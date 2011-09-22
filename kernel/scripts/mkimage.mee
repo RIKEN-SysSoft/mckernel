@@ -1,0 +1,3 @@
+#!/bin/sh
+
+cat $3/../elfboot/elfboot $1 > $2

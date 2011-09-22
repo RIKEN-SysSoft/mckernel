@@ -1,0 +1,34 @@
+AALBASE=$(SRC)/../../aal/manycore
+AALDIR=$(AALBASE)/$(TARGET)
+SRCS=$(wildcard $(SRC)/*.c)
+OBJS=$(notdir $(patsubst %.c,%.o,$(SRCS)))
+CFLAGS=-Wall -nostdlib -nostdinc -isystem $(shell $(CC) -print-file-name=include) -O3 -I$(AALBASE)/generic/include -I$(AALDIR)/include -I$(SRC)/include
+LDFLAGS=-e arch_start
+AALOBJ=$(AALDIR)/aal.o
+
+-include $(SRC)/configs/config.$(TARGET)
+
+all: depend kernel.img
+
+kernel.img: $(OBJS) $(AALOBJ)
+	$(LD) $(LDFLAGS) -o $@.elf $^
+	[ -f $(SRC)/scripts/mkimage.$(TARGET) ] && sh $(SRC)/scripts/mkimage.$(TARGET) '$@.elf' '$@' '$(SRC)' || cp $@.elf $@
+
+clean:
+	$(RM) $(OBJS) kernel.img kernel.img.elf Makefile.dep
+	make -C $(AALDIR) clean
+
+depend: Makefile.dep
+
+Makefile.dep: $(SRCS)
+	$(CC) $(CFLAGS) -MM $(SRCS) > Makefile.dep
+
+$(AALOBJ): FORCE
+	make -C $(AALDIR) CC=$(CC) LD=$(LD)
+
+%.o: $(SRC)/%.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+FORCE:
+
+-include Makefile.dep
