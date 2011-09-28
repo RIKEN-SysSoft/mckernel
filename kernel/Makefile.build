@@ -1,26 +1,21 @@
-AALBASE=$(SRC)/../../aal/manycore
 AALDIR=$(AALBASE)/$(TARGET)
-SRCS=$(wildcard $(SRC)/*.c)
-OBJS=$(notdir $(patsubst %.c,%.o,$(SRCS)))
-CFLAGS=-Wall -nostdlib -nostdinc -isystem $(shell $(CC) -print-file-name=include) -O3 -I$(SRC)/include -mcmodel=kernel
-LDFLAGS=-e arch_start
-AALOBJ=$(AALDIR)/aal.o
+OBJS=setup.o mem.o debug.o
+DEPSRCS=$(wildcard $(SRC)/*.c)
 
--include $(SRC)/configs/config.$(TARGET)
-include $(AALDIR)/Makefile.config
+include $(SRC)/configs/config.$(TARGET)
 include $(AALBASE)/Makefile.common
+
+CFLAGS += -I$(SRC)/include -mcmodel=kernel
+LDFLAGS += -e arch_start
+AALOBJ = aal/aal.o
+
+SUBCMD_OPTS = TARGET=$(TARGET) O=$(CURDIR)/aal CC=$(CC) LD=$(LD)
 
 ld_kern_cmd_base = $(LD) $(LDFLAGS) -o $@.elf $^
 mkimage_cmd_base = [ -f $(SRC)/scripts/mkimage.$(TARGET) ] && sh $(SRC)/scripts/mkimage.$(TARGET) '$@.elf' '$@' '$(SRC)' || cp $@.elf $@
 
-ifeq ($(V),1)
-	ld_kern_cmd = $(ld_kern_cmd_base)
-	mkimage_cmd = $(mkimage_cmd_base)
-else
-	ld_kern_cmd = @echo '       ' LDKERN $@; $(ld_kern_cmd_base)
-	mkimage_cmd = @echo '       ' MKIMAGE $@; $(mkimage_cmd_base)
-endif
-
+ld_kern_cmd = $(call echo_cmd,LDKERN,$@)$(ld_kern_cmd_base)
+mkimage_cmd = $(call echo_cmd,MKIMAGE,$@)$(mkimage_cmd_base)
 
 all: depend kernel.img
 
@@ -30,15 +25,16 @@ kernel.img: $(OBJS) $(AALOBJ)
 
 clean:
 	$(RM) $(OBJS) kernel.img kernel.img.elf Makefile.dep
-	@make -C $(AALDIR) clean
+	@$(submake) -C $(AALBASE) $(SUBCMD_OPTS) clean
 
 depend: Makefile.dep
 
-Makefile.dep: $(SRCS)
+Makefile.dep: $(DEPSRCS)
 	$(dep_cmd)
 
 $(AALOBJ): FORCE
-	@make -C $(AALDIR) CC=$(CC) LD=$(LD)
+	@mkdir -p $(dir $(AALOBJ))
+	$(call echo_cmd,BUILD AAL,$(TARGET))$(submake) -C $(AALBASE) $(SUBCMD_OPTS)
 
 %.o: $(SRC)/%.c
 	$(cc_cmd)
