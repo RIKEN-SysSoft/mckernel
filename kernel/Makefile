@@ -10,7 +10,8 @@ KERNELS = $(addsuffix /$(KERNEL),$(addprefix $(BUILD_DIR)/,$(BUILD_TARGET)))
 all: $(KERNELS)
 
 %/kernel.img: %/Makefile
-	make -C $(dir $@)
+	@echo 'MAKE TARGET' $(dir $@)
+	@make -C $(dir $@)
 
 %/Makefile: Makefile.build FORCE
 	@mkdir -p $(dir $@)
@@ -21,6 +22,6 @@ all: $(KERNELS)
 clean: $(addsuffix .clean,$(BUILD_TARGET))
 
 %.clean: $(BUILD_DIR)/%/Makefile
-	make -C $(BUILD_DIR)/$(basename $@) clean
+	@make -C $(BUILD_DIR)/$(basename $@) clean
 
 FORCE:

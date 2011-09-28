@@ -2,32 +2,46 @@ AALBASE=$(SRC)/../../aal/manycore
 AALDIR=$(AALBASE)/$(TARGET)
 SRCS=$(wildcard $(SRC)/*.c)
 OBJS=$(notdir $(patsubst %.c,%.o,$(SRCS)))
-CFLAGS=-Wall -nostdlib -nostdinc -isystem $(shell $(CC) -print-file-name=include) -O3 -I$(AALBASE)/generic/include -I$(AALDIR)/include -I$(SRC)/include
+CFLAGS=-Wall -nostdlib -nostdinc -isystem $(shell $(CC) -print-file-name=include) -O3 -I$(SRC)/include -mcmodel=kernel
 LDFLAGS=-e arch_start
 AALOBJ=$(AALDIR)/aal.o
 
 -include $(SRC)/configs/config.$(TARGET)
+include $(AALDIR)/Makefile.config
+include $(AALBASE)/Makefile.common
+
+ld_kern_cmd_base = $(LD) $(LDFLAGS) -o $@.elf $^
+mkimage_cmd_base = [ -f $(SRC)/scripts/mkimage.$(TARGET) ] && sh $(SRC)/scripts/mkimage.$(TARGET) '$@.elf' '$@' '$(SRC)' || cp $@.elf $@
+
+ifeq ($(V),1)
+	ld_kern_cmd = $(ld_kern_cmd_base)
+	mkimage_cmd = $(mkimage_cmd_base)
+else
+	ld_kern_cmd = @echo '       ' LDKERN $@; $(ld_kern_cmd_base)
+	mkimage_cmd = @echo '       ' MKIMAGE $@; $(mkimage_cmd_base)
+endif
+
 
 all: depend kernel.img
 
 kernel.img: $(OBJS) $(AALOBJ)
-	$(LD) $(LDFLAGS) -o $@.elf $^
-	[ -f $(SRC)/scripts/mkimage.$(TARGET) ] && sh $(SRC)/scripts/mkimage.$(TARGET) '$@.elf' '$@' '$(SRC)' || cp $@.elf $@
+	$(ld_kern_cmd)
+	$(mkimage_cmd)
 
 clean:
 	$(RM) $(OBJS) kernel.img kernel.img.elf Makefile.dep
-	make -C $(AALDIR) clean
+	@make -C $(AALDIR) clean
 
 depend: Makefile.dep
 
 Makefile.dep: $(SRCS)
-	$(CC) $(CFLAGS) -MM $(SRCS) > Makefile.dep
+	$(dep_cmd)
 
 $(AALOBJ): FORCE
-	make -C $(AALDIR) CC=$(CC) LD=$(LD)
+	@make -C $(AALDIR) CC=$(CC) LD=$(LD)
 
 %.o: $(SRC)/%.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(cc_cmd)
 
 FORCE:
 

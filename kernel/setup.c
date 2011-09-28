@@ -6,6 +6,7 @@ extern struct aal_kmsg_buf kmsg_buf;
 
 extern void arch_init(void);
 extern void kmsg_init(void);
+extern void mem_init(void);
 
 int main(void)
 {
@@ -15,9 +16,13 @@ int main(void)
 
 	arch_init();
 
-	cpu_disable_interrupt();
+	mem_init();
+
+	cpu_enable_interrupt();
+
 	while (1) {
 		cpu_halt();
+		kprintf("back from halt.\n");
 	}
 	return 0;
 }

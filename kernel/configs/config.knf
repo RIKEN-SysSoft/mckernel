@@ -2,4 +2,4 @@ CC = /home/shimosawa/cross.knf/bin/x86_64-l1om-linux-gcc
 LD = /home/shimosawa/cross.knf/bin/x86_64-l1om-linux-ld
 
 CFLAGS += -mno-sse -mno-mmx -mno-sse2 -mno-3dnow
-LDFLAGS += -m elf_l1om
+LDFLAGS += -m elf_l1om -T $(SRC)/knf.lds
