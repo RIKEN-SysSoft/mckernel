@@ -1,5 +1,5 @@
 AALDIR=$(AALBASE)/$(TARGET)
-OBJS=setup.o mem.o debug.o
+OBJS=setup.o mem.o debug.o mikc.o
 DEPSRCS=$(wildcard $(SRC)/*.c)
 
 include $(SRC)/configs/config.$(TARGET)

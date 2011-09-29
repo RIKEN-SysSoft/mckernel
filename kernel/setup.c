@@ -7,6 +7,7 @@ extern struct aal_kmsg_buf kmsg_buf;
 extern void arch_init(void);
 extern void kmsg_init(void);
 extern void mem_init(void);
+extern void ikc_master_init(void);
 
 int main(void)
 {
@@ -17,6 +18,8 @@ int main(void)
 	arch_init();
 
 	mem_init();
+
+	ikc_master_init();
 
 	cpu_enable_interrupt();
 
