@@ -11,7 +11,7 @@ KERNELS = $(addsuffix /$(KERNEL),$(addprefix $(O)/,$(BUILD_TARGET)))
 SUBCMD_OPTS = V='$(V)'
 
 $(if $(O),,$(error Specify the compilation target directory))
-$(if $(shell ls $(AALBASE)/Makefile.aal),,\
+$(if $(shell ls $(AALBASE)/Makefile),,\
 	$(error AAL is not found in $(AALBASE)))
 
 .PHONY: all clean
