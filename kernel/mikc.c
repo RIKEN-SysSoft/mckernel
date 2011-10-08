@@ -4,7 +4,8 @@
 #include <aal/ikc.h>
 
 static struct aal_ikc_channel_desc mchannel;
-static int master_channel_packet_handler(void *__packet, void *arg);
+static int master_channel_packet_handler(struct aal_ikc_channel_desc *,
+                                         void *__packet, void *arg);
 
 void ikc_master_init(void)
 {
@@ -12,7 +13,8 @@ void ikc_master_init(void)
 	kprintf("done.\n");
 }
 
-static int master_channel_packet_handler(void *__packet, void *arg)
+static int master_channel_packet_handler(struct aal_ikc_channel_desc *c,
+                                         void *__packet, void *arg)
 {
 	struct aal_ikc_master_packet *packet = __packet;
 
