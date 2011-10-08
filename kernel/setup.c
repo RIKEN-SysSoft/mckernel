@@ -1,5 +1,7 @@
+#include <types.h>
 #include <kmsg.h>
 #include <aal/cpu.h>
+#include <aal/mm.h>
 #include <aal/debug.h>
 
 extern struct aal_kmsg_buf kmsg_buf;
