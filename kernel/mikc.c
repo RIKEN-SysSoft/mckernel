@@ -2,19 +2,20 @@
 #include <aal/cpu.h>
 #include <aal/debug.h>
 #include <aal/ikc.h>
+#include <ikc/msg.h>
 
 static struct aal_ikc_channel_desc mchannel;
-static int master_channel_packet_handler(struct aal_ikc_channel_desc *,
+static int arch_master_channel_packet_handler(struct aal_ikc_channel_desc *,
                                          void *__packet, void *arg);
 
 void ikc_master_init(void)
 {
-	aal_mc_ikc_init_first(&mchannel, master_channel_packet_handler);
+	aal_mc_ikc_init_first(&mchannel, arch_master_channel_packet_handler);
 	kprintf("done.\n");
 }
 
-static int master_channel_packet_handler(struct aal_ikc_channel_desc *c,
-                                         void *__packet, void *arg)
+static int arch_master_channel_packet_handler(struct aal_ikc_channel_desc *c,
+                                              void *__packet, void *arg)
 {
 	struct aal_ikc_master_packet *packet = __packet;
 

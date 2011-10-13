@@ -11,6 +11,7 @@ extern void kmsg_init(void);
 extern void mem_init(void);
 extern void ikc_master_init(void);
 extern void arch_ready(void);
+extern void mc_ikc_init(void);
 
 int main(void)
 {
@@ -24,8 +25,9 @@ int main(void)
 
 	ikc_master_init();
 
-	arch_ready();
+	mc_ikc_init();
 
+	arch_ready();
 	cpu_enable_interrupt();
 	while (1) {
 		cpu_halt();

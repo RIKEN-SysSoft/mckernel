@@ -86,6 +86,32 @@ static void virtual_allocator_init(void)
 	                                    MAP_VMAP_SIZE, LARGE_PAGE_SIZE);
 }
 
+void *aal_mc_map_virtual(unsigned long phys, int npages,
+                         enum aal_mc_pt_attribute attr)
+{
+	void *p;
+	unsigned long i;
+
+	p = (void *)aal_pagealloc_alloc(vmap_allocator, npages);
+	if (!p) {
+		return NULL;
+	}
+	for (i = 0; i < npages; i++) {
+		aal_mc_pt_set_page(NULL, (char *)p + (i << PAGE_SHIFT),
+		                   phys + (i << PAGE_SHIFT), attr);
+	}
+	return p;
+}
+
+void aal_mc_unmap_virtual(void *va, int npages)
+{
+	unsigned long i;
+
+	for (i = 0; i < npages; i++) {
+		aal_mc_pt_clear_page(NULL, (char *)va + (i << PAGE_SHIFT));
+	}
+	aal_pagealloc_free(vmap_allocator, virt_to_phys(va), npages);
+}
 
 void mem_init(void)
 {
