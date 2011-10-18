@@ -32,3 +32,7 @@ static int arch_master_channel_packet_handler(struct aal_ikc_channel_desc *c,
 	return 0;
 }
 
+struct aal_ikc_channel_desc *aal_mc_get_master_channel(void)
+{
+	return &mchannel;
+}

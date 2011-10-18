@@ -83,7 +83,7 @@ static struct aal_page_allocator_desc *vmap_allocator;
 static void virtual_allocator_init(void)
 {
 	vmap_allocator = aal_pagealloc_init(MAP_VMAP_START,
-	                                    MAP_VMAP_SIZE, LARGE_PAGE_SIZE);
+	                                    MAP_VMAP_SIZE, PAGE_SIZE);
 }
 
 void *aal_mc_map_virtual(unsigned long phys, int npages,
