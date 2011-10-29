@@ -19,12 +19,9 @@ static int arch_master_channel_packet_handler(struct aal_ikc_channel_desc *c,
 {
 	struct aal_ikc_master_packet *packet = __packet;
 
-	/* Do something */
-	kprintf("Packet = %p\n", packet);
-	kprintf("Master packet! : %x\n", packet->msg);
-
 	switch (packet->msg) {
 	case MASTER_PACKET_INIT_ACK:
+		kprintf("Master channel init acked.\n");
 		aal_ikc_send(&mchannel, packet, 0);
 		break;
 	}

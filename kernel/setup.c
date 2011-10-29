@@ -29,9 +29,11 @@ int main(void)
 
 	arch_ready();
 	cpu_enable_interrupt();
+
+	kputs("MCK/AAL booted.\n");
+
 	while (1) {
 		cpu_halt();
-		kprintf("back from halt.\n");
 	}
 	return 0;
 }
