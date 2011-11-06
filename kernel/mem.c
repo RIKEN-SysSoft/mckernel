@@ -6,6 +6,8 @@
 #include <aal/mm.h>
 #include <aal/page_alloc.h>
 
+#include <cls.h>
+
 static struct aal_page_allocator_desc *pa_allocator;
 static unsigned long pa_start, pa_end;
 
@@ -119,4 +121,104 @@ void mem_init(void)
 
 	/* Prepare the kernel virtual map space */
 	virtual_allocator_init();
+}
+
+void kmalloc_init(void)
+{
+	struct cpu_local_var *v = get_this_cpu_local_var();
+	struct malloc_header *h = &v->free_list;
+
+	h->next = &v->free_list;
+	h->size = 0;
+}
+
+void *kmalloc(int size, int flag)
+{
+	struct cpu_local_var *v = get_this_cpu_local_var();
+	struct malloc_header *h = &v->free_list, *prev, *p;
+	int u, req_page;
+
+	if (size >= PAGE_SIZE * 4) {
+		return NULL;
+	}
+
+	u = (size + sizeof(*h) - 1) / sizeof(*h);
+
+	prev = h;
+	h = h->next;
+
+	while (1) {
+		if (h == &v->free_list) {
+			req_page = ((u + 1) * sizeof(*h) + PAGE_SIZE - 1)
+				>> PAGE_SHIFT;
+
+			h = allocate_pages(req_page, 0);
+			prev->next = h;
+			h->size = (req_page * PAGE_SIZE) / sizeof(*h) - 2;
+			/* Guard entry */
+			p = h + h->size + 1;
+			p->next = &v->free_list;
+			h->next = p;
+		}
+
+		if (h->size >= u) {
+			if (h->size == u || h->size == u + 1) {
+				prev->next = h->next;
+				return h + 1;
+			} else { /* Divide */
+				h->size -= u + 1;
+				
+				p = h + h->size + 1;
+				p->size = u;
+
+				return p + 1;
+			}
+		}
+		prev = h;
+		h = h->next;
+	}
+}
+
+void kfree(void *ptr)
+{
+	struct cpu_local_var *v = get_this_cpu_local_var();
+	struct malloc_header *h = &v->free_list, *p = ptr;
+	int combined = 0;
+	
+	h = h->next;
+	
+	p--;
+
+	while ((p < h || p > h->next) && h != &v->free_list) {
+		h = h->next;
+	}
+
+	if (h + h->size + 1 == p && h->size != 0) {
+		combined = 1;
+		h->size += p->size + 1;
+	}
+	if (h->next == p + p->size + 1 && h->next->size != 0) {
+		combined = 1;
+		h->size += h->next->size + 1;
+		h->next = h->next->next;
+	}
+	if (!combined) {
+		p->next = h->next;
+		h->next = p;
+	}
+}
+
+void print_free_list(void)
+{
+	struct cpu_local_var *v = get_this_cpu_local_var();
+	struct malloc_header *h = &v->free_list;
+
+	h = h->next;
+
+	kprintf("free_list : \n");
+	while (h != &v->free_list) {
+		kprintf("  %p : %p, %d ->\n", h, h->next, h->size);
+		h = h->next;
+	}
+	kprintf("\n");
 }

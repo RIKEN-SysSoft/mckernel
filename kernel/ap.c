@@ -4,14 +4,30 @@
 #include <aal/mm.h>
 #include <aal/debug.h>
 
+int num_processors = 1;
+static volatile int ap_stop = 1;
+
 void ap_idle(void)
 {
 	int id = aal_mc_get_hardware_processor_id();
 
-	kprintf(" %d", id);
 	while (1) {
 		cpu_halt();
 	}
+}
+
+static void ap_wait(void)
+{
+	while (ap_stop) {
+		cpu_pause();
+	}
+
+	ap_idle();
+}
+
+void ap_start(void)
+{
+	ap_stop = 0;
 }
 
 void ap_init(void)
@@ -36,7 +52,10 @@ void ap_init(void)
 		if (cpu_info->hw_ids[i] == bsp_hw_id) {
 			continue;
 		}
-		aal_mc_boot_cpu(cpu_info->hw_ids[i], (unsigned long)ap_idle);
+		aal_mc_boot_cpu(cpu_info->hw_ids[i], (unsigned long)ap_wait);
+		kprintf(" %d", cpu_info->hw_ids[i]);
+
+		num_processors++;
 	}
 	kprintf(" .. Done\n");
 }
