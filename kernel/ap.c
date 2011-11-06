@@ -9,8 +9,6 @@ static volatile int ap_stop = 1;
 
 void ap_idle(void)
 {
-	int id = aal_mc_get_hardware_processor_id();
-
 	while (1) {
 		cpu_halt();
 	}

@@ -1,3 +1,4 @@
+ENTRY(main)
 PHDRS 
 {
 	text PT_LOAD FLAGS(5);
@@ -5,7 +6,7 @@ PHDRS
 }
 SECTIONS
 {
-	. = 0xffffffff80001000;
+	. = LOAD_PA;
     _head = .;
 
     .text : {
@@ -24,7 +25,7 @@ SECTIONS
           *(.bss .bss.*)
     }
     . = ALIGN(4096);
-    _end = .;
+    data_end = .;
 
 	/DISCARD/ : {
 	     *(.eh_frame)

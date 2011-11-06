@@ -1,3 +1,10 @@
 #!/bin/sh
 
-cat $3/../elfboot/elfboot $1 > $2
+set -e
+
+O=`pwd`
+
+make -C $3/../kboot O=$O clean
+make -C $3/../kboot O=$O KIMAGE="$O/$1" LOAD_PA=0x3a001000
+
+cat $3/../elfboot/elfboot kboot/kboot.elf > $2

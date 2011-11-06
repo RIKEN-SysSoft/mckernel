@@ -12,7 +12,7 @@ AALOBJ = aal/aal.o
 SUBCMD_OPTS = TARGET=$(TARGET) O=$(CURDIR)/aal CC=$(CC) LD=$(LD)
 
 ld_kern_cmd_base = $(LD) $(LDFLAGS) -o $@.elf $^
-mkimage_cmd_base = [ -f $(SRC)/scripts/mkimage.$(TARGET) ] && sh $(SRC)/scripts/mkimage.$(TARGET) '$@.elf' '$@' '$(SRC)' || cp $@.elf $@
+mkimage_cmd_base = [ -f $(SRC)/scripts/mkimage.$(TARGET) ] && CC=$(CC) LD=$(LD) LDFLAGS="$(LDFLAGS_MKIMAGE)" sh $(SRC)/scripts/mkimage.$(TARGET) '$@.elf' '$@' '$(SRC)' || cp $@.elf $@
 
 ld_kern_cmd = $(call echo_cmd,LDKERN,$@)$(ld_kern_cmd_base)
 mkimage_cmd = $(call echo_cmd,MKIMAGE,$@)$(mkimage_cmd_base)

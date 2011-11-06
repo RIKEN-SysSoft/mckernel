@@ -3,3 +3,4 @@ LD = /home/shimosawa/cross.knf/bin/x86_64-l1om-linux-ld
 
 CFLAGS += -mno-sse -mno-mmx -mno-sse2 -mno-3dnow
 LDFLAGS += -m elf_l1om -T $(SRC)/knf.lds
+LDFLAGS_MKIMAGE = -m elf_l1om
