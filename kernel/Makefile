@@ -32,6 +32,6 @@ all: $(KERNELS)
 clean: $(addsuffix .clean,$(BUILD_TARGET))
 
 %.clean: $(O)/%/Makefile
-	@make -C $(O)/$(basename $@) $(SUBCMD_OPTS) clean
+	@make --no-print-directory -C $(O)/$(basename $@) $(SUBCMD_OPTS) clean
 
 FORCE:

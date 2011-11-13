@@ -24,7 +24,7 @@ kernel.img: $(OBJS) $(AALOBJ)
 	$(mkimage_cmd)
 
 clean:
-	$(RM) $(OBJS) kernel.img kernel.img.elf Makefile.dep
+	$(rm_cmd) $(OBJS) kernel.img kernel.img.elf Makefile.dep
 	@$(submake) -C $(AALBASE) $(SUBCMD_OPTS) clean
 
 depend: Makefile.dep
