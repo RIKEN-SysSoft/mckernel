@@ -46,6 +46,7 @@ static void page_fault_handler(unsigned long address, void *regs)
 {
 	kprintf("Page fault for %016lx\n", address);
 	/* TODO */
+	aal_mc_debug_show_interrupt_context(regs);
 	panic("page fault");
 }
 

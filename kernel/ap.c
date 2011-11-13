@@ -17,6 +17,7 @@ void ap_idle(void)
 static void ap_wait(void)
 {
 	while (ap_stop) {
+		barrier();
 		cpu_pause();
 	}
 
@@ -44,7 +45,7 @@ void ap_init(void)
 		return;
 	}
 
-	kprintf("BSP HW ID = %d\n", bsp_hw_id);
+	kprintf("BSP HW ID = %d, ", bsp_hw_id);
 	kprintf("AP Booting :");
 	for (i = 0; i < cpu_info->ncpus; i++) {
 		if (cpu_info->hw_ids[i] == bsp_hw_id) {
