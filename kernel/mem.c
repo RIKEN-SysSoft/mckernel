@@ -1,4 +1,5 @@
 #include <kmsg.h>
+#include <kmalloc.h>
 #include <string.h>
 #include <aal/cpu.h>
 #include <aal/debug.h>
@@ -38,8 +39,8 @@ void free_pages(void *va, int npages)
 }
 
 static struct aal_mc_pa_ops allocator = {
-	.alloc = allocate_pages,
-	.free = free_pages,
+	.alloc_page = allocate_pages,
+	.free_page = free_pages,
 };
 
 static void page_fault_handler(unsigned long address, void *regs)
@@ -79,6 +80,12 @@ static void page_allocator_init(void)
 
 	/* And prepare some exception handlers */
 	aal_mc_set_page_fault_handler(page_fault_handler);
+}
+
+void register_kmalloc(void)
+{
+	allocator.alloc = kmalloc;
+	allocator.free = kfree;
 }
 
 static struct aal_page_allocator_desc *vmap_allocator;
@@ -131,9 +138,11 @@ void kmalloc_init(void)
 
 	h->next = &v->free_list;
 	h->size = 0;
+
+	register_kmalloc();
 }
 
-void *kmalloc(int size, int flag)
+void *kmalloc(int size, enum aal_mc_ap_flag flag)
 {
 	struct cpu_local_var *v = get_this_cpu_local_var();
 	struct malloc_header *h = &v->free_list, *prev, *p;
