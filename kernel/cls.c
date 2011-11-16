@@ -20,6 +20,7 @@ void cpu_local_var_init(void)
 	z = (z + PAGE_SIZE - 1) >> PAGE_SHIFT;
 
 	clv = allocate_pages(z, 0);
+	memset(clv, 0, z * PAGE_SIZE);
 }
 
 struct cpu_local_var *get_cpu_local_var(int id)
