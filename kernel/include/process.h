@@ -1,0 +1,52 @@
+#ifndef HEADER_PROCESS_H
+#define HEADER_PROCESS_H
+
+#include <aal/context.h>
+#include <aal/cpu.h>
+#include <aal/mm.h>
+#include <list.h>
+
+#define VR_STACK     1
+
+struct vm_range {
+	struct list_head list;
+	unsigned long start, end;
+	unsigned long phys;
+	unsigned long flag;
+};
+
+struct vm_regions {
+	unsigned long text_start, text_end;
+	unsigned long data_start, data_end;
+	unsigned long brk_start, brk_end;
+	unsigned long map_start, map_end;
+	unsigned long stack_start, stack_end;
+};
+
+struct process {
+	int pid;
+	int status;
+
+	struct page_table *page_table;
+	struct list_head vm_range_list;
+
+	struct vm_regions region;
+
+	aal_mc_kernel_context_t ctx;
+	aal_mc_user_context_t  *uctx;
+};
+
+struct process *create_process(unsigned long user_pc);
+int add_process_memory_range(struct process *process,
+                             unsigned long start, unsigned long end,
+                             unsigned long phys, unsigned long flag);
+int remove_process_region(struct process *proc,
+                          unsigned long start, unsigned long end);
+void init_process_stack(struct process *process);
+unsigned long extend_process_region(struct process *proc,
+                                    unsigned long start, unsigned long end,
+                                    unsigned long address);
+
+void schedule(void);
+
+#endif

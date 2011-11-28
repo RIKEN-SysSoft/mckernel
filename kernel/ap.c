@@ -47,6 +47,7 @@ void ap_init(void)
 
 	kprintf("BSP HW ID = %d, ", bsp_hw_id);
 	kprintf("AP Booting :");
+
 	for (i = 0; i < cpu_info->ncpus; i++) {
 		if (cpu_info->hw_ids[i] == bsp_hw_id) {
 			continue;

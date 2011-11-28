@@ -100,7 +100,10 @@ void *aal_mc_map_virtual(unsigned long phys, int npages,
                          enum aal_mc_pt_attribute attr)
 {
 	void *p;
-	unsigned long i;
+	unsigned long i, offset;
+
+	offset = (phys & (PAGE_SIZE - 1));
+	phys = phys & PAGE_MASK;
 
 	p = (void *)aal_pagealloc_alloc(vmap_allocator, npages);
 	if (!p) {
@@ -110,13 +113,14 @@ void *aal_mc_map_virtual(unsigned long phys, int npages,
 		aal_mc_pt_set_page(NULL, (char *)p + (i << PAGE_SHIFT),
 		                   phys + (i << PAGE_SHIFT), attr);
 	}
-	return p;
+	return (char *)p + offset;
 }
 
 void aal_mc_unmap_virtual(void *va, int npages)
 {
 	unsigned long i;
 
+	va = (void *)((unsigned long)va & PAGE_MASK);
 	for (i = 0; i < npages; i++) {
 		aal_mc_pt_clear_page(NULL, (char *)va + (i << PAGE_SHIFT));
 	}

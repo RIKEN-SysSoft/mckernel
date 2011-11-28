@@ -40,6 +40,7 @@ static int test_packet_handler(struct aal_ikc_channel_desc *c,
 {
 	struct ikc_test_packet *packet = __packet;
 	struct ikc_test_packet p;
+	int i;
 	unsigned long a, pp, *v;
 	       
 	if (packet->msg == 0x11110011) {
@@ -56,7 +57,9 @@ static int test_packet_handler(struct aal_ikc_channel_desc *c,
 		aal_mc_unmap_memory(NULL, pp, 4 * 1024 * 1024);
 	} else if (packet->msg == 0x11110012) {
 		p.msg = 0x11110013;
-		aal_ikc_send(c, &p, 0);
+		for (i = 0; i < 10; i++) {
+			aal_ikc_send(c, &p, 0);
+		}
 	}
 	
 	return 0;

@@ -1,5 +1,8 @@
 #ifndef __HEADER_CLS_H
 #define __HEADER_CLS_H
+
+#include <process.h>
+#include <syscall.h>
 /*
  * CPU Local Storage (cls)
  */
@@ -12,7 +15,16 @@ struct malloc_header {
 struct cpu_local_var {
 	/* malloc */
 	struct malloc_header free_list;
-	/* Align to 64-byte */
+
+	struct process idle;
+
+	struct process *current;
+	struct process *next;
+
+	struct aal_ikc_channel_desc *syscall_channel;
+
+	struct syscall_params scp;
+	struct ikc_scd_init_param iip;
 } __attribute__((aligned(64)));
 
 
