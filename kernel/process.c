@@ -221,7 +221,7 @@ void schedule(void)
 
 	if (switch_ctx) {
 		kprintf("schedule: %p (%p) => %p (%p) \n", prev, 
-		        prev->page_table, next, next->page_table);
+		        prev ? prev->page_table : NULL, next, next->page_table);
 		aal_mc_load_page_table(next->page_table);
 
 		if (prev) {

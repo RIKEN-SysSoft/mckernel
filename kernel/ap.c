@@ -3,6 +3,7 @@
 #include <aal/cpu.h>
 #include <aal/mm.h>
 #include <aal/debug.h>
+#include <process.h>
 
 int num_processors = 1;
 static volatile int ap_stop = 1;
@@ -20,8 +21,12 @@ static void ap_wait(void)
 		barrier();
 		cpu_pause();
 	}
+	kprintf("ap started.\n");
+	kmalloc_init();
+	sched_init();
+	init_host_syscall_channel();
 
-	ap_idle();
+	schedule();
 }
 
 void ap_start(void)

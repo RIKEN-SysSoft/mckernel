@@ -21,6 +21,10 @@ static void send_syscall(struct syscall_request *req)
 
 	res->status = 0;
 
+	kprintf("CPU : %lx\n", aal_mc_get_processor_id());
+	kprintf("Target is %lx\n", cpu_local_var(scp).request_pa);
+	kprintf("SC req: %ld %ld %ld\n", req->valid, req->number, req->args[0]);
+
 	memcpy_async(cpu_local_var(scp).request_pa,
 	             virt_to_phys(req), sizeof(*req), 0, &fin);
 
@@ -249,7 +253,7 @@ long sys_uname(int n, aal_mc_user_context_t *ctx)
 	request.number = n;
 	request.args[0] = phys;
 
-	return do_syscall(&request);
+	return do_syscall(&request), stop();
 }
 
 long sys_getxid(int n, aal_mc_user_context_t *ctx)
@@ -310,6 +314,14 @@ long syscall(int num, aal_mc_user_context_t *ctx)
 	long l;
 
 	cpu_enable_interrupt();
+
+	kprintf("SC(%d)[%3d](%lx, %lx, %lx, %lx, %lx) @ %lx | %lx\n", 
+	        aal_mc_get_processor_id(),
+	        num,
+	        aal_mc_syscall_arg0(ctx), aal_mc_syscall_arg1(ctx),
+	        aal_mc_syscall_arg2(ctx), aal_mc_syscall_arg3(ctx),
+	        aal_mc_syscall_arg4(ctx), aal_mc_syscall_pc(ctx),
+	        aal_mc_syscall_sp(ctx));
 
 	if (syscall_table[num]) {
 		l = syscall_table[num](num, ctx);

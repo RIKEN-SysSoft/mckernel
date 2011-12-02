@@ -114,7 +114,6 @@ static void rest_init(void)
 	mc_ikc_init();
 
 	sched_init();
-	ap_start();
 }
 
 int host_ikc_inited = 0;
@@ -129,6 +128,7 @@ static void post_init(void)
 	}
 
 	init_host_syscall_channel();
+	ap_start();
 }
 
 int main(void)

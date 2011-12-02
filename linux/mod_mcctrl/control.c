@@ -166,6 +166,11 @@ int mcexec_wait_syscall(aal_os_t os, struct syscall_wait_desc *__user req)
 			}
 		}
 		*c->param.doorbell_va = 0;
+		printk("(%p) %ld SC %ld: %lx\n", 
+		       c->param.request_va,
+		       c->param.request_va->valid,
+		       c->param.request_va->number,
+		       c->param.request_va->args[0]);
 		if (__do_in_kernel_syscall(os, c, c->param.request_va)) {
 #endif
 			if (copy_to_user(&req->sr, c->param.request_va,

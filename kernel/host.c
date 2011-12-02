@@ -142,7 +142,7 @@ static void process_msg_init_acked(unsigned long pphys)
 
 	lparam->post_fin = 1;
 
-	kprintf("Syscall parameters:\n");
+	kprintf("Syscall parameters: (%d)\n", aal_mc_get_processor_id());
 	kprintf(" Response: %lx, %p\n",
 	        lparam->response_pa, lparam->response_va);
 	kprintf(" Request : %lx, %lx, %p\n",
