@@ -29,6 +29,7 @@ static void send_syscall(struct syscall_request *req)
 
 	memcpy_async_wait(&fin);
 
+	cpu_local_var(scp).request_va->valid = 1;
 	*(unsigned int *)cpu_local_var(scp).doorbell_va = 1;
 
 #ifdef SYSCALL_BY_IKC
@@ -68,6 +69,7 @@ long sys_brk(int n, aal_mc_user_context_t *ctx)
 
 #define SYSCALL_DECLARE(name) long sys_##name(int n, aal_mc_user_context_t *ctx)
 #define SYSCALL_HEADER struct syscall_request request; \
+	request.valid = 0; \
 	request.number = n
 #define SYSCALL_ARG_D(n)    request.args[n] = aal_mc_syscall_arg##n(ctx)
 #define SYSCALL_ARG_MO(n) \

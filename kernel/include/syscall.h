@@ -50,8 +50,9 @@ struct ikc_scd_init_param {
 };
 
 struct syscall_request {
+	unsigned long valid;
 	unsigned long number;
-	unsigned long args[5];
+	unsigned long args[6];
 };
 
 struct syscall_response {

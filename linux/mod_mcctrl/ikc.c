@@ -54,6 +54,9 @@ int mcctrl_ikc_set_recv_cpu(int cpu)
 	return 0;
 }
 
+unsigned long *mcctrl_doorbell_va;
+unsigned long mcctrl_doorbell_pa;
+
 static void mcctrl_ikc_init(aal_os_t os, int cpu, unsigned long rphys)
 {
 	struct ikc_scd_packet packet;
@@ -71,8 +74,8 @@ static void mcctrl_ikc_init(aal_os_t os, int cpu, unsigned long rphys)
 
 	pmc->param.request_va = (void *)__get_free_pages(GFP_KERNEL, 4);
 	pmc->param.request_pa = virt_to_phys(pmc->param.request_va);
-	pmc->param.doorbell_va = (void *)__get_free_page(GFP_KERNEL);
-	pmc->param.doorbell_pa = virt_to_phys(pmc->param.doorbell_va);
+	pmc->param.doorbell_va = mcctrl_doorbell_va;
+	pmc->param.doorbell_pa = mcctrl_doorbell_pa;
 	pmc->param.post_va = (void *)__get_free_page(GFP_KERNEL);
 	pmc->param.post_pa = virt_to_phys(pmc->param.post_va);
 	memset(pmc->param.doorbell_va, 0, PAGE_SIZE);
@@ -96,6 +99,10 @@ static void mcctrl_ikc_init(aal_os_t os, int cpu, unsigned long rphys)
 	packet.msg = SCD_MSG_INIT_CHANNEL_ACKED;
 	packet.ref = cpu;
 	packet.arg = rphys;
+
+	printk("Request: %lx, Response: %lx, Doorbell: %lx\n",
+	       pmc->param.request_pa, pmc->param.response_rpa,
+	       pmc->param.doorbell_pa);
 
 	aal_ikc_send(pmc->c, &packet, 0);
 
@@ -137,6 +144,9 @@ static struct aal_ikc_listen_param listen_param = {
 int prepare_ikc_channels(aal_os_t os)
 {
 	struct aal_cpu_info *info;
+
+	mcctrl_doorbell_va = (void *)__get_free_page(GFP_KERNEL);
+	mcctrl_doorbell_pa = virt_to_phys(mcctrl_doorbell_va);
 
 	info = aal_os_get_cpu_info(os);
 	if (!info) {

@@ -35,8 +35,9 @@ struct program_load_desc {
 };
 
 struct syscall_request {
+	unsigned long valid;
 	unsigned long number;
-	unsigned long args[5];
+	unsigned long args[6];
 };
 
 struct syscall_wait_desc {
