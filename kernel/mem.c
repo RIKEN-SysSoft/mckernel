@@ -151,12 +151,16 @@ void *kmalloc(int size, enum aal_mc_ap_flag flag)
 	struct cpu_local_var *v = get_this_cpu_local_var();
 	struct malloc_header *h = &v->free_list, *prev, *p;
 	int u, req_page;
+	unsigned long flags;
+
 
 	if (size >= PAGE_SIZE * 4) {
 		return NULL;
 	}
 
 	u = (size + sizeof(*h) - 1) / sizeof(*h);
+
+	flags = cpu_disable_interrupt_save();
 
 	prev = h;
 	h = h->next;
@@ -172,12 +176,15 @@ void *kmalloc(int size, enum aal_mc_ap_flag flag)
 			/* Guard entry */
 			p = h + h->size + 1;
 			p->next = &v->free_list;
+			p->size = 0;
 			h->next = p;
 		}
 
 		if (h->size >= u) {
 			if (h->size == u || h->size == u + 1) {
 				prev->next = h->next;
+
+				cpu_restore_interrupt(flags);
 				return h + 1;
 			} else { /* Divide */
 				h->size -= u + 1;
@@ -185,6 +192,7 @@ void *kmalloc(int size, enum aal_mc_ap_flag flag)
 				p = h + h->size + 1;
 				p->size = u;
 
+				cpu_restore_interrupt(flags);
 				return p + 1;
 			}
 		}
@@ -198,7 +206,9 @@ void kfree(void *ptr)
 	struct cpu_local_var *v = get_this_cpu_local_var();
 	struct malloc_header *h = &v->free_list, *p = ptr;
 	int combined = 0;
-	
+	unsigned long flags;
+
+	flags = cpu_disable_interrupt_save();
 	h = h->next;
 	
 	p--;
@@ -212,14 +222,19 @@ void kfree(void *ptr)
 		h->size += p->size + 1;
 	}
 	if (h->next == p + p->size + 1 && h->next->size != 0) {
-		combined = 1;
-		h->size += h->next->size + 1;
-		h->next = h->next->next;
-	}
-	if (!combined) {
+		if (combined) {
+			h->size += h->next->size + 1;
+			h->next = h->next->next;
+		} else { 
+			p->size += h->next->size + 1;
+			p->next = h->next->next;
+			h->next = p;
+		}
+	} else if (!combined) {
 		p->next = h->next;
 		h->next = p;
 	}
+	cpu_restore_interrupt(flags);
 }
 
 void print_free_list(void)

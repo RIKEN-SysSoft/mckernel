@@ -23,14 +23,18 @@ struct process *create_process(unsigned long user_pc)
 	return proc;
 }
 
-void update_process_page_table(struct process *process, struct vm_range *range)
+extern void __host_update_process_range(struct process *process,
+                                        struct vm_range *range);
+
+void update_process_page_table(struct process *process, struct vm_range *range,
+                               enum aal_mc_pt_attribute flag)
 {
 	unsigned long p, pa = range->phys;
 
 	p = range->start;
 	while (p < range->end) {
 		aal_mc_pt_set_page(process->page_table, (void *)p,
-		                   pa, PTATTR_WRITABLE | PTATTR_USER);
+		                   pa, PTATTR_WRITABLE | PTATTR_USER | flag);
 
 		pa += PAGE_SIZE;
 		p += PAGE_SIZE;
@@ -57,7 +61,17 @@ int add_process_memory_range(struct process *process,
 	        range->start, range->end, range->phys, range->phys + 
 	        range->end - range->start);
 
-	update_process_page_table(process, range);
+	if (flag & VR_REMOTE) {
+		update_process_page_table(process, range, AAL_PTA_REMOTE);
+	} else if (flag & VR_IO_NOCACHE) {
+		update_process_page_table(process, range, PTATTR_UNCACHABLE);
+	} else {
+		update_process_page_table(process, range, 0);
+	}
+
+	if (!(flag & VR_REMOTE)) {
+		__host_update_process_range(process, range);
+	}
 
 	list_add_tail(&range->list, &process->vm_range_list);
 
@@ -73,19 +87,23 @@ void init_process_stack(struct process *process)
 
 	add_process_memory_range(process, USER_END - PAGE_SIZE,
 	                         USER_END,
-	                         virt_to_phys(p), VR_STACK);
+	                         virt_to_phys(stack), VR_STACK);
 
 	/* TODO: fill with actual value of argc, argv, envp */
-	
-	p[-1] = 0;     /* env: "" */
-	p[-2] = 0x41;  /* argv(0): "a" */
-	p[-3] = USER_END - sizeof(unsigned long); /* envp: END - 8 */
-	p[-4] = 0;     /* argv[1] = NULL */
-	p[-5] = USER_END - sizeof(unsigned long) * 2; /* argv[0] = END - 16 */
-	p[-6] = 1;     /* argc */
+	kprintf("%lx, %p\n", virt_to_phys(stack), p);
+
+	p[-1] = 0;     /* AT_NULL */
+	p[-2] = 0;
+	p[-3] = USER_END - sizeof(unsigned long) * 2;
+	p[-4] = 0;     /* env: "" */
+	p[-5] = 0x41;  /* argv(0): "a" */
+	p[-6] = USER_END - sizeof(unsigned long) * 4; /* envp: END - 8 */
+	p[-7] = 0;     /* argv[1] = NULL */
+	p[-8] = USER_END - sizeof(unsigned long) * 5; /* argv[0] = END - 16 */
+	p[-9] = 1;     /* argc */
 
 	aal_mc_modify_user_context(process->uctx, AAL_UCR_STACK_POINTER,
-	                           USER_END - sizeof(unsigned long) * 6);
+	                           USER_END - sizeof(unsigned long) * 8);
 	process->region.stack_end = USER_END;
 	process->region.stack_start = USER_END - PAGE_SIZE;
 }
@@ -128,12 +146,39 @@ int remove_process_region(struct process *proc,
 		return -EINVAL;
 	}
 
+	/* We defer freeing to the time of exit */
 	while (start < end) {
 		aal_mc_pt_clear_page(proc->page_table, (void *)start);
 		start += PAGE_SIZE;
 	}
 
 	return 0;
+}
+
+extern void print_free_list(void);
+void free_process_memory(struct process *proc)
+{
+	struct vm_range *range, *next;
+
+	list_for_each_entry_safe(range, next, &proc->vm_range_list,
+	                         list) {
+		if (!(range->flag & VR_REMOTE) &&
+		    !(range->flag & VR_IO_NOCACHE) &&
+		    !(range->flag & VR_RESERVED)) {
+			aal_mc_free_pages(phys_to_virt(range->phys),
+			                  (range->end - range->start)
+			                  >> PAGE_SHIFT);
+		}
+		list_del(&range->list);
+		aal_mc_free(range);
+	}
+	/* TODO: Free page tables */
+	proc->status = PS_ZOMBIE;
+}
+
+void destroy_process(struct process *proc)
+{
+	aal_mc_free_pages(proc, 1);
 }
 
 static void idle(void)
@@ -175,7 +220,8 @@ void schedule(void)
 	cpu_enable_interrupt();
 
 	if (switch_ctx) {
-		kprintf("schedule: %p => %p \n", prev, next);
+		kprintf("schedule: %p (%p) => %p (%p) \n", prev, 
+		        prev->page_table, next, next->page_table);
 		aal_mc_load_page_table(next->page_table);
 
 		if (prev) {

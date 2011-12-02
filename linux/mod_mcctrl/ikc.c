@@ -69,11 +69,15 @@ static void mcctrl_ikc_init(aal_os_t os, int cpu, unsigned long rphys)
 	                             sizeof(struct ikc_scd_init_param));
 	rpm = ioremap_wc(phys, sizeof(struct ikc_scd_init_param));
 
-	pmc->param.request_va = (void *)__get_free_page(GFP_KERNEL);
+	pmc->param.request_va = (void *)__get_free_pages(GFP_KERNEL, 4);
 	pmc->param.request_pa = virt_to_phys(pmc->param.request_va);
 	pmc->param.doorbell_va = (void *)__get_free_page(GFP_KERNEL);
 	pmc->param.doorbell_pa = virt_to_phys(pmc->param.doorbell_va);
-
+	pmc->param.post_va = (void *)__get_free_page(GFP_KERNEL);
+	pmc->param.post_pa = virt_to_phys(pmc->param.post_va);
+	memset(pmc->param.doorbell_va, 0, PAGE_SIZE);
+	memset(pmc->param.post_va, 0, PAGE_SIZE);
+	
 	pmc->param.response_rpa = rpm->response_page;
 	pmc->param.response_pa 
 		= aal_device_map_memory(aal_os_to_dev(os),
@@ -82,8 +86,12 @@ static void mcctrl_ikc_init(aal_os_t os, int cpu, unsigned long rphys)
 	pmc->param.response_va = ioremap_wc(pmc->param.response_pa,
 	                                    PAGE_SIZE);
 
+	pmc->dma_buf = (void *)__get_free_pages(GFP_KERNEL,
+	                                        DMA_PIN_SHIFT - PAGE_SHIFT);
+
 	rpm->request_page = pmc->param.request_pa;
 	rpm->doorbell_page = pmc->param.doorbell_pa;
+	rpm->post_page = pmc->param.post_pa;
 
 	packet.msg = SCD_MSG_INIT_CHANNEL_ACKED;
 	packet.ref = cpu;

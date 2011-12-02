@@ -8,21 +8,36 @@
 #include <cls.h>
 #include <syscall.h>
 #include <page.h>
+#include <amemcpy.h>
+
+int memcpy_async(unsigned long dest, unsigned long src,
+                 unsigned long len, int wait, unsigned long *notify);
 
 static void send_syscall(struct syscall_request *req)
 {
 	struct ikc_scd_packet packet;
 	struct syscall_response *res = cpu_local_var(scp).response_va;
+	unsigned long fin;
 
 	res->status = 0;
-	/* TODO: copy by DMA */
-	memcpy_long(cpu_local_var(scp).request_va, req, sizeof(*req));
 
+	memcpy_async(cpu_local_var(scp).request_pa,
+	             virt_to_phys(req), sizeof(*req), 0, &fin);
+
+	memcpy_async_wait(&cpu_local_var(scp).post_fin);
+	cpu_local_var(scp).post_va->v[0] = cpu_local_var(scp).post_idx;
+
+	memcpy_async_wait(&fin);
+
+	*(unsigned int *)cpu_local_var(scp).doorbell_va = 1;
+
+#ifdef SYSCALL_BY_IKC
 	packet.msg = SCD_MSG_SYSCALL_ONESIDE;
 	packet.ref = aal_mc_get_processor_id();
 	packet.arg = cpu_local_var(scp).request_rpa;
-
-	aal_ikc_send(cpu_local_var(syscall_channel), &packet, 0);
+	
+	aal_ikc_send(cpu_local_var(syscall_channel), &packet, 0); 
+#endif
 }
 
 static int do_syscall(struct syscall_request *req)
@@ -103,9 +118,7 @@ static int stop(void)
 SYSCALL_DECLARE(open)
 {
 	SYSCALL_HEADER;
-	
 	SYSCALL_ARGS_3(MI, D, D);
-
 	SYSCALL_FOOTER;
 }
 
@@ -169,10 +182,11 @@ SYSCALL_DECLARE(lseek)
 SYSCALL_DECLARE(exit_group)
 {
 	SYSCALL_HEADER;
-	send_syscall(&request);
+	do_syscall(&request);
 
-	cpu_local_var(current) = NULL;
+	free_process_memory(cpu_local_var(current));
 	cpu_local_var(next) = &cpu_local_var(idle);
+	
 	schedule();
 
 	return 0;
@@ -307,4 +321,35 @@ long syscall(int num, aal_mc_user_context_t *ctx)
 		while(1);
 		return -ENOSYS;
 	}
+}
+
+void __host_update_process_range(struct process *process, 
+                                 struct vm_range *range)
+{
+	struct syscall_post *post;
+	int idx;
+
+	memcpy_async_wait(&cpu_local_var(scp).post_fin);
+
+	post = &cpu_local_var(scp).post_buf;
+
+	post->v[0] = 1;
+	post->v[1] = range->start;
+	post->v[2] = range->end;
+	post->v[3] = range->phys;
+
+	cpu_disable_interrupt();
+	if (cpu_local_var(scp).post_idx >= 
+	    PAGE_SIZE / sizeof(struct syscall_post)) {
+		/* XXX: Wait until it is consumed */
+	} else {
+		idx = ++(cpu_local_var(scp).post_idx);
+
+		cpu_local_var(scp).post_fin = 0;
+		memcpy_async(cpu_local_var(scp).post_pa + 
+		             idx * sizeof(*post),
+		             virt_to_phys(post), sizeof(*post), 0,
+		             &cpu_local_var(scp).post_fin);
+	}
+	cpu_enable_interrupt();
 }

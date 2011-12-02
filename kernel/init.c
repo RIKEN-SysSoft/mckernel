@@ -53,31 +53,49 @@ static void dma_test(void)
 	}
 }
 
+extern char *aal_mc_get_kernel_args(void);
+
+char *find_command_line(char *name)
+{
+	char *cmdline = aal_mc_get_kernel_args();
+
+	if (!cmdline) {
+		return NULL;
+	}
+	return strstr(cmdline, name);
+}
+
 static void pc_test(void)
 {
 	int i;
-	int kmode = PERFCTR_USER_MODE;
-	int x[2][4] = { { APT_TYPE_L1D_MISS, APT_TYPE_L1I_MISS,
+	int kmode = PERFCTR_KERNEL_MODE;
+	int imode = 1;
+	char *p;
+	int x[2][4] = { { APT_TYPE_L1D_REQUEST,
+	                  APT_TYPE_L1D_MISS,
 	                  APT_TYPE_L2_MISS, APT_TYPE_INSTRUCTIONS, },
-	                { APT_TYPE_STALL,  APT_TYPE_L1I_MISS,
-	                  APT_TYPE_L2_MISS, APT_TYPE_INSTRUCTIONS, }};
+	                { APT_TYPE_L1I_MISS, APT_TYPE_LLC_MISS,
+	                  APT_TYPE_STALL, APT_TYPE_CYCLE },
+	};
+
+	if (!(p = find_command_line("perfctr"))) {
+		kprintf("perfctr not initialized.\n");
+		return;
+	}
+	if (p[7] == '=' && p[8] >= '0' && p[8] <= '5') {
+		i = p[8] - '0';
+		kmode = (i >> 1) + 1;
+		imode = (i & 1);
+	} else {
+		kprintf("perfctr not initialized.\n");
+		return;
+	}
+	kprintf("perfctr mode : priv = %d, set = %d\n", kmode, imode);
 
 	for (i = 0; i < 4; i++) {
-		aal_mc_perfctr_init(i, x[1][i], kmode);
+		aal_mc_perfctr_init(i, x[imode][i], kmode);
 	}
 	aal_mc_perfctr_start(0xf);
-/*
-	aal_mc_perfctr_read_mask(0x0f, st);
-	for (i = 0; i < 100000; i++) {
-		data[i & 1023] += i;
-		asm volatile("" : : : "memory");
-	}
-	aal_mc_perfctr_read_mask(0x0f, ed);
-	aal_mc_perfctr_stop(1);
-
-	kprintf("INS = %ld, %ld, %ld\n", st[0], ed[0], ed[0] - st[0]);
-	kprintf("L2M = %ld, %ld, %ld\n", st[1], ed[1], ed[1] - st[1]);
-*/
 }
 
 static void rest_init(void)

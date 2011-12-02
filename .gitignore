@@ -1,3 +1,16 @@
 *.o
 *.elf
+*.bin
+*.ko
+*.cmd
+*.unsigned
+*.mod.c
+Module.symvers
+*.order
+.tmp_versions
 
+elfboot/elfboot
+elfboot/elfboot_test
+linux/executer/mcexec
+linux/mod_test*
+linux/target

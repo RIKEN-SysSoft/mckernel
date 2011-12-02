@@ -5,6 +5,7 @@
 #include <linux/mm.h>
 #include <asm/uaccess.h>
 #include <asm/delay.h>
+#include <asm/msr.h>
 #include "mcctrl.h"
 
 static DECLARE_WAIT_QUEUE_HEAD(wq_prepare);
@@ -106,11 +107,14 @@ static long mcexec_start_image(aal_os_t os,
 {
 	struct program_load_desc desc;
 	struct ikc_scd_packet isp;
+	struct mcctrl_channel *c;
 
 	if (copy_from_user(&desc, udesc,
 	                   sizeof(struct program_load_desc))) {
 		return -EFAULT;
 	}
+
+	c = channels + desc.cpu;
 
 	mcctrl_ikc_set_recv_cpu(desc.cpu);
 	
@@ -131,25 +135,48 @@ int mcexec_syscall(struct mcctrl_channel *c, unsigned long arg)
 	return 0;
 }
 
+
+int __do_in_kernel_syscall(aal_os_t os, struct mcctrl_channel *c,
+                           struct syscall_request *sc);
+
 int mcexec_wait_syscall(aal_os_t os, struct syscall_wait_desc *__user req)
 {
 	struct syscall_wait_desc swd;
 	struct mcctrl_channel *c;
-
+	unsigned long s, w;
+	
 	if (copy_from_user(&swd, req, sizeof(swd.cpu))) {
 		return -EFAULT;
 	}
 
 	c = channels + swd.cpu;
 
+#ifdef DO_USER_MODE
 	wait_event_interruptible(c->wq_syscall, c->req);
 	c->req = 0;
-
-	if (copy_to_user(&req->sr, c->param.request_va,
-	                 sizeof(struct syscall_request))) {
-		return -EFAULT;
+#else
+	while (1) {
+		rdtscll(s);
+		while (!(*c->param.doorbell_va)) {
+			mb();
+			cpu_relax();
+			rdtscll(w);
+			if (w > s + 1024 * 1024 * 1024 * 1) {
+				return -EINTR;
+			}
+		}
+		*c->param.doorbell_va = 0;
+		if (__do_in_kernel_syscall(os, c, c->param.request_va)) {
+#endif
+			if (copy_to_user(&req->sr, c->param.request_va,
+			                 sizeof(struct syscall_request))) {
+				return -EFAULT;
+			}
+#ifndef DO_USER_MODE
+			break;
+		}
 	}
-
+#endif
 	return 0;
 }
 

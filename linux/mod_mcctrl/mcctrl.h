@@ -14,6 +14,8 @@
 
 #define SCD_MSG_SYSCALL_ONESIDE         0x4
 
+#define DMA_PIN_SHIFT                   16
+
 struct ikc_scd_packet {
 	int msg;
 	int ref;
@@ -29,6 +31,11 @@ struct ikc_scd_init_param {
 	unsigned long request_page;
 	unsigned long response_page;
 	unsigned long doorbell_page;
+	unsigned long post_page;
+};
+
+struct syscall_post {
+	unsigned long v[4];
 };
 
 struct syscall_params {
@@ -36,7 +43,9 @@ struct syscall_params {
 	struct syscall_request *request_va;
 	unsigned long response_rpa, response_pa;
 	struct syscall_response *response_va;
-
+	unsigned long post_pa;
+	struct syscall_post *post_va;
+	
 	unsigned long doorbell_pa;
 	unsigned long *doorbell_va;
 };
@@ -45,6 +54,7 @@ struct mcctrl_channel {
 	struct aal_ikc_channel_desc *c;
 	struct syscall_params param;
 	struct ikc_scd_init_param init;
+	void *dma_buf;
 
 	int req;
 	wait_queue_head_t wq_syscall;

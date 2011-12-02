@@ -19,6 +19,7 @@ static void process_msg_prepare_process(unsigned long rphys)
 	struct program_load_desc *p, *pn;
 	int i, npages, n;
 	struct process *proc;
+	unsigned long addr;
 
 	sz = sizeof(struct program_load_desc)
 		+ sizeof(struct program_image_section) * 16;
@@ -37,6 +38,9 @@ static void process_msg_prepare_process(unsigned long rphys)
 
 	proc = create_process(p->entry);
 	proc->pid = p->pid;
+
+	/* TODO: Clear it at the proper timing */
+	cpu_local_var(scp).post_idx = 0;
 
 	for (i = 0; i < n; i++) {
 		s = (pn->sections[i].vaddr) & PAGE_MASK;
@@ -65,8 +69,25 @@ static void process_msg_prepare_process(unsigned long rphys)
 	}
 	proc->region.brk_start = proc->region.brk_end = proc->region.data_end;
 	proc->region.map_start = proc->region.map_end = 
-		(USER_END / 3) & PAGE_MASK;
-			
+		(USER_END / 3) & LARGE_PAGE_MASK;
+
+	/* Map system call stuffs */
+	addr = proc->region.map_start - PAGE_SIZE * SCD_RESERVED_COUNT;
+	e = addr + PAGE_SIZE * DOORBELL_PAGE_COUNT;
+	add_process_memory_range(proc, addr, e,
+	                         cpu_local_var(scp).doorbell_pa,
+	                         VR_REMOTE | VR_RESERVED);
+	addr = e;
+	e = addr + PAGE_SIZE * REQUEST_PAGE_COUNT;
+	add_process_memory_range(proc, addr, e,
+	                         cpu_local_var(scp).request_pa,
+	                         VR_REMOTE | VR_RESERVED);
+	addr = e;
+	e = addr + PAGE_SIZE * RESPONSE_PAGE_COUNT;
+	add_process_memory_range(proc, addr, e,
+	                         cpu_local_var(scp).response_pa,
+	                         VR_RESERVED);
+
 	p->rprocess = (unsigned long)proc;
 	init_process_stack(proc);
 
@@ -84,7 +105,7 @@ static void process_msg_init(struct ikc_scd_init_param *pcp)
 	struct syscall_params *lparam;
 
 	lparam = &cpu_local_var(scp);
-	lparam->response_va = allocate_pages(1, 0);
+	lparam->response_va = allocate_pages(RESPONSE_PAGE_COUNT, 0);
 	lparam->response_pa = virt_to_phys(lparam->response_va);
 
 	pcp->request_page = 0;
@@ -100,16 +121,27 @@ static void process_msg_init_acked(unsigned long pphys)
 	lparam = &cpu_local_var(scp);
 	lparam->request_rpa = param->request_page;
 	lparam->request_pa = aal_mc_map_memory(NULL, param->request_page,
-	                                       PAGE_SIZE);
-	lparam->request_va = aal_mc_map_virtual(lparam->request_pa, 1,
+	                                       REQUEST_PAGE_COUNT * PAGE_SIZE);
+	lparam->request_va = aal_mc_map_virtual(lparam->request_pa,
+	                                        REQUEST_PAGE_COUNT,
 	                                        PTATTR_WRITABLE);
 
 	lparam->doorbell_rpa = param->doorbell_page;
 	lparam->doorbell_pa = aal_mc_map_memory(NULL, param->doorbell_page,
+	                                        DOORBELL_PAGE_COUNT * 
 	                                        PAGE_SIZE);
-	lparam->doorbell_va = aal_mc_map_virtual(lparam->doorbell_pa, 1,
+	lparam->doorbell_va = aal_mc_map_virtual(lparam->doorbell_pa,
+	                                         DOORBELL_PAGE_COUNT,
 	                                         PTATTR_WRITABLE);
-	
+
+	lparam->post_rpa = param->post_page;
+	lparam->post_pa = aal_mc_map_memory(NULL, param->post_page,
+	                                    PAGE_SIZE);
+	lparam->post_va = aal_mc_map_virtual(lparam->post_pa, 1,
+	                                     PTATTR_WRITABLE);
+
+	lparam->post_fin = 1;
+
 	kprintf("Syscall parameters:\n");
 	kprintf(" Response: %lx, %p\n",
 	        lparam->response_pa, lparam->response_va);
@@ -117,7 +149,8 @@ static void process_msg_init_acked(unsigned long pphys)
 	        lparam->request_pa, lparam->request_rpa, lparam->request_va);
 	kprintf(" Doorbell: %lx, %lx, %p\n",
 	        lparam->doorbell_pa, lparam->doorbell_rpa, lparam->doorbell_va);
-
+	kprintf(" Post: %lx, %lx, %p\n",
+	        lparam->post_pa, lparam->post_rpa, lparam->post_va);
 }
 
 static void syscall_channel_send(struct aal_ikc_channel_desc *c,
@@ -150,6 +183,7 @@ static int syscall_packet_handler(struct aal_ikc_channel_desc *c,
 
 	case SCD_MSG_SCHEDULE_PROCESS:
 		kprintf("next one : %lx\n", packet->arg);
+
 		cpu_local_var(next) = (struct process *)packet->arg;
 		return 0;
 	}

@@ -36,6 +36,9 @@ int kprintf(const char *format, ...)
 	va_start(va, format);
 
 	flags = aal_mc_spinlock_lock(&kmsg_lock);
+	if (kmsg_buf.tail >= kmsg_buf.len - 1) {
+		kmsg_buf.tail = 0;
+	}
 
 	len = vsnprintf(kmsg_buf.str + kmsg_buf.tail,
 	                kmsg_buf.len - kmsg_buf.tail, format, va);

@@ -289,6 +289,8 @@ void do_syscall_load(int fd, int cpu, unsigned long dest, unsigned long src,
 	}
 }
 
+#define SET_ERR(ret) if (ret == -1) ret = -errno
+
 int main_loop(int fd, int cpu)
 {
 	struct syscall_wait_desc w;
@@ -306,22 +308,26 @@ int main_loop(int fd, int cpu)
 				asm volatile ("" : : : "memory");
 			}
 			ret = open(dma_buf, w.sr.args[1], w.sr.args[2]);
+			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 
 		case __NR_close:
 			ret = close(w.sr.args[0]);
+			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 
 		case __NR_read:
 			ret = read(w.sr.args[0], dma_buf, w.sr.args[2]);
+			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 1, dma_buf_pa,
 			                  w.sr.args[1], w.sr.args[2]);
 			break;
 
 		case __NR_write:
 			dma_buf[w.sr.args[2]] = 0;
+			SET_ERR(ret);
 			do_syscall_load(fd, cpu, dma_buf_pa,
 			                w.sr.args[1], w.sr.args[2]);
 
@@ -398,6 +404,7 @@ int main_loop(int fd, int cpu)
 
 		case __NR_exit:
 		case __NR_exit_group:
+			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
 			return w.sr.args[0];
 
 		case __NR_uname:
@@ -415,4 +422,6 @@ int main_loop(int fd, int cpu)
 
 		}
 	}
+	printf("timed out.\n");
+	return 1;
 }

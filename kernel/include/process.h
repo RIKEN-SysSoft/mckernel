@@ -6,7 +6,12 @@
 #include <aal/mm.h>
 #include <list.h>
 
-#define VR_STACK     1
+#define VR_STACK           0x1
+#define VR_RESERVED        0x2
+#define VR_IO_NOCACHE      0x100
+#define VR_REMOTE          0x200
+
+#define PS_ZOMBIE          0x1
 
 struct vm_range {
 	struct list_head list;
@@ -37,6 +42,9 @@ struct process {
 };
 
 struct process *create_process(unsigned long user_pc);
+void destroy_process(struct process *proc);
+void free_process_memory(struct process *proc);
+
 int add_process_memory_range(struct process *process,
                              unsigned long start, unsigned long end,
                              unsigned long phys, unsigned long flag);
