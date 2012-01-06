@@ -102,6 +102,8 @@ int mcexec_load_image(aal_os_t os, struct program_transfer *__user upt)
 	return 0;
 }
 
+extern unsigned long last_thread_exec;
+
 static long mcexec_start_image(aal_os_t os,
                                  struct program_load_desc * __user udesc)
 {
@@ -117,6 +119,8 @@ static long mcexec_start_image(aal_os_t os,
 	c = channels + desc.cpu;
 
 	mcctrl_ikc_set_recv_cpu(desc.cpu);
+
+	last_thread_exec = desc.cpu;
 	
 	isp.msg = SCD_MSG_SCHEDULE_PROCESS;
 	isp.ref = desc.cpu;
@@ -139,11 +143,14 @@ int mcexec_syscall(struct mcctrl_channel *c, unsigned long arg)
 int __do_in_kernel_syscall(aal_os_t os, struct mcctrl_channel *c,
                            struct syscall_request *sc);
 
+static int remaining_job, base_cpu, job_pos;
+extern int num_channels;
+
 int mcexec_wait_syscall(aal_os_t os, struct syscall_wait_desc *__user req)
 {
 	struct syscall_wait_desc swd;
 	struct mcctrl_channel *c;
-	unsigned long s, w;
+	unsigned long s, w, d;
 	
 	if (copy_from_user(&swd, req, sizeof(swd.cpu))) {
 		return -EFAULT;
@@ -157,20 +164,38 @@ int mcexec_wait_syscall(aal_os_t os, struct syscall_wait_desc *__user req)
 #else
 	while (1) {
 		rdtscll(s);
-		while (!(*c->param.doorbell_va)) {
-			mb();
-			cpu_relax();
-			rdtscll(w);
-			if (w > s + 1024 * 1024 * 1024 * 1) {
-				return -EINTR;
+		if (!remaining_job) {
+			while (!(*c->param.doorbell_va)) {
+				mb();
+				cpu_relax();
+				rdtscll(w);
+				if (w > s + 1024UL * 1024 * 1024 * 10) {
+					return -EINTR;
+				}
 			}
+			d = (*c->param.doorbell_va) - 1;
+			*c->param.doorbell_va = 0;
+
+			if (d < 0 || d >= num_channels) {
+				d = 0;
+			}
+			base_cpu = d;
+			job_pos = 0;
+			remaining_job = 1;
+		} else { 
+			job_pos++;
 		}
-		*c->param.doorbell_va = 0;
-		printk("(%p) %ld SC %ld: %lx\n", 
-		       c->param.request_va,
-		       c->param.request_va->valid,
-		       c->param.request_va->number,
-		       c->param.request_va->args[0]);
+		
+		for (; job_pos < num_channels; job_pos++) {
+			if (base_cpu + job_pos >= num_channels) {
+				c = channels + 
+					(base_cpu + job_pos - num_channels);
+			} else {
+				c = channels + base_cpu + job_pos;
+			}
+			if (c->param.request_va &&
+			    c->param.request_va->valid) {
+				c->param.request_va->valid = 0; /* ack */
 		if (__do_in_kernel_syscall(os, c, c->param.request_va)) {
 #endif
 			if (copy_to_user(&req->sr, c->param.request_va,
@@ -178,8 +203,11 @@ int mcexec_wait_syscall(aal_os_t os, struct syscall_wait_desc *__user req)
 				return -EFAULT;
 			}
 #ifndef DO_USER_MODE
-			break;
+			return 0;
 		}
+			}
+		}
+		remaining_job = 0;
 	}
 #endif
 	return 0;

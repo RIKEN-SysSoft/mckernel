@@ -4,6 +4,7 @@
 #include <aal/context.h>
 #include <aal/cpu.h>
 #include <aal/mm.h>
+#include <aal/atomic.h>
 #include <list.h>
 
 #define VR_STACK           0x1
@@ -28,20 +29,27 @@ struct vm_regions {
 	unsigned long stack_start, stack_end;
 };
 
+struct process_vm {
+	aal_atomic_t refcount;
+
+	struct page_table *page_table;
+	struct list_head vm_range_list;
+	struct vm_regions region;
+};
+
 struct process {
 	int pid;
 	int status;
 
-	struct page_table *page_table;
-	struct list_head vm_range_list;
-
-	struct vm_regions region;
+	struct process_vm *vm;
 
 	aal_mc_kernel_context_t ctx;
 	aal_mc_user_context_t  *uctx;
 };
 
 struct process *create_process(unsigned long user_pc);
+struct process *clone_process(struct process *org,
+                              unsigned long pc, unsigned long sp);
 void destroy_process(struct process *proc);
 void free_process_memory(struct process *proc);
 

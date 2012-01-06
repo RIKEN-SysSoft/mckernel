@@ -7,7 +7,7 @@
 #include <aal/ikc.h>
 #include <ikc/master.h>
 
-static int num_channels;
+int num_channels;
 
 struct mcctrl_channel *channels;
 
@@ -45,6 +45,21 @@ int mcctrl_ikc_send(int cpu, struct ikc_scd_packet *pisp)
 	return aal_ikc_send(channels[cpu].c, pisp, 0);
 }
 
+int mcctrl_ikc_send_msg(int cpu, int msg, int ref, unsigned long arg)
+{
+	struct ikc_scd_packet packet;
+
+	if (cpu < 0 || cpu >= num_channels || !channels[cpu].c) {
+		return -EINVAL;
+	}
+
+	packet.msg = msg;
+	packet.ref = ref;
+	packet.arg = arg;
+
+	return aal_ikc_send(channels[cpu].c, &packet, 0);
+}
+
 int mcctrl_ikc_set_recv_cpu(int cpu)
 {
 	aal_ikc_channel_set_cpu(channels[cpu].c,
@@ -52,6 +67,15 @@ int mcctrl_ikc_set_recv_cpu(int cpu)
 	kprintf("Setting the target to %d\n",
 	        aal_ikc_get_processor_id());
 	return 0;
+}
+
+int mcctrl_ikc_is_valid_thread(int cpu)
+{
+	if (cpu < 0 || cpu >= num_channels || !channels[cpu].c) {
+		return 0;
+	} else {
+		return 1;
+	}
 }
 
 unsigned long *mcctrl_doorbell_va;
@@ -68,6 +92,8 @@ static void mcctrl_ikc_init(aal_os_t os, int cpu, unsigned long rphys)
 		return;
 	}
 
+	printk("IKC init: %d\n", cpu);
+
 	phys = aal_device_map_memory(aal_os_to_dev(os), rphys,
 	                             sizeof(struct ikc_scd_init_param));
 	rpm = ioremap_wc(phys, sizeof(struct ikc_scd_init_param));
@@ -79,6 +105,7 @@ static void mcctrl_ikc_init(aal_os_t os, int cpu, unsigned long rphys)
 	pmc->param.post_va = (void *)__get_free_page(GFP_KERNEL);
 	pmc->param.post_pa = virt_to_phys(pmc->param.post_va);
 	memset(pmc->param.doorbell_va, 0, PAGE_SIZE);
+	memset(pmc->param.request_va, 0, PAGE_SIZE);
 	memset(pmc->param.post_va, 0, PAGE_SIZE);
 	
 	pmc->param.response_rpa = rpm->response_page;
@@ -86,8 +113,8 @@ static void mcctrl_ikc_init(aal_os_t os, int cpu, unsigned long rphys)
 		= aal_device_map_memory(aal_os_to_dev(os),
 		                        pmc->param.response_rpa,
 		                        PAGE_SIZE);
-	pmc->param.response_va = ioremap_wc(pmc->param.response_pa,
-	                                    PAGE_SIZE);
+	pmc->param.response_va = ioremap_cache(pmc->param.response_pa,
+	                                       PAGE_SIZE);
 
 	pmc->dma_buf = (void *)__get_free_pages(GFP_KERNEL,
 	                                        DMA_PIN_SHIFT - PAGE_SHIFT);
@@ -103,6 +130,9 @@ static void mcctrl_ikc_init(aal_os_t os, int cpu, unsigned long rphys)
 	printk("Request: %lx, Response: %lx, Doorbell: %lx\n",
 	       pmc->param.request_pa, pmc->param.response_rpa,
 	       pmc->param.doorbell_pa);
+	printk("Request: %p, Response: %p, Doorbell: %p\n",
+	       pmc->param.request_va, pmc->param.response_va,
+	       pmc->param.doorbell_va);
 
 	aal_ikc_send(pmc->c, &packet, 0);
 

@@ -28,5 +28,6 @@ int memcpy_async(unsigned long dest, unsigned long src,
 			barrier();
 		}
 	}
+
 	return 0;
 }

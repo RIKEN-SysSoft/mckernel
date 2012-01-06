@@ -76,6 +76,10 @@ static unsigned long translate_remote_va(struct mcctrl_channel *c,
 	return -EFAULT;
 }
 
+unsigned long last_thread_exec = 0;
+
+extern struct mcctrl_channel *channels;
+
 int __do_in_kernel_syscall(aal_os_t os, struct mcctrl_channel *c,
                            struct syscall_request *sc)
 {
@@ -84,7 +88,7 @@ int __do_in_kernel_syscall(aal_os_t os, struct mcctrl_channel *c,
 	unsigned long pa;
 
 	switch (sc->number) {
-	case 0:
+	case 0: /* read */
 	case 1024:
 		if (sc->number & 1024) {
 			sc->args[1] = translate_remote_va(c, sc->args[1]);
@@ -108,7 +112,7 @@ int __do_in_kernel_syscall(aal_os_t os, struct mcctrl_channel *c,
 		__return_syscall(c, ret);
 		return 0;
 
-	case 1:
+	case 1: /* write */
 	case 1025:
 		if (sc->number & 1024) {
 			sc->args[1] = translate_remote_va(c, sc->args[1]);
@@ -131,7 +135,7 @@ int __do_in_kernel_syscall(aal_os_t os, struct mcctrl_channel *c,
 		__return_syscall(c, ret);
 		return 0;
 		
-	case 2:
+	case 2: /* open */
 	case 1026:
 		if (sc->number & 1024) {
 			sc->args[0] = translate_remote_va(c, sc->args[0]);
@@ -155,11 +159,27 @@ int __do_in_kernel_syscall(aal_os_t os, struct mcctrl_channel *c,
 		__return_syscall(c, ret);
 		return 0;
 
-	case 3:
+	case 3: /* Close */
 		ret = sys_close(sc->args[0]);
 		__return_syscall(c, ret);
 		return 0;
 
+	case 56: /* Clone */
+		last_thread_exec++;
+		if (mcctrl_ikc_is_valid_thread(last_thread_exec)) {
+			printk("Clone notification: %lx\n", sc->args[0]);
+			if (channels[last_thread_exec].param.post_va) {
+				memcpy(channels[last_thread_exec].param.post_va,
+				       c->param.post_va, PAGE_SIZE);
+			}
+			mcctrl_ikc_send_msg(last_thread_exec,
+			                    SCD_MSG_SCHEDULE_PROCESS,
+			                    last_thread_exec, sc->args[0]);
+		}
+
+		__return_syscall(c, 0);
+		return 0;
+		
 	default:
 		if (sc->number & 1024) {
 			__return_syscall(c, -EFAULT);

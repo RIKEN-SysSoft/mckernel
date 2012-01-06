@@ -18,12 +18,10 @@ static void send_syscall(struct syscall_request *req)
 	struct ikc_scd_packet packet;
 	struct syscall_response *res = cpu_local_var(scp).response_va;
 	unsigned long fin;
+	int w;
 
 	res->status = 0;
-
-	kprintf("CPU : %lx\n", aal_mc_get_processor_id());
-	kprintf("Target is %lx\n", cpu_local_var(scp).request_pa);
-	kprintf("SC req: %ld %ld %ld\n", req->valid, req->number, req->args[0]);
+	req->valid = 0;
 
 	memcpy_async(cpu_local_var(scp).request_pa,
 	             virt_to_phys(req), sizeof(*req), 0, &fin);
@@ -31,10 +29,12 @@ static void send_syscall(struct syscall_request *req)
 	memcpy_async_wait(&cpu_local_var(scp).post_fin);
 	cpu_local_var(scp).post_va->v[0] = cpu_local_var(scp).post_idx;
 
+	w = aal_mc_get_processor_id() + 1;
+
 	memcpy_async_wait(&fin);
 
 	cpu_local_var(scp).request_va->valid = 1;
-	*(unsigned int *)cpu_local_var(scp).doorbell_va = 1;
+	*(unsigned int *)cpu_local_var(scp).doorbell_va = w;
 
 #ifdef SYSCALL_BY_IKC
 	packet.msg = SCD_MSG_SYSCALL_ONESIDE;
@@ -61,7 +61,7 @@ static int do_syscall(struct syscall_request *req)
 long sys_brk(int n, aal_mc_user_context_t *ctx)
 {
 	unsigned long address = aal_mc_syscall_arg0(ctx);
-	struct vm_regions *region = &cpu_local_var(current)->region;
+	struct vm_regions *region = &cpu_local_var(current)->vm->region;
 
 	region->brk_end = 
 		extend_process_region(cpu_local_var(current),
@@ -73,13 +73,12 @@ long sys_brk(int n, aal_mc_user_context_t *ctx)
 
 #define SYSCALL_DECLARE(name) long sys_##name(int n, aal_mc_user_context_t *ctx)
 #define SYSCALL_HEADER struct syscall_request request; \
-	request.valid = 0; \
 	request.number = n
 #define SYSCALL_ARG_D(n)    request.args[n] = aal_mc_syscall_arg##n(ctx)
 #define SYSCALL_ARG_MO(n) \
 	do { \
 	unsigned long __phys; \
-	if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->page_table, \
+	if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, \
 	                           (void *)aal_mc_syscall_arg##n(ctx),\
 	                           &__phys)) { \
 		return -EFAULT; \
@@ -89,7 +88,7 @@ long sys_brk(int n, aal_mc_user_context_t *ctx)
 #define SYSCALL_ARG_MI(n) \
 	do { \
 	unsigned long __phys; \
-	if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->page_table, \
+	if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, \
 	                           (void *)aal_mc_syscall_arg##n(ctx),\
 	                           &__phys)) { \
 		return -EFAULT; \
@@ -201,7 +200,7 @@ SYSCALL_DECLARE(exit_group)
 SYSCALL_DECLARE(mmap)
 {
 	unsigned long address, ret;
-	struct vm_regions *region = &cpu_local_var(current)->region;
+	struct vm_regions *region = &cpu_local_var(current)->vm->region;
 		
 	/* anonymous */
 	if (aal_mc_syscall_arg3(ctx) & 0x22) {
@@ -240,12 +239,12 @@ SYSCALL_DECLARE(getpid)
 	return cpu_local_var(current)->pid;
 }
 
-long sys_uname(int n, aal_mc_user_context_t *ctx)
+SYSCALL_DECLARE(uname)
 {
-	struct syscall_request request;
+	SYSCALL_HEADER;
 	unsigned long phys;
 
-	if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->page_table, 
+	if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
 	                           (void *)aal_mc_syscall_arg0(ctx), &phys)) {
 		return -EFAULT;
 	}
@@ -253,7 +252,7 @@ long sys_uname(int n, aal_mc_user_context_t *ctx)
 	request.number = n;
 	request.args[0] = phys;
 
-	return do_syscall(&request), stop();
+	return do_syscall(&request);
 }
 
 long sys_getxid(int n, aal_mc_user_context_t *ctx)
@@ -284,6 +283,29 @@ long sys_arch_prctl(int n, aal_mc_user_context_t *ctx)
 	return -EINVAL;
 }
 
+SYSCALL_DECLARE(clone)
+{
+	/* Clone a new thread */
+	struct process *new;
+	struct syscall_request request;
+
+	new = clone_process(cpu_local_var(current), aal_mc_syscall_pc(ctx),
+	                    aal_mc_syscall_arg1(ctx));
+	/* XXX Assign new pid! */
+	new->pid = cpu_local_var(current)->pid;
+	kprintf("Cloned: %p \n", new);
+
+	aal_mc_syscall_ret(new->uctx) = 0;
+
+	/* Hope it is scheduled after... :) */
+	request.number = n;
+	request.args[0] = (unsigned long)new;
+	/* Sync */
+	do_syscall(&request);
+	kprintf("Clone ret.\n");
+	return new->pid;
+}
+
 static long (*syscall_table[])(int, aal_mc_user_context_t *) = {
 	[0] = sys_read,
 	[1] = sys_write,
@@ -298,6 +320,7 @@ static long (*syscall_table[])(int, aal_mc_user_context_t *) = {
 	[17] = sys_pread,
 	[18] = sys_pwrite,
 	[39] = sys_getpid,
+	[56] = sys_clone,
 	[63] = sys_uname,
 	[102] = sys_getxid,
 	[104] = sys_getxid,
@@ -309,22 +332,29 @@ static long (*syscall_table[])(int, aal_mc_user_context_t *) = {
 	[231] = sys_exit_group,
 };
 
+#define DEBUG_PRINT_SC
+
 long syscall(int num, aal_mc_user_context_t *ctx)
 {
 	long l;
 
 	cpu_enable_interrupt();
 
-	kprintf("SC(%d)[%3d](%lx, %lx, %lx, %lx, %lx) @ %lx | %lx\n", 
+#ifdef DEBUG_PRINT_SC
+	kprintf("SC(%d)[%3d](%lx, %lx) @ %lx | %lx = ", 
 	        aal_mc_get_processor_id(),
 	        num,
 	        aal_mc_syscall_arg0(ctx), aal_mc_syscall_arg1(ctx),
 	        aal_mc_syscall_arg2(ctx), aal_mc_syscall_arg3(ctx),
 	        aal_mc_syscall_arg4(ctx), aal_mc_syscall_pc(ctx),
 	        aal_mc_syscall_sp(ctx));
+#endif
 
 	if (syscall_table[num]) {
 		l = syscall_table[num](num, ctx);
+#ifdef DEBUG_PRINT_SC
+		kprintf(" %lx\n", l);
+#endif
 		return l;
 	} else {
 		kprintf("USC[%3d](%lx, %lx, %lx, %lx, %lx) @ %lx | %lx\n", num,

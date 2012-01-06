@@ -53,26 +53,27 @@ static void process_msg_prepare_process(unsigned long rphys)
 
 		/* TODO: Maybe we need flag */
 		if (i == 0) {
-			proc->region.text_start = s;
-			proc->region.text_end = e;
+			proc->vm->region.text_start = s;
+			proc->vm->region.text_end = e;
 		} else if (i == 1) {
-			proc->region.data_start = s;
-			proc->region.data_end = e;
+			proc->vm->region.data_start = s;
+			proc->vm->region.data_end = e;
 		} else {
-			proc->region.data_start =
-				(s < proc->region.data_start ? 
-				 s : proc->region.data_start);
-			proc->region.data_end = 
-				(e > proc->region.data_end ? 
-				 e : proc->region.data_end);
+			proc->vm->region.data_start =
+				(s < proc->vm->region.data_start ? 
+				 s : proc->vm->region.data_start);
+			proc->vm->region.data_end = 
+				(e > proc->vm->region.data_end ? 
+				 e : proc->vm->region.data_end);
 		}
 	}
-	proc->region.brk_start = proc->region.brk_end = proc->region.data_end;
-	proc->region.map_start = proc->region.map_end = 
+	proc->vm->region.brk_start = proc->vm->region.brk_end =
+		proc->vm->region.data_end;
+	proc->vm->region.map_start = proc->vm->region.map_end = 
 		(USER_END / 3) & LARGE_PAGE_MASK;
 
 	/* Map system call stuffs */
-	addr = proc->region.map_start - PAGE_SIZE * SCD_RESERVED_COUNT;
+	addr = proc->vm->region.map_start - PAGE_SIZE * SCD_RESERVED_COUNT;
 	e = addr + PAGE_SIZE * DOORBELL_PAGE_COUNT;
 	add_process_memory_range(proc, addr, e,
 	                         cpu_local_var(scp).doorbell_pa,
@@ -92,7 +93,7 @@ static void process_msg_prepare_process(unsigned long rphys)
 	init_process_stack(proc);
 
 	kprintf("new process : %p [%d] / table : %p\n", proc, proc->pid,
-	        proc->page_table);
+	        proc->vm->page_table);
 
 	aal_mc_free(pn);
 

@@ -38,7 +38,13 @@ static void dma_test(void)
 {
 	struct aal_dma_request req;
 	unsigned long fin = 0;
+	int i;
 
+	for (i = 0; i < 8; i++) {
+		data[i] = 8 - i;
+	}
+
+	kprintf("DMA Test Started.\n");
 	memset(&req, 0, sizeof(req));
 	req.src_phys = virt_to_phys(data);
 	req.dest_phys = virt_to_phys(data + 256);
@@ -46,11 +52,17 @@ static void dma_test(void)
 	req.notify = (void *)virt_to_phys(&fin);
 	req.priv = (void *)0x2984;
 	
-	aal_mc_dma_request(0, &req);
+	kprintf("VtoP : %p, %lx\n", data, virt_to_phys(data));
 
+	if (aal_mc_dma_request(0, &req) != 0) {
+		kprintf("Failed to request DMA!\n");
+	}
+
+	kprintf("DMA Test Wait.\n");
 	while (!fin) {
 		barrier();
 	}
+	kprintf("DMA Test End.\n");
 }
 
 extern char *aal_mc_get_kernel_args(void);
@@ -127,7 +139,7 @@ static void post_init(void)
 		cpu_pause();
 	}
 
-	init_host_syscall_channel();
+/*	init_host_syscall_channel(); */
 	ap_start();
 }
 

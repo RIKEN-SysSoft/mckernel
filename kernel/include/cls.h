@@ -17,6 +17,7 @@ struct cpu_local_var {
 	struct malloc_header free_list;
 
 	struct process idle;
+	struct process_vm idle_vm;
 
 	struct process *current;
 	struct process *next;

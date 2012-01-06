@@ -61,5 +61,6 @@ struct mcctrl_channel {
 };
 
 int mcctrl_ikc_send(int cpu, struct ikc_scd_packet *pisp);
-
+int mcctrl_ikc_send_msg(int cpu, int msg, int ref, unsigned long arg);
+int mcctrl_ikc_is_valid_thread(int cpu);
 #endif

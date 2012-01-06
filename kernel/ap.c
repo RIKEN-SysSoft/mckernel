@@ -24,7 +24,7 @@ static void ap_wait(void)
 	kprintf("ap started.\n");
 	kmalloc_init();
 	sched_init();
-	init_host_syscall_channel();
+/*	init_host_syscall_channel(); */
 
 	schedule();
 }
