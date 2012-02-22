@@ -7,23 +7,10 @@
 #include <aal/dma.h>
 #include <aal/perfctr.h>
 #include <process.h>
+#include <init.h>
 #include <cls.h>
 
 extern struct aal_kmsg_buf kmsg_buf;
-
-extern void arch_init(void);
-extern void kmsg_init(void);
-extern void mem_init(void);
-extern void ikc_master_init(void);
-extern void ap_init(void);
-extern void arch_ready(void);
-extern void mc_ikc_init(void);
-extern void cpu_local_var_init(void);
-extern void kmalloc_init(void);
-extern void ap_start(void);
-extern void aal_mc_dma_init(void);
-extern void init_host_syscall_channel(void);
-extern void sched_init(void);
 
 extern long syscall(int, aal_mc_user_context_t *);
 
@@ -77,15 +64,16 @@ char *find_command_line(char *name)
 	return strstr(cmdline, name);
 }
 
-static void pc_test(void)
+void pc_init(void)
 {
 	int i;
 	int kmode = PERFCTR_KERNEL_MODE;
 	int imode = 1;
 	char *p;
-	int x[2][4] = { { APT_TYPE_L1D_REQUEST,
+
+	int x[2][4] = { { APT_TYPE_INSTRUCTIONS,
 	                  APT_TYPE_L1D_MISS,
-	                  APT_TYPE_L2_MISS, APT_TYPE_INSTRUCTIONS, },
+	                  APT_TYPE_L2_MISS, APT_TYPE_L1I_MISS, },
 	                { APT_TYPE_L1I_MISS, APT_TYPE_LLC_MISS,
 	                  APT_TYPE_STALL, APT_TYPE_CYCLE },
 	};
@@ -108,6 +96,29 @@ static void pc_test(void)
 		aal_mc_perfctr_init(i, x[imode][i], kmode);
 	}
 	aal_mc_perfctr_start(0xf);
+}
+
+void pc_ap_init(void)
+{
+	pc_init();
+}
+
+static void pc_test(void)
+{
+	int i;
+	unsigned long st[4], ed[4];
+
+	pc_init();
+
+	aal_mc_perfctr_read_mask(0xf, st);
+	for (i = 0; i < sizeof(data) / sizeof(data[0]); i++) {
+		data[i] += i;
+		asm volatile ("" : : : "memory");
+	}
+	aal_mc_perfctr_read_mask(0xf, ed);
+
+	kprintf("perfctr:(%ld) %ld, %ld, %ld, %ld\n", st[0], ed[0] - st[0],
+	        ed[1] - st[1], ed[2] - st[2], ed[3] - st[3]);
 }
 
 static void rest_init(void)
