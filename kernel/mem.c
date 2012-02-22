@@ -94,6 +94,9 @@ static void virtual_allocator_init(void)
 {
 	vmap_allocator = aal_pagealloc_init(MAP_VMAP_START,
 	                                    MAP_VMAP_SIZE, PAGE_SIZE);
+	/* Make sure that kernel first-level page table copying works */
+	aal_mc_pt_prepare_map(NULL, (void *)MAP_VMAP_START, MAP_VMAP_SIZE,
+	                      AAL_MC_PT_FIRST_LEVEL);
 }
 
 void *aal_mc_map_virtual(unsigned long phys, int npages,
