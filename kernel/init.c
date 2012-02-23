@@ -33,18 +33,22 @@ static void dma_test(void)
 
 	kprintf("DMA Test Started.\n");
 	memset(&req, 0, sizeof(req));
+	req.src_os = AAL_THIS_OS;
 	req.src_phys = virt_to_phys(data);
+	req.dest_os = AAL_THIS_OS;
 	req.dest_phys = virt_to_phys(data + 256);
 	req.size = 64;
 	req.notify = (void *)virt_to_phys(&fin);
+	req.notify_os = AAL_THIS_OS;
 	req.priv = (void *)0x2984;
-	
+
 	kprintf("VtoP : %p, %lx\n", data, virt_to_phys(data));
+	kprintf("notify : %p, %lx (%lx)\n", &fin, virt_to_phys(&fin),
+	        sizeof(req));
 
 	if (aal_mc_dma_request(0, &req) != 0) {
 		kprintf("Failed to request DMA!\n");
 	}
-
 	kprintf("DMA Test Wait.\n");
 	while (!fin) {
 		barrier();
