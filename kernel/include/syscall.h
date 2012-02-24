@@ -1,6 +1,8 @@
 #ifndef __HEADER_SYSCALL_H
 #define __HEADER_SYSCALL_H
 
+#include <aal/memconst.h>
+
 #define NUM_SYSCALLS 255
 
 #define REQUEST_PAGE_COUNT              16
@@ -61,7 +63,7 @@ struct syscall_response {
 };
 
 struct syscall_post {
-	unsigned long v[4];
+	unsigned long v[8];
 };
 
 struct syscall_params {
@@ -77,7 +79,7 @@ struct syscall_params {
 	unsigned long post_rpa, post_pa;
 	struct syscall_post *post_va;
 	unsigned long post_fin;
-	struct syscall_post post_buf;
+	struct syscall_post post_buf AAL_DMA_ALIGN;
 };
 
 #endif

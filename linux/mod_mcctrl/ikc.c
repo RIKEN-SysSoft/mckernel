@@ -7,6 +7,8 @@
 #include <aal/ikc.h>
 #include <ikc/master.h>
 
+#define REQUEST_SHIFT    16
+
 int num_channels;
 
 struct mcctrl_channel *channels;
@@ -98,7 +100,9 @@ static void mcctrl_ikc_init(aal_os_t os, int cpu, unsigned long rphys)
 	                             sizeof(struct ikc_scd_init_param));
 	rpm = ioremap_wc(phys, sizeof(struct ikc_scd_init_param));
 
-	pmc->param.request_va = (void *)__get_free_pages(GFP_KERNEL, 4);
+	pmc->param.request_va =
+		(void *)__get_free_pages(GFP_KERNEL,
+		                         REQUEST_SHIFT - PAGE_SHIFT);
 	pmc->param.request_pa = virt_to_phys(pmc->param.request_va);
 	pmc->param.doorbell_va = mcctrl_doorbell_va;
 	pmc->param.doorbell_pa = mcctrl_doorbell_pa;
@@ -198,4 +202,34 @@ int prepare_ikc_channels(aal_os_t os)
 	
 	aal_ikc_listen_port(os, &listen_param);
 	return 0;
+}
+
+void __destroy_ikc_channel(aal_os_t os, struct mcctrl_channel *pmc)
+{
+	free_pages((unsigned long)pmc->param.request_va,
+	           REQUEST_SHIFT - PAGE_SHIFT);
+	free_page((unsigned long)pmc->param.post_va);
+
+	iounmap(pmc->param.response_va);
+	aal_device_unmap_memory(aal_os_to_dev(os),
+	                        pmc->param.response_pa, PAGE_SIZE);
+	free_pages((unsigned long)pmc->dma_buf,
+	           DMA_PIN_SHIFT - PAGE_SHIFT);
+}
+
+void destroy_ikc_channels(aal_os_t os)
+{
+	int i;
+
+	for (i = 0; i < num_channels; i++) {
+		if (channels[i].c) {
+//			aal_ikc_disconnect(channels[i].c);
+			aal_ikc_free_channel(channels[i].c);
+			__destroy_ikc_channel(os, channels + i);
+			printk("Channel #%d freed.\n", i);
+		}
+	}
+	free_page((unsigned long)mcctrl_doorbell_va);
+
+	kfree(channels);
 }

@@ -14,7 +14,7 @@
 
 #define SCD_MSG_SYSCALL_ONESIDE         0x4
 
-#define DMA_PIN_SHIFT                   16
+#define DMA_PIN_SHIFT                   21
 
 struct ikc_scd_packet {
 	int msg;
@@ -35,7 +35,7 @@ struct ikc_scd_init_param {
 };
 
 struct syscall_post {
-	unsigned long v[4];
+	unsigned long v[8];
 };
 
 struct syscall_params {

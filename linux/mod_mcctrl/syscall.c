@@ -9,11 +9,28 @@
 #include <asm/delay.h>
 #include "mcctrl.h"
 
+#define ALIGN_WAIT_BUF(z)   (((z + 63) >> 6) << 6)
+
+#define SC_DEBUG
+#ifdef SC_DEBUG
+static struct aal_dma_request last_request;
+
+static void print_dma_lastreq(void)
+{
+	printk("SRC OS : %p | %lx\nDESTOS : %p | %lx\n", last_request.src_os,
+	       last_request.src_phys, last_request.dest_os,
+	       last_request.dest_phys);
+	printk("SIZE   : %lx | NOTIFY : %p | PRIV : %p\n",
+	       last_request.size, last_request.notify, last_request.priv);
+}
+#endif
+
 static int do_async_copy(aal_os_t os, unsigned long dest, unsigned long src,
                          unsigned long size, unsigned int inbound)
 {
 	struct aal_dma_request request;
 	aal_dma_channel_t channel;
+	unsigned long asize = ALIGN_WAIT_BUF(size);
 
 	channel = aal_device_get_dma_channel(aal_os_to_dev(os), 0);
 	if (!channel) {
@@ -21,28 +38,48 @@ static int do_async_copy(aal_os_t os, unsigned long dest, unsigned long src,
 	}
 
 	memset(&request, 0, sizeof(request));
-	request.src_os = os;
+	request.src_os = inbound ? os : NULL;
 	request.src_phys = src;
-	request.dest_os = NULL;
+	request.dest_os = inbound ? NULL : os;
 	request.dest_phys = dest;
 	request.size = size;
-	request.notify = (void *)(inbound ? dest + size : src + size);
+	request.notify = (void *)(inbound ? dest + asize : src + asize);
 	request.priv = (void *)1;
+
+	*(unsigned long *)phys_to_virt((unsigned long)request.notify) = 0;
+#ifdef SC_DEBUG
+	last_request = request;
+#endif
 
 	aal_dma_request(channel, &request);
 
 	return 0;
 }
 
+int mcctrl_dma_abort;
+
 static void async_wait(unsigned char *p, int size)
 {
-	while (!p[size]) {
+	int asize = ALIGN_WAIT_BUF(size);
+	unsigned long long s, w;
+
+	rdtscll(s);
+	while (!p[asize]) {
 		mb();
 		cpu_relax();
+		rdtscll(w);
+		if (w > s + 1024UL * 1024 * 1024 * 10) {
+			printk("DMA Timed out : %p (%p + %d) => %d\n",
+			       p + asize, p, size, p[asize]);
+			print_dma_lastreq();
+			mcctrl_dma_abort = 1;
+			return;
+		}
 	}
 }
 static void clear_wait(unsigned char *p, int size)
 {
+	int asize = ALIGN_WAIT_BUF(size);
 	p[size] = 0;
 }
 
@@ -75,7 +112,6 @@ static unsigned long translate_remote_va(struct mcctrl_channel *c,
 
 	return -EFAULT;
 }
-
 unsigned long last_thread_exec = 0;
 
 extern struct mcctrl_channel *channels;

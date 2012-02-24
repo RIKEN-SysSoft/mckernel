@@ -11,6 +11,7 @@
 
 extern long __mcctrl_control(aal_os_t, unsigned int, unsigned long);
 extern int prepare_ikc_channels(aal_os_t os);
+extern void destroy_ikc_channels(aal_os_t os);
 
 static long mcctrl_ioctl(aal_os_t os, unsigned int request, void *priv,
                          unsigned long arg)
@@ -47,13 +48,14 @@ static int __init mcctrl_init(void)
 		return -EINVAL;
 	}
 
-
 	return aal_os_register_user_call_handlers(os, &mcctrl_uc);
 }
 
 static void __exit mcctrl_exit(void)
 {
+	printk("mcctrl: unregistered.\n");
 	aal_os_unregister_user_call_handlers(os, &mcctrl_uc);
+	destroy_ikc_channels(os);
 }
 
 MODULE_LICENSE("GPL v2");

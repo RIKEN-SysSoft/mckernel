@@ -8,6 +8,12 @@
 #include <asm/msr.h>
 #include "mcctrl.h"
 
+#ifdef DEBUG
+#define dprintk printk
+#else
+#define dprintk(...)
+#endif
+
 static DECLARE_WAIT_QUEUE_HEAD(wq_prepare);
 extern struct mcctrl_channel *channels;
 int mcctrl_ikc_set_recv_cpu(int cpu);
@@ -145,6 +151,7 @@ int __do_in_kernel_syscall(aal_os_t os, struct mcctrl_channel *c,
 
 static int remaining_job, base_cpu, job_pos;
 extern int num_channels;
+extern int mcctrl_dma_abort;
 
 int mcexec_wait_syscall(aal_os_t os, struct syscall_wait_desc *__user req)
 {
@@ -163,6 +170,7 @@ int mcexec_wait_syscall(aal_os_t os, struct syscall_wait_desc *__user req)
 	c->req = 0;
 #else
 	while (1) {
+		c = channels + swd.cpu;
 		rdtscll(s);
 		if (!remaining_job) {
 			while (!(*c->param.doorbell_va)) {
@@ -193,9 +201,15 @@ int mcexec_wait_syscall(aal_os_t os, struct syscall_wait_desc *__user req)
 			} else {
 				c = channels + base_cpu + job_pos;
 			}
+			if (!c) {
+				continue;
+			}
 			if (c->param.request_va &&
 			    c->param.request_va->valid) {
 				c->param.request_va->valid = 0; /* ack */
+				dprintk("SC #%lx, %lx\n",
+				        c->param.request_va->number,
+				        c->param.request_va->args[0]);
 		if (__do_in_kernel_syscall(os, c, c->param.request_va)) {
 #endif
 			if (copy_to_user(&req->sr, c->param.request_va,
@@ -204,6 +218,9 @@ int mcexec_wait_syscall(aal_os_t os, struct syscall_wait_desc *__user req)
 			}
 #ifndef DO_USER_MODE
 			return 0;
+		}
+		if (mcctrl_dma_abort) {
+			return -2;
 		}
 			}
 		}
@@ -283,16 +300,33 @@ long mcexec_ret_syscall(aal_os_t os, struct syscall_ret_desc *__user arg)
 	mc->param.response_va->ret = ret.ret;
 
 	if (ret.size > 0) {
+		/* Host => Accel. Write is fast. */
+		unsigned long phys;
+		void *rpm;
+
+		phys = aal_device_map_memory(aal_os_to_dev(os), ret.dest,
+		                             ret.size);
+		rpm = ioremap_wc(phys, ret.size);
+		
+		memcpy(rpm, phys_to_virt(ret.src), ret.size);
+		mc->param.response_va->status = 1;
+
+		iounmap(rpm);
+		aal_device_unmap_memory(aal_os_to_dev(os), phys, ret.size);
+
+/*
 		memset(&request, 0, sizeof(request));
 		request.src_os = NULL;
 		request.src_phys = ret.src;
 		request.dest_os = os;
 		request.dest_phys = ret.dest;
 		request.size = ret.size;
-		request.notify = (void *)mc->param.response_pa;
+		request.notify_os = os;
+		request.notify = (void *)mc->param.response_rpa;
 		request.priv = (void *)1;
 		
 		aal_dma_request(channel, &request);
+*/
 	} else {
 		mc->param.response_va->status = 1;
 	}

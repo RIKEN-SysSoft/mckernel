@@ -72,7 +72,7 @@ long sys_brk(int n, aal_mc_user_context_t *ctx)
 }
 
 #define SYSCALL_DECLARE(name) long sys_##name(int n, aal_mc_user_context_t *ctx)
-#define SYSCALL_HEADER struct syscall_request request; \
+#define SYSCALL_HEADER struct syscall_request request AAL_DMA_ALIGN; \
 	request.number = n
 #define SYSCALL_ARG_D(n)    request.args[n] = aal_mc_syscall_arg##n(ctx)
 #define SYSCALL_ARG_MO(n) \
@@ -257,7 +257,7 @@ SYSCALL_DECLARE(uname)
 
 long sys_getxid(int n, aal_mc_user_context_t *ctx)
 {
-	struct syscall_request request;
+	struct syscall_request request AAL_DMA_ALIGN;
 
 	request.number = n;
 
@@ -287,7 +287,7 @@ SYSCALL_DECLARE(clone)
 {
 	/* Clone a new thread */
 	struct process *new;
-	struct syscall_request request;
+	struct syscall_request request AAL_DMA_ALIGN;
 
 	new = clone_process(cpu_local_var(current), aal_mc_syscall_pc(ctx),
 	                    aal_mc_syscall_arg1(ctx));
@@ -332,8 +332,6 @@ static long (*syscall_table[])(int, aal_mc_user_context_t *) = {
 	[231] = sys_exit_group,
 };
 
-#define DEBUG_PRINT_SC
-
 long syscall(int num, aal_mc_user_context_t *ctx)
 {
 	long l;
@@ -345,9 +343,7 @@ long syscall(int num, aal_mc_user_context_t *ctx)
 	        aal_mc_get_processor_id(),
 	        num,
 	        aal_mc_syscall_arg0(ctx), aal_mc_syscall_arg1(ctx),
-	        aal_mc_syscall_arg2(ctx), aal_mc_syscall_arg3(ctx),
-	        aal_mc_syscall_arg4(ctx), aal_mc_syscall_pc(ctx),
-	        aal_mc_syscall_sp(ctx));
+	        aal_mc_syscall_pc(ctx), aal_mc_syscall_sp(ctx));
 #endif
 
 	if (syscall_table[num]) {
