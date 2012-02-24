@@ -200,6 +200,11 @@ int __do_in_kernel_syscall(aal_os_t os, struct mcctrl_channel *c,
 		__return_syscall(c, ret);
 		return 0;
 
+	case 8: /* lseek */
+		ret = sys_lseek(sc->args[0], sc->args[1], sc->args[2]);
+		__return_syscall(c, ret);
+		return 0;
+
 	case 56: /* Clone */
 		last_thread_exec++;
 		if (mcctrl_ikc_is_valid_thread(last_thread_exec)) {
