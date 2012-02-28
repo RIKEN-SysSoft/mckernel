@@ -127,6 +127,10 @@ static void pc_test(void)
 
 static void rest_init(void)
 {
+	char *cmdline;
+	cmdline = aal_mc_get_kernel_args();
+	kprintf("KCommand Line: %s\n", cmdline);
+
 	handler_init();
 
 	aal_mc_dma_init();
