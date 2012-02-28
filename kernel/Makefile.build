@@ -30,11 +30,12 @@ clean:
 
 depend: Makefile.dep
 
-Makefile.dep: $(DEPSRCS)
-	$(dep_cmd)
+Makefile.dep:
+	$(call dep_cmd,$(DEPSRCS))
 
 $(AALOBJ): FORCE
 	@mkdir -p $(dir $(AALOBJ))
+	$(call echo_cmd,BUILD AAL,$(TARGET))$(submake) -C $(AALBASE) $(SUBCMD_OPTS) prepare
 	$(call echo_cmd,BUILD AAL,$(TARGET))$(submake) -C $(AALBASE) $(SUBCMD_OPTS)
 
 %.o: $(SRC)/%.c
