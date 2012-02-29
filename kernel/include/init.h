@@ -16,4 +16,6 @@ extern void init_host_syscall_channel(void);
 extern void sched_init(void);
 extern void pc_ap_init(void);
 
+extern char *find_command_line(char *name);
+
 #endif

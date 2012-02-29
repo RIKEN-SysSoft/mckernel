@@ -158,7 +158,9 @@ static void post_init(void)
 		cpu_pause();
 	}
 
-/*	init_host_syscall_channel(); */
+	if (find_command_line("hidos")) {
+		init_host_syscall_channel();
+	}
 	ap_start();
 }
 

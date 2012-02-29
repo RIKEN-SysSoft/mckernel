@@ -24,7 +24,10 @@ static void ap_wait(void)
 	}
 	kmalloc_init();
 	sched_init();
-/*	init_host_syscall_channel(); */
+
+	if (find_command_line("hidos")) {
+		init_host_syscall_channel();
+	}
 	pc_ap_init();
 
 	schedule();
