@@ -9,13 +9,6 @@
 int num_processors = 1;
 static volatile int ap_stop = 1;
 
-void ap_idle(void)
-{
-	while (1) {
-		cpu_halt();
-	}
-}
-
 static void ap_wait(void)
 {
 	while (ap_stop) {
