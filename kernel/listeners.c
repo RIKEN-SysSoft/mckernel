@@ -60,6 +60,8 @@ static int test_packet_handler(struct aal_ikc_channel_desc *c,
 		for (i = 0; i < 10; i++) {
 			aal_ikc_send(c, &p, 0);
 		}
+	} else if (packet->msg == 0x1111001a) {
+		kprintf("Packet, I am %d.\n", aal_mc_get_processor_id());
 	}
 	
 	return 0;
@@ -82,7 +84,7 @@ static struct aal_ikc_listen_param test_listen_param = {
 	.magic = 0x29,
 };
 
-void mc_ikc_init(void)
+void mc_ikc_test_init(void)
 {
 	aal_ikc_listen_port(NULL, &test_listen_param);
 	kprintf("Listener registered port %d\n", 500);

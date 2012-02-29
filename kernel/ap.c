@@ -23,6 +23,9 @@ static void ap_wait(void)
 	}
 	pc_ap_init();
 
+	/* one of them listens */
+	mc_ikc_test_init();
+
 	schedule();
 }
 

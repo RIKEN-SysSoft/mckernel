@@ -142,7 +142,6 @@ static void rest_init(void)
 	kmalloc_init();
 
 	ikc_master_init();
-	mc_ikc_init();
 
 	sched_init();
 }

@@ -7,7 +7,7 @@ extern void mem_init(void);
 extern void ikc_master_init(void);
 extern void ap_init(void);
 extern void arch_ready(void);
-extern void mc_ikc_init(void);
+extern void mc_ikc_test_init(void);
 extern void cpu_local_var_init(void);
 extern void kmalloc_init(void);
 extern void ap_start(void);
