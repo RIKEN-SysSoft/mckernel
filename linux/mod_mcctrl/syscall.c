@@ -7,6 +7,7 @@
 #include <linux/syscalls.h>
 #include <asm/uaccess.h>
 #include <asm/delay.h>
+#include <asm/io.h>
 #include "mcctrl.h"
 
 #define ALIGN_WAIT_BUF(z)   (((z + 63) >> 6) << 6)
@@ -112,9 +113,13 @@ static unsigned long translate_remote_va(struct mcctrl_channel *c,
 
 	return -EFAULT;
 }
+
 unsigned long last_thread_exec = 0;
 
 extern struct mcctrl_channel *channels;
+
+#ifndef DO_USER_MODE
+
 
 int __do_in_kernel_syscall(aal_os_t os, struct mcctrl_channel *c,
                            struct syscall_request *sc)
@@ -230,3 +235,4 @@ int __do_in_kernel_syscall(aal_os_t os, struct mcctrl_channel *c,
 		}
 	}
 }
+#endif /* DO_USER_MODE */

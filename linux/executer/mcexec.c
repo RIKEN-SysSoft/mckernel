@@ -17,6 +17,8 @@
 #include <sys/stat.h>
 #include <sys/utsname.h>
 
+#define DEBUG
+
 #ifndef DEBUG
 #define __dprint(msg, ...)
 #define __dprintf(arg, ...)
@@ -220,9 +222,9 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error: Failed to open /dev/mcctrl.\n");
 		return 1;
 	}
-	fdm = open("/dev/mem", O_RDWR);
+	fdm = open("/dev/fmem", O_RDWR);
 	if (fdm < 0) {
-		fprintf(stderr, "Error: Failed to open /dev/mem.\n");
+		fprintf(stderr, "Error: Failed to open /dev/fmem.\n");
 		return 1;
 	}
 
@@ -299,14 +301,20 @@ int main_loop(int fd, int cpu)
 	w.cpu = cpu;
 
 	while (ioctl(fd, MCEXEC_UP_WAIT_SYSCALL, (unsigned long)&w) == 0) {
+
+		__dprintf("got syscall: %d\n", w.sr.number);
+
 		switch (w.sr.number) {
 		case __NR_open:
 			dma_buf[256] = 0;
-			do_syscall_load(fd, cpu, dma_buf_pa, w.sr.args[0], 256);
-
+			
+			do_syscall_load(fd, cpu, dma_buf, w.sr.args[0], 256);
+			/*
 			while (!dma_buf[256]) {
 				asm volatile ("" : : : "memory");
 			}
+			*/
+
 			ret = open(dma_buf, w.sr.args[1], w.sr.args[2]);
 			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
@@ -321,19 +329,21 @@ int main_loop(int fd, int cpu)
 		case __NR_read:
 			ret = read(w.sr.args[0], dma_buf, w.sr.args[2]);
 			SET_ERR(ret);
-			do_syscall_return(fd, cpu, ret, 1, dma_buf_pa,
+			do_syscall_return(fd, cpu, ret, 1, dma_buf,
 			                  w.sr.args[1], w.sr.args[2]);
 			break;
 
 		case __NR_write:
 			dma_buf[w.sr.args[2]] = 0;
 			SET_ERR(ret);
-			do_syscall_load(fd, cpu, dma_buf_pa,
+			do_syscall_load(fd, cpu, dma_buf,
 			                w.sr.args[1], w.sr.args[2]);
 
+			/*
 			while (!dma_buf[w.sr.args[2]]) {
 				asm volatile ("" : : : "memory");
 			}
+			*/
 
 			ret = write(w.sr.args[0], dma_buf, w.sr.args[2]);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
@@ -347,18 +357,20 @@ int main_loop(int fd, int cpu)
 		case __NR_pread64:
 			ret = pread(w.sr.args[0], dma_buf, w.sr.args[2],
 			            w.sr.args[3]);
-			do_syscall_return(fd, cpu, ret, 1, dma_buf_pa,
+			do_syscall_return(fd, cpu, ret, 1, dma_buf,
 			                  w.sr.args[1], w.sr.args[2]);
 			break;
 
 		case __NR_pwrite64:
 			dma_buf[w.sr.args[2]] = 0;
-			do_syscall_load(fd, cpu, dma_buf_pa,
+			do_syscall_load(fd, cpu, dma_buf,
 			                w.sr.args[1], w.sr.args[2]);
 
+			/*
 			while (!dma_buf[w.sr.args[2]]) {
 				asm volatile ("" : : : "memory");
 			}
+			*/
 
 			ret = pwrite(w.sr.args[0], dma_buf, w.sr.args[2],
 			             w.sr.args[3]);
@@ -371,7 +383,7 @@ int main_loop(int fd, int cpu)
 			if (ret == -1) {
 				ret = -errno;
 			}
-			do_syscall_return(fd, cpu, ret, 1, dma_buf_pa,
+			do_syscall_return(fd, cpu, ret, 1, dma_buf,
 			                  w.sr.args[1], sizeof(struct stat));
 			break;
 
@@ -382,7 +394,7 @@ int main_loop(int fd, int cpu)
 				if (ret == -1) {
 					ret = -errno;
 				}
-				do_syscall_return(fd, cpu, ret, 1, dma_buf_pa,
+				do_syscall_return(fd, cpu, ret, 1, dma_buf,
 				                  w.sr.args[2],
 				                  sizeof(struct kernel_termios)
 					);
@@ -413,7 +425,7 @@ int main_loop(int fd, int cpu)
 				ret = -errno;
 			}
 			do_syscall_return(fd,
-			                  cpu, ret, 1, dma_buf_pa, w.sr.args[0],
+			                  cpu, ret, 1, dma_buf, w.sr.args[0],
 			                  sizeof(struct utsname));
 			break;
 		default:

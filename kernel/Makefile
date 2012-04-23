@@ -1,4 +1,5 @@
-BUILD_TARGET = mee knf
+#BUILD_TARGET = mee knf
+BUILD_TARGET = knf
 SRC = $(CURDIR)
 
 AALBASE ?= $(SRC)/../../aal/manycore

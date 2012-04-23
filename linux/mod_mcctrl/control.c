@@ -6,6 +6,7 @@
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/msr.h>
+#include <asm/io.h>
 #include "mcctrl.h"
 
 #ifdef DEBUG
@@ -145,9 +146,10 @@ int mcexec_syscall(struct mcctrl_channel *c, unsigned long arg)
 	return 0;
 }
 
-
+#ifndef DO_USER_MODE
 int __do_in_kernel_syscall(aal_os_t os, struct mcctrl_channel *c,
                            struct syscall_request *sc);
+#endif
 
 static int remaining_job, base_cpu, job_pos;
 extern int num_channels;
@@ -251,16 +253,33 @@ long mcexec_pin_region(aal_os_t os, unsigned long *__user uaddress)
 long mcexec_load_syscall(aal_os_t os, struct syscall_load_desc *__user arg)
 {
 	struct syscall_load_desc desc;
+	unsigned long phys;
+	void *rpm;
+	
+	if (copy_from_user(&desc, arg, sizeof(struct syscall_load_desc))) {
+		return -EFAULT;
+	}
+	
+	phys = aal_device_map_memory(aal_os_to_dev(os), desc.src, desc.size);
+	rpm = ioremap_wc(phys, desc.size);
+
+	printk("mcexec_load_syscall: %s (desc.size: %d)\n", rpm, desc.size);
+
+	if (copy_to_user((void *__user)desc.dest, rpm, desc.size)) {
+		return -EFAULT;
+	}
+
+	iounmap(rpm);
+	aal_device_unmap_memory(aal_os_to_dev(os), phys, desc.size);
+	
+/*
 	aal_dma_channel_t channel;
 	struct aal_dma_request request;
+	unsigned long dma_status = 0;
 
 	channel = aal_device_get_dma_channel(aal_os_to_dev(os), 0);
 	if (!channel) {
 		return -EINVAL;
-	}
-
-	if (copy_from_user(&desc, arg, sizeof(struct syscall_load_desc))) {
-		return -EFAULT;
 	}
 
 	memset(&request, 0, sizeof(request));
@@ -269,10 +288,16 @@ long mcexec_load_syscall(aal_os_t os, struct syscall_load_desc *__user arg)
 	request.dest_os = NULL;
 	request.dest_phys = desc.dest;
 	request.size = desc.size;
-	request.notify = (void *)(desc.dest + desc.size);
+	request.notify = (void *)virt_to_phys(&dma_status);
 	request.priv = (void *)1;
 
 	aal_dma_request(channel, &request);
+
+	while (!dma_status) {
+		mb();
+		udelay(1);
+	}
+*/
 
 	return 0;
 }
@@ -308,7 +333,10 @@ long mcexec_ret_syscall(aal_os_t os, struct syscall_ret_desc *__user arg)
 		                             ret.size);
 		rpm = ioremap_wc(phys, ret.size);
 		
-		memcpy(rpm, phys_to_virt(ret.src), ret.size);
+		if (copy_from_user(rpm, (void *__user)ret.src, ret.size)) {
+			return -EFAULT;
+		}
+
 		mc->param.response_va->status = 1;
 
 		iounmap(rpm);

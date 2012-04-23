@@ -16,6 +16,8 @@
 
 #define DMA_PIN_SHIFT                   21
 
+#define DO_USER_MODE
+
 struct ikc_scd_packet {
 	int msg;
 	int ref;

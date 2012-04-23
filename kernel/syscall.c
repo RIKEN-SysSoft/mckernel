@@ -9,6 +9,17 @@
 #include <syscall.h>
 #include <page.h>
 #include <amemcpy.h>
+#include <uio.h>
+
+#define SYSCALL_BY_IKC
+
+#define DEBUG_PRINT_SC
+
+#ifdef DEBUG_PRINT_SC
+#define dkprintf kprintf
+#else
+#define dkprintf(...)
+#endif
 
 int memcpy_async(unsigned long dest, unsigned long src,
                  unsigned long len, int wait, unsigned long *notify);
@@ -45,15 +56,23 @@ static void send_syscall(struct syscall_request *req)
 #endif
 }
 
-static int do_syscall(struct syscall_request *req)
+static int do_syscall(struct syscall_request *req, aal_mc_user_context_t *ctx)
 {
 	struct syscall_response *res = cpu_local_var(scp).response_va;
 
 	send_syscall(req);
 
+	dkprintf("SC(%d)[%3d] waiting for host.. \n", 
+	        aal_mc_get_processor_id(),
+	        req->number);
+	
 	while (!res->status) {
 		cpu_pause();
 	}
+	
+	dkprintf("SC(%d)[%3d] got host reply: %d \n", 
+	        aal_mc_get_processor_id(),
+	        req->number, res->ret);
 
 	return res->ret;
 }
@@ -105,7 +124,7 @@ long sys_brk(int n, aal_mc_user_context_t *ctx)
 	SYSCALL_ARG_##a0(0); SYSCALL_ARG_##a1(1); \
 	SYSCALL_ARG_##a2(2); SYSCALL_ARG_##a3(3)
 
-#define SYSCALL_FOOTER return do_syscall(&request)
+#define SYSCALL_FOOTER return do_syscall(&request, ctx)
 
 SYSCALL_DECLARE(fstat)
 {
@@ -187,7 +206,7 @@ SYSCALL_DECLARE(lseek)
 SYSCALL_DECLARE(exit_group)
 {
 	SYSCALL_HEADER;
-	do_syscall(&request);
+	do_syscall(&request, ctx);
 
 	free_process_memory(cpu_local_var(current));
 	cpu_local_var(next) = &cpu_local_var(idle);
@@ -218,7 +237,7 @@ SYSCALL_DECLARE(mmap)
 			return -EINVAL;
 		}
 	}
-	kprintf("Non-anonymous mmap: fd = %lx, %lx\n",
+	dkprintf("Non-anonymous mmap: fd = %lx, %lx\n",
 	        aal_mc_syscall_arg4(ctx), aal_mc_syscall_arg5(ctx));
 	while(1);
 }
@@ -243,6 +262,7 @@ SYSCALL_DECLARE(uname)
 {
 	SYSCALL_HEADER;
 	unsigned long phys;
+	int ret;
 
 	if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
 	                           (void *)aal_mc_syscall_arg0(ctx), &phys)) {
@@ -252,7 +272,9 @@ SYSCALL_DECLARE(uname)
 	request.number = n;
 	request.args[0] = phys;
 
-	return do_syscall(&request);
+	ret = do_syscall(&request, ctx);
+
+	return ret;
 }
 
 long sys_getxid(int n, aal_mc_user_context_t *ctx)
@@ -261,7 +283,7 @@ long sys_getxid(int n, aal_mc_user_context_t *ctx)
 
 	request.number = n;
 
-	return do_syscall(&request);
+	return do_syscall(&request, ctx);
 }
 
 long sys_arch_prctl(int n, aal_mc_user_context_t *ctx)
@@ -293,7 +315,7 @@ SYSCALL_DECLARE(clone)
 	                    aal_mc_syscall_arg1(ctx));
 	/* XXX Assign new pid! */
 	new->pid = cpu_local_var(current)->pid;
-	kprintf("Cloned: %p \n", new);
+	dkprintf("Cloned: %p \n", new);
 
 	aal_mc_syscall_ret(new->uctx) = 0;
 
@@ -301,10 +323,49 @@ SYSCALL_DECLARE(clone)
 	request.number = n;
 	request.args[0] = (unsigned long)new;
 	/* Sync */
-	do_syscall(&request);
-	kprintf("Clone ret.\n");
+	do_syscall(&request, ctx);
+	dkprintf("Clone ret.\n");
 	return new->pid;
 }
+
+
+SYSCALL_DECLARE(writev)
+{
+	/* Adhoc implementation of writev calling write sequentially */
+	struct syscall_request request AAL_DMA_ALIGN;
+	unsigned long seg;
+	size_t seg_ret, ret = 0;
+	
+	int fd = aal_mc_syscall_arg0(ctx);
+	struct iovec *iov = (struct iovec*)aal_mc_syscall_arg1(ctx);
+	unsigned long nr_segs = aal_mc_syscall_arg2(ctx);
+
+	for (seg = 0; seg < nr_segs; ++seg) {
+		unsigned long __phys; 
+		
+		if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
+	                           (void *)iov[seg].iov_base, &__phys)) {
+			return -EFAULT;
+		}
+		
+		request.number = 1; /* write */
+		request.args[0] = fd;
+		request.args[1] = __phys;
+		request.args[2] = iov[seg].iov_len;
+
+		seg_ret = do_syscall(&request, ctx);
+		
+		if (seg_ret < 0) {
+			ret = -EFAULT;
+			break;
+		}
+		
+		ret += seg_ret;
+	}
+
+	return ret;
+}
+
 
 static long (*syscall_table[])(int, aal_mc_user_context_t *) = {
 	[0] = sys_read,
@@ -319,6 +380,7 @@ static long (*syscall_table[])(int, aal_mc_user_context_t *) = {
 	[16] = sys_ioctl,
 	[17] = sys_pread,
 	[18] = sys_pwrite,
+	[20] = sys_writev,
 	[39] = sys_getpid,
 	[56] = sys_clone,
 	[63] = sys_uname,
@@ -338,27 +400,23 @@ long syscall(int num, aal_mc_user_context_t *ctx)
 
 	cpu_enable_interrupt();
 
-#ifdef DEBUG_PRINT_SC
-	kprintf("SC(%d)[%3d](%lx, %lx) @ %lx | %lx = ", 
+	dkprintf("SC(%d)[%3d](%lx, %lx) @ %lx | %lx = ", 
 	        aal_mc_get_processor_id(),
 	        num,
 	        aal_mc_syscall_arg0(ctx), aal_mc_syscall_arg1(ctx),
 	        aal_mc_syscall_pc(ctx), aal_mc_syscall_sp(ctx));
-#endif
 
 	if (syscall_table[num]) {
 		l = syscall_table[num](num, ctx);
-#ifdef DEBUG_PRINT_SC
-		kprintf(" %lx\n", l);
-#endif
+		dkprintf(" %lx\n", l);
 		return l;
 	} else {
-		kprintf("USC[%3d](%lx, %lx, %lx, %lx, %lx) @ %lx | %lx\n", num,
+		dkprintf("USC[%3d](%lx, %lx, %lx, %lx, %lx) @ %lx | %lx\n", num,
 		        aal_mc_syscall_arg0(ctx), aal_mc_syscall_arg1(ctx),
 		        aal_mc_syscall_arg2(ctx), aal_mc_syscall_arg3(ctx),
 		        aal_mc_syscall_arg4(ctx), aal_mc_syscall_pc(ctx),
 		        aal_mc_syscall_sp(ctx));
-		while(1);
+		//while(1);
 		return -ENOSYS;
 	}
 }

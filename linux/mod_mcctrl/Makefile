@@ -1,8 +1,10 @@
-ifeq ($(K),"current")
+
+#ifeq ($(K),"current")
 KDIR=/lib/modules/`uname -r `/build
-else
-KDIR=../target
-endif
+#else
+#KDIR=../target
+#endif
+
 
 obj-m += mcctrl.o
 
