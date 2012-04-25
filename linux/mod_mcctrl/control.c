@@ -263,7 +263,7 @@ long mcexec_load_syscall(aal_os_t os, struct syscall_load_desc *__user arg)
 	phys = aal_device_map_memory(aal_os_to_dev(os), desc.src, desc.size);
 	rpm = ioremap_wc(phys, desc.size);
 
-	printk("mcexec_load_syscall: %s (desc.size: %d)\n", rpm, desc.size);
+	dprintk("mcexec_load_syscall: %s (desc.size: %d)\n", rpm, desc.size);
 
 	if (copy_to_user((void *__user)desc.dest, rpm, desc.size)) {
 		return -EFAULT;
