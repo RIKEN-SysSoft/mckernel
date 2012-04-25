@@ -6,6 +6,14 @@
 #include <aal/debug.h>
 #include <page.h>
 
+#define DEBUG_PRINT_PROCESS
+
+#ifdef DEBUG_PRINT_PROCESS
+#define dkprintf kprintf
+#else
+#define dkprintf(...)
+#endif
+
 void init_process_vm(struct process_vm *vm)
 {
 	aal_atomic_set(&vm->refcount, 1);
@@ -89,7 +97,7 @@ int add_process_memory_range(struct process *process,
 	range->phys = phys;
 	range->flag = flag;
 
-	kprintf("range: %lx - %lx => %lx - %lx\n",
+	dkprintf("range: %lx - %lx => %lx - %lx\n",
 	        range->start, range->end, range->phys, range->phys + 
 	        range->end - range->start);
 
@@ -257,7 +265,7 @@ void schedule(void)
 	cpu_enable_interrupt();
 
 	if (switch_ctx) {
-		kprintf("[%d] schedule: %d => %d \n",
+		dkprintf("[%d] schedule: %d => %d \n",
 		        aal_mc_get_processor_id(),
 		        prev ? prev->pid : 0, next ? next->pid : 0);
 
