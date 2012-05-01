@@ -14,6 +14,8 @@
 #define dkprintf(...)
 #endif
 
+extern long do_arch_prctl(unsigned long code, unsigned long address);
+
 void init_process_vm(struct process_vm *vm)
 {
 	aal_atomic_set(&vm->refcount, 1);
@@ -225,6 +227,10 @@ void destroy_process(struct process *proc)
 
 static void idle(void)
 {
+	//unsigned int	flags;
+	//flags = aal_mc_spinlock_lock(&cpu_status_lock);
+	cpu_local_var(status) = CPU_STATUS_IDLE;
+	//aal_mc_spinlock_unlock(&cpu_status_lock, flags);
 	while (1) {
 		cpu_enable_interrupt();
 		schedule();
@@ -244,6 +250,7 @@ void sched_init(void)
 	aal_mc_init_context(&idle_process->ctx, NULL, idle);
 
 	cpu_local_var(next) = idle_process;
+	cpu_local_var(status) = CPU_STATUS_RUNNING;
 }
 
 void schedule(void)
@@ -270,6 +277,8 @@ void schedule(void)
 		        prev ? prev->pid : 0, next ? next->pid : 0);
 
 		aal_mc_load_page_table(next->vm->page_table);
+		
+		do_arch_prctl(ARCH_SET_FS, next->vm->region.tlsblock_base);
 
 		if (prev) {
 			aal_mc_switch_context(&prev->ctx, &next->ctx);

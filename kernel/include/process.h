@@ -27,6 +27,7 @@ struct vm_regions {
 	unsigned long brk_start, brk_end;
 	unsigned long map_start, map_end;
 	unsigned long stack_start, stack_end;
+	unsigned long tlsblock_base, tlsblock_limit;
 };
 
 struct process_vm {
@@ -45,6 +46,10 @@ struct process {
 
 	aal_mc_kernel_context_t ctx;
 	aal_mc_user_context_t  *uctx;
+	
+	struct thread {
+		int	*clear_child_tid;
+	} thread;
 };
 
 struct process *create_process(unsigned long user_pc);

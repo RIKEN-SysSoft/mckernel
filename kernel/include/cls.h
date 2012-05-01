@@ -12,6 +12,12 @@ struct malloc_header {
 	unsigned long size;
 };
 
+#include <aal/lock.h>
+#define CPU_STATUS_DISABLE	(0)
+#define CPU_STATUS_IDLE		(1)
+#define CPU_STATUS_RUNNING	(2)
+extern aal_spinlock_t	cpu_status_lock;
+
 struct cpu_local_var {
 	/* malloc */
 	struct malloc_header free_list;
@@ -26,6 +32,9 @@ struct cpu_local_var {
 
 	struct syscall_params scp;
 	struct ikc_scd_init_param iip;
+	
+	int status;
+	int fs;
 } __attribute__((aligned(64)));
 
 
