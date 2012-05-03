@@ -10,6 +10,14 @@
 #include <process.h>
 #include <page.h>
 
+#define DEBUG_PRINT_HOST
+
+#ifdef DEBUG_PRINT_HOST
+#define dkprintf kprintf
+#else
+#define dkprintf(...)
+#endif
+
 /*
  * Communication with host 
  */
@@ -29,7 +37,7 @@ static void process_msg_prepare_process(unsigned long rphys)
 	p = aal_mc_map_virtual(phys, npages, PTATTR_WRITABLE);
 
 	n = p->num_sections;
-	kprintf("# of sections: %d\n", n);
+	dkprintf("# of sections: %d\n", n);
 
 	pn = aal_mc_allocate(sizeof(struct program_load_desc) 
 	                     + sizeof(struct program_image_section) * n, 0);
@@ -92,7 +100,7 @@ static void process_msg_prepare_process(unsigned long rphys)
 	p->rprocess = (unsigned long)proc;
 	init_process_stack(proc);
 
-	kprintf("new process : %p [%d] / table : %p\n", proc, proc->pid,
+	dkprintf("new process : %p [%d] / table : %p\n", proc, proc->pid,
 	        proc->vm->page_table);
 
 	aal_mc_free(pn);
@@ -143,14 +151,14 @@ static void process_msg_init_acked(unsigned long pphys)
 
 	lparam->post_fin = 1;
 
-	kprintf("Syscall parameters: (%d)\n", aal_mc_get_processor_id());
-	kprintf(" Response: %lx, %p\n",
+	dkprintf("Syscall parameters: (%d)\n", aal_mc_get_processor_id());
+	dkprintf(" Response: %lx, %p\n",
 	        lparam->response_pa, lparam->response_va);
-	kprintf(" Request : %lx, %lx, %p\n",
+	dkprintf(" Request : %lx, %lx, %p\n",
 	        lparam->request_pa, lparam->request_rpa, lparam->request_va);
-	kprintf(" Doorbell: %lx, %lx, %p\n",
+	dkprintf(" Doorbell: %lx, %lx, %p\n",
 	        lparam->doorbell_pa, lparam->doorbell_rpa, lparam->doorbell_va);
-	kprintf(" Post: %lx, %lx, %p\n",
+	dkprintf(" Post: %lx, %lx, %p\n",
 	        lparam->post_pa, lparam->post_rpa, lparam->post_va);
 }
 
@@ -168,7 +176,7 @@ static int syscall_packet_handler(struct aal_ikc_channel_desc *c,
 
 	switch (packet->msg) {
 	case SCD_MSG_INIT_CHANNEL_ACKED:
-		kprintf("init channel acked!\n");
+		dkprintf("SCD_MSG_INIT_CHANNEL_ACKED\n");
 		process_msg_init_acked(packet->arg);
 		return 0;
 
@@ -183,9 +191,12 @@ static int syscall_packet_handler(struct aal_ikc_channel_desc *c,
 		return 0;
 
 	case SCD_MSG_SCHEDULE_PROCESS:
-		kprintf("next one : %lx\n", packet->arg);
+		dkprintf("SCD_MSG_SCHEDULE_PROCESS: %lx\n", packet->arg);
 
-		cpu_local_var(next) = (struct process *)packet->arg;
+		runq_add_proc((struct process *)packet->arg, 
+		              aal_mc_get_processor_id());
+					  
+		//cpu_local_var(next) = (struct process *)packet->arg;
 		return 0;
 	}
 	return 0;
@@ -202,12 +213,12 @@ void init_host_syscall_channel(void)
 	param.magic = 0x1129;
 	param.handler = syscall_packet_handler;
 
-	kprintf("(syscall) Trying to connect host ...");
+	dkprintf("(syscall) Trying to connect host ...");
 	while (aal_ikc_connect(NULL, &param) != 0) {
-		kprintf(".");
+		dkprintf(".");
 		aal_mc_delay_us(1000 * 1000);
 	}
-	kprintf("connected.\n");
+	dkprintf("connected.\n");
 
 	get_this_cpu_local_var()->syscall_channel = param.channel;
 

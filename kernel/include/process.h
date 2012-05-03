@@ -12,7 +12,11 @@
 #define VR_IO_NOCACHE      0x100
 #define VR_REMOTE          0x200
 
-#define PS_ZOMBIE          0x1
+#define PS_RUNNING           0x1
+#define PS_INTERRUPTIBLE     0x2
+#define PS_UNINTERRUPTIBLE   0x3
+#define PS_ZOMBIE            0x4
+#define PS_EXITED            0x5
 
 struct vm_range {
 	struct list_head list;
@@ -41,11 +45,14 @@ struct process_vm {
 struct process {
 	int pid;
 	int status;
+	int cpu_id;
 
 	struct process_vm *vm;
 
 	aal_mc_kernel_context_t ctx;
 	aal_mc_user_context_t  *uctx;
+	
+	struct list_head sched_list;  // Runqueue
 	
 	struct thread {
 		int	*clear_child_tid;
@@ -69,5 +76,7 @@ unsigned long extend_process_region(struct process *proc,
                                     unsigned long address);
 
 void schedule(void);
+void runq_add_proc(struct process *proc, int cpu_id);
+void runq_del_proc(struct process *proc, int cpu_id);
 
 #endif

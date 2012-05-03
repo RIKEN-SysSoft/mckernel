@@ -21,6 +21,7 @@ void init_process_vm(struct process_vm *vm)
 	aal_atomic_set(&vm->refcount, 1);
 	INIT_LIST_HEAD(&vm->vm_range_list);
 	vm->page_table = aal_mc_pt_create();
+	vm->region.tlsblock_base = 0;
 }
 
 struct process *create_process(unsigned long user_pc)
@@ -248,28 +249,56 @@ void sched_init(void)
 	idle_process->vm = &cpu_local_var(idle_vm);
 
 	aal_mc_init_context(&idle_process->ctx, NULL, idle);
+	idle_process->pid = aal_mc_get_processor_id();
 
-	cpu_local_var(next) = idle_process;
-	cpu_local_var(status) = CPU_STATUS_RUNNING;
+	INIT_LIST_HEAD(&cpu_local_var(runq));
+	cpu_local_var(runq_len) = 0;
+	aal_mc_spinlock_init(&cpu_local_var(runq_lock));
 }
 
 void schedule(void)
 {
 	struct cpu_local_var *v = get_this_cpu_local_var();
-	struct process *next, *prev;
+	struct process *next, *prev, *proc, *tmp = NULL;
 	int switch_ctx = 0;
+	unsigned long irqstate;
 
-	cpu_disable_interrupt();
-	if (v->next && v->next != v->current) {
-		prev = v->current;
-		next = v->next;
+	irqstate = aal_mc_spinlock_lock(&(v->runq_lock));
 
-		switch_ctx = 1;
+	next = NULL;
+	prev = v->current;
 
-		v->current = next;
-		v->next = NULL;
+	/* All runnable processes are on the runqueue */
+	if (prev && prev != &cpu_local_var(idle)) {
+		list_del(&prev->sched_list);
+		--v->runq_len;	
+		
+		/* Round-robin if not exited yet */
+		if (prev->status != PS_EXITED) {
+			list_add_tail(&prev->sched_list, &(v->runq));
+			++v->runq_len;
+		}
 	}
-	cpu_enable_interrupt();
+
+	/* Pick a new running process */
+	list_for_each_entry_safe(proc, tmp, &(v->runq), sched_list) {
+		if (proc->status == PS_RUNNING) {
+			next = proc;
+			break;
+		}
+	}
+
+	/* No process? Run idle.. */
+	if (!next) {
+		next = &cpu_local_var(idle);
+	}
+
+	if (prev != next) {
+		switch_ctx = 1;
+		v->current = next;
+	}
+	
+	aal_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 
 	if (switch_ctx) {
 		dkprintf("[%d] schedule: %d => %d \n",
@@ -277,7 +306,6 @@ void schedule(void)
 		        prev ? prev->pid : 0, next ? next->pid : 0);
 
 		aal_mc_load_page_table(next->vm->page_table);
-		
 		do_arch_prctl(ARCH_SET_FS, next->vm->region.tlsblock_base);
 
 		if (prev) {
@@ -288,4 +316,42 @@ void schedule(void)
 	}
 }
 
+/* Runq lock must be held here */
+void __runq_add_proc(struct process *proc, int cpu_id)
+{
+	struct cpu_local_var *v = get_cpu_local_var(cpu_id);
+	list_add_tail(&proc->sched_list, &v->runq);
+	++v->runq_len;
+	proc->cpu_id = cpu_id;
+	proc->status = PS_RUNNING;
+
+	dkprintf("runq_add_proc(): pid %d added to CPU[%d]'s runq\n", 
+             proc->pid, cpu_id);
+}
+
+void runq_add_proc(struct process *proc, int cpu_id)
+{
+	struct cpu_local_var *v = get_cpu_local_var(cpu_id);
+	unsigned long irqstate;
+	
+	irqstate = aal_mc_spinlock_lock(&(v->runq_lock));
+	__runq_add_proc(proc, cpu_id);
+	aal_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+
+	/*
+	if (cpu != this_cpu)
+		xcall_reschedule(cpu);
+	*/
+}
+
+void runq_del_proc(struct process *proc, int cpu_id)
+{
+	struct cpu_local_var *v = get_cpu_local_var(cpu_id);
+	unsigned long irqstate;
+	
+	irqstate = aal_mc_spinlock_lock(&(v->runq_lock));
+	list_del(&proc->sched_list);
+	++v->runq_len;
+	aal_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+}
 

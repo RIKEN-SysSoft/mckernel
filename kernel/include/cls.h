@@ -25,8 +25,10 @@ struct cpu_local_var {
 	struct process idle;
 	struct process_vm idle_vm;
 
+	aal_spinlock_t runq_lock;
 	struct process *current;
-	struct process *next;
+	struct list_head runq;
+	size_t runq_len;
 
 	struct aal_ikc_channel_desc *syscall_channel;
 

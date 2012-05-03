@@ -213,9 +213,12 @@ SYSCALL_DECLARE(exit_group)
 	SYSCALL_HEADER;
 	do_syscall(&request, ctx);
 
+	runq_del_proc(cpu_local_var(current), aal_mc_get_processor_id());
 	free_process_memory(cpu_local_var(current));
-	cpu_local_var(next) = &cpu_local_var(idle);
+
+	//cpu_local_var(next) = &cpu_local_var(idle);
 	
+	cpu_local_var(current) = NULL; 
 	schedule();
 
 	return 0;
@@ -422,7 +425,7 @@ SYSCALL_DECLARE(clone)
 		unsigned long	pptid;
 		int		*vptid;
 		if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table,
-				                   aal_mc_syscall_arg2(ctx), &pptid))
+				                   (int*)aal_mc_syscall_arg2(ctx), &pptid))
 			return -EFAULT;
 
 		vptid = (int *)phys_to_virt(pptid);
@@ -430,13 +433,15 @@ SYSCALL_DECLARE(clone)
 	}
 
 	new->thread.clear_child_tid = (clone_flags & CLONE_CHILD_CLEARTID)
-				      ? aal_mc_syscall_arg3(ctx)
+				      ? (int*)aal_mc_syscall_arg3(ctx)
 				      : NULL;
 	
 
 	aal_mc_syscall_ret(new->uctx) = 0;
-	get_cpu_local_var(cpuid)->next = new;
-	get_cpu_local_var(cpuid)->status = CPU_STATUS_RUNNING;
+
+	runq_add_proc(new, cpuid);
+	//get_cpu_local_var(cpuid)->next = new;
+	//get_cpu_local_var(cpuid)->status = CPU_STATUS_RUNNING;
 	//aal_mc_spinlock_unlock(&cpu_status_lock, flags);
 	aal_mc_interrupt_cpu(aal_mc_get_cpu_info()->hw_ids[cpuid], 0xd1);
 	
@@ -446,6 +451,18 @@ SYSCALL_DECLARE(clone)
 	return new->pid;
 }
 
+SYSCALL_DECLARE(set_tid_address)
+{
+	cpu_local_var(current)->thread.clear_child_tid = 
+	                        (int*)aal_mc_syscall_arg2(ctx);
+
+	return cpu_local_var(current)->pid;
+}
+
+SYSCALL_DECLARE(set_robust_list)
+{
+	return -ENOSYS;
+}
 
 SYSCALL_DECLARE(writev)
 {
@@ -510,7 +527,10 @@ static long (*syscall_table[])(int, aal_mc_user_context_t *) = {
 	[110] = sys_getxid,
 	[111] = sys_getxid,
 	[158] = sys_arch_prctl,
+	[218] = sys_set_tid_address,
 	[231] = sys_exit_group,
+	[273] = sys_set_robust_list,
+	[288] = NULL,
 };
 
 #if 0
