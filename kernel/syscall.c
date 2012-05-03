@@ -10,6 +10,11 @@
 #include <page.h>
 #include <amemcpy.h>
 #include <uio.h>
+#include <aal/lock.h>
+#include <ctype.h>
+
+/* Headers taken from kitten LWK */
+#include <lwk/stddef.h>
 
 #define SYSCALL_BY_IKC
 
@@ -253,6 +258,13 @@ SYSCALL_DECLARE(munmap)
 	                             address + len);
 }
 
+SYSCALL_DECLARE(mprotect)
+{
+	dkprintf("mprotect returns 0\n");
+	return 0;
+}
+
+
 SYSCALL_DECLARE(getpid)
 {
 	return cpu_local_var(current)->pid;
@@ -286,6 +298,50 @@ long sys_getxid(int n, aal_mc_user_context_t *ctx)
 	return do_syscall(&request, ctx);
 }
 
+long do_arch_prctl(unsigned long code, unsigned long address)
+{
+	int err = 0;
+	enum aal_asr_type type;
+
+	switch (code) {
+		case ARCH_SET_FS:
+		case ARCH_GET_FS:
+			type = AAL_ASR_X86_FS;
+			break;
+		case ARCH_GET_GS:
+			type = AAL_ASR_X86_GS;
+			break;
+		case ARCH_SET_GS:
+			return -ENOTSUPP;
+		default:
+			return -EINVAL;
+	}
+
+	switch (code) {
+		case ARCH_SET_FS:
+		case ARCH_SET_GS:
+			err = aal_mc_arch_set_special_register(type, address);
+			break;
+		case ARCH_GET_FS:
+		case ARCH_GET_GS:
+			err = aal_mc_arch_get_special_register(type,
+												   (unsigned long*)address);
+			break;
+		default:
+			break;
+	}
+
+	return err;
+}
+
+
+SYSCALL_DECLARE(arch_prctl)
+{
+	return do_arch_prctl(aal_mc_syscall_arg0(ctx), 
+	                     aal_mc_syscall_arg1(ctx));
+}
+
+#if 0
 long sys_arch_prctl(int n, aal_mc_user_context_t *ctx)
 {
 	unsigned long code = aal_mc_syscall_arg0(ctx);
@@ -325,6 +381,68 @@ SYSCALL_DECLARE(clone)
 	/* Sync */
 	do_syscall(&request, ctx);
 	dkprintf("Clone ret.\n");
+	return new->pid;
+}
+#endif
+
+SYSCALL_DECLARE(clone)
+{
+	int			i;
+	int			cpuid = -1;
+	int			clone_flags = aal_mc_syscall_arg0(ctx);
+	//unsigned long		flags;	/* spinlock */
+	struct aal_mc_cpu_info	*cpu_info = aal_mc_get_cpu_info();
+	struct process		*new;
+	
+	kputs(";sys_clone\n");
+
+	//flags = aal_mc_spinlock_lock(&cpu_status_lock);
+	for (i = 0; i < cpu_info->ncpus; i++) {
+		if(get_cpu_local_var(i)->status == CPU_STATUS_IDLE)
+			cpuid = i;
+	}
+	if(cpuid < 0) return -EAGAIN;
+
+	new = clone_process(cpu_local_var(current), aal_mc_syscall_pc(ctx),
+	                    aal_mc_syscall_arg1(ctx));
+
+	/* TODO: allocate new pid */
+	new->pid = 0xc107e;
+
+	if (clone_flags & CLONE_SETTLS) {
+		dkprintf("clone_flags & CLONE_SETTLS\n");
+		
+		new->vm->region.tlsblock_base
+			= (unsigned long)aal_mc_syscall_arg4(ctx);
+	}
+	else 
+		new->vm->region.tlsblock_base = 0;
+
+	if (clone_flags & CLONE_PARENT_SETTID) {
+		unsigned long	pptid;
+		int		*vptid;
+		if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table,
+				                   aal_mc_syscall_arg2(ctx), &pptid))
+			return -EFAULT;
+
+		vptid = (int *)phys_to_virt(pptid);
+		*vptid = 1;
+	}
+
+	new->thread.clear_child_tid = (clone_flags & CLONE_CHILD_CLEARTID)
+				      ? aal_mc_syscall_arg3(ctx)
+				      : NULL;
+	
+
+	aal_mc_syscall_ret(new->uctx) = 0;
+	get_cpu_local_var(cpuid)->next = new;
+	get_cpu_local_var(cpuid)->status = CPU_STATUS_RUNNING;
+	//aal_mc_spinlock_unlock(&cpu_status_lock, flags);
+	aal_mc_interrupt_cpu(aal_mc_get_cpu_info()->hw_ids[cpuid], 0xd1);
+	
+	dkprintf("clone: kicking scheduler!\n");
+	while (1) { cpu_halt(); }
+
 	return new->pid;
 }
 
@@ -375,6 +493,7 @@ static long (*syscall_table[])(int, aal_mc_user_context_t *) = {
 	[5] = sys_fstat,
 	[8] = sys_lseek,
 	[9] = sys_mmap,
+	[10] = sys_mprotect,
 	[11] = sys_munmap,
 	[12] = sys_brk,
 	[16] = sys_ioctl,
@@ -393,6 +512,21 @@ static long (*syscall_table[])(int, aal_mc_user_context_t *) = {
 	[158] = sys_arch_prctl,
 	[231] = sys_exit_group,
 };
+
+#if 0
+
+aal_spinlock_t cpu_status_lock;
+
+static int clone_init(void)
+{
+	unsigned long flags;
+
+	aal_mc_spinlock_init(&cpu_status_lock);
+	
+	return 0;
+}
+
+#endif
 
 long syscall(int num, aal_mc_user_context_t *ctx)
 {
@@ -451,3 +585,4 @@ void __host_update_process_range(struct process *process,
 	}
 	cpu_enable_interrupt();
 }
+
