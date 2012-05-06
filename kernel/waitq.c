@@ -1,0 +1,147 @@
+
+/* Kitten waitqueue adaptation */
+
+#include <waitq.h>
+#include <process.h>
+#include <cls.h>
+
+int
+default_wake_function(waitq_entry_t *entry, unsigned mode,
+					  int flags, void *key)
+{
+	return sched_wakeup_process(entry->private, PS_NORMAL);
+}
+
+void
+waitq_init(waitq_t *waitq)
+{
+	aal_mc_spinlock_init(&waitq->lock);
+	INIT_LIST_HEAD(&waitq->waitq);
+}
+
+void
+waitq_init_entry(waitq_entry_t *entry, struct process *proc)
+{
+	entry->private = proc;
+	entry->func = default_wake_function;
+	INIT_LIST_HEAD(&entry->link);
+}
+
+int
+waitq_active(waitq_t *waitq)
+{
+	int active;
+	unsigned long irqstate;
+
+	irqstate = aal_mc_spinlock_lock(&waitq->lock);
+	active = !list_empty(&waitq->waitq);
+	aal_mc_spinlock_unlock(&waitq->lock, irqstate);
+
+	return active;
+}
+
+void
+waitq_add_entry(waitq_t *waitq, waitq_entry_t *entry)
+{
+	unsigned long irqstate;
+
+	irqstate = aal_mc_spinlock_lock(&waitq->lock);
+	waitq_add_entry_locked(waitq, entry);
+	aal_mc_spinlock_unlock(&waitq->lock, irqstate);
+}
+
+
+void
+waitq_add_entry_locked(waitq_t *waitq, waitq_entry_t *entry)
+{
+	//BUG_ON(!list_empty(&entry->link));
+	list_add_tail(&entry->link, &waitq->waitq);
+}
+
+
+void
+waitq_remove_entry(waitq_t *waitq, waitq_entry_t *entry)
+{
+	unsigned long irqstate;
+	
+	irqstate = aal_mc_spinlock_lock(&waitq->lock);
+	waitq_remove_entry_locked(waitq, entry);
+	aal_mc_spinlock_unlock(&waitq->lock, irqstate);
+}
+
+
+void
+waitq_remove_entry_locked(waitq_t *waitq, waitq_entry_t *entry)
+{
+	//BUG_ON(list_empty(&entry->link));
+	list_del_init(&entry->link);
+}
+
+
+void
+waitq_prepare_to_wait(waitq_t *waitq, waitq_entry_t *entry, int state)
+{
+	unsigned long irqstate;
+	
+	irqstate = aal_mc_spinlock_lock(&waitq->lock);
+	if (list_empty(&entry->link))
+		list_add(&entry->link, &waitq->waitq);
+	cpu_local_var(current)->status = state;
+	aal_mc_spinlock_unlock(&waitq->lock, irqstate);
+}
+
+void
+waitq_finish_wait(waitq_t *waitq, waitq_entry_t *entry)
+{
+	cpu_local_var(current)->status = PS_RUNNING;
+	waitq_remove_entry(waitq, entry);
+}
+
+void
+waitq_wakeup(waitq_t *waitq)
+{
+	unsigned long irqstate;
+	struct list_head *tmp;
+	waitq_entry_t *entry;
+	
+	irqstate = aal_mc_spinlock_lock(&waitq->lock);
+	list_for_each(tmp, &waitq->waitq) {
+		entry = list_entry(tmp, waitq_entry_t, link);
+		entry->func(entry, 0, 0, NULL);
+	}
+	aal_mc_spinlock_unlock(&waitq->lock, irqstate);
+}
+
+
+int
+waitq_wake_nr(waitq_t * waitq, int nr)
+{
+	unsigned long irqstate;
+
+	irqstate = aal_mc_spinlock_lock(&waitq->lock);
+	int count = waitq_wake_nr_locked(waitq, nr);
+	aal_mc_spinlock_unlock(&waitq->lock, irqstate);
+
+	if (count > 0)
+		schedule();
+	
+	return count;
+}
+
+
+int
+waitq_wake_nr_locked( waitq_t * waitq, int nr )
+{
+	int count = 0;
+	waitq_entry_t *entry;
+
+	list_for_each_entry(entry, &waitq->waitq, link) {
+		if (++count > nr)
+			break;
+		
+		entry->func(entry, 0, 0, NULL);
+	}
+
+	return count - 1;
+}
+

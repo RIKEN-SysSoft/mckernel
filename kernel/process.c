@@ -5,6 +5,7 @@
 #include <cls.h>
 #include <aal/debug.h>
 #include <page.h>
+#include <cpulocal.h>
 
 #define DEBUG_PRINT_PROCESS
 
@@ -307,6 +308,7 @@ void schedule(void)
 
 		aal_mc_load_page_table(next->vm->page_table);
 		do_arch_prctl(ARCH_SET_FS, next->vm->region.tlsblock_base);
+		cpu_local_var(status) = CPU_STATUS_RUNNING;
 
 		if (prev) {
 			aal_mc_switch_context(&prev->ctx, &next->ctx);
@@ -315,6 +317,35 @@ void schedule(void)
 		}
 	}
 }
+
+
+int sched_wakeup_process(struct process *proc, int valid_states)
+{
+	int status;
+	unsigned long irqstate;
+	struct cpu_local_var *v = get_cpu_local_var(proc->cpu_id);
+
+	irqstate = aal_mc_spinlock_lock(&(v->runq_lock));
+	
+	if (proc->status & valid_states) {
+		proc->status = PS_RUNNING;
+		status = 0;
+	} 
+	else {
+		status = -EINVAL;
+	}
+
+	aal_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+
+	if (!status && (proc->cpu_id != aal_mc_get_processor_id())) {
+		aal_mc_interrupt_cpu(get_x86_cpu_local_variable(proc->cpu_id)->apic_id,
+		                     0xd1);
+	}
+
+	return status;
+}
+
+
 
 /* Runq lock must be held here */
 void __runq_add_proc(struct process *proc, int cpu_id)

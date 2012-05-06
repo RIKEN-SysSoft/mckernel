@@ -14,9 +14,11 @@
 
 #define PS_RUNNING           0x1
 #define PS_INTERRUPTIBLE     0x2
-#define PS_UNINTERRUPTIBLE   0x3
-#define PS_ZOMBIE            0x4
-#define PS_EXITED            0x5
+#define PS_UNINTERRUPTIBLE   0x4
+#define PS_ZOMBIE            0x8
+#define PS_EXITED            0x10
+
+#define PS_NORMAL	(PS_INTERRUPTIBLE | PS_UNINTERRUPTIBLE)
 
 struct vm_range {
 	struct list_head list;
@@ -78,5 +80,6 @@ unsigned long extend_process_region(struct process *proc,
 void schedule(void);
 void runq_add_proc(struct process *proc, int cpu_id);
 void runq_del_proc(struct process *proc, int cpu_id);
+int sched_wakeup_process(struct process *proc, int valid_states);
 
 #endif
