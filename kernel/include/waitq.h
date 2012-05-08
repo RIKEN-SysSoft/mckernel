@@ -5,8 +5,8 @@
 
 #include <aal/lock.h>
 #include <list.h>
-#include <process.h>
 
+struct process;
 struct waitq_entry;
 
 typedef int (*waitq_func_t)(struct waitq_entry *wait, unsigned mode,

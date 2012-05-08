@@ -20,6 +20,7 @@
 
 #define PS_NORMAL	(PS_INTERRUPTIBLE | PS_UNINTERRUPTIBLE)
 
+
 struct vm_range {
 	struct list_head list;
 	unsigned long start, end;
@@ -33,16 +34,9 @@ struct vm_regions {
 	unsigned long brk_start, brk_end;
 	unsigned long map_start, map_end;
 	unsigned long stack_start, stack_end;
-	unsigned long tlsblock_base, tlsblock_limit;
 };
 
-struct process_vm {
-	aal_atomic_t refcount;
-
-	struct page_table *page_table;
-	struct list_head vm_range_list;
-	struct vm_regions region;
-};
+struct process_vm;
 
 struct process {
 	int pid;
@@ -54,12 +48,29 @@ struct process {
 	aal_mc_kernel_context_t ctx;
 	aal_mc_user_context_t  *uctx;
 	
-	struct list_head sched_list;  // Runqueue
+	// Runqueue list entry
+	struct list_head sched_list;  
 	
 	struct thread {
 		int	*clear_child_tid;
+		unsigned long tlsblock_base, tlsblock_limit;
 	} thread;
 };
+
+#include <waitq.h>
+#include <futex.h>
+
+struct process_vm {
+	aal_atomic_t refcount;
+
+	struct page_table *page_table;
+	struct list_head vm_range_list;
+	struct vm_regions region;
+ 	
+	// Address space private futexes 
+	struct futex_queue futex_queues[1 << FUTEX_HASHBITS];
+};
+
 
 struct process *create_process(unsigned long user_pc);
 struct process *clone_process(struct process *org,

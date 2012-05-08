@@ -45,7 +45,7 @@ static void process_msg_prepare_process(unsigned long rphys)
 	            + sizeof(struct program_image_section) * n);
 
 	proc = create_process(p->entry);
-	proc->pid = p->pid;
+	proc->pid = 1024;
 
 	/* TODO: Clear it at the proper timing */
 	cpu_local_var(scp).post_idx = 0;

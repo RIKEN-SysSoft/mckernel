@@ -1,6 +1,6 @@
 AALDIR=$(AALBASE)/$(TARGET)
 OBJS = init.o mem.o debug.o mikc.o listeners.o ap.o syscall.o cls.o host.o
-OBJS += process.o copy.o waitq.o
+OBJS += process.o copy.o waitq.o futex.o
 DEPSRCS=$(wildcard $(SRC)/*.c)
 
 CFLAGS += -I$(SRC)/include -mcmodel=kernel -D__KERNEL__

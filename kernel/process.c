@@ -19,22 +19,30 @@ extern long do_arch_prctl(unsigned long code, unsigned long address);
 
 void init_process_vm(struct process_vm *vm)
 {
+	int i;
+
 	aal_atomic_set(&vm->refcount, 1);
 	INIT_LIST_HEAD(&vm->vm_range_list);
 	vm->page_table = aal_mc_pt_create();
-	vm->region.tlsblock_base = 0;
+	
+	/* Initialize futex queues */
+	for (i = 0; i < (1 << FUTEX_HASHBITS); ++i)
+		futex_queue_init(&vm->futex_queues[i]);
+
 }
 
 struct process *create_process(unsigned long user_pc)
 {
 	struct process *proc;
 
-	proc = aal_mc_alloc_pages(1, 0);
+	proc = aal_mc_alloc_pages(3, 0);
+	if (!proc)
+		return NULL;
 
 	memset(proc, 0, sizeof(struct process));
 
 	aal_mc_init_user_process(&proc->ctx, &proc->uctx,
-	                         ((char *)proc) + PAGE_SIZE, user_pc, 0);
+	                         ((char *)proc) + 3 * PAGE_SIZE, user_pc, 0);
 
 	proc->vm = (struct process_vm *)(proc + 1);
 
@@ -50,7 +58,7 @@ struct process *clone_process(struct process *org, unsigned long pc,
 
 	proc = aal_mc_alloc_pages(1, 0);
 
-	memset(proc, 0, sizeof(struct process));
+	memset(proc, 0, sizeof(*proc));
 
 	aal_mc_init_user_process(&proc->ctx, &proc->uctx,
 	                         ((char *)proc) + PAGE_SIZE, pc, sp);
@@ -101,9 +109,9 @@ int add_process_memory_range(struct process *process,
 	range->phys = phys;
 	range->flag = flag;
 
-	dkprintf("range: %lx - %lx => %lx - %lx\n",
+	dkprintf("range: 0x%lX - 0x%lX => 0x%lX - 0x%lX (%ld)\n",
 	        range->start, range->end, range->phys, range->phys + 
-	        range->end - range->start);
+	        range->end - range->start, range->end - range->start);
 
 	if (flag & VR_REMOTE) {
 		update_process_page_table(process, range, AAL_PTA_REMOTE);
@@ -122,14 +130,17 @@ int add_process_memory_range(struct process *process,
 	return 0;
 }
 
+
+#define NR_STACK_PAGES 2
+
 void init_process_stack(struct process *process)
 {
-	char *stack = aal_mc_alloc_pages(1, 0);
-	unsigned long *p = (unsigned long *)(stack + PAGE_SIZE);
+	char *stack = aal_mc_alloc_pages(NR_STACK_PAGES, 0);
+	unsigned long *p = (unsigned long *)(stack + (NR_STACK_PAGES * PAGE_SIZE));
 
-	memset(stack, 0, PAGE_SIZE);
+	memset(stack, 0, NR_STACK_PAGES * PAGE_SIZE);
 
-	add_process_memory_range(process, USER_END - PAGE_SIZE,
+	add_process_memory_range(process, USER_END - (NR_STACK_PAGES * PAGE_SIZE),
 	                         USER_END,
 	                         virt_to_phys(stack), VR_STACK);
 
@@ -147,7 +158,7 @@ void init_process_stack(struct process *process)
 	aal_mc_modify_user_context(process->uctx, AAL_UCR_STACK_POINTER,
 	                           USER_END - sizeof(unsigned long) * 9);
 	process->vm->region.stack_end = USER_END;
-	process->vm->region.stack_start = USER_END - PAGE_SIZE;
+	process->vm->region.stack_start = USER_END - (NR_STACK_PAGES * PAGE_SIZE);
 }
 
 
@@ -231,11 +242,11 @@ static void idle(void)
 {
 	//unsigned int	flags;
 	//flags = aal_mc_spinlock_lock(&cpu_status_lock);
-	cpu_local_var(status) = CPU_STATUS_IDLE;
 	//aal_mc_spinlock_unlock(&cpu_status_lock, flags);
 	while (1) {
 		cpu_enable_interrupt();
 		schedule();
+		cpu_local_var(status) = CPU_STATUS_IDLE;
 		cpu_halt();
 	}
 }
@@ -307,8 +318,13 @@ void schedule(void)
 		        prev ? prev->pid : 0, next ? next->pid : 0);
 
 		aal_mc_load_page_table(next->vm->page_table);
-		do_arch_prctl(ARCH_SET_FS, next->vm->region.tlsblock_base);
-		cpu_local_var(status) = CPU_STATUS_RUNNING;
+		
+		kprintf("[%d] schedule: tlsblock_base: 0x%lX\n", 
+		        aal_mc_get_processor_id(), next->thread.tlsblock_base); 
+		do_arch_prctl(ARCH_SET_FS, next->thread.tlsblock_base);
+		
+		if (next != &cpu_local_var(idle))
+			cpu_local_var(status) = CPU_STATUS_RUNNING;
 
 		if (prev) {
 			aal_mc_switch_context(&prev->ctx, &next->ctx);
@@ -355,6 +371,7 @@ void __runq_add_proc(struct process *proc, int cpu_id)
 	++v->runq_len;
 	proc->cpu_id = cpu_id;
 	proc->status = PS_RUNNING;
+	get_cpu_local_var(cpu_id)->status = CPU_STATUS_RUNNING;
 
 	dkprintf("runq_add_proc(): pid %d added to CPU[%d]'s runq\n", 
              proc->pid, cpu_id);
