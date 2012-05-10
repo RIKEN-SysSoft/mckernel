@@ -47,28 +47,31 @@ static void page_fault_handler(unsigned long address, void *regs)
 {
 	struct vm_range *range, *next;
 	char found = 0;
+	int irqflags;
 
-	kprintf("[%d] Page fault for 0x%lX\n", 
-	        aal_mc_get_processor_id(), address);
+	irqflags = kprintf_lock();
+	__kprintf("[%d] Page fault for 0x%lX\n", 
+	          aal_mc_get_processor_id(), address);
 
 	list_for_each_entry_safe(range, next, 
 	                         &cpu_local_var(current)->vm->vm_range_list, 
 							 list) {
 		
 		if (range->start <= address && range->end > address) {
-			kprintf("address is in range, flag: 0x%X! \n", range->flag);
+			__kprintf("address is in range, flag: 0x%X! \n", range->flag);
 			found = 1;
 			break;
 		}
 	}
 	
 	if (!found)
-		kprintf("address is out of range! \n");
+		__kprintf("address is out of range! \n");
 
+	kprintf_unlock(irqflags);
 
 	/* TODO */
 	aal_mc_debug_show_interrupt_context(regs);
-	panic("page fault");
+	panic("");
 }
 
 static void page_allocator_init(void)
