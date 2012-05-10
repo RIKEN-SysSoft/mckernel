@@ -8,8 +8,9 @@
 #define REQUEST_PAGE_COUNT              16
 #define RESPONSE_PAGE_COUNT             16
 #define DOORBELL_PAGE_COUNT             1
+#define ARGENV_PAGE_COUNT               8
 #define SCD_RESERVED_COUNT \
-	(REQUEST_PAGE_COUNT + RESPONSE_PAGE_COUNT + DOORBELL_PAGE_COUNT)
+	(REQUEST_PAGE_COUNT + RESPONSE_PAGE_COUNT + DOORBELL_PAGE_COUNT + ARGENV_PAGE_COUNT)
 
 #define SCD_MSG_PREPARE_PROCESS         0x1
 #define SCD_MSG_PREPARE_PROCESS_ACKED   0x2
@@ -89,6 +90,10 @@ struct program_load_desc {
 	int pid;
 	unsigned long entry;
 	unsigned long rprocess;
+	char *args;
+	unsigned long args_len;
+	char *envs;
+	unsigned long envs_len;
 	struct program_image_section sections[0];
 };
 

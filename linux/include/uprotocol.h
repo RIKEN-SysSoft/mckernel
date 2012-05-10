@@ -31,6 +31,10 @@ struct program_load_desc {
 	int pid;
 	unsigned long entry;
 	unsigned long rprocess;
+	char *args;
+	unsigned long args_len;
+	char *envs;
+	unsigned long envs_len;
 	struct program_image_section sections[0];
 };
 

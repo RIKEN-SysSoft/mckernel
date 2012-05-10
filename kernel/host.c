@@ -28,6 +28,11 @@ static void process_msg_prepare_process(unsigned long rphys)
 	int i, npages, n;
 	struct process *proc;
 	unsigned long addr;
+	char *args_envs, *args_envs_r;
+	unsigned long args_envs_p, args_envs_rp;
+	char **argv;
+	int argc, envc, args_envs_npages;
+	char **env;
 
 	sz = sizeof(struct program_load_desc)
 		+ sizeof(struct program_image_section) * 16;
@@ -97,8 +102,89 @@ static void process_msg_prepare_process(unsigned long rphys)
 	                         cpu_local_var(scp).response_pa,
 	                         VR_RESERVED);
 
+	/* Map, copy and update args and envs */
+	addr = e;
+	e = addr + PAGE_SIZE * ARGENV_PAGE_COUNT;
+	
+	args_envs = aal_mc_alloc_pages(ARGENV_PAGE_COUNT, 0);
+	args_envs_p = virt_to_phys(args_envs);
+	
+	add_process_memory_range(proc, addr, e,
+	                         args_envs_p,
+	                         VR_RESERVED);
+	
+	dkprintf("args_envs mapping\n");
+
+	dkprintf("args: 0x%lX, args_len: %d\n", p->args, p->args_len);
+
+	// Map in remote physical addr of args and copy it
+	args_envs_npages = (p->args_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
+	dkprintf("args_envs_npages: %d\n", args_envs_npages);
+	args_envs_rp = aal_mc_map_memory(NULL, (unsigned long)p->args, p->args_len);
+	dkprintf("args_envs_rp: 0x%lX\n", args_envs_rp);
+	args_envs_r = (char *)aal_mc_map_virtual(args_envs_rp, args_envs_npages, 
+											 PTATTR_WRITABLE);
+	dkprintf("args_envs_r: 0x%lX\n", args_envs_r);
+
+	dkprintf("args copy, nr: %d\n", *((int*)args_envs_r));
+	
+	memcpy_long(args_envs, args_envs_r, p->args_len + 8);
+
+	/* TODO: add a virtual_unmap function, that really does only unmap 
+	 * the virtual address and doesn't drop the physical page itself!! */
+
+	//aal_mc_unmap_virtual(args_envs_r, args_envs_npages);
+	//aal_mc_unmap_memory(NULL, args_envs_rp, p->args_len);
+	
+	dkprintf("envs: 0x%lX, envs_len: %d\n", p->envs, p->envs_len);
+
+	// Map in remote physical addr of envs and copy it after args
+	args_envs_npages = (p->envs_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
+	dkprintf("args_envs_npages: %d\n", args_envs_npages);
+	args_envs_rp = aal_mc_map_memory(NULL, (unsigned long)p->envs, p->envs_len);
+	dkprintf("args_envs_rp: 0x%lX\n", args_envs_rp);
+	args_envs_r = (char *)aal_mc_map_virtual(args_envs_rp, args_envs_npages, 
+											 PTATTR_WRITABLE);
+	dkprintf("args_envs_r: 0x%lX\n", args_envs_r);
+	
+	dkprintf("envs copy, nr: %d\n", *((int*)args_envs_r));
+	
+	memcpy_long(args_envs + p->args_len, args_envs_r, p->envs_len + 8);
+
+	//aal_mc_unmap_virtual(args_envs_r, args_envs_npages);
+	//aal_mc_unmap_memory(NULL, args_envs_rp, p->envs_len);
+
+	// Update variables
+	argc = *((int*)(args_envs));
+	dkprintf("argc: %d\n", argc);
+
+	argv = (char **)(args_envs + (sizeof(int)));
+	while (*argv) {
+		char **_argv = argv;
+		dkprintf("%s\n", args_envs + (unsigned long)*argv);
+		*argv = (char *)addr + (unsigned long)*argv; // Process' address space!
+		argv = ++_argv;
+	}
+	argv = (char **)(args_envs + (sizeof(int)));
+	
+	envc = *((int*)(args_envs + p->args_len));
+	dkprintf("envc: %d\n", envc);
+
+	env = (char **)(args_envs + p->args_len + sizeof(int));
+	while (*env) {
+		char **_env = env;
+		//dkprintf("%s\n", args_envs + p->args_len + (unsigned long)*env);
+		*env = (char *)addr + p->args_len + (unsigned long)*env;
+		env = ++_env;
+	}
+	env = (char **)(args_envs + p->args_len + sizeof(int));
+	
+	dkprintf("env OK\n");
+
+	aal_mc_unmap_virtual(args_envs, ARGENV_PAGE_COUNT);
+
 	p->rprocess = (unsigned long)proc;
-	init_process_stack(proc);
+	init_process_stack(proc, argc, argv, envc, env);
 
 	dkprintf("new process : %p [%d] / table : %p\n", proc, proc->pid,
 	        proc->vm->page_table);

@@ -17,7 +17,7 @@
 
 
 #define USER_STACK_NR_PAGES 4
-#define KERNEL_STACK_NR_PAGES 4
+#define KERNEL_STACK_NR_PAGES 8
 
 extern long do_arch_prctl(unsigned long code, unsigned long address);
 
@@ -137,8 +137,11 @@ int add_process_memory_range(struct process *process,
 
 
 
-void init_process_stack(struct process *process)
+void init_process_stack(struct process *process, int argc, char **argv, 
+                        int envc, char **env)
 {
+	int s_ind = 0;
+	int arg_ind;
 	char *stack = aal_mc_alloc_pages(USER_STACK_NR_PAGES, 0);
 	unsigned long *p = (unsigned long *)(stack + 
 	                   (USER_STACK_NR_PAGES * PAGE_SIZE));
@@ -150,19 +153,24 @@ void init_process_stack(struct process *process)
 	                         USER_END,
 	                         virt_to_phys(stack), VR_STACK);
 
-	/* TODO: fill with actual value of argc, argv, envp */
 	p[-1] = 0;     /* AT_NULL */
 	p[-2] = 0;
 	p[-3] = USER_END - sizeof(unsigned long) * 2;
-	p[-4] = 0;     /* env: "" */
-	p[-5] = 0x41;  /* argv(0): "a" */
-	p[-6] = 0;     /* envp: NULL */
-	p[-7] = 0;     /* argv[1] = NULL */
-	p[-8] = USER_END - sizeof(unsigned long) * 5; /* argv[0] = END - 16 */
-	p[-9] = 1;     /* argc */
+	p[-4] = 0;     /* envp terminating NULL */
+	s_ind = -5;
+	for (arg_ind = envc - 1; arg_ind > -1; --arg_ind) {
+		p[s_ind--] = (unsigned long)env[arg_ind];
+	}
+	
+	p[s_ind--] = 0; /* argv terminating NULL */
+	for (arg_ind = argc - 1; arg_ind > -1; --arg_ind) {
+		p[s_ind--] = (unsigned long)argv[arg_ind];
+	}
+	/* argc */
+	p[s_ind] = argc;
 
 	aal_mc_modify_user_context(process->uctx, AAL_UCR_STACK_POINTER,
-	                           USER_END - sizeof(unsigned long) * 9);
+	                           USER_END + sizeof(unsigned long) * s_ind);
 	process->vm->region.stack_end = USER_END;
 	process->vm->region.stack_start = USER_END - 
 	                                  (USER_STACK_NR_PAGES * PAGE_SIZE);

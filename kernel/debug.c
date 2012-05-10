@@ -49,7 +49,7 @@ int __kprintf(const char *format, ...)
 
 	/* Copy into the local buf */
 	va_start(va, format);
-	len += vsnprintf(buf + len, KPRINTF_LOCAL_BUF_LEN - len, format, va);
+	len += vsnprintf(buf + len, KPRINTF_LOCAL_BUF_LEN - len - 2, format, va);
 	va_end(va);
 
 	/* Append to kmsg buffer */
@@ -74,7 +74,7 @@ int kprintf(const char *format, ...)
 
 	/* Copy into the local buf */
 	va_start(va, format);
-	len += vsnprintf(buf + len, KPRINTF_LOCAL_BUF_LEN - len, format, va);
+	len += vsnprintf(buf + len, KPRINTF_LOCAL_BUF_LEN - len - 2, format, va);
 	va_end(va);
 
 	/* Append to kmsg buffer */

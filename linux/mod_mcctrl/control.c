@@ -24,6 +24,7 @@ static long mcexec_prepare_image(aal_os_t os,
 {
 	struct program_load_desc desc, *pdesc;
 	struct ikc_scd_packet isp;
+	void *args, *envs;
 
 	if (copy_from_user(&desc, udesc,
 	                    sizeof(struct program_load_desc))) {
@@ -46,6 +47,28 @@ static long mcexec_prepare_image(aal_os_t os,
 
 	pdesc->pid = task_tgid_vnr(current);
 
+	args = kmalloc(pdesc->args_len, GFP_KERNEL);
+	if (copy_from_user(args, pdesc->args, pdesc->args_len)) {
+		kfree(args);
+		kfree(pdesc);
+		return -EFAULT;
+	}
+	
+	envs = kmalloc(pdesc->envs_len, GFP_KERNEL);
+	if (copy_from_user(envs, pdesc->envs, pdesc->envs_len)) {
+		kfree(envs);
+		kfree(args);
+		kfree(pdesc);
+		return -EFAULT;
+	}
+
+	pdesc->args = virt_to_phys(args);
+	printk("args: 0x%lX\n", pdesc->args);
+	printk("argc: %d\n", *(int*)args);
+	pdesc->envs = virt_to_phys(envs);
+	printk("envs: 0x%lX\n", pdesc->envs);
+	printk("envc: %d\n", *(int*)envs);
+
 	isp.msg = SCD_MSG_PREPARE_PROCESS;
 	isp.ref = pdesc->cpu;
 	isp.arg = virt_to_phys(pdesc);
@@ -62,6 +85,8 @@ static long mcexec_prepare_image(aal_os_t os,
 	             sizeof(struct program_image_section) * desc.num_sections);
 
 	kfree(pdesc);
+	kfree(envs);
+	kfree(args);
 
 	return 0;
 }
