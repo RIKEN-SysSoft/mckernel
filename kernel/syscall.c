@@ -30,8 +30,6 @@
 #define dkprintf(...)
 #endif
 
-static aal_spinlock_t sysc_lock = { 0 };
-
 static aal_atomic_t pid_cnt = AAL_ATOMIC_INIT(1024);
 
 int memcpy_async(unsigned long dest, unsigned long src,
@@ -295,7 +293,7 @@ SYSCALL_DECLARE(mmap)
 	unsigned long address, ret;
 	struct vm_regions *region = &cpu_local_var(current)->vm->region;
 		
-	/* anonymous */
+	/* MAP_ANONYMOUS */
 	if (aal_mc_syscall_arg3(ctx) & 0x22) {
 		ret = region->map_end;
 		address = region->map_end + aal_mc_syscall_arg1(ctx);
@@ -415,49 +413,6 @@ SYSCALL_DECLARE(arch_prctl)
 	                     aal_mc_syscall_arg1(ctx));
 }
 
-#if 0
-long sys_arch_prctl(int n, aal_mc_user_context_t *ctx)
-{
-	unsigned long code = aal_mc_syscall_arg0(ctx);
-	unsigned long address = aal_mc_syscall_arg1(ctx);
-
-	switch (code) {
-	case 0x1002:
-		return aal_mc_arch_set_special_register(AAL_ASR_X86_FS,
-		                                        address);
-
-	case 0x1003:
-		return aal_mc_arch_get_special_register(AAL_ASR_X86_FS,
-		                                        (unsigned long *)
-		                                        address);
-	}
-
-	return -EINVAL;
-}
-
-SYSCALL_DECLARE(clone)
-{
-	/* Clone a new thread */
-	struct process *new;
-	struct syscall_request request AAL_DMA_ALIGN;
-
-	new = clone_process(cpu_local_var(current), aal_mc_syscall_pc(ctx),
-	                    aal_mc_syscall_arg1(ctx));
-	/* XXX Assign new pid! */
-	new->pid = cpu_local_var(current)->pid;
-	dkprintf("Cloned: %p \n", new);
-
-	aal_mc_syscall_ret(new->uctx) = 0;
-
-	/* Hope it is scheduled after... :) */
-	request.number = n;
-	request.args[0] = (unsigned long)new;
-	/* Sync */
-	do_syscall(&request, ctx);
-	dkprintf("Clone ret.\n");
-	return new->pid;
-}
-#endif
 
 SYSCALL_DECLARE(clone)
 {
@@ -519,15 +474,21 @@ SYSCALL_DECLARE(clone)
 	}
 
 	aal_mc_syscall_ret(new->uctx) = 0;
-	runq_add_proc(new, cpuid);
-
-	//get_cpu_local_var(cpuid)->next = new;
-	//aal_mc_spinlock_unlock(&cpu_status_lock, flags);
 	
 	dkprintf("clone: kicking scheduler!\n");
-	aal_mc_interrupt_cpu(get_x86_cpu_local_variable(cpuid)->apic_id, 0xd1);
-	
+	runq_add_proc(new, cpuid);
+
 	//while (1) { cpu_halt(); }
+#if 0
+	aal_mc_syscall_ret(new->uctx) = 0;
+
+	/* Hope it is scheduled after... :) */
+	request.number = n;
+	request.args[0] = (unsigned long)new;
+	/* Sync */
+	do_syscall(&request, ctx);
+	dkprintf("Clone ret.\n");
+#endif
 
 	return new->pid;
 }
@@ -653,8 +614,8 @@ SYSCALL_DECLARE(getrlimit)
 	case RLIMIT_STACK:
 
 		dkprintf("[%d] getrlimit() RLIMIT_STACK\n", aal_mc_get_processor_id());
-		rlm->rlim_cur = (1024*1024);
-		rlm->rlim_max = (16384*1024);
+		rlm->rlim_cur = (128*4096);  /* Linux provides 8MB */
+		rlm->rlim_max = (1024*1024*1024);
 		ret = 0;
 		break;
 

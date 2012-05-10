@@ -95,8 +95,9 @@ struct program_load_desc *load_elf(FILE *fp)
 			desc->sections[j].offset = phdr.p_offset;
 			desc->sections[j].len = phdr.p_memsz;
 
-			__dprintf("%d: %lx, %lx, %lx, %lx\n",
-			          j, desc->sections[j].vaddr,
+			__dprintf("%d: (%s) %lx, %lx, %lx, %lx\n",
+			          j, (phdr.p_type == PT_LOAD ? "PT_LOAD" : "PT_TLS"), 
+					  desc->sections[j].vaddr,
 			          desc->sections[j].filesz,
 			          desc->sections[j].offset,
 			          desc->sections[j].len);
@@ -413,6 +414,15 @@ int main_loop(int fd, int cpu)
 			}
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
+
+		case __NR_clone:
+
+			__dprint("MIC clone(), new thread's cpu_id: %d\n", w.sr.args[0]);
+
+
+			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
+			break;
+			
 
 		case __NR_exit:
 		case __NR_exit_group:
