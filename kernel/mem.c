@@ -6,11 +6,14 @@
 #include <aal/lock.h>
 #include <aal/mm.h>
 #include <aal/page_alloc.h>
+#include <registers.h>
 
 #include <cls.h>
 
 static struct aal_page_allocator_desc *pa_allocator;
 static unsigned long pa_start, pa_end;
+
+extern int aal_mc_pt_print_pte(struct page_table *pt, void *virt);
 
 static void reserve_pages(unsigned long start, unsigned long end, int type)
 {
@@ -43,15 +46,24 @@ static struct aal_mc_pa_ops allocator = {
 	.free_page = free_pages,
 };
 
-static void page_fault_handler(unsigned long address, void *regs)
+static void page_fault_handler(unsigned long address, void *regs, 
+                               unsigned long rbp)
 {
 	struct vm_range *range, *next;
 	char found = 0;
 	int irqflags;
+	unsigned long error = ((struct x86_regs *)regs)->error;
 
 	irqflags = kprintf_lock();
-	__kprintf("[%d] Page fault for 0x%lX\n", 
-	          aal_mc_get_processor_id(), address);
+	__kprintf("[%d] Page fault for 0x%lX, (rbp: 0x%lX)\n", 
+	          aal_mc_get_processor_id(), address, rbp); 
+
+	__kprintf("%s for %s access in %s mode (reserved bit %s set), it %s an instruction fetch\n", 
+	          (error & PF_PROT ? "protection fault" : "no page found"),
+			  (error & PF_WRITE ? "write" : "read"),
+			  (error & PF_USER ? "user" : "kernel"),
+			  (error & PF_RSVD ? "was" : "wasn't"),
+			  (error & PF_INSTR ? "was" : "wasn't"));
 
 	list_for_each_entry_safe(range, next, 
 	                         &cpu_local_var(current)->vm->vm_range_list, 
@@ -60,6 +72,8 @@ static void page_fault_handler(unsigned long address, void *regs)
 		if (range->start <= address && range->end > address) {
 			__kprintf("address is in range, flag: 0x%X! \n", range->flag);
 			found = 1;
+			aal_mc_pt_print_pte(cpu_local_var(current)->vm->page_table, 
+			                    (void*)address);
 			break;
 		}
 	}
@@ -142,7 +156,7 @@ void *aal_mc_map_virtual(unsigned long phys, int npages,
 	return (char *)p + offset;
 }
 
-void aal_mc_unmap_virtual(void *va, int npages)
+void aal_mc_unmap_virtual(void *va, int npages, int free_physical)
 {
 	unsigned long i;
 
@@ -150,7 +164,9 @@ void aal_mc_unmap_virtual(void *va, int npages)
 	for (i = 0; i < npages; i++) {
 		aal_mc_pt_clear_page(NULL, (char *)va + (i << PAGE_SHIFT));
 	}
-	aal_pagealloc_free(vmap_allocator, virt_to_phys(va), npages);
+	
+	if (free_physical)
+		aal_pagealloc_free(vmap_allocator, virt_to_phys(va), npages);
 }
 
 void mem_init(void)
