@@ -33,6 +33,7 @@ static void process_msg_prepare_process(unsigned long rphys)
 	char **argv;
 	int argc, envc, args_envs_npages;
 	char **env;
+	int range_npages;
 
 	sz = sizeof(struct program_load_desc)
 		+ sizeof(struct program_image_section) * 16;
@@ -59,9 +60,65 @@ static void process_msg_prepare_process(unsigned long rphys)
 		s = (pn->sections[i].vaddr) & PAGE_MASK;
 		e = (pn->sections[i].vaddr + pn->sections[i].len
 		     + PAGE_SIZE - 1) & PAGE_MASK;
-		up = virt_to_phys(aal_mc_alloc_pages((e - s) >> PAGE_SHIFT, 0));
+		range_npages = (e - s) >> PAGE_SHIFT;
 
-		add_process_memory_range(proc, s, e, up, 0);
+#if 0
+		if (range_npages <= 256) {
+#endif
+			up = virt_to_phys(aal_mc_alloc_pages(range_npages, 0));
+			add_process_memory_range(proc, s, e, up, 0);
+			
+			{
+				void *_virt = (void *)s;
+				unsigned long _phys;
+				aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
+				                       _virt, &_phys);
+				for (_virt = (void *)s + PAGE_SIZE; 
+				     (unsigned long)_virt < e; _virt += PAGE_SIZE) {
+					unsigned long __phys;
+					aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
+				                       _virt, &__phys);
+					if (__phys != _phys + PAGE_SIZE) {
+						kprintf("0x%lX + PAGE_SIZE is not physically contigous, from 0x%lX to 0x%lX\n", _virt - PAGE_SIZE, _phys, __phys);
+						panic("mondai");
+					}
+					
+					_phys = __phys;
+				}
+				kprintf("0x%lX -> 0x%lX is physically contigous\n", s, e);
+			}
+#if 0			
+		}
+		else {
+			up = 0;
+			if (add_process_large_range(proc, s, e, 0, &up)) {
+				kprintf("ERROR: not enough memory\n");
+				while (1) cpu_halt();
+			}
+			
+			
+			{
+				void *_virt = (void *)s;
+				unsigned long _phys;
+				aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
+				                       _virt, &_phys);
+				for (_virt = (void *)s + PAGE_SIZE; 
+				     (unsigned long)_virt < e; _virt += PAGE_SIZE) {
+					unsigned long __phys;
+					aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
+				                       _virt, &__phys);
+					if (__phys != _phys + PAGE_SIZE) {
+						kprintf("0x%lX + PAGE_SIZE is not physically contigous, from 0x%lX to 0x%lX\n", _virt - PAGE_SIZE, _phys, __phys);
+						panic("mondai");
+					}
+					
+					_phys = __phys;
+				}
+				kprintf("0x%lX -> 0x%lX is physically contigous\n", s, e);
+			}
+		}
+#endif
+
 		p->sections[i].remote_pa = up;
 
 		/* TODO: Maybe we need flag */
@@ -181,7 +238,7 @@ static void process_msg_prepare_process(unsigned long rphys)
 	
 	dkprintf("env OK\n");
 
-	aal_mc_unmap_virtual(args_envs, ARGENV_PAGE_COUNT);
+	aal_mc_unmap_virtual(args_envs, ARGENV_PAGE_COUNT, 0);
 
 	p->rprocess = (unsigned long)proc;
 	init_process_stack(proc, argc, argv, envc, env);
@@ -191,7 +248,7 @@ static void process_msg_prepare_process(unsigned long rphys)
 
 	aal_mc_free(pn);
 
-	aal_mc_unmap_virtual(p, npages);
+	aal_mc_unmap_virtual(p, npages, 1);
 	aal_mc_unmap_memory(NULL, phys, sz);
 }
 

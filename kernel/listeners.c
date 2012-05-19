@@ -53,7 +53,7 @@ static int test_packet_handler(struct aal_ikc_channel_desc *c,
 		
 		testmem(v, 4 * 1024 * 1024);
 
-		aal_mc_unmap_virtual(v, 4 * 1024);
+		aal_mc_unmap_virtual(v, 4 * 1024, 1);
 		aal_mc_unmap_memory(NULL, pp, 4 * 1024 * 1024);
 	} else if (packet->msg == 0x11110012) {
 		p.msg = 0x11110013;
