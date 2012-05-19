@@ -16,8 +16,8 @@
 #endif
 
 
-#define USER_STACK_NR_PAGES 4
-#define KERNEL_STACK_NR_PAGES 8
+#define USER_STACK_NR_PAGES 512
+#define KERNEL_STACK_NR_PAGES 16
 
 extern long do_arch_prctl(unsigned long code, unsigned long address);
 
@@ -95,8 +95,66 @@ void update_process_page_table(struct process *process, struct vm_range *range,
 
 		pa += PAGE_SIZE;
 		p += PAGE_SIZE;
+
 	}
 }
+
+int add_process_large_range(struct process *process,
+                            unsigned long start, unsigned long end,
+                            unsigned long flag, unsigned long *phys)
+{
+	struct vm_range *range;
+	int npages = (end - start) >> PAGE_SHIFT;
+	int npages_allocated = 0;
+	void *virt;
+
+	range = kmalloc(sizeof(struct vm_range), 0);
+	if (!range) {
+		return -ENOMEM;
+	}
+
+	INIT_LIST_HEAD(&range->list);
+	range->start = start;
+	range->end = end;
+	range->flag = flag;
+	range->phys = 0;
+
+	/* Loop through the range, allocate and map blocks of 64 pages */
+	for (npages_allocated = 0; npages_allocated < npages; 
+	     npages_allocated += 64) {
+		 struct vm_range sub_range;
+
+		virt = aal_mc_alloc_pages(64, 0);
+		if (!virt) {
+			return -ENOMEM;
+		}
+
+		/* Save the first sub region's physical address */
+		if (!(*phys)) {
+			*phys = virt_to_phys(virt);
+		}
+
+		sub_range.phys = virt_to_phys(virt);
+		sub_range.start = start + npages_allocated * PAGE_SIZE;
+		sub_range.end = sub_range.start + 64 * PAGE_SIZE;
+		
+
+		update_process_page_table(process, &sub_range, flag);
+		
+		dkprintf("subrange 0x%lX - 0x%lX -> 0x%lx - 0x%lX mapped\n",
+		        sub_range.start, sub_range.end,
+				sub_range.phys, sub_range.phys + 64 * PAGE_SIZE);
+
+		memset(virt, 0, 64 * PAGE_SIZE);
+	}
+	
+	dkprintf("range: 0x%lX - 0x%lX (%ld)\n",
+	        range->start, range->end, range->end - range->start);
+
+	list_add_tail(&range->list, &process->vm->vm_range_list);
+	return 0;
+}
+
 
 int add_process_memory_range(struct process *process,
                              unsigned long start, unsigned long end,
@@ -129,8 +187,12 @@ int add_process_memory_range(struct process *process,
 	if (!(flag & VR_REMOTE)) {
 		__host_update_process_range(process, range);
 	}
-
+	
 	list_add_tail(&range->list, &process->vm->vm_range_list);
+	
+	/* Clear content! */
+	if (!(flag & VR_REMOTE))
+		memset((void*)phys_to_virt(range->phys), 0, end - start);
 
 	return 0;
 }
@@ -158,11 +220,13 @@ void init_process_stack(struct process *process, int argc, char **argv,
 	p[-3] = USER_END - sizeof(unsigned long) * 2;
 	p[-4] = 0;     /* envp terminating NULL */
 	s_ind = -5;
+	/* envp */
 	for (arg_ind = envc - 1; arg_ind > -1; --arg_ind) {
 		p[s_ind--] = (unsigned long)env[arg_ind];
 	}
 	
 	p[s_ind--] = 0; /* argv terminating NULL */
+	/* argv */
 	for (arg_ind = argc - 1; arg_ind > -1; --arg_ind) {
 		p[s_ind--] = (unsigned long)argv[arg_ind];
 	}
@@ -202,9 +266,6 @@ unsigned long extend_process_region(struct process *proc,
 		return end;
 	}
 	
-	/* Clear content! */
-	memset(p, 0, aligned_new_end - aligned_end);
-
 	add_process_memory_range(proc, aligned_end, aligned_new_end,
 	                         virt_to_phys(p), 0);
 	
@@ -331,7 +392,6 @@ void schedule(void)
 		v->current = next;
 	}
 	
-	aal_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 
 	if (switch_ctx) {
 		dkprintf("[%d] schedule: %d => %d \n",
@@ -340,11 +400,13 @@ void schedule(void)
 
 		aal_mc_load_page_table(next->vm->page_table);
 		
-		kprintf("[%d] schedule: tlsblock_base: 0x%lX\n", 
-		        aal_mc_get_processor_id(), next->thread.tlsblock_base); 
+		dkprintf("[%d] schedule: tlsblock_base: 0x%lX\n", 
+		         aal_mc_get_processor_id(), next->thread.tlsblock_base); 
 
 		/* Set up new TLS.. */
 		do_arch_prctl(ARCH_SET_FS, next->thread.tlsblock_base);
+		
+		aal_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 		
 		if (prev) {
 			aal_mc_switch_context(&prev->ctx, &next->ctx);
@@ -352,6 +414,9 @@ void schedule(void)
 		else {
 			aal_mc_switch_context(NULL, &next->ctx);
 		}
+	}
+	else {
+		aal_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 	}
 }
 
