@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
+#include <sys/time.h>
 
 #define DEBUG
 
@@ -131,13 +132,14 @@ void transfer_image(FILE *fp, int fd, struct program_load_desc *desc)
 		fseek(fp, desc->sections[i].offset, SEEK_SET);
 		flen = desc->sections[i].filesz;
 
-		__dprintf("seeked to %lx | size %lx\n",
+		__dprintf("seeked to %lx | size %ld\n",
 		          desc->sections[i].offset, flen);
 
 		while (s < e) {
 			pt.dest = rpa;
 			pt.src = dma_buf;
 			pt.sz = PAGE_SIZE;
+			lr = 0;
 			
 			memset(dma_buf, 0, PAGE_SIZE);
 			if (s < desc->sections[i].vaddr) {
@@ -149,7 +151,8 @@ void transfer_image(FILE *fp, int fd, struct program_load_desc *desc)
 				}
 				fread(dma_buf + l, 1, lr, fp); 
 				flen -= lr;
-			} else if (flen > 0) {
+			} 
+			else if (flen > 0) {
 				if (flen > PAGE_SIZE) {
 					lr = PAGE_SIZE;
 				} else {
@@ -160,14 +163,16 @@ void transfer_image(FILE *fp, int fd, struct program_load_desc *desc)
 			} 
 			s += PAGE_SIZE;
 			rpa += PAGE_SIZE;
+			
+			/* No more left to upload.. */
+			if (lr == 0 && flen == 0) break;
 
 			if (ioctl(fd, MCEXEC_UP_LOAD_IMAGE,
-			          (unsigned long)&pt)) {
+						(unsigned long)&pt)) {
 				perror("dma");
 				break;
 			}
 		}
-
 	}
 }
 
@@ -180,8 +185,9 @@ void print_desc(struct program_load_desc *desc)
 	          desc->status, desc->cpu, desc->pid, desc->entry,
 	          desc->rprocess);
 	for (i = 0; i < desc->num_sections; i++) {
-		__dprintf("%lx, %lx, %lx\n", desc->sections[i].vaddr,
-		          desc->sections[i].len, desc->sections[i].remote_pa);
+		__dprintf("vaddr: %lx, mem_len: %ld, remote_pa: %lx, files: %ld\n", 
+		          desc->sections[i].vaddr, desc->sections[i].len, 
+				  desc->sections[i].remote_pa, desc->sections[i].filesz);
 	}
 }
 
@@ -221,8 +227,7 @@ void print_flat(char *flat)
 int flatten_strings(int nr_strings, char **strings, char **flat)
 {
 	int full_len, string_i;
-	unsigned int flat_offset;
-	char *string;
+	unsigned long flat_offset;
 	char *_flat;
 
 	/* How many strings do we have? */
@@ -272,7 +277,6 @@ int main(int argc, char **argv)
 	long r;
 	char *envs;
 	char *args;
-	int len;
 
 	if (argc < 2) {
 		fprintf(stderr, "Usage: %s (program) [args...]\n",
@@ -387,20 +391,24 @@ int main_loop(int fd, int cpu)
 
 	while (ioctl(fd, MCEXEC_UP_WAIT_SYSCALL, (unsigned long)&w) == 0) {
 
-		__dprintf("got syscall: %d\n", w.sr.number);
+		/* Don't print when got a msg to stdout */
+		if (!(w.sr.number == __NR_write && w.sr.args[0] == 1))
+			__dprintf("got syscall: %ld\n", w.sr.number);
 
 		switch (w.sr.number) {
 		case __NR_open:
 			dma_buf[256] = 0;
 			
-			do_syscall_load(fd, cpu, dma_buf, w.sr.args[0], 256);
+			do_syscall_load(fd, cpu, (unsigned long)dma_buf, w.sr.args[0], 256);
 			/*
 			while (!dma_buf[256]) {
 				asm volatile ("" : : : "memory");
 			}
 			*/
+			
+			printf("open: %s\n", dma_buf);
 
-			ret = open(dma_buf, w.sr.args[1], w.sr.args[2]);
+			ret = open((char *)dma_buf, w.sr.args[1], w.sr.args[2]);
 			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
@@ -414,14 +422,14 @@ int main_loop(int fd, int cpu)
 		case __NR_read:
 			ret = read(w.sr.args[0], dma_buf, w.sr.args[2]);
 			SET_ERR(ret);
-			do_syscall_return(fd, cpu, ret, 1, dma_buf,
+			do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf,
 			                  w.sr.args[1], w.sr.args[2]);
 			break;
 
 		case __NR_write:
 			dma_buf[w.sr.args[2]] = 0;
 			SET_ERR(ret);
-			do_syscall_load(fd, cpu, dma_buf,
+			do_syscall_load(fd, cpu, (unsigned long)dma_buf,
 			                w.sr.args[1], w.sr.args[2]);
 
 			/*
@@ -442,13 +450,13 @@ int main_loop(int fd, int cpu)
 		case __NR_pread64:
 			ret = pread(w.sr.args[0], dma_buf, w.sr.args[2],
 			            w.sr.args[3]);
-			do_syscall_return(fd, cpu, ret, 1, dma_buf,
+			do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf,
 			                  w.sr.args[1], w.sr.args[2]);
 			break;
 
 		case __NR_pwrite64:
 			dma_buf[w.sr.args[2]] = 0;
-			do_syscall_load(fd, cpu, dma_buf,
+			do_syscall_load(fd, cpu, (unsigned long)dma_buf,
 			                w.sr.args[1], w.sr.args[2]);
 
 			/*
@@ -463,12 +471,21 @@ int main_loop(int fd, int cpu)
 			break;
 
 
+		case __NR_stat:
+			ret = stat((const char*)w.sr.args[0], (void *)dma_buf);
+			if (ret == -1) {
+				ret = -errno;
+			}
+			do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf,
+			                  w.sr.args[1], sizeof(struct stat));
+			break;
+
 		case __NR_fstat:
 			ret = fstat(w.sr.args[0], (void *)dma_buf);
 			if (ret == -1) {
 				ret = -errno;
 			}
-			do_syscall_return(fd, cpu, ret, 1, dma_buf,
+			do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf,
 			                  w.sr.args[1], sizeof(struct stat));
 			break;
 
@@ -479,12 +496,20 @@ int main_loop(int fd, int cpu)
 				if (ret == -1) {
 					ret = -errno;
 				}
-				do_syscall_return(fd, cpu, ret, 1, dma_buf,
+				do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf,
 				                  w.sr.args[2],
 				                  sizeof(struct kernel_termios)
 					);
 			}
 			break;
+		
+		case __NR_gettimeofday:
+			ret = gettimeofday((struct timeval *)dma_buf, NULL);
+			SET_ERR(ret);
+			do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf,
+			                  w.sr.args[1], sizeof(struct timeval));
+			break;
+
 
 		case __NR_getgid:
 		case __NR_getuid:
@@ -501,7 +526,7 @@ int main_loop(int fd, int cpu)
 
 		case __NR_clone:
 
-			__dprint("MIC clone(), new thread's cpu_id: %d\n", w.sr.args[0]);
+			__dprintf("MIC clone(), new thread's cpu_id: %ld\n", w.sr.args[0]);
 
 
 			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
@@ -519,7 +544,7 @@ int main_loop(int fd, int cpu)
 				ret = -errno;
 			}
 			do_syscall_return(fd,
-			                  cpu, ret, 1, dma_buf, w.sr.args[0],
+			                  cpu, ret, 1, (unsigned long)dma_buf, w.sr.args[0],
 			                  sizeof(struct utsname));
 			break;
 		default:
