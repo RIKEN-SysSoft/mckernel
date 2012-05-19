@@ -231,15 +231,15 @@ static int futex_wait(uint32_t __user *uaddr, uint32_t val,
 		status = -EWOULDBLOCK;
 		goto error;
 	}
-
-	/* Add ourself to the futex queue and drop our lock on it */
-	queue_me(&futex, queue);
-	queue_unlock(queue, irqflags);
-
+	
 	/* Add ourself to the futex's waitq and go to sleep */
 	cpu_local_var(current)->status = PS_INTERRUPTIBLE;
 	waitq_add_entry(&futex.waitq, &wait);
 
+	/* Add ourself to the futex queue and drop our lock on it */
+	queue_me(&futex, queue);
+	queue_unlock(queue, irqflags);
+	
 	if (!list_empty(&futex.link)) {
 		// We don't have timers for now, let's sleep forever,
 		// and pretend we were woken up
