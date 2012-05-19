@@ -15,6 +15,8 @@
 #include <ctype.h>
 #include <waitq.h>
 #include <rlimit.h>
+#include <affinity.h>
+#include <time.h>
 
 /* Headers taken from kitten LWK */
 #include <lwk/stddef.h>
@@ -72,6 +74,10 @@ static int do_syscall(struct syscall_request *req, aal_mc_user_context_t *ctx)
 {
 	struct syscall_response *res = cpu_local_var(scp).response_va;
 
+	dkprintf("SC(%d)[%3d] sending syscall\n",
+	        aal_mc_get_processor_id(),
+	        req->number);
+
 	send_syscall(req);
 
 	dkprintf("SC(%d)[%3d] waiting for host.. \n", 
@@ -98,6 +104,7 @@ long sys_brk(int n, aal_mc_user_context_t *ctx)
 		extend_process_region(cpu_local_var(current),
 		                      region->brk_start, region->brk_end,
 		                      address);
+	
 	return region->brk_end;
 
 }
@@ -153,10 +160,30 @@ static int stop(void)
 
 SYSCALL_DECLARE(open)
 {
+
 	SYSCALL_HEADER;
+	dkprintf("open: %s\n", (char*)aal_mc_syscall_arg0(ctx));
 	SYSCALL_ARGS_3(MI, D, D);
 	SYSCALL_FOOTER;
 }
+
+SYSCALL_DECLARE(stat)
+{
+	SYSCALL_HEADER;
+	dkprintf("stat(\"%s\");\n", (char*)aal_mc_syscall_arg0(ctx));
+	SYSCALL_ARGS_2(D, D);
+	SYSCALL_FOOTER;
+}
+
+
+SYSCALL_DECLARE(gettimeofday)
+{
+	SYSCALL_HEADER;
+	dkprintf("gettimeofday() \n");
+	SYSCALL_ARGS_1(MO);
+	SYSCALL_FOOTER;
+}
+
 
 static DECLARE_WAITQ(my_waitq);
 
@@ -254,7 +281,7 @@ SYSCALL_DECLARE(pwrite)
 
 SYSCALL_DECLARE(close)
 {
-	kprintf("[%d] close() \n", aal_mc_get_processor_id());
+	dkprintf("[%d] close() \n", aal_mc_get_processor_id());
 	return -EBADF;
 
 /*
@@ -614,7 +641,7 @@ SYSCALL_DECLARE(getrlimit)
 	case RLIMIT_STACK:
 
 		dkprintf("[%d] getrlimit() RLIMIT_STACK\n", aal_mc_get_processor_id());
-		rlm->rlim_cur = (128*4096);  /* Linux provides 8MB */
+		rlm->rlim_cur = (512*4096);  /* Linux provides 8MB */
 		rlm->rlim_max = (1024*1024*1024);
 		ret = 0;
 		break;
@@ -627,6 +654,23 @@ SYSCALL_DECLARE(getrlimit)
 	return ret;
 }
 
+SYSCALL_DECLARE(sched_getaffinity)
+{
+	//int pid = (int)aal_mc_syscall_arg0(ctx);
+	//int size = (int)aal_mc_syscall_arg1(ctx);
+	int cpu_id;
+	cpu_set_t *mask = (cpu_set_t *)aal_mc_syscall_arg2(ctx);
+
+	CPU_ZERO(mask);
+	for (cpu_id = 0; cpu_id < 120; ++cpu_id)
+		CPU_SET(cpu_id, mask);
+
+	dkprintf("sched_getaffinity returns full mask\n");
+
+	return 0;
+}
+
+
 SYSCALL_DECLARE(noop)
 {
 	kprintf("noop() \n");
@@ -638,6 +682,7 @@ static long (*syscall_table[])(int, aal_mc_user_context_t *) = {
 	[1] = sys_write,
 	[2] = sys_open,
 	[3] = sys_close,
+	[4] = sys_stat,
 	[5] = sys_fstat,
 	[8] = sys_lseek,
 	[9] = sys_mmap,
@@ -654,6 +699,7 @@ static long (*syscall_table[])(int, aal_mc_user_context_t *) = {
 	[56] = sys_clone,
 	[60] = sys_exit,
 	[63] = sys_uname,
+	[96] = sys_gettimeofday,
 	[97]  = sys_getrlimit,
 	[102] = sys_getxid,
 	[104] = sys_getxid,
@@ -663,6 +709,7 @@ static long (*syscall_table[])(int, aal_mc_user_context_t *) = {
 	[111] = sys_getxid,
 	[158] = sys_arch_prctl,
 	[202] = sys_futex,
+	[204] = sys_sched_getaffinity,
 	[218] = sys_set_tid_address,
 	[231] = sys_exit_group,
 	[273] = sys_set_robust_list,
@@ -698,7 +745,9 @@ long syscall(int num, aal_mc_user_context_t *ctx)
 
 	if (syscall_table[num]) {
 		l = syscall_table[num](num, ctx);
-		dkprintf(" %lx\n", l);
+		
+		dkprintf("SC(%d)[%3d] ret: %d\n", 
+				aal_mc_get_processor_id(), num, l);
 	} else {
 		dkprintf("USC[%3d](%lx, %lx, %lx, %lx, %lx) @ %lx | %lx\n", num,
 		        aal_mc_syscall_arg0(ctx), aal_mc_syscall_arg1(ctx),
