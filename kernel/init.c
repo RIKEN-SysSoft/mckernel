@@ -10,6 +10,15 @@
 #include <init.h>
 #include <cls.h>
 
+//#define DEBUG_PRINT_INIT
+
+#ifdef DEBUG_PRINT_INIT
+#define dkprintf kprintf
+#else
+#define dkprintf(...)
+#endif
+
+
 extern struct aal_kmsg_buf kmsg_buf;
 
 extern long syscall(int, aal_mc_user_context_t *);
@@ -83,7 +92,7 @@ void pc_init(void)
 	};
 
 	if (!(p = find_command_line("perfctr"))) {
-		kprintf("perfctr not initialized.\n");
+		dkprintf("perfctr not initialized.\n");
 		return;
 	}
 	if (p[7] == '=' && p[8] >= '0' && p[8] <= '5') {
@@ -91,10 +100,10 @@ void pc_init(void)
 		kmode = (i >> 1) + 1;
 		imode = (i & 1);
 	} else {
-		kprintf("perfctr not initialized.\n");
+		dkprintf("perfctr not initialized.\n");
 		return;
 	}
-	kprintf("perfctr mode : priv = %d, set = %d\n", kmode, imode);
+	dkprintf("perfctr mode : priv = %d, set = %d\n", kmode, imode);
 
 	for (i = 0; i < 4; i++) {
 		aal_mc_perfctr_init(i, x[imode][i], kmode);
