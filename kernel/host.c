@@ -18,6 +18,18 @@
 #define dkprintf(...)
 #endif
 
+void check_mapping_for_proc(struct process *proc, unsigned long addr)
+{
+	unsigned long __phys;
+
+	if (aal_mc_pt_virt_to_phys(proc->vm->page_table, (void*)addr, &__phys)) {
+		kprintf("check_map: no mapping for 0x%lX\n", addr);
+	}
+	else {
+		kprintf("check_map: 0x%lX -> 0x%lX\n", addr, __phys);
+	}
+}
+
 /*
  * Communication with host 
  */
@@ -71,13 +83,18 @@ static void process_msg_prepare_process(unsigned long rphys)
 			{
 				void *_virt = (void *)s;
 				unsigned long _phys;
-				aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
-				                       _virt, &_phys);
+				if (aal_mc_pt_virt_to_phys(proc->vm->page_table, 
+				                       _virt, &_phys)) {
+					kprintf("ERROR: no mapping for 0x%lX\n", _virt);
+				}
 				for (_virt = (void *)s + PAGE_SIZE; 
 				     (unsigned long)_virt < e; _virt += PAGE_SIZE) {
 					unsigned long __phys;
-					aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
-				                       _virt, &__phys);
+					if (aal_mc_pt_virt_to_phys(proc->vm->page_table, 
+				                           _virt, &__phys)) {
+						kprintf("ERROR: no mapping for 0x%lX\n", _virt);
+						panic("mapping");
+					}
 					if (__phys != _phys + PAGE_SIZE) {
 						kprintf("0x%lX + PAGE_SIZE is not physically contigous, from 0x%lX to 0x%lX\n", _virt - PAGE_SIZE, _phys, __phys);
 						panic("mondai");
@@ -137,6 +154,7 @@ static void process_msg_prepare_process(unsigned long rphys)
 				 e : proc->vm->region.data_end);
 		}
 	}
+	
 	proc->vm->region.brk_start = proc->vm->region.brk_end =
 		proc->vm->region.data_end;
 	proc->vm->region.map_start = proc->vm->region.map_end = 
@@ -187,12 +205,9 @@ static void process_msg_prepare_process(unsigned long rphys)
 	
 	memcpy_long(args_envs, args_envs_r, p->args_len + 8);
 
-	/* TODO: add a virtual_unmap function, that really does only unmap 
-	 * the virtual address and doesn't drop the physical page itself!! */
-
-	//aal_mc_unmap_virtual(args_envs_r, args_envs_npages);
-	//aal_mc_unmap_memory(NULL, args_envs_rp, p->args_len);
-	
+	aal_mc_unmap_virtual(args_envs_r, args_envs_npages, 0);
+	aal_mc_unmap_memory(NULL, args_envs_rp, p->args_len);
+				
 	dkprintf("envs: 0x%lX, envs_len: %d\n", p->envs, p->envs_len);
 
 	// Map in remote physical addr of envs and copy it after args
@@ -208,8 +223,8 @@ static void process_msg_prepare_process(unsigned long rphys)
 	
 	memcpy_long(args_envs + p->args_len, args_envs_r, p->envs_len + 8);
 
-	//aal_mc_unmap_virtual(args_envs_r, args_envs_npages);
-	//aal_mc_unmap_memory(NULL, args_envs_rp, p->envs_len);
+	aal_mc_unmap_virtual(args_envs_r, args_envs_npages, 0);
+	aal_mc_unmap_memory(NULL, args_envs_rp, p->envs_len);
 
 	// Update variables
 	argc = *((int*)(args_envs));
@@ -237,8 +252,6 @@ static void process_msg_prepare_process(unsigned long rphys)
 	env = (char **)(args_envs + p->args_len + sizeof(int));
 	
 	dkprintf("env OK\n");
-
-	aal_mc_unmap_virtual(args_envs, ARGENV_PAGE_COUNT, 0);
 
 	p->rprocess = (unsigned long)proc;
 	init_process_stack(proc, argc, argv, envc, env);
