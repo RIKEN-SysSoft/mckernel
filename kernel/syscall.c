@@ -493,11 +493,12 @@ SYSCALL_DECLARE(clone)
 		dkprintf("clone_flags & CLONE_SETTLS: 0x%lX\n", 
 			     (unsigned long)aal_mc_syscall_arg4(ctx));
 		
-		new->thread.tlsblock_base
-			= (unsigned long)aal_mc_syscall_arg4(ctx);
+		new->thread.tlsblock_base = 
+			(unsigned long)aal_mc_syscall_arg4(ctx);
 	}
 	else { 
-		new->thread.tlsblock_base = 0;
+		new->thread.tlsblock_base = 
+			cpu_local_var(current)->thread.tlsblock_base;
 	}
 
 	aal_mc_syscall_ret(new->uctx) = 0;
