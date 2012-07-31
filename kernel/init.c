@@ -34,35 +34,48 @@ static void dma_test(void)
 {
 	struct aal_dma_request req;
 	unsigned long fin = 0;
-	int i;
+	int i, j;
 
-	for (i = 0; i < 8; i++) {
-		data[i] = 8 - i;
+	for (j = 0; j < 2; ++j) {
+		fin = 0;
+
+		memset(data, 0, 1024 * sizeof(unsigned long));
+
+		for (i = 0; i < 8; i++) {
+			data[i] = i;
+		}
+
+		kprintf("DMA Test Started.\n");
+		memset(&req, 0, sizeof(req));
+		req.src_os = AAL_THIS_OS;
+		req.src_phys = virt_to_phys(data);
+		req.dest_os = AAL_THIS_OS;
+		req.dest_phys = virt_to_phys(&data[256]);
+		req.size = 64;
+		req.notify = (void *)virt_to_phys(&fin);
+		req.notify_os = AAL_THIS_OS;
+		req.priv = (void *)0x2984;
+
+		kprintf("VtoP : %p, %lx\n", data, virt_to_phys(data));
+		kprintf("notify : %p, %lx (%lx)\n", &fin, virt_to_phys(&fin),
+				sizeof(req));
+
+		if (aal_mc_dma_request(0, &req) != 0) {
+			kprintf("Failed to request DMA!\n");
+		}
+		kprintf("DMA Test Wait.\n");
+		while (!fin) {
+			barrier();
+		}
+		kprintf("DMA Test End.\n");
+
+		for (i = 0; i < 8; i++) {
+			if (data[i] != data[256 + i]) {
+				kprintf("DMA result is inconsistent!\n");
+				panic("");
+			}
+		}
 	}
-
-	kprintf("DMA Test Started.\n");
-	memset(&req, 0, sizeof(req));
-	req.src_os = AAL_THIS_OS;
-	req.src_phys = virt_to_phys(data);
-	req.dest_os = AAL_THIS_OS;
-	req.dest_phys = virt_to_phys(data + 256);
-	req.size = 64;
-	req.notify = (void *)virt_to_phys(&fin);
-	req.notify_os = AAL_THIS_OS;
-	req.priv = (void *)0x2984;
-
-	kprintf("VtoP : %p, %lx\n", data, virt_to_phys(data));
-	kprintf("notify : %p, %lx (%lx)\n", &fin, virt_to_phys(&fin),
-	        sizeof(req));
-
-	if (aal_mc_dma_request(0, &req) != 0) {
-		kprintf("Failed to request DMA!\n");
-	}
-	kprintf("DMA Test Wait.\n");
-	while (!fin) {
-		barrier();
-	}
-	kprintf("DMA Test End.\n");
 }
 
 extern char *aal_mc_get_kernel_args(void);
@@ -144,7 +157,7 @@ static void rest_init(void)
 
 	aal_mc_dma_init();
 	dma_test();
-	pc_test();
+	//pc_test();
 
 	ap_init();
 	cpu_local_var_init();
@@ -189,6 +202,7 @@ int main(void)
 	post_init();
 
 	kputs("MCK/AAL booted.\n");
+
 
 	schedule();
 
