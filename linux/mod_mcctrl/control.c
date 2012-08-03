@@ -25,6 +25,7 @@ static long mcexec_prepare_image(aal_os_t os,
 	struct program_load_desc desc, *pdesc;
 	struct ikc_scd_packet isp;
 	void *args, *envs;
+	long ret = 0;
 
 	if (copy_from_user(&desc, udesc,
 	                    sizeof(struct program_load_desc))) {
@@ -56,17 +57,15 @@ static long mcexec_prepare_image(aal_os_t os,
 	
 	envs = kmalloc(pdesc->envs_len, GFP_KERNEL);
 	if (copy_from_user(envs, pdesc->envs, pdesc->envs_len)) {
-		kfree(envs);
-		kfree(args);
-		kfree(pdesc);
-		return -EFAULT;
+		ret = -EFAULT;	
+		goto free_out;
 	}
 
-	pdesc->args = virt_to_phys(args);
-	printk("args: 0x%lX\n", pdesc->args);
+	pdesc->args = (void*)virt_to_phys(args);
+	printk("args: 0x%lX\n", (unsigned long)pdesc->args);
 	printk("argc: %d\n", *(int*)args);
-	pdesc->envs = virt_to_phys(envs);
-	printk("envs: 0x%lX\n", pdesc->envs);
+	pdesc->envs = (void*)virt_to_phys(envs);
+	printk("envs: 0x%lX\n", (unsigned long)pdesc->envs);
 	printk("envc: %d\n", *(int*)envs);
 
 	isp.msg = SCD_MSG_PREPARE_PROCESS;
@@ -81,19 +80,28 @@ static long mcexec_prepare_image(aal_os_t os,
 
 	wait_event_interruptible(wq_prepare, pdesc->status);
 
-	copy_to_user(udesc, pdesc, sizeof(struct program_load_desc) + 
-	             sizeof(struct program_image_section) * desc.num_sections);
+	if (copy_to_user(udesc, pdesc, sizeof(struct program_load_desc) + 
+	             sizeof(struct program_image_section) * desc.num_sections)) {
+		ret = -EFAULT;	
+		goto free_out;
+	}
 
+	ret = 0;
+
+free_out:
+	kfree(args);
 	kfree(pdesc);
 	kfree(envs);
-	kfree(args);
 
-	return 0;
+	return ret;
 }
 
 int mcexec_load_image(aal_os_t os, struct program_transfer *__user upt)
 {
 	struct program_transfer pt;
+	unsigned long phys, ret = 0;
+	void *rpm;
+#if 0	
 	unsigned long dma_status = 0;
 	aal_dma_channel_t channel;
 	struct aal_dma_request request;
@@ -103,10 +111,33 @@ int mcexec_load_image(aal_os_t os, struct program_transfer *__user upt)
 	if (!channel) {
 		return -EINVAL;
 	}
+#endif	
 
 	if (copy_from_user(&pt, upt, sizeof(pt))) {
 		return -EFAULT;
 	}
+	
+	phys = aal_device_map_memory(aal_os_to_dev(os), pt.dest, PAGE_SIZE);
+#ifdef CONFIG_KNF
+	rpm = ioremap_wc(phys, PAGE_SIZE);
+#else
+	rpm = aal_device_map_virtual(aal_os_to_dev(os), phys, PAGE_SIZE, NULL, 0);
+#endif
+
+	if (copy_from_user(rpm, pt.src, PAGE_SIZE)) {
+		ret = -EFAULT;
+	}
+
+#ifdef CONFIG_KNF
+	iounmap(rpm);
+#else
+	aal_device_unmap_virtual(aal_os_to_dev(os), rpm, PAGE_SIZE);
+#endif
+	aal_device_unmap_memory(aal_os_to_dev(os), phys, PAGE_SIZE);	
+
+	return ret;
+
+#if 0	
 	p = (void *)__get_free_page(GFP_KERNEL);
 
 	if (copy_from_user(p, pt.src, PAGE_SIZE)) {
@@ -132,6 +163,7 @@ int mcexec_load_image(aal_os_t os, struct program_transfer *__user upt)
 	free_page((unsigned long)p);
 
 	return 0;
+#endif
 }
 
 extern unsigned long last_thread_exec;
@@ -174,9 +206,9 @@ int mcexec_syscall(struct mcctrl_channel *c, unsigned long arg)
 #ifndef DO_USER_MODE
 int __do_in_kernel_syscall(aal_os_t os, struct mcctrl_channel *c,
                            struct syscall_request *sc);
+static int remaining_job, base_cpu, job_pos;
 #endif
 
-static int remaining_job, base_cpu, job_pos;
 extern int num_channels;
 extern int mcctrl_dma_abort;
 
@@ -184,7 +216,6 @@ int mcexec_wait_syscall(aal_os_t os, struct syscall_wait_desc *__user req)
 {
 	struct syscall_wait_desc swd;
 	struct mcctrl_channel *c;
-	unsigned long s, w, d;
 	
 	if (copy_from_user(&swd, req, sizeof(swd.cpu))) {
 		return -EFAULT;
@@ -286,7 +317,11 @@ long mcexec_load_syscall(aal_os_t os, struct syscall_load_desc *__user arg)
 	}
 	
 	phys = aal_device_map_memory(aal_os_to_dev(os), desc.src, desc.size);
+#ifdef CONFIG_KNF
 	rpm = ioremap_wc(phys, desc.size);
+#else
+	rpm = aal_device_map_virtual(aal_os_to_dev(os), phys, desc.size, NULL, 0);
+#endif
 
 	dprintk("mcexec_load_syscall: %s (desc.size: %d)\n", rpm, desc.size);
 
@@ -294,8 +329,13 @@ long mcexec_load_syscall(aal_os_t os, struct syscall_load_desc *__user arg)
 		return -EFAULT;
 	}
 
+#ifdef CONFIG_KNF
 	iounmap(rpm);
-	aal_device_unmap_memory(aal_os_to_dev(os), phys, desc.size);
+#else
+	aal_device_unmap_virtual(aal_os_to_dev(os), rpm, desc.size);
+#endif
+	
+	aal_device_unmap_memory(aal_os_to_dev(os), phys, desc.size);	
 	
 /*
 	aal_dma_channel_t channel;
@@ -330,14 +370,16 @@ long mcexec_load_syscall(aal_os_t os, struct syscall_load_desc *__user arg)
 long mcexec_ret_syscall(aal_os_t os, struct syscall_ret_desc *__user arg)
 {
 	struct syscall_ret_desc ret;
+	struct mcctrl_channel *mc;
+#if 0	
 	aal_dma_channel_t channel;
 	struct aal_dma_request request;
-	struct mcctrl_channel *mc;
 
 	channel = aal_device_get_dma_channel(aal_os_to_dev(os), 0);
 	if (!channel) {
 		return -EINVAL;
 	}
+#endif	
 
 	if (copy_from_user(&ret, arg, sizeof(struct syscall_ret_desc))) {
 		return -EFAULT;
@@ -356,7 +398,12 @@ long mcexec_ret_syscall(aal_os_t os, struct syscall_ret_desc *__user arg)
 
 		phys = aal_device_map_memory(aal_os_to_dev(os), ret.dest,
 		                             ret.size);
+#ifdef CONFIG_KNF
 		rpm = ioremap_wc(phys, ret.size);
+#else
+		rpm = aal_device_map_virtual(aal_os_to_dev(os), phys, 
+		                             ret.size, NULL, 0);
+#endif
 		
 		if (copy_from_user(rpm, (void *__user)ret.src, ret.size)) {
 			return -EFAULT;
@@ -364,7 +411,11 @@ long mcexec_ret_syscall(aal_os_t os, struct syscall_ret_desc *__user arg)
 
 		mc->param.response_va->status = 1;
 
+#ifdef CONFIG_KNF
 		iounmap(rpm);
+#else
+		aal_device_unmap_virtual(aal_os_to_dev(os), rpm, ret.size);
+#endif
 		aal_device_unmap_memory(aal_os_to_dev(os), phys, ret.size);
 
 /*

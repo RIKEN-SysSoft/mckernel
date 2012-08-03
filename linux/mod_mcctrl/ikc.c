@@ -98,7 +98,13 @@ static void mcctrl_ikc_init(aal_os_t os, int cpu, unsigned long rphys)
 
 	phys = aal_device_map_memory(aal_os_to_dev(os), rphys,
 	                             sizeof(struct ikc_scd_init_param));
+#ifdef CONFIG_KNF
 	rpm = ioremap_wc(phys, sizeof(struct ikc_scd_init_param));
+#else
+	rpm = aal_device_map_virtual(aal_os_to_dev(os), phys, 
+	                             sizeof(struct ikc_scd_init_param),
+								 NULL, 0);
+#endif
 
 	pmc->param.request_va =
 		(void *)__get_free_pages(GFP_KERNEL,
@@ -117,8 +123,14 @@ static void mcctrl_ikc_init(aal_os_t os, int cpu, unsigned long rphys)
 		= aal_device_map_memory(aal_os_to_dev(os),
 		                        pmc->param.response_rpa,
 		                        PAGE_SIZE);
+#ifdef CONFIG_KNF							
 	pmc->param.response_va = ioremap_cache(pmc->param.response_pa,
 	                                       PAGE_SIZE);
+#else
+	pmc->param.response_va = aal_device_map_virtual(aal_os_to_dev(os), 
+	                                                pmc->param.response_pa,
+													PAGE_SIZE, NULL, 0);
+#endif
 
 	pmc->dma_buf = (void *)__get_free_pages(GFP_KERNEL,
 	                                        DMA_PIN_SHIFT - PAGE_SHIFT);
@@ -140,7 +152,12 @@ static void mcctrl_ikc_init(aal_os_t os, int cpu, unsigned long rphys)
 
 	aal_ikc_send(pmc->c, &packet, 0);
 
+#ifdef CONFIG_KNF							
 	iounmap(rpm);
+#else
+	aal_device_unmap_virtual(aal_os_to_dev(os), rpm, 
+	                         sizeof(struct ikc_scd_init_param));
+#endif
 
 	aal_device_unmap_memory(aal_os_to_dev(os), phys,
 	                        sizeof(struct ikc_scd_init_param));
@@ -210,7 +227,12 @@ void __destroy_ikc_channel(aal_os_t os, struct mcctrl_channel *pmc)
 	           REQUEST_SHIFT - PAGE_SHIFT);
 	free_page((unsigned long)pmc->param.post_va);
 
+#ifdef CONFIG_KNF
 	iounmap(pmc->param.response_va);
+#else
+	aal_device_unmap_virtual(aal_os_to_dev(os), pmc->param.response_va, 
+	                         PAGE_SIZE);
+#endif
 	aal_device_unmap_memory(aal_os_to_dev(os),
 	                        pmc->param.response_pa, PAGE_SIZE);
 	free_pages((unsigned long)pmc->dma_buf,

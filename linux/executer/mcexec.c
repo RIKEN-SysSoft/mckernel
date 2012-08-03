@@ -195,7 +195,9 @@ void print_desc(struct program_load_desc *desc)
 #define PIN_SIZE  (1 << PIN_SHIFT)
 #define PIN_MASK  ~(unsigned long)(PIN_SIZE - 1)
 
+#if 0
 unsigned long dma_buf_pa;
+#endif
 
 
 void print_flat(char *flat) 
@@ -271,10 +273,13 @@ int flatten_strings(int nr_strings, char **strings, char **flat)
 
 int main(int argc, char **argv)
 {
-	int fd, fdm;
+	int fd;
+#if 0	
+	int fdm;
+	long r;
+#endif
 	FILE *fp;
 	struct program_load_desc *desc;
-	long r;
 	char *envs;
 	char *args;
 
@@ -311,6 +316,8 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error: Failed to open /dev/mcctrl.\n");
 		return 1;
 	}
+
+#if 0	
 	fdm = open("/dev/fmem", O_RDWR);
 	if (fdm < 0) {
 		fprintf(stderr, "Error: Failed to open /dev/fmem.\n");
@@ -327,6 +334,20 @@ int main(int argc, char **argv)
 	dma_buf = mmap(NULL, PIN_SIZE, PROT_READ | PROT_WRITE,
 	               MAP_SHARED, fdm, dma_buf_pa);
 	__dprintf("DMA Buffer: %lx, %p\n", dma_buf_pa, dma_buf);
+#endif
+
+	dma_buf = mmap(0, PIN_SIZE, PROT_READ | PROT_WRITE, 
+	               (MAP_ANONYMOUS | MAP_PRIVATE), -1, 0);
+	if (!dma_buf) {
+		printf("error: allocating DMA area\n");
+		exit(1);
+	}
+	
+	/* PIN buffer */
+	if (mlock(dma_buf, (size_t)PIN_SIZE)) {
+		printf("ERROR: locking dma_buf\n");
+		exit(1);
+	}
 
 	if (ioctl(fd, MCEXEC_UP_PREPARE_IMAGE, (unsigned long)desc) != 0) {
 		perror("prepare");

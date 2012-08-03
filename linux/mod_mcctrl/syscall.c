@@ -12,7 +12,7 @@
 
 #define ALIGN_WAIT_BUF(z)   (((z + 63) >> 6) << 6)
 
-#define SC_DEBUG
+//#define SC_DEBUG
 #ifdef SC_DEBUG
 static struct aal_dma_request last_request;
 
@@ -26,6 +26,9 @@ static void print_dma_lastreq(void)
 }
 #endif
 
+unsigned long last_thread_exec = 0;
+
+#ifndef DO_USER_MODE
 static int do_async_copy(aal_os_t os, unsigned long dest, unsigned long src,
                          unsigned long size, unsigned int inbound)
 {
@@ -80,7 +83,7 @@ static void async_wait(unsigned char *p, int size)
 }
 static void clear_wait(unsigned char *p, int size)
 {
-	int asize = ALIGN_WAIT_BUF(size);
+	//int asize = ALIGN_WAIT_BUF(size);
 	p[size] = 0;
 }
 
@@ -114,12 +117,7 @@ static unsigned long translate_remote_va(struct mcctrl_channel *c,
 	return -EFAULT;
 }
 
-unsigned long last_thread_exec = 0;
-
 extern struct mcctrl_channel *channels;
-
-#ifndef DO_USER_MODE
-
 
 int __do_in_kernel_syscall(aal_os_t os, struct mcctrl_channel *c,
                            struct syscall_request *sc)
@@ -235,4 +233,4 @@ int __do_in_kernel_syscall(aal_os_t os, struct mcctrl_channel *c,
 		}
 	}
 }
-#endif /* DO_USER_MODE */
+#endif /* !DO_USER_MODE */
