@@ -7,6 +7,7 @@
 #include <linux/fs.h>
 #include <linux/miscdevice.h>
 #include <linux/slab.h>
+#include <sysdeps/knf/mic/mic_type.h>
 #include "mcctrl.h"
 
 extern long __mcctrl_control(aal_os_t, unsigned int, unsigned long);

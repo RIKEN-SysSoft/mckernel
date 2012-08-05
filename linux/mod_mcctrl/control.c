@@ -7,6 +7,7 @@
 #include <asm/delay.h>
 #include <asm/msr.h>
 #include <asm/io.h>
+#include <sysdeps/knf/mic/mic_type.h>
 #include "mcctrl.h"
 
 #ifdef DEBUG

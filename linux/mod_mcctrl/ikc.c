@@ -6,6 +6,7 @@
 #include "mcctrl.h"
 #include <aal/ikc.h>
 #include <ikc/master.h>
+#include <sysdeps/knf/mic/micconst.h>
 
 #define REQUEST_SHIFT    16
 
