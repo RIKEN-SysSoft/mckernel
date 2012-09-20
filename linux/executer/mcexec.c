@@ -493,14 +493,21 @@ int main_loop(int fd, int cpu)
 
 
 		case __NR_stat:
-			ret = stat((const char*)w.sr.args[0], (void *)dma_buf);
+			{
+			char filename[256];
+			
+			do_syscall_load(fd, cpu, (unsigned long)&filename[0],
+					        w.sr.args[0], 256);
+			
+			ret = stat(filename, (void *)dma_buf);
 			if (ret == -1) {
 				ret = -errno;
 			}
+
 			do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf,
 			                  w.sr.args[1], sizeof(struct stat));
 			break;
-
+			}
 		case __NR_fstat:
 			ret = fstat(w.sr.args[0], (void *)dma_buf);
 			if (ret == -1) {
