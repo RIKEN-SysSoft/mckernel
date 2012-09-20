@@ -7,7 +7,8 @@
 #include <aal/mm.h>
 #include <aal/page_alloc.h>
 #include <registers.h>
-
+#include <sysdeps/knf/mic/micconst.h>
+#include <sysdeps/knf/mic/micsboxdefine.h>
 #include <cls.h>
 
 static struct aal_page_allocator_desc *pa_allocator;
@@ -167,6 +168,36 @@ void aal_mc_unmap_virtual(void *va, int npages, int free_physical)
 	
 	if (free_physical)
 		aal_pagealloc_free(vmap_allocator, virt_to_phys(va), npages);
+}
+
+/* moved from aal_knc/manycore/knf/setup.c */
+/*static*/ void *sbox_base = (void *)SBOX_BASE;
+void sbox_write(int offset, unsigned int value)
+{
+	*(volatile unsigned int *)(sbox_base + offset) = value;
+}
+unsigned int sbox_read(int offset)
+{
+	return *(volatile unsigned int *)(sbox_base + offset);
+}
+
+/* insert entry into map which maps mic physical address to host physical address */
+
+unsigned int free_bitmap_micpa = ((~(1ULL<<(NUM_SMPT_ENTRIES_IN_USE - NUM_SMPT_ENTRIES_MICPA)) - 1)&(1ULL << NUM_SMPT_ENTRIES_IN_USE - 1));
+
+void aal_mc_map_micpa(unsigned long host_pa, unsigned long* mic_pa) {
+    int i;
+    for(i = NUM_SMPT_ENTRIES_IN_USE - 1; i >= NUM_SMPT_ENTRIES_IN_USE - NUM_SMPT_ENTRIES_MICPA; i--) {
+        if((free_bitmap_micpa >> i) & 1) {
+            free_bitmap_micpa &= ~(1ULL << i);
+            *mic_pa = MIC_SYSTEM_BASE + MIC_SYSTEM_PAGE_SIZE * i;
+            break;
+        }
+    }
+    kprintf("aal_mc_map_micpa,1,i=%d,host_pa=%lx,mic_pa=%llx\n", i, host_pa, *mic_pa);
+    if(i == NUM_SMPT_ENTRIES_IN_USE - NUM_SMPT_ENTRIES_MICPA - 1) { return 0; }
+    sbox_write(SBOX_SMPT00 + ((*mic_pa - MIC_SYSTEM_BASE) >> MIC_SYSTEM_PAGE_SHIFT) * 4, BUILD_SMPT(SNOOP_ON, host_pa >> MIC_SYSTEM_PAGE_SHIFT));
+    *mic_pa += (host_pa & (MIC_SYSTEM_PAGE_SIZE-1));
 }
 
 void mem_init(void)
