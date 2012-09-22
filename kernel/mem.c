@@ -92,6 +92,7 @@ static void page_allocator_init(void)
 {
 	unsigned long page_map_pa, pages;
 	void *page_map;
+	unsigned int i;
 
 	pa_start = aal_mc_get_memory_address(AAL_MC_GMA_AVAIL_START, 0);
 	pa_end = aal_mc_get_memory_address(AAL_MC_GMA_AVAIL_END, 0);
@@ -99,13 +100,27 @@ static void page_allocator_init(void)
 	pa_start &= PAGE_MASK;
 	pa_end = (pa_end + PAGE_SIZE - 1) & PAGE_MASK;
 
+	/* 
 	page_map_pa = aal_mc_get_memory_address(AAL_MC_GMA_HEAP_START, 0);
+	page_map = phys_to_virt(page_map_pa);
+	 * Can't allocate in reserved area 
+	 * TODO: figure this out automatically! 
+	*/
+	page_map_pa = 0x100000;
 	page_map = phys_to_virt(page_map_pa);
 
 	pa_allocator = __aal_pagealloc_init(pa_start, pa_end - pa_start,
 	                                    PAGE_SIZE, page_map, &pages);
 
 	reserve_pages(page_map_pa, page_map_pa + pages * PAGE_SIZE, 0);
+
+	/* BIOS reserved ranges */
+	for (i = 1; i <= aal_mc_get_memory_address(AAL_MC_NR_RESERVED_AREAS, 0); 
+	     ++i) {
+
+		reserve_pages(aal_mc_get_memory_address(AAL_MC_RESERVED_AREA_START, i),
+		              aal_mc_get_memory_address(AAL_MC_RESERVED_AREA_END, i), 0);
+	}
 	
 	aal_mc_reserve_arch_pages(pa_start, pa_end, reserve_pages);
 
