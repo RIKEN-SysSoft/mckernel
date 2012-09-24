@@ -171,7 +171,7 @@ SYSCALL_DECLARE(stat)
 {
 	SYSCALL_HEADER;
 	dkprintf("stat(\"%s\");\n", (char*)aal_mc_syscall_arg0(ctx));
-	SYSCALL_ARGS_2(D, D);
+	SYSCALL_ARGS_2(MO, MO);
 	SYSCALL_FOOTER;
 }
 
