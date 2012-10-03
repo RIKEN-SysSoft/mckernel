@@ -285,9 +285,13 @@ SYSCALL_DECLARE(pwrite)
 
 SYSCALL_DECLARE(close)
 {
+	SYSCALL_HEADER;
+	SYSCALL_ARGS_1(D);
+	SYSCALL_FOOTER;
+#if 0
 	dkprintf("[%d] close() \n", aal_mc_get_processor_id());
 	return -EBADF;
-
+#endif
 /*
 	SYSCALL_HEADER;
 	SYSCALL_ARGS_1(D);
