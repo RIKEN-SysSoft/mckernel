@@ -319,28 +319,111 @@ SYSCALL_DECLARE(exit_group)
 	return 0;
 }
 
+// MIC:9 linux:90
 SYSCALL_DECLARE(mmap)
 {
-	unsigned long address, ret;
 	struct vm_regions *region = &cpu_local_var(current)->vm->region;
-		
-	/* MAP_ANONYMOUS */
-	if (aal_mc_syscall_arg3(ctx) & 0x22) {
-		ret = region->map_end;
-		address = region->map_end + aal_mc_syscall_arg1(ctx);
+    unsigned long lockr;
 
+    kprintf("syscall.c,mmap,addr=%lx,len=%lx,prot=%lx,flags=%x,fd=%x,offset=%lx\n",
+            aal_mc_syscall_arg0(ctx), aal_mc_syscall_arg1(ctx),
+            aal_mc_syscall_arg2(ctx), aal_mc_syscall_arg3(ctx),
+            aal_mc_syscall_arg4(ctx), aal_mc_syscall_arg5(ctx)
+            );
+    //kprintf("syscall.c,mmap,dumping kmsg...\n");
+    //    send_kmsg(ctx);
+    //    return -EINVAL; // debug
+		
+    if((aal_mc_syscall_arg3(ctx) & 0x10) == 0x10) {
+        // libc/sysdeps/unix/sysv/linux/x86_64/bits/mman.h
+        // #define MAP_FIXED  0x10
+        // use the given vaddr as is
+        struct syscall_request request AAL_DMA_ALIGN;
+        request.number = n;
+        
+        // do a job similar to mcos/kernel/host.c:process_msg_prepare_process
+        unsigned long s = (aal_mc_syscall_arg0(ctx)) & PAGE_MASK;
+        unsigned long e = (s + aal_mc_syscall_arg1(ctx)
+                           + PAGE_SIZE - 1) & PAGE_MASK;
+		int range_npages = (e - s) >> PAGE_SHIFT;
+
+        unsigned long pa;
+        int r = aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, (void *)s, &pa);
+        // va range is not overwrapped with existing mmap
+        if(r != 0) {
+            pa = virt_to_phys(aal_mc_alloc_pages(range_npages, 0)); // allocate pa
+            //            lockr = aal_mc_spinlock_lock(&cpu_status_lock);
+            add_process_memory_range(cpu_local_var(current), s, e, pa, 0); // register to page_table
+            //            aal_mc_spinlock_unlock(&cpu_status_lock, lockr);
+            kprintf("syscall.c,pa allocated=%lx\n", pa);
+        } else {
+            kprintf("syscall.c,pa found=%lx\n", pa);
+            // we need to clear to avoid BSS contamination, even when reusing physical memory range
+            // because ld.so performs mmap (va:0, size:va of second section including BSS, FIXED, prot:RX, offset:0)
+	    // this causes contamination of BSS section when libc.so is large enough to reach BSS section
+	    // then performs mmap (va:second section including BSS, FIXED, prot:RW, offset:second section in file)
+            kprintf("syscall.c,clearing from %lx to %lx\n", s, e);
+            memset((void*)phys_to_virt(pa), 0, e - s);
+        }
+        if ((aal_mc_syscall_arg3(ctx) & 0x20) == 0x20) {
+            // #define MAP_ANONYMOUS  0x20
+            kprintf("syscall.c,MAP_FIXED,MAP_ANONYMOUS\n");
+            return aal_mc_syscall_arg0(ctx); // maybe we should return zero
+        } else {
+            kprintf("syscall.c,MAP_FIXED,!MAP_ANONYMOUS\n");
+            // lseek(mmap_fd, mmap_off, SEEK_SET);
+            // read(mmap_fd, mmap_addr, mmap_len);
+            SYSCALL_ARGS_6(MO, D, D, D, D, D); 
+            int r = do_syscall(&request, ctx);
+            if(r == 0) { return aal_mc_syscall_arg0(ctx); } else { return -EINVAL; }
+        }
+    } else if ((aal_mc_syscall_arg3(ctx) & 0x20) == 0x20) {
+        // #define MAP_ANONYMOUS  0x20
+        kprintf("syscall.c,!MAP_FIXED,MAP_ANONYMOUS\n");
+        unsigned long s = (region->map_end + PAGE_SIZE - 1) & PAGE_MASK;
+		unsigned long len = (aal_mc_syscall_arg1(ctx) + PAGE_SIZE - 1) & PAGE_MASK;
+        //        lockr = aal_mc_spinlock_lock(&cpu_status_lock);
 		region->map_end = 
 			extend_process_region(cpu_local_var(current),
 			                      region->map_start,
 			                      region->map_end,
-			                      address);
-		if (region->map_end == address) {
-			return ret;
-		} else {
-			return -EINVAL;
-		}
-	}
-	dkprintf("Non-anonymous mmap: fd = %lx, %lx\n",
+			                      s + len);
+        //        aal_mc_spinlock_unlock(&cpu_status_lock, lockr);
+		kprintf("syscall.c,returning to caller...\n");
+		if (region->map_end == s + len) { return s; } else { return -EINVAL; }
+
+	} else if ((aal_mc_syscall_arg3(ctx) & 0x02) == 0x02) {
+        // #define MAP_PRIVATE    0x02
+
+        unsigned long s = (region->map_end + PAGE_SIZE - 1) & PAGE_MASK;
+		unsigned long len = (aal_mc_syscall_arg1(ctx) + PAGE_SIZE - 1) & PAGE_MASK;
+        //        lockr = aal_mc_spinlock_lock(&cpu_status_lock);
+		region->map_end = 
+			extend_process_region(cpu_local_var(current),
+			                      region->map_start,
+			                      region->map_end,
+			                      s + len);
+        //        aal_mc_spinlock_unlock(&cpu_status_lock, lockr);
+		if (region->map_end != s + len) { return -EINVAL; }
+
+        struct syscall_request request AAL_DMA_ALIGN;
+        request.number = n;
+
+        kprintf("syscall.c,!MAP_FIXED,!MAP_ANONYMOUS,MAP_PRIVATE\n");
+        // lseek(mmap_fd, mmap_off, SEEK_SET);
+        // read(mmap_fd, mmap_addr, mmap_len);
+        SYSCALL_ARGS_6(MO, D, D, D, D, D); 
+        // overwriting request.args[0]
+        unsigned long __phys;                                      
+        if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, (void *)s, &__phys)) {
+            return -EFAULT; 
+        }                 
+        request.args[0] = __phys;
+        
+        int r = do_syscall(&request, ctx);
+        if(r == 0) { return s; } else { return -EINVAL; }
+    }
+	dkprintf("mmap flags not supported: fd = %lx, %lx\n",
 	        aal_mc_syscall_arg4(ctx), aal_mc_syscall_arg5(ctx));
 	while(1);
 }
