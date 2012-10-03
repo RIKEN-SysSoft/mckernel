@@ -142,6 +142,10 @@ long sys_brk(int n, aal_mc_user_context_t *ctx)
 #define SYSCALL_ARGS_4(a0, a1, a2, a3) \
 	SYSCALL_ARG_##a0(0); SYSCALL_ARG_##a1(1); \
 	SYSCALL_ARG_##a2(2); SYSCALL_ARG_##a3(3)
+#define SYSCALL_ARGS_6(a0, a1, a2, a3, a4, a5) \
+	SYSCALL_ARG_##a0(0); SYSCALL_ARG_##a1(1); \
+	SYSCALL_ARG_##a2(2); SYSCALL_ARG_##a3(3); \
+	SYSCALL_ARG_##a4(4); SYSCALL_ARG_##a5(5);
 
 #define SYSCALL_FOOTER return do_syscall(&request, ctx)
 
