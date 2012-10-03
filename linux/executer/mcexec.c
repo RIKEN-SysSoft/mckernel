@@ -191,7 +191,7 @@ void print_desc(struct program_load_desc *desc)
 	}
 }
 
-#define PIN_SHIFT  16
+#define PIN_SHIFT  24
 #define PIN_SIZE  (1 << PIN_SHIFT)
 #define PIN_MASK  ~(unsigned long)(PIN_SIZE - 1)
 
