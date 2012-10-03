@@ -575,6 +575,34 @@ int main_loop(int fd, int cpu)
 			                  cpu, ret, 1, (unsigned long)dma_buf, w.sr.args[0],
 			                  sizeof(struct utsname));
 			break;
+
+		case __NR_mmap: {
+            // w.sr.args[0] is converted to MIC physical address
+            printf("mcexec.c,mmap,MIC-paddr=%lx,len=%lx,prot=%lx,flags=%lx,fd=%lx,offset=%lx\n",
+                   w.sr.args[0], w.sr.args[1], w.sr.args[2], w.sr.args[3], w.sr.args[4], w.sr.args[5]);
+            off_t old_off = lseek(w.sr.args[4], 0, SEEK_CUR);
+            if(old_off == -1) { printf("mcexec.c,mmap,lseek failed\n"); ret = -errno; goto mmap_out; }
+            off_t rlseek = lseek(w.sr.args[4], w.sr.args[5], SEEK_SET);
+            if(rlseek == -1) { printf("mcexec.c,mmap,lseek failed\n"); ret = -errno; goto mmap_out; }
+            ssize_t toread = w.sr.args[1];
+            ret = 0;
+            while(toread > 0) {
+                printf("mcexec.c,mmap,read,addr=%lx,len=%lx\n", (long int)((void *)dma_buf + w.sr.args[1] - toread), toread);
+                ssize_t rread = read(w.sr.args[4], (void *)dma_buf + w.sr.args[1] - toread, toread);
+                if(rread == 0) {
+                    printf("mcexec.c,mmap,read==0\n");
+                    goto mmap_zero_out;
+                } else if(rread < 0) {
+                    printf("mcexec.c,mmap,read failed\n"); ret = -errno; break;
+                }
+                toread -= rread;
+            }
+            mmap_zero_out:
+            rlseek = lseek(w.sr.args[4], old_off, SEEK_SET);
+            if(rlseek == -1) { printf("mcexec.c,mmap,lseek failed\n"); ret = -errno; }
+            mmap_out:
+			do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf, w.sr.args[0], w.sr.args[1]);
+            break; }
 		default:
 			printf("Unhandled system calls: %ld\n", w.sr.number);
 			break;
