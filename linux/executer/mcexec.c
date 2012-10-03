@@ -435,6 +435,7 @@ int main_loop(int fd, int cpu)
 			break;
 
 		case __NR_close:
+			printf("mcexec.c,close,fd=%lx\n", w.sr.args[0]);
 			ret = close(w.sr.args[0]);
 			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
