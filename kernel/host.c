@@ -254,7 +254,7 @@ static void process_msg_prepare_process(unsigned long rphys)
 	dkprintf("env OK\n");
 
 	p->rprocess = (unsigned long)proc;
-	init_process_stack(proc, argc, argv, envc, env);
+	init_process_stack(proc, pn, argc, argv, envc, env);
 
 	dkprintf("new process : %p [%d] / table : %p\n", proc, proc->pid,
 	        proc->vm->page_table);

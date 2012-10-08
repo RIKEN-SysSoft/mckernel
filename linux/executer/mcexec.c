@@ -60,6 +60,8 @@ struct program_load_desc *load_elf(FILE *fp)
 	Elf64_Phdr phdr;
 	int i, j, nhdrs = 0;
 	struct program_load_desc *desc;
+	unsigned long load_addr = 0;
+	int load_addr_set = 0;
 
 	if (fread(&hdr, sizeof(hdr), 1, fp) < 1) {
 		__eprint("Cannot read Ehdr.\n");
@@ -103,10 +105,19 @@ struct program_load_desc *load_elf(FILE *fp)
 			          desc->sections[j].offset,
 			          desc->sections[j].len);
 			j++;
+
+			if (!load_addr_set) {
+				load_addr_set = 1;
+				load_addr = phdr.p_vaddr - phdr.p_offset;
+			}
 		}
 	}
 	desc->pid = getpid();
 	desc->entry = hdr.e_entry;
+
+	desc->at_phdr = load_addr + hdr.e_phoff;
+	desc->at_phent = sizeof(phdr);
+	desc->at_phnum = hdr.e_phnum;
 
 	return desc;
 }

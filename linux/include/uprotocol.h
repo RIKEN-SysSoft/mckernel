@@ -31,6 +31,9 @@ struct program_load_desc {
 	int pid;
 	unsigned long entry;
 	unsigned long rprocess;
+	unsigned long at_phdr;
+	unsigned long at_phent;
+	unsigned long at_phnum;
 	char *args;
 	unsigned long args_len;
 	char *envs;

@@ -6,6 +6,7 @@
 #include <aal/debug.h>
 #include <page.h>
 #include <cpulocal.h>
+#include <auxvec.h>
 
 #define DEBUG_PRINT_PROCESS
 
@@ -199,7 +200,8 @@ int add_process_memory_range(struct process *process,
 
 
 
-void init_process_stack(struct process *process, int argc, char **argv, 
+void init_process_stack(struct process *process, struct program_load_desc *pn,
+                        int argc, char **argv, 
                         int envc, char **env)
 {
 	int s_ind = 0;
@@ -215,11 +217,16 @@ void init_process_stack(struct process *process, int argc, char **argv,
 	                         USER_END,
 	                         virt_to_phys(stack), VR_STACK);
 
-	p[-1] = 0;     /* AT_NULL */
-	p[-2] = 0;
-	p[-3] = USER_END - sizeof(unsigned long) * 2;
-	p[-4] = 0;     /* envp terminating NULL */
-	s_ind = -5;
+	s_ind = -1;
+	p[s_ind--] = 0;     /* AT_NULL */
+	p[s_ind--] = 0;
+	p[s_ind--] = pn->at_phnum; /* AT_PHNUM */
+	p[s_ind--] = AT_PHNUM;
+	p[s_ind--] = pn->at_phent;  /* AT_PHENT */
+	p[s_ind--] = AT_PHENT;
+	p[s_ind--] = pn->at_phdr;  /* AT_PHDR */
+	p[s_ind--] = AT_PHDR;	
+	p[s_ind--] = 0;     /* envp terminating NULL */
 	/* envp */
 	for (arg_ind = envc - 1; arg_ind > -1; --arg_ind) {
 		p[s_ind--] = (unsigned long)env[arg_ind];

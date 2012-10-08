@@ -86,7 +86,9 @@ int add_process_large_range(struct process *process,
                             unsigned long flag, unsigned long *phys);
 int remove_process_region(struct process *proc,
                           unsigned long start, unsigned long end);
-void init_process_stack(struct process *process, int argc, char **argv, 
+struct program_load_desc;
+void init_process_stack(struct process *process, struct program_load_desc *pn,
+                        int argc, char **argv, 
                         int envc, char **env);
 unsigned long extend_process_region(struct process *proc,
                                     unsigned long start, unsigned long end,
