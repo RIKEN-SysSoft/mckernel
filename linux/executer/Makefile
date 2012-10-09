@@ -1,4 +1,4 @@
-CFLAGS = -O3 -Wall -g
+CFLAGS = -O3 -Wall -g -pthread
 
 all: mcexec
 

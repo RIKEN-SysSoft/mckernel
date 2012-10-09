@@ -21,6 +21,8 @@
 #include <sys/wait.h>
 #include <dirent.h>
 #include <sys/syscall.h>
+#include <pthread.h>
+#include <signal.h>
 
 #define DEBUG
 
@@ -56,7 +58,7 @@ struct kernel_termios {
 	cc_t c_cc[NCCS];                /* control characters */
 };
 
-int main_loop(int fd, int cpu);
+int main_loop(int fd, int cpu, pthread_mutex_t *lock);
 
 struct program_load_desc *load_elf(FILE *fp)
 {
@@ -285,6 +287,23 @@ int flatten_strings(int nr_strings, char **strings, char **flat)
 	return full_len;
 }
 
+#define NUM_HANDLER_THREADS	64
+
+struct thread_data_s {
+	pthread_t thread_id;
+	int fd;
+	int cpu;
+	int ret;
+	pthread_mutex_t *lock;
+} thread_data[NUM_HANDLER_THREADS];
+
+static void *main_loop_thread_func(void *arg)
+{
+	struct thread_data_s *td = (struct thread_data_s *)arg;
+	
+	td->ret = main_loop(td->fd, td->cpu, td->lock);
+	return NULL;
+}
 
 int main(int argc, char **argv)
 {
@@ -297,6 +316,8 @@ int main(int argc, char **argv)
 	struct program_load_desc *desc;
 	char *envs;
 	char *args;
+	int i;
+	pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 	if (argc < 2) {
 		fprintf(stderr, "Usage: %s (program) [args...]\n",
@@ -374,6 +395,21 @@ int main(int argc, char **argv)
 	transfer_image(fp, fd, desc);
 	fflush(stdout);
 	fflush(stderr);
+	
+	for (i = 0; i < NUM_HANDLER_THREADS; ++i) {
+		int ret;
+
+		thread_data[i].fd = fd;
+		thread_data[i].cpu = i;
+		thread_data[i].lock = &lock;
+		ret = pthread_create(&thread_data[i].thread_id, NULL, 
+		                     &main_loop_thread_func, &thread_data[i]);
+
+		if (ret < 0) {
+			printf("ERROR: creating syscall threads\n");
+			exit(1);
+		}
+	}
 
 	if (ioctl(fd, MCEXEC_UP_START_IMAGE, (unsigned long)desc) != 0) {
 		perror("exec");
@@ -381,8 +417,14 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	return main_loop(fd, desc->cpu);
+	for (i = 0; i < NUM_HANDLER_THREADS; ++i) {
+		int ret;
+		ret = pthread_join(thread_data[i].thread_id, NULL);
+	}
+
+	return 0;
 }
+
 
 void do_syscall_return(int fd, int cpu,
                        int ret, int n, unsigned long src, unsigned long dest,
@@ -418,7 +460,7 @@ void do_syscall_load(int fd, int cpu, unsigned long dest, unsigned long src,
 
 #define SET_ERR(ret) if (ret == -1) ret = -errno
 
-int main_loop(int fd, int cpu)
+int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 {
 	struct syscall_wait_desc w;
 	int ret;
@@ -429,7 +471,9 @@ int main_loop(int fd, int cpu)
 
 		/* Don't print when got a msg to stdout */
 		if (!(w.sr.number == __NR_write && w.sr.args[0] == 1))
-			__dprintf("got syscall: %ld\n", w.sr.number);
+			__dprintf("[%d] got syscall: %ld\n", cpu, w.sr.number);
+		
+		pthread_mutex_lock(lock);
 
 		switch (w.sr.number) {
 		case __NR_open:
@@ -580,6 +624,10 @@ int main_loop(int fd, int cpu)
 		case __NR_exit:
 		case __NR_exit_group:
 			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
+		
+			exit(0);
+
+			pthread_mutex_unlock(lock);
 			return w.sr.args[0];
 
 		case __NR_uname:
@@ -681,6 +729,8 @@ int main_loop(int fd, int cpu)
 			break;
 
 		}
+		
+		pthread_mutex_unlock(lock);
 	}
 	printf("timed out.\n");
 	return 1;
