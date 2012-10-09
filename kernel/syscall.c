@@ -475,6 +475,45 @@ SYSCALL_DECLARE(uname)
 
 	return ret;
 }
+// asmlinkage long sys_getcwd(char __user *buf, unsigned long size);
+SYSCALL_DECLARE(getcwd)
+{
+    kprintf("getcwd\n");
+    SYSCALL_HEADER;
+	SYSCALL_ARGS_2(MO, D);
+	SYSCALL_FOOTER;
+
+}
+
+SYSCALL_DECLARE(access)
+{
+    kprintf("access: %s\n", (char*)aal_mc_syscall_arg0(ctx));
+    SYSCALL_HEADER;
+	SYSCALL_ARGS_2(MI, D);
+	SYSCALL_FOOTER;
+}
+
+SYSCALL_DECLARE(getdents64)
+{
+    SYSCALL_HEADER;
+	SYSCALL_ARGS_3(D, MO, D);
+	SYSCALL_FOOTER;
+}
+
+SYSCALL_DECLARE(fcntl)
+{
+    SYSCALL_HEADER;
+	SYSCALL_ARGS_2(D, D);
+	SYSCALL_FOOTER;
+}
+
+SYSCALL_DECLARE(readlink)
+{
+    SYSCALL_HEADER;
+	dkprintf("readlink: %s\n", (char*)aal_mc_syscall_arg0(ctx));
+	SYSCALL_ARGS_3(MI, MO, D);
+	SYSCALL_FOOTER;
+}
 
 long sys_getxid(int n, aal_mc_user_context_t *ctx)
 {
@@ -622,6 +661,22 @@ SYSCALL_DECLARE(set_tid_address)
 	return cpu_local_var(current)->pid;
 }
 
+// see linux-2.6.34.13/kernel/signal.c
+SYSCALL_DECLARE(tgkill)
+{
+    int tgid = aal_mc_syscall_arg0(ctx);
+    int pid = aal_mc_syscall_arg1(ctx);
+    int sig = aal_mc_syscall_arg2(ctx);
+
+    if(pid <= 0 || tgid <= 0) { return -EINVAL; }
+    // search pid
+    // check kill permission
+    if(sig == 0) {
+        return 0;
+    } else {
+        return -EPERM; 
+    }
+}
 
 SYSCALL_DECLARE(set_robust_list)
 {
@@ -663,6 +718,22 @@ SYSCALL_DECLARE(writev)
 	}
 
 	return ret;
+}
+
+SYSCALL_DECLARE(rt_sigaction)
+{
+    //  kprintf("sys_rt_sigaction called. returning zero...\n");
+  return 0;
+}
+SYSCALL_DECLARE(rt_sigprocmask)
+{
+    //  kprintf("sys_rt_sigprocmask called. returning zero...\n");
+  return 0;
+}
+SYSCALL_DECLARE(madvise)
+{
+    //  kprintf("sys_madvise called. returning zero...\n");
+  return 0;
 }
 
 SYSCALL_DECLARE(futex)
@@ -748,22 +819,56 @@ SYSCALL_DECLARE(getrlimit)
 	return ret;
 }
 
-SYSCALL_DECLARE(sched_getaffinity)
+SYSCALL_DECLARE(sched_setaffinity)
 {
-	//int pid = (int)aal_mc_syscall_arg0(ctx);
-	//int size = (int)aal_mc_syscall_arg1(ctx);
-	int cpu_id;
-	cpu_set_t *mask = (cpu_set_t *)aal_mc_syscall_arg2(ctx);
-
-	CPU_ZERO(mask);
-	for (cpu_id = 0; cpu_id < 120; ++cpu_id)
-		CPU_SET(cpu_id, mask);
-
-	dkprintf("sched_getaffinity returns full mask\n");
-
+#if 0
+    int pid = (int)aal_mc_syscall_arg0(ctx);
+	unsigned int len = (unsigned int)aal_mc_syscall_arg1(ctx);
+#endif
+    cpu_set_t *mask = (cpu_set_t *)aal_mc_syscall_arg2(ctx);
+	unsigned long __phys;
+#if 0
+    int i;
+#endif
+    /* TODO: check mask is in user's page table */
+    if(!mask) { return -EFAULT; }
+	if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
+	                           (void *)mask,
+	                           &__phys)) {
+		return -EFAULT;
+	}
+#if 0
+    dkprintf("sched_setaffinity,\n");
+    for(i = 0; i < len/sizeof(__cpu_mask); i++) {
+        dkprintf("mask[%d]=%lx,", i, mask->__bits[i]);
+    }
+#endif
 	return 0;
 }
 
+#define MIN2(x,y) (x) < (y) ? (x) : (y)
+#define MIN3(x,y,z) MIN2(MIN2((x),(y)),MIN2((y),(z)))
+// see linux-2.6.34.13/kernel/sched.c
+SYSCALL_DECLARE(sched_getaffinity)
+{
+	//int pid = (int)aal_mc_syscall_arg0(ctx);
+	unsigned int len = (int)aal_mc_syscall_arg1(ctx);
+	int cpu_id;
+	cpu_set_t *mask = (cpu_set_t *)aal_mc_syscall_arg2(ctx);
+	struct aal_mc_cpu_info *cpu_info = aal_mc_get_cpu_info();
+    if(len*8 < cpu_info->ncpus) { return -EINVAL; }
+    if(len & (sizeof(unsigned long)-1)) { return -EINVAL; }
+    int min_len = MIN2(len, sizeof(cpu_set_t));
+    int min_ncpus = MIN2(min_len*8, cpu_info->ncpus);
+
+	CPU_ZERO_S(min_len, mask);
+	for (cpu_id = 0; cpu_id < min_ncpus; ++cpu_id)
+		CPU_SET_S(min_len, cpu_id, mask);
+
+    //	dkprintf("sched_getaffinity returns full mask\n");
+
+	return min_len;
+}
 
 SYSCALL_DECLARE(noop)
 {
@@ -783,16 +888,21 @@ static long (*syscall_table[])(int, aal_mc_user_context_t *) = {
 	[10] = sys_mprotect,
 	[11] = sys_munmap,
 	[12] = sys_brk,
-	[14] = sys_noop,
+	[13] = sys_rt_sigaction,
+	[14] = sys_rt_sigprocmask,
 	[16] = sys_ioctl,
 	[17] = sys_pread,
 	[18] = sys_pwrite,
 	[20] = sys_writev,
-	[28] = sys_noop,
+	[21] = sys_access,
+	[28] = sys_madvise,
 	[39] = sys_getpid,
 	[56] = sys_clone,
 	[60] = sys_exit,
 	[63] = sys_uname,
+    [72] = sys_fcntl,
+	[79] = sys_getcwd,
+    [89] = sys_readlink,
 	[96] = sys_gettimeofday,
 	[97]  = sys_getrlimit,
 	[102] = sys_getxid,
@@ -803,11 +913,63 @@ static long (*syscall_table[])(int, aal_mc_user_context_t *) = {
 	[111] = sys_getxid,
 	[158] = sys_arch_prctl,
 	[202] = sys_futex,
+	[203] = sys_sched_setaffinity,
 	[204] = sys_sched_getaffinity,
+	[217] = sys_getdents64,
 	[218] = sys_set_tid_address,
 	[231] = sys_exit_group,
+    [234] = sys_tgkill,
 	[273] = sys_set_robust_list,
 	[288] = NULL,
+};
+
+static char *syscall_name[] = {
+	[0] = "sys_read",
+	[1] = "sys_write",
+	[2] = "sys_open",
+	[3] = "sys_close",
+	[4] = "sys_stat",
+	[5] = "sys_fstat",
+	[8] = "sys_lseek",
+	[9] = "sys_mmap",
+	[10] = "sys_mprotect",
+	[11] = "sys_munmap",
+	[12] = "sys_brk",
+	[13] = "sys_rt_sigaction",
+	[14] = "sys_rt_sigprocmask",
+	[16] = "sys_ioctl",
+	[17] = "sys_pread",
+	[18] = "sys_pwrite",
+	[20] = "sys_writev",
+	//	[24] = "sys_sched_yield",
+	[21] = "sys_access",
+	[28] = "sys_madvise",
+	[39] = "sys_getpid",
+	[56] = "sys_clone",
+	[60] = "sys_exit",
+	[63] = "sys_uname",
+
+    [72] = "sys_fcntl",
+	[79] = "sys_getcwd",
+    [89] = "sys_readlink",
+	[96] = "sys_gettimeofday",
+	[97]  = "sys_getrlimit",
+	[102] = "sys_getuid",
+	[104] = "sys_getgid",
+	[107] = "sys_geteuid",
+	[108] = "sys_getegid",
+	[110] = "sys_getpgid",
+	[111] = "sys_getppid",
+	[158] = "sys_arch_prctl",
+	[202] = "sys_futex",
+	[203] = "sys_sched_setaffinity",
+	[204] = "sys_sched_getaffinity",
+	[217] = "sys_getdents64",
+	[218] = "sys_set_tid_address",
+	[231] = "sys_exit_group",
+    [234] = "sys_tgkill",
+	[273] = "sys_set_robust_list",
+	[288] = "NULL",
 };
 
 #if 0
@@ -831,9 +993,9 @@ long syscall(int num, aal_mc_user_context_t *ctx)
 
 	cpu_enable_interrupt();
 
-	dkprintf("SC(%d)[%3d](%lx, %lx) @ %lx | %lx = ", 
+	dkprintf("SC(%d)[%3d=%s](%lx, %lx) @ %lx | %lx = ", 
 	        aal_mc_get_processor_id(),
-	        num,
+	        num, syscall_name[num],
 	        aal_mc_syscall_arg0(ctx), aal_mc_syscall_arg1(ctx),
 	        aal_mc_syscall_pc(ctx), aal_mc_syscall_sp(ctx));
 
