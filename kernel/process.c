@@ -89,6 +89,7 @@ void update_process_page_table(struct process *process, struct vm_range *range,
 {
 	unsigned long p, pa = range->phys;
 
+    unsigned long flags = aal_mc_spinlock_lock(&process->vm->page_table_lock);
 	p = range->start;
 	while (p < range->end) {
 		aal_mc_pt_set_page(process->vm->page_table, (void *)p,
@@ -98,6 +99,7 @@ void update_process_page_table(struct process *process, struct vm_range *range,
 		p += PAGE_SIZE;
 
 	}
+    aal_mc_spinlock_unlock(&process->vm->page_table_lock, flags);
 }
 
 int add_process_large_range(struct process *process,
@@ -282,15 +284,18 @@ unsigned long extend_process_region(struct process *proc,
 int remove_process_region(struct process *proc,
                           unsigned long start, unsigned long end)
 {
+    unsigned long flags;
 	if ((start & (PAGE_SIZE - 1)) || (end & (PAGE_SIZE - 1))) {
 		return -EINVAL;
 	}
 
+    flags = aal_mc_spinlock_lock(&proc->vm->page_table_lock);
 	/* We defer freeing to the time of exit */
 	while (start < end) {
 		aal_mc_pt_clear_page(proc->vm->page_table, (void *)start);
 		start += PAGE_SIZE;
 	}
+    aal_mc_spinlock_unlock(&proc->vm->page_table_lock, flags);
 
 	return 0;
 }

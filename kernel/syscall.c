@@ -384,6 +384,7 @@ SYSCALL_DECLARE(mmap)
     } else if ((aal_mc_syscall_arg3(ctx) & 0x20) == 0x20) {
         // #define MAP_ANONYMOUS  0x20
         kprintf("syscall.c,!MAP_FIXED,MAP_ANONYMOUS\n");
+        unsigned long flags = aal_mc_spinlock_lock(&cpu_local_var(current)->vm->memory_range_lock);
         unsigned long s = (region->map_end + PAGE_SIZE - 1) & PAGE_MASK;
 		unsigned long len = (aal_mc_syscall_arg1(ctx) + PAGE_SIZE - 1) & PAGE_MASK;
         //        lockr = aal_mc_spinlock_lock(&cpu_status_lock);
@@ -392,13 +393,14 @@ SYSCALL_DECLARE(mmap)
 			                      region->map_start,
 			                      region->map_end,
 			                      s + len);
-        //        aal_mc_spinlock_unlock(&cpu_status_lock, lockr);
+        aal_mc_spinlock_unlock(&cpu_local_var(current)->vm->memory_range_lock, flags);
 		kprintf("syscall.c,returning to caller...\n");
 		if (region->map_end == s + len) { return s; } else { return -EINVAL; }
 
 	} else if ((aal_mc_syscall_arg3(ctx) & 0x02) == 0x02) {
         // #define MAP_PRIVATE    0x02
 
+        unsigned long flags = aal_mc_spinlock_lock(&cpu_local_var(current)->vm->memory_range_lock);
         unsigned long s = (region->map_end + PAGE_SIZE - 1) & PAGE_MASK;
 		unsigned long len = (aal_mc_syscall_arg1(ctx) + PAGE_SIZE - 1) & PAGE_MASK;
         //        lockr = aal_mc_spinlock_lock(&cpu_status_lock);
@@ -407,7 +409,7 @@ SYSCALL_DECLARE(mmap)
 			                      region->map_start,
 			                      region->map_end,
 			                      s + len);
-        //        aal_mc_spinlock_unlock(&cpu_status_lock, lockr);
+        aal_mc_spinlock_unlock(&cpu_local_var(current)->vm->memory_range_lock, flags);
 		if (region->map_end != s + len) { return -EINVAL; }
 
         struct syscall_request request AAL_DMA_ALIGN;

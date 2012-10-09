@@ -69,6 +69,14 @@ struct process_vm {
  	
 	// Address space private futexes 
 	struct futex_queue futex_queues[1 << FUTEX_HASHBITS];
+
+    aal_spinlock_t page_table_lock;
+    aal_spinlock_t memory_range_lock;
+    // to protect the followings:
+    // 1. addition of process "memory range" (extend_process_region, add_process_memory_range)
+    // 2. addition of process page table (allocate_pages, update_process_page_table)
+    // note that physical memory allocator (aal_mc_alloc_pages, aal_pagealloc_alloc)
+    // is protected by its own lock (see aal/manycore/generic/page_alloc.c)
 };
 
 
