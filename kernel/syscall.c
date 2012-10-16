@@ -746,7 +746,7 @@ SYSCALL_DECLARE(futex)
 	uint32_t *uaddr = (uint32_t *)aal_mc_syscall_arg0(ctx);
 	int op = (int)aal_mc_syscall_arg1(ctx);
 	uint32_t val = (uint32_t)aal_mc_syscall_arg2(ctx);
-	//struct timespec __user *utime = aal_mc_syscall_arg3(ctx);
+	struct timespec *utime = (struct timespec*)aal_mc_syscall_arg3(ctx);
 	uint32_t *uaddr2 = (uint32_t *)aal_mc_syscall_arg4(ctx);
 	uint32_t val3 = (uint32_t)aal_mc_syscall_arg5(ctx);
 
@@ -768,6 +768,44 @@ SYSCALL_DECLARE(futex)
 	 * number of waiters to wake in 'utime' if op == FUTEX_WAKE_OP. */
 	if (op == FUTEX_CMP_REQUEUE || op == FUTEX_WAKE_OP)
 		val2 = (uint32_t) (unsigned long) aal_mc_syscall_arg3(ctx);
+
+    // we don't have timer interrupt and wakeup, so fake it by just pausing
+    if (op == FUTEX_WAIT_BITSET && utime) {
+
+        // gettimeofday(&tv_now, NULL);
+        struct syscall_request request AAL_DMA_ALIGN; 
+        struct timeval tv_now;
+        request.number = 96;
+
+        unsigned long __phys;                                          
+        if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
+                                   (void *)&tv_now,
+                                   &__phys)) { 
+            return -EFAULT; 
+        }
+        request.args[0] = __phys;               
+        
+        int r = do_syscall(&request, ctx);
+        if(r < 0) {
+            return -EFAULT;
+        }
+
+        dkprintf("futex,FUTEX_WAIT_BITSET,arg3!=NULL,pc=%lx\n", (unsigned long)aal_mc_syscall_pc(ctx));
+
+        dkprintf("  now->tv_sec=%016ld,tv_nsec=%016ld\n", tv_now.tv_sec, tv_now.tv_usec * 1000);
+        dkprintf("utime->tv_sec=%016ld,tv_nsec=%016ld\n", utime->tv_sec, utime->tv_nsec);
+
+        long nsec_now = ((long)tv_now.tv_sec * 1000000000ULL) + 
+            tv_now.tv_usec * 1000;
+        long nsec_timeout = ((long)utime->tv_sec * 1000000000ULL) + 
+            utime->tv_nsec * 1;
+        long diff_nsec = nsec_timeout - nsec_now;
+        if(diff_nsec > 0) {
+            dkprintf("pausing %016ldnsec\n", diff_nsec);
+            arch_delay(diff_nsec/1000); // unit is usec
+        }
+        return -ETIMEDOUT; 
+    }
 
 	return futex(uaddr, op, val, timeout, uaddr2, val2, val3);
 }

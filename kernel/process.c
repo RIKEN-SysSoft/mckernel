@@ -187,9 +187,11 @@ int add_process_memory_range(struct process *process,
 		update_process_page_table(process, range, 0);
 	}
 
+#if 0 // disable __host_update_process_range() in add_process_memory_range(), because it has no effect on the actual mapping on the MICs side. 
 	if (!(flag & VR_REMOTE)) {
 		__host_update_process_range(process, range);
 	}
+#endif
 	
 	list_add_tail(&range->list, &process->vm->vm_range_list);
 	
