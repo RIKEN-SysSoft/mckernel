@@ -645,7 +645,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			char* c = getcwd((void *)dma_buf, w.sr.args[1]); 
             ret = (c == 0) ? -errno : strnlen((const char*)dma_buf, w.sr.args[1]);
             printf("getcwd result: %s\n", dma_buf);
-			do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf, w.sr.args[0], c == 0 ? 0 : ret);
+			do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf, w.sr.args[0], c == 0 ? 0 : ret + 1);
             break; }
 
             // see linux-2.6.34.13/fs/open.c
