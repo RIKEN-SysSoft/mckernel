@@ -179,6 +179,16 @@ SYSCALL_DECLARE(stat)
 	SYSCALL_FOOTER;
 }
 
+SYSCALL_DECLARE(time)
+{
+	SYSCALL_HEADER;
+    if(aal_mc_syscall_arg0(ctx)) {
+        SYSCALL_ARGS_1(MO);
+    } else {
+        SYSCALL_ARGS_1(D);
+    }
+	SYSCALL_FOOTER;
+}
 
 SYSCALL_DECLARE(gettimeofday)
 {
@@ -950,6 +960,7 @@ static long (*syscall_table[])(int, aal_mc_user_context_t *) = {
 	[110] = sys_getxid,
 	[111] = sys_getxid,
 	[158] = sys_arch_prctl,
+	[201] = sys_time,
 	[202] = sys_futex,
 	[203] = sys_sched_setaffinity,
 	[204] = sys_sched_getaffinity,
@@ -999,6 +1010,7 @@ static char *syscall_name[] = {
 	[110] = "sys_getpgid",
 	[111] = "sys_getppid",
 	[158] = "sys_arch_prctl",
+	[201] = "sys_time",
 	[202] = "sys_futex",
 	[203] = "sys_sched_setaffinity",
 	[204] = "sys_sched_getaffinity",
