@@ -1,0 +1,46 @@
+#BUILD_TARGET = mee knf
+BUILD_TARGET = knf
+SRC = $(CURDIR)
+CONFIG_V ?= KNF
+
+AALBASE ?= $(SRC)/../../aal/manycore
+O ?= $(KBUILD_OUTPUT)
+V ?= $(VERBOSE)
+
+EXTRA_OBJS ?=
+
+KERNEL = kernel.img
+KERNELS = $(addsuffix /$(KERNEL),$(addprefix $(O)/,$(BUILD_TARGET)))
+
+SUBCMD_OPTS = V='$(V)'
+
+$(if $(O),,$(error Specify the compilation target directory))
+$(if $(shell ls $(AALBASE)/Makefile),,\
+	$(error AAL is not found in $(AALBASE)))
+
+.PHONY: all clean depend
+
+all: $(KERNELS)
+
+%/kernel.img: %/Makefile
+	@echo 'Building for' $(dir $@)
+	@make --no-print-directory -C $(dir $@) $(SUBCMD_OPTS)
+
+%/Makefile: Makefile.build.mpiu FORCE
+	rm -f $@
+	@mkdir -p $(dir $@)
+	@echo 'SRC = $(SRC)' > $@
+	@echo 'AALBASE = $(AALBASE)' >> $@
+	@echo 'CONFIG_V = $(CONFIG_V)' >> $@
+	@echo 'TARGET = $(notdir $(patsubst %/,%,$(dir $@)))' >> $@
+	@echo 'CONFIG_V = $(CONFIG_V)' >> $@
+	@echo 'EXTRA_OBJS = $(EXTRA_OBJS)' >> $@
+	@cat Makefile.build.mpiu >> $@
+	@rm -f $(dir $@)/Makefile.dep
+
+clean: $(addsuffix .clean,$(BUILD_TARGET))
+
+%.clean: $(O)/%/Makefile
+	@make --no-print-directory -C $(O)/$(basename $@) $(SUBCMD_OPTS) clean
+
+FORCE:

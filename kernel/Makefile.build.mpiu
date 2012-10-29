@@ -1,10 +1,10 @@
 AALDIR=$(AALBASE)/$(TARGET)
 OBJS = init.o mem.o debug.o mikc.o listeners.o ap.o syscall.o cls.o host.o
-OBJS += process.o copy.o waitq.o futex.o
+OBJS += process.o copy.o waitq.o futex.o timer.o
 DEPSRCS=$(wildcard $(SRC)/*.c)
 
 #CFLAGS += -I$(SRC)/include -mcmodel=kernel -D__KERNEL__ -DDCFA_KMOD -DIOCTL_FUNC_EXTENSION
-CFLAGS += -I$(SRC)/include -mcmodel=kernel -D__KERNEL__ -DDCFA_KMOD -DKNC_MAP_MICPA -DUSE_NOCACHE_MMAP
+CFLAGS += -I$(SRC)/include -mcmodel=kernel -D__KERNEL__ -DDCFA_KMOD -DKNC_MAP_MICPA
 CFLAGS += -DCONFIG_$(CONFIG_V)
 
 LDFLAGS += -e arch_start
