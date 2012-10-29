@@ -4,3 +4,6 @@ all: mcexec
 
 mcexec: mcexec.c
 	$(CC) $(CFLAGS) -o $@ $^
+
+clean:
+	rm -f mcexec
