@@ -17,7 +17,7 @@
 #endif
 
 
-#define USER_STACK_NR_PAGES 512
+#define USER_STACK_NR_PAGES 4096
 #define KERNEL_STACK_NR_PAGES 16
 
 extern long do_arch_prctl(unsigned long code, unsigned long address);
@@ -25,6 +25,9 @@ extern long do_arch_prctl(unsigned long code, unsigned long address);
 void init_process_vm(struct process_vm *vm)
 {
 	int i;
+
+	aal_mc_spinlock_init(&vm->memory_range_lock);
+	aal_mc_spinlock_init(&vm->page_table_lock);
 
 	aal_atomic_set(&vm->refcount, 1);
 	INIT_LIST_HEAD(&vm->vm_range_list);
