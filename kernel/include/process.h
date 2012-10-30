@@ -92,8 +92,8 @@ int add_process_memory_range(struct process *process,
 int add_process_large_range(struct process *process,
                             unsigned long start, unsigned long end,
                             unsigned long flag, unsigned long *phys);
-int remove_process_region(struct process *proc,
-                          unsigned long start, unsigned long end);
+int remove_process_region(struct process *proc, unsigned long va_start, unsigned long va_end, unsigned long pa);
+
 struct program_load_desc;
 void init_process_stack(struct process *process, struct program_load_desc *pn,
                         int argc, char **argv, 
