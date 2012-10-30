@@ -101,7 +101,10 @@ static void page_allocator_init(void)
 	pa_start = aal_mc_get_memory_address(AAL_MC_GMA_AVAIL_START, 0);
 	pa_end = aal_mc_get_memory_address(AAL_MC_GMA_AVAIL_END, 0);
 
-	pa_start &= PAGE_MASK;
+    //	pa_start &= PAGE_MASK;
+    // physical memory allocator stores bitmap in array of long int
+    // so the unit size is 64-page
+    pa_start = (pa_start + PAGE_SIZE * 64 - 1) & ~(PAGE_SIZE * 64 - 1);
 	pa_end = (pa_end + PAGE_SIZE - 1) & PAGE_MASK;
 
 	/* 
