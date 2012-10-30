@@ -34,7 +34,10 @@ static void reserve_pages(unsigned long start, unsigned long end, int type)
 
 void *allocate_pages(int npages, enum aal_mc_ap_flag flag)
 {
-	return phys_to_virt(aal_pagealloc_alloc(pa_allocator, npages));
+    unsigned long pa = aal_pagealloc_alloc(pa_allocator, npages);
+    /* all_pagealloc_alloc returns zero when error occured, 
+       and callee (in mcos/kernel/process.c) so propagate it */
+	return pa ? phys_to_virt(pa) : 0; 
 }
 
 void free_pages(void *va, int npages)
