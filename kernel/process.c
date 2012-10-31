@@ -18,7 +18,7 @@
 #endif
 
 
-#define USER_STACK_NR_PAGES 4096
+#define USER_STACK_NR_PAGES 8192
 #define KERNEL_STACK_NR_PAGES 16
 
 extern long do_arch_prctl(unsigned long code, unsigned long address);
