@@ -17,6 +17,7 @@
 #include <rlimit.h>
 #include <affinity.h>
 #include <time.h>
+#include <aal/perfctr.h>
 
 /* Headers taken from kitten LWK */
 #include <lwk/stddef.h>
@@ -979,6 +980,71 @@ SYSCALL_DECLARE(noop)
 	return -EFAULT;
 }
 
+#ifdef DCFA_KMOD
+
+extern int ibmic_cmd_syscall(char *uargs);
+extern int dcfampi_cmd_syscall(char *uargs);
+
+static int (*mod_call_table[]) (char *) = {
+		[1] = ibmic_cmd_syscall,
+		[2] = dcfampi_cmd_syscall,
+};
+
+SYSCALL_DECLARE(mod_call) {
+	int mod_id;
+	unsigned long long uargs;
+
+	mod_id = aal_mc_syscall_arg0(ctx);
+	uargs = aal_mc_syscall_arg1(ctx);
+
+	dkprintf("mod_call id:%d, uargs=0x%llx, type=%s, command=%x\n", mod_id, uargs, mod_id==1?"ibmic":"dcfampi", *((uint32_t*)(((char*)uargs)+0)));
+
+	if(mod_call_table[mod_id])
+		return mod_call_table[mod_id]((char*)uargs);
+
+	return -ENOSYS;
+}
+#endif
+
+SYSCALL_DECLARE(process_data_section) {
+    unsigned long s = cpu_local_var(current)->vm->region.data_start;
+    unsigned long e = cpu_local_var(current)->vm->region.data_end;
+    *((unsigned long*)aal_mc_syscall_arg0(ctx)) = s;
+    *((unsigned long*)aal_mc_syscall_arg1(ctx)) = e;
+    return 0;
+}
+
+/* select counter type */
+SYSCALL_DECLARE(pmc_init)
+{
+    int counter = aal_mc_syscall_arg0(ctx);
+
+    enum aal_perfctr_type type = (enum aal_perfctr_type)aal_mc_syscall_arg1(ctx);
+    /* see aal/manycore/generic/include/aal/perfctr.h */
+
+    int mode = PERFCTR_USER_MODE;
+
+    return aal_mc_perfctr_init(counter, type, mode);
+}
+
+SYSCALL_DECLARE(pmc_start)
+{
+    unsigned long counter = aal_mc_syscall_arg0(ctx);
+    return aal_mc_perfctr_start(1 << counter);
+}
+
+SYSCALL_DECLARE(pmc_stop)
+{
+    unsigned long counter = aal_mc_syscall_arg0(ctx);
+    return aal_mc_perfctr_stop(1 << counter);
+}
+
+SYSCALL_DECLARE(pmc_reset)
+{
+    int counter = aal_mc_syscall_arg0(ctx);
+    return aal_mc_perfctr_reset(counter);
+}
+
 static long (*syscall_table[])(int, aal_mc_user_context_t *) = {
 	[0] = sys_read,
 	[1] = sys_write,
@@ -1025,6 +1091,14 @@ static long (*syscall_table[])(int, aal_mc_user_context_t *) = {
     [234] = sys_tgkill,
 	[273] = sys_set_robust_list,
 	[288] = NULL,
+#ifdef DCFA_KMOD
+	[303] = sys_mod_call,
+#endif
+    [502] = sys_process_data_section,
+    [601] = sys_pmc_init,
+    [602] = sys_pmc_start,
+    [603] = sys_pmc_stop,
+    [604] = sys_pmc_reset,
 };
 
 static char *syscall_name[] = {
@@ -1075,6 +1149,14 @@ static char *syscall_name[] = {
     [234] = "sys_tgkill",
 	[273] = "sys_set_robust_list",
 	[288] = "NULL",
+#ifdef DCFA_KMOD
+	[303] = "sys_mod_call",
+#endif
+	[502] = "process_data_section",
+    [601] = "sys_pmc_init",
+    [602] = "sys_pmc_start",
+    [603] = "sys_pmc_stop",
+    [604] = "sys_pmc_reset",
 };
 
 #if 0
@@ -1098,11 +1180,32 @@ long syscall(int num, aal_mc_user_context_t *ctx)
 
 	cpu_enable_interrupt();
 
-	dkprintf("SC(%d)[%3d=%s](%lx, %lx) @ %lx | %lx = ", 
-	        aal_mc_get_processor_id(),
-	        num, syscall_name[num],
-	        aal_mc_syscall_arg0(ctx), aal_mc_syscall_arg1(ctx),
-	        aal_mc_syscall_pc(ctx), aal_mc_syscall_sp(ctx));
+#if 0
+	if(num != 24)  // if not sched_yield
+#endif
+	dkprintf("SC(%d:%d)[%3d=%s](%lx, %lx,%lx, %lx, %lx, %lx)@%lx,sp:%lx",
+             aal_mc_get_processor_id(),
+             aal_mc_get_hardware_processor_id(),
+             num, syscall_name[num],
+             aal_mc_syscall_arg0(ctx), aal_mc_syscall_arg1(ctx),
+             aal_mc_syscall_arg2(ctx), aal_mc_syscall_arg3(ctx),
+             aal_mc_syscall_arg4(ctx), aal_mc_syscall_arg5(ctx),
+             aal_mc_syscall_pc(ctx), aal_mc_syscall_sp(ctx));
+#if 1
+#if 0
+	if(num != 24)  // if not sched_yield
+#endif
+    dkprintf(",*sp:%lx,*(sp+8):%lx,*(sp+16):%lx,*(sp+24):%lx",
+             *((unsigned long*)aal_mc_syscall_sp(ctx)),
+             *((unsigned long*)(aal_mc_syscall_sp(ctx)+8)),
+             *((unsigned long*)(aal_mc_syscall_sp(ctx)+16)),
+             *((unsigned long*)(aal_mc_syscall_sp(ctx)+24)));
+#endif
+#if 0
+	if(num != 24)  // if not sched_yield
+#endif
+    dkprintf("\n");
+
 
 	if (syscall_table[num]) {
 		l = syscall_table[num](num, ctx);

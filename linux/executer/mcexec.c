@@ -203,7 +203,7 @@ void print_desc(struct program_load_desc *desc)
 	          desc->status, desc->cpu, desc->pid, desc->entry,
 	          desc->rprocess);
 	for (i = 0; i < desc->num_sections; i++) {
-		__dprintf("vaddr: %lx, mem_len: %ld, remote_pa: %lx, files: %ld\n", 
+		__dprintf("vaddr: %lx, mem_len: %lx, remote_pa: %lx, files: %lx\n", 
 		          desc->sections[i].vaddr, desc->sections[i].len, 
 				  desc->sections[i].remote_pa, desc->sections[i].filesz);
 	}
@@ -222,12 +222,12 @@ void print_flat(char *flat)
 {
 	char **string;
 		
-	printf("counter: %d\n", *((int *)flat));
+	__dprintf("counter: %d\n", *((int *)flat));
 
 	string = (char **)(flat + sizeof(int));
 	while (*string) {
 		
-		printf("%s\n", (flat + (unsigned long)(*string)));
+		__dprintf("%s\n", (flat + (unsigned long)(*string)));
 
 		++string;
 	}
@@ -376,13 +376,13 @@ int main(int argc, char **argv)
 	dma_buf = mmap(0, PIN_SIZE, PROT_READ | PROT_WRITE, 
 	               (MAP_ANONYMOUS | MAP_PRIVATE), -1, 0);
 	if (!dma_buf) {
-		printf("error: allocating DMA area\n");
+		__dprint("error: allocating DMA area\n");
 		exit(1);
 	}
 	
 	/* PIN buffer */
 	if (mlock(dma_buf, (size_t)PIN_SIZE)) {
-		printf("ERROR: locking dma_buf\n");
+		__dprint("ERROR: locking dma_buf\n");
 		exit(1);
 	}
 
@@ -495,7 +495,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			break;
 
 		case __NR_close:
-			printf("mcexec.c,close,fd=%lx\n", w.sr.args[0]);
+			__dprintf("mcexec.c,close,fd=%lx\n", w.sr.args[0]);
 			ret = close(w.sr.args[0]);
 			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
@@ -571,6 +571,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			}
 		case __NR_fstat:
 			ret = fstat(w.sr.args[0], (void *)dma_buf);
+            __dprintf("mcexec.c:main_loop,arg[0]=%ld,ret=%d\n", w.sr.args[0], ret);
 			if (ret == -1) {
 				ret = -errno;
 			}
@@ -608,7 +609,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
                 ret = time(NULL);
             }
 			SET_ERR(ret);
-            printf("time=%ld\n", ret);
+            __dprintf("time=%ld\n", ret);
 			do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf,
 			                  w.sr.args[0], sizeof(time_t));
 			break; }
@@ -616,6 +617,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 		case __NR_gettimeofday:
 			ret = gettimeofday((struct timeval *)dma_buf, NULL);
 			SET_ERR(ret);
+            __dprintf("gettimeofday=%016ld,%09ld\n", ((struct timeval *)dma_buf)->tv_sec, ((struct timeval *)dma_buf)->tv_usec);
 			do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf,
 			                  w.sr.args[0], sizeof(struct timeval));
 			break;
@@ -666,7 +668,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
             // note that return type is different between glibc-getcwd and sys_getcwd
 			char* c = getcwd((void *)dma_buf, w.sr.args[1]); 
             ret = (c == 0) ? -errno : strnlen((const char*)dma_buf, w.sr.args[1]);
-            printf("getcwd result: %s\n", dma_buf);
+            __dprintf("getcwd result: %s\n", dma_buf);
 			do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf, w.sr.args[0], c == 0 ? 0 : ret + 1);
             break; }
 
@@ -674,7 +676,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 		case __NR_access: {
 			dma_buf[256] = 0;
 			do_syscall_load(fd, cpu, (unsigned long)dma_buf, w.sr.args[0], 256);
-			printf("access: %s\n", dma_buf);
+			__dprintf("access: %s\n", dma_buf);
 			int c = access((void *)dma_buf, w.sr.args[1]);
             ret = (c < 0) ? -errno : c;
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
@@ -685,7 +687,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
             switch(w.sr.args[1]) {
             case F_GETFD:
                 c = fcntl(w.sr.args[0], w.sr.args[1]);
-                printf("fcntl,F_GETFD,c=%x\n", c);
+                __dprintf("fcntl,F_GETFD,c=%x\n", c);
                 ret = (c < 0) ? -errno : c;
                 break;
             default:
@@ -704,7 +706,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 		case __NR_readlink: {
 			dma_buf[256] = 0;
 			do_syscall_load(fd, cpu, (unsigned long)dma_buf, w.sr.args[0], 256);
-			printf("readlink: %s\n", dma_buf);
+			__dprintf("readlink: %s\n", dma_buf);
             char* dup = strndup((char *)dma_buf, 256);
 			int c = readlink(dup, (void *)dma_buf, w.sr.args[2]);
             free(dup);
@@ -721,39 +723,39 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 
 		case __NR_mmap: {
             // w.sr.args[0] is converted to MIC physical address
-            printf("mcexec.c,mmap,MIC-paddr=%lx,len=%lx,prot=%lx,flags=%lx,fd=%lx,offset=%lx\n",
+            __dprintf("mcexec.c,mmap,MIC-paddr=%lx,len=%lx,prot=%lx,flags=%lx,fd=%lx,offset=%lx\n",
                    w.sr.args[0], w.sr.args[1], w.sr.args[2], w.sr.args[3], w.sr.args[4], w.sr.args[5]);
             off_t old_off = lseek(w.sr.args[4], 0, SEEK_CUR);
-            if(old_off == -1) { printf("mcexec.c,mmap,lseek failed\n"); ret = -errno; goto mmap_out; }
+            if(old_off == -1) { __dprint("mcexec.c,mmap,lseek failed\n"); ret = -errno; goto mmap_out; }
             off_t rlseek = lseek(w.sr.args[4], w.sr.args[5], SEEK_SET);
-            if(rlseek == -1) { printf("mcexec.c,mmap,lseek failed\n"); ret = -errno; goto mmap_out; }
+            if(rlseek == -1) { __dprint("mcexec.c,mmap,lseek failed\n"); ret = -errno; goto mmap_out; }
             ssize_t toread = w.sr.args[1];
             ret = 0;
             while(toread > 0) {
-                printf("mcexec.c,mmap,read,addr=%lx,len=%lx\n", (long int)((void *)dma_buf + w.sr.args[1] - toread), toread);
+                __dprintf("mcexec.c,mmap,read,addr=%lx,len=%lx\n", (long int)((void *)dma_buf + w.sr.args[1] - toread), toread);
                 ssize_t rread = read(w.sr.args[4], (void *)dma_buf + w.sr.args[1] - toread, toread);
                 if(rread == 0) {
-                    printf("mcexec.c,mmap,read==0\n");
+                    __dprint("mcexec.c,mmap,read==0\n");
                     goto mmap_zero_out;
                 } else if(rread < 0) {
-                    printf("mcexec.c,mmap,read failed\n"); ret = -errno; break;
+                    __dprint("mcexec.c,mmap,read failed\n"); ret = -errno; break;
                 }
                 toread -= rread;
             }
             mmap_zero_out:
             rlseek = lseek(w.sr.args[4], old_off, SEEK_SET);
-            if(rlseek == -1) { printf("mcexec.c,mmap,lseek failed\n"); ret = -errno; }
+            if(rlseek == -1) { __dprint("mcexec.c,mmap,lseek failed\n"); ret = -errno; }
             mmap_out:
 			do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf, w.sr.args[0], w.sr.args[1]);
             break; }
 		default:
-			printf("Unhandled system calls: %ld\n", w.sr.number);
+			__dprintf("Unhandled system calls: %ld\n", w.sr.number);
 			break;
 
 		}
 		
 		pthread_mutex_unlock(lock);
 	}
-	printf("timed out.\n");
+	__dprint("timed out.\n");
 	return 1;
 }

@@ -97,11 +97,13 @@ void pc_init(void)
 	int imode = 1;
 	char *p;
 
-	int x[2][4] = { { APT_TYPE_INSTRUCTIONS,
-	                  APT_TYPE_L1D_MISS,
-	                  APT_TYPE_L2_MISS, APT_TYPE_L1I_MISS, },
-	                { APT_TYPE_L1I_MISS, APT_TYPE_LLC_MISS,
-	                  APT_TYPE_STALL, APT_TYPE_CYCLE },
+	int x[2][4] = { { APT_TYPE_INSTRUCTIONS_EXECUTED,
+	                  APT_TYPE_DATA_READ_MISS,
+	                  APT_TYPE_L2_CODE_READ_MISS_MEM_FILL,
+                      APT_TYPE_CODE_CACHE_MISS, },
+	                { APT_TYPE_CODE_CACHE_MISS,
+                      APT_TYPE_LLC_MISS, // not updated for KNC
+	                  APT_TYPE_STALL, APT_TYPE_CYCLE }, // not updated for KNC
 	};
 
 	if (!(p = find_command_line("perfctr"))) {
