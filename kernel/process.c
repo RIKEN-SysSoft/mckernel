@@ -300,9 +300,9 @@ unsigned long extend_process_region(struct process *proc,
 #ifdef USE_LARGE_PAGES
 	if (aligned_new_end - aligned_end >= LARGE_PAGE_SIZE) {
 		unsigned long p_aligned;
+		unsigned long old_aligned_end = aligned_end;
 
 		if ((aligned_end & (LARGE_PAGE_SIZE - 1)) != 0) {
-			unsigned long old_aligned_end = aligned_end;
 
 			aligned_end = (aligned_end + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
 			/* Fill in the gap between old_aligned_end and aligned_end
@@ -313,11 +313,11 @@ unsigned long extend_process_region(struct process *proc,
 			
 			dkprintf("filled in gap for LARGE_PAGE_SIZE aligned start: 0x%lX -> 0x%lX\n",
 					old_aligned_end, aligned_end);
-
 		}
 	
 		/* Add large region for the actual mapping */
-		aligned_new_end = (aligned_new_end + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
+		aligned_new_end = (aligned_new_end + (aligned_end - old_aligned_end) +
+				(LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
 		address = aligned_new_end;
 
 		p = allocate_pages((aligned_new_end - aligned_end + LARGE_PAGE_SIZE) 
