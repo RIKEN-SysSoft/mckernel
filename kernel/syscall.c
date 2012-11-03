@@ -467,7 +467,7 @@ SYSCALL_DECLARE(mmap)
 			                      region->map_end,
 			                      s + len);
         aal_mc_spinlock_unlock(&cpu_local_var(current)->vm->memory_range_lock, flags);
-		if (region->map_end != s + len) { return -EINVAL; }
+		if (region->map_end < s + len) { return -EINVAL; }
 
         struct syscall_request request AAL_DMA_ALIGN;
         request.number = n;
@@ -484,7 +484,7 @@ SYSCALL_DECLARE(mmap)
         request.args[0] = __phys;
         
         int r = do_syscall(&request, ctx);
-        if(r == 0) { return s; } else { return -EINVAL; }
+        if(r == 0) { return region->map_end - len; } else { return -EINVAL; }
     }
 	dkprintf("mmap flags not supported: fd = %lx, %lx\n",
 	        aal_mc_syscall_arg4(ctx), aal_mc_syscall_arg5(ctx));
