@@ -11,6 +11,14 @@
 #include <sysdeps/knf/mic/micsboxdefine.h>
 #include <cls.h>
 
+//#define DEBUG_PRINT_MEM
+
+#ifdef DEBUG_PRINT_MEM
+#define dkprintf kprintf
+#else
+#define dkprintf(...)
+#endif
+
 static struct aal_page_allocator_desc *pa_allocator;
 static unsigned long pa_start, pa_end;
 
@@ -27,7 +35,7 @@ static void reserve_pages(unsigned long start, unsigned long end, int type)
 	if (start >= end) {
 		return;
 	}
-	kprintf("reserve: %016lx - %016lx (%ld pages)\n", start, end,
+	dkprintf("reserve: %016lx - %016lx (%ld pages)\n", start, end,
 	        (end - start) >> PAGE_SHIFT);
 	aal_pagealloc_reserve(pa_allocator, start, end);
 }
@@ -89,6 +97,19 @@ static void page_fault_handler(unsigned long address, void *regs,
 
 	/* TODO */
 	aal_mc_debug_show_interrupt_context(regs);
+
+#ifdef DEBUG_PRINT_MEM
+	{
+	  const struct x86_regs *_regs = regs;
+	  dkprintf("*rsp:%lx,*rsp+8:%lx,*rsp+16:%lx,*rsp+24:%lx,\n",
+		  *((unsigned long*)_regs->rsp),
+		  *((unsigned long*)_regs->rsp+8),
+		  *((unsigned long*)_regs->rsp+16),
+		  *((unsigned long*)_regs->rsp+24)
+		  );
+	}
+#endif
+
 	panic("");
 }
 
@@ -212,8 +233,8 @@ void aal_mc_map_micpa(unsigned long host_pa, unsigned long* mic_pa) {
             break;
         }
     }
-    kprintf("aal_mc_map_micpa,1,i=%d,host_pa=%lx,mic_pa=%llx\n", i, host_pa, *mic_pa);
-    if(i == NUM_SMPT_ENTRIES_IN_USE - NUM_SMPT_ENTRIES_MICPA - 1) { return 0; }
+    dkprintf("aal_mc_map_micpa,1,i=%d,host_pa=%lx,mic_pa=%llx\n", i, host_pa, *mic_pa);
+    if(i == NUM_SMPT_ENTRIES_IN_USE - NUM_SMPT_ENTRIES_MICPA - 1) { return; }
     sbox_write(SBOX_SMPT00 + ((*mic_pa - MIC_SYSTEM_BASE) >> MIC_SYSTEM_PAGE_SHIFT) * 4, BUILD_SMPT(SNOOP_ON, host_pa >> MIC_SYSTEM_PAGE_SHIFT));
     *mic_pa += (host_pa & (MIC_SYSTEM_PAGE_SIZE-1));
 }
