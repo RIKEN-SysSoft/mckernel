@@ -369,45 +369,32 @@ SYSCALL_DECLARE(mmap)
 #ifdef USE_LARGE_PAGES
 			// use large pages if mapping is big enough
 			if (e - s >= LARGE_PAGE_SIZE) {
-				unsigned long old_s = s;
 				unsigned long p;
 				unsigned long p_aligned;
+				unsigned long s_orig = s;
+				unsigned long head_space = 0;
 
-				// fill in gap with regular pages until the first large 
-				// page aligned address
+				// compute head space before the first large page aligned
+				// virtual address
 				if ((s & (LARGE_PAGE_SIZE - 1)) != 0) {
-
 					s = (s + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
-
-					// allocate physical address
-					pa = virt_to_phys(aal_mc_alloc_pages(
-								(s - old_s) >> PAGE_SHIFT, 0)); 
-
-					// add page_table, add memory-range
-					add_process_memory_range(cpu_local_var(current), 
-							old_s, s, pa, 0); 
-					
-					dkprintf("filled in gap for LARGE_PAGE_SIZE aligned start: 0x%lX -> 0x%lX\n",
-							old_s, s);
+					head_space = (s - s_orig);	
 				}
 
 				e = (e + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
-				p = (unsigned long)aal_mc_alloc_pages((e - s + LARGE_PAGE_SIZE) 
-						>> PAGE_SHIFT, 0); 
-				p_aligned = (p + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
+				p = (unsigned long)aal_mc_alloc_pages(
+						(e - s + 2 * LARGE_PAGE_SIZE) >> PAGE_SHIFT, 0); 
 
-				// free unneeded
-				if (p_aligned > p) {
-					free_pages((void *)p, (p_aligned - (unsigned long)p) 
-							>> PAGE_SHIFT);
-				}
+				p_aligned = (p + LARGE_PAGE_SIZE + (LARGE_PAGE_SIZE - 1)) 
+					& LARGE_PAGE_MASK;
 
 				// add range, mapping
-				add_process_memory_range(cpu_local_var(current), s, e,
-						virt_to_phys((void *)p_aligned), 0);
+				add_process_memory_range(cpu_local_var(current), s_orig, e,
+						virt_to_phys((void *)(p_aligned - head_space)), 0);
 
 				dkprintf("largePTE area: 0x%lX - 0x%lX (s: %lu) -> 0x%lX -\n",
-						s, e, (e - s), virt_to_phys((void *)p_aligned));
+						s_orig, e, (e - s_orig), 
+						virt_to_phys((void *)(p_aligned - head_space)));
 			}
 			else {
 #endif
