@@ -96,12 +96,34 @@ void update_process_page_table(struct process *process, struct vm_range *range,
     unsigned long flags = aal_mc_spinlock_lock(&process->vm->page_table_lock);
 	p = range->start;
 	while (p < range->end) {
-		aal_mc_pt_set_page(process->vm->page_table, (void *)p,
-		                   pa, PTATTR_WRITABLE | PTATTR_USER | flag);
+#ifdef USE_LARGE_PAGES
+		/* Use large PTE if both virtual and physical addresses are large page 
+		 * aligned and more than LARGE_PAGE_SIZE is left from the range */
+		if ((p & (LARGE_PAGE_SIZE - 1)) == 0 && 
+				(pa & (LARGE_PAGE_SIZE - 1)) == 0 &&
+				(range->end - p) >= LARGE_PAGE_SIZE) {
 
-		pa += PAGE_SIZE;
-		p += PAGE_SIZE;
+			if (aal_mc_pt_set_large_page(process->vm->page_table, (void *)p,
+					pa, PTATTR_WRITABLE | PTATTR_USER | flag) != 0) {
+				kprintf("ERROR:setting large page for 0x%lX -> 0x%lX\n", p, pa);
+				panic("");
+			}
 
+			dkprintf("large page set for 0x%lX -> 0x%lX\n", p, pa);
+
+			pa += LARGE_PAGE_SIZE;
+			p += LARGE_PAGE_SIZE;
+		}
+		else {
+#endif		
+			aal_mc_pt_set_page(process->vm->page_table, (void *)p,
+					pa, PTATTR_WRITABLE | PTATTR_USER | flag);
+
+			pa += PAGE_SIZE;
+			p += PAGE_SIZE;
+#ifdef USE_LARGE_PAGES
+		}
+#endif
 	}
     aal_mc_spinlock_unlock(&process->vm->page_table_lock, flags);
 }
@@ -274,7 +296,51 @@ unsigned long extend_process_region(struct process *proc,
 	}
 
 	aligned_new_end = (address + PAGE_SIZE - 1) & PAGE_MASK;
+
+#ifdef USE_LARGE_PAGES
+	if (aligned_new_end - aligned_end >= LARGE_PAGE_SIZE) {
+		unsigned long p_aligned;
+
+		if ((aligned_end & (LARGE_PAGE_SIZE - 1)) != 0) {
+			unsigned long old_aligned_end = aligned_end;
+
+			aligned_end = (aligned_end + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
+			/* Fill in the gap between old_aligned_end and aligned_end
+			 * with regular pages */
+			p = allocate_pages((aligned_end - old_aligned_end) >> PAGE_SHIFT, 0);
+			add_process_memory_range(proc, old_aligned_end, aligned_end,
+					virt_to_phys(p), 0);
+			
+			dkprintf("filled in gap for LARGE_PAGE_SIZE aligned start: 0x%lX -> 0x%lX\n",
+					old_aligned_end, aligned_end);
+
+		}
 	
+		/* Add large region for the actual mapping */
+		aligned_new_end = (aligned_new_end + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
+		address = aligned_new_end;
+
+		p = allocate_pages((aligned_new_end - aligned_end + LARGE_PAGE_SIZE) 
+				>> PAGE_SHIFT, 0);
+
+		p_aligned = ((unsigned long)p + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
+
+		if (p_aligned > (unsigned long)p) {
+			free_pages(p, (p_aligned - (unsigned long)p) >> PAGE_SHIFT);
+		}
+
+		add_process_memory_range(proc, aligned_end, aligned_new_end,
+				virt_to_phys((void *)p_aligned), 0);
+
+		dkprintf("largePTE area: 0x%lX - 0x%lX (s: %lu) -> 0x%lX - \n",
+				aligned_end, aligned_new_end, 
+				(aligned_new_end - aligned_end), 
+				virt_to_phys((void *)p_aligned));
+
+		return address;
+	}
+#endif
+
 	p = allocate_pages((aligned_new_end - aligned_end) >> PAGE_SHIFT, 0);
 
 	if (!p) {

@@ -365,11 +365,62 @@ SYSCALL_DECLARE(mmap)
         int r = aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, (void *)s, &pa);
         // va range is not overwrapped with existing mmap
         if(r != 0) {
-            pa = virt_to_phys(aal_mc_alloc_pages(range_npages, 0)); // allocate pa
-            //            lockr = aal_mc_spinlock_lock(&cpu_status_lock);
-            add_process_memory_range(cpu_local_var(current), s, e, pa, 0); // register to page_table
-            //            aal_mc_spinlock_unlock(&cpu_status_lock, lockr);
-            kprintf("syscall.c,pa allocated=%lx\n", pa);
+
+#ifdef USE_LARGE_PAGES
+			// use large pages if mapping is big enough
+			if (e - s >= LARGE_PAGE_SIZE) {
+				unsigned long old_s = s;
+				unsigned long p;
+				unsigned long p_aligned;
+
+				// fill in gap with regular pages until the first large 
+				// page aligned address
+				if ((s & (LARGE_PAGE_SIZE - 1)) != 0) {
+
+					s = (s + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
+
+					// allocate physical address
+					pa = virt_to_phys(aal_mc_alloc_pages(
+								(s - old_s) >> PAGE_SHIFT, 0)); 
+
+					// add page_table, add memory-range
+					add_process_memory_range(cpu_local_var(current), 
+							old_s, s, pa, 0); 
+					
+					dkprintf("filled in gap for LARGE_PAGE_SIZE aligned start: 0x%lX -> 0x%lX\n",
+							old_s, s);
+				}
+
+				e = (e + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
+				p = (unsigned long)aal_mc_alloc_pages((e - s + LARGE_PAGE_SIZE) 
+						>> PAGE_SHIFT, 0); 
+				p_aligned = (p + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
+
+				// free unneeded
+				if (p_aligned > p) {
+					free_pages((void *)p, (p_aligned - (unsigned long)p) 
+							>> PAGE_SHIFT);
+				}
+
+				// add range, mapping
+				add_process_memory_range(cpu_local_var(current), s, e,
+						virt_to_phys((void *)p_aligned), 0);
+
+				dkprintf("largePTE area: 0x%lX - 0x%lX (s: %lu) -> 0x%lX -\n",
+						s, e, (e - s), virt_to_phys((void *)p_aligned));
+			}
+			else {
+#endif
+				// allocate physical address
+				pa = virt_to_phys(aal_mc_alloc_pages(range_npages, 0)); 
+
+				// add page_table, add memory-range
+				add_process_memory_range(cpu_local_var(current), s, e, pa, 0); 
+
+				dkprintf("syscall.c,pa allocated=%lx\n", pa);			
+#ifdef USE_LARGE_PAGES
+			}
+#endif
         } else {
             kprintf("syscall.c,pa found=%lx\n", pa);
             // we need to clear to avoid BSS contamination, even when reusing physical memory range
@@ -403,9 +454,18 @@ SYSCALL_DECLARE(mmap)
 			                      region->map_end,
 			                      s + len);
         aal_mc_spinlock_unlock(&cpu_local_var(current)->vm->memory_range_lock, flags);
-        //        kprintf("syscall.c,mmap,map_end=%lx,s+len=%lx\n", region->map_end, s+len);
-
-		if (region->map_end == s + len) { return s; } else { return -EINVAL; }
+        dkprintf("syscall.c,mmap,map_end=%lx,s+len=%lx\n", region->map_end, s+len);
+#ifdef USE_LARGE_PAGES
+		if (region->map_end >= s + len) { 
+			/* NOTE: extend_process_region() might have large page aligned */
+			return region->map_end - len; 
+		} 
+#else
+		if (region->map_end == s + len) return s;
+#endif
+		else { 
+			return -EINVAL; 
+		}
 
 	} else if ((aal_mc_syscall_arg3(ctx) & 0x02) == 0x02) {
         // #define MAP_PRIVATE    0x02

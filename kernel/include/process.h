@@ -20,6 +20,7 @@
 
 #define PS_NORMAL	(PS_INTERRUPTIBLE | PS_UNINTERRUPTIBLE)
 
+#define USE_LARGE_PAGES
 
 struct vm_range {
 	struct list_head list;
