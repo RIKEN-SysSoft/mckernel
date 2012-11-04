@@ -234,9 +234,24 @@ void aal_mc_map_micpa(unsigned long host_pa, unsigned long* mic_pa) {
         }
     }
     dkprintf("aal_mc_map_micpa,1,i=%d,host_pa=%lx,mic_pa=%llx\n", i, host_pa, *mic_pa);
-    if(i == NUM_SMPT_ENTRIES_IN_USE - NUM_SMPT_ENTRIES_MICPA - 1) { return; }
+    if(i == NUM_SMPT_ENTRIES_IN_USE - NUM_SMPT_ENTRIES_MICPA - 1) {
+        *mic_pa = 0;
+        return; 
+    }
     sbox_write(SBOX_SMPT00 + ((*mic_pa - MIC_SYSTEM_BASE) >> MIC_SYSTEM_PAGE_SHIFT) * 4, BUILD_SMPT(SNOOP_ON, host_pa >> MIC_SYSTEM_PAGE_SHIFT));
     *mic_pa += (host_pa & (MIC_SYSTEM_PAGE_SIZE-1));
+}
+
+int aal_mc_free_micpa(unsigned long mic_pa) {
+    int smpt_ndx = (mic_pa - MIC_SYSTEM_BASE) >> MIC_SYSTEM_PAGE_SHIFT);
+    if(smpt_ndx >= NUM_SMPT_ENTRIES_IN_USE || 
+       smpt_ndx <  NUM_SMPT_ENTRIES_IN_USE - NUM_SMPT_ENTRIES_MICPA) {
+        dkprintf("aal_mc_free_micpa,mic_pa=%llx,out of range\n", host_pa); 
+        return -1;
+    }
+    free_bitmap_micpa |= (1ULL << smpt_ndx);
+    dkprintf("aal_mc_free_micpa,index=%d,freed\n", smpt_ndx); 
+    return 0;
 }
 
 void mem_init(void)
