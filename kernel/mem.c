@@ -222,7 +222,7 @@ unsigned int sbox_read(int offset)
 
 /* insert entry into map which maps mic physical address to host physical address */
 
-unsigned int free_bitmap_micpa = ((~(1ULL<<(NUM_SMPT_ENTRIES_IN_USE - NUM_SMPT_ENTRIES_MICPA)) - 1)&((1ULL << NUM_SMPT_ENTRIES_IN_USE) - 1));
+unsigned int free_bitmap_micpa = ((~((1ULL<<(NUM_SMPT_ENTRIES_IN_USE - NUM_SMPT_ENTRIES_MICPA))-1))&((1ULL << NUM_SMPT_ENTRIES_IN_USE) - 1));
 
 void aal_mc_map_micpa(unsigned long host_pa, unsigned long* mic_pa) {
     int i;
