@@ -243,7 +243,7 @@ void aal_mc_map_micpa(unsigned long host_pa, unsigned long* mic_pa) {
 }
 
 int aal_mc_free_micpa(unsigned long mic_pa) {
-    int smpt_ndx = (mic_pa - MIC_SYSTEM_BASE) >> MIC_SYSTEM_PAGE_SHIFT);
+    int smpt_ndx = ((mic_pa - MIC_SYSTEM_BASE) >> MIC_SYSTEM_PAGE_SHIFT);
     if(smpt_ndx >= NUM_SMPT_ENTRIES_IN_USE || 
        smpt_ndx <  NUM_SMPT_ENTRIES_IN_USE - NUM_SMPT_ENTRIES_MICPA) {
         dkprintf("aal_mc_free_micpa,mic_pa=%llx,out of range\n", host_pa); 
