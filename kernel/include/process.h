@@ -103,6 +103,12 @@ unsigned long extend_process_region(struct process *proc,
                                     unsigned long start, unsigned long end,
                                     unsigned long address);
 
+#ifdef USE_NOCACHE_MMAP
+unsigned long extend_process_nocache_region(struct process *proc,
+                                    unsigned long start, unsigned long end,
+                                    unsigned long address);
+#endif
+
 void schedule(void);
 void runq_add_proc(struct process *proc, int cpu_id);
 void runq_del_proc(struct process *proc, int cpu_id);

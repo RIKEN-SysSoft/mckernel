@@ -25,7 +25,7 @@
 
 #define SYSCALL_BY_IKC
 
-#define DEBUG_PRINT_SC
+//#define DEBUG_PRINT_SC
 
 #ifdef DEBUG_PRINT_SC
 #define dkprintf kprintf
@@ -435,12 +435,27 @@ SYSCALL_DECLARE(mmap)
         kprintf("syscall.c,!MAP_FIXED,MAP_ANONYMOUS\n");
         unsigned long flags = aal_mc_spinlock_lock(&cpu_local_var(current)->vm->memory_range_lock);
         unsigned long s = (region->map_end + PAGE_SIZE - 1) & PAGE_MASK;
+        unsigned long map_end_aligned = region->map_end;
 		unsigned long len = (aal_mc_syscall_arg1(ctx) + PAGE_SIZE - 1) & PAGE_MASK;
-		region->map_end = 
-			extend_process_region(cpu_local_var(current),
-			                      region->map_start,
-			                      region->map_end,
-			                      s + len);
+        dkprintf("SC(%d),syscall.c,mmap,len=%lx", cpuid, len);
+
+#ifdef USE_NOCACHE_MMAP
+		if ((aal_mc_syscall_arg3(ctx) & 0x40) == 0x40) {
+			dkprintf("SC(%d),syscall.c,mmap,nocache,len=%lx\n", cpuid, len);
+			region->map_end = extend_process_nocache_region(
+					cpu_local_var(current), region->map_start, map_end_aligned,
+					s + len);
+		}
+		else
+#endif
+		{
+			region->map_end =
+				extend_process_region(cpu_local_var(current),
+				                      region->map_start,
+				                      map_end_aligned,
+				                      s + len);
+		}
+
         aal_mc_spinlock_unlock(&cpu_local_var(current)->vm->memory_range_lock, flags);
         dkprintf("syscall.c,mmap,map_end=%lx,s+len=%lx\n", region->map_end, s+len);
 #ifdef USE_LARGE_PAGES
