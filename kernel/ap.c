@@ -5,12 +5,15 @@
 #include <aal/debug.h>
 #include <process.h>
 #include <init.h>
+#include <march.h>
 
 int num_processors = 1;
 static volatile int ap_stop = 1;
 
 static void ap_wait(void)
 {
+	wrmsr(MSR_IA32_TIME_STAMP_COUNTER, 0);
+	
 	while (ap_stop) {
 		barrier();
 		cpu_pause();
@@ -42,6 +45,8 @@ void ap_init(void)
 	int bsp_hw_id;
 
 	aal_mc_init_ap();
+	
+	wrmsr(MSR_IA32_TIME_STAMP_COUNTER, 0);
 
 	cpu_info = aal_mc_get_cpu_info();
 	bsp_hw_id = aal_mc_get_hardware_processor_id();
