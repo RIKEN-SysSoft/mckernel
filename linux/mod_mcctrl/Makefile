@@ -10,8 +10,8 @@ obj-m += mcctrl.o
 
 mcctrl-objs := driver.o control.o ikc.o syscall.o
 
-AAL_BASE=$(src)/../../../aal
-EXTRA_CFLAGS = -I$(AAL_BASE)/host/include -I$(AAL_BASE)/host/driver/knf -I$(AAL_BASE)/include -I$(AAL_BASE)/ikc/include -I$(src)/../include
+AALBASE ?= $(src)/../../../aal
+EXTRA_CFLAGS = -I$(AALBASE)/host/include -I$(AALBASE)/host/driver/knf -I$(AALBASE)/include -I$(AALBASE)/ikc/include -I$(src)/../include
 
 .PHONY: clean install
 
