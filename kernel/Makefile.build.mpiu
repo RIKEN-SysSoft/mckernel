@@ -1,16 +1,19 @@
 AALDIR=$(AALBASE)/$(TARGET)
 OBJS = init.o mem.o debug.o mikc.o listeners.o ap.o syscall.o cls.o host.o
-OBJS += process.o copy.o waitq.o futex.o timer.o
+OBJS += process.o copy.o waitq.o futex.o
 DEPSRCS=$(wildcard $(SRC)/*.c)
 
-CFLAGS += -I$(SRC)/include -mcmodel=kernel -D__KERNEL__
+#CFLAGS += -I$(SRC)/include -mcmodel=kernel -D__KERNEL__ -DDCFA_KMOD -DIOCTL_FUNC_EXTENSION
+CFLAGS += -I$(SRC)/include -mcmodel=kernel -D__KERNEL__ -DDCFA_KMOD -DKNC_MAP_MICPA -DUSE_NOCACHE_MMAP
+CFLAGS += -DCONFIG_$(CONFIG_V)
+
 LDFLAGS += -e arch_start
 AALOBJ = aal/aal.o
 
 include $(SRC)/configs/config.$(TARGET)
 include $(AALBASE)/Makefile.common
 
-SUBCMD_OPTS = TARGET=$(TARGET) O=$(CURDIR)/aal CC=$(CC) LD=$(LD)
+SUBCMD_OPTS = TARGET=$(TARGET) O=$(CURDIR)/aal CC=$(CC) LD=$(LD) CONFIG_V=$(CONFIG_V)
 
 ld_kern_cmd_base = $(LD) $(LDFLAGS) -o $@.elf $^
 mkimage_cmd_base = [ -f $(SRC)/scripts/mkimage.$(TARGET) ] && CC=$(CC) LD=$(LD) LDFLAGS="$(LDFLAGS_MKIMAGE)" sh $(SRC)/scripts/mkimage.$(TARGET) '$@.elf' '$@' '$(SRC)' || cp $@.elf $@
@@ -20,7 +23,7 @@ mkimage_cmd = $(call echo_cmd,MKIMAGE,$@)$(mkimage_cmd_base)
 
 all: depend kernel.img
 
-kernel.img: $(OBJS) $(AALOBJ)
+kernel.img: $(OBJS) $(AALOBJ) $(EXTRA_OBJS)
 	$(ld_kern_cmd)
 	$(mkimage_cmd)
 

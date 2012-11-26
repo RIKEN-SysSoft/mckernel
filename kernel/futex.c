@@ -62,6 +62,7 @@
 #include <list.h>
 #include <cls.h>
 #include <kmsg.h>
+#include <timer.h>
 
 #if 0
 #include <lwk/kernel.h>

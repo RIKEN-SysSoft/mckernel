@@ -7,6 +7,7 @@
 #include <page.h>
 #include <cpulocal.h>
 #include <auxvec.h>
+#include <timer.h>
 
 #define DEBUG_PRINT_PROCESS
 
@@ -365,6 +366,11 @@ void sched_init(void)
 	INIT_LIST_HEAD(&cpu_local_var(runq));
 	cpu_local_var(runq_len) = 0;
 	aal_mc_spinlock_init(&cpu_local_var(runq_lock));
+
+	if (aal_mc_get_processor_id() == TIMER_CPU_ID) {
+		init_timers();
+		wake_timers_loop();
+	}
 }
 
 void schedule(void)

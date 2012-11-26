@@ -750,7 +750,7 @@ SYSCALL_DECLARE(futex)
 {
 	// TODO: timespec support!
 	//struct timespec _utime;
-	uint64_t timeout = 1000; // MAX_SCHEDULE_TIMEOUT;
+	uint64_t timeout = 0; // No timeout
 	uint32_t val2 = 0;
 
 	uint32_t *uaddr = (uint32_t *)aal_mc_syscall_arg0(ctx);
@@ -780,13 +780,13 @@ SYSCALL_DECLARE(futex)
 		val2 = (uint32_t) (unsigned long) aal_mc_syscall_arg3(ctx);
 
     // we don't have timer interrupt and wakeup, so fake it by just pausing
-    if (op == FUTEX_WAIT_BITSET && utime) {
-
+    if (utime && (op == FUTEX_WAIT_BITSET || op == FUTEX_WAIT)) {
         // gettimeofday(&tv_now, NULL);
         struct syscall_request request AAL_DMA_ALIGN; 
         struct timeval tv_now;
         request.number = 96;
 
+#if 1
         unsigned long __phys;                                          
         if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
                                    (void *)&tv_now,
@@ -810,11 +810,18 @@ SYSCALL_DECLARE(futex)
         long nsec_timeout = ((long)utime->tv_sec * 1000000000ULL) + 
             utime->tv_nsec * 1;
         long diff_nsec = nsec_timeout - nsec_now;
+
+		/*
         if(diff_nsec > 0) {
             dkprintf("pausing %016ldnsec\n", diff_nsec);
             arch_delay(diff_nsec/1000); // unit is usec
         }
-        return -ETIMEDOUT; 
+		*/
+		timeout = (diff_nsec / 1000) * 1100; // (usec * 1.1GHz)
+#else
+        arch_delay(200000); // unit is usec
+	return -ETIMEDOUT; 
+#endif
     }
 
 	return futex(uaddr, op, val, timeout, uaddr2, val2, val3);
