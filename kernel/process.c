@@ -280,7 +280,7 @@ void init_process_stack(struct process *process, struct program_load_desc *pn,
 
 unsigned long extend_process_region(struct process *proc,
                                     unsigned long start, unsigned long end,
-                                    unsigned long address)
+                                    unsigned long address, unsigned long flag)
 {
 	unsigned long aligned_end, aligned_new_end;
 	void *p;
@@ -330,7 +330,7 @@ unsigned long extend_process_region(struct process *proc,
 		}
 
 		add_process_memory_range(proc, aligned_end, aligned_new_end,
-				virt_to_phys((void *)p_aligned), 0);
+				virt_to_phys((void *)p_aligned), flag);
 
 		dkprintf("largePTE area: 0x%lX - 0x%lX (s: %lu) -> 0x%lX - \n",
 				aligned_end, aligned_new_end, 
@@ -348,94 +348,10 @@ unsigned long extend_process_region(struct process *proc,
 	}
 	
 	add_process_memory_range(proc, aligned_end, aligned_new_end,
-	                         virt_to_phys(p), 0);
+	                         virt_to_phys(p), flag);
 	
 	return address;
 }
-
-#ifdef USE_NOCACHE_MMAP
-unsigned long extend_process_nocache_region(struct process *proc,
-                                    unsigned long start, unsigned long end,
-                                    unsigned long address)
-{
-	unsigned long aligned_end, aligned_new_end;
-	void *p;
-
-	if (!address || address < start || address >= USER_END) {
-		return end;
-	}
-
-	aligned_end = ((end + PAGE_SIZE - 1) & PAGE_MASK);
-
-	if (aligned_end >= address) {
-		return address;
-	}
-
-	aligned_new_end = (address + PAGE_SIZE - 1) & PAGE_MASK;
-
-#ifdef USE_LARGE_PAGES
-	if (aligned_new_end - aligned_end >= LARGE_PAGE_SIZE) {
-		unsigned long p_aligned;
-		unsigned long old_aligned_end = aligned_end;
-
-		if ((aligned_end & (LARGE_PAGE_SIZE - 1)) != 0) {
-
-			aligned_end = (aligned_end + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
-			/* Fill in the gap between old_aligned_end and aligned_end
-			 * with regular pages */
-			p = allocate_pages((aligned_end - old_aligned_end) >> PAGE_SHIFT, 0);
-			add_process_memory_range(proc, old_aligned_end, aligned_end,
-					virt_to_phys(p), 0);
-
-			dkprintf("filled in gap for LARGE_PAGE_SIZE aligned start: 0x%lX -> 0x%lX\n",
-					old_aligned_end, aligned_end);
-		}
-
-		/* Add large region for the actual mapping */
-		aligned_new_end = (aligned_new_end + (aligned_end - old_aligned_end) +
-				(LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
-		address = aligned_new_end;
-
-		p = allocate_pages((aligned_new_end - aligned_end + LARGE_PAGE_SIZE)
-				>> PAGE_SHIFT, 0);
-
-		p_aligned = ((unsigned long)p + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
-
-		if (p_aligned > (unsigned long)p) {
-			free_pages(p, (p_aligned - (unsigned long)p) >> PAGE_SHIFT);
-		}
-
-		add_process_memory_range(proc, aligned_end, aligned_new_end,
-				virt_to_phys((void *)p_aligned), VR_IO_NOCACHE);
-
-		dkprintf("largePTE area(no cache): 0x%lX - 0x%lX (s: %lu) -> 0x%lX - \n",
-				aligned_end, aligned_new_end,
-				(aligned_new_end - aligned_end),
-				virt_to_phys((void *)p_aligned));
-
-		return address;
-	}
-#endif
-
-	p = allocate_pages((aligned_new_end - aligned_end) >> PAGE_SHIFT, 0);
-
-    //    kprintf("process.c,p=%lx\n", p);
-	if (!p) {
-        //        kprintf("process.c,p==0\n");
-		return end;
-	}
-
-	add_process_memory_range(proc, aligned_end, aligned_new_end,
-	                         virt_to_phys(p), VR_IO_NOCACHE);
-	dkprintf("extend area(no cache): 0x%lX - 0x%lX (s: %lu) -> 0x%lX - \n",
-			aligned_end, aligned_new_end,
-			(aligned_new_end - aligned_end),
-			virt_to_phys(p));
-
-
-	return address;
-}
-#endif
 
 // Original version retained because dcfa (src/mccmd/client/ibmic/main.c) calls this 
 int remove_process_region(struct process *proc,

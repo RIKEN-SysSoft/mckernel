@@ -121,7 +121,7 @@ long sys_brk(int n, aal_mc_user_context_t *ctx)
     region->brk_end = 
         extend_process_region(cpu_local_var(current),
                               region->brk_start, region->brk_end,
-                              address);
+                              address, 0);
     aal_mc_spinlock_unlock(&cpu_local_var(current)->vm->memory_range_lock, flags);
     dkprintf("SC(%d)[sys_brk] brk_end set to %lx\n", aal_mc_get_processor_id(), region->brk_end);
     
@@ -464,9 +464,9 @@ SYSCALL_DECLARE(mmap)
 #ifdef USE_NOCACHE_MMAP
 		if ((aal_mc_syscall_arg3(ctx) & 0x40) == 0x40) {
 			dkprintf("SC(%d),syscall.c,mmap,nocache,len=%lx\n", cpuid, len);
-			region->map_end = extend_process_nocache_region(
+			region->map_end = extend_process_region(
 					cpu_local_var(current), region->map_start, map_end_aligned,
-					s + len);
+					s + len, VR_IO_NOCACHE);
 		}
 		else
 #endif
@@ -475,7 +475,7 @@ SYSCALL_DECLARE(mmap)
 				extend_process_region(cpu_local_var(current),
 				                      region->map_start,
 				                      map_end_aligned,
-				                      s + len);
+				                      s + len, 0);
 		}
 
         aal_mc_spinlock_unlock(&cpu_local_var(current)->vm->memory_range_lock, flags);
@@ -506,7 +506,7 @@ SYSCALL_DECLARE(mmap)
 			extend_process_region(cpu_local_var(current),
 			                      region->map_start,
 			                      s,
-			                      s + len);
+			                      s + len, 0);
 #else
         unsigned long s = (region->map_end + PAGE_SIZE - 1) & PAGE_MASK;
 		unsigned long len = (aal_mc_syscall_arg1(ctx) + PAGE_SIZE - 1) & PAGE_MASK;
@@ -514,7 +514,7 @@ SYSCALL_DECLARE(mmap)
 			extend_process_region(cpu_local_var(current),
 			                      region->map_start,
 			                      region->map_end,
-			                      s + len);
+			                      s + len, 0);
 #endif
         aal_mc_spinlock_unlock(&cpu_local_var(current)->vm->memory_range_lock, flags);
 		if (region->map_end < s + len) { return -EINVAL; }
