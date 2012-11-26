@@ -411,7 +411,7 @@ SYSCALL_DECLARE(mmap)
 		region->map_end = 
 			extend_process_region(cpu_local_var(current),
 			                      region->map_start,
-			                      map_end_aligned,
+			                      region->map_end,
 			                      s + len);
         aal_mc_spinlock_unlock(&cpu_local_var(current)->vm->memory_range_lock, flags);
         //        kprintf("syscall.c,mmap,map_end=%lx,s+len=%lx\n", region->map_end, s+len);
@@ -457,17 +457,13 @@ SYSCALL_DECLARE(mmap)
 
 SYSCALL_DECLARE(munmap)
 {
-	unsigned long va, pa, len;
-    int r;
+	unsigned long address, len;
 
-	va = aal_mc_syscall_arg0(ctx);
+	address = aal_mc_syscall_arg0(ctx);
 	len = aal_mc_syscall_arg1(ctx);
 
-    if(aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, (void *)va, &pa)) {
-        return -EFAULT; 
-    }
-    r = remove_process_region(cpu_local_var(current), va, va + len, pa);
-	return r;
+	return remove_process_region(cpu_local_var(current), address, 
+	                             address + len);
 }
 
 SYSCALL_DECLARE(mprotect)

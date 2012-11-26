@@ -286,28 +286,21 @@ unsigned long extend_process_region(struct process *proc,
 	return address;
 }
 
-int remove_process_region(struct process *proc, unsigned long va_start, unsigned long va_end, unsigned long pa)
+int remove_process_region(struct process *proc,
+                          unsigned long start, unsigned long end)
 {
     unsigned long flags;
-	if ((va_start & (PAGE_SIZE - 1)) || (va_end & (PAGE_SIZE - 1))) {
+	if ((start & (PAGE_SIZE - 1)) || (end & (PAGE_SIZE - 1))) {
 		return -EINVAL;
 	}
 
     flags = aal_mc_spinlock_lock(&proc->vm->page_table_lock);
 	/* We defer freeing to the time of exit */
-    unsigned long va = va_start;
-	while (va < va_end) {
-		aal_mc_pt_clear_page(proc->vm->page_table, (void *)va);
-		va += PAGE_SIZE;
+	while (start < end) {
+		aal_mc_pt_clear_page(proc->vm->page_table, (void *)start);
+		start += PAGE_SIZE;
 	}
     aal_mc_spinlock_unlock(&proc->vm->page_table_lock, flags);
-
-    // we skip freeing "range"
-
-#if 1
-    kprintf("process.c,free_pages,pa=%lx,start=%lx,end=%lx\n", pa, va_start, va_end);
-    free_pages_pa(pa, (va_end - va_start) / PAGE_SIZE);
-#endif
 
 	return 0;
 }

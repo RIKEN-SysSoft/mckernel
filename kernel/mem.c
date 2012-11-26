@@ -40,12 +40,6 @@ void *allocate_pages(int npages, enum aal_mc_ap_flag flag)
 	return pa ? phys_to_virt(pa) : 0; 
 }
 
-void free_pages_pa(unsigned long pa, int npages)
-{
-    kprintf("mem.c,free_pages_pa,pa=%lx\n", pa);
-	aal_pagealloc_free(pa_allocator, pa, npages);
-}
-
 void free_pages(void *va, int npages)
 {
 	aal_pagealloc_free(pa_allocator, virt_to_phys(va), npages);
