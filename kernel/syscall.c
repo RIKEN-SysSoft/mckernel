@@ -395,18 +395,7 @@ SYSCALL_DECLARE(mmap)
         // #define MAP_ANONYMOUS  0x20
         kprintf("syscall.c,!MAP_FIXED,MAP_ANONYMOUS\n");
         unsigned long flags = aal_mc_spinlock_lock(&cpu_local_var(current)->vm->memory_range_lock);
-
-#if 1
-        unsigned long sz = aal_mc_syscall_arg1(ctx);
-        unsigned long amt_align = (sz & (PAGE_SIZE*2-1)) ? PAGE_SIZE : sz/2;
-        unsigned long s = ((region->map_end + amt_align - 1) & ~(amt_align - 1));
-        kprintf("(%d),syscall.c,!MAP_FIXED,MAP_ANONYMOUS,sz=%lx,amt_align=%lx,s=%lx\n", aal_mc_get_processor_id(), sz, amt_align, s);
-        unsigned long map_end_aligned = ((region->map_end + amt_align - 1) & ~(amt_align - 1));
-#else
         unsigned long s = (region->map_end + PAGE_SIZE - 1) & PAGE_MASK;
-        unsigned long map_end_aligned = region->map_end;
-#endif
-
 		unsigned long len = (aal_mc_syscall_arg1(ctx) + PAGE_SIZE - 1) & PAGE_MASK;
 		region->map_end = 
 			extend_process_region(cpu_local_var(current),
