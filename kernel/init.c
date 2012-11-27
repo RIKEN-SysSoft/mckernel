@@ -10,6 +10,11 @@
 #include <init.h>
 #include <cls.h>
 
+//#define IOCTL_FUNC_EXTENSION
+#ifdef IOCTL_FUNC_EXTENSION
+#include <ioctl.h>
+#endif
+
 //#define DEBUG_PRINT_INIT
 
 #ifdef DEBUG_PRINT_INIT
@@ -186,6 +191,13 @@ static void post_init(void)
 	}
 	ap_start();
 }
+#ifdef DCFA_RUN
+extern void user_main();
+#endif
+
+#ifdef DCFA_KMOD
+extern int mc_cmd_client_init(void);
+#endif
 
 int main(void)
 {
@@ -205,8 +217,19 @@ int main(void)
 
 	kputs("MCK/AAL booted.\n");
 
+#ifdef DCFA_KMOD
+	mc_cmd_client_init();
+#endif
 
+#ifdef DCFA_RUN
+	kputs("DCFA begin\n");
+
+	user_main();
+
+	kputs("DCFA end\n");
+#else
 	schedule();
+#endif
 
 	return 0;
 }
