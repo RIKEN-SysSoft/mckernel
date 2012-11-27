@@ -474,14 +474,26 @@ SYSCALL_DECLARE(mmap)
         // #define MAP_PRIVATE    0x02
 
         unsigned long flags = aal_mc_spinlock_lock(&cpu_local_var(current)->vm->memory_range_lock);
+
+#if 1 /* takagidebug*/
+        unsigned long amt_align = 0x100000; /* takagi */
+        unsigned long s = ((region->map_end + amt_align - 1) & ~(amt_align - 1));
+        unsigned long len = (aal_mc_syscall_arg1(ctx) + PAGE_SIZE - 1) & PAGE_MASK;
+        dkprintf("(%d),syscall.c,!MAP_FIXED,!MAP_ANONYMOUS,amt_align=%lx,s=%lx,len=%lx\n", aal_mc_get_processor_id(), amt_align, s, len);
+		region->map_end = 
+			extend_process_region(cpu_local_var(current),
+			                      region->map_start,
+			                      s,
+			                      s + len);
+#else
         unsigned long s = (region->map_end + PAGE_SIZE - 1) & PAGE_MASK;
 		unsigned long len = (aal_mc_syscall_arg1(ctx) + PAGE_SIZE - 1) & PAGE_MASK;
-        //        lockr = aal_mc_spinlock_lock(&cpu_status_lock);
 		region->map_end = 
 			extend_process_region(cpu_local_var(current),
 			                      region->map_start,
 			                      region->map_end,
 			                      s + len);
+#endif
         aal_mc_spinlock_unlock(&cpu_local_var(current)->vm->memory_range_lock, flags);
 		if (region->map_end < s + len) { return -EINVAL; }
 		s = region->map_end - len;
