@@ -100,13 +100,35 @@ long sys_brk(int n, aal_mc_user_context_t *ctx)
 {
 	unsigned long address = aal_mc_syscall_arg0(ctx);
 	struct vm_regions *region = &cpu_local_var(current)->vm->region;
+    unsigned long r;
 
-	region->brk_end = 
-		extend_process_region(cpu_local_var(current),
-		                      region->brk_start, region->brk_end,
-		                      address);
-	
-	return region->brk_end;
+    dkprintf("SC(%d)[sys_brk] brk_start=%lx,end=%lx\n", aal_mc_get_processor_id(), region->brk_start, region->brk_end);
+
+    /* brk change fail, including glibc trick brk(0) to obtain current brk */
+    if(address < region->brk_start) {
+        r = region->brk_end;
+        goto out;
+    }
+
+    /* brk change fail, because we don't shrink memory region  */
+    if(address < region->brk_end) {
+        r = region->brk_end;
+        goto out;
+    }
+
+    /* try to extend memory region */
+    unsigned long flags = aal_mc_spinlock_lock(&cpu_local_var(current)->vm->memory_range_lock);
+    region->brk_end = 
+        extend_process_region(cpu_local_var(current),
+                              region->brk_start, region->brk_end,
+                              address);
+    aal_mc_spinlock_unlock(&cpu_local_var(current)->vm->memory_range_lock, flags);
+    dkprintf("SC(%d)[sys_brk] brk_end set to %lx\n", aal_mc_get_processor_id(), region->brk_end);
+    
+    r = region->brk_end;    
+
+    out:
+	return r;
 
 }
 
