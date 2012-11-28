@@ -30,7 +30,7 @@
 #define dkprintf(...)
 #endif
 
-#define LOOP_TIMEOUT 1000 /* default 1000 */
+#define LOOP_TIMEOUT 500
 
 struct list_head timers;
 aal_spinlock_t timers_lock;
@@ -47,6 +47,56 @@ uint64_t schedule_timeout(uint64_t timeout)
 	struct waitq_entry my_wait;
 	struct timer my_timer;
 	unsigned long irqflags;
+	struct process *proc = cpu_local_var(current);
+
+	irqflags = aal_mc_spinlock_lock(&proc->spin_sleep_lock);
+	dkprintf("schedule_timeout() spin sleep timeout: %lu\n", timeout);
+	proc->spin_sleep = 1;
+	aal_mc_spinlock_unlock(&proc->spin_sleep_lock, irqflags);
+
+	/* Spin sleep.. */
+	for (;;) {
+		uint64_t t_s = rdtsc();
+		uint64_t t_e;
+		int spin_over = 0;
+
+		irqflags = aal_mc_spinlock_lock(&proc->spin_sleep_lock);
+		
+		/* Woken up by someone? */
+		if (!proc->spin_sleep) {
+			t_e = rdtsc();
+
+			spin_over = 1;
+			if ((t_e - t_s) < timeout) {
+				timeout -= (t_e - t_s);
+			}
+			else {
+				timeout = 1;
+			}
+		}
+		
+		aal_mc_spinlock_unlock(&proc->spin_sleep_lock, irqflags);
+
+		t_s = rdtsc();
+		
+		while ((rdtsc() - t_s) < LOOP_TIMEOUT) {
+			cpu_pause();
+		}
+
+		if (timeout < LOOP_TIMEOUT) {
+			timeout = 0;
+			spin_over = 1;
+		}
+		else {
+			timeout -= LOOP_TIMEOUT;
+		}
+
+		if (spin_over) {
+			dkprintf("schedule_timeout() spin woken up, timeout: %lu\n", 
+					timeout);
+			return timeout;
+		}
+	}
 
 	/* Init waitq and wait entry for this timer */
 	my_timer.timeout = (timeout < LOOP_TIMEOUT) ? LOOP_TIMEOUT : timeout;
@@ -72,6 +122,7 @@ uint64_t schedule_timeout(uint64_t timeout)
 	if (my_timer.timeout) {
 		list_del(&my_timer.list);
 	}
+	
 	aal_mc_spinlock_unlock(&timers_lock, irqflags);
 
 	dkprintf("schedule_timeout() woken up, timeout: %lu\n", 

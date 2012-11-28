@@ -846,8 +846,6 @@ SYSCALL_DECLARE(madvise)
 
 SYSCALL_DECLARE(futex)
 {
-	// TODO: timespec support!
-	//struct timespec _utime;
 	uint64_t timeout = 0; // No timeout
 	uint32_t val2 = 0;
 
@@ -857,20 +855,47 @@ SYSCALL_DECLARE(futex)
 	struct timespec *utime = (struct timespec*)aal_mc_syscall_arg3(ctx);
 	uint32_t *uaddr2 = (uint32_t *)aal_mc_syscall_arg4(ctx);
 	uint32_t val3 = (uint32_t)aal_mc_syscall_arg5(ctx);
+    
+	dkprintf("futex,uaddr=%lx,op=%x, val=%x, utime=%lx, uaddr2=%lx, val3=%x, []=%x\n", (unsigned long)uaddr, op, val, utime, uaddr2, val3, *uaddr);
 
 	/* Mask off the FUTEX_PRIVATE_FLAG,
 	 * assume all futexes are address space private */
 	op = (op & FUTEX_CMD_MASK);
 
-#if 0 
-	if (utime && (op == FUTEX_WAIT)) {
-		if (copy_from_user(&_utime, utime, sizeof(_utime)) != 0)
+	if (utime && (op == FUTEX_WAIT_BITSET || op == FUTEX_WAIT)) {
+		/* gettimeofday(&tv_now, NULL) from host */
+		struct syscall_request request AAL_DMA_ALIGN; 
+		struct timeval tv_now;
+		request.number = 96;
+		unsigned long __phys;                                          
+
+		dkprintf("futex,utime and FUTEX_WAIT_*, uaddr=%lx, []=%x\n", (unsigned long)uaddr, *uaddr);
+
+		if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
+					(void *)&tv_now, &__phys)) { 
+			return -EFAULT; 
+		}
+
+		request.args[0] = __phys;               
+
+		int r = do_syscall(&request, ctx);
+
+		if (r < 0) {
 			return -EFAULT;
-		if (!timespec_valid(&_utime))
-			return -EINVAL;
-		timeout = timespec_to_ns(_utime);
+		}
+
+		dkprintf("futex, FUTEX_WAIT_*, arg3 != NULL, pc=%lx\n", (unsigned long)aal_mc_syscall_pc(ctx));
+		dkprintf("now->tv_sec=%016ld,tv_nsec=%016ld\n", tv_now.tv_sec, tv_now.tv_usec * 1000);
+		dkprintf("utime->tv_sec=%016ld,tv_nsec=%016ld\n", utime->tv_sec, utime->tv_nsec);
+
+		long nsec_now = ((long)tv_now.tv_sec * 1000000000ULL) + 
+			tv_now.tv_usec * 1000;
+		long nsec_timeout = ((long)utime->tv_sec * 1000000000ULL) + 
+			utime->tv_nsec * 1;
+		long diff_nsec = nsec_timeout - nsec_now;
+
+		timeout = (diff_nsec / 1000) * 1100; // (usec * 1.1GHz)
 	}
-#endif
 
 	/* Requeue parameter in 'utime' if op == FUTEX_CMP_REQUEUE.
 	 * number of waiters to wake in 'utime' if op == FUTEX_WAKE_OP. */

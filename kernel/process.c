@@ -58,6 +58,9 @@ struct process *create_process(unsigned long user_pc)
 
 	init_process_vm(proc->vm);
 
+	aal_mc_spinlock_init(&proc->spin_sleep_lock);
+	proc->spin_sleep = 0;
+
 	return proc;
 }
 
@@ -434,10 +437,12 @@ void sched_init(void)
 	cpu_local_var(runq_len) = 0;
 	aal_mc_spinlock_init(&cpu_local_var(runq_lock));
 
+#ifdef TIMER_CPU_ID
 	if (aal_mc_get_processor_id() == TIMER_CPU_ID) {
 		init_timers();
 		wake_timers_loop();
 	}
+#endif
 }
 
 void schedule(void)
@@ -514,8 +519,23 @@ void schedule(void)
 int sched_wakeup_process(struct process *proc, int valid_states)
 {
 	int status;
+	int spin_slept = 0;
 	unsigned long irqstate;
 	struct cpu_local_var *v = get_cpu_local_var(proc->cpu_id);
+	
+	irqstate = aal_mc_spinlock_lock(&(proc->spin_sleep_lock));
+	if (proc->spin_sleep) {
+		dkprintf("sched_wakeup_process() spin wakeup: cpu_id: %d\n", 
+				proc->cpu_id);
+
+		spin_slept = 1;
+		proc->spin_sleep = 0;
+		status = 0;	
+	}
+	aal_mc_spinlock_unlock(&(proc->spin_sleep_lock), irqstate);
+	
+	if (spin_slept)
+		return status;
 
 	irqstate = aal_mc_spinlock_lock(&(v->runq_lock));
 	

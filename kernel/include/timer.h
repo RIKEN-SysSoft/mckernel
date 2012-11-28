@@ -18,7 +18,7 @@
 #include <affinity.h>
 #include <time.h>
 
-#define TIMER_CPU_ID	227
+//#define TIMER_CPU_ID	227
 
 struct timer {
 	uint64_t timeout;

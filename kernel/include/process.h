@@ -22,6 +22,9 @@
 
 #define USE_LARGE_PAGES
 
+#include <waitq.h>
+#include <futex.h>
+
 struct vm_range {
 	struct list_head list;
 	unsigned long start, end;
@@ -52,14 +55,14 @@ struct process {
 	// Runqueue list entry
 	struct list_head sched_list;  
 	
+	aal_spinlock_t spin_sleep_lock;
+	int spin_sleep;
+
 	struct thread {
 		int	*clear_child_tid;
 		unsigned long tlsblock_base, tlsblock_limit;
 	} thread;
 };
-
-#include <waitq.h>
-#include <futex.h>
 
 struct process_vm {
 	aal_atomic_t refcount;

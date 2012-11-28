@@ -242,11 +242,14 @@ static int futex_wait(uint32_t __user *uaddr, uint32_t val,
 	queue_unlock(queue, irqflags);
 	
 	if (!list_empty(&futex.link)) {
-		// We don't have timers for now, let's sleep forever,
-		// and pretend we were woken up
-		//time_remain = schedule_timeout(timeout);
-		schedule();
-		time_remain = 10;
+		
+		if (timeout) {
+			time_remain = schedule_timeout(timeout);
+		}
+		else {
+			schedule();
+			time_remain = 0;
+		}
 	}
 
 	cpu_local_var(current)->status = PS_RUNNING;
