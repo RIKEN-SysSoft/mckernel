@@ -76,7 +76,8 @@ static void send_syscall(struct syscall_request *req)
 #endif
 }
 
-static int do_syscall(struct syscall_request *req, aal_mc_user_context_t *ctx)
+
+int do_syscall(struct syscall_request *req, aal_mc_user_context_t *ctx)
 {
 	struct syscall_response *res = cpu_local_var(scp).response_va;
 

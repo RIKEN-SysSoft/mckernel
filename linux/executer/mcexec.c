@@ -25,13 +25,13 @@
 #include <pthread.h>
 #include <signal.h>
 
-#define DEBUG
+//#define DEBUG
 
 #ifndef DEBUG
 #define __dprint(msg, ...)
 #define __dprintf(arg, ...)
 #define __eprint(msg, ...)
-#define __eprinf(format, ...)
+#define __eprintf(format, ...)
 #else
 #define __dprint(msg, ...)  printf("%s: " msg, __FUNCTION__)
 #define __dprintf(format, ...)  printf("%s: " format, __FUNCTION__, \
@@ -39,6 +39,15 @@
 #define __eprint(msg, ...)  fprintf(stderr, "%s: " msg, __FUNCTION__)
 #define __eprintf(format, ...)  fprintf(stderr, "%s: " format, __FUNCTION__, \
                                         __VA_ARGS__)
+#endif
+
+#ifdef USE_SYSCALL_MOD_CALL
+extern int mc_cmd_server_init();
+extern void mc_cmd_server_exit();
+extern void mc_cmd_handle(int fd, int cpu, unsigned long args[6]);
+
+int __glob_argc = -1;
+char **__glob_argv = 0;
 #endif
 
 typedef unsigned char   cc_t;
@@ -301,8 +310,9 @@ struct thread_data_s {
 static void *main_loop_thread_func(void *arg)
 {
 	struct thread_data_s *td = (struct thread_data_s *)arg;
-	
+
 	td->ret = main_loop(td->fd, td->cpu, td->lock);
+
 	return NULL;
 }
 
@@ -319,6 +329,11 @@ int main(int argc, char **argv)
 	char *args;
 	int i;
 	pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+#ifdef USE_SYSCALL_MOD_CALL
+	__glob_argc = argc;
+	__glob_argv = argv;
+#endif
 
 	if (argc < 2) {
 		fprintf(stderr, "Usage: %s (program) [args...]\n",
@@ -397,6 +412,17 @@ int main(int argc, char **argv)
 	fflush(stdout);
 	fflush(stderr);
 	
+#ifdef USE_SYSCALL_MOD_CALL
+	/**
+	 * TODO: need mutex for static structures
+	 */
+	if(mc_cmd_server_init()){
+		fprintf(stderr, "Error: cmd server init failed\n");
+		return 1;
+	}
+	__dprint("mccmd server initialized\n");
+#endif
+
 	for (i = 0; i < NUM_HANDLER_THREADS; ++i) {
 		int ret;
 
@@ -422,6 +448,11 @@ int main(int argc, char **argv)
 		int ret;
 		ret = pthread_join(thread_data[i].thread_id, NULL);
 	}
+
+#ifdef USE_SYSCALL_MOD_CALL
+    mc_cmd_server_exit();
+    __dprint("mccmd server exited\n");
+#endif
 
 	return 0;
 }
@@ -487,7 +518,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			}
 			*/
 			
-			printf("open: %s\n", dma_buf);
+			__dprintf("open: %s\n", dma_buf);
 
 			ret = open((char *)dma_buf, w.sr.args[1], w.sr.args[2]);
 			SET_ERR(ret);
@@ -748,6 +779,14 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
             mmap_out:
 			do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf, w.sr.args[0], w.sr.args[1]);
             break; }
+
+#ifdef USE_SYSCALL_MOD_CALL
+		case 303:{
+			__dprintf("mcexec.c,mod_cal,mod=%ld,cmd=%ld\n", w.sr.args[0], w.sr.args[1]);
+			mc_cmd_handle(fd, cpu, w.sr.args);
+			break;
+		}
+#endif
 		default:
 			__dprintf("Unhandled system calls: %ld\n", w.sr.number);
 			break;
