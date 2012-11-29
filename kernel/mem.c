@@ -233,7 +233,7 @@ void aal_mc_map_micpa(unsigned long host_pa, unsigned long* mic_pa) {
             break;
         }
     }
-    dkprintf("aal_mc_map_micpa,1,i=%d,host_pa=%lx,mic_pa=%llx\n", i, host_pa, *mic_pa);
+    kprintf("aal_mc_map_micpa,1,i=%d,host_pa=%lx,mic_pa=%llx\n", i, host_pa, *mic_pa);
     if(i == NUM_SMPT_ENTRIES_IN_USE - NUM_SMPT_ENTRIES_MICPA - 1) {
         *mic_pa = 0;
         return; 
@@ -250,8 +250,13 @@ int aal_mc_free_micpa(unsigned long mic_pa) {
         return -1;
     }
     free_bitmap_micpa |= (1ULL << smpt_ndx);
-    dkprintf("aal_mc_free_micpa,index=%d,freed\n", smpt_ndx); 
+    kprintf("aal_mc_free_micpa,index=%d,freed\n", smpt_ndx);
     return 0;
+}
+
+void aal_mc_clean_micpa(void){
+	free_bitmap_micpa = ((~((1ULL<<(NUM_SMPT_ENTRIES_IN_USE - NUM_SMPT_ENTRIES_MICPA))-1))&((1ULL << NUM_SMPT_ENTRIES_IN_USE) - 1));
+	kprintf("aal_mc_clean_micpa\n");
 }
 
 void mem_init(void)

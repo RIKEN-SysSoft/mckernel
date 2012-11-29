@@ -38,6 +38,11 @@ static aal_atomic_t pid_cnt = AAL_ATOMIC_INIT(1024);
 int memcpy_async(unsigned long dest, unsigned long src,
                  unsigned long len, int wait, unsigned long *notify);
 
+
+#ifdef DCFA_KMOD
+static void do_mod_exit(int status);
+#endif
+
 static void send_syscall(struct syscall_request *req)
 {
 	struct ikc_scd_packet packet;
@@ -343,8 +348,12 @@ SYSCALL_DECLARE(lseek)
 SYSCALL_DECLARE(exit_group)
 {
 	SYSCALL_HEADER;
-	do_syscall(&request, ctx);
 
+#ifdef DCFA_KMOD
+	do_mod_exit((int)aal_mc_syscall_arg0(ctx));
+#endif
+
+	do_syscall(&request, ctx);
 	runq_del_proc(cpu_local_var(current), aal_mc_get_processor_id());
 	free_process_memory(cpu_local_var(current));
 
@@ -952,6 +961,10 @@ SYSCALL_DECLARE(futex)
 
 SYSCALL_DECLARE(exit)
 {
+#ifdef DCFA_KMOD
+	do_mod_exit((int)aal_mc_syscall_arg0(ctx));
+#endif
+
 	/* If there is a clear_child_tid address set, clear it and wake it.
 	 * This unblocks any pthread_join() waiters. */
 	if (cpu_local_var(current)->thread.clear_child_tid) {
@@ -1058,10 +1071,16 @@ SYSCALL_DECLARE(noop)
 
 extern int ibmic_cmd_syscall(char *uargs);
 extern int dcfampi_cmd_syscall(char *uargs);
+extern void ibmic_cmd_exit(int status);
 
 static int (*mod_call_table[]) (char *) = {
 		[1] = ibmic_cmd_syscall,
 		[2] = dcfampi_cmd_syscall,
+};
+
+static void (*mod_exit_table[]) (int) = {
+		[1] = ibmic_cmd_exit,
+		[2] = NULL,
 };
 
 SYSCALL_DECLARE(mod_call) {
@@ -1077,6 +1096,14 @@ SYSCALL_DECLARE(mod_call) {
 		return mod_call_table[mod_id]((char*)uargs);
 
 	return -ENOSYS;
+}
+
+static void do_mod_exit(int status){
+	int i;
+	for(i=1; i<=2; i++){
+		if(mod_exit_table[i])
+			mod_exit_table[i](status);
+	}
 }
 #endif
 
