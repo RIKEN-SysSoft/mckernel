@@ -469,11 +469,11 @@ SYSCALL_DECLARE(mmap)
         unsigned long s = (region->map_end + PAGE_SIZE - 1) & PAGE_MASK;
         unsigned long map_end_aligned = region->map_end;
 		unsigned long len = (aal_mc_syscall_arg1(ctx) + PAGE_SIZE - 1) & PAGE_MASK;
-        dkprintf("SC(%d),syscall.c,mmap,len=%lx", cpuid, len);
+        dkprintf("syscall.c,mmap,len=%lx", len);
 
 #ifdef USE_NOCACHE_MMAP
 		if ((aal_mc_syscall_arg3(ctx) & 0x40) == 0x40) {
-			dkprintf("SC(%d),syscall.c,mmap,nocache,len=%lx\n", cpuid, len);
+			dkprintf("syscall.c,mmap,nocache,len=%lx\n", len);
 			region->map_end = extend_process_region(
 					cpu_local_var(current), region->map_start, map_end_aligned,
 					s + len, VR_IO_NOCACHE);

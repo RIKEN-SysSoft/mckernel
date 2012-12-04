@@ -33,12 +33,12 @@
 #define __eprint(msg, ...)
 #define __eprintf(format, ...)
 #else
-#define __dprint(msg, ...)  printf("%s: " msg, __FUNCTION__)
-#define __dprintf(format, ...)  printf("%s: " format, __FUNCTION__, \
-                                       __VA_ARGS__)
-#define __eprint(msg, ...)  fprintf(stderr, "%s: " msg, __FUNCTION__)
-#define __eprintf(format, ...)  fprintf(stderr, "%s: " format, __FUNCTION__, \
-                                        __VA_ARGS__)
+#define __dprint(msg, ...)  {printf("%s: " msg, __FUNCTION__);fflush(stdout);}
+#define __dprintf(format, ...)  {printf("%s: " format, __FUNCTION__, \
+                                       __VA_ARGS__);fflush(stdout);}
+#define __eprint(msg, ...)  {fprintf(stderr, "%s: " msg, __FUNCTION__);fflush(stderr);}
+#define __eprintf(format, ...)  {fprintf(stderr, "%s: " format, __FUNCTION__, \
+                                        __VA_ARGS__);fflush(stderr);}
 #endif
 
 #ifdef USE_SYSCALL_MOD_CALL
@@ -346,6 +346,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error: Failed to open %s\n", argv[1]);
 		return 1;
 	}
+
 	desc = load_elf(fp);
 	if (!desc) {
 		fclose(fp);
@@ -448,11 +449,6 @@ int main(int argc, char **argv)
 		int ret;
 		ret = pthread_join(thread_data[i].thread_id, NULL);
 	}
-
-#ifdef USE_SYSCALL_MOD_CALL
-    mc_cmd_server_exit();
-    __dprint("mccmd server exited\n");
-#endif
 
 	return 0;
 }
@@ -679,7 +675,14 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 		case __NR_exit:
 		case __NR_exit_group:
 			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
-		
+
+			__dprintf("__NR_exit/__NR_exit_group: %ld (cpu_id: %d)\n",
+					w.sr.args[0], cpu);
+
+#ifdef USE_SYSCALL_MOD_CALL
+			mc_cmd_server_exit();
+			__dprint("mccmd server exited\n");
+#endif
 			exit(0);
 
 			pthread_mutex_unlock(lock);
