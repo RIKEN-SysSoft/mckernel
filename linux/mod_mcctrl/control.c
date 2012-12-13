@@ -3,6 +3,7 @@
 #include <linux/slab.h>
 #include <linux/wait.h>
 #include <linux/mm.h>
+#include <linux/gfp.h>
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/msr.h>
@@ -289,20 +290,52 @@ int mcexec_wait_syscall(aal_os_t os, struct syscall_wait_desc *__user req)
 	return 0;
 }
 
-long mcexec_pin_region(aal_os_t os, unsigned long *__user uaddress)
+long mcexec_pin_region(aal_os_t os, unsigned long *__user arg)
 {
+	struct prepare_dma_desc desc;
 	int pin_shift = 16;
+	int order;
 	unsigned long a;
 
-	a = __get_free_pages(GFP_KERNEL, pin_shift - PAGE_SHIFT);
+	if (copy_from_user(&desc, arg, sizeof(struct prepare_dma_desc))) {
+		return -EFAULT;
+	}
+
+	order =  pin_shift - PAGE_SHIFT;
+	if(desc.size > 0){
+		order = get_order (desc.size);
+	}
+
+	a = __get_free_pages(GFP_KERNEL, order);
 	if (!a) {
 		return -ENOMEM;
 	}
 
 	a = virt_to_phys((void *)a);
 
-	if (copy_to_user(uaddress, &a, sizeof(unsigned long))) {
+	if (copy_to_user((void*)desc.pa, &a, sizeof(unsigned long))) {
 		return -EFAULT;
+	}
+	return 0;
+}
+
+long mcexec_free_region(aal_os_t os, unsigned long *__user arg)
+{
+	struct free_dma_desc desc;
+	int pin_shift = 16;
+	int order;
+
+	if (copy_from_user(&desc, arg, sizeof(struct free_dma_desc))) {
+		return -EFAULT;
+	}
+
+	order =  pin_shift - PAGE_SHIFT;
+	if(desc.size > 0){
+		order = get_order (desc.size);
+	}
+
+	if(desc.pa > 0){
+		free_pages((unsigned long)phys_to_virt(desc.pa), order);
 	}
 	return 0;
 }
@@ -463,6 +496,8 @@ long __mcctrl_control(aal_os_t os, unsigned int req, unsigned long arg)
 	case MCEXEC_UP_PREPARE_DMA:
 		return mcexec_pin_region(os, (unsigned long *)arg);
 
+	case MCEXEC_UP_FREE_DMA:
+		return mcexec_free_region(os, (unsigned long *)arg);
 	}
 	return -EINVAL;
 }

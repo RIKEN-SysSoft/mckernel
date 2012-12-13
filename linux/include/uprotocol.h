@@ -9,6 +9,7 @@
 #define MCEXEC_UP_LOAD_SYSCALL   0x30a02905
 
 #define MCEXEC_UP_PREPARE_DMA    0x30a02910
+#define MCEXEC_UP_FREE_DMA       0x30a02911
 
 struct program_transfer {
 	unsigned long dest;
@@ -69,6 +70,15 @@ struct syscall_ret_desc {
 	long ret;
 	unsigned long src;
 	unsigned long dest;
+	unsigned long size;
+};
+
+struct prepare_dma_desc {
+	unsigned long size;
+	unsigned long pa;
+};
+struct free_dma_desc {
+	unsigned long pa;
 	unsigned long size;
 };
 

@@ -28,6 +28,7 @@ static struct aal_os_user_call_handler mcctrl_uchs[] = {
 	{ .request = MCEXEC_UP_RET_SYSCALL, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_LOAD_SYSCALL, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_PREPARE_DMA, .func = mcctrl_ioctl },
+	{ .request = MCEXEC_UP_FREE_DMA, .func = mcctrl_ioctl },
 };
 
 static struct aal_os_user_call mcctrl_uc = {
