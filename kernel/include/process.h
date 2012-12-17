@@ -1,10 +1,10 @@
 #ifndef HEADER_PROCESS_H
 #define HEADER_PROCESS_H
 
-#include <aal/context.h>
-#include <aal/cpu.h>
-#include <aal/mm.h>
-#include <aal/atomic.h>
+#include <ihk/context.h>
+#include <ihk/cpu.h>
+#include <ihk/mm.h>
+#include <ihk/atomic.h>
 #include <list.h>
 
 #define VR_STACK           0x1

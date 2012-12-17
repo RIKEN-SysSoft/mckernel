@@ -3,7 +3,7 @@
 #include <errno.h>
 #include <kmalloc.h>
 #include <cls.h>
-#include <aal/debug.h>
+#include <ihk/debug.h>
 #include <page.h>
 #include <cpulocal.h>
 #include <auxvec.h>

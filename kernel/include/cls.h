@@ -12,7 +12,7 @@ struct malloc_header {
 	unsigned long size;
 };
 
-#include <aal/lock.h>
+#include <ihk/lock.h>
 #define CPU_STATUS_DISABLE	(0)
 #define CPU_STATUS_IDLE		(1)
 #define CPU_STATUS_RUNNING	(2)

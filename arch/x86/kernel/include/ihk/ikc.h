@@ -1,7 +1,7 @@
 #ifndef HEADER_X86_COMMON_AAL_IKC_H
 #define HEADER_X86_COMMON_AAL_IKC_H
 
-#include <ikc/aal.h>
+#include <ikc/ihk.h>
 
 /* manycore side */
 int aal_mc_ikc_init_first(struct aal_ikc_channel_desc *,

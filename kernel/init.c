@@ -1,11 +1,11 @@
 #include <types.h>
 #include <kmsg.h>
 #include <kmalloc.h>
-#include <aal/cpu.h>
-#include <aal/mm.h>
-#include <aal/debug.h>
-#include <aal/dma.h>
-#include <aal/perfctr.h>
+#include <ihk/cpu.h>
+#include <ihk/mm.h>
+#include <ihk/debug.h>
+#include <ihk/dma.h>
+#include <ihk/perfctr.h>
 #include <process.h>
 #include <init.h>
 #include <cls.h>

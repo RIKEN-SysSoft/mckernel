@@ -1,7 +1,7 @@
 #ifndef HEADER_MCCTRL_H
 #define HEADER_MCCTRL_H
 
-#include <aal/aal_host_driver.h>
+#include <ihk/ihk_host_driver.h>
 #include <uprotocol.h>
 #include <linux/wait.h>
 

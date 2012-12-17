@@ -1,7 +1,7 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-#include <aal/types.h>
+#include <ihk/types.h>
 
 #endif
 

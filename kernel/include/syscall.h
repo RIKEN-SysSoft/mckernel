@@ -1,7 +1,7 @@
 #ifndef __HEADER_SYSCALL_H
 #define __HEADER_SYSCALL_H
 
-#include <aal/memconst.h>
+#include <ihk/memconst.h>
 
 #define NUM_SYSCALLS 255
 

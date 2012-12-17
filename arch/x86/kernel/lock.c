@@ -1,4 +1,4 @@
-#include <aal/lock.h>
+#include <ihk/lock.h>
 
 #if 0
 

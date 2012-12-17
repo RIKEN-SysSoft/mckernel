@@ -1,5 +1,5 @@
-#include <aal/cpu.h>
-#include <aal/debug.h>
+#include <ihk/cpu.h>
+#include <ihk/debug.h>
 #include <types.h>
 #include <errno.h>
 #include <list.h>

@@ -1,8 +1,8 @@
 #include <cpulocal.h>
-#include <aal/atomic.h>
-#include <aal/mm.h>
-#include <aal/cpu.h>
-#include <aal/debug.h>
+#include <ihk/atomic.h>
+#include <ihk/mm.h>
+#include <ihk/cpu.h>
+#include <ihk/debug.h>
 #include <registers.h>
 #include <string.h>
 

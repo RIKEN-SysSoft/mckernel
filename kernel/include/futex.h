@@ -55,7 +55,7 @@
 
 #ifdef __KERNEL__
 
-#include <aal/lock.h>
+#include <ihk/lock.h>
 #include <list.h>
 #include <process.h>
 #include <waitq.h>

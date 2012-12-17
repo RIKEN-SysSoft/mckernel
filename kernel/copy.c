@@ -1,4 +1,4 @@
-#include <aal/dma.h>
+#include <ihk/dma.h>
 #include <amemcpy.h>
 
 int memcpy_async(unsigned long dest, unsigned long src,

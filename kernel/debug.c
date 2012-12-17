@@ -1,8 +1,8 @@
 #include <stdarg.h>
 #include <string.h>
 #include <kmsg.h>
-#include <aal/debug.h>
-#include <aal/lock.h>
+#include <ihk/debug.h>
+#include <ihk/lock.h>
 
 struct aal_kmsg_buf kmsg_buf AAL_KMSG_ALIGN;
 

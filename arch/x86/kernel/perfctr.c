@@ -1,7 +1,7 @@
-#include <aal/perfctr.h>
+#include <ihk/perfctr.h>
 #include <march.h>
 #include <errno.h>
-#include <aal/debug.h>
+#include <ihk/debug.h>
 #include <registers.h>
 
 extern unsigned int *x86_march_perfmap;

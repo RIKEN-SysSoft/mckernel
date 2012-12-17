@@ -58,7 +58,7 @@
 #include <process.h>
 #include <futex.h>
 #include <hash.h>
-#include <aal/lock.h>
+#include <ihk/lock.h>
 #include <list.h>
 #include <cls.h>
 #include <kmsg.h>

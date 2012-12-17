@@ -1,9 +1,9 @@
 #include <types.h>
 #include <kmsg.h>
-#include <aal/cpu.h>
-#include <aal/mm.h>
-#include <aal/debug.h>
-#include <aal/ikc.h>
+#include <ihk/cpu.h>
+#include <ihk/mm.h>
+#include <ihk/debug.h>
+#include <ihk/ikc.h>
 #include <ikc/master.h>
 
 static unsigned long read_tsc(void)

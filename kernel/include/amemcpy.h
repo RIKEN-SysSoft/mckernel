@@ -1,7 +1,7 @@
 #ifndef HEADER_AMEMCPY_H
 #define HEADER_AMEMCPY_H
 
-#include <aal/cpu.h>
+#include <ihk/cpu.h>
 
 static void memcpy_async_wait(unsigned long *notify)
 {

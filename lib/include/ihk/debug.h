@@ -1,7 +1,7 @@
 #ifndef AAL_DEBUG_H
 #define AAL_DEBUG_H
 
-#include <aal/memconst.h>
+#include <ihk/memconst.h>
 
 struct aal_kmsg_buf {
 	int tail;

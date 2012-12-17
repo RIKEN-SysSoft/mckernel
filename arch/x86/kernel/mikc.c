@@ -1,5 +1,5 @@
-#include <aal/ikc.h>
-#include <aal/lock.h>
+#include <ihk/ikc.h>
+#include <ihk/lock.h>
 #include <ikc/msg.h>
 #include <memory.h>
 #include <string.h>

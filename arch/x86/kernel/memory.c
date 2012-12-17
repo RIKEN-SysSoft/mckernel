@@ -1,6 +1,6 @@
-#include <aal/cpu.h>
-#include <aal/debug.h>
-#include <aal/mm.h>
+#include <ihk/cpu.h>
+#include <ihk/debug.h>
+#include <ihk/mm.h>
 #include <types.h>
 #include <memory.h>
 #include <string.h>

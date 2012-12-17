@@ -1,14 +1,14 @@
 #include <kmsg.h>
 #include <kmalloc.h>
 #include <string.h>
-#include <aal/cpu.h>
-#include <aal/debug.h>
-#include <aal/lock.h>
-#include <aal/mm.h>
-#include <aal/page_alloc.h>
+#include <ihk/cpu.h>
+#include <ihk/debug.h>
+#include <ihk/lock.h>
+#include <ihk/mm.h>
+#include <ihk/page_alloc.h>
 #include <registers.h>
-#include <sysdeps/knf/mic/micconst.h>
-#include <sysdeps/knf/mic/micsboxdefine.h>
+#include <sysdeps/mic/mic/micconst.h>
+#include <sysdeps/mic/mic/micsboxdefine.h>
 #include <cls.h>
 
 //#define DEBUG_PRINT_MEM

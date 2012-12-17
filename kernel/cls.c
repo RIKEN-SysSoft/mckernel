@@ -1,10 +1,10 @@
 #include <kmsg.h>
 #include <string.h>
-#include <aal/cpu.h>
-#include <aal/debug.h>
-#include <aal/lock.h>
-#include <aal/mm.h>
-#include <aal/page_alloc.h>
+#include <ihk/cpu.h>
+#include <ihk/debug.h>
+#include <ihk/lock.h>
+#include <ihk/mm.h>
+#include <ihk/page_alloc.h>
 #include <cls.h>
 #include <page.h>
 

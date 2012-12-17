@@ -1,7 +1,7 @@
 #ifndef __HEADER_GENERIC_INCLUDE_DMA_H
 #define __HEADER_GENERIC_INCLUDE_DMA_H
 
-#include <aal/ikc.h>
+#include <ihk/ikc.h>
 
 struct aal_dma_request {
 	aal_os_t src_os;

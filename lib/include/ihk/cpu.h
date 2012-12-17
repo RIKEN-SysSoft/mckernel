@@ -2,7 +2,7 @@
 #define AAL_CPU_H
 
 #include <list.h>
-#include <aal/context.h>
+#include <ihk/context.h>
 
 void cpu_enable_interrupt(void);
 void cpu_disable_interrupt(void);

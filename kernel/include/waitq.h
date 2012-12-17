@@ -3,7 +3,7 @@
 
 /* Kitten waitqueue adaptation */
 
-#include <aal/lock.h>
+#include <ihk/lock.h>
 #include <list.h>
 
 struct process;

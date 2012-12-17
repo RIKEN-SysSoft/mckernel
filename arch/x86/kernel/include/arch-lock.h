@@ -4,7 +4,7 @@
 #ifndef __HEADER_X86_COMMON_ARCH_LOCK
 #define __HEADER_X86_COMMON_ARCH_LOCK
 
-#include <aal/cpu.h>
+#include <ihk/cpu.h>
 
 //#define DEBUG_SPINLOCK
 

@@ -1,23 +1,23 @@
 #include <types.h>
 #include <kmsg.h>
-#include <aal/cpu.h>
+#include <ihk/cpu.h>
 #include <cpulocal.h>
-#include <aal/mm.h>
-#include <aal/debug.h>
-#include <aal/ikc.h>
+#include <ihk/mm.h>
+#include <ihk/debug.h>
+#include <ihk/ikc.h>
 #include <errno.h>
 #include <cls.h>
 #include <syscall.h>
 #include <page.h>
 #include <amemcpy.h>
 #include <uio.h>
-#include <aal/lock.h>
+#include <ihk/lock.h>
 #include <ctype.h>
 #include <waitq.h>
 #include <rlimit.h>
 #include <affinity.h>
 #include <time.h>
-#include <aal/perfctr.h>
+#include <ihk/perfctr.h>
 
 /* Headers taken from kitten LWK */
 #include <lwk/stddef.h>

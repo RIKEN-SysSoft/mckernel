@@ -1,5 +1,5 @@
-#include <aal/debug.h>
-#include <aal/cpu.h>
+#include <ihk/debug.h>
+#include <ihk/cpu.h>
 
 void panic(const char *msg)
 {

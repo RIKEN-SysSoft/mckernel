@@ -4,9 +4,9 @@
 #include <linux/miscdevice.h>
 #include <linux/slab.h>
 #include "mcctrl.h"
-#include <aal/ikc.h>
+#include <ihk/ikc.h>
 #include <ikc/master.h>
-#include <sysdeps/knf/mic/micconst.h>
+#include <sysdeps/mic/mic/micconst.h>
 
 #define REQUEST_SHIFT    16
 
