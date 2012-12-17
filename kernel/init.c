@@ -24,20 +24,20 @@
 #endif
 
 
-extern struct aal_kmsg_buf kmsg_buf;
+extern struct ihk_kmsg_buf kmsg_buf;
 
-extern long syscall(int, aal_mc_user_context_t *);
+extern long syscall(int, ihk_mc_user_context_t *);
 
 static void handler_init(void)
 {
-	aal_mc_set_syscall_handler(syscall);
+	ihk_mc_set_syscall_handler(syscall);
 }
 
 unsigned long data[1024] __attribute__((aligned(64)));
 
 static void dma_test(void)
 {
-	struct aal_dma_request req;
+	struct ihk_dma_request req;
 	unsigned long fin = 0;
 	int i, j;
 
@@ -52,20 +52,20 @@ static void dma_test(void)
 
 		kprintf("DMA Test Started.\n");
 		memset(&req, 0, sizeof(req));
-		req.src_os = AAL_THIS_OS;
+		req.src_os = IHK_THIS_OS;
 		req.src_phys = virt_to_phys(data);
-		req.dest_os = AAL_THIS_OS;
+		req.dest_os = IHK_THIS_OS;
 		req.dest_phys = virt_to_phys(&data[256]);
 		req.size = 64;
 		req.notify = (void *)virt_to_phys(&fin);
-		req.notify_os = AAL_THIS_OS;
+		req.notify_os = IHK_THIS_OS;
 		req.priv = (void *)0x2984;
 
 		kprintf("VtoP : %p, %lx\n", data, virt_to_phys(data));
 		kprintf("notify : %p, %lx (%lx)\n", &fin, virt_to_phys(&fin),
 				sizeof(req));
 
-		if (aal_mc_dma_request(0, &req) != 0) {
+		if (ihk_mc_dma_request(0, &req) != 0) {
 			kprintf("Failed to request DMA!\n");
 		}
 		kprintf("DMA Test Wait.\n");
@@ -83,11 +83,11 @@ static void dma_test(void)
 	}
 }
 
-extern char *aal_mc_get_kernel_args(void);
+extern char *ihk_mc_get_kernel_args(void);
 
 char *find_command_line(char *name)
 {
-	char *cmdline = aal_mc_get_kernel_args();
+	char *cmdline = ihk_mc_get_kernel_args();
 
 	if (!cmdline) {
 		return NULL;
@@ -126,9 +126,9 @@ void pc_init(void)
 	dkprintf("perfctr mode : priv = %d, set = %d\n", kmode, imode);
 
 	for (i = 0; i < 4; i++) {
-		aal_mc_perfctr_init(i, x[imode][i], kmode);
+		ihk_mc_perfctr_init(i, x[imode][i], kmode);
 	}
-	aal_mc_perfctr_start(0xf);
+	ihk_mc_perfctr_start(0xf);
 }
 
 void pc_ap_init(void)
@@ -143,12 +143,12 @@ static void pc_test(void)
 
 	pc_init();
 
-	aal_mc_perfctr_read_mask(0xf, st);
+	ihk_mc_perfctr_read_mask(0xf, st);
 	for (i = 0; i < sizeof(data) / sizeof(data[0]); i++) {
 		data[i] += i;
 		asm volatile ("" : : : "memory");
 	}
-	aal_mc_perfctr_read_mask(0xf, ed);
+	ihk_mc_perfctr_read_mask(0xf, ed);
 
 	kprintf("perfctr:(%ld) %ld, %ld, %ld, %ld\n", st[0], ed[0] - st[0],
 	        ed[1] - st[1], ed[2] - st[2], ed[3] - st[3]);
@@ -157,12 +157,12 @@ static void pc_test(void)
 static void rest_init(void)
 {
 	char *cmdline;
-	cmdline = aal_mc_get_kernel_args();
+	cmdline = ihk_mc_get_kernel_args();
 	kprintf("KCommand Line: %s\n", cmdline);
 
 	handler_init();
 
-	aal_mc_dma_init();
+	ihk_mc_dma_init();
 	dma_test();
 	//pc_test();
 
@@ -215,7 +215,7 @@ int main(void)
 
 	post_init();
 
-	kputs("MCK/AAL booted.\n");
+	kputs("MCK/IHK booted.\n");
 
 #ifdef DCFA_KMOD
 	mc_cmd_client_init();

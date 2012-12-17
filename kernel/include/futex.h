@@ -211,13 +211,13 @@ static inline int futex_atomic_cmpxchg_inatomic(int __user *uaddr, int oldval,
 struct futex {
 	struct list_head		link;
 	struct waitq			waitq;
-	aal_spinlock_t *		lock_ptr;
+	ihk_spinlock_t *		lock_ptr;
 	uint32_t __user *		uaddr;
 	uint32_t				bitset;
 };
 
 struct futex_queue {
-	aal_spinlock_t			lock;
+	ihk_spinlock_t			lock;
 	struct list_head		futex_list;
 };
 

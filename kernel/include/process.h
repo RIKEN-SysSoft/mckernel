@@ -49,13 +49,13 @@ struct process {
 
 	struct process_vm *vm;
 
-	aal_mc_kernel_context_t ctx;
-	aal_mc_user_context_t  *uctx;
+	ihk_mc_kernel_context_t ctx;
+	ihk_mc_user_context_t  *uctx;
 	
 	// Runqueue list entry
 	struct list_head sched_list;  
 	
-	aal_spinlock_t spin_sleep_lock;
+	ihk_spinlock_t spin_sleep_lock;
 	int spin_sleep;
 
 	struct thread {
@@ -65,7 +65,7 @@ struct process {
 };
 
 struct process_vm {
-	aal_atomic_t refcount;
+	ihk_atomic_t refcount;
 
 	struct page_table *page_table;
 	struct list_head vm_range_list;
@@ -74,13 +74,13 @@ struct process_vm {
 	// Address space private futexes 
 	struct futex_queue futex_queues[1 << FUTEX_HASHBITS];
 
-    aal_spinlock_t page_table_lock;
-    aal_spinlock_t memory_range_lock;
+    ihk_spinlock_t page_table_lock;
+    ihk_spinlock_t memory_range_lock;
     // to protect the followings:
     // 1. addition of process "memory range" (extend_process_region, add_process_memory_range)
     // 2. addition of process page table (allocate_pages, update_process_page_table)
-    // note that physical memory allocator (aal_mc_alloc_pages, aal_pagealloc_alloc)
-    // is protected by its own lock (see aal/manycore/generic/page_alloc.c)
+    // note that physical memory allocator (ihk_mc_alloc_pages, ihk_pagealloc_alloc)
+    // is protected by its own lock (see ihk/manycore/generic/page_alloc.c)
 };
 
 

@@ -1,12 +1,12 @@
-#ifndef AAL_DEBUG_H
-#define AAL_DEBUG_H
+#ifndef IHK_DEBUG_H
+#define IHK_DEBUG_H
 
 #include <ihk/memconst.h>
 
-struct aal_kmsg_buf {
+struct ihk_kmsg_buf {
 	int tail;
 	int len;
-	char str[AAL_KMSG_SIZE - sizeof(int) * 2];
+	char str[IHK_KMSG_SIZE - sizeof(int) * 2];
 };
 
 extern int kprintf(const char *format, ...);

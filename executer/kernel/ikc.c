@@ -15,10 +15,10 @@ int num_channels;
 struct mcctrl_channel *channels;
 
 void mcexec_prepare_ack(unsigned long arg);
-static void mcctrl_ikc_init(aal_os_t os, int cpu, unsigned long rphys);
+static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys);
 int mcexec_syscall(struct mcctrl_channel *c, unsigned long arg);
 
-static int syscall_packet_handler(struct aal_ikc_channel_desc *c,
+static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *__os)
 {
 	struct ikc_scd_packet *pisp = __packet;
@@ -45,7 +45,7 @@ int mcctrl_ikc_send(int cpu, struct ikc_scd_packet *pisp)
 	if (cpu < 0 || cpu >= num_channels || !channels[cpu].c) {
 		return -EINVAL;
 	}
-	return aal_ikc_send(channels[cpu].c, pisp, 0);
+	return ihk_ikc_send(channels[cpu].c, pisp, 0);
 }
 
 int mcctrl_ikc_send_msg(int cpu, int msg, int ref, unsigned long arg)
@@ -60,15 +60,15 @@ int mcctrl_ikc_send_msg(int cpu, int msg, int ref, unsigned long arg)
 	packet.ref = ref;
 	packet.arg = arg;
 
-	return aal_ikc_send(channels[cpu].c, &packet, 0);
+	return ihk_ikc_send(channels[cpu].c, &packet, 0);
 }
 
 int mcctrl_ikc_set_recv_cpu(int cpu)
 {
-	aal_ikc_channel_set_cpu(channels[cpu].c,
-	                        aal_ikc_get_processor_id());
+	ihk_ikc_channel_set_cpu(channels[cpu].c,
+	                        ihk_ikc_get_processor_id());
 	kprintf("Setting the target to %d\n",
-	        aal_ikc_get_processor_id());
+	        ihk_ikc_get_processor_id());
 	return 0;
 }
 
@@ -84,7 +84,7 @@ int mcctrl_ikc_is_valid_thread(int cpu)
 unsigned long *mcctrl_doorbell_va;
 unsigned long mcctrl_doorbell_pa;
 
-static void mcctrl_ikc_init(aal_os_t os, int cpu, unsigned long rphys)
+static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys)
 {
 	struct ikc_scd_packet packet;
 	struct mcctrl_channel *pmc = channels + cpu;
@@ -97,12 +97,12 @@ static void mcctrl_ikc_init(aal_os_t os, int cpu, unsigned long rphys)
 
 	printk("IKC init: %d\n", cpu);
 
-	phys = aal_device_map_memory(aal_os_to_dev(os), rphys,
+	phys = ihk_device_map_memory(ihk_os_to_dev(os), rphys,
 	                             sizeof(struct ikc_scd_init_param));
-#ifdef CONFIG_KNF
+#ifdef CONFIG_MIC
 	rpm = ioremap_wc(phys, sizeof(struct ikc_scd_init_param));
 #else
-	rpm = aal_device_map_virtual(aal_os_to_dev(os), phys, 
+	rpm = ihk_device_map_virtual(ihk_os_to_dev(os), phys, 
 	                             sizeof(struct ikc_scd_init_param),
 								 NULL, 0);
 #endif
@@ -121,14 +121,14 @@ static void mcctrl_ikc_init(aal_os_t os, int cpu, unsigned long rphys)
 	
 	pmc->param.response_rpa = rpm->response_page;
 	pmc->param.response_pa 
-		= aal_device_map_memory(aal_os_to_dev(os),
+		= ihk_device_map_memory(ihk_os_to_dev(os),
 		                        pmc->param.response_rpa,
 		                        PAGE_SIZE);
-#ifdef CONFIG_KNF							
+#ifdef CONFIG_MIC							
 	pmc->param.response_va = ioremap_cache(pmc->param.response_pa,
 	                                       PAGE_SIZE);
 #else
-	pmc->param.response_va = aal_device_map_virtual(aal_os_to_dev(os), 
+	pmc->param.response_va = ihk_device_map_virtual(ihk_os_to_dev(os), 
 	                                                pmc->param.response_pa,
 													PAGE_SIZE, NULL, 0);
 #endif
@@ -151,22 +151,22 @@ static void mcctrl_ikc_init(aal_os_t os, int cpu, unsigned long rphys)
 	       pmc->param.request_va, pmc->param.response_va,
 	       pmc->param.doorbell_va);
 
-	aal_ikc_send(pmc->c, &packet, 0);
+	ihk_ikc_send(pmc->c, &packet, 0);
 
-#ifdef CONFIG_KNF							
+#ifdef CONFIG_MIC							
 	iounmap(rpm);
 #else
-	aal_device_unmap_virtual(aal_os_to_dev(os), rpm, 
+	ihk_device_unmap_virtual(ihk_os_to_dev(os), rpm, 
 	                         sizeof(struct ikc_scd_init_param));
 #endif
 
-	aal_device_unmap_memory(aal_os_to_dev(os), phys,
+	ihk_device_unmap_memory(ihk_os_to_dev(os), phys,
 	                        sizeof(struct ikc_scd_init_param));
 }
 
-static int connect_handler(struct aal_ikc_channel_info *param)
+static int connect_handler(struct ihk_ikc_channel_info *param)
 {
-	struct aal_ikc_channel_desc *c;
+	struct ihk_ikc_channel_desc *c;
 	int cpu;
 
 	c = param->channel;
@@ -185,7 +185,7 @@ static int connect_handler(struct aal_ikc_channel_info *param)
 	return 0;
 }
 
-static struct aal_ikc_listen_param listen_param = {
+static struct ihk_ikc_listen_param listen_param = {
 	.port = 501,
 	.handler = connect_handler,
 	.pkt_size = sizeof(struct ikc_scd_packet),
@@ -193,14 +193,14 @@ static struct aal_ikc_listen_param listen_param = {
 	.magic = 0x1129,
 };
 
-int prepare_ikc_channels(aal_os_t os)
+int prepare_ikc_channels(ihk_os_t os)
 {
-	struct aal_cpu_info *info;
+	struct ihk_cpu_info *info;
 
 	mcctrl_doorbell_va = (void *)__get_free_page(GFP_KERNEL);
 	mcctrl_doorbell_pa = virt_to_phys(mcctrl_doorbell_va);
 
-	info = aal_os_get_cpu_info(os);
+	info = ihk_os_get_cpu_info(os);
 	if (!info) {
 		printk("Error: cannot retrieve CPU info.\n");
 		return -EINVAL;
@@ -218,36 +218,36 @@ int prepare_ikc_channels(aal_os_t os)
 		return -ENOMEM;
 	}
 	
-	aal_ikc_listen_port(os, &listen_param);
+	ihk_ikc_listen_port(os, &listen_param);
 	return 0;
 }
 
-void __destroy_ikc_channel(aal_os_t os, struct mcctrl_channel *pmc)
+void __destroy_ikc_channel(ihk_os_t os, struct mcctrl_channel *pmc)
 {
 	free_pages((unsigned long)pmc->param.request_va,
 	           REQUEST_SHIFT - PAGE_SHIFT);
 	free_page((unsigned long)pmc->param.post_va);
 
-#ifdef CONFIG_KNF
+#ifdef CONFIG_MIC
 	iounmap(pmc->param.response_va);
 #else
-	aal_device_unmap_virtual(aal_os_to_dev(os), pmc->param.response_va, 
+	ihk_device_unmap_virtual(ihk_os_to_dev(os), pmc->param.response_va, 
 	                         PAGE_SIZE);
 #endif
-	aal_device_unmap_memory(aal_os_to_dev(os),
+	ihk_device_unmap_memory(ihk_os_to_dev(os),
 	                        pmc->param.response_pa, PAGE_SIZE);
 	free_pages((unsigned long)pmc->dma_buf,
 	           DMA_PIN_SHIFT - PAGE_SHIFT);
 }
 
-void destroy_ikc_channels(aal_os_t os)
+void destroy_ikc_channels(ihk_os_t os)
 {
 	int i;
 
 	for (i = 0; i < num_channels; i++) {
 		if (channels[i].c) {
-//			aal_ikc_disconnect(channels[i].c);
-			aal_ikc_free_channel(channels[i].c);
+//			ihk_ikc_disconnect(channels[i].c);
+			ihk_ikc_free_channel(channels[i].c);
 			__destroy_ikc_channel(os, channels + i);
 			printk("Channel #%d freed.\n", i);
 		}

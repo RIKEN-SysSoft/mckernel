@@ -14,7 +14,7 @@
 
 //#define SC_DEBUG
 #ifdef SC_DEBUG
-static struct aal_dma_request last_request;
+static struct ihk_dma_request last_request;
 
 static void print_dma_lastreq(void)
 {
@@ -29,14 +29,14 @@ static void print_dma_lastreq(void)
 unsigned long last_thread_exec = 0;
 
 #ifndef DO_USER_MODE
-static int do_async_copy(aal_os_t os, unsigned long dest, unsigned long src,
+static int do_async_copy(ihk_os_t os, unsigned long dest, unsigned long src,
                          unsigned long size, unsigned int inbound)
 {
-	struct aal_dma_request request;
-	aal_dma_channel_t channel;
+	struct ihk_dma_request request;
+	ihk_dma_channel_t channel;
 	unsigned long asize = ALIGN_WAIT_BUF(size);
 
-	channel = aal_device_get_dma_channel(aal_os_to_dev(os), 0);
+	channel = ihk_device_get_dma_channel(ihk_os_to_dev(os), 0);
 	if (!channel) {
 		return -EINVAL;
 	}
@@ -55,7 +55,7 @@ static int do_async_copy(aal_os_t os, unsigned long dest, unsigned long src,
 	last_request = request;
 #endif
 
-	aal_dma_request(channel, &request);
+	ihk_dma_request(channel, &request);
 
 	return 0;
 }
@@ -119,7 +119,7 @@ static unsigned long translate_remote_va(struct mcctrl_channel *c,
 
 extern struct mcctrl_channel *channels;
 
-int __do_in_kernel_syscall(aal_os_t os, struct mcctrl_channel *c,
+int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c,
                            struct syscall_request *sc)
 {
 	int ret;

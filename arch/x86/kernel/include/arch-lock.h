@@ -12,17 +12,17 @@
 int __kprintf(const char *format, ...);
 #endif
 
-typedef int aal_spinlock_t;
+typedef int ihk_spinlock_t;
 
-#define AAL_STATIC_SPINLOCK_FUNCS
+#define IHK_STATIC_SPINLOCK_FUNCS
 
-static void aal_mc_spinlock_init(aal_spinlock_t *lock)
+static void ihk_mc_spinlock_init(ihk_spinlock_t *lock)
 {
 	*lock = 0;
 }
 #define SPIN_LOCK_UNLOCKED 0
 
-static unsigned long aal_mc_spinlock_lock(aal_spinlock_t *lock)
+static unsigned long ihk_mc_spinlock_lock(ihk_spinlock_t *lock)
 {
 	int inc = 0x00010000;
 	int tmp;
@@ -46,7 +46,7 @@ static unsigned long aal_mc_spinlock_lock(aal_spinlock_t *lock)
 
 #ifdef DEBUG_SPINLOCK
 	__kprintf("[%d] trying to grab lock: 0x%lX\n", 
-	          aal_mc_get_processor_id(), lock);
+	          ihk_mc_get_processor_id(), lock);
 #endif
 	asm volatile("lock; xaddl %0, %1\n"
 			"movzwl %w0, %2\n\t"
@@ -64,19 +64,19 @@ static unsigned long aal_mc_spinlock_lock(aal_spinlock_t *lock)
 			: "memory", "cc");
 
 #ifdef DEBUG_SPINLOCK
-	__kprintf("[%d] holding lock: 0x%lX\n", aal_mc_get_processor_id(), lock);
+	__kprintf("[%d] holding lock: 0x%lX\n", ihk_mc_get_processor_id(), lock);
 #endif
 
 	return flags;
 }
 
-static void aal_mc_spinlock_unlock(aal_spinlock_t *lock, unsigned long flags)
+static void ihk_mc_spinlock_unlock(ihk_spinlock_t *lock, unsigned long flags)
 {
 	asm volatile ("lock incw %0" : "+m"(*lock) : : "memory", "cc");
 
 	cpu_restore_interrupt(flags);
 #ifdef DEBUG_SPINLOCK
-	__kprintf("[%d] released lock: 0x%lX\n", aal_mc_get_processor_id(), lock);
+	__kprintf("[%d] released lock: 0x%lX\n", ihk_mc_get_processor_id(), lock);
 #endif
 }
 

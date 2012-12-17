@@ -11,7 +11,7 @@ extern void mc_ikc_test_init(void);
 extern void cpu_local_var_init(void);
 extern void kmalloc_init(void);
 extern void ap_start(void);
-extern void aal_mc_dma_init(void);
+extern void ihk_mc_dma_init(void);
 extern void init_host_syscall_channel(void);
 extern void sched_init(void);
 extern void pc_ap_init(void);

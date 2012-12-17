@@ -27,12 +27,12 @@ void init_process_vm(struct process_vm *vm)
 {
 	int i;
 
-	aal_mc_spinlock_init(&vm->memory_range_lock);
-	aal_mc_spinlock_init(&vm->page_table_lock);
+	ihk_mc_spinlock_init(&vm->memory_range_lock);
+	ihk_mc_spinlock_init(&vm->page_table_lock);
 
-	aal_atomic_set(&vm->refcount, 1);
+	ihk_atomic_set(&vm->refcount, 1);
 	INIT_LIST_HEAD(&vm->vm_range_list);
-	vm->page_table = aal_mc_pt_create();
+	vm->page_table = ihk_mc_pt_create();
 	
 	/* Initialize futex queues */
 	for (i = 0; i < (1 << FUTEX_HASHBITS); ++i)
@@ -44,13 +44,13 @@ struct process *create_process(unsigned long user_pc)
 {
 	struct process *proc;
 
-	proc = aal_mc_alloc_pages(KERNEL_STACK_NR_PAGES, 0);
+	proc = ihk_mc_alloc_pages(KERNEL_STACK_NR_PAGES, 0);
 	if (!proc)
 		return NULL;
 
 	memset(proc, 0, sizeof(struct process));
 
-	aal_mc_init_user_process(&proc->ctx, &proc->uctx,
+	ihk_mc_init_user_process(&proc->ctx, &proc->uctx,
 	                         ((char *)proc) + 
 							 KERNEL_STACK_NR_PAGES * PAGE_SIZE, user_pc, 0);
 
@@ -58,7 +58,7 @@ struct process *create_process(unsigned long user_pc)
 
 	init_process_vm(proc->vm);
 
-	aal_mc_spinlock_init(&proc->spin_sleep_lock);
+	ihk_mc_spinlock_init(&proc->spin_sleep_lock);
 	proc->spin_sleep = 0;
 
 	return proc;
@@ -69,20 +69,20 @@ struct process *clone_process(struct process *org, unsigned long pc,
 {
 	struct process *proc;
 
-	proc = aal_mc_alloc_pages(KERNEL_STACK_NR_PAGES, 0);
+	proc = ihk_mc_alloc_pages(KERNEL_STACK_NR_PAGES, 0);
 
 	memset(proc, 0, KERNEL_STACK_NR_PAGES);
 
 	/* NOTE: sp is the user mode stack! */
-	aal_mc_init_user_process(&proc->ctx, &proc->uctx,
+	ihk_mc_init_user_process(&proc->ctx, &proc->uctx,
 	                         ((char *)proc) + 
 							 KERNEL_STACK_NR_PAGES * PAGE_SIZE, pc, sp);
 
 	memcpy(proc->uctx, org->uctx, sizeof(*org->uctx));
-	aal_mc_modify_user_context(proc->uctx, AAL_UCR_STACK_POINTER, sp);
-	aal_mc_modify_user_context(proc->uctx, AAL_UCR_PROGRAM_COUNTER, pc);
+	ihk_mc_modify_user_context(proc->uctx, IHK_UCR_STACK_POINTER, sp);
+	ihk_mc_modify_user_context(proc->uctx, IHK_UCR_PROGRAM_COUNTER, pc);
 	
-	aal_atomic_inc(&org->vm->refcount);
+	ihk_atomic_inc(&org->vm->refcount);
 	proc->vm = org->vm;
 
 	return proc;
@@ -92,11 +92,11 @@ extern void __host_update_process_range(struct process *process,
                                         struct vm_range *range);
 
 void update_process_page_table(struct process *process, struct vm_range *range,
-                               enum aal_mc_pt_attribute flag)
+                               enum ihk_mc_pt_attribute flag)
 {
 	unsigned long p, pa = range->phys;
 
-    unsigned long flags = aal_mc_spinlock_lock(&process->vm->page_table_lock);
+    unsigned long flags = ihk_mc_spinlock_lock(&process->vm->page_table_lock);
 	p = range->start;
 	while (p < range->end) {
 #ifdef USE_LARGE_PAGES
@@ -106,7 +106,7 @@ void update_process_page_table(struct process *process, struct vm_range *range,
 				(pa & (LARGE_PAGE_SIZE - 1)) == 0 &&
 				(range->end - p) >= LARGE_PAGE_SIZE) {
 
-			if (aal_mc_pt_set_large_page(process->vm->page_table, (void *)p,
+			if (ihk_mc_pt_set_large_page(process->vm->page_table, (void *)p,
 					pa, PTATTR_WRITABLE | PTATTR_USER | flag) != 0) {
 				kprintf("ERROR:setting large page for 0x%lX -> 0x%lX\n", p, pa);
 				panic("");
@@ -119,7 +119,7 @@ void update_process_page_table(struct process *process, struct vm_range *range,
 		}
 		else {
 #endif		
-			aal_mc_pt_set_page(process->vm->page_table, (void *)p,
+			ihk_mc_pt_set_page(process->vm->page_table, (void *)p,
 					pa, PTATTR_WRITABLE | PTATTR_USER | flag);
 
 			pa += PAGE_SIZE;
@@ -128,7 +128,7 @@ void update_process_page_table(struct process *process, struct vm_range *range,
 		}
 #endif
 	}
-    aal_mc_spinlock_unlock(&process->vm->page_table_lock, flags);
+    ihk_mc_spinlock_unlock(&process->vm->page_table_lock, flags);
 }
 
 int add_process_large_range(struct process *process,
@@ -156,7 +156,7 @@ int add_process_large_range(struct process *process,
 	     npages_allocated += 64) {
 		 struct vm_range sub_range;
 
-		virt = aal_mc_alloc_pages(64, 0);
+		virt = ihk_mc_alloc_pages(64, 0);
 		if (!virt) {
 			return -ENOMEM;
 		}
@@ -209,7 +209,7 @@ int add_process_memory_range(struct process *process,
 	        range->end - range->start, range->end - range->start);
 
 	if (flag & VR_REMOTE) {
-		update_process_page_table(process, range, AAL_PTA_REMOTE);
+		update_process_page_table(process, range, IHK_PTA_REMOTE);
 	} else if (flag & VR_IO_NOCACHE) {
 		update_process_page_table(process, range, PTATTR_UNCACHABLE);
 	} else {
@@ -239,7 +239,7 @@ void init_process_stack(struct process *process, struct program_load_desc *pn,
 {
 	int s_ind = 0;
 	int arg_ind;
-	char *stack = aal_mc_alloc_pages(USER_STACK_NR_PAGES, 0);
+	char *stack = ihk_mc_alloc_pages(USER_STACK_NR_PAGES, 0);
 	unsigned long *p = (unsigned long *)(stack + 
 	                   (USER_STACK_NR_PAGES * PAGE_SIZE));
 
@@ -273,7 +273,7 @@ void init_process_stack(struct process *process, struct program_load_desc *pn,
 	/* argc */
 	p[s_ind] = argc;
 
-	aal_mc_modify_user_context(process->uctx, AAL_UCR_STACK_POINTER,
+	ihk_mc_modify_user_context(process->uctx, IHK_UCR_STACK_POINTER,
 	                           USER_END + sizeof(unsigned long) * s_ind);
 	process->vm->region.stack_end = USER_END;
 	process->vm->region.stack_start = USER_END - 
@@ -365,13 +365,13 @@ int remove_process_region(struct process *proc,
 		return -EINVAL;
 	}
 
-    flags = aal_mc_spinlock_lock(&proc->vm->page_table_lock);
+    flags = ihk_mc_spinlock_lock(&proc->vm->page_table_lock);
 	/* We defer freeing to the time of exit */
 	while (start < end) {
-		aal_mc_pt_clear_page(proc->vm->page_table, (void *)start);
+		ihk_mc_pt_clear_page(proc->vm->page_table, (void *)start);
 		start += PAGE_SIZE;
 	}
-    aal_mc_spinlock_unlock(&proc->vm->page_table_lock, flags);
+    ihk_mc_spinlock_unlock(&proc->vm->page_table_lock, flags);
 
 	return 0;
 }
@@ -381,7 +381,7 @@ void free_process_memory(struct process *proc)
 {
 	struct vm_range *range, *next;
 
-	if (!aal_atomic_dec_and_test(&proc->vm->refcount)) {
+	if (!ihk_atomic_dec_and_test(&proc->vm->refcount)) {
 		return;
 	}
 
@@ -390,12 +390,12 @@ void free_process_memory(struct process *proc)
 		if (!(range->flag & VR_REMOTE) &&
 		    !(range->flag & VR_IO_NOCACHE) &&
 		    !(range->flag & VR_RESERVED)) {
-			aal_mc_free_pages(phys_to_virt(range->phys),
+			ihk_mc_free_pages(phys_to_virt(range->phys),
 			                  (range->end - range->start)
 			                  >> PAGE_SHIFT);
 		}
 		list_del(&range->list);
-		aal_mc_free(range);
+		ihk_mc_free(range);
 	}
 	/* TODO: Free page tables */
 	proc->status = PS_ZOMBIE;
@@ -403,14 +403,14 @@ void free_process_memory(struct process *proc)
 
 void destroy_process(struct process *proc)
 {
-	aal_mc_free_pages(proc, 1);
+	ihk_mc_free_pages(proc, 1);
 }
 
 static void idle(void)
 {
 	//unsigned int	flags;
-	//flags = aal_mc_spinlock_lock(&cpu_status_lock);
-	//aal_mc_spinlock_unlock(&cpu_status_lock, flags);
+	//flags = ihk_mc_spinlock_lock(&cpu_status_lock);
+	//ihk_mc_spinlock_unlock(&cpu_status_lock, flags);
 	cpu_local_var(status) = CPU_STATUS_IDLE;
 
 	while (1) {
@@ -430,15 +430,15 @@ void sched_init(void)
 
 	idle_process->vm = &cpu_local_var(idle_vm);
 
-	aal_mc_init_context(&idle_process->ctx, NULL, idle);
-	idle_process->pid = aal_mc_get_processor_id();
+	ihk_mc_init_context(&idle_process->ctx, NULL, idle);
+	idle_process->pid = ihk_mc_get_processor_id();
 
 	INIT_LIST_HEAD(&cpu_local_var(runq));
 	cpu_local_var(runq_len) = 0;
-	aal_mc_spinlock_init(&cpu_local_var(runq_lock));
+	ihk_mc_spinlock_init(&cpu_local_var(runq_lock));
 
 #ifdef TIMER_CPU_ID
-	if (aal_mc_get_processor_id() == TIMER_CPU_ID) {
+	if (ihk_mc_get_processor_id() == TIMER_CPU_ID) {
 		init_timers();
 		wake_timers_loop();
 	}
@@ -452,7 +452,7 @@ void schedule(void)
 	int switch_ctx = 0;
 	unsigned long irqstate;
 
-	irqstate = aal_mc_spinlock_lock(&(v->runq_lock));
+	irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 
 	next = NULL;
 	prev = v->current;
@@ -490,28 +490,28 @@ void schedule(void)
 
 	if (switch_ctx) {
 		dkprintf("[%d] schedule: %d => %d \n",
-		        aal_mc_get_processor_id(),
+		        ihk_mc_get_processor_id(),
 		        prev ? prev->pid : 0, next ? next->pid : 0);
 
-		aal_mc_load_page_table(next->vm->page_table);
+		ihk_mc_load_page_table(next->vm->page_table);
 		
 		dkprintf("[%d] schedule: tlsblock_base: 0x%lX\n", 
-		         aal_mc_get_processor_id(), next->thread.tlsblock_base); 
+		         ihk_mc_get_processor_id(), next->thread.tlsblock_base); 
 
 		/* Set up new TLS.. */
 		do_arch_prctl(ARCH_SET_FS, next->thread.tlsblock_base);
 		
-		aal_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 		
 		if (prev) {
-			aal_mc_switch_context(&prev->ctx, &next->ctx);
+			ihk_mc_switch_context(&prev->ctx, &next->ctx);
 		} 
 		else {
-			aal_mc_switch_context(NULL, &next->ctx);
+			ihk_mc_switch_context(NULL, &next->ctx);
 		}
 	}
 	else {
-		aal_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 	}
 }
 
@@ -523,7 +523,7 @@ int sched_wakeup_process(struct process *proc, int valid_states)
 	unsigned long irqstate;
 	struct cpu_local_var *v = get_cpu_local_var(proc->cpu_id);
 	
-	irqstate = aal_mc_spinlock_lock(&(proc->spin_sleep_lock));
+	irqstate = ihk_mc_spinlock_lock(&(proc->spin_sleep_lock));
 	if (proc->spin_sleep) {
 		dkprintf("sched_wakeup_process() spin wakeup: cpu_id: %d\n", 
 				proc->cpu_id);
@@ -532,12 +532,12 @@ int sched_wakeup_process(struct process *proc, int valid_states)
 		proc->spin_sleep = 0;
 		status = 0;	
 	}
-	aal_mc_spinlock_unlock(&(proc->spin_sleep_lock), irqstate);
+	ihk_mc_spinlock_unlock(&(proc->spin_sleep_lock), irqstate);
 	
 	if (spin_slept)
 		return status;
 
-	irqstate = aal_mc_spinlock_lock(&(v->runq_lock));
+	irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 	
 	if (proc->status & valid_states) {
 		proc->status = PS_RUNNING;
@@ -547,10 +547,10 @@ int sched_wakeup_process(struct process *proc, int valid_states)
 		status = -EINVAL;
 	}
 
-	aal_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+	ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 
-	if (!status && (proc->cpu_id != aal_mc_get_processor_id())) {
-		aal_mc_interrupt_cpu(get_x86_cpu_local_variable(proc->cpu_id)->apic_id,
+	if (!status && (proc->cpu_id != ihk_mc_get_processor_id())) {
+		ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(proc->cpu_id)->apic_id,
 		                     0xd1);
 	}
 
@@ -578,13 +578,13 @@ void runq_add_proc(struct process *proc, int cpu_id)
 	struct cpu_local_var *v = get_cpu_local_var(cpu_id);
 	unsigned long irqstate;
 	
-	irqstate = aal_mc_spinlock_lock(&(v->runq_lock));
+	irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 	__runq_add_proc(proc, cpu_id);
-	aal_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+	ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 
 	/* Kick scheduler */
-	if (cpu_id != aal_mc_get_processor_id())
-		aal_mc_interrupt_cpu(
+	if (cpu_id != ihk_mc_get_processor_id())
+		ihk_mc_interrupt_cpu(
 		         get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
 }
 
@@ -594,13 +594,13 @@ void runq_del_proc(struct process *proc, int cpu_id)
 	struct cpu_local_var *v = get_cpu_local_var(cpu_id);
 	unsigned long irqstate;
 	
-	irqstate = aal_mc_spinlock_lock(&(v->runq_lock));
+	irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 	list_del(&proc->sched_list);
 	--v->runq_len;
 	
 	if (!v->runq_len)
 		get_cpu_local_var(cpu_id)->status = CPU_STATUS_IDLE;
 
-	aal_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+	ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 }
 

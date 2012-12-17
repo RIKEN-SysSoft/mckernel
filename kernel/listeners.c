@@ -35,7 +35,7 @@ void testmem(void *v, unsigned long size)
 }
 
 
-static int test_packet_handler(struct aal_ikc_channel_desc *c,
+static int test_packet_handler(struct ihk_ikc_channel_desc *c,
                                 void *__packet, void *__os)
 {
 	struct ikc_test_packet *packet = __packet;
@@ -47,27 +47,27 @@ static int test_packet_handler(struct aal_ikc_channel_desc *c,
 		kprintf("Test msg : %x, %x\n", packet->msg);
 		a = (unsigned long)packet->param1 << 12;
 		
-		pp = aal_mc_map_memory(NULL, a, 4 * 1024 * 1024);
-		v = aal_mc_map_virtual(pp, 4 * 1024,
+		pp = ihk_mc_map_memory(NULL, a, 4 * 1024 * 1024);
+		v = ihk_mc_map_virtual(pp, 4 * 1024,
 		                       PTATTR_UNCACHABLE);
 		
 		testmem(v, 4 * 1024 * 1024);
 
-		aal_mc_unmap_virtual(v, 4 * 1024, 1);
-		aal_mc_unmap_memory(NULL, pp, 4 * 1024 * 1024);
+		ihk_mc_unmap_virtual(v, 4 * 1024, 1);
+		ihk_mc_unmap_memory(NULL, pp, 4 * 1024 * 1024);
 	} else if (packet->msg == 0x11110012) {
 		p.msg = 0x11110013;
 		for (i = 0; i < 10; i++) {
-			aal_ikc_send(c, &p, 0);
+			ihk_ikc_send(c, &p, 0);
 		}
 	} else if (packet->msg == 0x1111001a) {
-		kprintf("Packet, I am %d.\n", aal_mc_get_processor_id());
+		kprintf("Packet, I am %d.\n", ihk_mc_get_processor_id());
 	}
 	
 	return 0;
 }
                                 
-static int test_handler(struct aal_ikc_channel_info *param)
+static int test_handler(struct ihk_ikc_channel_info *param)
 {
 	kprintf("Test connected : %p\n", param->channel);
 
@@ -76,7 +76,7 @@ static int test_handler(struct aal_ikc_channel_info *param)
 	return 0;
 }
 
-static struct aal_ikc_listen_param test_listen_param = {
+static struct ihk_ikc_listen_param test_listen_param = {
 	.port = 500,
 	.handler = test_handler,
 	.pkt_size = sizeof(struct ikc_test_packet),
@@ -86,6 +86,6 @@ static struct aal_ikc_listen_param test_listen_param = {
 
 void mc_ikc_test_init(void)
 {
-	aal_ikc_listen_port(NULL, &test_listen_param);
+	ihk_ikc_listen_port(NULL, &test_listen_param);
 	kprintf("Listener registered port %d\n", 500);
 }

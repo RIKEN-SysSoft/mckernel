@@ -1,11 +1,11 @@
-#ifndef HEADER_X86_COMMON_AAL_IKC_H
-#define HEADER_X86_COMMON_AAL_IKC_H
+#ifndef HEADER_X86_COMMON_IHK_IKC_H
+#define HEADER_X86_COMMON_IHK_IKC_H
 
 #include <ikc/ihk.h>
 
 /* manycore side */
-int aal_mc_ikc_init_first(struct aal_ikc_channel_desc *,
-                          aal_ikc_ph_t handler);
+int ihk_mc_ikc_init_first(struct ihk_ikc_channel_desc *,
+                          ihk_ikc_ph_t handler);
 
 #endif
 

@@ -16,7 +16,7 @@ struct malloc_header {
 #define CPU_STATUS_DISABLE	(0)
 #define CPU_STATUS_IDLE		(1)
 #define CPU_STATUS_RUNNING	(2)
-extern aal_spinlock_t	cpu_status_lock;
+extern ihk_spinlock_t	cpu_status_lock;
 
 struct cpu_local_var {
 	/* malloc */
@@ -25,12 +25,12 @@ struct cpu_local_var {
 	struct process idle;
 	struct process_vm idle_vm;
 
-	aal_spinlock_t runq_lock;
+	ihk_spinlock_t runq_lock;
 	struct process *current;
 	struct list_head runq;
 	size_t runq_len;
 
-	struct aal_ikc_channel_desc *syscall_channel;
+	struct ihk_ikc_channel_desc *syscall_channel;
 
 	struct syscall_params scp;
 	struct ikc_scd_init_param iip;
@@ -43,7 +43,7 @@ struct cpu_local_var {
 struct cpu_local_var *get_cpu_local_var(int id);
 static struct cpu_local_var *get_this_cpu_local_var(void)
 {
-	return get_cpu_local_var(aal_mc_get_processor_id());
+	return get_cpu_local_var(ihk_mc_get_processor_id());
 }
 
 #define cpu_local_var(name) get_this_cpu_local_var()->name

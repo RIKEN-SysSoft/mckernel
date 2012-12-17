@@ -40,16 +40,16 @@ void ap_start(void)
 
 void ap_init(void)
 {
-	struct aal_mc_cpu_info *cpu_info;
+	struct ihk_mc_cpu_info *cpu_info;
 	int i;
 	int bsp_hw_id;
 
-	aal_mc_init_ap();
+	ihk_mc_init_ap();
 	
 	wrmsr(MSR_IA32_TIME_STAMP_COUNTER, 0);
 
-	cpu_info = aal_mc_get_cpu_info();
-	bsp_hw_id = aal_mc_get_hardware_processor_id();
+	cpu_info = ihk_mc_get_cpu_info();
+	bsp_hw_id = ihk_mc_get_hardware_processor_id();
 
 	/* If no information exists, UP mode */
 	if (!cpu_info) {
@@ -63,7 +63,7 @@ void ap_init(void)
 		if (cpu_info->hw_ids[i] == bsp_hw_id) {
 			continue;
 		}
-		aal_mc_boot_cpu(cpu_info->hw_ids[i], (unsigned long)ap_wait);
+		ihk_mc_boot_cpu(cpu_info->hw_ids[i], (unsigned long)ap_wait);
 		kprintf(" %d", cpu_info->hw_ids[i]);
 
 		num_processors++;

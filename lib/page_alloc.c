@@ -1,5 +1,5 @@
 /*
- * AAL - Generic page allocator (manycore version)
+ * IHK - Generic page allocator (manycore version)
  * (C) Copyright 2011 Taku Shimosawa.
  */
 #include <types.h>
@@ -11,7 +11,7 @@
 #include <memory.h>
 #include <bitops.h>
 
-void *allocate_pages(int npages, enum aal_mc_ap_flag flag);
+void *allocate_pages(int npages, enum ihk_mc_ap_flag flag);
 void free_pages(void *, int npages);
 
 #define MAP_INDEX(n)    ((n) >> 6)
@@ -19,12 +19,12 @@ void free_pages(void *, int npages);
 #define ADDRESS(desc, index, bit)    \
 	((desc)->start + (((index) * 64 + (bit)) << ((desc)->shift)))
 
-void *__aal_pagealloc_init(unsigned long start, unsigned long size,
+void *__ihk_pagealloc_init(unsigned long start, unsigned long size,
                            unsigned long unit, void *initial,
                            unsigned long *pdescsize)
 {
 	/* Unit must be power of 2, and size and start must be unit-aligned */
-	struct aal_page_allocator_desc *desc;
+	struct ihk_page_allocator_desc *desc;
 	int i, page_shift, descsize, mapsize, mapaligned;
 	int flag = 0;
 
@@ -50,7 +50,7 @@ void *__aal_pagealloc_init(unsigned long start, unsigned long size,
 	memset(desc, 0, descsize * PAGE_SIZE);
 
 	if (!desc) {
-		kprintf("AAL: failed to allocate page-allocator-desc "\
+		kprintf("IHK: failed to allocate page-allocator-desc "\
 		        "(%lx, %lx, %lx)\n", start, size, unit);
 		return NULL;
 	}
@@ -64,7 +64,7 @@ void *__aal_pagealloc_init(unsigned long start, unsigned long size,
 	kprintf("Page allocator: %lx - %lx (%d)\n", start, start + size,
 	        page_shift);
 
-	aal_mc_spinlock_init(&desc->lock);
+	ihk_mc_spinlock_init(&desc->lock);
 
 	/* Reserve align padding area */
 	for (i = mapsize; i < mapaligned * 8; i++) {
@@ -74,26 +74,26 @@ void *__aal_pagealloc_init(unsigned long start, unsigned long size,
 	return desc;
 }
 
-void *aal_pagealloc_init(unsigned long start, unsigned long size,
+void *ihk_pagealloc_init(unsigned long start, unsigned long size,
                          unsigned long unit)
 {
-	return __aal_pagealloc_init(start, size, unit, NULL, NULL);
+	return __ihk_pagealloc_init(start, size, unit, NULL, NULL);
 }
 
-void aal_pagealloc_destroy(void *__desc)
+void ihk_pagealloc_destroy(void *__desc)
 {
-	struct aal_page_allocator_desc *desc = __desc;
+	struct ihk_page_allocator_desc *desc = __desc;
 
 	free_pages(desc, desc->flag);
 }
 
-static unsigned long __aal_pagealloc_large(struct aal_page_allocator_desc *desc,
+static unsigned long __ihk_pagealloc_large(struct ihk_page_allocator_desc *desc,
                                            int nblocks)
 {
 	unsigned long flags;
 	unsigned int i, j, mi;
 
-	flags = aal_mc_spinlock_lock(&desc->lock);
+	flags = ihk_mc_spinlock_lock(&desc->lock);
 	for (i = 0, mi = desc->last; i < desc->count; i++, mi++) {
 		if (mi >= desc->count) {
 			mi = 0;
@@ -110,18 +110,18 @@ static unsigned long __aal_pagealloc_large(struct aal_page_allocator_desc *desc,
 			for (j = mi; j < mi + nblocks; j++) {
 				desc->map[j] = (unsigned long)-1;
 			}
-			aal_mc_spinlock_unlock(&desc->lock, flags);
+			ihk_mc_spinlock_unlock(&desc->lock, flags);
 			return ADDRESS(desc, mi, 0);
 		}
 	}
-	aal_mc_spinlock_unlock(&desc->lock, flags);
+	ihk_mc_spinlock_unlock(&desc->lock, flags);
 
 	return 0;
 }
 
-unsigned long aal_pagealloc_alloc(void *__desc, int npages)
+unsigned long ihk_pagealloc_alloc(void *__desc, int npages)
 {
-	struct aal_page_allocator_desc *desc = __desc;
+	struct ihk_page_allocator_desc *desc = __desc;
 	unsigned int i, mi;
 	int j;
 	unsigned long v, mask, flags;
@@ -129,12 +129,12 @@ unsigned long aal_pagealloc_alloc(void *__desc, int npages)
 	/* If requested page is more than the half of the element,
 	 * we allocate the whole element (ulong) */
 	if (npages >= 32) {
-		return __aal_pagealloc_large(desc, (npages + 63) >> 6);
+		return __ihk_pagealloc_large(desc, (npages + 63) >> 6);
 	}
 
 	mask = (1UL << npages) - 1;
 
-	flags = aal_mc_spinlock_lock(&desc->lock);
+	flags = ihk_mc_spinlock_lock(&desc->lock);
 	for (i = 0, mi = desc->last; i < desc->count; i++, mi++) {
 		if (mi >= desc->count) {
 			mi = 0;
@@ -148,21 +148,21 @@ unsigned long aal_pagealloc_alloc(void *__desc, int npages)
 			if (!(v & (mask << j))) { /* free */
 				desc->map[mi] |= (mask << j);
 
-				aal_mc_spinlock_unlock(&desc->lock, flags);
+				ihk_mc_spinlock_unlock(&desc->lock, flags);
 				return ADDRESS(desc, mi, j);
 			}
 		}
 	}
-	aal_mc_spinlock_unlock(&desc->lock, flags);
+	ihk_mc_spinlock_unlock(&desc->lock, flags);
 
 	/* We use null pointer for failure */
 	return 0;
 }
 
-void aal_pagealloc_reserve(void *__desc, unsigned long start, unsigned long end)
+void ihk_pagealloc_reserve(void *__desc, unsigned long start, unsigned long end)
 {
 	int i, n;
-	struct aal_page_allocator_desc *desc = __desc;
+	struct ihk_page_allocator_desc *desc = __desc;
 	unsigned long flags;
 
 	n = (end + (1 << desc->shift) - 1 - desc->start) >> desc->shift;
@@ -171,7 +171,7 @@ void aal_pagealloc_reserve(void *__desc, unsigned long start, unsigned long end)
 		return;
 	}
 
-	flags = aal_mc_spinlock_lock(&desc->lock);
+	flags = ihk_mc_spinlock_lock(&desc->lock);
 	for (; i < n; i++) {
 		if (!(i & 63) && i + 63 < n) {
 			desc->map[MAP_INDEX(i)] = (unsigned long)-1L;
@@ -180,12 +180,12 @@ void aal_pagealloc_reserve(void *__desc, unsigned long start, unsigned long end)
 			desc->map[MAP_INDEX(i)] |= (1UL << MAP_BIT(i));
 		}
 	}
-	aal_mc_spinlock_unlock(&desc->lock, flags);
+	ihk_mc_spinlock_unlock(&desc->lock, flags);
 }
 
-void aal_pagealloc_free(void *__desc, unsigned long address, int npages)
+void ihk_pagealloc_free(void *__desc, unsigned long address, int npages)
 {
-	struct aal_page_allocator_desc *desc = __desc;
+	struct ihk_page_allocator_desc *desc = __desc;
 	int i;
 	unsigned mi;
 	unsigned long flags;
@@ -194,21 +194,21 @@ void aal_pagealloc_free(void *__desc, unsigned long address, int npages)
 	if (npages >= 32) {
 		npages = (npages + 63) & ~63;
 	}
-	flags = aal_mc_spinlock_lock(&desc->lock);
+	flags = ihk_mc_spinlock_lock(&desc->lock);
 	mi = (address - desc->start) >> desc->shift;
 	for (i = 0; i < npages; i++, mi++) {
 		desc->map[MAP_INDEX(mi)] &= ~(1UL << MAP_BIT(mi));
 	}
-	aal_mc_spinlock_unlock(&desc->lock, flags);
+	ihk_mc_spinlock_unlock(&desc->lock, flags);
 }
 
-unsigned long aal_pagealloc_count(void *__desc)
+unsigned long ihk_pagealloc_count(void *__desc)
 {
-	struct aal_page_allocator_desc *desc = __desc;
+	struct ihk_page_allocator_desc *desc = __desc;
 	unsigned long i, j, n = 0;
 	unsigned long flags;
 
-	flags = aal_mc_spinlock_lock(&desc->lock);
+	flags = ihk_mc_spinlock_lock(&desc->lock);
 	/* XXX: Very silly counting */
 	for (i = 0; i < desc->count; i++) {
 		for (j = 0; j < 64; j++) {
@@ -217,21 +217,21 @@ unsigned long aal_pagealloc_count(void *__desc)
 			}
 		}
 	}
-	aal_mc_spinlock_unlock(&desc->lock, flags);
+	ihk_mc_spinlock_unlock(&desc->lock, flags);
 	
 	return n;
 }
 
-void __aal_pagealloc_zero_free_pages(void *__desc)
+void __ihk_pagealloc_zero_free_pages(void *__desc)
 {
-	struct aal_page_allocator_desc *desc = __desc;
+	struct ihk_page_allocator_desc *desc = __desc;
 	unsigned int mi;
 	int j;
 	unsigned long v, flags;
 
 kprintf("zeroing free memory... ");
 
-	flags = aal_mc_spinlock_lock(&desc->lock);
+	flags = ihk_mc_spinlock_lock(&desc->lock);
 	for (mi = 0; mi < desc->count; mi++) {
 		
 		v = desc->map[mi];
@@ -245,7 +245,7 @@ kprintf("zeroing free memory... ");
 			}
 		}
 	}
-	aal_mc_spinlock_unlock(&desc->lock, flags);
+	ihk_mc_spinlock_unlock(&desc->lock, flags);
 
 kprintf("\nzeroing done\n");
 }

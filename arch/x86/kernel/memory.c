@@ -10,7 +10,7 @@
 static char *last_page;
 extern char _head[], _end[];
 
-struct aal_mc_pa_ops *pa_ops;
+struct ihk_mc_pa_ops *pa_ops;
 
 extern unsigned long x86_kernel_phys_base;
 
@@ -32,7 +32,7 @@ void *early_alloc_page(void)
 	return p;
 }
 
-void *arch_alloc_page(enum aal_mc_ap_flag flag)
+void *arch_alloc_page(enum ihk_mc_ap_flag flag)
 {
 	if (pa_ops)
 		return pa_ops->alloc_page(1, flag);
@@ -45,7 +45,7 @@ void arch_free_page(void *ptr)
 		pa_ops->free_page(ptr, 1);
 }
 
-void *aal_mc_alloc_pages(int npages, enum aal_mc_ap_flag flag)
+void *ihk_mc_alloc_pages(int npages, enum ihk_mc_ap_flag flag)
 {
 	if (pa_ops)
 		return pa_ops->alloc_page(npages, flag);
@@ -53,26 +53,26 @@ void *aal_mc_alloc_pages(int npages, enum aal_mc_ap_flag flag)
 		return NULL;
 }
 
-void aal_mc_free_pages(void *p, int npages)
+void ihk_mc_free_pages(void *p, int npages)
 {
 	if (pa_ops)
 		pa_ops->free_page(p, npages);
 }
 
-void *aal_mc_allocate(int size, enum aal_mc_ap_flag flag)
+void *ihk_mc_allocate(int size, enum ihk_mc_ap_flag flag)
 {
 	if (pa_ops && pa_ops->alloc)
 		return pa_ops->alloc(size, flag);
 	else
-		return aal_mc_alloc_pages(1, flag);
+		return ihk_mc_alloc_pages(1, flag);
 }
 
-void aal_mc_free(void *p)
+void ihk_mc_free(void *p)
 {
 	if (pa_ops && pa_ops->free)
 		return pa_ops->free(p);
 	else
-		return aal_mc_free_pages(p, 1);
+		return ihk_mc_free_pages(p, 1);
 }
 
 void *get_last_early_heap(void)
@@ -146,8 +146,8 @@ static void init_normal_area(struct page_table *pt)
 	unsigned long map_start, map_end, phys, pt_phys;
 	int ident_index, virt_index;
 
-	map_start = aal_mc_get_memory_address(AAL_MC_GMA_MAP_START, 0);
-	map_end = aal_mc_get_memory_address(AAL_MC_GMA_MAP_END, 0);
+	map_start = ihk_mc_get_memory_address(IHK_MC_GMA_MAP_START, 0);
+	map_end = ihk_mc_get_memory_address(IHK_MC_GMA_MAP_END, 0);
 
 	kprintf("map_start = %lx, map_end = %lx\n", map_start, map_end);
 	ident_index = map_start >> PTL4_SHIFT;
@@ -180,15 +180,15 @@ static struct page_table *__alloc_new_pt(void)
  */
 
 #define ATTR_MASK (PTATTR_WRITABLE | PTATTR_USER | PTATTR_ACTIVE)
-static unsigned long attr_to_l4attr(enum aal_mc_pt_attribute attr)
+static unsigned long attr_to_l4attr(enum ihk_mc_pt_attribute attr)
 {
 	return (attr & ATTR_MASK) | PFL4_PRESENT;
 }
-static unsigned long attr_to_l3attr(enum aal_mc_pt_attribute attr)
+static unsigned long attr_to_l3attr(enum ihk_mc_pt_attribute attr)
 {
 	return (attr & ATTR_MASK) | PFL3_PRESENT;
 }
-static unsigned long attr_to_l2attr(enum aal_mc_pt_attribute attr)
+static unsigned long attr_to_l2attr(enum ihk_mc_pt_attribute attr)
 {
 	unsigned long r = (attr & (ATTR_MASK | PTATTR_LARGEPAGE));
 
@@ -197,7 +197,7 @@ static unsigned long attr_to_l2attr(enum aal_mc_pt_attribute attr)
 	}
 	return r;
 }
-static unsigned long attr_to_l1attr(enum aal_mc_pt_attribute attr)
+static unsigned long attr_to_l1attr(enum ihk_mc_pt_attribute attr)
 {
 	if (attr & PTATTR_UNCACHABLE) {
 		return (attr & ATTR_MASK) | PFL1_PWT | PFL1_PWT;
@@ -398,7 +398,7 @@ static int __clear_pt_page(struct page_table *pt, void *virt, int largepage)
 	return 0;
 }
 
-int aal_mc_pt_virt_to_phys(struct page_table *pt,
+int ihk_mc_pt_virt_to_phys(struct page_table *pt,
                            void *virt, unsigned long *phys)
 {
 	int l4idx, l3idx, l2idx, l1idx;
@@ -438,7 +438,7 @@ int aal_mc_pt_virt_to_phys(struct page_table *pt,
 	return 0;
 }
 
-int aal_mc_pt_print_pte(struct page_table *pt, void *virt)
+int ihk_mc_pt_print_pte(struct page_table *pt, void *virt)
 {
 	int l4idx, l3idx, l2idx, l1idx;
 	unsigned long v = (unsigned long)virt;
@@ -483,33 +483,33 @@ int aal_mc_pt_print_pte(struct page_table *pt, void *virt)
 }
 
 int set_pt_large_page(struct page_table *pt, void *virt, unsigned long phys,
-                      enum aal_mc_pt_attribute attr)
+                      enum ihk_mc_pt_attribute attr)
 {
 	return __set_pt_page(pt, virt, phys, attr | PTATTR_LARGEPAGE
 	                     | PTATTR_ACTIVE);
 }
 
-int aal_mc_pt_set_large_page(page_table_t pt, void *virt,
-                       unsigned long phys, enum aal_mc_pt_attribute attr)
+int ihk_mc_pt_set_large_page(page_table_t pt, void *virt,
+                       unsigned long phys, enum ihk_mc_pt_attribute attr)
 {
 	return __set_pt_page(pt, virt, phys, attr | PTATTR_LARGEPAGE
 	                     | PTATTR_ACTIVE);
 }
 
-int aal_mc_pt_set_page(page_table_t pt, void *virt,
-                       unsigned long phys, enum aal_mc_pt_attribute attr)
+int ihk_mc_pt_set_page(page_table_t pt, void *virt,
+                       unsigned long phys, enum ihk_mc_pt_attribute attr)
 {
 	return __set_pt_page(pt, virt, phys, attr | PTATTR_ACTIVE);
 }
 
-int aal_mc_pt_prepare_map(page_table_t p, void *virt, unsigned long size,
-                          enum aal_mc_pt_prepare_flag flag)
+int ihk_mc_pt_prepare_map(page_table_t p, void *virt, unsigned long size,
+                          enum ihk_mc_pt_prepare_flag flag)
 {
 	int l4idx, l4e, ret = 0;
 	unsigned long v = (unsigned long)virt;
 	struct page_table *pt = p, *newpt;
 	unsigned long l;
-	enum aal_mc_pt_attribute attr = PTATTR_WRITABLE;
+	enum ihk_mc_pt_attribute attr = PTATTR_WRITABLE;
 
 	if (!pt) {
 		pt = init_pt;
@@ -517,7 +517,7 @@ int aal_mc_pt_prepare_map(page_table_t p, void *virt, unsigned long size,
 
 	l4idx = ((v) >> PTL4_SHIFT) & (PT_ENTRIES - 1);
 
-	if (flag == AAL_MC_PT_FIRST_LEVEL) {
+	if (flag == IHK_MC_PT_FIRST_LEVEL) {
 		l4e = ((v + size) >> PTL4_SHIFT)  & (PT_ENTRIES - 1);
 
 		for (; l4idx <= l4e; l4idx++) {
@@ -545,9 +545,9 @@ int aal_mc_pt_prepare_map(page_table_t p, void *virt, unsigned long size,
 	return ret;
 }
 
-struct page_table *aal_mc_pt_create(void)
+struct page_table *ihk_mc_pt_create(void)
 {
-	struct page_table *pt = aal_mc_alloc_pages(1, 0);
+	struct page_table *pt = ihk_mc_alloc_pages(1, 0);
 
 	memset(pt->entry, 0, PAGE_SIZE);
 	/* Copy the kernel space */
@@ -557,7 +557,7 @@ struct page_table *aal_mc_pt_create(void)
 	return pt;
 }
 
-int aal_mc_pt_clear_page(page_table_t pt, void *virt)
+int ihk_mc_pt_clear_page(page_table_t pt, void *virt)
 {
 	return __clear_pt_page(pt, virt, 0);
 }
@@ -575,7 +575,7 @@ void load_page_table(struct page_table *pt)
 	asm volatile ("movq %0, %%cr3" : : "r"(pt_addr) : "memory");
 }
 
-void aal_mc_load_page_table(struct page_table *pt)
+void ihk_mc_load_page_table(struct page_table *pt)
 {
 	load_page_table(pt);
 }
@@ -668,7 +668,7 @@ void init_page_table(void)
 extern void __reserve_arch_pages(unsigned long, unsigned long,
                                  void (*)(unsigned long, unsigned long, int));
 
-void aal_mc_reserve_arch_pages(unsigned long start, unsigned long end,
+void ihk_mc_reserve_arch_pages(unsigned long start, unsigned long end,
                                void (*cb)(unsigned long, unsigned long, int))
 {
 	/* Reserve Text + temporal heap */
@@ -681,7 +681,7 @@ void aal_mc_reserve_arch_pages(unsigned long start, unsigned long end,
 	__reserve_arch_pages(start, end, cb);
 }
 
-void aal_mc_set_page_allocator(struct aal_mc_pa_ops *ops)
+void ihk_mc_set_page_allocator(struct ihk_mc_pa_ops *ops)
 {
 	last_page = NULL;
 	pa_ops = ops;

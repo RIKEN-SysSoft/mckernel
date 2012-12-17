@@ -3,7 +3,7 @@
 
 #include <ihk/mm.h>
 
-void *kmalloc(int size, enum aal_mc_ap_flag flag);
+void *kmalloc(int size, enum ihk_mc_ap_flag flag);
 void kfree(void *ptr);
 
 #endif

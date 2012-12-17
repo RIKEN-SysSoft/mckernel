@@ -20,7 +20,7 @@ static DECLARE_WAIT_QUEUE_HEAD(wq_prepare);
 extern struct mcctrl_channel *channels;
 int mcctrl_ikc_set_recv_cpu(int cpu);
 
-static long mcexec_prepare_image(aal_os_t os,
+static long mcexec_prepare_image(ihk_os_t os,
                                  struct program_load_desc * __user udesc)
 {
 	struct program_load_desc desc, *pdesc;
@@ -97,18 +97,18 @@ free_out:
 	return ret;
 }
 
-int mcexec_load_image(aal_os_t os, struct program_transfer *__user upt)
+int mcexec_load_image(ihk_os_t os, struct program_transfer *__user upt)
 {
 	struct program_transfer pt;
 	unsigned long phys, ret = 0;
 	void *rpm;
 #if 0	
 	unsigned long dma_status = 0;
-	aal_dma_channel_t channel;
-	struct aal_dma_request request;
+	ihk_dma_channel_t channel;
+	struct ihk_dma_request request;
 	void *p;
 
-	channel = aal_device_get_dma_channel(aal_os_to_dev(os), 0);
+	channel = ihk_device_get_dma_channel(ihk_os_to_dev(os), 0);
 	if (!channel) {
 		return -EINVAL;
 	}
@@ -118,23 +118,23 @@ int mcexec_load_image(aal_os_t os, struct program_transfer *__user upt)
 		return -EFAULT;
 	}
 	
-	phys = aal_device_map_memory(aal_os_to_dev(os), pt.dest, PAGE_SIZE);
-#ifdef CONFIG_KNF
+	phys = ihk_device_map_memory(ihk_os_to_dev(os), pt.dest, PAGE_SIZE);
+#ifdef CONFIG_MIC
 	rpm = ioremap_wc(phys, PAGE_SIZE);
 #else
-	rpm = aal_device_map_virtual(aal_os_to_dev(os), phys, PAGE_SIZE, NULL, 0);
+	rpm = ihk_device_map_virtual(ihk_os_to_dev(os), phys, PAGE_SIZE, NULL, 0);
 #endif
 
 	if (copy_from_user(rpm, pt.src, PAGE_SIZE)) {
 		ret = -EFAULT;
 	}
 
-#ifdef CONFIG_KNF
+#ifdef CONFIG_MIC
 	iounmap(rpm);
 #else
-	aal_device_unmap_virtual(aal_os_to_dev(os), rpm, PAGE_SIZE);
+	ihk_device_unmap_virtual(ihk_os_to_dev(os), rpm, PAGE_SIZE);
 #endif
-	aal_device_unmap_memory(aal_os_to_dev(os), phys, PAGE_SIZE);	
+	ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);	
 
 	return ret;
 
@@ -154,7 +154,7 @@ int mcexec_load_image(aal_os_t os, struct program_transfer *__user upt)
 	request.notify = (void *)virt_to_phys(&dma_status);
 	request.priv = (void *)1;
 
-	aal_dma_request(channel, &request);
+	ihk_dma_request(channel, &request);
 
 	while (!dma_status) {
 		mb();
@@ -169,7 +169,7 @@ int mcexec_load_image(aal_os_t os, struct program_transfer *__user upt)
 
 extern unsigned long last_thread_exec;
 
-static long mcexec_start_image(aal_os_t os,
+static long mcexec_start_image(ihk_os_t os,
                                  struct program_load_desc * __user udesc)
 {
 	struct program_load_desc desc;
@@ -205,7 +205,7 @@ int mcexec_syscall(struct mcctrl_channel *c, unsigned long arg)
 }
 
 #ifndef DO_USER_MODE
-int __do_in_kernel_syscall(aal_os_t os, struct mcctrl_channel *c,
+int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c,
                            struct syscall_request *sc);
 static int remaining_job, base_cpu, job_pos;
 #endif
@@ -213,7 +213,7 @@ static int remaining_job, base_cpu, job_pos;
 extern int num_channels;
 extern int mcctrl_dma_abort;
 
-int mcexec_wait_syscall(aal_os_t os, struct syscall_wait_desc *__user req)
+int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 {
 	struct syscall_wait_desc swd;
 	struct mcctrl_channel *c;
@@ -289,7 +289,7 @@ int mcexec_wait_syscall(aal_os_t os, struct syscall_wait_desc *__user req)
 	return 0;
 }
 
-long mcexec_pin_region(aal_os_t os, unsigned long *__user arg)
+long mcexec_pin_region(ihk_os_t os, unsigned long *__user arg)
 {
 	struct prepare_dma_desc desc;
 	int pin_shift = 16;
@@ -318,7 +318,7 @@ long mcexec_pin_region(aal_os_t os, unsigned long *__user arg)
 	return 0;
 }
 
-long mcexec_free_region(aal_os_t os, unsigned long *__user arg)
+long mcexec_free_region(ihk_os_t os, unsigned long *__user arg)
 {
 	struct free_dma_desc desc;
 	int pin_shift = 16;
@@ -339,7 +339,7 @@ long mcexec_free_region(aal_os_t os, unsigned long *__user arg)
 	return 0;
 }
 
-long mcexec_load_syscall(aal_os_t os, struct syscall_load_desc *__user arg)
+long mcexec_load_syscall(ihk_os_t os, struct syscall_load_desc *__user arg)
 {
 	struct syscall_load_desc desc;
 	unsigned long phys;
@@ -349,11 +349,11 @@ long mcexec_load_syscall(aal_os_t os, struct syscall_load_desc *__user arg)
 		return -EFAULT;
 	}
 	
-	phys = aal_device_map_memory(aal_os_to_dev(os), desc.src, desc.size);
-#ifdef CONFIG_KNF
+	phys = ihk_device_map_memory(ihk_os_to_dev(os), desc.src, desc.size);
+#ifdef CONFIG_MIC
 	rpm = ioremap_wc(phys, desc.size);
 #else
-	rpm = aal_device_map_virtual(aal_os_to_dev(os), phys, desc.size, NULL, 0);
+	rpm = ihk_device_map_virtual(ihk_os_to_dev(os), phys, desc.size, NULL, 0);
 #endif
 
 	dprintk("mcexec_load_syscall: %s (desc.size: %d)\n", rpm, desc.size);
@@ -362,20 +362,20 @@ long mcexec_load_syscall(aal_os_t os, struct syscall_load_desc *__user arg)
 		return -EFAULT;
 	}
 
-#ifdef CONFIG_KNF
+#ifdef CONFIG_MIC
 	iounmap(rpm);
 #else
-	aal_device_unmap_virtual(aal_os_to_dev(os), rpm, desc.size);
+	ihk_device_unmap_virtual(ihk_os_to_dev(os), rpm, desc.size);
 #endif
 	
-	aal_device_unmap_memory(aal_os_to_dev(os), phys, desc.size);	
+	ihk_device_unmap_memory(ihk_os_to_dev(os), phys, desc.size);	
 	
 /*
-	aal_dma_channel_t channel;
-	struct aal_dma_request request;
+	ihk_dma_channel_t channel;
+	struct ihk_dma_request request;
 	unsigned long dma_status = 0;
 
-	channel = aal_device_get_dma_channel(aal_os_to_dev(os), 0);
+	channel = ihk_device_get_dma_channel(ihk_os_to_dev(os), 0);
 	if (!channel) {
 		return -EINVAL;
 	}
@@ -389,7 +389,7 @@ long mcexec_load_syscall(aal_os_t os, struct syscall_load_desc *__user arg)
 	request.notify = (void *)virt_to_phys(&dma_status);
 	request.priv = (void *)1;
 
-	aal_dma_request(channel, &request);
+	ihk_dma_request(channel, &request);
 
 	while (!dma_status) {
 		mb();
@@ -400,15 +400,15 @@ long mcexec_load_syscall(aal_os_t os, struct syscall_load_desc *__user arg)
 	return 0;
 }
 
-long mcexec_ret_syscall(aal_os_t os, struct syscall_ret_desc *__user arg)
+long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 {
 	struct syscall_ret_desc ret;
 	struct mcctrl_channel *mc;
 #if 0	
-	aal_dma_channel_t channel;
-	struct aal_dma_request request;
+	ihk_dma_channel_t channel;
+	struct ihk_dma_request request;
 
-	channel = aal_device_get_dma_channel(aal_os_to_dev(os), 0);
+	channel = ihk_device_get_dma_channel(ihk_os_to_dev(os), 0);
 	if (!channel) {
 		return -EINVAL;
 	}
@@ -429,12 +429,12 @@ long mcexec_ret_syscall(aal_os_t os, struct syscall_ret_desc *__user arg)
 		unsigned long phys;
 		void *rpm;
 
-		phys = aal_device_map_memory(aal_os_to_dev(os), ret.dest,
+		phys = ihk_device_map_memory(ihk_os_to_dev(os), ret.dest,
 		                             ret.size);
-#ifdef CONFIG_KNF
+#ifdef CONFIG_MIC
 		rpm = ioremap_wc(phys, ret.size);
 #else
-		rpm = aal_device_map_virtual(aal_os_to_dev(os), phys, 
+		rpm = ihk_device_map_virtual(ihk_os_to_dev(os), phys, 
 		                             ret.size, NULL, 0);
 #endif
 		
@@ -444,12 +444,12 @@ long mcexec_ret_syscall(aal_os_t os, struct syscall_ret_desc *__user arg)
 
 		mc->param.response_va->status = 1;
 
-#ifdef CONFIG_KNF
+#ifdef CONFIG_MIC
 		iounmap(rpm);
 #else
-		aal_device_unmap_virtual(aal_os_to_dev(os), rpm, ret.size);
+		ihk_device_unmap_virtual(ihk_os_to_dev(os), rpm, ret.size);
 #endif
-		aal_device_unmap_memory(aal_os_to_dev(os), phys, ret.size);
+		ihk_device_unmap_memory(ihk_os_to_dev(os), phys, ret.size);
 
 /*
 		memset(&request, 0, sizeof(request));
@@ -462,7 +462,7 @@ long mcexec_ret_syscall(aal_os_t os, struct syscall_ret_desc *__user arg)
 		request.notify = (void *)mc->param.response_rpa;
 		request.priv = (void *)1;
 		
-		aal_dma_request(channel, &request);
+		ihk_dma_request(channel, &request);
 */
 	} else {
 		mc->param.response_va->status = 1;
@@ -471,7 +471,7 @@ long mcexec_ret_syscall(aal_os_t os, struct syscall_ret_desc *__user arg)
 	return 0;
 }
 
-long __mcctrl_control(aal_os_t os, unsigned int req, unsigned long arg)
+long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg)
 {
 	switch (req) {
 	case MCEXEC_UP_PREPARE_IMAGE:

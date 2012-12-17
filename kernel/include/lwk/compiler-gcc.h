@@ -7,7 +7,7 @@
 
 /* Optimization barrier */
 /* The "volatile" is due to gcc bugs
- * NOTE: already defined in aal/manycore/generic/include/aal/cpu.h 
+ * NOTE: already defined in ihk/manycore/generic/include/ihk/cpu.h 
  * #define barrier() __asm__ __volatile__("": : :"memory")
  */
 

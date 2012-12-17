@@ -25,7 +25,7 @@ struct ikc_scd_packet {
 };
 
 struct mcctrl_priv { 
-	aal_os_t os;
+	ihk_os_t os;
 	struct program_load_desc *desc;
 };
 
@@ -53,7 +53,7 @@ struct syscall_params {
 };
 
 struct mcctrl_channel {
-	struct aal_ikc_channel_desc *c;
+	struct ihk_ikc_channel_desc *c;
 	struct syscall_params param;
 	struct ikc_scd_init_param init;
 	void *dma_buf;

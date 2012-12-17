@@ -15,7 +15,7 @@ default_wake_function(waitq_entry_t *entry, unsigned mode,
 void
 waitq_init(waitq_t *waitq)
 {
-	aal_mc_spinlock_init(&waitq->lock);
+	ihk_mc_spinlock_init(&waitq->lock);
 	INIT_LIST_HEAD(&waitq->waitq);
 }
 
@@ -33,9 +33,9 @@ waitq_active(waitq_t *waitq)
 	int active;
 	unsigned long irqstate;
 
-	irqstate = aal_mc_spinlock_lock(&waitq->lock);
+	irqstate = ihk_mc_spinlock_lock(&waitq->lock);
 	active = !list_empty(&waitq->waitq);
-	aal_mc_spinlock_unlock(&waitq->lock, irqstate);
+	ihk_mc_spinlock_unlock(&waitq->lock, irqstate);
 
 	return active;
 }
@@ -45,9 +45,9 @@ waitq_add_entry(waitq_t *waitq, waitq_entry_t *entry)
 {
 	unsigned long irqstate;
 
-	irqstate = aal_mc_spinlock_lock(&waitq->lock);
+	irqstate = ihk_mc_spinlock_lock(&waitq->lock);
 	waitq_add_entry_locked(waitq, entry);
-	aal_mc_spinlock_unlock(&waitq->lock, irqstate);
+	ihk_mc_spinlock_unlock(&waitq->lock, irqstate);
 }
 
 
@@ -64,9 +64,9 @@ waitq_remove_entry(waitq_t *waitq, waitq_entry_t *entry)
 {
 	unsigned long irqstate;
 	
-	irqstate = aal_mc_spinlock_lock(&waitq->lock);
+	irqstate = ihk_mc_spinlock_lock(&waitq->lock);
 	waitq_remove_entry_locked(waitq, entry);
-	aal_mc_spinlock_unlock(&waitq->lock, irqstate);
+	ihk_mc_spinlock_unlock(&waitq->lock, irqstate);
 }
 
 
@@ -83,11 +83,11 @@ waitq_prepare_to_wait(waitq_t *waitq, waitq_entry_t *entry, int state)
 {
 	unsigned long irqstate;
 	
-	irqstate = aal_mc_spinlock_lock(&waitq->lock);
+	irqstate = ihk_mc_spinlock_lock(&waitq->lock);
 	if (list_empty(&entry->link))
 		list_add(&entry->link, &waitq->waitq);
 	cpu_local_var(current)->status = state;
-	aal_mc_spinlock_unlock(&waitq->lock, irqstate);
+	ihk_mc_spinlock_unlock(&waitq->lock, irqstate);
 }
 
 void
@@ -104,12 +104,12 @@ waitq_wakeup(waitq_t *waitq)
 	struct list_head *tmp;
 	waitq_entry_t *entry;
 	
-	irqstate = aal_mc_spinlock_lock(&waitq->lock);
+	irqstate = ihk_mc_spinlock_lock(&waitq->lock);
 	list_for_each(tmp, &waitq->waitq) {
 		entry = list_entry(tmp, waitq_entry_t, link);
 		entry->func(entry, 0, 0, NULL);
 	}
-	aal_mc_spinlock_unlock(&waitq->lock, irqstate);
+	ihk_mc_spinlock_unlock(&waitq->lock, irqstate);
 }
 
 
@@ -118,9 +118,9 @@ waitq_wake_nr(waitq_t * waitq, int nr)
 {
 	unsigned long irqstate;
 
-	irqstate = aal_mc_spinlock_lock(&waitq->lock);
+	irqstate = ihk_mc_spinlock_lock(&waitq->lock);
 	int count = waitq_wake_nr_locked(waitq, nr);
-	aal_mc_spinlock_unlock(&waitq->lock, irqstate);
+	ihk_mc_spinlock_unlock(&waitq->lock, irqstate);
 
 	if (count > 0)
 		schedule();

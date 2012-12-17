@@ -22,7 +22,7 @@ void check_mapping_for_proc(struct process *proc, unsigned long addr)
 {
 	unsigned long __phys;
 
-	if (aal_mc_pt_virt_to_phys(proc->vm->page_table, (void*)addr, &__phys)) {
+	if (ihk_mc_pt_virt_to_phys(proc->vm->page_table, (void*)addr, &__phys)) {
 		kprintf("check_map: no mapping for 0x%lX\n", addr);
 	}
 	else {
@@ -51,13 +51,13 @@ static void process_msg_prepare_process(unsigned long rphys)
 		+ sizeof(struct program_image_section) * 16;
 	npages = (sz + PAGE_SIZE - 1) >> PAGE_SHIFT;
 
-	phys = aal_mc_map_memory(NULL, rphys, sz);
-	p = aal_mc_map_virtual(phys, npages, PTATTR_WRITABLE);
+	phys = ihk_mc_map_memory(NULL, rphys, sz);
+	p = ihk_mc_map_virtual(phys, npages, PTATTR_WRITABLE);
 
 	n = p->num_sections;
 	dkprintf("# of sections: %d\n", n);
 
-	pn = aal_mc_allocate(sizeof(struct program_load_desc) 
+	pn = ihk_mc_allocate(sizeof(struct program_load_desc) 
 	                     + sizeof(struct program_image_section) * n, 0);
 	memcpy_long(pn, p, sizeof(struct program_load_desc) 
 	            + sizeof(struct program_image_section) * n);
@@ -77,20 +77,20 @@ static void process_msg_prepare_process(unsigned long rphys)
 #if 0
 		if (range_npages <= 256) {
 #endif
-			up = virt_to_phys(aal_mc_alloc_pages(range_npages, 0));
+			up = virt_to_phys(ihk_mc_alloc_pages(range_npages, 0));
 			add_process_memory_range(proc, s, e, up, 0);
 			
 			{
 				void *_virt = (void *)s;
 				unsigned long _phys;
-				if (aal_mc_pt_virt_to_phys(proc->vm->page_table, 
+				if (ihk_mc_pt_virt_to_phys(proc->vm->page_table, 
 				                       _virt, &_phys)) {
 					kprintf("ERROR: no mapping for 0x%lX\n", _virt);
 				}
 				for (_virt = (void *)s + PAGE_SIZE; 
 				     (unsigned long)_virt < e; _virt += PAGE_SIZE) {
 					unsigned long __phys;
-					if (aal_mc_pt_virt_to_phys(proc->vm->page_table, 
+					if (ihk_mc_pt_virt_to_phys(proc->vm->page_table, 
 				                           _virt, &__phys)) {
 						kprintf("ERROR: no mapping for 0x%lX\n", _virt);
 						panic("mapping");
@@ -117,12 +117,12 @@ static void process_msg_prepare_process(unsigned long rphys)
 			{
 				void *_virt = (void *)s;
 				unsigned long _phys;
-				aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
+				ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
 				                       _virt, &_phys);
 				for (_virt = (void *)s + PAGE_SIZE; 
 				     (unsigned long)_virt < e; _virt += PAGE_SIZE) {
 					unsigned long __phys;
-					aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
+					ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
 				                       _virt, &__phys);
 					if (__phys != _phys + PAGE_SIZE) {
 						kprintf("0x%lX + PAGE_SIZE is not physically contigous, from 0x%lX to 0x%lX\n", _virt - PAGE_SIZE, _phys, __phys);
@@ -181,7 +181,7 @@ static void process_msg_prepare_process(unsigned long rphys)
 	addr = e;
 	e = addr + PAGE_SIZE * ARGENV_PAGE_COUNT;
 	
-	args_envs = aal_mc_alloc_pages(ARGENV_PAGE_COUNT, 0);
+	args_envs = ihk_mc_alloc_pages(ARGENV_PAGE_COUNT, 0);
 	args_envs_p = virt_to_phys(args_envs);
 	
 	add_process_memory_range(proc, addr, e,
@@ -195,9 +195,9 @@ static void process_msg_prepare_process(unsigned long rphys)
 	// Map in remote physical addr of args and copy it
 	args_envs_npages = (p->args_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
 	dkprintf("args_envs_npages: %d\n", args_envs_npages);
-	args_envs_rp = aal_mc_map_memory(NULL, (unsigned long)p->args, p->args_len);
+	args_envs_rp = ihk_mc_map_memory(NULL, (unsigned long)p->args, p->args_len);
 	dkprintf("args_envs_rp: 0x%lX\n", args_envs_rp);
-	args_envs_r = (char *)aal_mc_map_virtual(args_envs_rp, args_envs_npages, 
+	args_envs_r = (char *)ihk_mc_map_virtual(args_envs_rp, args_envs_npages, 
 											 PTATTR_WRITABLE);
 	dkprintf("args_envs_r: 0x%lX\n", args_envs_r);
 
@@ -205,17 +205,17 @@ static void process_msg_prepare_process(unsigned long rphys)
 	
 	memcpy_long(args_envs, args_envs_r, p->args_len + 8);
 
-	aal_mc_unmap_virtual(args_envs_r, args_envs_npages, 0);
-	aal_mc_unmap_memory(NULL, args_envs_rp, p->args_len);
+	ihk_mc_unmap_virtual(args_envs_r, args_envs_npages, 0);
+	ihk_mc_unmap_memory(NULL, args_envs_rp, p->args_len);
 				
 	dkprintf("envs: 0x%lX, envs_len: %d\n", p->envs, p->envs_len);
 
 	// Map in remote physical addr of envs and copy it after args
 	args_envs_npages = (p->envs_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
 	dkprintf("args_envs_npages: %d\n", args_envs_npages);
-	args_envs_rp = aal_mc_map_memory(NULL, (unsigned long)p->envs, p->envs_len);
+	args_envs_rp = ihk_mc_map_memory(NULL, (unsigned long)p->envs, p->envs_len);
 	dkprintf("args_envs_rp: 0x%lX\n", args_envs_rp);
-	args_envs_r = (char *)aal_mc_map_virtual(args_envs_rp, args_envs_npages, 
+	args_envs_r = (char *)ihk_mc_map_virtual(args_envs_rp, args_envs_npages, 
 											 PTATTR_WRITABLE);
 	dkprintf("args_envs_r: 0x%lX\n", args_envs_r);
 	
@@ -223,8 +223,8 @@ static void process_msg_prepare_process(unsigned long rphys)
 	
 	memcpy_long(args_envs + p->args_len, args_envs_r, p->envs_len + 8);
 
-	aal_mc_unmap_virtual(args_envs_r, args_envs_npages, 0);
-	aal_mc_unmap_memory(NULL, args_envs_rp, p->envs_len);
+	ihk_mc_unmap_virtual(args_envs_r, args_envs_npages, 0);
+	ihk_mc_unmap_memory(NULL, args_envs_rp, p->envs_len);
 
 	// Update variables
 	argc = *((int*)(args_envs));
@@ -259,10 +259,10 @@ static void process_msg_prepare_process(unsigned long rphys)
 	dkprintf("new process : %p [%d] / table : %p\n", proc, proc->pid,
 	        proc->vm->page_table);
 
-	aal_mc_free(pn);
+	ihk_mc_free(pn);
 
-	aal_mc_unmap_virtual(p, npages, 1);
-	aal_mc_unmap_memory(NULL, phys, sz);
+	ihk_mc_unmap_virtual(p, npages, 1);
+	ihk_mc_unmap_memory(NULL, phys, sz);
 }
 
 static void process_msg_init(struct ikc_scd_init_param *pcp)
@@ -285,29 +285,29 @@ static void process_msg_init_acked(unsigned long pphys)
 
 	lparam = &cpu_local_var(scp);
 	lparam->request_rpa = param->request_page;
-	lparam->request_pa = aal_mc_map_memory(NULL, param->request_page,
+	lparam->request_pa = ihk_mc_map_memory(NULL, param->request_page,
 	                                       REQUEST_PAGE_COUNT * PAGE_SIZE);
-	lparam->request_va = aal_mc_map_virtual(lparam->request_pa,
+	lparam->request_va = ihk_mc_map_virtual(lparam->request_pa,
 	                                        REQUEST_PAGE_COUNT,
 	                                        PTATTR_WRITABLE);
 
 	lparam->doorbell_rpa = param->doorbell_page;
-	lparam->doorbell_pa = aal_mc_map_memory(NULL, param->doorbell_page,
+	lparam->doorbell_pa = ihk_mc_map_memory(NULL, param->doorbell_page,
 	                                        DOORBELL_PAGE_COUNT * 
 	                                        PAGE_SIZE);
-	lparam->doorbell_va = aal_mc_map_virtual(lparam->doorbell_pa,
+	lparam->doorbell_va = ihk_mc_map_virtual(lparam->doorbell_pa,
 	                                         DOORBELL_PAGE_COUNT,
 	                                         PTATTR_WRITABLE);
 
 	lparam->post_rpa = param->post_page;
-	lparam->post_pa = aal_mc_map_memory(NULL, param->post_page,
+	lparam->post_pa = ihk_mc_map_memory(NULL, param->post_page,
 	                                    PAGE_SIZE);
-	lparam->post_va = aal_mc_map_virtual(lparam->post_pa, 1,
+	lparam->post_va = ihk_mc_map_virtual(lparam->post_pa, 1,
 	                                     PTATTR_WRITABLE);
 
 	lparam->post_fin = 1;
 
-	dkprintf("Syscall parameters: (%d)\n", aal_mc_get_processor_id());
+	dkprintf("Syscall parameters: (%d)\n", ihk_mc_get_processor_id());
 	dkprintf(" Response: %lx, %p\n",
 	        lparam->response_pa, lparam->response_va);
 	dkprintf(" Request : %lx, %lx, %p\n",
@@ -318,14 +318,14 @@ static void process_msg_init_acked(unsigned long pphys)
 	        lparam->post_pa, lparam->post_rpa, lparam->post_va);
 }
 
-static void syscall_channel_send(struct aal_ikc_channel_desc *c,
+static void syscall_channel_send(struct ihk_ikc_channel_desc *c,
                                  struct ikc_scd_packet *packet)
 {
-	aal_ikc_send(c, packet, 0);
+	ihk_ikc_send(c, packet, 0);
 }
 
-static int syscall_packet_handler(struct aal_ikc_channel_desc *c,
-                                  void *__packet, void *aal_os)
+static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
+                                  void *__packet, void *ihk_os)
 {
 	struct ikc_scd_packet *packet = __packet;
 	struct ikc_scd_packet pckt;
@@ -350,7 +350,7 @@ static int syscall_packet_handler(struct aal_ikc_channel_desc *c,
 		dkprintf("SCD_MSG_SCHEDULE_PROCESS: %lx\n", packet->arg);
 
 		runq_add_proc((struct process *)packet->arg, 
-		              aal_mc_get_processor_id());
+		              ihk_mc_get_processor_id());
 					  
 		//cpu_local_var(next) = (struct process *)packet->arg;
 		return 0;
@@ -360,7 +360,7 @@ static int syscall_packet_handler(struct aal_ikc_channel_desc *c,
 
 void init_host_syscall_channel(void)
 {
-	struct aal_ikc_connect_param param;
+	struct ihk_ikc_connect_param param;
 	struct ikc_scd_packet pckt;
 
 	param.port = 501;
@@ -370,9 +370,9 @@ void init_host_syscall_channel(void)
 	param.handler = syscall_packet_handler;
 
 	dkprintf("(syscall) Trying to connect host ...");
-	while (aal_ikc_connect(NULL, &param) != 0) {
+	while (ihk_ikc_connect(NULL, &param) != 0) {
 		dkprintf(".");
-		aal_mc_delay_us(1000 * 1000);
+		ihk_mc_delay_us(1000 * 1000);
 	}
 	dkprintf("connected.\n");
 
@@ -380,7 +380,7 @@ void init_host_syscall_channel(void)
 
 	process_msg_init(&cpu_local_var(iip));
 	pckt.msg = SCD_MSG_INIT_CHANNEL;
-	pckt.ref = aal_mc_get_processor_id();
+	pckt.ref = ihk_mc_get_processor_id();
 	pckt.arg = virt_to_phys(&cpu_local_var(iip));
 	syscall_channel_send(param.channel, &pckt);
 }

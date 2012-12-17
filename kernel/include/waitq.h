@@ -16,7 +16,7 @@ int default_wake_function(struct waitq_entry *wait, unsigned mode, int flags,
 			              void *key);
 
 typedef struct waitq {
-	aal_spinlock_t lock;
+	ihk_spinlock_t lock;
 	struct list_head waitq;
 } waitq_t;
 

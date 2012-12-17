@@ -48,7 +48,7 @@ static int set_perfctr_x86(int counter, int event, int mask, int inv, int count,
 	                              CVAL2(event, mask, inv, count));
 }
 
-int aal_mc_perfctr_init(int counter, enum aal_perfctr_type type, int mode)
+int ihk_mc_perfctr_init(int counter, enum ihk_perfctr_type type, int mode)
 {
 	if (counter < 0 || counter >= X86_IA32_NUM_PERF_COUNTERS) {
 		return -EINVAL;
@@ -67,7 +67,7 @@ int aal_mc_perfctr_init(int counter, enum aal_perfctr_type type, int mode)
 extern void x86_march_perfctr_start(unsigned long counter_mask);
 #endif
 
-int aal_mc_perfctr_start(unsigned long counter_mask)
+int ihk_mc_perfctr_start(unsigned long counter_mask)
 {
 	unsigned int value = 0;
 
@@ -82,7 +82,7 @@ int aal_mc_perfctr_start(unsigned long counter_mask)
 	return 0;
 }
 
-int aal_mc_perfctr_stop(unsigned long counter_mask)
+int ihk_mc_perfctr_stop(unsigned long counter_mask)
 {
 	unsigned int value;
 
@@ -94,7 +94,7 @@ int aal_mc_perfctr_stop(unsigned long counter_mask)
 	return 0;
 }
 
-int aal_mc_perfctr_reset(int counter)
+int ihk_mc_perfctr_reset(int counter)
 {
 	if (counter < 0 || counter >= X86_IA32_NUM_PERF_COUNTERS) {
 		return -EINVAL;
@@ -105,7 +105,7 @@ int aal_mc_perfctr_reset(int counter)
 	return 0;
 }
 
-int aal_mc_perfctr_read_mask(unsigned long counter_mask, unsigned long *value)
+int ihk_mc_perfctr_read_mask(unsigned long counter_mask, unsigned long *value)
 {
 	int i, j;
 
@@ -118,7 +118,7 @@ int aal_mc_perfctr_read_mask(unsigned long counter_mask, unsigned long *value)
 	return 0;
 }
 
-unsigned long aal_mc_perfctr_read(int counter)
+unsigned long ihk_mc_perfctr_read(int counter)
 {
 	if (counter < 0 || counter >= X86_IA32_NUM_PERF_COUNTERS) {
 		return -EINVAL;

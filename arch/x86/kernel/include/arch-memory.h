@@ -79,7 +79,7 @@
 #define PFL1_KERN_ATTR       (PFL1_PRESENT | PFL1_WRITABLE)
 
 /* For easy conversion, it is better to be the same as architecture's ones */
-enum aal_mc_pt_attribute {
+enum ihk_mc_pt_attribute {
 	PTATTR_ACTIVE     = 0x01,
 	PTATTR_WRITABLE   = 0x02,
 	PTATTR_USER       = 0x04,
@@ -104,5 +104,5 @@ void *map_fixed_area(unsigned long phys, unsigned long size, int uncachable);
 #define AP_TRAMPOLINE_SIZE  0x4000
 
 /* Local is cachable */
-#define AAL_IKC_QUEUE_PT_ATTR (PTATTR_WRITABLE | PTATTR_UNCACHABLE)
+#define IHK_IKC_QUEUE_PT_ATTR (PTATTR_WRITABLE | PTATTR_UNCACHABLE)
 #endif

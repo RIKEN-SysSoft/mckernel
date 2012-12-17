@@ -135,7 +135,7 @@ struct syscall_params {
 	unsigned long post_rpa, post_pa;
 	struct syscall_post *post_va;
 	unsigned long post_fin;
-	struct syscall_post post_buf AAL_DMA_ALIGN;
+	struct syscall_post post_buf IHK_DMA_ALIGN;
 };
 
 #endif

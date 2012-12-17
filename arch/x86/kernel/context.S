@@ -4,8 +4,8 @@
 		(X86_CPU_LOCAL_OFFSET_TSS + X86_TSS_OFFSET_SP0)
 
 .text
-.globl aal_mc_switch_context
-aal_mc_switch_context:
+.globl ihk_mc_switch_context
+ihk_mc_switch_context:
 		pushfq
 		popq	%rax
 		testq	%rdi, %rdi

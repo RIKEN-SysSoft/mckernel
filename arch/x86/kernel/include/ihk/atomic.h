@@ -1,50 +1,50 @@
-#ifndef HEADER_X86_COMMON_AAL_ATOMIC_H
-#define HEADER_X86_COMMON_AAL_ATOMIC_H
+#ifndef HEADER_X86_COMMON_IHK_ATOMIC_H
+#define HEADER_X86_COMMON_IHK_ATOMIC_H
  
 typedef struct {
 	int counter;
-} aal_atomic_t;
+} ihk_atomic_t;
 
-#define AAL_ATOMIC_INIT(i)	{ (i) }
+#define IHK_ATOMIC_INIT(i)	{ (i) }
 
 
-static inline int aal_atomic_read(const aal_atomic_t *v)
+static inline int ihk_atomic_read(const ihk_atomic_t *v)
 {
 	return (*(volatile int *)&(v)->counter);
 }
 
-static inline void aal_atomic_set(aal_atomic_t *v, int i)
+static inline void ihk_atomic_set(ihk_atomic_t *v, int i)
 {
 	v->counter = i;
 }
 
-static inline void aal_atomic_add(int i, aal_atomic_t *v)
+static inline void ihk_atomic_add(int i, ihk_atomic_t *v)
 {
 	asm volatile("lock addl %1,%0"
 		     : "+m" (v->counter)
 		     : "ir" (i));
 }
 
-static inline void aal_atomic_sub(int i, aal_atomic_t *v)
+static inline void ihk_atomic_sub(int i, ihk_atomic_t *v)
 {
 	asm volatile("lock subl %1,%0"
 		     : "+m" (v->counter)
 		     : "ir" (i));
 }
 
-static inline void aal_atomic_inc(aal_atomic_t *v)
+static inline void ihk_atomic_inc(ihk_atomic_t *v)
 {
 	asm volatile("lock incl %0"
 		     : "+m" (v->counter));
 }
 
-static inline void aal_atomic_dec(aal_atomic_t *v)
+static inline void ihk_atomic_dec(ihk_atomic_t *v)
 {
 	asm volatile("lock decl %0"
 		     : "+m" (v->counter));
 }
 
-static inline int aal_atomic_dec_and_test(aal_atomic_t *v)
+static inline int ihk_atomic_dec_and_test(ihk_atomic_t *v)
 {
 	unsigned char c;
 
@@ -54,7 +54,7 @@ static inline int aal_atomic_dec_and_test(aal_atomic_t *v)
 	return c != 0;
 }
 
-static inline int aal_atomic_inc_and_test(aal_atomic_t *v)
+static inline int ihk_atomic_inc_and_test(ihk_atomic_t *v)
 {
 	unsigned char c;
 
@@ -64,7 +64,7 @@ static inline int aal_atomic_inc_and_test(aal_atomic_t *v)
 	return c != 0;
 }
 
-static inline int aal_atomic_add_return(int i, aal_atomic_t *v)
+static inline int ihk_atomic_add_return(int i, ihk_atomic_t *v)
 {
 	int __i;
 
@@ -75,12 +75,12 @@ static inline int aal_atomic_add_return(int i, aal_atomic_t *v)
 	return i + __i;
 }
 
-static inline int aal_atomic_sub_return(int i, aal_atomic_t *v)
+static inline int ihk_atomic_sub_return(int i, ihk_atomic_t *v)
 {
-	return aal_atomic_add_return(-i, v);
+	return ihk_atomic_add_return(-i, v);
 }
 
-#define aal_atomic_inc_return(v)  (aal_atomic_add_return(1, v))
-#define aal_atomic_dec_return(v)  (aal_atomic_sub_return(1, v))
+#define ihk_atomic_inc_return(v)  (ihk_atomic_add_return(1, v))
+#define ihk_atomic_dec_return(v)  (ihk_atomic_sub_return(1, v))
 
 #endif

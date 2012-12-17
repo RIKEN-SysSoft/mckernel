@@ -1,12 +1,12 @@
-#ifndef __HEADER_GENERIC_AAL_LOCK
-#define __HEADER_GENERIC_AAL_LOCK
+#ifndef __HEADER_GENERIC_IHK_LOCK
+#define __HEADER_GENERIC_IHK_LOCK
 
 #include <arch-lock.h>
 
-#ifndef AAL_STATIC_SPINLOCK_FUNCS
-void aal_mc_spinlock_init(aal_spinlock_t *);
-void aal_mc_spinlock_lock(aal_spinlock_t *, unsigned long *);
-void aal_mc_spinlock_unlock(aal_spinlock_t *, unsigned long *);
+#ifndef IHK_STATIC_SPINLOCK_FUNCS
+void ihk_mc_spinlock_init(ihk_spinlock_t *);
+void ihk_mc_spinlock_lock(ihk_spinlock_t *, unsigned long *);
+void ihk_mc_spinlock_unlock(ihk_spinlock_t *, unsigned long *);
 #endif
 
 #endif

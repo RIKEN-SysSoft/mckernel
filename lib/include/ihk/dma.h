@@ -3,19 +3,19 @@
 
 #include <ihk/ikc.h>
 
-struct aal_dma_request {
-	aal_os_t src_os;
+struct ihk_dma_request {
+	ihk_os_t src_os;
 	unsigned long src_phys;
-	aal_os_t dest_os;
+	ihk_os_t dest_os;
 	unsigned long dest_phys;
 	unsigned long size;
 	
 	void (*callback)(void *);
 	void *priv;
-	aal_os_t notify_os;
+	ihk_os_t notify_os;
 	unsigned long *notify;
 };
 
-int aal_mc_dma_request(int channel, struct aal_dma_request *req);
+int ihk_mc_dma_request(int channel, struct ihk_dma_request *req);
 
 #endif

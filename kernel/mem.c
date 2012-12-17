@@ -19,10 +19,10 @@
 #define dkprintf(...)
 #endif
 
-static struct aal_page_allocator_desc *pa_allocator;
+static struct ihk_page_allocator_desc *pa_allocator;
 static unsigned long pa_start, pa_end;
 
-extern int aal_mc_pt_print_pte(struct page_table *pt, void *virt);
+extern int ihk_mc_pt_print_pte(struct page_table *pt, void *virt);
 
 static void reserve_pages(unsigned long start, unsigned long end, int type)
 {
@@ -37,12 +37,12 @@ static void reserve_pages(unsigned long start, unsigned long end, int type)
 	}
 	dkprintf("reserve: %016lx - %016lx (%ld pages)\n", start, end,
 	        (end - start) >> PAGE_SHIFT);
-	aal_pagealloc_reserve(pa_allocator, start, end);
+	ihk_pagealloc_reserve(pa_allocator, start, end);
 }
 
-void *allocate_pages(int npages, enum aal_mc_ap_flag flag)
+void *allocate_pages(int npages, enum ihk_mc_ap_flag flag)
 {
-    unsigned long pa = aal_pagealloc_alloc(pa_allocator, npages);
+    unsigned long pa = ihk_pagealloc_alloc(pa_allocator, npages);
     /* all_pagealloc_alloc returns zero when error occured, 
        and callee (in mcos/kernel/process.c) so propagate it */
 	return pa ? phys_to_virt(pa) : 0; 
@@ -50,10 +50,10 @@ void *allocate_pages(int npages, enum aal_mc_ap_flag flag)
 
 void free_pages(void *va, int npages)
 {
-	aal_pagealloc_free(pa_allocator, virt_to_phys(va), npages);
+	ihk_pagealloc_free(pa_allocator, virt_to_phys(va), npages);
 }
 
-static struct aal_mc_pa_ops allocator = {
+static struct ihk_mc_pa_ops allocator = {
 	.alloc_page = allocate_pages,
 	.free_page = free_pages,
 };
@@ -68,7 +68,7 @@ static void page_fault_handler(unsigned long address, void *regs,
 
 	irqflags = kprintf_lock();
 	__kprintf("[%d] Page fault for 0x%lX, (rbp: 0x%lX)\n", 
-	          aal_mc_get_processor_id(), address, rbp); 
+	          ihk_mc_get_processor_id(), address, rbp); 
 
 	__kprintf("%s for %s access in %s mode (reserved bit %s set), it %s an instruction fetch\n", 
 	          (error & PF_PROT ? "protection fault" : "no page found"),
@@ -84,7 +84,7 @@ static void page_fault_handler(unsigned long address, void *regs,
 		if (range->start <= address && range->end > address) {
 			__kprintf("address is in range, flag: 0x%X! \n", range->flag);
 			found = 1;
-			aal_mc_pt_print_pte(cpu_local_var(current)->vm->page_table, 
+			ihk_mc_pt_print_pte(cpu_local_var(current)->vm->page_table, 
 			                    (void*)address);
 			break;
 		}
@@ -96,7 +96,7 @@ static void page_fault_handler(unsigned long address, void *regs,
 	kprintf_unlock(irqflags);
 
 	/* TODO */
-	aal_mc_debug_show_interrupt_context(regs);
+	ihk_mc_debug_show_interrupt_context(regs);
 
 #ifdef DEBUG_PRINT_MEM
 	{
@@ -119,14 +119,14 @@ static void page_allocator_init(void)
 	void *page_map;
 	unsigned int i;
 
-	pa_start = aal_mc_get_memory_address(AAL_MC_GMA_AVAIL_START, 0);
-	pa_end = aal_mc_get_memory_address(AAL_MC_GMA_AVAIL_END, 0);
+	pa_start = ihk_mc_get_memory_address(IHK_MC_GMA_AVAIL_START, 0);
+	pa_end = ihk_mc_get_memory_address(IHK_MC_GMA_AVAIL_END, 0);
 
 	pa_start &= PAGE_MASK;
 	pa_end = (pa_end + PAGE_SIZE - 1) & PAGE_MASK;
 
 	/* 
-	page_map_pa = aal_mc_get_memory_address(AAL_MC_GMA_HEAP_START, 0);
+	page_map_pa = ihk_mc_get_memory_address(IHK_MC_GMA_HEAP_START, 0);
 	page_map = phys_to_virt(page_map_pa);
 	 * Can't allocate in reserved area 
 	 * TODO: figure this out automatically! 
@@ -134,29 +134,29 @@ static void page_allocator_init(void)
 	page_map_pa = 0x100000;
 	page_map = phys_to_virt(page_map_pa);
 
-	pa_allocator = __aal_pagealloc_init(pa_start, pa_end - pa_start,
+	pa_allocator = __ihk_pagealloc_init(pa_start, pa_end - pa_start,
 	                                    PAGE_SIZE, page_map, &pages);
 
 	reserve_pages(page_map_pa, page_map_pa + pages * PAGE_SIZE, 0);
 
 	/* BIOS reserved ranges */
-	for (i = 1; i <= aal_mc_get_memory_address(AAL_MC_NR_RESERVED_AREAS, 0); 
+	for (i = 1; i <= ihk_mc_get_memory_address(IHK_MC_NR_RESERVED_AREAS, 0); 
 	     ++i) {
 
-		reserve_pages(aal_mc_get_memory_address(AAL_MC_RESERVED_AREA_START, i),
-		              aal_mc_get_memory_address(AAL_MC_RESERVED_AREA_END, i), 0);
+		reserve_pages(ihk_mc_get_memory_address(IHK_MC_RESERVED_AREA_START, i),
+		              ihk_mc_get_memory_address(IHK_MC_RESERVED_AREA_END, i), 0);
 	}
 	
-	aal_mc_reserve_arch_pages(pa_start, pa_end, reserve_pages);
+	ihk_mc_reserve_arch_pages(pa_start, pa_end, reserve_pages);
 
 	kprintf("Available pages: %ld pages\n",
-	        aal_pagealloc_count(pa_allocator));
+	        ihk_pagealloc_count(pa_allocator));
 
-	/* Notify the aal to use my page allocator */
-	aal_mc_set_page_allocator(&allocator);
+	/* Notify the ihk to use my page allocator */
+	ihk_mc_set_page_allocator(&allocator);
 
 	/* And prepare some exception handlers */
-	aal_mc_set_page_fault_handler(page_fault_handler);
+	ihk_mc_set_page_fault_handler(page_fault_handler);
 }
 
 void register_kmalloc(void)
@@ -165,19 +165,19 @@ void register_kmalloc(void)
 	allocator.free = kfree;
 }
 
-static struct aal_page_allocator_desc *vmap_allocator;
+static struct ihk_page_allocator_desc *vmap_allocator;
 
 static void virtual_allocator_init(void)
 {
-	vmap_allocator = aal_pagealloc_init(MAP_VMAP_START,
+	vmap_allocator = ihk_pagealloc_init(MAP_VMAP_START,
 	                                    MAP_VMAP_SIZE, PAGE_SIZE);
 	/* Make sure that kernel first-level page table copying works */
-	aal_mc_pt_prepare_map(NULL, (void *)MAP_VMAP_START, MAP_VMAP_SIZE,
-	                      AAL_MC_PT_FIRST_LEVEL);
+	ihk_mc_pt_prepare_map(NULL, (void *)MAP_VMAP_START, MAP_VMAP_SIZE,
+	                      IHK_MC_PT_FIRST_LEVEL);
 }
 
-void *aal_mc_map_virtual(unsigned long phys, int npages,
-                         enum aal_mc_pt_attribute attr)
+void *ihk_mc_map_virtual(unsigned long phys, int npages,
+                         enum ihk_mc_pt_attribute attr)
 {
 	void *p;
 	unsigned long i, offset;
@@ -185,31 +185,31 @@ void *aal_mc_map_virtual(unsigned long phys, int npages,
 	offset = (phys & (PAGE_SIZE - 1));
 	phys = phys & PAGE_MASK;
 
-	p = (void *)aal_pagealloc_alloc(vmap_allocator, npages);
+	p = (void *)ihk_pagealloc_alloc(vmap_allocator, npages);
 	if (!p) {
 		return NULL;
 	}
 	for (i = 0; i < npages; i++) {
-		aal_mc_pt_set_page(NULL, (char *)p + (i << PAGE_SHIFT),
+		ihk_mc_pt_set_page(NULL, (char *)p + (i << PAGE_SHIFT),
 		                   phys + (i << PAGE_SHIFT), attr);
 	}
 	return (char *)p + offset;
 }
 
-void aal_mc_unmap_virtual(void *va, int npages, int free_physical)
+void ihk_mc_unmap_virtual(void *va, int npages, int free_physical)
 {
 	unsigned long i;
 
 	va = (void *)((unsigned long)va & PAGE_MASK);
 	for (i = 0; i < npages; i++) {
-		aal_mc_pt_clear_page(NULL, (char *)va + (i << PAGE_SHIFT));
+		ihk_mc_pt_clear_page(NULL, (char *)va + (i << PAGE_SHIFT));
 	}
 	
 	if (free_physical)
-		aal_pagealloc_free(vmap_allocator, virt_to_phys(va), npages);
+		ihk_pagealloc_free(vmap_allocator, virt_to_phys(va), npages);
 }
 
-/* moved from aal_knc/manycore/knf/setup.c */
+/* moved from ihk_knc/manycore/mic/setup.c */
 /*static*/ void *sbox_base = (void *)SBOX_BASE;
 void sbox_write(int offset, unsigned int value)
 {
@@ -224,7 +224,7 @@ unsigned int sbox_read(int offset)
 
 unsigned int free_bitmap_micpa = ((~((1ULL<<(NUM_SMPT_ENTRIES_IN_USE - NUM_SMPT_ENTRIES_MICPA))-1))&((1ULL << NUM_SMPT_ENTRIES_IN_USE) - 1));
 
-void aal_mc_map_micpa(unsigned long host_pa, unsigned long* mic_pa) {
+void ihk_mc_map_micpa(unsigned long host_pa, unsigned long* mic_pa) {
     int i;
     for(i = NUM_SMPT_ENTRIES_IN_USE - 1; i >= NUM_SMPT_ENTRIES_IN_USE - NUM_SMPT_ENTRIES_MICPA; i--) {
         if((free_bitmap_micpa >> i) & 1) {
@@ -233,7 +233,7 @@ void aal_mc_map_micpa(unsigned long host_pa, unsigned long* mic_pa) {
             break;
         }
     }
-    kprintf("aal_mc_map_micpa,1,i=%d,host_pa=%lx,mic_pa=%llx\n", i, host_pa, *mic_pa);
+    kprintf("ihk_mc_map_micpa,1,i=%d,host_pa=%lx,mic_pa=%llx\n", i, host_pa, *mic_pa);
     if(i == NUM_SMPT_ENTRIES_IN_USE - NUM_SMPT_ENTRIES_MICPA - 1) {
         *mic_pa = 0;
         return; 
@@ -242,21 +242,21 @@ void aal_mc_map_micpa(unsigned long host_pa, unsigned long* mic_pa) {
     *mic_pa += (host_pa & (MIC_SYSTEM_PAGE_SIZE-1));
 }
 
-int aal_mc_free_micpa(unsigned long mic_pa) {
+int ihk_mc_free_micpa(unsigned long mic_pa) {
     int smpt_ndx = ((mic_pa - MIC_SYSTEM_BASE) >> MIC_SYSTEM_PAGE_SHIFT);
     if(smpt_ndx >= NUM_SMPT_ENTRIES_IN_USE || 
        smpt_ndx <  NUM_SMPT_ENTRIES_IN_USE - NUM_SMPT_ENTRIES_MICPA) {
-        dkprintf("aal_mc_free_micpa,mic_pa=%llx,out of range\n", mic_pa); 
+        dkprintf("ihk_mc_free_micpa,mic_pa=%llx,out of range\n", mic_pa); 
         return -1;
     }
     free_bitmap_micpa |= (1ULL << smpt_ndx);
-    kprintf("aal_mc_free_micpa,index=%d,freed\n", smpt_ndx);
+    kprintf("ihk_mc_free_micpa,index=%d,freed\n", smpt_ndx);
     return 0;
 }
 
-void aal_mc_clean_micpa(void){
+void ihk_mc_clean_micpa(void){
 	free_bitmap_micpa = ((~((1ULL<<(NUM_SMPT_ENTRIES_IN_USE - NUM_SMPT_ENTRIES_MICPA))-1))&((1ULL << NUM_SMPT_ENTRIES_IN_USE) - 1));
-	kprintf("aal_mc_clean_micpa\n");
+	kprintf("ihk_mc_clean_micpa\n");
 }
 
 void mem_init(void)
@@ -278,7 +278,7 @@ void kmalloc_init(void)
 	register_kmalloc();
 }
 
-void *kmalloc(int size, enum aal_mc_ap_flag flag)
+void *kmalloc(int size, enum ihk_mc_ap_flag flag)
 {
 	struct cpu_local_var *v = get_this_cpu_local_var();
 	struct malloc_header *h = &v->free_list, *prev, *p;

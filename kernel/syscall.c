@@ -33,7 +33,7 @@
 #define dkprintf(...)
 #endif
 
-static aal_atomic_t pid_cnt = AAL_ATOMIC_INIT(1024);
+static ihk_atomic_t pid_cnt = IHK_ATOMIC_INIT(1024);
 
 int memcpy_async(unsigned long dest, unsigned long src,
                  unsigned long len, int wait, unsigned long *notify);
@@ -59,7 +59,7 @@ static void send_syscall(struct syscall_request *req)
 	memcpy_async_wait(&cpu_local_var(scp).post_fin);
 	cpu_local_var(scp).post_va->v[0] = cpu_local_var(scp).post_idx;
 
-	w = aal_mc_get_processor_id() + 1;
+	w = ihk_mc_get_processor_id() + 1;
 
 	memcpy_async_wait(&fin);
 
@@ -68,27 +68,27 @@ static void send_syscall(struct syscall_request *req)
 
 #ifdef SYSCALL_BY_IKC
 	packet.msg = SCD_MSG_SYSCALL_ONESIDE;
-	packet.ref = aal_mc_get_processor_id();
+	packet.ref = ihk_mc_get_processor_id();
 	packet.arg = cpu_local_var(scp).request_rpa;
 	
-	aal_ikc_send(cpu_local_var(syscall_channel), &packet, 0); 
-	//aal_ikc_send(get_cpu_local_var(0)->syscall_channel, &packet, 0); 
+	ihk_ikc_send(cpu_local_var(syscall_channel), &packet, 0); 
+	//ihk_ikc_send(get_cpu_local_var(0)->syscall_channel, &packet, 0); 
 #endif
 }
 
 
-int do_syscall(struct syscall_request *req, aal_mc_user_context_t *ctx)
+int do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx)
 {
 	struct syscall_response *res = cpu_local_var(scp).response_va;
 
 	dkprintf("SC(%d)[%3d] sending syscall\n",
-	        aal_mc_get_processor_id(),
+	        ihk_mc_get_processor_id(),
 	        req->number);
 
 	send_syscall(req);
 
 	dkprintf("SC(%d)[%3d] waiting for host.. \n", 
-	        aal_mc_get_processor_id(),
+	        ihk_mc_get_processor_id(),
 	        req->number);
 	
 	while (!res->status) {
@@ -96,19 +96,19 @@ int do_syscall(struct syscall_request *req, aal_mc_user_context_t *ctx)
 	}
 	
 	dkprintf("SC(%d)[%3d] got host reply: %d \n", 
-	        aal_mc_get_processor_id(),
+	        ihk_mc_get_processor_id(),
 	        req->number, res->ret);
 
 	return res->ret;
 }
 
-long sys_brk(int n, aal_mc_user_context_t *ctx)
+long sys_brk(int n, ihk_mc_user_context_t *ctx)
 {
-	unsigned long address = aal_mc_syscall_arg0(ctx);
+	unsigned long address = ihk_mc_syscall_arg0(ctx);
 	struct vm_regions *region = &cpu_local_var(current)->vm->region;
     unsigned long r;
 
-    dkprintf("SC(%d)[sys_brk] brk_start=%lx,end=%lx\n", aal_mc_get_processor_id(), region->brk_start, region->brk_end);
+    dkprintf("SC(%d)[sys_brk] brk_start=%lx,end=%lx\n", ihk_mc_get_processor_id(), region->brk_start, region->brk_end);
 
     /* brk change fail, including glibc trick brk(0) to obtain current brk */
     if(address < region->brk_start) {
@@ -123,13 +123,13 @@ long sys_brk(int n, aal_mc_user_context_t *ctx)
     }
 
     /* try to extend memory region */
-    unsigned long flags = aal_mc_spinlock_lock(&cpu_local_var(current)->vm->memory_range_lock);
+    unsigned long flags = ihk_mc_spinlock_lock(&cpu_local_var(current)->vm->memory_range_lock);
     region->brk_end = 
         extend_process_region(cpu_local_var(current),
                               region->brk_start, region->brk_end,
                               address, 0);
-    aal_mc_spinlock_unlock(&cpu_local_var(current)->vm->memory_range_lock, flags);
-    dkprintf("SC(%d)[sys_brk] brk_end set to %lx\n", aal_mc_get_processor_id(), region->brk_end);
+    ihk_mc_spinlock_unlock(&cpu_local_var(current)->vm->memory_range_lock, flags);
+    dkprintf("SC(%d)[sys_brk] brk_end set to %lx\n", ihk_mc_get_processor_id(), region->brk_end);
     
     r = region->brk_end;    
 
@@ -138,15 +138,15 @@ long sys_brk(int n, aal_mc_user_context_t *ctx)
 
 }
 
-#define SYSCALL_DECLARE(name) long sys_##name(int n, aal_mc_user_context_t *ctx)
-#define SYSCALL_HEADER struct syscall_request request AAL_DMA_ALIGN; \
+#define SYSCALL_DECLARE(name) long sys_##name(int n, ihk_mc_user_context_t *ctx)
+#define SYSCALL_HEADER struct syscall_request request IHK_DMA_ALIGN; \
 	request.number = n
-#define SYSCALL_ARG_D(n)    request.args[n] = aal_mc_syscall_arg##n(ctx)
+#define SYSCALL_ARG_D(n)    request.args[n] = ihk_mc_syscall_arg##n(ctx)
 #define SYSCALL_ARG_MO(n) \
 	do { \
 	unsigned long __phys; \
-	if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, \
-	                           (void *)aal_mc_syscall_arg##n(ctx),\
+	if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, \
+	                           (void *)ihk_mc_syscall_arg##n(ctx),\
 	                           &__phys)) { \
 		return -EFAULT; \
 	}\
@@ -155,8 +155,8 @@ long sys_brk(int n, aal_mc_user_context_t *ctx)
 #define SYSCALL_ARG_MI(n) \
 	do { \
 	unsigned long __phys; \
-	if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, \
-	                           (void *)aal_mc_syscall_arg##n(ctx),\
+	if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, \
+	                           (void *)ihk_mc_syscall_arg##n(ctx),\
 	                           &__phys)) { \
 		return -EFAULT; \
 	}\
@@ -195,7 +195,7 @@ SYSCALL_DECLARE(open)
 {
 
 	SYSCALL_HEADER;
-	dkprintf("open: %s\n", (char*)aal_mc_syscall_arg0(ctx));
+	dkprintf("open: %s\n", (char*)ihk_mc_syscall_arg0(ctx));
 	SYSCALL_ARGS_3(MI, D, D);
 	SYSCALL_FOOTER;
 }
@@ -203,7 +203,7 @@ SYSCALL_DECLARE(open)
 SYSCALL_DECLARE(stat)
 {
 	SYSCALL_HEADER;
-	dkprintf("stat(\"%s\");\n", (char*)aal_mc_syscall_arg0(ctx));
+	dkprintf("stat(\"%s\");\n", (char*)ihk_mc_syscall_arg0(ctx));
 	SYSCALL_ARGS_2(MO, MO);
 	SYSCALL_FOOTER;
 }
@@ -211,7 +211,7 @@ SYSCALL_DECLARE(stat)
 SYSCALL_DECLARE(time)
 {
 	SYSCALL_HEADER;
-    if(aal_mc_syscall_arg0(ctx)) {
+    if(ihk_mc_syscall_arg0(ctx)) {
         SYSCALL_ARGS_1(MO);
     } else {
         SYSCALL_ARGS_1(D);
@@ -233,7 +233,7 @@ static DECLARE_WAITQ(my_waitq);
 SYSCALL_DECLARE(ioctl)
 {
 
-	switch (aal_mc_syscall_arg0(ctx)) {
+	switch (ihk_mc_syscall_arg0(ctx)) {
 
 	case 0: {
 		struct waitq_entry my_wait;
@@ -284,7 +284,7 @@ SYSCALL_DECLARE(ioctl)
 	SYSCALL_HEADER;
 
 	/* Very ad-hoc for termios */
-	switch(aal_mc_syscall_arg1(ctx)) {
+	switch(ihk_mc_syscall_arg1(ctx)) {
 	case 0x5401:
 		SYSCALL_ARGS_3(D, D, MO);
 		SYSCALL_FOOTER;
@@ -328,7 +328,7 @@ SYSCALL_DECLARE(close)
 	SYSCALL_ARGS_1(D);
 	SYSCALL_FOOTER;
 #if 0
-	dkprintf("[%d] close() \n", aal_mc_get_processor_id());
+	dkprintf("[%d] close() \n", ihk_mc_get_processor_id());
 	return -EBADF;
 #endif
 /*
@@ -351,11 +351,11 @@ SYSCALL_DECLARE(exit_group)
 	SYSCALL_HEADER;
 
 #ifdef DCFA_KMOD
-	do_mod_exit((int)aal_mc_syscall_arg0(ctx));
+	do_mod_exit((int)ihk_mc_syscall_arg0(ctx));
 #endif
 
 	do_syscall(&request, ctx);
-	runq_del_proc(cpu_local_var(current), aal_mc_get_processor_id());
+	runq_del_proc(cpu_local_var(current), ihk_mc_get_processor_id());
 	free_process_memory(cpu_local_var(current));
 
 	//cpu_local_var(next) = &cpu_local_var(idle);
@@ -373,29 +373,29 @@ SYSCALL_DECLARE(mmap)
     unsigned long lockr;
 
     kprintf("syscall.c,mmap,addr=%lx,len=%lx,prot=%lx,flags=%x,fd=%x,offset=%lx\n",
-            aal_mc_syscall_arg0(ctx), aal_mc_syscall_arg1(ctx),
-            aal_mc_syscall_arg2(ctx), aal_mc_syscall_arg3(ctx),
-            aal_mc_syscall_arg4(ctx), aal_mc_syscall_arg5(ctx)
+            ihk_mc_syscall_arg0(ctx), ihk_mc_syscall_arg1(ctx),
+            ihk_mc_syscall_arg2(ctx), ihk_mc_syscall_arg3(ctx),
+            ihk_mc_syscall_arg4(ctx), ihk_mc_syscall_arg5(ctx)
             );
     //kprintf("syscall.c,mmap,dumping kmsg...\n");
     //    send_kmsg(ctx);
     //    return -EINVAL; // debug
 		
-    if((aal_mc_syscall_arg3(ctx) & 0x10) == 0x10) {
+    if((ihk_mc_syscall_arg3(ctx) & 0x10) == 0x10) {
         // libc/sysdeps/unix/sysv/linux/x86_64/bits/mman.h
         // #define MAP_FIXED  0x10
         // use the given vaddr as is
-        struct syscall_request request AAL_DMA_ALIGN;
+        struct syscall_request request IHK_DMA_ALIGN;
         request.number = n;
         
         // do a job similar to mcos/kernel/host.c:process_msg_prepare_process
-        unsigned long s = (aal_mc_syscall_arg0(ctx)) & PAGE_MASK;
-        unsigned long e = (s + aal_mc_syscall_arg1(ctx)
+        unsigned long s = (ihk_mc_syscall_arg0(ctx)) & PAGE_MASK;
+        unsigned long e = (s + ihk_mc_syscall_arg1(ctx)
                            + PAGE_SIZE - 1) & PAGE_MASK;
 		int range_npages = (e - s) >> PAGE_SHIFT;
 
         unsigned long pa;
-        int r = aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, (void *)s, &pa);
+        int r = ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, (void *)s, &pa);
         // va range is not overwrapped with existing mmap
         if(r != 0) {
 
@@ -415,7 +415,7 @@ SYSCALL_DECLARE(mmap)
 				}
 
 				e = (e + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
-				p = (unsigned long)aal_mc_alloc_pages(
+				p = (unsigned long)ihk_mc_alloc_pages(
 						(e - s + 2 * LARGE_PAGE_SIZE) >> PAGE_SHIFT, 0); 
 
 				p_aligned = (p + LARGE_PAGE_SIZE + (LARGE_PAGE_SIZE - 1)) 
@@ -432,7 +432,7 @@ SYSCALL_DECLARE(mmap)
 			else {
 #endif
 				// allocate physical address
-				pa = virt_to_phys(aal_mc_alloc_pages(range_npages, 0)); 
+				pa = virt_to_phys(ihk_mc_alloc_pages(range_npages, 0)); 
 
 				// add page_table, add memory-range
 				add_process_memory_range(cpu_local_var(current), s, e, pa, 0); 
@@ -450,29 +450,29 @@ SYSCALL_DECLARE(mmap)
             kprintf("syscall.c,clearing from %lx to %lx\n", s, e);
             memset((void*)phys_to_virt(pa), 0, e - s);
         }
-        if ((aal_mc_syscall_arg3(ctx) & 0x20) == 0x20) {
+        if ((ihk_mc_syscall_arg3(ctx) & 0x20) == 0x20) {
             // #define MAP_ANONYMOUS  0x20
             kprintf("syscall.c,MAP_FIXED,MAP_ANONYMOUS\n");
-            return aal_mc_syscall_arg0(ctx); // maybe we should return zero
+            return ihk_mc_syscall_arg0(ctx); // maybe we should return zero
         } else {
             kprintf("syscall.c,MAP_FIXED,!MAP_ANONYMOUS\n");
             // lseek(mmap_fd, mmap_off, SEEK_SET);
             // read(mmap_fd, mmap_addr, mmap_len);
             SYSCALL_ARGS_6(MO, D, D, D, D, D); 
             int r = do_syscall(&request, ctx);
-            if(r == 0) { return aal_mc_syscall_arg0(ctx); } else { return -EINVAL; }
+            if(r == 0) { return ihk_mc_syscall_arg0(ctx); } else { return -EINVAL; }
         }
-    } else if ((aal_mc_syscall_arg3(ctx) & 0x20) == 0x20) {
+    } else if ((ihk_mc_syscall_arg3(ctx) & 0x20) == 0x20) {
         // #define MAP_ANONYMOUS  0x20
         kprintf("syscall.c,!MAP_FIXED,MAP_ANONYMOUS\n");
-        unsigned long flags = aal_mc_spinlock_lock(&cpu_local_var(current)->vm->memory_range_lock);
+        unsigned long flags = ihk_mc_spinlock_lock(&cpu_local_var(current)->vm->memory_range_lock);
         unsigned long s = (region->map_end + PAGE_SIZE - 1) & PAGE_MASK;
         unsigned long map_end_aligned = region->map_end;
-		unsigned long len = (aal_mc_syscall_arg1(ctx) + PAGE_SIZE - 1) & PAGE_MASK;
+		unsigned long len = (ihk_mc_syscall_arg1(ctx) + PAGE_SIZE - 1) & PAGE_MASK;
         dkprintf("syscall.c,mmap,len=%lx", len);
 
 #ifdef USE_NOCACHE_MMAP
-		if ((aal_mc_syscall_arg3(ctx) & 0x40) == 0x40) {
+		if ((ihk_mc_syscall_arg3(ctx) & 0x40) == 0x40) {
 			dkprintf("syscall.c,mmap,nocache,len=%lx\n", len);
 			region->map_end = extend_process_region(
 					cpu_local_var(current), region->map_start, map_end_aligned,
@@ -488,7 +488,7 @@ SYSCALL_DECLARE(mmap)
 				                      s + len, 0);
 		}
 
-        aal_mc_spinlock_unlock(&cpu_local_var(current)->vm->memory_range_lock, flags);
+        ihk_mc_spinlock_unlock(&cpu_local_var(current)->vm->memory_range_lock, flags);
         dkprintf("syscall.c,mmap,map_end=%lx,s+len=%lx\n", region->map_end, s+len);
 #ifdef USE_LARGE_PAGES
 		if (region->map_end >= s + len) { 
@@ -502,16 +502,16 @@ SYSCALL_DECLARE(mmap)
 			return -EINVAL; 
 		}
 
-	} else if ((aal_mc_syscall_arg3(ctx) & 0x02) == 0x02) {
+	} else if ((ihk_mc_syscall_arg3(ctx) & 0x02) == 0x02) {
         // #define MAP_PRIVATE    0x02
 
-        unsigned long flags = aal_mc_spinlock_lock(&cpu_local_var(current)->vm->memory_range_lock);
+        unsigned long flags = ihk_mc_spinlock_lock(&cpu_local_var(current)->vm->memory_range_lock);
 
 #if 1 /* takagidebug*/
         unsigned long amt_align = 0x100000; /* takagi */
         unsigned long s = ((region->map_end + amt_align - 1) & ~(amt_align - 1));
-        unsigned long len = (aal_mc_syscall_arg1(ctx) + PAGE_SIZE - 1) & PAGE_MASK;
-        dkprintf("(%d),syscall.c,!MAP_FIXED,!MAP_ANONYMOUS,amt_align=%lx,s=%lx,len=%lx\n", aal_mc_get_processor_id(), amt_align, s, len);
+        unsigned long len = (ihk_mc_syscall_arg1(ctx) + PAGE_SIZE - 1) & PAGE_MASK;
+        dkprintf("(%d),syscall.c,!MAP_FIXED,!MAP_ANONYMOUS,amt_align=%lx,s=%lx,len=%lx\n", ihk_mc_get_processor_id(), amt_align, s, len);
 		region->map_end = 
 			extend_process_region(cpu_local_var(current),
 			                      region->map_start,
@@ -519,18 +519,18 @@ SYSCALL_DECLARE(mmap)
 			                      s + len, 0);
 #else
         unsigned long s = (region->map_end + PAGE_SIZE - 1) & PAGE_MASK;
-		unsigned long len = (aal_mc_syscall_arg1(ctx) + PAGE_SIZE - 1) & PAGE_MASK;
+		unsigned long len = (ihk_mc_syscall_arg1(ctx) + PAGE_SIZE - 1) & PAGE_MASK;
 		region->map_end = 
 			extend_process_region(cpu_local_var(current),
 			                      region->map_start,
 			                      region->map_end,
 			                      s + len, 0);
 #endif
-        aal_mc_spinlock_unlock(&cpu_local_var(current)->vm->memory_range_lock, flags);
+        ihk_mc_spinlock_unlock(&cpu_local_var(current)->vm->memory_range_lock, flags);
 		if (region->map_end < s + len) { return -EINVAL; }
 		s = region->map_end - len;
 
-        struct syscall_request request AAL_DMA_ALIGN;
+        struct syscall_request request IHK_DMA_ALIGN;
         request.number = n;
 
         kprintf("syscall.c,!MAP_FIXED,!MAP_ANONYMOUS,MAP_PRIVATE\n");
@@ -539,7 +539,7 @@ SYSCALL_DECLARE(mmap)
         SYSCALL_ARGS_6(MO, D, D, D, D, D); 
         // overwriting request.args[0]
         unsigned long __phys;                                      
-        if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, (void *)s, &__phys)) {
+        if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, (void *)s, &__phys)) {
             return -EFAULT; 
         }                 
         request.args[0] = __phys;
@@ -548,7 +548,7 @@ SYSCALL_DECLARE(mmap)
         if(r == 0) { return s; } else { return -EINVAL; }
     }
 	dkprintf("mmap flags not supported: fd = %lx, %lx\n",
-	        aal_mc_syscall_arg4(ctx), aal_mc_syscall_arg5(ctx));
+	        ihk_mc_syscall_arg4(ctx), ihk_mc_syscall_arg5(ctx));
 	while(1);
 }
 
@@ -556,8 +556,8 @@ SYSCALL_DECLARE(munmap)
 {
 	unsigned long address, len;
 
-	address = aal_mc_syscall_arg0(ctx);
-	len = aal_mc_syscall_arg1(ctx);
+	address = ihk_mc_syscall_arg0(ctx);
+	len = ihk_mc_syscall_arg1(ctx);
 
 	return remove_process_region(cpu_local_var(current), address, 
 	                             address + len);
@@ -581,8 +581,8 @@ SYSCALL_DECLARE(uname)
 	unsigned long phys;
 	int ret;
 
-	if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
-	                           (void *)aal_mc_syscall_arg0(ctx), &phys)) {
+	if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
+	                           (void *)ihk_mc_syscall_arg0(ctx), &phys)) {
 		return -EFAULT;
 	}
 
@@ -605,7 +605,7 @@ SYSCALL_DECLARE(getcwd)
 
 SYSCALL_DECLARE(access)
 {
-    kprintf("access: %s\n", (char*)aal_mc_syscall_arg0(ctx));
+    kprintf("access: %s\n", (char*)ihk_mc_syscall_arg0(ctx));
     SYSCALL_HEADER;
 	SYSCALL_ARGS_2(MI, D);
 	SYSCALL_FOOTER;
@@ -628,14 +628,14 @@ SYSCALL_DECLARE(fcntl)
 SYSCALL_DECLARE(readlink)
 {
     SYSCALL_HEADER;
-	dkprintf("readlink: %s\n", (char*)aal_mc_syscall_arg0(ctx));
+	dkprintf("readlink: %s\n", (char*)ihk_mc_syscall_arg0(ctx));
 	SYSCALL_ARGS_3(MI, MO, D);
 	SYSCALL_FOOTER;
 }
 
-long sys_getxid(int n, aal_mc_user_context_t *ctx)
+long sys_getxid(int n, ihk_mc_user_context_t *ctx)
 {
-	struct syscall_request request AAL_DMA_ALIGN;
+	struct syscall_request request IHK_DMA_ALIGN;
 
 	request.number = n;
 
@@ -645,15 +645,15 @@ long sys_getxid(int n, aal_mc_user_context_t *ctx)
 long do_arch_prctl(unsigned long code, unsigned long address)
 {
 	int err = 0;
-	enum aal_asr_type type;
+	enum ihk_asr_type type;
 
 	switch (code) {
 		case ARCH_SET_FS:
 		case ARCH_GET_FS:
-			type = AAL_ASR_X86_FS;
+			type = IHK_ASR_X86_FS;
 			break;
 		case ARCH_GET_GS:
-			type = AAL_ASR_X86_GS;
+			type = IHK_ASR_X86_GS;
 			break;
 		case ARCH_SET_GS:
 			return -ENOTSUPP;
@@ -664,16 +664,16 @@ long do_arch_prctl(unsigned long code, unsigned long address)
 	switch (code) {
 		case ARCH_SET_FS:
 			kprintf("[%d] arch_prctl: ARCH_SET_FS: 0x%lX\n",
-			        aal_mc_get_processor_id(), address);
+			        ihk_mc_get_processor_id(), address);
 			cpu_local_var(current)->thread.tlsblock_base = address;
-			err = aal_mc_arch_set_special_register(type, address);
+			err = ihk_mc_arch_set_special_register(type, address);
 			break;
 		case ARCH_SET_GS:
-			err = aal_mc_arch_set_special_register(type, address);
+			err = ihk_mc_arch_set_special_register(type, address);
 			break;
 		case ARCH_GET_FS:
 		case ARCH_GET_GS:
-			err = aal_mc_arch_get_special_register(type,
+			err = ihk_mc_arch_get_special_register(type,
 												   (unsigned long*)address);
 			break;
 		default:
@@ -686,8 +686,8 @@ long do_arch_prctl(unsigned long code, unsigned long address)
 
 SYSCALL_DECLARE(arch_prctl)
 {
-	return do_arch_prctl(aal_mc_syscall_arg0(ctx), 
-	                     aal_mc_syscall_arg1(ctx));
+	return do_arch_prctl(ihk_mc_syscall_arg0(ctx), 
+	                     ihk_mc_syscall_arg1(ctx));
 }
 
 
@@ -695,16 +695,16 @@ SYSCALL_DECLARE(clone)
 {
 	int i;
 	int cpuid = -1;
-	int clone_flags = aal_mc_syscall_arg0(ctx);
+	int clone_flags = ihk_mc_syscall_arg0(ctx);
 	//unsigned long	flags;	/* spinlock */
-	struct aal_mc_cpu_info *cpu_info = aal_mc_get_cpu_info();
+	struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
 	struct process *new;
 	
 	dkprintf("[%d] clone(): stack_pointr: 0x%lX\n",
-	         aal_mc_get_processor_id(), 
-			 (unsigned long)aal_mc_syscall_arg1(ctx));
+	         ihk_mc_get_processor_id(), 
+			 (unsigned long)ihk_mc_syscall_arg1(ctx));
 
-	//flags = aal_mc_spinlock_lock(&cpu_status_lock);
+	//flags = ihk_mc_spinlock_lock(&cpu_status_lock);
 	for (i = 0; i < cpu_info->ncpus; i++) {
 		if (get_cpu_local_var(i)->status == CPU_STATUS_IDLE) {
 			cpuid = i;
@@ -715,50 +715,50 @@ SYSCALL_DECLARE(clone)
 	if (cpuid < 0) 
 		return -EAGAIN;
 	
-	new = clone_process(cpu_local_var(current), aal_mc_syscall_pc(ctx),
-	                    aal_mc_syscall_arg1(ctx));
+	new = clone_process(cpu_local_var(current), ihk_mc_syscall_pc(ctx),
+	                    ihk_mc_syscall_arg1(ctx));
 	
 	if (!new) {
 		return -ENOMEM;
 	}
 
 	/* Allocate new pid */
-	new->pid = aal_atomic_inc_return(&pid_cnt);
+	new->pid = ihk_atomic_inc_return(&pid_cnt);
 	
 	if (clone_flags & CLONE_PARENT_SETTID) {
 		dkprintf("clone_flags & CLONE_PARENT_SETTID: 0x%lX\n",
-		         (unsigned long)aal_mc_syscall_arg2(ctx));
+		         (unsigned long)ihk_mc_syscall_arg2(ctx));
 		
-		*(int*)aal_mc_syscall_arg2(ctx) = new->pid;
+		*(int*)ihk_mc_syscall_arg2(ctx) = new->pid;
 	}
 	
 	if (clone_flags & CLONE_CHILD_CLEARTID) {
 		dkprintf("clone_flags & CLONE_CHILD_CLEARTID: 0x%lX\n", 
-			     (unsigned long)aal_mc_syscall_arg3(ctx));
+			     (unsigned long)ihk_mc_syscall_arg3(ctx));
 
-		new->thread.clear_child_tid = (int*)aal_mc_syscall_arg3(ctx);
+		new->thread.clear_child_tid = (int*)ihk_mc_syscall_arg3(ctx);
 	}
 	
 	if (clone_flags & CLONE_SETTLS) {
 		dkprintf("clone_flags & CLONE_SETTLS: 0x%lX\n", 
-			     (unsigned long)aal_mc_syscall_arg4(ctx));
+			     (unsigned long)ihk_mc_syscall_arg4(ctx));
 		
 		new->thread.tlsblock_base = 
-			(unsigned long)aal_mc_syscall_arg4(ctx);
+			(unsigned long)ihk_mc_syscall_arg4(ctx);
 	}
 	else { 
 		new->thread.tlsblock_base = 
 			cpu_local_var(current)->thread.tlsblock_base;
 	}
 
-	aal_mc_syscall_ret(new->uctx) = 0;
+	ihk_mc_syscall_ret(new->uctx) = 0;
 	
 	dkprintf("clone: kicking scheduler!\n");
 	runq_add_proc(new, cpuid);
 
 	//while (1) { cpu_halt(); }
 #if 0
-	aal_mc_syscall_ret(new->uctx) = 0;
+	ihk_mc_syscall_ret(new->uctx) = 0;
 
 	/* Hope it is scheduled after... :) */
 	request.number = n;
@@ -774,7 +774,7 @@ SYSCALL_DECLARE(clone)
 SYSCALL_DECLARE(set_tid_address)
 {
 	cpu_local_var(current)->thread.clear_child_tid = 
-	                        (int*)aal_mc_syscall_arg2(ctx);
+	                        (int*)ihk_mc_syscall_arg2(ctx);
 
 	return cpu_local_var(current)->pid;
 }
@@ -782,9 +782,9 @@ SYSCALL_DECLARE(set_tid_address)
 // see linux-2.6.34.13/kernel/signal.c
 SYSCALL_DECLARE(tgkill)
 {
-    int tgid = aal_mc_syscall_arg0(ctx);
-    int pid = aal_mc_syscall_arg1(ctx);
-    int sig = aal_mc_syscall_arg2(ctx);
+    int tgid = ihk_mc_syscall_arg0(ctx);
+    int pid = ihk_mc_syscall_arg1(ctx);
+    int sig = ihk_mc_syscall_arg2(ctx);
 
     if(pid <= 0 || tgid <= 0) { return -EINVAL; }
     // search pid
@@ -804,18 +804,18 @@ SYSCALL_DECLARE(set_robust_list)
 SYSCALL_DECLARE(writev)
 {
 	/* Adhoc implementation of writev calling write sequentially */
-	struct syscall_request request AAL_DMA_ALIGN;
+	struct syscall_request request IHK_DMA_ALIGN;
 	unsigned long seg;
 	size_t seg_ret, ret = 0;
 	
-	int fd = aal_mc_syscall_arg0(ctx);
-	struct iovec *iov = (struct iovec*)aal_mc_syscall_arg1(ctx);
-	unsigned long nr_segs = aal_mc_syscall_arg2(ctx);
+	int fd = ihk_mc_syscall_arg0(ctx);
+	struct iovec *iov = (struct iovec*)ihk_mc_syscall_arg1(ctx);
+	unsigned long nr_segs = ihk_mc_syscall_arg2(ctx);
 
 	for (seg = 0; seg < nr_segs; ++seg) {
 		unsigned long __phys; 
 		
-		if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
+		if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
 	                           (void *)iov[seg].iov_base, &__phys)) {
 			return -EFAULT;
 		}
@@ -859,12 +859,12 @@ SYSCALL_DECLARE(futex)
 	uint64_t timeout = 0; // No timeout
 	uint32_t val2 = 0;
 
-	uint32_t *uaddr = (uint32_t *)aal_mc_syscall_arg0(ctx);
-	int op = (int)aal_mc_syscall_arg1(ctx);
-	uint32_t val = (uint32_t)aal_mc_syscall_arg2(ctx);
-	struct timespec *utime = (struct timespec*)aal_mc_syscall_arg3(ctx);
-	uint32_t *uaddr2 = (uint32_t *)aal_mc_syscall_arg4(ctx);
-	uint32_t val3 = (uint32_t)aal_mc_syscall_arg5(ctx);
+	uint32_t *uaddr = (uint32_t *)ihk_mc_syscall_arg0(ctx);
+	int op = (int)ihk_mc_syscall_arg1(ctx);
+	uint32_t val = (uint32_t)ihk_mc_syscall_arg2(ctx);
+	struct timespec *utime = (struct timespec*)ihk_mc_syscall_arg3(ctx);
+	uint32_t *uaddr2 = (uint32_t *)ihk_mc_syscall_arg4(ctx);
+	uint32_t val3 = (uint32_t)ihk_mc_syscall_arg5(ctx);
     
 	dkprintf("futex,uaddr=%lx,op=%x, val=%x, utime=%lx, uaddr2=%lx, val3=%x, []=%x\n", (unsigned long)uaddr, op, val, utime, uaddr2, val3, *uaddr);
 
@@ -874,14 +874,14 @@ SYSCALL_DECLARE(futex)
 
 	if (utime && (op == FUTEX_WAIT_BITSET || op == FUTEX_WAIT)) {
 		/* gettimeofday(&tv_now, NULL) from host */
-		struct syscall_request request AAL_DMA_ALIGN; 
+		struct syscall_request request IHK_DMA_ALIGN; 
 		struct timeval tv_now;
 		request.number = 96;
 		unsigned long __phys;                                          
 
 		dkprintf("futex,utime and FUTEX_WAIT_*, uaddr=%lx, []=%x\n", (unsigned long)uaddr, *uaddr);
 
-		if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
+		if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
 					(void *)&tv_now, &__phys)) { 
 			return -EFAULT; 
 		}
@@ -894,7 +894,7 @@ SYSCALL_DECLARE(futex)
 			return -EFAULT;
 		}
 
-		dkprintf("futex, FUTEX_WAIT_*, arg3 != NULL, pc=%lx\n", (unsigned long)aal_mc_syscall_pc(ctx));
+		dkprintf("futex, FUTEX_WAIT_*, arg3 != NULL, pc=%lx\n", (unsigned long)ihk_mc_syscall_pc(ctx));
 		dkprintf("now->tv_sec=%016ld,tv_nsec=%016ld\n", tv_now.tv_sec, tv_now.tv_usec * 1000);
 		dkprintf("utime->tv_sec=%016ld,tv_nsec=%016ld\n", utime->tv_sec, utime->tv_nsec);
 
@@ -910,18 +910,18 @@ SYSCALL_DECLARE(futex)
 	/* Requeue parameter in 'utime' if op == FUTEX_CMP_REQUEUE.
 	 * number of waiters to wake in 'utime' if op == FUTEX_WAKE_OP. */
 	if (op == FUTEX_CMP_REQUEUE || op == FUTEX_WAKE_OP)
-		val2 = (uint32_t) (unsigned long) aal_mc_syscall_arg3(ctx);
+		val2 = (uint32_t) (unsigned long) ihk_mc_syscall_arg3(ctx);
 
     // we don't have timer interrupt and wakeup, so fake it by just pausing
     if (utime && (op == FUTEX_WAIT_BITSET || op == FUTEX_WAIT)) {
         // gettimeofday(&tv_now, NULL);
-        struct syscall_request request AAL_DMA_ALIGN; 
+        struct syscall_request request IHK_DMA_ALIGN; 
         struct timeval tv_now;
         request.number = 96;
 
 #if 1
         unsigned long __phys;                                          
-        if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
+        if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
                                    (void *)&tv_now,
                                    &__phys)) { 
             return -EFAULT; 
@@ -933,7 +933,7 @@ SYSCALL_DECLARE(futex)
             return -EFAULT;
         }
 
-        dkprintf("futex,FUTEX_WAIT_BITSET,arg3!=NULL,pc=%lx\n", (unsigned long)aal_mc_syscall_pc(ctx));
+        dkprintf("futex,FUTEX_WAIT_BITSET,arg3!=NULL,pc=%lx\n", (unsigned long)ihk_mc_syscall_pc(ctx));
 
         dkprintf("  now->tv_sec=%016ld,tv_nsec=%016ld\n", tv_now.tv_sec, tv_now.tv_usec * 1000);
         dkprintf("utime->tv_sec=%016ld,tv_nsec=%016ld\n", utime->tv_sec, utime->tv_nsec);
@@ -963,7 +963,7 @@ SYSCALL_DECLARE(futex)
 SYSCALL_DECLARE(exit)
 {
 #ifdef DCFA_KMOD
-	do_mod_exit((int)aal_mc_syscall_arg0(ctx));
+	do_mod_exit((int)ihk_mc_syscall_arg0(ctx));
 #endif
 
 	/* If there is a clear_child_tid address set, clear it and wake it.
@@ -990,14 +990,14 @@ SYSCALL_DECLARE(exit)
 SYSCALL_DECLARE(getrlimit)
 {
 	int ret;
-	int resource = aal_mc_syscall_arg0(ctx);
-	struct rlimit *rlm = (struct rlimit *)aal_mc_syscall_arg1(ctx);
+	int resource = ihk_mc_syscall_arg0(ctx);
+	struct rlimit *rlm = (struct rlimit *)ihk_mc_syscall_arg1(ctx);
 
 	switch (resource) {
 
 	case RLIMIT_STACK:
 
-		dkprintf("[%d] getrlimit() RLIMIT_STACK\n", aal_mc_get_processor_id());
+		dkprintf("[%d] getrlimit() RLIMIT_STACK\n", ihk_mc_get_processor_id());
 		rlm->rlim_cur = (512*4096);  /* Linux provides 8MB */
 		rlm->rlim_max = (1024*1024*1024);
 		ret = 0;
@@ -1014,17 +1014,17 @@ SYSCALL_DECLARE(getrlimit)
 SYSCALL_DECLARE(sched_setaffinity)
 {
 #if 0
-    int pid = (int)aal_mc_syscall_arg0(ctx);
-	unsigned int len = (unsigned int)aal_mc_syscall_arg1(ctx);
+    int pid = (int)ihk_mc_syscall_arg0(ctx);
+	unsigned int len = (unsigned int)ihk_mc_syscall_arg1(ctx);
 #endif
-    cpu_set_t *mask = (cpu_set_t *)aal_mc_syscall_arg2(ctx);
+    cpu_set_t *mask = (cpu_set_t *)ihk_mc_syscall_arg2(ctx);
 	unsigned long __phys;
 #if 0
     int i;
 #endif
     /* TODO: check mask is in user's page table */
     if(!mask) { return -EFAULT; }
-	if (aal_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
+	if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
 	                           (void *)mask,
 	                           &__phys)) {
 		return -EFAULT;
@@ -1043,11 +1043,11 @@ SYSCALL_DECLARE(sched_setaffinity)
 // see linux-2.6.34.13/kernel/sched.c
 SYSCALL_DECLARE(sched_getaffinity)
 {
-	//int pid = (int)aal_mc_syscall_arg0(ctx);
-	unsigned int len = (int)aal_mc_syscall_arg1(ctx);
+	//int pid = (int)ihk_mc_syscall_arg0(ctx);
+	unsigned int len = (int)ihk_mc_syscall_arg1(ctx);
 	int cpu_id;
-	cpu_set_t *mask = (cpu_set_t *)aal_mc_syscall_arg2(ctx);
-	struct aal_mc_cpu_info *cpu_info = aal_mc_get_cpu_info();
+	cpu_set_t *mask = (cpu_set_t *)ihk_mc_syscall_arg2(ctx);
+	struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
     if(len*8 < cpu_info->ncpus) { return -EINVAL; }
     if(len & (sizeof(unsigned long)-1)) { return -EINVAL; }
     int min_len = MIN2(len, sizeof(cpu_set_t));
@@ -1088,8 +1088,8 @@ SYSCALL_DECLARE(mod_call) {
 	int mod_id;
 	unsigned long long uargs;
 
-	mod_id = aal_mc_syscall_arg0(ctx);
-	uargs = aal_mc_syscall_arg1(ctx);
+	mod_id = ihk_mc_syscall_arg0(ctx);
+	uargs = ihk_mc_syscall_arg1(ctx);
 
 	dkprintf("mod_call id:%d, uargs=0x%llx, type=%s, command=%x\n", mod_id, uargs, mod_id==1?"ibmic":"dcfampi", *((uint32_t*)(((char*)uargs)+0)));
 
@@ -1111,43 +1111,43 @@ static void do_mod_exit(int status){
 SYSCALL_DECLARE(process_data_section) {
     unsigned long s = cpu_local_var(current)->vm->region.data_start;
     unsigned long e = cpu_local_var(current)->vm->region.data_end;
-    *((unsigned long*)aal_mc_syscall_arg0(ctx)) = s;
-    *((unsigned long*)aal_mc_syscall_arg1(ctx)) = e;
+    *((unsigned long*)ihk_mc_syscall_arg0(ctx)) = s;
+    *((unsigned long*)ihk_mc_syscall_arg1(ctx)) = e;
     return 0;
 }
 
 /* select counter type */
 SYSCALL_DECLARE(pmc_init)
 {
-    int counter = aal_mc_syscall_arg0(ctx);
+    int counter = ihk_mc_syscall_arg0(ctx);
 
-    enum aal_perfctr_type type = (enum aal_perfctr_type)aal_mc_syscall_arg1(ctx);
-    /* see aal/manycore/generic/include/aal/perfctr.h */
+    enum ihk_perfctr_type type = (enum ihk_perfctr_type)ihk_mc_syscall_arg1(ctx);
+    /* see ihk/manycore/generic/include/ihk/perfctr.h */
 
     int mode = PERFCTR_USER_MODE;
 
-    return aal_mc_perfctr_init(counter, type, mode);
+    return ihk_mc_perfctr_init(counter, type, mode);
 }
 
 SYSCALL_DECLARE(pmc_start)
 {
-    unsigned long counter = aal_mc_syscall_arg0(ctx);
-    return aal_mc_perfctr_start(1 << counter);
+    unsigned long counter = ihk_mc_syscall_arg0(ctx);
+    return ihk_mc_perfctr_start(1 << counter);
 }
 
 SYSCALL_DECLARE(pmc_stop)
 {
-    unsigned long counter = aal_mc_syscall_arg0(ctx);
-    return aal_mc_perfctr_stop(1 << counter);
+    unsigned long counter = ihk_mc_syscall_arg0(ctx);
+    return ihk_mc_perfctr_stop(1 << counter);
 }
 
 SYSCALL_DECLARE(pmc_reset)
 {
-    int counter = aal_mc_syscall_arg0(ctx);
-    return aal_mc_perfctr_reset(counter);
+    int counter = ihk_mc_syscall_arg0(ctx);
+    return ihk_mc_perfctr_reset(counter);
 }
 
-static long (*syscall_table[])(int, aal_mc_user_context_t *) = {
+static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
 	[0] = sys_read,
 	[1] = sys_write,
 	[2] = sys_open,
@@ -1263,20 +1263,20 @@ static char *syscall_name[] = {
 
 #if 0
 
-aal_spinlock_t cpu_status_lock;
+ihk_spinlock_t cpu_status_lock;
 
 static int clone_init(void)
 {
 	unsigned long flags;
 
-	aal_mc_spinlock_init(&cpu_status_lock);
+	ihk_mc_spinlock_init(&cpu_status_lock);
 	
 	return 0;
 }
 
 #endif
 
-long syscall(int num, aal_mc_user_context_t *ctx)
+long syscall(int num, ihk_mc_user_context_t *ctx)
 {
 	long l;
 
@@ -1286,22 +1286,22 @@ long syscall(int num, aal_mc_user_context_t *ctx)
 	if(num != 24)  // if not sched_yield
 #endif
 	dkprintf("SC(%d:%d)[%3d=%s](%lx, %lx,%lx, %lx, %lx, %lx)@%lx,sp:%lx",
-             aal_mc_get_processor_id(),
-             aal_mc_get_hardware_processor_id(),
+             ihk_mc_get_processor_id(),
+             ihk_mc_get_hardware_processor_id(),
              num, syscall_name[num],
-             aal_mc_syscall_arg0(ctx), aal_mc_syscall_arg1(ctx),
-             aal_mc_syscall_arg2(ctx), aal_mc_syscall_arg3(ctx),
-             aal_mc_syscall_arg4(ctx), aal_mc_syscall_arg5(ctx),
-             aal_mc_syscall_pc(ctx), aal_mc_syscall_sp(ctx));
+             ihk_mc_syscall_arg0(ctx), ihk_mc_syscall_arg1(ctx),
+             ihk_mc_syscall_arg2(ctx), ihk_mc_syscall_arg3(ctx),
+             ihk_mc_syscall_arg4(ctx), ihk_mc_syscall_arg5(ctx),
+             ihk_mc_syscall_pc(ctx), ihk_mc_syscall_sp(ctx));
 #if 1
 #if 0
 	if(num != 24)  // if not sched_yield
 #endif
     dkprintf(",*sp:%lx,*(sp+8):%lx,*(sp+16):%lx,*(sp+24):%lx",
-             *((unsigned long*)aal_mc_syscall_sp(ctx)),
-             *((unsigned long*)(aal_mc_syscall_sp(ctx)+8)),
-             *((unsigned long*)(aal_mc_syscall_sp(ctx)+16)),
-             *((unsigned long*)(aal_mc_syscall_sp(ctx)+24)));
+             *((unsigned long*)ihk_mc_syscall_sp(ctx)),
+             *((unsigned long*)(ihk_mc_syscall_sp(ctx)+8)),
+             *((unsigned long*)(ihk_mc_syscall_sp(ctx)+16)),
+             *((unsigned long*)(ihk_mc_syscall_sp(ctx)+24)));
 #endif
 #if 0
 	if(num != 24)  // if not sched_yield
@@ -1313,13 +1313,13 @@ long syscall(int num, aal_mc_user_context_t *ctx)
 		l = syscall_table[num](num, ctx);
 		
 		dkprintf("SC(%d)[%3d] ret: %d\n", 
-				aal_mc_get_processor_id(), num, l);
+				ihk_mc_get_processor_id(), num, l);
 	} else {
 		dkprintf("USC[%3d](%lx, %lx, %lx, %lx, %lx) @ %lx | %lx\n", num,
-		        aal_mc_syscall_arg0(ctx), aal_mc_syscall_arg1(ctx),
-		        aal_mc_syscall_arg2(ctx), aal_mc_syscall_arg3(ctx),
-		        aal_mc_syscall_arg4(ctx), aal_mc_syscall_pc(ctx),
-		        aal_mc_syscall_sp(ctx));
+		        ihk_mc_syscall_arg0(ctx), ihk_mc_syscall_arg1(ctx),
+		        ihk_mc_syscall_arg2(ctx), ihk_mc_syscall_arg3(ctx),
+		        ihk_mc_syscall_arg4(ctx), ihk_mc_syscall_pc(ctx),
+		        ihk_mc_syscall_sp(ctx));
 		//while(1);
 		l = -ENOSYS;
 	}

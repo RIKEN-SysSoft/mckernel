@@ -250,9 +250,9 @@ static void init_smp_processor(void)
 
 static char *trampoline_va, *first_page_va;
 
-void aal_mc_init_ap(void)
+void ihk_mc_init_ap(void)
 {
-	struct aal_mc_cpu_info *cpu_info = aal_mc_get_cpu_info();
+	struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
 
 	trampoline_va = map_fixed_area(AP_TRAMPOLINE, AP_TRAMPOLINE_SIZE,
 	                               0);
@@ -270,7 +270,7 @@ void aal_mc_init_ap(void)
 extern void init_page_table(void);
 
 extern char x86_syscall[];
-long (*__x86_syscall_handler)(int, aal_mc_user_context_t *);
+long (*__x86_syscall_handler)(int, ihk_mc_user_context_t *);
 
 void init_syscall(void)
 {
@@ -344,10 +344,10 @@ void arch_show_interrupt_context(const void *reg);
 
 void handle_interrupt(int vector, struct x86_regs *regs)
 {
-	struct aal_mc_interrupt_handler *h;
+	struct ihk_mc_interrupt_handler *h;
 
 	dkprintf("CPU[%d] got interrupt, vector: %d, RIP: 0x%lX\n", 
-	         aal_mc_get_processor_id(), vector, regs->rip);
+	         ihk_mc_get_processor_id(), vector, regs->rip);
 
 	if (vector < 0 || vector > 255) {
 		panic("Invalid interrupt vector.");
@@ -439,7 +439,7 @@ static void __x86_wakeup(int apicid, unsigned long ip)
 	}
 }
 
-/** AAL Functions **/
+/** IHK Functions **/
 
 void cpu_halt(void)
 {
@@ -475,8 +475,8 @@ unsigned long cpu_disable_interrupt_save(void)
 	return flags;
 }
 
-int aal_mc_register_interrupt_handler(int vector,
-                                      struct aal_mc_interrupt_handler *h)
+int ihk_mc_register_interrupt_handler(int vector,
+                                      struct ihk_mc_interrupt_handler *h)
 {
 	if (vector < 32 || vector > 255) {
 		return -EINVAL;
@@ -486,8 +486,8 @@ int aal_mc_register_interrupt_handler(int vector,
 
 	return 0;
 }
-int aal_mc_unregister_interrupt_handler(int vector,
-                                        struct aal_mc_interrupt_handler *h)
+int ihk_mc_unregister_interrupt_handler(int vector,
+                                        struct ihk_mc_interrupt_handler *h)
 {
 	list_del(&h->list);
 
@@ -496,7 +496,7 @@ int aal_mc_unregister_interrupt_handler(int vector,
 
 extern unsigned long __page_fault_handler_address;
 
-void aal_mc_set_page_fault_handler(void (*h)(unsigned long, void *))
+void ihk_mc_set_page_fault_handler(void (*h)(unsigned long, void *))
 {
 	__page_fault_handler_address = (unsigned long)h;
 }
@@ -505,7 +505,7 @@ extern char trampoline_code_data[], trampoline_code_data_end[];
 struct page_table *get_init_page_table(void);
 unsigned long get_transit_page_table(void);
 
-void aal_mc_boot_cpu(int cpuid, unsigned long pc)
+void ihk_mc_boot_cpu(int cpuid, unsigned long pc)
 {
 	unsigned long *p;
 
@@ -532,7 +532,7 @@ void aal_mc_boot_cpu(int cpuid, unsigned long pc)
 	}
 }
 
-void aal_mc_init_context(aal_mc_kernel_context_t *new_ctx,
+void ihk_mc_init_context(ihk_mc_kernel_context_t *new_ctx,
                          void *stack_pointer, void (*next_function)(void))
 {
 	unsigned long *sp;
@@ -542,7 +542,7 @@ void aal_mc_init_context(aal_mc_kernel_context_t *new_ctx,
 	}
 
 	sp = stack_pointer;
-	memset(new_ctx, 0, sizeof(aal_mc_kernel_context_t));
+	memset(new_ctx, 0, sizeof(ihk_mc_kernel_context_t));
 
 	/* Set the return address */
 	new_ctx->rsp = (unsigned long)(sp - 1);
@@ -551,43 +551,43 @@ void aal_mc_init_context(aal_mc_kernel_context_t *new_ctx,
 
 extern char enter_user_mode[];
                                        
-void aal_mc_init_user_process(aal_mc_kernel_context_t *ctx,
-                              aal_mc_user_context_t **puctx,
+void ihk_mc_init_user_process(ihk_mc_kernel_context_t *ctx,
+                              ihk_mc_user_context_t **puctx,
                               void *stack_pointer, unsigned long new_pc,
                               unsigned long user_sp)
 {
 	char *sp;
-	aal_mc_user_context_t *uctx;
+	ihk_mc_user_context_t *uctx;
 
 	sp = stack_pointer;
-	sp -= sizeof(aal_mc_user_context_t);
-	uctx = (aal_mc_user_context_t *)sp;
+	sp -= sizeof(ihk_mc_user_context_t);
+	uctx = (ihk_mc_user_context_t *)sp;
 
 	*puctx = uctx;
 
-	memset(uctx, 0, sizeof(aal_mc_user_context_t));
+	memset(uctx, 0, sizeof(ihk_mc_user_context_t));
 	uctx->cs = USER_CS;
 	uctx->rip = new_pc;
 	uctx->ss = USER_DS;
 	uctx->rsp = user_sp;
 	uctx->rflags = RFLAGS_IF;
 
-	aal_mc_init_context(ctx, sp, (void (*)(void))enter_user_mode);
+	ihk_mc_init_context(ctx, sp, (void (*)(void))enter_user_mode);
 	ctx->rsp0 = (unsigned long)stack_pointer;
 }
 
-void aal_mc_modify_user_context(aal_mc_user_context_t *uctx,
-                                enum aal_mc_user_context_regtype reg,
+void ihk_mc_modify_user_context(ihk_mc_user_context_t *uctx,
+                                enum ihk_mc_user_context_regtype reg,
                                 unsigned long value)
 {
-	if (reg == AAL_UCR_STACK_POINTER) {
+	if (reg == IHK_UCR_STACK_POINTER) {
 		uctx->rsp = value;
-	} else if (reg == AAL_UCR_PROGRAM_COUNTER) {
+	} else if (reg == IHK_UCR_PROGRAM_COUNTER) {
 		uctx->rip = value;
 	}
 }
 
-void aal_mc_print_user_context(aal_mc_user_context_t *uctx)
+void ihk_mc_print_user_context(ihk_mc_user_context_t *uctx)
 {
 	kprintf("CS:RIP = %04lx:%16lx\n", uctx->cs, uctx->rip);
 	kprintf("%16lx %16lx %16lx %16lx\n%16lx %16lx %16lx\n",
@@ -595,12 +595,12 @@ void aal_mc_print_user_context(aal_mc_user_context_t *uctx)
 	        uctx->rsi, uctx->rdi, uctx->rsp);
 }
 
-void aal_mc_set_syscall_handler(long (*handler)(int, aal_mc_user_context_t *))
+void ihk_mc_set_syscall_handler(long (*handler)(int, ihk_mc_user_context_t *))
 {
 	__x86_syscall_handler = handler;
 }
 
-void aal_mc_delay_us(int us)
+void ihk_mc_delay_us(int us)
 {
 	arch_delay(us);
 }
@@ -629,12 +629,12 @@ void arch_show_interrupt_context(const void *reg)
 	kprintf_unlock(irqflags);
 }
 
-int aal_mc_arch_set_special_register(enum aal_asr_type type,
+int ihk_mc_arch_set_special_register(enum ihk_asr_type type,
                                      unsigned long value)
 {
 	/* GS modification is not permitted */
 	switch (type) {
-	case AAL_ASR_X86_FS:
+	case IHK_ASR_X86_FS:
 		wrmsr(MSR_FS_BASE, value);
 		return 0;
 	default:
@@ -642,12 +642,12 @@ int aal_mc_arch_set_special_register(enum aal_asr_type type,
 	}
 }
 
-int aal_mc_arch_get_special_register(enum aal_asr_type type,
+int ihk_mc_arch_get_special_register(enum ihk_asr_type type,
                                      unsigned long *value)
 {
 	/* GS modification is not permitted */
 	switch (type) {
-	case AAL_ASR_X86_FS:
+	case IHK_ASR_X86_FS:
 		*value = rdmsr(MSR_FS_BASE);
 		return 0;
 	default:
@@ -655,9 +655,9 @@ int aal_mc_arch_get_special_register(enum aal_asr_type type,
 	}
 }
 
-int aal_mc_interrupt_cpu(int cpu, int vector)
+int ihk_mc_interrupt_cpu(int cpu, int vector)
 {
-	kprintf("[%d] aal_mc_interrupt_cpu: %d\n", aal_mc_get_processor_id(), cpu);
+	kprintf("[%d] ihk_mc_interrupt_cpu: %d\n", ihk_mc_get_processor_id(), cpu);
 
 	wait_icr_idle();
 	x86_issue_ipi(cpu, vector);

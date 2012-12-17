@@ -80,7 +80,7 @@
 
 void futex_queue_init(struct futex_queue *queue)
 {
-	aal_mc_spinlock_init(&queue->lock);
+	ihk_mc_spinlock_init(&queue->lock);
 	INIT_LIST_HEAD(&queue->futex_list);
 }
 
@@ -115,13 +115,13 @@ static struct futex_queue *queue_lock(struct futex *futex, int *irqflags)
 {
 	struct futex_queue *queue = get_queue(futex->uaddr);
 	futex->lock_ptr = &queue->lock;
-	*irqflags = aal_mc_spinlock_lock(&queue->lock);
+	*irqflags = ihk_mc_spinlock_lock(&queue->lock);
 	return queue;
 }
 
 static void queue_unlock(struct futex_queue *futex_queue, int irqflags)
 {
-	aal_mc_spinlock_unlock(&futex_queue->lock, irqflags);
+	ihk_mc_spinlock_unlock(&futex_queue->lock, irqflags);
 }
 
 static void queue_me(struct futex *futex, struct futex_queue *futex_queue)
@@ -131,7 +131,7 @@ static void queue_me(struct futex *futex, struct futex_queue *futex_queue)
 
 static int unqueue_me(struct futex *futex)
 {
-	aal_spinlock_t *lock_ptr;
+	ihk_spinlock_t *lock_ptr;
 	int irqflags;
 	int status = 0;
 
@@ -140,7 +140,7 @@ retry:
 	lock_ptr = futex->lock_ptr;
 	barrier();
 	if (lock_ptr != NULL) {
-		irqflags = aal_mc_spinlock_lock(lock_ptr);
+		irqflags = ihk_mc_spinlock_lock(lock_ptr);
 		/*
 		 * q->lock_ptr can change between reading it and
 		 * spin_lock(), causing us to take the wrong lock.  This
@@ -155,13 +155,13 @@ retry:
 		 * we can detect whether we acquired the correct lock.
 		 */
 		if (lock_ptr != futex->lock_ptr) {
-			aal_mc_spinlock_unlock(lock_ptr, irqflags);
+			ihk_mc_spinlock_unlock(lock_ptr, irqflags);
 			goto retry;
 		}
 
 		//WARN_ON(list_empty(&futex->link));
 		list_del(&futex->link);
-		aal_mc_spinlock_unlock(lock_ptr, irqflags);
+		ihk_mc_spinlock_unlock(lock_ptr, irqflags);
 		status = 1;
 	}
 
@@ -172,23 +172,23 @@ static void lock_two_queues(struct futex_queue *queue1, int *irqflags1,
                             struct futex_queue *queue2, int *irqflags2)
 {
 	if (queue1 < queue2) 
-		*irqflags1 = aal_mc_spinlock_lock(&queue1->lock);
+		*irqflags1 = ihk_mc_spinlock_lock(&queue1->lock);
 	
-	*irqflags2 = aal_mc_spinlock_lock(&queue2->lock);
+	*irqflags2 = ihk_mc_spinlock_lock(&queue2->lock);
 	
 	if (queue1 > queue2)
-		*irqflags1 = aal_mc_spinlock_lock(&queue1->lock);
+		*irqflags1 = ihk_mc_spinlock_lock(&queue1->lock);
 }
 
 static void unlock_two_queues(struct futex_queue *queue1, int irqflags1,
                               struct futex_queue *queue2, int irqflags2)
 {
 	if (queue1 == queue2) {
-		aal_mc_spinlock_unlock(&queue2->lock, irqflags2);
+		ihk_mc_spinlock_unlock(&queue2->lock, irqflags2);
 	}
 	else {
-		aal_mc_spinlock_unlock(&queue2->lock, irqflags2);
-		aal_mc_spinlock_unlock(&queue1->lock, irqflags1);
+		ihk_mc_spinlock_unlock(&queue2->lock, irqflags2);
+		ihk_mc_spinlock_unlock(&queue1->lock, irqflags1);
 	}
 }
 
@@ -316,7 +316,7 @@ static int futex_wake(uint32_t __user *uaddr, int nr_wake, uint32_t bitset)
 		return -EINVAL;
 
 	queue = get_queue(uaddr);
-	irqflags = aal_mc_spinlock_lock(&queue->lock);
+	irqflags = ihk_mc_spinlock_lock(&queue->lock);
 	head = &queue->futex_list;
 
 	list_for_each_entry_safe(this, next, head, link) {
@@ -327,7 +327,7 @@ static int futex_wake(uint32_t __user *uaddr, int nr_wake, uint32_t bitset)
 		}
 	}
 
-	aal_mc_spinlock_unlock(&queue->lock, irqflags);
+	ihk_mc_spinlock_unlock(&queue->lock, irqflags);
 	return nr_woke;
 }
 
