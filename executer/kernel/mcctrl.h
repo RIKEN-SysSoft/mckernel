@@ -4,6 +4,8 @@
 #include <ihk/ihk_host_driver.h>
 #include <uprotocol.h>
 #include <linux/wait.h>
+#include <ihk/ikc.h>
+#include <ikc/master.h>
 
 #define SCD_MSG_PREPARE_PROCESS         0x1
 #define SCD_MSG_PREPARE_PROCESS_ACKED   0x2
@@ -62,7 +64,22 @@ struct mcctrl_channel {
 	wait_queue_head_t wq_syscall;
 };
 
-int mcctrl_ikc_send(int cpu, struct ikc_scd_packet *pisp);
-int mcctrl_ikc_send_msg(int cpu, int msg, int ref, unsigned long arg);
-int mcctrl_ikc_is_valid_thread(int cpu);
+struct mcctrl_usrdata {
+	struct ihk_ikc_listen_param listen_param;
+	ihk_os_t	os;
+	int	num_channels;
+	struct mcctrl_channel	*channels;
+	unsigned long	*mcctrl_doorbell_va;
+	unsigned long	mcctrl_doorbell_pa;
+	int	remaining_job;
+	int	base_cpu;
+	int	job_pos;
+	int	mcctrl_dma_abort;
+	unsigned long	last_thread_exec;
+	wait_queue_head_t	wq_prepare;
+};
+
+int mcctrl_ikc_send(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp);
+int mcctrl_ikc_send_msg(ihk_os_t os, int cpu, int msg, int ref, unsigned long arg);
+int mcctrl_ikc_is_valid_thread(ihk_os_t os, int cpu);
 #endif

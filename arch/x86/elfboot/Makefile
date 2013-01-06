@@ -1,29 +1,36 @@
+DEST=$(O)/elfboot
 CFLAGS=-c -Wall -O
 CFLAGS_TEST=-DTEST
 
-all: elfboot
+all: $(DEST) $(DEST)/elfboot
 
-elfboot: elfboot.bin
+$(DEST)/elfboot: $(DEST)/elfboot.bin
 	cp $^ $@
 	truncate -s $(shell expr '(' `stat -c '%s' $^` + 4095 ')' / 4096 '*' 4096) $@
 
-elfboot.bin: elfboot.elf
+$(DEST)/elfboot.bin: $(DEST)/elfboot.elf
 	$(OBJCOPY) -O binary $^ $@
 
-elfboot.elf: head.o elfboot.raw.o raw.lds
+$(DEST)/elfboot.elf: $(DEST)/head.o $(DEST)/elfboot.raw.o raw.lds
 	$(LD) $(LDFLAGS_RAW) -T raw.lds -o $@ $^
 
-elfboot_test: elfboot.test.o test_main.o
+$(DEST)/elfboot_test: $(DEST)/elfboot.test.o $(DEST)/test_main.o
 	$(CC) -o $@ $^
 
-elfboot.raw.o: elfboot.c
+$(DEST)/head.o: head.S
 	$(CC) $(CFLAGS) -o $@ $^
 
-elfboot.test.o: elfboot.c
+$(DEST)/elfboot.raw.o: elfboot.c
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(DEST)/elfboot.test.o: elfboot.c
 	$(CC) $(CFLAGS) $(CFLAGS_TEST) -o $@ $^
 
 clean:
-	$(RM) elfboot *.bin *.elf elfboot_test *.o
+	$(RM) $(DEST)/elfboot *.bin $(DEST)/*.elf $(DEST)/elfboot_test *.o
 
 disas:
-	$(OBJDUMP) -b binary -m i386:x86-64 -D elfboot.bin
+	$(OBJDUMP) -b binary -m i386:x86-64 -D $(DEST)/elfboot.bin
+
+$(DEST):
+	@mkdir -p $(DEST)

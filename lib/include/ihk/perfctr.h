@@ -27,6 +27,12 @@ enum ihk_perfctr_type {
 	APT_TYPE_ITLB_MISS,
 	APT_TYPE_STALL,
 	APT_TYPE_CYCLE,
+
+        APT_TYPE_INSTRUCTIONS,
+        APT_TYPE_L1D_MISS,
+        APT_TYPE_L1I_MISS,
+        APT_TYPE_L2_MISS,
+
 	PERFCTR_MAX_TYPE,
 };
 

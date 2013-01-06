@@ -327,6 +327,9 @@ int main(int argc, char **argv)
 	struct program_load_desc *desc;
 	char *envs;
 	char *args;
+	char dev[64];
+	char **a;
+	char *p;
 	int i;
 	pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -335,8 +338,19 @@ int main(int argc, char **argv)
 	__glob_argv = argv;
 #endif
 
+	strcpy(dev, "/dev/mcos0");
+	if(argv[1]){
+		for(p = argv[1]; *p && *p >= '0' && *p <= '9'; p++);
+		if(!*p){
+			sprintf(dev, "/dev/mcos%s", argv[1]);
+			for(a = argv + 2; *a; a++)
+				a[-1] = a[0];
+			a[-1] = NULL;
+			argc--;
+		}
+	}
 	if (argc < 2) {
-		fprintf(stderr, "Usage: %s (program) [args...]\n",
+		fprintf(stderr, "Usage: %s [<mcos-id>] (program) [args...]\n",
 		        argv[0]);
 		return 1;
 	}
@@ -364,9 +378,9 @@ int main(int argc, char **argv)
 	desc->args = args;
 	//print_flat(args);
 
-	fd = open("/dev/mcos0", O_RDWR);
+	fd = open(dev, O_RDWR);
 	if (fd < 0) {
-		fprintf(stderr, "Error: Failed to open /dev/mcctrl.\n");
+		fprintf(stderr, "Error: Failed to open %s.\n", dev);
 		return 1;
 	}
 

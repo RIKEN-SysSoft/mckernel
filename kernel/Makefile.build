@@ -14,6 +14,9 @@ include $(IHKBASE)/Makefile.common
 
 SUBCMD_OPTS = TARGET=$(TARGET) O=$(CURDIR)/ihk CC=$(CC) LD=$(LD) SRC=$(SRC)
 
+OBJDUMP ?= objdump
+OBJCOPY ?= objcopy
+
 ld_kern_cmd_base = $(LD) $(LDFLAGS) -o $@.elf $^
 mkimage_cmd_base = [ -f $(SRC)/script/mkimage.$(TARGET) ] && CC=$(CC) LD=$(LD) LDFLAGS="$(LDFLAGS_MKIMAGE)" OBJDUMP=$(OBJDUMP) OBJCOPY=$(OBJCOPY) sh $(SRC)/script/mkimage.$(TARGET) '$@.elf' '$@' '$(SRC)' || cp $@.elf $@
 

@@ -20,7 +20,9 @@
 
 #define PS_NORMAL	(PS_INTERRUPTIBLE | PS_UNINTERRUPTIBLE)
 
+#ifdef ATTACHED_MIC
 #define USE_LARGE_PAGES
+#endif
 
 #include <waitq.h>
 #include <futex.h>

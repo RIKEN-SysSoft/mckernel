@@ -3,18 +3,19 @@
 #include <linux/fs.h>
 #include <linux/miscdevice.h>
 #include <linux/slab.h>
+#include <linux/string.h>
 #include "mcctrl.h"
-#include <ihk/ikc.h>
-#include <ikc/master.h>
+#ifdef ATTACHED_MIC
 #include <sysdeps/mic/mic/micconst.h>
+#endif
 
 #define REQUEST_SHIFT    16
 
-int num_channels;
+//int num_channels;
 
-struct mcctrl_channel *channels;
+//struct mcctrl_channel *channels;
 
-void mcexec_prepare_ack(unsigned long arg);
+void mcexec_prepare_ack(ihk_os_t os, unsigned long arg);
 static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys);
 int mcexec_syscall(struct mcctrl_channel *c, unsigned long arg);
 
@@ -22,6 +23,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *__os)
 {
 	struct ikc_scd_packet *pisp = __packet;
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(__os);
 
 	switch (pisp->msg) {
 	case SCD_MSG_INIT_CHANNEL:
@@ -29,30 +31,33 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		break;
 
 	case SCD_MSG_PREPARE_PROCESS_ACKED:
-		mcexec_prepare_ack(pisp->arg);
+		mcexec_prepare_ack(__os, pisp->arg);
 		break;
 
 	case SCD_MSG_SYSCALL_ONESIDE:
-		mcexec_syscall(channels + pisp->ref, pisp->arg);
+		mcexec_syscall(usrdata->channels + pisp->ref, pisp->arg);
 		break;
 	}
 
 	return 0;
 }
 
-int mcctrl_ikc_send(int cpu, struct ikc_scd_packet *pisp)
+int mcctrl_ikc_send(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp)
 {
-	if (cpu < 0 || cpu >= num_channels || !channels[cpu].c) {
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+
+	if (cpu < 0 || cpu >= usrdata->num_channels || !usrdata->channels[cpu].c) {
 		return -EINVAL;
 	}
-	return ihk_ikc_send(channels[cpu].c, pisp, 0);
+	return ihk_ikc_send(usrdata->channels[cpu].c, pisp, 0);
 }
 
-int mcctrl_ikc_send_msg(int cpu, int msg, int ref, unsigned long arg)
+int mcctrl_ikc_send_msg(ihk_os_t os, int cpu, int msg, int ref, unsigned long arg)
 {
 	struct ikc_scd_packet packet;
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 
-	if (cpu < 0 || cpu >= num_channels || !channels[cpu].c) {
+	if (cpu < 0 || cpu >= usrdata->num_channels || !usrdata->channels[cpu].c) {
 		return -EINVAL;
 	}
 
@@ -60,34 +65,39 @@ int mcctrl_ikc_send_msg(int cpu, int msg, int ref, unsigned long arg)
 	packet.ref = ref;
 	packet.arg = arg;
 
-	return ihk_ikc_send(channels[cpu].c, &packet, 0);
+	return ihk_ikc_send(usrdata->channels[cpu].c, &packet, 0);
 }
 
-int mcctrl_ikc_set_recv_cpu(int cpu)
+int mcctrl_ikc_set_recv_cpu(ihk_os_t os, int cpu)
 {
-	ihk_ikc_channel_set_cpu(channels[cpu].c,
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+
+	ihk_ikc_channel_set_cpu(usrdata->channels[cpu].c,
 	                        ihk_ikc_get_processor_id());
 	kprintf("Setting the target to %d\n",
 	        ihk_ikc_get_processor_id());
 	return 0;
 }
 
-int mcctrl_ikc_is_valid_thread(int cpu)
+int mcctrl_ikc_is_valid_thread(ihk_os_t os, int cpu)
 {
-	if (cpu < 0 || cpu >= num_channels || !channels[cpu].c) {
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+
+	if (cpu < 0 || cpu >= usrdata->num_channels || !usrdata->channels[cpu].c) {
 		return 0;
 	} else {
 		return 1;
 	}
 }
 
-unsigned long *mcctrl_doorbell_va;
-unsigned long mcctrl_doorbell_pa;
+//unsigned long *mcctrl_doorbell_va;
+//unsigned long mcctrl_doorbell_pa;
 
 static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys)
 {
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct ikc_scd_packet packet;
-	struct mcctrl_channel *pmc = channels + cpu;
+	struct mcctrl_channel *pmc = usrdata->channels + cpu;
 	unsigned long phys;
 	struct ikc_scd_init_param *rpm;
 
@@ -111,8 +121,8 @@ static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys)
 		(void *)__get_free_pages(GFP_KERNEL,
 		                         REQUEST_SHIFT - PAGE_SHIFT);
 	pmc->param.request_pa = virt_to_phys(pmc->param.request_va);
-	pmc->param.doorbell_va = mcctrl_doorbell_va;
-	pmc->param.doorbell_pa = mcctrl_doorbell_pa;
+	pmc->param.doorbell_va = usrdata->mcctrl_doorbell_va;
+	pmc->param.doorbell_pa = usrdata->mcctrl_doorbell_pa;
 	pmc->param.post_va = (void *)__get_free_page(GFP_KERNEL);
 	pmc->param.post_pa = virt_to_phys(pmc->param.post_va);
 	memset(pmc->param.doorbell_va, 0, PAGE_SIZE);
@@ -168,18 +178,20 @@ static int connect_handler(struct ihk_ikc_channel_info *param)
 {
 	struct ihk_ikc_channel_desc *c;
 	int cpu;
+	ihk_os_t os = param->channel->remote_os;
+	struct mcctrl_usrdata   *usrdata = ihk_host_os_get_usrdata(os);
 
 	c = param->channel;
 	cpu = c->send.queue->read_cpu;
 
-	if (cpu < 0 || cpu >= num_channels) {
+	if (cpu < 0 || cpu >= usrdata->num_channels) {
 		kprintf("Invalid connect source processor: %d\n", cpu);
 		return 1;
 	}
 	param->packet_handler = syscall_packet_handler;
-	init_waitqueue_head(&channels[cpu].wq_syscall);
+	init_waitqueue_head(&usrdata->channels[cpu].wq_syscall);
 
-	channels[cpu].c = c;
+	usrdata->channels[cpu].c = c;
 	kprintf("syscall: MC CPU %d connected.\n", cpu);
 
 	return 0;
@@ -196,9 +208,11 @@ static struct ihk_ikc_listen_param listen_param = {
 int prepare_ikc_channels(ihk_os_t os)
 {
 	struct ihk_cpu_info *info;
+	struct mcctrl_usrdata   *usrdata;
 
-	mcctrl_doorbell_va = (void *)__get_free_page(GFP_KERNEL);
-	mcctrl_doorbell_pa = virt_to_phys(mcctrl_doorbell_va);
+	usrdata = kzalloc(sizeof(struct mcctrl_usrdata), GFP_KERNEL);
+	usrdata->mcctrl_doorbell_va = (void *)__get_free_page(GFP_KERNEL);
+	usrdata->mcctrl_doorbell_pa = virt_to_phys(usrdata->mcctrl_doorbell_va);
 
 	info = ihk_os_get_cpu_info(os);
 	if (!info) {
@@ -210,15 +224,19 @@ int prepare_ikc_channels(ihk_os_t os)
 		return -EINVAL;
 	}
 
-	num_channels = info->n_cpus;
-	channels = kzalloc(sizeof(struct mcctrl_channel) * num_channels,
+	usrdata->num_channels = info->n_cpus;
+	usrdata->channels = kzalloc(sizeof(struct mcctrl_channel) * usrdata->num_channels,
 	                   GFP_KERNEL);
-	if (!channels) {
+	if (!usrdata->channels) {
 		printk("Error: cannot allocate channels.\n");
 		return -ENOMEM;
 	}
-	
-	ihk_ikc_listen_port(os, &listen_param);
+
+	usrdata->os = os;
+	init_waitqueue_head(&usrdata->wq_prepare);
+	ihk_host_os_set_usrdata(os, usrdata);
+	memcpy(&usrdata->listen_param, &listen_param, sizeof listen_param);
+	ihk_ikc_listen_port(os, &usrdata->listen_param);
 	return 0;
 }
 
@@ -243,16 +261,20 @@ void __destroy_ikc_channel(ihk_os_t os, struct mcctrl_channel *pmc)
 void destroy_ikc_channels(ihk_os_t os)
 {
 	int i;
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 
-	for (i = 0; i < num_channels; i++) {
-		if (channels[i].c) {
-//			ihk_ikc_disconnect(channels[i].c);
-			ihk_ikc_free_channel(channels[i].c);
-			__destroy_ikc_channel(os, channels + i);
+	ihk_host_os_set_usrdata(os, NULL);
+
+	for (i = 0; i < usrdata->num_channels; i++) {
+		if (usrdata->channels[i].c) {
+//			ihk_ikc_disconnect(usrdata->channels[i].c);
+			ihk_ikc_free_channel(usrdata->channels[i].c);
+			__destroy_ikc_channel(os, usrdata->channels + i);
 			printk("Channel #%d freed.\n", i);
 		}
 	}
-	free_page((unsigned long)mcctrl_doorbell_va);
+	free_page((unsigned long)usrdata->mcctrl_doorbell_va);
 
-	kfree(channels);
+	kfree(usrdata->channels);
+	kfree(usrdata);
 }

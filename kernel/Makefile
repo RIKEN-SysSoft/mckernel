@@ -1,5 +1,5 @@
 #BUILD_TARGET = builtin-mic attached-mic
-BUILD_TARGET = attached-mic
+BUILD_TARGET ?= attached-mic
 SRC = $(CURDIR)
 
 IHKBASE ?= $(SRC)/../../ihk/cokernel

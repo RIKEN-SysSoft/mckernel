@@ -16,9 +16,9 @@
 #define dprintk(...)
 #endif
 
-static DECLARE_WAIT_QUEUE_HEAD(wq_prepare);
-extern struct mcctrl_channel *channels;
-int mcctrl_ikc_set_recv_cpu(int cpu);
+//static DECLARE_WAIT_QUEUE_HEAD(wq_prepare);
+//extern struct mcctrl_channel *channels;
+int mcctrl_ikc_set_recv_cpu(ihk_os_t os, int cpu);
 
 static long mcexec_prepare_image(ihk_os_t os,
                                  struct program_load_desc * __user udesc)
@@ -27,6 +27,7 @@ static long mcexec_prepare_image(ihk_os_t os,
 	struct ikc_scd_packet isp;
 	void *args, *envs;
 	long ret = 0;
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 
 	if (copy_from_user(&desc, udesc,
 	                    sizeof(struct program_load_desc))) {
@@ -77,9 +78,9 @@ static long mcexec_prepare_image(ihk_os_t os,
 	printk("%p (%lx)\n", pdesc, isp.arg);
 	
 	pdesc->status = 0;
-	mcctrl_ikc_send(pdesc->cpu, &isp);
+	mcctrl_ikc_send(os, pdesc->cpu, &isp);
 
-	wait_event_interruptible(wq_prepare, pdesc->status);
+	wait_event_interruptible(usrdata->wq_prepare, pdesc->status);
 
 	if (copy_to_user(udesc, pdesc, sizeof(struct program_load_desc) + 
 	             sizeof(struct program_image_section) * desc.num_sections)) {
@@ -167,7 +168,7 @@ int mcexec_load_image(ihk_os_t os, struct program_transfer *__user upt)
 #endif
 }
 
-extern unsigned long last_thread_exec;
+//extern unsigned long last_thread_exec;
 
 static long mcexec_start_image(ihk_os_t os,
                                  struct program_load_desc * __user udesc)
@@ -175,23 +176,24 @@ static long mcexec_start_image(ihk_os_t os,
 	struct program_load_desc desc;
 	struct ikc_scd_packet isp;
 	struct mcctrl_channel *c;
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 
 	if (copy_from_user(&desc, udesc,
 	                   sizeof(struct program_load_desc))) {
 		return -EFAULT;
 	}
 
-	c = channels + desc.cpu;
+	c = usrdata->channels + desc.cpu;
 
-	mcctrl_ikc_set_recv_cpu(desc.cpu);
+	mcctrl_ikc_set_recv_cpu(os, desc.cpu);
 
-	last_thread_exec = desc.cpu;
+	usrdata->last_thread_exec = desc.cpu;
 	
 	isp.msg = SCD_MSG_SCHEDULE_PROCESS;
 	isp.ref = desc.cpu;
 	isp.arg = desc.rprocess;
 
-	mcctrl_ikc_send(desc.cpu, &isp);
+	mcctrl_ikc_send(os, desc.cpu, &isp);
 
 	return 0;
 }
@@ -207,31 +209,37 @@ int mcexec_syscall(struct mcctrl_channel *c, unsigned long arg)
 #ifndef DO_USER_MODE
 int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c,
                            struct syscall_request *sc);
-static int remaining_job, base_cpu, job_pos;
+// static int remaining_job, base_cpu, job_pos;
 #endif
 
-extern int num_channels;
-extern int mcctrl_dma_abort;
+// extern int num_channels;
+// extern int mcctrl_dma_abort;
 
 int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 {
 	struct syscall_wait_desc swd;
 	struct mcctrl_channel *c;
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+#ifndef DO_USER_MODE
+	unsigned long s, w, d;
+#endif
 	
 	if (copy_from_user(&swd, req, sizeof(swd.cpu))) {
 		return -EFAULT;
 	}
 
-	c = channels + swd.cpu;
+if(swd.cpu >= usrdata->num_channels)return -EINVAL;
+
+	c = usrdata->channels + swd.cpu;
 
 #ifdef DO_USER_MODE
 	wait_event_interruptible(c->wq_syscall, c->req);
 	c->req = 0;
 #else
 	while (1) {
-		c = channels + swd.cpu;
+		c = usrdata->channels + swd.cpu;
 		rdtscll(s);
-		if (!remaining_job) {
+		if (!usrdata->remaining_job) {
 			while (!(*c->param.doorbell_va)) {
 				mb();
 				cpu_relax();
@@ -243,22 +251,22 @@ int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 			d = (*c->param.doorbell_va) - 1;
 			*c->param.doorbell_va = 0;
 
-			if (d < 0 || d >= num_channels) {
+			if (d < 0 || d >= usrdata->num_channels) {
 				d = 0;
 			}
-			base_cpu = d;
-			job_pos = 0;
-			remaining_job = 1;
+			usrdata->base_cpu = d;
+			usrdata->job_pos = 0;
+			usrdata->remaining_job = 1;
 		} else { 
-			job_pos++;
+			usrdata->job_pos++;
 		}
 		
-		for (; job_pos < num_channels; job_pos++) {
+		for (; usrdata->job_pos < usrdata->num_channels; usrdata->job_pos++) {
 			if (base_cpu + job_pos >= num_channels) {
-				c = channels + 
-					(base_cpu + job_pos - num_channels);
+				c = usrdata->channels + 
+					(usrdata->base_cpu + usrdata->job_pos - usrdata->num_channels);
 			} else {
-				c = channels + base_cpu + job_pos;
+				c = usrdata->channels + usrdata->base_cpu + usrdata->job_pos;
 			}
 			if (!c) {
 				continue;
@@ -278,12 +286,12 @@ int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 #ifndef DO_USER_MODE
 			return 0;
 		}
-		if (mcctrl_dma_abort) {
+		if (usrdata->mcctrl_dma_abort) {
 			return -2;
 		}
 			}
 		}
-		remaining_job = 0;
+		usrdata->remaining_job = 0;
 	}
 #endif
 	return 0;
@@ -404,6 +412,7 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 {
 	struct syscall_ret_desc ret;
 	struct mcctrl_channel *mc;
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 #if 0	
 	ihk_dma_channel_t channel;
 	struct ihk_dma_request request;
@@ -417,7 +426,7 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 	if (copy_from_user(&ret, arg, sizeof(struct syscall_ret_desc))) {
 		return -EFAULT;
 	}
-	mc = channels + ret.cpu;
+	mc = usrdata->channels + ret.cpu;
 	if (!mc) {
 		return -EINVAL;
 	}
@@ -501,12 +510,13 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg)
 	return -EINVAL;
 }
 
-void mcexec_prepare_ack(unsigned long arg)
+void mcexec_prepare_ack(ihk_os_t os, unsigned long arg)
 {
 	struct program_load_desc *desc = phys_to_virt(arg);
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 
 	desc->status = 1;
 	
-	wake_up_all(&wq_prepare);
+	wake_up_all(&usrdata->wq_prepare);
 }
 

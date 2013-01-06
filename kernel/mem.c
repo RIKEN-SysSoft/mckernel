@@ -7,8 +7,10 @@
 #include <ihk/mm.h>
 #include <ihk/page_alloc.h>
 #include <registers.h>
+#ifdef ATTACHED_MIC
 #include <sysdeps/mic/mic/micconst.h>
 #include <sysdeps/mic/mic/micsboxdefine.h>
+#endif
 #include <cls.h>
 
 //#define DEBUG_PRINT_MEM
@@ -125,13 +127,15 @@ static void page_allocator_init(void)
 	pa_start &= PAGE_MASK;
 	pa_end = (pa_end + PAGE_SIZE - 1) & PAGE_MASK;
 
-	/* 
+#ifndef ATTACHED_MIC
 	page_map_pa = ihk_mc_get_memory_address(IHK_MC_GMA_HEAP_START, 0);
-	page_map = phys_to_virt(page_map_pa);
+#else
+	/* 
 	 * Can't allocate in reserved area 
 	 * TODO: figure this out automatically! 
 	*/
 	page_map_pa = 0x100000;
+#endif
 	page_map = phys_to_virt(page_map_pa);
 
 	pa_allocator = __ihk_pagealloc_init(pa_start, pa_end - pa_start,
@@ -209,6 +213,7 @@ void ihk_mc_unmap_virtual(void *va, int npages, int free_physical)
 		ihk_pagealloc_free(vmap_allocator, virt_to_phys(va), npages);
 }
 
+#ifdef ATTACHED_MIC
 /* moved from ihk_knc/manycore/mic/setup.c */
 /*static*/ void *sbox_base = (void *)SBOX_BASE;
 void sbox_write(int offset, unsigned int value)
@@ -258,6 +263,7 @@ void ihk_mc_clean_micpa(void){
 	free_bitmap_micpa = ((~((1ULL<<(NUM_SMPT_ENTRIES_IN_USE - NUM_SMPT_ENTRIES_MICPA))-1))&((1ULL << NUM_SMPT_ENTRIES_IN_USE) - 1));
 	kprintf("ihk_mc_clean_micpa\n");
 }
+#endif
 
 void mem_init(void)
 {

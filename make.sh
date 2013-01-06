@@ -1,4 +1,6 @@
 #!/bin/sh
+MOPT=
+OPT=
 ihkdir=`pwd`/../ihk
 installdir=
 kerneldir=
@@ -45,10 +47,24 @@ if [ "X$target" = X ]; then
 	target=attached-mic
 fi
 
+if [ "X$kerneldir" = X ]; then
+	if [ -f $ihkdir/kerneldir ]; then
+		kerneldir="`cat $ihkdir/kerneldir`"
+	fi
+fi
+
+if [ "X$kerneldir" != X ]; then
+	MOPT="KDIR=$kerneldir"
+fi
+if [ "X$target" = "Xbuiltin-mic" ]; then
+	MOPT="$MOPT ARCH=k1om"
+	OPT="CC=x86_64-k1om-linux-gcc"
+fi
+
 if [ "X$installdir" != X ]; then
 	mkdir -p "$installdir"
 fi
-(cd executer/kernel; make)
+(cd executer/kernel; make $MOPT)
 if [ -f executer/kernel/mcctrl.ko ]; then
 	if [ "X$installdir" != X ]; then
 		cp executer/kernel/mcctrl.ko "$installdir"
@@ -58,28 +74,26 @@ else
 	exit 1
 fi
 
-for tgt in $target; do
-	case "$tgt" in
-	    attached-mic)
-		(cd kernel; mkdir -p build; make O=`pwd`/build)
-		krn=kernel/build/$tgt/kernel.img
-		;;
-	    *)
-		echo "unknown target $tgt" >&2
-		exit 1
-		;;
-	esac
-	if [ -f $krn ]; then
-		if [ "X$installdir" != X ]; then
-			cp $krn "$installdir"
-		fi
-	else
-		echo "$krn could not be built" >&2
-		exit 1
+case "$target" in
+    attached-mic | builtin-x86 | builtin-mic)
+	(cd kernel; mkdir -p build; make O=`pwd`/build BUILD_TARGET=$target)
+	krn=kernel/build/$target/kernel.img
+	;;
+    *)
+	echo "unknown target $target" >&2
+	exit 1
+	;;
+esac
+if [ -f $krn ]; then
+	if [ "X$installdir" != X ]; then
+		cp $krn "$installdir"
 	fi
-done
+else
+	echo "$krn could not be built" >&2
+	exit 1
+fi
 
-(cd executer/user; make)
+(cd executer/user; make $OPT)
 if [ -f executer/user/mcexec ]; then
 	if [ "X$installdir" != X ]; then
 		cp executer/user/mcexec "$installdir"

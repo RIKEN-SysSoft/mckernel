@@ -14,7 +14,7 @@
 
 //#define SC_DEBUG
 #ifdef SC_DEBUG
-static struct ihk_dma_request last_request;
+//static struct ihk_dma_request last_request;
 
 static void print_dma_lastreq(void)
 {
@@ -26,9 +26,30 @@ static void print_dma_lastreq(void)
 }
 #endif
 
-unsigned long last_thread_exec = 0;
+//unsigned long last_thread_exec = 0;
 
 #ifndef DO_USER_MODE
+static struct {
+	long (*do_sys_open)(int, const char __user *, int, int);
+	long (*sys_lseek)(unsigned int, off_t, unsigned int);
+	long (*sys_read)(unsigned int, char __user *, size_t);
+	long (*sys_write)(unsigned int, const char __user *, size_t);
+} syscalls;
+
+void
+mcctrl_syscall_init(void)
+{
+	printk("mcctrl_syscall_init\n");
+	syscalls.do_sys_open = (void *)kallsyms_lookup_name("do_sys_open");
+	syscalls.sys_lseek = (void *)kallsyms_lookup_name("sys_lseek");
+	syscalls.sys_read = (void *)kallsyms_lookup_name("sys_read");
+	syscalls.sys_write = (void *)kallsyms_lookup_name("sys_write");
+	printk("syscalls.do_sys_open=%lx\n", (long)syscalls.do_sys_open);
+	printk("syscalls.sys_lseek=%lx\n", (long)syscalls.sys_lseek);
+	printk("syscalls.sys_read=%lx\n", (long)syscalls.sys_read);
+	printk("syscalls.sys_write=%lx\n", (long)syscalls.sys_write);
+}
+
 static int do_async_copy(ihk_os_t os, unsigned long dest, unsigned long src,
                          unsigned long size, unsigned int inbound)
 {
@@ -60,12 +81,13 @@ static int do_async_copy(ihk_os_t os, unsigned long dest, unsigned long src,
 	return 0;
 }
 
-int mcctrl_dma_abort;
+//int mcctrl_dma_abort;
 
-static void async_wait(unsigned char *p, int size)
+static void async_wait(ihk_os_t os, unsigned char *p, int size)
 {
 	int asize = ALIGN_WAIT_BUF(size);
 	unsigned long long s, w;
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 
 	rdtscll(s);
 	while (!p[asize]) {
@@ -75,12 +97,15 @@ static void async_wait(unsigned char *p, int size)
 		if (w > s + 1024UL * 1024 * 1024 * 10) {
 			printk("DMA Timed out : %p (%p + %d) => %d\n",
 			       p + asize, p, size, p[asize]);
+#ifdef SC_DEBUG
 			print_dma_lastreq();
-			mcctrl_dma_abort = 1;
+#endif
+			usrdata->mcctrl_dma_abort = 1;
 			return;
 		}
 	}
 }
+
 static void clear_wait(unsigned char *p, int size)
 {
 	//int asize = ALIGN_WAIT_BUF(size);
@@ -117,7 +142,7 @@ static unsigned long translate_remote_va(struct mcctrl_channel *c,
 	return -EFAULT;
 }
 
-extern struct mcctrl_channel *channels;
+//extern struct mcctrl_channel *channels;
 
 int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c,
                            struct syscall_request *sc)
@@ -125,6 +150,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c,
 	int ret;
 	mm_segment_t fs;
 	unsigned long pa;
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 
 	switch (sc->number) {
 	case 0: /* read */
@@ -140,13 +166,13 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c,
 		clear_wait(c->dma_buf, sc->args[2]);
 		fs = get_fs();
 		set_fs(KERNEL_DS);
-		ret = sys_read(sc->args[0], c->dma_buf, sc->args[2]);
+		ret = syscalls.sys_read(sc->args[0], c->dma_buf, sc->args[2]);
 		if (ret > 0) {
 			do_async_copy(os, sc->args[1], virt_to_phys(c->dma_buf),
 			              sc->args[2], 0);
 			set_fs(fs);
 			
-			async_wait(c->dma_buf, sc->args[2]);
+			async_wait(os, c->dma_buf, sc->args[2]);
 		}
 		__return_syscall(c, ret);
 		return 0;
@@ -166,9 +192,9 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c,
 		              sc->args[2], 1);
 		fs = get_fs();
 		set_fs(KERNEL_DS);
-		async_wait(c->dma_buf, sc->args[2]);
+		async_wait(os, c->dma_buf, sc->args[2]);
 
-		ret = sys_write(sc->args[0], c->dma_buf, sc->args[2]);
+		ret = syscalls.sys_write(sc->args[0], c->dma_buf, sc->args[2]);
 		set_fs(fs);
 
 		__return_syscall(c, ret);
@@ -189,9 +215,9 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c,
 		              256, 1);
 		fs = get_fs();
 		set_fs(KERNEL_DS);
-		async_wait(c->dma_buf, 256);
+		async_wait(os, c->dma_buf, 256);
 
-		ret = do_sys_open(AT_FDCWD, c->dma_buf, sc->args[1],
+		ret = syscalls.do_sys_open(AT_FDCWD, c->dma_buf, sc->args[1],
 		                  sc->args[2]);
 		set_fs(fs);
 
@@ -204,21 +230,21 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c,
 		return 0;
 
 	case 8: /* lseek */
-		ret = sys_lseek(sc->args[0], sc->args[1], sc->args[2]);
+		ret = syscalls.sys_lseek(sc->args[0], sc->args[1], sc->args[2]);
 		__return_syscall(c, ret);
 		return 0;
 
 	case 56: /* Clone */
-		last_thread_exec++;
-		if (mcctrl_ikc_is_valid_thread(last_thread_exec)) {
+		usrdata->last_thread_exec++;
+		if (mcctrl_ikc_is_valid_thread(usrdata->last_thread_exec)) {
 			printk("Clone notification: %lx\n", sc->args[0]);
-			if (channels[last_thread_exec].param.post_va) {
-				memcpy(channels[last_thread_exec].param.post_va,
+			if (channels[usrdata->last_thread_exec].param.post_va) {
+				memcpy(usrdata->channels[usrdata->last_thread_exec].param.post_va,
 				       c->param.post_va, PAGE_SIZE);
 			}
-			mcctrl_ikc_send_msg(last_thread_exec,
+			mcctrl_ikc_send_msg(usrdata->last_thread_exec,
 			                    SCD_MSG_SCHEDULE_PROCESS,
-			                    last_thread_exec, sc->args[0]);
+			                    usrdata->last_thread_exec, sc->args[0]);
 		}
 
 		__return_syscall(c, 0);
