@@ -197,6 +197,7 @@ extern void user_main();
 
 #ifdef DCFA_KMOD
 extern int mc_cmd_client_init(void);
+extern void ibmic_cmd_init(void);
 #endif
 
 int main(void)
@@ -219,6 +220,7 @@ int main(void)
 
 #ifdef DCFA_KMOD
 	mc_cmd_client_init();
+	ibmic_cmd_init();
 #endif
 
 #ifdef DCFA_RUN
