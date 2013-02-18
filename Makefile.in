@@ -1,0 +1,40 @@
+TARGET = @TARGET@
+
+all::
+	@(cd executer/kernel; make modules)
+	@(cd executer/user; make)
+	@case "$(TARGET)" in \
+	    attached-mic | builtin-x86 | builtin-mic) \
+		(cd kernel; make) \
+		;; \
+	    *) \
+		echo "unknown target $(TARGET)" >&2 \
+		exit 1 \
+		;; \
+	esac
+
+install::
+	@(cd executer/kernel; make install)
+	@(cd executer/user; make install)
+	@case "$(TARGET)" in \
+	    attached-mic | builtin-x86 | builtin-mic) \
+		(cd kernel; make install) \
+		;; \
+	    *) \
+		echo "unknown target $(TARGET)" >&2 \
+		exit 1 \
+		;; \
+	esac
+
+clean::
+	@(cd executer/kernel; make clean)
+	@(cd executer/user; make clean)
+	@case "$(TARGET)" in \
+	    attached-mic | builtin-x86 | builtin-mic) \
+		(cd kernel; make clean) \
+		;; \
+	    *) \
+		echo "unknown target $(TARGET)" >&2 \
+		exit 1 \
+		;; \
+	esac
