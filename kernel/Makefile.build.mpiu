@@ -1,45 +1,48 @@
-AALDIR=$(AALBASE)/$(TARGET)
+IHKDIR=$(IHKBASE)/$(TARGETDIR)
 OBJS = init.o mem.o debug.o mikc.o listeners.o ap.o syscall.o cls.o host.o
 OBJS += process.o copy.o waitq.o futex.o timer.o
 DEPSRCS=$(wildcard $(SRC)/*.c)
 
-#CFLAGS += -I$(SRC)/include -mcmodel=kernel -D__KERNEL__ -DDCFA_KMOD -DIOCTL_FUNC_EXTENSION
-CFLAGS += -I$(SRC)/include -mcmodel=kernel -D__KERNEL__ -DDCFA_KMOD -DKNC_MAP_MICPA
-CFLAGS += -DCONFIG_$(CONFIG_V)
+CFLAGS += -I$(SRC)/include -mcmodel=kernel -D__KERNEL__
+CFLAGS += -DDCFA_KMOD -DKNC_MAP_MICPA -DCONFIG_$(CONFIG_V)
 
 LDFLAGS += -e arch_start
-AALOBJ = aal/aal.o
+IHKOBJ = ihk/ihk.o
 
-include $(SRC)/configs/config.$(TARGET)
-include $(AALBASE)/Makefile.common
+include $(SRC)/config/config.$(TARGET)
+include $(IHKBASE)/Makefile.common
 
-SUBCMD_OPTS = TARGET=$(TARGET) O=$(CURDIR)/aal CC=$(CC) LD=$(LD) CONFIG_V=$(CONFIG_V)
+SUBCMD_OPTS = TARGET=$(TARGET) O=$(CURDIR)/ihk CC=$(CC) LD=$(LD) SRC=$(SRC)
+SUBCMD_OPTS += CONFIG_V=$(CONFIG_V)
+
+OBJDUMP ?= objdump
+OBJCOPY ?= objcopy
 
 ld_kern_cmd_base = $(LD) $(LDFLAGS) -o $@.elf $^
-mkimage_cmd_base = [ -f $(SRC)/scripts/mkimage.$(TARGET) ] && CC=$(CC) LD=$(LD) LDFLAGS="$(LDFLAGS_MKIMAGE)" sh $(SRC)/scripts/mkimage.$(TARGET) '$@.elf' '$@' '$(SRC)' || cp $@.elf $@
+mkimage_cmd_base = [ -f $(SRC)/script/mkimage.$(TARGET) ] && CC=$(CC) LD=$(LD) LDFLAGS="$(LDFLAGS_MKIMAGE)" OBJDUMP=$(OBJDUMP) OBJCOPY=$(OBJCOPY) sh $(SRC)/script/mkimage.$(TARGET) '$@.elf' '$@' '$(SRC)' || cp $@.elf $@
 
 ld_kern_cmd = $(call echo_cmd,LDKERN,$@)$(ld_kern_cmd_base)
 mkimage_cmd = $(call echo_cmd,MKIMAGE,$@)$(mkimage_cmd_base)
 
 all: depend kernel.img
 
-kernel.img: $(OBJS) $(AALOBJ) $(EXTRA_OBJS)
+kernel.img: $(OBJS) $(IHKOBJ) $(EXTRA_OBJS)
 	$(ld_kern_cmd)
 	$(mkimage_cmd)
 
 clean:
 	$(rm_cmd) $(OBJS) kernel.img kernel.img.elf Makefile.dep
-	@$(submake) -C $(AALBASE) $(SUBCMD_OPTS) clean
+	@$(submake) -C $(IHKBASE) $(SUBCMD_OPTS) clean
 
 depend: Makefile.dep
 
 Makefile.dep:
 	$(call dep_cmd,$(DEPSRCS))
 
-$(AALOBJ): FORCE
-	@mkdir -p $(dir $(AALOBJ))
-	$(call echo_cmd,BUILD AAL,$(TARGET))$(submake) -C $(AALBASE) $(SUBCMD_OPTS) prepare
-	$(call echo_cmd,BUILD AAL,$(TARGET))$(submake) -C $(AALBASE) $(SUBCMD_OPTS)
+$(IHKOBJ): FORCE
+	@mkdir -p $(dir $(IHKOBJ))
+	$(call echo_cmd,BUILD IHK,$(TARGET))$(submake) -C $(IHKBASE) $(SUBCMD_OPTS) prepare
+	$(call echo_cmd,BUILD IHK,$(TARGET))$(submake) -C $(IHKBASE) $(SUBCMD_OPTS)
 
 %.o: $(SRC)/%.c
 	$(cc_cmd)
