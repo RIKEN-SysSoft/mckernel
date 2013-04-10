@@ -1,0 +1,102 @@
+BUILD_TARGET ?= attached-mic
+SRC = $(CURDIR)
+IHKBASE ?= $(SRC)/../../ihk/cokernel
+INSTALL_KL_DIR ?= ./
+
+O ?= $(KBUILD_OUTPUT)
+N ?= kernel_obj.o
+V ?= $(VERBOSE)
+
+CONFIG_V ?= KNF
+DCFA_V ?= u
+
+EXTRA_OBJS ?=
+
+## compile items
+
+KERNEL = kernel.img
+KERNELS = $(addsuffix /$(KERNEL),$(addprefix $(O)/,$(BUILD_TARGET)))
+
+KERNEL_OBJ = $(addsuffix /$(N),$(addprefix $(O)/,$(BUILD_TARGET)))
+KERNEL_MAKEFILE = $(addsuffix /Makefile,$(addprefix $(O)/,$(BUILD_TARGET)))
+
+## install items
+
+ifeq ("$(DCFA_V)", "k")
+KERNEL_OBJ_PUB = $(INSTALL_KL_DIR)/$(N)
+KERNEL_MAKEFILE_PUB = $(INSTALL_KL_DIR)/Makefile
+else
+KERNELS_PUB = $(INSTALL_KL_DIR)/$(KERNEL)
+KERNEL_MAKEFILE_PUB = $(INSTALL_KL_DIR)/Makefile
+endif
+
+SUBCMD_OPTS = V='$(V)'
+
+$(if $(O),,$(error Specify the compilation target directory))
+#$(if $(shell ls $(IHKBASE)/Makefile),,\
+#	$(error IHK is not found in $(IHKBASE)))
+
+
+.PHONY: kmod umod clean depend
+.SECONDARY:	$(KERNEL_MAKEFILE) $(KERNEL_MAKEFILE_PUB)
+
+kmod: $(KERNEL_OBJ)
+
+umod: $(KERNELS)
+
+umod_install:
+	@echo install $(KERNELS_PUB)
+	@rm -f $(KERNELS_PUB)
+	@mkdir -p $(dir $(KERNELS_PUB))
+	@cp $(KERNELS) $(KERNELS_PUB)
+
+kmod_install: $(KERNEL_MAKEFILE_PUB)
+	@echo install $(KERNEL_OBJ_PUB)
+	@rm -f $(KERNEL_OBJ_PUB)
+	@cp $(KERNEL_OBJ) $(KERNEL_OBJ_PUB)
+
+%/kernel.img: %/Makefile
+	@echo 'Building for' $(dir $@)
+	@make --no-print-directory -C $(dir $@) $(SUBCMD_OPTS)
+
+%/$(N): %/Makefile
+	@echo 'Building for' $(dir $@)
+	@make kobj --no-print-directory -C $(dir $@) $(SUBCMD_OPTS)
+	
+$(KERNEL_MAKEFILE): Makefile.build.dcfa
+	rm -f $@
+	@mkdir -p $(dir $@)
+	@echo 'SRC = $(SRC)' > $@
+	@echo 'IHKBASE = $(IHKBASE)' >> $@
+	@echo 'TARGET = $(notdir $(patsubst %/,%,$(dir $@)))' >> $@
+	@echo 'TARGETDIR = $$(shell echo $$(TARGET) | sed "s/-/\//")' >> $@	
+	@echo 'CONFIG_V = $(CONFIG_V)' >> $@
+	@echo 'DCFA_V = $(DCFA_V)' >> $@
+	@echo 'KERNEL_OBJ = $(KERNEL_OBJ)' >> $@
+	@echo 'EXTRA_OBJS = $(EXTRA_OBJS)' >> $@
+	@echo 'EXTRA_CFLAGS = $(EXTRA_CFLAGS)' >> $@
+	@cat $^ >> $@
+#	@rm -f $(dir $@)/Makefile.dep
+
+$(KERNEL_MAKEFILE_PUB): Makefile.build.dcfa.public
+	@echo install $@
+	@rm -f $@
+	@mkdir -p $(dir $@)
+	@echo 'SRC = $(SRC)' > $@
+	@echo 'IHKBASE = $(IHKBASE)' >> $@
+	@echo 'TARGET = $(BUILD_TARGET)' >> $@
+	@echo 'TARGETDIR = $$(shell echo $$(TARGET) | sed "s/-/\//")' >> $@	
+	@echo 'KERNEL_OBJ = $(KERNEL_OBJ_PUB)' >> $@
+	@cat $^ >> $@
+		
+umod_clean: $(addsuffix .umod_clean,$(BUILD_TARGET))
+
+kmod_clean: $(addsuffix .kmod_clean,$(BUILD_TARGET))
+
+%.umod_clean: $(O)/%/Makefile
+	@make --no-print-directory -C $(O)/$(basename $@) $(SUBCMD_OPTS) umod_clean
+	
+%.kmod_clean: $(O)/%/Makefile
+	@make --no-print-directory -C $(O)/$(basename $@) $(SUBCMD_OPTS) kmod_clean
+	
+FORCE:

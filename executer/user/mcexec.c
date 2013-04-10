@@ -46,6 +46,16 @@ extern int mc_cmd_server_init();
 extern void mc_cmd_server_exit();
 extern void mc_cmd_handle(int fd, int cpu, unsigned long args[6]);
 
+#ifdef CMD_DCFA
+extern void ibmic_cmd_server_exit();
+extern int ibmic_cmd_server_init();
+#endif
+
+#ifdef CMD_DCFAMPI
+extern void dcfampi_cmd_server_exit();
+extern int dcfampi_cmd_server_init();
+#endif
+
 int __glob_argc = -1;
 char **__glob_argv = 0;
 #endif
@@ -431,6 +441,20 @@ int main(int argc, char **argv)
 	/**
 	 * TODO: need mutex for static structures
 	 */
+#ifdef CMD_DCFA
+	if(ibmic_cmd_server_init()){
+		fprintf(stderr, "Error: Failed to initialize ibmic_cmd_server.\n");
+		return -1;
+	}
+#endif
+
+#ifdef CMD_DCFAMPI
+	if(dcfampi_cmd_server_init()){
+		fprintf(stderr, "Error: Failed to initialize dcfampi_cmd_server.\n");
+		return -1;
+	}
+#endif
+
 	if(mc_cmd_server_init()){
 		fprintf(stderr, "Error: cmd server init failed\n");
 		return 1;
@@ -695,6 +719,14 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 
 #ifdef USE_SYSCALL_MOD_CALL
 			mc_cmd_server_exit();
+#ifdef CMD_DCFA
+			ibmic_cmd_server_exit();
+#endif
+
+#ifdef CMD_DCFAMPI
+			dcfampi_cmd_server_exit();
+#endif
+
 			__dprint("mccmd server exited\n");
 #endif
 			exit(0);

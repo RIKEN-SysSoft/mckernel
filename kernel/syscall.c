@@ -1070,18 +1070,31 @@ SYSCALL_DECLARE(noop)
 
 #ifdef DCFA_KMOD
 
+#ifdef CMD_DCFA
 extern int ibmic_cmd_syscall(char *uargs);
-extern int dcfampi_cmd_syscall(char *uargs);
 extern void ibmic_cmd_exit(int status);
+#endif
+
+#ifdef CMD_DCFAMPI
+extern int dcfampi_cmd_syscall(char *uargs);
+#endif
 
 static int (*mod_call_table[]) (char *) = {
+#ifdef CMD_DCFA
 		[1] = ibmic_cmd_syscall,
+#endif
+#ifdef CMD_DCFAMPI
 		[2] = dcfampi_cmd_syscall,
+#endif
 };
 
 static void (*mod_exit_table[]) (int) = {
+#ifdef CMD_DCFA
 		[1] = ibmic_cmd_exit,
+#endif
+#ifdef CMD_DCFAMPI
 		[2] = NULL,
+#endif
 };
 
 SYSCALL_DECLARE(mod_call) {
@@ -1095,6 +1108,8 @@ SYSCALL_DECLARE(mod_call) {
 
 	if(mod_call_table[mod_id])
 		return mod_call_table[mod_id]((char*)uargs);
+
+	kprintf("ERROR! undefined mod_call id:%d\n", mod_id);
 
 	return -ENOSYS;
 }

@@ -4,8 +4,14 @@ OBJS += process.o copy.o waitq.o futex.o timer.o
 DEPSRCS=$(wildcard $(SRC)/*.c)
 
 CFLAGS += -I$(SRC)/include -mcmodel=kernel -D__KERNEL__
-CFLAGS += -DDCFA_KMOD -DKNC_MAP_MICPA -DCONFIG_$(CONFIG_V)
+CFLAGS += -DKNC_MAP_MICPA -DCONFIG_$(CONFIG_V) $(EXTRA_CFLAGS)
 
+ifeq ("$(DCFA_V)", "k")
+CFLAGS += -DDCFA_RUN
+else
+CFLAGS += -DDCFA_KMOD
+endif
+ 
 LDFLAGS += -e arch_start
 IHKOBJ = ihk/ihk.o
 
@@ -24,16 +30,28 @@ mkimage_cmd_base = [ -f $(SRC)/script/mkimage.$(TARGET) ] && CC=$(CC) LD=$(LD) L
 ld_kern_cmd = $(call echo_cmd,LDKERN,$@)$(ld_kern_cmd_base)
 mkimage_cmd = $(call echo_cmd,MKIMAGE,$@)$(mkimage_cmd_base)
 
-all: depend kernel.img
+P_OBJ ?= ./a.out
+
+all: kernel.img
 
 kernel.img: $(OBJS) $(IHKOBJ) $(EXTRA_OBJS)
 	$(ld_kern_cmd)
 	$(mkimage_cmd)
 
-clean:
-	$(rm_cmd) $(OBJS) kernel.img kernel.img.elf Makefile.dep
+kobj: depend $(KERNEL_OBJ)
+	
+$(KERNEL_OBJ): $(OBJS) $(IHKOBJ)
+	@echo '       ' [with] $^
+	$(ld_cmd)
+	
+umod_clean:
+	$(rm_cmd) $(OBJS) $(IHKOBJ) kernel.img kernel.img.elf Makefile.dep
 	@$(submake) -C $(IHKBASE) $(SUBCMD_OPTS) clean
 
+kmod_clean:
+	$(rm_cmd) $(OBJS) $(IHKOBJ) $(KERNEL_OBJ) Makefile.dep
+	@$(submake) -C $(IHKBASE) $(SUBCMD_OPTS) clean
+	
 depend: Makefile.dep
 
 Makefile.dep:
