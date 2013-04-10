@@ -1,0 +1,19 @@
+CC=@CC@
+BINDIR=@BINDIR@
+CFLAGS=-Wall -O
+TARGET=mcexec
+
+all: $(TARGET)
+
+mcexec: mcexec.c
+	$(CC) $(CFLAGS) -pthread -o $@ $^
+
+clean:
+	$(RM) $(TARGET) *.o
+
+.PHONY: all clean install
+
+install:
+	mkdir -p -m 755 $(BINDIR)
+	install -m 755 mcexec $(BINDIR)
+
