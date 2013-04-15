@@ -38,6 +38,9 @@ case $WITH_TARGET in
 	if test "X$BINDIR" = X; then
 		BINDIR="$prefix/bin"
 	fi
+	if test "X$SBINDIR" = X; then
+		SBINDIR="$prefix/sbin"
+	fi
 	if test "X$KMODDIR" = X; then
 		KMODDIR="$prefix/kmod"
 	fi
@@ -55,6 +58,9 @@ case $WITH_TARGET in
 	if test "X$BINDIR" = X; then
 		BINDIR="$prefix/attached/bin"
 	fi
+	if test "X$SBINDIR" = X; then
+		SBINDIR="$prefix/attached/sbin"
+	fi
 	if test "X$KMODDIR" = X; then
 		KMODDIR="$prefix/attached/kmod"
 	fi
@@ -68,6 +74,9 @@ case $WITH_TARGET in
 	fi
 	if test "X$BINDIR" = X; then
 		BINDIR="$prefix/bin"
+	fi
+	if test "X$SBINDIR" = X; then
+		SBINDIR="$prefix/sbin"
 	fi
 	if test "X$KMODDIR" = X; then
 		KMODDIR="$prefix/kmod"
@@ -87,6 +96,7 @@ AC_SUBST(ARCH)
 AC_SUBST(KDIR)
 AC_SUBST(TARGET)
 AC_SUBST(BINDIR)
+AC_SUBST(SBINDIR)
 AC_SUBST(KMODDIR)
 AC_SUBST(KERNDIR)
 
@@ -95,6 +105,7 @@ AC_CONFIG_FILES([
 	executer/user/Makefile
 	executer/kernel/Makefile
 	kernel/Makefile
+	boot-attached-mic.sh
 ])
 
 AC_OUTPUT

@@ -603,6 +603,7 @@ ac_subst_vars='LTLIBOBJS
 LIBOBJS
 KERNDIR
 KMODDIR
+SBINDIR
 BINDIR
 TARGET
 KDIR
@@ -2725,6 +2726,9 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 	if test "X$BINDIR" = X; then
 		BINDIR="$prefix/bin"
 	fi
+	if test "X$SBINDIR" = X; then
+		SBINDIR="$prefix/sbin"
+	fi
 	if test "X$KMODDIR" = X; then
 		KMODDIR="$prefix/kmod"
 	fi
@@ -2775,6 +2779,9 @@ fi
 	fi
 	if test "X$BINDIR" = X; then
 		BINDIR="$prefix/attached/bin"
+	fi
+	if test "X$SBINDIR" = X; then
+		SBINDIR="$prefix/attached/sbin"
 	fi
 	if test "X$KMODDIR" = X; then
 		KMODDIR="$prefix/attached/kmod"
@@ -3472,6 +3479,9 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 	if test "X$BINDIR" = X; then
 		BINDIR="$prefix/bin"
 	fi
+	if test "X$SBINDIR" = X; then
+		SBINDIR="$prefix/sbin"
+	fi
 	if test "X$KMODDIR" = X; then
 		KMODDIR="$prefix/kmod"
 	fi
@@ -3495,7 +3505,8 @@ TARGET="$WITH_TARGET"
 
 
 
-ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/kernel/Makefile kernel/Makefile"
+
+ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/kernel/Makefile kernel/Makefile boot-attached-mic.sh"
 
 
 cat >confcache <<\_ACEOF
@@ -4110,6 +4121,7 @@ do
     "executer/user/Makefile") CONFIG_FILES="$CONFIG_FILES executer/user/Makefile" ;;
     "executer/kernel/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/Makefile" ;;
     "kernel/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/Makefile" ;;
+    "boot-attached-mic.sh") CONFIG_FILES="$CONFIG_FILES boot-attached-mic.sh" ;;
 
   *) { { $as_echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 $as_echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
