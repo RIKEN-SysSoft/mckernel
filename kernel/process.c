@@ -140,6 +140,14 @@ int add_process_large_range(struct process *process,
 	int npages_allocated = 0;
 	void *virt;
 
+	if ((start < process->vm->region.user_start)
+			|| (process->vm->region.user_end < end)) {
+		kprintf("large range(%#lx - %#lx) is not in user avail(%#lx - %#lx)\n",
+				start, end, process->vm->region.user_start,
+				process->vm->region.user_end);
+		return -EINVAL;
+	}
+
 	range = kmalloc(sizeof(struct vm_range), 0);
 	if (!range) {
 		return -ENOMEM;
@@ -194,6 +202,14 @@ int add_process_memory_range(struct process *process,
 {
 	struct vm_range *range;
 
+	if ((start < process->vm->region.user_start)
+			|| (process->vm->region.user_end < end)) {
+		kprintf("range(%#lx - %#lx) is not in user avail(%#lx - %#lx)\n",
+				start, end, process->vm->region.user_start,
+				process->vm->region.user_end);
+		return -EINVAL;
+	}
+
 	range = kmalloc(sizeof(struct vm_range), 0);
 	if (!range) {
 		return -ENOMEM;
@@ -239,16 +255,15 @@ void init_process_stack(struct process *process, struct program_load_desc *pn,
 {
 	int s_ind = 0;
 	int arg_ind;
+	unsigned long size = USER_STACK_NR_PAGES * PAGE_SIZE;
 	char *stack = ihk_mc_alloc_pages(USER_STACK_NR_PAGES, 0);
-	unsigned long *p = (unsigned long *)(stack + 
-	                   (USER_STACK_NR_PAGES * PAGE_SIZE));
+	unsigned long *p = (unsigned long *)(stack + size);
+	unsigned long end = process->vm->region.user_end;
+	unsigned long start = end - size;
 
-	memset(stack, 0, USER_STACK_NR_PAGES * PAGE_SIZE);
+	memset(stack, 0, size);
 
-	add_process_memory_range(process, USER_END - 
-	                         (USER_STACK_NR_PAGES * PAGE_SIZE),
-	                         USER_END,
-	                         virt_to_phys(stack), VR_STACK);
+	add_process_memory_range(process, start, end, virt_to_phys(stack), VR_STACK);
 
 	s_ind = -1;
 	p[s_ind--] = 0;     /* AT_NULL */
@@ -274,10 +289,9 @@ void init_process_stack(struct process *process, struct program_load_desc *pn,
 	p[s_ind] = argc;
 
 	ihk_mc_modify_user_context(process->uctx, IHK_UCR_STACK_POINTER,
-	                           USER_END + sizeof(unsigned long) * s_ind);
-	process->vm->region.stack_end = USER_END;
-	process->vm->region.stack_start = USER_END - 
-	                                  (USER_STACK_NR_PAGES * PAGE_SIZE);
+	                           end + sizeof(unsigned long) * s_ind);
+	process->vm->region.stack_end = end;
+	process->vm->region.stack_start = start;
 }
 
 

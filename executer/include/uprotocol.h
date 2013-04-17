@@ -31,7 +31,10 @@ struct program_load_desc {
 	int cpu;
 	int pid;
 	unsigned long entry;
+	unsigned long user_start;
+	unsigned long user_end;
 	unsigned long rprocess;
+	unsigned long rpgtable;
 	unsigned long at_phdr;
 	unsigned long at_phent;
 	unsigned long at_phnum;

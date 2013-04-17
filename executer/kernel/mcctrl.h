@@ -77,9 +77,13 @@ struct mcctrl_usrdata {
 	int	mcctrl_dma_abort;
 	unsigned long	last_thread_exec;
 	wait_queue_head_t	wq_prepare;
+	unsigned long	rpgtable;	/* per process, not per OS */
 };
 
 int mcctrl_ikc_send(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp);
 int mcctrl_ikc_send_msg(ihk_os_t os, int cpu, int msg, int ref, unsigned long arg);
 int mcctrl_ikc_is_valid_thread(ihk_os_t os, int cpu);
+int reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp,
+		unsigned long *endp);
+
 #endif

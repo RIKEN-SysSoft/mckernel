@@ -40,6 +40,7 @@ struct vm_regions {
 	unsigned long brk_start, brk_end;
 	unsigned long map_start, map_end;
 	unsigned long stack_start, stack_end;
+	unsigned long user_start, user_end;
 };
 
 struct process_vm;

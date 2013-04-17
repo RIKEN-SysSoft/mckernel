@@ -64,6 +64,8 @@ static void process_msg_prepare_process(unsigned long rphys)
 
 	proc = create_process(p->entry);
 	proc->pid = 1024;
+	proc->vm->region.user_start = pn->user_start;
+	proc->vm->region.user_end = pn->user_end;
 
 	/* TODO: Clear it at the proper timing */
 	cpu_local_var(scp).post_idx = 0;
@@ -254,6 +256,7 @@ static void process_msg_prepare_process(unsigned long rphys)
 	dkprintf("env OK\n");
 
 	p->rprocess = (unsigned long)proc;
+	p->rpgtable = virt_to_phys(proc->vm->page_table);
 	init_process_stack(proc, pn, argc, argv, envc, env);
 
 	dkprintf("new process : %p [%d] / table : %p\n", proc, proc->pid,

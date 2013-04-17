@@ -1,6 +1,6 @@
 CC=@CC@
 BINDIR=@BINDIR@
-CFLAGS=-Wall -O
+CFLAGS=-Wall -O -fPIE -pie
 TARGET=mcexec
 
 all: $(TARGET)

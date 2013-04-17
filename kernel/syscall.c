@@ -1291,6 +1291,14 @@ static int clone_init(void)
 
 #endif
 
+long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx)
+{
+	SYSCALL_HEADER;
+	dkprintf("syscall_generic_forwarding(%d)\n", n);
+	SYSCALL_ARGS_6(D,D,D,D,D,D);
+	SYSCALL_FOOTER;
+}
+
 long syscall(int num, ihk_mc_user_context_t *ctx)
 {
 	long l;
@@ -1324,7 +1332,8 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
     dkprintf("\n");
 
 
-	if (syscall_table[num]) {
+	if ((0 <= num) && (num < sizeof(syscall_table)/sizeof(syscall_table[0]))
+			&& (syscall_table[num] != NULL)) {
 		l = syscall_table[num](num, ctx);
 		
 		dkprintf("SC(%d)[%3d] ret: %d\n", 
@@ -1335,8 +1344,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		        ihk_mc_syscall_arg2(ctx), ihk_mc_syscall_arg3(ctx),
 		        ihk_mc_syscall_arg4(ctx), ihk_mc_syscall_pc(ctx),
 		        ihk_mc_syscall_sp(ctx));
-		//while(1);
-		l = -ENOSYS;
+		l = syscall_generic_forwarding(num, ctx);
 	}
 	
 	return l;

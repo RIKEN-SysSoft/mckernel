@@ -5,6 +5,9 @@
 #include <linux/mm.h>
 #include <linux/fs.h>
 #include <linux/syscalls.h>
+#include <linux/anon_inodes.h>
+#include <linux/mman.h>
+#include <linux/file.h>
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/io.h>
@@ -13,6 +16,13 @@
 #define ALIGN_WAIT_BUF(z)   (((z + 63) >> 6) << 6)
 
 //#define SC_DEBUG
+
+#ifdef SC_DEBUG
+#define	dprintk(...)	printk(__VA_ARGS__)
+#else
+#define	dprintk(...)
+#endif
+
 #ifdef SC_DEBUG
 //static struct ihk_dma_request last_request;
 
@@ -25,6 +35,129 @@ static void print_dma_lastreq(void)
 	       last_request.size, last_request.notify, last_request.priv);
 }
 #endif
+
+#if 1	/* x86 depend, host OS side */
+unsigned long translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva)
+{
+	unsigned long rpa;
+	int offsh;
+	int i;
+	int ix;
+	unsigned long phys;
+	unsigned long *pt;
+
+	rpa = rpt;
+	offsh = 39;
+	/* i = 0: PML4, 1: PDPT, 2: PDT, 3: PT */
+	for (i = 0; i < 4; ++i) {
+		ix = (rva >> offsh) & 0x1FF;
+		phys = ihk_device_map_memory(ihk_os_to_dev(os), rpa, PAGE_SIZE);
+		pt = ihk_device_map_virtual(ihk_os_to_dev(os), phys, PAGE_SIZE, NULL, 0);
+		dprintk("rpa %#lx offsh %d ix %#x phys %#lx pt %p pt[ix] %#lx\n",
+				rpa, offsh, ix, phys, pt, pt[ix]);
+
+#define	PTE_P	0x001
+		if (!(pt[ix] & PTE_P)) {
+			ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
+			ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
+			return -EFAULT;
+		}
+
+#define	PTE_PS	0x080
+		if (pt[ix] & PTE_PS) {
+			rpa = pt[ix] & ((1UL << 52) - 1) & ~((1UL << offsh) - 1);
+			rpa |= rva & ((1UL << offsh) - 1);
+			ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
+			ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
+			goto out;
+		}
+
+		rpa = pt[ix] & ((1UL << 52) - 1) & ~((1UL << 12) - 1);
+		offsh -= 9;
+		ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
+		ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
+	}
+	rpa |= rva & ((1UL << 12) - 1);
+out:
+	dprintk("translate_rva_to_rpa: rva %#lx --> rpa %#lx\n", rva, rpa);
+	return rpa;
+}
+#endif
+
+static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+{
+	struct mcctrl_usrdata *	usrdata	= vma->vm_file->private_data;
+	ihk_device_t		dev = ihk_os_to_dev(usrdata->os);
+	unsigned long		rpa;
+	unsigned long		phys;
+	int			error;
+
+	dprintk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
+			vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
+
+	rpa = translate_rva_to_rpa(usrdata->os, usrdata->rpgtable,
+			(unsigned long)vmf->virtual_address);
+
+	phys = ihk_device_map_memory(dev, rpa, PAGE_SIZE);
+	error = vm_insert_pfn(vma, (unsigned long)vmf->virtual_address, phys>>PAGE_SHIFT);
+	ihk_device_unmap_memory(dev, phys, PAGE_SIZE);
+	if (error) {
+		printk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
+				vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
+		return VM_FAULT_SIGBUS;
+	}
+
+	return VM_FAULT_NOPAGE;
+}
+
+static struct vm_operations_struct rus_vmops = {
+	.fault = &rus_vm_fault,
+};
+
+static int rus_mmap(struct file *file, struct vm_area_struct *vma)
+{
+	vma->vm_flags |= VM_IO | VM_RESERVED | VM_DONTEXPAND | VM_PFNMAP;
+	vma->vm_ops = &rus_vmops;
+	return 0;
+}
+
+static struct file_operations rus_fops = {
+	.mmap = &rus_mmap,
+};
+
+int reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp, unsigned long *endp)
+{
+	struct file *file;
+	struct vm_area_struct *vma;
+	unsigned long start;
+	unsigned long end;
+
+	file = anon_inode_getfile("[mckernel]", &rus_fops, usrdata, O_RDWR);
+	if (IS_ERR(file)) {
+		return PTR_ERR(file);
+	}
+
+#define	DESIRED_USER_END	0x800000000000
+#define	GAP_FOR_MCEXEC		0x008000000000UL
+	end = DESIRED_USER_END;
+	down_write(&current->mm->mmap_sem);
+	vma = find_vma(current->mm, 0);
+	if (vma) {
+		end = (vma->vm_start - GAP_FOR_MCEXEC) & ~(GAP_FOR_MCEXEC - 1);
+	}
+	start = do_mmap_pgoff(file, 0, end,
+			PROT_READ|PROT_WRITE, MAP_FIXED|MAP_SHARED, 0);
+	up_write(&current->mm->mmap_sem);
+	fput(file);
+	if (IS_ERR_VALUE(start)) {
+		printk("mcctrl:user space reservation failed.\n");
+		return start;
+	}
+
+	*startp = start;
+	*endp = end;
+	return 0;
+}
 
 //unsigned long last_thread_exec = 0;
 

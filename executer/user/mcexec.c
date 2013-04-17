@@ -524,12 +524,31 @@ void do_syscall_load(int fd, int cpu, unsigned long dest, unsigned long src,
 	}
 }
 
+static long
+do_generic_syscall(
+		struct syscall_wait_desc *w)
+{
+	long	ret;
+
+	__dprintf("do_generic_syscall(%ld)\n", w->sr.number);
+
+	errno = 0;
+	ret = syscall(w->sr.number, w->sr.args[0], w->sr.args[1], w->sr.args[2],
+		 w->sr.args[3], w->sr.args[4], w->sr.args[5]);
+	if (errno != 0) {
+		ret = -errno;
+	}
+
+	__dprintf("do_generic_syscall(%ld):%ld (%#lx)\n", w->sr.number, ret, ret);
+	return ret;
+}
+
 #define SET_ERR(ret) if (ret == -1) ret = -errno
 
 int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 {
 	struct syscall_wait_desc w;
-	int ret;
+	long ret;
 	
 	w.cpu = cpu;
 
@@ -837,7 +856,8 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 		}
 #endif
 		default:
-			__dprintf("Unhandled system calls: %ld\n", w.sr.number);
+			 ret = do_generic_syscall(&w);
+			 do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 
 		}
