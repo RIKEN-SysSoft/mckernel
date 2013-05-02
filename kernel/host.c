@@ -49,7 +49,7 @@ static void process_msg_prepare_process(unsigned long rphys)
 
 	sz = sizeof(struct program_load_desc)
 		+ sizeof(struct program_image_section) * 16;
-	npages = (sz + PAGE_SIZE - 1) >> PAGE_SHIFT;
+	npages = (rphys + sz - 1) >> PAGE_SHIFT - rphys >> PAGE_SHIFT + 1;
 
 	phys = ihk_mc_map_memory(NULL, rphys, sz);
 	p = ihk_mc_map_virtual(phys, npages, PTATTR_WRITABLE);
