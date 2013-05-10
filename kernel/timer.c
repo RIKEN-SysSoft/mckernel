@@ -30,7 +30,7 @@
 #define dkprintf(...)
 #endif
 
-#define LOOP_TIMEOUT 500
+#define LOOP_TIMEOUT 10
 
 struct list_head timers;
 ihk_spinlock_t timers_lock;
@@ -46,13 +46,12 @@ uint64_t schedule_timeout(uint64_t timeout)
 {	
 	struct waitq_entry my_wait;
 	struct timer my_timer;
-	unsigned long irqflags;
 	struct process *proc = cpu_local_var(current);
 
-	irqflags = ihk_mc_spinlock_lock(&proc->spin_sleep_lock);
+	ihk_mc_spinlock_lock_noirq(&proc->spin_sleep_lock);
 	dkprintf("schedule_timeout() spin sleep timeout: %lu\n", timeout);
 	proc->spin_sleep = 1;
-	ihk_mc_spinlock_unlock(&proc->spin_sleep_lock, irqflags);
+	ihk_mc_spinlock_unlock_noirq(&proc->spin_sleep_lock);
 
 	/* Spin sleep.. */
 	for (;;) {
@@ -60,7 +59,7 @@ uint64_t schedule_timeout(uint64_t timeout)
 		uint64_t t_e;
 		int spin_over = 0;
 
-		irqflags = ihk_mc_spinlock_lock(&proc->spin_sleep_lock);
+		ihk_mc_spinlock_lock_noirq(&proc->spin_sleep_lock);
 		
 		/* Woken up by someone? */
 		if (!proc->spin_sleep) {
@@ -75,7 +74,7 @@ uint64_t schedule_timeout(uint64_t timeout)
 			}
 		}
 		
-		ihk_mc_spinlock_unlock(&proc->spin_sleep_lock, irqflags);
+		ihk_mc_spinlock_unlock_noirq(&proc->spin_sleep_lock);
 
 		t_s = rdtsc();
 		
@@ -105,25 +104,24 @@ uint64_t schedule_timeout(uint64_t timeout)
 	waitq_init_entry(&my_wait, cpu_local_var(current));
 
 	/* Add ourself to the timer queue */
-	irqflags = ihk_mc_spinlock_lock(&timers_lock);
+	ihk_mc_spinlock_lock_noirq(&timers_lock);
 	list_add_tail(&my_timer.list, &timers);
-	ihk_mc_spinlock_unlock(&timers_lock, irqflags);
 
 	dkprintf("schedule_timeout() sleep timeout: %lu\n", my_timer.timeout);
 
 	/* Add ourself to the waitqueue and sleep */ 
 	waitq_prepare_to_wait(&my_timer.processes, &my_wait, PS_INTERRUPTIBLE);
+	ihk_mc_spinlock_unlock_noirq(&timers_lock);
 	schedule();
 	waitq_finish_wait(&my_timer.processes, &my_wait);
 
-	irqflags = ihk_mc_spinlock_lock(&timers_lock);
+	ihk_mc_spinlock_lock_noirq(&timers_lock);
 	
 	/* Waken up by someone else then timeout? */
 	if (my_timer.timeout) {
 		list_del(&my_timer.list);
 	}
-	
-	ihk_mc_spinlock_unlock(&timers_lock, irqflags);
+	ihk_mc_spinlock_unlock_noirq(&timers_lock);
 
 	dkprintf("schedule_timeout() woken up, timeout: %lu\n", 
 			my_timer.timeout);
@@ -135,7 +133,6 @@ uint64_t schedule_timeout(uint64_t timeout)
 void wake_timers_loop(void)
 {
 	unsigned long loop_s;
-	unsigned long irqflags;
 	struct timer *timer;
 	struct timer *timer_next;
 
@@ -149,7 +146,7 @@ void wake_timers_loop(void)
 
 		/* Iterate and decrease timeout for all timers,
 		 * wake up if timeout reaches zero. */
-		irqflags = ihk_mc_spinlock_lock(&timers_lock);
+		ihk_mc_spinlock_lock_noirq(&timers_lock);
 		
 		list_for_each_entry_safe(timer, timer_next, &timers, list) {
 			
@@ -165,6 +162,6 @@ void wake_timers_loop(void)
 			}
 		}
 		
-		ihk_mc_spinlock_unlock(&timers_lock, irqflags);
+		ihk_mc_spinlock_unlock_noirq(&timers_lock);
 	}
 }
