@@ -260,21 +260,15 @@ pte_t *get_pte(struct page_table *pt, void *virt, int attr)
 		pt = newpt;
 	}
 
-	/* TODO: PTATTR_LARGEPAGE 
+	/* PTATTR_LARGEPAGE */
 	if (attr & PTATTR_LARGEPAGE) {
-		if (pt->entry[l2idx] & PFL2_PRESENT) {
-			if ((pt->entry[l2idx] & PAGE_MASK) != phys) {
-				return -EBUSY;
-			} else {
-				return 0;
-			}
-		} else {
-			pt->entry[l2idx] = phys | attr_to_l2attr(attr)
-				| PFL2_SIZE;
-			return 0;
-		}
+		return &(pt->entry[l2idx]);
 	}
-	*/
+
+	/* Requested regular page, but large is allocated? */
+	if (pt->entry[l2idx] & PFL2_SIZE) {
+		return NULL;
+	}
 
 	if (pt->entry[l2idx] & PFL2_PRESENT) {
 		pt = phys_to_virt(pt->entry[l2idx] & PAGE_MASK);
