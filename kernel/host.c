@@ -10,7 +10,7 @@
 #include <process.h>
 #include <page.h>
 
-#define DEBUG_PRINT_HOST
+//#define DEBUG_PRINT_HOST
 
 #ifdef DEBUG_PRINT_HOST
 #define dkprintf kprintf
@@ -102,7 +102,7 @@ static void process_msg_prepare_process(unsigned long rphys)
 					
 					_phys = __phys;
 				}
-				kprintf("0x%lX -> 0x%lX is physically contigous\n", s, e);
+				dkprintf("0x%lX -> 0x%lX is physically contigous\n", s, e);
 			}
 #if 0			
 		}
@@ -131,7 +131,7 @@ static void process_msg_prepare_process(unsigned long rphys)
 					
 					_phys = __phys;
 				}
-				kprintf("0x%lX -> 0x%lX is physically contigous\n", s, e);
+				dkprintf("0x%lX -> 0x%lX is physically contigous\n", s, e);
 			}
 		}
 #endif
@@ -207,6 +207,7 @@ static void process_msg_prepare_process(unsigned long rphys)
 
 	ihk_mc_unmap_virtual(args_envs_r, args_envs_npages, 0);
 	ihk_mc_unmap_memory(NULL, args_envs_rp, p->args_len);
+	flush_tlb();
 				
 	dkprintf("envs: 0x%lX, envs_len: %d\n", p->envs, p->envs_len);
 
@@ -225,6 +226,7 @@ static void process_msg_prepare_process(unsigned long rphys)
 
 	ihk_mc_unmap_virtual(args_envs_r, args_envs_npages, 0);
 	ihk_mc_unmap_memory(NULL, args_envs_rp, p->envs_len);
+	flush_tlb();
 
 	// Update variables
 	argc = *((int*)(args_envs));
@@ -263,6 +265,7 @@ static void process_msg_prepare_process(unsigned long rphys)
 
 	ihk_mc_unmap_virtual(p, npages, 1);
 	ihk_mc_unmap_memory(NULL, phys, sz);
+	flush_tlb();
 }
 
 static void process_msg_init(struct ikc_scd_init_param *pcp)
