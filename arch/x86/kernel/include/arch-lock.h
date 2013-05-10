@@ -22,13 +22,10 @@ static void ihk_mc_spinlock_init(ihk_spinlock_t *lock)
 }
 #define SPIN_LOCK_UNLOCKED 0
 
-static unsigned long ihk_mc_spinlock_lock(ihk_spinlock_t *lock)
+static void ihk_mc_spinlock_lock_noirq(ihk_spinlock_t *lock)
 {
 	int inc = 0x00010000;
 	int tmp;
-	unsigned long flags;
-	
-	flags = cpu_disable_interrupt_save();
 
 #if 0
 	asm volatile("lock ; xaddl %0, %1\n"
@@ -66,13 +63,27 @@ static unsigned long ihk_mc_spinlock_lock(ihk_spinlock_t *lock)
 #ifdef DEBUG_SPINLOCK
 	__kprintf("[%d] holding lock: 0x%lX\n", ihk_mc_get_processor_id(), lock);
 #endif
+}
+
+static unsigned long ihk_mc_spinlock_lock(ihk_spinlock_t *lock)
+{
+	unsigned long flags;
+	
+	flags = cpu_disable_interrupt_save();
+
+	ihk_mc_spinlock_lock_noirq(lock);
 
 	return flags;
 }
 
-static void ihk_mc_spinlock_unlock(ihk_spinlock_t *lock, unsigned long flags)
+static void ihk_mc_spinlock_unlock_noirq(ihk_spinlock_t *lock)
 {
 	asm volatile ("lock incw %0" : "+m"(*lock) : : "memory", "cc");
+}
+
+static void ihk_mc_spinlock_unlock(ihk_spinlock_t *lock, unsigned long flags)
+{
+	ihk_mc_spinlock_unlock_noirq(lock);
 
 	cpu_restore_interrupt(flags);
 #ifdef DEBUG_SPINLOCK
