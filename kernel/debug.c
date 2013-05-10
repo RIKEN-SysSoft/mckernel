@@ -20,9 +20,12 @@ void kputs(char *buf)
 
 	if (len + kmsg_buf.tail > kmsg_buf.len) {
 		kmsg_buf.tail = 0;
+		if(len > kmsg_buf.len) {
+			len = kmsg_buf.len;
+		}
 	}
 	
-	strncpy(kmsg_buf.str + kmsg_buf.tail, buf, len);
+	memcpy(kmsg_buf.str + kmsg_buf.tail, buf, len);
 	kmsg_buf.tail += len;
 
 	ihk_mc_spinlock_unlock(&kmsg_lock, flags);
