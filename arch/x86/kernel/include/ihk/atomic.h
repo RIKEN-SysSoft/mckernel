@@ -83,4 +83,60 @@ static inline int ihk_atomic_sub_return(int i, ihk_atomic_t *v)
 #define ihk_atomic_inc_return(v)  (ihk_atomic_add_return(1, v))
 #define ihk_atomic_dec_return(v)  (ihk_atomic_sub_return(1, v))
 
+/*
+ * Note: no "lock" prefix even on SMP: xchg always implies lock anyway
+ * Note 2: xchg has side effect, so that attribute volatile is necessary,
+ *	  but generally the primitive is invalid, *ptr is output argument. --ANK
+ */
+#define __xg(x) ((volatile long *)(x))
+
+#define xchg4(ptr, x)						\
+({									\
+	int __x = (x);					\
+	asm volatile("xchgl %k0,%1"				\
+			 : "=r" (__x)				\
+			 : "m" (*ptr), "0" (__x)		\
+			 : "memory");				\
+	__x;								\
+})
+
+#define __xchg(x, ptr, size)						\
+({									\
+	__typeof(*(ptr)) __x = (x);					\
+	switch (size) {							\
+	case 1:								\
+		asm volatile("xchgb %b0,%1"				\
+			     : "=q" (__x)				\
+			     : "m" (*__xg(ptr)), "0" (__x)		\
+			     : "memory");				\
+		break;							\
+	case 2:								\
+		asm volatile("xchgw %w0,%1"				\
+			     : "=r" (__x)				\
+			     : "m" (*__xg(ptr)), "0" (__x)		\
+			     : "memory");				\
+		break;							\
+	case 4:								\
+		asm volatile("xchgl %k0,%1"				\
+			     : "=r" (__x)				\
+			     : "m" (*__xg(ptr)), "0" (__x)		\
+			     : "memory");				\
+		break;							\
+	case 8:								\
+		asm volatile("xchgq %0,%1"				\
+			     : "=r" (__x)				\
+			     : "m" (*__xg(ptr)), "0" (__x)		\
+			     : "memory");				\
+		break;							\
+	default:							\
+		panic("xchg for wrong size");					\
+	}								\
+	__x;								\
+})
+
+
+#define xchg(ptr, v)							\
+	__xchg((v), (ptr), sizeof(*ptr))
+
+
 #endif
