@@ -210,7 +210,7 @@ void ihk_mc_unmap_virtual(void *va, int npages, int free_physical)
 	}
 	
 	if (free_physical)
-		ihk_pagealloc_free(vmap_allocator, virt_to_phys(va), npages);
+		ihk_pagealloc_free(vmap_allocator, va, npages);
 }
 
 #ifdef ATTACHED_MIC
