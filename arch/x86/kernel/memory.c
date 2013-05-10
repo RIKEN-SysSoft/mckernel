@@ -385,6 +385,11 @@ static int __clear_pt_page(struct page_table *pt, void *virt, int largepage)
 			return 0;
 		}
 	}
+	
+	if ((pt->entry[l2idx] & PFL2_PRESENT)) {
+		return -EINVAL;
+	}
+
 	pt = phys_to_virt(pt->entry[l2idx] & PAGE_MASK);
 
 	pt->entry[l1idx] = 0;
