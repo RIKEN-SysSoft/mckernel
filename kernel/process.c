@@ -19,25 +19,18 @@
 
 
 #define USER_STACK_NR_PAGES 8192
-#define KERNEL_STACK_NR_PAGES 16
+#define KERNEL_STACK_NR_PAGES 24
 
 extern long do_arch_prctl(unsigned long code, unsigned long address);
 
 void init_process_vm(struct process_vm *vm)
 {
-	int i;
-
 	ihk_mc_spinlock_init(&vm->memory_range_lock);
 	ihk_mc_spinlock_init(&vm->page_table_lock);
 
 	ihk_atomic_set(&vm->refcount, 1);
 	INIT_LIST_HEAD(&vm->vm_range_list);
 	vm->page_table = ihk_mc_pt_create();
-	
-	/* Initialize futex queues */
-	for (i = 0; i < (1 << FUTEX_HASHBITS); ++i)
-		futex_queue_init(&vm->futex_queues[i]);
-
 }
 
 struct process *create_process(unsigned long user_pc)

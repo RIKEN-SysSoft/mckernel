@@ -216,6 +216,8 @@ int main(void)
 
 	post_init();
 
+	futex_init();
+
 	kputs("MCK/IHK booted.\n");
 
 #ifdef DCFA_KMOD

@@ -370,7 +370,7 @@ SYSCALL_DECLARE(exit_group)
 SYSCALL_DECLARE(mmap)
 {
 	struct vm_regions *region = &cpu_local_var(current)->vm->region;
-    unsigned long lockr;
+	unsigned long lockr;
 
     dkprintf("syscall.c,mmap,addr=%lx,len=%lx,prot=%lx,flags=%x,fd=%x,offset=%lx\n",
             ihk_mc_syscall_arg0(ctx), ihk_mc_syscall_arg1(ctx),
@@ -865,14 +865,22 @@ SYSCALL_DECLARE(futex)
 	uint32_t *uaddr2 = (uint32_t *)ihk_mc_syscall_arg4(ctx);
 	uint32_t val3 = (uint32_t)ihk_mc_syscall_arg5(ctx);
     
-	dkprintf("futex,uaddr=%lx,op=%x, val=%x, utime=%lx, uaddr2=%lx, val3=%x, []=%x\n", (unsigned long)uaddr, op, val, utime, uaddr2, val3, *uaddr);
-
 	/* Mask off the FUTEX_PRIVATE_FLAG,
 	 * assume all futexes are address space private */
 	op = (op & FUTEX_CMD_MASK);
+	
+	dkprintf("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%lx, uaddr2=%lx, val3=%x, []=%x\n", 
+	op,
+	(op == FUTEX_WAIT) ? "FUTEX_WAIT" :
+	(op == FUTEX_WAIT_BITSET) ? "FUTEX_WAIT_BITSET" :
+	(op == FUTEX_WAKE) ? "FUTEX_WAKE" :
+	(op == FUTEX_WAKE_OP) ? "FUTEX_WAKE_OP" :
+	(op == FUTEX_WAKE_BITSET) ? "FUTEX_WAKE_BITSET" :
+	(op == FUTEX_CMP_REQUEUE) ? "FUTEX_CMP_REQUEUE" :
+	(op == FUTEX_REQUEUE) ? "FUTEX_REQUEUE (NOT IMPL!)" : "unknown",
+	(unsigned long)uaddr, op, val, utime, uaddr2, val3, *uaddr);
 
 	if (utime && (op == FUTEX_WAIT_BITSET || op == FUTEX_WAIT)) {
-		/* gettimeofday(&tv_now, NULL) from host */
 		struct syscall_request request IHK_DMA_ALIGN; 
 		struct timeval tv_now;
 		request.number = 96;
@@ -904,57 +912,13 @@ SYSCALL_DECLARE(futex)
 		long diff_nsec = nsec_timeout - nsec_now;
 
 		timeout = (diff_nsec / 1000) * 1100; // (usec * 1.1GHz)
+		dkprintf("futex timeout: %lu\n", timeout);
 	}
 
 	/* Requeue parameter in 'utime' if op == FUTEX_CMP_REQUEUE.
 	 * number of waiters to wake in 'utime' if op == FUTEX_WAKE_OP. */
 	if (op == FUTEX_CMP_REQUEUE || op == FUTEX_WAKE_OP)
 		val2 = (uint32_t) (unsigned long) ihk_mc_syscall_arg3(ctx);
-
-    // we don't have timer interrupt and wakeup, so fake it by just pausing
-    if (utime && (op == FUTEX_WAIT_BITSET || op == FUTEX_WAIT)) {
-        // gettimeofday(&tv_now, NULL);
-        struct syscall_request request IHK_DMA_ALIGN; 
-        struct timeval tv_now;
-        request.number = 96;
-
-#if 1
-        unsigned long __phys;                                          
-        if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
-                                   (void *)&tv_now,
-                                   &__phys)) { 
-            return -EFAULT; 
-        }
-        request.args[0] = __phys;               
-        
-        int r = do_syscall(&request, ctx);
-        if(r < 0) {
-            return -EFAULT;
-        }
-
-        dkprintf("futex,FUTEX_WAIT_BITSET,arg3!=NULL,pc=%lx\n", (unsigned long)ihk_mc_syscall_pc(ctx));
-
-        dkprintf("  now->tv_sec=%016ld,tv_nsec=%016ld\n", tv_now.tv_sec, tv_now.tv_usec * 1000);
-        dkprintf("utime->tv_sec=%016ld,tv_nsec=%016ld\n", utime->tv_sec, utime->tv_nsec);
-
-        long nsec_now = ((long)tv_now.tv_sec * 1000000000ULL) + 
-            tv_now.tv_usec * 1000;
-        long nsec_timeout = ((long)utime->tv_sec * 1000000000ULL) + 
-            utime->tv_nsec * 1;
-        long diff_nsec = nsec_timeout - nsec_now;
-
-		/*
-        if(diff_nsec > 0) {
-            dkprintf("pausing %016ldnsec\n", diff_nsec);
-            arch_delay(diff_nsec/1000); // unit is usec
-        }
-		*/
-		timeout = (diff_nsec / 1000) * 1100; // (usec * 1.1GHz)
-#else
-        arch_delay(200000); // unit is usec
-	return -ETIMEDOUT; 
-#endif
-    }
 
 	return futex(uaddr, op, val, timeout, uaddr2, val2, val3);
 }

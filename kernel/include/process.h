@@ -73,9 +73,6 @@ struct process_vm {
 	struct list_head vm_range_list;
 	struct vm_regions region;
  	
-	// Address space private futexes 
-	struct futex_queue futex_queues[1 << FUTEX_HASHBITS];
-
     ihk_spinlock_t page_table_lock;
     ihk_spinlock_t memory_range_lock;
     // to protect the followings:

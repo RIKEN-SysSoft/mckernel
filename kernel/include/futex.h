@@ -1,23 +1,49 @@
-/* Kitten LWK futex adaptation */
+/*
+ * Linux futex adaptation.
+ * (C) Copyright 2013 RIKEN AICS
+ * Balazs Gerofi <bgerofi@riken.jp>
+ */
 
-
-#ifndef _LWK_FUTEX_H
-#define _LWK_FUTEX_H
+#ifndef _FUTEX_H
+#define _FUTEX_H
 
 /** \name Futex Commands
  * @{
  */
 #define FUTEX_WAIT		0
 #define FUTEX_WAKE		1
+#define FUTEX_FD		2
+#define FUTEX_REQUEUE		3
 #define FUTEX_CMP_REQUEUE	4
 #define FUTEX_WAKE_OP		5
+#define FUTEX_LOCK_PI		6
+#define FUTEX_UNLOCK_PI		7
+#define FUTEX_TRYLOCK_PI	8
 #define FUTEX_WAIT_BITSET	9
 #define FUTEX_WAKE_BITSET	10
+#define FUTEX_WAIT_REQUEUE_PI	11
+#define FUTEX_CMP_REQUEUE_PI	12
 // @}
 
 #define FUTEX_PRIVATE_FLAG	128
 #define FUTEX_CLOCK_REALTIME	256
 #define FUTEX_CMD_MASK		~(FUTEX_PRIVATE_FLAG | FUTEX_CLOCK_REALTIME)
+
+#define FUTEX_WAIT_PRIVATE	(FUTEX_WAIT | FUTEX_PRIVATE_FLAG)
+#define FUTEX_WAKE_PRIVATE	(FUTEX_WAKE | FUTEX_PRIVATE_FLAG)
+#define FUTEX_REQUEUE_PRIVATE	(FUTEX_REQUEUE | FUTEX_PRIVATE_FLAG)
+#define FUTEX_CMP_REQUEUE_PRIVATE (FUTEX_CMP_REQUEUE | FUTEX_PRIVATE_FLAG)
+#define FUTEX_WAKE_OP_PRIVATE	(FUTEX_WAKE_OP | FUTEX_PRIVATE_FLAG)
+#define FUTEX_LOCK_PI_PRIVATE	(FUTEX_LOCK_PI | FUTEX_PRIVATE_FLAG)
+#define FUTEX_UNLOCK_PI_PRIVATE	(FUTEX_UNLOCK_PI | FUTEX_PRIVATE_FLAG)
+#define FUTEX_TRYLOCK_PI_PRIVATE (FUTEX_TRYLOCK_PI | FUTEX_PRIVATE_FLAG)
+#define FUTEX_WAIT_BITSET_PRIVATE	(FUTEX_WAIT_BITSET | FUTEX_PRIVATE_FLAG)
+#define FUTEX_WAKE_BITSET_PRIVATE	(FUTEX_WAKE_BITSET | FUTEX_PRIVATE_FLAG)
+#define FUTEX_WAIT_REQUEUE_PI_PRIVATE	(FUTEX_WAIT_REQUEUE_PI | \
+					 FUTEX_PRIVATE_FLAG)
+#define FUTEX_CMP_REQUEUE_PI_PRIVATE	(FUTEX_CMP_REQUEUE_PI | \
+					 FUTEX_PRIVATE_FLAG)
+
 
 /** \name Futex Operations, used for FUTEX_WAKE_OP
  * @{
@@ -201,30 +227,34 @@ static inline int futex_atomic_cmpxchg_inatomic(int __user *uaddr, int oldval,
 
 #define FUTEX_HASHBITS		8	/* 256 entries in each futex hash tbl */
 
-/** Futex tracking structure.
- *
- * A futex has a woken state, just like tasks have TASK_RUNNING.
- * It is considered woken when list_empty(&futex->link) || futex->lock_ptr == 0.
- * The order of wakup is always to make the first condition true, then
- * wake up futex->waitq, then make the second condition true.
- */
-struct futex {
-	struct list_head		link;
-	struct waitq			waitq;
-	ihk_spinlock_t *		lock_ptr;
-	uint32_t __user *		uaddr;
-	uint32_t				bitset;
+#define FUT_OFF_INODE    1 /* We set bit 0 if key has a reference on inode */
+#define FUT_OFF_MMSHARED 2 /* We set bit 1 if key has a reference on mm */
+
+struct process_vm;
+
+union futex_key {
+#if 0
+	struct {
+		unsigned long pgoff;
+		struct inode *inode;
+		int offset;
+	} shared;
+#endif	
+	struct {
+		unsigned long address;
+		struct process_vm *mm;
+		int offset;
+	} private;
+	struct {
+		unsigned long word;
+		void *ptr;
+		int offset;
+	} both;
 };
 
-struct futex_queue {
-	ihk_spinlock_t			lock;
-	struct list_head		futex_list;
-};
+#define FUTEX_KEY_INIT (union futex_key) { .both = { .ptr = NULL } }
 
-extern void
-futex_queue_init(
-	struct futex_queue *		queue
-);
+extern int futex_init(void);
 
 extern int
 futex(

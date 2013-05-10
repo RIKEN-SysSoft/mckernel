@@ -1,15 +1,7 @@
 /*
- * Kitten LWK futex code adaptation.
- * Copyright (c) 2012 RIKEN AICS
- */
-
-/*
- * Copyright (c) 2008 Sandia National Laboratories
- *
- * Futex code adapted from Linux 2.6.27.9, original copyright below.
- * Simplified to only support address-space (process-private) futexes.
- * Removed demand-paging, cow, etc. complications since LWK doesn't
- * require these.
+ * Linux futex adaptation.
+ * (C) Copyright 2013 RIKEN AICS
+ * Balazs Gerofi <bgerofi@riken.jp>
  */
 
 /*
@@ -32,6 +24,10 @@
  *
  *  PRIVATE futexes by Eric Dumazet
  *  Copyright (C) 2007 Eric Dumazet <dada1@cosmosbay.com>
+ *
+ *  Requeue-PI support by Darren Hart <dvhltc@us.ibm.com>
+ *  Copyright (C) IBM Corporation, 2009
+ *  Thanks to Thomas Gleixner for conceptual design and careful reviews.
  *
  *  Thanks to Ben LaHaise for yelling "hashed waitqueues" loudly
  *  enough at me, Linus for the original (flawed) idea, Matthew
@@ -57,90 +53,555 @@
 
 #include <process.h>
 #include <futex.h>
-#include <hash.h>
+#include <jhash.h>
 #include <ihk/lock.h>
+#include <ihk/atomic.h>
 #include <list.h>
+#include <plist.h>
 #include <cls.h>
 #include <kmsg.h>
 #include <timer.h>
 
-#if 0
-#include <lwk/kernel.h>
-#include <lwk/task.h>
-#include <lwk/aspace.h>
-#include <lwk/futex.h>
-#include <lwk/hash.h>
-#include <lwk/sched.h>
+//#define DEBUG_PRINT_FUTEX
 
-#ifdef __UACCESS__
-#include <arch/uaccess.h>
-#endif
-
-#endif
-
-void futex_queue_init(struct futex_queue *queue)
-{
-	ihk_mc_spinlock_init(&queue->lock);
-	INIT_LIST_HEAD(&queue->futex_list);
-}
-
-static int uaddr_is_valid(uint32_t __user *uaddr)
-{
-#ifdef __UACCESS__
-	return access_ok(VERIFY_WRITE, uaddr, sizeof(uint32_t));
+#ifdef DEBUG_PRINT_FUTEX
+#define dkprintf kprintf
 #else
-	return 1;
+#define dkprintf(...)
 #endif
+
+int futex_cmpxchg_enabled;
+
+/**
+ * struct futex_q - The hashed futex queue entry, one per waiting task
+ * @task:		the task waiting on the futex
+ * @lock_ptr:		the hash bucket lock
+ * @key:		the key the futex is hashed on
+ * @requeue_pi_key:	the requeue_pi target futex key
+ * @bitset:		bitset for the optional bitmasked wakeup
+ *
+ * We use this hashed waitqueue, instead of a normal wait_queue_t, so
+ * we can wake only the relevant ones (hashed queues may be shared).
+ *
+ * A futex_q has a woken state, just like tasks have TASK_RUNNING.
+ * It is considered woken when plist_node_empty(&q->list) || q->lock_ptr == 0.
+ * The order of wakup is always to make the first condition true, then
+ * the second.
+ *
+ * PI futexes are typically woken before they are removed from the hash list via
+ * the rt_mutex code. See unqueue_me_pi().
+ */
+struct futex_q {
+	struct plist_node list;
+
+	struct process *task;
+	ihk_spinlock_t *lock_ptr;
+	union futex_key key;
+	union futex_key *requeue_pi_key;
+	uint32_t bitset;
+};
+
+/*
+ * Hash buckets are shared by all the futex_keys that hash to the same
+ * location.  Each key may have multiple futex_q structures, one for each task
+ * waiting on a futex.
+ */
+struct futex_hash_bucket {
+	ihk_spinlock_t lock;
+	struct plist_head chain;
+};
+
+static struct futex_hash_bucket futex_queues[1<<FUTEX_HASHBITS];
+
+/*
+ * We hash on the keys returned from get_futex_key (see below).
+ */
+static struct futex_hash_bucket *hash_futex(union futex_key *key)
+{
+	uint32_t hash = jhash2((uint32_t*)&key->both.word,
+			  (sizeof(key->both.word)+sizeof(key->both.ptr))/4,
+			  key->both.offset);
+	return &futex_queues[hash & ((1 << FUTEX_HASHBITS)-1)];
 }
 
-static int futex_init(struct futex *futex, uint32_t __user *uaddr,
-                      uint32_t bitset)
+/*
+ * Return 1 if two futex_keys are equal, 0 otherwise.
+ */
+static inline int match_futex(union futex_key *key1, union futex_key *key2)
 {
-	if (!uaddr_is_valid(uaddr))
-		return -EINVAL;
+	return (key1 && key2
+		&& key1->both.word == key2->both.word
+		&& key1->both.ptr == key2->both.ptr
+		&& key1->both.offset == key2->both.offset);
+}
 
-	futex->uaddr = uaddr;
-	futex->bitset = bitset;
-	waitq_init(&futex->waitq);
+/*
+ * Take a reference to the resource addressed by a key.
+ * Can be called while holding spinlocks.
+ *
+ */
+static void get_futex_key_refs(union futex_key *key)
+{
+	/* RIKEN: only !fshared futexes... */
+	return;
+}
+
+/*
+ * Drop a reference to the resource addressed by a key.
+ * The hash bucket spinlock must not be held.
+ */
+static void drop_futex_key_refs(union futex_key *key)
+{
+	/* RIKEN: only !fshared futexes... */
+	return;
+}
+/**
+ * get_futex_key() - Get parameters which are the keys for a futex
+ * @uaddr:	virtual address of the futex
+ * @fshared:	0 for a PROCESS_PRIVATE futex, 1 for PROCESS_SHARED
+ * @key:	address where result is stored.
+ *
+ * Returns a negative error code or 0
+ * The key words are stored in *key on success.
+ *
+ * For shared mappings, it's (page->index, vma->vm_file->f_path.dentry->d_inode,
+ * offset_within_page).  For private mappings, it's (uaddr, current->mm).
+ * We can usually work out the index without swapping in the page.
+ *
+ * lock_page() might sleep, the caller should not hold a spinlock.
+ */
+static int
+get_futex_key(uint32_t *uaddr, int fshared, union futex_key *key)
+{
+	unsigned long address = (unsigned long)uaddr;
+	struct process_vm *mm = cpu_local_var(current)->vm;
+
+	/*
+	 * The futex address must be "naturally" aligned.
+	 */
+	key->both.offset = address % PAGE_SIZE;
+	if (((address % sizeof(uint32_t)) != 0))
+		return -EINVAL;
+	address -= key->both.offset;
+
+	/*
+	 * PROCESS_PRIVATE futexes are fast.
+	 * As the mm cannot disappear under us and the 'key' only needs
+	 * virtual address, we dont even have to find the underlying vma.
+	 * Note : We do have to check 'uaddr' is a valid user address,
+	 *        but access_ok() should be faster than find_vma()
+	 */
+	if (!fshared) {
+
+		key->private.mm = mm;
+		key->private.address = address;
+		get_futex_key_refs(key);
+		return 0;
+	}
+
+	/* RIKEN: No shared futex support... */
+	return -EFAULT;
+}
+
+
+static inline
+void put_futex_key(int fshared, union futex_key *key)
+{
+	drop_futex_key_refs(key);
+}
+
+static int cmpxchg_futex_value_locked(uint32_t __user *uaddr, uint32_t uval, uint32_t newval)
+{
+	int curval;
+
+	/* RIKEN: futexes are on not swappable memory */
+	curval = futex_atomic_cmpxchg_inatomic((int*)uaddr, (int)uval, (int)newval);
+
+	return curval;
+}
+
+static int get_futex_value_locked(uint32_t *dest, uint32_t *from)
+{
+	/* RIKEN: futexes are always on not swappable pages */
+	*dest = *from;
+
 	return 0;
 }
 
-static struct futex_queue *get_queue(uint32_t __user *uaddr)
+/*
+ * The hash bucket lock must be held when this is called.
+ * Afterwards, the futex_q must not be accessed.
+ */
+static void wake_futex(struct futex_q *q)
 {
-	uint64_t hash = hash_64((uint64_t)uaddr, FUTEX_HASHBITS);
-	return &cpu_local_var(current)->vm->futex_queues[hash];
+	struct process *p = q->task;
+
+	/*
+	 * We set q->lock_ptr = NULL _before_ we wake up the task. If
+	 * a non futex wake up happens on another CPU then the task
+	 * might exit and p would dereference a non existing task
+	 * struct. Prevent this by holding a reference on p across the
+	 * wake up.
+	 */
+
+	plist_del(&q->list, &q->list.plist);
+	/*
+	 * The waiting task can free the futex_q as soon as
+	 * q->lock_ptr = NULL is written, without taking any locks. A
+	 * memory barrier is required here to prevent the following
+	 * store to lock_ptr from getting ahead of the plist_del.
+	 */
+	barrier();
+	q->lock_ptr = NULL;
+
+	sched_wakeup_process(p, PS_NORMAL);
 }
 
-static struct futex_queue *queue_lock(struct futex *futex, int *irqflags)
+/*
+ * Express the locking dependencies for lockdep:
+ */
+static inline void
+double_lock_hb(struct futex_hash_bucket *hb1, struct futex_hash_bucket *hb2)
 {
-	struct futex_queue *queue = get_queue(futex->uaddr);
-	futex->lock_ptr = &queue->lock;
-	*irqflags = ihk_mc_spinlock_lock(&queue->lock);
-	return queue;
+	if (hb1 <= hb2) {
+		ihk_mc_spinlock_lock_noirq(&hb1->lock);
+		if (hb1 < hb2)
+			ihk_mc_spinlock_lock_noirq(&hb2->lock);
+	} else { /* hb1 > hb2 */
+		ihk_mc_spinlock_lock_noirq(&hb2->lock);
+		ihk_mc_spinlock_lock_noirq(&hb1->lock);
+	}
 }
 
-static void queue_unlock(struct futex_queue *futex_queue, int irqflags)
+static inline void
+double_unlock_hb(struct futex_hash_bucket *hb1, struct futex_hash_bucket *hb2)
 {
-	ihk_mc_spinlock_unlock(&futex_queue->lock, irqflags);
+	ihk_mc_spinlock_unlock_noirq(&hb1->lock);
+	if (hb1 != hb2)
+		ihk_mc_spinlock_unlock_noirq(&hb2->lock);
 }
 
-static void queue_me(struct futex *futex, struct futex_queue *futex_queue)
+/*
+ * Wake up waiters matching bitset queued on this futex (uaddr).
+ */
+static int futex_wake(uint32_t *uaddr, int fshared, int nr_wake, uint32_t bitset)
 {
-	list_add_tail(&futex->link, &futex_queue->futex_list);
+	struct futex_hash_bucket *hb;
+	struct futex_q *this, *next;
+	struct plist_head *head;
+	union futex_key key = FUTEX_KEY_INIT;
+	int ret;
+
+	if (!bitset)
+		return -EINVAL;
+
+	ret = get_futex_key(uaddr, fshared, &key);
+	if ((ret != 0))
+		goto out;
+
+	hb = hash_futex(&key);
+	ihk_mc_spinlock_lock_noirq(&hb->lock);
+	head = &hb->chain;
+
+	plist_for_each_entry_safe(this, next, head, list) {
+		if (match_futex (&this->key, &key)) {
+			
+			/* RIKEN: no pi state... */
+			/* Check if one of the bits is set in both bitsets */
+			if (!(this->bitset & bitset))
+				continue;
+
+			wake_futex(this);
+			if (++ret >= nr_wake)
+				break;
+		}
+	}
+
+	ihk_mc_spinlock_unlock_noirq(&hb->lock);
+	put_futex_key(fshared, &key);
+out:
+	return ret;
 }
 
-static int unqueue_me(struct futex *futex)
+/*
+ * Wake up all waiters hashed on the physical page that is mapped
+ * to this virtual address:
+ */
+static int
+futex_wake_op(uint32_t *uaddr1, int fshared, uint32_t *uaddr2,
+	      int nr_wake, int nr_wake2, int op)
+{
+	union futex_key key1 = FUTEX_KEY_INIT, key2 = FUTEX_KEY_INIT;
+	struct futex_hash_bucket *hb1, *hb2;
+	struct plist_head *head;
+	struct futex_q *this, *next;
+	int ret, op_ret;
+
+retry:
+	ret = get_futex_key(uaddr1, fshared, &key1);
+	if ((ret != 0))
+		goto out;
+	ret = get_futex_key(uaddr2, fshared, &key2);
+	if ((ret != 0))
+		goto out_put_key1;
+
+	hb1 = hash_futex(&key1);
+	hb2 = hash_futex(&key2);
+
+retry_private:
+	double_lock_hb(hb1, hb2);
+	op_ret = futex_atomic_op_inuser(op, (int*)uaddr2);
+	if ((op_ret < 0)) {
+
+		double_unlock_hb(hb1, hb2);
+
+		if ((op_ret != -EFAULT)) {
+			ret = op_ret;
+			goto out_put_keys;
+		}
+
+		/* RIKEN: set ret to 0 as if fault_in_user_writeable() returned it */
+		ret = 0;
+
+		if (!fshared)
+			goto retry_private;
+
+		put_futex_key(fshared, &key2);
+		put_futex_key(fshared, &key1);
+		goto retry;
+	}
+
+	head = &hb1->chain;
+
+	plist_for_each_entry_safe(this, next, head, list) {
+		if (match_futex (&this->key, &key1)) {
+			wake_futex(this);
+			if (++ret >= nr_wake)
+				break;
+		}
+	}
+
+	if (op_ret > 0) {
+		head = &hb2->chain;
+
+		op_ret = 0;
+		plist_for_each_entry_safe(this, next, head, list) {
+			if (match_futex (&this->key, &key2)) {
+				wake_futex(this);
+				if (++op_ret >= nr_wake2)
+					break;
+			}
+		}
+		ret += op_ret;
+	}
+
+	double_unlock_hb(hb1, hb2);
+out_put_keys:
+	put_futex_key(fshared, &key2);
+out_put_key1:
+	put_futex_key(fshared, &key1);
+out:
+	return ret;
+}
+
+/**
+ * requeue_futex() - Requeue a futex_q from one hb to another
+ * @q:		the futex_q to requeue
+ * @hb1:	the source hash_bucket
+ * @hb2:	the target hash_bucket
+ * @key2:	the new key for the requeued futex_q
+ */
+static inline
+void requeue_futex(struct futex_q *q, struct futex_hash_bucket *hb1,
+		   struct futex_hash_bucket *hb2, union futex_key *key2)
+{
+
+	/*
+	 * If key1 and key2 hash to the same bucket, no need to
+	 * requeue.
+	 */
+	if ((&hb1->chain != &hb2->chain)) {
+		plist_del(&q->list, &hb1->chain);
+		plist_add(&q->list, &hb2->chain);
+		q->lock_ptr = &hb2->lock;
+#ifdef CONFIG_DEBUG_PI_LIST
+		q->list.plist.spinlock = &hb2->lock;
+#endif
+	}
+	get_futex_key_refs(key2);
+	q->key = *key2;
+}
+
+/**
+ * futex_requeue() - Requeue waiters from uaddr1 to uaddr2
+ * uaddr1:	source futex user address
+ * uaddr2:	target futex user address
+ * nr_wake:	number of waiters to wake (must be 1 for requeue_pi)
+ * nr_requeue:	number of waiters to requeue (0-INT_MAX)
+ * requeue_pi:	if we are attempting to requeue from a non-pi futex to a
+ * 		pi futex (pi to pi requeue is not supported)
+ *
+ * Requeue waiters on uaddr1 to uaddr2. In the requeue_pi case, try to acquire
+ * uaddr2 atomically on behalf of the top waiter.
+ *
+ * Returns:
+ * >=0 - on success, the number of tasks requeued or woken
+ *  <0 - on error
+ */
+static int futex_requeue(uint32_t *uaddr1, int fshared, uint32_t *uaddr2,
+			 int nr_wake, int nr_requeue, uint32_t *cmpval,
+			 int requeue_pi)
+{
+	union futex_key key1 = FUTEX_KEY_INIT, key2 = FUTEX_KEY_INIT;
+	int drop_count = 0, task_count = 0, ret;
+	struct futex_hash_bucket *hb1, *hb2;
+	struct plist_head *head1;
+	struct futex_q *this, *next;
+
+	ret = get_futex_key(uaddr1, fshared, &key1);
+	if ((ret != 0))
+		goto out;
+	ret = get_futex_key(uaddr2, fshared, &key2);
+	if ((ret != 0))
+		goto out_put_key1;
+
+	hb1 = hash_futex(&key1);
+	hb2 = hash_futex(&key2);
+
+	double_lock_hb(hb1, hb2);
+
+	if ((cmpval != NULL)) {
+		uint32_t curval;
+
+		ret = get_futex_value_locked(&curval, uaddr1);
+
+		if (curval != *cmpval) {
+			ret = -EAGAIN;
+			goto out_unlock;
+		}
+	}
+
+	head1 = &hb1->chain;
+	plist_for_each_entry_safe(this, next, head1, list) {
+		if (task_count - nr_wake >= nr_requeue)
+			break;
+
+		if (!match_futex(&this->key, &key1))
+			continue;
+
+		/*
+		 * Wake nr_wake waiters.  For requeue_pi, if we acquired the
+		 * lock, we already woke the top_waiter.  If not, it will be
+		 * woken by futex_unlock_pi().
+		 */
+		/* RIKEN: no requeue_pi at this moment */
+		if (++task_count <= nr_wake) {
+			wake_futex(this);
+			continue;
+		}
+
+		requeue_futex(this, hb1, hb2, &key2);
+		drop_count++;
+	}
+
+out_unlock:
+	double_unlock_hb(hb1, hb2);
+
+	/*
+	 * drop_futex_key_refs() must be called outside the spinlocks. During
+	 * the requeue we moved futex_q's from the hash bucket at key1 to the
+	 * one at key2 and updated their key pointer.  We no longer need to
+	 * hold the references to key1.
+	 */
+	while (--drop_count >= 0)
+		drop_futex_key_refs(&key1);
+
+	put_futex_key(fshared, &key2);
+out_put_key1:
+	put_futex_key(fshared, &key1);
+out:
+	return ret ? ret : task_count;
+}
+
+/* The key must be already stored in q->key. */
+static inline struct futex_hash_bucket *queue_lock(struct futex_q *q)
+{
+	struct futex_hash_bucket *hb;
+
+	get_futex_key_refs(&q->key);
+	hb = hash_futex(&q->key);
+	q->lock_ptr = &hb->lock;
+
+	ihk_mc_spinlock_lock_noirq(&hb->lock);
+	return hb;
+}
+
+static inline void
+queue_unlock(struct futex_q *q, struct futex_hash_bucket *hb)
+{
+	ihk_mc_spinlock_unlock_noirq(&hb->lock);
+	drop_futex_key_refs(&q->key);
+}
+
+/**
+ * queue_me() - Enqueue the futex_q on the futex_hash_bucket
+ * @q:	The futex_q to enqueue
+ * @hb:	The destination hash bucket
+ *
+ * The hb->lock must be held by the caller, and is released here. A call to
+ * queue_me() is typically paired with exactly one call to unqueue_me().  The
+ * exceptions involve the PI related operations, which may use unqueue_me_pi()
+ * or nothing if the unqueue is done as part of the wake process and the unqueue
+ * state is implicit in the state of woken task (see futex_wait_requeue_pi() for
+ * an example).
+ */
+static inline void queue_me(struct futex_q *q, struct futex_hash_bucket *hb)
+{
+	int prio;
+
+	/*
+	 * The priority used to register this element is
+	 * - either the real thread-priority for the real-time threads
+	 * (i.e. threads with a priority lower than MAX_RT_PRIO)
+	 * - or MAX_RT_PRIO for non-RT threads.
+	 * Thus, all RT-threads are woken first in priority order, and
+	 * the others are woken last, in FIFO order.
+	 *
+	 * RIKEN: no priorities at the moment, everyone is 10.
+	 */
+	prio = 10; 
+
+	plist_node_init(&q->list, prio);
+#ifdef CONFIG_DEBUG_PI_LIST
+	q->list.plist.spinlock = &hb->lock;
+#endif
+	plist_add(&q->list, &hb->chain);
+	q->task = cpu_local_var(current);
+	ihk_mc_spinlock_unlock_noirq(&hb->lock);
+}
+
+/**
+ * unqueue_me() - Remove the futex_q from its futex_hash_bucket
+ * @q:	The futex_q to unqueue
+ *
+ * The q->lock_ptr must not be held by the caller. A call to unqueue_me() must
+ * be paired with exactly one earlier call to queue_me().
+ *
+ * Returns:
+ *   1 - if the futex_q was still queued (and we removed unqueued it)
+ *   0 - if the futex_q was already removed by the waking thread
+ */
+static int unqueue_me(struct futex_q *q)
 {
 	ihk_spinlock_t *lock_ptr;
-	int irqflags;
-	int status = 0;
+	int ret = 0;
 
 	/* In the common case we don't take the spinlock, which is nice. */
 retry:
-	lock_ptr = futex->lock_ptr;
+	lock_ptr = q->lock_ptr;
 	barrier();
 	if (lock_ptr != NULL) {
-		irqflags = ihk_mc_spinlock_lock(lock_ptr);
+		ihk_mc_spinlock_lock_noirq(lock_ptr);
 		/*
 		 * q->lock_ptr can change between reading it and
 		 * spin_lock(), causing us to take the wrong lock.  This
@@ -154,95 +615,46 @@ retry:
 		 * however, change back to the original value.  Therefore
 		 * we can detect whether we acquired the correct lock.
 		 */
-		if (lock_ptr != futex->lock_ptr) {
-			ihk_mc_spinlock_unlock(lock_ptr, irqflags);
+		if (lock_ptr != q->lock_ptr) {
+			ihk_mc_spinlock_unlock_noirq(lock_ptr);
 			goto retry;
 		}
+		plist_del(&q->list, &q->list.plist);
 
-		//WARN_ON(list_empty(&futex->link));
-		list_del(&futex->link);
-		ihk_mc_spinlock_unlock(lock_ptr, irqflags);
-		status = 1;
+		ihk_mc_spinlock_unlock_noirq(lock_ptr);
+		ret = 1;
 	}
 
-	return status;
+	drop_futex_key_refs(&q->key);
+	return ret;
 }
 
-static void lock_two_queues(struct futex_queue *queue1, int *irqflags1,
-                            struct futex_queue *queue2, int *irqflags2)
-{
-	if (queue1 < queue2) 
-		*irqflags1 = ihk_mc_spinlock_lock(&queue1->lock);
-	
-	*irqflags2 = ihk_mc_spinlock_lock(&queue2->lock);
-	
-	if (queue1 > queue2)
-		*irqflags1 = ihk_mc_spinlock_lock(&queue1->lock);
-}
+/**
+ * futex_wait_queue_me() - queue_me() and wait for wakeup, timeout, or signal
+ * @hb:		the futex hash bucket, must be locked by the caller
+ * @q:		the futex_q to queue up on
+ * @timeout:	the prepared hrtimer_sleeper, or null for no timeout
+ */
 
-static void unlock_two_queues(struct futex_queue *queue1, int irqflags1,
-                              struct futex_queue *queue2, int irqflags2)
+/* RIKEN: this function has been rewritten so that it returns the remaining
+ * time in case we are waken.
+ */
+static uint64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q *q,
+				uint64_t timeout)
 {
-	if (queue1 == queue2) {
-		ihk_mc_spinlock_unlock(&queue2->lock, irqflags2);
-	}
-	else {
-		ihk_mc_spinlock_unlock(&queue2->lock, irqflags2);
-		ihk_mc_spinlock_unlock(&queue1->lock, irqflags1);
-	}
-}
-
-/** Puts a task to sleep waiting on a futex. */
-static int futex_wait(uint32_t __user *uaddr, uint32_t val, 
-                      uint64_t timeout, uint32_t bitset)
-{
-	DECLARE_WAITQ_ENTRY(wait, cpu_local_var(current));
-	int status;
-	uint32_t uval;
-	struct futex futex;
-	struct futex_queue *queue;
-	int irqflags;
 	uint64_t time_remain = 0;
-
-	if (!bitset)
-		return -EINVAL;
-
-	/* This verifies that uaddr is sane */
-	if ((status = futex_init(&futex, uaddr, bitset)) != 0)
-		return status;
-
-	/* Lock the futex queue corresponding to uaddr */
-	queue = queue_lock(&futex, &irqflags);
-
-	/* Get the value from user-space. Since we don't have
- 	 * paging, the only options are for this to succeed (with no
- 	 * page faults) or fail, returning -EFAULT. There is no way
- 	 * for us to be put to sleep, so holding the queue's spinlock
- 	 * is fine. */
-#ifdef __UACCESS__	
-	if ((status = get_user(uval, uaddr)) != 0)
-		goto error;
-#else
-	uval = *uaddr;
-	status = 0;
-#endif
-
-	/* The user-space value must match the value passed in */
-	if (uval != val) {
-		status = -EWOULDBLOCK;
-		goto error;
-	}
+	/*
+	 * The task state is guaranteed to be set before another task can
+	 * wake it. set_current_state() is implemented using set_mb() and
+	 * queue_me() calls spin_unlock() upon completion, both serializing
+	 * access to the hash list and forcing another memory barrier.
+	 */
+	xchg4(&(cpu_local_var(current)->status), PS_INTERRUPTIBLE);
+	queue_me(q, hb);
 	
-	/* Add ourself to the futex's waitq and go to sleep */
-	cpu_local_var(current)->status = PS_INTERRUPTIBLE;
-	waitq_add_entry(&futex.waitq, &wait);
-
-	/* Add ourself to the futex queue and drop our lock on it */
-	queue_me(&futex, queue);
-	queue_unlock(queue, irqflags);
-	
-	if (!list_empty(&futex.link)) {
+	if (!plist_node_empty(&q->list)) {
 		
+		/* RIKEN: use mcos timers */
 		if (timeout) {
 			time_remain = schedule_timeout(timeout);
 		}
@@ -251,221 +663,217 @@ static int futex_wait(uint32_t __user *uaddr, uint32_t val,
 			time_remain = 0;
 		}
 	}
-
-	cpu_local_var(current)->status = PS_RUNNING;
-
-	/*
- 	 * NOTE: We don't remove ourself from the waitq because
- 	 *       we are the only user of it.
- 	 */
 	
-	/* If we were woken (and unqueued), we succeeded, whatever. */
-	if (!unqueue_me(&futex))
-		return 0;
-
-	if (time_remain == 0)
-		return -ETIMEDOUT;
-		
-	/* We expect that there is a signal pending, but another thread
-	 * may have handled it for us already. */
-	return -EINTR;
-
-error:
-	queue_unlock(queue, irqflags);
-	return status;
+	/* This does not need to be serialized */
+	cpu_local_var(current)->status = PS_RUNNING;
+	
+	return time_remain;
 }
 
-/*
- * The futex_queue's lock must be held when this is called.
- * Afterwards, the futex_queue must not be accessed.
+/**
+ * futex_wait_setup() - Prepare to wait on a futex
+ * @uaddr:	the futex userspace address
+ * @val:	the expected value
+ * @fshared:	whether the futex is shared (1) or not (0)
+ * @q:		the associated futex_q
+ * @hb:		storage for hash_bucket pointer to be returned to caller
+ *
+ * Setup the futex_q and locate the hash_bucket.  Get the futex value and
+ * compare it with the expected value.  Handle atomic faults internally.
+ * Return with the hb lock held and a q.key reference on success, and unlocked
+ * with no q.key reference on failure.
+ *
+ * Returns:
+ *  0 - uaddr contains val and hb has been locked
+ * <1 - -EFAULT or -EWOULDBLOCK (uaddr does not contain val) and hb is unlcoked
  */
-static void wake_futex(struct futex *futex)
+static int futex_wait_setup(uint32_t __user *uaddr, uint32_t val, int fshared,
+			   struct futex_q *q, struct futex_hash_bucket **hb)
 {
-	list_del_init(&futex->link);
+	uint32_t uval;
+	int ret;
+
 	/*
-	 * The lock in waitq_wakeup() is a crucial memory barrier after the
-	 * list_del_init() and also before assigning to futex->lock_ptr.
-	 */
-	waitq_wakeup(&futex->waitq);
-	/*
-	 * The waiting task can free the futex as soon as this is written,
-	 * without taking any locks.  This must come last.
+	 * Access the page AFTER the hash-bucket is locked.
+	 * Order is important:
 	 *
-	 * A memory barrier is required here to prevent the following store
-	 * to lock_ptr from getting ahead of the wakeup. Clearing the lock
-	 * at the end of waitq_wakeup() does not prevent this store from
-	 * moving.
+	 *   Userspace waiter: val = var; if (cond(val)) futex_wait(&var, val);
+	 *   Userspace waker:  if (cond(var)) { var = new; futex_wake(&var); }
+	 *
+	 * The basic logical guarantee of a futex is that it blocks ONLY
+	 * if cond(var) is known to be true at the time of blocking, for
+	 * any cond.  If we queued after testing *uaddr, that would open
+	 * a race condition where we could block indefinitely with
+	 * cond(var) false, which would violate the guarantee.
+	 *
+	 * A consequence is that futex_wait() can return zero and absorb
+	 * a wakeup when *uaddr != val on entry to the syscall.  This is
+	 * rare, but normal.
 	 */
-	barrier();
-	futex->lock_ptr = NULL;
+	q->key = FUTEX_KEY_INIT;
+	ret = get_futex_key(uaddr, fshared, &q->key);
+	if ((ret != 0))
+		return ret;
+
+	*hb = queue_lock(q);
+
+	ret = get_futex_value_locked(&uval, uaddr);
+
+	/* RIKEN: get_futex_value_locked() always returns 0 on mckernel */
+
+	if (uval != val) {
+		queue_unlock(q, *hb);
+		ret = -EWOULDBLOCK;
+	}
+
+	if (ret)
+		put_futex_key(fshared, &q->key);
+	return ret;
 }
 
-/** Wakes up nr_wake tasks waiting on a futex. */
-static int futex_wake(uint32_t __user *uaddr, int nr_wake, uint32_t bitset)
+static int futex_wait(uint32_t __user *uaddr, int fshared,
+		      uint32_t val, uint64_t timeout, uint32_t bitset, int clockrt)
 {
-	struct futex_queue *queue;
-	struct list_head *head;
-	struct futex *this, *next;
-	int nr_woke = 0;
-	int irqflags;
+	struct futex_hash_bucket *hb;
+	struct futex_q q;
+	uint64_t time_remain;
+	int ret;
 
 	if (!bitset)
 		return -EINVAL;
 
-	if (!uaddr_is_valid(uaddr))
-		return -EINVAL;
+	q.bitset = bitset;
+	q.requeue_pi_key = NULL;
 
-	queue = get_queue(uaddr);
-	irqflags = ihk_mc_spinlock_lock(&queue->lock);
-	head = &queue->futex_list;
+	/* RIKEN: futex_wait_queue_me() calls schedule_timeout() if timer is set */
 
-	list_for_each_entry_safe(this, next, head, link) {
-		if ((this->uaddr == uaddr) && (this->bitset & bitset)) {
-			wake_futex(this);
-			if (++nr_woke >= nr_wake)
-				break;
-		}
-	}
+retry:
+	/* Prepare to wait on uaddr. */
+	ret = futex_wait_setup(uaddr, val, fshared, &q, &hb);
+	if (ret)
+		goto out;
 
-	ihk_mc_spinlock_unlock(&queue->lock, irqflags);
-	return nr_woke;
+	/* queue_me and wait for wakeup, timeout, or a signal. */
+	time_remain = futex_wait_queue_me(hb, &q, timeout);
+
+	/* If we were woken (and unqueued), we succeeded, whatever. */
+	ret = 0;
+	if (!unqueue_me(&q))
+		goto out_put_key;
+	ret = -ETIMEDOUT;
+
+	/* RIKEN: timer expired case (indicated by !time_remain) */
+	if (timeout && !time_remain)
+		goto out_put_key;
+
+	/* RIKEN: no signals */
+	put_futex_key(fshared, &q.key);
+	goto retry;
+
+out_put_key:
+	put_futex_key(fshared, &q.key);
+out:
+	return ret;
 }
 
-/** Conditionally wakes up tasks that are waiting on futexes. */
-static int futex_wake_op(uint32_t __user *uaddr1, uint32_t __user *uaddr2,
-                         int nr_wake1, int nr_wake2, int op)
+int futex(uint32_t *uaddr, int op, uint32_t val, uint64_t timeout,
+		uint32_t *uaddr2, uint32_t val2, uint32_t val3)
 {
-	struct futex_queue *queue1, *queue2;
-	int irqflags1 = 0;
-	int irqflags2 = 0;
-	struct list_head *head;
-	struct futex *this, *next;
-	int op_result, nr_woke1 = 0, nr_woke2 = 0;
+	int clockrt, ret = -ENOSYS;
+	int cmd = op & FUTEX_CMD_MASK;
+	int fshared = 0;
 
-	if (!uaddr_is_valid(uaddr1) || !uaddr_is_valid(uaddr2))
-		return -EINVAL;
-
-	queue1 = get_queue(uaddr1);
-	queue2 = get_queue(uaddr2);
-	lock_two_queues(queue1, &irqflags1, queue2, &irqflags2);
-
-	op_result = futex_atomic_op_inuser(op, (int *)uaddr2);
-	if (op_result < 0) {
-		unlock_two_queues(queue1, irqflags1, queue2, irqflags2);
-		return op_result;
+	/* RIKEN: Assume address space private futexes. 
+	if (!(op & FUTEX_PRIVATE_FLAG)) {
+		fshared = 1;
 	}
+	*/
 
-	head = &queue1->futex_list;
-	list_for_each_entry_safe(this, next, head, link) {
-		if (this->uaddr == uaddr1) {
-			wake_futex(this);
-			if (++nr_woke1 >= nr_wake1)
-				break;
-		}
+	clockrt = op & FUTEX_CLOCK_REALTIME;
+	if (clockrt && cmd != FUTEX_WAIT_BITSET && cmd != FUTEX_WAIT_REQUEUE_PI)
+		return -ENOSYS;
+
+	switch (cmd) {
+	case FUTEX_WAIT:
+		val3 = FUTEX_BITSET_MATCH_ANY;
+	case FUTEX_WAIT_BITSET:
+		ret = futex_wait(uaddr, fshared, val, timeout, val3, clockrt);
+		break;
+	case FUTEX_WAKE:
+		val3 = FUTEX_BITSET_MATCH_ANY;
+	case FUTEX_WAKE_BITSET:
+		ret = futex_wake(uaddr, fshared, val, val3);
+		break;
+	case FUTEX_REQUEUE:
+		ret = futex_requeue(uaddr, fshared, uaddr2, val, val2, NULL, 0);
+		break;
+	case FUTEX_CMP_REQUEUE:
+		ret = futex_requeue(uaddr, fshared, uaddr2, val, val2, &val3,
+				    0);
+		break;
+	case FUTEX_WAKE_OP:
+		ret = futex_wake_op(uaddr, fshared, uaddr2, val, val2, val3);
+		break;
+	/* RIKEN: these calls are not supported for now.	
+	case FUTEX_LOCK_PI:
+		if (futex_cmpxchg_enabled)
+			ret = futex_lock_pi(uaddr, fshared, val, timeout, 0);
+		break;
+	case FUTEX_UNLOCK_PI:
+		if (futex_cmpxchg_enabled)
+			ret = futex_unlock_pi(uaddr, fshared);
+		break;
+	case FUTEX_TRYLOCK_PI:
+		if (futex_cmpxchg_enabled)
+			ret = futex_lock_pi(uaddr, fshared, 0, timeout, 1);
+		break;
+	case FUTEX_WAIT_REQUEUE_PI:
+		val3 = FUTEX_BITSET_MATCH_ANY;
+		ret = futex_wait_requeue_pi(uaddr, fshared, val, timeout, val3,
+					    clockrt, uaddr2);
+		break;
+	case FUTEX_CMP_REQUEUE_PI:
+		ret = futex_requeue(uaddr, fshared, uaddr2, val, val2, &val3,
+				    1);
+		break;
+	*/
+	default:
+		kprintf("futex() invalid cmd: %d \n", cmd); 
+		ret = -ENOSYS;
 	}
-
-	if (op_result > 0) {
-		head = &queue2->futex_list;
-		list_for_each_entry_safe(this, next, head, link) {
-			if (this->uaddr == uaddr2) {
-				wake_futex(this);
-				if (++nr_woke2 >= nr_wake2)
-					break;
-			}
-		}
-	}
-
-	unlock_two_queues(queue1, irqflags1, queue2, irqflags2);
-	return nr_woke1 + nr_woke2;
+	return ret;
 }
 
-/** Conditionally wakes up or requeues tasks that are waiting on futexes. */
-static int futex_cmp_requeue(uint32_t __user *uaddr1, uint32_t __user *uaddr2,
-                             int nr_wake, int nr_requeue, uint32_t cmpval)
-{
-	struct futex_queue *queue1, *queue2;
-	int irqflags1, irqflags2;
-	struct list_head *head1, *head2;
-	struct futex *this, *next;
-	uint32_t curval;
-	int status, nr_woke = 0;
-
-	if (!uaddr_is_valid(uaddr1) || !uaddr_is_valid(uaddr2))
-		return -EINVAL;
-
-	queue1 = get_queue(uaddr1);
-	queue2 = get_queue(uaddr2);
-	lock_two_queues(queue1, &irqflags1, queue2, &irqflags2);
-
-#ifdef __UACCESS__
-	if ((status = get_user(curval, uaddr1)) != 0)
-		goto out_unlock;
-#else
-	curval = *uaddr1;
-	status = 0;
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #endif
 
-	if (curval != cmpval) {
-		status = -EAGAIN;
-		goto out_unlock;
-	}
-
-	head1 = &queue1->futex_list;
-	head2 = &queue2->futex_list;
-	list_for_each_entry_safe(this, next, head1, link) {
-		if (this->uaddr != uaddr1)
-			continue;
-		if (++nr_woke <= nr_wake) {
-			wake_futex(this);
-		} else {
-			/* If uaddr1 and uaddr2 hash to the
-			 * same futex queue, no need to requeue */
-			if (head1 != head2) {
-				list_move_tail(&this->link, head2);
-				this->lock_ptr = &queue2->lock;
-			}
-			this->uaddr = uaddr2;
-
-			if (nr_woke - nr_wake >= nr_requeue)
-				break;
-		}
-	}
-	status = nr_woke;
-
-out_unlock:
-	unlock_two_queues(queue1, irqflags1, queue2, irqflags2);
-	return status;
-}
-
-int futex(uint32_t __user *uaddr, int op, uint32_t val, uint64_t timeout,
-          uint32_t __user *uaddr2, uint32_t val2, uint32_t val3)
+int futex_init(void)
 {
-	int status;
+	int curval;
+	int i;
 
-	switch (op) {
-		case FUTEX_WAIT:
-			val3 = FUTEX_BITSET_MATCH_ANY;
-		case FUTEX_WAIT_BITSET:
-			status = futex_wait(uaddr, val, timeout, val3);
-			break;
-		case FUTEX_WAKE:
-			val3 = FUTEX_BITSET_MATCH_ANY;
-		case FUTEX_WAKE_BITSET:
-			status = futex_wake(uaddr, val, val3);
-			break;
-		case FUTEX_WAKE_OP:
-			status = futex_wake_op(uaddr, uaddr2, val, val2, val3);
-			break;
-		case FUTEX_CMP_REQUEUE:
-			status = futex_cmp_requeue(uaddr, uaddr2, val, val2, val3);
-			break;
-		default:
-			kprintf("sys_futex() op=%d not supported (pid: )\n",
-			        op, &cpu_local_var(current)->pid);
-
-			status = -ENOSYS;
+	/*
+	 * This will fail and we want it. Some arch implementations do
+	 * runtime detection of the futex_atomic_cmpxchg_inatomic()
+	 * functionality. We want to know that before we call in any
+	 * of the complex code paths. Also we want to prevent
+	 * registration of robust lists in that case. NULL is
+	 * guaranteed to fault and we get -EFAULT on functional
+	 * implementation, the non functional ones will return
+	 * -ENOSYS.
+	 */
+	curval = cmpxchg_futex_value_locked(NULL, 0, 0);
+	if (curval == -EFAULT) {
+		dkprintf("futex_cmpxchg_enabled = 1 ??\n");
+		futex_cmpxchg_enabled = 1;
 	}
 
-	return status;
+	for (i = 0; i < ARRAY_SIZE(futex_queues); i++) {
+		plist_head_init(&futex_queues[i].chain, &futex_queues[i].lock);
+		ihk_mc_spinlock_init(&futex_queues[i].lock);
+	}
+
+	return 0;
 }
 
