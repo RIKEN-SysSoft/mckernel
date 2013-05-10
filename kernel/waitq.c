@@ -31,11 +31,10 @@ int
 waitq_active(waitq_t *waitq)
 {
 	int active;
-	unsigned long irqstate;
 
-	irqstate = ihk_mc_spinlock_lock(&waitq->lock);
+	ihk_mc_spinlock_lock_noirq(&waitq->lock);
 	active = !list_empty(&waitq->waitq);
-	ihk_mc_spinlock_unlock(&waitq->lock, irqstate);
+	ihk_mc_spinlock_unlock_noirq(&waitq->lock);
 
 	return active;
 }
@@ -43,11 +42,9 @@ waitq_active(waitq_t *waitq)
 void
 waitq_add_entry(waitq_t *waitq, waitq_entry_t *entry)
 {
-	unsigned long irqstate;
-
-	irqstate = ihk_mc_spinlock_lock(&waitq->lock);
+	ihk_mc_spinlock_lock_noirq(&waitq->lock);
 	waitq_add_entry_locked(waitq, entry);
-	ihk_mc_spinlock_unlock(&waitq->lock, irqstate);
+	ihk_mc_spinlock_unlock_noirq(&waitq->lock);
 }
 
 
@@ -62,11 +59,9 @@ waitq_add_entry_locked(waitq_t *waitq, waitq_entry_t *entry)
 void
 waitq_remove_entry(waitq_t *waitq, waitq_entry_t *entry)
 {
-	unsigned long irqstate;
-	
-	irqstate = ihk_mc_spinlock_lock(&waitq->lock);
+	ihk_mc_spinlock_lock_noirq(&waitq->lock);
 	waitq_remove_entry_locked(waitq, entry);
-	ihk_mc_spinlock_unlock(&waitq->lock, irqstate);
+	ihk_mc_spinlock_unlock_noirq(&waitq->lock);
 }
 
 
@@ -81,13 +76,11 @@ waitq_remove_entry_locked(waitq_t *waitq, waitq_entry_t *entry)
 void
 waitq_prepare_to_wait(waitq_t *waitq, waitq_entry_t *entry, int state)
 {
-	unsigned long irqstate;
-	
-	irqstate = ihk_mc_spinlock_lock(&waitq->lock);
+	ihk_mc_spinlock_lock_noirq(&waitq->lock);
 	if (list_empty(&entry->link))
 		list_add(&entry->link, &waitq->waitq);
 	cpu_local_var(current)->status = state;
-	ihk_mc_spinlock_unlock(&waitq->lock, irqstate);
+	ihk_mc_spinlock_unlock_noirq(&waitq->lock);
 }
 
 void
@@ -100,27 +93,24 @@ waitq_finish_wait(waitq_t *waitq, waitq_entry_t *entry)
 void
 waitq_wakeup(waitq_t *waitq)
 {
-	unsigned long irqstate;
 	struct list_head *tmp;
 	waitq_entry_t *entry;
 	
-	irqstate = ihk_mc_spinlock_lock(&waitq->lock);
+	ihk_mc_spinlock_lock_noirq(&waitq->lock);
 	list_for_each(tmp, &waitq->waitq) {
 		entry = list_entry(tmp, waitq_entry_t, link);
 		entry->func(entry, 0, 0, NULL);
 	}
-	ihk_mc_spinlock_unlock(&waitq->lock, irqstate);
+	ihk_mc_spinlock_unlock_noirq(&waitq->lock);
 }
 
 
 int
 waitq_wake_nr(waitq_t * waitq, int nr)
 {
-	unsigned long irqstate;
-
-	irqstate = ihk_mc_spinlock_lock(&waitq->lock);
+	ihk_mc_spinlock_lock_noirq(&waitq->lock);
 	int count = waitq_wake_nr_locked(waitq, nr);
-	ihk_mc_spinlock_unlock(&waitq->lock, irqstate);
+	ihk_mc_spinlock_unlock_noirq(&waitq->lock);
 
 	if (count > 0)
 		schedule();
