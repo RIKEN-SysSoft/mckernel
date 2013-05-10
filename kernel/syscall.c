@@ -596,7 +596,7 @@ SYSCALL_DECLARE(uname)
 // asmlinkage long sys_getcwd(char __user *buf, unsigned long size);
 SYSCALL_DECLARE(getcwd)
 {
-    kprintf("getcwd\n");
+    dkprintf("getcwd\n");
     SYSCALL_HEADER;
 	SYSCALL_ARGS_2(MO, D);
 	SYSCALL_FOOTER;
@@ -605,7 +605,7 @@ SYSCALL_DECLARE(getcwd)
 
 SYSCALL_DECLARE(access)
 {
-    kprintf("access: %s\n", (char*)ihk_mc_syscall_arg0(ctx));
+    dkprintf("access: %s\n", (char*)ihk_mc_syscall_arg0(ctx));
     SYSCALL_HEADER;
 	SYSCALL_ARGS_2(MI, D);
 	SYSCALL_FOOTER;
