@@ -30,7 +30,7 @@
 #define APIC_DM_STARTUP         0x00600
 
 
-#define DEBUG_PRINT_CPU
+//#define DEBUG_PRINT_CPU
 
 #ifdef DEBUG_PRINT_CPU
 #define dkprintf kprintf
@@ -346,6 +346,8 @@ void handle_interrupt(int vector, struct x86_regs *regs)
 {
 	struct ihk_mc_interrupt_handler *h;
 
+	lapic_ack();
+
 	dkprintf("CPU[%d] got interrupt, vector: %d, RIP: 0x%lX\n", 
 	         ihk_mc_get_processor_id(), vector, regs->rip);
 
@@ -369,8 +371,6 @@ void handle_interrupt(int vector, struct x86_regs *regs)
 			}
 		}
 	}
-
-	lapic_ack();
 }
 
 void gpe_handler(struct x86_regs *regs)
@@ -657,7 +657,7 @@ int ihk_mc_arch_get_special_register(enum ihk_asr_type type,
 
 int ihk_mc_interrupt_cpu(int cpu, int vector)
 {
-	kprintf("[%d] ihk_mc_interrupt_cpu: %d\n", ihk_mc_get_processor_id(), cpu);
+	dkprintf("[%d] ihk_mc_interrupt_cpu: %d\n", ihk_mc_get_processor_id(), cpu);
 
 	wait_icr_idle();
 	x86_issue_ipi(cpu, vector);
