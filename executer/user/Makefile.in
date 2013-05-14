@@ -6,7 +6,7 @@ TARGET=mcexec
 all: $(TARGET)
 
 mcexec: mcexec.c
-	$(CC) $(CFLAGS) -pthread -o $@ $^
+	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -pthread -o $@ $^ $(EXTRA_OBJS)
 
 clean:
 	$(RM) $(TARGET) *.o
