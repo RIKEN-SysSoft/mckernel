@@ -683,7 +683,7 @@ void ihk_mc_reserve_arch_pages(unsigned long start, unsigned long end,
 
 void ihk_mc_set_page_allocator(struct ihk_mc_pa_ops *ops)
 {
-	last_page = NULL;
+	last_page = (void *)-1;
 	pa_ops = ops;
 }
 
