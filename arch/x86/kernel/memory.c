@@ -200,7 +200,7 @@ static unsigned long attr_to_l2attr(enum ihk_mc_pt_attribute attr)
 static unsigned long attr_to_l1attr(enum ihk_mc_pt_attribute attr)
 {
 	if (attr & PTATTR_UNCACHABLE) {
-		return (attr & ATTR_MASK) | PFL1_PWT | PFL1_PWT;
+		return (attr & ATTR_MASK) | PFL1_PCD | PFL1_PWT;
 	} else { 
 		return (attr & ATTR_MASK);
 	}
