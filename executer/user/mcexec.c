@@ -441,6 +441,11 @@ int main(int argc, char **argv)
 	/**
 	 * TODO: need mutex for static structures
 	 */
+	if(mc_cmd_server_init()){
+		fprintf(stderr, "Error: cmd server init failed\n");
+		return 1;
+	}
+
 #ifdef CMD_DCFA
 	if(ibmic_cmd_server_init()){
 		fprintf(stderr, "Error: Failed to initialize ibmic_cmd_server.\n");
@@ -454,11 +459,6 @@ int main(int argc, char **argv)
 		return -1;
 	}
 #endif
-
-	if(mc_cmd_server_init()){
-		fprintf(stderr, "Error: cmd server init failed\n");
-		return 1;
-	}
 	__dprint("mccmd server initialized\n");
 #endif
 
@@ -737,7 +737,6 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 					w.sr.args[0], cpu);
 
 #ifdef USE_SYSCALL_MOD_CALL
-			mc_cmd_server_exit();
 #ifdef CMD_DCFA
 			ibmic_cmd_server_exit();
 #endif
@@ -745,7 +744,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 #ifdef CMD_DCFAMPI
 			dcfampi_cmd_server_exit();
 #endif
-
+			mc_cmd_server_exit();
 			__dprint("mccmd server exited\n");
 #endif
 			exit(0);
