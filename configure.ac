@@ -28,6 +28,8 @@ if test "X$WITH_TARGET" = Xyes -o "X$WITH_TARGET" = Xno; then
 	WITH_TARGET=attached-mic
 fi
 
+test "x$prefix" = xNONE && prefix="$ac_default_prefix"
+
 case $WITH_TARGET in
     attached-mic)
 	ARCH=`uname -m`

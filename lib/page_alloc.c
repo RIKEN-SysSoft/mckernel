@@ -46,14 +46,14 @@ void *__ihk_pagealloc_init(unsigned long start, unsigned long size,
 	} else {
 		desc = (void *)allocate_pages(descsize, 0);
 	}
-	flag = descsize;
-	memset(desc, 0, descsize * PAGE_SIZE);
-
 	if (!desc) {
 		kprintf("IHK: failed to allocate page-allocator-desc "\
 		        "(%lx, %lx, %lx)\n", start, size, unit);
 		return NULL;
 	}
+
+	flag = descsize;
+	memset(desc, 0, descsize * PAGE_SIZE);
 
 	desc->start = start;
 	desc->last = 0;

@@ -549,6 +549,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 {
 	struct syscall_wait_desc w;
 	long ret;
+	char *fn;
 	
 	w.cpu = cpu;
 
@@ -573,7 +574,17 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			
 			__dprintf("open: %s\n", dma_buf);
 
-			ret = open((char *)dma_buf, w.sr.args[1], w.sr.args[2]);
+			fn = (char *)dma_buf;
+			if(!strcmp(fn, "/proc/meminfo")){
+				fn = "/admin/fs/attached/files/proc/meminfo";
+			}
+			else if(!strcmp(fn, "/proc/cpuinfo")){
+				fn = "/admin/fs/attached/files/proc/cpuinfo";
+			}
+			else if(!strcmp(fn, "/sys/devices/system/cpu/online")){
+				fn = "/admin/fs/attached/files/sys/devices/system/cpu/online";
+			}
+			ret = open(fn, w.sr.args[1], w.sr.args[2]);
 			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;

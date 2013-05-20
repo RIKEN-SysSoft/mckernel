@@ -44,7 +44,7 @@ void *get_x86_this_cpu_kstack(void);
 void init_processors_local(int max_id);
 void assign_processor_id(void);
 void arch_delay(int);
-void x86_set_warm_reset(void);
+void x86_set_warm_reset(unsigned long ip, char *first_page_va);
 void x86_init_perfctr(void);
 
 extern int kprintf(const char *format, ...);
@@ -393,12 +393,7 @@ static void outb(uint8_t v, uint16_t port)
 
 static void set_warm_reset_vector(unsigned long ip)
 {
-	/* Write CMOS */
-	x86_set_warm_reset();
-
-	/* Set vector */
-	*(unsigned short *)(first_page_va + 0x469) = (ip >> 4);
-	*(unsigned short *)(first_page_va + 0x467) = ip & 0xf;
+	x86_set_warm_reset(ip, first_page_va);
 }
 
 static void wait_icr_idle(void)
