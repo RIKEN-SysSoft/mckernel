@@ -63,7 +63,7 @@ static void process_msg_prepare_process(unsigned long rphys)
 	            + sizeof(struct program_image_section) * n);
 
 	proc = create_process(p->entry);
-	proc->pid = 1024;
+	proc->pid = pn->pid;
 	proc->vm->region.user_start = pn->user_start;
 	proc->vm->region.user_end = pn->user_end;
 
