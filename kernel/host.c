@@ -186,9 +186,7 @@ static void process_msg_prepare_process(unsigned long rphys)
 	args_envs = ihk_mc_alloc_pages(ARGENV_PAGE_COUNT, 0);
 	args_envs_p = virt_to_phys(args_envs);
 	
-	add_process_memory_range(proc, addr, e,
-	                         args_envs_p,
-	                         VR_RESERVED);
+	add_process_memory_range(proc, addr, e, args_envs_p, 0);
 	
 	dkprintf("args_envs mapping\n");
 
