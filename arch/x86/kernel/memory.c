@@ -10,7 +10,7 @@
 static char *last_page;
 extern char _head[], _end[];
 
-struct ihk_mc_pa_ops *pa_ops;
+static struct ihk_mc_pa_ops *pa_ops;
 
 extern unsigned long x86_kernel_phys_base;
 
