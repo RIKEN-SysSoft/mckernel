@@ -349,18 +349,24 @@ SYSCALL_DECLARE(lseek)
 SYSCALL_DECLARE(exit_group)
 {
 	SYSCALL_HEADER;
+	struct process *proc = cpu_local_var(current);
 
 #ifdef DCFA_KMOD
 	do_mod_exit((int)ihk_mc_syscall_arg0(ctx));
 #endif
 
-	do_syscall(&request, ctx);
-	runq_del_proc(cpu_local_var(current), ihk_mc_get_processor_id());
-	free_process_memory(cpu_local_var(current));
+	/* XXX: send SIGKILL to all threads in this process */
 
-	//cpu_local_var(next) = &cpu_local_var(idle);
-	
-	cpu_local_var(current) = NULL; 
+	do_syscall(&request, ctx);
+
+#define	IS_DETACHED_PROCESS(proc)	(1)	/* should be implemented in the future */
+	proc->status = PS_ZOMBIE;
+	if (IS_DETACHED_PROCESS(proc)) {
+		/* release a reference for wait(2) */
+		proc->status = PS_EXITED;
+		free_process(proc);
+	}
+
 	schedule();
 
 	return 0;
@@ -974,26 +980,34 @@ SYSCALL_DECLARE(futex)
 
 SYSCALL_DECLARE(exit)
 {
+	struct process *proc = cpu_local_var(current);
+
 #ifdef DCFA_KMOD
 	do_mod_exit((int)ihk_mc_syscall_arg0(ctx));
 #endif
 
+	/* XXX: for if all threads issued the exit(2) rather than exit_group(2),
+	 *      exit(2) also should delegate.
+	 */
 	/* If there is a clear_child_tid address set, clear it and wake it.
 	 * This unblocks any pthread_join() waiters. */
-	if (cpu_local_var(current)->thread.clear_child_tid) {
+	if (proc->thread.clear_child_tid) {
 		
 		kprintf("exit clear_child!\n");
 
-		*cpu_local_var(current)->thread.clear_child_tid = 0;
+		*proc->thread.clear_child_tid = 0;
 		barrier();
-		futex((uint32_t *)cpu_local_var(current)->thread.clear_child_tid, 
+		futex((uint32_t *)proc->thread.clear_child_tid,
 		      FUTEX_WAKE, 1, 0, NULL, 0, 0);
 	}
 	
-	runq_del_proc(cpu_local_var(current), cpu_local_var(current)->cpu_id);
-	free_process_memory(cpu_local_var(current));
+	proc->status = PS_ZOMBIE;
+	if (IS_DETACHED_PROCESS(proc)) {
+		/* release a reference for wait(2) */
+		proc->status = PS_EXITED;
+		free_process(proc);
+	}
 
-	cpu_local_var(current) = NULL; 
 	schedule();
 	
 	return 0;

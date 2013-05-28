@@ -572,6 +572,50 @@ struct page_table *ihk_mc_pt_create(enum ihk_mc_ap_flag ap_flag)
 	return pt;
 }
 
+static void destroy_page_table(int level, struct page_table *pt)
+{
+	int ix;
+	unsigned long entry;
+	struct page_table *lower;
+
+	if ((level < 1) || (4 < level)) {
+		panic("destroy_page_table: level is out of range");
+	}
+	if (pt == NULL) {
+		panic("destroy_page_table: pt is NULL");
+	}
+
+	if (level > 1) {
+		for (ix = 0; ix < PT_ENTRIES; ++ix) {
+			entry = pt->entry[ix];
+			if (!(entry & PF_PRESENT)) {
+				/* entry is not valid */
+				continue;
+			}
+			if (entry & PF_SIZE) {
+				/* not a page table */
+				continue;
+			}
+			lower = (struct page_table *)phys_to_virt(entry & PT_PHYSMASK);
+			destroy_page_table(level-1, lower);
+		}
+	}
+
+	arch_free_page(pt);
+	return;
+}
+
+void ihk_mc_pt_destroy(struct page_table *pt)
+{
+	const int level = 4;	/* PML4 */
+
+	/* clear shared entry */
+	memset(pt->entry + PT_ENTRIES / 2, 0, sizeof(pt->entry[0]) * PT_ENTRIES / 2);
+
+	destroy_page_table(level, pt);
+	return;
+}
+
 int ihk_mc_pt_clear_page(page_table_t pt, void *virt)
 {
 	return __clear_pt_page(pt, virt, 0);

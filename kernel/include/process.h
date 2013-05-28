@@ -51,6 +51,7 @@ struct process {
 	int status;
 	int cpu_id;
 
+	ihk_atomic_t refcount;
 	struct process_vm *vm;
 
 	ihk_mc_kernel_context_t ctx;
@@ -74,6 +75,7 @@ struct process_vm {
 	struct page_table *page_table;
 	struct list_head vm_range_list;
 	struct vm_regions region;
+	struct process *owner_process;		/* process that reside on the same page */
  	
 	// Address space private futexes 
 	struct futex_queue futex_queues[1 << FUTEX_HASHBITS];
@@ -92,6 +94,8 @@ struct process *create_process(unsigned long user_pc);
 struct process *clone_process(struct process *org,
                               unsigned long pc, unsigned long sp);
 void destroy_process(struct process *proc);
+void hold_process(struct process *proc);
+void free_process(struct process *proc);
 void free_process_memory(struct process *proc);
 
 int add_process_memory_range(struct process *process,

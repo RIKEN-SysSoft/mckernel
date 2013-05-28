@@ -76,7 +76,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 		ihk_mc_unmap_memory(NULL, phys, sz);
 		return -ENOMEM;
 	}
-	proc->pid = 1024;
+	proc->pid = pn->pid;
 	proc->vm->region.user_start = pn->user_start;
 	proc->vm->region.user_end = pn->user_end;
 
@@ -213,7 +213,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	}
 	args_envs_p = virt_to_phys(args_envs);
 	
-	if(add_process_memory_range(proc, addr, e, args_envs_p, VR_RESERVED) != 0){
+	if(add_process_memory_range(proc, addr, e, args_envs_p, VR_NONE) != 0){
 		ihk_mc_free_pages(args_envs, ARGENV_PAGE_COUNT);
 		goto err;
 	}
@@ -306,7 +306,6 @@ err:
 	ihk_mc_unmap_virtual(p, npages, 1);
 	ihk_mc_unmap_memory(NULL, phys, sz);
 	free_process_memory(proc);
-	// TODO: call page tables free by nakamura
 	destroy_process(proc);
 	return -ENOMEM;
 }
