@@ -23,7 +23,7 @@
 
 extern long do_arch_prctl(unsigned long code, unsigned long address);
 
-void init_process_vm(struct process_vm *vm)
+static void init_process_vm(struct process *owner, struct process_vm *vm)
 {
 	int i;
 
@@ -33,6 +33,8 @@ void init_process_vm(struct process_vm *vm)
 	ihk_atomic_set(&vm->refcount, 1);
 	INIT_LIST_HEAD(&vm->vm_range_list);
 	vm->page_table = ihk_mc_pt_create();
+	hold_process(owner);
+	vm->owner_process = owner;
 	
 	/* Initialize futex queues */
 	for (i = 0; i < (1 << FUTEX_HASHBITS); ++i)
@@ -49,6 +51,7 @@ struct process *create_process(unsigned long user_pc)
 		return NULL;
 
 	memset(proc, 0, sizeof(struct process));
+	ihk_atomic_set(&proc->refcount, 2);	/* one for exit, another for wait */
 
 	ihk_mc_init_user_process(&proc->ctx, &proc->uctx,
 	                         ((char *)proc) + 
@@ -56,7 +59,7 @@ struct process *create_process(unsigned long user_pc)
 
 	proc->vm = (struct process_vm *)(proc + 1);
 
-	init_process_vm(proc->vm);
+	init_process_vm(proc, proc->vm);
 
 	ihk_mc_spinlock_init(&proc->spin_sleep_lock);
 	proc->spin_sleep = 0;
@@ -72,6 +75,7 @@ struct process *clone_process(struct process *org, unsigned long pc,
 	proc = ihk_mc_alloc_pages(KERNEL_STACK_NR_PAGES, 0);
 
 	memset(proc, 0, KERNEL_STACK_NR_PAGES);
+	ihk_atomic_set(&proc->refcount, 2);	/* one for exit, another for wait */
 
 	/* NOTE: sp is the user mode stack! */
 	ihk_mc_init_user_process(&proc->ctx, &proc->uctx,
@@ -394,12 +398,18 @@ extern void print_free_list(void);
 void free_process_memory(struct process *proc)
 {
 	struct vm_range *range, *next;
+	struct process_vm *vm = proc->vm;
 
-	if (!ihk_atomic_dec_and_test(&proc->vm->refcount)) {
+	if (vm == NULL) {
 		return;
 	}
 
-	list_for_each_entry_safe(range, next, &proc->vm->vm_range_list,
+	proc->vm = NULL;
+	if (!ihk_atomic_dec_and_test(&vm->refcount)) {
+		return;
+	}
+
+	list_for_each_entry_safe(range, next, &vm->vm_range_list,
 	                         list) {
 		if (!(range->flag & VR_REMOTE) &&
 		    !(range->flag & VR_IO_NOCACHE) &&
@@ -411,13 +421,28 @@ void free_process_memory(struct process *proc)
 		list_del(&range->list);
 		ihk_mc_free(range);
 	}
-	/* TODO: Free page tables */
-	proc->status = PS_ZOMBIE;
+
+	ihk_mc_pt_destroy(vm->page_table);
+	free_process(vm->owner_process);
 }
 
-void destroy_process(struct process *proc)
+void hold_process(struct process *proc)
 {
-	ihk_mc_free_pages(proc, 1);
+	if (proc->status & (PS_ZOMBIE | PS_EXITED)) {
+		panic("hold_process: already exited process");
+	}
+
+	ihk_atomic_inc(&proc->refcount);
+	return;
+}
+
+void free_process(struct process *proc)
+{
+	if (!ihk_atomic_dec_and_test(&proc->refcount)) {
+		return;
+	}
+
+	ihk_mc_free_pages(proc, KERNEL_STACK_NR_PAGES);
 }
 
 static void idle(void)
@@ -465,6 +490,7 @@ void schedule(void)
 	struct process *next, *prev, *proc, *tmp = NULL;
 	int switch_ctx = 0;
 	unsigned long irqstate;
+	struct process *last;
 
 	irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 
@@ -477,9 +503,13 @@ void schedule(void)
 		--v->runq_len;	
 		
 		/* Round-robin if not exited yet */
-		if (prev->status != PS_EXITED) {
+		if (!(prev->status & (PS_ZOMBIE | PS_EXITED))) {
 			list_add_tail(&prev->sched_list, &(v->runq));
 			++v->runq_len;
+		}
+
+		if (!v->runq_len) {
+			v->status = CPU_STATUS_IDLE;
 		}
 	}
 
@@ -501,7 +531,6 @@ void schedule(void)
 		v->current = next;
 	}
 	
-
 	if (switch_ctx) {
 		dkprintf("[%d] schedule: %d => %d \n",
 		        ihk_mc_get_processor_id(),
@@ -518,10 +547,15 @@ void schedule(void)
 		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 		
 		if (prev) {
-			ihk_mc_switch_context(&prev->ctx, &next->ctx);
+			last = ihk_mc_switch_context(&prev->ctx, &next->ctx, prev);
 		} 
 		else {
-			ihk_mc_switch_context(NULL, &next->ctx);
+			last = ihk_mc_switch_context(NULL, &next->ctx, prev);
+		}
+
+		if ((last != NULL) && (last->status & (PS_ZOMBIE | PS_EXITED))) {
+			free_process_memory(last);
+			free_process(last);
 		}
 	}
 	else {

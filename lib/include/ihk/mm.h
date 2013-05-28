@@ -91,7 +91,9 @@ int ihk_mc_pt_clear_page(page_table_t pt, void *virt);
 int ihk_mc_pt_prepare_map(page_table_t pt, void *virt, unsigned long size,
                           enum ihk_mc_pt_prepare_flag);
 
+/* XXX: proper use of struct page_table and page_table_t is unknown */
 struct page_table *ihk_mc_pt_create(void);
+void ihk_mc_pt_destroy(struct page_table *pt);
 void ihk_mc_load_page_table(struct page_table *pt);
 int ihk_mc_pt_virt_to_phys(struct page_table *pt,
                            void *virt, unsigned long *phys);

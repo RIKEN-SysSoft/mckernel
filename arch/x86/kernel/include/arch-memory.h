@@ -42,6 +42,12 @@
 
 #define PT_ENTRIES         512
 
+/* mask of the physical address of the entry to the page table */
+#define	PT_PHYSMASK	(((1UL << 52) - 1) & PAGE_MASK)
+
+#define	PF_PRESENT	0x01	/* entry is valid */
+#define	PF_SIZE		0x80	/* entry points large page */
+
 #define PFL4_PRESENT    0x01
 #define PFL4_WRITABLE   0x02
 #define PFL4_USER       0x04

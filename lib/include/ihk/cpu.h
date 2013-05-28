@@ -50,8 +50,11 @@ void ihk_mc_init_ap(void);
 void ihk_mc_init_context(ihk_mc_kernel_context_t *new_ctx,
                          void *stack_pointer,
                          void (*next_function)(void));
-void ihk_mc_switch_context(ihk_mc_kernel_context_t *old_ctx,
-                           ihk_mc_kernel_context_t *new_ctx);
+
+/* returns the 'prev' argument of the call that caused the switch to the context returned. */
+void *ihk_mc_switch_context(ihk_mc_kernel_context_t *old_ctx,
+                           ihk_mc_kernel_context_t *new_ctx,
+			   void *prev);
 int ihk_mc_interrupt_cpu(int cpu, int vector);
 
 void ihk_mc_init_user_process(ihk_mc_kernel_context_t *ctx,
