@@ -349,6 +349,9 @@ unsigned long extend_process_region(struct process *proc,
 		if (p_aligned > (unsigned long)p) {
 			free_pages(p, (p_aligned - (unsigned long)p) >> PAGE_SHIFT);
 		}
+		free_pages(
+			(void *)(p_aligned + aligned_new_end - aligned_end),
+			(LARGE_PAGE_SIZE - (p_aligned - (unsigned long)p)) >> PAGE_SHIFT);
 
 		add_process_memory_range(proc, aligned_end, aligned_new_end,
 				virt_to_phys((void *)p_aligned), flag);
