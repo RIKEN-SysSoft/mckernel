@@ -48,8 +48,12 @@ static int test_packet_handler(struct ihk_ikc_channel_desc *c,
 		a = (unsigned long)packet->param1 << 12;
 		
 		pp = ihk_mc_map_memory(NULL, a, 4 * 1024 * 1024);
-		v = ihk_mc_map_virtual(pp, 4 * 1024,
-		                       PTATTR_UNCACHABLE);
+		if((v = ihk_mc_map_virtual(pp, 4 * 1024,
+		                       PTATTR_UNCACHABLE)) == NULL){
+			ihk_mc_unmap_memory(NULL, pp, 4 * 1024 * 1024);
+			kprintf("Test msg : Not enough space\n");
+			return 0;
+		}
 		
 		testmem(v, 4 * 1024 * 1024);
 

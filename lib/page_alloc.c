@@ -44,7 +44,7 @@ void *__ihk_pagealloc_init(unsigned long start, unsigned long size,
 		desc = initial;
 		*pdescsize = descsize;
 	} else {
-		desc = (void *)allocate_pages(descsize, 0);
+		desc = (void *)allocate_pages(descsize, IHK_MC_AP_CRITICAL);
 	}
 	if (!desc) {
 		kprintf("IHK: failed to allocate page-allocator-desc "\

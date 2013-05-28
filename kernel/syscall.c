@@ -370,7 +370,8 @@ SYSCALL_DECLARE(exit_group)
 SYSCALL_DECLARE(mmap)
 {
 	struct vm_regions *region = &cpu_local_var(current)->vm->region;
-    unsigned long lockr;
+	unsigned long lockr;
+	void *va;
 
     kprintf("syscall.c,mmap,addr=%lx,len=%lx,prot=%lx,flags=%x,fd=%x,offset=%lx\n",
             ihk_mc_syscall_arg0(ctx), ihk_mc_syscall_arg1(ctx),
@@ -415,15 +416,20 @@ SYSCALL_DECLARE(mmap)
 				}
 
 				e = (e + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
-				p = (unsigned long)ihk_mc_alloc_pages(
-						(e - s + 2 * LARGE_PAGE_SIZE) >> PAGE_SHIFT, 0); 
+				if((p = (unsigned long)ihk_mc_alloc_pages(
+						(e - s + 2 * LARGE_PAGE_SIZE) >> PAGE_SHIFT, IHK_MC_AP_NOWAIT)) == NULL){
+					return -ENOMEM;
+				}
 
 				p_aligned = (p + LARGE_PAGE_SIZE + (LARGE_PAGE_SIZE - 1)) 
 					& LARGE_PAGE_MASK;
 
 				// add range, mapping
-				add_process_memory_range(cpu_local_var(current), s_orig, e,
-						virt_to_phys((void *)(p_aligned - head_space)), 0);
+				if(add_process_memory_range(cpu_local_var(current), s_orig, e,
+						virt_to_phys((void *)(p_aligned - head_space)), VR_NONE) != 0){
+					ihk_mc_free_pages(p, range_npages);
+					return -ENOMEM;
+				}
 
 				dkprintf("largePTE area: 0x%lX - 0x%lX (s: %lu) -> 0x%lX -\n",
 						s_orig, e, (e - s_orig), 
@@ -432,10 +438,16 @@ SYSCALL_DECLARE(mmap)
 			else {
 #endif
 				// allocate physical address
-				pa = virt_to_phys(ihk_mc_alloc_pages(range_npages, 0)); 
+				if((va = ihk_mc_alloc_pages(range_npages, IHK_MC_AP_NOWAIT)) == NULL){
+					return -ENOMEM;
+				}
+				pa = virt_to_phys(va); 
 
 				// add page_table, add memory-range
-				add_process_memory_range(cpu_local_var(current), s, e, pa, 0); 
+				if(add_process_memory_range(cpu_local_var(current), s, e, pa, VR_NONE) != 0){
+					ihk_mc_free_pages(va, range_npages);
+					return -ENOMEM;
+				}
 
 				dkprintf("syscall.c,pa allocated=%lx\n", pa);			
 #ifdef USE_LARGE_PAGES

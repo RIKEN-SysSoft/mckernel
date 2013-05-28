@@ -7,6 +7,7 @@
 #include <ihk/atomic.h>
 #include <list.h>
 
+#define VR_NONE            0x0
 #define VR_STACK           0x1
 #define VR_RESERVED        0x2
 #define VR_IO_NOCACHE      0x100
@@ -96,13 +97,16 @@ void free_process_memory(struct process *proc);
 int add_process_memory_range(struct process *process,
                              unsigned long start, unsigned long end,
                              unsigned long phys, unsigned long flag);
+#if 0
 int add_process_large_range(struct process *process,
                             unsigned long start, unsigned long end,
-                            unsigned long flag, unsigned long *phys);
+                            unsigned long flag, unsigned long *phys,
+                            enum ihk_mc_ap_flag ap_flag);
+#endif
 int remove_process_region(struct process *proc,
                           unsigned long start, unsigned long end);
 struct program_load_desc;
-void init_process_stack(struct process *process, struct program_load_desc *pn,
+int init_process_stack(struct process *process, struct program_load_desc *pn,
                         int argc, char **argv, 
                         int envc, char **env);
 unsigned long extend_process_region(struct process *proc,

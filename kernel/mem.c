@@ -44,10 +44,14 @@ static void reserve_pages(unsigned long start, unsigned long end, int type)
 
 void *allocate_pages(int npages, enum ihk_mc_ap_flag flag)
 {
-    unsigned long pa = ihk_pagealloc_alloc(pa_allocator, npages);
-    /* all_pagealloc_alloc returns zero when error occured, 
-       and callee (in mcos/kernel/process.c) so propagate it */
-	return pa ? phys_to_virt(pa) : 0; 
+	unsigned long pa = ihk_pagealloc_alloc(pa_allocator, npages);
+	/* all_pagealloc_alloc returns zero when error occured, 
+	   and callee (in mcos/kernel/process.c) so propagate it */
+	if(pa)
+		return phys_to_virt(pa);
+	if(flag != IHK_MC_AP_NOWAIT)
+		panic("Not enough space\n");
+	return NULL;
 }
 
 void free_pages(void *va, int npages)
@@ -194,8 +198,15 @@ void *ihk_mc_map_virtual(unsigned long phys, int npages,
 		return NULL;
 	}
 	for (i = 0; i < npages; i++) {
-		ihk_mc_pt_set_page(NULL, (char *)p + (i << PAGE_SHIFT),
-		                   phys + (i << PAGE_SHIFT), attr);
+		if(ihk_mc_pt_set_page(NULL, (char *)p + (i << PAGE_SHIFT),
+		                   phys + (i << PAGE_SHIFT), attr) != 0){
+			int j;
+			for(j = 0; j < i; j++){
+				ihk_mc_pt_clear_page(NULL, (char *)p + (j << PAGE_SHIFT));
+			}
+			ihk_pagealloc_free(vmap_allocator, virt_to_phys(p), npages);
+			return NULL;
+		}
 	}
 	return (char *)p + offset;
 }
@@ -308,7 +319,9 @@ void *kmalloc(int size, enum ihk_mc_ap_flag flag)
 			req_page = ((u + 1) * sizeof(*h) + PAGE_SIZE - 1)
 				>> PAGE_SHIFT;
 
-			h = allocate_pages(req_page, 0);
+			h = allocate_pages(req_page, flag);
+			if(h == NULL)
+				return NULL;
 			prev->next = h;
 			h->size = (req_page * PAGE_SIZE) / sizeof(*h) - 2;
 			/* Guard entry */

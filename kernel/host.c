@@ -33,7 +33,7 @@ void check_mapping_for_proc(struct process *proc, unsigned long addr)
 /*
  * Communication with host 
  */
-static void process_msg_prepare_process(unsigned long rphys)
+static int process_msg_prepare_process(unsigned long rphys)
 {
 	unsigned long phys, sz, s, e, up;
 	struct program_load_desc *p, *pn;
@@ -46,23 +46,36 @@ static void process_msg_prepare_process(unsigned long rphys)
 	int argc, envc, args_envs_npages;
 	char **env;
 	int range_npages;
+	void *up_v;
 
 	sz = sizeof(struct program_load_desc)
 		+ sizeof(struct program_image_section) * 16;
 	npages = ((rphys + sz - 1) >> PAGE_SHIFT) - (rphys >> PAGE_SHIFT) + 1;
 
 	phys = ihk_mc_map_memory(NULL, rphys, sz);
-	p = ihk_mc_map_virtual(phys, npages, PTATTR_WRITABLE);
+	if((p = ihk_mc_map_virtual(phys, npages, PTATTR_WRITABLE)) == NULL){
+		ihk_mc_unmap_memory(NULL, phys, sz);
+		return -ENOMEM;
+	}
 
 	n = p->num_sections;
 	dkprintf("# of sections: %d\n", n);
 
-	pn = ihk_mc_allocate(sizeof(struct program_load_desc) 
-	                     + sizeof(struct program_image_section) * n, 0);
+	if((pn = ihk_mc_allocate(sizeof(struct program_load_desc) 
+	       + sizeof(struct program_image_section) * n, IHK_MC_AP_NOWAIT)) == NULL){
+		ihk_mc_unmap_virtual(p, npages, 0);
+		ihk_mc_unmap_memory(NULL, phys, sz);
+		return -ENOMEM;
+	}
 	memcpy_long(pn, p, sizeof(struct program_load_desc) 
 	            + sizeof(struct program_image_section) * n);
 
-	proc = create_process(p->entry);
+	if((proc = create_process(p->entry)) == NULL){
+		ihk_mc_free(pn);
+		ihk_mc_unmap_virtual(p, npages, 1);
+		ihk_mc_unmap_memory(NULL, phys, sz);
+		return -ENOMEM;
+	}
 	proc->pid = 1024;
 	proc->vm->region.user_start = pn->user_start;
 	proc->vm->region.user_end = pn->user_end;
@@ -79,8 +92,14 @@ static void process_msg_prepare_process(unsigned long rphys)
 #if 0
 		if (range_npages <= 256) {
 #endif
-			up = virt_to_phys(ihk_mc_alloc_pages(range_npages, 0));
-			add_process_memory_range(proc, s, e, up, 0);
+			if((up_v = ihk_mc_alloc_pages(range_npages, IHK_MC_AP_NOWAIT)) == NULL){
+				goto err;
+			}
+			up = virt_to_phys(up_v);
+			if(add_process_memory_range(proc, s, e, up, VR_NONE) != 0){
+				ihk_mc_free_pages(up_v, range_npages);
+				goto err;
+			}
 			
 			{
 				void *_virt = (void *)s;
@@ -110,7 +129,7 @@ static void process_msg_prepare_process(unsigned long rphys)
 		}
 		else {
 			up = 0;
-			if (add_process_large_range(proc, s, e, 0, &up)) {
+			if (add_process_large_range(proc, s, e, VR_NONE, &up)) {
 				kprintf("ERROR: not enough memory\n");
 				while (1) cpu_halt();
 			}
@@ -165,30 +184,39 @@ static void process_msg_prepare_process(unsigned long rphys)
 	/* Map system call stuffs */
 	addr = proc->vm->region.map_start - PAGE_SIZE * SCD_RESERVED_COUNT;
 	e = addr + PAGE_SIZE * DOORBELL_PAGE_COUNT;
-	add_process_memory_range(proc, addr, e,
+	if(add_process_memory_range(proc, addr, e,
 	                         cpu_local_var(scp).doorbell_pa,
-	                         VR_REMOTE | VR_RESERVED);
+	                         VR_REMOTE | VR_RESERVED) != 0){
+		goto err;
+	}
 	addr = e;
 	e = addr + PAGE_SIZE * REQUEST_PAGE_COUNT;
-	add_process_memory_range(proc, addr, e,
+	if(add_process_memory_range(proc, addr, e,
 	                         cpu_local_var(scp).request_pa,
-	                         VR_REMOTE | VR_RESERVED);
+	                         VR_REMOTE | VR_RESERVED) != 0){
+		goto err;
+	}
 	addr = e;
 	e = addr + PAGE_SIZE * RESPONSE_PAGE_COUNT;
-	add_process_memory_range(proc, addr, e,
+	if(add_process_memory_range(proc, addr, e,
 	                         cpu_local_var(scp).response_pa,
-	                         VR_RESERVED);
+	                         VR_RESERVED) != 0){
+		goto err;
+	}
 
 	/* Map, copy and update args and envs */
 	addr = e;
 	e = addr + PAGE_SIZE * ARGENV_PAGE_COUNT;
 	
-	args_envs = ihk_mc_alloc_pages(ARGENV_PAGE_COUNT, 0);
+	if((args_envs = ihk_mc_alloc_pages(ARGENV_PAGE_COUNT, IHK_MC_AP_NOWAIT)) == NULL){
+		goto err;
+	}
 	args_envs_p = virt_to_phys(args_envs);
 	
-	add_process_memory_range(proc, addr, e,
-	                         args_envs_p,
-	                         VR_RESERVED);
+	if(add_process_memory_range(proc, addr, e, args_envs_p, VR_RESERVED) != 0){
+		ihk_mc_free_pages(args_envs, ARGENV_PAGE_COUNT);
+		goto err;
+	}
 	
 	dkprintf("args_envs mapping\n");
 
@@ -199,8 +227,10 @@ static void process_msg_prepare_process(unsigned long rphys)
 	dkprintf("args_envs_npages: %d\n", args_envs_npages);
 	args_envs_rp = ihk_mc_map_memory(NULL, (unsigned long)p->args, p->args_len);
 	dkprintf("args_envs_rp: 0x%lX\n", args_envs_rp);
-	args_envs_r = (char *)ihk_mc_map_virtual(args_envs_rp, args_envs_npages, 
-											 PTATTR_WRITABLE);
+	if((args_envs_r = (char *)ihk_mc_map_virtual(args_envs_rp, args_envs_npages, 
+	    PTATTR_WRITABLE)) == NULL){
+		goto err;
+	}
 	dkprintf("args_envs_r: 0x%lX\n", args_envs_r);
 
 	dkprintf("args copy, nr: %d\n", *((int*)args_envs_r));
@@ -217,8 +247,10 @@ static void process_msg_prepare_process(unsigned long rphys)
 	dkprintf("args_envs_npages: %d\n", args_envs_npages);
 	args_envs_rp = ihk_mc_map_memory(NULL, (unsigned long)p->envs, p->envs_len);
 	dkprintf("args_envs_rp: 0x%lX\n", args_envs_rp);
-	args_envs_r = (char *)ihk_mc_map_virtual(args_envs_rp, args_envs_npages, 
-											 PTATTR_WRITABLE);
+	if((args_envs_r = (char *)ihk_mc_map_virtual(args_envs_rp, args_envs_npages, 
+	    PTATTR_WRITABLE)) == NULL){
+		goto err;
+	}
 	dkprintf("args_envs_r: 0x%lX\n", args_envs_r);
 	
 	dkprintf("envs copy, nr: %d\n", *((int*)args_envs_r));
@@ -257,7 +289,9 @@ static void process_msg_prepare_process(unsigned long rphys)
 
 	p->rprocess = (unsigned long)proc;
 	p->rpgtable = virt_to_phys(proc->vm->page_table);
-	init_process_stack(proc, pn, argc, argv, envc, env);
+	if(init_process_stack(proc, pn, argc, argv, envc, env) != 0){
+		goto err;
+	}
 
 	dkprintf("new process : %p [%d] / table : %p\n", proc, proc->pid,
 	        proc->vm->page_table);
@@ -266,6 +300,15 @@ static void process_msg_prepare_process(unsigned long rphys)
 
 	ihk_mc_unmap_virtual(p, npages, 1);
 	ihk_mc_unmap_memory(NULL, phys, sz);
+	return 0;
+err:
+	ihk_mc_free(pn);
+	ihk_mc_unmap_virtual(p, npages, 1);
+	ihk_mc_unmap_memory(NULL, phys, sz);
+	free_process_memory(proc);
+	// TODO: call page tables free by nakamura
+	destroy_process(proc);
+	return -ENOMEM;
 }
 
 static void process_msg_init(struct ikc_scd_init_param *pcp)
@@ -290,23 +333,32 @@ static void process_msg_init_acked(unsigned long pphys)
 	lparam->request_rpa = param->request_page;
 	lparam->request_pa = ihk_mc_map_memory(NULL, param->request_page,
 	                                       REQUEST_PAGE_COUNT * PAGE_SIZE);
-	lparam->request_va = ihk_mc_map_virtual(lparam->request_pa,
+	if((lparam->request_va = ihk_mc_map_virtual(lparam->request_pa,
 	                                        REQUEST_PAGE_COUNT,
-	                                        PTATTR_WRITABLE);
+	                                        PTATTR_WRITABLE)) == NULL){
+		// TODO: 
+		panic("ENOMEM");
+	}
 
 	lparam->doorbell_rpa = param->doorbell_page;
 	lparam->doorbell_pa = ihk_mc_map_memory(NULL, param->doorbell_page,
 	                                        DOORBELL_PAGE_COUNT * 
 	                                        PAGE_SIZE);
-	lparam->doorbell_va = ihk_mc_map_virtual(lparam->doorbell_pa,
+	if((lparam->doorbell_va = ihk_mc_map_virtual(lparam->doorbell_pa,
 	                                         DOORBELL_PAGE_COUNT,
-	                                         PTATTR_WRITABLE);
+	                                         PTATTR_WRITABLE)) == NULL){
+		// TODO: 
+		panic("ENOMEM");
+	}
 
 	lparam->post_rpa = param->post_page;
 	lparam->post_pa = ihk_mc_map_memory(NULL, param->post_page,
 	                                    PAGE_SIZE);
-	lparam->post_va = ihk_mc_map_virtual(lparam->post_pa, 1,
-	                                     PTATTR_WRITABLE);
+	if((lparam->post_va = ihk_mc_map_virtual(lparam->post_pa, 1,
+	                                     PTATTR_WRITABLE)) == NULL){
+		// TODO: 
+		panic("ENOMEM");
+	}
 
 	lparam->post_fin = 1;
 
@@ -340,9 +392,10 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		return 0;
 
 	case SCD_MSG_PREPARE_PROCESS:
-		process_msg_prepare_process(packet->arg);
-
-		pckt.msg = SCD_MSG_PREPARE_PROCESS_ACKED;
+		if(process_msg_prepare_process(packet->arg) == 0)
+			pckt.msg = SCD_MSG_PREPARE_PROCESS_ACKED;
+		else
+			pckt.msg = SCD_MSG_PREPARE_PROCESS_NACKED;
 		pckt.ref = packet->ref;
 		pckt.arg = packet->arg;
 		syscall_channel_send(c, &pckt);

@@ -230,6 +230,7 @@ int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 	unsigned long s, w, d;
 #endif
 	
+//printk("mcexec_wait_syscall swd=%p req=%p size=%d\n", &swd, req, sizeof(swd.cpu));
 	if (copy_from_user(&swd, req, sizeof(swd.cpu))) {
 		return -EFAULT;
 	}
