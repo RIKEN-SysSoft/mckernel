@@ -316,7 +316,7 @@ void *kmalloc(int size, enum ihk_mc_ap_flag flag)
 
 	while (1) {
 		if (h == &v->free_list) {
-			req_page = ((u + 1) * sizeof(*h) + PAGE_SIZE - 1)
+			req_page = ((u + 2) * sizeof(*h) + PAGE_SIZE - 1)
 				>> PAGE_SHIFT;
 
 			h = allocate_pages(req_page, flag);
