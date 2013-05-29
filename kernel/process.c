@@ -84,7 +84,7 @@ struct process *clone_process(struct process *org, unsigned long pc,
 		return NULL;
 	}
 
-	memset(proc, 0, KERNEL_STACK_NR_PAGES);
+	memset(proc, 0, sizeof(struct process));
 	ihk_atomic_set(&proc->refcount, 2);	/* one for exit, another for wait */
 
 	/* NOTE: sp is the user mode stack! */
@@ -98,6 +98,9 @@ struct process *clone_process(struct process *org, unsigned long pc,
 	
 	ihk_atomic_inc(&org->vm->refcount);
 	proc->vm = org->vm;
+
+	ihk_mc_spinlock_init(&proc->spin_sleep_lock);
+	proc->spin_sleep = 0;
 
 	return proc;
 }
