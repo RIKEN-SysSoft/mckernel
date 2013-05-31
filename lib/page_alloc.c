@@ -88,10 +88,21 @@ void ihk_pagealloc_destroy(void *__desc)
 }
 
 static unsigned long __ihk_pagealloc_large(struct ihk_page_allocator_desc *desc,
-                                           int nblocks)
+                                           int npages)
 {
 	unsigned long flags;
 	unsigned int i, j, mi;
+	int nblocks;
+	int nfrags;
+	unsigned long mask;
+
+	nblocks = (npages / 64);
+	mask = -1;
+	nfrags = (npages % 64);
+	if (nfrags > 0) {
+		++nblocks;
+		mask = (1UL << nfrags) - 1;
+	}
 
 	flags = ihk_mc_spinlock_lock(&desc->lock);
 	for (i = 0, mi = desc->last; i < desc->count; i++, mi++) {
@@ -101,15 +112,16 @@ static unsigned long __ihk_pagealloc_large(struct ihk_page_allocator_desc *desc,
 		if (mi + nblocks >= desc->count) {
 			continue;
 		}
-		for (j = mi; j < mi + nblocks; j++) {
+		for (j = mi; j < mi + nblocks - 1; j++) {
 			if (desc->map[j]) {
 				break;
 			}
 		}
-		if (j == mi + nblocks) {
-			for (j = mi; j < mi + nblocks; j++) {
+		if ((j == (mi + nblocks - 1)) && !(desc->map[j] & mask)) {
+			for (j = mi; j < mi + nblocks - 1; j++) {
 				desc->map[j] = (unsigned long)-1;
 			}
+			desc->map[j] |= mask;
 			ihk_mc_spinlock_unlock(&desc->lock, flags);
 			return ADDRESS(desc, mi, 0);
 		}
@@ -126,10 +138,8 @@ unsigned long ihk_pagealloc_alloc(void *__desc, int npages)
 	int j;
 	unsigned long v, mask, flags;
 
-	/* If requested page is more than the half of the element,
-	 * we allocate the whole element (ulong) */
 	if (npages >= 32) {
-		return __ihk_pagealloc_large(desc, (npages + 63) >> 6);
+		return __ihk_pagealloc_large(desc, npages);
 	}
 
 	mask = (1UL << npages) - 1;
@@ -191,9 +201,6 @@ void ihk_pagealloc_free(void *__desc, unsigned long address, int npages)
 	unsigned long flags;
 
 	/* XXX: Parameter check */
-	if (npages >= 32) {
-		npages = (npages + 63) & ~63;
-	}
 	flags = ihk_mc_spinlock_lock(&desc->lock);
 	mi = (address - desc->start) >> desc->shift;
 	for (i = 0; i < npages; i++, mi++) {
