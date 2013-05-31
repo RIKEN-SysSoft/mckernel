@@ -554,7 +554,7 @@ SYSCALL_DECLARE(mmap)
         kprintf("syscall.c,!MAP_FIXED,!MAP_ANONYMOUS,MAP_PRIVATE\n");
         // lseek(mmap_fd, mmap_off, SEEK_SET);
         // read(mmap_fd, mmap_addr, mmap_len);
-        SYSCALL_ARGS_6(MO, D, D, D, D, D); 
+        SYSCALL_ARGS_6(D, D, D, D, D, D);
         // overwriting request.args[0]
         unsigned long __phys;                                      
         if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, (void *)s, &__phys)) {
