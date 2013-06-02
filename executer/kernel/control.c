@@ -87,6 +87,11 @@ static long mcexec_prepare_image(ihk_os_t os,
 
 	wait_event_interruptible(usrdata->wq_prepare, pdesc->status);
 
+	if(pdesc->err == -1){
+		ret = -EFAULT;	
+		goto free_out;
+	}
+
 	usrdata->rpgtable = pdesc->rpgtable;
 	if (copy_to_user(udesc, pdesc, sizeof(struct program_load_desc) + 
 	             sizeof(struct program_image_section) * desc.num_sections)) {
@@ -517,11 +522,12 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg)
 	return -EINVAL;
 }
 
-void mcexec_prepare_ack(ihk_os_t os, unsigned long arg)
+void mcexec_prepare_ack(ihk_os_t os, unsigned long arg, int err)
 {
 	struct program_load_desc *desc = phys_to_virt(arg);
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 
+	desc->err = err;
 	desc->status = 1;
 	
 	wake_up_all(&usrdata->wq_prepare);
