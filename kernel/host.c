@@ -89,9 +89,6 @@ static int process_msg_prepare_process(unsigned long rphys)
 		     + PAGE_SIZE - 1) & PAGE_MASK;
 		range_npages = (e - s) >> PAGE_SHIFT;
 
-#if 0
-		if (range_npages <= 256) {
-#endif
 			if((up_v = ihk_mc_alloc_pages(range_npages, IHK_MC_AP_NOWAIT)) == NULL){
 				goto err;
 			}
@@ -125,37 +122,6 @@ static int process_msg_prepare_process(unsigned long rphys)
 				}
 				dkprintf("0x%lX -> 0x%lX is physically contigous\n", s, e);
 			}
-#if 0			
-		}
-		else {
-			up = 0;
-			if (add_process_large_range(proc, s, e, VR_NONE, &up)) {
-				kprintf("ERROR: not enough memory\n");
-				while (1) cpu_halt();
-			}
-			
-			
-			{
-				void *_virt = (void *)s;
-				unsigned long _phys;
-				ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
-				                       _virt, &_phys);
-				for (_virt = (void *)s + PAGE_SIZE; 
-				     (unsigned long)_virt < e; _virt += PAGE_SIZE) {
-					unsigned long __phys;
-					ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
-				                       _virt, &__phys);
-					if (__phys != _phys + PAGE_SIZE) {
-						kprintf("0x%lX + PAGE_SIZE is not physically contigous, from 0x%lX to 0x%lX\n", _virt - PAGE_SIZE, _phys, __phys);
-						panic("mondai");
-					}
-					
-					_phys = __phys;
-				}
-				dkprintf("0x%lX -> 0x%lX is physically contigous\n", s, e);
-			}
-		}
-#endif
 
 		p->sections[i].remote_pa = up;
 
