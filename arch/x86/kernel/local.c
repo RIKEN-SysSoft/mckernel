@@ -11,7 +11,7 @@ struct x86_cpu_local_variables *locals;
 void init_processors_local(int max_id)
 {
 	/* Is contiguous allocating adequate?? */
-	locals = ihk_mc_alloc_pages(max_id, 0);
+	locals = ihk_mc_alloc_pages(max_id, IHK_MC_AP_CRITICAL);
 	memset(locals, 0, PAGE_SIZE * max_id);
 
 	kprintf("locals = %p\n", locals);

@@ -22,6 +22,9 @@ enum ihk_mc_ma_type {
 
 enum ihk_mc_ap_flag {
 	IHK_MC_AP_FLAG,
+	IHK_MC_AP_CRITICAL, /* panic on no memory space */
+	IHK_MC_AP_NOWAIT,   /* error return on no memory space */
+	IHK_MC_AP_WAIT      /* wait on no memory space */
 };
 
 enum ihk_mc_pt_prepare_flag {
@@ -88,10 +91,13 @@ int ihk_mc_pt_set_large_page(page_table_t pt, void *virt,
 int ihk_mc_pt_change_page(page_table_t pt, void *virt,
                           enum ihk_mc_pt_attribute);
 int ihk_mc_pt_clear_page(page_table_t pt, void *virt);
+int ihk_mc_pt_clear_large_page(page_table_t pt, void *virt);
 int ihk_mc_pt_prepare_map(page_table_t pt, void *virt, unsigned long size,
                           enum ihk_mc_pt_prepare_flag);
 
-struct page_table *ihk_mc_pt_create(void);
+struct page_table *ihk_mc_pt_create(enum ihk_mc_ap_flag ap_flag);
+/* XXX: proper use of struct page_table and page_table_t is unknown */
+void ihk_mc_pt_destroy(struct page_table *pt);
 void ihk_mc_load_page_table(struct page_table *pt);
 int ihk_mc_pt_virt_to_phys(struct page_table *pt,
                            void *virt, unsigned long *phys);

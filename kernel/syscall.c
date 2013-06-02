@@ -349,18 +349,24 @@ SYSCALL_DECLARE(lseek)
 SYSCALL_DECLARE(exit_group)
 {
 	SYSCALL_HEADER;
+	struct process *proc = cpu_local_var(current);
 
 #ifdef DCFA_KMOD
 	do_mod_exit((int)ihk_mc_syscall_arg0(ctx));
 #endif
 
-	do_syscall(&request, ctx);
-	runq_del_proc(cpu_local_var(current), ihk_mc_get_processor_id());
-	free_process_memory(cpu_local_var(current));
+	/* XXX: send SIGKILL to all threads in this process */
 
-	//cpu_local_var(next) = &cpu_local_var(idle);
-	
-	cpu_local_var(current) = NULL; 
+	do_syscall(&request, ctx);
+
+#define	IS_DETACHED_PROCESS(proc)	(1)	/* should be implemented in the future */
+	proc->status = PS_ZOMBIE;
+	if (IS_DETACHED_PROCESS(proc)) {
+		/* release a reference for wait(2) */
+		proc->status = PS_EXITED;
+		free_process(proc);
+	}
+
 	schedule();
 
 	return 0;
@@ -371,6 +377,7 @@ SYSCALL_DECLARE(mmap)
 {
 	struct vm_regions *region = &cpu_local_var(current)->vm->region;
 	unsigned long lockr;
+	void *va;
 
     dkprintf("syscall.c,mmap,addr=%lx,len=%lx,prot=%lx,flags=%x,fd=%x,offset=%lx\n",
             ihk_mc_syscall_arg0(ctx), ihk_mc_syscall_arg1(ctx),
@@ -415,15 +422,20 @@ SYSCALL_DECLARE(mmap)
 				}
 
 				e = (e + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
-				p = (unsigned long)ihk_mc_alloc_pages(
-						(e - s + 2 * LARGE_PAGE_SIZE) >> PAGE_SHIFT, 0); 
+				if((p = (unsigned long)ihk_mc_alloc_pages(
+						(e - s + 2 * LARGE_PAGE_SIZE) >> PAGE_SHIFT, IHK_MC_AP_NOWAIT)) == NULL){
+					return -ENOMEM;
+				}
 
 				p_aligned = (p + LARGE_PAGE_SIZE + (LARGE_PAGE_SIZE - 1)) 
 					& LARGE_PAGE_MASK;
 
 				// add range, mapping
-				add_process_memory_range(cpu_local_var(current), s_orig, e,
-						virt_to_phys((void *)(p_aligned - head_space)), 0);
+				if(add_process_memory_range(cpu_local_var(current), s_orig, e,
+						virt_to_phys((void *)(p_aligned - head_space)), VR_NONE) != 0){
+					ihk_mc_free_pages(p, range_npages);
+					return -ENOMEM;
+				}
 
 				dkprintf("largePTE area: 0x%lX - 0x%lX (s: %lu) -> 0x%lX -\n",
 						s_orig, e, (e - s_orig), 
@@ -432,10 +444,16 @@ SYSCALL_DECLARE(mmap)
 			else {
 #endif
 				// allocate physical address
-				pa = virt_to_phys(ihk_mc_alloc_pages(range_npages, 0)); 
+				if((va = ihk_mc_alloc_pages(range_npages, IHK_MC_AP_NOWAIT)) == NULL){
+					return -ENOMEM;
+				}
+				pa = virt_to_phys(va); 
 
 				// add page_table, add memory-range
-				add_process_memory_range(cpu_local_var(current), s, e, pa, 0); 
+				if(add_process_memory_range(cpu_local_var(current), s, e, pa, VR_NONE) != 0){
+					ihk_mc_free_pages(va, range_npages);
+					return -ENOMEM;
+				}
 
 				dkprintf("syscall.c,pa allocated=%lx\n", pa);			
 #ifdef USE_LARGE_PAGES
@@ -536,7 +554,7 @@ SYSCALL_DECLARE(mmap)
         dkprintf("syscall.c,!MAP_FIXED,!MAP_ANONYMOUS,MAP_PRIVATE\n");
         // lseek(mmap_fd, mmap_off, SEEK_SET);
         // read(mmap_fd, mmap_addr, mmap_len);
-        SYSCALL_ARGS_6(MO, D, D, D, D, D); 
+        SYSCALL_ARGS_6(D, D, D, D, D, D);
         // overwriting request.args[0]
         unsigned long __phys;                                      
         if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, (void *)s, &__phys)) {
@@ -925,26 +943,34 @@ SYSCALL_DECLARE(futex)
 
 SYSCALL_DECLARE(exit)
 {
+	struct process *proc = cpu_local_var(current);
+
 #ifdef DCFA_KMOD
 	do_mod_exit((int)ihk_mc_syscall_arg0(ctx));
 #endif
 
+	/* XXX: for if all threads issued the exit(2) rather than exit_group(2),
+	 *      exit(2) also should delegate.
+	 */
 	/* If there is a clear_child_tid address set, clear it and wake it.
 	 * This unblocks any pthread_join() waiters. */
-	if (cpu_local_var(current)->thread.clear_child_tid) {
+	if (proc->thread.clear_child_tid) {
 		
 		dkprintf("exit clear_child!\n");
 
-		*cpu_local_var(current)->thread.clear_child_tid = 0;
+		*proc->thread.clear_child_tid = 0;
 		barrier();
-		futex((uint32_t *)cpu_local_var(current)->thread.clear_child_tid, 
+		futex((uint32_t *)proc->thread.clear_child_tid,
 		      FUTEX_WAKE, 1, 0, NULL, 0, 0);
 	}
 	
-	runq_del_proc(cpu_local_var(current), cpu_local_var(current)->cpu_id);
-	free_process_memory(cpu_local_var(current));
+	proc->status = PS_ZOMBIE;
+	if (IS_DETACHED_PROCESS(proc)) {
+		/* release a reference for wait(2) */
+		proc->status = PS_EXITED;
+		free_process(proc);
+	}
 
-	cpu_local_var(current) = NULL; 
 	schedule();
 	
 	return 0;
@@ -1018,7 +1044,7 @@ SYSCALL_DECLARE(sched_getaffinity)
 
 	CPU_ZERO_S(min_len, mask);
 	for (cpu_id = 0; cpu_id < min_ncpus; ++cpu_id)
-		CPU_SET_S(min_len, cpu_id, mask);
+		CPU_SET_S(cpu_info->hw_ids[cpu_id], min_len, mask);
 
     //	dkprintf("sched_getaffinity returns full mask\n");
 
@@ -1033,18 +1059,31 @@ SYSCALL_DECLARE(noop)
 
 #ifdef DCFA_KMOD
 
+#ifdef CMD_DCFA
 extern int ibmic_cmd_syscall(char *uargs);
-extern int dcfampi_cmd_syscall(char *uargs);
 extern void ibmic_cmd_exit(int status);
+#endif
+
+#ifdef CMD_DCFAMPI
+extern int dcfampi_cmd_syscall(char *uargs);
+#endif
 
 static int (*mod_call_table[]) (char *) = {
+#ifdef CMD_DCFA
 		[1] = ibmic_cmd_syscall,
+#endif
+#ifdef CMD_DCFAMPI
 		[2] = dcfampi_cmd_syscall,
+#endif
 };
 
 static void (*mod_exit_table[]) (int) = {
+#ifdef CMD_DCFA
 		[1] = ibmic_cmd_exit,
+#endif
+#ifdef CMD_DCFAMPI
 		[2] = NULL,
+#endif
 };
 
 SYSCALL_DECLARE(mod_call) {
@@ -1058,6 +1097,8 @@ SYSCALL_DECLARE(mod_call) {
 
 	if(mod_call_table[mod_id])
 		return mod_call_table[mod_id]((char*)uargs);
+
+	kprintf("ERROR! undefined mod_call id:%d\n", mod_id);
 
 	return -ENOSYS;
 }
@@ -1239,6 +1280,14 @@ static int clone_init(void)
 
 #endif
 
+long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx)
+{
+	SYSCALL_HEADER;
+	dkprintf("syscall_generic_forwarding(%d)\n", n);
+	SYSCALL_ARGS_6(D,D,D,D,D,D);
+	SYSCALL_FOOTER;
+}
+
 long syscall(int num, ihk_mc_user_context_t *ctx)
 {
 	long l;
@@ -1272,7 +1321,8 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
     dkprintf("\n");
 
 
-	if (syscall_table[num]) {
+	if ((0 <= num) && (num < sizeof(syscall_table)/sizeof(syscall_table[0]))
+			&& (syscall_table[num] != NULL)) {
 		l = syscall_table[num](num, ctx);
 		
 		dkprintf("SC(%d)[%3d] ret: %d\n", 
@@ -1283,8 +1333,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		        ihk_mc_syscall_arg2(ctx), ihk_mc_syscall_arg3(ctx),
 		        ihk_mc_syscall_arg4(ctx), ihk_mc_syscall_pc(ctx),
 		        ihk_mc_syscall_sp(ctx));
-		//while(1);
-		l = -ENOSYS;
+		l = syscall_generic_forwarding(num, ctx);
 	}
 	
 	return l;

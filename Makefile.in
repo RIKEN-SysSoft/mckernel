@@ -1,4 +1,5 @@
 TARGET = @TARGET@
+SBINDIR = @SBINDIR@
 
 all::
 	@(cd executer/kernel; make modules)
@@ -25,6 +26,10 @@ install::
 		exit 1 \
 		;; \
 	esac
+	if [ "$(TARGET)" = attached-mic ]; then \
+		mkdir -p -m 755 $(SBINDIR); \
+		install -m 755 boot-attached-mic.sh $(SBINDIR)/boot.sh; \
+	fi
 
 clean::
 	@(cd executer/kernel; make clean)

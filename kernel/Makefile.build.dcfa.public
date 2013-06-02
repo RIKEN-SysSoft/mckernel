@@ -1,0 +1,24 @@
+IHKDIR=$(IHKBASE)/$(TARGETDIR)
+ 
+LDFLAGS += -e arch_start
+
+include $(SRC)/config/config.$(TARGET)
+include $(IHKBASE)/Makefile.common
+
+ld_kern_cmd_base = $(LD) $(LDFLAGS) -o $@.elf $^
+mkimage_cmd_base = [ -f $(SRC)/script/mkimage.$(TARGET) ] && CC=$(CC) LD=$(LD) LDFLAGS="$(LDFLAGS_MKIMAGE)" OBJDUMP=$(OBJDUMP) OBJCOPY=$(OBJCOPY) sh $(SRC)/script/mkimage.$(TARGET) '$@.elf' '$@' '$(SRC)' || cp $@.elf $@
+
+ld_kern_cmd = $(call echo_cmd,LDKERN,$@)$(ld_kern_cmd_base)
+mkimage_cmd = $(call echo_cmd,MKIMAGE,$@)$(mkimage_cmd_base)
+
+P_OBJ ?= ./a.out
+
+all: kernel_program.img
+
+kernel_program.img: $(KERNEL_OBJ) $(P_OBJ)
+	$(ld_kern_cmd)
+	$(mkimage_cmd)
+
+FORCE:
+
+-include Makefile.dep

@@ -15,7 +15,7 @@
 
 //struct mcctrl_channel *channels;
 
-void mcexec_prepare_ack(ihk_os_t os, unsigned long arg);
+void mcexec_prepare_ack(ihk_os_t os, unsigned long arg, int err);
 static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys);
 int mcexec_syscall(struct mcctrl_channel *c, unsigned long arg);
 
@@ -31,7 +31,11 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		break;
 
 	case SCD_MSG_PREPARE_PROCESS_ACKED:
-		mcexec_prepare_ack(__os, pisp->arg);
+		mcexec_prepare_ack(__os, pisp->arg, 0);
+		break;
+
+	case SCD_MSG_PREPARE_PROCESS_NACKED:
+		mcexec_prepare_ack(__os, pisp->arg, -1);
 		break;
 
 	case SCD_MSG_SYSCALL_ONESIDE:

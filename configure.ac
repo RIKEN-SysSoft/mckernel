@@ -28,6 +28,8 @@ if test "X$WITH_TARGET" = Xyes -o "X$WITH_TARGET" = Xno; then
 	WITH_TARGET=attached-mic
 fi
 
+test "x$prefix" = xNONE && prefix="$ac_default_prefix"
+
 case $WITH_TARGET in
     attached-mic)
 	ARCH=`uname -m`
@@ -37,6 +39,9 @@ case $WITH_TARGET in
 	fi
 	if test "X$BINDIR" = X; then
 		BINDIR="$prefix/bin"
+	fi
+	if test "X$SBINDIR" = X; then
+		SBINDIR="$prefix/sbin"
 	fi
 	if test "X$KMODDIR" = X; then
 		KMODDIR="$prefix/kmod"
@@ -55,6 +60,9 @@ case $WITH_TARGET in
 	if test "X$BINDIR" = X; then
 		BINDIR="$prefix/attached/bin"
 	fi
+	if test "X$SBINDIR" = X; then
+		SBINDIR="$prefix/attached/sbin"
+	fi
 	if test "X$KMODDIR" = X; then
 		KMODDIR="$prefix/attached/kmod"
 	fi
@@ -68,6 +76,9 @@ case $WITH_TARGET in
 	fi
 	if test "X$BINDIR" = X; then
 		BINDIR="$prefix/bin"
+	fi
+	if test "X$SBINDIR" = X; then
+		SBINDIR="$prefix/sbin"
 	fi
 	if test "X$KMODDIR" = X; then
 		KMODDIR="$prefix/kmod"
@@ -87,6 +98,7 @@ AC_SUBST(ARCH)
 AC_SUBST(KDIR)
 AC_SUBST(TARGET)
 AC_SUBST(BINDIR)
+AC_SUBST(SBINDIR)
 AC_SUBST(KMODDIR)
 AC_SUBST(KERNDIR)
 
@@ -95,6 +107,7 @@ AC_CONFIG_FILES([
 	executer/user/Makefile
 	executer/kernel/Makefile
 	kernel/Makefile
+	boot-attached-mic.sh
 ])
 
 AC_OUTPUT

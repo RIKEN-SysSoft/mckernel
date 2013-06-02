@@ -12,7 +12,8 @@ static int arch_master_channel_packet_handler(struct ihk_ikc_channel_desc *,
 void ikc_master_init(void)
 {
 	mchannel = kmalloc(sizeof(struct ihk_ikc_channel_desc) +
-	                   sizeof(struct ihk_ikc_master_packet), 0);
+	                   sizeof(struct ihk_ikc_master_packet),
+	                   IHK_MC_AP_CRITICAL);
 
 	ihk_mc_ikc_init_first(mchannel, arch_master_channel_packet_handler);
 }

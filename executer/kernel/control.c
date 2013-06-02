@@ -50,6 +50,11 @@ static long mcexec_prepare_image(ihk_os_t os,
 
 	pdesc->pid = task_tgid_vnr(current);
 
+	if (reserve_user_space(usrdata, &pdesc->user_start, &pdesc->user_end)) {
+		kfree(pdesc);
+		return -ENOMEM;
+	}
+
 	args = kmalloc(pdesc->args_len, GFP_KERNEL);
 	if (copy_from_user(args, pdesc->args, pdesc->args_len)) {
 		kfree(args);
@@ -82,6 +87,12 @@ static long mcexec_prepare_image(ihk_os_t os,
 
 	wait_event_interruptible(usrdata->wq_prepare, pdesc->status);
 
+	if(pdesc->err == -1){
+		ret = -EFAULT;	
+		goto free_out;
+	}
+
+	usrdata->rpgtable = pdesc->rpgtable;
 	if (copy_to_user(udesc, pdesc, sizeof(struct program_load_desc) + 
 	             sizeof(struct program_image_section) * desc.num_sections)) {
 		ret = -EFAULT;	
@@ -224,6 +235,7 @@ int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 	unsigned long s, w, d;
 #endif
 	
+//printk("mcexec_wait_syscall swd=%p req=%p size=%d\n", &swd, req, sizeof(swd.cpu));
 	if (copy_from_user(&swd, req, sizeof(swd.cpu))) {
 		return -EFAULT;
 	}
@@ -510,11 +522,12 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg)
 	return -EINVAL;
 }
 
-void mcexec_prepare_ack(ihk_os_t os, unsigned long arg)
+void mcexec_prepare_ack(ihk_os_t os, unsigned long arg, int err)
 {
 	struct program_load_desc *desc = phys_to_virt(arg);
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 
+	desc->err = err;
 	desc->status = 1;
 	
 	wake_up_all(&usrdata->wq_prepare);

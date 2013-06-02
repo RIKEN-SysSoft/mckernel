@@ -23,25 +23,36 @@
 
 extern long do_arch_prctl(unsigned long code, unsigned long address);
 
-void init_process_vm(struct process_vm *vm)
+static int init_process_vm(struct process *owner, struct process_vm *vm)
 {
+	int i;
+	void *pt = ihk_mc_pt_create(IHK_MC_AP_NOWAIT);
+
+	if(pt == NULL)
+		return -ENOMEM;
+
 	ihk_mc_spinlock_init(&vm->memory_range_lock);
 	ihk_mc_spinlock_init(&vm->page_table_lock);
 
 	ihk_atomic_set(&vm->refcount, 1);
 	INIT_LIST_HEAD(&vm->vm_range_list);
-	vm->page_table = ihk_mc_pt_create();
+	vm->page_table = pt;
+	hold_process(owner);
+	vm->owner_process = owner;
+	
+	return 0;
 }
 
 struct process *create_process(unsigned long user_pc)
 {
 	struct process *proc;
 
-	proc = ihk_mc_alloc_pages(KERNEL_STACK_NR_PAGES, 0);
+	proc = ihk_mc_alloc_pages(KERNEL_STACK_NR_PAGES, IHK_MC_AP_NOWAIT);
 	if (!proc)
 		return NULL;
 
 	memset(proc, 0, sizeof(struct process));
+	ihk_atomic_set(&proc->refcount, 2);	/* one for exit, another for wait */
 
 	ihk_mc_init_user_process(&proc->ctx, &proc->uctx,
 	                         ((char *)proc) + 
@@ -49,7 +60,10 @@ struct process *create_process(unsigned long user_pc)
 
 	proc->vm = (struct process_vm *)(proc + 1);
 
-	init_process_vm(proc->vm);
+	if(init_process_vm(proc, proc->vm) != 0){
+		ihk_mc_free_pages(proc, KERNEL_STACK_NR_PAGES);
+		return NULL;
+	}
 
 	ihk_mc_spinlock_init(&proc->spin_sleep_lock);
 	proc->spin_sleep = 0;
@@ -62,9 +76,12 @@ struct process *clone_process(struct process *org, unsigned long pc,
 {
 	struct process *proc;
 
-	proc = ihk_mc_alloc_pages(KERNEL_STACK_NR_PAGES, 0);
+	if((proc = ihk_mc_alloc_pages(KERNEL_STACK_NR_PAGES, IHK_MC_AP_NOWAIT)) == NULL){
+		return NULL;
+	}
 
-	memset(proc, 0, KERNEL_STACK_NR_PAGES);
+	memset(proc, 0, sizeof(struct process));
+	ihk_atomic_set(&proc->refcount, 2);	/* one for exit, another for wait */
 
 	/* NOTE: sp is the user mode stack! */
 	ihk_mc_init_user_process(&proc->ctx, &proc->uctx,
@@ -78,18 +95,21 @@ struct process *clone_process(struct process *org, unsigned long pc,
 	ihk_atomic_inc(&org->vm->refcount);
 	proc->vm = org->vm;
 
+	ihk_mc_spinlock_init(&proc->spin_sleep_lock);
+	proc->spin_sleep = 0;
+
 	return proc;
 }
 
 extern void __host_update_process_range(struct process *process,
                                         struct vm_range *range);
 
-void update_process_page_table(struct process *process, struct vm_range *range,
-                               enum ihk_mc_pt_attribute flag)
+static int update_process_page_table(struct process *process,
+                          struct vm_range *range, enum ihk_mc_pt_attribute flag)
 {
 	unsigned long p, pa = range->phys;
-
-    ihk_mc_spinlock_lock_noirq(&process->vm->page_table_lock);
+	unsigned long pp;
+	unsigned long flags = ihk_mc_spinlock_lock(&process->vm->page_table_lock);
 	p = range->start;
 	while (p < range->end) {
 #ifdef USE_LARGE_PAGES
@@ -101,8 +121,7 @@ void update_process_page_table(struct process *process, struct vm_range *range,
 
 			if (ihk_mc_pt_set_large_page(process->vm->page_table, (void *)p,
 					pa, PTATTR_WRITABLE | PTATTR_USER | flag) != 0) {
-				kprintf("ERROR:setting large page for 0x%lX -> 0x%lX\n", p, pa);
-				panic("");
+				goto err;
 			}
 
 			dkprintf("large page set for 0x%lX -> 0x%lX\n", p, pa);
@@ -112,8 +131,10 @@ void update_process_page_table(struct process *process, struct vm_range *range,
 		}
 		else {
 #endif		
-			ihk_mc_pt_set_page(process->vm->page_table, (void *)p,
-					pa, PTATTR_WRITABLE | PTATTR_USER | flag);
+			if(ihk_mc_pt_set_page(process->vm->page_table, (void *)p,
+			      pa, PTATTR_WRITABLE | PTATTR_USER | flag) != 0){
+				goto err;
+			}
 
 			pa += PAGE_SIZE;
 			p += PAGE_SIZE;
@@ -121,9 +142,36 @@ void update_process_page_table(struct process *process, struct vm_range *range,
 		}
 #endif
 	}
-    ihk_mc_spinlock_unlock_noirq(&process->vm->page_table_lock);
+	ihk_mc_spinlock_unlock(&process->vm->page_table_lock, flags);
+	return 0;
+
+err:
+	pp = range->start;
+	pa = range->phys;
+	while(pp < p){
+#ifdef USE_LARGE_PAGES
+		if ((p & (LARGE_PAGE_SIZE - 1)) == 0 && 
+				(pa & (LARGE_PAGE_SIZE - 1)) == 0 &&
+				(range->end - p) >= LARGE_PAGE_SIZE) {
+			ihk_mc_pt_clear_large_page(process->vm->page_table, (void *)pp);
+			pa += LARGE_PAGE_SIZE;
+			pp += LARGE_PAGE_SIZE;
+		}
+		else{
+#endif
+			ihk_mc_pt_clear_page(process->vm->page_table, (void *)pp);
+			pa += PAGE_SIZE;
+			pp += PAGE_SIZE;
+#ifdef USE_LARGE_PAGES
+		}
+#endif
+	}
+
+	ihk_mc_spinlock_unlock(&process->vm->page_table_lock, flags);
+	return -ENOMEM;
 }
 
+#if 0
 int add_process_large_range(struct process *process,
                             unsigned long start, unsigned long end,
                             unsigned long flag, unsigned long *phys)
@@ -133,7 +181,15 @@ int add_process_large_range(struct process *process,
 	int npages_allocated = 0;
 	void *virt;
 
-	range = kmalloc(sizeof(struct vm_range), 0);
+	if ((start < process->vm->region.user_start)
+			|| (process->vm->region.user_end < end)) {
+		kprintf("large range(%#lx - %#lx) is not in user avail(%#lx - %#lx)\n",
+				start, end, process->vm->region.user_start,
+				process->vm->region.user_end);
+		return -EINVAL;
+	}
+
+	range = kmalloc(sizeof(struct vm_range), ap_flag);
 	if (!range) {
 		return -ENOMEM;
 	}
@@ -149,7 +205,7 @@ int add_process_large_range(struct process *process,
 	     npages_allocated += 64) {
 		 struct vm_range sub_range;
 
-		virt = ihk_mc_alloc_pages(64, 0);
+		virt = ihk_mc_alloc_pages(64, IHK_MC_AP_NOWAIT);
 		if (!virt) {
 			return -ENOMEM;
 		}
@@ -179,15 +235,24 @@ int add_process_large_range(struct process *process,
 	list_add_tail(&range->list, &process->vm->vm_range_list);
 	return 0;
 }
-
+#endif
 
 int add_process_memory_range(struct process *process,
                              unsigned long start, unsigned long end,
                              unsigned long phys, unsigned long flag)
 {
 	struct vm_range *range;
+	int rc;
 
-	range = kmalloc(sizeof(struct vm_range), 0);
+	if ((start < process->vm->region.user_start)
+			|| (process->vm->region.user_end < end)) {
+		kprintf("range(%#lx - %#lx) is not in user avail(%#lx - %#lx)\n",
+				start, end, process->vm->region.user_start,
+				process->vm->region.user_end);
+		return -EINVAL;
+	}
+
+	range = kmalloc(sizeof(struct vm_range), IHK_MC_AP_NOWAIT);
 	if (!range) {
 		return -ENOMEM;
 	}
@@ -202,11 +267,15 @@ int add_process_memory_range(struct process *process,
 	        range->end - range->start, range->end - range->start);
 
 	if (flag & VR_REMOTE) {
-		update_process_page_table(process, range, IHK_PTA_REMOTE);
+		rc = update_process_page_table(process, range, IHK_PTA_REMOTE);
 	} else if (flag & VR_IO_NOCACHE) {
-		update_process_page_table(process, range, PTATTR_UNCACHABLE);
+		rc = update_process_page_table(process, range, PTATTR_UNCACHABLE);
 	} else {
-		update_process_page_table(process, range, 0);
+		rc = update_process_page_table(process, range, 0);
+	}
+	if(rc != 0){
+		kfree(range);
+		return rc;
 	}
 
 #if 0 // disable __host_update_process_range() in add_process_memory_range(), because it has no effect on the actual mapping on the MICs side. 
@@ -226,22 +295,28 @@ int add_process_memory_range(struct process *process,
 
 
 
-void init_process_stack(struct process *process, struct program_load_desc *pn,
+int init_process_stack(struct process *process, struct program_load_desc *pn,
                         int argc, char **argv, 
                         int envc, char **env)
 {
 	int s_ind = 0;
 	int arg_ind;
-	char *stack = ihk_mc_alloc_pages(USER_STACK_NR_PAGES, 0);
-	unsigned long *p = (unsigned long *)(stack + 
-	                   (USER_STACK_NR_PAGES * PAGE_SIZE));
+	unsigned long size = USER_STACK_NR_PAGES * PAGE_SIZE;
+	char *stack = ihk_mc_alloc_pages(USER_STACK_NR_PAGES, IHK_MC_AP_NOWAIT);
+	unsigned long *p = (unsigned long *)(stack + size);
+	unsigned long end = process->vm->region.user_end;
+	unsigned long start = end - size;
+	int rc;
 
-	memset(stack, 0, USER_STACK_NR_PAGES * PAGE_SIZE);
+	if(stack == NULL)
+		return -ENOMEM;
 
-	add_process_memory_range(process, USER_END - 
-	                         (USER_STACK_NR_PAGES * PAGE_SIZE),
-	                         USER_END,
-	                         virt_to_phys(stack), VR_STACK);
+	memset(stack, 0, size);
+
+	if((rc = add_process_memory_range(process, start, end, virt_to_phys(stack), VR_STACK)) != 0){
+		ihk_mc_free_pages(stack, USER_STACK_NR_PAGES);
+		return rc;
+	}
 
 	s_ind = -1;
 	p[s_ind--] = 0;     /* AT_NULL */
@@ -267,10 +342,10 @@ void init_process_stack(struct process *process, struct program_load_desc *pn,
 	p[s_ind] = argc;
 
 	ihk_mc_modify_user_context(process->uctx, IHK_UCR_STACK_POINTER,
-	                           USER_END + sizeof(unsigned long) * s_ind);
-	process->vm->region.stack_end = USER_END;
-	process->vm->region.stack_start = USER_END - 
-	                                  (USER_STACK_NR_PAGES * PAGE_SIZE);
+	                           end + sizeof(unsigned long) * s_ind);
+	process->vm->region.stack_end = end;
+	process->vm->region.stack_start = start;
+	return 0;
 }
 
 
@@ -280,6 +355,7 @@ unsigned long extend_process_region(struct process *proc,
 {
 	unsigned long aligned_end, aligned_new_end;
 	void *p;
+	int rc;
 
 	if (!address || address < start || address >= USER_END) {
 		return end;
@@ -303,9 +379,15 @@ unsigned long extend_process_region(struct process *proc,
 			aligned_end = (aligned_end + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
 			/* Fill in the gap between old_aligned_end and aligned_end
 			 * with regular pages */
-			p = allocate_pages((aligned_end - old_aligned_end) >> PAGE_SHIFT, 0);
-			add_process_memory_range(proc, old_aligned_end, aligned_end,
-					virt_to_phys(p), 0);
+			if((p = allocate_pages((aligned_end - old_aligned_end) >> PAGE_SHIFT,
+                                 IHK_MC_AP_NOWAIT)) == NULL){
+				return end;
+			}
+			if((rc = add_process_memory_range(proc, old_aligned_end,
+                                        aligned_end, virt_to_phys(p), VR_NONE)) != 0){
+				free_pages(p, (aligned_end - old_aligned_end) >> PAGE_SHIFT);
+				return end;
+			}
 			
 			dkprintf("filled in gap for LARGE_PAGE_SIZE aligned start: 0x%lX -> 0x%lX\n",
 					old_aligned_end, aligned_end);
@@ -316,17 +398,26 @@ unsigned long extend_process_region(struct process *proc,
 				(LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
 		address = aligned_new_end;
 
-		p = allocate_pages((aligned_new_end - aligned_end + LARGE_PAGE_SIZE) 
-				>> PAGE_SHIFT, 0);
+		if((p = allocate_pages((aligned_new_end - aligned_end + LARGE_PAGE_SIZE) >> PAGE_SHIFT,
+                            IHK_MC_AP_NOWAIT)) == NULL){
+			return end;
+		}
 
 		p_aligned = ((unsigned long)p + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
 
 		if (p_aligned > (unsigned long)p) {
 			free_pages(p, (p_aligned - (unsigned long)p) >> PAGE_SHIFT);
 		}
+		free_pages(
+			(void *)(p_aligned + aligned_new_end - aligned_end),
+			(LARGE_PAGE_SIZE - (p_aligned - (unsigned long)p)) >> PAGE_SHIFT);
 
-		add_process_memory_range(proc, aligned_end, aligned_new_end,
-				virt_to_phys((void *)p_aligned), flag);
+		if((rc = add_process_memory_range(proc, aligned_end,
+                               aligned_new_end, virt_to_phys((void *)p_aligned),
+                               flag)) != 0){
+			free_pages(p, (aligned_new_end - aligned_end + LARGE_PAGE_SIZE) >> PAGE_SHIFT);
+			return end;
+		}
 
 		dkprintf("largePTE area: 0x%lX - 0x%lX (s: %lu) -> 0x%lX - \n",
 				aligned_end, aligned_new_end, 
@@ -337,14 +428,17 @@ unsigned long extend_process_region(struct process *proc,
 	}
 #endif
 
-	p = allocate_pages((aligned_new_end - aligned_end) >> PAGE_SHIFT, 0);
+	p = allocate_pages((aligned_new_end - aligned_end) >> PAGE_SHIFT, IHK_MC_AP_NOWAIT);
 
 	if (!p) {
 		return end;
 	}
 	
-	add_process_memory_range(proc, aligned_end, aligned_new_end,
-	                         virt_to_phys(p), flag);
+	if((rc = add_process_memory_range(proc, aligned_end, aligned_new_end,
+	                         virt_to_phys(p), flag)) != 0){
+		free_pages(p, (aligned_new_end - aligned_end) >> PAGE_SHIFT);
+		return end;
+	}
 	
 	return address;
 }
@@ -372,12 +466,18 @@ extern void print_free_list(void);
 void free_process_memory(struct process *proc)
 {
 	struct vm_range *range, *next;
+	struct process_vm *vm = proc->vm;
 
-	if (!ihk_atomic_dec_and_test(&proc->vm->refcount)) {
+	if (vm == NULL) {
 		return;
 	}
 
-	list_for_each_entry_safe(range, next, &proc->vm->vm_range_list,
+	proc->vm = NULL;
+	if (!ihk_atomic_dec_and_test(&vm->refcount)) {
+		return;
+	}
+
+	list_for_each_entry_safe(range, next, &vm->vm_range_list,
 	                         list) {
 		if (!(range->flag & VR_REMOTE) &&
 		    !(range->flag & VR_IO_NOCACHE) &&
@@ -389,13 +489,33 @@ void free_process_memory(struct process *proc)
 		list_del(&range->list);
 		ihk_mc_free(range);
 	}
-	/* TODO: Free page tables */
-	proc->status = PS_ZOMBIE;
+
+	ihk_mc_pt_destroy(vm->page_table);
+	free_process(vm->owner_process);
+}
+
+void hold_process(struct process *proc)
+{
+	if (proc->status & (PS_ZOMBIE | PS_EXITED)) {
+		panic("hold_process: already exited process");
+	}
+
+	ihk_atomic_inc(&proc->refcount);
+	return;
 }
 
 void destroy_process(struct process *proc)
 {
-	ihk_mc_free_pages(proc, 1);
+	ihk_mc_free_pages(proc, KERNEL_STACK_NR_PAGES);
+}
+
+void free_process(struct process *proc)
+{
+	if (!ihk_atomic_dec_and_test(&proc->refcount)) {
+		return;
+	}
+
+	destroy_process(proc);
 }
 
 static void idle(void)
@@ -443,6 +563,7 @@ void schedule(void)
 	struct process *next, *prev, *proc, *tmp = NULL;
 	int switch_ctx = 0;
 	unsigned long irqstate;
+	struct process *last;
 
 	irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 
@@ -455,9 +576,13 @@ void schedule(void)
 		--v->runq_len;	
 		
 		/* Round-robin if not exited yet */
-		if (prev->status != PS_EXITED) {
+		if (!(prev->status & (PS_ZOMBIE | PS_EXITED))) {
 			list_add_tail(&prev->sched_list, &(v->runq));
 			++v->runq_len;
+		}
+
+		if (!v->runq_len) {
+			v->status = CPU_STATUS_IDLE;
 		}
 	}
 
@@ -479,7 +604,6 @@ void schedule(void)
 		v->current = next;
 	}
 	
-
 	if (switch_ctx) {
 		dkprintf("[%d] schedule: %d => %d \n",
 		        ihk_mc_get_processor_id(),
@@ -496,10 +620,15 @@ void schedule(void)
 		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 		
 		if (prev) {
-			ihk_mc_switch_context(&prev->ctx, &next->ctx);
+			last = ihk_mc_switch_context(&prev->ctx, &next->ctx, prev);
 		} 
 		else {
-			ihk_mc_switch_context(NULL, &next->ctx);
+			last = ihk_mc_switch_context(NULL, &next->ctx, prev);
+		}
+
+		if ((last != NULL) && (last->status & (PS_ZOMBIE | PS_EXITED))) {
+			free_process_memory(last);
+			free_process(last);
 		}
 	}
 	else {

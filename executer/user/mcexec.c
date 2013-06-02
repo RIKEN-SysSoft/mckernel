@@ -46,6 +46,16 @@ extern int mc_cmd_server_init();
 extern void mc_cmd_server_exit();
 extern void mc_cmd_handle(int fd, int cpu, unsigned long args[6]);
 
+#ifdef CMD_DCFA
+extern void ibmic_cmd_server_exit();
+extern int ibmic_cmd_server_init();
+#endif
+
+#ifdef CMD_DCFAMPI
+extern void dcfampi_cmd_server_exit();
+extern int dcfampi_cmd_server_init();
+#endif
+
 int __glob_argc = -1;
 char **__glob_argv = 0;
 #endif
@@ -435,6 +445,20 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error: cmd server init failed\n");
 		return 1;
 	}
+
+#ifdef CMD_DCFA
+	if(ibmic_cmd_server_init()){
+		fprintf(stderr, "Error: Failed to initialize ibmic_cmd_server.\n");
+		return -1;
+	}
+#endif
+
+#ifdef CMD_DCFAMPI
+	if(dcfampi_cmd_server_init()){
+		fprintf(stderr, "Error: Failed to initialize dcfampi_cmd_server.\n");
+		return -1;
+	}
+#endif
 	__dprint("mccmd server initialized\n");
 #endif
 
@@ -500,12 +524,32 @@ void do_syscall_load(int fd, int cpu, unsigned long dest, unsigned long src,
 	}
 }
 
+static long
+do_generic_syscall(
+		struct syscall_wait_desc *w)
+{
+	long	ret;
+
+	__dprintf("do_generic_syscall(%ld)\n", w->sr.number);
+
+	errno = 0;
+	ret = syscall(w->sr.number, w->sr.args[0], w->sr.args[1], w->sr.args[2],
+		 w->sr.args[3], w->sr.args[4], w->sr.args[5]);
+	if (errno != 0) {
+		ret = -errno;
+	}
+
+	__dprintf("do_generic_syscall(%ld):%ld (%#lx)\n", w->sr.number, ret, ret);
+	return ret;
+}
+
 #define SET_ERR(ret) if (ret == -1) ret = -errno
 
 int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 {
 	struct syscall_wait_desc w;
-	int ret;
+	long ret;
+	char *fn;
 	
 	w.cpu = cpu;
 
@@ -530,7 +574,17 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			
 			__dprintf("open: %s\n", dma_buf);
 
-			ret = open((char *)dma_buf, w.sr.args[1], w.sr.args[2]);
+			fn = (char *)dma_buf;
+			if(!strcmp(fn, "/proc/meminfo")){
+				fn = "/admin/fs/attached/files/proc/meminfo";
+			}
+			else if(!strcmp(fn, "/proc/cpuinfo")){
+				fn = "/admin/fs/attached/files/proc/cpuinfo";
+			}
+			else if(!strcmp(fn, "/sys/devices/system/cpu/online")){
+				fn = "/admin/fs/attached/files/sys/devices/system/cpu/online";
+			}
+			ret = open(fn, w.sr.args[1], w.sr.args[2]);
 			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
@@ -694,6 +748,13 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 					w.sr.args[0], cpu);
 
 #ifdef USE_SYSCALL_MOD_CALL
+#ifdef CMD_DCFA
+			ibmic_cmd_server_exit();
+#endif
+
+#ifdef CMD_DCFAMPI
+			dcfampi_cmd_server_exit();
+#endif
 			mc_cmd_server_exit();
 			__dprint("mccmd server exited\n");
 #endif
@@ -805,7 +866,8 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 		}
 #endif
 		default:
-			__dprintf("Unhandled system calls: %ld\n", w.sr.number);
+			 ret = do_generic_syscall(&w);
+			 do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 
 		}

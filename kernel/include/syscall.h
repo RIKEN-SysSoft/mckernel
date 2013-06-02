@@ -14,6 +14,7 @@
 
 #define SCD_MSG_PREPARE_PROCESS         0x1
 #define SCD_MSG_PREPARE_PROCESS_ACKED   0x2
+#define SCD_MSG_PREPARE_PROCESS_NACKED  0x7
 #define SCD_MSG_SCHEDULE_PROCESS        0x3
 
 #define SCD_MSG_INIT_CHANNEL            0x5
@@ -88,8 +89,12 @@ struct program_load_desc {
 	int status;
 	int cpu;
 	int pid;
+	int err;
 	unsigned long entry;
+	unsigned long user_start;
+	unsigned long user_end;
 	unsigned long rprocess;
+	unsigned long rpgtable;
 	unsigned long at_phdr;
 	unsigned long at_phent;
 	unsigned long at_phnum;

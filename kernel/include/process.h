@@ -7,6 +7,7 @@
 #include <ihk/atomic.h>
 #include <list.h>
 
+#define VR_NONE            0x0
 #define VR_STACK           0x1
 #define VR_RESERVED        0x2
 #define VR_IO_NOCACHE      0x100
@@ -40,6 +41,7 @@ struct vm_regions {
 	unsigned long brk_start, brk_end;
 	unsigned long map_start, map_end;
 	unsigned long stack_start, stack_end;
+	unsigned long user_start, user_end;
 };
 
 struct process_vm;
@@ -49,6 +51,7 @@ struct process {
 	int status;
 	int cpu_id;
 
+	ihk_atomic_t refcount;
 	struct process_vm *vm;
 
 	ihk_mc_kernel_context_t ctx;
@@ -72,6 +75,7 @@ struct process_vm {
 	struct page_table *page_table;
 	struct list_head vm_range_list;
 	struct vm_regions region;
+	struct process *owner_process;		/* process that reside on the same page */
  	
     ihk_spinlock_t page_table_lock;
     ihk_spinlock_t memory_range_lock;
@@ -87,18 +91,23 @@ struct process *create_process(unsigned long user_pc);
 struct process *clone_process(struct process *org,
                               unsigned long pc, unsigned long sp);
 void destroy_process(struct process *proc);
+void hold_process(struct process *proc);
+void free_process(struct process *proc);
 void free_process_memory(struct process *proc);
 
 int add_process_memory_range(struct process *process,
                              unsigned long start, unsigned long end,
                              unsigned long phys, unsigned long flag);
+#if 0
 int add_process_large_range(struct process *process,
                             unsigned long start, unsigned long end,
-                            unsigned long flag, unsigned long *phys);
+                            unsigned long flag, unsigned long *phys,
+                            enum ihk_mc_ap_flag ap_flag);
+#endif
 int remove_process_region(struct process *proc,
                           unsigned long start, unsigned long end);
 struct program_load_desc;
-void init_process_stack(struct process *process, struct program_load_desc *pn,
+int init_process_stack(struct process *process, struct program_load_desc *pn,
                         int argc, char **argv, 
                         int envc, char **env);
 unsigned long extend_process_region(struct process *proc,

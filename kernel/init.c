@@ -222,7 +222,9 @@ int main(void)
 
 #ifdef DCFA_KMOD
 	mc_cmd_client_init();
+#ifdef CMD_DCFA
 	ibmic_cmd_init();
+#endif
 #endif
 
 #ifdef DCFA_RUN
