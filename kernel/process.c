@@ -112,7 +112,7 @@ static int update_process_page_table(struct process *process,
                           struct vm_range *range, enum ihk_mc_pt_attribute flag)
 {
 	unsigned long p, pa = range->phys;
-
+	unsigned long pp;
 	unsigned long flags = ihk_mc_spinlock_lock(&process->vm->page_table_lock);
 	p = range->start;
 	while (p < range->end) {
@@ -125,8 +125,7 @@ static int update_process_page_table(struct process *process,
 
 			if (ihk_mc_pt_set_large_page(process->vm->page_table, (void *)p,
 					pa, PTATTR_WRITABLE | PTATTR_USER | flag) != 0) {
-				kprintf("ERROR:setting large page for 0x%lX -> 0x%lX\n", p, pa);
-				panic("");
+				goto err;
 			}
 
 			dkprintf("large page set for 0x%lX -> 0x%lX\n", p, pa);
@@ -138,8 +137,7 @@ static int update_process_page_table(struct process *process,
 #endif		
 			if(ihk_mc_pt_set_page(process->vm->page_table, (void *)p,
 			      pa, PTATTR_WRITABLE | PTATTR_USER | flag) != 0){
-				ihk_mc_spinlock_unlock(&process->vm->page_table_lock, flags);
-				return -ENOMEM;
+				goto err;
 			}
 
 			pa += PAGE_SIZE;
@@ -150,6 +148,31 @@ static int update_process_page_table(struct process *process,
 	}
 	ihk_mc_spinlock_unlock(&process->vm->page_table_lock, flags);
 	return 0;
+
+err:
+	pp = range->start;
+	pa = range->phys;
+	while(pp < p){
+#ifdef USE_LARGE_PAGES
+		if ((p & (LARGE_PAGE_SIZE - 1)) == 0 && 
+				(pa & (LARGE_PAGE_SIZE - 1)) == 0 &&
+				(range->end - p) >= LARGE_PAGE_SIZE) {
+			ihk_mc_pt_clear_large_page(process->vm->page_table, (void *)pp);
+			pa += LARGE_PAGE_SIZE;
+			pp += LARGE_PAGE_SIZE;
+		}
+		else{
+#endif
+			ihk_mc_pt_clear_page(process->vm->page_table, (void *)pp);
+			pa += PAGE_SIZE;
+			pp += PAGE_SIZE;
+#ifdef USE_LARGE_PAGES
+		}
+#endif
+	}
+
+	ihk_mc_spinlock_unlock(&process->vm->page_table_lock, flags);
+	return -ENOMEM;
 }
 
 #if 0

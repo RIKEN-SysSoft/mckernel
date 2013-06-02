@@ -621,6 +621,11 @@ int ihk_mc_pt_clear_page(page_table_t pt, void *virt)
 	return __clear_pt_page(pt, virt, 0);
 }
 
+int ihk_mc_pt_clear_large_page(page_table_t pt, void *virt)
+{
+	return __clear_pt_page(pt, virt, 1);
+}
+
 void load_page_table(struct page_table *pt)
 {
 	unsigned long pt_addr;
