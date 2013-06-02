@@ -1051,6 +1051,11 @@ SYSCALL_DECLARE(sched_getaffinity)
 	return min_len;
 }
 
+SYSCALL_DECLARE(sched_yield)
+{
+	return -ENOSYS;
+}
+
 SYSCALL_DECLARE(noop)
 {
 	kprintf("noop() \n");
@@ -1170,6 +1175,7 @@ static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
 	[18] = sys_pwrite,
 	[20] = sys_writev,
 	[21] = sys_access,
+	[24] = sys_sched_yield,
 	[28] = sys_madvise,
 	[39] = sys_getpid,
 	[56] = sys_clone,
@@ -1225,7 +1231,7 @@ static char *syscall_name[] = {
 	[17] = "sys_pread",
 	[18] = "sys_pwrite",
 	[20] = "sys_writev",
-	//	[24] = "sys_sched_yield",
+	[24] = "sys_sched_yield",
 	[21] = "sys_access",
 	[28] = "sys_madvise",
 	[39] = "sys_getpid",
