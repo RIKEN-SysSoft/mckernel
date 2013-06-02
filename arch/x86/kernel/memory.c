@@ -302,7 +302,8 @@ static int __set_pt_page(struct page_table *pt, void *virt, unsigned long phys,
 	struct page_table *newpt;
 	enum ihk_mc_ap_flag ap_flag;
 
-	ap_flag = attr & PTATTR_USER? IHK_MC_AP_NOWAIT: IHK_MC_AP_CRITICAL;
+	ap_flag = (attr & (PTATTR_USER | PTATTR_FOR_USER)) ?
+	                IHK_MC_AP_NOWAIT: IHK_MC_AP_CRITICAL;
 
 	if (!pt) {
 		pt = init_pt;

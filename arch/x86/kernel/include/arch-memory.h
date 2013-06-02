@@ -91,6 +91,7 @@ enum ihk_mc_pt_attribute {
 	PTATTR_USER       = 0x04,
 	PTATTR_LARGEPAGE  = 0x80,
 	PTATTR_UNCACHABLE = 0x10000,
+	PTATTR_FOR_USER   = 0x20000,
 };
 
 typedef unsigned long pte_t;
