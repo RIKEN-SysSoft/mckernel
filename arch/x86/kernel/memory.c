@@ -399,7 +399,7 @@ static int __clear_pt_page(struct page_table *pt, void *virt, int largepage)
 		}
 	}
 	
-	if ((pt->entry[l2idx] & PFL2_PRESENT)) {
+	if (!(pt->entry[l2idx] & PFL2_PRESENT)) {
 		return -EINVAL;
 	}
 
