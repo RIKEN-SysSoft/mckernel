@@ -24,6 +24,7 @@
 struct ikc_scd_packet {
 	int msg;
 	int ref;
+	int err;
 	unsigned long arg;
 };
 

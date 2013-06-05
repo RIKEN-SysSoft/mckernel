@@ -367,6 +367,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 {
 	struct ikc_scd_packet *packet = __packet;
 	struct ikc_scd_packet pckt;
+	int rc;
 
 	switch (packet->msg) {
 	case SCD_MSG_INIT_CHANNEL_ACKED:
@@ -375,10 +376,14 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		return 0;
 
 	case SCD_MSG_PREPARE_PROCESS:
-		if(process_msg_prepare_process(packet->arg) == 0)
+		if((rc = process_msg_prepare_process(packet->arg)) == 0){
 			pckt.msg = SCD_MSG_PREPARE_PROCESS_ACKED;
-		else
+			pckt.err = 0;
+		}
+		else{
 			pckt.msg = SCD_MSG_PREPARE_PROCESS_NACKED;
+			pckt.err = rc;
+		}
 		pckt.ref = packet->ref;
 		pckt.arg = packet->arg;
 		syscall_channel_send(c, &pckt);

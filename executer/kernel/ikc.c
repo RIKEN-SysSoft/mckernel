@@ -35,7 +35,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		break;
 
 	case SCD_MSG_PREPARE_PROCESS_NACKED:
-		mcexec_prepare_ack(__os, pisp->arg, -1);
+		mcexec_prepare_ack(__os, pisp->arg, pisp->err);
 		break;
 
 	case SCD_MSG_SYSCALL_ONESIDE:

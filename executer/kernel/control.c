@@ -87,8 +87,8 @@ static long mcexec_prepare_image(ihk_os_t os,
 
 	wait_event_interruptible(usrdata->wq_prepare, pdesc->status);
 
-	if(pdesc->err == -1){
-		ret = -EFAULT;	
+	if(pdesc->err < 0){
+		ret = pdesc->err;	
 		goto free_out;
 	}
 
