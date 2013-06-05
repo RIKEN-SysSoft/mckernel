@@ -1043,8 +1043,9 @@ SYSCALL_DECLARE(sched_getaffinity)
     int min_ncpus = MIN2(min_len*8, cpu_info->ncpus);
 
 	CPU_ZERO_S(min_len, mask);
-	for (cpu_id = 0; cpu_id < min_ncpus; ++cpu_id)
-		CPU_SET_S(cpu_info->hw_ids[cpu_id], min_len, mask);
+	CPU_SET_S(ihk_mc_get_hardware_processor_id(), min_len, mask);
+	//for (cpu_id = 0; cpu_id < min_ncpus; ++cpu_id)
+	//	CPU_SET_S(cpu_info->hw_ids[cpu_id], min_len, mask);
 
     //	dkprintf("sched_getaffinity returns full mask\n");
 
