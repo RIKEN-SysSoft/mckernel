@@ -1,16 +1,14 @@
-BUILD_TARGET ?= attached-mic
+BUILD_TARGET ?= @TARGET@
+INSTALL_KL_DIR ?= @KERNDIR@
 SRC = $(CURDIR)
-IHKBASE ?= $(SRC)/../../ihk/cokernel
-INSTALL_KL_DIR ?= ./
 
-O ?= $(KBUILD_OUTPUT)
-N ?= kernel_obj.o
+DCFA_MODE ?= umod
+IHKBASE ?= $(SRC)/../../ihk/cokernel
+O ?= $(CURDIR)/build
 V ?= $(VERBOSE)
 
-CONFIG_V ?= KNF
-DCFA_V ?= u
-
-EXTRA_OBJS ?=
+N ?= kernel_obj.o
+EXTRA_OBJS ?= 
 
 ## compile items
 
@@ -22,7 +20,7 @@ KERNEL_MAKEFILE = $(addsuffix /Makefile,$(addprefix $(O)/,$(BUILD_TARGET)))
 
 ## install items
 
-ifeq ("$(DCFA_V)", "k")
+ifeq ("$(DCFA_MODE)", "kmod")
 KERNEL_OBJ_PUB = $(INSTALL_KL_DIR)/$(N)
 KERNEL_MAKEFILE_PUB = $(INSTALL_KL_DIR)/Makefile
 else
@@ -37,9 +35,16 @@ $(if $(O),,$(error Specify the compilation target directory))
 #	$(error IHK is not found in $(IHKBASE)))
 
 
-.PHONY: kmod umod clean depend
+.PHONY: all kmod umod clean depend
 .SECONDARY:	$(KERNEL_MAKEFILE) $(KERNEL_MAKEFILE_PUB)
 
+all: $(DCFA_MODE)
+
+install: $(DCFA_MODE)_install
+
+clean:
+	rm -rf $(O)
+	
 kmod: $(KERNEL_OBJ)
 
 umod: $(KERNELS)
@@ -70,8 +75,7 @@ $(KERNEL_MAKEFILE): Makefile.build.dcfa
 	@echo 'IHKBASE = $(IHKBASE)' >> $@
 	@echo 'TARGET = $(notdir $(patsubst %/,%,$(dir $@)))' >> $@
 	@echo 'TARGETDIR = $$(shell echo $$(TARGET) | sed "s/-/\//")' >> $@	
-	@echo 'CONFIG_V = $(CONFIG_V)' >> $@
-	@echo 'DCFA_V = $(DCFA_V)' >> $@
+	@echo 'DCFA_MODE = $(DCFA_MODE)' >> $@
 	@echo 'KERNEL_OBJ = $(KERNEL_OBJ)' >> $@
 	@echo 'EXTRA_OBJS = $(EXTRA_OBJS)' >> $@
 	@echo 'EXTRA_CFLAGS = $(EXTRA_CFLAGS)' >> $@
@@ -88,15 +92,5 @@ $(KERNEL_MAKEFILE_PUB): Makefile.build.dcfa.public
 	@echo 'TARGETDIR = $$(shell echo $$(TARGET) | sed "s/-/\//")' >> $@	
 	@echo 'KERNEL_OBJ = $(KERNEL_OBJ_PUB)' >> $@
 	@cat $^ >> $@
-		
-umod_clean: $(addsuffix .umod_clean,$(BUILD_TARGET))
-
-kmod_clean: $(addsuffix .kmod_clean,$(BUILD_TARGET))
-
-%.umod_clean: $(O)/%/Makefile
-	@make --no-print-directory -C $(O)/$(basename $@) $(SUBCMD_OPTS) umod_clean
-	
-%.kmod_clean: $(O)/%/Makefile
-	@make --no-print-directory -C $(O)/$(basename $@) $(SUBCMD_OPTS) kmod_clean
 	
 FORCE:

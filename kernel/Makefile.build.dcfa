@@ -1,12 +1,12 @@
 IHKDIR=$(IHKBASE)/$(TARGETDIR)
 OBJS = init.o mem.o debug.o mikc.o listeners.o ap.o syscall.o cls.o host.o
-OBJS += process.o copy.o waitq.o futex.o timer.o
+OBJS += process.o copy.o waitq.o futex.o timer.o plist.o
 DEPSRCS=$(wildcard $(SRC)/*.c)
 
 CFLAGS += -I$(SRC)/include -mcmodel=kernel -D__KERNEL__
-CFLAGS += -DKNC_MAP_MICPA -DCONFIG_$(CONFIG_V) $(EXTRA_CFLAGS)
+CFLAGS += -DKNC_MAP_MICPA $(EXTRA_CFLAGS)
 
-ifeq ("$(DCFA_V)", "k")
+ifeq ("$(DCFA_MODE)", "kmod")
 CFLAGS += -DDCFA_RUN
 else
 CFLAGS += -DDCFA_KMOD
@@ -19,7 +19,6 @@ include $(SRC)/config/config.$(TARGET)
 include $(IHKBASE)/Makefile.common
 
 SUBCMD_OPTS = TARGET=$(TARGET) O=$(CURDIR)/ihk CC=$(CC) LD=$(LD) SRC=$(SRC)
-SUBCMD_OPTS += CONFIG_V=$(CONFIG_V)
 
 OBJDUMP ?= objdump
 OBJCOPY ?= objcopy

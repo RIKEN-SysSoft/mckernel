@@ -13,6 +13,10 @@ AC_ARG_WITH([target],
     [--with-target={attached-mic | builtin-mic | builtin-x86}],[target, default is attached-mic]),
   [WITH_TARGET=$withval],[WITH_TARGET=yes])
 
+AC_ARG_ENABLE([dcfa],
+  [AS_HELP_STRING(
+  	[--enable-dcfa],[Enable DCFA modules])],[],[enable_dcfa=no])
+
 case "X$WITH_KERNELSRC" in
     Xyes | Xno | X)
 	WITH_KERNELSRC='/lib/modules/`uname -r`/build'
@@ -110,4 +114,7 @@ AC_CONFIG_FILES([
 	boot-attached-mic.sh
 ])
 
+AS_IF([test "x$enable_dcfa" = xyes], [
+        AC_CONFIG_FILES([kernel/Makefile.dcfa])])
+    
 AC_OUTPUT
