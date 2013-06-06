@@ -14,3 +14,10 @@ elfboot/elfboot_test
 linux/executer/mcexec
 linux/mod_test*
 linux/target
+
+Makefile
+boot-attached-mic.sh
+config.log
+config.status
+/executer/user/mcexec
+/kernel/build

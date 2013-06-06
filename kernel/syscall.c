@@ -115,6 +115,9 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid)
 {
 	struct ikc_scd_packet packet;
 	struct syscall_response *res;
+#ifdef USE_DMA
+	unsigned long fin;
+#endif
 	struct syscall_params *scp;
 	struct ihk_ikc_channel_desc *syscall_channel;
 	int ret;
@@ -1655,6 +1658,7 @@ SYSCALL_DECLARE(rt_sigqueueinfo)
 	siginfo_t *info = (siginfo_t *)ihk_mc_syscall_arg2(ctx);
 	siginfo_t winfo;
 
+	if (0) kprintf("sys_rt_sigqueueinfo(%d,%d,%p)\n", pid, sig, info);
 	if(copy_from_user(proc, &winfo, info, sizeof winfo))
 		return -EFAULT;
 
