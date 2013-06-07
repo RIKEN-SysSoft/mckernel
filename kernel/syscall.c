@@ -636,13 +636,6 @@ SYSCALL_DECLARE(getdents64)
 	SYSCALL_FOOTER;
 }
 
-SYSCALL_DECLARE(fcntl)
-{
-    SYSCALL_HEADER;
-	SYSCALL_ARGS_2(D, D);
-	SYSCALL_FOOTER;
-}
-
 SYSCALL_DECLARE(readlink)
 {
     SYSCALL_HEADER;
@@ -1182,7 +1175,6 @@ static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
 	[56] = sys_clone,
 	[60] = sys_exit,
 	[63] = sys_uname,
-    [72] = sys_fcntl,
 	[79] = sys_getcwd,
     [89] = sys_readlink,
 	[96] = sys_gettimeofday,
@@ -1239,8 +1231,7 @@ static char *syscall_name[] = {
 	[56] = "sys_clone",
 	[60] = "sys_exit",
 	[63] = "sys_uname",
-
-    [72] = "sys_fcntl",
+	[72] = "sys_fcntl",
 	[79] = "sys_getcwd",
     [89] = "sys_readlink",
 	[96] = "sys_gettimeofday",

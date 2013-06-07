@@ -791,21 +791,6 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
             break; }
 
-		case __NR_fcntl: {
-            int c;
-            switch(w.sr.args[1]) {
-            case F_GETFD:
-                c = fcntl(w.sr.args[0], w.sr.args[1]);
-                __dprintf("fcntl,F_GETFD,c=%x\n", c);
-                ret = (c < 0) ? -errno : c;
-                break;
-            default:
-                ret = -EINVAL; 
-                break;
-            }
-			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
-            break; }
-
 		case __NR_getdents64: { // linux-2.6.34.13/fs/readdir.c
 			long c = syscall((int)__NR_getdents64, (unsigned int)w.sr.args[0], (void *)dma_buf, (unsigned int)w.sr.args[2]);
             ret = (c < 0) ? -errno : c;
