@@ -674,20 +674,6 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			                  w.sr.args[1], sizeof(struct stat));
 			break;
 
-		case __NR_ioctl:
-			if (w.sr.args[1] == TCGETS) {
-				ret = ioctl(w.sr.args[0], w.sr.args[1],
-				            (unsigned long)dma_buf);
-				if (ret == -1) {
-					ret = -errno;
-				}
-				do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf,
-				                  w.sr.args[2],
-				                  sizeof(struct kernel_termios)
-					);
-			}
-			break;
-		
             /*
               glibc-2.14.90/sysdeps/unix/sysv/linux/x86_64/time.S
              linux-2.6.34.13/arch/x86/kernel/vsyscall_64.c

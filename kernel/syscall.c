@@ -227,73 +227,6 @@ SYSCALL_DECLARE(gettimeofday)
 	SYSCALL_FOOTER;
 }
 
-
-static DECLARE_WAITQ(my_waitq);
-
-SYSCALL_DECLARE(ioctl)
-{
-
-	switch (ihk_mc_syscall_arg0(ctx)) {
-
-	case 0: {
-		struct waitq_entry my_wait;
-		waitq_init_entry(&my_wait, cpu_local_var(current));
-
-		dkprintf("CPU[%d] pid[%d] going to sleep...\n",
-		        cpu_local_var(current)->cpu_id, 
-				cpu_local_var(current)->pid);
-
-		waitq_prepare_to_wait(&my_waitq, &my_wait, PS_INTERRUPTIBLE);
-		schedule();
-		
-		waitq_finish_wait(&my_waitq, &my_wait);
-		
-		dkprintf("CPU[%d] pid[%d] woke up!\n",
-		        cpu_local_var(current)->cpu_id, 
-				cpu_local_var(current)->pid);
-
-		break;
-	}
-
-	case 1:
-	
-		dkprintf("CPU[%d] pid[%d] waking up everyone..\n",
-		        cpu_local_var(current)->cpu_id, 
-				cpu_local_var(current)->pid);
-		
-		waitq_wakeup(&my_waitq);
-		
-		break;
-	
-	case 2:
-	
-		dkprintf("[%d] pid %d made an ioctl\n", 
-		        cpu_local_var(current)->cpu_id, 
-				cpu_local_var(current)->pid);
-
-		break;
-	
-	default:
-		dkprintf("ioctl() unimplemented\n");
-		
-	}
-
-	return 0;
-
-#if 0
-	SYSCALL_HEADER;
-
-	/* Very ad-hoc for termios */
-	switch(ihk_mc_syscall_arg1(ctx)) {
-	case 0x5401:
-		SYSCALL_ARGS_3(D, D, MO);
-		SYSCALL_FOOTER;
-	}
-
-	return -EINVAL;
-#endif
-}
-
 SYSCALL_DECLARE(read)
 {
 	SYSCALL_HEADER;
@@ -1164,7 +1097,6 @@ static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
 	[12] = sys_brk,
 	[13] = sys_rt_sigaction,
 	[14] = sys_rt_sigprocmask,
-	[16] = sys_ioctl,
 	[17] = sys_pread,
 	[18] = sys_pwrite,
 	[20] = sys_writev,
