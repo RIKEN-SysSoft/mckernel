@@ -171,6 +171,96 @@ err:
 	return -ENOMEM;
 }
 
+int remove_process_memory_range(struct process *process, unsigned long start, unsigned long end)
+{
+	struct process_vm * const vm = process->vm;
+	struct vm_range *range;
+	struct vm_range *next;
+	int error;
+	unsigned long freestart;
+	unsigned long freephys;
+	unsigned long freesize;
+	struct vm_range *freerange;
+	struct vm_range *newrange;
+
+	list_for_each_entry_safe(range, next, &vm->vm_range_list, list) {
+		if ((range->end <= start) || (end <= range->start)) {
+			/* no overlap */
+			continue;
+		}
+
+		error = 0;
+		freerange = NULL;
+		freesize = 0;
+
+		if (start <= range->start) {
+			/* partial or whole delete from range->start */
+			freestart = range->start;
+			freephys = range->phys;
+			freesize = end - range->start;
+
+			if (freesize >= (range->end - range->start)) {
+				freesize = range->end - range->start;
+				list_del(&range->list);
+				freerange = range;
+			}
+			else {
+				range->start += freesize;
+				range->phys += freesize;
+			}
+		}
+		else if (range->end <= end) {
+			/* partial delete up to range->end */
+			freestart = start;
+			freephys = range->phys + (start - range->start);
+			freesize = range->end - start;
+
+			range->end = start;
+		}
+		else {
+			/* delete the middle part of the 'range' */
+			freestart = start;
+			freephys = range->phys + (start - range->start);
+			freesize = end - start;
+
+			newrange = kmalloc(sizeof(struct vm_range), IHK_MC_AP_NOWAIT);
+			if (!newrange) {
+				kprintf("remove_process_memory_range:kmalloc failed\n");
+				return -ENOMEM;
+			}
+			INIT_LIST_HEAD(&range->list);
+			newrange->start = end;
+			newrange->end = range->end;
+			newrange->phys = range->phys + (end - range->start);
+			newrange->flag = range->flag;
+			list_add_tail(&newrange->list, &vm->vm_range_list);
+
+			range->end = start;
+		}
+
+		if (freesize > 0) {
+			error = remove_process_region(process, freestart, (freestart + freesize));
+			if (error) {
+				kprintf("remove_process_memory_range:remove_process_region failed: %d\n", error);
+				/* through */
+			}
+
+			if (!(range->flag & (VR_REMOTE | VR_IO_NOCACHE | VR_RESERVED))) {
+				// XXX: need TLB shootdown?
+				ihk_mc_free_pages(phys_to_virt(freephys), freesize>>PAGE_SHIFT);
+			}
+		}
+		if (freerange != NULL) {
+			ihk_mc_free(freerange);
+		}
+		if (error) {
+			return error;
+		}
+	}
+
+	return 0;
+}
+
 int add_process_memory_range(struct process *process,
                              unsigned long start, unsigned long end,
                              unsigned long phys, unsigned long flag)

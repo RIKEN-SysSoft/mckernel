@@ -98,6 +98,8 @@ void free_process_memory(struct process *proc);
 int add_process_memory_range(struct process *process,
                              unsigned long start, unsigned long end,
                              unsigned long phys, unsigned long flag);
+int remove_process_memory_range(
+		struct process *process, unsigned long start, unsigned long end);
 int remove_process_region(struct process *proc,
                           unsigned long start, unsigned long end);
 struct program_load_desc;

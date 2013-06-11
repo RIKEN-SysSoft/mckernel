@@ -506,12 +506,16 @@ SYSCALL_DECLARE(mmap)
 SYSCALL_DECLARE(munmap)
 {
 	unsigned long address, len;
+	int error;
 
 	address = ihk_mc_syscall_arg0(ctx);
 	len = ihk_mc_syscall_arg1(ctx);
 
-	return remove_process_region(cpu_local_var(current), address, 
-	                             address + len);
+	ihk_mc_spinlock_lock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
+	error = remove_process_memory_range(cpu_local_var(current), address, address+len);
+	ihk_mc_spinlock_unlock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
+
+	return error;
 }
 
 SYSCALL_DECLARE(mprotect)
