@@ -92,6 +92,7 @@ int ihk_mc_pt_change_page(page_table_t pt, void *virt,
                           enum ihk_mc_pt_attribute);
 int ihk_mc_pt_clear_page(page_table_t pt, void *virt);
 int ihk_mc_pt_clear_large_page(page_table_t pt, void *virt);
+int ihk_mc_pt_clear_range(page_table_t pt, void *start, void *end);
 int ihk_mc_pt_prepare_map(page_table_t pt, void *virt, unsigned long size,
                           enum ihk_mc_pt_prepare_flag);
 

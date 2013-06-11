@@ -213,6 +213,12 @@ static unsigned long attr_to_l1attr(enum ihk_mc_pt_attribute attr)
 	l2i = ((virt) >> PTL2_SHIFT) & (PT_ENTRIES - 1); \
 	l1i = ((virt) >> PTL1_SHIFT) & (PT_ENTRIES - 1)
 
+#define	GET_INDICES_VIRT(l4i, l3i, l2i, l1i)		\
+		( ((uint64_t)(l4i) << PTL4_SHIFT)	\
+		| ((uint64_t)(l3i) << PTL3_SHIFT)	\
+		| ((uint64_t)(l2i) << PTL2_SHIFT)	\
+		| ((uint64_t)(l1i) << PTL1_SHIFT)	\
+		)
 
 void set_pte(pte_t *ppte, unsigned long phys, int attr)
 {
@@ -624,6 +630,234 @@ int ihk_mc_pt_clear_page(page_table_t pt, void *virt)
 int ihk_mc_pt_clear_large_page(page_table_t pt, void *virt)
 {
 	return __clear_pt_page(pt, virt, 1);
+}
+
+static int clear_range_l1(struct page_table *pt, uint64_t base, uint64_t start, uint64_t end)
+{
+	int six;
+	int eix;
+	int ret;
+	int i;
+
+	six = (start <= base)? 0: (start - base) >> PTL1_SHIFT;
+	eix = ((base + PTL2_SIZE) <= end)? PT_ENTRIES
+		: ((end - base) + (PTL1_SIZE - 1)) >> PTL1_SHIFT;
+
+	ret = -ENOENT;
+	for (i = six; i < eix; ++i) {
+		if (!(pt->entry[i] & PFL1_PRESENT)) {
+			continue;
+		}
+
+		pt->entry[i] = 0;
+		ret = 0;
+	}
+
+	return ret;
+}
+
+static int clear_range_l2(struct page_table *pt, uint64_t base, uint64_t start, uint64_t end)
+{
+	int six;
+	int eix;
+	int ret;
+	int i;
+	uint64_t off;
+	struct page_table *q;
+	int error;
+
+	six = (start <= base)? 0: (start - base) >> PTL2_SHIFT;
+	eix = ((base + PTL3_SIZE) <= end)? PT_ENTRIES
+		: ((end - base) + (PTL2_SIZE - 1)) >> PTL2_SHIFT;
+
+	ret = -ENOENT;
+	for (i = six; i < eix; ++i) {
+		if (!(pt->entry[i] & PFL2_PRESENT)) {
+			continue;
+		}
+
+		off = i * PTL2_SIZE;
+
+		if (pt->entry[i] & PFL2_SIZE) {
+			if (((base + off) < start) || (end < (base + off + PTL2_SIZE))) {
+				kprintf("clear_range_l2(%p,%lx,%lx,%lx):"
+						"not a 2MiB page boundary\n",
+						pt, base, start, end);
+				ret = -ERANGE;
+				break;
+			}
+
+			pt->entry[i] = 0;
+			ret = 0;
+			continue;
+		}
+
+		q = phys_to_virt(pt->entry[i] & PT_PHYSMASK);
+
+		if ((start <= (base + off)) && ((base + off + PTL2_SIZE) <= end)) {
+			pt->entry[i] = 0;
+			ret = 0;
+			arch_free_page(q);
+		}
+		else {
+			error = clear_range_l1(q, base+off, start, end);
+			if (!error) {
+				ret = 0;
+			}
+			else if (error != -ENOENT) {
+				ret = error;
+				break;
+			}
+		}
+	}
+
+	return ret;
+}
+
+static int clear_range_l3(struct page_table *pt, uint64_t base, uint64_t start, uint64_t end)
+{
+	int six;
+	int eix;
+	int ret;
+	int i;
+	int error;
+	struct page_table *q;
+
+	six = (start <= base)? 0: (start - base) >> PTL3_SHIFT;
+	eix = ((base + PTL4_SIZE) <= end)? PT_ENTRIES
+		: ((end - base) + (PTL3_SIZE - 1)) >> PTL3_SHIFT;
+
+	ret = -ENOENT;
+	for (i = six; i < eix; ++i) {
+		if (!(pt->entry[i] & PFL3_PRESENT)) {
+			continue;
+		}
+
+		q = phys_to_virt(pt->entry[i] & PT_PHYSMASK);
+		error = clear_range_l2(q, base+(i*PTL3_SIZE), start, end);
+		if (!error) {
+			ret = 0;
+		}
+		else if (error != -ENOENT) {
+			ret = error;
+			break;
+		}
+	}
+
+	return ret;
+}
+
+static int clear_range_l4(struct page_table *pt, uint64_t base, uint64_t start, uint64_t end)
+{
+	int six;
+	int eix;
+	int ret;
+	int i;
+	int error;
+	struct page_table *q;
+
+	six = (start <= base)? 0: (start - base) >> PTL4_SHIFT;
+	eix = ((end - base) + (PTL4_SIZE - 1)) >> PTL4_SHIFT;
+	if ((eix <= 0) || (PT_ENTRIES < eix)) {
+		eix = PT_ENTRIES;
+	}
+
+	ret = -ENOENT;
+	for (i = six; i < eix; ++i) {
+		if (!(pt->entry[i] & PFL4_PRESENT)) {
+			continue;
+		}
+
+		q = phys_to_virt(pt->entry[i] & PT_PHYSMASK);
+		error = clear_range_l3(q, base+(i*PTL4_SIZE), start, end);
+		if (!error) {
+			ret = 0;
+		}
+		else if (error != -ENOENT) {
+			ret = error;
+			break;
+		}
+	}
+
+	return ret;
+}
+
+static int lookup_pte(struct page_table *pt, void *virt, pte_t **ptep, void **pgbasep, uint64_t *pgsizep)
+{
+	int l4idx, l3idx, l2idx, l1idx;
+
+	GET_VIRT_INDICES((uint64_t)virt, l4idx, l3idx, l2idx, l1idx);
+
+	if (!(pt->entry[l4idx] & PFL4_PRESENT)) {
+		return -ENOENT;
+	}
+
+	pt = phys_to_virt(pt->entry[l4idx] & PT_PHYSMASK);
+	if (!(pt->entry[l3idx] & PFL3_PRESENT)) {
+		return -ENOENT;
+	}
+
+	pt = phys_to_virt(pt->entry[l3idx] & PT_PHYSMASK);
+	if (!(pt->entry[l2idx] & PFL2_PRESENT) || (pt->entry[l2idx] & PFL2_SIZE)) {
+		*ptep = &pt->entry[l2idx];
+		*pgbasep = (void *)GET_INDICES_VIRT(l4idx, l3idx, l2idx, 0);
+		*pgsizep = PTL2_SIZE;
+		return 0;
+	}
+
+	pt = phys_to_virt(pt->entry[l2idx] & PT_PHYSMASK);
+	*ptep = &pt->entry[l1idx];
+	*pgbasep = (void *)GET_INDICES_VIRT(l4idx, l3idx, l2idx, l1idx);
+	*pgsizep = PTL1_SIZE;
+
+	return 0;
+}
+
+static int is_middle_of_the_page(struct page_table *pt, void *virt)
+{
+	int error;
+	pte_t *pte;
+	void *pgbase;
+	uint64_t pgsize;
+
+	error = lookup_pte(pt, virt, &pte, &pgbase, &pgsize);
+	if (error) {
+		return 0;
+	}
+
+	if (!(*pte & PF_PRESENT)) {
+		return 0;
+	}
+
+	return pgbase != virt;
+}
+
+int ihk_mc_pt_clear_range(page_table_t pt, void *start0, void *end0)
+{
+	const uint64_t start = (uint64_t)start0;
+	const uint64_t end = (uint64_t)end0;
+	int error;
+
+	if ((USER_END <= start) || (USER_END < end) || (end <= start)) {
+		kprintf("ihk_mc_pt_clear_range(%p,%p,%p):invalid start and/or end.\n",
+				pt, start0, end0);
+		return -EINVAL;
+	}
+
+	if (((start % LARGE_PAGE_SIZE) != 0) && is_middle_of_the_page(pt, start0)) {
+		kprintf("ihk_mc_pt_clear_range(%p,%p,%p):start0 is not a page boundary\n",
+				pt, start0, end0);
+		return -EINVAL;
+	}
+
+	if (((end % LARGE_PAGE_SIZE) != 0) && is_middle_of_the_page(pt, end0)) {
+		kprintf("ihk_mc_pt_clear_range(%p,%p,%p):end0 is not a page boundary\n",
+				pt, start0, end0);
+		return -EINVAL;
+	}
+
+	error = clear_range_l4(pt, 0, start, end);
+	return error;
 }
 
 void load_page_table(struct page_table *pt)

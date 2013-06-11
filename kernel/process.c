@@ -475,13 +475,11 @@ int remove_process_region(struct process *proc,
 		return -EINVAL;
 	}
 
-    ihk_mc_spinlock_lock_noirq(&proc->vm->page_table_lock);
+	ihk_mc_spinlock_lock_noirq(&proc->vm->page_table_lock);
 	/* We defer freeing to the time of exit */
-	while (start < end) {
-		ihk_mc_pt_clear_page(proc->vm->page_table, (void *)start);
-		start += PAGE_SIZE;
-	}
-    ihk_mc_spinlock_unlock_noirq(&proc->vm->page_table_lock);
+	// XXX: check error
+	ihk_mc_pt_clear_range(proc->vm->page_table, (void *)start, (void *)end);
+	ihk_mc_spinlock_unlock_noirq(&proc->vm->page_table_lock);
 
 	return 0;
 }
