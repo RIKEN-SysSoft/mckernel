@@ -630,16 +630,6 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			pthread_mutex_unlock(lock);
 			return w.sr.args[0];
 
-            // see linux-2.6.34.13/fs/open.c
-		case __NR_access: {
-			dma_buf[256] = 0;
-			do_syscall_load(fd, cpu, (unsigned long)dma_buf, w.sr.args[0], 256);
-			__dprintf("access: %s\n", dma_buf);
-			int c = access((void *)dma_buf, w.sr.args[1]);
-            ret = (c < 0) ? -errno : c;
-			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
-            break; }
-
 		case __NR_getdents64: { // linux-2.6.34.13/fs/readdir.c
 			long c = syscall((int)__NR_getdents64, (unsigned int)w.sr.args[0], (void *)dma_buf, (unsigned int)w.sr.args[2]);
             ret = (c < 0) ? -errno : c;

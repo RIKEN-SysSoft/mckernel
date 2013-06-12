@@ -450,14 +450,6 @@ SYSCALL_DECLARE(getpid)
 	return cpu_local_var(current)->pid;
 }
 
-SYSCALL_DECLARE(access)
-{
-    dkprintf("access: %s\n", (char*)ihk_mc_syscall_arg0(ctx));
-    SYSCALL_HEADER;
-	SYSCALL_ARGS_2(MI, D);
-	SYSCALL_FOOTER;
-}
-
 SYSCALL_DECLARE(getdents64)
 {
     SYSCALL_HEADER;
@@ -941,7 +933,6 @@ static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
 	[12] = sys_brk,
 	[13] = sys_rt_sigaction,
 	[14] = sys_rt_sigprocmask,
-	[21] = sys_access,
 	[24] = sys_sched_yield,
 	[28] = sys_madvise,
 	[39] = sys_getpid,
