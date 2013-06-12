@@ -165,13 +165,6 @@ SYSCALL_DECLARE(gettimeofday)
 	SYSCALL_FOOTER;
 }
 
-SYSCALL_DECLARE(read)
-{
-	SYSCALL_HEADER;
-	SYSCALL_ARGS_3(D, MO, D);
-	SYSCALL_FOOTER;
-}
-
 SYSCALL_DECLARE(pread)
 {
 	SYSCALL_HEADER;
@@ -1014,7 +1007,6 @@ SYSCALL_DECLARE(pmc_reset)
 }
 
 static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
-	[0] = sys_read,
 	[1] = sys_write,
 	[2] = sys_open,
 	[3] = sys_close,

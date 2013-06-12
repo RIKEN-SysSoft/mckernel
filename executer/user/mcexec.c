@@ -596,13 +596,6 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 
-		case __NR_read:
-			ret = read(w.sr.args[0], dma_buf, w.sr.args[2]);
-			SET_ERR(ret);
-			do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf,
-			                  w.sr.args[1], w.sr.args[2]);
-			break;
-
 		case __NR_write:
 			dma_buf[w.sr.args[2]] = 0;
 			SET_ERR(ret);
