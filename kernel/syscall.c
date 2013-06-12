@@ -450,13 +450,6 @@ SYSCALL_DECLARE(getpid)
 	return cpu_local_var(current)->pid;
 }
 
-SYSCALL_DECLARE(getdents64)
-{
-    SYSCALL_HEADER;
-	SYSCALL_ARGS_3(D, MO, D);
-	SYSCALL_FOOTER;
-}
-
 SYSCALL_DECLARE(readlink)
 {
     SYSCALL_HEADER;
@@ -945,7 +938,6 @@ static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
 	[202] = sys_futex,
 	[203] = sys_sched_setaffinity,
 	[204] = sys_sched_getaffinity,
-	[217] = sys_getdents64,
 	[218] = sys_set_tid_address,
 	[231] = sys_exit_group,
     [234] = sys_tgkill,
