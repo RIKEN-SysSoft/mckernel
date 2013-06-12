@@ -601,22 +601,6 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 
-		case __NR_pwrite64:
-			dma_buf[w.sr.args[2]] = 0;
-			do_syscall_load(fd, cpu, (unsigned long)dma_buf,
-			                w.sr.args[1], w.sr.args[2]);
-
-			/*
-			while (!dma_buf[w.sr.args[2]]) {
-				asm volatile ("" : : : "memory");
-			}
-			*/
-
-			ret = pwrite(w.sr.args[0], dma_buf, w.sr.args[2],
-			             w.sr.args[3]);
-			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
-			break;
-
 		case __NR_gettimeofday:
 			ret = gettimeofday((struct timeval *)dma_buf, NULL);
 			SET_ERR(ret);

@@ -165,13 +165,6 @@ SYSCALL_DECLARE(gettimeofday)
 	SYSCALL_FOOTER;
 }
 
-SYSCALL_DECLARE(pwrite)
-{
-	SYSCALL_HEADER;
-	SYSCALL_ARGS_4(D, MI, D, D);
-	SYSCALL_FOOTER;
-}
-
 SYSCALL_DECLARE(close)
 {
 	SYSCALL_HEADER;
@@ -1002,7 +995,6 @@ static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
 	[12] = sys_brk,
 	[13] = sys_rt_sigaction,
 	[14] = sys_rt_sigprocmask,
-	[18] = sys_pwrite,
 	[21] = sys_access,
 	[24] = sys_sched_yield,
 	[28] = sys_madvise,
