@@ -599,15 +599,6 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			                  w.sr.args[0], sizeof(struct timeval));
 			break;
 
-		case __NR_clone:
-
-			__dprintf("MIC clone(), new thread's cpu_id: %ld\n", w.sr.args[0]);
-
-
-			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
-			break;
-			
-
 		case __NR_exit:
 		case __NR_exit_group:
 			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);

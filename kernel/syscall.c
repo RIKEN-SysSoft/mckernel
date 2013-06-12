@@ -35,10 +35,6 @@
 
 static ihk_atomic_t pid_cnt = IHK_ATOMIC_INIT(1024);
 
-int memcpy_async(unsigned long dest, unsigned long src,
-                 unsigned long len, int wait, unsigned long *notify);
-
-
 #ifdef DCFA_KMOD
 static void do_mod_exit(int status);
 #endif
@@ -72,7 +68,6 @@ static void send_syscall(struct syscall_request *req)
 	packet.arg = cpu_local_var(scp).request_rpa;
 	
 	ihk_ikc_send(cpu_local_var(syscall_channel), &packet, 0); 
-	//ihk_ikc_send(get_cpu_local_var(0)->syscall_channel, &packet, 0); 
 #endif
 }
 
@@ -141,12 +136,6 @@ int do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx)
 	SYSCALL_ARG_##a4(4); SYSCALL_ARG_##a5(5);
 
 #define SYSCALL_FOOTER return do_syscall(&request, ctx)
-
-static int stop(void)
-{
-	while(1);
-	return 0;
-}
 
 SYSCALL_DECLARE(open)
 {
@@ -555,18 +544,6 @@ SYSCALL_DECLARE(clone)
 	dkprintf("clone: kicking scheduler!\n");
 	runq_add_proc(new, cpuid);
 
-	//while (1) { cpu_halt(); }
-#if 0
-	ihk_mc_syscall_ret(new->uctx) = 0;
-
-	/* Hope it is scheduled after... :) */
-	request.number = n;
-	request.args[0] = (unsigned long)new;
-	/* Sync */
-	do_syscall(&request, ctx);
-	dkprintf("Clone ret.\n");
-#endif
-
 	return new->pid;
 }
 
@@ -802,12 +779,6 @@ SYSCALL_DECLARE(sched_yield)
 	return -ENOSYS;
 }
 
-SYSCALL_DECLARE(noop)
-{
-	kprintf("noop() \n");
-	return -EFAULT;
-}
-
 #ifdef DCFA_KMOD
 
 #ifdef CMD_DCFA
@@ -991,21 +962,6 @@ static char *syscall_name[] = {
     [603] = "sys_pmc_stop",
     [604] = "sys_pmc_reset",
 };
-
-#if 0
-
-ihk_spinlock_t cpu_status_lock;
-
-static int clone_init(void)
-{
-	unsigned long flags;
-
-	ihk_mc_spinlock_init(&cpu_status_lock);
-	
-	return 0;
-}
-
-#endif
 
 long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx)
 {
