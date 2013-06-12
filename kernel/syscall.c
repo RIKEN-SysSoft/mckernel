@@ -165,22 +165,6 @@ SYSCALL_DECLARE(gettimeofday)
 	SYSCALL_FOOTER;
 }
 
-SYSCALL_DECLARE(close)
-{
-	SYSCALL_HEADER;
-	SYSCALL_ARGS_1(D);
-	SYSCALL_FOOTER;
-#if 0
-	dkprintf("[%d] close() \n", ihk_mc_get_processor_id());
-	return -EBADF;
-#endif
-/*
-	SYSCALL_HEADER;
-	SYSCALL_ARGS_1(D);
-	SYSCALL_FOOTER;
-*/
-}
-
 SYSCALL_DECLARE(lseek)
 {
 	SYSCALL_HEADER;
@@ -987,7 +971,6 @@ SYSCALL_DECLARE(pmc_reset)
 
 static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
 	[2] = sys_open,
-	[3] = sys_close,
 	[8] = sys_lseek,
 	[9] = sys_mmap,
 	[10] = sys_mprotect,

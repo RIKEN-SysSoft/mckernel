@@ -589,13 +589,6 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 
-		case __NR_close:
-			__dprintf("mcexec.c,close,fd=%lx\n", w.sr.args[0]);
-			ret = close(w.sr.args[0]);
-			SET_ERR(ret);
-			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
-			break;
-
 		case __NR_lseek:
 			ret = lseek64(w.sr.args[0], w.sr.args[1], w.sr.args[2]);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
