@@ -450,16 +450,6 @@ SYSCALL_DECLARE(getpid)
 	return cpu_local_var(current)->pid;
 }
 
-// asmlinkage long sys_getcwd(char __user *buf, unsigned long size);
-SYSCALL_DECLARE(getcwd)
-{
-    dkprintf("getcwd\n");
-    SYSCALL_HEADER;
-	SYSCALL_ARGS_2(MO, D);
-	SYSCALL_FOOTER;
-
-}
-
 SYSCALL_DECLARE(access)
 {
     dkprintf("access: %s\n", (char*)ihk_mc_syscall_arg0(ctx));
@@ -957,7 +947,6 @@ static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
 	[39] = sys_getpid,
 	[56] = sys_clone,
 	[60] = sys_exit,
-	[79] = sys_getcwd,
     [89] = sys_readlink,
 	[96] = sys_gettimeofday,
 	[97]  = sys_getrlimit,
