@@ -630,16 +630,6 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			pthread_mutex_unlock(lock);
 			return w.sr.args[0];
 
-		case __NR_uname:
-			ret = uname((void *)dma_buf);
-			if (ret == -1) {
-				ret = -errno;
-			}
-			do_syscall_return(fd,
-			                  cpu, ret, 1, (unsigned long)dma_buf, w.sr.args[0],
-			                  sizeof(struct utsname));
-			break;
-
 		case __NR_getcwd: {
             // note that return type is different between glibc-getcwd and sys_getcwd
 			char* c = getcwd((void *)dma_buf, w.sr.args[1]); 

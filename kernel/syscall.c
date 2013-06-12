@@ -450,24 +450,6 @@ SYSCALL_DECLARE(getpid)
 	return cpu_local_var(current)->pid;
 }
 
-SYSCALL_DECLARE(uname)
-{
-	SYSCALL_HEADER;
-	unsigned long phys;
-	int ret;
-
-	if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
-	                           (void *)ihk_mc_syscall_arg0(ctx), &phys)) {
-		return -EFAULT;
-	}
-
-	request.number = n;
-	request.args[0] = phys;
-
-	ret = do_syscall(&request, ctx);
-
-	return ret;
-}
 // asmlinkage long sys_getcwd(char __user *buf, unsigned long size);
 SYSCALL_DECLARE(getcwd)
 {
@@ -975,7 +957,6 @@ static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
 	[39] = sys_getpid,
 	[56] = sys_clone,
 	[60] = sys_exit,
-	[63] = sys_uname,
 	[79] = sys_getcwd,
     [89] = sys_readlink,
 	[96] = sys_gettimeofday,
