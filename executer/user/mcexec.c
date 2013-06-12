@@ -664,15 +664,6 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			                  w.sr.args[1], sizeof(struct stat));
 			break;
 			}
-		case __NR_fstat:
-			ret = fstat(w.sr.args[0], (void *)dma_buf);
-            __dprintf("mcexec.c:main_loop,arg[0]=%ld,ret=%d\n", w.sr.args[0], ret);
-			if (ret == -1) {
-				ret = -errno;
-			}
-			do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf,
-			                  w.sr.args[1], sizeof(struct stat));
-			break;
 
             /*
               glibc-2.14.90/sysdeps/unix/sysv/linux/x86_64/time.S

@@ -142,13 +142,6 @@ int do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx)
 
 #define SYSCALL_FOOTER return do_syscall(&request, ctx)
 
-SYSCALL_DECLARE(fstat)
-{
-	SYSCALL_HEADER;
-	SYSCALL_ARGS_2(D, MO);
-	SYSCALL_FOOTER;
-}
-
 static int stop(void)
 {
 	while(1);
@@ -1082,7 +1075,6 @@ static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
 	[2] = sys_open,
 	[3] = sys_close,
 	[4] = sys_stat,
-	[5] = sys_fstat,
 	[8] = sys_lseek,
 	[9] = sys_mmap,
 	[10] = sys_mprotect,
