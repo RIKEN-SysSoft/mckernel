@@ -165,14 +165,6 @@ SYSCALL_DECLARE(gettimeofday)
 	SYSCALL_FOOTER;
 }
 
-SYSCALL_DECLARE(lseek)
-{
-	SYSCALL_HEADER;
-	SYSCALL_ARGS_3(D, D, D);
-	SYSCALL_FOOTER;
-}
-
-
 SYSCALL_DECLARE(exit_group)
 {
 	SYSCALL_HEADER;
@@ -971,7 +963,6 @@ SYSCALL_DECLARE(pmc_reset)
 
 static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
 	[2] = sys_open,
-	[8] = sys_lseek,
 	[9] = sys_mmap,
 	[10] = sys_mprotect,
 	[11] = sys_munmap,
