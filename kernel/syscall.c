@@ -102,42 +102,6 @@ int do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx)
 	return res->ret;
 }
 
-long sys_brk(int n, ihk_mc_user_context_t *ctx)
-{
-	unsigned long address = ihk_mc_syscall_arg0(ctx);
-	struct vm_regions *region = &cpu_local_var(current)->vm->region;
-    unsigned long r;
-
-    dkprintf("SC(%d)[sys_brk] brk_start=%lx,end=%lx\n", ihk_mc_get_processor_id(), region->brk_start, region->brk_end);
-
-    /* brk change fail, including glibc trick brk(0) to obtain current brk */
-    if(address < region->brk_start) {
-        r = region->brk_end;
-        goto out;
-    }
-
-    /* brk change fail, because we don't shrink memory region  */
-    if(address < region->brk_end) {
-        r = region->brk_end;
-        goto out;
-    }
-
-    /* try to extend memory region */
-    ihk_mc_spinlock_lock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
-    region->brk_end = 
-        extend_process_region(cpu_local_var(current),
-                              region->brk_start, region->brk_end,
-                              address, 0);
-    ihk_mc_spinlock_unlock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
-    dkprintf("SC(%d)[sys_brk] brk_end set to %lx\n", ihk_mc_get_processor_id(), region->brk_end);
-    
-    r = region->brk_end;    
-
-    out:
-	return r;
-
-}
-
 #define SYSCALL_DECLARE(name) long sys_##name(int n, ihk_mc_user_context_t *ctx)
 #define SYSCALL_HEADER struct syscall_request request IHK_DMA_ALIGN; \
 	request.number = n
@@ -524,6 +488,41 @@ SYSCALL_DECLARE(mprotect)
 	return 0;
 }
 
+SYSCALL_DECLARE(brk)
+{
+	unsigned long address = ihk_mc_syscall_arg0(ctx);
+	struct vm_regions *region = &cpu_local_var(current)->vm->region;
+    unsigned long r;
+
+    dkprintf("SC(%d)[sys_brk] brk_start=%lx,end=%lx\n", ihk_mc_get_processor_id(), region->brk_start, region->brk_end);
+
+    /* brk change fail, including glibc trick brk(0) to obtain current brk */
+    if(address < region->brk_start) {
+        r = region->brk_end;
+        goto out;
+    }
+
+    /* brk change fail, because we don't shrink memory region  */
+    if(address < region->brk_end) {
+        r = region->brk_end;
+        goto out;
+    }
+
+    /* try to extend memory region */
+    ihk_mc_spinlock_lock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
+    region->brk_end = 
+        extend_process_region(cpu_local_var(current),
+                              region->brk_start, region->brk_end,
+                              address, 0);
+    ihk_mc_spinlock_unlock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
+    dkprintf("SC(%d)[sys_brk] brk_end set to %lx\n", ihk_mc_get_processor_id(), region->brk_end);
+    
+    r = region->brk_end;    
+
+    out:
+	return r;
+
+}
 
 SYSCALL_DECLARE(getpid)
 {
