@@ -157,14 +157,6 @@ SYSCALL_DECLARE(open)
 	SYSCALL_FOOTER;
 }
 
-SYSCALL_DECLARE(stat)
-{
-	SYSCALL_HEADER;
-	dkprintf("stat(\"%s\");\n", (char*)ihk_mc_syscall_arg0(ctx));
-	SYSCALL_ARGS_2(MO, MO);
-	SYSCALL_FOOTER;
-}
-
 SYSCALL_DECLARE(time)
 {
 	SYSCALL_HEADER;
@@ -1074,7 +1066,6 @@ static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
 	[1] = sys_write,
 	[2] = sys_open,
 	[3] = sys_close,
-	[4] = sys_stat,
 	[8] = sys_lseek,
 	[9] = sys_mmap,
 	[10] = sys_mprotect,

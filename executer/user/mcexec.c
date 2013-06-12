@@ -647,24 +647,6 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 
-
-		case __NR_stat:
-			{
-			char filename[256];
-			
-			do_syscall_load(fd, cpu, (unsigned long)&filename[0],
-					        w.sr.args[0], 256);
-			
-			ret = stat(filename, (void *)dma_buf);
-			if (ret == -1) {
-				ret = -errno;
-			}
-
-			do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf,
-			                  w.sr.args[1], sizeof(struct stat));
-			break;
-			}
-
             /*
               glibc-2.14.90/sysdeps/unix/sysv/linux/x86_64/time.S
              linux-2.6.34.13/arch/x86/kernel/vsyscall_64.c
