@@ -647,27 +647,6 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 
-            /*
-              glibc-2.14.90/sysdeps/unix/sysv/linux/x86_64/time.S
-             linux-2.6.34.13/arch/x86/kernel/vsyscall_64.c
-             /usr/include/time.h
-               /usr/include/bits/types.h
-                 /usr/include/bits/typesizes.h
-                   #define __TIME_T_TYPE           __SLONGWORD_TYPE
-            */
-		case __NR_time: {
-            time_t ret;
-            if(w.sr.args[0]) {
-                ret = time((time_t *)dma_buf);
-            } else {
-                ret = time(NULL);
-            }
-			SET_ERR(ret);
-            __dprintf("time=%ld\n", ret);
-			do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf,
-			                  w.sr.args[0], sizeof(time_t));
-			break; }
-
 		case __NR_gettimeofday:
 			ret = gettimeofday((struct timeval *)dma_buf, NULL);
 			SET_ERR(ret);

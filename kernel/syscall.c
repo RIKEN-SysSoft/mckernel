@@ -157,17 +157,6 @@ SYSCALL_DECLARE(open)
 	SYSCALL_FOOTER;
 }
 
-SYSCALL_DECLARE(time)
-{
-	SYSCALL_HEADER;
-    if(ihk_mc_syscall_arg0(ctx)) {
-        SYSCALL_ARGS_1(MO);
-    } else {
-        SYSCALL_ARGS_1(D);
-    }
-	SYSCALL_FOOTER;
-}
-
 SYSCALL_DECLARE(gettimeofday)
 {
 	SYSCALL_HEADER;
@@ -1088,7 +1077,6 @@ static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
 	[96] = sys_gettimeofday,
 	[97]  = sys_getrlimit,
 	[158] = sys_arch_prctl,
-	[201] = sys_time,
 	[202] = sys_futex,
 	[203] = sys_sched_setaffinity,
 	[204] = sys_sched_getaffinity,
