@@ -165,13 +165,6 @@ SYSCALL_DECLARE(gettimeofday)
 	SYSCALL_FOOTER;
 }
 
-SYSCALL_DECLARE(write)
-{
-	SYSCALL_HEADER;
-	SYSCALL_ARGS_3(D, MI, D);
-	SYSCALL_FOOTER;
-}
-
 SYSCALL_DECLARE(pwrite)
 {
 	SYSCALL_HEADER;
@@ -1000,7 +993,6 @@ SYSCALL_DECLARE(pmc_reset)
 }
 
 static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
-	[1] = sys_write,
 	[2] = sys_open,
 	[3] = sys_close,
 	[8] = sys_lseek,
