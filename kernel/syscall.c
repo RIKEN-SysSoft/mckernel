@@ -450,14 +450,6 @@ SYSCALL_DECLARE(getpid)
 	return cpu_local_var(current)->pid;
 }
 
-SYSCALL_DECLARE(readlink)
-{
-    SYSCALL_HEADER;
-	dkprintf("readlink: %s\n", (char*)ihk_mc_syscall_arg0(ctx));
-	SYSCALL_ARGS_3(MI, MO, D);
-	SYSCALL_FOOTER;
-}
-
 long do_arch_prctl(unsigned long code, unsigned long address)
 {
 	int err = 0;
@@ -931,7 +923,6 @@ static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
 	[39] = sys_getpid,
 	[56] = sys_clone,
 	[60] = sys_exit,
-    [89] = sys_readlink,
 	[96] = sys_gettimeofday,
 	[97]  = sys_getrlimit,
 	[158] = sys_arch_prctl,

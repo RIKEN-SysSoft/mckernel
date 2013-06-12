@@ -630,24 +630,6 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			pthread_mutex_unlock(lock);
 			return w.sr.args[0];
 
-		case __NR_readlink: {
-			dma_buf[256] = 0;
-			do_syscall_load(fd, cpu, (unsigned long)dma_buf, w.sr.args[0], 256);
-			__dprintf("readlink: %s\n", dma_buf);
-            char* dup = strndup((char *)dma_buf, 256);
-			int c = readlink(dup, (void *)dma_buf, w.sr.args[2]);
-            free(dup);
-            ret = (c < 0) ? -errno : c;
-            if(c > 0) {
-                dup = strndup((char *)dma_buf, c); // readlink does not append NULL at the end
-                //                printf("readlink result:c=%d,s=%s\n", c, dup);
-                free(dup);
-            } else {
-                //                printf("readlink result: c=%d,s=<NULL>\n", c);
-            }
-			do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf, w.sr.args[1], c < 0 ? 0 : c);
-            break; }
-
 		case __NR_mmap: {
             // w.sr.args[0] is converted to MIC physical address
             __dprintf("mcexec.c,mmap,MIC-paddr=%lx,len=%lx,prot=%lx,flags=%lx,fd=%lx,offset=%lx\n",
