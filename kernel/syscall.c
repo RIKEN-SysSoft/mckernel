@@ -579,15 +579,6 @@ SYSCALL_DECLARE(readlink)
 	SYSCALL_FOOTER;
 }
 
-long sys_getxid(int n, ihk_mc_user_context_t *ctx)
-{
-	struct syscall_request request IHK_DMA_ALIGN;
-
-	request.number = n;
-
-	return do_syscall(&request, ctx);
-}
-
 long do_arch_prctl(unsigned long code, unsigned long address)
 {
 	int err = 0;
@@ -1113,12 +1104,6 @@ static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
     [89] = sys_readlink,
 	[96] = sys_gettimeofday,
 	[97]  = sys_getrlimit,
-	[102] = sys_getxid,
-	[104] = sys_getxid,
-	[107] = sys_getxid,
-	[108] = sys_getxid,
-	[110] = sys_getxid,
-	[111] = sys_getxid,
 	[158] = sys_arch_prctl,
 	[201] = sys_time,
 	[202] = sys_futex,

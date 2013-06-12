@@ -704,19 +704,6 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			break;
 
 
-		case __NR_getgid:
-		case __NR_getuid:
-		case __NR_geteuid:
-		case __NR_getegid:
-		case __NR_getppid:
-		case __NR_getpgrp:
-			ret = syscall(w.sr.number);
-			if (ret == -1) {
-				ret = -errno;
-			}
-			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
-			break;
-
 		case __NR_clone:
 
 			__dprintf("MIC clone(), new thread's cpu_id: %ld\n", w.sr.args[0]);
