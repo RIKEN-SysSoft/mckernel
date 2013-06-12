@@ -711,43 +711,6 @@ SYSCALL_DECLARE(set_robust_list)
 	return -ENOSYS;
 }
 
-SYSCALL_DECLARE(writev)
-{
-	/* Adhoc implementation of writev calling write sequentially */
-	struct syscall_request request IHK_DMA_ALIGN;
-	unsigned long seg;
-	size_t seg_ret, ret = 0;
-	
-	int fd = ihk_mc_syscall_arg0(ctx);
-	struct iovec *iov = (struct iovec*)ihk_mc_syscall_arg1(ctx);
-	unsigned long nr_segs = ihk_mc_syscall_arg2(ctx);
-
-	for (seg = 0; seg < nr_segs; ++seg) {
-		unsigned long __phys; 
-		
-		if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
-	                           (void *)iov[seg].iov_base, &__phys)) {
-			return -EFAULT;
-		}
-		
-		request.number = 1; /* write */
-		request.args[0] = fd;
-		request.args[1] = __phys;
-		request.args[2] = iov[seg].iov_len;
-
-		seg_ret = do_syscall(&request, ctx);
-		
-		if (seg_ret < 0) {
-			ret = -EFAULT;
-			break;
-		}
-		
-		ret += seg_ret;
-	}
-
-	return ret;
-}
-
 SYSCALL_DECLARE(rt_sigaction)
 {
     //  kprintf("sys_rt_sigaction called. returning zero...\n");
@@ -1064,7 +1027,6 @@ static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
 	[14] = sys_rt_sigprocmask,
 	[17] = sys_pread,
 	[18] = sys_pwrite,
-	[20] = sys_writev,
 	[21] = sys_access,
 	[24] = sys_sched_yield,
 	[28] = sys_madvise,
