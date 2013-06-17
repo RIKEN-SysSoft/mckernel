@@ -157,14 +157,6 @@ SYSCALL_DECLARE(open)
 	SYSCALL_FOOTER;
 }
 
-SYSCALL_DECLARE(gettimeofday)
-{
-	SYSCALL_HEADER;
-	dkprintf("gettimeofday() \n");
-	SYSCALL_ARGS_1(MO);
-	SYSCALL_FOOTER;
-}
-
 SYSCALL_DECLARE(exit_group)
 {
 	SYSCALL_HEADER;
@@ -923,7 +915,6 @@ static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
 	[39] = sys_getpid,
 	[56] = sys_clone,
 	[60] = sys_exit,
-	[96] = sys_gettimeofday,
 	[97]  = sys_getrlimit,
 	[158] = sys_arch_prctl,
 	[202] = sys_futex,

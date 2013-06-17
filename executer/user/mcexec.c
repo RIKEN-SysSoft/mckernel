@@ -589,7 +589,6 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 
-		case __NR_gettimeofday:
 		case __NR_futex:
 			ret = gettimeofday((struct timeval *)dma_buf, NULL);
 			SET_ERR(ret);
