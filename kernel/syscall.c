@@ -654,7 +654,7 @@ SYSCALL_DECLARE(futex)
 	if (utime && (op == FUTEX_WAIT_BITSET || op == FUTEX_WAIT)) {
 		struct syscall_request request IHK_DMA_ALIGN; 
 		struct timeval tv_now;
-		request.number = 96;
+		request.number = n;
 		unsigned long __phys;                                          
 
 		dkprintf("futex,utime and FUTEX_WAIT_*, uaddr=%lx, []=%x\n", (unsigned long)uaddr, *uaddr);

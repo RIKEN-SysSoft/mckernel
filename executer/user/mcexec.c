@@ -590,13 +590,15 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			break;
 
 		case __NR_gettimeofday:
+		case __NR_futex:
 			ret = gettimeofday((struct timeval *)dma_buf, NULL);
 			SET_ERR(ret);
-            __dprintf("gettimeofday=%016ld,%09ld\n", ((struct timeval *)dma_buf)->tv_sec, ((struct timeval *)dma_buf)->tv_usec);
+			__dprintf("gettimeofday=%016ld,%09ld\n",
+					((struct timeval *)dma_buf)->tv_sec,
+					((struct timeval *)dma_buf)->tv_usec);
 			do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf,
 			                  w.sr.args[0], sizeof(struct timeval));
 			break;
-
 
 		case __NR_clone:
 
