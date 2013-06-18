@@ -144,4 +144,50 @@ struct syscall_params {
 	struct syscall_post post_buf IHK_DMA_ALIGN;
 };
 
+#define SYSCALL_DECLARE(name) long sys_##name(int n, ihk_mc_user_context_t *ctx)
+#define SYSCALL_HEADER struct syscall_request request IHK_DMA_ALIGN; \
+	request.number = n
+#define SYSCALL_ARG_D(n)    request.args[n] = ihk_mc_syscall_arg##n(ctx)
+#define SYSCALL_ARG_MO(n) \
+	do { \
+	unsigned long __phys; \
+	if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, \
+	                           (void *)ihk_mc_syscall_arg##n(ctx),\
+	                           &__phys)) { \
+		return -EFAULT; \
+	}\
+	request.args[n] = __phys; \
+	} while(0)
+#define SYSCALL_ARG_MI(n) \
+	do { \
+	unsigned long __phys; \
+	if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, \
+	                           (void *)ihk_mc_syscall_arg##n(ctx),\
+	                           &__phys)) { \
+		return -EFAULT; \
+	}\
+	request.args[n] = __phys; \
+	} while(0)
+
+
+#define SYSCALL_ARGS_1(a0)          SYSCALL_ARG_##a0(0)
+#define SYSCALL_ARGS_2(a0, a1)      SYSCALL_ARG_##a0(0); SYSCALL_ARG_##a1(1)
+#define SYSCALL_ARGS_3(a0, a1, a2)  SYSCALL_ARG_##a0(0); SYSCALL_ARG_##a1(1); \
+	                            SYSCALL_ARG_##a2(2)
+#define SYSCALL_ARGS_4(a0, a1, a2, a3) \
+	SYSCALL_ARG_##a0(0); SYSCALL_ARG_##a1(1); \
+	SYSCALL_ARG_##a2(2); SYSCALL_ARG_##a3(3)
+#define SYSCALL_ARGS_6(a0, a1, a2, a3, a4, a5) \
+	SYSCALL_ARG_##a0(0); SYSCALL_ARG_##a1(1); \
+	SYSCALL_ARG_##a2(2); SYSCALL_ARG_##a3(3); \
+	SYSCALL_ARG_##a4(4); SYSCALL_ARG_##a5(5);
+
+#define SYSCALL_FOOTER return do_syscall(&request, ctx)
+
+extern long (*syscall_table[])(int n, ihk_mc_user_context_t *ctx);
+extern char *syscall_name[];
+extern long syscall_table_elems;
+
+extern int do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx);
+
 #endif

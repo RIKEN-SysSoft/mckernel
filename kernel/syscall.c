@@ -97,46 +97,6 @@ int do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx)
 	return res->ret;
 }
 
-#define SYSCALL_DECLARE(name) long sys_##name(int n, ihk_mc_user_context_t *ctx)
-#define SYSCALL_HEADER struct syscall_request request IHK_DMA_ALIGN; \
-	request.number = n
-#define SYSCALL_ARG_D(n)    request.args[n] = ihk_mc_syscall_arg##n(ctx)
-#define SYSCALL_ARG_MO(n) \
-	do { \
-	unsigned long __phys; \
-	if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, \
-	                           (void *)ihk_mc_syscall_arg##n(ctx),\
-	                           &__phys)) { \
-		return -EFAULT; \
-	}\
-	request.args[n] = __phys; \
-	} while(0)
-#define SYSCALL_ARG_MI(n) \
-	do { \
-	unsigned long __phys; \
-	if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, \
-	                           (void *)ihk_mc_syscall_arg##n(ctx),\
-	                           &__phys)) { \
-		return -EFAULT; \
-	}\
-	request.args[n] = __phys; \
-	} while(0)
-
-
-#define SYSCALL_ARGS_1(a0)          SYSCALL_ARG_##a0(0)
-#define SYSCALL_ARGS_2(a0, a1)      SYSCALL_ARG_##a0(0); SYSCALL_ARG_##a1(1)
-#define SYSCALL_ARGS_3(a0, a1, a2)  SYSCALL_ARG_##a0(0); SYSCALL_ARG_##a1(1); \
-	                            SYSCALL_ARG_##a2(2)
-#define SYSCALL_ARGS_4(a0, a1, a2, a3) \
-	SYSCALL_ARG_##a0(0); SYSCALL_ARG_##a1(1); \
-	SYSCALL_ARG_##a2(2); SYSCALL_ARG_##a3(3)
-#define SYSCALL_ARGS_6(a0, a1, a2, a3, a4, a5) \
-	SYSCALL_ARG_##a0(0); SYSCALL_ARG_##a1(1); \
-	SYSCALL_ARG_##a2(2); SYSCALL_ARG_##a3(3); \
-	SYSCALL_ARG_##a4(4); SYSCALL_ARG_##a5(5);
-
-#define SYSCALL_FOOTER return do_syscall(&request, ctx)
-
 SYSCALL_DECLARE(open)
 {
 
@@ -872,96 +832,6 @@ SYSCALL_DECLARE(pmc_reset)
     return ihk_mc_perfctr_reset(counter);
 }
 
-static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
-	[2] = sys_open,
-	[9] = sys_mmap,
-	[10] = sys_mprotect,
-	[11] = sys_munmap,
-	[12] = sys_brk,
-	[13] = sys_rt_sigaction,
-	[14] = sys_rt_sigprocmask,
-	[24] = sys_sched_yield,
-	[28] = sys_madvise,
-	[39] = sys_getpid,
-	[56] = sys_clone,
-	[60] = sys_exit,
-	[97]  = sys_getrlimit,
-	[158] = sys_arch_prctl,
-	[202] = sys_futex,
-	[203] = sys_sched_setaffinity,
-	[204] = sys_sched_getaffinity,
-	[218] = sys_set_tid_address,
-	[231] = sys_exit_group,
-    [234] = sys_tgkill,
-	[273] = sys_set_robust_list,
-	[288] = NULL,
-#ifdef DCFA_KMOD
-	[303] = sys_mod_call,
-#endif
-    [502] = sys_process_data_section,
-    [601] = sys_pmc_init,
-    [602] = sys_pmc_start,
-    [603] = sys_pmc_stop,
-    [604] = sys_pmc_reset,
-};
-
-static char *syscall_name[] __attribute__ ((unused)) = {
-	[0] = "sys_read",
-	[1] = "sys_write",
-	[2] = "sys_open",
-	[3] = "sys_close",
-	[4] = "sys_stat",
-	[5] = "sys_fstat",
-	[8] = "sys_lseek",
-	[9] = "sys_mmap",
-	[10] = "sys_mprotect",
-	[11] = "sys_munmap",
-	[12] = "sys_brk",
-	[13] = "sys_rt_sigaction",
-	[14] = "sys_rt_sigprocmask",
-	[16] = "sys_ioctl",
-	[17] = "sys_pread",
-	[18] = "sys_pwrite",
-	[20] = "sys_writev",
-	[24] = "sys_sched_yield",
-	[21] = "sys_access",
-	[28] = "sys_madvise",
-	[39] = "sys_getpid",
-	[56] = "sys_clone",
-	[60] = "sys_exit",
-	[63] = "sys_uname",
-	[72] = "sys_fcntl",
-	[79] = "sys_getcwd",
-    [89] = "sys_readlink",
-	[96] = "sys_gettimeofday",
-	[97]  = "sys_getrlimit",
-	[102] = "sys_getuid",
-	[104] = "sys_getgid",
-	[107] = "sys_geteuid",
-	[108] = "sys_getegid",
-	[110] = "sys_getpgid",
-	[111] = "sys_getppid",
-	[158] = "sys_arch_prctl",
-	[201] = "sys_time",
-	[202] = "sys_futex",
-	[203] = "sys_sched_setaffinity",
-	[204] = "sys_sched_getaffinity",
-	[217] = "sys_getdents64",
-	[218] = "sys_set_tid_address",
-	[231] = "sys_exit_group",
-    [234] = "sys_tgkill",
-	[273] = "sys_set_robust_list",
-	[288] = "NULL",
-#ifdef DCFA_KMOD
-	[303] = "sys_mod_call",
-#endif
-	[502] = "process_data_section",
-    [601] = "sys_pmc_init",
-    [602] = "sys_pmc_start",
-    [603] = "sys_pmc_stop",
-    [604] = "sys_pmc_reset",
-};
-
 long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx)
 {
 	SYSCALL_HEADER;
@@ -1003,7 +873,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
     dkprintf("\n");
 
 
-	if ((0 <= num) && (num < sizeof(syscall_table)/sizeof(syscall_table[0]))
+	if ((0 <= num) && (num < syscall_table_elems)
 			&& (syscall_table[num] != NULL)) {
 		l = syscall_table[num](num, ctx);
 		
