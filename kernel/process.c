@@ -110,6 +110,9 @@ static int update_process_page_table(struct process *process,
 	unsigned long p, pa = range->phys;
 	unsigned long pp;
 	unsigned long flags = ihk_mc_spinlock_lock(&process->vm->page_table_lock);
+	const enum ihk_mc_pt_attribute attr
+		= flag | PTATTR_WRITABLE | PTATTR_USER | PTATTR_FOR_USER;
+
 	p = range->start;
 	while (p < range->end) {
 #ifdef USE_LARGE_PAGES
@@ -120,7 +123,7 @@ static int update_process_page_table(struct process *process,
 				(range->end - p) >= LARGE_PAGE_SIZE) {
 
 			if (ihk_mc_pt_set_large_page(process->vm->page_table, (void *)p,
-					pa, PTATTR_WRITABLE | PTATTR_USER | flag) != 0) {
+					pa, attr) != 0) {
 				goto err;
 			}
 
@@ -132,7 +135,7 @@ static int update_process_page_table(struct process *process,
 		else {
 #endif		
 			if(ihk_mc_pt_set_page(process->vm->page_table, (void *)p,
-			      pa, PTATTR_WRITABLE | PTATTR_USER | flag) != 0){
+			      pa, attr) != 0){
 				goto err;
 			}
 
