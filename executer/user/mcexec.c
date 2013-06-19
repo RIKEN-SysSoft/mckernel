@@ -484,8 +484,7 @@ int main(int argc, char **argv)
 	}
 
 	for (i = 0; i < NUM_HANDLER_THREADS; ++i) {
-		int ret;
-		ret = pthread_join(thread_data[i].thread_id, NULL);
+		pthread_join(thread_data[i].thread_id, NULL);
 	}
 
 	return 0;

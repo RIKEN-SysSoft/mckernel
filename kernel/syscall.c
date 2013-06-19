@@ -176,7 +176,6 @@ SYSCALL_DECLARE(exit_group)
 SYSCALL_DECLARE(mmap)
 {
 	struct vm_regions *region = &cpu_local_var(current)->vm->region;
-	unsigned long lockr;
 	void *va;
 
     dkprintf("syscall.c,mmap,addr=%lx,len=%lx,prot=%lx,flags=%x,fd=%x,offset=%lx\n",
@@ -223,7 +222,7 @@ SYSCALL_DECLARE(mmap)
 
 				e = (e + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
 				if((p = (unsigned long)ihk_mc_alloc_pages(
-						(e - s + 2 * LARGE_PAGE_SIZE) >> PAGE_SHIFT, IHK_MC_AP_NOWAIT)) == NULL){
+						(e - s + 2 * LARGE_PAGE_SIZE) >> PAGE_SHIFT, IHK_MC_AP_NOWAIT)) == (unsigned long)NULL) {
 					return -ENOMEM;
 				}
 
@@ -233,7 +232,7 @@ SYSCALL_DECLARE(mmap)
 				// add range, mapping
 				if(add_process_memory_range(cpu_local_var(current), s_orig, e,
 						virt_to_phys((void *)(p_aligned - head_space)), VR_NONE) != 0){
-					ihk_mc_free_pages(p, range_npages);
+					ihk_mc_free_pages((void *)p, range_npages);
 					return -ENOMEM;
 				}
 
@@ -756,13 +755,13 @@ SYSCALL_DECLARE(sched_getaffinity)
 {
 	//int pid = (int)ihk_mc_syscall_arg0(ctx);
 	unsigned int len = (int)ihk_mc_syscall_arg1(ctx);
-	int cpu_id;
+	//int cpu_id;
 	cpu_set_t *mask = (cpu_set_t *)ihk_mc_syscall_arg2(ctx);
 	struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
     if(len*8 < cpu_info->ncpus) { return -EINVAL; }
     if(len & (sizeof(unsigned long)-1)) { return -EINVAL; }
     int min_len = MIN2(len, sizeof(cpu_set_t));
-    int min_ncpus = MIN2(min_len*8, cpu_info->ncpus);
+    //int min_ncpus = MIN2(min_len*8, cpu_info->ncpus);
 
 	CPU_ZERO_S(min_len, mask);
 	CPU_SET_S(ihk_mc_get_hardware_processor_id(), min_len, mask);
@@ -906,7 +905,7 @@ static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
     [604] = sys_pmc_reset,
 };
 
-static char *syscall_name[] = {
+static char *syscall_name[] __attribute__ ((unused)) = {
 	[0] = "sys_read",
 	[1] = "sys_write",
 	[2] = "sys_open",

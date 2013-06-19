@@ -25,7 +25,6 @@ extern long do_arch_prctl(unsigned long code, unsigned long address);
 
 static int init_process_vm(struct process *owner, struct process_vm *vm)
 {
-	int i;
 	void *pt = ihk_mc_pt_create(IHK_MC_AP_NOWAIT);
 
 	if(pt == NULL)
