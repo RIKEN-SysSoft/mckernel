@@ -135,7 +135,7 @@ static unsigned long setup_l3(struct page_table *pt,
 		}
 		pt_phys = setup_l2(arch_alloc_page(IHK_MC_AP_CRITICAL), phys, start, end);
 
-		pt->entry[i] = pt_phys | PFL3_KERN_ATTR;
+		pt->entry[i] = pt_phys | PFL3_PDIR_ATTR;
 	}
 
 	return virt_to_phys(pt);
@@ -160,8 +160,8 @@ static void init_normal_area(struct page_table *pt)
 		pt_phys = setup_l3(arch_alloc_page(IHK_MC_AP_CRITICAL), phys,
 		                   map_start, map_end);
 
-		pt->entry[ident_index++] = pt_phys | PFL4_KERN_ATTR;
-		pt->entry[virt_index++] = pt_phys | PFL4_KERN_ATTR;
+		pt->entry[ident_index++] = pt_phys | PFL4_PDIR_ATTR;
+		pt->entry[virt_index++] = pt_phys | PFL4_PDIR_ATTR;
 	}
 }
 
@@ -181,6 +181,7 @@ static struct page_table *__alloc_new_pt(enum ihk_mc_ap_flag ap_flag)
  */
 
 #define ATTR_MASK (PTATTR_WRITABLE | PTATTR_USER | PTATTR_ACTIVE)
+#if 0
 static unsigned long attr_to_l4attr(enum ihk_mc_pt_attribute attr)
 {
 	return (attr & ATTR_MASK) | PFL4_PRESENT;
@@ -189,6 +190,7 @@ static unsigned long attr_to_l3attr(enum ihk_mc_pt_attribute attr)
 {
 	return (attr & ATTR_MASK) | PFL3_PRESENT;
 }
+#endif
 static unsigned long attr_to_l2attr(enum ihk_mc_pt_attribute attr)
 {
 	unsigned long r = (attr & (ATTR_MASK | PTATTR_LARGEPAGE));
@@ -322,7 +324,7 @@ static int __set_pt_page(struct page_table *pt, void *virt, unsigned long phys,
 	} else {
 		if((newpt = __alloc_new_pt(ap_flag)) == NULL)
 			return -ENOMEM;
-		pt->entry[l4idx] = virt_to_phys(newpt) | attr_to_l4attr(attr);
+		pt->entry[l4idx] = virt_to_phys(newpt) | PFL4_PDIR_ATTR;
 		pt = newpt;
 	}
 
@@ -331,7 +333,7 @@ static int __set_pt_page(struct page_table *pt, void *virt, unsigned long phys,
 	} else {
 		if((newpt = __alloc_new_pt(ap_flag)) == NULL)
 			return -ENOMEM;
-		pt->entry[l3idx] = virt_to_phys(newpt) | attr_to_l3attr(attr);
+		pt->entry[l3idx] = virt_to_phys(newpt) | PFL3_PDIR_ATTR;
 		pt = newpt;
 	}
 
@@ -354,8 +356,7 @@ static int __set_pt_page(struct page_table *pt, void *virt, unsigned long phys,
 	} else {
 		if((newpt = __alloc_new_pt(ap_flag)) == NULL)
 			return -ENOMEM;
-		pt->entry[l2idx] = virt_to_phys(newpt) | attr_to_l2attr(attr)
-			| PFL2_PRESENT;
+		pt->entry[l2idx] = virt_to_phys(newpt) | PFL2_PDIR_ATTR;
 		pt = newpt;
 	}
 
@@ -547,7 +548,7 @@ int ihk_mc_pt_prepare_map(page_table_t p, void *virt, unsigned long size,
 					ret = -ENOMEM;
 				} else { 
 					pt->entry[l4idx] = virt_to_phys(newpt)
-						| attr_to_l4attr(attr);
+						| PFL4_PDIR_ATTR;
 				}
 			}
 		}

@@ -84,6 +84,11 @@
 #define PFL2_KERN_ATTR       (PFL2_PRESENT | PFL2_WRITABLE)
 #define PFL1_KERN_ATTR       (PFL1_PRESENT | PFL1_WRITABLE)
 
+/* for the page table entry that points another page table */
+#define	PFL4_PDIR_ATTR	(PFL4_PRESENT | PFL4_WRITABLE | PFL4_USER)
+#define	PFL3_PDIR_ATTR	(PFL3_PRESENT | PFL3_WRITABLE | PFL3_USER)
+#define	PFL2_PDIR_ATTR	(PFL2_PRESENT | PFL2_WRITABLE | PFL2_USER)
+
 /* For easy conversion, it is better to be the same as architecture's ones */
 enum ihk_mc_pt_attribute {
 	PTATTR_ACTIVE     = 0x01,
