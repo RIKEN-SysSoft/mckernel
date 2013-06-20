@@ -57,9 +57,7 @@ SYSCALL_HANDLED(218, set_tid_address)
 SYSCALL_HANDLED(231, exit_group)
 SYSCALL_HANDLED(234, tgkill)
 SYSCALL_HANDLED(273, set_robust_list)
-#ifdef DCFA_KMOD
 SYSCALL_HANDLED(303, mod_call)
-#endif
 SYSCALL_HANDLED(502, process_data_section)
 SYSCALL_HANDLED(601, pmc_init)
 SYSCALL_HANDLED(602, pmc_start)
