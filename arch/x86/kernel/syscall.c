@@ -20,6 +20,7 @@
 #include <syscall_list.h>
 #undef	SYSCALL_HANDLED
 #undef	SYSCALL_DELEGATED
+extern long sys_mod_call(int n, ihk_mc_user_context_t *ctx) __attribute__ ((weak));
 
 /* generate syscall_table[] */
 long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
