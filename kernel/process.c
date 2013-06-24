@@ -230,7 +230,6 @@ int remove_process_memory_range(struct process *process, unsigned long start, un
 				kprintf("remove_process_memory_range:kmalloc failed\n");
 				return -ENOMEM;
 			}
-			INIT_LIST_HEAD(&range->list);
 			newrange->start = end;
 			newrange->end = range->end;
 			newrange->phys = range->phys + (end - range->start);
