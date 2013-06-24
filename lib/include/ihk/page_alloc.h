@@ -24,5 +24,6 @@ unsigned long ihk_pagealloc_alloc(void *__desc, int npages);
 void ihk_pagealloc_reserve(void *desc, unsigned long start, unsigned long end);
 void ihk_pagealloc_free(void *__desc, unsigned long address, int npages);
 unsigned long ihk_pagealloc_count(void *__desc);
+int ihk_pagealloc_query_free(void *__desc);
 
 #endif

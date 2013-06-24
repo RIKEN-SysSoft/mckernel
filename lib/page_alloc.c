@@ -229,6 +229,32 @@ unsigned long ihk_pagealloc_count(void *__desc)
 	return n;
 }
 
+int ihk_pagealloc_query_free(void *__desc)
+{
+	struct ihk_page_allocator_desc *desc = __desc;
+	unsigned int mi;
+	int j;
+	unsigned long v, flags;
+	int npages = 0;
+
+	flags = ihk_mc_spinlock_lock(&desc->lock);
+	for (mi = 0; mi < desc->count; mi++) {
+		
+		v = desc->map[mi];
+		if (v == (unsigned long)-1)
+			continue;
+		
+		for (j = 0; j < 64; j++) {
+			if (!(v & ((unsigned long)1 << j))) { /* free */
+				npages++;
+			}
+		}
+	}
+	ihk_mc_spinlock_unlock(&desc->lock, flags);
+
+	return npages;
+}
+
 void __ihk_pagealloc_zero_free_pages(void *__desc)
 {
 	struct ihk_page_allocator_desc *desc = __desc;

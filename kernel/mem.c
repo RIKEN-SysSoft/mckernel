@@ -64,6 +64,27 @@ static struct ihk_mc_pa_ops allocator = {
 	.free_page = free_pages,
 };
 
+void sbox_write(int offset, unsigned int value);
+
+static void query_free_mem_interrupt_handler(void *priv)
+{
+	dkprintf("query free mem handler!\n");
+
+	int pages = ihk_pagealloc_query_free(pa_allocator);
+	
+	dkprintf("free pages: %d\n", pages);
+
+	sbox_write(SBOX_SCRATCH0, pages);
+	sbox_write(SBOX_SCRATCH1, 1);
+}
+
+static struct ihk_mc_interrupt_handler query_free_mem_handler = {
+	.func = query_free_mem_interrupt_handler,
+	.priv = NULL,
+};
+
+
+
 static void page_fault_handler(unsigned long address, void *regs, 
                                unsigned long rbp)
 {
@@ -165,6 +186,10 @@ static void page_allocator_init(void)
 
 	/* And prepare some exception handlers */
 	ihk_mc_set_page_fault_handler(page_fault_handler);
+
+	/* Register query free mem handler */
+	ihk_mc_register_interrupt_handler(ihk_mc_get_vector(IHK_GV_QUERY_FREE_MEM),
+		&query_free_mem_handler);
 }
 
 void register_kmalloc(void)

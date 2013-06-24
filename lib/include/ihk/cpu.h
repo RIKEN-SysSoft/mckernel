@@ -26,6 +26,7 @@ int ihk_mc_unregister_interrupt_handler(int vector,
 
 enum ihk_mc_gv_type {
 	IHK_GV_IKC = 1,
+	IHK_GV_QUERY_FREE_MEM = 2
 };
 
 int ihk_mc_get_vector(enum ihk_mc_gv_type type);
