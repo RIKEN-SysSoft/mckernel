@@ -821,14 +821,6 @@ static void do_mod_exit(int status){
 }
 #endif
 
-SYSCALL_DECLARE(process_data_section) {
-    unsigned long s = cpu_local_var(current)->vm->region.data_start;
-    unsigned long e = cpu_local_var(current)->vm->region.data_end;
-    *((unsigned long*)ihk_mc_syscall_arg0(ctx)) = s;
-    *((unsigned long*)ihk_mc_syscall_arg1(ctx)) = e;
-    return 0;
-}
-
 /* select counter type */
 SYSCALL_DECLARE(pmc_init)
 {
