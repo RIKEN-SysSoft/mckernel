@@ -184,10 +184,6 @@ struct syscall_params {
 
 #define SYSCALL_FOOTER return do_syscall(&request, ctx)
 
-extern long (*syscall_table[])(int n, ihk_mc_user_context_t *ctx);
-extern char *syscall_name[];
-extern long syscall_table_elems;
-
 extern int do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx);
 
 #endif

@@ -35,6 +35,34 @@
 
 static ihk_atomic_t pid_cnt = IHK_ATOMIC_INIT(1024);
 
+/* generate system call handler's prototypes */
+#define	SYSCALL_HANDLED(number,name)	extern long sys_##name(int n, ihk_mc_user_context_t *ctx);
+#define	SYSCALL_DELEGATED(number,name)
+#include <syscall_list.h>
+#undef	SYSCALL_HANDLED
+#undef	SYSCALL_DELEGATED
+
+/* generate syscall_table[] */
+static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
+#define	SYSCALL_HANDLED(number,name)	[number] = &sys_##name,
+#define	SYSCALL_DELEGATED(number,name)
+#include <syscall_list.h>
+#undef	SYSCALL_HANDLED
+#undef	SYSCALL_DELEGATED
+};
+
+/* generate syscall_name[] */
+#define	MCKERNEL_UNUSED	__attribute__ ((unused))
+static char *syscall_name[] MCKERNEL_UNUSED = {
+#define	DECLARATOR(number,name)		[number] = #name,
+#define	SYSCALL_HANDLED(number,name)	DECLARATOR(number,sys_##name)
+#define	SYSCALL_DELEGATED(number,name)	DECLARATOR(number,sys_##name)
+#include <syscall_list.h>
+#undef	DECLARATOR
+#undef	SYSCALL_HANDLED
+#undef	SYSCALL_DELEGATED
+};
+
 #ifdef DCFA_KMOD
 static void do_mod_exit(int status);
 #endif
@@ -873,7 +901,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
     dkprintf("\n");
 
 
-	if ((0 <= num) && (num < syscall_table_elems)
+	if ((0 <= num) && (num < (sizeof(syscall_table) / sizeof(syscall_table[0])))
 			&& (syscall_table[num] != NULL)) {
 		l = syscall_table[num](num, ctx);
 		
