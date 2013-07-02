@@ -12,6 +12,7 @@
 #define VR_RESERVED        0x2
 #define VR_IO_NOCACHE      0x100
 #define VR_REMOTE          0x200
+#define VR_DEMAND_PAGING   0x1000
 
 #define PS_RUNNING           0x1
 #define PS_INTERRUPTIBLE     0x2
@@ -22,7 +23,7 @@
 #define PS_NORMAL	(PS_INTERRUPTIBLE | PS_UNINTERRUPTIBLE)
 
 #ifdef ATTACHED_MIC
-#define USE_LARGE_PAGES
+//#define USE_LARGE_PAGES
 #endif
 
 #include <waitq.h>

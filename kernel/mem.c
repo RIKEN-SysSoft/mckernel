@@ -110,6 +110,36 @@ static void page_fault_handler(unsigned long address, void *regs,
 		
 		if (range->start <= address && range->end > address) {
 			__kprintf("address is in range, flag: 0x%X! \n", range->flag);
+			if(range->flag & VR_DEMAND_PAGING){
+			  //allocate page for demand paging
+			  __kprintf("demand paging\n");
+			  void* pa = allocate_pages(1, IHK_MC_AP_CRITICAL);
+			  if(!pa){
+			    kprintf_unlock(irqflags);
+			    panic("allocate_pages failed");
+			  }
+			  __kprintf("physical memory area obtained %lx\n", virt_to_phys(pa));
+
+              {
+                  enum ihk_mc_pt_attribute flag = 0;
+                  struct process *process = cpu_local_var(current);
+                  unsigned long flags = ihk_mc_spinlock_lock(&process->vm->page_table_lock);
+                  const enum ihk_mc_pt_attribute attr = flag | PTATTR_WRITABLE | PTATTR_USER | PTATTR_FOR_USER;
+
+                  int rc = ihk_mc_pt_set_page(process->vm->page_table, (void*)(address & PAGE_MASK), virt_to_phys(pa), attr);
+                  if(rc != 0) {
+                      ihk_mc_spinlock_unlock(&process->vm->page_table_lock, flags);
+                      __kprintf("ihk_mc_pt_set_page failed,rc=%d,%p,%lx,%08x\n", rc, (void*)(address & PAGE_MASK), virt_to_phys(pa), attr);
+                      ihk_mc_pt_print_pte(process->vm->page_table, (void*)address);
+                      goto fn_fail;
+                  }
+                  ihk_mc_spinlock_unlock(&process->vm->page_table_lock, flags);
+                  __kprintf("update_process_page_table success\n");
+              }
+			  kprintf_unlock(irqflags);
+              memset(pa, 0, PAGE_SIZE);
+			  return;
+			}
 			found = 1;
 			ihk_mc_pt_print_pte(cpu_local_var(current)->vm->page_table, 
 			                    (void*)address);
@@ -120,6 +150,7 @@ static void page_fault_handler(unsigned long address, void *regs,
 	if (!found)
 		__kprintf("address is out of range! \n");
 
+ fn_fail:
 	kprintf_unlock(irqflags);
 
 	/* TODO */

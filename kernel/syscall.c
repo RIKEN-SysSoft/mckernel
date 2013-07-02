@@ -274,7 +274,21 @@ SYSCALL_DECLARE(mmap)
         unsigned long s = (region->map_end + PAGE_SIZE - 1) & PAGE_MASK;
         unsigned long map_end_aligned = region->map_end;
 		unsigned long len = (ihk_mc_syscall_arg1(ctx) + PAGE_SIZE - 1) & PAGE_MASK;
-        dkprintf("syscall.c,mmap,len=%lx", len);
+        dkprintf("syscall.c,mmap,len=%lx\n", len);
+
+        unsigned long flag = 0; /* eager paging */
+#if 1
+        /* Intel OpenMP hack: it requests 128MB and munmap tail and head
+           to create 64MB-aligned 64MB memory area 
+           and then it tries to touch memory-block
+           with offset of 0x10, 0x101008 */
+        if(ihk_mc_syscall_arg1(ctx) == 1024*1024*64 || ihk_mc_syscall_arg1(ctx) == 1024*1024*128) {
+            flag |= VR_DEMAND_PAGING; /* demand paging */
+            kprintf("SC(%d)[mmap],!MAP_FIXED,MAP_ANONYMOUS,sz=%lx\n", ihk_mc_get_processor_id(), ihk_mc_syscall_arg1(ctx));
+        }
+        //if(ihk_mc_syscall_arg3(ctx) & 0x100) { flag |= 0x1000; };
+#endif
+
 
 #ifdef USE_NOCACHE_MMAP
 		if ((ihk_mc_syscall_arg3(ctx) & 0x40) == 0x40) {
@@ -290,11 +304,15 @@ SYSCALL_DECLARE(mmap)
 				extend_process_region(cpu_local_var(current),
 				                      region->map_start,
 				                      map_end_aligned,
-				                      s + len, 0);
+				                      s + len, flag);
 		}
 
+        if(ihk_mc_syscall_arg1(ctx) == 1024*1024*64 || ihk_mc_syscall_arg1(ctx) == 1024*1024*128) {
+            kprintf("syscall.c,mmap,cpuid=%d,map_end-len=%lx,s+len=%lx,map_end=%lx\n", ihk_mc_get_processor_id(), region->map_end-len, s+len, region->map_end);
+        }
+
         ihk_mc_spinlock_unlock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
-        dkprintf("syscall.c,mmap,map_end=%lx,s+len=%lx\n", region->map_end, s+len);
+
 #ifdef USE_LARGE_PAGES
 		if (region->map_end >= s + len) { 
 			/* NOTE: extend_process_region() might have large page aligned */

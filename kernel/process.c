@@ -103,7 +103,7 @@ struct process *clone_process(struct process *org, unsigned long pc,
 extern void __host_update_process_range(struct process *process,
                                         struct vm_range *range);
 
-static int update_process_page_table(struct process *process,
+int update_process_page_table(struct process *process,
                           struct vm_range *range, enum ihk_mc_pt_attribute flag)
 {
 	unsigned long p, pa = range->phys;
@@ -239,14 +239,18 @@ int remove_process_memory_range(struct process *process, unsigned long start, un
 			range->end = start;
 		}
 
-		if (freesize > 0) {
+        /* FIXME: traverse page table entries and release physical memory area if present
+         then mark the page table entry non-present */
+		if (freesize > 0 && !(range->flag & VR_DEMAND_PAGING)) {
+            dkprintf("remove_process_memory_range,remove_process_region\n");
 			error = remove_process_region(process, freestart, (freestart + freesize));
 			if (error) {
 				kprintf("remove_process_memory_range:remove_process_region failed: %d\n", error);
 				/* through */
 			}
 
-			if (!(range->flag & (VR_REMOTE | VR_IO_NOCACHE | VR_RESERVED))) {
+			if (!(range->flag & (VR_REMOTE | VR_IO_NOCACHE | VR_RESERVED)) && !(range->flag & VR_DEMAND_PAGING)) {
+                dkprintf("remove_process_memory_range,ihk_mc_free_pages\n");
 				// XXX: need TLB shootdown?
 				ihk_mc_free_pages(phys_to_virt(freephys), freesize>>PAGE_SHIFT);
 			}
@@ -287,14 +291,23 @@ int add_process_memory_range(struct process *process,
 	range->phys = phys;
 	range->flag = flag;
 
+    if(range->flag & VR_DEMAND_PAGING) {
+	dkprintf("range: 0x%lX - 0x%lX => physicall memory area is allocated on demand (%ld)\n",
+	        range->start, range->end, range->end - range->start);
+    } else {
 	dkprintf("range: 0x%lX - 0x%lX => 0x%lX - 0x%lX (%ld)\n",
 	        range->start, range->end, range->phys, range->phys + 
 	        range->end - range->start, range->end - range->start);
+    }
 
 	if (flag & VR_REMOTE) {
 		rc = update_process_page_table(process, range, IHK_PTA_REMOTE);
 	} else if (flag & VR_IO_NOCACHE) {
 		rc = update_process_page_table(process, range, PTATTR_UNCACHABLE);
+	} else if(flag & VR_DEMAND_PAGING){
+	  //demand paging no need to update process table now
+	  kprintf("demand paging do not update process page table\n");
+      rc = 0;
 	} else {
 		rc = update_process_page_table(process, range, 0);
 	}
@@ -312,7 +325,7 @@ int add_process_memory_range(struct process *process,
 	list_add_tail(&range->list, &process->vm->vm_range_list);
 	
 	/* Clear content! */
-	if (!(flag & VR_REMOTE))
+	if (!(flag & VR_REMOTE) && !(flag & VR_DEMAND_PAGING))
 		memset((void*)phys_to_virt(range->phys), 0, end - start);
 
 	return 0;
@@ -396,6 +409,7 @@ unsigned long extend_process_region(struct process *proc,
 
 #ifdef USE_LARGE_PAGES
 	if (aligned_new_end - aligned_end >= LARGE_PAGE_SIZE) {
+	  if(flag & VR_DEMAND_PAGING){panic("demand paging for large page is not available!");}
 		unsigned long p_aligned;
 		unsigned long old_aligned_end = aligned_end;
 
@@ -452,15 +466,20 @@ unsigned long extend_process_region(struct process *proc,
 		return address;
 	}
 #endif
+	if(flag & VR_DEMAND_PAGING){
+	  // demand paging no need to allocate page now
+	  kprintf("demand page do not allocate page\n");
+	  p=0;
+	}else{
 
 	p = allocate_pages((aligned_new_end - aligned_end) >> PAGE_SHIFT, IHK_MC_AP_NOWAIT);
 
 	if (!p) {
 		return end;
 	}
-	
+    }	
 	if((rc = add_process_memory_range(proc, aligned_end, aligned_new_end,
-	                         virt_to_phys(p), flag)) != 0){
+                                      (p==0?0:virt_to_phys(p)), flag)) != 0){
 		free_pages(p, (aligned_new_end - aligned_end) >> PAGE_SHIFT);
 		return end;
 	}
