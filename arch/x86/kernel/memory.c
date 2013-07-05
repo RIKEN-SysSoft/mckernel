@@ -540,6 +540,10 @@ int ihk_mc_pt_print_pte(struct page_table *pt, void *virt)
 		__kprintf("l3 entry: 0x%lX\n", pt->entry[l3idx]);
 		return -EFAULT;
 	}
+	if ((pt->entry[l3idx] & PFL3_SIZE)) {
+		__kprintf("l3 entry: 0x%lX\n", pt->entry[l3idx]);
+		return 0;
+	}
 	pt = phys_to_virt(pt->entry[l3idx] & PAGE_MASK);
 	
 	__kprintf("l2 table: 0x%lX l2idx: %d \n", virt_to_phys(pt), l2idx);
@@ -549,6 +553,7 @@ int ihk_mc_pt_print_pte(struct page_table *pt, void *virt)
 		return -EFAULT;
 	}
 	if ((pt->entry[l2idx] & PFL2_SIZE)) {
+		__kprintf("l2 entry: 0x%lX\n", pt->entry[l2idx]);
 		return 0;
 	}
 	pt = phys_to_virt(pt->entry[l2idx] & PAGE_MASK);
