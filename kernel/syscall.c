@@ -487,27 +487,16 @@ SYSCALL_DECLARE(arch_prctl)
 
 SYSCALL_DECLARE(clone)
 {
-	int i;
-	int cpuid = -1;
+	int cpuid;
 	int clone_flags = ihk_mc_syscall_arg0(ctx);
-	struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
 	struct process *new;
 	
 	dkprintf("[%d] clone(): stack_pointr: 0x%lX\n",
 	         ihk_mc_get_processor_id(), 
 			 (unsigned long)ihk_mc_syscall_arg1(ctx));
 
-	//ihk_mc_spinlock_lock_noirq(&cpu_status_lock);
-	for (i = 0; i < cpu_info->ncpus; i++) {
-		if (get_cpu_local_var(i)->status == CPU_STATUS_IDLE) {
-			cpuid = i;
-			break;
-		}
-	}
+    cpuid = obtain_clone_cpuid();
 
-	if (cpuid < 0) 
-		return -EAGAIN;
-	
 	new = clone_process(cpu_local_var(current), ihk_mc_syscall_pc(ctx),
 	                    ihk_mc_syscall_arg1(ctx));
 	
@@ -546,7 +535,7 @@ SYSCALL_DECLARE(clone)
 
 	ihk_mc_syscall_ret(new->uctx) = 0;
 	
-	dkprintf("clone: kicking scheduler!\n");
+	dkprintf("clone: kicking scheduler!,cpuid=%d\n", cpuid);
 	runq_add_proc(new, cpuid);
 
 	return new->pid;

@@ -185,5 +185,6 @@ struct syscall_params {
 #define SYSCALL_FOOTER return do_syscall(&request, ctx)
 
 extern int do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx);
+extern int obtain_clone_cpuid();
 
 #endif
