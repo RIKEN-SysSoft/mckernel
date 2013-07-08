@@ -521,9 +521,8 @@ void free_process_memory(struct process *proc)
 
 	list_for_each_entry_safe(range, next, &vm->vm_range_list,
 	                         list) {
-		if (!(range->flag & VR_REMOTE) &&
-		    !(range->flag & VR_IO_NOCACHE) &&
-		    !(range->flag & VR_RESERVED)) {
+		if (!(range->flag & (VR_REMOTE | VR_IO_NOCACHE | VR_RESERVED
+						| VR_DEMAND_PAGING))) {
 			ihk_mc_free_pages(phys_to_virt(range->phys),
 			                  (range->end - range->start)
 			                  >> PAGE_SHIFT);
