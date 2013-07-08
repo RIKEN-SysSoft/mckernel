@@ -124,6 +124,10 @@ static struct page_table *init_pt;
 static int use_1gb_page = 0;
 #endif
 
+#define	OWANO_IMPLEMENTATION
+#include <owano-memory.h>
+#undef	OWANO_IMPLEMENTATION
+
 #ifdef USE_LARGE_PAGES
 static void check_available_page_size(void)
 {
