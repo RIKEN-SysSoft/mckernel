@@ -149,15 +149,19 @@ static struct ihk_mc_pa_ops allocator = {
 
 void sbox_write(int offset, unsigned int value);
 
-static void query_free_mem_interrupt_handler(void *priv)
+void query_free_mem_interrupt_handler(void *priv)
 {
-#ifdef ATTACHED_MIC
 	dkprintf("query free mem handler!\n");
 
 	int pages = ihk_pagealloc_query_free(pa_allocator);
+	static int first = -1;
 	
-	dkprintf("free pages: %d\n", pages);
+	if (first < 0) {
+		first = pages;
+	}
+	kprintf("free pages: %d (%d)\n", pages, pages-first);
 
+#ifdef	ATTACHED_MIC
 	sbox_write(SBOX_SCRATCH0, pages);
 	sbox_write(SBOX_SCRATCH1, 1);
 #endif
