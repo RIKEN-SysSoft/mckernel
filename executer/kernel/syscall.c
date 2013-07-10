@@ -97,6 +97,11 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 
 	rpa = translate_rva_to_rpa(usrdata->os, usrdata->rpgtable,
 			(unsigned long)vmf->virtual_address);
+	if ((long)rpa < 0) {
+		printk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
+				vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
+		return VM_FAULT_SIGBUS;
+	}
 
 	phys = ihk_device_map_memory(dev, rpa, PAGE_SIZE);
 	error = vm_insert_pfn(vma, (unsigned long)vmf->virtual_address, phys>>PAGE_SHIFT);
