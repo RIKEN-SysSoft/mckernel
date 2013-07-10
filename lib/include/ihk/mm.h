@@ -50,7 +50,7 @@ void ihk_mc_reserve_arch_pages(unsigned long start, unsigned long end,
                                void (*cb)(unsigned long, unsigned long, int));
 
 struct ihk_mc_pa_ops {
-	void *(*alloc_page)(int, enum ihk_mc_ap_flag);
+	void *(*alloc_page)(int, int, enum ihk_mc_ap_flag);
 	void (*free_page)(void *, int);
 
 	void *(*alloc)(int, enum ihk_mc_ap_flag);
@@ -74,6 +74,7 @@ void ihk_mc_map_micpa(unsigned long host_pa, unsigned long* mic_pa);
 int ihk_mc_free_micpa(unsigned long mic_pa);
 void ihk_mc_clean_micpa(void);
 
+void *ihk_mc_alloc_aligned_pages(int npages, int p2align, enum ihk_mc_ap_flag flag);
 void *ihk_mc_alloc_pages(int npages, enum ihk_mc_ap_flag flag);
 void ihk_mc_free_pages(void *p, int npages);
 void *ihk_mc_allocate(int size, enum ihk_mc_ap_flag flag);

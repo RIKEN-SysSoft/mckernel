@@ -20,7 +20,7 @@ void *__ihk_pagealloc_init(unsigned long start, unsigned long size,
 void *ihk_pagealloc_init(unsigned long start, unsigned long size,
                          unsigned long unit);
 void ihk_pagealloc_destroy(void *__desc);
-unsigned long ihk_pagealloc_alloc(void *__desc, int npages);
+unsigned long ihk_pagealloc_alloc(void *__desc, int npages, int p2align);
 void ihk_pagealloc_reserve(void *desc, unsigned long start, unsigned long end);
 void ihk_pagealloc_free(void *__desc, unsigned long address, int npages);
 unsigned long ihk_pagealloc_count(void *__desc);

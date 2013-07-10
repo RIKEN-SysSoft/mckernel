@@ -42,9 +42,9 @@ static void reserve_pages(unsigned long start, unsigned long end, int type)
 	ihk_pagealloc_reserve(pa_allocator, start, end);
 }
 
-void *allocate_pages(int npages, enum ihk_mc_ap_flag flag)
+void *allocate_aligned_pages(int npages, int p2align, enum ihk_mc_ap_flag flag)
 {
-	unsigned long pa = ihk_pagealloc_alloc(pa_allocator, npages);
+	unsigned long pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
 	/* all_pagealloc_alloc returns zero when error occured, 
 	   and callee (in mcos/kernel/process.c) so propagate it */
 	if(pa)
@@ -54,13 +54,18 @@ void *allocate_pages(int npages, enum ihk_mc_ap_flag flag)
 	return NULL;
 }
 
+void *allocate_pages(int npages, enum ihk_mc_ap_flag flag)
+{
+	return allocate_aligned_pages(npages, PAGE_P2ALIGN, flag);
+}
+
 void free_pages(void *va, int npages)
 {
 	ihk_pagealloc_free(pa_allocator, virt_to_phys(va), npages);
 }
 
 static struct ihk_mc_pa_ops allocator = {
-	.alloc_page = allocate_pages,
+	.alloc_page = allocate_aligned_pages,
 	.free_page = free_pages,
 };
 
@@ -176,12 +181,15 @@ static void page_allocator_init(void)
 	unsigned long page_map_pa, pages;
 	void *page_map;
 	unsigned int i;
+	uint64_t start;
+	uint64_t end;
 
-	pa_start = ihk_mc_get_memory_address(IHK_MC_GMA_AVAIL_START, 0);
-	pa_end = ihk_mc_get_memory_address(IHK_MC_GMA_AVAIL_END, 0);
+	start = ihk_mc_get_memory_address(IHK_MC_GMA_AVAIL_START, 0);
+	end = ihk_mc_get_memory_address(IHK_MC_GMA_AVAIL_END, 0);
 
-	pa_start &= PAGE_MASK;
-	pa_end = (pa_end + PAGE_SIZE - 1) & PAGE_MASK;
+	start &= PAGE_MASK;
+	pa_start = start & LARGE_PAGE_MASK;
+	pa_end = (end + PAGE_SIZE - 1) & PAGE_MASK;
 
 #ifndef ATTACHED_MIC
 	page_map_pa = ihk_mc_get_memory_address(IHK_MC_GMA_HEAP_START, 0);
@@ -198,6 +206,9 @@ static void page_allocator_init(void)
 	                                    PAGE_SIZE, page_map, &pages);
 
 	reserve_pages(page_map_pa, page_map_pa + pages * PAGE_SIZE, 0);
+	if (pa_start < start) {
+		reserve_pages(pa_start, start, 0);
+	}
 
 	/* BIOS reserved ranges */
 	for (i = 1; i <= ihk_mc_get_memory_address(IHK_MC_NR_RESERVED_AREAS, 0); 
@@ -249,7 +260,7 @@ void *ihk_mc_map_virtual(unsigned long phys, int npages,
 	offset = (phys & (PAGE_SIZE - 1));
 	phys = phys & PAGE_MASK;
 
-	p = (void *)ihk_pagealloc_alloc(vmap_allocator, npages);
+	p = (void *)ihk_pagealloc_alloc(vmap_allocator, npages, PAGE_P2ALIGN);
 	if (!p) {
 		return NULL;
 	}

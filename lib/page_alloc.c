@@ -88,13 +88,14 @@ void ihk_pagealloc_destroy(void *__desc)
 }
 
 static unsigned long __ihk_pagealloc_large(struct ihk_page_allocator_desc *desc,
-                                           int npages)
+                                           int npages, int p2align)
 {
 	unsigned long flags;
 	unsigned int i, j, mi;
 	int nblocks;
 	int nfrags;
 	unsigned long mask;
+	int mialign;
 
 	nblocks = (npages / 64);
 	mask = -1;
@@ -103,13 +104,14 @@ static unsigned long __ihk_pagealloc_large(struct ihk_page_allocator_desc *desc,
 		++nblocks;
 		mask = (1UL << nfrags) - 1;
 	}
+	mialign = (p2align <= 6)? 1: (1 << (p2align - 6));
 
 	flags = ihk_mc_spinlock_lock(&desc->lock);
 	for (i = 0, mi = desc->last; i < desc->count; i++, mi++) {
 		if (mi >= desc->count) {
 			mi = 0;
 		}
-		if (mi + nblocks >= desc->count) {
+		if ((mi + nblocks >= desc->count) || (mi % mialign)) {
 			continue;
 		}
 		for (j = mi; j < mi + nblocks - 1; j++) {
@@ -131,18 +133,20 @@ static unsigned long __ihk_pagealloc_large(struct ihk_page_allocator_desc *desc,
 	return 0;
 }
 
-unsigned long ihk_pagealloc_alloc(void *__desc, int npages)
+unsigned long ihk_pagealloc_alloc(void *__desc, int npages, int p2align)
 {
 	struct ihk_page_allocator_desc *desc = __desc;
 	unsigned int i, mi;
 	int j;
 	unsigned long v, mask, flags;
+	int jalign;
 
-	if (npages >= 32) {
-		return __ihk_pagealloc_large(desc, npages);
+	if ((npages >= 32) || (p2align >= 5)) {
+		return __ihk_pagealloc_large(desc, npages, p2align);
 	}
 
 	mask = (1UL << npages) - 1;
+	jalign = (p2align <= 0)? 1: (1 << p2align);
 
 	flags = ihk_mc_spinlock_lock(&desc->lock);
 	for (i = 0, mi = desc->last; i < desc->count; i++, mi++) {
@@ -155,6 +159,9 @@ unsigned long ihk_pagealloc_alloc(void *__desc, int npages)
 			continue;
 		
 		for (j = 0; j <= 64 - npages; j++) {
+			if (j % jalign) {
+				continue;
+			}
 			if (!(v & (mask << j))) { /* free */
 				desc->map[mi] |= (mask << j);
 

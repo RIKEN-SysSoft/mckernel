@@ -16,10 +16,12 @@
 #define PAGE_SHIFT         12
 #define PAGE_SIZE          (1UL << PAGE_SHIFT)
 #define PAGE_MASK          (~((unsigned long)PAGE_SIZE - 1))
+#define PAGE_P2ALIGN       0
 
 #define LARGE_PAGE_SHIFT   21
 #define LARGE_PAGE_SIZE    (1UL << LARGE_PAGE_SHIFT)
 #define LARGE_PAGE_MASK    (~((unsigned long)LARGE_PAGE_SIZE - 1))
+#define LARGE_PAGE_P2ALIGN (LARGE_PAGE_SHIFT - PAGE_SHIFT)
 
 #define USER_END           0x0000800000000000UL
 #define MAP_ST_START       0xffff800000000000UL

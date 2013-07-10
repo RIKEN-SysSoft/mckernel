@@ -35,7 +35,7 @@ void *early_alloc_page(void)
 void *arch_alloc_page(enum ihk_mc_ap_flag flag)
 {
 	if (pa_ops)
-		return pa_ops->alloc_page(1, flag);
+		return pa_ops->alloc_page(1, PAGE_P2ALIGN, flag);
 	else
 		return early_alloc_page();
 }
@@ -45,12 +45,17 @@ void arch_free_page(void *ptr)
 		pa_ops->free_page(ptr, 1);
 }
 
-void *ihk_mc_alloc_pages(int npages, enum ihk_mc_ap_flag flag)
+void *ihk_mc_alloc_aligned_pages(int npages, int p2align, enum ihk_mc_ap_flag flag)
 {
 	if (pa_ops)
-		return pa_ops->alloc_page(npages, flag);
+		return pa_ops->alloc_page(npages, p2align, flag);
 	else
 		return NULL;
+}
+
+void *ihk_mc_alloc_pages(int npages, enum ihk_mc_ap_flag flag)
+{
+	return ihk_mc_alloc_aligned_pages(npages, PAGE_P2ALIGN, flag);
 }
 
 void ihk_mc_free_pages(void *p, int npages)
