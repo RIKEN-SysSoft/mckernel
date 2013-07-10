@@ -6,6 +6,7 @@
 #include <string.h>
 #include <errno.h>
 #include <list.h>
+#include <process.h>
 
 static char *last_page;
 extern char _head[], _end[];
@@ -638,109 +639,57 @@ int ihk_mc_pt_clear_large_page(page_table_t pt, void *virt)
 	return __clear_pt_page(pt, virt, 1);
 }
 
-static int clear_range_l1(struct page_table *pt, uint64_t base, uint64_t start, uint64_t end)
+typedef int walk_pte_fn_t(void *args, pte_t *ptep, uint64_t base,
+		uint64_t start, uint64_t end);
+
+static int walk_pte_l1(struct page_table *pt, uint64_t base, uint64_t start,
+		uint64_t end, walk_pte_fn_t *funcp, void *args)
 {
 	int six;
 	int eix;
 	int ret;
 	int i;
-
-	six = (start <= base)? 0: (start - base) >> PTL1_SHIFT;
-	eix = ((base + PTL2_SIZE) <= end)? PT_ENTRIES
-		: ((end - base) + (PTL1_SIZE - 1)) >> PTL1_SHIFT;
-
-	ret = -ENOENT;
-	for (i = six; i < eix; ++i) {
-		if (!(pt->entry[i] & PFL1_PRESENT)) {
-			continue;
-		}
-
-		pt->entry[i] = 0;
-		ret = 0;
-	}
-
-	return ret;
-}
-
-static int clear_range_l2(struct page_table *pt, uint64_t base, uint64_t start, uint64_t end)
-{
-	int six;
-	int eix;
-	int ret;
-	int i;
+	int error;
 	uint64_t off;
-	struct page_table *q;
-	int error;
 
-	six = (start <= base)? 0: (start - base) >> PTL2_SHIFT;
-	eix = ((base + PTL3_SIZE) <= end)? PT_ENTRIES
-		: ((end - base) + (PTL2_SIZE - 1)) >> PTL2_SHIFT;
+	six = (start <= base)? 0: ((start - base) >> PTL1_SHIFT);
+	eix = ((end == 0) || ((base + PTL2_SIZE) <= end))? PT_ENTRIES
+		: (((end - base) + (PTL1_SIZE - 1)) >> PTL1_SHIFT);
 
 	ret = -ENOENT;
 	for (i = six; i < eix; ++i) {
-		if (!(pt->entry[i] & PFL2_PRESENT)) {
-			continue;
+		off = i * PTL1_SIZE;
+		error = (*funcp)(args, &pt->entry[i], base+off, start, end);
+		if (!error) {
+			ret = 0;
 		}
+		else if (error != -ENOENT) {
+			ret = error;
+			break;
+		}
+	}
 
+	return ret;
+}
+
+static int walk_pte_l2(struct page_table *pt, uint64_t base, uint64_t start,
+		uint64_t end, walk_pte_fn_t *funcp, void *args)
+{
+	int six;
+	int eix;
+	int ret;
+	int i;
+	int error;
+	uint64_t off;
+
+	six = (start <= base)? 0: ((start - base) >> PTL2_SHIFT);
+	eix = ((end == 0) || ((base + PTL3_SIZE) <= end))? PT_ENTRIES
+		: (((end - base) + (PTL2_SIZE - 1)) >> PTL2_SHIFT);
+
+	ret = -ENOENT;
+	for (i = six; i < eix; ++i) {
 		off = i * PTL2_SIZE;
-
-		if (pt->entry[i] & PFL2_SIZE) {
-			if (((base + off) < start) || (end < (base + off + PTL2_SIZE))) {
-				kprintf("clear_range_l2(%p,%lx,%lx,%lx):"
-						"not a 2MiB page boundary\n",
-						pt, base, start, end);
-				ret = -ERANGE;
-				break;
-			}
-
-			pt->entry[i] = 0;
-			ret = 0;
-			continue;
-		}
-
-		q = phys_to_virt(pt->entry[i] & PT_PHYSMASK);
-
-		if ((start <= (base + off)) && ((base + off + PTL2_SIZE) <= end)) {
-			pt->entry[i] = 0;
-			ret = 0;
-			arch_free_page(q);
-		}
-		else {
-			error = clear_range_l1(q, base+off, start, end);
-			if (!error) {
-				ret = 0;
-			}
-			else if (error != -ENOENT) {
-				ret = error;
-				break;
-			}
-		}
-	}
-
-	return ret;
-}
-
-static int clear_range_l3(struct page_table *pt, uint64_t base, uint64_t start, uint64_t end)
-{
-	int six;
-	int eix;
-	int ret;
-	int i;
-	int error;
-	struct page_table *q;
-
-	six = (start <= base)? 0: (start - base) >> PTL3_SHIFT;
-	eix = ((base + PTL4_SIZE) <= end)? PT_ENTRIES
-		: ((end - base) + (PTL3_SIZE - 1)) >> PTL3_SHIFT;
-
-	ret = -ENOENT;
-	for (i = six; i < eix; ++i) {
-		if (!(pt->entry[i] & PFL3_PRESENT)) {
-			continue;
-		}
-
-		q = phys_to_virt(pt->entry[i] & PT_PHYSMASK);
-		error = clear_range_l2(q, base+(i*PTL3_SIZE), start, end);
+		error = (*funcp)(args, &pt->entry[i], base+off, start, end);
 		if (!error) {
 			ret = 0;
 		}
@@ -753,29 +702,24 @@ static int clear_range_l3(struct page_table *pt, uint64_t base, uint64_t start, 
 	return ret;
 }
 
-static int clear_range_l4(struct page_table *pt, uint64_t base, uint64_t start, uint64_t end)
+static int walk_pte_l3(struct page_table *pt, uint64_t base, uint64_t start,
+		uint64_t end, walk_pte_fn_t *funcp, void *args)
 {
 	int six;
 	int eix;
 	int ret;
 	int i;
 	int error;
-	struct page_table *q;
+	uint64_t off;
 
-	six = (start <= base)? 0: (start - base) >> PTL4_SHIFT;
-	eix = ((end - base) + (PTL4_SIZE - 1)) >> PTL4_SHIFT;
-	if ((eix <= 0) || (PT_ENTRIES < eix)) {
-		eix = PT_ENTRIES;
-	}
+	six = (start <= base)? 0: ((start - base) >> PTL3_SHIFT);
+	eix = ((end == 0) || ((base + PTL4_SIZE) <= end))? PT_ENTRIES
+		: (((end - base) + (PTL3_SIZE - 1)) >> PTL3_SHIFT);
 
 	ret = -ENOENT;
 	for (i = six; i < eix; ++i) {
-		if (!(pt->entry[i] & PFL4_PRESENT)) {
-			continue;
-		}
-
-		q = phys_to_virt(pt->entry[i] & PT_PHYSMASK);
-		error = clear_range_l3(q, base+(i*PTL4_SIZE), start, end);
+		off = i * PTL3_SIZE;
+		error = (*funcp)(args, &pt->entry[i], base+off, start, end);
 		if (!error) {
 			ret = 0;
 		}
@@ -786,6 +730,127 @@ static int clear_range_l4(struct page_table *pt, uint64_t base, uint64_t start, 
 	}
 
 	return ret;
+}
+
+static int walk_pte_l4(struct page_table *pt, uint64_t base, uint64_t start,
+		uint64_t end, walk_pte_fn_t *funcp, void *args)
+{
+	int six;
+	int eix;
+	int ret;
+	int i;
+	int error;
+	uint64_t off;
+
+	six = (start <= base)? 0: ((start - base) >> PTL4_SHIFT);
+	eix = (end == 0)? PT_ENTRIES
+		:(((end - base) + (PTL4_SIZE - 1)) >> PTL4_SHIFT);
+
+	ret = -ENOENT;
+	for (i = six; i < eix; ++i) {
+		off = i * PTL4_SIZE;
+		error = (*funcp)(args, &pt->entry[i], base+off, start, end);
+		if (!error) {
+			ret = 0;
+		}
+		else if (error != -ENOENT) {
+			ret = error;
+			break;
+		}
+	}
+
+	return ret;
+}
+
+struct clear_range_args {
+	int free_physical;
+};
+
+static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base, uint64_t start, uint64_t end)
+{
+	struct clear_range_args *args = args0;
+	uint64_t phys;
+
+	if (!(*ptep & PFL1_PRESENT)) {
+		return -ENOENT;
+	}
+
+	phys = *ptep & PT_PHYSMASK;
+	*ptep = 0;
+
+	if (args->free_physical) {
+		ihk_mc_free_pages(phys_to_virt(phys), 1);
+	}
+
+	return 0;
+}
+
+static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base, uint64_t start, uint64_t end)
+{
+	struct clear_range_args *args = args0;
+	uint64_t phys;
+	struct page_table *pt;
+	int error;
+
+	if (!(*ptep & PFL2_PRESENT)) {
+		return -ENOENT;
+	}
+
+	if (*ptep & PFL2_SIZE) {
+		if ((base < start) || (end < (base + PTL2_SIZE))) {
+			kprintf("clear_range_l2(%p,%p,%lx,%lx,%lx):"
+					"not a 2MiB page boundary\n",
+					args0, ptep, base, start, end);
+			return -ERANGE;
+		}
+
+		phys = *ptep & PT_PHYSMASK;
+		*ptep = 0;
+
+		if (args->free_physical) {
+			ihk_mc_free_pages(phys_to_virt(phys),
+					LARGE_PAGE_SIZE/PAGE_SIZE);
+		}
+
+		return 0;
+	}
+
+	pt = phys_to_virt(*ptep & PT_PHYSMASK);
+	error = walk_pte_l1(pt, base, start, end, &clear_range_l1, args0);
+	if (error && (error != -ENOENT)) {
+		return error;
+	}
+
+	if ((start <= base) && ((base + PTL2_SIZE) <= end)) {
+		*ptep = 0;
+		arch_free_page(pt);
+	}
+
+	return 0;
+}
+
+static int clear_range_l3(void *args0, pte_t *ptep, uint64_t base, uint64_t start, uint64_t end)
+{
+	struct page_table *pt;
+
+	if (!(*ptep & PFL3_PRESENT)) {
+		return -ENOENT;
+	}
+
+	pt = phys_to_virt(*ptep & PT_PHYSMASK);
+	return walk_pte_l2(pt, base, start, end, &clear_range_l2, args0);
+}
+
+static int clear_range_l4(void *args0, pte_t *ptep, uint64_t base, uint64_t start, uint64_t end)
+{
+	struct page_table *pt;
+
+	if (!(*ptep & PFL4_PRESENT)) {
+		return -ENOENT;
+	}
+
+	pt = phys_to_virt(*ptep & PT_PHYSMASK);
+	return walk_pte_l3(pt, base, start, end, &clear_range_l3, args0);
 }
 
 static int lookup_pte(struct page_table *pt, void *virt, pte_t **ptep, void **pgbasep, uint64_t *pgsizep)
@@ -819,51 +884,89 @@ static int lookup_pte(struct page_table *pt, void *virt, pte_t **ptep, void **pg
 	return 0;
 }
 
-static int is_middle_of_the_page(struct page_table *pt, void *virt)
+#ifdef USE_LARGE_PAGES
+static int split_large_page(struct page_table *pt, intptr_t virt)
 {
 	int error;
-	pte_t *pte;
+	pte_t *ptep;
 	void *pgbase;
 	uint64_t pgsize;
+	struct page_table *q;
+	uint64_t phys;
+	pte_t attr;
+	int i;
 
-	error = lookup_pte(pt, virt, &pte, &pgbase, &pgsize);
-	if (error) {
+	error = lookup_pte(pt, (void *)virt, &ptep, &pgbase, &pgsize);
+	if (error || !(*ptep & PF_PRESENT) || (pgsize == PAGE_SIZE)) {
 		return 0;
 	}
 
-	if (!(*pte & PF_PRESENT)) {
-		return 0;
+	q = __alloc_new_pt(IHK_MC_AP_NOWAIT);
+	if (q == NULL) {
+		kprintf("split_large_page:__alloc_new_pt failed\n");
+		return -ENOMEM;
 	}
 
-	return pgbase != virt;
+	phys = *ptep & PT_PHYSMASK;
+	attr = *ptep & (PFL2_PRESENT | PFL2_WRITABLE | PFL2_USER | PFL2_PWT | PFL2_PCD);
+
+	for (i = 0; i < PT_ENTRIES; ++i) {
+		q->entry[i] = (phys + (i * PTL1_SIZE)) | attr;
+	}
+
+	*ptep = (virt_to_phys(q) & PT_PHYSMASK) | PFL2_PDIR_ATTR;
+	return 0;
 }
+#endif /* USE_LARGE_PAGES */
 
-int ihk_mc_pt_clear_range(page_table_t pt, void *start0, void *end0)
+static int clear_range(page_table_t pt, void *start0, void *end0, int free_physical)
 {
 	const uint64_t start = (uint64_t)start0;
 	const uint64_t end = (uint64_t)end0;
 	int error;
+	struct clear_range_args args;
 
 	if ((USER_END <= start) || (USER_END < end) || (end <= start)) {
-		kprintf("ihk_mc_pt_clear_range(%p,%p,%p):invalid start and/or end.\n",
-				pt, start0, end0);
+		kprintf("clear_range(%p,%p,%p,%x):invalid start and/or end.\n",
+				pt, start0, end0, free_physical);
 		return -EINVAL;
 	}
 
-	if (((start % LARGE_PAGE_SIZE) != 0) && is_middle_of_the_page(pt, start0)) {
-		kprintf("ihk_mc_pt_clear_range(%p,%p,%p):start0 is not a page boundary\n",
-				pt, start0, end0);
-		return -EINVAL;
+#ifdef USE_LARGE_PAGES
+	if (start & (LARGE_PAGE_SIZE - 1)) {
+		error = split_large_page(pt, start);
+		if (error) {
+			kprintf("clear_range(%p,%p,%p,%x):split_large_page(%lx) failed. %d\n",
+					pt, start0, end0, free_physical, start, error);
+			return error;
+		}
 	}
 
-	if (((end % LARGE_PAGE_SIZE) != 0) && is_middle_of_the_page(pt, end0)) {
-		kprintf("ihk_mc_pt_clear_range(%p,%p,%p):end0 is not a page boundary\n",
-				pt, start0, end0);
-		return -EINVAL;
+	if (end & (LARGE_PAGE_SIZE - 1)) {
+		error = split_large_page(pt, end);
+		if (error) {
+			kprintf("clear_range(%p,%p,%p,%x):split_large_page(%lx) failed. %d\n",
+					pt, start0, end0, free_physical, end, error);
+			return error;
+		}
 	}
+#endif /* USE_LARGE_PAGES */
 
-	error = clear_range_l4(pt, 0, start, end);
+	args.free_physical = free_physical;
+	error = walk_pte_l4(pt, 0, start, end, &clear_range_l4, &args);
 	return error;
+}
+
+int ihk_mc_pt_clear_range(page_table_t pt, void *start0, void *end0)
+{
+#define	KEEP_PHYSICAL	0
+	return clear_range(pt, start0, end0, KEEP_PHYSICAL);
+}
+
+int ihk_mc_pt_free_range(page_table_t pt, void *start0, void *end0)
+{
+#define	FREE_PHYSICAL	1
+	return clear_range(pt, start0, end0, FREE_PHYSICAL);
 }
 
 void load_page_table(struct page_table *pt)

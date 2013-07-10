@@ -82,7 +82,11 @@ struct program_image_section {
 	unsigned long len;
 	unsigned long remote_pa;
 	unsigned long filesz, offset;
+	int prot;
+	int padding;
+#if 0
 	void *source;
+#endif
 };
 
 struct program_load_desc {

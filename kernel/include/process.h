@@ -13,6 +13,13 @@
 #define VR_IO_NOCACHE      0x100
 #define VR_REMOTE          0x200
 #define VR_DEMAND_PAGING   0x1000
+#define	VR_PROT_NONE       0x00000000
+#define	VR_PROT_READ       0x00010000
+#define	VR_PROT_WRITE      0x00020000
+#define	VR_PROT_EXEC       0x00040000
+#define	VR_PROT_MASK       0x00070000
+
+#define	PROT_TO_VR_FLAG(prot)	(((unsigned long)(prot) << 16) & VR_PROT_MASK)
 
 #define PS_RUNNING           0x1
 #define PS_INTERRUPTIBLE     0x2
@@ -32,7 +39,6 @@
 struct vm_range {
 	struct list_head list;
 	unsigned long start, end;
-	unsigned long phys;
 	unsigned long flag;
 };
 
@@ -101,6 +107,8 @@ int add_process_memory_range(struct process *process,
                              unsigned long phys, unsigned long flag);
 int remove_process_memory_range(
 		struct process *process, unsigned long start, unsigned long end);
+struct vm_range *lookup_process_memory_range(
+		struct process *proc, uintptr_t start, uintptr_t end);
 int remove_process_region(struct process *proc,
                           unsigned long start, unsigned long end);
 struct program_load_desc;

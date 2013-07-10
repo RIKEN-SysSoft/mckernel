@@ -18,6 +18,7 @@
 #include <affinity.h>
 #include <time.h>
 #include <ihk/perfctr.h>
+#include <mman.h>
 
 /* Headers taken from kitten LWK */
 #include <lwk/stddef.h>
@@ -125,6 +126,14 @@ int do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx)
 	return res->ret;
 }
 
+long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx)
+{
+	SYSCALL_HEADER;
+	dkprintf("syscall_generic_forwarding(%d)\n", n);
+	SYSCALL_ARGS_6(D,D,D,D,D,D);
+	SYSCALL_FOOTER;
+}
+
 SYSCALL_DECLARE(open)
 {
 
@@ -165,6 +174,7 @@ SYSCALL_DECLARE(mmap)
 {
 	struct vm_regions *region = &cpu_local_var(current)->vm->region;
 	void *va;
+	const unsigned long prot_flags = VR_PROT_READ | VR_PROT_WRITE | VR_PROT_EXEC;
 
     dkprintf("syscall.c,mmap,addr=%lx,len=%lx,prot=%lx,flags=%x,fd=%x,offset=%lx\n",
             ihk_mc_syscall_arg0(ctx), ihk_mc_syscall_arg1(ctx),
@@ -219,7 +229,7 @@ SYSCALL_DECLARE(mmap)
 
 				// add range, mapping
 				if(add_process_memory_range(cpu_local_var(current), s_orig, e,
-						virt_to_phys((void *)(p_aligned - head_space)), VR_NONE) != 0){
+						virt_to_phys((void *)(p_aligned - head_space)), prot_flags) != 0){
 					ihk_mc_free_pages((void *)p, range_npages);
 					return -ENOMEM;
 				}
@@ -237,7 +247,7 @@ SYSCALL_DECLARE(mmap)
 				pa = virt_to_phys(va); 
 
 				// add page_table, add memory-range
-				if(add_process_memory_range(cpu_local_var(current), s, e, pa, VR_NONE) != 0){
+				if(add_process_memory_range(cpu_local_var(current), s, e, pa, prot_flags) != 0){
 					ihk_mc_free_pages(va, range_npages);
 					return -ENOMEM;
 				}
@@ -277,6 +287,8 @@ SYSCALL_DECLARE(mmap)
         dkprintf("syscall.c,mmap,len=%lx\n", len);
 
         unsigned long flag = 0; /* eager paging */
+
+	flag |= VR_PROT_READ|VR_PROT_WRITE|VR_PROT_EXEC;
 #if 1
         /* Intel OpenMP hack: it requests 128MB and munmap tail and head
            to create 64MB-aligned 64MB memory area 
@@ -295,7 +307,7 @@ SYSCALL_DECLARE(mmap)
 			dkprintf("syscall.c,mmap,nocache,len=%lx\n", len);
 			region->map_end = extend_process_region(
 					cpu_local_var(current), region->map_start, map_end_aligned,
-					s + len, VR_IO_NOCACHE);
+					s + len, VR_IO_NOCACHE|(flag & ~VR_DEMAND_PAGING));
 		}
 		else
 #endif
@@ -334,12 +346,13 @@ SYSCALL_DECLARE(mmap)
         unsigned long amt_align = 0x100000; /* takagi */
         unsigned long s = ((region->map_end + amt_align - 1) & ~(amt_align - 1));
         unsigned long len = (ihk_mc_syscall_arg1(ctx) + PAGE_SIZE - 1) & PAGE_MASK;
+	unsigned long flag = VR_PROT_READ|VR_PROT_WRITE|VR_PROT_EXEC;
         dkprintf("(%d),syscall.c,!MAP_FIXED,!MAP_ANONYMOUS,amt_align=%lx,s=%lx,len=%lx\n", ihk_mc_get_processor_id(), amt_align, s, len);
 		region->map_end = 
 			extend_process_region(cpu_local_var(current),
 			                      region->map_start,
 			                      s,
-			                      s + len, 0);
+			                      s + len, flag);
 #else
         unsigned long s = (region->map_end + PAGE_SIZE - 1) & PAGE_MASK;
 		unsigned long len = (ihk_mc_syscall_arg1(ctx) + PAGE_SIZE - 1) & PAGE_MASK;
@@ -347,7 +360,7 @@ SYSCALL_DECLARE(mmap)
 			extend_process_region(cpu_local_var(current),
 			                      region->map_start,
 			                      region->map_end,
-			                      s + len, 0);
+			                      s + len, flag);
 #endif
         ihk_mc_spinlock_unlock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
 		if (region->map_end < s + len) { return -EINVAL; }
@@ -375,16 +388,266 @@ SYSCALL_DECLARE(mmap)
 	while(1);
 }
 
+static int do_munmap(void *addr, size_t len)
+{
+	return remove_process_memory_range(
+			cpu_local_var(current), (intptr_t)addr, (intptr_t)addr+len);
+}
+
+static int search_free_space(size_t len, intptr_t hint, intptr_t *addrp)
+{
+	struct process *proc = cpu_local_var(current);
+	struct vm_regions *region = &proc->vm->region;
+	intptr_t addr;
+	struct vm_range *range;
+
+	addr = hint;
+	for (;;) {
+#ifdef USE_LARGE_PAGES
+		if (len >= LARGE_PAGE_SIZE) {
+			addr = (addr + LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
+		}
+#endif /* USE_LARGE_PAGES */
+
+		if ((region->user_end <= addr)
+				|| ((region->user_end - len) < addr)) {
+			kprintf("search_free_space:no virtual: %lx %lx %lx\n",
+					addr, len, region->user_end);
+			return -ENOMEM;
+		}
+
+		range = lookup_process_memory_range(proc, addr, addr+len);
+		if (range == NULL) {
+			break;
+		}
+		addr = range->end;
+	}
+
+	*addrp = addr;
+	return 0;
+}
+
+SYSCALL_DECLARE(new_mmap)
+{
+	const int supported_flags = 0
+		| MAP_PRIVATE		// 02
+		| MAP_FIXED		// 10
+		| MAP_ANONYMOUS		// 20
+		;
+	const int ignored_flags = 0
+#ifdef	USE_NOCACHE_MMAP
+		| MAP_32BIT		// 40
+#endif /* USE_NOCACHE_MMAP */
+		| MAP_DENYWRITE		// 0800
+		| MAP_NORESERVE		// 4000
+		| MAP_STACK		// 00020000
+		;
+	const int error_flags = 0
+		| MAP_SHARED		// 01
+#ifndef	USE_NOCACHE_MMAP
+		| MAP_32BIT		// 40
+#endif /* ndef USE_NOCACHE_MMAP */
+		| MAP_GROWSDOWN		// 0100
+		| MAP_EXECUTABLE	// 1000
+		| MAP_LOCKED		// 2000
+		| MAP_POPULATE		// 8000
+		| MAP_NONBLOCK		// 00010000
+		| MAP_HUGETLB		// 00040000
+		;
+
+	const intptr_t addr0 = ihk_mc_syscall_arg0(ctx);
+	const size_t len0 = ihk_mc_syscall_arg1(ctx);
+	const int prot = ihk_mc_syscall_arg2(ctx);
+	const int flags = ihk_mc_syscall_arg3(ctx);
+	const int fd = ihk_mc_syscall_arg4(ctx);
+	const off_t off = ihk_mc_syscall_arg5(ctx);
+
+	struct process *proc = cpu_local_var(current);
+	struct vm_regions *region = &proc->vm->region;
+	intptr_t addr;
+	size_t len;
+	int error;
+	intptr_t npages;
+	int p2align;
+	void *p;
+	int vrflags;
+	intptr_t phys;
+
+	dkprintf("[%d]sys_mmap(%lx,%lx,%x,%x,%d,%lx)\n",
+			ihk_mc_get_processor_id(),
+			addr0, len0, prot, flags, fd, off);
+
+	/* check constants for flags */
+	if (1) {
+		int dup_flags;
+
+		dup_flags = (supported_flags & ignored_flags);
+		dup_flags |= (ignored_flags & error_flags);
+		dup_flags |= (error_flags & supported_flags);
+
+		if (dup_flags) {
+			kprintf("sys_mmap:duplicate flags: %lx\n", dup_flags);
+			kprintf("s-flags: %08x\n", supported_flags);
+			kprintf("i-flags: %08x\n", ignored_flags);
+			kprintf("e-flags: %08x\n", error_flags);
+			panic("sys_mmap:duplicate flags\n");
+			/* no return */
+		}
+	}
+
+	/* check arguments */
+#define	VALID_DUMMY_ADDR	(region->user_start)
+	addr = (flags & MAP_FIXED)? addr0: VALID_DUMMY_ADDR;
+	len = (len0 + PAGE_SIZE - 1) & PAGE_MASK;
+	if ((addr & (PAGE_SIZE - 1))
+			|| (addr < region->user_start)
+			|| (region->user_end <= addr)
+			|| (len == 0)
+			|| (len > (region->user_end - region->user_start))
+			|| ((region->user_end - len) < addr)
+			|| !(flags & (MAP_SHARED | MAP_PRIVATE))
+			|| ((flags & MAP_SHARED) && (flags & MAP_PRIVATE))
+			|| (off & (PAGE_SIZE - 1))) {
+		kprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):EINVAL\n",
+				addr0, len0, prot, flags, fd, off);
+		error = -EINVAL;
+		goto out;
+	}
+
+	/* check not supported requests */
+	if ((flags & error_flags)
+			|| (flags & ~(supported_flags | ignored_flags))) {
+		kprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):unknown flags %lx\n",
+				addr0, len0, prot, flags, fd, off,
+				(flags & ~(supported_flags | ignored_flags)));
+		error = -EINVAL;
+		goto out;
+	}
+
+	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
+
+	if (flags & MAP_FIXED) {
+		/* clear specified address range */
+		error = do_munmap((void *)addr, len);
+		if (error) {
+			kprintf("sys_mmap:do_munmap(%lx,%lx) failed. %d\n",
+					addr, len, error);
+			ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+			goto out;
+		}
+	}
+	else {
+		/* choose mapping address */
+		error = search_free_space(len, region->map_end, &addr);
+		if (error) {
+			kprintf("sys_mmap:search_free_space(%lx,%lx) failed. %d\n",
+					len, region->map_end, error);
+			ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+			goto out;
+		}
+		region->map_end = addr + len;
+	}
+
+	/* do the map */
+	vrflags = VR_NONE;
+	vrflags |= (prot & PROT_READ)? VR_PROT_READ: 0;
+	vrflags |= (prot & PROT_WRITE)? VR_PROT_WRITE: 0;
+	vrflags |= (prot & PROT_EXEC)? VR_PROT_EXEC: 0;
+	if (flags & MAP_ANONYMOUS) {
+		if (0) {
+			/* dummy */
+		}
+#ifdef	USE_NOCACHE_MMAP
+#define	X_MAP_NOCACHE	MAP_32BIT
+		else if (flags & X_MAP_NOCACHE) {
+			vrflags |= VR_IO_NOCACHE;
+		}
+#endif
+		else if ((len == 64*1024*1024) || (len == 128*1024*1024)) {
+			vrflags |= VR_DEMAND_PAGING;
+		}
+	}
+
+	p = NULL;
+	phys = 0;
+	if (!(vrflags & VR_DEMAND_PAGING)) {
+		npages = len >> PAGE_SHIFT;
+		p2align = PAGE_P2ALIGN;
+#ifdef USE_LARGE_PAGES
+		if ((len >= LARGE_PAGE_SIZE)
+				&& ((addr & (LARGE_PAGE_SIZE - 1)) == 0)) {
+			p2align = LARGE_PAGE_P2ALIGN;
+		}
+#endif /* USE_LARGE_PAGES */
+		p = ihk_mc_alloc_aligned_pages(npages, p2align, IHK_MC_AP_NOWAIT);
+		if (p == NULL) {
+			kprintf("sys_mmap:allocate_pages(%d,%d) failed.\n",
+					npages, p2align);
+			ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+			error = -ENOMEM;
+			goto out;
+		}
+		phys = virt_to_phys(p);
+	}
+
+	error = add_process_memory_range(proc, addr, addr+len, phys, vrflags);
+	if (error) {
+		kprintf("sys_mmap:add_process_memory_range"
+				"(%p,%lx,%lx,%lx,%lx) failed %d\n",
+				proc, addr, addr+len,
+				virt_to_phys(p), vrflags, error);
+		ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+		if (p != NULL) {
+			ihk_mc_free_pages(p, npages);
+		}
+		goto out;
+	}
+
+	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+
+	/* read page with pread64() */
+	if (!(flags & MAP_ANONYMOUS)) {
+		ihk_mc_user_context_t ctx2;
+		ssize_t ss;
+
+		ihk_mc_syscall_arg0(&ctx2) = fd;
+		ihk_mc_syscall_arg1(&ctx2) = addr;
+		ihk_mc_syscall_arg2(&ctx2) = len;
+		ihk_mc_syscall_arg3(&ctx2) = off;
+
+		ss = syscall_generic_forwarding(__NR_pread64, &ctx2);
+		if (ss < 0) {
+			kprintf("sys_mmap:pread(%d,%lx,%lx,%lx) failed %ld\n",
+					fd, addr, len, off, (long)ss);
+			error = do_munmap((void *)addr, len);
+			if (error) {
+				kprintf("sys_mmap:do_munmap(%lx,%lx) failed. %d\n",
+						addr, len, error);
+				/* through */
+			}
+			error = ss;
+			goto out;
+		}
+	}
+
+	error = 0;
+out:
+	if (error) {
+		kprintf("[%d]sys_mmap(%lx,%lx,%x,%x,%d,%lx): %ld %lx\n",
+				ihk_mc_get_processor_id(),
+				addr0, len0, prot, flags, fd, off, error, addr);
+	}
+	return (!error)? addr: error;
+}
+
 SYSCALL_DECLARE(munmap)
 {
-	unsigned long address, len;
+	void * const addr = (void *)ihk_mc_syscall_arg0(ctx);
+	const size_t len = ihk_mc_syscall_arg1(ctx);
 	int error;
 
-	address = ihk_mc_syscall_arg0(ctx);
-	len = ihk_mc_syscall_arg1(ctx);
-
 	ihk_mc_spinlock_lock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
-	error = remove_process_memory_range(cpu_local_var(current), address, address+len);
+	error = do_munmap(addr, len);
 	ihk_mc_spinlock_unlock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
 
 	return error;
@@ -420,7 +683,8 @@ SYSCALL_DECLARE(brk)
 	/* try to extend memory region */
 	ihk_mc_spinlock_lock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
 	region->brk_end = extend_process_region(cpu_local_var(current),
-			region->brk_start, region->brk_end, address, 0);
+			region->brk_start, region->brk_end, address,
+			VR_PROT_READ|VR_PROT_WRITE);
 	ihk_mc_spinlock_unlock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
 	dkprintf("SC(%d)[sys_brk] brk_end set to %lx\n",
 			ihk_mc_get_processor_id(), region->brk_end);
@@ -859,14 +1123,6 @@ SYSCALL_DECLARE(pmc_reset)
     return ihk_mc_perfctr_reset(counter);
 }
 
-long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx)
-{
-	SYSCALL_HEADER;
-	dkprintf("syscall_generic_forwarding(%d)\n", n);
-	SYSCALL_ARGS_6(D,D,D,D,D,D);
-	SYSCALL_FOOTER;
-}
-
 long syscall(int num, ihk_mc_user_context_t *ctx)
 {
 	long l;
@@ -918,6 +1174,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	return l;
 }
 
+#if 0
 void __host_update_process_range(struct process *process, 
                                  struct vm_range *range)
 {
@@ -948,4 +1205,4 @@ void __host_update_process_range(struct process *process,
 	}
 	cpu_enable_interrupt();
 }
-
+#endif

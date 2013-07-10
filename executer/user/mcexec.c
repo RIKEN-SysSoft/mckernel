@@ -124,12 +124,18 @@ struct program_load_desc *load_elf(FILE *fp)
 			desc->sections[j].offset = phdr.p_offset;
 			desc->sections[j].len = phdr.p_memsz;
 
-			__dprintf("%d: (%s) %lx, %lx, %lx, %lx\n",
-			          j, (phdr.p_type == PT_LOAD ? "PT_LOAD" : "PT_TLS"), 
-					  desc->sections[j].vaddr,
+			desc->sections[j].prot = PROT_NONE;
+			desc->sections[j].prot |= (phdr.p_flags & PF_R)? PROT_READ: 0;
+			desc->sections[j].prot |= (phdr.p_flags & PF_W)? PROT_WRITE: 0;
+			desc->sections[j].prot |= (phdr.p_flags & PF_X)? PROT_EXEC: 0;
+
+			__dprintf("%d: (%s) %lx, %lx, %lx, %lx, %x\n",
+				  j, (phdr.p_type == PT_LOAD ? "PT_LOAD" : "PT_TLS"), 
+				  desc->sections[j].vaddr,
 			          desc->sections[j].filesz,
 			          desc->sections[j].offset,
-			          desc->sections[j].len);
+			          desc->sections[j].len,
+				  desc->sections[j].prot);
 			j++;
 
 			if (!load_addr_set) {
