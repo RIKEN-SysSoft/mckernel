@@ -11,8 +11,11 @@ typedef int                int32_t;
 typedef long long          int64_t;
 
 typedef long long          ptrdiff_t;
+typedef int64_t            intptr_t;
+typedef uint64_t           uintptr_t;
 typedef unsigned long long size_t;
 typedef long long          ssize_t;
+typedef int64_t            off_t;
 
 #define NULL ((void *)0)
 
