@@ -187,4 +187,14 @@ struct syscall_params {
 extern int do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx);
 extern int obtain_clone_cpuid();
 
+#define DECLARATOR(number,name)		__NR_##name = number,
+#define	SYSCALL_HANDLED(number,name)	DECLARATOR(number,name)
+#define	SYSCALL_DELEGATED(number,name)	DECLARATOR(number,name)
+enum {
+#include <syscall_list.h>
+};
+#undef	DECLARATOR
+#undef	SYSCALL_HANDLED
+#undef	SYSCALL_DELEGATED
+
 #endif
