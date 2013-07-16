@@ -639,6 +639,9 @@ out:
 	return error;
 }
 
+#ifdef UNDEFINED
+mmap() {}
+#endif
 SYSCALL_DECLARE(mmap)
 {
 	const int supported_flags = 0
@@ -910,6 +913,9 @@ out2:
 	return (!error)? addr: error;
 }
 
+#ifdef UNDEFINED
+munmap() {}
+#endif
 SYSCALL_DECLARE(munmap)
 {
 	const uintptr_t addr = ihk_mc_syscall_arg0(ctx);
@@ -943,6 +949,9 @@ out:
 	return error;
 }
 
+#ifdef UNDEFINED
+mprotect() {}
+#endif
 SYSCALL_DECLARE(mprotect)
 {
 	const intptr_t start = ihk_mc_syscall_arg0(ctx);
@@ -1772,6 +1781,9 @@ SYSCALL_DECLARE(sigaltstack)
 	return 0;
 }
 
+#ifdef UNDEFINED
+madvise() {}
+#endif
 SYSCALL_DECLARE(madvise)
 {
 	const uintptr_t start = (uintptr_t)ihk_mc_syscall_arg0(ctx);
@@ -2162,6 +2174,9 @@ SYSCALL_DECLARE(sched_yield)
 	return -ENOSYS;
 }
 
+#ifdef UNDEFINED
+mlock() {}
+#endif
 SYSCALL_DECLARE(mlock)
 {
 	const uintptr_t start0 = ihk_mc_syscall_arg0(ctx);
@@ -2337,6 +2352,9 @@ out2:
 	return error;
 }
 
+#ifdef UNDEFINED
+munlock() {}
+#endif
 SYSCALL_DECLARE(munlock)
 {
 	const uintptr_t start0 = ihk_mc_syscall_arg0(ctx);
@@ -2490,6 +2508,9 @@ out2:
 	return error;
 }
 
+#ifdef UNDEFINED
+remap_file_pages() {}
+#endif
 SYSCALL_DECLARE(remap_file_pages)
 {
 	const uintptr_t start0 = ihk_mc_syscall_arg0(ctx);
@@ -2566,6 +2587,9 @@ out:
 	return error;
 }
 
+#ifdef UNDEFINED
+mremap() {}
+#endif
 SYSCALL_DECLARE(mremap)
 {
 	const uintptr_t oldaddr = ihk_mc_syscall_arg0(ctx);
