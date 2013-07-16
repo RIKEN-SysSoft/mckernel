@@ -255,100 +255,130 @@ out:
 	return error;
 }
 
-int remove_process_memory_range(struct process *process, unsigned long start, unsigned long end)
+int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
+{
+	const intptr_t start0 = range->start;
+	const intptr_t end0 = range->end;
+	int error;
+	intptr_t start;
+	intptr_t end;
+#ifdef USE_LARGE_PAGES
+	struct vm_range *neighbor;
+	intptr_t lpstart;
+	intptr_t lpend;
+#endif /* USE_LARGE_PAGES */
+
+	dkprintf("free_process_memory_range(%p,%lx-%lx)\n",
+			vm, start0, end0);
+
+	start = range->start;
+	end = range->end;
+	if (!(range->flag & (VR_REMOTE | VR_IO_NOCACHE | VR_RESERVED))) {
+#ifdef USE_LARGE_PAGES
+		lpstart = start & LARGE_PAGE_MASK;
+		lpend = (end + LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
+
+
+		if (lpstart < start) {
+			neighbor = previous_process_memory_range(vm, range);
+			if ((neighbor == NULL) || (neighbor->end <= lpstart)) {
+				start = lpstart;
+			}
+		}
+
+		if (end < lpend) {
+			neighbor = next_process_memory_range(vm, range);
+			if ((neighbor == NULL) || (lpend <= neighbor->start)) {
+				end = lpend;
+			}
+		}
+#endif /* USE_LARGE_PAGES */
+
+		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
+		error = ihk_mc_pt_free_range(vm->page_table,
+				(void *)start, (void *)end);
+		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
+		if (error && (error != -ENOENT)) {
+			ekprintf("free_process_memory_range(%p,%lx-%lx):"
+					"ihk_mc_pt_free_range(%lx-%lx) failed. %d\n",
+					vm, start0, end0, start, end, error);
+			/* through */
+		}
+	}
+	else {
+		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
+		error = ihk_mc_pt_clear_range(vm->page_table,
+				(void *)start, (void *)end);
+		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
+		if (error && (error != -ENOENT)) {
+			ekprintf("free_process_memory_range(%p,%lx-%lx):"
+					"ihk_mc_pt_clear_range(%lx-%lx) failed. %d\n",
+					vm, start0, end0, start, end, error);
+			/* through */
+		}
+	}
+
+	list_del(&range->list);
+	ihk_mc_free(range);
+
+	dkprintf("free_process_memory_range(%p,%lx-%lx): 0\n",
+			vm, start0, end0);
+	return 0;
+}
+
+int remove_process_memory_range(struct process *process,
+		unsigned long start, unsigned long end)
 {
 	struct process_vm * const vm = process->vm;
 	struct vm_range *range;
 	struct vm_range *next;
 	int error;
-	unsigned long freestart;
-	unsigned long freesize;
 	struct vm_range *freerange;
-	struct vm_range *newrange;
+
+	dkprintf("remove_process_memory_range(%p,%lx,%lx)\n",
+			process, start, end);
 
 	list_for_each_entry_safe(range, next, &vm->vm_range_list, list) {
 		if ((range->end <= start) || (end <= range->start)) {
 			/* no overlap */
 			continue;
 		}
+		freerange = range;
 
-		error = 0;
-		freerange = NULL;
-		freesize = 0;
-
-		if (start <= range->start) {
-			/* partial or whole delete from range->start */
-			freestart = range->start;
-			freesize = end - range->start;
-
-			if (freesize >= (range->end - range->start)) {
-				freesize = range->end - range->start;
-				list_del(&range->list);
-				freerange = range;
-			}
-			else {
-				range->start += freesize;
+		if (freerange->start < start) {
+			error = split_process_memory_range(process,
+					freerange, start, &freerange);
+			if (error) {
+				ekprintf("remove_process_memory_range(%p,%lx,%lx):"
+						"split failed %d\n",
+						process, start, end, error);
+				return error;
 			}
 		}
-		else if (range->end <= end) {
-			/* partial delete up to range->end */
-			freestart = start;
-			freesize = range->end - start;
 
-			range->end = start;
-		}
-		else {
-			/* delete the middle part of the 'range' */
-			freestart = start;
-			freesize = end - start;
-
-			newrange = kmalloc(sizeof(struct vm_range), IHK_MC_AP_NOWAIT);
-			if (!newrange) {
-				kprintf("remove_process_memory_range:kmalloc failed\n");
-				return -ENOMEM;
-			}
-			newrange->start = end;
-			newrange->end = range->end;
-			newrange->flag = range->flag;
-			list_add_tail(&newrange->list, &vm->vm_range_list);
-
-			range->end = start;
-		}
-
-		if (freesize > 0) {
-			if (!(range->flag & (VR_REMOTE | VR_IO_NOCACHE | VR_RESERVED))) {
-				/* clear page table and free physical pages */
-				ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
-				error = ihk_mc_pt_free_range(vm->page_table,
-						(void *)start, (void *)end);
-				ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
-				if (error && (error != -ENOENT)) {
-					kprintf("remove_process_memory_range:"
-							"ihk_mc_pt_free_range failed: %d\n",
-							error);
-					/* through */
-				}
-			}
-			else {
-				/* clear page table */
-				error = remove_process_region(process, freestart,
-						(freestart + freesize));
-				if (error) {
-					kprintf("remove_process_memory_range:"
-							"remove_process_region failed: %d\n",
-							error);
-					/* through */
-				}
+		if (end < freerange->end) {
+			error = split_process_memory_range(process,
+					freerange, end, NULL);
+			if (error) {
+				ekprintf("remove_process_memory_range(%p,%lx,%lx):"
+						"split failed %d\n",
+						process, start, end, error);
+				return error;
 			}
 		}
-		if (freerange != NULL) {
-			ihk_mc_free(freerange);
-		}
+
+		error = free_process_memory_range(process->vm, freerange);
 		if (error) {
+			ekprintf("remove_process_memory_range(%p,%lx,%lx):"
+					"free failed %d\n",
+					process, start, end, error);
 			return error;
 		}
+
 	}
 
+	dkprintf("remove_process_memory_range(%p,%lx,%lx): 0\n",
+			process, start, end);
 	return 0;
 }
 
@@ -522,6 +552,27 @@ struct vm_range *next_process_memory_range(
 			vm, range->start, range->end, next,
 			next? next->start: 0, next? next->end: 0);
 	return next;
+}
+
+struct vm_range *previous_process_memory_range(
+		struct process_vm *vm, struct vm_range *range)
+{
+	struct vm_range *prev;
+
+	dkprintf("previous_process_memory_range(%p,%lx-%lx)\n",
+			vm, range->start, range->end);
+
+	if (list_first_entry(&vm->vm_range_list, struct vm_range, list) == range) {
+		prev = NULL;
+	}
+	else {
+		prev = list_entry(range->list.prev, struct vm_range, list);
+	}
+
+	dkprintf("previous_process_memory_range(%p,%lx-%lx): %p %lx-%lx\n",
+			vm, range->start, range->end, prev,
+			prev? prev->start: 0, prev? prev->end: 0);
+	return prev;
 }
 
 int change_prot_process_memory_range(struct process *proc,
@@ -772,22 +823,17 @@ void free_process_memory(struct process *proc)
 		return;
 	}
 
-	ihk_mc_spinlock_lock_noirq(&proc->vm->page_table_lock);
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 	list_for_each_entry_safe(range, next, &vm->vm_range_list, list) {
-		if (!(range->flag & (VR_REMOTE | VR_IO_NOCACHE | VR_RESERVED))) {
-			error = ihk_mc_pt_free_range(vm->page_table,
-					(void *)range->start, (void *)range->end);
-			if (error && (error != -ENOENT)) {
-				kprintf("free_process_memory:"
-						"ihk_mc_pt_free_range(%lx,%lx) failed. %d\n",
-						range->start, range->end, error);
-				/* through */
-			}
+		error = free_process_memory_range(vm, range);
+		if (error) {
+			ekprintf("free_process_memory(%p):"
+					"free range failed. %lx-%lx %d\n",
+					proc, range->start, range->end, error);
+			/* through */
 		}
-		list_del(&range->list);
-		ihk_mc_free(range);
 	}
-	ihk_mc_spinlock_unlock_noirq(&proc->vm->page_table_lock);
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 
 	ihk_mc_pt_destroy(vm->page_table);
 	free_process(vm->owner_process);

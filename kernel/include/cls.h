@@ -37,6 +37,8 @@ struct cpu_local_var {
 	
 	int status;
 	int fs;
+
+	struct list_head pending_free_pages;
 } __attribute__((aligned(64)));
 
 

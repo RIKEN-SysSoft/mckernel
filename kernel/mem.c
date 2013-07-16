@@ -12,17 +12,21 @@
 #include <sysdeps/mic/mic/micsboxdefine.h>
 #endif
 #include <cls.h>
+#include <page.h>
 
 //#define DEBUG_PRINT_MEM
 
 #ifdef DEBUG_PRINT_MEM
-#define dkprintf kprintf
+#define	dkprintf(...)	kprintf(__VA_ARGS__)
+#define	ekprintf(...)	kprintf(__VA_ARGS__)
 #else
 #define dkprintf(...)
+#define	ekprintf(...)	kprintf(__VA_ARGS__)
 #endif
 
 static struct ihk_page_allocator_desc *pa_allocator;
 static unsigned long pa_start, pa_end;
+static struct page *pa_pages;
 
 extern int ihk_mc_pt_print_pte(struct page_table *pt, void *virt);
 
@@ -61,7 +65,54 @@ void *allocate_pages(int npages, enum ihk_mc_ap_flag flag)
 
 void free_pages(void *va, int npages)
 {
+	struct list_head *pendings = &cpu_local_var(pending_free_pages);
+	struct page *page;
+
+	if (pendings->next != NULL) {
+		page = phys_to_page(virt_to_phys(va));
+		if (page->flags & PAGE_IN_LIST) {
+			panic("free_pages");
+		}
+		page->flags |= PAGE_IN_LIST;
+		page->count = npages;
+		list_add_tail(&page->list, pendings);
+		return;
+	}
+
 	ihk_pagealloc_free(pa_allocator, virt_to_phys(va), npages);
+}
+
+void begin_free_pages_pending(void) {
+	struct list_head *pendings = &cpu_local_var(pending_free_pages);
+
+	if (pendings->next != NULL) {
+		panic("begin_free_pages_pending");
+	}
+	INIT_LIST_HEAD(pendings);
+	return;
+}
+
+void finish_free_pages_pending(void)
+{
+	struct list_head *pendings = &cpu_local_var(pending_free_pages);
+	struct page *page;
+	struct page *next;
+
+	if (pendings->next == NULL) {
+		return;
+	}
+
+	list_for_each_entry_safe(page, next, pendings, list) {
+		if (!(page->flags & PAGE_IN_LIST)) {
+			panic("free_pending_pages");
+		}
+		page->flags &= ~PAGE_IN_LIST;
+		list_del(&page->list);
+		ihk_pagealloc_free(pa_allocator, page_to_phys(page), page->count);
+	}
+
+	pendings->next = pendings->prev = NULL;
+	return;
 }
 
 static struct ihk_mc_pa_ops allocator = {
@@ -236,6 +287,48 @@ static void page_allocator_init(void)
 		&query_free_mem_handler);
 }
 
+struct page *phys_to_page(uintptr_t phys)
+{
+	int64_t ix;
+
+	if ((phys < pa_start) || (pa_end <= phys)) {
+		return NULL;
+	}
+
+	ix = (phys - pa_start) >> PAGE_SHIFT;
+	return &pa_pages[ix];
+}
+
+uintptr_t page_to_phys(struct page *page)
+{
+	int64_t ix;
+	uintptr_t phys;
+
+	ix = page - pa_pages;
+	phys = pa_start + (ix << PAGE_SHIFT);
+	if ((phys < pa_start) || (pa_end <= phys)) {
+		ekprintf("page_to_phys(%p):not a pa_pages[]:%p %lx-%lx\n",
+				page, pa_pages, pa_start, pa_end);
+		panic("page_to_phys");
+	}
+	return phys;
+}
+
+static void page_init(void)
+{
+	size_t npages;
+	size_t allocsize;
+	size_t allocpages;
+
+	npages = (pa_end - pa_start) >> PAGE_SHIFT;
+	allocsize = sizeof(struct page) * npages;
+	allocpages = (allocsize + PAGE_SIZE - 1) >> PAGE_SHIFT;
+
+	pa_pages = allocate_pages(allocpages, IHK_MC_AP_CRITICAL);
+	memset(pa_pages, 0, allocsize);
+	return;
+}
+
 void register_kmalloc(void)
 {
 	allocator.alloc = kmalloc;
@@ -348,6 +441,7 @@ void ihk_mc_clean_micpa(void){
 void mem_init(void)
 {
 	page_allocator_init();
+	page_init();
 
 	/* Prepare the kernel virtual map space */
 	virtual_allocator_init();

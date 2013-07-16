@@ -131,6 +131,8 @@ struct vm_range *lookup_process_memory_range(
 		struct process_vm *vm, uintptr_t start, uintptr_t end);
 struct vm_range *next_process_memory_range(
 		struct process_vm *vm, struct vm_range *range);
+struct vm_range *previous_process_memory_range(
+		struct process_vm *vm, struct vm_range *range);
 int remove_process_region(struct process *proc,
                           unsigned long start, unsigned long end);
 struct program_load_desc;

@@ -173,8 +173,14 @@ SYSCALL_DECLARE(exit_group)
 
 static int do_munmap(void *addr, size_t len)
 {
-	return remove_process_memory_range(
-			cpu_local_var(current), (intptr_t)addr, (intptr_t)addr+len);
+	int error;
+
+	begin_free_pages_pending();
+	error = remove_process_memory_range(cpu_local_var(current),
+			(intptr_t)addr, (intptr_t)addr+len);
+	// XXX: TLB flush
+	finish_free_pages_pending();
+	return error;
 }
 
 static int search_free_space(size_t len, intptr_t hint, intptr_t *addrp)
@@ -488,6 +494,7 @@ SYSCALL_DECLARE(mprotect)
 	}
 
 	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
+	begin_free_pages_pending();
 
 	/* check contiguous map */
 	first = NULL;
@@ -572,6 +579,8 @@ SYSCALL_DECLARE(mprotect)
 
 	error = 0;
 out:
+	// XXX: TLB flush
+	finish_free_pages_pending();
 	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
 	dkprintf("[%d]sys_mprotect(%lx,%lx,%x): %d\n",
 			ihk_mc_get_processor_id(), start, len0, prot, error);
