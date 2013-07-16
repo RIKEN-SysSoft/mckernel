@@ -95,6 +95,11 @@ int ihk_mc_pt_clear_page(page_table_t pt, void *virt);
 int ihk_mc_pt_clear_large_page(page_table_t pt, void *virt);
 int ihk_mc_pt_clear_range(page_table_t pt, void *start, void *end);
 int ihk_mc_pt_free_range(page_table_t pt, void *start, void *end);
+int ihk_mc_pt_change_attr_range(page_table_t pt, void *start, void *end,
+		enum ihk_mc_pt_attribute clrattr,
+		enum ihk_mc_pt_attribute setattr);
+int ihk_mc_pt_alloc_range(page_table_t pt, void *start, void *end,
+		enum ihk_mc_pt_attribute attr);
 int ihk_mc_pt_prepare_map(page_table_t pt, void *virt, unsigned long size,
                           enum ihk_mc_pt_prepare_flag);
 

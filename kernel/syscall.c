@@ -205,7 +205,7 @@ static int search_free_space(size_t len, intptr_t hint, intptr_t *addrp)
 			goto out;
 		}
 
-		range = lookup_process_memory_range(proc, addr, addr+len);
+		range = lookup_process_memory_range(proc->vm, addr, addr+len);
 		if (range == NULL) {
 			break;
 		}
@@ -437,17 +437,145 @@ SYSCALL_DECLARE(munmap)
 	const size_t len = ihk_mc_syscall_arg1(ctx);
 	int error;
 
+	dkprintf("[%d]sys_munmap(%lx,%lx)\n",
+			ihk_mc_get_processor_id(), addr, len);
+
 	ihk_mc_spinlock_lock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
 	error = do_munmap(addr, len);
 	ihk_mc_spinlock_unlock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
 
+	dkprintf("[%d]sys_munmap(%lx,%lx): %d\n",
+			ihk_mc_get_processor_id(), addr, len, error);
 	return error;
 }
 
 SYSCALL_DECLARE(mprotect)
 {
-	dkprintf("mprotect returns 0\n");
-	return 0;
+	const intptr_t start = ihk_mc_syscall_arg0(ctx);
+	const size_t len0 = ihk_mc_syscall_arg1(ctx);
+	const int prot = ihk_mc_syscall_arg2(ctx);
+	struct process *proc = cpu_local_var(current);
+	struct vm_regions *region = &proc->vm->region;
+	size_t len;
+	intptr_t end;
+	struct vm_range *first;
+	intptr_t addr;
+	struct vm_range *range;
+	int error;
+	struct vm_range *changed;
+	const unsigned long protflags = PROT_TO_VR_FLAG(prot);
+
+	dkprintf("[%d]sys_mprotect(%lx,%lx,%x)\n",
+			ihk_mc_get_processor_id(), start, len0, prot);
+
+	len = (len0 + PAGE_SIZE - 1) & PAGE_MASK;
+	end = start + len;
+
+	/* check arguments */
+	if ((start & (PAGE_SIZE - 1))
+			|| (start < region->user_start)
+			|| (region->user_end <= start)
+			|| (len > (region->user_end - region->user_start)
+			|| ((region->user_end - len) < start))) {
+		ekprintf("[%d]sys_mprotect(%lx,%lx,%x): -EINVAL\n",
+				ihk_mc_get_processor_id(), start, len0, prot);
+		return -EINVAL;
+	}
+
+	if (len == 0) {
+		/* nothing to do */
+		return 0;
+	}
+
+	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
+
+	/* check contiguous map */
+	first = NULL;
+	for (addr = start; addr < end; addr = range->end) {
+		if (first == NULL) {
+			range = lookup_process_memory_range(proc->vm, start, start+PAGE_SIZE);
+			first = range;
+		}
+		else {
+			range = next_process_memory_range(proc->vm, range);
+		}
+
+		if ((range == NULL) || (addr < range->start)) {
+			/* not contiguous */
+			ekprintf("sys_mprotect(%lx,%lx,%x):not contiguous\n",
+					start, len0, prot);
+			error = -ENOMEM;
+			goto out;
+		}
+
+		if (range->flag & (VR_REMOTE | VR_RESERVED | VR_IO_NOCACHE)) {
+			ekprintf("sys_mprotect(%lx,%lx,%x):cannot change\n",
+					start, len0, prot);
+			error = -EINVAL;
+			goto out;
+		}
+	}
+
+	/* do the mprotect */
+	changed = NULL;
+	for (addr = start; addr < end; addr = changed->end) {
+		if (changed == NULL) {
+			range = first;
+		}
+		else {
+			range = next_process_memory_range(proc->vm, changed);
+		}
+		if (range == NULL) {
+			ekprintf("sys_mprotect(%lx,%lx,%x):next(%lx) failed.\n",
+					start, len0, prot,
+					(changed)? changed->end: -1);
+			panic("sys_mprotect:next\n");
+		}
+
+		if (range->start < addr) {
+			error = split_process_memory_range(proc, range, addr, &range);
+			if (error) {
+				ekprintf("sys_mprotect(%lx,%lx,%x):split failed. %d\n",
+						start, len0, prot, error);
+				goto out;
+			}
+		}
+		if (end < range->end) {
+			error = split_process_memory_range(proc, range, end, NULL);
+			if (error) {
+				ekprintf("sys_mprotect(%lx,%lx,%x):split failed. %d\n",
+						start, len0, prot, error);
+				goto out;
+			}
+		}
+
+		error = change_prot_process_memory_range(proc, range, protflags);
+		if (error) {
+			ekprintf("sys_mprotect(%lx,%lx,%x):change failed. %d\n",
+					start, len0, prot, error);
+			goto out;
+		}
+
+		if (changed == NULL) {
+			changed = range;
+		}
+		else {
+			error = join_process_memory_range(proc, changed, range);
+			if (error) {
+				ekprintf("sys_mprotect(%lx,%lx,%x):join failed. %d\n",
+						start, len0, prot, error);
+				changed = range;
+				/* through */
+			}
+		}
+	}
+
+	error = 0;
+out:
+	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+	dkprintf("[%d]sys_mprotect(%lx,%lx,%x): %d\n",
+			ihk_mc_get_processor_id(), start, len0, prot, error);
+	return error;
 }
 
 SYSCALL_DECLARE(brk)

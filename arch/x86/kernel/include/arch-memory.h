@@ -47,38 +47,38 @@
 /* mask of the physical address of the entry to the page table */
 #define	PT_PHYSMASK	(((1UL << 52) - 1) & PAGE_MASK)
 
-#define	PF_PRESENT	0x01	/* entry is valid */
-#define	PF_SIZE		0x80	/* entry points large page */
+#define	PF_PRESENT	((pte_t)0x01)	/* entry is valid */
+#define	PF_SIZE		((pte_t)0x80)	/* entry points large page */
 
-#define PFL4_PRESENT    0x01
-#define PFL4_WRITABLE   0x02
-#define PFL4_USER       0x04
+#define PFL4_PRESENT    ((pte_t)0x01)
+#define PFL4_WRITABLE   ((pte_t)0x02)
+#define PFL4_USER       ((pte_t)0x04)
 
-#define PFL3_PRESENT    0x01
-#define PFL3_WRITABLE   0x02
-#define PFL3_USER       0x04
-#define PFL3_ACCESSED   0x20
-#define PFL3_DIRTY      0x40
-#define PFL3_SIZE       0x80   /* Used in 1G page */
-#define PFL3_GLOBAL     0x100
+#define PFL3_PRESENT    ((pte_t)0x01)
+#define PFL3_WRITABLE   ((pte_t)0x02)
+#define PFL3_USER       ((pte_t)0x04)
+#define PFL3_ACCESSED   ((pte_t)0x20)
+#define PFL3_DIRTY      ((pte_t)0x40)
+#define PFL3_SIZE       ((pte_t)0x80)   /* Used in 1G page */
+#define PFL3_GLOBAL     ((pte_t)0x100)
 
-#define PFL2_PRESENT    0x01
-#define PFL2_WRITABLE   0x02
-#define PFL2_USER       0x04
-#define PFL2_ACCESSED   0x20
-#define PFL2_DIRTY      0x40
-#define PFL2_SIZE       0x80   /* Used in 2M page */
-#define PFL2_GLOBAL     0x100
-#define PFL2_PWT        0x08
-#define PFL2_PCD        0x10
+#define PFL2_PRESENT    ((pte_t)0x01)
+#define PFL2_WRITABLE   ((pte_t)0x02)
+#define PFL2_USER       ((pte_t)0x04)
+#define PFL2_PWT        ((pte_t)0x08)
+#define PFL2_PCD        ((pte_t)0x10)
+#define PFL2_ACCESSED   ((pte_t)0x20)
+#define PFL2_DIRTY      ((pte_t)0x40)
+#define PFL2_SIZE       ((pte_t)0x80)   /* Used in 2M page */
+#define PFL2_GLOBAL     ((pte_t)0x100)
 
-#define PFL1_PRESENT    0x01
-#define PFL1_WRITABLE   0x02
-#define PFL1_USER       0x04
-#define PFL1_ACCESSED   0x20
-#define PFL1_DIRTY      0x40
-#define PFL1_PWT        0x08
-#define PFL1_PCD        0x10
+#define PFL1_PRESENT    ((pte_t)0x01)
+#define PFL1_WRITABLE   ((pte_t)0x02)
+#define PFL1_USER       ((pte_t)0x04)
+#define PFL1_PWT        ((pte_t)0x08)
+#define PFL1_PCD        ((pte_t)0x10)
+#define PFL1_ACCESSED   ((pte_t)0x20)
+#define PFL1_DIRTY      ((pte_t)0x40)
 
 /* We allow user programs to access all the memory */
 #define PFL4_KERN_ATTR       (PFL4_PRESENT | PFL4_WRITABLE)
@@ -102,6 +102,8 @@ enum ihk_mc_pt_attribute {
 };
 
 typedef unsigned long pte_t;
+
+#define	PTE_NULL ((pte_t)0)
 
 struct page_table;
 void set_pte(pte_t *ppte, unsigned long phys, int attr);

@@ -120,8 +120,17 @@ int add_process_memory_range(struct process *process,
                              unsigned long phys, unsigned long flag);
 int remove_process_memory_range(
 		struct process *process, unsigned long start, unsigned long end);
+int split_process_memory_range(struct process *process,
+		struct vm_range *range, uintptr_t addr, struct vm_range **splitp);
+int join_process_memory_range(struct process *process, struct vm_range *surviving,
+		struct vm_range *merging);
+int change_prot_process_memory_range(
+		struct process *process, struct vm_range *range,
+		unsigned long newflag);
 struct vm_range *lookup_process_memory_range(
-		struct process *proc, uintptr_t start, uintptr_t end);
+		struct process_vm *vm, uintptr_t start, uintptr_t end);
+struct vm_range *next_process_memory_range(
+		struct process_vm *vm, struct vm_range *range);
 int remove_process_region(struct process *proc,
                           unsigned long start, unsigned long end);
 struct program_load_desc;

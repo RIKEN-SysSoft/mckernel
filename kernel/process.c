@@ -13,9 +13,11 @@
 //#define DEBUG_PRINT_PROCESS
 
 #ifdef DEBUG_PRINT_PROCESS
-#define dkprintf kprintf
+#define dkprintf(...) kprintf(__VA_ARGS__)
+#define ekprintf(...) kprintf(__VA_ARGS__)
 #else
 #define dkprintf(...)
+#define ekprintf(...) kprintf(__VA_ARGS__)
 #endif
 
 
@@ -114,9 +116,6 @@ struct process *clone_process(struct process *org, unsigned long pc,
 	return proc;
 }
 
-extern void __host_update_process_range(struct process *process,
-                                        struct vm_range *range);
-
 int update_process_page_table(struct process *process,
                           struct vm_range *range, uint64_t phys,
 			  enum ihk_mc_pt_attribute flag)
@@ -188,6 +187,72 @@ err:
 
 	ihk_mc_spinlock_unlock(&process->vm->page_table_lock, flags);
 	return -ENOMEM;
+}
+
+int split_process_memory_range(struct process *proc, struct vm_range *range,
+		uintptr_t addr, struct vm_range **splitp)
+{
+	int error;
+	struct vm_range *newrange = NULL;
+
+	dkprintf("split_process_memory_range(%p,%lx-%lx,%lx,%p)\n",
+			proc, range->start, range->end, addr, splitp);
+
+	newrange = kmalloc(sizeof(struct vm_range), IHK_MC_AP_NOWAIT);
+	if (!newrange) {
+		ekprintf("split_process_memory_range(%p,%lx-%lx,%lx,%p):"
+				"kmalloc failed\n",
+				proc, range->start, range->end, addr, splitp);
+		error = -ENOMEM;
+		goto out;
+	}
+
+	newrange->start = addr;
+	newrange->end = range->end;
+	newrange->flag = range->flag;
+
+	range->end = addr;
+
+	list_add(&newrange->list, &range->list);
+
+	error = 0;
+	if (splitp != NULL) {
+		*splitp = newrange;
+	}
+
+out:
+	dkprintf("split_process_memory_range(%p,%lx-%lx,%lx,%p): %d %p %lx-%lx\n",
+			proc, range->start, range->end, addr, splitp,
+			error, newrange,
+			newrange? newrange->start: 0, newrange? newrange->end: 0);
+	return error;
+}
+
+int join_process_memory_range(struct process *proc,
+		struct vm_range *surviving, struct vm_range *merging)
+{
+	int error;
+
+	dkprintf("join_process_memory_range(%p,%lx-%lx,%lx-%lx)\n",
+			proc, surviving->start, surviving->end,
+			merging->start, merging->end);
+
+	if ((surviving->end != merging->start)
+			|| (surviving->flag != merging->flag)) {
+		error = -EINVAL;
+		goto out;
+	}
+
+	surviving->end = merging->end;
+
+	list_del(&merging->list);
+	ihk_mc_free(merging);
+
+	error = 0;
+out:
+	dkprintf("join_process_memory_range(%p,%lx-%lx,%p): %d\n",
+			proc, surviving->start, surviving->end, merging, error);
+	return error;
 }
 
 int remove_process_memory_range(struct process *process, unsigned long start, unsigned long end)
@@ -287,12 +352,65 @@ int remove_process_memory_range(struct process *process, unsigned long start, un
 	return 0;
 }
 
+static void insert_vm_range_list(struct process_vm *vm, struct vm_range *newrange)
+{
+	struct list_head *next;
+	struct vm_range *range;
+
+	next = &vm->vm_range_list;
+	list_for_each_entry(range, &vm->vm_range_list, list) {
+		if ((newrange->start < range->end) && (range->start < newrange->end)) {
+			ekprintf("insert_vm_range_list(%p,%lx-%lx %lx):overlap %lx-%lx %lx\n",
+					vm, newrange->start, newrange->end, newrange->flag,
+					range->start, range->end, range->flag);
+			panic("insert_vm_range_list\n");
+		}
+
+		if (newrange->end <= range->start) {
+			next = &range->list;
+			break;
+		}
+	}
+
+	list_add_tail(&newrange->list, next);
+	return;
+}
+
+enum ihk_mc_pt_attribute vrflag_to_ptattr(unsigned long flag)
+{
+	enum ihk_mc_pt_attribute attr;
+
+	attr = PTATTR_USER | PTATTR_FOR_USER;
+
+	if (flag & VR_REMOTE) {
+		attr |= IHK_PTA_REMOTE;
+	}
+	else if (flag & VR_IO_NOCACHE) {
+		attr |= PTATTR_UNCACHABLE;
+	}
+
+	if ((flag & VR_PROT_MASK) != VR_PROT_NONE) {
+		attr |= PTATTR_ACTIVE;
+	}
+
+	if (flag & VR_PROT_WRITE) {
+		attr |= PTATTR_WRITABLE;
+	}
+
+	return attr;
+}
+
+
 int add_process_memory_range(struct process *process,
                              unsigned long start, unsigned long end,
                              unsigned long phys, unsigned long flag)
 {
 	struct vm_range *range;
 	int rc;
+#if 0
+	extern void __host_update_process_range(struct process *process,
+						struct vm_range *range);
+#endif
 
 	if ((start < process->vm->region.user_start)
 			|| (process->vm->region.user_end < end)) {
@@ -330,6 +448,8 @@ int add_process_memory_range(struct process *process,
 	  //demand paging no need to update process table now
 	  kprintf("demand paging do not update process page table\n");
       rc = 0;
+	} else if ((range->flag & VR_PROT_MASK) == VR_PROT_NONE) {
+		rc = 0;
 	} else {
 		rc = update_process_page_table(process, range, phys, 0);
 	}
@@ -344,7 +464,7 @@ int add_process_memory_range(struct process *process,
 	}
 #endif
 	
-	list_add_tail(&range->list, &process->vm->vm_range_list);
+	insert_vm_range_list(process->vm, range);
 	
 	/* Clear content! */
 	if (!(flag & (VR_REMOTE | VR_DEMAND_PAGING))
@@ -355,21 +475,114 @@ int add_process_memory_range(struct process *process,
 	return 0;
 }
 
-struct vm_range *lookup_process_memory_range(struct process *proc, uintptr_t start, uintptr_t end)
+struct vm_range *lookup_process_memory_range(
+		struct process_vm *vm, uintptr_t start, uintptr_t end)
 {
-	struct vm_range *range;
+	struct vm_range *range = NULL;
+
+	dkprintf("lookup_process_memory_range(%p,%lx,%lx)\n", vm, start, end);
 
 	if (end <= start) {
-		return NULL;
+		goto out;
 	}
 
-	list_for_each_entry(range, &proc->vm->vm_range_list, list) {
+	list_for_each_entry(range, &vm->vm_range_list, list) {
+		if (end <= range->start) {
+			break;
+		}
 		if ((start < range->end) && (range->start < end)) {
-			return range;
+			goto out;
 		}
 	}
 
-	return NULL;
+	range = NULL;
+out:
+	dkprintf("lookup_process_memory_range(%p,%lx,%lx): %p %lx-%lx\n",
+			vm, start, end, range,
+			range? range->start: 0, range? range->end: 0);
+	return range;
+}
+
+struct vm_range *next_process_memory_range(
+		struct process_vm *vm, struct vm_range *range)
+{
+	struct vm_range *next;
+
+	dkprintf("next_process_memory_range(%p,%lx-%lx)\n",
+			vm, range->start, range->end);
+
+	if (list_is_last(&range->list, &vm->vm_range_list)) {
+		next = NULL;
+	}
+	else {
+		next = list_entry(range->list.next, struct vm_range, list);
+	}
+
+	dkprintf("next_process_memory_range(%p,%lx-%lx): %p %lx-%lx\n",
+			vm, range->start, range->end, next,
+			next? next->start: 0, next? next->end: 0);
+	return next;
+}
+
+int change_prot_process_memory_range(struct process *proc,
+		struct vm_range *range, unsigned long protflag)
+{
+	unsigned long newflag;
+	int error;
+	enum ihk_mc_pt_attribute oldattr;
+	enum ihk_mc_pt_attribute newattr;
+	enum ihk_mc_pt_attribute clrattr;
+	enum ihk_mc_pt_attribute setattr;
+
+	dkprintf("change_prot_process_memory_range(%p,%lx-%lx,%lx)\n",
+			proc, range->start, range->end, protflag);
+
+	newflag = (range->flag & ~VR_PROT_MASK) | (protflag & VR_PROT_MASK);
+	if (range->flag == newflag) {
+		/* nothing to do */
+		error = 0;
+		goto out;
+	}
+
+	oldattr = vrflag_to_ptattr(range->flag);
+	newattr = vrflag_to_ptattr(newflag);
+
+	clrattr = oldattr & ~newattr;
+	setattr = newattr & ~oldattr;
+
+	ihk_mc_spinlock_lock_noirq(&proc->vm->page_table_lock);
+	error = ihk_mc_pt_change_attr_range(proc->vm->page_table,
+			(void *)range->start, (void *)range->end,
+			clrattr, setattr);
+	ihk_mc_spinlock_unlock_noirq(&proc->vm->page_table_lock);
+	if (error && (error != -ENOENT)) {
+		ekprintf("change_prot_process_memory_range(%p,%lx-%lx,%lx):"
+				"ihk_mc_pt_change_attr_range failed: %d\n",
+				proc, range->start, range->end, protflag, error);
+		goto out;
+	}
+
+	if (((range->flag & VR_PROT_MASK) == PROT_NONE)
+			&& !(range->flag & VR_DEMAND_PAGING)) {
+		ihk_mc_spinlock_lock_noirq(&proc->vm->page_table_lock);
+		error = ihk_mc_pt_alloc_range(proc->vm->page_table,
+				(void *)range->start, (void *)range->end,
+				newattr);
+		ihk_mc_spinlock_unlock_noirq(&proc->vm->page_table_lock);
+		if (error) {
+			ekprintf("change_prot_process_memory_range(%p,%lx-%lx,%lx):"
+					"ihk_mc_pt_alloc_range failed: %d\n",
+					proc, range->start, range->end, protflag, error);
+			goto out;
+		}
+	}
+
+	range->flag = newflag;
+	error = 0;
+out:
+	dkprintf("change_prot_process_memory_range(%p,%lx-%lx,%lx): %d\n",
+			proc, range->start, range->end, protflag, error);
+	return error;
 }
 
 int init_process_stack(struct process *process, struct program_load_desc *pn,
@@ -544,7 +757,6 @@ int remove_process_region(struct process *proc,
 	return 0;
 }
 
-extern void print_free_list(void);
 void free_process_memory(struct process *proc)
 {
 	struct vm_range *range, *next;
