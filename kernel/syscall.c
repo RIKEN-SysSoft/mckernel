@@ -813,6 +813,28 @@ SYSCALL_DECLARE(set_tid_address)
 	return cpu_local_var(current)->pid;
 }
 
+SYSCALL_DECLARE(kill)
+{
+	int pid = ihk_mc_syscall_arg0(ctx);
+	int sig = ihk_mc_syscall_arg1(ctx);
+
+	struct process *proc = cpu_local_var(current);
+
+	if(proc->pid == pid){
+		proc->signal = sig;
+		return 0;
+	}
+
+	if(pid <= 0) { return -EINVAL; }
+	// search pid
+	// check kill permission
+	if(sig == 0) {
+		return 0;
+	} else {
+		return -EPERM;
+	}
+}
+
 // see linux-2.6.34.13/kernel/signal.c
 SYSCALL_DECLARE(tgkill)
 {
@@ -835,11 +857,87 @@ SYSCALL_DECLARE(set_robust_list)
 	return -ENOSYS;
 }
 
+int
+do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
+{
+	struct process *proc = cpu_local_var(current);
+	struct k_sigaction *k;
+	// TODO: sigmask
+
+	k = proc->sighandler->action + sig - 1;
+	if(oact)
+		memcpy(oact, k, sizeof(struct k_sigaction));
+	if(act){
+		memcpy(k, act, sizeof(struct k_sigaction));
+	}
+	return 0;
+}
+
 SYSCALL_DECLARE(rt_sigaction)
 {
-    //  kprintf("sys_rt_sigaction called. returning zero...\n");
-  return 0;
+	int sig = ihk_mc_syscall_arg0(ctx);
+	const struct sigaction *act = (const struct sigaction *)ihk_mc_syscall_arg1(ctx);
+	struct sigaction *oact = (struct sigaction *)ihk_mc_syscall_arg2(ctx);
+	size_t sigsetsize = ihk_mc_syscall_arg3(ctx);
+	struct k_sigaction new_sa, old_sa;
+	int rc;
+
+	//if (sigsetsize != sizeof(sigset_t))
+		//return -EINVAL;
+
+	if(act)
+		memcpy(&new_sa.sa, act, sizeof new_sa.sa);
+	rc = do_sigaction(sig, act? &new_sa: NULL, oact? &old_sa: NULL);
+	if(oact)
+		memcpy(oact, &old_sa.sa, sizeof old_sa.sa);
+
+	return rc;
 }
+
+static void
+check_signal(unsigned long rc)
+{
+	struct process *proc = cpu_local_var(current);
+	struct k_sigaction *k;
+	int	sig = proc->signal;
+
+	proc->signal = 0;
+	if(sig){
+		k = proc->sighandler->action + sig - 1;
+		if(k->sa.sa_handler){
+			unsigned long *usp; /* user stack */
+			char *kspbottom;
+			long	w;
+			asm volatile ("movq %%gs:24,%0" : "=r" (usp));
+			asm volatile ("movq %%gs:132,%0" : "=r" (kspbottom));
+			memcpy(proc->sigstack, kspbottom - 120, 120);
+			proc->sigrc = rc;
+			usp--;
+			*usp = (unsigned long)k->sa.sa_restorer;
+			w = 56 + 3;
+			asm volatile ("pushq %0" :: "r" (w));
+			asm volatile ("pushq %0" :: "r" (usp));
+			w = 1 << 9;
+			asm volatile ("pushq %0" :: "r" (w));
+			w = 48 + 3;
+			asm volatile ("pushq %0" :: "r" (w));
+			asm volatile ("pushq %0" :: "r" (k->sa.sa_handler));
+			asm volatile ("iretq");
+		}
+	}
+}
+
+SYSCALL_DECLARE(rt_sigreturn)
+{
+	struct process *proc = cpu_local_var(current);
+	char *kspbottom;
+	asm volatile ("movq %%gs:132,%0" : "=r" (kspbottom));
+	memcpy(kspbottom - 120, proc->sigstack, 120);
+
+	return proc->sigrc;
+}
+
+
 SYSCALL_DECLARE(rt_sigprocmask)
 {
     //  kprintf("sys_rt_sigprocmask called. returning zero...\n");
@@ -1129,6 +1227,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 
 	cpu_enable_interrupt();
 
+
 #if 0
 	if(num != 24)  // if not sched_yield
 #endif
@@ -1170,7 +1269,9 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		        ihk_mc_syscall_sp(ctx));
 		l = syscall_generic_forwarding(num, ctx);
 	}
-	
+
+	check_signal(l);
+
 	return l;
 }
 

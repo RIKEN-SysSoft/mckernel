@@ -6,6 +6,7 @@
 #include <ihk/mm.h>
 #include <ihk/atomic.h>
 #include <list.h>
+#include <signal.h>
 
 #define VR_NONE            0x0
 #define VR_STACK           0x1
@@ -53,6 +54,12 @@ struct vm_regions {
 
 struct process_vm;
 
+struct sig_handler {
+	// TODO: lock;
+	int	use;
+	struct k_sigaction action[_NSIG];
+};
+
 struct process {
 	int pid;
 	int status;
@@ -74,6 +81,12 @@ struct process {
 		int	*clear_child_tid;
 		unsigned long tlsblock_base, tlsblock_limit;
 	} thread;
+
+	int signal;
+	struct sig_handler *sighandler;
+	ihk_mc_kernel_context_t sigctx;
+	char	sigstack[512];
+	unsigned long sigrc; // return code of rt_sigreturn (x86_64: rax reg.)
 };
 
 struct process_vm {

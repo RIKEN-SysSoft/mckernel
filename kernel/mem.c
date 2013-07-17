@@ -73,6 +73,7 @@ void sbox_write(int offset, unsigned int value);
 
 static void query_free_mem_interrupt_handler(void *priv)
 {
+#ifdef ATTACHED_MIC
 	dkprintf("query free mem handler!\n");
 
 	int pages = ihk_pagealloc_query_free(pa_allocator);
@@ -81,6 +82,7 @@ static void query_free_mem_interrupt_handler(void *priv)
 
 	sbox_write(SBOX_SCRATCH0, pages);
 	sbox_write(SBOX_SCRATCH1, 1);
+#endif
 }
 
 static struct ihk_mc_interrupt_handler query_free_mem_handler = {
