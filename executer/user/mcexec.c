@@ -313,7 +313,7 @@ int flatten_strings(int nr_strings, char **strings, char **flat)
 	return full_len;
 }
 
-#define NUM_HANDLER_THREADS	64
+#define NUM_HANDLER_THREADS	248
 
 struct thread_data_s {
 	pthread_t thread_id;
