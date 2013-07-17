@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <list.h>
 #include <process.h>
+#include <page.h>
 
 #define	ekprintf(...)	kprintf(__VA_ARGS__)
 
@@ -796,15 +797,20 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base, uint64_t star
 {
 	struct clear_range_args *args = args0;
 	uint64_t phys;
+	struct page *page;
 
 	if (*ptep == PTE_NULL) {
 		return -ENOENT;
 	}
 
 	phys = *ptep & PT_PHYSMASK;
-	*ptep = 0;
+	*ptep = PTE_NULL;
 
 	if (args->free_physical) {
+		page = phys_to_page(phys);
+		if (page && (page->mode == PM_MAPPED) && !page_unmap(page)) {
+			return 0;
+		}
 		ihk_mc_free_pages(phys_to_virt(phys), 1);
 	}
 
@@ -817,6 +823,7 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base, uint64_t star
 	uint64_t phys;
 	struct page_table *pt;
 	int error;
+	struct page *page;
 
 	if (*ptep == PTE_NULL) {
 		return -ENOENT;
@@ -841,6 +848,15 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base, uint64_t star
 		*ptep = PTE_NULL;
 
 		if (args->free_physical) {
+			page = phys_to_page(phys);
+			if (page && (page->mode == PM_MAPPED)) {
+				if (--page->count > 0) {
+					/* other mapping exists */
+					return 0;
+				}
+				list_del(&page->list);
+				page->mode = PM_NONE;
+			}
 			ihk_mc_free_pages(phys_to_virt(phys),
 					LARGE_PAGE_SIZE/PAGE_SIZE);
 		}
@@ -1131,6 +1147,369 @@ int ihk_mc_pt_alloc_range(page_table_t pt, void *start, void *end,
 {
 	return walk_pte_l4(pt, 0, (intptr_t)start, (intptr_t)end,
 			&alloc_range_l4, &attr);
+}
+
+static int lookup_pte(struct page_table *pt, uintptr_t virt, pte_t **ptepp,
+		uintptr_t *pgbasep, size_t *pgsizep)
+{
+	int l4idx, l3idx, l2idx, l1idx;
+
+	GET_VIRT_INDICES(virt, l4idx, l3idx, l2idx, l1idx);
+
+	if (!(pt->entry[l4idx] & PFL4_PRESENT)) {
+		return -ENOENT;
+	}
+
+	pt = phys_to_virt(pt->entry[l4idx] & PT_PHYSMASK);
+	if (!(pt->entry[l3idx] & PFL3_PRESENT)) {
+		return -ENOENT;
+	}
+
+	pt = phys_to_virt(pt->entry[l3idx] & PT_PHYSMASK);
+	if ((pt->entry[l2idx] == PTE_NULL)
+			|| (pt->entry[l2idx] & PFL2_SIZE)) {
+		*ptepp = &pt->entry[l2idx];
+		*pgbasep = GET_INDICES_VIRT(l4idx, l3idx, l2idx, 0);
+		*pgsizep = PTL2_SIZE;
+		return 0;
+	}
+
+	pt = phys_to_virt(pt->entry[l2idx] & PT_PHYSMASK);
+	*ptepp = &pt->entry[l1idx];
+	*pgbasep = GET_INDICES_VIRT(l4idx, l3idx, l2idx, l1idx);
+	*pgsizep = PTL1_SIZE;
+
+	return 0;
+}
+
+int ihk_mc_pt_lookup_pte(page_table_t pt, void *virt, pte_t **ptepp, void **pgbasep, size_t *pgsizep)
+{
+	int error;
+	pte_t *ptep = NULL;
+	uintptr_t pgbase = 0;
+	size_t pgsize = 0;
+
+	kprintf("ihk_mc_pt_lookup_pte(%p,%p)\n", pt, virt);
+	error = lookup_pte(pt, (uintptr_t)virt, &ptep, &pgbase, &pgsize);
+	if (error) {
+		kprintf("ihk_mc_pt_lookup_pte(%p,%p):lookup failed. %d\n", pt, virt, error);
+		goto out;
+	}
+
+	error = 0;
+	*ptepp = ptep;
+	*pgbasep = (void *)pgbase;
+	*pgsizep = pgsize;
+
+out:
+	kprintf("ihk_mc_pt_lookup_pte(%p,%p): %d %p %lx %lx\n", pt, virt, error, ptep, pgbase, pgsize);
+	return error;
+}
+
+static int page_p2align_list[] = {
+	LARGE_PAGE_P2ALIGN,
+	PAGE_P2ALIGN,
+	-1,
+};
+
+int ihk_mc_pt_choose_pagesize(page_table_t pt, void *start0, void *end0,
+		void *fault_addr0, size_t maxpgsize, void **pgaddrp,
+		size_t *pgsizep, int *p2alignp)
+{
+	const uintptr_t start = (uintptr_t)start0;
+	const uintptr_t end = (uintptr_t)end0;
+	const uintptr_t fault_addr = (uintptr_t)fault_addr0;
+	int ix;
+	int p2align;
+	size_t pgsize;
+	uintptr_t pgbase;
+	pte_t *ptep;
+	int error;
+	uintptr_t pga;
+	size_t pgs;
+
+	kprintf("ihk_mc_pt_choose_pagesize(%p,%p,%p,%p,%lx,%p,%p,%p)\n",
+			pt, start0, end0, fault_addr0, maxpgsize, pgaddrp,
+			pgsizep, p2alignp);
+
+	if ((fault_addr < start) || (end <= fault_addr)) {
+		kprintf("ihk_mc_pt_choose_pagesize(%p,%p,%p,%p,%lx,%p,%p,%p):"
+				"out of range\n",
+				pt, start0, end0, fault_addr0, maxpgsize,
+				pgaddrp, pgsizep, p2alignp);
+		panic("ihk_mc_pt_choose_pagesize:out of range");
+	}
+
+	pgs = 0;
+	for (ix = 0; page_p2align_list[ix] >= 0; ++ix) {
+		p2align = page_p2align_list[ix];
+		pgsize = PAGE_SIZE << p2align;
+		pgbase = fault_addr & ~(pgsize - 1);
+		if ((maxpgsize != 0) && (pgsize > maxpgsize)) {
+			continue;
+		}
+		if ((pgbase < start) || (end < (pgbase + pgsize))) {
+			continue;
+		}
+		if (pgs == 0) {
+			error = lookup_pte(pt, fault_addr, &ptep, &pga, &pgs);
+			if (error == -ENOENT) {
+				error = 0;
+				pgs = LARGE_PAGE_SIZE;
+				pga = fault_addr & LARGE_PAGE_MASK;
+			}
+			else if (error) {
+				kprintf("ihk_mc_pt_choose_pagesize("
+						"%p,%p,%p,%p,%lx,%p,%p,%p):"
+						"lookup pte failed. %d\n",
+						pt, start0, end0, fault_addr0,
+						maxpgsize, pgaddrp, pgsizep,
+						p2alignp, error);
+				goto out;
+			}
+		}
+		if (pgs < pgsize) {
+			continue;
+		}
+
+		error = 0;
+		*pgaddrp = (void *)pgbase;
+		*pgsizep = pgsize;
+		*p2alignp = p2align;
+		goto out;
+	}
+
+	kprintf("ihk_mc_pt_choose_pagesize(%p,%p,%p,%p,%lx,%p,%p,%p):"
+			"not reached\n",
+			pt, start0, end0, fault_addr0, maxpgsize, pgaddrp,
+			pgsizep, p2alignp);
+	panic("ihk_mc_pt_choose_pagesize:not reached");
+
+out:
+	kprintf("ihk_mc_pt_choose_pagesize(%p,%p,%p,%p,%lx,%p,%p,%p):"
+		       " %d %p %lx %d\n",
+		       pt, start0, end0, fault_addr0, maxpgsize, pgaddrp,
+		       pgsizep, p2alignp, error, *pgaddrp, *pgsizep, *p2alignp);
+	return error;
+}
+
+struct set_range_args {
+	uintptr_t phys;
+	enum ihk_mc_pt_attribute attr;
+	int padding;
+	uintptr_t diff;
+};
+
+int set_range_l1(void *args0, pte_t *ptep, uint64_t base, uint64_t start,
+		uint64_t end)
+{
+	struct set_range_args *args = args0;
+	int error;
+	uintptr_t phys;
+
+	kprintf("set_range_l1(%p,%p,%lx,%lx,%lx)\n",
+			args0, ptep, base, start, end);
+
+	if (*ptep != PTE_NULL) {
+		kprintf("set_range_l1(%p,%p,%lx,%lx,%lx):page exists\n",
+				args0, ptep, base, start, end);
+		error = -EBUSY;
+		goto out;
+	}
+
+	phys = args->phys + (base - start);
+	*ptep = phys | attr_to_l1attr(args->attr);
+
+	error = 0;
+out:
+	kprintf("set_range_l1(%p,%p,%lx,%lx,%lx): %d\n",
+			args0, ptep, base, start, end, error);
+	return error;
+}
+
+int set_range_l2(void *args0, pte_t *ptep, uint64_t base, uint64_t start,
+		uint64_t end)
+{
+	struct set_range_args *args = args0;
+	uintptr_t phys;
+	int error;
+	struct page_table *pt;
+
+	kprintf("set_range_l2(%p,%p,%lx,%lx,%lx)\n",
+			args0, ptep, base, start, end);
+
+	if (*ptep == PTE_NULL) {
+		if ((start <= base) && ((base + PTL2_SIZE) <= end)
+				&& ((args->diff & (PTL2_SIZE - 1)) == 0)) {
+			phys = args->phys + (base - start);
+			*ptep = phys | attr_to_l2attr(args->attr|PTATTR_LARGEPAGE);
+			kprintf("set_range_l2(%p,%p,%lx,%lx,%lx):"
+					"large page\n",
+					args0, ptep, base, start, end);
+			error = 0;
+			goto out;
+		}
+
+		pt = __alloc_new_pt(IHK_MC_AP_NOWAIT);
+		if (pt == NULL) {
+			kprintf("set_range_l2(%p,%p,%lx,%lx,%lx):"
+					"__alloc_new_pt failed\n",
+					args0, ptep, base, start, end);
+			error = -ENOMEM;
+			goto out;
+		}
+
+		*ptep = virt_to_phys(pt) | PFL2_PDIR_ATTR;
+	}
+	else if (*ptep & PFL2_SIZE) {
+		kprintf("set_range_l2(%p,%p,%lx,%lx,%lx):"
+				"page exists\n",
+				args0, ptep, base, start, end);
+		error = -EBUSY;
+		goto out;
+	}
+	else {
+		pt = phys_to_virt(*ptep & PT_PHYSMASK);
+	}
+
+	error = walk_pte_l1(pt, base, start, end, &set_range_l1, args0);
+	if (error) {
+		kprintf("set_range_l2(%p,%p,%lx,%lx,%lx):"
+				"walk_pte_l1 failed. %d\n",
+				args0, ptep, base, start, end, error);
+		goto out;
+	}
+
+	error = 0;
+out:
+	kprintf("set_range_l2(%p,%p,%lx,%lx,%lx): %d\n",
+			args0, ptep, base, start, end, error);
+	return error;
+}
+
+int set_range_l3(void *args0, pte_t *ptep, uint64_t base, uint64_t start,
+		uint64_t end)
+{
+	struct page_table *pt;
+	int error;
+
+	kprintf("set_range_l3(%p,%p,%lx,%lx,%lx)\n",
+			args0, ptep, base, start, end);
+
+	if (*ptep == PTE_NULL) {
+		pt = __alloc_new_pt(IHK_MC_AP_NOWAIT);
+		if (pt == NULL) {
+			kprintf("set_range_l3(%p,%p,%lx,%lx,%lx):"
+					"__alloc_new_pt failed\n",
+					args0, ptep, base, start, end);
+			return -ENOMEM;
+		}
+		*ptep = virt_to_phys(pt) | PFL3_PDIR_ATTR;
+	}
+	else {
+		pt = phys_to_virt(*ptep & PT_PHYSMASK);
+	}
+
+	error = walk_pte_l2(pt, base, start, end, &set_range_l2, args0);
+	if (error) {
+		kprintf("set_range_l3(%p,%p,%lx,%lx,%lx):"
+				"walk_pte_l2 failed. %d\n",
+				args0, ptep, base, start, end, error);
+		goto out;
+	}
+
+	error = 0;
+out:
+	kprintf("set_range_l3(%p,%p,%lx,%lx,%lx): %d\n",
+			args0, ptep, base, start, end, error);
+	return error;
+}
+
+int set_range_l4(void *args0, pte_t *ptep, uint64_t base, uint64_t start,
+		uint64_t end)
+{
+	struct page_table *pt;
+	int error;
+
+	kprintf("set_range_l4(%p,%p,%lx,%lx,%lx)\n",
+			args0, ptep, base, start, end);
+
+	if (*ptep == PTE_NULL) {
+		pt = __alloc_new_pt(IHK_MC_AP_NOWAIT);
+		if (pt == NULL) {
+			kprintf("set_range_l4(%p,%p,%lx,%lx,%lx):"
+					"__alloc_new_pt failed\n",
+					args0, ptep, base, start, end);
+			return -ENOMEM;
+		}
+		*ptep = virt_to_phys(pt) | PFL4_PDIR_ATTR;
+	}
+	else {
+		pt = phys_to_virt(*ptep & PT_PHYSMASK);
+	}
+
+	error =  walk_pte_l3(pt, base, start, end, &set_range_l3, args0);
+	if (error) {
+		kprintf("set_range_l4(%p,%p,%lx,%lx,%lx):"
+				"walk_pte_l3 failed. %d\n",
+				args0, ptep, base, start, end, error);
+		goto out;
+	}
+
+	error = 0;
+out:
+	kprintf("set_range_l4(%p,%p,%lx,%lx,%lx): %d\n",
+			args0, ptep, base, start, end, error);
+	return error;
+}
+
+int ihk_mc_pt_set_range(page_table_t pt, void *start, void *end,
+		uintptr_t phys, enum ihk_mc_pt_attribute attr)
+{
+	int error;
+	struct set_range_args args;
+
+	kprintf("ihk_mc_pt_set_range(%p,%p,%p,%lx,%x)\n",
+			pt, start, end, phys, attr);
+
+	args.phys = phys;
+	args.attr = attr;
+	args.diff = (uintptr_t)start ^ phys;
+
+	error = walk_pte_l4(pt, 0, (uintptr_t)start, (uintptr_t)end,
+			&set_range_l4, &args);
+	if (error) {
+		kprintf("ihk_mc_pt_set_range(%p,%p,%p,%lx,%x):"
+				"walk_pte_l4 failed. %d\n",
+				pt, start, end, phys, attr, error);
+		goto out;
+	}
+
+	error = 0;
+out:
+	kprintf("ihk_mc_pt_set_range(%p,%p,%p,%lx,%x): %d\n",
+			pt, start, end, phys, attr, error);
+	return error;
+}
+
+int ihk_mc_pt_set_pte(page_table_t pt, pte_t *ptep, uintptr_t phys, size_t pgsize, enum ihk_mc_pt_attribute attr)
+{
+	kprintf("ihk_mc_pt_set_pte(%p,%p,%lx,%lx,%x):\n",
+			pt, ptep, phys, pgsize, attr);
+	switch (pgsize) {
+	case PTL1_SIZE:
+		*ptep = phys | attr_to_l1attr(attr);
+		break;
+	case PTL2_SIZE:
+		*ptep = phys | attr_to_l2attr(attr | PTATTR_LARGEPAGE);
+		break;
+	default:
+		kprintf("ihk_mc_pt_set_pte(%p,%p,%lx,%lx,%x):\n",
+				pt, ptep, phys, pgsize, attr);
+		panic("ihk_mc_pt_set_pte");
+		break;
+	}
+	return 0;
 }
 
 void load_page_table(struct page_table *pt)

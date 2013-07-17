@@ -289,6 +289,11 @@ void init_syscall(void)
 
 void init_cpu(void)
 {
+	asm volatile (
+			"mov	%%cr0,%%rax;"
+			"or	$0x10000,%%rax;"
+			"mov	%%rax,%%cr0"
+			::: "%rax");
 	init_fpu();
 	init_lapic();
 	init_syscall();
@@ -494,7 +499,7 @@ int ihk_mc_unregister_interrupt_handler(int vector,
 
 extern unsigned long __page_fault_handler_address;
 
-void ihk_mc_set_page_fault_handler(void (*h)(unsigned long, void *))
+void ihk_mc_set_page_fault_handler(void (*h)(unsigned long, unsigned long, void *))
 {
 	__page_fault_handler_address = (unsigned long)h;
 }

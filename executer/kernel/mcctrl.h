@@ -80,6 +80,7 @@ struct mcctrl_usrdata {
 	unsigned long	last_thread_exec;
 	wait_queue_head_t	wq_prepare;
 	unsigned long	rpgtable;	/* per process, not per OS */
+	void **channelowners;
 };
 
 int mcctrl_ikc_send(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp);

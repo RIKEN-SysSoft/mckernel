@@ -7,6 +7,7 @@
 #include <ihk/atomic.h>
 #include <list.h>
 #include <signal.h>
+#include <memobj.h>
 
 #define VR_NONE            0x0
 #define VR_STACK           0x1
@@ -14,13 +15,21 @@
 #define VR_IO_NOCACHE      0x100
 #define VR_REMOTE          0x200
 #define VR_DEMAND_PAGING   0x1000
+#define	VR_PRIVATE         0x2000
 #define	VR_PROT_NONE       0x00000000
 #define	VR_PROT_READ       0x00010000
 #define	VR_PROT_WRITE      0x00020000
 #define	VR_PROT_EXEC       0x00040000
 #define	VR_PROT_MASK       0x00070000
+#define	VR_MAXPROT_NONE    0x00000000
+#define	VR_MAXPROT_READ    0x00100000
+#define	VR_MAXPROT_WRITE   0x00200000
+#define	VR_MAXPROT_EXEC    0x00400000
+#define	VR_MAXPROT_MASK    0x00700000
 
 #define	PROT_TO_VR_FLAG(prot)	(((unsigned long)(prot) << 16) & VR_PROT_MASK)
+#define	VRFLAG_PROT_TO_MAXPROT(vrflag)	(((vrflag) & VR_PROT_MASK) << 4)
+#define	VRFLAG_MAXPROT_TO_PROT(vrflag)	(((vrflag) & VR_MAXPROT_MASK) >> 4)
 
 #define PS_RUNNING           0x1
 #define PS_INTERRUPTIBLE     0x2
@@ -41,6 +50,8 @@ struct vm_range {
 	struct list_head list;
 	unsigned long start, end;
 	unsigned long flag;
+	struct memobj *memobj;
+	off_t objoff;
 };
 
 struct vm_regions {
@@ -106,7 +117,6 @@ struct process_vm {
     // is protected by its own lock (see ihk/manycore/generic/page_alloc.c)
 };
 
-
 struct process *create_process(unsigned long user_pc);
 struct process *clone_process(struct process *org,
                               unsigned long pc, unsigned long sp);
@@ -114,10 +124,12 @@ void destroy_process(struct process *proc);
 void hold_process(struct process *proc);
 void free_process(struct process *proc);
 void free_process_memory(struct process *proc);
+void flush_process_memory(struct process *proc);
 
 int add_process_memory_range(struct process *process,
                              unsigned long start, unsigned long end,
-                             unsigned long phys, unsigned long flag);
+                             unsigned long phys, unsigned long flag,
+			     struct memobj *memobj, off_t objoff);
 int remove_process_memory_range(
 		struct process *process, unsigned long start, unsigned long end);
 int split_process_memory_range(struct process *process,
@@ -133,6 +145,7 @@ struct vm_range *next_process_memory_range(
 		struct process_vm *vm, struct vm_range *range);
 struct vm_range *previous_process_memory_range(
 		struct process_vm *vm, struct vm_range *range);
+int page_fault_process_memory_range(struct process *proc, struct vm_range *range, uintptr_t fault_addr, uint64_t reason);
 int remove_process_region(struct process *proc,
                           unsigned long start, unsigned long end);
 struct program_load_desc;

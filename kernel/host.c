@@ -92,12 +92,13 @@ static int process_msg_prepare_process(unsigned long rphys)
 		range_npages = (e - s) >> PAGE_SHIFT;
 		flags = VR_NONE;
 		flags |= PROT_TO_VR_FLAG(pn->sections[i].prot);
+		flags |= VRFLAG_PROT_TO_MAXPROT(flags);
 
 			if((up_v = ihk_mc_alloc_pages(range_npages, IHK_MC_AP_NOWAIT)) == NULL){
 				goto err;
 			}
 			up = virt_to_phys(up_v);
-			if(add_process_memory_range(proc, s, e, up, flags) != 0){
+			if(add_process_memory_range(proc, s, e, up, flags, NULL, 0) != 0){
 				ihk_mc_free_pages(up_v, range_npages);
 				goto err;
 			}
@@ -168,29 +169,32 @@ static int process_msg_prepare_process(unsigned long rphys)
 
 	/* Map system call stuffs */
 	flags = VR_RESERVED | VR_PROT_READ | VR_PROT_WRITE;
+	flags |= VRFLAG_PROT_TO_MAXPROT(flags);
 	addr = proc->vm->region.map_start - PAGE_SIZE * SCD_RESERVED_COUNT;
 	e = addr + PAGE_SIZE * DOORBELL_PAGE_COUNT;
 	if(add_process_memory_range(proc, addr, e,
 	                         cpu_local_var(scp).doorbell_pa,
-	                         VR_REMOTE | flags) != 0){
+	                         VR_REMOTE | flags, NULL, 0) != 0){
 		goto err;
 	}
 	addr = e;
 	e = addr + PAGE_SIZE * REQUEST_PAGE_COUNT;
 	if(add_process_memory_range(proc, addr, e,
 	                         cpu_local_var(scp).request_pa,
-	                         VR_REMOTE | flags) != 0){
+	                         VR_REMOTE | flags, NULL, 0) != 0){
 		goto err;
 	}
 	addr = e;
 	e = addr + PAGE_SIZE * RESPONSE_PAGE_COUNT;
 	if(add_process_memory_range(proc, addr, e,
 	                         cpu_local_var(scp).response_pa,
-	                         flags) != 0){
+	                         flags, NULL, 0) != 0){
 		goto err;
 	}
 
 	/* Map, copy and update args and envs */
+	flags = VR_PROT_READ | VR_PROT_WRITE;
+	flags |= VRFLAG_PROT_TO_MAXPROT(flags);
 	addr = e;
 	e = addr + PAGE_SIZE * ARGENV_PAGE_COUNT;
 	
@@ -200,7 +204,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	args_envs_p = virt_to_phys(args_envs);
 	
 	if(add_process_memory_range(proc, addr, e, args_envs_p,
-				VR_PROT_READ|VR_PROT_WRITE) != 0){
+				flags, NULL, 0) != 0){
 		ihk_mc_free_pages(args_envs, ARGENV_PAGE_COUNT);
 		goto err;
 	}
