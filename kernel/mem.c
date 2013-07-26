@@ -1,4 +1,3 @@
-#include <ihk/types.h>
 #include <kmsg.h>
 #include <kmalloc.h>
 #include <string.h>
@@ -69,12 +68,12 @@ void free_pages(void *va, int npages)
 	struct list_head *pendings = &cpu_local_var(pending_free_pages);
 	struct page *page;
 
-	page = phys_to_page(virt_to_phys(va));
-	if (page->mode != PM_NONE) {
-		panic("free_pages:not PM_NONE");
-	}
 	if (pendings->next != NULL) {
-		page->mode = PM_PENDING_FREE;
+		page = phys_to_page(virt_to_phys(va));
+		if (page->flags & PAGE_IN_LIST) {
+			panic("free_pages");
+		}
+		page->flags |= PAGE_IN_LIST;
 		page->count = npages;
 		list_add_tail(&page->list, pendings);
 		return;
@@ -104,10 +103,10 @@ void finish_free_pages_pending(void)
 	}
 
 	list_for_each_entry_safe(page, next, pendings, list) {
-		if (page->mode != PM_PENDING_FREE) {
-			panic("free_pending_pages:not PM_PENDING_FREE");
+		if (!(page->flags & PAGE_IN_LIST)) {
+			panic("free_pending_pages");
 		}
-		page->mode = PM_NONE;
+		page->flags &= ~PAGE_IN_LIST;
 		list_del(&page->list);
 		ihk_pagealloc_free(pa_allocator, page_to_phys(page), page->count);
 	}
@@ -144,39 +143,72 @@ static struct ihk_mc_interrupt_handler query_free_mem_handler = {
 
 void sigsegv(void *);
 
-static void unhandled_page_fault(struct process *proc, unsigned long address, void *regs)
+static void page_fault_handler(unsigned long address, void *regs, 
+                               unsigned long rbp)
 {
-	struct process_vm *vm = proc->vm;
-	struct vm_range *range;
-	char found;
+	struct vm_range *range, *next;
+	char found = 0;
 	int irqflags;
 	unsigned long error = ((struct x86_regs *)regs)->error;
 
 	irqflags = kprintf_lock();
-	__kprintf("[%d] Page fault for 0x%lX\n",
-			ihk_mc_get_processor_id(), address);
-	__kprintf("%s for %s access in %s mode (reserved bit %s set), "
-			"it %s an instruction fetch\n",
-			(error & PF_PROT ? "protection fault" : "no page found"),
-			(error & PF_WRITE ? "write" : "read"),
-			(error & PF_USER ? "user" : "kernel"),
-			(error & PF_RSVD ? "was" : "wasn't"),
-			(error & PF_INSTR ? "was" : "wasn't"));
+	__kprintf("[%d] Page fault for 0x%lX, (rbp: 0x%lX)\n", 
+	          ihk_mc_get_processor_id(), address, rbp); 
 
-	found = 0;
-	list_for_each_entry(range, &vm->vm_range_list, list) {
+	__kprintf("%s for %s access in %s mode (reserved bit %s set), it %s an instruction fetch\n", 
+	          (error & PF_PROT ? "protection fault" : "no page found"),
+			  (error & PF_WRITE ? "write" : "read"),
+			  (error & PF_USER ? "user" : "kernel"),
+			  (error & PF_RSVD ? "was" : "wasn't"),
+			  (error & PF_INSTR ? "was" : "wasn't"));
+
+	list_for_each_entry_safe(range, next, 
+	                         &cpu_local_var(current)->vm->vm_range_list, 
+							 list) {
+		
 		if (range->start <= address && range->end > address) {
+			__kprintf("address is in range, flag: 0x%X! \n", range->flag);
+			if(range->flag & VR_DEMAND_PAGING){
+			  //allocate page for demand paging
+			  __kprintf("demand paging\n");
+			  void* pa = allocate_pages(1, IHK_MC_AP_CRITICAL);
+			  if(!pa){
+			    kprintf_unlock(irqflags);
+			    panic("allocate_pages failed");
+			  }
+			  __kprintf("physical memory area obtained %lx\n", virt_to_phys(pa));
+
+              {
+                  enum ihk_mc_pt_attribute flag = 0;
+                  struct process *process = cpu_local_var(current);
+                  unsigned long flags = ihk_mc_spinlock_lock(&process->vm->page_table_lock);
+                  const enum ihk_mc_pt_attribute attr = flag | PTATTR_WRITABLE | PTATTR_USER | PTATTR_FOR_USER;
+
+                  int rc = ihk_mc_pt_set_page(process->vm->page_table, (void*)(address & PAGE_MASK), virt_to_phys(pa), attr);
+                  if(rc != 0) {
+                      ihk_mc_spinlock_unlock(&process->vm->page_table_lock, flags);
+                      __kprintf("ihk_mc_pt_set_page failed,rc=%d,%p,%lx,%08x\n", rc, (void*)(address & PAGE_MASK), virt_to_phys(pa), attr);
+                      ihk_mc_pt_print_pte(process->vm->page_table, (void*)address);
+                      goto fn_fail;
+                  }
+                  ihk_mc_spinlock_unlock(&process->vm->page_table_lock, flags);
+                  __kprintf("update_process_page_table success\n");
+              }
+			  kprintf_unlock(irqflags);
+              memset(pa, 0, PAGE_SIZE);
+			  return;
+			}
 			found = 1;
-			__kprintf("address is in range, flag: 0x%X! \n",
-					range->flag);
-			ihk_mc_pt_print_pte(vm->page_table, (void*)address);
+			ihk_mc_pt_print_pte(cpu_local_var(current)->vm->page_table, 
+			                    (void*)address);
 			break;
 		}
 	}
-	if (!found) {
+	
+	if (!found)
 		__kprintf("address is out of range! \n");
-	}
 
+ fn_fail:
 	kprintf_unlock(irqflags);
 
 	/* TODO */
@@ -184,72 +216,19 @@ static void unhandled_page_fault(struct process *proc, unsigned long address, vo
 
 #ifdef DEBUG_PRINT_MEM
 	{
-		uint64_t *sp = (void *)REGS_GET_STACK_POINTER(regs);
-
-		kprintf("*rsp:%lx,*rsp+8:%lx,*rsp+16:%lx,*rsp+24:%lx,\n",
-				sp[0], sp[1], sp[2], sp[3]);
+	  const struct x86_regs *_regs = regs;
+	  dkprintf("*rsp:%lx,*rsp+8:%lx,*rsp+16:%lx,*rsp+24:%lx,\n",
+		  *((unsigned long*)_regs->rsp),
+		  *((unsigned long*)_regs->rsp+8),
+		  *((unsigned long*)_regs->rsp+16),
+		  *((unsigned long*)_regs->rsp+24)
+		  );
 	}
 #endif
 
-#if 0
-	panic("mem fault");
-#endif
 	sigsegv(regs);
-	return;
-}
 
-static void page_fault_handler(unsigned long address, unsigned long reason, void *regs)
-{
-	struct process *proc = cpu_local_var(current);
-	struct process_vm *vm = proc->vm;
-	struct vm_range *range;
-	unsigned long vrflag;
-	unsigned long denied;
-	int error;
-
-	kprintf("[%d]page_fault_handler(%lx,%lx,%p)\n",
-			ihk_mc_get_processor_id(), address, reason, regs);
-
-	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
-	range = lookup_process_memory_range(vm, address, address+1);
-	if (range == NULL) {
-		kprintf("page_fault_handler(%lx,%lx,%p):out of range\n",
-				address, reason, regs);
-		unhandled_page_fault(proc, address, regs);
-		goto out;
-	}
-
-	if (reason & PF_WRITE) {
-		vrflag = VR_PROT_WRITE;
-	}
-	else if (reason & PF_INSTR) {
-		vrflag = VR_PROT_EXEC;
-	}
-	else {
-		vrflag = VR_PROT_READ;
-	}
-
-	denied = vrflag & ~range->flag;
-	if (denied) {
-		kprintf("page_fault_handler(%lx,%lx,%p):access denied. %lx\n",
-				address, reason, regs, denied);
-		unhandled_page_fault(proc, address, regs);
-		goto out;
-	}
-
-	error = page_fault_process_memory_range(proc, range, address, reason);
-	if (error) {
-		kprintf("page_fault_handler(%lx,%lx,%p):fault range failed. %d\n",
-				address, reason, regs, error);
-		unhandled_page_fault(proc, address, regs);
-		goto out;
-	}
-
-out:
-	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
-	kprintf("[%d]page_fault_handler(%lx,%lx,%p):\n",
-			ihk_mc_get_processor_id(), address, reason, regs);
-	return;
+	//panic("mem fault");
 }
 
 static void page_allocator_init(void)
@@ -310,7 +289,6 @@ static void page_allocator_init(void)
 		&query_free_mem_handler);
 }
 
-#if 1
 struct page *phys_to_page(uintptr_t phys)
 {
 	int64_t ix;
@@ -338,26 +316,6 @@ uintptr_t page_to_phys(struct page *page)
 	return phys;
 }
 
-int page_unmap(struct page *page)
-{
-	kprintf("page_unmap(%p %x %d)\n", page, page->mode, page->count);
-	if (page->mode != PM_MAPPED) {
-		panic("page_unmap:not PM_MAPPED");
-	}
-
-	if (--page->count > 0) {
-		/* other mapping exist */
-		kprintf("page_unmap(%p %x %d): 0\n", page, page->mode, page->count);
-		return 0;
-	}
-
-	/* no mapping exist */
-	list_del(&page->list);
-	page->mode = PM_NONE;
-	kprintf("page_unmap(%p %x %d): 1\n", page, page->mode, page->count);
-	return 1;
-}
-
 static void page_init(void)
 {
 	size_t npages;
@@ -372,7 +330,6 @@ static void page_init(void)
 	memset(pa_pages, 0, allocsize);
 	return;
 }
-#endif
 
 void register_kmalloc(void)
 {

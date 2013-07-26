@@ -8,7 +8,6 @@
 #include <linux/anon_inodes.h>
 #include <linux/mman.h>
 #include <linux/file.h>
-#include <linux/semaphore.h>
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/io.h>
@@ -38,7 +37,7 @@ static void print_dma_lastreq(void)
 #endif
 
 #if 1	/* x86 depend, host OS side */
-unsigned long translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva, unsigned fflags)
+unsigned long translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva)
 {
 	unsigned long rpa;
 	int offsh;
@@ -59,13 +58,6 @@ unsigned long translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long
 
 #define	PTE_P	0x001
 		if (!(pt[ix] & PTE_P)) {
-			ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
-			ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
-			return -EFAULT;
-		}
-
-#define	PTE_RW	0x002
-		if ((fflags & FAULT_FLAG_WRITE) && !(pt[ix] & PTE_RW)) {
 			ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
 			ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
 			return -EFAULT;
@@ -92,64 +84,6 @@ out:
 }
 #endif
 
-static int pager_call(ihk_os_t os, struct syscall_request *req);
-static int remote_page_fault(struct mcctrl_usrdata *usrdata, struct vm_fault *vmf)
-{
-	int cpu;
-	struct mcctrl_channel *channel;
-	volatile struct syscall_request *req;
-	volatile struct syscall_response *resp;
-
-	printk("remote_page_fault(%p,%p %x)\n", usrdata, vmf->virtual_address, vmf->flags);
-	/* get peer cpu */
-	for (cpu = 0; cpu < usrdata->num_channels; ++cpu) {
-		if (usrdata->channelowners[cpu] == current) {
-			break;
-		}
-	}
-	if (cpu >= usrdata->num_channels) {
-		printk("cpu not found\n");
-		return -ENOENT;
-	}
-
-	channel = &usrdata->channels[cpu];
-	req = channel->param.request_va;
-	resp = channel->param.response_va;
-
-	/* request page fault */
-	resp->ret = -EFAULT;
-	resp->fault_address = (unsigned long)vmf->virtual_address;
-	resp->fault_reason = (vmf->flags & FAULT_FLAG_WRITE)? 1: 0;
-
-	req->valid = 0;
-	resp->status = 3;
-
-retry:
-	/* wait for response */
-	while (req->valid == 0) {
-		schedule();
-	}
-	req->valid = 0;
-
-	/* check result */
-	if (req->number != __NR_mmap) {
-		printk("remote_page_fault:invalid response. %lx %lx\n",
-				req->number, req->args[0]);
-		return -EIO;
-	}
-	else if (req->args[0] != 0x0101) {
-		resp->ret = pager_call(usrdata->os, (void *)req);
-		resp->status = 1;
-		goto retry;
-	}
-	else if (req->args[1] != 0) {
-		printk("remote_page_fault:response %d\n", (int)req->args[1]);
-		return (int)req->args[1];
-	}
-	printk("remote_page_fault(%p,%p %x): 0\n", usrdata, vmf->virtual_address, vmf->flags);
-	return 0;
-}
-
 static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
 	struct mcctrl_usrdata *	usrdata	= vma->vm_file->private_data;
@@ -157,26 +91,12 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	unsigned long		rpa;
 	unsigned long		phys;
 	int			error;
-	int			try;
 
 	dprintk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
 			vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
 
-	for (try = 1; ; ++try) {
-		rpa = translate_rva_to_rpa(usrdata->os, usrdata->rpgtable,
-				(unsigned long)vmf->virtual_address,
-				vmf->flags);
-#define	NTRIES 2
-		if (((long)rpa >= 0) || (try >= NTRIES)) {
-			break;
-		}
-
-		error = remote_page_fault(usrdata, vmf);
-		if (error) {
-			printk("forward_page_fault failed. %d\n", error);
-			break;
-		}
-	}
+	rpa = translate_rva_to_rpa(usrdata->os, usrdata->rpgtable,
+			(unsigned long)vmf->virtual_address);
 	if ((long)rpa < 0) {
 		printk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
 				vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
@@ -210,7 +130,6 @@ static struct file_operations rus_fops = {
 	.mmap = &rus_mmap,
 };
 
-struct vm_area_struct *rus_vma = NULL;
 int reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp, unsigned long *endp)
 {
 	struct file *file;
@@ -233,7 +152,6 @@ int reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp, un
 	}
 	start = do_mmap_pgoff(file, 0, end,
 			PROT_READ|PROT_WRITE, MAP_FIXED|MAP_SHARED, 0);
-	vma = find_vma(current->mm, 0);
 	up_write(&current->mm->mmap_sem);
 	fput(file);
 	if (IS_ERR_VALUE(start)) {
@@ -241,7 +159,6 @@ int reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp, un
 		return start;
 	}
 
-	rus_vma = vma;
 	*startp = start;
 	*endp = end;
 	return 0;
@@ -333,6 +250,12 @@ static void clear_wait(unsigned char *p, int size)
 	p[size] = 0;
 }
 
+static void __return_syscall(struct mcctrl_channel *c, int ret)
+{
+	c->param.response_va->ret = ret;
+	c->param.response_va->status = 1;
+}
+
 static unsigned long translate_remote_va(struct mcctrl_channel *c,
                                          unsigned long rva)
 {
@@ -359,7 +282,6 @@ static unsigned long translate_remote_va(struct mcctrl_channel *c,
 
 //extern struct mcctrl_channel *channels;
 
-#if 0
 int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c,
                            struct syscall_request *sc)
 {
@@ -475,328 +397,4 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c,
 		}
 	}
 }
-#endif
 #endif /* !DO_USER_MODE */
-
-static void __return_syscall(struct mcctrl_channel *c, long ret)
-{
-	c->param.response_va->ret = ret;
-	c->param.response_va->status = 1;
-}
-
-struct pager {
-	struct list_head	list;
-	struct inode *		inode;
-	void *			handle;
-};
-
-/*
- * for linux v2.6.35 or prior
- */
-#ifndef DEFINE_SEMAPHORE
-#define DEFINE_SEMAPHORE(...)	DECLARE_MUTEX(__VA_ARGS__)
-#endif
-
-static DEFINE_SEMAPHORE(pager_sem);
-static struct list_head pager_list = LIST_HEAD_INIT(pager_list);
-
-struct pager_create_result {
-	uintptr_t	handle;
-	int		maxprot;
-};
-
-static int pager_req_create(ihk_os_t os, int fd, int flags, int prot, uintptr_t result_pa)
-{
-	const int ignore_flags = MAP_FIXED | MAP_DENYWRITE;
-	const int ok_flags = MAP_PRIVATE;
-	ihk_device_t dev = ihk_os_to_dev(os);
-	int error;
-	void *handle = NULL;
-	struct pager_create_result *resp;
-	int maxprot = -1;
-	struct file *file = NULL;
-	struct inode *inode;
-	struct pager *pager;
-	uintptr_t phys;
-
-	printk("pager_req_create(%d,%x,%x,%lx)\n", fd, flags, prot, (long)result_pa);
-
-	if (flags & ~(ignore_flags | ok_flags)) {
-		printk("pager_req_create(%d,%x,%x,%lx):not supported flags %x\n",
-				fd, flags, prot, (long)result_pa,
-				flags & ~(ignore_flags | ok_flags));
-		error = -EINVAL;
-		goto out;
-	}
-
-	file = fget(fd);
-	if (file == NULL) {
-		error = -EBADF;
-		printk("pager_req_create(%d,%x,%x,%lx):file not found. %d\n", fd, flags, prot, (long)result_pa, error);
-		goto out;
-	}
-
-	inode = file->f_path.dentry->d_inode;
-	if (inode == NULL) {
-		error = -EBADF;
-		printk("pager_req_create(%d,%x,%x,%lx):inode not found. %d\n", fd, flags, prot, (long)result_pa, error);
-		goto out;
-	}
-
-	if (!(file->f_mode & (FMODE_READ | FMODE_WRITE))) {
-		maxprot = PROT_NONE;
-	}
-	else {
-		maxprot = 0;
-		if (file->f_mode & FMODE_READ) {
-			maxprot |= PROT_READ;
-			maxprot |= PROT_EXEC;
-		}
-		if (file->f_mode & FMODE_WRITE) {
-			maxprot |= PROT_WRITE;
-		}
-	}
-
-	error = down_interruptible(&pager_sem);
-	if (error) {
-		error = -EINTR;
-		printk("pager_req_create(%d,%x,%x,%lx):signaled. %d\n", fd, flags, prot, (long)result_pa, error);
-		goto out;
-	}
-
-	list_for_each_entry(pager, &pager_list, list) {
-		if (pager->inode == inode) {
-			handle = pager->handle;
-			error = -EALREADY;
-			up(&pager_sem);
-			goto found;
-		}
-	}
-
-	pager = kzalloc(sizeof(*pager), GFP_KERNEL);
-	if (pager == NULL) {
-		error = -ENOMEM;
-		printk("pager_req_create(%d,%x,%x,%lx):kzalloc failed. %d\n", fd, flags, prot, (long)result_pa, error);
-		up(&pager_sem);
-		goto out;
-	}
-
-	down_write(&current->mm->mmap_sem);
-	handle = (void *)do_mmap_pgoff(file, 0, PAGE_SIZE, prot, (flags & ok_flags), 0);
-	up_write(&current->mm->mmap_sem);
-	if (IS_ERR(handle)) {
-		error = PTR_ERR(handle);
-		printk("pager_req_create(%d,%x,%x,%lx):mmap failed. %d\n",
-				fd, flags, prot, (long)result_pa, error);
-		kfree(pager);
-		up(&pager_sem);
-		goto out;
-	}
-
-	pager->inode = inode;
-	pager->handle = handle;
-	list_add(&pager->list, &pager_list);
-	up(&pager_sem);
-
-	error = 0;
-found:
-	phys = ihk_device_map_memory(dev, result_pa, sizeof(*resp));
-	resp = ihk_device_map_virtual(dev, phys, sizeof(*resp), NULL, 0);
-	resp->handle = (uintptr_t)handle;
-	resp->maxprot = maxprot;
-	ihk_device_unmap_virtual(dev, resp, sizeof(*resp));
-	ihk_device_unmap_memory(dev, phys, sizeof(*resp));
-
-out:
-	if (file != NULL) {
-		fput(file);
-	}
-	printk("pager_req_create(%d,%x,%x,%lx): %d %p %x\n",
-			fd, flags, prot, (long)result_pa, error, handle, maxprot);
-	return error;
-}
-
-static int pager_req_release(ihk_os_t os, uintptr_t handle)
-{
-	struct vm_area_struct *vma;
-	int error;
-	struct pager *pager;
-	struct pager *next;
-
-	printk("pager_req_relase(%p,%lx)\n", os, handle);
-
-	error = down_interruptible(&pager_sem);
-	if (error) {
-		printk("pager_req_relase(%p,%lx):signaled. %d\n", os, handle, error);
-		down_write(&current->mm->mmap_sem);
-		goto out;
-	}
-
-	list_for_each_entry_safe(pager, next, &pager_list, list) {
-		if ((uintptr_t)pager->handle == handle) {
-			list_del(&pager->list);
-			up(&pager_sem);
-			kfree(pager);
-			goto found;
-		}
-	}
-	up(&pager_sem);
-
-	error = -EBADF;
-	printk("pager_req_relase(%p,%lx):pager not found. %d\n", os, handle, error);
-	down_write(&current->mm->mmap_sem);
-	goto out;
-
-found:
-	down_write(&current->mm->mmap_sem);
-	vma = find_vma(current->mm, handle);
-	if (vma == 0) {
-		error = -EBADF;
-		printk("pager_req_relase(%p,%lx):vma not found. %d\n", os, handle, error);
-		goto out;
-	}
-	if ((vma->vm_start != handle) || (vma->vm_end != (handle + PAGE_SIZE))) {
-		error = -EBADF;
-		printk("pager_req_relase(%p,%lx):invalid vma. %d\n", os, handle, error);
-		goto out;
-	}
-	if (vma->vm_file == NULL) {
-		error = -EBADF;
-		printk("pager_req_relase(%p,%lx):file not found. %d\n", os, handle, error);
-		goto out;
-	}
-
-	error = do_munmap(current->mm, handle, PAGE_SIZE);
-	if (error) {
-		printk("pager_req_relase(%p,%lx):do_munmap failed. %d\n", os, handle, error);
-		goto out;
-	}
-
-	error = 0;
-out:
-	up_write(&current->mm->mmap_sem);
-	printk("pager_req_relase(%p,%lx): %d\n", os, handle, error);
-	return error;
-}
-
-static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size, uintptr_t rpa)
-{
-	ihk_device_t dev = ihk_os_to_dev(os);
-	struct vm_area_struct *vma;
-	int error;
-	struct file *file;
-	uintptr_t phys;
-	void *buf;
-	mm_segment_t fs;
-	loff_t pos;
-	ssize_t ss;
-
-	printk("pager_req_read(%lx,%lx,%lx,%lx)\n", handle, off, size, rpa);
-
-	down_read(&current->mm->mmap_sem);
-	vma = find_vma(current->mm, handle);
-	if (vma == 0) {
-		error = -EBADF;
-		printk("pager_req_read(%lx,%lx,%lx,%lx):vma not found. %d\n", handle, off, size, rpa, error);
-		up_read(&current->mm->mmap_sem);
-		goto out;
-	}
-	if ((vma->vm_start != handle) || (vma->vm_end != (handle + PAGE_SIZE))) {
-		error = -EBADF;
-		printk("pager_req_read(%lx,%lx,%lx,%lx):invalid vma. %d\n", handle, off, size, rpa, error);
-		up_read(&current->mm->mmap_sem);
-		goto out;
-	}
-	file = vma->vm_file;
-	if (file == NULL) {
-		error = -EBADF;
-		printk("pager_req_read(%lx,%lx,%lx,%lx):file not found. %d\n", handle, off, size, rpa, error);
-		up_read(&current->mm->mmap_sem);
-		goto out;
-	}
-	get_file(file);
-	up_read(&current->mm->mmap_sem);
-
-	phys = ihk_device_map_memory(dev, rpa, size);
-	buf = ihk_device_map_virtual(dev, phys, size, NULL, 0);
-	fs = get_fs();
-	set_fs(KERNEL_DS);
-	pos = off;
-	ss = vfs_read(file, buf, size, &pos);
-	if ((ss >= 0) && (ss != size)) {
-		if (clear_user(buf+ss, size-ss) == 0) {
-			ss = size;
-		}
-		else {
-			ss = -EIO;
-		}
-	}
-	set_fs(fs);
-	ihk_device_unmap_virtual(dev, buf, size);
-	ihk_device_unmap_memory(dev, phys, size);
-	fput(file);
-	if (ss < 0) {
-		error = ss;
-		printk("pager_req_read(%lx,%lx,%lx,%lx):pread failed. %d\n", handle, off, size, rpa, error);
-		goto out;
-	}
-	error = 0;
-out:
-	printk("pager_req_read(%lx,%lx,%lx,%lx): %d\n", handle, off, size, rpa, error);
-	return error;
-}
-
-static int pager_call(ihk_os_t os, struct syscall_request *req)
-{
-	int error;
-
-	printk("pager_call(%p %#lx)\n", req, req->args[0]);
-	switch (req->args[0]) {
-#define	PAGER_REQ_CREATE	0x0001
-#define	PAGER_REQ_RELEASE	0x0002
-#define	PAGER_REQ_READ		0x0003
-	case PAGER_REQ_CREATE:
-		error = pager_req_create(os, req->args[1], req->args[2], req->args[3], req->args[4]);
-		break;
-
-	case PAGER_REQ_RELEASE:
-		error = pager_req_release(os, req->args[1]);
-		break;
-
-	case PAGER_REQ_READ:
-		error = pager_req_read(os, req->args[1], req->args[2], req->args[3], req->args[4]);
-		break;
-
-	default:
-		error = -ENOSYS;
-		break;
-	}
-
-	printk("pager_call(%p %#lx): %d\n", req, req->args[0], error);
-	return error;
-}
-
-int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall_request *sc)
-{
-	int error;
-	long ret;
-
-	printk("__do_in_kernel_syscall(%p,%p,%p %ld)\n", os, c, sc, sc->number);
-	switch (sc->number) {
-	case __NR_mmap:
-		ret = pager_call(os, sc);
-		break;
-
-	default:
-		error = -ENOSYS;
-		goto out;
-		break;
-	}
-
-	__return_syscall(c, ret);
-
-	error = 0;
-out:
-	printk("__do_in_kernel_syscall(%p,%p,%p %ld): %d\n", os, c, sc, sc->number, error);
-	return error;
-}

@@ -1,7 +1,6 @@
 #ifndef __HEADER_GENERIC_IHK_MM_H
 #define __HEADER_GENERIC_IHK_MM_H
 
-#include <ihk/types.h>
 #include <memory.h>
 
 enum ihk_mc_gma_type {
@@ -59,7 +58,7 @@ struct ihk_mc_pa_ops {
 };
 
 void ihk_mc_set_page_allocator(struct ihk_mc_pa_ops *);
-void ihk_mc_set_page_fault_handler(void (*h)(unsigned long, unsigned long, void *));
+void ihk_mc_set_page_fault_handler(void (*h)(unsigned long, void *, unsigned long));
 
 unsigned long ihk_mc_map_memory(void *os, unsigned long phys, 
                                 unsigned long size);
@@ -101,13 +100,6 @@ int ihk_mc_pt_change_attr_range(page_table_t pt, void *start, void *end,
 		enum ihk_mc_pt_attribute setattr);
 int ihk_mc_pt_alloc_range(page_table_t pt, void *start, void *end,
 		enum ihk_mc_pt_attribute attr);
-int ihk_mc_pt_lookup_pte(page_table_t pt, void *virt, pte_t **ptepp, void **pgbasep, size_t *pgsizep);
-int ihk_mc_pt_choose_pagesize(page_table_t pt, void *start, void *end,
-		void *fault_addr, size_t maxpgsize, void **pgbasep,
-		size_t *pgsizep, int *p2alignp);
-int ihk_mc_pt_set_range(page_table_t pt, void *start, void *end,
-		uintptr_t phys, enum ihk_mc_pt_attribute attr);
-int ihk_mc_pt_set_pte(page_table_t pt, pte_t *ptep, uintptr_t phys, size_t pgsize, enum ihk_mc_pt_attribute attr);
 int ihk_mc_pt_prepare_map(page_table_t pt, void *virt, unsigned long size,
                           enum ihk_mc_pt_prepare_flag);
 

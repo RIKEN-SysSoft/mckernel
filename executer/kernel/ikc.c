@@ -235,11 +235,6 @@ int prepare_ikc_channels(ihk_os_t os)
 		printk("Error: cannot allocate channels.\n");
 		return -ENOMEM;
 	}
-	usrdata->channelowners = kzalloc(sizeof(void *) * usrdata->num_channels, GFP_KERNEL);
-	if (usrdata->channelowners == NULL) {
-		printk("Error: cannot allocate channelowners.\n");
-		return -ENOMEM;
-	}
 
 	usrdata->os = os;
 	init_waitqueue_head(&usrdata->wq_prepare);

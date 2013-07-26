@@ -128,8 +128,6 @@ struct x86_regs {
 	unsigned long error, rip, cs, rflags, rsp, ss;
 };
 
-#define	REGS_GET_STACK_POINTER(regs)	(((struct x86_regs *)regs)->rsp)
-
 /*
  * Page fault error code bits:
  *

@@ -217,9 +217,9 @@ int mcexec_syscall(struct mcctrl_channel *c, unsigned long arg)
 	return 0;
 }
 
+#ifndef DO_USER_MODE
 int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c,
                            struct syscall_request *sc);
-#ifndef DO_USER_MODE
 // static int remaining_job, base_cpu, job_pos;
 #endif
 
@@ -243,24 +243,10 @@ int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 if(swd.cpu >= usrdata->num_channels)return -EINVAL;
 
 	c = usrdata->channels + swd.cpu;
-	if ((usrdata->channelowners[swd.cpu] != NULL)
-			&& (usrdata->channelowners[swd.cpu] != current)) {
-		printk("mcexec_wait_syscall:double wait %p %p\n",
-				usrdata->channelowners[swd.cpu],
-				current);
-		return -EBUSY;
-	}
 
 #ifdef DO_USER_MODE
-retry:
-	if (wait_event_interruptible(c->wq_syscall, c->req)) {
-		return -EINTR;
-	}
+	wait_event_interruptible(c->wq_syscall, c->req);
 	c->req = 0;
-	if (!c->param.request_va->valid) {
-printk("mcexec_wait_syscall:stray wakeup\n");
-		goto retry;
-	}
 #else
 	while (1) {
 		c = usrdata->channels + swd.cpu;
@@ -299,28 +285,22 @@ printk("mcexec_wait_syscall:stray wakeup\n");
 			}
 			if (c->param.request_va &&
 			    c->param.request_va->valid) {
-#endif
 				c->param.request_va->valid = 0; /* ack */
 				dprintk("SC #%lx, %lx\n",
 				        c->param.request_va->number,
 				        c->param.request_va->args[0]);
-				usrdata->channelowners[swd.cpu] = current;
-				if (__do_in_kernel_syscall(os, c, c->param.request_va)) {
-					if (copy_to_user(&req->sr, c->param.request_va,
-							 sizeof(struct syscall_request))) {
-						usrdata->channelowners[swd.cpu] = NULL;
-						return -EFAULT;
-					}
-					return 0;
-				}
-				usrdata->channelowners[swd.cpu] = NULL;
-#ifdef	DO_USER_MODE
-				goto retry;
+		if (__do_in_kernel_syscall(os, c, c->param.request_va)) {
 #endif
+			if (copy_to_user(&req->sr, c->param.request_va,
+			                 sizeof(struct syscall_request))) {
+				return -EFAULT;
+			}
 #ifndef DO_USER_MODE
-				if (usrdata->mcctrl_dma_abort) {
-					return -2;
-				}
+			return 0;
+		}
+		if (usrdata->mcctrl_dma_abort) {
+			return -2;
+		}
 			}
 		}
 		usrdata->remaining_job = 0;
@@ -458,13 +438,6 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 	if (copy_from_user(&ret, arg, sizeof(struct syscall_ret_desc))) {
 		return -EFAULT;
 	}
-	if (usrdata->channelowners[ret.cpu] != current) {
-		printk("mcexec_ret_syscall:owner mismatch: %p %p\n",
-				usrdata->channelowners[ret.cpu],
-				current);
-		return -EBUSY;
-	}
-	usrdata->channelowners[ret.cpu] = NULL;
 	mc = usrdata->channels + ret.cpu;
 	if (!mc) {
 		return -EINVAL;
@@ -515,15 +488,6 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 	} else {
 		mc->param.response_va->status = 1;
 	}
-#if 1
-	{
-		extern struct vm_area_struct *rus_vma;
-
-		if (zap_vma_ptes(rus_vma, rus_vma->vm_start, rus_vma->vm_end - rus_vma->vm_start)) {
-			printk("zap_vma_ptes failed\n");
-		}
-	}
-#endif
 
 	return 0;
 }
