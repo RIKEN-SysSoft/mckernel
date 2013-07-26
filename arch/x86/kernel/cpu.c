@@ -373,12 +373,15 @@ void handle_interrupt(int vector, struct x86_regs *regs)
 	}
 }
 
+void sigill(void *);
+
 void gpe_handler(struct x86_regs *regs)
 {
 	kprintf("General protection fault (err: %lx, %lx:%lx)\n",
 	        regs->error, regs->cs, regs->rip);
 	arch_show_interrupt_context(regs);
-	panic("GPF");
+	sigill(regs);
+	// panic("GPF");
 }
 
 void x86_issue_ipi(unsigned int apicid, unsigned int low)

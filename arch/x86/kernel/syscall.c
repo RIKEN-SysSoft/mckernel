@@ -6,6 +6,10 @@
 #include <ihk/debug.h>
 #include <cls.h>
 #include <syscall.h>
+#include <process.h>
+#include <string.h>
+
+void terminate(int, int, ihk_mc_user_context_t *);
 
 //#define DEBUG_PRINT_SC
 
@@ -66,4 +70,81 @@ int obtain_clone_cpuid() {
     }
     ihk_mc_spinlock_unlock_noirq(&cpuid_head_lock);
     return cpuid;
+}
+
+SYSCALL_DECLARE(rt_sigreturn)
+{
+        struct process *proc = cpu_local_var(current);
+        char *kspbottom;
+        asm volatile ("movq %%gs:132,%0" : "=r" (kspbottom));
+        memcpy(kspbottom - 120, proc->sigstack, 120);
+
+        return proc->sigrc;
+}
+
+void
+check_signal(unsigned long rc, unsigned long *regs)
+{
+	struct process *proc = cpu_local_var(current);
+	struct k_sigaction *k;
+	int	sig = proc->signal;
+
+	proc->signal = 0;
+	if(sig){
+		if(regs == NULL){ /* call from syscall */
+			asm volatile ("movq %%gs:132,%0" : "=r" (regs));
+			regs -= 16;
+		}
+		else{
+			rc = regs[9]; /* rax */
+		}
+
+		k = proc->sighandler->action + sig - 1;
+
+		if(k->sa.sa_handler == (void *)1){
+			return;
+		}
+		else if(k->sa.sa_handler){
+			unsigned long *usp; /* user stack */
+			long	w;
+
+			usp = (void *)regs[14];
+			memcpy(proc->sigstack, regs, 128);
+			proc->sigrc = rc;
+			usp--;
+			*usp = (unsigned long)k->sa.sa_restorer;
+			w = 56 + 3;
+			asm volatile ("pushq %0" :: "r" (w));
+			asm volatile ("pushq %0" :: "r" (usp));
+			w = 1 << 9;
+			asm volatile ("pushq %0" :: "r" (w));
+			w = 48 + 3;
+			asm volatile ("pushq %0" :: "r" (w));
+			asm volatile ("pushq %0" :: "r" (k->sa.sa_handler));
+			asm volatile ("iretq");
+		}
+		else{
+			if(sig == SIGCHLD || sig == SIGURG)
+				return;
+			terminate(0, sig, (ihk_mc_user_context_t *)regs[14]);
+		}
+	}
+}
+
+void
+sigsegv(unsigned long *regs)
+{
+	struct process *proc = cpu_local_var(current);
+
+	proc->signal = SIGSEGV;
+	check_signal(0, regs);
+}
+
+void
+sigill(unsigned long *regs)
+{
+	struct process *proc = cpu_local_var(current);
+
+	proc->signal = SIGILL;
+	check_signal(0, regs);
 }

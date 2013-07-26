@@ -141,7 +141,7 @@ static struct ihk_mc_interrupt_handler query_free_mem_handler = {
 	.priv = NULL,
 };
 
-
+void sigsegv(void *);
 
 static void page_fault_handler(unsigned long address, void *regs, 
                                unsigned long rbp)
@@ -226,7 +226,9 @@ static void page_fault_handler(unsigned long address, void *regs,
 	}
 #endif
 
-	panic("");
+	sigsegv(regs);
+
+	//panic("mem fault");
 }
 
 static void page_allocator_init(void)
