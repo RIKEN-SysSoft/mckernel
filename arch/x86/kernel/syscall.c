@@ -115,6 +115,7 @@ check_signal(unsigned long rc, unsigned long *regs)
 			usp--;
 			*usp = (unsigned long)k->sa.sa_restorer;
 
+			regs[4] = (unsigned long)sig;
 			regs[11] = (unsigned long)k->sa.sa_handler;
 			regs[14] = (unsigned long)usp;
 		}
