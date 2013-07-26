@@ -610,6 +610,14 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 
 			__dprintf("__NR_exit/__NR_exit_group: %ld (cpu_id: %d)\n",
 					w.sr.args[0], cpu);
+			if(w.sr.number == __NR_exit_group){
+				int	sig = w.sr.args[0] & 0x7f;
+				int	term = (w.sr.args[0] & 0xff00) >> 8;
+				if(sig)
+					fprintf(stderr, "Terminate by signal %d\n", sig);
+				else if(term)
+					fprintf(stderr, "Exit status: %d\n", term);
+			}
 
 #ifdef USE_SYSCALL_MOD_CALL
 #ifdef CMD_DCFA

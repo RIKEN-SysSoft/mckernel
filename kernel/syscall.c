@@ -154,6 +154,7 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 	struct process *proc = cpu_local_var(current);
 
 	request.number = __NR_exit_group;
+	request.args[0] = ((rc & 0x00ff) << 8) | (sig & 0x7f);
 
 #ifdef DCFA_KMOD
 	do_mod_exit(rc);
