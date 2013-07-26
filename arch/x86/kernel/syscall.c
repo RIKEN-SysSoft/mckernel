@@ -75,9 +75,11 @@ int obtain_clone_cpuid() {
 SYSCALL_DECLARE(rt_sigreturn)
 {
         struct process *proc = cpu_local_var(current);
-        char *kspbottom;
-        asm volatile ("movq %%gs:132,%0" : "=r" (kspbottom));
-        memcpy(kspbottom - 120, proc->sigstack, 120);
+	unsigned long *regs;
+
+	asm volatile ("movq %%gs:132,%0" : "=r" (regs));
+	regs -= 16;
+        memcpy(regs, proc->sigstack, 128);
 
         return proc->sigrc;
 }
@@ -106,22 +108,15 @@ check_signal(unsigned long rc, unsigned long *regs)
 		}
 		else if(k->sa.sa_handler){
 			unsigned long *usp; /* user stack */
-			long	w;
 
 			usp = (void *)regs[14];
 			memcpy(proc->sigstack, regs, 128);
 			proc->sigrc = rc;
 			usp--;
 			*usp = (unsigned long)k->sa.sa_restorer;
-			w = 56 + 3;
-			asm volatile ("pushq %0" :: "r" (w));
-			asm volatile ("pushq %0" :: "r" (usp));
-			w = 1 << 9;
-			asm volatile ("pushq %0" :: "r" (w));
-			w = 48 + 3;
-			asm volatile ("pushq %0" :: "r" (w));
-			asm volatile ("pushq %0" :: "r" (k->sa.sa_handler));
-			asm volatile ("iretq");
+
+			regs[11] = (unsigned long)k->sa.sa_handler;
+			regs[14] = (unsigned long)usp;
 		}
 		else{
 			if(sig == SIGCHLD || sig == SIGURG)
