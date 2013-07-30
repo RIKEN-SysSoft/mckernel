@@ -549,6 +549,7 @@ SYSCALL_DECLARE(mprotect)
 	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
 	begin_free_pages_pending();
 
+#if 0
 	/* check contiguous map */
 	first = NULL;
 	for (addr = start; addr < end; addr = range->end) {
@@ -575,6 +576,9 @@ SYSCALL_DECLARE(mprotect)
 			goto out;
 		}
 	}
+#else
+	first = lookup_process_memory_range(proc->vm, start, start+PAGE_SIZE);
+#endif
 
 	/* do the mprotect */
 	changed = NULL;
@@ -585,11 +589,20 @@ SYSCALL_DECLARE(mprotect)
 		else {
 			range = next_process_memory_range(proc->vm, changed);
 		}
-		if (range == NULL) {
-			ekprintf("sys_mprotect(%lx,%lx,%x):next(%lx) failed.\n",
-					start, len0, prot,
-					(changed)? changed->end: -1);
-			panic("sys_mprotect:next\n");
+
+		if ((range == NULL) || (addr < range->start)) {
+			/* not contiguous */
+			ekprintf("sys_mprotect(%lx,%lx,%x):not contiguous\n",
+					start, len0, prot);
+			error = -ENOMEM;
+			goto out;
+		}
+
+		if (range->flag & (VR_REMOTE | VR_RESERVED | VR_IO_NOCACHE)) {
+			ekprintf("sys_mprotect(%lx,%lx,%x):cannot change\n",
+					start, len0, prot);
+			error = -ENOMEM;
+			goto out;
 		}
 
 		if (range->start < addr) {
