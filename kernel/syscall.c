@@ -216,6 +216,7 @@ static int do_munmap(void *addr, size_t len)
 	error = remove_process_memory_range(cpu_local_var(current),
 			(intptr_t)addr, (intptr_t)addr+len);
 	// XXX: TLB flush
+	flush_tlb();
 	finish_free_pages_pending();
 	return error;
 }
@@ -617,6 +618,7 @@ SYSCALL_DECLARE(mprotect)
 	error = 0;
 out:
 	// XXX: TLB flush
+	flush_tlb();
 	finish_free_pages_pending();
 	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
 	dkprintf("[%d]sys_mprotect(%lx,%lx,%x): %d\n",
