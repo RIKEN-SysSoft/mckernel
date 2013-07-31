@@ -761,3 +761,46 @@ void print_free_list(void)
 	}
 	kprintf("\n");
 }
+
+void print_active_entry(void)
+{
+	struct cpu_local_var *v = get_this_cpu_local_var();
+	struct malloc_header *h = &v->free_list;
+	struct malloc_header *p;
+	struct malloc_header *q;
+
+	kprintf("active entries: \n");
+	for (p = h->next; (p != h) && (p->next != h) ; p = p->next) {
+		if (p->size || p->next->size) {
+			q = p + p->size + 1;
+			if (q != p->next) {
+				kprintf("  %p - %p: %d\n", q, p->next, (p->next - q));
+			}
+		}
+	}
+	kprintf("\n");
+
+	return;
+}
+
+void show_free_list(void)
+{
+	struct cpu_local_var *v = get_this_cpu_local_var();
+	struct malloc_header *h = &v->free_list;
+	struct malloc_header *p;
+	int count;
+	int free;
+
+	print_active_entry();
+	count = 0;
+	free = 0;
+	for (p = h->next; p != h; p = p->next) {
+		++count;
+		free += p->size;
+	}
+
+	kprintf("[%d]free_list: %d entry %lx bytes\n",
+			ihk_mc_get_processor_id(), count, sizeof(*p)*free);
+
+	return;
+}

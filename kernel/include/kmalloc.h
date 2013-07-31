@@ -17,5 +17,6 @@
 
 void *kmalloc(int size, enum ihk_mc_ap_flag flag);
 void kfree(void *ptr);
+void show_free_list(void);
 
 #endif
