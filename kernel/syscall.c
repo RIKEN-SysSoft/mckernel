@@ -428,6 +428,12 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 	request.number = __NR_exit_group;
 	request.args[0] = ((rc & 0x00ff) << 8) | (sig & 0xff);
 
+	if (1) {
+		extern void query_free_mem_interrupt_handler(void *);
+
+		query_free_mem_interrupt_handler(NULL);
+	}
+
 #ifdef DCFA_KMOD
 	do_mod_exit(rc);
 #endif
@@ -509,12 +515,6 @@ SYSCALL_DECLARE(exit_group)
 	terminate((int)ihk_mc_syscall_arg0(ctx), 0, ctx);
 #if 0
 	struct process *proc = cpu_local_var(current);
-
-	if (1) {
-		extern void query_free_mem_interrupt_handler(void *);
-
-		query_free_mem_interrupt_handler(NULL);
-	}
 
 #ifdef DCFA_KMOD
 	do_mod_exit((int)ihk_mc_syscall_arg0(ctx));
