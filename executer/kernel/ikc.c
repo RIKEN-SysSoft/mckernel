@@ -213,6 +213,7 @@ int prepare_ikc_channels(ihk_os_t os)
 {
 	struct ihk_cpu_info *info;
 	struct mcctrl_usrdata   *usrdata;
+	int error;
 
 	usrdata = kzalloc(sizeof(struct mcctrl_usrdata), GFP_KERNEL);
 	usrdata->mcctrl_doorbell_va = (void *)__get_free_page(GFP_KERNEL);
@@ -241,6 +242,12 @@ int prepare_ikc_channels(ihk_os_t os)
 	ihk_host_os_set_usrdata(os, usrdata);
 	memcpy(&usrdata->listen_param, &listen_param, sizeof listen_param);
 	ihk_ikc_listen_port(os, &usrdata->listen_param);
+
+	error = init_peer_channel_registry(usrdata);
+	if (error) {
+		return error;
+	}
+
 	return 0;
 }
 

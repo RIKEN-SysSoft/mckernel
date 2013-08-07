@@ -218,8 +218,6 @@ int mcexec_syscall(struct mcctrl_channel *c, unsigned long arg)
 }
 
 #ifndef DO_USER_MODE
-int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c,
-                           struct syscall_request *sc);
 // static int remaining_job, base_cpu, job_pos;
 #endif
 
@@ -242,11 +240,27 @@ int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 
 if(swd.cpu >= usrdata->num_channels)return -EINVAL;
 
+	c = get_peer_channel(usrdata, current);
+	if (c) {
+		printk("mcexec_wait_syscall:already registered. task %p ch %p\n",
+				current, c);
+		return -EBUSY;
+	}
 	c = usrdata->channels + swd.cpu;
 
 #ifdef DO_USER_MODE
-	wait_event_interruptible(c->wq_syscall, c->req);
+retry:
+	if (wait_event_interruptible(c->wq_syscall, c->req)) {
+		return -EINTR;
+	}
 	c->req = 0;
+#if 1
+	mb();
+	if (!c->param.request_va->valid) {
+printk("mcexec_wait_syscall:stray wakeup\n");
+		goto retry;
+	}
+#endif
 #else
 	while (1) {
 		c = usrdata->channels + swd.cpu;
@@ -285,22 +299,28 @@ if(swd.cpu >= usrdata->num_channels)return -EINVAL;
 			}
 			if (c->param.request_va &&
 			    c->param.request_va->valid) {
+#endif
 				c->param.request_va->valid = 0; /* ack */
 				dprintk("SC #%lx, %lx\n",
 				        c->param.request_va->number,
 				        c->param.request_va->args[0]);
-		if (__do_in_kernel_syscall(os, c, c->param.request_va)) {
+				register_peer_channel(usrdata, current, c);
+				if (__do_in_kernel_syscall(os, c, c->param.request_va)) {
+					if (copy_to_user(&req->sr, c->param.request_va,
+							 sizeof(struct syscall_request))) {
+						deregister_peer_channel(usrdata, current, c);
+						return -EFAULT;
+					}
+					return 0;
+				}
+				deregister_peer_channel(usrdata, current, c);
+#ifdef	DO_USER_MODE
+				goto retry;
 #endif
-			if (copy_to_user(&req->sr, c->param.request_va,
-			                 sizeof(struct syscall_request))) {
-				return -EFAULT;
-			}
 #ifndef DO_USER_MODE
-			return 0;
-		}
-		if (usrdata->mcctrl_dma_abort) {
-			return -2;
-		}
+				if (usrdata->mcctrl_dma_abort) {
+					return -2;
+				}
 			}
 		}
 		usrdata->remaining_job = 0;
@@ -442,6 +462,7 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 	if (!mc) {
 		return -EINVAL;
 	}
+	deregister_peer_channel(usrdata, current, mc);
 
 	mc->param.response_va->ret = ret.ret;
 
@@ -463,6 +484,7 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 			return -EFAULT;
 		}
 
+		mb();
 		mc->param.response_va->status = 1;
 
 #ifdef CONFIG_MIC
@@ -486,6 +508,7 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 		ihk_dma_request(channel, &request);
 */
 	} else {
+		mb();
 		mc->param.response_va->status = 1;
 	}
 

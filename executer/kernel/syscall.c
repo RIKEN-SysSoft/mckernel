@@ -36,8 +36,79 @@ static void print_dma_lastreq(void)
 }
 #endif
 
+int init_peer_channel_registry(struct mcctrl_usrdata *ud)
+{
+	ud->keys = kzalloc(sizeof(void *) * ud->num_channels, GFP_KERNEL);
+	if (!ud->keys) {
+		printk("Error: cannot allocate usrdata.keys[].\n");
+		return -ENOMEM;
+	}
+
+	return 0;
+}
+
+int register_peer_channel(struct mcctrl_usrdata *ud, void *key, struct mcctrl_channel *ch)
+{
+	int cpu;
+
+	cpu = ch - ud->channels;
+	if ((cpu < 0) || (ud->num_channels <= cpu)) {
+		printk("register_peer_channel(%p,%p,%p):"
+				"not a syscall channel. cpu=%d\n",
+				ud, key, ch, cpu);
+		return -EINVAL;
+	}
+
+	if (ud->keys[cpu] != NULL) {
+		printk("register_peer_channel(%p,%p,%p):"
+				"already registered. cpu=%d\n",
+				ud, key, ch, cpu);
+		return -EBUSY;
+	}
+
+	ud->keys[cpu] = key;
+	return 0;
+}
+
+int deregister_peer_channel(struct mcctrl_usrdata *ud, void *key, struct mcctrl_channel *ch)
+{
+	int cpu;
+
+	cpu = ch - ud->channels;
+	if ((cpu < 0) || (ud->num_channels <= cpu)) {
+		printk("deregister_peer_channel(%p,%p,%p):"
+				"not a syscall channel. cpu=%d\n",
+				ud, key, ch, cpu);
+		return -EINVAL;
+	}
+
+	if (ud->keys[cpu] && (ud->keys[cpu] != key)) {
+		printk("register_peer_channel(%p,%p,%p):"
+				"not registered. cpu=%d\n",
+				ud, key, ch, cpu);
+		return -EBUSY;
+	}
+
+	ud->keys[cpu] = NULL;
+	return 0;
+}
+
+struct mcctrl_channel *get_peer_channel(struct mcctrl_usrdata *ud, void *key)
+{
+	int cpu;
+
+	for (cpu = 0; cpu < ud->num_channels; ++cpu) {
+		if (ud->keys[cpu] == key) {
+			return &ud->channels[cpu];
+		}
+	}
+
+	return NULL;
+}
+
 #if 1	/* x86 depend, host OS side */
-unsigned long translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva)
+int translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva,
+		unsigned long *rpap, unsigned long *pgsizep)
 {
 	unsigned long rpa;
 	int offsh;
@@ -45,9 +116,12 @@ unsigned long translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long
 	int ix;
 	unsigned long phys;
 	unsigned long *pt;
+	int error;
+	unsigned long pgsize;
 
 	rpa = rpt;
 	offsh = 39;
+	pgsize = 0;
 	/* i = 0: PML4, 1: PDPT, 2: PDT, 3: PT */
 	for (i = 0; i < 4; ++i) {
 		ix = (rva >> offsh) & 0x1FF;
@@ -60,16 +134,19 @@ unsigned long translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long
 		if (!(pt[ix] & PTE_P)) {
 			ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
 			ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
-			return -EFAULT;
+			error = -EFAULT;
+			goto out;
 		}
 
 #define	PTE_PS	0x080
 		if (pt[ix] & PTE_PS) {
-			rpa = pt[ix] & ((1UL << 52) - 1) & ~((1UL << offsh) - 1);
-			rpa |= rva & ((1UL << offsh) - 1);
+			pgsize = 1UL << offsh;
+			rpa = pt[ix] & ((1UL << 52) - 1) & ~(pgsize - 1);
+			rpa |= rva & (pgsize - 1);
 			ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
 			ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
-			goto out;
+			error = 0;
+			goto found;
 		}
 
 		rpa = pt[ix] & ((1UL << 52) - 1) & ~((1UL << 12) - 1);
@@ -77,12 +154,87 @@ unsigned long translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long
 		ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
 		ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
 	}
-	rpa |= rva & ((1UL << 12) - 1);
+	pgsize = 1UL << 12;
+	rpa |= rva & (pgsize - 1);
+
+found:
+	error = 0;
+	*rpap = rpa;
+	*pgsizep = pgsize;
+
 out:
-	dprintk("translate_rva_to_rpa: rva %#lx --> rpa %#lx\n", rva, rpa);
-	return rpa;
+	dprintk("translate_rva_to_rpa: %d rva %#lx --> rpa %#lx (%lx)\n",
+			error, rva, rpa, pgsize);
+	return error;
 }
 #endif
+
+static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t reason)
+{
+	struct mcctrl_channel *channel;
+	struct syscall_request *req;
+	struct syscall_response *resp;
+	int error;
+
+	dprintk("remote_page_fault(%p,%p,%llx)\n", usrdata, fault_addr, reason);
+
+	channel = get_peer_channel(usrdata, current);
+	if (!channel) {
+		error = -ENOENT;
+		printk("remote_page_fault(%p,%p,%llx):channel not found. %d\n",
+				usrdata, fault_addr, reason, error);
+		goto out;
+	}
+
+	req = channel->param.request_va;
+	resp = channel->param.response_va;
+
+	/* request page fault */
+	resp->ret = -EFAULT;
+	resp->fault_address = (unsigned long)fault_addr;
+	resp->fault_reason = reason;
+
+#define	STATUS_PAGE_FAULT	3
+	req->valid = 0;
+	mb();
+	resp->status = STATUS_PAGE_FAULT;
+
+	/* wait for response */
+	error = wait_event_interruptible(channel->wq_syscall, channel->req);
+	if (error) {
+		printk("remote_page_fault:interrupted. %d\n", error);
+		goto out;
+	}
+	channel->req = 0;
+	if (!req->valid) {
+		printk("remote_page_fault:not valid\n");
+	}
+	req->valid = 0;
+
+	/* check result */
+	if (req->number != __NR_mmap) {
+		printk("remote_page_fault:unexpected response. %lx %lx\n",
+				req->number, req->args[0]);
+		error = -EIO;
+		goto out;
+	}
+	else if (req->args[0] != 0x0101) {
+		printk("remote_page_fault:unexpected response. %lx %lx\n",
+				req->number, req->args[0]);
+		error = -EIO;
+		goto out;
+	}
+	else if (req->args[1] != 0) {
+		error = req->args[1];
+		printk("remote_page_fault:response %d\n", error);
+		goto out;
+	}
+
+	error = 0;
+out:
+	dprintk("remote_page_fault(%p,%p,%llx): %d\n", usrdata, fault_addr, reason, error);
+	return error;
+}
 
 static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
@@ -91,21 +243,48 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	unsigned long		rpa;
 	unsigned long		phys;
 	int			error;
+	int			try;
+	uint64_t		reason;
+	unsigned long		pgsize;
+	unsigned long		rva;
+	unsigned long		pfn;
 
 	dprintk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
 			vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
 
-	rpa = translate_rva_to_rpa(usrdata->os, usrdata->rpgtable,
-			(unsigned long)vmf->virtual_address);
-	if ((long)rpa < 0) {
+	for (try = 1; ; ++try) {
+		error = translate_rva_to_rpa(usrdata->os, usrdata->rpgtable,
+				(unsigned long)vmf->virtual_address,
+				&rpa, &pgsize);
+#define	NTRIES 2
+		if (!error || (try >= NTRIES)) {
+			break;
+		}
+
+		reason = 0;
+		if (vmf->flags & FAULT_FLAG_WRITE) {
+#define	PF_WRITE	0x02
+			reason |= PF_WRITE;
+		}
+		error = remote_page_fault(usrdata, vmf->virtual_address, reason);
+		if (error) {
+			printk("forward_page_fault failed. %d\n", error);
+			break;
+		}
+	}
+	if (error) {
 		printk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
 				vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
 		return VM_FAULT_SIGBUS;
 	}
 
-	phys = ihk_device_map_memory(dev, rpa, PAGE_SIZE);
-	error = vm_insert_pfn(vma, (unsigned long)vmf->virtual_address, phys>>PAGE_SHIFT);
-	ihk_device_unmap_memory(dev, phys, PAGE_SIZE);
+	rva = (unsigned long)vmf->virtual_address & ~(pgsize - 1);
+	rpa = rpa & ~(pgsize - 1);
+
+	phys = ihk_device_map_memory(dev, rpa, pgsize);
+	pfn = phys >> PAGE_SHIFT;
+	error = remap_pfn_range(vma, rva, pfn, pgsize, PAGE_SHARED);
+	ihk_device_unmap_memory(dev, phys, pgsize);
 	if (error) {
 		printk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
 				vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
@@ -250,12 +429,6 @@ static void clear_wait(unsigned char *p, int size)
 	p[size] = 0;
 }
 
-static void __return_syscall(struct mcctrl_channel *c, int ret)
-{
-	c->param.response_va->ret = ret;
-	c->param.response_va->status = 1;
-}
-
 static unsigned long translate_remote_va(struct mcctrl_channel *c,
                                          unsigned long rva)
 {
@@ -282,6 +455,7 @@ static unsigned long translate_remote_va(struct mcctrl_channel *c,
 
 //extern struct mcctrl_channel *channels;
 
+#if 0
 int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c,
                            struct syscall_request *sc)
 {
@@ -397,4 +571,33 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c,
 		}
 	}
 }
+#endif
 #endif /* !DO_USER_MODE */
+
+static void __return_syscall(struct mcctrl_channel *c, int ret)
+{
+	c->param.response_va->ret = ret;
+	mb();
+	c->param.response_va->status = 1;
+}
+
+int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall_request *sc)
+{
+	int error;
+	long ret;
+
+	dprintk("__do_in_kernel_syscall(%p,%p,%p %ld)\n", os, c, sc, sc->number);
+	switch (sc->number) {
+	default:
+		error = -ENOSYS;
+		goto out;
+		break;
+	}
+
+	__return_syscall(c, ret);
+
+	error = 0;
+out:
+	dprintk("__do_in_kernel_syscall(%p,%p,%p %ld): %d\n", os, c, sc, sc->number, error);
+	return error;
+}

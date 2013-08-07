@@ -80,6 +80,7 @@ struct mcctrl_usrdata {
 	unsigned long	last_thread_exec;
 	wait_queue_head_t	wq_prepare;
 	unsigned long	rpgtable;	/* per process, not per OS */
+	void **keys;
 };
 
 int mcctrl_ikc_send(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp);
@@ -87,5 +88,12 @@ int mcctrl_ikc_send_msg(ihk_os_t os, int cpu, int msg, int ref, unsigned long ar
 int mcctrl_ikc_is_valid_thread(ihk_os_t os, int cpu);
 int reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp,
 		unsigned long *endp);
+
+/* syscall.c */
+int init_peer_channel_registry(struct mcctrl_usrdata *ud);
+int register_peer_channel(struct mcctrl_usrdata *ud, void *key, struct mcctrl_channel *ch);
+int deregister_peer_channel(struct mcctrl_usrdata *ud, void *key, struct mcctrl_channel *ch);
+struct mcctrl_channel *get_peer_channel(struct mcctrl_usrdata *ud, void *key);
+int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall_request *sc);
 
 #endif

@@ -92,6 +92,7 @@ static void send_syscall(struct syscall_request *req)
 
 	memcpy_async_wait(&fin);
 
+	barrier();
 	cpu_local_var(scp).request_va->valid = 1;
 	*(unsigned int *)cpu_local_var(scp).doorbell_va = w;
 
@@ -108,6 +109,8 @@ static void send_syscall(struct syscall_request *req)
 int do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx)
 {
 	struct syscall_response *res = cpu_local_var(scp).response_va;
+	struct syscall_request req2;
+	int error;
 
 	dkprintf("SC(%d)[%3d] sending syscall\n",
 	        ihk_mc_get_processor_id(),
@@ -119,10 +122,29 @@ int do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx)
 	        ihk_mc_get_processor_id(),
 	        req->number);
 	
-	while (!res->status) {
-		cpu_pause();
-	}
+#define	STATUS_IN_PROGRESS	0
+#define	STATUS_COMPLETED	1
+#define	STATUS_PAGE_FAULT	3
+	while (res->status != STATUS_COMPLETED) {
+		while (res->status == STATUS_IN_PROGRESS) {
+			cpu_pause();
+		}
 	
+		if (res->status == STATUS_PAGE_FAULT) {
+			error = page_fault_process(cpu_local_var(current),
+					(void *)res->fault_address,
+					res->fault_reason);
+
+			/* send result */
+			req2.number = __NR_mmap;
+#define PAGER_RESUME_PAGE_FAULT	0x0101
+			req2.args[0] = PAGER_RESUME_PAGE_FAULT;
+			req2.args[1] = error;
+
+			send_syscall(&req2);
+		}
+	}
+
 	dkprintf("SC(%d)[%3d] got host reply: %d \n", 
 	        ihk_mc_get_processor_id(),
 	        req->number, res->ret);
@@ -399,7 +421,7 @@ SYSCALL_DECLARE(mmap)
 			vrflags |= VR_IO_NOCACHE;
 		}
 #endif
-		else if ((len == 64*1024*1024) || (len == 128*1024*1024)) {
+		else {
 			vrflags |= VR_DEMAND_PAGING;
 		}
 	}
