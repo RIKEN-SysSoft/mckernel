@@ -494,7 +494,7 @@ int ihk_mc_unregister_interrupt_handler(int vector,
 
 extern unsigned long __page_fault_handler_address;
 
-void ihk_mc_set_page_fault_handler(void (*h)(unsigned long, void *))
+void ihk_mc_set_page_fault_handler(void (*h)(void *, uint64_t, void *))
 {
 	__page_fault_handler_address = (unsigned long)h;
 }

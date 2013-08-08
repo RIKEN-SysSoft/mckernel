@@ -57,6 +57,8 @@
 #define PFL3_PRESENT    ((pte_t)0x01)
 #define PFL3_WRITABLE   ((pte_t)0x02)
 #define PFL3_USER       ((pte_t)0x04)
+#define PFL3_PWT        ((pte_t)0x08)
+#define PFL3_PCD        ((pte_t)0x10)
 #define PFL3_ACCESSED   ((pte_t)0x20)
 #define PFL3_DIRTY      ((pte_t)0x40)
 #define PFL3_SIZE       ((pte_t)0x80)   /* Used in 1G page */

@@ -66,8 +66,8 @@ page_fault:
 		cld
 		PUSH_ALL_REGS
 		movq	%cr2, %rdi
-		movq	%rsp, %rsi
-		movq    %rbp, %rdx
+		movq	80(%rsp),%rsi
+		movq	%rsp,%rdx
 		movq	__page_fault_handler_address(%rip), %rax
 		andq	%rax, %rax
 		jz		1f
