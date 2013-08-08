@@ -477,19 +477,34 @@ out:
 
 SYSCALL_DECLARE(munmap)
 {
-	void * const addr = (void *)ihk_mc_syscall_arg0(ctx);
-	const size_t len = ihk_mc_syscall_arg1(ctx);
+	const uintptr_t addr = ihk_mc_syscall_arg0(ctx);
+	const size_t len0 = ihk_mc_syscall_arg1(ctx);
+	struct process *proc = cpu_local_var(current);
+	struct vm_regions *region = &proc->vm->region;
+	size_t len;
 	int error;
 
 	dkprintf("[%d]sys_munmap(%lx,%lx)\n",
-			ihk_mc_get_processor_id(), addr, len);
+			ihk_mc_get_processor_id(), addr, len0);
 
-	ihk_mc_spinlock_lock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
-	error = do_munmap(addr, len);
-	ihk_mc_spinlock_unlock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
+	len = (len0 + PAGE_SIZE - 1) & PAGE_MASK;
+	if ((addr & (PAGE_SIZE - 1))
+			|| (addr < region->user_start)
+			|| (region->user_end <= addr)
+			|| (len == 0)
+			|| (len > (region->user_end - region->user_start))
+			|| ((region->user_end - len) < addr)) {
+		error = -EINVAL;
+		goto out;
+	}
 
+	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
+	error = do_munmap((void *)addr, len);
+	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+
+out:
 	dkprintf("[%d]sys_munmap(%lx,%lx): %d\n",
-			ihk_mc_get_processor_id(), addr, len, error);
+			ihk_mc_get_processor_id(), addr, len0, error);
 	return error;
 }
 
