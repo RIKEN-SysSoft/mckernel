@@ -7,6 +7,7 @@
 #include <ihk/atomic.h>
 #include <list.h>
 #include <signal.h>
+#include <memobj.h>
 
 #define VR_NONE            0x0
 #define VR_STACK           0x1
@@ -14,13 +15,21 @@
 #define VR_IO_NOCACHE      0x100
 #define VR_REMOTE          0x200
 #define VR_DEMAND_PAGING   0x1000
+#define	VR_PRIVATE         0x2000
 #define	VR_PROT_NONE       0x00000000
 #define	VR_PROT_READ       0x00010000
 #define	VR_PROT_WRITE      0x00020000
 #define	VR_PROT_EXEC       0x00040000
 #define	VR_PROT_MASK       0x00070000
+#define	VR_MAXPROT_NONE    0x00000000
+#define	VR_MAXPROT_READ    0x00100000
+#define	VR_MAXPROT_WRITE   0x00200000
+#define	VR_MAXPROT_EXEC    0x00400000
+#define	VR_MAXPROT_MASK    0x00700000
 
 #define	PROT_TO_VR_FLAG(prot)	(((unsigned long)(prot) << 16) & VR_PROT_MASK)
+#define	VRFLAG_PROT_TO_MAXPROT(vrflag)	(((vrflag) & VR_PROT_MASK) << 4)
+#define	VRFLAG_MAXPROT_TO_PROT(vrflag)	(((vrflag) & VR_MAXPROT_MASK) >> 4)
 
 #define PS_RUNNING           0x1
 #define PS_INTERRUPTIBLE     0x2
@@ -42,6 +51,8 @@ struct vm_range {
 	struct list_head list;
 	unsigned long start, end;
 	unsigned long flag;
+	struct memobj *memobj;
+	off_t objoff;
 };
 
 struct vm_regions {
@@ -60,6 +71,8 @@ struct sig_handler {
 	ihk_atomic_t	use;
 	struct k_sigaction action[_NSIG];
 };
+
+typedef void pgio_func_t(void *arg);
 
 struct process {
 	int pid;
@@ -92,6 +105,8 @@ struct process {
 	// TODO: backup FR and MMX regs
 	unsigned long sigrc; // return code of rt_sigreturn (x86_64: rax reg.)
 	struct rlimit rlimit_stack;
+	pgio_func_t *pgio_fp;
+	void *pgio_arg;
 };
 
 struct process_vm {
@@ -118,11 +133,13 @@ struct process *clone_process(struct process *org,
 void destroy_process(struct process *proc);
 void hold_process(struct process *proc);
 void free_process(struct process *proc);
+void flush_process_memory(struct process *proc);
 void free_process_memory(struct process *proc);
 
 int add_process_memory_range(struct process *process,
                              unsigned long start, unsigned long end,
-                             unsigned long phys, unsigned long flag);
+                             unsigned long phys, unsigned long flag,
+			     struct memobj *memobj, off_t objoff);
 int remove_process_memory_range(
 		struct process *process, unsigned long start, unsigned long end);
 int split_process_memory_range(struct process *process,

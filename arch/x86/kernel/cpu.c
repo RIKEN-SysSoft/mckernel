@@ -288,8 +288,22 @@ void init_syscall(void)
 	wrmsr(MSR_LSTAR, (unsigned long)x86_syscall);
 }
 
+static void enable_page_protection_fault(void)
+{
+	asm volatile (
+			"pushf	;"
+			"cli	;"
+			"mov	%%cr0,%%rax;"
+			"or	$0x10000,%%rax;"
+			"mov	%%rax,%%cr0;"
+			"popf"
+			::: "%rax");
+	return;
+}
+
 void init_cpu(void)
 {
+	enable_page_protection_fault();
 	init_fpu();
 	init_lapic();
 	init_syscall();
@@ -465,7 +479,7 @@ void cpu_restore_interrupt(unsigned long flags)
 
 void cpu_pause(void)
 {
-	asm volatile("pause");
+	asm volatile("pause" ::: "memory");
 }
 
 unsigned long cpu_disable_interrupt_save(void)

@@ -68,12 +68,15 @@ void free_pages(void *va, int npages)
 	struct list_head *pendings = &cpu_local_var(pending_free_pages);
 	struct page *page;
 
+	page = phys_to_page(virt_to_phys(va));
+	if (!page) {
+		panic("free_pages:struct page not found");
+	}
+	if (page->mode != PM_NONE) {
+		panic("free_pages:not PM_NONE");
+	}
 	if (pendings->next != NULL) {
-		page = phys_to_page(virt_to_phys(va));
-		if (page->flags & PAGE_IN_LIST) {
-			panic("free_pages");
-		}
-		page->flags |= PAGE_IN_LIST;
+		page->mode = PM_PENDING_FREE;
 		page->count = npages;
 		list_add_tail(&page->list, pendings);
 		return;
@@ -103,10 +106,10 @@ void finish_free_pages_pending(void)
 	}
 
 	list_for_each_entry_safe(page, next, pendings, list) {
-		if (!(page->flags & PAGE_IN_LIST)) {
-			panic("free_pending_pages");
+		if (page->mode != PM_PENDING_FREE) {
+			panic("free_pending_pages:not PM_PENDING_FREE");
 		}
-		page->flags &= ~PAGE_IN_LIST;
+		page->mode = PM_NONE;
 		list_del(&page->list);
 		ihk_pagealloc_free(pa_allocator, page_to_phys(page), page->count);
 	}
@@ -192,11 +195,6 @@ static void unhandled_page_fault(struct process *proc, void *fault_addr, void *r
 	}
 #endif
 
-#if 0
-	panic("mem fault");
-#endif
-	set_signal(SIGSEGV, regs);
-	check_signal(0, regs);
 	return;
 }
 
@@ -215,6 +213,13 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 				ihk_mc_get_processor_id(), fault_addr,
 				reason, regs, error);
 		unhandled_page_fault(proc, fault_addr, regs);
+		if (error == -ERANGE) {
+			set_signal(SIGBUS, regs);
+		}
+		else {
+			set_signal(SIGSEGV, regs);
+		}
+		check_signal(0, regs);
 		goto out;
 	}
 
@@ -309,6 +314,27 @@ uintptr_t page_to_phys(struct page *page)
 		panic("page_to_phys");
 	}
 	return phys;
+}
+
+int page_unmap(struct page *page)
+{
+	dkprintf("page_unmap(%p %x %d)\n", page, page->mode, page->count);
+	if (page->mode != PM_MAPPED) {
+		return 1;
+	}
+
+	if (--page->count > 0) {
+		/* other mapping exist */
+		dkprintf("page_unmap(%p %x %d): 0\n",
+				page, page->mode, page->count);
+		return 0;
+	}
+
+	/* no mapping exist */
+	list_del(&page->list);
+	page->mode = PM_NONE;
+	dkprintf("page_unmap(%p %x %d): 1\n", page, page->mode, page->count);
+	return 1;
 }
 
 static void page_init(void)

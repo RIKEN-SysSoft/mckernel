@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <list.h>
 #include <process.h>
+#include <page.h>
 
 #define	dkprintf(...)
 #define	ekprintf(...)	kprintf(__VA_ARGS__)
@@ -820,16 +821,20 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 {
 	struct clear_range_args *args = args0;
 	uint64_t phys;
+	struct page *page;
 
 	if (*ptep == PTE_NULL) {
 		return -ENOENT;
 	}
 
 	phys = *ptep & PT_PHYSMASK;
-	*ptep = 0;
+	*ptep = PTE_NULL;
 
 	if (args->free_physical) {
-		ihk_mc_free_pages(phys_to_virt(phys), 1);
+		page = phys_to_page(phys);
+		if (page && page_unmap(page)) {
+			ihk_mc_free_pages(phys_to_virt(phys), 1);
+		}
 	}
 
 	return 0;
@@ -842,6 +847,7 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
 	uint64_t phys;
 	struct page_table *pt;
 	int error;
+	struct page *page;
 
 	if (*ptep == PTE_NULL) {
 		return -ENOENT;
@@ -866,8 +872,10 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
 		*ptep = PTE_NULL;
 
 		if (args->free_physical) {
-			ihk_mc_free_pages(phys_to_virt(phys),
-					LARGE_PAGE_SIZE/PAGE_SIZE);
+			page = phys_to_page(phys);
+			if (page && page_unmap(page)) {
+				ihk_mc_free_pages(phys_to_virt(phys), PTL2_SIZE/PTL1_SIZE);
+			}
 		}
 
 		return 0;

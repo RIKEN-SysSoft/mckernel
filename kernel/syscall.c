@@ -19,6 +19,8 @@
 #include <time.h>
 #include <ihk/perfctr.h>
 #include <mman.h>
+#include <kmalloc.h>
+#include <memobj.h>
 
 /* Headers taken from kitten LWK */
 #include <lwk/stddef.h>
@@ -210,6 +212,7 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 
 	/* XXX: send SIGKILL to all threads in this process */
 
+	flush_process_memory(proc);	/* temporary hack */
 	do_syscall(&request, ctx);
 
 #define	IS_DETACHED_PROCESS(proc)	(1)	/* should be implemented in the future */
@@ -370,10 +373,13 @@ SYSCALL_DECLARE(mmap)
 	int error;
 	intptr_t npages;
 	int p2align;
-	void *p;
+	void *p = NULL;
 	int vrflags;
 	intptr_t phys;
 	int unmapped = 0;
+	struct memobj *memobj = NULL;
+	int maxprot;
+	int denied;
 
 	dkprintf("[%d]sys_mmap(%lx,%lx,%x,%x,%d,%lx)\n",
 			ihk_mc_get_processor_id(),
@@ -462,6 +468,7 @@ SYSCALL_DECLARE(mmap)
 	/* do the map */
 	vrflags = VR_NONE;
 	vrflags |= PROT_TO_VR_FLAG(prot);
+	vrflags |= (flags & MAP_PRIVATE)? VR_PRIVATE: 0;
 	if (flags & MAP_ANONYMOUS) {
 		if (0) {
 			/* dummy */
@@ -476,10 +483,21 @@ SYSCALL_DECLARE(mmap)
 			vrflags |= VR_DEMAND_PAGING;
 		}
 	}
+	else {
+		vrflags |= VR_DEMAND_PAGING;
+	}
 
-	p = NULL;
 	phys = 0;
-	if (!(vrflags & VR_DEMAND_PAGING)
+	maxprot = PROT_READ | PROT_WRITE | PROT_EXEC;
+	if (!(flags & MAP_ANONYMOUS)) {
+		error = fileobj_create(fd, &memobj, &maxprot);
+		if (error) {
+			ekprintf("sys_mmap:fileobj_create failed. %d\n", error);
+			ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+			goto out;
+		}
+	}
+	else if (!(vrflags & VR_DEMAND_PAGING)
 			&& ((vrflags & VR_PROT_MASK) != VR_PROT_NONE)) {
 		npages = len >> PAGE_SHIFT;
 		p2align = PAGE_P2ALIGN;
@@ -500,48 +518,41 @@ SYSCALL_DECLARE(mmap)
 		phys = virt_to_phys(p);
 	}
 
-	error = add_process_memory_range(proc, addr, addr+len, phys, vrflags);
+	if ((flags & MAP_PRIVATE) && (maxprot & PROT_READ)) {
+		maxprot |= PROT_WRITE;
+	}
+	denied = prot & ~maxprot;
+	if (denied) {
+		ekprintf("sys_mmap:denied %x. %x %x\n", denied, prot, maxprot);
+		ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+		error = (denied == PROT_EXEC)? -EPERM: -EACCES;
+		goto out;
+	}
+	vrflags |= VRFLAG_PROT_TO_MAXPROT(PROT_TO_VR_FLAG(maxprot));
+
+	error = add_process_memory_range(proc, addr, addr+len, phys, vrflags, memobj, off);
 	if (error) {
 		ekprintf("sys_mmap:add_process_memory_range"
 				"(%p,%lx,%lx,%lx,%lx) failed %d\n",
 				proc, addr, addr+len,
 				virt_to_phys(p), vrflags, error);
 		ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
-		if (p != NULL) {
-			ihk_mc_free_pages(p, npages);
-		}
 		goto out;
 	}
 
 	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
 
-	/* read page with pread64() */
-	if (!(flags & MAP_ANONYMOUS)) {
-		ihk_mc_user_context_t ctx2;
-		ssize_t ss;
-
-		ihk_mc_syscall_arg0(&ctx2) = fd;
-		ihk_mc_syscall_arg1(&ctx2) = addr;
-		ihk_mc_syscall_arg2(&ctx2) = len;
-		ihk_mc_syscall_arg3(&ctx2) = off;
-
-		ss = syscall_generic_forwarding(__NR_pread64, &ctx2);
-		if (ss < 0) {
-			ekprintf("sys_mmap:pread(%d,%lx,%lx,%lx) failed %ld\n",
-					fd, addr, len, off, (long)ss);
-			error = do_munmap((void *)addr, len);
-			if (error) {
-				ekprintf("sys_mmap:do_munmap(%lx,%lx) failed. %d\n",
-						addr, len, error);
-				/* through */
-			}
-			error = ss;
-			goto out;
-		}
-	}
-
 	error = 0;
+	p = NULL;
+	memobj = NULL;
+
 out:
+	if (p) {
+		ihk_mc_free_pages(p, npages);
+	}
+	if (memobj) {
+		memobj_release(memobj);
+	}
 	if (unmapped) {
 		clear_host_pte(addr, len);
 	}
@@ -600,6 +611,7 @@ SYSCALL_DECLARE(mprotect)
 	int error;
 	struct vm_range *changed;
 	const unsigned long protflags = PROT_TO_VR_FLAG(prot);
+	unsigned long denied;
 
 	dkprintf("[%d]sys_mprotect(%lx,%lx,%x)\n",
 			ihk_mc_get_processor_id(), start, len0, prot);
@@ -675,6 +687,14 @@ SYSCALL_DECLARE(mprotect)
 			goto out;
 		}
 
+		denied = protflags & ~VRFLAG_MAXPROT_TO_PROT(range->flag);
+		if (denied) {
+			ekprintf("sys_mprotect(%lx,%lx,%x):denied %lx. %lx %lx\n",
+					start, len0, prot, denied, protflags, range->flag);
+			error = -EACCES;
+			goto out;
+		}
+
 		if (range->flag & (VR_REMOTE | VR_RESERVED | VR_IO_NOCACHE)) {
 			ekprintf("sys_mprotect(%lx,%lx,%x):cannot change\n",
 					start, len0, prot);
@@ -736,6 +756,7 @@ SYSCALL_DECLARE(brk)
 	unsigned long address = ihk_mc_syscall_arg0(ctx);
 	struct vm_regions *region = &cpu_local_var(current)->vm->region;
 	unsigned long r;
+	unsigned long vrflag;
 
 	dkprintf("SC(%d)[sys_brk] brk_start=%lx,end=%lx\n",
 			ihk_mc_get_processor_id(), region->brk_start, region->brk_end);
@@ -753,10 +774,11 @@ SYSCALL_DECLARE(brk)
 	}
 
 	/* try to extend memory region */
+	vrflag = VR_PROT_READ | VR_PROT_WRITE;
+	vrflag |= VRFLAG_PROT_TO_MAXPROT(vrflag);
 	ihk_mc_spinlock_lock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
 	region->brk_end = extend_process_region(cpu_local_var(current),
-			region->brk_start, region->brk_end, address,
-			VR_PROT_READ|VR_PROT_WRITE);
+			region->brk_start, region->brk_end, address, vrflag);
 	ihk_mc_spinlock_unlock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
 	dkprintf("SC(%d)[sys_brk] brk_end set to %lx\n",
 			ihk_mc_get_processor_id(), region->brk_end);

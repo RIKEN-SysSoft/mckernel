@@ -1,6 +1,8 @@
 #ifndef __HEADER_X86_COMMON_ARCH_MEMORY_H
 #define __HEADER_X86_COMMON_ARCH_MEMORY_H
 
+#include <ihk/types.h>
+
 #define KERNEL_CS_ENTRY    4
 #define KERNEL_DS_ENTRY    5
 #define USER_CS_ENTRY      6
@@ -103,9 +105,23 @@ enum ihk_mc_pt_attribute {
 	PTATTR_FOR_USER   = 0x20000,
 };
 
+#define	PTE_NULL ((pte_t)0)
 typedef unsigned long pte_t;
 
-#define	PTE_NULL ((pte_t)0)
+static inline int pte_is_null(pte_t *ptep)
+{
+	return (*ptep == PTE_NULL);
+}
+
+static inline int pte_is_present(pte_t *ptep)
+{
+	return !!(*ptep & PF_PRESENT);
+}
+
+static inline uintptr_t pte_get_phys(pte_t *ptep)
+{
+	return (*ptep & PT_PHYSMASK);
+}
 
 struct page_table;
 void set_pte(pte_t *ppte, unsigned long phys, int attr);
