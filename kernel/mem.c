@@ -141,7 +141,8 @@ static struct ihk_mc_interrupt_handler query_free_mem_handler = {
 	.priv = NULL,
 };
 
-void sigsegv(void *);
+void set_signal(int, unsigned long *);
+void check_signal(long, unsigned long *);
 
 static void unhandled_page_fault(struct process *proc, void *fault_addr, void *regs)
 {
@@ -194,7 +195,8 @@ static void unhandled_page_fault(struct process *proc, void *fault_addr, void *r
 #if 0
 	panic("mem fault");
 #endif
-	sigsegv(regs);
+	set_signal(SIGSEGV, regs);
+	check_signal(0, regs);
 	return;
 }
 

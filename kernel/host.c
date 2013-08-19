@@ -368,6 +368,8 @@ static void syscall_channel_send(struct ihk_ikc_channel_desc *c,
 	ihk_ikc_send(c, packet, 0);
 }
 
+extern unsigned long do_kill(int, int);
+
 static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *ihk_os)
 {
@@ -403,6 +405,10 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		              ihk_mc_get_processor_id());
 					  
 		//cpu_local_var(next) = (struct process *)packet->arg;
+		return 0;
+	case SCD_MSG_SEND_SIGNAL:
+		rc = do_kill((int)packet->arg, (int)(packet->arg >> 32));
+		kprintf("SCD_MSG_SEND_SIGNAL: %lx, rc=%d\n", packet->arg, rc);
 		return 0;
 	}
 	return 0;

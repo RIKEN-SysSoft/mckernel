@@ -8,6 +8,7 @@
 #include <syscall.h>
 #include <process.h>
 #include <string.h>
+#include <errno.h>
 
 void terminate(int, int, ihk_mc_user_context_t *);
 
@@ -91,8 +92,12 @@ check_signal(unsigned long rc, unsigned long *regs)
 	struct k_sigaction *k;
 	int	sig = proc->signal;
 
+	if(proc == NULL || proc->pid == 0)
+		return;
+
 	proc->signal = 0;
 	if(sig){
+		int irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
 		if(regs == NULL){ /* call from syscall */
 			asm volatile ("movq %%gs:132,%0" : "=r" (regs));
 			regs -= 16;
@@ -104,6 +109,7 @@ check_signal(unsigned long rc, unsigned long *regs)
 		k = proc->sighandler->action + sig - 1;
 
 		if(k->sa.sa_handler == (void *)1){
+			ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
 			return;
 		}
 		else if(k->sa.sa_handler){
@@ -118,8 +124,10 @@ check_signal(unsigned long rc, unsigned long *regs)
 			regs[4] = (unsigned long)sig;
 			regs[11] = (unsigned long)k->sa.sa_handler;
 			regs[14] = (unsigned long)usp;
+			ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
 		}
 		else{
+			ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
 			if(sig == SIGCHLD || sig == SIGURG)
 				return;
 			terminate(0, sig, (ihk_mc_user_context_t *)regs[14]);
@@ -127,20 +135,38 @@ check_signal(unsigned long rc, unsigned long *regs)
 	}
 }
 
-void
-sigsegv(unsigned long *regs)
+extern unsigned long do_kill(int pid, int sig);
+
+unsigned long
+do_kill(int pid, int sig)
 {
 	struct process *proc = cpu_local_var(current);
 
-	proc->signal = SIGSEGV;
-	check_signal(0, regs);
+	if(proc == NULL || proc->pid == 0){
+		return -ESRCH;
+	}
+	if(proc->pid == pid){
+		proc->signal = sig;
+		return 0;
+	}
+
+	if(pid <= 0){
+		return -EINVAL;
+	}
+	if(sig == 0){
+		return 0;
+	}
+	else{
+		return -EPERM;
+	}
 }
 
 void
-sigill(unsigned long *regs)
+set_signal(int sig, unsigned long *regs)
 {
 	struct process *proc = cpu_local_var(current);
 
-	proc->signal = SIGILL;
-	check_signal(0, regs);
+	if(proc == NULL || proc->pid == 0)
+		return;
+	proc->signal = sig;
 }

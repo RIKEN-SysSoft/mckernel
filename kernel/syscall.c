@@ -66,7 +66,7 @@ static char *syscall_name[] MCKERNEL_UNUSED = {
 #undef	SYSCALL_DELEGATED
 };
 
-void check_signal(unsigned long rc, unsigned long *regs);
+void check_signal(long rc, unsigned long *regs);
 
 #ifdef DCFA_KMOD
 static void do_mod_exit(int status);
@@ -830,26 +830,14 @@ SYSCALL_DECLARE(set_tid_address)
 	return cpu_local_var(current)->pid;
 }
 
+extern unsigned long do_kill(int pid, int sig);
+
 SYSCALL_DECLARE(kill)
 {
 	int pid = ihk_mc_syscall_arg0(ctx);
 	int sig = ihk_mc_syscall_arg1(ctx);
 
-	struct process *proc = cpu_local_var(current);
-
-	if(proc->pid == pid){
-		proc->signal = sig;
-		return 0;
-	}
-
-	if(pid <= 0) { return -EINVAL; }
-	// search pid
-	// check kill permission
-	if(sig == 0) {
-		return 0;
-	} else {
-		return -EPERM;
-	}
+	return do_kill(pid, sig);
 }
 
 // see linux-2.6.34.13/kernel/signal.c
@@ -879,14 +867,16 @@ do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
 {
 	struct process *proc = cpu_local_var(current);
 	struct k_sigaction *k;
-	// TODO: sigmask
+	int	irqstate;
 
+	irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
 	k = proc->sighandler->action + sig - 1;
 	if(oact)
 		memcpy(oact, k, sizeof(struct k_sigaction));
 	if(act){
 		memcpy(k, act, sizeof(struct k_sigaction));
 	}
+	ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
 	return 0;
 }
 
@@ -913,9 +903,38 @@ SYSCALL_DECLARE(rt_sigaction)
 
 SYSCALL_DECLARE(rt_sigprocmask)
 {
-    //  kprintf("sys_rt_sigprocmask called. returning zero...\n");
-  return 0;
+	int how = ihk_mc_syscall_arg0(ctx);
+	const sigset_t *set = (const sigset_t *)ihk_mc_syscall_arg1(ctx);
+	sigset_t *oldset = (sigset_t *)ihk_mc_syscall_arg2(ctx);
+	//  kprintf("sys_rt_sigprocmask called. returning zero...\n");
+	return 0;
 }
+
+SYSCALL_DECLARE(rt_sigpending)
+{
+	return 0;
+}
+
+SYSCALL_DECLARE(rt_sigtimedwait)
+{
+	return 0;
+}
+
+SYSCALL_DECLARE(rt_sigqueueinfo)
+{
+	return 0;
+}
+
+SYSCALL_DECLARE(rt_sigsuspend)
+{
+	return 0;
+}
+
+SYSCALL_DECLARE(sigaltstack)
+{
+	return 0;
+}
+
 SYSCALL_DECLARE(madvise)
 {
     //  kprintf("sys_madvise called. returning zero...\n");

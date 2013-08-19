@@ -8,6 +8,7 @@
 #include <registers.h>
 #include <cpulocal.h>
 #include <march.h>
+#include <signal.h>
 
 #define LAPIC_ID            0x020
 #define LAPIC_TIMER         0x320
@@ -341,6 +342,8 @@ void setup_x86_ap(void (*next_func)(void))
 }
 
 void arch_show_interrupt_context(const void *reg);
+void set_signal(int, void *);
+void check_signal(long, void *);
 
 void handle_interrupt(int vector, struct x86_regs *regs)
 {
@@ -371,16 +374,17 @@ void handle_interrupt(int vector, struct x86_regs *regs)
 			}
 		}
 	}
-}
 
-void sigill(void *);
+	check_signal(0, regs);
+}
 
 void gpe_handler(struct x86_regs *regs)
 {
 	kprintf("General protection fault (err: %lx, %lx:%lx)\n",
 	        regs->error, regs->cs, regs->rip);
 	arch_show_interrupt_context(regs);
-	sigill(regs);
+	set_signal(SIGILL, regs);
+	check_signal(0, regs);
 	// panic("GPF");
 }
 

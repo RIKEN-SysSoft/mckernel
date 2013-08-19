@@ -16,6 +16,7 @@
 #define SCD_MSG_INIT_CHANNEL_ACKED      0x6
 
 #define SCD_MSG_SYSCALL_ONESIDE         0x4
+#define SCD_MSG_SEND_SIGNAL     	0x8
 
 #define DMA_PIN_SHIFT                   21
 

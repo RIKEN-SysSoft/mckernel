@@ -80,6 +80,8 @@ struct kernel_termios {
 
 int main_loop(int fd, int cpu, pthread_mutex_t *lock);
 
+static int fd;
+
 struct program_load_desc *load_elf(FILE *fp)
 {
 	Elf64_Ehdr hdr;
@@ -332,9 +334,22 @@ static void *main_loop_thread_func(void *arg)
 	return NULL;
 }
 
+void
+sendsig(int sig)
+{
+	unsigned long	param;
+
+	param = ((unsigned long)sig) << 32 | ((unsigned long)getpid());
+	if (ioctl(fd, MCEXEC_UP_SEND_SIGNAL, param) != 0) {
+		perror("send_signal");
+		close(fd);
+		exit(1);
+	}
+}
+
 int main(int argc, char **argv)
 {
-	int fd;
+//	int fd;
 #if 0	
 	int fdm;
 	long r;
@@ -488,6 +503,11 @@ int main(int argc, char **argv)
 		close(fd);
 		return 1;
 	}
+
+	for (i = 1; i <= 64; i++)
+		if (i != SIGCHLD && i != SIGCONT && i != SIGSTOP &&
+		    i != SIGTSTP && i != SIGTTIN && i != SIGTTOU)
+			signal(i, sendsig);
 
 	for (i = 0; i < NUM_HANDLER_THREADS; ++i) {
 		pthread_join(thread_data[i].thread_id, NULL);

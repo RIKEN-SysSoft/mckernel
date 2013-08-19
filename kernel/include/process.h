@@ -55,8 +55,8 @@ struct vm_regions {
 struct process_vm;
 
 struct sig_handler {
-	// TODO: lock;
-	int	use;
+	ihk_spinlock_t	lock;
+	ihk_atomic_t	use;
 	struct k_sigaction action[_NSIG];
 };
 
@@ -83,9 +83,12 @@ struct process {
 	} thread;
 
 	int signal;
+	sigset_t sigpend;
+	sigset_t sigmask;
 	struct sig_handler *sighandler;
 	ihk_mc_kernel_context_t sigctx;
 	char	sigstack[512];
+	// TODO: backup FR and MMX regs
 	unsigned long sigrc; // return code of rt_sigreturn (x86_64: rax reg.)
 };
 

@@ -62,7 +62,8 @@ struct process *create_process(unsigned long user_pc)
 		return NULL;
 	}
 	memset(proc->sighandler, '\0', sizeof(struct sig_handler));
-	proc->sighandler->use = 1;
+	ihk_atomic_set(&proc->sighandler->use, 1);
+	ihk_mc_spinlock_init(&proc->sighandler->lock);
 
 	ihk_mc_init_user_process(&proc->ctx, &proc->uctx,
 	                         ((char *)proc) + 
@@ -106,9 +107,8 @@ struct process *clone_process(struct process *org, unsigned long pc,
 	ihk_atomic_inc(&org->vm->refcount);
 	proc->vm = org->vm;
 
-	// TODO: lock
 	proc->sighandler = org->sighandler;
-	org->sighandler->use++;
+	ihk_atomic_inc(&org->sighandler->use);
 
 	ihk_mc_spinlock_init(&proc->spin_sleep_lock);
 	proc->spin_sleep = 0;
@@ -1054,6 +1054,9 @@ void hold_process(struct process *proc)
 
 void destroy_process(struct process *proc)
 {
+	if(ihk_atomic_dec_and_test(&proc->sighandler->use)){
+		kfree(proc->sighandler);
+	}
 	ihk_mc_free_pages(proc, KERNEL_STACK_NR_PAGES);
 }
 
