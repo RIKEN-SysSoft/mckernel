@@ -316,6 +316,7 @@ out:
 SYSCALL_DECLARE(mmap)
 {
 	const int supported_flags = 0
+		| MAP_SHARED		// 01
 		| MAP_PRIVATE		// 02
 		| MAP_FIXED		// 10
 		| MAP_ANONYMOUS		// 20
@@ -329,7 +330,6 @@ SYSCALL_DECLARE(mmap)
 		| MAP_STACK		// 00020000
 		;
 	const int error_flags = 0
-		| MAP_SHARED		// 01
 #ifndef	USE_NOCACHE_MMAP
 		| MAP_32BIT		// 40
 #endif /* ndef USE_NOCACHE_MMAP */
@@ -404,6 +404,14 @@ SYSCALL_DECLARE(mmap)
 	if ((flags & error_flags)
 			|| (flags & ~(supported_flags | ignored_flags))) {
 		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):unknown flags %x\n",
+				addr0, len0, prot, flags, fd, off,
+				(flags & ~(supported_flags | ignored_flags)));
+		error = -EINVAL;
+		goto out;
+	}
+
+	if ((flags & MAP_SHARED) && !(flags & MAP_ANONYMOUS)) {
+		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):NYI:shared mapped file%lx\n",
 				addr0, len0, prot, flags, fd, off,
 				(flags & ~(supported_flags | ignored_flags)));
 		error = -EINVAL;
