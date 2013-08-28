@@ -8,6 +8,8 @@
 #include <linux/anon_inodes.h>
 #include <linux/mman.h>
 #include <linux/file.h>
+#include <linux/cred.h>
+#include <linux/capability.h>
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/io.h>
@@ -315,11 +317,25 @@ int reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp, un
 	struct vm_area_struct *vma;
 	unsigned long start;
 	unsigned long end;
+	struct cred *promoted;
+	const struct cred *original;
 
 	file = anon_inode_getfile("[mckernel]", &rus_fops, usrdata, O_RDWR);
 	if (IS_ERR(file)) {
 		return PTR_ERR(file);
 	}
+
+	promoted = prepare_creds();
+	if (!promoted) {
+		printk("mcctrl:user space reservation failed. ENOMEM\n");
+		fput(file);
+		return -ENOMEM;
+	}
+	/*
+	 * CAP_SYS_RAWIO for mmap_min_addr check avoidance
+	 */
+	cap_raise(promoted->cap_effective, CAP_SYS_RAWIO);
+	original = override_creds(promoted);
 
 #define	DESIRED_USER_END	0x800000000000
 #define	GAP_FOR_MCEXEC		0x008000000000UL
@@ -332,6 +348,9 @@ int reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp, un
 	start = do_mmap_pgoff(file, 0, end,
 			PROT_READ|PROT_WRITE, MAP_FIXED|MAP_SHARED, 0);
 	up_write(&current->mm->mmap_sem);
+
+	revert_creds(original);
+	put_cred(promoted);
 	fput(file);
 	if (IS_ERR_VALUE(start)) {
 		printk("mcctrl:user space reservation failed.\n");
