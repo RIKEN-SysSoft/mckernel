@@ -300,11 +300,8 @@ err:
 	return -ENOMEM;
 }
 
-static void process_msg_init(struct ikc_scd_init_param *pcp)
+static void process_msg_init(struct ikc_scd_init_param *pcp, struct syscall_params *lparam)
 {
-	struct syscall_params *lparam;
-
-	lparam = &cpu_local_var(scp);
 	lparam->response_va = allocate_pages(RESPONSE_PAGE_COUNT, 0);
 	lparam->response_pa = virt_to_phys(lparam->response_va);
 
@@ -313,12 +310,14 @@ static void process_msg_init(struct ikc_scd_init_param *pcp)
 	pcp->response_page = lparam->response_pa;
 }
 
-static void process_msg_init_acked(unsigned long pphys)
+static void process_msg_init_acked(struct ihk_ikc_channel_desc *c, unsigned long pphys)
 {
 	struct ikc_scd_init_param *param = (void *)pphys;
 	struct syscall_params *lparam;
 
 	lparam = &cpu_local_var(scp);
+	if(cpu_local_var(syscall_channel2) == c)
+		lparam = &cpu_local_var(scp2);
 	lparam->request_rpa = param->request_page;
 	lparam->request_pa = ihk_mc_map_memory(NULL, param->request_page,
 	                                       REQUEST_PAGE_COUNT * PAGE_SIZE);
@@ -380,7 +379,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	switch (packet->msg) {
 	case SCD_MSG_INIT_CHANNEL_ACKED:
 		dkprintf("SCD_MSG_INIT_CHANNEL_ACKED\n");
-		process_msg_init_acked(packet->arg);
+		process_msg_init_acked(c, packet->arg);
 		return 0;
 
 	case SCD_MSG_PREPARE_PROCESS:
@@ -434,9 +433,36 @@ void init_host_syscall_channel(void)
 
 	get_this_cpu_local_var()->syscall_channel = param.channel;
 
-	process_msg_init(&cpu_local_var(iip));
+	process_msg_init(&cpu_local_var(iip), &cpu_local_var(scp));
 	pckt.msg = SCD_MSG_INIT_CHANNEL;
 	pckt.ref = ihk_mc_get_processor_id();
 	pckt.arg = virt_to_phys(&cpu_local_var(iip));
+	syscall_channel_send(param.channel, &pckt);
+}
+
+void init_host_syscall_channel2(void)
+{
+	struct ihk_ikc_connect_param param;
+	struct ikc_scd_packet pckt;
+
+	param.port = 502;
+	param.pkt_size = sizeof(struct ikc_scd_packet);
+	param.queue_size = PAGE_SIZE;
+	param.magic = 0x1329;
+	param.handler = syscall_packet_handler;
+
+	dkprintf("(syscall) Trying to connect host ...");
+	while (ihk_ikc_connect(NULL, &param) != 0) {
+		dkprintf(".");
+		ihk_mc_delay_us(1000 * 1000);
+	}
+	dkprintf("connected.\n");
+
+	get_this_cpu_local_var()->syscall_channel2 = param.channel;
+
+	process_msg_init(&cpu_local_var(iip2), &cpu_local_var(scp2));
+	pckt.msg = SCD_MSG_INIT_CHANNEL;
+	pckt.ref = ihk_mc_get_processor_id();
+	pckt.arg = virt_to_phys(&cpu_local_var(iip2));
 	syscall_channel_send(param.channel, &pckt);
 }

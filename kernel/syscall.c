@@ -75,46 +75,72 @@ static void do_mod_exit(int status);
 static void send_syscall(struct syscall_request *req)
 {
 	struct ikc_scd_packet packet;
-	struct syscall_response *res = cpu_local_var(scp).response_va;
+	struct syscall_response *res;
 	unsigned long fin;
 	int w;
+	struct syscall_params *scp;
+	struct ihk_ikc_channel_desc *syscall_channel;
+	int cpu;
+
+	if(req->number == __NR_exit_group){
+		extern int num_processors;
+
+		scp = &get_cpu_local_var(0)->scp2;
+		syscall_channel = get_cpu_local_var(0)->syscall_channel2;
+		cpu = num_processors;
+	}
+	else{
+		scp = &cpu_local_var(scp);
+		syscall_channel = cpu_local_var(syscall_channel);
+		cpu = ihk_mc_get_processor_id();
+	}
+	res = scp->response_va;
 
 	res->status = 0;
 	req->valid = 0;
 
-	memcpy_async(cpu_local_var(scp).request_pa,
+	memcpy_async(scp->request_pa,
 	             virt_to_phys(req), sizeof(*req), 0, &fin);
 
-	memcpy_async_wait(&cpu_local_var(scp).post_fin);
-	cpu_local_var(scp).post_va->v[0] = cpu_local_var(scp).post_idx;
+	memcpy_async_wait(&scp->post_fin);
+	scp->post_va->v[0] = scp->post_idx;
 
-	w = ihk_mc_get_processor_id() + 1;
+	w = cpu + 1;
 
 	memcpy_async_wait(&fin);
 
 	barrier();
-	cpu_local_var(scp).request_va->valid = 1;
-	*(unsigned int *)cpu_local_var(scp).doorbell_va = w;
+	scp->request_va->valid = 1;
+	*(unsigned int *)scp->doorbell_va = w;
 
 #ifdef SYSCALL_BY_IKC
 	packet.msg = SCD_MSG_SYSCALL_ONESIDE;
-	packet.ref = ihk_mc_get_processor_id();
-	packet.arg = cpu_local_var(scp).request_rpa;
+	packet.ref = cpu;
+	packet.arg = scp->request_rpa;
 	
-	ihk_ikc_send(cpu_local_var(syscall_channel), &packet, 0); 
+	ihk_ikc_send(syscall_channel, &packet, 0); 
 #endif
 }
 
 
 int do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx)
 {
-	struct syscall_response *res = cpu_local_var(scp).response_va;
+	struct syscall_response *res;
 	struct syscall_request req2;
+	struct syscall_params *scp;
 	int error;
 
 	dkprintf("SC(%d)[%3d] sending syscall\n",
 	        ihk_mc_get_processor_id(),
 	        req->number);
+
+	if(req->number == __NR_exit_group){
+		scp = &get_cpu_local_var(0)->scp2;
+	}
+	else{
+		scp = &cpu_local_var(scp);
+	}
+	res = scp->response_va;
 
 	send_syscall(req);
 

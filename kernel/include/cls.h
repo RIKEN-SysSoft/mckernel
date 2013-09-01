@@ -31,9 +31,12 @@ struct cpu_local_var {
 	size_t runq_len;
 
 	struct ihk_ikc_channel_desc *syscall_channel;
-
 	struct syscall_params scp;
 	struct ikc_scd_init_param iip;
+
+	struct ihk_ikc_channel_desc *syscall_channel2;
+	struct syscall_params scp2;
+	struct ikc_scd_init_param iip2;
 	
 	int status;
 	int fs;

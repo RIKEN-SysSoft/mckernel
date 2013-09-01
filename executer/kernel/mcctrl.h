@@ -69,6 +69,7 @@ struct mcctrl_channel {
 
 struct mcctrl_usrdata {
 	struct ihk_ikc_listen_param listen_param;
+	struct ihk_ikc_listen_param listen_param2;
 	ihk_os_t	os;
 	int	num_channels;
 	struct mcctrl_channel	*channels;

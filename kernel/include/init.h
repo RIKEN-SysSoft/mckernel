@@ -13,6 +13,7 @@ extern void kmalloc_init(void);
 extern void ap_start(void);
 extern void ihk_mc_dma_init(void);
 extern void init_host_syscall_channel(void);
+extern void init_host_syscall_channel2(void);
 extern void sched_init(void);
 extern void pc_ap_init(void);
 

@@ -315,7 +315,7 @@ int flatten_strings(int nr_strings, char **strings, char **flat)
 	return full_len;
 }
 
-#define NUM_HANDLER_THREADS	248
+//#define NUM_HANDLER_THREADS	248
 
 struct thread_data_s {
 	pthread_t thread_id;
@@ -323,7 +323,7 @@ struct thread_data_s {
 	int cpu;
 	int ret;
 	pthread_mutex_t *lock;
-} thread_data[NUM_HANDLER_THREADS];
+} *thread_data;
 
 static void *main_loop_thread_func(void *arg)
 {
@@ -362,6 +362,7 @@ int main(int argc, char **argv)
 	char **a;
 	char *p;
 	int i;
+	int ncpu;
 	pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef USE_SYSCALL_MOD_CALL
@@ -414,6 +415,15 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error: Failed to open %s.\n", dev);
 		return 1;
 	}
+
+	ncpu = ioctl(fd, MCEXEC_UP_GET_CPU, 0);
+	if(ncpu == -1){
+		fprintf(stderr, "No CPU found.\n");
+		return 1;
+	}
+
+	thread_data = (struct thread_data_s *)malloc(sizeof(struct thread_data_s) * (ncpu + 1));
+	memset(thread_data, '\0', sizeof(struct thread_data_s) * (ncpu + 1));
 
 #if 0	
 	fdm = open("/dev/fmem", O_RDWR);
@@ -483,7 +493,7 @@ int main(int argc, char **argv)
 	__dprint("mccmd server initialized\n");
 #endif
 
-	for (i = 0; i < NUM_HANDLER_THREADS; ++i) {
+	for (i = 0; i <= ncpu; ++i) {
 		int ret;
 
 		thread_data[i].fd = fd;
@@ -509,7 +519,7 @@ int main(int argc, char **argv)
 		    i != SIGTSTP && i != SIGTTIN && i != SIGTTOU)
 			signal(i, sendsig);
 
-	for (i = 0; i < NUM_HANDLER_THREADS; ++i) {
+	for (i = 0; i <= ncpu; ++i) {
 		pthread_join(thread_data[i].thread_id, NULL);
 	}
 
@@ -584,7 +594,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 		if (!(w.sr.number == __NR_write && w.sr.args[0] == 1))
 			__dprintf("[%d] got syscall: %ld\n", cpu, w.sr.number);
 		
-		pthread_mutex_lock(lock);
+		//pthread_mutex_lock(lock);
 
 		switch (w.sr.number) {
 		case __NR_open:
@@ -652,7 +662,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 #endif
 			exit(0);
 
-			pthread_mutex_unlock(lock);
+			//pthread_mutex_unlock(lock);
 			return w.sr.args[0];
 
 		case __NR_mmap:
@@ -676,7 +686,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 
 		}
 		
-		pthread_mutex_unlock(lock);
+		//pthread_mutex_unlock(lock);
 	}
 	__dprint("timed out.\n");
 	return 1;

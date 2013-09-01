@@ -188,6 +188,7 @@ static void post_init(void)
 
 	if (find_command_line("hidos")) {
 		init_host_syscall_channel();
+		init_host_syscall_channel2();
 	}
 	ap_start();
 }

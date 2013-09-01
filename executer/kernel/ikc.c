@@ -16,7 +16,7 @@
 //struct mcctrl_channel *channels;
 
 void mcexec_prepare_ack(ihk_os_t os, unsigned long arg, int err);
-static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys);
+static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ihk_ikc_channel_desc *c);
 int mcexec_syscall(struct mcctrl_channel *c, unsigned long arg);
 
 static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
@@ -27,7 +27,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 
 	switch (pisp->msg) {
 	case SCD_MSG_INIT_CHANNEL:
-		mcctrl_ikc_init(__os, pisp->ref, pisp->arg);
+		mcctrl_ikc_init(__os, pisp->ref, pisp->arg, c);
 		break;
 
 	case SCD_MSG_PREPARE_PROCESS_ACKED:
@@ -97,7 +97,7 @@ int mcctrl_ikc_is_valid_thread(ihk_os_t os, int cpu)
 //unsigned long *mcctrl_doorbell_va;
 //unsigned long mcctrl_doorbell_pa;
 
-static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys)
+static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ihk_ikc_channel_desc *c)
 {
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct ikc_scd_packet packet;
@@ -105,11 +105,14 @@ static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys)
 	unsigned long phys;
 	struct ikc_scd_init_param *rpm;
 
+	if(c->port == 502)
+		pmc = usrdata->channels + usrdata->num_channels - 1;
+
 	if (!pmc) {
 		return;
 	}
 
-	printk("IKC init: %d\n", cpu);
+	printk("IKC init: cpu=%d port=%d\n", cpu, c->port);
 
 	phys = ihk_device_map_memory(ihk_os_to_dev(os), rphys,
 	                             sizeof(struct ikc_scd_init_param));
@@ -196,7 +199,26 @@ static int connect_handler(struct ihk_ikc_channel_info *param)
 	init_waitqueue_head(&usrdata->channels[cpu].wq_syscall);
 
 	usrdata->channels[cpu].c = c;
-	kprintf("syscall: MC CPU %d connected.\n", cpu);
+	kprintf("syscall: MC CPU %d connected. c=%p\n", cpu, c);
+
+	return 0;
+}
+
+static int connect_handler2(struct ihk_ikc_channel_info *param)
+{
+	struct ihk_ikc_channel_desc *c;
+	int cpu;
+	ihk_os_t os = param->channel->remote_os;
+	struct mcctrl_usrdata   *usrdata = ihk_host_os_get_usrdata(os);
+
+	c = param->channel;
+	cpu = usrdata->num_channels - 1;
+
+	param->packet_handler = syscall_packet_handler;
+	init_waitqueue_head(&usrdata->channels[cpu].wq_syscall);
+
+	usrdata->channels[cpu].c = c;
+	kprintf("syscall: MC CPU %d connected. c=%p\n", cpu, c);
 
 	return 0;
 }
@@ -207,6 +229,14 @@ static struct ihk_ikc_listen_param listen_param = {
 	.pkt_size = sizeof(struct ikc_scd_packet),
 	.queue_size = PAGE_SIZE,
 	.magic = 0x1129,
+};
+
+static struct ihk_ikc_listen_param listen_param2 = {
+	.port = 502,
+	.handler = connect_handler2,
+	.pkt_size = sizeof(struct ikc_scd_packet),
+	.queue_size = PAGE_SIZE,
+	.magic = 0x1329,
 };
 
 int prepare_ikc_channels(ihk_os_t os)
@@ -229,7 +259,7 @@ int prepare_ikc_channels(ihk_os_t os)
 		return -EINVAL;
 	}
 
-	usrdata->num_channels = info->n_cpus;
+	usrdata->num_channels = info->n_cpus + 1;
 	usrdata->channels = kzalloc(sizeof(struct mcctrl_channel) * usrdata->num_channels,
 	                   GFP_KERNEL);
 	if (!usrdata->channels) {
@@ -242,6 +272,8 @@ int prepare_ikc_channels(ihk_os_t os)
 	ihk_host_os_set_usrdata(os, usrdata);
 	memcpy(&usrdata->listen_param, &listen_param, sizeof listen_param);
 	ihk_ikc_listen_port(os, &usrdata->listen_param);
+	memcpy(&usrdata->listen_param2, &listen_param2, sizeof listen_param2);
+	ihk_ikc_listen_port(os, &usrdata->listen_param2);
 
 	error = init_peer_channel_registry(usrdata);
 	if (error) {

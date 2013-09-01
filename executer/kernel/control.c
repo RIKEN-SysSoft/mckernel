@@ -225,6 +225,23 @@ static long mcexec_send_signal(ihk_os_t os, unsigned long sigparam)
 	return 0;
 }
 
+static long mcexec_get_cpu(ihk_os_t os)
+{
+	struct ihk_cpu_info *info;
+
+	info = ihk_os_get_cpu_info(os);
+	if (!info) {
+		printk("Error: cannot retrieve CPU info.\n");
+		return -EINVAL;
+	}
+	if (info->n_cpus < 1) {
+		printk("Error: # of cpu is invalid.\n");
+		return -EINVAL;
+	}
+
+	return info->n_cpus;
+}
+
 int mcexec_syscall(struct mcctrl_channel *c, unsigned long arg)
 {
 	c->req = 1;
@@ -554,6 +571,9 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg)
 
 	case MCEXEC_UP_SEND_SIGNAL:
 		return mcexec_send_signal(os, arg);
+
+	case MCEXEC_UP_GET_CPU:
+		return mcexec_get_cpu(os);
 
 	case MCEXEC_UP_PREPARE_DMA:
 		return mcexec_pin_region(os, (unsigned long *)arg);
