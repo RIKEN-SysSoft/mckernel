@@ -126,7 +126,7 @@ static void send_syscall(struct syscall_request *req)
 int do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx)
 {
 	struct syscall_response *res;
-	struct syscall_request req2;
+	struct syscall_request req2 IHK_DMA_ALIGN;
 	struct syscall_params *scp;
 	int error;
 
