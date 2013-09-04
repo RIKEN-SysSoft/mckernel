@@ -403,7 +403,7 @@ SYSCALL_DECLARE(mmap)
 	/* check not supported requests */
 	if ((flags & error_flags)
 			|| (flags & ~(supported_flags | ignored_flags))) {
-		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):unknown flags %lx\n",
+		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):unknown flags %x\n",
 				addr0, len0, prot, flags, fd, off,
 				(flags & ~(supported_flags | ignored_flags)));
 		error = -EINVAL;
