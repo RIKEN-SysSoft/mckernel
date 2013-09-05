@@ -600,6 +600,38 @@ static void __return_syscall(struct mcctrl_channel *c, int ret)
 	c->param.response_va->status = 1;
 }
 
+static void clear_pte_range(uintptr_t addr, uintptr_t len)
+{
+	struct mm_struct *mm = current->mm;
+	struct vm_area_struct *vma;
+	uintptr_t start;
+	uintptr_t end;
+
+	down_read(&mm->mmap_sem);
+	vma = find_vma(mm, 0);
+	if (!vma) {
+		printk("clear_pte_range(%lx,%lx):find_vma(0) failed\n",
+				addr, len);
+		up_read(&mm->mmap_sem);
+		return;
+	}
+
+	start = addr;
+	end = addr + len;
+	if (start < vma->vm_start) {
+		start = vma->vm_start;
+	}
+	if (vma->vm_end < end) {
+		end = vma->vm_end;
+	}
+	if (start < end) {
+		zap_vma_ptes(vma, start, end-start);
+	}
+
+	up_read(&mm->mmap_sem);
+	return;
+}
+
 int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall_request *sc)
 {
 	int error;
@@ -607,6 +639,11 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 
 	dprintk("__do_in_kernel_syscall(%p,%p,%p %ld)\n", os, c, sc, sc->number);
 	switch (sc->number) {
+	case __NR_munmap:
+		clear_pte_range(sc->args[0], sc->args[1]);
+		ret = 0;
+		break;
+
 	default:
 		error = -ENOSYS;
 		goto out;

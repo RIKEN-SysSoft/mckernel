@@ -256,6 +256,21 @@ SYSCALL_DECLARE(exit_group)
 	return 0;
 }
 
+static void clear_host_pte(uintptr_t addr, size_t len)
+{
+	ihk_mc_user_context_t ctx;
+	long lerror;
+
+	ihk_mc_syscall_arg0(&ctx) = addr;
+	ihk_mc_syscall_arg1(&ctx) = len;
+
+	lerror = syscall_generic_forwarding(__NR_munmap, &ctx);
+	if (lerror) {
+		kprintf("clear_host_pte failed. %ld\n", lerror);
+	}
+	return;
+}
+
 static int do_munmap(void *addr, size_t len)
 {
 	int error;
@@ -358,6 +373,7 @@ SYSCALL_DECLARE(mmap)
 	void *p;
 	int vrflags;
 	intptr_t phys;
+	int unmapped = 0;
 
 	dkprintf("[%d]sys_mmap(%lx,%lx,%x,%x,%d,%lx)\n",
 			ihk_mc_get_processor_id(),
@@ -422,6 +438,7 @@ SYSCALL_DECLARE(mmap)
 
 	if (flags & MAP_FIXED) {
 		/* clear specified address range */
+		unmapped = 1;
 		error = do_munmap((void *)addr, len);
 		if (error) {
 			ekprintf("sys_mmap:do_munmap(%lx,%lx) failed. %d\n",
@@ -525,6 +542,9 @@ SYSCALL_DECLARE(mmap)
 
 	error = 0;
 out:
+	if (unmapped) {
+		clear_host_pte(addr, len);
+	}
 	dkprintf("[%d]sys_mmap(%lx,%lx,%x,%x,%d,%lx): %ld %lx\n",
 			ihk_mc_get_processor_id(),
 			addr0, len0, prot, flags, fd, off, error, addr);
@@ -557,6 +577,7 @@ SYSCALL_DECLARE(munmap)
 	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
 	error = do_munmap((void *)addr, len);
 	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+	clear_host_pte(addr, len);
 
 out:
 	dkprintf("[%d]sys_munmap(%lx,%lx): %d\n",
