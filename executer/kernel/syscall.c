@@ -85,7 +85,7 @@ int deregister_peer_channel(struct mcctrl_usrdata *ud, void *key, struct mcctrl_
 	}
 
 	if (ud->keys[cpu] && (ud->keys[cpu] != key)) {
-		printk("register_peer_channel(%p,%p,%p):"
+		printk("deregister_peer_channel(%p,%p,%p):"
 				"not registered. cpu=%d\n",
 				ud, key, ch, cpu);
 		return -EBUSY;
