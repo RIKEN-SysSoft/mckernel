@@ -65,7 +65,14 @@ int register_peer_channel(struct mcctrl_usrdata *ud, void *key, struct mcctrl_ch
 		printk("register_peer_channel(%p,%p,%p):"
 				"already registered. cpu=%d\n",
 				ud, key, ch, cpu);
+		/*
+		 * When mcexec receives a signal,
+		 * it may be finished without doing deregister_peer_channel().
+		 * Therefore a substitute registration is necessary.
+		 */
+#if 0
 		return -EBUSY;
+#endif
 	}
 
 	ud->keys[cpu] = key;
