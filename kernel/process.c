@@ -866,6 +866,8 @@ int init_process_stack(struct process *process, struct program_load_desc *pn,
 	s_ind = -1;
 	p[s_ind--] = 0;     /* AT_NULL */
 	p[s_ind--] = 0;
+	p[s_ind--] = pn->at_entry; /* AT_ENTRY */
+	p[s_ind--] = AT_ENTRY;
 	p[s_ind--] = pn->at_phnum; /* AT_PHNUM */
 	p[s_ind--] = AT_PHNUM;
 	p[s_ind--] = pn->at_phent;  /* AT_PHENT */

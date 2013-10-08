@@ -104,6 +104,7 @@ struct program_load_desc {
 	unsigned long at_phdr;
 	unsigned long at_phent;
 	unsigned long at_phnum;
+	unsigned long at_entry;
 	char *args;
 	unsigned long args_len;
 	char *envs;
