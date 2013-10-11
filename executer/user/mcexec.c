@@ -472,6 +472,47 @@ sendsig(int sig)
 	}
 }
 
+static int reduce_stack(struct rlimit *orig_rlim, char *argv[])
+{
+	int n;
+	char newval[40];
+	int error;
+	struct rlimit new_rlim;
+
+	/* save original value to environment variable */
+	n = snprintf(newval, sizeof(newval), "%#lx,%#lx",
+			(unsigned long)orig_rlim->rlim_cur,
+			(unsigned long)orig_rlim->rlim_max);
+	if (n >= sizeof(newval)) {
+		__eprintf("snprintf(%s):buffer overflow\n",
+				rlimit_stack_envname);
+		return 1;
+	}
+
+#define	ALLOW_OVERWRITE	1
+	error = setenv(rlimit_stack_envname, newval, ALLOW_OVERWRITE);
+	if (error) {
+		__eprintf("failed to setenv(%s)\n", rlimit_stack_envname);
+		return 1;
+	}
+
+	/* exec() myself with small stack */
+#define	MCEXEC_STACK_SIZE	(10 * 1024 * 1024)	/* 10 MiB */
+	new_rlim.rlim_cur = MCEXEC_STACK_SIZE;
+	new_rlim.rlim_max = orig_rlim->rlim_max;
+
+	error = setrlimit(RLIMIT_STACK, &new_rlim);
+	if (error) {
+		__eprint("failed to setrlimit(RLIMIT_STACK)\n");
+		return 1;
+	}
+
+	execv("/proc/self/exe", argv);
+
+	__eprint("failed to execv(myself)\n");
+	return 1;
+}
+
 int main(int argc, char **argv)
 {
 //	int fd;
@@ -511,6 +552,13 @@ int main(int argc, char **argv)
 	error = getrlimit(RLIMIT_STACK, &rlim_stack);
 	if (error) {
 		fprintf(stderr, "Error: Failed to get stack limit.\n");
+		return 1;
+	}
+#define	MCEXEC_MAX_STACK_SIZE	(1024 * 1024 * 1024)	/* 1 GiB */
+	if (rlim_stack.rlim_cur > MCEXEC_MAX_STACK_SIZE) {
+		/* need to call reduce_stack() before modifying the argv[] */
+		(void)reduce_stack(&rlim_stack, argv);	/* no return, unless failure */
+		fprintf(stderr, "Error: Failed to reduce stack.\n");
 		return 1;
 	}
 
