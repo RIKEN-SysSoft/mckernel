@@ -82,6 +82,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock);
 
 static int fd;
 static char *altroot;
+static const char rlimit_stack_envname[] = "MCKERNEL_RLIMIT_STACK";
 
 struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 {
@@ -493,6 +494,9 @@ int main(int argc, char **argv)
 	char *path;
 	int error;
 	struct rlimit rlim_stack;
+	int n;
+	unsigned long lcur;
+	unsigned long lmax;
 
 #ifdef USE_SYSCALL_MOD_CALL
 	__glob_argc = argc;
@@ -570,6 +574,23 @@ int main(int argc, char **argv)
 	desc->args = args;
 	//print_flat(args);
 
+	p = getenv(rlimit_stack_envname);
+	if (p) {
+		n = sscanf(p, "%lx,%lx", &lcur, &lmax);
+		if (n != 2) {
+			fprintf(stderr, "Error: Failed to parse %s\n",
+					rlimit_stack_envname);
+			return 1;
+		}
+		if (lmax > rlim_stack.rlim_max) {
+			lmax = rlim_stack.rlim_max;
+		}
+		if (lcur > lmax) {
+			lcur = lmax;
+		}
+		rlim_stack.rlim_cur = lcur;
+		rlim_stack.rlim_max = lmax;
+	}
 	desc->rlimit_stack_cur = rlim_stack.rlim_cur;
 	desc->rlimit_stack_max = rlim_stack.rlim_max;
 
