@@ -81,6 +81,7 @@ struct kernel_termios {
 int main_loop(int fd, int cpu, pthread_mutex_t *lock);
 
 static int fd;
+static char *altroot;
 
 struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 {
@@ -174,6 +175,31 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	desc->at_entry = hdr.e_entry;
 
 	return desc;
+}
+
+char *search_file(char *orgpath, int mode)
+{
+	int error;
+	static char modpath[PATH_MAX];
+	int n;
+
+	error = access(orgpath, mode);
+	if (!error) {
+		return orgpath;
+	}
+
+	n = snprintf(modpath, sizeof(modpath), "%s/%s", altroot, orgpath);
+	if (n >= sizeof(modpath)) {
+		__eprintf("modified path too long: %s/%s\n", altroot, orgpath);
+		return NULL;
+	}
+
+	error = access(modpath, mode);
+	if (!error) {
+		return modpath;
+	}
+
+	return NULL;
 }
 
 struct program_load_desc *load_interp(struct program_load_desc *desc0, FILE *fp)
@@ -464,11 +490,17 @@ int main(int argc, char **argv)
 	pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 	FILE *interp = NULL;
 	char *interp_path;
+	char *path;
 
 #ifdef USE_SYSCALL_MOD_CALL
 	__glob_argc = argc;
 	__glob_argv = argv;
 #endif
+
+	altroot = getenv("MCEXEC_ALT_ROOT");
+	if (!altroot) {
+		altroot = "/usr/linux-k1om-4.7/linux-k1om";
+	}
 
 	strcpy(dev, "/dev/mcos0");
 	if(argv[1]){
@@ -501,9 +533,15 @@ int main(int argc, char **argv)
 	}
 
 	if (interp_path) {
-		interp = fopen(interp_path, "rb");
+		path = search_file(interp_path, X_OK);
+		if (!path) {
+			fprintf(stderr, "Error: interp not found: %s\n", interp_path);
+			return 1;
+		}
+
+		interp = fopen(path, "rb");
 		if (!interp) {
-			fprintf(stderr, "Error: Failed to open %s\n", interp_path);
+			fprintf(stderr, "Error: Failed to open %s\n", path);
 			return 1;
 		}
 
