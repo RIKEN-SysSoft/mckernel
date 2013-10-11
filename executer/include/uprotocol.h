@@ -26,9 +26,7 @@ struct program_image_section {
 	unsigned long filesz, offset;
 	int prot;
 	int padding;
-#if 0
-	void *source;
-#endif
+	void *fp;
 };
 
 struct program_load_desc {

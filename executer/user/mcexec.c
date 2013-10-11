@@ -82,7 +82,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock);
 
 static int fd;
 
-struct program_load_desc *load_elf(FILE *fp)
+struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 {
 	Elf64_Ehdr hdr;
 	Elf64_Phdr phdr;
@@ -90,6 +90,10 @@ struct program_load_desc *load_elf(FILE *fp)
 	struct program_load_desc *desc;
 	unsigned long load_addr = 0;
 	int load_addr_set = 0;
+	static char interp_path[PATH_MAX];
+	ssize_t ss;
+
+	*interp_pathp = NULL;
 
 	if (fread(&hdr, sizeof(hdr), 1, fp) < 1) {
 		__eprint("Cannot read Ehdr.\n");
@@ -120,11 +124,26 @@ struct program_load_desc *load_elf(FILE *fp)
 			__eprintf("Loading phdr failed (%d)\n", i);
 			return NULL;
 		}
+		if (phdr.p_type == PT_INTERP) {
+			if (phdr.p_filesz > sizeof(interp_path)) {
+				__eprint("too large PT_INTERP segment\n");
+				return NULL;
+			}
+			ss = pread(fileno(fp), interp_path, phdr.p_filesz,
+					phdr.p_offset);
+			if (ss <= 0) {
+				__eprint("cannot read PT_INTERP segment\n");
+				return NULL;
+			}
+			interp_path[ss] = '\0';
+			*interp_pathp = interp_path;
+		}
 		if (phdr.p_type == PT_LOAD) {
 			desc->sections[j].vaddr = phdr.p_vaddr;
 			desc->sections[j].filesz = phdr.p_filesz;
 			desc->sections[j].offset = phdr.p_offset;
 			desc->sections[j].len = phdr.p_memsz;
+			desc->sections[j].fp = fp;
 
 			desc->sections[j].prot = PROT_NONE;
 			desc->sections[j].prot |= (phdr.p_flags & PF_R)? PROT_READ: 0;
@@ -157,19 +176,97 @@ struct program_load_desc *load_elf(FILE *fp)
 	return desc;
 }
 
+struct program_load_desc *load_interp(struct program_load_desc *desc0, FILE *fp)
+{
+	Elf64_Ehdr hdr;
+	Elf64_Phdr phdr;
+	int i, j, nhdrs = 0;
+	struct program_load_desc *desc = desc0;
+	size_t newsize;
+
+	if (fread(&hdr, sizeof(hdr), 1, fp) < 1) {
+		__eprint("Cannot read Ehdr.\n");
+		return NULL;
+	}
+	if (memcmp(hdr.e_ident, ELFMAG, SELFMAG)) {
+		__eprint("ELFMAG mismatched.\n");
+		return NULL;
+	}
+	fseek(fp, hdr.e_phoff, SEEK_SET);
+	for (i = 0; i < hdr.e_phnum; i++) {
+		if (fread(&phdr, sizeof(phdr), 1, fp) < 1) {
+			__eprintf("Loading phdr failed (%d)\n", i);
+			return NULL;
+		}
+		if (phdr.p_type == PT_LOAD) {
+			nhdrs++;
+		}
+	}
+
+	nhdrs += desc->num_sections;
+	newsize = sizeof(struct program_load_desc)
+		+ (nhdrs * sizeof(struct program_image_section));
+	desc = realloc(desc, newsize);
+	if (!desc) {
+		__eprintf("realloc(%#lx) failed\n", (long)newsize);
+		return NULL;
+	}
+
+	fseek(fp, hdr.e_phoff, SEEK_SET);
+	j = desc->num_sections;
+	for (i = 0; i < hdr.e_phnum; i++) {
+		if (fread(&phdr, sizeof(phdr), 1, fp) < 1) {
+			__eprintf("Loading phdr failed (%d)\n", i);
+			return NULL;
+		}
+		if (phdr.p_type == PT_INTERP) {
+			__eprint("PT_INTERP on interp\n");
+			return NULL;
+		}
+		if (phdr.p_type == PT_LOAD) {
+			desc->sections[j].vaddr = phdr.p_vaddr;
+			desc->sections[j].filesz = phdr.p_filesz;
+			desc->sections[j].offset = phdr.p_offset;
+			desc->sections[j].len = phdr.p_memsz;
+			desc->sections[j].fp = fp;
+
+			desc->sections[j].prot = PROT_NONE;
+			desc->sections[j].prot |= (phdr.p_flags & PF_R)? PROT_READ: 0;
+			desc->sections[j].prot |= (phdr.p_flags & PF_W)? PROT_WRITE: 0;
+			desc->sections[j].prot |= (phdr.p_flags & PF_X)? PROT_EXEC: 0;
+
+			__dprintf("%d: (%s) %lx, %lx, %lx, %lx, %x\n",
+				  j, (phdr.p_type == PT_LOAD ? "PT_LOAD" : "PT_TLS"),
+				  desc->sections[j].vaddr,
+			          desc->sections[j].filesz,
+			          desc->sections[j].offset,
+			          desc->sections[j].len,
+				  desc->sections[j].prot);
+			j++;
+		}
+	}
+	desc->num_sections = j;
+
+	desc->entry = hdr.e_entry;
+
+	return desc;
+}
+
 unsigned char *dma_buf;
 
 
 #define PAGE_SIZE 4096
 #define PAGE_MASK ~((unsigned long)PAGE_SIZE - 1)
 
-void transfer_image(FILE *fp, int fd, struct program_load_desc *desc)
+void transfer_image(int fd, struct program_load_desc *desc)
 {
 	struct program_transfer pt;
 	unsigned long s, e, flen, rpa;
 	int i, l, lr;
+	FILE *fp;
 
 	for (i = 0; i < desc->num_sections; i++) {
+		fp = desc->sections[i].fp;
 		s = (desc->sections[i].vaddr) & PAGE_MASK;
 		e = (desc->sections[i].vaddr + desc->sections[i].len
 		     + PAGE_SIZE - 1) & PAGE_MASK;
@@ -365,6 +462,8 @@ int main(int argc, char **argv)
 	int i;
 	int ncpu;
 	pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+	FILE *interp = NULL;
+	char *interp_path;
 
 #ifdef USE_SYSCALL_MOD_CALL
 	__glob_argc = argc;
@@ -394,11 +493,25 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	desc = load_elf(fp);
+	desc = load_elf(fp, &interp_path);
 	if (!desc) {
 		fclose(fp);
 		fprintf(stderr, "Error: Failed to parse ELF!\n");
 		return 1;
+	}
+
+	if (interp_path) {
+		interp = fopen(interp_path, "rb");
+		if (!interp) {
+			fprintf(stderr, "Error: Failed to open %s\n", interp_path);
+			return 1;
+		}
+
+		desc = load_interp(desc, interp);
+		if (!desc) {
+			fprintf(stderr, "Error: Failed to parse interp!\n");
+			return 1;
+		}
 	}
 
 	__dprintf("# of sections: %d\n", desc->num_sections);
@@ -465,7 +578,7 @@ int main(int argc, char **argv)
 	}
 
 	print_desc(desc);
-	transfer_image(fp, fd, desc);
+	transfer_image(fd, desc);
 	fflush(stdout);
 	fflush(stderr);
 	
