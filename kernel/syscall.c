@@ -1106,14 +1106,14 @@ SYSCALL_DECLARE(getrlimit)
 	int ret;
 	int resource = ihk_mc_syscall_arg0(ctx);
 	struct rlimit *rlm = (struct rlimit *)ihk_mc_syscall_arg1(ctx);
+	struct process *proc = cpu_local_var(current);
 
 	switch (resource) {
 
 	case RLIMIT_STACK:
-
 		dkprintf("[%d] getrlimit() RLIMIT_STACK\n", ihk_mc_get_processor_id());
-		rlm->rlim_cur = (512*4096);  /* Linux provides 8MB */
-		rlm->rlim_max = (1024*1024*1024);
+		rlm->rlim_cur = proc->rlimit_stack.rlim_cur;
+		rlm->rlim_max = proc->rlimit_stack.rlim_max;
 		ret = 0;
 		break;
 

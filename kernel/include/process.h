@@ -36,6 +36,7 @@
 
 #include <waitq.h>
 #include <futex.h>
+#include <rlimit.h>
 
 struct vm_range {
 	struct list_head list;
@@ -90,6 +91,7 @@ struct process {
 	char	sigstack[512];
 	// TODO: backup FR and MMX regs
 	unsigned long sigrc; // return code of rt_sigreturn (x86_64: rax reg.)
+	struct rlimit rlimit_stack;
 };
 
 struct process_vm {

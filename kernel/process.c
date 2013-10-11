@@ -106,6 +106,7 @@ struct process *clone_process(struct process *org, unsigned long pc,
 	
 	ihk_atomic_inc(&org->vm->refcount);
 	proc->vm = org->vm;
+	proc->rlimit_stack = org->rlimit_stack;
 
 	proc->sighandler = org->sighandler;
 	ihk_atomic_inc(&org->sighandler->use);

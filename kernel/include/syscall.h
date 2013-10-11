@@ -107,6 +107,8 @@ struct program_load_desc {
 	unsigned long args_len;
 	char *envs;
 	unsigned long envs_len;
+	unsigned long rlimit_stack_cur;
+	unsigned long rlimit_stack_max;
 	struct program_image_section sections[0];
 };
 

@@ -491,6 +491,8 @@ int main(int argc, char **argv)
 	FILE *interp = NULL;
 	char *interp_path;
 	char *path;
+	int error;
+	struct rlimit rlim_stack;
 
 #ifdef USE_SYSCALL_MOD_CALL
 	__glob_argc = argc;
@@ -500,6 +502,12 @@ int main(int argc, char **argv)
 	altroot = getenv("MCEXEC_ALT_ROOT");
 	if (!altroot) {
 		altroot = "/usr/linux-k1om-4.7/linux-k1om";
+	}
+
+	error = getrlimit(RLIMIT_STACK, &rlim_stack);
+	if (error) {
+		fprintf(stderr, "Error: Failed to get stack limit.\n");
+		return 1;
 	}
 
 	strcpy(dev, "/dev/mcos0");
@@ -561,6 +569,9 @@ int main(int argc, char **argv)
 	desc->args_len = flatten_strings(-1, argv + 1, &args);
 	desc->args = args;
 	//print_flat(args);
+
+	desc->rlimit_stack_cur = rlim_stack.rlim_cur;
+	desc->rlimit_stack_max = rlim_stack.rlim_max;
 
 	fd = open(dev, O_RDWR);
 	if (fd < 0) {

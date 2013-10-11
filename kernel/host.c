@@ -81,6 +81,8 @@ static int process_msg_prepare_process(unsigned long rphys)
 	proc->pid = pn->pid;
 	proc->vm->region.user_start = pn->user_start;
 	proc->vm->region.user_end = pn->user_end;
+	proc->rlimit_stack.rlim_cur = pn->rlimit_stack_cur;
+	proc->rlimit_stack.rlim_max = pn->rlimit_stack_max;
 
 	/* TODO: Clear it at the proper timing */
 	cpu_local_var(scp).post_idx = 0;
