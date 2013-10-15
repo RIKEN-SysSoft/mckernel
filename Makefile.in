@@ -28,7 +28,7 @@ install::
 	esac
 	if [ "$(TARGET)" = attached-mic ]; then \
 		mkdir -p -m 755 $(SBINDIR); \
-		install -m 755 boot-attached-mic.sh $(SBINDIR)/boot.sh; \
+		install -m 755 boot-attached-mic.sh $(SBINDIR)/mcreboot; \
 	fi
 
 clean::

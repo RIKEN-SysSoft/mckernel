@@ -74,25 +74,25 @@ for mod_path in "$KMODDIR/ihk.ko" "$KMODDIR/ihk_mic.ko" "$KMODDIR/mcctrl.ko"; do
 	if [ "$mod_path" == "$KMODDIR/ihk_mic.ko" ]; then
 		echo "creating OS device" >&2
 		sleep 2
-		"$SBINDIR/ihktest" 0 create
+		"$SBINDIR/ihkconfig" 0 create
 		sleep 2
 	fi
 	
 	if [ "$mod_path" == "$KMODDIR/mcctrl.ko" ]; then
 		if [ $# -gt 0 ]; then
 			echo "setting kernel parameter to: \"$1\"" >&2
-			"$SBINDIR/ihkostest" 0 kargs "$1"
+			"$SBINDIR/ihkosctl" 0 kargs "$1"
 			sleep 2
 		else
 			echo "setting kernel parameter to: \"hidos\"" >&2
-			"$SBINDIR/ihkostest" 0 kargs "hidos"
+			"$SBINDIR/ihkosctl" 0 kargs "hidos"
 			sleep 2
 		fi
 		echo "using kernel image: $KERNDIR/mckernel.img" >&2
-		"$SBINDIR/ihkostest" 0 load "$KERNDIR/mckernel.img"
+		"$SBINDIR/ihkosctl" 0 load "$KERNDIR/mckernel.img"
 		sleep 2
 		echo "booting OS 0" >&2
-		"$SBINDIR/ihkostest" 0 boot
+		"$SBINDIR/ihkosctl" 0 boot
 		sleep 2
 	fi
 done
