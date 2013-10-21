@@ -133,7 +133,10 @@ static int process_msg_prepare_process(unsigned long rphys)
 		p->sections[i].remote_pa = up;
 
 		/* TODO: Maybe we need flag */
-		if (i == 0) {
+		if (pn->sections[i].interp) {
+			/* nothing to do */
+		}
+		else if (i == 0) {
 			proc->vm->region.text_start = s;
 			proc->vm->region.text_end = e;
 		} else if (i == 1) {

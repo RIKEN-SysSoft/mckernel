@@ -145,6 +145,7 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 			desc->sections[j].filesz = phdr.p_filesz;
 			desc->sections[j].offset = phdr.p_offset;
 			desc->sections[j].len = phdr.p_memsz;
+			desc->sections[j].interp = 0;
 			desc->sections[j].fp = fp;
 
 			desc->sections[j].prot = PROT_NONE;
@@ -255,6 +256,7 @@ struct program_load_desc *load_interp(struct program_load_desc *desc0, FILE *fp)
 			desc->sections[j].filesz = phdr.p_filesz;
 			desc->sections[j].offset = phdr.p_offset;
 			desc->sections[j].len = phdr.p_memsz;
+			desc->sections[j].interp = 1;
 			desc->sections[j].fp = fp;
 
 			desc->sections[j].prot = PROT_NONE;

@@ -25,7 +25,8 @@ struct program_image_section {
 	unsigned long remote_pa;
 	unsigned long filesz, offset;
 	int prot;
-	int padding;
+	unsigned char interp;
+	unsigned char padding[3];
 	void *fp;
 };
 
