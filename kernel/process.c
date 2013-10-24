@@ -1042,27 +1042,45 @@ int init_process_stack(struct process *process, struct program_load_desc *pn,
 	int s_ind = 0;
 	int arg_ind;
 	unsigned long size = USER_STACK_NR_PAGES * PAGE_SIZE;
-	char *stack = ihk_mc_alloc_pages(USER_STACK_NR_PAGES, IHK_MC_AP_NOWAIT);
-	unsigned long *p = (unsigned long *)(stack + size);
 	unsigned long end = process->vm->region.user_end;
 	unsigned long start = end - size;
 	int rc;
 	unsigned long vrflag;
+	char *stack;
+	int error;
+	unsigned long *p;
+	unsigned long minsz;
 
-	if(stack == NULL)
-		return -ENOMEM;
-
-	memset(stack, 0, size);
-
-	vrflag = VR_STACK;
+	/* create stack range */
+	vrflag = VR_STACK | VR_DEMAND_PAGING;
 	vrflag |= VR_PROT_READ | VR_PROT_WRITE | VR_PROT_EXEC;
 	vrflag |= VRFLAG_PROT_TO_MAXPROT(vrflag);
-	if ((rc = add_process_memory_range(process, start, end, virt_to_phys(stack),
+#define	NOPHYS	((uintptr_t)-1)
+	if ((rc = add_process_memory_range(process, start, end, NOPHYS,
 					vrflag, NULL, 0)) != 0) {
-		ihk_mc_free_pages(stack, USER_STACK_NR_PAGES);
 		return rc;
 	}
 
+	/* map physical pages for initial stack frame */
+	minsz = PAGE_SIZE;
+	stack = ihk_mc_alloc_pages(minsz >> PAGE_SHIFT, IHK_MC_AP_NOWAIT);
+	if (!stack) {
+		return -ENOMEM;
+	}
+	memset(stack, 0, minsz);
+	error = ihk_mc_pt_set_range(process->vm->page_table,
+			(void *)(end-minsz), (void *)end,
+			virt_to_phys(stack), vrflag_to_ptattr(vrflag));
+	if (error) {
+		kprintf("init_process_stack:"
+				"set range %lx-%lx %lx failed. %d\n",
+				(end-minsz), end, stack, error);
+		ihk_mc_free_pages(stack, minsz >> PAGE_SHIFT);
+		return error;
+	}
+
+	/* set up initial stack frame */
+	p = (unsigned long *)(stack + minsz);
 	s_ind = -1;
 	p[s_ind--] = 0;     /* AT_NULL */
 	p[s_ind--] = 0;
