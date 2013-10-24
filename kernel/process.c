@@ -1041,9 +1041,9 @@ int init_process_stack(struct process *process, struct program_load_desc *pn,
 {
 	int s_ind = 0;
 	int arg_ind;
-	unsigned long size = USER_STACK_NR_PAGES * PAGE_SIZE;
+	unsigned long size;
 	unsigned long end = process->vm->region.user_end;
-	unsigned long start = end - size;
+	unsigned long start;
 	int rc;
 	unsigned long vrflag;
 	char *stack;
@@ -1052,6 +1052,16 @@ int init_process_stack(struct process *process, struct program_load_desc *pn,
 	unsigned long minsz;
 
 	/* create stack range */
+	minsz = PAGE_SIZE;
+	size = process->rlimit_stack.rlim_cur & PAGE_MASK;
+	if (size > (USER_END / 2)) {
+		size = USER_END / 2;
+	}
+	else if (size < minsz) {
+		size = minsz;
+	}
+	start = end - size;
+
 	vrflag = VR_STACK | VR_DEMAND_PAGING;
 	vrflag |= VR_PROT_READ | VR_PROT_WRITE | VR_PROT_EXEC;
 	vrflag |= VRFLAG_PROT_TO_MAXPROT(vrflag);
@@ -1062,7 +1072,6 @@ int init_process_stack(struct process *process, struct program_load_desc *pn,
 	}
 
 	/* map physical pages for initial stack frame */
-	minsz = PAGE_SIZE;
 	stack = ihk_mc_alloc_pages(minsz >> PAGE_SHIFT, IHK_MC_AP_NOWAIT);
 	if (!stack) {
 		return -ENOMEM;
