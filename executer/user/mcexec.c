@@ -491,8 +491,8 @@ static int reduce_stack(struct rlimit *orig_rlim, char *argv[])
 		return 1;
 	}
 
-#define	ALLOW_OVERWRITE	1
-	error = setenv(rlimit_stack_envname, newval, ALLOW_OVERWRITE);
+#define	DO_NOT_OVERWRITE	0
+	error = setenv(rlimit_stack_envname, newval, DO_NOT_OVERWRITE);
 	if (error) {
 		__eprintf("failed to setenv(%s)\n", rlimit_stack_envname);
 		return 1;
