@@ -642,6 +642,7 @@ ac_user_opts='
 enable_option_checking
 with_kernelsrc
 with_target
+enable_dcfa
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1256,6 +1257,12 @@ if test -n "$ac_init_help"; then
    esac
   cat <<\_ACEOF
 
+Optional Features:
+  --disable-option-checking  ignore unrecognized --enable/--with options
+  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
+  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-dcfa           Enable DCFA modules
+
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
@@ -1760,6 +1767,14 @@ if test "${with_target+set}" = set; then :
   withval=$with_target; WITH_TARGET=$withval
 else
   WITH_TARGET=yes
+fi
+
+
+# Check whether --enable-dcfa was given.
+if test "${enable_dcfa+set}" = set; then :
+  enableval=$enable_dcfa;
+else
+  enable_dcfa=no
 fi
 
 
@@ -3215,6 +3230,12 @@ TARGET="$WITH_TARGET"
 ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/kernel/Makefile kernel/Makefile boot-attached-mic.sh"
 
 
+if test "x$enable_dcfa" = xyes; then :
+
+        ac_config_files="$ac_config_files kernel/Makefile.dcfa"
+
+fi
+
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -3925,6 +3946,7 @@ do
     "executer/kernel/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/Makefile" ;;
     "kernel/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/Makefile" ;;
     "boot-attached-mic.sh") CONFIG_FILES="$CONFIG_FILES boot-attached-mic.sh" ;;
+    "kernel/Makefile.dcfa") CONFIG_FILES="$CONFIG_FILES kernel/Makefile.dcfa" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
