@@ -537,7 +537,6 @@ int main(int argc, char **argv)
 	char *path;
 	int error;
 	struct rlimit rlim_stack;
-	int n;
 	unsigned long lcur;
 	unsigned long lmax;
 
@@ -626,8 +625,16 @@ int main(int argc, char **argv)
 
 	p = getenv(rlimit_stack_envname);
 	if (p) {
-		n = sscanf(p, "%lx,%lx", &lcur, &lmax);
-		if (n != 2) {
+		errno = 0;
+		lcur = strtoul(p, &p, 0);
+		if (errno || (*p != ',')) {
+			fprintf(stderr, "Error: Failed to parse %s\n",
+					rlimit_stack_envname);
+			return 1;
+		}
+		errno = 0;
+		lmax = strtoul(p+1, &p, 0);
+		if (errno || (*p != '\0')) {
 			fprintf(stderr, "Error: Failed to parse %s\n",
 					rlimit_stack_envname);
 			return 1;
