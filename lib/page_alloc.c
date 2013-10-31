@@ -17,7 +17,7 @@ void free_pages(void *, int npages);
 #define MAP_INDEX(n)    ((n) >> 6)
 #define MAP_BIT(n)      ((n) & 0x3f)
 #define ADDRESS(desc, index, bit)    \
-	((desc)->start + (((index) * 64 + (bit)) << ((desc)->shift)))
+	((desc)->start + (((uintptr_t)(index) * 64 + (bit)) << ((desc)->shift)))
 
 void *__ihk_pagealloc_init(unsigned long start, unsigned long size,
                            unsigned long unit, void *initial,
