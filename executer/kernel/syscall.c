@@ -256,6 +256,18 @@ out:
 	return error;
 }
 
+/*
+ * By remap_pfn_range(), VM_PFN_AT_MMAP may be raised.
+ * VM_PFN_AT_MMAP cause the following problems.
+ *
+ * 1) vm_pgoff is changed. As a result, i_mmap tree is corrupted.
+ * 2) duplicate free_memtype() calls occur.
+ *
+ * These problems may be solved in linux-3.7.
+ * It uses vm_insert_pfn() until it is fixed.
+ */
+#define	USE_VM_INSERT_PFN	1
+
 static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
 	struct mcctrl_usrdata *	usrdata	= vma->vm_file->private_data;
@@ -268,6 +280,9 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	unsigned long		pgsize;
 	unsigned long		rva;
 	unsigned long		pfn;
+#if USE_VM_INSERT_PFN
+	size_t			pix;
+#endif
 
 	dprintk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
 			vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
@@ -303,7 +318,16 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 
 	phys = ihk_device_map_memory(dev, rpa, pgsize);
 	pfn = phys >> PAGE_SHIFT;
-	error = remap_pfn_range(vma, rva, pfn, pgsize, PAGE_SHARED);
+#if USE_VM_INSERT_PFN
+	for (pix = 0; pix < (pgsize / PAGE_SIZE); ++pix) {
+		error = vm_insert_pfn(vma, rva+(pix*PAGE_SIZE), pfn+pix);
+		if (error) {
+			break;
+		}
+	}
+#else
+	error = remap_pfn_range(vma, rva, pfn, pgsize, vma->vm_page_prot);
+#endif
 	ihk_device_unmap_memory(dev, phys, pgsize);
 	if (error) {
 		printk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
@@ -898,32 +922,67 @@ static void __return_syscall(struct mcctrl_channel *c, int ret)
 	c->param.response_va->status = 1;
 }
 
-static void clear_pte_range(uintptr_t addr, uintptr_t len)
+static int remap_user_space(uintptr_t rva, size_t len, int prot)
 {
 	struct mm_struct *mm = current->mm;
 	struct vm_area_struct *vma;
+	struct file *file;
 	uintptr_t start;
+	pgoff_t pgoff;
+	uintptr_t map;
+
+	dprintk("remap_user_space(%lx,%lx,%x)\n", rva, len, prot);
+	down_write(&mm->mmap_sem);
+	vma = find_vma(mm, rva);
+	if (!vma || (rva < vma->vm_start)) {
+		printk("remap_user_space(%lx,%lx,%x):find_vma failed. %p %lx %lx\n",
+				rva, len, prot, vma,
+				(vma)? vma->vm_start: -1,
+				(vma)? vma->vm_end: 0);
+		up_write(&mm->mmap_sem);
+		map = -ENOMEM;
+		goto out;
+	}
+
+	file = vma->vm_file;
+	start = rva;
+	pgoff = vma->vm_pgoff + ((rva - vma->vm_start) >> PAGE_SHIFT);
+
+	map = do_mmap_pgoff(file, start, len,
+			prot, MAP_FIXED|MAP_SHARED, pgoff);
+	up_write(&mm->mmap_sem);
+out:
+	dprintk("remap_user_space(%lx,%lx,%x): %lx (%ld)\n",
+			rva, len, prot, (long)map, (long)map);
+	return (IS_ERR_VALUE(map))? (int)map: 0;
+}
+
+static void clear_pte_range(uintptr_t start, uintptr_t len)
+{
+	struct mm_struct *mm = current->mm;
+	struct vm_area_struct *vma;
+	uintptr_t addr;
 	uintptr_t end;
 
 	down_read(&mm->mmap_sem);
-	vma = find_vma(mm, 0);
-	if (!vma) {
-		printk("clear_pte_range(%lx,%lx):find_vma(0) failed\n",
-				addr, len);
-		up_read(&mm->mmap_sem);
-		return;
-	}
+	addr = start;
+	while (addr < (start + len)) {
+		vma = find_vma(mm, addr);
+		if (!vma) {
+			break;
+		}
 
-	start = addr;
-	end = addr + len;
-	if (start < vma->vm_start) {
-		start = vma->vm_start;
-	}
-	if (vma->vm_end < end) {
-		end = vma->vm_end;
-	}
-	if (start < end) {
-		zap_vma_ptes(vma, start, end-start);
+		if (addr < vma->vm_start) {
+			addr = vma->vm_start;
+		}
+		end = start + len;
+		if (vma->vm_end < end) {
+			end = vma->vm_end;
+		}
+		if (addr < end) {
+			zap_vma_ptes(vma, addr, end-addr);
+		}
+		addr = end;
 	}
 
 	up_read(&mm->mmap_sem);
@@ -944,6 +1003,10 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 	case __NR_munmap:
 		clear_pte_range(sc->args[0], sc->args[1]);
 		ret = 0;
+		break;
+
+	case __NR_mprotect:
+		ret = remap_user_space(sc->args[0], sc->args[1], sc->args[2]);
 		break;
 
 	default:

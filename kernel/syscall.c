@@ -274,15 +274,47 @@ static void clear_host_pte(uintptr_t addr, size_t len)
 	return;
 }
 
+static int set_host_vma(uintptr_t addr, size_t len, int prot)
+{
+	ihk_mc_user_context_t ctx;
+	long lerror;
+
+	ihk_mc_syscall_arg0(&ctx) = addr;
+	ihk_mc_syscall_arg1(&ctx) = len;
+	ihk_mc_syscall_arg2(&ctx) = prot;
+
+	lerror = syscall_generic_forwarding(__NR_mprotect, &ctx);
+	if (lerror) {
+		kprintf("set_host_vma(%lx,%lx,%x) failed. %ld\n",
+				addr, len, prot, lerror);
+		goto out;
+	}
+
+	lerror = 0;
+out:
+	return (int)lerror;
+}
+
 static int do_munmap(void *addr, size_t len)
 {
 	int error;
+	int ro_freed;
 
 	begin_free_pages_pending();
 	error = remove_process_memory_range(cpu_local_var(current),
-			(intptr_t)addr, (intptr_t)addr+len);
+			(intptr_t)addr, (intptr_t)addr+len, &ro_freed);
 	// XXX: TLB flush
 	flush_tlb();
+	if (error || !ro_freed) {
+		clear_host_pte((uintptr_t)addr, len);
+	}
+	else {
+		error = set_host_vma((uintptr_t)addr, len, PROT_READ|PROT_WRITE);
+		if (error) {
+			kprintf("sys_munmap:set_host_vma failed. %d\n", error);
+			/* through */
+		}
+	}
 	finish_free_pages_pending();
 	return error;
 }
@@ -376,10 +408,10 @@ SYSCALL_DECLARE(mmap)
 	void *p = NULL;
 	int vrflags;
 	intptr_t phys;
-	int unmapped = 0;
 	struct memobj *memobj = NULL;
 	int maxprot;
 	int denied;
+	int ro_vma_mapped = 0;
 
 	dkprintf("[%d]sys_mmap(%lx,%lx,%x,%x,%d,%lx)\n",
 			ihk_mc_get_processor_id(),
@@ -419,7 +451,7 @@ SYSCALL_DECLARE(mmap)
 		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):EINVAL\n",
 				addr0, len0, prot, flags, fd, off);
 		error = -EINVAL;
-		goto out;
+		goto out2;
 	}
 
 	/* check not supported requests */
@@ -429,7 +461,7 @@ SYSCALL_DECLARE(mmap)
 				addr0, len0, prot, flags, fd, off,
 				(flags & ~(supported_flags | ignored_flags)));
 		error = -EINVAL;
-		goto out;
+		goto out2;
 	}
 
 	if ((flags & MAP_SHARED) && !(flags & MAP_ANONYMOUS)) {
@@ -437,19 +469,17 @@ SYSCALL_DECLARE(mmap)
 				addr0, len0, prot, flags, fd, off,
 				(flags & ~(supported_flags | ignored_flags)));
 		error = -EINVAL;
-		goto out;
+		goto out2;
 	}
 
 	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
 
 	if (flags & MAP_FIXED) {
 		/* clear specified address range */
-		unmapped = 1;
 		error = do_munmap((void *)addr, len);
 		if (error) {
 			ekprintf("sys_mmap:do_munmap(%lx,%lx) failed. %d\n",
 					addr, len, error);
-			ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
 			goto out;
 		}
 	}
@@ -459,7 +489,6 @@ SYSCALL_DECLARE(mmap)
 		if (error) {
 			ekprintf("sys_mmap:search_free_space(%lx,%lx) failed. %d\n",
 					len, region->map_end, error);
-			ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
 			goto out;
 		}
 		region->map_end = addr + len;
@@ -487,13 +516,22 @@ SYSCALL_DECLARE(mmap)
 		vrflags |= VR_DEMAND_PAGING;
 	}
 
+	if (!(prot & PROT_WRITE)) {
+		error = set_host_vma(addr, len, PROT_READ);
+		if (error) {
+			kprintf("sys_mmap:set_host_vma failed. %d\n", error);
+			goto out;
+		}
+
+		ro_vma_mapped = 1;
+	}
+
 	phys = 0;
 	maxprot = PROT_READ | PROT_WRITE | PROT_EXEC;
 	if (!(flags & MAP_ANONYMOUS)) {
 		error = fileobj_create(fd, &memobj, &maxprot);
 		if (error) {
 			ekprintf("sys_mmap:fileobj_create failed. %d\n", error);
-			ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
 			goto out;
 		}
 	}
@@ -511,7 +549,6 @@ SYSCALL_DECLARE(mmap)
 		if (p == NULL) {
 			ekprintf("sys_mmap:allocate_pages(%d,%d) failed.\n",
 					npages, p2align);
-			ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
 			error = -ENOMEM;
 			goto out;
 		}
@@ -524,7 +561,6 @@ SYSCALL_DECLARE(mmap)
 	denied = prot & ~maxprot;
 	if (denied) {
 		ekprintf("sys_mmap:denied %x. %x %x\n", denied, prot, maxprot);
-		ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
 		error = (denied == PROT_EXEC)? -EPERM: -EACCES;
 		goto out;
 	}
@@ -536,25 +572,26 @@ SYSCALL_DECLARE(mmap)
 				"(%p,%lx,%lx,%lx,%lx) failed %d\n",
 				proc, addr, addr+len,
 				virt_to_phys(p), vrflags, error);
-		ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
 		goto out;
 	}
-
-	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
 
 	error = 0;
 	p = NULL;
 	memobj = NULL;
+	ro_vma_mapped = 0;
 
 out:
+	if (ro_vma_mapped) {
+		(void)set_host_vma(addr, len, PROT_READ|PROT_WRITE);
+	}
+	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+
+out2:
 	if (p) {
 		ihk_mc_free_pages(p, npages);
 	}
 	if (memobj) {
 		memobj_release(memobj);
-	}
-	if (unmapped) {
-		clear_host_pte(addr, len);
 	}
 	dkprintf("[%d]sys_mmap(%lx,%lx,%x,%x,%d,%lx): %ld %lx\n",
 			ihk_mc_get_processor_id(),
@@ -588,7 +625,6 @@ SYSCALL_DECLARE(munmap)
 	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
 	error = do_munmap((void *)addr, len);
 	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
-	clear_host_pte(addr, len);
 
 out:
 	dkprintf("[%d]sys_munmap(%lx,%lx): %d\n",
@@ -612,6 +648,7 @@ SYSCALL_DECLARE(mprotect)
 	struct vm_range *changed;
 	const unsigned long protflags = PROT_TO_VR_FLAG(prot);
 	unsigned long denied;
+	int ro_changed = 0;
 
 	dkprintf("[%d]sys_mprotect(%lx,%lx,%x)\n",
 			ihk_mc_get_processor_id(), start, len0, prot);
@@ -718,6 +755,10 @@ SYSCALL_DECLARE(mprotect)
 			}
 		}
 
+		if ((range->flag ^ protflags) & VR_PROT_WRITE) {
+			ro_changed = 1;
+		}
+
 		error = change_prot_process_memory_range(proc, range, protflags);
 		if (error) {
 			ekprintf("sys_mprotect(%lx,%lx,%x):change failed. %d\n",
@@ -743,6 +784,13 @@ SYSCALL_DECLARE(mprotect)
 out:
 	// XXX: TLB flush
 	flush_tlb();
+	if (ro_changed && !error) {
+		error = set_host_vma(start, len, prot & (PROT_READ|PROT_WRITE));
+		if (error) {
+			kprintf("sys_mprotect:set_host_vma failed. %d\n", error);
+			/* through */
+		}
+	}
 	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
 	dkprintf("[%d]sys_mprotect(%lx,%lx,%x): %d\n",
 			ihk_mc_get_processor_id(), start, len0, prot, error);
