@@ -324,15 +324,15 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 			memobj_lock(range->memobj);
 		}
 		error = ihk_mc_pt_free_range(vm->page_table,
-				(void *)start, (void *)end);
+				(void *)start, (void *)end, range->memobj);
 		if (range->memobj) {
 			memobj_unlock(range->memobj);
 		}
 		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 		if (error && (error != -ENOENT)) {
 			ekprintf("free_process_memory_range(%p,%lx-%lx):"
-					"ihk_mc_pt_free_range(%lx-%lx) failed. %d\n",
-					vm, start0, end0, start, end, error);
+					"ihk_mc_pt_free_range(%lx-%lx,%p) failed. %d\n",
+					vm, start0, end0, start, end, range->memobj, error);
 			/* through */
 		}
 	}

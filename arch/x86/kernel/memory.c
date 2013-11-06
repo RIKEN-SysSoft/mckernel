@@ -814,6 +814,8 @@ static int split_large_page(pte_t *ptep)
 
 struct clear_range_args {
 	int free_physical;
+	uint8_t padding[4];
+	struct memobj *memobj;
 };
 
 static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
@@ -822,13 +824,18 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 	struct clear_range_args *args = args0;
 	uint64_t phys;
 	struct page *page;
+	pte_t old;
 
 	if (*ptep == PTE_NULL) {
 		return -ENOENT;
 	}
 
 	phys = *ptep & PT_PHYSMASK;
-	*ptep = PTE_NULL;
+	old = xchg(ptep, PTE_NULL);
+
+	if ((old & PFL1_DIRTY) && args->memobj) {
+		memobj_flush_page(args->memobj, phys, PTL1_SIZE);
+	}
 
 	if (args->free_physical) {
 		page = phys_to_page(phys);
@@ -848,6 +855,7 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
 	struct page_table *pt;
 	int error;
 	struct page *page;
+	pte_t old;
 
 	if (*ptep == PTE_NULL) {
 		return -ENOENT;
@@ -869,7 +877,11 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
 
 	if (*ptep & PFL2_SIZE) {
 		phys = *ptep & PT_PHYSMASK;
-		*ptep = PTE_NULL;
+		old = xchg(ptep, PTE_NULL);
+
+		if ((old & PFL2_DIRTY) && args->memobj) {
+			memobj_flush_page(args->memobj, phys, PTL2_SIZE);
+		}
 
 		if (args->free_physical) {
 			page = phys_to_page(phys);
@@ -922,7 +934,7 @@ static int clear_range_l4(void *args0, pte_t *ptep, uint64_t base,
 }
 
 static int clear_range(struct page_table *pt, uintptr_t start, uintptr_t end,
-		int free_physical)
+		int free_physical, struct memobj *memobj)
 {
 	int error;
 	struct clear_range_args args;
@@ -935,6 +947,8 @@ static int clear_range(struct page_table *pt, uintptr_t start, uintptr_t end,
 	}
 
 	args.free_physical = free_physical;
+	args.memobj = memobj;
+
 	error = walk_pte_l4(pt, 0, start, end, &clear_range_l4, &args);
 	return error;
 }
@@ -943,14 +957,14 @@ int ihk_mc_pt_clear_range(page_table_t pt, void *start, void *end)
 {
 #define	KEEP_PHYSICAL	0
 	return clear_range(pt, (uintptr_t)start, (uintptr_t)end,
-			KEEP_PHYSICAL);
+			KEEP_PHYSICAL, NULL);
 }
 
-int ihk_mc_pt_free_range(page_table_t pt, void *start, void *end)
+int ihk_mc_pt_free_range(page_table_t pt, void *start, void *end, struct memobj *memobj)
 {
 #define	FREE_PHYSICAL	1
 	return clear_range(pt, (uintptr_t)start, (uintptr_t)end,
-			FREE_PHYSICAL);
+			FREE_PHYSICAL, memobj);
 }
 
 struct change_attr_args {
@@ -1284,7 +1298,7 @@ int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 		error = -EBUSY;
 		ekprintf("set_range_l1(%lx,%lx,%lx):page exists. %d %lx\n",
 				base, start, end, error, *ptep);
-		(void)clear_range(args->pt, start, base, KEEP_PHYSICAL);
+		(void)clear_range(args->pt, start, base, KEEP_PHYSICAL, NULL);
 		goto out;
 	}
 
@@ -1332,7 +1346,7 @@ int set_range_l2(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 					"__alloc_new_pt failed. %d %lx\n",
 					base, start, end, error, *ptep);
 			(void)clear_range(args->pt, start, base,
-					KEEP_PHYSICAL);
+					KEEP_PHYSICAL, NULL);
 			goto out;
 		}
 
@@ -1343,7 +1357,7 @@ int set_range_l2(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 		ekprintf("set_range_l2(%lx,%lx,%lx):"
 				"page exists. %d %lx\n",
 				base, start, end, error, *ptep);
-		(void)clear_range(args->pt, start, base, KEEP_PHYSICAL);
+		(void)clear_range(args->pt, start, base, KEEP_PHYSICAL, NULL);
 		goto out;
 	}
 	else {
@@ -1400,7 +1414,7 @@ int set_range_l3(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 					"__alloc_new_pt failed. %d %lx\n",
 					base, start, end, error, *ptep);
 			(void)clear_range(args->pt, start, base,
-					KEEP_PHYSICAL);
+					KEEP_PHYSICAL, NULL);
 			goto out;
 		}
 		*ptep = virt_to_phys(pt) | PFL3_PDIR_ATTR;
@@ -1410,7 +1424,7 @@ int set_range_l3(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 		ekprintf("set_range_l3(%lx,%lx,%lx):"
 				"page exists. %d %lx\n",
 				base, start, end, error, *ptep);
-		(void)clear_range(args->pt, start, base, KEEP_PHYSICAL);
+		(void)clear_range(args->pt, start, base, KEEP_PHYSICAL, NULL);
 		goto out;
 	}
 	else {
@@ -1449,7 +1463,7 @@ int set_range_l4(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 					"__alloc_new_pt failed. %d %lx\n",
 					base, start, end, error, *ptep);
 			(void)clear_range(args->pt, start, base,
-					KEEP_PHYSICAL);
+					KEEP_PHYSICAL, NULL);
 			goto out;
 		}
 		*ptep = virt_to_phys(pt) | PFL4_PDIR_ATTR;

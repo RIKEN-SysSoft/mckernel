@@ -464,14 +464,6 @@ SYSCALL_DECLARE(mmap)
 		goto out2;
 	}
 
-	if ((flags & MAP_SHARED) && !(flags & MAP_ANONYMOUS)) {
-		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):NYI:shared mapped file%lx\n",
-				addr0, len0, prot, flags, fd, off,
-				(flags & ~(supported_flags | ignored_flags)));
-		error = -EINVAL;
-		goto out2;
-	}
-
 	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
 
 	if (flags & MAP_FIXED) {
