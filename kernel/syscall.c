@@ -636,7 +636,6 @@ SYSCALL_DECLARE(mprotect)
 	}
 
 	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
-	begin_free_pages_pending();
 
 #if 0
 	/* check contiguous map */
@@ -744,7 +743,6 @@ SYSCALL_DECLARE(mprotect)
 out:
 	// XXX: TLB flush
 	flush_tlb();
-	finish_free_pages_pending();
 	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
 	dkprintf("[%d]sys_mprotect(%lx,%lx,%x): %d\n",
 			ihk_mc_get_processor_id(), start, len0, prot, error);
