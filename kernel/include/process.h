@@ -140,8 +140,8 @@ int add_process_memory_range(struct process *process,
                              unsigned long start, unsigned long end,
                              unsigned long phys, unsigned long flag,
 			     struct memobj *memobj, off_t objoff);
-int remove_process_memory_range(
-		struct process *process, unsigned long start, unsigned long end);
+int remove_process_memory_range(struct process *process, unsigned long start,
+		unsigned long end, int *ro_freedp);
 int split_process_memory_range(struct process *process,
 		struct vm_range *range, uintptr_t addr, struct vm_range **splitp);
 int join_process_memory_range(struct process *process, struct vm_range *surviving,

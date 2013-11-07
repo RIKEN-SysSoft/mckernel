@@ -361,13 +361,14 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 }
 
 int remove_process_memory_range(struct process *process,
-		unsigned long start, unsigned long end)
+		unsigned long start, unsigned long end, int *ro_freedp)
 {
 	struct process_vm * const vm = process->vm;
 	struct vm_range *range;
 	struct vm_range *next;
 	int error;
 	struct vm_range *freerange;
+	int ro_freed = 0;
 
 	dkprintf("remove_process_memory_range(%p,%lx,%lx)\n",
 			process, start, end);
@@ -401,6 +402,10 @@ int remove_process_memory_range(struct process *process,
 			}
 		}
 
+		if (!(freerange->flag & VR_PROT_WRITE)) {
+			ro_freed = 1;
+		}
+
 		error = free_process_memory_range(process->vm, freerange);
 		if (error) {
 			ekprintf("remove_process_memory_range(%p,%lx,%lx):"
@@ -411,8 +416,11 @@ int remove_process_memory_range(struct process *process,
 
 	}
 
-	dkprintf("remove_process_memory_range(%p,%lx,%lx): 0\n",
-			process, start, end);
+	if (ro_freedp) {
+		*ro_freedp = ro_freed;
+	}
+	dkprintf("remove_process_memory_range(%p,%lx,%lx): 0 %d\n",
+			process, start, end, ro_freed);
 	return 0;
 }
 
