@@ -43,7 +43,7 @@ if [ "$1" == "-u" ]; then
 	exit
 fi
 
-wait_time=50
+wait_time=20
 
 if [ "$modules_were_loaded" == "1" ]; then
 	echo "waiting for ${wait_time} seconds: " >&2
