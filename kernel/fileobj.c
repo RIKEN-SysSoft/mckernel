@@ -33,12 +33,14 @@ static memobj_release_func_t fileobj_release;
 static memobj_ref_func_t fileobj_ref;
 static memobj_get_page_func_t fileobj_get_page;
 static memobj_copy_page_func_t fileobj_copy_page;
+static memobj_flush_page_func_t fileobj_flush_page;
 
 static struct memobj_ops fileobj_ops = {
 	.release =	&fileobj_release,
 	.ref =		&fileobj_ref,
 	.get_page =	&fileobj_get_page,
 	.copy_page =	&fileobj_copy_page,
+	.flush_page =	&fileobj_flush_page,
 };
 
 static struct fileobj *to_fileobj(struct memobj *memobj)
@@ -527,4 +529,32 @@ out:
 	dkprintf("fileobj_copy_page(%p,%lx,%d): %lx\n",
 			memobj, orgpa, p2align, newpa);
 	return newpa;
+}
+
+static int fileobj_flush_page(struct memobj *memobj, uintptr_t phys,
+		size_t pgsize)
+{
+	struct fileobj *obj = to_fileobj(memobj);
+	struct page *page;
+	ihk_mc_user_context_t ctx;
+	ssize_t ss;
+
+	page = phys_to_page(phys);
+	memobj_unlock(&obj->memobj);
+
+	ihk_mc_syscall_arg0(&ctx) = PAGER_REQ_WRITE;
+	ihk_mc_syscall_arg1(&ctx) = obj->handle;
+	ihk_mc_syscall_arg2(&ctx) = page->offset;
+	ihk_mc_syscall_arg3(&ctx) = pgsize;
+	ihk_mc_syscall_arg4(&ctx) = phys;
+
+	ss = syscall_generic_forwarding(__NR_mmap, &ctx);
+	if (ss != pgsize) {
+		dkprintf("fileobj_flush_page(%p,%lx,%lx): %ld (%lx)\n",
+				memobj, phys, pgsize, ss, ss);
+		/* through */
+	}
+
+	memobj_lock(&obj->memobj);
+	return 0;
 }

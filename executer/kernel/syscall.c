@@ -885,6 +885,84 @@ out:
 	return ss;
 }
 
+static int pager_req_write(ihk_os_t os, uintptr_t handle, off_t off, size_t size, uintptr_t rpa)
+{
+	ssize_t ss;
+	struct pager *pager;
+	struct file *file = NULL;
+	uintptr_t phys = -1;
+	ihk_device_t dev = ihk_os_to_dev(os);
+	void *buf = NULL;
+	mm_segment_t fs;
+	loff_t pos;
+	loff_t fsize;
+	size_t len;
+
+	dprintk("pager_req_write(%lx,%lx,%lx,%lx)\n", handle, off, size, rpa);
+
+	ss = down_interruptible(&pager_sem);
+	if (ss) {
+		printk("pager_req_write(%lx,%lx,%lx,%lx): signaled. %ld\n", handle, off, size, rpa, ss);
+		goto out;
+	}
+
+	list_for_each_entry(pager, &pager_list, list) {
+		if ((uintptr_t)pager == handle) {
+			file = pager->rwfile;
+			break;
+		}
+	}
+	if (file) {
+		get_file(file);
+	}
+	up(&pager_sem);
+
+	if (!file) {
+		ss = -EBADF;
+		printk("pager_req_write(%lx,%lx,%lx,%lx):pager not found. %ld\n", handle, off, size, rpa, ss);
+		goto out;
+	}
+
+	/*
+	 * XXX: vfs_write 位の階層を使いつつ，
+	 * ファイルサイズ更新を回避する方法ないかな？
+	 */
+	fsize = i_size_read(file->f_mapping->host);
+	if (off >= fsize) {
+		ss = 0;
+		goto out;
+	}
+
+	phys = ihk_device_map_memory(dev, rpa, size);
+	buf = ihk_device_map_virtual(dev, phys, size, NULL, 0);
+	fs = get_fs();
+	set_fs(KERNEL_DS);
+	pos = off;
+	len = size;
+	if ((off + size) > fsize) {
+		len = fsize - off;
+	}
+	ss = vfs_write(file, buf, len, &pos);
+	set_fs(fs);
+	if (ss < 0) {
+		printk("pager_req_write(%lx,%lx,%lx,%lx):pwrite failed. %ld\n", handle, off, size, rpa, ss);
+		goto out;
+	}
+
+out:
+	if (buf) {
+		ihk_device_unmap_virtual(dev, buf, size);
+	}
+	if (phys != (uintptr_t)-1) {
+		ihk_device_unmap_memory(dev, phys, size);
+	}
+	if (file) {
+		fput(file);
+	}
+	dprintk("pager_req_write(%lx,%lx,%lx,%lx): %ld\n", handle, off, size, rpa, ss);
+	return ss;
+}
+
 static long pager_call(ihk_os_t os, struct syscall_request *req)
 {
 	long ret;
@@ -894,6 +972,7 @@ static long pager_call(ihk_os_t os, struct syscall_request *req)
 #define	PAGER_REQ_CREATE	0x0001
 #define	PAGER_REQ_RELEASE	0x0002
 #define	PAGER_REQ_READ		0x0003
+#define	PAGER_REQ_WRITE		0x0004
 	case PAGER_REQ_CREATE:
 		ret = pager_req_create(os, req->args[1], req->args[2]);
 		break;
@@ -904,6 +983,10 @@ static long pager_call(ihk_os_t os, struct syscall_request *req)
 
 	case PAGER_REQ_READ:
 		ret = pager_req_read(os, req->args[1], req->args[2], req->args[3], req->args[4]);
+		break;
+
+	case PAGER_REQ_WRITE:
+		ret = pager_req_write(os, req->args[1], req->args[2], req->args[3], req->args[4]);
 		break;
 
 	default:

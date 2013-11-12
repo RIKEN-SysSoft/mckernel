@@ -7,6 +7,7 @@ enum pager_op {
 	PAGER_REQ_CREATE =	0x0001,
 	PAGER_REQ_RELEASE =	0x0002,
 	PAGER_REQ_READ =	0x0003,
+	PAGER_REQ_WRITE =	0x0004,
 };
 
 /*
