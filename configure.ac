@@ -111,7 +111,7 @@ AC_CONFIG_FILES([
 	executer/user/Makefile
 	executer/kernel/Makefile
 	kernel/Makefile
-	boot-attached-mic.sh
+	arch/x86/tools/mcreboot-attached-mic.sh
 ])
 
 AS_IF([test "x$enable_dcfa" = xyes], [

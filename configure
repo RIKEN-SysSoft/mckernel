@@ -3227,7 +3227,7 @@ TARGET="$WITH_TARGET"
 
 
 
-ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/kernel/Makefile kernel/Makefile boot-attached-mic.sh"
+ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/kernel/Makefile kernel/Makefile arch/x86/tools/mcreboot-attached-mic.sh"
 
 
 if test "x$enable_dcfa" = xyes; then :
@@ -3945,7 +3945,7 @@ do
     "executer/user/Makefile") CONFIG_FILES="$CONFIG_FILES executer/user/Makefile" ;;
     "executer/kernel/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/Makefile" ;;
     "kernel/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/Makefile" ;;
-    "boot-attached-mic.sh") CONFIG_FILES="$CONFIG_FILES boot-attached-mic.sh" ;;
+    "arch/x86/tools/mcreboot-attached-mic.sh") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/mcreboot-attached-mic.sh" ;;
     "kernel/Makefile.dcfa") CONFIG_FILES="$CONFIG_FILES kernel/Makefile.dcfa" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
