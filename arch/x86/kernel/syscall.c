@@ -85,15 +85,21 @@ SYSCALL_DECLARE(rt_sigreturn)
         return proc->sigrc;
 }
 
+extern struct x86_cpu_local_variables *locals;
+
 void
 check_signal(unsigned long rc, unsigned long *regs)
 {
-	struct process *proc = cpu_local_var(current);
+	struct process *proc;
 	struct k_sigaction *k;
-	int	sig = proc->signal;
+	int	sig;
 
+	if(locals == NULL)
+		return;
+	proc = cpu_local_var(current);
 	if(proc == NULL || proc->pid == 0)
 		return;
+	sig = proc->signal;
 
 	proc->signal = 0;
 	if(sig){
