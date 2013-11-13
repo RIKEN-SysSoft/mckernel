@@ -10,7 +10,7 @@
 
 extern int num_processors;
 
-static struct cpu_local_var *clv;
+struct cpu_local_var *clv;
 
 void cpu_local_var_init(void)
 {
