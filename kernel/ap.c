@@ -1,3 +1,21 @@
+/**
+ * \file ap.c
+ * Licence details are found in the file LICENSE.
+ *  
+ * \brief
+ * Initiallization code for CPU cores other than the boot core. 
+ *
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ * Copyright (C) 2011 - 2012  Taku Shimosawa
+ * 
+ * \author Balazs Gerofi  <bgerofi@riken.jp> \par
+ * Copyright (C) 2012  RIKEN AICS
+ *
+ *
+ * HISTORY:
+ *  2012/10/10: bgerofi - enable syscall channels for all MIC cores
+ *
+ */
 #include <types.h>
 #include <kmsg.h>
 #include <ihk/cpu.h>

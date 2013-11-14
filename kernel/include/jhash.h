@@ -1,8 +1,20 @@
 #ifndef _LINUX_JHASH_H
 #define _LINUX_JHASH_H
-
-/* RIKEN: u32 replaced to uint32_t
+/**
+ * \file futex.c
+ * Licence details are found in the file LICENSE.
+ *  
+ * \brief
+ * Adaptation to McKernel
  *
+ * \author Balazs Gerofi  <bgerofi@riken.jp> \par
+ * Copyright (C) 2012  RIKEN AICS
+ *
+ *
+ * HISTORY:
+ */
+
+/* 
  * jhash.h: Jenkins hash support.
  *
  * Copyright (C) 1996 Bob Jenkins (bob_jenkins@burtleburtle.net)
@@ -20,6 +32,7 @@
  *
  * I've modified Bob's hash to be useful in the Linux kernel, and
  * any bugs present are surely my fault.  -DaveM
+ * 
  */
 
 /* NOTE: Arguments are modified. */

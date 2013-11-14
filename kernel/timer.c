@@ -1,3 +1,14 @@
+/**
+ * \file timer.c
+ * Licence details are found in the file LICENSE.
+ *  
+ * \brief
+ * Simple spinning timer for timeout support in futex.
+ *
+ * \author Balazs Gerofi  <bgerofi@is.s.u-tokyo.ac.jp> \par
+ * Copyright (C) 2013  The University of Tokyo
+ *
+ */
 #include <types.h>
 #include <kmsg.h>
 #include <ihk/cpu.h>
