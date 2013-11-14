@@ -1,3 +1,13 @@
+/**
+ * \file context.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Define types of registers belonging to context.
+ *  Define macros to retrieve arguments of system call.
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+
 #ifndef __HEADER_X86_COMMON_CONTEXT_H
 #define __HEADER_X86_COMMON_CONTEXT_H
 

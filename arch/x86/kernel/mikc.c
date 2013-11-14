@@ -1,3 +1,12 @@
+/**
+ * \file mikc.c
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Initialize Inter-Kernel Communication (IKC)
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+
 #include <ihk/ikc.h>
 #include <ihk/lock.h>
 #include <ikc/msg.h>

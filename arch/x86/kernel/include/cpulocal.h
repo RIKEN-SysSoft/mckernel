@@ -1,3 +1,12 @@
+/**
+ * \file cpulocal.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Declare information for individual CPUs.
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+
 #ifndef HEADER_X86_COMMON_CPULOCAL_H
 #define HEADER_X86_COMMON_CPULOCAL_H
 

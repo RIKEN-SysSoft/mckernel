@@ -1,3 +1,12 @@
+/**
+ * \file lock.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Declare functions implementing spin lock.
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+
 #ifndef __HEADER_GENERIC_IHK_LOCK
 #define __HEADER_GENERIC_IHK_LOCK
 

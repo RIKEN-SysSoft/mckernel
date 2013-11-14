@@ -1,3 +1,12 @@
+/**
+ * \file memory.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Convert virtual address from/to physical address.
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+
 #ifndef __HEADER_GENERIC_MEMORY_H
 #define __HEADER_GENERIC_MEMORY_H
 

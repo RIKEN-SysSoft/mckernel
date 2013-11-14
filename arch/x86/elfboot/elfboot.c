@@ -1,3 +1,12 @@
+/**
+ * \file elfboot.c
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Load an ELF image.
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+
 #include <elf.h>
 #include "test.h"
 

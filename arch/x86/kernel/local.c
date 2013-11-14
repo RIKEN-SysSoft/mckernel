@@ -1,3 +1,13 @@
+/**
+ * \file local.c
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Manipulate information for individual CPUs. These information
+ *  resides in memory.
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+
 #include <cpulocal.h>
 #include <ihk/atomic.h>
 #include <ihk/mm.h>

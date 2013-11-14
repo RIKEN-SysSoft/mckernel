@@ -1,3 +1,12 @@
+/**
+ * \file lock.c
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Spin lock.
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+
 #include <ihk/lock.h>
 
 #if 0
