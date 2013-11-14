@@ -1,3 +1,12 @@
+/**
+ * \file dma.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Declare types and functions for DMA.
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+
 #ifndef __HEADER_GENERIC_INCLUDE_DMA_H
 #define __HEADER_GENERIC_INCLUDE_DMA_H
 

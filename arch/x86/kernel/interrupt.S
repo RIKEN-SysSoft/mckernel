@@ -1,4 +1,13 @@
-#define X86_CPU_LOCAL_OFFSET_TSS    128
+/**
+ * \file interrupt.S
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Interrupt handler entries.
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+
+	#define X86_CPU_LOCAL_OFFSET_TSS    128
 #define X86_TSS_OFFSET_SP0          4
 #define X86_CPU_LOCAL_OFFSET_SP0 \
 		(X86_CPU_LOCAL_OFFSET_TSS + X86_TSS_OFFSET_SP0)

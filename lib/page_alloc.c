@@ -1,6 +1,10 @@
-/*
- * IHK - Generic page allocator (manycore version)
- * (C) Copyright 2011 Taku Shimosawa.
+/**
+ * \file page_alloc.c
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  IHK - Generic page allocator (manycore version)
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
  */
 #include <types.h>
 #include <string.h>

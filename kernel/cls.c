@@ -1,3 +1,15 @@
+/**
+ * \file cls.c
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Initialization of cpu local variable
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ * Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+/*
+ * HISTORY:
+ */
+
 #include <kmsg.h>
 #include <string.h>
 #include <ihk/cpu.h>

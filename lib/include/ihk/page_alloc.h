@@ -1,3 +1,13 @@
+/**
+ * \file page_alloc.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Declare functions acquire physical pages and assign virtual addresses
+ *  to them. 
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+
 #ifndef __HEADER_GENERIC_IHK_PAGE_ALLOC
 #define __HEADER_GENERIC_IHK_PAGE_ALLOC
 

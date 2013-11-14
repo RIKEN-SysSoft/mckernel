@@ -1,3 +1,15 @@
+/**
+ * \file listeners.c
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Usage example of ihk_ikc_listen_port()
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ * Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+/*
+ * HISTORY:
+ */
+
 #include <types.h>
 #include <kmsg.h>
 #include <ihk/cpu.h>

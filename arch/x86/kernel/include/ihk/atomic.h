@@ -1,3 +1,12 @@
+/**
+ * \file atomic.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Atomic memory operations.
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+
 #ifndef HEADER_X86_COMMON_IHK_ATOMIC_H
 #define HEADER_X86_COMMON_IHK_ATOMIC_H
  

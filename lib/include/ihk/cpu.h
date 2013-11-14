@@ -1,3 +1,12 @@
+/**
+ * \file cpu.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Declare types and functions to control CPU. 
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+
 #ifndef IHK_CPU_H
 #define IHK_CPU_H
 

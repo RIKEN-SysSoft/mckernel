@@ -1,3 +1,12 @@
+/**
+ * \file limits.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Define max and min of 32-bit integer.
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+
 #ifndef __HEADER_LIMITS
 #define __HEADER_LIMITS
 

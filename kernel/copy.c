@@ -1,3 +1,15 @@
+/**
+ * \file copy.c
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Memory copy using DMA controller
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ * Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+/*
+ * HISTORY:
+ */
+
 #include <ihk/dma.h>
 #include <amemcpy.h>
 
