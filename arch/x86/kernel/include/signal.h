@@ -1,3 +1,16 @@
+/**
+ * \file arch/x86/kernel/include/signal.h
+ *  Licence details are found in the file LICENSE.
+ * \brief
+ *  define signal
+ * \author Tomoki Shirasawa  <tomoki.shirasawa.kk@hitachi-solutions.com> \par
+ *      Copyright (C) 2012 - 2013 Hitachi, Ltd.
+ */
+/*
+ * HISTORY:
+ *  2012/02/11 bgerofi what kind of new features have been added
+ */
+
 #define _NSIG		64
 #define _NSIG_BPW	64
 #define _NSIG_WORDS (_NSIG / _NSIG_BPW)

@@ -1,3 +1,34 @@
+/**
+ * \file executer/user/mcexec.c
+ *  Licence details are found in the file LICENSE.
+ * \brief
+ *  ....
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ * \author Balazs Gerofi  <bgerofi@riken.jp> \par
+ *      Copyright (C) 2012  RIKEN AICS
+ * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
+ *      Copyright (C) 2012 - 2013 Hitachi, Ltd.
+ * \author Tomoki Shirasawa  <tomoki.shirasawa.kk@hitachi-solutions.com> \par
+ *      Copyright (C) 2012 - 2013 Hitachi, Ltd.
+ * \author Balazs Gerofi  <bgerofi@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2013  The University of Tokyo
+ */
+/*
+ * HISTORY:
+ *  2013/11/07 hamada added <sys/resource.h> which is required by getrlimit(2)
+ *  2013/10/21 nakamura exclude interpreter's segment from data region
+ *  2013/10/11 nakamura mcexec: add a upper limit of the stack size
+ *  2013/10/11 nakamura mcexec: add a path prefix for interpreter search
+ *  2013/10/11 nakamura mcexec: add a interpreter invocation
+ *  2013/10/08 nakamura add a AT_ENTRY entry to the auxiliary vector
+ *  2013/09/02 shirasawa add terminate thread
+ *  2013/08/19 shirasawa mcexec forward signal to MIC process
+ *  2013/08/07 nakamura add page fault forwarding
+ *  2013/07/26 shirasawa mcexec print signum or exit status
+ *  2013/07/17 nakamura create more mcexec thread so that all cpu to be serviced
+ *  2013/04/17 nakamura add generic system call forwarding
+ */
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>

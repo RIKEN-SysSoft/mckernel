@@ -1,3 +1,30 @@
+/**
+ * \file executer/kernel/syscall.c
+ *  Licence details are found in the file LICENSE.
+ * \brief
+ *  provide system calls
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ * \author Balazs Gerofi  <bgerofi@riken.jp> \par
+ *      Copyright (C) 2012  RIKEN AICS
+ * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
+ *      Copyright (C) 2012 - 2013 Hitachi, Ltd.
+ * \author Tomoki Shirasawa  <tomoki.shirasawa.kk@hitachi-solutions.com> \par
+ *      Copyright (C) 2012 - 2013 Hitachi, Ltd.
+ * \author Balazs Gerofi  <bgerofi@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2013  The University of Tokyo
+ */
+/*
+ * HISTORY:
+ *  2013/11/06 nakamura add shared mapped file
+ *  2013/11/06 nakamura refuse the write to a read-only memory
+ *  2013/09/05 nakamura add mcexec's PTE cleaning to munmap()/mmap(MAP_FIXED)
+ *  2013/08/28 mcexec: upgrade CAP_SYS_RAWIO while do_mmap_pgoff()
+ *  2013/08/09 nakamura support private mapped file
+ *  2013/08/07 nakamura add page fault forwarding
+ *  2013/07/10 rus_vm_fault(): add handling of page absence
+ *  2013/04/17 nakamura add generic system call forwarding
+ */
 #include <linux/sched.h>
 #include <linux/module.h>
 #include <linux/slab.h>

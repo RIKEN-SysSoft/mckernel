@@ -1,3 +1,26 @@
+/**
+ * \file executer/kernel/ikc.c
+ *  Licence details are found in the file LICENSE.
+ * \brief
+ *  inter kernel communication
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ * \author Balazs Gerofi  <bgerofi@riken.jp> \par
+ *      Copyright (C) 2012  RIKEN AICS
+ * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
+ *      Copyright (C) 2012 - 2013 Hitachi, Ltd.
+ * \author Tomoki Shirasawa  <tomoki.shirasawa.kk@hitachi-solutions.com> \par
+ *      Copyright (C) 2012 - 2013 Hitachi, Ltd.
+ * \author Balazs Gerofi  <bgerofi@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2013  The University of Tokyo
+ */
+/*
+ * HISTORY:
+ *  2013/09/02 shirasawa add terminate thread
+ *  2013/08/07 nakamura add page fault forwarding
+ *  2013/06/06 shirasawa propagate error code for prepare image
+ *  2013/06/02 shirasawa add error handling for prepare_process
+ */
 #include <linux/sched.h>
 #include <linux/module.h>
 #include <linux/fs.h>

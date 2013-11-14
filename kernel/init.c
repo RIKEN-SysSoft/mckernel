@@ -1,3 +1,23 @@
+/**
+ * \file kernel/init.c
+ *  Licence details are found in the file LICENSE.
+ * \brief
+ *  main function and initializer
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ * \author Balazs Gerofi  <bgerofi@riken.jp> \par
+ *      Copyright (C) 2012  RIKEN AICS
+ * \author Tomoki Shirasawa  <tomoki.shirasawa.kk@hitachi-solutions.com> \par
+ *      Copyright (C) 2012 - 2013 Hitachi, Ltd.
+ * \author Balazs Gerofi  <bgerofi@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2013  The University of Tokyo
+ */
+/*
+ * HISTORY:
+ *  2013/09/02 shirasawa add terminate thread
+ *  2013/06/02 balazs resolved merge conflicts with futex code
+ *  2013/05/20 simin exchange the dcfa stuff init/exit order in mcexec
+ */
 #include <types.h>
 #include <kmsg.h>
 #include <kmalloc.h>
