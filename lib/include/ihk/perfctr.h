@@ -6,6 +6,9 @@
  * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
  *      Copyright (C) 2011 - 2012  Taku Shimosawa
  */
+/*
+ * HISTORY
+ */
 
 #ifndef HEADER_GENERIC_IHK_PERFCTR_H
 #define HEADER_GENERIC_IHK_PERFCTR_H

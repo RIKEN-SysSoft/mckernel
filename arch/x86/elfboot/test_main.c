@@ -6,6 +6,10 @@
  * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
  *      Copyright (C) 2011 - 2012  Taku Shimosawa
  */
+/*
+ * HISTORY
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

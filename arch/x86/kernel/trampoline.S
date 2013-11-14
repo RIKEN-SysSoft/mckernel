@@ -7,8 +7,11 @@
  * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
  *      Copyright (C) 2011 - 2012  Taku Shimosawa
  */
+/*
+ * HISTORY
+ */
 
-	#define BOOT_CS       0x10
+#define BOOT_CS       0x10
 #define BOOT_DS       0x18
 #define BOOT_CS64     0x20
 

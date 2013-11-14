@@ -1,3 +1,15 @@
+/**
+ * \file main.c
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Load an ELF image on data_start and jump to its entry point.
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+/*
+ * HISTORY
+ */
+
 #include <elf.h>
 
 extern char data_start[], data_end[];
