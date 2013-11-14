@@ -1,3 +1,15 @@
+/**
+ * \file affinity.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Macros used to set and get CPU affinity
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ * Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+/*
+ * HISTORY:
+ */
+
 /* 
  * Adapted from Linux sched.h 
  *

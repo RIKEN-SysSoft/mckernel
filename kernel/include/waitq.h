@@ -1,3 +1,16 @@
+/**
+ * \file waitq.h
+ * License details are found in the file LICENSE.
+ *  
+ * \brief
+ * Waitqueue adaptation from Sandia's Kitten OS 
+ * (originally taken from Linux)
+ *
+ * \author Balazs Gerofi  <bgerofi@riken.jp> \par
+ * Copyright (C) 2012  RIKEN AICS
+ *
+ */
+
 #ifndef _LWK_WAITQ_H
 #define _LWK_WAITQ_H
 
