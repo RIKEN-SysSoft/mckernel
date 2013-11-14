@@ -1,3 +1,15 @@
+/**
+ * \file time.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Format of time variables
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ * Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+/*
+ * HISTORY
+ */
+
 /* 
  * time.h:
  *

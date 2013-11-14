@@ -1,3 +1,15 @@
+/**
+ * \file page.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Structures and functions of memory page
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ * Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+/*
+ * HISTORY
+ */
+
 #ifndef __HEADER_PAGE_H
 #define __HEADER_PAGE_H
 

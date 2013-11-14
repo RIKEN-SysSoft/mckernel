@@ -1,3 +1,15 @@
+/**
+ * \file syscall.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Structures and macros for system call on McKernel
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ * Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+/*
+ * HISTORY
+ */
+
 #ifndef __HEADER_SYSCALL_H
 #define __HEADER_SYSCALL_H
 

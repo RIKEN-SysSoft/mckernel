@@ -1,3 +1,15 @@
+/**
+ * \file process.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Structures of process and virtual memory management
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ * Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+/*
+ * HISTORY
+ */
+
 #ifndef HEADER_PROCESS_H
 #define HEADER_PROCESS_H
 
