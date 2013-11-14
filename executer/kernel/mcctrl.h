@@ -1,6 +1,6 @@
 /**
  * \file mcctrl.h
- *  Licence details are found in the file LICENSE.
+ *  License details are found in the file LICENSE.
  * \brief
  *  define data structure
  * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par

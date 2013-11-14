@@ -1,6 +1,6 @@
 /**
  * \file executer/kernel/driver.c
- *  Licence details are found in the file LICENSE.
+ *  License details are found in the file LICENSE.
  * \brief
  *  kernel module entry
  * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par

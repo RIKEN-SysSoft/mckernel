@@ -1,6 +1,6 @@
 /**
  * \file executer/user/mcexec.c
- *  Licence details are found in the file LICENSE.
+ *  License details are found in the file LICENSE.
  * \brief
  *  ....
  * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par

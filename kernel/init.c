@@ -1,6 +1,6 @@
 /**
  * \file kernel/init.c
- *  Licence details are found in the file LICENSE.
+ *  License details are found in the file LICENSE.
  * \brief
  *  main function and initializer
  * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par

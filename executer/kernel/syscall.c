@@ -1,6 +1,6 @@
 /**
  * \file executer/kernel/syscall.c
- *  Licence details are found in the file LICENSE.
+ *  License details are found in the file LICENSE.
  * \brief
  *  provide system calls
  * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par

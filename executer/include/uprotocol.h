@@ -1,6 +1,6 @@
 /**
  * \file executer/include/uprotocol.h
- *  Licence details are found in the file LICENSE.
+ *  License details are found in the file LICENSE.
  * \brief
  *  define protocol
  * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par

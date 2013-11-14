@@ -1,6 +1,6 @@
 /**
  * \file arch/x86/kernel/include/signal.h
- *  Licence details are found in the file LICENSE.
+ *  License details are found in the file LICENSE.
  * \brief
  *  define signal
  * \author Tomoki Shirasawa  <tomoki.shirasawa.kk@hitachi-solutions.com> \par
