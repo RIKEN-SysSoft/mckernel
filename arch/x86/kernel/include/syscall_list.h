@@ -1,5 +1,13 @@
+/**
+ * \file syscall_list.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  define system calls
+ * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
+ * 	Copyright (C) 2013  Hitachi, Ltd.
+ */
 /*
- * [x86] syscall_list.h
+ * HISTORY:
  */
 
 /*

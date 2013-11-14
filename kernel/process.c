@@ -1,3 +1,25 @@
+/**
+ * \file process.c
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  process, thread, and, virtual memory management
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ * 	Copyright (C) 2011 - 2012  Taku Shimosawa
+ * \author Balazs Gerofi  <bgerofi@riken.jp> \par
+ * 	Copyright (C) 2012  RIKEN AICS
+ * \author Masamichi Takagi  <m-takagi@ab.jp.nec.com> \par
+ * 	Copyright (C) 2012 - 2013  NEC Corporation
+ * \author Balazs Gerofi  <bgerofi@is.s.u-tokyo.ac.jp> \par
+ * 	Copyright (C) 2013  The University of Tokyo
+ * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
+ * 	Copyright (C) 2013  Hitachi, Ltd.
+ * \author Tomoki Shirasawa  <tomoki.shirasawa.kk@hitachi-solutions.com> \par
+ * 	Copyright (C) 2013  Hitachi, Ltd.
+ */
+/*
+ * HISTORY:
+ */
+
 #include <process.h>
 #include <string.h>
 #include <errno.h>

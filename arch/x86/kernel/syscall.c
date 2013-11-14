@@ -1,5 +1,17 @@
+/**
+ * \file syscall.c
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  archtecture depended system call handlers
+ * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
+ * 	Copyright (C) 2013  Hitachi, Ltd.
+ * \author Masamichi Takagi  <m-takagi@ab.jp.nec.com> \par
+ * 	Copyright (C) 2013  NEC Corporation
+ * \author Tomoki Shirasawa  <tomoki.shirasawa.kk@hitachi-solutions.com> \par
+ * 	Copyright (C) 2013  Hitachi, Ltd.
+ */
 /*
- * [x86] syscall.c
+ * HISTORY:
  */
 
 #include <ihk/cpu.h>

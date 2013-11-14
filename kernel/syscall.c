@@ -1,3 +1,27 @@
+/**
+ * \file syscall.c
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  system call handlers
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ * 	Copyright (C) 2011 - 2012  Taku Shimosawa
+ * \author Balazs Gerofi  <bgerofi@riken.jp> \par
+ * 	Copyright (C) 2012  RIKEN AICS
+ * \author Masamichi Takagi  <m-takagi@ab.jp.nec.com> \par
+ * 	Copyright (C) 2012 - 2013  NEC Corporation
+ * \author Min Si <msi@is.s.u-tokyo.ac.jp> \par
+ * 	Copyright (C) 2012  Min Si
+ * \author Balazs Gerofi  <bgerofi@is.s.u-tokyo.ac.jp> \par
+ * 	Copyright (C) 2013  The University of Tokyo
+ * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
+ * 	Copyright (C) 2013  Hitachi, Ltd.
+ * \author Tomoki Shirasawa  <tomoki.shirasawa.kk@hitachi-solutions.com> \par
+ * 	Copyright (C) 2013  Hitachi, Ltd.
+ */
+/*
+ * HISTORY:
+ */
+
 #include <types.h>
 #include <kmsg.h>
 #include <ihk/cpu.h>

@@ -1,3 +1,21 @@
+/**
+ * \file host.c
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  host call handlers
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ * 	Copyright (C) 2011 - 2012  Taku Shimosawa
+ * \author Balazs Gerofi  <bgerofi@riken.jp> \par
+ * 	Copyright (C) 2012  RIKEN AICS
+ * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
+ * 	Copyright (C) 2013  Hitachi, Ltd.
+ * \author Tomoki Shirasawa  <tomoki.shirasawa.kk@hitachi-solutions.com> \par
+ * 	Copyright (C) 2013  Hitachi, Ltd.
+ */
+/*
+ * HISTORY:
+ */
+
 #include <types.h>
 #include <kmsg.h>
 #include <ihk/cpu.h>

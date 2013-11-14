@@ -1,3 +1,14 @@
+/**
+ * \file pager.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  file back-ended pager declarations
+ * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
+ * 	Copyright (C) 2013  Hitachi, Ltd.
+ */
+/*
+ * HISTORY:
+ */
 #ifndef HEADER_PAGER_H
 #define HEADER_PAGER_H
 

@@ -1,3 +1,15 @@
+/**
+ * \file mman.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  memory management declarations
+ * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
+ * 	Copyright (C) 2013  Hitachi, Ltd.
+ */
+/*
+ * HISTORY:
+ */
+
 #ifndef HEADER_MMAN_H
 #define HEADER_MMAN_H
 

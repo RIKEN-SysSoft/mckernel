@@ -1,3 +1,15 @@
+/**
+ * \file memobj.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  defines and declares for memory object
+ * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
+ * 	Copyright (C) 2013  Hitachi, Ltd.
+ */
+/*
+ * HISTORY:
+ */
+
 #ifndef HEADER_MEMOBJ_H
 #define HEADER_MEMOBJ_H
 

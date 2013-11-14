@@ -1,3 +1,15 @@
+/**
+ * \file fileobj.c
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  file back-ended pager client
+ * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
+ * 	Copyright (C) 2013  Hitachi, Ltd.
+ */
+/*
+ * HISTORY:
+ */
+
 #include <ihk/cpu.h>
 #include <ihk/debug.h>
 #include <ihk/lock.h>
