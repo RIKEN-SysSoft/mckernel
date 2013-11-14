@@ -1,3 +1,15 @@
+/**
+ * \file cls.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Structure of cpu local variable
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ * Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+/*
+ * HISTORY:
+ */
+
 #ifndef __HEADER_CLS_H
 #define __HEADER_CLS_H
 

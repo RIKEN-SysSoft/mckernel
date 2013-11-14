@@ -1,3 +1,15 @@
+/**
+ * \file init.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Initialization functions
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ * Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+/*
+ * HISTORY:
+ */
+
 #ifndef INIT_H
 #define INIT_H
 
