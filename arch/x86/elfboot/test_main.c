@@ -1,3 +1,11 @@
+/**
+ * \file test_main.c
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Test of loading an ELF file.
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

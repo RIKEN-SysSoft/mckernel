@@ -1,3 +1,12 @@
+/**
+ * \file arch-memomry.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Define and declare memory management macros and functions
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+
 #ifndef __HEADER_X86_COMMON_ARCH_MEMORY_H
 #define __HEADER_X86_COMMON_ARCH_MEMORY_H
 

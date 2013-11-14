@@ -1,3 +1,12 @@
+/**
+ * \file perfctr.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Declare type and functions to manipulate performance counters. 
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+
 #ifndef HEADER_GENERIC_IHK_PERFCTR_H
 #define HEADER_GENERIC_IHK_PERFCTR_H
 

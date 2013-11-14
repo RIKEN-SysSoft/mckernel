@@ -1,3 +1,12 @@
+/**
+ * \file string.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Declare string manipulation functions.
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+
 #ifndef __STRING_H
 #define __STRING_H
 

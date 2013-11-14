@@ -1,4 +1,14 @@
-#define BOOT_CS       0x10
+/**
+ * \file trampoline.c
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  (1) Set-up page table address, (2) Transition to 64-bit and paging mode,
+ *  (3) Jump to specified address
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+
+	#define BOOT_CS       0x10
 #define BOOT_DS       0x18
 #define BOOT_CS64     0x20
 

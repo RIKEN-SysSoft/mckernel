@@ -1,3 +1,12 @@
+/**
+ * \file types.h
+ *  Licence details are found in the file LICENSE.
+ * \brief
+ *  typedef stdint.h like integer types
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+
 #ifndef X86_COMMON_TYPES_H
 #define X86_COMMON_TYPES_H
 

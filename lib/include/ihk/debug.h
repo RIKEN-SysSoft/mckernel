@@ -1,3 +1,12 @@
+/**
+ * \file debug.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Declare types and functions to print debug message (kmsg).
+ * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
+ *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ */
+
 #ifndef IHK_DEBUG_H
 #define IHK_DEBUG_H
 
