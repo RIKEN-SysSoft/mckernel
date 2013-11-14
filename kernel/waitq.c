@@ -1,5 +1,15 @@
-
-/* Kitten waitqueue adaptation */
+/**
+ * \file waitq.c
+ * Licence details are found in the file LICENSE.
+ *  
+ * \brief
+ * Waitqueue adaptation from Sandia's Kitten OS 
+ * (originally taken from Linux)
+ *
+ * \author Balazs Gerofi  <bgerofi@riken.jp> \par
+ * Copyright (C) 2012  RIKEN AICS
+ *
+ */
 
 #include <waitq.h>
 #include <process.h>

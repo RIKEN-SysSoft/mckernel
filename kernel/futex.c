@@ -1,7 +1,16 @@
-/*
- * Linux futex adaptation.
- * (C) Copyright 2013 RIKEN AICS
- * Balazs Gerofi <bgerofi@riken.jp>
+/**
+ * \file futex.c
+ * Licence details are found in the file LICENSE.
+ *  
+ * \brief
+ * Futex adaptation to McKernel
+ *
+ * \author Balazs Gerofi  <bgerofi@riken.jp> \par
+ * Copyright (C) 2012  RIKEN AICS
+ *
+ *
+ * HISTORY:
+ *
  */
 
 /*
