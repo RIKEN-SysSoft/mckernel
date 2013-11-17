@@ -584,6 +584,12 @@ PACKAGE_URL=''
 ac_default_prefix=/opt/ppos
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+DCFA_RESEASE_DATE
+MCKERNEL_RELEASE_DATE
+IHK_RELEASE_DATE
+DCFA_VERSION
+MCKERNEL_VERSION
+IHK_VERSION
 KERNDIR
 KMODDIR
 SBINDIR
@@ -1753,9 +1759,9 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 IHK_VERSION=0.9.0
 MCKERNEL_VERSION=0.9.0
 DCFA_VERSION=0.9.0
-IHK_RELEASE_DATA=2013-11-18
-MCKERNEL_RELEASE_DATA=2013-11-18
-DCFA_RELEASE_DATA=2013-11-18
+IHK_RELEASE_DATE=2013-11-18
+MCKERNEL_RELEASE_DATE=2013-11-18
+DCFA_RELEASE_DATE=2013-11-18
 
 
 
@@ -3234,7 +3240,14 @@ TARGET="$WITH_TARGET"
 
 
 
-ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/kernel/Makefile kernel/Makefile arch/x86/tools/mcreboot-attached-mic.sh"
+
+
+
+
+
+
+
+ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/kernel/Makefile kernel/Makefile arch/x86/tools/mcreboot-attached-mic.sh mcreboot.1:mcreboot.1in"
 
 
 if test "x$enable_dcfa" = xyes; then :
@@ -3953,6 +3966,7 @@ do
     "executer/kernel/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/Makefile" ;;
     "kernel/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/Makefile" ;;
     "arch/x86/tools/mcreboot-attached-mic.sh") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/mcreboot-attached-mic.sh" ;;
+    "mcreboot.1") CONFIG_FILES="$CONFIG_FILES mcreboot.1:mcreboot.1in" ;;
     "kernel/Makefile.dcfa") CONFIG_FILES="$CONFIG_FILES kernel/Makefile.dcfa" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
