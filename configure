@@ -3247,7 +3247,7 @@ TARGET="$WITH_TARGET"
 
 
 
-ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/kernel/Makefile kernel/Makefile arch/x86/tools/mcreboot-attached-mic.sh mcreboot.1:mcreboot.1in"
+ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/kernel/Makefile kernel/Makefile arch/x86/tools/mcreboot-attached-mic.sh arch/x86/tools/mcshutdown-attached-mic.sh mcreboot.1:mcreboot.1in"
 
 
 if test "x$enable_dcfa" = xyes; then :
@@ -3966,6 +3966,7 @@ do
     "executer/kernel/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/Makefile" ;;
     "kernel/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/Makefile" ;;
     "arch/x86/tools/mcreboot-attached-mic.sh") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/mcreboot-attached-mic.sh" ;;
+    "arch/x86/tools/mcshutdown-attached-mic.sh") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/mcshutdown-attached-mic.sh" ;;
     "mcreboot.1") CONFIG_FILES="$CONFIG_FILES mcreboot.1:mcreboot.1in" ;;
     "kernel/Makefile.dcfa") CONFIG_FILES="$CONFIG_FILES kernel/Makefile.dcfa" ;;
 

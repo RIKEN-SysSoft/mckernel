@@ -29,6 +29,7 @@ install::
 	if [ "$(TARGET)" = attached-mic ]; then \
 		mkdir -p -m 755 $(SBINDIR); \
 		install -m 755 arch/x86/tools/mcreboot-attached-mic.sh $(SBINDIR)/mcreboot; \
+		install -m 755 arch/x86/tools/mcshutdown-attached-mic.sh $(SBINDIR)/mcshutdown; \
 	fi
 
 clean::
