@@ -134,7 +134,7 @@ AC_CONFIG_FILES([
 	kernel/Makefile
 	arch/x86/tools/mcreboot-attached-mic.sh
 	arch/x86/tools/mcshutdown-attached-mic.sh
-	mcreboot.1:mcreboot.1in
+	arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in
 ])
 
 AS_IF([test "x$enable_dcfa" = xyes], [
