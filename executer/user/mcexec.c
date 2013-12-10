@@ -920,10 +920,12 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			if(w.sr.number == __NR_exit_group){
 				sig = w.sr.args[0] & 0x7f;
 				term = (w.sr.args[0] & 0xff00) >> 8;
-				if(sig)
-					fprintf(stderr, "Terminate by signal %d\n", sig);
-				else if(term)
-					fprintf(stderr, "Exit status: %d\n", term);
+				if(isatty(2)){
+					if(sig)
+						fprintf(stderr, "Terminate by signal %d\n", sig);
+					else if(term)
+						fprintf(stderr, "Exit status: %d\n", term);
+				}
 			}
 
 #ifdef USE_SYSCALL_MOD_CALL
