@@ -35,6 +35,8 @@ if lsmod | awk 'BEGIN{rc=1}$1 == "mic"{rc=0}END{exit(rc)}'; then
 	sudo service mpss unload
 fi
 
+"$SBINDIR/ihkosctl" 0 shutdown
+
 for mod_name in mcctrl ihk_mic ihk; do
 	if lsmod | awk 'BEGIN{rc=1}$1 == "'"$mod_name"'"{rc=0}END{exit(rc)}'; then
 		modules_were_loaded="1"
