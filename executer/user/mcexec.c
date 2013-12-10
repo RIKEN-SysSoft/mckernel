@@ -858,6 +858,8 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 	struct syscall_wait_desc w;
 	long ret;
 	char *fn;
+	int sig;
+	int term;
 	
 	w.cpu = cpu;
 
@@ -909,13 +911,15 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 
 		case __NR_exit:
 		case __NR_exit_group:
+			sig = 0;
+			term = 0;
 			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
 
 			__dprintf("__NR_exit/__NR_exit_group: %ld (cpu_id: %d)\n",
 					w.sr.args[0], cpu);
 			if(w.sr.number == __NR_exit_group){
-				int	sig = w.sr.args[0] & 0x7f;
-				int	term = (w.sr.args[0] & 0xff00) >> 8;
+				sig = w.sr.args[0] & 0x7f;
+				term = (w.sr.args[0] & 0xff00) >> 8;
 				if(sig)
 					fprintf(stderr, "Terminate by signal %d\n", sig);
 				else if(term)
@@ -933,7 +937,11 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			mc_cmd_server_exit();
 			__dprint("mccmd server exited\n");
 #endif
-			exit(0);
+			if(sig){
+				signal(sig, SIG_DFL);
+				kill(getpid(), sig);
+			}
+			exit(term);
 
 			//pthread_mutex_unlock(lock);
 			return w.sr.args[0];
