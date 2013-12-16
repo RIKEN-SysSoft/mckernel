@@ -98,6 +98,8 @@ SYSCALL_DECLARE(rt_sigreturn)
 }
 
 extern struct cpu_local_var *clv;
+extern unsigned long do_kill(int pid, int sig);
+extern void interrupt_syscall();
 
 void
 check_signal(unsigned long rc, unsigned long *regs)
@@ -123,7 +125,6 @@ check_signal(unsigned long rc, unsigned long *regs)
 		else{
 			rc = regs[9]; /* rax */
 		}
-
 		k = proc->sighandler->action + sig - 1;
 
 		if(k->sa.sa_handler == (void *)1){
@@ -132,6 +133,13 @@ check_signal(unsigned long rc, unsigned long *regs)
 		}
 		else if(k->sa.sa_handler){
 			unsigned long *usp; /* user stack */
+
+			if(regs[14] & 0x8000000000000000){ // kernel addr
+				proc->signal = sig;
+				interrupt_syscall();
+				ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
+				return;
+			}
 
 			usp = (void *)regs[14];
 			memcpy(proc->sigstack, regs, 128);
@@ -152,8 +160,6 @@ check_signal(unsigned long rc, unsigned long *regs)
 		}
 	}
 }
-
-extern unsigned long do_kill(int pid, int sig);
 
 unsigned long
 do_kill(int pid, int sig)
@@ -187,4 +193,5 @@ set_signal(int sig, unsigned long *regs)
 	if(proc == NULL || proc->pid == 0)
 		return;
 	proc->signal = sig;
+	interrupt_syscall();
 }

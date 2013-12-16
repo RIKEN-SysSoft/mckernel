@@ -116,6 +116,11 @@ static int fd;
 static char *altroot;
 static const char rlimit_stack_envname[] = "MCKERNEL_RLIMIT_STACK";
 
+pid_t gettid(void)
+{
+	return syscall(SYS_gettid);
+}
+
 struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 {
 	Elf64_Ehdr hdr;
@@ -483,6 +488,8 @@ struct thread_data_s {
 	int ret;
 	pthread_mutex_t *lock;
 } *thread_data;
+int ncpu;
+pid_t master_tid;
 
 static void *main_loop_thread_func(void *arg)
 {
@@ -497,6 +504,9 @@ void
 sendsig(int sig)
 {
 	unsigned long	param;
+
+	if(gettid() != master_tid)
+		return;
 
 	param = ((unsigned long)sig) << 32 | ((unsigned long)getpid());
 	if (ioctl(fd, MCEXEC_UP_SEND_SIGNAL, param) != 0) {
@@ -562,7 +572,6 @@ int main(int argc, char **argv)
 	char **a;
 	char *p;
 	int i;
-	int ncpu;
 	pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 	FILE *interp = NULL;
 	char *interp_path;
@@ -766,6 +775,18 @@ int main(int argc, char **argv)
 	__dprint("mccmd server initialized\n");
 #endif
 
+	master_tid = gettid();
+	for (i = 1; i <= 64; i++)
+		if (i != SIGCHLD && i != SIGCONT && i != SIGSTOP &&
+		    i != SIGTSTP && i != SIGTTIN && i != SIGTTOU){
+			struct sigaction act;
+
+			sigaction(i, NULL, &act);
+			act.sa_handler = sendsig;
+			act.sa_flags &= ~(SA_RESTART);
+			sigaction(i, &act, NULL);
+		}
+
 	for (i = 0; i <= ncpu; ++i) {
 		int ret;
 
@@ -786,11 +807,6 @@ int main(int argc, char **argv)
 		close(fd);
 		return 1;
 	}
-
-	for (i = 1; i <= 64; i++)
-		if (i != SIGCHLD && i != SIGCONT && i != SIGSTOP &&
-		    i != SIGTSTP && i != SIGTTIN && i != SIGTTOU)
-			signal(i, sendsig);
 
 	for (i = 0; i <= ncpu; ++i) {
 		pthread_join(thread_data[i].thread_id, NULL);
@@ -851,6 +867,21 @@ do_generic_syscall(
 	return ret;
 }
 
+static void
+kill_thread(unsigned long cpu)
+{
+	if(cpu >= 0 && cpu < ncpu){
+		pthread_kill(thread_data[cpu].thread_id, SIGINT);
+	}
+	else{
+		int	i;
+
+		for (i = 0; i < ncpu; ++i) {
+			pthread_kill(thread_data[i].thread_id, SIGINT);
+		}
+	}
+}
+
 #define SET_ERR(ret) if (ret == -1) ret = -errno
 
 int main_loop(int fd, int cpu, pthread_mutex_t *lock)
@@ -860,10 +891,10 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 	char *fn;
 	int sig;
 	int term;
-	
+
 	w.cpu = cpu;
 
-	while (ioctl(fd, MCEXEC_UP_WAIT_SYSCALL, (unsigned long)&w) == 0) {
+	while (((ret = ioctl(fd, MCEXEC_UP_WAIT_SYSCALL, (unsigned long)&w)) == 0) || (ret == -1 && errno == EINTR)) {
 
 		/* Don't print when got a msg to stdout */
 		if (!(w.sr.number == __NR_write && w.sr.args[0] == 1))
@@ -909,6 +940,10 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			                  w.sr.args[0], sizeof(struct timeval));
 			break;
 
+		case __NR_kill: // interrupt syscall
+			kill_thread(w.sr.args[0]);
+			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
+			break;
 		case __NR_exit:
 		case __NR_exit_group:
 			sig = 0;
@@ -963,6 +998,8 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 		}
 #endif
 		default:
+fprintf(stderr, "syscall=%ld\n", w.sr.number);
+fflush(stderr);
 			 ret = do_generic_syscall(&w);
 			 do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;

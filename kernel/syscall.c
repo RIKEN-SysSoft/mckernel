@@ -108,7 +108,8 @@ static void send_syscall(struct syscall_request *req)
 	struct ihk_ikc_channel_desc *syscall_channel;
 	int cpu;
 
-	if(req->number == __NR_exit_group){
+	if(req->number == __NR_exit_group ||
+	   req->number == __NR_kill){ // interrupt syscall
 		extern int num_processors;
 
 		scp = &get_cpu_local_var(0)->scp2;
@@ -160,7 +161,8 @@ int do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx)
 	        ihk_mc_get_processor_id(),
 	        req->number);
 
-	if(req->number == __NR_exit_group){
+	if(req->number == __NR_exit_group ||
+	   req->number == __NR_kill){ // interrupt syscall
 		scp = &get_cpu_local_var(0)->scp2;
 	}
 	else{
@@ -248,6 +250,22 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 	}
 
 	schedule();
+}
+
+void
+interrupt_syscall()
+{
+	ihk_mc_user_context_t ctx;
+	long lerror;
+
+	ihk_mc_syscall_arg0(&ctx) = ihk_mc_get_processor_id();
+	ihk_mc_syscall_arg1(&ctx) = 0;
+
+	lerror = syscall_generic_forwarding(__NR_kill, &ctx);
+	if (lerror) {
+		kprintf("clear_host_pte failed. %ld\n", lerror);
+	}
+	return;
 }
 
 SYSCALL_DECLARE(exit_group)
