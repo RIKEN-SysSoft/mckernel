@@ -922,13 +922,22 @@ SYSCALL_DECLARE(arch_prctl)
 	                     ihk_mc_syscall_arg1(ctx));
 }
 
+SYSCALL_DECLARE(execve)
+{
+	return -EOPNOTSUPP;
+}
 
 SYSCALL_DECLARE(clone)
 {
 	int cpuid;
 	int clone_flags = ihk_mc_syscall_arg0(ctx);
 	struct process *new;
-	
+
+	if(clone_flags == 0x1200011){
+		// fork()
+		return -EOPNOTSUPP;
+	}
+
 	dkprintf("[%d] clone(): stack_pointr: 0x%lX\n",
 	         ihk_mc_get_processor_id(), 
 			 (unsigned long)ihk_mc_syscall_arg1(ctx));
