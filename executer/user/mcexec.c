@@ -998,8 +998,6 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 		}
 #endif
 		default:
-fprintf(stderr, "syscall=%ld\n", w.sr.number);
-fflush(stderr);
 			 ret = do_generic_syscall(&w);
 			 do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
