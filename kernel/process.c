@@ -363,7 +363,8 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 			memobj_lock(range->memobj);
 		}
 		error = ihk_mc_pt_free_range(vm->page_table,
-				(void *)start, (void *)end, range->memobj);
+				(void *)start, (void *)end,
+				(range->flag & VR_PRIVATE)? NULL: range->memobj);
 		if (range->memobj) {
 			memobj_unlock(range->memobj);
 		}
