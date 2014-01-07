@@ -21,6 +21,7 @@
 #include <process.h>
 #include <string.h>
 #include <errno.h>
+#include <kmalloc.h>
 
 void terminate(int, int, ihk_mc_user_context_t *);
 
@@ -108,56 +109,97 @@ check_signal(unsigned long rc, unsigned long *regs)
 	struct process *proc;
 	struct k_sigaction *k;
 	int	sig;
+	struct sig_pending *pending;
+	struct sig_pending *next;
+	struct list_head *head;
+	ihk_spinlock_t *lock;
+	__sigset_t w;
+	int	irqstate;
 
 	if(clv == NULL)
 		return;
 	proc = cpu_local_var(current);
 	if(proc == NULL || proc->pid == 0)
 		return;
-	sig = proc->signal;
 
-	proc->signal = 0;
-	if(sig){
-		int irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
-		if(regs == NULL){ /* call from syscall */
-			asm volatile ("movq %%gs:132,%0" : "=r" (regs));
-			regs -= 16;
+	w = proc->sigmask.__val[0];
+	lock = &proc->sigshared->lock;
+	head = &proc->sigshared->sigpending;
+	pending = NULL;
+	irqstate = ihk_mc_spinlock_lock(lock);
+	list_for_each_entry_safe(pending, next, head, list){
+		if(!(pending->sigmask.__val[0] & w)){
+			list_del(&pending->list);
+			break;
 		}
-		else{
-			rc = regs[9]; /* rax */
-		}
-		k = proc->sighandler->action + sig - 1;
+	}
+	if(&pending->list == head)
+		pending = NULL;
+	ihk_mc_spinlock_unlock(lock, irqstate);
 
-		if(k->sa.sa_handler == (void *)1){
+	if(!pending){
+		lock = &proc->sigpendinglock;
+		head = &proc->sigpending;
+		irqstate = ihk_mc_spinlock_lock(lock);
+		list_for_each_entry_safe(pending, next, head, list){
+			if(!(pending->sigmask.__val[0] & w)){
+				list_del(&pending->list);
+				break;
+			}
+		}
+		if(&pending->list == head)
+			pending = NULL;
+		ihk_mc_spinlock_unlock(lock, irqstate);
+	}
+	if(!pending)
+		return;
+
+	for(w = pending->sigmask.__val[0], sig = 0; w; sig++, w >>= 1);
+
+	irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
+	if(regs == NULL){ /* call from syscall */
+		asm volatile ("movq %%gs:132,%0" : "=r" (regs));
+		regs -= 16;
+	}
+	else{
+		rc = regs[9]; /* rax */
+	}
+	k = proc->sighandler->action + sig - 1;
+
+	if(k->sa.sa_handler == (void *)1){
+		kfree(pending);
+		ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
+		return;
+	}
+	else if(k->sa.sa_handler){
+		unsigned long *usp; /* user stack */
+
+		if(regs[14] & 0x8000000000000000){ // kernel addr
+			int flag = ihk_mc_spinlock_lock(lock);
+			list_add(&pending->list, head);
+			ihk_mc_spinlock_unlock(lock, flag);
 			ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
 			return;
 		}
-		else if(k->sa.sa_handler){
-			unsigned long *usp; /* user stack */
 
-			if(regs[14] & 0x8000000000000000){ // kernel addr
-				proc->signal = sig;
-				ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
-				return;
-			}
+		usp = (void *)regs[14];
+		memcpy(proc->sigstack, regs, 128);
+		proc->sigrc = rc;
+		usp--;
+		*usp = (unsigned long)k->sa.sa_restorer;
 
-			usp = (void *)regs[14];
-			memcpy(proc->sigstack, regs, 128);
-			proc->sigrc = rc;
-			usp--;
-			*usp = (unsigned long)k->sa.sa_restorer;
-
-			regs[4] = (unsigned long)sig;
-			regs[11] = (unsigned long)k->sa.sa_handler;
-			regs[14] = (unsigned long)usp;
-			ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
-		}
-		else{
-			ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
-			if(sig == SIGCHLD || sig == SIGURG)
-				return;
-			terminate(0, sig, (ihk_mc_user_context_t *)regs[14]);
-		}
+		regs[4] = (unsigned long)sig;
+		regs[11] = (unsigned long)k->sa.sa_handler;
+		regs[14] = (unsigned long)usp;
+		kfree(pending);
+		ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
+	}
+	else{
+		kfree(pending);
+		ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
+		if(sig == SIGCHLD || sig == SIGURG)
+			return;
+		terminate(0, sig, (ihk_mc_user_context_t *)regs[14]);
 	}
 }
 
@@ -166,7 +208,12 @@ do_kill(int pid, int tid, int sig)
 {
 	struct process *proc = cpu_local_var(current);
 	struct process *tproc = NULL;
-	int	i;
+	int i;
+	__sigset_t mask;
+	struct sig_pending *pending;
+	struct list_head *head;
+	int irqstate;
+	int rc;
 
 	if(proc == NULL || proc->pid == 0){
 		return -ESRCH;
@@ -176,7 +223,11 @@ do_kill(int pid, int tid, int sig)
 		return -EINVAL;
 
 	if(tid == -1){
-		if(pid == proc->pid || pid <= 0){
+		if(pid == -1)
+			return -EPERM;
+		if(proc->pid == -pid)
+			pid = -pid;
+		if(pid == proc->pid || pid == 0){
 			tproc = proc;
 		}
 	}
@@ -206,13 +257,43 @@ do_kill(int pid, int tid, int sig)
 	if(sig == 0)
 		return 0;
 
-	if(__sigmask(sig) & proc->sigmask.__val[0]){
-		// TODO: masked signal: ignore -> pending
-		return 0;
+	if(tid == -1){
+		irqstate = ihk_mc_spinlock_lock(&tproc->sigshared->lock);
+		head = &tproc->sigshared->sigpending;
 	}
-	proc->signal = sig;
+	else{
+		irqstate = ihk_mc_spinlock_lock(&tproc->sigpendinglock);
+		head = &tproc->sigpending;
+	}
+	mask = __sigmask(sig);
+	pending = NULL;
+	rc = 0;
+	if(sig < 34){
+		list_for_each_entry(pending, head, list){
+			if(pending->sigmask.__val[0] == mask)
+				break;
+		}
+		if(&pending->list == head)
+			pending = NULL;
+	}
+	if(pending == NULL){
+		pending = kmalloc(sizeof(struct sig_pending), IHK_MC_AP_NOWAIT);
+		pending->sigmask.__val[0] = mask;
+		if(!pending){
+			rc = -ENOMEM;
+		}
+		else{
+			list_add_tail(&pending->list, head);
+		}
+	}
+	if(tid == -1){
+		ihk_mc_spinlock_unlock(&tproc->sigshared->lock, irqstate);
+	}
+	else{
+		ihk_mc_spinlock_unlock(&tproc->sigpendinglock, irqstate);
+	}
 	interrupt_syscall(1);
-	return 0;
+	return rc;
 }
 
 void
@@ -227,11 +308,6 @@ set_signal(int sig, unsigned long *regs, int nonmaskable)
 		if(nonmaskable){
 			terminate(0, sig, (ihk_mc_user_context_t *)regs[14]);
 		}
-		else{
-			// TODO: masked signal: ignore -> pending
-			return;
-		}
 	}
-	proc->signal = sig;
-	interrupt_syscall(1);
+	do_kill(proc->pid, proc->tid, sig);
 }

@@ -1075,7 +1075,7 @@ SYSCALL_DECLARE(rt_sigprocmask)
 	const sigset_t *set = (const sigset_t *)ihk_mc_syscall_arg1(ctx);
 	sigset_t *oldset = (sigset_t *)ihk_mc_syscall_arg2(ctx);
 	struct process *proc = cpu_local_var(current);
-	int	irqstate;
+	int flag;
 
 	if(set &&
 	   how != SIG_BLOCK &&
@@ -1083,7 +1083,7 @@ SYSCALL_DECLARE(rt_sigprocmask)
 	   how != SIG_SETMASK)
 		return -EINVAL;
 
-	irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
+	flag = ihk_mc_spinlock_lock(&proc->sighandler->lock);
 	if(oldset)
 		oldset->__val[0] = proc->sigmask.__val[0];
 	if(set){
@@ -1099,12 +1099,38 @@ SYSCALL_DECLARE(rt_sigprocmask)
 			break;
 		}
 	}
-	ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
+	ihk_mc_spinlock_unlock(&proc->sighandler->lock, flag);
 	return 0;
 }
 
 SYSCALL_DECLARE(rt_sigpending)
 {
+	int flag;
+	struct sig_pending *pending;
+	struct list_head *head;
+	ihk_spinlock_t *lock;
+	__sigset_t w = 0;
+	struct process *proc = cpu_local_var(current);
+	sigset_t *set = (sigset_t *)ihk_mc_syscall_arg0(ctx);
+
+	lock = &proc->sigshared->lock;
+	head = &proc->sigshared->sigpending;
+	flag = ihk_mc_spinlock_lock(lock);
+	list_for_each_entry(pending, head, list){
+		w |= pending->sigmask.__val[0];
+	}
+	ihk_mc_spinlock_unlock(lock, flag);
+
+	lock = &proc->sigpendinglock;
+	head = &proc->sigpending;
+	flag = ihk_mc_spinlock_lock(lock);
+	list_for_each_entry(pending, head, list){
+		w |= pending->sigmask.__val[0];
+	}
+	ihk_mc_spinlock_unlock(lock, flag);
+
+	set->__val[0] = w;
+
 	return 0;
 }
 

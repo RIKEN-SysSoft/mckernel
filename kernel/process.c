@@ -83,9 +83,20 @@ struct process *create_process(unsigned long user_pc)
 		ihk_mc_free_pages(proc, KERNEL_STACK_NR_PAGES);
 		return NULL;
 	}
+	proc->sigshared = kmalloc(sizeof(struct sig_shared), IHK_MC_AP_NOWAIT);
+	if(!proc->sigshared){
+		ihk_mc_free_pages(proc->sighandler, KERNEL_STACK_NR_PAGES);
+		ihk_mc_free_pages(proc, KERNEL_STACK_NR_PAGES);
+		return NULL;
+	}
 	memset(proc->sighandler, '\0', sizeof(struct sig_handler));
 	ihk_atomic_set(&proc->sighandler->use, 1);
 	ihk_mc_spinlock_init(&proc->sighandler->lock);
+	ihk_atomic_set(&proc->sigshared->use, 1);
+	ihk_mc_spinlock_init(&proc->sigshared->lock);
+	INIT_LIST_HEAD(&proc->sigshared->sigpending);
+	ihk_mc_spinlock_init(&proc->sigpendinglock);
+	INIT_LIST_HEAD(&proc->sigpending);
 
 	ihk_mc_init_user_process(&proc->ctx, &proc->uctx,
 	                         ((char *)proc) + 
@@ -132,6 +143,12 @@ struct process *clone_process(struct process *org, unsigned long pc,
 
 	proc->sighandler = org->sighandler;
 	ihk_atomic_inc(&org->sighandler->use);
+
+	proc->sigshared = org->sigshared;
+	ihk_atomic_inc(&org->sigshared->use);
+
+	ihk_mc_spinlock_init(&proc->sigpendinglock);
+	INIT_LIST_HEAD(&proc->sigpending);
 
 	ihk_mc_spinlock_init(&proc->spin_sleep_lock);
 	proc->spin_sleep = 0;
@@ -1339,8 +1356,22 @@ void hold_process(struct process *proc)
 
 void destroy_process(struct process *proc)
 {
+	struct sig_pending *pending;
+	struct sig_pending *next;
 	if(ihk_atomic_dec_and_test(&proc->sighandler->use)){
 		kfree(proc->sighandler);
+	}
+	if(ihk_atomic_dec_and_test(&proc->sigshared->use)){
+		list_for_each_entry_safe(pending, next, &proc->sigshared->sigpending, list){
+			list_del(&pending->list);
+			kfree(pending);
+		}
+		list_del(&proc->sigshared->sigpending);
+		kfree(proc->sigshared);
+	}
+	list_for_each_entry_safe(pending, next, &proc->sigpending, list){
+		list_del(&pending->list);
+		kfree(pending);
 	}
 	ihk_mc_free_pages(proc, KERNEL_STACK_NR_PAGES);
 }

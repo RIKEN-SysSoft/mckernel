@@ -84,6 +84,18 @@ struct sig_handler {
 	struct k_sigaction action[_NSIG];
 };
 
+struct sig_pending {
+	struct list_head list;
+	sigset_t sigmask;
+	// TODO: siginfo
+};
+
+struct sig_shared {
+	ihk_spinlock_t  lock;
+	ihk_atomic_t    use;
+	struct list_head sigpending;
+};
+
 typedef void pgio_func_t(void *arg);
 
 struct process {
@@ -110,10 +122,10 @@ struct process {
 
 	int tid;
 	sigset_t sigmask;
-	int signal;
-//	sigset_t sigpend;
+	ihk_spinlock_t	sigpendinglock;
+	struct list_head sigpending;
+	struct sig_shared *sigshared;
 	struct sig_handler *sighandler;
-//	ihk_mc_kernel_context_t sigctx;
 	char	sigstack[512]; // TODO: 1. move to user stack
 	                       // TODO: 2. backup FR and MMX regs
 	unsigned long sigrc; // return code of rt_sigreturn (x86_64: rax reg.)
