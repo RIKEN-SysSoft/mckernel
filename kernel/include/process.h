@@ -108,14 +108,16 @@ struct process {
 		unsigned long tlsblock_base, tlsblock_limit;
 	} thread;
 
-	int signal;
-	sigset_t sigpend;
+	int tid;
 	sigset_t sigmask;
+	int signal;
+//	sigset_t sigpend;
 	struct sig_handler *sighandler;
-	ihk_mc_kernel_context_t sigctx;
-	char	sigstack[512];
-	// TODO: backup FR and MMX regs
+//	ihk_mc_kernel_context_t sigctx;
+	char	sigstack[512]; // TODO: 1. move to user stack
+	                       // TODO: 2. backup FR and MMX regs
 	unsigned long sigrc; // return code of rt_sigreturn (x86_64: rax reg.)
+
 	struct rlimit rlimit_stack;
 	pgio_func_t *pgio_fp;
 	void *pgio_arg;

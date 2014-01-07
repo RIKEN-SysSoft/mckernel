@@ -1379,7 +1379,8 @@ void sched_init(void)
 	idle_process->vm = &cpu_local_var(idle_vm);
 
 	ihk_mc_init_context(&idle_process->ctx, NULL, idle);
-	idle_process->pid = ihk_mc_get_processor_id();
+	idle_process->pid = 0;
+	idle_process->tid = ihk_mc_get_processor_id();
 
 	INIT_LIST_HEAD(&cpu_local_var(runq));
 	cpu_local_var(runq_len) = 0;
@@ -1443,7 +1444,7 @@ void schedule(void)
 	if (switch_ctx) {
 		dkprintf("[%d] schedule: %d => %d \n",
 		        ihk_mc_get_processor_id(),
-		        prev ? prev->pid : 0, next ? next->pid : 0);
+		        prev ? prev->tid : 0, next ? next->tid : 0);
 
 		ihk_mc_load_page_table(next->vm->page_table);
 		
@@ -1526,8 +1527,8 @@ void __runq_add_proc(struct process *proc, int cpu_id)
 	proc->status = PS_RUNNING;
 	get_cpu_local_var(cpu_id)->status = CPU_STATUS_RUNNING;
 
-	dkprintf("runq_add_proc(): pid %d added to CPU[%d]'s runq\n", 
-             proc->pid, cpu_id);
+	dkprintf("runq_add_proc(): tid %d added to CPU[%d]'s runq\n", 
+             proc->tid, cpu_id);
 }
 
 void runq_add_proc(struct process *proc, int cpu_id)

@@ -164,7 +164,7 @@ static struct ihk_mc_interrupt_handler query_free_mem_handler = {
 	.priv = NULL,
 };
 
-void set_signal(int, unsigned long *);
+void set_signal(int, unsigned long *, int);
 void check_signal(long, unsigned long *);
 
 static void unhandled_page_fault(struct process *proc, void *fault_addr, void *regs)
@@ -234,10 +234,10 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 				reason, regs, error);
 		unhandled_page_fault(proc, fault_addr, regs);
 		if (error == -ERANGE) {
-			set_signal(SIGBUS, regs);
+			set_signal(SIGBUS, regs, 1);
 		}
 		else {
-			set_signal(SIGSEGV, regs);
+			set_signal(SIGSEGV, regs, 1);
 		}
 		check_signal(0, regs);
 		goto out;

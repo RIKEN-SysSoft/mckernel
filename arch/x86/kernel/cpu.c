@@ -368,7 +368,7 @@ void setup_x86_ap(void (*next_func)(void))
 }
 
 void arch_show_interrupt_context(const void *reg);
-void set_signal(int, void *);
+void set_signal(int, void *, int);
 void check_signal(long, void *);
 
 void handle_interrupt(int vector, struct x86_regs *regs)
@@ -409,7 +409,7 @@ void gpe_handler(struct x86_regs *regs)
 	kprintf("General protection fault (err: %lx, %lx:%lx)\n",
 	        regs->error, regs->cs, regs->rip);
 	arch_show_interrupt_context(regs);
-	set_signal(SIGILL, regs);
+	set_signal(SIGILL, regs, 1);
 	check_signal(0, regs);
 	// panic("GPF");
 }

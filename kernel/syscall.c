@@ -62,7 +62,7 @@
 #define	ekprintf(...) kprintf(__VA_ARGS__)
 #endif
 
-static ihk_atomic_t pid_cnt = IHK_ATOMIC_INIT(1024);
+//static ihk_atomic_t pid_cnt = IHK_ATOMIC_INIT(1024);
 
 /* generate system call handler's prototypes */
 #define	SYSCALL_HANDLED(number,name)	extern long sys_##name(int n, ihk_mc_user_context_t *ctx);
@@ -98,7 +98,7 @@ void check_signal(long rc, unsigned long *regs);
 static void do_mod_exit(int status);
 #endif
 
-static void send_syscall(struct syscall_request *req)
+static void send_syscall(struct syscall_request *req, int cpu)
 {
 	struct ikc_scd_packet packet;
 	struct syscall_response *res;
@@ -106,7 +106,6 @@ static void send_syscall(struct syscall_request *req)
 	int w;
 	struct syscall_params *scp;
 	struct ihk_ikc_channel_desc *syscall_channel;
-	int cpu;
 
 	if(req->number == __NR_exit_group ||
 	   req->number == __NR_kill){ // interrupt syscall
@@ -117,9 +116,8 @@ static void send_syscall(struct syscall_request *req)
 		cpu = num_processors;
 	}
 	else{
-		scp = &cpu_local_var(scp);
-		syscall_channel = cpu_local_var(syscall_channel);
-		cpu = ihk_mc_get_processor_id();
+		scp = &get_cpu_local_var(cpu)->scp;
+		syscall_channel = get_cpu_local_var(cpu)->syscall_channel;
 	}
 	res = scp->response_va;
 
@@ -150,7 +148,7 @@ static void send_syscall(struct syscall_request *req)
 }
 
 
-int do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx)
+int do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx, int cpu)
 {
 	struct syscall_response *res;
 	struct syscall_request req2 IHK_DMA_ALIGN;
@@ -166,11 +164,11 @@ int do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx)
 		scp = &get_cpu_local_var(0)->scp2;
 	}
 	else{
-		scp = &cpu_local_var(scp);
+		scp = &get_cpu_local_var(cpu)->scp;
 	}
 	res = scp->response_va;
 
-	send_syscall(req);
+	send_syscall(req, cpu);
 
 	dkprintf("SC(%d)[%3d] waiting for host.. \n", 
 	        ihk_mc_get_processor_id(),
@@ -185,7 +183,7 @@ int do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx)
 		}
 	
 		if (res->status == STATUS_PAGE_FAULT) {
-			error = page_fault_process(cpu_local_var(current),
+			error = page_fault_process(get_cpu_local_var(cpu)->current,
 					(void *)res->fault_address,
 					res->fault_reason);
 
@@ -195,7 +193,7 @@ int do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx)
 			req2.args[0] = PAGER_RESUME_PAGE_FAULT;
 			req2.args[1] = error;
 
-			send_syscall(&req2);
+			send_syscall(&req2, cpu);
 		}
 	}
 
@@ -239,7 +237,7 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 	/* XXX: send SIGKILL to all threads in this process */
 
 	flush_process_memory(proc);	/* temporary hack */
-	do_syscall(&request, ctx);
+	do_syscall(&request, ctx, ihk_mc_get_processor_id());
 
 #define	IS_DETACHED_PROCESS(proc)	(1)	/* should be implemented in the future */
 	proc->status = PS_ZOMBIE;
@@ -253,12 +251,12 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 }
 
 void
-interrupt_syscall()
+interrupt_syscall(int all)
 {
 	ihk_mc_user_context_t ctx;
 	long lerror;
 
-	ihk_mc_syscall_arg0(&ctx) = ihk_mc_get_processor_id();
+	ihk_mc_syscall_arg0(&ctx) = all? -1: ihk_mc_get_processor_id();
 	ihk_mc_syscall_arg1(&ctx) = 0;
 
 	lerror = syscall_generic_forwarding(__NR_kill, &ctx);
@@ -284,7 +282,7 @@ SYSCALL_DECLARE(exit_group)
 
 	/* XXX: send SIGKILL to all threads in this process */
 
-	do_syscall(&request, ctx);
+	do_syscall(&request, ctx, ihk_mc_get_processor_id());
 
 #define	IS_DETACHED_PROCESS(proc)	(1)	/* should be implemented in the future */
 	proc->status = PS_ZOMBIE;
@@ -874,6 +872,11 @@ SYSCALL_DECLARE(getpid)
 	return cpu_local_var(current)->pid;
 }
 
+SYSCALL_DECLARE(gettid)
+{
+	return cpu_local_var(current)->tid;
+}
+
 long do_arch_prctl(unsigned long code, unsigned long address)
 {
 	int err = 0;
@@ -932,6 +935,8 @@ SYSCALL_DECLARE(clone)
 	int cpuid;
 	int clone_flags = ihk_mc_syscall_arg0(ctx);
 	struct process *new;
+	ihk_mc_user_context_t ctx1;
+	struct syscall_request request1 IHK_DMA_ALIGN;
 
 	if(clone_flags == 0x1200011){
 		// fork()
@@ -942,7 +947,7 @@ SYSCALL_DECLARE(clone)
 	         ihk_mc_get_processor_id(), 
 			 (unsigned long)ihk_mc_syscall_arg1(ctx));
 
-    cpuid = obtain_clone_cpuid();
+	cpuid = obtain_clone_cpuid();
 
 	new = clone_process(cpu_local_var(current), ihk_mc_syscall_pc(ctx),
 	                    ihk_mc_syscall_arg1(ctx));
@@ -951,9 +956,13 @@ SYSCALL_DECLARE(clone)
 		return -ENOMEM;
 	}
 
-	/* Allocate new pid */
-	new->pid = ihk_atomic_inc_return(&pid_cnt);
-	
+//	/* Allocate new pid */
+//	new->pid = ihk_atomic_inc_return(&pid_cnt);
+
+	new->pid = cpu_local_var(current)->pid;
+	request1.number = __NR_gettid;
+	new->tid = do_syscall(&request1, &ctx1, cpuid);
+
 	if (clone_flags & CLONE_PARENT_SETTID) {
 		dkprintf("clone_flags & CLONE_PARENT_SETTID: 0x%lX\n",
 		         (unsigned long)ihk_mc_syscall_arg2(ctx));
@@ -981,11 +990,11 @@ SYSCALL_DECLARE(clone)
 	}
 
 	ihk_mc_syscall_ret(new->uctx) = 0;
-	
-	dkprintf("clone: kicking scheduler!,cpuid=%d\n", cpuid);
+
+	dkprintf("clone: kicking scheduler!,cpuid=%d pid=%d tid=%d\n", cpuid, new->pid, new->tid);
 	runq_add_proc(new, cpuid);
 
-	return new->pid;
+	return new->tid;
 }
 
 SYSCALL_DECLARE(set_tid_address)
@@ -996,31 +1005,24 @@ SYSCALL_DECLARE(set_tid_address)
 	return cpu_local_var(current)->pid;
 }
 
-extern unsigned long do_kill(int pid, int sig);
+extern unsigned long do_kill(int pid, int tid, int sig);
 
 SYSCALL_DECLARE(kill)
 {
 	int pid = ihk_mc_syscall_arg0(ctx);
 	int sig = ihk_mc_syscall_arg1(ctx);
 
-	return do_kill(pid, sig);
+	return do_kill(pid, -1, sig);
 }
 
 // see linux-2.6.34.13/kernel/signal.c
 SYSCALL_DECLARE(tgkill)
 {
-    int tgid = ihk_mc_syscall_arg0(ctx);
-    int pid = ihk_mc_syscall_arg1(ctx);
-    int sig = ihk_mc_syscall_arg2(ctx);
+	int tgid = ihk_mc_syscall_arg0(ctx);
+	int pid = ihk_mc_syscall_arg1(ctx);
+	int sig = ihk_mc_syscall_arg2(ctx);
 
-    if(pid <= 0 || tgid <= 0) { return -EINVAL; }
-    // search pid
-    // check kill permission
-    if(sig == 0) {
-        return 0;
-    } else {
-        return -EPERM; 
-    }
+	return do_kill(tgid, pid, sig);
 }
 
 SYSCALL_DECLARE(set_robust_list)
@@ -1072,7 +1074,32 @@ SYSCALL_DECLARE(rt_sigprocmask)
 	int how = ihk_mc_syscall_arg0(ctx);
 	const sigset_t *set = (const sigset_t *)ihk_mc_syscall_arg1(ctx);
 	sigset_t *oldset = (sigset_t *)ihk_mc_syscall_arg2(ctx);
-	//  kprintf("sys_rt_sigprocmask called. returning zero...\n");
+	struct process *proc = cpu_local_var(current);
+	int	irqstate;
+
+	if(set &&
+	   how != SIG_BLOCK &&
+	   how != SIG_UNBLOCK &&
+	   how != SIG_SETMASK)
+		return -EINVAL;
+
+	irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
+	if(oldset)
+		oldset->__val[0] = proc->sigmask.__val[0];
+	if(set){
+		switch(how){
+		    case SIG_BLOCK:
+			proc->sigmask.__val[0] |= set->__val[0];
+			break;
+		    case SIG_UNBLOCK:
+			proc->sigmask.__val[0] &= ~set->__val[0];
+			break;
+		    case SIG_SETMASK:
+			proc->sigmask.__val[0] = set->__val[0];
+			break;
+		}
+	}
+	ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
 	return 0;
 }
 
@@ -1149,7 +1176,7 @@ SYSCALL_DECLARE(futex)
 
 		request.args[0] = __phys;               
 
-		int r = do_syscall(&request, ctx);
+		int r = do_syscall(&request, ctx, ihk_mc_get_processor_id());
 
 		if (r < 0) {
 			return -EFAULT;

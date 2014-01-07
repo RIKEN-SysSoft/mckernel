@@ -98,8 +98,9 @@ SYSCALL_DECLARE(rt_sigreturn)
 }
 
 extern struct cpu_local_var *clv;
-extern unsigned long do_kill(int pid, int sig);
-extern void interrupt_syscall();
+extern unsigned long do_kill(int pid, int tid, int sig);
+extern void interrupt_syscall(int all);
+extern int num_processors;
 
 void
 check_signal(unsigned long rc, unsigned long *regs)
@@ -136,7 +137,6 @@ check_signal(unsigned long rc, unsigned long *regs)
 
 			if(regs[14] & 0x8000000000000000){ // kernel addr
 				proc->signal = sig;
-				interrupt_syscall();
 				ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
 				return;
 			}
@@ -162,36 +162,76 @@ check_signal(unsigned long rc, unsigned long *regs)
 }
 
 unsigned long
-do_kill(int pid, int sig)
+do_kill(int pid, int tid, int sig)
 {
 	struct process *proc = cpu_local_var(current);
+	struct process *tproc = NULL;
+	int	i;
 
 	if(proc == NULL || proc->pid == 0){
 		return -ESRCH;
 	}
-	if(proc->pid == pid){
-		proc->signal = sig;
-		return 0;
-	}
 
-	if(pid <= 0){
+	if(sig > 64 || sig < 0)
 		return -EINVAL;
+
+	if(tid == -1){
+		if(pid == proc->pid || pid <= 0){
+			tproc = proc;
+		}
 	}
-	if(sig == 0){
-		return 0;
+	else if(pid == -1){
+		for(i = 0; i < num_processors; i++)
+			if(get_cpu_local_var(i)->current &&
+			   get_cpu_local_var(i)->current->pid > 0 &&
+			   get_cpu_local_var(i)->current->tid == tid){
+				tproc = get_cpu_local_var(i)->current;
+				break;
+			}
 	}
 	else{
-		return -EPERM;
+		if(pid == 0)
+			return -ESRCH;
+		for(i = 0; i < num_processors; i++)
+			if(get_cpu_local_var(i)->current &&
+			   get_cpu_local_var(i)->current->pid == pid &&
+			   get_cpu_local_var(i)->current->tid == tid){
+				tproc = get_cpu_local_var(i)->current;
+				break;
+			}
 	}
+
+	if(!tproc)
+		return -ESRCH;
+	if(sig == 0)
+		return 0;
+
+	if(__sigmask(sig) & proc->sigmask.__val[0]){
+		// TODO: masked signal: ignore -> pending
+		return 0;
+	}
+	proc->signal = sig;
+	interrupt_syscall(1);
+	return 0;
 }
 
 void
-set_signal(int sig, unsigned long *regs)
+set_signal(int sig, unsigned long *regs, int nonmaskable)
 {
 	struct process *proc = cpu_local_var(current);
 
 	if(proc == NULL || proc->pid == 0)
 		return;
+
+	if(__sigmask(sig) & proc->sigmask.__val[0]){
+		if(nonmaskable){
+			terminate(0, sig, (ihk_mc_user_context_t *)regs[14]);
+		}
+		else{
+			// TODO: masked signal: ignore -> pending
+			return;
+		}
+	}
 	proc->signal = sig;
-	interrupt_syscall();
+	interrupt_syscall(1);
 }

@@ -97,6 +97,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 		return -ENOMEM;
 	}
 	proc->pid = pn->pid;
+	proc->tid = pn->pid;
 	proc->vm->region.user_start = pn->user_start;
 	proc->vm->region.user_end = pn->user_end;
 	proc->rlimit_stack.rlim_cur = pn->rlimit_stack_cur;
@@ -394,7 +395,7 @@ static void syscall_channel_send(struct ihk_ikc_channel_desc *c,
 	ihk_ikc_send(c, packet, 0);
 }
 
-extern unsigned long do_kill(int, int);
+extern unsigned long do_kill(int, int, int);
 
 static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *ihk_os)
@@ -433,7 +434,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		//cpu_local_var(next) = (struct process *)packet->arg;
 		return 0;
 	case SCD_MSG_SEND_SIGNAL:
-		rc = do_kill((int)packet->arg, (int)(packet->arg >> 32));
+		rc = do_kill((int)packet->arg, -1, (int)(packet->arg >> 32));
 		kprintf("SCD_MSG_SEND_SIGNAL: %lx, rc=%d\n", packet->arg, rc);
 		return 0;
 	}

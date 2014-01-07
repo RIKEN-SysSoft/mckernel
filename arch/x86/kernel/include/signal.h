@@ -15,9 +15,18 @@
 #define _NSIG_BPW	64
 #define _NSIG_WORDS (_NSIG / _NSIG_BPW)
 
+typedef unsigned long int __sigset_t;
+#define __sigmask(sig)  (((__sigset_t) 1) << ((sig) - 1))
+
+# define _SIGSET_NWORDS (1024 / (8 * sizeof (__sigset_t)))
+
 typedef struct {
-        unsigned long sig[_NSIG_WORDS];
+	__sigset_t __val[_SIGSET_NWORDS];
 } sigset_t;
+
+#define SIG_BLOCK 0
+#define SIG_UNBLOCK 1
+#define SIG_SETMASK 2
 
 struct sigaction {
 	void (*sa_handler)(int);
@@ -29,6 +38,76 @@ struct sigaction {
 struct k_sigaction {
         struct sigaction sa;
 };
+
+struct sigstack {
+	void	*ss_sp;
+	int	ss_onstack;
+};
+
+typedef struct sigaltstack {
+	void	*ss_sp;
+	int	ss_flags;
+	size_t	ss_size;
+} stack_t;
+
+typedef union sigval {
+	int sival_int;
+	void *sival_ptr;
+} sigval_t;
+
+#define __SI_MAX_SIZE 128
+#define __SI_PAD_SIZE ((__SI_MAX_SIZE / sizeof (int)) - 4)
+
+typedef struct siginfo {
+	int si_signo;		/* Signal number.  */
+	int si_errno;		/* If non-zero, an errno value associated with
+				   this signal, as defined in <errno.h>.  */
+	int si_code;		/* Signal code.  */
+
+	union {
+		int _pad[__SI_PAD_SIZE];
+
+		/* kill().  */
+		struct {
+			int si_pid;/* Sending process ID.  */
+			int si_uid;/* Real user ID of sending process.  */
+		} _kill;
+
+		/* POSIX.1b timers.  */
+		struct {
+			int si_tid;         /* Timer ID.  */
+			int si_overrun;     /* Overrun count.  */
+			sigval_t si_sigval; /* Signal value.  */
+		} _timer;
+
+		/* POSIX.1b signals.  */
+		struct {
+			int si_pid;     /* Sending process ID.  */
+			int si_uid;     /* Real user ID of sending process.  */
+			sigval_t si_sigval; /* Signal value.  */
+		} _rt;
+
+		/* SIGCHLD.  */
+		struct {
+			int si_pid;     /* Which child.  */
+			int si_uid;     /* Real user ID of sending process.  */
+			int si_status;      /* Exit value or signal.  */
+			long si_utime;
+			long si_stime;
+		} _sigchld;
+
+		/* SIGILL, SIGFPE, SIGSEGV, SIGBUS.  */
+		struct {
+			void *si_addr;      /* Faulting insn/memory ref.  */
+		} _sigfault;
+
+		/* SIGPOLL.  */
+		struct {
+			long int si_band;   /* Band event for SIGPOLL.  */
+			int si_fd;
+		} _sigpoll;
+	} _sifields;
+} siginfo_t;
 
 #define SIGHUP           1
 #define SIGINT           2

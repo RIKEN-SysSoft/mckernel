@@ -501,7 +501,7 @@ static void *main_loop_thread_func(void *arg)
 }
 
 void
-sendsig(int sig)
+sendsig(int sig, siginfo_t *siginfo, void *context)
 {
 	unsigned long	param;
 
@@ -782,8 +782,9 @@ int main(int argc, char **argv)
 			struct sigaction act;
 
 			sigaction(i, NULL, &act);
-			act.sa_handler = sendsig;
+			act.sa_sigaction = sendsig;
 			act.sa_flags &= ~(SA_RESTART);
+			act.sa_flags |= SA_SIGINFO;
 			sigaction(i, &act, NULL);
 		}
 
