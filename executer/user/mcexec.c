@@ -924,15 +924,11 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 
 		switch (w.sr.number) {
 		case __NR_open:
-			dma_buf[256] = 0;
-			
-			do_syscall_load(fd, cpu, (unsigned long)dma_buf, w.sr.args[0], 256);
-			/*
-			while (!dma_buf[256]) {
-				asm volatile ("" : : : "memory");
+			ret = do_strncpy_from_user(fd, dma_buf, (void *)w.sr.args[0], PIN_SIZE);
+			if (ret < 0) {
+				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+				break;
 			}
-			*/
-			
 			__dprintf("open: %s\n", dma_buf);
 
 			fn = (char *)dma_buf;

@@ -214,15 +214,6 @@ long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx)
 	SYSCALL_FOOTER;
 }
 
-SYSCALL_DECLARE(open)
-{
-
-	SYSCALL_HEADER;
-	dkprintf("open: %s\n", (char*)ihk_mc_syscall_arg0(ctx));
-	SYSCALL_ARGS_3(MI, D, D);
-	SYSCALL_FOOTER;
-}
-
 void
 terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 {
