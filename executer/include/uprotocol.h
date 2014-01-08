@@ -37,6 +37,7 @@
 #define MCEXEC_UP_LOAD_SYSCALL   0x30a02905
 #define MCEXEC_UP_SEND_SIGNAL    0x30a02906
 #define MCEXEC_UP_GET_CPU        0x30a02907
+#define MCEXEC_UP_STRNCPY_FROM_USER 0x30a02908
 
 #define MCEXEC_UP_PREPARE_DMA    0x30a02910
 #define MCEXEC_UP_FREE_DMA       0x30a02911
@@ -113,6 +114,13 @@ struct syscall_ret_desc {
 	unsigned long src;
 	unsigned long dest;
 	unsigned long size;
+};
+
+struct strncpy_from_user_desc {
+	void *dest;
+	void *src;
+	unsigned long n;
+	long result;
 };
 
 struct prepare_dma_desc {

@@ -573,6 +573,58 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 	return 0;
 }
 
+long mcexec_strncpy_from_user(ihk_os_t os, struct strncpy_from_user_desc * __user arg)
+{
+	struct strncpy_from_user_desc desc;
+	void *buf;
+	void *dest;
+	void *src;
+	unsigned long remain;
+	long want;
+	long copied;
+
+	if (copy_from_user(&desc, arg, sizeof(desc))) {
+		return -EFAULT;
+	}
+
+	buf = (void *)__get_free_page(GFP_KERNEL);
+	if (!buf) {
+		return -ENOMEM;
+	}
+
+	dest = desc.dest;
+	src = desc.src;
+	remain = desc.n;
+	want = 0;
+	copied = 0;
+
+	while ((remain > 0) && (want == copied)) {
+		want = (remain > PAGE_SIZE)? PAGE_SIZE: remain;
+		copied = strncpy_from_user(buf, src, want);
+		if (copied == want) {
+			if (copy_to_user(dest, buf, copied)) {
+				copied = -EFAULT;
+			}
+		}
+		else if (copied >= 0) {
+			if (copy_to_user(dest, buf, copied+1)) {
+				copied = -EFAULT;
+			}
+		}
+		dest += copied;
+		src += copied;
+		remain -= copied;
+	}
+
+	desc.result = (copied >= 0)? (desc.n - remain): copied;
+	free_page((unsigned long)buf);
+
+	if (copy_to_user(arg, &desc, sizeof(*arg))) {
+		return -EFAULT;
+	}
+	return 0;
+}
+
 long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg)
 {
 	switch (req) {
@@ -599,6 +651,9 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg)
 
 	case MCEXEC_UP_GET_CPU:
 		return mcexec_get_cpu(os);
+
+	case MCEXEC_UP_STRNCPY_FROM_USER:
+		return mcexec_strncpy_from_user(os, (struct strncpy_from_user_desc *)arg);
 
 	case MCEXEC_UP_PREPARE_DMA:
 		return mcexec_pin_region(os, (unsigned long *)arg);

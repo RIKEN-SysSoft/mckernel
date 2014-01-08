@@ -51,6 +51,7 @@ static struct ihk_os_user_call_handler mcctrl_uchs[] = {
 	{ .request = MCEXEC_UP_LOAD_SYSCALL, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_SEND_SIGNAL, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_GET_CPU, .func = mcctrl_ioctl },
+	{ .request = MCEXEC_UP_STRNCPY_FROM_USER, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_PREPARE_DMA, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_FREE_DMA, .func = mcctrl_ioctl },
 };

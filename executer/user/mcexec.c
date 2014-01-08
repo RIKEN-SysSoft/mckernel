@@ -883,6 +883,25 @@ kill_thread(unsigned long cpu)
 	}
 }
 
+static long do_strncpy_from_user(int fd, void *dest, void *src, unsigned long n)
+{
+	struct strncpy_from_user_desc desc;
+	int ret;
+
+	desc.dest = dest;
+	desc.src = src;
+	desc.n = n;
+
+	ret = ioctl(fd, MCEXEC_UP_STRNCPY_FROM_USER, (unsigned long)&desc);
+	if (ret) {
+		ret = -errno;
+		perror("strncpy_from_user:ioctl");
+		return ret;
+	}
+
+	return desc.result;
+}
+
 #define SET_ERR(ret) if (ret == -1) ret = -errno
 
 int main_loop(int fd, int cpu, pthread_mutex_t *lock)
