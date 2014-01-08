@@ -1,5 +1,6 @@
 TARGET = @TARGET@
 SBINDIR = @SBINDIR@
+MANDIR = @MANDIR@
 
 all::
 	@(cd executer/kernel; make modules)
@@ -30,6 +31,8 @@ install::
 		mkdir -p -m 755 $(SBINDIR); \
 		install -m 755 arch/x86/tools/mcreboot-attached-mic.sh $(SBINDIR)/mcreboot; \
 		install -m 755 arch/x86/tools/mcshutdown-attached-mic.sh $(SBINDIR)/mcshutdown; \
+		mkdir -p -m 755 $(MANDIR)/man1; \
+		install -m 644 arch/x86/tools/mcreboot.1 $(MANDIR)/man1/mcreboot.1; \
 	fi
 
 clean::
