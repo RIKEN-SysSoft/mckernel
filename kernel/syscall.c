@@ -93,6 +93,8 @@ static char *syscall_name[] MCKERNEL_UNUSED = {
 };
 
 void check_signal(long rc, unsigned long *regs);
+int copy_from_user(struct process *, void *, const void *, size_t);
+int copy_to_user(struct process *, void *, const void *, size_t);
 
 #ifdef DCFA_KMOD
 static void do_mod_exit(int status);
@@ -1041,32 +1043,38 @@ do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
 	k = proc->sighandler->action + sig - 1;
 	if(oact)
 		memcpy(oact, k, sizeof(struct k_sigaction));
-	if(act){
+	if(act)
 		memcpy(k, act, sizeof(struct k_sigaction));
-	}
 	ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
 	return 0;
 }
 
 SYSCALL_DECLARE(rt_sigaction)
 {
+	struct process *proc = cpu_local_var(current);
 	int sig = ihk_mc_syscall_arg0(ctx);
 	const struct sigaction *act = (const struct sigaction *)ihk_mc_syscall_arg1(ctx);
 	struct sigaction *oact = (struct sigaction *)ihk_mc_syscall_arg2(ctx);
-	//size_t sigsetsize = ihk_mc_syscall_arg3(ctx);
+	size_t sigsetsize = ihk_mc_syscall_arg3(ctx);
 	struct k_sigaction new_sa, old_sa;
 	int rc;
 
-	//if (sigsetsize != sizeof(sigset_t))
-		//return -EINVAL;
+	if (sigsetsize != sizeof(sigset_t))
+		return -EINVAL;
 
 	if(act)
-		memcpy(&new_sa.sa, act, sizeof new_sa.sa);
+		if(copy_from_user(proc, &new_sa.sa, act, sizeof new_sa.sa)){
+			goto fault;
+		}
 	rc = do_sigaction(sig, act? &new_sa: NULL, oact? &old_sa: NULL);
-	if(oact)
-		memcpy(oact, &old_sa.sa, sizeof old_sa.sa);
+	if(rc == 0 && oact)
+		if(copy_to_user(proc, oact, &old_sa.sa, sizeof old_sa.sa)){
+			goto fault;
+		}
 
 	return rc;
+fault:
+	return -EFAULT;
 }
 
 SYSCALL_DECLARE(rt_sigprocmask)
@@ -1074,8 +1082,13 @@ SYSCALL_DECLARE(rt_sigprocmask)
 	int how = ihk_mc_syscall_arg0(ctx);
 	const sigset_t *set = (const sigset_t *)ihk_mc_syscall_arg1(ctx);
 	sigset_t *oldset = (sigset_t *)ihk_mc_syscall_arg2(ctx);
+	size_t sigsetsize = (size_t)ihk_mc_syscall_arg3(ctx);
 	struct process *proc = cpu_local_var(current);
 	int flag;
+	__sigset_t wsig;
+
+	if(sigsetsize != sizeof(sigset_t))
+		return -EINVAL;
 
 	if(set &&
 	   how != SIG_BLOCK &&
@@ -1084,23 +1097,32 @@ SYSCALL_DECLARE(rt_sigprocmask)
 		return -EINVAL;
 
 	flag = ihk_mc_spinlock_lock(&proc->sighandler->lock);
-	if(oldset)
-		oldset->__val[0] = proc->sigmask.__val[0];
+	if(oldset){
+		wsig = proc->sigmask.__val[0];
+		if(copy_to_user(proc, oldset->__val, &wsig, sizeof wsig))
+			goto fault;
+	}
 	if(set){
+		if(copy_from_user(proc, &wsig, set->__val, sizeof wsig))
+			goto fault;
 		switch(how){
 		    case SIG_BLOCK:
-			proc->sigmask.__val[0] |= set->__val[0];
+			proc->sigmask.__val[0] |= wsig;
 			break;
 		    case SIG_UNBLOCK:
-			proc->sigmask.__val[0] &= ~set->__val[0];
+			proc->sigmask.__val[0] &= ~wsig;
 			break;
 		    case SIG_SETMASK:
-			proc->sigmask.__val[0] = set->__val[0];
+			proc->sigmask.__val[0] = wsig;
 			break;
 		}
 	}
+	proc->supmask = proc->sigmask;
 	ihk_mc_spinlock_unlock(&proc->sighandler->lock, flag);
 	return 0;
+fault:
+	ihk_mc_spinlock_unlock(&proc->sighandler->lock, flag);
+	return -EFAULT;
 }
 
 SYSCALL_DECLARE(rt_sigpending)
@@ -1112,6 +1134,10 @@ SYSCALL_DECLARE(rt_sigpending)
 	__sigset_t w = 0;
 	struct process *proc = cpu_local_var(current);
 	sigset_t *set = (sigset_t *)ihk_mc_syscall_arg0(ctx);
+	size_t sigsetsize = (size_t)ihk_mc_syscall_arg1(ctx);
+
+	if (sigsetsize > sizeof(sigset_t))
+		return -EINVAL;
 
 	lock = &proc->sigshared->lock;
 	head = &proc->sigshared->sigpending;
@@ -1129,23 +1155,39 @@ SYSCALL_DECLARE(rt_sigpending)
 	}
 	ihk_mc_spinlock_unlock(lock, flag);
 
-	set->__val[0] = w;
+	if(copy_to_user(proc, set->__val, &w, sizeof w))
+		return -EFAULT;
 
 	return 0;
 }
 
 SYSCALL_DECLARE(rt_sigtimedwait)
 {
+/*
+sigset_t *
+siginfo_t *
+struct timespec *
+size_t
+*/
 	return 0;
 }
 
 SYSCALL_DECLARE(rt_sigqueueinfo)
 {
+/*
+pid_t
+int
+siginfo_t *
+*/
 	return 0;
 }
 
 SYSCALL_DECLARE(rt_sigsuspend)
 {
+/*
+sigset_t *
+size_t
+*/
 	return 0;
 }
 
@@ -1276,8 +1318,10 @@ SYSCALL_DECLARE(getrlimit)
 
 	case RLIMIT_STACK:
 		dkprintf("[%d] getrlimit() RLIMIT_STACK\n", ihk_mc_get_processor_id());
-		rlm->rlim_cur = proc->rlimit_stack.rlim_cur;
-		rlm->rlim_max = proc->rlimit_stack.rlim_max;
+		if(copy_to_user(proc, &rlm->rlim_cur, &proc->rlimit_stack.rlim_cur, sizeof rlm->rlim_cur))
+			return -EFAULT;
+		if(copy_to_user(proc, &rlm->rlim_max, &proc->rlimit_stack.rlim_max, sizeof rlm->rlim_max))
+			return -EFAULT;
 		ret = 0;
 		break;
 

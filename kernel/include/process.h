@@ -121,7 +121,9 @@ struct process {
 	} thread;
 
 	int tid;
+	volatile int sigevent;
 	sigset_t sigmask;
+	sigset_t supmask;
 	ihk_spinlock_t	sigpendinglock;
 	struct list_head sigpending;
 	struct sig_shared *sigshared;

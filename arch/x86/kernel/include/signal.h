@@ -18,10 +18,8 @@
 typedef unsigned long int __sigset_t;
 #define __sigmask(sig)  (((__sigset_t) 1) << ((sig) - 1))
 
-# define _SIGSET_NWORDS (1024 / (8 * sizeof (__sigset_t)))
-
 typedef struct {
-	__sigset_t __val[_SIGSET_NWORDS];
+	__sigset_t __val[_NSIG_WORDS];
 } sigset_t;
 
 #define SIG_BLOCK 0

@@ -1749,7 +1749,67 @@ unsigned long virt_to_phys(void *v)
 		return va - MAP_ST_START;
 	}
 }
+
 void *phys_to_virt(unsigned long p)
 {
 	return (void *)(p + MAP_ST_START);
+}
+
+int copy_from_user(struct process *proc, void *dst, const void *src, size_t siz)
+{
+	struct process_vm *vm = proc->vm;
+	struct vm_range *range;
+	size_t pos;
+	size_t wsiz;
+	unsigned long pgstart = (unsigned long)src;
+
+	wsiz = siz + (pgstart & 0x0000000000000fffUL);
+	pgstart &= 0xfffffffffffff000UL;
+	if(!pgstart || pgstart >= MAP_KERNEL_START)
+		return -EFAULT;
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	for(pos = 0; pos < wsiz; pos += 4096, pgstart += 4096){
+		range = lookup_process_memory_range(vm, pgstart, pgstart+1);
+		if(range == NULL){
+			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+			return -EFAULT;
+		}
+		if((range->flag & VR_PROT_MASK) == VR_PROT_NONE){
+			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+			return -EFAULT;
+		}
+	}
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	memcpy(dst, src, siz);
+	return 0;
+}
+
+int copy_to_user(struct process *proc, void *dst, const void *src, size_t siz)
+{
+	struct process_vm *vm = proc->vm;
+	struct vm_range *range;
+	size_t pos;
+	size_t wsiz;
+	unsigned long pgstart = (unsigned long)dst;
+
+	wsiz = siz + (pgstart & 0x0000000000000fffUL);
+	pgstart &= 0xfffffffffffff000UL;
+	if(!pgstart || pgstart >= MAP_KERNEL_START)
+		return -EFAULT;
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	for(pos = 0; pos < wsiz; pos += 4096, pgstart += 4096){
+		range = lookup_process_memory_range(vm, pgstart, pgstart+1);
+		if(range == NULL){
+			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+			return -EFAULT;
+		}
+		if(((range->flag & VR_PROT_MASK) == VR_PROT_NONE) ||
+		    !(range->flag & VR_PROT_WRITE)){
+			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+			return -EFAULT;
+		}
+	}
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	memcpy(dst, src, siz);
+	return 0;
 }
