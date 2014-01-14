@@ -67,6 +67,8 @@ static int process_msg_prepare_process(unsigned long rphys)
 	int range_npages;
 	void *up_v;
 	unsigned long flags;
+	uintptr_t interp_obase = -1;
+	uintptr_t interp_nbase = -1;
 
 	sz = sizeof(struct program_load_desc)
 		+ sizeof(struct program_image_section) * 16;
@@ -100,6 +102,8 @@ static int process_msg_prepare_process(unsigned long rphys)
 	proc->tid = pn->pid;
 	proc->vm->region.user_start = pn->user_start;
 	proc->vm->region.user_end = pn->user_end;
+	proc->vm->region.map_start = (USER_END / 3) & LARGE_PAGE_MASK;
+	proc->vm->region.map_end = proc->vm->region.map_start;
 	proc->rlimit_stack.rlim_cur = pn->rlimit_stack_cur;
 	proc->rlimit_stack.rlim_max = pn->rlimit_stack_max;
 
@@ -107,6 +111,18 @@ static int process_msg_prepare_process(unsigned long rphys)
 	cpu_local_var(scp).post_idx = 0;
 
 	for (i = 0; i < n; i++) {
+		if (pn->sections[i].interp && (interp_nbase == (uintptr_t)-1)) {
+			interp_obase = pn->sections[i].vaddr;
+			interp_obase -= (interp_obase % pn->interp_align);
+			interp_nbase = proc->vm->region.map_start;
+			interp_nbase = (interp_nbase + pn->interp_align - 1)
+				& ~(pn->interp_align - 1);
+		}
+		if (pn->sections[i].interp) {
+			pn->sections[i].vaddr -= interp_obase;
+			pn->sections[i].vaddr += interp_nbase;
+			p->sections[i].vaddr = pn->sections[i].vaddr;
+		}
 		s = (pn->sections[i].vaddr) & PAGE_MASK;
 		e = (pn->sections[i].vaddr + pn->sections[i].len
 		     + PAGE_SIZE - 1) & PAGE_MASK;
@@ -153,7 +169,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 
 		/* TODO: Maybe we need flag */
 		if (pn->sections[i].interp) {
-			/* nothing to do */
+			proc->vm->region.map_end = e;
 		}
 		else if (i == 0) {
 			proc->vm->region.text_start = s;
@@ -171,6 +187,13 @@ static int process_msg_prepare_process(unsigned long rphys)
 		}
 	}
 	
+	if (interp_nbase != (uintptr_t)-1) {
+		pn->entry -= interp_obase;
+		pn->entry += interp_nbase;
+		p->entry = pn->entry;
+		ihk_mc_modify_user_context(proc->uctx, IHK_UCR_PROGRAM_COUNTER, pn->entry);
+	}
+
 #if 1
     /*
       Fix for the problem where brk grows to hit .bss section
@@ -188,8 +211,6 @@ static int process_msg_prepare_process(unsigned long rphys)
 	proc->vm->region.brk_start = proc->vm->region.brk_end =
 		proc->vm->region.data_end;
 #endif
-	proc->vm->region.map_start = proc->vm->region.map_end = 
-		(USER_END / 3) & LARGE_PAGE_MASK;
 
 	/* Map system call stuffs */
 	flags = VR_RESERVED | VR_PROT_READ | VR_PROT_WRITE;

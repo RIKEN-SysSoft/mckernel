@@ -122,6 +122,7 @@ struct program_load_desc {
 	unsigned long envs_len;
 	unsigned long rlimit_stack_cur;
 	unsigned long rlimit_stack_max;
+	unsigned long interp_align;
 	struct program_image_section sections[0];
 };
 

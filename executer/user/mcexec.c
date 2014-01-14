@@ -248,6 +248,7 @@ struct program_load_desc *load_interp(struct program_load_desc *desc0, FILE *fp)
 	int i, j, nhdrs = 0;
 	struct program_load_desc *desc = desc0;
 	size_t newsize;
+	unsigned long align;
 
 	if (fread(&hdr, sizeof(hdr), 1, fp) < 1) {
 		__eprint("Cannot read Ehdr.\n");
@@ -278,6 +279,7 @@ struct program_load_desc *load_interp(struct program_load_desc *desc0, FILE *fp)
 	}
 
 	fseek(fp, hdr.e_phoff, SEEK_SET);
+	align = 1;
 	j = desc->num_sections;
 	for (i = 0; i < hdr.e_phnum; i++) {
 		if (fread(&phdr, sizeof(phdr), 1, fp) < 1) {
@@ -301,6 +303,10 @@ struct program_load_desc *load_interp(struct program_load_desc *desc0, FILE *fp)
 			desc->sections[j].prot |= (phdr.p_flags & PF_W)? PROT_WRITE: 0;
 			desc->sections[j].prot |= (phdr.p_flags & PF_X)? PROT_EXEC: 0;
 
+			if (phdr.p_align > align) {
+				align = phdr.p_align;
+			}
+
 			__dprintf("%d: (%s) %lx, %lx, %lx, %lx, %x\n",
 				  j, (phdr.p_type == PT_LOAD ? "PT_LOAD" : "PT_TLS"),
 				  desc->sections[j].vaddr,
@@ -314,6 +320,7 @@ struct program_load_desc *load_interp(struct program_load_desc *desc0, FILE *fp)
 	desc->num_sections = j;
 
 	desc->entry = hdr.e_entry;
+	desc->interp_align = align;
 
 	return desc;
 }
