@@ -1308,8 +1308,133 @@ SYSCALL_DECLARE(sigaltstack)
 
 SYSCALL_DECLARE(madvise)
 {
-    //  kprintf("sys_madvise called. returning zero...\n");
-  return 0;
+	const uintptr_t start = (uintptr_t)ihk_mc_syscall_arg0(ctx);
+	const size_t len0 = (size_t)ihk_mc_syscall_arg1(ctx);
+	const int advice = (int)ihk_mc_syscall_arg2(ctx);
+	size_t len;
+	uintptr_t end;
+	struct process *proc = cpu_local_var(current);
+	struct vm_regions *region = &proc->vm->region;
+	struct vm_range *first;
+	uintptr_t addr;
+	struct vm_range *range;
+	int error;
+
+	dkprintf("[%d]sys_madvise(%lx,%lx,%x)\n",
+			ihk_mc_get_processor_id(), start, len0, advice);
+
+	len = (len0 + PAGE_SIZE - 1) & PAGE_MASK;
+	end = start + len;
+
+	if ((start & (PAGE_SIZE - 1))
+			|| (len < len0)
+			|| (end < start)) {
+		error = -EINVAL;
+		goto out2;
+	}
+
+	if ((start < region->user_start)
+			|| (region->user_end <= start)
+			|| (len > (region->user_end - region->user_start))
+			|| ((region->user_end - len) < start)) {
+		error = -ENOMEM;
+		goto out2;
+	}
+
+	error = 0;
+	switch (advice) {
+	default:
+	case MADV_MERGEABLE:
+	case MADV_UNMERGEABLE:
+	case MADV_HUGEPAGE:
+	case MADV_NOHUGEPAGE:
+	case MADV_DONTDUMP:
+	case MADV_DODUMP:
+		error = -EINVAL;
+		break;
+
+	case MADV_NORMAL:
+	case MADV_RANDOM:
+	case MADV_SEQUENTIAL:
+	case MADV_WILLNEED:
+	case MADV_DONTNEED:
+	case MADV_DONTFORK:
+	case MADV_DOFORK:
+		break;
+
+	case MADV_REMOVE:
+		error = -EACCES;
+		break;
+
+	case MADV_HWPOISON:
+	case MADV_SOFT_OFFLINE:
+		error = -EPERM;
+		break;
+
+	}
+	if (error) {
+		goto out2;
+	}
+
+	if (start == end) {
+		error = 0;
+		goto out2;
+	}
+
+	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
+	/* check contiguous map */
+	first = NULL;
+	for (addr = start; addr < end; addr = range->end) {
+		if (first == NULL) {
+			range = lookup_process_memory_range(proc->vm, start, start+PAGE_SIZE);
+			first = range;
+		}
+		else {
+			range = next_process_memory_range(proc->vm, range);
+		}
+
+		if ((range == NULL) || (addr < range->start)) {
+			/* not contiguous */
+			dkprintf("[%d]sys_madvise(%lx,%lx,%x):not contig "
+					"%lx [%lx-%lx)\n",
+					ihk_mc_get_processor_id(), start,
+					len0, advice, addr, range->start,
+					range->end);
+			error = -ENOMEM;
+			goto out;
+		}
+
+#define	MEMOBJ_IS_FILEOBJ(obj)	((obj) != NULL)
+		if (!MEMOBJ_IS_FILEOBJ(range->memobj)) {
+			dkprintf("[%d]sys_madvise(%lx,%lx,%x):not fileobj "
+					"[%lx-%lx) %lx\n",
+					ihk_mc_get_processor_id(), start,
+					len0, advice, range->start,
+					range->end, range->memobj);
+			error = -EBADF;
+			goto out;
+		}
+
+		if ((advice == MADV_DONTNEED)
+				&& (range->flag & VR_LOCKED)) {
+			dkprintf("[%d]sys_madvise(%lx,%lx,%x):locked"
+					"[%lx-%lx) %lx\n",
+					ihk_mc_get_processor_id(), start,
+					len0, advice, range->start,
+					range->end, range->flag);
+			error = -EINVAL;
+			goto out;
+		}
+	}
+
+	error = 0;
+out:
+	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+
+out2:
+	dkprintf("[%d]sys_madvise(%lx,%lx,%x): %d\n",
+			ihk_mc_get_processor_id(), start, len0, advice, error);
+	return error;
 }
 
 SYSCALL_DECLARE(futex)

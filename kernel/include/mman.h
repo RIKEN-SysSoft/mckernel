@@ -43,4 +43,24 @@
 #define	MAP_STACK	0x00020000
 #define	MAP_HUGETLB	0x00040000
 
+/*
+ * memory advice
+ */
+#define	MADV_NORMAL		0
+#define	MADV_RANDOM		1
+#define	MADV_SEQUENTIAL		2
+#define	MADV_WILLNEED		3
+#define	MADV_DONTNEED		4
+#define	MADV_REMOVE		9
+#define	MADV_DONTFORK		10
+#define	MADV_DOFORK		11
+#define	MADV_MERGEABLE		12
+#define	MADV_UNMERGEABLE	13
+#define	MADV_HUGEPAGE		14
+#define	MADV_NOHUGEPAGE		15
+#define	MADV_DONTDUMP		16
+#define	MADV_DODUMP		17
+#define	MADV_HWPOISON		100
+#define	MADV_SOFT_OFFLINE	101
+
 #endif /* HEADER_MMAN_H */
