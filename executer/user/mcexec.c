@@ -923,6 +923,10 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 
 	while (((ret = ioctl(fd, MCEXEC_UP_WAIT_SYSCALL, (unsigned long)&w)) == 0) || (ret == -1 && errno == EINTR)) {
 
+		if (ret) {
+			continue;
+		}
+
 		/* Don't print when got a msg to stdout */
 		if (!(w.sr.number == __NR_write && w.sr.args[0] == 1))
 			__dprintf("[%d] got syscall: %ld\n", cpu, w.sr.number);
