@@ -13,6 +13,7 @@
 #ifndef __HEADER_SYSCALL_H
 #define __HEADER_SYSCALL_H
 
+#include <ihk/context.h>
 #include <ihk/memconst.h>
 
 #define NUM_SYSCALLS 255

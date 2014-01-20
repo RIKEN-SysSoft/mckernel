@@ -1698,6 +1698,21 @@ void init_low_area(struct page_table *pt)
 	set_pt_large_page(pt, 0, 0, PTATTR_WRITABLE);
 }
 
+static void init_vsyscall_area(struct page_table *pt)
+{
+	extern char vsyscall_page[];
+	int error;
+
+#define	VSYSCALL_ADDR	((void *)(0xffffffffff600000))
+	error = __set_pt_page(pt, VSYSCALL_ADDR,
+			virt_to_phys(vsyscall_page), PTATTR_ACTIVE|PTATTR_USER);
+	if (error) {
+		panic("init_vsyscall_area:__set_pt_page failed");
+	}
+
+	return;
+}
+
 void init_page_table(void)
 {
 #ifdef USE_LARGE_PAGES
@@ -1712,6 +1727,7 @@ void init_page_table(void)
 	init_fixed_area(init_pt);
 	init_low_area(init_pt);
 	init_text_area(init_pt);
+	init_vsyscall_area(init_pt);
 
 	load_page_table(init_pt);
 	kprintf("Page table is now at %p\n", init_pt);

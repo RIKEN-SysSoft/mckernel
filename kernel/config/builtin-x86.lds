@@ -20,6 +20,19 @@ SECTIONS
 	.rodata : {
 	      *(.rodata .rodata.*)
 	} :data
+
+	.vsyscall : ALIGN(0x1000) {
+		vsyscall_page = .;
+
+		. = vsyscall_page + 0x000;
+		*(.vsyscall.gettimeofday)
+
+		. = vsyscall_page + 0x400;
+		*(.vsyscall.time)
+
+		. = ALIGN(4096);
+	} : data = 0xf4
+
     .bss : {
           *(.bss .bss.*)
     }
