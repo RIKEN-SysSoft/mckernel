@@ -1004,6 +1004,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			if(sig){
 				signal(sig, SIG_DFL);
 				kill(getpid(), sig);
+				pause();
 			}
 			exit(term);
 
