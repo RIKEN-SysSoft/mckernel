@@ -62,6 +62,7 @@
 #define	PT_PHYSMASK	(((1UL << 52) - 1) & PAGE_MASK)
 
 #define	PF_PRESENT	((pte_t)0x01)	/* entry is valid */
+#define PF_WRITABLE	((pte_t)0x02)
 #define	PF_SIZE		((pte_t)0x80)	/* entry points large page */
 
 #define PFL4_PRESENT    ((pte_t)0x01)
@@ -128,6 +129,11 @@ static inline int pte_is_null(pte_t *ptep)
 static inline int pte_is_present(pte_t *ptep)
 {
 	return !!(*ptep & PF_PRESENT);
+}
+
+static inline int pte_is_writable(pte_t *ptep)
+{
+	return !!(*ptep & PF_WRITABLE);
 }
 
 static inline uintptr_t pte_get_phys(pte_t *ptep)

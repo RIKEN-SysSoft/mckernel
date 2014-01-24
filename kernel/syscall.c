@@ -404,6 +404,7 @@ SYSCALL_DECLARE(mmap)
 		| MAP_PRIVATE		// 02
 		| MAP_FIXED		// 10
 		| MAP_ANONYMOUS		// 20
+		| MAP_POPULATE		// 8000
 		;
 	const int ignored_flags = 0
 #ifdef	USE_NOCACHE_MMAP
@@ -420,7 +421,6 @@ SYSCALL_DECLARE(mmap)
 		| MAP_GROWSDOWN		// 0100
 		| MAP_EXECUTABLE	// 1000
 		| MAP_LOCKED		// 2000
-		| MAP_POPULATE		// 8000
 		| MAP_NONBLOCK		// 00010000
 		| MAP_HUGETLB		// 00040000
 		;
@@ -611,6 +611,28 @@ out:
 		(void)set_host_vma(addr, len, PROT_READ|PROT_WRITE);
 	}
 	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+
+	if (!error && (flags & MAP_POPULATE)) {
+		error = populate_process_memory(proc, (void *)addr, len);
+		if (error) {
+			ekprintf("sys_mmap:populate_process_memory"
+					"(%p,%p,%lx) failed %d\n",
+					proc, (void *)addr, len, error);
+			/*
+			 * In this case,
+			 * the mapping established by this call should be unmapped
+			 * before mmap() returns with error.
+			 *
+			 * However, the mapping cannot be unmaped simply,
+			 * because the mapping can be modified by other thread
+			 * because memory_range_lock has been released.
+			 *
+			 * For the moment, like a linux-2.6.38-8,
+			 * the physical page allocation failure is ignored.
+			 */
+			error = 0;
+		}
+	}
 
 out2:
 	if (p) {

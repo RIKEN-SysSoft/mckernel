@@ -163,6 +163,7 @@ void hold_process(struct process *proc);
 void free_process(struct process *proc);
 void flush_process_memory(struct process *proc);
 void free_process_memory(struct process *proc);
+int populate_process_memory(struct process *proc, void *start, size_t len);
 
 int add_process_memory_range(struct process *process,
                              unsigned long start, unsigned long end,

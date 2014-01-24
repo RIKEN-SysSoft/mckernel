@@ -1037,6 +1037,41 @@ static int do_page_fault_process(struct process *proc, void *fault_addr0, uint64
 			goto out;
 		}
 	}
+	else if (reason & PF_DONTCOW) {
+		pte_t *ptep;
+		void *ptepgaddr;
+		size_t ptepgsize;
+		int ptep2align;
+
+		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
+		ptep = ihk_mc_pt_lookup_pte(vm->page_table, fault_addr0,
+				&ptepgaddr, &ptepgsize, &ptep2align);
+		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
+
+		if (!ptep || pte_is_null(ptep)) {
+			error = page_fault_process_memory_range(vm, range, fault_addr);
+			if (error == -ERESTART) {
+				goto out;
+			}
+			else if (error) {
+				kprintf("[%d]do_page_fault_process(%p,%lx,%lx):"
+						"fault range failed. %d\n",
+						ihk_mc_get_processor_id(), proc,
+						fault_addr0, reason, error);
+				goto out;
+			}
+		}
+		else if (!pte_is_writable(ptep) && (range->flag & VR_PROT_WRITE)) {
+			error = protection_fault_process_memory_range(vm, range, fault_addr);
+			if (error) {
+				kprintf("[%d]do_page_fault_process(%p,%lx,%lx):"
+						"protection range failed. %d\n",
+						ihk_mc_get_processor_id(), proc,
+						fault_addr0, reason, error);
+				goto out;
+			}
+		}
+	}
 	else {
 		error = page_fault_process_memory_range(vm, range, fault_addr);
 		if (error == -ERESTART) {
@@ -1343,6 +1378,29 @@ void free_process_memory(struct process *proc)
 
 	ihk_mc_pt_destroy(vm->page_table);
 	free_process(vm->owner_process);
+}
+
+int populate_process_memory(struct process *proc, void *start, size_t len)
+{
+	int error;
+	const int reason = PF_USER | PF_DONTCOW;
+	uintptr_t end;
+	uintptr_t addr;
+
+	end = (uintptr_t)start + len;
+	for (addr = (uintptr_t)start; addr < end; addr += PAGE_SIZE) {
+		error = page_fault_process(proc, (void *)addr, reason);
+		if (error) {
+			ekprintf("populate_process_range:page_fault_process"
+					"(%p,%lx,%lx) failed %d\n",
+					proc, addr, reason, error);
+			goto out;
+		}
+	}
+
+	error = 0;
+out:
+	return error;
 }
 
 void hold_process(struct process *proc)

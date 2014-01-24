@@ -151,6 +151,9 @@ struct x86_regs {
  *   bit 2 ==	0: kernel-mode access	1: user-mode access
  *   bit 3 ==	1: use of reserved bit detected
  *   bit 4 ==	1: fault was an instruction fetch
+ *
+ *   internal use:
+ *   bit 30 ==	1: don't use COW page to resolve page fault.
  */
 enum x86_pf_error_code {
 	PF_PROT		=		1 << 0,
@@ -158,6 +161,8 @@ enum x86_pf_error_code {
 	PF_USER		=		1 << 2,
 	PF_RSVD		=		1 << 3,
 	PF_INSTR	=		1 << 4,
+
+	PF_DONTCOW	=		1 << 30,
 };
 
 #endif
