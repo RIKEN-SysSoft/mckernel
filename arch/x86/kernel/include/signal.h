@@ -33,6 +33,16 @@ struct sigaction {
 	sigset_t sa_mask;
 };
 
+//// work in progress
+struct sigbackup {
+	unsigned long rc; // return code of rt_sigreturn (rax)
+	void	*uctx;
+	sigset_t mask;
+	double	fpregs[16];
+	
+};
+////
+
 struct k_sigaction {
         struct sigaction sa;
 };

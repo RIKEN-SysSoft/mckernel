@@ -93,6 +93,7 @@ static char *syscall_name[] MCKERNEL_UNUSED = {
 };
 
 void check_signal(long rc, unsigned long *regs);
+void do_signal(long rc, unsigned long *regs, struct process *proc, struct sig_pending *pending);
 int copy_from_user(struct process *, void *, const void *, size_t);
 int copy_to_user(struct process *, void *, const void *, size_t);
 
@@ -1154,37 +1155,132 @@ SYSCALL_DECLARE(rt_sigpending)
 
 SYSCALL_DECLARE(rt_sigtimedwait)
 {
-/*
-sigset_t *
-siginfo_t *
-struct timespec *
-size_t
-*/
-	return 0;
+	struct process *proc = cpu_local_var(current);
+	const sigset_t *set = (const sigset_t *)ihk_mc_syscall_arg0(ctx);
+	siginfo_t *info = (siginfo_t *)ihk_mc_syscall_arg1(ctx);
+	void *timeout = (void *)ihk_mc_syscall_arg2(ctx);
+	size_t sigsetsize = (size_t)ihk_mc_syscall_arg3(ctx);
+	siginfo_t winfo;
+	__sigset_t wset;
+	long wtimeout[2];
+
+	if (sigsetsize > sizeof(sigset_t))
+		return -EINVAL;
+
+	memset(&winfo, '\0', sizeof winfo);
+	if(copy_from_user(proc, &wset, set, sizeof wset))
+		return -EFAULT;
+	if(copy_from_user(proc, wtimeout, timeout, sizeof wtimeout))
+		return -EFAULT;
+	if(copy_to_user(proc, info, &winfo, sizeof winfo))
+		return -EFAULT;
+
+	return -EOPNOTSUPP;
 }
 
 SYSCALL_DECLARE(rt_sigqueueinfo)
 {
-/*
-pid_t
-int
-siginfo_t *
-*/
-	return 0;
+	struct process *proc = cpu_local_var(current);
+	int pid = (int)ihk_mc_syscall_arg0(ctx);
+	int sig = (int)ihk_mc_syscall_arg1(ctx);
+	siginfo_t *info = (siginfo_t *)ihk_mc_syscall_arg2(ctx);
+	siginfo_t winfo;
+
+	if(copy_from_user(proc, &winfo, info, sizeof winfo))
+		return -EFAULT;
+
+	return -EOPNOTSUPP;
+}
+
+static int
+do_sigsuspend(struct process *proc, const sigset_t *set)
+{
+	__sigset_t wset;
+	int flag;
+	struct sig_pending *pending;
+	struct list_head *head;
+	ihk_spinlock_t *lock;
+
+	wset = set->__val[0];
+	wset &= ~__sigmask(SIGKILL);
+	wset &= ~__sigmask(SIGTERM);
+	proc->sigmask.__val[0] = wset;
+
+	for(;;){
+		while(proc->sigevent == 0);
+		proc->sigevent = 0;
+
+		lock = &proc->sigshared->lock;
+		head = &proc->sigshared->sigpending;
+		flag = ihk_mc_spinlock_lock(lock);
+		list_for_each_entry(pending, head, list){
+			if(!(pending->sigmask.__val[0] & wset))
+				break;
+		}
+
+		if(&pending->list == head){
+			ihk_mc_spinlock_unlock(lock, flag);
+
+			lock = &proc->sigpendinglock;
+			head = &proc->sigpending;
+			flag = ihk_mc_spinlock_lock(lock);
+			list_for_each_entry(pending, head, list){
+				if(!(pending->sigmask.__val[0] & wset))
+					break;
+			}
+		}
+		if(&pending->list == head){
+			ihk_mc_spinlock_unlock(lock, flag);
+			continue;
+		}
+
+		list_del(&pending->list);
+		ihk_mc_spinlock_unlock(lock, flag);
+		do_signal(-EINTR, NULL, proc, pending);
+		break;
+	}
+	return -EINTR;
+}
+
+
+SYSCALL_DECLARE(pause)
+{
+	struct process *proc = cpu_local_var(current);
+
+	return do_sigsuspend(proc, &proc->sigmask);
 }
 
 SYSCALL_DECLARE(rt_sigsuspend)
 {
-/*
-sigset_t *
-size_t
-*/
-	return 0;
+	struct process *proc = cpu_local_var(current);
+	const sigset_t *set = (const sigset_t *)ihk_mc_syscall_arg0(ctx);
+	size_t sigsetsize = (size_t)ihk_mc_syscall_arg1(ctx);
+	sigset_t wset;
+
+	if (sigsetsize > sizeof(sigset_t))
+		return -EINVAL;
+	if(copy_from_user(proc, &wset, set, sizeof wset))
+		return -EFAULT;
+
+	return do_sigsuspend(proc, &wset);
 }
 
 SYSCALL_DECLARE(sigaltstack)
 {
-	return 0;
+	struct process *proc = cpu_local_var(current);
+	const stack_t *ss = (const stack_t *)ihk_mc_syscall_arg0(ctx);
+	stack_t *oss = (stack_t *)ihk_mc_syscall_arg1(ctx);
+	stack_t	wss;
+
+	memset(&wss, '\0', sizeof wss);
+	if(oss)
+		if(copy_to_user(proc, oss, &wss, sizeof wss))
+			return -EFAULT;
+	if(ss)
+		if(copy_from_user(proc, &wss, ss, sizeof wss))
+			return -EFAULT;
+
+	return -EOPNOTSUPP;
 }
 
 SYSCALL_DECLARE(madvise)

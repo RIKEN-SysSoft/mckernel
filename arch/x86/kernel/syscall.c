@@ -95,6 +95,8 @@ SYSCALL_DECLARE(rt_sigreturn)
 	regs -= 16;
         memcpy(regs, proc->sigstack, 128);
 
+	proc->sigmask.__val[0] = proc->supmask.__val[0];
+
         return proc->sigrc;
 }
 
@@ -104,57 +106,17 @@ extern void interrupt_syscall(int all);
 extern int num_processors;
 
 void
-check_signal(unsigned long rc, unsigned long *regs)
+do_signal(unsigned long rc, unsigned long *regs, struct process *proc, struct sig_pending *pending)
 {
-	struct process *proc;
 	struct k_sigaction *k;
 	int	sig;
-	struct sig_pending *pending;
-	struct sig_pending *next;
-	struct list_head *head;
-	ihk_spinlock_t *lock;
 	__sigset_t w;
 	int	irqstate;
 
-	if(clv == NULL)
-		return;
-	proc = cpu_local_var(current);
-	if(proc == NULL || proc->pid == 0)
-		return;
-
-	w = proc->sigmask.__val[0];
-	lock = &proc->sigshared->lock;
-	head = &proc->sigshared->sigpending;
-	pending = NULL;
-	irqstate = ihk_mc_spinlock_lock(lock);
-	list_for_each_entry_safe(pending, next, head, list){
-		if(!(pending->sigmask.__val[0] & w)){
-			list_del(&pending->list);
-			break;
-		}
-	}
-	if(&pending->list == head)
-		pending = NULL;
-	ihk_mc_spinlock_unlock(lock, irqstate);
-
-	if(!pending){
-		lock = &proc->sigpendinglock;
-		head = &proc->sigpending;
-		irqstate = ihk_mc_spinlock_lock(lock);
-		list_for_each_entry_safe(pending, next, head, list){
-			if(!(pending->sigmask.__val[0] & w)){
-				list_del(&pending->list);
-				break;
-			}
-		}
-		if(&pending->list == head)
-			pending = NULL;
-		ihk_mc_spinlock_unlock(lock, irqstate);
-	}
-	if(!pending)
-		return;
-
 	for(w = pending->sigmask.__val[0], sig = 0; w; sig++, w >>= 1);
+
+	if(sig == SIGKILL || sig == SIGTERM)
+		terminate(0, sig, (ihk_mc_user_context_t *)regs[14]);
 
 	irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
 	if(regs == NULL){ /* call from syscall */
@@ -174,14 +136,6 @@ check_signal(unsigned long rc, unsigned long *regs)
 	else if(k->sa.sa_handler){
 		unsigned long *usp; /* user stack */
 
-		if(regs[14] & 0x8000000000000000){ // kernel addr
-			int flag = ihk_mc_spinlock_lock(lock);
-			list_add(&pending->list, head);
-			ihk_mc_spinlock_unlock(lock, flag);
-			ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
-			return;
-		}
-
 		usp = (void *)regs[14];
 		memcpy(proc->sigstack, regs, 128);
 		proc->sigrc = rc;
@@ -192,6 +146,7 @@ check_signal(unsigned long rc, unsigned long *regs)
 		regs[11] = (unsigned long)k->sa.sa_handler;
 		regs[14] = (unsigned long)usp;
 		kfree(pending);
+		proc->sigmask.__val[0] |= pending->sigmask.__val[0];
 		ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
 	}
 	else{
@@ -200,6 +155,63 @@ check_signal(unsigned long rc, unsigned long *regs)
 		if(sig == SIGCHLD || sig == SIGURG)
 			return;
 		terminate(0, sig, (ihk_mc_user_context_t *)regs[14]);
+	}
+}
+
+void
+check_signal(unsigned long rc, unsigned long *regs)
+{
+	struct process *proc;
+	struct sig_pending *pending;
+	struct sig_pending *next;
+	struct list_head *head;
+	ihk_spinlock_t *lock;
+	__sigset_t w;
+	int	irqstate;
+
+	if(clv == NULL)
+		return;
+	proc = cpu_local_var(current);
+	if(proc == NULL || proc->pid == 0)
+		return;
+
+	if(regs != NULL && (regs[14] & 0x8000000000000000))
+		return;
+
+	for(;;){
+		w = proc->sigmask.__val[0];
+		lock = &proc->sigshared->lock;
+		head = &proc->sigshared->sigpending;
+		pending = NULL;
+		irqstate = ihk_mc_spinlock_lock(lock);
+		list_for_each_entry_safe(pending, next, head, list){
+			if(!(pending->sigmask.__val[0] & w)){
+				list_del(&pending->list);
+				break;
+			}
+		}
+		if(&pending->list == head)
+			pending = NULL;
+		ihk_mc_spinlock_unlock(lock, irqstate);
+
+		if(!pending){
+			lock = &proc->sigpendinglock;
+			head = &proc->sigpending;
+			irqstate = ihk_mc_spinlock_lock(lock);
+			list_for_each_entry_safe(pending, next, head, list){
+				if(!(pending->sigmask.__val[0] & w)){
+					list_del(&pending->list);
+					break;
+				}
+			}
+			if(&pending->list == head)
+				pending = NULL;
+			ihk_mc_spinlock_unlock(lock, irqstate);
+		}
+		if(!pending)
+			return;
+
+		do_signal(rc, regs, proc, pending);
 	}
 }
 
@@ -284,6 +296,7 @@ do_kill(int pid, int tid, int sig)
 		}
 		else{
 			list_add_tail(&pending->list, head);
+			proc->sigevent = 1;
 		}
 	}
 	if(tid == -1){
@@ -297,17 +310,16 @@ do_kill(int pid, int tid, int sig)
 }
 
 void
-set_signal(int sig, unsigned long *regs, int nonmaskable)
+set_signal(int sig, unsigned long *regs)
 {
 	struct process *proc = cpu_local_var(current);
 
 	if(proc == NULL || proc->pid == 0)
 		return;
 
-	if(__sigmask(sig) & proc->sigmask.__val[0]){
-		if(nonmaskable){
-			terminate(0, sig, (ihk_mc_user_context_t *)regs[14]);
-		}
-	}
-	do_kill(proc->pid, proc->tid, sig);
+	if((__sigmask(sig) & proc->sigmask.__val[0]) ||
+	   (regs[14] & 0x8000000000000000))
+		terminate(0, sig, (ihk_mc_user_context_t *)regs[14]);
+	else
+		do_kill(proc->pid, proc->tid, sig);
 }
