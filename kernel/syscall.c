@@ -1500,6 +1500,180 @@ SYSCALL_DECLARE(sched_yield)
 	return -ENOSYS;
 }
 
+SYSCALL_DECLARE(mlock)
+{
+	const uintptr_t start0 = ihk_mc_syscall_arg0(ctx);
+	const size_t len0 = ihk_mc_syscall_arg1(ctx);
+	struct process *proc = cpu_local_var(current);
+	struct vm_regions *region = &proc->vm->region;
+	uintptr_t start;
+	size_t len;
+	uintptr_t end;
+	struct vm_range *first;
+	uintptr_t addr;
+	struct vm_range *range;
+	int error;
+	struct vm_range *changed;
+
+	dkprintf("[%d]sys_mlock(%lx,%lx)\n",
+			ihk_mc_get_processor_id(), start0, len0);
+
+	start = start0 & PAGE_MASK;
+	len = (start & (PAGE_SIZE - 1)) + len0;
+	len = (len + PAGE_SIZE - 1) & PAGE_MASK;
+	end = start + len;
+
+	if (end < start) {
+		error = -EINVAL;
+		goto out2;
+	}
+
+	if ((start < region->user_start)
+			|| (region->user_end <= start)
+			|| (len > (region->user_end - region->user_start))
+			|| ((region->user_end - len) < start)) {
+		error = -ENOMEM;
+		goto out2;
+	}
+
+	if (start == end) {
+		error = 0;
+		goto out2;
+	}
+
+	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
+
+	/* check contiguous map */
+	first = NULL;
+	for (addr = start; addr < end; addr = range->end) {
+		if (first == NULL) {
+			range = lookup_process_memory_range(proc->vm, start, start+PAGE_SIZE);
+			first = range;
+		}
+		else {
+			range = next_process_memory_range(proc->vm, range);
+		}
+
+		if (!range || (addr < range->start)) {
+			/* not contiguous */
+			dkprintf("[%d]sys_mlock(%lx,%lx):not contiguous."
+				       " %lx [%lx-%lx)\n",
+					ihk_mc_get_processor_id(), start0,
+					len0, addr, range->start, range->end);
+			error = -ENOMEM;
+			goto out;
+		}
+
+		if (range->flag & (VR_REMOTE | VR_RESERVED | VR_IO_NOCACHE)) {
+			ekprintf("[%d]sys_mlock(%lx,%lx):cannot change."
+				       " [%lx-%lx) %lx\n",
+					ihk_mc_get_processor_id(), start0,
+					len0, range->start, range->end,
+					range->flag);
+			error = -EINVAL;
+			goto out;
+		}
+	}
+
+	/* do the mlock */
+	changed = NULL;
+	for (addr = start; addr < end; addr = changed->end) {
+		if (!changed) {
+			range = first;
+		}
+		else {
+			range = next_process_memory_range(proc->vm, changed);
+		}
+
+		if (!range || (addr < range->start)) {
+			/* not contiguous */
+			dkprintf("[%d]sys_mlock(%lx,%lx):not contiguous."
+				       " %lx [%lx-%lx)\n",
+					ihk_mc_get_processor_id(), start0,
+					len0, addr, range->start, range->end);
+			error = -ENOMEM;
+			goto out;
+		}
+
+		if (range->start < addr) {
+			error = split_process_memory_range(proc, range, addr, &range);
+			if (error) {
+				ekprintf("[%d]sys_mlock(%lx,%lx):split failed. "
+						" [%lx-%lx) %lx %d\n",
+						ihk_mc_get_processor_id(),
+						start0, len0, range->start,
+						range->end, addr, error);
+				goto out;
+			}
+		}
+		if (end < range->end) {
+			error = split_process_memory_range(proc, range, end, NULL);
+			if (error) {
+				ekprintf("[%d]sys_mlock(%lx,%lx):split failed. "
+						" [%lx-%lx) %lx %d\n",
+						ihk_mc_get_processor_id(),
+						start0, len0, range->start,
+						range->end, addr, error);
+				goto out;
+			}
+		}
+
+		range->flag |= VR_LOCKED;
+
+		if (!changed) {
+			changed = range;
+		}
+		else {
+			error = join_process_memory_range(proc, changed, range);
+			if (error) {
+				dkprintf("[%d]sys_mlock(%lx,%lx):join failed. %d",
+						ihk_mc_get_processor_id(),
+						start0, len0, error);
+				dkprintf("LHS: %p [%lx-%lx) %lx %p\n",
+						changed, changed->start,
+						changed->end, changed->flag,
+						changed->memobj);
+				dkprintf("RHS: %p [%lx-%lx) %lx %p\n",
+						range, range->start,
+						range->end, range->flag,
+						range->memobj);
+				changed = range;
+				/* through */
+			}
+		}
+	}
+
+	error = 0;
+out:
+	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+
+	if (!error) {
+		error = populate_process_memory(proc, (void *)start, len);
+		if (error) {
+			ekprintf("sys_mlock(%lx,%lx):populate failed. %d\n",
+					start0, len0, error);
+			/*
+			 * In this case,
+			 * the region locked by this call should be unlocked
+			 * before mlock() returns with error.
+			 *
+			 * However, the region cannot be unlocked simply,
+			 * because the region can be modified by other thread
+			 * because memory_range_lock has been released.
+			 *
+			 * For the time being, like a linux-2.6.38-8,
+			 * the physical page allocation failure is ignored.
+			 */
+			error = 0;
+		}
+	}
+
+out2:
+	dkprintf("[%d]sys_mlock(%lx,%lx): %d\n",
+			ihk_mc_get_processor_id(), start0, len0, error);
+	return error;
+}
+
 #ifdef DCFA_KMOD
 
 #ifdef CMD_DCFA
