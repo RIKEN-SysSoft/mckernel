@@ -404,6 +404,7 @@ SYSCALL_DECLARE(mmap)
 		| MAP_PRIVATE		// 02
 		| MAP_FIXED		// 10
 		| MAP_ANONYMOUS		// 20
+		| MAP_LOCKED		// 2000
 		| MAP_POPULATE		// 8000
 		;
 	const int ignored_flags = 0
@@ -420,7 +421,6 @@ SYSCALL_DECLARE(mmap)
 #endif /* ndef USE_NOCACHE_MMAP */
 		| MAP_GROWSDOWN		// 0100
 		| MAP_EXECUTABLE	// 1000
-		| MAP_LOCKED		// 2000
 		| MAP_NONBLOCK		// 00010000
 		| MAP_HUGETLB		// 00040000
 		;
@@ -524,6 +524,7 @@ SYSCALL_DECLARE(mmap)
 	vrflags = VR_NONE;
 	vrflags |= PROT_TO_VR_FLAG(prot);
 	vrflags |= (flags & MAP_PRIVATE)? VR_PRIVATE: 0;
+	vrflags |= (flags & MAP_LOCKED)? VR_LOCKED: 0;
 	if (flags & MAP_ANONYMOUS) {
 		if (0) {
 			/* dummy */
@@ -612,7 +613,7 @@ out:
 	}
 	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
 
-	if (!error && (flags & MAP_POPULATE)) {
+	if (!error && (flags & (MAP_POPULATE | MAP_LOCKED))) {
 		error = populate_process_memory(proc, (void *)addr, len);
 		if (error) {
 			ekprintf("sys_mmap:populate_process_memory"

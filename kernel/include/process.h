@@ -28,6 +28,7 @@
 #define VR_REMOTE          0x200
 #define VR_DEMAND_PAGING   0x1000
 #define	VR_PRIVATE         0x2000
+#define	VR_LOCKED          0x4000
 #define	VR_PROT_NONE       0x00000000
 #define	VR_PROT_READ       0x00010000
 #define	VR_PROT_WRITE      0x00020000
