@@ -825,7 +825,7 @@ int main(int argc, char **argv)
 
 
 void do_syscall_return(int fd, int cpu,
-                       int ret, int n, unsigned long src, unsigned long dest,
+                       long ret, int n, unsigned long src, unsigned long dest,
                        unsigned long sz)
 {
 	struct syscall_ret_desc desc;

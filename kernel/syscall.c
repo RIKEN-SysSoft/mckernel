@@ -151,7 +151,7 @@ static void send_syscall(struct syscall_request *req, int cpu)
 }
 
 
-int do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx, int cpu)
+long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx, int cpu)
 {
 	struct syscall_response *res;
 	struct syscall_request req2 IHK_DMA_ALIGN;
