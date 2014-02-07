@@ -407,7 +407,7 @@ void print_desc(struct program_load_desc *desc)
 	}
 }
 
-#define PIN_SHIFT  28
+#define PIN_SHIFT  12
 #define PIN_SIZE  (1 << PIN_SHIFT)
 #define PIN_MASK  ~(unsigned long)(PIN_SIZE - 1)
 
@@ -735,7 +735,7 @@ int main(int argc, char **argv)
 
 	dma_buf = mmap(0, PIN_SIZE, PROT_READ | PROT_WRITE, 
 	               (MAP_ANONYMOUS | MAP_PRIVATE), -1, 0);
-	if (!dma_buf) {
+	if (dma_buf == (void *)-1) {
 		__dprint("error: allocating DMA area\n");
 		exit(1);
 	}
@@ -890,6 +890,7 @@ kill_thread(unsigned long cpu)
 	}
 }
 
+#if 0
 static long do_strncpy_from_user(int fd, void *dest, void *src, unsigned long n)
 {
 	struct strncpy_from_user_desc desc;
@@ -908,6 +909,7 @@ static long do_strncpy_from_user(int fd, void *dest, void *src, unsigned long n)
 
 	return desc.result;
 }
+#endif
 
 #define SET_ERR(ret) if (ret == -1) ret = -errno
 
@@ -918,6 +920,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 	char *fn;
 	int sig;
 	int term;
+	struct timeval tv;
 
 	w.cpu = cpu;
 
@@ -935,14 +938,9 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 
 		switch (w.sr.number) {
 		case __NR_open:
-			ret = do_strncpy_from_user(fd, dma_buf, (void *)w.sr.args[0], PIN_SIZE);
-			if (ret < 0) {
-				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
-				break;
-			}
-			__dprintf("open: %s\n", dma_buf);
+			__dprintf("open: %s\n", (char *)w.sr.args[0]);
 
-			fn = (char *)dma_buf;
+			fn = (char *)w.sr.args[0];
 			if(!strcmp(fn, "/proc/meminfo")){
 				fn = "/admin/fs/attached/files/proc/meminfo";
 			}
@@ -958,12 +956,12 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			break;
 
 		case __NR_futex:
-			ret = gettimeofday((struct timeval *)dma_buf, NULL);
+			ret = gettimeofday(&tv, NULL);
 			SET_ERR(ret);
 			__dprintf("gettimeofday=%016ld,%09ld\n",
-					((struct timeval *)dma_buf)->tv_sec,
-					((struct timeval *)dma_buf)->tv_usec);
-			do_syscall_return(fd, cpu, ret, 1, (unsigned long)dma_buf,
+					tv.tv_sec,
+					tv.tv_usec);
+			do_syscall_return(fd, cpu, ret, 1, (unsigned long)&tv,
 			                  w.sr.args[0], sizeof(struct timeval));
 			break;
 
