@@ -664,7 +664,7 @@ int main(int argc, char **argv)
 	argv[optind + 2] = NULL;
 	argc -= (optind - 1);
 
-	printf("target_core: %d, device: %s, command: ", target_core, dev);
+	__dprintf("target_core: %d, device: %s, command: ", target_core, dev);
 	for (i = 1; i < argc; ++i) {
 		printf("%s ", argv[i]);
 	}
@@ -966,6 +966,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 	struct timeval tv;
 
 	w.cpu = cpu;
+	w.pid = getpid();
 
 	while (((ret = ioctl(fd, MCEXEC_UP_WAIT_SYSCALL, (unsigned long)&w)) == 0) || (ret == -1 && errno == EINTR)) {
 

@@ -116,6 +116,9 @@ static void send_syscall(struct syscall_request *req, int cpu)
 
 		scp = &get_cpu_local_var(0)->scp2;
 		syscall_channel = get_cpu_local_var(0)->syscall_channel2;
+		
+		/* XXX: is this really going to work if multiple processes 
+		 * exit/receive signals at the same time?? */
 		cpu = num_processors;
 	}
 	else{
@@ -144,8 +147,9 @@ static void send_syscall(struct syscall_request *req, int cpu)
 #ifdef SYSCALL_BY_IKC
 	packet.msg = SCD_MSG_SYSCALL_ONESIDE;
 	packet.ref = cpu;
-	packet.arg = scp->request_rpa;
-	
+	packet.pid = cpu_local_var(current)->pid;
+	packet.arg = scp->request_rpa;	
+	dkprintf("send syscall, nr: %d, pid: %d\n", req->number, packet.pid);
 	ihk_ikc_send(syscall_channel, &packet, 0); 
 #endif
 }
@@ -186,6 +190,8 @@ long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx, int cpu
 		}
 	
 		if (res->status == STATUS_PAGE_FAULT) {
+			dkprintf("STATUS_PAGE_FAULT in syscall, pid: %d\n", 
+					cpu_local_var(current)->pid);		
 			error = page_fault_process(get_cpu_local_var(cpu)->current,
 					(void *)res->fault_address,
 					res->fault_reason);

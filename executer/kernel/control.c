@@ -267,10 +267,37 @@ static long mcexec_get_cpu(ihk_os_t os)
 	return info->n_cpus;
 }
 
-int mcexec_syscall(struct mcctrl_channel *c, unsigned long arg)
+int mcexec_syscall(struct mcctrl_channel *c, int pid, unsigned long arg)
 {
+	struct wait_queue_head_list_node *wqhln = NULL;
+	struct wait_queue_head_list_node *wqhln_iter;
+	unsigned long flags;
+
+	/* Look up per-process wait queue head with pid */
+	flags = ihk_ikc_spinlock_lock(&c->wq_list_lock);
+	list_for_each_entry(wqhln_iter, &c->wq_list, list) {
+		if (wqhln_iter->pid == pid) {
+			wqhln = wqhln_iter;
+			break;
+		}
+	}
+
+	if (!wqhln) {
+retry_alloc:
+		wqhln = kmalloc(sizeof(*wqhln), GFP_KERNEL);
+		if (!wqhln) {
+			printk("WARNING: coudln't alloc wait queue head, retrying..\n");
+			goto retry_alloc;
+		}
+
+		wqhln->pid = pid;
+		init_waitqueue_head(&wqhln->wq_syscall);
+		list_add_tail(&wqhln->list, &c->wq_list);
+	}
+	ihk_ikc_spinlock_unlock(&c->wq_list_lock, flags);
+
 	c->req = 1;
-	wake_up(&c->wq_syscall);
+	wake_up(&wqhln->wq_syscall);
 
 	return 0;
 }
@@ -287,16 +314,21 @@ int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 	struct syscall_wait_desc swd;
 	struct mcctrl_channel *c;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct wait_queue_head_list_node *wqhln;
+	struct wait_queue_head_list_node *wqhln_iter;
+	int ret = 0;
+	unsigned long irqflags;
 #ifndef DO_USER_MODE
 	unsigned long s, w, d;
 #endif
 	
 //printk("mcexec_wait_syscall swd=%p req=%p size=%d\n", &swd, req, sizeof(swd.cpu));
-	if (copy_from_user(&swd, req, sizeof(swd.cpu))) {
+	if (copy_from_user(&swd, req, sizeof(swd))) {
 		return -EFAULT;
 	}
 
-if(swd.cpu >= usrdata->num_channels)return -EINVAL;
+	if (swd.cpu >= usrdata->num_channels)
+		return -EINVAL;
 
 	c = get_peer_channel(usrdata, current);
 	if (c) {
@@ -308,9 +340,43 @@ if(swd.cpu >= usrdata->num_channels)return -EINVAL;
 
 #ifdef DO_USER_MODE
 retry:
-	if (wait_event_interruptible(c->wq_syscall, c->req)) {
+	/* Prepare per-process wait queue head */
+retry_alloc:
+	wqhln = kmalloc(sizeof(*wqhln), GFP_KERNEL);
+	if (!wqhln) {
+		printk("WARNING: coudln't alloc wait queue head, retrying..\n");
+		goto retry_alloc;
+	}
+
+	wqhln->pid = swd.pid;	
+	init_waitqueue_head(&wqhln->wq_syscall);
+	
+	irqflags = ihk_ikc_spinlock_lock(&c->wq_list_lock);
+	/* First see if there is one wait queue already */
+	list_for_each_entry(wqhln_iter, &c->wq_list, list) {
+		if (wqhln_iter->pid == current->tgid) {
+			kfree(wqhln);
+			wqhln = wqhln_iter;
+			list_del(&wqhln->list);
+			printk("DEBUG: wait queue head was already available in syscall wait\n");
+			break;
+		}
+	}
+	list_add_tail(&wqhln->list, &c->wq_list);
+	ihk_ikc_spinlock_unlock(&c->wq_list_lock, irqflags);
+
+	ret = wait_event_interruptible(wqhln->wq_syscall, c->req);
+	
+	/* Remove per-process wait queue head */
+	irqflags = ihk_ikc_spinlock_lock(&c->wq_list_lock);
+	list_del(&wqhln->list);
+	ihk_ikc_spinlock_unlock(&c->wq_list_lock, irqflags);
+	kfree(wqhln);
+
+	if (ret) {
 		return -EINTR;
 	}
+
 	c->req = 0;
 #if 1
 	mb();

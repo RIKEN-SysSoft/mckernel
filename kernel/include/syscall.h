@@ -87,6 +87,7 @@ struct user_desc {
 struct ikc_scd_packet {
 	int msg;
 	int ref;
+	int pid;
 	int err;
 	unsigned long arg;
 };

@@ -57,7 +57,7 @@
 static long pager_call(ihk_os_t os, struct syscall_request *req);
 
 #ifdef SC_DEBUG
-//static struct ihk_dma_request last_request;
+static struct ihk_dma_request last_request;
 
 static void print_dma_lastreq(void)
 {
@@ -215,7 +215,7 @@ static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, u
 	struct syscall_request *req;
 	struct syscall_response *resp;
 	int error;
-
+	
 	dprintk("remote_page_fault(%p,%p,%llx)\n", usrdata, fault_addr, reason);
 
 	channel = get_peer_channel(usrdata, current);
@@ -241,8 +241,43 @@ static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, u
 	resp->status = STATUS_PAGE_FAULT;
 
 	for (;;) {
+		struct wait_queue_head_list_node *wqhln;
+		struct wait_queue_head_list_node *wqhln_iter;
+		unsigned long irqflags;
+		
+retry_alloc:
+		wqhln = kmalloc(sizeof(*wqhln), GFP_KERNEL);
+		if (!wqhln) {
+			printk("WARNING: coudln't alloc wait queue head, retrying..\n");
+			goto retry_alloc;
+		}
+
+		/* Prepare per-process wait queue head */
+		wqhln->pid = current->tgid;	
+		init_waitqueue_head(&wqhln->wq_syscall);
+
+		irqflags = ihk_ikc_spinlock_lock(&channel->wq_list_lock);
+		/* First see if there is a wait queue already */
+		list_for_each_entry(wqhln_iter, &channel->wq_list, list) {
+			if (wqhln_iter->pid == current->tgid) {
+				kfree(wqhln);
+				wqhln = wqhln_iter;
+				list_del(&wqhln->list);
+				break;
+			}
+		}
+		list_add_tail(&wqhln->list, &channel->wq_list);
+		ihk_ikc_spinlock_unlock(&channel->wq_list_lock, irqflags);
+
 		/* wait for response */
-		error = wait_event_interruptible(channel->wq_syscall, channel->req);
+		error = wait_event_interruptible(wqhln->wq_syscall, channel->req);
+
+		/* Remove per-process wait queue head */
+		irqflags = ihk_ikc_spinlock_lock(&channel->wq_list_lock);
+		list_del(&wqhln->list);
+		ihk_ikc_spinlock_unlock(&channel->wq_list_lock, irqflags);
+		kfree(wqhln);
+
 		if (error) {
 			printk("remote_page_fault:interrupted. %d\n", error);
 			goto out;
