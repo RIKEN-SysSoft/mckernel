@@ -284,7 +284,7 @@ int mcexec_syscall(struct mcctrl_channel *c, int pid, unsigned long arg)
 
 	if (!wqhln) {
 retry_alloc:
-		wqhln = kmalloc(sizeof(*wqhln), GFP_KERNEL);
+		wqhln = kmalloc(sizeof(*wqhln), GFP_ATOMIC);
 		if (!wqhln) {
 			printk("WARNING: coudln't alloc wait queue head, retrying..\n");
 			goto retry_alloc;
