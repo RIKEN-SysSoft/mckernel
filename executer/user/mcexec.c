@@ -959,7 +959,6 @@ kill_thread(unsigned long cpu)
 	}
 }
 
-#if 0
 static long do_strncpy_from_user(int fd, void *dest, void *src, unsigned long n)
 {
 	struct strncpy_from_user_desc desc;
@@ -978,7 +977,6 @@ static long do_strncpy_from_user(int fd, void *dest, void *src, unsigned long n)
 
 	return desc.result;
 }
-#endif
 
 #define SET_ERR(ret) if (ret == -1) ret = -errno
 
@@ -990,6 +988,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 	int sig;
 	int term;
 	struct timeval tv;
+	char pathbuf[PATH_MAX];
 
 	w.cpu = cpu;
 	w.pid = getpid();
@@ -1008,9 +1007,17 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 
 		switch (w.sr.number) {
 		case __NR_open:
-			__dprintf("open: %s\n", (char *)w.sr.args[0]);
+			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[0], PATH_MAX);
+			if (ret >= PATH_MAX) {
+				ret = -ENAMETOOLONG;
+			}
+			if (ret < 0) {
+				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+				break;
+			}
+			__dprintf("open: %s\n", pathbuf);
 
-			fn = (char *)w.sr.args[0];
+			fn = pathbuf;
 			if(!strcmp(fn, "/proc/meminfo")){
 				fn = "/admin/fs/attached/files/proc/meminfo";
 			}
