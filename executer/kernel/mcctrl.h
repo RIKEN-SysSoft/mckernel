@@ -56,6 +56,7 @@
 struct ikc_scd_packet {
 	int msg;
 	int ref;
+	int pid;
 	int err;
 	unsigned long arg;
 };
@@ -88,6 +89,12 @@ struct syscall_params {
 	unsigned long *doorbell_va;
 };
 
+struct wait_queue_head_list_node {
+	struct list_head list;
+	wait_queue_head_t wq_syscall;
+	int pid;
+};
+
 struct mcctrl_channel {
 	struct ihk_ikc_channel_desc *c;
 	struct syscall_params param;
@@ -95,7 +102,8 @@ struct mcctrl_channel {
 	void *dma_buf;
 
 	int req;
-	wait_queue_head_t wq_syscall;
+	struct list_head wq_list;
+	ihk_spinlock_t wq_list_lock;
 };
 
 struct mcctrl_usrdata {

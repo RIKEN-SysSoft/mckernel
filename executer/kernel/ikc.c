@@ -40,7 +40,7 @@
 
 void mcexec_prepare_ack(ihk_os_t os, unsigned long arg, int err);
 static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ihk_ikc_channel_desc *c);
-int mcexec_syscall(struct mcctrl_channel *c, unsigned long arg);
+int mcexec_syscall(struct mcctrl_channel *c, int pid, unsigned long arg);
 
 static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *__os)
@@ -62,7 +62,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		break;
 
 	case SCD_MSG_SYSCALL_ONESIDE:
-		mcexec_syscall(usrdata->channels + pisp->ref, pisp->arg);
+		mcexec_syscall(usrdata->channels + pisp->ref, pisp->pid, pisp->arg);
 		break;
 	}
 
@@ -219,7 +219,9 @@ static int connect_handler(struct ihk_ikc_channel_info *param)
 		return 1;
 	}
 	param->packet_handler = syscall_packet_handler;
-	init_waitqueue_head(&usrdata->channels[cpu].wq_syscall);
+	
+	INIT_LIST_HEAD(&usrdata->channels[cpu].wq_list);
+	spin_lock_init(&usrdata->channels[cpu].wq_list_lock);
 
 	usrdata->channels[cpu].c = c;
 	kprintf("syscall: MC CPU %d connected. c=%p\n", cpu, c);
@@ -238,7 +240,9 @@ static int connect_handler2(struct ihk_ikc_channel_info *param)
 	cpu = usrdata->num_channels - 1;
 
 	param->packet_handler = syscall_packet_handler;
-	init_waitqueue_head(&usrdata->channels[cpu].wq_syscall);
+	
+	INIT_LIST_HEAD(&usrdata->channels[cpu].wq_list);
+	spin_lock_init(&usrdata->channels[cpu].wq_list_lock);
 
 	usrdata->channels[cpu].c = c;
 	kprintf("syscall: MC CPU %d connected. c=%p\n", cpu, c);

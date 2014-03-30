@@ -37,6 +37,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
+#include <ctype.h>
 #include <sys/mman.h>
 #include <asm/unistd.h>
 #include "../include/uprotocol.h"
@@ -564,6 +565,11 @@ static int reduce_stack(struct rlimit *orig_rlim, char *argv[])
 	return 1;
 }
 
+void print_usage(char **argv)
+{
+	fprintf(stderr, "Usage: %s [-c target_core] [<mcos-id>] (program) [args...]\n", argv[0]);
+}
+
 int main(int argc, char **argv)
 {
 //	int fd;
@@ -573,6 +579,7 @@ int main(int argc, char **argv)
 #endif
 	FILE *fp;
 	struct program_load_desc *desc;
+	int envs_len;
 	char *envs;
 	char *args;
 	char dev[64];
@@ -587,6 +594,9 @@ int main(int argc, char **argv)
 	struct rlimit rlim_stack;
 	unsigned long lcur;
 	unsigned long lmax;
+	int target_core = 0;
+	int mcosid = 0;
+	int opt;
 
 #ifdef USE_SYSCALL_MOD_CALL
 	__glob_argc = argc;
@@ -597,6 +607,10 @@ int main(int argc, char **argv)
 	if (!altroot) {
 		altroot = "/usr/linux-k1om-4.7/linux-k1om";
 	}
+	
+	/* Collect environment variables */
+	envs_len = flatten_strings(-1, environ, &envs);
+	envs = envs;
 
 	error = getrlimit(RLIMIT_STACK, &rlim_stack);
 	if (error) {
@@ -610,24 +624,52 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error: Failed to reduce stack.\n");
 		return 1;
 	}
-
-	strcpy(dev, "/dev/mcos0");
-	if(argv[1]){
-		for(p = argv[1]; *p && *p >= '0' && *p <= '9'; p++);
-		if(!*p){
-			sprintf(dev, "/dev/mcos%s", argv[1]);
-			for(a = argv + 2; *a; a++)
-				a[-1] = a[0];
-			a[-1] = NULL;
-			argc--;
+           
+	/* Parse options ("+" denotes stop at the first non-option) */
+	while ((opt = getopt(argc, argv, "+c:")) != -1) {
+		switch (opt) {
+			case 'c':
+				target_core = atoi(optarg);
+				break;
+			
+			default: /* '?' */
+				print_usage(argv);
+				exit(EXIT_FAILURE);
 		}
 	}
-	if (argc < 2) {
-		fprintf(stderr, "Usage: %s [<mcos-id>] (program) [args...]\n",
-		        argv[0]);
-		return 1;
+
+	if (optind >= argc) {
+		print_usage(argv);
+		exit(EXIT_FAILURE);
 	}
-	
+
+	/* Determine OS device */
+	if (isdigit(*argv[optind])) {
+		mcosid = atoi(argv[optind]);
+		++optind;
+	}
+
+	sprintf(dev, "/dev/mcos%d", mcosid);
+
+	/* No more arguments? */
+	if (optind >= argc) {
+		print_usage(argv);
+		exit(EXIT_FAILURE);
+	}
+
+	/* Shift arguments to the front */
+	for (a = argv + optind; *a; a++) {
+		a[- optind + 1] = a[0];
+	}
+	argv[optind + 2] = NULL;
+	argc -= (optind - 1);
+
+	__dprintf("target_core: %d, device: %s, command: ", target_core, dev);
+	for (i = 1; i < argc; ++i) {
+		printf("%s ", argv[i]);
+	}
+	printf("\n");
+
 	fp = fopen(argv[1], "rb");
 	if (!fp) {
 		fprintf(stderr, "Error: Failed to open %s\n", argv[1]);
@@ -663,7 +705,7 @@ int main(int argc, char **argv)
 
 	__dprintf("# of sections: %d\n", desc->num_sections);
 	
-	desc->envs_len = flatten_strings(-1, environ, &envs);
+	desc->envs_len = envs_len;
 	desc->envs = envs;
 	//print_flat(envs);
 
@@ -671,6 +713,7 @@ int main(int argc, char **argv)
 	desc->args = args;
 	//print_flat(args);
 
+	desc->cpu = target_core;
 	p = getenv(rlimit_stack_envname);
 	if (p) {
 		errno = 0;
@@ -923,6 +966,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 	struct timeval tv;
 
 	w.cpu = cpu;
+	w.pid = getpid();
 
 	while (((ret = ioctl(fd, MCEXEC_UP_WAIT_SYSCALL, (unsigned long)&w)) == 0) || (ret == -1 && errno == EINTR)) {
 

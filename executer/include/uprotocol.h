@@ -93,6 +93,7 @@ struct syscall_request {
 struct syscall_wait_desc {
 	unsigned long cpu;
 	struct syscall_request sr;
+	int pid;
 };
 
 struct syscall_load_desc {
