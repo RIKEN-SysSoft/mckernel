@@ -55,6 +55,7 @@ static void handler_init(void)
 
 unsigned long data[1024] __attribute__((aligned(64)));
 
+#ifdef USE_DMA
 static void dma_test(void)
 {
 	struct ihk_dma_request req;
@@ -102,6 +103,7 @@ static void dma_test(void)
 		}
 	}
 }
+#endif
 
 extern char *ihk_mc_get_kernel_args(void);
 
@@ -182,8 +184,10 @@ static void rest_init(void)
 
 	handler_init();
 
+#ifdef USE_DMA
 	ihk_mc_dma_init();
 	dma_test();
+#endif
 	//pc_test();
 
 	ap_init();

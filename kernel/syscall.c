@@ -106,7 +106,6 @@ static void send_syscall(struct syscall_request *req, int cpu)
 	struct ikc_scd_packet packet;
 	struct syscall_response *res;
 	unsigned long fin;
-	int w;
 	struct syscall_params *scp;
 	struct ihk_ikc_channel_desc *syscall_channel;
 
@@ -127,19 +126,20 @@ static void send_syscall(struct syscall_request *req, int cpu)
 	res->status = 0;
 	req->valid = 0;
 
+#ifdef USE_DMA
 	memcpy_async(scp->request_pa,
 	             virt_to_phys(req), sizeof(*req), 0, &fin);
 
 	memcpy_async_wait(&scp->post_fin);
 	scp->post_va->v[0] = scp->post_idx;
-
-	w = cpu + 1;
-
 	memcpy_async_wait(&fin);
+#else
+	memcpy(scp->request_va, req, sizeof(*req));
+#endif
 
 	barrier();
 	scp->request_va->valid = 1;
-	*(unsigned int *)scp->doorbell_va = w;
+	*(unsigned int *)scp->doorbell_va = cpu + 1;
 
 #ifdef SYSCALL_BY_IKC
 	packet.msg = SCD_MSG_SYSCALL_ONESIDE;

@@ -10,6 +10,7 @@
  * HISTORY:
  */
 
+#ifdef USE_DMA
 #include <ihk/dma.h>
 #include <amemcpy.h>
 
@@ -48,3 +49,4 @@ int memcpy_async(unsigned long dest, unsigned long src,
 
 	return 0;
 }
+#endif
