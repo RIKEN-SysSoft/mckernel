@@ -1067,7 +1067,7 @@ SYSCALL_DECLARE(clone)
 SYSCALL_DECLARE(set_tid_address)
 {
 	cpu_local_var(current)->thread.clear_child_tid = 
-	                        (int*)ihk_mc_syscall_arg2(ctx);
+	                        (int*)ihk_mc_syscall_arg0(ctx);
 
 	return cpu_local_var(current)->pid;
 }
