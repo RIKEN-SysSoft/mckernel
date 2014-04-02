@@ -8,6 +8,9 @@
  */
 /*
  * HISTORY
+ * 
+ * 2014/04 - bgerofi: save/restore rbp when entering/leaving kernel (for glibc)
+ * 2013/?? - bgerofi + shimosawa: handle rsp correctly for nested interrupts
  */
 
 #define X86_CPU_LOCAL_OFFSET_TSS    128
@@ -22,6 +25,7 @@
 #define USER_DS                     (56 + 3)
 
 #define PUSH_ALL_REGS     \
+		pushq %rbp; \
         pushq %rax; \
         pushq %rbx; \
         pushq %rcx; \
@@ -42,7 +46,8 @@
         popq  %rdx; \
         popq  %rcx; \
         popq  %rbx; \
-        popq  %rax
+        popq  %rax; \
+		popq  %rbp
 		
 .data
 .globl generic_common_handlers
@@ -62,7 +67,7 @@ vector=vector+1
 
 common_interrupt:
 		PUSH_ALL_REGS
-		movq    80(%rsp), %rdi
+		movq    88(%rsp), %rdi
 		movq	%rsp, %rsi
 		call 	handle_interrupt /* Enter C code */
 		POP_ALL_REGS
@@ -78,7 +83,7 @@ page_fault:
 		cld
 		PUSH_ALL_REGS
 		movq	%cr2, %rdi
-		movq	80(%rsp),%rsi
+		movq	88(%rsp),%rsi
 		movq	%rsp,%rdx
 		movq	__page_fault_handler_address(%rip), %rax
 		andq	%rax, %rax

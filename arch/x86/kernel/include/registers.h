@@ -137,7 +137,7 @@ struct tss64 {
 
 struct x86_regs {
 	unsigned long r11, r10, r9, r8;
-	unsigned long rdi, rsi, rdx, rcx, rbx, rax;
+	unsigned long rdi, rsi, rdx, rcx, rbx, rax, rbp;
 	unsigned long error, rip, cs, rflags, rsp, ss;
 };
 
