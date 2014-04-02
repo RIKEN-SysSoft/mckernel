@@ -157,8 +157,8 @@ struct process_vm {
 
 
 struct process *create_process(unsigned long user_pc);
-struct process *clone_process(struct process *org,
-                              unsigned long pc, unsigned long sp);
+struct process *clone_process(struct process *org, unsigned long pc,
+                              unsigned long sp, int clone_flags);
 void destroy_process(struct process *proc);
 void hold_process(struct process *proc);
 void free_process(struct process *proc);

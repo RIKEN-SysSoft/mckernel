@@ -358,7 +358,6 @@ retry_alloc:
 			kfree(wqhln);
 			wqhln = wqhln_iter;
 			list_del(&wqhln->list);
-			printk("DEBUG: wait queue head was already available in syscall wait\n");
 			break;
 		}
 	}

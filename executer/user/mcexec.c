@@ -1093,6 +1093,55 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			break;
 		}
 #endif
+		case __NR_fork: {
+			int child;
+
+			child = fork();
+
+			switch (child) {
+				/* Error */
+				case -1:
+					do_syscall_return(fd, cpu, -1, 0, 0, 0, 0);
+					break;
+
+				/* Child process */
+				case 0: {
+					int i;
+
+					/* Reopen device fd */
+					close(fd);
+					fd = open(dev, O_RDWR);
+					if (fd < 0) {
+						/* TODO: tell parent something went wrong? */
+						fprintf(stderr, "ERROR: opening %s\n", dev);
+						return 1;
+					}
+					
+					/* Reinit signals and syscall threads */
+					init_sigaction();
+					init_worker_threads(fd);
+
+					__dprintf("pid(%d): signals and syscall threads OK\n", 
+							getpid());
+				
+					/* TODO: does the forked thread run in a pthread context? */
+					for (i = 0; i <= ncpu; ++i) {
+						pthread_join(thread_data[i].thread_id, NULL);
+					}
+
+					return 0;
+				}
+				
+				/* Parent */
+				default:
+					
+					do_syscall_return(fd, cpu, child, 0, 0, 0, 0);
+					break;
+			}
+
+			break;
+		}
+
 		default:
 			 ret = do_generic_syscall(&w);
 			 do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);

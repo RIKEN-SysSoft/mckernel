@@ -101,7 +101,7 @@ int copy_to_user(struct process *, void *, const void *, size_t);
 static void do_mod_exit(int status);
 #endif
 
-static void send_syscall(struct syscall_request *req, int cpu)
+static void send_syscall(struct syscall_request *req, int cpu, int pid)
 {
 	struct ikc_scd_packet packet;
 	struct syscall_response *res;
@@ -147,7 +147,7 @@ static void send_syscall(struct syscall_request *req, int cpu)
 #ifdef SYSCALL_BY_IKC
 	packet.msg = SCD_MSG_SYSCALL_ONESIDE;
 	packet.ref = cpu;
-	packet.pid = cpu_local_var(current)->pid;
+	packet.pid = pid ? pid : cpu_local_var(current)->pid;
 	packet.arg = scp->request_rpa;	
 	dkprintf("send syscall, nr: %d, pid: %d\n", req->number, packet.pid);
 	ihk_ikc_send(syscall_channel, &packet, 0); 
@@ -155,7 +155,8 @@ static void send_syscall(struct syscall_request *req, int cpu)
 }
 
 
-long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx, int cpu)
+long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx, 
+		int cpu, int pid)
 {
 	struct syscall_response *res;
 	struct syscall_request req2 IHK_DMA_ALIGN;
@@ -175,7 +176,7 @@ long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx, int cpu
 	}
 	res = scp->response_va;
 
-	send_syscall(req, cpu);
+	send_syscall(req, cpu, pid);
 
 	dkprintf("SC(%d)[%3d] waiting for host.. \n", 
 	        ihk_mc_get_processor_id(),
@@ -202,7 +203,7 @@ long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx, int cpu
 			req2.args[0] = PAGER_RESUME_PAGE_FAULT;
 			req2.args[1] = error;
 
-			send_syscall(&req2, cpu);
+			send_syscall(&req2, cpu, pid);
 		}
 	}
 
@@ -237,7 +238,7 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 	/* XXX: send SIGKILL to all threads in this process */
 
 	flush_process_memory(proc);	/* temporary hack */
-	do_syscall(&request, ctx, ihk_mc_get_processor_id());
+	do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0);
 
 #define	IS_DETACHED_PROCESS(proc)	(1)	/* should be implemented in the future */
 	proc->status = PS_ZOMBIE;
@@ -282,7 +283,7 @@ SYSCALL_DECLARE(exit_group)
 
 	/* XXX: send SIGKILL to all threads in this process */
 
-	do_syscall(&request, ctx, ihk_mc_get_processor_id());
+	do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0);
 
 #define	IS_DETACHED_PROCESS(proc)	(1)	/* should be implemented in the future */
 	proc->status = PS_ZOMBIE;
@@ -306,6 +307,8 @@ static void clear_host_pte(uintptr_t addr, size_t len)
 
 	ihk_mc_syscall_arg0(&ctx) = addr;
 	ihk_mc_syscall_arg1(&ctx) = len;
+	/* NOTE: 3rd parameter denotes new rpgtable of host process (if not zero) */
+	ihk_mc_syscall_arg2(&ctx) = 0;
 
 	lerror = syscall_generic_forwarding(__NR_munmap, &ctx);
 	if (lerror) {
@@ -961,30 +964,57 @@ SYSCALL_DECLARE(clone)
 	ihk_mc_user_context_t ctx1;
 	struct syscall_request request1 IHK_DMA_ALIGN;
 
-	if(clone_flags == 0x1200011){
-		// fork()
-		return -EOPNOTSUPP;
-	}
-
-	dkprintf("[%d] clone(): stack_pointr: 0x%lX\n",
-	         ihk_mc_get_processor_id(), 
-			 (unsigned long)ihk_mc_syscall_arg1(ctx));
+	dkprintf("clone(): stack_pointr passed in: 0x%lX, stack pointer of caller: 0x%lx\n",
+			 (unsigned long)ihk_mc_syscall_arg1(ctx),
+			 (unsigned long)ihk_mc_syscall_sp(ctx));
 
 	cpuid = obtain_clone_cpuid();
 
 	new = clone_process(cpu_local_var(current), ihk_mc_syscall_pc(ctx),
-	                    ihk_mc_syscall_arg1(ctx));
+	                    ihk_mc_syscall_arg1(ctx) ? ihk_mc_syscall_arg1(ctx) :
+						ihk_mc_syscall_sp(ctx), 
+						clone_flags);
 	
 	if (!new) {
 		return -ENOMEM;
 	}
 
-//	/* Allocate new pid */
-//	new->pid = ihk_atomic_inc_return(&pid_cnt);
+	/* fork() a new process on the host */
+	/* TODO: do this check properly! */
+	if (clone_flags == 0x1200011) {
+		request1.number = __NR_fork;
+		new->pid = do_syscall(&request1, &ctx1, ihk_mc_get_processor_id(), 0);
+		
+		if (new->pid == -1) {
+			kprintf("ERROR: forking host process\n");
+			
+			/* TODO: clean-up new */
+			return -EFAULT;
+		}
 
-	new->pid = cpu_local_var(current)->pid;
+		dkprintf("fork(): new pid: %d\n", new->pid);
+		/* clear user space PTEs and set new rpgtable so that consequent 
+		 * page faults will look up the right mappings */
+		request1.number = __NR_munmap;
+		request1.args[0] = new->vm->region.user_start;
+		request1.args[1] = new->vm->region.user_end - 
+			new->vm->region.user_start;
+		/* 3rd parameter denotes new rpgtable of host process */
+		request1.args[2] = virt_to_phys(new->vm->page_table);
+
+		dkprintf("fork(): requesting PTE clear and rpgtable (0x%lx) update\n",
+				request1.args[2]);
+
+		if (do_syscall(&request1, &ctx1, ihk_mc_get_processor_id(), new->pid)) {
+			kprintf("ERROR: clearing PTEs in host process\n");
+		}		
+	}
+	else {
+		new->pid = cpu_local_var(current)->pid;
+	}
+	
 	request1.number = __NR_gettid;
-	new->tid = do_syscall(&request1, &ctx1, cpuid);
+	new->tid = do_syscall(&request1, &ctx1, cpuid, new->pid);
 
 	if (clone_flags & CLONE_PARENT_SETTID) {
 		dkprintf("clone_flags & CLONE_PARENT_SETTID: 0x%lX\n",
@@ -998,6 +1028,20 @@ SYSCALL_DECLARE(clone)
 			     (unsigned long)ihk_mc_syscall_arg3(ctx));
 
 		new->thread.clear_child_tid = (int*)ihk_mc_syscall_arg3(ctx);
+	}
+	
+	if (clone_flags & CLONE_CHILD_SETTID) {
+		unsigned long phys;
+		dkprintf("clone_flags & CLONE_CHILD_SETTID: 0x%lX\n",
+				(unsigned long)ihk_mc_syscall_arg3(ctx));
+
+		if (ihk_mc_pt_virt_to_phys(new->vm->page_table, 
+					(void *)ihk_mc_syscall_arg3(ctx), &phys)) { 
+			kprintf("ERROR: looking up physical addr for child process\n");
+			return -EFAULT; 
+		}
+	
+		*((int*)phys_to_virt(phys)) = new->tid;
 	}
 	
 	if (clone_flags & CLONE_SETTLS) {
@@ -1485,7 +1529,7 @@ SYSCALL_DECLARE(futex)
 
 		request.args[0] = __phys;               
 
-		int r = do_syscall(&request, ctx, ihk_mc_get_processor_id());
+		int r = do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0);
 
 		if (r < 0) {
 			return -EFAULT;
