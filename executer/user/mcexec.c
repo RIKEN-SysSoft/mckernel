@@ -495,14 +495,19 @@ struct thread_data_s {
 	int cpu;
 	int ret;
 	pthread_mutex_t *lock;
+	pthread_barrier_t *init_ready;
 } *thread_data;
 int ncpu;
 pid_t master_tid;
+
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_barrier_t init_ready;
 
 static void *main_loop_thread_func(void *arg)
 {
 	struct thread_data_s *td = (struct thread_data_s *)arg;
 
+	pthread_barrier_wait(&init_ready);
 	td->ret = main_loop(td->fd, td->cpu, td->lock);
 
 	return NULL;
@@ -570,6 +575,53 @@ void print_usage(char **argv)
 	fprintf(stderr, "Usage: %s [-c target_core] [<mcos-id>] (program) [args...]\n", argv[0]);
 }
 
+void init_sigaction(void)
+{
+	int i;
+
+	master_tid = gettid();
+	for (i = 1; i <= 64; i++) {
+		if (i != SIGCHLD && i != SIGCONT && i != SIGSTOP &&
+		    i != SIGTSTP && i != SIGTTIN && i != SIGTTOU) {
+			struct sigaction act;
+
+			sigaction(i, NULL, &act);
+			act.sa_sigaction = sendsig;
+			act.sa_flags &= ~(SA_RESTART);
+			act.sa_flags |= SA_SIGINFO;
+			sigaction(i, &act, NULL);
+		}
+	}
+}		
+
+void init_worker_threads(int fd) 
+{
+	int i;
+
+	pthread_mutex_init(&lock, NULL);
+	pthread_barrier_init(&init_ready, NULL, ncpu + 2);
+
+	for (i = 0; i <= ncpu; ++i) {
+		int ret;
+
+		thread_data[i].fd = fd;
+		thread_data[i].cpu = i;
+		thread_data[i].lock = &lock;
+		thread_data[i].init_ready = &init_ready;
+		ret = pthread_create(&thread_data[i].thread_id, NULL, 
+		                     &main_loop_thread_func, &thread_data[i]);
+
+		if (ret < 0) {
+			printf("ERROR: creating syscall threads\n");
+			exit(1);
+		}
+	}
+
+	pthread_barrier_wait(&init_ready);
+}	
+
+char dev[64];
+
 int main(int argc, char **argv)
 {
 //	int fd;
@@ -582,11 +634,9 @@ int main(int argc, char **argv)
 	int envs_len;
 	char *envs;
 	char *args;
-	char dev[64];
 	char **a;
 	char *p;
 	int i;
-	pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 	FILE *interp = NULL;
 	char *interp_path;
 	char *path;
@@ -666,9 +716,9 @@ int main(int argc, char **argv)
 
 	__dprintf("target_core: %d, device: %s, command: ", target_core, dev);
 	for (i = 1; i < argc; ++i) {
-		printf("%s ", argv[i]);
+		__dprintf("%s ", argv[i]);
 	}
-	printf("\n");
+	__dprintf("\n");
 
 	fp = fopen(argv[1], "rb");
 	if (!fp) {
@@ -825,33 +875,9 @@ int main(int argc, char **argv)
 	__dprint("mccmd server initialized\n");
 #endif
 
-	master_tid = gettid();
-	for (i = 1; i <= 64; i++)
-		if (i != SIGCHLD && i != SIGCONT && i != SIGSTOP &&
-		    i != SIGTSTP && i != SIGTTIN && i != SIGTTOU){
-			struct sigaction act;
+	init_sigaction();
 
-			sigaction(i, NULL, &act);
-			act.sa_sigaction = sendsig;
-			act.sa_flags &= ~(SA_RESTART);
-			act.sa_flags |= SA_SIGINFO;
-			sigaction(i, &act, NULL);
-		}
-
-	for (i = 0; i <= ncpu; ++i) {
-		int ret;
-
-		thread_data[i].fd = fd;
-		thread_data[i].cpu = i;
-		thread_data[i].lock = &lock;
-		ret = pthread_create(&thread_data[i].thread_id, NULL, 
-		                     &main_loop_thread_func, &thread_data[i]);
-
-		if (ret < 0) {
-			printf("ERROR: creating syscall threads\n");
-			exit(1);
-		}
-	}
+	init_worker_threads(fd);
 
 	if (ioctl(fd, MCEXEC_UP_START_IMAGE, (unsigned long)desc) != 0) {
 		perror("exec");
