@@ -46,6 +46,8 @@ struct x86_cpu_local_variables {
 } __attribute__((packed));
 
 struct x86_cpu_local_variables *get_x86_cpu_local_variable(int id);
+struct x86_cpu_local_variables *get_x86_this_cpu_local(void);
+void *get_x86_this_cpu_kstack(void);
 
 
 #endif

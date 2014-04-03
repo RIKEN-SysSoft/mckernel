@@ -52,8 +52,6 @@
 #endif
 
 
-struct x86_cpu_local_variables *get_x86_this_cpu_local(void);
-void *get_x86_this_cpu_kstack(void);
 void init_processors_local(int max_id);
 void assign_processor_id(void);
 void arch_delay(int);
