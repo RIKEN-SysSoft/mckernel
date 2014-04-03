@@ -164,8 +164,8 @@ static struct ihk_mc_interrupt_handler query_free_mem_handler = {
 	.priv = NULL,
 };
 
-void set_signal(int, unsigned long *);
-void check_signal(long, unsigned long *);
+void set_signal(int sig, void *regs);
+void check_signal(unsigned long rc, void *regs);
 
 static void unhandled_page_fault(struct process *proc, void *fault_addr, void *regs)
 {

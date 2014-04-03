@@ -106,8 +106,9 @@ extern void interrupt_syscall(int all);
 extern int num_processors;
 
 void
-do_signal(unsigned long rc, unsigned long *regs, struct process *proc, struct sig_pending *pending)
+do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pending *pending)
 {
+	unsigned long *regs = regs0;
 	struct k_sigaction *k;
 	int	sig;
 	__sigset_t w;
@@ -159,8 +160,9 @@ do_signal(unsigned long rc, unsigned long *regs, struct process *proc, struct si
 }
 
 void
-check_signal(unsigned long rc, unsigned long *regs)
+check_signal(unsigned long rc, void *regs0)
 {
+	unsigned long *regs = regs0;
 	struct process *proc;
 	struct sig_pending *pending;
 	struct sig_pending *next;
@@ -310,8 +312,9 @@ do_kill(int pid, int tid, int sig)
 }
 
 void
-set_signal(int sig, unsigned long *regs)
+set_signal(int sig, void *regs0)
 {
+	unsigned long *regs = regs0;
 	struct process *proc = cpu_local_var(current);
 
 	if(proc == NULL || proc->pid == 0)

@@ -92,8 +92,8 @@ static char *syscall_name[] MCKERNEL_UNUSED = {
 #undef	SYSCALL_DELEGATED
 };
 
-void check_signal(long rc, unsigned long *regs);
-void do_signal(long rc, unsigned long *regs, struct process *proc, struct sig_pending *pending);
+void check_signal(unsigned long rc, void *regs);
+void do_signal(long rc, void *regs, struct process *proc, struct sig_pending *pending);
 int copy_from_user(struct process *, void *, const void *, size_t);
 int copy_to_user(struct process *, void *, const void *, size_t);
 

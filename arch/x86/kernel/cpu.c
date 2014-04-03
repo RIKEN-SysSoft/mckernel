@@ -368,8 +368,8 @@ void setup_x86_ap(void (*next_func)(void))
 }
 
 void arch_show_interrupt_context(const void *reg);
-void set_signal(int, void *);
-void check_signal(long, void *);
+void set_signal(int sig, void *regs);
+void check_signal(unsigned long rc, void *regs);
 
 void handle_interrupt(int vector, struct x86_regs *regs)
 {
