@@ -1333,8 +1333,8 @@ int init_process_stack(struct process *process, struct program_load_desc *pn,
 	start = end - size;
 
 	vrflag = VR_STACK | VR_DEMAND_PAGING;
-	vrflag |= VR_PROT_READ | VR_PROT_WRITE | VR_PROT_EXEC;
-	vrflag |= VRFLAG_PROT_TO_MAXPROT(vrflag);
+	vrflag |= PROT_TO_VR_FLAG(pn->stack_prot);
+	vrflag |= VR_MAXPROT_READ | VR_MAXPROT_WRITE | VR_MAXPROT_EXEC;
 #define	NOPHYS	((uintptr_t)-1)
 	if ((rc = add_process_memory_range(process, start, end, NOPHYS,
 					vrflag, NULL, 0)) != 0) {
