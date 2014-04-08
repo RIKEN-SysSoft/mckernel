@@ -142,8 +142,8 @@ static inline uintptr_t pte_get_phys(pte_t *ptep)
 }
 
 struct page_table;
-void set_pte(pte_t *ppte, unsigned long phys, int attr);
-pte_t *get_pte(struct page_table *pt, void *virt, int attr);
+void set_pte(pte_t *ppte, unsigned long phys, enum ihk_mc_pt_attribute attr);
+pte_t *get_pte(struct page_table *pt, void *virt, enum ihk_mc_pt_attribute attr);
 
 void *early_alloc_page(void);
 void *get_last_early_heap(void);

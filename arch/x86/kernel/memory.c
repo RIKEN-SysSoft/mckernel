@@ -266,7 +266,7 @@ static unsigned long attr_to_l1attr(enum ihk_mc_pt_attribute attr)
 		| ((uint64_t)(l1i) << PTL1_SHIFT)	\
 		)
 
-void set_pte(pte_t *ppte, unsigned long phys, int attr)
+void set_pte(pte_t *ppte, unsigned long phys, enum ihk_mc_pt_attribute attr)
 {
 	if (attr & PTATTR_LARGEPAGE) {
 		*ppte = phys | attr_to_l2attr(attr) | PFL2_SIZE;
@@ -285,7 +285,7 @@ void set_pte(pte_t *ppte, unsigned long phys, int attr)
  *             and returns a pointer to the PTE corresponding to the
  *             virtual address.
  */
-pte_t *get_pte(struct page_table *pt, void *virt, int attr, enum ihk_mc_ap_flag ap_flag)
+pte_t *get_pte(struct page_table *pt, void *virt, enum ihk_mc_pt_attribute attr, enum ihk_mc_ap_flag ap_flag)
 {
 	int l4idx, l3idx, l2idx, l1idx;
 	unsigned long v = (unsigned long)virt;
@@ -341,7 +341,7 @@ pte_t *get_pte(struct page_table *pt, void *virt, int attr, enum ihk_mc_ap_flag 
 #endif
 
 static int __set_pt_page(struct page_table *pt, void *virt, unsigned long phys,
-                         int attr)
+                         enum ihk_mc_pt_attribute attr)
 {
 	int l4idx, l3idx, l2idx, l1idx;
 	unsigned long v = (unsigned long)virt;
