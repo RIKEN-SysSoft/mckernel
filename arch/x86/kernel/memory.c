@@ -1666,21 +1666,25 @@ void *map_fixed_area(unsigned long phys, unsigned long size, int uncachable)
 {
 	unsigned long poffset, paligned;
 	int i, npages;
-	int flag = PTATTR_WRITABLE | PTATTR_ACTIVE;
 	void *v = (void *)fixed_virt;
+	enum ihk_mc_pt_attribute attr;
 
 	poffset = phys & (PAGE_SIZE - 1);
 	paligned = phys & PAGE_MASK;
 	npages = (poffset + size + PAGE_SIZE - 1) >> PAGE_SHIFT;
 
+	attr = PTATTR_WRITABLE | PTATTR_ACTIVE;
+#if 0	/* In the case of LAPIC MMIO, something will happen */
+	attr |= PTATTR_NO_EXECUTE;
+#endif
 	if (uncachable) {
-		flag |= PTATTR_UNCACHABLE;
+		attr |= PTATTR_UNCACHABLE;
 	}
 
 	kprintf("map_fixed: %lx => %p (%d pages)\n", paligned, v, npages);
 
 	for (i = 0; i < npages; i++) {
-		if(__set_pt_page(init_pt, (void *)fixed_virt, paligned, flag)){
+		if(__set_pt_page(init_pt, (void *)fixed_virt, paligned, attr)){
 			return NULL;
 		}
 
@@ -1695,7 +1699,7 @@ void *map_fixed_area(unsigned long phys, unsigned long size, int uncachable)
 
 void init_low_area(struct page_table *pt)
 {
-	set_pt_large_page(pt, 0, 0, PTATTR_WRITABLE);
+	set_pt_large_page(pt, 0, 0, PTATTR_NO_EXECUTE|PTATTR_WRITABLE);
 }
 
 static void init_vsyscall_area(struct page_table *pt)

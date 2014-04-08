@@ -348,6 +348,7 @@ int update_process_page_table(struct process *process,
 
 	attr = flag | PTATTR_USER | PTATTR_FOR_USER;
 	attr |= (range->flag & VR_PROT_WRITE)? PTATTR_WRITABLE: 0;
+	attr |= (range->flag & VR_PROT_EXEC)? 0: PTATTR_NO_EXECUTE;
 
 	p = range->start;
 	while (p < range->end) {
@@ -688,6 +689,10 @@ enum ihk_mc_pt_attribute vrflag_to_ptattr(unsigned long flag)
 
 	if (flag & VR_PROT_WRITE) {
 		attr |= PTATTR_WRITABLE;
+	}
+
+	if (!(flag & VR_PROT_EXEC)) {
+		attr |= PTATTR_NO_EXECUTE;
 	}
 
 	return attr;
@@ -1198,7 +1203,9 @@ static int do_page_fault_process(struct process *proc, void *fault_addr0, uint64
 
 	if (((range->flag & VR_PROT_MASK) == VR_PROT_NONE)
 			|| ((reason & PF_WRITE)
-				&& !(range->flag & VR_PROT_WRITE))) {
+				&& !(range->flag & VR_PROT_WRITE))
+			|| ((reason & PF_INSTR)
+				&& !(range->flag & VR_PROT_EXEC))) {
 		error = -EFAULT;
 		kprintf("[%d]do_page_fault_process(%p,%lx,%lx):"
 				"access denied. %d\n",

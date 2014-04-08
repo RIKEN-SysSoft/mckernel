@@ -114,6 +114,7 @@ enum ihk_mc_pt_attribute {
 	PTATTR_WRITABLE   = 0x02,
 	PTATTR_USER       = 0x04,
 	PTATTR_LARGEPAGE  = 0x80,
+	PTATTR_NO_EXECUTE = 0x8000000000000000,
 	PTATTR_UNCACHABLE = 0x10000,
 	PTATTR_FOR_USER   = 0x20000,
 };
@@ -156,5 +157,5 @@ void *map_fixed_area(unsigned long phys, unsigned long size, int uncachable);
 #define AP_TRAMPOLINE_SIZE  0x4000
 
 /* Local is cachable */
-#define IHK_IKC_QUEUE_PT_ATTR (PTATTR_WRITABLE | PTATTR_UNCACHABLE)
+#define IHK_IKC_QUEUE_PT_ATTR (PTATTR_NO_EXECUTE | PTATTR_WRITABLE | PTATTR_UNCACHABLE)
 #endif
