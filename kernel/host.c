@@ -69,13 +69,16 @@ static int process_msg_prepare_process(unsigned long rphys)
 	unsigned long flags;
 	uintptr_t interp_obase = -1;
 	uintptr_t interp_nbase = -1;
+	enum ihk_mc_pt_attribute attr;
+
+	attr = PTATTR_NO_EXECUTE | PTATTR_WRITABLE | PTATTR_FOR_USER;
 
 	sz = sizeof(struct program_load_desc)
 		+ sizeof(struct program_image_section) * 16;
 	npages = ((rphys + sz - 1) >> PAGE_SHIFT) - (rphys >> PAGE_SHIFT) + 1;
 
 	phys = ihk_mc_map_memory(NULL, rphys, sz);
-	if((p = ihk_mc_map_virtual(phys, npages, PTATTR_WRITABLE | PTATTR_FOR_USER)) == NULL){
+	if((p = ihk_mc_map_virtual(phys, npages, attr)) == NULL){
 		ihk_mc_unmap_memory(NULL, phys, sz);
 		return -ENOMEM;
 	}
@@ -264,7 +267,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	args_envs_rp = ihk_mc_map_memory(NULL, (unsigned long)p->args, p->args_len);
 	dkprintf("args_envs_rp: 0x%lX\n", args_envs_rp);
 	if((args_envs_r = (char *)ihk_mc_map_virtual(args_envs_rp, args_envs_npages, 
-	    PTATTR_WRITABLE | PTATTR_FOR_USER)) == NULL){
+	    attr)) == NULL){
 		goto err;
 	}
 	dkprintf("args_envs_r: 0x%lX\n", args_envs_r);
@@ -285,7 +288,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	args_envs_rp = ihk_mc_map_memory(NULL, (unsigned long)p->envs, p->envs_len);
 	dkprintf("args_envs_rp: 0x%lX\n", args_envs_rp);
 	if((args_envs_r = (char *)ihk_mc_map_virtual(args_envs_rp, args_envs_npages, 
-	    PTATTR_WRITABLE | PTATTR_FOR_USER)) == NULL){
+	    attr)) == NULL){
 		goto err;
 	}
 	dkprintf("args_envs_r: 0x%lX\n", args_envs_r);
@@ -363,6 +366,9 @@ static void process_msg_init_acked(struct ihk_ikc_channel_desc *c, unsigned long
 {
 	struct ikc_scd_init_param *param = (void *)pphys;
 	struct syscall_params *lparam;
+	enum ihk_mc_pt_attribute attr;
+
+	attr = PTATTR_NO_EXECUTE | PTATTR_WRITABLE | PTATTR_FOR_USER;
 
 	lparam = &cpu_local_var(scp);
 	if(cpu_local_var(syscall_channel2) == c)
@@ -372,7 +378,7 @@ static void process_msg_init_acked(struct ihk_ikc_channel_desc *c, unsigned long
 	                                       REQUEST_PAGE_COUNT * PAGE_SIZE);
 	if((lparam->request_va = ihk_mc_map_virtual(lparam->request_pa,
 	                                        REQUEST_PAGE_COUNT,
-	                                        PTATTR_WRITABLE | PTATTR_FOR_USER)) == NULL){
+	                                        attr)) == NULL){
 		// TODO: 
 		panic("ENOMEM");
 	}
@@ -383,7 +389,7 @@ static void process_msg_init_acked(struct ihk_ikc_channel_desc *c, unsigned long
 	                                        PAGE_SIZE);
 	if((lparam->doorbell_va = ihk_mc_map_virtual(lparam->doorbell_pa,
 	                                         DOORBELL_PAGE_COUNT,
-	                                         PTATTR_WRITABLE | PTATTR_FOR_USER)) == NULL){
+	                                         attr)) == NULL){
 		// TODO: 
 		panic("ENOMEM");
 	}
@@ -392,7 +398,7 @@ static void process_msg_init_acked(struct ihk_ikc_channel_desc *c, unsigned long
 	lparam->post_pa = ihk_mc_map_memory(NULL, param->post_page,
 	                                    PAGE_SIZE);
 	if((lparam->post_va = ihk_mc_map_virtual(lparam->post_pa, 1,
-	                                     PTATTR_WRITABLE | PTATTR_FOR_USER)) == NULL){
+	                                     attr)) == NULL){
 		// TODO: 
 		panic("ENOMEM");
 	}

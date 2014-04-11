@@ -159,6 +159,7 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	fseek(fp, hdr.e_phoff, SEEK_SET);
 	j = 0;
 	desc->num_sections = nhdrs;
+	desc->stack_prot = PROT_READ | PROT_WRITE | PROT_EXEC;	/* default */
 	for (i = 0; i < hdr.e_phnum; i++) {
 		if (fread(&phdr, sizeof(phdr), 1, fp) < 1) {
 			__eprintf("Loading phdr failed (%d)\n", i);
@@ -204,6 +205,12 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 				load_addr_set = 1;
 				load_addr = phdr.p_vaddr - phdr.p_offset;
 			}
+		}
+		if (phdr.p_type == PT_GNU_STACK) {
+			desc->stack_prot = PROT_NONE;
+			desc->stack_prot |= (phdr.p_flags & PF_R)? PROT_READ: 0;
+			desc->stack_prot |= (phdr.p_flags & PF_W)? PROT_WRITE: 0;
+			desc->stack_prot |= (phdr.p_flags & PF_X)? PROT_EXEC: 0;
 		}
 	}
 	desc->pid = getpid();

@@ -65,6 +65,7 @@ struct program_load_desc {
 	int cpu;
 	int pid;
 	int err;
+	int stack_prot;
 	unsigned long entry;
 	unsigned long user_start;
 	unsigned long user_end;
