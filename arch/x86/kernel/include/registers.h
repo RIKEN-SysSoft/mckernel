@@ -162,7 +162,7 @@ enum x86_pf_error_code {
 	PF_RSVD		=		1 << 3,
 	PF_INSTR	=		1 << 4,
 
-	PF_DONTCOW	=		1 << 30,
+	PF_POPULATE	=		1 << 30,
 };
 
 #endif

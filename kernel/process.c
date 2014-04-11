@@ -1304,7 +1304,7 @@ static int do_page_fault_process(struct process *proc, void *fault_addr0, uint64
 			goto out;
 		}
 	}
-	else if (reason & PF_DONTCOW) {
+	else if (reason & PF_POPULATE) {
 		pte_t *ptep;
 		void *ptepgaddr;
 		size_t ptepgsize;
@@ -1652,7 +1652,7 @@ void free_process_memory(struct process *proc)
 int populate_process_memory(struct process *proc, void *start, size_t len)
 {
 	int error;
-	const int reason = PF_USER | PF_DONTCOW;
+	const int reason = PF_USER | PF_POPULATE;
 	uintptr_t end;
 	uintptr_t addr;
 
