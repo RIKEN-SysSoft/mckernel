@@ -979,9 +979,11 @@ SYSCALL_DECLARE(clone)
 		return -ENOMEM;
 	}
 
+	if (clone_flags & CLONE_VM) {
+		new->pid = cpu_local_var(current)->pid;
+	}
 	/* fork() a new process on the host */
-	/* TODO: do this check properly! */
-	if (clone_flags == 0x1200011) {
+	else {
 		request1.number = __NR_fork;
 		new->pid = do_syscall(&request1, &ctx1, ihk_mc_get_processor_id(), 0);
 		
@@ -1008,9 +1010,6 @@ SYSCALL_DECLARE(clone)
 		if (do_syscall(&request1, &ctx1, ihk_mc_get_processor_id(), new->pid)) {
 			kprintf("ERROR: clearing PTEs in host process\n");
 		}		
-	}
-	else {
-		new->pid = cpu_local_var(current)->pid;
 	}
 	
 	request1.number = __NR_gettid;

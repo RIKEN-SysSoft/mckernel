@@ -145,9 +145,22 @@ struct process *clone_process(struct process *org, unsigned long pc,
 
 	proc->rlimit_stack = org->rlimit_stack;
 
-	/* TODO: do this check properly!
-	 * fork() */
-	if (clone_flags == 0x1200011) {
+	/* clone() */
+	if (clone_flags & CLONE_VM) {
+		ihk_atomic_inc(&org->vm->refcount);
+		proc->vm = org->vm;
+		
+		proc->sighandler = org->sighandler;
+		ihk_atomic_inc(&org->sighandler->use);
+
+		proc->sigshared = org->sigshared;
+		ihk_atomic_inc(&org->sigshared->use);
+
+		ihk_mc_spinlock_init(&proc->sigpendinglock);
+		INIT_LIST_HEAD(&proc->sigpending);
+	}
+	/* fork() */
+	else {
 		dkprintf("fork(): sighandler\n");
 		proc->sighandler = kmalloc(sizeof(struct sig_handler), 
 				IHK_MC_AP_NOWAIT);
@@ -189,20 +202,6 @@ struct process *clone_process(struct process *org, unsigned long pc,
 		}
 		
 		dkprintf("fork(): copy_user_ranges() OK\n");
-	}
-	/* clone() */
-	else {
-		ihk_atomic_inc(&org->vm->refcount);
-		proc->vm = org->vm;
-		
-		proc->sighandler = org->sighandler;
-		ihk_atomic_inc(&org->sighandler->use);
-
-		proc->sigshared = org->sigshared;
-		ihk_atomic_inc(&org->sigshared->use);
-
-		ihk_mc_spinlock_init(&proc->sigpendinglock);
-		INIT_LIST_HEAD(&proc->sigpending);
 	}
 
 	ihk_mc_spinlock_init(&proc->spin_sleep_lock);
