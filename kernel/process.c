@@ -47,6 +47,10 @@
 #define KERNEL_STACK_NR_PAGES 24
 
 extern long do_arch_prctl(unsigned long code, unsigned long address);
+static void insert_vm_range_list(struct process_vm *vm, 
+		struct vm_range *newrange);
+static int copy_user_ranges(struct process *proc, struct process *org);
+enum ihk_mc_pt_attribute vrflag_to_ptattr(unsigned long flag);
 
 static int init_process_vm(struct process *owner, struct process_vm *vm)
 {
@@ -105,6 +109,7 @@ struct process *create_process(unsigned long user_pc)
 	proc->vm = (struct process_vm *)(proc + 1);
 
 	if(init_process_vm(proc, proc->vm) != 0){
+		kfree(proc->sigshared);
 		kfree(proc->sighandler);
 		ihk_mc_free_pages(proc, KERNEL_STACK_NR_PAGES);
 		return NULL;
@@ -117,11 +122,12 @@ struct process *create_process(unsigned long user_pc)
 }
 
 struct process *clone_process(struct process *org, unsigned long pc,
-                              unsigned long sp)
+                              unsigned long sp, int clone_flags)
 {
 	struct process *proc;
 
-	if((proc = ihk_mc_alloc_pages(KERNEL_STACK_NR_PAGES, IHK_MC_AP_NOWAIT)) == NULL){
+	if ((proc = ihk_mc_alloc_pages(KERNEL_STACK_NR_PAGES, 
+					IHK_MC_AP_NOWAIT)) == NULL) {
 		return NULL;
 	}
 
@@ -136,24 +142,198 @@ struct process *clone_process(struct process *org, unsigned long pc,
 	memcpy(proc->uctx, org->uctx, sizeof(*org->uctx));
 	ihk_mc_modify_user_context(proc->uctx, IHK_UCR_STACK_POINTER, sp);
 	ihk_mc_modify_user_context(proc->uctx, IHK_UCR_PROGRAM_COUNTER, pc);
-	
-	ihk_atomic_inc(&org->vm->refcount);
-	proc->vm = org->vm;
+
 	proc->rlimit_stack = org->rlimit_stack;
 
-	proc->sighandler = org->sighandler;
-	ihk_atomic_inc(&org->sighandler->use);
+	/* clone() */
+	if (clone_flags & CLONE_VM) {
+		ihk_atomic_inc(&org->vm->refcount);
+		proc->vm = org->vm;
+		
+		proc->sighandler = org->sighandler;
+		ihk_atomic_inc(&org->sighandler->use);
 
-	proc->sigshared = org->sigshared;
-	ihk_atomic_inc(&org->sigshared->use);
+		proc->sigshared = org->sigshared;
+		ihk_atomic_inc(&org->sigshared->use);
 
-	ihk_mc_spinlock_init(&proc->sigpendinglock);
-	INIT_LIST_HEAD(&proc->sigpending);
+		ihk_mc_spinlock_init(&proc->sigpendinglock);
+		INIT_LIST_HEAD(&proc->sigpending);
+	}
+	/* fork() */
+	else {
+		dkprintf("fork(): sighandler\n");
+		proc->sighandler = kmalloc(sizeof(struct sig_handler), 
+				IHK_MC_AP_NOWAIT);
+		
+		if (!proc->sighandler) {
+			goto err_free_proc;
+		}
+
+		dkprintf("fork(): sigshared\n");
+		proc->sigshared = kmalloc(sizeof(struct sig_shared), IHK_MC_AP_NOWAIT);
+		
+		if (!proc->sigshared) {
+			goto err_free_sighandler;
+		}
+
+		memset(proc->sighandler, '\0', sizeof(struct sig_handler));
+		ihk_atomic_set(&proc->sighandler->use, 1);
+		ihk_mc_spinlock_init(&proc->sighandler->lock);
+		ihk_atomic_set(&proc->sigshared->use, 1);
+		ihk_mc_spinlock_init(&proc->sigshared->lock);
+		INIT_LIST_HEAD(&proc->sigshared->sigpending);
+		ihk_mc_spinlock_init(&proc->sigpendinglock);
+		INIT_LIST_HEAD(&proc->sigpending);
+
+		proc->vm = (struct process_vm *)(proc + 1);
+		
+		dkprintf("fork(): init_process_vm()\n");
+		if (init_process_vm(proc, proc->vm) != 0) {
+			goto err_free_sigshared;
+		}
+
+		memcpy(&proc->vm->region, &org->vm->region, sizeof(struct vm_regions));
+		
+		dkprintf("fork(): copy_user_ranges()\n");
+		/* Copy user-space mappings.
+		 * TODO: do this with COW later? */	
+		if (copy_user_ranges(proc, org) != 0) {
+			goto err_free_sigshared;
+		}
+		
+		dkprintf("fork(): copy_user_ranges() OK\n");
+	}
 
 	ihk_mc_spinlock_init(&proc->spin_sleep_lock);
 	proc->spin_sleep = 0;
 
 	return proc;
+
+err_free_sigshared:
+	kfree(proc->sigshared);
+
+err_free_sighandler:
+	ihk_mc_free_pages(proc->sighandler, KERNEL_STACK_NR_PAGES);
+
+err_free_proc:
+	ihk_mc_free_pages(proc, KERNEL_STACK_NR_PAGES);
+	
+	return NULL;
+}
+
+static int copy_user_ranges(struct process *proc, struct process *org) 
+{
+	struct vm_range *src_range;
+	struct vm_range *range;	
+	
+	ihk_mc_spinlock_lock_noirq(&org->vm->memory_range_lock);
+
+	/* Iterate original process' vm_range list and take a copy one-by-one */
+	list_for_each_entry(src_range, &org->vm->vm_range_list, list) {
+		void *ptepgaddr;
+		size_t ptepgsize;
+		int ptep2align;
+		void *pg_vaddr;
+		size_t pgsize;
+		void *vaddr;
+		int p2align;
+		enum ihk_mc_pt_attribute attr;
+		pte_t *ptep;
+
+		range = kmalloc(sizeof(struct vm_range), IHK_MC_AP_NOWAIT);
+		if (!range) {
+			goto err_rollback;
+		}
+
+		INIT_LIST_HEAD(&range->list);
+		range->start = src_range->start;
+		range->end = src_range->end;
+		range->flag = src_range->flag;
+		range->memobj = src_range->memobj;
+		range->objoff = src_range->objoff;
+		if (range->memobj) {
+			memobj_ref(range->memobj);
+		}
+
+		/* Copy actual mappings */
+		vaddr = (void *)range->start; 
+		while ((unsigned long)vaddr < range->end) {
+			/* Get source PTE */
+			ptep = ihk_mc_pt_lookup_pte(org->vm->page_table, vaddr,
+					&ptepgaddr, &ptepgsize, &ptep2align);
+
+			if (!ptep || pte_is_null(ptep) || !pte_is_present(ptep)) {
+				vaddr += PAGE_SIZE;
+				continue;
+			}
+
+			dkprintf("copy_user_ranges(): 0x%lx PTE found\n", vaddr);
+			
+			/* Page size */
+			if (arch_get_smaller_page_size(NULL, -1, &ptepgsize, 
+						&ptep2align)) {
+
+				kprintf("ERROR: copy_user_ranges() "
+						"(%p,%lx-%lx %lx,%lx):"
+						"get pgsize failed\n", org->vm,
+						range->start, range->end,
+						range->flag, vaddr);
+
+				goto err_free_range_rollback;
+			}
+			
+			pgsize = ptepgsize;
+			p2align = ptep2align;
+			dkprintf("copy_user_ranges(): page size: %d\n", pgsize);
+			
+			/* Get physical page */
+			pg_vaddr = ihk_mc_alloc_aligned_pages(1, p2align, IHK_MC_AP_NOWAIT);
+
+			if (!pg_vaddr) {
+				kprintf("ERROR: copy_user_ranges() allocating new page\n");
+				goto err_free_range_rollback;
+			}
+			dkprintf("copy_user_ranges(): phys page allocated\n", pgsize);
+
+			/* Copy content */
+			memcpy(pg_vaddr, vaddr, pgsize);
+			dkprintf("copy_user_ranges(): memcpy OK\n", pgsize);
+
+			/* Set up new PTE */
+			attr = vrflag_to_ptattr(range->flag);
+			if (ihk_mc_pt_set_range(proc->vm->page_table, vaddr,
+						vaddr + pgsize, virt_to_phys(pg_vaddr), attr)) {
+				kprintf("ERROR: copy_user_ranges() "
+						"(%p,%lx-%lx %lx,%lx):"
+						"set range failed.\n",
+						org->vm, range->start, range->end,
+						range->flag, vaddr);
+
+				goto err_free_range_rollback;
+			}
+			dkprintf("copy_user_ranges(): new PTE set\n", pgsize);
+			
+			vaddr += pgsize;
+		}
+
+		insert_vm_range_list(proc->vm, range);
+	}
+
+	ihk_mc_spinlock_unlock_noirq(&org->vm->memory_range_lock);
+	
+	return 0;
+
+err_free_range_rollback:
+	kfree(range);
+
+err_rollback:
+
+	/* TODO: implement rollback */
+
+
+	ihk_mc_spinlock_unlock_noirq(&org->vm->memory_range_lock);
+
+	return -1;
 }
 
 int update_process_page_table(struct process *process,
@@ -167,6 +347,7 @@ int update_process_page_table(struct process *process,
 
 	attr = flag | PTATTR_USER | PTATTR_FOR_USER;
 	attr |= (range->flag & VR_PROT_WRITE)? PTATTR_WRITABLE: 0;
+	attr |= (range->flag & VR_PROT_EXEC)? 0: PTATTR_NO_EXECUTE;
 
 	p = range->start;
 	while (p < range->end) {
@@ -509,6 +690,10 @@ enum ihk_mc_pt_attribute vrflag_to_ptattr(unsigned long flag)
 		attr |= PTATTR_WRITABLE;
 	}
 
+	if (!(flag & VR_PROT_EXEC)) {
+		attr |= PTATTR_NO_EXECUTE;
+	}
+
 	return attr;
 }
 
@@ -549,10 +734,9 @@ int add_process_memory_range(struct process *process,
 	        range->start, range->end, range->end - range->start,
 		range->flag);
     } else {
-	dkprintf("range: 0x%lX - 0x%lX => 0x%lX - 0x%lX (%ld) [%lx]\n",
-	        range->start, range->end, range->phys, range->phys + 
-	        range->end - range->start, range->end - range->start,
-		range->flag);
+		dkprintf("range: 0x%lX - 0x%lX (%ld) [%lx]\n",
+				range->start, range->end, range->end - range->start,
+				range->flag);
     }
 
 	if (flag & VR_REMOTE) {
@@ -1018,7 +1202,9 @@ static int do_page_fault_process(struct process *proc, void *fault_addr0, uint64
 
 	if (((range->flag & VR_PROT_MASK) == VR_PROT_NONE)
 			|| ((reason & PF_WRITE)
-				&& !(range->flag & VR_PROT_WRITE))) {
+				&& !(range->flag & VR_PROT_WRITE))
+			|| ((reason & PF_INSTR)
+				&& !(range->flag & VR_PROT_EXEC))) {
 		error = -EFAULT;
 		kprintf("[%d]do_page_fault_process(%p,%lx,%lx):"
 				"access denied. %d\n",
@@ -1146,8 +1332,8 @@ int init_process_stack(struct process *process, struct program_load_desc *pn,
 	start = end - size;
 
 	vrflag = VR_STACK | VR_DEMAND_PAGING;
-	vrflag |= VR_PROT_READ | VR_PROT_WRITE | VR_PROT_EXEC;
-	vrflag |= VRFLAG_PROT_TO_MAXPROT(vrflag);
+	vrflag |= PROT_TO_VR_FLAG(pn->stack_prot);
+	vrflag |= VR_MAXPROT_READ | VR_MAXPROT_WRITE | VR_MAXPROT_EXEC;
 #define	NOPHYS	((uintptr_t)-1)
 	if ((rc = add_process_memory_range(process, start, end, NOPHYS,
 					vrflag, NULL, 0)) != 0) {

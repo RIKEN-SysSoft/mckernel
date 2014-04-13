@@ -1126,10 +1126,11 @@ static void clear_pte_range(uintptr_t start, uintptr_t len)
 		}
 		if (addr < end) {
 			zap_vma_ptes(vma, addr, end-addr);
+			dprintk("clear_pte_range() 0x%lx - 0x%lx OK\n", 
+					vma->vm_start, vma->vm_end);
 		}
 		addr = end;
 	}
-
 	up_read(&mm->mmap_sem);
 	return;
 }
@@ -1138,6 +1139,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 {
 	int error;
 	long ret = -1;
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 
 	dprintk("__do_in_kernel_syscall(%p,%p,%ld %lx)\n", os, c, sc->number, sc->args[0]);
 	switch (sc->number) {
@@ -1146,6 +1148,11 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 		break;
 
 	case __NR_munmap:
+		/* Set new remote page table if not zero */
+		if (sc->args[2]) {
+			usrdata->rpgtable = sc->args[2];
+		}
+
 		clear_pte_range(sc->args[0], sc->args[1]);
 		ret = 0;
 		break;

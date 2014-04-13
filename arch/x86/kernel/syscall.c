@@ -17,6 +17,7 @@
 #include <ihk/cpu.h>
 #include <ihk/debug.h>
 #include <cls.h>
+#include <cpulocal.h>
 #include <syscall.h>
 #include <process.h>
 #include <string.h>
@@ -89,10 +90,12 @@ int obtain_clone_cpuid() {
 SYSCALL_DECLARE(rt_sigreturn)
 {
         struct process *proc = cpu_local_var(current);
-	unsigned long *regs;
+	struct x86_cpu_local_variables *v = get_x86_this_cpu_local();
+	struct x86_regs *regs;
 
-	asm volatile ("movq %%gs:132,%0" : "=r" (regs));
-	regs -= 16;
+	regs = (struct x86_regs *)v->kernel_stack;
+	--regs;
+
         memcpy(regs, proc->sigstack, 128);
 
 	proc->sigmask.__val[0] = proc->supmask.__val[0];
@@ -106,8 +109,9 @@ extern void interrupt_syscall(int all);
 extern int num_processors;
 
 void
-do_signal(unsigned long rc, unsigned long *regs, struct process *proc, struct sig_pending *pending)
+do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pending *pending)
 {
+	struct x86_regs *regs = regs0;
 	struct k_sigaction *k;
 	int	sig;
 	__sigset_t w;
@@ -116,15 +120,17 @@ do_signal(unsigned long rc, unsigned long *regs, struct process *proc, struct si
 	for(w = pending->sigmask.__val[0], sig = 0; w; sig++, w >>= 1);
 
 	if(sig == SIGKILL || sig == SIGTERM)
-		terminate(0, sig, (ihk_mc_user_context_t *)regs[14]);
+		terminate(0, sig, (ihk_mc_user_context_t *)regs->rsp);
 
 	irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
 	if(regs == NULL){ /* call from syscall */
-		asm volatile ("movq %%gs:132,%0" : "=r" (regs));
-		regs -= 16;
+		struct x86_cpu_local_variables *v = get_x86_this_cpu_local();
+
+		regs = (struct x86_regs *)v->kernel_stack;
+		--regs;
 	}
 	else{
-		rc = regs[9]; /* rax */
+		rc = regs->rax;
 	}
 	k = proc->sighandler->action + sig - 1;
 
@@ -136,15 +142,15 @@ do_signal(unsigned long rc, unsigned long *regs, struct process *proc, struct si
 	else if(k->sa.sa_handler){
 		unsigned long *usp; /* user stack */
 
-		usp = (void *)regs[14];
+		usp = (void *)regs->rsp;
 		memcpy(proc->sigstack, regs, 128);
 		proc->sigrc = rc;
 		usp--;
 		*usp = (unsigned long)k->sa.sa_restorer;
 
-		regs[4] = (unsigned long)sig;
-		regs[11] = (unsigned long)k->sa.sa_handler;
-		regs[14] = (unsigned long)usp;
+		regs->rdi = (unsigned long)sig;
+		regs->rip = (unsigned long)k->sa.sa_handler;
+		regs->rsp = (unsigned long)usp;
 		kfree(pending);
 		proc->sigmask.__val[0] |= pending->sigmask.__val[0];
 		ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
@@ -154,13 +160,14 @@ do_signal(unsigned long rc, unsigned long *regs, struct process *proc, struct si
 		ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
 		if(sig == SIGCHLD || sig == SIGURG)
 			return;
-		terminate(0, sig, (ihk_mc_user_context_t *)regs[14]);
+		terminate(0, sig, (ihk_mc_user_context_t *)regs->rsp);
 	}
 }
 
 void
-check_signal(unsigned long rc, unsigned long *regs)
+check_signal(unsigned long rc, void *regs0)
 {
+	struct x86_regs *regs = regs0;
 	struct process *proc;
 	struct sig_pending *pending;
 	struct sig_pending *next;
@@ -175,7 +182,7 @@ check_signal(unsigned long rc, unsigned long *regs)
 	if(proc == NULL || proc->pid == 0)
 		return;
 
-	if(regs != NULL && (regs[14] & 0x8000000000000000))
+	if(regs != NULL && (regs->rsp & 0x8000000000000000))
 		return;
 
 	for(;;){
@@ -310,16 +317,17 @@ do_kill(int pid, int tid, int sig)
 }
 
 void
-set_signal(int sig, unsigned long *regs)
+set_signal(int sig, void *regs0)
 {
+	struct x86_regs *regs = regs0;
 	struct process *proc = cpu_local_var(current);
 
 	if(proc == NULL || proc->pid == 0)
 		return;
 
 	if((__sigmask(sig) & proc->sigmask.__val[0]) ||
-	   (regs[14] & 0x8000000000000000))
-		terminate(0, sig, (ihk_mc_user_context_t *)regs[14]);
+	   (regs->rsp & 0x8000000000000000))
+		terminate(0, sig, (ihk_mc_user_context_t *)regs->rsp);
 	else
 		do_kill(proc->pid, proc->tid, sig);
 }

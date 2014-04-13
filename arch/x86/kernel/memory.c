@@ -219,7 +219,15 @@ static struct page_table *__alloc_new_pt(enum ihk_mc_ap_flag ap_flag)
  *      but L2 and L1 do not!
  */
 
-#define ATTR_MASK (PTATTR_WRITABLE | PTATTR_USER | PTATTR_ACTIVE)
+static enum ihk_mc_pt_attribute attr_mask = PTATTR_WRITABLE | PTATTR_USER | PTATTR_ACTIVE;
+#define	ATTR_MASK	attr_mask
+
+void enable_ptattr_no_execute(void)
+{
+	attr_mask |= PTATTR_NO_EXECUTE;
+	return;
+}
+
 #if 0
 static unsigned long attr_to_l4attr(enum ihk_mc_pt_attribute attr)
 {
@@ -266,7 +274,7 @@ static unsigned long attr_to_l1attr(enum ihk_mc_pt_attribute attr)
 		| ((uint64_t)(l1i) << PTL1_SHIFT)	\
 		)
 
-void set_pte(pte_t *ppte, unsigned long phys, int attr)
+void set_pte(pte_t *ppte, unsigned long phys, enum ihk_mc_pt_attribute attr)
 {
 	if (attr & PTATTR_LARGEPAGE) {
 		*ppte = phys | attr_to_l2attr(attr) | PFL2_SIZE;
@@ -285,7 +293,7 @@ void set_pte(pte_t *ppte, unsigned long phys, int attr)
  *             and returns a pointer to the PTE corresponding to the
  *             virtual address.
  */
-pte_t *get_pte(struct page_table *pt, void *virt, int attr, enum ihk_mc_ap_flag ap_flag)
+pte_t *get_pte(struct page_table *pt, void *virt, enum ihk_mc_pt_attribute attr, enum ihk_mc_ap_flag ap_flag)
 {
 	int l4idx, l3idx, l2idx, l1idx;
 	unsigned long v = (unsigned long)virt;
@@ -341,7 +349,7 @@ pte_t *get_pte(struct page_table *pt, void *virt, int attr, enum ihk_mc_ap_flag 
 #endif
 
 static int __set_pt_page(struct page_table *pt, void *virt, unsigned long phys,
-                         int attr)
+                         enum ihk_mc_pt_attribute attr)
 {
 	int l4idx, l3idx, l2idx, l1idx;
 	unsigned long v = (unsigned long)virt;
@@ -1666,21 +1674,25 @@ void *map_fixed_area(unsigned long phys, unsigned long size, int uncachable)
 {
 	unsigned long poffset, paligned;
 	int i, npages;
-	int flag = PTATTR_WRITABLE | PTATTR_ACTIVE;
 	void *v = (void *)fixed_virt;
+	enum ihk_mc_pt_attribute attr;
 
 	poffset = phys & (PAGE_SIZE - 1);
 	paligned = phys & PAGE_MASK;
 	npages = (poffset + size + PAGE_SIZE - 1) >> PAGE_SHIFT;
 
+	attr = PTATTR_WRITABLE | PTATTR_ACTIVE;
+#if 0	/* In the case of LAPIC MMIO, something will happen */
+	attr |= PTATTR_NO_EXECUTE;
+#endif
 	if (uncachable) {
-		flag |= PTATTR_UNCACHABLE;
+		attr |= PTATTR_UNCACHABLE;
 	}
 
 	kprintf("map_fixed: %lx => %p (%d pages)\n", paligned, v, npages);
 
 	for (i = 0; i < npages; i++) {
-		if(__set_pt_page(init_pt, (void *)fixed_virt, paligned, flag)){
+		if(__set_pt_page(init_pt, (void *)fixed_virt, paligned, attr)){
 			return NULL;
 		}
 
@@ -1695,7 +1707,7 @@ void *map_fixed_area(unsigned long phys, unsigned long size, int uncachable)
 
 void init_low_area(struct page_table *pt)
 {
-	set_pt_large_page(pt, 0, 0, PTATTR_WRITABLE);
+	set_pt_large_page(pt, 0, 0, PTATTR_NO_EXECUTE|PTATTR_WRITABLE);
 }
 
 static void init_vsyscall_area(struct page_table *pt)

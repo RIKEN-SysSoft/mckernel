@@ -159,6 +159,7 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	fseek(fp, hdr.e_phoff, SEEK_SET);
 	j = 0;
 	desc->num_sections = nhdrs;
+	desc->stack_prot = PROT_READ | PROT_WRITE | PROT_EXEC;	/* default */
 	for (i = 0; i < hdr.e_phnum; i++) {
 		if (fread(&phdr, sizeof(phdr), 1, fp) < 1) {
 			__eprintf("Loading phdr failed (%d)\n", i);
@@ -204,6 +205,12 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 				load_addr_set = 1;
 				load_addr = phdr.p_vaddr - phdr.p_offset;
 			}
+		}
+		if (phdr.p_type == PT_GNU_STACK) {
+			desc->stack_prot = PROT_NONE;
+			desc->stack_prot |= (phdr.p_flags & PF_R)? PROT_READ: 0;
+			desc->stack_prot |= (phdr.p_flags & PF_W)? PROT_WRITE: 0;
+			desc->stack_prot |= (phdr.p_flags & PF_X)? PROT_EXEC: 0;
 		}
 	}
 	desc->pid = getpid();
@@ -495,14 +502,19 @@ struct thread_data_s {
 	int cpu;
 	int ret;
 	pthread_mutex_t *lock;
+	pthread_barrier_t *init_ready;
 } *thread_data;
 int ncpu;
 pid_t master_tid;
+
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_barrier_t init_ready;
 
 static void *main_loop_thread_func(void *arg)
 {
 	struct thread_data_s *td = (struct thread_data_s *)arg;
 
+	pthread_barrier_wait(&init_ready);
 	td->ret = main_loop(td->fd, td->cpu, td->lock);
 
 	return NULL;
@@ -570,6 +582,53 @@ void print_usage(char **argv)
 	fprintf(stderr, "Usage: %s [-c target_core] [<mcos-id>] (program) [args...]\n", argv[0]);
 }
 
+void init_sigaction(void)
+{
+	int i;
+
+	master_tid = gettid();
+	for (i = 1; i <= 64; i++) {
+		if (i != SIGCHLD && i != SIGCONT && i != SIGSTOP &&
+		    i != SIGTSTP && i != SIGTTIN && i != SIGTTOU) {
+			struct sigaction act;
+
+			sigaction(i, NULL, &act);
+			act.sa_sigaction = sendsig;
+			act.sa_flags &= ~(SA_RESTART);
+			act.sa_flags |= SA_SIGINFO;
+			sigaction(i, &act, NULL);
+		}
+	}
+}		
+
+void init_worker_threads(int fd) 
+{
+	int i;
+
+	pthread_mutex_init(&lock, NULL);
+	pthread_barrier_init(&init_ready, NULL, ncpu + 2);
+
+	for (i = 0; i <= ncpu; ++i) {
+		int ret;
+
+		thread_data[i].fd = fd;
+		thread_data[i].cpu = i;
+		thread_data[i].lock = &lock;
+		thread_data[i].init_ready = &init_ready;
+		ret = pthread_create(&thread_data[i].thread_id, NULL, 
+		                     &main_loop_thread_func, &thread_data[i]);
+
+		if (ret < 0) {
+			printf("ERROR: creating syscall threads\n");
+			exit(1);
+		}
+	}
+
+	pthread_barrier_wait(&init_ready);
+}	
+
+char dev[64];
+
 int main(int argc, char **argv)
 {
 //	int fd;
@@ -582,11 +641,9 @@ int main(int argc, char **argv)
 	int envs_len;
 	char *envs;
 	char *args;
-	char dev[64];
 	char **a;
 	char *p;
 	int i;
-	pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 	FILE *interp = NULL;
 	char *interp_path;
 	char *path;
@@ -666,9 +723,9 @@ int main(int argc, char **argv)
 
 	__dprintf("target_core: %d, device: %s, command: ", target_core, dev);
 	for (i = 1; i < argc; ++i) {
-		printf("%s ", argv[i]);
+		__dprintf("%s ", argv[i]);
 	}
-	printf("\n");
+	__dprintf("\n");
 
 	fp = fopen(argv[1], "rb");
 	if (!fp) {
@@ -825,33 +882,9 @@ int main(int argc, char **argv)
 	__dprint("mccmd server initialized\n");
 #endif
 
-	master_tid = gettid();
-	for (i = 1; i <= 64; i++)
-		if (i != SIGCHLD && i != SIGCONT && i != SIGSTOP &&
-		    i != SIGTSTP && i != SIGTTIN && i != SIGTTOU){
-			struct sigaction act;
+	init_sigaction();
 
-			sigaction(i, NULL, &act);
-			act.sa_sigaction = sendsig;
-			act.sa_flags &= ~(SA_RESTART);
-			act.sa_flags |= SA_SIGINFO;
-			sigaction(i, &act, NULL);
-		}
-
-	for (i = 0; i <= ncpu; ++i) {
-		int ret;
-
-		thread_data[i].fd = fd;
-		thread_data[i].cpu = i;
-		thread_data[i].lock = &lock;
-		ret = pthread_create(&thread_data[i].thread_id, NULL, 
-		                     &main_loop_thread_func, &thread_data[i]);
-
-		if (ret < 0) {
-			printf("ERROR: creating syscall threads\n");
-			exit(1);
-		}
-	}
+	init_worker_threads(fd);
 
 	if (ioctl(fd, MCEXEC_UP_START_IMAGE, (unsigned long)desc) != 0) {
 		perror("exec");
@@ -933,7 +966,6 @@ kill_thread(unsigned long cpu)
 	}
 }
 
-#if 0
 static long do_strncpy_from_user(int fd, void *dest, void *src, unsigned long n)
 {
 	struct strncpy_from_user_desc desc;
@@ -952,7 +984,6 @@ static long do_strncpy_from_user(int fd, void *dest, void *src, unsigned long n)
 
 	return desc.result;
 }
-#endif
 
 #define SET_ERR(ret) if (ret == -1) ret = -errno
 
@@ -964,6 +995,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 	int sig;
 	int term;
 	struct timeval tv;
+	char pathbuf[PATH_MAX];
 
 	w.cpu = cpu;
 	w.pid = getpid();
@@ -982,9 +1014,17 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 
 		switch (w.sr.number) {
 		case __NR_open:
-			__dprintf("open: %s\n", (char *)w.sr.args[0]);
+			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[0], PATH_MAX);
+			if (ret >= PATH_MAX) {
+				ret = -ENAMETOOLONG;
+			}
+			if (ret < 0) {
+				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+				break;
+			}
+			__dprintf("open: %s\n", pathbuf);
 
-			fn = (char *)w.sr.args[0];
+			fn = pathbuf;
 			if(!strcmp(fn, "/proc/meminfo")){
 				fn = "/admin/fs/attached/files/proc/meminfo";
 			}
@@ -1067,6 +1107,55 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			break;
 		}
 #endif
+		case __NR_fork: {
+			int child;
+
+			child = fork();
+
+			switch (child) {
+				/* Error */
+				case -1:
+					do_syscall_return(fd, cpu, -1, 0, 0, 0, 0);
+					break;
+
+				/* Child process */
+				case 0: {
+					int i;
+
+					/* Reopen device fd */
+					close(fd);
+					fd = open(dev, O_RDWR);
+					if (fd < 0) {
+						/* TODO: tell parent something went wrong? */
+						fprintf(stderr, "ERROR: opening %s\n", dev);
+						return 1;
+					}
+					
+					/* Reinit signals and syscall threads */
+					init_sigaction();
+					init_worker_threads(fd);
+
+					__dprintf("pid(%d): signals and syscall threads OK\n", 
+							getpid());
+				
+					/* TODO: does the forked thread run in a pthread context? */
+					for (i = 0; i <= ncpu; ++i) {
+						pthread_join(thread_data[i].thread_id, NULL);
+					}
+
+					return 0;
+				}
+				
+				/* Parent */
+				default:
+					
+					do_syscall_return(fd, cpu, child, 0, 0, 0, 0);
+					break;
+			}
+
+			break;
+		}
+
 		default:
 			 ret = do_generic_syscall(&w);
 			 do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
