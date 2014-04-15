@@ -413,7 +413,7 @@ static int __set_pt_page(struct page_table *pt, void *virt, unsigned long phys,
 	}
 
 	if (pt->entry[l1idx] & PFL1_PRESENT) {
-		if ((pt->entry[l1idx] & PAGE_MASK) != phys) {
+		if ((pt->entry[l1idx] & PT_PHYSMASK) != phys) {
 			return -EBUSY;
 		} else {
 			return 0;
@@ -505,7 +505,7 @@ int ihk_mc_pt_virt_to_phys(struct page_table *pt,
 		return -EFAULT;
 	}
 
-	*phys = (pt->entry[l1idx] & PAGE_MASK) | (v & (PAGE_SIZE - 1));
+	*phys = (pt->entry[l1idx] & PT_PHYSMASK) | (v & (PAGE_SIZE - 1));
 	return 0;
 }
 
