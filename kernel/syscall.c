@@ -981,6 +981,9 @@ SYSCALL_DECLARE(clone)
 
 	if (clone_flags & CLONE_VM) {
 		new->pid = cpu_local_var(current)->pid;
+		
+		request1.number = __NR_gettid;
+		new->tid = do_syscall(&request1, &ctx1, cpuid, new->pid);
 	}
 	/* fork() a new process on the host */
 	else {
@@ -993,6 +996,9 @@ SYSCALL_DECLARE(clone)
 			/* TODO: clean-up new */
 			return -EFAULT;
 		}
+
+		/* In a single threaded process TID equals to PID */
+		new->tid = new->pid;
 
 		dkprintf("fork(): new pid: %d\n", new->pid);
 		/* clear user space PTEs and set new rpgtable so that consequent 
@@ -1012,9 +1018,6 @@ SYSCALL_DECLARE(clone)
 		}		
 	}
 	
-	request1.number = __NR_gettid;
-	new->tid = do_syscall(&request1, &ctx1, cpuid, new->pid);
-
 	if (clone_flags & CLONE_PARENT_SETTID) {
 		dkprintf("clone_flags & CLONE_PARENT_SETTID: 0x%lX\n",
 		         (unsigned long)ihk_mc_syscall_arg2(ctx));
