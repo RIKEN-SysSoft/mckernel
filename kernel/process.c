@@ -84,14 +84,11 @@ struct process *create_process(unsigned long user_pc)
 
 	proc->sighandler = kmalloc(sizeof(struct sig_handler), IHK_MC_AP_NOWAIT);
 	if(!proc->sighandler){
-		ihk_mc_free_pages(proc, KERNEL_STACK_NR_PAGES);
-		return NULL;
+		goto err_free_process;
 	}
 	proc->sigshared = kmalloc(sizeof(struct sig_shared), IHK_MC_AP_NOWAIT);
 	if(!proc->sigshared){
-		ihk_mc_free_pages(proc->sighandler, KERNEL_STACK_NR_PAGES);
-		ihk_mc_free_pages(proc, KERNEL_STACK_NR_PAGES);
-		return NULL;
+		goto err_free_sighandler;
 	}
 	memset(proc->sighandler, '\0', sizeof(struct sig_handler));
 	ihk_atomic_set(&proc->sighandler->use, 1);
@@ -109,16 +106,24 @@ struct process *create_process(unsigned long user_pc)
 	proc->vm = (struct process_vm *)(proc + 1);
 
 	if(init_process_vm(proc, proc->vm) != 0){
-		kfree(proc->sigshared);
-		kfree(proc->sighandler);
-		ihk_mc_free_pages(proc, KERNEL_STACK_NR_PAGES);
-		return NULL;
+		goto err_free_sigshared;
 	}
 
 	ihk_mc_spinlock_init(&proc->spin_sleep_lock);
 	proc->spin_sleep = 0;
 
 	return proc;
+
+err_free_sigshared:
+	kfree(proc->sigshared);
+
+err_free_sighandler:
+	kfree(proc->sighandler);
+
+err_free_process:
+	ihk_mc_free_pages(proc, KERNEL_STACK_NR_PAGES);
+	
+	return NULL;
 }
 
 struct process *clone_process(struct process *org, unsigned long pc,
