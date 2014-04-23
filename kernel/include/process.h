@@ -161,7 +161,7 @@ struct process *clone_process(struct process *org, unsigned long pc,
                               unsigned long sp, int clone_flags);
 void destroy_process(struct process *proc);
 void hold_process(struct process *proc);
-void free_process(struct process *proc);
+void release_process(struct process *proc);
 void flush_process_memory(struct process *proc);
 void free_process_memory(struct process *proc);
 int populate_process_memory(struct process *proc, void *start, size_t len);

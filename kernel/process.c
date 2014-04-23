@@ -222,7 +222,7 @@ err_free_sighandler:
 
 err_free_proc:
 	ihk_mc_free_pages(proc, KERNEL_STACK_NR_PAGES);
-	
+	release_process(org);
 	return NULL;
 }
 
@@ -1570,7 +1570,7 @@ void free_process_memory(struct process *proc)
 	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 
 	ihk_mc_pt_destroy(vm->page_table);
-	free_process(vm->owner_process);
+	release_process(vm->owner_process);
 }
 
 int populate_process_memory(struct process *proc, void *start, size_t len)
@@ -1628,7 +1628,7 @@ void destroy_process(struct process *proc)
 	ihk_mc_free_pages(proc, KERNEL_STACK_NR_PAGES);
 }
 
-void free_process(struct process *proc)
+void release_process(struct process *proc)
 {
 	if (!ihk_atomic_dec_and_test(&proc->refcount)) {
 		return;
@@ -1748,7 +1748,7 @@ void schedule(void)
 
 		if ((last != NULL) && (last->status & (PS_ZOMBIE | PS_EXITED))) {
 			free_process_memory(last);
-			free_process(last);
+			release_process(last);
 		}
 	}
 	else {
