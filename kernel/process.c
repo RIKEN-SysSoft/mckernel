@@ -44,13 +44,63 @@
 
 
 #define USER_STACK_NR_PAGES 8192
-#define KERNEL_STACK_NR_PAGES 24
+#define KERNEL_STACK_NR_PAGES 25
 
 extern long do_arch_prctl(unsigned long code, unsigned long address);
 static void insert_vm_range_list(struct process_vm *vm, 
 		struct vm_range *newrange);
 static int copy_user_ranges(struct process *proc, struct process *org);
 enum ihk_mc_pt_attribute vrflag_to_ptattr(unsigned long flag);
+	
+
+void hold_fork_tree_node(struct fork_tree_node *ftn)
+{
+	ihk_atomic_inc(&ftn->refcount);
+	dkprintf("hold ftn(%d): %d\n", 
+			ftn->pid, ihk_atomic_read(&ftn->refcount));
+}
+
+void release_fork_tree_node(struct fork_tree_node *ftn)
+{
+	dkprintf("release ftn(%d): %d\n", 
+			ftn->pid, ihk_atomic_read(&ftn->refcount));
+	
+	if (!ihk_atomic_dec_and_test(&ftn->refcount)) {
+		return;
+	}
+	
+	dkprintf("dealloc ftn(%d): %d\n", 
+			ftn->pid, ihk_atomic_read(&ftn->refcount));
+	
+	/* Dealloc */
+	kfree(ftn);
+}
+
+
+void init_fork_tree_node(struct fork_tree_node *ftn, 
+		struct fork_tree_node *parent, struct process *owner)
+{
+	ihk_mc_spinlock_init(&ftn->lock);
+	/* Only the process/thread holds a reference at this point */
+	ihk_atomic_set(&ftn->refcount, 1);
+	
+	ftn->owner = owner;
+
+	/* These will be filled out when changing status */
+	ftn->pid = -1;
+	ftn->exit_status = -1;
+	ftn->status = PS_RUNNING;
+
+	ftn->parent = NULL;
+	if (parent) {
+		ftn->parent = parent;
+	}
+
+	INIT_LIST_HEAD(&ftn->children);
+	INIT_LIST_HEAD(&ftn->siblings_list);
+	
+	waitq_init(&ftn->waitpid_q);
+}
 
 static int init_process_vm(struct process *owner, struct process_vm *vm)
 {
@@ -80,7 +130,7 @@ struct process *create_process(unsigned long user_pc)
 		return NULL;
 
 	memset(proc, 0, sizeof(struct process));
-	ihk_atomic_set(&proc->refcount, 2);	/* one for exit, another for wait */
+	ihk_atomic_set(&proc->refcount, 1);	
 
 	proc->sighandler = kmalloc(sizeof(struct sig_handler), IHK_MC_AP_NOWAIT);
 	if(!proc->sighandler){
@@ -104,6 +154,13 @@ struct process *create_process(unsigned long user_pc)
 							 KERNEL_STACK_NR_PAGES * PAGE_SIZE, user_pc, 0);
 
 	proc->vm = (struct process_vm *)(proc + 1);
+
+	proc->ftn = kmalloc(sizeof(struct fork_tree_node), IHK_MC_AP_NOWAIT);
+	if (!proc->ftn) {
+		goto err_free_sigshared;
+	}
+
+	init_fork_tree_node(proc->ftn, NULL, proc);
 
 	if(init_process_vm(proc, proc->vm) != 0){
 		goto err_free_sigshared;
@@ -137,7 +194,7 @@ struct process *clone_process(struct process *org, unsigned long pc,
 	}
 
 	memset(proc, 0, sizeof(struct process));
-	ihk_atomic_set(&proc->refcount, 2);	/* one for exit, another for wait */
+	ihk_atomic_set(&proc->refcount, 1);	
 
 	/* NOTE: sp is the user mode stack! */
 	ihk_mc_init_user_process(&proc->ctx, &proc->uctx,
@@ -149,6 +206,14 @@ struct process *clone_process(struct process *org, unsigned long pc,
 	ihk_mc_modify_user_context(proc->uctx, IHK_UCR_PROGRAM_COUNTER, pc);
 
 	proc->rlimit_stack = org->rlimit_stack;
+	
+	proc->ftn = kmalloc(sizeof(struct fork_tree_node), IHK_MC_AP_NOWAIT);
+	if (!proc->ftn) {
+		goto err_free_sigshared;
+	}
+
+	init_fork_tree_node(proc->ftn, (clone_flags & CLONE_VM) ? NULL : org->ftn,
+			proc);
 
 	/* clone() */
 	if (clone_flags & CLONE_VM) {
@@ -207,6 +272,17 @@ struct process *clone_process(struct process *org, unsigned long pc,
 		}
 		
 		dkprintf("fork(): copy_user_ranges() OK\n");
+		
+		/* Add proc's fork_tree_node to parent's children list */
+		ihk_mc_spinlock_lock_noirq(&org->ftn->lock);
+		list_add_tail(&proc->ftn->siblings_list, &org->ftn->children);
+		ihk_mc_spinlock_unlock_noirq(&org->ftn->lock);	
+
+		/* We hold a reference to parent */
+		hold_fork_tree_node(proc->ftn->parent);
+		
+		/* Parent holds a reference to us */
+		hold_fork_tree_node(proc->ftn);
 	}
 
 	ihk_mc_spinlock_init(&proc->spin_sleep_lock);
@@ -1610,6 +1686,9 @@ void destroy_process(struct process *proc)
 {
 	struct sig_pending *pending;
 	struct sig_pending *next;
+
+	free_process_memory(proc);	
+
 	if(ihk_atomic_dec_and_test(&proc->sighandler->use)){
 		kfree(proc->sighandler);
 	}

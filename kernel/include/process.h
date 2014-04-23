@@ -52,6 +52,32 @@
 
 #define PS_NORMAL	(PS_INTERRUPTIBLE | PS_UNINTERRUPTIBLE)
 
+/* Waitpid options */
+#define WNOHANG		0x00000001
+#define WUNTRACED	0x00000002
+#define WSTOPPED	WUNTRACED
+#define WEXITED		0x00000004
+#define WCONTINUED	0x00000008
+#define WNOWAIT		0x01000000	/* Don't reap, just poll status.  */
+
+/* If WIFEXITED(STATUS), the low-order 8 bits of the status.  */
+#define	__WEXITSTATUS(status)	(((status) & 0xff00) >> 8)
+
+/* If WIFSIGNALED(STATUS), the terminating signal.  */
+#define	__WTERMSIG(status)	((status) & 0x7f)
+
+/* If WIFSTOPPED(STATUS), the signal that stopped the child.  */
+#define	__WSTOPSIG(status)	__WEXITSTATUS(status)
+
+/* Nonzero if STATUS indicates normal termination.  */
+#define	__WIFEXITED(status)	(__WTERMSIG(status) == 0)
+
+/* Nonzero if STATUS indicates termination by a signal.  */
+#define __WIFSIGNALED(status) \
+  (((signed char) (((status) & 0x7f) + 1) >> 1) > 0)
+
+/* Nonzero if STATUS indicates the child is stopped.  */
+#define	__WIFSTOPPED(status)	(((status) & 0xff) == 0x7f)
 #ifdef ATTACHED_MIC
 //#define USE_LARGE_PAGES
 #endif
@@ -88,7 +114,7 @@ struct sig_handler {
 struct sig_pending {
 	struct list_head list;
 	sigset_t sigmask;
-	// TODO: siginfo
+	siginfo_t info;
 };
 
 struct sig_shared {
@@ -98,6 +124,29 @@ struct sig_shared {
 };
 
 typedef void pgio_func_t(void *arg);
+
+/* Represents a node in the process fork tree, it may exist even after the 
+ * corresponding process exited due to references from the parent and/or 
+ * children and is used for implementing wait/waitpid without having a 
+ * special "init" process */
+struct fork_tree_node {
+	ihk_spinlock_t lock;
+	ihk_atomic_t refcount;
+	int exit_status;
+	int status;
+
+	struct process *owner;
+	int pid;
+	
+	struct fork_tree_node *parent;
+	struct list_head children;
+	struct list_head siblings_list;
+	
+	struct waitq waitpid_q;
+};
+
+void hold_fork_tree_node(struct fork_tree_node *ftn);
+void release_fork_tree_node(struct fork_tree_node *ftn);
 
 struct process {
 	int pid;
@@ -136,6 +185,8 @@ struct process {
 	struct rlimit rlimit_stack;
 	pgio_func_t *pgio_fp;
 	void *pgio_arg;
+
+	struct fork_tree_node *ftn;
 };
 
 struct process_vm {

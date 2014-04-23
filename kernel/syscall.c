@@ -222,11 +222,138 @@ long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx)
 	SYSCALL_FOOTER;
 }
 
+void sigchld_parent(struct process *parent, int status)
+{
+	struct process *proc = cpu_local_var(current);
+	int irqstate;
+	struct sig_pending *pending;
+	struct list_head *head;
+	__sigset_t mask;
+
+	mask = __sigmask(SIGCHLD);
+
+	head = &parent->sigpending;
+	irqstate = ihk_mc_spinlock_lock(&parent->sigpendinglock);
+
+	list_for_each_entry(pending, head, list) {
+		if (pending->sigmask.__val[0] == mask)
+			break;
+	}
+
+	if (&pending->list == head) {
+		pending = kmalloc(sizeof(struct sig_pending), IHK_MC_AP_NOWAIT);
+		
+		if (!pending) {
+			/* TODO: what to do here?? */
+			panic("ERROR: not enough memory for signaling parent process!");
+		}
+
+		pending->sigmask.__val[0] = mask;
+		pending->info.si_signo = SIGCHLD;
+		pending->info._sifields._sigchld.si_pid = proc->pid;
+		pending->info._sifields._sigchld.si_status = status;
+
+		list_add_tail(&pending->list, head);
+		proc->sigevent = 1;
+	}
+	/* TODO: There was a SIGCHLD pending */
+	else {
+
+	}
+
+	ihk_mc_spinlock_unlock(&parent->sigpendinglock, irqstate);
+}
+
+/* 
+ * From glibc: INLINE_SYSCALL (wait4, 4, pid, stat_loc, options, NULL);
+ */
+SYSCALL_DECLARE(wait4)
+{
+	struct process *proc = cpu_local_var(current);
+	struct fork_tree_node *child, *child_iter;
+	int pid = (int)ihk_mc_syscall_arg0(ctx);
+	int *status = (int *)ihk_mc_syscall_arg1(ctx);
+	int options = (int)ihk_mc_syscall_arg2(ctx);
+	int ret;
+	struct waitq_entry waitpid_wqe;
+
+rescan:
+	child = NULL;
+	pid = (int)ihk_mc_syscall_arg0(ctx);	
+	
+	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
+	
+	list_for_each_entry(child_iter, &proc->ftn->children, siblings_list) {	
+		ihk_mc_spinlock_lock_noirq(&child_iter->lock);
+		
+		if (child_iter->status == PS_ZOMBIE
+			&& (pid == -1 || pid == child_iter->pid)) {
+			child = child_iter;
+			ihk_mc_spinlock_unlock_noirq(&child_iter->lock);
+			break;
+		}
+		
+		ihk_mc_spinlock_unlock_noirq(&child_iter->lock);
+	}
+
+	if (child) {
+		struct syscall_request request IHK_DMA_ALIGN;
+
+		dkprintf("wait: found PS_ZOMBIE process: %d\n", child->pid);
+		
+		list_del(&child->siblings_list);	
+		ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
+
+		*status = child->exit_status;
+		pid = child->pid;
+		
+		release_fork_tree_node(child);
+
+		/* Ask host to clean up exited child */
+		request.number = __NR_wait4;
+		request.args[0] = pid;
+		request.args[1] = 0;
+		ret = do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0);
+		
+		if (ret != pid)
+			kprintf("WARNING: host waitpid failed?\n");
+		
+		goto exit;
+	}
+	
+	/* Don't sleep if WNOHANG requested */
+	if (options & WNOHANG) {
+		ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
+
+		*status = 0;
+		pid = 0;
+		goto exit;
+	}
+
+	/* Sleep */
+	waitq_init_entry(&waitpid_wqe, proc);
+	waitq_prepare_to_wait(&proc->ftn->waitpid_q, &waitpid_wqe, PS_INTERRUPTIBLE);
+
+	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
+
+	schedule();
+	dkprintf("wait4(): woken up\n");
+
+	waitq_finish_wait(&proc->ftn->waitpid_q, &waitpid_wqe);
+
+	goto rescan;
+
+exit:
+	return pid;
+}
+
 void
 terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 {
 	struct syscall_request request IHK_DMA_ALIGN;
 	struct process *proc = cpu_local_var(current);
+	struct fork_tree_node *ftn = proc->ftn;
+	struct fork_tree_node *child, *next;
 
 	request.number = __NR_exit_group;
 	request.args[0] = ((rc & 0x00ff) << 8) | (sig & 0x7f);
@@ -241,13 +368,43 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 	do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0);
 
 #define	IS_DETACHED_PROCESS(proc)	(1)	/* should be implemented in the future */
-	proc->status = PS_ZOMBIE;
-	if (IS_DETACHED_PROCESS(proc)) {
-		/* release a reference for wait(2) */
-		proc->status = PS_EXITED;
-		free_process(proc);
+
+	/* Do a "wait" on all children and detach owner process */
+	ihk_mc_spinlock_lock_noirq(&ftn->lock);
+	list_for_each_entry_safe(child, next, &ftn->children, siblings_list) {
+			
+		list_del(&child->siblings_list);
+		release_fork_tree_node(child);
 	}
 
+	ftn->owner = NULL;
+
+	ihk_mc_spinlock_unlock_noirq(&ftn->lock);	
+
+	/* Send SIGCHILD to parent */
+	if (ftn->parent) {
+		
+		ihk_mc_spinlock_lock_noirq(&ftn->lock);
+		ftn->pid = proc->pid;
+		ftn->exit_status = 0; // WIFEXITED gives true
+		ftn->status = PS_ZOMBIE;
+		ihk_mc_spinlock_unlock_noirq(&ftn->lock);	
+
+		/* Signal parent if still attached */
+		ihk_mc_spinlock_lock_noirq(&ftn->parent->lock);
+		if (ftn->parent->owner) {
+			sigchld_parent(ftn->parent->owner, 0);
+		}
+		ihk_mc_spinlock_unlock_noirq(&ftn->parent->lock);	
+		
+		/* Wake parent (if sleeping in wait4()) */
+		waitq_wakeup(&ftn->parent->waitpid_q);
+		
+		release_fork_tree_node(ftn->parent);
+	}
+
+	release_fork_tree_node(ftn);
+	release_process(proc);
 	schedule();
 }
 
@@ -1017,6 +1174,8 @@ SYSCALL_DECLARE(clone)
 			kprintf("ERROR: clearing PTEs in host process\n");
 		}		
 	}
+
+	new->ftn->pid = new->pid;
 	
 	if (clone_flags & CLONE_PARENT_SETTID) {
 		dkprintf("clone_flags & CLONE_PARENT_SETTID: 0x%lX\n",
@@ -1583,11 +1742,8 @@ SYSCALL_DECLARE(exit)
 	}
 	
 	proc->status = PS_ZOMBIE;
-	if (IS_DETACHED_PROCESS(proc)) {
-		/* release a reference for wait(2) */
-		proc->status = PS_EXITED;
-		free_process(proc);
-	}
+	
+	release_process(proc);
 
 	schedule();
 	

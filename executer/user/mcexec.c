@@ -1156,6 +1156,19 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			break;
 		}
 
+		case __NR_wait4: {
+			int status;
+			int ret;
+			pid_t pid = w.sr.args[0];
+
+			if ((ret = waitpid(pid, &status, 0)) != pid) {
+				fprintf(stderr, "ERROR: waiting for %lu\n", w.sr.args[0]);
+			}
+
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+		}
+
 		default:
 			 ret = do_generic_syscall(&w);
 			 do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
