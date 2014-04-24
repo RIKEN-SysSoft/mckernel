@@ -501,6 +501,8 @@ struct thread_data_s {
 	int fd;
 	int cpu;
 	int ret;
+	pid_t	tid;
+	int terminate;
 	pthread_mutex_t *lock;
 	pthread_barrier_t *init_ready;
 } *thread_data;
@@ -514,6 +516,7 @@ static void *main_loop_thread_func(void *arg)
 {
 	struct thread_data_s *td = (struct thread_data_s *)arg;
 
+	td->tid = gettid();
 	pthread_barrier_wait(&init_ready);
 	td->ret = main_loop(td->fd, td->cpu, td->lock);
 
@@ -524,9 +527,19 @@ void
 sendsig(int sig, siginfo_t *siginfo, void *context)
 {
 	unsigned long	param;
+	pid_t	tid = gettid();
+	int	i;
 
-	if(gettid() != master_tid)
-		return;
+	if(tid != master_tid){
+		for(i = 0; i < ncpu; i++)
+			if(thread_data[i].tid == tid){
+				if(thread_data[i].terminate)
+					return;
+				break;
+			}
+		if(i == ncpu)
+			return;
+	}
 
 	param = ((unsigned long)sig) << 32 | ((unsigned long)getpid());
 	if (ioctl(fd, MCEXEC_UP_SEND_SIGNAL, param) != 0) {
@@ -615,6 +628,7 @@ void init_worker_threads(int fd)
 		thread_data[i].cpu = i;
 		thread_data[i].lock = &lock;
 		thread_data[i].init_ready = &init_ready;
+		thread_data[i].terminate = 0;
 		ret = pthread_create(&thread_data[i].thread_id, NULL, 
 		                     &main_loop_thread_func, &thread_data[i]);
 
@@ -955,12 +969,14 @@ static void
 kill_thread(unsigned long cpu)
 {
 	if(cpu >= 0 && cpu < ncpu){
+		thread_data[cpu].terminate = 1;
 		pthread_kill(thread_data[cpu].thread_id, SIGINT);
 	}
 	else{
 		int	i;
 
 		for (i = 0; i < ncpu; ++i) {
+			thread_data[i].terminate = 1;
 			pthread_kill(thread_data[i].thread_id, SIGINT);
 		}
 	}
