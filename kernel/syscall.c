@@ -404,7 +404,10 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 	}
 
 	release_fork_tree_node(ftn);
+	
+	proc->status = PS_EXITED;
 	release_process(proc);
+	
 	schedule();
 }
 
@@ -1743,6 +1746,7 @@ SYSCALL_DECLARE(exit)
 	
 	proc->status = PS_ZOMBIE;
 	
+	release_fork_tree_node(proc->ftn);
 	release_process(proc);
 
 	schedule();
