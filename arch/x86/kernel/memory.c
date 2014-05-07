@@ -1617,11 +1617,17 @@ out:
 	return error;
 }
 
-enum ihk_mc_pt_attribute arch_vrflag_to_ptattr(unsigned long flag)
+enum ihk_mc_pt_attribute arch_vrflag_to_ptattr(unsigned long flag, uint64_t fault, pte_t *ptep)
 {
 	enum ihk_mc_pt_attribute attr;
 
-	attr = common_vrflag_to_ptattr(flag);
+	attr = common_vrflag_to_ptattr(flag, fault, ptep);
+
+	if ((fault & PF_PROT)
+			|| ((fault & PF_POPULATE) && (flag & VR_PRIVATE))) {
+		attr |= PTATTR_DIRTY;
+	}
+
 	return attr;
 }
 

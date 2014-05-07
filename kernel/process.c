@@ -380,7 +380,7 @@ static int copy_user_ranges(struct process *proc, struct process *org)
 			dkprintf("copy_user_ranges(): memcpy OK\n", pgsize);
 
 			/* Set up new PTE */
-			attr = arch_vrflag_to_ptattr(range->flag);
+			attr = arch_vrflag_to_ptattr(range->flag, PF_POPULATE, NULL);
 			if (ihk_mc_pt_set_range(proc->vm->page_table, vaddr,
 						vaddr + pgsize, virt_to_phys(pg_vaddr), attr)) {
 				kprintf("ERROR: copy_user_ranges() "
@@ -749,7 +749,7 @@ static void insert_vm_range_list(struct process_vm *vm, struct vm_range *newrang
 	return;
 }
 
-enum ihk_mc_pt_attribute common_vrflag_to_ptattr(unsigned long flag)
+enum ihk_mc_pt_attribute common_vrflag_to_ptattr(unsigned long flag, uint64_t fault, pte_t *ptep)
 {
 	enum ihk_mc_pt_attribute attr;
 
@@ -943,8 +943,8 @@ int change_prot_process_memory_range(struct process *proc,
 		goto out;
 	}
 
-	oldattr = arch_vrflag_to_ptattr(range->flag);
-	newattr = arch_vrflag_to_ptattr(newflag);
+	oldattr = arch_vrflag_to_ptattr(range->flag, PF_POPULATE, NULL);
+	newattr = arch_vrflag_to_ptattr(newflag, PF_POPULATE, NULL);
 
 	clrattr = oldattr & ~newattr;
 	setattr = newattr & ~oldattr;
@@ -985,7 +985,7 @@ out:
 }
 
 static int page_fault_process_memory_range(struct process_vm *vm,
-		struct vm_range *range, uintptr_t fault_addr)
+		struct vm_range *range, uintptr_t fault_addr, uint64_t reason)
 {
 	int error;
 	int npages;
@@ -1111,7 +1111,7 @@ static int page_fault_process_memory_range(struct process_vm *vm,
 	}
 
 	/* (5) mapping */
-	attr = arch_vrflag_to_ptattr(range->flag);
+	attr = arch_vrflag_to_ptattr(range->flag, reason, ptep);
 	if (range->memobj && (range->flag & VR_PRIVATE) && (range->flag & VR_PROT_WRITE)) {
 		/* for copy-on-write */
 		attr &= ~PTATTR_WRITABLE;
@@ -1168,7 +1168,7 @@ out:
 	return error;
 }
 
-static int protection_fault_process_memory_range(struct process_vm *vm, struct vm_range *range, uintptr_t fault_addr)
+static int protection_fault_process_memory_range(struct process_vm *vm, struct vm_range *range, uintptr_t fault_addr, uint64_t reason)
 {
 	int error;
 	pte_t *ptep;
@@ -1237,8 +1237,7 @@ static int protection_fault_process_memory_range(struct process_vm *vm, struct v
 		page_map(phys_to_page(newpa));
 	}
 
-	attr = arch_vrflag_to_ptattr(range->flag);
-	attr |= PTATTR_DIRTY;
+	attr = arch_vrflag_to_ptattr(range->flag, reason, ptep);
 	error = ihk_mc_pt_set_pte(vm->page_table, ptep, pgsize, newpa, attr);
 	if (error) {
 		kprintf("protection_fault_process_memory_range"
@@ -1298,7 +1297,7 @@ static int do_page_fault_process(struct process *proc, void *fault_addr0, uint64
 	}
 
 	if (reason & PF_PROT) {
-		error = protection_fault_process_memory_range(vm, range, fault_addr);
+		error = protection_fault_process_memory_range(vm, range, fault_addr, reason);
 		if (error) {
 			kprintf("[%d]do_page_fault_process(%p,%lx,%lx):"
 					"protection range failed. %d\n",
@@ -1319,7 +1318,7 @@ static int do_page_fault_process(struct process *proc, void *fault_addr0, uint64
 		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 
 		if (!ptep || pte_is_null(ptep)) {
-			error = page_fault_process_memory_range(vm, range, fault_addr);
+			error = page_fault_process_memory_range(vm, range, fault_addr, reason);
 			if (error == -ERESTART) {
 				goto out;
 			}
@@ -1332,7 +1331,7 @@ static int do_page_fault_process(struct process *proc, void *fault_addr0, uint64
 			}
 		}
 		else if (!pte_is_writable(ptep) && (range->flag & VR_PROT_WRITE)) {
-			error = protection_fault_process_memory_range(vm, range, fault_addr);
+			error = protection_fault_process_memory_range(vm, range, fault_addr, reason);
 			if (error) {
 				kprintf("[%d]do_page_fault_process(%p,%lx,%lx):"
 						"protection range failed. %d\n",
@@ -1343,7 +1342,7 @@ static int do_page_fault_process(struct process *proc, void *fault_addr0, uint64
 		}
 	}
 	else {
-		error = page_fault_process_memory_range(vm, range, fault_addr);
+		error = page_fault_process_memory_range(vm, range, fault_addr, reason);
 		if (error == -ERESTART) {
 			goto out;
 		}
@@ -1433,7 +1432,7 @@ int init_process_stack(struct process *process, struct program_load_desc *pn,
 	error = ihk_mc_pt_set_range(process->vm->page_table,
 			(void *)(end-minsz), (void *)end,
 			virt_to_phys(stack),
-			arch_vrflag_to_ptattr(vrflag));
+			arch_vrflag_to_ptattr(vrflag, PF_POPULATE, NULL));
 	if (error) {
 		kprintf("init_process_stack:"
 				"set range %lx-%lx %lx failed. %d\n",
