@@ -1240,6 +1240,7 @@ static int protection_fault_process_memory_range(struct process_vm *vm, struct v
 	}
 
 	attr = vrflag_to_ptattr(range->flag);
+	attr |= PTATTR_DIRTY;
 	error = ihk_mc_pt_set_pte(vm->page_table, ptep, pgsize, newpa, attr);
 	if (error) {
 		kprintf("protection_fault_process_memory_range"
