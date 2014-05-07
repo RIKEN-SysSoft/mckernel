@@ -1617,6 +1617,14 @@ out:
 	return error;
 }
 
+enum ihk_mc_pt_attribute arch_vrflag_to_ptattr(unsigned long flag)
+{
+	enum ihk_mc_pt_attribute attr;
+
+	attr = common_vrflag_to_ptattr(flag);
+	return attr;
+}
+
 void load_page_table(struct page_table *pt)
 {
 	unsigned long pt_addr;

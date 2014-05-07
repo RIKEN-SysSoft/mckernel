@@ -247,6 +247,8 @@ int init_process_stack(struct process *process, struct program_load_desc *pn,
 unsigned long extend_process_region(struct process *proc,
                                     unsigned long start, unsigned long end,
                                     unsigned long address, unsigned long flag);
+extern enum ihk_mc_pt_attribute arch_vrflag_to_ptattr(unsigned long flag);
+enum ihk_mc_pt_attribute common_vrflag_to_ptattr(unsigned long flag);
 
 void schedule(void);
 void runq_add_proc(struct process *proc, int cpu_id);

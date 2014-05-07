@@ -50,8 +50,7 @@ extern long do_arch_prctl(unsigned long code, unsigned long address);
 static void insert_vm_range_list(struct process_vm *vm, 
 		struct vm_range *newrange);
 static int copy_user_ranges(struct process *proc, struct process *org);
-enum ihk_mc_pt_attribute vrflag_to_ptattr(unsigned long flag);
-	
+
 
 void hold_fork_tree_node(struct fork_tree_node *ftn)
 {
@@ -381,7 +380,7 @@ static int copy_user_ranges(struct process *proc, struct process *org)
 			dkprintf("copy_user_ranges(): memcpy OK\n", pgsize);
 
 			/* Set up new PTE */
-			attr = vrflag_to_ptattr(range->flag);
+			attr = arch_vrflag_to_ptattr(range->flag);
 			if (ihk_mc_pt_set_range(proc->vm->page_table, vaddr,
 						vaddr + pgsize, virt_to_phys(pg_vaddr), attr)) {
 				kprintf("ERROR: copy_user_ranges() "
@@ -750,7 +749,7 @@ static void insert_vm_range_list(struct process_vm *vm, struct vm_range *newrang
 	return;
 }
 
-enum ihk_mc_pt_attribute vrflag_to_ptattr(unsigned long flag)
+enum ihk_mc_pt_attribute common_vrflag_to_ptattr(unsigned long flag)
 {
 	enum ihk_mc_pt_attribute attr;
 
@@ -777,7 +776,6 @@ enum ihk_mc_pt_attribute vrflag_to_ptattr(unsigned long flag)
 
 	return attr;
 }
-
 
 int add_process_memory_range(struct process *process,
                              unsigned long start, unsigned long end,
@@ -945,8 +943,8 @@ int change_prot_process_memory_range(struct process *proc,
 		goto out;
 	}
 
-	oldattr = vrflag_to_ptattr(range->flag);
-	newattr = vrflag_to_ptattr(newflag);
+	oldattr = arch_vrflag_to_ptattr(range->flag);
+	newattr = arch_vrflag_to_ptattr(newflag);
 
 	clrattr = oldattr & ~newattr;
 	setattr = newattr & ~oldattr;
@@ -1113,7 +1111,7 @@ static int page_fault_process_memory_range(struct process_vm *vm,
 	}
 
 	/* (5) mapping */
-	attr = vrflag_to_ptattr(range->flag);
+	attr = arch_vrflag_to_ptattr(range->flag);
 	if (range->memobj && (range->flag & VR_PRIVATE) && (range->flag & VR_PROT_WRITE)) {
 		/* for copy-on-write */
 		attr &= ~PTATTR_WRITABLE;
@@ -1239,7 +1237,7 @@ static int protection_fault_process_memory_range(struct process_vm *vm, struct v
 		page_map(phys_to_page(newpa));
 	}
 
-	attr = vrflag_to_ptattr(range->flag);
+	attr = arch_vrflag_to_ptattr(range->flag);
 	attr |= PTATTR_DIRTY;
 	error = ihk_mc_pt_set_pte(vm->page_table, ptep, pgsize, newpa, attr);
 	if (error) {
@@ -1434,7 +1432,8 @@ int init_process_stack(struct process *process, struct program_load_desc *pn,
 	memset(stack, 0, minsz);
 	error = ihk_mc_pt_set_range(process->vm->page_table,
 			(void *)(end-minsz), (void *)end,
-			virt_to_phys(stack), vrflag_to_ptattr(vrflag));
+			virt_to_phys(stack),
+			arch_vrflag_to_ptattr(vrflag));
 	if (error) {
 		kprintf("init_process_stack:"
 				"set range %lx-%lx %lx failed. %d\n",
