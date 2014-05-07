@@ -13,11 +13,13 @@
 #ifndef __HEADER_PAGE_H
 #define __HEADER_PAGE_H
 
+#include <ihk/atomic.h>
+
 struct page {
 	struct list_head	list;
 	uint8_t			mode;
 	uint8_t			padding[3];
-	int32_t			count;
+	ihk_atomic_t		count;
 	off_t			offset;
 };
 

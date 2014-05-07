@@ -343,7 +343,7 @@ int page_unmap(struct page *page)
 		return 1;
 	}
 
-	if (--page->count > 0) {
+	if (ihk_atomic_sub_return(1, &page->count) > 0) {
 		/* other mapping exist */
 		dkprintf("page_unmap(%p %x %d): 0\n",
 				page, page->mode, page->count);
@@ -363,6 +363,9 @@ static void page_init(void)
 	size_t allocsize;
 	size_t allocpages;
 
+	if (sizeof(ihk_atomic_t) != sizeof(uint32_t)) {
+		panic("sizeof(ihk_atomic_t) is not 32 bit");
+	}
 	npages = (pa_end - pa_start) >> PAGE_SHIFT;
 	allocsize = sizeof(struct page) * npages;
 	allocpages = (allocsize + PAGE_SIZE - 1) >> PAGE_SHIFT;

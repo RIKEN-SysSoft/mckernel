@@ -253,23 +253,25 @@ static void fileobj_release(struct memobj *memobj)
 		/* zap page_list */
 		for (;;) {
 			struct page *page;
+			int count;
 
 			page = page_list_first(obj);
 			if (!page) {
 				break;
 			}
 			page_list_remove(obj, page);
+			count = ihk_atomic_sub_return(1, &page->count);
 
 			if (!((page->mode == PM_WILL_PAGEIO)
 					|| (page->mode == PM_DONE_PAGEIO)
 					|| (page->mode == PM_PAGEIO_EOF)
 					|| (page->mode == PM_PAGEIO_ERROR)
 					|| ((page->mode == PM_MAPPED)
-						&& (page->count <= 0)))) {
+						&& (count <= 0)))) {
 				kprintf("fileobj_release(%p %lx): "
 					       "mode %x, count %d, off %lx\n",
 					       obj, obj->handle, page->mode,
-					       page->count, page->offset);
+					       count, page->offset);
 				panic("fileobj_release");
 			}
 
@@ -429,6 +431,7 @@ static int fileobj_get_page(struct memobj *memobj, off_t off, int p2align, uintp
 			}
 			page->mode = PM_WILL_PAGEIO;
 			page->offset = off;
+			ihk_atomic_set(&page->count, 1);
 			page_list_insert(obj, page);
 		}
 
@@ -448,7 +451,6 @@ static int fileobj_get_page(struct memobj *memobj, off_t off, int p2align, uintp
 	}
 	else if (page->mode == PM_DONE_PAGEIO) {
 		page->mode = PM_MAPPED;
-		page->count = 0;
 	}
 	else if (page->mode == PM_PAGEIO_EOF) {
 		error = -ERANGE;
@@ -459,7 +461,7 @@ static int fileobj_get_page(struct memobj *memobj, off_t off, int p2align, uintp
 		goto out;
 	}
 
-	++page->count;
+	ihk_atomic_inc(&page->count);
 
 	error = 0;
 	*physp = page_to_phys(page);
@@ -486,6 +488,7 @@ static uintptr_t fileobj_copy_page(
 	void *newkva = NULL;
 	uintptr_t newpa = -1;
 	void *orgkva;
+	int count;
 
 	dkprintf("fileobj_copy_page(%p,%lx,%d)\n", memobj, orgpa, p2align);
 	if (p2align != PAGE_P2ALIGN) {
@@ -500,22 +503,24 @@ static uintptr_t fileobj_copy_page(
 					memobj, orgpa, p2align, orgpage->mode);
 			panic("fileobj_copy_page:invalid cow page");
 		}
-		if (orgpage->count == 1) {	// XXX: private only
+		count = ihk_atomic_read(&orgpage->count);
+		if (count == 2) {	// XXX: private only
 			list_del(&orgpage->list);
+			ihk_atomic_dec(&orgpage->count);
 			orgpage->mode = PM_NONE;
 			newpa = orgpa;
 			break;
 		}
-		if (orgpage->count <= 0) {
+		if (count <= 0) {
 			kprintf("fileobj_copy_page(%p,%lx,%d):"
 					"orgpage count corrupted. %x\n",
-					memobj, orgpa, p2align, orgpage->count);
+					memobj, orgpa, p2align, count);
 			panic("fileobj_copy_page:orgpage count corrupted");
 		}
 		if (newkva) {
 			orgkva = phys_to_virt(orgpa);
 			memcpy(newkva, orgkva, pgsize);
-			--orgpage->count;
+			ihk_atomic_dec(&orgpage->count);
 			newpa = virt_to_phys(newkva);
 			newkva = NULL;	/* avoid ihk_mc_free_pages() */
 			break;
