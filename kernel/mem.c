@@ -97,7 +97,7 @@ void free_pages(void *va, int npages)
 	}
 	if (pendings->next != NULL) {
 		page->mode = PM_PENDING_FREE;
-		page->count = npages;
+		page->offset = npages;
 		list_add_tail(&page->list, pendings);
 		return;
 	}
@@ -131,7 +131,7 @@ void finish_free_pages_pending(void)
 		}
 		page->mode = PM_NONE;
 		list_del(&page->list);
-		ihk_pagealloc_free(pa_allocator, page_to_phys(page), page->count);
+		ihk_pagealloc_free(pa_allocator, page_to_phys(page), page->offset);
 	}
 
 	pendings->next = pendings->prev = NULL;
@@ -339,10 +339,6 @@ uintptr_t page_to_phys(struct page *page)
 int page_unmap(struct page *page)
 {
 	dkprintf("page_unmap(%p %x %d)\n", page, page->mode, page->count);
-	if (page->mode != PM_MAPPED) {
-		return 1;
-	}
-
 	if (ihk_atomic_sub_return(1, &page->count) > 0) {
 		/* other mapping exist */
 		dkprintf("page_unmap(%p %x %d): 0\n",
@@ -351,6 +347,10 @@ int page_unmap(struct page *page)
 	}
 
 	/* no mapping exist */
+	if (page->mode != PM_MAPPED) {
+		return 1;
+	}
+
 	list_del(&page->list);
 	page->mode = PM_NONE;
 	dkprintf("page_unmap(%p %x %d): 1\n", page, page->mode, page->count);

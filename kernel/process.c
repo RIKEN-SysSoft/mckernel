@@ -1090,6 +1090,7 @@ static int page_fault_process_memory_range(struct process_vm *vm,
 						p2align, IHK_MC_AP_NOWAIT);
 				if (virt) {
 					phys = virt_to_phys(virt);
+					page_map(phys_to_page(phys));
 					memset(virt, 0, pgsize);
 					break;
 				}
@@ -1160,6 +1161,7 @@ out:
 		}
 	}
 	if (virt != NULL) {
+		page_unmap(phys_to_page(phys));
 		ihk_mc_free_pages(virt, npages);
 	}
 	dkprintf("[%d]page_fault_process_memory_range(%p,%lx-%lx %lx,%lx): %d\n",
@@ -1234,6 +1236,7 @@ static int protection_fault_process_memory_range(struct process_vm *vm, struct v
 
 		memcpy(newkva, oldkva, pgsize);
 		newpa = virt_to_phys(newkva);
+		page_map(phys_to_page(newpa));
 	}
 
 	attr = vrflag_to_ptattr(range->flag);
@@ -1244,6 +1247,7 @@ static int protection_fault_process_memory_range(struct process_vm *vm, struct v
 				vm, range->start, range->end, range->flag,
 				fault_addr, error);
 		panic("protection_fault_process_memory_range:ihk_mc_pt_set_pte failed.");
+		page_unmap(phys_to_page(newpa));
 		ihk_mc_free_pages(newkva, npages);
 		goto out;
 	}

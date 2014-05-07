@@ -44,4 +44,9 @@ void free_pages(void *va, int npages);
 void begin_free_pages_pending(void);
 void finish_free_pages_pending(void);
 
+static inline void page_map(struct page *page)
+{
+	ihk_atomic_inc(&page->count);
+}
+
 #endif

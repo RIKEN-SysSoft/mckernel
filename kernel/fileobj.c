@@ -522,6 +522,7 @@ static uintptr_t fileobj_copy_page(
 			memcpy(newkva, orgkva, pgsize);
 			ihk_atomic_dec(&orgpage->count);
 			newpa = virt_to_phys(newkva);
+			page_map(phys_to_page(newpa));
 			newkva = NULL;	/* avoid ihk_mc_free_pages() */
 			break;
 		}
