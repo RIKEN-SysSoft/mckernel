@@ -49,4 +49,21 @@ static inline void page_map(struct page *page)
 	ihk_atomic_inc(&page->count);
 }
 
+static inline int page_is_in_memobj(struct page *page)
+{
+	return (0
+			|| (page->mode == PM_MAPPED)
+			|| (page->mode == PM_PAGEIO)
+			|| (page->mode == PM_WILL_PAGEIO)
+			|| (page->mode == PM_DONE_PAGEIO)
+			|| (page->mode == PM_PAGEIO_EOF)
+			|| (page->mode == PM_PAGEIO_ERROR)
+			);
+}
+
+static inline int page_is_multi_mapped(struct page *page)
+{
+	return (ihk_atomic_read(&page->count) > 1);
+}
+
 #endif
