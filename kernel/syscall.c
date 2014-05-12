@@ -303,8 +303,10 @@ rescan:
 		
 		list_del(&child->siblings_list);	
 		ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
-
-		*status = child->exit_status;
+		
+		if (status) {
+			*status = child->exit_status;
+		}
 		pid = child->pid;
 		
 		release_fork_tree_node(child);
@@ -386,7 +388,7 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 		
 		ihk_mc_spinlock_lock_noirq(&ftn->lock);
 		ftn->pid = proc->pid;
-		ftn->exit_status = 0; // WIFEXITED gives true
+		ftn->exit_status = ((rc & 0x00ff) << 8) | (sig & 0x7f);
 		ftn->status = PS_ZOMBIE;
 		ihk_mc_spinlock_unlock_noirq(&ftn->lock);	
 
