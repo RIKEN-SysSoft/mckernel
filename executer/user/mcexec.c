@@ -1084,7 +1084,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 					if(sig)
 						fprintf(stderr, "Terminate by signal %d\n", sig);
 					else if(term)
-						fprintf(stderr, "Exit status: %d\n", term);
+						__dprintf(stderr, "Exit status: %d\n", term);
 				}
 			}
 
