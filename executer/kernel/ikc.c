@@ -302,6 +302,9 @@ int prepare_ikc_channels(ihk_os_t os)
 	memcpy(&usrdata->listen_param2, &listen_param2, sizeof listen_param2);
 	ihk_ikc_listen_port(os, &usrdata->listen_param2);
 
+	INIT_LIST_HEAD(&usrdata->per_proc_list);
+	spin_lock_init(&usrdata->per_proc_list_lock);
+
 	error = init_peer_channel_registry(usrdata);
 	if (error) {
 		return error;

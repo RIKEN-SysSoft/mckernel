@@ -175,6 +175,7 @@ int translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva,
 			ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
 			ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
 			error = -EFAULT;
+			printk("ERROR: remote PTE is not present for 0x%lx (rpt: %lx) ?\n", rva, rpt);
 			goto out;
 		}
 
@@ -345,16 +346,38 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 #if USE_VM_INSERT_PFN
 	size_t			pix;
 #endif
+	struct mcctrl_per_proc_data *ppd, *ppd_iter;
+	unsigned long flags;
 
 	dprintk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
 			vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
+	
+	ppd = NULL;
+	flags = ihk_ikc_spinlock_lock(&usrdata->per_proc_list_lock);
+	
+	list_for_each_entry(ppd_iter, &usrdata->per_proc_list, list) {
+		if (ppd_iter->pid == current->tgid) {
+			ppd = ppd_iter;
+			break;
+		}
+	}
+	ihk_ikc_spinlock_unlock(&usrdata->per_proc_list_lock, flags);
+
+	if (!ppd) {
+		printk("ERROR: no per process data for pid %d\n", current->tgid);
+		return VM_FAULT_SIGBUS;
+	}
 
 	for (try = 1; ; ++try) {
-		error = translate_rva_to_rpa(usrdata->os, usrdata->rpgtable,
+		error = translate_rva_to_rpa(usrdata->os, ppd->rpgtable,
 				(unsigned long)vmf->virtual_address,
 				&rpa, &pgsize);
 #define	NTRIES 2
 		if (!error || (try >= NTRIES)) {
+			if (error) {
+				printk("translate_rva_to_rpa: error\n");
+			}
+
 			break;
 		}
 
@@ -370,7 +393,7 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 		}
 	}
 	if (error) {
-		printk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
+		printk("mcctrl:page fault error:flags %#x pgoff %#lx va %p page %p\n",
 				vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
 		return VM_FAULT_SIGBUS;
 	}
@@ -392,7 +415,7 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 #endif
 	ihk_device_unmap_memory(dev, phys, pgsize);
 	if (error) {
-		printk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
+		printk("mcctrl:page fault:remap error:flags %#x pgoff %#lx va %p page %p\n",
 				vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
 		return VM_FAULT_SIGBUS;
 	}
@@ -1150,7 +1173,25 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 	case __NR_munmap:
 		/* Set new remote page table if not zero */
 		if (sc->args[2]) {
-			usrdata->rpgtable = sc->args[2];
+			unsigned long flags;
+			struct mcctrl_per_proc_data *ppd = NULL;
+
+			ppd = kmalloc(sizeof(*ppd), GFP_ATOMIC);
+			if (!ppd) {
+				printk("ERROR: allocating per process data\n");
+				error = -ENOMEM;
+				goto out;
+			}
+
+			ppd->pid = current->tgid;
+			ppd->rpgtable = sc->args[2];
+
+			flags = ihk_ikc_spinlock_lock(&usrdata->per_proc_list_lock);
+			list_add_tail(&ppd->list, &usrdata->per_proc_list);
+			ihk_ikc_spinlock_unlock(&usrdata->per_proc_list_lock, flags);
+
+			printk("pid: %d, rpgtable: 0x%lx added\n", 
+				ppd->pid, ppd->rpgtable);
 		}
 
 		clear_pte_range(sc->args[0], sc->args[1]);

@@ -53,6 +53,8 @@ static long mcexec_prepare_image(ihk_os_t os,
 	void *args, *envs;
 	long ret = 0;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	unsigned long flags;
+	struct mcctrl_per_proc_data *ppd = NULL;
 
 	if (copy_from_user(&desc, udesc,
 	                    sizeof(struct program_load_desc))) {
@@ -117,7 +119,23 @@ static long mcexec_prepare_image(ihk_os_t os,
 		goto free_out;
 	}
 
-	usrdata->rpgtable = pdesc->rpgtable;
+	ppd = kmalloc(sizeof(*ppd), GFP_ATOMIC);
+	if (!ppd) {
+		printk("ERROR: allocating per process data\n");
+		ret = -ENOMEM;
+		goto free_out;
+	}
+
+	ppd->pid = pdesc->pid;
+	ppd->rpgtable = pdesc->rpgtable;
+
+	flags = ihk_ikc_spinlock_lock(&usrdata->per_proc_list_lock);
+	list_add_tail(&ppd->list, &usrdata->per_proc_list);
+	ihk_ikc_spinlock_unlock(&usrdata->per_proc_list_lock, flags);
+	
+	printk("pid %d, rpgtable: 0x%lx added\n", 
+		ppd->pid, ppd->rpgtable);
+
 	if (copy_to_user(udesc, pdesc, sizeof(struct program_load_desc) + 
 	             sizeof(struct program_image_section) * desc.num_sections)) {
 		ret = -EFAULT;	

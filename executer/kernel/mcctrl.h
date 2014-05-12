@@ -106,6 +106,12 @@ struct mcctrl_channel {
 	ihk_spinlock_t wq_list_lock;
 };
 
+struct mcctrl_per_proc_data {
+	struct list_head list;
+	int pid;
+	unsigned long rpgtable;	/* per process, not per OS */
+};
+
 struct mcctrl_usrdata {
 	struct ihk_ikc_listen_param listen_param;
 	struct ihk_ikc_listen_param listen_param2;
@@ -120,7 +126,9 @@ struct mcctrl_usrdata {
 	int	mcctrl_dma_abort;
 	unsigned long	last_thread_exec;
 	wait_queue_head_t	wq_prepare;
-	unsigned long	rpgtable;	/* per process, not per OS */
+	
+	struct list_head per_proc_list;
+	ihk_spinlock_t per_proc_list_lock;
 	void **keys;
 };
 
