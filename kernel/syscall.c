@@ -276,6 +276,7 @@ SYSCALL_DECLARE(wait4)
 	int options = (int)ihk_mc_syscall_arg2(ctx);
 	int ret;
 	struct waitq_entry waitpid_wqe;
+	int empty = 1;
 
 rescan:
 	child = NULL;
@@ -284,6 +285,9 @@ rescan:
 	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
 	
 	list_for_each_entry(child_iter, &proc->ftn->children, siblings_list) {	
+		
+		empty = 0;
+
 		ihk_mc_spinlock_lock_noirq(&child_iter->lock);
 		
 		if (child_iter->status == PS_ZOMBIE
@@ -294,6 +298,11 @@ rescan:
 		}
 		
 		ihk_mc_spinlock_unlock_noirq(&child_iter->lock);
+	}
+
+	if (empty) {
+		ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
+		return ECHILD;
 	}
 
 	if (child) {
