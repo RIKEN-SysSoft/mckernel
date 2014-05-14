@@ -56,6 +56,7 @@
 
 static long pager_call(ihk_os_t os, struct syscall_request *req);
 
+#ifndef DO_USER_MODE
 #ifdef SC_DEBUG
 static struct ihk_dma_request last_request;
 
@@ -67,6 +68,7 @@ static void print_dma_lastreq(void)
 	printk("SIZE   : %lx | NOTIFY : %p | PRIV : %p\n",
 	       last_request.size, last_request.notify, last_request.priv);
 }
+#endif
 #endif
 
 int init_peer_channel_registry(struct mcctrl_usrdata *ud)
