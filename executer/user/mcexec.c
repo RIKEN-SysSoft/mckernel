@@ -1167,6 +1167,7 @@ void do_syscall_return(int fd, int cpu,
 {
 	struct syscall_ret_desc desc;
 
+	__dprintf("do_syscall_return(%d,%d,%ld(%#lx),%d,%#lx,%#lx,%ld(%#lx))\n", fd, cpu, ret, ret, n, src, dest, sz, sz);
 	desc.cpu = cpu;
 	desc.ret = ret;
 	desc.src = src;
@@ -1345,7 +1346,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock, int mcosid)
 
 		/* Don't print when got a msg to stdout */
 		if (!(w.sr.number == __NR_write && w.sr.args[0] == 1))
-			__dprintf("[%d] got syscall: %ld\n", cpu, w.sr.number);
+			__dprintf("[%d] got syscall: %ld %#lx %#lx %#lx %#lx %#lx %#lx\n", cpu, w.sr.number, w.sr.args[0], w.sr.args[1], w.sr.args[2], w.sr.args[3], w.sr.args[4], w.sr.args[5]);
 		
 		//pthread_mutex_lock(lock);
 
@@ -1405,7 +1406,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock, int mcosid)
 							fprintf(stderr, "Terminate by signal %d\n", sig);
 					}
 					else if(term)
-						__dprintf("Exit status: %d\n", term);
+						__eprintf("Exit status: %d\n", term);
 				}
 			}
 
