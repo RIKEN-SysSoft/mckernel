@@ -178,9 +178,6 @@ struct process {
 	struct list_head sigpending;
 	struct sig_shared *sigshared;
 	struct sig_handler *sighandler;
-	char	sigstack[512]; // TODO: 1. move to user stack
-	                       // TODO: 2. backup FR and MMX regs
-	unsigned long sigrc; // return code of rt_sigreturn (x86_64: rax reg.)
 
 	struct rlimit rlimit_stack;
 	pgio_func_t *pgio_fp;

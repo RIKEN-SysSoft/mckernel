@@ -105,7 +105,6 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid)
 {
 	struct ikc_scd_packet packet;
 	struct syscall_response *res;
-	unsigned long fin;
 	struct syscall_params *scp;
 	struct ihk_ikc_channel_desc *syscall_channel;
 
@@ -1287,34 +1286,6 @@ do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
 		memcpy(k, act, sizeof(struct k_sigaction));
 	ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
 	return 0;
-}
-
-SYSCALL_DECLARE(rt_sigaction)
-{
-	struct process *proc = cpu_local_var(current);
-	int sig = ihk_mc_syscall_arg0(ctx);
-	const struct sigaction *act = (const struct sigaction *)ihk_mc_syscall_arg1(ctx);
-	struct sigaction *oact = (struct sigaction *)ihk_mc_syscall_arg2(ctx);
-	size_t sigsetsize = ihk_mc_syscall_arg3(ctx);
-	struct k_sigaction new_sa, old_sa;
-	int rc;
-
-	if (sigsetsize != sizeof(sigset_t))
-		return -EINVAL;
-
-	if(act)
-		if(copy_from_user(proc, &new_sa.sa, act, sizeof new_sa.sa)){
-			goto fault;
-		}
-	rc = do_sigaction(sig, act? &new_sa: NULL, oact? &old_sa: NULL);
-	if(rc == 0 && oact)
-		if(copy_to_user(proc, oact, &old_sa.sa, sizeof old_sa.sa)){
-			goto fault;
-		}
-
-	return rc;
-fault:
-	return -EFAULT;
 }
 
 SYSCALL_DECLARE(rt_sigprocmask)

@@ -25,6 +25,9 @@
 #include <kmalloc.h>
 
 void terminate(int, int, ihk_mc_user_context_t *);
+int copy_from_user(struct process *proc, void *dst, const void *src, size_t siz);
+int copy_to_user(struct process *proc, void *dst, const void *src, size_t siz);
+long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
 
 //#define DEBUG_PRINT_SC
 
@@ -87,20 +90,55 @@ int obtain_clone_cpuid() {
     return cpuid;
 }
 
+SYSCALL_DECLARE(rt_sigaction)
+{
+	struct process *proc = cpu_local_var(current);
+	int sig = ihk_mc_syscall_arg0(ctx);
+	const struct sigaction *act = (const struct sigaction *)ihk_mc_syscall_arg1(ctx);
+	struct sigaction *oact = (struct sigaction *)ihk_mc_syscall_arg2(ctx);
+	size_t sigsetsize = ihk_mc_syscall_arg3(ctx);
+	struct k_sigaction new_sa, old_sa;
+	int rc;
+
+	if (sigsetsize != sizeof(sigset_t))
+		return -EINVAL;
+
+	if(act)
+		if(copy_from_user(proc, &new_sa.sa, act, sizeof new_sa.sa)){
+			goto fault;
+		}
+	rc = do_sigaction(sig, act? &new_sa: NULL, oact? &old_sa: NULL);
+	if(rc == 0 && oact)
+		if(copy_to_user(proc, oact, &old_sa.sa, sizeof old_sa.sa)){
+			goto fault;
+		}
+
+	return rc;
+fault:
+	return -EFAULT;
+}
+
+struct sigsp {
+	struct x86_regs regs;
+	unsigned long sigrc;
+};
+
 SYSCALL_DECLARE(rt_sigreturn)
 {
-        struct process *proc = cpu_local_var(current);
-	struct x86_cpu_local_variables *v = get_x86_this_cpu_local();
+	struct process *proc = cpu_local_var(current);
 	struct x86_regs *regs;
+	struct sigsp *sigsp;
+	long rc = -EFAULT;
 
-	regs = (struct x86_regs *)v->kernel_stack;
+	asm("movq %%gs:132, %0" : "=r" (regs));
 	--regs;
 
-        memcpy(regs, proc->sigstack, 128);
-
 	proc->sigmask.__val[0] = proc->supmask.__val[0];
-
-        return proc->sigrc;
+	sigsp = (struct sigsp *)regs->rsp;
+	if(copy_from_user(proc, regs, &sigsp->regs, sizeof(struct x86_regs)))
+		return rc;
+	copy_from_user(proc, &rc, &sigsp->sigrc, sizeof(long));
+	return rc;
 }
 
 extern struct cpu_local_var *clv;
@@ -124,9 +162,7 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 
 	irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
 	if(regs == NULL){ /* call from syscall */
-		struct x86_cpu_local_variables *v = get_x86_this_cpu_local();
-
-		regs = (struct x86_regs *)v->kernel_stack;
+		asm("movq %%gs:132, %0" : "=r" (regs));
 		--regs;
 	}
 	else{
@@ -141,16 +177,26 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 	}
 	else if(k->sa.sa_handler){
 		unsigned long *usp; /* user stack */
+		struct sigsp *sigsp;
 
-		usp = (void *)regs->rsp;
-		memcpy(proc->sigstack, regs, 128);
-		proc->sigrc = rc;
+		usp = (unsigned long *)regs->rsp;
+		sigsp = ((struct sigsp *)usp) - 1;
+		if(copy_to_user(proc, &sigsp->regs, regs, sizeof(struct x86_regs)) ||
+		   copy_to_user(proc, &sigsp->sigrc, &rc, sizeof(long))){
+			kfree(pending);
+			ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
+			terminate(0, sig, (ihk_mc_user_context_t *)regs->rsp);
+			return;
+		}
+
+		usp = (unsigned long *)sigsp;
 		usp--;
 		*usp = (unsigned long)k->sa.sa_restorer;
 
 		regs->rdi = (unsigned long)sig;
 		regs->rip = (unsigned long)k->sa.sa_handler;
 		regs->rsp = (unsigned long)usp;
+
 		kfree(pending);
 		proc->sigmask.__val[0] |= pending->sigmask.__val[0];
 		ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
