@@ -1190,7 +1190,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 			list_add_tail(&ppd->list, &usrdata->per_proc_list);
 			ihk_ikc_spinlock_unlock(&usrdata->per_proc_list_lock, flags);
 
-			printk("pid: %d, rpgtable: 0x%lx added\n", 
+			dprintk("pid: %d, rpgtable: 0x%lx added\n", 
 				ppd->pid, ppd->rpgtable);
 		}
 
@@ -1219,7 +1219,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 		if (ppd) {	
 			list_del(&ppd->list);
 			
-			printk("pid: %d, tid: %d: rpgtable for %d (0x%lx) removed\n", 
+			dprintk("pid: %d, tid: %d: rpgtable for %d (0x%lx) removed\n", 
 				current->tgid, current->pid, ppd->pid, ppd->rpgtable);
 			
 			kfree(ppd);

@@ -133,7 +133,7 @@ static long mcexec_prepare_image(ihk_os_t os,
 	list_add_tail(&ppd->list, &usrdata->per_proc_list);
 	ihk_ikc_spinlock_unlock(&usrdata->per_proc_list_lock, flags);
 	
-	printk("pid %d, rpgtable: 0x%lx added\n", 
+	dprintk("pid %d, rpgtable: 0x%lx added\n", 
 		ppd->pid, ppd->rpgtable);
 
 	if (copy_to_user(udesc, pdesc, sizeof(struct program_load_desc) + 
