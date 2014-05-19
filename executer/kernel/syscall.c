@@ -1202,6 +1202,40 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 		ret = remap_user_space(sc->args[0], sc->args[1], sc->args[2]);
 		break;
 
+	case __NR_exit_group: {
+		unsigned long flags;
+		struct mcctrl_per_proc_data *ppd = NULL, *ppd_iter;
+
+		ppd = NULL;
+		flags = ihk_ikc_spinlock_lock(&usrdata->per_proc_list_lock);
+		
+		list_for_each_entry(ppd_iter, &usrdata->per_proc_list, list) {
+			if (ppd_iter->pid == current->tgid) {
+				ppd = ppd_iter;
+				break;
+			}
+		}
+		
+		if (ppd) {	
+			list_del(&ppd->list);
+			
+			printk("pid: %d, tid: %d: rpgtable for %d (0x%lx) removed\n", 
+				current->tgid, current->pid, ppd->pid, ppd->rpgtable);
+			
+			kfree(ppd);
+		}
+		else {
+			printk("WARNING: no per process data for pid %d ?\n", 
+					current->tgid);
+		}
+
+		ihk_ikc_spinlock_unlock(&usrdata->per_proc_list_lock, flags);
+	
+		/* Make sure the user space handler will be called as well */
+		error = -ENOSYS;
+		goto out;
+		}
+
 	default:
 		error = -ENOSYS;
 		goto out;

@@ -107,6 +107,7 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid)
 	struct syscall_response *res;
 	struct syscall_params *scp;
 	struct ihk_ikc_channel_desc *syscall_channel;
+	int ret;
 
 	if(req->number == __NR_exit_group ||
 	   req->number == __NR_kill){ // interrupt syscall
@@ -149,7 +150,11 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid)
 	packet.pid = pid ? pid : cpu_local_var(current)->pid;
 	packet.arg = scp->request_rpa;	
 	dkprintf("send syscall, nr: %d, pid: %d\n", req->number, packet.pid);
-	ihk_ikc_send(syscall_channel, &packet, 0); 
+	
+	ret = ihk_ikc_send(syscall_channel, &packet, 0);
+	if (ret < 0) {
+		kprintf("ERROR: sending IKC msg, ret: %d\n", ret);
+	}
 #endif
 }
 
@@ -1179,6 +1184,7 @@ SYSCALL_DECLARE(clone)
 			new->vm->region.user_start;
 		/* 3rd parameter denotes new rpgtable of host process */
 		request1.args[2] = virt_to_phys(new->vm->page_table);
+		request1.args[3] = new->pid;
 
 		dkprintf("fork(): requesting PTE clear and rpgtable (0x%lx) update\n",
 				request1.args[2]);

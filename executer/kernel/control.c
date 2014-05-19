@@ -390,6 +390,18 @@ retry_alloc:
 	ihk_ikc_spinlock_unlock(&c->wq_list_lock, irqflags);
 	kfree(wqhln);
 
+	if (c->param.request_va->number == 61 &&
+			c->param.request_va->args[0] == swd.pid) {
+
+		dprintk("pid: %d, tid: %d: SC %d, swd.cpu: %d, WARNING: wait4() for self?\n",
+				current->tgid,
+				current->pid,
+				c->param.request_va->number,
+				swd.cpu);
+
+		return -EINTR;
+	}
+
 	if (ret) {
 		return -EINTR;
 	}
