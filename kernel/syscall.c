@@ -306,7 +306,7 @@ rescan:
 
 	if (empty) {
 		ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
-		return ECHILD;
+		return -ECHILD;
 	}
 
 	if (child) {
