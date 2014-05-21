@@ -10,6 +10,7 @@
  * HISTORY
  */
 
+#include <kmalloc.h>
 #include <string.h>
 
 size_t strlen(const char *p)
@@ -168,3 +169,59 @@ int memcmp(const void *s1, const void *s2, size_t n)
 	}
 	return *p1 - *p2;
 }
+
+/* 
+ * Flatten out a (char **) string array into the following format:
+ * [nr_strings][char *offset of string_0]...[char *offset of string_n-1][NULL][string0]...[stringn_1]
+ * if nr_strings == -1, we assume the last item is NULL 
+ *
+ * NOTE: copy this string somewhere, add the address of the string to each offset
+ * and we get back a valid argv or envp array.
+ *
+ * returns the total length of the flat string and updates flat to
+ * point to the beginning.
+ */
+int flatten_strings(int nr_strings, char **strings, char **flat)
+{
+	int full_len, string_i;
+	unsigned long flat_offset;
+	char *_flat;
+
+	/* How many strings do we have? */
+	if (nr_strings == -1) {
+		for (nr_strings = 0; strings[nr_strings]; ++nr_strings); 
+	}
+
+	/* Count full length */
+	full_len = sizeof(int) + sizeof(char *); // Counter and terminating NULL
+	for (string_i = 0; string_i < nr_strings; ++string_i) {
+		// Pointer + actual value
+		full_len += sizeof(char *) + strlen(strings[string_i]) + 1; 
+	}
+
+	_flat = (char *)kmalloc(full_len, IHK_MC_AP_NOWAIT);
+	if (!_flat) {
+		return 0;
+	}
+
+	memset(_flat, 0, full_len);
+
+	/* Number of strings */
+	*((int*)_flat) = nr_strings;
+	
+	// Actual offset
+	flat_offset = sizeof(int) + sizeof(char *) * (nr_strings + 1); 
+
+	for (string_i = 0; string_i < nr_strings; ++string_i) {
+		
+		/* Fabricate the string */
+		*((char **)(_flat + sizeof(int) + string_i * sizeof(char *))) = (void *)flat_offset;
+		memcpy(_flat + flat_offset, strings[string_i], strlen(strings[string_i]) + 1);
+		flat_offset += strlen(strings[string_i]) + 1;
+
+	}
+
+	*flat = _flat;
+	return full_len;
+}
+
