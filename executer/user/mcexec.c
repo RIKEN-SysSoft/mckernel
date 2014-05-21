@@ -335,6 +335,53 @@ struct program_load_desc *load_interp(struct program_load_desc *desc0, FILE *fp)
 
 unsigned char *dma_buf;
 
+int load_elf_desc(char *filename, struct program_load_desc **desc_p)
+{
+	FILE *fp;
+	FILE *interp = NULL;
+	char *interp_path;
+	struct program_load_desc *desc;
+
+	fp = fopen(filename, "rb");
+	if (!fp) {
+		fprintf(stderr, "Error: Failed to open %s\n", filename);
+		return 1;
+	}
+
+	desc = load_elf(fp, &interp_path);
+	if (!desc) {
+		fclose(fp);
+		fprintf(stderr, "Error: Failed to parse ELF!\n");
+		return 1;
+	}
+
+	if (interp_path) {
+		char *path;
+
+		path = search_file(interp_path, X_OK);
+		if (!path) {
+			fprintf(stderr, "Error: interp not found: %s\n", interp_path);
+			return 1;
+		}
+
+		interp = fopen(path, "rb");
+		if (!interp) {
+			fprintf(stderr, "Error: Failed to open %s\n", path);
+			return 1;
+		}
+
+		desc = load_interp(desc, interp);
+		if (!desc) {
+			fprintf(stderr, "Error: Failed to parse interp!\n");
+			return 1;
+		}
+	}
+
+	__dprintf("# of sections: %d\n", desc->num_sections);
+	
+	*desc_p = desc;
+	return 0;
+}
 
 #define PAGE_SIZE 4096
 #define PAGE_MASK ~((unsigned long)PAGE_SIZE - 1)
@@ -650,7 +697,6 @@ int main(int argc, char **argv)
 	int fdm;
 	long r;
 #endif
-	FILE *fp;
 	struct program_load_desc *desc;
 	int envs_len;
 	char *envs;
@@ -658,9 +704,6 @@ int main(int argc, char **argv)
 	char **a;
 	char *p;
 	int i;
-	FILE *interp = NULL;
-	char *interp_path;
-	char *path;
 	int error;
 	struct rlimit rlim_stack;
 	unsigned long lcur;
@@ -741,40 +784,10 @@ int main(int argc, char **argv)
 	}
 	__dprintf("\n");
 
-	fp = fopen(argv[1], "rb");
-	if (!fp) {
-		fprintf(stderr, "Error: Failed to open %s\n", argv[1]);
+	if (load_elf_desc(argv[1], &desc) != 0) {
+		fprintf(stderr, "error: loading file: %s\n", argv[1]);
 		return 1;
 	}
-
-	desc = load_elf(fp, &interp_path);
-	if (!desc) {
-		fclose(fp);
-		fprintf(stderr, "Error: Failed to parse ELF!\n");
-		return 1;
-	}
-
-	if (interp_path) {
-		path = search_file(interp_path, X_OK);
-		if (!path) {
-			fprintf(stderr, "Error: interp not found: %s\n", interp_path);
-			return 1;
-		}
-
-		interp = fopen(path, "rb");
-		if (!interp) {
-			fprintf(stderr, "Error: Failed to open %s\n", path);
-			return 1;
-		}
-
-		desc = load_interp(desc, interp);
-		if (!desc) {
-			fprintf(stderr, "Error: Failed to parse interp!\n");
-			return 1;
-		}
-	}
-
-	__dprintf("# of sections: %d\n", desc->num_sections);
 	
 	desc->envs_len = envs_len;
 	desc->envs = envs;
