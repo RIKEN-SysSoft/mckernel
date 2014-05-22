@@ -776,7 +776,7 @@ int main(int argc, char **argv)
 	for (a = argv + optind; *a; a++) {
 		a[- optind + 1] = a[0];
 	}
-	argv[optind + 2] = NULL;
+	argv[argc - optind + 2] = NULL;
 	argc -= (optind - 1);
 
 	__dprintf("target_core: %d, device: %s, command: ", target_core, dev);
