@@ -49,26 +49,282 @@ void check_mapping_for_proc(struct process *proc, unsigned long addr)
 	}
 }
 
+/* 
+ * Prepares the process ranges based on the ELF header described 
+ * in program_load_desc and updates physical address in "p" so that
+ * host can copy program image.
+ * It also prepares args, envs and the process stack.
+ * 
+ * NOTE: if args, args_len, envs, envs_len are zero, 
+ * the function constructs them based on the descriptor 
+ */
+int prepare_process_ranges_args_envs(struct process *proc, 
+		struct program_load_desc *pn,
+		struct program_load_desc *p,
+		enum ihk_mc_pt_attribute attr,
+		char *args, int args_len,
+		char *envs, int envs_len) 
+{
+	char *args_envs, *args_envs_r;
+	unsigned long args_envs_p, args_envs_rp;
+	unsigned long s, e, up;
+	char **argv;
+	int i, n, argc, envc, args_envs_npages;
+	char **env;
+	int range_npages;
+	void *up_v;
+	unsigned long addr;
+	unsigned long flags;
+	uintptr_t interp_obase = -1;
+	uintptr_t interp_nbase = -1;
+	
+	n = p->num_sections;
+
+	for (i = 0; i < n; i++) {
+		
+		if (pn->sections[i].interp && (interp_nbase == (uintptr_t)-1)) {
+			interp_obase = pn->sections[i].vaddr;
+			interp_obase -= (interp_obase % pn->interp_align);
+			interp_nbase = proc->vm->region.map_start;
+			interp_nbase = (interp_nbase + pn->interp_align - 1)
+				& ~(pn->interp_align - 1);
+		}
+
+		if (pn->sections[i].interp) {
+			pn->sections[i].vaddr -= interp_obase;
+			pn->sections[i].vaddr += interp_nbase;
+			p->sections[i].vaddr = pn->sections[i].vaddr;
+		}
+		s = (pn->sections[i].vaddr) & PAGE_MASK;
+		e = (pn->sections[i].vaddr + pn->sections[i].len
+				+ PAGE_SIZE - 1) & PAGE_MASK;
+		range_npages = (e - s) >> PAGE_SHIFT;
+		flags = VR_NONE;
+		flags |= PROT_TO_VR_FLAG(pn->sections[i].prot);
+		flags |= VRFLAG_PROT_TO_MAXPROT(flags);
+
+		if ((up_v = ihk_mc_alloc_pages(range_npages, IHK_MC_AP_NOWAIT)) 
+				== NULL) {
+			goto err;
+		} 
+		
+		up = virt_to_phys(up_v);
+		if (add_process_memory_range(proc, s, e, up, flags, NULL, 0) != 0) {
+			ihk_mc_free_pages(up_v, range_npages);
+			goto err;
+		}
+
+		{
+			void *_virt = (void *)s;
+			unsigned long _phys;
+			if (ihk_mc_pt_virt_to_phys(proc->vm->page_table, 
+						_virt, &_phys)) {
+				kprintf("ERROR: no mapping for 0x%lX\n", _virt);
+			}
+			for (_virt = (void *)s + PAGE_SIZE; 
+					(unsigned long)_virt < e; _virt += PAGE_SIZE) {
+				unsigned long __phys;
+				if (ihk_mc_pt_virt_to_phys(proc->vm->page_table, 
+							_virt, &__phys)) {
+					kprintf("ERROR: no mapping for 0x%lX\n", _virt);
+					panic("mapping");
+				}
+				if (__phys != _phys + PAGE_SIZE) {
+					kprintf("0x%lX + PAGE_SIZE is not physically contigous, from 0x%lX to 0x%lX\n", _virt - PAGE_SIZE, _phys, __phys);
+					panic("mondai");
+				}
+
+				_phys = __phys;
+			}
+			dkprintf("0x%lX -> 0x%lX is physically contigous\n", s, e);
+		}
+
+		p->sections[i].remote_pa = up;
+
+		/* TODO: Maybe we need flag */
+		if (pn->sections[i].interp) {
+			proc->vm->region.map_end = e;
+		}
+		else if (i == 0) {
+			proc->vm->region.text_start = s;
+			proc->vm->region.text_end = e;
+		} 
+		else if (i == 1) {
+			proc->vm->region.data_start = s;
+			proc->vm->region.data_end = e;
+		} 
+		else {
+			proc->vm->region.data_start =
+				(s < proc->vm->region.data_start ? 
+				 s : proc->vm->region.data_start);
+			proc->vm->region.data_end = 
+				(e > proc->vm->region.data_end ? 
+				 e : proc->vm->region.data_end);
+		}
+	}
+
+	if (interp_nbase != (uintptr_t)-1) {
+		pn->entry -= interp_obase;
+		pn->entry += interp_nbase;
+		p->entry = pn->entry;
+		ihk_mc_modify_user_context(proc->uctx, IHK_UCR_PROGRAM_COUNTER, 
+				pn->entry);
+	}
+
+#if 1
+	/*
+	   Fix for the problem where brk grows to hit .bss section
+	   when using dynamically linked executables.
+	   Test code resides in /home/takagi/project/mpich/src/brk_icc_mic.
+	   This is because when using
+	   ld.so (i.e. using shared objects), mckernel/kernel/host.c sets "brk" to
+	   the end of .bss of ld.so (e.g. 0x21f000), and then ld.so places a
+	   main-program after this (e.g. 0x400000), so "brk" will hit .bss
+	   eventually.
+	   */
+	proc->vm->region.brk_start = proc->vm->region.brk_end =
+		(USER_END / 4) & LARGE_PAGE_MASK;
+#else
+	proc->vm->region.brk_start = proc->vm->region.brk_end =
+		proc->vm->region.data_end;
+#endif
+
+	/* Map system call stuffs */
+	flags = VR_RESERVED | VR_PROT_READ | VR_PROT_WRITE;
+	flags |= VRFLAG_PROT_TO_MAXPROT(flags);
+	addr = proc->vm->region.map_start - PAGE_SIZE * SCD_RESERVED_COUNT;
+	e = addr + PAGE_SIZE * DOORBELL_PAGE_COUNT;
+	if(add_process_memory_range(proc, addr, e,
+				cpu_local_var(scp).doorbell_pa,
+				VR_REMOTE | flags, NULL, 0) != 0){
+		goto err;
+	}
+	addr = e;
+	e = addr + PAGE_SIZE * REQUEST_PAGE_COUNT;
+	if(add_process_memory_range(proc, addr, e,
+				cpu_local_var(scp).request_pa,
+				VR_REMOTE | flags, NULL, 0) != 0){
+		goto err;
+	}
+	addr = e;
+	e = addr + PAGE_SIZE * RESPONSE_PAGE_COUNT;
+	if(add_process_memory_range(proc, addr, e,
+				cpu_local_var(scp).response_pa,
+				flags, NULL, 0) != 0){
+		goto err;
+	}
+
+	/* Map, copy and update args and envs */
+	flags = VR_PROT_READ | VR_PROT_WRITE;
+	flags |= VRFLAG_PROT_TO_MAXPROT(flags);
+	addr = e;
+	e = addr + PAGE_SIZE * ARGENV_PAGE_COUNT;
+
+	if((args_envs = ihk_mc_alloc_pages(ARGENV_PAGE_COUNT, IHK_MC_AP_NOWAIT)) == NULL){
+		goto err;
+	}
+	args_envs_p = virt_to_phys(args_envs);
+
+	if(add_process_memory_range(proc, addr, e, args_envs_p,
+				flags, NULL, 0) != 0){
+		ihk_mc_free_pages(args_envs, ARGENV_PAGE_COUNT);
+		goto err;
+	}
+
+	dkprintf("args_envs mapping\n");
+
+	dkprintf("args: 0x%lX, args_len: %d\n", p->args, p->args_len);
+
+	// Map in remote physical addr of args and copy it
+	args_envs_npages = (p->args_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
+	dkprintf("args_envs_npages: %d\n", args_envs_npages);
+	args_envs_rp = ihk_mc_map_memory(NULL, (unsigned long)p->args, p->args_len);
+	dkprintf("args_envs_rp: 0x%lX\n", args_envs_rp);
+	if((args_envs_r = (char *)ihk_mc_map_virtual(args_envs_rp, args_envs_npages, 
+					attr)) == NULL){
+		goto err;
+	}
+	dkprintf("args_envs_r: 0x%lX\n", args_envs_r);
+
+	dkprintf("args copy, nr: %d\n", *((int*)args_envs_r));
+
+	memcpy_long(args_envs, args_envs_r, p->args_len + 8);
+
+	ihk_mc_unmap_virtual(args_envs_r, args_envs_npages, 0);
+	ihk_mc_unmap_memory(NULL, args_envs_rp, p->args_len);
+	flush_tlb();
+
+	dkprintf("envs: 0x%lX, envs_len: %d\n", p->envs, p->envs_len);
+
+	// Map in remote physical addr of envs and copy it after args
+	args_envs_npages = (p->envs_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
+	dkprintf("args_envs_npages: %d\n", args_envs_npages);
+	args_envs_rp = ihk_mc_map_memory(NULL, (unsigned long)p->envs, p->envs_len);
+	dkprintf("args_envs_rp: 0x%lX\n", args_envs_rp);
+	if((args_envs_r = (char *)ihk_mc_map_virtual(args_envs_rp, args_envs_npages, 
+					attr)) == NULL){
+		goto err;
+	}
+	dkprintf("args_envs_r: 0x%lX\n", args_envs_r);
+
+	dkprintf("envs copy, nr: %d\n", *((int*)args_envs_r));
+
+	memcpy_long(args_envs + p->args_len, args_envs_r, p->envs_len + 8);
+
+	ihk_mc_unmap_virtual(args_envs_r, args_envs_npages, 0);
+	ihk_mc_unmap_memory(NULL, args_envs_rp, p->envs_len);
+	flush_tlb();
+
+	// Update variables
+	argc = *((int*)(args_envs));
+	dkprintf("argc: %d\n", argc);
+
+	argv = (char **)(args_envs + (sizeof(int)));
+	while (*argv) {
+		char **_argv = argv;
+		dkprintf("%s\n", args_envs + (unsigned long)*argv);
+		*argv = (char *)addr + (unsigned long)*argv; // Process' address space!
+		argv = ++_argv;
+	}
+	argv = (char **)(args_envs + (sizeof(int)));
+
+	envc = *((int*)(args_envs + p->args_len));
+	dkprintf("envc: %d\n", envc);
+
+	env = (char **)(args_envs + p->args_len + sizeof(int));
+	while (*env) {
+		char **_env = env;
+		//dkprintf("%s\n", args_envs + p->args_len + (unsigned long)*env);
+		*env = (char *)addr + p->args_len + (unsigned long)*env;
+		env = ++_env;
+	}
+	env = (char **)(args_envs + p->args_len + sizeof(int));
+
+	dkprintf("env OK\n");
+
+	p->rprocess = (unsigned long)proc;
+	p->rpgtable = virt_to_phys(proc->vm->page_table);
+	
+	if (init_process_stack(proc, pn, argc, argv, envc, env) != 0) {
+		goto err;
+	}
+
+	return 0;
+
+err:
+	/* TODO: cleanup allocated ranges */
+	return -1;
+}
+
 /*
  * Communication with host 
  */
 static int process_msg_prepare_process(unsigned long rphys)
 {
-	unsigned long phys, sz, s, e, up;
+	unsigned long phys, sz;
 	struct program_load_desc *p, *pn;
-	int i, npages, n;
+	int npages, n;
 	struct process *proc;
-	unsigned long addr;
-	char *args_envs, *args_envs_r;
-	unsigned long args_envs_p, args_envs_rp;
-	char **argv;
-	int argc, envc, args_envs_npages;
-	char **env;
-	int range_npages;
-	void *up_v;
-	unsigned long flags;
-	uintptr_t interp_obase = -1;
-	uintptr_t interp_nbase = -1;
 	enum ihk_mc_pt_attribute attr;
 
 	attr = PTATTR_NO_EXECUTE | PTATTR_WRITABLE | PTATTR_FOR_USER;
@@ -114,224 +370,9 @@ static int process_msg_prepare_process(unsigned long rphys)
 	/* TODO: Clear it at the proper timing */
 	cpu_local_var(scp).post_idx = 0;
 
-	for (i = 0; i < n; i++) {
-		if (pn->sections[i].interp && (interp_nbase == (uintptr_t)-1)) {
-			interp_obase = pn->sections[i].vaddr;
-			interp_obase -= (interp_obase % pn->interp_align);
-			interp_nbase = proc->vm->region.map_start;
-			interp_nbase = (interp_nbase + pn->interp_align - 1)
-				& ~(pn->interp_align - 1);
-		}
-		if (pn->sections[i].interp) {
-			pn->sections[i].vaddr -= interp_obase;
-			pn->sections[i].vaddr += interp_nbase;
-			p->sections[i].vaddr = pn->sections[i].vaddr;
-		}
-		s = (pn->sections[i].vaddr) & PAGE_MASK;
-		e = (pn->sections[i].vaddr + pn->sections[i].len
-		     + PAGE_SIZE - 1) & PAGE_MASK;
-		range_npages = (e - s) >> PAGE_SHIFT;
-		flags = VR_NONE;
-		flags |= PROT_TO_VR_FLAG(pn->sections[i].prot);
-		flags |= VRFLAG_PROT_TO_MAXPROT(flags);
-
-			if((up_v = ihk_mc_alloc_pages(range_npages, IHK_MC_AP_NOWAIT)) == NULL){
-				goto err;
-			}
-			up = virt_to_phys(up_v);
-			if(add_process_memory_range(proc, s, e, up, flags, NULL, 0) != 0){
-				ihk_mc_free_pages(up_v, range_npages);
-				goto err;
-			}
-			
-			{
-				void *_virt = (void *)s;
-				unsigned long _phys;
-				if (ihk_mc_pt_virt_to_phys(proc->vm->page_table, 
-				                       _virt, &_phys)) {
-					kprintf("ERROR: no mapping for 0x%lX\n", _virt);
-				}
-				for (_virt = (void *)s + PAGE_SIZE; 
-				     (unsigned long)_virt < e; _virt += PAGE_SIZE) {
-					unsigned long __phys;
-					if (ihk_mc_pt_virt_to_phys(proc->vm->page_table, 
-				                           _virt, &__phys)) {
-						kprintf("ERROR: no mapping for 0x%lX\n", _virt);
-						panic("mapping");
-					}
-					if (__phys != _phys + PAGE_SIZE) {
-						kprintf("0x%lX + PAGE_SIZE is not physically contigous, from 0x%lX to 0x%lX\n", _virt - PAGE_SIZE, _phys, __phys);
-						panic("mondai");
-					}
-					
-					_phys = __phys;
-				}
-				dkprintf("0x%lX -> 0x%lX is physically contigous\n", s, e);
-			}
-
-		p->sections[i].remote_pa = up;
-
-		/* TODO: Maybe we need flag */
-		if (pn->sections[i].interp) {
-			proc->vm->region.map_end = e;
-		}
-		else if (i == 0) {
-			proc->vm->region.text_start = s;
-			proc->vm->region.text_end = e;
-		} else if (i == 1) {
-			proc->vm->region.data_start = s;
-			proc->vm->region.data_end = e;
-		} else {
-			proc->vm->region.data_start =
-				(s < proc->vm->region.data_start ? 
-				 s : proc->vm->region.data_start);
-			proc->vm->region.data_end = 
-				(e > proc->vm->region.data_end ? 
-				 e : proc->vm->region.data_end);
-		}
-	}
-	
-	if (interp_nbase != (uintptr_t)-1) {
-		pn->entry -= interp_obase;
-		pn->entry += interp_nbase;
-		p->entry = pn->entry;
-		ihk_mc_modify_user_context(proc->uctx, IHK_UCR_PROGRAM_COUNTER, pn->entry);
-	}
-
-#if 1
-    /*
-      Fix for the problem where brk grows to hit .bss section
-      when using dynamically linked executables.
-      Test code resides in /home/takagi/project/mpich/src/brk_icc_mic.
-      This is because when using
-      ld.so (i.e. using shared objects), mckernel/kernel/host.c sets "brk" to
-      the end of .bss of ld.so (e.g. 0x21f000), and then ld.so places a
-      main-program after this (e.g. 0x400000), so "brk" will hit .bss
-      eventually.
-    */
-	proc->vm->region.brk_start = proc->vm->region.brk_end =
-		(USER_END / 4) & LARGE_PAGE_MASK;
-#else
-	proc->vm->region.brk_start = proc->vm->region.brk_end =
-		proc->vm->region.data_end;
-#endif
-
-	/* Map system call stuffs */
-	flags = VR_RESERVED | VR_PROT_READ | VR_PROT_WRITE;
-	flags |= VRFLAG_PROT_TO_MAXPROT(flags);
-	addr = proc->vm->region.map_start - PAGE_SIZE * SCD_RESERVED_COUNT;
-	e = addr + PAGE_SIZE * DOORBELL_PAGE_COUNT;
-	if(add_process_memory_range(proc, addr, e,
-	                         cpu_local_var(scp).doorbell_pa,
-	                         VR_REMOTE | flags, NULL, 0) != 0){
-		goto err;
-	}
-	addr = e;
-	e = addr + PAGE_SIZE * REQUEST_PAGE_COUNT;
-	if(add_process_memory_range(proc, addr, e,
-	                         cpu_local_var(scp).request_pa,
-	                         VR_REMOTE | flags, NULL, 0) != 0){
-		goto err;
-	}
-	addr = e;
-	e = addr + PAGE_SIZE * RESPONSE_PAGE_COUNT;
-	if(add_process_memory_range(proc, addr, e,
-	                         cpu_local_var(scp).response_pa,
-	                         flags, NULL, 0) != 0){
-		goto err;
-	}
-
-	/* Map, copy and update args and envs */
-	flags = VR_PROT_READ | VR_PROT_WRITE;
-	flags |= VRFLAG_PROT_TO_MAXPROT(flags);
-	addr = e;
-	e = addr + PAGE_SIZE * ARGENV_PAGE_COUNT;
-	
-	if((args_envs = ihk_mc_alloc_pages(ARGENV_PAGE_COUNT, IHK_MC_AP_NOWAIT)) == NULL){
-		goto err;
-	}
-	args_envs_p = virt_to_phys(args_envs);
-	
-	if(add_process_memory_range(proc, addr, e, args_envs_p,
-				flags, NULL, 0) != 0){
-		ihk_mc_free_pages(args_envs, ARGENV_PAGE_COUNT);
-		goto err;
-	}
-	
-	dkprintf("args_envs mapping\n");
-
-	dkprintf("args: 0x%lX, args_len: %d\n", p->args, p->args_len);
-
-	// Map in remote physical addr of args and copy it
-	args_envs_npages = (p->args_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
-	dkprintf("args_envs_npages: %d\n", args_envs_npages);
-	args_envs_rp = ihk_mc_map_memory(NULL, (unsigned long)p->args, p->args_len);
-	dkprintf("args_envs_rp: 0x%lX\n", args_envs_rp);
-	if((args_envs_r = (char *)ihk_mc_map_virtual(args_envs_rp, args_envs_npages, 
-	    attr)) == NULL){
-		goto err;
-	}
-	dkprintf("args_envs_r: 0x%lX\n", args_envs_r);
-
-	dkprintf("args copy, nr: %d\n", *((int*)args_envs_r));
-	
-	memcpy_long(args_envs, args_envs_r, p->args_len + 8);
-
-	ihk_mc_unmap_virtual(args_envs_r, args_envs_npages, 0);
-	ihk_mc_unmap_memory(NULL, args_envs_rp, p->args_len);
-	flush_tlb();
-				
-	dkprintf("envs: 0x%lX, envs_len: %d\n", p->envs, p->envs_len);
-
-	// Map in remote physical addr of envs and copy it after args
-	args_envs_npages = (p->envs_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
-	dkprintf("args_envs_npages: %d\n", args_envs_npages);
-	args_envs_rp = ihk_mc_map_memory(NULL, (unsigned long)p->envs, p->envs_len);
-	dkprintf("args_envs_rp: 0x%lX\n", args_envs_rp);
-	if((args_envs_r = (char *)ihk_mc_map_virtual(args_envs_rp, args_envs_npages, 
-	    attr)) == NULL){
-		goto err;
-	}
-	dkprintf("args_envs_r: 0x%lX\n", args_envs_r);
-	
-	dkprintf("envs copy, nr: %d\n", *((int*)args_envs_r));
-	
-	memcpy_long(args_envs + p->args_len, args_envs_r, p->envs_len + 8);
-
-	ihk_mc_unmap_virtual(args_envs_r, args_envs_npages, 0);
-	ihk_mc_unmap_memory(NULL, args_envs_rp, p->envs_len);
-	flush_tlb();
-
-	// Update variables
-	argc = *((int*)(args_envs));
-	dkprintf("argc: %d\n", argc);
-
-	argv = (char **)(args_envs + (sizeof(int)));
-	while (*argv) {
-		char **_argv = argv;
-		dkprintf("%s\n", args_envs + (unsigned long)*argv);
-		*argv = (char *)addr + (unsigned long)*argv; // Process' address space!
-		argv = ++_argv;
-	}
-	argv = (char **)(args_envs + (sizeof(int)));
-	
-	envc = *((int*)(args_envs + p->args_len));
-	dkprintf("envc: %d\n", envc);
-
-	env = (char **)(args_envs + p->args_len + sizeof(int));
-	while (*env) {
-		char **_env = env;
-		//dkprintf("%s\n", args_envs + p->args_len + (unsigned long)*env);
-		*env = (char *)addr + p->args_len + (unsigned long)*env;
-		env = ++_env;
-	}
-	env = (char **)(args_envs + p->args_len + sizeof(int));
-	
-	dkprintf("env OK\n");
-
-	p->rprocess = (unsigned long)proc;
-	p->rpgtable = virt_to_phys(proc->vm->page_table);
-	if(init_process_stack(proc, pn, argc, argv, envc, env) != 0){
+	if (prepare_process_ranges_args_envs(proc, pn, p, attr, 
+				NULL, 0, NULL, 0) != 0) {
+		kprintf("error: preparing process ranges, args, envs, stack\n");
 		goto err;
 	}
 
