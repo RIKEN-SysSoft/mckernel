@@ -30,7 +30,7 @@
 #define HEADER_UPROTOCOL_H
 
 #define MCEXEC_UP_PREPARE_IMAGE  0x30a02900
-#define MCEXEC_UP_LOAD_IMAGE     0x30a02901
+#define MCEXEC_UP_TRANSFER       0x30a02901
 #define MCEXEC_UP_START_IMAGE    0x30a02902
 #define MCEXEC_UP_WAIT_SYSCALL   0x30a02903
 #define MCEXEC_UP_RET_SYSCALL    0x30a02904
@@ -42,10 +42,14 @@
 #define MCEXEC_UP_PREPARE_DMA    0x30a02910
 #define MCEXEC_UP_FREE_DMA       0x30a02911
 
-struct program_transfer {
-	unsigned long dest;
-	void *src;
-	unsigned long sz;
+#define MCEXEC_UP_TRANSFER_TO_REMOTE	0
+#define MCEXEC_UP_TRANSFER_FROM_REMOTE	1
+
+struct remote_transfer {
+	unsigned long rphys;
+	void *userp;
+	unsigned long size;
+	char direction;  
 };
 
 struct program_image_section {

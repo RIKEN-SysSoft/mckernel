@@ -44,7 +44,7 @@ static long mcctrl_ioctl(ihk_os_t os, unsigned int request, void *priv,
 
 static struct ihk_os_user_call_handler mcctrl_uchs[] = {
 	{ .request = MCEXEC_UP_PREPARE_IMAGE, .func = mcctrl_ioctl },
-	{ .request = MCEXEC_UP_LOAD_IMAGE, .func = mcctrl_ioctl },
+	{ .request = MCEXEC_UP_TRANSFER, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_START_IMAGE, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_WAIT_SYSCALL, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_RET_SYSCALL, .func = mcctrl_ioctl },

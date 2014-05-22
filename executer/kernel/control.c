@@ -152,9 +152,9 @@ free_out:
 	return ret;
 }
 
-int mcexec_load_image(ihk_os_t os, struct program_transfer *__user upt)
+int mcexec_transfer_image(ihk_os_t os, struct remote_transfer *__user upt)
 {
-	struct program_transfer pt;
+	struct remote_transfer pt;
 	unsigned long phys, ret = 0;
 	void *rpm;
 #if 0	
@@ -172,16 +172,32 @@ int mcexec_load_image(ihk_os_t os, struct program_transfer *__user upt)
 	if (copy_from_user(&pt, upt, sizeof(pt))) {
 		return -EFAULT;
 	}
+
+	if (pt.size > PAGE_SIZE) {
+		printk("mcexec_transfer_image(): ERROR: size exceeds PAGE_SIZE\n");
+		return -EFAULT;
+	}
 	
-	phys = ihk_device_map_memory(ihk_os_to_dev(os), pt.dest, PAGE_SIZE);
+	phys = ihk_device_map_memory(ihk_os_to_dev(os), pt.rphys, PAGE_SIZE);
 #ifdef CONFIG_MIC
 	rpm = ioremap_wc(phys, PAGE_SIZE);
 #else
 	rpm = ihk_device_map_virtual(ihk_os_to_dev(os), phys, PAGE_SIZE, NULL, 0);
 #endif
-
-	if (copy_from_user(rpm, pt.src, PAGE_SIZE)) {
-		ret = -EFAULT;
+	
+	if (pt.direction == MCEXEC_UP_TRANSFER_TO_REMOTE) {
+		if (copy_from_user(rpm, pt.userp, pt.size)) {
+			ret = -EFAULT;
+		}
+	}
+	else if (pt.direction == MCEXEC_UP_TRANSFER_FROM_REMOTE) {
+		if (copy_to_user(pt.userp, rpm, pt.size)) {
+			ret = -EFAULT;
+		}
+	}
+	else {
+		printk("mcexec_transfer_image(): ERROR: invalid direction\n");
+		ret = -EINVAL;
 	}
 
 #ifdef CONFIG_MIC
@@ -726,8 +742,8 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg)
 	case MCEXEC_UP_PREPARE_IMAGE:
 		return mcexec_prepare_image(os,
 		                            (struct program_load_desc *)arg);
-	case MCEXEC_UP_LOAD_IMAGE:
-		return mcexec_load_image(os, (struct program_transfer *)arg);
+	case MCEXEC_UP_TRANSFER:
+		return mcexec_transfer_image(os, (struct remote_transfer *)arg);
 
 	case MCEXEC_UP_START_IMAGE:
 		return mcexec_start_image(os, (struct program_load_desc *)arg);

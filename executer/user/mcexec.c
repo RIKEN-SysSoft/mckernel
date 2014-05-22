@@ -388,7 +388,7 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p)
 
 void transfer_image(int fd, struct program_load_desc *desc)
 {
-	struct program_transfer pt;
+	struct remote_transfer pt;
 	unsigned long s, e, flen, rpa;
 	int i, l, lr;
 	FILE *fp;
@@ -407,9 +407,10 @@ void transfer_image(int fd, struct program_load_desc *desc)
 		          desc->sections[i].offset, flen);
 
 		while (s < e) {
-			pt.dest = rpa;
-			pt.src = dma_buf;
-			pt.sz = PAGE_SIZE;
+			pt.rphys = rpa;
+			pt.userp = dma_buf;
+			pt.size = PAGE_SIZE;
+			pt.direction = MCEXEC_UP_TRANSFER_TO_REMOTE;
 			lr = 0;
 			
 			memset(dma_buf, 0, PAGE_SIZE);
@@ -438,7 +439,7 @@ void transfer_image(int fd, struct program_load_desc *desc)
 			/* No more left to upload.. */
 			if (lr == 0 && flen == 0) break;
 
-			if (ioctl(fd, MCEXEC_UP_LOAD_IMAGE,
+			if (ioctl(fd, MCEXEC_UP_TRANSFER,
 						(unsigned long)&pt)) {
 				perror("dma");
 				break;
