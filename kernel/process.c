@@ -1423,6 +1423,29 @@ void flush_process_memory(struct process *proc)
 	return;
 }
 
+void free_process_memory_ranges(struct process *proc)
+{
+	int error;
+	struct vm_range *range, *next;
+	struct process_vm *vm = proc->vm;
+
+	if (vm == NULL) {
+		return;
+	}
+
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	list_for_each_entry_safe(range, next, &vm->vm_range_list, list) {
+		error = free_process_memory_range(vm, range);
+		if (error) {
+			ekprintf("free_process_memory(%p):"
+					"free range failed. %lx-%lx %d\n",
+					proc, range->start, range->end, error);
+			/* through */
+		}
+	}
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+}
+
 void free_process_memory(struct process *proc)
 {
 	struct vm_range *range, *next;

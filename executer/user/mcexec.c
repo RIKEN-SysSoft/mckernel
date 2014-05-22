@@ -1199,6 +1199,93 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			break;
 		}
 
+		case __NR_execve: {
+
+			/* Execve phase */
+			switch (w.sr.args[0]) {
+				int ret = -1;
+				struct program_load_desc *desc;
+				struct remote_transfer trans;
+				
+				/* Load descriptor phase */
+				case 1:
+					if (load_elf_desc((char *)w.sr.args[1], &desc) != 0) {
+						fprintf(stderr, 
+							"execve(): error loading ELF for file %s\n", 
+							(char *)w.sr.args[1]);
+						goto return_execve1;
+					}
+
+					__dprintf("execve(): load_elf_desc() for %s OK, num sections: %d\n",
+						w.sr.args[1], desc->num_sections);
+
+					/* Copy descriptor to co-kernel side */
+					trans.userp = (void*)desc;
+					trans.rphys = w.sr.args[2];
+					trans.size = sizeof(struct program_load_desc) + 
+						sizeof(struct program_image_section) * 
+						desc->num_sections;
+					trans.direction = MCEXEC_UP_TRANSFER_TO_REMOTE;
+					
+					if (ioctl(fd, MCEXEC_UP_TRANSFER, &trans) != 0) {
+						fprintf(stderr, 
+							"execve(): error transfering ELF for file %s\n", 
+							(char *)w.sr.args[1]);
+						goto return_execve1;
+					}
+					
+					__dprintf("execve(): load_elf_desc() for %s OK\n",
+						w.sr.args[1]);
+
+					/* We can't be sure next phase will succeed */
+					/* TODO: what shall we do with fp in desc?? */
+					free(desc);
+					
+					ret = 0;
+return_execve1:
+					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+					break;
+
+				/* Copy program image phase */
+				case 2:
+					
+					/* Alloc descriptor */
+					desc = malloc(w.sr.args[2]);
+					if (!desc) {
+						fprintf(stderr, "execve(): error allocating desc\n");
+						goto return_execve2;
+					}
+
+					/* Copy descriptor from co-kernel side */
+					trans.userp = (void*)desc;
+					trans.rphys = w.sr.args[1];
+					trans.size = w.sr.args[2];
+					trans.direction = MCEXEC_UP_TRANSFER_FROM_REMOTE;
+					
+					if (ioctl(fd, MCEXEC_UP_TRANSFER, &trans) != 0) {
+						fprintf(stderr, 
+							"execve(): error obtaining ELF descriptor\n");
+						goto return_execve1;
+					}
+					
+					printf("execve(): transfer ELF desc OK\n");
+
+					transfer_image(fd, desc);	
+					__dprintf("execve(): image transferred\n");
+
+					ret = 0;
+return_execve2:					
+					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+					break;
+
+				default:
+					fprintf(stderr, "execve(): ERROR: invalid execve phase\n");
+					break;
+			}
+
+			break;
+		}
+
 		default:
 			 ret = do_generic_syscall(&w);
 			 do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);

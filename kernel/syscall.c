@@ -97,6 +97,13 @@ void do_signal(long rc, void *regs, struct process *proc, struct sig_pending *pe
 int copy_from_user(struct process *, void *, const void *, size_t);
 int copy_to_user(struct process *, void *, const void *, size_t);
 
+int prepare_process_ranges_args_envs(struct process *proc, 
+		struct program_load_desc *pn,
+		struct program_load_desc *p,
+		enum ihk_mc_pt_attribute attr,
+		char *args, int args_len,
+		char *envs, int envs_len);
+
 #ifdef DCFA_KMOD
 static void do_mod_exit(int status);
 #endif
@@ -1128,7 +1135,83 @@ SYSCALL_DECLARE(arch_prctl)
 
 SYSCALL_DECLARE(execve)
 {
-	return -EOPNOTSUPP;
+	long ret;
+	const char *filename = (const char *)ihk_mc_syscall_arg0(ctx);
+	char **argv = (char **)ihk_mc_syscall_arg1(ctx);
+	char **envp = (char **)ihk_mc_syscall_arg2(ctx);
+
+	char *argv_flat = NULL;
+	int argv_flat_len = 0;
+	char *envp_flat = NULL;
+	int envp_flat_len = 0;
+	
+	struct syscall_request request IHK_DMA_ALIGN;
+	struct program_load_desc *desc;
+
+	desc = ihk_mc_alloc_pages(1, IHK_MC_AP_NOWAIT);
+	if (!desc) {
+		kprintf("execve(): ERROR: allocating program descriptor\n");
+		return -ENOMEM;
+	}
+
+	memset((void*)desc, 0, PAGE_SIZE);
+
+	/* Request host to open executable and load ELF section descriptions */
+	request.number = __NR_execve;  
+	request.args[0] = 1;  /* 1st phase - get ELF desc */
+	request.args[1] = (unsigned long)filename;	
+	request.args[2] = virt_to_phys(desc);
+	ret = do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0);
+
+	if (ret != 0) {
+		kprintf("execve(): ERROR: host failed to load elf header\n");
+		return -EINVAL;
+	}
+
+	dkprintf("execve(): ELF desc received, num sections: %d\n",
+		desc->num_sections);
+
+	/* Flatten argv and envp into kernel-space buffers */
+	argv_flat_len = flatten_strings(-1, argv, &argv_flat);
+	if (argv_flat_len == 0) {
+		kprintf("ERROR: no argv for executable: %s?\n", filename);
+		return -EINVAL;
+	}
+
+	envp_flat_len = flatten_strings(-1, envp, &envp_flat);
+	if (envp_flat_len == 0) {
+		kprintf("ERROR: no envp for executable: %s?\n", filename);
+		return -EINVAL;
+	}
+
+	/* Unmap all memory areas of the process, userspace will be gone */
+	free_process_memory_ranges(cpu_local_var(current));
+
+	/* Create virtual memory ranges and update args/envs */
+	if (prepare_process_ranges_args_envs(cpu_local_var(current), desc, desc, 
+				PTATTR_NO_EXECUTE | PTATTR_WRITABLE | PTATTR_FOR_USER,
+				argv_flat, argv_flat_len, envp_flat, envp_flat_len) != 0) {
+		kprintf("execve(): PANIC: preparing ranges, args, envs, stack\n");
+		panic("");
+	}
+
+	/* Request host to transfer ELF image */
+	request.number = __NR_execve;  
+	request.args[0] = 2;  /* 2nd phase - transfer ELF image */
+	request.args[1] = virt_to_phys(desc);
+	request.args[2] = sizeof(struct program_load_desc) + 
+		sizeof(struct program_image_section) * desc->num_sections;
+
+	ret = do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0);
+
+	if (ret != 0) {
+		kprintf("execve(): PANIC: host failed to load elf image\n");
+		panic("");
+	}
+
+	dkprintf("execve(): returning to new process\n");
+
+	return 0;
 }
 
 SYSCALL_DECLARE(clone)
