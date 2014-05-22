@@ -414,6 +414,7 @@ static int __set_pt_page(struct page_table *pt, void *virt, unsigned long phys,
 
 	if (pt->entry[l1idx] & PFL1_PRESENT) {
 		if ((pt->entry[l1idx] & PT_PHYSMASK) != phys) {
+			kprintf("EBUSY: page table for 0x%lX is already set\n", virt);
 			return -EBUSY;
 		} else {
 			return 0;

@@ -105,12 +105,14 @@ int prepare_process_ranges_args_envs(struct process *proc,
 
 		if ((up_v = ihk_mc_alloc_pages(range_npages, IHK_MC_AP_NOWAIT)) 
 				== NULL) {
+			kprintf("ERROR: alloc pages for ELF section %i\n", i);
 			goto err;
 		} 
 		
 		up = virt_to_phys(up_v);
 		if (add_process_memory_range(proc, s, e, up, flags, NULL, 0) != 0) {
 			ihk_mc_free_pages(up_v, range_npages);
+			kprintf("ERROR: adding memory range for ELF section %i\n", i);
 			goto err;
 		}
 
@@ -197,6 +199,7 @@ int prepare_process_ranges_args_envs(struct process *proc,
 	if(add_process_memory_range(proc, addr, e,
 				cpu_local_var(scp).doorbell_pa,
 				VR_REMOTE | flags, NULL, 0) != 0){
+		kprintf("ERROR: adding memory range for syscalls dorbell\n");
 		goto err;
 	}
 	addr = e;
@@ -204,6 +207,7 @@ int prepare_process_ranges_args_envs(struct process *proc,
 	if(add_process_memory_range(proc, addr, e,
 				cpu_local_var(scp).request_pa,
 				VR_REMOTE | flags, NULL, 0) != 0){
+		kprintf("ERROR: adding memory range for syscalls request pa\n");
 		goto err;
 	}
 	addr = e;
@@ -211,6 +215,7 @@ int prepare_process_ranges_args_envs(struct process *proc,
 	if(add_process_memory_range(proc, addr, e,
 				cpu_local_var(scp).response_pa,
 				flags, NULL, 0) != 0){
+		kprintf("ERROR: adding memory range for syscalls response pa\n");
 		goto err;
 	}
 
@@ -221,6 +226,7 @@ int prepare_process_ranges_args_envs(struct process *proc,
 	e = addr + PAGE_SIZE * ARGENV_PAGE_COUNT;
 
 	if((args_envs = ihk_mc_alloc_pages(ARGENV_PAGE_COUNT, IHK_MC_AP_NOWAIT)) == NULL){
+		kprintf("ERROR: allocating pages for args/envs\n");
 		goto err;
 	}
 	args_envs_p = virt_to_phys(args_envs);
@@ -228,6 +234,7 @@ int prepare_process_ranges_args_envs(struct process *proc,
 	if(add_process_memory_range(proc, addr, e, args_envs_p,
 				flags, NULL, 0) != 0){
 		ihk_mc_free_pages(args_envs, ARGENV_PAGE_COUNT);
+		kprintf("ERROR: adding memory range for args/envs\n");
 		goto err;
 	}
 

@@ -440,6 +440,8 @@ int update_process_page_table(struct process *process,
 
 			if (ihk_mc_pt_set_large_page(process->vm->page_table, (void *)p,
 					pa, attr) != 0) {
+				kprintf("ERROR: setting large page for 0x%lX -> 0x%lX\n", 
+						p, pa);
 				goto err;
 			}
 
@@ -452,6 +454,7 @@ int update_process_page_table(struct process *process,
 #endif		
 			if(ihk_mc_pt_set_page(process->vm->page_table, (void *)p,
 			      pa, attr) != 0){
+				kprintf("ERROR: setting page for 0x%lX -> 0x%lX\n", p, pa);
 				goto err;
 			}
 
@@ -593,8 +596,8 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 	intptr_t lpend;
 #endif /* USE_LARGE_PAGES */
 
-	dkprintf("free_process_memory_range(%p,%lx-%lx)\n",
-			vm, start0, end0);
+	dkprintf("free_process_memory_range(%p, 0x%lx - 0x%lx)\n",
+			vm, range->start, range->end);
 
 	start = range->start;
 	end = range->end;
@@ -799,6 +802,7 @@ int add_process_memory_range(struct process *process,
 
 	range = kmalloc(sizeof(struct vm_range), IHK_MC_AP_NOWAIT);
 	if (!range) {
+		kprintf("ERROR: allocating pages for range\n");
 		return -ENOMEM;
 	}
 	INIT_LIST_HEAD(&range->list);
@@ -832,6 +836,7 @@ int add_process_memory_range(struct process *process,
 		rc = update_process_page_table(process, range, phys, 0);
 	}
 	if(rc != 0){
+		kprintf("ERROR: preparing page tables\n");
 		kfree(range);
 		return rc;
 	}
