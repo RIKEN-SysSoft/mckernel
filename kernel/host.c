@@ -235,44 +235,69 @@ int prepare_process_ranges_args_envs(struct process *proc,
 
 	dkprintf("args: 0x%lX, args_len: %d\n", p->args, p->args_len);
 
-	// Map in remote physical addr of args and copy it
-	args_envs_npages = (p->args_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
-	dkprintf("args_envs_npages: %d\n", args_envs_npages);
-	args_envs_rp = ihk_mc_map_memory(NULL, (unsigned long)p->args, p->args_len);
-	dkprintf("args_envs_rp: 0x%lX\n", args_envs_rp);
-	if((args_envs_r = (char *)ihk_mc_map_virtual(args_envs_rp, args_envs_npages, 
-					attr)) == NULL){
-		goto err;
+	/* Only map remote address if it wasn't specified as an argument */
+	if (!args) {
+		// Map in remote physical addr of args and copy it
+		args_envs_npages = (p->args_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
+		dkprintf("args_envs_npages: %d\n", args_envs_npages);
+		args_envs_rp = ihk_mc_map_memory(NULL, 
+				(unsigned long)p->args, p->args_len);
+
+		dkprintf("args_envs_rp: 0x%lX\n", args_envs_rp);
+		if ((args_envs_r = (char *)ihk_mc_map_virtual(args_envs_rp, 
+						args_envs_npages, attr)) == NULL){
+			goto err;
+		}
+		dkprintf("args_envs_r: 0x%lX\n", args_envs_r);
 	}
-	dkprintf("args_envs_r: 0x%lX\n", args_envs_r);
+	else {
+		args_envs_r = args;
+		p->args_len = args_len;
+	}
 
 	dkprintf("args copy, nr: %d\n", *((int*)args_envs_r));
 
 	memcpy_long(args_envs, args_envs_r, p->args_len + 8);
 
-	ihk_mc_unmap_virtual(args_envs_r, args_envs_npages, 0);
-	ihk_mc_unmap_memory(NULL, args_envs_rp, p->args_len);
+	/* Only unmap remote address if it wasn't specified as an argument */
+	if (!args) {
+		ihk_mc_unmap_virtual(args_envs_r, args_envs_npages, 0);
+		ihk_mc_unmap_memory(NULL, args_envs_rp, p->args_len);
+	}
 	flush_tlb();
 
 	dkprintf("envs: 0x%lX, envs_len: %d\n", p->envs, p->envs_len);
 
-	// Map in remote physical addr of envs and copy it after args
-	args_envs_npages = (p->envs_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
-	dkprintf("args_envs_npages: %d\n", args_envs_npages);
-	args_envs_rp = ihk_mc_map_memory(NULL, (unsigned long)p->envs, p->envs_len);
-	dkprintf("args_envs_rp: 0x%lX\n", args_envs_rp);
-	if((args_envs_r = (char *)ihk_mc_map_virtual(args_envs_rp, args_envs_npages, 
-					attr)) == NULL){
-		goto err;
+	/* Only map remote address if it wasn't specified as an argument */
+	if (!envs) {
+		// Map in remote physical addr of envs and copy it after args
+		args_envs_npages = (p->envs_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
+		dkprintf("args_envs_npages: %d\n", args_envs_npages);
+		args_envs_rp = ihk_mc_map_memory(NULL, (unsigned long)p->envs, 
+				p->envs_len);
+
+		dkprintf("args_envs_rp: 0x%lX\n", args_envs_rp);
+		
+		if ((args_envs_r = (char *)ihk_mc_map_virtual(args_envs_rp, 
+						args_envs_npages, attr)) == NULL) {
+			goto err;
+		}
+		dkprintf("args_envs_r: 0x%lX\n", args_envs_r);
 	}
-	dkprintf("args_envs_r: 0x%lX\n", args_envs_r);
+	else {
+		args_envs_r = envs;
+		p->envs_len = envs_len;
+	}
 
 	dkprintf("envs copy, nr: %d\n", *((int*)args_envs_r));
 
 	memcpy_long(args_envs + p->args_len, args_envs_r, p->envs_len + 8);
 
-	ihk_mc_unmap_virtual(args_envs_r, args_envs_npages, 0);
-	ihk_mc_unmap_memory(NULL, args_envs_rp, p->envs_len);
+	/* Only map remote address if it wasn't specified as an argument */
+	if (!envs) {
+		ihk_mc_unmap_virtual(args_envs_r, args_envs_npages, 0);
+		ihk_mc_unmap_memory(NULL, args_envs_rp, p->envs_len);
+	}
 	flush_tlb();
 
 	// Update variables
