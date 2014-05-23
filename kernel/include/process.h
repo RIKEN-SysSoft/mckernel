@@ -20,6 +20,7 @@
 #include <list.h>
 #include <signal.h>
 #include <memobj.h>
+#include <affinity.h>
 
 #define VR_NONE            0x0
 #define VR_STACK           0x1
@@ -185,6 +186,8 @@ struct process {
 	void *pgio_arg;
 
 	struct fork_tree_node *ftn;
+
+	cpu_set_t cpu_set;
 };
 
 struct process_vm {

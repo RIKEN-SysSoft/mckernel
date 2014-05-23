@@ -1919,56 +1919,97 @@ SYSCALL_DECLARE(ptrace)
 	return -ENOSYS;
 }
 
+#define MIN2(x,y) (x) < (y) ? (x) : (y)
 SYSCALL_DECLARE(sched_setaffinity)
 {
-#if 0
-    int pid = (int)ihk_mc_syscall_arg0(ctx);
-	unsigned int len = (unsigned int)ihk_mc_syscall_arg1(ctx);
-#endif
-    cpu_set_t *mask = (cpu_set_t *)ihk_mc_syscall_arg2(ctx);
-	unsigned long __phys;
-#if 0
-    int i;
-#endif
-    /* TODO: check mask is in user's page table */
-    if(!mask) { return -EFAULT; }
-	if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
-	                           (void *)mask,
-	                           &__phys)) {
+	int tid = (int)ihk_mc_syscall_arg0(ctx);
+	size_t len = (size_t)ihk_mc_syscall_arg1(ctx);
+	cpu_set_t *u_cpu_set = (cpu_set_t *)ihk_mc_syscall_arg2(ctx);
+
+	cpu_set_t cpu_set;
+	struct process *thread;
+	int i;
+
+	if (sizeof(cpu_set_t) > len) {
+		kprintf("%s %d\n", __FILE__, __LINE__);
+		return -EINVAL;
+	}
+	len = MIN2(len, sizeof(cpu_set_t));
+
+	if (copy_from_user(cpu_local_var(current), &cpu_set, u_cpu_set, len)) {
+		kprintf("%s %d\n", __FILE__, __LINE__);
 		return -EFAULT;
 	}
-#if 0
-    dkprintf("sched_setaffinity,\n");
-    for(i = 0; i < len/sizeof(__cpu_mask); i++) {
-        dkprintf("mask[%d]=%lx,", i, mask->__bits[i]);
-    }
-#endif
+
+	thread = NULL;
+	extern int num_processors;
+	for (i = 0; i < num_processors; i++) {
+		struct process *tmp_proc;
+		ihk_mc_spinlock_lock_noirq(&get_cpu_local_var(i)->runq_lock);
+		list_for_each_entry(tmp_proc, &get_cpu_local_var(i)->runq, sched_list) {
+			if (tmp_proc && tmp_proc->pid && tmp_proc->tid == tid) {
+				thread = tmp_proc;
+				hold_process(thread);
+				break;
+			}
+		}
+		ihk_mc_spinlock_unlock_noirq(&get_cpu_local_var(i)->runq_lock);
+		if (thread)
+			break;
+	}
+	if (!thread) {
+		kprintf("%s %d\n", __FILE__, __LINE__);
+		return -ESRCH;
+	}
+	memcpy(&thread->cpu_set, &cpu_set, sizeof(cpu_set));
+	release_process(thread);
+	kprintf("%s %d\n", __FILE__, __LINE__);
 	return 0;
 }
 
-#define MIN2(x,y) (x) < (y) ? (x) : (y)
-#define MIN3(x,y,z) MIN2(MIN2((x),(y)),MIN2((y),(z)))
 // see linux-2.6.34.13/kernel/sched.c
 SYSCALL_DECLARE(sched_getaffinity)
 {
-	//int pid = (int)ihk_mc_syscall_arg0(ctx);
-	unsigned int len = (int)ihk_mc_syscall_arg1(ctx);
-	//int cpu_id;
-	cpu_set_t *mask = (cpu_set_t *)ihk_mc_syscall_arg2(ctx);
-	struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
-    if(len*8 < cpu_info->ncpus) { return -EINVAL; }
-    if(len & (sizeof(unsigned long)-1)) { return -EINVAL; }
-    int min_len = MIN2(len, sizeof(cpu_set_t));
-    //int min_ncpus = MIN2(min_len*8, cpu_info->ncpus);
+	int tid = (int)ihk_mc_syscall_arg0(ctx);
+	size_t len = (size_t)ihk_mc_syscall_arg1(ctx);
+	cpu_set_t *u_cpu_set = (cpu_set_t *)ihk_mc_syscall_arg2(ctx);
 
-	CPU_ZERO_S(min_len, mask);
-	CPU_SET_S(ihk_mc_get_hardware_processor_id(), min_len, mask);
-	//for (cpu_id = 0; cpu_id < min_ncpus; ++cpu_id)
-	//	CPU_SET_S(cpu_info->hw_ids[cpu_id], min_len, mask);
+	int ret;
+	struct process *thread;
+	int i;
 
-    //	dkprintf("sched_getaffinity returns full mask\n");
+	if (sizeof(cpu_set_t) > len) {
+		kprintf("%s %d\n", __FILE__, __LINE__);
+		return -EINVAL;
+	}
+	len = MIN2(len, sizeof(cpu_set_t));
 
-	return min_len;
+	thread = NULL;
+	extern int num_processors;
+	for (i = 0; i < num_processors; i++) {
+		struct process *tmp_proc;
+		ihk_mc_spinlock_lock_noirq(&get_cpu_local_var(i)->runq_lock);
+		list_for_each_entry(tmp_proc, &get_cpu_local_var(i)->runq, sched_list) {
+			if (tmp_proc && tmp_proc->pid && tmp_proc->tid == tid) {
+				thread = tmp_proc;
+				hold_process(thread);
+				break;
+			}
+		}
+		ihk_mc_spinlock_unlock_noirq(&get_cpu_local_var(i)->runq_lock);
+		if (thread)
+			break;
+	}
+	if (!thread) {
+		kprintf("%s %d\n", __FILE__, __LINE__);
+		return -ESRCH;
+	}
+	ret = copy_to_user(cpu_local_var(current), u_cpu_set, &thread->cpu_set, len);
+	release_process(thread);
+	kprintf("%s %d %d\n", __FILE__, __LINE__, ret);
+	if (ret < 0)
+		return ret;
+	return len;
 }
 
 SYSCALL_DECLARE(sched_yield)
