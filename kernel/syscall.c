@@ -1843,6 +1843,13 @@ SYSCALL_DECLARE(getrlimit)
 		ret = 0;
 		break;
 
+	case RLIMIT_FSIZE:
+	case RLIMIT_LOCKS:
+	case RLIMIT_NOFILE:
+		/* just forward */
+		ret = syscall_generic_forwarding(n, ctx);
+		break;
+
 	default:
 
 		return -ENOSYS;
