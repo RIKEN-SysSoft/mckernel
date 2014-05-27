@@ -772,21 +772,14 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	/* Shift arguments to the front */
-	for (a = argv + optind; *a; a++) {
-		a[- optind + 1] = a[0];
-	}
-	argv[argc - optind + 2] = NULL;
-	argc -= (optind);
-
 	__dprintf("target_core: %d, device: %s, command: ", target_core, dev);
-	for (i = 1; i < argc; ++i) {
+	for (i = optind; i < argc; ++i) {
 		__dprintf("%s ", argv[i]);
 	}
 	__dprintf("\n");
 
-	if (load_elf_desc(argv[1], &desc) != 0) {
-		fprintf(stderr, "error: loading file: %s\n", argv[1]);
+	if (load_elf_desc(argv[optind], &desc) != 0) {
+		fprintf(stderr, "error: loading file: %s\n", argv[optind]);
 		return 1;
 	}
 	
@@ -794,7 +787,7 @@ int main(int argc, char **argv)
 	desc->envs = envs;
 	//print_flat(envs);
 
-	desc->args_len = flatten_strings(-1, argv + 1, &args);
+	desc->args_len = flatten_strings(-1, argv + optind, &args);
 	desc->args = args;
 	//print_flat(args);
 
