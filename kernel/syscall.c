@@ -1860,6 +1860,17 @@ SYSCALL_DECLARE(getrlimit)
 	return ret;
 }
 
+SYSCALL_DECLARE(ptrace)
+{
+	const int request = ihk_mc_syscall_arg0(ctx);
+	const long pid = ihk_mc_syscall_arg1(ctx);
+	void * const addr = (void *)ihk_mc_syscall_arg2(ctx);
+	void * const data = (void *)ihk_mc_syscall_arg3(ctx);
+
+	kprintf("ptrace(%d,%ld,%p,%p): ENOSYS\n", request, pid, addr, data);
+	return -ENOSYS;
+}
+
 SYSCALL_DECLARE(sched_setaffinity)
 {
 #if 0
