@@ -574,23 +574,44 @@ static void *main_loop_thread_func(void *arg)
 void
 sendsig(int sig, siginfo_t *siginfo, void *context)
 {
-	unsigned long	param;
+	pid_t	pid = getpid();
 	pid_t	tid = gettid();
 	int	i;
+	int	cpu;
+	struct signal_desc sigdesc;
 
-	if(tid != master_tid){
-		for(i = 0; i < ncpu; i++)
+
+	if(siginfo->si_pid == pid &&
+	   siginfo->si_signo == SIGINT)
+		return;
+	if(tid == thread_data[0].tid){
+		cpu = thread_data[0].cpu;
+		tid = master_tid;
+	}
+	else if(tid != master_tid){
+		for(i = 1; i < ncpu; i++)
 			if(thread_data[i].tid == tid){
 				if(thread_data[i].terminate)
 					return;
 				break;
 			}
-		if(i == ncpu)
-			return;
+		if(i != ncpu)
+			cpu = thread_data[i].cpu;
+		else{
+			cpu = 0;
+			tid = -1;
+		}
+	}
+	else{
+		cpu = 0;
+		tid = -1;
 	}
 
-	param = ((unsigned long)sig) << 32 | ((unsigned long)getpid());
-	if (ioctl(fd, MCEXEC_UP_SEND_SIGNAL, param) != 0) {
+	sigdesc.cpu = cpu;
+	sigdesc.pid = (int)pid;
+	sigdesc.tid = (int)tid;
+	sigdesc.sig = sig;
+	if (ioctl(fd, MCEXEC_UP_SEND_SIGNAL, &sigdesc) != 0) {
 		perror("send_signal");
 		close(fd);
 		exit(1);
@@ -702,7 +723,6 @@ int main(int argc, char **argv)
 	int envs_len;
 	char *envs;
 	char *args;
-	char **a;
 	char *p;
 	int i;
 	int error;
@@ -976,14 +996,12 @@ static void
 kill_thread(unsigned long cpu)
 {
 	if(cpu >= 0 && cpu < ncpu){
-		thread_data[cpu].terminate = 1;
 		pthread_kill(thread_data[cpu].thread_id, SIGINT);
 	}
 	else{
 		int	i;
 
 		for (i = 0; i < ncpu; ++i) {
-			thread_data[i].terminate = 1;
 			pthread_kill(thread_data[i].thread_id, SIGINT);
 		}
 	}

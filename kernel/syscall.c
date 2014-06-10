@@ -94,6 +94,7 @@ static char *syscall_name[] MCKERNEL_UNUSED = {
 
 void check_signal(unsigned long rc, void *regs);
 void do_signal(long rc, void *regs, struct process *proc, struct sig_pending *pending);
+extern unsigned long do_kill(int pid, int tid, int sig);
 int copy_from_user(struct process *, void *, const void *, size_t);
 int copy_to_user(struct process *, void *, const void *, size_t);
 
@@ -415,7 +416,10 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 		/* Signal parent if still attached */
 		ihk_mc_spinlock_lock_noirq(&ftn->parent->lock);
 		if (ftn->parent->owner) {
+			do_kill(ftn->parent->owner->pid, -1, SIGCHLD);
+/*
 			sigchld_parent(ftn->parent->owner, 0);
+*/
 		}
 		ihk_mc_spinlock_unlock_noirq(&ftn->parent->lock);	
 		
@@ -1334,8 +1338,6 @@ SYSCALL_DECLARE(set_tid_address)
 
 	return cpu_local_var(current)->pid;
 }
-
-extern unsigned long do_kill(int pid, int tid, int sig);
 
 SYSCALL_DECLARE(kill)
 {

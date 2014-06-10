@@ -134,9 +134,17 @@ struct prepare_dma_desc {
 	unsigned long size;
 	unsigned long pa;
 };
+
 struct free_dma_desc {
 	unsigned long pa;
 	unsigned long size;
+};
+
+struct signal_desc {
+	int cpu;
+	int pid;
+	int tid;
+	int sig;
 };
 
 #endif

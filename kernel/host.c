@@ -535,7 +535,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		//cpu_local_var(next) = (struct process *)packet->arg;
 		return 0;
 	case SCD_MSG_SEND_SIGNAL:
-		rc = do_kill((int)packet->arg, -1, (int)(packet->arg >> 32));
+		rc = do_kill((int)packet->pid, (int)(packet->arg >> 32), packet->arg & 0x00000000ffffffffL);
 		kprintf("SCD_MSG_SEND_SIGNAL: %lx, rc=%d\n", packet->arg, rc);
 		return 0;
 	}

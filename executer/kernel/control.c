@@ -268,16 +268,21 @@ static long mcexec_start_image(ihk_os_t os,
 	return 0;
 }
 
-static long mcexec_send_signal(ihk_os_t os, unsigned long sigparam)
+static long mcexec_send_signal(ihk_os_t os, struct signal_desc *sigparam)
 {
 	struct ikc_scd_packet isp;
 	struct mcctrl_channel *c;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct signal_desc sig;
 
+	if (copy_from_user(&sig, sigparam, sizeof(struct signal_desc))) {
+		return -EFAULT;
+	}
 	c = usrdata->channels;
 	isp.msg = SCD_MSG_SEND_SIGNAL;
-	isp.ref = 0;
-	isp.arg = sigparam;
+	isp.ref = sig.cpu;
+	isp.pid = sig.pid;
+	isp.arg = (long)sig.tid << 32 | (sig.sig & 0x00000000ffffffffL);
 
 	mcctrl_ikc_send(os, 0, &isp);
 
@@ -758,7 +763,7 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg)
 		return mcexec_load_syscall(os, (struct syscall_load_desc *)arg);
 
 	case MCEXEC_UP_SEND_SIGNAL:
-		return mcexec_send_signal(os, arg);
+		return mcexec_send_signal(os, (struct signal_desc *)arg);
 
 	case MCEXEC_UP_GET_CPU:
 		return mcexec_get_cpu(os);

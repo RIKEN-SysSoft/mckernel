@@ -295,6 +295,15 @@ do_kill(int pid, int tid, int sig)
 		if(pid == proc->pid || pid == 0){
 			tproc = proc;
 		}
+		else{
+			for(i = 0; i < num_processors; i++){
+				if(get_cpu_local_var(i)->current &&
+				   get_cpu_local_var(i)->current->pid == pid){
+					tproc = get_cpu_local_var(i)->current;
+					break;
+				}
+			}
+		}
 	}
 	else if(pid == -1){
 		for(i = 0; i < num_processors; i++)
@@ -357,6 +366,9 @@ do_kill(int pid, int tid, int sig)
 	}
 	else{
 		ihk_mc_spinlock_unlock(&tproc->sigpendinglock, irqstate);
+	}
+	if(proc != tproc){
+		ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(tproc->cpu_id)->apic_id, 0xd0);
 	}
 	interrupt_syscall(1);
 	return rc;
