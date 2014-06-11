@@ -143,7 +143,7 @@ SYSCALL_DECLARE(rt_sigreturn)
 
 extern struct cpu_local_var *clv;
 extern unsigned long do_kill(int pid, int tid, int sig);
-extern void interrupt_syscall(int all);
+extern void interrupt_syscall(int all, int pid);
 extern int num_processors;
 
 void
@@ -370,7 +370,7 @@ do_kill(int pid, int tid, int sig)
 	if(proc != tproc){
 		ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(tproc->cpu_id)->apic_id, 0xd0);
 	}
-	interrupt_syscall(1);
+	interrupt_syscall(1, tproc->pid);
 	return rc;
 }
 

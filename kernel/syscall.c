@@ -127,6 +127,8 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid)
 		/* XXX: is this really going to work if multiple processes 
 		 * exit/receive signals at the same time?? */
 		cpu = num_processors;
+		if(req->number == __NR_kill)
+			pid = req->args[2];
 	}
 	else{
 		scp = &get_cpu_local_var(cpu)->scp;
@@ -234,6 +236,7 @@ long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx)
 	SYSCALL_FOOTER;
 }
 
+#if 0
 void sigchld_parent(struct process *parent, int status)
 {
 	struct process *proc = cpu_local_var(current);
@@ -275,6 +278,7 @@ void sigchld_parent(struct process *parent, int status)
 
 	ihk_mc_spinlock_unlock(&parent->sigpendinglock, irqstate);
 }
+#endif
 
 /* 
  * From glibc: INLINE_SYSCALL (wait4, 4, pid, stat_loc, options, NULL);
@@ -438,13 +442,14 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 }
 
 void
-interrupt_syscall(int all)
+interrupt_syscall(int all, int pid)
 {
 	ihk_mc_user_context_t ctx;
 	long lerror;
 
 	ihk_mc_syscall_arg0(&ctx) = all? -1: ihk_mc_get_processor_id();
 	ihk_mc_syscall_arg1(&ctx) = 0;
+	ihk_mc_syscall_arg2(&ctx) = pid;
 
 	lerror = syscall_generic_forwarding(__NR_kill, &ctx);
 	if (lerror) {
