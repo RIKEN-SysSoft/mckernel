@@ -1546,16 +1546,16 @@ void release_process(struct process *proc)
 
 static void idle(void)
 {
-	//unsigned int	flags;
-	//flags = ihk_mc_spinlock_lock(&cpu_status_lock);
-	//ihk_mc_spinlock_unlock(&cpu_status_lock, flags);
 	cpu_local_var(status) = CPU_STATUS_IDLE;
+    cpu_enable_interrupt();
 
 	while (1) {
-		cpu_enable_interrupt();
 		schedule();
-		//cpu_local_var(status) = CPU_STATUS_IDLE;
-		cpu_halt();
+        cpu_disable_interrupt();
+        if (cpu_local_var(status) == CPU_STATUS_IDLE)
+            cpu_safe_halt();
+        else
+            cpu_enable_interrupt();
 	}
 }
 
