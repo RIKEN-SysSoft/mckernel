@@ -78,6 +78,8 @@
 #define PFL3_DIRTY      ((pte_t)0x40)
 #define PFL3_SIZE       ((pte_t)0x80)   /* Used in 1G page */
 #define PFL3_GLOBAL     ((pte_t)0x100)
+#define PFL3_IGNORED_11 ((pte_t)1 << 11)
+#define PFL3_FILEOFF    PFL3_IGNORED_11
 
 #define PFL2_PRESENT    ((pte_t)0x01)
 #define PFL2_WRITABLE   ((pte_t)0x02)
@@ -88,6 +90,8 @@
 #define PFL2_DIRTY      ((pte_t)0x40)
 #define PFL2_SIZE       ((pte_t)0x80)   /* Used in 2M page */
 #define PFL2_GLOBAL     ((pte_t)0x100)
+#define PFL2_IGNORED_11 ((pte_t)1 << 11)
+#define PFL2_FILEOFF    PFL2_IGNORED_11
 
 #define PFL1_PRESENT    ((pte_t)0x01)
 #define PFL1_WRITABLE   ((pte_t)0x02)
@@ -96,6 +100,8 @@
 #define PFL1_PCD        ((pte_t)0x10)
 #define PFL1_ACCESSED   ((pte_t)0x20)
 #define PFL1_DIRTY      ((pte_t)0x40)
+#define PFL1_IGNORED_11 ((pte_t)1 << 11)
+#define PFL1_FILEOFF    PFL1_IGNORED_11
 
 /* We allow user programs to access all the memory */
 #define PFL4_KERN_ATTR       (PFL4_PRESENT | PFL4_WRITABLE)
@@ -108,6 +114,9 @@
 #define	PFL3_PDIR_ATTR	(PFL3_PRESENT | PFL3_WRITABLE | PFL3_USER)
 #define	PFL2_PDIR_ATTR	(PFL2_PRESENT | PFL2_WRITABLE | PFL2_USER)
 
+#define	PTE_NULL ((pte_t)0)
+typedef unsigned long pte_t;
+
 /* For easy conversion, it is better to be the same as architecture's ones */
 enum ihk_mc_pt_attribute {
 	PTATTR_ACTIVE     = 0x01,
@@ -115,13 +124,11 @@ enum ihk_mc_pt_attribute {
 	PTATTR_USER       = 0x04,
 	PTATTR_DIRTY      = 0x40,
 	PTATTR_LARGEPAGE  = 0x80,
+	PTATTR_FILEOFF    = PFL2_FILEOFF,
 	PTATTR_NO_EXECUTE = 0x8000000000000000,
 	PTATTR_UNCACHABLE = 0x10000,
 	PTATTR_FOR_USER   = 0x20000,
 };
-
-#define	PTE_NULL ((pte_t)0)
-typedef unsigned long pte_t;
 
 static inline int pte_is_null(pte_t *ptep)
 {
@@ -153,9 +160,29 @@ static inline int pte_is_dirty(pte_t *ptep, size_t pgsize)
 	}
 }
 
+static inline int pte_is_fileoff(pte_t *ptep, size_t pgsize)
+{
+	switch (pgsize) {
+	case PTL1_SIZE:	return !!(*ptep & PFL1_FILEOFF);
+	case PTL2_SIZE:	return !!(*ptep & PFL2_FILEOFF);
+	case PTL3_SIZE:	return !!(*ptep & PFL3_FILEOFF);
+	default:
+#if 0	/* XXX: workaround. cannot use panic() here */
+		panic("pte_is_fileoff");
+#else
+		return !!(*ptep & PTATTR_FILEOFF);
+#endif
+	}
+}
+
 static inline uintptr_t pte_get_phys(pte_t *ptep)
 {
 	return (*ptep & PT_PHYSMASK);
+}
+
+static inline off_t pte_get_off(pte_t *ptep, size_t pgsize)
+{
+	return (off_t)(*ptep & PAGE_MASK);
 }
 
 #if 0	/* XXX: workaround. cannot use panic() here */

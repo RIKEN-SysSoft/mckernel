@@ -219,7 +219,13 @@ static struct page_table *__alloc_new_pt(enum ihk_mc_ap_flag ap_flag)
  *      but L2 and L1 do not!
  */
 
-static enum ihk_mc_pt_attribute attr_mask = PTATTR_WRITABLE | PTATTR_USER | PTATTR_ACTIVE;
+static enum ihk_mc_pt_attribute attr_mask
+		= 0
+		| PTATTR_FILEOFF
+		| PTATTR_WRITABLE
+		| PTATTR_USER
+		| PTATTR_ACTIVE
+		| 0;
 #define	ATTR_MASK	attr_mask
 
 void enable_ptattr_no_execute(void)
@@ -523,6 +529,7 @@ int ihk_mc_pt_print_pte(struct page_table *pt, void *virt)
 
 	if (!(pt->entry[l4idx] & PFL4_PRESENT)) {
 		__kprintf("0x%lX l4idx not present! \n", (unsigned long)virt);
+		__kprintf("l4 entry: 0x%lX\n", pt->entry[l4idx]);
 		return -EFAULT;
 	}
 	pt = phys_to_virt(pt->entry[l4idx] & PAGE_MASK);
@@ -530,6 +537,7 @@ int ihk_mc_pt_print_pte(struct page_table *pt, void *virt)
 	__kprintf("l3 table: 0x%lX l3idx: %d \n", virt_to_phys(pt), l3idx);
 	if (!(pt->entry[l3idx] & PFL3_PRESENT)) {
 		__kprintf("0x%lX l3idx not present! \n", (unsigned long)virt);
+		__kprintf("l3 entry: 0x%lX\n", pt->entry[l3idx]);
 		return -EFAULT;
 	}
 	pt = phys_to_virt(pt->entry[l3idx] & PAGE_MASK);
@@ -537,6 +545,7 @@ int ihk_mc_pt_print_pte(struct page_table *pt, void *virt)
 	__kprintf("l2 table: 0x%lX l2idx: %d \n", virt_to_phys(pt), l2idx);
 	if (!(pt->entry[l2idx] & PFL2_PRESENT)) {
 		__kprintf("0x%lX l2idx not present! \n", (unsigned long)virt);
+		__kprintf("l2 entry: 0x%lX\n", pt->entry[l2idx]);
 		return -EFAULT;
 	}
 	if ((pt->entry[l2idx] & PFL2_SIZE)) {
@@ -546,11 +555,12 @@ int ihk_mc_pt_print_pte(struct page_table *pt, void *virt)
 
 	__kprintf("l1 table: 0x%lX l1idx: %d \n", virt_to_phys(pt), l1idx);
 	if (!(pt->entry[l1idx] & PFL1_PRESENT)) {
-		__kprintf("0x%lX PTE (l1) not present! entry: 0x%lX\n", 
-		          (unsigned long)virt, pt->entry[l1idx]);
+		__kprintf("0x%lX l1idx not present! \n", (unsigned long)virt);
+		__kprintf("l1 entry: 0x%lX\n", pt->entry[l1idx]);
 		return -EFAULT;
 	}
 
+	__kprintf("l1 entry: 0x%lX\n", pt->entry[l1idx]);
 	return 0;
 }
 
@@ -822,8 +832,16 @@ static int split_large_page(pte_t *ptep)
 		return -ENOMEM;
 	}
 
-	phys = *ptep & PT_PHYSMASK;
-	attr = *ptep & ~PFL2_SIZE;
+	if (!(*ptep & PFL2_FILEOFF)) {
+		phys = *ptep & PT_PHYSMASK;
+		attr = *ptep & ~PT_PHYSMASK;
+		attr &= ~PFL2_SIZE;
+	}
+	else {
+		phys = *ptep & PAGE_MASK;	/* file offset */
+		attr = *ptep & ~PAGE_MASK;
+		attr &= ~PFL2_SIZE;
+	}
 
 	for (i = 0; i < PT_ENTRIES; ++i) {
 		pt->entry[i] = (phys + (i * PTL1_SIZE)) | attr;
@@ -1008,7 +1026,7 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 		memobj_flush_page(args->memobj, phys, PTL1_SIZE);
 	}
 
-	if (args->free_physical) {
+	if (!(old & PFL1_FILEOFF) && args->free_physical) {
 		page = phys_to_page(phys);
 		if (page && page_unmap(page)) {
 			ihk_mc_free_pages(phys_to_virt(phys), 1);
@@ -1054,7 +1072,7 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
 			memobj_flush_page(args->memobj, phys, PTL2_SIZE);
 		}
 
-		if (args->free_physical) {
+		if (!(old & PFL2_FILEOFF) && args->free_physical) {
 			page = phys_to_page(phys);
 			if (page && page_unmap(page)) {
 				ihk_mc_free_pages(phys_to_virt(phys), PTL2_SIZE/PTL1_SIZE);
@@ -1148,7 +1166,7 @@ static int change_attr_range_l1(void *arg0, pte_t *ptep, uint64_t base,
 {
 	struct change_attr_args *args = arg0;
 
-	if (*ptep == PTE_NULL) {
+	if ((*ptep == PTE_NULL) || (*ptep & PFL1_FILEOFF)) {
 		return -ENOENT;
 	}
 
@@ -1163,7 +1181,7 @@ static int change_attr_range_l2(void *arg0, pte_t *ptep, uint64_t base,
 	int error;
 	struct page_table *pt;
 
-	if (*ptep == PTE_NULL) {
+	if ((*ptep == PTE_NULL) || (*ptep & PFL2_FILEOFF)) {
 		return -ENOENT;
 	}
 
@@ -1182,7 +1200,9 @@ static int change_attr_range_l2(void *arg0, pte_t *ptep, uint64_t base,
 	}
 
 	if (*ptep & PFL2_SIZE) {
-		*ptep = (*ptep & ~args->clrpte) | args->setpte;
+		if (!(*ptep & PFL2_FILEOFF)) {
+			*ptep = (*ptep & ~args->clrpte) | args->setpte;
+		}
 		return 0;
 	}
 
@@ -1195,7 +1215,7 @@ static int change_attr_range_l3(void *arg0, pte_t *ptep, uint64_t base,
 {
 	struct page_table *pt;
 
-	if (*ptep == PTE_NULL) {
+	if ((*ptep == PTE_NULL) || (*ptep & PFL3_FILEOFF)) {
 		return -ENOENT;
 	}
 

@@ -1012,7 +1012,8 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 	/*****/
 	ptep = ihk_mc_pt_lookup_pte(vm->page_table, (void *)fault_addr, &pgaddr, &pgsize, &p2align);
-	if (!(reason & PF_PROT) && ptep && !pte_is_null(ptep)) {
+	if (!(reason & PF_PROT) && ptep && !pte_is_null(ptep)
+			&& !pte_is_fileoff(ptep, pgsize)) {
 		if (!pte_is_present(ptep)) {
 			error = -EFAULT;
 			kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):PROT_NONE. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
@@ -1034,11 +1035,16 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 	}
 	attr = arch_vrflag_to_ptattr(range->flag, reason, ptep);
 	pgaddr = (void *)(fault_addr & ~(pgsize - 1));
-	if (!ptep || pte_is_null(ptep)) {
+	if (!ptep || pte_is_null(ptep) || pte_is_fileoff(ptep, pgsize)) {
 		if (range->memobj) {
 			off_t off;
 
-			off = range->objoff + ((uintptr_t)pgaddr - range->start);
+			if (!ptep || !pte_is_fileoff(ptep, pgsize)) {
+				off = range->objoff + ((uintptr_t)pgaddr - range->start);
+			}
+			else {
+				off = pte_get_off(ptep, pgsize);
+			}
 			error = memobj_get_page(range->memobj, off, p2align, &phys);
 			if (error) {
 				if (error != -ERESTART) {
