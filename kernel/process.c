@@ -997,6 +997,94 @@ out:
 	return error;
 }
 
+struct rfp_args {
+	off_t off;
+	uintptr_t start;
+	struct memobj *memobj;
+};
+
+static int remap_one_page(void *arg0, page_table_t pt, pte_t *ptep,
+		void *pgaddr, size_t pgsize)
+{
+	struct rfp_args * const args = arg0;
+	int error;
+	off_t off;
+	pte_t apte;
+	uintptr_t phys;
+	struct page *page;
+
+	dkprintf("remap_one_page(%p,%p,%p %#lx,%p,%#lx)\n",
+			arg0, pt, ptep, *ptep, pgaddr, pgsize);
+
+	/* XXX: NYI: large pages */
+	if (pgsize != PAGE_SIZE) {
+		error = -E2BIG;
+		ekprintf("remap_one_page(%p,%p,%p %#lx,%p,%#lx):%d\n",
+				arg0, pt, ptep, *ptep, pgaddr, pgsize, error);
+		goto out;
+	}
+
+	off = args->off + ((uintptr_t)pgaddr - args->start);
+	pte_make_fileoff(off, 0, pgsize, &apte);
+
+	pte_xchg(ptep, &apte);
+	flush_tlb_single((uintptr_t)pgaddr);	/* XXX: TLB flush */
+
+	if (pte_is_null(&apte) || pte_is_fileoff(&apte, pgsize)) {
+		error = 0;
+		goto out;
+	}
+	phys = pte_get_phys(&apte);
+
+	if (pte_is_dirty(&apte, pgsize)) {
+		memobj_flush_page(args->memobj, phys, pgsize);	/* XXX: in lock period */
+	}
+
+	page = phys_to_page(phys);
+	if (page && page_unmap(page)) {
+		ihk_mc_free_pages(phys_to_virt(phys), pgsize/PAGE_SIZE);
+	}
+
+	error = 0;
+out:
+	dkprintf("remap_one_page(%p,%p,%p %#lx,%p,%#lx): %d\n",
+			arg0, pt, ptep, *ptep, pgaddr, pgsize, error);
+	return error;
+}
+
+int remap_process_memory_range(struct process_vm *vm, struct vm_range *range,
+		uintptr_t start, uintptr_t end, off_t off)
+{
+	struct rfp_args args;
+	int error;
+
+	dkprintf("remap_process_memory_range(%p,%p,%#lx,%#lx,%#lx)\n",
+			vm, range, start, end, off);
+	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
+	memobj_lock(range->memobj);
+
+	args.start = start;
+	args.off = off;
+	args.memobj = range->memobj;
+
+	error = visit_pte_range(vm->page_table, (void *)start,
+			(void *)end, VPTEF_DEFAULT, &remap_one_page, &args);
+	if (error) {
+		ekprintf("remap_process_memory_range(%p,%p,%#lx,%#lx,%#lx):"
+				"visit pte failed %d\n",
+				vm, range, start, end, off, error);
+		goto out;
+	}
+
+	error = 0;
+out:
+	memobj_unlock(range->memobj);
+	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
+	dkprintf("remap_process_memory_range(%p,%p,%#lx,%#lx,%#lx):%d\n",
+			vm, range, start, end, off, error);
+	return error;
+}
+
 static int page_fault_process_memory_range(struct process_vm *vm, struct vm_range *range, uintptr_t fault_addr, uint64_t reason)
 {
 	int error;

@@ -2271,6 +2271,80 @@ out2:
 	return error;
 }
 
+SYSCALL_DECLARE(remap_file_pages)
+{
+	const uintptr_t start0 = ihk_mc_syscall_arg0(ctx);
+	const size_t size = ihk_mc_syscall_arg1(ctx);
+	const int prot = ihk_mc_syscall_arg2(ctx);
+	const size_t pgoff = ihk_mc_syscall_arg3(ctx);
+	const int flags = ihk_mc_syscall_arg4(ctx);
+	int error;
+	const uintptr_t start = start0 & PAGE_MASK;
+	const uintptr_t end = start + size;
+	const off_t off = (off_t)pgoff << PAGE_SHIFT;
+	struct process * const proc = cpu_local_var(current);
+	struct vm_range *range;
+	int er;
+	int need_populate = 0;
+
+	dkprintf("sys_remap_file_pages(%#lx,%#lx,%#x,%#lx,%#x)\n",
+			start0, size, prot, pgoff, flags);
+	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
+#define	PGOFF_LIMIT	((off_t)1 << ((8*sizeof(off_t) - 1) - PAGE_SHIFT))
+	if ((size <= 0) || (size & (PAGE_SIZE - 1)) || (prot != 0)
+			|| (pgoff < 0) || (PGOFF_LIMIT <= pgoff)
+			|| ((PGOFF_LIMIT - pgoff) < (size / PAGE_SIZE))
+			|| !((start < end) || (end == 0))) {
+		ekprintf("sys_remap_file_pages(%#lx,%#lx,%#x,%#lx,%#x):"
+				"invalid args\n",
+				start0, size, prot, pgoff, flags);
+		error = -EINVAL;
+		goto out;
+	}
+
+	range = lookup_process_memory_range(proc->vm, start, end);
+	if (!range || (start < range->start) || (range->end < end)
+			|| (range->flag & VR_PRIVATE)
+			|| !range->memobj) {
+		ekprintf("sys_remap_file_pages(%#lx,%#lx,%#x,%#lx,%#x):"
+				"invalid VMR:[%#lx-%#lx) %#lx %p\n",
+				start0, size, prot, pgoff, flags,
+				range?range->start:0, range?range->end:0,
+				range?range->flag:0, range?range->memobj:NULL);
+		error = -EINVAL;
+		goto out;
+	}
+
+	error = remap_process_memory_range(proc->vm, range, start, end, off);
+	if (error) {
+		ekprintf("sys_remap_file_pages(%#lx,%#lx,%#x,%#lx,%#x):"
+				"remap failed %d\n",
+				start0, size, prot, pgoff, flags, error);
+		goto out;
+	}
+	clear_host_pte(start, size);	/* XXX: workaround */
+
+	if (range->flag & VR_LOCKED) {
+		need_populate = 1;
+	}
+	error = 0;
+out:
+	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+
+	if (need_populate
+			&& (er = populate_process_memory(
+					proc, (void *)start, size))) {
+		ekprintf("sys_remap_file_pages(%#lx,%#lx,%#x,%#lx,%#x):"
+				"populate failed %d\n",
+				start0, size, prot, pgoff, flags, er);
+		/* ignore populate error */
+	}
+
+	dkprintf("sys_remap_file_pages(%#lx,%#lx,%#x,%#lx,%#x): %d\n",
+			start0, size, prot, pgoff, flags, error);
+	return error;
+}
+
 #ifdef DCFA_KMOD
 
 #ifdef CMD_DCFA

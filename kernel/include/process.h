@@ -228,6 +228,8 @@ int join_process_memory_range(struct process *process, struct vm_range *survivin
 int change_prot_process_memory_range(
 		struct process *process, struct vm_range *range,
 		unsigned long newflag);
+int remap_process_memory_range(struct process_vm *vm, struct vm_range *range,
+		uintptr_t start, uintptr_t end, off_t off);
 struct vm_range *lookup_process_memory_range(
 		struct process_vm *vm, uintptr_t start, uintptr_t end);
 struct vm_range *next_process_memory_range(
