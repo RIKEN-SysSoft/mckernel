@@ -833,6 +833,156 @@ static int split_large_page(pte_t *ptep)
 	return 0;
 }
 
+struct visit_pte_args {
+	page_table_t pt;
+	enum visit_pte_flag flags;
+	int padding;
+	pte_visitor_t *funcp;
+	void *arg;
+};
+
+static int visit_pte_l1(void *arg0, pte_t *ptep, uintptr_t base,
+		uintptr_t start, uintptr_t end)
+{
+	struct visit_pte_args *args = arg0;
+
+	if ((*ptep == PTE_NULL) && (args->flags & VPTEF_SKIP_NULL)) {
+		return 0;
+	}
+
+	return (*args->funcp)(args->arg, args->pt, ptep, (void *)base,
+			PTL1_SIZE);
+}
+
+static int visit_pte_l2(void *arg0, pte_t *ptep, uintptr_t base,
+		uintptr_t start, uintptr_t end)
+{
+	int error;
+	struct visit_pte_args *args = arg0;
+	struct page_table *pt;
+
+	if ((*ptep == PTE_NULL) && (args->flags & VPTEF_SKIP_NULL)) {
+		return 0;
+	}
+
+#ifdef USE_LARGE_PAGES
+	if (((*ptep == PTE_NULL) || (*ptep & PFL2_SIZE))
+			&& (start <= base)
+			&& (((base + PTL2_SIZE) <= end)
+				|| (end == 0))) {
+		error = (*args->funcp)(args->arg, args->pt, ptep,
+				(void *)base, PTL2_SIZE);
+		if (error != -E2BIG) {
+			return error;
+		}
+	}
+
+	if (*ptep & PFL2_SIZE) {
+		ekprintf("visit_pte_l2:split large page\n");
+		return -ENOMEM;
+	}
+#endif
+
+	if (*ptep == PTE_NULL) {
+		pt = __alloc_new_pt(IHK_MC_AP_NOWAIT);
+		if (!pt) {
+			return -ENOMEM;
+		}
+		*ptep = virt_to_phys(pt) | PFL2_PDIR_ATTR;
+	}
+	else {
+		pt = phys_to_virt(*ptep & PT_PHYSMASK);
+	}
+
+	error = walk_pte_l1(pt, base, start, end, &visit_pte_l1, arg0);
+	return error;
+}
+
+static int visit_pte_l3(void *arg0, pte_t *ptep, uintptr_t base,
+		uintptr_t start, uintptr_t end)
+{
+	int error;
+	struct visit_pte_args *args = arg0;
+	struct page_table *pt;
+
+	if ((*ptep == PTE_NULL) && (args->flags & VPTEF_SKIP_NULL)) {
+		return 0;
+	}
+
+#ifdef USE_LARGE_PAGES
+	if (((*ptep == PTE_NULL) || (*ptep & PFL3_SIZE))
+			&& (start <= base)
+			&& (((base + PTL3_SIZE) <= end)
+				|| (end == 0))) {
+		error = (*args->funcp)(args->arg, args->pt, ptep,
+				(void *)base, PTL3_SIZE);
+		if (error != -E2BIG) {
+			return error;
+		}
+	}
+
+	if (*ptep & PFL3_SIZE) {
+		ekprintf("visit_pte_l3:split large page\n");
+		return -ENOMEM;
+	}
+#endif
+
+	if (*ptep == PTE_NULL) {
+		pt = __alloc_new_pt(IHK_MC_AP_NOWAIT);
+		if (!pt) {
+			return -ENOMEM;
+		}
+		*ptep = virt_to_phys(pt) | PFL3_PDIR_ATTR;
+	}
+	else {
+		pt = phys_to_virt(*ptep & PT_PHYSMASK);
+	}
+
+	error = walk_pte_l2(pt, base, start, end, &visit_pte_l2, arg0);
+	return error;
+}
+
+static int visit_pte_l4(void *arg0, pte_t *ptep, uintptr_t base,
+		uintptr_t start, uintptr_t end)
+{
+	int error;
+	struct visit_pte_args *args = arg0;
+	struct page_table *pt;
+
+	if ((*ptep == PTE_NULL) && (args->flags & VPTEF_SKIP_NULL)) {
+		return 0;
+	}
+
+	if (*ptep == PTE_NULL) {
+		pt = __alloc_new_pt(IHK_MC_AP_NOWAIT);
+		if (!pt) {
+			return -ENOMEM;
+		}
+		*ptep = virt_to_phys(pt) | PFL4_PDIR_ATTR;
+	}
+	else {
+		pt = phys_to_virt(*ptep & PT_PHYSMASK);
+	}
+
+	error = walk_pte_l3(pt, base, start, end, &visit_pte_l3, arg0);
+	return error;
+}
+
+int visit_pte_range(page_table_t pt, void *start0, void *end0,
+		enum visit_pte_flag flags, pte_visitor_t *funcp, void *arg)
+{
+	const uintptr_t start = (uintptr_t)start0;
+	const uintptr_t end = (uintptr_t)end0;
+	struct visit_pte_args args;
+
+	args.pt = pt;
+	args.flags = flags;
+	args.funcp = funcp;
+	args.arg = arg;
+
+	return walk_pte_l4(pt, 0, start, end, &visit_pte_l4, &args);
+}
+
 struct clear_range_args {
 	int free_physical;
 	uint8_t padding[4];
