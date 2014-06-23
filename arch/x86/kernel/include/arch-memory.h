@@ -138,6 +138,21 @@ static inline int pte_is_writable(pte_t *ptep)
 	return !!(*ptep & PF_WRITABLE);
 }
 
+static inline int pte_is_dirty(pte_t *ptep, size_t pgsize)
+{
+	switch (pgsize) {
+	case PTL1_SIZE:	return !!(*ptep & PFL1_DIRTY);
+	case PTL2_SIZE:	return !!(*ptep & PFL2_DIRTY);
+	case PTL3_SIZE:	return !!(*ptep & PFL3_DIRTY);
+	default:
+#if 0	/* XXX: workaround. cannot use panic() here */
+		panic("pte_is_dirty");
+#else
+		return !!(*ptep & PTATTR_DIRTY);
+#endif
+	}
+}
+
 static inline uintptr_t pte_get_phys(pte_t *ptep)
 {
 	return (*ptep & PT_PHYSMASK);
