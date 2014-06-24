@@ -158,6 +158,15 @@ static inline uintptr_t pte_get_phys(pte_t *ptep)
 	return (*ptep & PT_PHYSMASK);
 }
 
+#if 0	/* XXX: workaround. cannot use panic() here */
+static inline void pte_xchg(pte_t *ptep, pte_t *valp)
+{
+	*valp = xchg(ptep, *valp);
+}
+#else
+#define	pte_xchg(p,vp)	do { *(vp) = xchg((p), *(vp)); } while (0)
+#endif
+
 struct page_table;
 void set_pte(pte_t *ppte, unsigned long phys, enum ihk_mc_pt_attribute attr);
 pte_t *get_pte(struct page_table *pt, void *virt, enum ihk_mc_pt_attribute attr);
