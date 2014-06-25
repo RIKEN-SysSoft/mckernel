@@ -148,6 +148,10 @@ struct process *create_process(unsigned long user_pc)
 	ihk_mc_spinlock_init(&proc->sigpendinglock);
 	INIT_LIST_HEAD(&proc->sigpending);
 
+	proc->sigstack.ss_sp = NULL;
+	proc->sigstack.ss_flags = SS_DISABLE;
+	proc->sigstack.ss_size = 0;
+
 	ihk_mc_init_user_process(&proc->ctx, &proc->uctx,
 	                         ((char *)proc) + 
 							 KERNEL_STACK_NR_PAGES * PAGE_SIZE, user_pc, 0);
@@ -218,7 +222,11 @@ struct process *clone_process(struct process *org, unsigned long pc,
 	if (clone_flags & CLONE_VM) {
 		ihk_atomic_inc(&org->vm->refcount);
 		proc->vm = org->vm;
-		
+
+		proc->sigstack.ss_sp = NULL;
+		proc->sigstack.ss_flags = SS_DISABLE;
+		proc->sigstack.ss_size = 0;
+
 		proc->sighandler = org->sighandler;
 		ihk_atomic_inc(&org->sighandler->use);
 

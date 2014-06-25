@@ -121,6 +121,8 @@ fault:
 struct sigsp {
 	struct x86_regs regs;
 	unsigned long sigrc;
+	unsigned long sigmask;
+	int ssflags;
 };
 
 SYSCALL_DECLARE(rt_sigreturn)
@@ -133,8 +135,9 @@ SYSCALL_DECLARE(rt_sigreturn)
 	asm("movq %%gs:132, %0" : "=r" (regs));
 	--regs;
 
-	proc->sigmask.__val[0] = proc->supmask.__val[0];
 	sigsp = (struct sigsp *)regs->rsp;
+	proc->sigmask.__val[0] = sigsp->sigmask;
+	proc->sigstack.ss_flags = sigsp->ssflags;
 	if(copy_from_user(proc, regs, &sigsp->regs, sizeof(struct x86_regs)))
 		return rc;
 	copy_from_user(proc, &rc, &sigsp->sigrc, sizeof(long));
@@ -178,8 +181,20 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 	else if(k->sa.sa_handler){
 		unsigned long *usp; /* user stack */
 		struct sigsp *sigsp;
+		int	ssflags = proc->sigstack.ss_flags;
+		unsigned long	mask = (unsigned long)proc->sigmask.__val[0];
 
-		usp = (unsigned long *)regs->rsp;
+		if((k->sa.sa_flags & SA_ONSTACK) &&
+		   !(proc->sigstack.ss_flags & SS_DISABLE) &&
+		   !(proc->sigstack.ss_flags & SS_ONSTACK)){
+			unsigned long lsp;
+			lsp = ((unsigned long)(((char *)proc->sigstack.ss_sp) + proc->sigstack.ss_size)) & 0xfffffffffffffff8UL;
+			usp = (unsigned long *)lsp;
+			proc->sigstack.ss_flags |= SS_ONSTACK;
+		}
+		else{
+			usp = (unsigned long *)regs->rsp;
+		}
 		sigsp = ((struct sigsp *)usp) - 1;
 		if(copy_to_user(proc, &sigsp->regs, regs, sizeof(struct x86_regs)) ||
 		   copy_to_user(proc, &sigsp->sigrc, &rc, sizeof(long))){
@@ -188,6 +203,8 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 			terminate(0, sig, (ihk_mc_user_context_t *)regs->rsp);
 			return;
 		}
+		sigsp->sigmask = mask;
+		sigsp->ssflags = ssflags;
 
 		usp = (unsigned long *)sigsp;
 		usp--;
@@ -197,8 +214,8 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 		regs->rip = (unsigned long)k->sa.sa_handler;
 		regs->rsp = (unsigned long)usp;
 
-		kfree(pending);
 		proc->sigmask.__val[0] |= pending->sigmask.__val[0];
+		kfree(pending);
 		ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
 	}
 	else{
@@ -342,7 +359,7 @@ do_kill(int pid, int tid, int sig)
 	mask = __sigmask(sig);
 	pending = NULL;
 	rc = 0;
-	if(sig < 34){
+	if(sig < 33){ // SIGRTMIN - SIGRTMAX
 		list_for_each_entry(pending, head, list){
 			if(pending->sigmask.__val[0] == mask)
 				break;

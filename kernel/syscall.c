@@ -1424,7 +1424,6 @@ SYSCALL_DECLARE(rt_sigprocmask)
 			break;
 		}
 	}
-	proc->supmask = proc->sigmask;
 	ihk_mc_spinlock_unlock(&proc->sighandler->lock, flag);
 	return 0;
 fault:
@@ -1587,15 +1586,28 @@ SYSCALL_DECLARE(sigaltstack)
 	stack_t *oss = (stack_t *)ihk_mc_syscall_arg1(ctx);
 	stack_t	wss;
 
-	memset(&wss, '\0', sizeof wss);
 	if(oss)
-		if(copy_to_user(proc, oss, &wss, sizeof wss))
+		if(copy_to_user(proc, oss, &proc->sigstack, sizeof wss))
 			return -EFAULT;
-	if(ss)
+	if(ss){
 		if(copy_from_user(proc, &wss, ss, sizeof wss))
 			return -EFAULT;
+		if(wss.ss_flags != 0 && wss.ss_flags != SS_DISABLE)
+			return -EINVAL;
+		if(wss.ss_flags == SS_DISABLE){
+			proc->sigstack.ss_sp = NULL;
+			proc->sigstack.ss_flags = SS_DISABLE;
+			proc->sigstack.ss_size = 0;
+		}
+		else{
+			if(wss.ss_size < MINSIGSTKSZ)
+				return -ENOMEM;
 
-	return -EOPNOTSUPP;
+			memcpy(&proc->sigstack, &wss, sizeof wss);
+		}
+	}
+
+	return 0;
 }
 
 SYSCALL_DECLARE(madvise)

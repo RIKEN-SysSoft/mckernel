@@ -33,23 +33,16 @@ struct sigaction {
 	sigset_t sa_mask;
 };
 
-//// work in progress
-struct sigbackup {
-	unsigned long rc; // return code of rt_sigreturn (rax)
-	void	*uctx;
-	sigset_t mask;
-	double	fpregs[16];
-	
-};
-////
+#define SA_NOCLDSTOP    0x00000001u
+#define SA_NOCLDWAIT    0x00000002u
+#define SA_NODEFER      0x40000000u
+#define SA_ONSTACK      0x08000000u
+#define SA_RESETHAND    0x80000000u
+#define SA_RESTART      0x10000000u
+#define SA_SIGINFO      0x00000004u
 
 struct k_sigaction {
         struct sigaction sa;
-};
-
-struct sigstack {
-	void	*ss_sp;
-	int	ss_onstack;
 };
 
 typedef struct sigaltstack {
@@ -57,6 +50,10 @@ typedef struct sigaltstack {
 	int	ss_flags;
 	size_t	ss_size;
 } stack_t;
+
+#define MINSIGSTKSZ 2048
+#define SS_ONSTACK 1
+#define SS_DISABLE 2
 
 typedef union sigval {
 	int sival_int;
