@@ -21,6 +21,7 @@
 #include <cpulocal.h>
 #include <march.h>
 #include <signal.h>
+#include <process.h>
 
 #define LAPIC_ID            0x020
 #define LAPIC_TIMER         0x320

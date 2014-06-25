@@ -11,6 +11,9 @@
  *  2012/02/11 bgerofi what kind of new features have been added
  */
 
+#ifndef __HEADER_X86_COMMON_SIGNAL_H
+#define __HEADER_X86_COMMON_SIGNAL_H
+
 #define _NSIG		64
 #define _NSIG_BPW	64
 #define _NSIG_WORDS (_NSIG / _NSIG_BPW)
@@ -149,3 +152,5 @@ typedef struct siginfo {
 #define SIGSYS          31
 #define SIGUNUSED       31
 #define SIGRTMIN        32
+
+#endif /*__HEADER_X86_COMMON_SIGNAL_H*/

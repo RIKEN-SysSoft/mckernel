@@ -261,4 +261,7 @@ void runq_add_proc(struct process *proc, int cpu_id);
 void runq_del_proc(struct process *proc, int cpu_id);
 int sched_wakeup_process(struct process *proc, int valid_states);
 
+void sched_request_migrate(int cpu_id, struct process *proc);
+void check_need_resched(void);
+
 #endif
