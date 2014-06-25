@@ -1742,10 +1742,6 @@ void schedule(void)
 			list_add_tail(&prev->sched_list, &(v->runq));
 			++v->runq_len;
 		}
-
-		if (!v->runq_len) {
-			v->status = CPU_STATUS_IDLE;
-		}
 	}
 
 	/* Pick a new running process */
@@ -1759,6 +1755,7 @@ void schedule(void)
 	/* No process? Run idle.. */
 	if (!next) {
 		next = &cpu_local_var(idle);
+		v->status = CPU_STATUS_IDLE;
 	}
 
 	if (prev != next) {
