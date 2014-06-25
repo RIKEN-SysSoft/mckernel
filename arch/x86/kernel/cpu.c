@@ -510,6 +510,11 @@ void cpu_halt(void)
 	asm volatile("hlt");
 }
 
+void cpu_safe_halt(void)
+{
+    asm volatile("sti; hlt");
+}
+
 void cpu_enable_interrupt(void)
 {
 	asm volatile("sti");
