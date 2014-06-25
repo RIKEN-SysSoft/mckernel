@@ -2014,6 +2014,11 @@ SYSCALL_DECLARE(sched_getaffinity)
 	return len;
 }
 
+SYSCALL_DECLARE(get_cpu_id)
+{
+	return ihk_mc_get_processor_id();
+}
+
 SYSCALL_DECLARE(sched_yield)
 {
 	return -ENOSYS;

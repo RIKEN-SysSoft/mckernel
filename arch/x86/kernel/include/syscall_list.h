@@ -89,5 +89,6 @@ SYSCALL_HANDLED(601, pmc_init)
 SYSCALL_HANDLED(602, pmc_start)
 SYSCALL_HANDLED(603, pmc_stop)
 SYSCALL_HANDLED(604, pmc_reset)
+SYSCALL_HANDLED(700, get_cpu_id)
 
 /**** End of File ****/
