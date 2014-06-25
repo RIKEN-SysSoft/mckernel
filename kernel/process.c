@@ -1711,12 +1711,81 @@ void sched_init(void)
 	cpu_local_var(runq_len) = 0;
 	ihk_mc_spinlock_init(&cpu_local_var(runq_lock));
 
+	INIT_LIST_HEAD(&cpu_local_var(migq));
+	ihk_mc_spinlock_init(&cpu_local_var(migq_lock));
+
 #ifdef TIMER_CPU_ID
 	if (ihk_mc_get_processor_id() == TIMER_CPU_ID) {
 		init_timers();
 		wake_timers_loop();
 	}
 #endif
+}
+
+static void double_rq_lock(struct cpu_local_var *v1, struct cpu_local_var *v2)
+{
+	if (v1 < v2) {
+		ihk_mc_spinlock_lock_noirq(&v1->runq_lock);
+		ihk_mc_spinlock_lock_noirq(&v2->runq_lock);
+	} else {
+		ihk_mc_spinlock_lock_noirq(&v2->runq_lock);
+		ihk_mc_spinlock_lock_noirq(&v1->runq_lock);
+	}
+}
+
+static void double_rq_unlock(struct cpu_local_var *v1, struct cpu_local_var *v2)
+{
+	ihk_mc_spinlock_unlock_noirq(&v1->runq_lock);
+	ihk_mc_spinlock_unlock_noirq(&v2->runq_lock);
+}
+
+struct migrate_request {
+	struct list_head list;
+	struct process *proc;
+	struct waitq wq;
+};
+
+static void do_migrate(void)
+{
+	int cur_cpu_id = ihk_mc_get_processor_id();
+	struct cpu_local_var *cur_v = get_cpu_local_var(cur_cpu_id);
+	struct migrate_request *req, *tmp;
+
+	ihk_mc_spinlock_lock_noirq(&cur_v->migq_lock);
+	list_for_each_entry_safe(req, tmp, &cur_v->migq, list) {
+		int cpu_id;
+		struct cpu_local_var *v;
+
+		/* 0. check if migration is necessary */
+		list_del(&req->list);
+		if (req->proc->cpu_id != cur_cpu_id) /* already not here */
+			goto ack;
+		if (CPU_ISSET(cur_cpu_id, &req->proc->cpu_set)) /* good affinity */
+			goto ack;
+
+		/* 1. select CPU */
+		for (cpu_id = 0; cpu_id < CPU_SETSIZE; cpu_id++)
+			if (CPU_ISSET(cpu_id, &req->proc->cpu_set))
+				break;
+		if (CPU_SETSIZE == cpu_id) /* empty affinity (bug?) */
+			goto ack;
+
+		/* 2. migrate thread */
+		v = get_cpu_local_var(cpu_id);
+		double_rq_lock(cur_v, v);
+		list_del(&req->proc->sched_list);
+		cur_v->runq_len -= 1;
+		req->proc->cpu_id = cpu_id;
+		list_add_tail(&req->proc->sched_list, &v->runq);
+		v->runq_len += 1;
+		if (v->runq_len == 1)
+			ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
+		double_rq_unlock(cur_v, v);
+
+ack:
+		waitq_wakeup(&req->wq);
+	}
+	ihk_mc_spinlock_unlock_noirq(&cur_v->migq_lock);
 }
 
 void schedule(void)
@@ -1727,6 +1796,7 @@ void schedule(void)
 	unsigned long irqstate;
 	struct process *last;
 
+redo:
 	irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 
 	next = NULL;
@@ -1744,18 +1814,22 @@ void schedule(void)
 		}
 	}
 
-	/* Pick a new running process */
-	list_for_each_entry_safe(proc, tmp, &(v->runq), sched_list) {
-		if (proc->status == PS_RUNNING) {
-			next = proc;
-			break;
-		}
-	}
-
-	/* No process? Run idle.. */
-	if (!next) {
+	if (v->flags & CPU_FLAG_NEED_MIGRATE) {
 		next = &cpu_local_var(idle);
-		v->status = CPU_STATUS_IDLE;
+	} else {
+		/* Pick a new running process */
+		list_for_each_entry_safe(proc, tmp, &(v->runq), sched_list) {
+			if (proc->status == PS_RUNNING) {
+				next = proc;
+				break;
+			}
+		}
+
+		/* No process? Run idle.. */
+		if (!next) {
+			next = &cpu_local_var(idle);
+			v->status = CPU_STATUS_IDLE;
+		}
 	}
 
 	if (prev != next) {
@@ -1792,6 +1866,21 @@ void schedule(void)
 	}
 	else {
 		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+	}
+
+	if (v->flags & CPU_FLAG_NEED_MIGRATE) {
+		v->flags &= ~CPU_FLAG_NEED_MIGRATE;
+		do_migrate();
+		goto redo;
+	}
+}
+
+void check_need_resched(void)
+{
+	struct cpu_local_var *v = get_this_cpu_local_var();
+	if (v->flags & CPU_FLAG_NEED_RESCHED) {
+		v->flags &= ~CPU_FLAG_NEED_RESCHED;
+		schedule();
 	}
 }
 
@@ -1835,6 +1924,49 @@ int sched_wakeup_process(struct process *proc, int valid_states)
 	}
 
 	return status;
+}
+
+/*
+ * 1. Add current process to waitq
+ * 2. Queue migration request into the target CPU's queue
+ * 3. Kick migration on the CPU
+ * 4. Wait for completion of the migration
+ *
+ * struct migrate_request {
+ *     list //migq,
+ *     wq,
+ *     proc
+ * }
+ *
+ * [expected processing of the target CPU]
+ * 1. Interrupted by IPI
+ * 2. call schedule() via check_resched()
+ * 3. Do migration
+ * 4. Wake up this thread
+ */
+void sched_request_migrate(int cpu_id, struct process *proc)
+{
+	struct cpu_local_var *v = get_cpu_local_var(cpu_id);
+	struct migrate_request req = { .proc = proc };
+	unsigned long irqstate;
+	DECLARE_WAITQ_ENTRY(entry, cpu_local_var(current));
+
+	waitq_init(&req.wq);
+	waitq_prepare_to_wait(&req.wq, &entry, PS_UNINTERRUPTIBLE);
+
+	irqstate = ihk_mc_spinlock_lock(&v->migq_lock);
+	list_add_tail(&req.list, &v->migq);
+	ihk_mc_spinlock_unlock(&v->migq_lock, irqstate);
+
+	v->flags |= CPU_FLAG_NEED_RESCHED | CPU_FLAG_NEED_MIGRATE;
+	v->status = CPU_STATUS_RUNNING;
+
+	if (cpu_id != ihk_mc_get_processor_id())
+		ihk_mc_interrupt_cpu(/* Kick scheduler */
+				get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
+
+	schedule();
+	waitq_finish_wait(&req.wq, &entry);
 }
 
 

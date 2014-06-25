@@ -438,6 +438,7 @@ void handle_interrupt(int vector, struct x86_regs *regs)
 	}
 
 	check_signal(0, regs);
+	check_need_resched();
 }
 
 void gpe_handler(struct x86_regs *regs)
@@ -447,6 +448,7 @@ void gpe_handler(struct x86_regs *regs)
 	arch_show_interrupt_context(regs);
 	set_signal(SIGILL, regs);
 	check_signal(0, regs);
+	check_need_resched();
 	// panic("GPF");
 }
 

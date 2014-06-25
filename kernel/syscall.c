@@ -1926,45 +1926,51 @@ SYSCALL_DECLARE(sched_setaffinity)
 	size_t len = (size_t)ihk_mc_syscall_arg1(ctx);
 	cpu_set_t *u_cpu_set = (cpu_set_t *)ihk_mc_syscall_arg2(ctx);
 
-	cpu_set_t cpu_set;
+	cpu_set_t k_cpu_set, cpu_set;
 	struct process *thread;
-	int i;
+	int cpu_id;
 
-	if (sizeof(cpu_set_t) > len) {
-		kprintf("%s %d\n", __FILE__, __LINE__);
+	if (sizeof(k_cpu_set) > len) {
+		kprintf("%s:%d\n Too small buffer.", __FILE__, __LINE__);
 		return -EINVAL;
 	}
-	len = MIN2(len, sizeof(cpu_set_t));
+	len = MIN2(len, sizeof(k_cpu_set));
 
-	if (copy_from_user(cpu_local_var(current), &cpu_set, u_cpu_set, len)) {
-		kprintf("%s %d\n", __FILE__, __LINE__);
+	if (copy_from_user(cpu_local_var(current), &k_cpu_set, u_cpu_set, len)) {
+		kprintf("%s:%d copy_from_user failed.\n", __FILE__, __LINE__);
 		return -EFAULT;
 	}
 
-	thread = NULL;
+	// XXX: We should build something like cpu_available_mask in advance
+	CPU_ZERO(&cpu_set);
 	extern int num_processors;
-	for (i = 0; i < num_processors; i++) {
-		struct process *tmp_proc;
-		ihk_mc_spinlock_lock_noirq(&get_cpu_local_var(i)->runq_lock);
-		list_for_each_entry(tmp_proc, &get_cpu_local_var(i)->runq, sched_list) {
-			if (tmp_proc && tmp_proc->pid && tmp_proc->tid == tid) {
-				thread = tmp_proc;
-				hold_process(thread);
-				break;
-			}
-		}
-		ihk_mc_spinlock_unlock_noirq(&get_cpu_local_var(i)->runq_lock);
-		if (thread)
-			break;
+	for (cpu_id = 0; cpu_id < num_processors; cpu_id++)
+		if (CPU_ISSET(cpu_id, &k_cpu_set))
+			CPU_SET(cpu_id, &cpu_set);
+
+	for (cpu_id = 0; cpu_id < num_processors; cpu_id++) {
+		ihk_mc_spinlock_lock_noirq(&get_cpu_local_var(cpu_id)->runq_lock);
+		list_for_each_entry(thread, &get_cpu_local_var(cpu_id)->runq, sched_list)
+			if (thread->pid && thread->tid == tid)
+				goto found; /* without unlocking runq_lock */
+		ihk_mc_spinlock_unlock_noirq(&get_cpu_local_var(cpu_id)->runq_lock);
 	}
-	if (!thread) {
-		kprintf("%s %d\n", __FILE__, __LINE__);
-		return -ESRCH;
-	}
+	kprintf("%s:%d Thread not found.\n", __FILE__, __LINE__);
+	return -ESRCH;
+
+found:
 	memcpy(&thread->cpu_set, &cpu_set, sizeof(cpu_set));
-	release_process(thread);
-	kprintf("%s %d\n", __FILE__, __LINE__);
-	return 0;
+
+	if (!CPU_ISSET(cpu_id, &thread->cpu_set)) {
+		hold_process(thread);
+		ihk_mc_spinlock_unlock_noirq(&get_cpu_local_var(cpu_id)->runq_lock);
+		sched_request_migrate(cpu_id, thread);
+		release_process(thread);
+		return 0;
+	} else {
+		ihk_mc_spinlock_unlock_noirq(&get_cpu_local_var(cpu_id)->runq_lock);
+		return 0;
+	}
 }
 
 // see linux-2.6.34.13/kernel/sched.c
@@ -1972,40 +1978,36 @@ SYSCALL_DECLARE(sched_getaffinity)
 {
 	int tid = (int)ihk_mc_syscall_arg0(ctx);
 	size_t len = (size_t)ihk_mc_syscall_arg1(ctx);
-	cpu_set_t *u_cpu_set = (cpu_set_t *)ihk_mc_syscall_arg2(ctx);
+	cpu_set_t k_cpu_set, *u_cpu_set = (cpu_set_t *)ihk_mc_syscall_arg2(ctx);
 
 	int ret;
-	struct process *thread;
+	int found = 0;
 	int i;
 
-	if (sizeof(cpu_set_t) > len) {
-		kprintf("%s %d\n", __FILE__, __LINE__);
+	if (sizeof(k_cpu_set) > len) {
+		kprintf("%s:%d Too small buffer.\n", __FILE__, __LINE__);
 		return -EINVAL;
 	}
-	len = MIN2(len, sizeof(cpu_set_t));
+	len = MIN2(len, sizeof(k_cpu_set));
 
-	thread = NULL;
 	extern int num_processors;
-	for (i = 0; i < num_processors; i++) {
-		struct process *tmp_proc;
+	for (i = 0; i < num_processors && !found; i++) {
+		struct process *thread;
 		ihk_mc_spinlock_lock_noirq(&get_cpu_local_var(i)->runq_lock);
-		list_for_each_entry(tmp_proc, &get_cpu_local_var(i)->runq, sched_list) {
-			if (tmp_proc && tmp_proc->pid && tmp_proc->tid == tid) {
-				thread = tmp_proc;
-				hold_process(thread);
+		list_for_each_entry(thread, &get_cpu_local_var(i)->runq, sched_list) {
+			if (thread->pid && thread->tid == tid) {
+				found = 1;
+				memcpy(&k_cpu_set, &thread->cpu_set, sizeof(k_cpu_set));
 				break;
 			}
 		}
 		ihk_mc_spinlock_unlock_noirq(&get_cpu_local_var(i)->runq_lock);
-		if (thread)
-			break;
 	}
-	if (!thread) {
-		kprintf("%s %d\n", __FILE__, __LINE__);
+	if (!found) {
+		kprintf("%s:%d Thread not found.\n", __FILE__, __LINE__);
 		return -ESRCH;
 	}
-	ret = copy_to_user(cpu_local_var(current), u_cpu_set, &thread->cpu_set, len);
-	release_process(thread);
+	ret = copy_to_user(cpu_local_var(current), u_cpu_set, &k_cpu_set, len);
 	kprintf("%s %d %d\n", __FILE__, __LINE__, ret);
 	if (ret < 0)
 		return ret;
@@ -2777,6 +2779,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	}
 
 	check_signal(l, NULL);
+	check_need_resched();
 
 	return l;
 }

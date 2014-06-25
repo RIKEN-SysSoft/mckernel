@@ -30,6 +30,9 @@ struct malloc_header {
 #define CPU_STATUS_RUNNING	(2)
 extern ihk_spinlock_t	cpu_status_lock;
 
+#define CPU_FLAG_NEED_RESCHED	0x1U
+#define CPU_FLAG_NEED_MIGRATE	0x2U
+
 struct cpu_local_var {
 	/* malloc */
 	struct malloc_header free_list;
@@ -54,6 +57,11 @@ struct cpu_local_var {
 	int fs;
 
 	struct list_head pending_free_pages;
+
+	unsigned int flags;
+
+	ihk_spinlock_t migq_lock;
+	struct list_head migq;
 } __attribute__((aligned(64)));
 
 
