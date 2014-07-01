@@ -936,6 +936,39 @@ struct vm_range *previous_process_memory_range(
 	return prev;
 }
 
+int extend_up_process_memory_range(struct process_vm *vm,
+		struct vm_range *range, uintptr_t newend)
+{
+	int error;
+	struct vm_range *next;
+
+	dkprintf("exntend_up_process_memory_range(%p,%p %#lx-%#lx,%#lx)\n",
+			vm, range, range->start, range->end, newend);
+	if (newend <= range->end) {
+		error = -EINVAL;
+		goto out;
+	}
+
+	if (vm->region.user_end < newend) {
+		error = -EPERM;
+		goto out;
+	}
+
+	next = next_process_memory_range(vm ,range);
+	if (next && (next->start < newend)) {
+		error = -ENOMEM;
+		goto out;
+	}
+
+	error = 0;
+	range->end = newend;
+
+out:
+	dkprintf("exntend_up_process_memory_range(%p,%p %#lx-%#lx,%#lx):%d\n",
+			vm, range, range->start, range->end, newend, error);
+	return error;
+}
+
 int change_prot_process_memory_range(struct process *proc,
 		struct vm_range *range, unsigned long protflag)
 {

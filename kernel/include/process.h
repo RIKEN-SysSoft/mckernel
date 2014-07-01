@@ -29,6 +29,7 @@
 #define VR_DEMAND_PAGING   0x1000
 #define	VR_PRIVATE         0x2000
 #define	VR_LOCKED          0x4000
+#define	VR_FILEOFF         0x8000	/* remap_file_pages()ed range */
 #define	VR_PROT_NONE       0x00000000
 #define	VR_PROT_READ       0x00010000
 #define	VR_PROT_WRITE      0x00020000
@@ -236,6 +237,8 @@ struct vm_range *next_process_memory_range(
 		struct process_vm *vm, struct vm_range *range);
 struct vm_range *previous_process_memory_range(
 		struct process_vm *vm, struct vm_range *range);
+int extend_up_process_memory_range(struct process_vm *vm,
+		struct vm_range *range, uintptr_t newend);
 
 int page_fault_process(struct process *proc, void *fault_addr, uint64_t reason);
 int remove_process_region(struct process *proc,

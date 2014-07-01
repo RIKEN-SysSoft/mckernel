@@ -133,6 +133,7 @@ typedef int pte_visitor_t(void *arg, page_table_t pt, pte_t *ptep,
 		void *pgaddr, size_t pgsize);
 int visit_pte_range(page_table_t pt, void *start, void *end,
 		enum visit_pte_flag flags, pte_visitor_t *funcp, void *arg);
+int move_pte_range(page_table_t pt, void *src, void *dest, size_t size);
 
 struct page_table *ihk_mc_pt_create(enum ihk_mc_ap_flag ap_flag);
 /* XXX: proper use of struct page_table and page_table_t is unknown */

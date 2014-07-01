@@ -2315,6 +2315,7 @@ SYSCALL_DECLARE(remap_file_pages)
 		goto out;
 	}
 
+	range->flag |= VR_FILEOFF;
 	error = remap_process_memory_range(proc->vm, range, start, end, off);
 	if (error) {
 		ekprintf("sys_remap_file_pages(%#lx,%#lx,%#x,%#lx,%#x):"
@@ -2343,6 +2344,226 @@ out:
 	dkprintf("sys_remap_file_pages(%#lx,%#lx,%#x,%#lx,%#x): %d\n",
 			start0, size, prot, pgoff, flags, error);
 	return error;
+}
+
+SYSCALL_DECLARE(mremap)
+{
+	const uintptr_t oldaddr = ihk_mc_syscall_arg0(ctx);
+	const size_t oldsize0 = ihk_mc_syscall_arg1(ctx);
+	const size_t newsize0 = ihk_mc_syscall_arg2(ctx);
+	const int flags = ihk_mc_syscall_arg3(ctx);
+	const uintptr_t newaddr = ihk_mc_syscall_arg4(ctx);
+	const ssize_t oldsize = (oldsize0 + PAGE_SIZE - 1) & PAGE_MASK;
+	const ssize_t newsize = (newsize0 + PAGE_SIZE - 1) & PAGE_MASK;
+	const uintptr_t oldstart = oldaddr;
+	const uintptr_t oldend = oldstart + oldsize;
+	struct process *proc = cpu_local_var(current);
+	struct process_vm *vm = proc->vm;
+	int error;
+	struct vm_range *range;
+	int need_relocate;
+	uintptr_t newstart;
+	uintptr_t newend;
+	size_t size;
+	uintptr_t ret;
+	uintptr_t lckstart = -1;
+	uintptr_t lckend = -1;
+
+	dkprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx)\n",
+			oldaddr, oldsize0, newsize0, flags, newaddr);
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+
+	if ((oldaddr & ~PAGE_MASK)
+			|| (oldsize < 0)
+			|| (newsize <= 0)
+			|| (flags & ~(MREMAP_MAYMOVE | MREMAP_FIXED))
+			|| ((flags & MREMAP_FIXED)
+				&& !(flags & MREMAP_MAYMOVE))
+			|| ((flags & MREMAP_FIXED)
+				&& (newaddr & ~PAGE_MASK))) {
+		error = -EINVAL;
+		ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):invalid. %d\n",
+				oldaddr, oldsize0, newsize0, flags, newaddr,
+				error);
+		goto out;
+	}
+
+	/* check original mapping */
+	range = lookup_process_memory_range(vm, oldstart, oldstart+PAGE_SIZE);
+	if (!range || (oldstart < range->start) || (range->end < oldend)
+			|| (range->flag & (VR_FILEOFF))
+			|| (range->flag & (VR_REMOTE|VR_IO_NOCACHE|VR_RESERVED))) {
+		error = -EFAULT;
+		ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+				"lookup failed. %d %p %#lx-%#lx %#lx\n",
+				oldaddr, oldsize0, newsize0, flags, newaddr,
+				error, range, range?range->start:0,
+				range?range->end:0, range?range->flag:0);
+		goto out;
+	}
+
+	if (oldend < oldstart) {
+		error = -EINVAL;
+		ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+				"old range overflow. %d\n",
+				oldaddr, oldsize0, newsize0, flags, newaddr,
+				error);
+		goto out;
+	}
+
+	/* determine new mapping range */
+	need_relocate = 0;
+	if (flags & MREMAP_FIXED) {
+		need_relocate = 1;
+		newstart = newaddr;
+		newend = newstart + newsize;
+		if (newstart < vm->region.user_start) {
+			error = -EPERM;
+			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+					"mmap_min_addr %#lx. %d\n",
+					oldaddr, oldsize0, newsize0, flags,
+					newaddr, vm->region.user_start,
+					error);
+			goto out;
+		}
+		if ((newstart < oldend) && (oldstart < newend)) {
+			error = -EINVAL;
+			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+					"fixed:overlapped. %d\n",
+					oldaddr, oldsize0, newsize0, flags,
+					newaddr, error);
+			goto out;
+		}
+	}
+	else if (!(flags & MREMAP_FIXED) && (oldsize < newsize)) {
+		if (oldend == range->end) {
+			newstart = oldstart;
+			newend = newstart + newsize;
+			error = extend_up_process_memory_range(vm, range,
+					newend);
+			if (!error) {
+				if (range->flag & VR_LOCKED) {
+					lckstart = oldend;
+					lckend = newend;
+				}
+				goto out;
+			}
+		}
+		if (!(flags & MREMAP_MAYMOVE)) {
+			error = -ENOMEM;
+			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+					"cannot relocate. %d\n",
+					oldaddr, oldsize0, newsize0, flags,
+					newaddr, error);
+			goto out;
+		}
+		need_relocate = 1;
+		error = search_free_space(newsize, vm->region.map_end,
+				(intptr_t *)&newstart);
+		if (error) {
+			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+					"search failed. %d\n",
+					oldaddr, oldsize0, newsize0, flags,
+					newaddr, error);
+			goto out;
+		}
+		newend = newstart + newsize;
+	}
+	else {
+		newstart = oldstart;
+		newend = newstart + newsize;
+	}
+
+	/* do the remap */
+	if (need_relocate) {
+		if (flags & MREMAP_FIXED) {
+			error = do_munmap((void *)newstart, newsize);
+			if (error) {
+				ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+						"fixed:munmap failed. %d\n",
+						oldaddr, oldsize0, newsize0,
+						flags, newaddr, error);
+				goto out;
+			}
+		}
+		if (range->memobj) {
+			memobj_ref(range->memobj);
+		}
+		error = add_process_memory_range(proc, newstart, newend, -1,
+				range->flag, range->memobj,
+				range->objoff + (oldstart - range->start));
+		if (error) {
+			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+					"add failed. %d\n",
+					oldaddr, oldsize0, newsize0, flags,
+					newaddr, error);
+			if (range->memobj) {
+				memobj_release(range->memobj);
+			}
+			goto out;
+		}
+		if (range->flag & VR_LOCKED) {
+			lckstart = newstart;
+			lckend = newend;
+		}
+
+		if (oldsize > 0) {
+			size = (oldsize < newsize)? oldsize: newsize;
+			ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
+			error = move_pte_range(vm->page_table,
+					(void *)oldstart, (void *)newstart,
+					size);
+			ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
+			if (error) {
+				ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+						"move failed. %d\n",
+						oldaddr, oldsize0, newsize0,
+						flags, newaddr, error);
+				goto out;
+			}
+
+			error = do_munmap((void *)oldstart, oldsize);
+			if (error) {
+				ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+						"relocate:munmap failed. %d\n",
+						oldaddr, oldsize0, newsize0,
+						flags, newaddr, error);
+				goto out;
+			}
+		}
+	}
+	else if (newsize < oldsize) {
+		error = do_munmap((void *)newend, (oldend - newend));
+		if (error) {
+			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+					"shrink:munmap failed. %d\n",
+					oldaddr, oldsize0, newsize0, flags,
+					newaddr, error);
+			goto out;
+		}
+	}
+	else {
+		/* nothing to do */
+	}
+
+	error = 0;
+out:
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	if (!error && (lckstart < lckend)) {
+		error = populate_process_memory(proc, (void *)lckstart, (lckend - lckstart));
+		if (error) {
+			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+					"populate failed. %d %#lx-%#lx\n",
+					oldaddr, oldsize0, newsize0, flags,
+					newaddr, error, lckstart, lckend);
+			error = 0;	/* ignore error */
+		}
+	}
+	ret = (error)? error: newstart;
+	dkprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):%d %#lx\n",
+			oldaddr, oldsize0, newsize0, flags, newaddr, error,
+			ret);
+	return ret;
 }
 
 #ifdef DCFA_KMOD

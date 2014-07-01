@@ -1802,6 +1802,76 @@ enum ihk_mc_pt_attribute arch_vrflag_to_ptattr(unsigned long flag, uint64_t faul
 	return attr;
 }
 
+struct move_args {
+	uintptr_t src;
+	uintptr_t dest;
+};
+
+static int move_one_page(void *arg0, page_table_t pt, pte_t *ptep, void *pgaddr, size_t pgsize)
+{
+	int error;
+	struct move_args *args = arg0;
+	uintptr_t dest;
+	pte_t apte;
+	uintptr_t phys;
+	enum ihk_mc_pt_attribute attr;
+
+	dkprintf("move_one_page(%p,%p,%p %#lx,%p,%#lx)\n",
+			arg0, pt, ptep, *ptep, pgaddr, pgsize);
+	if (pte_is_fileoff(ptep, pgsize)) {
+		error = -ENOTSUPP;
+		kprintf("move_one_page(%p,%p,%p %#lx,%p,%#lx):fileoff. %d\n",
+				arg0, pt, ptep, *ptep, pgaddr, pgsize, error);
+		goto out;
+	}
+
+	dest = args->dest + ((uintptr_t)pgaddr - args->src);
+
+	apte = PTE_NULL;
+	pte_xchg(ptep, &apte);
+
+	phys = apte & PT_PHYSMASK;
+	attr = apte & ~PT_PHYSMASK;
+
+	error = ihk_mc_pt_set_range(pt, (void *)dest,
+			(void *)(dest + pgsize), phys, attr);
+	if (error) {
+		kprintf("move_one_page(%p,%p,%p %#lx,%p,%#lx):"
+				"set failed. %d\n",
+				arg0, pt, ptep, *ptep, pgaddr, pgsize, error);
+		goto out;
+	}
+
+	error = 0;
+out:
+	dkprintf("move_one_page(%p,%p,%p %#lx,%p,%#lx):%d\n",
+			arg0, pt, ptep, *ptep, pgaddr, pgsize, error);
+	return error;
+}
+
+int move_pte_range(page_table_t pt, void *src, void *dest, size_t size)
+{
+	int error;
+	struct move_args args;
+
+	dkprintf("move_pte_range(%p,%p,%p,%#lx)\n", pt, src, dest, size);
+	args.src = (uintptr_t)src;
+	args.dest = (uintptr_t)dest;
+
+	error = visit_pte_range(pt, src, src+size, VPTEF_SKIP_NULL,
+			&move_one_page, &args);
+	flush_tlb();	/* XXX: TLB flush */
+	if (error) {
+		goto out;
+	}
+
+	error = 0;
+out:
+	dkprintf("move_pte_range(%p,%p,%p,%#lx):%d\n",
+			pt, src, dest, size, error);
+	return error;
+}
+
 void load_page_table(struct page_table *pt)
 {
 	unsigned long pt_addr;
