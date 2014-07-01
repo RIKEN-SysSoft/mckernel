@@ -1274,6 +1274,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 				ret = file->f_op->write(file, pt, size, &file->f_pos);
 				if (ret != len) {
 					dprintk("core file write failed(%d).\n", ret);
+					break;
 				}
 				ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
 				ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
