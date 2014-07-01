@@ -223,4 +223,5 @@ enum {
 #undef	SYSCALL_HANDLED
 #undef	SYSCALL_DELEGATED
 
+#define	__NR_coredump 999	/* pseudo syscall for coredump */
 #endif

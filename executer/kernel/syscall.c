@@ -46,7 +46,7 @@
 
 #define ALIGN_WAIT_BUF(z)   (((z + 63) >> 6) << 6)
 
-//#define SC_DEBUG
+#define SC_DEBUG
 
 #ifdef SC_DEBUG
 #define	dprintk(...)	printk(__VA_ARGS__)
@@ -1236,6 +1236,39 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 		goto out;
 		}
 
+	case __NR_coredump:
+		/* xxx */
+		dprintk("coredump called as a pseudo syscall\n");
+		{
+			struct file *file;
+			int ret, len;
+			Mm_segment_t oldfs = get_fs(); 
+
+			set_fs(KERNEL_DS);
+			/* Any Linux documentation states that we should not 
+			 * open a file from a kernel module, but our karma makes
+			 * leads us to do this. Precisely, Here we emulate the core 
+			 * dump routine of the Linux kernel in linux/fs/exec.c. 
+			 * So we have a legitimate reason.
+			 */
+			file = filp_open("core", O_CREAT | O_RDWR | O_LARGEFILE, 0600);
+			if (IS_ERR(file) || !file->f_op || !file->f_op->write) {
+				dprintk("cannot open core file\n");
+				goto fail;
+			}			
+			len = 10;
+			ret = file->f_op->write(file, "core file", len, &file->f_pos);
+			if (ret != len) {
+				dprintk("core file write failed(%d).\n", ret);
+			}
+		fail:
+			filp_close(file, NULL);
+			set_fs(oldfs);
+
+		}
+		error = 0;
+		ret = 0; 
+		break;
 	default:
 		error = -ENOSYS;
 		goto out;

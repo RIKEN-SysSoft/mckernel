@@ -206,6 +206,23 @@ static void unhandled_page_fault(struct process *proc, void *fault_addr, void *r
 	/* TODO */
 	ihk_mc_debug_show_interrupt_context(regs);
 
+	{
+		/* xxx */
+		/* core dump framework test */
+		struct syscall_request request IHK_DMA_ALIGN;
+		int ret;
+
+		request.number = __NR_coredump;
+		/* no data for now */
+		ret = do_syscall(&request, proc->uctx, 
+				 proc->cpu_id, proc->pid);
+		if (ret == 0) {
+			kprintf("dumped core.\n");
+		} else {
+			kprintf("core dump failed.\n");
+		}
+	}
+
 #ifdef DEBUG_PRINT_MEM
 	{
 		uint64_t *sp = (void *)REGS_GET_STACK_POINTER(regs);

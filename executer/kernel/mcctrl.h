@@ -53,6 +53,8 @@
 
 #define DO_USER_MODE
 
+#define	__NR_coredump			999
+
 struct ikc_scd_packet {
 	int msg;
 	int ref;
