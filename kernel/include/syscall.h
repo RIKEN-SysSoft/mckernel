@@ -224,4 +224,9 @@ enum {
 #undef	SYSCALL_DELEGATED
 
 #define	__NR_coredump 999	/* pseudo syscall for coredump */
+struct coretable {
+	int len;
+	void *addr;
+}
+
 #endif

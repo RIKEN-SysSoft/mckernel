@@ -211,8 +211,15 @@ static void unhandled_page_fault(struct process *proc, void *fault_addr, void *r
 		/* core dump framework test */
 		struct syscall_request request IHK_DMA_ALIGN;
 		int ret;
+		struct coretable coreentry[3];
+
+		coreentry[0] = {8, virt_to_phys("this is ")};
+		coreentry[1] = {7, virt_to_phys("a test ")};
+		coreentry[2] = {15, virt_to_phys("for coredump.\n")};
 
 		request.number = __NR_coredump;
+		request.args[0] = 3;
+		request.args[1] = virt_to_phys(&coreentry);
 		/* no data for now */
 		ret = do_syscall(&request, proc->uctx, 
 				 proc->cpu_id, proc->pid);

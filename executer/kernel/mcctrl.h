@@ -54,6 +54,10 @@
 #define DO_USER_MODE
 
 #define	__NR_coredump			999
+struct coretable {
+	int len;
+	void *addr;
+}
 
 struct ikc_scd_packet {
 	int msg;

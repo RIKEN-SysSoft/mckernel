@@ -1241,8 +1241,12 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 		dprintk("coredump called as a pseudo syscall\n");
 		{
 			struct file *file;
-			int ret, len;
+			int ret, len, chunks, i;
 			Mm_segment_t oldfs = get_fs(); 
+			struct coretable *coretable;
+			unsigned long phys, tablephys, rphys;
+			unsigned long *pt;
+			int tablesize, size;
 
 			set_fs(KERNEL_DS);
 			/* Any Linux documentation states that we should not 
@@ -1256,11 +1260,28 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 				dprintk("cannot open core file\n");
 				goto fail;
 			}			
-			len = 10;
-			ret = file->f_op->write(file, "core file", len, &file->f_pos);
-			if (ret != len) {
-				dprintk("core file write failed(%d).\n", ret);
+			chunks = req->args[0]; /* > 0 */
+			/* first we map the chunk table */
+			tablesize = sizeof(struct coretable) * chunks;
+			tablephys = ihk_device_map_memory(ihk_os_to_dev(os), req->args[1], tablesize);
+			coretable = ihk_device_map_virtula(ihk_os_dev(os), tablephys, tablesize, NULL, 0);
+			for (i = 0; i < chunks; i++) {
+				/* xxx:map and write the chunk out */
+				rphys = coretable[i].addr;
+				size = coretable[i].len;
+				phys = ihk_device_map_memory(ihk_os_to_dev(os), rphys, size);
+				pt = ihk_device_map_virtula(ihk_os_dev(os), phys, size, NULL, 0);
+				ret = file->f_op->write(file, pt, size, &file->f_pos);
+				if (ret != len) {
+					dprintk("core file write failed(%d).\n", ret);
+				}
+				ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
+				ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
 			}
+			/* xxx:unmap the chunk */
+			/* unmap the chunk table */
+			ihk_device_unmap_virtual(ihk_os_to_dev(os), coretable, PAGE_SIZE);
+			ihk_device_unmap_memory(ihk_os_to_dev(os), tablephys, PAGE_SIZE);
 		fail:
 			filp_close(file, NULL);
 			set_fs(oldfs);
