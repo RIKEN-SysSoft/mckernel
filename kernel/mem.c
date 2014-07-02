@@ -213,9 +213,12 @@ static void unhandled_page_fault(struct process *proc, void *fault_addr, void *r
 		int ret;
 		struct coretable coreentry[3];
 
-		coreentry[0] = {8, virt_to_phys("this is ")};
-		coreentry[1] = {7, virt_to_phys("a test ")};
-		coreentry[2] = {15, virt_to_phys("for coredump.\n")};
+		coreentry[0].len = 8;
+		coreentry[0].addr = virt_to_phys("this is ");
+		coreentry[1].len = 7;
+		coreentry[1].addr = virt_to_phys("a test ");
+		coreentry[2].len = 15;
+		coreentry[2].addr = virt_to_phys("for coredump.\n");
 
 		request.number = __NR_coredump;
 		request.args[0] = 3;

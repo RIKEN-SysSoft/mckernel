@@ -1158,6 +1158,74 @@ static void clear_pte_range(uintptr_t start, uintptr_t len)
 	return;
 }
 
+/* xxx */
+
+static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
+	struct file *file;
+	struct coretable *coretable;
+	int ret, len, i, tablesize, size, error = 0;
+	mm_segment_t oldfs = get_fs(); 
+	unsigned long phys, tablephys, rphys;
+	ihk_device_t dev = ihk_os_to_dev(os);
+	char *pt;
+
+	dprintk("coredump called as a pseudo syscall\n");
+
+	if (chunks <= 0) {
+		dprintk("no core data found!(%d)\n", chunks);
+		error = -EINVAL;
+		goto fail;
+	}
+
+	set_fs(KERNEL_DS);
+
+	/* Every Linux documentation insists we should not 
+	 * open a file in the kernel module, but our karma makes
+	 * leads us here. Precisely, Here we emulate the core 
+	 * dump routine of the Linux kernel in linux/fs/exec.c. 
+	 * So we have a legitimate reason to do this.
+	 */
+	file = filp_open("core", O_CREAT | O_RDWR | O_LARGEFILE, 0600);
+	if (IS_ERR(file) || !file->f_op || !file->f_op->write) {
+		dprintk("cannot open core file\n");
+		error = PTR_ERR(file);
+		goto fail;
+	}			
+
+	/* first we map the chunk table */
+	tablesize = sizeof(struct coretable) * chunks;
+	tablephys = ihk_device_map_memory(dev, rcoretable, tablesize);
+	coretable = ihk_device_map_virtual(dev, tablephys, tablesize, NULL, 0);
+	for (i = 0; i < chunks; i++) {
+		/* map and write the chunk out */
+		rphys = (unsigned long) coretable[i].addr;
+		size = coretable[i].len;
+		phys = ihk_device_map_memory(dev, rphys, size);
+		pt = ihk_device_map_virtual(dev, phys, size, NULL, 0);
+		ret = file->f_op->write(file, pt, size, &file->f_pos);
+		if (ret != size) {
+			dprintk("core file write failed(%d).\n", ret);
+			error = PTR_ERR(file);
+			break;
+		}
+		/* unmap the chunk out */
+		ihk_device_unmap_virtual(dev, pt, size);
+		ihk_device_unmap_memory(dev, phys, size);
+	}
+	/* unmap the chunk table */
+	ihk_device_unmap_virtual(dev, coretable, tablesize);
+	ihk_device_unmap_memory(dev, tablephys, tablesize);
+	filp_close(file, NULL);
+fail:
+	set_fs(oldfs);
+	if (error == -ENOSYS) {
+		/* make sure we do not travel to user land */
+		error = -EINVAL;
+	}
+	return error;
+}
+
+
 int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall_request *sc)
 {
 	int error;
@@ -1237,60 +1305,10 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 		}
 
 	case __NR_coredump:
-		/* xxx */
-		dprintk("coredump called as a pseudo syscall\n");
-		{
-			struct file *file;
-			int ret, len, chunks, i;
-			Mm_segment_t oldfs = get_fs(); 
-			struct coretable *coretable;
-			unsigned long phys, tablephys, rphys;
-			unsigned long *pt;
-			int tablesize, size;
-
-			set_fs(KERNEL_DS);
-			/* Any Linux documentation states that we should not 
-			 * open a file from a kernel module, but our karma makes
-			 * leads us to do this. Precisely, Here we emulate the core 
-			 * dump routine of the Linux kernel in linux/fs/exec.c. 
-			 * So we have a legitimate reason.
-			 */
-			file = filp_open("core", O_CREAT | O_RDWR | O_LARGEFILE, 0600);
-			if (IS_ERR(file) || !file->f_op || !file->f_op->write) {
-				dprintk("cannot open core file\n");
-				goto fail;
-			}			
-			chunks = req->args[0]; /* > 0 */
-			/* first we map the chunk table */
-			tablesize = sizeof(struct coretable) * chunks;
-			tablephys = ihk_device_map_memory(ihk_os_to_dev(os), req->args[1], tablesize);
-			coretable = ihk_device_map_virtula(ihk_os_dev(os), tablephys, tablesize, NULL, 0);
-			for (i = 0; i < chunks; i++) {
-				/* xxx:map and write the chunk out */
-				rphys = coretable[i].addr;
-				size = coretable[i].len;
-				phys = ihk_device_map_memory(ihk_os_to_dev(os), rphys, size);
-				pt = ihk_device_map_virtula(ihk_os_dev(os), phys, size, NULL, 0);
-				ret = file->f_op->write(file, pt, size, &file->f_pos);
-				if (ret != len) {
-					dprintk("core file write failed(%d).\n", ret);
-					break;
-				}
-				ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
-				ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
-			}
-			/* xxx:unmap the chunk */
-			/* unmap the chunk table */
-			ihk_device_unmap_virtual(ihk_os_to_dev(os), coretable, PAGE_SIZE);
-			ihk_device_unmap_memory(ihk_os_to_dev(os), tablephys, PAGE_SIZE);
-		fail:
-			filp_close(file, NULL);
-			set_fs(oldfs);
-
-		}
-		error = 0;
-		ret = 0; 
+		error = writecore(os, sc->args[1], sc->args[0]);
+		ret = 0;
 		break;
+
 	default:
 		error = -ENOSYS;
 		goto out;

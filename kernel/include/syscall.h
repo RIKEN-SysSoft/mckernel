@@ -227,6 +227,6 @@ enum {
 struct coretable {
 	int len;
 	void *addr;
-}
+};
 
 #endif
