@@ -1702,8 +1702,8 @@ SYSCALL_DECLARE(madvise)
 			dkprintf("[%d]sys_madvise(%lx,%lx,%x):not contig "
 					"%lx [%lx-%lx)\n",
 					ihk_mc_get_processor_id(), start,
-					len0, advice, addr, range->start,
-					range->end);
+					len0, advice, addr, range?range->start:0,
+					range?range->end:0);
 			error = -ENOMEM;
 			goto out;
 		}
@@ -2035,7 +2035,8 @@ SYSCALL_DECLARE(mlock)
 			dkprintf("[%d]sys_mlock(%lx,%lx):not contiguous."
 				       " %lx [%lx-%lx)\n",
 					ihk_mc_get_processor_id(), start0,
-					len0, addr, range->start, range->end);
+					len0, addr, range?range->start:0,
+					range?range->end:0);
 			error = -ENOMEM;
 			goto out;
 		}
@@ -2209,7 +2210,8 @@ SYSCALL_DECLARE(munlock)
 			dkprintf("[%d]sys_munlock(%lx,%lx):not contiguous."
 				       " %lx [%lx-%lx)\n",
 					ihk_mc_get_processor_id(), start0,
-					len0, addr, range->start, range->end);
+					len0, addr, range?range->start:0,
+					range?range->end:0);
 			error = -ENOMEM;
 			goto out;
 		}
