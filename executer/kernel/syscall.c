@@ -1203,14 +1203,14 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 		phys = ihk_device_map_memory(dev, rphys, size);
 		pt = ihk_device_map_virtual(dev, phys, size, NULL, 0);
 		ret = file->f_op->write(file, pt, size, &file->f_pos);
+		/* unmap the chunk */
+		ihk_device_unmap_virtual(dev, pt, size);
+		ihk_device_unmap_memory(dev, phys, size);
 		if (ret != size) {
 			dprintk("core file write failed(%d).\n", ret);
 			error = PTR_ERR(file);
 			break;
 		}
-		/* unmap the chunk out */
-		ihk_device_unmap_virtual(dev, pt, size);
-		ihk_device_unmap_memory(dev, phys, size);
 	}
 	/* unmap the chunk table */
 	ihk_device_unmap_virtual(dev, coretable, tablesize);
