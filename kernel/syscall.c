@@ -2305,6 +2305,7 @@ SYSCALL_DECLARE(remap_file_pages)
 	range = lookup_process_memory_range(proc->vm, start, end);
 	if (!range || (start < range->start) || (range->end < end)
 			|| (range->flag & VR_PRIVATE)
+			|| (range->flag & (VR_REMOTE|VR_IO_NOCACHE|VR_RESERVED))
 			|| !range->memobj) {
 		ekprintf("sys_remap_file_pages(%#lx,%#lx,%#x,%#lx,%#x):"
 				"invalid VMR:[%#lx-%#lx) %#lx %p\n",
