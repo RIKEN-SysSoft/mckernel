@@ -57,7 +57,7 @@
 
 struct coretable {
 	int len;
-	void *addr;
+	unsigned long addr;
 };
 
 struct ikc_scd_packet {

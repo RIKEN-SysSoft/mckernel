@@ -1198,7 +1198,7 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 	coretable = ihk_device_map_virtual(dev, tablephys, tablesize, NULL, 0);
 	for (i = 0; i < chunks; i++) {
 		/* map and write the chunk out */
-		rphys = (unsigned long) coretable[i].addr;
+		rphys = coretable[i].addr;
 		size = coretable[i].len;
 		phys = ihk_device_map_memory(dev, rphys, size);
 		pt = ihk_device_map_virtual(dev, phys, size, NULL, 0);

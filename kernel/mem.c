@@ -34,7 +34,7 @@
 #include <cls.h>
 #include <page.h>
 
-//#define DEBUG_PRINT_MEM
+#define DEBUG_PRINT_MEM
 
 #ifdef DEBUG_PRINT_MEM
 #define	dkprintf(...)	kprintf(__VA_ARGS__)
@@ -166,6 +166,34 @@ static struct ihk_mc_interrupt_handler query_free_mem_handler = {
 
 void set_signal(int sig, void *regs);
 void check_signal(unsigned long rc, void *regs);
+int gencore(struct process *, void *, struct coretable **, int *);
+
+static void coredump(struct process *proc, void *regs)
+{
+	/* xxx */
+	struct syscall_request request IHK_DMA_ALIGN;
+	int ret;
+	struct coretable *coretable;
+	int chunks;
+
+	ret = gencore(proc, regs, &coretable, &chunks);
+	if (ret != 0) {
+		dkprintf("could not generate a core file image\n");
+		return;
+	}
+	request.number = __NR_coredump;
+	request.args[0] = chunks;
+	request.args[1] = virt_to_phys(coretable);
+	/* no data for now */
+	ret = do_syscall(&request, proc->uctx, 
+			 proc->cpu_id, proc->pid);
+	if (ret == 0) {
+		kprintf("dumped core.\n");
+	} else {
+		kprintf("core dump failed.\n");
+	}
+	kfree(coretable);
+}
 
 static void unhandled_page_fault(struct process *proc, void *fault_addr, void *regs)
 {
@@ -206,32 +234,9 @@ static void unhandled_page_fault(struct process *proc, void *fault_addr, void *r
 	/* TODO */
 	ihk_mc_debug_show_interrupt_context(regs);
 
-	{
-		/* xxx */
-		/* core dump framework test */
-		struct syscall_request request IHK_DMA_ALIGN;
-		int ret;
-		struct coretable coreentry[3];
 
-		coreentry[0].len = 8;
-		coreentry[0].addr = virt_to_phys("this is ");
-		coreentry[1].len = 7;
-		coreentry[1].addr = virt_to_phys("a test ");
-		coreentry[2].len = 15;
-		coreentry[2].addr = virt_to_phys("for coredump.\n");
-
-		request.number = __NR_coredump;
-		request.args[0] = 3;
-		request.args[1] = virt_to_phys(&coreentry);
-		/* no data for now */
-		ret = do_syscall(&request, proc->uctx, 
-				 proc->cpu_id, proc->pid);
-		if (ret == 0) {
-			kprintf("dumped core.\n");
-		} else {
-			kprintf("core dump failed.\n");
-		}
-	}
+	dkprintf("now dump a core file\n");
+	coredump(proc, regs);
 
 #ifdef DEBUG_PRINT_MEM
 	{
