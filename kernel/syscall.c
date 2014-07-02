@@ -209,7 +209,7 @@ long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx,
 					cpu_local_var(current)->pid);		
 			error = page_fault_process(get_cpu_local_var(cpu)->current,
 					(void *)res->fault_address,
-					res->fault_reason);
+					res->fault_reason|PF_POPULATE);
 
 			/* send result */
 			req2.number = __NR_mmap;
