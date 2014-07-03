@@ -795,6 +795,13 @@ SYSCALL_DECLARE(mmap)
 			goto out;
 		}
 	}
+	else {
+		error = zeroobj_create(&memobj);
+		if (error) {
+			ekprintf("sys_mmap:zeroobj_create failed. %d\n", error);
+			goto out;
+		}
+	}
 
 	if ((flags & MAP_PRIVATE) && (maxprot & PROT_READ)) {
 		maxprot |= PROT_WRITE;
