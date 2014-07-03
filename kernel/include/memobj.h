@@ -18,8 +18,15 @@
 #include <ihk/lock.h>
 #include <list.h>
 
+enum {
+	/* for memobj.flags */
+	MF_HAS_PAGER	= 0x0001,
+};
+
 struct memobj {
 	struct memobj_ops *	ops;
+	uint32_t		flags;
+	int8_t			padding[4];
 	ihk_spinlock_t		lock;
 };
 
@@ -72,6 +79,11 @@ static inline void memobj_lock(struct memobj *obj)
 static inline void memobj_unlock(struct memobj *obj)
 {
 	ihk_mc_spinlock_unlock_noirq(&obj->lock);
+}
+
+static inline int memobj_has_pager(struct memobj *obj)
+{
+	return !!(obj->flags & MF_HAS_PAGER);
 }
 
 int fileobj_create(int fd, struct memobj **objp, int *maxprotp);

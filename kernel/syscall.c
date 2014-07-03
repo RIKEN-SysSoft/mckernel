@@ -1708,9 +1708,8 @@ SYSCALL_DECLARE(madvise)
 			goto out;
 		}
 
-#define	MEMOBJ_IS_FILEOBJ(obj)	((obj) != NULL)
-		if (!MEMOBJ_IS_FILEOBJ(range->memobj)) {
-			dkprintf("[%d]sys_madvise(%lx,%lx,%x):not fileobj "
+		if (!range->memobj || !memobj_has_pager(range->memobj)) {
+			dkprintf("[%d]sys_madvise(%lx,%lx,%x):has not pager"
 					"[%lx-%lx) %lx\n",
 					ihk_mc_get_processor_id(), start,
 					len0, advice, range->start,

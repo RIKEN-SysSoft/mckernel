@@ -184,6 +184,7 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp)
 
 	memset(newobj, 0, sizeof(*newobj));
 	newobj->memobj.ops = &fileobj_ops;
+	newobj->memobj.flags = MF_HAS_PAGER;
 	newobj->handle = result.handle;
 	newobj->sref = 1;
 	newobj->cref = 1;
