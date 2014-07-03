@@ -18,6 +18,7 @@
 #include <ihk/lock.h>
 #include <errno.h>
 #include <list.h>
+#include <shm.h>
 
 enum {
 	/* for memobj.flags */
@@ -101,5 +102,6 @@ static inline int memobj_has_pager(struct memobj *obj)
 }
 
 int fileobj_create(int fd, struct memobj **objp, int *maxprotp);
+int shmobj_create(struct shmid_ds *ds, struct memobj **objp);
 
 #endif /* HEADER_MEMOBJ_H */
