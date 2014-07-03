@@ -16,6 +16,7 @@
 #include <ihk/types.h>
 #include <ihk/atomic.h>
 #include <ihk/lock.h>
+#include <errno.h>
 #include <list.h>
 
 enum {
@@ -46,29 +47,42 @@ struct memobj_ops {
 
 static inline void memobj_release(struct memobj *obj)
 {
-	(*obj->ops->release)(obj);
+	if (obj->ops->release) {
+		(*obj->ops->release)(obj);
+	}
 }
 
 static inline void memobj_ref(struct memobj *obj)
 {
-	(*obj->ops->ref)(obj);
+	if (obj->ops->ref) {
+		(*obj->ops->ref)(obj);
+	}
 }
 
 static inline int memobj_get_page(struct memobj *obj, off_t off,
 		int p2align, uintptr_t *physp)
 {
-	return (*obj->ops->get_page)(obj, off, p2align, physp);
+	if (obj->ops->get_page) {
+		return (*obj->ops->get_page)(obj, off, p2align, physp);
+	}
+	return -ENXIO;
 }
 
 static inline uintptr_t memobj_copy_page(struct memobj *obj,
 		uintptr_t orgphys, int p2align)
 {
-	return (*obj->ops->copy_page)(obj, orgphys, p2align);
+	if (obj->ops->copy_page) {
+		return (*obj->ops->copy_page)(obj, orgphys, p2align);
+	}
+	return -ENXIO;
 }
 
 static inline int memobj_flush_page(struct memobj *obj, uintptr_t phys, size_t pgsize)
 {
-	return (*obj->ops->flush_page)(obj, phys, pgsize);
+	if (obj->ops->flush_page) {
+		return (*obj->ops->flush_page)(obj, phys, pgsize);
+	}
+	return 0;
 }
 
 static inline void memobj_lock(struct memobj *obj)
