@@ -51,7 +51,7 @@ typedef struct {
 #define	ELFDATA2LSB	1	/* LSB */
 #define	El_VERSION	1	/* defined to be the same as EV CURRENT */
 #define	ELFOSABI_NONE	0	/* unspecied */
-#define	EI_ABIVERSION	0	/* unspecied */ /* xxx */
+#define	El_ABIVERSION_NONE	0	/* unspecied */
 #define	ET_CORE		4	/* Core file */
 #define	EM_K10M		181	/* Intel K10M */
 #define	EV_CURRENT	1	/* Current version */
@@ -79,7 +79,7 @@ typedef struct note {
 	Elf64_Xword descsz;
 	Elf64_Xword type;
 	char *contents;		/* name char[namesz] and desc[descsz] */
-};
+} Elf64_Nhdr;
 
 #include "elfcoregpl.h"
 

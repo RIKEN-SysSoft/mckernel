@@ -167,6 +167,7 @@ static struct ihk_mc_interrupt_handler query_free_mem_handler = {
 void set_signal(int sig, void *regs);
 void check_signal(unsigned long rc, void *regs);
 int gencore(struct process *, void *, struct coretable **, int *);
+void freecore(struct coretable **);
 
 static void coredump(struct process *proc, void *regs)
 {
@@ -192,7 +193,7 @@ static void coredump(struct process *proc, void *regs)
 	} else {
 		kprintf("core dump failed.\n");
 	}
-	kfree(coretable);
+	freecore(&coretable);
 }
 
 static void unhandled_page_fault(struct process *proc, void *fault_addr, void *regs)
