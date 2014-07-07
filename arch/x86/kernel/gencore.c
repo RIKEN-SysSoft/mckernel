@@ -64,7 +64,7 @@ int gencore(struct process *proc, void *regs,
 
 #define DUMMY
 
-#ifdef DUMMY
+#ifndef DUMMY
 
 	/* ELF header */
 
