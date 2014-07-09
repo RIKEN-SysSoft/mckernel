@@ -204,6 +204,12 @@ static inline off_t pte_get_off(pte_t *ptep, size_t pgsize)
 	return (off_t)(*ptep & PAGE_MASK);
 }
 
+static inline void pte_make_null(pte_t *ptep, size_t pgsize)
+{
+	*ptep = PTE_NULL;
+	return;
+}
+
 static inline void pte_make_fileoff(off_t off,
 		enum ihk_mc_pt_attribute ptattr, size_t pgsize, pte_t *ptep)
 {
@@ -234,6 +240,36 @@ static inline void pte_xchg(pte_t *ptep, pte_t *valp)
 #else
 #define	pte_xchg(p,vp)	do { *(vp) = xchg((p), *(vp)); } while (0)
 #endif
+
+static inline void pte_clear_dirty(pte_t *ptep, size_t pgsize)
+{
+	uint64_t mask;
+
+	switch (pgsize) {
+	default:	/* through */
+	case PTL1_SIZE:	mask = ~PFL1_DIRTY;	break;
+	case PTL2_SIZE:	mask = ~PFL2_DIRTY;	break;
+	case PTL3_SIZE:	mask = ~PFL3_DIRTY;	break;
+	}
+
+	asm volatile ("lock andq %0,%1" :: "r"(mask), "m"(*ptep));
+	return;
+}
+
+static inline void pte_set_dirty(pte_t *ptep, size_t pgsize)
+{
+	uint64_t mask;
+
+	switch (pgsize) {
+	default:	/* through */
+	case PTL1_SIZE:	mask = PFL1_DIRTY;	break;
+	case PTL2_SIZE:	mask = PFL2_DIRTY;	break;
+	case PTL3_SIZE:	mask = PFL3_DIRTY;	break;
+	}
+
+	asm volatile ("lock orq %0,%1" :: "r"(mask), "m"(*ptep));
+	return;
+}
 
 struct page_table;
 void set_pte(pte_t *ppte, unsigned long phys, enum ihk_mc_pt_attribute attr);

@@ -46,6 +46,7 @@ static memobj_ref_func_t fileobj_ref;
 static memobj_get_page_func_t fileobj_get_page;
 static memobj_copy_page_func_t fileobj_copy_page;
 static memobj_flush_page_func_t fileobj_flush_page;
+static memobj_invalidate_page_func_t fileobj_invalidate_page;
 
 static struct memobj_ops fileobj_ops = {
 	.release =	&fileobj_release,
@@ -53,6 +54,7 @@ static struct memobj_ops fileobj_ops = {
 	.get_page =	&fileobj_get_page,
 	.copy_page =	&fileobj_copy_page,
 	.flush_page =	&fileobj_flush_page,
+	.invalidate_page =	&fileobj_invalidate_page,
 };
 
 static struct fileobj *to_fileobj(struct memobj *memobj)
@@ -576,4 +578,34 @@ static int fileobj_flush_page(struct memobj *memobj, uintptr_t phys,
 
 	memobj_lock(&obj->memobj);
 	return 0;
+}
+
+static int fileobj_invalidate_page(struct memobj *memobj, uintptr_t phys,
+		size_t pgsize)
+{
+	struct fileobj *obj = to_fileobj(memobj);
+	int error;
+	struct page *page;
+
+	dkprintf("fileobj_invalidate_page(%p,%#lx,%#lx)\n",
+			memobj, phys, pgsize);
+
+	if (!(page = phys_to_page(phys))
+			|| !(page = page_list_lookup(obj, page->offset))) {
+		error = 0;
+		goto out;
+	}
+
+	if (ihk_atomic_read(&page->count) == 1) {
+		if (page_unmap(page)) {
+			ihk_mc_free_pages(phys_to_virt(phys),
+					pgsize/PAGE_SIZE);
+		}
+	}
+
+	error = 0;
+out:
+	dkprintf("fileobj_invalidate_page(%p,%#lx,%#lx):%d\n",
+			memobj, phys, pgsize, error);
+	return error;
 }

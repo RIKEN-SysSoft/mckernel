@@ -1210,6 +1210,154 @@ out:
 	return error;
 }
 
+struct sync_args {
+	struct memobj *memobj;
+};
+
+static int sync_one_page(void *arg0, page_table_t pt, pte_t *ptep,
+		void *pgaddr, size_t pgsize)
+{
+	struct sync_args *args = arg0;
+	int error;
+	uintptr_t phys;
+
+	dkprintf("sync_one_page(%p,%p,%p %#lx,%p,%#lx)\n",
+			arg0, pt, ptep, *ptep, pgaddr, pgsize);
+	if (pte_is_null(ptep) || pte_is_fileoff(ptep, pgsize)
+			|| !pte_is_dirty(ptep, pgsize)) {
+		error = 0;
+		goto out;
+	}
+
+	pte_clear_dirty(ptep, pgsize);
+	flush_tlb_single((uintptr_t)pgaddr);	/* XXX: TLB flush */
+
+	phys = pte_get_phys(ptep);
+	error = memobj_flush_page(args->memobj, phys, pgsize);
+	if (error) {
+		ekprintf("sync_one_page(%p,%p,%p %#lx,%p,%#lx):"
+				"flush failed. %d\n",
+				arg0, pt, ptep, *ptep, pgaddr, pgsize, error);
+		pte_set_dirty(ptep, pgsize);
+		goto out;
+	}
+
+	error = 0;
+out:
+	dkprintf("sync_one_page(%p,%p,%p %#lx,%p,%#lx):%d\n",
+			arg0, pt, ptep, *ptep, pgaddr, pgsize, error);
+	return error;
+}
+
+int sync_process_memory_range(struct process_vm *vm, struct vm_range *range,
+		uintptr_t start, uintptr_t end)
+{
+	int error;
+	struct sync_args args;
+
+	dkprintf("sync_process_memory_range(%p,%p,%#lx,%#lx)\n",
+			vm, range, start, end);
+	args.memobj = range->memobj;
+
+	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
+	memobj_lock(range->memobj);
+	error = visit_pte_range(vm->page_table, (void *)start, (void *)end,
+			VPTEF_SKIP_NULL, &sync_one_page, &args);
+	memobj_unlock(range->memobj);
+	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
+	if (error) {
+		ekprintf("sync_process_memory_range(%p,%p,%#lx,%#lx):"
+				"visit failed%d\n",
+				vm, range, start, end, error);
+		goto out;
+	}
+out:
+	dkprintf("sync_process_memory_range(%p,%p,%#lx,%#lx):%d\n",
+			vm, range, start, end, error);
+	return error;
+}
+
+struct invalidate_args {
+	struct vm_range *range;
+};
+
+static int invalidate_one_page(void *arg0, page_table_t pt, pte_t *ptep,
+		void *pgaddr, size_t pgsize)
+{
+	struct invalidate_args *args = arg0;
+	struct vm_range *range = args->range;
+	int error;
+	uintptr_t phys;
+	struct page *page;
+	off_t linear_off;
+	pte_t apte;
+
+	dkprintf("invalidate_one_page(%p,%p,%p %#lx,%p,%#lx)\n",
+			arg0, pt, ptep, *ptep, pgaddr, pgsize);
+	if (pte_is_null(ptep) || pte_is_fileoff(ptep, pgsize)) {
+		error = 0;
+		goto out;
+	}
+
+	phys = pte_get_phys(ptep);
+	page = phys_to_page(phys);
+	linear_off = range->objoff + ((uintptr_t)pgaddr - range->start);
+	if (page && (page->offset == linear_off)) {
+		pte_make_null(&apte, pgsize);
+	}
+	else {
+		pte_make_fileoff(page->offset, 0, pgsize, &apte);
+	}
+	pte_xchg(ptep, &apte);
+	flush_tlb_single((uintptr_t)pgaddr);	/* XXX: TLB flush */
+
+	if (page && page_unmap(page)) {
+		panic("invalidate_one_page");
+	}
+
+	error = memobj_invalidate_page(range->memobj, phys, pgsize);
+	if (error) {
+		ekprintf("invalidate_one_page(%p,%p,%p %#lx,%p,%#lx):"
+				"invalidate failed. %d\n",
+				arg0, pt, ptep, *ptep, pgaddr, pgsize, error);
+		goto out;
+	}
+
+	error = 0;
+out:
+	dkprintf("invalidate_one_page(%p,%p,%p %#lx,%p,%#lx):%d\n",
+			arg0, pt, ptep, *ptep, pgaddr, pgsize, error);
+	return error;
+}
+
+int invalidate_process_memory_range(struct process_vm *vm,
+		struct vm_range *range, uintptr_t start, uintptr_t end)
+{
+	int error;
+	struct invalidate_args args;
+
+	dkprintf("invalidate_process_memory_range(%p,%p,%#lx,%#lx)\n",
+			vm, range, start, end);
+	args.range = range;
+
+	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
+	memobj_lock(range->memobj);
+	error = visit_pte_range(vm->page_table, (void *)start, (void *)end,
+			VPTEF_SKIP_NULL, &invalidate_one_page, &args);
+	memobj_unlock(range->memobj);
+	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
+	if (error) {
+		ekprintf("invalidate_process_memory_range(%p,%p,%#lx,%#lx):"
+				"visit failed%d\n",
+				vm, range, start, end, error);
+		goto out;
+	}
+out:
+	dkprintf("invalidate_process_memory_range(%p,%p,%#lx,%#lx):%d\n",
+			vm, range, start, end, error);
+	return error;
+}
+
 static int page_fault_process_memory_range(struct process_vm *vm, struct vm_range *range, uintptr_t fault_addr, uint64_t reason)
 {
 	int error;

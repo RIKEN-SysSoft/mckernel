@@ -3935,6 +3935,123 @@ out:
 	return ret;
 }
 
+SYSCALL_DECLARE(msync)
+{
+	const uintptr_t start0 = ihk_mc_syscall_arg0(ctx);
+	const size_t len0 = ihk_mc_syscall_arg1(ctx);
+	const int flags = ihk_mc_syscall_arg2(ctx);
+	const size_t len = (len0 + PAGE_SIZE - 1) & PAGE_MASK;
+	const uintptr_t start = start0;
+	const uintptr_t end = start + len;
+	struct process *proc = cpu_local_var(current);
+	struct process_vm *vm = proc->vm;
+	int error;
+	uintptr_t addr;
+	struct vm_range *range;
+	uintptr_t s;
+	uintptr_t e;
+
+	dkprintf("sys_msync(%#lx,%#lx,%#x)\n", start0, len0, flags);
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+
+	if ((start0 & ~PAGE_MASK)
+			|| (flags & ~(MS_ASYNC|MS_INVALIDATE|MS_SYNC))
+			|| ((flags & MS_ASYNC) && (flags & MS_SYNC))) {
+		error = -EINVAL;
+		ekprintf("sys_msync(%#lx,%#lx,%#x):invalid args. %d\n",
+				start0, len0, flags, error);
+		goto out;
+	}
+	if (end < start) {
+		error = -ENOMEM;
+		ekprintf("sys_msync(%#lx,%#lx,%#x):invalid args. %d\n",
+				start0, len0, flags, error);
+		goto out;
+	}
+
+	/* check ranges */
+	range = NULL;
+	for (addr = start; addr < end; addr = range->end) {
+		if (!range) {
+			range = lookup_process_memory_range(vm, addr,
+					addr+PAGE_SIZE);
+		}
+		else {
+			range = next_process_memory_range(vm, range);
+		}
+
+		if (!range || (addr < range->start)) {
+			error = -ENOMEM;
+			ekprintf("sys_msync(%#lx,%#lx,%#x):"
+					"invalid VMR %d %#lx-%#lx %#lx\n",
+					start0, len0, flags, error,
+					range?range->start:0,
+					range?range->end:0,
+					range?range->flag:0);
+			goto out;
+		}
+		if ((flags & MS_INVALIDATE) && (range->flag & VR_LOCKED)) {
+			error = -EBUSY;
+			ekprintf("sys_msync(%#lx,%#lx,%#x):"
+					"locked VMR %d %#lx-%#lx %#lx\n",
+					start0, len0, flags, error,
+					range->start, range->end, range->flag);
+			goto out;
+		}
+	}
+
+	/* do the sync */
+	range = NULL;
+	for (addr = start; addr < end; addr = range->end) {
+		if (!range) {
+			range = lookup_process_memory_range(vm, addr,
+					addr+PAGE_SIZE);
+		}
+		else {
+			range = next_process_memory_range(vm, range);
+		}
+
+		if ((range->flag & VR_PRIVATE) || !range->memobj
+				|| !memobj_has_pager(range->memobj)) {
+			dkprintf("sys_msync(%#lx,%#lx,%#x):"
+					"unsyncable VMR %d %#lx-%#lx %#lx\n",
+					start0, len0, flags, error,
+					range->start, range->end, range->flag);
+			/* nothing to do */
+			continue;
+		}
+
+		s = addr;
+		e = (range->end < end)? range->end: end;
+
+		if (flags & (MS_ASYNC | MS_SYNC)) {
+			error = sync_process_memory_range(vm, range, s, e);
+			if (error) {
+				ekprintf("sys_msync(%#lx,%#lx,%#x):sync failed. %d\n",
+						start0, len0, flags, error);
+				goto out;
+			}
+		}
+
+		if (flags & MS_INVALIDATE) {
+			error = invalidate_process_memory_range(
+					vm, range, s, e);
+			if (error) {
+				ekprintf("sys_msync(%#lx,%#lx,%#x):"
+						"invalidate failed. %d\n",
+						start0, len0, flags, error);
+				goto out;
+			}
+		}
+	}
+
+	error = 0;
+out:
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	dkprintf("sys_msync(%#lx,%#lx,%#x):%d\n", start0, len0, flags, error);
+	return error;
+} /* sys_msync() */
+
 SYSCALL_DECLARE(getcpu)
 {
 	const uintptr_t cpup = ihk_mc_syscall_arg0(ctx);

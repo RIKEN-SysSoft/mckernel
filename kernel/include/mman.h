@@ -69,4 +69,11 @@
 #define	MREMAP_MAYMOVE	0x01
 #define	MREMAP_FIXED	0x02
 
+/*
+ * for msync()
+ */
+#define	MS_ASYNC	0x01
+#define	MS_INVALIDATE	0x02
+#define	MS_SYNC		0x04
+
 #endif /* HEADER_MMAN_H */
