@@ -226,7 +226,7 @@ int gencore(struct process *proc, void *regs,
 			 range->start, range->end, range->flag, range->objoff);
 		/* We omit reserved areas because they are only for
 		   mckernel's internal use. */		   
-		if ((range->flag && VR_RESERVED) != 0)
+		if ((range->flag & VR_RESERVED) != 0)
 			continue;
 		segs++;
 	}
@@ -244,8 +244,6 @@ int gencore(struct process *proc, void *regs,
 	}
 
 	dkprintf("now generate a core file image\n");
-
-#define DUMMY
 
 #ifndef DUMMY
 
@@ -286,7 +284,7 @@ int gencore(struct process *proc, void *regs,
 		unsigned long flag = range->flag;
 		unsigned long size = range->end - range->start;
 
-		if ((range->flag && VR_RESERVED) != 0)
+		if ((range->flag & VR_RESERVED) != 0)
 			continue;
 
 		ph[i].p_type = PT_LOAD;
@@ -321,7 +319,7 @@ int gencore(struct process *proc, void *regs,
 
 	i = 3;	/* memory segments */
 	list_for_each_entry(range, &vm->vm_range_list, list) {
-		if ((range->flag && VR_RESERVED) != 0)
+		if ((range->flag & VR_RESERVED) != 0)
 			continue;
 		ct[i].addr = virt_to_phys(range->start);
 		ct[i].len = range->end - range->start;
