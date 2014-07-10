@@ -86,6 +86,8 @@
 #include <futex.h>
 #include <rlimit.h>
 
+#define	AUXV_LEN	12
+
 struct vm_range {
 	struct list_head list;
 	unsigned long start, end;
@@ -184,6 +186,7 @@ struct process {
 	void *pgio_arg;
 
 	struct fork_tree_node *ftn;
+	unsigned long saved_auxv[AUXV_LEN];
 };
 
 struct process_vm {

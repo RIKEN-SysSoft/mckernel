@@ -1254,6 +1254,9 @@ int init_process_stack(struct process *process, struct program_load_desc *pn,
 	/* set up initial stack frame */
 	p = (unsigned long *)(stack + minsz);
 	s_ind = -1;
+	/* auxiliary vector */
+	/* If you add/delete entires, then AUXV_LEN should be 
+	   increased/decreased. */
 	p[s_ind--] = 0;     /* AT_NULL */
 	p[s_ind--] = 0;
 	p[s_ind--] = pn->at_entry; /* AT_ENTRY */
@@ -1266,6 +1269,9 @@ int init_process_stack(struct process *process, struct program_load_desc *pn,
 	p[s_ind--] = AT_PHDR;	
 	p[s_ind--] = 4096; /* AT_PAGESZ */
 	p[s_ind--] = AT_PAGESZ;
+	/* save auxiliary vector for core dump */
+	memcpy(process->saved_auxv, &p[s_ind + 1], 
+	       sizeof(process->saved_auxv));
 	p[s_ind--] = 0;     /* envp terminating NULL */
 	/* envp */
 	for (arg_ind = envc - 1; arg_ind > -1; --arg_ind) {

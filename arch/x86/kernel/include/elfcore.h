@@ -74,12 +74,18 @@ typedef struct {
 #define	PF_W		2	/* writable bit */
 #define	PF_R		4	/* readable bit */
 
-typedef struct note {
+struct note {
 	Elf64_Xword namesz;
 	Elf64_Xword descsz;
 	Elf64_Xword type;
 	char *contents;		/* name char[namesz] and desc[descsz] */
-} Elf64_Nhdr;
+};
+
+#define	NT_PRSTATUS	1
+#define	NT_PRFRPREG	2
+#define	NT_PRPSINFO	3
+#define	NT_AUXV		6
+#define	NT_X86_STATE	0x202
 
 #include "elfcoregpl.h"
 
