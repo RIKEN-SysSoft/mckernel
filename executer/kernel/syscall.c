@@ -1200,9 +1200,19 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 		/* map and write the chunk out */
 		rphys = coretable[i].addr;
 		size = coretable[i].len;
+		dprintk("mapping remote %lx@%lx -> ", size, rphys);
 		phys = ihk_device_map_memory(dev, rphys, size);
+		dprintk("physical %lx, ", phys);
 		pt = ihk_device_map_virtual(dev, phys, size, NULL, 0);
-		ret = file->f_op->write(file, pt, size, &file->f_pos);
+		dprintk("virtual %lx\n", pt);
+		if (pt != NULL) {
+			ret = file->f_op->write(file, pt, size, &file->f_pos);
+		} else {
+			dprintk("cannot map physical memory(%lx) to virtual memory.\n", 
+				phys);
+			ihk_device_unmap_memory(dev, phys, size);
+			break;
+		}			
 		/* unmap the chunk */
 		ihk_device_unmap_virtual(dev, pt, size);
 		ihk_device_unmap_memory(dev, phys, size);

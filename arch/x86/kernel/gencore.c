@@ -222,7 +222,7 @@ int gencore(struct process *proc, void *regs,
 	}
 
 	list_for_each_entry(range, &vm->vm_range_list, list) {
-		dkprintf("start:%x end:%x flag:%x objoff:%x\n", 
+		dkprintf("start:%lx end:%lx flag:%lx objoff:%lx\n", 
 			 range->start, range->end, range->flag, range->objoff);
 		/* We omit reserved areas because they are only for
 		   mckernel's internal use. */		   
@@ -235,17 +235,15 @@ int gencore(struct process *proc, void *regs,
 	{
 		struct vm_regions region = proc->vm->region;
 
-		dkprintf("text:  %x-%x\n", region.text_start, region.text_end);
-		dkprintf("data:  %x-%x\n", region.data_start, region.data_end);
-		dkprintf("brk:   %x-%x\n", region.brk_start, region.brk_end);
-		dkprintf("map:   %x-%x\n", region.map_start, region.map_end);
-		dkprintf("stack: %x-%x\n", region.stack_start, region.stack_end);
-		dkprintf("user:  %x-%x\n\n", region.user_start, region.user_end);
+		dkprintf("text:  %lx-%lx\n", region.text_start, region.text_end);
+		dkprintf("data:  %lx-%lx\n", region.data_start, region.data_end);
+		dkprintf("brk:   %lx-%lx\n", region.brk_start, region.brk_end);
+		dkprintf("map:   %lx-%lx\n", region.map_start, region.map_end);
+		dkprintf("stack: %lx-%lx\n", region.stack_start, region.stack_end);
+		dkprintf("user:  %lx-%lx\n\n", region.user_start, region.user_end);
 	}
 
 	dkprintf("now generate a core file image\n");
-
-#ifndef DUMMY
 
 	offset += sizeof(eh);
 	fill_elf_header(&eh, segs);
@@ -310,12 +308,15 @@ int gencore(struct process *proc, void *regs,
 
 	ct[0].addr = virt_to_phys(&eh);	/* ELF header */
 	ct[0].len = 64; 
+	dkprintf("coretable[0]: %lx@%lx(%lx)\n", ct[0].len, ct[0].addr, &eh);
 
 	ct[1].addr = virt_to_phys(ph);	/* program header table */
 	ct[1].len = phsize;
+	dkprintf("coretable[1]: %lx@%lx(%lx)\n", ct[1].len, ct[1].addr, ph);
 
 	ct[2].addr = virt_to_phys(note);	/* NOTE segment */
 	ct[2].len = notesize;
+	dkprintf("coretable[2]: %lx@%lx(%lx)\n", ct[2].len, ct[2].addr, note);
 
 	i = 3;	/* memory segments */
 	list_for_each_entry(range, &vm->vm_range_list, list) {
@@ -323,29 +324,12 @@ int gencore(struct process *proc, void *regs,
 			continue;
 		ct[i].addr = virt_to_phys(range->start);
 		ct[i].len = range->end - range->start;
+		dkprintf("coretable[%d]: %lx@%lx(%lx)\n", i, ct[i].len, ct[i].addr, range->start);
 		i++;
 	}
 	*chunks = segs + 2;
-	
-#else /* dummy */
-	*coretable = kmalloc(sizeof(struct coretable) * 3, IHK_MC_AP_NOWAIT);
-	if (!*coretable) {
-		dkprintf("could not alloc a coretable.\n");
-		goto fail;
-	}
-
-	ct[0].len = 8;
-	ct[0].addr = virt_to_phys("this is ");
-	ct[1].len = 7;
-	ct[1].addr = virt_to_phys("a test ");
-	ct[2].len = 15;
-	ct[2].addr = virt_to_phys("for coredump.\n");
-
-	dkprintf("generated a core table.\n");
-
-	*chunks = 3;
-#endif
 	*coretable = ct;
+
 	return 0;
 
 	fail:
