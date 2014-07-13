@@ -168,6 +168,7 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid)
 #endif
 }
 
+ihk_spinlock_t syscall_lock;
 
 long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx, 
 		int cpu, int pid)
@@ -176,6 +177,9 @@ long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx,
 	struct syscall_request req2 IHK_DMA_ALIGN;
 	struct syscall_params *scp;
 	int error;
+	long rc;
+	int islock = 0;
+	unsigned long irqstate;
 
 	dkprintf("SC(%d)[%3d] sending syscall\n",
 	        ihk_mc_get_processor_id(),
@@ -184,6 +188,8 @@ long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx,
 	if(req->number == __NR_exit_group ||
 	   req->number == __NR_kill){ // interrupt syscall
 		scp = &get_cpu_local_var(0)->scp2;
+		islock = 1;
+		irqstate = ihk_mc_spinlock_lock(&syscall_lock);
 	}
 	else{
 		scp = &get_cpu_local_var(cpu)->scp;
@@ -225,7 +231,12 @@ long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx,
 	        ihk_mc_get_processor_id(),
 	        req->number, res->ret);
 
-	return res->ret;
+	rc = res->ret;
+	if(islock){
+		ihk_mc_spinlock_unlock(&syscall_lock, irqstate);
+	}
+
+	return rc;
 }
 
 long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx)

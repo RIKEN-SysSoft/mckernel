@@ -288,14 +288,16 @@ check_signal(unsigned long rc, void *regs0)
 unsigned long
 do_kill(int pid, int tid, int sig)
 {
+	struct cpu_local_var *v;
+	struct process *p;
 	struct process *proc = cpu_local_var(current);
 	struct process *tproc = NULL;
 	int i;
 	__sigset_t mask;
 	struct sig_pending *pending;
 	struct list_head *head;
-	int irqstate;
 	int rc;
+	unsigned long irqstate;
 
 	if(proc == NULL || proc->pid == 0){
 		return -ESRCH;
@@ -314,37 +316,52 @@ do_kill(int pid, int tid, int sig)
 		}
 		else{
 			for(i = 0; i < num_processors; i++){
-				if(get_cpu_local_var(i)->current &&
-				   get_cpu_local_var(i)->current->pid == pid){
-					tproc = get_cpu_local_var(i)->current;
-					break;
+				v = get_cpu_local_var(i);
+				irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
+				list_for_each_entry(p, &(v->runq), sched_list){
+					if(p->pid == pid){
+						tproc = p;
+						break;
+					}
 				}
+				ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 			}
 		}
 	}
 	else if(pid == -1){
-		for(i = 0; i < num_processors; i++)
-			if(get_cpu_local_var(i)->current &&
-			   get_cpu_local_var(i)->current->pid > 0 &&
-			   get_cpu_local_var(i)->current->tid == tid){
-				tproc = get_cpu_local_var(i)->current;
-				break;
+		for(i = 0; i < num_processors; i++){
+			v = get_cpu_local_var(i);
+			irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
+			list_for_each_entry(p, &(v->runq), sched_list){
+				if(p->pid > 0 &&
+				   p->tid == tid){
+					tproc = p;
+					break;
+				}
 			}
+			ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+		}
 	}
 	else{
 		if(pid == 0)
 			return -ESRCH;
-		for(i = 0; i < num_processors; i++)
-			if(get_cpu_local_var(i)->current &&
-			   get_cpu_local_var(i)->current->pid == pid &&
-			   get_cpu_local_var(i)->current->tid == tid){
-				tproc = get_cpu_local_var(i)->current;
-				break;
+		for(i = 0; i < num_processors; i++){
+			v = get_cpu_local_var(i);
+			irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
+			list_for_each_entry(p, &(v->runq), sched_list){
+				if(p->pid == pid &&
+				   p->tid == tid){
+					tproc = p;
+					break;
+				}
 			}
+			ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+		}
 	}
 
-	if(!tproc)
+	if(!tproc){
 		return -ESRCH;
+	}
 	if(sig == 0)
 		return 0;
 
@@ -375,7 +392,7 @@ do_kill(int pid, int tid, int sig)
 		}
 		else{
 			list_add_tail(&pending->list, head);
-			proc->sigevent = 1;
+			tproc->sigevent = 1;
 		}
 	}
 	if(tid == -1){
