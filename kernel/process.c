@@ -253,7 +253,7 @@ struct process *clone_process(struct process *org, unsigned long pc,
 			goto err_free_sighandler;
 		}
 
-		memset(proc->sighandler, '\0', sizeof(struct sig_handler));
+		memcpy(proc->sighandler, org->sighandler, sizeof(struct sig_handler));
 		ihk_atomic_set(&proc->sighandler->use, 1);
 		ihk_mc_spinlock_init(&proc->sighandler->lock);
 		ihk_atomic_set(&proc->sigshared->use, 1);
