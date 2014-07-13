@@ -45,6 +45,7 @@
 #include <mman.h>
 #include <kmalloc.h>
 #include <memobj.h>
+#include <shm.h>
 
 /* Headers taken from kitten LWK */
 #include <lwk/stddef.h>
@@ -215,7 +216,7 @@ long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx,
 					cpu_local_var(current)->pid);		
 			error = page_fault_process(get_cpu_local_var(cpu)->current,
 					(void *)res->fault_address,
-					res->fault_reason);
+					res->fault_reason|PF_POPULATE);
 
 			/* send result */
 			req2.number = __NR_mmap;
@@ -641,12 +642,13 @@ SYSCALL_DECLARE(mmap)
 	const int prot = ihk_mc_syscall_arg2(ctx);
 	const int flags = ihk_mc_syscall_arg3(ctx);
 	const int fd = ihk_mc_syscall_arg4(ctx);
-	const off_t off = ihk_mc_syscall_arg5(ctx);
+	const off_t off0 = ihk_mc_syscall_arg5(ctx);
 
 	struct process *proc = cpu_local_var(current);
 	struct vm_regions *region = &proc->vm->region;
 	intptr_t addr;
 	size_t len;
+	off_t off;
 	int error;
 	intptr_t npages;
 	int p2align;
@@ -657,10 +659,11 @@ SYSCALL_DECLARE(mmap)
 	int maxprot;
 	int denied;
 	int ro_vma_mapped = 0;
+	struct shmid_ds ads;
 
 	dkprintf("[%d]sys_mmap(%lx,%lx,%x,%x,%d,%lx)\n",
 			ihk_mc_get_processor_id(),
-			addr0, len0, prot, flags, fd, off);
+			addr0, len0, prot, flags, fd, off0);
 
 	/* check constants for flags */
 	if (1) {
@@ -692,9 +695,9 @@ SYSCALL_DECLARE(mmap)
 			|| ((region->user_end - len) < addr)
 			|| !(flags & (MAP_SHARED | MAP_PRIVATE))
 			|| ((flags & MAP_SHARED) && (flags & MAP_PRIVATE))
-			|| (off & (PAGE_SIZE - 1))) {
+			|| (off0 & (PAGE_SIZE - 1))) {
 		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):EINVAL\n",
-				addr0, len0, prot, flags, fd, off);
+				addr0, len0, prot, flags, fd, off0);
 		error = -EINVAL;
 		goto out2;
 	}
@@ -703,7 +706,7 @@ SYSCALL_DECLARE(mmap)
 	if ((flags & error_flags)
 			|| (flags & ~(supported_flags | ignored_flags))) {
 		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):unknown flags %x\n",
-				addr0, len0, prot, flags, fd, off,
+				addr0, len0, prot, flags, fd, off0,
 				(flags & ~(supported_flags | ignored_flags)));
 		error = -EINVAL;
 		goto out2;
@@ -765,8 +768,10 @@ SYSCALL_DECLARE(mmap)
 	}
 
 	phys = 0;
+	off = 0;
 	maxprot = PROT_READ | PROT_WRITE | PROT_EXEC;
 	if (!(flags & MAP_ANONYMOUS)) {
+		off = off0;
 		error = fileobj_create(fd, &memobj, &maxprot);
 		if (error) {
 			ekprintf("sys_mmap:fileobj_create failed. %d\n", error);
@@ -791,6 +796,22 @@ SYSCALL_DECLARE(mmap)
 			goto out;
 		}
 		phys = virt_to_phys(p);
+	}
+	else if (flags & MAP_SHARED) {
+		memset(&ads, 0, sizeof(ads));
+		ads.shm_segsz = len;
+		error = shmobj_create(&ads, &memobj);
+		if (error) {
+			ekprintf("sys_mmap:shmobj_create failed. %d\n", error);
+			goto out;
+		}
+	}
+	else {
+		error = zeroobj_create(&memobj);
+		if (error) {
+			ekprintf("sys_mmap:zeroobj_create failed. %d\n", error);
+			goto out;
+		}
 	}
 
 	if ((flags & MAP_PRIVATE) && (maxprot & PROT_READ)) {
@@ -855,7 +876,7 @@ out2:
 	}
 	dkprintf("[%d]sys_mmap(%lx,%lx,%x,%x,%d,%lx): %ld %lx\n",
 			ihk_mc_get_processor_id(),
-			addr0, len0, prot, flags, fd, off, error, addr);
+			addr0, len0, prot, flags, fd, off0, error, addr);
 	return (!error)? addr: error;
 }
 
@@ -1713,15 +1734,14 @@ SYSCALL_DECLARE(madvise)
 			dkprintf("[%d]sys_madvise(%lx,%lx,%x):not contig "
 					"%lx [%lx-%lx)\n",
 					ihk_mc_get_processor_id(), start,
-					len0, advice, addr, range->start,
-					range->end);
+					len0, advice, addr, range?range->start:0,
+					range?range->end:0);
 			error = -ENOMEM;
 			goto out;
 		}
 
-#define	MEMOBJ_IS_FILEOBJ(obj)	((obj) != NULL)
-		if (!MEMOBJ_IS_FILEOBJ(range->memobj)) {
-			dkprintf("[%d]sys_madvise(%lx,%lx,%x):not fileobj "
+		if (!range->memobj || !memobj_has_pager(range->memobj)) {
+			dkprintf("[%d]sys_madvise(%lx,%lx,%x):has not pager"
 					"[%lx-%lx) %lx\n",
 					ihk_mc_get_processor_id(), start,
 					len0, advice, range->start,
@@ -2046,7 +2066,8 @@ SYSCALL_DECLARE(mlock)
 			dkprintf("[%d]sys_mlock(%lx,%lx):not contiguous."
 				       " %lx [%lx-%lx)\n",
 					ihk_mc_get_processor_id(), start0,
-					len0, addr, range->start, range->end);
+					len0, addr, range?range->start:0,
+					range?range->end:0);
 			error = -ENOMEM;
 			goto out;
 		}
@@ -2220,7 +2241,8 @@ SYSCALL_DECLARE(munlock)
 			dkprintf("[%d]sys_munlock(%lx,%lx):not contiguous."
 				       " %lx [%lx-%lx)\n",
 					ihk_mc_get_processor_id(), start0,
-					len0, addr, range->start, range->end);
+					len0, addr, range?range->start:0,
+					range?range->end:0);
 			error = -ENOMEM;
 			goto out;
 		}
