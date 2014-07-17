@@ -75,10 +75,10 @@ typedef struct {
 #define	PF_R		4	/* readable bit */
 
 struct note {
-	Elf64_Xword namesz;
-	Elf64_Xword descsz;
-	Elf64_Xword type;
-	char *contents;		/* name char[namesz] and desc[descsz] */
+	Elf64_Word namesz;
+	Elf64_Word descsz;
+	Elf64_Word type;
+	/* name char[namesz] and desc[descsz] */
 };
 
 #define	NT_PRSTATUS	1

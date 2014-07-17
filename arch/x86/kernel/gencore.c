@@ -296,7 +296,7 @@ int gencore(struct process *proc, void *regs,
 	ph[0].p_offset = offset;
 	ph[0].p_vaddr = 0;
 	ph[0].p_paddr = 0;
-	ph[0].p_filesz = 0;
+	ph[0].p_filesz = notesize;
 	ph[0].p_memsz = notesize;
 	ph[0].p_align = 1024;
 
@@ -316,7 +316,7 @@ int gencore(struct process *proc, void *regs,
 		ph[i].p_offset = offset;
 		ph[i].p_vaddr = range->start;
 		ph[i].p_paddr = 0;
-		ph[i].p_filesz = 0;	/* How can we know this? */ 
+		ph[i].p_filesz = size;
 		ph[i].p_memsz = size;
 		ph[i].p_align = 1024;	/* ??? */
 		i++;
