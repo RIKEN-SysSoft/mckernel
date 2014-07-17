@@ -53,6 +53,7 @@ typedef struct {
 #define	ELFOSABI_NONE	0	/* unspecied */
 #define	El_ABIVERSION_NONE	0	/* unspecied */
 #define	ET_CORE		4	/* Core file */
+#define	EM_X86_64	62	/* AMD x86-64 architecture */
 #define	EM_K10M		181	/* Intel K10M */
 #define	EV_CURRENT	1	/* Current version */
 

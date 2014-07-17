@@ -38,7 +38,11 @@ void fill_elf_header(Elf64_Ehdr *eh, int segs)
 	eh->e_ident[EI_OSABI] = ELFOSABI_NONE;
 	eh->e_ident[EI_ABIVERSION] = El_ABIVERSION_NONE;
 	eh->e_type = ET_CORE;
+#ifdef CONFIG_MIC
 	eh->e_machine = EM_K10M;
+#else
+	eh->e_machine = EM_X86_64;
+#endif
 	eh->e_version = EV_CURRENT;
 	eh->e_entry = 0;	/* Do we really need this? */
 	eh->e_phoff = 64;	/* fixed */
