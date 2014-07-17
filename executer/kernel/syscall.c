@@ -1180,7 +1180,7 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 	set_fs(KERNEL_DS);
 
 	/* Every Linux documentation insists we should not 
-	 * open a file in the kernel module, but our karma makes
+	 * open a file in the kernel module, but our karma 
 	 * leads us here. Precisely, Here we emulate the core 
 	 * dump routine of the Linux kernel in linux/fs/exec.c. 
 	 * So we have a legitimate reason to do this.
@@ -1200,22 +1200,37 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 		/* map and write the chunk out */
 		rphys = coretable[i].addr;
 		size = coretable[i].len;
-		dprintk("mapping remote %lx@%lx -> ", size, rphys);
-		phys = ihk_device_map_memory(dev, rphys, size);
-		dprintk("physical %lx, ", phys);
-		pt = ihk_device_map_virtual(dev, phys, size, NULL, 0);
-		dprintk("virtual %lx\n", pt);
-		if (pt != NULL) {
-			ret = file->f_op->write(file, pt, size, &file->f_pos);
-		} else {
-			dprintk("cannot map physical memory(%lx) to virtual memory.\n", 
-				phys);
+		if (rphys != 0) {
+			dprintk("mapping remote %x@%lx -> ", size, rphys);
+			phys = ihk_device_map_memory(dev, rphys, size);
+			dprintk("physical %lx, ", phys);
+			pt = ihk_device_map_virtual(dev, phys, size, NULL, 0);
+			dprintk("virtual %p\n", pt);
+			if (pt != NULL) {
+				ret = file->f_op->write(file, pt, size, &file->f_pos);
+			} else {
+				dprintk("cannot map physical memory(%lx) to virtual memory.\n", 
+					phys);
+				ihk_device_unmap_memory(dev, phys, size);
+				break;
+			}			
+			/* unmap the chunk */
+			ihk_device_unmap_virtual(dev, pt, size);
 			ihk_device_unmap_memory(dev, phys, size);
-			break;
-		}			
-		/* unmap the chunk */
-		ihk_device_unmap_virtual(dev, pt, size);
-		ihk_device_unmap_memory(dev, phys, size);
+		} else {
+			/* We skip if the physical address is NULL
+			   and make the core file sparse. */
+			if (!file->f_op->llseek || (file->f_op->llseek == no_llseek)) {
+				dprintk("We have no llseek. The core file is truncated.\n");
+				error = -EINVAL;
+			}
+			ret = file->f_op->llseek(file, size, SEEK_CUR);
+			if (ret < 0) {
+				dprintk("core file seek failed(%d).\n", ret);
+				error = PTR_ERR(file);
+				break;
+			}
+		}
 		if (ret != size) {
 			dprintk("core file write failed(%d).\n", ret);
 			error = PTR_ERR(file);

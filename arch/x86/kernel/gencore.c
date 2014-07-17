@@ -216,6 +216,8 @@ int gencore(struct process *proc, void *regs,
 	unsigned int offset = 0;
 	int i;
 
+	*chunks = 3; /* Elf header , header table and NOTE segment */
+
 	if (vm == NULL) {
 		dkprintf("no vm found.\n");
 		return -1;
@@ -226,11 +228,33 @@ int gencore(struct process *proc, void *regs,
 			 range->start, range->end, range->flag, range->objoff);
 		/* We omit reserved areas because they are only for
 		   mckernel's internal use. */		   
-		if ((range->flag & VR_RESERVED) != 0)
+		if (range->flag & VR_RESERVED)
 			continue;
+		/* We need a chunk for each page for a demand paging area.
+		   This can be optimized for spacial complexity but we would
+		   lose simplicity instead. */
+		if (range->flag & VR_DEMAND_PAGING) {
+			unsigned long p, phys;
+			int prevzero = 0;
+			for (p = range->start; p < range->end; p += PAGE_SIZE) {
+				if (ihk_mc_pt_virt_to_phys(proc->vm->page_table, 
+							    (void *)p, &phys) != 0) {
+					prevzero = 1;
+				} else {
+					if (prevzero == 1)
+						(*chunks)++;
+					(*chunks)++;
+					prevzero = 0;
+				}
+			}
+			if (prevzero == 1)
+				(*chunks)++;
+		} else {
+			(*chunks)++;
+		}
 		segs++;
 	}
-	dkprintf("we have %d segs including one for NOTE.\n\n", segs);
+	dkprintf("we have %d segs and %d chunks.\n\n", segs, *chunks);
 
 	{
 		struct vm_regions region = proc->vm->region;
@@ -282,7 +306,7 @@ int gencore(struct process *proc, void *regs,
 		unsigned long flag = range->flag;
 		unsigned long size = range->end - range->start;
 
-		if ((range->flag & VR_RESERVED) != 0)
+		if (range->flag & VR_RESERVED)
 			continue;
 
 		ph[i].p_type = PT_LOAD;
@@ -300,7 +324,7 @@ int gencore(struct process *proc, void *regs,
 	}
 
 	/* coretable to send to host */
-	ct = kmalloc(sizeof(struct coretable) * (segs + 2), IHK_MC_AP_NOWAIT);
+	ct = kmalloc(sizeof(struct coretable) * (*chunks), IHK_MC_AP_NOWAIT);
 	if (!ct) {
 		dkprintf("could not alloc a coretable.\n");
 		goto fail;
@@ -320,14 +344,74 @@ int gencore(struct process *proc, void *regs,
 
 	i = 3;	/* memory segments */
 	list_for_each_entry(range, &vm->vm_range_list, list) {
-		if ((range->flag & VR_RESERVED) != 0)
+		unsigned long phys;
+
+		if (range->flag & VR_RESERVED)
 			continue;
-		ct[i].addr = virt_to_phys(range->start);
-		ct[i].len = range->end - range->start;
-		dkprintf("coretable[%d]: %lx@%lx(%lx)\n", i, ct[i].len, ct[i].addr, range->start);
-		i++;
+		if (range->flag & VR_DEMAND_PAGING) {
+			/* Just an ad hoc kluge. */
+			unsigned long p, start, phys;
+			int prevzero = 0;
+			unsigned long size = 0;
+
+			for (start = p = range->start; 
+			     p < range->end; p += PAGE_SIZE) {
+				if (ihk_mc_pt_virt_to_phys(proc->vm->page_table, 
+							    (void *)p, &phys) != 0) {
+					if (prevzero == 0) {
+						/* We begin a new chunk */
+						size = PAGE_SIZE;
+						start = p;
+					} else {
+						/* We extend the previous chunk */
+						size += PAGE_SIZE;
+					}
+					prevzero = 1;
+				} else {
+					if (prevzero == 1) {
+						/* Flush out an empty chunk */
+						ct[i].addr = 0;
+						ct[i].len = size;
+						dkprintf("coretable[%d]: %lx@%lx(%lx)\n", i, 
+							 ct[i].len, ct[i].addr, start);
+						i++;
+
+					}
+					ct[i].addr = phys;
+					ct[i].len = PAGE_SIZE;
+					dkprintf("coretable[%d]: %lx@%lx(%lx)\n", i, 
+						 ct[i].len, ct[i].addr, p);
+					i++;
+					prevzero = 0;
+				}
+			}
+			if (prevzero == 1) {
+				/* An empty chunk */
+				ct[i].addr = 0;
+				ct[i].len = size;
+				dkprintf("coretable[%d]: %lx@%lx(%lx)\n", i, 
+					 ct[i].len, ct[i].addr, start);
+				i++;
+			}		
+		} else {
+			if ((proc->vm->region.user_start <= range->start) &&
+			    (range->end <= proc->vm->region.user_end)) {
+				if (ihk_mc_pt_virt_to_phys(proc->vm->page_table, 
+							   (void *)range->start, &phys) != 0) {
+					dkprintf("could not convert user virtual address %lx"
+						 "to physical address", range->start);
+					goto fail;
+				}
+			} else {
+				phys = virt_to_phys((void *)range->start);
+			}
+			ct[i].addr = phys;
+			ct[i].len = range->end - range->start;
+			dkprintf("coretable[%d]: %lx@%lx(%lx)\n", i, 
+				 ct[i].len, ct[i].addr, range->start);
+			i++;
+		}
 	}
-	*chunks = segs + 2;
 	*coretable = ct;
 
 	return 0;
