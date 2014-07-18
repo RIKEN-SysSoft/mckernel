@@ -34,7 +34,7 @@
 #include <cls.h>
 #include <page.h>
 
-#define DEBUG_PRINT_MEM
+//#define DEBUG_PRINT_MEM
 
 #ifdef DEBUG_PRINT_MEM
 #define	dkprintf(...)	kprintf(__VA_ARGS__)

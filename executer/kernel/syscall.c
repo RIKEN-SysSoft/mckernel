@@ -46,7 +46,7 @@
 
 #define ALIGN_WAIT_BUF(z)   (((z + 63) >> 6) << 6)
 
-#define SC_DEBUG
+//#define SC_DEBUG
 
 #ifdef SC_DEBUG
 #define	dprintk(...)	printk(__VA_ARGS__)
@@ -1157,8 +1157,6 @@ static void clear_pte_range(uintptr_t start, uintptr_t len)
 	up_read(&mm->mmap_sem);
 	return;
 }
-
-/* xxx */
 
 static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 	struct file *file;

@@ -35,8 +35,6 @@
 #include <asm/io.h>
 #include "mcctrl.h"
 
-#define DEBUG 1
-
 #ifdef DEBUG
 #define dprintk printk
 #else
