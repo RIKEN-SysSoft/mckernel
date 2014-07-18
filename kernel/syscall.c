@@ -45,6 +45,7 @@
 #include <mman.h>
 #include <kmalloc.h>
 #include <memobj.h>
+#include <shm.h>
 
 /* Headers taken from kitten LWK */
 #include <lwk/stddef.h>
@@ -168,6 +169,7 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid)
 #endif
 }
 
+ihk_spinlock_t syscall_lock;
 
 long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx, 
 		int cpu, int pid)
@@ -176,6 +178,9 @@ long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx,
 	struct syscall_request req2 IHK_DMA_ALIGN;
 	struct syscall_params *scp;
 	int error;
+	long rc;
+	int islock = 0;
+	unsigned long irqstate;
 
 	dkprintf("SC(%d)[%3d] sending syscall\n",
 	        ihk_mc_get_processor_id(),
@@ -184,6 +189,8 @@ long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx,
 	if(req->number == __NR_exit_group ||
 	   req->number == __NR_kill){ // interrupt syscall
 		scp = &get_cpu_local_var(0)->scp2;
+		islock = 1;
+		irqstate = ihk_mc_spinlock_lock(&syscall_lock);
 	}
 	else{
 		scp = &get_cpu_local_var(cpu)->scp;
@@ -209,7 +216,7 @@ long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx,
 					cpu_local_var(current)->pid);		
 			error = page_fault_process(get_cpu_local_var(cpu)->current,
 					(void *)res->fault_address,
-					res->fault_reason);
+					res->fault_reason|PF_POPULATE);
 
 			/* send result */
 			req2.number = __NR_mmap;
@@ -225,7 +232,12 @@ long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx,
 	        ihk_mc_get_processor_id(),
 	        req->number, res->ret);
 
-	return res->ret;
+	rc = res->ret;
+	if(islock){
+		ihk_mc_spinlock_unlock(&syscall_lock, irqstate);
+	}
+
+	return rc;
 }
 
 long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx)
@@ -630,12 +642,13 @@ SYSCALL_DECLARE(mmap)
 	const int prot = ihk_mc_syscall_arg2(ctx);
 	const int flags = ihk_mc_syscall_arg3(ctx);
 	const int fd = ihk_mc_syscall_arg4(ctx);
-	const off_t off = ihk_mc_syscall_arg5(ctx);
+	const off_t off0 = ihk_mc_syscall_arg5(ctx);
 
 	struct process *proc = cpu_local_var(current);
 	struct vm_regions *region = &proc->vm->region;
 	intptr_t addr;
 	size_t len;
+	off_t off;
 	int error;
 	intptr_t npages;
 	int p2align;
@@ -646,10 +659,11 @@ SYSCALL_DECLARE(mmap)
 	int maxprot;
 	int denied;
 	int ro_vma_mapped = 0;
+	struct shmid_ds ads;
 
 	dkprintf("[%d]sys_mmap(%lx,%lx,%x,%x,%d,%lx)\n",
 			ihk_mc_get_processor_id(),
-			addr0, len0, prot, flags, fd, off);
+			addr0, len0, prot, flags, fd, off0);
 
 	/* check constants for flags */
 	if (1) {
@@ -681,9 +695,9 @@ SYSCALL_DECLARE(mmap)
 			|| ((region->user_end - len) < addr)
 			|| !(flags & (MAP_SHARED | MAP_PRIVATE))
 			|| ((flags & MAP_SHARED) && (flags & MAP_PRIVATE))
-			|| (off & (PAGE_SIZE - 1))) {
+			|| (off0 & (PAGE_SIZE - 1))) {
 		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):EINVAL\n",
-				addr0, len0, prot, flags, fd, off);
+				addr0, len0, prot, flags, fd, off0);
 		error = -EINVAL;
 		goto out2;
 	}
@@ -692,7 +706,7 @@ SYSCALL_DECLARE(mmap)
 	if ((flags & error_flags)
 			|| (flags & ~(supported_flags | ignored_flags))) {
 		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):unknown flags %x\n",
-				addr0, len0, prot, flags, fd, off,
+				addr0, len0, prot, flags, fd, off0,
 				(flags & ~(supported_flags | ignored_flags)));
 		error = -EINVAL;
 		goto out2;
@@ -754,8 +768,10 @@ SYSCALL_DECLARE(mmap)
 	}
 
 	phys = 0;
+	off = 0;
 	maxprot = PROT_READ | PROT_WRITE | PROT_EXEC;
 	if (!(flags & MAP_ANONYMOUS)) {
+		off = off0;
 		error = fileobj_create(fd, &memobj, &maxprot);
 		if (error) {
 			ekprintf("sys_mmap:fileobj_create failed. %d\n", error);
@@ -780,6 +796,22 @@ SYSCALL_DECLARE(mmap)
 			goto out;
 		}
 		phys = virt_to_phys(p);
+	}
+	else if (flags & MAP_SHARED) {
+		memset(&ads, 0, sizeof(ads));
+		ads.shm_segsz = len;
+		error = shmobj_create(&ads, &memobj);
+		if (error) {
+			ekprintf("sys_mmap:shmobj_create failed. %d\n", error);
+			goto out;
+		}
+	}
+	else {
+		error = zeroobj_create(&memobj);
+		if (error) {
+			ekprintf("sys_mmap:zeroobj_create failed. %d\n", error);
+			goto out;
+		}
 	}
 
 	if ((flags & MAP_PRIVATE) && (maxprot & PROT_READ)) {
@@ -844,7 +876,7 @@ out2:
 	}
 	dkprintf("[%d]sys_mmap(%lx,%lx,%x,%x,%d,%lx): %ld %lx\n",
 			ihk_mc_get_processor_id(),
-			addr0, len0, prot, flags, fd, off, error, addr);
+			addr0, len0, prot, flags, fd, off0, error, addr);
 	return (!error)? addr: error;
 }
 
@@ -1702,15 +1734,14 @@ SYSCALL_DECLARE(madvise)
 			dkprintf("[%d]sys_madvise(%lx,%lx,%x):not contig "
 					"%lx [%lx-%lx)\n",
 					ihk_mc_get_processor_id(), start,
-					len0, advice, addr, range->start,
-					range->end);
+					len0, advice, addr, range?range->start:0,
+					range?range->end:0);
 			error = -ENOMEM;
 			goto out;
 		}
 
-#define	MEMOBJ_IS_FILEOBJ(obj)	((obj) != NULL)
-		if (!MEMOBJ_IS_FILEOBJ(range->memobj)) {
-			dkprintf("[%d]sys_madvise(%lx,%lx,%x):not fileobj "
+		if (!range->memobj || !memobj_has_pager(range->memobj)) {
+			dkprintf("[%d]sys_madvise(%lx,%lx,%x):has not pager"
 					"[%lx-%lx) %lx\n",
 					ihk_mc_get_processor_id(), start,
 					len0, advice, range->start,
@@ -1888,56 +1919,104 @@ SYSCALL_DECLARE(ptrace)
 	return -ENOSYS;
 }
 
+#define MIN2(x,y) (x) < (y) ? (x) : (y)
 SYSCALL_DECLARE(sched_setaffinity)
 {
-#if 0
-    int pid = (int)ihk_mc_syscall_arg0(ctx);
-	unsigned int len = (unsigned int)ihk_mc_syscall_arg1(ctx);
-#endif
-    cpu_set_t *mask = (cpu_set_t *)ihk_mc_syscall_arg2(ctx);
-	unsigned long __phys;
-#if 0
-    int i;
-#endif
-    /* TODO: check mask is in user's page table */
-    if(!mask) { return -EFAULT; }
-	if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
-	                           (void *)mask,
-	                           &__phys)) {
+	int tid = (int)ihk_mc_syscall_arg0(ctx);
+	size_t len = (size_t)ihk_mc_syscall_arg1(ctx);
+	cpu_set_t *u_cpu_set = (cpu_set_t *)ihk_mc_syscall_arg2(ctx);
+
+	cpu_set_t k_cpu_set, cpu_set;
+	struct process *thread;
+	int cpu_id;
+
+	if (sizeof(k_cpu_set) > len) {
+		kprintf("%s:%d\n Too small buffer.", __FILE__, __LINE__);
+		return -EINVAL;
+	}
+	len = MIN2(len, sizeof(k_cpu_set));
+
+	if (copy_from_user(cpu_local_var(current), &k_cpu_set, u_cpu_set, len)) {
+		kprintf("%s:%d copy_from_user failed.\n", __FILE__, __LINE__);
 		return -EFAULT;
 	}
-#if 0
-    dkprintf("sched_setaffinity,\n");
-    for(i = 0; i < len/sizeof(__cpu_mask); i++) {
-        dkprintf("mask[%d]=%lx,", i, mask->__bits[i]);
-    }
-#endif
-	return 0;
+
+	// XXX: We should build something like cpu_available_mask in advance
+	CPU_ZERO(&cpu_set);
+	extern int num_processors;
+	for (cpu_id = 0; cpu_id < num_processors; cpu_id++)
+		if (CPU_ISSET(cpu_id, &k_cpu_set))
+			CPU_SET(cpu_id, &cpu_set);
+
+	for (cpu_id = 0; cpu_id < num_processors; cpu_id++) {
+		ihk_mc_spinlock_lock_noirq(&get_cpu_local_var(cpu_id)->runq_lock);
+		list_for_each_entry(thread, &get_cpu_local_var(cpu_id)->runq, sched_list)
+			if (thread->pid && thread->tid == tid)
+				goto found; /* without unlocking runq_lock */
+		ihk_mc_spinlock_unlock_noirq(&get_cpu_local_var(cpu_id)->runq_lock);
+	}
+	kprintf("%s:%d Thread not found.\n", __FILE__, __LINE__);
+	return -ESRCH;
+
+found:
+	memcpy(&thread->cpu_set, &cpu_set, sizeof(cpu_set));
+
+	if (!CPU_ISSET(cpu_id, &thread->cpu_set)) {
+		hold_process(thread);
+		ihk_mc_spinlock_unlock_noirq(&get_cpu_local_var(cpu_id)->runq_lock);
+		sched_request_migrate(cpu_id, thread);
+		release_process(thread);
+		return 0;
+	} else {
+		ihk_mc_spinlock_unlock_noirq(&get_cpu_local_var(cpu_id)->runq_lock);
+		return 0;
+	}
 }
 
-#define MIN2(x,y) (x) < (y) ? (x) : (y)
-#define MIN3(x,y,z) MIN2(MIN2((x),(y)),MIN2((y),(z)))
 // see linux-2.6.34.13/kernel/sched.c
 SYSCALL_DECLARE(sched_getaffinity)
 {
-	//int pid = (int)ihk_mc_syscall_arg0(ctx);
-	unsigned int len = (int)ihk_mc_syscall_arg1(ctx);
-	//int cpu_id;
-	cpu_set_t *mask = (cpu_set_t *)ihk_mc_syscall_arg2(ctx);
-	struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
-    if(len*8 < cpu_info->ncpus) { return -EINVAL; }
-    if(len & (sizeof(unsigned long)-1)) { return -EINVAL; }
-    int min_len = MIN2(len, sizeof(cpu_set_t));
-    //int min_ncpus = MIN2(min_len*8, cpu_info->ncpus);
+	int tid = (int)ihk_mc_syscall_arg0(ctx);
+	size_t len = (size_t)ihk_mc_syscall_arg1(ctx);
+	cpu_set_t k_cpu_set, *u_cpu_set = (cpu_set_t *)ihk_mc_syscall_arg2(ctx);
 
-	CPU_ZERO_S(min_len, mask);
-	CPU_SET_S(ihk_mc_get_hardware_processor_id(), min_len, mask);
-	//for (cpu_id = 0; cpu_id < min_ncpus; ++cpu_id)
-	//	CPU_SET_S(cpu_info->hw_ids[cpu_id], min_len, mask);
+	int ret;
+	int found = 0;
+	int i;
 
-    //	dkprintf("sched_getaffinity returns full mask\n");
+	if (sizeof(k_cpu_set) > len) {
+		kprintf("%s:%d Too small buffer.\n", __FILE__, __LINE__);
+		return -EINVAL;
+	}
+	len = MIN2(len, sizeof(k_cpu_set));
 
-	return min_len;
+	extern int num_processors;
+	for (i = 0; i < num_processors && !found; i++) {
+		struct process *thread;
+		ihk_mc_spinlock_lock_noirq(&get_cpu_local_var(i)->runq_lock);
+		list_for_each_entry(thread, &get_cpu_local_var(i)->runq, sched_list) {
+			if (thread->pid && thread->tid == tid) {
+				found = 1;
+				memcpy(&k_cpu_set, &thread->cpu_set, sizeof(k_cpu_set));
+				break;
+			}
+		}
+		ihk_mc_spinlock_unlock_noirq(&get_cpu_local_var(i)->runq_lock);
+	}
+	if (!found) {
+		kprintf("%s:%d Thread not found.\n", __FILE__, __LINE__);
+		return -ESRCH;
+	}
+	ret = copy_to_user(cpu_local_var(current), u_cpu_set, &k_cpu_set, len);
+	kprintf("%s %d %d\n", __FILE__, __LINE__, ret);
+	if (ret < 0)
+		return ret;
+	return len;
+}
+
+SYSCALL_DECLARE(get_cpu_id)
+{
+	return ihk_mc_get_processor_id();
 }
 
 SYSCALL_DECLARE(sched_yield)
@@ -2035,7 +2114,8 @@ SYSCALL_DECLARE(mlock)
 			dkprintf("[%d]sys_mlock(%lx,%lx):not contiguous."
 				       " %lx [%lx-%lx)\n",
 					ihk_mc_get_processor_id(), start0,
-					len0, addr, range->start, range->end);
+					len0, addr, range?range->start:0,
+					range?range->end:0);
 			error = -ENOMEM;
 			goto out;
 		}
@@ -2209,7 +2289,8 @@ SYSCALL_DECLARE(munlock)
 			dkprintf("[%d]sys_munlock(%lx,%lx):not contiguous."
 				       " %lx [%lx-%lx)\n",
 					ihk_mc_get_processor_id(), start0,
-					len0, addr, range->start, range->end);
+					len0, addr, range?range->start:0,
+					range?range->end:0);
 			error = -ENOMEM;
 			goto out;
 		}
@@ -2269,6 +2350,302 @@ out2:
 	dkprintf("[%d]sys_munlock(%lx,%lx): %d\n",
 			ihk_mc_get_processor_id(), start0, len0, error);
 	return error;
+}
+
+SYSCALL_DECLARE(remap_file_pages)
+{
+	const uintptr_t start0 = ihk_mc_syscall_arg0(ctx);
+	const size_t size = ihk_mc_syscall_arg1(ctx);
+	const int prot = ihk_mc_syscall_arg2(ctx);
+	const size_t pgoff = ihk_mc_syscall_arg3(ctx);
+	const int flags = ihk_mc_syscall_arg4(ctx);
+	int error;
+	const uintptr_t start = start0 & PAGE_MASK;
+	const uintptr_t end = start + size;
+	const off_t off = (off_t)pgoff << PAGE_SHIFT;
+	struct process * const proc = cpu_local_var(current);
+	struct vm_range *range;
+	int er;
+	int need_populate = 0;
+
+	dkprintf("sys_remap_file_pages(%#lx,%#lx,%#x,%#lx,%#x)\n",
+			start0, size, prot, pgoff, flags);
+	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
+#define	PGOFF_LIMIT	((off_t)1 << ((8*sizeof(off_t) - 1) - PAGE_SHIFT))
+	if ((size <= 0) || (size & (PAGE_SIZE - 1)) || (prot != 0)
+			|| (pgoff < 0) || (PGOFF_LIMIT <= pgoff)
+			|| ((PGOFF_LIMIT - pgoff) < (size / PAGE_SIZE))
+			|| !((start < end) || (end == 0))) {
+		ekprintf("sys_remap_file_pages(%#lx,%#lx,%#x,%#lx,%#x):"
+				"invalid args\n",
+				start0, size, prot, pgoff, flags);
+		error = -EINVAL;
+		goto out;
+	}
+
+	range = lookup_process_memory_range(proc->vm, start, end);
+	if (!range || (start < range->start) || (range->end < end)
+			|| (range->flag & VR_PRIVATE)
+			|| (range->flag & (VR_REMOTE|VR_IO_NOCACHE|VR_RESERVED))
+			|| !range->memobj) {
+		ekprintf("sys_remap_file_pages(%#lx,%#lx,%#x,%#lx,%#x):"
+				"invalid VMR:[%#lx-%#lx) %#lx %p\n",
+				start0, size, prot, pgoff, flags,
+				range?range->start:0, range?range->end:0,
+				range?range->flag:0, range?range->memobj:NULL);
+		error = -EINVAL;
+		goto out;
+	}
+
+	range->flag |= VR_FILEOFF;
+	error = remap_process_memory_range(proc->vm, range, start, end, off);
+	if (error) {
+		ekprintf("sys_remap_file_pages(%#lx,%#lx,%#x,%#lx,%#x):"
+				"remap failed %d\n",
+				start0, size, prot, pgoff, flags, error);
+		goto out;
+	}
+	clear_host_pte(start, size);	/* XXX: workaround */
+
+	if (range->flag & VR_LOCKED) {
+		need_populate = 1;
+	}
+	error = 0;
+out:
+	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+
+	if (need_populate
+			&& (er = populate_process_memory(
+					proc, (void *)start, size))) {
+		ekprintf("sys_remap_file_pages(%#lx,%#lx,%#x,%#lx,%#x):"
+				"populate failed %d\n",
+				start0, size, prot, pgoff, flags, er);
+		/* ignore populate error */
+	}
+
+	dkprintf("sys_remap_file_pages(%#lx,%#lx,%#x,%#lx,%#x): %d\n",
+			start0, size, prot, pgoff, flags, error);
+	return error;
+}
+
+SYSCALL_DECLARE(mremap)
+{
+	const uintptr_t oldaddr = ihk_mc_syscall_arg0(ctx);
+	const size_t oldsize0 = ihk_mc_syscall_arg1(ctx);
+	const size_t newsize0 = ihk_mc_syscall_arg2(ctx);
+	const int flags = ihk_mc_syscall_arg3(ctx);
+	const uintptr_t newaddr = ihk_mc_syscall_arg4(ctx);
+	const ssize_t oldsize = (oldsize0 + PAGE_SIZE - 1) & PAGE_MASK;
+	const ssize_t newsize = (newsize0 + PAGE_SIZE - 1) & PAGE_MASK;
+	const uintptr_t oldstart = oldaddr;
+	const uintptr_t oldend = oldstart + oldsize;
+	struct process *proc = cpu_local_var(current);
+	struct process_vm *vm = proc->vm;
+	int error;
+	struct vm_range *range;
+	int need_relocate;
+	uintptr_t newstart;
+	uintptr_t newend;
+	size_t size;
+	uintptr_t ret;
+	uintptr_t lckstart = -1;
+	uintptr_t lckend = -1;
+
+	dkprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx)\n",
+			oldaddr, oldsize0, newsize0, flags, newaddr);
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+
+	if ((oldaddr & ~PAGE_MASK)
+			|| (oldsize < 0)
+			|| (newsize <= 0)
+			|| (flags & ~(MREMAP_MAYMOVE | MREMAP_FIXED))
+			|| ((flags & MREMAP_FIXED)
+				&& !(flags & MREMAP_MAYMOVE))
+			|| ((flags & MREMAP_FIXED)
+				&& (newaddr & ~PAGE_MASK))) {
+		error = -EINVAL;
+		ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):invalid. %d\n",
+				oldaddr, oldsize0, newsize0, flags, newaddr,
+				error);
+		goto out;
+	}
+
+	/* check original mapping */
+	range = lookup_process_memory_range(vm, oldstart, oldstart+PAGE_SIZE);
+	if (!range || (oldstart < range->start) || (range->end < oldend)
+			|| (range->flag & (VR_FILEOFF))
+			|| (range->flag & (VR_REMOTE|VR_IO_NOCACHE|VR_RESERVED))) {
+		error = -EFAULT;
+		ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+				"lookup failed. %d %p %#lx-%#lx %#lx\n",
+				oldaddr, oldsize0, newsize0, flags, newaddr,
+				error, range, range?range->start:0,
+				range?range->end:0, range?range->flag:0);
+		goto out;
+	}
+
+	if (oldend < oldstart) {
+		error = -EINVAL;
+		ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+				"old range overflow. %d\n",
+				oldaddr, oldsize0, newsize0, flags, newaddr,
+				error);
+		goto out;
+	}
+
+	/* determine new mapping range */
+	need_relocate = 0;
+	if (flags & MREMAP_FIXED) {
+		need_relocate = 1;
+		newstart = newaddr;
+		newend = newstart + newsize;
+		if (newstart < vm->region.user_start) {
+			error = -EPERM;
+			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+					"mmap_min_addr %#lx. %d\n",
+					oldaddr, oldsize0, newsize0, flags,
+					newaddr, vm->region.user_start,
+					error);
+			goto out;
+		}
+		if ((newstart < oldend) && (oldstart < newend)) {
+			error = -EINVAL;
+			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+					"fixed:overlapped. %d\n",
+					oldaddr, oldsize0, newsize0, flags,
+					newaddr, error);
+			goto out;
+		}
+	}
+	else if (!(flags & MREMAP_FIXED) && (oldsize < newsize)) {
+		if (oldend == range->end) {
+			newstart = oldstart;
+			newend = newstart + newsize;
+			error = extend_up_process_memory_range(vm, range,
+					newend);
+			if (!error) {
+				if (range->flag & VR_LOCKED) {
+					lckstart = oldend;
+					lckend = newend;
+				}
+				goto out;
+			}
+		}
+		if (!(flags & MREMAP_MAYMOVE)) {
+			error = -ENOMEM;
+			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+					"cannot relocate. %d\n",
+					oldaddr, oldsize0, newsize0, flags,
+					newaddr, error);
+			goto out;
+		}
+		need_relocate = 1;
+		error = search_free_space(newsize, vm->region.map_end,
+				(intptr_t *)&newstart);
+		if (error) {
+			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+					"search failed. %d\n",
+					oldaddr, oldsize0, newsize0, flags,
+					newaddr, error);
+			goto out;
+		}
+		newend = newstart + newsize;
+	}
+	else {
+		newstart = oldstart;
+		newend = newstart + newsize;
+	}
+
+	/* do the remap */
+	if (need_relocate) {
+		if (flags & MREMAP_FIXED) {
+			error = do_munmap((void *)newstart, newsize);
+			if (error) {
+				ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+						"fixed:munmap failed. %d\n",
+						oldaddr, oldsize0, newsize0,
+						flags, newaddr, error);
+				goto out;
+			}
+		}
+		if (range->memobj) {
+			memobj_ref(range->memobj);
+		}
+		error = add_process_memory_range(proc, newstart, newend, -1,
+				range->flag, range->memobj,
+				range->objoff + (oldstart - range->start));
+		if (error) {
+			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+					"add failed. %d\n",
+					oldaddr, oldsize0, newsize0, flags,
+					newaddr, error);
+			if (range->memobj) {
+				memobj_release(range->memobj);
+			}
+			goto out;
+		}
+		if (range->flag & VR_LOCKED) {
+			lckstart = newstart;
+			lckend = newend;
+		}
+
+		if (oldsize > 0) {
+			size = (oldsize < newsize)? oldsize: newsize;
+			ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
+			error = move_pte_range(vm->page_table,
+					(void *)oldstart, (void *)newstart,
+					size);
+			ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
+			if (error) {
+				ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+						"move failed. %d\n",
+						oldaddr, oldsize0, newsize0,
+						flags, newaddr, error);
+				goto out;
+			}
+
+			error = do_munmap((void *)oldstart, oldsize);
+			if (error) {
+				ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+						"relocate:munmap failed. %d\n",
+						oldaddr, oldsize0, newsize0,
+						flags, newaddr, error);
+				goto out;
+			}
+		}
+	}
+	else if (newsize < oldsize) {
+		error = do_munmap((void *)newend, (oldend - newend));
+		if (error) {
+			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+					"shrink:munmap failed. %d\n",
+					oldaddr, oldsize0, newsize0, flags,
+					newaddr, error);
+			goto out;
+		}
+	}
+	else {
+		/* nothing to do */
+	}
+
+	error = 0;
+out:
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	if (!error && (lckstart < lckend)) {
+		error = populate_process_memory(proc, (void *)lckstart, (lckend - lckstart));
+		if (error) {
+			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+					"populate failed. %d %#lx-%#lx\n",
+					oldaddr, oldsize0, newsize0, flags,
+					newaddr, error, lckstart, lckend);
+			error = 0;	/* ignore error */
+		}
+	}
+	ret = (error)? error: newstart;
+	dkprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):%d %#lx\n",
+			oldaddr, oldsize0, newsize0, flags, newaddr, error,
+			ret);
+	return ret;
 }
 
 #ifdef DCFA_KMOD
@@ -2407,6 +2784,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	}
 
 	check_signal(l, NULL);
+	check_need_resched();
 
 	return l;
 }

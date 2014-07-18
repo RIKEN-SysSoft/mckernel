@@ -20,6 +20,7 @@
 #include <list.h>
 #include <signal.h>
 #include <memobj.h>
+#include <affinity.h>
 
 #define VR_NONE            0x0
 #define VR_STACK           0x1
@@ -29,6 +30,7 @@
 #define VR_DEMAND_PAGING   0x1000
 #define	VR_PRIVATE         0x2000
 #define	VR_LOCKED          0x4000
+#define	VR_FILEOFF         0x8000	/* remap_file_pages()ed range */
 #define	VR_PROT_NONE       0x00000000
 #define	VR_PROT_READ       0x00010000
 #define	VR_PROT_WRITE      0x00020000
@@ -186,6 +188,7 @@ struct process {
 	void *pgio_arg;
 
 	struct fork_tree_node *ftn;
+	cpu_set_t cpu_set;
 	unsigned long saved_auxv[AUXV_LEN];
 };
 
@@ -231,12 +234,16 @@ int join_process_memory_range(struct process *process, struct vm_range *survivin
 int change_prot_process_memory_range(
 		struct process *process, struct vm_range *range,
 		unsigned long newflag);
+int remap_process_memory_range(struct process_vm *vm, struct vm_range *range,
+		uintptr_t start, uintptr_t end, off_t off);
 struct vm_range *lookup_process_memory_range(
 		struct process_vm *vm, uintptr_t start, uintptr_t end);
 struct vm_range *next_process_memory_range(
 		struct process_vm *vm, struct vm_range *range);
 struct vm_range *previous_process_memory_range(
 		struct process_vm *vm, struct vm_range *range);
+int extend_up_process_memory_range(struct process_vm *vm,
+		struct vm_range *range, uintptr_t newend);
 
 int page_fault_process(struct process *proc, void *fault_addr, uint64_t reason);
 int remove_process_region(struct process *proc,
@@ -255,5 +262,8 @@ void schedule(void);
 void runq_add_proc(struct process *proc, int cpu_id);
 void runq_del_proc(struct process *proc, int cpu_id);
 int sched_wakeup_process(struct process *proc, int valid_states);
+
+void sched_request_migrate(int cpu_id, struct process *proc);
+void check_need_resched(void);
 
 #endif

@@ -63,4 +63,10 @@
 #define	MADV_HWPOISON		100
 #define	MADV_SOFT_OFFLINE	101
 
+/*
+ * for mremap()
+ */
+#define	MREMAP_MAYMOVE	0x01
+#define	MREMAP_FIXED	0x02
+
 #endif /* HEADER_MMAN_H */

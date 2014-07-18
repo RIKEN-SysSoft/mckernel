@@ -281,6 +281,7 @@ out:
 	dkprintf("[%d]page_fault_handler(%p,%lx,%p): (%d)\n",
 			ihk_mc_get_processor_id(), fault_addr, reason,
 			regs, error);
+	check_need_resched();
 	return;
 }
 

@@ -18,6 +18,16 @@
 #include <ihk/ikc.h>
 #include <ikc/master.h>
 
+//#define DEBUG_LISTENERS
+
+#ifdef DEBUG_LISTENERS
+#define	dkprintf(...)	kprintf(__VA_ARGS__)
+#define	ekprintf(...)	kprintf(__VA_ARGS__)
+#else
+#define dkprintf(...)
+#define	ekprintf(...)	kprintf(__VA_ARGS__)
+#endif
+
 static unsigned long read_tsc(void)
 {
 	unsigned int low, high;
@@ -103,5 +113,5 @@ static struct ihk_ikc_listen_param test_listen_param = {
 void mc_ikc_test_init(void)
 {
 	ihk_ikc_listen_port(NULL, &test_listen_param);
-	kprintf("Listener registered port %d\n", 500);
+	dkprintf("Listener registered port %d\n", 500);
 }

@@ -253,7 +253,7 @@ struct process *clone_process(struct process *org, unsigned long pc,
 			goto err_free_sighandler;
 		}
 
-		memset(proc->sighandler, '\0', sizeof(struct sig_handler));
+		memcpy(proc->sighandler, org->sighandler, sizeof(struct sig_handler));
 		ihk_atomic_set(&proc->sighandler->use, 1);
 		ihk_mc_spinlock_init(&proc->sighandler->lock);
 		ihk_atomic_set(&proc->sigshared->use, 1);
@@ -936,6 +936,39 @@ struct vm_range *previous_process_memory_range(
 	return prev;
 }
 
+int extend_up_process_memory_range(struct process_vm *vm,
+		struct vm_range *range, uintptr_t newend)
+{
+	int error;
+	struct vm_range *next;
+
+	dkprintf("exntend_up_process_memory_range(%p,%p %#lx-%#lx,%#lx)\n",
+			vm, range, range->start, range->end, newend);
+	if (newend <= range->end) {
+		error = -EINVAL;
+		goto out;
+	}
+
+	if (vm->region.user_end < newend) {
+		error = -EPERM;
+		goto out;
+	}
+
+	next = next_process_memory_range(vm ,range);
+	if (next && (next->start < newend)) {
+		error = -ENOMEM;
+		goto out;
+	}
+
+	error = 0;
+	range->end = newend;
+
+out:
+	dkprintf("exntend_up_process_memory_range(%p,%p %#lx-%#lx,%#lx):%d\n",
+			vm, range, range->start, range->end, newend, error);
+	return error;
+}
+
 int change_prot_process_memory_range(struct process *proc,
 		struct vm_range *range, unsigned long protflag)
 {
@@ -997,6 +1030,94 @@ out:
 	return error;
 }
 
+struct rfp_args {
+	off_t off;
+	uintptr_t start;
+	struct memobj *memobj;
+};
+
+static int remap_one_page(void *arg0, page_table_t pt, pte_t *ptep,
+		void *pgaddr, size_t pgsize)
+{
+	struct rfp_args * const args = arg0;
+	int error;
+	off_t off;
+	pte_t apte;
+	uintptr_t phys;
+	struct page *page;
+
+	dkprintf("remap_one_page(%p,%p,%p %#lx,%p,%#lx)\n",
+			arg0, pt, ptep, *ptep, pgaddr, pgsize);
+
+	/* XXX: NYI: large pages */
+	if (pgsize != PAGE_SIZE) {
+		error = -E2BIG;
+		ekprintf("remap_one_page(%p,%p,%p %#lx,%p,%#lx):%d\n",
+				arg0, pt, ptep, *ptep, pgaddr, pgsize, error);
+		goto out;
+	}
+
+	off = args->off + ((uintptr_t)pgaddr - args->start);
+	pte_make_fileoff(off, 0, pgsize, &apte);
+
+	pte_xchg(ptep, &apte);
+	flush_tlb_single((uintptr_t)pgaddr);	/* XXX: TLB flush */
+
+	if (pte_is_null(&apte) || pte_is_fileoff(&apte, pgsize)) {
+		error = 0;
+		goto out;
+	}
+	phys = pte_get_phys(&apte);
+
+	if (pte_is_dirty(&apte, pgsize)) {
+		memobj_flush_page(args->memobj, phys, pgsize);	/* XXX: in lock period */
+	}
+
+	page = phys_to_page(phys);
+	if (page && page_unmap(page)) {
+		ihk_mc_free_pages(phys_to_virt(phys), pgsize/PAGE_SIZE);
+	}
+
+	error = 0;
+out:
+	dkprintf("remap_one_page(%p,%p,%p %#lx,%p,%#lx): %d\n",
+			arg0, pt, ptep, *ptep, pgaddr, pgsize, error);
+	return error;
+}
+
+int remap_process_memory_range(struct process_vm *vm, struct vm_range *range,
+		uintptr_t start, uintptr_t end, off_t off)
+{
+	struct rfp_args args;
+	int error;
+
+	dkprintf("remap_process_memory_range(%p,%p,%#lx,%#lx,%#lx)\n",
+			vm, range, start, end, off);
+	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
+	memobj_lock(range->memobj);
+
+	args.start = start;
+	args.off = off;
+	args.memobj = range->memobj;
+
+	error = visit_pte_range(vm->page_table, (void *)start,
+			(void *)end, VPTEF_DEFAULT, &remap_one_page, &args);
+	if (error) {
+		ekprintf("remap_process_memory_range(%p,%p,%#lx,%#lx,%#lx):"
+				"visit pte failed %d\n",
+				vm, range, start, end, off, error);
+		goto out;
+	}
+
+	error = 0;
+out:
+	memobj_unlock(range->memobj);
+	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
+	dkprintf("remap_process_memory_range(%p,%p,%#lx,%#lx,%#lx):%d\n",
+			vm, range, start, end, off, error);
+	return error;
+}
+
 static int page_fault_process_memory_range(struct process_vm *vm, struct vm_range *range, uintptr_t fault_addr, uint64_t reason)
 {
 	int error;
@@ -1012,7 +1133,8 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 	/*****/
 	ptep = ihk_mc_pt_lookup_pte(vm->page_table, (void *)fault_addr, &pgaddr, &pgsize, &p2align);
-	if (!(reason & PF_PROT) && ptep && !pte_is_null(ptep)) {
+	if (!(reason & PF_PROT) && ptep && !pte_is_null(ptep)
+			&& !pte_is_fileoff(ptep, pgsize)) {
 		if (!pte_is_present(ptep)) {
 			error = -EFAULT;
 			kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):PROT_NONE. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
@@ -1034,11 +1156,16 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 	}
 	attr = arch_vrflag_to_ptattr(range->flag, reason, ptep);
 	pgaddr = (void *)(fault_addr & ~(pgsize - 1));
-	if (!ptep || pte_is_null(ptep)) {
+	if (!ptep || pte_is_null(ptep) || pte_is_fileoff(ptep, pgsize)) {
 		if (range->memobj) {
 			off_t off;
 
-			off = range->objoff + ((uintptr_t)pgaddr - range->start);
+			if (!ptep || !pte_is_fileoff(ptep, pgsize)) {
+				off = range->objoff + ((uintptr_t)pgaddr - range->start);
+			}
+			else {
+				off = pte_get_off(ptep, pgsize);
+			}
 			error = memobj_get_page(range->memobj, off, p2align, &phys);
 			if (error) {
 				if (error != -ERESTART) {
@@ -1590,12 +1717,81 @@ void sched_init(void)
 	cpu_local_var(runq_len) = 0;
 	ihk_mc_spinlock_init(&cpu_local_var(runq_lock));
 
+	INIT_LIST_HEAD(&cpu_local_var(migq));
+	ihk_mc_spinlock_init(&cpu_local_var(migq_lock));
+
 #ifdef TIMER_CPU_ID
 	if (ihk_mc_get_processor_id() == TIMER_CPU_ID) {
 		init_timers();
 		wake_timers_loop();
 	}
 #endif
+}
+
+static void double_rq_lock(struct cpu_local_var *v1, struct cpu_local_var *v2)
+{
+	if (v1 < v2) {
+		ihk_mc_spinlock_lock_noirq(&v1->runq_lock);
+		ihk_mc_spinlock_lock_noirq(&v2->runq_lock);
+	} else {
+		ihk_mc_spinlock_lock_noirq(&v2->runq_lock);
+		ihk_mc_spinlock_lock_noirq(&v1->runq_lock);
+	}
+}
+
+static void double_rq_unlock(struct cpu_local_var *v1, struct cpu_local_var *v2)
+{
+	ihk_mc_spinlock_unlock_noirq(&v1->runq_lock);
+	ihk_mc_spinlock_unlock_noirq(&v2->runq_lock);
+}
+
+struct migrate_request {
+	struct list_head list;
+	struct process *proc;
+	struct waitq wq;
+};
+
+static void do_migrate(void)
+{
+	int cur_cpu_id = ihk_mc_get_processor_id();
+	struct cpu_local_var *cur_v = get_cpu_local_var(cur_cpu_id);
+	struct migrate_request *req, *tmp;
+
+	ihk_mc_spinlock_lock_noirq(&cur_v->migq_lock);
+	list_for_each_entry_safe(req, tmp, &cur_v->migq, list) {
+		int cpu_id;
+		struct cpu_local_var *v;
+
+		/* 0. check if migration is necessary */
+		list_del(&req->list);
+		if (req->proc->cpu_id != cur_cpu_id) /* already not here */
+			goto ack;
+		if (CPU_ISSET(cur_cpu_id, &req->proc->cpu_set)) /* good affinity */
+			goto ack;
+
+		/* 1. select CPU */
+		for (cpu_id = 0; cpu_id < CPU_SETSIZE; cpu_id++)
+			if (CPU_ISSET(cpu_id, &req->proc->cpu_set))
+				break;
+		if (CPU_SETSIZE == cpu_id) /* empty affinity (bug?) */
+			goto ack;
+
+		/* 2. migrate thread */
+		v = get_cpu_local_var(cpu_id);
+		double_rq_lock(cur_v, v);
+		list_del(&req->proc->sched_list);
+		cur_v->runq_len -= 1;
+		req->proc->cpu_id = cpu_id;
+		list_add_tail(&req->proc->sched_list, &v->runq);
+		v->runq_len += 1;
+		if (v->runq_len == 1)
+			ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
+		double_rq_unlock(cur_v, v);
+
+ack:
+		waitq_wakeup(&req->wq);
+	}
+	ihk_mc_spinlock_unlock_noirq(&cur_v->migq_lock);
 }
 
 void schedule(void)
@@ -1606,6 +1802,7 @@ void schedule(void)
 	unsigned long irqstate;
 	struct process *last;
 
+redo:
 	irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 
 	next = NULL;
@@ -1621,23 +1818,24 @@ void schedule(void)
 			list_add_tail(&prev->sched_list, &(v->runq));
 			++v->runq_len;
 		}
+	}
 
-		if (!v->runq_len) {
+	if (v->flags & CPU_FLAG_NEED_MIGRATE) {
+		next = &cpu_local_var(idle);
+	} else {
+		/* Pick a new running process */
+		list_for_each_entry_safe(proc, tmp, &(v->runq), sched_list) {
+			if (proc->status == PS_RUNNING) {
+				next = proc;
+				break;
+			}
+		}
+
+		/* No process? Run idle.. */
+		if (!next) {
+			next = &cpu_local_var(idle);
 			v->status = CPU_STATUS_IDLE;
 		}
-	}
-
-	/* Pick a new running process */
-	list_for_each_entry_safe(proc, tmp, &(v->runq), sched_list) {
-		if (proc->status == PS_RUNNING) {
-			next = proc;
-			break;
-		}
-	}
-
-	/* No process? Run idle.. */
-	if (!next) {
-		next = &cpu_local_var(idle);
 	}
 
 	if (prev != next) {
@@ -1674,6 +1872,21 @@ void schedule(void)
 	}
 	else {
 		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+	}
+
+	if (v->flags & CPU_FLAG_NEED_MIGRATE) {
+		v->flags &= ~CPU_FLAG_NEED_MIGRATE;
+		do_migrate();
+		goto redo;
+	}
+}
+
+void check_need_resched(void)
+{
+	struct cpu_local_var *v = get_this_cpu_local_var();
+	if (v->flags & CPU_FLAG_NEED_RESCHED) {
+		v->flags &= ~CPU_FLAG_NEED_RESCHED;
+		schedule();
 	}
 }
 
@@ -1717,6 +1930,49 @@ int sched_wakeup_process(struct process *proc, int valid_states)
 	}
 
 	return status;
+}
+
+/*
+ * 1. Add current process to waitq
+ * 2. Queue migration request into the target CPU's queue
+ * 3. Kick migration on the CPU
+ * 4. Wait for completion of the migration
+ *
+ * struct migrate_request {
+ *     list //migq,
+ *     wq,
+ *     proc
+ * }
+ *
+ * [expected processing of the target CPU]
+ * 1. Interrupted by IPI
+ * 2. call schedule() via check_resched()
+ * 3. Do migration
+ * 4. Wake up this thread
+ */
+void sched_request_migrate(int cpu_id, struct process *proc)
+{
+	struct cpu_local_var *v = get_cpu_local_var(cpu_id);
+	struct migrate_request req = { .proc = proc };
+	unsigned long irqstate;
+	DECLARE_WAITQ_ENTRY(entry, cpu_local_var(current));
+
+	waitq_init(&req.wq);
+	waitq_prepare_to_wait(&req.wq, &entry, PS_UNINTERRUPTIBLE);
+
+	irqstate = ihk_mc_spinlock_lock(&v->migq_lock);
+	list_add_tail(&req.list, &v->migq);
+	ihk_mc_spinlock_unlock(&v->migq_lock, irqstate);
+
+	v->flags |= CPU_FLAG_NEED_RESCHED | CPU_FLAG_NEED_MIGRATE;
+	v->status = CPU_STATUS_RUNNING;
+
+	if (cpu_id != ihk_mc_get_processor_id())
+		ihk_mc_interrupt_cpu(/* Kick scheduler */
+				get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
+
+	schedule();
+	waitq_finish_wait(&req.wq, &entry);
 }
 
 

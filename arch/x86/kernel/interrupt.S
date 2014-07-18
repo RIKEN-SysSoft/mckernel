@@ -35,8 +35,16 @@
         pushq %r8;  \
         pushq %r9; \
         pushq %r10; \
-        pushq %r11; 
+        pushq %r11; \
+        pushq %r12; \
+        pushq %r13; \
+        pushq %r14; \
+        pushq %r15; 
 #define POP_ALL_REGS      \
+        popq  %r15; \
+        popq  %r14; \
+        popq  %r13; \
+        popq  %r12; \
         popq  %r11; \
         popq  %r10; \
         popq  %r9;  \
@@ -67,7 +75,7 @@ vector=vector+1
 
 common_interrupt:
 		PUSH_ALL_REGS
-		movq    88(%rsp), %rdi
+		movq    120(%rsp), %rdi
 		movq	%rsp, %rsi
 		call 	handle_interrupt /* Enter C code */
 		POP_ALL_REGS
@@ -83,7 +91,7 @@ page_fault:
 		cld
 		PUSH_ALL_REGS
 		movq	%cr2, %rdi
-		movq	88(%rsp),%rsi
+		movq	120(%rsp),%rsi
 		movq	%rsp,%rdx
 		movq	__page_fault_handler_address(%rip), %rax
 		andq	%rax, %rax
@@ -120,13 +128,13 @@ x86_syscall:
 		movq	%gs:24, %rcx
 		movq	%rcx, 32(%rsp)
 		PUSH_ALL_REGS
-		movq	72(%rsp), %rdi
+		movq	104(%rsp), %rdi
 		movw	%ss, %ax
 		movw	%ax, %ds
 		movq	%rsp, %rsi
 		callq	*__x86_syscall_handler(%rip)
 1:		
-		movq	%rax, 72(%rsp)
+		movq	%rax, 104(%rsp)
 		POP_ALL_REGS
 #ifdef USE_SYSRET
 		movq	8(%rsp), %rcx
