@@ -1278,6 +1278,8 @@ SYSCALL_DECLARE(clone)
 		return -ENOMEM;
 	}
 
+	cpu_set(cpuid, &new->vm->cpu_set, &new->vm->cpu_set_lock);
+
 	if (clone_flags & CLONE_VM) {
 		new->pid = cpu_local_var(current)->pid;
 		
@@ -2592,7 +2594,7 @@ SYSCALL_DECLARE(mremap)
 		if (oldsize > 0) {
 			size = (oldsize < newsize)? oldsize: newsize;
 			ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
-			error = move_pte_range(vm->page_table,
+			error = move_pte_range(vm->page_table, vm,
 					(void *)oldstart, (void *)newstart,
 					size);
 			ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);

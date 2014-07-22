@@ -1005,6 +1005,7 @@ struct clear_range_args {
 	int free_physical;
 	uint8_t padding[4];
 	struct memobj *memobj;
+	struct process_vm *vm;
 };
 
 static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
@@ -1032,6 +1033,8 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 			ihk_mc_free_pages(phys_to_virt(phys), 1);
 		}
 	}
+	
+	remote_flush_tlb_cpumask(args->vm, base, ihk_mc_get_processor_id());
 
 	return 0;
 }
@@ -1079,6 +1082,8 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
 			}
 		}
 
+		remote_flush_tlb_cpumask(args->vm, base, ihk_mc_get_processor_id());
+
 		return 0;
 	}
 
@@ -1122,8 +1127,9 @@ static int clear_range_l4(void *args0, pte_t *ptep, uint64_t base,
 	return walk_pte_l3(pt, base, start, end, &clear_range_l3, args0);
 }
 
-static int clear_range(struct page_table *pt, uintptr_t start, uintptr_t end,
-		int free_physical, struct memobj *memobj)
+static int clear_range(struct page_table *pt, struct process_vm *vm, 
+		uintptr_t start, uintptr_t end, int free_physical, 
+		struct memobj *memobj)
 {
 	int error;
 	struct clear_range_args args;
@@ -1137,22 +1143,25 @@ static int clear_range(struct page_table *pt, uintptr_t start, uintptr_t end,
 
 	args.free_physical = free_physical;
 	args.memobj = memobj;
+	args.vm = vm;
 
 	error = walk_pte_l4(pt, 0, start, end, &clear_range_l4, &args);
 	return error;
 }
 
-int ihk_mc_pt_clear_range(page_table_t pt, void *start, void *end)
+int ihk_mc_pt_clear_range(page_table_t pt, struct process_vm *vm, 
+		void *start, void *end)
 {
 #define	KEEP_PHYSICAL	0
-	return clear_range(pt, (uintptr_t)start, (uintptr_t)end,
+	return clear_range(pt, vm, (uintptr_t)start, (uintptr_t)end,
 			KEEP_PHYSICAL, NULL);
 }
 
-int ihk_mc_pt_free_range(page_table_t pt, void *start, void *end, struct memobj *memobj)
+int ihk_mc_pt_free_range(page_table_t pt, struct process_vm *vm, 
+		void *start, void *end, struct memobj *memobj)
 {
 #define	FREE_PHYSICAL	1
-	return clear_range(pt, (uintptr_t)start, (uintptr_t)end,
+	return clear_range(pt, vm, (uintptr_t)start, (uintptr_t)end,
 			FREE_PHYSICAL, memobj);
 }
 
@@ -1474,6 +1483,7 @@ struct set_range_args {
 	enum ihk_mc_pt_attribute attr;
 	int padding;
 	uintptr_t diff;
+	struct process_vm *vm;
 };
 
 int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
@@ -1489,7 +1499,7 @@ int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 		error = -EBUSY;
 		ekprintf("set_range_l1(%lx,%lx,%lx):page exists. %d %lx\n",
 				base, start, end, error, *ptep);
-		(void)clear_range(args->pt, start, base, KEEP_PHYSICAL, NULL);
+		(void)clear_range(args->pt, args->vm, start, base, KEEP_PHYSICAL, NULL);
 		goto out;
 	}
 
@@ -1536,7 +1546,7 @@ int set_range_l2(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 			ekprintf("set_range_l2(%lx,%lx,%lx):"
 					"__alloc_new_pt failed. %d %lx\n",
 					base, start, end, error, *ptep);
-			(void)clear_range(args->pt, start, base,
+			(void)clear_range(args->pt, args->vm, start, base,
 					KEEP_PHYSICAL, NULL);
 			goto out;
 		}
@@ -1548,7 +1558,7 @@ int set_range_l2(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 		ekprintf("set_range_l2(%lx,%lx,%lx):"
 				"page exists. %d %lx\n",
 				base, start, end, error, *ptep);
-		(void)clear_range(args->pt, start, base, KEEP_PHYSICAL, NULL);
+		(void)clear_range(args->pt, args->vm, start, base, KEEP_PHYSICAL, NULL);
 		goto out;
 	}
 	else {
@@ -1604,7 +1614,7 @@ int set_range_l3(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 			ekprintf("set_range_l3(%lx,%lx,%lx):"
 					"__alloc_new_pt failed. %d %lx\n",
 					base, start, end, error, *ptep);
-			(void)clear_range(args->pt, start, base,
+			(void)clear_range(args->pt, args->vm, start, base,
 					KEEP_PHYSICAL, NULL);
 			goto out;
 		}
@@ -1615,7 +1625,7 @@ int set_range_l3(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 		ekprintf("set_range_l3(%lx,%lx,%lx):"
 				"page exists. %d %lx\n",
 				base, start, end, error, *ptep);
-		(void)clear_range(args->pt, start, base, KEEP_PHYSICAL, NULL);
+		(void)clear_range(args->pt, args->vm, start, base, KEEP_PHYSICAL, NULL);
 		goto out;
 	}
 	else {
@@ -1653,7 +1663,7 @@ int set_range_l4(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 			ekprintf("set_range_l4(%lx,%lx,%lx):"
 					"__alloc_new_pt failed. %d %lx\n",
 					base, start, end, error, *ptep);
-			(void)clear_range(args->pt, start, base,
+			(void)clear_range(args->pt, args->vm, start, base,
 					KEEP_PHYSICAL, NULL);
 			goto out;
 		}
@@ -1678,8 +1688,8 @@ out:
 	return error;
 }
 
-int ihk_mc_pt_set_range(page_table_t pt, void *start, void *end,
-		uintptr_t phys, enum ihk_mc_pt_attribute attr)
+int ihk_mc_pt_set_range(page_table_t pt, struct process_vm *vm, void *start, 
+		void *end, uintptr_t phys, enum ihk_mc_pt_attribute attr)
 {
 	int error;
 	struct set_range_args args;
@@ -1691,6 +1701,7 @@ int ihk_mc_pt_set_range(page_table_t pt, void *start, void *end,
 	args.phys = phys;
 	args.attr = attr;
 	args.diff = (uintptr_t)start ^ phys;
+	args.vm = vm;
 
 	error = walk_pte_l4(pt, 0, (uintptr_t)start, (uintptr_t)end,
 			&set_range_l4, &args);
@@ -1805,9 +1816,11 @@ enum ihk_mc_pt_attribute arch_vrflag_to_ptattr(unsigned long flag, uint64_t faul
 struct move_args {
 	uintptr_t src;
 	uintptr_t dest;
+	struct process_vm *vm;
 };
 
-static int move_one_page(void *arg0, page_table_t pt, pte_t *ptep, void *pgaddr, size_t pgsize)
+static int move_one_page(void *arg0, page_table_t pt, pte_t *ptep, 
+		void *pgaddr, size_t pgsize)
 {
 	int error;
 	struct move_args *args = arg0;
@@ -1833,7 +1846,7 @@ static int move_one_page(void *arg0, page_table_t pt, pte_t *ptep, void *pgaddr,
 	phys = apte & PT_PHYSMASK;
 	attr = apte & ~PT_PHYSMASK;
 
-	error = ihk_mc_pt_set_range(pt, (void *)dest,
+	error = ihk_mc_pt_set_range(pt, args->vm, (void *)dest,
 			(void *)(dest + pgsize), phys, attr);
 	if (error) {
 		kprintf("move_one_page(%p,%p,%p %#lx,%p,%#lx):"
@@ -1849,7 +1862,8 @@ out:
 	return error;
 }
 
-int move_pte_range(page_table_t pt, void *src, void *dest, size_t size)
+int move_pte_range(page_table_t pt, struct process_vm *vm, 
+		void *src, void *dest, size_t size)
 {
 	int error;
 	struct move_args args;
@@ -1857,6 +1871,7 @@ int move_pte_range(page_table_t pt, void *src, void *dest, size_t size)
 	dkprintf("move_pte_range(%p,%p,%p,%#lx)\n", pt, src, dest, size);
 	args.src = (uintptr_t)src;
 	args.dest = (uintptr_t)dest;
+	args.vm = vm;
 
 	error = visit_pte_range(pt, src, src+size, VPTEF_SKIP_NULL,
 			&move_one_page, &args);

@@ -31,5 +31,9 @@ typedef int64_t            off_t;
 
 #define NULL ((void *)0)
 
+#define BITS_PER_LONG_SHIFT 6 
+#define BITS_PER_LONG (1 << BITS_PER_LONG_SHIFT)
+
+
 #endif
 
