@@ -1158,6 +1158,14 @@ static void clear_pte_range(uintptr_t start, uintptr_t len)
 	return;
 }
 
+/**
+ * \brief Write out the core file image to a core file.
+ *
+ * \param os An ihk_os_t structure.
+ * \param rcoretable The physical address of remote's coretable.
+ * \param chunks The number of chunks which make a core file image in the whole.
+ */
+
 static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 	struct file *file;
 	struct coretable *coretable;
