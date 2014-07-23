@@ -188,6 +188,7 @@ struct process {
 	void *pgio_arg;
 
 	struct fork_tree_node *ftn;
+
 	cpu_set_t cpu_set;
 	unsigned long saved_auxv[AUXV_LEN];
 };
