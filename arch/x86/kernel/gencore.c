@@ -24,7 +24,12 @@
  * of a chunk and its length.
  */
 
-/* ELF header */
+/**
+ * \brief Fill the elf header.
+ *
+ * \param eh An Elf64_Ehdr structure.
+ * \param segs Number of segments of the core file.
+ */
 
 void fill_elf_header(Elf64_Ehdr *eh, int segs)
 {
@@ -37,6 +42,8 @@ void fill_elf_header(Elf64_Ehdr *eh, int segs)
 	eh->e_ident[EI_VERSION] = El_VERSION;
 	eh->e_ident[EI_OSABI] = ELFOSABI_NONE;
 	eh->e_ident[EI_ABIVERSION] = El_ABIVERSION_NONE;
+	memset((void *)eh + EI_PAD, 0, sizeof(*eh) - EI_PAD);
+
 	eh->e_type = ET_CORE;
 #ifdef CONFIG_MIC
 	eh->e_machine = EM_K10M;
@@ -56,13 +63,24 @@ void fill_elf_header(Elf64_Ehdr *eh, int segs)
 	eh->e_shstrndx = 0;
 }
 
-/* prstatus NOTE */
+/**
+ * \brief Return the size of the prstatus entry of the NOTE segment.
+ *
+ */
 
 int get_prstatus_size(void)
 {
 	return sizeof(struct note) + align32(sizeof("CORE")) 
 		+ align32(sizeof(struct elf_prstatus64));
 }
+
+/**
+ * \brief Fill a prstatus structure.
+ *
+ * \param head A pointer to a note structure.
+ * \param proc A pointer to the current process structure.
+ * \param regs0 A pointer to a x86_regs structure.
+ */
 
 void fill_prstatus(struct note *head, struct process *proc, void *regs0)
 {
@@ -80,6 +98,7 @@ void fill_prstatus(struct note *head, struct process *proc, void *regs0)
 	name =  (void *) (head + 1);
 	memcpy(name, "CORE", sizeof("CORE"));
 	prstatus = (struct elf_prstatus64 *)(name + align32(sizeof("CORE")));
+	memset(prstatus, 0, sizeof(struct elf_prstatus64));
 
 /*
   We ignore following entries for now.
@@ -126,13 +145,24 @@ void fill_prstatus(struct note *head, struct process *proc, void *regs0)
 	prstatus->pr_fpvalid = 0;	/* We assume no fp */
 } 
 
-/* prpsinfo NOTE */
+/**
+ * \brief Return the size of the prpsinfo entry of the NOTE segment.
+ *
+ */
 
 int get_prpsinfo_size(void)
 {
 	return sizeof(struct note) + align32(sizeof("CORE")) 
 		+ align32(sizeof(struct elf_prpsinfo64));
 }
+
+/**
+ * \brief Fill a prpsinfo structure.
+ *
+ * \param head A pointer to a note structure.
+ * \param proc A pointer to the current process structure.
+ * \param regs A pointer to a x86_regs structure.
+ */
 
 void fill_prpsinfo(struct note *head, struct process *proc, void *regs)
 {
@@ -145,6 +175,7 @@ void fill_prpsinfo(struct note *head, struct process *proc, void *regs)
 	name =  (void *) (head + 1);
 	memcpy(name, "CORE", sizeof("CORE"));
 	prpsinfo = (struct elf_prpsinfo64 *)(name + align32(sizeof("CORE")));
+	memset(prpsinfo, 0, sizeof(struct elf_prpsinfo64));
 
 	prpsinfo->pr_state = proc->status;
 	prpsinfo->pr_pid = proc->pid;
@@ -165,13 +196,24 @@ void fill_prpsinfo(struct note *head, struct process *proc, void *regs)
 */
 } 
 
-/* auxv NOTE */
+/**
+ * \brief Return the size of the AUXV entry of the NOTE segment.
+ *
+ */
 
 int get_auxv_size(void)
 {
 	return sizeof(struct note) + align32(sizeof("CORE")) 
 		+ sizeof(unsigned long) * AUXV_LEN;
 }
+
+/**
+ * \brief Fill an AUXV structure.
+ *
+ * \param head A pointer to a note structure.
+ * \param proc A pointer to the current process structure.
+ * \param regs A pointer to a x86_regs structure.
+ */
 
 void fill_auxv(struct note *head, struct process *proc, void *regs)
 {
@@ -187,13 +229,24 @@ void fill_auxv(struct note *head, struct process *proc, void *regs)
 	memcpy(auxv, proc->saved_auxv, sizeof(unsigned long) * AUXV_LEN);
 } 
 
-/* whole NOTE segment */
+/**
+ * \brief Return the size of the whole NOTE segment.
+ *
+ */
 
 int get_note_size(void)
 {
 	return get_prstatus_size() + get_prpsinfo_size()
 		+ get_auxv_size();
 }
+
+/**
+ * \brief Fill the NOTE segment.
+ *
+ * \param head A pointer to a note structure.
+ * \param proc A pointer to the current process structure.
+ * \param regs A pointer to a x86_regs structure.
+ */
 
 void fill_note(void *note, struct process *proc, void *regs)
 {
@@ -204,7 +257,20 @@ void fill_note(void *note, struct process *proc, void *regs)
 	fill_auxv(note, proc, regs);
 }
 
-/* whole core image */
+/**
+ * \brief Generate an image of the core file.
+ *
+ * \param proc A pointer to the current process structure.
+ * \param regs A pointer to a x86_regs structure.
+ * \param coretable(out) An array of core chunks.
+ * \param chunks(out) Number of the entires of coretable.
+ *
+ * A core chunk is represented by a pair of a physical 
+ * address of memory region and its size. If there are
+ * no corresponding physical address for a VM area 
+ * (an unallocated demand-paging page, e.g.), the address
+ * should be zero.
+ */
 
 int gencore(struct process *proc, void *regs, 
 	    struct coretable **coretable, int *chunks)
@@ -430,7 +496,11 @@ int gencore(struct process *proc, void *regs,
 	return -1;
 }
 
-/* Free all the allocated spaces. */
+/**
+ * \brief Free all the allocated spaces for an image of the core file.
+ *
+ * \param coretable An array of core chunks.
+ */
 
 void freecore(struct coretable **coretable)
 {

@@ -169,9 +169,15 @@ void check_signal(unsigned long rc, void *regs);
 int gencore(struct process *, void *, struct coretable **, int *);
 void freecore(struct coretable **);
 
+/**
+ * \brief Generate a core file and tell the host to write it out.
+ *
+ * \param proc A current process structure.
+ * \param regs A pointer to a x86_regs structure.
+ */
+
 static void coredump(struct process *proc, void *regs)
 {
-	/* xxx */
 	struct syscall_request request IHK_DMA_ALIGN;
 	int ret;
 	struct coretable *coretable;

@@ -1215,6 +1215,11 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 			/* unmap the chunk */
 			ihk_device_unmap_virtual(dev, pt, size);
 			ihk_device_unmap_memory(dev, phys, size);
+			if (ret != size) {
+				dprintk("core file write failed(%d).\n", ret);
+				error = PTR_ERR(file);
+				break;
+			}
 		} else {
 			/* We skip if the physical address is NULL
 			   and make the core file sparse. */
@@ -1228,11 +1233,6 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 				error = PTR_ERR(file);
 				break;
 			}
-		}
-		if (ret != size) {
-			dprintk("core file write failed(%d).\n", ret);
-			error = PTR_ERR(file);
-			break;
 		}
 	}
 	/* unmap the chunk table */
