@@ -33,6 +33,8 @@
 #endif
 #include <cls.h>
 #include <page.h>
+#include <bitops.h>
+#include <cpulocal.h>
 
 //#define DEBUG_PRINT_MEM
 
@@ -49,6 +51,8 @@ static unsigned long pa_start, pa_end;
 static struct page *pa_pages;
 
 extern int ihk_mc_pt_print_pte(struct page_table *pt, void *virt);
+
+struct tlb_flush_entry tlb_flush_vector[IHK_TLB_FLUSH_IRQ_VECTOR_SIZE];
 
 static void reserve_pages(unsigned long start, unsigned long end, int type)
 {
@@ -255,6 +259,106 @@ static void unhandled_page_fault(struct process *proc, void *fault_addr, void *r
 #endif
 
 	return;
+}
+
+void remote_flush_tlb_cpumask(struct process_vm *vm, 
+		unsigned long addr, int cpu_id)
+{
+	unsigned long cpu;
+	int flush_ind;
+	struct tlb_flush_entry *flush_entry;
+	cpu_set_t _cpu_set;
+
+	if (addr) {
+		flush_ind = (addr >> PAGE_SHIFT) % IHK_TLB_FLUSH_IRQ_VECTOR_SIZE;
+	}
+	/* Zero address denotes full TLB flush */
+	else {	
+		/* Random.. */
+		flush_ind = (rdtsc()) % IHK_TLB_FLUSH_IRQ_VECTOR_SIZE;
+	}
+	
+	flush_entry = &tlb_flush_vector[flush_ind]; 
+
+	/* Take a copy of the cpu set so that we don't hold the lock
+	 * all the way while interrupting other cores */
+	ihk_mc_spinlock_lock_noirq(&vm->cpu_set_lock);
+	memcpy(&_cpu_set, &vm->cpu_set, sizeof(cpu_set_t));
+	ihk_mc_spinlock_unlock_noirq(&vm->cpu_set_lock);
+	
+	dkprintf("trying to aquire flush_entry->lock flush_ind: %d\n", flush_ind);
+	
+	ihk_mc_spinlock_lock_noirq(&flush_entry->lock);
+
+	flush_entry->vm = vm;
+	flush_entry->addr = addr;
+	ihk_atomic_set(&flush_entry->pending, 0);
+
+	dkprintf("lock aquired, iterating cpu mask.. flush_ind: %d\n", flush_ind);
+	
+	/* Loop through CPUs in this address space and interrupt them for
+	 * TLB flush on the specified address */
+	for_each_set_bit(cpu, (const unsigned long*)&_cpu_set.__bits, CPU_SETSIZE) {
+		
+		if (ihk_mc_get_processor_id() == cpu) 
+			continue;
+
+		ihk_atomic_inc(&flush_entry->pending);
+		dkprintf("remote_flush_tlb_cpumask: flush_ind: %d, addr: 0x%lX, interrupting cpu: %d\n",
+		        flush_ind, addr, cpu);
+
+		ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpu)->apic_id, 
+		                     flush_ind + IHK_TLB_FLUSH_IRQ_VECTOR_START);
+	}
+	
+#ifdef DEBUG_IC_TLB
+	{
+		unsigned long tsc;
+		tsc = rdtsc() + 12884901888;  /* 1.2GHz =>10 sec */
+#endif
+
+		/* Wait for all cores */
+		while (ihk_atomic_read(&flush_entry->pending) != 0) {
+			cpu_pause();
+
+#ifdef DEBUG_IC_TLB
+			if (rdtsc() > tsc) {
+				kprintf("waited 10 secs for remote TLB!! -> panic_all()\n"); 
+				panic_all_cores("waited 10 secs for remote TLB!!\n"); 
+			}
+#endif
+		}
+#ifdef DEBUG_IC_TLB
+	}
+#endif
+	
+	ihk_mc_spinlock_unlock_noirq(&flush_entry->lock);
+}
+
+void tlb_flush_handler(int vector)
+{
+	int flags = cpu_disable_interrupt_save();
+
+	struct tlb_flush_entry *flush_entry = &tlb_flush_vector[vector - 
+		IHK_TLB_FLUSH_IRQ_VECTOR_START];
+	
+	dkprintf("decreasing pending cnt for %d\n", 
+			vector - IHK_TLB_FLUSH_IRQ_VECTOR_START);
+
+	/* Decrease counter */
+	ihk_atomic_dec(&flush_entry->pending);
+
+	dkprintf("flusing TLB for addr: 0x%lX\n", flush_entry->addr);
+		
+	if (flush_entry->addr) {
+		flush_tlb_single(flush_entry->addr & PAGE_MASK);	
+	}
+	/* Zero address denotes full TLB flush */
+	else {
+		flush_tlb();
+	}
+	
+	cpu_restore_interrupt(flags);
 }
 
 static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)

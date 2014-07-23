@@ -116,6 +116,8 @@ static int init_process_vm(struct process *owner, struct process_vm *vm)
 	vm->page_table = pt;
 	hold_process(owner);
 	vm->owner_process = owner;
+	memset(&vm->cpu_set, 0, sizeof(cpu_set_t));
+	ihk_mc_spinlock_init(&vm->cpu_set_lock);
 	
 	return 0;
 }
@@ -168,6 +170,9 @@ struct process *create_process(unsigned long user_pc)
 	if(init_process_vm(proc, proc->vm) != 0){
 		goto err_free_sigshared;
 	}
+
+	cpu_set(ihk_mc_get_processor_id(), &proc->vm->cpu_set, 
+			&proc->vm->cpu_set_lock);
 
 	ihk_mc_spinlock_init(&proc->spin_sleep_lock);
 	proc->spin_sleep = 0;
@@ -389,7 +394,7 @@ static int copy_user_ranges(struct process *proc, struct process *org)
 
 			/* Set up new PTE */
 			attr = arch_vrflag_to_ptattr(range->flag, PF_POPULATE, NULL);
-			if (ihk_mc_pt_set_range(proc->vm->page_table, vaddr,
+			if (ihk_mc_pt_set_range(proc->vm->page_table, proc->vm, vaddr,
 						vaddr + pgsize, virt_to_phys(pg_vaddr), attr)) {
 				kprintf("ERROR: copy_user_ranges() "
 						"(%p,%lx-%lx %lx,%lx):"
@@ -634,7 +639,7 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 		if (range->memobj) {
 			memobj_lock(range->memobj);
 		}
-		error = ihk_mc_pt_free_range(vm->page_table,
+		error = ihk_mc_pt_free_range(vm->page_table, vm,
 				(void *)start, (void *)end,
 				(range->flag & VR_PRIVATE)? NULL: range->memobj);
 		if (range->memobj) {
@@ -650,7 +655,7 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 	}
 	else {
 		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
-		error = ihk_mc_pt_clear_range(vm->page_table,
+		error = ihk_mc_pt_clear_range(vm->page_table, vm,
 				(void *)start, (void *)end);
 		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 		if (error && (error != -ENOENT)) {
@@ -1227,7 +1232,8 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 		}
 	}
 	else {
-		error = ihk_mc_pt_set_range(vm->page_table, pgaddr, pgaddr+pgsize, phys, attr);
+		error = ihk_mc_pt_set_range(vm->page_table, vm, pgaddr, pgaddr + pgsize, 
+				phys, attr);
 		if (error) {
 			kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):set_range failed. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
 			goto out;
@@ -1366,7 +1372,7 @@ int init_process_stack(struct process *process, struct program_load_desc *pn,
 		return -ENOMEM;
 	}
 	memset(stack, 0, minsz);
-	error = ihk_mc_pt_set_range(process->vm->page_table,
+	error = ihk_mc_pt_set_range(process->vm->page_table, process->vm,
 			(void *)(end-minsz), (void *)end,
 			virt_to_phys(stack),
 			arch_vrflag_to_ptattr(vrflag, PF_POPULATE, NULL));
@@ -1532,7 +1538,8 @@ int remove_process_region(struct process *proc,
 	ihk_mc_spinlock_lock_noirq(&proc->vm->page_table_lock);
 	/* We defer freeing to the time of exit */
 	// XXX: check error
-	ihk_mc_pt_clear_range(proc->vm->page_table, (void *)start, (void *)end);
+	ihk_mc_pt_clear_range(proc->vm->page_table, proc->vm, 
+			(void *)start, (void *)end);
 	ihk_mc_spinlock_unlock_noirq(&proc->vm->page_table_lock);
 
 	return 0;
@@ -1656,6 +1663,10 @@ void destroy_process(struct process *proc)
 	struct sig_pending *pending;
 	struct sig_pending *next;
 
+	if (proc->vm) {
+		cpu_clear(proc->cpu_id, &proc->vm->cpu_set, &proc->vm->cpu_set_lock);
+	}
+
 	free_process_memory(proc);	
 
 	if(ihk_atomic_dec_and_test(&proc->sighandler->use)){
@@ -1683,6 +1694,22 @@ void release_process(struct process *proc)
 	}
 
 	destroy_process(proc);
+}
+
+void cpu_set(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock)
+{
+	unsigned int flags;
+	flags = ihk_mc_spinlock_lock(lock);
+	CPU_SET(cpu, cpu_set);
+	ihk_mc_spinlock_unlock(lock, flags);
+}
+
+void cpu_clear(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock)
+{
+	unsigned int flags;
+	flags = ihk_mc_spinlock_lock(lock);
+	CPU_CLR(cpu, cpu_set);
+	ihk_mc_spinlock_unlock(lock, flags);
 }
 
 static void idle(void)

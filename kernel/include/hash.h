@@ -14,8 +14,6 @@
  * machines where multiplications are slow.
  */
 
-#define BITS_PER_LONG 64
-
 /* 2^31 + 2^29 - 2^25 + 2^22 - 2^19 - 2^16 + 1 */
 #define GOLDEN_RATIO_PRIME_32 0x9e370001UL
 /*  2^63 + 2^61 - 2^57 + 2^54 - 2^51 - 2^18 + 1 */

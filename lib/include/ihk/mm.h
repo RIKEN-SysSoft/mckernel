@@ -8,6 +8,7 @@
  */
 /*
  * HISTORY
+ * 2014/07: bgerofi: remote TLB flush handler
  */
 
 #ifndef __HEADER_GENERIC_IHK_MM_H
@@ -15,8 +16,11 @@
 
 #include <ihk/types.h>
 #include <memory.h>
+#include <ihk/lock.h>
+#include <ihk/atomic.h>
 
 struct memobj;
+struct process_vm;
 
 enum ihk_mc_gma_type {
 	IHK_MC_GMA_MAP_START,
@@ -115,16 +119,18 @@ int ihk_mc_pt_change_page(page_table_t pt, void *virt,
                           enum ihk_mc_pt_attribute);
 int ihk_mc_pt_clear_page(page_table_t pt, void *virt);
 int ihk_mc_pt_clear_large_page(page_table_t pt, void *virt);
-int ihk_mc_pt_clear_range(page_table_t pt, void *start, void *end);
-int ihk_mc_pt_free_range(page_table_t pt, void *start, void *end, struct memobj *memobj);
+int ihk_mc_pt_clear_range(page_table_t pt, struct process_vm *vm, 
+		void *start, void *end);
+int ihk_mc_pt_free_range(page_table_t pt, struct process_vm *vm, 
+		void *start, void *end, struct memobj *memobj);
 int ihk_mc_pt_change_attr_range(page_table_t pt, void *start, void *end,
 		enum ihk_mc_pt_attribute clrattr,
 		enum ihk_mc_pt_attribute setattr);
 int ihk_mc_pt_alloc_range(page_table_t pt, void *start, void *end,
 		enum ihk_mc_pt_attribute attr);
 pte_t *ihk_mc_pt_lookup_pte(page_table_t pt, void *virt, void **pgbasep, size_t *pgsizep, int *p2alignp);
-int ihk_mc_pt_set_range(page_table_t pt, void *start, void *end,
-		uintptr_t phys, enum ihk_mc_pt_attribute attr);
+int ihk_mc_pt_set_range(page_table_t pt, struct process_vm *vm, void *start, 
+		void *end, uintptr_t phys, enum ihk_mc_pt_attribute attr);
 int ihk_mc_pt_set_pte(page_table_t pt, pte_t *ptep, size_t pgsize, uintptr_t phys, enum ihk_mc_pt_attribute attr);
 int ihk_mc_pt_prepare_map(page_table_t pt, void *virt, unsigned long size,
                           enum ihk_mc_pt_prepare_flag);
@@ -133,7 +139,8 @@ typedef int pte_visitor_t(void *arg, page_table_t pt, pte_t *ptep,
 		void *pgaddr, size_t pgsize);
 int visit_pte_range(page_table_t pt, void *start, void *end,
 		enum visit_pte_flag flags, pte_visitor_t *funcp, void *arg);
-int move_pte_range(page_table_t pt, void *src, void *dest, size_t size);
+int move_pte_range(page_table_t pt, struct process_vm *vm, 
+		void *src, void *dest, size_t size);
 
 struct page_table *ihk_mc_pt_create(enum ihk_mc_ap_flag ap_flag);
 /* XXX: proper use of struct page_table and page_table_t is unknown */
@@ -141,5 +148,19 @@ void ihk_mc_pt_destroy(struct page_table *pt);
 void ihk_mc_load_page_table(struct page_table *pt);
 int ihk_mc_pt_virt_to_phys(struct page_table *pt,
                            void *virt, unsigned long *phys);
+
+void remote_flush_tlb_cpumask(struct process_vm *vm, 
+		unsigned long addr, int cpu_id);
+
+extern void (*__tlb_flush_handler)(int vector);
+
+struct tlb_flush_entry {
+	struct process_vm *vm;
+	unsigned long addr;
+	ihk_atomic_t pending;
+	ihk_spinlock_t lock;
+} __attribute__((aligned(64)));
+
+extern struct tlb_flush_entry tlb_flush_vector[IHK_TLB_FLUSH_IRQ_VECTOR_SIZE];
 
 #endif

@@ -407,6 +407,7 @@ void setup_x86_ap(void (*next_func)(void))
 void arch_show_interrupt_context(const void *reg);
 void set_signal(int sig, void *regs);
 void check_signal(unsigned long rc, void *regs);
+extern void tlb_flush_handler(int vector);
 
 void handle_interrupt(int vector, struct x86_regs *regs)
 {
@@ -419,7 +420,8 @@ void handle_interrupt(int vector, struct x86_regs *regs)
 
 	if (vector < 0 || vector > 255) {
 		panic("Invalid interrupt vector.");
-	} else if (vector < 32) {
+	} 
+	else if (vector < 32) {
 		if (vector == 8 || 
 		    (vector >= 10 && vector <= 15) || vector == 17) {
 			kprintf("Exception %d, rflags: 0x%lX CS: 0x%lX, RIP: 0x%lX\n",
@@ -430,7 +432,13 @@ void handle_interrupt(int vector, struct x86_regs *regs)
 		}
 		arch_show_interrupt_context(regs);
 		panic("Unhandled exception");
-	} else {
+	}
+	else if (vector >= IHK_TLB_FLUSH_IRQ_VECTOR_START && 
+	         vector < IHK_TLB_FLUSH_IRQ_VECTOR_END) {
+
+			tlb_flush_handler(vector);
+	} 
+	else {
 		list_for_each_entry(h, &handlers[vector - 32], list) {
 			if (h->func) {
 				h->func(h->priv);

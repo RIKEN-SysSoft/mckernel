@@ -208,6 +208,9 @@ struct process_vm {
     // 2. addition of process page table (allocate_pages, update_process_page_table)
     // note that physical memory allocator (ihk_mc_alloc_pages, ihk_pagealloc_alloc)
     // is protected by its own lock (see ihk/manycore/generic/page_alloc.c)
+
+	cpu_set_t cpu_set;
+	ihk_spinlock_t cpu_set_lock;
 };
 
 
@@ -266,5 +269,8 @@ int sched_wakeup_process(struct process *proc, int valid_states);
 
 void sched_request_migrate(int cpu_id, struct process *proc);
 void check_need_resched(void);
+
+void cpu_set(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock);
+void cpu_clear(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock);
 
 #endif
