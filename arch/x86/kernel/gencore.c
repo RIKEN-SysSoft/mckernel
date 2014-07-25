@@ -7,6 +7,7 @@
 #include <elfcore.h>
 
 #define	align32(x) ((((x) + 3) / 4) * 4)
+#define	alignpage(x) ((((x) + (PAGE_SIZE) - 1) / (PAGE_SIZE)) * (PAGE_SIZE))
 
 #define DEBUG_PRINT_GENCORE
 
@@ -42,7 +43,6 @@ void fill_elf_header(Elf64_Ehdr *eh, int segs)
 	eh->e_ident[EI_VERSION] = El_VERSION;
 	eh->e_ident[EI_OSABI] = ELFOSABI_NONE;
 	eh->e_ident[EI_ABIVERSION] = El_ABIVERSION_NONE;
-	memset((void *)eh + EI_PAD, 0, sizeof(*eh) - EI_PAD);
 
 	eh->e_type = ET_CORE;
 #ifdef CONFIG_MIC
@@ -98,7 +98,6 @@ void fill_prstatus(struct note *head, struct process *proc, void *regs0)
 	name =  (void *) (head + 1);
 	memcpy(name, "CORE", sizeof("CORE"));
 	prstatus = (struct elf_prstatus64 *)(name + align32(sizeof("CORE")));
-	memset(prstatus, 0, sizeof(struct elf_prstatus64));
 
 /*
   We ignore following entries for now.
@@ -175,7 +174,6 @@ void fill_prpsinfo(struct note *head, struct process *proc, void *regs)
 	name =  (void *) (head + 1);
 	memcpy(name, "CORE", sizeof("CORE"));
 	prpsinfo = (struct elf_prpsinfo64 *)(name + align32(sizeof("CORE")));
-	memset(prpsinfo, 0, sizeof(struct elf_prpsinfo64));
 
 	prpsinfo->pr_state = proc->status;
 	prpsinfo->pr_pid = proc->pid;
@@ -282,7 +280,7 @@ int gencore(struct process *proc, void *regs,
 	struct vm_range *range;
 	struct process_vm *vm = proc->vm;
 	int segs = 1;	/* the first one is for NOTE */
-	int notesize, phsize;
+	int notesize, phsize, alignednotesize;
 	unsigned int offset = 0;
 	int i;
 
@@ -342,14 +340,6 @@ int gencore(struct process *proc, void *regs,
 	offset += sizeof(eh);
 	fill_elf_header(&eh, segs);
 
-	notesize = get_note_size();
-	note = kmalloc(notesize, IHK_MC_AP_NOWAIT);
-	if (note == NULL) {
-		dkprintf("could not alloc NOTE for core.\n");
-		goto fail;
-	}
-	fill_note(note, proc, regs);
-
 	/* program header table */
 	phsize = sizeof(Elf64_Phdr) * segs;
 	ph = kmalloc(phsize, IHK_MC_AP_NOWAIT);
@@ -357,8 +347,23 @@ int gencore(struct process *proc, void *regs,
 		dkprintf("could not alloc a program header table.\n");
 		goto fail;
 	}
+	memset(ph, 0, phsize);
 
 	offset += phsize;
+
+	/* NOTE segment
+	 * To align the next segment page-sized, we prepare a padded
+	 * region for our NOTE segment.
+	 */
+	notesize = get_note_size();
+	alignednotesize = alignpage(notesize + offset) - offset;
+	note = kmalloc(alignednotesize, IHK_MC_AP_NOWAIT);
+	if (note == NULL) {
+		dkprintf("could not alloc NOTE for core.\n");
+		goto fail;
+	}
+	memset(note, 0, alignednotesize);
+	fill_note(note, proc, regs);
 
 	/* prgram header for NOTE segment is exceptional */
 	ph[0].p_type = PT_NOTE;
@@ -368,7 +373,9 @@ int gencore(struct process *proc, void *regs,
 	ph[0].p_paddr = 0;
 	ph[0].p_filesz = notesize;
 	ph[0].p_memsz = notesize;
-	ph[0].p_align = 1024;
+	ph[0].p_align = 0;
+
+	offset += alignednotesize;
 
 	/* program header for each memory chunk */
 	i = 1;
@@ -388,7 +395,7 @@ int gencore(struct process *proc, void *regs,
 		ph[i].p_paddr = 0;
 		ph[i].p_filesz = size;
 		ph[i].p_memsz = size;
-		ph[i].p_align = 1024;	/* ??? */
+		ph[i].p_align = PAGE_SIZE;
 		i++;
 		offset += size;
 	}
@@ -409,7 +416,7 @@ int gencore(struct process *proc, void *regs,
 	dkprintf("coretable[1]: %lx@%lx(%lx)\n", ct[1].len, ct[1].addr, ph);
 
 	ct[2].addr = virt_to_phys(note);	/* NOTE segment */
-	ct[2].len = notesize;
+	ct[2].len = alignednotesize;
 	dkprintf("coretable[2]: %lx@%lx(%lx)\n", ct[2].len, ct[2].addr, note);
 
 	i = 3;	/* memory segments */
