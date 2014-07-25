@@ -407,6 +407,10 @@ retry_alloc:
 
 	ret = wait_event_interruptible(wqhln->wq_syscall, wqhln->req);
 	
+	if (ret) {
+		return -EINTR;
+	}
+
 	/* Remove per-process wait queue head */
 	irqflags = ihk_ikc_spinlock_lock(&c->wq_list_lock);
 	list_del(&wqhln->list);
@@ -422,10 +426,6 @@ retry_alloc:
 				c->param.request_va->number,
 				swd.cpu);
 
-		return -EINTR;
-	}
-
-	if (ret) {
 		return -EINTR;
 	}
 
