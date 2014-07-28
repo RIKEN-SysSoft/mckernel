@@ -1221,8 +1221,8 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 				int ret = -1;
 				struct program_load_desc *desc;
 				struct remote_transfer trans;
-				FILE *fp;
-				int status;
+				int error;
+				int found = 0;
 				char path[2048];
 				char *filename;
 
@@ -1232,37 +1232,59 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 					filename = (char *)w.sr.args[1];
 
 					/* Is filename without path? */
-					if (0 && strncmp(filename, "/", 1) 
-						//&& strncmp(filename, ".", 1)
-						) {
+					if (strncmp(filename, "/", 1) 
+							&& strncmp(filename, ".", 1)) {
+						
+						char *token, *string, *tofree;
+						char *PATH = getenv("COKERNEL_PATH");
+						if (!PATH) {
+							PATH = getenv("PATH");
+						}
+						
+						__dprintf("PATH: %s\n", PATH);
 
-						char *PATH = getenv("PATH");
-						fprintf(stderr, "PATH: %s\n", PATH);
-
-						/* Open command for reading. */
-						sprintf(path, "/usr/bin/which %s", filename);
-						fp = popen(path, "r");
-						if (fp == NULL) {
-							fprintf(stderr, "execve(): failed to run which\n" );
+						/* strsep() modifies string! */
+						tofree = string = strdup(PATH);
+						if (string == NULL) {
+							printf("error: copying PATH, not enough memory?\n");
 							goto return_execve1;
 						}
 
-						/* Read the output a line at a time - output it. */
-						if (fgets(path, sizeof(path)-1, fp) == NULL) {
-							fprintf(stderr, "execve(): failed to read which\n" );
-							pclose(fp);
-							goto return_execve1;
+						while ((token = strsep(&string, ":")) != NULL) {
+
+							error = snprintf(path, sizeof(path), 
+									"%s/%s", token, filename);
+							if (error < 0 || error >= sizeof(path)) {
+								fprintf(stderr, "execve(): array too small?\n");
+								continue;
+							}
+
+							error = access(path, X_OK);
+							if (!error) {
+								found = 1;
+								break;
+							}
 						}
 
-						/* close */
-						pclose(fp);
+						free(tofree);
 					}
 					else {
-						sprintf(path, "%s", filename);
+						error = snprintf(path, sizeof(path), "%s", filename);
+						if (error < 0 || error >= sizeof(path)) {
+							fprintf(stderr, "execve(): array too small?\n");
+							goto return_execve1;
+						}
+
+						found = 1;
+					}
+					
+					if (!found) {
+						fprintf(stderr, 
+							"execve(): error finding file %s\n", path);
+						goto return_execve1;
 					}
 
-					__dprintf("execve: filename: %s\n", filename);
-					__dprintf("execve: LD_LIBRARY_PATH: %s\n", getenv("LD_LIBRARY_PATH") ? getenv("LD_LIBRARY_PATH") : "(empty)");
+					__dprintf("execve(): path to binary: %s\n", path);
 
 					if (load_elf_desc(path, &desc) != 0) {
 						fprintf(stderr, 
