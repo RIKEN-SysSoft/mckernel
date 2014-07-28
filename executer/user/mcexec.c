@@ -1217,18 +1217,57 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 				int ret = -1;
 				struct program_load_desc *desc;
 				struct remote_transfer trans;
-				
+				FILE *fp;
+				int status;
+				char path[2048];
+				char *filename;
+
 				/* Load descriptor phase */
 				case 1:
-					if (load_elf_desc((char *)w.sr.args[1], &desc) != 0) {
+
+					filename = (char *)w.sr.args[1];
+
+					/* Is filename without path? */
+					if (0 && strncmp(filename, "/", 1) 
+						//&& strncmp(filename, ".", 1)
+						) {
+
+						char *PATH = getenv("PATH");
+						fprintf(stderr, "PATH: %s\n", PATH);
+
+						/* Open command for reading. */
+						sprintf(path, "/usr/bin/which %s", filename);
+						fp = popen(path, "r");
+						if (fp == NULL) {
+							fprintf(stderr, "execve(): failed to run which\n" );
+							goto return_execve1;
+						}
+
+						/* Read the output a line at a time - output it. */
+						if (fgets(path, sizeof(path)-1, fp) == NULL) {
+							fprintf(stderr, "execve(): failed to read which\n" );
+							pclose(fp);
+							goto return_execve1;
+						}
+
+						/* close */
+						pclose(fp);
+					}
+					else {
+						sprintf(path, "%s", filename);
+					}
+
+					__dprintf("execve: filename: %s\n", filename);
+					__dprintf("execve: LD_LIBRARY_PATH: %s\n", getenv("LD_LIBRARY_PATH") ? getenv("LD_LIBRARY_PATH") : "(empty)");
+
+					if (load_elf_desc(path, &desc) != 0) {
 						fprintf(stderr, 
-							"execve(): error loading ELF for file %s\n", 
-							(char *)w.sr.args[1]);
+							"execve(): error loading ELF for file %s\n", path);
 						goto return_execve1;
 					}
 
 					__dprintf("execve(): load_elf_desc() for %s OK, num sections: %d\n",
-						w.sr.args[1], desc->num_sections);
+						path, desc->num_sections);
 
 					/* Copy descriptor to co-kernel side */
 					trans.userp = (void*)desc;
@@ -1246,7 +1285,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 					}
 					
 					__dprintf("execve(): load_elf_desc() for %s OK\n",
-						w.sr.args[1]);
+						path);
 
 					/* We can't be sure next phase will succeed */
 					/* TODO: what shall we do with fp in desc?? */
@@ -1279,7 +1318,7 @@ return_execve1:
 						goto return_execve1;
 					}
 					
-					printf("execve(): transfer ELF desc OK\n");
+					__dprintf("execve(): transfer ELF desc OK\n");
 
 					transfer_image(fd, desc);	
 					__dprintf("execve(): image transferred\n");
