@@ -116,6 +116,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock);
 static int fd;
 static char *altroot;
 static const char rlimit_stack_envname[] = "MCKERNEL_RLIMIT_STACK";
+static int ischild;
 
 pid_t gettid(void)
 {
@@ -1106,8 +1107,10 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 				sig = w.sr.args[0] & 0x7f;
 				term = (w.sr.args[0] & 0xff00) >> 8;
 				if(isatty(2)){
-					if(sig)
-						fprintf(stderr, "Terminate by signal %d\n", sig);
+					if(sig){
+						if(!ischild)
+							fprintf(stderr, "Terminate by signal %d\n", sig);
+					}
 					else if(term)
 						__dprintf("Exit status: %d\n", term);
 				}
@@ -1163,6 +1166,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 				case 0: {
 					int i;
 
+					ischild = 1;
 					/* Reopen device fd */
 					close(fd);
 					fd = open(dev, O_RDWR);
