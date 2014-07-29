@@ -160,10 +160,6 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 
 	for(w = pending->sigmask.__val[0], sig = 0; w; sig++, w >>= 1);
 
-	if(sig == SIGKILL || sig == SIGTERM)
-		terminate(0, sig, (ihk_mc_user_context_t *)regs->rsp);
-
-	irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
 	if(regs == NULL){ /* call from syscall */
 		asm("movq %%gs:132, %0" : "=r" (regs));
 		--regs;
@@ -171,6 +167,11 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 	else{
 		rc = regs->rax;
 	}
+
+	if(sig == SIGKILL || sig == SIGTERM)
+		terminate(0, sig, (ihk_mc_user_context_t *)regs->rsp);
+
+	irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
 	k = proc->sighandler->action + sig - 1;
 
 	if(k->sa.sa_handler == (void *)1){
