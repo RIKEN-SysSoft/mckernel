@@ -342,6 +342,12 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p)
 	FILE *interp = NULL;
 	char *interp_path;
 	struct program_load_desc *desc;
+	int ret = 0;
+
+	if ((ret = access(filename, X_OK)) != 0) {
+		fprintf(stderr, "Error: %s is not an executable?\n", filename);
+		return ret;
+	}
 
 	fp = fopen(filename, "rb");
 	if (!fp) {
@@ -1218,22 +1224,24 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 
 			/* Execve phase */
 			switch (w.sr.args[0]) {
-				int ret = -1;
 				struct program_load_desc *desc;
 				struct remote_transfer trans;
 				int error;
-				int found = 0;
+				int found;
 				char path[2048];
 				char *filename;
+				int ret;
 
 				/* Load descriptor phase */
 				case 1:
-
+					
+					ret = -1;
+					found = 0;
 					filename = (char *)w.sr.args[1];
 
-					/* Is filename without path? */
+					/* Is filename a single component without path? */
 					if (strncmp(filename, "/", 1) 
-							&& strncmp(filename, ".", 1)) {
+							&& !strchr(filename, '/')) {
 						
 						char *token, *string, *tofree;
 						char *PATH = getenv("COKERNEL_PATH");
@@ -1260,7 +1268,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 							}
 
 							error = access(path, X_OK);
-							if (!error) {
+							if (error == 0) {
 								found = 1;
 								break;
 							}
@@ -1280,13 +1288,13 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 					
 					if (!found) {
 						fprintf(stderr, 
-							"execve(): error finding file %s\n", path);
+							"execve(): error finding file %s\n", filename);
 						goto return_execve1;
 					}
 
 					__dprintf("execve(): path to binary: %s\n", path);
 
-					if (load_elf_desc(path, &desc) != 0) {
+					if ((ret = load_elf_desc(path, &desc)) != 0) {
 						fprintf(stderr, 
 							"execve(): error loading ELF for file %s\n", path);
 						goto return_execve1;
@@ -1325,6 +1333,7 @@ return_execve1:
 				/* Copy program image phase */
 				case 2:
 					
+					ret = -1;
 					/* Alloc descriptor */
 					desc = malloc(w.sr.args[2]);
 					if (!desc) {
