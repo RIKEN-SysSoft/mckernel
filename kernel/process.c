@@ -43,9 +43,6 @@
 #endif
 
 
-#define USER_STACK_NR_PAGES 8192
-#define KERNEL_STACK_NR_PAGES 25
-
 extern long do_arch_prctl(unsigned long code, unsigned long address);
 static void insert_vm_range_list(struct process_vm *vm, 
 		struct vm_range *newrange);
@@ -1787,6 +1784,7 @@ static void do_migrate(void)
 	ihk_mc_spinlock_lock_noirq(&cur_v->migq_lock);
 	list_for_each_entry_safe(req, tmp, &cur_v->migq, list) {
 		int cpu_id;
+		int old_cpu_id;
 		struct cpu_local_var *v;
 
 		/* 0. check if migration is necessary */
@@ -1808,9 +1806,17 @@ static void do_migrate(void)
 		double_rq_lock(cur_v, v);
 		list_del(&req->proc->sched_list);
 		cur_v->runq_len -= 1;
+		old_cpu_id = req->proc->cpu_id;
 		req->proc->cpu_id = cpu_id;
 		list_add_tail(&req->proc->sched_list, &v->runq);
 		v->runq_len += 1;
+		
+		/* update cpu_set of the VM for remote TLB invalidation */
+		cpu_clear(old_cpu_id, &req->proc->vm->cpu_set, 
+				&req->proc->vm->cpu_set_lock);
+		cpu_set(cpu_id, &req->proc->vm->cpu_set, 
+				&req->proc->vm->cpu_set_lock);
+
 		if (v->runq_len == 1)
 			ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
 		double_rq_unlock(cur_v, v);

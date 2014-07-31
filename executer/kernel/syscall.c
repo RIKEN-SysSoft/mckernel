@@ -255,6 +255,7 @@ retry_alloc:
 
 		/* Prepare per-process wait queue head */
 		wqhln->pid = current->tgid;	
+		wqhln->req = 0;
 		init_waitqueue_head(&wqhln->wq_syscall);
 
 		irqflags = ihk_ikc_spinlock_lock(&channel->wq_list_lock);
@@ -271,7 +272,7 @@ retry_alloc:
 		ihk_ikc_spinlock_unlock(&channel->wq_list_lock, irqflags);
 
 		/* wait for response */
-		error = wait_event_interruptible(wqhln->wq_syscall, channel->req);
+		error = wait_event_interruptible(wqhln->wq_syscall, wqhln->req);
 
 		/* Remove per-process wait queue head */
 		irqflags = ihk_ikc_spinlock_lock(&channel->wq_list_lock);
@@ -283,7 +284,6 @@ retry_alloc:
 			printk("remote_page_fault:interrupted. %d\n", error);
 			goto out;
 		}
-		channel->req = 0;
 		if (!req->valid) {
 			printk("remote_page_fault:not valid\n");
 		}

@@ -1228,6 +1228,11 @@ SYSCALL_DECLARE(execve)
 	/* Unmap all memory areas of the process, userspace will be gone */
 	free_process_memory_ranges(cpu_local_var(current));
 
+	ihk_mc_init_user_process(&cpu_local_var(current)->ctx, 
+			&cpu_local_var(current)->uctx,
+			((char *)cpu_local_var(current)) + 
+			KERNEL_STACK_NR_PAGES * PAGE_SIZE, desc->entry, 0);
+
 	/* Create virtual memory ranges and update args/envs */
 	if (prepare_process_ranges_args_envs(cpu_local_var(current), desc, desc, 
 				PTATTR_NO_EXECUTE | PTATTR_WRITABLE | PTATTR_FOR_USER,
@@ -1235,6 +1240,18 @@ SYSCALL_DECLARE(execve)
 		kprintf("execve(): PANIC: preparing ranges, args, envs, stack\n");
 		panic("");
 	}
+	
+	/* Clear host user space PTEs */
+	request.number = __NR_munmap;
+	request.args[0] = cpu_local_var(current)->vm->region.user_start;
+	request.args[1] = cpu_local_var(current)->vm->region.user_end - 
+		cpu_local_var(current)->vm->region.user_start;
+	dkprintf("execve(): requesting host PTE clear\n");
+
+	if (do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0)) {
+		kprintf("execve(): ERROR: clearing PTEs in host process\n");
+		panic("");
+	}		
 
 	/* Request host to transfer ELF image */
 	request.number = __NR_execve;  
@@ -1250,8 +1267,13 @@ SYSCALL_DECLARE(execve)
 		panic("");
 	}
 
-	dkprintf("execve(): returning to new process\n");
+	/* Switch to new execution context */
+	dkprintf("execve(): switching to new process\n");
+	
+	ihk_mc_switch_context(NULL, &cpu_local_var(current)->ctx, 
+		cpu_local_var(current));
 
+	/* Never reach here */
 	return 0;
 }
 

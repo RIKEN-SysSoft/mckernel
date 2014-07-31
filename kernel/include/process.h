@@ -84,6 +84,9 @@
 //#define USE_LARGE_PAGES
 #endif
 
+#define USER_STACK_NR_PAGES 8192
+#define KERNEL_STACK_NR_PAGES 25
+
 #include <waitq.h>
 #include <futex.h>
 #include <rlimit.h>

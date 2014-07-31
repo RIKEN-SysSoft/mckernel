@@ -330,12 +330,13 @@ retry_alloc:
 		}
 
 		wqhln->pid = pid;
+		wqhln->req = 0;
 		init_waitqueue_head(&wqhln->wq_syscall);
 		list_add_tail(&wqhln->list, &c->wq_list);
 	}
 	ihk_ikc_spinlock_unlock(&c->wq_list_lock, flags);
 
-	c->req = 1;
+	wqhln->req = 1;
 	wake_up(&wqhln->wq_syscall);
 
 	return 0;
@@ -388,6 +389,7 @@ retry_alloc:
 	}
 
 	wqhln->pid = swd.pid;	
+	wqhln->req = 0;
 	init_waitqueue_head(&wqhln->wq_syscall);
 	
 	irqflags = ihk_ikc_spinlock_lock(&c->wq_list_lock);
@@ -403,8 +405,12 @@ retry_alloc:
 	list_add_tail(&wqhln->list, &c->wq_list);
 	ihk_ikc_spinlock_unlock(&c->wq_list_lock, irqflags);
 
-	ret = wait_event_interruptible(wqhln->wq_syscall, c->req);
+	ret = wait_event_interruptible(wqhln->wq_syscall, wqhln->req);
 	
+	if (ret) {
+		return -EINTR;
+	}
+
 	/* Remove per-process wait queue head */
 	irqflags = ihk_ikc_spinlock_lock(&c->wq_list_lock);
 	list_del(&wqhln->list);
@@ -423,11 +429,6 @@ retry_alloc:
 		return -EINTR;
 	}
 
-	if (ret) {
-		return -EINTR;
-	}
-
-	c->req = 0;
 #if 1
 	mb();
 	if (!c->param.request_va->valid) {

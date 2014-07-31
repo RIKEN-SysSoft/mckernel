@@ -100,6 +100,7 @@ struct wait_queue_head_list_node {
 	struct list_head list;
 	wait_queue_head_t wq_syscall;
 	int pid;
+	int req;
 };
 
 struct mcctrl_channel {
@@ -108,7 +109,6 @@ struct mcctrl_channel {
 	struct ikc_scd_init_param init;
 	void *dma_buf;
 
-	int req;
 	struct list_head wq_list;
 	ihk_spinlock_t wq_list_lock;
 };

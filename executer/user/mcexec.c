@@ -116,6 +116,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock);
 static int fd;
 static char *altroot;
 static const char rlimit_stack_envname[] = "MCKERNEL_RLIMIT_STACK";
+static int ischild;
 
 pid_t gettid(void)
 {
@@ -341,6 +342,12 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p)
 	FILE *interp = NULL;
 	char *interp_path;
 	struct program_load_desc *desc;
+	int ret = 0;
+
+	if ((ret = access(filename, X_OK)) != 0) {
+		fprintf(stderr, "Error: %s is not an executable?\n", filename);
+		return ret;
+	}
 
 	fp = fopen(filename, "rb");
 	if (!fp) {
@@ -1106,8 +1113,10 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 				sig = w.sr.args[0] & 0x7f;
 				term = (w.sr.args[0] & 0xff00) >> 8;
 				if(isatty(2)){
-					if(sig)
-						fprintf(stderr, "Terminate by signal %d\n", sig);
+					if(sig){
+						if(!ischild)
+							fprintf(stderr, "Terminate by signal %d\n", sig);
+					}
 					else if(term)
 						__dprintf("Exit status: %d\n", term);
 				}
@@ -1163,6 +1172,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 				case 0: {
 					int i;
 
+					ischild = 1;
 					/* Reopen device fd */
 					close(fd);
 					fd = open(dev, O_RDWR);
@@ -1214,21 +1224,84 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 
 			/* Execve phase */
 			switch (w.sr.args[0]) {
-				int ret = -1;
 				struct program_load_desc *desc;
 				struct remote_transfer trans;
-				
+				int error;
+				int found;
+				char path[2048];
+				char *filename;
+				int ret;
+
 				/* Load descriptor phase */
 				case 1:
-					if (load_elf_desc((char *)w.sr.args[1], &desc) != 0) {
+					
+					ret = -1;
+					found = 0;
+					filename = (char *)w.sr.args[1];
+
+					/* Is filename a single component without path? */
+					if (strncmp(filename, "/", 1) 
+							&& !strchr(filename, '/')) {
+						
+						char *token, *string, *tofree;
+						char *PATH = getenv("COKERNEL_PATH");
+						if (!PATH) {
+							PATH = getenv("PATH");
+						}
+						
+						__dprintf("PATH: %s\n", PATH);
+
+						/* strsep() modifies string! */
+						tofree = string = strdup(PATH);
+						if (string == NULL) {
+							printf("error: copying PATH, not enough memory?\n");
+							goto return_execve1;
+						}
+
+						while ((token = strsep(&string, ":")) != NULL) {
+
+							error = snprintf(path, sizeof(path), 
+									"%s/%s", token, filename);
+							if (error < 0 || error >= sizeof(path)) {
+								fprintf(stderr, "execve(): array too small?\n");
+								continue;
+							}
+
+							error = access(path, X_OK);
+							if (error == 0) {
+								found = 1;
+								break;
+							}
+						}
+
+						free(tofree);
+					}
+					else {
+						error = snprintf(path, sizeof(path), "%s", filename);
+						if (error < 0 || error >= sizeof(path)) {
+							fprintf(stderr, "execve(): array too small?\n");
+							goto return_execve1;
+						}
+
+						found = 1;
+					}
+					
+					if (!found) {
 						fprintf(stderr, 
-							"execve(): error loading ELF for file %s\n", 
-							(char *)w.sr.args[1]);
+							"execve(): error finding file %s\n", filename);
+						goto return_execve1;
+					}
+
+					__dprintf("execve(): path to binary: %s\n", path);
+
+					if ((ret = load_elf_desc(path, &desc)) != 0) {
+						fprintf(stderr, 
+							"execve(): error loading ELF for file %s\n", path);
 						goto return_execve1;
 					}
 
 					__dprintf("execve(): load_elf_desc() for %s OK, num sections: %d\n",
-						w.sr.args[1], desc->num_sections);
+						path, desc->num_sections);
 
 					/* Copy descriptor to co-kernel side */
 					trans.userp = (void*)desc;
@@ -1246,7 +1319,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 					}
 					
 					__dprintf("execve(): load_elf_desc() for %s OK\n",
-						w.sr.args[1]);
+						path);
 
 					/* We can't be sure next phase will succeed */
 					/* TODO: what shall we do with fp in desc?? */
@@ -1260,6 +1333,7 @@ return_execve1:
 				/* Copy program image phase */
 				case 2:
 					
+					ret = -1;
 					/* Alloc descriptor */
 					desc = malloc(w.sr.args[2]);
 					if (!desc) {
@@ -1279,7 +1353,7 @@ return_execve1:
 						goto return_execve1;
 					}
 					
-					printf("execve(): transfer ELF desc OK\n");
+					__dprintf("execve(): transfer ELF desc OK\n");
 
 					transfer_image(fd, desc);	
 					__dprintf("execve(): image transferred\n");
