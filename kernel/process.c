@@ -1399,6 +1399,8 @@ int init_process_stack(struct process *process, struct program_load_desc *pn,
 	p[s_ind--] = AT_PHDR;	
 	p[s_ind--] = 4096; /* AT_PAGESZ */
 	p[s_ind--] = AT_PAGESZ;
+	p[s_ind--] = pn->at_clktck; /* AT_CLKTCK */
+	p[s_ind--] = AT_CLKTCK;
 	/* save auxiliary vector for core dump */
 	memcpy(process->saved_auxv, &p[s_ind + 1], 
 	       sizeof(process->saved_auxv));

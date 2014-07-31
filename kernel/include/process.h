@@ -91,7 +91,7 @@
 #include <futex.h>
 #include <rlimit.h>
 
-#define	AUXV_LEN	12
+#define	AUXV_LEN	14
 
 struct vm_range {
 	struct list_head list;

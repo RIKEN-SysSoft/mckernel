@@ -221,6 +221,7 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	desc->at_phent = sizeof(phdr);
 	desc->at_phnum = hdr.e_phnum;
 	desc->at_entry = hdr.e_entry;
+	desc->at_clktck = sysconf(_SC_CLK_TCK);
 
 	return desc;
 }

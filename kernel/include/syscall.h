@@ -119,6 +119,7 @@ struct program_load_desc {
 	unsigned long at_phent;
 	unsigned long at_phnum;
 	unsigned long at_entry;
+	unsigned long at_clktck;
 	char *args;
 	unsigned long args_len;
 	char *envs;
