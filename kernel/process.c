@@ -1396,6 +1396,8 @@ int init_process_stack(struct process *process, struct program_load_desc *pn,
 	p[s_ind--] = AT_PHDR;	
 	p[s_ind--] = 4096; /* AT_PAGESZ */
 	p[s_ind--] = AT_PAGESZ;
+	p[s_ind--] = pn->at_clktck; /* AT_CLKTCK */
+	p[s_ind--] = AT_CLKTCK;
 	p[s_ind--] = 0;     /* envp terminating NULL */
 	/* envp */
 	for (arg_ind = envc - 1; arg_ind > -1; --arg_ind) {
