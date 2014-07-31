@@ -72,21 +72,31 @@ int obtain_clone_cpuid() {
  retry:
     /* Try to obtain next physical core */
     cpuid = cpuid_head;
-    cpuid_head += 4;
+
+    /* A hyper-threading core on the same physical core as
+       the parent process might be chosen. Use sched_setaffinity
+       if you want to skip that kind of busy physical core for
+       performance reason. */
+    cpuid_head += 1;
     if(cpuid_head >= cpu_info->ncpus) {
-        cpuid_head = ((cpuid_head % 4) + 1) % 4;
+        cpuid_head = 0;
     }
-    /* Don't use a physical core with a system process (e.g. MPI)
-       because using it degrades performance */
-    if((cpu_info->ncpus - 3 <= cpuid && cpuid <= cpu_info->ncpus - 1) ||
-       get_cpu_local_var(cpuid)->status != CPU_STATUS_IDLE) {
+
+    /* A hyper-threading core whose parent physical core has a
+       process on one of its hyper-threading core might
+       be chosen. Use sched_setaffinity if you want to skip that
+       kind of busy physical core for performance reason. */
+    if(get_cpu_local_var(cpuid)->status != CPU_STATUS_IDLE) {
         nretry++;
         if(nretry >= cpu_info->ncpus) {
-            panic("there is no cpu with empty runq\n");
+            cpuid = -1;
+            ihk_mc_spinlock_unlock_noirq(&cpuid_head_lock);
+            goto out;
         }
         goto retry; 
     }
     ihk_mc_spinlock_unlock_noirq(&cpuid_head_lock);
+ out:
     return cpuid;
 }
 
