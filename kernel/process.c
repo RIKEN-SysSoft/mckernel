@@ -1385,8 +1385,8 @@ int init_process_stack(struct process *process, struct program_load_desc *pn,
 	p = (unsigned long *)(stack + minsz);
 	s_ind = -1;
 	/* auxiliary vector */
-	/* If you add/delete entires, then AUXV_LEN should be 
-	   increased/decreased. */
+	/* If you add/delete entires, please increase/decrease
+	   AUXV_LEN in include/process.h. */
 	p[s_ind--] = 0;     /* AT_NULL */
 	p[s_ind--] = 0;
 	p[s_ind--] = pn->at_entry; /* AT_ENTRY */
@@ -1401,7 +1401,7 @@ int init_process_stack(struct process *process, struct program_load_desc *pn,
 	p[s_ind--] = AT_PAGESZ;
 	p[s_ind--] = pn->at_clktck; /* AT_CLKTCK */
 	p[s_ind--] = AT_CLKTCK;
-	/* save auxiliary vector for core dump */
+	/* Save auxiliary vector for later use. */
 	memcpy(process->saved_auxv, &p[s_ind + 1], 
 	       sizeof(process->saved_auxv));
 	p[s_ind--] = 0;     /* envp terminating NULL */
