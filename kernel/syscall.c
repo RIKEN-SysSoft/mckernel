@@ -1290,6 +1290,9 @@ SYSCALL_DECLARE(clone)
 			 (unsigned long)ihk_mc_syscall_sp(ctx));
 
 	cpuid = obtain_clone_cpuid();
+    if (cpuid == -1) {
+        return -EAGAIN;
+    }
 
 	new = clone_process(cpu_local_var(current), ihk_mc_syscall_pc(ctx),
 	                    ihk_mc_syscall_arg1(ctx) ? ihk_mc_syscall_arg1(ctx) :
