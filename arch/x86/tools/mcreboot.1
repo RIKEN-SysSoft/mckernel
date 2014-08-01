@@ -1,0 +1,36 @@
+.\" Man page for McKernel
+.\"   mcreboot
+.\"
+.\" Copyright (C) 2013 The University of Tokyo, Japan
+.\"	Written by Yutaka Ishikawa <ishikawa@is.s.u-tokyo.ac.jp>
+.\"
+.TH MCREBOOT 1 "2013-11-18" "Version 0.9.0" MCKERNEL 0.9.0"
+.SH NAME
+mcreboot \- a script to boot/reboot the McKernel environment
+.\"
+
+.\" ----------------------------  SYNOPSIS ----------------------------
+.SH SYNOPSIS
+mcreboot
+
+.BR
+.\" ----------------------------  DESCRIPTION ----------------------------
+.SH DESCRIPTION
+The mcreboot command, executed by the root privileged mode, shutdowns
+the MPSS environment if it is running, and then initializes the
+McKernel environment.
+
+.\" ----------------------------  FILES ----------------------------
+.SH FILES
+.LP
+.I mcctrl, 
+.I ihk_mic, 
+.I ihk
+
+.\" ----------------------------  SEE ALSO ----------------------------
+.SH SEE ALSO
+ihkosctl (1)
+
+.\" ----------------------------  AUTHORS ----------------------------
+.SH AUTHORS
+Copyright (C) 2013 McKernel Development Team, The University of Tokyo, Japan

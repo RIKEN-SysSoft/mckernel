@@ -1,0 +1,112 @@
+#!/bin/bash
+
+# \file arch/x86/tools/mcreboot-attached-mic.sh.in
+#  License details are found in the file LICENSE.
+# \brief
+#  mckernel boot script
+# \author Masamichi Takagi  <m-takagi@ab.jp.nec.com> \par
+#      Copyright (C) 2013  NEC Corporation
+# \author Tomoki Shirasawa  <tomoki.shirasawa.kk@hitachi-solutions.com> \par
+#      Copyright (C) 2012 - 2013 Hitachi, Ltd.
+
+# HISTORY:
+#
+
+prefix="/opt/ppos"
+BINDIR="/opt/ppos/bin"
+SBINDIR="/opt/ppos/sbin"
+KMODDIR="/opt/ppos/kmod"
+KERNDIR="/opt/ppos/attached/kernel"
+
+if ! lspci | grep 'Co-processor.*Intel Corporation' > /dev/null 2>&1; then
+	echo No Intel co-processor found. >&2
+	exit 1
+fi
+
+echo "removing kernel modules..." >&2
+modules_were_loaded="0"
+
+if [ "`service mpss status 2> /dev/null`" != "mpss is stopped" ]; then
+	modules_were_loaded="1"
+	sudo service mpss stop
+fi
+if lsmod | awk 'BEGIN{rc=1}$1 == "mic"{rc=0}END{exit(rc)}'; then
+	modules_were_loaded="1"
+	sudo service mpss unload
+fi
+
+"$SBINDIR/ihkosctl" 0 shutdown
+
+for mod_name in mcctrl ihk_mic ihk; do
+	if lsmod | awk 'BEGIN{rc=1}$1 == "'"$mod_name"'"{rc=0}END{exit(rc)}'; then
+		modules_were_loaded="1"
+		echo "rmmod $mod_name" >&2
+		if rmmod $mod_name; then
+			echo "$mod_name removed succesfully" >&2
+			sleep 1
+		else
+			echo "ERROR: couldn't remove $mod_name" >&2
+			exit 1
+		fi
+	fi
+done
+
+echo "removing kernel modules done" >&2
+
+if [ "$1" == "-u" ]; then
+	exit
+fi
+
+wait_time=10
+
+if [ "$modules_were_loaded" == "1" ]; then
+	echo "waiting for ${wait_time} seconds: " >&2
+	while [ "$wait_time" != 0 ]; do
+		echo -n "$wait_time " >&2
+		sleep 1
+		let wait_time=(${wait_time}-1)
+	done
+	echo "" >&2
+fi
+
+if [ "$1" == "-w" ]; then
+	shift 1
+	echo "press enter to continue" >&2
+	read enter_press
+fi
+
+
+for mod_path in "$KMODDIR/ihk.ko" "$KMODDIR/ihk_mic.ko" "$KMODDIR/mcctrl.ko"; do
+	if insmod $mod_path; then
+		sleep 1
+		echo "$mod_path inserted succesfully" >&2
+	else
+		echo "ERROR: couldn't insert $mod_path" >&2
+		exit 1
+	fi
+
+	if [ "$mod_path" == "$KMODDIR/ihk_mic.ko" ]; then
+		echo "creating OS device" >&2
+		sleep 1
+		"$SBINDIR/ihkconfig" 0 create
+		sleep 1
+	fi
+	
+	if [ "$mod_path" == "$KMODDIR/mcctrl.ko" ]; then
+		if [ $# -gt 0 ]; then
+			echo "setting kernel parameter to: \"$1\"" >&2
+			"$SBINDIR/ihkosctl" 0 kargs "$1"
+			sleep 1
+		else
+			echo "setting kernel parameter to: \"hidos\"" >&2
+			"$SBINDIR/ihkosctl" 0 kargs "hidos"
+			sleep 1
+		fi
+		echo "using kernel image: $KERNDIR/mckernel.img" >&2
+		"$SBINDIR/ihkosctl" 0 load "$KERNDIR/mckernel.img"
+		sleep 1
+		echo "booting OS 0" >&2
+		"$SBINDIR/ihkosctl" 0 boot
+		sleep 1
+	fi
+done
