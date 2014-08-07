@@ -405,6 +405,19 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	pfn = phys >> PAGE_SHIFT;
 #if USE_VM_INSERT_PFN
 	for (pix = 0; pix < (pgsize / PAGE_SIZE); ++pix) {
+		struct page *page;
+
+		if (pfn_valid(pfn+pix)) {
+			page = pfn_to_page(pfn+pix);
+			if (!page_count(page)) {
+				get_page(page);
+			}
+			error = vm_insert_page(vma, rva+(pix*PAGE_SIZE), page);
+			if (error) {
+				printk("vm_insert_page: %d\n", error);
+			}
+		}
+		else
 		error = vm_insert_pfn(vma, rva+(pix*PAGE_SIZE), pfn+pix);
 		if (error) {
 			break;
