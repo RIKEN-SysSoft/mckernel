@@ -344,16 +344,28 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p)
 	char *interp_path;
 	struct program_load_desc *desc;
 	int ret = 0;
+	struct stat sb;
 
 	if ((ret = access(filename, X_OK)) != 0) {
-		fprintf(stderr, "Error: %s is not an executable?\n", filename);
-		return ret;
+		fprintf(stderr, "Error: %s is not an executable?, errno: %d\n", 
+			filename, errno);
+		return errno;
+	}
+	
+	if ((ret = stat(filename, &sb)) == -1) {
+		fprintf(stderr, "Error: failed to stat %s\n", filename);
+		return errno;
+	}
+	
+	if (sb.st_size == 0) {
+		fprintf(stderr, "Error: file %s is zero length\n", filename);
+		return ENOEXEC;
 	}
 
 	fp = fopen(filename, "rb");
 	if (!fp) {
 		fprintf(stderr, "Error: Failed to open %s\n", filename);
-		return 1;
+		return errno;
 	}
 
 	desc = load_elf(fp, &interp_path);
@@ -1249,6 +1261,11 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 						if (!PATH) {
 							PATH = getenv("PATH");
 						}
+
+						if (strlen(filename) >= 255) {
+							ret = ENAMETOOLONG;
+							goto return_execve1;
+						}
 						
 						__dprintf("PATH: %s\n", PATH);
 
@@ -1278,7 +1295,15 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 						free(tofree);
 					}
 					else {
-						error = snprintf(path, sizeof(path), "%s", filename);
+						char *root = getenv("COKERNEL_EXEC_ROOT");
+						
+						if (root) {
+							error = snprintf(path, sizeof(path), "%s/%s", root, filename);
+						}
+						else {
+							error = snprintf(path, sizeof(path), "%s", filename);
+						}
+
 						if (error < 0 || error >= sizeof(path)) {
 							fprintf(stderr, "execve(): array too small?\n");
 							goto return_execve1;
@@ -1290,6 +1315,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 					if (!found) {
 						fprintf(stderr, 
 							"execve(): error finding file %s\n", filename);
+						ret = ENOENT;
 						goto return_execve1;
 					}
 

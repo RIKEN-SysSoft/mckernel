@@ -1188,6 +1188,21 @@ SYSCALL_DECLARE(execve)
 	
 	struct syscall_request request IHK_DMA_ALIGN;
 	struct program_load_desc *desc;
+	struct process_vm *vm = cpu_local_var(current)->vm;
+	struct vm_range *range;
+
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+
+	range = lookup_process_memory_range(vm, (unsigned long)filename, 
+			(unsigned long)filename+1);
+
+	if (range == NULL || !(range->flag & VR_PROT_READ)) {
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		kprintf("execve(): ERROR: filename is bad address\n");
+		return -EFAULT;
+	}
+	
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 
 	desc = ihk_mc_alloc_pages(1, IHK_MC_AP_NOWAIT);
 	if (!desc) {
@@ -1205,8 +1220,9 @@ SYSCALL_DECLARE(execve)
 	ret = do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0);
 
 	if (ret != 0) {
-		kprintf("execve(): ERROR: host failed to load elf header\n");
-		return -EINVAL;
+		kprintf("execve(): ERROR: host failed to load elf header, errno: %d\n", 
+				ret);
+		return -ret;
 	}
 
 	dkprintf("execve(): ELF desc received, num sections: %d\n",
