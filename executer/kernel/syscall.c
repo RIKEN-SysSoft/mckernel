@@ -1138,13 +1138,16 @@ out:
 	return (IS_ERR_VALUE(map))? (int)map: 0;
 }
 
-static void clear_pte_range(uintptr_t start, uintptr_t len)
+static int clear_pte_range(uintptr_t start, uintptr_t len)
 {
 	struct mm_struct *mm = current->mm;
 	struct vm_area_struct *vma;
 	uintptr_t addr;
 	uintptr_t end;
+	int error;
+	int ret;
 
+	ret = 0;
 	down_read(&mm->mmap_sem);
 	addr = start;
 	while (addr < (start + len)) {
@@ -1161,14 +1164,15 @@ static void clear_pte_range(uintptr_t start, uintptr_t len)
 			end = vma->vm_end;
 		}
 		if (addr < end) {
-			zap_vma_ptes(vma, addr, end-addr);
-			dprintk("clear_pte_range() 0x%lx - 0x%lx OK\n", 
-					vma->vm_start, vma->vm_end);
+			error = zap_vma_ptes(vma, addr, end-addr);
+			if (ret == 0) {
+				ret = error;
+			}
 		}
 		addr = end;
 	}
 	up_read(&mm->mmap_sem);
-	return;
+	return ret;
 }
 
 /**
@@ -1306,8 +1310,11 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 				ppd->pid, ppd->rpgtable);
 		}
 
-		clear_pte_range(sc->args[0], sc->args[1]);
-		ret = 0;
+		error = clear_pte_range(sc->args[0], sc->args[1]);
+		if (error) {
+			error = -ENOSYS;
+			goto out;
+		}
 		break;
 
 	case __NR_mprotect:

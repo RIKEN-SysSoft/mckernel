@@ -1157,10 +1157,14 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			return w.sr.args[0];
 
 		case __NR_mmap:
-		case __NR_munmap:
 		case __NR_mprotect:
 			/* reserved for internal use */
 			do_syscall_return(fd, cpu, -ENOSYS, 0, 0, 0, 0);
+			break;
+
+		case __NR_munmap:
+			ret = madvise((void *)w.sr.args[0], w.sr.args[1], MADV_DONTNEED);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 
 #ifdef USE_SYSCALL_MOD_CALL
