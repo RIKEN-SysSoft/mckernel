@@ -27,6 +27,7 @@
 #include <linux/miscdevice.h>
 #include <linux/slab.h>
 #include <linux/string.h>
+#include <linux/proc_fs.h>
 #include "mcctrl.h"
 #ifdef ATTACHED_MIC
 #include <sysdeps/mic/mic/micconst.h>
@@ -38,9 +39,21 @@
 
 //struct mcctrl_channel *channels;
 
+DECLARE_WAIT_QUEUE_HEAD(procfs)
+
 void mcexec_prepare_ack(ihk_os_t os, unsigned long arg, int err);
 static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ihk_ikc_channel_desc *c);
 int mcexec_syscall(struct mcctrl_channel *c, int pid, unsigned long arg);
+
+int mckernel_procfs_read(char *buffer, char **start, off_t offset,
+			 int count, int *peof, void *dat);
+
+/* A private data for the procfs driver. */
+struct procfs_data {
+	int os;
+	int cpu;
+	char fname[PROCFS_NAME_MAX];
+}
 
 static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *__os)
@@ -63,6 +76,20 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 
 	case SCD_MSG_SYSCALL_ONESIDE:
 		mcexec_syscall(usrdata->channels + pisp->ref, pisp->pid, pisp->arg);
+		break;
+	case SCD_MSG_PROCFS_CREATE:
+		/* create procfs entry */
+		/* register callback function */
+		/* xxx */
+		break;
+	case SCD_MSG_PROCFS_DELETE:
+		/* deregister callback function */
+		/* delete procfs entry */
+		/* xxx */
+		break;
+	case SCD_MSG_PROCFS_ANSWER:
+		/* wakeup processing thread */
+		/* xxx */
 		break;
 	}
 
@@ -350,4 +377,38 @@ void destroy_ikc_channels(ihk_os_t os)
 
 	kfree(usrdata->channels);
 	kfree(usrdata);
+}
+
+/*
+ * callback funciton for McKernel procfs
+ *
+ * This function conforms to the 2) way of fs/proc/generic.c
+ * from linux-2.6.39.4.
+ */
+
+int mckernel_procfs_read(char *buffer, char **start, off_t offset,
+			 int count, int *peof, void *dat)
+{
+	struct procfs_data *data = dat;
+	struct procfs_read *r;
+	struct ikc_scd_packet isp;
+
+	r = kmalloc(sizeof(struct procfs_read));
+	if (r == NULL) {
+		/* what is the proper way to error? */
+		return -1;
+	}
+	r->pbuf = virt_to_phys(buffer);
+	r->offset = offset;
+	r->count = count;
+	strncpy(r->fname, dat->fname, PROCFS_NAME_MAX);
+	
+	isp.msg = SCD_MSG_PROCFS_REQUEST;
+	isp.ref = dat->cpu;
+	isp.arg = virt_to_phys(r);
+
+	/* send request to the McKernel and sleep */
+	/* wake up and return the result */
+
+	return 0;
 }

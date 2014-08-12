@@ -49,6 +49,11 @@
 #define SCD_MSG_SYSCALL_ONESIDE         0x4
 #define SCD_MSG_SEND_SIGNAL     	0x8
 
+#define	SCD_MSG_PROCFS_CREATE		0x10
+#define	SCD_MSG_PROCFS_DELETE		0x11
+#define	SCD_MSG_PROCFS_REQUEST		0x12
+#define	SCD_MSG_PROCFS_ANSWER		0x13
+
 #define DMA_PIN_SHIFT                   21
 
 #define DO_USER_MODE
@@ -151,5 +156,14 @@ int register_peer_channel(struct mcctrl_usrdata *ud, void *key, struct mcctrl_ch
 int deregister_peer_channel(struct mcctrl_usrdata *ud, void *key, struct mcctrl_channel *ch);
 struct mcctrl_channel *get_peer_channel(struct mcctrl_usrdata *ud, void *key);
 int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall_request *sc);
+
+struct procfs_read {
+	unsigned long int pbuf;	/* physical address of the host buffer (request) */
+	int offset;		/* offset to read (request) */
+	int count;		/* bytes to read (request) */
+	int eof;		/* if eof is detected, 1 otherwise 0. (answer)*/
+	int return;		/* read bytes (answer) */
+	char fname[PROCFS_NAME_MAX];	/* procfs filename (request) */
+}
 
 #endif
