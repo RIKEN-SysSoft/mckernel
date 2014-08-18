@@ -2088,7 +2088,7 @@ void ihk_mc_reserve_arch_pages(unsigned long start, unsigned long end,
 	/* Reserve Text + temporal heap */
 	cb(virt_to_phys(_head), virt_to_phys(get_last_early_heap()), 0);
 	/* Reserve trampoline area to boot the second ap */
-	cb(AP_TRAMPOLINE, AP_TRAMPOLINE + AP_TRAMPOLINE_SIZE, 0);
+	cb(ap_trampoline, ap_trampoline + AP_TRAMPOLINE_SIZE, 0);
 	/* Reserve the null page */
 	cb(0, PAGE_SIZE, 0);
 	/* Micro-arch specific */

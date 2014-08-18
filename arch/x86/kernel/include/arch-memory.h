@@ -246,7 +246,8 @@ void flush_tlb_single(unsigned long addr);
 
 void *map_fixed_area(unsigned long phys, unsigned long size, int uncachable);
 
-#define AP_TRAMPOLINE       0x10000
+extern unsigned long ap_trampoline;
+//#define AP_TRAMPOLINE       0x10000
 #define AP_TRAMPOLINE_SIZE  0x4000
 
 /* Local is cachable */

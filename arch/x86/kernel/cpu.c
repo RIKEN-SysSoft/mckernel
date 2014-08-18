@@ -266,8 +266,8 @@ void ihk_mc_init_ap(void)
 {
 	struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
 
-	trampoline_va = map_fixed_area(AP_TRAMPOLINE, AP_TRAMPOLINE_SIZE,
-	                               0);
+	trampoline_va = map_fixed_area(ap_trampoline, AP_TRAMPOLINE_SIZE, 0);
+	kprintf("trampoline area: 0x%lx \n", ap_trampoline);
 	first_page_va = map_fixed_area(0, PAGE_SIZE, 0);
 
 	kprintf("# of cpus : %d\n", cpu_info->ncpus);
@@ -607,7 +607,7 @@ void ihk_mc_boot_cpu(int cpuid, unsigned long pc)
 
 	cpu_boot_status = 0;
 
-	__x86_wakeup(cpuid, AP_TRAMPOLINE);
+	__x86_wakeup(cpuid, ap_trampoline);
 
 	/* XXX: Time out */
 	while (!cpu_boot_status) {
