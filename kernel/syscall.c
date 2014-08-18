@@ -98,6 +98,7 @@ void do_signal(long rc, void *regs, struct process *proc, struct sig_pending *pe
 extern unsigned long do_kill(int pid, int tid, int sig);
 int copy_from_user(struct process *, void *, const void *, size_t);
 int copy_to_user(struct process *, void *, const void *, size_t);
+void do_setpgid(int, int);
 
 int prepare_process_ranges_args_envs(struct process *proc, 
 		struct program_load_desc *pn,
@@ -1318,6 +1319,8 @@ SYSCALL_DECLARE(clone)
 		return -ENOMEM;
 	}
 
+	new->pgid = cpu_local_var(current)->pgid;
+
 	cpu_set(cpuid, &new->vm->cpu_set, &new->vm->cpu_set_lock);
 
 	if (clone_flags & CLONE_VM) {
@@ -1430,10 +1433,28 @@ SYSCALL_DECLARE(kill)
 SYSCALL_DECLARE(tgkill)
 {
 	int tgid = ihk_mc_syscall_arg0(ctx);
-	int pid = ihk_mc_syscall_arg1(ctx);
+	int tid = ihk_mc_syscall_arg1(ctx);
 	int sig = ihk_mc_syscall_arg2(ctx);
 
-	return do_kill(tgid, pid, sig);
+	if(tid <= 0)
+		return -EINVAL;
+	if(tgid <= 0 && tgid != -1)
+		return -EINVAL;
+
+	return do_kill(tgid, tid, sig);
+}
+
+SYSCALL_DECLARE(setpgid)
+{
+	int pid = ihk_mc_syscall_arg0(ctx);
+	int pgid = ihk_mc_syscall_arg1(ctx);
+	long rc;
+
+	rc = syscall_generic_forwarding(__NR_setpgid, ctx);
+	if(rc == 0){
+		do_setpgid(pid, pgid);
+	}
+	return rc;
 }
 
 SYSCALL_DECLARE(set_robust_list)

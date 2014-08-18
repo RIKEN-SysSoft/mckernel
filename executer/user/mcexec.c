@@ -215,6 +215,7 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 		}
 	}
 	desc->pid = getpid();
+	desc->pgid = getpgid(0);
 	desc->entry = hdr.e_entry;
 
 	desc->at_phdr = load_addr + hdr.e_phoff;

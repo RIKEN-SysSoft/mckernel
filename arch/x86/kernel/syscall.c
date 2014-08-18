@@ -160,6 +160,34 @@ extern void interrupt_syscall(int all, int pid);
 extern int num_processors;
 
 void
+do_setpgid(int pid, int pgid)
+{
+	struct cpu_local_var *v;
+	struct process *p;
+	struct process *proc = cpu_local_var(current);
+	int i;
+	unsigned long irqstate;
+
+	if(pid == 0)
+		pid = proc->pid;
+	if(pgid == 0)
+		pgid = pid;
+
+	for(i = 0; i < num_processors; i++){
+		v = get_cpu_local_var(i);
+		irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
+		list_for_each_entry(p, &(v->runq), sched_list){
+			if(p->pid <= 0)
+				continue;
+			if(p->pid == pid){
+				p->pgid = pgid;
+			}
+		}
+		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+	}
+}
+
+void
 do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pending *pending)
 {
 	struct x86_regs *regs = regs0;
@@ -319,6 +347,52 @@ do_kill(int pid, int tid, int sig)
 	if(sig > 64 || sig < 0)
 		return -EINVAL;
 
+	if(tid == -1 && pid <= 0){
+		int	pgid = -pid;
+		int	rc = -ESRCH;
+		int	*pids;
+		int	i;
+		int	n = 0;
+		int	sendme = 0;
+
+		pids = kmalloc(sizeof(int) * num_processors, IHK_MC_AP_NOWAIT);
+		if(!pids)
+			return -ENOMEM;
+		if(pid == 0)
+			pgid = proc->pgid;
+		for(i = 0; i < num_processors; i++){
+			v = get_cpu_local_var(i);
+			irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
+			list_for_each_entry(p, &(v->runq), sched_list){
+				if(p->pid <= 0)
+					continue;
+				if(p->pid == proc->pid){
+					sendme = 1;
+					continue;
+				}
+				if(pgid == 1 || p->pgid == pgid){
+					int	j;
+
+					for(j = 0; j < n; j++)
+						if(pids[j] == p->pid)
+							break;
+					if(j == n){
+						pids[n] = p->pid;
+						n++;
+					}
+				}
+			}
+			ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+		}
+		for(i = 0; i < n; i++)
+			rc = do_kill(pids[i], -1, sig);
+		if(sendme)
+			rc = do_kill(proc->pid, -1, sig);
+
+		kfree(pids);
+		return rc;
+	}
+
 	mask = __sigmask(sig);
 	if(tid == -1){
 		struct process *tproc0 = NULL;
@@ -380,7 +454,6 @@ do_kill(int pid, int tid, int sig)
 	}
 	if(sig == 0)
 		return 0;
-
 
 	doint = 0;
 	if(tid == -1){

@@ -70,6 +70,7 @@ struct program_load_desc {
 	int pid;
 	int err;
 	int stack_prot;
+	int pgid;
 	unsigned long entry;
 	unsigned long user_start;
 	unsigned long user_end;

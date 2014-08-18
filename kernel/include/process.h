@@ -194,6 +194,7 @@ struct process {
 
 	cpu_set_t cpu_set;
 	unsigned long saved_auxv[AUXV_LEN];
+	int pgid;	/* process group id */
 };
 
 struct process_vm {

@@ -391,6 +391,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	}
 	proc->pid = pn->pid;
 	proc->tid = pn->pid;
+	proc->pgid = pn->pgid;
 	proc->ftn->pid = pn->pid;
 	proc->vm->region.user_start = pn->user_start;
 	proc->vm->region.user_end = pn->user_end;
