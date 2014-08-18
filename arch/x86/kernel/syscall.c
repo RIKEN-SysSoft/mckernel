@@ -309,6 +309,8 @@ do_kill(int pid, int tid, int sig)
 	struct list_head *head;
 	int rc;
 	unsigned long irqstate;
+	struct k_sigaction *k;
+	int doint;
 
 	if(proc == NULL || proc->pid == 0){
 		return -ESRCH;
@@ -317,27 +319,30 @@ do_kill(int pid, int tid, int sig)
 	if(sig > 64 || sig < 0)
 		return -EINVAL;
 
+	mask = __sigmask(sig);
 	if(tid == -1){
-		if(pid == -1)
-			return -EPERM;
-		if(proc->pid == -pid)
-			pid = -pid;
+		struct process *tproc0 = NULL;
+
 		if(pid == proc->pid || pid == 0){
-			tproc = proc;
+			tproc0 = proc;
 		}
-		else{
-			for(i = 0; i < num_processors; i++){
-				v = get_cpu_local_var(i);
-				irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
-				list_for_each_entry(p, &(v->runq), sched_list){
-					if(p->pid == pid){
-						tproc = p;
-						break;
+		for(i = 0; i < num_processors; i++){
+			v = get_cpu_local_var(i);
+			irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
+			list_for_each_entry(p, &(v->runq), sched_list){
+				if(p->pid == pid){
+					if(p->tid == pid || tproc0 == NULL)
+						tproc0 = p;
+					if(mask & p->sigmask.__val[0]){
+						if(p->tid == pid || tproc == NULL)
+							tproc = p;
 					}
 				}
-				ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 			}
+			ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 		}
+		if(tproc == NULL)
+			tproc = tproc0;
 	}
 	else if(pid == -1){
 		for(i = 0; i < num_processors; i++){
@@ -376,6 +381,8 @@ do_kill(int pid, int tid, int sig)
 	if(sig == 0)
 		return 0;
 
+
+	doint = 0;
 	if(tid == -1){
 		irqstate = ihk_mc_spinlock_lock(&tproc->sigshared->lock);
 		head = &tproc->sigshared->sigpending;
@@ -384,38 +391,47 @@ do_kill(int pid, int tid, int sig)
 		irqstate = ihk_mc_spinlock_lock(&tproc->sigpendinglock);
 		head = &tproc->sigpending;
 	}
-	mask = __sigmask(sig);
-	pending = NULL;
-	rc = 0;
-	if(sig < 33){ // SIGRTMIN - SIGRTMAX
-		list_for_each_entry(pending, head, list){
-			if(pending->sigmask.__val[0] == mask)
-				break;
+
+	k = tproc->sighandler->action + sig - 1;
+	if(k->sa.sa_handler != (void *)1 &&
+	   (k->sa.sa_handler != NULL ||
+	    (sig != SIGCHLD && sig != SIGURG))){
+		pending = NULL;
+		rc = 0;
+		if(sig < 33){ // SIGRTMIN - SIGRTMAX
+			list_for_each_entry(pending, head, list){
+				if(pending->sigmask.__val[0] == mask)
+					break;
+			}
+			if(&pending->list == head)
+				pending = NULL;
 		}
-		if(&pending->list == head)
-			pending = NULL;
+		if(pending == NULL){
+			doint = 1;
+			pending = kmalloc(sizeof(struct sig_pending), IHK_MC_AP_NOWAIT);
+			pending->sigmask.__val[0] = mask;
+			if(!pending){
+				rc = -ENOMEM;
+			}
+			else{
+				list_add_tail(&pending->list, head);
+				tproc->sigevent = 1;
+			}
+		}
 	}
-	if(pending == NULL){
-		pending = kmalloc(sizeof(struct sig_pending), IHK_MC_AP_NOWAIT);
-		pending->sigmask.__val[0] = mask;
-		if(!pending){
-			rc = -ENOMEM;
-		}
-		else{
-			list_add_tail(&pending->list, head);
-			tproc->sigevent = 1;
-		}
-	}
+
 	if(tid == -1){
 		ihk_mc_spinlock_unlock(&tproc->sigshared->lock, irqstate);
 	}
 	else{
 		ihk_mc_spinlock_unlock(&tproc->sigpendinglock, irqstate);
 	}
-	if(proc != tproc){
-		ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(tproc->cpu_id)->apic_id, 0xd0);
+	if(doint && !(mask & tproc->sigmask.__val[0])){
+		if(proc != tproc){
+			ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(tproc->cpu_id)->apic_id, 0xd0);
+		}
+		interrupt_syscall(tproc->pid, tproc->cpu_id);
 	}
-	interrupt_syscall(1, tproc->pid);
 	return rc;
 }
 

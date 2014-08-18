@@ -129,7 +129,7 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid)
 		 * exit/receive signals at the same time?? */
 		cpu = num_processors;
 		if(req->number == __NR_kill)
-			pid = req->args[2];
+			pid = req->args[0];
 	}
 	else{
 		scp = &get_cpu_local_var(cpu)->scp;
@@ -454,14 +454,13 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 }
 
 void
-interrupt_syscall(int all, int pid)
+interrupt_syscall(int pid, int cpuid)
 {
 	ihk_mc_user_context_t ctx;
 	long lerror;
 
-	ihk_mc_syscall_arg0(&ctx) = all? -1: ihk_mc_get_processor_id();
-	ihk_mc_syscall_arg1(&ctx) = 0;
-	ihk_mc_syscall_arg2(&ctx) = pid;
+	ihk_mc_syscall_arg0(&ctx) = pid;
+	ihk_mc_syscall_arg1(&ctx) = cpuid;
 
 	lerror = syscall_generic_forwarding(__NR_kill, &ctx);
 	if (lerror) {

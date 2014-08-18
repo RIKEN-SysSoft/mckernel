@@ -1111,7 +1111,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			break;
 
 		case __NR_kill: // interrupt syscall
-			kill_thread(w.sr.args[0]);
+			kill_thread(w.sr.args[1]);
 			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
 			break;
 		case __NR_exit:
