@@ -1398,6 +1398,14 @@ return_execve2:
 			break;
 		}
 
+		case __NR_close:
+			if(w.sr.args[0] == fd)
+				ret = -EBADF;
+			else
+				ret = do_generic_syscall(&w);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+
 		default:
 			 ret = do_generic_syscall(&w);
 			 do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
