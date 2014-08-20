@@ -1661,6 +1661,8 @@ void destroy_process(struct process *proc)
 	struct sig_pending *pending;
 	struct sig_pending *next;
 
+	delete_proc_procfs_files(proc->pid);
+
 	if (proc->vm) {
 		cpu_clear(proc->cpu_id, &proc->vm->cpu_set, &proc->vm->cpu_set_lock);
 	}
@@ -2033,6 +2035,8 @@ void runq_add_proc(struct process *proc, int cpu_id)
 	irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 	__runq_add_proc(proc, cpu_id);
 	ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+
+	create_proc_procfs_files(proc->pid, cpu_id);
 
 	/* Kick scheduler */
 	if (cpu_id != ihk_mc_get_processor_id())

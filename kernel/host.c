@@ -416,6 +416,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	ihk_mc_unmap_virtual(p, npages, 1);
 	ihk_mc_unmap_memory(NULL, phys, sz);
 	flush_tlb();
+
 	return 0;
 err:
 	ihk_mc_free(pn);
@@ -499,6 +500,8 @@ static void syscall_channel_send(struct ihk_ikc_channel_desc *c,
 extern unsigned long do_kill(int, int, int);
 extern void settid(struct process *proc, int mode, int newcpuid, int oldcpuid);
 
+extern void process_procfs_request(unsigned long rarg);
+
 static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *ihk_os)
 {
@@ -540,6 +543,9 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	case SCD_MSG_SEND_SIGNAL:
 		rc = do_kill((int)packet->pid, (int)(packet->arg >> 32), packet->arg & 0x00000000ffffffffL);
 		kprintf("SCD_MSG_SEND_SIGNAL: %lx, rc=%d\n", packet->arg, rc);
+		return 0;
+	case SCD_MSG_PROCFS_REQUEST:
+		process_procfs_request(packet->arg);
 		return 0;
 	}
 	return 0;

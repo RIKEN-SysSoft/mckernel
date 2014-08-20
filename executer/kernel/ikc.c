@@ -28,6 +28,7 @@
 #include <linux/slab.h>
 #include <linux/string.h>
 #include <linux/proc_fs.h>
+#include <linux/list.h>
 #include "mcctrl.h"
 #ifdef ATTACHED_MIC
 #include <sysdeps/mic/mic/micconst.h>
@@ -39,21 +40,31 @@
 
 //struct mcctrl_channel *channels;
 
-DECLARE_WAIT_QUEUE_HEAD(procfs)
-
 void mcexec_prepare_ack(ihk_os_t os, unsigned long arg, int err);
 static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ihk_ikc_channel_desc *c);
 int mcexec_syscall(struct mcctrl_channel *c, int pid, unsigned long arg);
+
+static DECLARE_WAIT_QUEUE_HEAD(procfsq);
+static unsigned long procfsq_channel;
 
 int mckernel_procfs_read(char *buffer, char **start, off_t offset,
 			 int count, int *peof, void *dat);
 
 /* A private data for the procfs driver. */
 struct procfs_data {
-	int os;
+	ihk_os_t os;
+	int osnum;
+	int pid;
 	int cpu;
 	char fname[PROCFS_NAME_MAX];
-}
+};
+
+struct procfs_list_entry {
+	struct list_head list;
+	struct procfs_data *data;
+};
+
+LIST_HEAD(procfs_file_list);
 
 static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *__os)
@@ -78,18 +89,78 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		mcexec_syscall(usrdata->channels + pisp->ref, pisp->pid, pisp->arg);
 		break;
 	case SCD_MSG_PROCFS_CREATE:
-		/* create procfs entry */
-		/* register callback function */
-		/* xxx */
+	{
+		struct procfs_data *d;
+		unsigned long parg;
+		struct procfs_file *f;
+		struct proc_dir_entry *entry;
+		struct procfs_list_entry *e;
+		int mode;
+		ihk_device_t dev = ihk_os_to_dev(__os);
+
+		d = kmalloc(sizeof(struct procfs_data), GFP_KERNEL);
+		if (d == NULL) {
+			kprintf("ERROR: not enough memory to create PROCFS entry.\n");
+		}
+		d->osnum = pisp->osnum;
+		d->os = __os;
+		d->cpu = pisp->ref;
+		d->pid = pisp->pid;
+
+		parg = ihk_device_map_memory(dev, pisp->arg, sizeof(struct procfs_file));
+		f = ihk_device_map_virtual(dev, parg, sizeof(struct procfs_file), NULL, 0);
+		strncpy(d->fname, f->fname, PROCFS_NAME_MAX);
+		mode = f->mode;
+		f->status = 1; /* done */
+		ihk_device_unmap_virtual(dev, f, sizeof(struct procfs_file));
+		ihk_device_unmap_memory(dev, parg, sizeof(struct procfs_file));
+
+		entry = create_proc_entry(d->fname, mode, NULL);
+		if (entry == NULL) {
+			kprintf("ERROR: cannot create a PROCFS entry.\n");
+			kfree(d);
+			goto quit;
+		}
+		entry->data = d;
+		entry->read_proc = mckernel_procfs_read;
+
+		e = kmalloc(sizeof(struct procfs_list_entry), GFP_KERNEL);
+		if (e == NULL) {
+			kprintf("ERROR: not enough memory to create PROCFS entry.\n");
+			kfree(d);
+			goto quit;
+		}
+		e->data = d;
+		list_add(&(e->list), &procfs_file_list);
+	}
+	quit:
 		break;
 	case SCD_MSG_PROCFS_DELETE:
-		/* deregister callback function */
-		/* delete procfs entry */
-		/* xxx */
+	{
+		ihk_device_t dev = ihk_os_to_dev(__os);
+		unsigned long parg;
+		struct procfs_file *f;
+		struct procfs_list_entry *e;
+
+		parg = ihk_device_map_memory(dev, pisp->arg, sizeof(struct procfs_file));
+		f = ihk_device_map_virtual(dev, parg, sizeof(struct procfs_file), NULL, 0);
+		list_for_each_entry(e, &procfs_file_list, list) {
+			if (strncmp(e->data->fname, f->fname, PROCFS_NAME_MAX) == 0) {
+				list_del(&e->list);
+				kfree(e->data);
+				kfree(e);
+				break;
+			}
+		}
+		remove_proc_entry(f->fname, NULL);
+		ihk_device_unmap_virtual(dev, f, sizeof(struct procfs_file));
+		ihk_device_unmap_memory(dev, parg, sizeof(struct procfs_file));
+
+	}
 		break;
 	case SCD_MSG_PROCFS_ANSWER:
-		/* wakeup processing thread */
-		/* xxx */
+		procfsq_channel = pisp->arg;
+		wake_up(&procfsq);
 		break;
 	}
 
@@ -386,29 +457,56 @@ void destroy_ikc_channels(ihk_os_t os)
  * from linux-2.6.39.4.
  */
 
+static void *channel;
+
 int mckernel_procfs_read(char *buffer, char **start, off_t offset,
 			 int count, int *peof, void *dat)
 {
 	struct procfs_data *data = dat;
 	struct procfs_read *r;
 	struct ikc_scd_packet isp;
+	int ret;
+	unsigned long pbuf;
 
-	r = kmalloc(sizeof(struct procfs_read));
-	if (r == NULL) {
-		/* what is the proper way to error? */
-		return -1;
+	if (count <= 0 || dat == NULL) {
+		return 0;
 	}
-	r->pbuf = virt_to_phys(buffer);
+
+	pbuf = virt_to_phys(buffer);
+	if (pbuf / PAGE_SIZE != (pbuf + count - 1) / PAGE_SIZE) {
+		/* Truncate the read count upto the nearest page boundary */
+		count = ((pbuf + count - 1) / PAGE_SIZE) * PAGE_SIZE - pbuf;
+	}
+	r = kmalloc(sizeof(struct procfs_read), GFP_KERNEL);
+	if (r == NULL) {
+		return -ENOMEM;
+	}
+retry:
+	r->pbuf = pbuf;
+	r->eof = 0;
+	r->ret = 0;
 	r->offset = offset;
 	r->count = count;
-	strncpy(r->fname, dat->fname, PROCFS_NAME_MAX);
-	
+	strncpy(r->fname, data->fname, PROCFS_NAME_MAX);
 	isp.msg = SCD_MSG_PROCFS_REQUEST;
-	isp.ref = dat->cpu;
+	isp.ref = data->cpu;
 	isp.arg = virt_to_phys(r);
-
-	/* send request to the McKernel and sleep */
-	/* wake up and return the result */
-
-	return 0;
+	mcctrl_ikc_send(data->os, data->cpu, &isp);
+	channel = NULL;
+	/* Wait for a reply. */
+	wait_event_interruptible(procfsq, procfsq_channel == virt_to_phys(r));
+	/* Wake up and check the result. */
+	if ((r->ret == 0) && (r->eof != 1)) {
+		/* A miss-hit has occurred (caused by migration e.g.).
+		 * We simply retry the query. 
+		 */
+		goto retry;
+	}
+	if (r->eof == 1) {
+		*peof = 1;
+	}
+	ret = r->ret;
+	kfree(r);
+	
+	return ret;
 }

@@ -36,6 +36,11 @@
 #define SCD_MSG_SYSCALL_ONESIDE         0x4
 #define SCD_MSG_SEND_SIGNAL		0x8
 
+#define	SCD_MSG_PROCFS_CREATE		0x10
+#define	SCD_MSG_PROCFS_DELETE		0x11
+#define	SCD_MSG_PROCFS_REQUEST		0x12
+#define	SCD_MSG_PROCFS_ANSWER		0x13
+
 #define ARCH_SET_GS 0x1001
 #define ARCH_SET_FS 0x1002
 #define ARCH_GET_FS 0x1003
@@ -87,6 +92,7 @@ struct user_desc {
 struct ikc_scd_packet {
 	int msg;
 	int ref;
+	int osnum;
 	int pid;
 	int err;
 	unsigned long arg;
@@ -229,6 +235,28 @@ enum {
 struct coretable {		/* table entry for a core chunk */
 	int len;		/* length of the chunk */
 	unsigned long addr;	/* physical addr of the chunk */
+};
+
+void create_proc_procfs_files(int pid, int cpuid);
+void delete_proc_procfs_files(int pid);
+void create_os_procfs_files(void);
+void delete_os_procfs_files(void);
+
+#define PROCFS_NAME_MAX 1000
+
+struct procfs_read {
+	unsigned long pbuf;	/* physical address of the host buffer (request) */
+	unsigned long offset;	/* offset to read (request) */
+	int count;		/* bytes to read (request) */
+	int eof;		/* if eof is detected, 1 otherwise 0. (answer)*/
+	int ret;		/* read bytes (answer) */
+	char fname[PROCFS_NAME_MAX];	/* procfs filename (request) */
+};
+
+struct procfs_file {
+	int status;			/* status of processing (answer) */
+	int mode;			/* file mode (request) */
+	char fname[PROCFS_NAME_MAX];	/* procfs filename (request) */
 };
 
 #endif

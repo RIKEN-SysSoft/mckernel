@@ -68,6 +68,7 @@ struct coretable {
 struct ikc_scd_packet {
 	int msg;
 	int ref;
+	int osnum;
 	int pid;
 	int err;
 	unsigned long arg;
@@ -157,13 +158,21 @@ int deregister_peer_channel(struct mcctrl_usrdata *ud, void *key, struct mcctrl_
 struct mcctrl_channel *get_peer_channel(struct mcctrl_usrdata *ud, void *key);
 int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall_request *sc);
 
+#define PROCFS_NAME_MAX 1000
+
 struct procfs_read {
-	unsigned long int pbuf;	/* physical address of the host buffer (request) */
-	int offset;		/* offset to read (request) */
+	unsigned long pbuf;	/* physical address of the host buffer (request) */
+	unsigned long offset;	/* offset to read (request) */
 	int count;		/* bytes to read (request) */
 	int eof;		/* if eof is detected, 1 otherwise 0. (answer)*/
-	int return;		/* read bytes (answer) */
+	int ret;		/* read bytes (answer) */
 	char fname[PROCFS_NAME_MAX];	/* procfs filename (request) */
-}
+};
+
+struct procfs_file {
+	int status;			/* status of processing (answer) */
+	int mode;			/* file mode (request) */
+	char fname[PROCFS_NAME_MAX];	/* procfs filename (request) */
+};
 
 #endif

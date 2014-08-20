@@ -43,6 +43,7 @@
 #define dkprintf(...)
 #endif
 
+int osnum = 0;
 
 extern struct ihk_kmsg_buf kmsg_buf;
 
@@ -132,6 +133,16 @@ void pc_init(void)
                       APT_TYPE_LLC_MISS, // not updated for KNC
 	                  APT_TYPE_STALL, APT_TYPE_CYCLE }, // not updated for KNC
 	};
+
+	p = find_command_line("osnum=");
+	if (p != NULL) {
+		while (('0' <= *p) && (*p <= '9')) {
+			osnum *= 10;
+			osnum += *p++ - '0';
+		}
+	}
+	kprintf("osnum: %d\n");
+
 
 	if (!(p = find_command_line("perfctr"))) {
 		dkprintf("perfctr not initialized.\n");
