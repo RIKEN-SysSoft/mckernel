@@ -110,6 +110,8 @@ SYSCALL_DECLARE(rt_sigaction)
 	struct k_sigaction new_sa, old_sa;
 	int rc;
 
+	if(sig == SIGKILL || sig == SIGSTOP)
+		return -EINVAL;
 	if (sigsetsize != sizeof(sigset_t))
 		return -EINVAL;
 
