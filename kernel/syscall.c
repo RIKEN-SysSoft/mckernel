@@ -1612,7 +1612,7 @@ do_sigsuspend(struct process *proc, const sigset_t *set)
 
 	wset = set->__val[0];
 	wset &= ~__sigmask(SIGKILL);
-	wset &= ~__sigmask(SIGTERM);
+	wset &= ~__sigmask(SIGSTOP);
 	proc->sigmask.__val[0] = wset;
 
 	for(;;){
