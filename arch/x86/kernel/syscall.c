@@ -208,7 +208,7 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 		rc = regs->rax;
 	}
 
-	if(sig == SIGKILL || sig == SIGTERM)
+	if(sig == SIGKILL)
 		terminate(0, sig, (ihk_mc_user_context_t *)regs->rsp);
 
 	irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
