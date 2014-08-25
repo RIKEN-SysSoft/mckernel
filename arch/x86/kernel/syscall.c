@@ -338,9 +338,11 @@ do_kill(int pid, int tid, int sig)
 	struct sig_pending *pending;
 	struct list_head *head;
 	int rc;
-	unsigned long irqstate;
+	unsigned long irqstate = 0;
 	struct k_sigaction *k;
 	int doint;
+	ihk_spinlock_t *savelock = NULL;
+	int found = 0;
 
 	if(proc == NULL || proc->pid == 0){
 		return -ESRCH;
@@ -395,75 +397,106 @@ do_kill(int pid, int tid, int sig)
 		return rc;
 	}
 
+	irqstate = cpu_disable_interrupt_save();
 	mask = __sigmask(sig);
 	if(tid == -1){
 		struct process *tproc0 = NULL;
+		ihk_spinlock_t *savelock0 = NULL;
 
-		if(pid == proc->pid || pid == 0){
-			tproc0 = proc;
-		}
 		for(i = 0; i < num_processors; i++){
 			v = get_cpu_local_var(i);
-			irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
+			found = 0;
+			ihk_mc_spinlock_lock_noirq(&(v->runq_lock));
 			list_for_each_entry(p, &(v->runq), sched_list){
 				if(p->pid == pid){
-					if(p->tid == pid || tproc0 == NULL)
-						tproc0 = p;
-					if(mask & p->sigmask.__val[0]){
-						if(p->tid == pid || tproc == NULL)
+					if(p->tid == pid || tproc == NULL){
+						if(!(mask & p->sigmask.__val[0])){
 							tproc = p;
+							if(!found && savelock)
+								ihk_mc_spinlock_unlock_noirq(savelock);
+							found = 1;
+							savelock =  &(v->runq_lock);
+							if(savelock0 && savelock0 != savelock){
+								ihk_mc_spinlock_unlock_noirq(savelock0);
+								savelock0 = NULL;
+							}
+						}
+						else if(tproc == NULL && tproc0 == NULL){
+							tproc0 = p;
+							found = 1;
+							savelock0 = &(v->runq_lock);
+						}
+					}
+					if(!(mask & p->sigmask.__val[0])){
+						if(p->tid == pid || tproc == NULL){
+
+						}
 					}
 				}
 			}
-			ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+			if(!found)
+				ihk_mc_spinlock_unlock_noirq(&(v->runq_lock));
 		}
-		if(tproc == NULL)
+		if(tproc == NULL){
 			tproc = tproc0;
+			savelock = savelock0;
+		}
 	}
 	else if(pid == -1){
 		for(i = 0; i < num_processors; i++){
 			v = get_cpu_local_var(i);
-			irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
+			found = 0;
+			ihk_mc_spinlock_lock_noirq(&(v->runq_lock));
 			list_for_each_entry(p, &(v->runq), sched_list){
 				if(p->pid > 0 &&
 				   p->tid == tid){
+					savelock = &(v->runq_lock);
+					found = 1;
 					tproc = p;
 					break;
 				}
 			}
-			ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+			if(!found)
+				ihk_mc_spinlock_unlock_noirq(&(v->runq_lock));
 		}
 	}
 	else{
-		if(pid == 0)
-			return -ESRCH;
 		for(i = 0; i < num_processors; i++){
 			v = get_cpu_local_var(i);
-			irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
+			found = 0;
+			ihk_mc_spinlock_lock_noirq(&(v->runq_lock));
 			list_for_each_entry(p, &(v->runq), sched_list){
 				if(p->pid == pid &&
 				   p->tid == tid){
+					savelock = &(v->runq_lock);
+					found = 1;
 					tproc = p;
 					break;
 				}
 			}
-			ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+			if(found)
+				break;
+			ihk_mc_spinlock_unlock_noirq(&(v->runq_lock));
 		}
 	}
 
 	if(!tproc){
+		cpu_restore_interrupt(irqstate);
 		return -ESRCH;
 	}
-	if(sig == 0)
+	if(sig == 0){
+		ihk_mc_spinlock_unlock_noirq(savelock);
+		cpu_restore_interrupt(irqstate);
 		return 0;
+	}
 
 	doint = 0;
 	if(tid == -1){
-		irqstate = ihk_mc_spinlock_lock(&tproc->sigshared->lock);
+		ihk_mc_spinlock_lock_noirq(&tproc->sigshared->lock);
 		head = &tproc->sigshared->sigpending;
 	}
 	else{
-		irqstate = ihk_mc_spinlock_lock(&tproc->sigpendinglock);
+		ihk_mc_spinlock_lock_noirq(&tproc->sigpendinglock);
 		head = &tproc->sigpending;
 	}
 
@@ -496,16 +529,25 @@ do_kill(int pid, int tid, int sig)
 	}
 
 	if(tid == -1){
-		ihk_mc_spinlock_unlock(&tproc->sigshared->lock, irqstate);
+		ihk_mc_spinlock_unlock_noirq(&tproc->sigshared->lock);
 	}
 	else{
-		ihk_mc_spinlock_unlock(&tproc->sigpendinglock, irqstate);
+		ihk_mc_spinlock_unlock_noirq(&tproc->sigpendinglock);
 	}
+
 	if(doint && !(mask & tproc->sigmask.__val[0])){
+		int cpuid = tproc->cpu_id;
 		if(proc != tproc){
-			ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(tproc->cpu_id)->apic_id, 0xd0);
+			ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpuid)->apic_id, 0xd0);
 		}
-		interrupt_syscall(tproc->pid, tproc->cpu_id);
+		pid = tproc->pid;
+		ihk_mc_spinlock_unlock_noirq(savelock);
+		cpu_restore_interrupt(irqstate);
+		interrupt_syscall(pid, cpuid);
+	}
+	else{
+		ihk_mc_spinlock_unlock_noirq(savelock);
+		cpu_restore_interrupt(irqstate);
 	}
 	return rc;
 }

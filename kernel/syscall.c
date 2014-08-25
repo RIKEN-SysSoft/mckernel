@@ -1992,6 +1992,7 @@ SYSCALL_DECLARE(sched_setaffinity)
 	cpu_set_t k_cpu_set, cpu_set;
 	struct process *thread;
 	int cpu_id;
+	unsigned long irqstate;
 
 	if (sizeof(k_cpu_set) > len) {
 		kprintf("%s:%d\n Too small buffer.", __FILE__, __LINE__);
@@ -2012,11 +2013,11 @@ SYSCALL_DECLARE(sched_setaffinity)
 			CPU_SET(cpu_id, &cpu_set);
 
 	for (cpu_id = 0; cpu_id < num_processors; cpu_id++) {
-		ihk_mc_spinlock_lock_noirq(&get_cpu_local_var(cpu_id)->runq_lock);
+		irqstate = ihk_mc_spinlock_lock(&get_cpu_local_var(cpu_id)->runq_lock);
 		list_for_each_entry(thread, &get_cpu_local_var(cpu_id)->runq, sched_list)
 			if (thread->pid && thread->tid == tid)
 				goto found; /* without unlocking runq_lock */
-		ihk_mc_spinlock_unlock_noirq(&get_cpu_local_var(cpu_id)->runq_lock);
+		ihk_mc_spinlock_unlock(&get_cpu_local_var(cpu_id)->runq_lock, irqstate);
 	}
 	kprintf("%s:%d Thread not found.\n", __FILE__, __LINE__);
 	return -ESRCH;
@@ -2026,12 +2027,12 @@ found:
 
 	if (!CPU_ISSET(cpu_id, &thread->cpu_set)) {
 		hold_process(thread);
-		ihk_mc_spinlock_unlock_noirq(&get_cpu_local_var(cpu_id)->runq_lock);
+		ihk_mc_spinlock_unlock(&get_cpu_local_var(cpu_id)->runq_lock, irqstate);
 		sched_request_migrate(cpu_id, thread);
 		release_process(thread);
 		return 0;
 	} else {
-		ihk_mc_spinlock_unlock_noirq(&get_cpu_local_var(cpu_id)->runq_lock);
+		ihk_mc_spinlock_unlock(&get_cpu_local_var(cpu_id)->runq_lock, irqstate);
 		return 0;
 	}
 }
@@ -2046,6 +2047,7 @@ SYSCALL_DECLARE(sched_getaffinity)
 	int ret;
 	int found = 0;
 	int i;
+	unsigned long irqstate;
 
 	if (sizeof(k_cpu_set) > len) {
 		kprintf("%s:%d Too small buffer.\n", __FILE__, __LINE__);
@@ -2056,7 +2058,7 @@ SYSCALL_DECLARE(sched_getaffinity)
 	extern int num_processors;
 	for (i = 0; i < num_processors && !found; i++) {
 		struct process *thread;
-		ihk_mc_spinlock_lock_noirq(&get_cpu_local_var(i)->runq_lock);
+		irqstate = ihk_mc_spinlock_lock(&get_cpu_local_var(i)->runq_lock);
 		list_for_each_entry(thread, &get_cpu_local_var(i)->runq, sched_list) {
 			if (thread->pid && thread->tid == tid) {
 				found = 1;
@@ -2064,7 +2066,7 @@ SYSCALL_DECLARE(sched_getaffinity)
 				break;
 			}
 		}
-		ihk_mc_spinlock_unlock_noirq(&get_cpu_local_var(i)->runq_lock);
+		ihk_mc_spinlock_unlock(&get_cpu_local_var(i)->runq_lock, irqstate);
 	}
 	if (!found) {
 		kprintf("%s:%d Thread not found.\n", __FILE__, __LINE__);

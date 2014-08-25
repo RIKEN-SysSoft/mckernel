@@ -277,4 +277,7 @@ void check_need_resched(void);
 void cpu_set(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock);
 void cpu_clear(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock);
 
+struct process *findthread_and_lock(int pid, int tid, void *savelock, unsigned long *irqstate);
+void process_unlock(void *savelock, unsigned long irqstate);
+
 #endif

@@ -1754,21 +1754,21 @@ void sched_init(void)
 #endif
 }
 
-static void double_rq_lock(struct cpu_local_var *v1, struct cpu_local_var *v2)
+static void double_rq_lock(struct cpu_local_var *v1, struct cpu_local_var *v2, unsigned long *irqstate)
 {
 	if (v1 < v2) {
-		ihk_mc_spinlock_lock_noirq(&v1->runq_lock);
+		*irqstate = ihk_mc_spinlock_lock(&v1->runq_lock);
 		ihk_mc_spinlock_lock_noirq(&v2->runq_lock);
 	} else {
-		ihk_mc_spinlock_lock_noirq(&v2->runq_lock);
+		*irqstate = ihk_mc_spinlock_lock(&v2->runq_lock);
 		ihk_mc_spinlock_lock_noirq(&v1->runq_lock);
 	}
 }
 
-static void double_rq_unlock(struct cpu_local_var *v1, struct cpu_local_var *v2)
+static void double_rq_unlock(struct cpu_local_var *v1, struct cpu_local_var *v2, unsigned long irqstate)
 {
 	ihk_mc_spinlock_unlock_noirq(&v1->runq_lock);
-	ihk_mc_spinlock_unlock_noirq(&v2->runq_lock);
+	ihk_mc_spinlock_unlock(&v2->runq_lock, irqstate);
 }
 
 struct migrate_request {
@@ -1782,6 +1782,7 @@ static void do_migrate(void)
 	int cur_cpu_id = ihk_mc_get_processor_id();
 	struct cpu_local_var *cur_v = get_cpu_local_var(cur_cpu_id);
 	struct migrate_request *req, *tmp;
+	unsigned long irqstate = 0;
 
 	ihk_mc_spinlock_lock_noirq(&cur_v->migq_lock);
 	list_for_each_entry_safe(req, tmp, &cur_v->migq, list) {
@@ -1805,7 +1806,7 @@ static void do_migrate(void)
 
 		/* 2. migrate thread */
 		v = get_cpu_local_var(cpu_id);
-		double_rq_lock(cur_v, v);
+		double_rq_lock(cur_v, v, &irqstate);
 		list_del(&req->proc->sched_list);
 		cur_v->runq_len -= 1;
 		old_cpu_id = req->proc->cpu_id;
@@ -1821,7 +1822,7 @@ static void do_migrate(void)
 
 		if (v->runq_len == 1)
 			ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
-		double_rq_unlock(cur_v, v);
+		double_rq_unlock(cur_v, v, irqstate);
 
 ack:
 		waitq_wakeup(&req->wq);
@@ -2057,3 +2058,31 @@ void runq_del_proc(struct process *proc, int cpu_id)
 	ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 }
 
+struct process *
+findthread_and_lock(int pid, int tid, void *savelock, unsigned long *irqstate)
+{
+	struct cpu_local_var *v;
+	struct process *p;
+	int i;
+	extern int num_processors;
+
+	for(i = 0; i < num_processors; i++){
+		v = get_cpu_local_var(i);
+		*(ihk_spinlock_t **)savelock = &(v->runq_lock);
+		*irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
+		list_for_each_entry(p, &(v->runq), sched_list){
+			if(p->pid == pid &&
+			   p->tid == tid){
+				return p;
+			}
+		}
+		ihk_mc_spinlock_unlock(&(v->runq_lock), *irqstate);
+	}
+	return NULL;
+}
+
+void
+process_unlock(void *savelock, unsigned long irqstate)
+{
+	ihk_mc_spinlock_unlock((ihk_spinlock_t *)savelock, irqstate);
+}
