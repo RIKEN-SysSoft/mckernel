@@ -26,10 +26,10 @@
 
 #define DEBUG_PRINT_PROCFS
 
-#ifdef DEBUG_PRINT_PROCFS
-#define dkprintf kprintf
+#ifdef DEBUG_PRINT_SC
+#define	dprintf(...) kprintf(__VA_ARGS__)
 #else
-#define dkprintf(...)
+#define dprintf(...)
 #endif
 
 extern int snprintf(char * buf, size_t size, const char *fmt, ...);
@@ -56,6 +56,7 @@ void create_proc_procfs_files(int pid, int cpuid)
 
 static void create_proc_procfs_file(int pid, char *fname, int mode, int cpuid)
 {
+	dprintf("create procfs file: %s, mode: %s, cpuid: %d\n", fname, mode, cpuid);
 	operate_proc_procfs_file(pid, fname, SCD_MSG_PROCFS_CREATE, mode, cpuid);
 }
 
@@ -69,6 +70,7 @@ void delete_proc_procfs_files(int pid)
 
 static void delete_proc_procfs_file(int pid, char *fname)
 {
+	dprintf("delete procfs file: %s\n", fname);
 	operate_proc_procfs_file(pid, fname, SCD_MSG_PROCFS_DELETE, 0, 0);
 }
 
@@ -118,6 +120,8 @@ void process_procfs_request(unsigned long rarg)
 	char *buf;
 	struct ihk_ikc_channel_desc *syscall_channel;
 
+	dprintf("process_procfs_request: invoked.\n");
+
 	syscall_channel = get_cpu_local_var(0)->syscall_channel;
 
 	parg = ihk_mc_map_memory(NULL, rarg, sizeof(struct procfs_read));
@@ -127,17 +131,21 @@ void process_procfs_request(unsigned long rarg)
 	pbuf = ihk_mc_map_memory(NULL, r->pbuf, r->count);
 	buf = ihk_mc_map_virtual(pbuf, r->count, PTATTR_WRITABLE | PTATTR_ACTIVE);
 
+	dprintf("fname:%s, offset: %lx, count:%d.\n", r->fname, r->offset, r->count);
+
 	/* mcos0/PID/taks/PID/mem */
 	ret = sscanf(r->fname, "mcos%d/%d/task/%d/mem", &rosnum, &pid, &tid);
 	if ((ret == 3) && (pid == tid) && (osnum == rosnum)) {
 		if (cpu_local_var(current)->pid != pid) {
-			/* A hit-miss caused by migration */ 
+			/* When the target process is no more here.
+			   This kind of hit-misses are caused by migration */ 
 			ans = 0;
 		} else {
 			struct vm_range *range;
 			struct process_vm *vm = proc->vm;
 			ans = -EIO; /* default to an I/O error */
 			list_for_each_entry(range, &vm->vm_range_list, list) {
+				dprintf("range: %lx - %lx\n", range->start, range->end);
 				if ((range->start <= r->offset) && 
 				    (r->offset <= range->end)) {
 					if (r->offset + r->count <= range->end) {
@@ -153,10 +161,22 @@ void process_procfs_request(unsigned long rarg)
 				}
 			}
 		}
-		goto skip;
+		goto end;
 	}
 
-skip:
+	/* Processing of other kinds of procfs files should be located here.
+	   Its template is something like what follows:
+
+	   ret = scanf(r->fname, "mcos%d/PATTERN", ...)
+	   if ((ret == x) && pattern has matched) {
+	   	get the data and write it to the buffer;
+		ans = written bytes;
+		goto end;
+	   }
+	*/
+
+end:
+	dprintf("read: %d, eof: %d\n", ans, eof);
 	r->ret = ans;
 	r->eof = eof;
 	packet.msg = SCD_MSG_PROCFS_ANSWER;

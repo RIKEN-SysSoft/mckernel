@@ -34,6 +34,14 @@
 #include <sysdeps/mic/mic/micconst.h>
 #endif
 
+//#define IKC_DEBUG
+
+#ifdef IKC_DEBUG
+#define	dprintk(...)	printk(__VA_ARGS__)
+#else
+#define	dprintk(...)
+#endif
+
 #define REQUEST_SHIFT    16
 
 //int num_channels;
@@ -46,6 +54,7 @@ int mcexec_syscall(struct mcctrl_channel *c, int pid, unsigned long arg);
 
 static DECLARE_WAIT_QUEUE_HEAD(procfsq);
 static unsigned long procfsq_channel;
+static ihk_spinlock_t procfsq_lock;
 
 int mckernel_procfs_read(char *buffer, char **start, off_t offset,
 			 int count, int *peof, void *dat);
@@ -65,6 +74,7 @@ struct procfs_list_entry {
 };
 
 LIST_HEAD(procfs_file_list);
+static ihk_spinlock_t procfs_file_list_lock;
 
 static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *__os)
@@ -97,11 +107,15 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		struct procfs_list_entry *e;
 		int mode;
 		ihk_device_t dev = ihk_os_to_dev(__os);
+		unsigned long irqflags;
 
+		dprintk("ikc: received SCD_MSG_PROCFS_CREATE message.\n");
 		d = kmalloc(sizeof(struct procfs_data), GFP_KERNEL);
 		if (d == NULL) {
 			kprintf("ERROR: not enough memory to create PROCFS entry.\n");
+			goto quit;
 		}
+		dprintk("osnum: %d, cpu: %d, pid: %d\n", pisp->osnum, pisp->ref, pisp->pid);
 		d->osnum = pisp->osnum;
 		d->os = __os;
 		d->cpu = pisp->ref;
@@ -114,6 +128,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		f->status = 1; /* done */
 		ihk_device_unmap_virtual(dev, f, sizeof(struct procfs_file));
 		ihk_device_unmap_memory(dev, parg, sizeof(struct procfs_file));
+		dprintk("fname: %s, mode: %o\n", d->fname, mode);
 
 		entry = create_proc_entry(d->fname, mode, NULL);
 		if (entry == NULL) {
@@ -123,6 +138,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		}
 		entry->data = d;
 		entry->read_proc = mckernel_procfs_read;
+		dprintk("made a proc entry.\n");
 
 		e = kmalloc(sizeof(struct procfs_list_entry), GFP_KERNEL);
 		if (e == NULL) {
@@ -131,7 +147,10 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 			goto quit;
 		}
 		e->data = d;
+		irqflags = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
 		list_add(&(e->list), &procfs_file_list);
+		ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflags);
+		dprintk("added to a procfs list.\n");
 	}
 	quit:
 		break;
@@ -141,26 +160,34 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		unsigned long parg;
 		struct procfs_file *f;
 		struct procfs_list_entry *e;
+		unsigned long irqflags;
 
+		dprintk("ikc: received SCD_MSG_PROCFS_DELETE message.\n");
 		parg = ihk_device_map_memory(dev, pisp->arg, sizeof(struct procfs_file));
 		f = ihk_device_map_virtual(dev, parg, sizeof(struct procfs_file), NULL, 0);
+		dprintk("ikc: fname: %s.\n", f->fname);
 		list_for_each_entry(e, &procfs_file_list, list) {
 			if (strncmp(e->data->fname, f->fname, PROCFS_NAME_MAX) == 0) {
+				dprintk("found and delete an entry in the list.\n");
+				irqflags = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
 				list_del(&e->list);
+				ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflags);
 				kfree(e->data);
 				kfree(e);
 				break;
 			}
 		}
 		remove_proc_entry(f->fname, NULL);
+		dprintk("removed procfs entry.\n");
 		ihk_device_unmap_virtual(dev, f, sizeof(struct procfs_file));
 		ihk_device_unmap_memory(dev, parg, sizeof(struct procfs_file));
 
 	}
 		break;
 	case SCD_MSG_PROCFS_ANSWER:
+		dprintk("ikc: received SCD_MSG_PROCFS_ANSWER message.\n");
 		procfsq_channel = pisp->arg;
-		wake_up(&procfsq);
+		wake_up_interruptible(&procfsq);
 		break;
 	}
 
@@ -468,6 +495,9 @@ int mckernel_procfs_read(char *buffer, char **start, off_t offset,
 	int ret;
 	unsigned long pbuf;
 
+	dprintk("mckernel_procfs_read: invoked for %s\n", data->fname); 
+	dprintk("offset: %lx, count: %d\n", offset, count\n);
+
 	if (count <= 0 || dat == NULL) {
 		return 0;
 	}
@@ -494,12 +524,15 @@ retry:
 	mcctrl_ikc_send(data->os, data->cpu, &isp);
 	channel = NULL;
 	/* Wait for a reply. */
+	dprintk("now wait for a relpy\n");
 	wait_event_interruptible(procfsq, procfsq_channel == virt_to_phys(r));
 	/* Wake up and check the result. */
+	dprintk("mckernel_procfs_read: woke up. ret: %d, eof: %d\n", r->ret, r->eof);
 	if ((r->ret == 0) && (r->eof != 1)) {
 		/* A miss-hit has occurred (caused by migration e.g.).
 		 * We simply retry the query. 
 		 */
+		dprintk("retry\n");
 		goto retry;
 	}
 	if (r->eof == 1) {
