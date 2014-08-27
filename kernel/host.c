@@ -390,7 +390,6 @@ static int process_msg_prepare_process(unsigned long rphys)
 		return -ENOMEM;
 	}
 	proc->pid = pn->pid;
-	proc->tid = pn->pid;
 	proc->pgid = pn->pgid;
 	proc->ftn->pid = pn->pid;
 	proc->vm->region.user_start = pn->user_start;
@@ -498,6 +497,7 @@ static void syscall_channel_send(struct ihk_ikc_channel_desc *c,
 }
 
 extern unsigned long do_kill(int, int, int);
+extern void settid(struct process *proc, int mode, int newcpuid, int oldcpuid);
 
 static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *ihk_os)
@@ -505,6 +505,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	struct ikc_scd_packet *packet = __packet;
 	struct ikc_scd_packet pckt;
 	int rc;
+	struct process *proc;
 
 	switch (packet->msg) {
 	case SCD_MSG_INIT_CHANNEL_ACKED:
@@ -529,9 +530,10 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 
 	case SCD_MSG_SCHEDULE_PROCESS:
 		dkprintf("SCD_MSG_SCHEDULE_PROCESS: %lx\n", packet->arg);
+		proc = (struct process *)packet->arg;
 
-		runq_add_proc((struct process *)packet->arg, 
-		              ihk_mc_get_processor_id());
+		settid(proc, 0, ihk_mc_get_processor_id(), -1);
+		runq_add_proc(proc, ihk_mc_get_processor_id());
 					  
 		//cpu_local_var(next) = (struct process *)packet->arg;
 		return 0;

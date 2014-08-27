@@ -344,10 +344,6 @@ do_kill(int pid, int tid, int sig)
 	ihk_spinlock_t *savelock = NULL;
 	int found = 0;
 
-	if(proc == NULL || proc->pid == 0){
-		return -ESRCH;
-	}
-
 	if(sig > 64 || sig < 0)
 		return -EINVAL;
 
@@ -359,18 +355,21 @@ do_kill(int pid, int tid, int sig)
 		int	n = 0;
 		int	sendme = 0;
 
+		if(pid == 0){
+			if(proc == NULL || proc->pid <= 0)
+				return -ESRCH;
+			pgid = proc->pgid;
+		}
 		pids = kmalloc(sizeof(int) * num_processors, IHK_MC_AP_NOWAIT);
 		if(!pids)
 			return -ENOMEM;
-		if(pid == 0)
-			pgid = proc->pgid;
 		for(i = 0; i < num_processors; i++){
 			v = get_cpu_local_var(i);
 			irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 			list_for_each_entry(p, &(v->runq), sched_list){
 				if(p->pid <= 0)
 					continue;
-				if(p->pid == proc->pid){
+				if(proc && p->pid == proc->pid){
 					sendme = 1;
 					continue;
 				}

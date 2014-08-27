@@ -572,6 +572,7 @@ struct thread_data_s {
 	int ret;
 	pid_t	tid;
 	int terminate;
+	int remote_tid;
 	pthread_mutex_t *lock;
 	pthread_barrier_t *init_ready;
 } *thread_data;
@@ -586,6 +587,7 @@ static void *main_loop_thread_func(void *arg)
 	struct thread_data_s *td = (struct thread_data_s *)arg;
 
 	td->tid = gettid();
+	td->remote_tid = (int)td->tid;
 	pthread_barrier_wait(&init_ready);
 	td->ret = main_loop(td->fd, td->cpu, td->lock);
 
@@ -597,40 +599,47 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 {
 	pid_t	pid = getpid();
 	pid_t	tid = gettid();
+	int	remote_tid;
 	int	i;
 	int	cpu;
 	struct signal_desc sigdesc;
 
-
 	if(siginfo->si_pid == pid &&
 	   siginfo->si_signo == SIGINT)
 		return;
-	if(tid == thread_data[0].tid){
-		cpu = thread_data[0].cpu;
-		tid = master_tid;
+
+	if(tid == master_tid){
+		cpu = 0;
+		remote_tid = -1;
 	}
-	else if(tid != master_tid){
-		for(i = 1; i < ncpu; i++)
-			if(thread_data[i].tid == tid){
+	else{
+		for(i = 1; i < ncpu; i++){
+			if(siginfo->si_pid == pid &&
+			   thread_data[i].tid == tid){
 				if(thread_data[i].terminate)
 					return;
 				break;
 			}
-		if(i != ncpu)
+			if(siginfo->si_pid != pid &&
+			   thread_data[i].remote_tid == tid){
+				if(thread_data[i].terminate)
+					return;
+				break;
+			}
+		}
+		if(i != ncpu){
+			remote_tid = thread_data[i].remote_tid;
 			cpu = thread_data[i].cpu;
+		}
 		else{
 			cpu = 0;
-			tid = -1;
+			remote_tid = -1;
 		}
-	}
-	else{
-		cpu = 0;
-		tid = -1;
 	}
 
 	sigdesc.cpu = cpu;
 	sigdesc.pid = (int)pid;
-	sigdesc.tid = (int)tid;
+	sigdesc.tid = remote_tid;
 	sigdesc.sig = sig;
 	if (ioctl(fd, MCEXEC_UP_SEND_SIGNAL, &sigdesc) != 0) {
 		perror("send_signal");
@@ -1171,6 +1180,27 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			break;
 		}
 #endif
+
+		case __NR_gettid:{
+			int mode = w.sr.args[0];
+			int remote_pid = w.sr.args[1];
+			int newcpuid = w.sr.args[2];
+			int oldcpuid = w.sr.args[3];
+			int wtid = thread_data[newcpuid].remote_tid;
+
+			if(mode == 0){
+				thread_data[ncpu].remote_tid = wtid;
+				thread_data[newcpuid].remote_tid = remote_pid;
+			}
+			else if(mode == 2){
+				thread_data[newcpuid].remote_tid = thread_data[oldcpuid].remote_tid;
+				thread_data[oldcpuid].remote_tid = wtid;
+			}
+
+			do_syscall_return(fd, cpu, thread_data[newcpuid].remote_tid, 0, 0, 0, 0);
+			break;
+		}
+
 		case __NR_fork: {
 			int child;
 

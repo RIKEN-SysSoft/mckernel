@@ -120,6 +120,7 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid)
 	int ret;
 
 	if(req->number == __NR_exit_group ||
+	   req->number == __NR_gettid ||
 	   req->number == __NR_kill){ // interrupt syscall
 		extern int num_processors;
 
@@ -131,6 +132,8 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid)
 		cpu = num_processors;
 		if(req->number == __NR_kill)
 			pid = req->args[0];
+		if(req->number == __NR_gettid)
+			pid = req->args[1];
 	}
 	else{
 		scp = &get_cpu_local_var(cpu)->scp;
@@ -188,6 +191,7 @@ long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx,
 	        req->number);
 
 	if(req->number == __NR_exit_group ||
+	   req->number == __NR_gettid ||
 	   req->number == __NR_kill){ // interrupt syscall
 		scp = &get_cpu_local_var(0)->scp2;
 		islock = 1;
@@ -1121,6 +1125,20 @@ SYSCALL_DECLARE(getpid)
 	return cpu_local_var(current)->pid;
 }
 
+void
+settid(struct process *proc, int mode, int newcpuid, int oldcpuid)
+{
+	ihk_mc_user_context_t ctx;
+	unsigned long rc;
+
+	ihk_mc_syscall_arg0(&ctx) = mode;
+	ihk_mc_syscall_arg1(&ctx) = proc->pid;
+	ihk_mc_syscall_arg2(&ctx) = newcpuid;
+	ihk_mc_syscall_arg3(&ctx) = oldcpuid;
+	rc = syscall_generic_forwarding(__NR_gettid, &ctx);
+	proc->tid = rc;
+}
+
 SYSCALL_DECLARE(gettid)
 {
 	return cpu_local_var(current)->tid;
@@ -1325,9 +1343,7 @@ SYSCALL_DECLARE(clone)
 
 	if (clone_flags & CLONE_VM) {
 		new->pid = cpu_local_var(current)->pid;
-		
-		request1.number = __NR_gettid;
-		new->tid = do_syscall(&request1, &ctx1, cpuid, new->pid);
+		settid(new, 1, cpuid, -1);
 	}
 	/* fork() a new process on the host */
 	else {
@@ -1342,7 +1358,7 @@ SYSCALL_DECLARE(clone)
 		}
 
 		/* In a single threaded process TID equals to PID */
-		new->tid = new->pid;
+		settid(new, 0, cpuid, -1);
 
 		dkprintf("fork(): new pid: %d\n", new->pid);
 		/* clear user space PTEs and set new rpgtable so that consequent 

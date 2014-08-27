@@ -42,12 +42,11 @@
 #define ekprintf(...) kprintf(__VA_ARGS__)
 #endif
 
-
 extern long do_arch_prctl(unsigned long code, unsigned long address);
 static void insert_vm_range_list(struct process_vm *vm, 
 		struct vm_range *newrange);
 static int copy_user_ranges(struct process *proc, struct process *org);
-
+void settid(struct process *proc, int mode, int newcpuid, int oldcpuid);
 
 void hold_fork_tree_node(struct fork_tree_node *ftn)
 {
@@ -1811,6 +1810,7 @@ static void do_migrate(void)
 		cur_v->runq_len -= 1;
 		old_cpu_id = req->proc->cpu_id;
 		req->proc->cpu_id = cpu_id;
+		settid(req->proc, 2, cpu_id, old_cpu_id);
 		list_add_tail(&req->proc->sched_list, &v->runq);
 		v->runq_len += 1;
 		
@@ -2010,8 +2010,6 @@ void sched_request_migrate(int cpu_id, struct process *proc)
 	schedule();
 	waitq_finish_wait(&req.wq, &entry);
 }
-
-
 
 /* Runq lock must be held here */
 void __runq_add_proc(struct process *proc, int cpu_id)
