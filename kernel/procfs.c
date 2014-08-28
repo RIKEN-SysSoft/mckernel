@@ -50,7 +50,7 @@ void create_proc_procfs_files(int pid, int cpuid)
 {
 	char fname[PROCFS_NAME_MAX];
 
-	snprintf(fname, PROCFS_NAME_MAX, "/proc/mcos%d/%d/mem", osnum, pid);
+	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/mem", osnum, pid);
 	create_proc_procfs_file(pid, fname, 0400, cpuid);
 }
 
@@ -64,7 +64,7 @@ void delete_proc_procfs_files(int pid)
 {
 	char fname[PROCFS_NAME_MAX];
 
-	snprintf(fname, PROCFS_NAME_MAX, "/proc/mcos%d/%d/mem", osnum, pid);
+	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/mem", osnum, pid);
 	delete_proc_procfs_file(pid, fname);
 }
 

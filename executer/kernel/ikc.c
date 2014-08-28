@@ -70,7 +70,7 @@ struct procfs_data {
 
 struct procfs_list_entry {
 	struct list_head list;
-	struct procfs_data *data;
+	struct proc_dir_entry *entry;
 };
 
 LIST_HEAD(procfs_file_list);
@@ -146,7 +146,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 			kfree(d);
 			goto quit;
 		}
-		e->data = d;
+		e->entry = entry;
 		irqflags = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
 		list_add(&(e->list), &procfs_file_list);
 		ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflags);
@@ -167,12 +167,17 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		f = ihk_device_map_virtual(dev, parg, sizeof(struct procfs_file), NULL, 0);
 		dprintk("ikc: fname: %s.\n", f->fname);
 		list_for_each_entry(e, &procfs_file_list, list) {
-			if (strncmp(e->data->fname, f->fname, PROCFS_NAME_MAX) == 0) {
+			struct procfs_data *d = (struct procfs_data *)e->entry->data;
+			if (d == NULL) {
+				continue;
+			}
+			if (strncmp(d->fname, f->fname, PROCFS_NAME_MAX) == 0) {
 				dprintk("found and delete an entry in the list.\n");
 				irqflags = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
 				list_del(&e->list);
 				ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflags);
-				kfree(e->data);
+				kfree(e->entry->data);
+				e->entry->data = NULL;
 				kfree(e);
 				break;
 			}
