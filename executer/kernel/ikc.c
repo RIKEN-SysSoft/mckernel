@@ -26,7 +26,7 @@
 #include <linux/fs.h>
 #include <linux/miscdevice.h>
 #include <linux/slab.h>
-#include <linux/strings.h>
+#include <linux/string.h>
 #include "mcctrl.h"
 #ifdef ATTACHED_MIC
 #include <sysdeps/mic/mic/micconst.h>
