@@ -5,7 +5,7 @@ KMODDIR=@KMODDIR@
 
 obj-m += mcctrl.o
 
-mcctrl-objs := driver.o control.o ikc.o syscall.o
+mcctrl-objs := driver.o control.o ikc.o syscall.o procfs.o
 
 IHK_BASE=$(src)/../../../ihk
 EXTRA_CFLAGS = -I$(IHK_BASE)/linux/include -I$(IHK_BASE)/ikc/include -I$(IHK_BASE)/include -I$(src)/../include
