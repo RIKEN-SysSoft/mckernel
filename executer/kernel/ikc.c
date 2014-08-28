@@ -34,7 +34,7 @@
 #include <sysdeps/mic/mic/micconst.h>
 #endif
 
-//#define IKC_DEBUG
+#define IKC_DEBUG
 
 #ifdef IKC_DEBUG
 #define	dprintk(...)	printk(__VA_ARGS__)
@@ -496,7 +496,7 @@ int mckernel_procfs_read(char *buffer, char **start, off_t offset,
 	unsigned long pbuf;
 
 	dprintk("mckernel_procfs_read: invoked for %s\n", data->fname); 
-	dprintk("offset: %lx, count: %d\n", offset, count\n);
+	dprintk("offset: %lx, count: %d\n", offset, count);
 
 	if (count <= 0 || dat == NULL) {
 		return 0;
