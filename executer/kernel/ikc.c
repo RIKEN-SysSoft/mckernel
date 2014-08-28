@@ -26,18 +26,10 @@
 #include <linux/fs.h>
 #include <linux/miscdevice.h>
 #include <linux/slab.h>
-#include <linux/list.h>
+#include <linux/strings.h>
 #include "mcctrl.h"
 #ifdef ATTACHED_MIC
 #include <sysdeps/mic/mic/micconst.h>
-#endif
-
-#define IKC_DEBUG
-
-#ifdef IKC_DEBUG
-#define	dprintk(...)	printk(__VA_ARGS__)
-#else
-#define	dprintk(...)
 #endif
 
 #define REQUEST_SHIFT    16
