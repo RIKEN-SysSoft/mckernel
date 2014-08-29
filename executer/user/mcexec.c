@@ -1164,6 +1164,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 
 		case __NR_munmap:
 			ret = madvise((void *)w.sr.args[0], w.sr.args[1], MADV_DONTNEED);
+			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 
