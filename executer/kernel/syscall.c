@@ -1315,6 +1315,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 			error = -ENOSYS;
 			goto out;
 		}
+		ret = 0;
 		break;
 
 	case __NR_mprotect:
