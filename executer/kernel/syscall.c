@@ -411,6 +411,12 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 			page = pfn_to_page(pfn+pix);
 			if (!page_count(page)) {
 				get_page(page);
+				/*
+				 * TODO:
+				 * The pages which get_page() has been called with
+				 * should be recorded.  Because these pages have to
+				 * be passed to put_page() before they are freed.
+				 */
 			}
 			error = vm_insert_page(vma, rva+(pix*PAGE_SIZE), page);
 			if (error) {
