@@ -608,33 +608,27 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 	   siginfo->si_signo == SIGINT)
 		return;
 
-	if(tid == master_tid){
-		cpu = 0;
-		remote_tid = -1;
+	for(i = 0; i < ncpu; i++){
+		if(siginfo->si_pid == pid &&
+		   thread_data[i].tid == tid){
+			if(thread_data[i].terminate)
+				return;
+			break;
+		}
+		if(siginfo->si_pid != pid &&
+		   thread_data[i].remote_tid == tid){
+			if(thread_data[i].terminate)
+				return;
+			break;
+		}
+	}
+	if(i != ncpu){
+		remote_tid = thread_data[i].remote_tid;
+		cpu = thread_data[i].cpu;
 	}
 	else{
-		for(i = 1; i < ncpu; i++){
-			if(siginfo->si_pid == pid &&
-			   thread_data[i].tid == tid){
-				if(thread_data[i].terminate)
-					return;
-				break;
-			}
-			if(siginfo->si_pid != pid &&
-			   thread_data[i].remote_tid == tid){
-				if(thread_data[i].terminate)
-					return;
-				break;
-			}
-		}
-		if(i != ncpu){
-			remote_tid = thread_data[i].remote_tid;
-			cpu = thread_data[i].cpu;
-		}
-		else{
-			cpu = 0;
-			remote_tid = -1;
-		}
+		cpu = 0;
+		remote_tid = -1;
 	}
 
 	sigdesc.cpu = cpu;
