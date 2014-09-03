@@ -400,7 +400,7 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 	struct fork_tree_node *child, *next;
 
 	request.number = __NR_exit_group;
-	request.args[0] = ((rc & 0x00ff) << 8) | (sig & 0x7f);
+	request.args[0] = ((rc & 0x00ff) << 8) | (sig & 0xff);
 
 #ifdef DCFA_KMOD
 	do_mod_exit(rc);
@@ -430,7 +430,7 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 		
 		ihk_mc_spinlock_lock_noirq(&ftn->lock);
 		ftn->pid = proc->pid;
-		ftn->exit_status = ((rc & 0x00ff) << 8) | (sig & 0x7f);
+		ftn->exit_status = ((rc & 0x00ff) << 8) | (sig & 0xff);
 		ftn->status = PS_ZOMBIE;
 		ihk_mc_spinlock_unlock_noirq(&ftn->lock);	
 
