@@ -2009,6 +2009,7 @@ SYSCALL_DECLARE(sched_setaffinity)
 	struct process *thread;
 	int cpu_id;
 	unsigned long irqstate;
+	extern int num_processors;
 
 	if (sizeof(k_cpu_set) > len) {
 		kprintf("%s:%d\n Too small buffer.", __FILE__, __LINE__);
@@ -2023,10 +2024,12 @@ SYSCALL_DECLARE(sched_setaffinity)
 
 	// XXX: We should build something like cpu_available_mask in advance
 	CPU_ZERO(&cpu_set);
-	extern int num_processors;
 	for (cpu_id = 0; cpu_id < num_processors; cpu_id++)
 		if (CPU_ISSET(cpu_id, &k_cpu_set))
 			CPU_SET(cpu_id, &cpu_set);
+
+	if(tid == 0)
+		tid = cpu_local_var(current)->tid;
 
 	for (cpu_id = 0; cpu_id < num_processors; cpu_id++) {
 		irqstate = ihk_mc_spinlock_lock(&get_cpu_local_var(cpu_id)->runq_lock);
@@ -2064,6 +2067,7 @@ SYSCALL_DECLARE(sched_getaffinity)
 	int found = 0;
 	int i;
 	unsigned long irqstate;
+	extern int num_processors;
 
 	if (sizeof(k_cpu_set) > len) {
 		kprintf("%s:%d Too small buffer.\n", __FILE__, __LINE__);
@@ -2071,7 +2075,9 @@ SYSCALL_DECLARE(sched_getaffinity)
 	}
 	len = MIN2(len, sizeof(k_cpu_set));
 
-	extern int num_processors;
+	if(tid == 0)
+		tid = cpu_local_var(current)->tid;
+
 	for (i = 0; i < num_processors && !found; i++) {
 		struct process *thread;
 		irqstate = ihk_mc_spinlock_lock(&get_cpu_local_var(i)->runq_lock);
