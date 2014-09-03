@@ -338,14 +338,109 @@ struct program_load_desc *load_interp(struct program_load_desc *desc0, FILE *fp)
 
 unsigned char *dma_buf;
 
-int load_elf_desc(char *filename, struct program_load_desc **desc_p)
+int lookup_exec_path(char *filename, char *path, int max_len) 
+{
+	int found = 0;
+	int error;
+
+	/* Is file not absolute path? */
+	if (strncmp(filename, "/", 1)) {
+		
+		/* Is filename a single component without path? */
+		if (strncmp(filename, ".", 1) && !strchr(filename, '/')) {
+
+			char *token, *string, *tofree;
+			char *PATH = getenv("COKERNEL_PATH");
+			if (!PATH) {
+				PATH = getenv("PATH");
+			}
+
+			if (strlen(filename) >= 255) {
+				return ENAMETOOLONG;
+			}
+
+			__dprintf("PATH: %s\n", PATH);
+
+			/* strsep() modifies string! */
+			tofree = string = strdup(PATH);
+			if (string == NULL) {
+				printf("lookup_exec_path(): copying PATH, not enough memory?\n");
+				return ENOMEM;
+			}
+
+			while ((token = strsep(&string, ":")) != NULL) {
+
+				error = snprintf(path, max_len, 
+						"%s/%s", token, filename);
+				if (error < 0 || error >= max_len) {
+					fprintf(stderr, "lookup_exec_path(): array too small?\n");
+					continue;
+				}
+
+				error = access(path, X_OK);
+				if (error == 0) {
+					found = 1;
+					break;
+				}
+			}
+
+			free(tofree);
+		}
+
+		/* Not in path, file to be open from the working directory */
+		if (!found) {
+			error = snprintf(path, max_len, "%s", filename);
+
+			if (error < 0 || error >= max_len) {
+				fprintf(stderr, "lookup_exec_path(): array too small?\n");
+				return ENOMEM;
+			}
+
+			found = 1;
+		}
+	}
+	/* Absolute path */
+	else if (!strncmp(filename, "/", 1)) {
+		char *root = getenv("COKERNEL_EXEC_ROOT");
+
+		if (root) {
+			error = snprintf(path, max_len, "%s/%s", root, filename);
+		}
+		else {
+			error = snprintf(path, max_len, "%s", filename);
+		}
+
+		if (error < 0 || error >= max_len) {
+			fprintf(stderr, "lookup_exec_path(): array too small?\n");
+			return ENOMEM;
+		}
+
+		found = 1;
+	}
+
+	if (!found) {
+		fprintf(stderr, 
+				"lookup_exec_path(): error finding file %s\n", filename);
+		return ENOENT;
+	}
+
+	__dprintf("lookup_exec_path(): %s\n", path);
+
+	return 0;
+}
+
+int load_elf_desc(char *filename, struct program_load_desc **desc_p, 
+		char **shell_p)
 {
 	FILE *fp;
 	FILE *interp = NULL;
 	char *interp_path;
+	char *shell = NULL;
+	size_t shell_len = 0;
 	struct program_load_desc *desc;
 	int ret = 0;
 	struct stat sb;
+	char header[1024];
 
 	if ((ret = access(filename, X_OK)) != 0) {
 		fprintf(stderr, "Error: %s is not an executable?, errno: %d\n", 
@@ -368,6 +463,27 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p)
 		fprintf(stderr, "Error: Failed to open %s\n", filename);
 		return errno;
 	}
+
+	if (fread(&header, 1, 2, fp) != 2) {
+		fprintf(stderr, "Error: Failed to read header from %s\n", filename);
+		return errno;
+	}
+
+	if (!strncmp(header, "#!", 2)) {
+		
+		if (getline(&shell, &shell_len, fp) == -1) {
+			fprintf(stderr, "Error: reading shell path %s\n", filename);
+		}
+
+		fclose(fp);
+
+		/* Delete new line character */
+		shell[strlen(shell) - 1] = 0;
+		*shell_p = shell;
+		return 0;
+	}
+
+	rewind(fp);
 
 	desc = load_elf(fp, &interp_path);
 	if (!desc) {
@@ -519,7 +635,7 @@ void print_flat(char *flat)
  * returns the total length of the flat string and updates flat to
  * point to the beginning.
  */
-int flatten_strings(int nr_strings, char **strings, char **flat)
+int flatten_strings(int nr_strings, char *first, char **strings, char **flat)
 {
 	int full_len, string_i;
 	unsigned long flat_offset;
@@ -532,6 +648,10 @@ int flatten_strings(int nr_strings, char **strings, char **flat)
 
 	/* Count full length */
 	full_len = sizeof(int) + sizeof(char *); // Counter and terminating NULL
+	if (first) {
+		full_len += sizeof(char *) + strlen(first) + 1; 
+	}
+
 	for (string_i = 0; string_i < nr_strings; ++string_i) {
 		// Pointer + actual value
 		full_len += sizeof(char *) + strlen(strings[string_i]) + 1; 
@@ -545,18 +665,25 @@ int flatten_strings(int nr_strings, char **strings, char **flat)
 	memset(_flat, 0, full_len);
 
 	/* Number of strings */
-	*((int*)_flat) = nr_strings;
+	*((int*)_flat) = nr_strings + (first ? 1 : 0);
 	
 	// Actual offset
-	flat_offset = sizeof(int) + sizeof(char *) * (nr_strings + 1); 
+	flat_offset = sizeof(int) + sizeof(char *) * (nr_strings + 1 + 
+			(first ? 1 : 0)); 
+
+	if (first) {
+		*((char **)(_flat + sizeof(int))) = (void *)flat_offset;
+		memcpy(_flat + flat_offset, first, strlen(first) + 1);
+		flat_offset += strlen(first) + 1;
+	}
 
 	for (string_i = 0; string_i < nr_strings; ++string_i) {
 		
 		/* Fabricate the string */
-		*((char **)(_flat + sizeof(int) + string_i * sizeof(char *))) = (void *)flat_offset;
+		*((char **)(_flat + sizeof(int) + (string_i + (first ? 1 : 0)) 
+					* sizeof(char *))) = (void *)flat_offset;
 		memcpy(_flat + flat_offset, strings[string_i], strlen(strings[string_i]) + 1);
 		flat_offset += strlen(strings[string_i]) + 1;
-
 	}
 
 	*flat = _flat;
@@ -756,6 +883,9 @@ int main(int argc, char **argv)
 	int target_core = 0;
 	int mcosid = 0;
 	int opt;
+	char path[1024];
+	char *shell = NULL;
+	char shell_path[1024];
 
 #ifdef USE_SYSCALL_MOD_CALL
 	__glob_argc = argc;
@@ -768,7 +898,7 @@ int main(int argc, char **argv)
 	}
 	
 	/* Collect environment variables */
-	envs_len = flatten_strings(-1, environ, &envs);
+	envs_len = flatten_strings(-1, NULL, environ, &envs);
 	envs = envs;
 
 	error = getrlimit(RLIMIT_STACK, &rlim_stack);
@@ -820,18 +950,40 @@ int main(int argc, char **argv)
 	for (i = optind; i < argc; ++i) {
 		__dprintf("%s ", argv[i]);
 	}
-	__dprintf("\n");
+	__dprintf("%s", "\n");
 
-	if (load_elf_desc(argv[optind], &desc) != 0) {
+	if (lookup_exec_path(argv[optind], path, sizeof(path)) != 0) {
+		fprintf(stderr, "error: finding file: %s\n", argv[optind]);
+		return 1;
+	}
+
+	if (load_elf_desc(path, &desc, &shell) != 0) {
 		fprintf(stderr, "error: loading file: %s\n", argv[optind]);
 		return 1;
+	}
+
+	/* Check whether shell script */
+	if (shell) {
+		if (lookup_exec_path(shell, shell_path, sizeof(shell_path)) != 0) {
+			fprintf(stderr, "error: finding file: %s\n", shell);
+			return 1;
+		}
+
+		if (load_elf_desc(shell_path, &desc, &shell) != 0) {
+			fprintf(stderr, "error: loading file: %s\n", shell);
+			return 1;
+		}
+	}
+
+	if (shell) {
+		argv[optind] = path;
 	}
 	
 	desc->envs_len = envs_len;
 	desc->envs = envs;
 	//print_flat(envs);
 
-	desc->args_len = flatten_strings(-1, argv + optind, &args);
+	desc->args_len = flatten_strings(-1, shell, argv + optind, &args);
 	desc->args = args;
 	//print_flat(args);
 
@@ -1269,92 +1421,50 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			switch (w.sr.args[0]) {
 				struct program_load_desc *desc;
 				struct remote_transfer trans;
-				int error;
-				int found;
-				char path[2048];
+				char path[1024];
 				char *filename;
 				int ret;
+				char *shell = NULL;
+				char shell_path[1024];
 
 				/* Load descriptor phase */
 				case 1:
 					
-					ret = -1;
-					found = 0;
 					filename = (char *)w.sr.args[1];
-
-					/* Is filename a single component without path? */
-					if (strncmp(filename, "/", 1) 
-							&& !strchr(filename, '/')) {
-						
-						char *token, *string, *tofree;
-						char *PATH = getenv("COKERNEL_PATH");
-						if (!PATH) {
-							PATH = getenv("PATH");
-						}
-
-						if (strlen(filename) >= 255) {
-							ret = ENAMETOOLONG;
-							goto return_execve1;
-						}
-						
-						__dprintf("PATH: %s\n", PATH);
-
-						/* strsep() modifies string! */
-						tofree = string = strdup(PATH);
-						if (string == NULL) {
-							printf("error: copying PATH, not enough memory?\n");
-							goto return_execve1;
-						}
-
-						while ((token = strsep(&string, ":")) != NULL) {
-
-							error = snprintf(path, sizeof(path), 
-									"%s/%s", token, filename);
-							if (error < 0 || error >= sizeof(path)) {
-								fprintf(stderr, "execve(): array too small?\n");
-								continue;
-							}
-
-							error = access(path, X_OK);
-							if (error == 0) {
-								found = 1;
-								break;
-							}
-						}
-
-						free(tofree);
-					}
-					else {
-						char *root = getenv("COKERNEL_EXEC_ROOT");
-						
-						if (root) {
-							error = snprintf(path, sizeof(path), "%s/%s", root, filename);
-						}
-						else {
-							error = snprintf(path, sizeof(path), "%s", filename);
-						}
-
-						if (error < 0 || error >= sizeof(path)) {
-							fprintf(stderr, "execve(): array too small?\n");
-							goto return_execve1;
-						}
-
-						found = 1;
-					}
 					
-					if (!found) {
-						fprintf(stderr, 
-							"execve(): error finding file %s\n", filename);
-						ret = ENOENT;
+					if ((ret = lookup_exec_path(filename, path, sizeof(path))) 
+						!= 0) {
 						goto return_execve1;
 					}
 
-					__dprintf("execve(): path to binary: %s\n", path);
-
-					if ((ret = load_elf_desc(path, &desc)) != 0) {
+					if ((ret = load_elf_desc(path, &desc, &shell)) != 0) {
 						fprintf(stderr, 
 							"execve(): error loading ELF for file %s\n", path);
 						goto return_execve1;
+					}
+					
+					/* Check whether shell script */
+					if (shell) {
+						if ((ret = lookup_exec_path(shell, shell_path, 
+									sizeof(shell_path))) != 0) {
+							fprintf(stderr, "execve(): error: finding file: %s\n", shell);
+							goto return_execve1;
+						}
+
+						if ((ret = load_elf_desc(shell_path, &desc, &shell)) 
+								!= 0) {
+							fprintf(stderr, "execve(): error: loading file: %s\n", shell);
+							goto return_execve1;
+						}
+
+						if (strlen(shell_path) >= SHELL_PATH_MAX_LEN) {
+							fprintf(stderr, "execve(): error: shell path too long: %s\n", shell_path);
+							ret = ENAMETOOLONG;
+							goto return_execve1;
+						}
+
+						/* Let the LWK know the shell interpreter */
+						strcpy(desc->shell_path, shell_path);
 					}
 
 					__dprintf("execve(): load_elf_desc() for %s OK, num sections: %d\n",
@@ -1410,10 +1520,10 @@ return_execve1:
 						goto return_execve1;
 					}
 					
-					__dprintf("execve(): transfer ELF desc OK\n");
+					__dprintf("%s", "execve(): transfer ELF desc OK\n");
 
 					transfer_image(fd, desc);	
-					__dprintf("execve(): image transferred\n");
+					__dprintf("%s", "execve(): image transferred\n");
 
 					ret = 0;
 return_execve2:					

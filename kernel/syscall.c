@@ -1245,15 +1245,20 @@ SYSCALL_DECLARE(execve)
 
 	dkprintf("execve(): ELF desc received, num sections: %d\n",
 		desc->num_sections);
+	
+	if (desc->shell_path[0]) {
+		dkprintf("execve(): shell interpreter: %s\n", desc->shell_path);
+	}
 
 	/* Flatten argv and envp into kernel-space buffers */
-	argv_flat_len = flatten_strings(-1, argv, &argv_flat);
+	argv_flat_len = flatten_strings(-1, (desc->shell_path[0] ? 
+				desc->shell_path : NULL), argv, &argv_flat);
 	if (argv_flat_len == 0) {
 		kprintf("ERROR: no argv for executable: %s?\n", filename);
 		return -EINVAL;
 	}
 
-	envp_flat_len = flatten_strings(-1, envp, &envp_flat);
+	envp_flat_len = flatten_strings(-1, NULL, envp, &envp_flat);
 	if (envp_flat_len == 0) {
 		kprintf("ERROR: no envp for executable: %s?\n", filename);
 		return -EINVAL;
