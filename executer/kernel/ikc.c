@@ -88,7 +88,8 @@ int mcctrl_ikc_send(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp)
 {
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 
-	if (cpu < 0 || cpu >= usrdata->num_channels || !usrdata->channels[cpu].c) {
+	if (cpu < 0 || os == NULL || usrdata == NULL ||
+	    cpu >= usrdata->num_channels || !usrdata->channels[cpu].c) {
 		return -EINVAL;
 	}
 	return ihk_ikc_send(usrdata->channels[cpu].c, pisp, 0);

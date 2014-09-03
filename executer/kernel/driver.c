@@ -35,6 +35,9 @@ extern void destroy_ikc_channels(ihk_os_t os);
 #ifndef DO_USER_MODE
 extern void mcctrl_syscall_init(void);
 #endif
+extern void procfs_init(int);
+extern void procfs_exit(int);
+
 
 static long mcctrl_ioctl(ihk_os_t os, unsigned int request, void *priv,
                          unsigned long arg)
@@ -104,8 +107,10 @@ static int __init mcctrl_init(void)
 				destroy_ikc_channels(os[i]);
 				os[i] = NULL;
 			}
+			procfs_init(i);
 		}
 	}
+
 	return 0;
 }
 
@@ -118,6 +123,7 @@ static void __exit mcctrl_exit(void)
 		if(os[i]){
 			ihk_os_unregister_user_call_handlers(os[i], mcctrl_uc + i);
 			destroy_ikc_channels(os[i]);
+			procfs_exit(i);
 		}
 	}
 }

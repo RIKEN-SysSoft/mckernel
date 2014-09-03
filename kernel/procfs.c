@@ -26,7 +26,7 @@
 
 #define DEBUG_PRINT_PROCFS
 
-#ifdef DEBUG_PRINT_SC
+#ifdef DEBUG_PRINT_PROCFS
 #define	dprintf(...) kprintf(__VA_ARGS__)
 #else
 #define dprintf(...)
@@ -50,13 +50,17 @@ void create_proc_procfs_files(int pid, int cpuid)
 {
 	char fname[PROCFS_NAME_MAX];
 
-	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/mem", osnum, pid);
+	dprintf("create procfs files:\n");
+
+	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task/%d/mem", osnum, pid, pid);
 	create_proc_procfs_file(pid, fname, 0400, cpuid);
+
+	dprintf("create procfs files: done\n");
 }
 
 static void create_proc_procfs_file(int pid, char *fname, int mode, int cpuid)
 {
-	dprintf("create procfs file: %s, mode: %s, cpuid: %d\n", fname, mode, cpuid);
+	dprintf("create procfs file: %s, mode: %o, cpuid: %d\n", fname, mode, cpuid);
 	operate_proc_procfs_file(pid, fname, SCD_MSG_PROCFS_CREATE, mode, cpuid);
 }
 
@@ -64,14 +68,32 @@ void delete_proc_procfs_files(int pid)
 {
 	char fname[PROCFS_NAME_MAX];
 
-	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/mem", osnum, pid);
+	dprintf("delete procfs files\n");
+	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task/%d/mem", osnum, pid, pid);
 	delete_proc_procfs_file(pid, fname);
+
+	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task/%d", osnum, pid, pid);
+	delete_proc_procfs_file(pid, fname);
+
+	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task", osnum, pid);
+	delete_proc_procfs_file(pid, fname);
+
+	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d", osnum, pid);
+	delete_proc_procfs_file(pid, fname);
+
+	/* CAVEAT: deleting mcos%d level procfs directory should be located 
+	   in delete_mckernel_procfs_files().*/
+	snprintf(fname, PROCFS_NAME_MAX, "mcos%d", osnum);
+	delete_proc_procfs_file(pid, fname);
+
+	dprintf("delete procfs files: done\n");
 }
 
 static void delete_proc_procfs_file(int pid, char *fname)
 {
 	dprintf("delete procfs file: %s\n", fname);
 	operate_proc_procfs_file(pid, fname, SCD_MSG_PROCFS_DELETE, 0, 0);
+	dprintf("delete procfs file: %s done\n", fname);
 }
 
 static void operate_proc_procfs_file(int pid, char *fname, int msg, int mode, int cpuid)
@@ -131,14 +153,20 @@ void process_procfs_request(unsigned long rarg)
 	pbuf = ihk_mc_map_memory(NULL, r->pbuf, r->count);
 	buf = ihk_mc_map_virtual(pbuf, r->count, PTATTR_WRITABLE | PTATTR_ACTIVE);
 
-	dprintf("fname:%s, offset: %lx, count:%d.\n", r->fname, r->offset, r->count);
+	dprintf("fname: %s, offset: %lx, count:%d.\n", r->fname, r->offset, r->count);
 
-	/* mcos0/PID/taks/PID/mem */
+	/* mcos0/PID/taks/PID/mem
+	 *
+	 * The offset is treated as the beginning of the virtual address area
+	 * of the process. The count is the length of the area.
+	 */
 	ret = sscanf(r->fname, "mcos%d/%d/task/%d/mem", &rosnum, &pid, &tid);
 	if ((ret == 3) && (pid == tid) && (osnum == rosnum)) {
 		if (cpu_local_var(current)->pid != pid) {
-			/* When the target process is no more here.
-			   This kind of hit-misses are caused by migration */ 
+			/* The target process has gone by migration. */
+#ifdef FIXME
+			r->newcpu = ...
+#endif
 			ans = 0;
 		} else {
 			struct vm_range *range;
@@ -147,16 +175,13 @@ void process_procfs_request(unsigned long rarg)
 			list_for_each_entry(range, &vm->vm_range_list, list) {
 				dprintf("range: %lx - %lx\n", range->start, range->end);
 				if ((range->start <= r->offset) && 
-				    (r->offset <= range->end)) {
-					if (r->offset + r->count <= range->end) {
-						memcpy((void *) buf, (void *) range->start, r->count);
-						ans = r->count;
-					} else {
-						unsigned int remain;
-						remain = range->end - r->offset;
-						memcpy((void *) buf, (void *)range->start, remain);
-						ans = remain;
+				    (r->offset < range->end)) {
+					unsigned int len = r->count;
+					if (range->end < r->offset + r->count) {
+						len = range->end - r->offset;
 					}
+					memcpy((void *) buf, (void *)range->start, len);
+					ans = len;
 					break;
 				}
 			}

@@ -1169,7 +1169,7 @@ static void clear_pte_range(uintptr_t start, uintptr_t len)
 static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 	struct file *file;
 	struct coretable *coretable;
-	int ret, len, i, tablesize, size, error = 0;
+	int ret, i, tablesize, size, error = 0;
 	mm_segment_t oldfs = get_fs(); 
 	unsigned long phys, tablephys, rphys;
 	ihk_device_t dev = ihk_os_to_dev(os);

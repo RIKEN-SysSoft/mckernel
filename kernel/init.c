@@ -35,7 +35,7 @@
 #include <ioctl.h>
 #endif
 
-//#define DEBUG_PRINT_INIT
+#define DEBUG_PRINT_INIT
 
 #ifdef DEBUG_PRINT_INIT
 #define dkprintf kprintf
@@ -141,7 +141,7 @@ void pc_init(void)
 			osnum += *p++ - '0';
 		}
 	}
-	kprintf("osnum: %d\n");
+	kprintf("osnum: %d\n", osnum);
 
 
 	if (!(p = find_command_line("perfctr"))) {

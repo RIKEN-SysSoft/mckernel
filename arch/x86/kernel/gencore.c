@@ -273,10 +273,10 @@ void fill_note(void *note, struct process *proc, void *regs)
 int gencore(struct process *proc, void *regs, 
 	    struct coretable **coretable, int *chunks)
 {
-	struct coretable *ct;
+	struct coretable *ct = NULL;
 	Elf64_Ehdr eh;
-	Elf64_Phdr *ph;
-	void *note;
+	Elf64_Phdr *ph = NULL;
+	void *note = NULL;
 	struct vm_range *range;
 	struct process_vm *vm = proc->vm;
 	int segs = 1;	/* the first one is for NOTE */
