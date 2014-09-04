@@ -311,6 +311,9 @@ SYSCALL_DECLARE(wait4)
 	struct waitq_entry waitpid_wqe;
 	int empty = 1;
 
+    if (options & ~(WNOHANG | WUNTRACED | WCONTINUED)) {
+        return -EINVAL;
+    }
 rescan:
 	child = NULL;
 	pid = (int)ihk_mc_syscall_arg0(ctx);	
