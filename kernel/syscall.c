@@ -333,7 +333,7 @@ rescan:
 		ihk_mc_spinlock_unlock_noirq(&child_iter->lock);
 	}
 
-	if (empty) {
+	if (empty || (!child && pid != -1)) {
 		ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
 		return -ECHILD;
 	}
