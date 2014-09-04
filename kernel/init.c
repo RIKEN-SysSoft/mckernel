@@ -35,7 +35,7 @@
 #include <ioctl.h>
 #endif
 
-#define DEBUG_PRINT_INIT
+//#define DEBUG_PRINT_INIT
 
 #ifdef DEBUG_PRINT_INIT
 #define dkprintf kprintf

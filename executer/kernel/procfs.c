@@ -17,7 +17,7 @@
 #include <linux/fs.h>
 #include "mcctrl.h"
 
-#define PROCFS_DEBUG
+//#define PROCFS_DEBUG
 
 #ifdef PROCFS_DEBUG
 #define	dprintk(...)	printk(__VA_ARGS__)
@@ -47,9 +47,11 @@ struct procfs_list_entry {
 LIST_HEAD(procfs_file_list);
 static ihk_spinlock_t procfs_file_list_lock;
 
-/*
- * char *p a name of the procfs file
- * int mode if zero create a directory otherwise a file
+/**
+ * \brief Return specified procfs entry. 
+ *
+ * \param p a name of the procfs file
+ * \param mode if zero create a directory otherwise a file
  *
  * return value: NULL: Something wrong has occurred.
  *               otherwise: address of the proc_dir_entry structure of the procfs file
@@ -130,6 +132,16 @@ static struct proc_dir_entry *get_procfs_entry(char *p, int mode)
 	return ret;
 }
 
+/**
+ * \brief Create a procfs entry.
+ *
+ * \param __os (opeque) os variable
+ * \param ref cpuid of the requesting mckernel process
+ * \param osnum osnum of the requesting mckernel process
+ * \param pid pid of the requesting mckernel process
+ * \param arg sent argument
+ */
+
 void procfs_create(void *__os, int ref, int osnum, int pid, unsigned long arg)
 {
 	struct proc_dir_entry *entry;
@@ -175,6 +187,13 @@ quit:
 	dprintk("procfs_create: done\n");
 }
 
+/**
+ * \brief Delete a procfs entry.
+ *
+ * \param __os (opaque) os variable
+ * \param arg sent argument
+ */
+
 void procfs_delete(void *__os, unsigned long arg)
 {
 	ihk_device_t dev = ihk_os_to_dev(__os);
@@ -216,15 +235,22 @@ void procfs_delete(void *__os, unsigned long arg)
 	dprintk("procfs_delete: done\n");
 }
 
-void procfs_answer(unsigned int arg)
+/**
+ * \brief Process SCD_MSG_PROCFS_ANSWER message.
+ *
+ * \param arg sent argument
+ * \param err error info (redundant)
+ */
+
+void procfs_answer(unsigned int arg, int err)
 {
-	dprintk("procfs: received SCD_MSG_PROCFS_ANSWER message.\n");
+	dprintk("procfs: received SCD_MSG_PROCFS_ANSWER message(err = %d).\n", err);
 	procfsq_channel = arg;
 	wake_up_interruptible(&procfsq);
 }
 
-/*
- * callback funciton for McKernel procfs
+/**
+ * \brief The callback funciton for McKernel procfs
  *
  * This function conforms to the 2) way of fs/proc/generic.c
  * from linux-2.6.39.4.
@@ -238,11 +264,10 @@ int mckernel_procfs_read(char *buffer, char **start, off_t offset,
 	struct procfs_list_entry *e = dat;
 	struct procfs_read *r;
 	struct ikc_scd_packet isp;
-	int ret;
+	int ret, retrycount = 0;
 	unsigned long pbuf;
 
 	dprintk("mckernel_procfs_read: invoked for %s\n", e->fname); 
-	dprintk("offset: %lx, count: %d\n", offset, count);
 
 	if (count <= 0 || dat == NULL) {
 		return 0;
@@ -258,9 +283,11 @@ int mckernel_procfs_read(char *buffer, char **start, off_t offset,
 		return -ENOMEM;
 	}
 retry:
+	dprintk("offset: %lx, count: %d, cpu: %d\n", offset, count, e->cpu);
+
 	r->pbuf = pbuf;
 	r->eof = 0;
-	r->ret = 0;
+	r->ret = -EIO;	/* default to error */
 	r->offset = offset;
 	r->count = count;
 	strncpy(r->fname, e->fname, PROCFS_NAME_MAX);
@@ -281,6 +308,10 @@ retry:
 		/* A miss-hit caused by migration has occurred.
 		 * We simply retry the query with a new CPU.
 		 */
+		if (retrycount++ > 10) {
+			kprintf("ERROR: mckernel_procfs_read: excessive retry.\n");
+			return -EIO;
+		}
 		e->cpu = r->newcpu;
 		dprintk("retry\n");
 		goto retry;
@@ -288,10 +319,6 @@ retry:
 	if (r->eof == 1) {
 		*peof = 1;
 	}
-	/* We employ the 2) method for a proc read function.
-	 * Refer to fs/proc/generic.c of the Linux kernel 
-	 * for the details.
-	 */
 	*start = buffer;
 	ret = r->ret;
 	kfree(r);
@@ -299,16 +326,28 @@ retry:
 	return ret;
 }
 
-void procfs_init(int i) {
+/**
+ * \brief Initialization for procfs
+ *
+ * \param osnum os number
+ */
+
+void procfs_init(int osnum) {
 }
 
-void procfs_exit(int i) {
+/**
+ * \brief Finalization for procfs
+ *
+ * \param osnum os number
+ */
+
+void procfs_exit(int osnum) {
 	char buf[20];
 	int error;
 	mm_segment_t old_fs = get_fs();
 	struct kstat stat;
 
-	sprintf(buf, "/proc/mcos%d", i);
+	sprintf(buf, "/proc/mcos%d", osnum);
 
 	set_fs(KERNEL_DS);
 	error = vfs_stat (buf, &stat);
@@ -317,5 +356,6 @@ void procfs_exit(int i) {
 		return;
 	}
 
+	/* remove remnant of previous mcos%d */
 	remove_proc_entry(buf + 6, NULL);
 }

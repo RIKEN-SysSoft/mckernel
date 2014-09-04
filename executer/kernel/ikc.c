@@ -43,7 +43,7 @@ static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ih
 int mcexec_syscall(struct mcctrl_channel *c, int pid, unsigned long arg);
 void procfs_create(void *__os, int ref, int osnum, int pid, unsigned long arg);
 void procfs_delete(void *__os, unsigned long arg);
-void procfs_answer(unsigned long arg);
+void procfs_answer(unsigned long arg, int err);
 
 static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *__os)
@@ -77,7 +77,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		break;
 
 	case SCD_MSG_PROCFS_ANSWER:
-		procfs_answer(pisp->arg);
+		procfs_answer(pisp->arg, pisp->err);
 		break;
 	}
 
