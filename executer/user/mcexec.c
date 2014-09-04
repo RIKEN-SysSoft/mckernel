@@ -340,8 +340,13 @@ unsigned char *dma_buf;
 
 int lookup_exec_path(char *filename, char *path, int max_len) 
 {
-	int found = 0;
+	int found;
 	int error;
+	struct stat sb;
+	char *link_path = NULL;
+
+retry:
+	found = 0;
 
 	/* Is file not absolute path? */
 	if (strncmp(filename, "/", 1)) {
@@ -418,6 +423,36 @@ int lookup_exec_path(char *filename, char *path, int max_len)
 		found = 1;
 	}
 
+	if (link_path) {
+		free(link_path);
+		link_path = NULL;
+	}
+
+	/* Check whether the resolved path is a symlink */
+	if (lstat(path, &sb) == -1) {
+		fprintf(stderr, "lookup_exec_path(): error stat\n");
+		return errno;
+	}
+
+	if ((sb.st_mode & S_IFMT) == S_IFLNK) {
+		char *link_path = malloc(max_len);
+		if (!link_path) {
+			fprintf(stderr, "lookup_exec_path(): error allocating\n");
+			return ENOMEM;
+		}
+		
+		error = readlink(path, link_path, max_len);
+		if (error == -1 || error == max_len) {
+			fprintf(stderr, "lookup_exec_path(): error readlink\n");
+			return EINVAL;
+		}
+
+		__dprintf("lookup_exec_path(): %s is link -> %s\n", path, link_path);
+
+		filename = link_path;
+		goto retry; 
+	}
+	
 	if (!found) {
 		fprintf(stderr, 
 				"lookup_exec_path(): error finding file %s\n", filename);
