@@ -256,8 +256,6 @@ void procfs_answer(unsigned int arg, int err)
  * from linux-2.6.39.4.
  */
 
-static void *channel;
-
 int mckernel_procfs_read(char *buffer, char **start, off_t offset,
 			 int count, int *peof, void *dat)
 {
@@ -298,7 +296,6 @@ retry:
 	if (ret < 0) {
 		return ret; /* error */
 	}
-	channel = NULL;
 	/* Wait for a reply. */
 	dprintk("now wait for a relpy\n");
 	wait_event_interruptible(procfsq, procfsq_channel == virt_to_phys(r));
