@@ -111,7 +111,7 @@ struct kernel_termios {
 	cc_t c_cc[NCCS];                /* control characters */
 };
 
-int main_loop(int fd, int cpu, pthread_mutex_t *lock);
+int main_loop(int fd, int cpu, pthread_mutex_t *lock, int mcosid);
 
 static int fd;
 static char *altroot;
@@ -569,6 +569,7 @@ struct thread_data_s {
 	pthread_t thread_id;
 	int fd;
 	int cpu;
+	int mcosid;
 	int ret;
 	pid_t	tid;
 	int terminate;
@@ -589,7 +590,7 @@ static void *main_loop_thread_func(void *arg)
 	td->tid = gettid();
 	td->remote_tid = (int)td->tid;
 	pthread_barrier_wait(&init_ready);
-	td->ret = main_loop(td->fd, td->cpu, td->lock);
+	td->ret = main_loop(td->fd, td->cpu, td->lock, td->mcosid);
 
 	return NULL;
 }
@@ -713,7 +714,7 @@ void init_sigaction(void)
 	}
 }		
 
-void init_worker_threads(int fd) 
+void init_worker_threads(int fd, int mcosid) 
 {
 	int i;
 
@@ -725,6 +726,7 @@ void init_worker_threads(int fd)
 
 		thread_data[i].fd = fd;
 		thread_data[i].cpu = i;
+		thread_data[i].mcosid = mcosid;
 		thread_data[i].lock = &lock;
 		thread_data[i].init_ready = &init_ready;
 		thread_data[i].terminate = 0;
@@ -955,7 +957,7 @@ int main(int argc, char **argv)
 
 	init_sigaction();
 
-	init_worker_threads(fd);
+	init_worker_threads(fd, mcosid);
 
 	if (ioctl(fd, MCEXEC_UP_START_IMAGE, (unsigned long)desc) != 0) {
 		perror("exec");
@@ -1058,7 +1060,7 @@ static long do_strncpy_from_user(int fd, void *dest, void *src, unsigned long n)
 
 #define SET_ERR(ret) if (ret == -1) ret = -errno
 
-int main_loop(int fd, int cpu, pthread_mutex_t *lock)
+int main_loop(int fd, int cpu, pthread_mutex_t *lock, int mcosid)
 {
 	struct syscall_wait_desc w;
 	long ret;
@@ -1067,6 +1069,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 	int term;
 	struct timeval tv;
 	char pathbuf[PATH_MAX];
+	char tmpbuf[PATH_MAX];
 
 	w.cpu = cpu;
 	w.pid = getpid();
@@ -1096,11 +1099,9 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			__dprintf("open: %s\n", pathbuf);
 
 			fn = pathbuf;
-			if(!strcmp(fn, "/proc/meminfo")){
-				fn = "/admin/fs/attached/files/proc/meminfo";
-			}
-			else if(!strcmp(fn, "/proc/cpuinfo")){
-				fn = "/admin/fs/attached/files/proc/cpuinfo";
+			if(!strncmp(fn, "/proc/", 6)){
+				sprintf(tmpbuf, "/proc/mcos%d/%s", mcosid, fn + 6);
+				fn = tmpbuf;
 			}
 			else if(!strcmp(fn, "/sys/devices/system/cpu/online")){
 				fn = "/admin/fs/attached/files/sys/devices/system/cpu/online";
@@ -1228,7 +1229,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 					
 					/* Reinit signals and syscall threads */
 					init_sigaction();
-					init_worker_threads(fd);
+					init_worker_threads(fd, mcosid);
 
 					__dprintf("pid(%d): signals and syscall threads OK\n", 
 							getpid());
