@@ -189,6 +189,8 @@ do_setpgid(int pid, int pgid)
 	}
 }
 
+extern void coredump(struct process *proc, void *regs);
+
 void
 do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pending *pending)
 {
@@ -260,11 +262,26 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 		ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
 	}
 	else{
+		int	coredumped = 0;
 		kfree(pending);
 		ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
-		if(sig == SIGCHLD || sig == SIGURG)
+		switch(sig){
+		    case SIGCHLD:
+		    case SIGURG:
 			return;
-		terminate(0, sig, (ihk_mc_user_context_t *)regs->rsp);
+		    case SIGQUIT:
+		    case SIGILL:
+		    case SIGTRAP:
+		    case SIGABRT:
+		    case SIGBUS:
+		    case SIGFPE:
+		    case SIGUSR1:
+		    case SIGSEGV:
+		    case SIGUSR2:
+			coredump(proc, regs);
+			coredumped = 0x80;
+		}
+		terminate(0, sig | coredumped, (ihk_mc_user_context_t *)regs->rsp);
 	}
 }
 
@@ -561,8 +578,10 @@ set_signal(int sig, void *regs0)
 		return;
 
 	if((__sigmask(sig) & proc->sigmask.__val[0]) ||
-	   (regs->rsp & 0x8000000000000000))
-		terminate(0, sig, (ihk_mc_user_context_t *)regs->rsp);
+	   (regs->rsp & 0x8000000000000000)){
+		coredump(proc, regs0);
+		terminate(0, sig | 0x80, (ihk_mc_user_context_t *)regs->rsp);
+	}
 	else
 		do_kill(proc->pid, proc->tid, sig);
 }

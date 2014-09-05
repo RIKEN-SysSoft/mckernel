@@ -109,6 +109,8 @@ struct program_image_section {
 	void *fp;
 };
 
+#define SHELL_PATH_MAX_LEN	1024
+
 struct program_load_desc {
 	int num_sections;
 	int status;
@@ -134,6 +136,7 @@ struct program_load_desc {
 	unsigned long rlimit_stack_cur;
 	unsigned long rlimit_stack_max;
 	unsigned long interp_align;
+	char shell_path[SHELL_PATH_MAX_LEN];
 	struct program_image_section sections[0];
 };
 

@@ -180,7 +180,7 @@ void freecore(struct coretable **);
  * \param regs A pointer to a x86_regs structure.
  */
 
-static void coredump(struct process *proc, void *regs)
+void coredump(struct process *proc, void *regs)
 {
 	struct syscall_request request IHK_DMA_ALIGN;
 	int ret;
@@ -216,9 +216,9 @@ static void unhandled_page_fault(struct process *proc, void *fault_addr, void *r
 	unsigned long error = ((struct x86_regs *)regs)->error;
 
 	irqflags = kprintf_lock();
-	__kprintf("[%d] Page fault for 0x%lX\n",
+	dkprintf("[%d] Page fault for 0x%lX\n",
 			ihk_mc_get_processor_id(), address);
-	__kprintf("%s for %s access in %s mode (reserved bit %s set), "
+	dkprintf("%s for %s access in %s mode (reserved bit %s set), "
 			"it %s an instruction fetch\n",
 			(error & PF_PROT ? "protection fault" : "no page found"),
 			(error & PF_WRITE ? "write" : "read"),
@@ -230,14 +230,14 @@ static void unhandled_page_fault(struct process *proc, void *fault_addr, void *r
 	list_for_each_entry(range, &vm->vm_range_list, list) {
 		if (range->start <= address && range->end > address) {
 			found = 1;
-			__kprintf("address is in range, flag: 0x%X! \n",
+			dkprintf("address is in range, flag: 0x%X! \n",
 					range->flag);
 			ihk_mc_pt_print_pte(vm->page_table, (void*)address);
 			break;
 		}
 	}
 	if (!found) {
-		__kprintf("address is out of range! \n");
+		dkprintf("address is out of range! \n");
 	}
 
 	kprintf_unlock(irqflags);
@@ -246,8 +246,8 @@ static void unhandled_page_fault(struct process *proc, void *fault_addr, void *r
 	ihk_mc_debug_show_interrupt_context(regs);
 
 
-	dkprintf("now dump a core file\n");
-	coredump(proc, regs);
+	//dkprintf("now dump a core file\n");
+	//coredump(proc, regs);
 
 #ifdef DEBUG_PRINT_MEM
 	{

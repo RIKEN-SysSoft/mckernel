@@ -29,6 +29,6 @@ int memcmp(const void *s1, const void *s2, size_t n);
 void *memset(void *s, int n, size_t l);
 
 unsigned long strtol(const char *cp, char **endp, unsigned int base);
-int flatten_strings(int nr_strings, char **strings, char **flat);
+int flatten_strings(int nr_strings, char *first, char **strings, char **flat);
 
 #endif

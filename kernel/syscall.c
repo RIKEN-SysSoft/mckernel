@@ -311,6 +311,9 @@ SYSCALL_DECLARE(wait4)
 	struct waitq_entry waitpid_wqe;
 	int empty = 1;
 
+    if (options & ~(WNOHANG | WUNTRACED | WCONTINUED)) {
+        return -EINVAL;
+    }
 rescan:
 	child = NULL;
 	pid = (int)ihk_mc_syscall_arg0(ctx);	
@@ -333,7 +336,7 @@ rescan:
 		ihk_mc_spinlock_unlock_noirq(&child_iter->lock);
 	}
 
-	if (empty) {
+	if (empty || (!child && pid != -1)) {
 		ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
 		return -ECHILD;
 	}
@@ -400,7 +403,7 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 	struct fork_tree_node *child, *next;
 
 	request.number = __NR_exit_group;
-	request.args[0] = ((rc & 0x00ff) << 8) | (sig & 0x7f);
+	request.args[0] = ((rc & 0x00ff) << 8) | (sig & 0xff);
 
 #ifdef DCFA_KMOD
 	do_mod_exit(rc);
@@ -430,7 +433,7 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 		
 		ihk_mc_spinlock_lock_noirq(&ftn->lock);
 		ftn->pid = proc->pid;
-		ftn->exit_status = ((rc & 0x00ff) << 8) | (sig & 0x7f);
+		ftn->exit_status = ((rc & 0x00ff) << 8) | (sig & 0xff);
 		ftn->status = PS_ZOMBIE;
 		ihk_mc_spinlock_unlock_noirq(&ftn->lock);	
 
@@ -1245,15 +1248,20 @@ SYSCALL_DECLARE(execve)
 
 	dkprintf("execve(): ELF desc received, num sections: %d\n",
 		desc->num_sections);
+	
+	if (desc->shell_path[0]) {
+		dkprintf("execve(): shell interpreter: %s\n", desc->shell_path);
+	}
 
 	/* Flatten argv and envp into kernel-space buffers */
-	argv_flat_len = flatten_strings(-1, argv, &argv_flat);
+	argv_flat_len = flatten_strings(-1, (desc->shell_path[0] ? 
+				desc->shell_path : NULL), argv, &argv_flat);
 	if (argv_flat_len == 0) {
 		kprintf("ERROR: no argv for executable: %s?\n", filename);
 		return -EINVAL;
 	}
 
-	envp_flat_len = flatten_strings(-1, envp, &envp_flat);
+	envp_flat_len = flatten_strings(-1, NULL, envp, &envp_flat);
 	if (envp_flat_len == 0) {
 		kprintf("ERROR: no envp for executable: %s?\n", filename);
 		return -EINVAL;
@@ -2009,6 +2017,7 @@ SYSCALL_DECLARE(sched_setaffinity)
 	struct process *thread;
 	int cpu_id;
 	unsigned long irqstate;
+	extern int num_processors;
 
 	if (sizeof(k_cpu_set) > len) {
 		kprintf("%s:%d\n Too small buffer.", __FILE__, __LINE__);
@@ -2023,10 +2032,12 @@ SYSCALL_DECLARE(sched_setaffinity)
 
 	// XXX: We should build something like cpu_available_mask in advance
 	CPU_ZERO(&cpu_set);
-	extern int num_processors;
 	for (cpu_id = 0; cpu_id < num_processors; cpu_id++)
 		if (CPU_ISSET(cpu_id, &k_cpu_set))
 			CPU_SET(cpu_id, &cpu_set);
+
+	if(tid == 0)
+		tid = cpu_local_var(current)->tid;
 
 	for (cpu_id = 0; cpu_id < num_processors; cpu_id++) {
 		irqstate = ihk_mc_spinlock_lock(&get_cpu_local_var(cpu_id)->runq_lock);
@@ -2064,6 +2075,7 @@ SYSCALL_DECLARE(sched_getaffinity)
 	int found = 0;
 	int i;
 	unsigned long irqstate;
+	extern int num_processors;
 
 	if (sizeof(k_cpu_set) > len) {
 		kprintf("%s:%d Too small buffer.\n", __FILE__, __LINE__);
@@ -2071,7 +2083,9 @@ SYSCALL_DECLARE(sched_getaffinity)
 	}
 	len = MIN2(len, sizeof(k_cpu_set));
 
-	extern int num_processors;
+	if(tid == 0)
+		tid = cpu_local_var(current)->tid;
+
 	for (i = 0; i < num_processors && !found; i++) {
 		struct process *thread;
 		irqstate = ihk_mc_spinlock_lock(&get_cpu_local_var(i)->runq_lock);

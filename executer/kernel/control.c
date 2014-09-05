@@ -284,7 +284,7 @@ static long mcexec_send_signal(ihk_os_t os, struct signal_desc *sigparam)
 	isp.pid = sig.pid;
 	isp.arg = (long)sig.tid << 32 | (sig.sig & 0x00000000ffffffffL);
 
-	mcctrl_ikc_send(os, 0, &isp);
+	mcctrl_ikc_send(os, sig.cpu, &isp);
 
 	return 0;
 }
