@@ -326,46 +326,50 @@ rescan:
 
 		ihk_mc_spinlock_lock_noirq(&child_iter->lock);
 		
-		if (child_iter->status == PS_ZOMBIE
-			&& (pid == -1 || pid == child_iter->pid)) {
+		if (pid == -1 || pid == child_iter->pid) {
 			child = child_iter;
-			ihk_mc_spinlock_unlock_noirq(&child_iter->lock);
 			break;
 		}
 		
 		ihk_mc_spinlock_unlock_noirq(&child_iter->lock);
 	}
-
+	
 	if (empty || (!child && pid != -1)) {
 		ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
 		return -ECHILD;
 	}
 
+	/* If child is valid we are still holding its ftn->lock */
 	if (child) {
-		struct syscall_request request IHK_DMA_ALIGN;
+		if (child->status == PS_ZOMBIE) {
+			struct syscall_request request IHK_DMA_ALIGN;
 
-		dkprintf("wait: found PS_ZOMBIE process: %d\n", child->pid);
-		
-		list_del(&child->siblings_list);	
-		ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
-		
-		if (status) {
-			*status = child->exit_status;
+			ihk_mc_spinlock_unlock_noirq(&child->lock);
+			dkprintf("wait: found PS_ZOMBIE process: %d\n", child->pid);
+
+			list_del(&child->siblings_list);	
+			ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
+
+			if (status) {
+				*status = child->exit_status;
+			}
+			pid = child->pid;
+
+			release_fork_tree_node(child);
+
+			/* Ask host to clean up exited child */
+			request.number = __NR_wait4;
+			request.args[0] = pid;
+			request.args[1] = 0;
+			ret = do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0);
+
+			if (ret != pid)
+				kprintf("WARNING: host waitpid failed?\n");
+
+			goto exit;
 		}
-		pid = child->pid;
 		
-		release_fork_tree_node(child);
-
-		/* Ask host to clean up exited child */
-		request.number = __NR_wait4;
-		request.args[0] = pid;
-		request.args[1] = 0;
-		ret = do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0);
-		
-		if (ret != pid)
-			kprintf("WARNING: host waitpid failed?\n");
-		
-		goto exit;
+		ihk_mc_spinlock_unlock_noirq(&child->lock);
 	}
 	
 	/* Don't sleep if WNOHANG requested */
