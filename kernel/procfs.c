@@ -292,6 +292,9 @@ void process_procfs_request(unsigned long rarg)
 			}
 			memcpy((void *)buf, ((char *) proc->saved_auxv) + r->offset, len);
 			ans = len;
+			if (r->offset + len == limit) {
+				eof = 1;
+			}
 		}
 		goto end;
 	}
