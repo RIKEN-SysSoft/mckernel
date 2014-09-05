@@ -59,6 +59,9 @@ void create_proc_procfs_files(int pid, int cpuid)
 
 	dprintf("create procfs files:\n");
 
+	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/auxv", osnum, pid);
+	create_proc_procfs_file(pid, fname, 0400, cpuid);
+
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task/%d/mem", osnum, pid, pid);
 	create_proc_procfs_file(pid, fname, 0400, cpuid);
 
@@ -98,6 +101,9 @@ void delete_proc_procfs_files(int pid)
 	delete_proc_procfs_file(pid, fname);
 
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task", osnum, pid);
+	delete_proc_procfs_file(pid, fname);
+
+	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/auxv", osnum, pid);
 	delete_proc_procfs_file(pid, fname);
 
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d", osnum, pid);
@@ -194,19 +200,18 @@ void process_procfs_request(unsigned long rarg)
 	dprintf("rarg: %x\n", rarg);
 	parg = ihk_mc_map_memory(NULL, rarg, sizeof(struct procfs_read));
 	dprintf("parg: %x\n", parg);
-	r = ihk_mc_map_virtual(parg, sizeof(struct procfs_read), 
-			       PTATTR_WRITABLE | PTATTR_ACTIVE);
-	dprintf("r: %p\n", r);
+	r = ihk_mc_map_virtual(parg, 1, PTATTR_WRITABLE | PTATTR_ACTIVE);
 	if (r == NULL) {
 		kprintf("ERROR: process_procfs_request: got a null procfs_read structure.\n");
 		packet.err = -EIO;
 		goto dataunavail;
 	}
+	dprintf("r: %p\n", r);
 
 	dprintf("remote pbuf: %x\n", r->pbuf);
 	pbuf = ihk_mc_map_memory(NULL, r->pbuf, r->count);
 	dprintf("pbuf: %x\n", pbuf);
-	buf = ihk_mc_map_virtual(pbuf, r->count, PTATTR_WRITABLE | PTATTR_ACTIVE);
+	buf = ihk_mc_map_virtual(pbuf, 1, PTATTR_WRITABLE | PTATTR_ACTIVE);
 	dprintf("buf: %p\n", buf);
 	if (buf == NULL) {
 		kprintf("ERROR: process_procfs_request: got a null buffer.\n");
@@ -236,8 +241,7 @@ void process_procfs_request(unsigned long rarg)
 	/* Processing for pattern "mcos%d/xxx" files should be here.
 	   Its template is something like what follows:
 
-	   ret = sscanf(p, "PATTERN", ...)
-	   if ((ret == xx) && pattern has matched) {
+	   if (pattern matches) {
 	   	   get the data (at 'r->offset')
 		   and write it to 'buf'
 		   up to 'r->count' bytes.
@@ -277,7 +281,23 @@ void process_procfs_request(unsigned long rarg)
 	p = strchr(p, '/') + 1;
 
 	/* 
-	 * mcos0/PID/taks/PID/mem
+	 * mcos%d/PID/auxv
+	 */
+	if (strcmp(p, "auxv") == 0) {
+		unsigned int limit = AUXV_LEN * sizeof(int);
+		unsigned int len = r->count;
+		if (r->offset < limit) {
+			if (limit < r->offset + r->count) {
+				len = limit - r->offset;
+			}
+			memcpy((void *)buf, ((char *) proc->saved_auxv) + r->offset, len);
+			ans = len;
+		}
+		goto end;
+	}
+
+	/* 
+	 * mcos%d/PID/taks/PID/mem
 	 *
 	 * The offset is treated as the beginning of the virtual address area
 	 * of the process. The count is the length of the area.
@@ -299,7 +319,7 @@ void process_procfs_request(unsigned long rarg)
 				if (range->end < r->offset + r->count) {
 					len = range->end - r->offset;
 				}
-				memcpy((void *) buf, (void *)range->start, len);
+				memcpy((void *)buf, (void *)range->start, len);
 				ans = len;
 				break;
 			}
@@ -312,14 +332,14 @@ void process_procfs_request(unsigned long rarg)
 	*/
 	dprintf("could not find a matching entry for %s.\n", p); 
 end:
-	ihk_mc_unmap_virtual(buf, r->count, 0);
+	ihk_mc_unmap_virtual(buf, 1, 0);
 	dprintf("ret: %d, eof: %d\n", ans, eof);
 	r->ret = ans;
 	r->eof = eof;
 	packet.err = 0;
 bufunavail:
 	ihk_mc_unmap_memory(NULL, pbuf, r->count);
-	ihk_mc_unmap_virtual(r, sizeof(struct procfs_read), 0);
+	ihk_mc_unmap_virtual(r, 1, 0);
 dataunavail:
 	ihk_mc_unmap_memory(NULL, parg, sizeof(struct procfs_read));
 

@@ -170,9 +170,9 @@ void procfs_create(void *__os, int ref, int osnum, int pid, unsigned long arg)
 			printk("ERROR: procfs_creat: file name not properly terminated.\n");
 			goto quit;
 	}
-	entry = get_procfs_entry(f->fname, mode);
+	entry = get_procfs_entry(name, mode);
 	if (entry == NULL) {
-		printk("ERROR: could not create a procfs entry for %s.\n", f->fname);
+		printk("ERROR: could not create a procfs entry for %s.\n", name);
 		goto quit;
 	}
 
@@ -260,14 +260,14 @@ int mckernel_procfs_read(char *buffer, char **start, off_t offset,
 			 int count, int *peof, void *dat)
 {
 	struct procfs_list_entry *e = dat;
-	struct procfs_read *r;
+	volatile struct procfs_read *r;
 	struct ikc_scd_packet isp;
 	int ret, retrycount = 0;
 	unsigned long pbuf;
 
 	dprintk("mckernel_procfs_read: invoked for %s\n", e->fname); 
 
-	if (count <= 0 || dat == NULL) {
+	if (count <= 0 || dat == NULL || offset < 0) {
 		return 0;
 	}
 
