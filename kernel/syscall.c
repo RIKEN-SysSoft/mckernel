@@ -1323,26 +1323,29 @@ SYSCALL_DECLARE(execve)
 	return 0;
 }
 
-SYSCALL_DECLARE(clone)
+unsigned long do_fork(int clone_flags, unsigned long newsp,
+                      unsigned long parent_tidptr, unsigned long child_tidptr,
+                      unsigned long tlsblock_base, unsigned long curpc,
+                      unsigned long cursp)
 {
 	int cpuid;
-	int clone_flags = ihk_mc_syscall_arg0(ctx);
 	struct process *new;
 	ihk_mc_user_context_t ctx1;
 	struct syscall_request request1 IHK_DMA_ALIGN;
 
-	dkprintf("clone(): stack_pointr passed in: 0x%lX, stack pointer of caller: 0x%lx\n",
-			 (unsigned long)ihk_mc_syscall_arg1(ctx),
-			 (unsigned long)ihk_mc_syscall_sp(ctx));
+    dkprintf("do_fork,flags=%08x,newsp=%lx,ptidptr=%lx,ctidptr=%lx,tls=%lx,curpc=%lx,cursp=%lx",
+            clone_flags, newsp, parent_tidptr, child_tidptr, tlsblock_base, curpc, cursp);
+
+	dkprintf("do_fork(): stack_pointr passed in: 0x%lX, stack pointer of caller: 0x%lx\n",
+			 newsp, cursp);
 
 	cpuid = obtain_clone_cpuid();
     if (cpuid == -1) {
         return -EAGAIN;
     }
 
-	new = clone_process(cpu_local_var(current), ihk_mc_syscall_pc(ctx),
-	                    ihk_mc_syscall_arg1(ctx) ? ihk_mc_syscall_arg1(ctx) :
-						ihk_mc_syscall_sp(ctx), 
+	new = clone_process(cpu_local_var(current), curpc,
+	                    newsp ? newsp : cursp, 
 						clone_flags);
 	
 	if (!new) {
@@ -1395,25 +1398,25 @@ SYSCALL_DECLARE(clone)
 	
 	if (clone_flags & CLONE_PARENT_SETTID) {
 		dkprintf("clone_flags & CLONE_PARENT_SETTID: 0x%lX\n",
-		         (unsigned long)ihk_mc_syscall_arg2(ctx));
+		         parent_tidptr);
 		
-		*(int*)ihk_mc_syscall_arg2(ctx) = new->pid;
+		*(int*)parent_tidptr = new->pid;
 	}
 	
 	if (clone_flags & CLONE_CHILD_CLEARTID) {
 		dkprintf("clone_flags & CLONE_CHILD_CLEARTID: 0x%lX\n", 
-			     (unsigned long)ihk_mc_syscall_arg3(ctx));
+			     child_tidptr);
 
-		new->thread.clear_child_tid = (int*)ihk_mc_syscall_arg3(ctx);
+		new->thread.clear_child_tid = (int*)child_tidptr;
 	}
 	
 	if (clone_flags & CLONE_CHILD_SETTID) {
 		unsigned long phys;
 		dkprintf("clone_flags & CLONE_CHILD_SETTID: 0x%lX\n",
-				(unsigned long)ihk_mc_syscall_arg3(ctx));
+				child_tiptr);
 
 		if (ihk_mc_pt_virt_to_phys(new->vm->page_table, 
-					(void *)ihk_mc_syscall_arg3(ctx), &phys)) { 
+					(void *)child_tidptr, &phys)) { 
 			kprintf("ERROR: looking up physical addr for child process\n");
 			return -EFAULT; 
 		}
@@ -1423,10 +1426,9 @@ SYSCALL_DECLARE(clone)
 	
 	if (clone_flags & CLONE_SETTLS) {
 		dkprintf("clone_flags & CLONE_SETTLS: 0x%lX\n", 
-			     (unsigned long)ihk_mc_syscall_arg4(ctx));
+			     tlsblock_base);
 		
-		new->thread.tlsblock_base = 
-			(unsigned long)ihk_mc_syscall_arg4(ctx);
+		new->thread.tlsblock_base = tlsblock_base;
 	}
 	else { 
 		new->thread.tlsblock_base = 
@@ -1439,6 +1441,19 @@ SYSCALL_DECLARE(clone)
 	runq_add_proc(new, cpuid);
 
 	return new->tid;
+}
+
+SYSCALL_DECLARE(vfork)
+{
+    return do_fork(SIGCHLD, 0, 0, 0, 0, ihk_mc_syscall_pc(ctx), ihk_mc_syscall_sp(ctx));
+}
+
+SYSCALL_DECLARE(clone)
+{
+    return do_fork((int)ihk_mc_syscall_arg0(ctx), ihk_mc_syscall_arg1(ctx),
+                   ihk_mc_syscall_arg2(ctx), ihk_mc_syscall_arg3(ctx),
+                   ihk_mc_syscall_arg4(ctx), ihk_mc_syscall_pc(ctx),
+                   ihk_mc_syscall_sp(ctx));
 }
 
 SYSCALL_DECLARE(set_tid_address)
