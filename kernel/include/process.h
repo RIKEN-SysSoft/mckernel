@@ -144,6 +144,7 @@ struct fork_tree_node {
 
 	struct process *owner;
 	int pid;
+	int pgid;
 	
 	struct fork_tree_node *parent;
 	struct list_head children;

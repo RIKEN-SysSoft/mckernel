@@ -183,6 +183,11 @@ do_setpgid(int pid, int pgid)
 				continue;
 			if(p->pid == pid){
 				p->pgid = pgid;
+
+                /* Update pgid in fork_tree because it's used in wait4 */
+                ihk_mc_spinlock_lock_noirq(&p->ftn->lock);
+                p->ftn->pgid = pgid;
+                ihk_mc_spinlock_unlock_noirq(&p->ftn->lock);
 			}
 		}
 		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);

@@ -305,6 +305,7 @@ SYSCALL_DECLARE(wait4)
 	struct process *proc = cpu_local_var(current);
 	struct fork_tree_node *child, *child_iter;
 	int pid = (int)ihk_mc_syscall_arg0(ctx);
+	int pgid = proc->pgid;
 	int *status = (int *)ihk_mc_syscall_arg1(ctx);
 	int options = (int)ihk_mc_syscall_arg2(ctx);
 	int ret;
@@ -326,7 +327,7 @@ rescan:
 
 		ihk_mc_spinlock_lock_noirq(&child_iter->lock);
 		
-		if (pid == -1 || pid == child_iter->pid) {
+		if (pid == -1 || (pid == 0 && pgid == child_iter->pgid) || pid == child_iter->pid) {
 			child = child_iter;
 			break;
 		}
@@ -1395,6 +1396,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	}
 
 	new->ftn->pid = new->pid;
+	new->ftn->pgid = new->pgid;
 	
 	if (clone_flags & CLONE_PARENT_SETTID) {
 		dkprintf("clone_flags & CLONE_PARENT_SETTID: 0x%lX\n",
