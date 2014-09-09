@@ -210,6 +210,7 @@ struct process *clone_process(struct process *org, unsigned long pc,
 	ihk_mc_modify_user_context(proc->uctx, IHK_UCR_PROGRAM_COUNTER, pc);
 
 	proc->rlimit_stack = org->rlimit_stack;
+	proc->sigmask = org->sigmask;
 	
 	proc->ftn = kmalloc(sizeof(struct fork_tree_node), IHK_MC_AP_NOWAIT);
 	if (!proc->ftn) {
