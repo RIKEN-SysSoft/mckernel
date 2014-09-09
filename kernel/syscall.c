@@ -1648,6 +1648,7 @@ static int
 do_sigsuspend(struct process *proc, const sigset_t *set)
 {
 	__sigset_t wset;
+	__sigset_t bset;
 	int flag;
 	struct sig_pending *pending;
 	struct list_head *head;
@@ -1656,6 +1657,7 @@ do_sigsuspend(struct process *proc, const sigset_t *set)
 	wset = set->__val[0];
 	wset &= ~__sigmask(SIGKILL);
 	wset &= ~__sigmask(SIGSTOP);
+	bset = proc->sigmask.__val[0];
 	proc->sigmask.__val[0] = wset;
 
 	for(;;){
@@ -1688,6 +1690,7 @@ do_sigsuspend(struct process *proc, const sigset_t *set)
 
 		list_del(&pending->list);
 		ihk_mc_spinlock_unlock(lock, flag);
+		proc->sigmask.__val[0] = bset;
 		do_signal(-EINTR, NULL, proc, pending);
 		break;
 	}
