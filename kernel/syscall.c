@@ -368,6 +368,18 @@ rescan:
 				kprintf("WARNING: host waitpid failed?\n");
 
 			goto exit;
+		} else if(child->status == PS_STOPPED) {
+			ihk_mc_spinlock_unlock_noirq(&child->lock);
+			ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
+
+			/* exit_status is created in do_signal */
+			if (status) {
+				*status = child->exit_status;
+			}
+			pid = child->pid;
+			dkprintf("wait4,PS_STOPPED,pid=%d,status=%08x\n", pid, *status);
+
+			goto exit;
 		}
 		
 		ihk_mc_spinlock_unlock_noirq(&child->lock);

@@ -274,6 +274,30 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 		    case SIGCHLD:
 		    case SIGURG:
 			return;
+        case SIGSTOP: {
+            dkprintf("do_signal,SIGSTOP,changing state\n");
+            struct process *proc = cpu_local_var(current);
+            struct fork_tree_node *ftn = proc->ftn;
+            int exit_code = SIGSTOP;
+
+            /* Update process state in fork tree */
+            ihk_mc_spinlock_lock_noirq(&ftn->lock);	
+            ftn->exit_status = (exit_code << 8) | 0x7f;
+            ftn->status = PS_STOPPED;
+            ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
+
+            /* Wake up the parent who tried wait4 and sleeping */
+            waitq_wakeup(&proc->ftn->parent->waitpid_q);
+
+            dkprintf("do_signal,SIGSTOP,sleeping\n");
+            /* Sleep */
+            proc->status = PS_STOPPED;
+            schedule();
+            dkprintf("SIGSTOP(): woken up\n");
+            goto out; }
+        case SIGCONT:
+            dkprintf("do_signal,SIGCONT,do nothing\n");
+            goto out;
 		    case SIGQUIT:
 		    case SIGILL:
 		    case SIGTRAP:
@@ -288,6 +312,7 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 		}
 		terminate(0, sig | coredumped, (ihk_mc_user_context_t *)regs->rsp);
 	}
+ out:;
 }
 
 void
@@ -555,21 +580,40 @@ do_kill(int pid, int tid, int sig)
 	else{
 		ihk_mc_spinlock_unlock_noirq(&tproc->sigpendinglock);
 	}
-
-	if(doint && !(mask & tproc->sigmask.__val[0])){
-		int cpuid = tproc->cpu_id;
-		if(proc != tproc){
-			ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpuid)->apic_id, 0xd0);
-		}
-		pid = tproc->pid;
-		ihk_mc_spinlock_unlock_noirq(savelock);
-		cpu_restore_interrupt(irqstate);
-		interrupt_syscall(pid, cpuid);
+	dkprintf("do_kill,pid=%d,sig=%d\n", pid, sig);
+	if(doint && !(mask & tproc->sigmask.__val[0]) &&
+       sig != SIGSTOP && sig != SIGCONT){
+            int cpuid = tproc->cpu_id;
+            dkprintf("do_kill,proc=%p,tproc=%p\n", proc, tproc);
+            if(proc != tproc){
+                ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpuid)->apic_id, 0xd0);
+            }
+            pid = tproc->pid;
+            ihk_mc_spinlock_unlock_noirq(savelock);
+            cpu_restore_interrupt(irqstate);
+            kprintf("do_kill,sending kill to mcexec,pid=%d,cpuid=%d\n", pid, cpuid);
+            interrupt_syscall(pid, cpuid);
 	}
 	else{
 		ihk_mc_spinlock_unlock_noirq(savelock);
 		cpu_restore_interrupt(irqstate);
 	}
+    if(!(mask & tproc->sigmask.__val[0])) {
+        switch(sig) {
+        case SIGCONT:
+            dkprintf("do_kill,SIGCONT\n");
+            /* Wake up the target only when stopped by SIGSTOP */
+            sched_wakeup_process(tproc, PS_STOPPED);
+            if (tproc->ftn->status & PS_STOPPED) {
+                ihk_mc_spinlock_lock_noirq(&tproc->ftn->lock);	
+                xchg4((int *)(&tproc->ftn->status), PS_RUNNING);
+                ihk_mc_spinlock_unlock_noirq(&tproc->ftn->lock);	
+            } 
+            break;
+        default:
+            break;
+        }
+    }
 	return rc;
 }
 
