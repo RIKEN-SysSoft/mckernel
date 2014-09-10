@@ -581,25 +581,25 @@ do_kill(int pid, int tid, int sig)
 		ihk_mc_spinlock_unlock_noirq(&tproc->sigpendinglock);
 	}
 	dkprintf("do_kill,pid=%d,sig=%d\n", pid, sig);
-	if(doint && !(mask & tproc->sigmask.__val[0]) &&
-       sig != SIGSTOP && sig != SIGCONT){
-            int cpuid = tproc->cpu_id;
-            dkprintf("do_kill,proc=%p,tproc=%p\n", proc, tproc);
-            if(proc != tproc){
-                ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpuid)->apic_id, 0xd0);
-            }
-            pid = tproc->pid;
-            ihk_mc_spinlock_unlock_noirq(savelock);
-            cpu_restore_interrupt(irqstate);
-            kprintf("do_kill,sending kill to mcexec,pid=%d,cpuid=%d\n", pid, cpuid);
-            interrupt_syscall(pid, cpuid);
-	}
-	else{
-		ihk_mc_spinlock_unlock_noirq(savelock);
-		cpu_restore_interrupt(irqstate);
-	}
-    if(!(mask & tproc->sigmask.__val[0])) {
+	if(doint && !(mask & tproc->sigmask.__val[0])){
+        dkprintf("do_kill,proc=%p,tproc=%p\n", proc, tproc);
         switch(sig) {
+        case SIGCONT:
+            break;
+        case SIGSTOP:
+        default:
+            if(proc != tproc){
+                dkprintf("do_kill,ipi,pid=%d,cpu_id=%d\n",
+                         tproc->pid, tproc->cpu_id);
+                ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(tproc->cpu_id)->apic_id, 0xd0);
+            }
+            break;
+        }
+        ihk_mc_spinlock_unlock_noirq(savelock);
+        cpu_restore_interrupt(irqstate);
+        switch(sig) {
+        case SIGSTOP:
+            break;
         case SIGCONT:
             dkprintf("do_kill,SIGCONT\n");
             /* Wake up the target only when stopped by SIGSTOP */
@@ -611,9 +611,16 @@ do_kill(int pid, int tid, int sig)
             } 
             break;
         default:
+            dkprintf("do_kill,sending kill to mcexec,pid=%d,cpuid=%d\n",
+                     tproc->pid, tproc->cpu_id);
+            interrupt_syscall(tproc->pid, tproc->cpu_id);
             break;
         }
-    }
+	}
+	else{
+		ihk_mc_spinlock_unlock_noirq(savelock);
+		cpu_restore_interrupt(irqstate);
+	}
 	return rc;
 }
 
