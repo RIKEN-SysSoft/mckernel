@@ -29,6 +29,8 @@
 #include <linux/wait.h>
 #include <linux/mm.h>
 #include <linux/gfp.h>
+#include <linux/fs.h>
+#include <linux/file.h>
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/msr.h>
@@ -690,6 +692,24 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 	return 0;
 }
 
+int mcexec_test_open_exec(ihk_os_t os, char * __user filename)
+{
+	struct file *file;
+	int retval;
+
+	file = open_exec(filename);
+	retval = PTR_ERR(file);
+	if (IS_ERR(file)) {
+		goto out_return;
+	}
+
+	retval = 0;
+	fput(file);
+
+out_return:
+	return -retval;
+}
+
 long mcexec_strncpy_from_user(ihk_os_t os, struct strncpy_from_user_desc * __user arg)
 {
 	struct strncpy_from_user_desc desc;
@@ -770,7 +790,11 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg)
 		return mcexec_get_cpu(os);
 
 	case MCEXEC_UP_STRNCPY_FROM_USER:
-		return mcexec_strncpy_from_user(os, (struct strncpy_from_user_desc *)arg);
+		return mcexec_strncpy_from_user(os, 
+				(struct strncpy_from_user_desc *)arg);
+
+	case MCEXEC_UP_TEST_OPEN_EXEC:
+		return mcexec_test_open_exec(os, (char *)arg);
 
 	case MCEXEC_UP_PREPARE_DMA:
 		return mcexec_pin_region(os, (unsigned long *)arg);

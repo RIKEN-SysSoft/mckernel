@@ -519,7 +519,13 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 	}
 
 	rewind(fp);
-
+	
+	if ((ret = ioctl(fd, MCEXEC_UP_TEST_OPEN_EXEC, filename)) != 0) {
+		fprintf(stderr, "Error: open_exec() fails for %s: %d (fd: %d)\n", 
+			filename, ret, fd);
+		return ret;
+	}
+	
 	desc = load_elf(fp, &interp_path);
 	if (!desc) {
 		fclose(fp);
@@ -989,6 +995,13 @@ int main(int argc, char **argv)
 	}
 	__dprintf("%s", "\n");
 
+	/* Open OS chardev for ioctl() */
+	fd = open(dev, O_RDWR);
+	if (fd < 0) {
+		fprintf(stderr, "Error: Failed to open %s.\n", dev);
+		return 1;
+	}
+
 	if (lookup_exec_path(argv[optind], path, sizeof(path)) != 0) {
 		fprintf(stderr, "error: finding file: %s\n", argv[optind]);
 		return 1;
@@ -1052,12 +1065,6 @@ int main(int argc, char **argv)
 	}
 	desc->rlimit_stack_cur = rlim_stack.rlim_cur;
 	desc->rlimit_stack_max = rlim_stack.rlim_max;
-
-	fd = open(dev, O_RDWR);
-	if (fd < 0) {
-		fprintf(stderr, "Error: Failed to open %s.\n", dev);
-		return 1;
-	}
 
 	ncpu = ioctl(fd, MCEXEC_UP_GET_CPU, 0);
 	if(ncpu == -1){
