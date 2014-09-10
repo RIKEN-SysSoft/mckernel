@@ -51,7 +51,6 @@
 #define PS_UNINTERRUPTIBLE   0x4
 #define PS_ZOMBIE            0x8
 #define PS_EXITED            0x10
-#define PS_STOPPED           0x20
 
 #define PS_NORMAL	(PS_INTERRUPTIBLE | PS_UNINTERRUPTIBLE)
 
