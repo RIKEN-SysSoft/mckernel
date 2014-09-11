@@ -327,7 +327,10 @@ rescan:
 
 		ihk_mc_spinlock_lock_noirq(&child_iter->lock);
 		
-		if (pid == -1 || (pid == 0 && pgid == child_iter->pgid) || pid == child_iter->pid) {
+		if ((pid < 0 && -pid == child_iter->pgid) ||
+			pid == -1 ||
+			(pid == 0 && pgid == child_iter->pgid) ||
+			(pid > 0 && pid == child_iter->pid)) {
 			child = child_iter;
 			break;
 		}
