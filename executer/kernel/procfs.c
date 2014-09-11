@@ -44,6 +44,13 @@ struct procfs_list_entry {
 	char fname[PROCFS_NAME_MAX];
 };
 
+/*
+ * In the procfs_file_list, mckenrel procfs files are
+ * listed in the manner that the leaf file is located 
+ * always nearer to the list top than its parent node 
+ * file.
+ */
+
 LIST_HEAD(procfs_file_list);
 static ihk_spinlock_t procfs_file_list_lock;
 
@@ -51,6 +58,7 @@ static ihk_spinlock_t procfs_file_list_lock;
  * \brief Return specified procfs entry. 
  *
  * \param p a name of the procfs file
+ * \param osnum os number
  * \param mode if zero create a directory otherwise a file
  *
  * return value: NULL: Something wrong has occurred.
@@ -62,7 +70,7 @@ static ihk_spinlock_t procfs_file_list_lock;
  * This process is recursive to the root of the procfs tree.
  */
 
-static struct proc_dir_entry *get_procfs_entry(char *p, int mode)
+static struct proc_dir_entry *get_procfs_entry(char *p, int osnum, int mode)
 {
 	char *r;
 	struct proc_dir_entry *ret = NULL, *parent = NULL;
@@ -70,7 +78,7 @@ static struct proc_dir_entry *get_procfs_entry(char *p, int mode)
 	char name[PROCFS_NAME_MAX];
 	unsigned long irqflags;
 
-	dprintk("get_procfs_entry: %s for mode %o\n", p, mode);
+	dprintk("get_procfs_entry: %s for osnum %d mode %o\n", p, osnum, mode);
 	irqflags = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
 	list_for_each_entry(e, &procfs_file_list, list) {
 		if (e == NULL) {
@@ -91,7 +99,7 @@ static struct proc_dir_entry *get_procfs_entry(char *p, int mode)
 		/* We have non-null parent dir. */
 		strncpy(name, p, r - p);
 		name[r - p] = '\0'; 
-		parent = get_procfs_entry(name, 0);
+		parent = get_procfs_entry(name, osnum, 0);
 		if (parent == NULL) {
 			/* We counld not get a parent procfs entry. Give up.*/
 			return NULL;
@@ -121,6 +129,7 @@ static struct proc_dir_entry *get_procfs_entry(char *p, int mode)
 		return NULL;
 	}
 	ret->data = e;
+	e->osnum = osnum;
 	e->entry = ret;
 	e->parent = parent;
 
@@ -170,14 +179,13 @@ void procfs_create(void *__os, int ref, int osnum, int pid, unsigned long arg)
 			printk("ERROR: procfs_creat: file name not properly terminated.\n");
 			goto quit;
 	}
-	entry = get_procfs_entry(name, mode);
+	entry = get_procfs_entry(name, osnum, mode);
 	if (entry == NULL) {
 		printk("ERROR: could not create a procfs entry for %s.\n", name);
 		goto quit;
 	}
 
 	e = entry->data;
-	e->osnum = osnum;
 	e->os = __os;
 	e->cpu = ref;
 	e->pid = pid;
@@ -191,10 +199,11 @@ quit:
  * \brief Delete a procfs entry.
  *
  * \param __os (opaque) os variable
+ * \param osnum os number
  * \param arg sent argument
  */
 
-void procfs_delete(void *__os, unsigned long arg)
+void procfs_delete(void *__os, int osnum, unsigned long arg)
 {
 	ihk_device_t dev = ihk_os_to_dev(__os);
 	unsigned long parg;
@@ -211,24 +220,25 @@ void procfs_delete(void *__os, unsigned long arg)
 	dprintk("fname: %s.\n", f->fname);
 	irqflags = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
 	list_for_each_entry(e, &procfs_file_list, list) {
-		if (strncmp(e->fname, f->fname, PROCFS_NAME_MAX) == 0) {
-			dprintk("found and delete an entry in the list.\n");
+		if ((strncmp(e->fname, f->fname, PROCFS_NAME_MAX) == 0) &&
+		    (e->osnum == osnum)) {
 			list_del(&e->list);
 			e->entry->read_proc = NULL;
 			e->entry->data = NULL;
 			parent = e->parent;
 			kfree(e);
+			r = strrchr(f->fname, '/');
+			if (r == NULL) {
+				strncpy(name, f->fname, PROCFS_NAME_MAX);
+			} else {
+				strncpy(name, r + 1, PROCFS_NAME_MAX);
+			}
+			dprintk("found and remove %s from the list.\n", name);
+			remove_proc_entry(name, parent);
 			break;
 		}
 	}
 	ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflags);
-	r = strrchr(f->fname, '/');
-	if (r == NULL) {
-		strncpy(name, f->fname, PROCFS_NAME_MAX);
-	} else {
-		strncpy(name, r + 1, PROCFS_NAME_MAX);
-	}
-	remove_proc_entry(name, parent);
 	f->status = 1; /* Now the peer can free the data. */
 	ihk_device_unmap_virtual(dev, f, sizeof(struct procfs_file));
 	ihk_device_unmap_memory(dev, parg, sizeof(struct procfs_file));
@@ -288,7 +298,7 @@ retry:
 	r->ret = -EIO;	/* default to error */
 	r->offset = offset;
 	r->count = count;
-	strncpy(r->fname, e->fname, PROCFS_NAME_MAX);
+	strncpy((char *)r->fname, e->fname, PROCFS_NAME_MAX);
 	isp.msg = SCD_MSG_PROCFS_REQUEST;
 	isp.ref = e->cpu;
 	isp.arg = virt_to_phys(r);
@@ -318,7 +328,7 @@ retry:
 	}
 	*start = buffer;
 	ret = r->ret;
-	kfree(r);
+	kfree((void *)r);
 	
 	return ret;
 }
@@ -339,10 +349,37 @@ void procfs_init(int osnum) {
  */
 
 void procfs_exit(int osnum) {
-	char buf[20];
+	char buf[20], *r;
 	int error;
 	mm_segment_t old_fs = get_fs();
 	struct kstat stat;
+	struct proc_dir_entry *parent;
+	struct procfs_list_entry *e, *temp = NULL;
+	unsigned long irqflags;
+
+	dprintk("remove remaining mckernel procfs files.\n");
+
+	irqflags = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
+	list_for_each_entry_safe(e, temp, &procfs_file_list, list) {
+		if (e->osnum == osnum) {
+			dprintk("found entry for %s.\n", e->fname);
+			list_del(&e->list);
+			e->entry->read_proc = NULL;
+			e->entry->data = NULL;
+			parent = e->parent;
+			r = strrchr(e->fname, '/');
+			if (r == NULL) {
+				r = e->fname;
+			} else {
+				r += 1;
+			}
+			remove_proc_entry(r, parent);
+			dprintk("free the entry\n");
+			kfree(e);
+		}
+		dprintk("iterate it.\n");
+	}
+	ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflags);
 
 	sprintf(buf, "/proc/mcos%d", osnum);
 
@@ -352,6 +389,8 @@ void procfs_exit(int osnum) {
 	if (error != 0) {
 		return;
 	}
+
+	printk("procfs_exit: We have to remove unexpectedly remaining %s.\n", buf);
 
 	/* remove remnant of previous mcos%d */
 	remove_proc_entry(buf + 6, NULL);
