@@ -1430,7 +1430,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	if (clone_flags & CLONE_CHILD_SETTID) {
 		unsigned long phys;
 		dkprintf("clone_flags & CLONE_CHILD_SETTID: 0x%lX\n",
-				child_tiptr);
+				child_tidptr);
 
 		if (ihk_mc_pt_virt_to_phys(new->vm->page_table, 
 					(void *)child_tidptr, &phys)) { 
