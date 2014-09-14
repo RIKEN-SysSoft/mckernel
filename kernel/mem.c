@@ -641,6 +641,7 @@ void kmalloc_init(void)
 {
 	struct cpu_local_var *v = get_this_cpu_local_var();
 	struct malloc_header *h = &v->free_list;
+	ihk_mc_spinlock_init(&v->free_list_lock);
 
 	h->next = &v->free_list;
 	h->size = 0;
@@ -662,7 +663,7 @@ void *kmalloc(int size, enum ihk_mc_ap_flag flag)
 
 	u = (size + sizeof(*h) - 1) / sizeof(*h);
 
-	flags = cpu_disable_interrupt_save();
+	flags = ihk_mc_spinlock_lock(&v->free_list_lock);
 
 	prev = h;
 	h = h->next;
@@ -687,16 +688,18 @@ void *kmalloc(int size, enum ihk_mc_ap_flag flag)
 		if (h->size >= u) {
 			if (h->size == u || h->size == u + 1) {
 				prev->next = h->next;
+				h->cpu_id = ihk_mc_get_processor_id();
 
-				cpu_restore_interrupt(flags);
+				ihk_mc_spinlock_unlock(&v->free_list_lock, flags);
 				return h + 1;
 			} else { /* Divide */
 				h->size -= u + 1;
 				
 				p = h + h->size + 1;
 				p->size = u;
+				p->cpu_id = ihk_mc_get_processor_id();
 
-				cpu_restore_interrupt(flags);
+				ihk_mc_spinlock_unlock(&v->free_list_lock, flags);
 				return p + 1;
 			}
 		}
@@ -707,15 +710,14 @@ void *kmalloc(int size, enum ihk_mc_ap_flag flag)
 
 void kfree(void *ptr)
 {
-	struct cpu_local_var *v = get_this_cpu_local_var();
-	struct malloc_header *h = &v->free_list, *p = ptr;
+	struct malloc_header *p = (struct malloc_header *)ptr;
+	struct cpu_local_var *v = get_cpu_local_var((--p)->cpu_id);
+	struct malloc_header *h = &v->free_list;
 	int combined = 0;
 	unsigned long flags;
 
-	flags = cpu_disable_interrupt_save();
+	flags = ihk_mc_spinlock_lock(&v->free_list_lock);
 	h = h->next;
-	
-	p--;
 
 	while ((p < h || p > h->next) && h != &v->free_list) {
 		h = h->next;
@@ -738,7 +740,7 @@ void kfree(void *ptr)
 		p->next = h->next;
 		h->next = p;
 	}
-	cpu_restore_interrupt(flags);
+	ihk_mc_spinlock_unlock(&v->free_list_lock, flags);
 }
 
 void print_free_list(void)

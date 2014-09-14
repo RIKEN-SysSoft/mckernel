@@ -21,6 +21,7 @@
 
 struct malloc_header {
 	struct malloc_header *next;
+	unsigned int cpu_id;
 	unsigned long size;
 };
 
@@ -36,6 +37,7 @@ extern ihk_spinlock_t	cpu_status_lock;
 struct cpu_local_var {
 	/* malloc */
 	struct malloc_header free_list;
+	ihk_spinlock_t free_list_lock;
 
 	struct process idle;
 	struct process_vm idle_vm;
