@@ -33,6 +33,7 @@
 #endif
 
 extern int snprintf(char * buf, size_t size, const char *fmt, ...);
+extern int sprintf(char * buf, const char *fmt, ...);
 extern int sscanf(const char * buf, const char * fmt, ...);
 
 extern int osnum;
@@ -65,6 +66,9 @@ void create_proc_procfs_files(int pid, int cpuid)
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task/%d/mem", osnum, pid, pid);
 	create_proc_procfs_file(pid, fname, 0400, cpuid);
 
+	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task/%d/stat", osnum, pid, pid);
+	create_proc_procfs_file(pid, fname, 0444, cpuid);
+
 	dprintf("create procfs files: done\n");
 }
 
@@ -95,6 +99,9 @@ void delete_proc_procfs_files(int pid)
 
 	dprintf("delete procfs files\n");
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task/%d/mem", osnum, pid, pid);
+	delete_proc_procfs_file(pid, fname);
+
+	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task/%d/stat", osnum, pid, pid);
 	delete_proc_procfs_file(pid, fname);
 
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task/%d", osnum, pid, pid);
@@ -192,6 +199,8 @@ void process_procfs_request(unsigned long rarg)
 	int rosnum, ret, pid, tid, ans = -EIO, eof = 0;
 	char *buf, *p;
 	struct ihk_ikc_channel_desc *syscall_channel;
+	void *savelock;
+	unsigned long irqstate;
 
 	dprintf("process_procfs_request: invoked.\n");
 
@@ -257,9 +266,6 @@ void process_procfs_request(unsigned long rarg)
 	if (ret == 1) {
 		if (pid != cpu_local_var(current)->pid) {
 			/* We are not located in the proper cpu for some reason. */
-			void *savelock;
-			unsigned long irqstate;
-			struct process *proc;
 
 			dprintf("mismatched pid. We are %d, but requested pid is %d.\n",
 				pid, cpu_local_var(current)->pid);
@@ -305,28 +311,88 @@ void process_procfs_request(unsigned long rarg)
 	 * The offset is treated as the beginning of the virtual address area
 	 * of the process. The count is the length of the area.
 	 */
-	ret = sscanf(p, "task/%d/mem", &tid);
+	tid = pid;
+	ret = sscanf(p, "task/%d/", &tid);
 	if (ret == 1) {
-		struct vm_range *range;
-		struct process_vm *vm = proc->vm;
+		p = strchr(p, '/') + 1;
+		p = strchr(p, '/') + 1;
 
-		if (pid != tid) {
-			/* We are not multithreaded yet. */
-			goto end;
-		} 
-		list_for_each_entry(range, &vm->vm_range_list, list) {
-			dprintf("range: %lx - %lx\n", range->start, range->end);
-			if ((range->start <= r->offset) && 
-			    (r->offset < range->end)) {
-				unsigned int len = r->count;
-				if (range->end < r->offset + r->count) {
-					len = range->end - r->offset;
+		if (!strcmp(p, "mem")){
+			struct vm_range *range;
+			struct process_vm *vm = proc->vm;
+
+			if (pid != tid) {
+				/* We are not multithreaded yet. */
+				goto end;
+			} 
+			list_for_each_entry(range, &vm->vm_range_list, list) {
+				dprintf("range: %lx - %lx\n", range->start, range->end);
+				if ((range->start <= r->offset) && 
+				    (r->offset < range->end)) {
+					unsigned int len = r->count;
+					if (range->end < r->offset + r->count) {
+						len = range->end - r->offset;
+					}
+					memcpy((void *)buf, (void *)range->start, len);
+					ans = len;
+					break;
 				}
-				memcpy((void *)buf, (void *)range->start, len);
-				ans = len;
-				break;
+			}
+			goto end;
+		}
+
+		if (!strcmp(p, "stat")) {
+			if ((proc = findthread_and_lock(pid, tid, &savelock, &irqstate))){
+				dprintf("thread found! pid=%d tid=%d\n", pid, tid);
+				/*
+				 * pid (comm) state ppid
+				 * pgrp session tty_nr tpgid
+				 * flags minflt cminflt majflt
+				 * cmajflt utime stime cutime
+				 * cstime priority nice num_threads
+				 * itrealvalue starttime vsize rss
+				 * rsslim startcode endcode startstack
+				 * kstkesp kstkeip signal blocked
+				 * sigignore sigcatch wchan nswap
+				 * cnswap exit_signal processor rt_priority
+				 * policy delayacct_blkio_ticks guest_time cguest_time
+				 */
+				ans = sprintf((char *)buf,
+				    "%d (%s) %c %d "	      // pid...
+				    "%d %d %d %d "	      // pgrp...
+				    "%u %lu %lu %lu "	      // flags...
+				    "%lu %lu %lu %ld "	      // cmajflt...
+				    "%ld %ld %ld %ld "	      // cstime...
+				    "%ld %llu %lu %ld "	      // itrealvalue...
+				    "%lu %lu %lu %lu "	      // rsslim...
+				    "%lu %lu %lu %lu "	      // kstkesp...
+				    "%lu %lu %lu %lu "	      // sigignore...
+				    "%lu %d %d %u "	      // cnswap...
+				    "%u %llu %lu %ld",	      // policy...
+				    0, "exe", 'R', 0,	      // pid...
+				    0, 0, 0, 0,      	      // pgrp...
+				    0, 0L, 0L, 0L,	      // flags...
+				    0L, 0L, 0L, 0L,	      // cmajflt...
+				    0L, 0L, 0L, 0L,	      // cstime...
+				    0L, 0LL, 0L, 0L,	      // itrealvalue...
+				    0L, 0L, 0L, 0L,	      // rsslim...
+				    0L, 0L, 0L, 0L,	      // kstkesp...
+				    0L, 0L, 0L, 0L,	      // sigignore...
+				    0L, 0, proc->cpu_id, 0,   // cnswap...
+				    0, 0LL, 0L, 0L	      // policy...
+				);
+				/* The target process has gone by migration. */
+				r->newcpu = proc->cpu_id;
+				process_unlock(savelock, irqstate);
+				eof = 1;
+				dprintf("buf=%s\n", buf);
+				goto end;
+			}
+			else{
+				dprintf("no thread found pid=%d tid=%d\n", pid, tid);
 			}
 		}
+		dprintf("could not find a matching entry for task/%d/%s.\n", tid, p); 
 		goto end;
 	}
 
