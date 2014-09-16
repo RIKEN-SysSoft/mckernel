@@ -63,6 +63,9 @@ void create_proc_procfs_files(int pid, int cpuid)
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/auxv", osnum, pid);
 	create_proc_procfs_file(pid, fname, 0400, cpuid);
 
+	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/mem", osnum, pid);
+	create_proc_procfs_file(pid, fname, 0400, cpuid);
+
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task/%d/mem", osnum, pid, pid);
 	create_proc_procfs_file(pid, fname, 0400, cpuid);
 
@@ -97,7 +100,7 @@ void delete_proc_procfs_files(int pid)
 {
 	char fname[PROCFS_NAME_MAX];
 
-	dprintf("delete procfs files\n");
+	dprintf("delete procfs files for pid %d.\n", pid);
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task/%d/mem", osnum, pid, pid);
 	delete_proc_procfs_file(pid, fname);
 
@@ -110,18 +113,16 @@ void delete_proc_procfs_files(int pid)
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task", osnum, pid);
 	delete_proc_procfs_file(pid, fname);
 
+	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/mem", osnum, pid);
+	delete_proc_procfs_file(pid, fname);
+
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/auxv", osnum, pid);
 	delete_proc_procfs_file(pid, fname);
 
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d", osnum, pid);
 	delete_proc_procfs_file(pid, fname);
 
-	/* CAVEAT: deleting mcos%d level procfs directory should be located 
-	   in delete_mckernel_procfs_files().*/
-	snprintf(fname, PROCFS_NAME_MAX, "mcos%d", osnum);
-	delete_proc_procfs_file(pid, fname);
-
-	dprintf("delete procfs files: done\n");
+	dprintf("delete procfs files for pid %d: done\n", pid);
 }
 
 /**
@@ -287,6 +288,32 @@ void process_procfs_request(unsigned long rarg)
 	p = strchr(p, '/') + 1;
 
 	/* 
+	 * mcos%d/PID/mem
+	 *
+	 * The offset is treated as the beginning of the virtual address area
+	 * of the process. The count is the length of the area.
+	 */
+	if (strcmp(p, "mem") == 0) {
+		struct vm_range *range;
+		struct process_vm *vm = proc->vm;
+
+		list_for_each_entry(range, &vm->vm_range_list, list) {
+			dprintf("range: %lx - %lx\n", range->start, range->end);
+			if ((range->start <= r->offset) && 
+			    (r->offset < range->end)) {
+				unsigned int len = r->count;
+				if (range->end < r->offset + r->count) {
+					len = range->end - r->offset;
+				}
+				memcpy((void *)buf, (void *)range->start, len);
+				ans = len;
+				break;
+			}
+		}
+		goto end;
+	}
+
+	/* 
 	 * mcos%d/PID/auxv
 	 */
 	if (strcmp(p, "auxv") == 0) {
@@ -301,6 +328,9 @@ void process_procfs_request(unsigned long rarg)
 			if (r->offset + len == limit) {
 				eof = 1;
 			}
+		} else if (r->offset == limit) {
+			ans = 0;
+			eof = 1;
 		}
 		goto end;
 	}
@@ -342,6 +372,9 @@ void process_procfs_request(unsigned long rarg)
 		}
 
 		if (!strcmp(p, "stat")) {
+			char tmp[1024];
+			int len;
+
 			if ((proc = findthread_and_lock(pid, tid, &savelock, &irqstate))){
 				dprintf("thread found! pid=%d tid=%d\n", pid, tid);
 				/*
@@ -357,7 +390,7 @@ void process_procfs_request(unsigned long rarg)
 				 * cnswap exit_signal processor rt_priority
 				 * policy delayacct_blkio_ticks guest_time cguest_time
 				 */
-				ans = sprintf((char *)buf,
+				ans = sprintf(tmp,
 				    "%d (%s) %c %d "	      // pid...
 				    "%d %d %d %d "	      // pgrp...
 				    "%u %lu %lu %lu "	      // flags...
@@ -368,7 +401,7 @@ void process_procfs_request(unsigned long rarg)
 				    "%lu %lu %lu %lu "	      // kstkesp...
 				    "%lu %lu %lu %lu "	      // sigignore...
 				    "%lu %d %d %u "	      // cnswap...
-				    "%u %llu %lu %ld",	      // policy...
+				    "%u %llu %lu %ld\n",      // policy...
 				    0, "exe", 'R', 0,	      // pid...
 				    0, 0, 0, 0,      	      // pgrp...
 				    0, 0L, 0L, 0L,	      // flags...
@@ -381,11 +414,22 @@ void process_procfs_request(unsigned long rarg)
 				    0L, 0, proc->cpu_id, 0,   // cnswap...
 				    0, 0LL, 0L, 0L	      // policy...
 				);
-				/* The target process has gone by migration. */
-				r->newcpu = proc->cpu_id;
 				process_unlock(savelock, irqstate);
-				eof = 1;
-				dprintf("buf=%s\n", buf);
+				dprintf("tmp=%s\n", tmp);
+
+				len = strlen(tmp);
+				if (r->offset < len) {
+					if (r->offset + r->count < len) {
+						ans = r->count;
+					} else {
+						eof = 1;
+						ans = len;
+					}
+					strncpy(buf, tmp + r->offset, ans);
+				} else if (r->offset == len) {
+					ans = 0;
+					eof = 1;
+				}
 				goto end;
 			}
 			else{

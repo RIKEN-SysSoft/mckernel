@@ -254,8 +254,11 @@ void procfs_delete(void *__os, int osnum, unsigned long arg)
 
 void procfs_answer(unsigned int arg, int err)
 {
+	volatile struct procfs_read *r = phys_to_virt(arg);
+
 	dprintk("procfs: received SCD_MSG_PROCFS_ANSWER message(err = %d).\n", err);
 	procfsq_channel = arg;
+	r->error = err;
 	wake_up_interruptible(&procfsq);
 }
 
@@ -274,6 +277,7 @@ int mckernel_procfs_read(char *buffer, char **start, off_t offset,
 	struct ikc_scd_packet isp;
 	int ret, retrycount = 0;
 	unsigned long pbuf;
+	int i;
 
 	dprintk("mckernel_procfs_read: invoked for %s\n", e->fname); 
 
@@ -295,7 +299,7 @@ retry:
 
 	r->pbuf = pbuf;
 	r->eof = 0;
-	r->ret = -EIO;	/* default to error */
+	r->ret = PAGE_SIZE * 2;	/* dummy answer  */
 	r->offset = offset;
 	r->count = count;
 	strncpy((char *)r->fname, e->fname, PROCFS_NAME_MAX);
@@ -310,7 +314,19 @@ retry:
 	dprintk("now wait for a relpy\n");
 	wait_event_interruptible(procfsq, procfsq_channel == virt_to_phys(r));
 	/* Wake up and check the result. */
-	dprintk("mckernel_procfs_read: woke up. ret: %d, eof: %d\n", r->ret, r->eof);
+	dprintk("mckernel_procfs_read: woke up.\n");
+	if (r->error != 0) {
+		kprintf("ERROR: mckernel_procfs_read: failed to get valid answer.\n");
+		return -EIO;
+	}		
+	for (i = 0; r->ret == PAGE_SIZE * 2; i++) {
+		/* FIXME: busy wait for the real answer to reach*/;
+		if (i > 1000000) {
+			kprintf("ERROR: mckernel_procfs_read: answer unavailable.\n");
+			return -EIO;
+		}
+	}
+	dprintk("ret: %d, eof: %d (wait loop count: %d)\n", r->ret, r->eof, i);
 	if ((r->ret == 0) && (r->eof != 1)) {
 		/* A miss-hit caused by migration has occurred.
 		 * We simply retry the query with a new CPU.
@@ -324,6 +340,7 @@ retry:
 		goto retry;
 	}
 	if (r->eof == 1) {
+		dprintk("reached end of file.\n");
 		*peof = 1;
 	}
 	*start = buffer;

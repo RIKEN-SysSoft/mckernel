@@ -164,6 +164,7 @@ struct procfs_read {
 	unsigned long pbuf;	/* physical address of the host buffer (request) */
 	unsigned long offset;	/* offset to read (request) */
 	int count;		/* bytes to read (request) */
+	int error;		/* non-zero if below fields are invalid. (answer) */
 	int eof;		/* if eof is detected, 1 otherwise 0. (answer)*/
 	int ret;		/* read bytes (answer) */
 	int newcpu;		/* migrated new cpu (answer) */
