@@ -812,6 +812,32 @@ SYSCALL_DECLARE(mmap)
 	if (!(flags & MAP_ANONYMOUS)) {
 		off = off0;
 		error = fileobj_create(fd, &memobj, &maxprot);
+#ifdef ATTACHED_MIC
+		/*
+		 * XXX: refuse device mapping in attached-mic now:
+		 *
+		 * In attached-mic, ihk_mc_map_memory() cannot convert into a local
+		 * physical address a remote physical address which point KNC's memory.
+		 * It seems that ihk_mc_map_memory() needs to set up SMPT.
+		 */
+		if (error == -ESRCH) {
+			error = -ENODEV;
+		}
+#endif
+		if (error == -ESRCH) {
+			kprintf("sys_mmap:hit non VREG\n");
+			/*
+			 * XXX: temporary:
+			 *
+			 * device mappings are uncachable
+			 * until memory type setting codes are implemented.
+			 */
+			if (1) {
+				vrflags &= ~VR_MEMTYPE_MASK;
+				vrflags |= VR_MEMTYPE_UC;
+			}
+			error = devobj_create(fd, len, off, &memobj, &maxprot);
+		}
 		if (error) {
 			ekprintf("sys_mmap:fileobj_create failed. %d\n", error);
 			goto out;

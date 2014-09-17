@@ -778,8 +778,20 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 	struct pager *pager = NULL;
 	struct pager *newpager = NULL;
 	uintptr_t phys;
+	struct kstat st;
 
 	dprintk("pager_req_create(%d,%lx)\n", fd, (long)result_pa);
+
+	error = vfs_fstat(fd, &st);
+	if (error) {
+		printk("pager_req_create(%d,%lx):vfs_stat failed. %d\n", fd, (long)result_pa, error);
+		goto out;
+	}
+	if (!S_ISREG(st.mode)) {
+		error = -ESRCH;
+		printk("pager_req_create(%d,%lx):not VREG. %x\n", fd, (long)result_pa, st.mode);
+		goto out;
+	}
 
 	file = fget(fd);
 	if (!file) {
