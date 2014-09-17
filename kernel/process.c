@@ -42,10 +42,6 @@
 #define ekprintf(...) kprintf(__VA_ARGS__)
 #endif
 
-#define	OWANO_IMPLEMENTATION
-#include <owano-process.h>
-#undef	OWANO_IMPLEMENTATION
-
 extern long do_arch_prctl(unsigned long code, unsigned long address);
 static void insert_vm_range_list(struct process_vm *vm, 
 		struct vm_range *newrange);
