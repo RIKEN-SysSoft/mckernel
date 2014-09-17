@@ -747,6 +747,9 @@ struct pager {
 	int			ref;
 	struct file *		rofile;
 	struct file *		rwfile;
+	uintptr_t		map_uaddr;
+	size_t			map_len;
+	off_t			map_off;
 };
 
 /*
@@ -1069,6 +1072,165 @@ out:
 	return ss;
 }
 
+struct pager_map_result {
+	uintptr_t	handle;
+	int		maxprot;
+	int8_t		padding[4];
+};
+
+static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off, uintptr_t result_rpa)
+{
+	const ihk_device_t dev = ihk_os_to_dev(os);
+	const off_t pgoff = off / PAGE_SIZE;
+	int error;
+	struct file *file = NULL;
+	uintptr_t va = -1;
+	int maxprot;
+	struct pager *pager = NULL;
+	struct pager_map_result *resp;
+	uintptr_t phys;
+
+	printk("pager_req_map(%p,%d,%lx,%lx,%lx)\n", os, fd, len, off, result_rpa);
+	pager = kzalloc(sizeof(*pager), GFP_KERNEL);
+	if (!pager) {
+		error = -ENOMEM;
+		printk("pager_req_map(%p,%d,%lx,%lx,%lx):kzalloc failed. %d\n", os, fd, len, off, result_rpa, error);
+		goto out;
+	}
+
+	file = fget(fd);
+	if (!file) {
+		error = -EBADF;
+		printk("pager_req_map(%p,%d,%lx,%lx,%lx):fget failed. %d\n", os, fd, len, off, result_rpa, error);
+		goto out;
+	}
+
+	maxprot = 0;
+	if (file->f_mode & FMODE_READ) {
+		maxprot |= PROT_READ;
+	}
+	if (file->f_mode & FMODE_WRITE) {
+		maxprot |= PROT_WRITE;
+	}
+	if (!(file->f_path.mnt->mnt_flags & MNT_NOEXEC)) {
+		maxprot |= PROT_EXEC;
+	}
+
+	down_write(&current->mm->mmap_sem);
+#define	ANY_WHERE 0
+	va = do_mmap_pgoff(file, ANY_WHERE, len, maxprot, MAP_SHARED, pgoff);
+	up_write(&current->mm->mmap_sem);
+	if (IS_ERR_VALUE(va)) {
+		printk("pager_req_map(%p,%d,%lx,%lx,%lx):do_mmap_pgoff failed. %d\n", os, fd, len, off, result_rpa, (int)va);
+		error = va;
+		goto out;
+	}
+
+	pager->ref = 1;
+	pager->map_uaddr = va;
+	pager->map_len = len;
+	pager->map_off = off;
+
+	phys = ihk_device_map_memory(dev, result_rpa, sizeof(*resp));
+	resp = ihk_device_map_virtual(dev, phys, sizeof(*resp), NULL, 0);
+	resp->handle = (uintptr_t)pager;
+	resp->maxprot = maxprot;
+	ihk_device_unmap_virtual(dev, resp, sizeof(*resp));
+	ihk_device_unmap_memory(dev, phys, sizeof(*resp));
+
+	error = 0;
+	pager = 0; /* pager should be in list? */
+
+out:
+	if (file) {
+		fput(file);
+	}
+	if (pager) {
+		kfree(pager);
+	}
+	printk("pager_req_map(%p,%d,%lx,%lx,%lx): %d\n", os, fd, len, off, result_rpa, error);
+	return error;
+}
+
+static int pager_req_pfn(ihk_os_t os, uintptr_t handle, off_t off, uintptr_t ppfn_rpa)
+{
+	const ihk_device_t dev = ihk_os_to_dev(os);
+	struct pager * const pager = (void *)handle;
+	int error;
+	uintptr_t pfn;
+	uintptr_t va;
+	pgd_t *pgd;
+	pud_t *pud;
+	pmd_t *pmd;
+	pte_t *pte;
+	uintptr_t phys;
+	uintptr_t *ppfn;
+
+	printk("pager_req_pfn(%p,%lx,%lx)\n", os, handle, off);
+
+	if ((off < pager->map_off) || ((pager->map_off+pager->map_len) < (off + PAGE_SIZE))) {
+		error = -ERANGE;
+		pfn = 0;
+		printk("pager_req_pfn(%p,%lx,%lx):out of range. %d [%lx..%lx)\n", os, handle, off, error, pager->map_off, pager->map_off+pager->map_len);
+		goto out;
+	}
+
+	va = pager->map_uaddr + (off - pager->map_off);
+#define	PFN_VALID	((uintptr_t)1 << 63)
+	pfn = PFN_VALID;	/* デフォルトは not present */
+
+	down_read(&current->mm->mmap_sem);
+	pgd = pgd_offset(current->mm, va);
+	if (!pgd_none(*pgd) && !pgd_bad(*pgd) && pgd_present(*pgd)) {
+		pud = pud_offset(pgd, va);
+		if (!pud_none(*pud) && !pud_bad(*pud) && pud_present(*pud)) {
+			pmd = pmd_offset(pud, va);
+			if (!pmd_none(*pmd) && !pmd_bad(*pmd) && pmd_present(*pmd)) {
+				pte = pte_offset_map(pmd, va);
+				if (!pte_none(*pte) && pte_present(*pte)) {
+					pfn = (uintptr_t)pte_pfn(*pte) << PAGE_SHIFT;
+#define	PFN_PRESENT	((uintptr_t)1 << 0)
+					pfn |= PFN_VALID | PFN_PRESENT;
+				}
+				pte_unmap(pte);
+			}
+		}
+	}
+	up_read(&current->mm->mmap_sem);
+
+	phys = ihk_device_map_memory(dev, ppfn_rpa, sizeof(*ppfn));
+	ppfn = ihk_device_map_virtual(dev, phys, sizeof(*ppfn), NULL, 0);
+	*ppfn = pfn;
+	ihk_device_unmap_virtual(dev, ppfn, sizeof(*ppfn));
+	ihk_device_unmap_memory(dev, phys, sizeof(*ppfn));
+
+	error = 0;
+out:
+	printk("pager_req_pfn(%p,%lx,%lx): %d %lx\n", os, handle, off, error, pfn);
+	return error;
+}
+
+static int pager_req_unmap(ihk_os_t os, uintptr_t handle)
+{
+	struct pager * const pager = (void *)handle;
+	int error;
+
+	printk("pager_req_unmap(%p,%lx)\n", os, handle);
+
+	down_write(&current->mm->mmap_sem);
+	error = do_munmap(current->mm, pager->map_uaddr, pager->map_len);
+	up_write(&current->mm->mmap_sem);
+
+	if (error) {
+		printk("pager_req_unmap(%p,%lx):do_munmap failed. %d\n", os, handle, error);
+		/* through */
+	}
+
+	kfree(pager);
+	printk("pager_req_unmap(%p,%lx): %d\n", os, handle, error);
+	return error;
+}
+
 static long pager_call(ihk_os_t os, struct syscall_request *req)
 {
 	long ret;
@@ -1079,6 +1241,9 @@ static long pager_call(ihk_os_t os, struct syscall_request *req)
 #define	PAGER_REQ_RELEASE	0x0002
 #define	PAGER_REQ_READ		0x0003
 #define	PAGER_REQ_WRITE		0x0004
+#define	PAGER_REQ_MAP		0x0005
+#define	PAGER_REQ_PFN		0x0006
+#define	PAGER_REQ_UNMAP		0x0007
 	case PAGER_REQ_CREATE:
 		ret = pager_req_create(os, req->args[1], req->args[2]);
 		break;
@@ -1095,8 +1260,21 @@ static long pager_call(ihk_os_t os, struct syscall_request *req)
 		ret = pager_req_write(os, req->args[1], req->args[2], req->args[3], req->args[4]);
 		break;
 
+	case PAGER_REQ_MAP:
+		ret = pager_req_map(os, req->args[1], req->args[2], req->args[3], req->args[4]);
+		break;
+
+	case PAGER_REQ_PFN:
+		ret = pager_req_pfn(os, req->args[1], req->args[2], req->args[3]);
+		break;
+
+	case PAGER_REQ_UNMAP:
+		ret = pager_req_unmap(os, req->args[1]);
+		break;
+
 	default:
 		ret = -ENOSYS;
+		printk("pager_call(%#lx):unknown req %ld\n", req->args[0], ret);
 		break;
 	}
 

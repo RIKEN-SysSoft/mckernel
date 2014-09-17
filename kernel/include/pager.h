@@ -19,6 +19,9 @@ enum pager_op {
 	PAGER_REQ_RELEASE =	0x0002,
 	PAGER_REQ_READ =	0x0003,
 	PAGER_REQ_WRITE =	0x0004,
+	PAGER_REQ_MAP =		0x0005,
+	PAGER_REQ_PFN =		0x0006,
+	PAGER_REQ_UNMAP =	0x0007,
 };
 
 /*
@@ -36,4 +39,17 @@ struct pager_create_result {
 /*
  * int pager_req_read(uintptr_t handle, off_t off, size_t size, uintptr_t buf_rpa);
  */
+/*
+ */
+struct pager_map_result {
+	uintptr_t	handle;
+	int		maxprot;
+	int8_t		padding[4];
+};
+
+/* for pager_req_pfn() */
+#define	PFN_VALID	((uintptr_t)1 << 63)
+#define	PFN_PRESENT	((uintptr_t)1 << 0)
+#define	PFN_PFN		((((uintptr_t)1 << 56) - 1) & ~(PAGE_SIZE - 1))
+
 #endif /* HEADER_PAGER_H */
