@@ -1915,7 +1915,6 @@ redo:
 		if ((last != NULL) && (last->status & (PS_ZOMBIE | PS_EXITED))) {
 			free_process_memory(last);
 			release_process(last);
-			show_free_list();
 		}
 	}
 	else {
