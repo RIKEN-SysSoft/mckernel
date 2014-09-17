@@ -510,12 +510,6 @@ SYSCALL_DECLARE(exit_group)
 #if 0
 	struct process *proc = cpu_local_var(current);
 
-	if (1) {
-		extern void query_free_mem_interrupt_handler(void *);
-
-		query_free_mem_interrupt_handler(NULL);
-	}
-
 #ifdef DCFA_KMOD
 	do_mod_exit((int)ihk_mc_syscall_arg0(ctx));
 #endif
