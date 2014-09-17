@@ -21,6 +21,3 @@ config.log
 config.status
 /executer/user/mcexec
 /kernel/build
-/arch/x86/tools/mcreboot-attached-mic.sh
-/arch/x86/tools/mcreboot.1
-/arch/x86/tools/mcshutdown-attached-mic.sh
