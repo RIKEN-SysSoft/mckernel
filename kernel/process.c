@@ -791,6 +791,10 @@ enum ihk_mc_pt_attribute common_vrflag_to_ptattr(unsigned long flag, uint64_t fa
 		attr |= PTATTR_NO_EXECUTE;
 	}
 
+	if ((flag & VR_MEMTYPE_MASK) == VR_MEMTYPE_UC) {
+		attr |= PTATTR_UNCACHABLE;
+	}
+
 	return attr;
 }
 
