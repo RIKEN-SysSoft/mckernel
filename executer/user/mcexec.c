@@ -1248,6 +1248,81 @@ static long do_strncpy_from_user(int fd, void *dest, void *src, unsigned long n)
 
 #define SET_ERR(ret) if (ret == -1) ret = -errno
 
+int close_cloexec_fds(int mcos_fd)
+{
+	int fd;
+	int max_fd = sysconf(_SC_OPEN_MAX);
+	
+	for (fd = 0; fd < max_fd; ++fd) {
+		int flags;
+
+		if (fd == mcos_fd)
+			continue;
+		
+		flags = fcntl(fd, F_GETFD, 0);
+		if (flags & FD_CLOEXEC) {
+			close(fd);
+		}
+	}
+
+	/*
+	 * NOTE: a much more elegant solution would be to iterate fds in proc,
+	 * but opendir() seems to change some state in glibc which makes some
+	 * of the execve() LTP tests fail. 
+	 * TODO: investigate this later.
+	 *
+	DIR *d;
+	struct dirent *de;
+	struct dirent __de;
+
+	if ((d = opendir("/proc/self/fd")) == NULL) {
+		fprintf(stderr, "error: opening /proc/self/fd \n");
+		return -1;
+	}
+
+	while (!readdir_r(d, &__de, &de) && de != NULL) {
+		long l;
+		char *e = NULL;
+		int flags;
+		
+		if (de->d_name[0] == '.')
+			continue;
+
+		errno = 0;
+		l = strtol(de->d_name, &e, 10);
+		if (errno != 0 || !e || *e) {
+			closedir(d);
+			return -1;
+		}
+
+		fd = (int)l;
+
+		if ((long)fd != l) {
+			closedir(d);
+			return -1;
+		}
+
+		if (fd == dirfd(d))
+			continue;
+
+		if (fd == mcos_fd)
+			continue;
+		
+		fprintf(stderr, "checking: %d\n", fd);
+
+		flags = fcntl(fd, F_GETFD, 0);
+		if (flags & FD_CLOEXEC) {
+			fprintf(stderr, "closing: %d\n", fd);
+			close(fd);
+		}
+	}
+
+	closedir(d);
+	*/
+	
+	return 0;
+}
+
 int main_loop(int fd, int cpu, pthread_mutex_t *lock, int mcosid)
 {
 	struct syscall_wait_desc w;
@@ -1560,13 +1635,19 @@ return_execve1:
 					if (ioctl(fd, MCEXEC_UP_TRANSFER, &trans) != 0) {
 						fprintf(stderr, 
 							"execve(): error obtaining ELF descriptor\n");
-						goto return_execve1;
+						ret = EINVAL;
+						goto return_execve2;
 					}
 					
 					__dprintf("%s", "execve(): transfer ELF desc OK\n");
 
 					transfer_image(fd, desc);	
 					__dprintf("%s", "execve(): image transferred\n");
+
+					if (close_cloexec_fds(fd) < 0) {
+						ret = EINVAL;
+						goto return_execve2;
+					}
 
 					ret = 0;
 return_execve2:					
