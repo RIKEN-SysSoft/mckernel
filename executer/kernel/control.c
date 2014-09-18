@@ -692,9 +692,22 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 	return 0;
 }
 
-int mcexec_test_open_exec(ihk_os_t os, char * __user filename)
+LIST_HEAD(mckernel_exec_files);
+spinlock_t mckernel_exec_file_lock = SPIN_LOCK_UNLOCKED;
+ 
+
+struct mckernel_exec_file {
+	ihk_os_t os;
+	pid_t pid;
+	struct file *fp;
+	struct list_head list;
+};
+
+int mcexec_open_exec(ihk_os_t os, char * __user filename)
 {
 	struct file *file;
+	struct mckernel_exec_file *mcef;
+	struct mckernel_exec_file *mcef_iter;
 	int retval;
 
 	file = open_exec(filename);
@@ -703,11 +716,63 @@ int mcexec_test_open_exec(ihk_os_t os, char * __user filename)
 		goto out_return;
 	}
 
-	retval = 0;
+	mcef = kmalloc(sizeof(*mcef), GFP_KERNEL);
+	if (!mcef) {
+		retval = ENOMEM;
+		goto out_put_file;
+	}
+
+	spin_lock_irq(&mckernel_exec_file_lock);
+	/* Find previous file (if exists) and drop it */
+	list_for_each_entry(mcef_iter, &mckernel_exec_files, list) {
+		if (mcef_iter->os == os && mcef_iter->pid == current->tgid) {
+			allow_write_access(mcef_iter->fp);
+			fput(mcef_iter->fp);
+			list_del(&mcef_iter->list);
+			kfree(mcef_iter);
+			dprintk("%d open_exec dropped previous executable \n", (int)current->tgid);
+			break;
+		}
+	}
+	
+	/* Add new exec file to the list */
+	mcef->os = os;
+	mcef->pid = current->tgid;
+	mcef->fp = file;
+	list_add_tail(&mcef->list, &mckernel_exec_files);
+	spin_unlock(&mckernel_exec_file_lock);
+
+	dprintk("%d open_exec and holding file: %s\n", (int)current->tgid, filename);
+	return 0;
+	
+out_put_file:
 	fput(file);
 
 out_return:
 	return -retval;
+}
+
+
+int mcexec_close_exec(ihk_os_t os)
+{
+	struct mckernel_exec_file *mcef = NULL;
+	int found = 0;
+		
+	spin_lock_irq(&mckernel_exec_file_lock);
+	list_for_each_entry(mcef, &mckernel_exec_files, list) {
+		if (mcef->os == os && mcef->pid == current->tgid) {
+			allow_write_access(mcef->fp);
+			fput(mcef->fp);
+			list_del(&mcef->list);
+			kfree(mcef);
+			found = 1;
+			dprintk("%d close_exec dropped executable \n", (int)current->tgid);
+			break;
+		}
+	}
+	spin_unlock(&mckernel_exec_file_lock);
+
+	return (found ? 0 : EINVAL);
 }
 
 long mcexec_strncpy_from_user(ihk_os_t os, struct strncpy_from_user_desc * __user arg)
@@ -793,8 +858,11 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg)
 		return mcexec_strncpy_from_user(os, 
 				(struct strncpy_from_user_desc *)arg);
 
-	case MCEXEC_UP_TEST_OPEN_EXEC:
-		return mcexec_test_open_exec(os, (char *)arg);
+	case MCEXEC_UP_OPEN_EXEC:
+		return mcexec_open_exec(os, (char *)arg);
+
+	case MCEXEC_UP_CLOSE_EXEC:
+		return mcexec_close_exec(os);
 
 	case MCEXEC_UP_PREPARE_DMA:
 		return mcexec_pin_region(os, (unsigned long *)arg);

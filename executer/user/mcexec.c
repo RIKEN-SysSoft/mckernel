@@ -352,7 +352,7 @@ retry:
 	if (strncmp(filename, "/", 1)) {
 		
 		/* Is filename a single component without path? */
-		if (strncmp(filename, ".", 1) && !strchr(filename, '/')) {
+		while (strncmp(filename, ".", 1) && !strchr(filename, '/')) {
 
 			char *token, *string, *tofree;
 			char *PATH = getenv("COKERNEL_PATH");
@@ -362,6 +362,21 @@ retry:
 
 			if (strlen(filename) >= 255) {
 				return ENAMETOOLONG;
+			}
+			
+			/* See first whether file is available in current working dir */
+			error = access(filename, X_OK);
+			if (error == 0) {
+				__dprintf("lookup_exec_path(): found %s in cwd\n", filename);
+				error = snprintf(path, max_len, "%s", filename);
+
+				if (error < 0 || error >= max_len) {
+					fprintf(stderr, "lookup_exec_path(): array too small?\n");
+					return ENOMEM;
+				}
+
+				found = 1;
+				break;
 			}
 
 			__dprintf("PATH: %s\n", PATH);
@@ -390,6 +405,7 @@ retry:
 			}
 
 			free(tofree);
+			break;
 		}
 
 		/* Not in path, file to be open from the working directory */
@@ -520,7 +536,7 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 
 	rewind(fp);
 	
-	if ((ret = ioctl(fd, MCEXEC_UP_TEST_OPEN_EXEC, filename)) != 0) {
+	if ((ret = ioctl(fd, MCEXEC_UP_OPEN_EXEC, filename)) != 0) {
 		fprintf(stderr, "Error: open_exec() fails for %s: %d (fd: %d)\n", 
 			filename, ret, fd);
 		return ret;
@@ -1392,6 +1408,12 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock, int mcosid)
 		case __NR_exit_group:
 			sig = 0;
 			term = 0;
+			
+			/* Drop executable file */
+			if ((ret = ioctl(fd, MCEXEC_UP_CLOSE_EXEC)) != 0) {
+				fprintf(stderr, "WARNING: close_exec() couldn't find exec file?\n");
+			}
+
 			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
 
 			__dprintf("__NR_exit/__NR_exit_group: %ld (cpu_id: %d)\n",

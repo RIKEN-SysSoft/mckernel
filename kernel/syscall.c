@@ -1244,9 +1244,11 @@ SYSCALL_DECLARE(arch_prctl)
 SYSCALL_DECLARE(execve)
 {
 	long ret;
+	char *empty_envp[1] = {NULL};
 	const char *filename = (const char *)ihk_mc_syscall_arg0(ctx);
 	char **argv = (char **)ihk_mc_syscall_arg1(ctx);
-	char **envp = (char **)ihk_mc_syscall_arg2(ctx);
+	char **envp = (char **)ihk_mc_syscall_arg2(ctx) ? 
+		(char **)ihk_mc_syscall_arg2(ctx) : empty_envp;
 
 	char *argv_flat = NULL;
 	int argv_flat_len = 0;
