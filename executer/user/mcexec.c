@@ -447,7 +447,7 @@ retry:
 
 	/* Check whether the resolved path is a symlink */
 	if (lstat(path, &sb) == -1) {
-		fprintf(stderr, "lookup_exec_path(): error stat\n");
+		fprintf(stderr, "lookup_exec_path(): %s, error stat\n");
 		return errno;
 	}
 

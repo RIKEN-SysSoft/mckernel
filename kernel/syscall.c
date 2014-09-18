@@ -297,13 +297,92 @@ void sigchld_parent(struct process *parent, int status)
 }
 #endif
 
+static int wait_zombie(struct process *proc, struct fork_tree_node *child, int *status, ihk_mc_user_context_t *ctx) {
+    int ret;
+    struct syscall_request request IHK_DMA_ALIGN;
+    
+    dkprintf("wait: found PS_ZOMBIE process: %d\n", child->pid);
+    
+    list_del(&child->siblings_list);	
+    
+    if (status) {
+        *status = child->exit_status;
+    }
+    
+    release_fork_tree_node(child);
+    
+    /* Ask host to clean up exited child */
+    request.number = __NR_wait4;
+    request.args[0] = child->pid;
+    request.args[1] = 0;
+    ret = do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0);
+    
+    if (ret != child->pid)
+        kprintf("WARNING: host waitpid failed?\n");
+    dkprintf("wait_zombie,child->pid=%d,status=%08x\n",
+			 child->pid, status ? *status : -1);
+    return ret;
+}
+
+static int wait_stopped(struct process *proc, struct fork_tree_node *child, int *status, int options) {
+    dkprintf("wait_stopped,proc->pid=%d,child->pid=%d,options=%08x\n",
+			 proc->pid, child->pid, options);
+    int ret;
+    
+    /* Copy exit_status created in do_signal */
+    int *exit_status = (child->ptrace & PT_TRACED) ? 
+        &child->exit_status : 
+        &child->group_exit_status;
+    
+    /* Skip this process because exit_status has been reaped. */
+    if (!*exit_status) {
+        ret = 0;
+        goto out;
+    }
+
+    /* TODO: define 0x7f in kernel/include/process.h */
+    if (status) {
+        *status =  (*exit_status << 8) | 0x7f;
+    }
+    
+    /* Reap exit_status. signal_flags is reaped on receiving signal
+       in do_kill(). */
+    if(!(options & WNOWAIT)) {
+        *exit_status = 0;
+    }
+    
+    dkprintf("wait_stopped,child->pid=%d,status=%08x\n",
+			 child->pid, status ? *status : -1);
+    ret = child->pid;
+ out:
+    return ret;    
+}
+
+static int wait_continued(struct process *proc, struct fork_tree_node *child, int *status, int options) {
+    int ret;
+    
+    if (status) {
+        *status = 0xffff;
+    }
+
+    /* Reap signal_flags */
+    if(!(options & WNOWAIT)) {
+        child->signal_flags &= ~SIGNAL_STOP_CONTINUED;
+    }
+
+    dkprintf("wait4,SIGNAL_STOP_CONTINUED,pid=%d,status=%08x\n",
+			 child->pid, status ? *status : -1);
+    ret = child->pid;
+    return ret;
+}
+
 /* 
  * From glibc: INLINE_SYSCALL (wait4, 4, pid, stat_loc, options, NULL);
  */
 SYSCALL_DECLARE(wait4)
 {
 	struct process *proc = cpu_local_var(current);
-	struct fork_tree_node *child, *child_iter;
+	struct fork_tree_node *child_iter;
 	int pid = (int)ihk_mc_syscall_arg0(ctx);
 	int pgid = proc->pgid;
 	int *status = (int *)ihk_mc_syscall_arg1(ctx);
@@ -312,18 +391,17 @@ SYSCALL_DECLARE(wait4)
 	struct waitq_entry waitpid_wqe;
 	int empty = 1;
 
+    dkprintf("wait4,proc->pid=%d,pid=%d\n", proc->pid, pid);
     if (options & ~(WNOHANG | WUNTRACED | WCONTINUED)) {
-        return -EINVAL;
+        ret = -EINVAL;
+        goto exit;
     }
 rescan:
-	child = NULL;
 	pid = (int)ihk_mc_syscall_arg0(ctx);	
 	
 	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
 	
 	list_for_each_entry(child_iter, &proc->ftn->children, siblings_list) {	
-		
-		empty = 0;
 
 		ihk_mc_spinlock_lock_noirq(&child_iter->lock);
 		
@@ -331,73 +409,91 @@ rescan:
 			pid == -1 ||
 			(pid == 0 && pgid == child_iter->pgid) ||
 			(pid > 0 && pid == child_iter->pid)) {
-			child = child_iter;
-			break;
+
+            empty = 0;
+
+            if(child_iter->status == PS_ZOMBIE) {
+                ret = wait_zombie(proc, child_iter, status, ctx);
+                if(ret) {
+                    goto out_found;
+                }
+            }
+
+            if((child_iter->signal_flags & SIGNAL_STOP_STOPPED) &&
+               (options & WUNTRACED)) {
+                /* Not ptraced and in stopped state and WUNTRACED is specified */
+                ret = wait_stopped(proc, child_iter, status, options);
+                if(ret) {
+                    goto out_found;
+                }
+            }
+            
+            if((child_iter->signal_flags & SIGNAL_STOP_CONTINUED) &&
+               (options & WCONTINUED)) {
+                ret = wait_continued(proc, child_iter, status, options);
+                if(ret) {
+                    goto out_found;
+                }
+            }
 		}
 		
 		ihk_mc_spinlock_unlock_noirq(&child_iter->lock);
 	}
-	
-	if (empty || (!child && pid != -1)) {
-		ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
-		return -ECHILD;
-	}
 
-	/* If child is valid we are still holding its ftn->lock */
-	if (child) {
-		if (child->status == PS_ZOMBIE) {
-			struct syscall_request request IHK_DMA_ALIGN;
+	list_for_each_entry(child_iter, &proc->ftn->ptrace_children, ptrace_siblings_list) {	
 
-			ihk_mc_spinlock_unlock_noirq(&child->lock);
-			dkprintf("wait: found PS_ZOMBIE process: %d\n", child->pid);
+		ihk_mc_spinlock_lock_noirq(&child_iter->lock);
+		
+		if ((pid < 0 && -pid == child_iter->pgid) ||
+			pid == -1 ||
+			(pid == 0 && pgid == child_iter->pgid) ||
+			(pid > 0 && pid == child_iter->pid)) {
 
-			list_del(&child->siblings_list);	
-			ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
+            empty = 0;
 
-			if (status) {
-				*status = child->exit_status;
-			}
-			pid = child->pid;
+            if(child_iter->status == PS_ZOMBIE) {
+                ret = wait_zombie(proc, child_iter, status, ctx);
+                if(ret) {
+                    goto out_found;
+                }
+            }
 
-			release_fork_tree_node(child);
+            if(child_iter->status & (PS_STOPPED | PS_TRACED)) {
+                /* ptraced and in stopeed or trace-stopped state */
+                ret = wait_stopped(proc, child_iter, status, options);
+                if(ret) {
+                    goto out_found;
+                }
+            } else {
+                /* ptraced and in running or sleeping state */
+            }
 
-			/* Ask host to clean up exited child */
-			request.number = __NR_wait4;
-			request.args[0] = pid;
-			request.args[1] = 0;
-			ret = do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0);
-
-			if (ret != pid)
-				kprintf("WARNING: host waitpid failed?\n");
-
-			goto exit;
-		} else if(child->status == PS_STOPPED) {
-			ihk_mc_spinlock_unlock_noirq(&child->lock);
-			ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
-
-			/* exit_status is created in do_signal */
-			if (status) {
-				*status = child->exit_status;
-			}
-			pid = child->pid;
-			dkprintf("wait4,PS_STOPPED,pid=%d,status=%08x\n", pid, *status);
-
-			goto exit;
+            if((child_iter->signal_flags & SIGNAL_STOP_CONTINUED) &&
+               (options & WCONTINUED)) {
+                ret = wait_continued(proc, child_iter, status, options);
+                if(ret) {
+                    goto out_found;
+                }
+            }
 		}
 		
-		ihk_mc_spinlock_unlock_noirq(&child->lock);
+		ihk_mc_spinlock_unlock_noirq(&child_iter->lock);
+	}
+
+	if (empty) {
+		ret = -ECHILD;
+		goto out_notfound;
 	}
 	
 	/* Don't sleep if WNOHANG requested */
 	if (options & WNOHANG) {
-		ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
-
 		*status = 0;
-		pid = 0;
-		goto exit;
+		ret = 0;
+		goto out_notfound;
 	}
 
 	/* Sleep */
+    dkprintf("wait4,sleeping\n");
 	waitq_init_entry(&waitpid_wqe, proc);
 	waitq_prepare_to_wait(&proc->ftn->waitpid_q, &waitpid_wqe, PS_INTERRUPTIBLE);
 
@@ -409,9 +505,14 @@ rescan:
 	waitq_finish_wait(&proc->ftn->waitpid_q, &waitpid_wqe);
 
 	goto rescan;
-
-exit:
-	return pid;
+    
+ exit:
+    return ret;
+ out_found:
+    ihk_mc_spinlock_unlock_noirq(&child_iter->lock);
+ out_notfound:
+    ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
+    goto exit;
 }
 
 void
@@ -421,6 +522,8 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 	struct process *proc = cpu_local_var(current);
 	struct fork_tree_node *ftn = proc->ftn;
 	struct fork_tree_node *child, *next;
+    struct process *parent_owner;
+    int error;
 
 	request.number = __NR_exit_group;
 	request.args[0] = ((rc & 0x00ff) << 8) | (sig & 0xff);
@@ -439,17 +542,18 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 	/* Do a "wait" on all children and detach owner process */
 	ihk_mc_spinlock_lock_noirq(&ftn->lock);
 	list_for_each_entry_safe(child, next, &ftn->children, siblings_list) {
-			
 		list_del(&child->siblings_list);
 		release_fork_tree_node(child);
 	}
-
 	ftn->owner = NULL;
-
 	ihk_mc_spinlock_unlock_noirq(&ftn->lock);	
 
 	/* Send SIGCHILD to parent */
 	if (ftn->parent) {
+		int parent_owner_pid;
+
+		dkprintf("terminate,ftn->parent->owner->pid=%d\n",
+			ftn->parent->owner->pid);
 		
 		ihk_mc_spinlock_lock_noirq(&ftn->lock);
 		ftn->pid = proc->pid;
@@ -457,27 +561,38 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 		ftn->status = PS_ZOMBIE;
 		ihk_mc_spinlock_unlock_noirq(&ftn->lock);	
 
+		/* Wake parent (if sleeping in wait4()) */
+		dkprintf("terminate,wakeup\n");
+		waitq_wakeup(&ftn->parent->waitpid_q);
+
 		/* Signal parent if still attached */
 		ihk_mc_spinlock_lock_noirq(&ftn->parent->lock);
-		if (ftn->parent->owner) {
+		parent_owner = ftn->parent->owner;
+		parent_owner_pid = parent_owner ? ftn->parent->owner->pid : 0;
+		ihk_mc_spinlock_unlock_noirq(&ftn->parent->lock);	
+		if (parent_owner) {
 			struct siginfo info;
 			memset(&info, '\0', sizeof info);
 			info.si_signo = SIGCHLD;
-			info.si_code = sig? ((sig & 0x80)? 3: 2): 1;
+			info.si_code = sig? ((sig & 0x80)? CLD_DUMPED: CLD_KILLED): CLD_EXITED;
 			info._sifields._sigchld.si_pid = proc->pid;
 			info._sifields._sigchld.si_status = ((rc & 0x00ff) << 8) | (sig & 0xff);
-			do_kill(ftn->parent->owner->pid, -1, SIGCHLD, &info);
+			dkprintf("terminate,kill SIGCHLD,target pid=%d\n",
+				parent_owner_pid);
+			error = do_kill(ftn->parent->owner->pid, -1, SIGCHLD, &info);
 /*
 			sigchld_parent(ftn->parent->owner, 0);
 */
+			dkprintf("terminate,klll SIGCHILD,error=%d\n",
+				error);
 		}
-		ihk_mc_spinlock_unlock_noirq(&ftn->parent->lock);	
-		
-		/* Wake parent (if sleeping in wait4()) */
-		waitq_wakeup(&ftn->parent->waitpid_q);
-		
+	
 		release_fork_tree_node(ftn->parent);
-	}
+	} else {
+		ihk_mc_spinlock_lock_noirq(&ftn->lock);
+		ftn->status = PS_EXITED;
+		ihk_mc_spinlock_unlock_noirq(&ftn->lock);	
+    }
 
 	release_fork_tree_node(ftn);
 	
@@ -490,6 +605,7 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 void
 interrupt_syscall(int pid, int cpuid)
 {
+    dkprintf("interrupt_syscall,target pid=%d,target cpuid=%d\n", pid, cpuid);
 	ihk_mc_user_context_t ctx;
 	long lerror;
 
@@ -509,6 +625,7 @@ SYSCALL_DECLARE(exit_group)
 	SYSCALL_HEADER;
 #endif
 
+	dkprintf("sys_exit_group,pid=%d\n", cpu_local_var(current)->pid);
 	terminate((int)ihk_mc_syscall_arg0(ctx), 0, ctx);
 #if 0
 	struct process *proc = cpu_local_var(current);
@@ -1247,8 +1364,58 @@ SYSCALL_DECLARE(arch_prctl)
 	                     ihk_mc_syscall_arg1(ctx));
 }
 
+static int ptrace_report_exec(struct process *proc) {
+	int error = 0;
+	long rc;
+	struct siginfo info;
+
+	if (!(proc->ftn->ptrace & PT_TRACE_EXEC)) {
+		goto out;
+	}
+    
+	/* Save reason why stopped and process state for wait to reap */
+	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
+	memset(&info, '\0', sizeof info);
+	info.si_signo = SIGTRAP;
+	info.si_code = TRAP_TRACE;
+	proc->ftn->exit_status = (SIGTRAP | (PTRACE_EVENT_EXEC << 8));
+	/* Transition process state */
+	proc->ftn->status = PS_TRACED;
+	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
+    
+	/* Signal myself so that my parent can wait for me */
+	rc = do_kill(proc->ftn->pid, -1, SIGTRAP, &info);
+	if (rc < 0) {
+		kprintf("ptrace_report_exec,do_kill failed\n");
+	}
+    
+	if (proc->ftn->parent) {
+		/* kill SIGCHLD */
+		ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
+		if (proc->ftn->parent->owner) {
+			memset(&info, '\0', sizeof info);
+			info.si_signo = SIGCHLD;
+			info.si_code = CLD_TRAPPED;
+			info._sifields._sigchld.si_pid = proc->pid;
+			info._sifields._sigchld.si_status = PS_TRACED;
+			rc = do_kill(proc->ftn->parent->owner->pid, -1, SIGCHLD, &info);
+			if(rc < 0) {
+				kprintf("ptrace_report_exec,do_kill failed\n");
+			}
+		}
+		ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);	
+        
+		/* Wake parent (if sleeping in wait4()) */
+		waitq_wakeup(&proc->ftn->parent->waitpid_q);
+	}
+
+out:
+	return error;
+}
+
 SYSCALL_DECLARE(execve)
 {
+    int error;
 	long ret;
 	char *empty_envp[1] = {NULL};
 	const char *filename = (const char *)ihk_mc_syscall_arg0(ctx);
@@ -1363,6 +1530,11 @@ SYSCALL_DECLARE(execve)
 		panic("");
 	}
 
+    error = ptrace_report_exec(cpu_local_var(current));
+    if(error) {
+		kprintf("execve(): ERROR: ptrace_report_exec()\n");
+    }
+
 	/* Switch to new execution context */
 	dkprintf("execve(): switching to new process\n");
 	
@@ -1414,7 +1586,6 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	else {
 		request1.number = __NR_fork;
 		new->pid = do_syscall(&request1, &ctx1, ihk_mc_get_processor_id(), 0);
-		
 		if (new->pid == -1) {
 			kprintf("ERROR: forking host process\n");
 			
@@ -1521,13 +1692,17 @@ SYSCALL_DECLARE(kill)
 	int sig = ihk_mc_syscall_arg1(ctx);
 	struct process *proc = cpu_local_var(current);
 	struct siginfo info;
+	int error;
 
 	memset(&info, '\0', sizeof info);
 	info.si_signo = sig;
 	info.si_code = SI_USER;
 	info._sifields._kill.si_pid = proc->pid;
 
-	return do_kill(pid, -1, sig, &info);
+	dkprintf("sys_kill,enter,pid=%d,sig=%d\n", pid, sig);
+	error = do_kill(pid, -1, sig, &info);
+	dkprintf("sys_kill,returning,pid=%d,sig=%d,error=%d\n", pid, sig, error);
+	return error;
 }
 
 // see linux-2.6.34.13/kernel/signal.c
@@ -2038,6 +2213,7 @@ SYSCALL_DECLARE(futex)
 SYSCALL_DECLARE(exit)
 {
 	struct process *proc = cpu_local_var(current);
+	dkprintf("sys_exit,pid=%d\n", proc->pid);
 
 #ifdef DCFA_KMOD
 	do_mod_exit((int)ihk_mc_syscall_arg0(ctx));
@@ -2101,15 +2277,93 @@ SYSCALL_DECLARE(getrlimit)
 	return ret;
 }
 
+static int ptrace_wakeup_sig(int pid, long request, long data) {
+	dkprintf("ptrace_wakeup_sig,pid=%d,data=%08x\n", pid, data);
+	int error;
+	struct process *child;
+	ihk_spinlock_t *savelock;
+	unsigned long irqstate;
+	struct siginfo info;
+
+	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	if (!child) {
+		error = -ESRCH;
+		goto out;
+	}
+	ihk_mc_spinlock_unlock(savelock, irqstate);
+
+	error = sched_wakeup_process(child, PS_TRACED);
+	if (error < 0) {
+		goto out;
+	}
+
+	ihk_mc_spinlock_lock_noirq(&child->ftn->lock);	
+	child->ftn->exit_status = data;
+	if (child->ftn->status & PS_TRACED) {
+		xchg4((int *)(&child->ftn->status), PS_RUNNING);
+	} 
+	ihk_mc_spinlock_unlock_noirq(&child->ftn->lock);
+
+
+	if (data > 64 || data < 0) {
+		error = -EINVAL;
+		goto out;
+	}
+
+	switch (request) {
+	case PTRACE_KILL:
+		memset(&info, '\0', sizeof info);
+		info.si_signo = SIGKILL;
+		error = do_kill(pid, -1, SIGKILL, &info);
+		if (error < 0) {
+			goto out;
+		}
+		break;
+	case PTRACE_CONT:
+		if(data != 0) {
+			struct process *proc;
+
+			/* TODO: Tracing process replace the original
+			   signal with "data" */
+			proc = cpu_local_var(current);
+			memset(&info, '\0', sizeof info);
+			info.si_signo = data;
+			info.si_code = SI_USER;
+			info._sifields._kill.si_pid = proc->pid;
+			error = do_kill(pid, -1, data, &info);
+			if (error < 0) {
+				goto out;
+			}
+		}
+		break;
+	default:
+		break;
+	}
+
+out:
+	return error;
+}
+
 SYSCALL_DECLARE(ptrace)
 {
-	const int request = ihk_mc_syscall_arg0(ctx);
-	const long pid = ihk_mc_syscall_arg1(ctx);
-	void * const addr = (void *)ihk_mc_syscall_arg2(ctx);
-	void * const data = (void *)ihk_mc_syscall_arg3(ctx);
+	const long request = (long)ihk_mc_syscall_arg0(ctx);
+	const int pid = (int)ihk_mc_syscall_arg1(ctx);
+	const long addr = (long)ihk_mc_syscall_arg2(ctx);
+	const long data = (long)ihk_mc_syscall_arg3(ctx);
+    int error;
 
-	kprintf("ptrace(%d,%ld,%p,%p): ENOSYS\n", request, pid, addr, data);
-	return -ENOSYS;
+    switch(request) {
+    case PTRACE_KILL:
+    case PTRACE_CONT:
+        error = ptrace_wakeup_sig(pid, request, data);
+        break;
+    default:
+        error = 0;
+        break;
+    }
+
+	dkprintf("ptrace(%d,%ld,%p,%p): returning %d\n", request, pid, addr, data, error);
+	return error;
 }
 
 #define MIN2(x,y) (x) < (y) ? (x) : (y)

@@ -55,8 +55,18 @@
 #define PS_ZOMBIE            0x8
 #define PS_EXITED            0x10
 #define PS_STOPPED           0x20
+#define PS_TRACED            0x40 /* Set to "not running" by a ptrace related event */
 
 #define PS_NORMAL	(PS_INTERRUPTIBLE | PS_UNINTERRUPTIBLE)
+
+#define PT_TRACED 0x1     /* The process is ptraced */
+#define PT_TRACE_EXEC 0x2 /* Trace execve(2) */
+
+#define PTRACE_CONT 7
+#define PTRACE_KILL 8
+
+#define SIGNAL_STOP_STOPPED   0x1 /* The process has been stopped by SIGSTOP */
+#define SIGNAL_STOP_CONTINUED 0x2 /* The process has been resumed by SIGCONT */
 
 /* Waitpid options */
 #define WNOHANG		0x00000001
@@ -154,7 +164,29 @@ struct fork_tree_node {
 	struct list_head children;
 	struct list_head siblings_list;
 	
+    /* The ptracing process behave as the parent of the ptraced process
+       after using PTRACE_ATTACH except getppid. So we save it here. */
+	struct fork_tree_node *ppid_parent;
+
+    /* Manage ptraced processes in the separate list to make it easy to
+       restore the orginal parent child relationship when 
+       performing PTRACE_DETACH */
+	struct list_head ptrace_children;
+	struct list_head ptrace_siblings_list;
+
 	struct waitq waitpid_q;
+
+    /* Store exit_status for a group of threads when stopped by SIGSTOP.
+       exit_status can't be used because values of exit_status of threads
+       might divert while the threads are exiting by group_exit(). */
+    int group_exit_status;
+
+    /* Showing whether or not the process is ptraced */
+    int ptrace;
+
+    /* Store event related to signal. For example, 
+       it represents that the proceess has been resumed by SIGCONT. */
+    int signal_flags;
 };
 
 void hold_fork_tree_node(struct fork_tree_node *ftn);
