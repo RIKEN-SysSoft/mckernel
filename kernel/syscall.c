@@ -459,7 +459,7 @@ rescan:
             }
 
             if(child_iter->status & (PS_STOPPED | PS_TRACED)) {
-                /* ptraced and in stopeed or trace-stopped state */
+                /* ptraced and in stopped or trace-stopped state */
                 ret = wait_stopped(proc, child_iter, status, options);
                 if(ret) {
                     goto out_found;
@@ -2277,6 +2277,8 @@ SYSCALL_DECLARE(getrlimit)
 	return ret;
 }
 
+extern int ptrace_traceme(void);
+
 static int ptrace_wakeup_sig(int pid, long request, long data) {
 	dkprintf("ptrace_wakeup_sig,pid=%d,data=%08x\n", pid, data);
 	int error;
@@ -2353,6 +2355,8 @@ SYSCALL_DECLARE(ptrace)
     int error;
 
     switch(request) {
+    case PTRACE_TRACEME:
+	error = ptrace_traceme();
     case PTRACE_KILL:
     case PTRACE_CONT:
         error = ptrace_wakeup_sig(pid, request, data);

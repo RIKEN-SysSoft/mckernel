@@ -84,12 +84,11 @@ void init_fork_tree_node(struct fork_tree_node *ftn,
 	/* These will be filled out when changing status */
 	ftn->pid = -1;
 	ftn->exit_status = -1;
-    ftn->group_exit_status = 0;
 	ftn->status = PS_RUNNING;
-#if 1
-	ftn->ptrace = parent ? PT_TRACED : 0; /*debug*//*takagi*/
-#endif
-    ftn->signal_flags = 0;
+
+	ftn->group_exit_status = 0;
+	ftn->ptrace = 0;
+	ftn->signal_flags = 0;
 
 	ftn->parent = NULL;
 	if (parent) {
@@ -98,9 +97,6 @@ void init_fork_tree_node(struct fork_tree_node *ftn,
 	INIT_LIST_HEAD(&ftn->children);
 	INIT_LIST_HEAD(&ftn->siblings_list);
 
-	if (parent) {
-        ftn->ppid_parent = parent; /*debug*//*takagi*/
-    }
 	INIT_LIST_HEAD(&ftn->ptrace_children);
 	INIT_LIST_HEAD(&ftn->ptrace_siblings_list);
 	
@@ -297,12 +293,6 @@ struct process *clone_process(struct process *org, unsigned long pc,
 		list_add_tail(&proc->ftn->siblings_list, &org->ftn->children);
 		ihk_mc_spinlock_unlock_noirq(&org->ftn->lock);	
 
-        /*takagi*//*debug*/
-#if 1
-		ihk_mc_spinlock_lock_noirq(&org->ftn->lock);
-		list_add_tail(&proc->ftn->ptrace_siblings_list, &org->ftn->ptrace_children);
-		ihk_mc_spinlock_unlock_noirq(&org->ftn->lock);	
-#endif
 		/* We hold a reference to parent */
 		hold_fork_tree_node(proc->ftn->parent);
 		
@@ -326,6 +316,25 @@ err_free_proc:
 	release_process(org);
 	return NULL;
 }
+
+int ptrace_traceme(void){
+        struct process *proc = cpu_local_var(current);
+        struct fork_tree_node *ftn = proc->ftn, *parent;
+
+	ftn->ptrace = PT_TRACED;
+
+	parent = ftn->parent;
+	if (parent != NULL) {
+		ftn->ppid_parent = parent;
+
+		ihk_mc_spinlock_lock_noirq(&parent->lock);
+		list_add_tail(&ftn->ptrace_siblings_list, &parent->ptrace_children);
+		ihk_mc_spinlock_unlock_noirq(&parent->lock);
+	}
+
+	return 0;
+}
+
 
 static int copy_user_ranges(struct process *proc, struct process *org) 
 {
