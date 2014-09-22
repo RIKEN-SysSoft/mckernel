@@ -449,6 +449,7 @@ end:
 	dprintf("ret: %d, eof: %d\n", ans, eof);
 	r->ret = ans;
 	r->eof = eof;
+	r->status = 1; /* done */
 	packet.err = 0;
 bufunavail:
 	ihk_mc_unmap_memory(NULL, pbuf, r->count);
