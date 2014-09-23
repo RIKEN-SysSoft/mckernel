@@ -362,7 +362,6 @@ static int process_msg_prepare_process(unsigned long rphys)
 		return -ENOMEM;
 	}
 	proc->pid = pn->pid;
-	kprintf("prepare_process,pid=%d,ptrace=%08x\n", proc->pid, proc->ftn->ptrace);
 	proc->pgid = pn->pgid;
 	proc->ftn->pid = pn->pid;
 	proc->vm->region.user_start = pn->user_start;

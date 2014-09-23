@@ -318,8 +318,8 @@ err_free_proc:
 }
 
 int ptrace_traceme(void){
-        struct process *proc = cpu_local_var(current);
-        struct fork_tree_node *ftn = proc->ftn, *parent;
+	struct process *proc = cpu_local_var(current);
+	struct fork_tree_node *ftn = proc->ftn, *parent;
 
 	ftn->ptrace = PT_TRACED;
 
@@ -1952,10 +1952,10 @@ redo:
 void check_need_resched(void)
 {
 	struct cpu_local_var *v = get_this_cpu_local_var();
-    if (v->flags & CPU_FLAG_NEED_RESCHED) {
+	if (v->flags & CPU_FLAG_NEED_RESCHED) {
 		v->flags &= ~CPU_FLAG_NEED_RESCHED;
 		schedule();
-    }
+	}
 }
 
 
@@ -1966,8 +1966,8 @@ int sched_wakeup_process(struct process *proc, int valid_states)
 	unsigned long irqstate;
 	struct cpu_local_var *v = get_cpu_local_var(proc->cpu_id);
 
-    dkprintf("sched_wakeup_process,proc->pid=%d,valid_states=%08x,proc->status=%08x,proc->cpu_id=%d,my cpu_id=%d\n",
-            proc->pid, valid_states, proc->status, proc->cpu_id, ihk_mc_get_processor_id());
+	dkprintf("sched_wakeup_process,proc->pid=%d,valid_states=%08x,proc->status=%08x,proc->cpu_id=%d,my cpu_id=%d\n",
+			 proc->pid, valid_states, proc->status, proc->cpu_id, ihk_mc_get_processor_id());
 	
 	irqstate = ihk_mc_spinlock_lock(&(proc->spin_sleep_lock));
 	if (proc->spin_sleep) {
@@ -1982,7 +1982,7 @@ int sched_wakeup_process(struct process *proc, int valid_states)
 	
 	if (spin_slept) {
 		return status;
-    }
+	}
 
 	irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 	
@@ -1997,7 +1997,7 @@ int sched_wakeup_process(struct process *proc, int valid_states)
 	ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 
 	if (!status && (proc->cpu_id != ihk_mc_get_processor_id())) {
-        dkprintf("sched_wakeup_process,issuing IPI,proc->cpu_id=%d\n", 
+		dkprintf("sched_wakeup_process,issuing IPI,proc->cpu_id=%d\n", 
 				 proc->cpu_id);
 		ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(proc->cpu_id)->apic_id,
 		                     0xd1);

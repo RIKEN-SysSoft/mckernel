@@ -448,8 +448,6 @@ void handle_interrupt(int vector, struct x86_regs *regs)
 
 	check_signal(0, regs);
 	check_need_resched();
-    //kprintf("handle_interrupt,exit\n");
-    //schedule();
 }
 
 void gpe_handler(struct x86_regs *regs)

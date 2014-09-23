@@ -246,7 +246,7 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 		   copy_to_user(proc, &sigsp->sigrc, &rc, sizeof(long))){
 			kfree(pending);
 			ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
-            kprintf("do_signal,copy_to_user failed\n");
+			kprintf("do_signal,copy_to_user failed\n");
 			terminate(0, sig, (ihk_mc_user_context_t *)regs->rsp);
 			return;
 		}
@@ -351,7 +351,8 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 	}
 }
 
-static int ptrace_report_signal(struct process *proc, struct sig_pending *pending) {
+static int ptrace_report_signal(struct process *proc, struct sig_pending *pending)
+{
 	int sig;
 	__sigset_t w;
 	long rc;
@@ -363,7 +364,6 @@ static int ptrace_report_signal(struct process *proc, struct sig_pending *pendin
 	/* Transition process state */
 	proc->ftn->status = PS_TRACED;
 	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
-    
 	if (proc->ftn->parent) {
 		/* kill SIGCHLD */
 		ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
@@ -381,7 +381,7 @@ static int ptrace_report_signal(struct process *proc, struct sig_pending *pendin
 			}
 		}
 		ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);	
-        
+
 		/* Wake parent (if sleeping in wait4()) */
 		waitq_wakeup(&proc->ftn->parent->waitpid_q);
 	}
@@ -406,7 +406,7 @@ check_signal(unsigned long rc, void *regs0)
 	ihk_spinlock_t *lock;
 	__sigset_t w, sig_bv;
 	int	irqstate;
-    int sig;
+	int sig;
 
 	if(clv == NULL)
 		return;
@@ -453,11 +453,11 @@ check_signal(unsigned long rc, void *regs0)
 			return;
 		}
 
-        for(sig_bv = pending->sigmask.__val[0], sig = 0; sig_bv; sig++, sig_bv >>= 1);
-        if((proc->ftn->ptrace & PT_TRACED) && sig != SIGKILL) {
-            sig = ptrace_report_signal(proc, pending);
-            /* TODO: Tracing process could overwrite signal, so handle the case here. */
-        }
+		for(sig_bv = pending->sigmask.__val[0], sig = 0; sig_bv; sig++, sig_bv >>= 1);
+		if((proc->ftn->ptrace & PT_TRACED) && sig != SIGKILL) {
+			sig = ptrace_report_signal(proc, pending);
+			/* TODO: Tracing process could overwrite signal, so handle the case here. */
+		}
 
 		do_signal(rc, regs, proc, pending);
 	}
@@ -466,7 +466,7 @@ check_signal(unsigned long rc, void *regs0)
 unsigned long
 do_kill(int pid, int tid, int sig, siginfo_t *info)
 {
-    dkprintf("do_kill,pid=%d,tid=%d,sig=%d\n", pid, tid, sig);
+	dkprintf("do_kill,pid=%d,tid=%d,sig=%d\n", pid, tid, sig);
 	struct cpu_local_var *v;
 	struct process *p;
 	struct process *proc = cpu_local_var(current);
@@ -549,7 +549,7 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 							tproc = p;
 							if(!found && savelock) {
 								ihk_mc_spinlock_unlock_noirq(savelock);
-                            }
+							}
 							found = 1;
 							savelock =  &(v->runq_lock);
 							if(savelock0 && savelock0 != savelock){
@@ -572,7 +572,7 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 			}
 			if(!found) {
 				ihk_mc_spinlock_unlock_noirq(&(v->runq_lock));
-            }
+			}
 		}
 		if(tproc == NULL){
 			tproc = tproc0;
@@ -637,11 +637,11 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 		head = &tproc->sigpending;
 	}
 
-	rc = 0;
 	/* Put signal event even when handler is SIG_IGN or SIG_DFL
 	   because target ptraced process must call ptrace_report_signal 
 	   in check_signal */
 	pending = NULL;
+	rc = 0;
 	if (sig < 33) { // SIGRTMIN - SIGRTMAX
 		list_for_each_entry(pending, head, list){
 			if(pending->sigmask.__val[0] == mask)
@@ -672,47 +672,47 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 	}
 
 	if(doint && !(mask & tproc->sigmask.__val[0])){
-        switch(sig) {
-        case SIGCONT:
-            break;
-        case SIGSTOP:
-        case SIGKILL:
-        default:
-            if(proc != tproc){
-                dkprintf("do_kill,ipi,pid=%d,cpu_id=%d\n",
-                         tproc->pid, tproc->cpu_id);
-                ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(tproc->cpu_id)->apic_id, 0xd0);
-            }
-            break;
-        }
+		switch(sig) {
+		case SIGCONT:
+			break;
+		case SIGSTOP:
+		case SIGKILL:
+		default:
+			if(proc != tproc){
+				dkprintf("do_kill,ipi,pid=%d,cpu_id=%d\n",
+						 tproc->pid, tproc->cpu_id);
+				ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(tproc->cpu_id)->apic_id, 0xd0);
+			}
+			break;
+		}
 
-        ihk_mc_spinlock_unlock_noirq(savelock);
-        cpu_restore_interrupt(irqstate);
+		ihk_mc_spinlock_unlock_noirq(savelock);
+		cpu_restore_interrupt(irqstate);
 
-        switch(sig) {
-        case SIGKILL:
+		switch(sig) {
+		case SIGKILL:
 #if 0
 			/* Is this really needed? */
-            kprintf("do_kill,sending kill to mcexec,pid=%d,cpuid=%d\n",
-                    tproc->pid, tproc->cpu_id);
-            interrupt_syscall(tproc->pid, tproc->cpu_id);
+			kprintf("do_kill,sending kill to mcexec,pid=%d,cpuid=%d\n",
+					tproc->pid, tproc->cpu_id);
+			interrupt_syscall(tproc->pid, tproc->cpu_id);
 #endif
 			break;
-        case SIGCONT:
-            /* Wake up the target only when stopped by SIGSTOP */
-            sched_wakeup_process(tproc, PS_STOPPED);
-            ihk_mc_spinlock_lock_noirq(&tproc->ftn->lock);	
-            if (tproc->ftn->status & PS_STOPPED) {
-                xchg4((int *)(&tproc->ftn->status), PS_RUNNING);
-                /* Reap and set singal_flags */
-                tproc->ftn->signal_flags = SIGNAL_STOP_CONTINUED;
-            } 
-            ihk_mc_spinlock_unlock_noirq(&tproc->ftn->lock);
-            break;
-        case SIGSTOP:
-        default:
-            break;
-        }
+		case SIGCONT:
+			/* Wake up the target only when stopped by SIGSTOP */
+			sched_wakeup_process(tproc, PS_STOPPED);
+			ihk_mc_spinlock_lock_noirq(&tproc->ftn->lock);	
+			if (tproc->ftn->status & PS_STOPPED) {
+				xchg4((int *)(&tproc->ftn->status), PS_RUNNING);
+				/* Reap and set singal_flags */
+				tproc->ftn->signal_flags = SIGNAL_STOP_CONTINUED;
+			} 
+			ihk_mc_spinlock_unlock_noirq(&tproc->ftn->lock);
+			break;
+		case SIGSTOP:
+		default:
+			break;
+		}
 	}
 	else{
 		ihk_mc_spinlock_unlock_noirq(savelock);
