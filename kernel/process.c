@@ -2066,7 +2066,7 @@ void runq_del_proc(struct process *proc, int cpu_id)
 }
 
 struct process *
-findthread_and_lock(int pid, int tid, void *savelock, unsigned long *irqstate)
+findthread_and_lock(int pid, int tid, ihk_spinlock_t **savelock, unsigned long *irqstate)
 {
 	struct cpu_local_var *v;
 	struct process *p;
@@ -2075,11 +2075,11 @@ findthread_and_lock(int pid, int tid, void *savelock, unsigned long *irqstate)
 
 	for(i = 0; i < num_processors; i++){
 		v = get_cpu_local_var(i);
-		*(ihk_spinlock_t **)savelock = &(v->runq_lock);
+		*savelock = &(v->runq_lock);
 		*irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 		list_for_each_entry(p, &(v->runq), sched_list){
 			if(p->pid == pid &&
-			   p->tid == tid){
+			   (tid == -1 || p->tid == tid)){
 				return p;
 			}
 		}

@@ -200,7 +200,7 @@ void process_procfs_request(unsigned long rarg)
 	int rosnum, ret, pid, tid, ans = -EIO, eof = 0;
 	char *buf, *p;
 	struct ihk_ikc_channel_desc *syscall_channel;
-	void *savelock;
+	ihk_spinlock_t *savelock;
 	unsigned long irqstate;
 
 	dprintf("process_procfs_request: invoked.\n");
@@ -449,6 +449,7 @@ end:
 	dprintf("ret: %d, eof: %d\n", ans, eof);
 	r->ret = ans;
 	r->eof = eof;
+	r->status = 1; /* done */
 	packet.err = 0;
 bufunavail:
 	ihk_mc_unmap_memory(NULL, pbuf, r->count);

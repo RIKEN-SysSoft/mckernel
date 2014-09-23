@@ -26,7 +26,6 @@
 #endif
 
 static DECLARE_WAIT_QUEUE_HEAD(procfsq);
-static unsigned long procfsq_channel;
 
 int mckernel_procfs_read(char *buffer, char **start, off_t offset,
 			 int count, int *peof, void *dat);
@@ -254,11 +253,7 @@ void procfs_delete(void *__os, int osnum, unsigned long arg)
 
 void procfs_answer(unsigned int arg, int err)
 {
-	volatile struct procfs_read *r = phys_to_virt(arg);
-
 	dprintk("procfs: received SCD_MSG_PROCFS_ANSWER message(err = %d).\n", err);
-	procfsq_channel = arg;
-	r->error = err;
 	wake_up_interruptible(&procfsq);
 }
 
@@ -277,7 +272,6 @@ int mckernel_procfs_read(char *buffer, char **start, off_t offset,
 	struct ikc_scd_packet isp;
 	int ret, retrycount = 0;
 	unsigned long pbuf;
-	int i;
 
 	dprintk("mckernel_procfs_read: invoked for %s\n", e->fname); 
 
@@ -299,7 +293,8 @@ retry:
 
 	r->pbuf = pbuf;
 	r->eof = 0;
-	r->ret = PAGE_SIZE * 2;	/* dummy answer  */
+	r->ret = -EIO; /* default */
+	r->status = 0;
 	r->offset = offset;
 	r->count = count;
 	strncpy((char *)r->fname, e->fname, PROCFS_NAME_MAX);
@@ -308,32 +303,25 @@ retry:
 	isp.arg = virt_to_phys(r);
 	ret = mcctrl_ikc_send(e->os, e->cpu, &isp);
 	if (ret < 0) {
-		return ret; /* error */
+		goto out; /* error */
 	}
 	/* Wait for a reply. */
+	ret = -EIO; /* default exit code */
 	dprintk("now wait for a relpy\n");
-	wait_event_interruptible(procfsq, procfsq_channel == virt_to_phys(r));
-	/* Wake up and check the result. */
-	dprintk("mckernel_procfs_read: woke up.\n");
-	if (r->error != 0) {
-		kprintf("ERROR: mckernel_procfs_read: failed to get valid answer.\n");
-		return -EIO;
-	}		
-	for (i = 0; r->ret == PAGE_SIZE * 2; i++) {
-		/* FIXME: busy wait for the real answer to reach*/;
-		if (i > 1000000) {
-			kprintf("ERROR: mckernel_procfs_read: answer unavailable.\n");
-			return -EIO;
-		}
+	/* Wait for the status field of the procfs_read structure set ready. */
+	if (wait_event_interruptible_timeout(procfsq, r->status != 0, HZ) == 0) {
+		kprintf("ERROR: mckernel_procfs_read: timeout (1 sec).\n");
+		goto out;
 	}
-	dprintk("ret: %d, eof: %d (wait loop count: %d)\n", r->ret, r->eof, i);
+	/* Wake up and check the result. */
+	dprintk("mckernel_procfs_read: woke up. ret: %d, eof: %d\n", r->ret, r->eof);
 	if ((r->ret == 0) && (r->eof != 1)) {
 		/* A miss-hit caused by migration has occurred.
 		 * We simply retry the query with a new CPU.
 		 */
 		if (retrycount++ > 10) {
 			kprintf("ERROR: mckernel_procfs_read: excessive retry.\n");
-			return -EIO;
+			goto out;
 		}
 		e->cpu = r->newcpu;
 		dprintk("retry\n");
@@ -345,6 +333,7 @@ retry:
 	}
 	*start = buffer;
 	ret = r->ret;
+out:
 	kfree((void *)r);
 	
 	return ret;
