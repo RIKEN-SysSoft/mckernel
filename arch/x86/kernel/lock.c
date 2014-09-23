@@ -19,12 +19,14 @@ void ihk_mc_spinlock_init(ihk_spinlock_t *lock)
 	*lock = 0;
 }
 
-void ihk_mc_spinlock_lock(ihk_spinlock_t *lock, unsigned long *flags)
+unsigned long ihk_mc_spinlock_lock(ihk_spinlock_t *lock)
 {
 	int inc = 0x00010000;
 	int tmp;
-	
-	cpu_disable_interrupt_save(flags);
+	unsigned long flags;
+
+	flags = cpu_disable_interrupt_save();
+
 	asm volatile("lock ; xaddl %0, %1\n"
 	             "movzwl %w0, %2\n\t"
 	             "shrl $16, %0\n\t"
@@ -36,12 +38,13 @@ void ihk_mc_spinlock_lock(ihk_spinlock_t *lock, unsigned long *flags)
 	             "jmp 1b\n"
 	             "2:"
 	             : "+Q" (inc), "+m" (*lock), "=r" (tmp) : : "memory", "cc");
+	return flags;
 }
 
-void ihk_mc_spinlock_unlock(ihk_spinlock_t *lock, unsigned long *flags)
+void ihk_mc_spinlock_unlock(ihk_spinlock_t *lock, unsigned long flags)
 {
 	asm volatile ("lock incw %0" : "+m"(*lock) : : "memory", "cc");
-	cpu_restore_interrupt(*flags);
+	cpu_restore_interrupt(flags);
 }
 
 #endif
