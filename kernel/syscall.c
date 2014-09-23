@@ -301,15 +301,11 @@ static int wait_zombie(struct process *proc, struct fork_tree_node *child, int *
     int ret;
     struct syscall_request request IHK_DMA_ALIGN;
     
-    dkprintf("wait: found PS_ZOMBIE process: %d\n", child->pid);
-    
-    list_del(&child->siblings_list);	
+    dkprintf("wait_zombie,found PS_ZOMBIE process: %d\n", child->pid);
     
     if (status) {
         *status = child->exit_status;
     }
-    
-    release_fork_tree_node(child);
     
     /* Ask host to clean up exited child */
     request.number = __NR_wait4;
@@ -401,7 +397,6 @@ SYSCALL_DECLARE(wait4)
 	pid = (int)ihk_mc_syscall_arg0(ctx);	
 
 	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
-
 	list_for_each_entry(child_iter, &proc->ftn->children, siblings_list) {	
 
 		ihk_mc_spinlock_lock_noirq(&child_iter->lock);
@@ -416,6 +411,8 @@ SYSCALL_DECLARE(wait4)
 			if(child_iter->status == PS_ZOMBIE) {
 				ret = wait_zombie(proc, child_iter, status, ctx);
 				if(ret) {
+					list_del(&child_iter->siblings_list);
+					release_fork_tree_node(child_iter);
 					goto out_found;
 				}
 			}
@@ -440,7 +437,6 @@ SYSCALL_DECLARE(wait4)
 
 		ihk_mc_spinlock_unlock_noirq(&child_iter->lock);
 	}
-
 	list_for_each_entry(child_iter, &proc->ftn->ptrace_children, ptrace_siblings_list) {	
 
 		ihk_mc_spinlock_lock_noirq(&child_iter->lock);
@@ -455,6 +451,8 @@ SYSCALL_DECLARE(wait4)
 			if(child_iter->status == PS_ZOMBIE) {
 				ret = wait_zombie(proc, child_iter, status, ctx);
 				if(ret) {
+					list_del(&child_iter->ptrace_siblings_list);
+					release_fork_tree_node(child_iter);
 					goto out_found;
 				}
 			}
@@ -510,8 +508,10 @@ SYSCALL_DECLARE(wait4)
  exit:
 	return ret;
  out_found:
+	dkprintf("wait4,out_found\n");
 	ihk_mc_spinlock_unlock_noirq(&child_iter->lock);
  out_notfound:
+	dkprintf("wait4,out_notfound\n");
 	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
 	goto exit;
 }
@@ -526,6 +526,7 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 	struct process *parent_owner;
 	int error;
 
+	dkprintf("terminate,pid=%d\n", proc->pid);
 	request.number = __NR_exit_group;
 	request.args[0] = ((rc & 0x00ff) << 8) | (sig & 0xff);
 
@@ -546,10 +547,14 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 		list_del(&child->siblings_list);
 		release_fork_tree_node(child);
 	}
+	list_for_each_entry_safe(child, next, &ftn->ptrace_children, ptrace_siblings_list) {
+		list_del(&child->ptrace_siblings_list);
+		release_fork_tree_node(child);
+	}
 	ftn->owner = NULL;
 	ihk_mc_spinlock_unlock_noirq(&ftn->lock);	
 
-	/* Send SIGCHILD to parent */
+	/* Send SIGCHLD to parent */
 	if (ftn->parent) {
 		int parent_owner_pid;
 
@@ -584,19 +589,18 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 /*
 			sigchld_parent(ftn->parent->owner, 0);
 */
-			dkprintf("terminate,klll SIGCHILD,error=%d\n",
+			dkprintf("terminate,klll SIGCHLD,error=%d\n",
 					 error);
 		}
-	
+
 		release_fork_tree_node(ftn->parent);
 	} else {
 		ihk_mc_spinlock_lock_noirq(&ftn->lock);
 		ftn->status = PS_EXITED;
 		ihk_mc_spinlock_unlock_noirq(&ftn->lock);	
     }
-
 	release_fork_tree_node(ftn);
-	
+
 	proc->status = PS_EXITED;
 	release_process(proc);
 	
@@ -1565,6 +1569,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 
 	cpuid = obtain_clone_cpuid();
     if (cpuid == -1) {
+		kprintf("do_fork,core not available\n");
         return -EAGAIN;
     }
 

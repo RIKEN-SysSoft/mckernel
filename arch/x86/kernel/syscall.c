@@ -207,6 +207,7 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 	int	irqstate;
 
 	for(w = pending->sigmask.__val[0], sig = 0; w; sig++, w >>= 1);
+	dkprintf("do_signal,pid=%d,sig=%d\n", proc->pid, sig);
 
 	if(regs == NULL){ /* call from syscall */
 		asm("movq %%gs:132, %0" : "=r" (regs));
@@ -313,12 +314,9 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 			/* Wake up the parent who tried wait4 and sleeping */
 			waitq_wakeup(&proc->ftn->parent->waitpid_q);
 
-			dkprintf("do_signal,SIGTRAP,sleeping\n");
 			/* Sleep */
+			dkprintf("do_signal,SIGTRAP,sleeping\n");
 			proc->status = PS_TRACED;
-
-			//struct cpu_local_var *v = get_this_cpu_local_var();
-			//v->flags |= CPU_FLAG_NEED_RESCHED;
 
 			schedule();
 			dkprintf("SIGTRAP(): woken up\n");
@@ -356,6 +354,8 @@ static int ptrace_report_signal(struct process *proc, struct sig_pending *pendin
 	int sig;
 	__sigset_t w;
 	long rc;
+
+	dkprintf("ptrace_report_signal,pid=%d\n", proc->pid);
 
 	/* Save reason why stopped and process state for wait to reap */
 	for (w = pending->sigmask.__val[0], sig = 0; w; sig++, w >>= 1);
@@ -673,10 +673,10 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 
 	if(doint && !(mask & tproc->sigmask.__val[0])){
 		switch(sig) {
+		case SIGKILL:
 		case SIGCONT:
 			break;
 		case SIGSTOP:
-		case SIGKILL:
 		default:
 			if(proc != tproc){
 				dkprintf("do_kill,ipi,pid=%d,cpu_id=%d\n",
@@ -697,6 +697,13 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 					tproc->pid, tproc->cpu_id);
 			interrupt_syscall(tproc->pid, tproc->cpu_id);
 #endif
+			/* Wake up the target only when stopped by ptrace-reporting */
+			sched_wakeup_process(tproc, PS_TRACED);
+			ihk_mc_spinlock_lock_noirq(&tproc->ftn->lock);	
+			if (tproc->ftn->status & PS_TRACED) {
+				xchg4((int *)(&tproc->ftn->status), PS_RUNNING);
+			} 
+			ihk_mc_spinlock_unlock_noirq(&tproc->ftn->lock);
 			break;
 		case SIGCONT:
 			/* Wake up the target only when stopped by SIGSTOP */

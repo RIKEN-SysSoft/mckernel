@@ -48,6 +48,11 @@ static void insert_vm_range_list(struct process_vm *vm,
 static int copy_user_ranges(struct process *proc, struct process *org);
 void settid(struct process *proc, int mode, int newcpuid, int oldcpuid);
 
+int refcount_fork_tree_node(struct fork_tree_node *ftn)
+{
+	return ihk_atomic_read(&ftn->refcount);
+}
+
 void hold_fork_tree_node(struct fork_tree_node *ftn)
 {
 	ihk_atomic_inc(&ftn->refcount);
@@ -318,23 +323,48 @@ err_free_proc:
 }
 
 int ptrace_traceme(void){
+	int error = 0;
 	struct process *proc = cpu_local_var(current);
-	struct fork_tree_node *ftn = proc->ftn, *parent;
+	struct fork_tree_node *child, *next;
+	dkprintf("ptrace_traceme,pid=%d,proc->ftn->parent=%p\n", proc->pid, proc->ftn->parent);
 
-	ftn->ptrace = PT_TRACED;
-
-	parent = ftn->parent;
-	if (parent != NULL) {
-		ftn->ppid_parent = parent;
-
-		ihk_mc_spinlock_lock_noirq(&parent->lock);
-		list_add_tail(&ftn->ptrace_siblings_list, &parent->ptrace_children);
-		ihk_mc_spinlock_unlock_noirq(&parent->lock);
+	if (proc->ftn->parent == NULL) {
+		error = -EPERM;
+		goto out;
 	}
 
-	return 0;
-}
+	dkprintf("ptrace_traceme,parent->pid=%d\n", proc->ftn->parent->pid);
+	
+	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
+	
+	proc->ftn->ptrace = PT_TRACED;
+	proc->ftn->ppid_parent = proc->ftn->parent;
+	
+	ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
+	list_for_each_entry_safe(child, next, &proc->ftn->parent->children, siblings_list) {
+		if(child == proc->ftn) {
+			list_del(&child->siblings_list);
+			goto found;
+		}
+	}
+	kprintf("ptrace_traceme,not found\n");
+	error = -EPERM;
+	goto out_notfound;
+ found:
+	list_add_tail(&proc->ftn->ptrace_siblings_list, &proc->ftn->parent->ptrace_children);
+	
+	ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
+	
+	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
 
+ out:
+	dkprintf("ptrace_traceme,returning,error=%d\n", error);
+	return error;
+ out_notfound:
+	ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
+	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
+	goto out;
+}
 
 static int copy_user_ranges(struct process *proc, struct process *org) 
 {

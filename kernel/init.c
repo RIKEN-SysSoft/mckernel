@@ -141,7 +141,7 @@ void pc_init(void)
 			osnum += *p++ - '0';
 		}
 	}
-	kprintf("osnum: %d\n", osnum);
+	dkprintf("osnum: %d\n", osnum);
 
 
 	if (!(p = find_command_line("perfctr"))) {

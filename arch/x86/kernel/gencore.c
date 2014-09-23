@@ -9,7 +9,7 @@
 #define	align32(x) ((((x) + 3) / 4) * 4)
 #define	alignpage(x) ((((x) + (PAGE_SIZE) - 1) / (PAGE_SIZE)) * (PAGE_SIZE))
 
-#define DEBUG_PRINT_GENCORE
+//#define DEBUG_PRINT_GENCORE
 
 #ifdef DEBUG_PRINT_GENCORE
 #define	dkprintf(...)	kprintf(__VA_ARGS__)
