@@ -84,6 +84,8 @@ SYSCALL_HANDLED(218, set_tid_address)
 SYSCALL_HANDLED(231, exit_group)
 SYSCALL_HANDLED(234, tgkill)
 SYSCALL_HANDLED(273, set_robust_list)
+SYSCALL_HANDLED(282, signalfd)
+SYSCALL_HANDLED(289, signalfd4)
 #ifdef DCFA_KMOD
 SYSCALL_HANDLED(303, mod_call)
 #endif

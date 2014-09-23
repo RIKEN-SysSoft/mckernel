@@ -820,6 +820,7 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 	sigdesc.pid = (int)pid;
 	sigdesc.tid = remote_tid;
 	sigdesc.sig = sig;
+	memcpy(&sigdesc.info, siginfo, 128);
 	if (ioctl(fd, MCEXEC_UP_SEND_SIGNAL, &sigdesc) != 0) {
 		perror("send_signal");
 		close(fd);

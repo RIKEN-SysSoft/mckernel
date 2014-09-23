@@ -95,7 +95,7 @@ static char *syscall_name[] MCKERNEL_UNUSED = {
 
 void check_signal(unsigned long rc, void *regs);
 void do_signal(long rc, void *regs, struct process *proc, struct sig_pending *pending);
-extern unsigned long do_kill(int pid, int tid, int sig);
+extern unsigned long do_kill(int pid, int tid, int sig, struct siginfo *info);
 int copy_from_user(struct process *, void *, const void *, size_t);
 int copy_to_user(struct process *, void *, const void *, size_t);
 void do_setpgid(int, int);
@@ -460,7 +460,13 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 		/* Signal parent if still attached */
 		ihk_mc_spinlock_lock_noirq(&ftn->parent->lock);
 		if (ftn->parent->owner) {
-			do_kill(ftn->parent->owner->pid, -1, SIGCHLD);
+			struct siginfo info;
+			memset(&info, '\0', sizeof info);
+			info.si_signo = SIGCHLD;
+			info.si_code = sig? ((sig & 0x80)? 3: 2): 1;
+			info._sifields._sigchld.si_pid = proc->pid;
+			info._sifields._sigchld.si_status = ((rc & 0x00ff) << 8) | (sig & 0xff);
+			do_kill(ftn->parent->owner->pid, -1, SIGCHLD, &info);
 /*
 			sigchld_parent(ftn->parent->owner, 0);
 */
@@ -1513,8 +1519,15 @@ SYSCALL_DECLARE(kill)
 {
 	int pid = ihk_mc_syscall_arg0(ctx);
 	int sig = ihk_mc_syscall_arg1(ctx);
+	struct process *proc = cpu_local_var(current);
+	struct siginfo info;
 
-	return do_kill(pid, -1, sig);
+	memset(&info, '\0', sizeof info);
+	info.si_signo = sig;
+	info.si_code = SI_USER;
+	info._sifields._kill.si_pid = proc->pid;
+
+	return do_kill(pid, -1, sig, &info);
 }
 
 // see linux-2.6.34.13/kernel/signal.c
@@ -1523,13 +1536,20 @@ SYSCALL_DECLARE(tgkill)
 	int tgid = ihk_mc_syscall_arg0(ctx);
 	int tid = ihk_mc_syscall_arg1(ctx);
 	int sig = ihk_mc_syscall_arg2(ctx);
+	struct process *proc = cpu_local_var(current);
+	struct siginfo info;
+
+	memset(&info, '\0', sizeof info);
+	info.si_signo = sig;
+	info.si_code = SI_TKILL;
+	info._sifields._kill.si_pid = proc->pid;
 
 	if(tid <= 0)
 		return -EINVAL;
 	if(tgid <= 0 && tgid != -1)
 		return -EINVAL;
 
-	return do_kill(tgid, tid, sig);
+	return do_kill(tgid, tid, sig, &info);
 }
 
 SYSCALL_DECLARE(setpgid)
@@ -1650,6 +1670,16 @@ SYSCALL_DECLARE(rt_sigpending)
 	return 0;
 }
 
+SYSCALL_DECLARE(signalfd)
+{
+	return -EOPNOTSUPP;
+}
+
+SYSCALL_DECLARE(signalfd4)
+{
+	return -EOPNOTSUPP;
+}
+
 SYSCALL_DECLARE(rt_sigtimedwait)
 {
 	struct process *proc = cpu_local_var(current);
@@ -1664,29 +1694,38 @@ SYSCALL_DECLARE(rt_sigtimedwait)
 	if (sigsetsize > sizeof(sigset_t))
 		return -EINVAL;
 
+	if(set == NULL)
+		return -EFAULT;
 	memset(&winfo, '\0', sizeof winfo);
 	if(copy_from_user(proc, &wset, set, sizeof wset))
 		return -EFAULT;
-	if(copy_from_user(proc, wtimeout, timeout, sizeof wtimeout))
-		return -EFAULT;
-	if(copy_to_user(proc, info, &winfo, sizeof winfo))
-		return -EFAULT;
+	if(timeout)
+		if(copy_from_user(proc, wtimeout, timeout, sizeof wtimeout))
+			return -EFAULT;
+
+
+	if(info)
+		if(copy_to_user(proc, info, &winfo, sizeof winfo))
+			return -EFAULT;
 
 	return -EOPNOTSUPP;
 }
 
 SYSCALL_DECLARE(rt_sigqueueinfo)
 {
-	struct process *proc = cpu_local_var(current);
 	int pid = (int)ihk_mc_syscall_arg0(ctx);
 	int sig = (int)ihk_mc_syscall_arg1(ctx);
-	siginfo_t *info = (siginfo_t *)ihk_mc_syscall_arg2(ctx);
-	siginfo_t winfo;
+	void *winfo = (void *)ihk_mc_syscall_arg2(ctx);
+	struct process *proc = cpu_local_var(current);
+	struct siginfo info;
 
-	if(copy_from_user(proc, &winfo, info, sizeof winfo))
+	if(pid <= 0)
+		return -ESRCH;
+
+	if(copy_from_user(proc, &info, winfo, sizeof info))
 		return -EFAULT;
 
-	return -EOPNOTSUPP;
+	return do_kill(pid, -1, sig, &info);
 }
 
 static int

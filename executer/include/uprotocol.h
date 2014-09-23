@@ -153,6 +153,7 @@ struct signal_desc {
 	int pid;
 	int tid;
 	int sig;
+	char info[128];
 };
 
 #endif

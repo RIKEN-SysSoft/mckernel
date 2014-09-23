@@ -168,7 +168,7 @@ static struct ihk_mc_interrupt_handler query_free_mem_handler = {
 	.priv = NULL,
 };
 
-void set_signal(int sig, void *regs);
+void set_signal(int sig, void *regs, struct siginfo *info);
 void check_signal(unsigned long rc, void *regs);
 int gencore(struct process *, void *, struct coretable **, int *);
 void freecore(struct coretable **);
@@ -371,16 +371,19 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 
 	error = page_fault_process(proc, fault_addr, reason);
 	if (error) {
+		struct siginfo info;
+
 		kprintf("[%d]page_fault_handler(%p,%lx,%p):"
 				"fault proc failed. %d\n",
 				ihk_mc_get_processor_id(), fault_addr,
 				reason, regs, error);
 		unhandled_page_fault(proc, fault_addr, regs);
+		memset(&info, '\0', sizeof info);
 		if (error == -ERANGE) {
-			set_signal(SIGBUS, regs);
+			set_signal(SIGBUS, regs, &info);
 		}
 		else {
-			set_signal(SIGSEGV, regs);
+			set_signal(SIGSEGV, regs, &info);
 		}
 		check_signal(0, regs);
 		goto out;

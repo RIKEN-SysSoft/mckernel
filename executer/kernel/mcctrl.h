@@ -145,6 +145,14 @@ struct mcctrl_usrdata {
 	void **keys;
 };
 
+struct mcctrl_signal {
+	int	cond;
+	int	sig;
+	int	pid;
+	int	tid;
+	char	info[128];
+};
+
 int mcctrl_ikc_send(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp);
 int mcctrl_ikc_send_msg(ihk_os_t os, int cpu, int msg, int ref, unsigned long arg);
 int mcctrl_ikc_is_valid_thread(ihk_os_t os, int cpu);

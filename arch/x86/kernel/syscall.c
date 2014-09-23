@@ -135,6 +135,7 @@ struct sigsp {
 	unsigned long sigrc;
 	unsigned long sigmask;
 	int ssflags;
+	siginfo_t info;
 };
 
 SYSCALL_DECLARE(rt_sigreturn)
@@ -157,7 +158,7 @@ SYSCALL_DECLARE(rt_sigreturn)
 }
 
 extern struct cpu_local_var *clv;
-extern unsigned long do_kill(int pid, int tid, int sig);
+extern unsigned long do_kill(int pid, int tid, int sig, struct siginfo *info);
 extern void interrupt_syscall(int all, int pid);
 extern int num_processors;
 
@@ -253,12 +254,17 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 		}
 		sigsp->sigmask = mask;
 		sigsp->ssflags = ssflags;
+		memcpy(&sigsp->info, &pending->info, sizeof(siginfo_t));
 
 		usp = (unsigned long *)sigsp;
 		usp--;
 		*usp = (unsigned long)k->sa.sa_restorer;
 
 		regs->rdi = (unsigned long)sig;
+		if(k->sa.sa_flags & SA_SIGINFO){
+			regs->rsi = (unsigned long)&sigsp->info;
+			regs->rdx = 0;
+		}
 		regs->rip = (unsigned long)k->sa.sa_handler;
 		regs->rsp = (unsigned long)usp;
 
@@ -374,7 +380,7 @@ check_signal(unsigned long rc, void *regs0)
 }
 
 unsigned long
-do_kill(int pid, int tid, int sig)
+do_kill(int pid, int tid, int sig, siginfo_t *info)
 {
 	struct cpu_local_var *v;
 	struct process *p;
@@ -435,9 +441,9 @@ do_kill(int pid, int tid, int sig)
 			ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 		}
 		for(i = 0; i < n; i++)
-			rc = do_kill(pids[i], -1, sig);
+			rc = do_kill(pids[i], -1, sig, info);
 		if(sendme)
-			rc = do_kill(proc->pid, -1, sig);
+			rc = do_kill(proc->pid, -1, sig, info);
 
 		kfree(pids);
 		return rc;
@@ -563,11 +569,12 @@ do_kill(int pid, int tid, int sig)
 		if(pending == NULL){
 			doint = 1;
 			pending = kmalloc(sizeof(struct sig_pending), IHK_MC_AP_NOWAIT);
-			pending->sigmask.__val[0] = mask;
 			if(!pending){
 				rc = -ENOMEM;
 			}
 			else{
+				pending->sigmask.__val[0] = mask;
+				memcpy(&pending->info, info, sizeof(siginfo_t));
 				list_add_tail(&pending->list, head);
 				tproc->sigevent = 1;
 			}
@@ -625,7 +632,7 @@ do_kill(int pid, int tid, int sig)
 }
 
 void
-set_signal(int sig, void *regs0)
+set_signal(int sig, void *regs0, siginfo_t *info)
 {
 	struct x86_regs *regs = regs0;
 	struct process *proc = cpu_local_var(current);
@@ -639,5 +646,5 @@ set_signal(int sig, void *regs0)
 		terminate(0, sig | 0x80, (ihk_mc_user_context_t *)regs->rsp);
 	}
 	else
-		do_kill(proc->pid, proc->tid, sig);
+		do_kill(proc->pid, proc->tid, sig, info);
 }

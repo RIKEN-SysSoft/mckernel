@@ -405,7 +405,7 @@ void setup_x86_ap(void (*next_func)(void))
 }
 
 void arch_show_interrupt_context(const void *reg);
-void set_signal(int sig, void *regs);
+void set_signal(int sig, void *regs, struct siginfo *info);
 void check_signal(unsigned long rc, void *regs);
 extern void tlb_flush_handler(int vector);
 
@@ -452,10 +452,13 @@ void handle_interrupt(int vector, struct x86_regs *regs)
 
 void gpe_handler(struct x86_regs *regs)
 {
+	struct siginfo info;
+
 	kprintf("General protection fault (err: %lx, %lx:%lx)\n",
 	        regs->error, regs->cs, regs->rip);
 	arch_show_interrupt_context(regs);
-	set_signal(SIGILL, regs);
+	memset(&info, '\0', sizeof info);
+	set_signal(SIGILL, regs, &info);
 	check_signal(0, regs);
 	check_need_resched();
 	// panic("GPF");

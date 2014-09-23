@@ -36,13 +36,13 @@ struct sigaction {
 	sigset_t sa_mask;
 };
 
-#define SA_NOCLDSTOP    0x00000001u
-#define SA_NOCLDWAIT    0x00000002u
-#define SA_NODEFER      0x40000000u
-#define SA_ONSTACK      0x08000000u
-#define SA_RESETHAND    0x80000000u
-#define SA_RESTART      0x10000000u
-#define SA_SIGINFO      0x00000004u
+#define SA_NOCLDSTOP    0x00000001U
+#define SA_NOCLDWAIT    0x00000002U
+#define SA_NODEFER      0x40000000U
+#define SA_ONSTACK      0x08000000U
+#define SA_RESETHAND    0x80000000U
+#define SA_RESTART      0x10000000U
+#define SA_SIGINFO      0x00000004U
 
 struct k_sigaction {
         struct sigaction sa;
@@ -71,6 +71,16 @@ typedef struct siginfo {
 	int si_errno;		/* If non-zero, an errno value associated with
 				   this signal, as defined in <errno.h>.  */
 	int si_code;		/* Signal code.  */
+#define SI_USER         0       /* sent by kill, sigsend, raise */
+#define SI_KERNEL       0x80    /* sent by the kernel from somewhere */
+#define SI_QUEUE        -1      /* sent by sigqueue */
+#define SI_TIMER __SI_CODE(__SI_TIMER,-2) /* sent by timer expiration */
+#define SI_MESGQ __SI_CODE(__SI_MESGQ,-3) /* sent by real time mesq state change
+ */
+#define SI_ASYNCIO      -4      /* sent by AIO completion */
+#define SI_SIGIO        -5      /* sent by queued SIGIO */
+#define SI_TKILL        -6      /* sent by tkill system call */
+#define SI_DETHREAD     -7      /* sent by execve() killing subsidiary threads */
 
 	union {
 		int _pad[__SI_PAD_SIZE];
@@ -116,6 +126,29 @@ typedef struct siginfo {
 		} _sigpoll;
 	} _sifields;
 } siginfo_t;
+
+struct signalfd_siginfo {
+	unsigned int ssi_signo;
+	int ssi_errno;
+	int ssi_code;
+	unsigned int ssi_pid;
+	unsigned int ssi_uid;
+	int ssi_fd;
+	unsigned int ssi_tid;
+	unsigned int ssi_band;
+	unsigned int ssi_overrun;
+	unsigned int ssi_trapno;
+	int ssi_status;
+	int ssi_int;
+	unsigned long ssi_ptr;
+	unsigned long ssi_utime;
+	unsigned long ssi_stime;
+	unsigned long ssi_addr;
+	unsigned short ssi_addr_lsb;
+
+	char __pad[46];
+};
+
 
 #define SIGHUP           1
 #define SIGINT           2

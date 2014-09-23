@@ -496,7 +496,7 @@ static void syscall_channel_send(struct ihk_ikc_channel_desc *c,
 	ihk_ikc_send(c, packet, 0);
 }
 
-extern unsigned long do_kill(int, int, int);
+extern unsigned long do_kill(int, int, int, struct siginfo *);
 extern void settid(struct process *proc, int mode, int newcpuid, int oldcpuid);
 
 extern void process_procfs_request(unsigned long rarg);
@@ -508,6 +508,14 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	struct ikc_scd_packet pckt;
 	int rc;
 	struct process *proc;
+	struct mcctrl_signal {
+		int	cond;
+		int	sig;
+		int	pid;
+		int	tid;
+		struct siginfo	info;
+	} *sp, info;
+	unsigned long pp;
 
 	switch (packet->msg) {
 	case SCD_MSG_INIT_CHANNEL_ACKED:
@@ -540,8 +548,19 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		//cpu_local_var(next) = (struct process *)packet->arg;
 		return 0;
 	case SCD_MSG_SEND_SIGNAL:
-		rc = do_kill((int)packet->pid, (int)(packet->arg >> 32), packet->arg & 0x00000000ffffffffL);
-		kprintf("SCD_MSG_SEND_SIGNAL: %lx, rc=%d\n", packet->arg, rc);
+		pp = ihk_mc_map_memory(NULL, packet->arg, sizeof(struct mcctrl_signal));
+		sp = (struct mcctrl_signal *)ihk_mc_map_virtual(pp, 1, PTATTR_WRITABLE | PTATTR_ACTIVE);
+		memcpy(&info, sp, sizeof(struct mcctrl_signal));
+		ihk_mc_unmap_virtual(sp, 1, 0);
+		ihk_mc_unmap_memory(NULL, pp, sizeof(struct mcctrl_signal));
+		pckt.msg = SCD_MSG_SEND_SIGNAL;
+		pckt.err = 0;
+		pckt.ref = packet->ref;
+		pckt.arg = packet->arg;
+		syscall_channel_send(c, &pckt);
+
+		rc = do_kill(info.pid, info.tid, info.sig, &info.info);
+		kprintf("SCD_MSG_SEND_SIGNAL: do_kill(pid=%d, tid=%d, sig=%d)=%d\n", info.pid, info.tid, info.sig, rc);
 		return 0;
 	case SCD_MSG_PROCFS_REQUEST:
 		process_procfs_request(packet->arg);
