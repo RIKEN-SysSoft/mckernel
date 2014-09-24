@@ -205,6 +205,7 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 	int	sig;
 	__sigset_t w;
 	int	irqstate;
+	struct fork_tree_node *ftn = proc->ftn;
 
 	for(w = pending->sigmask.__val[0], sig = 0; w; sig++, w >>= 1);
 	dkprintf("do_signal,pid=%d,sig=%d\n", proc->pid, sig);
@@ -276,10 +277,11 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 		kfree(pending);
 		ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
 		switch (sig) {
-		case SIGSTOP: {
+		case SIGSTOP:
+		case SIGTSTP:
+		case SIGTTIN:
+		case SIGTTOU:
 			dkprintf("do_signal,SIGSTOP,changing state\n");
-			struct process *proc = cpu_local_var(current);
-			struct fork_tree_node *ftn = proc->ftn;
 
 			/* Update process state in fork tree */
 			ihk_mc_spinlock_lock_noirq(&ftn->lock);	
@@ -299,11 +301,12 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 			proc->status = PS_STOPPED;
 			schedule();
 			dkprintf("SIGSTOP(): woken up\n");
-			break; }
-		case SIGTRAP: {
-			dkprintf("do_signal,SIGTRAP,changing state\n");
-			struct process *proc = cpu_local_var(current);
-			struct fork_tree_node *ftn = proc->ftn;
+			break;
+		case SIGTRAP:
+			dkprintf("do_signal,SIGTRAP\n");
+			if(!(ftn->ptrace & PT_TRACED)) {
+				goto core;
+			}
 
 			/* Update process state in fork tree */
 			ihk_mc_spinlock_lock_noirq(&ftn->lock);	
@@ -320,25 +323,31 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 
 			schedule();
 			dkprintf("SIGTRAP(): woken up\n");
-			break; }
+			break;
 		case SIGCONT:
 			dkprintf("do_signal,SIGCONT,do nothing\n");
 			break;
-		case SIGSEGV:
-			kprintf("do_signal,SIGSEGV received\n");
 		case SIGQUIT:
 		case SIGILL:
 		case SIGABRT:
-		case SIGBUS:
 		case SIGFPE:
-		case SIGUSR1:
-		case SIGUSR2:
+		case SIGSEGV:
+		case SIGBUS:
+		core:
+			dkprintf("do_signal,default,core,sig=%d\n", sig);
 			coredump(proc, regs);
 			coredumped = 0x80;
 			terminate(0, sig | coredumped, (ihk_mc_user_context_t *)regs->rsp);
 			break;
+		case SIGHUP:
+		case SIGINT:
 		case SIGKILL:
-			dkprintf("do_signal,calling terminate\n");
+		case SIGPIPE:
+		case SIGALRM:
+		case SIGTERM:
+		case SIGUSR1:
+		case SIGUSR2:
+			dkprintf("do_signal,default,terminate,sig=%d\n", sig);
 			terminate(0, sig, (ihk_mc_user_context_t *)regs->rsp);
 			break;
 		case SIGCHLD:
