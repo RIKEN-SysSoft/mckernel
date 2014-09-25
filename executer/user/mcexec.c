@@ -114,6 +114,7 @@ struct kernel_termios {
 int main_loop(int fd, int cpu, pthread_mutex_t *lock, int mcosid);
 
 static int fd;
+static char *exec_path = NULL;
 static char *altroot;
 static const char rlimit_stack_envname[] = "MCKERNEL_RLIMIT_STACK";
 static int ischild;
@@ -540,6 +541,16 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 		fprintf(stderr, "Error: open_exec() fails for %s: %d (fd: %d)\n", 
 			filename, ret, fd);
 		return ret;
+	}
+
+	/* Drop old name if exists */
+	if (exec_path) {
+		free(exec_path);
+	}
+
+	exec_path = strdup(filename);
+	if (!exec_path) {
+		fprintf(stderr, "WARNING: strdup(filename) failed\n");
 	}
 	
 	desc = load_elf(fp, &interp_path);
@@ -1495,18 +1506,30 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock, int mcosid)
 
 		case __NR_fork: {
 			int child;
+			int sync_pipe_fd[2];
+			char sync_msg;
+
+			if (pipe(sync_pipe_fd) != 0) {
+				fprintf(stderr, "fork(): error creating sync pipe\n");
+				do_syscall_return(fd, cpu, -1, 0, 0, 0, 0);
+				break;
+			}
 
 			child = fork();
 
 			switch (child) {
 				/* Error */
 				case -1:
+					fprintf(stderr, "fork(): error forking child process\n");
+					close(sync_pipe_fd[0]);
+					close(sync_pipe_fd[1]);
 					do_syscall_return(fd, cpu, -1, 0, 0, 0, 0);
 					break;
 
 				/* Child process */
 				case 0: {
 					int i;
+					int ret = 1;
 
 					ischild = 1;
 					/* Reopen device fd */
@@ -1515,7 +1538,10 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock, int mcosid)
 					if (fd < 0) {
 						/* TODO: tell parent something went wrong? */
 						fprintf(stderr, "ERROR: opening %s\n", dev);
-						return 1;
+						
+						/* Tell parent something went wrong */
+						sync_msg = 1;
+						goto fork_child_sync_pipe;
 					}
 					
 					/* Reinit signals and syscall threads */
@@ -1525,17 +1551,53 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock, int mcosid)
 					__dprintf("pid(%d): signals and syscall threads OK\n", 
 							getpid());
 				
+					/* Hold executable also in the child process */
+					if ((ret = ioctl(fd, MCEXEC_UP_OPEN_EXEC, exec_path)) 
+						!= 0) {
+						fprintf(stderr, "Error: open_exec() fails for %s: %d (fd: %d)\n", 
+								exec_path, ret, fd);
+						goto fork_child_sync_pipe;
+					}
+
+					/* Tell parent everything went OK */
+					sync_msg = 0;
+fork_child_sync_pipe:
+					if (write(sync_pipe_fd[1], &sync_msg, 1) != 1) {
+						fprintf(stderr, "ERROR: writing sync pipe\n");
+						goto fork_child_out;
+					}
+
+					ret = 0;
+fork_child_out:
+					close(sync_pipe_fd[0]);
+					close(sync_pipe_fd[1]);
+
 					/* TODO: does the forked thread run in a pthread context? */
 					for (i = 0; i <= ncpu; ++i) {
 						pthread_join(thread_data[i].thread_id, NULL);
 					}
 
-					return 0;
+					return ret;
 				}
 				
 				/* Parent */
 				default:
+
+					if (read(sync_pipe_fd[0], &sync_msg, 1) != 1) {
+						fprintf(stderr, "fork(): error reading sync message\n");
+						child = -1;
+						goto sync_out;
+					}
+
+					if (sync_msg != 0) {
+						fprintf(stderr, "fork(): error with child process after fork\n");
+						child = -1;
+						goto sync_out;
+					}
 					
+sync_out:
+					close(sync_pipe_fd[0]);
+					close(sync_pipe_fd[1]);
 					do_syscall_return(fd, cpu, child, 0, 0, 0, 0);
 					break;
 			}
