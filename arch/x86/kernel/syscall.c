@@ -552,12 +552,12 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 		head = &tproc->sigpending;
 	}
 
+	rc = 0;
 	k = tproc->sighandler->action + sig - 1;
 	if(k->sa.sa_handler != (void *)1 &&
 	   (k->sa.sa_handler != NULL ||
 	    (sig != SIGCHLD && sig != SIGURG))){
 		pending = NULL;
-		rc = 0;
 		if(sig < 33){ // SIGRTMIN - SIGRTMAX
 			list_for_each_entry(pending, head, list){
 				if(pending->sigmask.__val[0] == mask)
