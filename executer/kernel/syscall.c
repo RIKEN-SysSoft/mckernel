@@ -175,7 +175,7 @@ int translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva,
 			ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
 			ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
 			error = -EFAULT;
-			printk("ERROR: remote PTE is not present for 0x%lx (rpt: %lx) ?\n", rva, rpt);
+			dprintk("Remote PTE is not present for 0x%lx (rpt: %lx) ?\n", rva, rpt);
 			goto out;
 		}
 
