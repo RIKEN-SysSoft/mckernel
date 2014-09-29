@@ -379,7 +379,7 @@ static int wait_continued(struct process *proc, struct fork_tree_node *child, in
 SYSCALL_DECLARE(wait4)
 {
 	struct process *proc = cpu_local_var(current);
-	struct fork_tree_node *child_iter;
+	struct fork_tree_node *child_iter, *next;
 	int pid = (int)ihk_mc_syscall_arg0(ctx);
 	int pgid = proc->pgid;
 	int *status = (int *)ihk_mc_syscall_arg1(ctx);
@@ -397,7 +397,7 @@ SYSCALL_DECLARE(wait4)
 	pid = (int)ihk_mc_syscall_arg0(ctx);	
 
 	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
-	list_for_each_entry(child_iter, &proc->ftn->children, siblings_list) {	
+	list_for_each_entry_safe(child_iter, next, &proc->ftn->children, siblings_list) {	
 
 		ihk_mc_spinlock_lock_noirq(&child_iter->lock);
 
@@ -437,7 +437,7 @@ SYSCALL_DECLARE(wait4)
 
 		ihk_mc_spinlock_unlock_noirq(&child_iter->lock);
 	}
-	list_for_each_entry(child_iter, &proc->ftn->ptrace_children, ptrace_siblings_list) {	
+	list_for_each_entry_safe(child_iter, next, &proc->ftn->ptrace_children, ptrace_siblings_list) {	
 
 		ihk_mc_spinlock_lock_noirq(&child_iter->lock);
 
