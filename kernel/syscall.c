@@ -389,7 +389,8 @@ SYSCALL_DECLARE(wait4)
 	int empty = 1;
 
 	dkprintf("wait4,proc->pid=%d,pid=%d\n", proc->pid, pid);
-	if (options & ~(WNOHANG | WUNTRACED | WCONTINUED)) {
+	if (options & ~(WNOHANG | WUNTRACED | WCONTINUED | __WCLONE)) {
+		dkprintf("wait4: unexpected options(%x).\n", options);
 		ret = -EINVAL;
 		goto exit;
 	}
@@ -398,6 +399,10 @@ SYSCALL_DECLARE(wait4)
 
 	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
 	list_for_each_entry_safe(child_iter, next, &proc->ftn->children, siblings_list) {	
+
+		if (!(!!(options & __WCLONE) ^ (child_iter->termsig == SIGCHLD))) {
+			continue;
+		}
 
 		ihk_mc_spinlock_lock_noirq(&child_iter->lock);
 
@@ -438,6 +443,10 @@ SYSCALL_DECLARE(wait4)
 		ihk_mc_spinlock_unlock_noirq(&child_iter->lock);
 	}
 	list_for_each_entry_safe(child_iter, next, &proc->ftn->ptrace_children, ptrace_siblings_list) {	
+
+		if (!(!!(options & __WCLONE) ^ (child_iter->termsig == SIGCHLD))) {
+			continue;
+		}
 
 		ihk_mc_spinlock_lock_noirq(&child_iter->lock);
 
@@ -554,7 +563,7 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 	ftn->owner = NULL;
 	ihk_mc_spinlock_unlock_noirq(&ftn->lock);	
 
-	/* Send SIGCHLD to parent */
+	/* Send signal to parent */
 	if (ftn->parent) {
 		int parent_owner_pid;
 
@@ -576,21 +585,22 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 		parent_owner = ftn->parent->owner;
 		parent_owner_pid = parent_owner ? ftn->parent->owner->pid : 0;
 		ihk_mc_spinlock_unlock_noirq(&ftn->parent->lock);	
-		if (parent_owner) {
+		if (parent_owner && (ftn->termsig != 0)) {
 			struct siginfo info;
+
 			memset(&info, '\0', sizeof info);
 			info.si_signo = SIGCHLD;
 			info.si_code = sig? ((sig & 0x80)? CLD_DUMPED: CLD_KILLED): CLD_EXITED;
 			info._sifields._sigchld.si_pid = proc->pid;
 			info._sifields._sigchld.si_status = ((rc & 0x00ff) << 8) | (sig & 0xff);
-			dkprintf("terminate,kill SIGCHLD,target pid=%d\n",
-				parent_owner_pid);
+			dkprintf("terminate,kill %d,target pid=%d\n",
+					ftn->termsig, parent_owner_pid);
 			error = do_kill(ftn->parent->owner->pid, -1, SIGCHLD, &info);
 /*
 			sigchld_parent(ftn->parent->owner, 0);
 */
-			dkprintf("terminate,klll SIGCHLD,error=%d\n",
-					 error);
+			dkprintf("terminate,klll %d,error=%d\n",
+					ftn->termsig, error);
 		}
 
 		release_fork_tree_node(ftn->parent);
@@ -2363,13 +2373,16 @@ SYSCALL_DECLARE(ptrace)
 
 	switch(request) {
 	case PTRACE_TRACEME:
+		dkprintf("ptrace: PTRACE_TRACEME\n");
 		error = ptrace_traceme();
 		break;
 	case PTRACE_KILL:
 	case PTRACE_CONT:
+		dkprintf("ptrace: PTRACE_KILL/CONT\n");
 		error = ptrace_wakeup_sig(pid, request, data);
 		break;
 	default:
+		dkprintf("ptrace: unimplemented ptrace called.\n");
 		error = 0;
 		break;
 	}

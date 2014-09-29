@@ -202,6 +202,11 @@ struct process *clone_process(struct process *org, unsigned long pc,
                               unsigned long sp, int clone_flags)
 {
 	struct process *proc;
+	int termsig = clone_flags & 0xff;
+
+	if (termsig < 0 || _NSIG < termsig) {
+		return -EINVAL;
+	}
 
 	if ((proc = ihk_mc_alloc_pages(KERNEL_STACK_NR_PAGES, 
 					IHK_MC_AP_NOWAIT)) == NULL) {
@@ -227,6 +232,8 @@ struct process *clone_process(struct process *org, unsigned long pc,
 	if (!proc->ftn) {
 		goto err_free_sigshared;
 	}
+
+	proc->ftn->termsig = termsig;
 
 	init_fork_tree_node(proc->ftn, (clone_flags & CLONE_VM) ? NULL : org->ftn,
 			proc);

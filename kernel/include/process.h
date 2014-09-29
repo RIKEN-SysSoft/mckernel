@@ -112,6 +112,7 @@
 #define WEXITED		0x00000004
 #define WCONTINUED	0x00000008
 #define WNOWAIT		0x01000000	/* Don't reap, just poll status.  */
+#define	__WCLONE	0x80000000
 
 /* If WIFEXITED(STATUS), the low-order 8 bits of the status.  */
 #define	__WEXITSTATUS(status)	(((status) & 0xff00) >> 8)
@@ -224,6 +225,9 @@ struct fork_tree_node {
     /* Store event related to signal. For example, 
        it represents that the proceess has been resumed by SIGCONT. */
     int signal_flags;
+
+    /* Store signal sent to parent when the process terminates. */
+    int termsig;
 };
 
 void hold_fork_tree_node(struct fork_tree_node *ftn);
