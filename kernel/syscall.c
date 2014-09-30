@@ -327,9 +327,9 @@ static int wait_stopped(struct process *proc, struct fork_tree_node *child, int 
 	int ret;
 
 	/* Copy exit_status created in do_signal */
-	int *exit_status = (child->ptrace & PT_TRACED) ? 
-		&child->exit_status : 
-		&child->group_exit_status;
+	int *exit_status = child->status == PS_STOPPED ? 
+		&child->group_exit_status :
+		&child->exit_status;
 
 	/* Skip this process because exit_status has been reaped. */
 	if (!*exit_status) {
