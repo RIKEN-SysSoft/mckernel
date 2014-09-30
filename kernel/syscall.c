@@ -1381,6 +1381,7 @@ SYSCALL_DECLARE(arch_prctl)
 
 static int ptrace_report_exec(struct process *proc)
 {
+	dkprintf("ptrace_report_exec,enter\n");
 	int error = 0;
 	long rc;
 	struct siginfo info;
@@ -1388,8 +1389,8 @@ static int ptrace_report_exec(struct process *proc)
 	if (!(proc->ftn->ptrace & PT_TRACE_EXEC)) {
 		goto out;
 	}
-    
-	/* Save reason why stopped and process state for wait to reap */
+
+	/* Save reason why stopped and process state for wait4() to reap */
 	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
 	memset(&info, '\0', sizeof info);
 	info.si_signo = SIGTRAP;
@@ -1399,12 +1400,16 @@ static int ptrace_report_exec(struct process *proc)
 	proc->ftn->status = PS_TRACED;
 	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
 
+#if 0 // ??? b48da86357c4853f7dea94f67ec65d75d0502f08
 	/* Signal myself so that my parent can wait for me */
 	rc = do_kill(proc->ftn->pid, -1, SIGTRAP, &info);
 	if (rc < 0) {
 		kprintf("ptrace_report_exec,do_kill failed\n");
 	}
 
+#else
+	dkprintf("ptrace_report_exec,kill SIGCHLD\n");
+#endif
 	if (proc->ftn->parent) {
 		/* kill SIGCHLD */
 		ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
@@ -1416,7 +1421,7 @@ static int ptrace_report_exec(struct process *proc)
 			info._sifields._sigchld.si_status = PS_TRACED;
 			rc = do_kill(proc->ftn->parent->owner->pid, -1, SIGCHLD, &info);
 			if(rc < 0) {
-				kprintf("ptrace_report_exec,do_kill failed\n");
+				dkprintf("ptrace_report_exec,do_kill failed\n");
 			}
 		}
 		ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);	
@@ -1424,6 +1429,13 @@ static int ptrace_report_exec(struct process *proc)
 		/* Wake parent (if sleeping in wait4()) */
 		waitq_wakeup(&proc->ftn->parent->waitpid_q);
 	}
+	
+	/* Sleep */
+	dkprintf("ptrace_report_exec,sleeping\n");
+	proc->status = PS_TRACED;
+	
+	schedule();
+	dkprintf("ptrace_report_exec,woken up\n");
 
 out:
 	return error;

@@ -344,7 +344,7 @@ int ptrace_traceme(void){
 	
 	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
 	
-	proc->ftn->ptrace = PT_TRACED;
+	proc->ftn->ptrace = PT_TRACED | PT_TRACE_EXEC;
 	proc->ftn->ppid_parent = proc->ftn->parent;
 	
 	ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
