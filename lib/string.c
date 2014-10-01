@@ -50,9 +50,11 @@ char *strncpy(char *dest, const char *src, size_t maxlen)
 	char *head = dest;
 	ssize_t len = maxlen;
 
+	if(len <= 0)
+		return head;
 	while((*(dest++) = *(src++)) && --len);
 	if(len > 0){
-		while(len--){
+		while(--len){
 			*(dest++) = '\0';
 		}
 	}
