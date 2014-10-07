@@ -500,6 +500,9 @@ extern unsigned long do_kill(int, int, int, struct siginfo *);
 extern void settid(struct process *proc, int mode, int newcpuid, int oldcpuid);
 
 extern void process_procfs_request(unsigned long rarg);
+extern int memcheckall();
+extern int freecheck(int runcount);
+extern int runcount;
 
 static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *ihk_os)
@@ -524,6 +527,14 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		return 0;
 
 	case SCD_MSG_PREPARE_PROCESS:
+
+		if (find_command_line("memdebug")) {
+			memcheckall();
+			if (runcount)
+				freecheck(runcount);
+			runcount++;
+		}
+
 		if((rc = process_msg_prepare_process(packet->arg)) == 0){
 			pckt.msg = SCD_MSG_PREPARE_PROCESS_ACKED;
 			pckt.err = 0;

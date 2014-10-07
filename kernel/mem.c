@@ -35,6 +35,8 @@
 #include <page.h>
 #include <bitops.h>
 #include <cpulocal.h>
+#include <init.h>
+#include <cas.h>
 
 //#define DEBUG_PRINT_MEM
 
@@ -522,10 +524,18 @@ static void page_init(void)
 	return;
 }
 
+static char *memdebug = NULL;
+
 void register_kmalloc(void)
 {
-	allocator.alloc = kmalloc;
-	allocator.free = kfree;
+	if(memdebug){
+		allocator.alloc = __kmalloc;
+		allocator.free = __kfree;
+	}
+	else{
+		allocator.alloc = ___kmalloc;
+		allocator.free = ___kfree;
+	}
 }
 
 static struct ihk_page_allocator_desc *vmap_allocator;
@@ -640,25 +650,280 @@ void mem_init(void)
 	virtual_allocator_init();
 }
 
+struct location {
+	struct location *next;
+	int line;
+	int cnt;
+	char file[0];
+};
+
+struct alloc {
+	struct alloc *next;
+	struct malloc_header *p;
+	struct location *loc;
+	int size;
+	int runcount;
+};
+
+#define HASHNUM 129
+
+static struct alloc *allochash[HASHNUM];
+static struct location *lochash[HASHNUM];
+static ihk_spinlock_t alloclock;
+int runcount;
+static unsigned char *page;
+static int space;
+
+static void *dalloc(unsigned long size)
+{
+	void *r;
+	static int pos = 0;
+	unsigned long irqstate;
+
+	irqstate = ihk_mc_spinlock_lock(&alloclock);
+	size = (size + 7) & 0xfffffffffffffff8L;
+	if (pos + size > space) {
+		page = allocate_pages(1, IHK_MC_AP_NOWAIT);
+		space = 4096;
+		pos = 0;
+	}
+	r = page + pos;
+	pos += size;
+	ihk_mc_spinlock_unlock(&alloclock, irqstate);
+
+	return r;
+}
+
+void *_kmalloc(int size, enum ihk_mc_ap_flag flag, char *file, int line)
+{
+	char *r = ___kmalloc(size, flag);
+	struct malloc_header *h;
+	unsigned long hash;
+	char *t;
+	struct location *lp;
+	struct alloc *ap;
+	unsigned long alcsize;
+	unsigned long chksize;
+
+	if (!memdebug)
+		return r;
+
+	if (!r)
+		return r;
+
+	h = ((struct malloc_header *)r) - 1;
+	alcsize = h->size * sizeof(struct malloc_header);
+	chksize = alcsize - size;
+	memset(r + size, '\x5a', chksize);
+
+	for (hash = 0, t = file; *t; t++) {
+		hash <<= 1;
+		hash += *t;
+	}
+	hash += line;
+	hash %= HASHNUM;
+	for (lp = lochash[hash]; lp; lp = lp->next)
+		if (lp->line == line &&
+		   !strcmp(lp->file, file))
+			break;
+	if (!lp) {
+		lp = dalloc(sizeof(struct location) + strlen(file) + 1);
+		memset(lp, '\0', sizeof(struct location));
+		lp->line = line;
+		strcpy(lp->file, file);
+		do {
+			lp->next = lochash[hash];
+		} while (!compare_and_swap(lochash + hash, (unsigned long)lp->next, (unsigned long)lp));
+	}
+
+	hash = (unsigned long)h % HASHNUM;
+	do {
+		for (ap = allochash[hash]; ap; ap = ap->next)
+			if (!ap->p)
+				break;
+	} while (ap && !compare_and_swap(&ap->p, 0UL, (unsigned long)h));
+	if (!ap) {
+		ap = dalloc(sizeof(struct alloc));
+		memset(ap, '\0', sizeof(struct alloc));
+		ap->p = h;
+		do {
+			ap->next = allochash[hash];
+		} while (!compare_and_swap(allochash + hash, (unsigned long)ap->next, (unsigned long)ap));
+	}
+
+	ap->loc = lp;
+	ap->size = size;
+	ap->runcount = runcount;
+
+	return r;
+}
+
+int _memcheck(void *ptr, char *msg, char *file, int line, int flags)
+{
+	struct malloc_header *h = ((struct malloc_header *)ptr) - 1;
+	struct malloc_header *next;
+	unsigned long hash = (unsigned long)h % HASHNUM;
+	struct alloc *ap;
+	static unsigned long check = 0x5a5a5a5a5a5a5a5aUL;
+	unsigned long alcsize;
+	unsigned long chksize;
+
+
+	if (h->check != 0x5a5a5a5a) {
+		int i;
+		unsigned long max = 0;
+		unsigned long cur = (unsigned long)h;
+		struct alloc *maxap = NULL;
+
+		for (i = 0; i < HASHNUM; i++)
+			for (ap = allochash[i]; ap; ap = ap->next)
+				if ((unsigned long)ap->p < cur &&
+				   (unsigned long)ap->p > max) {
+					max = (unsigned long)ap->p;
+					maxap = ap;
+				}
+
+		kprintf("%s: detect buffer overrun, alc=%s:%d size=%ld h=%p, s=%ld\n", msg, maxap->loc->file, maxap->loc->line, maxap->size, maxap->p, maxap->p->size);
+		kprintf("broken header: h=%p next=%p size=%ld cpu_id=%d\n", h, h->next, h->size, h->cpu_id);
+	}
+
+	for (ap = allochash[hash]; ap; ap = ap->next)
+		if (ap->p == h)
+			break;
+	if (!ap) {
+		if(file)
+			kprintf("%s: address not found, %s:%d p=%p\n", msg, file, line, ptr);
+		else
+			kprintf("%s: address not found p=%p\n", msg, ptr);
+		return 1;
+	}
+
+	alcsize = h->size * sizeof(struct malloc_header);
+	chksize = alcsize - ap->size;
+	if (chksize > 8)
+		chksize = 8;
+	next = (struct malloc_header *)((char *)ptr + alcsize);
+
+	if (next->check != 0x5a5a5a5a ||
+	    memcmp((char *)ptr + ap->size, &check, chksize)) {
+		unsigned long buf = 0x5a5a5a5a5a5a5a5aUL;
+		unsigned char *p;
+		unsigned char *q;
+		memcpy(&buf, (char *)ptr + ap->size, chksize);
+		p = (unsigned char *)&(next->check);
+		q = (unsigned char *)&buf;
+
+		if (file)
+			kprintf("%s: broken, %s:%d alc=%s:%d %02x%02x%02x%02x%02x%02x%02x%02x %02x%02x%02x%02x size=%ld\n", msg, file, line, ap->loc->file, ap->loc->line, q[0], q[1], q[2], q[3], q[4], q[5], q[6], q[7], p[0], p[1], p[2], p[3], ap->size);
+		else
+			kprintf("%s: broken, alc=%s:%d %02x%02x%02x%02x%02x%02x%02x%02x %02x%02x%02x%02x size=%ld\n", msg, ap->loc->file, ap->loc->line, q[0], q[1], q[2], q[3], q[4], q[5], q[6], q[7], p[0], p[1], p[2], p[3], ap->size);
+
+
+		if (next->check != 0x5a5a5a5a)
+			kprintf("next->HEADER: next=%p size=%ld cpu_id=%d\n", next->next, next->size, next->cpu_id);
+
+		return 1;
+	}
+
+	if(flags & 1){
+		ap->p = NULL;
+		ap->loc = NULL;
+		ap->size = 0;
+	}
+	return 0;
+}
+
+int memcheckall()
+{
+	int i;
+	struct alloc *ap;
+	int r = 0;
+
+kprintf("memcheckall\n");
+	for(i = 0; i < HASHNUM; i++)
+		for(ap = allochash[i]; ap; ap = ap->next)
+			if(ap->p)
+				r |= _memcheck(ap->p + 1, "memcheck", NULL, 0, 2);
+kprintf("done\n");
+	return r;
+}
+
+int freecheck(int runcount)
+{
+	int i;
+	struct alloc *ap;
+	struct location *lp;
+	int r = 0;
+
+	for (i = 0; i < HASHNUM; i++)
+		for (lp = lochash[i]; lp; lp = lp->next)
+			lp->cnt = 0;
+
+	for (i = 0; i < HASHNUM; i++)
+		for (ap = allochash[i]; ap; ap = ap->next)
+			if (ap->p && ap->runcount == runcount) {
+				ap->loc->cnt++;
+				r++;
+			}
+
+	if (r) {
+		kprintf("memory leak?\n");
+		for (i = 0; i < HASHNUM; i++)
+			for (lp = lochash[i]; lp; lp = lp->next)
+				if (lp->cnt)
+					kprintf(" alc=%s:%d cnt=%d\n", lp->file, lp->line, lp->cnt);
+	}
+
+	return r;
+}
+
+void _kfree(void *ptr, char *file, int line)
+{
+	if (memdebug)
+		_memcheck(ptr, "KFREE", file, line, 1);
+	___kfree(ptr);
+}
+
+void *__kmalloc(int size, enum ihk_mc_ap_flag flag)
+{
+	return kmalloc(size, flag);
+}
+
+void __kfree(void *ptr)
+{
+	kfree(ptr);
+}
+
 void kmalloc_init(void)
 {
 	struct cpu_local_var *v = get_this_cpu_local_var();
 	struct malloc_header *h = &v->free_list;
 	ihk_mc_spinlock_init(&v->free_list_lock);
+	int i;
 
+	h->check = 0x5a5a5a5a;
 	h->next = &v->free_list;
 	h->size = 0;
 
 	register_kmalloc();
+
+	memdebug = find_command_line("memdebug");
+	for (i = 0; i < HASHNUM; i++) {
+		allochash[i] = NULL;
+		lochash[i] = NULL;
+	}
+	page = allocate_pages(16, IHK_MC_AP_NOWAIT);
+	space = 16 * 4096;
+	ihk_mc_spinlock_init(&alloclock);
 }
 
-void *kmalloc(int size, enum ihk_mc_ap_flag flag)
+
+void *___kmalloc(int size, enum ihk_mc_ap_flag flag)
 {
 	struct cpu_local_var *v = get_this_cpu_local_var();
 	struct malloc_header *h = &v->free_list, *prev, *p;
 	int u, req_page;
 	unsigned long flags;
-
 
 	if (size >= PAGE_SIZE * 4) {
 		return NULL;
@@ -679,10 +944,12 @@ void *kmalloc(int size, enum ihk_mc_ap_flag flag)
 			h = allocate_pages(req_page, flag);
 			if(h == NULL)
 				return NULL;
+			h->check = 0x5a5a5a5a;
 			prev->next = h;
 			h->size = (req_page * PAGE_SIZE) / sizeof(*h) - 2;
 			/* Guard entry */
 			p = h + h->size + 1;
+			p->check = 0x5a5a5a5a;
 			p->next = &v->free_list;
 			p->size = 0;
 			h->next = p;
@@ -699,6 +966,7 @@ void *kmalloc(int size, enum ihk_mc_ap_flag flag)
 				h->size -= u + 1;
 				
 				p = h + h->size + 1;
+				p->check = 0x5a5a5a5a;
 				p->size = u;
 				p->cpu_id = ihk_mc_get_processor_id();
 
@@ -711,7 +979,7 @@ void *kmalloc(int size, enum ihk_mc_ap_flag flag)
 	}
 }
 
-void kfree(void *ptr)
+void ___kfree(void *ptr)
 {
 	struct malloc_header *p = (struct malloc_header *)ptr;
 	struct cpu_local_var *v = get_cpu_local_var((--p)->cpu_id);
@@ -729,12 +997,15 @@ void kfree(void *ptr)
 	if (h + h->size + 1 == p && h->size != 0) {
 		combined = 1;
 		h->size += p->size + 1;
+		h->check = 0x5a5a5a5a;
 	}
 	if (h->next == p + p->size + 1 && h->next->size != 0) {
 		if (combined) {
+			h->check = 0x5a5a5a5a;
 			h->size += h->next->size + 1;
 			h->next = h->next->next;
 		} else { 
+			p->check = 0x5a5a5a5a;
 			p->size += h->next->size + 1;
 			p->next = h->next->next;
 			h->next = p;

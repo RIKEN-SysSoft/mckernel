@@ -20,8 +20,9 @@
  */
 
 struct malloc_header {
-	struct malloc_header *next;
+	unsigned int check;
 	unsigned int cpu_id;
+	struct malloc_header *next;
 	unsigned long size;
 };
 
