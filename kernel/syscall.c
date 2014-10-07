@@ -2395,7 +2395,6 @@ SYSCALL_DECLARE(ptrace)
 		break;
 	default:
 		dkprintf("ptrace: unimplemented ptrace called.\n");
-		error = 0;
 		break;
 	}
 
