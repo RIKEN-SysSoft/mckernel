@@ -695,19 +695,22 @@ void arch_show_interrupt_context(const void *reg)
 
 	irqflags = kprintf_lock();
 
-	__kprintf("CS:EIP = %4lX:%16lX\n", regs->cs, regs->rip);
+	__kprintf("CS:RIP = %4lX:%16lX\n", regs->cs, regs->rip);
 	__kprintf("             RAX              RBX              RCX              RDX\n");
 	__kprintf("%16lX %16lX %16lX %16lX\n",
 	        regs->rax, regs->rbx, regs->rcx, regs->rdx);
-	__kprintf("             RSI              RDI              RSP\n");
-	__kprintf("%16lX %16lX %16lX\n",
-	        regs->rsi, regs->rdi, regs->rsp);
+	__kprintf("             RSI              RDI              RSP              RBP\n");
+	__kprintf("%16lX %16lX %16lX %16lX\n",
+	        regs->rsi, regs->rdi, regs->rsp, regs->rbp);
 	__kprintf("              R8               R9              R10              R11\n");
 	__kprintf("%16lX %16lX %16lX %16lX\n",
 	        regs->r8, regs->r9, regs->r10, regs->r11);
-	__kprintf("              CS               SS        \n");
-	__kprintf("%16lX %16lX\n",
-	        regs->cs, regs->ss);
+	__kprintf("             R12              R13              R14              R15\n");
+	__kprintf("%16lX %16lX %16lX %16lX\n",
+	        regs->r12, regs->r13, regs->r14, regs->r15);
+	__kprintf("              CS               SS           RFLAGS            ERROR\n");
+	__kprintf("%16lX %16lX %16lX %16lX\n",
+	        regs->cs, regs->ss, regs->rflags, regs->error);
 	
 	kprintf_unlock(irqflags);
 }
