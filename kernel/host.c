@@ -191,38 +191,10 @@ int prepare_process_ranges_args_envs(struct process *proc,
 		proc->vm->region.data_end;
 #endif
 
-	/* Map system call stuffs */
-	flags = VR_RESERVED | VR_PROT_READ | VR_PROT_WRITE;
-	flags |= VRFLAG_PROT_TO_MAXPROT(flags);
-	addr = proc->vm->region.map_start - PAGE_SIZE * SCD_RESERVED_COUNT;
-	e = addr + PAGE_SIZE * DOORBELL_PAGE_COUNT;
-	if(add_process_memory_range(proc, addr, e,
-				cpu_local_var(scp).doorbell_pa,
-				VR_REMOTE | flags, NULL, 0) != 0){
-		kprintf("ERROR: adding memory range for syscalls dorbell\n");
-		goto err;
-	}
-	addr = e;
-	e = addr + PAGE_SIZE * REQUEST_PAGE_COUNT;
-	if(add_process_memory_range(proc, addr, e,
-				cpu_local_var(scp).request_pa,
-				VR_REMOTE | flags, NULL, 0) != 0){
-		kprintf("ERROR: adding memory range for syscalls request pa\n");
-		goto err;
-	}
-	addr = e;
-	e = addr + PAGE_SIZE * RESPONSE_PAGE_COUNT;
-	if(add_process_memory_range(proc, addr, e,
-				cpu_local_var(scp).response_pa,
-				flags, NULL, 0) != 0){
-		kprintf("ERROR: adding memory range for syscalls response pa\n");
-		goto err;
-	}
-
 	/* Map, copy and update args and envs */
 	flags = VR_PROT_READ | VR_PROT_WRITE;
 	flags |= VRFLAG_PROT_TO_MAXPROT(flags);
-	addr = e;
+	addr = proc->vm->region.map_start - PAGE_SIZE * SCD_RESERVED_COUNT;
 	e = addr + PAGE_SIZE * ARGENV_PAGE_COUNT;
 
 	if((args_envs = ihk_mc_alloc_pages(ARGENV_PAGE_COUNT, IHK_MC_AP_NOWAIT)) == NULL){
