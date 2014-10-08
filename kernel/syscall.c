@@ -1379,6 +1379,8 @@ SYSCALL_DECLARE(arch_prctl)
 	                     ihk_mc_syscall_arg1(ctx));
 }
 
+extern void peekuser(struct process *proc, void *regs);
+
 static int ptrace_report_exec(struct process *proc)
 {
 	dkprintf("ptrace_report_exec,enter\n");
@@ -1429,7 +1431,8 @@ static int ptrace_report_exec(struct process *proc)
 		/* Wake parent (if sleeping in wait4()) */
 		waitq_wakeup(&proc->ftn->parent->waitpid_q);
 	}
-	
+
+	peekuser(proc, NULL);
 	/* Sleep */
 	dkprintf("ptrace_report_exec,sleeping\n");
 	proc->status = PS_TRACED;
@@ -2375,13 +2378,32 @@ out:
 	return error;
 }
 
+static long ptrace_peekuser(int pid, long addr)
+{
+	long rc = -EIO;
+	struct process *child;
+	ihk_spinlock_t *savelock;
+	unsigned long irqstate;
+
+	if(addr > sizeof(struct user) || addr < 0)
+		return -EFAULT;
+	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	if (!child)
+		return -ESRCH;
+	if(child->status == PS_TRACED)
+		memcpy(&rc, (char *)child->userp + addr, 8);
+	ihk_mc_spinlock_unlock(savelock, irqstate);
+
+	return rc;
+}
+
 SYSCALL_DECLARE(ptrace)
 {
 	const long request = (long)ihk_mc_syscall_arg0(ctx);
 	const int pid = (int)ihk_mc_syscall_arg1(ctx);
 	const long addr = (long)ihk_mc_syscall_arg2(ctx);
 	const long data = (long)ihk_mc_syscall_arg3(ctx);
-	int error;
+	long error = -EOPNOTSUPP;
 
 	switch(request) {
 	case PTRACE_TRACEME:
@@ -2392,6 +2414,10 @@ SYSCALL_DECLARE(ptrace)
 	case PTRACE_CONT:
 		dkprintf("ptrace: PTRACE_KILL/CONT\n");
 		error = ptrace_wakeup_sig(pid, request, data);
+		break;
+	case PTRACE_PEEKUSER:
+		error = ptrace_peekuser(pid, addr);
+		dkprintf("PTRACE_PEEKUSER: addr=%p return=%p\n", addr, error);
 		break;
 	default:
 		dkprintf("ptrace: unimplemented ptrace called.\n");

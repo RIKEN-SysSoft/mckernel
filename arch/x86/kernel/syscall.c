@@ -195,6 +195,52 @@ do_setpgid(int pid, int pgid)
 	}
 }
 
+void
+peekuser(struct process *proc, void *regs0)
+{
+	struct x86_regs *regs = regs0;
+
+	if(regs == NULL){
+		asm("movq %%gs:132, %0" : "=r" (regs));
+		--regs;
+	}
+	if(proc->userp == NULL){
+		proc->userp = kmalloc(sizeof(struct user), IHK_MC_AP_NOWAIT);
+		memset(proc->userp, '\0', sizeof(struct user));
+	}
+	asm("mov %%db0, %0" :"=r" (proc->userp->u_debugreg[0]));
+	asm("mov %%db1, %0" :"=r" (proc->userp->u_debugreg[1]));
+	asm("mov %%db2, %0" :"=r" (proc->userp->u_debugreg[2]));
+	asm("mov %%db3, %0" :"=r" (proc->userp->u_debugreg[3]));
+//	asm("mov %%db4, %0" :"=r" (proc->userp->u_debugreg[4]));
+//	asm("mov %%db5, %0" :"=r" (proc->userp->u_debugreg[5]));
+	asm("mov %%db6, %0" :"=r" (proc->userp->u_debugreg[6]));
+	asm("mov %%db7, %0" :"=r" (proc->userp->u_debugreg[7]));
+	proc->userp->regs.r15 = regs->r15;
+	proc->userp->regs.r14 = regs->r14;
+	proc->userp->regs.r13 = regs->r13;
+	proc->userp->regs.r12 = regs->r12;
+	proc->userp->regs.rbp = regs->rbp;
+	proc->userp->regs.rbx = regs->rbx;
+	proc->userp->regs.r11 = regs->r11;
+	proc->userp->regs.r10 = regs->r10;
+	proc->userp->regs.r9 = regs->r9;
+	proc->userp->regs.r8 = regs->r8;
+	proc->userp->regs.rax = regs->rax;
+	proc->userp->regs.rcx = regs->rcx;
+	proc->userp->regs.rdx = regs->rdx;
+	proc->userp->regs.rsi = regs->rsi;
+	proc->userp->regs.rdi = regs->rdi;
+	proc->userp->regs.rip = regs->rip;
+	proc->userp->regs.cs = regs->cs;
+	proc->userp->regs.eflags = regs->rflags;
+	proc->userp->regs.rsp = regs->rsp;
+	proc->userp->regs.ss = regs->ss;
+	asm("mov %%es, %0" :"=r" (proc->userp->regs.es));
+	asm("mov %%fs, %0" :"=r" (proc->userp->regs.fs));
+	asm("mov %%gs, %0" :"=r" (proc->userp->regs.gs));
+}
+
 extern void coredump(struct process *proc, void *regs);
 
 void
@@ -358,7 +404,7 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 	}
 }
 
-static int ptrace_report_signal(struct process *proc, struct sig_pending *pending)
+static int ptrace_report_signal(struct process *proc, struct x86_regs *regs, struct sig_pending *pending)
 {
 	int sig;
 	__sigset_t w;
@@ -395,6 +441,7 @@ static int ptrace_report_signal(struct process *proc, struct sig_pending *pendin
 		waitq_wakeup(&proc->ftn->parent->waitpid_q);
 	}
 
+	peekuser(proc, regs);
 	dkprintf("ptrace_report_signal,sleeping\n");
 	/* Sleep */
 	proc->status = PS_TRACED;
@@ -464,7 +511,7 @@ check_signal(unsigned long rc, void *regs0)
 
 		for(sig_bv = pending->sigmask.__val[0], sig = 0; sig_bv; sig++, sig_bv >>= 1);
 		if((proc->ftn->ptrace & PT_TRACED) && sig != SIGKILL) {
-			sig = ptrace_report_signal(proc, pending);
+			sig = ptrace_report_signal(proc, regs, pending);
 			/* TODO: Tracing process could overwrite signal, so handle the case here. */
 		}
 
