@@ -119,6 +119,7 @@ struct page_table {
 };
 
 static struct page_table *init_pt;
+static ihk_spinlock_t init_pt_lock;
 
 #ifdef USE_LARGE_PAGES
 static int use_1gb_page = 0;
@@ -361,6 +362,14 @@ static int __set_pt_page(struct page_table *pt, void *virt, unsigned long phys,
 	unsigned long v = (unsigned long)virt;
 	struct page_table *newpt;
 	enum ihk_mc_ap_flag ap_flag;
+	int in_kernel =
+		(((unsigned long long)virt) >= 0xffff000000000000ULL);
+	unsigned long init_pt_lock_flags;
+	int ret = -ENOMEM;
+
+	if (in_kernel) {
+		init_pt_lock_flags = ihk_mc_spinlock_lock(&init_pt_lock);
+	}
 
 	ap_flag = (attr & PTATTR_FOR_USER) ?
 	                IHK_MC_AP_NOWAIT: IHK_MC_AP_CRITICAL;
@@ -381,7 +390,7 @@ static int __set_pt_page(struct page_table *pt, void *virt, unsigned long phys,
 		pt = phys_to_virt(pt->entry[l4idx] & PAGE_MASK);
 	} else {
 		if((newpt = __alloc_new_pt(ap_flag)) == NULL)
-			return -ENOMEM;
+			goto out;
 		pt->entry[l4idx] = virt_to_phys(newpt) | PFL4_PDIR_ATTR;
 		pt = newpt;
 	}
@@ -390,7 +399,7 @@ static int __set_pt_page(struct page_table *pt, void *virt, unsigned long phys,
 		pt = phys_to_virt(pt->entry[l3idx] & PAGE_MASK);
 	} else {
 		if((newpt = __alloc_new_pt(ap_flag)) == NULL)
-			return -ENOMEM;
+			goto out;
 		pt->entry[l3idx] = virt_to_phys(newpt) | PFL3_PDIR_ATTR;
 		pt = newpt;
 	}
@@ -398,14 +407,16 @@ static int __set_pt_page(struct page_table *pt, void *virt, unsigned long phys,
 	if (attr & PTATTR_LARGEPAGE) {
 		if (pt->entry[l2idx] & PFL2_PRESENT) {
 			if ((pt->entry[l2idx] & PAGE_MASK) != phys) {
-				return -EBUSY;
+				goto out;
 			} else {
-				return 0;
+				ret = 0;
+				goto out;
 			}
 		} else {
 			pt->entry[l2idx] = phys | attr_to_l2attr(attr)
 				| PFL2_SIZE;
-			return 0;
+			ret = 0;
+			goto out;
 		}
 	}
 
@@ -413,7 +424,7 @@ static int __set_pt_page(struct page_table *pt, void *virt, unsigned long phys,
 		pt = phys_to_virt(pt->entry[l2idx] & PAGE_MASK);
 	} else {
 		if((newpt = __alloc_new_pt(ap_flag)) == NULL)
-			return -ENOMEM;
+			goto out;
 		pt->entry[l2idx] = virt_to_phys(newpt) | PFL2_PDIR_ATTR;
 		pt = newpt;
 	}
@@ -421,13 +432,20 @@ static int __set_pt_page(struct page_table *pt, void *virt, unsigned long phys,
 	if (pt->entry[l1idx] & PFL1_PRESENT) {
 		if ((pt->entry[l1idx] & PT_PHYSMASK) != phys) {
 			kprintf("EBUSY: page table for 0x%lX is already set\n", virt);
-			return -EBUSY;
+			ret = -EBUSY;
+			goto out;
 		} else {
-			return 0;
+			ret = 0;
+			goto out;
 		}
 	}
 	pt->entry[l1idx] = phys | attr_to_l1attr(attr);
-	return 0;
+	ret = 0;
+out:
+	if (in_kernel) {
+		ihk_mc_spinlock_unlock(&init_pt_lock, init_pt_lock_flags);
+	}
+	return ret;
 }
 
 static int __clear_pt_page(struct page_table *pt, void *virt, int largepage)
@@ -2001,6 +2019,7 @@ void init_page_table(void)
 	check_available_page_size();
 #endif
 	init_pt = arch_alloc_page(IHK_MC_AP_CRITICAL);
+	ihk_mc_spinlock_init(&init_pt_lock);
 	
 	memset(init_pt, 0, sizeof(PAGE_SIZE));
 
