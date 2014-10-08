@@ -156,7 +156,7 @@ static void operate_proc_procfs_file(int pid, char *fname, int msg, int mode, in
 	struct procfs_file *f;
 	int ret;
 
-	syscall_channel = get_cpu_local_var(0)->syscall_channel;
+	syscall_channel = cpu_local_var(syscall_channel);
 
 	f = kmalloc(sizeof(struct procfs_file), IHK_MC_AP_NOWAIT);
 	if (!f) {
