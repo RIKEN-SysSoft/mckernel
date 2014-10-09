@@ -68,6 +68,15 @@ static ihk_spinlock_t procfs_file_list_lock;
  * We create a procfs entry if there is not already one.
  * This process is recursive to the root of the procfs tree.
  */
+/*
+ * XXX: Two or more entries which have same name can be created.
+ *
+ * get_procfs_entry() avoids creating an entry which has already been created.
+ * But, it allows creating an entry which is being created by another thread.
+ *
+ * This problem occurred when two requests which created files with a common
+ * ancestor directory which was not explicitly created were racing.
+ */
 
 static struct proc_dir_entry *get_procfs_entry(char *p, int osnum, int mode)
 {
@@ -169,10 +178,6 @@ void procfs_create(void *__os, int ref, int osnum, int pid, unsigned long arg)
 
 	strncpy(name, f->fname, PROCFS_NAME_MAX);
 	mode = f->mode;
-	f->status = 1; /* Now the peer can free the data. */
-
-	ihk_device_unmap_virtual(dev, f, sizeof(struct procfs_file));
-	ihk_device_unmap_memory(dev, parg, sizeof(struct procfs_file));
 
 	if (name[PROCFS_NAME_MAX - 1] != '\0') {
 			printk("ERROR: procfs_creat: file name not properly terminated.\n");
@@ -191,6 +196,9 @@ void procfs_create(void *__os, int ref, int osnum, int pid, unsigned long arg)
 
 	entry->read_proc = mckernel_procfs_read;
 quit:
+	f->status = 1; /* Now the peer can free the data. */
+	ihk_device_unmap_virtual(dev, f, sizeof(struct procfs_file));
+	ihk_device_unmap_memory(dev, parg, sizeof(struct procfs_file));
 	dprintk("procfs_create: done\n");
 }
 
