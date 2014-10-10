@@ -196,6 +196,45 @@ do_setpgid(int pid, int pgid)
 }
 
 void
+pokeuser(struct process *proc, void *regs0)
+{
+	struct x86_regs *regs = regs0;
+
+	if(regs == NULL){
+		asm("movq %%gs:132, %0" : "=r" (regs));
+		--regs;
+	}
+	asm("mov %0, %%db0" ::"r" (proc->userp->u_debugreg[0]));
+	asm("mov %0, %%db1" ::"r" (proc->userp->u_debugreg[1]));
+	asm("mov %0, %%db2" ::"r" (proc->userp->u_debugreg[2]));
+	asm("mov %0, %%db3" ::"r" (proc->userp->u_debugreg[3]));
+//	asm("mov %0, %%db4" ::"r" (proc->userp->u_debugreg[4]));
+//	asm("mov %0, %%db5" ::"r" (proc->userp->u_debugreg[5]));
+	asm("mov %0, %%db6" ::"r" (proc->userp->u_debugreg[6]));
+	asm("mov %0, %%db7" ::"r" (proc->userp->u_debugreg[7]));
+	regs->r15 = proc->userp->regs.r15;
+	regs->r14 = proc->userp->regs.r14;
+	regs->r13 = proc->userp->regs.r13;
+	regs->r12 = proc->userp->regs.r12;
+	regs->rbp = proc->userp->regs.rbp;
+	regs->rbx = proc->userp->regs.rbx;
+	regs->r11 = proc->userp->regs.r11;
+	regs->r10 = proc->userp->regs.r10;
+	regs->r9 = proc->userp->regs.r9;
+	regs->r8 = proc->userp->regs.r8;
+	regs->rax = proc->userp->regs.rax;
+	regs->rcx = proc->userp->regs.rcx;
+	regs->rdx = proc->userp->regs.rdx;
+	regs->rsi = proc->userp->regs.rsi;
+	regs->rdi = proc->userp->regs.rdi;
+	regs->rip = proc->userp->regs.rip;
+	regs->cs = proc->userp->regs.cs;
+	regs->rflags = proc->userp->regs.eflags;
+	regs->rsp = proc->userp->regs.rsp;
+	regs->ss = proc->userp->regs.ss;
+}
+
+void
 peekuser(struct process *proc, void *regs0)
 {
 	struct x86_regs *regs = regs0;

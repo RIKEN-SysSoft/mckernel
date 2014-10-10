@@ -2378,6 +2378,27 @@ out:
 	return error;
 }
 
+static long ptrace_pokeuser(int pid, long addr, long data)
+{
+	long rc = -EIO;
+	struct process *child;
+	ihk_spinlock_t *savelock;
+	unsigned long irqstate;
+
+	if(addr > sizeof(struct user) - 8 || addr < 0)
+		return -EFAULT;
+	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	if (!child)
+		return -ESRCH;
+	if(child->status == PS_TRACED){
+		memcpy((char *)child->userp + addr, &data, 8);
+		rc = 0;
+	}
+	ihk_mc_spinlock_unlock(savelock, irqstate);
+
+	return rc;
+}
+
 static long ptrace_peekuser(int pid, long addr)
 {
 	long rc = -EIO;
@@ -2385,13 +2406,35 @@ static long ptrace_peekuser(int pid, long addr)
 	ihk_spinlock_t *savelock;
 	unsigned long irqstate;
 
-	if(addr > sizeof(struct user) || addr < 0)
+	if(addr > sizeof(struct user) - 8|| addr < 0)
 		return -EFAULT;
 	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
 	if (!child)
 		return -ESRCH;
 	if(child->status == PS_TRACED)
 		memcpy(&rc, (char *)child->userp + addr, 8);
+	ihk_mc_spinlock_unlock(savelock, irqstate);
+
+	return rc;
+}
+
+static long ptrace_getregs(int pid, long data)
+{
+	struct user_regs_struct *regs = (struct user_regs_struct *)data;
+	long rc = -EIO;
+	struct process *child;
+	ihk_spinlock_t *savelock;
+	unsigned long irqstate;
+
+	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	if (!child)
+		return -ESRCH;
+	if(child->status == PS_TRACED){
+		if(copy_to_user(child, regs, child->userp, sizeof(struct user_regs_struct)))
+			rc = -EFAULT;
+		else
+			rc = 0;
+	}
 	ihk_mc_spinlock_unlock(savelock, irqstate);
 
 	return rc;
@@ -2415,9 +2458,17 @@ SYSCALL_DECLARE(ptrace)
 		dkprintf("ptrace: PTRACE_KILL/CONT\n");
 		error = ptrace_wakeup_sig(pid, request, data);
 		break;
+	case PTRACE_GETREGS:
+		error = ptrace_getregs(pid, data);
+		dkprintf("PTRACE_GETREGS: data=%p return=%p\n", data, error);
+		break;
 	case PTRACE_PEEKUSER:
 		error = ptrace_peekuser(pid, addr);
 		dkprintf("PTRACE_PEEKUSER: addr=%p return=%p\n", addr, error);
+		break;
+	case PTRACE_POKEUSER:
+		error = ptrace_pokeuser(pid, addr, data);
+		dkprintf("PTRACE_POKEUSER: addr=%p data=%p return=%p\n", addr, data, error);
 		break;
 	default:
 		dkprintf("ptrace: unimplemented ptrace called.\n");
