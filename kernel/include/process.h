@@ -59,8 +59,8 @@
 
 #define PS_NORMAL	(PS_INTERRUPTIBLE | PS_UNINTERRUPTIBLE)
 
-#define PT_TRACED 0x1     /* The process is ptraced */
-#define PT_TRACE_EXEC 0x2 /* Trace execve(2) */
+#define PT_TRACED 0x80     /* The process is ptraced */
+#define PT_TRACE_EXEC 0x100 /* Trace execve(2) */
 
 #define	PTRACE_TRACEME 0
 #define	PTRACE_PEEKTEXT 1
@@ -284,7 +284,10 @@ struct fork_tree_node {
        might divert while the threads are exiting by group_exit(). */
     int group_exit_status;
 
-    /* Showing whether or not the process is ptraced */
+    /* Store ptrace flags.
+     * The lower 8 bits are PTRACE_O_xxx of the PTRACE_SETOPTIONS request.
+     * Other bits are for inner use of the McKernel.
+     */
     int ptrace;
 
     /* Store event related to signal. For example, 

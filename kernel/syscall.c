@@ -2440,6 +2440,37 @@ static long ptrace_getregs(int pid, long data)
 	return rc;
 }
 
+static int ptrace_setoptions(int pid, int flags)
+{
+	int ret;
+	struct process *child;
+	ihk_spinlock_t *savelock;
+	unsigned long irqstate;
+
+	/* Only supported options are enabled.
+	 * PTRACE_O_TRACESYSGOOD is pretended to be supported for the time being.
+	 */
+	if (flags & ~PTRACE_O_TRACESYSGOOD) {
+		kprintf("ptrace_setoptions: not supported flag %x\n", flags);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	if (!child || !child->ftn || !(child->ftn->ptrace | PT_TRACED)) {
+		ret = -ESRCH;
+		goto unlockout;
+	}
+	
+	child->ftn->ptrace |= flags;
+	ret = 0;
+
+unlockout:
+	ihk_mc_spinlock_unlock(savelock, irqstate);
+out:
+	return ret;
+}
+
 SYSCALL_DECLARE(ptrace)
 {
 	const long request = (long)ihk_mc_syscall_arg0(ctx);
@@ -2469,6 +2500,10 @@ SYSCALL_DECLARE(ptrace)
 	case PTRACE_POKEUSER:
 		error = ptrace_pokeuser(pid, addr, data);
 		dkprintf("PTRACE_POKEUSER: addr=%p data=%p return=%p\n", addr, data, error);
+		break;
+	case PTRACE_SETOPTIONS:
+		error = ptrace_setoptions(pid, data);
+		dkprintf("PTRACE_SETOPTIONS: flags=%d return=%p\n", data, error);
 		break;
 	default:
 		dkprintf("ptrace: unimplemented ptrace called.\n");
