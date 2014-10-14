@@ -2457,7 +2457,7 @@ static int ptrace_setoptions(int pid, int flags)
 	}
 
 	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
-	if (!child || !child->ftn || !(child->ftn->ptrace | PT_TRACED)) {
+	if (!child || !child->ftn || !(child->ftn->ptrace & PT_TRACED)) {
 		ret = -ESRCH;
 		goto unlockout;
 	}
