@@ -2399,20 +2399,25 @@ static long ptrace_pokeuser(int pid, long addr, long data)
 	return rc;
 }
 
-static long ptrace_peekuser(int pid, long addr)
+static long ptrace_peekuser(int pid, long addr, long data)
 {
 	long rc = -EIO;
 	struct process *child;
 	ihk_spinlock_t *savelock;
 	unsigned long irqstate;
+	unsigned long *p = (unsigned long *)data;
 
 	if(addr > sizeof(struct user) - 8|| addr < 0)
 		return -EFAULT;
 	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
 	if (!child)
 		return -ESRCH;
-	if(child->status == PS_TRACED)
-		memcpy(&rc, (char *)child->userp + addr, 8);
+	if(child->status == PS_TRACED){
+		if(copy_to_user(child, p, (char *)child->userp + addr, 8))
+			rc = -EFAULT;
+		else
+			rc = 0;
+	}
 	ihk_mc_spinlock_unlock(savelock, irqstate);
 
 	return rc;
@@ -2494,7 +2499,7 @@ SYSCALL_DECLARE(ptrace)
 		dkprintf("PTRACE_GETREGS: data=%p return=%p\n", data, error);
 		break;
 	case PTRACE_PEEKUSER:
-		error = ptrace_peekuser(pid, addr);
+		error = ptrace_peekuser(pid, addr, data);
 		dkprintf("PTRACE_PEEKUSER: addr=%p return=%p\n", addr, error);
 		break;
 	case PTRACE_POKEUSER:
