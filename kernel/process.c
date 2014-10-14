@@ -1781,16 +1781,20 @@ void cpu_clear(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock)
 
 static void idle(void)
 {
-	cpu_local_var(status) = CPU_STATUS_IDLE;
-    cpu_enable_interrupt();
+	struct cpu_local_var *v = get_this_cpu_local_var();
+
+	v->status = CPU_STATUS_IDLE;
+	cpu_enable_interrupt();
 
 	while (1) {
 		schedule();
-        cpu_disable_interrupt();
-        if (cpu_local_var(status) == CPU_STATUS_IDLE)
-            cpu_safe_halt();
-        else
-            cpu_enable_interrupt();
+		cpu_disable_interrupt();
+		if (v->status == CPU_STATUS_IDLE) {
+			cpu_safe_halt();
+		}
+		else {
+			cpu_enable_interrupt();
+		}
 	}
 }
 
