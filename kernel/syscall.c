@@ -1740,6 +1740,19 @@ SYSCALL_DECLARE(vfork)
 
 SYSCALL_DECLARE(clone)
 {
+    /* If CLONE_VM flag is not present, we assume this clone(2) 
+     * request is induced by the fork(2) wrapper of glibc.
+     */
+    if ((ihk_mc_syscall_arg0(ctx) & CLONE_VM) == 0) {
+	    if (cpu_local_var(current)->ftn == NULL) {
+		    panic("No ftn for current process present.\n");
+	    }
+	    if ((cpu_local_var(current)->ftn->ptrace &
+		 PTRACE_O_TRACEFORK) != 0) {
+		    panic("We do not have PTRACE_O_TRACEFORK implementation yet.\n");
+	    }
+    }
+
     return do_fork((int)ihk_mc_syscall_arg0(ctx), ihk_mc_syscall_arg1(ctx),
                    ihk_mc_syscall_arg2(ctx), ihk_mc_syscall_arg3(ctx),
                    ihk_mc_syscall_arg4(ctx), ihk_mc_syscall_pc(ctx),
@@ -2504,9 +2517,11 @@ static int ptrace_setoptions(int pid, int flags)
 	unsigned long irqstate;
 
 	/* Only supported options are enabled.
-	 * PTRACE_O_TRACESYSGOOD is pretended to be supported for the time being.
+	 * Following options are pretended to be supported for the time being:
+	 * PTRACE_O_TRACESYSGOOD 
+	 * PTRACE_O_TRACEFORK
 	 */
-	if (flags & ~PTRACE_O_TRACESYSGOOD) {
+	if (flags & ~(PTRACE_O_TRACESYSGOOD|PTRACE_O_TRACEFORK)) {
 		kprintf("ptrace_setoptions: not supported flag %x\n", flags);
 		ret = -EINVAL;
 		goto out;
