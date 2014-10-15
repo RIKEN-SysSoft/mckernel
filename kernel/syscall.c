@@ -2498,6 +2498,60 @@ SYSCALL_DECLARE(ptrace)
 		error = ptrace_setoptions(pid, data);
 		dkprintf("PTRACE_SETOPTIONS: flags=%d return=%p\n", data, error);
 		break;
+	case PTRACE_PEEKTEXT:
+		dkprintf("ptrace: unimplemented ptrace(PTRACE_PEEKTEXT) called.\n");
+		break;
+	case PTRACE_PEEKDATA:
+		dkprintf("ptrace: unimplemented ptrace(PTRACE_PEEKDATA) called.\n");
+		break;
+	case PTRACE_POKETEXT:
+		dkprintf("ptrace: unimplemented ptrace(PTRACE_POKETEXT) called.\n");
+		break;
+	case PTRACE_POKEDATA:
+		dkprintf("ptrace: unimplemented ptrace(PTRACE_POKEDATA) called.\n");
+		break;
+	case PTRACE_SINGLESTEP:
+		dkprintf("ptrace: unimplemented ptrace(PTRACE_SINGLESTEP) called.\n");
+		break;
+	case PTRACE_GETFPREGS:
+		dkprintf("ptrace: unimplemented ptrace(PTRACE_GETFPREGS) called.\n");
+		break;
+	case PTRACE_SETFPREGS:
+		dkprintf("ptrace: unimplemented ptrace(PTRACE_SETFPREGS) called.\n");
+		break;
+	case PTRACE_SETREGS:
+		dkprintf("ptrace: unimplemented ptrace(PTRACE_SETREGS) called.\n");
+		break;
+	case PTRACE_ATTACH:
+		dkprintf("ptrace: unimplemented ptrace(PTRACE_ATTACH) called.\n");
+		break;
+	case PTRACE_DETACH:
+		dkprintf("ptrace: unimplemented ptrace(PTRACE_DETACH) called.\n");
+		break;
+	case PTRACE_GETFPXREGS:
+		dkprintf("ptrace: unimplemented ptrace(PTRACE_GETFPXREGS) called.\n");
+		break;
+	case PTRACE_SYSCALL:
+		dkprintf("ptrace: unimplemented ptrace(PTRACE_SYSCALL) called.\n");
+		break;
+	case PTRACE_GETSIGINFO:
+		dkprintf("ptrace: unimplemented ptrace(PTRACE_GETSIGINFO) called.\n");
+		break;
+	case PTRACE_SETSIGINFO:
+		dkprintf("ptrace: unimplemented ptrace(PTRACE_SETSIGINFO) called.\n");
+		break;
+	case PTRACE_GETREGSET:
+		dkprintf("ptrace: unimplemented ptrace(PTRACE_GETREGSET) called.\n");
+		break;
+	case PTRACE_SETREGSET:
+		dkprintf("ptrace: unimplemented ptrace(PTRACE_SETREGSET) called.\n");
+		break;
+	case PTRACE_GET_THREAD_AREA:
+		dkprintf("ptrace: unimplemented ptrace(PTRACE_GET_THREAD_AREA) called.\n");
+		break;
+	case PTRACE_ARCH_PRCTL:
+		dkprintf("ptrace: unimplemented ptrace(PTRACE_ARCH_PRCTL) called.\n");
+		break;
 	default:
 		dkprintf("ptrace: unimplemented ptrace called.\n");
 		break;
