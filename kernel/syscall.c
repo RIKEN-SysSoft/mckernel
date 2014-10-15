@@ -1394,24 +1394,12 @@ static int ptrace_report_exec(struct process *proc)
 
 	/* Save reason why stopped and process state for wait4() to reap */
 	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
-	memset(&info, '\0', sizeof info);
-	info.si_signo = SIGTRAP;
-	info.si_code = TRAP_TRACE;
 	proc->ftn->exit_status = (SIGTRAP | (PTRACE_EVENT_EXEC << 8));
 	/* Transition process state */
 	proc->ftn->status = PS_TRACED;
 	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
 
-#if 0 // ??? b48da86357c4853f7dea94f67ec65d75d0502f08
-	/* Signal myself so that my parent can wait for me */
-	rc = do_kill(proc->ftn->pid, -1, SIGTRAP, &info);
-	if (rc < 0) {
-		kprintf("ptrace_report_exec,do_kill failed\n");
-	}
-
-#else
 	dkprintf("ptrace_report_exec,kill SIGCHLD\n");
-#endif
 	if (proc->ftn->parent) {
 		/* kill SIGCHLD */
 		ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
@@ -1420,7 +1408,7 @@ static int ptrace_report_exec(struct process *proc)
 			info.si_signo = SIGCHLD;
 			info.si_code = CLD_TRAPPED;
 			info._sifields._sigchld.si_pid = proc->pid;
-			info._sifields._sigchld.si_status = PS_TRACED;
+			info._sifields._sigchld.si_status = proc->ftn->exit_status;
 			rc = do_kill(proc->ftn->parent->owner->pid, -1, SIGCHLD, &info);
 			if(rc < 0) {
 				dkprintf("ptrace_report_exec,do_kill failed\n");

@@ -468,7 +468,7 @@ static int ptrace_report_signal(struct process *proc, struct x86_regs *regs, str
 			info.si_signo = SIGCHLD;
 			info.si_code = CLD_TRAPPED;
 			info._sifields._sigchld.si_pid = proc->pid;
-			info._sifields._sigchld.si_status = PS_TRACED;
+			info._sifields._sigchld.si_status = proc->ftn->exit_status;
 			rc = do_kill(proc->ftn->parent->owner->pid, -1, SIGCHLD, &info);
 			if (rc < 0) {
 				kprintf("ptrace_report_signal,do_kill failed\n");
