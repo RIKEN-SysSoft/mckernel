@@ -566,10 +566,6 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 	/* Send signal to parent */
 	if (ftn->parent) {
 		int parent_owner_pid;
-
-		dkprintf("terminate,ftn->parent->owner->pid=%d\n",
-			ftn->parent->owner->pid);
-
 		ihk_mc_spinlock_lock_noirq(&ftn->lock);
 		ftn->pid = proc->pid;
 		ftn->exit_status = ((rc & 0x00ff) << 8) | (sig & 0xff);
