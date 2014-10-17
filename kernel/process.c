@@ -1349,6 +1349,33 @@ static int do_page_fault_process(struct process *proc, void *fault_addr0, uint64
 		goto out;
 	}
 
+	/*
+	 * XXX: quick fix
+	 * Corrupt data was read by the following sequence.
+	 * 1) a process did mmap(MAP_PRIVATE|MAP_ANONYMOUS)
+	 * 2) the process fetched the contents of a page of (1)'s mapping.
+	 * 3) the process wrote the contents of the page of (1)'s mapping.
+	 * 4) the process changed the contents of the page of (1)'s mapping.
+	 * 5) the process read something in the page of (1)'s mapping.
+	 *
+	 * In the case of the above sequence,
+	 * copy-on-write pages was mapped at (2). And their physical pages
+	 * were informed to mcctrl/mcexec at (3). However, page remapping
+	 * at (4) was not informed to mcctrl/mcexec, and the data read at (5)
+	 * was transferred to old pages which had been mapped at (2).
+	 */
+	if ((range->flag & VR_PRIVATE) && range->memobj) {
+		struct memobj *obj;
+
+		if (zeroobj_create(&obj)) {
+			panic("DPFP: zeroobj_crate");
+		}
+
+		if (range->memobj == obj) {
+			reason |= PF_POPULATE;
+		}
+	}
+
 	error = page_fault_process_memory_range(vm, range, fault_addr, reason);
 	if (error == -ERESTART) {
 		goto out;
