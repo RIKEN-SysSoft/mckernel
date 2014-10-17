@@ -2556,8 +2556,11 @@ SYSCALL_DECLARE(ptrace)
 		error = ptrace_traceme();
 		break;
 	case PTRACE_KILL:
+		dkprintf("ptrace: PTRACE_KILL\n");
+		error = ptrace_wakeup_sig(pid, request, data);
+		break;
 	case PTRACE_CONT:
-		dkprintf("ptrace: PTRACE_KILL/CONT\n");
+		dkprintf("ptrace: PTRACE_CONT: data=%d\n", data);
 		error = ptrace_wakeup_sig(pid, request, data);
 		break;
 	case PTRACE_GETREGS:
