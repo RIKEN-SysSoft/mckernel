@@ -1,8 +1,8 @@
 BUILD_TARGET ?= @TARGET@
 KERNDIR=@KERNDIR@
-SRC = $(CURDIR)
+VPATH=@abs_srcdir@
 
-IHKBASE ?= $(SRC)/../../ihk/cokernel
+IHKBASE ?= $(VPATH)/../../ihk/cokernel
 O ?= $(CURDIR)/build
 V ?= $(VERBOSE)
 

@@ -1,6 +1,7 @@
 CC=@CC@
 BINDIR=@BINDIR@
 CFLAGS=-Wall -O -fPIE -pie
+VPATH=@abs_srcdir@
 TARGET=mcexec
 
 all: $(TARGET)

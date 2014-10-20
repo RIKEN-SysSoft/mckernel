@@ -142,6 +142,7 @@ AC_CONFIG_FILES([
 	executer/user/Makefile
 	executer/kernel/Makefile
 	kernel/Makefile
+	kernel/Makefile.build
 	arch/x86/tools/mcreboot-attached-mic.sh
 	arch/x86/tools/mcshutdown-attached-mic.sh
 	arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in

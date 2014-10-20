@@ -1,20 +1,21 @@
 KDIR ?= @KDIR@
 ARCH ?= @ARCH@
-src ?= $(shell pwd)
+src = @abs_srcdir@
 KMODDIR=@KMODDIR@
+IHK_BASE=$(src)/../../../ihk
 
 obj-m += mcctrl.o
 
-mcctrl-objs := driver.o control.o ikc.o syscall.o procfs.o
+ccflags-y := -I$(IHK_BASE)/linux/include -I$(IHK_BASE)/ikc/include -I$(IHK_BASE)/include -I$(src)/../include
 
-IHK_BASE=$(src)/../../../ihk
-EXTRA_CFLAGS = -I$(IHK_BASE)/linux/include -I$(IHK_BASE)/ikc/include -I$(IHK_BASE)/include -I$(src)/../include
-KBUILD_EXTRA_SYMBOLS = $(IHK_BASE)/linux/core/Module.symvers
+mcctrl-y := driver.o control.o ikc.o syscall.o procfs.o
+
+KBUILD_EXTRA_SYMBOLS = @abs_builddir@/../../../ihk/linux/core/Module.symvers
 
 .PHONY: clean install modules
 
 modules:
-	$(MAKE) -C $(KDIR) M=$(PWD) ARCH=$(ARCH) modules
+	$(MAKE) -C $(KDIR) M=$(PWD) SUBDIRS=$(PWD) ARCH=$(ARCH) modules
 
 clean:
 	$(RM) .*.cmd *.mod.c *.o *.ko* Module.symvers modules.order -r .tmp*
