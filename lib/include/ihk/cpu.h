@@ -99,4 +99,7 @@ enum ihk_asr_type {
 int ihk_mc_arch_set_special_register(enum ihk_asr_type, unsigned long value);
 int ihk_mc_arch_get_special_register(enum ihk_asr_type, unsigned long *value);
 
+extern unsigned int ihk_ikc_irq;
+extern unsigned int ihk_ikc_irq_apicid;
+
 #endif

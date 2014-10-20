@@ -272,6 +272,9 @@ void ihk_mc_init_ap(void)
 
 	kprintf("# of cpus : %d\n", cpu_info->ncpus);
 	init_processors_local(cpu_info->ncpus);
+	
+	kprintf("IKC IRQ vector: %d, CPU APIC: %d\n", 
+			ihk_ikc_irq, ihk_ikc_irq_apicid);
 
 	/* Do initialization for THIS cpu (BSP) */
 	assign_processor_id();
@@ -596,6 +599,8 @@ void ihk_mc_boot_cpu(int cpuid, unsigned long pc)
 
 	memcpy(p, trampoline_code_data, 
 	       trampoline_code_data_end - trampoline_code_data);
+	kprintf("trampoline length: %d\n", 
+		trampoline_code_data_end - trampoline_code_data);
 
 	p[1] = (unsigned long)virt_to_phys(get_init_page_table());
 	p[2] = (unsigned long)setup_x86_ap;
