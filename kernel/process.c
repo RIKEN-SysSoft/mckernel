@@ -139,6 +139,15 @@ struct process *create_process(unsigned long user_pc)
 
 	memset(proc, 0, sizeof(struct process));
 	ihk_atomic_set(&proc->refcount, 2);	
+	if (1) {
+		struct ihk_mc_cpu_info *infop;
+		int i;
+
+		infop = ihk_mc_get_cpu_info();
+		for (i = 0; i < infop->ncpus; ++i) {
+			CPU_SET(i, &proc->cpu_set);
+		}
+	}
 
 	proc->sighandler = kmalloc(sizeof(struct sig_handler), IHK_MC_AP_NOWAIT);
 	if(!proc->sighandler){
@@ -215,6 +224,7 @@ struct process *clone_process(struct process *org, unsigned long pc,
 
 	memset(proc, 0, sizeof(struct process));
 	ihk_atomic_set(&proc->refcount, 2);	
+	memcpy(&proc->cpu_set, &org->cpu_set, sizeof(proc->cpu_set));
 
 	/* NOTE: sp is the user mode stack! */
 	ihk_mc_init_user_process(&proc->ctx, &proc->uctx,
