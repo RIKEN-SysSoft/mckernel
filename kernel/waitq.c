@@ -89,14 +89,14 @@ waitq_prepare_to_wait(waitq_t *waitq, waitq_entry_t *entry, int state)
 	ihk_mc_spinlock_lock_noirq(&waitq->lock);
 	if (list_empty(&entry->link))
 		list_add(&entry->link, &waitq->waitq);
-	cpu_local_var(current)->status = state;
+	cpu_local_var(current)->ftn->status = state;
 	ihk_mc_spinlock_unlock_noirq(&waitq->lock);
 }
 
 void
 waitq_finish_wait(waitq_t *waitq, waitq_entry_t *entry)
 {
-	cpu_local_var(current)->status = PS_RUNNING;
+	cpu_local_var(current)->ftn->status = PS_RUNNING;
 	waitq_remove_entry(waitq, entry);
 }
 

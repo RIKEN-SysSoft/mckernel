@@ -214,7 +214,7 @@ struct process *clone_process(struct process *org, unsigned long pc,
 	int termsig = clone_flags & 0xff;
 
 	if (termsig < 0 || _NSIG < termsig) {
-		return -EINVAL;
+		return (void *)-EINVAL;
 	}
 
 	if ((proc = ihk_mc_alloc_pages(KERNEL_STACK_NR_PAGES, 
@@ -343,7 +343,7 @@ int ptrace_traceme(void){
 	int error = 0;
 	struct process *proc = cpu_local_var(current);
 	struct fork_tree_node *child, *next;
-	dkprintf("ptrace_traceme,pid=%d,proc->ftn->parent=%p\n", proc->pid, proc->ftn->parent);
+	dkprintf("ptrace_traceme,pid=%d,proc->ftn->parent=%p\n", proc->ftn->pid, proc->ftn->parent);
 
 	if (proc->ftn->parent == NULL) {
 		error = -EPERM;
@@ -1752,7 +1752,7 @@ out:
 
 void hold_process(struct process *proc)
 {
-	if (proc->status & (PS_ZOMBIE | PS_EXITED)) {
+	if (proc->ftn->status & (PS_ZOMBIE | PS_EXITED)) {
 		panic("hold_process: already exited process");
 	}
 
@@ -1765,7 +1765,7 @@ void destroy_process(struct process *proc)
 	struct sig_pending *pending;
 	struct sig_pending *next;
 
-	delete_proc_procfs_files(proc->pid);
+	delete_proc_procfs_files(proc->ftn->pid);
 
 	if (proc->vm) {
 		cpu_clear(proc->cpu_id, &proc->vm->cpu_set, &proc->vm->cpu_set_lock);
@@ -1851,7 +1851,7 @@ static void idle(void)
 
 			s = ihk_mc_spinlock_lock(&v->runq_lock);
 			list_for_each_entry(p, &v->runq, sched_list) {
-				if (p->status == PS_RUNNING) {
+				if (p->ftn->status == PS_RUNNING) {
 					v->status = CPU_STATUS_RUNNING;
 					break;
 				}
@@ -1873,12 +1873,14 @@ void sched_init(void)
 
 	memset(idle_process, 0, sizeof(struct process));
 	memset(&cpu_local_var(idle_vm), 0, sizeof(struct process_vm));
+	memset(&cpu_local_var(idle_ftn), 0, sizeof(struct fork_tree_node));
 
 	idle_process->vm = &cpu_local_var(idle_vm);
+	idle_process->ftn = &cpu_local_var(idle_ftn);
 
 	ihk_mc_init_context(&idle_process->ctx, NULL, idle);
-	idle_process->pid = 0;
-	idle_process->tid = ihk_mc_get_processor_id();
+	idle_process->ftn->pid = 0;
+	idle_process->ftn->tid = ihk_mc_get_processor_id();
 
 	INIT_LIST_HEAD(&cpu_local_var(runq));
 	cpu_local_var(runq_len) = 0;
@@ -1992,7 +1994,7 @@ redo:
 		--v->runq_len;	
 		
 		/* Round-robin if not exited yet */
-		if (!(prev->status & (PS_ZOMBIE | PS_EXITED))) {
+		if (!(prev->ftn->status & (PS_ZOMBIE | PS_EXITED))) {
 			list_add_tail(&prev->sched_list, &(v->runq));
 			++v->runq_len;
 		}
@@ -2003,7 +2005,7 @@ redo:
 	} else {
 		/* Pick a new running process */
 		list_for_each_entry_safe(proc, tmp, &(v->runq), sched_list) {
-			if (proc->status == PS_RUNNING) {
+			if (proc->ftn->status == PS_RUNNING) {
 				next = proc;
 				break;
 			}
@@ -2043,7 +2045,7 @@ redo:
 			last = ihk_mc_switch_context(NULL, &next->ctx, prev);
 		}
 
-		if ((last != NULL) && (last->status & (PS_ZOMBIE | PS_EXITED))) {
+		if ((last != NULL) && (last->ftn->status & (PS_ZOMBIE | PS_EXITED))) {
 			free_process_memory(last);
 			release_process(last);
 		}
@@ -2077,7 +2079,7 @@ int sched_wakeup_process(struct process *proc, int valid_states)
 	struct cpu_local_var *v = get_cpu_local_var(proc->cpu_id);
 
 	dkprintf("sched_wakeup_process,proc->pid=%d,valid_states=%08x,proc->status=%08x,proc->cpu_id=%d,my cpu_id=%d\n",
-			 proc->pid, valid_states, proc->status, proc->cpu_id, ihk_mc_get_processor_id());
+			 proc->ftn->pid, valid_states, proc->ftn->status, proc->cpu_id, ihk_mc_get_processor_id());
 	
 	irqstate = ihk_mc_spinlock_lock(&(proc->spin_sleep_lock));
 	if (proc->spin_sleep) {
@@ -2096,8 +2098,8 @@ int sched_wakeup_process(struct process *proc, int valid_states)
 
 	irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 	
-	if (proc->status & valid_states) {
-		xchg4((int *)(&proc->status), PS_RUNNING);
+	if (proc->ftn->status & valid_states) {
+		xchg4((int *)(&proc->ftn->status), PS_RUNNING);
 		status = 0;
 	} 
 	else {
@@ -2166,7 +2168,7 @@ void __runq_add_proc(struct process *proc, int cpu_id)
 	list_add_tail(&proc->sched_list, &v->runq);
 	++v->runq_len;
 	proc->cpu_id = cpu_id;
-	proc->status = PS_RUNNING;
+	proc->ftn->status = PS_RUNNING;
 	get_cpu_local_var(cpu_id)->status = CPU_STATUS_RUNNING;
 
 	dkprintf("runq_add_proc(): tid %d added to CPU[%d]'s runq\n", 
@@ -2182,7 +2184,7 @@ void runq_add_proc(struct process *proc, int cpu_id)
 	__runq_add_proc(proc, cpu_id);
 	ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 
-	create_proc_procfs_files(proc->pid, cpu_id);
+	create_proc_procfs_files(proc->ftn->pid, cpu_id);
 
 	/* Kick scheduler */
 	if (cpu_id != ihk_mc_get_processor_id())
@@ -2219,8 +2221,8 @@ findthread_and_lock(int pid, int tid, ihk_spinlock_t **savelock, unsigned long *
 		*savelock = &(v->runq_lock);
 		*irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 		list_for_each_entry(p, &(v->runq), sched_list){
-			if(p->pid == pid &&
-			   (tid == -1 || p->tid == tid)){
+			if(p->ftn->pid == pid &&
+			   (tid == -1 || p->ftn->tid == tid)){
 				return p;
 			}
 		}

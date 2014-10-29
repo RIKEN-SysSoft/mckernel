@@ -41,6 +41,7 @@ struct cpu_local_var {
 	ihk_spinlock_t free_list_lock;
 
 	struct process idle;
+	struct fork_tree_node idle_ftn;
 	struct process_vm idle_vm;
 
 	ihk_spinlock_t runq_lock;

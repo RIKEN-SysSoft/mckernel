@@ -175,8 +175,8 @@ void fill_prpsinfo(struct note *head, struct process *proc, void *regs)
 	memcpy(name, "CORE", sizeof("CORE"));
 	prpsinfo = (struct elf_prpsinfo64 *)(name + align32(sizeof("CORE")));
 
-	prpsinfo->pr_state = proc->status;
-	prpsinfo->pr_pid = proc->pid;
+	prpsinfo->pr_state = proc->ftn->status;
+	prpsinfo->pr_pid = proc->ftn->pid;
 
 /*
   We leave most of the fields unfilled.

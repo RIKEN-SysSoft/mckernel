@@ -265,7 +265,7 @@ void process_procfs_request(unsigned long rarg)
 	 */
 	ret = sscanf(p, "%d/", &pid);
 	if (ret == 1) {
-		if (pid != cpu_local_var(current)->pid) {
+		if (pid != cpu_local_var(current)->ftn->pid) {
 			/* We are not located in the proper cpu for some reason. */
 
 			dprintf("mismatched pid. We are %d, but requested pid is %d.\n",

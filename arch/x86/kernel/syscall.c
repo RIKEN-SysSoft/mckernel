@@ -172,7 +172,7 @@ do_setpgid(int pid, int pgid)
 	unsigned long irqstate;
 
 	if(pid == 0)
-		pid = proc->pid;
+		pid = proc->ftn->pid;
 	if(pgid == 0)
 		pgid = pid;
 
@@ -180,15 +180,10 @@ do_setpgid(int pid, int pgid)
 		v = get_cpu_local_var(i);
 		irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 		list_for_each_entry(p, &(v->runq), sched_list){
-			if(p->pid <= 0)
+			if(p->ftn->pid <= 0)
 				continue;
-			if(p->pid == pid){
-				p->pgid = pgid;
-
-                /* Update pgid in fork_tree because it's used in wait4 */
-                ihk_mc_spinlock_lock_noirq(&p->ftn->lock);
-                p->ftn->pgid = pgid;
-                ihk_mc_spinlock_unlock_noirq(&p->ftn->lock);
+			if(p->ftn->pid == pid){
+				p->ftn->pgid = pgid;
 			}
 		}
 		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
@@ -293,7 +288,7 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 	struct fork_tree_node *ftn = proc->ftn;
 
 	for(w = pending->sigmask.__val[0], sig = 0; w; sig++, w >>= 1);
-	dkprintf("do_signal,pid=%d,sig=%d\n", proc->pid, sig);
+	dkprintf("do_signal,pid=%d,sig=%d\n", proc->ftn->pid, sig);
 
 	if(regs == NULL){ /* call from syscall */
 		asm("movq %%gs:132, %0" : "=r" (regs));
@@ -383,7 +378,7 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 
 			dkprintf("do_signal,SIGSTOP,sleeping\n");
 			/* Sleep */
-			proc->status = PS_STOPPED;
+			proc->ftn->status = PS_STOPPED;
 			schedule();
 			dkprintf("SIGSTOP(): woken up\n");
 			break;
@@ -404,7 +399,6 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 
 			/* Sleep */
 			dkprintf("do_signal,SIGTRAP,sleeping\n");
-			proc->status = PS_TRACED;
 
 			schedule();
 			dkprintf("SIGTRAP(): woken up\n");
@@ -449,7 +443,7 @@ static int ptrace_report_signal(struct process *proc, struct x86_regs *regs, str
 	__sigset_t w;
 	long rc;
 
-	dkprintf("ptrace_report_signal,pid=%d\n", proc->pid);
+	dkprintf("ptrace_report_signal,pid=%d\n", proc->ftn->pid);
 
 	/* Save reason why stopped and process state for wait to reap */
 	for (w = pending->sigmask.__val[0], sig = 0; w; sig++, w >>= 1);
@@ -467,9 +461,9 @@ static int ptrace_report_signal(struct process *proc, struct x86_regs *regs, str
 			memset(&info, '\0', sizeof info);
 			info.si_signo = SIGCHLD;
 			info.si_code = CLD_TRAPPED;
-			info._sifields._sigchld.si_pid = proc->pid;
+			info._sifields._sigchld.si_pid = proc->ftn->pid;
 			info._sifields._sigchld.si_status = proc->ftn->exit_status;
-			rc = do_kill(proc->ftn->parent->owner->pid, -1, SIGCHLD, &info);
+			rc = do_kill(proc->ftn->parent->pid, -1, SIGCHLD, &info);
 			if (rc < 0) {
 				kprintf("ptrace_report_signal,do_kill failed\n");
 			}
@@ -483,7 +477,6 @@ static int ptrace_report_signal(struct process *proc, struct x86_regs *regs, str
 	peekuser(proc, regs);
 	dkprintf("ptrace_report_signal,sleeping\n");
 	/* Sleep */
-	proc->status = PS_TRACED;
 	schedule();
 	dkprintf("ptrace_report_signal,wake up\n");
 
@@ -506,7 +499,7 @@ check_signal(unsigned long rc, void *regs0)
 	if(clv == NULL)
 		return;
 	proc = cpu_local_var(current);
-	if(proc == NULL || proc->pid == 0)
+	if(proc == NULL || proc->ftn->pid == 0)
 		return;
 
 	if(regs != NULL && (regs->rsp & 0x8000000000000000)) {
@@ -588,9 +581,9 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 		int	sendme = 0;
 
 		if(pid == 0){
-			if(proc == NULL || proc->pid <= 0)
+			if(proc == NULL || proc->ftn->pid <= 0)
 				return -ESRCH;
-			pgid = proc->pgid;
+			pgid = proc->ftn->pgid;
 		}
 		pids = kmalloc(sizeof(int) * num_processors, IHK_MC_AP_NOWAIT);
 		if(!pids)
@@ -599,20 +592,20 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 			v = get_cpu_local_var(i);
 			irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 			list_for_each_entry(p, &(v->runq), sched_list){
-				if(p->pid <= 0)
+				if(p->ftn->pid <= 0)
 					continue;
-				if(proc && p->pid == proc->pid){
+				if(proc && p->ftn->pid == proc->ftn->pid){
 					sendme = 1;
 					continue;
 				}
-				if(pgid == 1 || p->pgid == pgid){
+				if(pgid == 1 || p->ftn->pgid == pgid){
 					int	j;
 
 					for(j = 0; j < n; j++)
-						if(pids[j] == p->pid)
+						if(pids[j] == p->ftn->pid)
 							break;
 					if(j == n){
-						pids[n] = p->pid;
+						pids[n] = p->ftn->pid;
 						n++;
 					}
 				}
@@ -622,7 +615,7 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 		for(i = 0; i < n; i++)
 			rc = do_kill(pids[i], -1, sig, info);
 		if(sendme)
-			rc = do_kill(proc->pid, -1, sig, info);
+			rc = do_kill(proc->ftn->pid, -1, sig, info);
 
 		kfree(pids);
 		return rc;
@@ -638,8 +631,8 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 			found = 0;
 			ihk_mc_spinlock_lock_noirq(&(v->runq_lock));
 			list_for_each_entry(p, &(v->runq), sched_list){
-				if(p->pid == pid){
-					if(p->tid == pid || tproc == NULL){
+				if(p->ftn->pid == pid){
+					if(p->ftn->tid == pid || tproc == NULL){
 						if(!(mask & p->sigmask.__val[0])){
 							tproc = p;
 							if(!found && savelock) {
@@ -659,7 +652,7 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 						}
 					}
 					if(!(mask & p->sigmask.__val[0])){
-						if(p->tid == pid || tproc == NULL){
+						if(p->ftn->tid == pid || tproc == NULL){
 
 						}
 					}
@@ -680,8 +673,8 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 			found = 0;
 			ihk_mc_spinlock_lock_noirq(&(v->runq_lock));
 			list_for_each_entry(p, &(v->runq), sched_list){
-				if(p->pid > 0 &&
-				   p->tid == tid){
+				if(p->ftn->pid > 0 &&
+				   p->ftn->tid == tid){
 					savelock = &(v->runq_lock);
 					found = 1;
 					tproc = p;
@@ -698,8 +691,8 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 			found = 0;
 			ihk_mc_spinlock_lock_noirq(&(v->runq_lock));
 			list_for_each_entry(p, &(v->runq), sched_list){
-				if(p->pid == pid &&
-				   p->tid == tid){
+				if(p->ftn->pid == pid &&
+				   p->ftn->tid == tid){
 					savelock = &(v->runq_lock);
 					found = 1;
 					tproc = p;
@@ -775,7 +768,7 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 		default:
 			if(proc != tproc){
 				dkprintf("do_kill,ipi,pid=%d,cpu_id=%d\n",
-						 tproc->pid, tproc->cpu_id);
+						 tproc->ftn->pid, tproc->cpu_id);
 				ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(tproc->cpu_id)->apic_id, 0xd0);
 			}
 			break;
@@ -829,7 +822,7 @@ set_signal(int sig, void *regs0, siginfo_t *info)
 	struct x86_regs *regs = regs0;
 	struct process *proc = cpu_local_var(current);
 
-	if(proc == NULL || proc->pid == 0)
+	if(proc == NULL || proc->ftn->pid == 0)
 		return;
 
 	if((__sigmask(sig) & proc->sigmask.__val[0]) ||
@@ -838,5 +831,5 @@ set_signal(int sig, void *regs0, siginfo_t *info)
 		terminate(0, sig | 0x80, (ihk_mc_user_context_t *)regs->rsp);
 	}
 	else
-		do_kill(proc->pid, proc->tid, sig, info);
+		do_kill(proc->ftn->pid, proc->ftn->tid, sig, info);
 }

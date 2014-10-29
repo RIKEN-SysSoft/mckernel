@@ -199,7 +199,7 @@ void coredump(struct process *proc, void *regs)
 	request.args[1] = virt_to_phys(coretable);
 	/* no data for now */
 	ret = do_syscall(&request, proc->uctx, 
-			 proc->cpu_id, proc->pid);
+			 proc->cpu_id, proc->ftn->pid);
 	if (ret == 0) {
 		kprintf("dumped core.\n");
 	} else {

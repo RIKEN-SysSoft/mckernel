@@ -265,6 +265,7 @@ struct fork_tree_node {
 
 	struct process *owner;
 	int pid;
+	int tid;
 	int pgid;
 	
 	struct fork_tree_node *parent;
@@ -306,8 +307,6 @@ void hold_fork_tree_node(struct fork_tree_node *ftn);
 void release_fork_tree_node(struct fork_tree_node *ftn);
 
 struct process {
-	int pid;
-	int status;
 	int cpu_id;
 
 	ihk_atomic_t refcount;
@@ -327,7 +326,6 @@ struct process {
 		unsigned long tlsblock_base, tlsblock_limit;
 	} thread;
 
-	int tid;
 	volatile int sigevent;
 	sigset_t sigmask;
 	stack_t sigstack;
@@ -344,7 +342,6 @@ struct process {
 
 	cpu_set_t cpu_set;
 	unsigned long saved_auxv[AUXV_LEN];
-	int pgid;	/* process group id */
 
 	struct user *userp;
 };

@@ -162,7 +162,7 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid)
 #ifdef SYSCALL_BY_IKC
 	packet.msg = SCD_MSG_SYSCALL_ONESIDE;
 	packet.ref = cpu;
-	packet.pid = pid ? pid : cpu_local_var(current)->pid;
+	packet.pid = pid ? pid : cpu_local_var(current)->ftn->pid;
 	packet.arg = scp->request_rpa;	
 	dkprintf("send syscall, nr: %d, pid: %d\n", req->number, packet.pid);
 	
@@ -218,7 +218,7 @@ long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx,
 	
 		if (res->status == STATUS_PAGE_FAULT) {
 			dkprintf("STATUS_PAGE_FAULT in syscall, pid: %d\n", 
-					cpu_local_var(current)->pid);		
+					cpu_local_var(current)->ftn->pid);
 			error = page_fault_process(get_cpu_local_var(cpu)->current,
 					(void *)res->fault_address,
 					res->fault_reason|PF_POPULATE);
@@ -323,7 +323,7 @@ static int wait_zombie(struct process *proc, struct fork_tree_node *child, int *
 static int wait_stopped(struct process *proc, struct fork_tree_node *child, int *status, int options)
 {
 	dkprintf("wait_stopped,proc->pid=%d,child->pid=%d,options=%08x\n",
-			 proc->pid, child->pid, options);
+			 proc->ftn->pid, child->pid, options);
 	int ret;
 
 	/* Copy exit_status created in do_signal */
@@ -381,14 +381,14 @@ SYSCALL_DECLARE(wait4)
 	struct process *proc = cpu_local_var(current);
 	struct fork_tree_node *child_iter, *next;
 	int pid = (int)ihk_mc_syscall_arg0(ctx);
-	int pgid = proc->pgid;
+	int pgid = proc->ftn->pgid;
 	int *status = (int *)ihk_mc_syscall_arg1(ctx);
 	int options = (int)ihk_mc_syscall_arg2(ctx);
 	int ret;
 	struct waitq_entry waitpid_wqe;
 	int empty = 1;
 
-	dkprintf("wait4,proc->pid=%d,pid=%d\n", proc->pid, pid);
+	dkprintf("wait4,proc->pid=%d,pid=%d\n", proc->ftn->pid, pid);
 	if (options & ~(WNOHANG | WUNTRACED | WCONTINUED | __WCLONE)) {
 		dkprintf("wait4: unexpected options(%x).\n", options);
 		ret = -EINVAL;
@@ -535,7 +535,7 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 	struct process *parent_owner;
 	int error;
 
-	dkprintf("terminate,pid=%d\n", proc->pid);
+	dkprintf("terminate,pid=%d\n", proc->ftn->pid);
 	request.number = __NR_exit_group;
 	request.args[0] = ((rc & 0x00ff) << 8) | (sig & 0xff);
 
@@ -567,7 +567,6 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 	if (ftn->parent) {
 		int parent_owner_pid;
 		ihk_mc_spinlock_lock_noirq(&ftn->lock);
-		ftn->pid = proc->pid;
 		ftn->exit_status = ((rc & 0x00ff) << 8) | (sig & 0xff);
 		ftn->status = PS_ZOMBIE;
 		ihk_mc_spinlock_unlock_noirq(&ftn->lock);	
@@ -579,7 +578,7 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 		/* Signal parent if still attached */
 		ihk_mc_spinlock_lock_noirq(&ftn->parent->lock);
 		parent_owner = ftn->parent->owner;
-		parent_owner_pid = parent_owner ? ftn->parent->owner->pid : 0;
+		parent_owner_pid = parent_owner ? ftn->parent->pid : 0;
 		ihk_mc_spinlock_unlock_noirq(&ftn->parent->lock);	
 		if (parent_owner && (ftn->termsig != 0)) {
 			struct siginfo info;
@@ -587,11 +586,11 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 			memset(&info, '\0', sizeof info);
 			info.si_signo = SIGCHLD;
 			info.si_code = sig? ((sig & 0x80)? CLD_DUMPED: CLD_KILLED): CLD_EXITED;
-			info._sifields._sigchld.si_pid = proc->pid;
+			info._sifields._sigchld.si_pid = proc->ftn->pid;
 			info._sifields._sigchld.si_status = ((rc & 0x00ff) << 8) | (sig & 0xff);
 			dkprintf("terminate,kill %d,target pid=%d\n",
 					ftn->termsig, parent_owner_pid);
-			error = do_kill(ftn->parent->owner->pid, -1, SIGCHLD, &info);
+			error = do_kill(ftn->parent->pid, -1, SIGCHLD, &info);
 /*
 			sigchld_parent(ftn->parent->owner, 0);
 */
@@ -606,8 +605,6 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 		ihk_mc_spinlock_unlock_noirq(&ftn->lock);	
     }
 	release_fork_tree_node(ftn);
-
-	proc->status = PS_EXITED;
 	release_process(proc);
 	
 	schedule();
@@ -636,7 +633,7 @@ SYSCALL_DECLARE(exit_group)
 	SYSCALL_HEADER;
 #endif
 
-	dkprintf("sys_exit_group,pid=%d\n", cpu_local_var(current)->pid);
+	dkprintf("sys_exit_group,pid=%d\n", cpu_local_var(current)->ftn->pid);
 	terminate((int)ihk_mc_syscall_arg0(ctx), 0, ctx);
 #if 0
 	struct process *proc = cpu_local_var(current);
@@ -1305,7 +1302,7 @@ out:
 
 SYSCALL_DECLARE(getpid)
 {
-	return cpu_local_var(current)->pid;
+	return cpu_local_var(current)->ftn->pid;
 }
 
 void
@@ -1315,16 +1312,16 @@ settid(struct process *proc, int mode, int newcpuid, int oldcpuid)
 	unsigned long rc;
 
 	ihk_mc_syscall_arg0(&ctx) = mode;
-	ihk_mc_syscall_arg1(&ctx) = proc->pid;
+	ihk_mc_syscall_arg1(&ctx) = proc->ftn->pid;
 	ihk_mc_syscall_arg2(&ctx) = newcpuid;
 	ihk_mc_syscall_arg3(&ctx) = oldcpuid;
 	rc = syscall_generic_forwarding(__NR_gettid, &ctx);
-	proc->tid = rc;
+	proc->ftn->tid = rc;
 }
 
 SYSCALL_DECLARE(gettid)
 {
-	return cpu_local_var(current)->tid;
+	return cpu_local_var(current)->ftn->tid;
 }
 
 long do_arch_prctl(unsigned long code, unsigned long address)
@@ -1403,9 +1400,9 @@ static int ptrace_report_exec(struct process *proc)
 			memset(&info, '\0', sizeof info);
 			info.si_signo = SIGCHLD;
 			info.si_code = CLD_TRAPPED;
-			info._sifields._sigchld.si_pid = proc->pid;
+			info._sifields._sigchld.si_pid = proc->ftn->pid;
 			info._sifields._sigchld.si_status = proc->ftn->exit_status;
-			rc = do_kill(proc->ftn->parent->owner->pid, -1, SIGCHLD, &info);
+			rc = do_kill(proc->ftn->parent->pid, -1, SIGCHLD, &info);
 			if(rc < 0) {
 				dkprintf("ptrace_report_exec,do_kill failed\n");
 			}
@@ -1419,7 +1416,6 @@ static int ptrace_report_exec(struct process *proc)
 	peekuser(proc, NULL);
 	/* Sleep */
 	dkprintf("ptrace_report_exec,sleeping\n");
-	proc->status = PS_TRACED;
 	
 	schedule();
 	dkprintf("ptrace_report_exec,woken up\n");
@@ -1590,19 +1586,19 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		return -ENOMEM;
 	}
 
-	new->pgid = cpu_local_var(current)->pgid;
+	new->ftn->pgid = cpu_local_var(current)->ftn->pgid;
 
 	cpu_set(cpuid, &new->vm->cpu_set, &new->vm->cpu_set_lock);
 
 	if (clone_flags & CLONE_VM) {
-		new->pid = cpu_local_var(current)->pid;
+		new->ftn->pid = cpu_local_var(current)->ftn->pid;
 		settid(new, 1, cpuid, -1);
 	}
 	/* fork() a new process on the host */
 	else {
 		request1.number = __NR_fork;
-		new->pid = do_syscall(&request1, &ctx1, ihk_mc_get_processor_id(), 0);
-		if (new->pid == -1) {
+		new->ftn->pid = do_syscall(&request1, &ctx1, ihk_mc_get_processor_id(), 0);
+		if (new->ftn->pid == -1) {
 			kprintf("ERROR: forking host process\n");
 			
 			/* TODO: clean-up new */
@@ -1621,24 +1617,21 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 			new->vm->region.user_start;
 		/* 3rd parameter denotes new rpgtable of host process */
 		request1.args[2] = virt_to_phys(new->vm->page_table);
-		request1.args[3] = new->pid;
+		request1.args[3] = new->ftn->pid;
 
 		dkprintf("fork(): requesting PTE clear and rpgtable (0x%lx) update\n",
 				request1.args[2]);
 
-		if (do_syscall(&request1, &ctx1, ihk_mc_get_processor_id(), new->pid)) {
+		if (do_syscall(&request1, &ctx1, ihk_mc_get_processor_id(), new->ftn->pid)) {
 			kprintf("ERROR: clearing PTEs in host process\n");
 		}		
 	}
 
-	new->ftn->pid = new->pid;
-	new->ftn->pgid = new->pgid;
-	
 	if (clone_flags & CLONE_PARENT_SETTID) {
 		dkprintf("clone_flags & CLONE_PARENT_SETTID: 0x%lX\n",
 		         parent_tidptr);
 		
-		*(int*)parent_tidptr = new->pid;
+		*(int*)parent_tidptr = new->ftn->pid;
 	}
 	
 	if (clone_flags & CLONE_CHILD_CLEARTID) {
@@ -1659,7 +1652,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 			return -EFAULT; 
 		}
 	
-		*((int*)phys_to_virt(phys)) = new->tid;
+		*((int*)phys_to_virt(phys)) = new->ftn->tid;
 	}
 	
 	if (clone_flags & CLONE_SETTLS) {
@@ -1675,10 +1668,10 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 
 	ihk_mc_syscall_ret(new->uctx) = 0;
 
-	dkprintf("clone: kicking scheduler!,cpuid=%d pid=%d tid=%d\n", cpuid, new->pid, new->tid);
+	dkprintf("clone: kicking scheduler!,cpuid=%d pid=%d tid=%d\n", cpuid, new->ftn->pid, new->ftn->tid);
 	runq_add_proc(new, cpuid);
 
-	return new->tid;
+	return new->ftn->tid;
 }
 
 SYSCALL_DECLARE(vfork)
@@ -1699,7 +1692,7 @@ SYSCALL_DECLARE(set_tid_address)
 	cpu_local_var(current)->thread.clear_child_tid = 
 	                        (int*)ihk_mc_syscall_arg0(ctx);
 
-	return cpu_local_var(current)->pid;
+	return cpu_local_var(current)->ftn->pid;
 }
 
 SYSCALL_DECLARE(kill)
@@ -1713,7 +1706,7 @@ SYSCALL_DECLARE(kill)
 	memset(&info, '\0', sizeof info);
 	info.si_signo = sig;
 	info.si_code = SI_USER;
-	info._sifields._kill.si_pid = proc->pid;
+	info._sifields._kill.si_pid = proc->ftn->pid;
 
 	dkprintf("sys_kill,enter,pid=%d,sig=%d\n", pid, sig);
 	error = do_kill(pid, -1, sig, &info);
@@ -1733,7 +1726,7 @@ SYSCALL_DECLARE(tgkill)
 	memset(&info, '\0', sizeof info);
 	info.si_signo = sig;
 	info.si_code = SI_TKILL;
-	info._sifields._kill.si_pid = proc->pid;
+	info._sifields._kill.si_pid = proc->ftn->pid;
 
 	if(tid <= 0)
 		return -EINVAL;
@@ -2229,7 +2222,7 @@ SYSCALL_DECLARE(futex)
 SYSCALL_DECLARE(exit)
 {
 	struct process *proc = cpu_local_var(current);
-	dkprintf("sys_exit,pid=%d\n", proc->pid);
+	dkprintf("sys_exit,pid=%d\n", proc->ftn->pid);
 
 #ifdef DCFA_KMOD
 	do_mod_exit((int)ihk_mc_syscall_arg0(ctx));
@@ -2250,7 +2243,7 @@ SYSCALL_DECLARE(exit)
 		      FUTEX_WAKE, 1, 0, NULL, 0, 0);
 	}
 	
-	proc->status = PS_ZOMBIE;
+	proc->ftn->status = PS_ZOMBIE;
 	
 	release_fork_tree_node(proc->ftn);
 	release_process(proc);
@@ -2310,19 +2303,6 @@ static int ptrace_wakeup_sig(int pid, long request, long data) {
 	}
 	ihk_mc_spinlock_unlock(savelock, irqstate);
 
-	error = sched_wakeup_process(child, PS_TRACED | PS_STOPPED);
-	if (error < 0) {
-		goto out;
-	}
-
-	ihk_mc_spinlock_lock_noirq(&child->ftn->lock);	
-	child->ftn->exit_status = data;
-	if (child->ftn->status & PS_TRACED) {
-		xchg4((int *)(&child->ftn->status), PS_RUNNING);
-	} 
-	ihk_mc_spinlock_unlock_noirq(&child->ftn->lock);
-
-
 	if (data > 64 || data < 0) {
 		error = -EINVAL;
 		goto out;
@@ -2338,7 +2318,7 @@ static int ptrace_wakeup_sig(int pid, long request, long data) {
 		}
 		break;
 	case PTRACE_CONT:
-		if(data != 0) {
+		if(data != 0 && data != SIGSTOP) {
 			struct process *proc;
 
 			/* TODO: Tracing process replace the original
@@ -2347,7 +2327,7 @@ static int ptrace_wakeup_sig(int pid, long request, long data) {
 			memset(&info, '\0', sizeof info);
 			info.si_signo = data;
 			info.si_code = SI_USER;
-			info._sifields._kill.si_pid = proc->pid;
+			info._sifields._kill.si_pid = proc->ftn->pid;
 			error = do_kill(pid, -1, data, &info);
 			if (error < 0) {
 				goto out;
@@ -2358,6 +2338,10 @@ static int ptrace_wakeup_sig(int pid, long request, long data) {
 		break;
 	}
 
+	error = sched_wakeup_process(child, PS_TRACED | PS_STOPPED);
+	if (error < 0) {
+		goto out;
+	}
 out:
 	return error;
 }
@@ -2374,7 +2358,7 @@ static long ptrace_pokeuser(int pid, long addr, long data)
 	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
 	if (!child)
 		return -ESRCH;
-	if(child->status == PS_TRACED){
+	if(child->ftn->status == PS_TRACED){
 		memcpy((char *)child->userp + addr, &data, 8);
 		rc = 0;
 	}
@@ -2396,7 +2380,7 @@ static long ptrace_peekuser(int pid, long addr, long data)
 	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
 	if (!child)
 		return -ESRCH;
-	if(child->status == PS_TRACED){
+	if(child->ftn->status == PS_TRACED){
 		if(copy_to_user(child, p, (char *)child->userp + addr, 8))
 			rc = -EFAULT;
 		else
@@ -2418,7 +2402,7 @@ static long ptrace_getregs(int pid, long data)
 	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
 	if (!child)
 		return -ESRCH;
-	if(child->status == PS_TRACED){
+	if(child->ftn->status == PS_TRACED){
 		if(copy_to_user(child, regs, child->userp, sizeof(struct user_regs_struct)))
 			rc = -EFAULT;
 		else
@@ -2588,12 +2572,12 @@ SYSCALL_DECLARE(sched_setaffinity)
 			CPU_SET(cpu_id, &cpu_set);
 
 	if(tid == 0)
-		tid = cpu_local_var(current)->tid;
+		tid = cpu_local_var(current)->ftn->tid;
 
 	for (cpu_id = 0; cpu_id < num_processors; cpu_id++) {
 		irqstate = ihk_mc_spinlock_lock(&get_cpu_local_var(cpu_id)->runq_lock);
 		list_for_each_entry(thread, &get_cpu_local_var(cpu_id)->runq, sched_list)
-			if (thread->pid && thread->tid == tid)
+			if (thread->ftn->pid && thread->ftn->tid == tid)
 				goto found; /* without unlocking runq_lock */
 		ihk_mc_spinlock_unlock(&get_cpu_local_var(cpu_id)->runq_lock, irqstate);
 	}
@@ -2635,13 +2619,13 @@ SYSCALL_DECLARE(sched_getaffinity)
 	len = MIN2(len, sizeof(k_cpu_set));
 
 	if(tid == 0)
-		tid = cpu_local_var(current)->tid;
+		tid = cpu_local_var(current)->ftn->tid;
 
 	for (i = 0; i < num_processors && !found; i++) {
 		struct process *thread;
 		irqstate = ihk_mc_spinlock_lock(&get_cpu_local_var(i)->runq_lock);
 		list_for_each_entry(thread, &get_cpu_local_var(i)->runq, sched_list) {
-			if (thread->pid && thread->tid == tid) {
+			if (thread->ftn->pid && thread->ftn->tid == tid) {
 				found = 1;
 				memcpy(&k_cpu_set, &thread->cpu_set, sizeof(k_cpu_set));
 				break;
