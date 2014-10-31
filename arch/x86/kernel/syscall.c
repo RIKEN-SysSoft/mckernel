@@ -747,7 +747,10 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 		else{
 			pending->sigmask.__val[0] = mask;
 			memcpy(&pending->info, info, sizeof(siginfo_t));
-			list_add_tail(&pending->list, head);
+			if(sig == SIGKILL || sig == SIGSTOP)
+				list_add(&pending->list, head);
+			else
+				list_add_tail(&pending->list, head);
 			tproc->sigevent = 1;
 		}
 	}
@@ -759,57 +762,35 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 		ihk_mc_spinlock_unlock_noirq(&tproc->sigpendinglock);
 	}
 
-	if(doint && !(mask & tproc->sigmask.__val[0])){
-		switch(sig) {
-		case SIGKILL:
-		case SIGCONT:
-			break;
-		case SIGSTOP:
-		default:
-			if(proc != tproc){
-				dkprintf("do_kill,ipi,pid=%d,cpu_id=%d\n",
-						 tproc->ftn->pid, tproc->cpu_id);
-				ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(tproc->cpu_id)->apic_id, 0xd0);
-			}
-			break;
+	if (doint && !(mask & tproc->sigmask.__val[0])) {
+		int cpuid = tproc->cpu_id;
+		int pid = tproc->ftn->pid;
+		int status = tproc->ftn->status;
+
+		if (proc != tproc) {
+			dkprintf("do_kill,ipi,pid=%d,cpu_id=%d\n",
+				 tproc->ftn->pid, tproc->cpu_id);
+			ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(tproc->cpu_id)->apic_id, 0xd0);
 		}
 
 		ihk_mc_spinlock_unlock_noirq(savelock);
 		cpu_restore_interrupt(irqstate);
+		interrupt_syscall(pid, cpuid);
 
-		switch(sig) {
-		case SIGKILL:
-#if 0
-			/* Is this really needed? */
-			kprintf("do_kill,sending kill to mcexec,pid=%d,cpuid=%d\n",
-					tproc->pid, tproc->cpu_id);
-			interrupt_syscall(tproc->pid, tproc->cpu_id);
-#endif
-			/* Wake up the target only when stopped by ptrace-reporting */
-			sched_wakeup_process(tproc, PS_TRACED);
-			ihk_mc_spinlock_lock_noirq(&tproc->ftn->lock);	
-			if (tproc->ftn->status & PS_TRACED) {
-				xchg4((int *)(&tproc->ftn->status), PS_RUNNING);
-			} 
-			ihk_mc_spinlock_unlock_noirq(&tproc->ftn->lock);
-			break;
-		case SIGCONT:
-			/* Wake up the target only when stopped by SIGSTOP */
-			sched_wakeup_process(tproc, PS_STOPPED);
-			ihk_mc_spinlock_lock_noirq(&tproc->ftn->lock);	
-			if (tproc->ftn->status & PS_STOPPED) {
-				xchg4((int *)(&tproc->ftn->status), PS_RUNNING);
-				/* Reap and set singal_flags */
-				tproc->ftn->signal_flags = SIGNAL_STOP_CONTINUED;
-			} 
-			ihk_mc_spinlock_unlock_noirq(&tproc->ftn->lock);
-			break;
-		case SIGSTOP:
-		default:
-			break;
+		if (status != PS_RUNNING) {
+			switch(sig) {
+			case SIGKILL:
+				/* Wake up the target only when stopped by ptrace-reporting */
+				sched_wakeup_process(tproc, PS_TRACED | PS_STOPPED);
+				break;
+			case SIGCONT:
+				/* Wake up the target only when stopped by SIGSTOP */
+				sched_wakeup_process(tproc, PS_STOPPED);
+				break;
+			}
 		}
 	}
-	else{
+	else {
 		ihk_mc_spinlock_unlock_noirq(savelock);
 		cpu_restore_interrupt(irqstate);
 	}
