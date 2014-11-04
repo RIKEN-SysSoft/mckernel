@@ -24,7 +24,7 @@ AC_ARG_WITH([kernelsrc],
 
 AC_ARG_WITH([target],
   AC_HELP_STRING(
-    [--with-target={attached-mic | builtin-mic | builtin-x86}],[target, default is attached-mic]),
+    [--with-target={attached-mic | builtin-mic | builtin-x86 | smp-x86}],[target, default is attached-mic]),
   [WITH_TARGET=$withval],[WITH_TARGET=yes])
 
 AC_ARG_ENABLE([dcfa],
@@ -109,6 +109,26 @@ case $WITH_TARGET in
 	fi
 	if test "X$MANDIR" = X; then
 		MANDIR="$prefix/attached/man"
+	fi
+	;;
+    smp-x86)
+	ARCH=`uname -m`
+	AC_PROG_CC
+	XCC=$CC
+	if test "X$KERNDIR" = X; then
+		KERNDIR="$prefix/smp-x86/kernel"
+	fi
+	if test "X$BINDIR" = X; then
+		BINDIR="$prefix/bin"
+	fi
+	if test "X$SBINDIR" = X; then
+		SBINDIR="$prefix/sbin"
+	fi
+	if test "X$KMODDIR" = X; then
+		KMODDIR="$prefix/kmod"
+	fi
+	if test "X$MANDIR" = X; then
+		MANDIR="$prefix/smp-x86/man"
 	fi
 	;;
     *)

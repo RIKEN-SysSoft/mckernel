@@ -1,0 +1,24 @@
+#!/bin/sh
+
+cp $1 $2
+
+exit 0
+
+#set -e
+#
+#O=`pwd`
+#
+#make -C $3/../arch/x86/kboot O=$O clean
+##make -C $3/../kboot O=$O KIMAGE="$O/$1" LOAD_PA=0x3a001000
+#make -C $3/../arch/x86/kboot O=$O KIMAGE="$O/$1" LOAD_PA=0x101001000
+##make -C $3/../kboot O=$O KIMAGE="$O/$1" LOAD_PA=0x901001000
+#
+#make -C $3/../arch/x86/elfboot O=$O clean
+#make -C $3/../arch/x86/elfboot O=$O
+#
+#cat elfboot/elfboot kboot/kboot.elf > $2
+#
+#make -C $3/../arch/x86/kboot O=$O clean
+##make -C $3/../kboot O=$O KIMAGE="$O/$1" LOAD_PA=0x3a001000
+#make -C $3/../arch/x86/kboot O=$O KIMAGE="$O/$1" LOAD_PA=0x201001000
+#cat elfboot/elfboot kboot/kboot.elf > $2.8G

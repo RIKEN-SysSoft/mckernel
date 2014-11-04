@@ -6,7 +6,7 @@ all::
 	@(cd executer/kernel; make modules)
 	@(cd executer/user; make)
 	@case "$(TARGET)" in \
-	    attached-mic | builtin-x86 | builtin-mic) \
+	    attached-mic | builtin-x86 | builtin-mic | smp-x86) \
 		(cd kernel; make) \
 		;; \
 	    *) \
@@ -19,7 +19,7 @@ install::
 	@(cd executer/kernel; make install)
 	@(cd executer/user; make install)
 	@case "$(TARGET)" in \
-	    attached-mic | builtin-x86 | builtin-mic) \
+	    attached-mic | builtin-x86 | builtin-mic | smp-x86) \
 		(cd kernel; make install) \
 		;; \
 	    *) \
@@ -52,7 +52,7 @@ clean::
 	@(cd executer/kernel; make clean)
 	@(cd executer/user; make clean)
 	@case "$(TARGET)" in \
-	    attached-mic | builtin-x86 | builtin-mic) \
+	    attached-mic | builtin-x86 | builtin-mic | smp-x86) \
 		(cd kernel; make clean) \
 		;; \
 	    *) \
