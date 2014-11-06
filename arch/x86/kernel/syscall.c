@@ -561,10 +561,10 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 	struct process *tproc = NULL;
 	int i;
 	__sigset_t mask;
-	struct sig_pending *pending;
 	struct list_head *head;
 	int rc;
 	unsigned long irqstate = 0;
+	struct k_sigaction *k;
 	int doint;
 	ihk_spinlock_t *savelock = NULL;
 	int found = 0;
@@ -728,30 +728,35 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 	/* Put signal event even when handler is SIG_IGN or SIG_DFL
 	   because target ptraced process must call ptrace_report_signal 
 	   in check_signal */
-	pending = NULL;
 	rc = 0;
-	if (sig < 33) { // SIGRTMIN - SIGRTMAX
-		list_for_each_entry(pending, head, list){
-			if(pending->sigmask.__val[0] == mask)
-				break;
+	k = tproc->sighandler->action + sig - 1;
+	if(k->sa.sa_handler != (void *)1 &&
+	   (k->sa.sa_handler != NULL ||
+	    (sig != SIGCHLD && sig != SIGURG))){
+		struct sig_pending *pending = NULL;
+		if (sig < 33) { // SIGRTMIN - SIGRTMAX
+			list_for_each_entry(pending, head, list){
+				if(pending->sigmask.__val[0] == mask)
+					break;
+			}
+			if(&pending->list == head)
+				pending = NULL;
 		}
-		if(&pending->list == head)
-			pending = NULL;
-	}
-	if(pending == NULL){
-		doint = 1;
-		pending = kmalloc(sizeof(struct sig_pending), IHK_MC_AP_NOWAIT);
-		if(!pending){
-			rc = -ENOMEM;
-		}
-		else{
-			pending->sigmask.__val[0] = mask;
-			memcpy(&pending->info, info, sizeof(siginfo_t));
-			if(sig == SIGKILL || sig == SIGSTOP)
-				list_add(&pending->list, head);
-			else
-				list_add_tail(&pending->list, head);
-			tproc->sigevent = 1;
+		if(pending == NULL){
+			doint = 1;
+			pending = kmalloc(sizeof(struct sig_pending), IHK_MC_AP_NOWAIT);
+			if(!pending){
+				rc = -ENOMEM;
+			}
+			else{
+				pending->sigmask.__val[0] = mask;
+				memcpy(&pending->info, info, sizeof(siginfo_t));
+				if(sig == SIGKILL || sig == SIGSTOP)
+					list_add(&pending->list, head);
+				else
+					list_add_tail(&pending->list, head);
+				tproc->sigevent = 1;
+			}
 		}
 	}
 
