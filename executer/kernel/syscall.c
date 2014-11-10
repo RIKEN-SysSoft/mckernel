@@ -452,7 +452,7 @@ static int rus_mmap(struct file *file, struct vm_area_struct *vma)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,7,0)
 	vma->vm_flags |= VM_RESERVED | VM_DONTEXPAND | VM_MIXEDMAP;
 #else
-	vma->vm_flags |= VM_DONTDUMP | VM_DONTEXPAND | VM_MIXEDMAP;
+	vma->vm_flags |= VM_IO | VM_DONTDUMP | VM_DONTEXPAND | VM_PFNMAP;
 #endif
 	vma->vm_ops = &rus_vmops;
 	return 0;
