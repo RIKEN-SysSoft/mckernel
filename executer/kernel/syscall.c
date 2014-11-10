@@ -43,6 +43,7 @@
 #include <asm/delay.h>
 #include <asm/io.h>
 #include "mcctrl.h"
+#include <linux/version.h>
 
 #define ALIGN_WAIT_BUF(z)   (((z + 63) >> 6) << 6)
 
@@ -448,7 +449,11 @@ static struct vm_operations_struct rus_vmops = {
 
 static int rus_mmap(struct file *file, struct vm_area_struct *vma)
 {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,7,0)
 	vma->vm_flags |= VM_RESERVED | VM_DONTEXPAND | VM_MIXEDMAP;
+#else
+	vma->vm_flags |= VM_DONTDUMP | VM_DONTEXPAND | VM_MIXEDMAP;
+#endif
 	vma->vm_ops = &rus_vmops;
 	return 0;
 }
@@ -491,9 +496,18 @@ int reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp, un
 	if (vma) {
 		end = (vma->vm_start - GAP_FOR_MCEXEC) & ~(GAP_FOR_MCEXEC - 1);
 	}
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,5,0)
 	start = do_mmap_pgoff(file, 0, end,
 			PROT_READ|PROT_WRITE, MAP_FIXED|MAP_SHARED, 0);
+#endif			
+
 	up_write(&current->mm->mmap_sem);
+	
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,5,0)
+	start = vm_mmap(file, 0, end,
+			PROT_READ|PROT_WRITE, MAP_FIXED|MAP_SHARED, 0);
+#endif			
 
 	revert_creds(original);
 	put_cred(promoted);
@@ -1325,9 +1339,18 @@ static int remap_user_space(uintptr_t rva, size_t len, int prot)
 	start = rva;
 	pgoff = vma->vm_pgoff + ((rva - vma->vm_start) >> PAGE_SHIFT);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,5,0)
 	map = do_mmap_pgoff(file, start, len,
 			prot, MAP_FIXED|MAP_SHARED, pgoff);
+#endif
+
 	up_write(&mm->mmap_sem);
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,5,0)
+	map = vm_mmap(file, start, len,
+			prot, MAP_FIXED|MAP_SHARED, pgoff << PAGE_SHIFT);
+#endif
+
 out:
 	dprintk("remap_user_space(%lx,%lx,%x): %lx (%ld)\n",
 			rva, len, prot, (long)map, (long)map);
