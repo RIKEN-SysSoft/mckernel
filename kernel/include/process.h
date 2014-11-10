@@ -212,7 +212,7 @@ struct user
 	unsigned long int  u_debugreg [8];
 };
 
-#define	AUXV_LEN	14
+#define	AUXV_LEN	16
 
 struct vm_range {
 	struct list_head list;

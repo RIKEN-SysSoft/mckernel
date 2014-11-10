@@ -1445,6 +1445,7 @@ int init_process_stack(struct process *process, struct program_load_desc *pn,
 	int error;
 	unsigned long *p;
 	unsigned long minsz;
+	unsigned long at_rand;
 
 	/* create stack range */
 	minsz = PAGE_SIZE;
@@ -1487,6 +1488,12 @@ int init_process_stack(struct process *process, struct program_load_desc *pn,
 	/* set up initial stack frame */
 	p = (unsigned long *)(stack + minsz);
 	s_ind = -1;
+	
+	/* "random" 16 bytes on the very top */
+	p[s_ind--] = 0x010101011;
+	p[s_ind--] = 0x010101011;
+	at_rand = end + sizeof(unsigned long) * s_ind;
+	
 	/* auxiliary vector */
 	/* If you add/delete entires, please increase/decrease
 	   AUXV_LEN in include/process.h. */
@@ -1504,10 +1511,14 @@ int init_process_stack(struct process *process, struct program_load_desc *pn,
 	p[s_ind--] = AT_PAGESZ;
 	p[s_ind--] = pn->at_clktck; /* AT_CLKTCK */
 	p[s_ind--] = AT_CLKTCK;
+	p[s_ind--] = at_rand; /* AT_RANDOM */
+	p[s_ind--] = AT_RANDOM;
+	
 	/* Save auxiliary vector for later use. */
 	memcpy(process->saved_auxv, &p[s_ind + 1], 
 	       sizeof(process->saved_auxv));
-	p[s_ind--] = 0;     /* envp terminating NULL */
+		   
+	p[s_ind--] = 0;     /* envp terminating NULL */	
 	/* envp */
 	for (arg_ind = envc - 1; arg_ind > -1; --arg_ind) {
 		p[s_ind--] = (unsigned long)env[arg_ind];
