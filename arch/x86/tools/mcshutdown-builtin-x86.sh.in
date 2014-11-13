@@ -1,0 +1,16 @@
+#!/bin/bash
+# \file arch/x86/tools/mcshutdown-attached-mic.sh.in
+#  License details are found in the file LICENSE.
+# \brief
+#  mckernel shutdown script
+#
+# \author McKernel Development Team
+#
+
+prefix="@prefix@"
+BINDIR="@BINDIR@"
+SBINDIR="@SBINDIR@"
+KMODDIR="@KMODDIR@"
+KERNDIR="@KERNDIR@"
+
+"$SBINDIR/ihkosctl" 0 shutdown

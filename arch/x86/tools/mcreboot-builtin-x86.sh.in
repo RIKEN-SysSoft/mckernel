@@ -1,0 +1,46 @@
+#!/bin/bash -x
+
+# \file arch/x86/tools/mcreboot-builtin-x86.sh.in
+#  License details are found in the file LICENSE.
+# \brief
+#  mckernel boot script
+# \author Masamichi Takagi  <masamichi.takagi@riken.jp> \par
+#      Copyright (C) 2014  RIKEN AICS
+
+# HISTORY:
+#
+
+prefix="@prefix@"
+BINDIR="@BINDIR@"
+SBINDIR="@SBINDIR@"
+KMODDIR="@KMODDIR@"
+KERNDIR="@KERNDIR@"
+
+ps axg -opid,comm | awk '$2 == "mcexec"{print $1}' | while read i; do kill -9 $i; done
+if lsmod | grep mcctrl > /dev/null 2>&1; then
+	rmmod mcctrl || exit 1
+fi
+if lsmod | grep dcfa > /dev/null 2>&1; then
+	rmmod dcfa || exit 1
+fi
+if lsmod | grep ihk_builtin > /dev/null 2>&1; then
+	rmmod ihk_builtin || exit 1
+fi
+if lsmod | grep ihk > /dev/null 2>&1; then
+	rmmod ihk || exit 1
+fi
+insmod "$KMODDIR/ihk.ko" &&
+insmod "$KMODDIR/ihk_builtin.ko" &&
+"$SBINDIR/ihkconfig" 0 create &&
+NCORE=`dmesg | grep -E 'SHIMOS: CPU Status:'|awk '{split($0,a," "); for (i = 1; i <= length(a); i++) { if(a[i] ~ /2/) {count++}} print count;}'`
+MEM=`free -g | grep -E 'Mem:' | awk '{print int($2/4)}'`
+"$SBINDIR/ihkosctl" 0 alloc "$NCORE" "$MEM"g &&
+"$SBINDIR/ihkosctl" 0 load "$KERNDIR/mckernel.img" &&
+"$SBINDIR/ihkosctl" 0 kargs hidos osnum=0 &&
+"$SBINDIR/ihkosctl" 0 boot &&
+sleep 1 &&
+"$SBINDIR/ihkosctl" 0 kmsg &&
+insmod "$KMODDIR/mcctrl.ko" &&
+sleep 1 &&
+"$SBINDIR/ihkosctl" 0 kmsg &&
+exit 0
