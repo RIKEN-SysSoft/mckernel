@@ -16,7 +16,7 @@ SBINDIR="@SBINDIR@"
 KMODDIR="@KMODDIR@"
 KERNDIR="@KERNDIR@"
 
-ps axg -opid,comm | awk '$2 == "mcexec"{print $1}' | while read i; do kill -9 $i; done
+kill -9 `pidof mcexec`
 if lsmod | grep mcctrl > /dev/null 2>&1; then
 	rmmod mcctrl || exit 1
 fi
