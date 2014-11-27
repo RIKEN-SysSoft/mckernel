@@ -29,7 +29,8 @@
 
 #define OS_MAX_MINOR 64
 
-extern long __mcctrl_control(ihk_os_t, unsigned int, unsigned long);
+extern long __mcctrl_control(ihk_os_t, unsigned int, unsigned long,
+                             struct file *);
 extern int prepare_ikc_channels(ihk_os_t os);
 extern void destroy_ikc_channels(ihk_os_t os);
 #ifndef DO_USER_MODE
@@ -40,9 +41,9 @@ extern void procfs_exit(int);
 
 
 static long mcctrl_ioctl(ihk_os_t os, unsigned int request, void *priv,
-                         unsigned long arg)
+                         unsigned long arg, struct file *file)
 {
-	return __mcctrl_control(os, request, arg);
+	return __mcctrl_control(os, request, arg, file);
 }
 
 static struct ihk_os_user_call_handler mcctrl_uchs[] = {
@@ -55,10 +56,12 @@ static struct ihk_os_user_call_handler mcctrl_uchs[] = {
 	{ .request = MCEXEC_UP_SEND_SIGNAL, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_GET_CPU, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_STRNCPY_FROM_USER, .func = mcctrl_ioctl },
+	{ .request = MCEXEC_UP_NEW_PROCESS, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_PREPARE_DMA, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_FREE_DMA, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_OPEN_EXEC, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_CLOSE_EXEC, .func = mcctrl_ioctl },
+	{ .request = MCEXEC_UP_DEBUG_LOG, .func = mcctrl_ioctl },
 };
 
 static struct ihk_os_user_call mcctrl_uc_proto = {

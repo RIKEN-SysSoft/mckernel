@@ -780,7 +780,8 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 
 		ihk_mc_spinlock_unlock_noirq(savelock);
 		cpu_restore_interrupt(irqstate);
-		interrupt_syscall(pid, cpuid);
+		if(!tproc->nohost)
+			interrupt_syscall(pid, cpuid);
 
 		if (status != PS_RUNNING) {
 			switch(sig) {

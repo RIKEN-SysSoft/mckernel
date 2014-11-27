@@ -474,6 +474,8 @@ extern void process_procfs_request(unsigned long rarg);
 extern int memcheckall();
 extern int freecheck(int runcount);
 extern int runcount;
+extern void terminate_host(int pid);
+extern void debug_log(long);
 
 static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *ihk_os)
@@ -546,6 +548,14 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		return 0;
 	case SCD_MSG_PROCFS_REQUEST:
 		process_procfs_request(packet->arg);
+		return 0;
+	case SCD_MSG_CLEANUP_PROCESS:
+		dkprintf("SCD_MSG_CLEANUP_PROCESS pid=%d\n", packet->pid);
+		terminate_host(packet->pid);
+		return 0;
+	case SCD_MSG_DEBUG_LOG:
+		dkprintf("SCD_MSG_DEBUG_LOG code=%lx\n", packet->arg);
+		debug_log(packet->arg);
 		return 0;
 	}
 	return 0;

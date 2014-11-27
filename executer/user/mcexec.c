@@ -1530,6 +1530,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock, int mcosid)
 				case 0: {
 					int i;
 					int ret = 1;
+					struct newprocess_desc npdesc;
 
 					ischild = 1;
 					/* Reopen device fd */
@@ -1571,6 +1572,9 @@ fork_child_sync_pipe:
 fork_child_out:
 					close(sync_pipe_fd[0]);
 					close(sync_pipe_fd[1]);
+
+					npdesc.pid = getpid();
+					ioctl(fd, MCEXEC_UP_NEW_PROCESS, &npdesc);
 
 					/* TODO: does the forked thread run in a pthread context? */
 					for (i = 0; i <= ncpu; ++i) {

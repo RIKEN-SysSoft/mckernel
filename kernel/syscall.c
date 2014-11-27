@@ -546,7 +546,8 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 	/* XXX: send SIGKILL to all threads in this process */
 
 	flush_process_memory(proc);	/* temporary hack */
-	do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0);
+	if(!proc->nohost)
+		do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0);
 
 #define	IS_DETACHED_PROCESS(proc)	(1)	/* should be implemented in the future */
 
@@ -608,6 +609,44 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 	release_process(proc);
 	
 	schedule();
+}
+
+void terminate_host(int pid)
+{
+	struct cpu_local_var *v;
+	struct process *p;
+	int i;
+	unsigned long irqstate;
+	extern int num_processors;
+	int *tids;
+	int n;
+	siginfo_t info;
+
+	memset(&info, '\0', sizeof info);
+	info.si_signo = SIGKILL;
+	info.si_code = SI_KERNEL;
+
+	tids = kmalloc(sizeof(int) * num_processors, IHK_MC_AP_NOWAIT);
+	if(!tids)
+		return;
+
+	for(n = 0, i = 0; i < num_processors; i++){
+		v = get_cpu_local_var(i);
+		irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
+		list_for_each_entry(p, &(v->runq), sched_list){
+			if(p->ftn->pid == pid){
+				p->nohost = 1;
+				tids[n] = p->ftn->tid;
+				n++;
+			}
+		}
+		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+	}
+	for(i = 0; i < n; i++){
+		do_kill(pid, tids[i], SIGKILL, &info);
+	}
+
+	kfree(tids);
 }
 
 void

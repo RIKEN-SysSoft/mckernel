@@ -48,11 +48,14 @@
 
 #define SCD_MSG_SYSCALL_ONESIDE         0x4
 #define SCD_MSG_SEND_SIGNAL     	0x8
+#define SCD_MSG_CLEANUP_PROCESS         0x9
 
 #define	SCD_MSG_PROCFS_CREATE		0x10
 #define	SCD_MSG_PROCFS_DELETE		0x11
 #define	SCD_MSG_PROCFS_REQUEST		0x12
 #define	SCD_MSG_PROCFS_ANSWER		0x13
+
+#define SCD_MSG_DEBUG_LOG		0x20
 
 #define DMA_PIN_SHIFT                   21
 

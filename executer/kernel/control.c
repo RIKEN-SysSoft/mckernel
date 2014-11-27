@@ -242,18 +242,70 @@ int mcexec_transfer_image(ihk_os_t os, struct remote_transfer *__user upt)
 
 //extern unsigned long last_thread_exec;
 
+struct handlerinfo {
+	int	pid;
+};
+
+static long mcexec_debug_log(ihk_os_t os, unsigned long arg)
+{
+	struct ikc_scd_packet isp;
+	struct mcctrl_channel *c;
+
+	memset(&isp, '\0', sizeof isp);
+	isp.msg = SCD_MSG_DEBUG_LOG;
+	isp.arg = arg;
+	mcctrl_ikc_send(os, 0, &isp);
+	return 0;
+}
+
+static void release_handler(ihk_os_t os, void *param)
+{
+	struct handlerinfo *info = param;
+	struct ikc_scd_packet isp;
+	struct mcctrl_channel *c;
+
+	memset(&isp, '\0', sizeof isp);
+	isp.msg = SCD_MSG_CLEANUP_PROCESS;
+	isp.pid = info->pid;
+
+	mcctrl_ikc_send(os, 0, &isp);
+	kfree(param);
+}
+
+static long mcexec_newprocess(ihk_os_t os,
+                              struct newprocess_desc *__user udesc,
+                              struct file *file)
+{
+	struct newprocess_desc desc;
+	struct handlerinfo *info;
+
+	if (copy_from_user(&desc, udesc, sizeof(struct newprocess_desc))) {
+		return -EFAULT;
+	}
+	info = kmalloc(sizeof(struct handlerinfo), GFP_KERNEL);
+	info->pid = desc.pid;
+	ihk_os_register_release_handler(file, release_handler, info);
+	return 0;
+}
+
 static long mcexec_start_image(ihk_os_t os,
-                                 struct program_load_desc * __user udesc)
+                               struct program_load_desc * __user udesc,
+                               struct file *file)
 {
 	struct program_load_desc desc;
 	struct ikc_scd_packet isp;
 	struct mcctrl_channel *c;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct handlerinfo *info;
 
 	if (copy_from_user(&desc, udesc,
 	                   sizeof(struct program_load_desc))) {
 		return -EFAULT;
 	}
+
+	info = kmalloc(sizeof(struct handlerinfo), GFP_KERNEL);
+	info->pid = desc.pid;
+	ihk_os_register_release_handler(file, release_handler, info);
 
 	c = usrdata->channels + desc.cpu;
 
@@ -857,7 +909,8 @@ long mcexec_strncpy_from_user(ihk_os_t os, struct strncpy_from_user_desc * __use
 	return 0;
 }
 
-long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg)
+long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
+                      struct file *file)
 {
 	switch (req) {
 	case MCEXEC_UP_PREPARE_IMAGE:
@@ -867,7 +920,7 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg)
 		return mcexec_transfer_image(os, (struct remote_transfer *)arg);
 
 	case MCEXEC_UP_START_IMAGE:
-		return mcexec_start_image(os, (struct program_load_desc *)arg);
+		return mcexec_start_image(os, (struct program_load_desc *)arg, file);
 
 	case MCEXEC_UP_WAIT_SYSCALL:
 		return mcexec_wait_syscall(os, (struct syscall_wait_desc *)arg);
@@ -888,6 +941,10 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg)
 		return mcexec_strncpy_from_user(os, 
 				(struct strncpy_from_user_desc *)arg);
 
+	case MCEXEC_UP_NEW_PROCESS:
+		return mcexec_newprocess(os, (struct newprocess_desc *)arg,
+		                         file);
+
 	case MCEXEC_UP_OPEN_EXEC:
 		return mcexec_open_exec(os, (char *)arg);
 
@@ -899,6 +956,8 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg)
 
 	case MCEXEC_UP_FREE_DMA:
 		return mcexec_free_region(os, (unsigned long *)arg);
+	case MCEXEC_UP_DEBUG_LOG:
+		return mcexec_debug_log(os, arg);
 	}
 	return -EINVAL;
 }

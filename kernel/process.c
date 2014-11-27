@@ -2247,3 +2247,29 @@ process_unlock(void *savelock, unsigned long irqstate)
 {
 	ihk_mc_spinlock_unlock((ihk_spinlock_t *)savelock, irqstate);
 }
+
+void
+debug_log(unsigned long arg)
+{
+	struct cpu_local_var *v;
+	struct process *p;
+	int i;
+	extern int num_processors;
+	unsigned long irqstate;
+
+	switch(arg){
+	    case 1:
+		for(i = 0; i < num_processors; i++){
+			v = get_cpu_local_var(i);
+			irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
+			list_for_each_entry(p, &(v->runq), sched_list){
+				if(p->ftn->pid <= 0)
+					continue;
+				kprintf("cpu=%d pid=%d tid=%d status=%d\n",
+				        i, p->ftn->pid, p->ftn->tid, p->ftn->status);
+			}
+			ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+		}
+		break;
+	}
+}

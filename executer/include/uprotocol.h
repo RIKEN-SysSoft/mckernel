@@ -38,12 +38,15 @@
 #define MCEXEC_UP_SEND_SIGNAL    0x30a02906
 #define MCEXEC_UP_GET_CPU        0x30a02907
 #define MCEXEC_UP_STRNCPY_FROM_USER 0x30a02908
+#define MCEXEC_UP_NEW_PROCESS	 0x30a02909
 
 #define MCEXEC_UP_PREPARE_DMA    0x30a02910
 #define MCEXEC_UP_FREE_DMA       0x30a02911
 
 #define MCEXEC_UP_OPEN_EXEC      0x30a02912
 #define MCEXEC_UP_CLOSE_EXEC     0x30a02913
+
+#define MCEXEC_UP_DEBUG_LOG     0x40000000
 
 #define MCEXEC_UP_TRANSFER_TO_REMOTE	0
 #define MCEXEC_UP_TRANSFER_FROM_REMOTE	1
@@ -154,6 +157,10 @@ struct signal_desc {
 	int tid;
 	int sig;
 	char info[128];
+};
+
+struct newprocess_desc {
+	int pid;
 };
 
 #endif
