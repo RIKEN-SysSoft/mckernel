@@ -548,9 +548,24 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 		free(exec_path);
 	}
 
-	exec_path = strdup(filename);
-	if (!exec_path) {
-		fprintf(stderr, "WARNING: strdup(filename) failed\n");
+	if (!strncmp("/", filename, 1)) {
+		exec_path = strdup(filename);
+		
+		if (!exec_path) {
+			fprintf(stderr, "WARNING: strdup(filename) failed\n");
+			return ENOMEM;
+		}
+	}
+	else {
+		char *cwd = getcwd(NULL, 0);
+		exec_path = malloc(strlen(cwd) + strlen(filename) + 1);
+		if (!exec_path) {
+			fprintf(stderr, "Error: allocating exec_path\n");
+			return ENOMEM;
+		}
+
+		sprintf(exec_path, "%s/%s", cwd, filename);
+		free(cwd);
 	}
 	
 	desc = load_elf(fp, &interp_path);
