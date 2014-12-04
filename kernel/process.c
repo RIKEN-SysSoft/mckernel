@@ -245,14 +245,10 @@ struct process *clone_process(struct process *org, unsigned long pc,
 
 	proc->ftn->termsig = termsig;
 
-	init_fork_tree_node(proc->ftn, (clone_flags & CLONE_VM) ? NULL : org->ftn,
-			proc);
+	init_fork_tree_node(proc->ftn, org->ftn, proc);
 
-	/* clone() */
-	if (clone_flags & CLONE_VM) {
-		ihk_atomic_inc(&org->vm->refcount);
-		proc->vm = org->vm;
-
+	/* clone signal handlers */
+	if (clone_flags & CLONE_SIGHAND) {
 		proc->sigstack.ss_sp = NULL;
 		proc->sigstack.ss_flags = SS_DISABLE;
 		proc->sigstack.ss_size = 0;
@@ -266,7 +262,7 @@ struct process *clone_process(struct process *org, unsigned long pc,
 		ihk_mc_spinlock_init(&proc->sigpendinglock);
 		INIT_LIST_HEAD(&proc->sigpending);
 	}
-	/* fork() */
+	/* copy signal handlers (i.e., fork()) */
 	else {
 		dkprintf("fork(): sighandler\n");
 		proc->sighandler = kmalloc(sizeof(struct sig_handler), 
@@ -291,7 +287,15 @@ struct process *clone_process(struct process *org, unsigned long pc,
 		INIT_LIST_HEAD(&proc->sigshared->sigpending);
 		ihk_mc_spinlock_init(&proc->sigpendinglock);
 		INIT_LIST_HEAD(&proc->sigpending);
+	}
 
+	/* clone VM */
+	if (clone_flags & CLONE_VM) {
+		ihk_atomic_inc(&org->vm->refcount);
+		proc->vm = org->vm;
+	}
+	/* fork() */
+	else {
 		proc->vm = (struct process_vm *)(proc + 1);
 		
 		dkprintf("fork(): init_process_vm()\n");
@@ -309,18 +313,18 @@ struct process *clone_process(struct process *org, unsigned long pc,
 		}
 		
 		dkprintf("fork(): copy_user_ranges() OK\n");
-		
-		/* Add proc's fork_tree_node to parent's children list */
-		ihk_mc_spinlock_lock_noirq(&org->ftn->lock);
-		list_add_tail(&proc->ftn->siblings_list, &org->ftn->children);
-		ihk_mc_spinlock_unlock_noirq(&org->ftn->lock);	
-
-		/* We hold a reference to parent */
-		hold_fork_tree_node(proc->ftn->parent);
-		
-		/* Parent holds a reference to us */
-		hold_fork_tree_node(proc->ftn);
 	}
+	
+	/* Add thread/proc's fork_tree_node to parent's children list */
+	ihk_mc_spinlock_lock_noirq(&org->ftn->lock);
+	list_add_tail(&proc->ftn->siblings_list, &org->ftn->children);
+	ihk_mc_spinlock_unlock_noirq(&org->ftn->lock);	
+
+	/* We hold a reference to parent */
+	hold_fork_tree_node(proc->ftn->parent);
+
+	/* Parent holds a reference to us */
+	hold_fork_tree_node(proc->ftn);
 
 	ihk_mc_spinlock_init(&proc->spin_sleep_lock);
 	proc->spin_sleep = 0;
