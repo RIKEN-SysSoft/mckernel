@@ -2330,6 +2330,12 @@ SYSCALL_DECLARE(getrlimit)
 	case RLIMIT_NOFILE:
 		/* just forward */
 		ret = syscall_generic_forwarding(n, ctx);
+
+		/* return one less than the actual value to make sure mcexec can open 
+		 * its temporary synchronization pipe when a new process is forked */
+		if (resource == RLIMIT_NOFILE) {
+			ret -= 1;
+		}
 		break;
 
 	default:
