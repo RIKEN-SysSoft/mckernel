@@ -1348,6 +1348,11 @@ SYSCALL_DECLARE(getpid)
 	return cpu_local_var(current)->ftn->pid;
 }
 
+SYSCALL_DECLARE(getppid)
+{
+	return cpu_local_var(current)->ftn->parent->pid;
+}
+
 void
 settid(struct process *proc, int mode, int newcpuid, int oldcpuid)
 {
