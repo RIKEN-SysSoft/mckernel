@@ -412,6 +412,7 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 		case SIGFPE:
 		case SIGSEGV:
 		case SIGBUS:
+		case SIGSYS:
 		core:
 			dkprintf("do_signal,default,core,sig=%d\n", sig);
 			coredump(proc, regs);
