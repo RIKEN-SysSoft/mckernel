@@ -1619,6 +1619,12 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 
 	dkprintf("do_fork(): stack_pointr passed in: 0x%lX, stack pointer of caller: 0x%lx\n",
 			 newsp, cursp);
+	
+	if (((clone_flags & CLONE_VM) && !(clone_flags & CLONE_THREAD)) ||
+		(!(clone_flags & CLONE_VM) && (clone_flags & CLONE_THREAD))) {
+		kprintf("%s: ERROR: CLONE_VM and CLONE_THREAD should be set together\n");
+		return -EINVAL;
+	}
 
 	cpuid = obtain_clone_cpuid();
     if (cpuid == -1) {
