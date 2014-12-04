@@ -185,10 +185,14 @@ long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx,
 	long rc;
 	int islock = 0;
 	unsigned long irqstate;
+	struct process *proc = cpu_local_var(current);
 
 	dkprintf("SC(%d)[%3d] sending syscall\n",
 	        ihk_mc_get_processor_id(),
 	        req->number);
+
+	if(proc->nohost) // host is down
+		return -EPIPE;
 
 	if(req->number == __NR_exit_group ||
 	   req->number == __NR_gettid ||
