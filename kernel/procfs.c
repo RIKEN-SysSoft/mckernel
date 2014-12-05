@@ -66,6 +66,9 @@ void create_proc_procfs_files(int pid, int cpuid)
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/mem", osnum, pid);
 	create_proc_procfs_file(pid, fname, 0400, cpuid);
 
+	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/maps", osnum, pid);
+	create_proc_procfs_file(pid, fname, 0400, cpuid);
+
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task/%d/mem", osnum, pid, pid);
 	create_proc_procfs_file(pid, fname, 0400, cpuid);
 
@@ -114,6 +117,9 @@ void delete_proc_procfs_files(int pid)
 	delete_proc_procfs_file(pid, fname);
 
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/mem", osnum, pid);
+	delete_proc_procfs_file(pid, fname);
+
+	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/maps", osnum, pid);
 	delete_proc_procfs_file(pid, fname);
 
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/auxv", osnum, pid);
@@ -310,6 +316,58 @@ void process_procfs_request(unsigned long rarg)
 				break;
 			}
 		}
+		goto end;
+	}
+
+	/*
+	 * mcos%d/PID/maps
+	 */
+	if (strcmp(p, "maps") == 0) {
+		struct vm_range *range;
+		struct process_vm *vm = proc->vm;
+		int left = r->count - 1; /* extra 1 for terminating NULL */
+		int written = 0;
+		char *_buf = buf;
+
+		ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+
+		list_for_each_entry(range, &vm->vm_range_list, list) {
+			int written_now;
+
+			/* format is (from man proc):
+			 *  address           perms offset  dev   inode   pathname
+			 *  08048000-08056000 r-xp 00000000 03:0c 64593   /usr/sbin/gpm
+			 */
+			written_now = snprintf(_buf, left, 
+					"%lx-%lx %s%s%s%s %lx %lx:%lx %d %s\n",
+					range->start, range->end,
+					range->flag & VR_PROT_READ ? "r" : "-",
+					range->flag & VR_PROT_WRITE ? "w" : "-",
+					range->flag & VR_PROT_EXEC ? "x" : "-",
+					range->flag & VR_PRIVATE ? "p" : "s",
+					/* TODO: fill in file details! */
+					0UL,
+					0UL,
+					0UL,
+					0,
+					""
+					);
+			
+			left -= written_now;
+			_buf += written_now;
+			written += written_now;
+
+			if (left == 0) {
+				kprintf("%s(): WARNING: buffer too small to fill proc/maps\n", 
+						__FUNCTION__);
+				break;
+			}
+		}
+		
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		
+		ans = written + 1;
+		eof = 1;
 		goto end;
 	}
 
