@@ -275,23 +275,38 @@ void procfs_answer(unsigned int arg, int err)
 int mckernel_procfs_read(char *buffer, char **start, off_t offset,
 			 int count, int *peof, void *dat)
 {
+	char *kern_buffer;
+	int order = 0;
 	struct procfs_list_entry *e = dat;
 	volatile struct procfs_read *r;
 	struct ikc_scd_packet isp;
 	int ret, retrycount = 0;
 	unsigned long pbuf;
 
-	dprintk("mckernel_procfs_read: invoked for %s\n", e->fname); 
+	dprintk("mckernel_procfs_read: invoked for %s, count: %d\n", 
+			e->fname, count); 
+	
+	/* Starting from the middle of a proc file is not supported yet */
+	if (offset > 0) {
+		return 0;
+	}
 
 	if (count <= 0 || dat == NULL || offset < 0) {
 		return 0;
 	}
+	
+	while ((1 << order) < count) ++order;
+	order -= 12;
 
-	pbuf = virt_to_phys(buffer);
-	if (pbuf / PAGE_SIZE != (pbuf + count - 1) / PAGE_SIZE) {
-		/* Truncate the read count upto the nearest page boundary */
-		count = ((pbuf + count - 1) / PAGE_SIZE) * PAGE_SIZE - pbuf;
+	/* NOTE: we need physically contigous memory to pass through IKC */
+	kern_buffer = (char *)__get_free_pages(GFP_KERNEL, order);
+	if (!kern_buffer) {
+		printk("mckernel_procfs_read(): ERROR: allocating kernel buffer\n");
+		return -ENOMEM;
 	}
+	
+	pbuf = virt_to_phys(kern_buffer);
+
 	r = kmalloc(sizeof(struct procfs_read), GFP_KERNEL);
 	if (r == NULL) {
 		return -ENOMEM;
@@ -339,9 +354,12 @@ retry:
 		dprintk("reached end of file.\n");
 		*peof = 1;
 	}
-	*start = buffer;
+	
+	memcpy(buffer, kern_buffer, r->ret);
 	ret = r->ret;
+
 out:
+	free_pages((uintptr_t)kern_buffer, order);
 	kfree((void *)r);
 	
 	return ret;
