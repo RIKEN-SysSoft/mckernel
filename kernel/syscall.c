@@ -1350,7 +1350,9 @@ SYSCALL_DECLARE(getpid)
 
 SYSCALL_DECLARE(getppid)
 {
-	return cpu_local_var(current)->ftn->parent->pid;
+	if (cpu_local_var(current)->ftn->parent)
+		return cpu_local_var(current)->ftn->parent->pid;
+	return 1; // fake init
 }
 
 void
@@ -1489,7 +1491,8 @@ SYSCALL_DECLARE(execve)
 	
 	struct syscall_request request IHK_DMA_ALIGN;
 	struct program_load_desc *desc;
-	struct process_vm *vm = cpu_local_var(current)->vm;
+	struct process *proc = cpu_local_var(current);
+	struct process_vm *vm = proc->vm;
 	struct vm_range *range;
 
 	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
@@ -1596,6 +1599,7 @@ SYSCALL_DECLARE(execve)
 
 	/* Switch to new execution context */
 	dkprintf("execve(): switching to new process\n");
+	proc->execed = 1;
 	
 	ihk_mc_switch_context(NULL, &cpu_local_var(current)->ctx, 
 		cpu_local_var(current));
@@ -1795,6 +1799,23 @@ SYSCALL_DECLARE(setpgid)
 	int pid = ihk_mc_syscall_arg0(ctx);
 	int pgid = ihk_mc_syscall_arg1(ctx);
 	long rc;
+	struct process *proc = cpu_local_var(current);
+	ihk_spinlock_t *lock;
+	unsigned long irqstate = 0;
+	struct process *tproc;
+
+	if(proc->ftn->pid != pid){
+		tproc = findthread_and_lock(pid, pid, &lock, &irqstate);
+		if(tproc){
+			if(tproc->execed){
+				process_unlock(lock, irqstate);
+				return -EACCES;
+			}
+			process_unlock(lock, irqstate);
+		}
+		else
+			return -ESRCH;
+	}
 
 	rc = syscall_generic_forwarding(__NR_setpgid, ctx);
 	if(rc == 0){

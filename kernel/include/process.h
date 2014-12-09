@@ -328,6 +328,7 @@ struct process {
 
 	volatile int sigevent;
 	int nohost;
+	int execed;
 	sigset_t sigmask;
 	stack_t sigstack;
 	ihk_spinlock_t	sigpendinglock;
