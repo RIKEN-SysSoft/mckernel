@@ -494,6 +494,50 @@ static int __clear_pt_page(struct page_table *pt, void *virt, int largepage)
 	return 0;
 }
 
+uint64_t ihk_mc_pt_virt_to_pagemap(struct page_table *pt, unsigned long virt)
+{
+	int l4idx, l3idx, l2idx, l1idx;
+	unsigned long v = (unsigned long)virt;
+	uint64_t ret = 0;
+
+	if (!pt) {
+		pt = init_pt;
+	}
+
+	GET_VIRT_INDICES(v, l4idx, l3idx, l2idx, l1idx);
+
+	if (!(pt->entry[l4idx] & PFL4_PRESENT)) {
+		return ret;
+	}
+	pt = phys_to_virt(pt->entry[l4idx] & PAGE_MASK);
+
+	if (!(pt->entry[l3idx] & PFL3_PRESENT)) {
+		return ret;
+	}
+	pt = phys_to_virt(pt->entry[l3idx] & PAGE_MASK);
+
+	if (!(pt->entry[l2idx] & PFL2_PRESENT)) {
+		return ret;
+	}
+	if ((pt->entry[l2idx] & PFL2_SIZE)) {
+		
+		ret = PM_PFRAME(((pt->entry[l2idx] & LARGE_PAGE_MASK) + 
+					(v & (LARGE_PAGE_SIZE - 1))) >> PAGE_SHIFT);
+		ret |= PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT;
+		return ret;
+	}
+	pt = phys_to_virt(pt->entry[l2idx] & PAGE_MASK);
+
+	if (!(pt->entry[l1idx] & PFL1_PRESENT)) {
+		return ret;
+	}
+
+	ret = PM_PFRAME((pt->entry[l1idx] & PT_PHYSMASK) >> PAGE_SHIFT);
+	ret |= PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT;
+	return ret;
+}
+
+
 int ihk_mc_pt_virt_to_phys(struct page_table *pt,
                            void *virt, unsigned long *phys)
 {

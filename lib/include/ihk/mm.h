@@ -148,6 +148,7 @@ void ihk_mc_pt_destroy(struct page_table *pt);
 void ihk_mc_load_page_table(struct page_table *pt);
 int ihk_mc_pt_virt_to_phys(struct page_table *pt,
                            void *virt, unsigned long *phys);
+uint64_t ihk_mc_pt_virt_to_pagemap(struct page_table *pt, unsigned long virt);
 
 void remote_flush_tlb_cpumask(struct process_vm *vm, 
 		unsigned long addr, int cpu_id);

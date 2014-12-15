@@ -69,6 +69,9 @@ void create_proc_procfs_files(int pid, int cpuid)
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/maps", osnum, pid);
 	create_proc_procfs_file(pid, fname, 0400, cpuid);
 
+	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/pagemap", osnum, pid);
+	create_proc_procfs_file(pid, fname, 0400, cpuid);
+
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task/%d/mem", osnum, pid, pid);
 	create_proc_procfs_file(pid, fname, 0400, cpuid);
 
@@ -120,6 +123,9 @@ void delete_proc_procfs_files(int pid)
 	delete_proc_procfs_file(pid, fname);
 
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/maps", osnum, pid);
+	delete_proc_procfs_file(pid, fname);
+
+	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/pagemap", osnum, pid);
 	delete_proc_procfs_file(pid, fname);
 
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/auxv", osnum, pid);
@@ -208,6 +214,8 @@ void process_procfs_request(unsigned long rarg)
 	struct ihk_ikc_channel_desc *syscall_channel;
 	ihk_spinlock_t *savelock;
 	unsigned long irqstate;
+	unsigned long offset;
+	int count;
 
 	dprintf("process_procfs_request: invoked.\n");
 
@@ -235,6 +243,8 @@ void process_procfs_request(unsigned long rarg)
 		goto bufunavail;
 	}
 
+	count = r->count;
+	offset = r->offset;
 	dprintf("fname: %s, offset: %lx, count:%d.\n", r->fname, r->offset, r->count);
 
 	/*
@@ -328,6 +338,13 @@ void process_procfs_request(unsigned long rarg)
 		int left = r->count - 1; /* extra 1 for terminating NULL */
 		int written = 0;
 		char *_buf = buf;
+		
+		/* Starting from the middle of a proc file is not supported for maps */
+		if (offset > 0) {
+			ans = 0;
+			eof = 1;
+			goto end;
+		}
 
 		ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 
@@ -370,6 +387,51 @@ void process_procfs_request(unsigned long rarg)
 		eof = 1;
 		goto end;
 	}
+	
+	/*
+	 * mcos%d/PID/pagemap
+	 */
+	if (strcmp(p, "pagemap") == 0) {
+		struct process_vm *vm = proc->vm;
+		uint64_t *_buf = (uint64_t *)buf;
+		uint64_t start, end;
+		
+		if (offset < PAGE_SIZE) {
+			kprintf("WARNING: /proc/pagemap queried for NULL page\n");
+			ans = 0;
+			goto end;
+		}
+
+		/* Check alignment */
+		if ((offset % sizeof(uint64_t) != 0) || 
+		    (count % sizeof(uint64_t) != 0)) {
+			ans = 0;
+			eof = 1;
+			goto end;
+		}
+
+		start = (offset / sizeof(uint64_t)) << PAGE_SHIFT;
+		end = start + ((count / sizeof(uint64_t)) << PAGE_SHIFT);
+		
+		ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+
+		while (start < end) {
+			*_buf = ihk_mc_pt_virt_to_pagemap(proc->vm->page_table, start);
+			dprintf("PID: %d, /proc/pagemap: 0x%lx -> %lx\n",  proc->ftn->pid, 
+					start, *_buf);
+			start += PAGE_SIZE;
+			++_buf;
+		}
+
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		
+		dprintf("/proc/pagemap: 0x%lx - 0x%lx, count: %d\n", 
+			start, end, count);
+		
+		ans = count;
+		goto end;
+	}
+
 
 	/* 
 	 * mcos%d/PID/auxv

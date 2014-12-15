@@ -1405,7 +1405,11 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock, int mcosid)
 			__dprintf("open: %s\n", pathbuf);
 
 			fn = pathbuf;
-			if(!strncmp(fn, "/proc/", 6)){
+			if (!strncmp(fn, "/proc/self/", 11)){
+				sprintf(tmpbuf, "/proc/mcos%d/%d/%s", mcosid, getpid(), fn + 11);
+				fn = tmpbuf;
+			}
+			else if(!strncmp(fn, "/proc/", 6)){
 				sprintf(tmpbuf, "/proc/mcos%d/%s", mcosid, fn + 6);
 				fn = tmpbuf;
 			}

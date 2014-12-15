@@ -1072,7 +1072,7 @@ out:
 	}
 	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
 
-	if (!error && (flags & (MAP_POPULATE | MAP_LOCKED))) {
+	if (!error && (flags & (MAP_POPULATE) || flags & (MAP_LOCKED))) {
 		error = populate_process_memory(proc, (void *)addr, len);
 		if (error) {
 			ekprintf("sys_mmap:populate_process_memory"

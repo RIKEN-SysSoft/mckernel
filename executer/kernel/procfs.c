@@ -26,9 +26,8 @@
 #endif
 
 static DECLARE_WAIT_QUEUE_HEAD(procfsq);
-
-int mckernel_procfs_read(char *buffer, char **start, off_t offset,
-			 int count, int *peof, void *dat);
+static ssize_t mckernel_procfs_read(struct file *file, char __user *buf, 
+		size_t nbytes, loff_t *ppos);
 
 /* A private data for the procfs driver. */
 
@@ -149,6 +148,27 @@ static struct proc_dir_entry *get_procfs_entry(char *p, int osnum, int mode)
 	return ret;
 }
 
+loff_t mckernel_procfs_lseek(struct file *file, loff_t offset, int orig)
+{
+	switch (orig) {
+	case 0:
+		file->f_pos = offset;
+		break;
+	case 1:
+		file->f_pos += offset;
+		break;
+	default:
+		return -EINVAL;
+	}
+	return file->f_pos;
+}
+
+static const struct file_operations mckernel_procfs_file_operations = {
+	.llseek		= mckernel_procfs_lseek,
+	.read		= mckernel_procfs_read,
+	.write		= NULL,
+};
+
 /**
  * \brief Create a procfs entry.
  *
@@ -194,7 +214,7 @@ void procfs_create(void *__os, int ref, int osnum, int pid, unsigned long arg)
 	e->cpu = ref;
 	e->pid = pid;
 
-	entry->read_proc = mckernel_procfs_read;
+	entry->proc_fops = &mckernel_procfs_file_operations;
 quit:
 	f->status = 1; /* Now the peer can free the data. */
 	ihk_device_unmap_virtual(dev, f, sizeof(struct procfs_file));
@@ -271,32 +291,36 @@ void procfs_answer(unsigned int arg, int err)
  * This function conforms to the 2) way of fs/proc/generic.c
  * from linux-2.6.39.4.
  */
-
-int mckernel_procfs_read(char *buffer, char **start, off_t offset,
-			 int count, int *peof, void *dat)
+static ssize_t
+mckernel_procfs_read(struct file *file, char __user *buf, size_t nbytes,
+	       loff_t *ppos)
 {
+	struct inode * inode = file->f_path.dentry->d_inode;
 	char *kern_buffer;
 	int order = 0;
-	struct procfs_list_entry *e = dat;
 	volatile struct procfs_read *r;
 	struct ikc_scd_packet isp;
 	int ret, retrycount = 0;
 	unsigned long pbuf;
+	unsigned long count = nbytes;
+	struct proc_dir_entry *dp = PDE(inode);
+	struct procfs_list_entry *e = dp->data;
+	loff_t offset = *ppos;
 
-	dprintk("mckernel_procfs_read: invoked for %s, count: %d\n", 
-			e->fname, count); 
+	dprintk("mckernel_procfs_read: invoked for %s, offset: %lu, count: %d\n", 
+			e->fname, offset, count); 
 	
-	/* Starting from the middle of a proc file is not supported yet */
-	if (offset > 0) {
-		return 0;
-	}
-
-	if (count <= 0 || dat == NULL || offset < 0) {
+	if (count <= 0 || offset < 0) {
 		return 0;
 	}
 	
 	while ((1 << order) < count) ++order;
-	order -= 12;
+	if (order > 12) {
+		order -= 12;
+	}
+	else {
+		order = 1;
+	}
 
 	/* NOTE: we need physically contigous memory to pass through IKC */
 	kern_buffer = (char *)__get_free_pages(GFP_KERNEL, order);
@@ -324,18 +348,23 @@ retry:
 	isp.msg = SCD_MSG_PROCFS_REQUEST;
 	isp.ref = e->cpu;
 	isp.arg = virt_to_phys(r);
+	
 	ret = mcctrl_ikc_send(e->os, e->cpu, &isp);
+	
 	if (ret < 0) {
 		goto out; /* error */
 	}
+	
 	/* Wait for a reply. */
 	ret = -EIO; /* default exit code */
 	dprintk("now wait for a relpy\n");
+	
 	/* Wait for the status field of the procfs_read structure set ready. */
 	if (wait_event_interruptible_timeout(procfsq, r->status != 0, HZ) == 0) {
 		kprintf("ERROR: mckernel_procfs_read: timeout (1 sec).\n");
 		goto out;
 	}
+	
 	/* Wake up and check the result. */
 	dprintk("mckernel_procfs_read: woke up. ret: %d, eof: %d\n", r->ret, r->eof);
 	if ((r->ret == 0) && (r->eof != 1)) {
@@ -350,12 +379,14 @@ retry:
 		dprintk("retry\n");
 		goto retry;
 	}
-	if (r->eof == 1) {
-		dprintk("reached end of file.\n");
-		*peof = 1;
-	}
 	
-	memcpy(buffer, kern_buffer, r->ret);
+	if (copy_to_user(buf, kern_buffer, r->ret)) {
+		kprintf("ERROR: mckernel_procfs_read: copy_to_user failed.\n");
+		ret = -EFAULT;
+		goto out;
+	}
+
+	*ppos += r->ret;
 	ret = r->ret;
 
 out:
