@@ -1666,7 +1666,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		/* In a single threaded process TID equals to PID */
 		settid(new, 0, cpuid, -1);
 
-		dkprintf("fork(): new pid: %d\n", new->pid);
+		dkprintf("fork(): new pid: %d\n", new->ftn->pid);
 		/* clear user space PTEs and set new rpgtable so that consequent 
 		 * page faults will look up the right mappings */
 		request1.number = __NR_munmap;

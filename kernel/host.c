@@ -379,7 +379,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 		goto err;
 	}
 
-	dkprintf("new process : %p [%d] / table : %p\n", proc, proc->pid,
+	dkprintf("new process : %p [%d] / table : %p\n", proc, proc->ftn->pid,
 	        proc->vm->page_table);
 
 	ihk_mc_free(pn);

@@ -167,7 +167,7 @@ void wake_timers_loop(void)
 				list_del(&timer->list);
 
 				dkprintf("timers timeout occurred, waking up pid: %d\n", 
-						timer->proc->pid);
+						timer->proc->ftn->pid);
 
 				waitq_wakeup(&timer->processes);
 			}
