@@ -194,6 +194,7 @@ long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx,
 	if(proc->nohost) // host is down
 		return -EPIPE;
 
+	irqstate = 0;	/* for avoidance of warning */
 	if(req->number == __NR_exit_group ||
 	   req->number == __NR_gettid ||
 	   req->number == __NR_kill){ // interrupt syscall
