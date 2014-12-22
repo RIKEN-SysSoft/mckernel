@@ -2172,6 +2172,7 @@ SYSCALL_DECLARE(madvise)
 	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
 	/* check contiguous map */
 	first = NULL;
+	range = NULL;	/* for avoidance of warning */
 	for (addr = start; addr < end; addr = range->end) {
 		if (first == NULL) {
 			range = lookup_process_memory_range(proc->vm, start, start+PAGE_SIZE);
