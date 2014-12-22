@@ -261,7 +261,6 @@ static void release_handler(ihk_os_t os, void *param)
 {
 	struct handlerinfo *info = param;
 	struct ikc_scd_packet isp;
-	struct mcctrl_channel *c;
 
 	memset(&isp, '\0', sizeof isp);
 	isp.msg = SCD_MSG_CLEANUP_PROCESS;
