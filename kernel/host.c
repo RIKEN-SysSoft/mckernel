@@ -28,6 +28,7 @@
 #include <process.h>
 #include <page.h>
 #include <mman.h>
+#include <init.h>
 
 //#define DEBUG_PRINT_HOST
 
