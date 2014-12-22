@@ -2041,7 +2041,7 @@ redo:
 	if (switch_ctx) {
 		dkprintf("[%d] schedule: %d => %d \n",
 		        ihk_mc_get_processor_id(),
-		        prev ? prev->tid : 0, next ? next->tid : 0);
+		        prev ? prev->ftn->tid : 0, next ? next->ftn->tid : 0);
 
 		ihk_mc_load_page_table(next->vm->page_table);
 		
@@ -2187,7 +2187,7 @@ void __runq_add_proc(struct process *proc, int cpu_id)
 	get_cpu_local_var(cpu_id)->status = CPU_STATUS_RUNNING;
 
 	dkprintf("runq_add_proc(): tid %d added to CPU[%d]'s runq\n", 
-             proc->tid, cpu_id);
+             proc->ftn->tid, cpu_id);
 }
 
 void runq_add_proc(struct process *proc, int cpu_id)
