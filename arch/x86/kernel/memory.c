@@ -367,6 +367,7 @@ static int __set_pt_page(struct page_table *pt, void *virt, unsigned long phys,
 	unsigned long init_pt_lock_flags;
 	int ret = -ENOMEM;
 
+	init_pt_lock_flags = 0;	/* for avoidance of warning */
 	if (in_kernel) {
 		init_pt_lock_flags = ihk_mc_spinlock_lock(&init_pt_lock);
 	}
