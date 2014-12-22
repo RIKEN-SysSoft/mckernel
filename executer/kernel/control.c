@@ -249,7 +249,6 @@ struct handlerinfo {
 static long mcexec_debug_log(ihk_os_t os, unsigned long arg)
 {
 	struct ikc_scd_packet isp;
-	struct mcctrl_channel *c;
 
 	memset(&isp, '\0', sizeof isp);
 	isp.msg = SCD_MSG_DEBUG_LOG;
