@@ -33,7 +33,7 @@
 #include <string.h>
 #include <syscall.h>
 
-#define	dkprintf(...)
+#define	dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
 #define	ekprintf(...)	kprintf(__VA_ARGS__)
 
 struct devobj {

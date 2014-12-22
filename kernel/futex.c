@@ -76,7 +76,7 @@
 #ifdef DEBUG_PRINT_FUTEX
 #define dkprintf kprintf
 #else
-#define dkprintf(...)
+#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
 #endif
 
 int futex_cmpxchg_enabled;

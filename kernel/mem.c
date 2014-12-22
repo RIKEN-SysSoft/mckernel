@@ -44,7 +44,7 @@
 #define	dkprintf(...)	kprintf(__VA_ARGS__)
 #define	ekprintf(...)	kprintf(__VA_ARGS__)
 #else
-#define dkprintf(...)
+#define dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
 #define	ekprintf(...)	kprintf(__VA_ARGS__)
 #endif
 

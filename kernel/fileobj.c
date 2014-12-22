@@ -26,7 +26,7 @@
 #include <string.h>
 #include <syscall.h>
 
-#define	dkprintf(...)
+#define	dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
 #define	ekprintf(...)	kprintf(__VA_ARGS__)
 
 static ihk_spinlock_t fileobj_list_lock = SPIN_LOCK_UNLOCKED;

@@ -34,7 +34,7 @@
 #ifdef DEBUG_PRINT_HOST
 #define dkprintf kprintf
 #else
-#define dkprintf(...)
+#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
 #endif
 
 void check_mapping_for_proc(struct process *proc, unsigned long addr)
