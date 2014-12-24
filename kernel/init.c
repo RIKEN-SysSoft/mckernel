@@ -118,6 +118,27 @@ char *find_command_line(char *name)
 	return strstr(cmdline, name);
 }
 
+static void parse_kargs(void)
+{
+	kprintf("KCommand Line: %s\n", ihk_mc_get_kernel_args());
+
+	if (1) {
+		char *key = "osnum=";
+		char *p;
+
+		p = find_command_line(key);
+		if (p != NULL) {
+			p += strlen(key);
+			osnum = 0;
+			while (('0' <= *p) && (*p <= '9')) {
+				osnum *= 10;
+				osnum += *p++ - '0';
+			}
+			kprintf("osnum: %d\n", osnum);
+		}
+	}
+}
+
 void pc_init(void)
 {
 	int i;
@@ -133,15 +154,6 @@ void pc_init(void)
                       APT_TYPE_LLC_MISS, // not updated for KNC
 	                  APT_TYPE_STALL, APT_TYPE_CYCLE }, // not updated for KNC
 	};
-
-	p = find_command_line("osnum=");
-	if (p != NULL) {
-		while (('0' <= *p) && (*p <= '9')) {
-			osnum *= 10;
-			osnum += *p++ - '0';
-		}
-	}
-	dkprintf("osnum: %d\n", osnum);
 
 
 	if (!(p = find_command_line("perfctr"))) {
@@ -189,10 +201,6 @@ static void pc_test(void)
 
 static void rest_init(void)
 {
-	char *cmdline;
-	cmdline = ihk_mc_get_kernel_args();
-	kprintf("KCommand Line: %s\n", cmdline);
-
 	handler_init();
 
 #ifdef USE_DMA
@@ -244,6 +252,8 @@ int main(void)
 	kmsg_init();
 
 	kputs("MCK started.\n");
+
+	parse_kargs();
 
 	arch_init();
 
