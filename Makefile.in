@@ -42,6 +42,8 @@ install::
 		mkdir -p -m 755 $(MANDIR)/man1; \
 		install -m 644 arch/x86/tools/mcreboot.1 $(MANDIR)/man1/mcreboot.1; \
 		;; \
+	    smp-x86) \
+		;; \
 	    *) \
 		echo "unknown target $(TARGET)" >&2 \
 		exit 1 \
