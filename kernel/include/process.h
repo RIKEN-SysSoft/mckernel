@@ -243,6 +243,7 @@ struct sig_pending {
 	struct list_head list;
 	sigset_t sigmask;
 	siginfo_t info;
+	int ptracecont;
 };
 
 struct sig_shared {

@@ -95,7 +95,7 @@ static char *syscall_name[] MCKERNEL_UNUSED = {
 
 void check_signal(unsigned long rc, void *regs);
 void do_signal(long rc, void *regs, struct process *proc, struct sig_pending *pending);
-extern unsigned long do_kill(int pid, int tid, int sig, struct siginfo *info);
+extern unsigned long do_kill(int pid, int tid, int sig, struct siginfo *info, int ptracecont);
 int copy_from_user(struct process *, void *, const void *, size_t);
 int copy_to_user(struct process *, void *, const void *, size_t);
 void do_setpgid(int, int);
@@ -596,7 +596,7 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 			info._sifields._sigchld.si_status = ((rc & 0x00ff) << 8) | (sig & 0xff);
 			dkprintf("terminate,kill %d,target pid=%d\n",
 					ftn->termsig, parent_owner_pid);
-			error = do_kill(ftn->parent->pid, -1, SIGCHLD, &info);
+			error = do_kill(ftn->parent->pid, -1, SIGCHLD, &info, 0);
 /*
 			sigchld_parent(ftn->parent->owner, 0);
 */
@@ -648,7 +648,7 @@ void terminate_host(int pid)
 		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 	}
 	for(i = 0; i < n; i++){
-		do_kill(pid, tids[i], SIGKILL, &info);
+		do_kill(pid, tids[i], SIGKILL, &info, 0);
 	}
 
 	kfree(tids);
@@ -1453,7 +1453,7 @@ static int ptrace_report_exec(struct process *proc)
 			info.si_code = CLD_TRAPPED;
 			info._sifields._sigchld.si_pid = proc->ftn->pid;
 			info._sifields._sigchld.si_status = proc->ftn->exit_status;
-			rc = do_kill(proc->ftn->parent->pid, -1, SIGCHLD, &info);
+			rc = do_kill(proc->ftn->parent->pid, -1, SIGCHLD, &info, 0);
 			if(rc < 0) {
 				dkprintf("ptrace_report_exec,do_kill failed\n");
 			}
@@ -1781,7 +1781,7 @@ SYSCALL_DECLARE(kill)
 	info._sifields._kill.si_pid = proc->ftn->pid;
 
 	dkprintf("sys_kill,enter,pid=%d,sig=%d\n", pid, sig);
-	error = do_kill(pid, -1, sig, &info);
+	error = do_kill(pid, -1, sig, &info, 0);
 	dkprintf("sys_kill,returning,pid=%d,sig=%d,error=%d\n", pid, sig, error);
 	return error;
 }
@@ -1805,7 +1805,7 @@ SYSCALL_DECLARE(tgkill)
 	if(tgid <= 0 && tgid != -1)
 		return -EINVAL;
 
-	return do_kill(tgid, tid, sig, &info);
+	return do_kill(tgid, tid, sig, &info, 0);
 }
 
 SYSCALL_DECLARE(setpgid)
@@ -1998,7 +1998,7 @@ SYSCALL_DECLARE(rt_sigqueueinfo)
 	if(copy_from_user(proc, &info, winfo, sizeof info))
 		return -EFAULT;
 
-	return do_kill(pid, -1, sig, &info);
+	return do_kill(pid, -1, sig, &info, 0);
 }
 
 static int
@@ -2408,7 +2408,7 @@ static int ptrace_wakeup_sig(int pid, long request, long data) {
 	case PTRACE_KILL:
 		memset(&info, '\0', sizeof info);
 		info.si_signo = SIGKILL;
-		error = do_kill(pid, -1, SIGKILL, &info);
+		error = do_kill(pid, -1, SIGKILL, &info, 0);
 		if (error < 0) {
 			goto out;
 		}
@@ -2424,7 +2424,7 @@ static int ptrace_wakeup_sig(int pid, long request, long data) {
 			info.si_signo = data;
 			info.si_code = SI_USER;
 			info._sifields._kill.si_pid = proc->ftn->pid;
-			error = do_kill(pid, -1, data, &info);
+			error = do_kill(pid, -1, data, &info, 1);
 			if (error < 0) {
 				goto out;
 			}

@@ -468,7 +468,7 @@ static void syscall_channel_send(struct ihk_ikc_channel_desc *c,
 	ihk_ikc_send(c, packet, 0);
 }
 
-extern unsigned long do_kill(int, int, int, struct siginfo *);
+extern unsigned long do_kill(int, int, int, struct siginfo *, int ptracecont);
 extern void settid(struct process *proc, int mode, int newcpuid, int oldcpuid);
 
 extern void process_procfs_request(unsigned long rarg);
@@ -544,7 +544,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		pckt.arg = packet->arg;
 		syscall_channel_send(c, &pckt);
 
-		rc = do_kill(info.pid, info.tid, info.sig, &info.info);
+		rc = do_kill(info.pid, info.tid, info.sig, &info.info, 0);
 		kprintf("SCD_MSG_SEND_SIGNAL: do_kill(pid=%d, tid=%d, sig=%d)=%d\n", info.pid, info.tid, info.sig, rc);
 		return 0;
 	case SCD_MSG_PROCFS_REQUEST:

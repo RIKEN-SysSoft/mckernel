@@ -158,7 +158,7 @@ SYSCALL_DECLARE(rt_sigreturn)
 }
 
 extern struct cpu_local_var *clv;
-extern unsigned long do_kill(int pid, int tid, int sig, struct siginfo *info);
+extern unsigned long do_kill(int pid, int tid, int sig, struct siginfo *info, int ptracecont);
 extern void interrupt_syscall(int all, int pid);
 extern int num_processors;
 
@@ -277,6 +277,46 @@ peekuser(struct process *proc, void *regs0)
 
 extern void coredump(struct process *proc, void *regs);
 
+static void ptrace_report_signal(struct process *proc, struct x86_regs *regs, int sig)
+{
+	long rc;
+
+	dkprintf("ptrace_report_signal,pid=%d\n", proc->ftn->pid);
+
+	peekuser(proc, regs);
+	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);	
+	proc->ftn->exit_status = sig;
+	/* Transition process state */
+	proc->ftn->status = PS_TRACED;
+	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
+	if (proc->ftn->parent) {
+		/* kill SIGCHLD */
+		ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
+		if (proc->ftn->parent->owner) {
+			struct siginfo info;
+
+			memset(&info, '\0', sizeof info);
+			info.si_signo = SIGCHLD;
+			info.si_code = CLD_TRAPPED;
+			info._sifields._sigchld.si_pid = proc->ftn->pid;
+			info._sifields._sigchld.si_status = proc->ftn->exit_status;
+			rc = do_kill(proc->ftn->parent->pid, -1, SIGCHLD, &info, 0);
+			if (rc < 0) {
+				kprintf("ptrace_report_signal,do_kill failed\n");
+			}
+		}
+		ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);	
+
+		/* Wake parent (if sleeping in wait4()) */
+		waitq_wakeup(&proc->ftn->parent->waitpid_q);
+	}
+
+	dkprintf("ptrace_report_signal,sleeping\n");
+	/* Sleep */
+	schedule();
+	dkprintf("ptrace_report_signal,wake up\n");
+}
+
 void
 do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pending *pending)
 {
@@ -286,9 +326,19 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 	__sigset_t w;
 	int	irqstate;
 	struct fork_tree_node *ftn = proc->ftn;
+	int	orgsig;
+	int	ptraceflag = 0;
 
 	for(w = pending->sigmask.__val[0], sig = 0; w; sig++, w >>= 1);
 	dkprintf("do_signal,pid=%d,sig=%d\n", proc->ftn->pid, sig);
+	orgsig = sig;
+
+	if((ftn->ptrace & PT_TRACED) &&
+	   pending->ptracecont == 0 &&
+	   sig != SIGKILL) {
+		ptraceflag = 1;
+		sig = SIGSTOP;
+	}
 
 	if(regs == NULL){ /* call from syscall */
 		asm("movq %%gs:132, %0" : "=r" (regs));
@@ -361,26 +411,31 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 		case SIGTSTP:
 		case SIGTTIN:
 		case SIGTTOU:
-			dkprintf("do_signal,SIGSTOP,changing state\n");
+			if(ptraceflag){
+				ptrace_report_signal(proc, regs, orgsig);
+			}
+			else{
+				dkprintf("do_signal,SIGSTOP,changing state\n");
 
-			/* Update process state in fork tree */
-			ihk_mc_spinlock_lock_noirq(&ftn->lock);	
-			ftn->group_exit_status = SIGSTOP;
+				/* Update process state in fork tree */
+				ihk_mc_spinlock_lock_noirq(&ftn->lock);	
+				ftn->group_exit_status = SIGSTOP;
 
-			/* Reap and set new signal_flags */
-			ftn->signal_flags = SIGNAL_STOP_STOPPED;
+				/* Reap and set new signal_flags */
+				ftn->signal_flags = SIGNAL_STOP_STOPPED;
 
-			ftn->status = PS_STOPPED;
-			ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
+				ftn->status = PS_STOPPED;
+				ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
 
-			/* Wake up the parent who tried wait4 and sleeping */
-			waitq_wakeup(&proc->ftn->parent->waitpid_q);
+				/* Wake up the parent who tried wait4 and sleeping */
+				waitq_wakeup(&proc->ftn->parent->waitpid_q);
 
-			dkprintf("do_signal,SIGSTOP,sleeping\n");
-			/* Sleep */
-			proc->ftn->status = PS_STOPPED;
-			schedule();
-			dkprintf("SIGSTOP(): woken up\n");
+				dkprintf("do_signal,SIGSTOP,sleeping\n");
+				/* Sleep */
+				proc->ftn->status = PS_STOPPED;
+				schedule();
+				dkprintf("SIGSTOP(): woken up\n");
+			}
 			break;
 		case SIGTRAP:
 			dkprintf("do_signal,SIGTRAP\n");
@@ -419,69 +474,15 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 			coredumped = 0x80;
 			terminate(0, sig | coredumped, (ihk_mc_user_context_t *)regs->rsp);
 			break;
-		case SIGHUP:
-		case SIGINT:
-		case SIGKILL:
-		case SIGPIPE:
-		case SIGALRM:
-		case SIGTERM:
-		case SIGUSR1:
-		case SIGUSR2:
+		case SIGCHLD:
+		case SIGURG:
+			break;
+		default:
 			dkprintf("do_signal,default,terminate,sig=%d\n", sig);
 			terminate(0, sig, (ihk_mc_user_context_t *)regs->rsp);
 			break;
-		case SIGCHLD:
-		case SIGURG:
-		default:
-			break;
 		}
 	}
-}
-
-static int ptrace_report_signal(struct process *proc, struct x86_regs *regs, struct sig_pending *pending)
-{
-	int sig;
-	__sigset_t w;
-	long rc;
-
-	dkprintf("ptrace_report_signal,pid=%d\n", proc->ftn->pid);
-
-	/* Save reason why stopped and process state for wait to reap */
-	for (w = pending->sigmask.__val[0], sig = 0; w; sig++, w >>= 1);
-	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);	
-	proc->ftn->exit_status = sig;
-	/* Transition process state */
-	proc->ftn->status = PS_TRACED;
-	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
-	if (proc->ftn->parent) {
-		/* kill SIGCHLD */
-		ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
-		if (proc->ftn->parent->owner) {
-			struct siginfo info;
-
-			memset(&info, '\0', sizeof info);
-			info.si_signo = SIGCHLD;
-			info.si_code = CLD_TRAPPED;
-			info._sifields._sigchld.si_pid = proc->ftn->pid;
-			info._sifields._sigchld.si_status = proc->ftn->exit_status;
-			rc = do_kill(proc->ftn->parent->pid, -1, SIGCHLD, &info);
-			if (rc < 0) {
-				kprintf("ptrace_report_signal,do_kill failed\n");
-			}
-		}
-		ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);	
-
-		/* Wake parent (if sleeping in wait4()) */
-		waitq_wakeup(&proc->ftn->parent->waitpid_q);
-	}
-
-	peekuser(proc, regs);
-	dkprintf("ptrace_report_signal,sleeping\n");
-	/* Sleep */
-	schedule();
-	dkprintf("ptrace_report_signal,wake up\n");
-
-	return sig;
 }
 
 void
@@ -493,9 +494,8 @@ check_signal(unsigned long rc, void *regs0)
 	struct sig_pending *next;
 	struct list_head *head;
 	ihk_spinlock_t *lock;
-	__sigset_t w, sig_bv;
 	int	irqstate;
-	int sig;
+	__sigset_t w;
 
 	if(clv == NULL)
 		return;
@@ -542,18 +542,12 @@ check_signal(unsigned long rc, void *regs0)
 			return;
 		}
 
-		for(sig_bv = pending->sigmask.__val[0], sig = 0; sig_bv; sig++, sig_bv >>= 1);
-		if((proc->ftn->ptrace & PT_TRACED) && sig != SIGKILL) {
-			sig = ptrace_report_signal(proc, regs, pending);
-			/* TODO: Tracing process could overwrite signal, so handle the case here. */
-		}
-
 		do_signal(rc, regs, proc, pending);
 	}
 }
 
 unsigned long
-do_kill(int pid, int tid, int sig, siginfo_t *info)
+do_kill(int pid, int tid, int sig, siginfo_t *info, int ptracecont)
 {
 	dkprintf("do_kill,pid=%d,tid=%d,sig=%d\n", pid, tid, sig);
 	struct cpu_local_var *v;
@@ -614,9 +608,9 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 			ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 		}
 		for(i = 0; i < n; i++)
-			rc = do_kill(pids[i], -1, sig, info);
+			rc = do_kill(pids[i], -1, sig, info, ptracecont);
 		if(sendme)
-			rc = do_kill(proc->ftn->pid, -1, sig, info);
+			rc = do_kill(proc->ftn->pid, -1, sig, info, ptracecont);
 
 		kfree(pids);
 		return rc;
@@ -733,11 +727,13 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 	k = tproc->sighandler->action + sig - 1;
 	if(k->sa.sa_handler != (void *)1 &&
 	   (k->sa.sa_handler != NULL ||
+	    (tproc->ftn->ptrace & PT_TRACED) ||
 	    (sig != SIGCHLD && sig != SIGURG))){
 		struct sig_pending *pending = NULL;
 		if (sig < 33) { // SIGRTMIN - SIGRTMAX
 			list_for_each_entry(pending, head, list){
-				if(pending->sigmask.__val[0] == mask)
+				if(pending->sigmask.__val[0] == mask &&
+				   pending->ptracecont == ptracecont)
 					break;
 			}
 			if(&pending->list == head)
@@ -752,6 +748,7 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 			else{
 				pending->sigmask.__val[0] = mask;
 				memcpy(&pending->info, info, sizeof(siginfo_t));
+				pending->ptracecont = ptracecont;
 				if(sig == SIGKILL || sig == SIGSTOP)
 					list_add(&pending->list, head);
 				else
@@ -785,15 +782,13 @@ do_kill(int pid, int tid, int sig, siginfo_t *info)
 			interrupt_syscall(pid, cpuid);
 
 		if (status != PS_RUNNING) {
-			switch(sig) {
-			case SIGKILL:
+			if(sig == SIGKILL){
 				/* Wake up the target only when stopped by ptrace-reporting */
 				sched_wakeup_process(tproc, PS_TRACED | PS_STOPPED);
-				break;
-			case SIGCONT:
+			}
+			else if(sig == SIGCONT || ptracecont){
 				/* Wake up the target only when stopped by SIGSTOP */
 				sched_wakeup_process(tproc, PS_STOPPED);
-				break;
 			}
 		}
 	}
@@ -819,5 +814,5 @@ set_signal(int sig, void *regs0, siginfo_t *info)
 		terminate(0, sig | 0x80, (ihk_mc_user_context_t *)regs->rsp);
 	}
 	else
-		do_kill(proc->ftn->pid, proc->ftn->tid, sig, info);
+		do_kill(proc->ftn->pid, proc->ftn->tid, sig, info, 0);
 }
