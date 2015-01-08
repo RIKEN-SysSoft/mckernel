@@ -380,13 +380,15 @@ retry:
 		goto retry;
 	}
 	
-	if (copy_to_user(buf, kern_buffer, r->ret)) {
-		kprintf("ERROR: mckernel_procfs_read: copy_to_user failed.\n");
-		ret = -EFAULT;
-		goto out;
-	}
+	if (r->ret > 0) {
+		if (copy_to_user(buf, kern_buffer, r->ret)) {
+			kprintf("ERROR: mckernel_procfs_read: copy_to_user failed.\n");
+			ret = -EFAULT;
+			goto out;
+		}
 
-	*ppos += r->ret;
+		*ppos += r->ret;
+	}
 	ret = r->ret;
 
 out:
