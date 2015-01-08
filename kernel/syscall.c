@@ -1351,9 +1351,19 @@ SYSCALL_DECLARE(getpid)
 
 SYSCALL_DECLARE(getppid)
 {
-	if (cpu_local_var(current)->ftn->parent)
-		return cpu_local_var(current)->ftn->parent->pid;
-	return 1; // fake init
+	struct process *proc = cpu_local_var(current);
+	int pid = 1; // fake init
+
+	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
+	if (proc->ftn->ptrace & PT_TRACED) {
+		if (proc->ftn->ppid_parent)
+			pid = proc->ftn->ppid_parent->pid;
+	} else {
+		if (proc->ftn->parent)
+			pid = proc->ftn->parent->pid;
+	}
+	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
+	return pid;
 }
 
 void
@@ -2542,6 +2552,88 @@ out:
 	return ret;
 }
 
+static int ptrace_detach(int pid, int data)
+{
+	int error;
+	struct process *proc;
+	struct fork_tree_node *child, *next;
+	ihk_spinlock_t *savelock;
+	unsigned long irqstate;
+	struct siginfo info;
+
+	proc = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	if (!proc) {
+		error = -ESRCH;
+		goto out;
+	}
+	ihk_mc_spinlock_unlock(savelock, irqstate);
+
+	if (!(proc->ftn->ptrace & PT_TRACED) || proc->ftn->parent == NULL) {
+		error = -ESRCH;
+		goto out;
+	}
+
+	if (data > 64 || data < 0) {
+		error = -EIO;
+		goto out;
+	}
+
+	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
+	ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
+
+	list_for_each_entry_safe(child, next, &proc->ftn->parent->ptrace_children, ptrace_siblings_list) {
+		if (child == proc->ftn) {
+			list_del(&child->ptrace_siblings_list);
+			goto found;
+		}
+	}
+	kprintf("ptrace_detach,not found\n");
+	error = -EPERM;
+	goto out_notfound;
+found:
+	ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
+
+	proc->ftn->ptrace = 0;
+	proc->ftn->parent = proc->ftn->ppid_parent;
+	proc->ftn->ppid_parent = NULL;
+
+	if (proc->ftn->parent) {
+		ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
+		list_add_tail(&proc->ftn->siblings_list, &proc->ftn->parent->children);
+		ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
+	}
+
+	proc->uctx->rflags &= ~RFLAGS_TF; /* SingleStep clear */
+	/* TODO: other flags may clear */
+
+	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
+
+	if (data != 0) {
+		struct process *cur;
+
+		cur = cpu_local_var(current);
+		memset(&info, '\0', sizeof info);
+		info.si_signo = data;
+		info.si_code = SI_USER;
+		info._sifields._kill.si_pid = cur->ftn->pid;
+		error = do_kill(pid, -1, data, &info, 1);
+		if (error < 0) {
+			goto out;
+		}
+	}
+
+	error = sched_wakeup_process(proc, PS_TRACED | PS_STOPPED);
+	if (error < 0) {
+		goto out;
+	}
+out:
+	return error;
+out_notfound:
+	ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
+	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
+	goto out;
+}
+
 SYSCALL_DECLARE(ptrace)
 {
 	const long request = (long)ihk_mc_syscall_arg0(ctx);
@@ -2607,7 +2699,8 @@ SYSCALL_DECLARE(ptrace)
 		dkprintf("ptrace: unimplemented ptrace(PTRACE_ATTACH) called.\n");
 		break;
 	case PTRACE_DETACH:
-		dkprintf("ptrace: unimplemented ptrace(PTRACE_DETACH) called.\n");
+		dkprintf("ptrace: PTRACE_DETACH: data=%d\n", data);
+		error = ptrace_detach(pid, data);
 		break;
 	case PTRACE_GETFPXREGS:
 		dkprintf("ptrace: unimplemented ptrace(PTRACE_GETFPXREGS) called.\n");

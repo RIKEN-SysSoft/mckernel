@@ -16,6 +16,7 @@
 
 #include <types.h>
 
+#define RFLAGS_TF      (1 << 8)
 #define RFLAGS_IF      (1 << 9)
 
 #define MSR_EFER       0xc0000080
