@@ -152,6 +152,42 @@ static void delete_proc_procfs_file(int pid, char *fname)
 }
 
 /**
+ * \brief create a procfs file for this operating system
+ * \param fname relative path name from "host:/proc".
+ * \param mode permissions of the file to be created
+ *
+ * Though operate_proc_procfs_file() is intended to create a process
+ * specific file, it is reused to create a OS specific file by
+ * specifying -1 as the pid parameter.
+ */
+static void create_os_procfs_file(char *fname, int mode)
+{
+	const pid_t pid = -1;
+	const int msg = SCD_MSG_PROCFS_CREATE;
+	const int cpuid = ihk_mc_get_processor_id();	/* i.e. BSP */
+
+	operate_proc_procfs_file(pid, fname, msg, mode, cpuid);
+	return;
+}
+
+/**
+ * \brief create all procfs files for this operating system
+ */
+void create_os_procfs_files(void)
+{
+	char *fname = NULL;
+	size_t n;
+
+	fname = kmalloc(PROCFS_NAME_MAX, IHK_MC_AP_CRITICAL);
+
+	n = snprintf(fname, PROCFS_NAME_MAX, "mcos%d/stat", osnum);
+	if (n >= PROCFS_NAME_MAX) panic("/proc/stat");
+	create_os_procfs_file(fname, 0444);
+
+	return;
+}
+
+/**
  * \brief Create/delete a procfs file for process.
  *
  * \param pid pid of the process
@@ -297,7 +333,36 @@ void process_procfs_request(unsigned long rarg)
 			}
 			goto end;
 		}
-	} else {
+	}
+	else if (!strcmp(p, "stat")) {	/* "/proc/stat" */
+		extern int num_processors;	/* kernel/ap.c */
+		char *p;
+		size_t remain;
+		int cpu;
+
+		if (offset > 0) {
+			ans = 0;
+			eof = 1;
+			goto end;
+		}
+		p = buf;
+		remain = count;
+		for (cpu = 0; cpu < num_processors; ++cpu) {
+			size_t  n;
+
+			n = snprintf(p, remain, "cpu%d\n", cpu);
+			if (n >= remain) {
+				ans = -ENOSPC;
+				eof = 1;
+				goto end;
+			}
+			p += n;
+		}
+		ans = p - buf;
+		eof = 1;
+		goto end;
+	}
+	else {
 		goto end;
 	}
 	dprintf("matched PID: %d.\n", pid);

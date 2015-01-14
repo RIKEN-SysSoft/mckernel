@@ -29,6 +29,7 @@
 #include <process.h>
 #include <init.h>
 #include <cls.h>
+#include <syscall.h>
 
 //#define IOCTL_FUNC_EXTENSION
 #ifdef IOCTL_FUNC_EXTENSION
@@ -237,6 +238,7 @@ static void post_init(void)
 		ihk_mc_spinlock_init(&syscall_lock);
 	}
 	ap_start();
+	create_os_procfs_files();
 }
 #ifdef DCFA_RUN
 extern void user_main();
