@@ -349,7 +349,7 @@ int ptrace_traceme(void){
 	struct fork_tree_node *child, *next;
 	dkprintf("ptrace_traceme,pid=%d,proc->ftn->parent=%p\n", proc->ftn->pid, proc->ftn->parent);
 
-	if (proc->ftn->parent == NULL) {
+	if (proc->ftn->parent == NULL || proc->ftn->ptrace) {
 		error = -EPERM;
 		goto out;
 	}
@@ -2183,7 +2183,7 @@ void __runq_add_proc(struct process *proc, int cpu_id)
 	list_add_tail(&proc->sched_list, &v->runq);
 	++v->runq_len;
 	proc->cpu_id = cpu_id;
-	proc->ftn->status = PS_RUNNING;
+	//proc->ftn->status = PS_RUNNING;	/* not set here */
 	get_cpu_local_var(cpu_id)->status = CPU_STATUS_RUNNING;
 
 	dkprintf("runq_add_proc(): tid %d added to CPU[%d]'s runq\n", 

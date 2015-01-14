@@ -296,6 +296,12 @@ struct fork_tree_node {
      */
     int ptrace;
 
+    /* Store ptrace event message.
+       PTRACE_O_xxx will store event message here.
+       PTRACE_GETEVENTMSG will get from here.
+     */
+    unsigned long ptrace_eventmsg;
+
     /* Store event related to signal. For example, 
        it represents that the proceess has been resumed by SIGCONT. */
     int signal_flags;

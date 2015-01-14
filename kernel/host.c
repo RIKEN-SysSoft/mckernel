@@ -528,6 +528,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		proc = (struct process *)packet->arg;
 
 		settid(proc, 0, ihk_mc_get_processor_id(), -1);
+		proc->ftn->status = PS_RUNNING;
 		runq_add_proc(proc, ihk_mc_get_processor_id());
 					  
 		//cpu_local_var(next) = (struct process *)packet->arg;

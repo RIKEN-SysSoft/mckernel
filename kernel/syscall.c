@@ -1442,7 +1442,7 @@ static int ptrace_report_exec(struct process *proc)
 	long rc;
 	struct siginfo info;
 
-	if (!(proc->ftn->ptrace & PT_TRACE_EXEC)) {
+	if (!(proc->ftn->ptrace & (PT_TRACE_EXEC|PTRACE_O_TRACEEXEC))) {
 		goto out;
 	}
 
@@ -1482,6 +1482,109 @@ static int ptrace_report_exec(struct process *proc)
 	dkprintf("ptrace_report_exec,woken up\n");
 
 out:
+	return error;
+}
+
+static int ptrace_check_clone_event(struct process *proc, int clone_flags)
+{
+	int event = 0;
+
+	if (clone_flags & CLONE_VFORK) {
+		/* vfork */
+		if (proc->ftn->ptrace & PTRACE_O_TRACEVFORK) {
+			event = PTRACE_EVENT_VFORK;
+		}
+		if (proc->ftn->ptrace & PTRACE_O_TRACEVFORKDONE) {
+			event = PTRACE_EVENT_VFORK_DONE;
+		}
+	} else if ((clone_flags & CSIGNAL) == SIGCHLD) {
+		/* fork */
+		if (proc->ftn->ptrace & PTRACE_O_TRACEFORK) {
+			event = PTRACE_EVENT_FORK;
+		}
+	} else {
+		/* clone */
+		if (proc->ftn->ptrace & PTRACE_O_TRACECLONE) {
+			event = PTRACE_EVENT_CLONE;
+		}
+	}
+
+	return event;
+}
+
+static int ptrace_report_clone(struct process *proc, struct process *new, int event)
+{
+	dkprintf("ptrace_report_clone,enter\n");
+	int error = 0;
+	long rc;
+	struct siginfo info;
+
+	/* Save reason why stopped and process state for wait4() to reap */
+	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
+	proc->ftn->exit_status = (SIGTRAP | (event << 8));
+	/* Transition process state */
+	proc->ftn->status = PS_TRACED;
+	proc->ftn->ptrace_eventmsg = new->ftn->pid;
+	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
+
+	dkprintf("ptrace_report_clone,kill SIGCHLD\n");
+	if (proc->ftn->parent) {
+		/* kill SIGCHLD */
+		ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
+		if (proc->ftn->parent->owner) {
+			memset(&info, '\0', sizeof info);
+			info.si_signo = SIGCHLD;
+			info.si_code = CLD_TRAPPED;
+			info._sifields._sigchld.si_pid = proc->ftn->pid;
+			info._sifields._sigchld.si_status = proc->ftn->exit_status;
+			rc = do_kill(proc->ftn->parent->pid, -1, SIGCHLD, &info, 0);
+			if(rc < 0) {
+				dkprintf("ptrace_report_clone,do_kill failed\n");
+			}
+		}
+		ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);	
+
+		/* Wake parent (if sleeping in wait4()) */
+		waitq_wakeup(&proc->ftn->parent->waitpid_q);
+	}
+
+	if (event != PTRACE_EVENT_VFORK_DONE) {
+		/* PTRACE_EVENT_FORK or PTRACE_EVENT_VFORK or PTRACE_EVENT_CLONE */
+
+		struct fork_tree_node *child, *next;
+
+		/* set ptrace features to new process */
+		ihk_mc_spinlock_lock_noirq(&new->ftn->lock);
+
+		new->ftn->ptrace = proc->ftn->ptrace;
+		new->ftn->ppid_parent = new->ftn->parent; /* maybe proc */
+
+		ihk_mc_spinlock_lock_noirq(&new->ftn->parent->lock);
+		list_for_each_entry_safe(child, next, &new->ftn->parent->children, siblings_list) {
+			if(child == new->ftn) {
+				list_del(&child->siblings_list);
+				goto found;
+			}
+		}
+		panic("ptrace_report_clone: missing parent-child relationship.");
+found:
+		ihk_mc_spinlock_unlock_noirq(&new->ftn->parent->lock);
+
+		new->ftn->parent = proc->ftn->parent; /* new ptracing parent */
+
+		ihk_mc_spinlock_lock_noirq(&new->ftn->parent->lock);
+		list_add_tail(&new->ftn->ptrace_siblings_list, &new->ftn->parent->ptrace_children);
+		ihk_mc_spinlock_unlock_noirq(&new->ftn->parent->lock);
+
+		/* trace and SIGSTOP */
+		new->ftn->exit_status = SIGSTOP;
+		new->ftn->status = PS_TRACED;
+
+		ihk_mc_spinlock_unlock_noirq(&new->ftn->lock);
+	}
+
+	peekuser(proc, NULL);
+
 	return error;
 }
 
@@ -1628,6 +1731,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	struct process *new;
 	ihk_mc_user_context_t ctx1;
 	struct syscall_request request1 IHK_DMA_ALIGN;
+	int ptrace_event = 0;
 
     dkprintf("do_fork,flags=%08x,newsp=%lx,ptidptr=%lx,ctidptr=%lx,tls=%lx,curpc=%lx,cursp=%lx",
             clone_flags, newsp, parent_tidptr, child_tidptr, tlsblock_base, curpc, cursp);
@@ -1737,32 +1841,30 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 
 	ihk_mc_syscall_ret(new->uctx) = 0;
 
+	if (cpu_local_var(current)->ftn->ptrace) {
+		ptrace_event = ptrace_check_clone_event(cpu_local_var(current), clone_flags);
+		if (ptrace_event) {
+			ptrace_report_clone(cpu_local_var(current), new, ptrace_event);
+		}
+	}
+
 	dkprintf("clone: kicking scheduler!,cpuid=%d pid=%d tid=%d\n", cpuid, new->ftn->pid, new->ftn->tid);
 	runq_add_proc(new, cpuid);
+
+	if (ptrace_event) {
+		schedule();
+	}
 
 	return new->ftn->tid;
 }
 
 SYSCALL_DECLARE(vfork)
 {
-    return do_fork(SIGCHLD, 0, 0, 0, 0, ihk_mc_syscall_pc(ctx), ihk_mc_syscall_sp(ctx));
+    return do_fork(CLONE_VFORK|SIGCHLD, 0, 0, 0, 0, ihk_mc_syscall_pc(ctx), ihk_mc_syscall_sp(ctx));
 }
 
 SYSCALL_DECLARE(clone)
 {
-    /* If CLONE_VM flag is not present, we assume this clone(2) 
-     * request is induced by the fork(2) wrapper of glibc.
-     */
-    if ((ihk_mc_syscall_arg0(ctx) & CLONE_VM) == 0) {
-	    if (cpu_local_var(current)->ftn == NULL) {
-		    panic("No ftn for current process present.\n");
-	    }
-	    if ((cpu_local_var(current)->ftn->ptrace &
-		 PTRACE_O_TRACEFORK) != 0) {
-		    panic("We do not have PTRACE_O_TRACEFORK implementation yet.\n");
-	    }
-    }
-
     return do_fork((int)ihk_mc_syscall_arg0(ctx), ihk_mc_syscall_arg1(ctx),
                    ihk_mc_syscall_arg2(ctx), ihk_mc_syscall_arg3(ctx),
                    ihk_mc_syscall_arg4(ctx), ihk_mc_syscall_pc(ctx),
@@ -2530,8 +2632,13 @@ static int ptrace_setoptions(int pid, int flags)
 	 * Following options are pretended to be supported for the time being:
 	 * PTRACE_O_TRACESYSGOOD 
 	 * PTRACE_O_TRACEFORK
+	 * PTRACE_O_TRACEVFORK
+	 * PTRACE_O_TRACEVFORKDONE
 	 */
-	if (flags & ~(PTRACE_O_TRACESYSGOOD|PTRACE_O_TRACEFORK)) {
+	if (flags & ~(PTRACE_O_TRACESYSGOOD|
+				PTRACE_O_TRACEFORK|
+				PTRACE_O_TRACEVFORK|
+				PTRACE_O_TRACEVFORKDONE)) {
 		kprintf("ptrace_setoptions: not supported flag %x\n", flags);
 		ret = -EINVAL;
 		goto out;
@@ -2543,6 +2650,7 @@ static int ptrace_setoptions(int pid, int flags)
 		goto unlockout;
 	}
 	
+	child->ftn->ptrace &= ~PTRACE_O_MASK;	/* PT_TRACE_EXEC remains */
 	child->ftn->ptrace |= flags;
 	ret = 0;
 
@@ -2632,6 +2740,30 @@ out_notfound:
 	ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
 	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
 	goto out;
+}
+
+static long ptrace_geteventmsg(int pid, long data)
+{
+	unsigned long *msg_p = (unsigned long *)data;
+	long rc = -ESRCH;
+	struct process *child;
+	ihk_spinlock_t *savelock;
+	unsigned long irqstate;
+
+	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	if (!child) {
+		return -ESRCH;
+	}
+	if (child->ftn->status == PS_TRACED) {
+		if (copy_to_user(child, msg_p, &child->ftn->ptrace_eventmsg, sizeof(*msg_p))) {
+			rc = -EFAULT;
+		} else {
+			rc = 0;
+		}
+	}
+	ihk_mc_spinlock_unlock(savelock, irqstate);
+
+	return rc;
 }
 
 SYSCALL_DECLARE(ptrace)
@@ -2725,6 +2857,10 @@ SYSCALL_DECLARE(ptrace)
 		break;
 	case PTRACE_ARCH_PRCTL:
 		dkprintf("ptrace: unimplemented ptrace(PTRACE_ARCH_PRCTL) called.\n");
+		break;
+	case PTRACE_GETEVENTMSG:
+		dkprintf("ptrace: PTRACE_GETEVENTMSG: data=%p\n", data);
+		error = ptrace_geteventmsg(pid, data);
 		break;
 	default:
 		dkprintf("ptrace: unimplemented ptrace called.\n");
