@@ -147,7 +147,10 @@ x86_syscall:
 #endif
 		
 .globl enter_user_mode
-enter_user_mode:		
+enter_user_mode:
+		movq	$0,  %rdi
+		movq	%rsp, %rsi
+		call check_signal
 		POP_ALL_REGS
 		addq	$8, %rsp
 		iretq
