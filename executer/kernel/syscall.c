@@ -452,7 +452,7 @@ static int rus_mmap(struct file *file, struct vm_area_struct *vma)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,7,0)
 	vma->vm_flags |= VM_RESERVED | VM_DONTEXPAND | VM_MIXEDMAP;
 #else
-	vma->vm_flags |= VM_IO | VM_DONTDUMP | VM_DONTEXPAND | VM_PFNMAP;
+	vma->vm_flags |= VM_DONTDUMP | VM_DONTEXPAND | VM_MIXEDMAP;
 #endif
 	vma->vm_ops = &rus_vmops;
 	return 0;
@@ -1142,8 +1142,17 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off, uintptr_t r
 
 	down_write(&current->mm->mmap_sem);
 #define	ANY_WHERE 0
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,5,0)
 	va = do_mmap_pgoff(file, ANY_WHERE, len, maxprot, MAP_SHARED, pgoff);
+#endif	
+
 	up_write(&current->mm->mmap_sem);
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,5,0)
+	va = vm_mmap(file, ANY_WHERE, len, maxprot, MAP_SHARED, pgoff << PAGE_SHIFT);
+#endif
+
 	if (IS_ERR_VALUE(va)) {
 		printk("pager_req_map(%p,%d,%lx,%lx,%lx):do_mmap_pgoff failed. %d\n", os, fd, len, off, result_rpa, (int)va);
 		error = va;
@@ -1241,9 +1250,13 @@ static int pager_req_unmap(ihk_os_t os, uintptr_t handle)
 
 	printk("pager_req_unmap(%p,%lx)\n", os, handle);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,5,0)
 	down_write(&current->mm->mmap_sem);
 	error = do_munmap(current->mm, pager->map_uaddr, pager->map_len);
 	up_write(&current->mm->mmap_sem);
+#else
+	error = vm_munmap(pager->map_uaddr, pager->map_len);
+#endif
 
 	if (error) {
 		printk("pager_req_unmap(%p,%lx):do_munmap failed. %d\n", os, handle, error);

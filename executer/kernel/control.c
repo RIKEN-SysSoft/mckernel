@@ -775,7 +775,7 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 }
 
 LIST_HEAD(mckernel_exec_files);
-spinlock_t mckernel_exec_file_lock = SPIN_LOCK_UNLOCKED;
+DEFINE_SPINLOCK(mckernel_exec_file_lock);
  
 
 struct mckernel_exec_file {
