@@ -40,7 +40,6 @@
 #include <ctype.h>
 #include <sys/mman.h>
 #include <asm/unistd.h>
-#include "../include/uprotocol.h"
 #include <sched.h>
 
 #include <termios.h>
@@ -57,6 +56,7 @@
 #include <sys/syscall.h>
 #include <pthread.h>
 #include <signal.h>
+#include "../include/uprotocol.h"
 
 //#define DEBUG
 
@@ -945,7 +945,75 @@ void init_worker_threads(int fd, int mcosid)
 	}
 
 	pthread_barrier_wait(&init_ready);
-}	
+}
+
+#define MCK_RLIMIT_AS	0
+#define MCK_RLIMIT_CORE	1
+#define MCK_RLIMIT_CPU	2
+#define MCK_RLIMIT_DATA	3
+#define MCK_RLIMIT_FSIZE	4
+#define MCK_RLIMIT_LOCKS	5
+#define MCK_RLIMIT_MEMLOCK	6
+#define MCK_RLIMIT_MSGQUEUE	7
+#define MCK_RLIMIT_NICE	8
+#define MCK_RLIMIT_NOFILE	9
+#define MCK_RLIMIT_NPROC	10
+#define MCK_RLIMIT_RSS	11
+#define MCK_RLIMIT_RTPRIO	12
+#define MCK_RLIMIT_RTTIME	13
+#define MCK_RLIMIT_SIGPENDING	14
+#define MCK_RLIMIT_STACK	15
+
+static int rlimits[] = {
+#ifdef RLIMIT_AS
+	RLIMIT_AS,	MCK_RLIMIT_AS,
+#endif
+#ifdef RLIMIT_CORE
+	RLIMIT_CORE,	MCK_RLIMIT_CORE,
+#endif
+#ifdef RLIMIT_CPU
+	RLIMIT_CPU,	MCK_RLIMIT_CPU,
+#endif
+#ifdef RLIMIT_DATA
+	RLIMIT_DATA,	MCK_RLIMIT_DATA,
+#endif
+#ifdef RLIMIT_FSIZE
+	RLIMIT_FSIZE,	MCK_RLIMIT_FSIZE,
+#endif
+#ifdef RLIMIT_LOCKS
+	RLIMIT_LOCKS,	MCK_RLIMIT_LOCKS,
+#endif
+#ifdef RLIMIT_MEMLOCK
+	RLIMIT_MEMLOCK,	MCK_RLIMIT_MEMLOCK,
+#endif
+#ifdef RLIMIT_MSGQUEUE
+	RLIMIT_MSGQUEUE,MCK_RLIMIT_MSGQUEUE,
+#endif
+#ifdef RLIMIT_NICE
+	RLIMIT_NICE,	MCK_RLIMIT_NICE,
+#endif
+#ifdef RLIMIT_NOFILE
+	RLIMIT_NOFILE,	MCK_RLIMIT_NOFILE,
+#endif
+#ifdef RLIMIT_NPROC
+	RLIMIT_NPROC,	MCK_RLIMIT_NPROC,
+#endif
+#ifdef RLIMIT_RSS
+	RLIMIT_RSS,	MCK_RLIMIT_RSS,
+#endif
+#ifdef RLIMIT_RTPRIO
+	RLIMIT_RTPRIO,	MCK_RLIMIT_RTPRIO,
+#endif
+#ifdef RLIMIT_RTTIME
+	RLIMIT_RTTIME,	MCK_RLIMIT_RTTIME,
+#endif
+#ifdef RLIMIT_SIGPENDING
+	RLIMIT_SIGPENDING,MCK_RLIMIT_SIGPENDING,
+#endif
+#ifdef RLIMIT_STACK
+	RLIMIT_STACK,	MCK_RLIMIT_STACK,
+#endif
+};
 
 char dev[64];
 
@@ -1071,7 +1139,9 @@ int main(int argc, char **argv)
 	if (shell) {
 		argv[optind] = path;
 	}
-	
+
+	for(i = 0; i < sizeof(rlimits) / sizeof(int); i += 2)
+		getrlimit(rlimits[i], &desc->rlimit[rlimits[i + 1]]);
 	desc->envs_len = envs_len;
 	desc->envs = envs;
 	//print_flat(envs);
@@ -1106,8 +1176,8 @@ int main(int argc, char **argv)
 		rlim_stack.rlim_cur = lcur;
 		rlim_stack.rlim_max = lmax;
 	}
-	desc->rlimit_stack_cur = rlim_stack.rlim_cur;
-	desc->rlimit_stack_max = rlim_stack.rlim_max;
+	desc->rlimit[MCK_RLIMIT_STACK].rlim_cur = rlim_stack.rlim_cur;
+	desc->rlimit[MCK_RLIMIT_STACK].rlim_max = rlim_stack.rlim_max;
 
 	ncpu = ioctl(fd, MCEXEC_UP_GET_CPU, 0);
 	if(ncpu == -1){

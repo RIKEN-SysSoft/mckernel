@@ -21,6 +21,7 @@
 #include <signal.h>
 #include <memobj.h>
 #include <affinity.h>
+#include <syscall.h>
 
 #define VR_NONE            0x0
 #define VR_STACK           0x1
@@ -145,7 +146,6 @@
 
 #include <waitq.h>
 #include <futex.h>
-#include <rlimit.h>
 
 struct user_fpregs_struct
 {
@@ -343,7 +343,7 @@ struct process {
 	struct sig_shared *sigshared;
 	struct sig_handler *sighandler;
 
-	struct rlimit rlimit_stack;
+	struct rlimit rlimit[MCK_RLIM_MAX];
 	pgio_func_t *pgio_fp;
 	void *pgio_arg;
 

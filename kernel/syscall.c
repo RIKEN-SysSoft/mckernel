@@ -2455,43 +2455,110 @@ SYSCALL_DECLARE(exit)
 	return 0;
 }
 
-SYSCALL_DECLARE(getrlimit)
+static int rlimits[] = {
+#ifdef RLIMIT_AS
+	RLIMIT_AS,	MCK_RLIMIT_AS,
+#endif
+#ifdef RLIMIT_CORE
+	RLIMIT_CORE,	MCK_RLIMIT_CORE,
+#endif
+#ifdef RLIMIT_CPU
+	RLIMIT_CPU,	MCK_RLIMIT_CPU,
+#endif
+#ifdef RLIMIT_DATA
+	RLIMIT_DATA,	MCK_RLIMIT_DATA,
+#endif
+#ifdef RLIMIT_FSIZE
+	RLIMIT_FSIZE,	MCK_RLIMIT_FSIZE,
+#endif
+#ifdef RLIMIT_LOCKS
+	RLIMIT_LOCKS,	MCK_RLIMIT_LOCKS,
+#endif
+#ifdef RLIMIT_MEMLOCK
+	RLIMIT_MEMLOCK,	MCK_RLIMIT_MEMLOCK,
+#endif
+#ifdef RLIMIT_MSGQUEUE
+	RLIMIT_MSGQUEUE,MCK_RLIMIT_MSGQUEUE,
+#endif
+#ifdef RLIMIT_NICE
+	RLIMIT_NICE,	MCK_RLIMIT_NICE,
+#endif
+#ifdef RLIMIT_NOFILE
+	RLIMIT_NOFILE,	MCK_RLIMIT_NOFILE,
+#endif
+#ifdef RLIMIT_NPROC
+	RLIMIT_NPROC,	MCK_RLIMIT_NPROC,
+#endif
+#ifdef RLIMIT_RSS
+	RLIMIT_RSS,	MCK_RLIMIT_RSS,
+#endif
+#ifdef RLIMIT_RTPRIO
+	RLIMIT_RTPRIO,	MCK_RLIMIT_RTPRIO,
+#endif
+#ifdef RLIMIT_RTTIME
+	RLIMIT_RTTIME,	MCK_RLIMIT_RTTIME,
+#endif
+#ifdef RLIMIT_SIGPENDING
+	RLIMIT_SIGPENDING,MCK_RLIMIT_SIGPENDING,
+#endif
+#ifdef RLIMIT_STACK
+	RLIMIT_STACK,	MCK_RLIMIT_STACK,
+#endif
+};
+
+SYSCALL_DECLARE(setrlimit)
 {
-	int ret;
+	int rc;
 	int resource = ihk_mc_syscall_arg0(ctx);
 	struct rlimit *rlm = (struct rlimit *)ihk_mc_syscall_arg1(ctx);
 	struct process *proc = cpu_local_var(current);
+	int	i;
+	int	mcresource;
 
-	switch (resource) {
-
-	case RLIMIT_STACK:
-		dkprintf("[%d] getrlimit() RLIMIT_STACK\n", ihk_mc_get_processor_id());
-		if(copy_to_user(proc, &rlm->rlim_cur, &proc->rlimit_stack.rlim_cur, sizeof rlm->rlim_cur))
-			return -EFAULT;
-		if(copy_to_user(proc, &rlm->rlim_max, &proc->rlimit_stack.rlim_max, sizeof rlm->rlim_max))
-			return -EFAULT;
-		ret = 0;
+	switch(resource){
+	    case RLIMIT_FSIZE:
+	    case RLIMIT_NOFILE:
+		rc = syscall_generic_forwarding(__NR_setrlimit, ctx);
+		if(rc < 0)
+			return rc;
 		break;
-
-	case RLIMIT_FSIZE:
-	case RLIMIT_LOCKS:
-	case RLIMIT_NOFILE:
-		/* just forward */
-		ret = syscall_generic_forwarding(n, ctx);
-
-		/* return one less than the actual value to make sure mcexec can open 
-		 * its temporary synchronization pipe when a new process is forked */
-		if (resource == RLIMIT_NOFILE) {
-			ret -= 1;
-		}
-		break;
-
-	default:
-
-		return -ENOSYS;
 	}
 
-	return ret;
+	for(i = 0; i < sizeof(rlimits) / sizeof(int); i += 2)
+		if(rlimits[i] == resource){
+			mcresource = rlimits[i + 1];
+			break;
+		}
+	if(i >= sizeof(rlimits) / sizeof(int))
+		return -EINVAL;
+
+	if(copy_from_user(proc, proc->rlimit + mcresource, rlm, sizeof(struct rlimit)))
+		return -EFAULT;
+
+	return 0;
+}
+
+SYSCALL_DECLARE(getrlimit)
+{
+	int resource = ihk_mc_syscall_arg0(ctx);
+	struct rlimit *rlm = (struct rlimit *)ihk_mc_syscall_arg1(ctx);
+	struct process *proc = cpu_local_var(current);
+	int	i;
+	int	mcresource;
+
+	for(i = 0; i < sizeof(rlimits) / sizeof(int); i += 2)
+		if(rlimits[i] == resource){
+			mcresource = rlimits[i + 1];
+			break;
+		}
+	if(i >= sizeof(rlimits) / sizeof(int))
+		return -EINVAL;
+
+// TODO: check limit
+	if(copy_to_user(proc, rlm, proc->rlimit + mcresource, sizeof(struct rlimit)))
+		return -EFAULT;
+
+	return 0;
 }
 
 extern int ptrace_traceme(void);

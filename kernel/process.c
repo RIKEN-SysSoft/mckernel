@@ -235,7 +235,7 @@ struct process *clone_process(struct process *org, unsigned long pc,
 	ihk_mc_modify_user_context(proc->uctx, IHK_UCR_STACK_POINTER, sp);
 	ihk_mc_modify_user_context(proc->uctx, IHK_UCR_PROGRAM_COUNTER, pc);
 
-	proc->rlimit_stack = org->rlimit_stack;
+	memcpy(proc->rlimit, org->rlimit, sizeof(struct rlimit) * MCK_RLIM_MAX);
 	proc->sigmask = org->sigmask;
 	
 	proc->ftn = kmalloc(sizeof(struct fork_tree_node), IHK_MC_AP_NOWAIT);
@@ -1453,7 +1453,7 @@ int init_process_stack(struct process *process, struct program_load_desc *pn,
 
 	/* create stack range */
 	minsz = PAGE_SIZE;
-	size = process->rlimit_stack.rlim_cur & PAGE_MASK;
+	size = process->rlimit[MCK_RLIMIT_STACK].rlim_cur & PAGE_MASK;
 	if (size > (USER_END / 2)) {
 		size = USER_END / 2;
 	}

@@ -15,6 +15,7 @@
 
 #include <ihk/context.h>
 #include <ihk/memconst.h>
+#include <rlimit.h>
 
 #define NUM_SYSCALLS 255
 
@@ -112,6 +113,24 @@ struct program_image_section {
 };
 
 #define SHELL_PATH_MAX_LEN	1024
+#define MCK_RLIM_MAX	20
+
+#define MCK_RLIMIT_AS	0
+#define MCK_RLIMIT_CORE	1
+#define MCK_RLIMIT_CPU	2
+#define MCK_RLIMIT_DATA	3
+#define MCK_RLIMIT_FSIZE	4
+#define MCK_RLIMIT_LOCKS	5
+#define MCK_RLIMIT_MEMLOCK	6
+#define MCK_RLIMIT_MSGQUEUE	7
+#define MCK_RLIMIT_NICE	8
+#define MCK_RLIMIT_NOFILE	9
+#define MCK_RLIMIT_NPROC	10
+#define MCK_RLIMIT_RSS	11
+#define MCK_RLIMIT_RTPRIO	12
+#define MCK_RLIMIT_RTTIME	13
+#define MCK_RLIMIT_SIGPENDING	14
+#define MCK_RLIMIT_STACK	15
 
 struct program_load_desc {
 	int num_sections;
@@ -135,8 +154,7 @@ struct program_load_desc {
 	unsigned long args_len;
 	char *envs;
 	unsigned long envs_len;
-	unsigned long rlimit_stack_cur;
-	unsigned long rlimit_stack_max;
+	struct rlimit rlimit[MCK_RLIM_MAX];
 	unsigned long interp_align;
 	char shell_path[SHELL_PATH_MAX_LEN];
 	struct program_image_section sections[0];

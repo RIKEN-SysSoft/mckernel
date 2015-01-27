@@ -368,8 +368,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	proc->vm->region.user_end = pn->user_end;
 	proc->vm->region.map_start = (USER_END / 3) & LARGE_PAGE_MASK;
 	proc->vm->region.map_end = proc->vm->region.map_start;
-	proc->rlimit_stack.rlim_cur = pn->rlimit_stack_cur;
-	proc->rlimit_stack.rlim_max = pn->rlimit_stack_max;
+	memcpy(proc->rlimit, pn->rlimit, sizeof(struct rlimit) * MCK_RLIM_MAX);
 
 	/* TODO: Clear it at the proper timing */
 	cpu_local_var(scp).post_idx = 0;

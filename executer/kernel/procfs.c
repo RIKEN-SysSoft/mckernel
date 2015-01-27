@@ -15,6 +15,7 @@
 #include <linux/list.h>
 #include <linux/uaccess.h>
 #include <linux/fs.h>
+#include <linux/resource.h>
 #include "mcctrl.h"
 
 //#define PROCFS_DEBUG

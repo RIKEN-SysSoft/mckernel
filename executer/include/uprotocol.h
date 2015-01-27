@@ -70,6 +70,7 @@ struct program_image_section {
 };
 
 #define SHELL_PATH_MAX_LEN	1024
+#define MCK_RLIM_MAX	20
 
 struct program_load_desc {
 	int num_sections;
@@ -93,8 +94,7 @@ struct program_load_desc {
 	unsigned long args_len;
 	char *envs;
 	unsigned long envs_len;
-	unsigned long rlimit_stack_cur;
-	unsigned long rlimit_stack_max;
+	struct rlimit rlimit[MCK_RLIM_MAX];
 	unsigned long interp_align;
 	char shell_path[SHELL_PATH_MAX_LEN];
 	struct program_image_section sections[0];
