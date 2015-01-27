@@ -546,6 +546,7 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 	/* Drop old name if exists */
 	if (exec_path) {
 		free(exec_path);
+		exec_path = NULL;
 	}
 
 	if (!strncmp("/", filename, 1)) {
@@ -558,7 +559,12 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 	}
 	else {
 		char *cwd = getcwd(NULL, 0);
-		exec_path = malloc(strlen(cwd) + strlen(filename) + 1);
+		if (!cwd) {
+			fprintf(stderr, "Error: getting current working dir pathname\n");
+			return ENOMEM;
+		}
+
+		exec_path = malloc(strlen(cwd) + strlen(filename) + 2);
 		if (!exec_path) {
 			fprintf(stderr, "Error: allocating exec_path\n");
 			return ENOMEM;
