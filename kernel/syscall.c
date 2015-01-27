@@ -2613,10 +2613,7 @@ static int ptrace_wakeup_sig(int pid, long request, long data) {
 		break;
 	}
 
-	error = sched_wakeup_process(child, PS_TRACED | PS_STOPPED);
-	if (error < 0) {
-		goto out;
-	}
+	sched_wakeup_process(child, PS_TRACED | PS_STOPPED);
 out:
 	return error;
 }
