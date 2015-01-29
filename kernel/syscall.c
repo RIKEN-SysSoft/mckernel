@@ -2557,6 +2557,8 @@ SYSCALL_DECLARE(getrlimit)
 }
 
 extern int ptrace_traceme(void);
+extern void clear_single_step(struct process *proc);
+extern void set_single_step(struct process *proc);
 
 static int ptrace_wakeup_sig(int pid, long request, long data) {
 	dkprintf("ptrace_wakeup_sig,pid=%d,data=%08x\n", pid, data);
@@ -2588,6 +2590,14 @@ static int ptrace_wakeup_sig(int pid, long request, long data) {
 		}
 		break;
 	case PTRACE_CONT:
+	case PTRACE_SINGLESTEP:
+	case PTRACE_SYSCALL:
+		if (request == PTRACE_SINGLESTEP) {
+			set_single_step(child);
+		}
+		if (request == PTRACE_SYSCALL) {
+			/* TODO: may set PTRACE_SYSCALL flag */
+		}
 		if(data != 0 && data != SIGSTOP) {
 			struct process *proc;
 
@@ -2823,8 +2833,6 @@ out:
 	return ret;
 }
 
-extern void clear_single_step(struct process *proc);
-
 static int ptrace_detach(int pid, int data)
 {
 	int error;
@@ -2991,7 +2999,8 @@ SYSCALL_DECLARE(ptrace)
 		dkprintf("PTRACE_POKEDATA: addr=%p data=%p\n", addr, data);
 		break;
 	case PTRACE_SINGLESTEP:
-		dkprintf("ptrace: unimplemented ptrace(PTRACE_SINGLESTEP) called.\n");
+		dkprintf("ptrace: PTRACE_SINGLESTEP: data=%d\n", data);
+		error = ptrace_wakeup_sig(pid, request, data);
 		break;
 	case PTRACE_GETFPREGS:
 		dkprintf("ptrace: unimplemented ptrace(PTRACE_GETFPREGS) called.\n");

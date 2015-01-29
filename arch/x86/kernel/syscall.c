@@ -384,6 +384,11 @@ void clear_single_step(struct process *proc)
 	proc->uctx->rflags &= ~RFLAGS_TF;
 }
 
+void set_single_step(struct process *proc)
+{
+	proc->uctx->rflags |= RFLAGS_TF;
+}
+
 extern void coredump(struct process *proc, void *regs);
 
 static void ptrace_report_signal(struct process *proc, struct x86_regs *regs, int sig)

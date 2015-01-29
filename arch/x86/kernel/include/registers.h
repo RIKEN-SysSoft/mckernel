@@ -34,6 +34,14 @@
 #define RFLAGS_VIP     (1 << 20)
 #define RFLAGS_ID      (1 << 21)
 
+#define DB6_B0         (1 << 0)
+#define DB6_B1         (1 << 1)
+#define DB6_B2         (1 << 2)
+#define DB6_B3         (1 << 3)
+#define DB6_BD         (1 << 13)
+#define DB6_BS         (1 << 14)
+#define DB6_BT         (1 << 15)
+
 #define MSR_EFER       0xc0000080
 #define MSR_STAR       0xc0000081
 #define MSR_LSTAR      0xc0000082

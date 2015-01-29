@@ -154,3 +154,25 @@ enter_user_mode:
 		POP_ALL_REGS
 		addq	$8, %rsp
 		iretq
+
+.globl debug_exception
+debug_exception:
+		cld
+		pushq   $0	/* error */
+		PUSH_ALL_REGS
+		movq	%rsp, %rdi
+		call	debug_handler
+		POP_ALL_REGS
+		addq	$8, %rsp
+		iretq
+
+.globl int3_exception
+int3_exception:
+		cld
+		pushq   $0	/* error */
+		PUSH_ALL_REGS
+		movq	%rsp, %rdi
+		call	int3_handler
+		POP_ALL_REGS
+		addq	$8, %rsp
+		iretq

@@ -107,6 +107,7 @@ void reload_idt(void)
 
 static struct list_head handlers[256 - 32];
 extern char page_fault[], general_protection_exception[];
+extern char debug_exception[], int3_exception[];
 
 static void init_idt(void)
 {
@@ -124,6 +125,9 @@ static void init_idt(void)
 
 	set_idt_entry(13, (unsigned long)general_protection_exception);
 	set_idt_entry(14, (unsigned long)page_fault);
+
+	set_idt_entry_trap_gate(1, (unsigned long)debug_exception);
+	set_idt_entry_trap_gate(3, (unsigned long)int3_exception);
 
 	reload_idt();
 }
@@ -465,6 +469,50 @@ void gpe_handler(struct x86_regs *regs)
 	check_signal(0, regs);
 	check_need_resched();
 	// panic("GPF");
+}
+
+void debug_handler(struct x86_regs *regs)
+{
+	unsigned long db6;
+	int si_code = 0;
+	struct siginfo info;
+
+#ifdef DEBUG_PRINT_CPU
+	kprintf("debug exception (err: %lx, %lx:%lx)\n",
+	        regs->error, regs->cs, regs->rip);
+	arch_show_interrupt_context(regs);
+#endif
+
+	asm("mov %%db6, %0" :"=r" (db6));
+	if (db6 & DB6_BS) {
+	        regs->rflags &= ~RFLAGS_TF;
+		si_code = TRAP_TRACE;
+	} else if (db6 & (DB6_B3|DB6_B2|DB6_B1|DB6_B0)) {
+		si_code = TRAP_HWBKPT;
+	}
+
+	memset(&info, '\0', sizeof info);
+	info.si_code = si_code;
+	set_signal(SIGTRAP, regs, &info);
+	check_signal(0, regs);
+	check_need_resched();
+}
+
+void int3_handler(struct x86_regs *regs)
+{
+	struct siginfo info;
+
+#ifdef DEBUG_PRINT_CPU
+	kprintf("int3 exception (err: %lx, %lx:%lx)\n",
+	        regs->error, regs->cs, regs->rip);
+	arch_show_interrupt_context(regs);
+#endif
+
+	memset(&info, '\0', sizeof info);
+	info.si_code = TRAP_BRKPT;
+	set_signal(SIGTRAP, regs, &info);
+	check_signal(0, regs);
+	check_need_resched();
 }
 
 void x86_issue_ipi(unsigned int apicid, unsigned int low)
