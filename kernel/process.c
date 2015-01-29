@@ -43,6 +43,11 @@
 #endif
 
 extern long do_arch_prctl(unsigned long code, unsigned long address);
+extern long alloc_debugreg(struct process *proc);
+extern void save_debugreg(unsigned long *debugreg);
+extern void restore_debugreg(unsigned long *debugreg);
+extern void clear_debugreg(void);
+extern void clear_single_step(struct process *proc);
 static void insert_vm_range_list(struct process_vm *vm, 
 		struct vm_range *newrange);
 static int copy_user_ranges(struct process *proc, struct process *org);
@@ -377,6 +382,13 @@ int ptrace_traceme(void){
 	ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
 	
 	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
+
+	if (proc->ptrace_debugreg == NULL) {
+		error = alloc_debugreg(proc);
+	}
+
+	clear_single_step(proc);
+	/* TODO: other flags may reset */
 
  out:
 	dkprintf("ptrace_traceme,returning,error=%d\n", error);
@@ -1803,6 +1815,9 @@ void destroy_process(struct process *proc)
 		list_del(&pending->list);
 		kfree(pending);
 	}
+	if (proc->ptrace_debugreg) {
+		kfree(proc->ptrace_debugreg);
+	}
 	ihk_mc_free_pages(proc, KERNEL_STACK_NR_PAGES);
 }
 
@@ -2042,6 +2057,16 @@ redo:
 		dkprintf("[%d] schedule: %d => %d \n",
 		        ihk_mc_get_processor_id(),
 		        prev ? prev->ftn->tid : 0, next ? next->ftn->tid : 0);
+
+		if (prev && prev->ptrace_debugreg) {
+			save_debugreg(prev->ptrace_debugreg);
+			if (next->ptrace_debugreg == NULL) {
+				clear_debugreg();
+			}
+		}
+		if (next->ptrace_debugreg) {
+			restore_debugreg(next->ptrace_debugreg);
+		}
 
 		ihk_mc_load_page_table(next->vm->page_table);
 		

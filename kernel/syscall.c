@@ -1433,8 +1433,6 @@ SYSCALL_DECLARE(arch_prctl)
 	                     ihk_mc_syscall_arg1(ctx));
 }
 
-extern void peekuser(struct process *proc, void *regs);
-
 static int ptrace_report_exec(struct process *proc)
 {
 	dkprintf("ptrace_report_exec,enter\n");
@@ -1474,7 +1472,6 @@ static int ptrace_report_exec(struct process *proc)
 		waitq_wakeup(&proc->ftn->parent->waitpid_q);
 	}
 
-	peekuser(proc, NULL);
 	/* Sleep */
 	dkprintf("ptrace_report_exec,sleeping\n");
 	
@@ -1582,8 +1579,6 @@ found:
 
 		ihk_mc_spinlock_unlock_noirq(&new->ftn->lock);
 	}
-
-	peekuser(proc, NULL);
 
 	return error;
 }
@@ -2618,6 +2613,9 @@ out:
 	return error;
 }
 
+extern long ptrace_read_user(struct process *proc, long addr, unsigned long *value);
+extern long ptrace_write_user(struct process *proc, long addr, unsigned long value);
+
 static long ptrace_pokeuser(int pid, long addr, long data)
 {
 	long rc = -EIO;
@@ -2631,8 +2629,7 @@ static long ptrace_pokeuser(int pid, long addr, long data)
 	if (!child)
 		return -ESRCH;
 	if(child->ftn->status == PS_TRACED){
-		memcpy((char *)child->userp + addr, &data, 8);
-		rc = 0;
+		rc = ptrace_write_user(child, addr, (unsigned long)data);
 	}
 	ihk_mc_spinlock_unlock(savelock, irqstate);
 
@@ -2643,6 +2640,7 @@ static long ptrace_peekuser(int pid, long addr, long data)
 {
 	long rc = -EIO;
 	struct process *child;
+	struct process *proc = cpu_local_var(current);
 	ihk_spinlock_t *savelock;
 	unsigned long irqstate;
 	unsigned long *p = (unsigned long *)data;
@@ -2653,10 +2651,11 @@ static long ptrace_peekuser(int pid, long addr, long data)
 	if (!child)
 		return -ESRCH;
 	if(child->ftn->status == PS_TRACED){
-		if(copy_to_user(child, p, (char *)child->userp + addr, 8))
-			rc = -EFAULT;
-		else
-			rc = 0;
+		unsigned long value;
+		rc = ptrace_read_user(child, addr, &value);
+		if (rc == 0) {
+			rc = copy_to_user(proc, p, (char *)&value, sizeof(value));
+		}
 	}
 	ihk_mc_spinlock_unlock(savelock, irqstate);
 
@@ -2668,6 +2667,7 @@ static long ptrace_getregs(int pid, long data)
 	struct user_regs_struct *regs = (struct user_regs_struct *)data;
 	long rc = -EIO;
 	struct process *child;
+	struct process *proc = cpu_local_var(current);
 	ihk_spinlock_t *savelock;
 	unsigned long irqstate;
 
@@ -2675,16 +2675,57 @@ static long ptrace_getregs(int pid, long data)
 	if (!child)
 		return -ESRCH;
 	if(child->ftn->status == PS_TRACED){
-		if(copy_to_user(child, regs, child->userp, sizeof(struct user_regs_struct)))
-			rc = -EFAULT;
-		else
-			rc = 0;
+		struct user_regs_struct user_regs;
+		long addr;
+		unsigned long *p;
+		memset(&user_regs, '\0', sizeof(struct user_regs_struct));
+		for (addr = 0, p = (unsigned long *)&user_regs;
+				addr < sizeof(struct user_regs_struct);
+				addr += sizeof(*p), p++) {
+			rc = ptrace_read_user(child, addr, p);
+			if (rc) break;
+		}
+		if (rc == 0) {
+			rc = copy_to_user(proc, regs, &user_regs, sizeof(struct user_regs_struct));
+		}
 	}
 	ihk_mc_spinlock_unlock(savelock, irqstate);
 
 	return rc;
 }
 
+static long ptrace_setregs(int pid, long data)
+{
+	struct user_regs_struct *regs = (struct user_regs_struct *)data;
+	long rc = -EIO;
+	struct process *child;
+	struct process *proc = cpu_local_var(current);
+	ihk_spinlock_t *savelock;
+	unsigned long irqstate;
+
+	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	if (!child)
+		return -ESRCH;
+	if(child->ftn->status == PS_TRACED){
+		struct user_regs_struct user_regs;
+		rc = copy_from_user(proc, &user_regs, regs, sizeof(struct user_regs_struct));
+		if (rc == 0) {
+			long addr;
+			unsigned long *p;
+			for (addr = 0, p = (unsigned long *)&user_regs;
+					addr < sizeof(struct user_regs_struct);
+					addr += sizeof(*p), p++) {
+				rc = ptrace_write_user(child, addr, *p);
+				if (rc) {
+					break;
+				}
+			}
+		}
+	}
+	ihk_mc_spinlock_unlock(savelock, irqstate);
+
+	return rc;
+}
 static int ptrace_setoptions(int pid, int flags)
 {
 	int ret;
@@ -2723,6 +2764,8 @@ unlockout:
 out:
 	return ret;
 }
+
+extern void clear_single_step(struct process *proc);
 
 static int ptrace_detach(int pid, int data)
 {
@@ -2775,10 +2818,15 @@ found:
 		ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
 	}
 
-	proc->uctx->rflags &= ~RFLAGS_TF; /* SingleStep clear */
-	/* TODO: other flags may clear */
-
 	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
+
+	if (proc->ptrace_debugreg) {
+		kfree(proc->ptrace_debugreg);
+		proc->ptrace_debugreg = NULL;
+	}
+
+	clear_single_step(proc);
+	/* TODO: other flags may clear */
 
 	if (data != 0) {
 		struct process *cur;
@@ -2811,6 +2859,7 @@ static long ptrace_geteventmsg(int pid, long data)
 	unsigned long *msg_p = (unsigned long *)data;
 	long rc = -ESRCH;
 	struct process *child;
+	struct process *proc = cpu_local_var(current);
 	ihk_spinlock_t *savelock;
 	unsigned long irqstate;
 
@@ -2819,7 +2868,7 @@ static long ptrace_geteventmsg(int pid, long data)
 		return -ESRCH;
 	}
 	if (child->ftn->status == PS_TRACED) {
-		if (copy_to_user(child, msg_p, &child->ftn->ptrace_eventmsg, sizeof(*msg_p))) {
+		if (copy_to_user(proc, msg_p, &child->ftn->ptrace_eventmsg, sizeof(*msg_p))) {
 			rc = -EFAULT;
 		} else {
 			rc = 0;
@@ -2889,7 +2938,8 @@ SYSCALL_DECLARE(ptrace)
 		dkprintf("ptrace: unimplemented ptrace(PTRACE_SETFPREGS) called.\n");
 		break;
 	case PTRACE_SETREGS:
-		dkprintf("ptrace: unimplemented ptrace(PTRACE_SETREGS) called.\n");
+		error = ptrace_setregs(pid, data);
+		dkprintf("PTRACE_SETREGS: data=%p return=%p\n", data, error);
 		break;
 	case PTRACE_ATTACH:
 		dkprintf("ptrace: unimplemented ptrace(PTRACE_ATTACH) called.\n");

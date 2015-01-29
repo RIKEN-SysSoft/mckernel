@@ -352,7 +352,7 @@ struct process {
 	cpu_set_t cpu_set;
 	unsigned long saved_auxv[AUXV_LEN];
 
-	struct user *userp;
+	unsigned long *ptrace_debugreg;	/* debug registers for ptrace */
 };
 
 struct process_vm {

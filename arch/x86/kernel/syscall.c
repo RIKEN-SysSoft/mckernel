@@ -190,89 +190,198 @@ do_setpgid(int pid, int pgid)
 	}
 }
 
-void
-pokeuser(struct process *proc, void *regs0)
+static unsigned long *ptrace_get_regaddr(struct process *proc, long addr)
 {
-	struct x86_regs *regs = regs0;
-
-	if(regs == NULL){
-		asm("movq %%gs:132, %0" : "=r" (regs));
-		--regs;
+#define PTRACE_GET_REGADDR(regname) case offsetof(struct user_regs_struct, regname): return &(proc->uctx->regname)
+	switch (addr) {
+		PTRACE_GET_REGADDR(r15);
+		PTRACE_GET_REGADDR(r14);
+		PTRACE_GET_REGADDR(r13);
+		PTRACE_GET_REGADDR(r12);
+		PTRACE_GET_REGADDR(rbp);
+		PTRACE_GET_REGADDR(rbx);
+		PTRACE_GET_REGADDR(r11);
+		PTRACE_GET_REGADDR(r10);
+		PTRACE_GET_REGADDR(r9);
+		PTRACE_GET_REGADDR(r8);
+		PTRACE_GET_REGADDR(rax);
+		PTRACE_GET_REGADDR(rcx);
+		PTRACE_GET_REGADDR(rdx);
+		PTRACE_GET_REGADDR(rsi);
+		PTRACE_GET_REGADDR(rdi);
+		/* skip orig_rax */
+		PTRACE_GET_REGADDR(rip);
+		PTRACE_GET_REGADDR(cs);
+		/* skip eflags */
+		PTRACE_GET_REGADDR(rsp);
+		PTRACE_GET_REGADDR(ss);
+		/* skip fs_base gs_base ds es fs gs */
+	default:
+		break;
 	}
-	asm("mov %0, %%db0" ::"r" (proc->userp->u_debugreg[0]));
-	asm("mov %0, %%db1" ::"r" (proc->userp->u_debugreg[1]));
-	asm("mov %0, %%db2" ::"r" (proc->userp->u_debugreg[2]));
-	asm("mov %0, %%db3" ::"r" (proc->userp->u_debugreg[3]));
-//	asm("mov %0, %%db4" ::"r" (proc->userp->u_debugreg[4]));
-//	asm("mov %0, %%db5" ::"r" (proc->userp->u_debugreg[5]));
-	asm("mov %0, %%db6" ::"r" (proc->userp->u_debugreg[6]));
-	asm("mov %0, %%db7" ::"r" (proc->userp->u_debugreg[7]));
-	regs->r15 = proc->userp->regs.r15;
-	regs->r14 = proc->userp->regs.r14;
-	regs->r13 = proc->userp->regs.r13;
-	regs->r12 = proc->userp->regs.r12;
-	regs->rbp = proc->userp->regs.rbp;
-	regs->rbx = proc->userp->regs.rbx;
-	regs->r11 = proc->userp->regs.r11;
-	regs->r10 = proc->userp->regs.r10;
-	regs->r9 = proc->userp->regs.r9;
-	regs->r8 = proc->userp->regs.r8;
-	regs->rax = proc->userp->regs.rax;
-	regs->rcx = proc->userp->regs.rcx;
-	regs->rdx = proc->userp->regs.rdx;
-	regs->rsi = proc->userp->regs.rsi;
-	regs->rdi = proc->userp->regs.rdi;
-	regs->rip = proc->userp->regs.rip;
-	regs->cs = proc->userp->regs.cs;
-	regs->rflags = proc->userp->regs.eflags;
-	regs->rsp = proc->userp->regs.rsp;
-	regs->ss = proc->userp->regs.ss;
+	return NULL;
+#undef PTRACE_GET_REGADDR
+}
+
+#define RFLAGS_MASK (RFLAGS_CF | RFLAGS_PF | RFLAGS_AF | RFLAGS_ZF | \
+		RFLAGS_SF | RFLAGS_TF | RFLAGS_DF | RFLAGS_OF |  \
+		RFLAGS_NT | RFLAGS_RF | RFLAGS_AC)
+#define DB6_RESERVED_MASK (0xffffffffffff1ff0UL)
+#define DB6_RESERVED_SET (0xffff0ff0UL)
+#define DB7_RESERVED_MASK (0xffffffff0000dc00UL)
+#define DB7_RESERVED_SET (0x400UL)
+
+long
+ptrace_read_user(struct process *proc, long addr, unsigned long *value)
+{
+	unsigned long *p;
+
+	if (addr < sizeof(struct user_regs_struct)) {
+		if (addr & (sizeof(*value) - 1)) return -EIO;
+		if (addr == offsetof(struct user_regs_struct, eflags)) {
+			*value = proc->uctx->rflags;
+			return 0;
+		}
+		if (addr == offsetof(struct user_regs_struct, fs_base)) {
+			*value = proc->thread.tlsblock_base;
+			return 0;
+		}
+		p = ptrace_get_regaddr(proc, addr);
+		if (p) {
+			*value = *p;
+		} else {
+			dkprintf("ptrace_read_user,addr=%d\n", addr);
+			*value = 0;
+		}
+		return 0;
+	}
+	if (offsetof(struct user, u_debugreg[0]) <= addr &&
+			addr < offsetof(struct user, u_debugreg[8])) {
+		if (addr & (sizeof(*value) - 1)) return -EIO;
+		if (proc->ptrace_debugreg == NULL) {
+			kprintf("ptrace_read_user: missing ptrace_debugreg\n");
+			return -EFAULT;
+		}
+		p = &proc->ptrace_debugreg[(addr - offsetof(struct user, u_debugreg[0])) / sizeof(*value)];
+		*value = *p;
+		return 0;
+	}
+
+	/* SUCCESS others */
+	dkprintf("ptrace_read_user,addr=%d\n", addr);
+	*value = 0;
+	return 0;
+}
+
+long
+ptrace_write_user(struct process *proc, long addr, unsigned long value)
+{
+	unsigned long *p;
+
+	if (addr < sizeof(struct user_regs_struct)) {
+		if (addr & (sizeof(value) - 1)) return -EIO;
+		if (addr == offsetof(struct user_regs_struct, eflags)) {
+			proc->uctx->rflags &= ~RFLAGS_MASK;
+			proc->uctx->rflags |= (value & RFLAGS_MASK);
+			return 0;
+		}
+		if (addr == offsetof(struct user_regs_struct, fs_base)) {
+			proc->thread.tlsblock_base = value;
+			return 0;
+		}
+		p = ptrace_get_regaddr(proc, addr);
+		if (p) {
+			*p = value;
+		} else {
+			dkprintf("ptrace_write_user,addr=%d\n", addr);
+		}
+		return 0;
+	}
+	if (offsetof(struct user, u_debugreg[0]) <= addr &&
+			addr < offsetof(struct user, u_debugreg[8])) {
+		if (addr & (sizeof(value) - 1)) return -EIO;
+		if (proc->ptrace_debugreg == NULL) {
+			kprintf("ptrace_write_user: missing ptrace_debugreg\n");
+			return -EFAULT;
+		}
+		p = &proc->ptrace_debugreg[(addr - offsetof(struct user, u_debugreg[0])) / sizeof(value)];
+		if (addr == offsetof(struct user, u_debugreg[6])) {
+			value &= ~DB6_RESERVED_MASK;
+			value |= DB6_RESERVED_SET;
+		}
+		if (addr == offsetof(struct user, u_debugreg[7])) {
+			value &= ~DB7_RESERVED_MASK;
+			value |= DB7_RESERVED_SET;
+		}
+		*p = value;
+		return 0;
+	}
+
+	/* SUCCESS others */
+	dkprintf("ptrace_write_user,addr=%d\n", addr);
+	return 0;
+}
+
+long
+alloc_debugreg(struct process *proc)
+{
+	proc->ptrace_debugreg = kmalloc(sizeof(*proc->ptrace_debugreg) * 8, IHK_MC_AP_NOWAIT);
+	if (proc->ptrace_debugreg == NULL) {
+		kprintf("alloc_debugreg: no memory.\n");
+		return -ENOMEM;
+	}
+	memset(proc->ptrace_debugreg, '\0', sizeof(*proc->ptrace_debugreg) * 8);
+	proc->ptrace_debugreg[6] = DB6_RESERVED_SET;
+	proc->ptrace_debugreg[7] = DB7_RESERVED_SET;
+	return 0;
 }
 
 void
-peekuser(struct process *proc, void *regs0)
+save_debugreg(unsigned long *debugreg)
 {
-	struct x86_regs *regs = regs0;
+	asm("mov %%db0, %0" :"=r" (debugreg[0]));
+	asm("mov %%db1, %0" :"=r" (debugreg[1]));
+	asm("mov %%db2, %0" :"=r" (debugreg[2]));
+	asm("mov %%db3, %0" :"=r" (debugreg[3]));
+//	asm("mov %%db4, %0" :"=r" (debugreg[4]));
+//	asm("mov %%db5, %0" :"=r" (debugreg[5]));
+	debugreg[4] = debugreg[5] = 0;
+	asm("mov %%db6, %0" :"=r" (debugreg[6]));
+	asm("mov %%db7, %0" :"=r" (debugreg[7]));
+}
 
-	if(regs == NULL){
-		asm("movq %%gs:132, %0" : "=r" (regs));
-		--regs;
-	}
-	if(proc->userp == NULL){
-		proc->userp = kmalloc(sizeof(struct user), IHK_MC_AP_NOWAIT);
-		memset(proc->userp, '\0', sizeof(struct user));
-	}
-	asm("mov %%db0, %0" :"=r" (proc->userp->u_debugreg[0]));
-	asm("mov %%db1, %0" :"=r" (proc->userp->u_debugreg[1]));
-	asm("mov %%db2, %0" :"=r" (proc->userp->u_debugreg[2]));
-	asm("mov %%db3, %0" :"=r" (proc->userp->u_debugreg[3]));
-//	asm("mov %%db4, %0" :"=r" (proc->userp->u_debugreg[4]));
-//	asm("mov %%db5, %0" :"=r" (proc->userp->u_debugreg[5]));
-	asm("mov %%db6, %0" :"=r" (proc->userp->u_debugreg[6]));
-	asm("mov %%db7, %0" :"=r" (proc->userp->u_debugreg[7]));
-	proc->userp->regs.r15 = regs->r15;
-	proc->userp->regs.r14 = regs->r14;
-	proc->userp->regs.r13 = regs->r13;
-	proc->userp->regs.r12 = regs->r12;
-	proc->userp->regs.rbp = regs->rbp;
-	proc->userp->regs.rbx = regs->rbx;
-	proc->userp->regs.r11 = regs->r11;
-	proc->userp->regs.r10 = regs->r10;
-	proc->userp->regs.r9 = regs->r9;
-	proc->userp->regs.r8 = regs->r8;
-	proc->userp->regs.rax = regs->rax;
-	proc->userp->regs.rcx = regs->rcx;
-	proc->userp->regs.rdx = regs->rdx;
-	proc->userp->regs.rsi = regs->rsi;
-	proc->userp->regs.rdi = regs->rdi;
-	proc->userp->regs.rip = regs->rip;
-	proc->userp->regs.cs = regs->cs;
-	proc->userp->regs.eflags = regs->rflags;
-	proc->userp->regs.rsp = regs->rsp;
-	proc->userp->regs.ss = regs->ss;
-	asm("mov %%es, %0" :"=r" (proc->userp->regs.es));
-	asm("mov %%fs, %0" :"=r" (proc->userp->regs.fs));
-	asm("mov %%gs, %0" :"=r" (proc->userp->regs.gs));
+void
+restore_debugreg(unsigned long *debugreg)
+{
+	asm("mov %0, %%db0" ::"r" (debugreg[0]));
+	asm("mov %0, %%db1" ::"r" (debugreg[1]));
+	asm("mov %0, %%db2" ::"r" (debugreg[2]));
+	asm("mov %0, %%db3" ::"r" (debugreg[3]));
+//	asm("mov %0, %%db4" ::"r" (debugreg[4]));
+//	asm("mov %0, %%db5" ::"r" (debugreg[5]));
+	asm("mov %0, %%db6" ::"r" (debugreg[6]));
+	asm("mov %0, %%db7" ::"r" (debugreg[7]));
+}
+
+void
+clear_debugreg(void)
+{
+	unsigned long r = 0;
+	asm("mov %0, %%db0" ::"r" (r));
+	asm("mov %0, %%db1" ::"r" (r));
+	asm("mov %0, %%db2" ::"r" (r));
+	asm("mov %0, %%db3" ::"r" (r));
+//	asm("mov %0, %%db4" ::"r" (r));
+//	asm("mov %0, %%db5" ::"r" (r));
+	r = DB6_RESERVED_SET;
+	asm("mov %0, %%db6" ::"r" (r));
+	r = DB7_RESERVED_SET;
+	asm("mov %0, %%db7" ::"r" (r));
+}
+
+void clear_single_step(struct process *proc)
+{
+	proc->uctx->rflags &= ~RFLAGS_TF;
 }
 
 extern void coredump(struct process *proc, void *regs);
@@ -283,7 +392,6 @@ static void ptrace_report_signal(struct process *proc, struct x86_regs *regs, in
 
 	dkprintf("ptrace_report_signal,pid=%d\n", proc->ftn->pid);
 
-	peekuser(proc, regs);
 	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);	
 	proc->ftn->exit_status = sig;
 	/* Transition process state */
