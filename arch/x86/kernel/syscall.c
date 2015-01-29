@@ -700,22 +700,23 @@ do_kill(int pid, int tid, int sig, siginfo_t *info, int ptracecont)
 			v = get_cpu_local_var(i);
 			irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 			list_for_each_entry(p, &(v->runq), sched_list){
+				int	j;
+
 				if(p->ftn->pid <= 0)
+					continue;
+				if(pgid != 1 && p->ftn->pgid != pgid)
 					continue;
 				if(proc && p->ftn->pid == proc->ftn->pid){
 					sendme = 1;
 					continue;
 				}
-				if(pgid == 1 || p->ftn->pgid == pgid){
-					int	j;
 
-					for(j = 0; j < n; j++)
-						if(pids[j] == p->ftn->pid)
-							break;
-					if(j == n){
-						pids[n] = p->ftn->pid;
-						n++;
-					}
+				for(j = 0; j < n; j++)
+					if(pids[j] == p->ftn->pid)
+						break;
+				if(j == n){
+					pids[n] = p->ftn->pid;
+					n++;
 				}
 			}
 			ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
