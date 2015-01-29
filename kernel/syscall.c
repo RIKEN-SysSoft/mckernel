@@ -2560,7 +2560,7 @@ extern int ptrace_traceme(void);
 
 static int ptrace_wakeup_sig(int pid, long request, long data) {
 	dkprintf("ptrace_wakeup_sig,pid=%d,data=%08x\n", pid, data);
-	int error;
+	int error = 0;
 	struct process *child;
 	ihk_spinlock_t *savelock;
 	unsigned long irqstate;
