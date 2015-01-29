@@ -2726,6 +2726,64 @@ static long ptrace_setregs(int pid, long data)
 
 	return rc;
 }
+
+static long ptrace_peektext(int pid, long addr, long data)
+{
+	long rc = -EIO;
+	struct process *child;
+	struct process *proc = cpu_local_var(current);
+	ihk_spinlock_t *savelock;
+	unsigned long irqstate;
+	unsigned long *p = (unsigned long *)data;
+
+	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	if (!child)
+		return -ESRCH;
+	if(child->ftn->status == PS_TRACED){
+		unsigned long value;
+		ihk_mc_load_page_table(child->vm->page_table);
+		rc = copy_from_user(child, &value, (void *)addr, sizeof(value));
+		ihk_mc_load_page_table(proc->vm->page_table);
+		if (rc != 0) { 
+			dkprintf("ptrace_peektext: bad area  addr=0x%llx\n", addr);
+		} else {
+			rc = copy_to_user(proc, p, &value, sizeof(value));
+		}
+	}
+	ihk_mc_spinlock_unlock(savelock, irqstate);
+
+	return rc;
+}
+
+static long ptrace_poketext(int pid, long addr, long data)
+{
+	long rc = -EIO;
+	struct process *child;
+	ihk_spinlock_t *savelock;
+	unsigned long irqstate;
+
+	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	if (!child)
+		return -ESRCH;
+	if(child->ftn->status == PS_TRACED){
+#if 0
+		/* XXX: revisit here, when fix #401.
+		 * if read only, copy-on-write */
+#else
+		unsigned long phys;
+		rc = ihk_mc_pt_virt_to_phys(child->vm->page_table, (void *)addr, &phys);
+		if (rc != 0) {
+			dkprintf("ptrace_poketext: bad address 0x%llx\n", addr);
+		} else {
+			*((long *)phys_to_virt(phys)) = data;
+		}
+#endif
+	}
+	ihk_mc_spinlock_unlock(savelock, irqstate);
+
+	return rc;
+}
+
 static int ptrace_setoptions(int pid, int flags)
 {
 	int ret;
@@ -2917,16 +2975,20 @@ SYSCALL_DECLARE(ptrace)
 		dkprintf("PTRACE_SETOPTIONS: flags=%d return=%p\n", data, error);
 		break;
 	case PTRACE_PEEKTEXT:
-		dkprintf("ptrace: unimplemented ptrace(PTRACE_PEEKTEXT) called.\n");
+		error = ptrace_peektext(pid, addr, data);
+		dkprintf("PTRACE_PEEKTEXT: addr=%p return=%p\n", addr, error);
 		break;
 	case PTRACE_PEEKDATA:
-		dkprintf("ptrace: unimplemented ptrace(PTRACE_PEEKDATA) called.\n");
+		error = ptrace_peektext(pid, addr, data);
+		dkprintf("PTRACE_PEEKDATA: addr=%p return=%p\n", addr, error);
 		break;
 	case PTRACE_POKETEXT:
-		dkprintf("ptrace: unimplemented ptrace(PTRACE_POKETEXT) called.\n");
+		error = ptrace_poketext(pid, addr, data);
+		dkprintf("PTRACE_POKETEXT: addr=%p data=%p\n", addr, data);
 		break;
 	case PTRACE_POKEDATA:
-		dkprintf("ptrace: unimplemented ptrace(PTRACE_POKEDATA) called.\n");
+		error = ptrace_poketext(pid, addr, data);
+		dkprintf("PTRACE_POKEDATA: addr=%p data=%p\n", addr, data);
 		break;
 	case PTRACE_SINGLESTEP:
 		dkprintf("ptrace: unimplemented ptrace(PTRACE_SINGLESTEP) called.\n");
