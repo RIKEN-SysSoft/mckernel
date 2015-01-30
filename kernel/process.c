@@ -360,12 +360,9 @@ int ptrace_traceme(void){
 	}
 
 	dkprintf("ptrace_traceme,parent->pid=%d\n", proc->ftn->parent->pid);
-	
+
 	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
-	
-	proc->ftn->ptrace = PT_TRACED | PT_TRACE_EXEC;
-	proc->ftn->ppid_parent = proc->ftn->parent;
-	
+
 	ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
 	list_for_each_entry_safe(child, next, &proc->ftn->parent->children, siblings_list) {
 		if(child == proc->ftn) {
@@ -377,10 +374,12 @@ int ptrace_traceme(void){
 	error = -EPERM;
 	goto out_notfound;
  found:
+	proc->ftn->ptrace = PT_TRACED | PT_TRACE_EXEC;
+	proc->ftn->ppid_parent = proc->ftn->parent;
+
 	list_add_tail(&proc->ftn->ptrace_siblings_list, &proc->ftn->parent->ptrace_children);
-	
+
 	ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
-	
 	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
 
 	if (proc->ptrace_debugreg == NULL) {
