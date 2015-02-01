@@ -462,7 +462,9 @@ void procfs_exit(int osnum) {
 			} else {
 				r += 1;
 			}
-			remove_proc_entry(r, parent->entry);
+			if (parent) {
+				remove_proc_entry(r, parent->entry);
+			}
 			dprintk("free the entry\n");
 			kfree(e);
 		}
