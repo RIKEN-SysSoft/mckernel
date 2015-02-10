@@ -30,6 +30,9 @@ SECTIONS
 		. = vsyscall_page + 0x400;
 		*(.vsyscall.time)
 
+		. = vsyscall_page + 0x800;
+		*(.vsyscall.getcpu)
+
 		. = ALIGN(4096);
 	} : data = 0xf4
 

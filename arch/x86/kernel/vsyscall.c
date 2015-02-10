@@ -58,3 +58,17 @@ long vsyscall_time(void *tp)
 
 	return t;
 }
+
+extern int vsyscall_getcpu(unsigned *cpup, unsigned *nodep, void *tcachep)
+	__attribute__ ((section (".vsyscall.getcpu")));
+
+int vsyscall_getcpu(unsigned *cpup, unsigned *nodep, void *tcachep)
+{
+	int error;
+
+	asm ("syscall" : "=a" (error)
+			: "a" (__NR_getcpu), "D" (cpup), "S" (nodep), "d" (tcachep)
+			: "%rcx", "%r11", "memory");
+
+	return error;
+}
