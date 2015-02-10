@@ -3869,6 +3869,34 @@ out:
 	return ret;
 }
 
+SYSCALL_DECLARE(getcpu)
+{
+	const uintptr_t cpup = ihk_mc_syscall_arg0(ctx);
+	const uintptr_t nodep = ihk_mc_syscall_arg1(ctx);
+	struct process *proc = cpu_local_var(current);
+	const int cpu = ihk_mc_get_processor_id();
+	const int node = 0;
+	int error;
+
+	if (cpup) {
+		error = copy_to_user(proc, (void *)cpup, &cpu, sizeof(cpu));
+		if (error) {
+			goto out;
+		}
+	}
+
+	if (nodep) {
+		error = copy_to_user(proc, (void *)nodep, &node, sizeof(node));
+		if (error) {
+			goto out;
+		}
+	}
+
+	error = 0;
+out:
+	return error;
+} /* sys_getcpu() */
+
 #ifdef DCFA_KMOD
 
 #ifdef CMD_DCFA

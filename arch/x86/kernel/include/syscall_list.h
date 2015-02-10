@@ -90,6 +90,7 @@ SYSCALL_HANDLED(289, signalfd4)
 #ifdef DCFA_KMOD
 SYSCALL_HANDLED(303, mod_call)
 #endif
+SYSCALL_HANDLED(309, getcpu)
 SYSCALL_HANDLED(601, pmc_init)
 SYSCALL_HANDLED(602, pmc_start)
 SYSCALL_HANDLED(603, pmc_stop)
