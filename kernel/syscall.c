@@ -3897,6 +3897,36 @@ out:
 	return error;
 } /* sys_getcpu() */
 
+SYSCALL_DECLARE(mbind)
+{
+	dkprintf("sys_mbind\n");
+	return -ENOSYS;
+} /* sys_mbind() */
+
+SYSCALL_DECLARE(set_mempolicy)
+{
+	dkprintf("sys_set_mempolicy\n");
+	return -ENOSYS;
+} /* sys_set_mempolicy() */
+
+SYSCALL_DECLARE(get_mempolicy)
+{
+	dkprintf("sys_get_mempolicy\n");
+	return -ENOSYS;
+} /* sys_get_mempolicy() */
+
+SYSCALL_DECLARE(migrate_pages)
+{
+	dkprintf("sys_migrate_pages\n");
+	return -ENOSYS;
+} /* sys_migrate_pages() */
+
+SYSCALL_DECLARE(move_pages)
+{
+	dkprintf("sys_move_pages\n");
+	return -ENOSYS;
+} /* sys_move_pages() */
+
 #ifdef DCFA_KMOD
 
 #ifdef CMD_DCFA
