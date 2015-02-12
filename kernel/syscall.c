@@ -1956,6 +1956,7 @@ do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
 	struct process *proc = cpu_local_var(current);
 	struct k_sigaction *k;
 	int	irqstate;
+	ihk_mc_user_context_t ctx0;
 
 	irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
 	k = proc->sighandler->action + sig - 1;
@@ -1964,6 +1965,13 @@ do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
 	if(act)
 		memcpy(k, act, sizeof(struct k_sigaction));
 	ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
+
+	if(act){
+		ihk_mc_syscall_arg0(&ctx0) = sig;
+		ihk_mc_syscall_arg1(&ctx0) = (unsigned long)act->sa.sa_handler;
+		ihk_mc_syscall_arg2(&ctx0) = act->sa.sa_flags;
+		syscall_generic_forwarding(__NR_rt_sigaction, &ctx0);
+	}
 	return 0;
 }
 
@@ -1976,6 +1984,7 @@ SYSCALL_DECLARE(rt_sigprocmask)
 	struct process *proc = cpu_local_var(current);
 	int flag;
 	__sigset_t wsig;
+	ihk_mc_user_context_t ctx0;
 
 	if(sigsetsize != sizeof(sigset_t))
 		return -EINVAL;
@@ -2007,7 +2016,11 @@ SYSCALL_DECLARE(rt_sigprocmask)
 			break;
 		}
 	}
+	wsig = proc->sigmask.__val[0];
 	ihk_mc_spinlock_unlock(&proc->sighandler->lock, flag);
+
+	ihk_mc_syscall_arg0(&ctx0) = wsig;
+	syscall_generic_forwarding(__NR_rt_sigprocmask, &ctx0);
 	return 0;
 fault:
 	ihk_mc_spinlock_unlock(&proc->sighandler->lock, flag);

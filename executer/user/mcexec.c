@@ -811,6 +811,8 @@ static void *main_loop_thread_func(void *arg)
 	return NULL;
 }
 
+#define LOCALSIG SIGCHLD
+
 void
 sendsig(int sig, siginfo_t *siginfo, void *context)
 {
@@ -822,7 +824,10 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 	struct signal_desc sigdesc;
 
 	if(siginfo->si_pid == pid &&
-	   siginfo->si_signo == SIGINT)
+	   siginfo->si_signo == LOCALSIG)
+		return;
+
+	if(siginfo->si_signo == SIGCHLD)
 		return;
 
 	for(i = 0; i < ncpu; i++){
@@ -858,6 +863,34 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 		close(fd);
 		exit(1);
 	}
+}
+
+void
+act_sigaction(struct syscall_wait_desc *w)
+{
+	struct sigaction act;
+	int sig;
+
+	sig = w->sr.args[0];
+	memset(&act, '\0', sizeof act);
+	if (w->sr.args[1] == -1)
+		act.sa_handler = SIG_IGN;
+	else{
+		act.sa_sigaction = sendsig;
+		act.sa_flags = SA_SIGINFO;
+	}
+	sigaction(sig, &act, NULL);
+}
+
+void
+act_sigprocmask(struct syscall_wait_desc *w)
+{
+	sigset_t set;
+
+	sigemptyset(&set);
+	memcpy(&set, &w->sr.args[0], sizeof(unsigned long));
+	sigdelset(&set, LOCALSIG);
+	sigprocmask(SIG_SETMASK, &set, NULL);
 }
 
 static int reduce_stack(struct rlimit *orig_rlim, char *argv[])
@@ -912,8 +945,7 @@ void init_sigaction(void)
 
 	master_tid = gettid();
 	for (i = 1; i <= 64; i++) {
-		if (i != SIGCHLD && i != SIGCONT && i != SIGSTOP &&
-		    i != SIGTSTP && i != SIGTTIN && i != SIGTTOU) {
+		if (i != SIGKILL && i != SIGSTOP) {
 			struct sigaction act;
 
 			sigaction(i, NULL, &act);
@@ -1335,13 +1367,13 @@ static void
 kill_thread(unsigned long cpu)
 {
 	if(cpu >= 0 && cpu < ncpu){
-		pthread_kill(thread_data[cpu].thread_id, SIGINT);
+		pthread_kill(thread_data[cpu].thread_id, LOCALSIG);
 	}
 	else{
 		int	i;
 
 		for (i = 0; i < ncpu; ++i) {
-			pthread_kill(thread_data[i].thread_id, SIGINT);
+			pthread_kill(thread_data[i].thread_id, LOCALSIG);
 		}
 	}
 }
@@ -1845,6 +1877,16 @@ return_execve2:
 
 			break;
 		}
+
+		case __NR_rt_sigaction:
+			act_sigaction(&w);
+			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
+			break;
+
+		case __NR_rt_sigprocmask:
+			act_sigprocmask(&w);
+			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
+			break;
 
 		case __NR_close:
 			if(w.sr.args[0] == fd)
