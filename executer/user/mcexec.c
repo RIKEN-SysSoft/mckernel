@@ -1741,7 +1741,8 @@ sync_out:
 			int ret;
 			pid_t pid = w.sr.args[0];
 
-			if ((ret = waitpid(pid, &status, 0)) != pid) {
+			while ((ret = waitpid(pid, &status, 0)) == -1 && errno == EINTR);
+			if(ret != pid) {
 				fprintf(stderr, "ERROR: waiting for %lu\n", w.sr.args[0]);
 			}
 
