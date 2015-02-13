@@ -135,6 +135,7 @@ static void init_idt(void)
 void init_fpu(void)
 {
 	unsigned long reg;
+	unsigned long cpuid01_ecx;
 
 	asm volatile("movq %%cr0, %0" : "=r"(reg));
 	/* Unset EM and TS flag. */
@@ -144,10 +145,36 @@ void init_fpu(void)
 	asm volatile("movq %0, %%cr0" : : "r"(reg));
 
 #ifdef ENABLE_SSE
+	asm volatile("cpuid" : "=c" (cpuid01_ecx) : "a" (0x1) : "%rbx", "%rdx");
 	asm volatile("movq %%cr4, %0" : "=r"(reg));
-	/* Set OSFXSR flag. */
-	reg |= (1 << 9);
+	/* Cr4 flags: 
+	   OSFXSR[b9] - enables SSE instructions
+	   OSXMMEXCPT[b10] - generate SIMD FP exception instead of invalid op
+	   OSXSAVE[b18] - enables access to xcr0
+
+	   CPUID.01H:ECX flags:
+	   XSAVE[b26] - verify existence of extended crs/XSAVE
+	   AVX[b28] - verify existence of AVX instructions
+	*/
+	reg |= ((1 << 9) | (1 << 10));
+	if(cpuid01_ecx & (1 << 26)) {
+		/* XSAVE set, enable access to xcr0 */
+		reg |= (1 << 18);
+	}
 	asm volatile("movq %0, %%cr4" : : "r"(reg));
+
+	kprintf("init_fpu(): SSE init: CR4 = 0x%016lX;  ", reg);
+
+	/* Set xcr0[2:1] to enable avx ops */
+	if(cpuid01_ecx & (1 << 28)) {
+		reg = xgetbv(0);
+		reg |= 0x6;
+		xsetbv(0, reg);
+	}
+
+	kprintf("XCR0 = 0x%016lX\n", reg);
+#else
+	kprintf("init_fpu(): SSE not enabled\n");
 #endif
 
 	asm volatile("finit");
@@ -739,6 +766,30 @@ void ihk_mc_delay_us(int us)
 	arch_delay(us);
 }
 
+#define EXTENDED_ARCH_SHOW_CONTEXT
+#ifdef EXTENDED_ARCH_SHOW_CONTEXT
+void arch_show_extended_context(void)
+{
+	unsigned long cr0, cr4, msr, xcr0;
+
+	/*  Read and print CRs, MSR_EFER, XCR0  */
+	asm volatile("movq %%cr0, %0" : "=r"(cr0));
+	asm volatile("movq %%cr4, %0" : "=r"(cr4));
+	msr = rdmsr(MSR_EFER);
+	xcr0 = xgetbv(0);
+
+	__kprintf("\n             CR0              CR4\n");
+	__kprintf("%016lX %016lX\n", cr0, cr4);
+
+	__kprintf("             MSR_EFER\n");
+	__kprintf("%016lX\n", msr);
+
+	__kprintf("             XCR0\n");
+	__kprintf("%016lX\n", xcr0);
+
+}
+#endif
+
 void arch_show_interrupt_context(const void *reg)
 {
 	const struct x86_regs *regs = reg;
@@ -762,7 +813,11 @@ void arch_show_interrupt_context(const void *reg)
 	__kprintf("              CS               SS           RFLAGS            ERROR\n");
 	__kprintf("%16lx %16lx %16lx %16lx\n",
 	        regs->cs, regs->ss, regs->rflags, regs->error);
-	
+
+#ifdef EXTENDED_ARCH_SHOW_CONTEXT
+        arch_show_extended_context();
+#endif	
+
 	kprintf_unlock(irqflags);
 }
 

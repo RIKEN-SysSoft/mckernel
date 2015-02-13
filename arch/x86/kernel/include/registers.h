@@ -61,6 +61,25 @@
 #define MSR_PERF_CTL_0 0xc0010000
 #define MSR_PERF_CTR_0 0xc0010004
 
+static unsigned long xgetbv(unsigned int index)
+{
+	unsigned int low, high;
+
+	asm volatile("xgetbv" : "=a" (low), "=d" (high) : "c" (index));
+
+	return low | ((unsigned long)high << 32);
+}
+
+static void xsetbv(unsigned int index, unsigned long val)
+{
+	unsigned int low, high;
+
+	low = val;
+	high = val >> 32;
+
+	asm volatile("xsetbv" : : "a" (low), "d" (high), "c" (index));
+}
+
 static void wrmsr(unsigned int idx, unsigned long value){
 	unsigned int high, low;
 
