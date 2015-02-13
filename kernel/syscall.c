@@ -1925,6 +1925,11 @@ SYSCALL_DECLARE(setpgid)
 	unsigned long irqstate = 0;
 	struct process *tproc;
 
+	if(pid == 0)
+		pid = proc->ftn->pid;
+	if(pgid == 0)
+		pgid = pid;
+
 	if(proc->ftn->pid != pid){
 		tproc = findthread_and_lock(pid, pid, &lock, &irqstate);
 		if(tproc){
