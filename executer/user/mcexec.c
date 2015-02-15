@@ -811,7 +811,7 @@ static void *main_loop_thread_func(void *arg)
 	return NULL;
 }
 
-#define LOCALSIG SIGCHLD
+#define LOCALSIG SIGURG
 
 void
 sendsig(int sig, siginfo_t *siginfo, void *context)
@@ -872,8 +872,10 @@ act_sigaction(struct syscall_wait_desc *w)
 	int sig;
 
 	sig = w->sr.args[0];
+	if (sig == SIGCHLD || sig == LOCALSIG)
+		return;
 	memset(&act, '\0', sizeof act);
-	if (w->sr.args[1] == -1)
+	if (w->sr.args[1] == (unsigned long)SIG_IGN)
 		act.sa_handler = SIG_IGN;
 	else{
 		act.sa_sigaction = sendsig;
@@ -945,7 +947,7 @@ void init_sigaction(void)
 
 	master_tid = gettid();
 	for (i = 1; i <= 64; i++) {
-		if (i != SIGKILL && i != SIGSTOP) {
+		if (i != SIGKILL && i != SIGSTOP && i != SIGCHLD) {
 			struct sigaction act;
 
 			sigaction(i, NULL, &act);
@@ -1714,7 +1716,8 @@ fork_child_out:
 				/* Parent */
 				default:
 
-					if (read(sync_pipe_fd[0], &sync_msg, 1) != 1) {
+					while ((ret = read(sync_pipe_fd[0], &sync_msg, 1)) == -1 && errno == EINTR);
+					if (ret != 1) {
 						fprintf(stderr, "fork(): error reading sync message\n");
 						child = -1;
 						goto sync_out;
