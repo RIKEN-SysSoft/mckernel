@@ -492,6 +492,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		struct siginfo	info;
 	} *sp, info;
 	unsigned long pp;
+	int cpuid;
 
 	switch (packet->msg) {
 	case SCD_MSG_INIT_CHANNEL_ACKED:
@@ -523,12 +524,17 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		return 0;
 
 	case SCD_MSG_SCHEDULE_PROCESS:
+		cpuid = obtain_clone_cpuid();
+		if(cpuid == -1){
+			kprintf("No CPU available\n");
+			return -1;
+		}
 		dkprintf("SCD_MSG_SCHEDULE_PROCESS: %lx\n", packet->arg);
 		proc = (struct process *)packet->arg;
 
-		settid(proc, 0, ihk_mc_get_processor_id(), -1);
+		settid(proc, 0, cpuid, -1);
 		proc->ftn->status = PS_RUNNING;
-		runq_add_proc(proc, ihk_mc_get_processor_id());
+		runq_add_proc(proc, cpuid);
 					  
 		//cpu_local_var(next) = (struct process *)packet->arg;
 		return 0;
