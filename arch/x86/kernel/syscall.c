@@ -839,10 +839,10 @@ do_kill(int pid, int tid, int sig, siginfo_t *info, int ptracecont)
 	   in check_signal */
 	rc = 0;
 	k = tproc->sighandler->action + sig - 1;
-	if(k->sa.sa_handler != (void *)1 &&
-	   (k->sa.sa_handler != NULL ||
-	    (tproc->ftn->ptrace & PT_TRACED) ||
-	    (sig != SIGCHLD && sig != SIGURG))){
+	if((sig != SIGKILL && (tproc->ftn->ptrace & PT_TRACED)) ||
+			(k->sa.sa_handler != (void *)1 &&
+			 (k->sa.sa_handler != NULL ||
+			  (sig != SIGCHLD && sig != SIGURG)))){
 		struct sig_pending *pending = NULL;
 		if (sig < 33) { // SIGRTMIN - SIGRTMAX
 			list_for_each_entry(pending, head, list){
