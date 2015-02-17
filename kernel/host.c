@@ -174,23 +174,8 @@ int prepare_process_ranges_args_envs(struct process *proc,
 				pn->entry);
 	}
 
-#if 1
-	/*
-	   Fix for the problem where brk grows to hit .bss section
-	   when using dynamically linked executables.
-	   Test code resides in /home/takagi/project/mpich/src/brk_icc_mic.
-	   This is because when using
-	   ld.so (i.e. using shared objects), mckernel/kernel/host.c sets "brk" to
-	   the end of .bss of ld.so (e.g. 0x21f000), and then ld.so places a
-	   main-program after this (e.g. 0x400000), so "brk" will hit .bss
-	   eventually.
-	   */
-	proc->vm->region.brk_start = proc->vm->region.brk_end =
-		(USER_END / 4) & LARGE_PAGE_MASK;
-#else
 	proc->vm->region.brk_start = proc->vm->region.brk_end =
 		proc->vm->region.data_end;
-#endif
 
 	/* Map, copy and update args and envs */
 	flags = VR_PROT_READ | VR_PROT_WRITE;
