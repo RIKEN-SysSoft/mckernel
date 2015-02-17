@@ -387,7 +387,6 @@ int ptrace_traceme(void){
 	}
 
 	clear_single_step(proc);
-	/* TODO: other flags may reset */
 
  out:
 	dkprintf("ptrace_traceme,returning,error=%d\n", error);

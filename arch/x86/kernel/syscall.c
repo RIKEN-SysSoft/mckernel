@@ -391,7 +391,7 @@ void set_single_step(struct process *proc)
 
 extern void coredump(struct process *proc, void *regs);
 
-static void ptrace_report_signal(struct process *proc, struct x86_regs *regs, int sig)
+void ptrace_report_signal(struct process *proc, int sig)
 {
 	long rc;
 
@@ -401,6 +401,7 @@ static void ptrace_report_signal(struct process *proc, struct x86_regs *regs, in
 	proc->ftn->exit_status = sig;
 	/* Transition process state */
 	proc->ftn->status = PS_TRACED;
+	proc->ftn->ptrace &= ~PT_TRACE_SYSCALL_MASK;
 	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
 	if (proc->ftn->parent) {
 		/* kill SIGCHLD */
@@ -525,7 +526,7 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 		case SIGTTIN:
 		case SIGTTOU:
 			if(ptraceflag){
-				ptrace_report_signal(proc, regs, orgsig);
+				ptrace_report_signal(proc, orgsig);
 			}
 			else{
 				dkprintf("do_signal,SIGSTOP,changing state\n");

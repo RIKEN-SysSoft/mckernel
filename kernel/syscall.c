@@ -1433,53 +1433,42 @@ SYSCALL_DECLARE(arch_prctl)
 	                     ihk_mc_syscall_arg1(ctx));
 }
 
+extern void ptrace_report_signal(struct process *proc, int sig);
 static int ptrace_report_exec(struct process *proc)
 {
-	dkprintf("ptrace_report_exec,enter\n");
-	int error = 0;
-	long rc;
-	struct siginfo info;
+	int ptrace = proc->ftn->ptrace;
 
-	if (!(proc->ftn->ptrace & (PT_TRACE_EXEC|PTRACE_O_TRACEEXEC))) {
-		goto out;
+	if (ptrace & (PT_TRACE_EXEC|PTRACE_O_TRACEEXEC)) {
+		int sig = (SIGTRAP | (PTRACE_EVENT_EXEC << 8));
+		ptrace_report_signal(proc, sig);
 	}
+	return 0;
+}
 
-	/* Save reason why stopped and process state for wait4() to reap */
-	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
-	proc->ftn->exit_status = (SIGTRAP | (PTRACE_EVENT_EXEC << 8));
-	/* Transition process state */
-	proc->ftn->status = PS_TRACED;
-	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
 
-	dkprintf("ptrace_report_exec,kill SIGCHLD\n");
-	if (proc->ftn->parent) {
-		/* kill SIGCHLD */
-		ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
-		if (proc->ftn->parent->owner) {
-			memset(&info, '\0', sizeof info);
-			info.si_signo = SIGCHLD;
-			info.si_code = CLD_TRAPPED;
-			info._sifields._sigchld.si_pid = proc->ftn->pid;
-			info._sifields._sigchld.si_status = proc->ftn->exit_status;
-			rc = do_kill(proc->ftn->parent->pid, -1, SIGCHLD, &info, 0);
-			if(rc < 0) {
-				dkprintf("ptrace_report_exec,do_kill failed\n");
-			}
+static void ptrace_syscall_enter(struct process *proc)
+{
+	int ptrace = proc->ftn->ptrace;
+
+	if (ptrace & PT_TRACE_SYSCALL_ENTER) {
+		int sig = (SIGTRAP | ((ptrace & PTRACE_O_TRACESYSGOOD) ? 0x80 : 0));
+		ptrace_report_signal(proc, sig);
+		ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);	
+		if (proc->ftn->ptrace & PT_TRACE_SYSCALL_ENTER) {
+			proc->ftn->ptrace |= PT_TRACE_SYSCALL_EXIT;
 		}
-		ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);	
-
-		/* Wake parent (if sleeping in wait4()) */
-		waitq_wakeup(&proc->ftn->parent->waitpid_q);
+		ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
 	}
+}
 
-	/* Sleep */
-	dkprintf("ptrace_report_exec,sleeping\n");
-	
-	schedule();
-	dkprintf("ptrace_report_exec,woken up\n");
+static void ptrace_syscall_exit(struct process *proc)
+{
+	int ptrace = proc->ftn->ptrace;
 
-out:
-	return error;
+	if (ptrace & PT_TRACE_SYSCALL_EXIT) {
+		int sig = (SIGTRAP | ((ptrace & PTRACE_O_TRACESYSGOOD) ? 0x80 : 0));
+		ptrace_report_signal(proc, sig);
+	}
 }
 
 static int ptrace_check_clone_event(struct process *proc, int clone_flags)
@@ -1522,6 +1511,7 @@ static int ptrace_report_clone(struct process *proc, struct process *new, int ev
 	/* Transition process state */
 	proc->ftn->status = PS_TRACED;
 	proc->ftn->ptrace_eventmsg = new->ftn->pid;
+	proc->ftn->ptrace &= ~PT_TRACE_SYSCALL_MASK;
 	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
 
 	dkprintf("ptrace_report_clone,kill SIGCHLD\n");
@@ -2613,9 +2603,12 @@ static int ptrace_wakeup_sig(int pid, long request, long data) {
 		if (request == PTRACE_SINGLESTEP) {
 			set_single_step(child);
 		}
+		ihk_mc_spinlock_lock_noirq(&child->ftn->lock);
+		child->ftn->ptrace &= ~PT_TRACE_SYSCALL_MASK;
 		if (request == PTRACE_SYSCALL) {
-			/* TODO: may set PTRACE_SYSCALL flag */
+			child->ftn->ptrace |= PT_TRACE_SYSCALL_ENTER;
 		}
+		ihk_mc_spinlock_unlock_noirq(&child->ftn->lock);
 		if(data != 0 && data != SIGSTOP) {
 			struct process *proc;
 
@@ -2908,8 +2901,7 @@ static int ptrace_attach(int pid)
 		}
 	}
 
-	proc->uctx->rflags &= ~RFLAGS_TF; /* SingleStep clear */
-	/* TODO: other flags may reset */
+	clear_single_step(proc);
 
 	memset(&info, '\0', sizeof info);
 	info.si_signo = SIGSTOP;
@@ -2991,7 +2983,6 @@ found:
 	}
 
 	clear_single_step(proc);
-	/* TODO: other flags may clear */
 
 	if (data != 0) {
 		memset(&info, '\0', sizeof info);
@@ -3117,7 +3108,8 @@ SYSCALL_DECLARE(ptrace)
 		dkprintf("ptrace: unimplemented ptrace(PTRACE_GETFPXREGS) called.\n");
 		break;
 	case PTRACE_SYSCALL:
-		dkprintf("ptrace: unimplemented ptrace(PTRACE_SYSCALL) called.\n");
+		dkprintf("ptrace: PTRACE_SYSCALL: data=%d\n", data);
+		error = ptrace_wakeup_sig(pid, request, data);
 		break;
 	case PTRACE_GETSIGINFO:
 		dkprintf("ptrace: unimplemented ptrace(PTRACE_GETSIGINFO) called.\n");
@@ -4037,6 +4029,9 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 
 	cpu_enable_interrupt();
 
+	if (cpu_local_var(current)->ftn->ptrace) {
+		ptrace_syscall_enter(cpu_local_var(current));
+	}
 
 #if 0
 	if(num != 24)  // if not sched_yield
@@ -4082,6 +4077,10 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 
 	check_signal(l, NULL);
 	check_need_resched();
+
+	if (cpu_local_var(current)->ftn->ptrace) {
+		ptrace_syscall_exit(cpu_local_var(current));
+	}
 
 	return l;
 }
