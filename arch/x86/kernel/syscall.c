@@ -40,6 +40,20 @@ extern void save_fp_regs(struct process *proc);
 #define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
 #endif
 
+uintptr_t debug_constants[] = {
+	sizeof(struct cpu_local_var),
+	offsetof(struct cpu_local_var, current),
+	offsetof(struct cpu_local_var, runq),
+	offsetof(struct cpu_local_var, status),
+	offsetof(struct process, ctx),
+	offsetof(struct process, sched_list),
+	offsetof(struct process, ftn),
+	offsetof(struct fork_tree_node, status),
+	offsetof(struct fork_tree_node, pid),
+	offsetof(struct fork_tree_node, tid),
+	-1,
+};
+
 /*
 See dkprintf("BSP HW ID = %d, ", bsp_hw_id); (in ./mcos/kernel/ap.c)
 

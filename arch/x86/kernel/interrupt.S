@@ -130,6 +130,49 @@ general_protection_exception:
 		addq	$8, %rsp
 		iretq
 
+.globl nmi
+nmi:
+#define PANICED 232
+#define PANIC_REGS 240
+		movq	%rax,%gs:PANIC_REGS+0x00
+		movq	%rbx,%gs:PANIC_REGS+0x08
+		movq	%rcx,%gs:PANIC_REGS+0x10
+		movq	%rdx,%gs:PANIC_REGS+0x18
+		movq	%rsi,%gs:PANIC_REGS+0x20
+		movq	%rdi,%gs:PANIC_REGS+0x28
+		movq	%rbp,%gs:PANIC_REGS+0x30
+		movq	0x18(%rsp),%rax		/* rsp */
+		movq	%rax,%gs:PANIC_REGS+0x38
+		movq	%r8, %gs:PANIC_REGS+0x40
+		movq	%r9, %gs:PANIC_REGS+0x48
+		movq	%r10,%gs:PANIC_REGS+0x50
+		movq	%r11,%gs:PANIC_REGS+0x58
+		movq	%r12,%gs:PANIC_REGS+0x60
+		movq	%r13,%gs:PANIC_REGS+0x68
+		movq	%r14,%gs:PANIC_REGS+0x70
+		movq	%r15,%gs:PANIC_REGS+0x78
+		movq	0x00(%rsp),%rax		/* rip */
+		movq	%rax,%gs:PANIC_REGS+0x80
+		movq	0x10(%rsp),%rax		/* rflags */
+		movl	%eax,%gs:PANIC_REGS+0x88
+		movq	0x08(%rsp),%rax		/* cs */
+		movl	%eax,%gs:PANIC_REGS+0x8C
+		movq	0x20(%rsp),%rax		/* ss */
+		movl	%eax,%gs:PANIC_REGS+0x90
+		xorq	%rax,%rax
+		movw	%ds,%ax
+		movl	%eax,%gs:PANIC_REGS+0x94
+		movw	%es,%ax
+		movl	%eax,%gs:PANIC_REGS+0x98
+		movw	%fs,%ax
+		movl	%eax,%gs:PANIC_REGS+0x9C
+		movw	%gs,%ax
+		movl	%eax,%gs:PANIC_REGS+0xA0
+		movq	$1,%gs:PANICED
+1:
+		hlt
+		jmp	1b
+
 .globl x86_syscall
 x86_syscall:
 		cld

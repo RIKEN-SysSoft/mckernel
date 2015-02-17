@@ -42,7 +42,10 @@ struct x86_cpu_local_variables {
 	uint64_t gdt[10];
 /* 128 */
 	struct tss64 tss;
-
+/* 232 */
+	unsigned long paniced;
+	uint64_t panic_regs[21];
+/* 408 */
 } __attribute__((packed));
 
 struct x86_cpu_local_variables *get_x86_cpu_local_variable(int id);

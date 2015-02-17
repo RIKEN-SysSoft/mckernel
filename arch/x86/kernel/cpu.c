@@ -112,6 +112,7 @@ void reload_idt(void)
 }
 
 static struct list_head handlers[256 - 32];
+extern char nmi[];
 extern char page_fault[], general_protection_exception[];
 extern char debug_exception[], int3_exception[];
 
@@ -131,6 +132,7 @@ static void init_idt(void)
 		set_idt_entry(i, generic_common_handlers[i]);
 	}
 
+	set_idt_entry(2, (uintptr_t)nmi);
 	set_idt_entry(13, (unsigned long)general_protection_exception);
 	set_idt_entry(14, (unsigned long)page_fault);
 

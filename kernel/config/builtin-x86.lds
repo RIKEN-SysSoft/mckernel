@@ -42,8 +42,4 @@ SECTIONS
     . = ALIGN(4096);
     _end = .;
 
-	/DISCARD/ : {
-	     *(.eh_frame)
-         *(.note.gnu.build-id)
-	}
 }
