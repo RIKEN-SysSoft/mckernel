@@ -2821,11 +2821,15 @@ static int ptrace_setoptions(int pid, int flags)
 	 * PTRACE_O_TRACESYSGOOD 
 	 * PTRACE_O_TRACEFORK
 	 * PTRACE_O_TRACEVFORK
+	 * PTRACE_O_TRACECLONE
+	 * PTRACE_O_TRACEEXEC
 	 * PTRACE_O_TRACEVFORKDONE
 	 */
 	if (flags & ~(PTRACE_O_TRACESYSGOOD|
 				PTRACE_O_TRACEFORK|
 				PTRACE_O_TRACEVFORK|
+				PTRACE_O_TRACECLONE|
+				PTRACE_O_TRACEEXEC|
 				PTRACE_O_TRACEVFORKDONE)) {
 		kprintf("ptrace_setoptions: not supported flag %x\n", flags);
 		ret = -EINVAL;
