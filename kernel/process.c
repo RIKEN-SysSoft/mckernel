@@ -2041,8 +2041,19 @@ redo:
 
 		/* No process? Run idle.. */
 		if (!next) {
-			next = &cpu_local_var(idle);
-			v->status = CPU_STATUS_IDLE;
+			list_for_each_entry_safe(proc, tmp, &(v->runq), sched_list) {
+				if (proc->ftn->status & (PS_INTERRUPTIBLE |
+				                         PS_UNINTERRUPTIBLE |
+				                         PS_STOPPED |
+				                         PS_TRACED)) {
+					next = proc;
+					break;
+				}
+			}
+			if (!next) {
+				next = &cpu_local_var(idle);
+				v->status = CPU_STATUS_IDLE;
+			}
 		}
 	}
 
