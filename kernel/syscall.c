@@ -530,6 +530,8 @@ SYSCALL_DECLARE(wait4)
 	goto exit;
 }
 
+static int ptrace_terminate_tracer(struct process *proc, struct fork_tree_node *tracer);
+
 void
 terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 {
@@ -564,7 +566,9 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 	}
 	list_for_each_entry_safe(child, next, &ftn->ptrace_children, ptrace_siblings_list) {
 		list_del(&child->ptrace_siblings_list);
-		release_fork_tree_node(child);
+		if (ptrace_terminate_tracer(child->owner, ftn)) {
+			release_fork_tree_node(child);
+		}
 	}
 	ftn->owner = NULL;
 	ihk_mc_spinlock_unlock_noirq(&ftn->lock);	
@@ -2926,7 +2930,7 @@ static int ptrace_attach(int pid)
 
 static int ptrace_detach(int pid, int data)
 {
-	int error;
+	int error = 0;
 	struct process *proc;
 	struct fork_tree_node *child, *next;
 	ihk_spinlock_t *savelock;
@@ -2940,7 +2944,9 @@ static int ptrace_detach(int pid, int data)
 	}
 	ihk_mc_spinlock_unlock(savelock, irqstate);
 
-	if (!(proc->ftn->ptrace & PT_TRACED) || proc->ftn->parent != cpu_local_var(current)->ftn) {
+	if (!(proc->ftn->ptrace & PT_TRACED) ||
+			proc->ftn->parent != cpu_local_var(current)->ftn ||
+			proc->ftn->ppid_parent == NULL) {
 		error = -ESRCH;
 		goto out;
 	}
@@ -2969,11 +2975,9 @@ found:
 	proc->ftn->parent = proc->ftn->ppid_parent;
 	proc->ftn->ppid_parent = NULL;
 
-	if (proc->ftn->parent) {
-		ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
-		list_add_tail(&proc->ftn->siblings_list, &proc->ftn->parent->children);
-		ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
-	}
+	ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
+	list_add_tail(&proc->ftn->siblings_list, &proc->ftn->parent->children);
+	ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
 
 	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
 
@@ -3002,6 +3006,52 @@ out_notfound:
 	ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
 	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
 	goto out;
+}
+
+static int ptrace_terminate_tracer(struct process *proc, struct fork_tree_node *tracer)
+{
+	int error = 0;
+
+	dkprintf("ptrace_terminate_tracer,pid=%d\n", proc->ftn->pid);
+	if (!(proc->ftn->ptrace & PT_TRACED) ||
+			proc->ftn->parent != tracer ||
+			proc->ftn->ppid_parent == NULL) {
+		error = -ESRCH;
+		goto out;
+	}
+
+	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
+
+	proc->ftn->ptrace = 0;
+	proc->ftn->parent = proc->ftn->ppid_parent;
+	proc->ftn->ppid_parent = NULL;
+
+	if (proc->ftn->parent == tracer) {
+		error = 1;	/* will call release_fork_tree_node() */
+	} else {
+		/* re-connect real parent */
+		ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
+		list_add_tail(&proc->ftn->siblings_list, &proc->ftn->parent->children);
+		ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
+	}
+
+	/* if signal stopped, change to PS_STOPPED  */
+	if (proc->ftn->signal_flags & SIGNAL_STOP_STOPPED) {
+		proc->ftn->status = PS_STOPPED;
+	}
+
+	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
+
+	if (proc->ptrace_debugreg) {
+		kfree(proc->ptrace_debugreg);
+		proc->ptrace_debugreg = NULL;
+	}
+
+	clear_single_step(proc);
+
+out:
+	dkprintf("ptrace_terminate_tracer,error=%d\n", error);
+	return error;
 }
 
 static long ptrace_geteventmsg(int pid, long data)

@@ -402,6 +402,12 @@ void ptrace_report_signal(struct process *proc, int sig)
 	/* Transition process state */
 	proc->ftn->status = PS_TRACED;
 	proc->ftn->ptrace &= ~PT_TRACE_SYSCALL_MASK;
+	if (sig == SIGSTOP || sig == SIGTSTP ||
+			sig == SIGTTIN || sig == SIGTTOU) {
+		proc->ftn->signal_flags |= SIGNAL_STOP_STOPPED;
+	} else {
+		proc->ftn->signal_flags &= ~SIGNAL_STOP_STOPPED;
+	}
 	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
 	if (proc->ftn->parent) {
 		/* kill SIGCHLD */
