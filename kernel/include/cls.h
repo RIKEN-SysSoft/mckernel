@@ -30,6 +30,7 @@ struct malloc_header {
 #define CPU_STATUS_DISABLE	(0)
 #define CPU_STATUS_IDLE		(1)
 #define CPU_STATUS_RUNNING	(2)
+#define CPU_STATUS_RESERVED	(3)
 extern ihk_spinlock_t	cpu_status_lock;
 
 #define CPU_FLAG_NEED_RESCHED	0x1U

@@ -95,6 +95,7 @@ int obtain_clone_cpuid() {
         }
         goto retry; 
     }
+	get_cpu_local_var(cpuid)->status = CPU_STATUS_RESERVED;
     ihk_mc_spinlock_unlock_noirq(&cpuid_head_lock);
  out:
     return cpuid;

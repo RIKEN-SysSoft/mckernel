@@ -1996,7 +1996,8 @@ static void idle(void)
 {
 	struct cpu_local_var *v = get_this_cpu_local_var();
 
-	v->status = CPU_STATUS_IDLE;
+	if(v->status == CPU_STATUS_RUNNING)
+		v->status = CPU_STATUS_IDLE;
 	cpu_enable_interrupt();
 
 	while (1) {
@@ -2021,7 +2022,8 @@ static void idle(void)
 		 * 4) The idle process was resumed, and halted for waiting for
 		 *    the interrupt that had already been handled.
 		 */
-		if (v->status == CPU_STATUS_IDLE) {
+		if (v->status == CPU_STATUS_IDLE ||
+		    v->status == CPU_STATUS_RESERVED) {
 			long s;
 			struct process *p;
 
@@ -2034,7 +2036,8 @@ static void idle(void)
 			}
 			ihk_mc_spinlock_unlock(&v->runq_lock, s);
 		}
-		if (v->status == CPU_STATUS_IDLE) {
+		if (v->status == CPU_STATUS_IDLE ||
+		    v->status == CPU_STATUS_RESERVED) {
 			cpu_safe_halt();
 		}
 		else {
@@ -2189,19 +2192,8 @@ redo:
 
 		/* No process? Run idle.. */
 		if (!next) {
-			list_for_each_entry_safe(proc, tmp, &(v->runq), sched_list) {
-				if (proc->ftn->status & (PS_INTERRUPTIBLE |
-				                         PS_UNINTERRUPTIBLE |
-				                         PS_STOPPED |
-				                         PS_TRACED)) {
-					next = proc;
-					break;
-				}
-			}
-			if (!next) {
-				next = &cpu_local_var(idle);
-				v->status = CPU_STATUS_IDLE;
-			}
+			next = &cpu_local_var(idle);
+			v->status = v->runq_len? CPU_STATUS_RESERVED: CPU_STATUS_IDLE;
 		}
 	}
 
@@ -2256,6 +2248,13 @@ redo:
 		do_migrate();
 		goto redo;
 	}
+}
+
+void
+release_cpuid(int cpuid)
+{
+	if (!get_cpu_local_var(cpuid)->runq_len)
+		get_cpu_local_var(cpuid)->status = CPU_STATUS_IDLE;
 }
 
 void check_need_resched(void)

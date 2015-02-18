@@ -1745,6 +1745,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 						clone_flags);
 	
 	if (!new) {
+		release_cpuid(cpuid);
 		return -ENOMEM;
 	}
 
@@ -1764,6 +1765,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 			kprintf("ERROR: forking host process\n");
 			
 			/* TODO: clean-up new */
+			release_cpuid(cpuid);
 			return -EFAULT;
 		}
 
@@ -1811,6 +1813,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		if (ihk_mc_pt_virt_to_phys(new->vm->page_table, 
 					(void *)child_tidptr, &phys)) { 
 			kprintf("ERROR: looking up physical addr for child process\n");
+			release_cpuid(cpuid);
 			return -EFAULT; 
 		}
 	

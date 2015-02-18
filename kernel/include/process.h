@@ -444,5 +444,6 @@ void cpu_clear(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock);
 
 struct process *findthread_and_lock(int pid, int tid, ihk_spinlock_t **savelock, unsigned long *irqstate);
 void process_unlock(void *savelock, unsigned long irqstate);
+void release_cpuid(int cpuid);
 
 #endif
