@@ -253,9 +253,15 @@ int main(void)
 
 	kputs("MCK started.\n");
 
-	parse_kargs();
-
 	arch_init();
+
+	/*
+	 * In attached-mic,
+	 * bootparam is not mapped until arch_init() is finished.
+	 * In builtin-mic and builtin-x86,
+	 * virtual address of bootparam is changed in arch_init().
+	 */
+	parse_kargs();
 
 	mem_init();
 
