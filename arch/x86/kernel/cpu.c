@@ -824,7 +824,7 @@ void arch_show_extended_context(void)
 void arch_show_interrupt_context(const void *reg)
 {
 	const struct x86_regs *regs = reg;
-	int irqflags;
+	unsigned long irqflags;
 
 	irqflags = kprintf_lock();
 

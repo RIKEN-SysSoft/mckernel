@@ -45,12 +45,12 @@ void kputs(char *buf)
 
 #define KPRINTF_LOCAL_BUF_LEN 1024
 
-int kprintf_lock()
+unsigned long kprintf_lock(void)
 {
 	return ihk_mc_spinlock_lock(&kmsg_lock);
 }
 
-void kprintf_unlock(int irqflags)
+void kprintf_unlock(unsigned long irqflags)
 {
 	ihk_mc_spinlock_unlock(&kmsg_lock, irqflags);
 }

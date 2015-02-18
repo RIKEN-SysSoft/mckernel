@@ -22,8 +22,8 @@ struct ihk_kmsg_buf {
 };
 
 extern int kprintf(const char *format, ...);
-extern int kprintf_lock();
-extern void kprintf_unlock(int irqflags);
+extern unsigned long kprintf_lock(void);
+extern void kprintf_unlock(unsigned long irqflags);
 extern int __kprintf(const char *format, ...);
 
 extern void panic(const char *msg);

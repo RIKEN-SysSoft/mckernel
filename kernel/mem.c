@@ -214,7 +214,7 @@ static void unhandled_page_fault(struct process *proc, void *fault_addr, void *r
 	struct process_vm *vm = proc->vm;
 	struct vm_range *range;
 	char found;
-	int irqflags;
+	unsigned long irqflags;
 	unsigned long error = ((struct x86_regs *)regs)->error;
 
 	irqflags = kprintf_lock();
