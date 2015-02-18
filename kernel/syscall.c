@@ -3306,7 +3306,9 @@ SYSCALL_DECLARE(get_cpu_id)
 
 SYSCALL_DECLARE(sched_yield)
 {
-	return -ENOSYS;
+	schedule();
+
+	return 0;
 }
 
 SYSCALL_DECLARE(mlock)
