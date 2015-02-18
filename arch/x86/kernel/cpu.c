@@ -456,16 +456,50 @@ void handle_interrupt(int vector, struct x86_regs *regs)
 		panic("Invalid interrupt vector.");
 	} 
 	else if (vector < 32) {
-		if (vector == 8 || 
-		    (vector >= 10 && vector <= 15) || vector == 17) {
+		struct siginfo info;
+		switch(vector){
+		    case 0:
+			memset(&info, '\0', sizeof info);
+			info.si_signo = SIGFPE;
+			info.si_code = FPE_INTDIV;
+			info._sifields._sigfault.si_addr = (void *)regs->rip;
+			set_signal(SIGFPE, regs, &info);
+			break;
+		    case 9:
+		    case 16:
+		    case 19:
+			set_signal(SIGFPE, regs, NULL);
+			break;
+		    case 4:
+		    case 5:
+			set_signal(SIGSEGV, regs, NULL);
+			break;
+		    case 6:
+			memset(&info, '\0', sizeof info);
+			info.si_signo = SIGILL;
+			info.si_code = ILL_ILLOPN;
+			info._sifields._sigfault.si_addr = (void *)regs->rip;
+			set_signal(SIGILL, regs, &info);
+			break;
+		    case 10:
+			set_signal(SIGSEGV, regs, NULL);
+			break;
+		    case 11:
+		    case 12:
+			set_signal(SIGBUS, regs, NULL);
+			break;
+		    case 17:
+			memset(&info, '\0', sizeof info);
+			info.si_signo = SIGBUS;
+			info.si_code = BUS_ADRALN;
+			set_signal(SIGBUS, regs, &info);
+			break;
+		    default:
 			kprintf("Exception %d, rflags: 0x%lX CS: 0x%lX, RIP: 0x%lX\n",
 			        vector, regs->rflags, regs->cs, regs->rip);
-		} else {
-			kprintf("Exception %d, rflags: 0x%lX CS: 0x%lX, RIP: 0x%lX\n",
-			        vector, regs->rflags, regs->cs, regs->rip);
+			arch_show_interrupt_context(regs);
+			panic("Unhandled exception");
 		}
-		arch_show_interrupt_context(regs);
-		panic("Unhandled exception");
 	}
 	else if (vector >= IHK_TLB_FLUSH_IRQ_VECTOR_START && 
 	         vector < IHK_TLB_FLUSH_IRQ_VECTOR_END) {
@@ -486,13 +520,10 @@ void handle_interrupt(int vector, struct x86_regs *regs)
 
 void gpe_handler(struct x86_regs *regs)
 {
-	struct siginfo info;
-
 	kprintf("General protection fault (err: %lx, %lx:%lx)\n",
 	        regs->error, regs->cs, regs->rip);
 	arch_show_interrupt_context(regs);
-	memset(&info, '\0', sizeof info);
-	set_signal(SIGILL, regs, &info);
+	set_signal(SIGSEGV, regs, NULL);
 	check_signal(0, regs);
 	check_need_resched();
 	// panic("GPF");

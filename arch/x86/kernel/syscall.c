@@ -684,9 +684,16 @@ do_kill(int pid, int tid, int sig, siginfo_t *info, int ptracecont)
 	int doint;
 	ihk_spinlock_t *savelock = NULL;
 	int found = 0;
+	siginfo_t info0;
 
 	if(sig > 64 || sig < 0)
 		return -EINVAL;
+
+	if(info == NULL){
+		memset(&info0, '\0', sizeof info0);
+		info = &info0;
+		info0.si_signo = sig;
+	}
 
 	if(tid == -1 && pid <= 0){
 		int	pgid = -pid;
@@ -935,6 +942,5 @@ set_signal(int sig, void *regs0, siginfo_t *info)
 		coredump(proc, regs0);
 		terminate(0, sig | 0x80, (ihk_mc_user_context_t *)regs->rsp);
 	}
-	else
 		do_kill(proc->ftn->pid, proc->ftn->tid, sig, info, 0);
 }
