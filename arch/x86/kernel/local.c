@@ -80,6 +80,15 @@ void assign_processor_id(void)
 	v->processor_id = id;
 }
 
+void init_boot_processor_local(void)
+{
+	static struct x86_cpu_local_variables avar;
+
+	memset(&avar, -1, sizeof(avar));
+	set_gs_base(&avar);
+	return;
+}
+
 /** IHK **/
 int ihk_mc_get_processor_id(void)
 {
