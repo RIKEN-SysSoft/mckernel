@@ -99,6 +99,7 @@ extern unsigned long do_kill(int pid, int tid, int sig, struct siginfo *info, in
 int copy_from_user(struct process *, void *, const void *, size_t);
 int copy_to_user(struct process *, void *, const void *, size_t);
 void do_setpgid(int, int);
+extern long alloc_debugreg(struct process *proc);
 
 int prepare_process_ranges_args_envs(struct process *proc, 
 		struct program_load_desc *pn,
@@ -1550,6 +1551,10 @@ static int ptrace_report_clone(struct process *proc, struct process *new, int ev
 		new->ftn->ptrace = proc->ftn->ptrace;
 		new->ftn->ppid_parent = new->ftn->parent; /* maybe proc */
 
+		if ((new->ftn->ptrace & PT_TRACED) && new->ptrace_debugreg == NULL) {
+			alloc_debugreg(new);
+		}
+
 		ihk_mc_spinlock_lock_noirq(&new->ftn->parent->lock);
 		list_for_each_entry_safe(child, next, &new->ftn->parent->children, siblings_list) {
 			if(child == new->ftn) {
@@ -2854,8 +2859,6 @@ unlockout:
 out:
 	return ret;
 }
-
-extern long alloc_debugreg(struct process *proc);
 
 static int ptrace_attach(int pid)
 {
