@@ -330,7 +330,16 @@ out:
  * These problems may be solved in linux-3.7.
  * It uses vm_insert_pfn() until it is fixed.
  */
+
+/* TODO: figure out the correct Linux kernel version for this check,
+ * as for now, ihk-smp-x86 reloading works fine on 3.x.x kernels 
+ * using remap_pfn_range().
+ */
+#if LINUX_VERSION_CODE > KERNEL_VERSION(3,0,0)
+#define	USE_VM_INSERT_PFN	0
+#else
 #define	USE_VM_INSERT_PFN	1
+#endif
 
 static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
