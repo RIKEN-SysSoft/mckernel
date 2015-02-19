@@ -316,6 +316,29 @@ struct fork_tree_node {
 void hold_fork_tree_node(struct fork_tree_node *ftn);
 void release_fork_tree_node(struct fork_tree_node *ftn);
 
+/*
+ * Scheduling policies
+ */
+#define SCHED_NORMAL		0
+#define SCHED_FIFO		1
+#define SCHED_RR		2
+#define SCHED_BATCH		3
+/* SCHED_ISO: reserved but not implemented yet */
+#define SCHED_IDLE		5
+#define SCHED_DEADLINE		6
+
+/* Can be ORed in to make sure the process is reverted back to SCHED_NORMAL on fork */
+#define SCHED_RESET_ON_FORK     0x40000000
+
+/*
+ * For the sched_{set,get}attr() calls
+ */
+#define SCHED_FLAG_RESET_ON_FORK	0x01
+
+struct sched_param {
+	int sched_priority;
+};
+
 struct process {
 	int cpu_id;
 
@@ -327,6 +350,8 @@ struct process {
 	
 	// Runqueue list entry
 	struct list_head sched_list;  
+	int sched_policy;
+	struct sched_param sched_param;
 	
 	ihk_spinlock_t spin_sleep_lock;
 	int spin_sleep;

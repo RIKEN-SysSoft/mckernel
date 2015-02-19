@@ -154,6 +154,8 @@ struct process *create_process(unsigned long user_pc)
 		}
 	}
 
+	proc->sched_policy = SCHED_NORMAL;
+
 	proc->sighandler = kmalloc(sizeof(struct sig_handler), IHK_MC_AP_NOWAIT);
 	if(!proc->sighandler){
 		goto err_free_process;
@@ -251,6 +253,9 @@ struct process *clone_process(struct process *org, unsigned long pc,
 	proc->ftn->termsig = termsig;
 
 	init_fork_tree_node(proc->ftn, org->ftn, proc);
+
+	proc->sched_policy = org->sched_policy;
+	proc->sched_param.sched_priority = org->sched_param.sched_priority;
 
 	/* clone signal handlers */
 	if (clone_flags & CLONE_SIGHAND) {

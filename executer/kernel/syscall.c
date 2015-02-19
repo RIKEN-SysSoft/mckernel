@@ -1505,6 +1505,8 @@ fail:
 	return error;
 }
 
+#define SCHED_CHECK_SAME_OWNER        0x01
+#define SCHED_CHECK_ROOT              0x02
 
 int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall_request *sc)
 {
@@ -1592,6 +1594,71 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 		error = writecore(os, sc->args[1], sc->args[0]);
 		ret = 0;
 		break;
+	
+	case __NR_sched_setparam: {
+
+		switch (sc->args[0]) {
+			
+			case SCHED_CHECK_SAME_OWNER: {
+				const struct cred *cred = current_cred();
+				const struct cred *pcred;
+				bool match;
+				struct task_struct *p;
+				int pid = sc->args[1];
+				
+				rcu_read_lock();
+				p = pid_task(find_get_pid(pid), PIDTYPE_PID);
+				if (!p) {
+					rcu_read_unlock();
+					ret = -ESRCH;
+					goto sched_setparam_out;
+				}
+				rcu_read_unlock();
+
+				rcu_read_lock();
+				pcred = __task_cred(p);
+#if LINUX_VERSION_CODE > KERNEL_VERSION(3,4,0)
+				match = (uid_eq(cred->euid, pcred->euid) ||
+					 uid_eq(cred->euid, pcred->uid));
+#else
+				match = ((cred->euid == pcred->euid) ||
+						(cred->euid == pcred->uid));
+#endif
+				rcu_read_unlock();
+				
+				if (match) {
+					ret = 0;
+				}
+				else {
+					ret = -EPERM;
+				}
+				
+				break;
+			}
+
+			case SCHED_CHECK_ROOT: {
+				const struct cred *cred = current_cred();
+				bool match;
+				
+#if LINUX_VERSION_CODE > KERNEL_VERSION(3,4,0)
+				match = uid_eq(cred->euid, GLOBAL_ROOT_UID);
+#else
+				match = (cred->euid == 0);
+#endif
+				if (match) {
+					ret = 0;
+				}
+				else {
+					ret = -EPERM;
+				}
+				
+				break;
+			}
+		}
+			
+sched_setparam_out:
+		break;
+	}
 
 	default:
 		error = -ENOSYS;

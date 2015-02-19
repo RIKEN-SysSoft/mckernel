@@ -46,6 +46,7 @@
 #include <kmalloc.h>
 #include <memobj.h>
 #include <shm.h>
+#include <prio.h>
 
 /* Headers taken from kitten LWK */
 #include <lwk/stddef.h>
@@ -1364,8 +1365,9 @@ SYSCALL_DECLARE(getppid)
 		if (proc->ftn->ppid_parent)
 			pid = proc->ftn->ppid_parent->pid;
 	} else {
-		if (proc->ftn->parent)
+		if (proc->ftn->parent) {
 			pid = proc->ftn->parent->pid;
+		}
 	}
 	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
 	return pid;
@@ -3200,6 +3202,272 @@ SYSCALL_DECLARE(ptrace)
 
 	dkprintf("ptrace(%d,%ld,%p,%p): returning %d\n", request, pid, addr, data, error);
 	return error;
+}
+
+/* We do not have actual scheduling classes so we just make sure we store
+ * policies and priorities in a POSIX/Linux complaint manner */
+static int setscheduler(struct process *proc, int policy, struct sched_param *param)
+{
+	if ((policy == SCHED_FIFO || policy == SCHED_RR) &&
+		((param->sched_priority < 1) ||
+		 (param->sched_priority > MAX_USER_RT_PRIO - 1))) {
+		return -EINVAL;
+	}
+	
+	if ((policy == SCHED_NORMAL || policy == SCHED_BATCH || policy == SCHED_IDLE) &&
+		(param->sched_priority != 0)) {
+		return -EINVAL;
+	}
+
+	memcpy(&proc->sched_param, param, sizeof(*param));
+	proc->sched_policy = policy;
+
+	return 0;
+}
+
+#define SCHED_CHECK_SAME_OWNER        0x01
+#define SCHED_CHECK_ROOT              0x02
+
+SYSCALL_DECLARE(sched_setparam)
+{
+	int retval = 0;
+	int pid = (int)ihk_mc_syscall_arg0(ctx);
+	struct sched_param *uparam = (struct sched_param *)ihk_mc_syscall_arg1(ctx);
+	struct sched_param param;
+	struct process *proc = cpu_local_var(current);
+	unsigned long irqstate = 0;
+	ihk_spinlock_t *lock;
+	
+	ihk_mc_user_context_t ctx1;
+	struct syscall_request request1 IHK_DMA_ALIGN;
+
+	dkprintf("sched_setparam: pid: %d, uparam: 0x%lx\n", pid, uparam);
+
+	if (!uparam || pid < 0) {
+		return -EINVAL;
+	}
+
+	if (pid == 0)
+		pid = proc->ftn->pid;
+
+	if (proc->ftn->pid != pid) {
+		proc = findthread_and_lock(pid, pid, &lock, &irqstate);
+		if (!proc) {
+			return -ESRCH;
+		}
+		process_unlock(lock, irqstate);
+		
+		/* Ask Linux about ownership.. */
+		request1.number = __NR_sched_setparam;
+		request1.args[0] = SCHED_CHECK_SAME_OWNER;
+		request1.args[1] = pid;
+
+		retval = do_syscall(&request1, &ctx1, ihk_mc_get_processor_id(), 0);
+		if (retval != 0) {
+			return retval;
+		}
+	}
+
+	retval = copy_from_user(proc, &param, uparam, sizeof(param));
+	if (retval < 0) {
+		return -EFAULT;
+	}
+
+	return setscheduler(proc, proc->sched_policy, &param);
+}
+
+SYSCALL_DECLARE(sched_getparam)
+{
+	int retval = 0;
+	int pid = (int)ihk_mc_syscall_arg0(ctx);
+	struct sched_param *param = (struct sched_param *)ihk_mc_syscall_arg1(ctx);
+	struct process *proc = cpu_local_var(current);
+	unsigned long irqstate = 0;
+	ihk_spinlock_t *lock;
+
+	if (!param || pid < 0) {
+		return -EINVAL;
+	}
+
+	if (pid == 0)
+		pid = proc->ftn->pid;
+
+	if (proc->ftn->pid != pid) {
+		proc = findthread_and_lock(pid, pid, &lock, &irqstate);
+		if (!proc) {
+			return -ESRCH;
+		}
+		process_unlock(lock, irqstate);
+	}
+	
+	retval = copy_to_user(proc, param, &proc->sched_param, sizeof(*param)) ? -EFAULT : 0;
+	
+	return retval;
+}
+
+SYSCALL_DECLARE(sched_setscheduler)
+{
+	int retval;
+	int pid = (int)ihk_mc_syscall_arg0(ctx);
+	int policy = ihk_mc_syscall_arg1(ctx);
+	struct sched_param *uparam = (struct sched_param *)ihk_mc_syscall_arg2(ctx);
+	struct sched_param param;
+	struct process *proc = cpu_local_var(current);
+	unsigned long irqstate = 0;
+	ihk_spinlock_t *lock;
+	
+	ihk_mc_user_context_t ctx1;
+	struct syscall_request request1 IHK_DMA_ALIGN;
+	
+	if (!uparam || pid < 0) {
+		return -EINVAL;
+	}
+	
+	if (policy != SCHED_DEADLINE &&
+			policy != SCHED_FIFO && policy != SCHED_RR &&
+			policy != SCHED_NORMAL && policy != SCHED_BATCH &&
+			policy != SCHED_IDLE) {
+		return -EINVAL;
+	}
+
+	if (policy != SCHED_NORMAL) {
+		
+		/* Ask Linux about permissions */
+		request1.number = __NR_sched_setparam;
+		request1.args[0] = SCHED_CHECK_ROOT;
+
+		retval = do_syscall(&request1, &ctx1, ihk_mc_get_processor_id(), 0);
+		if (retval != 0) {
+			return retval;
+		}
+	}
+	
+	retval = copy_from_user(proc, &param, uparam, sizeof(param));
+	if (retval < 0) {
+		return -EFAULT;
+	}
+
+	if (pid == 0)
+		pid = proc->ftn->pid;
+
+	if (proc->ftn->pid != pid) {
+		proc = findthread_and_lock(pid, pid, &lock, &irqstate);
+		if (!proc) {
+			return -ESRCH;
+		}
+		process_unlock(lock, irqstate);
+		
+		/* Ask Linux about ownership.. */
+		request1.number = __NR_sched_setparam;
+		request1.args[0] = SCHED_CHECK_SAME_OWNER;
+		request1.args[1] = pid;
+
+		retval = do_syscall(&request1, &ctx1, ihk_mc_get_processor_id(), 0);
+		if (retval != 0) {
+			return retval;
+		}
+	}
+
+	return setscheduler(proc, policy, &param);
+}
+
+SYSCALL_DECLARE(sched_getscheduler)
+{
+	int pid = (int)ihk_mc_syscall_arg0(ctx);
+	struct process *proc = cpu_local_var(current);
+	unsigned long irqstate = 0;
+	ihk_spinlock_t *lock;
+
+	if (pid < 0) {
+		return -EINVAL;
+	}
+
+	if (pid == 0)
+		pid = proc->ftn->pid;
+
+	if (proc->ftn->pid != pid) {
+		proc = findthread_and_lock(pid, pid, &lock, &irqstate);
+		if (!proc) {
+			return -ESRCH;
+		}
+		process_unlock(lock, irqstate);
+	}
+
+	return proc->sched_policy;
+}
+
+SYSCALL_DECLARE(sched_get_priority_max)
+{
+	int ret = -EINVAL;
+	int policy = ihk_mc_syscall_arg0(ctx);
+
+	switch (policy) {
+		case SCHED_FIFO:
+		case SCHED_RR:
+			ret = MAX_USER_RT_PRIO - 1;
+			break;
+		case SCHED_DEADLINE:
+		case SCHED_NORMAL:
+		case SCHED_BATCH:
+		case SCHED_IDLE:
+			ret = 0;
+			break;
+	}
+	return ret;
+}
+
+SYSCALL_DECLARE(sched_get_priority_min)
+{
+	int ret = -EINVAL;
+	int policy = ihk_mc_syscall_arg0(ctx);
+
+	switch (policy) {
+		case SCHED_FIFO:
+		case SCHED_RR:
+			ret = 1;
+			break;
+		case SCHED_DEADLINE:
+		case SCHED_NORMAL:
+		case SCHED_BATCH:
+		case SCHED_IDLE:
+			ret = 0;
+	}
+	return ret;
+}
+
+SYSCALL_DECLARE(sched_rr_get_interval)
+{
+	int pid = ihk_mc_syscall_arg0(ctx);
+	struct timespec *utime = (struct timespec *)ihk_mc_syscall_arg1(ctx);
+	struct timespec t;
+	struct process *proc = cpu_local_var(current);
+	unsigned long irqstate = 0;
+	ihk_spinlock_t *lock;
+	int retval = 0;
+
+	if (pid < 0) 
+		return -EINVAL;
+
+	if (pid == 0)
+		pid = proc->ftn->pid;
+
+	if (proc->ftn->pid != pid) {
+		proc = findthread_and_lock(pid, pid, &lock, &irqstate);
+		if (!proc) {
+			return -ESRCH;
+		}
+		process_unlock(lock, irqstate);
+	}
+	
+	t.tv_sec = 0;
+	t.tv_nsec = 0;
+	if (proc->sched_policy == SCHED_RR) {
+		t.tv_nsec = 10000;
+	}
+	
+	retval = copy_to_user(proc, utime, &t, sizeof(t)) ? -EFAULT : 0;
+	
+	return retval;
 }
 
 #define MIN2(x,y) (x) < (y) ? (x) : (y)
