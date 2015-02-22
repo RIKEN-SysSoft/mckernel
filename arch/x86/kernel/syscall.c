@@ -525,6 +525,8 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 	}
 	else {
 		int	coredumped = 0;
+		siginfo_t info;
+
 		kfree(pending);
 		ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
 		switch (sig) {
@@ -532,6 +534,12 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 		case SIGTSTP:
 		case SIGTTIN:
 		case SIGTTOU:
+			memset(&info, '\0', sizeof info);
+			info.si_signo = SIGCHLD;
+			info.si_code = CLD_STOPPED;
+			info._sifields._sigchld.si_pid = proc->ftn->pid;
+			info._sifields._sigchld.si_status = (sig << 8) | 0x7f;
+			do_kill(proc->ftn->parent->pid, -1, SIGCHLD, &info, 0);
 			if(ptraceflag){
 				ptrace_report_signal(proc, orgsig);
 			}
@@ -580,6 +588,13 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 			dkprintf("SIGTRAP(): woken up\n");
 			break;
 		case SIGCONT:
+			memset(&info, '\0', sizeof info);
+			info.si_signo = SIGCHLD;
+			info.si_code = CLD_CONTINUED;
+			info._sifields._sigchld.si_pid = proc->ftn->pid;
+			info._sifields._sigchld.si_status = 0x0000ffff;
+			do_kill(proc->ftn->parent->pid, -1, SIGCHLD, &info, 0);
+			ftn->signal_flags = SIGNAL_STOP_CONTINUED;
 			dkprintf("do_signal,SIGCONT,do nothing\n");
 			break;
 		case SIGQUIT:
@@ -606,58 +621,82 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 	}
 }
 
+static struct sig_pending *
+getsigpending(struct process *proc, int delflag){
+	struct list_head *head;
+	ihk_spinlock_t *lock;
+	struct sig_pending *next;
+	struct sig_pending *pending;
+	__sigset_t w;
+	int	irqstate;
+
+	w = proc->sigmask.__val[0];
+
+	lock = &proc->sigshared->lock;
+	head = &proc->sigshared->sigpending;
+	for(;;){
+		irqstate = ihk_mc_spinlock_lock(lock);
+		list_for_each_entry_safe(pending, next, head, list){
+			if(!(pending->sigmask.__val[0] & w)){
+				if(delflag)
+					list_del(&pending->list);
+				ihk_mc_spinlock_unlock(lock, irqstate);
+				return pending;
+			}
+		}
+		ihk_mc_spinlock_unlock(lock, irqstate);
+
+		if(lock == &proc->sigpendinglock)
+			return NULL;
+		lock = &proc->sigpendinglock;
+		head = &proc->sigpending;
+	}
+
+	return NULL;
+}
+
+struct sig_pending *
+hassigpending(struct process *proc)
+{
+	return getsigpending(proc, 0);
+}
+
 void
 check_signal(unsigned long rc, void *regs0)
 {
 	struct x86_regs *regs = regs0;
 	struct process *proc;
 	struct sig_pending *pending;
-	struct sig_pending *next;
-	struct list_head *head;
-	ihk_spinlock_t *lock;
 	int	irqstate;
-	__sigset_t w;
 
 	if(clv == NULL)
 		return;
 	proc = cpu_local_var(current);
-	if(proc == NULL || proc->ftn->pid == 0)
+	if(proc == NULL || proc->ftn->pid == 0){
+		struct process *p;
+
+		irqstate = ihk_mc_spinlock_lock(&(cpu_local_var(runq_lock)));
+		list_for_each_entry(p, &(cpu_local_var(runq)), sched_list){
+			if(p->ftn->pid <= 0)
+				continue;
+			if(p->ftn->status == PS_INTERRUPTIBLE &&
+			   hassigpending(p)){
+				p->ftn->status = PS_RUNNING;
+				ihk_mc_spinlock_unlock(&(cpu_local_var(runq_lock)), irqstate);
+			//	schedule();
+				return;
+			}
+		}
+		ihk_mc_spinlock_unlock(&(cpu_local_var(runq_lock)), irqstate);
 		return;
+	}
 
 	if(regs != NULL && (regs->rsp & 0x8000000000000000)) {
 		return;
 	}
 
 	for(;;){
-		w = proc->sigmask.__val[0];
-		lock = &proc->sigshared->lock;
-		head = &proc->sigshared->sigpending;
-		pending = NULL;
-		irqstate = ihk_mc_spinlock_lock(lock);
-		list_for_each_entry_safe(pending, next, head, list){
-			if(!(pending->sigmask.__val[0] & w)){
-				list_del(&pending->list);
-				break;
-			}
-		}
-		if(&pending->list == head)
-			pending = NULL;
-		ihk_mc_spinlock_unlock(lock, irqstate);
-
-		if(!pending){
-			lock = &proc->sigpendinglock;
-			head = &proc->sigpending;
-			irqstate = ihk_mc_spinlock_lock(lock);
-			list_for_each_entry_safe(pending, next, head, list){
-				if(!(pending->sigmask.__val[0] & w)){
-					list_del(&pending->list);
-					break;
-				}
-			}
-			if(&pending->list == head)
-				pending = NULL;
-			ihk_mc_spinlock_unlock(lock, irqstate);
-		}
+		pending = getsigpending(proc, 1);
 		if(!pending) {
 			dkprintf("check_signal,queue is empty\n");
 			return;

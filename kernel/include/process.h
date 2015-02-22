@@ -122,6 +122,11 @@
 #define WNOWAIT		0x01000000	/* Don't reap, just poll status.  */
 #define	__WCLONE	0x80000000
 
+/* idtype */
+#define P_ALL 0
+#define P_PID 1
+#define P_PGID 2
+
 /* If WIFEXITED(STATUS), the low-order 8 bits of the status.  */
 #define	__WEXITSTATUS(status)	(((status) & 0xff00) >> 8)
 

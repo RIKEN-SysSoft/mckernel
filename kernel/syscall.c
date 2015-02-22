@@ -97,6 +97,7 @@ static char *syscall_name[] MCKERNEL_UNUSED = {
 void check_signal(unsigned long rc, void *regs);
 void do_signal(long rc, void *regs, struct process *proc, struct sig_pending *pending);
 extern unsigned long do_kill(int pid, int tid, int sig, struct siginfo *info, int ptracecont);
+extern struct sigpending *hassigpending(struct process *proc);
 int copy_from_user(struct process *, void *, const void *, size_t);
 int copy_to_user(struct process *, void *, const void *, size_t);
 void do_setpgid(int, int);
@@ -383,26 +384,20 @@ static int wait_continued(struct process *proc, struct fork_tree_node *child, in
 /* 
  * From glibc: INLINE_SYSCALL (wait4, 4, pid, stat_loc, options, NULL);
  */
-SYSCALL_DECLARE(wait4)
+static int
+do_wait(int pid, int *status, int options, void *rusage, ihk_mc_user_context_t *ctx)
 {
 	struct process *proc = cpu_local_var(current);
 	struct fork_tree_node *child_iter, *next;
-	int pid = (int)ihk_mc_syscall_arg0(ctx);
 	int pgid = proc->ftn->pgid;
-	int *status = (int *)ihk_mc_syscall_arg1(ctx);
-	int options = (int)ihk_mc_syscall_arg2(ctx);
 	int ret;
 	struct waitq_entry waitpid_wqe;
 	int empty = 1;
+	int orgpid = pid;
 
 	dkprintf("wait4,proc->pid=%d,pid=%d\n", proc->ftn->pid, pid);
-	if (options & ~(WNOHANG | WUNTRACED | WCONTINUED | __WCLONE)) {
-		dkprintf("wait4: unexpected options(%x).\n", options);
-		ret = -EINVAL;
-		goto exit;
-	}
  rescan:
-	pid = (int)ihk_mc_syscall_arg0(ctx);	
+	pid = orgpid;
 
 	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
 	list_for_each_entry_safe(child_iter, next, &proc->ftn->children, siblings_list) {	
@@ -420,11 +415,14 @@ SYSCALL_DECLARE(wait4)
 
 			empty = 0;
 
-			if(child_iter->status == PS_ZOMBIE) {
+			if((options & WEXITED) &&
+			   child_iter->status == PS_ZOMBIE) {
 				ret = wait_zombie(proc, child_iter, status, ctx);
 				if(ret) {
-					list_del(&child_iter->siblings_list);
-					release_fork_tree_node(child_iter);
+					if(!(options & WNOWAIT)){
+						list_del(&child_iter->siblings_list);
+						release_fork_tree_node(child_iter);
+					}
 					goto out_found;
 				}
 			}
@@ -434,6 +432,9 @@ SYSCALL_DECLARE(wait4)
 				/* Not ptraced and in stopped state and WUNTRACED is specified */
 				ret = wait_stopped(proc, child_iter, status, options);
 				if(ret) {
+					if(!(options & WNOWAIT)){
+						child_iter->signal_flags &= ~SIGNAL_STOP_STOPPED;
+					}
 					goto out_found;
 				}
 			}
@@ -442,6 +443,9 @@ SYSCALL_DECLARE(wait4)
 			   (options & WCONTINUED)) {
 				ret = wait_continued(proc, child_iter, status, options);
 				if(ret) {
+					if(!(options & WNOWAIT)){
+						child_iter->signal_flags &= ~SIGNAL_STOP_CONTINUED;
+					}
 					goto out_found;
 				}
 			}
@@ -464,11 +468,14 @@ SYSCALL_DECLARE(wait4)
 
 			empty = 0;
 
-			if(child_iter->status == PS_ZOMBIE) {
+			if((options & WEXITED) &&
+			   child_iter->status == PS_ZOMBIE) {
 				ret = wait_zombie(proc, child_iter, status, ctx);
 				if(ret) {
-					list_del(&child_iter->ptrace_siblings_list);
-					release_fork_tree_node(child_iter);
+					if(!(options & WNOWAIT)){
+						list_del(&child_iter->ptrace_siblings_list);
+						release_fork_tree_node(child_iter);
+					}
 					goto out_found;
 				}
 			}
@@ -477,6 +484,9 @@ SYSCALL_DECLARE(wait4)
 				/* ptraced and in stopped or trace-stopped state */
 				ret = wait_stopped(proc, child_iter, status, options);
 				if(ret) {
+					if(!(options & WNOWAIT)){
+						child_iter->signal_flags &= ~SIGNAL_STOP_STOPPED;
+					}
 					goto out_found;
 				}
 			} else {
@@ -487,6 +497,9 @@ SYSCALL_DECLARE(wait4)
 			   (options & WCONTINUED)) {
 				ret = wait_continued(proc, child_iter, status, options);
 				if(ret) {
+					if(!(options & WNOWAIT)){
+						child_iter->signal_flags &= ~SIGNAL_STOP_CONTINUED;
+					}
 					goto out_found;
 				}
 			}
@@ -513,6 +526,11 @@ SYSCALL_DECLARE(wait4)
 	waitq_prepare_to_wait(&proc->ftn->waitpid_q, &waitpid_wqe, PS_INTERRUPTIBLE);
 
 	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
+	if(hassigpending(proc)){
+		waitq_finish_wait(&proc->ftn->waitpid_q, &waitpid_wqe);
+		return -EINTR;
+	}
+
 
 	schedule();
 	dkprintf("wait4(): woken up\n");
@@ -530,6 +548,66 @@ SYSCALL_DECLARE(wait4)
 	dkprintf("wait4,out_notfound\n");
 	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
 	goto exit;
+}
+
+SYSCALL_DECLARE(wait4)
+{
+	int pid = (int)ihk_mc_syscall_arg0(ctx);
+	int *status = (int *)ihk_mc_syscall_arg1(ctx);
+	int options = (int)ihk_mc_syscall_arg2(ctx);
+	void *rusage = (void *)ihk_mc_syscall_arg3(ctx);
+
+	if(options & ~(WNOHANG | WUNTRACED | WCONTINUED | __WCLONE)){
+		dkprintf("wait4: unexpected options(%x).\n", options);
+		return -EINVAL;
+	}
+	return do_wait(pid, status, WEXITED | options, rusage, ctx);
+}
+
+SYSCALL_DECLARE(waitid)
+{
+	int idtype = (int)ihk_mc_syscall_arg0(ctx);
+	int id = (int)ihk_mc_syscall_arg1(ctx);
+	siginfo_t *info = (siginfo_t *)ihk_mc_syscall_arg2(ctx);
+	int options = (int)ihk_mc_syscall_arg3(ctx);
+	int pid;
+	int status;
+	int rc;
+
+	if(idtype == P_PID)
+		pid = id;
+	else if(idtype == P_PGID)
+		pid = -id;
+	else if(idtype == P_ALL)
+		pid = -1;
+	else
+		return -EINVAL;
+	if(options & ~(WEXITED | WSTOPPED | WCONTINUED | WNOHANG | WNOWAIT | __WCLONE)){
+		dkprintf("waitid: unexpected options(%x).\n", options);
+		return -EINVAL;
+	}
+	if(!(options & (WEXITED | WSTOPPED | WCONTINUED))){
+		dkprintf("waitid: no waiting status(%x).\n", options);
+		return -EINVAL;
+	}
+	rc = do_wait(pid, &status, options, NULL, ctx);
+	if(rc < 0)
+		return rc;
+	if(rc && info){
+		memset(info, '\0', sizeof(siginfo_t));
+		info->si_signo = SIGCHLD;
+		info->_sifields._sigchld.si_pid = rc;
+		info->_sifields._sigchld.si_status = status;
+		if((status & 0x000000ff) == 0x0000007f)
+			info->si_code = CLD_STOPPED;
+		else if((status & 0x0000ffff) == 0x0000ffff)
+			info->si_code = CLD_CONTINUED;
+		else if(status & 0x000000ff)
+			info->si_code = CLD_KILLED;
+		else
+			info->si_code = CLD_EXITED;
+	}
+	return 0;
 }
 
 static int ptrace_terminate_tracer(struct process *proc, struct fork_tree_node *tracer);
