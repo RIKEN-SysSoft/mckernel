@@ -1740,11 +1740,20 @@ sync_out:
 		}
 
 		case __NR_wait4: {
-			int status;
 			int ret;
 			pid_t pid = w.sr.args[0];
+			int options = w.sr.args[2];
+			siginfo_t info;
+			int opt;
 
-			while ((ret = waitpid(pid, &status, 0)) == -1 && errno == EINTR);
+			opt = WEXITED | (options & WNOWAIT);
+			memset(&info, '\0', sizeof info);
+			while((ret = waitid(P_PID, pid, &info, opt)) == -1 &&
+			      errno == EINTR);
+			if(ret == 0){
+				ret = info.si_pid;
+			}
+
 			if(ret != pid) {
 				fprintf(stderr, "ERROR: waiting for %lu\n", w.sr.args[0]);
 			}

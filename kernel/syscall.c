@@ -178,8 +178,7 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid)
 
 ihk_spinlock_t syscall_lock;
 
-long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx, 
-		int cpu, int pid)
+long do_syscall(struct syscall_request *req, int cpu, int pid)
 {
 	struct syscall_response *res;
 	struct syscall_request req2 IHK_DMA_ALIGN;
@@ -305,7 +304,7 @@ void sigchld_parent(struct process *parent, int status)
 }
 #endif
 
-static int wait_zombie(struct process *proc, struct fork_tree_node *child, int *status, ihk_mc_user_context_t *ctx) {
+static int wait_zombie(struct process *proc, struct fork_tree_node *child, int *status, int options) {
     int ret;
     struct syscall_request request IHK_DMA_ALIGN;
     
@@ -315,16 +314,18 @@ static int wait_zombie(struct process *proc, struct fork_tree_node *child, int *
         *status = child->exit_status;
     }
     
-    /* Ask host to clean up exited child */
-    request.number = __NR_wait4;
-    request.args[0] = child->pid;
-    request.args[1] = 0;
-    ret = do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0);
-    
-    if (ret != child->pid)
-        kprintf("WARNING: host waitpid failed?\n");
-    dkprintf("wait_zombie,child->pid=%d,status=%08x\n",
-			 child->pid, status ? *status : -1);
+	request.number = __NR_wait4;
+	request.args[0] = child->pid;
+	request.args[1] = 0;
+	request.args[2] = options;
+	/* Ask host to clean up exited child */
+	ret = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+
+	if (ret != child->pid)
+		kprintf("WARNING: host waitpid failed?\n");
+	dkprintf("wait_zombie,child->pid=%d,status=%08x\n",
+		 child->pid, status ? *status : -1);
+
     return ret;
 }
 
@@ -385,7 +386,7 @@ static int wait_continued(struct process *proc, struct fork_tree_node *child, in
  * From glibc: INLINE_SYSCALL (wait4, 4, pid, stat_loc, options, NULL);
  */
 static int
-do_wait(int pid, int *status, int options, void *rusage, ihk_mc_user_context_t *ctx)
+do_wait(int pid, int *status, int options, void *rusage)
 {
 	struct process *proc = cpu_local_var(current);
 	struct fork_tree_node *child_iter, *next;
@@ -417,8 +418,8 @@ do_wait(int pid, int *status, int options, void *rusage, ihk_mc_user_context_t *
 
 			if((options & WEXITED) &&
 			   child_iter->status == PS_ZOMBIE) {
-				ret = wait_zombie(proc, child_iter, status, ctx);
-				if(ret) {
+				ret = wait_zombie(proc, child_iter, status, options);
+				if(ret == child_iter->pid) {
 					if(!(options & WNOWAIT)){
 						list_del(&child_iter->siblings_list);
 						release_fork_tree_node(child_iter);
@@ -431,7 +432,7 @@ do_wait(int pid, int *status, int options, void *rusage, ihk_mc_user_context_t *
 			   (options & WUNTRACED)) {
 				/* Not ptraced and in stopped state and WUNTRACED is specified */
 				ret = wait_stopped(proc, child_iter, status, options);
-				if(ret) {
+				if(ret == child_iter->pid) {
 					if(!(options & WNOWAIT)){
 						child_iter->signal_flags &= ~SIGNAL_STOP_STOPPED;
 					}
@@ -442,7 +443,7 @@ do_wait(int pid, int *status, int options, void *rusage, ihk_mc_user_context_t *
 			if((child_iter->signal_flags & SIGNAL_STOP_CONTINUED) &&
 			   (options & WCONTINUED)) {
 				ret = wait_continued(proc, child_iter, status, options);
-				if(ret) {
+				if(ret == child_iter->pid) {
 					if(!(options & WNOWAIT)){
 						child_iter->signal_flags &= ~SIGNAL_STOP_CONTINUED;
 					}
@@ -470,8 +471,8 @@ do_wait(int pid, int *status, int options, void *rusage, ihk_mc_user_context_t *
 
 			if((options & WEXITED) &&
 			   child_iter->status == PS_ZOMBIE) {
-				ret = wait_zombie(proc, child_iter, status, ctx);
-				if(ret) {
+				ret = wait_zombie(proc, child_iter, status, options);
+				if(ret == child_iter->pid) {
 					if(!(options & WNOWAIT)){
 						list_del(&child_iter->ptrace_siblings_list);
 						release_fork_tree_node(child_iter);
@@ -483,7 +484,7 @@ do_wait(int pid, int *status, int options, void *rusage, ihk_mc_user_context_t *
 			if(child_iter->status & (PS_STOPPED | PS_TRACED)) {
 				/* ptraced and in stopped or trace-stopped state */
 				ret = wait_stopped(proc, child_iter, status, options);
-				if(ret) {
+				if(ret == child_iter->pid) {
 					if(!(options & WNOWAIT)){
 						child_iter->signal_flags &= ~SIGNAL_STOP_STOPPED;
 					}
@@ -496,7 +497,7 @@ do_wait(int pid, int *status, int options, void *rusage, ihk_mc_user_context_t *
 			if((child_iter->signal_flags & SIGNAL_STOP_CONTINUED) &&
 			   (options & WCONTINUED)) {
 				ret = wait_continued(proc, child_iter, status, options);
-				if(ret) {
+				if(ret == child_iter->pid) {
 					if(!(options & WNOWAIT)){
 						child_iter->signal_flags &= ~SIGNAL_STOP_CONTINUED;
 					}
@@ -556,19 +557,24 @@ SYSCALL_DECLARE(wait4)
 	int *status = (int *)ihk_mc_syscall_arg1(ctx);
 	int options = (int)ihk_mc_syscall_arg2(ctx);
 	void *rusage = (void *)ihk_mc_syscall_arg3(ctx);
+	int st;
+	int rc;
 
 	if(options & ~(WNOHANG | WUNTRACED | WCONTINUED | __WCLONE)){
 		dkprintf("wait4: unexpected options(%x).\n", options);
 		return -EINVAL;
 	}
-	return do_wait(pid, status, WEXITED | options, rusage, ctx);
+	rc = do_wait(pid, &st, WEXITED | options, rusage);
+	if(rc >= 0 && status)
+		copy_to_user(cpu_local_var(current), status, &st, sizeof(int));
+	return rc;
 }
 
 SYSCALL_DECLARE(waitid)
 {
 	int idtype = (int)ihk_mc_syscall_arg0(ctx);
 	int id = (int)ihk_mc_syscall_arg1(ctx);
-	siginfo_t *info = (siginfo_t *)ihk_mc_syscall_arg2(ctx);
+	siginfo_t *infop = (siginfo_t *)ihk_mc_syscall_arg2(ctx);
 	int options = (int)ihk_mc_syscall_arg3(ctx);
 	int pid;
 	int status;
@@ -590,22 +596,24 @@ SYSCALL_DECLARE(waitid)
 		dkprintf("waitid: no waiting status(%x).\n", options);
 		return -EINVAL;
 	}
-	rc = do_wait(pid, &status, options, NULL, ctx);
+	rc = do_wait(pid, &status, options, NULL);
 	if(rc < 0)
 		return rc;
-	if(rc && info){
-		memset(info, '\0', sizeof(siginfo_t));
-		info->si_signo = SIGCHLD;
-		info->_sifields._sigchld.si_pid = rc;
-		info->_sifields._sigchld.si_status = status;
+	if(rc && infop){
+		siginfo_t info;
+		memset(&info, '\0', sizeof(siginfo_t));
+		info.si_signo = SIGCHLD;
+		info._sifields._sigchld.si_pid = rc;
+		info._sifields._sigchld.si_status = status;
 		if((status & 0x000000ff) == 0x0000007f)
-			info->si_code = CLD_STOPPED;
+			info.si_code = CLD_STOPPED;
 		else if((status & 0x0000ffff) == 0x0000ffff)
-			info->si_code = CLD_CONTINUED;
+			info.si_code = CLD_CONTINUED;
 		else if(status & 0x000000ff)
-			info->si_code = CLD_KILLED;
+			info.si_code = CLD_KILLED;
 		else
-			info->si_code = CLD_EXITED;
+			info.si_code = CLD_EXITED;
+		copy_to_user(cpu_local_var(current), infop, &info, sizeof info);
 	}
 	return 0;
 }
@@ -634,7 +642,7 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 
 	flush_process_memory(proc);	/* temporary hack */
 	if(!proc->nohost)
-		do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0);
+		do_syscall(&request, ihk_mc_get_processor_id(), 0);
 
 #define	IS_DETACHED_PROCESS(proc)	(1)	/* should be implemented in the future */
 
@@ -1709,7 +1717,7 @@ SYSCALL_DECLARE(execve)
 	request.args[0] = 1;  /* 1st phase - get ELF desc */
 	request.args[1] = (unsigned long)filename;	
 	request.args[2] = virt_to_phys(desc);
-	ret = do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0);
+	ret = do_syscall(&request, ihk_mc_get_processor_id(), 0);
 
 	if (ret != 0) {
 		kprintf("execve(): ERROR: host failed to load elf header, errno: %d\n", 
@@ -1761,7 +1769,7 @@ SYSCALL_DECLARE(execve)
 		cpu_local_var(current)->vm->region.user_start;
 	dkprintf("execve(): requesting host PTE clear\n");
 
-	if (do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0)) {
+	if (do_syscall(&request, ihk_mc_get_processor_id(), 0)) {
 		kprintf("execve(): ERROR: clearing PTEs in host process\n");
 		panic("");
 	}		
@@ -1773,7 +1781,7 @@ SYSCALL_DECLARE(execve)
 	request.args[2] = sizeof(struct program_load_desc) + 
 		sizeof(struct program_image_section) * desc->num_sections;
 
-	ret = do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0);
+	ret = do_syscall(&request, ihk_mc_get_processor_id(), 0);
 
 	if (ret != 0) {
 		kprintf("execve(): PANIC: host failed to load elf image\n");
@@ -1803,7 +1811,6 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 {
 	int cpuid;
 	struct process *new;
-	ihk_mc_user_context_t ctx1;
 	struct syscall_request request1 IHK_DMA_ALIGN;
 	int ptrace_event = 0;
 
@@ -1845,7 +1852,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	/* fork() a new process on the host */
 	else {
 		request1.number = __NR_fork;
-		new->ftn->pid = do_syscall(&request1, &ctx1, ihk_mc_get_processor_id(), 0);
+		new->ftn->pid = do_syscall(&request1, ihk_mc_get_processor_id(), 0);
 		if (new->ftn->pid == -1) {
 			kprintf("ERROR: forking host process\n");
 			
@@ -1871,7 +1878,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		dkprintf("fork(): requesting PTE clear and rpgtable (0x%lx) update\n",
 				request1.args[2]);
 
-		if (do_syscall(&request1, &ctx1, ihk_mc_get_processor_id(), new->ftn->pid)) {
+		if (do_syscall(&request1, ihk_mc_get_processor_id(), new->ftn->pid)) {
 			kprintf("ERROR: clearing PTEs in host process\n");
 		}		
 	}
@@ -2488,7 +2495,7 @@ SYSCALL_DECLARE(futex)
 
 		request.args[0] = __phys;               
 
-		int r = do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0);
+		int r = do_syscall(&request, ihk_mc_get_processor_id(), 0);
 
 		if (r < 0) {
 			return -EFAULT;
@@ -3316,7 +3323,6 @@ SYSCALL_DECLARE(sched_setparam)
 	unsigned long irqstate = 0;
 	ihk_spinlock_t *lock;
 	
-	ihk_mc_user_context_t ctx1;
 	struct syscall_request request1 IHK_DMA_ALIGN;
 
 	dkprintf("sched_setparam: pid: %d, uparam: 0x%lx\n", pid, uparam);
@@ -3340,7 +3346,7 @@ SYSCALL_DECLARE(sched_setparam)
 		request1.args[0] = SCHED_CHECK_SAME_OWNER;
 		request1.args[1] = pid;
 
-		retval = do_syscall(&request1, &ctx1, ihk_mc_get_processor_id(), 0);
+		retval = do_syscall(&request1, ihk_mc_get_processor_id(), 0);
 		if (retval != 0) {
 			return retval;
 		}
@@ -3394,7 +3400,6 @@ SYSCALL_DECLARE(sched_setscheduler)
 	unsigned long irqstate = 0;
 	ihk_spinlock_t *lock;
 	
-	ihk_mc_user_context_t ctx1;
 	struct syscall_request request1 IHK_DMA_ALIGN;
 	
 	if (!uparam || pid < 0) {
@@ -3414,7 +3419,7 @@ SYSCALL_DECLARE(sched_setscheduler)
 		request1.number = __NR_sched_setparam;
 		request1.args[0] = SCHED_CHECK_ROOT;
 
-		retval = do_syscall(&request1, &ctx1, ihk_mc_get_processor_id(), 0);
+		retval = do_syscall(&request1, ihk_mc_get_processor_id(), 0);
 		if (retval != 0) {
 			return retval;
 		}
@@ -3440,7 +3445,7 @@ SYSCALL_DECLARE(sched_setscheduler)
 		request1.args[0] = SCHED_CHECK_SAME_OWNER;
 		request1.args[1] = pid;
 
-		retval = do_syscall(&request1, &ctx1, ihk_mc_get_processor_id(), 0);
+		retval = do_syscall(&request1, ihk_mc_get_processor_id(), 0);
 		if (retval != 0) {
 			return retval;
 		}

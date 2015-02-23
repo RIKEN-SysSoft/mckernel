@@ -238,9 +238,9 @@ struct syscall_params {
 	SYSCALL_ARG_##a2(2); SYSCALL_ARG_##a3(3); \
 	SYSCALL_ARG_##a4(4); SYSCALL_ARG_##a5(5);
 
-#define SYSCALL_FOOTER return do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0)
+#define SYSCALL_FOOTER return do_syscall(&request, ihk_mc_get_processor_id(), 0)
 
-extern long do_syscall(struct syscall_request *req, ihk_mc_user_context_t *ctx, int cpu, int pid);
+extern long do_syscall(struct syscall_request *req, int cpu, int pid);
 extern int obtain_clone_cpuid();
 extern long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx);
 
