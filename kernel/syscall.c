@@ -472,24 +472,24 @@ do_wait(int pid, int *status, int options, void *rusage)
 			if((options & WEXITED) &&
 			   child_iter->status == PS_ZOMBIE) {
 				ret = wait_zombie(proc, child_iter, status, options);
-				if(ret == child_iter->pid) {
+//				if(ret == child_iter->pid) {
 					if(!(options & WNOWAIT)){
 						list_del(&child_iter->ptrace_siblings_list);
 						release_fork_tree_node(child_iter);
 					}
 					goto out_found;
-				}
+//				}
 			}
 
 			if(child_iter->status & (PS_STOPPED | PS_TRACED)) {
 				/* ptraced and in stopped or trace-stopped state */
 				ret = wait_stopped(proc, child_iter, status, options);
-				if(ret == child_iter->pid) {
+//				if(ret == child_iter->pid) {
 					if(!(options & WNOWAIT)){
 						child_iter->signal_flags &= ~SIGNAL_STOP_STOPPED;
 					}
 					goto out_found;
-				}
+//				}
 			} else {
 				/* ptraced and in running or sleeping state */
 			}
@@ -497,12 +497,12 @@ do_wait(int pid, int *status, int options, void *rusage)
 			if((child_iter->signal_flags & SIGNAL_STOP_CONTINUED) &&
 			   (options & WCONTINUED)) {
 				ret = wait_continued(proc, child_iter, status, options);
-				if(ret == child_iter->pid) {
+//				if(ret == child_iter->pid) {
 					if(!(options & WNOWAIT)){
 						child_iter->signal_flags &= ~SIGNAL_STOP_CONTINUED;
 					}
 					goto out_found;
-				}
+//				}
 			}
 		}
 
@@ -2620,6 +2620,8 @@ SYSCALL_DECLARE(setrlimit)
 	switch(resource){
 	    case RLIMIT_FSIZE:
 	    case RLIMIT_NOFILE:
+	    case RLIMIT_LOCKS:
+	    case RLIMIT_MSGQUEUE:
 		rc = syscall_generic_forwarding(__NR_setrlimit, ctx);
 		if(rc < 0)
 			return rc;
