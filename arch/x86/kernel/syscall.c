@@ -495,6 +495,7 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 			usp = (unsigned long *)regs->rsp;
 		}
 		sigsp = ((struct sigsp *)usp) - 1;
+		sigsp = (struct sigsp *)((unsigned long)sigsp & 0xfffffffffffffff0UL);
 		if(copy_to_user(proc, &sigsp->regs, regs, sizeof(struct x86_regs)) ||
 		   copy_to_user(proc, &sigsp->sigrc, &rc, sizeof(long))){
 			kfree(pending);
