@@ -191,39 +191,6 @@ do_setpgid(int pid, int pgid)
 	}
 }
 
-static unsigned long *ptrace_get_regaddr(struct process *proc, long addr)
-{
-#define PTRACE_GET_REGADDR(regname) case offsetof(struct user_regs_struct, regname): return &(proc->uctx->gpr.regname)
-	switch (addr) {
-		PTRACE_GET_REGADDR(r15);
-		PTRACE_GET_REGADDR(r14);
-		PTRACE_GET_REGADDR(r13);
-		PTRACE_GET_REGADDR(r12);
-		PTRACE_GET_REGADDR(rbp);
-		PTRACE_GET_REGADDR(rbx);
-		PTRACE_GET_REGADDR(r11);
-		PTRACE_GET_REGADDR(r10);
-		PTRACE_GET_REGADDR(r9);
-		PTRACE_GET_REGADDR(r8);
-		PTRACE_GET_REGADDR(rax);
-		PTRACE_GET_REGADDR(rcx);
-		PTRACE_GET_REGADDR(rdx);
-		PTRACE_GET_REGADDR(rsi);
-		PTRACE_GET_REGADDR(rdi);
-		/* skip orig_rax */
-		PTRACE_GET_REGADDR(rip);
-		PTRACE_GET_REGADDR(cs);
-		/* skip eflags */
-		PTRACE_GET_REGADDR(rsp);
-		PTRACE_GET_REGADDR(ss);
-		/* skip fs_base gs_base ds es fs gs */
-	default:
-		break;
-	}
-	return NULL;
-#undef PTRACE_GET_REGADDR
-}
-
 #define RFLAGS_MASK (RFLAGS_CF | RFLAGS_PF | RFLAGS_AF | RFLAGS_ZF | \
 		RFLAGS_SF | RFLAGS_TF | RFLAGS_DF | RFLAGS_OF |  \
 		RFLAGS_NT | RFLAGS_RF | RFLAGS_AC)
@@ -232,27 +199,31 @@ static unsigned long *ptrace_get_regaddr(struct process *proc, long addr)
 #define DB7_RESERVED_MASK (0xffffffff0000dc00UL)
 #define DB7_RESERVED_SET (0x400UL)
 
+extern ihk_mc_user_context_t *lookup_user_context(struct process *proc);
+
 long
 ptrace_read_user(struct process *proc, long addr, unsigned long *value)
 {
 	unsigned long *p;
+	struct x86_user_context *uctx;
+	size_t off;
 
-	if (addr < sizeof(struct user_regs_struct)) {
-		if (addr & (sizeof(*value) - 1)) return -EIO;
-		if (addr == offsetof(struct user_regs_struct, eflags)) {
-			*value = proc->uctx->gpr.rflags;
-			return 0;
+	if ((addr < 0) || (addr & (sizeof(*value) - 1))) {
+		return -EIO;
+	}
+	else if (addr < sizeof(struct user_regs_struct)) {
+		uctx = lookup_user_context(proc);
+		if (!uctx) {
+			return -EIO;
 		}
-		if (addr == offsetof(struct user_regs_struct, fs_base)) {
-			*value = proc->thread.tlsblock_base;
-			return 0;
+		if (addr < offsetof(struct user_regs_struct, fs_base)) {
+			*value = *(unsigned long *)(
+					(uintptr_t)(&uctx->gpr) + addr);
 		}
-		p = ptrace_get_regaddr(proc, addr);
-		if (p) {
-			*value = *p;
-		} else {
-			dkprintf("ptrace_read_user,addr=%d\n", addr);
-			*value = 0;
+		else {
+			off = addr - offsetof(struct user_regs_struct, fs_base);
+			*value = *(unsigned long *)(
+					(uintptr_t)(&uctx->sr) + off);
 		}
 		return 0;
 	}
@@ -278,23 +249,30 @@ long
 ptrace_write_user(struct process *proc, long addr, unsigned long value)
 {
 	unsigned long *p;
+	struct x86_user_context *uctx;
+	size_t off;
 
-	if (addr < sizeof(struct user_regs_struct)) {
-		if (addr & (sizeof(value) - 1)) return -EIO;
+	if ((addr < 0) || (addr & (sizeof(value) - 1))) {
+		return -EIO;
+	}
+	else if (addr < sizeof(struct user_regs_struct)) {
+		uctx = lookup_user_context(proc);
+		if (!uctx) {
+			return -EIO;
+		}
 		if (addr == offsetof(struct user_regs_struct, eflags)) {
-			proc->uctx->gpr.rflags &= ~RFLAGS_MASK;
-			proc->uctx->gpr.rflags |= (value & RFLAGS_MASK);
-			return 0;
+			uctx->gpr.rflags &= ~RFLAGS_MASK;
+			uctx->gpr.rflags |= (value & RFLAGS_MASK);
 		}
-		if (addr == offsetof(struct user_regs_struct, fs_base)) {
-			proc->thread.tlsblock_base = value;
-			return 0;
+		else if (addr < offsetof(struct user_regs_struct, fs_base)) {
+			*(unsigned long *)((uintptr_t)(&uctx->gpr) + addr)
+				= value;
 		}
-		p = ptrace_get_regaddr(proc, addr);
-		if (p) {
-			*p = value;
-		} else {
-			dkprintf("ptrace_write_user,addr=%d\n", addr);
+		else {
+			off = addr - offsetof(struct user_regs_struct,
+					fs_base);
+			*(unsigned long *)((uintptr_t)(&uctx->sr) + off)
+				= value;
 		}
 		return 0;
 	}
