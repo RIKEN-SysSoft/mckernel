@@ -184,6 +184,15 @@ struct x86_basic_regs {
 	unsigned long rip, cs, rflags, rsp, ss;
 };
 
+struct x86_sregs {
+	unsigned long fs_base;
+	unsigned long gs_base;
+	unsigned long ds;
+	unsigned long es;
+	unsigned long fs;
+	unsigned long gs;
+};
+
 #define	REGS_GET_STACK_POINTER(regs)	(((struct x86_regs *)regs)->rsp)
 
 /*

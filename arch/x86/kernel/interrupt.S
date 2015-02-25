@@ -25,9 +25,16 @@
 #define USER_DS                     (56 + 3)
 
 /* struct x86_user_context */
-#define RAX_OFFSET       80
-#define ERROR_OFFSET    120
-#define RSP_OFFSET      152
+#define X86_SREGS_BASE  (0)
+#define X86_SREGS_SIZE  48
+
+#define X86_FLAGS_BASE  (X86_SREGS_BASE + X86_SREGS_SIZE)
+#define X86_FLAGS_SIZE  8
+
+#define X86_REGS_BASE   (X86_FLAGS_BASE + X86_FLAGS_SIZE)
+#define RAX_OFFSET      (X86_REGS_BASE + 80)
+#define ERROR_OFFSET    (X86_REGS_BASE + 120)
+#define RSP_OFFSET      (X86_REGS_BASE + 152)
 
 #define PUSH_ALL_REGS   \
         pushq %rdi;     \
@@ -44,9 +51,13 @@
         pushq %r12;     \
         pushq %r13;     \
         pushq %r14;     \
-        pushq %r15
+        pushq %r15;     \
+        pushq $1;               /* is_gpr_valid is set, and others are cleared */ \
+        subq  $X86_FLAGS_BASE,%rsp      /* for x86_sregs, etc. */
 
 #define POP_ALL_REGS    \
+        movq  $0,X86_FLAGS_BASE(%rsp);  /* clear all flags */ \
+        addq  $X86_REGS_BASE,%rsp;      /* discard x86_sregs, flags, etc. */ \
         popq  %r15;     \
         popq  %r14;     \
         popq  %r13;     \

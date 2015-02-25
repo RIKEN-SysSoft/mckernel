@@ -25,7 +25,19 @@ typedef struct x86_kregs ihk_mc_kernel_context_t;
 
 /* XXX: User context should contain floating point registers */
 struct x86_user_context {
-	struct x86_basic_regs gpr;
+	struct x86_sregs sr;
+
+	/* 16-byte boundary here */
+	uint8_t is_gpr_valid;
+	uint8_t is_sr_valid;
+	uint8_t spare_flags6;
+	uint8_t spare_flags5;
+	uint8_t spare_flags4;
+	uint8_t spare_flags3;
+	uint8_t spare_flags2;
+	uint8_t spare_flags1;
+	struct x86_basic_regs gpr;	/* must be last */
+	/* 16-byte boundary here */
 };
 typedef struct x86_user_context ihk_mc_user_context_t;
 
