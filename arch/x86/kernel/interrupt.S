@@ -24,39 +24,45 @@
 #define USER_CS                     (48 + 3)
 #define USER_DS                     (56 + 3)
 
-#define PUSH_ALL_REGS     \
-		pushq %rbp; \
-        pushq %rax; \
-        pushq %rbx; \
-        pushq %rcx; \
-        pushq %rdx; \
-        pushq %rsi; \
-        pushq %rdi; \
-        pushq %r8;  \
-        pushq %r9; \
-        pushq %r10; \
-        pushq %r11; \
-        pushq %r12; \
-        pushq %r13; \
-        pushq %r14; \
-        pushq %r15; 
-#define POP_ALL_REGS      \
-        popq  %r15; \
-        popq  %r14; \
-        popq  %r13; \
-        popq  %r12; \
-        popq  %r11; \
-        popq  %r10; \
-        popq  %r9;  \
-        popq  %r8;  \
-        popq  %rdi; \
-        popq  %rsi; \
-        popq  %rdx; \
-        popq  %rcx; \
-        popq  %rbx; \
-        popq  %rax; \
-		popq  %rbp
-		
+/* struct x86_user_context */
+#define RAX_OFFSET       80
+#define ERROR_OFFSET    120
+#define RSP_OFFSET      152
+
+#define PUSH_ALL_REGS   \
+        pushq %rdi;     \
+        pushq %rsi;     \
+        pushq %rdx;     \
+        pushq %rcx;     \
+        pushq %rax;     \
+        pushq %r8;      \
+        pushq %r9;      \
+        pushq %r10;     \
+        pushq %r11;     \
+        pushq %rbx;     \
+        pushq %rbp;     \
+        pushq %r12;     \
+        pushq %r13;     \
+        pushq %r14;     \
+        pushq %r15
+
+#define POP_ALL_REGS    \
+        popq  %r15;     \
+        popq  %r14;     \
+        popq  %r13;     \
+        popq  %r12;     \
+        popq  %rbp;     \
+        popq  %rbx;     \
+        popq  %r11;     \
+        popq  %r10;     \
+        popq  %r9;      \
+        popq  %r8;      \
+        popq  %rax;     \
+        popq  %rcx;     \
+        popq  %rdx;     \
+        popq  %rsi;     \
+        popq  %rdi
+
 .data
 .globl generic_common_handlers
 generic_common_handlers:
@@ -75,7 +81,7 @@ vector=vector+1
 
 common_interrupt:
 		PUSH_ALL_REGS
-		movq    120(%rsp), %rdi
+		movq    ERROR_OFFSET(%rsp), %rdi
 		movq	%rsp, %rsi
 		call 	handle_interrupt /* Enter C code */
 		POP_ALL_REGS
@@ -91,7 +97,7 @@ page_fault:
 		cld
 		PUSH_ALL_REGS
 		movq	%cr2, %rdi
-		movq	120(%rsp),%rsi
+		movq	ERROR_OFFSET(%rsp),%rsi
 		movq	%rsp,%rdx
 		movq	__page_fault_handler_address(%rip), %rax
 		andq	%rax, %rax
@@ -116,7 +122,7 @@ general_protection_exception:
 .globl x86_syscall
 x86_syscall:
 		cld
-		movq	%rsp, %gs:24
+		movq	%rsp, %gs:X86_CPU_LOCAL_OFFSET_USTACK
 		movq	%gs:(X86_CPU_LOCAL_OFFSET_SP0), %rsp
 
 		pushq	$(USER_DS)
@@ -124,21 +130,19 @@ x86_syscall:
 		pushq	%r11
 		pushq   $(USER_CS)
 		pushq	%rcx
-		pushq	$0
-		movq	%gs:24, %rcx
-		movq	%rcx, 32(%rsp)
+		pushq	%rax		/* error code (= system call number) */
 		PUSH_ALL_REGS
-		movq	104(%rsp), %rdi
+		movq	%gs:X86_CPU_LOCAL_OFFSET_USTACK, %rcx
+		movq	%rcx, RSP_OFFSET(%rsp)
+		movq	RAX_OFFSET(%rsp), %rdi
 		movw	%ss, %ax
 		movw	%ax, %ds
 		movq	%rsp, %rsi
 		callq	*__x86_syscall_handler(%rip)
 1:		
-		movq	%rax, 104(%rsp)
+		movq	%rax, RAX_OFFSET(%rsp)
 		POP_ALL_REGS
 #ifdef USE_SYSRET
-		movq	8(%rsp), %rcx
-		movq	24(%rsp), %r11
 		movq	32(%rsp), %rsp
 		sysretq
 #else

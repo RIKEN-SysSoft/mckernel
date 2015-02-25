@@ -179,9 +179,9 @@ struct tss64 {
 } __attribute__((packed));
 
 struct x86_basic_regs {
-	unsigned long r15, r14, r13, r12, r11, r10, r9, r8;
-	unsigned long rdi, rsi, rdx, rcx, rbx, rax, rbp;
-	unsigned long error, rip, cs, rflags, rsp, ss;
+	unsigned long r15, r14, r13, r12, rbp, rbx, r11, r10;
+	unsigned long r9, r8, rax, rcx, rdx, rsi, rdi, error;
+	unsigned long rip, cs, rflags, rsp, ss;
 };
 
 #define	REGS_GET_STACK_POINTER(regs)	(((struct x86_regs *)regs)->rsp)
