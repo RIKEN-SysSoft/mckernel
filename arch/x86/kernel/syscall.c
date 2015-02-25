@@ -132,7 +132,7 @@ fault:
 }
 
 struct sigsp {
-	struct x86_regs regs;
+	struct x86_user_context regs;
 	unsigned long sigrc;
 	unsigned long sigmask;
 	int ssflags;
@@ -142,17 +142,17 @@ struct sigsp {
 SYSCALL_DECLARE(rt_sigreturn)
 {
 	struct process *proc = cpu_local_var(current);
-	struct x86_regs *regs;
+	struct x86_user_context *regs;
 	struct sigsp *sigsp;
 	long rc = -EFAULT;
 
 	asm("movq %%gs:132, %0" : "=r" (regs));
 	--regs;
 
-	sigsp = (struct sigsp *)regs->rsp;
+	sigsp = (struct sigsp *)regs->gpr.rsp;
 	proc->sigmask.__val[0] = sigsp->sigmask;
 	proc->sigstack.ss_flags = sigsp->ssflags;
-	if(copy_from_user(proc, regs, &sigsp->regs, sizeof(struct x86_regs)))
+	if(copy_from_user(proc, regs, &sigsp->regs, sizeof(struct x86_user_context)))
 		return rc;
 	copy_from_user(proc, &rc, &sigsp->sigrc, sizeof(long));
 	return rc;
@@ -193,7 +193,7 @@ do_setpgid(int pid, int pgid)
 
 static unsigned long *ptrace_get_regaddr(struct process *proc, long addr)
 {
-#define PTRACE_GET_REGADDR(regname) case offsetof(struct user_regs_struct, regname): return &(proc->uctx->regname)
+#define PTRACE_GET_REGADDR(regname) case offsetof(struct user_regs_struct, regname): return &(proc->uctx->gpr.regname)
 	switch (addr) {
 		PTRACE_GET_REGADDR(r15);
 		PTRACE_GET_REGADDR(r14);
@@ -240,7 +240,7 @@ ptrace_read_user(struct process *proc, long addr, unsigned long *value)
 	if (addr < sizeof(struct user_regs_struct)) {
 		if (addr & (sizeof(*value) - 1)) return -EIO;
 		if (addr == offsetof(struct user_regs_struct, eflags)) {
-			*value = proc->uctx->rflags;
+			*value = proc->uctx->gpr.rflags;
 			return 0;
 		}
 		if (addr == offsetof(struct user_regs_struct, fs_base)) {
@@ -282,8 +282,8 @@ ptrace_write_user(struct process *proc, long addr, unsigned long value)
 	if (addr < sizeof(struct user_regs_struct)) {
 		if (addr & (sizeof(value) - 1)) return -EIO;
 		if (addr == offsetof(struct user_regs_struct, eflags)) {
-			proc->uctx->rflags &= ~RFLAGS_MASK;
-			proc->uctx->rflags |= (value & RFLAGS_MASK);
+			proc->uctx->gpr.rflags &= ~RFLAGS_MASK;
+			proc->uctx->gpr.rflags |= (value & RFLAGS_MASK);
 			return 0;
 		}
 		if (addr == offsetof(struct user_regs_struct, fs_base)) {
@@ -382,12 +382,12 @@ clear_debugreg(void)
 
 void clear_single_step(struct process *proc)
 {
-	proc->uctx->rflags &= ~RFLAGS_TF;
+	proc->uctx->gpr.rflags &= ~RFLAGS_TF;
 }
 
 void set_single_step(struct process *proc)
 {
-	proc->uctx->rflags |= RFLAGS_TF;
+	proc->uctx->gpr.rflags |= RFLAGS_TF;
 }
 
 extern void coredump(struct process *proc, void *regs);
@@ -441,7 +441,7 @@ void ptrace_report_signal(struct process *proc, int sig)
 void
 do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pending *pending)
 {
-	struct x86_regs *regs = regs0;
+	struct x86_user_context *regs = regs0;
 	struct k_sigaction *k;
 	int	sig;
 	__sigset_t w;
@@ -466,7 +466,7 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 		--regs;
 	}
 	else{
-		rc = regs->rax;
+		rc = regs->gpr.rax;
 	}
 
 	irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
@@ -492,16 +492,16 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 			proc->sigstack.ss_flags |= SS_ONSTACK;
 		}
 		else{
-			usp = (unsigned long *)regs->rsp;
+			usp = (unsigned long *)regs->gpr.rsp;
 		}
 		sigsp = ((struct sigsp *)usp) - 1;
 		sigsp = (struct sigsp *)((unsigned long)sigsp & 0xfffffffffffffff0UL);
-		if(copy_to_user(proc, &sigsp->regs, regs, sizeof(struct x86_regs)) ||
+		if(copy_to_user(proc, &sigsp->regs, regs, sizeof(struct x86_user_context)) ||
 		   copy_to_user(proc, &sigsp->sigrc, &rc, sizeof(long))){
 			kfree(pending);
 			ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
 			kprintf("do_signal,copy_to_user failed\n");
-			terminate(0, sig, (ihk_mc_user_context_t *)regs->rsp);
+			terminate(0, sig, (ihk_mc_user_context_t *)regs->gpr.rsp);
 			return;
 		}
 		sigsp->sigmask = mask;
@@ -512,13 +512,13 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 		usp--;
 		*usp = (unsigned long)k->sa.sa_restorer;
 
-		regs->rdi = (unsigned long)sig;
+		regs->gpr.rdi = (unsigned long)sig;
 		if(k->sa.sa_flags & SA_SIGINFO){
-			regs->rsi = (unsigned long)&sigsp->info;
-			regs->rdx = 0;
+			regs->gpr.rsi = (unsigned long)&sigsp->info;
+			regs->gpr.rdx = 0;
 		}
-		regs->rip = (unsigned long)k->sa.sa_handler;
-		regs->rsp = (unsigned long)usp;
+		regs->gpr.rip = (unsigned long)k->sa.sa_handler;
+		regs->gpr.rsp = (unsigned long)usp;
 
 		proc->sigmask.__val[0] |= pending->sigmask.__val[0];
 		kfree(pending);
@@ -609,14 +609,14 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 			dkprintf("do_signal,default,core,sig=%d\n", sig);
 			coredump(proc, regs);
 			coredumped = 0x80;
-			terminate(0, sig | coredumped, (ihk_mc_user_context_t *)regs->rsp);
+			terminate(0, sig | coredumped, (ihk_mc_user_context_t *)regs->gpr.rsp);
 			break;
 		case SIGCHLD:
 		case SIGURG:
 			break;
 		default:
 			dkprintf("do_signal,default,terminate,sig=%d\n", sig);
-			terminate(0, sig, (ihk_mc_user_context_t *)regs->rsp);
+			terminate(0, sig, (ihk_mc_user_context_t *)regs->gpr.rsp);
 			break;
 		}
 	}
@@ -665,7 +665,7 @@ hassigpending(struct process *proc)
 void
 check_signal(unsigned long rc, void *regs0)
 {
-	struct x86_regs *regs = regs0;
+	struct x86_user_context *regs = regs0;
 	struct process *proc;
 	struct sig_pending *pending;
 	int	irqstate;
@@ -692,7 +692,7 @@ check_signal(unsigned long rc, void *regs0)
 		return;
 	}
 
-	if(regs != NULL && (regs->rsp & 0x8000000000000000)) {
+	if(regs != NULL && (regs->gpr.rsp & 0x8000000000000000)) {
 		return;
 	}
 
@@ -971,16 +971,16 @@ do_kill(int pid, int tid, int sig, siginfo_t *info, int ptracecont)
 void
 set_signal(int sig, void *regs0, siginfo_t *info)
 {
-	struct x86_regs *regs = regs0;
+	struct x86_user_context *regs = regs0;
 	struct process *proc = cpu_local_var(current);
 
 	if(proc == NULL || proc->ftn->pid == 0)
 		return;
 
 	if((__sigmask(sig) & proc->sigmask.__val[0]) ||
-	   (regs->rsp & 0x8000000000000000)){
+	   (regs->gpr.rsp & 0x8000000000000000)){
 		coredump(proc, regs0);
-		terminate(0, sig | 0x80, (ihk_mc_user_context_t *)regs->rsp);
+		terminate(0, sig | 0x80, (ihk_mc_user_context_t *)regs->gpr.rsp);
 	}
 		do_kill(proc->ftn->pid, proc->ftn->tid, sig, info, 0);
 }

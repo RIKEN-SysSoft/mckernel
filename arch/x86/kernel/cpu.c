@@ -443,14 +443,14 @@ void set_signal(int sig, void *regs, struct siginfo *info);
 void check_signal(unsigned long rc, void *regs);
 extern void tlb_flush_handler(int vector);
 
-void handle_interrupt(int vector, struct x86_regs *regs)
+void handle_interrupt(int vector, struct x86_user_context *regs)
 {
 	struct ihk_mc_interrupt_handler *h;
 
 	lapic_ack();
 
 	dkprintf("CPU[%d] got interrupt, vector: %d, RIP: 0x%lX\n", 
-	         ihk_mc_get_processor_id(), vector, regs->rip);
+	         ihk_mc_get_processor_id(), vector, regs->gpr.rip);
 
 	if (vector < 0 || vector > 255) {
 		panic("Invalid interrupt vector.");
@@ -462,7 +462,7 @@ void handle_interrupt(int vector, struct x86_regs *regs)
 			memset(&info, '\0', sizeof info);
 			info.si_signo = SIGFPE;
 			info.si_code = FPE_INTDIV;
-			info._sifields._sigfault.si_addr = (void *)regs->rip;
+			info._sifields._sigfault.si_addr = (void *)regs->gpr.rip;
 			set_signal(SIGFPE, regs, &info);
 			break;
 		    case 9:
@@ -478,7 +478,7 @@ void handle_interrupt(int vector, struct x86_regs *regs)
 			memset(&info, '\0', sizeof info);
 			info.si_signo = SIGILL;
 			info.si_code = ILL_ILLOPN;
-			info._sifields._sigfault.si_addr = (void *)regs->rip;
+			info._sifields._sigfault.si_addr = (void *)regs->gpr.rip;
 			set_signal(SIGILL, regs, &info);
 			break;
 		    case 10:
@@ -496,7 +496,7 @@ void handle_interrupt(int vector, struct x86_regs *regs)
 			break;
 		    default:
 			kprintf("Exception %d, rflags: 0x%lX CS: 0x%lX, RIP: 0x%lX\n",
-			        vector, regs->rflags, regs->cs, regs->rip);
+			        vector, regs->gpr.rflags, regs->gpr.cs, regs->gpr.rip);
 			arch_show_interrupt_context(regs);
 			panic("Unhandled exception");
 		}
@@ -518,10 +518,10 @@ void handle_interrupt(int vector, struct x86_regs *regs)
 	check_need_resched();
 }
 
-void gpe_handler(struct x86_regs *regs)
+void gpe_handler(struct x86_user_context *regs)
 {
 	kprintf("General protection fault (err: %lx, %lx:%lx)\n",
-	        regs->error, regs->cs, regs->rip);
+	        regs->gpr.error, regs->gpr.cs, regs->gpr.rip);
 	arch_show_interrupt_context(regs);
 	set_signal(SIGSEGV, regs, NULL);
 	check_signal(0, regs);
@@ -529,7 +529,7 @@ void gpe_handler(struct x86_regs *regs)
 	// panic("GPF");
 }
 
-void debug_handler(struct x86_regs *regs)
+void debug_handler(struct x86_user_context *regs)
 {
 	unsigned long db6;
 	int si_code = 0;
@@ -543,7 +543,7 @@ void debug_handler(struct x86_regs *regs)
 
 	asm("mov %%db6, %0" :"=r" (db6));
 	if (db6 & DB6_BS) {
-	        regs->rflags &= ~RFLAGS_TF;
+	        regs->gpr.rflags &= ~RFLAGS_TF;
 		si_code = TRAP_TRACE;
 	} else if (db6 & (DB6_B3|DB6_B2|DB6_B1|DB6_B0)) {
 		si_code = TRAP_HWBKPT;
@@ -556,7 +556,7 @@ void debug_handler(struct x86_regs *regs)
 	check_need_resched();
 }
 
-void int3_handler(struct x86_regs *regs)
+void int3_handler(struct x86_user_context *regs)
 {
 	struct siginfo info;
 
@@ -758,11 +758,11 @@ void ihk_mc_init_user_process(ihk_mc_kernel_context_t *ctx,
 	*puctx = uctx;
 
 	memset(uctx, 0, sizeof(ihk_mc_user_context_t));
-	uctx->cs = USER_CS;
-	uctx->rip = new_pc;
-	uctx->ss = USER_DS;
-	uctx->rsp = user_sp;
-	uctx->rflags = RFLAGS_IF;
+	uctx->gpr.cs = USER_CS;
+	uctx->gpr.rip = new_pc;
+	uctx->gpr.ss = USER_DS;
+	uctx->gpr.rsp = user_sp;
+	uctx->gpr.rflags = RFLAGS_IF;
 
 	ihk_mc_init_context(ctx, sp, (void (*)(void))enter_user_mode);
 	ctx->rsp0 = (unsigned long)stack_pointer;
@@ -773,18 +773,18 @@ void ihk_mc_modify_user_context(ihk_mc_user_context_t *uctx,
                                 unsigned long value)
 {
 	if (reg == IHK_UCR_STACK_POINTER) {
-		uctx->rsp = value;
+		uctx->gpr.rsp = value;
 	} else if (reg == IHK_UCR_PROGRAM_COUNTER) {
-		uctx->rip = value;
+		uctx->gpr.rip = value;
 	}
 }
 
 void ihk_mc_print_user_context(ihk_mc_user_context_t *uctx)
 {
-	kprintf("CS:RIP = %04lx:%16lx\n", uctx->cs, uctx->rip);
+	kprintf("CS:RIP = %04lx:%16lx\n", uctx->gpr.cs, uctx->gpr.rip);
 	kprintf("%16lx %16lx %16lx %16lx\n%16lx %16lx %16lx\n",
-	        uctx->rax, uctx->rbx, uctx->rcx, uctx->rdx,
-	        uctx->rsi, uctx->rdi, uctx->rsp);
+	        uctx->gpr.rax, uctx->gpr.rbx, uctx->gpr.rcx, uctx->gpr.rdx,
+	        uctx->gpr.rsi, uctx->gpr.rdi, uctx->gpr.rsp);
 }
 
 void ihk_mc_set_syscall_handler(long (*handler)(int, ihk_mc_user_context_t *))
@@ -823,7 +823,8 @@ void arch_show_extended_context(void)
 
 void arch_show_interrupt_context(const void *reg)
 {
-	const struct x86_regs *regs = reg;
+	const struct x86_user_context *uctx = reg;
+	const struct x86_basic_regs *regs = &uctx->gpr;
 	unsigned long irqflags;
 
 	irqflags = kprintf_lock();

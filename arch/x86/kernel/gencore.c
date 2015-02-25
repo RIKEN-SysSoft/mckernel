@@ -86,7 +86,8 @@ void fill_prstatus(struct note *head, struct process *proc, void *regs0)
 {
 	void *name;
 	struct elf_prstatus64 *prstatus; 
-	struct x86_regs *regs = regs0;
+	struct x86_user_context *uctx = regs0;
+	struct x86_basic_regs *regs = &uctx->gpr;
         register unsigned long _r12 asm("r12");
         register unsigned long _r13 asm("r13");
         register unsigned long _r14 asm("r14");

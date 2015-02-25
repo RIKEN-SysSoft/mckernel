@@ -22,19 +22,23 @@ struct x86_kregs {
 };
 
 typedef struct x86_kregs ihk_mc_kernel_context_t;
+
 /* XXX: User context should contain floating point registers */
-typedef struct x86_regs ihk_mc_user_context_t;
+struct x86_user_context {
+	struct x86_basic_regs gpr;
+};
+typedef struct x86_user_context ihk_mc_user_context_t;
 
-#define ihk_mc_syscall_arg0(uc) (uc)->rdi
-#define ihk_mc_syscall_arg1(uc) (uc)->rsi
-#define ihk_mc_syscall_arg2(uc) (uc)->rdx
-#define ihk_mc_syscall_arg3(uc) (uc)->r10
-#define ihk_mc_syscall_arg4(uc) (uc)->r8
-#define ihk_mc_syscall_arg5(uc) (uc)->r9
+#define ihk_mc_syscall_arg0(uc) (uc)->gpr.rdi
+#define ihk_mc_syscall_arg1(uc) (uc)->gpr.rsi
+#define ihk_mc_syscall_arg2(uc) (uc)->gpr.rdx
+#define ihk_mc_syscall_arg3(uc) (uc)->gpr.r10
+#define ihk_mc_syscall_arg4(uc) (uc)->gpr.r8
+#define ihk_mc_syscall_arg5(uc) (uc)->gpr.r9
 
-#define ihk_mc_syscall_ret(uc)  (uc)->rax
+#define ihk_mc_syscall_ret(uc)  (uc)->gpr.rax
 
-#define ihk_mc_syscall_pc(uc)   (uc)->rip
-#define ihk_mc_syscall_sp(uc)   (uc)->rsp
+#define ihk_mc_syscall_pc(uc)   (uc)->gpr.rip
+#define ihk_mc_syscall_sp(uc)   (uc)->gpr.rsp
 
 #endif
