@@ -2966,26 +2966,31 @@ static int ptrace_attach(int pid)
 	ihk_mc_spinlock_unlock(savelock, irqstate);
 	dkprintf("ptrace_attach,pid=%d,proc->ftn->parent=%p\n", proc->ftn->pid, proc->ftn->parent);
 
-	if (proc->ftn->parent == NULL || proc->ftn->ptrace) {
+	if (proc->ftn->ptrace & PT_TRACED) {
 		error = -EPERM;
 		goto out;
 	}
-	dkprintf("ptrace_attach,parent->pid=%d\n", proc->ftn->parent->pid);
 
 	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
-	ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
+	if (proc->ftn->parent) {
+		dkprintf("ptrace_attach,parent->pid=%d\n", proc->ftn->parent->pid);
 
-	list_for_each_entry_safe(child, next, &proc->ftn->parent->children, siblings_list) {
-		if(child == proc->ftn) {
-			list_del(&child->siblings_list);
-			goto found;
+		ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
+
+		list_for_each_entry_safe(child, next, &proc->ftn->parent->children, siblings_list) {
+			if(child == proc->ftn) {
+				list_del(&child->siblings_list);
+				goto found;
+			}
 		}
-	}
-	kprintf("ptrace_attach,not found\n");
-	error = -EPERM;
-	goto out_notfound;
+		kprintf("ptrace_attach,not found\n");
+		error = -EPERM;
+		goto out_notfound;
  found:
-	ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
+		ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
+	} else {
+		hold_fork_tree_node(proc->ftn);
+	}
 
 	proc->ftn->ptrace = PT_TRACED | PT_TRACE_EXEC;
 	proc->ftn->ppid_parent = proc->ftn->parent;
@@ -3044,8 +3049,7 @@ static int ptrace_detach(int pid, int data)
 	ihk_mc_spinlock_unlock(savelock, irqstate);
 
 	if (!(proc->ftn->ptrace & PT_TRACED) ||
-			proc->ftn->parent != cpu_local_var(current)->ftn ||
-			proc->ftn->ppid_parent == NULL) {
+			proc->ftn->parent != cpu_local_var(current)->ftn) {
 		error = -ESRCH;
 		goto out;
 	}
@@ -3074,9 +3078,13 @@ found:
 	proc->ftn->parent = proc->ftn->ppid_parent;
 	proc->ftn->ppid_parent = NULL;
 
-	ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
-	list_add_tail(&proc->ftn->siblings_list, &proc->ftn->parent->children);
-	ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
+	if (proc->ftn->parent) {
+		ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
+		list_add_tail(&proc->ftn->siblings_list, &proc->ftn->parent->children);
+		ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
+	} else {
+		release_fork_tree_node(proc->ftn);
+	}
 
 	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
 
@@ -3113,8 +3121,7 @@ static int ptrace_terminate_tracer(struct process *proc, struct fork_tree_node *
 
 	dkprintf("ptrace_terminate_tracer,pid=%d\n", proc->ftn->pid);
 	if (!(proc->ftn->ptrace & PT_TRACED) ||
-			proc->ftn->parent != tracer ||
-			proc->ftn->ppid_parent == NULL) {
+			proc->ftn->parent != tracer) {
 		error = -ESRCH;
 		goto out;
 	}
@@ -3125,13 +3132,13 @@ static int ptrace_terminate_tracer(struct process *proc, struct fork_tree_node *
 	proc->ftn->parent = proc->ftn->ppid_parent;
 	proc->ftn->ppid_parent = NULL;
 
-	if (proc->ftn->parent == tracer) {
-		error = 1;	/* will call release_fork_tree_node() */
-	} else {
+	if (proc->ftn->parent && proc->ftn->parent != tracer) {
 		/* re-connect real parent */
 		ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
 		list_add_tail(&proc->ftn->siblings_list, &proc->ftn->parent->children);
 		ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
+	} else {
+		error = 1;	/* will call release_fork_tree_node() */
 	}
 
 	/* if signal stopped, change to PS_STOPPED  */
