@@ -22,6 +22,7 @@
 #include <march.h>
 #include <signal.h>
 #include <process.h>
+#include <cls.h>
 
 #define LAPIC_ID            0x020
 #define LAPIC_TIMER         0x320
@@ -887,3 +888,28 @@ int ihk_mc_interrupt_cpu(int cpu, int vector)
 	x86_issue_ipi(cpu, vector);
 	return 0;
 }
+
+ihk_mc_user_context_t *lookup_user_context(struct process *proc)
+{
+	ihk_mc_user_context_t *uctx = proc->uctx;
+
+	if ((!(proc->ftn->status & (PS_INTERRUPTIBLE | PS_UNINTERRUPTIBLE
+						| PS_STOPPED | PS_TRACED))
+				&& (proc != cpu_local_var(current)))
+			|| !uctx->is_gpr_valid) {
+		return NULL;
+	}
+
+	if (!uctx->is_sr_valid) {
+		uctx->sr.fs_base = proc->thread.tlsblock_base;
+		uctx->sr.gs_base = 0;
+		uctx->sr.ds = 0;
+		uctx->sr.es = 0;
+		uctx->sr.fs = 0;
+		uctx->sr.gs = 0;
+
+		uctx->is_sr_valid = 1;
+	}
+
+	return uctx;
+} /* lookup_user_context() */
