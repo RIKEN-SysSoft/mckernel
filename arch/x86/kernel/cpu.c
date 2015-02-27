@@ -855,6 +855,7 @@ void ihk_mc_init_user_process(ihk_mc_kernel_context_t *ctx,
 	uctx->gpr.ss = USER_DS;
 	uctx->gpr.rsp = user_sp;
 	uctx->gpr.rflags = RFLAGS_IF;
+	uctx->is_gpr_valid = 1;
 
 	ihk_mc_init_context(ctx, sp, (void (*)(void))enter_user_mode);
 	ctx->rsp0 = (unsigned long)stack_pointer;
