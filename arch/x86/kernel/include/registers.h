@@ -50,6 +50,11 @@
 #define MSR_GS_BASE    0xc0000101
 
 #define MSR_IA32_APIC_BASE 0x000000001b
+#define MSR_PLATFORM_INFO  0x000000ce
+#define MSR_IA32_PERF_CTL  0x00000199
+#define MSR_IA32_MISC_ENABLE		0x000001a0
+#define MSR_IA32_ENERGY_PERF_BIAS	0x000001b0
+#define MSR_NHM_TURBO_RATIO_LIMIT	0x000001ad
 
 #define CVAL(event, mask) \
         ((((event) & 0xf00) << 24) | ((mask) << 8) | ((event) & 0xff))

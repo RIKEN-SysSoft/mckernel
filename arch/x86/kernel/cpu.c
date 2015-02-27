@@ -8,6 +8,8 @@
  */
 /*
  * HISTORY
+ *  2015/02/26: bgerofi - set pstate, turbo mode and power/perf bias MSRs
+ *  2015/02/12: Dave - enable AVX if supported
  */
 
 #include <ihk/cpu.h>
@@ -235,6 +237,94 @@ void lapic_icr_write(unsigned int h, unsigned int l)
 	lapic_write(LAPIC_ICR0, l);
 }
 
+
+void print_msr(int idx)
+{
+	int bit;
+	unsigned long long val;
+
+	val = rdmsr(idx);
+
+	__kprintf("MSR 0x%x val (dec): %llu\n", idx, val);
+	__kprintf("MSR 0x%x val (hex): 0x%llx\n", idx, val);
+
+	__kprintf("                    ");
+	for (bit = 63; bit >= 0; --bit) {
+		__kprintf("%3d", bit);
+	}
+	__kprintf("\n");
+
+	__kprintf("MSR 0x%x val (bin):", idx);
+	for (bit = 63; bit >= 0; --bit) {
+		__kprintf("%3d", (val & ((unsigned long)1 << bit)) ? 1 : 0);
+	}
+	__kprintf("\n");
+}
+
+
+void init_pstate_and_turbo(void)
+{
+	uint64_t value;
+	uint64_t eax, ecx;
+
+	asm volatile("cpuid" : "=a" (eax), "=c" (ecx) : "a" (0x6) : "%rbx", "%rdx");
+
+	/* Query and set max pstate value: 
+	 *
+	 * IA32_PERF_CTL (0x199H) bit 15:0:
+	 * Target performance State Value
+	 */
+	value = rdmsr(MSR_PLATFORM_INFO);
+	value = (value >> 8) & 0xFF;
+
+	/* Turbo boost setting:
+	 * Bit 1 of EAX in Leaf 06H (i.e. CPUID.06H:EAX[1]) indicates opportunistic 
+	 * processor performance operation, such as IDA, has been enabled by BIOS.
+	 *
+	 * IA32_PERF_CTL (0x199H) bit 32: IDA (i.e., turbo boost) Engage. (R/W)
+	 * When set to 1: disengages IDA
+	 * When set to 0: enables IDA
+	 */
+	if (eax & (1 << 1)) {
+		uint64_t turbo_value;
+		
+		turbo_value = rdmsr(MSR_NHM_TURBO_RATIO_LIMIT);
+		turbo_value &= 0xFF;
+		if (turbo_value < value) {
+			value = turbo_value;
+		}
+
+		value = value << 8;
+		
+		/* Disable turbo boost */
+		//value |= (uint64_t)1 << 32; 
+
+		/* Enable turbo boost */
+		value &= ~((uint64_t)1 << 32);
+	}
+	else {
+		value = value << 8;
+	}
+
+	wrmsr(MSR_IA32_PERF_CTL, value);
+
+	/* IA32_ENERGY_PERF_BIAS (0x1B0H) bit 3:0:
+	 * (The processor supports this capability if CPUID.06H:ECX.SETBH[bit 3] is set.)
+	 * Power Policy Preference:
+	 * 0 indicates preference to highest performance.
+	 * 15 indicates preference to maximize energy saving.
+	 *
+	 * Set energy/perf bias to high performance 
+	 */ 
+	if (ecx & (1 << 3)) {
+		wrmsr(MSR_IA32_ENERGY_PERF_BIAS, 0);
+	}
+	
+	//print_msr(MSR_IA32_MISC_ENABLE);
+	//print_msr(MSR_IA32_PERF_CTL);
+	//print_msr(MSR_IA32_ENERGY_PERF_BIAS);
+}
+
 void init_lapic(void)
 {
 	unsigned long baseaddr;
@@ -390,6 +480,7 @@ void init_cpu(void)
 	init_lapic();
 	init_syscall();
 	x86_init_perfctr();
+	init_pstate_and_turbo();
 }
 
 void setup_x86(void)
