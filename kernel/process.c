@@ -1491,24 +1491,23 @@ out:
 	return error;
 }
 
-static int do_page_fault_process(struct process *proc, void *fault_addr0, uint64_t reason)
+static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, uint64_t reason)
 {
-	struct process_vm *vm = proc->vm;
 	int error;
 	const uintptr_t fault_addr = (uintptr_t)fault_addr0;
 	struct vm_range *range;
 
-	dkprintf("[%d]do_page_fault_process(%p,%lx,%lx)\n",
-			ihk_mc_get_processor_id(), proc, fault_addr0, reason);
+	dkprintf("[%d]do_page_fault_process_vm(%p,%lx,%lx)\n",
+			ihk_mc_get_processor_id(), vm, fault_addr0, reason);
 
 	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 
 	range = lookup_process_memory_range(vm, fault_addr, fault_addr+1);
 	if (range == NULL) {
 		error = -EFAULT;
-		kprintf("[%d]do_page_fault_process(%p,%lx,%lx):"
+		kprintf("[%d]do_page_fault_process_vm(%p,%lx,%lx):"
 				"out of range. %d\n",
-				ihk_mc_get_processor_id(), proc,
+				ihk_mc_get_processor_id(), vm,
 				fault_addr0, reason, error);
 		goto out;
 	}
@@ -1519,9 +1518,9 @@ static int do_page_fault_process(struct process *proc, void *fault_addr0, uint64
 			|| ((reason & PF_INSTR)
 				&& !(range->flag & VR_PROT_EXEC))) {
 		error = -EFAULT;
-		kprintf("[%d]do_page_fault_process(%p,%lx,%lx):"
+		kprintf("[%d]do_page_fault_process_vm(%p,%lx,%lx):"
 				"access denied. %d\n",
-				ihk_mc_get_processor_id(), proc,
+				ihk_mc_get_processor_id(), vm,
 				fault_addr0, reason, error);
 		goto out;
 	}
@@ -1558,9 +1557,9 @@ static int do_page_fault_process(struct process *proc, void *fault_addr0, uint64
 		goto out;
 	}
 	if (error) {
-		kprintf("[%d]do_page_fault_process(%p,%lx,%lx):"
+		kprintf("[%d]do_page_fault_process_vm(%p,%lx,%lx):"
 				"fault range failed. %d\n",
-				ihk_mc_get_processor_id(), proc,
+				ihk_mc_get_processor_id(), vm,
 				fault_addr0, reason, error);
 		goto out;
 	}
@@ -1568,22 +1567,19 @@ static int do_page_fault_process(struct process *proc, void *fault_addr0, uint64
 	error = 0;
 out:
 	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
-	dkprintf("[%d]do_page_fault_process(%p,%lx,%lx): %d\n",
-			ihk_mc_get_processor_id(), proc, fault_addr0,
+	dkprintf("[%d]do_page_fault_process_vm(%p,%lx,%lx): %d\n",
+			ihk_mc_get_processor_id(), vm, fault_addr0,
 			reason, error);
 	return error;
 }
 
-int page_fault_process(struct process *proc, void *fault_addr, uint64_t reason)
+int page_fault_process_vm(struct process_vm *fault_vm, void *fault_addr, uint64_t reason)
 {
 	int error;
-
-	if (proc != cpu_local_var(current)) {
-		panic("page_fault_process: other process");
-	}
+	struct process *proc = cpu_local_var(current);
 
 	for (;;) {
-		error = do_page_fault_process(proc, fault_addr, reason);
+		error = do_page_fault_process_vm(fault_vm, fault_addr, reason);
 		if (error != -ERESTART) {
 			break;
 		}
@@ -1914,9 +1910,9 @@ int populate_process_memory(struct process *proc, void *start, size_t len)
 
 	end = (uintptr_t)start + len;
 	for (addr = (uintptr_t)start; addr < end; addr += PAGE_SIZE) {
-		error = page_fault_process(proc, (void *)addr, reason);
+		error = page_fault_process_vm(proc->vm, (void *)addr, reason);
 		if (error) {
-			ekprintf("populate_process_range:page_fault_process"
+			ekprintf("populate_process_range:page_fault_process_vm"
 					"(%p,%lx,%lx) failed %d\n",
 					proc, addr, reason, error);
 			goto out;

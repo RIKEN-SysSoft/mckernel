@@ -370,12 +370,12 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 	dkprintf("[%d]page_fault_handler(%p,%lx,%p)\n",
 			ihk_mc_get_processor_id(), fault_addr, reason, regs);
 
-	error = page_fault_process(proc, fault_addr, reason);
+	error = page_fault_process_vm(proc->vm, fault_addr, reason);
 	if (error) {
 		struct siginfo info;
 
 		kprintf("[%d]page_fault_handler(%p,%lx,%p):"
-				"fault proc failed. %d\n",
+				"fault vm failed. %d\n",
 				ihk_mc_get_processor_id(), fault_addr,
 				reason, regs, error);
 		unhandled_page_fault(proc, fault_addr, regs);

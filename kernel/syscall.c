@@ -226,7 +226,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		if (res->status == STATUS_PAGE_FAULT) {
 			dkprintf("STATUS_PAGE_FAULT in syscall, pid: %d\n", 
 					cpu_local_var(current)->ftn->pid);
-			error = page_fault_process(get_cpu_local_var(cpu)->current,
+			error = page_fault_process_vm(proc->vm,
 					(void *)res->fault_address,
 					res->fault_reason|PF_POPULATE);
 
