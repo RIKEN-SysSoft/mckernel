@@ -629,7 +629,7 @@ void debug_handler(struct x86_user_context *regs)
 
 #ifdef DEBUG_PRINT_CPU
 	kprintf("debug exception (err: %lx, %lx:%lx)\n",
-	        regs->error, regs->cs, regs->rip);
+	        regs->gpr.error, regs->gpr.cs, regs->gpr.rip);
 	arch_show_interrupt_context(regs);
 #endif
 
@@ -654,7 +654,7 @@ void int3_handler(struct x86_user_context *regs)
 
 #ifdef DEBUG_PRINT_CPU
 	kprintf("int3 exception (err: %lx, %lx:%lx)\n",
-	        regs->error, regs->cs, regs->rip);
+	        regs->gpr.error, regs->gpr.cs, regs->gpr.rip);
 	arch_show_interrupt_context(regs);
 #endif
 
