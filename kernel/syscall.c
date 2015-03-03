@@ -101,6 +101,7 @@ extern struct sigpending *hassigpending(struct process *proc);
 int copy_from_user(void *, const void *, size_t);
 int read_process_vm(struct process_vm *, void *, const void *, size_t);
 int copy_to_user(void *, const void *, size_t);
+int patch_process_vm(struct process_vm *, void *, const void *, size_t);
 void do_setpgid(int, int);
 extern long alloc_debugreg(struct process *proc);
 
@@ -2942,18 +2943,10 @@ static long ptrace_poketext(int pid, long addr, long data)
 	if (!child)
 		return -ESRCH;
 	if(child->ftn->status == PS_TRACED){
-#if 0
-		/* XXX: revisit here, when fix #401.
-		 * if read only, copy-on-write */
-#else
-		unsigned long phys;
-		rc = ihk_mc_pt_virt_to_phys(child->vm->page_table, (void *)addr, &phys);
-		if (rc != 0) {
+		rc = patch_process_vm(child->vm, (void *)addr, &data, sizeof(data));
+		if (rc) {
 			dkprintf("ptrace_poketext: bad address 0x%llx\n", addr);
-		} else {
-			*((long *)phys_to_virt(phys)) = data;
 		}
-#endif
 	}
 	ihk_mc_spinlock_unlock(savelock, irqstate);
 
