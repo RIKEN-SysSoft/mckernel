@@ -540,7 +540,7 @@ uint64_t ihk_mc_pt_virt_to_pagemap(struct page_table *pt, unsigned long virt)
 
 
 int ihk_mc_pt_virt_to_phys(struct page_table *pt,
-                           void *virt, unsigned long *phys)
+                           const void *virt, unsigned long *phys)
 {
 	int l4idx, l3idx, l2idx, l1idx;
 	unsigned long v = (unsigned long)virt;
