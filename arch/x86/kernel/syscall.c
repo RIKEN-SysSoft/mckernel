@@ -26,7 +26,8 @@
 
 void terminate(int, int, ihk_mc_user_context_t *);
 int copy_from_user(void *dst, const void *src, size_t siz);
-int copy_to_user(struct process *proc, void *dst, const void *src, size_t siz);
+int copy_to_user(void *dst, const void *src, size_t siz);
+int write_process_vm(struct process_vm *vm, void *dst, const void *src, size_t siz);
 long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
 
 //#define DEBUG_PRINT_SC
@@ -103,7 +104,6 @@ int obtain_clone_cpuid() {
 
 SYSCALL_DECLARE(rt_sigaction)
 {
-	struct process *proc = cpu_local_var(current);
 	int sig = ihk_mc_syscall_arg0(ctx);
 	const struct sigaction *act = (const struct sigaction *)ihk_mc_syscall_arg1(ctx);
 	struct sigaction *oact = (struct sigaction *)ihk_mc_syscall_arg2(ctx);
@@ -122,7 +122,7 @@ SYSCALL_DECLARE(rt_sigaction)
 		}
 	rc = do_sigaction(sig, act? &new_sa: NULL, oact? &old_sa: NULL);
 	if(rc == 0 && oact)
-		if(copy_to_user(proc, oact, &old_sa.sa, sizeof old_sa.sa)){
+		if(copy_to_user(oact, &old_sa.sa, sizeof old_sa.sa)){
 			goto fault;
 		}
 
@@ -474,11 +474,11 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 		}
 		sigsp = ((struct sigsp *)usp) - 1;
 		sigsp = (struct sigsp *)((unsigned long)sigsp & 0xfffffffffffffff0UL);
-		if(copy_to_user(proc, &sigsp->regs, regs, sizeof(struct x86_user_context)) ||
-		   copy_to_user(proc, &sigsp->sigrc, &rc, sizeof(long))){
+		if(write_process_vm(proc->vm, &sigsp->regs, regs, sizeof(struct x86_user_context)) ||
+		   write_process_vm(proc->vm, &sigsp->sigrc, &rc, sizeof(long))){
 			kfree(pending);
 			ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
-			kprintf("do_signal,copy_to_user failed\n");
+			kprintf("do_signal,write_process_vm failed\n");
 			terminate(0, sig, (ihk_mc_user_context_t *)regs->gpr.rsp);
 			return;
 		}
