@@ -1378,7 +1378,7 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 	/*****/
 	ptep = ihk_mc_pt_lookup_pte(vm->page_table, (void *)fault_addr, &pgaddr, &pgsize, &p2align);
-	if (!(reason & PF_PROT) && ptep && !pte_is_null(ptep)
+	if (!(reason & (PF_PROT | PF_PATCH)) && ptep && !pte_is_null(ptep)
 			&& !pte_is_fileoff(ptep, pgsize)) {
 		if (!pte_is_present(ptep)) {
 			error = -EFAULT;
@@ -1439,7 +1439,10 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 	}
 	page = phys_to_page(phys);
 	/*****/
-	if ((range->flag & VR_PRIVATE) && (!page || page_is_in_memobj(page) || page_is_multi_mapped(page))) {
+	if (((range->flag & VR_PRIVATE)
+				|| ((reason & PF_PATCH)
+					&& !(range->flag & VR_PROT_WRITE)))
+			&& (!page || page_is_in_memobj(page) || page_is_multi_mapped(page))) {
 		if (!(attr & PTATTR_DIRTY)) {
 			attr &= ~PTATTR_WRITABLE;
 		}
@@ -1513,7 +1516,7 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 	}
 
 	if (((range->flag & VR_PROT_MASK) == VR_PROT_NONE)
-			|| ((reason & PF_WRITE)
+			|| (((reason & PF_WRITE) && !(reason & PF_PATCH))
 				&& !(range->flag & VR_PROT_WRITE))
 			|| ((reason & PF_INSTR)
 				&& !(range->flag & VR_PROT_EXEC))) {

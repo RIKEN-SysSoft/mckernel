@@ -1870,7 +1870,8 @@ enum ihk_mc_pt_attribute arch_vrflag_to_ptattr(unsigned long flag, uint64_t faul
 	attr = common_vrflag_to_ptattr(flag, fault, ptep);
 
 	if ((fault & PF_PROT)
-			|| ((fault & PF_POPULATE) && (flag & VR_PRIVATE))) {
+			|| ((fault & (PF_POPULATE | PF_PATCH))
+				&& (flag & VR_PRIVATE))) {
 		attr |= PTATTR_DIRTY;
 	}
 
@@ -2282,3 +2283,61 @@ int write_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t
 
 	return 0;
 } /* write_process_vm() */
+
+int patch_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t siz)
+{
+	const uintptr_t ustart = (uintptr_t)udst;
+	const uintptr_t uend = ustart + siz;
+	uint64_t reason;
+	uintptr_t addr;
+	int error;
+	const void *from;
+	void *to;
+	size_t remain;
+	size_t cpsize;
+	unsigned long pa;
+	void *va;
+
+	kprintf("patch_process_vm(%p,%p,%p,%lx)\n", vm, udst, ksrc, siz);
+	if ((ustart < vm->region.user_start)
+			|| (vm->region.user_end <= ustart)
+			|| ((vm->region.user_end - ustart) < siz)) {
+		kprintf("patch_process_vm(%p,%p,%p,%lx):not in user\n", vm, udst, ksrc, siz);
+		return -EFAULT;
+	}
+
+	reason = PF_PATCH | PF_WRITE | PF_USER;
+	for (addr = ustart & PAGE_MASK; addr < uend; addr += PAGE_SIZE) {
+		error = page_fault_process_vm(vm, (void *)addr, reason);
+		if (error) {
+			kprintf("patch_process_vm(%p,%p,%p,%lx):pf(%lx):%d\n", vm, udst, ksrc, siz, addr, error);
+			return error;
+		}
+	}
+
+	from = ksrc;
+	to = udst;
+	remain = siz;
+	while (remain > 0) {
+		cpsize = PAGE_SIZE - ((uintptr_t)to & (PAGE_SIZE - 1));
+		if (cpsize > remain) {
+			cpsize = remain;
+		}
+
+		error = ihk_mc_pt_virt_to_phys(vm->page_table, to, &pa);
+		if (error) {
+			kprintf("patch_process_vm(%p,%p,%p,%lx):v2p(%p):%d\n", vm, udst, ksrc, siz, to, error);
+			return error;
+		}
+
+		va = phys_to_virt(pa);
+		memcpy(va, from, cpsize);
+
+		from += cpsize;
+		to += cpsize;
+		remain -= cpsize;
+	}
+
+	kprintf("patch_process_vm(%p,%p,%p,%lx):%d\n", vm, udst, ksrc, siz, 0);
+	return 0;
+} /* patch_process_vm() */
