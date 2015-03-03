@@ -98,7 +98,8 @@ void check_signal(unsigned long rc, void *regs);
 void do_signal(long rc, void *regs, struct process *proc, struct sig_pending *pending);
 extern unsigned long do_kill(int pid, int tid, int sig, struct siginfo *info, int ptracecont);
 extern struct sigpending *hassigpending(struct process *proc);
-int copy_from_user(struct process *, void *, const void *, size_t);
+int copy_from_user(void *, const void *, size_t);
+int read_process_vm(struct process_vm *, void *, const void *, size_t);
 int copy_to_user(struct process *, void *, const void *, size_t);
 void do_setpgid(int, int);
 extern long alloc_debugreg(struct process *proc);
@@ -2096,7 +2097,7 @@ SYSCALL_DECLARE(rt_sigprocmask)
 			goto fault;
 	}
 	if(set){
-		if(copy_from_user(proc, &wsig, set->__val, sizeof wsig))
+		if(copy_from_user(&wsig, set->__val, sizeof wsig))
 			goto fault;
 		switch(how){
 		    case SIG_BLOCK:
@@ -2184,10 +2185,10 @@ SYSCALL_DECLARE(rt_sigtimedwait)
 	if(set == NULL)
 		return -EFAULT;
 	memset(&winfo, '\0', sizeof winfo);
-	if(copy_from_user(proc, &wset, set, sizeof wset))
+	if(copy_from_user(&wset, set, sizeof wset))
 		return -EFAULT;
 	if(timeout)
-		if(copy_from_user(proc, wtimeout, timeout, sizeof wtimeout))
+		if(copy_from_user(wtimeout, timeout, sizeof wtimeout))
 			return -EFAULT;
 
 
@@ -2203,13 +2204,12 @@ SYSCALL_DECLARE(rt_sigqueueinfo)
 	int pid = (int)ihk_mc_syscall_arg0(ctx);
 	int sig = (int)ihk_mc_syscall_arg1(ctx);
 	void *winfo = (void *)ihk_mc_syscall_arg2(ctx);
-	struct process *proc = cpu_local_var(current);
 	struct siginfo info;
 
 	if(pid <= 0)
 		return -ESRCH;
 
-	if(copy_from_user(proc, &info, winfo, sizeof info))
+	if(copy_from_user(&info, winfo, sizeof info))
 		return -EFAULT;
 
 	return do_kill(pid, -1, sig, &info, 0);
@@ -2285,7 +2285,7 @@ SYSCALL_DECLARE(rt_sigsuspend)
 
 	if (sigsetsize > sizeof(sigset_t))
 		return -EINVAL;
-	if(copy_from_user(proc, &wset, set, sizeof wset))
+	if(copy_from_user(&wset, set, sizeof wset))
 		return -EFAULT;
 
 	return do_sigsuspend(proc, &wset);
@@ -2302,7 +2302,7 @@ SYSCALL_DECLARE(sigaltstack)
 		if(copy_to_user(proc, oss, &proc->sigstack, sizeof wss))
 			return -EFAULT;
 	if(ss){
-		if(copy_from_user(proc, &wss, ss, sizeof wss))
+		if(copy_from_user(&wss, ss, sizeof wss))
 			return -EFAULT;
 		if(wss.ss_flags != 0 && wss.ss_flags != SS_DISABLE)
 			return -EINVAL;
@@ -2636,7 +2636,7 @@ SYSCALL_DECLARE(setrlimit)
 	if(i >= sizeof(rlimits) / sizeof(int))
 		return -EINVAL;
 
-	if(copy_from_user(proc, proc->rlimit + mcresource, rlm, sizeof(struct rlimit)))
+	if(copy_from_user(proc->rlimit + mcresource, rlm, sizeof(struct rlimit)))
 		return -EFAULT;
 
 	return 0;
@@ -2828,7 +2828,6 @@ static long ptrace_setregs(int pid, long data)
 	struct user_regs_struct *regs = (struct user_regs_struct *)data;
 	long rc = -EIO;
 	struct process *child;
-	struct process *proc = cpu_local_var(current);
 	ihk_spinlock_t *savelock;
 	unsigned long irqstate;
 
@@ -2837,7 +2836,7 @@ static long ptrace_setregs(int pid, long data)
 		return -ESRCH;
 	if(child->ftn->status == PS_TRACED){
 		struct user_regs_struct user_regs;
-		rc = copy_from_user(proc, &user_regs, regs, sizeof(struct user_regs_struct));
+		rc = copy_from_user(&user_regs, regs, sizeof(struct user_regs_struct));
 		if (rc == 0) {
 			long addr;
 			unsigned long *p;
@@ -2926,9 +2925,7 @@ static long ptrace_peektext(int pid, long addr, long data)
 		return -ESRCH;
 	if(child->ftn->status == PS_TRACED){
 		unsigned long value;
-		ihk_mc_load_page_table(child->vm->page_table);
-		rc = copy_from_user(child, &value, (void *)addr, sizeof(value));
-		ihk_mc_load_page_table(proc->vm->page_table);
+		rc = read_process_vm(child->vm, &value, (void *)addr, sizeof(value));
 		if (rc != 0) { 
 			dkprintf("ptrace_peektext: bad area  addr=0x%llx\n", addr);
 		} else {
@@ -3283,7 +3280,6 @@ ptrace_setsiginfo(int pid, siginfo_t *data)
 	ihk_spinlock_t *savelock;
 	unsigned long irqstate;
 	struct process *child;
-	struct process *proc = cpu_local_var(current);
 	int rc = 0;
 
 kprintf("ptrace_setsiginfo: sig=%d errno=%d code=%d\n", data->si_signo, data->si_errno, data->si_code);
@@ -3304,7 +3300,7 @@ kprintf("ptrace_setsiginfo: sig=%d errno=%d code=%d\n", data->si_signo, data->si
 		}
 
 		if (!rc &&
-		    copy_from_user(proc, &child->ptrace_sendsig->info, data, sizeof(siginfo_t))) {
+		    copy_from_user(&child->ptrace_sendsig->info, data, sizeof(siginfo_t))) {
 			rc = -EFAULT;
 		}
 	}
@@ -3491,7 +3487,7 @@ SYSCALL_DECLARE(sched_setparam)
 		}
 	}
 
-	retval = copy_from_user(proc, &param, uparam, sizeof(param));
+	retval = copy_from_user(&param, uparam, sizeof(param));
 	if (retval < 0) {
 		return -EFAULT;
 	}
@@ -3564,7 +3560,7 @@ SYSCALL_DECLARE(sched_setscheduler)
 		}
 	}
 	
-	retval = copy_from_user(proc, &param, uparam, sizeof(param));
+	retval = copy_from_user(&param, uparam, sizeof(param));
 	if (retval < 0) {
 		return -EFAULT;
 	}
@@ -3711,7 +3707,7 @@ SYSCALL_DECLARE(sched_setaffinity)
 	}
 	len = MIN2(len, sizeof(k_cpu_set));
 
-	if (copy_from_user(cpu_local_var(current), &k_cpu_set, u_cpu_set, len)) {
+	if (copy_from_user(&k_cpu_set, u_cpu_set, len)) {
 		kprintf("%s:%d copy_from_user failed.\n", __FILE__, __LINE__);
 		return -EFAULT;
 	}

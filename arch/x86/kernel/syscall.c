@@ -25,7 +25,7 @@
 #include <kmalloc.h>
 
 void terminate(int, int, ihk_mc_user_context_t *);
-int copy_from_user(struct process *proc, void *dst, const void *src, size_t siz);
+int copy_from_user(void *dst, const void *src, size_t siz);
 int copy_to_user(struct process *proc, void *dst, const void *src, size_t siz);
 long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
 
@@ -117,7 +117,7 @@ SYSCALL_DECLARE(rt_sigaction)
 		return -EINVAL;
 
 	if(act)
-		if(copy_from_user(proc, &new_sa.sa, act, sizeof new_sa.sa)){
+		if(copy_from_user(&new_sa.sa, act, sizeof new_sa.sa)){
 			goto fault;
 		}
 	rc = do_sigaction(sig, act? &new_sa: NULL, oact? &old_sa: NULL);
@@ -152,9 +152,9 @@ SYSCALL_DECLARE(rt_sigreturn)
 	sigsp = (struct sigsp *)regs->gpr.rsp;
 	proc->sigmask.__val[0] = sigsp->sigmask;
 	proc->sigstack.ss_flags = sigsp->ssflags;
-	if(copy_from_user(proc, regs, &sigsp->regs, sizeof(struct x86_user_context)))
+	if(copy_from_user(regs, &sigsp->regs, sizeof(struct x86_user_context)))
 		return rc;
-	copy_from_user(proc, &rc, &sigsp->sigrc, sizeof(long));
+	copy_from_user(&rc, &sigsp->sigrc, sizeof(long));
 	return rc;
 }
 

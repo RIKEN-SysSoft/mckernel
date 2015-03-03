@@ -20,6 +20,7 @@
 #include <list.h>
 #include <process.h>
 #include <page.h>
+#include <cls.h>
 
 #define	dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
 #define	ekprintf(...)	kprintf(__VA_ARGS__)
@@ -2117,9 +2118,9 @@ void *phys_to_virt(unsigned long p)
 	return (void *)(p + MAP_ST_START);
 }
 
-int copy_from_user(struct process *proc, void *dst, const void *src, size_t siz)
+int copy_from_user(void *dst, const void *src, size_t siz)
 {
-	struct process_vm *vm = proc->vm;
+	struct process_vm *vm = cpu_local_var(current)->vm;
 	struct vm_range *range;
 	size_t pos;
 	size_t wsiz;
@@ -2145,6 +2146,59 @@ int copy_from_user(struct process *proc, void *dst, const void *src, size_t siz)
 	memcpy(dst, src, siz);
 	return 0;
 }
+
+int read_process_vm(struct process_vm *vm, void *kdst, const void *usrc, size_t siz)
+{
+	const uintptr_t ustart = (uintptr_t)usrc;
+	const uintptr_t uend = ustart + siz;
+	uint64_t reason;
+	uintptr_t addr;
+	int error;
+	const void *from;
+	void *to;
+	size_t remain;
+	size_t cpsize;
+	unsigned long pa;
+	void *va;
+
+	if ((ustart < vm->region.user_start)
+			|| (vm->region.user_end <= ustart)
+			|| ((vm->region.user_end - ustart) < siz)) {
+		return -EFAULT;
+	}
+
+	reason = PF_USER;	/* page not present */
+	for (addr = ustart & PAGE_MASK; addr < uend; addr += PAGE_SIZE) {
+		error = page_fault_process_vm(vm, (void *)addr, reason);
+		if (error) {
+			return error;
+		}
+	}
+
+	from = usrc;
+	to = kdst;
+	remain = siz;
+	while (remain > 0) {
+		cpsize = PAGE_SIZE - ((uintptr_t)from & (PAGE_SIZE - 1));
+		if (cpsize > remain) {
+			cpsize = remain;
+		}
+
+		error = ihk_mc_pt_virt_to_phys(vm->page_table, from, &pa);
+		if (error) {
+			return error;
+		}
+
+		va = phys_to_virt(pa);
+		memcpy(to, va, cpsize);
+
+		from += cpsize;
+		to += cpsize;
+		remain -= cpsize;
+	}
+
+	return 0;
+} /* read_process_vm() */
 
 int copy_to_user(struct process *proc, void *dst, const void *src, size_t siz)
 {
