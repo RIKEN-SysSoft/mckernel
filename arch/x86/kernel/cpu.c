@@ -615,6 +615,9 @@ void gpe_handler(struct x86_user_context *regs)
 	kprintf("General protection fault (err: %lx, %lx:%lx)\n",
 	        regs->gpr.error, regs->gpr.cs, regs->gpr.rip);
 	arch_show_interrupt_context(regs);
+	if ((regs->gpr.cs & 3) == 0) {
+		panic("gpe_handler");
+	}
 	set_signal(SIGSEGV, regs, NULL);
 	check_signal(0, regs);
 	check_need_resched();
