@@ -2856,6 +2856,62 @@ static long ptrace_setregs(int pid, long data)
 	return rc;
 }
 
+static long ptrace_arch_prctl(int pid, long code, long addr)
+{
+	long rc = -EIO;
+	struct process *child;
+	ihk_spinlock_t *savelock;
+	unsigned long irqstate;
+
+	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	if (!child)
+		return -ESRCH;
+	if (child->ftn->status == PS_TRACED) {
+		switch (code) {
+		case ARCH_GET_FS: {
+			struct process *proc = cpu_local_var(current);
+			unsigned long value;
+			unsigned long *p = (unsigned long *)addr;
+			rc = ptrace_read_user(child,
+					offsetof(struct user_regs_struct, fs_base),
+					&value);
+			if (rc == 0) {
+				rc = copy_to_user(proc, p, (char *)&value, sizeof(value));
+			}
+			break;
+		}
+		case ARCH_GET_GS: {
+			struct process *proc = cpu_local_var(current);
+			unsigned long value;
+			unsigned long *p = (unsigned long *)addr;
+			rc = ptrace_read_user(child,
+					offsetof(struct user_regs_struct, gs_base),
+					&value);
+			if (rc == 0) {
+				rc = copy_to_user(proc, p, (char *)&value, sizeof(value));
+			}
+			break;
+		}
+		case ARCH_SET_FS:
+			rc = ptrace_write_user(child,
+					offsetof(struct user_regs_struct, fs_base),
+					(unsigned long)addr);
+			break;
+		case ARCH_SET_GS:
+			rc = ptrace_write_user(child,
+					offsetof(struct user_regs_struct, gs_base),
+					(unsigned long)addr);
+			break;
+		default:
+			rc = -EINVAL;
+			break;
+		}
+	}
+	ihk_mc_spinlock_unlock(savelock, irqstate);
+
+	return rc;
+}
+
 static long ptrace_peektext(int pid, long addr, long data)
 {
 	long rc = -EIO;
@@ -3356,7 +3412,8 @@ SYSCALL_DECLARE(ptrace)
 		dkprintf("ptrace: unimplemented ptrace(PTRACE_GET_THREAD_AREA) called.\n");
 		break;
 	case PTRACE_ARCH_PRCTL:
-		dkprintf("ptrace: unimplemented ptrace(PTRACE_ARCH_PRCTL) called.\n");
+		error = ptrace_arch_prctl(pid, data, addr);
+		dkprintf("PTRACE_ARCH_PRCTL: data=%p addr=%p return=%p\n", data, addr, error);
 		break;
 	case PTRACE_GETEVENTMSG:
 		dkprintf("ptrace: PTRACE_GETEVENTMSG: data=%p\n", data);
