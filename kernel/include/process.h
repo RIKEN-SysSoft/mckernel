@@ -386,6 +386,8 @@ struct process {
 	unsigned long saved_auxv[AUXV_LEN];
 
 	unsigned long *ptrace_debugreg;	/* debug registers for ptrace */
+	struct sig_pending *ptrace_recvsig;
+	struct sig_pending *ptrace_sendsig;
 };
 
 struct process_vm {

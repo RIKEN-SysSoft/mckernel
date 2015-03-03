@@ -1969,6 +1969,12 @@ void destroy_process(struct process *proc)
 	if (proc->ptrace_debugreg) {
 		kfree(proc->ptrace_debugreg);
 	}
+	if (proc->ptrace_recvsig) {
+		kfree(proc->ptrace_recvsig);
+	}
+	if (proc->ptrace_sendsig) {
+		kfree(proc->ptrace_sendsig);
+	}
 	ihk_mc_free_pages(proc, KERNEL_STACK_NR_PAGES);
 }
 

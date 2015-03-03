@@ -2715,11 +2715,18 @@ static int ptrace_wakeup_sig(int pid, long request, long data) {
 
 			/* TODO: Tracing process replace the original
 			   signal with "data" */
-			proc = cpu_local_var(current);
-			memset(&info, '\0', sizeof info);
-			info.si_signo = data;
-			info.si_code = SI_USER;
-			info._sifields._kill.si_pid = proc->ftn->pid;
+			if (request == PTRACE_CONT && child->ptrace_sendsig) {
+				memcpy(&info, &child->ptrace_sendsig->info, sizeof info);
+				kfree(child->ptrace_sendsig);
+				child->ptrace_sendsig = NULL;
+			}
+			else {
+				proc = cpu_local_var(current);
+				memset(&info, '\0', sizeof info);
+				info.si_signo = data;
+				info.si_code = SI_USER;
+				info._sifields._kill.si_pid = proc->ftn->pid;
+			}
 			error = do_kill(pid, -1, data, &info, 1);
 			if (error < 0) {
 				goto out;
@@ -3185,6 +3192,70 @@ static long ptrace_geteventmsg(int pid, long data)
 	return rc;
 }
 
+static long
+ptrace_getsiginfo(int pid, siginfo_t *data)
+{
+	ihk_spinlock_t *savelock;
+	unsigned long irqstate;
+	struct process *child;
+	struct process *proc = cpu_local_var(current);
+	int rc = 0;
+
+	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	if (!child) {
+		return -ESRCH;
+	}
+
+	if (child->ftn->status != PS_TRACED) {
+		rc = -ESRCH;
+	}
+	else if (child->ptrace_recvsig) {
+		if (copy_to_user(proc, data, &child->ptrace_recvsig->info, sizeof(siginfo_t))) {
+			rc = -EFAULT;
+		}
+	}
+	else {
+		rc = -ESRCH;
+	}
+	ihk_mc_spinlock_unlock(savelock, irqstate);
+	return rc;
+}
+
+static long
+ptrace_setsiginfo(int pid, siginfo_t *data)
+{
+	ihk_spinlock_t *savelock;
+	unsigned long irqstate;
+	struct process *child;
+	struct process *proc = cpu_local_var(current);
+	int rc = 0;
+
+kprintf("ptrace_setsiginfo: sig=%d errno=%d code=%d\n", data->si_signo, data->si_errno, data->si_code);
+	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	if (!child) {
+		return -ESRCH;
+	}
+
+	if (child->ftn->status != PS_TRACED) {
+		rc = -ESRCH;
+	}
+	else {
+		if (child->ptrace_sendsig == NULL) {
+			child->ptrace_sendsig = kmalloc(sizeof(struct sig_pending), IHK_MC_AP_NOWAIT);
+			if (child->ptrace_sendsig == NULL) {
+				rc = -ENOMEM;
+			}
+		}
+
+		if (!rc &&
+		    copy_from_user(proc, &child->ptrace_sendsig->info, data, sizeof(siginfo_t))) {
+			rc = -EFAULT;
+		}
+	}
+	ihk_mc_spinlock_unlock(savelock, irqstate);
+	return rc;
+}
+
 SYSCALL_DECLARE(ptrace)
 {
 	const long request = (long)ihk_mc_syscall_arg0(ctx);
@@ -3269,9 +3340,11 @@ SYSCALL_DECLARE(ptrace)
 		break;
 	case PTRACE_GETSIGINFO:
 		dkprintf("ptrace: unimplemented ptrace(PTRACE_GETSIGINFO) called.\n");
+		error = ptrace_getsiginfo(pid, (siginfo_t *)data);
 		break;
 	case PTRACE_SETSIGINFO:
 		dkprintf("ptrace: unimplemented ptrace(PTRACE_SETSIGINFO) called.\n");
+		error = ptrace_setsiginfo(pid, (siginfo_t *)data);
 		break;
 	case PTRACE_GETREGSET:
 		dkprintf("ptrace: unimplemented ptrace(PTRACE_GETREGSET) called.\n");

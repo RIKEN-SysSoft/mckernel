@@ -506,7 +506,16 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 		int	coredumped = 0;
 		siginfo_t info;
 
-		kfree(pending);
+		if(ptraceflag){
+			if(proc->ptrace_recvsig)
+				kfree(proc->ptrace_recvsig);
+			proc->ptrace_recvsig = pending;
+			if(proc->ptrace_sendsig)
+				kfree(proc->ptrace_sendsig);
+			proc->ptrace_sendsig = NULL;
+		}
+		else
+			kfree(pending);
 		ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
 		switch (sig) {
 		case SIGSTOP:
