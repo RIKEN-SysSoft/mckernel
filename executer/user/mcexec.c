@@ -55,6 +55,7 @@
 #include <dirent.h>
 #include <sys/syscall.h>
 #include <pthread.h>
+#include <semaphore.h>
 #include <signal.h>
 #include "../include/uprotocol.h"
 
@@ -119,6 +120,20 @@ static char *exec_path = NULL;
 static char *altroot;
 static const char rlimit_stack_envname[] = "MCKERNEL_RLIMIT_STACK";
 static int ischild;
+
+struct fork_sync {
+	pid_t pid;
+	int status;
+	sem_t sem;
+};
+
+struct fork_sync_container {
+	struct fork_sync_container *next;
+	struct fork_sync *fs;
+};
+
+struct fork_sync_container *fork_sync_top;
+pthread_mutex_t fork_sync_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 pid_t gettid(void)
 {
@@ -1647,108 +1662,137 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 		}
 
 		case __NR_fork: {
-			int child;
-			int sync_pipe_fd[2];
-			char sync_msg;
+			struct fork_sync *fs;
+			struct fork_sync_container *fsc;
+			struct fork_sync_container *fp;
+			struct fork_sync_container *fb;
+			int rc = -1;
+			pid_t pid;
 
-			if (pipe(sync_pipe_fd) != 0) {
-				fprintf(stderr, "fork(): error creating sync pipe\n");
-				do_syscall_return(fd, cpu, -1, 0, 0, 0, 0);
+			fsc = malloc(sizeof(struct fork_sync_container));
+			memset(fsc, '\0', sizeof(struct fork_sync_container));
+			pthread_mutex_lock(&fork_sync_mutex);
+			fsc->next = fork_sync_top;
+			fork_sync_top = fsc;
+			pthread_mutex_unlock(&fork_sync_mutex);
+			fsc->fs = fs = mmap(NULL, sizeof(struct fork_sync),
+			          PROT_READ | PROT_WRITE,
+			          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+			if(fs == (void *)-1){
+				goto fork_err;
+			}
+
+			memset(fs, '\0', sizeof(struct fork_sync));
+			sem_init(&fs->sem, 1, 0);
+
+			pid = fork();
+
+			switch (pid) {
+			    /* Error */
+			    case -1:
+				fprintf(stderr, "fork(): error forking child process\n");
+				rc = -errno;
+				break;
+
+			    /* Child process */
+			    case 0: {
+				int i;
+				int ret = 1;
+				struct newprocess_desc npdesc;
+
+				ischild = 1;
+				/* Reopen device fd */
+				close(fd);
+				fd = open(dev, O_RDWR);
+				if (fd < 0) {
+					fs->status = -errno;
+					fprintf(stderr, "ERROR: opening %s\n", dev);
+					
+					goto fork_child_sync_pipe;
+				}
+
+				/* Reinit signals and syscall threads */
+				init_sigaction();
+				init_worker_threads(fd);
+
+				__dprintf("pid(%d): signals and syscall threads OK\n", 
+						getpid());
+
+				/* Hold executable also in the child process */
+				if ((ret = ioctl(fd, MCEXEC_UP_OPEN_EXEC, exec_path)) 
+					!= 0) {
+					fprintf(stderr, "Error: open_exec() fails for %s: %d (fd: %d)\n", 
+							exec_path, ret, fd);
+					fs->status = -errno;
+					goto fork_child_sync_pipe;
+				}
+
+fork_child_sync_pipe:
+				sem_post(&fs->sem);
+				if (fs->status)
+					exit(1);
+
+				for (fp = fork_sync_top; fp;) {
+					fb = fp->next;
+					if (fp->fs)
+						munmap(fp->fs, sizeof(struct fork_sync));
+					free(fp);
+					fp = fb;
+				}
+				fork_sync_top = NULL;
+				pthread_mutex_init(&fork_sync_mutex, NULL);
+
+				npdesc.pid = getpid();
+				ioctl(fd, MCEXEC_UP_NEW_PROCESS, &npdesc);
+
+				/* TODO: does the forked thread run in a pthread context? */
+				for (i = 0; i <= ncpu; ++i) {
+					pthread_join(thread_data[i].thread_id, NULL);
+				}
+
+				return ret;
+			    }
+				
+			    /* Parent */
+			    default:
+				fs->pid = pid;
+				while ((rc = sem_trywait(&fs->sem)) == -1 && (errno == EAGAIN || errno == EINTR)) {
+					int st;
+					int wrc;
+
+					wrc = waitpid(pid, &st, WNOHANG);
+					if(wrc == pid) {
+						fs->status = -ENOMEM;
+						break;
+					}
+					sched_yield();
+				}
+
+				if (fs->status != 0) {
+					fprintf(stderr, "fork(): error with child process after fork\n");
+					rc = fs->status;
+					break;
+				}
+
+				rc = pid;
 				break;
 			}
 
-			child = fork();
-
-			switch (child) {
-				/* Error */
-				case -1:
-					fprintf(stderr, "fork(): error forking child process\n");
-					close(sync_pipe_fd[0]);
-					close(sync_pipe_fd[1]);
-					do_syscall_return(fd, cpu, -1, 0, 0, 0, 0);
+			sem_destroy(&fs->sem);
+			munmap(fs, sizeof(struct fork_sync));
+fork_err:
+			pthread_mutex_lock(&fork_sync_mutex);
+			for(fp = fork_sync_top, fb = NULL; fp; fb = fp, fp = fp->next)
+				if(fp == fsc)
 					break;
-
-				/* Child process */
-				case 0: {
-					int i;
-					int ret = 1;
-					struct newprocess_desc npdesc;
-
-					ischild = 1;
-					/* Reopen device fd */
-					close(fd);
-					fd = open(dev, O_RDWR);
-					if (fd < 0) {
-						/* TODO: tell parent something went wrong? */
-						fprintf(stderr, "ERROR: opening %s\n", dev);
-						
-						/* Tell parent something went wrong */
-						sync_msg = 1;
-						goto fork_child_sync_pipe;
-					}
-					
-					/* Reinit signals and syscall threads */
-					init_sigaction();
-					init_worker_threads(fd);
-
-					__dprintf("pid(%d): signals and syscall threads OK\n", 
-							getpid());
-				
-					/* Hold executable also in the child process */
-					if ((ret = ioctl(fd, MCEXEC_UP_OPEN_EXEC, exec_path)) 
-						!= 0) {
-						fprintf(stderr, "Error: open_exec() fails for %s: %d (fd: %d)\n", 
-								exec_path, ret, fd);
-						goto fork_child_sync_pipe;
-					}
-
-					/* Tell parent everything went OK */
-					sync_msg = 0;
-fork_child_sync_pipe:
-					if (write(sync_pipe_fd[1], &sync_msg, 1) != 1) {
-						fprintf(stderr, "ERROR: writing sync pipe\n");
-						goto fork_child_out;
-					}
-
-					ret = 0;
-fork_child_out:
-					close(sync_pipe_fd[0]);
-					close(sync_pipe_fd[1]);
-
-					npdesc.pid = getpid();
-					ioctl(fd, MCEXEC_UP_NEW_PROCESS, &npdesc);
-
-					/* TODO: does the forked thread run in a pthread context? */
-					for (i = 0; i <= ncpu; ++i) {
-						pthread_join(thread_data[i].thread_id, NULL);
-					}
-
-					return ret;
-				}
-				
-				/* Parent */
-				default:
-
-					while ((ret = read(sync_pipe_fd[0], &sync_msg, 1)) == -1 && errno == EINTR);
-					if (ret != 1) {
-						fprintf(stderr, "fork(): error reading sync message\n");
-						child = -1;
-						goto sync_out;
-					}
-
-					if (sync_msg != 0) {
-						fprintf(stderr, "fork(): error with child process after fork\n");
-						child = -1;
-						goto sync_out;
-					}
-					
-sync_out:
-					close(sync_pipe_fd[0]);
-					close(sync_pipe_fd[1]);
-					do_syscall_return(fd, cpu, child, 0, 0, 0, 0);
-					break;
+			if(fp){
+				if(fb)
+					fb->next = fsc->next;
+				else
+					fork_sync_top = fsc->next;
 			}
-
+			pthread_mutex_unlock(&fork_sync_mutex);
+			do_syscall_return(fd, cpu, rc, 0, 0, 0, 0);
 			break;
 		}
 
