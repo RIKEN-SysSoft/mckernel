@@ -252,6 +252,7 @@ void process_procfs_request(unsigned long rarg)
 	unsigned long irqstate;
 	unsigned long offset;
 	int count;
+	int npages;
 
 	dprintf("process_procfs_request: invoked.\n");
 
@@ -271,7 +272,9 @@ void process_procfs_request(unsigned long rarg)
 	dprintf("remote pbuf: %x\n", r->pbuf);
 	pbuf = ihk_mc_map_memory(NULL, r->pbuf, r->count);
 	dprintf("pbuf: %x\n", pbuf);
-	buf = ihk_mc_map_virtual(pbuf, 1, PTATTR_WRITABLE | PTATTR_ACTIVE);
+	count = r->count + ((uintptr_t)pbuf & (PAGE_SIZE - 1));
+	npages = (count + (PAGE_SIZE - 1)) / PAGE_SIZE;
+	buf = ihk_mc_map_virtual(pbuf, npages, PTATTR_WRITABLE | PTATTR_ACTIVE);
 	dprintf("buf: %p\n", buf);
 	if (buf == NULL) {
 		kprintf("ERROR: process_procfs_request: got a null buffer.\n");
@@ -630,7 +633,7 @@ void process_procfs_request(unsigned long rarg)
 	*/
 	dprintf("could not find a matching entry for %s.\n", p); 
 end:
-	ihk_mc_unmap_virtual(buf, 1, 0);
+	ihk_mc_unmap_virtual(buf, npages, 0);
 	dprintf("ret: %d, eof: %d\n", ans, eof);
 	r->ret = ans;
 	r->eof = eof;
