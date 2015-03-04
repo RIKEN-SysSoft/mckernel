@@ -253,6 +253,7 @@ void process_procfs_request(unsigned long rarg)
 	unsigned long offset;
 	int count;
 	int npages;
+	int is_current = 1;	/* is 'proc' same as 'current'? */
 
 	dprintf("process_procfs_request: invoked.\n");
 
@@ -325,16 +326,25 @@ void process_procfs_request(unsigned long rarg)
 
 			dprintf("mismatched pid. We are %d, but requested pid is %d.\n",
 				pid, cpu_local_var(current)->pid);
-			if ((proc = findthread_and_lock(pid, tid, &savelock, &irqstate))){
+			tid = pid;	/* main thread */
+			proc = findthread_and_lock(pid, tid, &savelock, &irqstate);
+			if (!proc) {
+				dprintf("We cannot find the proper cpu for requested pid.\n");
+				goto end;
+			}
+			else if (proc->cpu_id != ihk_mc_get_processor_id()) {
 				/* The target process has gone by migration. */
 				r->newcpu = proc->cpu_id;
 				dprintf("expected cpu id is %d.\n", proc->cpu_id);
 				process_unlock(savelock, irqstate);
 				ans = 0;
-			} else {
-				dprintf("We cannot find the proper cpu for requested pid.\n");
+				goto end;
 			}
-			goto end;
+			else {
+				process_unlock(savelock, irqstate);
+				/* 'proc' is not 'current' */
+				is_current = 0;
+			}
 		}
 	}
 	else if (!strcmp(p, "stat")) {	/* "/proc/stat" */
@@ -381,6 +391,9 @@ void process_procfs_request(unsigned long rarg)
 		struct vm_range *range;
 		struct process_vm *vm = proc->vm;
 
+		if (!is_current) {
+			goto end;
+		}
 		list_for_each_entry(range, &vm->vm_range_list, list) {
 			dprintf("range: %lx - %lx\n", range->start, range->end);
 			if ((range->start <= r->offset) && 
@@ -539,6 +552,9 @@ void process_procfs_request(unsigned long rarg)
 			struct vm_range *range;
 			struct process_vm *vm = proc->vm;
 
+			if (!is_current) {
+				goto end;
+			}
 			if (pid != tid) {
 				/* We are not multithreaded yet. */
 				goto end;
