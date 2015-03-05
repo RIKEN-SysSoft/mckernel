@@ -34,9 +34,16 @@
 #include <syscall.h>
 #include <process.h>
 
+//#define DEBUG_PRINT_DEVOBJ
 
-#define	dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
+#ifdef DEBUG_PRINT_DEVOBJ
+#define	dkprintf(...) kprintf(__VA_ARGS__)
+#define	ekprintf(...) kprintf(__VA_ARGS__)
+#else
+#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
+#define	ekprintf(...) kprintf(__VA_ARGS__)
+#endif
+
 
 struct devobj {
 	struct memobj	memobj;		/* must be first */
@@ -78,7 +85,7 @@ int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxp
 	struct devobj *obj  = NULL;
 	const size_t npages = (len + PAGE_SIZE - 1) / PAGE_SIZE;
 
-	kprintf("devobj_create(%d,%lx,%lx)\n", fd, len, off);
+	dkprintf("devobj_create(%d,%lx,%lx)\n", fd, len, off);
 #define MAX_PAGES_IN_DEVOBJ (PAGE_SIZE / sizeof(uintptr_t))
 	if (npages > MAX_PAGES_IN_DEVOBJ) {
 		error = -EFBIG;
@@ -113,8 +120,8 @@ int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxp
 		kprintf("devobj_create(%d,%lx,%lx):map failed. %d\n", fd, len, off, error);
 		goto out;
 	}
-	kprintf("devobj_create:handle: %lx\n", result.handle);
-	kprintf("devobj_create:maxprot: %x\n", result.maxprot);
+	dkprintf("devobj_create:handle: %lx\n", result.handle);
+	dkprintf("devobj_create:maxprot: %x\n", result.maxprot);
 
 	obj->memobj.ops = &devobj_ops;
 	obj->memobj.flags = MF_HAS_PAGER;
@@ -136,7 +143,7 @@ out:
 		}
 		kfree(obj);
 	}
-	kprintf("devobj_create(%d,%lx,%lx): %d %p %x%d\n", fd, len, off, error, *objp, *maxprotp);
+	dkprintf("devobj_create(%d,%lx,%lx): %d %p %x%d\n", fd, len, off, error, *objp, *maxprotp);
 	return error;
 }
 
@@ -144,7 +151,7 @@ static void devobj_ref(struct memobj *memobj)
 {
 	struct devobj *obj = to_devobj(memobj);
 
-	kprintf("devobj_ref(%p %lx):\n", obj, obj->handle);
+	dkprintf("devobj_ref(%p %lx):\n", obj, obj->handle);
 	memobj_lock(&obj->memobj);
 	++obj->ref;
 	memobj_unlock(&obj->memobj);
@@ -157,7 +164,7 @@ static void devobj_release(struct memobj *memobj)
 	struct devobj *free_obj = NULL;
 	uintptr_t handle;
 
-	kprintf("devobj_release(%p %lx)\n", obj, obj->handle);
+	dkprintf("devobj_release(%p %lx)\n", obj, obj->handle);
 
 	memobj_lock(&obj->memobj);
 	--obj->ref;
@@ -189,7 +196,7 @@ static void devobj_release(struct memobj *memobj)
 		kfree(free_obj);
 	}
 
-	kprintf("devobj_release(%p %lx):free %p\n",
+	dkprintf("devobj_release(%p %lx):free %p\n",
 			obj, handle, free_obj);
 	return;
 }
@@ -204,7 +211,7 @@ static int devobj_get_page(struct memobj *memobj, off_t off, int p2align, uintpt
 	ihk_mc_user_context_t ctx;
 	int ix;
 
-	kprintf("devobj_get_page(%p %lx,%lx,%d)\n", memobj, obj->handle, off, p2align);
+	dkprintf("devobj_get_page(%p %lx,%lx,%d)\n", memobj, obj->handle, off, p2align);
 
 	if ((pgoff < obj->pfn_pgoff) || ((obj->pfn_pgoff + obj->npages) <= pgoff)) {
 		error = -EFBIG;
@@ -212,7 +219,7 @@ static int devobj_get_page(struct memobj *memobj, off_t off, int p2align, uintpt
 		goto out;
 	}
 	ix = pgoff - obj->pfn_pgoff;
-kprintf("ix: %ld\n", ix);
+	dkprintf("ix: %ld\n", ix);
 
 	memobj_lock(&obj->memobj);
 	pfn = obj->pfn_table[ix];
@@ -232,7 +239,7 @@ kprintf("ix: %ld\n", ix);
 
 		if (pfn & PFN_PRESENT) {
 			/* convert remote physical into local physical */
-kprintf("devobj_get_page(%p %lx,%lx,%d):PFN_PRESENT before %#lx\n", memobj, obj->handle, off, p2align, pfn);
+			dkprintf("devobj_get_page(%p %lx,%lx,%d):PFN_PRESENT before %#lx\n", memobj, obj->handle, off, p2align, pfn);
 			attr = pfn & ~PFN_PFN;
 
 			/* TODO: do an arch dependent PTE to mapping flag conversion 
@@ -245,7 +252,7 @@ kprintf("devobj_get_page(%p %lx,%lx,%d):PFN_PRESENT before %#lx\n", memobj, obj-
 			pfn = ihk_mc_map_memory(NULL, (pfn & PFN_PFN), PAGE_SIZE);
 			pfn &= PFN_PFN;
 			pfn |= attr;
-kprintf("devobj_get_page(%p %lx,%lx,%d):PFN_PRESENT after %#lx\n", memobj, obj->handle, off, p2align, pfn);
+			dkprintf("devobj_get_page(%p %lx,%lx,%d):PFN_PRESENT after %#lx\n", memobj, obj->handle, off, p2align, pfn);
 		}
 
 		memobj_lock(&obj->memobj);
@@ -263,6 +270,6 @@ kprintf("devobj_get_page(%p %lx,%lx,%d):PFN_PRESENT after %#lx\n", memobj, obj->
 	*physp = pfn & PFN_PFN;
 
 out:
-	kprintf("devobj_get_page(%p %lx,%lx,%d): %d %lx\n", memobj, obj->handle, off, p2align, error, *physp);
+	dkprintf("devobj_get_page(%p %lx,%lx,%d): %d %lx\n", memobj, obj->handle, off, p2align, error, *physp);
 	return error;
 }

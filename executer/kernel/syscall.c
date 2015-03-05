@@ -805,19 +805,19 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 
 	error = vfs_fstat(fd, &st);
 	if (error) {
-		printk("pager_req_create(%d,%lx):vfs_stat failed. %d\n", fd, (long)result_pa, error);
+		dprintk("pager_req_create(%d,%lx):vfs_stat failed. %d\n", fd, (long)result_pa, error);
 		goto out;
 	}
 	if (!S_ISREG(st.mode)) {
 		error = -ESRCH;
-		printk("pager_req_create(%d,%lx):not VREG. %x\n", fd, (long)result_pa, st.mode);
+		dprintk("pager_req_create(%d,%lx):not VREG. %x\n", fd, (long)result_pa, st.mode);
 		goto out;
 	}
 
 	file = fget(fd);
 	if (!file) {
 		error = -EBADF;
-		printk("pager_req_create(%d,%lx):file not found. %d\n", fd, (long)result_pa, error);
+		dprintk("pager_req_create(%d,%lx):file not found. %d\n", fd, (long)result_pa, error);
 		goto out;
 	}
 
@@ -840,7 +840,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 	}
 	if (!(maxprot & PROT_READ)) {
 		error = -EACCES;
-		printk("pager_req_create(%d,%lx):cannot read file. %d\n", fd, (long)result_pa, error);
+		dprintk("pager_req_create(%d,%lx):cannot read file. %d\n", fd, (long)result_pa, error);
 		goto out;
 	}
 
@@ -1123,7 +1123,7 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off, uintptr_t r
 	struct pager_map_result *resp;
 	uintptr_t phys;
 
-	printk("pager_req_map(%p,%d,%lx,%lx,%lx)\n", os, fd, len, off, result_rpa);
+	dprintk("pager_req_map(%p,%d,%lx,%lx,%lx)\n", os, fd, len, off, result_rpa);
 	pager = kzalloc(sizeof(*pager), GFP_KERNEL);
 	if (!pager) {
 		error = -ENOMEM;
@@ -1193,9 +1193,10 @@ out:
 	if (pager) {
 		kfree(pager);
 	}
-	printk("pager_req_map(%p,%d,%lx,%lx,%lx): %d\n", os, fd, len, off, result_rpa, error);
+	dprintk("pager_req_map(%p,%d,%lx,%lx,%lx): %d\n", os, fd, len, off, result_rpa, error);
 	return error;
 }
+
 
 static int pager_req_pfn(ihk_os_t os, uintptr_t handle, off_t off, uintptr_t ppfn_rpa)
 {
@@ -1211,7 +1212,7 @@ static int pager_req_pfn(ihk_os_t os, uintptr_t handle, off_t off, uintptr_t ppf
 	uintptr_t phys;
 	uintptr_t *ppfn;
 
-	printk("pager_req_pfn(%p,%lx,%lx)\n", os, handle, off);
+	dprintk("pager_req_pfn(%p,%lx,%lx)\n", os, handle, off);
 
 	if ((off < pager->map_off) || ((pager->map_off+pager->map_len) < (off + PAGE_SIZE))) {
 		error = -ERANGE;
@@ -1256,7 +1257,7 @@ static int pager_req_pfn(ihk_os_t os, uintptr_t handle, off_t off, uintptr_t ppf
 
 	error = 0;
 out:
-	printk("pager_req_pfn(%p,%lx,%lx): %d %lx\n", os, handle, off, error, pfn);
+	dprintk("pager_req_pfn(%p,%lx,%lx): %d %lx\n", os, handle, off, error, pfn);
 	return error;
 }
 
@@ -1265,7 +1266,7 @@ static int pager_req_unmap(ihk_os_t os, uintptr_t handle)
 	struct pager * const pager = (void *)handle;
 	int error;
 
-	printk("pager_req_unmap(%p,%lx)\n", os, handle);
+	dprintk("pager_req_unmap(%p,%lx)\n", os, handle);
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,5,0)
 	down_write(&current->mm->mmap_sem);
@@ -1281,7 +1282,7 @@ static int pager_req_unmap(ihk_os_t os, uintptr_t handle)
 	}
 
 	kfree(pager);
-	printk("pager_req_unmap(%p,%lx): %d\n", os, handle, error);
+	dprintk("pager_req_unmap(%p,%lx): %d\n", os, handle, error);
 	return error;
 }
 
