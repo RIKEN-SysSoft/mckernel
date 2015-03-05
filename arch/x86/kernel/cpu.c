@@ -113,6 +113,8 @@ static struct list_head handlers[256 - 32];
 extern char page_fault[], general_protection_exception[];
 extern char debug_exception[], int3_exception[];
 
+uint64_t boot_pat_state = 0;
+
 static void init_idt(void)
 {
 	int i;
@@ -326,6 +328,65 @@ void init_pstate_and_turbo(void)
 	//print_msr(MSR_IA32_ENERGY_PERF_BIAS);
 }
 
+enum {
+	PAT_UC = 0,		/* uncached */
+	PAT_WC = 1,		/* Write combining */
+	PAT_WT = 4,		/* Write Through */
+	PAT_WP = 5,		/* Write Protected */
+	PAT_WB = 6,		/* Write Back (default) */
+	PAT_UC_MINUS = 7,	/* UC, but can be overriden by MTRR */
+};
+
+#define PAT(x, y)	((uint64_t)PAT_ ## y << ((x)*8))
+
+void init_pat(void)
+{
+	uint64_t pat;
+	uint64_t edx;
+
+	/*
+	 * An operating system or executive can detect the availability of the 
+	 * PAT by executing the CPUID instruction with a value of 1 in the EAX 
+	 * register. Support for the PAT is indicated by the PAT flag (bit 16 
+	 * of the values returned to EDX register). If the PAT is supported, 
+	 * the operating system or executive can use the IA32_PAT MSR to program 
+	 * the PAT. When memory types have been assigned to entries in the PAT, 
+	 * software can then use of the PAT-index bit (PAT) in the page-table and 
+	 * page-directory entries along with the PCD and PWT bits to assign memory 
+	 * types from the PAT to individual pages.
+	 */
+
+	asm volatile("cpuid" : "=d" (edx) : "a" (0x1) : "%rbx", "%rcx");
+	if (!(edx & ((uint64_t)1 << 16))) {
+		kprintf("PAT not supported.\n");
+		return;	
+	}
+	
+	/* Set PWT to Write-Combining. All other bits stay the same */
+	/* (Based on Linux' settings)
+	 *
+	 * PTE encoding used in Linux:
+	 *      PAT
+	 *      |PCD
+	 *      ||PWT
+	 *      |||
+	 *      000 WB		_PAGE_CACHE_WB
+	 *      001 WC		_PAGE_CACHE_WC
+	 *      010 UC-		_PAGE_CACHE_UC_MINUS
+	 *      011 UC		_PAGE_CACHE_UC
+	 * PAT bit unused
+	 */
+	pat = PAT(0, WB) | PAT(1, WC) | PAT(2, UC_MINUS) | PAT(3, UC) |
+	      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, UC);
+
+	/* Boot CPU check */
+	if (!boot_pat_state)
+		boot_pat_state = rdmsr(MSR_IA32_CR_PAT);
+
+	wrmsr(MSR_IA32_CR_PAT, pat);
+	kprintf("PAT support detected and reconfigured.\n");
+}
+
 void init_lapic(void)
 {
 	unsigned long baseaddr;
@@ -482,6 +543,7 @@ void init_cpu(void)
 	init_syscall();
 	x86_init_perfctr();
 	init_pstate_and_turbo();
+	init_pat();
 }
 
 void setup_x86(void)
