@@ -385,7 +385,7 @@ out:
 	return;
 }
 
-static int fileobj_get_page(struct memobj *memobj, off_t off, int p2align, uintptr_t *physp)
+static int fileobj_get_page(struct memobj *memobj, off_t off, int p2align, uintptr_t *physp, unsigned long *pflag)
 {
 	struct process *proc = cpu_local_var(current);
 	struct fileobj *obj = to_fileobj(memobj);

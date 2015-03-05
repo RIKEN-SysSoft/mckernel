@@ -1172,6 +1172,9 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off, uintptr_t r
 	pager->map_uaddr = va;
 	pager->map_len = len;
 	pager->map_off = off;
+	
+	dprintk("pager_req_map(%s): 0x%lx - 0x%lx (len: %lu)\n", 
+			file->f_dentry->d_name.name, va, va + len, len);
 
 	phys = ihk_device_map_memory(dev, result_rpa, sizeof(*resp));
 	resp = ihk_device_map_virtual(dev, phys, sizeof(*resp), NULL, 0);
@@ -1233,6 +1236,11 @@ static int pager_req_pfn(ihk_os_t os, uintptr_t handle, off_t off, uintptr_t ppf
 					pfn = (uintptr_t)pte_pfn(*pte) << PAGE_SHIFT;
 #define	PFN_PRESENT	((uintptr_t)1 << 0)
 					pfn |= PFN_VALID | PFN_PRESENT;
+					
+					/* Check if mapping is write-combined */
+					if (pte_flags(*pte) & _PAGE_CACHE_WC) {
+						pfn |= _PAGE_CACHE_WC;
+					}
 				}
 				pte_unmap(pte);
 			}

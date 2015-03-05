@@ -881,8 +881,8 @@ enum ihk_mc_pt_attribute common_vrflag_to_ptattr(unsigned long flag, uint64_t fa
 		attr |= PTATTR_NO_EXECUTE;
 	}
 
-	if ((flag & VR_MEMTYPE_MASK) == VR_MEMTYPE_UC) {
-		attr |= PTATTR_UNCACHABLE;
+	if (flag & VR_WRITE_COMBINED) {
+		attr |= PTATTR_WRITE_COMBINED;
 	}
 
 	return attr;
@@ -1376,6 +1376,7 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 	enum ihk_mc_pt_attribute attr;
 	uintptr_t phys;
 	struct page *page = NULL;
+	unsigned long memobj_flag = 0;
 
 	dkprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx)\n", vm, range->start, range->end, range->flag, fault_addr, reason);
 	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
@@ -1402,7 +1403,6 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 		pgsize = PAGE_SIZE;
 		p2align = PAGE_P2ALIGN;
 	}
-	attr = arch_vrflag_to_ptattr(range->flag, reason, ptep);
 	pgaddr = (void *)(fault_addr & ~(pgsize - 1));
 	if (!ptep || pte_is_null(ptep) || pte_is_fileoff(ptep, pgsize)) {
 		if (range->memobj) {
@@ -1414,7 +1414,8 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 			else {
 				off = pte_get_off(ptep, pgsize);
 			}
-			error = memobj_get_page(range->memobj, off, p2align, &phys);
+			error = memobj_get_page(range->memobj, off, p2align, 
+					&phys, &memobj_flag);
 			if (error) {
 				if (error != -ERESTART) {
 				}
@@ -1440,7 +1441,16 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 	else {
 		phys = pte_get_phys(ptep);
 	}
+	
 	page = phys_to_page(phys);
+	
+	/* If Linux requested VR_WRITE_COMBINED, but the range is NOCACHE mapped,
+	 * make sure we use VR_WRITE_COMBINED */
+	attr = arch_vrflag_to_ptattr(
+		(((memobj_flag & VR_WRITE_COMBINED) && (range->flag & VR_IO_NOCACHE)) ?
+		 range->flag & ~(VR_IO_NOCACHE) : range->flag) 
+		| memobj_flag, reason, ptep);
+	
 	/*****/
 	if (((range->flag & VR_PRIVATE)
 				|| ((reason & PF_PATCH)

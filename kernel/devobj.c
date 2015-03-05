@@ -32,6 +32,8 @@
 #include <pager.h>
 #include <string.h>
 #include <syscall.h>
+#include <process.h>
+
 
 #define	dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
 #define	ekprintf(...)	kprintf(__VA_ARGS__)
@@ -192,7 +194,7 @@ static void devobj_release(struct memobj *memobj)
 	return;
 }
 
-static int devobj_get_page(struct memobj *memobj, off_t off, int p2align, uintptr_t *physp)
+static int devobj_get_page(struct memobj *memobj, off_t off, int p2align, uintptr_t *physp, unsigned long *flag)
 {
 	const off_t pgoff = off >> PAGE_SHIFT;
 	struct devobj *obj = to_devobj(memobj);
@@ -232,6 +234,14 @@ kprintf("ix: %ld\n", ix);
 			/* convert remote physical into local physical */
 kprintf("devobj_get_page(%p %lx,%lx,%d):PFN_PRESENT before %#lx\n", memobj, obj->handle, off, p2align, pfn);
 			attr = pfn & ~PFN_PFN;
+
+			/* TODO: do an arch dependent PTE to mapping flag conversion 
+			 * instead of this inline check, also, we rely on having the
+			 * same PAT config as Linux here.. */
+			if ((pfn & PFL1_PWT) && !(pfn & PFL1_PCD)) {
+				*flag |= VR_WRITE_COMBINED;
+			}
+
 			pfn = ihk_mc_map_memory(NULL, (pfn & PFN_PFN), PAGE_SIZE);
 			pfn &= PFN_PFN;
 			pfn |= attr;

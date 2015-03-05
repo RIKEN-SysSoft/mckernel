@@ -264,7 +264,11 @@ static unsigned long attr_to_l1attr(enum ihk_mc_pt_attribute attr)
 {
 	if (attr & PTATTR_UNCACHABLE) {
 		return (attr & ATTR_MASK) | PFL1_PCD | PFL1_PWT;
-	} else { 
+	} 
+	else if (attr & PTATTR_WRITE_COMBINED) {
+		return (attr & ATTR_MASK) | PFL1_PWT;
+	}
+	else { 
 		return (attr & ATTR_MASK);
 	}
 }

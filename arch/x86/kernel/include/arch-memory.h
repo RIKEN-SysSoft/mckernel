@@ -147,6 +147,7 @@ enum ihk_mc_pt_attribute {
 	PTATTR_NO_EXECUTE = 0x8000000000000000,
 	PTATTR_UNCACHABLE = 0x10000,
 	PTATTR_FOR_USER   = 0x20000,
+	PTATTR_WRITE_COMBINED = 0x40000,
 };
 
 static inline int pte_is_null(pte_t *ptep)

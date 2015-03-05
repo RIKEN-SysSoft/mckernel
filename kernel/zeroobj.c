@@ -165,7 +165,7 @@ out:
 }
 
 static int zeroobj_get_page(struct memobj *memobj, off_t off, int p2align,
-		uintptr_t *physp)
+		uintptr_t *physp, unsigned long *pflag)
 {
 	int error;
 	struct zeroobj *obj = to_zeroobj(memobj);

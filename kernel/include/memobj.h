@@ -34,7 +34,7 @@ struct memobj {
 
 typedef void memobj_release_func_t(struct memobj *obj);
 typedef void memobj_ref_func_t(struct memobj *obj);
-typedef int memobj_get_page_func_t(struct memobj *obj, off_t off, int p2align, uintptr_t *physp);
+typedef int memobj_get_page_func_t(struct memobj *obj, off_t off, int p2align, uintptr_t *physp, unsigned long *flag);
 typedef uintptr_t memobj_copy_page_func_t(struct memobj *obj, uintptr_t orgphys, int p2align);
 typedef int memobj_flush_page_func_t(struct memobj *obj, uintptr_t phys, size_t pgsize);
 typedef int memobj_invalidate_page_func_t(struct memobj *obj, uintptr_t phys, size_t pgsize);
@@ -63,10 +63,10 @@ static inline void memobj_ref(struct memobj *obj)
 }
 
 static inline int memobj_get_page(struct memobj *obj, off_t off,
-		int p2align, uintptr_t *physp)
+		int p2align, uintptr_t *physp, unsigned long *pflag)
 {
 	if (obj->ops->get_page) {
-		return (*obj->ops->get_page)(obj, off, p2align, physp);
+		return (*obj->ops->get_page)(obj, off, p2align, physp, pflag);
 	}
 	return -ENXIO;
 }

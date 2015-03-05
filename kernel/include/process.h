@@ -28,6 +28,7 @@
 #define VR_RESERVED        0x2
 #define VR_IO_NOCACHE      0x100
 #define VR_REMOTE          0x200
+#define VR_WRITE_COMBINED  0x400
 #define VR_DEMAND_PAGING   0x1000
 #define	VR_PRIVATE         0x2000
 #define	VR_LOCKED          0x4000

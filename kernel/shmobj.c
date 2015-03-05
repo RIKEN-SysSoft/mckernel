@@ -203,7 +203,7 @@ static void shmobj_ref(struct memobj *memobj)
 }
 
 static int shmobj_get_page(struct memobj *memobj, off_t off, int p2align,
-		uintptr_t *physp)
+		uintptr_t *physp, unsigned long *pflag)
 {
 	struct shmobj *obj = to_shmobj(memobj);
 	int error;
