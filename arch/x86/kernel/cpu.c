@@ -14,6 +14,7 @@
 
 #include <ihk/cpu.h>
 #include <ihk/debug.h>
+#include <ihk/mm.h>
 #include <types.h>
 #include <errno.h>
 #include <list.h>
@@ -982,6 +983,42 @@ int ihk_mc_interrupt_cpu(int cpu, int vector)
 	wait_icr_idle();
 	x86_issue_ipi(cpu, vector);
 	return 0;
+}
+
+void
+release_fp_regs(struct process *proc)
+{
+	int	pages;
+
+	if (!proc->fp_regs)
+		return;
+	pages = (sizeof(fp_regs_struct) + 4095) >> 12;
+	ihk_mc_free_pages(proc->fp_regs, 1);
+	proc->fp_regs = NULL;
+}
+
+void
+save_fp_regs(struct process *proc)
+{
+	int	pages;
+
+	if (proc->fp_regs)
+		return;
+	pages = (sizeof(fp_regs_struct) + 4095) >> 12;
+	proc->fp_regs = ihk_mc_alloc_pages(pages, IHK_MC_AP_NOWAIT);
+	if(!proc->fp_regs)
+		return;
+	memset(proc->fp_regs, 0, sizeof(fp_regs_struct));
+	// TODO: do xsave
+}
+
+void
+restore_fp_regs(struct process *proc)
+{
+	if (!proc->fp_regs)
+		return;
+	// TODO: do xrstor
+	release_fp_regs(proc);
 }
 
 ihk_mc_user_context_t *lookup_user_context(struct process *proc)

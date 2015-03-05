@@ -51,6 +51,9 @@ extern void clear_single_step(struct process *proc);
 static void insert_vm_range_list(struct process_vm *vm, 
 		struct vm_range *newrange);
 static int copy_user_ranges(struct process *proc, struct process *org);
+extern void release_fp_regs(struct process *proc);
+extern void save_fp_regs(struct process *proc);
+extern void restore_fp_regs(struct process *proc);
 void settid(struct process *proc, int mode, int newcpuid, int oldcpuid);
 
 int refcount_fork_tree_node(struct fork_tree_node *ftn)
@@ -1973,6 +1976,9 @@ void destroy_process(struct process *proc)
 	}
 	if (proc->ptrace_sendsig) {
 		kfree(proc->ptrace_sendsig);
+	}
+	if (proc->fp_regs) {
+		release_fp_regs(proc);
 	}
 	ihk_mc_free_pages(proc, KERNEL_STACK_NR_PAGES);
 }

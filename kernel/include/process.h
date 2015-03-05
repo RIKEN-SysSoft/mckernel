@@ -388,6 +388,7 @@ struct process {
 	unsigned long *ptrace_debugreg;	/* debug registers for ptrace */
 	struct sig_pending *ptrace_recvsig;
 	struct sig_pending *ptrace_sendsig;
+	fp_regs_struct *fp_regs;
 };
 
 struct process_vm {

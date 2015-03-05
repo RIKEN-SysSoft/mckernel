@@ -223,4 +223,68 @@ enum x86_pf_error_code {
 	PF_POPULATE	=		1 << 30,
 };
 
+struct i387_fxsave_struct {
+	unsigned short cwd;
+	unsigned short swd;
+	unsigned short twd;
+	unsigned short fop;
+	union {
+		struct {
+			unsigned long rip;
+			unsigned long rdp;
+		};
+		struct {
+			unsigned int fip;
+			unsigned int fcs;
+			unsigned int foo;
+			unsigned int fos;
+		};
+	};
+	unsigned int mxcsr;
+	unsigned int mxcsr_mask;
+	unsigned int st_space[32];
+	unsigned int xmm_space[64];
+	unsigned int padding[12];
+	union {
+		unsigned int padding1[12];
+		unsigned int sw_reserved[12];
+	};
+
+} __attribute__((aligned(16)));
+
+struct ymmh_struct {
+	unsigned int ymmh_space[64];
+};
+
+struct lwp_struct {
+	unsigned char reserved[128];
+};
+
+struct bndreg {
+	unsigned long lower_bound;
+	unsigned long upper_bound;
+} __attribute__((packed));
+
+struct bndcsr {
+	unsigned long bndcfgu;
+	unsigned long bndstatus;
+} __attribute__((packed));
+
+struct xsave_hdr_struct {
+	unsigned long xstate_bv;
+	unsigned long xcomp_bv;
+	unsigned long reserved[6];
+} __attribute__((packed));
+
+struct xsave_struct {
+	struct i387_fxsave_struct i387;
+	struct xsave_hdr_struct xsave_hdr;
+	struct ymmh_struct ymmh;
+	struct lwp_struct lwp;
+	struct bndreg bndreg[4];
+	struct bndcsr bndcsr;
+} __attribute__ ((packed, aligned (64)));
+
+typedef struct xsave_struct fp_regs_struct;
+
 #endif
