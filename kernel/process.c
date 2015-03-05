@@ -1444,12 +1444,7 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 	
 	page = phys_to_page(phys);
 	
-	/* If Linux requested VR_WRITE_COMBINED, but the range is NOCACHE mapped,
-	 * make sure we use VR_WRITE_COMBINED */
-	attr = arch_vrflag_to_ptattr(
-		(((memobj_flag & VR_WRITE_COMBINED) && (range->flag & VR_IO_NOCACHE)) ?
-		 range->flag & ~(VR_IO_NOCACHE) : range->flag) 
-		| memobj_flag, reason, ptep);
+	attr = arch_vrflag_to_ptattr(range->flag | memobj_flag, reason, ptep);
 	
 	/*****/
 	if (((range->flag & VR_PRIVATE)
