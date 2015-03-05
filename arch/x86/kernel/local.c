@@ -19,13 +19,19 @@
 #include <registers.h>
 #include <string.h>
 
+#define LOCALS_SPAN (4 * PAGE_SIZE)
+
 struct x86_cpu_local_variables *locals;
+size_t x86_cpu_local_variables_span = LOCALS_SPAN;	/* for debugger */
 
 void init_processors_local(int max_id)
 {
+	size_t size;
+
+	size = LOCALS_SPAN * max_id;
 	/* Is contiguous allocating adequate?? */
-	locals = ihk_mc_alloc_pages(max_id, IHK_MC_AP_CRITICAL);
-	memset(locals, 0, PAGE_SIZE * max_id);
+	locals = ihk_mc_alloc_pages(size/PAGE_SIZE, IHK_MC_AP_CRITICAL);
+	memset(locals, 0, size);
 
 	kprintf("locals = %p\n", locals);
 }
@@ -33,12 +39,12 @@ void init_processors_local(int max_id)
 struct x86_cpu_local_variables *get_x86_cpu_local_variable(int id)
 {
 	return (struct x86_cpu_local_variables *)
-		((char *)locals + (id << PAGE_SHIFT));
+		((char *)locals + (LOCALS_SPAN * id));
 }
 
 static void *get_x86_cpu_local_kstack(int id)
 {
-	return ((char *)locals + ((id + 1) << PAGE_SHIFT));
+	return ((char *)locals + (LOCALS_SPAN * (id + 1)));
 }
 
 struct x86_cpu_local_variables *get_x86_this_cpu_local(void)
