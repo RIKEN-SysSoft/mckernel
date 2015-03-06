@@ -2907,6 +2907,102 @@ static long ptrace_arch_prctl(int pid, long code, long addr)
 	return rc;
 }
 
+extern long ptrace_read_fpregs(struct process *proc, void *fpregs);
+extern long ptrace_write_fpregs(struct process *proc, void *fpregs);
+
+static long ptrace_getfpregs(int pid, long data)
+{
+	long rc = -EIO;
+	struct process *child;
+	ihk_spinlock_t *savelock;
+	unsigned long irqstate;
+
+	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	if (!child)
+		return -ESRCH;
+	if (child->ftn->status == PS_TRACED) {
+		rc = ptrace_read_fpregs(child, (void *)data);
+	}
+	ihk_mc_spinlock_unlock(savelock, irqstate);
+
+	return rc;
+}
+
+static long ptrace_setfpregs(int pid, long data)
+{
+	long rc = -EIO;
+	struct process *child;
+	ihk_spinlock_t *savelock;
+	unsigned long irqstate;
+
+	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	if (!child)
+		return -ESRCH;
+	if (child->ftn->status == PS_TRACED) {
+		rc = ptrace_write_fpregs(child, (void *)data);
+	}
+	ihk_mc_spinlock_unlock(savelock, irqstate);
+
+	return rc;
+}
+
+extern long ptrace_read_regset(struct process *proc, long type, struct iovec *iov);
+extern long ptrace_write_regset(struct process *proc, long type, struct iovec *iov);
+
+static long ptrace_getregset(int pid, long type, long data)
+{
+	long rc = -EIO;
+	struct process *child;
+	ihk_spinlock_t *savelock;
+	unsigned long irqstate;
+
+	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	if (!child)
+		return -ESRCH;
+	if (child->ftn->status == PS_TRACED) {
+		struct iovec iov;
+
+		rc = copy_from_user(&iov, (struct iovec *)data, sizeof(iov));
+		if (rc == 0) {
+			rc = ptrace_read_regset(child, type, &iov);
+		}
+		if (rc == 0) {
+			rc = copy_to_user(&((struct iovec *)data)->iov_len,
+					&iov.iov_len, sizeof(iov.iov_len));
+		}
+	}
+	ihk_mc_spinlock_unlock(savelock, irqstate);
+
+	return rc;
+}
+
+static long ptrace_setregset(int pid, long type, long data)
+{
+	long rc = -EIO;
+	struct process *child;
+	ihk_spinlock_t *savelock;
+	unsigned long irqstate;
+
+	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	if (!child)
+		return -ESRCH;
+	if (child->ftn->status == PS_TRACED) {
+		struct iovec iov;
+
+		rc = copy_from_user(&iov, (struct iovec *)data, sizeof(iov));
+		if (rc == 0) {
+			rc = ptrace_write_regset(child, type, &iov);
+		}
+		if (rc == 0) {
+			rc = copy_to_user(&((struct iovec *)data)->iov_len,
+					&iov.iov_len, sizeof(iov.iov_len));
+		}
+	}
+	ihk_mc_spinlock_unlock(savelock, irqstate);
+
+	return rc;
+}
+
 static long ptrace_peektext(int pid, long addr, long data)
 {
 	long rc = -EIO;
@@ -3351,10 +3447,12 @@ SYSCALL_DECLARE(ptrace)
 		error = ptrace_wakeup_sig(pid, request, data);
 		break;
 	case PTRACE_GETFPREGS:
-		dkprintf("ptrace: unimplemented ptrace(PTRACE_GETFPREGS) called.\n");
+		dkprintf("ptrace: PTRACE_GETFPREGS: data=%p\n", data);
+		error = ptrace_getfpregs(pid, data);
 		break;
 	case PTRACE_SETFPREGS:
-		dkprintf("ptrace: unimplemented ptrace(PTRACE_SETFPREGS) called.\n");
+		dkprintf("ptrace: PTRACE_SETFPREGS: data=%p\n", data);
+		error = ptrace_setfpregs(pid, data);
 		break;
 	case PTRACE_SETREGS:
 		error = ptrace_setregs(pid, data);
@@ -3368,29 +3466,25 @@ SYSCALL_DECLARE(ptrace)
 		dkprintf("ptrace: PTRACE_DETACH: data=%d\n", data);
 		error = ptrace_detach(pid, data);
 		break;
-	case PTRACE_GETFPXREGS:
-		dkprintf("ptrace: unimplemented ptrace(PTRACE_GETFPXREGS) called.\n");
-		break;
 	case PTRACE_SYSCALL:
 		dkprintf("ptrace: PTRACE_SYSCALL: data=%d\n", data);
 		error = ptrace_wakeup_sig(pid, request, data);
 		break;
 	case PTRACE_GETSIGINFO:
-		dkprintf("ptrace: unimplemented ptrace(PTRACE_GETSIGINFO) called.\n");
+		dkprintf("ptrace: PTRACE_GETSIGINFO: data=%p\n", data);
 		error = ptrace_getsiginfo(pid, (siginfo_t *)data);
 		break;
 	case PTRACE_SETSIGINFO:
-		dkprintf("ptrace: unimplemented ptrace(PTRACE_SETSIGINFO) called.\n");
+		dkprintf("ptrace: PTRACE_SETSIGINFO: data=%p\n", data);
 		error = ptrace_setsiginfo(pid, (siginfo_t *)data);
 		break;
 	case PTRACE_GETREGSET:
-		dkprintf("ptrace: unimplemented ptrace(PTRACE_GETREGSET) called.\n");
+		dkprintf("ptrace: PTRACE_GETREGSET: addr=0x%x, data=%p\n", addr, data);
+		error = ptrace_getregset(pid, addr, data);
 		break;
 	case PTRACE_SETREGSET:
-		dkprintf("ptrace: unimplemented ptrace(PTRACE_SETREGSET) called.\n");
-		break;
-	case PTRACE_GET_THREAD_AREA:
-		dkprintf("ptrace: unimplemented ptrace(PTRACE_GET_THREAD_AREA) called.\n");
+		dkprintf("ptrace: PTRACE_SETREGSET: addr=0x%x, data=%p\n", addr, data);
+		error = ptrace_setregset(pid, addr, data);
 		break;
 	case PTRACE_ARCH_PRCTL:
 		error = ptrace_arch_prctl(pid, data, addr);
@@ -3401,7 +3495,7 @@ SYSCALL_DECLARE(ptrace)
 		error = ptrace_geteventmsg(pid, data);
 		break;
 	default:
-		dkprintf("ptrace: unimplemented ptrace called.\n");
+		kprintf("ptrace: unimplemented ptrace(%d) called.\n", request);
 		break;
 	}
 

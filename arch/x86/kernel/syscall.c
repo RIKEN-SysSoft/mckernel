@@ -23,12 +23,14 @@
 #include <string.h>
 #include <errno.h>
 #include <kmalloc.h>
+#include <uio.h>
 
 void terminate(int, int, ihk_mc_user_context_t *);
 int copy_from_user(void *dst, const void *src, size_t siz);
 int copy_to_user(void *dst, const void *src, size_t siz);
 int write_process_vm(struct process_vm *vm, void *dst, const void *src, size_t siz);
 long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
+extern void save_fp_regs(struct process *proc);
 
 //#define DEBUG_PRINT_SC
 
@@ -366,6 +368,70 @@ void clear_single_step(struct process *proc)
 void set_single_step(struct process *proc)
 {
 	proc->uctx->gpr.rflags |= RFLAGS_TF;
+}
+
+long ptrace_read_fpregs(struct process *proc, void *fpregs)
+{
+	save_fp_regs(proc);
+	if (proc->fp_regs == NULL) {
+		return -ENOMEM;
+	}
+	return copy_to_user(fpregs, &proc->fp_regs->i387,
+			sizeof(struct i387_fxsave_struct));
+}
+
+long ptrace_write_fpregs(struct process *proc, void *fpregs)
+{
+	save_fp_regs(proc);
+	if (proc->fp_regs == NULL) {
+		return -ENOMEM;
+	}
+	return copy_from_user(&proc->fp_regs->i387, fpregs, 
+			sizeof(struct i387_fxsave_struct));
+}
+
+long ptrace_read_regset(struct process *proc, long type, struct iovec *iov)
+{
+	long rc = -EINVAL;
+
+	switch (type) {
+	case NT_X86_XSTATE:
+		save_fp_regs(proc);
+		if (proc->fp_regs == NULL) {
+			return -ENOMEM;
+		}
+		if (iov->iov_len > sizeof(fp_regs_struct)) {
+			iov->iov_len = sizeof(fp_regs_struct);
+		}
+		rc = copy_to_user(&iov->iov_base, proc->fp_regs, iov->iov_len);
+		break;
+	default:
+		kprintf("ptrace_read_regset: not supported type 0x%x\n", type);
+		break;
+	}
+	return rc;
+}
+
+long ptrace_write_regset(struct process *proc, long type, struct iovec *iov)
+{
+	long rc = -EINVAL;
+
+	switch (type) {
+	case NT_X86_XSTATE:
+		save_fp_regs(proc);
+		if (proc->fp_regs == NULL) {
+			return -ENOMEM;
+		}
+		if (iov->iov_len > sizeof(fp_regs_struct)) {
+			iov->iov_len = sizeof(fp_regs_struct);
+		}
+		rc = copy_from_user(proc->fp_regs, &iov->iov_base, iov->iov_len);
+		break;
+	default:
+		kprintf("ptrace_write_regset: not supported type 0x%x\n", type);
+		break;
+	}
+	return rc;
 }
 
 extern void coredump(struct process *proc, void *regs);

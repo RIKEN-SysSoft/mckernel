@@ -111,6 +111,8 @@
 #define	PTRACE_EVENT_VFORK_DONE 5
 #define	PTRACE_EVENT_EXIT 6
 
+#define NT_X86_XSTATE 0x202 /* x86 XSAVE extended state */
+
 #define SIGNAL_STOP_STOPPED   0x1 /* The process has been stopped by SIGSTOP */
 #define SIGNAL_STOP_CONTINUED 0x2 /* The process has been resumed by SIGCONT */
 
