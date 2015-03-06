@@ -1239,8 +1239,9 @@ static int pager_req_pfn(ihk_os_t os, uintptr_t handle, off_t off, uintptr_t ppf
 					pfn |= PFN_VALID | PFN_PRESENT;
 					
 					/* Check if mapping is write-combined */
-					if (pte_flags(*pte) & _PAGE_CACHE_WC) {
-						pfn |= _PAGE_CACHE_WC;
+					if ((pte_flags(*pte) & _PAGE_PWT) && 
+						!(pte_flags(*pte) & _PAGE_PCD)) {
+						pfn |= _PAGE_PWT;
 					}
 				}
 				pte_unmap(pte);
