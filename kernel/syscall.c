@@ -1672,6 +1672,34 @@ found:
 	return error;
 }
 
+static void munmap_all(void)
+{
+	struct process *proc = cpu_local_var(current);
+	struct process_vm *vm = proc->vm;
+	struct vm_range *range;
+	struct vm_range *next;
+	void *addr;
+	size_t size;
+	int error;
+
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	list_for_each_entry_safe(range, next, &vm->vm_range_list, list) {
+		addr = (void *)range->start;
+		size = range->end - range->start;
+		error = do_munmap(addr, size);
+		if (error) {
+			kprintf("munmap_all():do_munmap(%p,%lx) failed. %d\n",
+					addr, size, error);
+			/* through */
+		}
+	}
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+
+	/* free vm_ranges which do_munmap() failed to remove. */
+	free_process_memory_ranges(proc);
+	return;
+} /* munmap_all() */
+
 SYSCALL_DECLARE(execve)
 {
 	int error;
@@ -1749,7 +1777,7 @@ SYSCALL_DECLARE(execve)
 	}
 
 	/* Unmap all memory areas of the process, userspace will be gone */
-	free_process_memory_ranges(cpu_local_var(current));
+	munmap_all();
 
 	ihk_mc_init_user_process(&cpu_local_var(current)->ctx, 
 			&cpu_local_var(current)->uctx,
