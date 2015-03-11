@@ -491,14 +491,15 @@ retry_alloc:
 
 	ret = wait_event_interruptible(wqhln->wq_syscall, wqhln->req);
 	
-	if (ret) {
-		return -EINTR;
-	}
 
 	/* Remove per-process wait queue head */
 	irqflags = ihk_ikc_spinlock_lock(&c->wq_list_lock);
 	list_del(&wqhln->list);
 	ihk_ikc_spinlock_unlock(&c->wq_list_lock, irqflags);
+	if (ret) {
+		kfree(wqhln);
+		return -EINTR;
+	}
 	kfree(wqhln);
 
 	if (c->param.request_va->number == 61 &&
