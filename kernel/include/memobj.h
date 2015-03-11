@@ -18,11 +18,19 @@
 #include <ihk/lock.h>
 #include <errno.h>
 #include <list.h>
-#include <shm.h>
+
+/* begin types.h */
+typedef int32_t key_t;
+typedef uint32_t uid_t;
+typedef uint32_t gid_t;
+typedef int64_t time_t;
+typedef int32_t pid_t;
+/* end types.h */
 
 enum {
 	/* for memobj.flags */
 	MF_HAS_PAGER	= 0x0001,
+	MF_SHMDT_OK	= 0x0002,
 };
 
 struct memobj {
@@ -113,6 +121,7 @@ static inline int memobj_has_pager(struct memobj *obj)
 }
 
 int fileobj_create(int fd, struct memobj **objp, int *maxprotp);
+struct shmid_ds;
 int shmobj_create(struct shmid_ds *ds, struct memobj **objp);
 int zeroobj_create(struct memobj **objp);
 int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxprotp);

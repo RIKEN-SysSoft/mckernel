@@ -1123,6 +1123,7 @@ SYSCALL_DECLARE(mmap)
 	else if (flags & MAP_SHARED) {
 		memset(&ads, 0, sizeof(ads));
 		ads.shm_segsz = len;
+		ads.shm_perm.mode = SHM_DEST;
 		error = shmobj_create(&ads, &memobj);
 		if (error) {
 			ekprintf("sys_mmap:shmobj_create failed. %d\n", error);
@@ -2643,6 +2644,590 @@ out2:
 			ihk_mc_get_processor_id(), start, len0, advice, error);
 	return error;
 }
+
+struct kshmid_ds {
+	int destroy;
+	int padding;
+	struct shmobj *obj;
+	struct memobj *memobj;
+	struct list_head chain;
+};
+
+int the_maxi = -1;
+LIST_HEAD(kds_list);
+LIST_HEAD(kds_free_list);
+struct shminfo the_shminfo = {
+	.shmmax = 64L * 1024 * 1024 * 1024,
+	.shmmin = 1,
+	.shmmni = 4 * 1024,
+	.shmall = 4L * 1024 * 1024 * 1024,
+};
+struct shm_info the_shm_info = { 0, };
+
+static uid_t geteuid(void) {
+	struct syscall_request sreq IHK_DMA_ALIGN;
+	struct process *proc = cpu_local_var(current);
+
+	sreq.number = __NR_geteuid;
+	return (uid_t)do_syscall(&sreq, ihk_mc_get_processor_id(), proc->ftn->pid);
+}
+
+static gid_t getegid(void) {
+	struct syscall_request sreq IHK_DMA_ALIGN;
+	struct process *proc = cpu_local_var(current);
+
+	sreq.number = __NR_getegid;
+	return (gid_t)do_syscall(&sreq, ihk_mc_get_processor_id(), proc->ftn->pid);
+}
+
+time_t time(void) {
+	struct syscall_request sreq IHK_DMA_ALIGN;
+	struct process *proc = cpu_local_var(current);
+
+	sreq.number = __NR_time;
+	sreq.args[0] = (uintptr_t)NULL;
+	return (time_t)do_syscall(&sreq, ihk_mc_get_processor_id(), proc->ftn->pid);
+}
+
+pid_t getpid(void) {
+	struct process *proc = cpu_local_var(current);
+
+	return proc->ftn->pid;
+}
+
+static int make_shmid(struct shmobj *obj)
+{
+	return ((int)obj->index << 16) | obj->ds.shm_perm.seq;
+} /* make_shmid() */
+
+static int shmid_to_index(int shmid)
+{
+	return (shmid >> 16);
+} /* shmid_to_index() */
+
+static int shmid_to_seq(int shmid)
+{
+	return (shmid & ((1 << 16) - 1));
+} /* shmid_to_seq() */
+
+int shmobj_list_lookup(int shmid, struct shmobj **objp)
+{
+	int index;
+	int seq;
+	struct shmobj *obj;
+
+	index = shmid_to_index(shmid);
+	seq = shmid_to_seq(shmid);
+
+	list_for_each_entry(obj, &kds_list, chain) {
+		if (obj->index == index) {
+			break;
+		}
+	}
+	if (&obj->chain == &kds_list) {
+		return -EINVAL;
+	}
+	if (obj->ds.shm_perm.seq != seq) {
+		return -EIDRM;
+	}
+
+	*objp = obj;
+	return 0;
+} /* shmobj_list_lookup() */
+
+int shmobj_list_lookup_by_key(key_t key, struct shmobj **objp)
+{
+	struct shmobj *obj;
+
+	list_for_each_entry(obj, &kds_list, chain) {
+		if (obj->ds.shm_perm.key == key) {
+			break;
+		}
+	}
+	if (&obj->chain == &kds_list) {
+		return -EINVAL;
+	}
+
+	*objp = obj;
+	return 0;
+} /* shmobj_list_lookup_by_key() */
+
+int shmobj_list_lookup_by_index(int index, struct shmobj **objp)
+{
+	struct shmobj *obj;
+
+	list_for_each_entry(obj, &kds_list, chain) {
+		if (obj->index == index) {
+			break;
+		}
+	}
+	if (&obj->chain == &kds_list) {
+		return -EINVAL;
+	}
+
+	*objp = obj;
+	return 0;
+} /* shmobj_list_lookup_by_index() */
+
+SYSCALL_DECLARE(shmget)
+{
+	const key_t key = ihk_mc_syscall_arg0(ctx);
+	const size_t size = ihk_mc_syscall_arg1(ctx);
+	const int shmflg = ihk_mc_syscall_arg2(ctx);
+	uid_t euid = geteuid();
+	gid_t egid = getegid();
+	time_t now = time();
+	struct process *proc = cpu_local_var(current);
+	int shmid;
+	int error;
+	struct shmid_ds ads;
+	struct shmobj *obj;
+
+	dkprintf("shmget(%#lx,%#lx,%#x)\n", key, size, shmflg);
+
+	if (size < the_shminfo.shmmin) {
+		dkprintf("shmget(%#lx,%#lx,%#x): -EINVAL\n", key, size, shmflg);
+		return -EINVAL;
+	}
+
+	shmobj_list_lock();
+	obj = NULL;
+	if (key != IPC_PRIVATE) {
+		error = shmobj_list_lookup_by_key(key, &obj);
+		if (error == -EINVAL) {
+			obj = NULL;
+		}
+		else if (error) {
+			shmobj_list_unlock();
+			dkprintf("shmget(%#lx,%#lx,%#x): lookup: %d\n", key, size, shmflg, error);
+			return error;
+		}
+		if (!obj && !(shmflg & IPC_CREAT)) {
+			shmobj_list_unlock();
+			dkprintf("shmget(%#lx,%#lx,%#x): -ENOENT\n", key, size, shmflg);
+			return -ENOENT;
+		}
+		if (obj && (shmflg & IPC_CREAT) && (shmflg & IPC_EXCL)) {
+			shmobj_list_unlock();
+			dkprintf("shmget(%#lx,%#lx,%#x): -EEXIST\n", key, size, shmflg);
+			return -EEXIST;
+		}
+	}
+
+	if (obj) {
+		if (euid) {
+			int req;
+
+			req = (shmflg | (shmflg << 3) | (shmflg << 6)) & 0700;
+			if ((obj->ds.shm_perm.uid == euid)
+					|| (obj->ds.shm_perm.cuid == euid)) {
+				/*  nothing to do */
+			}
+			else if ((obj->ds.shm_perm.gid == egid)
+					|| (obj->ds.shm_perm.cgid == egid)) {
+				/*
+				 * XXX: need to check supplementary group IDs
+				 */
+				req >>= 3;
+			}
+			else {
+				req >>= 6;
+			}
+			if (req & ~obj->ds.shm_perm.mode) {
+				shmobj_list_unlock();
+				dkprintf("shmget(%#lx,%#lx,%#x): -EINVAL\n", key, size, shmflg);
+				return -EACCES;
+			}
+		}
+		if (obj->ds.shm_segsz < size) {
+			shmobj_list_unlock();
+			dkprintf("shmget(%#lx,%#lx,%#x): -EINVAL\n", key, size, shmflg);
+			return -EINVAL;
+		}
+		shmid = make_shmid(obj);
+		shmobj_list_unlock();
+		dkprintf("shmget(%#lx,%#lx,%#x): %d\n", key, size, shmflg, shmid);
+		return shmid;
+	}
+
+	if (the_shm_info.used_ids >= the_shminfo.shmmni) {
+		shmobj_list_unlock();
+		dkprintf("shmget(%#lx,%#lx,%#x): -ENOSPC\n", key, size, shmflg);
+		return -ENOSPC;
+	}
+
+	memset(&ads, 0, sizeof(ads));
+	ads.shm_perm.key = key;
+	ads.shm_perm.uid = euid;
+	ads.shm_perm.cuid = euid;
+	ads.shm_perm.gid = egid;
+	ads.shm_perm.cgid = egid;
+	ads.shm_perm.mode = shmflg & 0777;
+	ads.shm_segsz = size;
+	ads.shm_ctime = now;
+	ads.shm_cpid = proc->ftn->pid;
+
+	error = shmobj_create_indexed(&ads, &obj);
+	if (error) {
+		shmobj_list_unlock();
+		dkprintf("shmget(%#lx,%#lx,%#x): shmobj_create: %d\n", key, size, shmflg, error);
+		return error;
+	}
+
+	obj->index = ++the_maxi;
+
+	list_add(&obj->chain, &kds_list);
+	++the_shm_info.used_ids;
+
+	shmid = make_shmid(obj);
+	shmobj_list_unlock();
+	memobj_release(&obj->memobj);
+
+	dkprintf("shmget(%#lx,%#lx,%#x): %d\n", key, size, shmflg, shmid);
+	return shmid;
+} /* sys_shmget() */
+
+SYSCALL_DECLARE(shmat)
+{
+	const int shmid = ihk_mc_syscall_arg0(ctx);
+	void * const shmaddr = (void *)ihk_mc_syscall_arg1(ctx);
+	const int shmflg = ihk_mc_syscall_arg2(ctx);
+	struct process *proc = cpu_local_var(current);
+	size_t len;
+	int error;
+	struct vm_regions *region = &proc->vm->region;
+	intptr_t addr;
+	int prot;
+	int vrflags;
+	int req;
+	uid_t euid = geteuid();
+	gid_t egid = getegid();
+	struct shmobj *obj;
+
+	dkprintf("shmat(%#x,%p,%#x)\n", shmid, shmaddr, shmflg);
+
+	shmobj_list_lock();
+	error = shmobj_list_lookup(shmid, &obj);
+	if (error) {
+		shmobj_list_unlock();
+		dkprintf("shmat(%#x,%p,%#x): lookup: %d\n", shmid, shmaddr, shmflg, error);
+		return error;
+	}
+
+	if (shmaddr && ((uintptr_t)shmaddr & (PAGE_SIZE - 1)) && !(shmflg & SHM_RND)) {
+		shmobj_list_unlock();
+		dkprintf("shmat(%#x,%p,%#x): -EINVAL\n", shmid, shmaddr, shmflg);
+		return -EINVAL;
+	}
+	addr = (uintptr_t)shmaddr & PAGE_MASK;
+	len = (obj->ds.shm_segsz + PAGE_SIZE - 1) & PAGE_MASK;
+
+	prot = PROT_READ;
+	req = 4;
+	if (!(shmflg & SHM_RDONLY)) {
+		prot |= PROT_WRITE;
+		req |= 2;
+	}
+
+	if (!euid) {
+		req = 0;
+	}
+	else if ((euid == obj->ds.shm_perm.uid) || (euid == obj->ds.shm_perm.cuid)) {
+		req <<= 6;
+	}
+	else if ((egid == obj->ds.shm_perm.gid) || (egid == obj->ds.shm_perm.cgid)) {
+		req <<= 3;
+	}
+	else {
+		req <<= 0;
+	}
+	if (~obj->ds.shm_perm.mode & req) {
+		shmobj_list_unlock();
+		dkprintf("shmat(%#x,%p,%#x): -EINVAL\n", shmid, shmaddr, shmflg);
+		return -EACCES;
+	}
+
+	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
+
+	if (addr) {
+		if (lookup_process_memory_range(proc->vm, addr, addr+len)) {
+			ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+			shmobj_list_unlock();
+			dkprintf("shmat(%#x,%p,%#x):lookup_process_memory_range succeeded. -ENOMEM\n", shmid, shmaddr, shmflg);
+			return -ENOMEM;
+		}
+	}
+	else {
+		error = search_free_space(len, region->map_end, &addr);
+		if (error) {
+			ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+			shmobj_list_unlock();
+			dkprintf("shmat(%#x,%p,%#x):search_free_space failed. %d\n", shmid, shmaddr, shmflg, error);
+			return error;
+		}
+		region->map_end = addr + len;
+	}
+
+	vrflags = VR_NONE;
+	vrflags |= VR_DEMAND_PAGING;
+	vrflags |= PROT_TO_VR_FLAG(prot);
+	vrflags |= VRFLAG_PROT_TO_MAXPROT(vrflags);
+
+	if (!(prot & PROT_WRITE)) {
+		error = set_host_vma(addr, len, PROT_READ);
+		if (error) {
+			ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+			shmobj_list_unlock();
+			dkprintf("shmat(%#x,%p,%#x):set_host_vma failed. %d\n", shmid, shmaddr, shmflg, error);
+			return error;
+		}
+	}
+
+	memobj_ref(&obj->memobj);
+
+	error = add_process_memory_range(proc, addr, addr+len, -1, vrflags, &obj->memobj, 0);
+	if (error) {
+		if (!(prot & PROT_WRITE)) {
+			(void)set_host_vma(addr, len, PROT_READ|PROT_WRITE);
+		}
+		memobj_release(&obj->memobj);
+		ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+		shmobj_list_unlock();
+		dkprintf("shmat(%#x,%p,%#x):add_process_memory_range failed. %d\n", shmid, shmaddr, shmflg, error);
+		return error;
+	}
+
+	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+	shmobj_list_unlock();
+
+	dkprintf("shmat:bump shm_nattach %p %d\n", obj, obj->ds.shm_nattch);
+	dkprintf("shmat(%#x,%p,%#x): 0x%lx. %d\n", shmid, shmaddr, shmflg, addr);
+	return addr;
+} /* sys_shmat() */
+
+SYSCALL_DECLARE(shmctl)
+{
+	const int shmid = ihk_mc_syscall_arg0(ctx);
+	const int cmd = ihk_mc_syscall_arg1(ctx);
+	struct shmid_ds * const buf = (void *)ihk_mc_syscall_arg2(ctx);
+	int error;
+	struct shmid_ds ads;
+	uid_t euid = geteuid();
+	gid_t egid = getegid();
+	time_t now = time();
+	int req;
+	int maxi;
+	struct shmobj *obj;
+
+	dkprintf("shmctl(%#x,%d,%p)\n", shmid, cmd, buf);
+	if (0) ;
+	else if (cmd == IPC_RMID) {
+		shmobj_list_lock();
+		error = shmobj_list_lookup(shmid, &obj);
+		if (error) {
+			shmobj_list_unlock();
+			dkprintf("shmctl(%#x,%d,%p): lookup: %d\n", shmid, cmd, buf, error);
+			return error;
+		}
+		if ((obj->ds.shm_perm.uid != euid)
+				&& (obj->ds.shm_perm.cuid != euid)) {
+			shmobj_list_unlock();
+			dkprintf("shmctl(%#x,%d,%p): -EPERM\n", shmid, cmd, buf);
+			return -EPERM;
+		}
+		obj->ds.shm_perm.mode |= SHM_DEST;
+		if (obj->ds.shm_nattch <= 0) {
+			shmobj_destroy(obj);
+		}
+		shmobj_list_unlock();
+
+		dkprintf("shmctl(%#x,%d,%p): 0\n", shmid, cmd, buf);
+		return 0;
+	}
+	else if (cmd == IPC_SET) {
+		shmobj_list_lock();
+		error = shmobj_list_lookup(shmid, &obj);
+		if (error) {
+			shmobj_list_unlock();
+			dkprintf("shmctl(%#x,%d,%p): lookup: %d\n", shmid, cmd, buf, error);
+			return error;
+		}
+		if ((obj->ds.shm_perm.uid != euid)
+				&& (obj->ds.shm_perm.cuid != euid)) {
+			shmobj_list_unlock();
+			dkprintf("shmctl(%#x,%d,%p): -EPERM\n", shmid, cmd, buf);
+			return -EPERM;
+		}
+		error = copy_from_user(&ads, buf, sizeof(ads));
+		if (error) {
+			shmobj_list_unlock();
+			dkprintf("shmctl(%#x,%d,%p): %d\n", shmid, cmd, buf, error);
+			return error;
+		}
+		obj->ds.shm_perm.uid = ads.shm_perm.uid;
+		obj->ds.shm_perm.gid = ads.shm_perm.gid;
+		obj->ds.shm_perm.mode &= ~0777;
+		obj->ds.shm_perm.mode |= ads.shm_perm.mode & 0777;
+		obj->ds.shm_ctime = now;
+
+		shmobj_list_unlock();
+		dkprintf("shmctl(%#x,%d,%p): 0\n", shmid, cmd, buf);
+		return 0;
+	}
+	else if (cmd == IPC_STAT) {
+		shmobj_list_lock();
+		error = shmobj_list_lookup(shmid, &obj);
+		if (error) {
+			shmobj_list_unlock();
+			dkprintf("shmctl(%#x,%d,%p): lookup: %d\n", shmid, cmd, buf, error);
+			return error;
+		}
+		if (!euid) {
+			req = 0;
+		}
+		else if ((euid == obj->ds.shm_perm.uid) || (euid == obj->ds.shm_perm.cuid)) {
+			req = 0400;
+		}
+		else if ((egid == obj->ds.shm_perm.gid) || (egid == obj->ds.shm_perm.cgid)) {
+			req = 0040;
+		}
+		else {
+			req = 0004;
+		}
+		if (req & ~obj->ds.shm_perm.mode) {
+			shmobj_list_unlock();
+			dkprintf("shmctl(%#x,%d,%p): -EACCES\n", shmid, cmd, buf);
+			return -EACCES;
+		}
+		error = copy_to_user(buf, &obj->ds, sizeof(*buf));
+		if (error) {
+			shmobj_list_unlock();
+			dkprintf("shmctl(%#x,%d,%p): %d\n", shmid, cmd, buf, error);
+			return error;
+		}
+
+		shmobj_list_unlock();
+		dkprintf("shmctl(%#x,%d,%p): 0\n", shmid, cmd, buf);
+		return 0;
+	}
+	else if (cmd == IPC_INFO) {
+		shmobj_list_lock();
+		error = shmobj_list_lookup(shmid, &obj);
+		if (error) {
+			shmobj_list_unlock();
+			dkprintf("shmctl(%#x,%d,%p): lookup: %d\n", shmid, cmd, buf, error);
+			return error;
+		}
+		error = copy_to_user(buf, &the_shminfo, sizeof(the_shminfo));
+		if (error) {
+			shmobj_list_unlock();
+			dkprintf("shmctl(%#x,%d,%p): %d\n", shmid, cmd, buf, error);
+			return error;
+		}
+
+		maxi = the_maxi;
+		if (maxi < 0) {
+			maxi = 0;
+		}
+		shmobj_list_unlock();
+		dkprintf("shmctl(%#x,%d,%p): %d\n", shmid, cmd, buf, maxi);
+		return maxi;
+	}
+	else if (cmd == SHM_LOCK) {
+		shmobj_list_lock();
+		error = shmobj_list_lookup(shmid, &obj);
+		if (error) {
+			shmobj_list_unlock();
+			dkprintf("shmctl(%#x,%d,%p): lookup: %d\n", shmid, cmd, buf, error);
+			return error;
+		}
+		obj->ds.shm_perm.mode |= SHM_LOCKED;
+		shmobj_list_unlock();
+
+		dkprintf("shmctl(%#x,%d,%p): 0\n", shmid, cmd, buf);
+		return 0;
+	}
+	else if (cmd == SHM_UNLOCK) {
+		shmobj_list_lock();
+		error = shmobj_list_lookup(shmid, &obj);
+		if (error) {
+			shmobj_list_unlock();
+			dkprintf("shmctl(%#x,%d,%p): lookup: %d\n", shmid, cmd, buf, error);
+			return error;
+		}
+		obj->ds.shm_perm.mode &= ~SHM_LOCKED;
+		shmobj_list_unlock();
+		dkprintf("shmctl(%#x,%d,%p): 0\n", shmid, cmd, buf);
+		return 0;
+	}
+	else if (cmd == SHM_STAT) {
+		shmobj_list_lock();
+		error = shmobj_list_lookup_by_index(shmid, &obj);
+		if (error) {
+			shmobj_list_unlock();
+			dkprintf("shmctl(%#x,%d,%p): lookup: %d\n", shmid, cmd, buf, error);
+			return error;
+		}
+		error = copy_to_user(buf, &obj->ds, sizeof(*buf));
+		if (error) {
+			shmobj_list_unlock();
+			dkprintf("shmctl(%#x,%d,%p): %d\n", shmid, cmd, buf, error);
+			return error;
+		}
+		shmobj_list_unlock();
+		dkprintf("shmctl(%#x,%d,%p): 0\n", shmid, cmd, buf);
+		return 0;
+	}
+	else if (cmd == SHM_INFO) {
+		shmobj_list_lock();
+		error = copy_to_user(buf, &the_shm_info, sizeof(the_shm_info));
+		if (error) {
+			shmobj_list_unlock();
+			dkprintf("shmctl(%#x,%d,%p): %d\n", shmid, cmd, buf, error);
+			return error;
+		}
+
+		maxi = the_maxi;
+		if (maxi < 0) {
+			maxi = 0;
+		}
+		shmobj_list_unlock();
+		dkprintf("shmctl(%#x,%d,%p): %d\n", shmid, cmd, buf, maxi);
+		return maxi;
+	}
+
+	dkprintf("shmctl(%#x,%d,%p): EINVAL\n", shmid, cmd, buf);
+	return -EINVAL;
+} /* sys_shmctl() */
+
+SYSCALL_DECLARE(shmdt)
+{
+	void * const shmaddr = (void *)ihk_mc_syscall_arg0(ctx);
+	struct process *proc = cpu_local_var(current);
+	struct vm_range *range;
+	int error;
+
+	dkprintf("shmdt(%p)\n", shmaddr);
+	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
+	range = lookup_process_memory_range(proc->vm, (uintptr_t)shmaddr, (uintptr_t)shmaddr+1);
+	if (!range || (range->start != (uintptr_t)shmaddr) || !range->memobj
+			|| !(range->memobj->flags & MF_SHMDT_OK)) {
+		ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+		dkprintf("shmdt(%p): -EINVAL\n", shmaddr);
+		return -EINVAL;
+	}
+
+	error = do_munmap((void *)range->start, (range->end - range->start));
+	if (error) {
+		ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+		dkprintf("shmdt(%p): %d\n", shmaddr, error);
+		return error;
+	}
+
+	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+	dkprintf("shmdt(%p): 0\n", shmaddr);
+	return 0;
+} /* sys_shmdt() */
 
 SYSCALL_DECLARE(futex)
 {

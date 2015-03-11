@@ -12,38 +12,71 @@
 #ifndef HEADER_SHM_H
 #define HEADER_SHM_H
 
-/* begin types.h */
-typedef int32_t key_t;
-typedef uint32_t uid_t;
-typedef uint32_t gid_t;
-typedef int64_t time_t;
-typedef int32_t pid_t;
-/* end types.h */
+#include <list.h>
+#include <memobj.h>
+#include <arch/shm.h>
 
-typedef uint64_t shmatt_t;
+enum {
+	/* for key_t */
+	IPC_PRIVATE	= 0,
 
-struct ipc_perm {
-	key_t		key;
-	uid_t		uid;
-	gid_t		gid;
-	uid_t		cuid;
-	gid_t		cgid;
-	uint16_t	mode;
-	uint8_t		padding[2];
-	uint16_t	seq;
-	uint8_t		padding2[22];
+	/* for shmflg */
+	IPC_CREAT	= 01000,
+	IPC_EXCL	= 02000,
+
+	SHM_RDONLY	= 010000,
+	SHM_RND		= 020000,
+	SHM_REMAP	= 040000,
+	SHM_EXEC	= 0100000,
+
+	/* for shm_mode */
+	SHM_DEST	= 01000,
+	SHM_LOCKED	= 02000,
+
+	/* for cmd of shmctl() */
+	IPC_RMID	= 0,
+	IPC_SET		= 1,
+	IPC_STAT	= 2,
+	IPC_INFO	= 3,
+
+	SHM_LOCK	= 11,
+	SHM_UNLOCK	= 12,
+	SHM_STAT	= 13,
+	SHM_INFO	= 14,
 };
 
-struct shmid_ds {
-	struct ipc_perm	shm_perm;
-	size_t		shm_segsz;
-	time_t		shm_atime;
-	time_t		shm_dtime;
-	time_t		shm_ctime;
-	pid_t		shm_cpid;
-	pid_t		shm_lpid;
-	shmatt_t	shm_nattch;
-	uint8_t		padding[16];
+struct shmobj {
+	struct memobj		memobj;		/* must be first */
+	int			index;
+	uint8_t			padding[4];
+	size_t			real_segsz;
+	struct shmid_ds		ds;
+	struct list_head	page_list;
+	struct list_head	chain;		/* shmobj_list */
 };
+
+struct shminfo {
+	uint64_t	shmmax;
+	uint64_t	shmmin;
+	uint64_t	shmmni;
+	uint64_t	shmseg;
+	uint64_t	shmall;
+	uint8_t		padding[32];
+};
+
+struct shm_info {
+	int32_t		used_ids;
+	uint8_t		padding[4];
+	uint64_t	shm_tot;
+	uint64_t	shm_rss;
+	uint64_t	shm_swp;
+	uint64_t	swap_attempts;
+	uint64_t	swap_successes;
+};
+
+void shmobj_list_lock(void);
+void shmobj_list_unlock(void);
+int shmobj_create_indexed(struct shmid_ds *ds, struct shmobj **objp);
+void shmobj_destroy(struct shmobj *obj);
 
 #endif /* HEADER_SHM_H */

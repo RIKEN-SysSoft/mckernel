@@ -454,6 +454,15 @@ static int copy_user_ranges(struct process *proc, struct process *org)
 				vaddr += PAGE_SIZE;
 				continue;
 			}
+			if (1) {
+				struct page *page;
+
+				page = phys_to_page(pte_get_phys(ptep));
+				if (page && page_is_in_memobj(page)) {
+					vaddr += PAGE_SIZE;
+					continue;
+				}
+			}
 
 			dkprintf("copy_user_ranges(): 0x%lx PTE found\n", vaddr);
 			
