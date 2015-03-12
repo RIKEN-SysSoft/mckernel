@@ -27,4 +27,10 @@
 #define	MAP_STACK	0x00020000
 #define	MAP_HUGETLB	0x00040000
 
+/*
+ * for mlockall()
+ */
+#define	MCL_CURRENT	0x01
+#define	MCL_FUTURE	0x02
+
 #endif /* HEADER_ARCH_MMAN_H */

@@ -5038,6 +5038,37 @@ out2:
 	return error;
 }
 
+SYSCALL_DECLARE(mlockall)
+{
+	const int flags = ihk_mc_syscall_arg0(ctx);
+	struct process *proc = cpu_local_var(current);
+	uid_t euid = geteuid();
+
+	if (!flags || (flags & ~(MCL_CURRENT|MCL_FUTURE))) {
+		kprintf("mlockall(0x%x):invalid flags: EINVAL\n", flags);
+		return -EINVAL;
+	}
+
+	if (!euid) {
+		kprintf("mlockall(0x%x):priv user: 0\n", flags);
+		return 0;
+	}
+
+	if (proc->rlimit[MCK_RLIMIT_MEMLOCK].rlim_cur != 0) {
+		kprintf("mlockall(0x%x):limits exists: ENOMEM\n", flags);
+		return -ENOMEM;
+	}
+
+	kprintf("mlockall(0x%x):no lock permitted: EPERM\n", flags);
+	return -EPERM;
+} /* sys_mlockall() */
+
+SYSCALL_DECLARE(munlockall)
+{
+	kprintf("munlockall(): 0\n");
+	return 0;
+} /* sys_munlockall() */
+
 SYSCALL_DECLARE(remap_file_pages)
 {
 	const uintptr_t start0 = ihk_mc_syscall_arg0(ctx);
