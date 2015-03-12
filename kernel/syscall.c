@@ -2514,6 +2514,58 @@ SYSCALL_DECLARE(sigaltstack)
 	return 0;
 }
 
+SYSCALL_DECLARE(mincore)
+{
+	const uintptr_t start = ihk_mc_syscall_arg0(ctx);
+	const size_t len = ihk_mc_syscall_arg1(ctx);
+	uint8_t * const vec = (void *)ihk_mc_syscall_arg2(ctx);
+	const uintptr_t end = start + len;
+	struct process *proc = cpu_local_var(current);
+	struct process_vm *vm = proc->vm;
+	void *up;
+	uintptr_t addr;
+	struct vm_range *range;
+	uint8_t value;
+	int error;
+	pte_t *ptep;
+
+	if (start & (PAGE_SIZE - 1)) {
+		kprintf("mincore(0x%lx,0x%lx,%p): EINVAL\n", start, len, vec);
+		return -EINVAL;
+	}
+
+	range = NULL;
+	up = vec;
+	for (addr = start; addr < end; addr += PAGE_SIZE) {
+		ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+		range = lookup_process_memory_range(vm, addr, addr+1);
+		if (!range) {
+			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+			kprintf("mincore(0x%lx,0x%lx,%p):lookup failed. ENOMEM\n", start, len, vec);
+			return -ENOMEM;
+		}
+
+		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
+		ptep = ihk_mc_pt_lookup_pte(vm->page_table, (void *)addr, NULL, NULL, NULL);
+		/*
+		 * XXX: It might be necessary to consider whether this page is COW page or not.
+		 */
+		value = (pte_is_present(ptep))? 1: 0;
+		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+
+		error = copy_to_user(up, &value, sizeof(value));
+		if (error) {
+			kprintf("mincore(0x%lx,0x%lx,%p):copy failed. %d\n", start, len, vec, error);
+			return error;
+		}
+		++up;
+	}
+
+	kprintf("mincore(0x%lx,0x%lx,%p): 0\n", start, len, vec);
+	return 0;
+} /* sys_mincore() */
+
 SYSCALL_DECLARE(madvise)
 {
 	const uintptr_t start = (uintptr_t)ihk_mc_syscall_arg0(ctx);
