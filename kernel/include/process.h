@@ -279,6 +279,9 @@ struct fork_tree_node {
 	int pid;
 	int tid;
 	int pgid;
+	int ruid;
+	int euid;
+	int suid;
 	
 	struct fork_tree_node *parent;
 	struct list_head children;

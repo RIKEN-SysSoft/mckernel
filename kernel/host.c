@@ -349,6 +349,9 @@ static int process_msg_prepare_process(unsigned long rphys)
 	}
 	proc->ftn->pid = pn->pid;
 	proc->ftn->pgid = pn->pgid;
+	proc->ftn->ruid = pn->ruid;
+	proc->ftn->euid = pn->euid;
+	proc->ftn->suid = pn->suid;
 	proc->vm->region.user_start = pn->user_start;
 	proc->vm->region.user_end = pn->user_end;
 	proc->vm->region.map_start = (USER_END / 3) & LARGE_PAGE_MASK;

@@ -106,6 +106,10 @@ void init_fork_tree_node(struct fork_tree_node *ftn,
 	ftn->parent = NULL;
 	if (parent) {
 		ftn->parent = parent;
+		ftn->pgid = parent->pgid;
+		ftn->ruid = parent->ruid;
+		ftn->euid = parent->euid;
+		ftn->suid = parent->suid;
 	}
 	INIT_LIST_HEAD(&ftn->children);
 	INIT_LIST_HEAD(&ftn->siblings_list);

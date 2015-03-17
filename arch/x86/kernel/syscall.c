@@ -932,6 +932,17 @@ do_kill(int pid, int tid, int sig, siginfo_t *info, int ptracecont)
 		return 0;
 	}
 
+	if(sig != SIGCONT &&
+	   proc->ftn->euid != 0 &&
+	   proc->ftn->ruid != tproc->ftn->ruid &&
+	   proc->ftn->euid != tproc->ftn->ruid &&
+	   proc->ftn->ruid != tproc->ftn->suid &&
+	   proc->ftn->euid != tproc->ftn->suid){
+		ihk_mc_spinlock_unlock_noirq(savelock);
+		cpu_restore_interrupt(irqstate);
+		return -EPERM;
+	}
+
 	doint = 0;
 	if(tid == -1){
 		ihk_mc_spinlock_lock_noirq(&tproc->sigshared->lock);

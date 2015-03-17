@@ -150,6 +150,9 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	int load_addr_set = 0;
 	static char interp_path[PATH_MAX];
 	ssize_t ss;
+	uid_t ruid;
+	uid_t euid;
+	uid_t suid;
 
 	*interp_pathp = NULL;
 
@@ -233,6 +236,10 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	}
 	desc->pid = getpid();
 	desc->pgid = getpgid(0);
+	getresuid(&ruid, &euid, &suid);
+	desc->ruid = ruid;
+	desc->euid = euid;
+	desc->suid = suid;
 	desc->entry = hdr.e_entry;
 
 	desc->at_phdr = load_addr + hdr.e_phoff;

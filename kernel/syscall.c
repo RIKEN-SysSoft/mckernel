@@ -104,6 +104,7 @@ int copy_to_user(void *, const void *, size_t);
 int patch_process_vm(struct process_vm *, void *, const void *, size_t);
 void do_setpgid(int, int);
 extern long alloc_debugreg(struct process *proc);
+extern int num_processors;
 
 int prepare_process_ranges_args_envs(struct process *proc, 
 		struct program_load_desc *pn,
@@ -1871,8 +1872,6 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		return -ENOMEM;
 	}
 
-	new->ftn->pgid = cpu_local_var(current)->ftn->pgid;
-
 	cpu_set(cpuid, &new->vm->cpu_set, &new->vm->cpu_set_lock);
 
 	if (clone_flags & CLONE_VM) {
@@ -2032,6 +2031,91 @@ SYSCALL_DECLARE(tgkill)
 		return -EINVAL;
 
 	return do_kill(tgid, tid, sig, &info, 0);
+}
+
+void
+do_setresuid(int ruid, int euid, int suid)
+{
+	struct process *proc = cpu_local_var(current);
+	int pid = proc->ftn->pid;
+	struct cpu_local_var *v;
+	struct process *p;
+	int i;
+	unsigned long irqstate;
+
+	for(i = 0; i < num_processors; i++){
+		v = get_cpu_local_var(i);
+		irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
+		list_for_each_entry(p, &(v->runq), sched_list){
+			if(p->ftn->pid == pid){
+				if(ruid != -1)
+					p->ftn->ruid = ruid;
+				if(euid != -1)
+					p->ftn->euid = euid;
+				if(suid != -1)
+					p->ftn->suid = suid;
+			}
+		}
+		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+	}
+}
+
+SYSCALL_DECLARE(setresuid)
+{
+	int ruid = ihk_mc_syscall_arg0(ctx);
+	int euid = ihk_mc_syscall_arg1(ctx);
+	int suid = ihk_mc_syscall_arg2(ctx);
+	int rc;
+
+	rc = syscall_generic_forwarding(__NR_setresuid, ctx);
+	if(rc == 0){
+		do_setresuid(ruid, euid, suid);
+	}
+	return rc;
+}
+
+SYSCALL_DECLARE(setreuid)
+{
+	int ruid = ihk_mc_syscall_arg0(ctx);
+	int euid = ihk_mc_syscall_arg1(ctx);
+	int suid = -1;
+	int rc;
+	struct process *proc = cpu_local_var(current);
+//	int euid_bak = proc->ftn->euid;
+	int ruid_bak = proc->ftn->ruid;
+
+	rc = syscall_generic_forwarding(__NR_setreuid, ctx);
+	if(rc == 0){
+		if(euid != -1){
+			if(euid != ruid_bak){
+				suid = euid;
+			}
+		}
+		else if(ruid != -1){
+		}
+		do_setresuid(ruid, euid, suid);
+	}
+	return rc;
+}
+
+SYSCALL_DECLARE(setuid)
+{
+	int euid = ihk_mc_syscall_arg0(ctx);
+	int ruid = -1;
+	int suid = -1;
+	long rc;
+	struct process *proc = cpu_local_var(current);
+	int euid_bak = proc->ftn->euid;
+
+	rc = syscall_generic_forwarding(__NR_setuid, ctx);
+	if(rc == 0){
+		if(euid_bak == 0){
+			ruid = euid;
+			suid = euid;
+		}
+		do_setresuid(ruid, euid, suid);
+	}
+	return rc;
 }
 
 SYSCALL_DECLARE(setpgid)
