@@ -926,11 +926,6 @@ do_kill(int pid, int tid, int sig, siginfo_t *info, int ptracecont)
 		cpu_restore_interrupt(irqstate);
 		return -ESRCH;
 	}
-	if(sig == 0){
-		ihk_mc_spinlock_unlock_noirq(savelock);
-		cpu_restore_interrupt(irqstate);
-		return 0;
-	}
 
 	if(sig != SIGCONT &&
 	   proc->ftn->euid != 0 &&
@@ -941,6 +936,12 @@ do_kill(int pid, int tid, int sig, siginfo_t *info, int ptracecont)
 		ihk_mc_spinlock_unlock_noirq(savelock);
 		cpu_restore_interrupt(irqstate);
 		return -EPERM;
+	}
+
+	if(sig == 0){
+		ihk_mc_spinlock_unlock_noirq(savelock);
+		cpu_restore_interrupt(irqstate);
+		return 0;
 	}
 
 	doint = 0;
