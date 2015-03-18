@@ -2163,7 +2163,7 @@ do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
 {
 	struct process *proc = cpu_local_var(current);
 	struct k_sigaction *k;
-	int	irqstate;
+	long	irqstate;
 	ihk_mc_user_context_t ctx0;
 
 	irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
@@ -2181,6 +2181,39 @@ do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
 		syscall_generic_forwarding(__NR_rt_sigaction, &ctx0);
 	}
 	return 0;
+}
+
+SYSCALL_DECLARE(close)
+{
+	int fd = ihk_mc_syscall_arg0(ctx);
+	int rc;
+	struct process *proc = cpu_local_var(current);
+	struct sigfd *sfd;
+	struct sigfd *sb;
+	long	irqstate;
+
+	irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
+	for(sfd = proc->sighandler->sigfd, sb = NULL; sfd; sb = sfd, sfd = sfd->next)
+		if(sfd->fd == fd)
+			break;
+	if(sfd){
+		struct syscall_request request IHK_DMA_ALIGN;
+		if(sb)
+			sb->next = sfd->next;
+		else
+			proc->sighandler->sigfd = sfd->next;
+		ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
+		request.number = __NR_signalfd4;
+		request.args[0] = 1;
+		request.args[1] = sfd->fd;
+		kfree(sfd);
+		rc = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+	}
+	else{
+		ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
+		rc = syscall_generic_forwarding(__NR_close, ctx);
+	}
+	return rc;
 }
 
 SYSCALL_DECLARE(rt_sigprocmask)
@@ -2278,7 +2311,53 @@ SYSCALL_DECLARE(signalfd)
 
 SYSCALL_DECLARE(signalfd4)
 {
-	return -EOPNOTSUPP;
+	int fd = ihk_mc_syscall_arg0(ctx);
+	struct process *proc = cpu_local_var(current);
+	struct sigfd *sfd;
+	long    irqstate;
+	sigset_t *maskp = (sigset_t *)ihk_mc_syscall_arg1(ctx);;
+	__sigset_t mask;
+	size_t sigsetsize = (size_t)ihk_mc_syscall_arg2(ctx);
+	int flags = ihk_mc_syscall_arg3(ctx);
+
+	if(sigsetsize != sizeof(sigset_t))
+		return -EINVAL;
+	if(copy_from_user(&mask, maskp, sizeof mask))
+		return -EFAULT;
+	if(flags & ~(SFD_NONBLOCK | SFD_CLOEXEC))
+		return -EINVAL;
+
+	irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
+	if(fd == -1){
+		struct syscall_request request IHK_DMA_ALIGN;
+		ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
+		request.number = __NR_signalfd4;
+		request.args[0] = 0;
+		request.args[1] = flags;
+		fd = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+		if(fd < 0){
+			return fd;
+		}
+		sfd = kmalloc(sizeof(struct sigfd), IHK_MC_AP_NOWAIT);
+		if(!sfd)
+			return -ENOMEM;
+		sfd->fd = fd;
+		irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
+		sfd->next = proc->sighandler->sigfd;
+		proc->sighandler->sigfd = sfd;
+	}
+	else{
+		for(sfd = proc->sighandler->sigfd; sfd; sfd = sfd->next)
+			if(sfd->fd == fd)
+				break;
+		if(!sfd){
+			ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
+			return -EINVAL;
+		}
+	}
+	memcpy(&sfd->mask, &mask, sizeof mask);
+	ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
+	return sfd->fd;
 }
 
 SYSCALL_DECLARE(rt_sigtimedwait)

@@ -57,6 +57,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <signal.h>
+#include <sys/signalfd.h>
 #include "../include/uprotocol.h"
 
 //#define DEBUG
@@ -97,6 +98,13 @@ char **__glob_argv = 0;
 typedef unsigned char   cc_t;
 typedef unsigned int    speed_t;
 typedef unsigned int    tcflag_t;
+
+struct sigfd {
+	struct sigfd *next;
+	int sigpipe[2];
+};
+
+struct sigfd *sigfdtop;
 
 #ifdef NCCS
 #undef NCCS
@@ -885,6 +893,64 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 		close(fd);
 		exit(1);
 	}
+}
+
+long
+act_signalfd4(struct syscall_wait_desc *w)
+{
+	struct sigfd *sfd;
+	struct sigfd *sb;
+	int mode = w->sr.args[0];
+	int flags;
+	int tmp;
+	int rc = 0;
+	struct signalfd_siginfo *info;
+
+	switch(mode){
+	    case 0: /* new signalfd */
+		sfd = malloc(sizeof(struct sigfd));
+		tmp = w->sr.args[1];
+		flags = 0;
+		if(tmp & SFD_NONBLOCK)
+			flags |= O_NONBLOCK;
+		if(tmp & SFD_CLOEXEC)
+			flags |= O_CLOEXEC;
+		pipe2(sfd->sigpipe, flags);
+		sfd->next = sigfdtop;
+		sigfdtop = sfd;
+		rc = sfd->sigpipe[0];
+		break;
+	    case 1: /* close signalfd */
+		tmp = w->sr.args[1];
+		for(sfd = sigfdtop, sb = NULL; sfd; sb = sfd, sfd = sfd->next)
+			if(sfd->sigpipe[0] == tmp)
+				break;
+		if(!sfd)
+			rc = -EBADF;
+		else{
+			if(sb)
+				sb->next = sfd->next;
+			else
+				sigfdtop = sfd->next;
+			close(sfd->sigpipe[0]);
+			close(sfd->sigpipe[1]);
+			free(sfd);
+		}
+		break;
+	    case 2: /* push signal */
+		tmp = w->sr.args[1];
+		for(sfd = sigfdtop; sfd; sfd = sfd->next)
+			if(sfd->sigpipe[0] == tmp)
+				break;
+		if(!sfd)
+			rc = -EBADF;
+		else{
+			info = (struct signalfd_siginfo *)w->sr.args[2];
+			write(sfd->sigpipe[1], info, sizeof(struct signalfd_siginfo));
+		}
+		break;
+	}
+	return rc;
 }
 
 void
@@ -1954,6 +2020,11 @@ return_execve2:
 
 			break;
 		}
+
+		case __NR_signalfd4:
+			ret = act_signalfd4(&w);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
 
 		case __NR_rt_sigaction:
 			act_sigaction(&w);

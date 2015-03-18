@@ -244,9 +244,18 @@ struct vm_regions {
 
 struct process_vm;
 
+struct sigfd {
+	struct sigfd *next;
+	int fd;
+	__sigset_t mask;
+};
+#define SFD_CLOEXEC 02000000
+#define SFD_NONBLOCK 04000
+
 struct sig_handler {
 	ihk_spinlock_t	lock;
 	ihk_atomic_t	use;
+	struct sigfd *sigfd;
 	struct k_sigaction action[_NSIG];
 };
 
