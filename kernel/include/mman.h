@@ -5,6 +5,8 @@
  *  memory management declarations
  * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
  * 	Copyright (C) 2013  Hitachi, Ltd.
+ * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
+ * 	Copyright (C) 2015  RIKEN AICS
  */
 /*
  * HISTORY:
@@ -12,6 +14,8 @@
 
 #ifndef HEADER_MMAN_H
 #define HEADER_MMAN_H
+
+#include <arch/mman.h>
 
 /*
  * memory protection
@@ -32,16 +36,6 @@
 #define	MAP_PRIVATE	0x02
 #define	MAP_FIXED	0x10
 #define	MAP_ANONYMOUS	0x20
-#define	MAP_32BIT	0x40
-#define	MAP_GROWSDOWN	0x0100
-#define	MAP_DENYWRITE	0x0800
-#define	MAP_EXECUTABLE	0x1000
-#define	MAP_LOCKED	0x2000
-#define	MAP_NORESERVE	0x4000
-#define	MAP_POPULATE	0x8000
-#define	MAP_NONBLOCK	0x00010000
-#define	MAP_STACK	0x00020000
-#define	MAP_HUGETLB	0x00040000
 
 /*
  * memory advice
