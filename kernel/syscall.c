@@ -1607,7 +1607,7 @@ static int ptrace_report_clone(struct process *proc, struct process *new, int ev
 	proc->ftn->exit_status = (SIGTRAP | (event << 8));
 	/* Transition process state */
 	proc->ftn->status = PS_TRACED;
-	proc->ftn->ptrace_eventmsg = new->ftn->pid;
+	proc->ftn->ptrace_eventmsg = new->ftn->tid;
 	proc->ftn->ptrace &= ~PT_TRACE_SYSCALL_MASK;
 	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
 
@@ -3505,7 +3505,7 @@ static int ptrace_wakeup_sig(int pid, long request, long data) {
 	unsigned long irqstate;
 	struct siginfo info;
 
-	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
 	if (!child) {
 		error = -ESRCH;
 		goto out;
@@ -3582,7 +3582,7 @@ static long ptrace_pokeuser(int pid, long addr, long data)
 
 	if(addr > sizeof(struct user) - 8 || addr < 0)
 		return -EFAULT;
-	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
 	if (!child)
 		return -ESRCH;
 	if(child->ftn->status == PS_TRACED){
@@ -3603,7 +3603,7 @@ static long ptrace_peekuser(int pid, long addr, long data)
 
 	if(addr > sizeof(struct user) - 8|| addr < 0)
 		return -EFAULT;
-	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
 	if (!child)
 		return -ESRCH;
 	if(child->ftn->status == PS_TRACED){
@@ -3626,7 +3626,7 @@ static long ptrace_getregs(int pid, long data)
 	ihk_spinlock_t *savelock;
 	unsigned long irqstate;
 
-	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
 	if (!child)
 		return -ESRCH;
 	if(child->ftn->status == PS_TRACED){
@@ -3657,7 +3657,7 @@ static long ptrace_setregs(int pid, long data)
 	ihk_spinlock_t *savelock;
 	unsigned long irqstate;
 
-	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
 	if (!child)
 		return -ESRCH;
 	if(child->ftn->status == PS_TRACED){
@@ -3688,7 +3688,7 @@ static long ptrace_arch_prctl(int pid, long code, long addr)
 	ihk_spinlock_t *savelock;
 	unsigned long irqstate;
 
-	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
 	if (!child)
 		return -ESRCH;
 	if (child->ftn->status == PS_TRACED) {
@@ -3745,7 +3745,7 @@ static long ptrace_getfpregs(int pid, long data)
 	ihk_spinlock_t *savelock;
 	unsigned long irqstate;
 
-	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
 	if (!child)
 		return -ESRCH;
 	if (child->ftn->status == PS_TRACED) {
@@ -3763,7 +3763,7 @@ static long ptrace_setfpregs(int pid, long data)
 	ihk_spinlock_t *savelock;
 	unsigned long irqstate;
 
-	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
 	if (!child)
 		return -ESRCH;
 	if (child->ftn->status == PS_TRACED) {
@@ -3784,7 +3784,7 @@ static long ptrace_getregset(int pid, long type, long data)
 	ihk_spinlock_t *savelock;
 	unsigned long irqstate;
 
-	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
 	if (!child)
 		return -ESRCH;
 	if (child->ftn->status == PS_TRACED) {
@@ -3811,7 +3811,7 @@ static long ptrace_setregset(int pid, long type, long data)
 	ihk_spinlock_t *savelock;
 	unsigned long irqstate;
 
-	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
 	if (!child)
 		return -ESRCH;
 	if (child->ftn->status == PS_TRACED) {
@@ -3839,7 +3839,7 @@ static long ptrace_peektext(int pid, long addr, long data)
 	unsigned long irqstate;
 	unsigned long *p = (unsigned long *)data;
 
-	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
 	if (!child)
 		return -ESRCH;
 	if(child->ftn->status == PS_TRACED){
@@ -3863,7 +3863,7 @@ static long ptrace_poketext(int pid, long addr, long data)
 	ihk_spinlock_t *savelock;
 	unsigned long irqstate;
 
-	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
 	if (!child)
 		return -ESRCH;
 	if(child->ftn->status == PS_TRACED){
@@ -3904,7 +3904,7 @@ static int ptrace_setoptions(int pid, int flags)
 		goto out;
 	}
 
-	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
 	if (!child || !child->ftn || !(child->ftn->ptrace & PT_TRACED)) {
 		ret = -ESRCH;
 		goto unlockout;
@@ -3929,7 +3929,7 @@ static int ptrace_attach(int pid)
 	unsigned long irqstate;
 	struct siginfo info;
 
-	proc = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	proc = findthread_and_lock(pid, pid, &savelock, &irqstate);
 	if (!proc) {
 		error = -ESRCH;
 		goto out;
@@ -4012,7 +4012,7 @@ static int ptrace_detach(int pid, int data)
 	unsigned long irqstate;
 	struct siginfo info;
 
-	proc = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	proc = findthread_and_lock(pid, pid, &savelock, &irqstate);
 	if (!proc) {
 		error = -ESRCH;
 		goto out;
@@ -4139,7 +4139,7 @@ static long ptrace_geteventmsg(int pid, long data)
 	ihk_spinlock_t *savelock;
 	unsigned long irqstate;
 
-	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
 	if (!child) {
 		return -ESRCH;
 	}
@@ -4163,7 +4163,7 @@ ptrace_getsiginfo(int pid, siginfo_t *data)
 	struct process *child;
 	int rc = 0;
 
-	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
 	if (!child) {
 		return -ESRCH;
 	}
@@ -4192,7 +4192,7 @@ ptrace_setsiginfo(int pid, siginfo_t *data)
 	int rc = 0;
 
 kprintf("ptrace_setsiginfo: sig=%d errno=%d code=%d\n", data->si_signo, data->si_errno, data->si_code);
-	child = findthread_and_lock(pid, -1, &savelock, &irqstate);
+	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
 	if (!child) {
 		return -ESRCH;
 	}
