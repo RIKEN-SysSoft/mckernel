@@ -403,7 +403,7 @@ long ptrace_read_regset(struct process *proc, long type, struct iovec *iov)
 		if (iov->iov_len > sizeof(fp_regs_struct)) {
 			iov->iov_len = sizeof(fp_regs_struct);
 		}
-		rc = copy_to_user(&iov->iov_base, proc->fp_regs, iov->iov_len);
+		rc = copy_to_user(iov->iov_base, proc->fp_regs, iov->iov_len);
 		break;
 	default:
 		kprintf("ptrace_read_regset: not supported type 0x%x\n", type);
@@ -425,7 +425,7 @@ long ptrace_write_regset(struct process *proc, long type, struct iovec *iov)
 		if (iov->iov_len > sizeof(fp_regs_struct)) {
 			iov->iov_len = sizeof(fp_regs_struct);
 		}
-		rc = copy_from_user(proc->fp_regs, &iov->iov_base, iov->iov_len);
+		rc = copy_from_user(proc->fp_regs, iov->iov_base, iov->iov_len);
 		break;
 	default:
 		kprintf("ptrace_write_regset: not supported type 0x%x\n", type);
