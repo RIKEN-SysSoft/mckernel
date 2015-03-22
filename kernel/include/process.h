@@ -431,6 +431,7 @@ struct process_vm {
 
 	cpu_set_t cpu_set;
 	ihk_spinlock_t cpu_set_lock;
+	int exiting;
 };
 
 

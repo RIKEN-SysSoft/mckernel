@@ -3604,8 +3604,9 @@ SYSCALL_DECLARE(exit)
 	
 	proc->ftn->status = PS_ZOMBIE;
 	
+	release_fork_tree_node(proc->ftn->parent);
 	release_fork_tree_node(proc->ftn);
-	release_process(proc);
+	//release_process(proc);
 
 	schedule();
 	

@@ -370,9 +370,24 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 	dkprintf("[%d]page_fault_handler(%p,%lx,%p)\n",
 			ihk_mc_get_processor_id(), fault_addr, reason, regs);
 
+	cpu_enable_interrupt();
+
 	error = page_fault_process_vm(proc->vm, fault_addr, reason);
 	if (error) {
 		struct siginfo info;
+
+		if (error == -ECANCELED) {
+			kprintf("process is exiting, terminate.\n");
+
+			ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
+			proc->ftn->status = PS_ZOMBIE;
+			ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
+			release_fork_tree_node(proc->ftn->parent);
+			release_fork_tree_node(proc->ftn);
+			//release_process(proc);
+
+			schedule();
+		}
 
 		kprintf("[%d]page_fault_handler(%p,%lx,%p):"
 				"fault vm failed. %d\n",

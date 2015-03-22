@@ -137,7 +137,8 @@ static int init_process_vm(struct process *owner, struct process_vm *vm)
 	vm->owner_process = owner;
 	memset(&vm->cpu_set, 0, sizeof(cpu_set_t));
 	ihk_mc_spinlock_init(&vm->cpu_set_lock);
-	
+	vm->exiting = 0;
+
 	return 0;
 }
 
@@ -1526,6 +1527,11 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 
 	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 
+	if (vm->exiting) {
+		error = -ECANCELED;
+		goto out;
+	}
+
 	range = lookup_process_memory_range(vm, fault_addr, fault_addr+1);
 	if (range == NULL) {
 		error = -EFAULT;
@@ -1854,6 +1860,8 @@ void flush_process_memory(struct process *proc)
 
 	dkprintf("flush_process_memory(%p)\n", proc);
 	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	/* Let concurrent page faults know the VM will be gone */
+	vm->exiting = 1;
 	list_for_each_entry_safe(range, next, &vm->vm_range_list, list) {
 		if (range->memobj) {
 			// XXX: temporary of temporary
