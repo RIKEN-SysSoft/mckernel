@@ -5539,6 +5539,223 @@ SYSCALL_DECLARE(move_pages)
 	return -ENOSYS;
 } /* sys_move_pages() */
 
+#define PROCESS_VM_READ		0
+#define PROCESS_VM_WRITE	1
+
+static int do_process_vm_read_writev(int pid, 
+		const struct iovec *local_iov,
+		unsigned long liovcnt,
+		const struct iovec *remote_iov,
+		unsigned long riovcnt,
+		unsigned long flags,
+		int op)
+{
+	int ret = -EINVAL;	
+	int li, ri, i;
+	int pli, pri;
+	off_t loff, roff;
+	size_t llen = 0, rlen = 0;
+	size_t copied = 0;
+	size_t to_copy;
+	struct process *lproc = cpu_local_var(current);
+	struct process *rproc, *p;
+	unsigned long rphys;
+	unsigned long rpage_left;
+	void *rva;
+
+	/* Sanity checks */
+	if (flags) {
+		return -EINVAL;
+	}
+	
+	/* TODO: IOV_MAX and PTRACE_ATTACH permission checks.. */	
+
+	for (li = 0; li < liovcnt; ++li) {
+		llen += local_iov[li].iov_len;
+		dkprintf("local_iov[%d].iov_base: 0x%lx, len: %lu\n",
+			li, local_iov[li].iov_base, local_iov[li].iov_len);
+	}
+
+	for (ri = 0; ri < riovcnt; ++ri) {
+		rlen += remote_iov[ri].iov_len;
+		dkprintf("remote_iov[%d].iov_base: 0x%lx, len: %lu\n",
+			ri, remote_iov[ri].iov_base, remote_iov[ri].iov_len);
+	}
+
+	if (llen != rlen) {
+		return -EINVAL;
+	}
+	
+	/* Find remote process 
+	 * XXX: are we going to have a hash table/function for this?? */
+	rproc = NULL;
+	for (i = 0; i < num_processors; i++) {
+		struct cpu_local_var *v = get_cpu_local_var(i);
+		
+		ihk_mc_spinlock_lock_noirq(&(v->runq_lock));
+		list_for_each_entry(p, &(v->runq), sched_list) {
+			if (p->ftn->pid == pid) {
+				rproc = p;
+				break;
+			}
+		}
+		ihk_mc_spinlock_unlock_noirq(&(v->runq_lock));
+
+		if (rproc)
+			break;
+	}
+
+	if (!rproc) {
+		ret = -ESRCH;
+		goto out;
+	}
+	
+	dkprintf("pid %d found, doing %s \n", pid, 
+		(op == PROCESS_VM_READ) ? "PROCESS_VM_READ" : "PROCESS_VM_WRITE");
+	
+	pli = pri = -1; /* Previous indeces in iovecs */
+	li = ri = 0; /* Current indeces in iovecs */
+	loff = roff = 0; /* Offsets in current iovec */
+
+	/* Now iterate and do the copy */
+	while (copied < llen) {
+		
+		/* New local vector? */
+		if (pli != li) {
+			struct vm_range *range;
+			
+			ihk_mc_spinlock_lock_noirq(&lproc->vm->memory_range_lock);
+			
+			range = lookup_process_memory_range(lproc->vm, 
+					(uintptr_t)local_iov[li].iov_base, 
+					(uintptr_t)(local_iov[li].iov_base + local_iov[li].iov_len));
+			
+			if (range == NULL) {
+				ret = -EINVAL; 
+				goto pli_out;
+			}
+
+			if (!(range->flag & ((op == PROCESS_VM_READ) ? 
+				VR_PROT_WRITE : VR_PROT_READ))) {
+				ret = -EPERM;
+				goto pli_out;
+			}
+
+			ret = 0;
+pli_out:
+			ihk_mc_spinlock_unlock_noirq(&lproc->vm->memory_range_lock);
+
+			if (ret != 0) {
+				goto out;
+			}
+
+			pli = li;
+		}
+
+		/* New remote vector? */
+		if (pri != ri) {
+			uint64_t reason = PF_POPULATE | PF_WRITE | PF_USER;
+			void *addr;
+
+			for (addr = (void *)
+					((unsigned long)remote_iov[ri].iov_base & PAGE_MASK); 
+					addr < (remote_iov[ri].iov_base + remote_iov[ri].iov_len); 
+					addr += PAGE_SIZE) {
+
+				ret = page_fault_process_vm(rproc->vm, addr, reason);
+				if (ret) {
+					ret = -EINVAL;
+					goto out;
+				}
+			}
+
+			pri = ri;
+		}
+		
+		/* Figure out how much we can copy at most in this iteration */
+		to_copy = (local_iov[li].iov_len - loff);	
+		if ((remote_iov[ri].iov_len - roff) < to_copy) {
+			to_copy = remote_iov[ri].iov_len - roff;
+		}
+
+		rpage_left = ((((unsigned long)remote_iov[ri].iov_base + roff + 
+			PAGE_SIZE) & PAGE_MASK) - 
+			((unsigned long)remote_iov[ri].iov_base + roff));
+		if (rpage_left < to_copy) {	
+			to_copy = rpage_left;
+		}
+
+		/* TODO: remember page and do this only if necessary */
+		ret = ihk_mc_pt_virt_to_phys(rproc->vm->page_table, 
+				remote_iov[ri].iov_base + roff, &rphys);
+
+		if (ret) {
+			ret = -EINVAL;
+			goto out;
+		}
+		
+		rva = phys_to_virt(rphys);
+		
+		memcpy((op == PROCESS_VM_READ) ? local_iov[li].iov_base + loff : rva,
+			(op == PROCESS_VM_READ) ? rva : local_iov[li].iov_base + loff,
+			to_copy);
+
+		copied += to_copy;
+		dkprintf("local_iov[%d]: 0x%lx %s remote_iov[%d]: 0x%lx, %lu copied\n",
+			li, local_iov[li].iov_base + loff, 
+			(op == PROCESS_VM_READ) ? "<-" : "->", 
+			ri, remote_iov[ri].iov_base + roff, to_copy);
+
+		loff += to_copy;
+		roff += to_copy;
+
+		if (loff == local_iov[li].iov_len) {
+			li++;
+			loff = 0;
+		}
+		
+		if (roff == remote_iov[ri].iov_len) {
+			ri++;
+			roff = 0;
+		}
+	}
+
+	return copied;
+
+out:
+	return ret;
+}
+
+SYSCALL_DECLARE(process_vm_writev)
+{
+	int pid = ihk_mc_syscall_arg0(ctx);
+	const struct iovec *local_iov = 
+		(const struct iovec *)ihk_mc_syscall_arg1(ctx);
+	unsigned long liovcnt = ihk_mc_syscall_arg2(ctx);
+	const struct iovec *remote_iov = 
+		(const struct iovec *)ihk_mc_syscall_arg3(ctx);
+	unsigned long riovcnt = ihk_mc_syscall_arg4(ctx);
+	unsigned long flags = ihk_mc_syscall_arg5(ctx);
+
+	return do_process_vm_read_writev(pid, local_iov, liovcnt,
+		remote_iov, riovcnt, flags, PROCESS_VM_WRITE);
+}
+
+SYSCALL_DECLARE(process_vm_readv)
+{
+	int pid = ihk_mc_syscall_arg0(ctx);
+	const struct iovec *local_iov = 
+		(const struct iovec *)ihk_mc_syscall_arg1(ctx);
+	unsigned long liovcnt = ihk_mc_syscall_arg2(ctx);
+	const struct iovec *remote_iov = 
+		(const struct iovec *)ihk_mc_syscall_arg3(ctx);
+	unsigned long riovcnt = ihk_mc_syscall_arg4(ctx);
+	unsigned long flags = ihk_mc_syscall_arg5(ctx);
+
+	return do_process_vm_read_writev(pid, local_iov, liovcnt,
+		remote_iov, riovcnt, flags, PROCESS_VM_READ);
+}
+
 #ifdef DCFA_KMOD
 
 #ifdef CMD_DCFA

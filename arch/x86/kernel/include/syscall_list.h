@@ -115,6 +115,8 @@ SYSCALL_HANDLED(289, signalfd4)
 SYSCALL_HANDLED(303, mod_call)
 #endif
 SYSCALL_HANDLED(309, getcpu)
+SYSCALL_HANDLED(310, process_vm_readv)
+SYSCALL_HANDLED(311, process_vm_writev)
 SYSCALL_HANDLED(601, pmc_init)
 SYSCALL_HANDLED(602, pmc_start)
 SYSCALL_HANDLED(603, pmc_stop)
