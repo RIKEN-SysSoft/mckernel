@@ -446,6 +446,10 @@ static void init_smp_processor(void)
 
 static char *trampoline_va, *first_page_va;
 
+/*@
+  @ assigns torampoline_va;
+  @ assigns first_page_va;
+  @*/
 void ihk_mc_init_ap(void)
 {
 	struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
@@ -791,31 +795,65 @@ void cpu_halt(void)
 	asm volatile("hlt");
 }
 
+/*@
+  @ assigns \nothing;
+  @ ensures \interrupt_disabled == 0;
+  @*/
 void cpu_safe_halt(void)
 {
     asm volatile("sti; hlt");
 }
 
+/*@
+  @ assigns \nothing;
+  @ ensures \interrupt_disabled == 0;
+  @*/
 void cpu_enable_interrupt(void)
 {
 	asm volatile("sti");
 }
 
+/*@
+  @ assigns \nothing;
+  @ ensures \interrupt_disabled > 0;
+  @*/
 void cpu_disable_interrupt(void)
 {
 	asm volatile("cli");
 }
 
+/*@
+  @ assigns \nothing;
+  @ behavior to_enabled:
+  @   assumes flags & RFLAGS_IF;
+  @   ensures \interrupt_disabled == 0;
+  @ behavior to_disabled:
+  @   assumes !(flags & RFLAGS_IF);
+  @   ensures \interrupt_disabled > 0;
+  @*/
 void cpu_restore_interrupt(unsigned long flags)
 {
 	asm volatile("push %0; popf" : : "g"(flags) : "memory", "cc");
 }
 
+/*@
+  @ assigns \nothing;
+  @*/
 void cpu_pause(void)
 {
 	asm volatile("pause" ::: "memory");
 }
 
+/*@
+  @ assigns \nothing;
+  @ ensures \interrupt_disabled > 0;
+  @ behavior from_enabled:
+  @   assumes \interrupt_disabled == 0;
+  @   ensures \result & RFLAGS_IF;
+  @ behavior from_disabled:
+  @   assumes \interrupt_disabled > 0;
+  @   ensures !(\result & RFLAGS_IF);
+  @*/
 unsigned long cpu_disable_interrupt_save(void)
 {
 	unsigned long flags;
@@ -825,6 +863,17 @@ unsigned long cpu_disable_interrupt_save(void)
 	return flags;
 }
 
+/*@
+  @ behavior valid_vector:
+  @   assumes 32 <= vector <= 255;
+  @   requires \valid(h);
+  @   assigns handlers[vector-32];
+  @   ensures \result == 0;
+  @ behavior invalid_vector:
+  @   assumes (vector < 32) || (255 < vector);
+  @   assigns \nothing;
+  @   ensures \result == -EINVAL;
+  @*/
 int ihk_mc_register_interrupt_handler(int vector,
                                       struct ihk_mc_interrupt_handler *h)
 {
@@ -846,6 +895,11 @@ int ihk_mc_unregister_interrupt_handler(int vector,
 
 extern unsigned long __page_fault_handler_address;
 
+/*@
+  @ requires \valid(h);
+  @ assigns __page_fault_handler_address;
+  @ ensures __page_fault_handler_address == h;
+  @*/
 void ihk_mc_set_page_fault_handler(void (*h)(void *, uint64_t, void *))
 {
 	__page_fault_handler_address = (unsigned long)h;
@@ -855,6 +909,18 @@ extern char trampoline_code_data[], trampoline_code_data_end[];
 struct page_table *get_init_page_table(void);
 unsigned long get_transit_page_table(void);
 
+/* reusable, but not reentrant */
+/*@
+  @ requires \valid_apicid(cpuid);	// valid APIC ID or not
+  @ requires \valid(pc);
+  @ requires \valid(trampoline_va);
+  @ requires \valid(trampoline_code_data
+  @		+(0..(trampoline_code_data_end - trampoline_code_data)));
+  @ requires \valid_physical(ap_trampoline);	// valid physical address or not
+  @ assigns (char *)trampoline_va+(0..trampoline_code_data_end - trampoline_code_data);
+  @ assigns cpu_boot_status;
+  @ ensures cpu_boot_status != 0;
+  @*/
 void ihk_mc_boot_cpu(int cpuid, unsigned long pc)
 {
 	unsigned long *p;
@@ -882,6 +948,11 @@ void ihk_mc_boot_cpu(int cpuid, unsigned long pc)
 	}
 }
 
+/*@
+  @ requires \valid(new_ctx);
+  @ requires (stack_pointer == NULL) || \valid((unsigned long *)stack_pointer-1);
+  @ requires \valid(next_function);
+  @*/
 void ihk_mc_init_context(ihk_mc_kernel_context_t *new_ctx,
                          void *stack_pointer, void (*next_function)(void))
 {
@@ -901,6 +972,15 @@ void ihk_mc_init_context(ihk_mc_kernel_context_t *new_ctx,
 
 extern char enter_user_mode[];
                                        
+/*@
+  @ requires \valid(ctx);
+  @ requires \valid(puctx);
+  @ requires \valid((ihk_mc_user_context_t *)stack_pointer-1);
+  @ requires \valid_user(new_pc);	// valid user space address or not
+  @ requires \valid_user(user_sp-1);
+  @ assigns *((ihk_mc_user_context_t *)stack_pointer-1);
+  @ assigns ctx->rsp0;
+  @*/
 void ihk_mc_init_user_process(ihk_mc_kernel_context_t *ctx,
                               ihk_mc_user_context_t **puctx,
                               void *stack_pointer, unsigned long new_pc,
@@ -927,6 +1007,18 @@ void ihk_mc_init_user_process(ihk_mc_kernel_context_t *ctx,
 	ctx->rsp0 = (unsigned long)stack_pointer;
 }
 
+/*@
+  @ behavior rsp:
+  @   assumes reg == IHK_UCR_STACK_POINTER;
+  @   requires \valid(uctx);
+  @   assigns uctx->gpr.rsp;
+  @   ensures uctx->gpr.rsp == value;
+  @ behavior rip:
+  @   assumes reg == IHK_UCR_PROGRAM_COUNTER;
+  @   requires \valid(uctx);
+  @   assigns uctx->gpr.rip;
+  @   ensures uctx->gpr.rip == value;
+  @*/
 void ihk_mc_modify_user_context(ihk_mc_user_context_t *uctx,
                                 enum ihk_mc_user_context_regtype reg,
                                 unsigned long value)
@@ -946,11 +1038,19 @@ void ihk_mc_print_user_context(ihk_mc_user_context_t *uctx)
 	        uctx->gpr.rsi, uctx->gpr.rdi, uctx->gpr.rsp);
 }
 
+/*@
+  @ requires \valid(handler);
+  @ assigns __x86_syscall_handler;
+  @ ensures __x86_syscall_handler == handler;
+  @*/
 void ihk_mc_set_syscall_handler(long (*handler)(int, ihk_mc_user_context_t *))
 {
 	__x86_syscall_handler = handler;
 }
 
+/*@
+  @ assigns \nothing;
+  @*/
 void ihk_mc_delay_us(int us)
 {
 	arch_delay(us);
@@ -1012,6 +1112,14 @@ void arch_show_interrupt_context(const void *reg)
 	kprintf_unlock(irqflags);
 }
 
+/*@
+  @ behavior fs_base:
+  @   assumes type == IHK_ASR_X86_FS;
+  @   ensures \result == 0;
+  @ behavior invaiid_type:
+  @   assumes type != IHK_ASR_X86_FS;
+  @   ensures \result == -EINVAL;
+  @*/
 int ihk_mc_arch_set_special_register(enum ihk_asr_type type,
                                      unsigned long value)
 {
@@ -1025,6 +1133,15 @@ int ihk_mc_arch_set_special_register(enum ihk_asr_type type,
 	}
 }
 
+/*@
+  @ behavior fs_base:
+  @   assumes type == IHK_ASR_X86_FS;
+  @   requires \valid(value);
+  @   ensures \result == 0;
+  @ behavior invalid_type:
+  @   assumes type != IHK_ASR_X86_FS;
+  @   ensures \result == -EINVAL;
+  @*/
 int ihk_mc_arch_get_special_register(enum ihk_asr_type type,
                                      unsigned long *value)
 {
@@ -1038,6 +1155,10 @@ int ihk_mc_arch_get_special_register(enum ihk_asr_type type,
 	}
 }
 
+/*@
+  @ requires \valid_apicid(cpu);	// valid APIC ID or not
+  @ ensures \result == 0
+  @*/
 int ihk_mc_interrupt_cpu(int cpu, int vector)
 {
 	dkprintf("[%d] ihk_mc_interrupt_cpu: %d\n", ihk_mc_get_processor_id(), cpu);
@@ -1047,6 +1168,10 @@ int ihk_mc_interrupt_cpu(int cpu, int vector)
 	return 0;
 }
 
+/*@
+  @ requires \valid(proc);
+  @ ensures proc->fp_regs == NULL;
+  @*/
 void
 release_fp_regs(struct process *proc)
 {
