@@ -5,6 +5,8 @@
  *  implements x86's vsyscall
  * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
  * 	Copyright (C) 2014  Hitachi, Ltd.
+ * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
+ * 	Copyright (C) 2015  RIKEN AICS
  */
 /*
  * HISTORY:

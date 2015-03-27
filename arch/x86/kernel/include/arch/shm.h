@@ -4,7 +4,7 @@
  * \brief
  *  header file for System V shared memory
  * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
- *  Copyright (C) 2015  RIKEN-AICS
+ * 	Copyright (C) 2015  RIKEN AICS
  */
 /*
  * HISTORY:

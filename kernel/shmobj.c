@@ -3,7 +3,8 @@
  *  License details are found in the file LICENSE.
  * \brief
  *  shared memory object
- * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com>
+ * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
+ * 	Copyright (C) 2014 - 2015  RIKEN AICS
  */
 /*
  * HISTORY:

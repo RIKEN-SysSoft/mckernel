@@ -5,6 +5,8 @@
  *  Control CPU. 
  * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
  *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
+ * 	Copyright (C) 2015  RIKEN AICS
  */
 /*
  * HISTORY

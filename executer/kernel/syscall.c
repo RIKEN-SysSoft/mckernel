@@ -13,6 +13,8 @@
  *      Copyright (C) 2012 - 2013 Hitachi, Ltd.
  * \author Balazs Gerofi  <bgerofi@is.s.u-tokyo.ac.jp> \par
  *      Copyright (C) 2013  The University of Tokyo
+ * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
+ * 	Copyright (C) 2014  RIKEN AICS
  */
 /*
  * HISTORY:

@@ -3,7 +3,8 @@
  *  License details are found in the file LICENSE.
  * \brief
  *  memory mapped device pager client
- * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com>
+ * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
+ * 	Copyright (C) 2014  RIKEN AICS
  */
 /*
  * HISTORY:
