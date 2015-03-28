@@ -72,6 +72,9 @@ void create_proc_procfs_files(int pid, int cpuid)
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/pagemap", osnum, pid);
 	create_proc_procfs_file(pid, fname, 0400, cpuid);
 
+	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/status", osnum, pid);
+	create_proc_procfs_file(pid, fname, 0400, cpuid);
+
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task/%d/mem", osnum, pid, pid);
 	create_proc_procfs_file(pid, fname, 0400, cpuid);
 
@@ -123,6 +126,9 @@ void delete_proc_procfs_files(int pid)
 	delete_proc_procfs_file(pid, fname);
 
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/maps", osnum, pid);
+	delete_proc_procfs_file(pid, fname);
+
+	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/status", osnum, pid);
 	delete_proc_procfs_file(pid, fname);
 
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/pagemap", osnum, pid);
@@ -513,6 +519,38 @@ void process_procfs_request(unsigned long rarg)
 		goto end;
 	}
 
+	/* 
+	 * mcos%d/PID/status
+	 */
+	if (strcmp(p, "status") == 0) {
+		struct vm_range *range;
+		unsigned long lockedsize = 0;
+		char tmp[80];
+		int len;
+
+		ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
+		list_for_each_entry(range, &proc->vm->vm_range_list, list) {
+			if(range->flag & VR_LOCKED)
+				lockedsize += range->end - range->start;
+		}
+		ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+
+		sprintf(tmp, "VmLck: %9lu kB\n", (lockedsize + 1023) >> 10);
+		len = strlen(tmp);
+		if (r->offset < len) {
+			if (r->offset + r->count < len) {
+				ans = r->count;
+			} else {
+				eof = 1;
+				ans = len;
+			}
+			strncpy(buf, tmp + r->offset, ans);
+		} else if (r->offset == len) {
+			ans = 0;
+			eof = 1;
+		}
+		goto end;
+	}
 
 	/* 
 	 * mcos%d/PID/auxv
