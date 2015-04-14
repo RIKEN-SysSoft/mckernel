@@ -381,9 +381,24 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 		unhandled_page_fault(proc, fault_addr, regs);
 		memset(&info, '\0', sizeof info);
 		if (error == -ERANGE) {
+			info.si_signo = SIGBUS;
+			info.si_code = BUS_ADRERR;
+			info._sifields._sigfault.si_addr = fault_addr;
 			set_signal(SIGBUS, regs, &info);
 		}
 		else {
+			struct process_vm *vm = proc->vm;
+			struct vm_range *range;
+
+			info.si_signo = SIGSEGV;
+			info.si_code = SEGV_MAPERR;
+			list_for_each_entry(range, &vm->vm_range_list, list) {
+				if (range->start <= (unsigned long)fault_addr && range->end > (unsigned long)fault_addr) {
+					info.si_code = SEGV_ACCERR;
+					break;
+				}
+			}
+			info._sifields._sigfault.si_addr = fault_addr;
 			set_signal(SIGSEGV, regs, &info);
 		}
 		check_signal(0, regs);

@@ -800,6 +800,7 @@ do_kill(int pid, int tid, int sig, siginfo_t *info, int ptracecont)
 		memset(&info0, '\0', sizeof info0);
 		info = &info0;
 		info0.si_signo = sig;
+		info0.si_code = SI_KERNEL;
 	}
 
 	if(tid == -1 && pid <= 0){
