@@ -253,11 +253,11 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	desc->ruid = ruid;
 	desc->euid = euid;
 	desc->suid = suid;
-	desc->fsuid = setfsuid(-1);
+//	desc->fsuid = setfsuid(-1);
 	desc->rgid = rgid;
 	desc->egid = egid;
 	desc->sgid = sgid;
-	desc->fsgid = setfsgid(-1);
+//	desc->fsgid = setfsgid(-1);
 	desc->entry = hdr.e_entry;
 
 	desc->at_phdr = load_addr + hdr.e_phoff;

@@ -2055,8 +2055,10 @@ do_setresuid(int ruid, int euid, int suid, int fsuid)
 					p->ftn->euid = euid;
 				if(suid != -1)
 					p->ftn->suid = suid;
+#if 0
 				if(fsuid != -1)
 					p->ftn->fsuid = fsuid;
+#endif
 			}
 		}
 		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
@@ -2084,8 +2086,10 @@ do_setresgid(int rgid, int egid, int sgid, int fsgid)
 					p->ftn->egid = egid;
 				if(sgid != -1)
 					p->ftn->sgid = sgid;
+#if 0
 				if(fsgid != -1)
 					p->ftn->fsgid = fsgid;
+#endif
 			}
 		}
 		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
@@ -2102,11 +2106,13 @@ SYSCALL_DECLARE(setresuid)
 	rc = syscall_generic_forwarding(__NR_setresuid, ctx);
 	if(rc == 0){
 		struct syscall_request request IHK_DMA_ALIGN;
-		int fsuid;
+		int fsuid = 0;
 
 		request.number = __NR_setfsuid;
 		request.args[0] = -1;
+#if 0
 		fsuid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+#endif
 		do_setresuid(ruid, euid, suid, fsuid);
 	}
 	return rc;
@@ -2125,7 +2131,7 @@ SYSCALL_DECLARE(setreuid)
 	rc = syscall_generic_forwarding(__NR_setreuid, ctx);
 	if(rc == 0){
 		struct syscall_request request IHK_DMA_ALIGN;
-		int fsuid;
+		int fsuid = 0;
 
 		if(euid != -1){
 			if(euid != ruid_bak){
@@ -2136,7 +2142,9 @@ SYSCALL_DECLARE(setreuid)
 		}
 		request.number = __NR_setfsuid;
 		request.args[0] = -1;
+#if 0
 		fsuid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+#endif
 		do_setresuid(ruid, euid, suid, fsuid);
 	}
 	return rc;
@@ -2154,7 +2162,7 @@ SYSCALL_DECLARE(setuid)
 	rc = syscall_generic_forwarding(__NR_setuid, ctx);
 	if(rc == 0){
 		struct syscall_request request IHK_DMA_ALIGN;
-		int fsuid;
+		int fsuid = 0;
 
 		if(euid_bak == 0){
 			ruid = euid;
@@ -2162,7 +2170,9 @@ SYSCALL_DECLARE(setuid)
 		}
 		request.number = __NR_setfsuid;
 		request.args[0] = -1;
+#if 0
 		fsuid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+#endif
 		do_setresuid(ruid, euid, suid, fsuid);
 	}
 	return rc;
@@ -2187,11 +2197,13 @@ SYSCALL_DECLARE(setresgid)
 	rc = syscall_generic_forwarding(__NR_setresgid, ctx);
 	if(rc == 0){
 		struct syscall_request request IHK_DMA_ALIGN;
-		int fsgid;
+		int fsgid = 0;
 
 		request.number = __NR_setfsgid;
 		request.args[0] = -1;
+#if 0
 		fsgid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+#endif
 		do_setresgid(rgid, egid, sgid, fsgid);
 	}
 	return rc;
@@ -2210,7 +2222,7 @@ SYSCALL_DECLARE(setregid)
 	rc = syscall_generic_forwarding(__NR_setregid, ctx);
 	if(rc == 0){
 		struct syscall_request request IHK_DMA_ALIGN;
-		int fsgid;
+		int fsgid = 0;
 
 		if(egid != -1){
 			if(egid != rgid_bak){
@@ -2221,7 +2233,9 @@ SYSCALL_DECLARE(setregid)
 		}
 		request.number = __NR_setfsgid;
 		request.args[0] = -1;
+#if 0
 		fsgid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+#endif
 		do_setresgid(rgid, egid, sgid, fsgid);
 	}
 	return rc;
@@ -2239,7 +2253,7 @@ SYSCALL_DECLARE(setgid)
 	rc = syscall_generic_forwarding(__NR_setgid, ctx);
 	if(rc == 0){
 		struct syscall_request request IHK_DMA_ALIGN;
-		int fsgid;
+		int fsgid = 0;
 
 		if(egid_bak == 0){
 			rgid = egid;
@@ -2247,7 +2261,9 @@ SYSCALL_DECLARE(setgid)
 		}
 		request.number = __NR_setfsgid;
 		request.args[0] = -1;
+#if 0
 		fsgid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+#endif
 		do_setresgid(rgid, egid, sgid, fsgid);
 	}
 	return rc;
