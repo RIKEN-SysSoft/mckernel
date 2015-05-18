@@ -1998,6 +1998,9 @@ void destroy_process(struct process *proc)
 	if (proc->fp_regs) {
 		release_fp_regs(proc);
 	}
+	if (proc->saved_cmdline) {
+		kfree(proc->saved_cmdline);
+	}
 	ihk_mc_free_pages(proc, KERNEL_STACK_NR_PAGES);
 }
 

@@ -143,6 +143,11 @@ struct program_load_desc {
 	int ruid;
 	int euid;
 	int suid;
+	int fsuid;
+	int rgid;
+	int egid;
+	int sgid;
+	int fsgid;
 	unsigned long entry;
 	unsigned long user_start;
 	unsigned long user_end;

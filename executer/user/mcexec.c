@@ -48,6 +48,7 @@
 #include <sys/stat.h>
 #include <sys/resource.h>
 #include <sys/utsname.h>
+#include <sys/fsuid.h>
 #include <time.h>
 #include <sys/time.h>
 #include <signal.h>
@@ -161,6 +162,9 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	uid_t ruid;
 	uid_t euid;
 	uid_t suid;
+	gid_t rgid;
+	gid_t egid;
+	gid_t sgid;
 
 	*interp_pathp = NULL;
 
@@ -245,9 +249,15 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	desc->pid = getpid();
 	desc->pgid = getpgid(0);
 	getresuid(&ruid, &euid, &suid);
+	getresgid(&rgid, &egid, &sgid);
 	desc->ruid = ruid;
 	desc->euid = euid;
 	desc->suid = suid;
+	desc->fsuid = setfsuid(-1);
+	desc->rgid = rgid;
+	desc->egid = egid;
+	desc->sgid = sgid;
+	desc->fsgid = setfsgid(-1);
 	desc->entry = hdr.e_entry;
 
 	desc->at_phdr = load_addr + hdr.e_phoff;

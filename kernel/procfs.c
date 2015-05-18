@@ -63,17 +63,20 @@ void create_proc_procfs_files(int pid, int cpuid)
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/auxv", osnum, pid);
 	create_proc_procfs_file(pid, fname, 0400, cpuid);
 
+	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/cmdline", osnum, pid);
+	create_proc_procfs_file(pid, fname, 0444, cpuid);
+
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/mem", osnum, pid);
 	create_proc_procfs_file(pid, fname, 0400, cpuid);
 
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/maps", osnum, pid);
-	create_proc_procfs_file(pid, fname, 0400, cpuid);
+	create_proc_procfs_file(pid, fname, 0444, cpuid);
 
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/pagemap", osnum, pid);
-	create_proc_procfs_file(pid, fname, 0400, cpuid);
+	create_proc_procfs_file(pid, fname, 0444, cpuid);
 
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/status", osnum, pid);
-	create_proc_procfs_file(pid, fname, 0400, cpuid);
+	create_proc_procfs_file(pid, fname, 0444, cpuid);
 
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task/%d/mem", osnum, pid, pid);
 	create_proc_procfs_file(pid, fname, 0400, cpuid);
@@ -132,6 +135,9 @@ void delete_proc_procfs_files(int pid)
 	delete_proc_procfs_file(pid, fname);
 
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/pagemap", osnum, pid);
+	delete_proc_procfs_file(pid, fname);
+
+	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/cmdline", osnum, pid);
 	delete_proc_procfs_file(pid, fname);
 
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/auxv", osnum, pid);
@@ -525,8 +531,9 @@ void process_procfs_request(unsigned long rarg)
 	if (strcmp(p, "status") == 0) {
 		struct vm_range *range;
 		unsigned long lockedsize = 0;
-		char tmp[80];
+		char tmp[1024];
 		int len;
+		struct fork_tree_node *ftn = proc->ftn;
 
 		ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
 		list_for_each_entry(range, &proc->vm->vm_range_list, list) {
@@ -535,7 +542,13 @@ void process_procfs_request(unsigned long rarg)
 		}
 		ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
 
-		sprintf(tmp, "VmLck: %9lu kB\n", (lockedsize + 1023) >> 10);
+		sprintf(tmp,
+		        "Uid:\t%d\t%d\t%d\t%d\n"
+		        "Gid:\t%d\t%d\t%d\t%d\n"
+		        "VmLck:\t%9lu kB\n",
+		        ftn->ruid, ftn->euid, ftn->suid, ftn->fsuid,
+		        ftn->rgid, ftn->egid, ftn->sgid, ftn->fsgid,
+		        (lockedsize + 1023) >> 10);
 		len = strlen(tmp);
 		if (r->offset < len) {
 			if (r->offset + r->count < len) {
@@ -563,6 +576,28 @@ void process_procfs_request(unsigned long rarg)
 				len = limit - r->offset;
 			}
 			memcpy((void *)buf, ((char *) proc->saved_auxv) + r->offset, len);
+			ans = len;
+			if (r->offset + len == limit) {
+				eof = 1;
+			}
+		} else if (r->offset == limit) {
+			ans = 0;
+			eof = 1;
+		}
+		goto end;
+	}
+
+	/* 
+	 * mcos%d/PID/cmdline
+	 */
+	if (strcmp(p, "cmdline") == 0) {
+		unsigned int limit = proc->saved_cmdline_len;
+		unsigned int len = r->count;
+		if (r->offset < limit) {
+			if (limit < r->offset + r->count) {
+				len = limit - r->offset;
+			}
+			memcpy((void *)buf, ((char *) proc->saved_cmdline) + r->offset, len);
 			ans = len;
 			if (r->offset + len == limit) {
 				eof = 1;

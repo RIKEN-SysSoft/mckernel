@@ -29,6 +29,7 @@
 #include <page.h>
 #include <mman.h>
 #include <init.h>
+#include <kmalloc.h>
 
 //#define DEBUG_PRINT_HOST
 
@@ -70,7 +71,8 @@ int prepare_process_ranges_args_envs(struct process *proc,
 	unsigned long args_envs_p, args_envs_rp;
 	unsigned long s, e, up;
 	char **argv;
-	int i, n, argc, envc, args_envs_npages;
+	char **a;
+	int i, n, argc, envc, args_envs_npages, l;
 	char **env;
 	int range_npages;
 	void *up_v;
@@ -270,13 +272,21 @@ int prepare_process_ranges_args_envs(struct process *proc,
 	dkprintf("argc: %d\n", argc);
 
 	argv = (char **)(args_envs + (sizeof(int)));
-	while (*argv) {
-		char **_argv = argv;
-		dkprintf("%s\n", args_envs + (unsigned long)*argv);
-		*argv = (char *)addr + (unsigned long)*argv; // Process' address space!
-		argv = ++_argv;
+	if(proc->saved_cmdline){
+		kfree(proc->saved_cmdline);
+		proc->saved_cmdline_len = 0;
 	}
-	argv = (char **)(args_envs + (sizeof(int)));
+	for(a = argv, l = 0; *a; a++)
+		l += strlen(args_envs + (unsigned long)*a) + 1;
+	proc->saved_cmdline = kmalloc(p->args_len, IHK_MC_AP_NOWAIT);
+	if(!proc->saved_cmdline)
+		goto err;
+	proc->saved_cmdline_len = l;
+	for(a = argv, l = 0; *a; a++){
+		strcpy(proc->saved_cmdline + l, args_envs + (unsigned long)*a);
+		l += strlen(args_envs + (unsigned long)*a) + 1;
+		*a = (char *)addr + (unsigned long)*a; // Process' address space!
+	}
 
 	envc = *((int*)(args_envs + p->args_len));
 	dkprintf("envc: %d\n", envc);
@@ -294,7 +304,7 @@ int prepare_process_ranges_args_envs(struct process *proc,
 
 	p->rprocess = (unsigned long)proc;
 	p->rpgtable = virt_to_phys(proc->vm->page_table);
-	
+
 	if (init_process_stack(proc, pn, argc, argv, envc, env) != 0) {
 		goto err;
 	}
@@ -352,6 +362,11 @@ static int process_msg_prepare_process(unsigned long rphys)
 	proc->ftn->ruid = pn->ruid;
 	proc->ftn->euid = pn->euid;
 	proc->ftn->suid = pn->suid;
+	proc->ftn->fsuid = pn->fsuid;
+	proc->ftn->rgid = pn->rgid;
+	proc->ftn->egid = pn->egid;
+	proc->ftn->sgid = pn->sgid;
+	proc->ftn->fsgid = pn->fsgid;
 	proc->vm->region.user_start = pn->user_start;
 	proc->vm->region.user_end = pn->user_end;
 	proc->vm->region.map_start = (USER_END / 3) & LARGE_PAGE_MASK;

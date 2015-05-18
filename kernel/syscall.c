@@ -2035,7 +2035,7 @@ SYSCALL_DECLARE(tgkill)
 }
 
 void
-do_setresuid(int ruid, int euid, int suid)
+do_setresuid(int ruid, int euid, int suid, int fsuid)
 {
 	struct process *proc = cpu_local_var(current);
 	int pid = proc->ftn->pid;
@@ -2055,6 +2055,37 @@ do_setresuid(int ruid, int euid, int suid)
 					p->ftn->euid = euid;
 				if(suid != -1)
 					p->ftn->suid = suid;
+				if(fsuid != -1)
+					p->ftn->fsuid = fsuid;
+			}
+		}
+		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+	}
+}
+
+void
+do_setresgid(int rgid, int egid, int sgid, int fsgid)
+{
+	struct process *proc = cpu_local_var(current);
+	int pid = proc->ftn->pid;
+	struct cpu_local_var *v;
+	struct process *p;
+	int i;
+	unsigned long irqstate;
+
+	for(i = 0; i < num_processors; i++){
+		v = get_cpu_local_var(i);
+		irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
+		list_for_each_entry(p, &(v->runq), sched_list){
+			if(p->ftn->pid == pid){
+				if(rgid != -1)
+					p->ftn->rgid = rgid;
+				if(egid != -1)
+					p->ftn->egid = egid;
+				if(sgid != -1)
+					p->ftn->sgid = sgid;
+				if(fsgid != -1)
+					p->ftn->fsgid = fsgid;
 			}
 		}
 		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
@@ -2070,7 +2101,13 @@ SYSCALL_DECLARE(setresuid)
 
 	rc = syscall_generic_forwarding(__NR_setresuid, ctx);
 	if(rc == 0){
-		do_setresuid(ruid, euid, suid);
+		struct syscall_request request IHK_DMA_ALIGN;
+		int fsuid;
+
+		request.number = __NR_setfsuid;
+		request.args[0] = -1;
+		fsuid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+		do_setresuid(ruid, euid, suid, fsuid);
 	}
 	return rc;
 }
@@ -2087,6 +2124,9 @@ SYSCALL_DECLARE(setreuid)
 
 	rc = syscall_generic_forwarding(__NR_setreuid, ctx);
 	if(rc == 0){
+		struct syscall_request request IHK_DMA_ALIGN;
+		int fsuid;
+
 		if(euid != -1){
 			if(euid != ruid_bak){
 				suid = euid;
@@ -2094,7 +2134,10 @@ SYSCALL_DECLARE(setreuid)
 		}
 		else if(ruid != -1){
 		}
-		do_setresuid(ruid, euid, suid);
+		request.number = __NR_setfsuid;
+		request.args[0] = -1;
+		fsuid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+		do_setresuid(ruid, euid, suid, fsuid);
 	}
 	return rc;
 }
@@ -2110,13 +2153,181 @@ SYSCALL_DECLARE(setuid)
 
 	rc = syscall_generic_forwarding(__NR_setuid, ctx);
 	if(rc == 0){
+		struct syscall_request request IHK_DMA_ALIGN;
+		int fsuid;
+
 		if(euid_bak == 0){
 			ruid = euid;
 			suid = euid;
 		}
-		do_setresuid(ruid, euid, suid);
+		request.number = __NR_setfsuid;
+		request.args[0] = -1;
+		fsuid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+		do_setresuid(ruid, euid, suid, fsuid);
 	}
 	return rc;
+}
+
+SYSCALL_DECLARE(setfsuid)
+{
+	int fsuid;
+
+	fsuid = syscall_generic_forwarding(__NR_setfsuid, ctx);
+	do_setresuid(-1, -1, -1, fsuid);
+	return fsuid;
+}
+
+SYSCALL_DECLARE(setresgid)
+{
+	int rgid = ihk_mc_syscall_arg0(ctx);
+	int egid = ihk_mc_syscall_arg1(ctx);
+	int sgid = ihk_mc_syscall_arg2(ctx);
+	int rc;
+
+	rc = syscall_generic_forwarding(__NR_setresgid, ctx);
+	if(rc == 0){
+		struct syscall_request request IHK_DMA_ALIGN;
+		int fsgid;
+
+		request.number = __NR_setfsgid;
+		request.args[0] = -1;
+		fsgid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+		do_setresgid(rgid, egid, sgid, fsgid);
+	}
+	return rc;
+}
+
+SYSCALL_DECLARE(setregid)
+{
+	int rgid = ihk_mc_syscall_arg0(ctx);
+	int egid = ihk_mc_syscall_arg1(ctx);
+	int sgid = -1;
+	int rc;
+	struct process *proc = cpu_local_var(current);
+//	int egid_bak = proc->ftn->egid;
+	int rgid_bak = proc->ftn->rgid;
+
+	rc = syscall_generic_forwarding(__NR_setregid, ctx);
+	if(rc == 0){
+		struct syscall_request request IHK_DMA_ALIGN;
+		int fsgid;
+
+		if(egid != -1){
+			if(egid != rgid_bak){
+				sgid = egid;
+			}
+		}
+		else if(rgid != -1){
+		}
+		request.number = __NR_setfsgid;
+		request.args[0] = -1;
+		fsgid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+		do_setresgid(rgid, egid, sgid, fsgid);
+	}
+	return rc;
+}
+
+SYSCALL_DECLARE(setgid)
+{
+	int egid = ihk_mc_syscall_arg0(ctx);
+	int rgid = -1;
+	int sgid = -1;
+	long rc;
+	struct process *proc = cpu_local_var(current);
+	int egid_bak = proc->ftn->egid;
+
+	rc = syscall_generic_forwarding(__NR_setgid, ctx);
+	if(rc == 0){
+		struct syscall_request request IHK_DMA_ALIGN;
+		int fsgid;
+
+		if(egid_bak == 0){
+			rgid = egid;
+			sgid = egid;
+		}
+		request.number = __NR_setfsgid;
+		request.args[0] = -1;
+		fsgid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+		do_setresgid(rgid, egid, sgid, fsgid);
+	}
+	return rc;
+}
+
+SYSCALL_DECLARE(setfsgid)
+{
+	int fsgid;
+
+	fsgid = syscall_generic_forwarding(__NR_setfsgid, ctx);
+	do_setresgid(-1, -1, -1, fsgid);
+	return fsgid;
+}
+
+SYSCALL_DECLARE(getuid)
+{
+	struct process *proc = cpu_local_var(current);
+	struct fork_tree_node *ftn = proc->ftn;
+
+	return ftn->ruid;
+}
+
+SYSCALL_DECLARE(geteuid)
+{
+	struct process *proc = cpu_local_var(current);
+	struct fork_tree_node *ftn = proc->ftn;
+
+	return ftn->euid;
+}
+
+SYSCALL_DECLARE(getresuid)
+{
+	struct process *proc = cpu_local_var(current);
+	struct fork_tree_node *ftn = proc->ftn;
+	int *ruid = (int *)ihk_mc_syscall_arg0(ctx);
+	int *euid = (int *)ihk_mc_syscall_arg1(ctx);
+	int *suid = (int *)ihk_mc_syscall_arg2(ctx);
+
+	if(copy_to_user(ruid, &ftn->ruid, sizeof(int)))
+		return -EFAULT;
+	if(copy_to_user(euid, &ftn->euid, sizeof(int)))
+		return -EFAULT;
+	if(copy_to_user(suid, &ftn->suid, sizeof(int)))
+		return -EFAULT;
+
+	return 0;
+}
+
+SYSCALL_DECLARE(getgid)
+{
+	struct process *proc = cpu_local_var(current);
+	struct fork_tree_node *ftn = proc->ftn;
+
+	return ftn->rgid;
+}
+
+SYSCALL_DECLARE(getegid)
+{
+	struct process *proc = cpu_local_var(current);
+	struct fork_tree_node *ftn = proc->ftn;
+
+	return ftn->egid;
+}
+
+SYSCALL_DECLARE(getresgid)
+{
+	struct process *proc = cpu_local_var(current);
+	struct fork_tree_node *ftn = proc->ftn;
+	int *rgid = (int *)ihk_mc_syscall_arg0(ctx);
+	int *egid = (int *)ihk_mc_syscall_arg1(ctx);
+	int *sgid = (int *)ihk_mc_syscall_arg2(ctx);
+
+	if(copy_to_user(rgid, &ftn->rgid, sizeof(int)))
+		return -EFAULT;
+	if(copy_to_user(egid, &ftn->egid, sizeof(int)))
+		return -EFAULT;
+	if(copy_to_user(sgid, &ftn->sgid, sizeof(int)))
+		return -EFAULT;
+
+	return 0;
 }
 
 SYSCALL_DECLARE(setpgid)

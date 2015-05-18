@@ -291,6 +291,11 @@ struct fork_tree_node {
 	int ruid;
 	int euid;
 	int suid;
+	int fsuid;
+	int rgid;
+	int egid;
+	int sgid;
+	int fsgid;
 	
 	struct fork_tree_node *parent;
 	struct list_head children;
@@ -404,6 +409,8 @@ struct process {
 	struct sig_pending *ptrace_recvsig;
 	struct sig_pending *ptrace_sendsig;
 	fp_regs_struct *fp_regs;
+	char *saved_cmdline;
+	long saved_cmdline_len;
 };
 
 struct process_vm {
