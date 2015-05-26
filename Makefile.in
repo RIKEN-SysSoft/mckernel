@@ -43,6 +43,10 @@ install::
 		install -m 644 arch/x86/tools/mcreboot.1 $(MANDIR)/man1/mcreboot.1; \
 		;; \
 	    smp-x86) \
+		mkdir -p -m 755 $(SBINDIR); \
+		install -m 755 arch/x86/tools/mcreboot-smp-x86.sh $(SBINDIR)/mcreboot; \
+		mkdir -p -m 755 $(MANDIR)/man1; \
+		install -m 644 arch/x86/tools/mcreboot.1 $(MANDIR)/man1/mcreboot.1; \
 		;; \
 	    *) \
 		echo "unknown target $(TARGET)" >&2 \

@@ -1,0 +1,64 @@
+#!/bin/bash
+
+# IHK SMP-x86 example boot script.
+# author: Balazs Gerofi <bgerofi@riken.jp>
+#      Copyright (C) 2014  RIKEN AICS
+# 
+# This is an example script for loading IHK, configuring a partition and 
+# booting McKernel on it. 
+# The script reserves half of the CPU cores and 512MB from NUMA node 0 if 
+# IHK is loaded for the first time, otherwise it destroys the current 
+# McKernel instances and reboots it using the same set of resources as previously.
+# Note that the script does not output anything unless an error occurs.
+
+prefix="@prefix@"
+BINDIR="@BINDIR@"
+SBINDIR="@SBINDIR@"
+KMODDIR="@KMODDIR@"
+KERNDIR="@KERNDIR@"
+
+mem="512M@0"
+
+# Get the number of CPUs on NUMA node 0
+nr_cpus=`lscpu --parse | awk -F"," '{if ($4 == 0) print $4}' | wc -l`
+
+# Use the second half of the cores
+let nr_cpus="$nr_cpus / 2"
+cpus=`lscpu --parse | awk -F"," '{if ($4 == 0) print $1}' | tail -n $nr_cpus | xargs echo -n | sed 's/ /,/g'`
+if [ "$cpus" == "" ]; then echo "error: no available CPUs on NUMA node 0?"; exit; fi
+
+# Remove delegator if loaded
+if [ "`lsmod | grep mcctrl`" != "" ]; then
+        if ! rmmod mcctrl; then echo "error: removing mcctrl"; exit; fi
+fi
+
+# Load IHK if not loaded
+if [ "`lsmod | grep ihk`" == "" ]; then
+        if ! insmod ${KMODDIR}/ihk.ko; then echo "error: loading ihk"; exit; fi;
+fi
+
+# Load IHK-SMP if not loaded and reserve CPUs and memory
+if [ "`lsmod | grep ihk_smp_x86`" == "" ]; then
+        if ! insmod ${KMODDIR}/ihk-smp-x86.ko; then echo "error: loading ihk-smp-x86"; exit; fi;
+        if ! ${SBINDIR}/ihkconfig 0 reserve cpu ${cpus}; then echo "error: reserving CPUs"; exit; fi
+        if ! ${SBINDIR}/ihkconfig 0 reserve mem ${mem}; then echo "error: reserving memory"; exit; fi
+fi
+
+# Check for existing OS instance and destroy
+if [ -c /dev/mcos0 ]; then
+        if ! ${SBINDIR}/ihkconfig 0 destroy 0; then echo "warning: destroy failed"; fi
+	
+	# Query CPU cores and memory so that the same values are used as previously
+	if ! ${SBINDIR}/ihkconfig 0 query cpu > /dev/null; then echo "error: querying cpus"; exit; fi
+	cpus=`${SBINDIR}/ihkconfig 0 query cpu`
+	if ! ${SBINDIR}/ihkconfig 0 query mem > /dev/null; then echo "error: querying memory"; exit; fi
+	mem=`${SBINDIR}/ihkconfig 0 query mem`
+fi
+
+if ! ${SBINDIR}/ihkconfig 0 create; then echo "error: create"; exit; fi
+if ! ${SBINDIR}/ihkosctl 0 assign cpu ${cpus}; then echo "error: assign CPUs"; exit; fi
+if ! ${SBINDIR}/ihkosctl 0 assign mem ${mem}; then echo "error: assign memory"; exit; fi
+if ! ${SBINDIR}/ihkosctl 0 load ${KERNDIR}/mckernel.img; then echo "error: loading kernel image"; exit; fi
+if ! ${SBINDIR}/ihkosctl 0 kargs hidos; then echo "error: setting kernel arguments"; exit; fi
+if ! ${SBINDIR}/ihkosctl 0 boot; then echo "error: booting"; exit; fi
+if ! insmod ${KMODDIR}/mcctrl.ko; then echo "error: inserting mcctrl.ko"; exit; fi
