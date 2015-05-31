@@ -39,6 +39,8 @@ extern void mcctrl_syscall_init(void);
 extern void procfs_init(int);
 extern void procfs_exit(int);
 
+extern void rus_page_hash_init(void);
+extern void rus_page_hash_put_pages(void);
 
 static long mcctrl_ioctl(ihk_os_t os, unsigned int request, void *priv,
                          unsigned long arg, struct file *file)
@@ -104,6 +106,8 @@ static int __init mcctrl_init(void)
 	mcctrl_syscall_init();
 #endif
 
+	rus_page_hash_init();
+
 	for(i = 0; i < OS_MAX_MINOR; i++){
 		if (os[i]) {
 			memcpy(mcctrl_uc + i, &mcctrl_uc_proto, sizeof mcctrl_uc_proto);
@@ -131,6 +135,8 @@ static void __exit mcctrl_exit(void)
 			procfs_exit(i);
 		}
 	}
+
+	rus_page_hash_put_pages();
 }
 
 MODULE_LICENSE("GPL v2");

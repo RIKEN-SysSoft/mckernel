@@ -322,6 +322,109 @@ out:
 	return error;
 }
 
+#define RUS_PAGE_HASH_SHIFT	8
+#define RUS_PAGE_HASH_SIZE	(1UL << RUS_PAGE_HASH_SHIFT)
+#define RUS_PAGE_HASH_MASK	(RUS_PAGE_HASH_SIZE - 1)
+
+struct list_head rus_page_hash[RUS_PAGE_HASH_SIZE];
+spinlock_t rus_page_hash_lock;
+
+struct rus_page {
+	struct list_head hash;
+	struct page *page;
+	int refcount;
+	int put_page;
+};
+
+void rus_page_hash_init(void)
+{
+	int i;
+
+	spin_lock_init(&rus_page_hash_lock);
+	for (i = 0; i < RUS_PAGE_HASH_SIZE; ++i) {
+		INIT_LIST_HEAD(&rus_page_hash[i]);
+	}
+}
+
+/* rus_page_hash_lock must be held */
+struct rus_page *_rus_page_hash_lookup(struct page *page)
+{
+	struct rus_page *rp = NULL;
+	struct rus_page *rp_iter;
+
+	list_for_each_entry(rp_iter,
+			&rus_page_hash[page_to_pfn(page) & RUS_PAGE_HASH_MASK], hash) {
+
+		if (rp_iter->page != page)
+			continue;
+
+		rp = rp_iter;
+		break;
+	}
+
+	return rp;
+}
+
+
+static int rus_page_hash_insert(struct page *page)
+{
+	int ret = 0;
+	struct rus_page *rp;
+
+	spin_lock(&rus_page_hash_lock);
+
+	rp = _rus_page_hash_lookup(page);
+	if (!rp) {
+		rp = kmalloc(sizeof(*rp), GFP_ATOMIC);
+
+		if (!rp) {
+			printk("rus_page_add_hash(): error allocating rp\n");
+			ret = -ENOMEM;
+			goto out;
+		}
+
+		rp->page = page;
+		rp->put_page = 0;
+
+		get_page(page);
+
+		rp->refcount = 0; /* Will be increased below */
+
+		list_add_tail(&rp->hash,
+				&rus_page_hash[page_to_pfn(page) & RUS_PAGE_HASH_MASK]);
+	}
+
+	++rp->refcount;
+
+
+out:
+	spin_unlock(&rus_page_hash_lock);
+	return ret;
+}
+
+void rus_page_hash_put_pages(void)
+{
+	int i;
+	struct rus_page *rp_iter;
+	struct rus_page *rp_iter_next;
+
+	spin_lock(&rus_page_hash_lock);
+
+	for (i = 0; i < RUS_PAGE_HASH_SIZE; ++i) {
+
+		list_for_each_entry_safe(rp_iter, rp_iter_next,
+				&rus_page_hash[i], hash) {
+			list_del(&rp_iter->hash);
+
+			put_page(rp_iter->page);
+			kfree(rp_iter);
+		}
+	}
+
+	spin_unlock(&rus_page_hash_lock);
+}
+
+
 /*
  * By remap_pfn_range(), VM_PFN_AT_MMAP may be raised.
  * VM_PFN_AT_MMAP cause the following problems.
@@ -333,15 +436,7 @@ out:
  * It uses vm_insert_pfn() until it is fixed.
  */
 
-/* TODO: figure out the correct Linux kernel version for this check,
- * as for now, ihk-smp-x86 reloading works fine on 3.x.x kernels 
- * using remap_pfn_range().
- */
-#if LINUX_VERSION_CODE > KERNEL_VERSION(3,0,0)
-#define	USE_VM_INSERT_PFN	0
-#else
 #define	USE_VM_INSERT_PFN	1
-#endif
 
 static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
@@ -421,15 +516,11 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 
 		if (pfn_valid(pfn+pix)) {
 			page = pfn_to_page(pfn+pix);
-			if (!page_count(page)) {
-				get_page(page);
-				/*
-				 * TODO:
-				 * The pages which get_page() has been called with
-				 * should be recorded.  Because these pages have to
-				 * be passed to put_page() before they are freed.
-				 */
+
+			if ((error = rus_page_hash_insert(page)) < 0) {
+				printk("rus_vm_fault: error hashing page??\n");
 			}
+
 			error = vm_insert_page(vma, rva+(pix*PAGE_SIZE), page);
 			if (error) {
 				printk("vm_insert_page: %d\n", error);
