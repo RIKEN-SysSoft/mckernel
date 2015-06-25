@@ -117,6 +117,7 @@ extern char page_fault[], general_protection_exception[];
 extern char debug_exception[], int3_exception[];
 
 uint64_t boot_pat_state = 0;
+int no_turbo = 0; /* May be updated by early parsing of kargs */
 
 static void init_idt(void)
 {
@@ -292,25 +293,27 @@ void init_pstate_and_turbo(void)
 	 * When set to 1: disengages IDA
 	 * When set to 0: enables IDA
 	 */
-	if (eax & (1 << 1)) {
-		uint64_t turbo_value;
-		
-		turbo_value = rdmsr(MSR_NHM_TURBO_RATIO_LIMIT);
-		turbo_value &= 0xFF;
-		if (turbo_value < value) {
-			value = turbo_value;
+	if (!no_turbo) {
+		if (eax & (1 << 1)) {
+			uint64_t turbo_value;
+
+			turbo_value = rdmsr(MSR_NHM_TURBO_RATIO_LIMIT);
+			turbo_value &= 0xFF;
+			if (turbo_value < value) {
+				value = turbo_value;
+			}
+
+			value = value << 8;
+
+			/* Disable turbo boost */
+			//value |= (uint64_t)1 << 32; 
+
+			/* Enable turbo boost */
+			value &= ~((uint64_t)1 << 32);
 		}
-
-		value = value << 8;
-		
-		/* Disable turbo boost */
-		//value |= (uint64_t)1 << 32; 
-
-		/* Enable turbo boost */
-		value &= ~((uint64_t)1 << 32);
-	}
-	else {
-		value = value << 8;
+		else {
+			value = value << 8;
+		}
 	}
 
 	wrmsr(MSR_IA32_PERF_CTL, value);
