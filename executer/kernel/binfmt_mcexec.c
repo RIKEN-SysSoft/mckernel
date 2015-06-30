@@ -10,8 +10,10 @@
 #include <linux/fs.h>
 #include <linux/slab.h>
 #include <linux/highmem.h>
+#include <linux/version.h>
 #include "mcctrl.h"
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
 static int pathcheck(const char *file, const char *list)
 {
 	const char *p;
@@ -254,3 +256,12 @@ void __exit binfmt_mcexec_exit(void)
 {
 	unregister_binfmt(&mcexec_format);
 }
+#else
+void __init binfmt_mcexec_init(void)
+{
+}
+
+void __exit binfmt_mcexec_exit(void)
+{
+}
+#endif
