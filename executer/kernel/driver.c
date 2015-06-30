@@ -41,6 +41,8 @@ extern void procfs_exit(int);
 
 extern void rus_page_hash_init(void);
 extern void rus_page_hash_put_pages(void);
+extern void binfmt_mcexec_init(void);
+extern void binfmt_mcexec_exit(void);
 
 static long mcctrl_ioctl(ihk_os_t os, unsigned int request, void *priv,
                          unsigned long arg, struct file *file)
@@ -120,6 +122,8 @@ static int __init mcctrl_init(void)
 		}
 	}
 
+	binfmt_mcexec_init();
+
 	return 0;
 }
 
@@ -127,6 +131,7 @@ static void __exit mcctrl_exit(void)
 {
 	int	i;
 
+	binfmt_mcexec_exit();
 	printk("mcctrl: unregistered.\n");
 	for(i = 0; i < OS_MAX_MINOR; i++){
 		if(os[i]){

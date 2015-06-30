@@ -38,6 +38,8 @@
 #include <ihk/ikc.h>
 #include <ikc/master.h>
 
+#define MCEXEC_PATH "@BINDIR@/mcexec"
+
 #define SCD_MSG_PREPARE_PROCESS         0x1
 #define SCD_MSG_PREPARE_PROCESS_ACKED   0x2
 #define SCD_MSG_PREPARE_PROCESS_NACKED  0x7

@@ -3816,7 +3816,7 @@ TARGET="$WITH_TARGET"
 
 
 
-ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/kernel/Makefile kernel/Makefile kernel/Makefile.build arch/x86/tools/mcreboot-attached-mic.sh arch/x86/tools/mcshutdown-attached-mic.sh arch/x86/tools/mcreboot-builtin-x86.sh arch/x86/tools/mcreboot-smp-x86.sh arch/x86/tools/mcshutdown-builtin-x86.sh arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in"
+ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/kernel/Makefile executer/kernel/mcctrl.h kernel/Makefile kernel/Makefile.build arch/x86/tools/mcreboot-attached-mic.sh arch/x86/tools/mcshutdown-attached-mic.sh arch/x86/tools/mcreboot-builtin-x86.sh arch/x86/tools/mcreboot-smp-x86.sh arch/x86/tools/mcshutdown-builtin-x86.sh arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in"
 
 
 if test "x$enable_dcfa" = xyes; then :
@@ -4533,6 +4533,7 @@ do
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "executer/user/Makefile") CONFIG_FILES="$CONFIG_FILES executer/user/Makefile" ;;
     "executer/kernel/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/Makefile" ;;
+    "executer/kernel/mcctrl.h") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcctrl.h" ;;
     "kernel/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/Makefile" ;;
     "kernel/Makefile.build") CONFIG_FILES="$CONFIG_FILES kernel/Makefile.build" ;;
     "arch/x86/tools/mcreboot-attached-mic.sh") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/mcreboot-attached-mic.sh" ;;
