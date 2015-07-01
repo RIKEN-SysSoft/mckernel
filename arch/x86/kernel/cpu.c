@@ -281,9 +281,12 @@ void init_pstate_and_turbo(void)
 	 *
 	 * IA32_PERF_CTL (0x199H) bit 15:0:
 	 * Target performance State Value
+	 *
+	 * The base operating ratio can be read 
+	 * from MSR_PLATFORM_INFO[15:8].
 	 */
 	value = rdmsr(MSR_PLATFORM_INFO);
-	value = (value >> 8) & 0xFF;
+	value &= 0xFF00;
 
 	/* Turbo boost setting:
 	 * Bit 1 of EAX in Leaf 06H (i.e. CPUID.06H:EAX[1]) indicates opportunistic 
@@ -293,26 +296,21 @@ void init_pstate_and_turbo(void)
 	 * When set to 1: disengages IDA
 	 * When set to 0: enables IDA
 	 */
-	if (!no_turbo) {
-		if (eax & (1 << 1)) {
+	if ((eax & (1 << 1))) {
+		if (!no_turbo) {
 			uint64_t turbo_value;
 
 			turbo_value = rdmsr(MSR_NHM_TURBO_RATIO_LIMIT);
 			turbo_value &= 0xFF;
-			if (turbo_value < value) {
-				value = turbo_value;
-			}
-
-			value = value << 8;
-
-			/* Disable turbo boost */
-			//value |= (uint64_t)1 << 32; 
+			value = turbo_value << 8;
 
 			/* Enable turbo boost */
 			value &= ~((uint64_t)1 << 32);
 		}
+		/* Turbo boost feature is supported, but requested to be turned off */
 		else {
-			value = value << 8;
+			/* Disable turbo boost */
+			value |= (uint64_t)1 << 32; 
 		}
 	}
 
