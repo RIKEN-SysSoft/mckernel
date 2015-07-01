@@ -13,7 +13,6 @@
 #include <linux/version.h>
 #include "mcctrl.h"
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
 static int pathcheck(const char *file, const char *list)
 {
 	const char *p;
@@ -40,13 +39,20 @@ static int pathcheck(const char *file, const char *list)
 	return 0;
 }
 
-static int load_elf(struct linux_binprm *bprm)
+static int load_elf(struct linux_binprm *bprm
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
+                    , struct pt_regs *regs
+#endif
+)
 {
-	const char *i_name;
+	char mcexec[BINPRM_BUF_SIZE];
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36)
+	const
+#endif
+	char *wp;
 	char *cp;
 	struct file *file;
-	char interp[BINPRM_BUF_SIZE];
-	int retval;
+	int rc;
 	struct elfhdr *elf_ex = (struct elfhdr *)bprm->buf;
 	typedef struct {
 		char	*name;
@@ -106,12 +112,16 @@ static int load_elf(struct linux_binprm *bprm)
 		for(i = 0, st = 0; mode != 2;){
 			if(st == 0){
 				off = p & ~PAGE_MASK;
-				retval = get_user_pages(current, bprm->mm,
+				rc = get_user_pages(current, bprm->mm,
 				                        bprm->p, 1, 0, 1,
 				                        &page, NULL);
-				if(retval <= 0)
+				if(rc <= 0)
 					return -EFAULT;
-				addr = kmap_atomic(page);
+				addr = kmap_atomic(page
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0)
+				                   , KM_USER0
+#endif
+);
 				st = 1;
 			}
 			if(addr[off]){
@@ -161,7 +171,11 @@ static int load_elf(struct linux_binprm *bprm)
 			off++;
 			p++;
 			if(off == PAGE_SIZE || mode == 2){
-				kunmap_atomic(addr);
+				kunmap_atomic(addr
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0)
+				              , KM_USER0
+#endif
+);
 				put_page(page);
 				st = 0;
 			}
@@ -169,62 +183,62 @@ static int load_elf(struct linux_binprm *bprm)
 	}
 
 	if(!env_mcexec || !strcmp(env_mcexec, "0") || !strcmp(env_mcexec, "off"))
-		retval = 1;
+		rc = 1;
 	else{
-		retval = 0;
+		rc = 0;
 		if(strchr(env_mcexec, '/') && strlen(env_mcexec) < BINPRM_BUF_SIZE)
-			strcpy(interp, env_mcexec);
+			strcpy(mcexec, env_mcexec);
 		else
-			strcpy(interp, MCEXEC_PATH);
+			strcpy(mcexec, MCEXEC_PATH);
 	}
 
-	if(retval);
+	if(rc);
 	else if(env_mcexec_wl)
-		retval = !pathcheck(bprm->interp, env_mcexec_wl);
+		rc = !pathcheck(bprm->interp, env_mcexec_wl);
 	else if(env_mcexec_bl)
-		retval = pathcheck(bprm->interp, env_mcexec_bl);
+		rc = pathcheck(bprm->interp, env_mcexec_bl);
 	else
-		retval = pathcheck(bprm->interp, "/usr:/bin:/sbin:/opt");
+		rc = pathcheck(bprm->interp, "/usr:/bin:/sbin:/opt");
 
 	for(ep = env; ep->name; ep++)
 		if(ep->val)
 			kfree(ep->val);
-	if(retval)
+	if(rc)
 		return -ENOEXEC;
 
-	file = open_exec(interp);
+	file = open_exec(mcexec);
 	if (IS_ERR(file))
 		return -ENOEXEC;
 
-	retval = remove_arg_zero(bprm);
-	if (retval){
+	rc = remove_arg_zero(bprm);
+	if (rc){
 		fput(file);
-		return retval;
+		return rc;
 	}
-	retval = copy_strings_kernel(1, &bprm->interp, bprm);
-	if (retval < 0){
+	rc = copy_strings_kernel(1, &bprm->interp, bprm);
+	if (rc < 0){
 		fput(file);
-		return retval; 
+		return rc; 
 	}
 	bprm->argc++;
-	i_name = interp;
-	retval = copy_strings_kernel(1, &i_name, bprm);
-	if (retval){
+	wp = mcexec;
+	rc = copy_strings_kernel(1, &wp, bprm);
+	if (rc){
 		fput(file);
-		return retval; 
+		return rc; 
 	}
 	bprm->argc++;
 #if 1
-	retval = bprm_change_interp(interp, bprm);
-	if (retval < 0){
+	rc = bprm_change_interp(mcexec, bprm);
+	if (rc < 0){
 		fput(file);
-		return retval;
+		return rc;
 	}
 #else
 	if(brpm->interp != bprm->filename)
 		kfree(brpm->interp);
 	kfree(brpm->filename);
-	bprm->filename = bprm->interp = kstrdup(interp, GFP_KERNEL);
+	bprm->filename = bprm->interp = kstrdup(mcexec, GFP_KERNEL);
 	if(!bprm->interp){
 		fput(file);
 		return -ENOMEM;
@@ -235,11 +249,15 @@ static int load_elf(struct linux_binprm *bprm)
 	fput(bprm->file);
 	bprm->file = file;
 
-	retval = prepare_binprm(bprm);
-	if (retval < 0){
-		return retval;
+	rc = prepare_binprm(bprm);
+	if (rc < 0){
+		return rc;
 	}
-	return search_binary_handler(bprm);
+	return search_binary_handler(bprm
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
+	                             , regs
+#endif
+);
 }
 
 static struct linux_binfmt mcexec_format = {
@@ -256,12 +274,3 @@ void __exit binfmt_mcexec_exit(void)
 {
 	unregister_binfmt(&mcexec_format);
 }
-#else
-void __init binfmt_mcexec_init(void)
-{
-}
-
-void __exit binfmt_mcexec_exit(void)
-{
-}
-#endif
