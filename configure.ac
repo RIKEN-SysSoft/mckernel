@@ -161,7 +161,6 @@ AC_CONFIG_FILES([
 	Makefile
 	executer/user/Makefile
 	executer/kernel/Makefile
-	executer/kernel/mcctrl.h
 	kernel/Makefile
 	kernel/Makefile.build
 	arch/x86/tools/mcreboot-attached-mic.sh
