@@ -159,12 +159,6 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	int load_addr_set = 0;
 	static char interp_path[PATH_MAX];
 	ssize_t ss;
-	uid_t ruid;
-	uid_t euid;
-	uid_t suid;
-	gid_t rgid;
-	gid_t egid;
-	gid_t sgid;
 
 	*interp_pathp = NULL;
 
@@ -248,18 +242,8 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	}
 	desc->pid = getpid();
 	desc->pgid = getpgid(0);
-	getresuid(&ruid, &euid, &suid);
-	getresgid(&rgid, &egid, &sgid);
-	desc->ruid = ruid;
-	desc->euid = euid;
-	desc->suid = suid;
-//	desc->fsuid = setfsuid(-1);
-	desc->rgid = rgid;
-	desc->egid = egid;
-	desc->sgid = sgid;
-//	desc->fsgid = setfsgid(-1);
 	desc->entry = hdr.e_entry;
-
+	ioctl(fd, MCEXEC_UP_GET_CREDV, desc->cred);
 	desc->at_phdr = load_addr + hdr.e_phoff;
 	desc->at_phent = sizeof(phdr);
 	desc->at_phnum = hdr.e_phnum;
@@ -2046,6 +2030,17 @@ return_execve2:
 			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
 			break;
 
+		case __NR_setfsuid:
+			if(w.sr.args[1] == 1){
+				ioctl(fd, MCEXEC_UP_GET_CRED, w.sr.args[0]);
+				ret = 0;
+			}
+			else{
+				ret = setfsuid(w.sr.args[0]);
+			}
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+
 		case __NR_close:
 			if(w.sr.args[0] == fd)
 				ret = -EBADF;
@@ -2055,8 +2050,8 @@ return_execve2:
 			break;
 
 		default:
-			 ret = do_generic_syscall(&w);
-			 do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			ret = do_generic_syscall(&w);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 
 		}

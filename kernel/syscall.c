@@ -2034,9 +2034,31 @@ SYSCALL_DECLARE(tgkill)
 	return do_kill(tgid, tid, sig, &info, 0);
 }
 
-void
-do_setresuid(int ruid, int euid, int suid, int fsuid)
+int *
+getcred(int *_buf)
 {
+	int	*buf;
+	struct syscall_request request IHK_DMA_ALIGN;
+	unsigned long phys;
+
+	if(((unsigned long)_buf) & ((unsigned long)(_buf + 8)) & ~4095)
+		buf = _buf + 8;
+	else
+		buf = _buf;
+	phys = virt_to_phys(buf);
+	request.number = __NR_setfsuid;
+	request.args[0] = phys;
+	request.args[1] = 1;
+	do_syscall(&request, ihk_mc_get_processor_id(), 0);
+
+	return buf;
+}
+
+void
+do_setresuid()
+{
+	int	_buf[16];
+	int	*buf;
 	struct process *proc = cpu_local_var(current);
 	int pid = proc->ftn->pid;
 	struct cpu_local_var *v;
@@ -2044,21 +2066,17 @@ do_setresuid(int ruid, int euid, int suid, int fsuid)
 	int i;
 	unsigned long irqstate;
 
+	buf = getcred(_buf);
+
 	for(i = 0; i < num_processors; i++){
 		v = get_cpu_local_var(i);
 		irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 		list_for_each_entry(p, &(v->runq), sched_list){
 			if(p->ftn->pid == pid){
-				if(ruid != -1)
-					p->ftn->ruid = ruid;
-				if(euid != -1)
-					p->ftn->euid = euid;
-				if(suid != -1)
-					p->ftn->suid = suid;
-#if 0
-				if(fsuid != -1)
-					p->ftn->fsuid = fsuid;
-#endif
+				p->ftn->ruid = buf[0];
+				p->ftn->euid = buf[1];
+				p->ftn->suid = buf[2];
+				p->ftn->fsuid = buf[3];
 			}
 		}
 		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
@@ -2066,8 +2084,10 @@ do_setresuid(int ruid, int euid, int suid, int fsuid)
 }
 
 void
-do_setresgid(int rgid, int egid, int sgid, int fsgid)
+do_setresgid()
 {
+	int	_buf[16];
+	int	*buf;
 	struct process *proc = cpu_local_var(current);
 	int pid = proc->ftn->pid;
 	struct cpu_local_var *v;
@@ -2075,21 +2095,17 @@ do_setresgid(int rgid, int egid, int sgid, int fsgid)
 	int i;
 	unsigned long irqstate;
 
+	buf = getcred(_buf);
+
 	for(i = 0; i < num_processors; i++){
 		v = get_cpu_local_var(i);
 		irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 		list_for_each_entry(p, &(v->runq), sched_list){
 			if(p->ftn->pid == pid){
-				if(rgid != -1)
-					p->ftn->rgid = rgid;
-				if(egid != -1)
-					p->ftn->egid = egid;
-				if(sgid != -1)
-					p->ftn->sgid = sgid;
-#if 0
-				if(fsgid != -1)
-					p->ftn->fsgid = fsgid;
-#endif
+				p->ftn->rgid = buf[4];
+				p->ftn->egid = buf[5];
+				p->ftn->sgid = buf[6];
+				p->ftn->fsgid = buf[7];
 			}
 		}
 		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
@@ -2098,184 +2114,96 @@ do_setresgid(int rgid, int egid, int sgid, int fsgid)
 
 SYSCALL_DECLARE(setresuid)
 {
-	int ruid = ihk_mc_syscall_arg0(ctx);
-	int euid = ihk_mc_syscall_arg1(ctx);
-	int suid = ihk_mc_syscall_arg2(ctx);
 	int rc;
 
 	rc = syscall_generic_forwarding(__NR_setresuid, ctx);
 	if(rc == 0){
-		struct syscall_request request IHK_DMA_ALIGN;
-		int fsuid = 0;
-
-		request.number = __NR_setfsuid;
-		request.args[0] = -1;
-#if 0
-		fsuid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
-#endif
-		do_setresuid(ruid, euid, suid, fsuid);
+		do_setresuid();
 	}
 	return rc;
 }
 
 SYSCALL_DECLARE(setreuid)
 {
-	int ruid = ihk_mc_syscall_arg0(ctx);
-	int euid = ihk_mc_syscall_arg1(ctx);
-	int suid = -1;
 	int rc;
-	struct process *proc = cpu_local_var(current);
-//	int euid_bak = proc->ftn->euid;
-	int ruid_bak = proc->ftn->ruid;
 
 	rc = syscall_generic_forwarding(__NR_setreuid, ctx);
 	if(rc == 0){
-		struct syscall_request request IHK_DMA_ALIGN;
-		int fsuid = 0;
-
-		if(euid != -1){
-			if(euid != ruid_bak){
-				suid = euid;
-			}
-		}
-		else if(ruid != -1){
-		}
-		request.number = __NR_setfsuid;
-		request.args[0] = -1;
-#if 0
-		fsuid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
-#endif
-		do_setresuid(ruid, euid, suid, fsuid);
+		do_setresuid();
 	}
 	return rc;
 }
 
 SYSCALL_DECLARE(setuid)
 {
-	int euid = ihk_mc_syscall_arg0(ctx);
-	int ruid = -1;
-	int suid = -1;
 	long rc;
-	struct process *proc = cpu_local_var(current);
-	int euid_bak = proc->ftn->euid;
 
 	rc = syscall_generic_forwarding(__NR_setuid, ctx);
 	if(rc == 0){
-		struct syscall_request request IHK_DMA_ALIGN;
-		int fsuid = 0;
-
-		if(euid_bak == 0){
-			ruid = euid;
-			suid = euid;
-		}
-		request.number = __NR_setfsuid;
-		request.args[0] = -1;
-#if 0
-		fsuid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
-#endif
-		do_setresuid(ruid, euid, suid, fsuid);
+		do_setresuid();
 	}
 	return rc;
 }
 
 SYSCALL_DECLARE(setfsuid)
 {
-	int fsuid;
+	int fsuid = (int)ihk_mc_syscall_arg0(ctx);;
+	unsigned long newfsuid;
+	struct syscall_request request IHK_DMA_ALIGN;
 
-	fsuid = syscall_generic_forwarding(__NR_setfsuid, ctx);
-	do_setresuid(-1, -1, -1, fsuid);
-	return fsuid;
+	request.number = __NR_setfsuid;
+	request.args[0] = fsuid;
+	request.args[1] = 0;
+	newfsuid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+	do_setresuid();
+	return newfsuid;
 }
 
 SYSCALL_DECLARE(setresgid)
 {
-	int rgid = ihk_mc_syscall_arg0(ctx);
-	int egid = ihk_mc_syscall_arg1(ctx);
-	int sgid = ihk_mc_syscall_arg2(ctx);
 	int rc;
 
 	rc = syscall_generic_forwarding(__NR_setresgid, ctx);
 	if(rc == 0){
-		struct syscall_request request IHK_DMA_ALIGN;
-		int fsgid = 0;
-
-		request.number = __NR_setfsgid;
-		request.args[0] = -1;
-#if 0
-		fsgid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
-#endif
-		do_setresgid(rgid, egid, sgid, fsgid);
+		do_setresgid();
 	}
 	return rc;
 }
 
 SYSCALL_DECLARE(setregid)
 {
-	int rgid = ihk_mc_syscall_arg0(ctx);
-	int egid = ihk_mc_syscall_arg1(ctx);
-	int sgid = -1;
 	int rc;
-	struct process *proc = cpu_local_var(current);
-//	int egid_bak = proc->ftn->egid;
-	int rgid_bak = proc->ftn->rgid;
 
 	rc = syscall_generic_forwarding(__NR_setregid, ctx);
 	if(rc == 0){
-		struct syscall_request request IHK_DMA_ALIGN;
-		int fsgid = 0;
-
-		if(egid != -1){
-			if(egid != rgid_bak){
-				sgid = egid;
-			}
-		}
-		else if(rgid != -1){
-		}
-		request.number = __NR_setfsgid;
-		request.args[0] = -1;
-#if 0
-		fsgid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
-#endif
-		do_setresgid(rgid, egid, sgid, fsgid);
+		do_setresgid();
 	}
 	return rc;
 }
 
 SYSCALL_DECLARE(setgid)
 {
-	int egid = ihk_mc_syscall_arg0(ctx);
-	int rgid = -1;
-	int sgid = -1;
 	long rc;
-	struct process *proc = cpu_local_var(current);
-	int egid_bak = proc->ftn->egid;
 
 	rc = syscall_generic_forwarding(__NR_setgid, ctx);
 	if(rc == 0){
-		struct syscall_request request IHK_DMA_ALIGN;
-		int fsgid = 0;
-
-		if(egid_bak == 0){
-			rgid = egid;
-			sgid = egid;
-		}
-		request.number = __NR_setfsgid;
-		request.args[0] = -1;
-#if 0
-		fsgid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
-#endif
-		do_setresgid(rgid, egid, sgid, fsgid);
+		do_setresgid();
 	}
 	return rc;
 }
 
 SYSCALL_DECLARE(setfsgid)
 {
-	int fsgid;
+	int fsgid = (int)ihk_mc_syscall_arg0(ctx);;
+	unsigned long newfsgid;
+	struct syscall_request request IHK_DMA_ALIGN;
 
-	fsgid = syscall_generic_forwarding(__NR_setfsgid, ctx);
-	do_setresgid(-1, -1, -1, fsgid);
-	return fsgid;
+	request.number = __NR_setfsuid;
+	request.args[0] = fsgid;
+	request.args[1] = 0;
+	newfsgid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+	do_setresgid();
+	return newfsgid;
 }
 
 SYSCALL_DECLARE(getuid)

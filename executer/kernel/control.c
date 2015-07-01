@@ -786,6 +786,40 @@ struct mckernel_exec_file {
 	struct list_head list;
 };
 
+int
+mcexec_getcred(unsigned long phys)
+{
+	int	*virt = phys_to_virt(phys);
+
+	virt[0] = current_uid();
+	virt[1] = current_euid();
+	virt[2] = current_suid();
+	virt[3] = current_fsuid();
+	virt[4] = current_gid();
+	virt[5] = current_egid();
+	virt[6] = current_sgid();
+	virt[7] = current_fsgid();
+	return 0;
+}
+
+int
+mcexec_getcredv(int __user *virt)
+{
+	int	wk[8];
+
+	wk[0] = current_uid();
+	wk[1] = current_euid();
+	wk[2] = current_suid();
+	wk[3] = current_fsuid();
+	wk[4] = current_gid();
+	wk[5] = current_egid();
+	wk[6] = current_sgid();
+	wk[7] = current_fsgid();
+	if(copy_to_user(virt, wk, sizeof(int) * 8))
+		return -EFAULT;
+	return 0;
+}
+
 int mcexec_open_exec(ihk_os_t os, char * __user filename)
 {
 	struct file *file;
@@ -957,6 +991,13 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 
 	case MCEXEC_UP_FREE_DMA:
 		return mcexec_free_region(os, (unsigned long *)arg);
+
+	case MCEXEC_UP_GET_CRED:
+		return mcexec_getcred((unsigned long)arg);
+
+	case MCEXEC_UP_GET_CREDV:
+		return mcexec_getcredv((int *)arg);
+
 	case MCEXEC_UP_DEBUG_LOG:
 		return mcexec_debug_log(os, arg);
 	}

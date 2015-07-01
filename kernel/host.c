@@ -359,14 +359,16 @@ static int process_msg_prepare_process(unsigned long rphys)
 	}
 	proc->ftn->pid = pn->pid;
 	proc->ftn->pgid = pn->pgid;
-	proc->ftn->ruid = pn->ruid;
-	proc->ftn->euid = pn->euid;
-	proc->ftn->suid = pn->suid;
-	proc->ftn->fsuid = pn->fsuid;
-	proc->ftn->rgid = pn->rgid;
-	proc->ftn->egid = pn->egid;
-	proc->ftn->sgid = pn->sgid;
-	proc->ftn->fsgid = pn->fsgid;
+
+	proc->ftn->ruid = pn->cred[0];
+	proc->ftn->euid = pn->cred[1];
+	proc->ftn->suid = pn->cred[2];
+	proc->ftn->fsuid = pn->cred[3];
+	proc->ftn->rgid = pn->cred[4];
+	proc->ftn->egid = pn->cred[5];
+	proc->ftn->sgid = pn->cred[6];
+	proc->ftn->fsgid = pn->cred[7];
+
 	proc->vm->region.user_start = pn->user_start;
 	proc->vm->region.user_end = pn->user_end;
 	proc->vm->region.map_start = (USER_END / 3) & LARGE_PAGE_MASK;
@@ -390,6 +392,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	ihk_mc_unmap_virtual(p, npages, 1);
 	ihk_mc_unmap_memory(NULL, phys, sz);
 	flush_tlb();
+
 	return 0;
 err:
 	ihk_mc_free(pn);

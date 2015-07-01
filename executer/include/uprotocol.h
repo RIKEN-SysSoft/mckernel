@@ -39,6 +39,8 @@
 #define MCEXEC_UP_GET_CPU        0x30a02907
 #define MCEXEC_UP_STRNCPY_FROM_USER 0x30a02908
 #define MCEXEC_UP_NEW_PROCESS	 0x30a02909
+#define MCEXEC_UP_GET_CRED	 0x30a0290a
+#define MCEXEC_UP_GET_CREDV	 0x30a0290b
 
 #define MCEXEC_UP_PREPARE_DMA    0x30a02910
 #define MCEXEC_UP_FREE_DMA       0x30a02911
@@ -80,14 +82,7 @@ struct program_load_desc {
 	int err;
 	int stack_prot;
 	int pgid;
-	int ruid;
-	int euid;
-	int suid;
-	int fsuid;
-	int rgid;
-	int egid;
-	int sgid;
-	int fsgid;
+	int cred[8];
 	unsigned long entry;
 	unsigned long user_start;
 	unsigned long user_end;

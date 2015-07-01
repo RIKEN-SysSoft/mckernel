@@ -47,6 +47,9 @@ static void create_proc_procfs_file(int pid, char *fname, int mode, int cpuid);
 static void delete_proc_procfs_file(int pid, char *fname);
 static void operate_proc_procfs_file(int pid, char *fname, int msg, int mode, int cpuid);
 
+int copy_from_user(void *dst, const void *src, size_t siz);
+int copy_to_user(void *dst, const void *src, size_t siz);
+
 /**
  * \brief Create all procfs files for process.
  *
@@ -404,19 +407,69 @@ void process_procfs_request(unsigned long rarg)
 		struct process_vm *vm = proc->vm;
 
 		if (!is_current) {
-			goto end;
-		}
-		list_for_each_entry(range, &vm->vm_range_list, list) {
-			dprintf("range: %lx - %lx\n", range->start, range->end);
-			if ((range->start <= r->offset) && 
-			    (r->offset < range->end)) {
-				unsigned int len = r->count;
-				if (range->end < r->offset + r->count) {
-					len = range->end - r->offset;
+			uint64_t reason = PF_POPULATE | PF_WRITE | PF_USER;
+			unsigned long offset = r->offset;
+			unsigned long left = r->count;
+			int ret;
+
+			ans = 0;
+			if(left == 0)
+				goto end;
+
+			while(left){
+				unsigned long pa;
+				char *va;
+				int pos = offset & (PAGE_SIZE - 1);
+				int size = PAGE_SIZE - pos;
+
+				if(size > left)
+					size = left;
+				ret = page_fault_process_vm(proc->vm,
+				                (void *)offset, reason);
+				if(ret){
+					if(ans == 0)
+						ans = -EIO;
+					goto end;
 				}
-				memcpy((void *)buf, (void *)range->start, len);
-				ans = len;
-				break;
+				ret = ihk_mc_pt_virt_to_phys(vm->page_table,
+				                (void *)offset, &pa);
+				if(ret){
+					if(ans == 0)
+						ans = -EIO;
+					goto end;
+				}
+				va = phys_to_virt(pa);
+				memcpy(buf + ans, va, size);
+				offset += size;
+				left -= size;
+				ans += size;
+			}
+		}
+		else{
+			unsigned long offset = r->offset;
+			unsigned long left = r->count;
+			unsigned long pos;
+			unsigned long l;
+			ans = 0;
+			list_for_each_entry(range, &vm->vm_range_list, list) {
+				dprintf("range: %lx - %lx\n", range->start, range->end);
+				while (left &&
+				       (range->start <= offset) && 
+				       (offset < range->end)) {
+					pos = offset & (PAGE_SIZE - 1);
+					l = PAGE_SIZE - pos;
+					if(l > left)
+						l = left;
+					if(copy_from_user(buf, (void *)offset, l)){
+						if(ans == 0)
+							ans = -EIO;
+						goto end;
+					}
+					buf += l;
+					ans += l;
+					offset += l;
+					left -= l;
+				}
 			}
 		}
 		goto end;
@@ -593,6 +646,13 @@ void process_procfs_request(unsigned long rarg)
 	if (strcmp(p, "cmdline") == 0) {
 		unsigned int limit = proc->saved_cmdline_len;
 		unsigned int len = r->count;
+
+		if(!proc->saved_cmdline){
+			ans = 0;
+			eof = 1;
+			goto end;
+		}
+
 		if (r->offset < limit) {
 			if (limit < r->offset + r->count) {
 				len = limit - r->offset;
