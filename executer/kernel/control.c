@@ -31,6 +31,7 @@
 #include <linux/gfp.h>
 #include <linux/fs.h>
 #include <linux/file.h>
+#include <linux/version.h>
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/msr.h>
@@ -786,19 +787,26 @@ struct mckernel_exec_file {
 	struct list_head list;
 };
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,5,0)
+#define GUIDVAL(x) (x)
+#else
+#define GUIDVAL(x) ((x).val)
+#endif
+
+
 int
 mcexec_getcred(unsigned long phys)
 {
 	int	*virt = phys_to_virt(phys);
 
-	virt[0] = current_uid();
-	virt[1] = current_euid();
-	virt[2] = current_suid();
-	virt[3] = current_fsuid();
-	virt[4] = current_gid();
-	virt[5] = current_egid();
-	virt[6] = current_sgid();
-	virt[7] = current_fsgid();
+	virt[0] = GUIDVAL(current_uid());
+	virt[1] = GUIDVAL(current_euid());
+	virt[2] = GUIDVAL(current_suid());
+	virt[3] = GUIDVAL(current_fsuid());
+	virt[4] = GUIDVAL(current_gid());
+	virt[5] = GUIDVAL(current_egid());
+	virt[6] = GUIDVAL(current_sgid());
+	virt[7] = GUIDVAL(current_fsgid());
 	return 0;
 }
 
@@ -807,14 +815,14 @@ mcexec_getcredv(int __user *virt)
 {
 	int	wk[8];
 
-	wk[0] = current_uid();
-	wk[1] = current_euid();
-	wk[2] = current_suid();
-	wk[3] = current_fsuid();
-	wk[4] = current_gid();
-	wk[5] = current_egid();
-	wk[6] = current_sgid();
-	wk[7] = current_fsgid();
+	wk[0] = GUIDVAL(current_uid());
+	wk[1] = GUIDVAL(current_euid());
+	wk[2] = GUIDVAL(current_suid());
+	wk[3] = GUIDVAL(current_fsuid());
+	wk[4] = GUIDVAL(current_gid());
+	wk[5] = GUIDVAL(current_egid());
+	wk[6] = GUIDVAL(current_sgid());
+	wk[7] = GUIDVAL(current_fsgid());
 	if(copy_to_user(virt, wk, sizeof(int) * 8))
 		return -EFAULT;
 	return 0;
