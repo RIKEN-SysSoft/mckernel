@@ -4761,6 +4761,7 @@ SYSCALL_DECLARE(sched_setaffinity)
 	cpu_set_t k_cpu_set, cpu_set;
 	struct process *thread;
 	int cpu_id;
+	int empty_set = 1; 
 	unsigned long irqstate;
 	extern int num_processors;
 
@@ -4777,11 +4778,19 @@ SYSCALL_DECLARE(sched_setaffinity)
 
 	// XXX: We should build something like cpu_available_mask in advance
 	CPU_ZERO(&cpu_set);
-	for (cpu_id = 0; cpu_id < num_processors; cpu_id++)
-		if (CPU_ISSET(cpu_id, &k_cpu_set))
+	for (cpu_id = 0; cpu_id < num_processors; cpu_id++) {
+		if (CPU_ISSET(cpu_id, &k_cpu_set)) {
 			CPU_SET(cpu_id, &cpu_set);
+			empty_set = 0;
+		}
+	}
+	
+	/* Empty target set? */
+	if (empty_set) {
+		return -EINVAL;
+	}
 
-	if(tid == 0)
+	if (tid == 0)
 		tid = cpu_local_var(current)->ftn->tid;
 
 	for (cpu_id = 0; cpu_id < num_processors; cpu_id++) {
@@ -4798,12 +4807,21 @@ found:
 	memcpy(&thread->cpu_set, &cpu_set, sizeof(cpu_set));
 
 	if (!CPU_ISSET(cpu_id, &thread->cpu_set)) {
+		/* Find a core which is in the target set */
+		int target_cpu_id;
+		for (target_cpu_id = 0; target_cpu_id < num_processors; target_cpu_id++) {
+			if (CPU_ISSET(target_cpu_id, &thread->cpu_set)) break;
+		}
+		
 		hold_process(thread);
 		ihk_mc_spinlock_unlock(&get_cpu_local_var(cpu_id)->runq_lock, irqstate);
-		sched_request_migrate(cpu_id, thread);
+		
+		sched_request_migrate(target_cpu_id, thread);
 		release_process(thread);
+		
 		return 0;
-	} else {
+	} 
+	else {
 		ihk_mc_spinlock_unlock(&get_cpu_local_var(cpu_id)->runq_lock, irqstate);
 		return 0;
 	}
