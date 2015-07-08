@@ -4766,9 +4766,9 @@ SYSCALL_DECLARE(sched_setaffinity)
 	extern int num_processors;
 
 	if (sizeof(k_cpu_set) > len) {
-		kprintf("%s:%d\n Too small buffer.", __FILE__, __LINE__);
-		return -EINVAL;
+		memset(&k_cpu_set, 0, sizeof(k_cpu_set));
 	}
+
 	len = MIN2(len, sizeof(k_cpu_set));
 
 	if (copy_from_user(&k_cpu_set, u_cpu_set, len)) {
@@ -4807,18 +4807,10 @@ found:
 	memcpy(&thread->cpu_set, &cpu_set, sizeof(cpu_set));
 
 	if (!CPU_ISSET(cpu_id, &thread->cpu_set)) {
-		/* Find a core which is in the target set */
-		int target_cpu_id;
-		for (target_cpu_id = 0; target_cpu_id < num_processors; target_cpu_id++) {
-			if (CPU_ISSET(target_cpu_id, &thread->cpu_set)) break;
-		}
-		
 		hold_process(thread);
 		ihk_mc_spinlock_unlock(&get_cpu_local_var(cpu_id)->runq_lock, irqstate);
-		
-		sched_request_migrate(target_cpu_id, thread);
+		sched_request_migrate(cpu_id, thread);
 		release_process(thread);
-		
 		return 0;
 	} 
 	else {
@@ -4840,10 +4832,6 @@ SYSCALL_DECLARE(sched_getaffinity)
 	unsigned long irqstate;
 	extern int num_processors;
 
-	if (sizeof(k_cpu_set) > len) {
-		kprintf("%s:%d Too small buffer.\n", __FILE__, __LINE__);
-		return -EINVAL;
-	}
 	len = MIN2(len, sizeof(k_cpu_set));
 
 	if(tid == 0)
@@ -4866,7 +4854,7 @@ SYSCALL_DECLARE(sched_getaffinity)
 		return -ESRCH;
 	}
 	ret = copy_to_user(u_cpu_set, &k_cpu_set, len);
-	kprintf("%s %d %d\n", __FILE__, __LINE__, ret);
+	dkprintf("%s() ret: %d\n", __FUNCTION__, ret);
 	if (ret < 0)
 		return ret;
 	return len;
