@@ -2151,7 +2151,7 @@ static void do_migrate(void)
 	struct migrate_request *req, *tmp;
 	unsigned long irqstate = 0;
 
-	ihk_mc_spinlock_lock_noirq(&cur_v->migq_lock);
+	irqstate = ihk_mc_spinlock_lock(&cur_v->migq_lock);
 	list_for_each_entry_safe(req, tmp, &cur_v->migq, list) {
 		int cpu_id;
 		int old_cpu_id;
@@ -2195,7 +2195,7 @@ static void do_migrate(void)
 ack:
 		waitq_wakeup(&req->wq);
 	}
-	ihk_mc_spinlock_unlock_noirq(&cur_v->migq_lock);
+	ihk_mc_spinlock_unlock(&cur_v->migq_lock, irqstate);
 }
 
 void schedule(void)
