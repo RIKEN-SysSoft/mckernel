@@ -4832,6 +4832,9 @@ SYSCALL_DECLARE(sched_getaffinity)
 	unsigned long irqstate;
 	extern int num_processors;
 
+	if (!len)
+		return -EINVAL;
+
 	len = MIN2(len, sizeof(k_cpu_set));
 
 	if(tid == 0)
