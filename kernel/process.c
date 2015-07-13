@@ -110,6 +110,11 @@ void init_fork_tree_node(struct fork_tree_node *ftn,
 		ftn->ruid = parent->ruid;
 		ftn->euid = parent->euid;
 		ftn->suid = parent->suid;
+		ftn->fsuid = parent->fsuid;
+		ftn->rgid = parent->rgid;
+		ftn->egid = parent->egid;
+		ftn->sgid = parent->sgid;
+		ftn->fsgid = parent->fsgid;
 	}
 	INIT_LIST_HEAD(&ftn->children);
 	INIT_LIST_HEAD(&ftn->siblings_list);
