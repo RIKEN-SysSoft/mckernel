@@ -604,7 +604,7 @@ void setup_x86_ap(void (*next_func)(void))
 
 void arch_show_interrupt_context(const void *reg);
 void set_signal(int sig, void *regs, struct siginfo *info);
-void check_signal(unsigned long rc, void *regs);
+void check_signal(unsigned long, void *, int);
 extern void tlb_flush_handler(int vector);
 
 void handle_interrupt(int vector, struct x86_user_context *regs)
@@ -678,7 +678,7 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 		}
 	}
 
-	check_signal(0, regs);
+	check_signal(0, regs, 0);
 	check_need_resched();
 }
 
@@ -691,7 +691,7 @@ void gpe_handler(struct x86_user_context *regs)
 		panic("gpe_handler");
 	}
 	set_signal(SIGSEGV, regs, NULL);
-	check_signal(0, regs);
+	check_signal(0, regs, 0);
 	check_need_resched();
 	// panic("GPF");
 }
@@ -719,7 +719,7 @@ void debug_handler(struct x86_user_context *regs)
 	memset(&info, '\0', sizeof info);
 	info.si_code = si_code;
 	set_signal(SIGTRAP, regs, &info);
-	check_signal(0, regs);
+	check_signal(0, regs, 0);
 	check_need_resched();
 }
 
@@ -736,7 +736,7 @@ void int3_handler(struct x86_user_context *regs)
 	memset(&info, '\0', sizeof info);
 	info.si_code = TRAP_BRKPT;
 	set_signal(SIGTRAP, regs, &info);
-	check_signal(0, regs);
+	check_signal(0, regs, 0);
 	check_need_resched();
 }
 

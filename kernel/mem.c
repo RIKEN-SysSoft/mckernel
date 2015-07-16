@@ -171,7 +171,7 @@ static struct ihk_mc_interrupt_handler query_free_mem_handler = {
 };
 
 void set_signal(int sig, void *regs, struct siginfo *info);
-void check_signal(unsigned long rc, void *regs);
+void check_signal(unsigned long, void *, int);
 int gencore(struct process *, void *, struct coretable **, int *);
 void freecore(struct coretable **);
 
@@ -416,7 +416,7 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 			info._sifields._sigfault.si_addr = fault_addr;
 			set_signal(SIGSEGV, regs, &info);
 		}
-		check_signal(0, regs);
+		check_signal(0, regs, 0);
 		goto out;
 	}
 

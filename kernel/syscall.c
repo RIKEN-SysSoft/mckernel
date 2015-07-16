@@ -94,7 +94,7 @@ static char *syscall_name[] MCKERNEL_UNUSED = {
 #undef	SYSCALL_DELEGATED
 };
 
-void check_signal(unsigned long rc, void *regs);
+void check_signal(unsigned long, void *, int);
 void do_signal(long rc, void *regs, struct process *proc, struct sig_pending *pending);
 extern unsigned long do_kill(int pid, int tid, int sig, struct siginfo *info, int ptracecont);
 extern struct sigpending *hassigpending(struct process *proc);
@@ -6059,7 +6059,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		l = syscall_generic_forwarding(num, ctx);
 	}
 
-	check_signal(l, NULL);
+	check_signal(l, NULL, num);
 	check_need_resched();
 
 	if (cpu_local_var(current)->ftn->ptrace) {

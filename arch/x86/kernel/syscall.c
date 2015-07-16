@@ -30,6 +30,7 @@ int copy_from_user(void *dst, const void *src, size_t siz);
 int copy_to_user(void *dst, const void *src, size_t siz);
 int write_process_vm(struct process_vm *vm, void *dst, const void *src, size_t siz);
 long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
+long syscall(int num, ihk_mc_user_context_t *ctx);
 extern void save_fp_regs(struct process *proc);
 
 //#define DEBUG_PRINT_SC
@@ -152,6 +153,8 @@ struct sigsp {
 	unsigned long sigrc;
 	unsigned long sigmask;
 	int ssflags;
+	int num;
+	int restart;
 	siginfo_t info;
 };
 
@@ -160,18 +163,19 @@ SYSCALL_DECLARE(rt_sigreturn)
 	struct process *proc = cpu_local_var(current);
 	struct x86_user_context *regs;
 	struct sigsp *sigsp;
-	long rc = -EFAULT;
 
 	asm("movq %%gs:132, %0" : "=r" (regs));
 	--regs;
 
 	sigsp = (struct sigsp *)regs->gpr.rsp;
+	if(copy_from_user(regs, &sigsp->regs, sizeof(struct x86_user_context)))
+		return -EFAULT;
 	proc->sigmask.__val[0] = sigsp->sigmask;
 	proc->sigstack.ss_flags = sigsp->ssflags;
-	if(copy_from_user(regs, &sigsp->regs, sizeof(struct x86_user_context)))
-		return rc;
-	copy_from_user(&rc, &sigsp->sigrc, sizeof(long));
-	return rc;
+	if(sigsp->restart){
+		return syscall(sigsp->num, (ihk_mc_user_context_t *)regs);
+	}
+	return sigsp->sigrc;
 }
 
 extern struct cpu_local_var *clv;
@@ -495,9 +499,41 @@ void ptrace_report_signal(struct process *proc, int sig)
 	schedule();
 	dkprintf("ptrace_report_signal,wake up\n");
 }
+static int
+isrestart(int num, unsigned long rc, int sig, int restart)
+{
+	if(num == 0 || rc != -EINTR)
+		return 0;
+	switch(num){
+	    case __NR_pause:
+	    case __NR_rt_sigsuspend:
+	    case __NR_rt_sigtimedwait:
+//	    case __NR_rt_sigwaitinfo:
+	    case __NR_epoll_wait:
+	    case __NR_epoll_pwait:
+	    case __NR_poll:
+	    case __NR_ppoll:
+	    case __NR_select:
+	    case __NR_pselect6:
+	    case __NR_msgrcv:
+	    case __NR_msgsnd:
+	    case __NR_semop:
+	    case __NR_semtimedop:
+	    case __NR_clock_nanosleep:
+	    case __NR_nanosleep:
+//	    case __NR_usleep:
+	    case __NR_io_getevents:
+		return 0;
+	}
+	if(sig == SIGCHLD)
+		return 1;
+	if(restart)
+		return 1;
+	return 0;
+}
 
 void
-do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pending *pending)
+do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pending *pending, int num)
 {
 	struct x86_user_context *regs = regs0;
 	struct k_sigaction *k;
@@ -564,6 +600,10 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 		}
 		sigsp->sigmask = mask;
 		sigsp->ssflags = ssflags;
+		sigsp->num = num;
+		sigsp->restart = isrestart(num, rc, sig, k->sa.sa_flags & SA_RESTART);
+		if(num != 0 && rc == -EINTR && sig == SIGCHLD)
+			sigsp->restart = 1;
 		memcpy(&sigsp->info, &pending->info, sizeof(siginfo_t));
 
 		usp = (unsigned long *)sigsp;
@@ -697,6 +737,9 @@ getsigpending(struct process *proc, int delflag){
 	struct sig_pending *pending;
 	__sigset_t w;
 	int	irqstate;
+	__sigset_t x;
+	int sig;
+	struct k_sigaction *k;
 
 	w = proc->sigmask.__val[0];
 
@@ -705,11 +748,18 @@ getsigpending(struct process *proc, int delflag){
 	for(;;){
 		irqstate = ihk_mc_spinlock_lock(lock);
 		list_for_each_entry_safe(pending, next, head, list){
-			if(!(pending->sigmask.__val[0] & w)){
-				if(delflag)
-					list_del(&pending->list);
-				ihk_mc_spinlock_unlock(lock, irqstate);
-				return pending;
+			for(x = pending->sigmask.__val[0], sig = 0; x; sig++, x >>= 1);
+			k = proc->sighandler->action + sig - 1;
+			if(delflag ||
+			   (sig != SIGCHLD && sig != SIGURG) ||
+			   (k->sa.sa_handler != (void *)1 &&
+			    k->sa.sa_handler != NULL)){
+				if(!(pending->sigmask.__val[0] & w)){
+					if(delflag)
+						list_del(&pending->list);
+					ihk_mc_spinlock_unlock(lock, irqstate);
+					return pending;
+				}
 			}
 		}
 		ihk_mc_spinlock_unlock(lock, irqstate);
@@ -730,7 +780,7 @@ hassigpending(struct process *proc)
 }
 
 void
-check_signal(unsigned long rc, void *regs0)
+check_signal(unsigned long rc, void *regs0, int num)
 {
 	struct x86_user_context *regs = regs0;
 	struct process *proc;
@@ -770,7 +820,7 @@ check_signal(unsigned long rc, void *regs0)
 			return;
 		}
 
-		do_signal(rc, regs, proc, pending);
+		do_signal(rc, regs, proc, pending, num);
 	}
 }
 
