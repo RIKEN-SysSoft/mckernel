@@ -95,7 +95,7 @@ static char *syscall_name[] MCKERNEL_UNUSED = {
 };
 
 void check_signal(unsigned long, void *, int);
-void do_signal(long rc, void *regs, struct process *proc, struct sig_pending *pending);
+void do_signal(long rc, void *regs, struct process *proc, struct sig_pending *pending, int num);
 extern unsigned long do_kill(int pid, int tid, int sig, struct siginfo *info, int ptracecont);
 extern struct sigpending *hassigpending(struct process *proc);
 int copy_from_user(void *, const void *, size_t);
@@ -2609,9 +2609,10 @@ do_sigsuspend(struct process *proc, const sigset_t *set)
 		list_del(&pending->list);
 		ihk_mc_spinlock_unlock(lock, flag);
 		proc->sigmask.__val[0] = bset;
-		do_signal(-EINTR, NULL, proc, pending);
+		do_signal(-EINTR, NULL, proc, pending, 0);
 		break;
 	}
+kprintf("return do_sigsuspend\n");
 	return -EINTR;
 }
 
