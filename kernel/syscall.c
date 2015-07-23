@@ -1474,7 +1474,9 @@ settid(struct process *proc, int mode, int newcpuid, int oldcpuid)
 	ihk_mc_syscall_arg2(&ctx) = newcpuid;
 	ihk_mc_syscall_arg3(&ctx) = oldcpuid;
 	rc = syscall_generic_forwarding(__NR_gettid, &ctx);
-	proc->ftn->tid = rc;
+	if (mode != 2) {
+		proc->ftn->tid = rc;
+	}
 }
 
 SYSCALL_DECLARE(gettid)
