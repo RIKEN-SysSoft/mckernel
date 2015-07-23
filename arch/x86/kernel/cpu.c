@@ -610,6 +610,9 @@ extern void tlb_flush_handler(int vector);
 void handle_interrupt(int vector, struct x86_user_context *regs)
 {
 	struct ihk_mc_interrupt_handler *h;
+	struct cpu_local_var *v = get_this_cpu_local_var();
+
+	v->in_interrupt = 1;
 
 	lapic_ack();
 
@@ -680,6 +683,8 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 
 	check_signal(0, regs, 0);
 	check_need_resched();
+
+	v->in_interrupt = 0;
 }
 
 void gpe_handler(struct x86_user_context *regs)

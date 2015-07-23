@@ -2293,7 +2293,7 @@ redo:
 		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 	}
 
-	if (v->flags & CPU_FLAG_NEED_MIGRATE) {
+	if (v->flags & CPU_FLAG_NEED_MIGRATE && !v->in_interrupt) {
 		v->flags &= ~CPU_FLAG_NEED_MIGRATE;
 		do_migrate();
 		goto redo;

@@ -67,6 +67,7 @@ struct cpu_local_var {
 
 	ihk_spinlock_t migq_lock;
 	struct list_head migq;
+	int in_interrupt;
 } __attribute__((aligned(64)));
 
 
