@@ -79,7 +79,7 @@ Core with BSP HW ID 226 boots next and is given  SW-ID of 226.
 Core with BSP HW ID 227 boots next and is given  SW-ID of 227.
 */
 static ihk_spinlock_t cpuid_head_lock = 0;
-static int cpuid_head = 1;
+static int cpuid_head = 0;
 
 /* archtecture-depended syscall handlers */
 int obtain_clone_cpuid() {

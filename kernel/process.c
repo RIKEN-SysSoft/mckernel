@@ -2042,6 +2042,8 @@ void cpu_clear(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock)
 	ihk_mc_spinlock_unlock(lock, flags);
 }
 
+static void do_migrate(void);
+
 static void idle(void)
 {
 	struct cpu_local_var *v = get_this_cpu_local_var();
@@ -2053,6 +2055,13 @@ static void idle(void)
 	while (1) {
 		schedule();
 		cpu_disable_interrupt();
+		
+		/* See if we need to migrate a process somewhere */
+		if (v->flags & CPU_FLAG_NEED_MIGRATE) {
+			v->flags &= ~CPU_FLAG_NEED_MIGRATE;
+			do_migrate();
+		}
+
 		/*
 		 * XXX: KLUDGE: It is desirable to be resolved in schedule().
 		 *
@@ -2205,14 +2214,15 @@ ack:
 
 void schedule(void)
 {
-	struct cpu_local_var *v = get_this_cpu_local_var();
+	struct cpu_local_var *v;
 	struct process *next, *prev, *proc, *tmp = NULL;
 	int switch_ctx = 0;
 	unsigned long irqstate;
 	struct process *last;
 
 redo:
-	irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
+	irqstate = ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
+	v = get_this_cpu_local_var();
 
 	next = NULL;
 	prev = v->current;
@@ -2284,19 +2294,19 @@ redo:
 			last = ihk_mc_switch_context(NULL, &next->ctx, prev);
 		}
 
-		if ((last != NULL) && (last->ftn->status & (PS_ZOMBIE | PS_EXITED))) {
+		/* Have we migrated to another core meanwhile? */
+		if (v != get_this_cpu_local_var()) {
+			dkprintf("migrated, skipping freeing last\n");
+			goto redo;
+		}
+
+		if ((last != NULL) && (last->ftn) && (last->ftn->status & (PS_ZOMBIE | PS_EXITED))) {
 			free_process_memory(last);
 			release_process(last);
 		}
 	}
 	else {
 		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
-	}
-
-	if (v->flags & CPU_FLAG_NEED_MIGRATE && !v->in_interrupt) {
-		v->flags &= ~CPU_FLAG_NEED_MIGRATE;
-		do_migrate();
-		goto redo;
 	}
 }
 
