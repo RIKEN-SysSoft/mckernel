@@ -2338,14 +2338,14 @@ int sched_wakeup_process(struct process *proc, int valid_states)
 			 proc->ftn->pid, valid_states, proc->ftn->status, proc->cpu_id, ihk_mc_get_processor_id());
 	
 	irqstate = ihk_mc_spinlock_lock(&(proc->spin_sleep_lock));
-	if (proc->spin_sleep) {
+	if (proc->spin_sleep > 0) {
 		dkprintf("sched_wakeup_process() spin wakeup: cpu_id: %d\n", 
 				 proc->cpu_id);
 
 		spin_slept = 1;
-		proc->spin_sleep = 0;
 		status = 0;	
 	}
+	--proc->spin_sleep;
 	ihk_mc_spinlock_unlock(&(proc->spin_sleep_lock), irqstate);
 	
 	if (spin_slept) {

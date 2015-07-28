@@ -58,22 +58,24 @@ uint64_t schedule_timeout(uint64_t timeout)
 	struct waitq_entry my_wait;
 	struct timer my_timer;
 	struct process *proc = cpu_local_var(current);
+	int irqstate;
+	int spin_sleep;
 
-	ihk_mc_spinlock_lock_noirq(&proc->spin_sleep_lock);
+	irqstate = ihk_mc_spinlock_lock(&proc->spin_sleep_lock);
 	dkprintf("schedule_timeout() spin sleep timeout: %lu\n", timeout);
-	proc->spin_sleep = 1;
-	ihk_mc_spinlock_unlock_noirq(&proc->spin_sleep_lock);
+	spin_sleep = ++proc->spin_sleep;
+	ihk_mc_spinlock_unlock(&proc->spin_sleep_lock, irqstate);
 
 	/* Spin sleep.. */
 	for (;;) {
 		uint64_t t_s = rdtsc();
 		uint64_t t_e;
 		int spin_over = 0;
-
-		ihk_mc_spinlock_lock_noirq(&proc->spin_sleep_lock);
+		
+		irqstate = ihk_mc_spinlock_lock(&proc->spin_sleep_lock);
 		
 		/* Woken up by someone? */
-		if (!proc->spin_sleep) {
+		if (proc->spin_sleep < 1) {
 			t_e = rdtsc();
 
 			spin_over = 1;
@@ -85,25 +87,69 @@ uint64_t schedule_timeout(uint64_t timeout)
 			}
 		}
 		
-		ihk_mc_spinlock_unlock_noirq(&proc->spin_sleep_lock);
+		ihk_mc_spinlock_unlock(&proc->spin_sleep_lock, irqstate);
 
-		t_s = rdtsc();
+		if (!spin_over) {
+			t_s = rdtsc();
+			int need_schedule;
+			struct cpu_local_var *v = get_this_cpu_local_var();
+			int irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
+			need_schedule = v->runq_len > 1 ? 1 : 0;
+			ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+
+			/* Give a chance to another process (if any) in case the core is
+			 * oversubscribed, but make sure we will be re-scheduled */
+			if (need_schedule) {
+				xchg4(&(cpu_local_var(current)->ftn->status), PS_RUNNING);
+				schedule();
+				xchg4(&(cpu_local_var(current)->ftn->status), 
+						PS_INTERRUPTIBLE);
+			}
+			else {
+				/* Spin wait */
+				while ((rdtsc() - t_s) < LOOP_TIMEOUT) {
+					cpu_pause();
+				}
+
+				if (timeout < LOOP_TIMEOUT) {
+					timeout = 0;
+					spin_over = 1;
+				}
+				else {
+					timeout -= LOOP_TIMEOUT;
+				}
+			}
+		}
 		
-		while ((rdtsc() - t_s) < LOOP_TIMEOUT) {
-			cpu_pause();
-		}
-
-		if (timeout < LOOP_TIMEOUT) {
-			timeout = 0;
-			spin_over = 1;
-		}
-		else {
-			timeout -= LOOP_TIMEOUT;
-		}
-
 		if (spin_over) {
 			dkprintf("schedule_timeout() spin woken up, timeout: %lu\n", 
 					timeout);
+			
+			/* Give a chance to another process (if any) in case we timed out, 
+			 * but make sure we will be re-scheduled */
+			if (timeout == 0) {
+				int need_schedule;
+				struct cpu_local_var *v = get_this_cpu_local_var();
+
+				int irqstate = 
+					ihk_mc_spinlock_lock(&(v->runq_lock));
+				need_schedule = v->runq_len > 1 ? 1 : 0;
+				ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+
+				if (need_schedule) {
+					xchg4(&(cpu_local_var(current)->ftn->status), PS_RUNNING);
+					schedule();
+					xchg4(&(cpu_local_var(current)->ftn->status), 
+							PS_INTERRUPTIBLE);
+				}
+			}
+			
+			irqstate = ihk_mc_spinlock_lock(&proc->spin_sleep_lock);
+			if (spin_sleep == proc->spin_sleep) {
+				--proc->spin_sleep;
+			}
+			ihk_mc_spinlock_unlock(&proc->spin_sleep_lock, irqstate);
+
 			return timeout;
 		}
 	}
