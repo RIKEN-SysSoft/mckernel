@@ -55,6 +55,8 @@ extern void release_fp_regs(struct process *proc);
 extern void save_fp_regs(struct process *proc);
 extern void restore_fp_regs(struct process *proc);
 void settid(struct process *proc, int mode, int newcpuid, int oldcpuid);
+extern void __runq_add_proc(struct process *proc, int cpu_id);
+extern void terminate_host(int pid);
 
 int refcount_fork_tree_node(struct fork_tree_node *ftn)
 {
@@ -2212,6 +2214,9 @@ ack:
 	ihk_mc_spinlock_unlock(&cur_v->migq_lock, irqstate);
 }
 
+extern int num_processors;
+extern ihk_spinlock_t cpuid_head_lock;
+
 void schedule(void)
 {
 	struct cpu_local_var *v;
@@ -2308,6 +2313,89 @@ redo:
 	else {
 		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 	}
+
+#if 1
+	/* FIXME: temporary solution.
+	 * move threads from the last CPU core to other available cores 
+	 * if it's oversubscribed 
+	 * Will be solved by proper timesharing in the future */
+	if (ihk_mc_get_processor_id() == (num_processors - 1)) {
+		int old_cpu_id;
+		int cpu_id;
+		struct cpu_local_var *v;
+		struct cpu_local_var *cur_v;
+		struct process *proc_to_move = NULL;
+		int irqstate2;
+
+		irqstate = cpu_disable_interrupt_save();
+
+		ihk_mc_spinlock_lock_noirq(&(get_this_cpu_local_var()->runq_lock));
+		v = get_this_cpu_local_var();
+
+		if (v->runq_len > 1) {
+			/* Pick another process */
+			list_for_each_entry_safe(proc, tmp, &(v->runq), sched_list) {
+				if (proc != cpu_local_var(current)) {
+					list_del(&proc->sched_list);
+					--v->runq_len;
+					proc_to_move = proc;
+					break;
+				}
+			}
+		}
+		ihk_mc_spinlock_unlock_noirq(&(v->runq_lock));
+
+		if (proc_to_move) {
+			ihk_mc_spinlock_lock_noirq(&cpuid_head_lock);
+
+			for (cpu_id = num_processors - 2; cpu_id > -1; --cpu_id) {
+
+				if (get_cpu_local_var(cpu_id)->status != 
+						CPU_STATUS_IDLE) {
+					continue;
+				}
+
+				get_cpu_local_var(cpu_id)->status = CPU_STATUS_RESERVED;
+				break;
+			}
+
+			ihk_mc_spinlock_unlock_noirq(&cpuid_head_lock);
+
+			if (cpu_id == -1) {
+				kprintf("error: no more CPUs left to balance oversubscribed tail core\n");
+				terminate_host(proc_to_move->ftn->pid);
+				cpu_restore_interrupt(irqstate);
+				return;
+			}
+
+			v = get_cpu_local_var(cpu_id);
+			cur_v = get_this_cpu_local_var();
+
+			double_rq_lock(cur_v, v, &irqstate2);
+
+			old_cpu_id = proc_to_move->cpu_id;
+			proc_to_move->cpu_id = cpu_id;
+			settid(proc_to_move, 2, cpu_id, old_cpu_id);
+			__runq_add_proc(proc_to_move, cpu_id);
+			cpu_clear(old_cpu_id, &proc_to_move->vm->cpu_set, 
+					&proc_to_move->vm->cpu_set_lock);
+			cpu_set(cpu_id, &proc_to_move->vm->cpu_set, 
+					&proc_to_move->vm->cpu_set_lock);
+
+			double_rq_unlock(cur_v, v, irqstate2);
+
+			/* Kick scheduler */
+			if (cpu_id != ihk_mc_get_processor_id())
+				ihk_mc_interrupt_cpu(
+						get_x86_cpu_local_variable(cpu_id)->apic_id, 
+						0xd1);
+
+			dkprintf("moved TID %d to CPU: %d\n", 
+				proc_to_move->ftn->tid, cpu_id);
+		}
+		cpu_restore_interrupt(irqstate);
+	}
+#endif
 }
 
 void
