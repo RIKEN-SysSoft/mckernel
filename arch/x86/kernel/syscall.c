@@ -87,6 +87,9 @@ int obtain_clone_cpuid() {
 	struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
     int cpuid, nretry = 0;
     ihk_mc_spinlock_lock_noirq(&cpuid_head_lock);
+	
+	/* Always start from 0 to fill in LWK cores linearily */
+	cpuid_head = 0;
  retry:
     /* Try to obtain next physical core */
     cpuid = cpuid_head;

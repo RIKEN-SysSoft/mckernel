@@ -2325,7 +2325,7 @@ redo:
 		struct cpu_local_var *v;
 		struct cpu_local_var *cur_v;
 		struct process *proc_to_move = NULL;
-		int irqstate2;
+		unsigned long irqstate2;
 
 		irqstate = cpu_disable_interrupt_save();
 
