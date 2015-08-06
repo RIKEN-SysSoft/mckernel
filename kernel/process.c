@@ -57,6 +57,8 @@ extern void restore_fp_regs(struct process *proc);
 void settid(struct process *proc, int mode, int newcpuid, int oldcpuid);
 extern void __runq_add_proc(struct process *proc, int cpu_id);
 extern void terminate_host(int pid);
+extern void lapic_timer_enable(unsigned int clocks);
+extern void lapic_timer_disable();
 
 int refcount_fork_tree_node(struct fork_tree_node *ftn)
 {
@@ -2263,6 +2265,23 @@ redo:
 		if (!(prev->ftn->status & (PS_ZOMBIE | PS_EXITED))) {
 			list_add_tail(&prev->sched_list, &(v->runq));
 			++v->runq_len;
+		}
+
+		/* Toggle timesharing if CPU core is oversubscribed 
+		 * (on last CPU core only for now) */
+		if (ihk_mc_get_processor_id() == num_processors - 1) {
+			if (v->runq_len > 1) {
+				if (!cpu_local_var(timer_enabled)) {
+					lapic_timer_enable(10000000);
+					cpu_local_var(timer_enabled) = 1;
+				}
+			}
+			else {
+				if (cpu_local_var(timer_enabled)) {
+					lapic_timer_disable();
+					cpu_local_var(timer_enabled) = 0;
+				}
+			}
 		}
 	}
 

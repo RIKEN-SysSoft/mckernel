@@ -69,6 +69,7 @@ struct cpu_local_var {
 	struct list_head migq;
 	int in_interrupt;
 	int no_preempt;
+	int timer_enabled;
 } __attribute__((aligned(64)));
 
 

@@ -39,6 +39,7 @@
 #define LAPIC_ICR0          0x300
 #define LAPIC_ICR2          0x310
 #define LAPIC_ESR           0x280
+#define LOCAL_TIMER_VECTOR  0xef
 
 #define APIC_INT_LEVELTRIG      0x08000
 #define APIC_INT_ASSERT         0x04000
@@ -48,6 +49,8 @@
 #define APIC_DM_NMI             0x00400
 #define APIC_DM_INIT            0x00500
 #define APIC_DM_STARTUP         0x00600
+#define APIC_DIVISOR            16
+#define APIC_LVT_TIMER_PERIODIC (1 << 17)
 
 
 //#define DEBUG_PRINT_CPU
@@ -251,6 +254,23 @@ void lapic_icr_write(unsigned int h, unsigned int l)
 	lapic_write(LAPIC_ICR0, l);
 }
 
+
+void lapic_timer_enable(unsigned int clocks)
+{
+	unsigned int lvtt_value;
+
+	lapic_write(LAPIC_TIMER_INITIAL, clocks / APIC_DIVISOR);
+	lapic_write(LAPIC_TIMER_DIVIDE, 3);
+
+	/* initialize periodic timer */
+	lvtt_value = LOCAL_TIMER_VECTOR | APIC_LVT_TIMER_PERIODIC;
+	lapic_write(LAPIC_TIMER, lvtt_value);
+}
+
+void lapic_timer_disable()
+{
+	lapic_write(LAPIC_TIMER_INITIAL, 0);
+}
 
 void print_msr(int idx)
 {
@@ -672,6 +692,12 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 			arch_show_interrupt_context(regs);
 			panic("Unhandled exception");
 		}
+	}
+	else if (vector == LOCAL_TIMER_VECTOR) {
+		/* Timer interrupt, enabled only on oversubscribed CPU cores,
+		 * request reschedule */
+		v->flags |= CPU_FLAG_NEED_RESCHED;
+		dkprintf("timer[%lu]: CPU_FLAG_NEED_RESCHED \n", rdtsc());
 	}
 	else if (vector >= IHK_TLB_FLUSH_IRQ_VECTOR_START && 
 	         vector < IHK_TLB_FLUSH_IRQ_VECTOR_END) {
