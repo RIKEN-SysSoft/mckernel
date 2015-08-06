@@ -74,18 +74,17 @@ void ap_init(void)
 		return;
 	}
 
-	kprintf("BSP HW ID = %d, ", bsp_hw_id);
-	kprintf("AP Booting :");
+	kprintf("BSP HW ID = %d\n", bsp_hw_id);
 
 	for (i = 0; i < cpu_info->ncpus; i++) {
 		if (cpu_info->hw_ids[i] == bsp_hw_id) {
 			continue;
 		}
+		kprintf("AP Booting: %d (HW ID: %d)\n", i, cpu_info->hw_ids[i]);
 		ihk_mc_boot_cpu(cpu_info->hw_ids[i], (unsigned long)ap_wait);
-		kprintf(" %d", cpu_info->hw_ids[i]);
 
 		num_processors++;
 	}
-	kprintf(" .. Done\n");
+	kprintf("AP Booting: Done\n");
 }
 

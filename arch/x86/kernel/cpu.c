@@ -415,7 +415,7 @@ void init_pat(void)
 		boot_pat_state = rdmsr(MSR_IA32_CR_PAT);
 
 	wrmsr(MSR_IA32_CR_PAT, pat);
-	kprintf("PAT support detected and reconfigured.\n");
+	dkprintf("PAT support detected and reconfigured.\n");
 }
 
 void init_lapic(void)
