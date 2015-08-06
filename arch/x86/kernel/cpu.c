@@ -143,6 +143,8 @@ static void init_idt(void)
 	reload_idt();
 }
 
+static int xsave_available = 0;
+
 void init_fpu(void)
 {
 	unsigned long reg;
@@ -170,20 +172,24 @@ void init_fpu(void)
 	reg |= ((1 << 9) | (1 << 10));
 	if(cpuid01_ecx & (1 << 26)) {
 		/* XSAVE set, enable access to xcr0 */
+		dkprintf("init_fpu(): XSAVE available\n");
+		xsave_available = 1;
 		reg |= (1 << 18);
 	}
 	asm volatile("movq %0, %%cr4" : : "r"(reg));
 
-	kprintf("init_fpu(): SSE init: CR4 = 0x%016lX;  ", reg);
+	dkprintf("init_fpu(): SSE init: CR4 = 0x%016lX\n", reg);
 
 	/* Set xcr0[2:1] to enable avx ops */
 	if(cpuid01_ecx & (1 << 28)) {
 		reg = xgetbv(0);
 		reg |= 0x6;
 		xsetbv(0, reg);
+		dkprintf("init_fpu(): AVX init: XCR0 = 0x%016lX\n", reg);
 	}
 
-	kprintf("XCR0 = 0x%016lX\n", reg);
+	/* TODO: set MSR_IA32_XSS to enable xsaves/xrstors */
+
 #else
 	kprintf("init_fpu(): SSE not enabled\n");
 #endif
@@ -1186,10 +1192,11 @@ release_fp_regs(struct process *proc)
 {
 	int	pages;
 
-	if (!proc->fp_regs)
+	if (proc && !proc->fp_regs)
 		return;
+
 	pages = (sizeof(fp_regs_struct) + 4095) >> 12;
-	ihk_mc_free_pages(proc->fp_regs, 1);
+	ihk_mc_free_pages(proc->fp_regs, pages);
 	proc->fp_regs = NULL;
 }
 
@@ -1198,14 +1205,30 @@ save_fp_regs(struct process *proc)
 {
 	int	pages;
 
-	if (proc->fp_regs)
-		return;
-	pages = (sizeof(fp_regs_struct) + 4095) >> 12;
-	proc->fp_regs = ihk_mc_alloc_pages(pages, IHK_MC_AP_NOWAIT);
-	if(!proc->fp_regs)
-		return;
-	memset(proc->fp_regs, 0, sizeof(fp_regs_struct));
-	// TODO: do xsave
+	if (!proc->fp_regs) {
+		pages = (sizeof(fp_regs_struct) + 4095) >> 12;
+		proc->fp_regs = ihk_mc_alloc_pages(pages, IHK_MC_AP_NOWAIT);
+
+		if (!proc->fp_regs) {
+			kprintf("error: allocating fp_regs pages\n");
+			return;
+		}
+
+		memset(proc->fp_regs, 0, sizeof(fp_regs_struct));
+	}
+
+	if (xsave_available) {
+		unsigned int low, high;
+
+		/* Request full save of x87, SSE and AVX states */
+		low = 0x7;
+		high = 0;
+
+		asm volatile("xsave %0" : : "m" (*proc->fp_regs), "a" (low), "d" (high) 
+			: "memory");
+
+		dkprintf("fp_regs for TID %d saved\n", proc->ftn->tid);
+	}
 }
 
 void
@@ -1213,8 +1236,22 @@ restore_fp_regs(struct process *proc)
 {
 	if (!proc->fp_regs)
 		return;
-	// TODO: do xrstor
-	release_fp_regs(proc);
+
+	if (xsave_available) {
+		unsigned int low, high;
+
+		/* Request full restore of x87, SSE and AVX states */
+		low = 0x7;
+		high = 0;
+
+		asm volatile("xrstor %0" : : "m" (*proc->fp_regs), 
+				"a" (low), "d" (high));
+		
+		dkprintf("fp_regs for TID %d restored\n", proc->ftn->tid);
+	}
+
+	// XXX: why release??
+	//release_fp_regs(proc);
 }
 
 ihk_mc_user_context_t *lookup_user_context(struct process *proc)

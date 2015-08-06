@@ -2304,6 +2304,15 @@ redo:
 			restore_debugreg(next->ptrace_debugreg);
 		}
 
+		/* Take care of floating point registers except for idle process */
+		if (prev && prev != &cpu_local_var(idle)) {
+			save_fp_regs(prev);
+		}
+
+		if (next != &cpu_local_var(idle)) {
+			restore_fp_regs(next);
+		}
+
 		ihk_mc_load_page_table(next->vm->page_table);
 		
 		dkprintf("[%d] schedule: tlsblock_base: 0x%lX\n", 

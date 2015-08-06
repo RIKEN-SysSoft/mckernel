@@ -58,6 +58,7 @@
 #define MSR_IA32_ENERGY_PERF_BIAS	0x000001b0
 #define MSR_NHM_TURBO_RATIO_LIMIT	0x000001ad
 #define MSR_IA32_CR_PAT			0x00000277
+#define MSR_IA32_XSS			0xda0
 
 
 #define CVAL(event, mask) \
