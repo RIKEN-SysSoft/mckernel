@@ -411,6 +411,7 @@ struct process {
 	fp_regs_struct *fp_regs;
 	char *saved_cmdline;
 	long saved_cmdline_len;
+	int in_syscall_offload;
 };
 
 struct process_vm {

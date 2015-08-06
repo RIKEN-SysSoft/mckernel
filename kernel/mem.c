@@ -370,6 +370,8 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 	dkprintf("[%d]page_fault_handler(%p,%lx,%p)\n",
 			ihk_mc_get_processor_id(), fault_addr, reason, regs);
 
+	preempt_disable();
+
 	cpu_enable_interrupt();
 
 	error = page_fault_process_vm(proc->vm, fault_addr, reason);
@@ -422,6 +424,7 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 
 	error = 0;
 out:
+	preempt_enable();
 	dkprintf("[%d]page_fault_handler(%p,%lx,%p): (%d)\n",
 			ihk_mc_get_processor_id(), fault_addr, reason,
 			regs, error);

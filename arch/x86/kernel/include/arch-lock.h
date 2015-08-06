@@ -14,6 +14,9 @@ int __kprintf(const char *format, ...);
 
 typedef int ihk_spinlock_t;
 
+extern void preempt_enable(void);
+extern void preempt_disable(void);
+
 #define IHK_STATIC_SPINLOCK_FUNCS
 
 static void ihk_mc_spinlock_init(ihk_spinlock_t *lock)
@@ -45,6 +48,9 @@ static void ihk_mc_spinlock_lock_noirq(ihk_spinlock_t *lock)
 	__kprintf("[%d] trying to grab lock: 0x%lX\n", 
 	          ihk_mc_get_processor_id(), lock);
 #endif
+
+	preempt_disable();
+
 	asm volatile("lock; xaddl %0, %1\n"
 			"movzwl %w0, %2\n\t"
 			"shrl $16, %0\n\t"
@@ -79,6 +85,8 @@ static unsigned long ihk_mc_spinlock_lock(ihk_spinlock_t *lock)
 static void ihk_mc_spinlock_unlock_noirq(ihk_spinlock_t *lock)
 {
 	asm volatile ("lock incw %0" : "+m"(*lock) : : "memory", "cc");
+	
+	preempt_enable();
 }
 
 static void ihk_mc_spinlock_unlock(ihk_spinlock_t *lock, unsigned long flags)

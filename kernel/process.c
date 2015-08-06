@@ -2225,6 +2225,16 @@ void schedule(void)
 	unsigned long irqstate;
 	struct process *last;
 
+	if (cpu_local_var(no_preempt)) {
+		dkprintf("no schedule() while no preemption! \n");
+		return;
+	}
+	
+	if (cpu_local_var(current)->in_syscall_offload) {
+		dkprintf("no schedule() while syscall offload!\n");
+		return;
+	}
+	
 redo:
 	irqstate = ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
 	v = get_this_cpu_local_var();

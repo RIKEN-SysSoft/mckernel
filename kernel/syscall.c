@@ -192,6 +192,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	unsigned long irqstate;
 	struct process *proc = cpu_local_var(current);
 
+	++proc->in_syscall_offload;
 	dkprintf("SC(%d)[%3d] sending syscall\n",
 	        ihk_mc_get_processor_id(),
 	        req->number);
@@ -252,6 +253,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		ihk_mc_spinlock_unlock(&syscall_lock, irqstate);
 	}
 
+	--proc->in_syscall_offload;
 	return rc;
 }
 
