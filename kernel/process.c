@@ -2044,6 +2044,17 @@ void cpu_clear(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock)
 	ihk_mc_spinlock_unlock(lock, flags);
 }
 
+void cpu_clear_and_set(int c_cpu, int s_cpu, 
+	cpu_set_t *cpu_set, ihk_spinlock_t *lock)
+{
+	unsigned int flags;
+	flags = ihk_mc_spinlock_lock(lock);
+	CPU_CLR(c_cpu, cpu_set);
+	CPU_SET(s_cpu, cpu_set);
+	ihk_mc_spinlock_unlock(lock, flags);
+}
+
+
 static void do_migrate(void);
 
 static void idle(void)
@@ -2199,11 +2210,12 @@ static void do_migrate(void)
 		v->runq_len += 1;
 		
 		/* update cpu_set of the VM for remote TLB invalidation */
-		cpu_clear(old_cpu_id, &req->proc->vm->cpu_set, 
-				&req->proc->vm->cpu_set_lock);
-		cpu_set(cpu_id, &req->proc->vm->cpu_set, 
+		cpu_clear_and_set(old_cpu_id, cpu_id, &req->proc->vm->cpu_set, 
 				&req->proc->vm->cpu_set_lock);
 
+		dkprintf("do_migrate(): migrated TID %d from CPU %d to CPU %d\n",
+			req->proc->ftn->tid, old_cpu_id, cpu_id);
+		
 		if (v->runq_len == 1)
 			ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
 		double_rq_unlock(cur_v, v, irqstate);
@@ -2385,11 +2397,11 @@ redo:
 
 			old_cpu_id = proc_to_move->cpu_id;
 			proc_to_move->cpu_id = cpu_id;
+			CPU_CLR(old_cpu_id, &proc_to_move->cpu_set);
+			CPU_SET(cpu_id, &proc_to_move->cpu_set);
 			settid(proc_to_move, 2, cpu_id, old_cpu_id);
 			__runq_add_proc(proc_to_move, cpu_id);
-			cpu_clear(old_cpu_id, &proc_to_move->vm->cpu_set, 
-					&proc_to_move->vm->cpu_set_lock);
-			cpu_set(cpu_id, &proc_to_move->vm->cpu_set, 
+			cpu_clear_and_set(old_cpu_id, cpu_id, &proc_to_move->vm->cpu_set, 
 					&proc_to_move->vm->cpu_set_lock);
 
 			double_rq_unlock(cur_v, v, irqstate2);
