@@ -77,3 +77,4 @@ if ! ${SBINDIR}/ihkosctl 0 load ${KERNDIR}/mckernel.img; then echo "error: loadi
 if ! ${SBINDIR}/ihkosctl 0 kargs hidos; then echo "error: setting kernel arguments"; exit; fi
 if ! ${SBINDIR}/ihkosctl 0 boot; then echo "error: booting"; exit; fi
 if ! insmod ${KMODDIR}/mcctrl.ko; then echo "error: inserting mcctrl.ko"; exit; fi
+if ! chown `logname` /dev/mcd* /dev/mcos*; then echo "error: chowning device files"; exit; fi
