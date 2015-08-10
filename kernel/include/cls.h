@@ -46,6 +46,7 @@ struct cpu_local_var {
 	struct process_vm idle_vm;
 
 	ihk_spinlock_t runq_lock;
+	unsigned long runq_irqstate;
 	struct process *current;
 	struct list_head runq;
 	size_t runq_len;

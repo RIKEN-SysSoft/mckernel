@@ -1012,6 +1012,18 @@ void ihk_mc_init_context(ihk_mc_kernel_context_t *new_ctx,
 }
 
 extern char enter_user_mode[];
+
+/* 
+ * Release runq_lock before entering user space.
+ * This is needed because schedule() holds the runq lock throughout
+ * the context switch and when a new process is created it starts
+ * execution in enter_user_mode, which in turn calls this function.
+ */
+void release_runq_lock(void)
+{
+	ihk_mc_spinlock_unlock(&(cpu_local_var(runq_lock)), 
+			cpu_local_var(runq_irqstate));
+}
                                        
 /*@
   @ requires \valid(ctx);

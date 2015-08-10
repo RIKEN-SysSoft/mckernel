@@ -206,6 +206,7 @@ x86_syscall:
 		
 .globl enter_user_mode
 enter_user_mode:
+		callq	release_runq_lock
 		movq	$0,  %rdi
 		movq	%rsp, %rsi
 		call check_signal

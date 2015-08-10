@@ -2062,6 +2062,12 @@ static void do_migrate(void);
 static void idle(void)
 {
 	struct cpu_local_var *v = get_this_cpu_local_var();
+	
+	/* Release runq_lock before starting the idle loop.
+	 * See comments at release_runq_lock().
+	 */
+	ihk_mc_spinlock_unlock(&(cpu_local_var(runq_lock)), 
+			cpu_local_var(runq_irqstate));
 
 	if(v->status == CPU_STATUS_RUNNING)
 		v->status = CPU_STATUS_IDLE;
@@ -2236,7 +2242,6 @@ void schedule(void)
 	struct cpu_local_var *v;
 	struct process *next, *prev, *proc, *tmp = NULL;
 	int switch_ctx = 0;
-	unsigned long irqstate;
 	struct process *last;
 
 	if (cpu_local_var(no_preempt)) {
@@ -2250,7 +2255,8 @@ void schedule(void)
 	}
 	
 redo:
-	irqstate = ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
+	cpu_local_var(runq_irqstate) = 
+		ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
 	v = get_this_cpu_local_var();
 
 	next = NULL;
@@ -2337,14 +2343,22 @@ redo:
 		/* Set up new TLS.. */
 		do_arch_prctl(ARCH_SET_FS, next->thread.tlsblock_base);
 		
-		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
-		
 		if (prev) {
 			last = ihk_mc_switch_context(&prev->ctx, &next->ctx, prev);
 		} 
 		else {
 			last = ihk_mc_switch_context(NULL, &next->ctx, prev);
 		}
+		
+		/* 
+		 * We must hold the lock throughout the context switch, otherwise
+		 * an IRQ could deschedule this process between page table loading and 
+		 * context switching and leave the execution in an inconsistent state.
+		 * Since we may be migrated to another core meanwhile, we refer 
+		 * directly to cpu_local_var. 
+		 */
+		ihk_mc_spinlock_unlock(&(cpu_local_var(runq_lock)), 
+			cpu_local_var(runq_irqstate));
 
 		/* Have we migrated to another core meanwhile? */
 		if (v != get_this_cpu_local_var()) {
@@ -2358,7 +2372,8 @@ redo:
 		}
 	}
 	else {
-		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+		ihk_mc_spinlock_unlock(&(cpu_local_var(runq_lock)), 
+			cpu_local_var(runq_irqstate));
 	}
 }
 
