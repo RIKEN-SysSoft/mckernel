@@ -2477,8 +2477,10 @@ void sched_request_migrate(int cpu_id, struct process *proc)
 	list_add_tail(&req.list, &v->migq);
 	ihk_mc_spinlock_unlock(&v->migq_lock, irqstate);
 
+	irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
 	v->flags |= CPU_FLAG_NEED_RESCHED | CPU_FLAG_NEED_MIGRATE;
 	v->status = CPU_STATUS_RUNNING;
+	ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
 
 	if (cpu_id != ihk_mc_get_processor_id())
 		ihk_mc_interrupt_cpu(/* Kick scheduler */
