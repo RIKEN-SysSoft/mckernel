@@ -1833,6 +1833,10 @@ SYSCALL_DECLARE(execve)
 	dkprintf("execve(): switching to new process\n");
 	proc->execed = 1;
 	
+	/* Lock run queue because enter_user_mode expects to release it */
+	cpu_local_var(runq_irqstate) = 
+		ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
+
 	ihk_mc_switch_context(NULL, &cpu_local_var(current)->ctx, 
 		cpu_local_var(current));
 
