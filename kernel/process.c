@@ -2388,6 +2388,10 @@ void check_need_resched(void)
 {
 	struct cpu_local_var *v = get_this_cpu_local_var();
 	if (v->flags & CPU_FLAG_NEED_RESCHED) {
+		if (v->in_interrupt && (v->flags & CPU_FLAG_NEED_MIGRATE)) {
+			dkprintf("no migration in IRQ context\n");
+			return;
+		}
 		v->flags &= ~CPU_FLAG_NEED_RESCHED;
 		schedule();
 	}
