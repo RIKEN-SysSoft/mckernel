@@ -105,6 +105,7 @@ int patch_process_vm(struct process_vm *, void *, const void *, size_t);
 void do_setpgid(int, int);
 extern long alloc_debugreg(struct process *proc);
 extern int num_processors;
+static int ptrace_detach(int pid, int data);
 
 int prepare_process_ranges_args_envs(struct process *proc, 
 		struct program_load_desc *pn,
@@ -633,7 +634,34 @@ terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
 	struct fork_tree_node *ftn = proc->ftn;
 	struct fork_tree_node *child, *next;
 	struct process *parent_owner;
+	int ntracee;
+	int *tracee = NULL;
+	int i;
 	int error;
+
+	// check tracee and ptrace detach
+	ntracee = 0;
+	ihk_mc_spinlock_lock_noirq(&ftn->lock);
+	list_for_each_entry(child, &ftn->ptrace_children, ptrace_siblings_list) {
+		ntracee++;
+	}
+	if(ntracee){
+		tracee = kmalloc(sizeof(int) * ntracee, IHK_MC_AP_NOWAIT);
+		i = 0;
+		if(tracee){
+			list_for_each_entry(child, &ftn->ptrace_children, ptrace_siblings_list) {
+				tracee[i] = child->pid;
+				i++;
+			}
+		}
+	}
+	ihk_mc_spinlock_unlock_noirq(&ftn->lock);	
+	if(tracee){
+		for(i = 0; i < ntracee; i++){
+			ptrace_detach(tracee[i], 0);
+		}
+		kfree(tracee);
+	}
 
 	dkprintf("terminate,pid=%d\n", proc->ftn->pid);
 	request.number = __NR_exit_group;
