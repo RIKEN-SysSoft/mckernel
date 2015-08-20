@@ -5,6 +5,7 @@
 #define __HEADER_X86_COMMON_ARCH_LOCK
 
 #include <ihk/cpu.h>
+#include <ihk/atomic.h>
 
 //#define DEBUG_SPINLOCK
 
@@ -98,6 +99,60 @@ static void ihk_mc_spinlock_unlock(ihk_spinlock_t *lock, unsigned long flags)
 	__kprintf("[%d] released lock: 0x%lX\n", ihk_mc_get_processor_id(), lock);
 #endif
 }
+
+
+/* An implementation of the Mellor-Crummey Scott (MCS) lock */
+typedef struct mcs_lock_node {
+	unsigned long locked;
+	struct mcs_lock_node *next;
+} __attribute__((aligned(64))) mcs_lock_node_t;
+
+static void mcs_lock_init(struct mcs_lock_node *node)
+{
+	node->locked = 0;
+	node->next = NULL;
+}
+
+static void mcs_lock_lock(struct mcs_lock_node *lock,
+		struct mcs_lock_node *node)
+{
+	struct mcs_lock_node *pred;
+
+	node->next = NULL;
+	node->locked = 0;
+	pred = (struct mcs_lock_node *)xchg8((unsigned long *)&lock->next,
+			(unsigned long)node);
+
+	if (pred) {
+		node->locked = 1;
+		pred->next = node;
+		while (node->locked != 0) {
+			cpu_pause();
+		}
+	}
+}
+
+static void mcs_lock_unlock(struct mcs_lock_node *lock,
+		struct mcs_lock_node *node)
+{
+	if (node->next == NULL) {
+		struct mcs_lock_node *old = (struct mcs_lock_node *)
+			atomic_cmpxchg8((unsigned long *)&lock->next,
+					(unsigned long)node, (unsigned long)0);
+
+		if (old == node) {
+			return;
+		}
+
+		while (node->next == NULL) {
+			cpu_pause();
+		}
+	}
+
+	node->next->locked = 0;
+}
+
+
 
 #endif
 

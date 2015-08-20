@@ -112,6 +112,17 @@ static inline int ihk_atomic_sub_return(int i, ihk_atomic_t *v)
 	__x;								\
 })
 
+static inline unsigned long xchg8(unsigned long *ptr, unsigned long x)
+{
+	unsigned long __x = (x);
+	asm volatile("xchgq %0,%1"
+			 : "=r" (__x)
+			 : "m" (*(volatile unsigned long*)(ptr)), "0" (__x)
+			 : "memory");
+
+	return __x;
+}
+
 #define __xchg(x, ptr, size)						\
 ({									\
 	__typeof(*(ptr)) __x = (x);					\
@@ -150,5 +161,17 @@ static inline int ihk_atomic_sub_return(int i, ihk_atomic_t *v)
 #define xchg(ptr, v)							\
 	__xchg((v), (ptr), sizeof(*ptr))
 
+static inline unsigned long atomic_cmpxchg8(unsigned long *addr,
+		unsigned long oldval,
+		unsigned long newval)
+{
+	asm volatile("lock; cmpxchgq %3, %1\n"
+		     : "=a" (oldval), "+m" (*addr)
+		     : "r" (newval), "0" (oldval)
+		     : "memory"
+	);
+
+	return oldval;
+}
 
 #endif
