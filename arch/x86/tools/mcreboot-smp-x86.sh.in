@@ -19,14 +19,17 @@ KMODDIR="@KMODDIR@"
 KERNDIR="@KERNDIR@"
 
 mem="512M@0"
+cpus=""
 
-# Get the number of CPUs on NUMA node 0
-nr_cpus=`lscpu --parse | awk -F"," '{if ($4 == 0) print $4}' | wc -l`
+if [ "$cpus" == "" ]; then
+	# Get the number of CPUs on NUMA node 0
+	nr_cpus=`lscpu --parse | awk -F"," '{if ($4 == 0) print $4}' | wc -l`
 
-# Use the second half of the cores
-let nr_cpus="$nr_cpus / 2"
-cpus=`lscpu --parse | awk -F"," '{if ($4 == 0) print $1}' | tail -n $nr_cpus | xargs echo -n | sed 's/ /,/g'`
-if [ "$cpus" == "" ]; then echo "error: no available CPUs on NUMA node 0?"; exit; fi
+	# Use the second half of the cores
+	let nr_cpus="$nr_cpus / 2"
+	cpus=`lscpu --parse | awk -F"," '{if ($4 == 0) print $1}' | tail -n $nr_cpus | xargs echo -n | sed 's/ /,/g'`
+	if [ "$cpus" == "" ]; then echo "error: no available CPUs on NUMA node 0?"; exit; fi
+fi
 
 # Remove delegator if loaded
 if [ "`lsmod | grep mcctrl`" != "" ]; then
@@ -51,6 +54,19 @@ if [ "`lsmod | grep ihk_smp_x86`" == "" ]; then
         if ! insmod ${KMODDIR}/ihk-smp-x86.ko ihk_start_irq=$ihk_irq; then echo "error: loading ihk-smp-x86"; exit; fi;
         if ! ${SBINDIR}/ihkconfig 0 reserve cpu ${cpus}; then echo "error: reserving CPUs"; exit; fi
         if ! ${SBINDIR}/ihkconfig 0 reserve mem ${mem}; then echo "error: reserving memory"; exit; fi
+# If loaded, but no resources allocated, get CPUs and memory
+else
+        if ! ${SBINDIR}/ihkconfig 0 query cpu > /dev/null; then echo "error: querying cpus"; exit; fi
+        cpus_allocated=`${SBINDIR}/ihkosctl 0 query cpu`
+		if [ "$cpus_allocated" == "" ]; then
+			if ! ${SBINDIR}/ihkconfig 0 reserve cpu ${cpus}; then echo "error: reserving CPUs"; exit; fi
+		fi
+
+        if ! ${SBINDIR}/ihkosctl 0 query mem > /dev/null; then echo "error: querying memory"; exit; fi
+        mem_allocated=`${SBINDIR}/ihkosctl 0 query mem`
+		if [ "$mem_allocated" == "" ]; then
+			if ! ${SBINDIR}/ihkconfig 0 reserve mem ${mem}; then echo "error: reserving memory"; exit; fi
+		fi
 fi
 
 # Check for existing OS instance and destroy

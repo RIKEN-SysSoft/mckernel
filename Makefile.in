@@ -44,7 +44,8 @@ install::
 		;; \
 	    smp-x86) \
 		mkdir -p -m 755 $(SBINDIR); \
-		install -m 755 arch/x86/tools/mcreboot-smp-x86.sh $(SBINDIR)/mcreboot; \
+		install -m 755 arch/x86/tools/mcreboot-smp-x86.sh $(SBINDIR)/mcreboot.sh; \
+		install -m 755 arch/x86/tools/mcstop+release-smp-x86.sh $(SBINDIR)/mcstop+release.sh; \
 		mkdir -p -m 755 $(MANDIR)/man1; \
 		install -m 644 arch/x86/tools/mcreboot.1 $(MANDIR)/man1/mcreboot.1; \
 		;; \

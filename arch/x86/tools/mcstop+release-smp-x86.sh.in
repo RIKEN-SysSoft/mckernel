@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# IHK SMP-x86 example McKernel unload script.
+# author: Balazs Gerofi <bgerofi@riken.jp>
+#      Copyright (C) 2015  RIKEN AICS
+# 
+# This is an example script for destroying McKernel and releasing IHK resources
+# Note that the script does no output anything unless an error occurs.
+
+prefix="@prefix@"
+BINDIR="@BINDIR@"
+SBINDIR="@SBINDIR@"
+KMODDIR="@KMODDIR@"
+KERNDIR="@KERNDIR@"
+
+mem=""
+cpus=""
+
+# No SMP module? Exit.
+if [ "`lsmod | grep ihk_smp_x86`" == "" ]; then exit; fi
+
+# Remove delegator if loaded
+if [ "`lsmod | grep mcctrl`" != "" ]; then
+        if ! rmmod mcctrl; then echo "error: removing mcctrl"; exit; fi
+fi
+
+# Destroy all LWK instances
+for i in /dev/mcos*; do
+	ind=`echo $i|cut -c10-`;
+    if ! ${SBINDIR}/ihkconfig 0 destroy $ind; then echo "error: destroying LWK instance $ind failed"; exit; fi	
+done
+
+# Query IHK-SMP resources and release them
+if ! ${SBINDIR}/ihkconfig 0 query cpu > /dev/null; then echo "error: querying cpus"; exit; fi
+cpus=`${SBINDIR}/ihkconfig 0 query cpu`
+if ! ${SBINDIR}/ihkconfig 0 release cpu $cpus > /dev/null; then echo "error: releasing CPUs"; exit; fi
+
+if ! ${SBINDIR}/ihkconfig 0 query mem > /dev/null; then echo "error: querying memory"; exit; fi
+mem=`${SBINDIR}/ihkconfig 0 query mem`	
+if ! ${SBINDIR}/ihkconfig 0 release mem $mem > /dev/null; then echo "error: releasing memory"; exit; fi
+
+# Remove SMP module
+if [ "`lsmod | grep ihk_smp_x86`" != "" ]; then
+        if ! rmmod ihk_smp_x86; then echo "error: removing ihk_smp_x86"; exit; fi
+fi
+
+
