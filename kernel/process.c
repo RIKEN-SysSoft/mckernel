@@ -1561,6 +1561,14 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 				"access denied. %d\n",
 				ihk_mc_get_processor_id(), vm,
 				fault_addr0, reason, error);
+		if (((range->flag & VR_PROT_MASK) == VR_PROT_NONE)) 
+			kprintf("if (((range->flag & VR_PROT_MASK) == VR_PROT_NONE))\n");
+		if (((reason & PF_WRITE) && !(reason & PF_PATCH)))
+			kprintf("if (((reason & PF_WRITE) && !(reason & PF_PATCH)))\n");
+		if (!(range->flag & VR_PROT_WRITE))
+			kprintf("if (!(range->flag & VR_PROT_WRITE))\n");
+		if ((reason & PF_INSTR) && !(range->flag & VR_PROT_EXEC))
+			kprintf("if ((reason & PF_INSTR) && !(range->flag & VR_PROT_EXEC))\n");
 		goto out;
 	}
 
@@ -2312,8 +2320,7 @@ redo:
 	}
 	
 	if (switch_ctx) {
-		dkprintf("[%d] schedule: %d => %d \n",
-		        ihk_mc_get_processor_id(),
+		dkprintf("schedule: %d => %d \n",
 		        prev ? prev->ftn->tid : 0, next ? next->ftn->tid : 0);
 
 		if (prev && prev->ptrace_debugreg) {

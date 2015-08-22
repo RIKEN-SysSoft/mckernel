@@ -1998,7 +1998,11 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		}
 	}
 
-	dkprintf("clone: kicking scheduler!,cpuid=%d pid=%d tid=%d\n", cpuid, new->ftn->pid, new->ftn->tid);
+	dkprintf("clone: kicking scheduler!,cpuid=%d pid=%d tid %d -> tid=%d\n", 
+		cpuid, new->ftn->pid, 
+		cpu_local_var(current)->ftn->tid,
+		new->ftn->tid);
+
 	runq_add_proc(new, cpuid);
 
 	if (ptrace_event) {
@@ -4818,6 +4822,8 @@ SYSCALL_DECLARE(sched_setaffinity)
 	for (cpu_id = 0; cpu_id < num_processors; cpu_id++) {
 		if (CPU_ISSET(cpu_id, &k_cpu_set)) {
 			CPU_SET(cpu_id, &cpu_set);
+			dkprintf("sched_setaffinity(): tid %d: setting target core %d\n",
+					cpu_local_var(current)->ftn->tid, cpu_id);
 			empty_set = 0;
 		}
 	}
@@ -4846,6 +4852,8 @@ found:
 	if (!CPU_ISSET(cpu_id, &thread->cpu_set)) {
 		hold_process(thread);
 		ihk_mc_spinlock_unlock(&get_cpu_local_var(cpu_id)->runq_lock, irqstate);
+		dkprintf("sched_setaffinity(): tid %d sched_request_migrate\n",
+				cpu_local_var(current)->ftn->tid, cpu_id);
 		sched_request_migrate(cpu_id, thread);
 		release_process(thread);
 		return 0;

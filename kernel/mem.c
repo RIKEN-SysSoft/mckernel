@@ -392,9 +392,9 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 		}
 
 		kprintf("[%d]page_fault_handler(%p,%lx,%p):"
-				"fault vm failed. %d\n",
+				"fault vm failed. %d, TID: %d\n",
 				ihk_mc_get_processor_id(), fault_addr,
-				reason, regs, error);
+				reason, regs, error, proc->ftn->tid);
 		unhandled_page_fault(proc, fault_addr, regs);
 		memset(&info, '\0', sizeof info);
 		if (error == -ERANGE) {
