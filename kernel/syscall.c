@@ -105,6 +105,7 @@ int patch_process_vm(struct process_vm *, void *, const void *, size_t);
 void do_setpgid(int, int);
 extern long alloc_debugreg(struct process *proc);
 extern int num_processors;
+extern unsigned long ihk_mc_get_ns_per_tsc(void);
 static int ptrace_detach(int pid, int data);
 
 int prepare_process_ranges_args_envs(struct process *proc, 
@@ -3505,38 +3506,47 @@ SYSCALL_DECLARE(futex)
 	(unsigned long)uaddr, op, val, utime, uaddr2, val3, *uaddr);
 
 	if (utime && (op == FUTEX_WAIT_BITSET || op == FUTEX_WAIT)) {
-		struct syscall_request request IHK_DMA_ALIGN; 
-		struct timeval tv_now;
-		request.number = n;
-		unsigned long __phys;                                          
+		if (!gettime_local_support) {
+			struct syscall_request request IHK_DMA_ALIGN; 
+			struct timeval tv_now;
+			request.number = n;
+			unsigned long __phys;                                          
 
-		dkprintf("futex,utime and FUTEX_WAIT_*, uaddr=%lx, []=%x\n", (unsigned long)uaddr, *uaddr);
+			dkprintf("futex,utime and FUTEX_WAIT_*, uaddr=%lx, []=%x\n", (unsigned long)uaddr, *uaddr);
 
-		if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
-					(void *)&tv_now, &__phys)) { 
-			return -EFAULT; 
+			if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
+						(void *)&tv_now, &__phys)) { 
+				return -EFAULT; 
+			}
+
+			request.args[0] = __phys;               
+
+			int r = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+
+			if (r < 0) {
+				return -EFAULT;
+			}
+
+			dkprintf("futex, FUTEX_WAIT_*, arg3 != NULL, pc=%lx\n", (unsigned long)ihk_mc_syscall_pc(ctx));
+			dkprintf("now->tv_sec=%016ld,tv_nsec=%016ld\n", tv_now.tv_sec, tv_now.tv_usec * 1000);
+			dkprintf("utime->tv_sec=%016ld,tv_nsec=%016ld\n", utime->tv_sec, utime->tv_nsec);
+			unsigned long nsec_timeout = ((long)utime->tv_sec * 1000000000ULL) 
+				+ utime->tv_nsec;
+
+			long nsec_now = ((long)tv_now.tv_sec * 1000000000ULL) + 
+				tv_now.tv_usec * 1000;
+			long diff_nsec = nsec_timeout - nsec_now;
+
+			timeout = (diff_nsec / 1000) * 1100; // (usec * 1.1GHz)
 		}
+		/* Compute timeout based on TSC/nanosec ratio */
+		else {
+			unsigned long nsec_timeout = ((long)utime->tv_sec * 1000000000ULL) 
+				+ utime->tv_nsec;
 
-		request.args[0] = __phys;               
-
-		int r = do_syscall(&request, ihk_mc_get_processor_id(), 0);
-
-		if (r < 0) {
-			return -EFAULT;
+			timeout = nsec_timeout * 1000 / ihk_mc_get_ns_per_tsc();
+			dkprintf("futex timeout: %lu\n", timeout);
 		}
-
-		dkprintf("futex, FUTEX_WAIT_*, arg3 != NULL, pc=%lx\n", (unsigned long)ihk_mc_syscall_pc(ctx));
-		dkprintf("now->tv_sec=%016ld,tv_nsec=%016ld\n", tv_now.tv_sec, tv_now.tv_usec * 1000);
-		dkprintf("utime->tv_sec=%016ld,tv_nsec=%016ld\n", utime->tv_sec, utime->tv_nsec);
-
-		long nsec_now = ((long)tv_now.tv_sec * 1000000000ULL) + 
-			tv_now.tv_usec * 1000;
-		long nsec_timeout = ((long)utime->tv_sec * 1000000000ULL) + 
-			utime->tv_nsec * 1;
-		long diff_nsec = nsec_timeout - nsec_now;
-
-		timeout = (diff_nsec / 1000) * 1100; // (usec * 1.1GHz)
-		dkprintf("futex timeout: %lu\n", timeout);
 	}
 
 	/* Requeue parameter in 'utime' if op == FUTEX_CMP_REQUEUE.
@@ -4911,6 +4921,88 @@ SYSCALL_DECLARE(sched_getaffinity)
 SYSCALL_DECLARE(get_cpu_id)
 {
 	return ihk_mc_get_processor_id();
+}
+
+void __update_time_from_tsc_delta(unsigned long *tv_sec,
+	unsigned long *tv_nsec,
+	unsigned long tsc_delta)
+{
+	unsigned long ns_delta = tsc_delta * ihk_mc_get_ns_per_tsc() / 1000;
+
+	*tv_sec += (ns_delta / NS_PER_SEC);
+	*tv_nsec += (ns_delta % NS_PER_SEC);
+	if (*tv_nsec > NS_PER_SEC) {
+		*tv_nsec -= NS_PER_SEC;
+		++*tv_sec;
+	}
+}
+
+void update_cpu_local_time(void)
+{
+	unsigned long tsc = rdtsc();
+
+	__update_time_from_tsc_delta(
+		&cpu_local_var(tv_sec),
+		&cpu_local_var(tv_nsec),
+		tsc - cpu_local_var(last_tsc));
+
+	cpu_local_var(last_tsc) = tsc;
+}
+
+
+SYSCALL_DECLARE(gettimeofday)
+{
+	struct timeval *tv = (struct timeval *)ihk_mc_syscall_arg0(ctx);
+    struct syscall_request request IHK_DMA_ALIGN;
+
+	/* Do it locally if supported */
+	if (gettime_local_support) {
+		update_cpu_local_time();
+
+		tv->tv_sec = cpu_local_var(tv_sec);
+		tv->tv_usec = cpu_local_var(tv_nsec) / 1000;
+
+		dkprintf("gettimeofday(): \n");
+		return 0;
+	}
+
+	/* Otherwise offload */
+	request.number = __NR_gettimeofday;
+	request.args[0] = (unsigned long)tv;
+
+	return do_syscall(&request, ihk_mc_get_processor_id(), 0);
+}
+
+
+SYSCALL_DECLARE(nanosleep)
+{
+	struct timespec *tv = (struct timespec *)ihk_mc_syscall_arg0(ctx);
+	struct timespec *rem = (struct timespec *)ihk_mc_syscall_arg0(ctx);
+    struct syscall_request request IHK_DMA_ALIGN;
+
+	/* Do it locally if supported */
+	if (gettime_local_support) {
+		unsigned long nanosecs = tv->tv_sec * NS_PER_SEC + tv->tv_nsec;
+		unsigned long tscs = nanosecs * 1000 / ihk_mc_get_ns_per_tsc();
+
+		unsigned long ts = rdtsc();
+
+		/* Spin wait */
+		while (rdtsc() - ts < tscs)
+			cpu_pause();
+
+		rem->tv_sec = 0;
+		rem->tv_nsec = 0;
+
+		return 0;
+	}
+
+	/* Otherwise offload */
+	request.number = __NR_nanosleep;
+	request.args[0] = (unsigned long)tv;
+	request.args[0] = (unsigned long)rem;
+
+	return do_syscall(&request, ihk_mc_get_processor_id(), 0);
 }
 
 SYSCALL_DECLARE(sched_yield)

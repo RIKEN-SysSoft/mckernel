@@ -19,6 +19,8 @@
 #ifndef __TIME_H
 #define __TIME_H
 
+#define NS_PER_SEC	1000000000UL
+
 typedef long int __time_t;
 
 /* POSIX.1b structure for a time value.  This is like a `struct timeval' but

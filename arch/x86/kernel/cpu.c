@@ -67,6 +67,7 @@ void assign_processor_id(void);
 void arch_delay(int);
 void x86_set_warm_reset(unsigned long ip, char *first_page_va);
 void x86_init_perfctr(void);
+int gettime_local_support = 0;
 
 extern int kprintf(const char *format, ...);
 
@@ -569,6 +570,29 @@ static void check_no_execute(void)
 	return;
 }
 
+void init_gettime_support(void)
+{
+	uint64_t op;
+	uint64_t eax;
+	uint64_t ebx;
+	uint64_t ecx;
+	uint64_t edx;
+
+	/* Check if Invariant TSC supported.
+	 * Processor’s support for invariant TSC is indicated by
+	 * CPUID.80000007H:EDX[8].
+	 * See page 2498 of the Intel64 and IA-32 Architectures Software
+	 * Developer’s Manual - combined */
+
+	op = 0x80000007;
+	asm volatile("cpuid" : "=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx) : "a" (op));
+
+	if (edx & (1 << 8)) {
+		gettime_local_support = 1;
+		kprintf("Invariant TSC supported.\n");
+	}
+}
+
 void init_cpu(void)
 {
 	enable_page_protection_fault();
@@ -594,6 +618,8 @@ void setup_x86(void)
 	check_no_execute();
 
 	init_cpu();
+
+	init_gettime_support();
 
 	kprintf("setup_x86 done.\n");
 }
@@ -1316,3 +1342,9 @@ ihk_mc_user_context_t *lookup_user_context(struct process *proc)
 
 	return uctx;
 } /* lookup_user_context() */
+
+
+void zero_tsc(void)
+{
+	wrmsr(MSR_IA32_TIME_STAMP_COUNTER, 0);
+}

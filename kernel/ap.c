@@ -24,18 +24,21 @@
 #include <process.h>
 #include <init.h>
 #include <march.h>
+#include <cls.h>
 
 int num_processors = 1;
 static volatile int ap_stop = 1;
+extern void zero_tsc(void);
 
 static void ap_wait(void)
 {
-	wrmsr(MSR_IA32_TIME_STAMP_COUNTER, 0);
-	
 	while (ap_stop) {
 		barrier();
 		cpu_pause();
 	}
+
+	zero_tsc();
+
 	kmalloc_init();
 	sched_init();
 
@@ -64,8 +67,6 @@ void ap_init(void)
 
 	ihk_mc_init_ap();
 	
-	wrmsr(MSR_IA32_TIME_STAMP_COUNTER, 0);
-
 	cpu_info = ihk_mc_get_cpu_info();
 	bsp_hw_id = ihk_mc_get_hardware_processor_id();
 

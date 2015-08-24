@@ -200,6 +200,14 @@ static void pc_test(void)
 	        ed[1] - st[1], ed[2] - st[2], ed[3] - st[3]);
 }
 
+extern void ihk_mc_get_boot_time(unsigned long *tv_sec, unsigned long *tv_nsec);
+static void time_init(void)
+{
+	ihk_mc_get_boot_time(&cpu_local_var(tv_sec),
+		&cpu_local_var(tv_nsec));
+	cpu_local_var(last_tsc) = 0;
+}
+
 static void rest_init(void)
 {
 	handler_init();
@@ -212,6 +220,7 @@ static void rest_init(void)
 
 	ap_init();
 	cpu_local_var_init();
+	time_init();
 	kmalloc_init();
 
 	ikc_master_init();
@@ -220,9 +229,13 @@ static void rest_init(void)
 }
 
 int host_ikc_inited = 0;
+extern int num_processors;
+extern void zero_tsc(void);
+extern void update_cpu_local_time(void);
 
 static void post_init(void)
 {
+	int i;
 	cpu_enable_interrupt();
 
 	while (!host_ikc_inited) {
@@ -237,7 +250,20 @@ static void post_init(void)
 		init_host_syscall_channel2();
 		ihk_mc_spinlock_init(&syscall_lock);
 	}
+
+	/* Update time elapsed so far during boot, distribute the current
+	 * date to all cores and zero TSC.
+	 * All AP cores are wait spinning for ap_start() and they will zero
+	 * their TSC immediatly. */
+	update_cpu_local_time();
+	cpu_local_var(last_tsc) = 0;
+	for (i = 0; i < num_processors; ++i) {
+		get_cpu_local_var(i)->tv_sec = cpu_local_var(tv_sec);
+		get_cpu_local_var(i)->tv_nsec = cpu_local_var(tv_nsec);
+	}
+	zero_tsc();
 	ap_start();
+
 	create_os_procfs_files();
 }
 #ifdef DCFA_RUN
