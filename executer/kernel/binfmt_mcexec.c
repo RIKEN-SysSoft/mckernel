@@ -80,6 +80,8 @@ static int load_elf(struct linux_binprm *bprm
 	char buf[32];
 	int l;
 	int pass;
+	char pbuf[1024];
+	const char *path;
 
 	if(bprm->envc == 0)
 		return -ENOEXEC;
@@ -91,7 +93,11 @@ static int load_elf(struct linux_binprm *bprm
 	if(elf_ex->e_ident[EI_CLASS] != ELFCLASS64)
 		return -ENOEXEC;
 
-	cp = strrchr(bprm->interp, '/');
+	path = d_path(&bprm->file->f_path, pbuf, 1024);
+	if(!path || IS_ERR(path))
+		path = bprm->interp;
+
+	cp = strrchr(path, '/');
 	if(!cp ||
 	   !strcmp(cp, "/mcexec") ||
 	   !strcmp(cp, "/ihkosctl") ||
@@ -196,11 +202,11 @@ static int load_elf(struct linux_binprm *bprm
 
 	if(rc);
 	else if(env_mcexec_wl)
-		rc = !pathcheck(bprm->interp, env_mcexec_wl);
+		rc = !pathcheck(path, env_mcexec_wl);
 	else if(env_mcexec_bl)
-		rc = pathcheck(bprm->interp, env_mcexec_bl);
+		rc = pathcheck(path, env_mcexec_bl);
 	else
-		rc = pathcheck(bprm->interp, "/usr:/bin:/sbin:/opt");
+		rc = pathcheck(path, "/usr:/bin:/sbin:/opt");
 
 	for(ep = env; ep->name; ep++)
 		if(ep->val)
