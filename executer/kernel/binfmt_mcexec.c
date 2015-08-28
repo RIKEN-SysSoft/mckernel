@@ -81,6 +81,8 @@ static int load_elf(struct linux_binprm *bprm
 	int l;
 	int pass;
 
+	if(bprm->envc == 0)
+		return -ENOEXEC;
 	if(memcmp(elf_ex->e_ident, ELFMAG, SELFMAG) != 0)
 		return -ENOEXEC;
 	if(elf_ex->e_type != ET_EXEC && elf_ex->e_type != ET_DYN)
@@ -100,7 +102,7 @@ static int load_elf(struct linux_binprm *bprm
 	cnt[1] = bprm->envc;
 	for(pass = 0; pass < 2; pass++){
 		p = bprm->p;
-		mode = cnt[0] == 0? (cnt[1] == 0? 2: 1): 0;
+		mode = cnt[0] == 0? 1: 0;
 		if(pass == 1){
 			for(ep = env; ep->name; ep++){
 				if(ep->l)
