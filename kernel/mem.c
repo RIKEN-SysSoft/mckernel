@@ -418,13 +418,14 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 			info._sifields._sigfault.si_addr = fault_addr;
 			set_signal(SIGSEGV, regs, &info);
 		}
+		preempt_enable();
 		check_signal(0, regs, 0);
 		goto out;
 	}
 
 	error = 0;
-out:
 	preempt_enable();
+out:
 	dkprintf("[%d]page_fault_handler(%p,%lx,%p): (%d)\n",
 			ihk_mc_get_processor_id(), fault_addr, reason,
 			regs, error);
