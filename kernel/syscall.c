@@ -1569,8 +1569,12 @@ static int ptrace_report_exec(struct process *proc)
 	int ptrace = proc->ftn->ptrace;
 
 	if (ptrace & (PT_TRACE_EXEC|PTRACE_O_TRACEEXEC)) {
+		ihk_mc_kernel_context_t ctx;
 		int sig = (SIGTRAP | (PTRACE_EVENT_EXEC << 8));
+
+		memcpy(&ctx, &proc->ctx, sizeof ctx);
 		ptrace_report_signal(proc, sig);
+		memcpy(&proc->ctx, &ctx, sizeof ctx);
 	}
 	return 0;
 }
