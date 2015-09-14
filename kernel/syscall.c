@@ -4963,6 +4963,12 @@ SYSCALL_DECLARE(gettimeofday)
 	if (gettime_local_support) {
 		update_cpu_local_time();
 
+		/* Check validity of argument */
+		if (!lookup_process_memory_range(cpu_local_var(current)->vm, 
+			(unsigned long)tv, (unsigned long)tv + sizeof(*tv))) {
+			return -EFAULT;
+		}
+
 		tv->tv_sec = cpu_local_var(tv_sec);
 		tv->tv_usec = cpu_local_var(tv_nsec) / 1000;
 
@@ -4981,24 +4987,55 @@ SYSCALL_DECLARE(gettimeofday)
 SYSCALL_DECLARE(nanosleep)
 {
 	struct timespec *tv = (struct timespec *)ihk_mc_syscall_arg0(ctx);
-	struct timespec *rem = (struct timespec *)ihk_mc_syscall_arg0(ctx);
+	struct timespec *rem = (struct timespec *)ihk_mc_syscall_arg1(ctx);
     struct syscall_request request IHK_DMA_ALIGN;
 
 	/* Do it locally if supported */
 	if (gettime_local_support) {
-		unsigned long nanosecs = tv->tv_sec * NS_PER_SEC + tv->tv_nsec;
-		unsigned long tscs = nanosecs * 1000 / ihk_mc_get_ns_per_tsc();
+		unsigned long nanosecs;
+		unsigned long nanosecs_rem = 0;
+		unsigned long tscs;
+		unsigned long tscs_rem;
+		struct timespec _tv;
+		struct timespec _rem;
+		int ret = 0;
 
 		unsigned long ts = rdtsc();
 
+		/* Check validity of arguments */
+		if (copy_from_user(&_tv, tv, sizeof(*tv))) {
+			return -EFAULT;
+		}
+
+		if (rem) {
+			if (copy_from_user(&_rem, rem, sizeof(*rem))) {
+				return -EFAULT;
+			}
+		}
+
+		if (tv->tv_sec < 0 || tv->tv_nsec >= NS_PER_SEC) {
+			return -EINVAL;
+		}
+
+		nanosecs = tv->tv_sec * NS_PER_SEC + tv->tv_nsec;
+		tscs = nanosecs * 1000 / ihk_mc_get_ns_per_tsc();
+
 		/* Spin wait */
-		while (rdtsc() - ts < tscs)
-			cpu_pause();
+		while (rdtsc() - ts < tscs) {
+			if (hassigpending(cpu_local_var(current))) {
+				tscs_rem = tscs - (rdtsc() - ts);
+				nanosecs_rem = tscs_rem * ihk_mc_get_ns_per_tsc() / 1000;
+				ret = -EINTR;
+				break;
+			}
+		}
 
-		rem->tv_sec = 0;
-		rem->tv_nsec = 0;
+		if (nanosecs_rem) {
+			rem->tv_sec = nanosecs_rem / NS_PER_SEC;
+			rem->tv_nsec = nanosecs_rem % NS_PER_SEC;
+		}
 
-		return 0;
+		return ret;
 	}
 
 	/* Otherwise offload */
