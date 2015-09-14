@@ -56,6 +56,8 @@ extern int ihk_mc_pt_print_pte(struct page_table *pt, void *virt);
 
 struct tlb_flush_entry tlb_flush_vector[IHK_TLB_FLUSH_IRQ_VECTOR_SIZE];
 
+int anon_on_demand = 0;
+
 static void reserve_pages(unsigned long start, unsigned long end, int type)
 {
 	if (start < pa_start) {
@@ -681,6 +683,11 @@ void mem_init(void)
 
 	/* Prepare the kernel virtual map space */
 	virtual_allocator_init();
+
+	if (find_command_line("anon_on_demand")) {
+		kprintf("Demand paging on ANONYMOUS mappings enabled.\n");
+		anon_on_demand = 1;
+	}
 }
 
 struct location {

@@ -1078,7 +1078,9 @@ SYSCALL_DECLARE(mmap)
 		}
 #endif
 		else {
-			vrflags |= VR_DEMAND_PAGING;
+			if (anon_on_demand) {
+				vrflags |= VR_DEMAND_PAGING;
+			}
 		}
 	}
 	else {

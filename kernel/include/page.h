@@ -66,4 +66,6 @@ static inline int page_is_multi_mapped(struct page *page)
 	return (ihk_atomic_read(&page->count) > 1);
 }
 
+/* Should we take page faults on ANONYMOUS mappings? */
+extern int anon_on_demand;
 #endif
