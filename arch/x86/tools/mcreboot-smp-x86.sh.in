@@ -20,6 +20,8 @@ KERNDIR="@KERNDIR@"
 
 mem="512M@0"
 cpus=""
+ihk_ikc_irq_core=0
+
 
 if [ "$cpus" == "" ]; then
 	# Get the number of CPUs on NUMA node 0
@@ -51,7 +53,7 @@ if [ "`lsmod | grep ihk_smp_x86`" == "" ]; then
                 fi
         done
         if [ "$ihk_irq" == "" ]; then echo "error: no IRQ available"; exit; fi
-        if ! insmod ${KMODDIR}/ihk-smp-x86.ko ihk_start_irq=$ihk_irq; then echo "error: loading ihk-smp-x86"; exit; fi;
+        if ! insmod ${KMODDIR}/ihk-smp-x86.ko ihk_start_irq=$ihk_irq ihk_ikc_irq_core=$ihk_ikc_irq_core; then echo "error: loading ihk-smp-x86"; exit; fi;
         if ! ${SBINDIR}/ihkconfig 0 reserve cpu ${cpus}; then echo "error: reserving CPUs"; exit; fi
         if ! ${SBINDIR}/ihkconfig 0 reserve mem ${mem}; then echo "error: reserving memory"; exit; fi
 # If loaded, but no resources allocated, get CPUs and memory
