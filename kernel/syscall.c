@@ -4975,14 +4975,14 @@ void update_cpu_local_time(void)
 SYSCALL_DECLARE(gettimeofday)
 {
 	struct timeval *tv = (struct timeval *)ihk_mc_syscall_arg0(ctx);
-    struct syscall_request request IHK_DMA_ALIGN;
+	struct syscall_request request IHK_DMA_ALIGN;
 
 	/* Do it locally if supported */
 	if (gettime_local_support) {
 		update_cpu_local_time();
 
 		/* Check validity of argument */
-		if (!lookup_process_memory_range(cpu_local_var(current)->vm, 
+		if (!lookup_process_memory_range(cpu_local_var(current)->vm,
 			(unsigned long)tv, (unsigned long)tv + sizeof(*tv))) {
 			return -EFAULT;
 		}
