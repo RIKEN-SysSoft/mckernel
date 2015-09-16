@@ -4978,6 +4978,11 @@ SYSCALL_DECLARE(gettimeofday)
 	struct syscall_request request IHK_DMA_ALIGN;
 	struct timezone *tz = (struct timezone *)ihk_mc_syscall_arg1(ctx);
 
+	if (!tv && !tz) {
+		/* nothing to do */
+		return 0;
+	}
+
 	/* Do it locally if supported */
 	if (!tz && gettime_local_support) {
 		update_cpu_local_time();
