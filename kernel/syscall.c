@@ -4977,6 +4977,8 @@ SYSCALL_DECLARE(gettimeofday)
 	struct timeval *tv = (struct timeval *)ihk_mc_syscall_arg0(ctx);
 	struct syscall_request request IHK_DMA_ALIGN;
 	struct timezone *tz = (struct timezone *)ihk_mc_syscall_arg1(ctx);
+	struct timeval atv;
+	int error;
 
 	if (!tv && !tz) {
 		/* nothing to do */
@@ -4987,17 +4989,13 @@ SYSCALL_DECLARE(gettimeofday)
 	if (!tz && gettime_local_support) {
 		update_cpu_local_time();
 
-		/* Check validity of argument */
-		if (!lookup_process_memory_range(cpu_local_var(current)->vm,
-			(unsigned long)tv, (unsigned long)tv + sizeof(*tv))) {
-			return -EFAULT;
-		}
+		atv.tv_sec = cpu_local_var(tv_sec);
+		atv.tv_usec = cpu_local_var(tv_nsec) / 1000;
 
-		tv->tv_sec = cpu_local_var(tv_sec);
-		tv->tv_usec = cpu_local_var(tv_nsec) / 1000;
+		error = copy_to_user(tv, &atv, sizeof(atv));
 
-		dkprintf("gettimeofday(): \n");
-		return 0;
+		dkprintf("gettimeofday(): %d\n", error);
+		return error;
 	}
 
 	/* Otherwise offload */
