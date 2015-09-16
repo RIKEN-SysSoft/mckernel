@@ -988,6 +988,7 @@ SYSCALL_DECLARE(mmap)
 	int denied;
 	int ro_vma_mapped = 0;
 	struct shmid_ds ads;
+	int populated_mapping = 0;
 
 	dkprintf("[%d]sys_mmap(%lx,%lx,%x,%x,%d,%lx)\n",
 			ihk_mc_get_processor_id(),
@@ -1078,13 +1079,18 @@ SYSCALL_DECLARE(mmap)
 		}
 #endif
 		else {
-			if (anon_on_demand) {
-				vrflags |= VR_DEMAND_PAGING;
+			vrflags |= VR_DEMAND_PAGING;
+			if (!anon_on_demand) {
+				populated_mapping = 1;
 			}
 		}
 	}
 	else {
 		vrflags |= VR_DEMAND_PAGING;
+	}
+
+	if (flags & (MAP_POPULATE | MAP_LOCKED)) {
+		populated_mapping = 1;
 	}
 
 	if (!(prot & PROT_WRITE)) {
@@ -1202,7 +1208,7 @@ out:
 	}
 	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
 
-	if (!error && (flags & (MAP_POPULATE) || flags & (MAP_LOCKED))) {
+	if (!error && populated_mapping) {
 		error = populate_process_memory(proc, (void *)addr, len);
 		if (error) {
 			ekprintf("sys_mmap:populate_process_memory"
