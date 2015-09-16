@@ -30,6 +30,9 @@ int vsyscall_gettimeofday(void *tv, void *tz)
 			: "a" (__NR_gettimeofday), "D" (tv), "S" (tz)
 			: "%rcx", "%r11", "memory");
 
+	if (error) {
+		*(int *)0 = 0;	/* i.e. raise(SIGSEGV) */
+	}
 	return error;
 }
 
