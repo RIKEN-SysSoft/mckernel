@@ -4976,9 +4976,10 @@ SYSCALL_DECLARE(gettimeofday)
 {
 	struct timeval *tv = (struct timeval *)ihk_mc_syscall_arg0(ctx);
 	struct syscall_request request IHK_DMA_ALIGN;
+	struct timezone *tz = (struct timezone *)ihk_mc_syscall_arg1(ctx);
 
 	/* Do it locally if supported */
-	if (gettime_local_support) {
+	if (!tz && gettime_local_support) {
 		update_cpu_local_time();
 
 		/* Check validity of argument */
@@ -4997,6 +4998,7 @@ SYSCALL_DECLARE(gettimeofday)
 	/* Otherwise offload */
 	request.number = __NR_gettimeofday;
 	request.args[0] = (unsigned long)tv;
+	request.args[1] = (unsigned long)tz;
 
 	return do_syscall(&request, ihk_mc_get_processor_id(), 0);
 }
