@@ -720,9 +720,12 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 		}
 	}
 	else if (vector == LOCAL_TIMER_VECTOR) {
+		unsigned long irqstate;
 		/* Timer interrupt, enabled only on oversubscribed CPU cores,
 		 * request reschedule */
+		irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
 		v->flags |= CPU_FLAG_NEED_RESCHED;
+		ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
 		dkprintf("timer[%lu]: CPU_FLAG_NEED_RESCHED \n", rdtsc());
 	}
 	else if (vector >= IHK_TLB_FLUSH_IRQ_VECTOR_START && 

@@ -4849,16 +4849,32 @@ SYSCALL_DECLARE(sched_setaffinity)
 		return -EINVAL;
 	}
 
-	if (tid == 0)
+	if (tid == 0) {
 		tid = cpu_local_var(current)->ftn->tid;
-
-	for (cpu_id = 0; cpu_id < num_processors; cpu_id++) {
+		thread = cpu_local_var(current);
+		cpu_id = ihk_mc_get_processor_id();
 		irqstate = ihk_mc_spinlock_lock(&get_cpu_local_var(cpu_id)->runq_lock);
-		list_for_each_entry(thread, &get_cpu_local_var(cpu_id)->runq, sched_list)
-			if (thread->ftn->pid && thread->ftn->tid == tid)
-				goto found; /* without unlocking runq_lock */
-		ihk_mc_spinlock_unlock(&get_cpu_local_var(cpu_id)->runq_lock, irqstate);
+
+		goto found;
 	}
+	else {
+		for (cpu_id = 0; cpu_id < num_processors; cpu_id++) {
+			irqstate = ihk_mc_spinlock_lock(
+				&get_cpu_local_var(cpu_id)->runq_lock);
+
+			list_for_each_entry(thread, 
+				&get_cpu_local_var(cpu_id)->runq, sched_list) {
+
+				if (thread->ftn->pid && thread->ftn->tid == tid) {
+					goto found; /* without unlocking runq_lock */
+				}
+			}
+
+			ihk_mc_spinlock_unlock(&get_cpu_local_var(cpu_id)->runq_lock, 
+				irqstate);
+		}
+	}
+
 	kprintf("%s:%d Thread not found.\n", __FILE__, __LINE__);
 	return -ESRCH;
 

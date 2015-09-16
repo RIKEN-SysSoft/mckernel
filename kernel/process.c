@@ -2087,8 +2087,8 @@ static void idle(void)
 		
 		/* See if we need to migrate a process somewhere */
 		if (v->flags & CPU_FLAG_NEED_MIGRATE) {
-			v->flags &= ~CPU_FLAG_NEED_MIGRATE;
 			do_migrate();
+			v->flags &= ~CPU_FLAG_NEED_MIGRATE;
 		}
 
 		/*
@@ -2232,8 +2232,8 @@ static void do_migrate(void)
 		dkprintf("do_migrate(): migrated TID %d from CPU %d to CPU %d\n",
 			req->proc->ftn->tid, old_cpu_id, cpu_id);
 		
-		if (v->runq_len == 1)
-			ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
+		v->flags |= CPU_FLAG_NEED_RESCHED;
+		ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
 		double_rq_unlock(cur_v, v, irqstate);
 
 ack:
@@ -2269,6 +2269,8 @@ redo:
 
 	next = NULL;
 	prev = v->current;
+	
+	v->flags &= ~CPU_FLAG_NEED_RESCHED;
 
 	/* All runnable processes are on the runqueue */
 	if (prev && prev != &cpu_local_var(idle)) {
@@ -2393,14 +2395,20 @@ release_cpuid(int cpuid)
 
 void check_need_resched(void)
 {
+	unsigned long irqstate;
 	struct cpu_local_var *v = get_this_cpu_local_var();
+	irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
 	if (v->flags & CPU_FLAG_NEED_RESCHED) {
 		if (v->in_interrupt && (v->flags & CPU_FLAG_NEED_MIGRATE)) {
-			dkprintf("no migration in IRQ context\n");
+			kprintf("no migration in IRQ context\n");
+			ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
 			return;
 		}
-		v->flags &= ~CPU_FLAG_NEED_RESCHED;
+		ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
 		schedule();
+	}
+	else {
+		ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
 	}
 }
 
@@ -2503,6 +2511,7 @@ void __runq_add_proc(struct process *proc, int cpu_id)
 	struct cpu_local_var *v = get_cpu_local_var(cpu_id);
 	list_add_tail(&proc->sched_list, &v->runq);
 	++v->runq_len;
+	v->flags |= CPU_FLAG_NEED_RESCHED;
 	proc->cpu_id = cpu_id;
 	//proc->ftn->status = PS_RUNNING;	/* not set here */
 	get_cpu_local_var(cpu_id)->status = CPU_STATUS_RUNNING;
