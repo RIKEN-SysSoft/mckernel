@@ -47,7 +47,7 @@ fi
 if [ "`lsmod | grep ihk_smp_x86`" == "" ]; then
         ihk_irq=""
         for i in `seq 64 255`; do 
-                if [ ! -d /proc/irq/$i ] && [ "`cat /proc/interrupts | grep ":" | awk '{print $1}' | grep -o '[0-9]*' | grep $i`" == "" ]; then
+                if [ ! -d /proc/irq/$i ] && [ "`cat /proc/interrupts | grep ":" | awk '{print $1}' | grep -o '[0-9]*' | grep -e '^$i$'`" == "" ]; then
                         ihk_irq=$i 
                         break
                 fi
