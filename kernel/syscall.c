@@ -5036,12 +5036,6 @@ SYSCALL_DECLARE(nanosleep)
 			return -EFAULT;
 		}
 
-		if (rem) {
-			if (copy_from_user(&_rem, rem, sizeof(*rem))) {
-				return -EFAULT;
-			}
-		}
-
 		if (tv->tv_sec < 0 || tv->tv_nsec >= NS_PER_SEC) {
 			return -EINVAL;
 		}
@@ -5060,8 +5054,12 @@ SYSCALL_DECLARE(nanosleep)
 		}
 
 		if (nanosecs_rem) {
-			rem->tv_sec = nanosecs_rem / NS_PER_SEC;
-			rem->tv_nsec = nanosecs_rem % NS_PER_SEC;
+			_rem.tv_sec = nanosecs_rem / NS_PER_SEC;
+			_rem.tv_nsec = nanosecs_rem % NS_PER_SEC;
+
+			if (copy_to_user(rem, &_rem, sizeof(*rem))) {
+				ret = -EFAULT;
+			}
 		}
 
 		return ret;
