@@ -5031,16 +5031,15 @@ SYSCALL_DECLARE(nanosleep)
 
 		unsigned long ts = rdtsc();
 
-		/* Check validity of arguments */
 		if (copy_from_user(&_tv, tv, sizeof(*tv))) {
 			return -EFAULT;
 		}
 
-		if (tv->tv_sec < 0 || tv->tv_nsec >= NS_PER_SEC) {
+		if (_tv.tv_sec < 0 || _tv.tv_nsec >= NS_PER_SEC) {
 			return -EINVAL;
 		}
 
-		nanosecs = tv->tv_sec * NS_PER_SEC + tv->tv_nsec;
+		nanosecs = _tv.tv_sec * NS_PER_SEC + _tv.tv_nsec;
 		tscs = nanosecs * 1000 / ihk_mc_get_ns_per_tsc();
 
 		/* Spin wait */
