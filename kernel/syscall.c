@@ -5017,7 +5017,7 @@ SYSCALL_DECLARE(nanosleep)
 {
 	struct timespec *tv = (struct timespec *)ihk_mc_syscall_arg0(ctx);
 	struct timespec *rem = (struct timespec *)ihk_mc_syscall_arg1(ctx);
-    struct syscall_request request IHK_DMA_ALIGN;
+	struct syscall_request request IHK_DMA_ALIGN;
 
 	/* Do it locally if supported */
 	if (gettime_local_support) {
