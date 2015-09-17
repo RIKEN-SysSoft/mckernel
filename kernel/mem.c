@@ -381,15 +381,16 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 		struct siginfo info;
 
 		if (error == -ECANCELED) {
-			kprintf("process is exiting, terminate.\n");
+			dkprintf("process is exiting, terminate.\n");
 
 			ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
 			proc->ftn->status = PS_ZOMBIE;
 			ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
 			release_fork_tree_node(proc->ftn->parent);
 			release_fork_tree_node(proc->ftn);
-			//release_process(proc);
+			release_process(proc);
 
+			preempt_enable();
 			schedule();
 		}
 
