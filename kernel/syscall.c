@@ -5022,7 +5022,7 @@ SYSCALL_DECLARE(nanosleep)
 	/* Do it locally if supported */
 	if (gettime_local_support) {
 		unsigned long nanosecs;
-		unsigned long nanosecs_rem = 0;
+		unsigned long nanosecs_rem;
 		unsigned long tscs;
 		unsigned long tscs_rem;
 		struct timespec _tv;
@@ -5053,7 +5053,7 @@ SYSCALL_DECLARE(nanosleep)
 			}
 		}
 
-		if (nanosecs_rem) {
+		if ((ret == -EINTR) && rem) {
 			_rem.tv_sec = nanosecs_rem / NS_PER_SEC;
 			_rem.tv_nsec = nanosecs_rem % NS_PER_SEC;
 
