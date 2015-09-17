@@ -5024,7 +5024,7 @@ SYSCALL_DECLARE(nanosleep)
 		unsigned long nanosecs;
 		unsigned long nanosecs_rem;
 		unsigned long tscs;
-		unsigned long tscs_rem;
+		long tscs_rem;
 		struct timespec _tv;
 		struct timespec _rem;
 		int ret = 0;
@@ -5046,14 +5046,18 @@ SYSCALL_DECLARE(nanosleep)
 		/* Spin wait */
 		while (rdtsc() - ts < tscs) {
 			if (hassigpending(cpu_local_var(current))) {
-				tscs_rem = tscs - (rdtsc() - ts);
-				nanosecs_rem = tscs_rem * ihk_mc_get_ns_per_tsc() / 1000;
 				ret = -EINTR;
 				break;
 			}
 		}
 
 		if ((ret == -EINTR) && rem) {
+			tscs_rem = tscs - (rdtsc() - ts);
+			if (tscs_rem < 0) {
+				tscs_rem = 0;
+			}
+			nanosecs_rem = tscs_rem * ihk_mc_get_ns_per_tsc() / 1000;
+
 			_rem.tv_sec = nanosecs_rem / NS_PER_SEC;
 			_rem.tv_nsec = nanosecs_rem % NS_PER_SEC;
 
