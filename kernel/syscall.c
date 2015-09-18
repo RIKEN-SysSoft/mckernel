@@ -1903,7 +1903,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	
 	if (((clone_flags & CLONE_VM) && !(clone_flags & CLONE_THREAD)) ||
 		(!(clone_flags & CLONE_VM) && (clone_flags & CLONE_THREAD))) {
-		kprintf("%s: ERROR: CLONE_VM and CLONE_THREAD should be set together\n");
+		kprintf("clone(): ERROR: CLONE_VM and CLONE_THREAD should be set together\n");
 		return -EINVAL;
 	}
 
