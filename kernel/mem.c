@@ -983,8 +983,11 @@ void *___kmalloc(int size, enum ihk_mc_ap_flag flag)
 				>> PAGE_SHIFT;
 
 			h = allocate_pages(req_page, flag);
-			if(h == NULL)
+			if(h == NULL) {
+				kprintf("kmalloc(%#x,%#x): out of memory\n", size, flag);
+				ihk_mc_spinlock_unlock(&v->free_list_lock, flags);
 				return NULL;
+			}
 			h->check = 0x5a5a5a5a;
 			prev->next = h;
 			h->size = (req_page * PAGE_SIZE) / sizeof(*h) - 2;
