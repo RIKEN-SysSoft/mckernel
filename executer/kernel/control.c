@@ -419,10 +419,10 @@ retry_alloc:
 		init_waitqueue_head(&wqhln->wq_syscall);
 		list_add_tail(&wqhln->list, &c->wq_list);
 	}
-	ihk_ikc_spinlock_unlock(&c->wq_list_lock, flags);
 
 	wqhln->req = 1;
 	wake_up(&wqhln->wq_syscall);
+	ihk_ikc_spinlock_unlock(&c->wq_list_lock, flags);
 
 	return 0;
 }
@@ -497,7 +497,7 @@ retry_alloc:
 	irqflags = ihk_ikc_spinlock_lock(&c->wq_list_lock);
 	list_del(&wqhln->list);
 	ihk_ikc_spinlock_unlock(&c->wq_list_lock, irqflags);
-	if (ret) {
+	if (ret && !wqhln->req) {
 		kfree(wqhln);
 		return -EINTR;
 	}
