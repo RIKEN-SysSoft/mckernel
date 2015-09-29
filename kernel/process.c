@@ -2257,7 +2257,8 @@ void schedule(void)
 		return;
 	}
 	
-	if (cpu_local_var(current)->in_syscall_offload) {
+	if (cpu_local_var(current)
+			&& cpu_local_var(current)->in_syscall_offload) {
 		dkprintf("no schedule() while syscall offload!\n");
 		return;
 	}
