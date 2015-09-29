@@ -818,8 +818,12 @@ static void wait_icr_idle(void)
 
 void x86_issue_ipi(unsigned int apicid, unsigned int low)
 {
+	unsigned long flags;
+
+	flags = cpu_disable_interrupt_save();
 	wait_icr_idle();
 	lapic_icr_write(apicid << LAPIC_ICR_ID_SHIFT, low);
+	cpu_restore_interrupt(flags);
 }
 
 static void outb(uint8_t v, uint16_t port)
