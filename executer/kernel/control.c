@@ -497,7 +497,7 @@ retry_alloc:
 	irqflags = ihk_ikc_spinlock_lock(&c->wq_list_lock);
 	list_del(&wqhln->list);
 	ihk_ikc_spinlock_unlock(&c->wq_list_lock, irqflags);
-	if (ret && !wqhln->req) {
+	if (ret) {
 		kfree(wqhln);
 		return -EINTR;
 	}
