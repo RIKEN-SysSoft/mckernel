@@ -303,6 +303,10 @@ void init_pstate_and_turbo(void)
 	uint64_t eax, ecx;
 
 	asm volatile("cpuid" : "=a" (eax), "=c" (ecx) : "a" (0x6) : "%rbx", "%rdx");
+	if (!(ecx & 0x01)) {
+		/* P-states and/or Turbo Boost are not supported. */
+		return;
+	}
 
 	/* Query and set max pstate value: 
 	 *
