@@ -809,6 +809,13 @@ void int3_handler(struct x86_user_context *regs)
 	check_need_resched();
 }
 
+static void wait_icr_idle(void)
+{
+	while (lapic_read(LAPIC_ICR0) & APIC_ICR_BUSY) {
+		cpu_pause();
+	}
+}
+
 void x86_issue_ipi(unsigned int apicid, unsigned int low)
 {
 	lapic_icr_write(apicid << LAPIC_ICR_ID_SHIFT, low);
@@ -822,13 +829,6 @@ static void outb(uint8_t v, uint16_t port)
 static void set_warm_reset_vector(unsigned long ip)
 {
 	x86_set_warm_reset(ip, first_page_va);
-}
-
-static void wait_icr_idle(void)
-{
-	while (lapic_read(LAPIC_ICR0) & APIC_ICR_BUSY) {
-		cpu_pause();
-	}
 }
 
 static void __x86_wakeup(int apicid, unsigned long ip)
