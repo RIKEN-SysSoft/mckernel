@@ -818,6 +818,7 @@ static void wait_icr_idle(void)
 
 void x86_issue_ipi(unsigned int apicid, unsigned int low)
 {
+	wait_icr_idle();
 	lapic_icr_write(apicid << LAPIC_ICR_ID_SHIFT, low);
 }
 
@@ -844,7 +845,6 @@ static void __x86_wakeup(int apicid, unsigned long ip)
 	/* INIT */
 	x86_issue_ipi(apicid, 
 	              APIC_INT_LEVELTRIG | APIC_INT_ASSERT | APIC_DM_INIT);
-	wait_icr_idle();
 
 	x86_issue_ipi(apicid, 
 	              APIC_INT_LEVELTRIG | APIC_DM_INIT);
@@ -1249,7 +1249,6 @@ int ihk_mc_interrupt_cpu(int cpu, int vector)
 {
 	dkprintf("[%d] ihk_mc_interrupt_cpu: %d\n", ihk_mc_get_processor_id(), cpu);
 
-	wait_icr_idle();
 	x86_issue_ipi(cpu, vector);
 	return 0;
 }
