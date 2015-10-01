@@ -2146,6 +2146,8 @@ void sched_init(void)
 	idle_process->ftn = &cpu_local_var(idle_ftn);
 
 	ihk_mc_init_context(&idle_process->ctx, NULL, idle);
+	ihk_mc_spinlock_init(&idle_process->vm->memory_range_lock);
+	INIT_LIST_HEAD(&idle_process->vm->vm_range_list);
 	idle_process->ftn->pid = 0;
 	idle_process->ftn->tid = ihk_mc_get_processor_id();
 
