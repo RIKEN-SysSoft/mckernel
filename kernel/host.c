@@ -80,6 +80,7 @@ int prepare_process_ranges_args_envs(struct process *proc,
 	unsigned long flags;
 	uintptr_t interp_obase = -1;
 	uintptr_t interp_nbase = -1;
+	size_t map_size;
 	
 	n = p->num_sections;
 
@@ -205,7 +206,8 @@ int prepare_process_ranges_args_envs(struct process *proc,
 	/* Only map remote address if it wasn't specified as an argument */
 	if (!args) {
 		// Map in remote physical addr of args and copy it
-		args_envs_npages = (p->args_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
+		map_size = ((uintptr_t)p->args & (PAGE_SIZE - 1)) + p->args_len;
+		args_envs_npages = (map_size + PAGE_SIZE - 1) >> PAGE_SHIFT;
 		dkprintf("args_envs_npages: %d\n", args_envs_npages);
 		args_envs_rp = ihk_mc_map_memory(NULL, 
 				(unsigned long)p->args, p->args_len);
@@ -238,7 +240,8 @@ int prepare_process_ranges_args_envs(struct process *proc,
 	/* Only map remote address if it wasn't specified as an argument */
 	if (!envs) {
 		// Map in remote physical addr of envs and copy it after args
-		args_envs_npages = (p->envs_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
+		map_size = ((uintptr_t)p->envs & (PAGE_SIZE - 1)) + p->envs_len;
+		args_envs_npages = (map_size + PAGE_SIZE - 1) >> PAGE_SHIFT;
 		dkprintf("args_envs_npages: %d\n", args_envs_npages);
 		args_envs_rp = ihk_mc_map_memory(NULL, (unsigned long)p->envs, 
 				p->envs_len);
