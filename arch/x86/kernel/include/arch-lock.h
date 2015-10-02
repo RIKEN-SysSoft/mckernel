@@ -100,7 +100,6 @@ static void ihk_mc_spinlock_unlock(ihk_spinlock_t *lock, unsigned long flags)
 #endif
 }
 
-
 /* An implementation of the Mellor-Crummey Scott (MCS) lock */
 typedef struct mcs_lock_node {
 	unsigned long locked;
@@ -152,7 +151,247 @@ static void mcs_lock_unlock(struct mcs_lock_node *lock,
 	node->next->locked = 0;
 }
 
+// reader/writer lock
+typedef struct rwlock_node {
+	ihk_atomic_t count;	// num of readers (use only common reader)
+	char type;		// lock type
+#define RWLOCK_TYPE_COMMON_READER 0
+#define RWLOCK_TYPE_READER 1
+#define RWLOCK_TYPE_WRITER 2
+	char locked;		// lock
+#define RWLOCK_LOCKED	1
+#define RWLOCK_UNLOCKED	0
+	char dmy1;		// unused
+	char dmy2;		// unused
+	struct rwlock_node *next;
+} __attribute__((aligned(64))) rwlock_node_t;
 
+typedef struct rwlock_node_irqsave {
+	struct rwlock_node node;
+	unsigned long irqsave;
+} __attribute__((aligned(64))) rwlock_node_irqsave_t;
+
+typedef struct rwlock_lock {
+	struct rwlock_node reader;		/* common reader lock */
+	struct rwlock_node *node;		/* base */
+} __attribute__((aligned(64))) rwlock_lock_t;
+
+static void
+rwlock_init(struct rwlock_lock *lock)
+{
+	ihk_atomic_set(&lock->reader.count, 0);
+	lock->reader.type = RWLOCK_TYPE_COMMON_READER;
+	lock->node = NULL;
+}
+
+static void
+rwlock_writer_lock_noirq(struct rwlock_lock *lock, struct rwlock_node *node)
+{
+	struct rwlock_node *pred;
+
+	preempt_disable();
+
+	node->type = RWLOCK_TYPE_WRITER;
+	node->next = NULL;
+
+	pred = (struct rwlock_node *)xchg8((unsigned long *)&lock->node,
+			(unsigned long)node);
+
+	if (pred) {
+		node->locked = RWLOCK_LOCKED;
+		pred->next = node;
+		while (node->locked != RWLOCK_UNLOCKED) {
+			cpu_pause();
+		}
+	}
+}
+
+static void
+rwlock_unlock_readers(struct rwlock_lock *lock)
+{
+	struct rwlock_node *p;
+	struct rwlock_node *f = NULL;
+	struct rwlock_node *n;
+
+	ihk_atomic_inc(&lock->reader.count); // protect to unlock reader
+	for(p = &lock->reader; p->next; p = n){
+		n = p->next;
+		if(p->next->type == RWLOCK_TYPE_READER){
+			p->next = n->next;
+			if(lock->node == n){
+				struct rwlock_node *old;
+
+				old = (struct rwlock_node *)atomic_cmpxchg8(
+				       (unsigned long *)&lock->node,
+				       (unsigned long)n,
+				       (unsigned long)p);
+
+				if(old != n){ // couldn't change
+					while (n->next == NULL) {
+						cpu_pause();
+					}
+					p->next = n->next;
+				}
+			}
+			if(f){
+				ihk_atomic_inc(&lock->reader.count);
+				n->locked = RWLOCK_UNLOCKED;
+			}
+			else
+				f = n;
+			n = p;
+		}
+		if(n->next == NULL && lock->node != n){
+			while (n->next == NULL) {
+				cpu_pause();
+			}
+		}
+	}
+
+	f->locked = RWLOCK_UNLOCKED;
+}
+
+static void
+rwlock_writer_unlock_noirq(struct rwlock_lock *lock, struct rwlock_node *node)
+{
+	if (node->next == NULL) {
+		struct rwlock_node *old = (struct rwlock_node *)
+			atomic_cmpxchg8((unsigned long *)&lock->node,
+					(unsigned long)node, (unsigned long)0);
+
+		if (old == node) {
+			goto out;
+		}
+
+		while (node->next == NULL) {
+			cpu_pause();
+		}
+	}
+
+	if(node->next->type == RWLOCK_TYPE_READER){
+		lock->reader.next = node->next;
+		rwlock_unlock_readers(lock);
+	}
+	else{
+		node->next->locked = RWLOCK_UNLOCKED;
+	}
+
+out:
+	preempt_enable();
+}
+
+static void
+rwlock_reader_lock_noirq(struct rwlock_lock *lock, struct rwlock_node *node)
+{
+	struct rwlock_node *pred;
+
+	preempt_disable();
+
+	node->type = RWLOCK_TYPE_READER;
+	node->next = NULL;
+
+	pred = (struct rwlock_node *)xchg8((unsigned long *)&lock->node,
+			(unsigned long)node);
+
+	if (pred) {
+		if(pred == &lock->reader){
+			if(ihk_atomic_inc_return(&pred->count) != 1){
+				struct rwlock_node *old;
+
+				old = (struct rwlock_node *)atomic_cmpxchg8(
+				       (unsigned long *)&lock->node,
+				       (unsigned long)node,
+				       (unsigned long)pred);
+
+				if (old == pred) {
+					goto out;
+				}
+
+				while (node->next == NULL) {
+					cpu_pause();
+				}
+
+				pred->next = node->next;
+				if(node->next->type == RWLOCK_TYPE_READER)
+					rwlock_unlock_readers(lock);
+				goto out;
+			}
+			ihk_atomic_dec(&pred->count);
+		}
+		node->locked = RWLOCK_LOCKED;
+		pred->next = node;
+		while (node->locked != RWLOCK_UNLOCKED) {
+			cpu_pause();
+		}
+	}
+	else {
+		lock->reader.next = node;
+		rwlock_unlock_readers(lock);
+	}
+out:
+	return;
+}
+
+static void
+rwlock_reader_unlock_noirq(struct rwlock_lock *lock, struct rwlock_node *node)
+{
+	if(ihk_atomic_dec_return(&lock->reader.count))
+		goto out;
+
+	if (lock->reader.next == NULL) {
+		struct rwlock_node *old;
+
+		old = (struct rwlock_node *)atomic_cmpxchg8(
+		       (unsigned long *)&lock->node,
+		       (unsigned long)&lock->reader,
+		       (unsigned long)0);
+
+		if (old == &lock->reader) {
+			goto out;
+		}
+
+		while (lock->reader.next == NULL) {
+			cpu_pause();
+		}
+	}
+
+	if(lock->reader.next->type == RWLOCK_TYPE_READER){
+		rwlock_unlock_readers(lock);
+	}
+	else{
+		lock->reader.next->locked = RWLOCK_UNLOCKED;
+	}
+
+out:
+	preempt_enable();
+}
+
+static void
+rwlock_writer_lock(struct rwlock_lock *lock, struct rwlock_node_irqsave *node)
+{
+	node->irqsave = cpu_disable_interrupt_save();
+	rwlock_writer_lock_noirq(lock, &node->node);
+}
+
+static void
+rwlock_writer_unlock(struct rwlock_lock *lock, struct rwlock_node_irqsave *node)
+{
+	rwlock_writer_unlock_noirq(lock, &node->node);
+	cpu_restore_interrupt(node->irqsave);
+}
+
+static void
+rwlock_reader_lock(struct rwlock_lock *lock, struct rwlock_node_irqsave *node)
+{
+	node->irqsave = cpu_disable_interrupt_save();
+	rwlock_reader_lock_noirq(lock, &node->node);
+}
+
+static void
+rwlock_reader_unlock(struct rwlock_lock *lock, struct rwlock_node_irqsave *node)
+{
+	rwlock_reader_unlock_noirq(lock, &node->node);
+	cpu_restore_interrupt(node->irqsave);
+}
 
 #endif
-
