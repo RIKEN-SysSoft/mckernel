@@ -36,7 +36,7 @@ struct timer {
 	uint64_t timeout;
 	struct waitq processes;
 	struct list_head list;
-	struct process *proc;
+	struct thread *thread;
 };
 
 uint64_t schedule_timeout(uint64_t timeout);

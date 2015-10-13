@@ -8,8 +8,9 @@
 #include <ihk/atomic.h>
 
 //#define DEBUG_SPINLOCK
+//#define DEBUG_MCS_RWLOCK
 
-#ifdef DEBUG_SPINLOCK
+#if defined(DEBUG_SPINLOCK) || defined(DEBUG_MCS_RWLOCK)
 int __kprintf(const char *format, ...);
 #endif
 
@@ -26,7 +27,17 @@ static void ihk_mc_spinlock_init(ihk_spinlock_t *lock)
 }
 #define SPIN_LOCK_UNLOCKED 0
 
-static void ihk_mc_spinlock_lock_noirq(ihk_spinlock_t *lock)
+#ifdef DEBUG_SPINLOCK
+#define ihk_mc_spinlock_lock_noirq(l) { \
+__kprintf("[%d] call ihk_mc_spinlock_lock_noirq %p %s:%d\n", ihk_mc_get_processor_id(), (l), __FILE__, __LINE__); \
+__ihk_mc_spinlock_lock_noirq(l); \
+__kprintf("[%d] ret ihk_mc_spinlock_lock_noirq\n", ihk_mc_get_processor_id()); \
+}
+#else
+#define ihk_mc_spinlock_lock_noirq __ihk_mc_spinlock_lock_noirq
+#endif
+
+static void __ihk_mc_spinlock_lock_noirq(ihk_spinlock_t *lock)
 {
 	int inc = 0x00010000;
 	int tmp;
@@ -43,11 +54,6 @@ static void ihk_mc_spinlock_lock_noirq(ihk_spinlock_t *lock)
 	             "jmp 1b\n"
 	             "2:"
 	             : "+Q" (inc), "+m" (*lock), "=r" (tmp) : : "memory", "cc");
-#endif
-
-#ifdef DEBUG_SPINLOCK
-	__kprintf("[%d] trying to grab lock: 0x%lX\n", 
-	          ihk_mc_get_processor_id(), lock);
 #endif
 
 	preempt_disable();
@@ -67,37 +73,58 @@ static void ihk_mc_spinlock_lock_noirq(ihk_spinlock_t *lock)
 			:
 			: "memory", "cc");
 
-#ifdef DEBUG_SPINLOCK
-	__kprintf("[%d] holding lock: 0x%lX\n", ihk_mc_get_processor_id(), lock);
-#endif
 }
 
-static unsigned long ihk_mc_spinlock_lock(ihk_spinlock_t *lock)
+#ifdef DEBUG_SPINLOCK
+#define ihk_mc_spinlock_lock(l) ({ unsigned long rc;\
+__kprintf("[%d] call ihk_mc_spinlock_lock %p %s:%d\n", ihk_mc_get_processor_id(), (l), __FILE__, __LINE__); \
+rc = __ihk_mc_spinlock_lock(l);\
+__kprintf("[%d] ret ihk_mc_spinlock_lock\n", ihk_mc_get_processor_id()); rc;\
+})
+#else
+#define ihk_mc_spinlock_lock __ihk_mc_spinlock_lock
+#endif
+static unsigned long __ihk_mc_spinlock_lock(ihk_spinlock_t *lock)
 {
 	unsigned long flags;
 	
 	flags = cpu_disable_interrupt_save();
 
-	ihk_mc_spinlock_lock_noirq(lock);
+	__ihk_mc_spinlock_lock_noirq(lock);
 
 	return flags;
 }
 
-static void ihk_mc_spinlock_unlock_noirq(ihk_spinlock_t *lock)
+#ifdef DEBUG_SPINLOCK
+#define ihk_mc_spinlock_unlock_noirq(l) { \
+__kprintf("[%d] call ihk_mc_spinlock_unlock_noirq %p %s:%d\n", ihk_mc_get_processor_id(), (l), __FILE__, __LINE__); \
+__ihk_mc_spinlock_unlock_noirq(l); \
+__kprintf("[%d] ret ihk_mc_spinlock_unlock_noirq\n", ihk_mc_get_processor_id()); \
+}
+#else
+#define ihk_mc_spinlock_unlock_noirq __ihk_mc_spinlock_unlock_noirq
+#endif
+static void __ihk_mc_spinlock_unlock_noirq(ihk_spinlock_t *lock)
 {
 	asm volatile ("lock incw %0" : "+m"(*lock) : : "memory", "cc");
 	
 	preempt_enable();
 }
 
-static void ihk_mc_spinlock_unlock(ihk_spinlock_t *lock, unsigned long flags)
+#ifdef DEBUG_SPINLOCK
+#define ihk_mc_spinlock_unlock(l, f) { \
+__kprintf("[%d] call ihk_mc_spinlock_unlock %p %s:%d\n", ihk_mc_get_processor_id(), (l), __FILE__, __LINE__); \
+__ihk_mc_spinlock_unlock((l), (f)); \
+__kprintf("[%d] ret ihk_mc_spinlock_unlock\n", ihk_mc_get_processor_id()); \
+}
+#else
+#define ihk_mc_spinlock_unlock __ihk_mc_spinlock_unlock
+#endif
+static void __ihk_mc_spinlock_unlock(ihk_spinlock_t *lock, unsigned long flags)
 {
-	ihk_mc_spinlock_unlock_noirq(lock);
+	__ihk_mc_spinlock_unlock_noirq(lock);
 
 	cpu_restore_interrupt(flags);
-#ifdef DEBUG_SPINLOCK
-	__kprintf("[%d] released lock: 0x%lX\n", ihk_mc_get_processor_id(), lock);
-#endif
 }
 
 /* An implementation of the Mellor-Crummey Scott (MCS) lock */
@@ -152,76 +179,85 @@ static void mcs_lock_unlock(struct mcs_lock_node *lock,
 }
 
 // reader/writer lock
-typedef struct rwlock_node {
+typedef struct mcs_rwlock_node {
 	ihk_atomic_t count;	// num of readers (use only common reader)
 	char type;		// lock type
-#define RWLOCK_TYPE_COMMON_READER 0
-#define RWLOCK_TYPE_READER 1
-#define RWLOCK_TYPE_WRITER 2
+#define MCS_RWLOCK_TYPE_COMMON_READER 0
+#define MCS_RWLOCK_TYPE_READER 1
+#define MCS_RWLOCK_TYPE_WRITER 2
 	char locked;		// lock
-#define RWLOCK_LOCKED	1
-#define RWLOCK_UNLOCKED	0
+#define MCS_RWLOCK_LOCKED	1
+#define MCS_RWLOCK_UNLOCKED	0
 	char dmy1;		// unused
 	char dmy2;		// unused
-	struct rwlock_node *next;
-} __attribute__((aligned(64))) rwlock_node_t;
+	struct mcs_rwlock_node *next;
+} __attribute__((aligned(64))) mcs_rwlock_node_t;
 
-typedef struct rwlock_node_irqsave {
-	struct rwlock_node node;
+typedef struct mcs_rwlock_node_irqsave {
+	struct mcs_rwlock_node node;
 	unsigned long irqsave;
-} __attribute__((aligned(64))) rwlock_node_irqsave_t;
+} __attribute__((aligned(64))) mcs_rwlock_node_irqsave_t;
 
-typedef struct rwlock_lock {
-	struct rwlock_node reader;		/* common reader lock */
-	struct rwlock_node *node;		/* base */
-} __attribute__((aligned(64))) rwlock_lock_t;
+typedef struct mcs_rwlock_lock {
+	struct mcs_rwlock_node reader;		/* common reader lock */
+	struct mcs_rwlock_node *node;		/* base */
+} __attribute__((aligned(64))) mcs_rwlock_lock_t;
 
 static void
-rwlock_init(struct rwlock_lock *lock)
+mcs_rwlock_init(struct mcs_rwlock_lock *lock)
 {
 	ihk_atomic_set(&lock->reader.count, 0);
-	lock->reader.type = RWLOCK_TYPE_COMMON_READER;
+	lock->reader.type = MCS_RWLOCK_TYPE_COMMON_READER;
 	lock->node = NULL;
 }
 
+#ifdef DEBUG_MCS_RWLOCK
+#define mcs_rwlock_writer_lock_noirq(l, n) { \
+__kprintf("[%d] call mcs_rwlock_writer_lock_noirq %p %s:%d\n", ihk_mc_get_processor_id(), (l), __FILE__, __LINE__); \
+__mcs_rwlock_writer_lock_noirq((l), (n)); \
+__kprintf("[%d] ret mcs_rwlock_writer_lock_noirq\n", ihk_mc_get_processor_id()); \
+}
+#else
+#define mcs_rwlock_writer_lock_noirq __mcs_rwlock_writer_lock_noirq
+#endif
 static void
-rwlock_writer_lock_noirq(struct rwlock_lock *lock, struct rwlock_node *node)
+__mcs_rwlock_writer_lock_noirq(struct mcs_rwlock_lock *lock, struct mcs_rwlock_node *node)
 {
-	struct rwlock_node *pred;
+	struct mcs_rwlock_node *pred;
 
 	preempt_disable();
 
-	node->type = RWLOCK_TYPE_WRITER;
+	node->type = MCS_RWLOCK_TYPE_WRITER;
 	node->next = NULL;
 
-	pred = (struct rwlock_node *)xchg8((unsigned long *)&lock->node,
+	pred = (struct mcs_rwlock_node *)xchg8((unsigned long *)&lock->node,
 			(unsigned long)node);
 
 	if (pred) {
-		node->locked = RWLOCK_LOCKED;
+		node->locked = MCS_RWLOCK_LOCKED;
 		pred->next = node;
-		while (node->locked != RWLOCK_UNLOCKED) {
+		while (node->locked != MCS_RWLOCK_UNLOCKED) {
 			cpu_pause();
 		}
 	}
 }
 
 static void
-rwlock_unlock_readers(struct rwlock_lock *lock)
+mcs_rwlock_unlock_readers(struct mcs_rwlock_lock *lock)
 {
-	struct rwlock_node *p;
-	struct rwlock_node *f = NULL;
-	struct rwlock_node *n;
+	struct mcs_rwlock_node *p;
+	struct mcs_rwlock_node *f = NULL;
+	struct mcs_rwlock_node *n;
 
 	ihk_atomic_inc(&lock->reader.count); // protect to unlock reader
 	for(p = &lock->reader; p->next; p = n){
 		n = p->next;
-		if(p->next->type == RWLOCK_TYPE_READER){
+		if(p->next->type == MCS_RWLOCK_TYPE_READER){
 			p->next = n->next;
 			if(lock->node == n){
-				struct rwlock_node *old;
+				struct mcs_rwlock_node *old;
 
-				old = (struct rwlock_node *)atomic_cmpxchg8(
+				old = (struct mcs_rwlock_node *)atomic_cmpxchg8(
 				       (unsigned long *)&lock->node,
 				       (unsigned long)n,
 				       (unsigned long)p);
@@ -233,29 +269,44 @@ rwlock_unlock_readers(struct rwlock_lock *lock)
 					p->next = n->next;
 				}
 			}
+			else if(p->next == NULL){
+				while (n->next == NULL) {
+					cpu_pause();
+				}
+				p->next = n->next;
+			}
 			if(f){
 				ihk_atomic_inc(&lock->reader.count);
-				n->locked = RWLOCK_UNLOCKED;
+				n->locked = MCS_RWLOCK_UNLOCKED;
 			}
 			else
 				f = n;
 			n = p;
 		}
 		if(n->next == NULL && lock->node != n){
-			while (n->next == NULL) {
+			while (n->next == NULL && lock->node != n) {
 				cpu_pause();
 			}
 		}
 	}
 
-	f->locked = RWLOCK_UNLOCKED;
+	f->locked = MCS_RWLOCK_UNLOCKED;
 }
 
+#ifdef DEBUG_MCS_RWLOCK
+#define mcs_rwlock_writer_unlock_noirq(l, n) { \
+__kprintf("[%d] call mcs_rwlock_writer_unlock_noirq %p %s:%d\n", ihk_mc_get_processor_id(), (l), __FILE__, __LINE__); \
+__mcs_rwlock_writer_unlock_noirq((l), (n)); \
+__kprintf("[%d] ret mcs_rwlock_writer_unlock_noirq\n", ihk_mc_get_processor_id()); \
+}
+#else
+#define mcs_rwlock_writer_unlock_noirq __mcs_rwlock_writer_unlock_noirq
+#endif
 static void
-rwlock_writer_unlock_noirq(struct rwlock_lock *lock, struct rwlock_node *node)
+__mcs_rwlock_writer_unlock_noirq(struct mcs_rwlock_lock *lock, struct mcs_rwlock_node *node)
 {
 	if (node->next == NULL) {
-		struct rwlock_node *old = (struct rwlock_node *)
+		struct mcs_rwlock_node *old = (struct mcs_rwlock_node *)
 			atomic_cmpxchg8((unsigned long *)&lock->node,
 					(unsigned long)node, (unsigned long)0);
 
@@ -268,42 +319,52 @@ rwlock_writer_unlock_noirq(struct rwlock_lock *lock, struct rwlock_node *node)
 		}
 	}
 
-	if(node->next->type == RWLOCK_TYPE_READER){
+	if(node->next->type == MCS_RWLOCK_TYPE_READER){
 		lock->reader.next = node->next;
-		rwlock_unlock_readers(lock);
+		mcs_rwlock_unlock_readers(lock);
 	}
 	else{
-		node->next->locked = RWLOCK_UNLOCKED;
+		node->next->locked = MCS_RWLOCK_UNLOCKED;
 	}
 
 out:
 	preempt_enable();
 }
 
+#ifdef DEBUG_MCS_RWLOCK
+#define mcs_rwlock_reader_lock_noirq(l, n) { \
+__kprintf("[%d] call mcs_rwlock_reader_lock_noirq %p %s:%d\n", ihk_mc_get_processor_id(), (l), __FILE__, __LINE__); \
+__mcs_rwlock_reader_lock_noirq((l), (n)); \
+__kprintf("[%d] ret mcs_rwlock_reader_lock_noirq\n", ihk_mc_get_processor_id()); \
+}
+#else
+#define mcs_rwlock_reader_lock_noirq __mcs_rwlock_reader_lock_noirq
+#endif
 static void
-rwlock_reader_lock_noirq(struct rwlock_lock *lock, struct rwlock_node *node)
+__mcs_rwlock_reader_lock_noirq(struct mcs_rwlock_lock *lock, struct mcs_rwlock_node *node)
 {
-	struct rwlock_node *pred;
+	struct mcs_rwlock_node *pred;
 
 	preempt_disable();
 
-	node->type = RWLOCK_TYPE_READER;
+	node->type = MCS_RWLOCK_TYPE_READER;
 	node->next = NULL;
+	node->dmy1 = ihk_mc_get_processor_id();
 
-	pred = (struct rwlock_node *)xchg8((unsigned long *)&lock->node,
+	pred = (struct mcs_rwlock_node *)xchg8((unsigned long *)&lock->node,
 			(unsigned long)node);
 
 	if (pred) {
 		if(pred == &lock->reader){
 			if(ihk_atomic_inc_return(&pred->count) != 1){
-				struct rwlock_node *old;
+				struct mcs_rwlock_node *old;
 
-				old = (struct rwlock_node *)atomic_cmpxchg8(
+				old = (struct mcs_rwlock_node *)atomic_cmpxchg8(
 				       (unsigned long *)&lock->node,
 				       (unsigned long)node,
 				       (unsigned long)pred);
 
-				if (old == pred) {
+				if (old == node) {
 					goto out;
 				}
 
@@ -312,36 +373,45 @@ rwlock_reader_lock_noirq(struct rwlock_lock *lock, struct rwlock_node *node)
 				}
 
 				pred->next = node->next;
-				if(node->next->type == RWLOCK_TYPE_READER)
-					rwlock_unlock_readers(lock);
+				if(node->next->type == MCS_RWLOCK_TYPE_READER)
+					mcs_rwlock_unlock_readers(lock);
 				goto out;
 			}
 			ihk_atomic_dec(&pred->count);
 		}
-		node->locked = RWLOCK_LOCKED;
+		node->locked = MCS_RWLOCK_LOCKED;
 		pred->next = node;
-		while (node->locked != RWLOCK_UNLOCKED) {
+		while (node->locked != MCS_RWLOCK_UNLOCKED) {
 			cpu_pause();
 		}
 	}
 	else {
 		lock->reader.next = node;
-		rwlock_unlock_readers(lock);
+		mcs_rwlock_unlock_readers(lock);
 	}
 out:
 	return;
 }
 
+#ifdef DEBUG_MCS_RWLOCK
+#define mcs_rwlock_reader_unlock_noirq(l, n) { \
+__kprintf("[%d] call mcs_rwlock_reader_unlock_noirq %p %s:%d\n", ihk_mc_get_processor_id(), (l), __FILE__, __LINE__); \
+__mcs_rwlock_reader_unlock_noirq((l), (n)); \
+__kprintf("[%d] ret mcs_rwlock_reader_unlock_noirq\n", ihk_mc_get_processor_id()); \
+}
+#else
+#define mcs_rwlock_reader_unlock_noirq __mcs_rwlock_reader_unlock_noirq
+#endif
 static void
-rwlock_reader_unlock_noirq(struct rwlock_lock *lock, struct rwlock_node *node)
+__mcs_rwlock_reader_unlock_noirq(struct mcs_rwlock_lock *lock, struct mcs_rwlock_node *node)
 {
 	if(ihk_atomic_dec_return(&lock->reader.count))
 		goto out;
 
 	if (lock->reader.next == NULL) {
-		struct rwlock_node *old;
+		struct mcs_rwlock_node *old;
 
-		old = (struct rwlock_node *)atomic_cmpxchg8(
+		old = (struct mcs_rwlock_node *)atomic_cmpxchg8(
 		       (unsigned long *)&lock->node,
 		       (unsigned long)&lock->reader,
 		       (unsigned long)0);
@@ -355,42 +425,78 @@ rwlock_reader_unlock_noirq(struct rwlock_lock *lock, struct rwlock_node *node)
 		}
 	}
 
-	if(lock->reader.next->type == RWLOCK_TYPE_READER){
-		rwlock_unlock_readers(lock);
+	if(lock->reader.next->type == MCS_RWLOCK_TYPE_READER){
+		mcs_rwlock_unlock_readers(lock);
 	}
 	else{
-		lock->reader.next->locked = RWLOCK_UNLOCKED;
+		lock->reader.next->locked = MCS_RWLOCK_UNLOCKED;
 	}
 
 out:
 	preempt_enable();
 }
 
+#ifdef DEBUG_MCS_RWLOCK
+#define mcs_rwlock_writer_lock(l, n) { \
+__kprintf("[%d] call mcs_rwlock_writer_lock %p %s:%d\n", ihk_mc_get_processor_id(), (l), __FILE__, __LINE__); \
+__mcs_rwlock_writer_lock((l), (n)); \
+__kprintf("[%d] ret mcs_rwlock_writer_lock\n", ihk_mc_get_processor_id()); \
+}
+#else
+#define mcs_rwlock_writer_lock __mcs_rwlock_writer_lock
+#endif
 static void
-rwlock_writer_lock(struct rwlock_lock *lock, struct rwlock_node_irqsave *node)
+__mcs_rwlock_writer_lock(struct mcs_rwlock_lock *lock, struct mcs_rwlock_node_irqsave *node)
 {
 	node->irqsave = cpu_disable_interrupt_save();
-	rwlock_writer_lock_noirq(lock, &node->node);
+	__mcs_rwlock_writer_lock_noirq(lock, &node->node);
 }
 
+#ifdef DEBUG_MCS_RWLOCK
+#define mcs_rwlock_writer_unlock(l, n) { \
+__kprintf("[%d] call mcs_rwlock_writer_unlock %p %s:%d\n", ihk_mc_get_processor_id(), (l), __FILE__, __LINE__); \
+__mcs_rwlock_writer_unlock((l), (n)); \
+__kprintf("[%d] ret mcs_rwlock_writer_unlock\n", ihk_mc_get_processor_id()); \
+}
+#else
+#define mcs_rwlock_writer_unlock __mcs_rwlock_writer_unlock
+#endif
 static void
-rwlock_writer_unlock(struct rwlock_lock *lock, struct rwlock_node_irqsave *node)
+__mcs_rwlock_writer_unlock(struct mcs_rwlock_lock *lock, struct mcs_rwlock_node_irqsave *node)
 {
-	rwlock_writer_unlock_noirq(lock, &node->node);
+	__mcs_rwlock_writer_unlock_noirq(lock, &node->node);
 	cpu_restore_interrupt(node->irqsave);
 }
 
+#ifdef DEBUG_MCS_RWLOCK
+#define mcs_rwlock_reader_lock(l, n) { \
+__kprintf("[%d] call mcs_rwlock_reader_lock %p %s:%d\n", ihk_mc_get_processor_id(), (l), __FILE__, __LINE__); \
+__mcs_rwlock_reader_lock((l), (n)); \
+__kprintf("[%d] ret mcs_rwlock_reader_lock\n", ihk_mc_get_processor_id()); \
+}
+#else
+#define mcs_rwlock_reader_lock __mcs_rwlock_reader_lock
+#endif
 static void
-rwlock_reader_lock(struct rwlock_lock *lock, struct rwlock_node_irqsave *node)
+__mcs_rwlock_reader_lock(struct mcs_rwlock_lock *lock, struct mcs_rwlock_node_irqsave *node)
 {
 	node->irqsave = cpu_disable_interrupt_save();
-	rwlock_reader_lock_noirq(lock, &node->node);
+	__mcs_rwlock_reader_lock_noirq(lock, &node->node);
 }
 
+#ifdef DEBUG_MCS_RWLOCK
+#define mcs_rwlock_reader_unlock(l, n) { \
+__kprintf("[%d] call mcs_rwlock_reader_unlock %p %s:%d\n", ihk_mc_get_processor_id(), (l), __FILE__, __LINE__); \
+__mcs_rwlock_reader_unlock((l), (n)); \
+__kprintf("[%d] ret mcs_rwlock_reader_unlock\n", ihk_mc_get_processor_id()); \
+}
+#else
+#define mcs_rwlock_reader_unlock __mcs_rwlock_reader_unlock
+#endif
 static void
-rwlock_reader_unlock(struct rwlock_lock *lock, struct rwlock_node_irqsave *node)
+__mcs_rwlock_reader_unlock(struct mcs_rwlock_lock *lock, struct mcs_rwlock_node_irqsave *node)
 {
-	rwlock_reader_unlock_noirq(lock, &node->node);
+	__mcs_rwlock_reader_unlock_noirq(lock, &node->node);
 	cpu_restore_interrupt(node->irqsave);
 }
 

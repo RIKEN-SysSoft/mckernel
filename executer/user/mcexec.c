@@ -183,6 +183,7 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	
 	desc = malloc(sizeof(struct program_load_desc)
 	              + sizeof(struct program_image_section) * nhdrs);
+	desc->shell_path[0] = '\0';
 	fseek(fp, hdr.e_phoff, SEEK_SET);
 	j = 0;
 	desc->num_sections = nhdrs;
@@ -1822,6 +1823,7 @@ fork_child_sync_pipe:
 				
 			    /* Parent */
 			    default:
+fprintf(stderr, "fork %d->%d\n", getpid(), pid);
 				fs->pid = pid;
 				while ((rc = sem_trywait(&fs->sem)) == -1 && (errno == EAGAIN || errno == EINTR)) {
 					int st;
@@ -1870,6 +1872,7 @@ fork_err:
 			siginfo_t info;
 			int opt;
 
+fprintf(stderr, "wait4: pid=%d\n", pid);
 			opt = WEXITED | (options & WNOWAIT);
 			memset(&info, '\0', sizeof info);
 			while((ret = waitid(P_PID, pid, &info, opt)) == -1 &&
@@ -1879,7 +1882,7 @@ fork_err:
 			}
 
 			if(ret != pid) {
-				fprintf(stderr, "ERROR: waiting for %lu\n", w.sr.args[0]);
+				fprintf(stderr, "ERROR: waiting for %lu rc=%d errno=%d\n", w.sr.args[0], ret, errno);
 			}
 
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);

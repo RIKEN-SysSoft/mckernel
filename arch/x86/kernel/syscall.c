@@ -25,13 +25,13 @@
 #include <kmalloc.h>
 #include <uio.h>
 
-void terminate(int, int, ihk_mc_user_context_t *);
+void terminate(int, int);
 int copy_from_user(void *dst, const void *src, size_t siz);
 int copy_to_user(void *dst, const void *src, size_t siz);
 int write_process_vm(struct process_vm *vm, void *dst, const void *src, size_t siz);
 long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
 long syscall(int num, ihk_mc_user_context_t *ctx);
-extern void save_fp_regs(struct process *proc);
+extern void save_fp_regs(struct thread *proc);
 
 //#define DEBUG_PRINT_SC
 
@@ -46,12 +46,12 @@ uintptr_t debug_constants[] = {
 	offsetof(struct cpu_local_var, current),
 	offsetof(struct cpu_local_var, runq),
 	offsetof(struct cpu_local_var, status),
-	offsetof(struct process, ctx),
-	offsetof(struct process, sched_list),
-	offsetof(struct process, ftn),
-	offsetof(struct fork_tree_node, status),
-	offsetof(struct fork_tree_node, pid),
-	offsetof(struct fork_tree_node, tid),
+	offsetof(struct thread, ctx),
+	offsetof(struct thread, sched_list),
+	offsetof(struct thread, proc),
+	offsetof(struct thread, tstatus),
+	offsetof(struct process, pid),
+	offsetof(struct thread, tid),
 	-1,
 };
 
@@ -163,7 +163,7 @@ struct sigsp {
 
 SYSCALL_DECLARE(rt_sigreturn)
 {
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 	struct x86_user_context *regs;
 	struct sigsp *sigsp;
 
@@ -173,8 +173,8 @@ SYSCALL_DECLARE(rt_sigreturn)
 	sigsp = (struct sigsp *)regs->gpr.rsp;
 	if(copy_from_user(regs, &sigsp->regs, sizeof(struct x86_user_context)))
 		return -EFAULT;
-	proc->sigmask.__val[0] = sigsp->sigmask;
-	proc->sigstack.ss_flags = sigsp->ssflags;
+	thread->sigmask.__val[0] = sigsp->sigmask;
+	thread->sigstack.ss_flags = sigsp->ssflags;
 	if(sigsp->restart){
 		return syscall(sigsp->num, (ihk_mc_user_context_t *)regs);
 	}
@@ -182,37 +182,9 @@ SYSCALL_DECLARE(rt_sigreturn)
 }
 
 extern struct cpu_local_var *clv;
-extern unsigned long do_kill(int pid, int tid, int sig, struct siginfo *info, int ptracecont);
+extern unsigned long do_kill(struct thread *thread, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
 extern void interrupt_syscall(int all, int pid);
 extern int num_processors;
-
-void
-do_setpgid(int pid, int pgid)
-{
-	struct cpu_local_var *v;
-	struct process *p;
-	struct process *proc = cpu_local_var(current);
-	int i;
-	unsigned long irqstate;
-
-	if(pid == 0)
-		pid = proc->ftn->pid;
-	if(pgid == 0)
-		pgid = pid;
-
-	for(i = 0; i < num_processors; i++){
-		v = get_cpu_local_var(i);
-		irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
-		list_for_each_entry(p, &(v->runq), sched_list){
-			if(p->ftn->pid <= 0)
-				continue;
-			if(p->ftn->pid == pid){
-				p->ftn->pgid = pgid;
-			}
-		}
-		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
-	}
-}
 
 #define RFLAGS_MASK (RFLAGS_CF | RFLAGS_PF | RFLAGS_AF | RFLAGS_ZF | \
 		RFLAGS_SF | RFLAGS_TF | RFLAGS_DF | RFLAGS_OF |  \
@@ -222,10 +194,10 @@ do_setpgid(int pid, int pgid)
 #define DB7_RESERVED_MASK (0xffffffff0000dc00UL)
 #define DB7_RESERVED_SET (0x400UL)
 
-extern ihk_mc_user_context_t *lookup_user_context(struct process *proc);
+extern ihk_mc_user_context_t *lookup_user_context(struct thread *thread);
 
 long
-ptrace_read_user(struct process *proc, long addr, unsigned long *value)
+ptrace_read_user(struct thread *thread, long addr, unsigned long *value)
 {
 	unsigned long *p;
 	struct x86_user_context *uctx;
@@ -235,7 +207,7 @@ ptrace_read_user(struct process *proc, long addr, unsigned long *value)
 		return -EIO;
 	}
 	else if (addr < sizeof(struct user_regs_struct)) {
-		uctx = lookup_user_context(proc);
+		uctx = lookup_user_context(thread);
 		if (!uctx) {
 			return -EIO;
 		}
@@ -253,11 +225,11 @@ ptrace_read_user(struct process *proc, long addr, unsigned long *value)
 	if (offsetof(struct user, u_debugreg[0]) <= addr &&
 			addr < offsetof(struct user, u_debugreg[8])) {
 		if (addr & (sizeof(*value) - 1)) return -EIO;
-		if (proc->ptrace_debugreg == NULL) {
+		if (thread->ptrace_debugreg == NULL) {
 			kprintf("ptrace_read_user: missing ptrace_debugreg\n");
 			return -EFAULT;
 		}
-		p = &proc->ptrace_debugreg[(addr - offsetof(struct user, u_debugreg[0])) / sizeof(*value)];
+		p = &thread->ptrace_debugreg[(addr - offsetof(struct user, u_debugreg[0])) / sizeof(*value)];
 		*value = *p;
 		return 0;
 	}
@@ -269,7 +241,7 @@ ptrace_read_user(struct process *proc, long addr, unsigned long *value)
 }
 
 long
-ptrace_write_user(struct process *proc, long addr, unsigned long value)
+ptrace_write_user(struct thread *thread, long addr, unsigned long value)
 {
 	unsigned long *p;
 	struct x86_user_context *uctx;
@@ -279,7 +251,7 @@ ptrace_write_user(struct process *proc, long addr, unsigned long value)
 		return -EIO;
 	}
 	else if (addr < sizeof(struct user_regs_struct)) {
-		uctx = lookup_user_context(proc);
+		uctx = lookup_user_context(thread);
 		if (!uctx) {
 			return -EIO;
 		}
@@ -302,11 +274,11 @@ ptrace_write_user(struct process *proc, long addr, unsigned long value)
 	if (offsetof(struct user, u_debugreg[0]) <= addr &&
 			addr < offsetof(struct user, u_debugreg[8])) {
 		if (addr & (sizeof(value) - 1)) return -EIO;
-		if (proc->ptrace_debugreg == NULL) {
+		if (thread->ptrace_debugreg == NULL) {
 			kprintf("ptrace_write_user: missing ptrace_debugreg\n");
 			return -EFAULT;
 		}
-		p = &proc->ptrace_debugreg[(addr - offsetof(struct user, u_debugreg[0])) / sizeof(value)];
+		p = &thread->ptrace_debugreg[(addr - offsetof(struct user, u_debugreg[0])) / sizeof(value)];
 		if (addr == offsetof(struct user, u_debugreg[6])) {
 			value &= ~DB6_RESERVED_MASK;
 			value |= DB6_RESERVED_SET;
@@ -325,16 +297,16 @@ ptrace_write_user(struct process *proc, long addr, unsigned long value)
 }
 
 long
-alloc_debugreg(struct process *proc)
+alloc_debugreg(struct thread *thread)
 {
-	proc->ptrace_debugreg = kmalloc(sizeof(*proc->ptrace_debugreg) * 8, IHK_MC_AP_NOWAIT);
-	if (proc->ptrace_debugreg == NULL) {
+	thread->ptrace_debugreg = kmalloc(sizeof(*thread->ptrace_debugreg) * 8, IHK_MC_AP_NOWAIT);
+	if (thread->ptrace_debugreg == NULL) {
 		kprintf("alloc_debugreg: no memory.\n");
 		return -ENOMEM;
 	}
-	memset(proc->ptrace_debugreg, '\0', sizeof(*proc->ptrace_debugreg) * 8);
-	proc->ptrace_debugreg[6] = DB6_RESERVED_SET;
-	proc->ptrace_debugreg[7] = DB7_RESERVED_SET;
+	memset(thread->ptrace_debugreg, '\0', sizeof(*thread->ptrace_debugreg) * 8);
+	thread->ptrace_debugreg[6] = DB6_RESERVED_SET;
+	thread->ptrace_debugreg[7] = DB7_RESERVED_SET;
 	return 0;
 }
 
@@ -381,50 +353,50 @@ clear_debugreg(void)
 	asm("mov %0, %%db7" ::"r" (r));
 }
 
-void clear_single_step(struct process *proc)
+void clear_single_step(struct thread *thread)
 {
-	proc->uctx->gpr.rflags &= ~RFLAGS_TF;
+	thread->uctx->gpr.rflags &= ~RFLAGS_TF;
 }
 
-void set_single_step(struct process *proc)
+void set_single_step(struct thread *thread)
 {
-	proc->uctx->gpr.rflags |= RFLAGS_TF;
+	thread->uctx->gpr.rflags |= RFLAGS_TF;
 }
 
-long ptrace_read_fpregs(struct process *proc, void *fpregs)
+long ptrace_read_fpregs(struct thread *thread, void *fpregs)
 {
-	save_fp_regs(proc);
-	if (proc->fp_regs == NULL) {
+	save_fp_regs(thread);
+	if (thread->fp_regs == NULL) {
 		return -ENOMEM;
 	}
-	return copy_to_user(fpregs, &proc->fp_regs->i387,
+	return copy_to_user(fpregs, &thread->fp_regs->i387,
 			sizeof(struct i387_fxsave_struct));
 }
 
-long ptrace_write_fpregs(struct process *proc, void *fpregs)
+long ptrace_write_fpregs(struct thread *thread, void *fpregs)
 {
-	save_fp_regs(proc);
-	if (proc->fp_regs == NULL) {
+	save_fp_regs(thread);
+	if (thread->fp_regs == NULL) {
 		return -ENOMEM;
 	}
-	return copy_from_user(&proc->fp_regs->i387, fpregs, 
+	return copy_from_user(&thread->fp_regs->i387, fpregs, 
 			sizeof(struct i387_fxsave_struct));
 }
 
-long ptrace_read_regset(struct process *proc, long type, struct iovec *iov)
+long ptrace_read_regset(struct thread *thread, long type, struct iovec *iov)
 {
 	long rc = -EINVAL;
 
 	switch (type) {
 	case NT_X86_XSTATE:
-		save_fp_regs(proc);
-		if (proc->fp_regs == NULL) {
+		save_fp_regs(thread);
+		if (thread->fp_regs == NULL) {
 			return -ENOMEM;
 		}
 		if (iov->iov_len > sizeof(fp_regs_struct)) {
 			iov->iov_len = sizeof(fp_regs_struct);
 		}
-		rc = copy_to_user(iov->iov_base, proc->fp_regs, iov->iov_len);
+		rc = copy_to_user(iov->iov_base, thread->fp_regs, iov->iov_len);
 		break;
 	default:
 		kprintf("ptrace_read_regset: not supported type 0x%x\n", type);
@@ -433,20 +405,20 @@ long ptrace_read_regset(struct process *proc, long type, struct iovec *iov)
 	return rc;
 }
 
-long ptrace_write_regset(struct process *proc, long type, struct iovec *iov)
+long ptrace_write_regset(struct thread *thread, long type, struct iovec *iov)
 {
 	long rc = -EINVAL;
 
 	switch (type) {
 	case NT_X86_XSTATE:
-		save_fp_regs(proc);
-		if (proc->fp_regs == NULL) {
+		save_fp_regs(thread);
+		if (thread->fp_regs == NULL) {
 			return -ENOMEM;
 		}
 		if (iov->iov_len > sizeof(fp_regs_struct)) {
 			iov->iov_len = sizeof(fp_regs_struct);
 		}
-		rc = copy_from_user(proc->fp_regs, iov->iov_base, iov->iov_len);
+		rc = copy_from_user(thread->fp_regs, iov->iov_base, iov->iov_len);
 		break;
 	default:
 		kprintf("ptrace_write_regset: not supported type 0x%x\n", type);
@@ -455,47 +427,44 @@ long ptrace_write_regset(struct process *proc, long type, struct iovec *iov)
 	return rc;
 }
 
-extern void coredump(struct process *proc, void *regs);
+extern void coredump(struct thread *thread, void *regs);
 
-void ptrace_report_signal(struct process *proc, int sig)
+void ptrace_report_signal(struct thread *thread, int sig)
 {
-	long rc;
+	struct mcs_rwlock_node_irqsave lock;
+	struct process *proc = thread->proc;
+	int parent_pid;
+	struct siginfo info;
 
-	dkprintf("ptrace_report_signal,pid=%d\n", proc->ftn->pid);
+	dkprintf("ptrace_report_signal,pid=%d\n", thread->proc->pid);
 
-	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);	
-	proc->ftn->exit_status = sig;
-	/* Transition process state */
-	proc->ftn->status = PS_TRACED;
-	proc->ftn->ptrace &= ~PT_TRACE_SYSCALL_MASK;
+	mcs_rwlock_writer_lock(&proc->update_lock, &lock);	
+	if(!(proc->ptrace & PT_TRACED)){
+		mcs_rwlock_writer_unlock(&proc->update_lock, &lock);
+		return;
+	}
+	proc->exit_status = sig;
+	/* Transition thread state */
+	proc->pstatus = PS_TRACED;
+	thread->tstatus = PS_TRACED;
+	proc->ptrace &= ~PT_TRACE_SYSCALL_MASK;
 	if (sig == SIGSTOP || sig == SIGTSTP ||
 			sig == SIGTTIN || sig == SIGTTOU) {
-		proc->ftn->signal_flags |= SIGNAL_STOP_STOPPED;
+		proc->signal_flags |= SIGNAL_STOP_STOPPED;
 	} else {
-		proc->ftn->signal_flags &= ~SIGNAL_STOP_STOPPED;
+		proc->signal_flags &= ~SIGNAL_STOP_STOPPED;
 	}
-	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
-	if (proc->ftn->parent) {
-		/* kill SIGCHLD */
-		ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
-		if (proc->ftn->parent->owner) {
-			struct siginfo info;
+	parent_pid = proc->parent->pid;
+	mcs_rwlock_writer_unlock(&proc->update_lock, &lock);
 
-			memset(&info, '\0', sizeof info);
-			info.si_signo = SIGCHLD;
-			info.si_code = CLD_TRAPPED;
-			info._sifields._sigchld.si_pid = proc->ftn->pid;
-			info._sifields._sigchld.si_status = proc->ftn->exit_status;
-			rc = do_kill(proc->ftn->parent->pid, -1, SIGCHLD, &info, 0);
-			if (rc < 0) {
-				kprintf("ptrace_report_signal,do_kill failed\n");
-			}
-		}
-		ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);	
-
-		/* Wake parent (if sleeping in wait4()) */
-		waitq_wakeup(&proc->ftn->parent->waitpid_q);
-	}
+	memset(&info, '\0', sizeof info);
+	info.si_signo = SIGCHLD;
+	info.si_code = CLD_TRAPPED;
+	info._sifields._sigchld.si_pid = thread->proc->pid;
+	info._sifields._sigchld.si_status = thread->proc->exit_status;
+	do_kill(cpu_local_var(current), parent_pid, -1, SIGCHLD, &info, 0);
+	/* Wake parent (if sleeping in wait4()) */
+	waitq_wakeup(&proc->parent->waitpid_q);
 
 	dkprintf("ptrace_report_signal,sleeping\n");
 	/* Sleep */
@@ -505,6 +474,8 @@ void ptrace_report_signal(struct process *proc, int sig)
 static int
 isrestart(int num, unsigned long rc, int sig, int restart)
 {
+	if(sig == SIGKILL || sig == SIGSTOP)
+		return 0;
 	if(num == 0 || rc != -EINTR)
 		return 0;
 	switch(num){
@@ -536,22 +507,23 @@ isrestart(int num, unsigned long rc, int sig, int restart)
 }
 
 void
-do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pending *pending, int num)
+do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pending *pending, int num)
 {
 	struct x86_user_context *regs = regs0;
 	struct k_sigaction *k;
 	int	sig;
 	__sigset_t w;
-	int	irqstate;
-	struct fork_tree_node *ftn = proc->ftn;
+	struct process *proc = thread->proc;
 	int	orgsig;
 	int	ptraceflag = 0;
+	struct mcs_rwlock_node_irqsave lock;
+	unsigned long irqstate;
 
 	for(w = pending->sigmask.__val[0], sig = 0; w; sig++, w >>= 1);
-	dkprintf("do_signal,pid=%d,sig=%d\n", proc->ftn->pid, sig);
+	dkprintf("do_signal,pid=%d,sig=%d\n", proc->pid, sig);
 	orgsig = sig;
 
-	if((ftn->ptrace & PT_TRACED) &&
+	if((proc->ptrace & PT_TRACED) &&
 	   pending->ptracecont == 0 &&
 	   sig != SIGKILL) {
 		ptraceflag = 1;
@@ -566,39 +538,39 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 		rc = regs->gpr.rax;
 	}
 
-	irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
-	k = proc->sighandler->action + sig - 1;
+	irqstate = ihk_mc_spinlock_lock(&thread->sigcommon->lock);
+	k = thread->sigcommon->action + sig - 1;
 
 	if(k->sa.sa_handler == SIG_IGN){
 		kfree(pending);
-		ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
+		ihk_mc_spinlock_unlock(&thread->sigcommon->lock, irqstate);
 		return;
 	}
 	else if(k->sa.sa_handler){
 		unsigned long *usp; /* user stack */
 		struct sigsp *sigsp;
-		int	ssflags = proc->sigstack.ss_flags;
-		unsigned long	mask = (unsigned long)proc->sigmask.__val[0];
+		int	ssflags = thread->sigstack.ss_flags;
+		unsigned long	mask = (unsigned long)thread->sigmask.__val[0];
 
 		if((k->sa.sa_flags & SA_ONSTACK) &&
-		   !(proc->sigstack.ss_flags & SS_DISABLE) &&
-		   !(proc->sigstack.ss_flags & SS_ONSTACK)){
+		   !(thread->sigstack.ss_flags & SS_DISABLE) &&
+		   !(thread->sigstack.ss_flags & SS_ONSTACK)){
 			unsigned long lsp;
-			lsp = ((unsigned long)(((char *)proc->sigstack.ss_sp) + proc->sigstack.ss_size)) & 0xfffffffffffffff8UL;
+			lsp = ((unsigned long)(((char *)thread->sigstack.ss_sp) + thread->sigstack.ss_size)) & 0xfffffffffffffff8UL;
 			usp = (unsigned long *)lsp;
-			proc->sigstack.ss_flags |= SS_ONSTACK;
+			thread->sigstack.ss_flags |= SS_ONSTACK;
 		}
 		else{
 			usp = (unsigned long *)regs->gpr.rsp;
 		}
 		sigsp = ((struct sigsp *)usp) - 1;
 		sigsp = (struct sigsp *)((unsigned long)sigsp & 0xfffffffffffffff0UL);
-		if(write_process_vm(proc->vm, &sigsp->regs, regs, sizeof(struct x86_user_context)) ||
-		   write_process_vm(proc->vm, &sigsp->sigrc, &rc, sizeof(long))){
+		if(write_process_vm(thread->vm, &sigsp->regs, regs, sizeof(struct x86_user_context)) ||
+		   write_process_vm(thread->vm, &sigsp->sigrc, &rc, sizeof(long))){
 			kfree(pending);
-			ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
+			ihk_mc_spinlock_unlock(&thread->sigcommon->lock, irqstate);
 			kprintf("do_signal,write_process_vm failed\n");
-			terminate(0, sig, (ihk_mc_user_context_t *)regs->gpr.rsp);
+			terminate(0, sig);
 			return;
 		}
 		sigsp->sigmask = mask;
@@ -621,25 +593,25 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 		regs->gpr.rip = (unsigned long)k->sa.sa_handler;
 		regs->gpr.rsp = (unsigned long)usp;
 
-		proc->sigmask.__val[0] |= pending->sigmask.__val[0];
+		thread->sigmask.__val[0] |= pending->sigmask.__val[0];
 		kfree(pending);
-		ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
+		ihk_mc_spinlock_unlock(&thread->sigcommon->lock, irqstate);
 	}
 	else {
 		int	coredumped = 0;
 		siginfo_t info;
 
 		if(ptraceflag){
-			if(proc->ptrace_recvsig)
-				kfree(proc->ptrace_recvsig);
-			proc->ptrace_recvsig = pending;
-			if(proc->ptrace_sendsig)
-				kfree(proc->ptrace_sendsig);
-			proc->ptrace_sendsig = NULL;
+			if(thread->ptrace_recvsig)
+				kfree(thread->ptrace_recvsig);
+			thread->ptrace_recvsig = pending;
+			if(thread->ptrace_sendsig)
+				kfree(thread->ptrace_sendsig);
+			thread->ptrace_sendsig = NULL;
 		}
 		else
 			kfree(pending);
-		ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
+		ihk_mc_spinlock_unlock(&thread->sigcommon->lock, irqstate);
 		switch (sig) {
 		case SIGSTOP:
 		case SIGTSTP:
@@ -648,49 +620,50 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 			memset(&info, '\0', sizeof info);
 			info.si_signo = SIGCHLD;
 			info.si_code = CLD_STOPPED;
-			info._sifields._sigchld.si_pid = proc->ftn->pid;
+			info._sifields._sigchld.si_pid = thread->proc->pid;
 			info._sifields._sigchld.si_status = (sig << 8) | 0x7f;
-			do_kill(proc->ftn->parent->pid, -1, SIGCHLD, &info, 0);
+			do_kill(cpu_local_var(current), thread->proc->parent->pid, -1, SIGCHLD, &info, 0);
 			if(ptraceflag){
-				ptrace_report_signal(proc, orgsig);
+				ptrace_report_signal(thread, orgsig);
 			}
 			else{
 				dkprintf("do_signal,SIGSTOP,changing state\n");
 
-				/* Update process state in fork tree */
-				ihk_mc_spinlock_lock_noirq(&ftn->lock);	
-				ftn->group_exit_status = SIGSTOP;
+				/* Update thread state in fork tree */
+				mcs_rwlock_writer_lock(&proc->update_lock, &lock);	
+				proc->group_exit_status = SIGSTOP;
 
 				/* Reap and set new signal_flags */
-				ftn->signal_flags = SIGNAL_STOP_STOPPED;
+				proc->signal_flags = SIGNAL_STOP_STOPPED;
 
-				ftn->status = PS_STOPPED;
-				ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
+				proc->pstatus = PS_STOPPED;
+				thread->tstatus = PS_STOPPED;
+				mcs_rwlock_writer_unlock(&proc->update_lock, &lock);	
 
 				/* Wake up the parent who tried wait4 and sleeping */
-				waitq_wakeup(&proc->ftn->parent->waitpid_q);
+				waitq_wakeup(&proc->parent->waitpid_q);
 
 				dkprintf("do_signal,SIGSTOP,sleeping\n");
 				/* Sleep */
-				proc->ftn->status = PS_STOPPED;
 				schedule();
 				dkprintf("SIGSTOP(): woken up\n");
 			}
 			break;
 		case SIGTRAP:
 			dkprintf("do_signal,SIGTRAP\n");
-			if(!(ftn->ptrace & PT_TRACED)) {
+			if(!(proc->ptrace & PT_TRACED)) {
 				goto core;
 			}
 
-			/* Update process state in fork tree */
-			ihk_mc_spinlock_lock_noirq(&ftn->lock);	
-			ftn->exit_status = SIGTRAP;
-			ftn->status = PS_TRACED;
-			ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
+			/* Update thread state in fork tree */
+			mcs_rwlock_writer_lock(&proc->update_lock, &lock);	
+			proc->exit_status = SIGTRAP;
+			proc->pstatus = PS_TRACED;
+			thread->tstatus = PS_TRACED;
+			mcs_rwlock_writer_unlock(&proc->update_lock, &lock);	
 
 			/* Wake up the parent who tried wait4 and sleeping */
-			waitq_wakeup(&proc->ftn->parent->waitpid_q);
+			waitq_wakeup(&thread->proc->parent->waitpid_q);
 
 			/* Sleep */
 			dkprintf("do_signal,SIGTRAP,sleeping\n");
@@ -702,10 +675,10 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 			memset(&info, '\0', sizeof info);
 			info.si_signo = SIGCHLD;
 			info.si_code = CLD_CONTINUED;
-			info._sifields._sigchld.si_pid = proc->ftn->pid;
+			info._sifields._sigchld.si_pid = proc->pid;
 			info._sifields._sigchld.si_status = 0x0000ffff;
-			do_kill(proc->ftn->parent->pid, -1, SIGCHLD, &info, 0);
-			ftn->signal_flags = SIGNAL_STOP_CONTINUED;
+			do_kill(cpu_local_var(current), proc->parent->pid, -1, SIGCHLD, &info, 0);
+			proc->signal_flags = SIGNAL_STOP_CONTINUED;
 			dkprintf("do_signal,SIGCONT,do nothing\n");
 			break;
 		case SIGQUIT:
@@ -717,23 +690,23 @@ do_signal(unsigned long rc, void *regs0, struct process *proc, struct sig_pendin
 		case SIGSYS:
 		core:
 			dkprintf("do_signal,default,core,sig=%d\n", sig);
-			coredump(proc, regs);
+			coredump(thread, regs);
 			coredumped = 0x80;
-			terminate(0, sig | coredumped, (ihk_mc_user_context_t *)regs->gpr.rsp);
+			terminate(0, sig | coredumped);
 			break;
 		case SIGCHLD:
 		case SIGURG:
 			break;
 		default:
 			dkprintf("do_signal,default,terminate,sig=%d\n", sig);
-			terminate(0, sig, (ihk_mc_user_context_t *)regs->gpr.rsp);
+			terminate(0, sig);
 			break;
 		}
 	}
 }
 
 static struct sig_pending *
-getsigpending(struct process *proc, int delflag){
+getsigpending(struct thread *thread, int delflag){
 	struct list_head *head;
 	ihk_spinlock_t *lock;
 	struct sig_pending *next;
@@ -744,15 +717,15 @@ getsigpending(struct process *proc, int delflag){
 	int sig;
 	struct k_sigaction *k;
 
-	w = proc->sigmask.__val[0];
+	w = thread->sigmask.__val[0];
 
-	lock = &proc->sigshared->lock;
-	head = &proc->sigshared->sigpending;
+	lock = &thread->sigcommon->lock;
+	head = &thread->sigcommon->sigpending;
 	for(;;){
 		irqstate = ihk_mc_spinlock_lock(lock);
 		list_for_each_entry_safe(pending, next, head, list){
 			for(x = pending->sigmask.__val[0], sig = 0; x; sig++, x >>= 1);
-			k = proc->sighandler->action + sig - 1;
+			k = thread->sigcommon->action + sig - 1;
 			if(delflag ||
 			   (sig != SIGCHLD && sig != SIGURG) ||
 			   (k->sa.sa_handler != (void *)1 &&
@@ -767,45 +740,44 @@ getsigpending(struct process *proc, int delflag){
 		}
 		ihk_mc_spinlock_unlock(lock, irqstate);
 
-		if(lock == &proc->sigpendinglock)
+		if(lock == &thread->sigpendinglock)
 			return NULL;
-		lock = &proc->sigpendinglock;
-		head = &proc->sigpending;
+		lock = &thread->sigpendinglock;
+		head = &thread->sigpending;
 	}
 
 	return NULL;
 }
 
 struct sig_pending *
-hassigpending(struct process *proc)
+hassigpending(struct thread *thread)
 {
-	return getsigpending(proc, 0);
+	return getsigpending(thread, 0);
 }
 
 void
 check_signal(unsigned long rc, void *regs0, int num)
 {
 	struct x86_user_context *regs = regs0;
-	struct process *proc;
+	struct thread *thread;
 	struct sig_pending *pending;
 	int	irqstate;
 
 	if(clv == NULL)
 		return;
-	proc = cpu_local_var(current);
-	if(proc == NULL || proc->ftn->pid == 0){
-		struct process *p;
+	thread = cpu_local_var(current);
+
+	if(thread == NULL || thread == &cpu_local_var(idle)){
+		struct thread *t;
 
 		irqstate = ihk_mc_spinlock_lock(&(cpu_local_var(runq_lock)));
-		list_for_each_entry(p, &(cpu_local_var(runq)), sched_list){
-			if(p->ftn->pid <= 0)
+		list_for_each_entry(t, &(cpu_local_var(runq)), sched_list){
+			if(t == &cpu_local_var(idle))
 				continue;
-			if(p->ftn->status == PS_INTERRUPTIBLE &&
-			   hassigpending(p)){
-				p->ftn->status = PS_RUNNING;
-				ihk_mc_spinlock_unlock(&(cpu_local_var(runq_lock)), irqstate);
-			//	schedule();
-				return;
+			if(t->tstatus == PS_INTERRUPTIBLE &&
+			   hassigpending(t)){
+				t->tstatus = PS_RUNNING;
+				break;
 			}
 		}
 		ihk_mc_spinlock_unlock(&(cpu_local_var(runq_lock)), irqstate);
@@ -817,24 +789,24 @@ check_signal(unsigned long rc, void *regs0, int num)
 	}
 
 	for(;;){
-		pending = getsigpending(proc, 1);
+		pending = getsigpending(thread, 1);
 		if(!pending) {
 			dkprintf("check_signal,queue is empty\n");
 			return;
 		}
 
-		do_signal(rc, regs, proc, pending, num);
+		do_signal(rc, regs, thread, pending, num);
 	}
 }
 
 unsigned long
-do_kill(int pid, int tid, int sig, siginfo_t *info, int ptracecont)
+do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
+        int ptracecont)
 {
 	dkprintf("do_kill,pid=%d,tid=%d,sig=%d\n", pid, tid, sig);
 	struct cpu_local_var *v;
-	struct process *p;
-	struct process *proc = cpu_local_var(current);
-	struct process *tproc = NULL;
+	struct thread *t;
+	struct thread *tthread = NULL;
 	int i;
 	__sigset_t mask;
 	struct list_head *head;
@@ -865,9 +837,9 @@ do_kill(int pid, int tid, int sig, siginfo_t *info, int ptracecont)
 		int	sendme = 0;
 
 		if(pid == 0){
-			if(proc == NULL || proc->ftn->pid <= 0)
+			if(thread == NULL || thread->proc->pid <= 0)
 				return -ESRCH;
-			pgid = proc->ftn->pgid;
+			pgid = thread->proc->pgid;
 		}
 		pids = kmalloc(sizeof(int) * num_processors, IHK_MC_AP_NOWAIT);
 		if(!pids)
@@ -875,32 +847,32 @@ do_kill(int pid, int tid, int sig, siginfo_t *info, int ptracecont)
 		for(i = 0; i < num_processors; i++){
 			v = get_cpu_local_var(i);
 			irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
-			list_for_each_entry(p, &(v->runq), sched_list){
+			list_for_each_entry(t, &(v->runq), sched_list){
 				int	j;
 
-				if(p->ftn->pid <= 0)
+				if(t->proc->pid <= 0)
 					continue;
-				if(pgid != 1 && p->ftn->pgid != pgid)
+				if(pgid != 1 && t->proc->pgid != pgid)
 					continue;
-				if(proc && p->ftn->pid == proc->ftn->pid){
+				if(thread && t->proc->pid == thread->proc->pid){
 					sendme = 1;
 					continue;
 				}
 
 				for(j = 0; j < n; j++)
-					if(pids[j] == p->ftn->pid)
+					if(pids[j] == t->proc->pid)
 						break;
 				if(j == n){
-					pids[n] = p->ftn->pid;
+					pids[n] = t->proc->pid;
 					n++;
 				}
 			}
 			ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 		}
 		for(i = 0; i < n; i++)
-			rc = do_kill(pids[i], -1, sig, info, ptracecont);
+			rc = do_kill(thread, pids[i], -1, sig, info, ptracecont);
 		if(sendme)
-			rc = do_kill(proc->ftn->pid, -1, sig, info, ptracecont);
+			rc = do_kill(thread, thread->proc->pid, -1, sig, info, ptracecont);
 
 		kfree(pids);
 		return rc;
@@ -908,18 +880,18 @@ do_kill(int pid, int tid, int sig, siginfo_t *info, int ptracecont)
 	irqstate = cpu_disable_interrupt_save();
 	mask = __sigmask(sig);
 	if(tid == -1){
-		struct process *tproc0 = NULL;
+		struct thread *tthread0 = NULL;
 		ihk_spinlock_t *savelock0 = NULL;
 
 		for(i = 0; i < num_processors; i++){
 			v = get_cpu_local_var(i);
 			found = 0;
 			ihk_mc_spinlock_lock_noirq(&(v->runq_lock));
-			list_for_each_entry(p, &(v->runq), sched_list){
-				if(p->ftn->pid == pid){
-					if(p->ftn->tid == pid || tproc == NULL){
-						if(!(mask & p->sigmask.__val[0])){
-							tproc = p;
+			list_for_each_entry(t, &(v->runq), sched_list){
+				if(t->proc->pid == pid){
+					if(t->tid == pid || tthread == NULL){
+						if(!(mask & t->sigmask.__val[0])){
+							tthread = t;
 							if(!found && savelock) {
 								ihk_mc_spinlock_unlock_noirq(savelock);
 							}
@@ -930,14 +902,14 @@ do_kill(int pid, int tid, int sig, siginfo_t *info, int ptracecont)
 								savelock0 = NULL;
 							}
 						}
-						else if(tproc == NULL && tproc0 == NULL){
-							tproc0 = p;
+						else if(tthread == NULL && tthread0 == NULL){
+							tthread0 = t;
 							found = 1;
 							savelock0 = &(v->runq_lock);
 						}
 					}
-					if(!(mask & p->sigmask.__val[0])){
-						if(p->ftn->tid == pid || tproc == NULL){
+					if(!(mask & t->sigmask.__val[0])){
+						if(t->tid == pid || tthread == NULL){
 
 						}
 					}
@@ -947,8 +919,8 @@ do_kill(int pid, int tid, int sig, siginfo_t *info, int ptracecont)
 				ihk_mc_spinlock_unlock_noirq(&(v->runq_lock));
 			}
 		}
-		if(tproc == NULL){
-			tproc = tproc0;
+		if(tthread == NULL){
+			tthread = tthread0;
 			savelock = savelock0;
 		}
 	}
@@ -957,12 +929,12 @@ do_kill(int pid, int tid, int sig, siginfo_t *info, int ptracecont)
 			v = get_cpu_local_var(i);
 			found = 0;
 			ihk_mc_spinlock_lock_noirq(&(v->runq_lock));
-			list_for_each_entry(p, &(v->runq), sched_list){
-				if(p->ftn->pid > 0 &&
-				   p->ftn->tid == tid){
+			list_for_each_entry(t, &(v->runq), sched_list){
+				if(t->proc->pid > 0 &&
+				   t->tid == tid){
 					savelock = &(v->runq_lock);
 					found = 1;
-					tproc = p;
+					tthread = t;
 					break;
 				}
 			}
@@ -975,12 +947,12 @@ do_kill(int pid, int tid, int sig, siginfo_t *info, int ptracecont)
 			v = get_cpu_local_var(i);
 			found = 0;
 			ihk_mc_spinlock_lock_noirq(&(v->runq_lock));
-			list_for_each_entry(p, &(v->runq), sched_list){
-				if(p->ftn->pid == pid &&
-				   p->ftn->tid == tid){
+			list_for_each_entry(t, &(v->runq), sched_list){
+				if(t->proc->pid == pid &&
+				   t->tid == tid){
 					savelock = &(v->runq_lock);
 					found = 1;
-					tproc = p;
+					tthread = t;
 					break;
 				}
 			}
@@ -990,17 +962,18 @@ do_kill(int pid, int tid, int sig, siginfo_t *info, int ptracecont)
 		}
 	}
 
-	if(!tproc){
+	if(!tthread){
 		cpu_restore_interrupt(irqstate);
 		return -ESRCH;
 	}
 
 	if(sig != SIGCONT &&
-	   proc->ftn->euid != 0 &&
-	   proc->ftn->ruid != tproc->ftn->ruid &&
-	   proc->ftn->euid != tproc->ftn->ruid &&
-	   proc->ftn->ruid != tproc->ftn->suid &&
-	   proc->ftn->euid != tproc->ftn->suid){
+	   thread &&
+	   thread->proc->euid != 0 &&
+	   thread->proc->ruid != tthread->proc->ruid &&
+	   thread->proc->euid != tthread->proc->ruid &&
+	   thread->proc->ruid != tthread->proc->suid &&
+	   thread->proc->euid != tthread->proc->suid){
 		ihk_mc_spinlock_unlock_noirq(savelock);
 		cpu_restore_interrupt(irqstate);
 		return -EPERM;
@@ -1014,20 +987,20 @@ do_kill(int pid, int tid, int sig, siginfo_t *info, int ptracecont)
 
 	doint = 0;
 	if(tid == -1){
-		ihk_mc_spinlock_lock_noirq(&tproc->sigshared->lock);
-		head = &tproc->sigshared->sigpending;
+		ihk_mc_spinlock_lock_noirq(&tthread->sigcommon->lock);
+		head = &tthread->sigcommon->sigpending;
 	}
 	else{
-		ihk_mc_spinlock_lock_noirq(&tproc->sigpendinglock);
-		head = &tproc->sigpending;
+		ihk_mc_spinlock_lock_noirq(&tthread->sigpendinglock);
+		head = &tthread->sigpending;
 	}
 
 	/* Put signal event even when handler is SIG_IGN or SIG_DFL
-	   because target ptraced process must call ptrace_report_signal 
+	   because target ptraced thread must call ptrace_report_signal 
 	   in check_signal */
 	rc = 0;
-	k = tproc->sighandler->action + sig - 1;
-	if((sig != SIGKILL && (tproc->ftn->ptrace & PT_TRACED)) ||
+	k = tthread->sigcommon->action + sig - 1;
+	if((sig != SIGKILL && (tthread->proc->ptrace & PT_TRACED)) ||
 			(k->sa.sa_handler != (void *)1 &&
 			 (k->sa.sa_handler != NULL ||
 			  (sig != SIGCHLD && sig != SIGURG)))){
@@ -1055,42 +1028,42 @@ do_kill(int pid, int tid, int sig, siginfo_t *info, int ptracecont)
 					list_add(&pending->list, head);
 				else
 					list_add_tail(&pending->list, head);
-				tproc->sigevent = 1;
+				tthread->sigevent = 1;
 			}
 		}
 	}
 
 	if(tid == -1){
-		ihk_mc_spinlock_unlock_noirq(&tproc->sigshared->lock);
+		ihk_mc_spinlock_unlock_noirq(&tthread->sigcommon->lock);
 	}
 	else{
-		ihk_mc_spinlock_unlock_noirq(&tproc->sigpendinglock);
+		ihk_mc_spinlock_unlock_noirq(&tthread->sigpendinglock);
 	}
 
-	if (doint && !(mask & tproc->sigmask.__val[0])) {
-		int cpuid = tproc->cpu_id;
-		int pid = tproc->ftn->pid;
-		int status = tproc->ftn->status;
+	if (doint && !(mask & tthread->sigmask.__val[0])) {
+		int cpuid = tthread->cpu_id;
+		int pid = tthread->proc->pid;
+		int status = tthread->tstatus;
 
-		if (proc != tproc) {
+		if (thread != tthread) {
 			dkprintf("do_kill,ipi,pid=%d,cpu_id=%d\n",
-				 tproc->ftn->pid, tproc->cpu_id);
-			ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(tproc->cpu_id)->apic_id, 0xd0);
+				 tthread->proc->pid, tthread->cpu_id);
+			ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(tthread->cpu_id)->apic_id, 0xd0);
 		}
 
 		ihk_mc_spinlock_unlock_noirq(savelock);
 		cpu_restore_interrupt(irqstate);
-		if(!tproc->nohost)
+		if(!tthread->proc->nohost)
 			interrupt_syscall(pid, cpuid);
 
 		if (status != PS_RUNNING) {
 			if(sig == SIGKILL){
 				/* Wake up the target only when stopped by ptrace-reporting */
-				sched_wakeup_process(tproc, PS_TRACED | PS_STOPPED);
+				sched_wakeup_thread(tthread, PS_TRACED | PS_STOPPED);
 			}
 			else if(sig == SIGCONT || ptracecont){
 				/* Wake up the target only when stopped by SIGSTOP */
-				sched_wakeup_process(tproc, PS_STOPPED);
+				sched_wakeup_thread(tthread, PS_STOPPED);
 			}
 		}
 	}
@@ -1105,15 +1078,15 @@ void
 set_signal(int sig, void *regs0, siginfo_t *info)
 {
 	struct x86_user_context *regs = regs0;
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 
-	if(proc == NULL || proc->ftn->pid == 0)
+	if(thread == NULL || thread->proc->pid == 0)
 		return;
 
-	if((__sigmask(sig) & proc->sigmask.__val[0]) ||
+	if((__sigmask(sig) & thread->sigmask.__val[0]) ||
 	   (regs->gpr.rsp & 0x8000000000000000)){
-		coredump(proc, regs0);
-		terminate(0, sig | 0x80, (ihk_mc_user_context_t *)regs->gpr.rsp);
+		coredump(thread, regs0);
+		terminate(0, sig | 0x80);
 	}
-		do_kill(proc->ftn->pid, proc->ftn->tid, sig, info, 0);
+		do_kill(thread, thread->proc->pid, thread->tid, sig, info, 0);
 }

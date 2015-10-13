@@ -95,20 +95,20 @@ static char *syscall_name[] MCKERNEL_UNUSED = {
 };
 
 void check_signal(unsigned long, void *, int);
-void do_signal(long rc, void *regs, struct process *proc, struct sig_pending *pending, int num);
-extern unsigned long do_kill(int pid, int tid, int sig, struct siginfo *info, int ptracecont);
-extern struct sigpending *hassigpending(struct process *proc);
+void do_signal(long rc, void *regs, struct thread *thread, struct sig_pending *pending, int num);
+extern unsigned long do_kill(struct thread *thread, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
+extern struct sigpending *hassigpending(struct thread *thread);
 int copy_from_user(void *, const void *, size_t);
 int read_process_vm(struct process_vm *, void *, const void *, size_t);
 int copy_to_user(void *, const void *, size_t);
 int patch_process_vm(struct process_vm *, void *, const void *, size_t);
-void do_setpgid(int, int);
-extern long alloc_debugreg(struct process *proc);
+extern long alloc_debugreg(struct thread *thread);
 extern int num_processors;
 extern unsigned long ihk_mc_get_ns_per_tsc(void);
-static int ptrace_detach(int pid, int data);
+extern int ptrace_detach(int pid, int data);
+extern void debug_log(unsigned long);
 
-int prepare_process_ranges_args_envs(struct process *proc, 
+int prepare_process_ranges_args_envs(struct thread *thread, 
 		struct program_load_desc *pn,
 		struct program_load_desc *p,
 		enum ihk_mc_pt_attribute attr,
@@ -170,10 +170,10 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid)
 #ifdef SYSCALL_BY_IKC
 	packet.msg = SCD_MSG_SYSCALL_ONESIDE;
 	packet.ref = cpu;
-	packet.pid = pid ? pid : cpu_local_var(current)->ftn->pid;
+	packet.pid = pid ? pid : cpu_local_var(current)->proc->pid;
 	packet.arg = scp->request_rpa;	
 	dkprintf("send syscall, nr: %d, pid: %d\n", req->number, packet.pid);
-	
+
 	ret = ihk_ikc_send(syscall_channel, &packet, 0);
 	if (ret < 0) {
 		kprintf("ERROR: sending IKC msg, ret: %d\n", ret);
@@ -192,15 +192,18 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	long rc;
 	int islock = 0;
 	unsigned long irqstate;
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 
-	++proc->in_syscall_offload;
 	dkprintf("SC(%d)[%3d] sending syscall\n",
-	        ihk_mc_get_processor_id(),
-	        req->number);
+		ihk_mc_get_processor_id(),
+		req->number);
 
-	if(proc->nohost) // host is down
-		return -EPIPE;
+	if(req->number != __NR_exit_group){
+
+		if(thread->proc->nohost) // host is down
+			return -EPIPE;
+		++thread->in_syscall_offload;
+	}
 
 	irqstate = 0;	/* for avoidance of warning */
 	if(req->number == __NR_exit_group ||
@@ -231,8 +234,8 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	
 		if (res->status == STATUS_PAGE_FAULT) {
 			dkprintf("STATUS_PAGE_FAULT in syscall, pid: %d\n", 
-					cpu_local_var(current)->ftn->pid);
-			error = page_fault_process_vm(proc->vm,
+					cpu_local_var(current)->proc->pid);
+			error = page_fault_process_vm(thread->vm,
 					(void *)res->fault_address,
 					res->fault_reason|PF_POPULATE);
 
@@ -255,7 +258,9 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		ihk_mc_spinlock_unlock(&syscall_lock, irqstate);
 	}
 
-	--proc->in_syscall_offload;
+	if(req->number != __NR_exit_group){
+		--thread->in_syscall_offload;
+	}
 	return rc;
 }
 
@@ -267,51 +272,7 @@ long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx)
 	SYSCALL_FOOTER;
 }
 
-#if 0
-void sigchld_parent(struct process *parent, int status)
-{
-	struct process *proc = cpu_local_var(current);
-	int irqstate;
-	struct sig_pending *pending;
-	struct list_head *head;
-	__sigset_t mask;
-
-	mask = __sigmask(SIGCHLD);
-
-	head = &parent->sigpending;
-	irqstate = ihk_mc_spinlock_lock(&parent->sigpendinglock);
-
-	list_for_each_entry(pending, head, list) {
-		if (pending->sigmask.__val[0] == mask)
-			break;
-	}
-
-	if (&pending->list == head) {
-		pending = kmalloc(sizeof(struct sig_pending), IHK_MC_AP_NOWAIT);
-		
-		if (!pending) {
-			/* TODO: what to do here?? */
-			panic("ERROR: not enough memory for signaling parent process!");
-		}
-
-		pending->sigmask.__val[0] = mask;
-		pending->info.si_signo = SIGCHLD;
-		pending->info._sifields._sigchld.si_pid = proc->pid;
-		pending->info._sifields._sigchld.si_status = status;
-
-		list_add_tail(&pending->list, head);
-		proc->sigevent = 1;
-	}
-	/* TODO: There was a SIGCHLD pending */
-	else {
-
-	}
-
-	ihk_mc_spinlock_unlock(&parent->sigpendinglock, irqstate);
-}
-#endif
-
-static int wait_zombie(struct process *proc, struct fork_tree_node *child, int *status, int options) {
+static int wait_zombie(struct thread *thread, struct process *child, int *status, int options) {
     int ret;
     struct syscall_request request IHK_DMA_ALIGN;
     
@@ -336,14 +297,14 @@ static int wait_zombie(struct process *proc, struct fork_tree_node *child, int *
     return ret;
 }
 
-static int wait_stopped(struct process *proc, struct fork_tree_node *child, int *status, int options)
+static int wait_stopped(struct thread *thread, struct process *child, int *status, int options)
 {
 	dkprintf("wait_stopped,proc->pid=%d,child->pid=%d,options=%08x\n",
-			 proc->ftn->pid, child->pid, options);
+			 thread->proc->pid, child->pid, options);
 	int ret;
 
 	/* Copy exit_status created in do_signal */
-	int *exit_status = child->status == PS_STOPPED ? 
+	int *exit_status = child->pstatus == PS_STOPPED ? 
 		&child->group_exit_status :
 		&child->exit_status;
 
@@ -371,7 +332,7 @@ static int wait_stopped(struct process *proc, struct fork_tree_node *child, int 
 	return ret;    
 }
 
-static int wait_continued(struct process *proc, struct fork_tree_node *child, int *status, int options) {
+static int wait_continued(struct thread *thread, struct process *child, int *status, int options) {
 	int ret;
 
 	if (status) {
@@ -395,125 +356,84 @@ static int wait_continued(struct process *proc, struct fork_tree_node *child, in
 static int
 do_wait(int pid, int *status, int options, void *rusage)
 {
-	struct process *proc = cpu_local_var(current);
-	struct fork_tree_node *child_iter, *next;
-	int pgid = proc->ftn->pgid;
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
+	struct process *child, *next;
+	int pgid = proc->pgid;
 	int ret;
 	struct waitq_entry waitpid_wqe;
 	int empty = 1;
 	int orgpid = pid;
+	struct mcs_rwlock_node lock;
 
-	dkprintf("wait4,proc->pid=%d,pid=%d\n", proc->ftn->pid, pid);
+	dkprintf("wait4,thread->pid=%d,pid=%d\n", thread->proc->pid, pid);
  rescan:
 	pid = orgpid;
 
-	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
-	list_for_each_entry_safe(child_iter, next, &proc->ftn->children, siblings_list) {	
-
-		if (!(!!(options & __WCLONE) ^ (child_iter->termsig == SIGCHLD))) {
+	mcs_rwlock_writer_lock_noirq(&thread->proc->children_lock, &lock);
+	list_for_each_entry_safe(child, next, &proc->children_list, siblings_list) {	
+		if (!(!!(options & __WCLONE) ^ (child->termsig == SIGCHLD))) {
 			continue;
 		}
 
-		ihk_mc_spinlock_lock_noirq(&child_iter->lock);
-
-		if ((pid < 0 && -pid == child_iter->pgid) ||
+		if ((pid < 0 && -pid == child->pgid) ||
 			pid == -1 ||
-			(pid == 0 && pgid == child_iter->pgid) ||
-			(pid > 0 && pid == child_iter->pid)) {
+			(pid == 0 && pgid == child->pgid) ||
+			(pid > 0 && pid == child->pid)) {
 
 			empty = 0;
 
 			if((options & WEXITED) &&
-			   child_iter->status == PS_ZOMBIE) {
-				ret = wait_zombie(proc, child_iter, status, options);
-				if(ret == child_iter->pid) {
+			   child->pstatus == PS_ZOMBIE) {
+				ret = wait_zombie(thread, child, status, options);
+				if(ret == child->pid){
+					mcs_rwlock_writer_unlock_noirq(&thread->proc->children_lock, &lock);
 					if(!(options & WNOWAIT)){
-						list_del(&child_iter->siblings_list);
-						release_fork_tree_node(child_iter);
+						release_process(child);
 					}
 					goto out_found;
 				}
 			}
 
-			if((child_iter->signal_flags & SIGNAL_STOP_STOPPED) &&
+			if(!(child->ptrace & PT_TRACED) &&
+			   (child->signal_flags & SIGNAL_STOP_STOPPED) &&
 			   (options & WUNTRACED)) {
 				/* Not ptraced and in stopped state and WUNTRACED is specified */
-				ret = wait_stopped(proc, child_iter, status, options);
-				if(ret == child_iter->pid) {
+				ret = wait_stopped(thread, child, status, options);
+				if(ret == child->pid){
 					if(!(options & WNOWAIT)){
-						child_iter->signal_flags &= ~SIGNAL_STOP_STOPPED;
+						child->signal_flags &= ~SIGNAL_STOP_STOPPED;
 					}
+					mcs_rwlock_writer_unlock_noirq(&thread->proc->children_lock, &lock);
 					goto out_found;
 				}
 			}
 
-			if((child_iter->signal_flags & SIGNAL_STOP_CONTINUED) &&
-			   (options & WCONTINUED)) {
-				ret = wait_continued(proc, child_iter, status, options);
-				if(ret == child_iter->pid) {
+			if((child->ptrace & PT_TRACED) &&
+			   (child->pstatus & (PS_STOPPED | PS_TRACED))) {
+				ret = wait_stopped(thread, child, status, options);
+				if(ret == child->pid){
 					if(!(options & WNOWAIT)){
-						child_iter->signal_flags &= ~SIGNAL_STOP_CONTINUED;
+						child->signal_flags &= ~SIGNAL_STOP_STOPPED;
 					}
+					mcs_rwlock_writer_unlock_noirq(&thread->proc->children_lock, &lock);
+					goto out_found;
+				}
+			}
+
+			if((child->signal_flags & SIGNAL_STOP_CONTINUED) &&
+			   (options & WCONTINUED)) {
+				ret = wait_continued(thread, child, status, options);
+				if(ret == child->pid){
+					if(!(options & WNOWAIT)){
+						child->signal_flags &= ~SIGNAL_STOP_CONTINUED;
+					}
+					mcs_rwlock_writer_unlock_noirq(&thread->proc->children_lock, &lock);
 					goto out_found;
 				}
 			}
 		}
 
-		ihk_mc_spinlock_unlock_noirq(&child_iter->lock);
-	}
-	list_for_each_entry_safe(child_iter, next, &proc->ftn->ptrace_children, ptrace_siblings_list) {	
-
-		if (!(!!(options & __WCLONE) ^ (child_iter->termsig == SIGCHLD))) {
-			continue;
-		}
-
-		ihk_mc_spinlock_lock_noirq(&child_iter->lock);
-
-		if ((pid < 0 && -pid == child_iter->pgid) ||
-			pid == -1 ||
-			(pid == 0 && pgid == child_iter->pgid) ||
-			(pid > 0 && pid == child_iter->pid)) {
-
-			empty = 0;
-
-			if((options & WEXITED) &&
-			   child_iter->status == PS_ZOMBIE) {
-				ret = wait_zombie(proc, child_iter, status, options);
-//				if(ret == child_iter->pid) {
-					if(!(options & WNOWAIT)){
-						list_del(&child_iter->ptrace_siblings_list);
-						release_fork_tree_node(child_iter);
-					}
-					goto out_found;
-//				}
-			}
-
-			if(child_iter->status & (PS_STOPPED | PS_TRACED)) {
-				/* ptraced and in stopped or trace-stopped state */
-				ret = wait_stopped(proc, child_iter, status, options);
-//				if(ret == child_iter->pid) {
-					if(!(options & WNOWAIT)){
-						child_iter->signal_flags &= ~SIGNAL_STOP_STOPPED;
-					}
-					goto out_found;
-//				}
-			} else {
-				/* ptraced and in running or sleeping state */
-			}
-
-			if((child_iter->signal_flags & SIGNAL_STOP_CONTINUED) &&
-			   (options & WCONTINUED)) {
-				ret = wait_continued(proc, child_iter, status, options);
-//				if(ret == child_iter->pid) {
-					if(!(options & WNOWAIT)){
-						child_iter->signal_flags &= ~SIGNAL_STOP_CONTINUED;
-					}
-					goto out_found;
-//				}
-			}
-		}
-
-		ihk_mc_spinlock_unlock_noirq(&child_iter->lock);
 	}
 
 	if (empty) {
@@ -530,20 +450,19 @@ do_wait(int pid, int *status, int options, void *rusage)
 
 	/* Sleep */
 	dkprintf("wait4,sleeping\n");
-	waitq_init_entry(&waitpid_wqe, proc);
-	waitq_prepare_to_wait(&proc->ftn->waitpid_q, &waitpid_wqe, PS_INTERRUPTIBLE);
+	waitq_init_entry(&waitpid_wqe, thread);
+	waitq_prepare_to_wait(&thread->proc->waitpid_q, &waitpid_wqe, PS_INTERRUPTIBLE);
 
-	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
-	if(hassigpending(proc)){
-		waitq_finish_wait(&proc->ftn->waitpid_q, &waitpid_wqe);
+	mcs_rwlock_writer_unlock_noirq(&thread->proc->children_lock, &lock);	
+	if(hassigpending(thread)){
+		waitq_finish_wait(&thread->proc->waitpid_q, &waitpid_wqe);
 		return -EINTR;
 	}
-
 
 	schedule();
 	dkprintf("wait4(): woken up\n");
 
-	waitq_finish_wait(&proc->ftn->waitpid_q, &waitpid_wqe);
+	waitq_finish_wait(&thread->proc->waitpid_q, &waitpid_wqe);
 
 	goto rescan;
 
@@ -551,10 +470,10 @@ do_wait(int pid, int *status, int options, void *rusage)
 	return ret;
  out_found:
 	dkprintf("wait4,out_found\n");
-	ihk_mc_spinlock_unlock_noirq(&child_iter->lock);
+	goto exit;
  out_notfound:
 	dkprintf("wait4,out_notfound\n");
-	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
+	mcs_rwlock_writer_unlock_noirq(&thread->proc->children_lock, &lock);
 	goto exit;
 }
 
@@ -625,159 +544,228 @@ SYSCALL_DECLARE(waitid)
 	return 0;
 }
 
-static int ptrace_terminate_tracer(struct process *proc, struct fork_tree_node *tracer);
-
 void
-terminate(int rc, int sig, ihk_mc_user_context_t *ctx)
+terminate(int rc, int sig)
 {
-	struct syscall_request request IHK_DMA_ALIGN;
-	struct process *proc = cpu_local_var(current);
-	struct fork_tree_node *ftn = proc->ftn;
-	struct fork_tree_node *child, *next;
-	struct process *parent_owner;
-	int ntracee;
-	int *tracee = NULL;
+	struct resource_set *resource_set = cpu_local_var(resource_set);
+	struct thread *mythread = cpu_local_var(current);
+	struct thread *thread;
+	struct process *proc = mythread->proc;
+	struct process *child;
+	struct process *next;
+	struct process *pid1 = resource_set->pid1;
+	struct mcs_rwlock_node_irqsave lock;
+	struct mcs_rwlock_node updatelock;
+	struct mcs_rwlock_node childlock;
+	struct mcs_rwlock_node childlock1;
 	int i;
-	int error;
+	int n;
+	int *ids = NULL;
+	struct syscall_request request IHK_DMA_ALIGN;
 
-	// check tracee and ptrace detach
-	ntracee = 0;
-	ihk_mc_spinlock_lock_noirq(&ftn->lock);
-	list_for_each_entry(child, &ftn->ptrace_children, ptrace_siblings_list) {
-		ntracee++;
+	// clean up threads
+	mcs_rwlock_reader_lock(&proc->threads_lock, &lock); // conflict clone
+	mcs_rwlock_writer_lock_noirq(&proc->update_lock, &updatelock);
+	if(proc->pstatus == PS_EXITED){
+		mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
+		mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
+		mythread->tstatus = PS_EXITED;
+		release_thread(mythread);
+		schedule();
+		// no return
+		return;
 	}
-	if(ntracee){
-		tracee = kmalloc(sizeof(int) * ntracee, IHK_MC_AP_NOWAIT);
+	proc->exit_status = ((rc & 0x00ff) << 8) | (sig & 0xff);
+	proc->pstatus = PS_EXITED;
+	mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
+	mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
+
+	mcs_rwlock_writer_lock(&proc->threads_lock, &lock);
+	list_del(&mythread->siblings_list);
+	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
+
+	mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
+	n = 0;
+	list_for_each_entry(thread, &proc->threads_list, siblings_list) {
+		n++;
+	}
+	if(n){
+		ids = kmalloc(sizeof(int) * n, IHK_MC_AP_NOWAIT);
 		i = 0;
-		if(tracee){
-			list_for_each_entry(child, &ftn->ptrace_children, ptrace_siblings_list) {
-				tracee[i] = child->pid;
-				i++;
+		if(ids){
+			list_for_each_entry(thread, &proc->threads_list, siblings_list) {
+				if(thread != mythread){
+					ids[i] = thread->tid;
+					i++;
+				}
 			}
 		}
 	}
-	ihk_mc_spinlock_unlock_noirq(&ftn->lock);	
-	if(tracee){
-		for(i = 0; i < ntracee; i++){
-			ptrace_detach(tracee[i], 0);
+	if(ids){
+		for(i = 0; i < n; i++){
+			do_kill(mythread, proc->pid, ids[i], SIGKILL, NULL, 0);
 		}
-		kfree(tracee);
+		kfree(ids);
+	}
+	mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
+
+	for(;;){
+		__mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
+		if(list_empty(&proc->threads_list)){
+			mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
+			break;
+		}
+		__mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
+		cpu_pause();
 	}
 
-	dkprintf("terminate,pid=%d\n", proc->ftn->pid);
-	request.number = __NR_exit_group;
-	request.args[0] = ((rc & 0x00ff) << 8) | (sig & 0xff);
+	mcs_rwlock_writer_lock(&proc->threads_lock, &lock);
+	list_add_tail(&mythread->siblings_list, &proc->threads_list);
+	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
+
+	delete_proc_procfs_files(proc->pid);
+
+	release_process_vm(proc->vm);
+	while (ihk_atomic_read(&proc->vm->refcount) != 0) {
+		cpu_pause();
+	}
+
+	if (proc->saved_cmdline) {
+		kfree(proc->saved_cmdline);
+	}
+
+	// check tracee and ptrace_detach
+	n = 0;
+	mcs_rwlock_reader_lock(&proc->children_lock, &lock);
+	list_for_each_entry(child, &proc->children_list, siblings_list) {
+		if(child->ptrace & PT_TRACED)
+			n++;
+	}
+	if(n){
+		ids = kmalloc(sizeof(int) * n, IHK_MC_AP_NOWAIT);
+		i = 0;
+		if(ids){
+			list_for_each_entry(child, &proc->children_list, siblings_list) {
+				if(child->ptrace & PT_TRACED){
+					ids[i] = child->pid;
+					i++;
+				}
+			}
+		}
+	}
+	mcs_rwlock_reader_unlock(&proc->children_lock, &lock);
+	if(ids){
+		for(i = 0; i < n; i++){
+			ptrace_detach(ids[i], 0);
+		}
+		kfree(ids);
+	}
+
+	// clean up children
+	for(i = 0; i < HASH_SIZE; i++){
+		mcs_rwlock_writer_lock(&resource_set->process_hash->lock[i],
+		                   &lock);
+		list_for_each_entry_safe(child, next,
+		                         &resource_set->process_hash->list[i],
+		                         hash_list){
+			mcs_rwlock_writer_lock_noirq(&child->update_lock,
+			                         &updatelock);
+			if(child->ppid_parent == proc &&
+			   child->pstatus == PS_ZOMBIE){
+				list_del(&child->hash_list);
+				list_del(&child->siblings_list);
+				kfree(child);
+			}
+			else if(child->ppid_parent == proc){
+				mcs_rwlock_writer_lock_noirq(&proc->children_lock,
+				                         &childlock);
+				mcs_rwlock_writer_lock_noirq(&pid1->children_lock,
+				                         &childlock1);
+				child->ppid_parent = pid1;
+				if(child->parent == proc){
+					child->parent = pid1;
+					list_del(&child->siblings_list);
+					list_add_tail(&child->siblings_list,
+					              &pid1->children_list);
+				}
+				else{
+					list_del(&child->ptraced_siblings_list);
+					list_add_tail(&child->ptraced_siblings_list,
+					              &pid1->ptraced_children_list);
+				}
+				mcs_rwlock_writer_unlock_noirq(&pid1->children_lock,
+				                         &childlock1);
+				mcs_rwlock_writer_unlock_noirq(&proc->children_lock,
+				                         &childlock);
+			}
+			mcs_rwlock_writer_unlock_noirq(&child->update_lock,
+			                           &updatelock);
+		}
+		mcs_rwlock_writer_unlock(&resource_set->process_hash->lock[i],
+		                   &lock);
+	}
+
+	dkprintf("terminate,pid=%d\n", proc->pid);
 
 #ifdef DCFA_KMOD
 	do_mod_exit(rc);
 #endif
 
-	/* XXX: send SIGKILL to all threads in this process */
-
-	flush_process_memory(proc);	/* temporary hack */
-	if(!proc->nohost)
-		do_syscall(&request, ihk_mc_get_processor_id(), 0);
-
-#define	IS_DETACHED_PROCESS(proc)	(1)	/* should be implemented in the future */
-
-	/* Do a "wait" on all children and detach owner process */
-	ihk_mc_spinlock_lock_noirq(&ftn->lock);
-	list_for_each_entry_safe(child, next, &ftn->children, siblings_list) {
-		list_del(&child->siblings_list);
-		release_fork_tree_node(child);
+	// clean up memory
+	if(!proc->nohost){
+		request.number = __NR_exit_group;
+		request.args[0] = proc->exit_status;
+		do_syscall(&request, ihk_mc_get_processor_id(), proc->pid);
 	}
-	list_for_each_entry_safe(child, next, &ftn->ptrace_children, ptrace_siblings_list) {
-		list_del(&child->ptrace_siblings_list);
-		if (ptrace_terminate_tracer(child->owner, ftn)) {
-			release_fork_tree_node(child);
-		}
+
+	// Send signal to parent
+	if (proc->parent == pid1) {
+		proc->pstatus = PS_ZOMBIE;
+		release_process(proc);
 	}
-	ftn->owner = NULL;
-	ihk_mc_spinlock_unlock_noirq(&ftn->lock);	
+	else {
+		proc->pstatus = PS_ZOMBIE;
 
-	/* Send signal to parent */
-	if (ftn->parent) {
-		int parent_owner_pid;
-		ihk_mc_spinlock_lock_noirq(&ftn->lock);
-		ftn->exit_status = ((rc & 0x00ff) << 8) | (sig & 0xff);
-		ftn->status = PS_ZOMBIE;
-		ihk_mc_spinlock_unlock_noirq(&ftn->lock);	
-
-		/* Wake parent (if sleeping in wait4()) */
 		dkprintf("terminate,wakeup\n");
-		waitq_wakeup(&ftn->parent->waitpid_q);
 
 		/* Signal parent if still attached */
-		ihk_mc_spinlock_lock_noirq(&ftn->parent->lock);
-		parent_owner = ftn->parent->owner;
-		parent_owner_pid = parent_owner ? ftn->parent->pid : 0;
-		ihk_mc_spinlock_unlock_noirq(&ftn->parent->lock);	
-		if (parent_owner && (ftn->termsig != 0)) {
+		if (proc->termsig != 0) {
 			struct siginfo info;
+			int error;
 
 			memset(&info, '\0', sizeof info);
 			info.si_signo = SIGCHLD;
-			info.si_code = sig? ((sig & 0x80)? CLD_DUMPED: CLD_KILLED): CLD_EXITED;
-			info._sifields._sigchld.si_pid = proc->ftn->pid;
-			info._sifields._sigchld.si_status = ((rc & 0x00ff) << 8) | (sig & 0xff);
-			dkprintf("terminate,kill %d,target pid=%d\n",
-					ftn->termsig, parent_owner_pid);
-			error = do_kill(ftn->parent->pid, -1, SIGCHLD, &info, 0);
-/*
-			sigchld_parent(ftn->parent->owner, 0);
-*/
+			info.si_code = (proc->exit_status & 0x7f)?
+			               ((proc->exit_status & 0x80)?
+			                CLD_DUMPED: CLD_KILLED): CLD_EXITED;
+			info._sifields._sigchld.si_pid = proc->pid;
+			info._sifields._sigchld.si_status = proc->exit_status;
+			error = do_kill(NULL, proc->parent->pid, -1, SIGCHLD, &info, 0);
 			dkprintf("terminate,klll %d,error=%d\n",
-					ftn->termsig, error);
+					proc->termsig, error);
 		}
+		/* Wake parent (if sleeping in wait4()) */
+		waitq_wakeup(&proc->parent->waitpid_q);
+	}
 
-		release_fork_tree_node(ftn->parent);
-	} else {
-		ihk_mc_spinlock_lock_noirq(&ftn->lock);
-		ftn->status = PS_EXITED;
-		ihk_mc_spinlock_unlock_noirq(&ftn->lock);	
-    }
-	release_fork_tree_node(ftn);
-	release_process(proc);
-	
+	mythread->tstatus = PS_EXITED;
+	release_thread(mythread);
 	schedule();
+	// no return
 }
 
-void terminate_host(int pid)
+void
+terminate_host(int pid)
 {
-	struct cpu_local_var *v;
-	struct process *p;
-	int i;
-	unsigned long irqstate;
-	extern int num_processors;
-	int *tids;
-	int n;
-	siginfo_t info;
+	struct process *proc;
+	struct mcs_rwlock_node_irqsave lock;
 
-	memset(&info, '\0', sizeof info);
-	info.si_signo = SIGKILL;
-	info.si_code = SI_KERNEL;
-
-	tids = kmalloc(sizeof(int) * num_processors, IHK_MC_AP_NOWAIT);
-	if(!tids)
+	proc = find_process(pid, &lock);
+	if(!proc)
 		return;
-
-	for(n = 0, i = 0; i < num_processors; i++){
-		v = get_cpu_local_var(i);
-		irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
-		list_for_each_entry(p, &(v->runq), sched_list){
-			if(p->ftn->pid == pid){
-				p->nohost = 1;
-				tids[n] = p->ftn->tid;
-				n++;
-			}
-		}
-		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
-	}
-	for(i = 0; i < n; i++){
-		do_kill(pid, tids[i], SIGKILL, &info, 0);
-	}
-
-	kfree(tids);
+	proc->nohost = 1;
+	process_unlock(proc, &lock);
+	do_kill(cpu_local_var(current), pid, -1, SIGKILL, NULL, 0);
 }
 
 void
@@ -799,34 +787,8 @@ interrupt_syscall(int pid, int cpuid)
 
 SYSCALL_DECLARE(exit_group)
 {
-#if 0
-	SYSCALL_HEADER;
-#endif
-
-	dkprintf("sys_exit_group,pid=%d\n", cpu_local_var(current)->ftn->pid);
-	terminate((int)ihk_mc_syscall_arg0(ctx), 0, ctx);
-#if 0
-	struct process *proc = cpu_local_var(current);
-
-#ifdef DCFA_KMOD
-	do_mod_exit((int)ihk_mc_syscall_arg0(ctx));
-#endif
-
-	/* XXX: send SIGKILL to all threads in this process */
-
-	do_syscall(&request, ctx, ihk_mc_get_processor_id(), 0);
-
-#define	IS_DETACHED_PROCESS(proc)	(1)	/* should be implemented in the future */
-	proc->status = PS_ZOMBIE;
-	if (IS_DETACHED_PROCESS(proc)) {
-		/* release a reference for wait(2) */
-		proc->status = PS_EXITED;
-		free_process(proc);
-	}
-
-	schedule();
-
-#endif
+	dkprintf("sys_exit_group,pid=%d\n", cpu_local_var(current)->proc->pid);
+	terminate((int)ihk_mc_syscall_arg0(ctx), 0);
 
 	return 0;
 }
@@ -875,7 +837,7 @@ static int do_munmap(void *addr, size_t len)
 	int ro_freed;
 
 	begin_free_pages_pending();
-	error = remove_process_memory_range(cpu_local_var(current),
+	error = remove_process_memory_range(cpu_local_var(current)->vm,
 			(intptr_t)addr, (intptr_t)addr+len, &ro_freed);
 	// XXX: TLB flush
 	flush_tlb();
@@ -895,8 +857,8 @@ static int do_munmap(void *addr, size_t len)
 
 static int search_free_space(size_t len, intptr_t hint, intptr_t *addrp)
 {
-	struct process *proc = cpu_local_var(current);
-	struct vm_regions *region = &proc->vm->region;
+	struct thread *thread = cpu_local_var(current);
+	struct vm_regions *region = &thread->vm->region;
 	intptr_t addr;
 	int error;
 	struct vm_range *range;
@@ -921,7 +883,7 @@ static int search_free_space(size_t len, intptr_t hint, intptr_t *addrp)
 			goto out;
 		}
 
-		range = lookup_process_memory_range(proc->vm, addr, addr+len);
+		range = lookup_process_memory_range(thread->vm, addr, addr+len);
 		if (range == NULL) {
 			break;
 		}
@@ -972,8 +934,8 @@ SYSCALL_DECLARE(mmap)
 	const int fd = ihk_mc_syscall_arg4(ctx);
 	const off_t off0 = ihk_mc_syscall_arg5(ctx);
 
-	struct process *proc = cpu_local_var(current);
-	struct vm_regions *region = &proc->vm->region;
+	struct thread *thread = cpu_local_var(current);
+	struct vm_regions *region = &thread->vm->region;
 	intptr_t addr;
 	size_t len;
 	off_t off;
@@ -1041,7 +1003,7 @@ SYSCALL_DECLARE(mmap)
 		goto out2;
 	}
 
-	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
+	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
 
 	if (flags & MAP_FIXED) {
 		/* clear specified address range */
@@ -1188,11 +1150,11 @@ SYSCALL_DECLARE(mmap)
 	}
 	vrflags |= VRFLAG_PROT_TO_MAXPROT(PROT_TO_VR_FLAG(maxprot));
 
-	error = add_process_memory_range(proc, addr, addr+len, phys, vrflags, memobj, off);
+	error = add_process_memory_range(thread->vm, addr, addr+len, phys, vrflags, memobj, off);
 	if (error) {
 		ekprintf("sys_mmap:add_process_memory_range"
 				"(%p,%lx,%lx,%lx,%lx) failed %d\n",
-				proc, addr, addr+len,
+				thread->vm, addr, addr+len,
 				virt_to_phys(p), vrflags, error);
 		goto out;
 	}
@@ -1206,14 +1168,14 @@ out:
 	if (ro_vma_mapped) {
 		(void)set_host_vma(addr, len, PROT_READ|PROT_WRITE);
 	}
-	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
 
 	if (!error && populated_mapping) {
-		error = populate_process_memory(proc, (void *)addr, len);
+		error = populate_process_memory(thread->vm, (void *)addr, len);
 		if (error) {
 			ekprintf("sys_mmap:populate_process_memory"
 					"(%p,%p,%lx) failed %d\n",
-					proc, (void *)addr, len, error);
+					thread->vm, (void *)addr, len, error);
 			/*
 			 * In this case,
 			 * the mapping established by this call should be unmapped
@@ -1247,8 +1209,8 @@ SYSCALL_DECLARE(munmap)
 {
 	const uintptr_t addr = ihk_mc_syscall_arg0(ctx);
 	const size_t len0 = ihk_mc_syscall_arg1(ctx);
-	struct process *proc = cpu_local_var(current);
-	struct vm_regions *region = &proc->vm->region;
+	struct thread *thread = cpu_local_var(current);
+	struct vm_regions *region = &thread->vm->region;
 	size_t len;
 	int error;
 
@@ -1266,9 +1228,9 @@ SYSCALL_DECLARE(munmap)
 		goto out;
 	}
 
-	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
+	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
 	error = do_munmap((void *)addr, len);
-	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
 
 out:
 	dkprintf("[%d]sys_munmap(%lx,%lx): %d\n",
@@ -1281,8 +1243,8 @@ SYSCALL_DECLARE(mprotect)
 	const intptr_t start = ihk_mc_syscall_arg0(ctx);
 	const size_t len0 = ihk_mc_syscall_arg1(ctx);
 	const int prot = ihk_mc_syscall_arg2(ctx);
-	struct process *proc = cpu_local_var(current);
-	struct vm_regions *region = &proc->vm->region;
+	struct thread *thread = cpu_local_var(current);
+	struct vm_regions *region = &thread->vm->region;
 	size_t len;
 	intptr_t end;
 	struct vm_range *first;
@@ -1316,38 +1278,9 @@ SYSCALL_DECLARE(mprotect)
 		return 0;
 	}
 
-	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
+	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
 
-#if 0
-	/* check contiguous map */
-	first = NULL;
-	for (addr = start; addr < end; addr = range->end) {
-		if (first == NULL) {
-			range = lookup_process_memory_range(proc->vm, start, start+PAGE_SIZE);
-			first = range;
-		}
-		else {
-			range = next_process_memory_range(proc->vm, range);
-		}
-
-		if ((range == NULL) || (addr < range->start)) {
-			/* not contiguous */
-			ekprintf("sys_mprotect(%lx,%lx,%x):not contiguous\n",
-					start, len0, prot);
-			error = -ENOMEM;
-			goto out;
-		}
-
-		if (range->flag & (VR_REMOTE | VR_RESERVED | VR_IO_NOCACHE)) {
-			ekprintf("sys_mprotect(%lx,%lx,%x):cannot change\n",
-					start, len0, prot);
-			error = -EINVAL;
-			goto out;
-		}
-	}
-#else
-	first = lookup_process_memory_range(proc->vm, start, start+PAGE_SIZE);
-#endif
+	first = lookup_process_memory_range(thread->vm, start, start+PAGE_SIZE);
 
 	/* do the mprotect */
 	changed = NULL;
@@ -1356,7 +1289,7 @@ SYSCALL_DECLARE(mprotect)
 			range = first;
 		}
 		else {
-			range = next_process_memory_range(proc->vm, changed);
+			range = next_process_memory_range(thread->vm, changed);
 		}
 
 		if ((range == NULL) || (addr < range->start)) {
@@ -1383,7 +1316,7 @@ SYSCALL_DECLARE(mprotect)
 		}
 
 		if (range->start < addr) {
-			error = split_process_memory_range(proc, range, addr, &range);
+			error = split_process_memory_range(thread->vm, range, addr, &range);
 			if (error) {
 				ekprintf("sys_mprotect(%lx,%lx,%x):split failed. %d\n",
 						start, len0, prot, error);
@@ -1391,7 +1324,7 @@ SYSCALL_DECLARE(mprotect)
 			}
 		}
 		if (end < range->end) {
-			error = split_process_memory_range(proc, range, end, NULL);
+			error = split_process_memory_range(thread->vm, range, end, NULL);
 			if (error) {
 				ekprintf("sys_mprotect(%lx,%lx,%x):split failed. %d\n",
 						start, len0, prot, error);
@@ -1403,7 +1336,7 @@ SYSCALL_DECLARE(mprotect)
 			ro_changed = 1;
 		}
 
-		error = change_prot_process_memory_range(proc, range, protflags);
+		error = change_prot_process_memory_range(thread->vm, range, protflags);
 		if (error) {
 			ekprintf("sys_mprotect(%lx,%lx,%x):change failed. %d\n",
 					start, len0, prot, error);
@@ -1414,7 +1347,7 @@ SYSCALL_DECLARE(mprotect)
 			changed = range;
 		}
 		else {
-			error = join_process_memory_range(proc, changed, range);
+			error = join_process_memory_range(thread->vm, changed, range);
 			if (error) {
 				ekprintf("sys_mprotect(%lx,%lx,%x):join failed. %d\n",
 						start, len0, prot, error);
@@ -1435,7 +1368,7 @@ out:
 			/* through */
 		}
 	}
-	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
 	dkprintf("[%d]sys_mprotect(%lx,%lx,%x): %d\n",
 			ihk_mc_get_processor_id(), start, len0, prot, error);
 	return error;
@@ -1467,7 +1400,7 @@ SYSCALL_DECLARE(brk)
 	vrflag = VR_PROT_READ | VR_PROT_WRITE;
 	vrflag |= VRFLAG_PROT_TO_MAXPROT(vrflag);
 	ihk_mc_spinlock_lock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
-	region->brk_end = extend_process_region(cpu_local_var(current),
+	region->brk_end = extend_process_region(cpu_local_var(current)->vm,
 			region->brk_start, region->brk_end, address, vrflag);
 	ihk_mc_spinlock_unlock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
 	dkprintf("SC(%d)[sys_brk] brk_end set to %lx\n",
@@ -1481,46 +1414,35 @@ out:
 
 SYSCALL_DECLARE(getpid)
 {
-	return cpu_local_var(current)->ftn->pid;
+	return cpu_local_var(current)->proc->pid;
 }
 
 SYSCALL_DECLARE(getppid)
 {
-	struct process *proc = cpu_local_var(current);
-	int pid = 1; // fake init
+	struct thread *thread = cpu_local_var(current);
 
-	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
-	if (proc->ftn->ptrace & PT_TRACED) {
-		if (proc->ftn->ppid_parent)
-			pid = proc->ftn->ppid_parent->pid;
-	} else {
-		if (proc->ftn->parent) {
-			pid = proc->ftn->parent->pid;
-		}
-	}
-	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
-	return pid;
+	return thread->proc->ppid_parent->pid;
 }
 
 void
-settid(struct process *proc, int mode, int newcpuid, int oldcpuid)
+settid(struct thread *thread, int mode, int newcpuid, int oldcpuid)
 {
 	ihk_mc_user_context_t ctx;
 	unsigned long rc;
 
 	ihk_mc_syscall_arg0(&ctx) = mode;
-	ihk_mc_syscall_arg1(&ctx) = proc->ftn->pid;
+	ihk_mc_syscall_arg1(&ctx) = thread->proc->pid;
 	ihk_mc_syscall_arg2(&ctx) = newcpuid;
 	ihk_mc_syscall_arg3(&ctx) = oldcpuid;
 	rc = syscall_generic_forwarding(__NR_gettid, &ctx);
 	if (mode != 2) {
-		proc->ftn->tid = rc;
+		thread->tid = rc;
 	}
 }
 
 SYSCALL_DECLARE(gettid)
 {
-	return cpu_local_var(current)->ftn->tid;
+	return cpu_local_var(current)->tid;
 }
 
 long do_arch_prctl(unsigned long code, unsigned long address)
@@ -1571,68 +1493,69 @@ SYSCALL_DECLARE(arch_prctl)
 	                     ihk_mc_syscall_arg1(ctx));
 }
 
-extern void ptrace_report_signal(struct process *proc, int sig);
-static int ptrace_report_exec(struct process *proc)
+extern void ptrace_report_signal(struct thread *thread, int sig);
+static int ptrace_report_exec(struct thread *thread)
 {
-	int ptrace = proc->ftn->ptrace;
+	int ptrace = thread->proc->ptrace;
 
 	if (ptrace & (PT_TRACE_EXEC|PTRACE_O_TRACEEXEC)) {
 		ihk_mc_kernel_context_t ctx;
 		int sig = (SIGTRAP | (PTRACE_EVENT_EXEC << 8));
 
-		memcpy(&ctx, &proc->ctx, sizeof ctx);
-		ptrace_report_signal(proc, sig);
-		memcpy(&proc->ctx, &ctx, sizeof ctx);
+		memcpy(&ctx, &thread->ctx, sizeof ctx);
+		ptrace_report_signal(thread, sig);
+		memcpy(&thread->ctx, &ctx, sizeof ctx);
 	}
 	return 0;
 }
 
 
-static void ptrace_syscall_enter(struct process *proc)
+static void ptrace_syscall_enter(struct thread *thread)
 {
-	int ptrace = proc->ftn->ptrace;
+	int ptrace = thread->proc->ptrace;
 
 	if (ptrace & PT_TRACE_SYSCALL_ENTER) {
 		int sig = (SIGTRAP | ((ptrace & PTRACE_O_TRACESYSGOOD) ? 0x80 : 0));
-		ptrace_report_signal(proc, sig);
-		ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);	
-		if (proc->ftn->ptrace & PT_TRACE_SYSCALL_ENTER) {
-			proc->ftn->ptrace |= PT_TRACE_SYSCALL_EXIT;
+		ptrace_report_signal(thread, sig);
+		// TODO(sira): フラグ設定を排他的に行う必要がある！
+		//?ihk_mc_spinlock_lock_noirq(&thread->proc->lock);	
+		if (thread->proc->ptrace & PT_TRACE_SYSCALL_ENTER) {
+			thread->proc->ptrace |= PT_TRACE_SYSCALL_EXIT;
 		}
-		ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
+		//?ihk_mc_spinlock_unlock_noirq(&thread->proc->lock);	
 	}
 }
 
-static void ptrace_syscall_exit(struct process *proc)
+static void ptrace_syscall_exit(struct thread *thread)
 {
-	int ptrace = proc->ftn->ptrace;
+	int ptrace = thread->proc->ptrace;
 
 	if (ptrace & PT_TRACE_SYSCALL_EXIT) {
 		int sig = (SIGTRAP | ((ptrace & PTRACE_O_TRACESYSGOOD) ? 0x80 : 0));
-		ptrace_report_signal(proc, sig);
+		ptrace_report_signal(thread, sig);
 	}
 }
 
-static int ptrace_check_clone_event(struct process *proc, int clone_flags)
+static int ptrace_check_clone_event(struct thread *thread, int clone_flags)
 {
 	int event = 0;
 
 	if (clone_flags & CLONE_VFORK) {
 		/* vfork */
-		if (proc->ftn->ptrace & PTRACE_O_TRACEVFORK) {
+		if (thread->proc->ptrace & PTRACE_O_TRACEVFORK) {
 			event = PTRACE_EVENT_VFORK;
 		}
-		if (proc->ftn->ptrace & PTRACE_O_TRACEVFORKDONE) {
+		if (thread->proc->ptrace & PTRACE_O_TRACEVFORKDONE) {
 			event = PTRACE_EVENT_VFORK_DONE;
 		}
 	} else if ((clone_flags & CSIGNAL) == SIGCHLD) {
 		/* fork */
-		if (proc->ftn->ptrace & PTRACE_O_TRACEFORK) {
+		if (thread->proc->ptrace & PTRACE_O_TRACEFORK) {
 			event = PTRACE_EVENT_FORK;
 		}
 	} else {
 		/* clone */
-		if (proc->ftn->ptrace & PTRACE_O_TRACECLONE) {
+		if (thread->proc->ptrace & PTRACE_O_TRACECLONE) {
 			event = PTRACE_EVENT_CLONE;
 		}
 	}
@@ -1640,80 +1563,90 @@ static int ptrace_check_clone_event(struct process *proc, int clone_flags)
 	return event;
 }
 
-static int ptrace_report_clone(struct process *proc, struct process *new, int event)
+// TODO(sira): 全体的にチェック必要
+static int ptrace_report_clone(struct thread *thread, struct thread *new, int event)
 {
 	dkprintf("ptrace_report_clone,enter\n");
 	int error = 0;
 	long rc;
 	struct siginfo info;
+	mcs_rwlock_node_t lock;
 
 	/* Save reason why stopped and process state for wait4() to reap */
-	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
-	proc->ftn->exit_status = (SIGTRAP | (event << 8));
+	// TODO(sira): フラグ設定を排他的に行う必要がある！
+	//?ihk_mc_spinlock_lock_noirq(&thread->proc->lock);
+	thread->proc->exit_status = (SIGTRAP | (event << 8));
 	/* Transition process state */
-	proc->ftn->status = PS_TRACED;
-	proc->ftn->ptrace_eventmsg = new->ftn->tid;
-	proc->ftn->ptrace &= ~PT_TRACE_SYSCALL_MASK;
-	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
+	thread->proc->pstatus = PS_TRACED;
+	thread->tstatus = PS_TRACED;
+	thread->proc->ptrace_eventmsg = new->tid;
+	thread->proc->ptrace &= ~PT_TRACE_SYSCALL_MASK;
+	//?ihk_mc_spinlock_unlock_noirq(&thread->proc->lock);	
 
 	dkprintf("ptrace_report_clone,kill SIGCHLD\n");
-	if (proc->ftn->parent) {
+	if (thread->proc->parent) {
 		/* kill SIGCHLD */
-		ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
-		if (proc->ftn->parent->owner) {
+		// このロックは不要と思われる
+		//?ihk_mc_spinlock_lock_noirq(&thread->proc->parent->lock);
+		// 条件も不要 必ず親がある
+		if (thread->proc->parent) {
 			memset(&info, '\0', sizeof info);
 			info.si_signo = SIGCHLD;
 			info.si_code = CLD_TRAPPED;
-			info._sifields._sigchld.si_pid = proc->ftn->pid;
-			info._sifields._sigchld.si_status = proc->ftn->exit_status;
-			rc = do_kill(proc->ftn->parent->pid, -1, SIGCHLD, &info, 0);
+			info._sifields._sigchld.si_pid = thread->proc->pid;
+			info._sifields._sigchld.si_status = thread->proc->exit_status;
+			rc = do_kill(cpu_local_var(current), thread->proc->parent->pid, -1, SIGCHLD, &info, 0);
 			if(rc < 0) {
 				dkprintf("ptrace_report_clone,do_kill failed\n");
 			}
 		}
-		ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);	
+		//?ihk_mc_spinlock_unlock_noirq(&thread->proc->parent->lock);	
 
 		/* Wake parent (if sleeping in wait4()) */
-		waitq_wakeup(&proc->ftn->parent->waitpid_q);
+		waitq_wakeup(&thread->proc->parent->waitpid_q);
 	}
 
 	if (event != PTRACE_EVENT_VFORK_DONE) {
 		/* PTRACE_EVENT_FORK or PTRACE_EVENT_VFORK or PTRACE_EVENT_CLONE */
 
-		struct fork_tree_node *child, *next;
+		struct process *child, *next;
 
 		/* set ptrace features to new process */
-		ihk_mc_spinlock_lock_noirq(&new->ftn->lock);
+		// このロックは不要と思われる
+		//?ihk_mc_spinlock_lock_noirq(&new->proc->lock);
 
-		new->ftn->ptrace = proc->ftn->ptrace;
-		new->ftn->ppid_parent = new->ftn->parent; /* maybe proc */
+		new->proc->ptrace = thread->proc->ptrace;
+		new->proc->ppid_parent = new->proc->parent; /* maybe proc */
 
-		if ((new->ftn->ptrace & PT_TRACED) && new->ptrace_debugreg == NULL) {
+		if ((new->proc->ptrace & PT_TRACED) && new->ptrace_debugreg == NULL) {
 			alloc_debugreg(new);
 		}
 
-		ihk_mc_spinlock_lock_noirq(&new->ftn->parent->lock);
-		list_for_each_entry_safe(child, next, &new->ftn->parent->children, siblings_list) {
-			if(child == new->ftn) {
+		mcs_rwlock_writer_lock_noirq(&new->proc->parent->children_lock, &lock);
+		list_for_each_entry_safe(child, next, &new->proc->parent->children_list, siblings_list) {
+			if(child == new->proc) {
 				list_del(&child->siblings_list);
 				goto found;
 			}
 		}
 		panic("ptrace_report_clone: missing parent-child relationship.");
 found:
-		ihk_mc_spinlock_unlock_noirq(&new->ftn->parent->lock);
+		mcs_rwlock_writer_unlock_noirq(&new->proc->parent->children_lock, &lock);
 
-		new->ftn->parent = proc->ftn->parent; /* new ptracing parent */
+		new->proc->parent = thread->proc->parent; /* new ptracing parent */
 
-		ihk_mc_spinlock_lock_noirq(&new->ftn->parent->lock);
-		list_add_tail(&new->ftn->ptrace_siblings_list, &new->ftn->parent->ptrace_children);
-		ihk_mc_spinlock_unlock_noirq(&new->ftn->parent->lock);
+/* TODO(sira): 作り直し
+		ihk_mc_spinlock_lock_noirq(&new->proc->parent->children_lock);
+		list_add_tail(&new->proc->ptrace_siblings_list, &new->proc->parent->ptrace_children);
+		ihk_mc_spinlock_unlock_noirq(&new->proc->parent->children_lock);
+*/
 
 		/* trace and SIGSTOP */
-		new->ftn->exit_status = SIGSTOP;
-		new->ftn->status = PS_TRACED;
+		new->proc->exit_status = SIGSTOP;
+		new->proc->pstatus = PS_TRACED;
+		new->tstatus = PS_TRACED;
 
-		ihk_mc_spinlock_unlock_noirq(&new->ftn->lock);
+		//?ihk_mc_spinlock_unlock_noirq(&new->proc->lock);
 	}
 
 	return error;
@@ -1721,8 +1654,8 @@ found:
 
 static void munmap_all(void)
 {
-	struct process *proc = cpu_local_var(current);
-	struct process_vm *vm = proc->vm;
+	struct thread *thread = cpu_local_var(current);
+	struct process_vm *vm = thread->vm;
 	struct vm_range *range;
 	struct vm_range *next;
 	void *addr;
@@ -1743,7 +1676,7 @@ static void munmap_all(void)
 	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 
 	/* free vm_ranges which do_munmap() failed to remove. */
-	free_process_memory_ranges(proc);
+	free_process_memory_ranges(thread->vm);
 	return;
 } /* munmap_all() */
 
@@ -1764,9 +1697,10 @@ SYSCALL_DECLARE(execve)
 	
 	struct syscall_request request IHK_DMA_ALIGN;
 	struct program_load_desc *desc;
-	struct process *proc = cpu_local_var(current);
-	struct process_vm *vm = proc->vm;
+	struct thread *thread = cpu_local_var(current);
+	struct process_vm *vm = thread->vm;
 	struct vm_range *range;
+	struct process *proc = thread->proc;
 
 	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 
@@ -1891,7 +1825,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
                       unsigned long cursp)
 {
 	int cpuid;
-	struct process *new;
+	struct thread *new;
 	struct syscall_request request1 IHK_DMA_ALIGN;
 	int ptrace_event = 0;
 
@@ -1913,9 +1847,8 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
         return -EAGAIN;
     }
 
-	new = clone_process(cpu_local_var(current), curpc,
-	                    newsp ? newsp : cursp, 
-						clone_flags);
+	new = clone_thread(cpu_local_var(current), curpc,
+	                    newsp ? newsp : cursp, clone_flags);
 	
 	if (!new) {
 		release_cpuid(cpuid);
@@ -1925,14 +1858,14 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	cpu_set(cpuid, &new->vm->cpu_set, &new->vm->cpu_set_lock);
 
 	if (clone_flags & CLONE_VM) {
-		new->ftn->pid = cpu_local_var(current)->ftn->pid;
+		new->proc->pid = cpu_local_var(current)->proc->pid;
 		settid(new, 1, cpuid, -1);
 	}
 	/* fork() a new process on the host */
 	else {
 		request1.number = __NR_fork;
-		new->ftn->pid = do_syscall(&request1, ihk_mc_get_processor_id(), 0);
-		if (new->ftn->pid == -1) {
+		new->proc->pid = do_syscall(&request1, ihk_mc_get_processor_id(), 0);
+		if (new->proc->pid == -1) {
 			kprintf("ERROR: forking host process\n");
 			
 			/* TODO: clean-up new */
@@ -1943,7 +1876,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		/* In a single threaded process TID equals to PID */
 		settid(new, 0, cpuid, -1);
 
-		dkprintf("fork(): new pid: %d\n", new->ftn->pid);
+		dkprintf("fork(): new pid: %d\n", new->proc->pid);
 		/* clear user space PTEs and set new rpgtable so that consequent 
 		 * page faults will look up the right mappings */
 		request1.number = __NR_munmap;
@@ -1951,13 +1884,13 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		request1.args[1] = new->vm->region.user_end - 
 			new->vm->region.user_start;
 		/* 3rd parameter denotes new rpgtable of host process */
-		request1.args[2] = virt_to_phys(new->vm->page_table);
-		request1.args[3] = new->ftn->pid;
+		request1.args[2] = virt_to_phys(new->vm->address_space->page_table);
+		request1.args[3] = new->proc->pid;
 
 		dkprintf("fork(): requesting PTE clear and rpgtable (0x%lx) update\n",
 				request1.args[2]);
 
-		if (do_syscall(&request1, ihk_mc_get_processor_id(), new->ftn->pid)) {
+		if (do_syscall(&request1, ihk_mc_get_processor_id(), new->proc->pid)) {
 			kprintf("ERROR: clearing PTEs in host process\n");
 		}		
 	}
@@ -1966,7 +1899,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		dkprintf("clone_flags & CLONE_PARENT_SETTID: 0x%lX\n",
 		         parent_tidptr);
 		
-		*(int*)parent_tidptr = new->ftn->pid;
+		*(int*)parent_tidptr = new->proc->pid;
 	}
 	
 	if (clone_flags & CLONE_CHILD_CLEARTID) {
@@ -1981,14 +1914,14 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		dkprintf("clone_flags & CLONE_CHILD_SETTID: 0x%lX\n",
 				child_tidptr);
 
-		if (ihk_mc_pt_virt_to_phys(new->vm->page_table, 
+		if (ihk_mc_pt_virt_to_phys(new->vm->address_space->page_table, 
 					(void *)child_tidptr, &phys)) { 
 			kprintf("ERROR: looking up physical addr for child process\n");
 			release_cpuid(cpuid);
 			return -EFAULT; 
 		}
 	
-		*((int*)phys_to_virt(phys)) = new->ftn->tid;
+		*((int*)phys_to_virt(phys)) = new->tid;
 	}
 	
 	if (clone_flags & CLONE_SETTLS) {
@@ -2004,25 +1937,32 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 
 	ihk_mc_syscall_ret(new->uctx) = 0;
 
-	if (cpu_local_var(current)->ftn->ptrace) {
+	if (cpu_local_var(current)->proc->ptrace) {
 		ptrace_event = ptrace_check_clone_event(cpu_local_var(current), clone_flags);
 		if (ptrace_event) {
 			ptrace_report_clone(cpu_local_var(current), new, ptrace_event);
 		}
 	}
 
-	dkprintf("clone: kicking scheduler!,cpuid=%d pid=%d tid %d -> tid=%d\n", 
-		cpuid, new->ftn->pid, 
-		cpu_local_var(current)->ftn->tid,
-		new->ftn->tid);
+	new->tstatus = PS_RUNNING;
+	chain_thread(new);
+	if (!(clone_flags & CLONE_VM)) {
+		new->proc->pstatus = PS_RUNNING;
+		chain_process(new->proc);
+	}
 
-	runq_add_proc(new, cpuid);
+	dkprintf("clone: kicking scheduler!,cpuid=%d pid=%d tid %d -> tid=%d\n", 
+		cpuid, new->proc->pid, 
+		cpu_local_var(current)->tid,
+		new->tid);
+
+	runq_add_thread(new, cpuid);
 
 	if (ptrace_event) {
 		schedule();
 	}
 
-	return new->ftn->tid;
+	return new->tid;
 }
 
 SYSCALL_DECLARE(vfork)
@@ -2043,24 +1983,24 @@ SYSCALL_DECLARE(set_tid_address)
 	cpu_local_var(current)->thread.clear_child_tid = 
 	                        (int*)ihk_mc_syscall_arg0(ctx);
 
-	return cpu_local_var(current)->ftn->pid;
+	return cpu_local_var(current)->proc->pid;
 }
 
 SYSCALL_DECLARE(kill)
 {
 	int pid = ihk_mc_syscall_arg0(ctx);
 	int sig = ihk_mc_syscall_arg1(ctx);
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 	struct siginfo info;
 	int error;
 
 	memset(&info, '\0', sizeof info);
 	info.si_signo = sig;
 	info.si_code = SI_USER;
-	info._sifields._kill.si_pid = proc->ftn->pid;
+	info._sifields._kill.si_pid = thread->proc->pid;
 
 	dkprintf("sys_kill,enter,pid=%d,sig=%d\n", pid, sig);
-	error = do_kill(pid, -1, sig, &info, 0);
+	error = do_kill(thread, pid, -1, sig, &info, 0);
 	dkprintf("sys_kill,returning,pid=%d,sig=%d,error=%d\n", pid, sig, error);
 	return error;
 }
@@ -2071,20 +2011,20 @@ SYSCALL_DECLARE(tgkill)
 	int tgid = ihk_mc_syscall_arg0(ctx);
 	int tid = ihk_mc_syscall_arg1(ctx);
 	int sig = ihk_mc_syscall_arg2(ctx);
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 	struct siginfo info;
 
 	memset(&info, '\0', sizeof info);
 	info.si_signo = sig;
 	info.si_code = SI_TKILL;
-	info._sifields._kill.si_pid = proc->ftn->pid;
+	info._sifields._kill.si_pid = thread->proc->pid;
 
 	if(tid <= 0)
 		return -EINVAL;
 	if(tgid <= 0 && tgid != -1)
 		return -EINVAL;
 
-	return do_kill(tgid, tid, sig, &info, 0);
+	return do_kill(thread, tgid, tid, sig, &info, 0);
 }
 
 int *
@@ -2112,28 +2052,15 @@ do_setresuid()
 {
 	int	_buf[16];
 	int	*buf;
-	struct process *proc = cpu_local_var(current);
-	int pid = proc->ftn->pid;
-	struct cpu_local_var *v;
-	struct process *p;
-	int i;
-	unsigned long irqstate;
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
 
 	buf = getcred(_buf);
 
-	for(i = 0; i < num_processors; i++){
-		v = get_cpu_local_var(i);
-		irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
-		list_for_each_entry(p, &(v->runq), sched_list){
-			if(p->ftn->pid == pid){
-				p->ftn->ruid = buf[0];
-				p->ftn->euid = buf[1];
-				p->ftn->suid = buf[2];
-				p->ftn->fsuid = buf[3];
-			}
-		}
-		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
-	}
+	proc->ruid = buf[0];
+	proc->euid = buf[1];
+	proc->suid = buf[2];
+	proc->fsuid = buf[3];
 }
 
 void
@@ -2141,28 +2068,15 @@ do_setresgid()
 {
 	int	_buf[16];
 	int	*buf;
-	struct process *proc = cpu_local_var(current);
-	int pid = proc->ftn->pid;
-	struct cpu_local_var *v;
-	struct process *p;
-	int i;
-	unsigned long irqstate;
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
 
 	buf = getcred(_buf);
 
-	for(i = 0; i < num_processors; i++){
-		v = get_cpu_local_var(i);
-		irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
-		list_for_each_entry(p, &(v->runq), sched_list){
-			if(p->ftn->pid == pid){
-				p->ftn->rgid = buf[4];
-				p->ftn->egid = buf[5];
-				p->ftn->sgid = buf[6];
-				p->ftn->fsgid = buf[7];
-			}
-		}
-		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
-	}
+	proc->rgid = buf[4];
+	proc->egid = buf[5];
+	proc->sgid = buf[6];
+	proc->fsgid = buf[7];
 }
 
 SYSCALL_DECLARE(setresuid)
@@ -2261,33 +2175,33 @@ SYSCALL_DECLARE(setfsgid)
 
 SYSCALL_DECLARE(getuid)
 {
-	struct process *proc = cpu_local_var(current);
-	struct fork_tree_node *ftn = proc->ftn;
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
 
-	return ftn->ruid;
+	return proc->ruid;
 }
 
 SYSCALL_DECLARE(geteuid)
 {
-	struct process *proc = cpu_local_var(current);
-	struct fork_tree_node *ftn = proc->ftn;
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
 
-	return ftn->euid;
+	return proc->euid;
 }
 
 SYSCALL_DECLARE(getresuid)
 {
-	struct process *proc = cpu_local_var(current);
-	struct fork_tree_node *ftn = proc->ftn;
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
 	int *ruid = (int *)ihk_mc_syscall_arg0(ctx);
 	int *euid = (int *)ihk_mc_syscall_arg1(ctx);
 	int *suid = (int *)ihk_mc_syscall_arg2(ctx);
 
-	if(copy_to_user(ruid, &ftn->ruid, sizeof(int)))
+	if(copy_to_user(ruid, &proc->ruid, sizeof(int)))
 		return -EFAULT;
-	if(copy_to_user(euid, &ftn->euid, sizeof(int)))
+	if(copy_to_user(euid, &proc->euid, sizeof(int)))
 		return -EFAULT;
-	if(copy_to_user(suid, &ftn->suid, sizeof(int)))
+	if(copy_to_user(suid, &proc->suid, sizeof(int)))
 		return -EFAULT;
 
 	return 0;
@@ -2295,33 +2209,33 @@ SYSCALL_DECLARE(getresuid)
 
 SYSCALL_DECLARE(getgid)
 {
-	struct process *proc = cpu_local_var(current);
-	struct fork_tree_node *ftn = proc->ftn;
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
 
-	return ftn->rgid;
+	return proc->rgid;
 }
 
 SYSCALL_DECLARE(getegid)
 {
-	struct process *proc = cpu_local_var(current);
-	struct fork_tree_node *ftn = proc->ftn;
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
 
-	return ftn->egid;
+	return proc->egid;
 }
 
 SYSCALL_DECLARE(getresgid)
 {
-	struct process *proc = cpu_local_var(current);
-	struct fork_tree_node *ftn = proc->ftn;
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
 	int *rgid = (int *)ihk_mc_syscall_arg0(ctx);
 	int *egid = (int *)ihk_mc_syscall_arg1(ctx);
 	int *sgid = (int *)ihk_mc_syscall_arg2(ctx);
 
-	if(copy_to_user(rgid, &ftn->rgid, sizeof(int)))
+	if(copy_to_user(rgid, &proc->rgid, sizeof(int)))
 		return -EFAULT;
-	if(copy_to_user(egid, &ftn->egid, sizeof(int)))
+	if(copy_to_user(egid, &proc->egid, sizeof(int)))
 		return -EFAULT;
-	if(copy_to_user(sgid, &ftn->sgid, sizeof(int)))
+	if(copy_to_user(sgid, &proc->sgid, sizeof(int)))
 		return -EFAULT;
 
 	return 0;
@@ -2331,25 +2245,24 @@ SYSCALL_DECLARE(setpgid)
 {
 	int pid = ihk_mc_syscall_arg0(ctx);
 	int pgid = ihk_mc_syscall_arg1(ctx);
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
+	struct mcs_rwlock_node_irqsave lock;
 	long rc;
-	struct process *proc = cpu_local_var(current);
-	ihk_spinlock_t *lock;
-	unsigned long irqstate = 0;
-	struct process *tproc;
 
 	if(pid == 0)
-		pid = proc->ftn->pid;
+		pid = proc->pid;
 	if(pgid == 0)
 		pgid = pid;
 
-	if(proc->ftn->pid != pid){
-		tproc = findthread_and_lock(pid, pid, &lock, &irqstate);
-		if(tproc){
-			if(tproc->execed){
-				process_unlock(lock, irqstate);
+	if(proc->pid != pid){
+		proc = find_process(pid, &lock);
+		if(proc){
+			if(proc->execed){
+				process_unlock(proc, &lock);
 				return -EACCES;
 			}
-			process_unlock(lock, irqstate);
+			process_unlock(proc, &lock);
 		}
 		else
 			return -ESRCH;
@@ -2357,7 +2270,11 @@ SYSCALL_DECLARE(setpgid)
 
 	rc = syscall_generic_forwarding(__NR_setpgid, ctx);
 	if(rc == 0){
-		do_setpgid(pid, pgid);
+		proc = find_process(pid, &lock);
+		if(proc){
+			proc->pgid = pgid;
+			process_unlock(proc, &lock);
+		}
 	}
 	return rc;
 }
@@ -2370,18 +2287,18 @@ SYSCALL_DECLARE(set_robust_list)
 int
 do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
 {
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 	struct k_sigaction *k;
 	long	irqstate;
 	ihk_mc_user_context_t ctx0;
 
-	irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
-	k = proc->sighandler->action + sig - 1;
+	irqstate = ihk_mc_spinlock_lock(&thread->sigcommon->lock);
+	k = thread->sigcommon->action + sig - 1;
 	if(oact)
 		memcpy(oact, k, sizeof(struct k_sigaction));
 	if(act)
 		memcpy(k, act, sizeof(struct k_sigaction));
-	ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
+	ihk_mc_spinlock_unlock(&thread->sigcommon->lock, irqstate);
 
 	if(act){
 		ihk_mc_syscall_arg0(&ctx0) = sig;
@@ -2396,13 +2313,13 @@ SYSCALL_DECLARE(close)
 {
 	int fd = ihk_mc_syscall_arg0(ctx);
 	int rc;
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 	struct sigfd *sfd;
 	struct sigfd *sb;
 	long	irqstate;
 
-	irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
-	for(sfd = proc->sighandler->sigfd, sb = NULL; sfd; sb = sfd, sfd = sfd->next)
+	irqstate = ihk_mc_spinlock_lock(&thread->sigcommon->lock);
+	for(sfd = thread->sigcommon->sigfd, sb = NULL; sfd; sb = sfd, sfd = sfd->next)
 		if(sfd->fd == fd)
 			break;
 	if(sfd){
@@ -2410,8 +2327,8 @@ SYSCALL_DECLARE(close)
 		if(sb)
 			sb->next = sfd->next;
 		else
-			proc->sighandler->sigfd = sfd->next;
-		ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
+			thread->sigcommon->sigfd = sfd->next;
+		ihk_mc_spinlock_unlock(&thread->sigcommon->lock, irqstate);
 		request.number = __NR_signalfd4;
 		request.args[0] = 1;
 		request.args[1] = sfd->fd;
@@ -2419,7 +2336,7 @@ SYSCALL_DECLARE(close)
 		rc = do_syscall(&request, ihk_mc_get_processor_id(), 0);
 	}
 	else{
-		ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
+		ihk_mc_spinlock_unlock(&thread->sigcommon->lock, irqstate);
 		rc = syscall_generic_forwarding(__NR_close, ctx);
 	}
 	return rc;
@@ -2431,8 +2348,7 @@ SYSCALL_DECLARE(rt_sigprocmask)
 	const sigset_t *set = (const sigset_t *)ihk_mc_syscall_arg1(ctx);
 	sigset_t *oldset = (sigset_t *)ihk_mc_syscall_arg2(ctx);
 	size_t sigsetsize = (size_t)ihk_mc_syscall_arg3(ctx);
-	struct process *proc = cpu_local_var(current);
-	int flag;
+	struct thread *thread = cpu_local_var(current);
 	__sigset_t wsig;
 	ihk_mc_user_context_t ctx0;
 
@@ -2445,9 +2361,8 @@ SYSCALL_DECLARE(rt_sigprocmask)
 	   how != SIG_SETMASK)
 		return -EINVAL;
 
-	flag = ihk_mc_spinlock_lock(&proc->sighandler->lock);
 	if(oldset){
-		wsig = proc->sigmask.__val[0];
+		wsig = thread->sigmask.__val[0];
 		if(copy_to_user(oldset->__val, &wsig, sizeof wsig))
 			goto fault;
 	}
@@ -2456,24 +2371,24 @@ SYSCALL_DECLARE(rt_sigprocmask)
 			goto fault;
 		switch(how){
 		    case SIG_BLOCK:
-			proc->sigmask.__val[0] |= wsig;
+			thread->sigmask.__val[0] |= wsig;
 			break;
 		    case SIG_UNBLOCK:
-			proc->sigmask.__val[0] &= ~wsig;
+			thread->sigmask.__val[0] &= ~wsig;
 			break;
 		    case SIG_SETMASK:
-			proc->sigmask.__val[0] = wsig;
+			thread->sigmask.__val[0] = wsig;
 			break;
 		}
 	}
-	wsig = proc->sigmask.__val[0];
-	ihk_mc_spinlock_unlock(&proc->sighandler->lock, flag);
+	thread->sigmask.__val[0] &= ~__sigmask(SIGKILL);
+	thread->sigmask.__val[0] &= ~__sigmask(SIGSTOP);
+	wsig = thread->sigmask.__val[0];
 
 	ihk_mc_syscall_arg0(&ctx0) = wsig;
 	syscall_generic_forwarding(__NR_rt_sigprocmask, &ctx0);
 	return 0;
 fault:
-	ihk_mc_spinlock_unlock(&proc->sighandler->lock, flag);
 	return -EFAULT;
 }
 
@@ -2484,23 +2399,23 @@ SYSCALL_DECLARE(rt_sigpending)
 	struct list_head *head;
 	ihk_spinlock_t *lock;
 	__sigset_t w = 0;
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 	sigset_t *set = (sigset_t *)ihk_mc_syscall_arg0(ctx);
 	size_t sigsetsize = (size_t)ihk_mc_syscall_arg1(ctx);
 
 	if (sigsetsize > sizeof(sigset_t))
 		return -EINVAL;
 
-	lock = &proc->sigshared->lock;
-	head = &proc->sigshared->sigpending;
+	lock = &thread->sigcommon->lock;
+	head = &thread->sigcommon->sigpending;
 	flag = ihk_mc_spinlock_lock(lock);
 	list_for_each_entry(pending, head, list){
 		w |= pending->sigmask.__val[0];
 	}
 	ihk_mc_spinlock_unlock(lock, flag);
 
-	lock = &proc->sigpendinglock;
-	head = &proc->sigpending;
+	lock = &thread->sigpendinglock;
+	head = &thread->sigpending;
 	flag = ihk_mc_spinlock_lock(lock);
 	list_for_each_entry(pending, head, list){
 		w |= pending->sigmask.__val[0];
@@ -2521,7 +2436,7 @@ SYSCALL_DECLARE(signalfd)
 SYSCALL_DECLARE(signalfd4)
 {
 	int fd = ihk_mc_syscall_arg0(ctx);
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 	struct sigfd *sfd;
 	long    irqstate;
 	sigset_t *maskp = (sigset_t *)ihk_mc_syscall_arg1(ctx);;
@@ -2536,10 +2451,10 @@ SYSCALL_DECLARE(signalfd4)
 	if(flags & ~(SFD_NONBLOCK | SFD_CLOEXEC))
 		return -EINVAL;
 
-	irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
+	irqstate = ihk_mc_spinlock_lock(&thread->sigcommon->lock);
 	if(fd == -1){
 		struct syscall_request request IHK_DMA_ALIGN;
-		ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
+		ihk_mc_spinlock_unlock(&thread->sigcommon->lock, irqstate);
 		request.number = __NR_signalfd4;
 		request.args[0] = 0;
 		request.args[1] = flags;
@@ -2551,21 +2466,21 @@ SYSCALL_DECLARE(signalfd4)
 		if(!sfd)
 			return -ENOMEM;
 		sfd->fd = fd;
-		irqstate = ihk_mc_spinlock_lock(&proc->sighandler->lock);
-		sfd->next = proc->sighandler->sigfd;
-		proc->sighandler->sigfd = sfd;
+		irqstate = ihk_mc_spinlock_lock(&thread->sigcommon->lock);
+		sfd->next = thread->sigcommon->sigfd;
+		thread->sigcommon->sigfd = sfd;
 	}
 	else{
-		for(sfd = proc->sighandler->sigfd; sfd; sfd = sfd->next)
+		for(sfd = thread->sigcommon->sigfd; sfd; sfd = sfd->next)
 			if(sfd->fd == fd)
 				break;
 		if(!sfd){
-			ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
+			ihk_mc_spinlock_unlock(&thread->sigcommon->lock, irqstate);
 			return -EINVAL;
 		}
 	}
 	memcpy(&sfd->mask, &mask, sizeof mask);
-	ihk_mc_spinlock_unlock(&proc->sighandler->lock, irqstate);
+	ihk_mc_spinlock_unlock(&thread->sigcommon->lock, irqstate);
 	return sfd->fd;
 }
 
@@ -2612,11 +2527,11 @@ SYSCALL_DECLARE(rt_sigqueueinfo)
 	if(copy_from_user(&info, winfo, sizeof info))
 		return -EFAULT;
 
-	return do_kill(pid, -1, sig, &info, 0);
+	return do_kill(cpu_local_var(current), pid, -1, sig, &info, 0);
 }
 
 static int
-do_sigsuspend(struct process *proc, const sigset_t *set)
+do_sigsuspend(struct thread *thread, const sigset_t *set)
 {
 	__sigset_t wset;
 	__sigset_t bset;
@@ -2628,15 +2543,16 @@ do_sigsuspend(struct process *proc, const sigset_t *set)
 	wset = set->__val[0];
 	wset &= ~__sigmask(SIGKILL);
 	wset &= ~__sigmask(SIGSTOP);
-	bset = proc->sigmask.__val[0];
-	proc->sigmask.__val[0] = wset;
+	bset = thread->sigmask.__val[0];
+	thread->sigmask.__val[0] = wset;
 
+	thread->sigevent = 1;
 	for(;;){
-		while(proc->sigevent == 0);
-		proc->sigevent = 0;
+		while(thread->sigevent == 0)
+			cpu_pause();
 
-		lock = &proc->sigshared->lock;
-		head = &proc->sigshared->sigpending;
+		lock = &thread->sigcommon->lock;
+		head = &thread->sigcommon->sigpending;
 		flag = ihk_mc_spinlock_lock(lock);
 		list_for_each_entry(pending, head, list){
 			if(!(pending->sigmask.__val[0] & wset))
@@ -2646,8 +2562,8 @@ do_sigsuspend(struct process *proc, const sigset_t *set)
 		if(&pending->list == head){
 			ihk_mc_spinlock_unlock(lock, flag);
 
-			lock = &proc->sigpendinglock;
-			head = &proc->sigpending;
+			lock = &thread->sigpendinglock;
+			head = &thread->sigpending;
 			flag = ihk_mc_spinlock_lock(lock);
 			list_for_each_entry(pending, head, list){
 				if(!(pending->sigmask.__val[0] & wset))
@@ -2656,30 +2572,30 @@ do_sigsuspend(struct process *proc, const sigset_t *set)
 		}
 		if(&pending->list == head){
 			ihk_mc_spinlock_unlock(lock, flag);
+			thread->sigevent = 0;
 			continue;
 		}
 
 		list_del(&pending->list);
 		ihk_mc_spinlock_unlock(lock, flag);
-		proc->sigmask.__val[0] = bset;
-		do_signal(-EINTR, NULL, proc, pending, 0);
+		thread->sigmask.__val[0] = bset;
+		do_signal(-EINTR, NULL, thread, pending, 0);
 		break;
 	}
-kprintf("return do_sigsuspend\n");
 	return -EINTR;
 }
 
 
 SYSCALL_DECLARE(pause)
 {
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 
-	return do_sigsuspend(proc, &proc->sigmask);
+	return do_sigsuspend(thread, &thread->sigmask);
 }
 
 SYSCALL_DECLARE(rt_sigsuspend)
 {
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 	const sigset_t *set = (const sigset_t *)ihk_mc_syscall_arg0(ctx);
 	size_t sigsetsize = (size_t)ihk_mc_syscall_arg1(ctx);
 	sigset_t wset;
@@ -2689,18 +2605,18 @@ SYSCALL_DECLARE(rt_sigsuspend)
 	if(copy_from_user(&wset, set, sizeof wset))
 		return -EFAULT;
 
-	return do_sigsuspend(proc, &wset);
+	return do_sigsuspend(thread, &wset);
 }
 
 SYSCALL_DECLARE(sigaltstack)
 {
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 	const stack_t *ss = (const stack_t *)ihk_mc_syscall_arg0(ctx);
 	stack_t *oss = (stack_t *)ihk_mc_syscall_arg1(ctx);
 	stack_t	wss;
 
 	if(oss)
-		if(copy_to_user(oss, &proc->sigstack, sizeof wss))
+		if(copy_to_user(oss, &thread->sigstack, sizeof wss))
 			return -EFAULT;
 	if(ss){
 		if(copy_from_user(&wss, ss, sizeof wss))
@@ -2708,15 +2624,15 @@ SYSCALL_DECLARE(sigaltstack)
 		if(wss.ss_flags != 0 && wss.ss_flags != SS_DISABLE)
 			return -EINVAL;
 		if(wss.ss_flags == SS_DISABLE){
-			proc->sigstack.ss_sp = NULL;
-			proc->sigstack.ss_flags = SS_DISABLE;
-			proc->sigstack.ss_size = 0;
+			thread->sigstack.ss_sp = NULL;
+			thread->sigstack.ss_flags = SS_DISABLE;
+			thread->sigstack.ss_size = 0;
 		}
 		else{
 			if(wss.ss_size < MINSIGSTKSZ)
 				return -ENOMEM;
 
-			memcpy(&proc->sigstack, &wss, sizeof wss);
+			memcpy(&thread->sigstack, &wss, sizeof wss);
 		}
 	}
 
@@ -2729,8 +2645,8 @@ SYSCALL_DECLARE(mincore)
 	const size_t len = ihk_mc_syscall_arg1(ctx);
 	uint8_t * const vec = (void *)ihk_mc_syscall_arg2(ctx);
 	const uintptr_t end = start + len;
-	struct process *proc = cpu_local_var(current);
-	struct process_vm *vm = proc->vm;
+	struct thread *thread = cpu_local_var(current);
+	struct process_vm *vm = thread->vm;
 	void *up;
 	uintptr_t addr;
 	struct vm_range *range;
@@ -2755,7 +2671,7 @@ SYSCALL_DECLARE(mincore)
 		}
 
 		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
-		ptep = ihk_mc_pt_lookup_pte(vm->page_table, (void *)addr, NULL, NULL, NULL);
+		ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table, (void *)addr, NULL, NULL, NULL);
 		/*
 		 * XXX: It might be necessary to consider whether this page is COW page or not.
 		 */
@@ -2782,8 +2698,8 @@ SYSCALL_DECLARE(madvise)
 	const int advice = (int)ihk_mc_syscall_arg2(ctx);
 	size_t len;
 	uintptr_t end;
-	struct process *proc = cpu_local_var(current);
-	struct vm_regions *region = &proc->vm->region;
+	struct thread *thread = cpu_local_var(current);
+	struct vm_regions *region = &thread->vm->region;
 	struct vm_range *first;
 	uintptr_t addr;
 	struct vm_range *range;
@@ -2850,17 +2766,17 @@ SYSCALL_DECLARE(madvise)
 		goto out2;
 	}
 
-	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
+	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
 	/* check contiguous map */
 	first = NULL;
 	range = NULL;	/* for avoidance of warning */
 	for (addr = start; addr < end; addr = range->end) {
 		if (first == NULL) {
-			range = lookup_process_memory_range(proc->vm, start, start+PAGE_SIZE);
+			range = lookup_process_memory_range(thread->vm, start, start+PAGE_SIZE);
 			first = range;
 		}
 		else {
-			range = next_process_memory_range(proc->vm, range);
+			range = next_process_memory_range(thread->vm, range);
 		}
 
 		if ((range == NULL) || (addr < range->start)) {
@@ -2898,7 +2814,7 @@ SYSCALL_DECLARE(madvise)
 
 	error = 0;
 out:
-	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
 
 out2:
 	dkprintf("[%d]sys_madvise(%lx,%lx,%x): %d\n",
@@ -2927,33 +2843,33 @@ struct shm_info the_shm_info = { 0, };
 
 static uid_t geteuid(void) {
 	struct syscall_request sreq IHK_DMA_ALIGN;
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 
 	sreq.number = __NR_geteuid;
-	return (uid_t)do_syscall(&sreq, ihk_mc_get_processor_id(), proc->ftn->pid);
+	return (uid_t)do_syscall(&sreq, ihk_mc_get_processor_id(), thread->proc->pid);
 }
 
 static gid_t getegid(void) {
 	struct syscall_request sreq IHK_DMA_ALIGN;
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 
 	sreq.number = __NR_getegid;
-	return (gid_t)do_syscall(&sreq, ihk_mc_get_processor_id(), proc->ftn->pid);
+	return (gid_t)do_syscall(&sreq, ihk_mc_get_processor_id(), thread->proc->pid);
 }
 
 time_t time(void) {
 	struct syscall_request sreq IHK_DMA_ALIGN;
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 
 	sreq.number = __NR_time;
 	sreq.args[0] = (uintptr_t)NULL;
-	return (time_t)do_syscall(&sreq, ihk_mc_get_processor_id(), proc->ftn->pid);
+	return (time_t)do_syscall(&sreq, ihk_mc_get_processor_id(), thread->proc->pid);
 }
 
 pid_t getpid(void) {
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 
-	return proc->ftn->pid;
+	return thread->proc->pid;
 }
 
 static int make_shmid(struct shmobj *obj)
@@ -3038,7 +2954,7 @@ SYSCALL_DECLARE(shmget)
 	uid_t euid = geteuid();
 	gid_t egid = getegid();
 	time_t now = time();
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 	int shmid;
 	int error;
 	struct shmid_ds ads;
@@ -3126,7 +3042,7 @@ SYSCALL_DECLARE(shmget)
 	ads.shm_perm.mode = shmflg & 0777;
 	ads.shm_segsz = size;
 	ads.shm_ctime = now;
-	ads.shm_cpid = proc->ftn->pid;
+	ads.shm_cpid = thread->proc->pid;
 
 	error = shmobj_create_indexed(&ads, &obj);
 	if (error) {
@@ -3153,10 +3069,10 @@ SYSCALL_DECLARE(shmat)
 	const int shmid = ihk_mc_syscall_arg0(ctx);
 	void * const shmaddr = (void *)ihk_mc_syscall_arg1(ctx);
 	const int shmflg = ihk_mc_syscall_arg2(ctx);
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 	size_t len;
 	int error;
-	struct vm_regions *region = &proc->vm->region;
+	struct vm_regions *region = &thread->vm->region;
 	intptr_t addr;
 	int prot;
 	int vrflags;
@@ -3208,11 +3124,11 @@ SYSCALL_DECLARE(shmat)
 		return -EACCES;
 	}
 
-	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
+	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
 
 	if (addr) {
-		if (lookup_process_memory_range(proc->vm, addr, addr+len)) {
-			ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+		if (lookup_process_memory_range(thread->vm, addr, addr+len)) {
+			ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
 			shmobj_list_unlock();
 			dkprintf("shmat(%#x,%p,%#x):lookup_process_memory_range succeeded. -ENOMEM\n", shmid, shmaddr, shmflg);
 			return -ENOMEM;
@@ -3221,7 +3137,7 @@ SYSCALL_DECLARE(shmat)
 	else {
 		error = search_free_space(len, region->map_end, &addr);
 		if (error) {
-			ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+			ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
 			shmobj_list_unlock();
 			dkprintf("shmat(%#x,%p,%#x):search_free_space failed. %d\n", shmid, shmaddr, shmflg, error);
 			return error;
@@ -3237,7 +3153,7 @@ SYSCALL_DECLARE(shmat)
 	if (!(prot & PROT_WRITE)) {
 		error = set_host_vma(addr, len, PROT_READ);
 		if (error) {
-			ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+			ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
 			shmobj_list_unlock();
 			dkprintf("shmat(%#x,%p,%#x):set_host_vma failed. %d\n", shmid, shmaddr, shmflg, error);
 			return error;
@@ -3246,19 +3162,19 @@ SYSCALL_DECLARE(shmat)
 
 	memobj_ref(&obj->memobj);
 
-	error = add_process_memory_range(proc, addr, addr+len, -1, vrflags, &obj->memobj, 0);
+	error = add_process_memory_range(thread->vm, addr, addr+len, -1, vrflags, &obj->memobj, 0);
 	if (error) {
 		if (!(prot & PROT_WRITE)) {
 			(void)set_host_vma(addr, len, PROT_READ|PROT_WRITE);
 		}
 		memobj_release(&obj->memobj);
-		ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+		ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
 		shmobj_list_unlock();
 		dkprintf("shmat(%#x,%p,%#x):add_process_memory_range failed. %d\n", shmid, shmaddr, shmflg, error);
 		return error;
 	}
 
-	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
 	shmobj_list_unlock();
 
 	dkprintf("shmat:bump shm_nattach %p %d\n", obj, obj->ds.shm_nattch);
@@ -3464,28 +3380,28 @@ SYSCALL_DECLARE(shmctl)
 SYSCALL_DECLARE(shmdt)
 {
 	void * const shmaddr = (void *)ihk_mc_syscall_arg0(ctx);
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 	struct vm_range *range;
 	int error;
 
 	dkprintf("shmdt(%p)\n", shmaddr);
-	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
-	range = lookup_process_memory_range(proc->vm, (uintptr_t)shmaddr, (uintptr_t)shmaddr+1);
+	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
+	range = lookup_process_memory_range(thread->vm, (uintptr_t)shmaddr, (uintptr_t)shmaddr+1);
 	if (!range || (range->start != (uintptr_t)shmaddr) || !range->memobj
 			|| !(range->memobj->flags & MF_SHMDT_OK)) {
-		ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+		ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
 		dkprintf("shmdt(%p): -EINVAL\n", shmaddr);
 		return -EINVAL;
 	}
 
 	error = do_munmap((void *)range->start, (range->end - range->start));
 	if (error) {
-		ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+		ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
 		dkprintf("shmdt(%p): %d\n", shmaddr, error);
 		return error;
 	}
 
-	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
 	dkprintf("shmdt(%p): 0\n", shmaddr);
 	return 0;
 } /* sys_shmdt() */
@@ -3526,7 +3442,7 @@ SYSCALL_DECLARE(futex)
 
 			dkprintf("futex,utime and FUTEX_WAIT_*, uaddr=%lx, []=%x\n", (unsigned long)uaddr, *uaddr);
 
-			if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->page_table, 
+			if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->address_space->page_table, 
 						(void *)&tv_now, &__phys)) { 
 				return -EFAULT; 
 			}
@@ -3571,8 +3487,26 @@ SYSCALL_DECLARE(futex)
 
 SYSCALL_DECLARE(exit)
 {
-	struct process *proc = cpu_local_var(current);
-	dkprintf("sys_exit,pid=%d\n", proc->ftn->pid);
+	struct thread *thread = cpu_local_var(current);
+	struct thread *child;
+	struct process *proc = thread->proc;
+	struct mcs_rwlock_node_irqsave lock;
+	int nproc;
+	int exit_status = (int)ihk_mc_syscall_arg0(ctx);
+
+	dkprintf("sys_exit,pid=%d\n", proc->pid);
+
+	mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
+	nproc = 0;
+	list_for_each_entry(child, &proc->threads_list, siblings_list){
+		nproc++;
+	}
+	mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
+
+	if(nproc == 1){ // process has only one thread
+		terminate(exit_status, 0);
+		return 0;
+	}
 
 #ifdef DCFA_KMOD
 	do_mod_exit((int)ihk_mc_syscall_arg0(ctx));
@@ -3583,24 +3517,21 @@ SYSCALL_DECLARE(exit)
 	 */
 	/* If there is a clear_child_tid address set, clear it and wake it.
 	 * This unblocks any pthread_join() waiters. */
-	if (proc->thread.clear_child_tid) {
+	if (thread->thread.clear_child_tid) {
 		
 		dkprintf("exit clear_child!\n");
 
-		*proc->thread.clear_child_tid = 0;
+		*thread->thread.clear_child_tid = 0;
 		barrier();
-		futex((uint32_t *)proc->thread.clear_child_tid,
+		futex((uint32_t *)thread->thread.clear_child_tid,
 		      FUTEX_WAKE, 1, 0, NULL, 0, 0);
 	}
-	
-	proc->ftn->status = PS_ZOMBIE;
-	
-	release_fork_tree_node(proc->ftn->parent);
-	release_fork_tree_node(proc->ftn);
-	//release_process(proc);
+
+	thread->tstatus = PS_EXITED;
+	release_thread(thread);
 
 	schedule();
-	
+
 	return 0;
 }
 
@@ -3660,7 +3591,7 @@ SYSCALL_DECLARE(setrlimit)
 	int rc;
 	int resource = ihk_mc_syscall_arg0(ctx);
 	struct rlimit *rlm = (struct rlimit *)ihk_mc_syscall_arg1(ctx);
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 	int	i;
 	int	mcresource;
 
@@ -3683,7 +3614,7 @@ SYSCALL_DECLARE(setrlimit)
 	if(i >= sizeof(rlimits) / sizeof(int))
 		return -EINVAL;
 
-	if(copy_from_user(proc->rlimit + mcresource, rlm, sizeof(struct rlimit)))
+	if(copy_from_user(thread->proc->rlimit + mcresource, rlm, sizeof(struct rlimit)))
 		return -EFAULT;
 
 	return 0;
@@ -3693,7 +3624,7 @@ SYSCALL_DECLARE(getrlimit)
 {
 	int resource = ihk_mc_syscall_arg0(ctx);
 	struct rlimit *rlm = (struct rlimit *)ihk_mc_syscall_arg1(ctx);
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 	int	i;
 	int	mcresource;
 
@@ -3706,30 +3637,32 @@ SYSCALL_DECLARE(getrlimit)
 		return -EINVAL;
 
 // TODO: check limit
-	if(copy_to_user(rlm, proc->rlimit + mcresource, sizeof(struct rlimit)))
+	if(copy_to_user(rlm, thread->proc->rlimit + mcresource, sizeof(struct rlimit)))
 		return -EFAULT;
 
 	return 0;
 }
 
 extern int ptrace_traceme(void);
-extern void clear_single_step(struct process *proc);
-extern void set_single_step(struct process *proc);
+extern void clear_single_step(struct thread *thread);
+extern void set_single_step(struct thread *thread);
 
 static int ptrace_wakeup_sig(int pid, long request, long data) {
 	dkprintf("ptrace_wakeup_sig,pid=%d,data=%08x\n", pid, data);
 	int error = 0;
-	struct process *child;
-	ihk_spinlock_t *savelock;
-	unsigned long irqstate;
+	struct thread *child;
 	struct siginfo info;
+	struct mcs_rwlock_node_irqsave lock;
+	struct thread *thread = cpu_local_var(current);
 
-	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
+	child = find_thread(pid, pid, &lock);
 	if (!child) {
 		error = -ESRCH;
 		goto out;
 	}
-	ihk_mc_spinlock_unlock(savelock, irqstate);
+// TODO: この位置で unlock してはいけない。
+// ここで unlock すると thread が生存していることが保証できなくなる。
+	thread_unlock(child, &lock);
 
 	if (data > 64 || data < 0) {
 		error = -EINVAL;
@@ -3740,7 +3673,7 @@ static int ptrace_wakeup_sig(int pid, long request, long data) {
 	case PTRACE_KILL:
 		memset(&info, '\0', sizeof info);
 		info.si_signo = SIGKILL;
-		error = do_kill(pid, -1, SIGKILL, &info, 0);
+		error = do_kill(thread, pid, -1, SIGKILL, &info, 0);
 		if (error < 0) {
 			goto out;
 		}
@@ -3751,14 +3684,13 @@ static int ptrace_wakeup_sig(int pid, long request, long data) {
 		if (request == PTRACE_SINGLESTEP) {
 			set_single_step(child);
 		}
-		ihk_mc_spinlock_lock_noirq(&child->ftn->lock);
-		child->ftn->ptrace &= ~PT_TRACE_SYSCALL_MASK;
+		//? ihk_mc_spinlock_lock_noirq(&child->proc->lock);
+		child->proc->ptrace &= ~PT_TRACE_SYSCALL_MASK;
 		if (request == PTRACE_SYSCALL) {
-			child->ftn->ptrace |= PT_TRACE_SYSCALL_ENTER;
+			child->proc->ptrace |= PT_TRACE_SYSCALL_ENTER;
 		}
-		ihk_mc_spinlock_unlock_noirq(&child->ftn->lock);
+		//? ihk_mc_spinlock_unlock_noirq(&child->proc->lock);
 		if(data != 0 && data != SIGSTOP) {
-			struct process *proc;
 
 			/* TODO: Tracing process replace the original
 			   signal with "data" */
@@ -3768,13 +3700,12 @@ static int ptrace_wakeup_sig(int pid, long request, long data) {
 				child->ptrace_sendsig = NULL;
 			}
 			else {
-				proc = cpu_local_var(current);
 				memset(&info, '\0', sizeof info);
 				info.si_signo = data;
 				info.si_code = SI_USER;
-				info._sifields._kill.si_pid = proc->ftn->pid;
+				info._sifields._kill.si_pid = thread->proc->pid;
 			}
-			error = do_kill(pid, -1, data, &info, 1);
+			error = do_kill(thread, pid, -1, data, &info, 1);
 			if (error < 0) {
 				goto out;
 			}
@@ -3784,30 +3715,29 @@ static int ptrace_wakeup_sig(int pid, long request, long data) {
 		break;
 	}
 
-	sched_wakeup_process(child, PS_TRACED | PS_STOPPED);
+	sched_wakeup_thread(child, PS_TRACED | PS_STOPPED);
 out:
 	return error;
 }
 
-extern long ptrace_read_user(struct process *proc, long addr, unsigned long *value);
-extern long ptrace_write_user(struct process *proc, long addr, unsigned long value);
+extern long ptrace_read_user(struct thread *thread, long addr, unsigned long *value);
+extern long ptrace_write_user(struct thread *thread, long addr, unsigned long value);
 
 static long ptrace_pokeuser(int pid, long addr, long data)
 {
 	long rc = -EIO;
-	struct process *child;
-	ihk_spinlock_t *savelock;
-	unsigned long irqstate;
+	struct thread *child;
+	struct mcs_rwlock_node_irqsave lock;
 
 	if(addr > sizeof(struct user) - 8 || addr < 0)
 		return -EFAULT;
-	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
+	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if(child->ftn->status == PS_TRACED){
+	if(child->proc->pstatus == PS_TRACED){
 		rc = ptrace_write_user(child, addr, (unsigned long)data);
 	}
-	ihk_mc_spinlock_unlock(savelock, irqstate);
+	thread_unlock(child, &lock);
 
 	return rc;
 }
@@ -3815,24 +3745,23 @@ static long ptrace_pokeuser(int pid, long addr, long data)
 static long ptrace_peekuser(int pid, long addr, long data)
 {
 	long rc = -EIO;
-	struct process *child;
-	ihk_spinlock_t *savelock;
-	unsigned long irqstate;
+	struct thread *child;
+	struct mcs_rwlock_node_irqsave lock;
 	unsigned long *p = (unsigned long *)data;
 
 	if(addr > sizeof(struct user) - 8|| addr < 0)
 		return -EFAULT;
-	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
+	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if(child->ftn->status == PS_TRACED){
+	if(child->proc->pstatus == PS_TRACED){
 		unsigned long value;
 		rc = ptrace_read_user(child, addr, &value);
 		if (rc == 0) {
 			rc = copy_to_user(p, (char *)&value, sizeof(value));
 		}
 	}
-	ihk_mc_spinlock_unlock(savelock, irqstate);
+	thread_unlock(child, &lock);
 
 	return rc;
 }
@@ -3841,14 +3770,13 @@ static long ptrace_getregs(int pid, long data)
 {
 	struct user_regs_struct *regs = (struct user_regs_struct *)data;
 	long rc = -EIO;
-	struct process *child;
-	ihk_spinlock_t *savelock;
-	unsigned long irqstate;
+	struct thread *child;
+	struct mcs_rwlock_node_irqsave lock;
 
-	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
+	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if(child->ftn->status == PS_TRACED){
+	if(child->proc->pstatus == PS_TRACED){
 		struct user_regs_struct user_regs;
 		long addr;
 		unsigned long *p;
@@ -3863,7 +3791,7 @@ static long ptrace_getregs(int pid, long data)
 			rc = copy_to_user(regs, &user_regs, sizeof(struct user_regs_struct));
 		}
 	}
-	ihk_mc_spinlock_unlock(savelock, irqstate);
+	thread_unlock(child, &lock);
 
 	return rc;
 }
@@ -3872,14 +3800,13 @@ static long ptrace_setregs(int pid, long data)
 {
 	struct user_regs_struct *regs = (struct user_regs_struct *)data;
 	long rc = -EIO;
-	struct process *child;
-	ihk_spinlock_t *savelock;
-	unsigned long irqstate;
+	struct thread *child;
+	struct mcs_rwlock_node_irqsave lock;
 
-	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
+	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if(child->ftn->status == PS_TRACED){
+	if(child->proc->pstatus == PS_TRACED){
 		struct user_regs_struct user_regs;
 		rc = copy_from_user(&user_regs, regs, sizeof(struct user_regs_struct));
 		if (rc == 0) {
@@ -3895,7 +3822,7 @@ static long ptrace_setregs(int pid, long data)
 			}
 		}
 	}
-	ihk_mc_spinlock_unlock(savelock, irqstate);
+	thread_unlock(child, &lock);
 
 	return rc;
 }
@@ -3903,14 +3830,13 @@ static long ptrace_setregs(int pid, long data)
 static long ptrace_arch_prctl(int pid, long code, long addr)
 {
 	long rc = -EIO;
-	struct process *child;
-	ihk_spinlock_t *savelock;
-	unsigned long irqstate;
+	struct thread *child;
+	struct mcs_rwlock_node_irqsave lock;
 
-	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
+	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if (child->ftn->status == PS_TRACED) {
+	if (child->proc->pstatus == PS_TRACED) {
 		switch (code) {
 		case ARCH_GET_FS: {
 			unsigned long value;
@@ -3949,28 +3875,27 @@ static long ptrace_arch_prctl(int pid, long code, long addr)
 			break;
 		}
 	}
-	ihk_mc_spinlock_unlock(savelock, irqstate);
+	thread_unlock(child, &lock);
 
 	return rc;
 }
 
-extern long ptrace_read_fpregs(struct process *proc, void *fpregs);
-extern long ptrace_write_fpregs(struct process *proc, void *fpregs);
+extern long ptrace_read_fpregs(struct thread *thread, void *fpregs);
+extern long ptrace_write_fpregs(struct thread *thread, void *fpregs);
 
 static long ptrace_getfpregs(int pid, long data)
 {
 	long rc = -EIO;
-	struct process *child;
-	ihk_spinlock_t *savelock;
-	unsigned long irqstate;
+	struct thread *child;
+	struct mcs_rwlock_node_irqsave lock;
 
-	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
+	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if (child->ftn->status == PS_TRACED) {
+	if (child->proc->pstatus == PS_TRACED) {
 		rc = ptrace_read_fpregs(child, (void *)data);
 	}
-	ihk_mc_spinlock_unlock(savelock, irqstate);
+	thread_unlock(child, &lock);
 
 	return rc;
 }
@@ -3978,35 +3903,33 @@ static long ptrace_getfpregs(int pid, long data)
 static long ptrace_setfpregs(int pid, long data)
 {
 	long rc = -EIO;
-	struct process *child;
-	ihk_spinlock_t *savelock;
-	unsigned long irqstate;
+	struct thread *child;
+	struct mcs_rwlock_node_irqsave lock;
 
-	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
+	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if (child->ftn->status == PS_TRACED) {
+	if (child->proc->pstatus == PS_TRACED) {
 		rc = ptrace_write_fpregs(child, (void *)data);
 	}
-	ihk_mc_spinlock_unlock(savelock, irqstate);
+	thread_unlock(child, &lock);
 
 	return rc;
 }
 
-extern long ptrace_read_regset(struct process *proc, long type, struct iovec *iov);
-extern long ptrace_write_regset(struct process *proc, long type, struct iovec *iov);
+extern long ptrace_read_regset(struct thread *thread, long type, struct iovec *iov);
+extern long ptrace_write_regset(struct thread *thread, long type, struct iovec *iov);
 
 static long ptrace_getregset(int pid, long type, long data)
 {
 	long rc = -EIO;
-	struct process *child;
-	ihk_spinlock_t *savelock;
-	unsigned long irqstate;
+	struct thread *child;
+	struct mcs_rwlock_node_irqsave lock;
 
-	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
+	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if (child->ftn->status == PS_TRACED) {
+	if (child->proc->pstatus == PS_TRACED) {
 		struct iovec iov;
 
 		rc = copy_from_user(&iov, (struct iovec *)data, sizeof(iov));
@@ -4018,7 +3941,7 @@ static long ptrace_getregset(int pid, long type, long data)
 					&iov.iov_len, sizeof(iov.iov_len));
 		}
 	}
-	ihk_mc_spinlock_unlock(savelock, irqstate);
+	thread_unlock(child, &lock);
 
 	return rc;
 }
@@ -4026,14 +3949,13 @@ static long ptrace_getregset(int pid, long type, long data)
 static long ptrace_setregset(int pid, long type, long data)
 {
 	long rc = -EIO;
-	struct process *child;
-	ihk_spinlock_t *savelock;
-	unsigned long irqstate;
+	struct thread *child;
+	struct mcs_rwlock_node_irqsave lock;
 
-	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
+	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if (child->ftn->status == PS_TRACED) {
+	if (child->proc->pstatus == PS_TRACED) {
 		struct iovec iov;
 
 		rc = copy_from_user(&iov, (struct iovec *)data, sizeof(iov));
@@ -4045,7 +3967,7 @@ static long ptrace_setregset(int pid, long type, long data)
 					&iov.iov_len, sizeof(iov.iov_len));
 		}
 	}
-	ihk_mc_spinlock_unlock(savelock, irqstate);
+	thread_unlock(child, &lock);
 
 	return rc;
 }
@@ -4053,15 +3975,14 @@ static long ptrace_setregset(int pid, long type, long data)
 static long ptrace_peektext(int pid, long addr, long data)
 {
 	long rc = -EIO;
-	struct process *child;
-	ihk_spinlock_t *savelock;
-	unsigned long irqstate;
+	struct thread *child;
+	struct mcs_rwlock_node_irqsave lock;
 	unsigned long *p = (unsigned long *)data;
 
-	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
+	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if(child->ftn->status == PS_TRACED){
+	if(child->proc->pstatus == PS_TRACED){
 		unsigned long value;
 		rc = read_process_vm(child->vm, &value, (void *)addr, sizeof(value));
 		if (rc != 0) { 
@@ -4070,7 +3991,7 @@ static long ptrace_peektext(int pid, long addr, long data)
 			rc = copy_to_user(p, &value, sizeof(value));
 		}
 	}
-	ihk_mc_spinlock_unlock(savelock, irqstate);
+	thread_unlock(child, &lock);
 
 	return rc;
 }
@@ -4078,20 +3999,19 @@ static long ptrace_peektext(int pid, long addr, long data)
 static long ptrace_poketext(int pid, long addr, long data)
 {
 	long rc = -EIO;
-	struct process *child;
-	ihk_spinlock_t *savelock;
-	unsigned long irqstate;
+	struct thread *child;
+	struct mcs_rwlock_node_irqsave lock;
 
-	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
+	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if(child->ftn->status == PS_TRACED){
+	if(child->proc->pstatus == PS_TRACED){
 		rc = patch_process_vm(child->vm, (void *)addr, &data, sizeof(data));
 		if (rc) {
 			dkprintf("ptrace_poketext: bad address 0x%llx\n", addr);
 		}
 	}
-	ihk_mc_spinlock_unlock(savelock, irqstate);
+	thread_unlock(child, &lock);
 
 	return rc;
 }
@@ -4099,9 +4019,8 @@ static long ptrace_poketext(int pid, long addr, long data)
 static int ptrace_setoptions(int pid, int flags)
 {
 	int ret;
-	struct process *child;
-	ihk_spinlock_t *savelock;
-	unsigned long irqstate;
+	struct thread *child;
+	struct mcs_rwlock_node_irqsave lock;
 
 	/* Only supported options are enabled.
 	 * Following options are pretended to be supported for the time being:
@@ -4123,18 +4042,19 @@ static int ptrace_setoptions(int pid, int flags)
 		goto out;
 	}
 
-	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
-	if (!child || !child->ftn || !(child->ftn->ptrace & PT_TRACED)) {
+	child = find_thread(pid, pid, &lock);
+	if (!child || !child->proc || !(child->proc->ptrace & PT_TRACED)) {
 		ret = -ESRCH;
 		goto unlockout;
 	}
 	
-	child->ftn->ptrace &= ~PTRACE_O_MASK;	/* PT_TRACE_EXEC remains */
-	child->ftn->ptrace |= flags;
+	child->proc->ptrace &= ~PTRACE_O_MASK;	/* PT_TRACE_EXEC remains */
+	child->proc->ptrace |= flags;
 	ret = 0;
 
 unlockout:
-	ihk_mc_spinlock_unlock(savelock, irqstate);
+	if(child)
+		thread_unlock(child, &lock);
 out:
 	return ret;
 }
@@ -4142,211 +4062,145 @@ out:
 static int ptrace_attach(int pid)
 {
 	int error = 0;
-	struct process *proc;
-	struct fork_tree_node *child, *next;
-	ihk_spinlock_t *savelock;
-	unsigned long irqstate;
+	struct thread *thread;
+	struct thread *mythread = cpu_local_var(current);
+	struct process *proc = mythread->proc;
+	struct process *child;
+	struct process *parent;
+	struct mcs_rwlock_node_irqsave lock;
+	struct mcs_rwlock_node childlock;
+	struct mcs_rwlock_node updatelock;
 	struct siginfo info;
 
-	proc = findthread_and_lock(pid, pid, &savelock, &irqstate);
-	if (!proc) {
+	thread = find_thread(pid, pid, &lock);
+	if (!thread) {
 		error = -ESRCH;
 		goto out;
 	}
-	ihk_mc_spinlock_unlock(savelock, irqstate);
-	dkprintf("ptrace_attach,pid=%d,proc->ftn->parent=%p\n", proc->ftn->pid, proc->ftn->parent);
+	child = thread->proc;
+	dkprintf("ptrace_attach,pid=%d,thread->proc->parent=%p\n", thread->proc->pid, thread->proc->parent);
 
-	if (proc->ftn->ptrace & PT_TRACED) {
+	mcs_rwlock_writer_lock_noirq(&child->update_lock, &updatelock);
+	if (thread->proc->ptrace & PT_TRACED) {
+		mcs_rwlock_writer_unlock_noirq(&child->update_lock, &updatelock);
+		thread_unlock(thread, &lock);
 		error = -EPERM;
 		goto out;
 	}
 
-	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
-	if (proc->ftn->parent) {
-		dkprintf("ptrace_attach,parent->pid=%d\n", proc->ftn->parent->pid);
+	parent = child->parent;
 
-		ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
+	dkprintf("ptrace_attach,parent->pid=%d\n", parent->pid);
 
-		list_for_each_entry_safe(child, next, &proc->ftn->parent->children, siblings_list) {
-			if(child == proc->ftn) {
-				list_del(&child->siblings_list);
-				goto found;
-			}
-		}
-		kprintf("ptrace_attach,not found\n");
-		error = -EPERM;
-		goto out_notfound;
- found:
-		ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
-	} else {
-		hold_fork_tree_node(proc->ftn);
-	}
+	mcs_rwlock_writer_lock_noirq(&parent->children_lock, &childlock);
+	list_del(&child->siblings_list);
+	list_add_tail(&child->ptraced_siblings_list, &parent->ptraced_children_list);
+	mcs_rwlock_writer_unlock_noirq(&parent->children_lock, &childlock);
 
-	proc->ftn->ptrace = PT_TRACED | PT_TRACE_EXEC;
-	proc->ftn->ppid_parent = proc->ftn->parent;
-	proc->ftn->parent = cpu_local_var(current)->ftn;
+	mcs_rwlock_writer_lock_noirq(&proc->children_lock, &childlock);
+	list_add_tail(&child->siblings_list, &proc->children_list);
+	thread->proc->parent = proc;
+	mcs_rwlock_writer_unlock_noirq(&proc->children_lock, &childlock);
 
-	ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
-	list_add_tail(&proc->ftn->ptrace_siblings_list, &proc->ftn->parent->ptrace_children);
-	ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
+	child->ptrace = PT_TRACED | PT_TRACE_EXEC;
 
-	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
+	mcs_rwlock_writer_unlock_noirq(&thread->proc->update_lock, &updatelock);
 
-	if (proc->ptrace_debugreg == NULL) {
-		error = alloc_debugreg(proc);
+	if (thread->ptrace_debugreg == NULL) {
+		error = alloc_debugreg(thread);
 		if (error < 0) {
+			thread_unlock(thread, &lock);
 			goto out;
 		}
 	}
 
-	clear_single_step(proc);
+	clear_single_step(thread);
+
+	thread_unlock(thread, &lock);
 
 	memset(&info, '\0', sizeof info);
 	info.si_signo = SIGSTOP;
 	info.si_code = SI_USER;
-	info._sifields._kill.si_pid = cpu_local_var(current)->ftn->pid;
-	error = do_kill(pid, -1, SIGSTOP, &info, 0);
+	info._sifields._kill.si_pid = proc->pid;
+	error = do_kill(mythread, pid, -1, SIGSTOP, &info, 0);
 	if (error < 0) {
 		goto out;
 	}
 
-	sched_wakeup_process(proc, PS_TRACED | PS_STOPPED);
+	sched_wakeup_thread(thread, PS_TRACED | PS_STOPPED);
   out:
 	dkprintf("ptrace_attach,returning,error=%d\n", error);
 	return error;
-
- out_notfound:
-	ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
-	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
-	goto out;
 }
 
 
-static int ptrace_detach(int pid, int data)
+int ptrace_detach(int pid, int data)
 {
 	int error = 0;
-	struct process *proc;
-	struct fork_tree_node *child, *next;
-	ihk_spinlock_t *savelock;
-	unsigned long irqstate;
+	struct thread *thread;
+	struct thread *mythread = cpu_local_var(current);
+	struct process *proc = mythread->proc;;
+	struct process *child;
+	struct process *parent;
+	struct mcs_rwlock_node_irqsave lock;
+	struct mcs_rwlock_node childlock;
+	struct mcs_rwlock_node updatelock;
 	struct siginfo info;
 
-	proc = findthread_and_lock(pid, pid, &savelock, &irqstate);
-	if (!proc) {
-		error = -ESRCH;
-		goto out;
-	}
-	ihk_mc_spinlock_unlock(savelock, irqstate);
-
-	if (!(proc->ftn->ptrace & PT_TRACED) ||
-			proc->ftn->parent != cpu_local_var(current)->ftn) {
-		error = -ESRCH;
-		goto out;
-	}
-
 	if (data > 64 || data < 0) {
-		error = -EIO;
+		return -EIO;
+	}
+
+	thread = find_thread(pid, pid, &lock);
+	if (!thread) {
+		error = -ESRCH;
 		goto out;
 	}
 
-	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
-	ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
-
-	list_for_each_entry_safe(child, next, &proc->ftn->parent->ptrace_children, ptrace_siblings_list) {
-		if (child == proc->ftn) {
-			list_del(&child->ptrace_siblings_list);
-			goto found;
-		}
-	}
-	kprintf("ptrace_detach,not found\n");
-	error = -EPERM;
-	goto out_notfound;
-found:
-	ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
-
-	proc->ftn->ptrace = 0;
-	proc->ftn->parent = proc->ftn->ppid_parent;
-	proc->ftn->ppid_parent = NULL;
-
-	if (proc->ftn->parent) {
-		ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
-		list_add_tail(&proc->ftn->siblings_list, &proc->ftn->parent->children);
-		ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
-	} else {
-		release_fork_tree_node(proc->ftn);
+	mcs_rwlock_writer_lock_noirq(&proc->update_lock, &updatelock);
+	child = thread->proc;
+	parent = child->ppid_parent;
+	if (!(proc->ptrace & PT_TRACED) || proc->parent != proc) {
+		mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
+		thread_unlock(thread, &lock);
+		error = -ESRCH;
+		goto out;
 	}
 
-	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
+	mcs_rwlock_writer_lock_noirq(&proc->children_lock, &childlock);
+	list_del(&proc->siblings_list);
+	mcs_rwlock_writer_unlock_noirq(&proc->children_lock, &childlock);
 
-	if (proc->ptrace_debugreg) {
-		kfree(proc->ptrace_debugreg);
-		proc->ptrace_debugreg = NULL;
+	mcs_rwlock_writer_lock_noirq(&parent->children_lock, &childlock);
+	list_del(&child->ptraced_siblings_list);
+	list_add_tail(&child->siblings_list, &parent->children_list);
+	child->parent = parent;
+	mcs_rwlock_writer_unlock_noirq(&parent->children_lock, &childlock);
+
+	child->ptrace = 0;
+
+	if (thread->ptrace_debugreg) {
+		kfree(thread->ptrace_debugreg);
+		thread->ptrace_debugreg = NULL;
 	}
 
-	clear_single_step(proc);
+	clear_single_step(thread);
+
+	thread_unlock(thread, &lock);
 
 	if (data != 0) {
 		memset(&info, '\0', sizeof info);
 		info.si_signo = data;
 		info.si_code = SI_USER;
-		info._sifields._kill.si_pid = cpu_local_var(current)->ftn->pid;
-		error = do_kill(pid, -1, data, &info, 1);
+		info._sifields._kill.si_pid = proc->pid;
+		error = do_kill(mythread, pid, -1, data, &info, 1);
 		if (error < 0) {
 			goto out;
 		}
 	}
 
-	sched_wakeup_process(proc, PS_TRACED | PS_STOPPED);
+	sched_wakeup_thread(thread, PS_TRACED | PS_STOPPED);
 out:
-	return error;
-out_notfound:
-	ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
-	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
-	goto out;
-}
-
-static int ptrace_terminate_tracer(struct process *proc, struct fork_tree_node *tracer)
-{
-	int error = 0;
-
-	dkprintf("ptrace_terminate_tracer,pid=%d\n", proc->ftn->pid);
-	if (!(proc->ftn->ptrace & PT_TRACED) ||
-			proc->ftn->parent != tracer) {
-		error = -ESRCH;
-		goto out;
-	}
-
-	ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
-
-	proc->ftn->ptrace = 0;
-	proc->ftn->parent = proc->ftn->ppid_parent;
-	proc->ftn->ppid_parent = NULL;
-
-	if (proc->ftn->parent && proc->ftn->parent != tracer) {
-		/* re-connect real parent */
-		ihk_mc_spinlock_lock_noirq(&proc->ftn->parent->lock);
-		list_add_tail(&proc->ftn->siblings_list, &proc->ftn->parent->children);
-		ihk_mc_spinlock_unlock_noirq(&proc->ftn->parent->lock);
-	} else {
-		error = 1;	/* will call release_fork_tree_node() */
-	}
-
-	/* if signal stopped, change to PS_STOPPED  */
-	if (proc->ftn->signal_flags & SIGNAL_STOP_STOPPED) {
-		proc->ftn->status = PS_STOPPED;
-	}
-
-	ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);
-
-	if (proc->ptrace_debugreg) {
-		kfree(proc->ptrace_debugreg);
-		proc->ptrace_debugreg = NULL;
-	}
-
-	clear_single_step(proc);
-
-out:
-	dkprintf("ptrace_terminate_tracer,error=%d\n", error);
 	return error;
 }
 
@@ -4354,22 +4208,21 @@ static long ptrace_geteventmsg(int pid, long data)
 {
 	unsigned long *msg_p = (unsigned long *)data;
 	long rc = -ESRCH;
-	struct process *child;
-	ihk_spinlock_t *savelock;
-	unsigned long irqstate;
+	struct thread *child;
+	struct mcs_rwlock_node_irqsave lock;
 
-	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
+	child = find_thread(pid, pid, &lock);
 	if (!child) {
 		return -ESRCH;
 	}
-	if (child->ftn->status == PS_TRACED) {
-		if (copy_to_user(msg_p, &child->ftn->ptrace_eventmsg, sizeof(*msg_p))) {
+	if (child->proc->pstatus == PS_TRACED) {
+		if (copy_to_user(msg_p, &child->proc->ptrace_eventmsg, sizeof(*msg_p))) {
 			rc = -EFAULT;
 		} else {
 			rc = 0;
 		}
 	}
-	ihk_mc_spinlock_unlock(savelock, irqstate);
+	thread_unlock(child, &lock);
 
 	return rc;
 }
@@ -4377,17 +4230,16 @@ static long ptrace_geteventmsg(int pid, long data)
 static long
 ptrace_getsiginfo(int pid, siginfo_t *data)
 {
-	ihk_spinlock_t *savelock;
-	unsigned long irqstate;
-	struct process *child;
+	struct thread *child;
+	struct mcs_rwlock_node_irqsave lock;
 	int rc = 0;
 
-	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
+	child = find_thread(pid, pid, &lock);
 	if (!child) {
 		return -ESRCH;
 	}
 
-	if (child->ftn->status != PS_TRACED) {
+	if (child->proc->pstatus != PS_TRACED) {
 		rc = -ESRCH;
 	}
 	else if (child->ptrace_recvsig) {
@@ -4398,25 +4250,23 @@ ptrace_getsiginfo(int pid, siginfo_t *data)
 	else {
 		rc = -ESRCH;
 	}
-	ihk_mc_spinlock_unlock(savelock, irqstate);
+	thread_unlock(child, &lock);
 	return rc;
 }
 
 static long
 ptrace_setsiginfo(int pid, siginfo_t *data)
 {
-	ihk_spinlock_t *savelock;
-	unsigned long irqstate;
-	struct process *child;
+	struct thread *child;
+	struct mcs_rwlock_node_irqsave lock;
 	int rc = 0;
 
-kprintf("ptrace_setsiginfo: sig=%d errno=%d code=%d\n", data->si_signo, data->si_errno, data->si_code);
-	child = findthread_and_lock(pid, pid, &savelock, &irqstate);
+	child = find_thread(pid, pid, &lock);
 	if (!child) {
 		return -ESRCH;
 	}
 
-	if (child->ftn->status != PS_TRACED) {
+	if (child->proc->pstatus != PS_TRACED) {
 		rc = -ESRCH;
 	}
 	else {
@@ -4432,7 +4282,7 @@ kprintf("ptrace_setsiginfo: sig=%d errno=%d code=%d\n", data->si_signo, data->si
 			rc = -EFAULT;
 		}
 	}
-	ihk_mc_spinlock_unlock(savelock, irqstate);
+	thread_unlock(child, &lock);
 	return rc;
 }
 
@@ -4552,7 +4402,7 @@ SYSCALL_DECLARE(ptrace)
 
 /* We do not have actual scheduling classes so we just make sure we store
  * policies and priorities in a POSIX/Linux complaint manner */
-static int setscheduler(struct process *proc, int policy, struct sched_param *param)
+static int setscheduler(struct thread *thread, int policy, struct sched_param *param)
 {
 	if ((policy == SCHED_FIFO || policy == SCHED_RR) &&
 		((param->sched_priority < 1) ||
@@ -4565,8 +4415,8 @@ static int setscheduler(struct process *proc, int policy, struct sched_param *pa
 		return -EINVAL;
 	}
 
-	memcpy(&proc->sched_param, param, sizeof(*param));
-	proc->sched_policy = policy;
+	memcpy(&thread->sched_param, param, sizeof(*param));
+	thread->sched_policy = policy;
 
 	return 0;
 }
@@ -4580,9 +4430,8 @@ SYSCALL_DECLARE(sched_setparam)
 	int pid = (int)ihk_mc_syscall_arg0(ctx);
 	struct sched_param *uparam = (struct sched_param *)ihk_mc_syscall_arg1(ctx);
 	struct sched_param param;
-	struct process *proc = cpu_local_var(current);
-	unsigned long irqstate = 0;
-	ihk_spinlock_t *lock;
+	struct thread *thread = cpu_local_var(current);
+	struct mcs_rwlock_node_irqsave lock;
 	
 	struct syscall_request request1 IHK_DMA_ALIGN;
 
@@ -4593,14 +4442,16 @@ SYSCALL_DECLARE(sched_setparam)
 	}
 
 	if (pid == 0)
-		pid = proc->ftn->pid;
+		pid = thread->proc->pid;
 
-	if (proc->ftn->pid != pid) {
-		proc = findthread_and_lock(pid, pid, &lock, &irqstate);
-		if (!proc) {
+	if (thread->proc->pid != pid) {
+		thread = find_thread(pid, pid, &lock);
+		if (!thread) {
 			return -ESRCH;
 		}
-		process_unlock(lock, irqstate);
+		// TODO: unlock 場所のチェック
+		// 何をしようとしているのか理解
+		thread_unlock(thread, &lock);
 		
 		/* Ask Linux about ownership.. */
 		request1.number = __NR_sched_setparam;
@@ -4618,7 +4469,7 @@ SYSCALL_DECLARE(sched_setparam)
 		return -EFAULT;
 	}
 
-	return setscheduler(proc, proc->sched_policy, &param);
+	return setscheduler(thread, thread->sched_policy, &param);
 }
 
 SYSCALL_DECLARE(sched_getparam)
@@ -4626,26 +4477,25 @@ SYSCALL_DECLARE(sched_getparam)
 	int retval = 0;
 	int pid = (int)ihk_mc_syscall_arg0(ctx);
 	struct sched_param *param = (struct sched_param *)ihk_mc_syscall_arg1(ctx);
-	struct process *proc = cpu_local_var(current);
-	unsigned long irqstate = 0;
-	ihk_spinlock_t *lock;
+	struct thread *thread = cpu_local_var(current);
+	struct mcs_rwlock_node_irqsave lock;
 
 	if (!param || pid < 0) {
 		return -EINVAL;
 	}
 
 	if (pid == 0)
-		pid = proc->ftn->pid;
+		pid = thread->proc->pid;
 
-	if (proc->ftn->pid != pid) {
-		proc = findthread_and_lock(pid, pid, &lock, &irqstate);
-		if (!proc) {
+	if (thread->proc->pid != pid) {
+		thread = find_thread(pid, pid, &lock);
+		if (!thread) {
 			return -ESRCH;
 		}
-		process_unlock(lock, irqstate);
+		thread_unlock(thread, &lock);
 	}
 	
-	retval = copy_to_user(param, &proc->sched_param, sizeof(*param)) ? -EFAULT : 0;
+	retval = copy_to_user(param, &thread->sched_param, sizeof(*param)) ? -EFAULT : 0;
 	
 	return retval;
 }
@@ -4657,9 +4507,8 @@ SYSCALL_DECLARE(sched_setscheduler)
 	int policy = ihk_mc_syscall_arg1(ctx);
 	struct sched_param *uparam = (struct sched_param *)ihk_mc_syscall_arg2(ctx);
 	struct sched_param param;
-	struct process *proc = cpu_local_var(current);
-	unsigned long irqstate = 0;
-	ihk_spinlock_t *lock;
+	struct thread *thread = cpu_local_var(current);
+	struct mcs_rwlock_node_irqsave lock;
 	
 	struct syscall_request request1 IHK_DMA_ALIGN;
 	
@@ -4692,14 +4541,14 @@ SYSCALL_DECLARE(sched_setscheduler)
 	}
 
 	if (pid == 0)
-		pid = proc->ftn->pid;
+		pid = thread->proc->pid;
 
-	if (proc->ftn->pid != pid) {
-		proc = findthread_and_lock(pid, pid, &lock, &irqstate);
-		if (!proc) {
+	if (thread->proc->pid != pid) {
+		thread = find_thread(pid, pid, &lock);
+		if (!thread) {
 			return -ESRCH;
 		}
-		process_unlock(lock, irqstate);
+		thread_unlock(thread, &lock);
 		
 		/* Ask Linux about ownership.. */
 		request1.number = __NR_sched_setparam;
@@ -4712,32 +4561,31 @@ SYSCALL_DECLARE(sched_setscheduler)
 		}
 	}
 
-	return setscheduler(proc, policy, &param);
+	return setscheduler(thread, policy, &param);
 }
 
 SYSCALL_DECLARE(sched_getscheduler)
 {
 	int pid = (int)ihk_mc_syscall_arg0(ctx);
-	struct process *proc = cpu_local_var(current);
-	unsigned long irqstate = 0;
-	ihk_spinlock_t *lock;
+	struct thread *thread = cpu_local_var(current);
+	struct mcs_rwlock_node_irqsave lock;
 
 	if (pid < 0) {
 		return -EINVAL;
 	}
 
 	if (pid == 0)
-		pid = proc->ftn->pid;
+		pid = thread->proc->pid;
 
-	if (proc->ftn->pid != pid) {
-		proc = findthread_and_lock(pid, pid, &lock, &irqstate);
-		if (!proc) {
+	if (thread->proc->pid != pid) {
+		thread = find_thread(pid, pid, &lock);
+		if (!thread) {
 			return -ESRCH;
 		}
-		process_unlock(lock, irqstate);
+		thread_unlock(thread, &lock);
 	}
 
-	return proc->sched_policy;
+	return thread->sched_policy;
 }
 
 SYSCALL_DECLARE(sched_get_priority_max)
@@ -4784,28 +4632,27 @@ SYSCALL_DECLARE(sched_rr_get_interval)
 	int pid = ihk_mc_syscall_arg0(ctx);
 	struct timespec *utime = (struct timespec *)ihk_mc_syscall_arg1(ctx);
 	struct timespec t;
-	struct process *proc = cpu_local_var(current);
-	unsigned long irqstate = 0;
-	ihk_spinlock_t *lock;
+	struct thread *thread = cpu_local_var(current);
+	struct mcs_rwlock_node_irqsave lock;
 	int retval = 0;
 
 	if (pid < 0) 
 		return -EINVAL;
 
 	if (pid == 0)
-		pid = proc->ftn->pid;
+		pid = thread->proc->pid;
 
-	if (proc->ftn->pid != pid) {
-		proc = findthread_and_lock(pid, pid, &lock, &irqstate);
-		if (!proc) {
+	if (thread->proc->pid != pid) {
+		thread = find_thread(pid, pid, &lock);
+		if (!thread) {
 			return -ESRCH;
 		}
-		process_unlock(lock, irqstate);
+		thread_unlock(thread, &lock);
 	}
 	
 	t.tv_sec = 0;
 	t.tv_nsec = 0;
-	if (proc->sched_policy == SCHED_RR) {
+	if (thread->sched_policy == SCHED_RR) {
 		t.tv_nsec = 10000;
 	}
 	
@@ -4822,7 +4669,7 @@ SYSCALL_DECLARE(sched_setaffinity)
 	cpu_set_t *u_cpu_set = (cpu_set_t *)ihk_mc_syscall_arg2(ctx);
 
 	cpu_set_t k_cpu_set, cpu_set;
-	struct process *thread;
+	struct thread *thread;
 	int cpu_id;
 	int empty_set = 1; 
 	unsigned long irqstate;
@@ -4845,7 +4692,7 @@ SYSCALL_DECLARE(sched_setaffinity)
 		if (CPU_ISSET(cpu_id, &k_cpu_set)) {
 			CPU_SET(cpu_id, &cpu_set);
 			dkprintf("sched_setaffinity(): tid %d: setting target core %d\n",
-					cpu_local_var(current)->ftn->tid, cpu_id);
+					cpu_local_var(current)->tid, cpu_id);
 			empty_set = 0;
 		}
 	}
@@ -4856,7 +4703,7 @@ SYSCALL_DECLARE(sched_setaffinity)
 	}
 
 	if (tid == 0) {
-		tid = cpu_local_var(current)->ftn->tid;
+		tid = cpu_local_var(current)->tid;
 		thread = cpu_local_var(current);
 		cpu_id = ihk_mc_get_processor_id();
 		irqstate = ihk_mc_spinlock_lock(&get_cpu_local_var(cpu_id)->runq_lock);
@@ -4871,7 +4718,7 @@ SYSCALL_DECLARE(sched_setaffinity)
 			list_for_each_entry(thread, 
 				&get_cpu_local_var(cpu_id)->runq, sched_list) {
 
-				if (thread->ftn->pid && thread->ftn->tid == tid) {
+				if (thread->proc->pid && thread->tid == tid) {
 					goto found; /* without unlocking runq_lock */
 				}
 			}
@@ -4888,12 +4735,12 @@ found:
 	memcpy(&thread->cpu_set, &cpu_set, sizeof(cpu_set));
 
 	if (!CPU_ISSET(cpu_id, &thread->cpu_set)) {
-		hold_process(thread);
+		hold_thread(thread);
 		ihk_mc_spinlock_unlock(&get_cpu_local_var(cpu_id)->runq_lock, irqstate);
 		dkprintf("sched_setaffinity(): tid %d sched_request_migrate\n",
-				cpu_local_var(current)->ftn->tid, cpu_id);
+				cpu_local_var(current)->tid, cpu_id);
 		sched_request_migrate(cpu_id, thread);
-		release_process(thread);
+		release_thread(thread);
 		return 0;
 	} 
 	else {
@@ -4921,13 +4768,13 @@ SYSCALL_DECLARE(sched_getaffinity)
 	len = MIN2(len, sizeof(k_cpu_set));
 
 	if(tid == 0)
-		tid = cpu_local_var(current)->ftn->tid;
+		tid = cpu_local_var(current)->tid;
 
 	for (i = 0; i < num_processors && !found; i++) {
-		struct process *thread;
+		struct thread *thread;
 		irqstate = ihk_mc_spinlock_lock(&get_cpu_local_var(i)->runq_lock);
 		list_for_each_entry(thread, &get_cpu_local_var(i)->runq, sched_list) {
-			if (thread->ftn->pid && thread->ftn->tid == tid) {
+			if (thread->proc->pid && thread->tid == tid) {
 				found = 1;
 				memcpy(&k_cpu_set, &thread->cpu_set, sizeof(k_cpu_set));
 				break;
@@ -5087,8 +4934,8 @@ SYSCALL_DECLARE(mlock)
 {
 	const uintptr_t start0 = ihk_mc_syscall_arg0(ctx);
 	const size_t len0 = ihk_mc_syscall_arg1(ctx);
-	struct process *proc = cpu_local_var(current);
-	struct vm_regions *region = &proc->vm->region;
+	struct thread *thread = cpu_local_var(current);
+	struct vm_regions *region = &thread->vm->region;
 	uintptr_t start;
 	size_t len;
 	uintptr_t end;
@@ -5124,17 +4971,17 @@ SYSCALL_DECLARE(mlock)
 		goto out2;
 	}
 
-	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
+	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
 
 	/* check contiguous map */
 	first = NULL;
 	for (addr = start; addr < end; addr = range->end) {
 		if (first == NULL) {
-			range = lookup_process_memory_range(proc->vm, start, start+PAGE_SIZE);
+			range = lookup_process_memory_range(thread->vm, start, start+PAGE_SIZE);
 			first = range;
 		}
 		else {
-			range = next_process_memory_range(proc->vm, range);
+			range = next_process_memory_range(thread->vm, range);
 		}
 
 		if (!range || (addr < range->start)) {
@@ -5165,7 +5012,7 @@ SYSCALL_DECLARE(mlock)
 			range = first;
 		}
 		else {
-			range = next_process_memory_range(proc->vm, changed);
+			range = next_process_memory_range(thread->vm, changed);
 		}
 
 		if (!range || (addr < range->start)) {
@@ -5180,7 +5027,7 @@ SYSCALL_DECLARE(mlock)
 		}
 
 		if (range->start < addr) {
-			error = split_process_memory_range(proc, range, addr, &range);
+			error = split_process_memory_range(thread->vm, range, addr, &range);
 			if (error) {
 				ekprintf("[%d]sys_mlock(%lx,%lx):split failed. "
 						" [%lx-%lx) %lx %d\n",
@@ -5191,7 +5038,7 @@ SYSCALL_DECLARE(mlock)
 			}
 		}
 		if (end < range->end) {
-			error = split_process_memory_range(proc, range, end, NULL);
+			error = split_process_memory_range(thread->vm, range, end, NULL);
 			if (error) {
 				ekprintf("[%d]sys_mlock(%lx,%lx):split failed. "
 						" [%lx-%lx) %lx %d\n",
@@ -5208,7 +5055,7 @@ SYSCALL_DECLARE(mlock)
 			changed = range;
 		}
 		else {
-			error = join_process_memory_range(proc, changed, range);
+			error = join_process_memory_range(thread->vm, changed, range);
 			if (error) {
 				dkprintf("[%d]sys_mlock(%lx,%lx):join failed. %d",
 						ihk_mc_get_processor_id(),
@@ -5229,10 +5076,10 @@ SYSCALL_DECLARE(mlock)
 
 	error = 0;
 out:
-	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
 
 	if (!error) {
-		error = populate_process_memory(proc, (void *)start, len);
+		error = populate_process_memory(thread->vm, (void *)start, len);
 		if (error) {
 			ekprintf("sys_mlock(%lx,%lx):populate failed. %d\n",
 					start0, len0, error);
@@ -5262,8 +5109,8 @@ SYSCALL_DECLARE(munlock)
 {
 	const uintptr_t start0 = ihk_mc_syscall_arg0(ctx);
 	const size_t len0 = ihk_mc_syscall_arg1(ctx);
-	struct process *proc = cpu_local_var(current);
-	struct vm_regions *region = &proc->vm->region;
+	struct thread *thread = cpu_local_var(current);
+	struct vm_regions *region = &thread->vm->region;
 	uintptr_t start;
 	size_t len;
 	uintptr_t end;
@@ -5299,17 +5146,17 @@ SYSCALL_DECLARE(munlock)
 		goto out2;
 	}
 
-	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
+	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
 
 	/* check contiguous map */
 	first = NULL;
 	for (addr = start; addr < end; addr = range->end) {
 		if (first == NULL) {
-			range = lookup_process_memory_range(proc->vm, start, start+PAGE_SIZE);
+			range = lookup_process_memory_range(thread->vm, start, start+PAGE_SIZE);
 			first = range;
 		}
 		else {
-			range = next_process_memory_range(proc->vm, range);
+			range = next_process_memory_range(thread->vm, range);
 		}
 
 		if (!range || (addr < range->start)) {
@@ -5340,7 +5187,7 @@ SYSCALL_DECLARE(munlock)
 			range = first;
 		}
 		else {
-			range = next_process_memory_range(proc->vm, changed);
+			range = next_process_memory_range(thread->vm, changed);
 		}
 
 		if (!range || (addr < range->start)) {
@@ -5355,7 +5202,7 @@ SYSCALL_DECLARE(munlock)
 		}
 
 		if (range->start < addr) {
-			error = split_process_memory_range(proc, range, addr, &range);
+			error = split_process_memory_range(thread->vm, range, addr, &range);
 			if (error) {
 				ekprintf("[%d]sys_munlock(%lx,%lx):split failed. "
 						" [%lx-%lx) %lx %d\n",
@@ -5366,7 +5213,7 @@ SYSCALL_DECLARE(munlock)
 			}
 		}
 		if (end < range->end) {
-			error = split_process_memory_range(proc, range, end, NULL);
+			error = split_process_memory_range(thread->vm, range, end, NULL);
 			if (error) {
 				ekprintf("[%d]sys_munlock(%lx,%lx):split failed. "
 						" [%lx-%lx) %lx %d\n",
@@ -5383,7 +5230,7 @@ SYSCALL_DECLARE(munlock)
 			changed = range;
 		}
 		else {
-			error = join_process_memory_range(proc, changed, range);
+			error = join_process_memory_range(thread->vm, changed, range);
 			if (error) {
 				dkprintf("[%d]sys_munlock(%lx,%lx):join failed. %d",
 						ihk_mc_get_processor_id(),
@@ -5404,7 +5251,7 @@ SYSCALL_DECLARE(munlock)
 
 	error = 0;
 out:
-	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
 out2:
 	dkprintf("[%d]sys_munlock(%lx,%lx): %d\n",
 			ihk_mc_get_processor_id(), start0, len0, error);
@@ -5414,7 +5261,7 @@ out2:
 SYSCALL_DECLARE(mlockall)
 {
 	const int flags = ihk_mc_syscall_arg0(ctx);
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 	uid_t euid = geteuid();
 
 	if (!flags || (flags & ~(MCL_CURRENT|MCL_FUTURE))) {
@@ -5427,7 +5274,7 @@ SYSCALL_DECLARE(mlockall)
 		return 0;
 	}
 
-	if (proc->rlimit[MCK_RLIMIT_MEMLOCK].rlim_cur != 0) {
+	if (thread->proc->rlimit[MCK_RLIMIT_MEMLOCK].rlim_cur != 0) {
 		kprintf("mlockall(0x%x):limits exists: ENOMEM\n", flags);
 		return -ENOMEM;
 	}
@@ -5453,14 +5300,14 @@ SYSCALL_DECLARE(remap_file_pages)
 	const uintptr_t start = start0 & PAGE_MASK;
 	const uintptr_t end = start + size;
 	const off_t off = (off_t)pgoff << PAGE_SHIFT;
-	struct process * const proc = cpu_local_var(current);
+	struct thread * const thread = cpu_local_var(current);
 	struct vm_range *range;
 	int er;
 	int need_populate = 0;
 
 	dkprintf("sys_remap_file_pages(%#lx,%#lx,%#x,%#lx,%#x)\n",
 			start0, size, prot, pgoff, flags);
-	ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
+	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
 #define	PGOFF_LIMIT	((off_t)1 << ((8*sizeof(off_t) - 1) - PAGE_SHIFT))
 	if ((size <= 0) || (size & (PAGE_SIZE - 1)) || (prot != 0)
 			|| (pgoff < 0) || (PGOFF_LIMIT <= pgoff)
@@ -5473,7 +5320,7 @@ SYSCALL_DECLARE(remap_file_pages)
 		goto out;
 	}
 
-	range = lookup_process_memory_range(proc->vm, start, end);
+	range = lookup_process_memory_range(thread->vm, start, end);
 	if (!range || (start < range->start) || (range->end < end)
 			|| (range->flag & VR_PRIVATE)
 			|| (range->flag & (VR_REMOTE|VR_IO_NOCACHE|VR_RESERVED))
@@ -5488,7 +5335,7 @@ SYSCALL_DECLARE(remap_file_pages)
 	}
 
 	range->flag |= VR_FILEOFF;
-	error = remap_process_memory_range(proc->vm, range, start, end, off);
+	error = remap_process_memory_range(thread->vm, range, start, end, off);
 	if (error) {
 		ekprintf("sys_remap_file_pages(%#lx,%#lx,%#x,%#lx,%#x):"
 				"remap failed %d\n",
@@ -5502,11 +5349,11 @@ SYSCALL_DECLARE(remap_file_pages)
 	}
 	error = 0;
 out:
-	ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
 
 	if (need_populate
 			&& (er = populate_process_memory(
-					proc, (void *)start, size))) {
+					thread->vm, (void *)start, size))) {
 		ekprintf("sys_remap_file_pages(%#lx,%#lx,%#x,%#lx,%#x):"
 				"populate failed %d\n",
 				start0, size, prot, pgoff, flags, er);
@@ -5529,8 +5376,8 @@ SYSCALL_DECLARE(mremap)
 	const ssize_t newsize = (newsize0 + PAGE_SIZE - 1) & PAGE_MASK;
 	const uintptr_t oldstart = oldaddr;
 	const uintptr_t oldend = oldstart + oldsize;
-	struct process *proc = cpu_local_var(current);
-	struct process_vm *vm = proc->vm;
+	struct thread *thread = cpu_local_var(current);
+	struct process_vm *vm = thread->vm;
 	int error;
 	struct vm_range *range;
 	int need_relocate;
@@ -5661,7 +5508,7 @@ SYSCALL_DECLARE(mremap)
 		if (range->memobj) {
 			memobj_ref(range->memobj);
 		}
-		error = add_process_memory_range(proc, newstart, newend, -1,
+		error = add_process_memory_range(thread->vm, newstart, newend, -1,
 				range->flag, range->memobj,
 				range->objoff + (oldstart - range->start));
 		if (error) {
@@ -5682,7 +5529,7 @@ SYSCALL_DECLARE(mremap)
 		if (oldsize > 0) {
 			size = (oldsize < newsize)? oldsize: newsize;
 			ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
-			error = move_pte_range(vm->page_table, vm,
+			error = move_pte_range(vm->address_space->page_table, vm,
 					(void *)oldstart, (void *)newstart,
 					size);
 			ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
@@ -5722,7 +5569,7 @@ SYSCALL_DECLARE(mremap)
 out:
 	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 	if (!error && (lckstart < lckend)) {
-		error = populate_process_memory(proc, (void *)lckstart, (lckend - lckstart));
+		error = populate_process_memory(thread->vm, (void *)lckstart, (lckend - lckstart));
 		if (error) {
 			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
 					"populate failed. %d %#lx-%#lx\n",
@@ -5746,8 +5593,8 @@ SYSCALL_DECLARE(msync)
 	const size_t len = (len0 + PAGE_SIZE - 1) & PAGE_MASK;
 	const uintptr_t start = start0;
 	const uintptr_t end = start + len;
-	struct process *proc = cpu_local_var(current);
-	struct process_vm *vm = proc->vm;
+	struct thread *thread = cpu_local_var(current);
+	struct process_vm *vm = thread->vm;
 	int error;
 	uintptr_t addr;
 	struct vm_range *range;
@@ -5930,8 +5777,8 @@ static int do_process_vm_read_writev(int pid,
 	size_t llen = 0, rlen = 0;
 	size_t copied = 0;
 	size_t to_copy;
-	struct process *lproc = cpu_local_var(current);
-	struct process *rproc, *p;
+	struct thread *lthread = cpu_local_var(current);
+	struct thread *rthread, *p;
 	unsigned long rphys;
 	unsigned long rpage_left;
 	void *rva;
@@ -5961,24 +5808,24 @@ static int do_process_vm_read_writev(int pid,
 	
 	/* Find remote process 
 	 * XXX: are we going to have a hash table/function for this?? */
-	rproc = NULL;
+	rthread = NULL;
 	for (i = 0; i < num_processors; i++) {
 		struct cpu_local_var *v = get_cpu_local_var(i);
 		
 		ihk_mc_spinlock_lock_noirq(&(v->runq_lock));
 		list_for_each_entry(p, &(v->runq), sched_list) {
-			if (p->ftn->pid == pid) {
-				rproc = p;
+			if (p->proc->pid == pid) {
+				rthread = p;
 				break;
 			}
 		}
 		ihk_mc_spinlock_unlock_noirq(&(v->runq_lock));
 
-		if (rproc)
+		if (rthread)
 			break;
 	}
 
-	if (!rproc) {
+	if (!rthread) {
 		ret = -ESRCH;
 		goto out;
 	}
@@ -5997,9 +5844,9 @@ static int do_process_vm_read_writev(int pid,
 		if (pli != li) {
 			struct vm_range *range;
 			
-			ihk_mc_spinlock_lock_noirq(&lproc->vm->memory_range_lock);
+			ihk_mc_spinlock_lock_noirq(&lthread->vm->memory_range_lock);
 			
-			range = lookup_process_memory_range(lproc->vm, 
+			range = lookup_process_memory_range(lthread->vm, 
 					(uintptr_t)local_iov[li].iov_base, 
 					(uintptr_t)(local_iov[li].iov_base + local_iov[li].iov_len));
 			
@@ -6016,7 +5863,7 @@ static int do_process_vm_read_writev(int pid,
 
 			ret = 0;
 pli_out:
-			ihk_mc_spinlock_unlock_noirq(&lproc->vm->memory_range_lock);
+			ihk_mc_spinlock_unlock_noirq(&lthread->vm->memory_range_lock);
 
 			if (ret != 0) {
 				goto out;
@@ -6035,7 +5882,7 @@ pli_out:
 					addr < (remote_iov[ri].iov_base + remote_iov[ri].iov_len); 
 					addr += PAGE_SIZE) {
 
-				ret = page_fault_process_vm(rproc->vm, addr, reason);
+				ret = page_fault_process_vm(rthread->vm, addr, reason);
 				if (ret) {
 					ret = -EINVAL;
 					goto out;
@@ -6059,7 +5906,7 @@ pli_out:
 		}
 
 		/* TODO: remember page and do this only if necessary */
-		ret = ihk_mc_pt_virt_to_phys(rproc->vm->page_table, 
+		ret = ihk_mc_pt_virt_to_phys(rthread->vm->address_space->page_table, 
 				remote_iov[ri].iov_base + roff, &rphys);
 
 		if (ret) {
@@ -6219,9 +6066,15 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 {
 	long l;
 
+	if(cpu_local_var(current)->proc->pstatus == PS_EXITED &&
+	   (num != __NR_exit && num != __NR_exit_group)){
+		check_signal(-EINVAL, NULL, 0);
+		return -EINVAL;
+	}
+
 	cpu_enable_interrupt();
 
-	if (cpu_local_var(current)->ftn->ptrace) {
+	if (cpu_local_var(current)->proc->ptrace) {
 		ptrace_syscall_enter(cpu_local_var(current));
 	}
 
@@ -6270,42 +6123,9 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	check_signal(l, NULL, num);
 	check_need_resched();
 
-	if (cpu_local_var(current)->ftn->ptrace) {
+	if (cpu_local_var(current)->proc->ptrace) {
 		ptrace_syscall_exit(cpu_local_var(current));
 	}
 
 	return l;
 }
-
-#if 0
-void __host_update_process_range(struct process *process, 
-                                 struct vm_range *range)
-{
-	struct syscall_post *post;
-	int idx;
-
-	memcpy_async_wait(&cpu_local_var(scp).post_fin);
-
-	post = &cpu_local_var(scp).post_buf;
-
-	post->v[0] = 1;
-	post->v[1] = range->start;
-	post->v[2] = range->end;
-	post->v[3] = range->phys;
-
-	cpu_disable_interrupt();
-	if (cpu_local_var(scp).post_idx >= 
-	    PAGE_SIZE / sizeof(struct syscall_post)) {
-		/* XXX: Wait until it is consumed */
-	} else {
-		idx = ++(cpu_local_var(scp).post_idx);
-
-		cpu_local_var(scp).post_fin = 0;
-		memcpy_async(cpu_local_var(scp).post_pa + 
-		             idx * sizeof(*post),
-		             virt_to_phys(post), sizeof(*post), 0,
-		             &cpu_local_var(scp).post_fin);
-	}
-	cpu_enable_interrupt();
-}
-#endif

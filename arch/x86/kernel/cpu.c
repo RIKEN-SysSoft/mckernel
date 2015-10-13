@@ -1262,33 +1262,33 @@ int ihk_mc_interrupt_cpu(int cpu, int vector)
   @ ensures proc->fp_regs == NULL;
   @*/
 void
-release_fp_regs(struct process *proc)
+release_fp_regs(struct thread *thread)
 {
 	int	pages;
 
-	if (proc && !proc->fp_regs)
+	if (thread && !thread->fp_regs)
 		return;
 
 	pages = (sizeof(fp_regs_struct) + 4095) >> 12;
-	ihk_mc_free_pages(proc->fp_regs, pages);
-	proc->fp_regs = NULL;
+	ihk_mc_free_pages(thread->fp_regs, pages);
+	thread->fp_regs = NULL;
 }
 
 void
-save_fp_regs(struct process *proc)
+save_fp_regs(struct thread *thread)
 {
 	int	pages;
 
-	if (!proc->fp_regs) {
+	if (!thread->fp_regs) {
 		pages = (sizeof(fp_regs_struct) + 4095) >> 12;
-		proc->fp_regs = ihk_mc_alloc_pages(pages, IHK_MC_AP_NOWAIT);
+		thread->fp_regs = ihk_mc_alloc_pages(pages, IHK_MC_AP_NOWAIT);
 
-		if (!proc->fp_regs) {
+		if (!thread->fp_regs) {
 			kprintf("error: allocating fp_regs pages\n");
 			return;
 		}
 
-		memset(proc->fp_regs, 0, sizeof(fp_regs_struct));
+		memset(thread->fp_regs, 0, sizeof(fp_regs_struct));
 	}
 
 	if (xsave_available) {
@@ -1298,17 +1298,17 @@ save_fp_regs(struct process *proc)
 		low = 0x7;
 		high = 0;
 
-		asm volatile("xsave %0" : : "m" (*proc->fp_regs), "a" (low), "d" (high) 
+		asm volatile("xsave %0" : : "m" (*thread->fp_regs), "a" (low), "d" (high) 
 			: "memory");
 
-		dkprintf("fp_regs for TID %d saved\n", proc->ftn->tid);
+		dkprintf("fp_regs for TID %d saved\n", thread->tid);
 	}
 }
 
 void
-restore_fp_regs(struct process *proc)
+restore_fp_regs(struct thread *thread)
 {
-	if (!proc->fp_regs)
+	if (!thread->fp_regs)
 		return;
 
 	if (xsave_available) {
@@ -1318,29 +1318,29 @@ restore_fp_regs(struct process *proc)
 		low = 0x7;
 		high = 0;
 
-		asm volatile("xrstor %0" : : "m" (*proc->fp_regs), 
+		asm volatile("xrstor %0" : : "m" (*thread->fp_regs), 
 				"a" (low), "d" (high));
 		
-		dkprintf("fp_regs for TID %d restored\n", proc->ftn->tid);
+		dkprintf("fp_regs for TID %d restored\n", thread->tid);
 	}
 
 	// XXX: why release??
-	//release_fp_regs(proc);
+	//release_fp_regs(thread);
 }
 
-ihk_mc_user_context_t *lookup_user_context(struct process *proc)
+ihk_mc_user_context_t *lookup_user_context(struct thread *thread)
 {
-	ihk_mc_user_context_t *uctx = proc->uctx;
+	ihk_mc_user_context_t *uctx = thread->uctx;
 
-	if ((!(proc->ftn->status & (PS_INTERRUPTIBLE | PS_UNINTERRUPTIBLE
+	if ((!(thread->tstatus & (PS_INTERRUPTIBLE | PS_UNINTERRUPTIBLE
 						| PS_STOPPED | PS_TRACED))
-				&& (proc != cpu_local_var(current)))
+				&& (thread != cpu_local_var(current)))
 			|| !uctx->is_gpr_valid) {
 		return NULL;
 	}
 
 	if (!uctx->is_sr_valid) {
-		uctx->sr.fs_base = proc->thread.tlsblock_base;
+		uctx->sr.fs_base = thread->thread.tlsblock_base;
 		uctx->sr.gs_base = 0;
 		uctx->sr.ds = 0;
 		uctx->sr.es = 0;

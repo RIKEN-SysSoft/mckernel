@@ -19,7 +19,7 @@ int
 default_wake_function(waitq_entry_t *entry, unsigned mode,
 					  int flags, void *key)
 {
-	return sched_wakeup_process(entry->private, PS_NORMAL);
+	return sched_wakeup_thread(entry->private, PS_NORMAL);
 }
 
 void
@@ -30,7 +30,7 @@ waitq_init(waitq_t *waitq)
 }
 
 void
-waitq_init_entry(waitq_entry_t *entry, struct process *proc)
+waitq_init_entry(waitq_entry_t *entry, struct thread *proc)
 {
 	entry->private = proc;
 	entry->func = default_wake_function;
@@ -89,14 +89,14 @@ waitq_prepare_to_wait(waitq_t *waitq, waitq_entry_t *entry, int state)
 	ihk_mc_spinlock_lock_noirq(&waitq->lock);
 	if (list_empty(&entry->link))
 		list_add(&entry->link, &waitq->waitq);
-	cpu_local_var(current)->ftn->status = state;
+	cpu_local_var(current)->tstatus = state;
 	ihk_mc_spinlock_unlock_noirq(&waitq->lock);
 }
 
 void
 waitq_finish_wait(waitq_t *waitq, waitq_entry_t *entry)
 {
-	cpu_local_var(current)->ftn->status = PS_RUNNING;
+	cpu_local_var(current)->tstatus = PS_RUNNING;
 	waitq_remove_entry(waitq, entry);
 }
 

@@ -257,14 +257,14 @@ static void operate_proc_procfs_file(int pid, char *fname, int msg, int mode, in
 void process_procfs_request(unsigned long rarg)
 {
 	unsigned long parg, pbuf;
-        struct process *proc = cpu_local_var(current);
+        struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
 	struct procfs_read *r;
 	struct ikc_scd_packet packet;
 	int rosnum, ret, pid, tid, ans = -EIO, eof = 0;
 	char *buf, *p;
 	struct ihk_ikc_channel_desc *syscall_channel;
-	ihk_spinlock_t *savelock;
-	unsigned long irqstate;
+	struct mcs_rwlock_node_irqsave lock;
 	unsigned long offset;
 	int count;
 	int npages;
@@ -336,30 +336,31 @@ void process_procfs_request(unsigned long rarg)
 	 */
 	ret = sscanf(p, "%d/", &pid);
 	if (ret == 1) {
-		if (pid != cpu_local_var(current)->ftn->pid) {
+		if (pid != cpu_local_var(current)->proc->pid) {
 			/* We are not located in the proper cpu for some reason. */
 
 			dprintf("mismatched pid. We are %d, but requested pid is %d.\n",
 				pid, cpu_local_var(current)->pid);
 			tid = pid;	/* main thread */
-			proc = findthread_and_lock(pid, tid, &savelock, &irqstate);
-			if (!proc) {
+			thread = find_thread(pid, tid, &lock);
+			if (!thread) {
 				dprintf("We cannot find the proper cpu for requested pid.\n");
 				goto end;
 			}
-			else if (proc->cpu_id != ihk_mc_get_processor_id()) {
+			else if (thread->cpu_id != ihk_mc_get_processor_id()) {
 				/* The target process has gone by migration. */
-				r->newcpu = proc->cpu_id;
-				dprintf("expected cpu id is %d.\n", proc->cpu_id);
-				process_unlock(savelock, irqstate);
+				r->newcpu = thread->cpu_id;
+				dprintf("expected cpu id is %d.\n", thread->cpu_id);
+				thread_unlock(thread, &lock);
 				ans = 0;
 				goto end;
 			}
 			else {
-				process_unlock(savelock, irqstate);
+				thread_unlock(thread, &lock);
 				/* 'proc' is not 'current' */
 				is_current = 0;
 			}
+			proc = thread->proc;
 		}
 	}
 	else if (!strcmp(p, "stat")) {	/* "/proc/stat" */
@@ -431,7 +432,7 @@ void process_procfs_request(unsigned long rarg)
 						ans = -EIO;
 					goto end;
 				}
-				ret = ihk_mc_pt_virt_to_phys(vm->page_table,
+				ret = ihk_mc_pt_virt_to_phys(vm->address_space->page_table,
 				                (void *)offset, &pa);
 				if(ret){
 					if(ans == 0)
@@ -562,8 +563,8 @@ void process_procfs_request(unsigned long rarg)
 		ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 
 		while (start < end) {
-			*_buf = ihk_mc_pt_virt_to_pagemap(proc->vm->page_table, start);
-			dprintf("PID: %d, /proc/pagemap: 0x%lx -> %lx\n",  proc->ftn->pid, 
+			*_buf = ihk_mc_pt_virt_to_pagemap(proc->vm->address_space->page_table, start);
+			dprintf("PID: %d, /proc/pagemap: 0x%lx -> %lx\n",  proc->proc->pid, 
 					start, *_buf);
 			start += PAGE_SIZE;
 			++_buf;
@@ -586,7 +587,6 @@ void process_procfs_request(unsigned long rarg)
 		unsigned long lockedsize = 0;
 		char tmp[1024];
 		int len;
-		struct fork_tree_node *ftn = proc->ftn;
 
 		ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
 		list_for_each_entry(range, &proc->vm->vm_range_list, list) {
@@ -599,8 +599,8 @@ void process_procfs_request(unsigned long rarg)
 		        "Uid:\t%d\t%d\t%d\t%d\n"
 		        "Gid:\t%d\t%d\t%d\t%d\n"
 		        "VmLck:\t%9lu kB\n",
-		        ftn->ruid, ftn->euid, ftn->suid, ftn->fsuid,
-		        ftn->rgid, ftn->egid, ftn->sgid, ftn->fsgid,
+		        proc->ruid, proc->euid, proc->suid, proc->fsuid,
+		        proc->rgid, proc->egid, proc->sgid, proc->fsgid,
 		        (lockedsize + 1023) >> 10);
 		len = strlen(tmp);
 		if (r->offset < len) {
@@ -712,7 +712,7 @@ void process_procfs_request(unsigned long rarg)
 			char tmp[1024];
 			int len;
 
-			if ((proc = findthread_and_lock(pid, tid, &savelock, &irqstate))){
+			if ((thread = find_thread(pid, tid, &lock))){
 				dprintf("thread found! pid=%d tid=%d\n", pid, tid);
 				/*
 				 * pid (comm) state ppid
@@ -748,10 +748,10 @@ void process_procfs_request(unsigned long rarg)
 				    0L, 0L, 0L, 0L,	      // rsslim...
 				    0L, 0L, 0L, 0L,	      // kstkesp...
 				    0L, 0L, 0L, 0L,	      // sigignore...
-				    0L, 0, proc->cpu_id, 0,   // cnswap...
+				    0L, 0, thread->cpu_id, 0, // cnswap...
 				    0, 0LL, 0L, 0L	      // policy...
 				);
-				process_unlock(savelock, irqstate);
+				thread_unlock(thread, &lock);
 				dprintf("tmp=%s\n", tmp);
 
 				len = strlen(tmp);

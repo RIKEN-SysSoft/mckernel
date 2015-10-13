@@ -174,7 +174,7 @@ static struct ihk_mc_interrupt_handler query_free_mem_handler = {
 
 void set_signal(int sig, void *regs, struct siginfo *info);
 void check_signal(unsigned long, void *, int);
-int gencore(struct process *, void *, struct coretable **, int *);
+int gencore(struct thread *, void *, struct coretable **, int *);
 void freecore(struct coretable **);
 
 /**
@@ -184,14 +184,14 @@ void freecore(struct coretable **);
  * \param regs A pointer to a x86_regs structure.
  */
 
-void coredump(struct process *proc, void *regs)
+void coredump(struct thread *thread, void *regs)
 {
 	struct syscall_request request IHK_DMA_ALIGN;
 	int ret;
 	struct coretable *coretable;
 	int chunks;
 
-	ret = gencore(proc, regs, &coretable, &chunks);
+	ret = gencore(thread, regs, &coretable, &chunks);
 	if (ret != 0) {
 		dkprintf("could not generate a core file image\n");
 		return;
@@ -200,7 +200,7 @@ void coredump(struct process *proc, void *regs)
 	request.args[0] = chunks;
 	request.args[1] = virt_to_phys(coretable);
 	/* no data for now */
-	ret = do_syscall(&request, proc->cpu_id, proc->ftn->pid);
+	ret = do_syscall(&request, thread->cpu_id, thread->proc->pid);
 	if (ret == 0) {
 		kprintf("dumped core.\n");
 	} else {
@@ -209,10 +209,10 @@ void coredump(struct process *proc, void *regs)
 	freecore(&coretable);
 }
 
-static void unhandled_page_fault(struct process *proc, void *fault_addr, void *regs)
+static void unhandled_page_fault(struct thread *thread, void *fault_addr, void *regs)
 {
 	const uintptr_t address = (uintptr_t)fault_addr;
-	struct process_vm *vm = proc->vm;
+	struct process_vm *vm = thread->vm;
 	struct vm_range *range;
 	char found;
 	unsigned long irqflags;
@@ -235,7 +235,7 @@ static void unhandled_page_fault(struct process *proc, void *fault_addr, void *r
 			found = 1;
 			dkprintf("address is in range, flag: 0x%X! \n",
 					range->flag);
-			ihk_mc_pt_print_pte(vm->page_table, (void*)address);
+			ihk_mc_pt_print_pte(vm->address_space->page_table, (void*)address);
 			break;
 		}
 	}
@@ -366,7 +366,7 @@ void tlb_flush_handler(int vector)
 
 static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 {
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 	int error;
 
 	dkprintf("[%d]page_fault_handler(%p,%lx,%p)\n",
@@ -376,29 +376,24 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 
 	cpu_enable_interrupt();
 
-	error = page_fault_process_vm(proc->vm, fault_addr, reason);
+	error = page_fault_process_vm(thread->vm, fault_addr, reason);
 	if (error) {
 		struct siginfo info;
 
 		if (error == -ECANCELED) {
 			dkprintf("process is exiting, terminate.\n");
 
-			ihk_mc_spinlock_lock_noirq(&proc->ftn->lock);
-			proc->ftn->status = PS_ZOMBIE;
-			ihk_mc_spinlock_unlock_noirq(&proc->ftn->lock);	
-			release_fork_tree_node(proc->ftn->parent);
-			release_fork_tree_node(proc->ftn);
-			release_process(proc);
-
 			preempt_enable();
-			schedule();
+			terminate(0, SIGSEGV);
+			// no return
 		}
 
 		kprintf("[%d]page_fault_handler(%p,%lx,%p):"
 				"fault vm failed. %d, TID: %d\n",
 				ihk_mc_get_processor_id(), fault_addr,
-				reason, regs, error, proc->ftn->tid);
-		unhandled_page_fault(proc, fault_addr, regs);
+				reason, regs, error, thread->tid);
+		unhandled_page_fault(thread, fault_addr, regs);
+		preempt_enable();
 		memset(&info, '\0', sizeof info);
 		if (error == -ERANGE) {
 			info.si_signo = SIGBUS;
@@ -407,7 +402,7 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 			set_signal(SIGBUS, regs, &info);
 		}
 		else {
-			struct process_vm *vm = proc->vm;
+			struct process_vm *vm = thread->vm;
 			struct vm_range *range;
 
 			info.si_signo = SIGSEGV;
@@ -421,7 +416,6 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 			info._sifields._sigfault.si_addr = fault_addr;
 			set_signal(SIGSEGV, regs, &info);
 		}
-		preempt_enable();
 		check_signal(0, regs, 0);
 		goto out;
 	}
@@ -880,12 +874,10 @@ int memcheckall()
 	struct alloc *ap;
 	int r = 0;
 
-kprintf("memcheckall\n");
 	for(i = 0; i < HASHNUM; i++)
 		for(ap = allochash[i]; ap; ap = ap->next)
 			if(ap->p)
 				r |= _memcheck(ap->p + 1, "memcheck", NULL, 0, 2);
-kprintf("done\n");
 	return r;
 }
 

@@ -78,11 +78,11 @@ int get_prstatus_size(void)
  * \brief Fill a prstatus structure.
  *
  * \param head A pointer to a note structure.
- * \param proc A pointer to the current process structure.
+ * \param thread A pointer to the current thread structure.
  * \param regs0 A pointer to a x86_regs structure.
  */
 
-void fill_prstatus(struct note *head, struct process *proc, void *regs0)
+void fill_prstatus(struct note *head, struct thread *thread, void *regs0)
 {
 	void *name;
 	struct elf_prstatus64 *prstatus; 
@@ -160,11 +160,11 @@ int get_prpsinfo_size(void)
  * \brief Fill a prpsinfo structure.
  *
  * \param head A pointer to a note structure.
- * \param proc A pointer to the current process structure.
+ * \param thread A pointer to the current thread structure.
  * \param regs A pointer to a x86_regs structure.
  */
 
-void fill_prpsinfo(struct note *head, struct process *proc, void *regs)
+void fill_prpsinfo(struct note *head, struct thread *thread, void *regs)
 {
 	void *name;
 	struct elf_prpsinfo64 *prpsinfo;
@@ -176,8 +176,8 @@ void fill_prpsinfo(struct note *head, struct process *proc, void *regs)
 	memcpy(name, "CORE", sizeof("CORE"));
 	prpsinfo = (struct elf_prpsinfo64 *)(name + align32(sizeof("CORE")));
 
-	prpsinfo->pr_state = proc->ftn->status;
-	prpsinfo->pr_pid = proc->ftn->pid;
+	prpsinfo->pr_state = thread->tstatus;
+	prpsinfo->pr_pid = thread->proc->pid;
 
 /*
   We leave most of the fields unfilled.
@@ -210,11 +210,11 @@ int get_auxv_size(void)
  * \brief Fill an AUXV structure.
  *
  * \param head A pointer to a note structure.
- * \param proc A pointer to the current process structure.
+ * \param thread A pointer to the current thread structure.
  * \param regs A pointer to a x86_regs structure.
  */
 
-void fill_auxv(struct note *head, struct process *proc, void *regs)
+void fill_auxv(struct note *head, struct thread *thread, void *regs)
 {
 	void *name;
 	void *auxv;
@@ -225,7 +225,7 @@ void fill_auxv(struct note *head, struct process *proc, void *regs)
 	name =  (void *) (head + 1);
 	memcpy(name, "CORE", sizeof("CORE"));
 	auxv = name + align32(sizeof("CORE"));
-	memcpy(auxv, proc->saved_auxv, sizeof(unsigned long) * AUXV_LEN);
+	memcpy(auxv, thread->proc->saved_auxv, sizeof(unsigned long) * AUXV_LEN);
 } 
 
 /**
@@ -243,23 +243,23 @@ int get_note_size(void)
  * \brief Fill the NOTE segment.
  *
  * \param head A pointer to a note structure.
- * \param proc A pointer to the current process structure.
+ * \param thread A pointer to the current thread structure.
  * \param regs A pointer to a x86_regs structure.
  */
 
-void fill_note(void *note, struct process *proc, void *regs)
+void fill_note(void *note, struct thread *thread, void *regs)
 {
-	fill_prstatus(note, proc, regs);
+	fill_prstatus(note, thread, regs);
 	note += get_prstatus_size();
-	fill_prpsinfo(note, proc, regs);
+	fill_prpsinfo(note, thread, regs);
 	note += get_prpsinfo_size();
-	fill_auxv(note, proc, regs);
+	fill_auxv(note, thread, regs);
 }
 
 /**
  * \brief Generate an image of the core file.
  *
- * \param proc A pointer to the current process structure.
+ * \param thread A pointer to the current thread structure.
  * \param regs A pointer to a x86_regs structure.
  * \param coretable(out) An array of core chunks.
  * \param chunks(out) Number of the entires of coretable.
@@ -271,7 +271,7 @@ void fill_note(void *note, struct process *proc, void *regs)
  * should be zero.
  */
 
-int gencore(struct process *proc, void *regs, 
+int gencore(struct thread *thread, void *regs, 
 	    struct coretable **coretable, int *chunks)
 {
 	struct coretable *ct = NULL;
@@ -279,7 +279,7 @@ int gencore(struct process *proc, void *regs,
 	Elf64_Phdr *ph = NULL;
 	void *note = NULL;
 	struct vm_range *range;
-	struct process_vm *vm = proc->vm;
+	struct process_vm *vm = thread->vm;
 	int segs = 1;	/* the first one is for NOTE */
 	int notesize, phsize, alignednotesize;
 	unsigned int offset = 0;
@@ -306,7 +306,7 @@ int gencore(struct process *proc, void *regs,
 			unsigned long p, phys;
 			int prevzero = 0;
 			for (p = range->start; p < range->end; p += PAGE_SIZE) {
-				if (ihk_mc_pt_virt_to_phys(proc->vm->page_table, 
+				if (ihk_mc_pt_virt_to_phys(thread->vm->address_space->page_table, 
 							    (void *)p, &phys) != 0) {
 					prevzero = 1;
 				} else {
@@ -326,7 +326,7 @@ int gencore(struct process *proc, void *regs,
 	dkprintf("we have %d segs and %d chunks.\n\n", segs, *chunks);
 
 	{
-		struct vm_regions region = proc->vm->region;
+		struct vm_regions region = thread->vm->region;
 
 		dkprintf("text:  %lx-%lx\n", region.text_start, region.text_end);
 		dkprintf("data:  %lx-%lx\n", region.data_start, region.data_end);
@@ -364,7 +364,7 @@ int gencore(struct process *proc, void *regs,
 		goto fail;
 	}
 	memset(note, 0, alignednotesize);
-	fill_note(note, proc, regs);
+	fill_note(note, thread, regs);
 
 	/* prgram header for NOTE segment is exceptional */
 	ph[0].p_type = PT_NOTE;
@@ -434,7 +434,7 @@ int gencore(struct process *proc, void *regs,
 
 			for (start = p = range->start; 
 			     p < range->end; p += PAGE_SIZE) {
-				if (ihk_mc_pt_virt_to_phys(proc->vm->page_table, 
+				if (ihk_mc_pt_virt_to_phys(thread->vm->address_space->page_table, 
 							    (void *)p, &phys) != 0) {
 					if (prevzero == 0) {
 						/* We begin a new chunk */
@@ -472,9 +472,9 @@ int gencore(struct process *proc, void *regs,
 				i++;
 			}		
 		} else {
-			if ((proc->vm->region.user_start <= range->start) &&
-			    (range->end <= proc->vm->region.user_end)) {
-				if (ihk_mc_pt_virt_to_phys(proc->vm->page_table, 
+			if ((thread->vm->region.user_start <= range->start) &&
+			    (range->end <= thread->vm->region.user_end)) {
+				if (ihk_mc_pt_virt_to_phys(thread->vm->address_space->page_table, 
 							   (void *)range->start, &phys) != 0) {
 					dkprintf("could not convert user virtual address %lx"
 						 "to physical address", range->start);

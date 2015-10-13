@@ -41,13 +41,14 @@ struct cpu_local_var {
 	struct malloc_header free_list;
 	ihk_spinlock_t free_list_lock;
 
-	struct process idle;
-	struct fork_tree_node idle_ftn;
+	struct thread idle;
+	struct process idle_proc;
 	struct process_vm idle_vm;
+	struct address_space idle_asp;
 
 	ihk_spinlock_t runq_lock;
 	unsigned long runq_irqstate;
-	struct process *current;
+	struct thread *current;
 	struct list_head runq;
 	size_t runq_len;
 
@@ -58,6 +59,7 @@ struct cpu_local_var {
 	struct ihk_ikc_channel_desc *syscall_channel2;
 	struct syscall_params scp2;
 	struct ikc_scd_init_param iip2;
+	struct resource_set *resource_set;
 	
 	int status;
 	int fs;

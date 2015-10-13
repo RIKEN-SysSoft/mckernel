@@ -285,4 +285,5 @@ struct procfs_file {
 	char fname[PROCFS_NAME_MAX];	/* procfs filename (request) */
 };
 
+extern void terminate(int, int);
 #endif

@@ -57,14 +57,14 @@ uint64_t schedule_timeout(uint64_t timeout)
 {	
 	struct waitq_entry my_wait;
 	struct timer my_timer;
-	struct process *proc = cpu_local_var(current);
+	struct thread *thread = cpu_local_var(current);
 	int irqstate;
 	int spin_sleep;
 
-	irqstate = ihk_mc_spinlock_lock(&proc->spin_sleep_lock);
+	irqstate = ihk_mc_spinlock_lock(&thread->spin_sleep_lock);
 	dkprintf("schedule_timeout() spin sleep timeout: %lu\n", timeout);
-	spin_sleep = ++proc->spin_sleep;
-	ihk_mc_spinlock_unlock(&proc->spin_sleep_lock, irqstate);
+	spin_sleep = ++thread->spin_sleep;
+	ihk_mc_spinlock_unlock(&thread->spin_sleep_lock, irqstate);
 
 	/* Spin sleep.. */
 	for (;;) {
@@ -72,10 +72,10 @@ uint64_t schedule_timeout(uint64_t timeout)
 		uint64_t t_e;
 		int spin_over = 0;
 		
-		irqstate = ihk_mc_spinlock_lock(&proc->spin_sleep_lock);
+		irqstate = ihk_mc_spinlock_lock(&thread->spin_sleep_lock);
 		
 		/* Woken up by someone? */
-		if (proc->spin_sleep < 1) {
+		if (thread->spin_sleep < 1) {
 			t_e = rdtsc();
 
 			spin_over = 1;
@@ -87,7 +87,7 @@ uint64_t schedule_timeout(uint64_t timeout)
 			}
 		}
 		
-		ihk_mc_spinlock_unlock(&proc->spin_sleep_lock, irqstate);
+		ihk_mc_spinlock_unlock(&thread->spin_sleep_lock, irqstate);
 
 		if (!spin_over) {
 			t_s = rdtsc();
@@ -97,12 +97,12 @@ uint64_t schedule_timeout(uint64_t timeout)
 			need_schedule = v->runq_len > 1 ? 1 : 0;
 			ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 
-			/* Give a chance to another process (if any) in case the core is
+			/* Give a chance to another thread (if any) in case the core is
 			 * oversubscribed, but make sure we will be re-scheduled */
 			if (need_schedule) {
-				xchg4(&(cpu_local_var(current)->ftn->status), PS_RUNNING);
+				xchg4(&(cpu_local_var(current)->tstatus), PS_RUNNING);
 				schedule();
-				xchg4(&(cpu_local_var(current)->ftn->status), 
+				xchg4(&(cpu_local_var(current)->tstatus), 
 						PS_INTERRUPTIBLE);
 			}
 			else {
@@ -125,7 +125,7 @@ uint64_t schedule_timeout(uint64_t timeout)
 			dkprintf("schedule_timeout() spin woken up, timeout: %lu\n", 
 					timeout);
 			
-			/* Give a chance to another process (if any) in case we timed out, 
+			/* Give a chance to another thread (if any) in case we timed out, 
 			 * but make sure we will be re-scheduled */
 			if (timeout == 0) {
 				int need_schedule;
@@ -137,18 +137,18 @@ uint64_t schedule_timeout(uint64_t timeout)
 				ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 
 				if (need_schedule) {
-					xchg4(&(cpu_local_var(current)->ftn->status), PS_RUNNING);
+					xchg4(&(cpu_local_var(current)->tstatus), PS_RUNNING);
 					schedule();
-					xchg4(&(cpu_local_var(current)->ftn->status), 
+					xchg4(&(cpu_local_var(current)->tstatus), 
 							PS_INTERRUPTIBLE);
 				}
 			}
 			
-			irqstate = ihk_mc_spinlock_lock(&proc->spin_sleep_lock);
-			if (spin_sleep == proc->spin_sleep) {
-				--proc->spin_sleep;
+			irqstate = ihk_mc_spinlock_lock(&thread->spin_sleep_lock);
+			if (spin_sleep == thread->spin_sleep) {
+				--thread->spin_sleep;
 			}
-			ihk_mc_spinlock_unlock(&proc->spin_sleep_lock, irqstate);
+			ihk_mc_spinlock_unlock(&thread->spin_sleep_lock, irqstate);
 
 			return timeout;
 		}
@@ -156,7 +156,7 @@ uint64_t schedule_timeout(uint64_t timeout)
 
 	/* Init waitq and wait entry for this timer */
 	my_timer.timeout = (timeout < LOOP_TIMEOUT) ? LOOP_TIMEOUT : timeout;
-	my_timer.proc = cpu_local_var(current);
+	my_timer.thread = cpu_local_var(current);
 	waitq_init(&my_timer.processes);
 	waitq_init_entry(&my_wait, cpu_local_var(current));
 
@@ -213,7 +213,7 @@ void wake_timers_loop(void)
 				list_del(&timer->list);
 
 				dkprintf("timers timeout occurred, waking up pid: %d\n", 
-						timer->proc->ftn->pid);
+						timer->thread->proc->pid);
 
 				waitq_wakeup(&timer->processes);
 			}

@@ -39,11 +39,11 @@
 #define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
 #endif
 
-void check_mapping_for_proc(struct process *proc, unsigned long addr)
+void check_mapping_for_proc(struct thread *thread, unsigned long addr)
 {
 	unsigned long __phys;
 
-	if (ihk_mc_pt_virt_to_phys(proc->vm->page_table, (void*)addr, &__phys)) {
+	if (ihk_mc_pt_virt_to_phys(thread->vm->address_space->page_table, (void*)addr, &__phys)) {
 		kprintf("check_map: no mapping for 0x%lX\n", addr);
 	}
 	else {
@@ -60,7 +60,7 @@ void check_mapping_for_proc(struct process *proc, unsigned long addr)
  * NOTE: if args, args_len, envs, envs_len are zero, 
  * the function constructs them based on the descriptor 
  */
-int prepare_process_ranges_args_envs(struct process *proc, 
+int prepare_process_ranges_args_envs(struct thread *thread, 
 		struct program_load_desc *pn,
 		struct program_load_desc *p,
 		enum ihk_mc_pt_attribute attr,
@@ -81,6 +81,9 @@ int prepare_process_ranges_args_envs(struct process *proc,
 	uintptr_t interp_obase = -1;
 	uintptr_t interp_nbase = -1;
 	size_t map_size;
+	struct process *proc = thread->proc;
+	struct process_vm *vm = proc->vm;
+	struct address_space *as = vm->address_space;
 	
 	n = p->num_sections;
 
@@ -89,7 +92,7 @@ int prepare_process_ranges_args_envs(struct process *proc,
 		if (pn->sections[i].interp && (interp_nbase == (uintptr_t)-1)) {
 			interp_obase = pn->sections[i].vaddr;
 			interp_obase -= (interp_obase % pn->interp_align);
-			interp_nbase = proc->vm->region.map_start;
+			interp_nbase = vm->region.map_start;
 			interp_nbase = (interp_nbase + pn->interp_align - 1)
 				& ~(pn->interp_align - 1);
 		}
@@ -114,7 +117,7 @@ int prepare_process_ranges_args_envs(struct process *proc,
 		} 
 		
 		up = virt_to_phys(up_v);
-		if (add_process_memory_range(proc, s, e, up, flags, NULL, 0) != 0) {
+		if (add_process_memory_range(vm, s, e, up, flags, NULL, 0) != 0) {
 			ihk_mc_free_pages(up_v, range_npages);
 			kprintf("ERROR: adding memory range for ELF section %i\n", i);
 			goto err;
@@ -123,14 +126,14 @@ int prepare_process_ranges_args_envs(struct process *proc,
 		{
 			void *_virt = (void *)s;
 			unsigned long _phys;
-			if (ihk_mc_pt_virt_to_phys(proc->vm->page_table, 
+			if (ihk_mc_pt_virt_to_phys(as->page_table, 
 						_virt, &_phys)) {
 				kprintf("ERROR: no mapping for 0x%lX\n", _virt);
 			}
 			for (_virt = (void *)s + PAGE_SIZE; 
 					(unsigned long)_virt < e; _virt += PAGE_SIZE) {
 				unsigned long __phys;
-				if (ihk_mc_pt_virt_to_phys(proc->vm->page_table, 
+				if (ihk_mc_pt_virt_to_phys(as->page_table, 
 							_virt, &__phys)) {
 					kprintf("ERROR: no mapping for 0x%lX\n", _virt);
 					panic("mapping");
@@ -149,23 +152,23 @@ int prepare_process_ranges_args_envs(struct process *proc,
 
 		/* TODO: Maybe we need flag */
 		if (pn->sections[i].interp) {
-			proc->vm->region.map_end = e;
+			vm->region.map_end = e;
 		}
 		else if (i == 0) {
-			proc->vm->region.text_start = s;
-			proc->vm->region.text_end = e;
+			vm->region.text_start = s;
+			vm->region.text_end = e;
 		} 
 		else if (i == 1) {
-			proc->vm->region.data_start = s;
-			proc->vm->region.data_end = e;
+			vm->region.data_start = s;
+			vm->region.data_end = e;
 		} 
 		else {
-			proc->vm->region.data_start =
-				(s < proc->vm->region.data_start ? 
-				 s : proc->vm->region.data_start);
-			proc->vm->region.data_end = 
-				(e > proc->vm->region.data_end ? 
-				 e : proc->vm->region.data_end);
+			vm->region.data_start =
+				(s < vm->region.data_start ? 
+				 s : vm->region.data_start);
+			vm->region.data_end = 
+				(e > vm->region.data_end ? 
+				 e : vm->region.data_end);
 		}
 	}
 
@@ -173,17 +176,17 @@ int prepare_process_ranges_args_envs(struct process *proc,
 		pn->entry -= interp_obase;
 		pn->entry += interp_nbase;
 		p->entry = pn->entry;
-		ihk_mc_modify_user_context(proc->uctx, IHK_UCR_PROGRAM_COUNTER, 
-				pn->entry);
+		ihk_mc_modify_user_context(thread->uctx,
+		                           IHK_UCR_PROGRAM_COUNTER, 
+		                           pn->entry);
 	}
 
-	proc->vm->region.brk_start = proc->vm->region.brk_end =
-		proc->vm->region.data_end;
+	vm->region.brk_start = vm->region.brk_end = vm->region.data_end;
 
 	/* Map, copy and update args and envs */
 	flags = VR_PROT_READ | VR_PROT_WRITE;
 	flags |= VRFLAG_PROT_TO_MAXPROT(flags);
-	addr = proc->vm->region.map_start - PAGE_SIZE * SCD_RESERVED_COUNT;
+	addr = vm->region.map_start - PAGE_SIZE * SCD_RESERVED_COUNT;
 	e = addr + PAGE_SIZE * ARGENV_PAGE_COUNT;
 
 	if((args_envs = ihk_mc_alloc_pages(ARGENV_PAGE_COUNT, IHK_MC_AP_NOWAIT)) == NULL){
@@ -192,7 +195,7 @@ int prepare_process_ranges_args_envs(struct process *proc,
 	}
 	args_envs_p = virt_to_phys(args_envs);
 
-	if(add_process_memory_range(proc, addr, e, args_envs_p,
+	if(add_process_memory_range(vm, addr, e, args_envs_p,
 				flags, NULL, 0) != 0){
 		ihk_mc_free_pages(args_envs, ARGENV_PAGE_COUNT);
 		kprintf("ERROR: adding memory range for args/envs\n");
@@ -305,10 +308,10 @@ int prepare_process_ranges_args_envs(struct process *proc,
 
 	dkprintf("env OK\n");
 
-	p->rprocess = (unsigned long)proc;
-	p->rpgtable = virt_to_phys(proc->vm->page_table);
+	p->rprocess = (unsigned long)thread;
+	p->rpgtable = virt_to_phys(as->page_table);
 
-	if (init_process_stack(proc, pn, argc, argv, envc, env) != 0) {
+	if (init_process_stack(thread, pn, argc, argv, envc, env) != 0) {
 		goto err;
 	}
 
@@ -327,7 +330,9 @@ static int process_msg_prepare_process(unsigned long rphys)
 	unsigned long phys, sz;
 	struct program_load_desc *p, *pn;
 	int npages, n;
+	struct thread *thread;
 	struct process *proc;
+	struct process_vm *vm;
 	enum ihk_mc_pt_attribute attr;
 
 	attr = PTATTR_NO_EXECUTE | PTATTR_WRITABLE | PTATTR_FOR_USER;
@@ -354,41 +359,43 @@ static int process_msg_prepare_process(unsigned long rphys)
 	memcpy_long(pn, p, sizeof(struct program_load_desc) 
 	            + sizeof(struct program_image_section) * n);
 
-	if((proc = create_process(p->entry)) == NULL){
+	if((thread = create_thread(p->entry)) == NULL){
 		ihk_mc_free(pn);
 		ihk_mc_unmap_virtual(p, npages, 1);
 		ihk_mc_unmap_memory(NULL, phys, sz);
 		return -ENOMEM;
 	}
-	proc->ftn->pid = pn->pid;
-	proc->ftn->pgid = pn->pgid;
+	proc = thread->proc;
+	vm = thread->vm;
 
-	proc->ftn->ruid = pn->cred[0];
-	proc->ftn->euid = pn->cred[1];
-	proc->ftn->suid = pn->cred[2];
-	proc->ftn->fsuid = pn->cred[3];
-	proc->ftn->rgid = pn->cred[4];
-	proc->ftn->egid = pn->cred[5];
-	proc->ftn->sgid = pn->cred[6];
-	proc->ftn->fsgid = pn->cred[7];
+	proc->pid = pn->pid;
+	proc->pgid = pn->pgid;
+	proc->ruid = pn->cred[0];
+	proc->euid = pn->cred[1];
+	proc->suid = pn->cred[2];
+	proc->fsuid = pn->cred[3];
+	proc->rgid = pn->cred[4];
+	proc->egid = pn->cred[5];
+	proc->sgid = pn->cred[6];
+	proc->fsgid = pn->cred[7];
 
-	proc->vm->region.user_start = pn->user_start;
-	proc->vm->region.user_end = pn->user_end;
-	proc->vm->region.map_start = (USER_END / 3) & LARGE_PAGE_MASK;
-	proc->vm->region.map_end = proc->vm->region.map_start;
+	vm->region.user_start = pn->user_start;
+	vm->region.user_end = pn->user_end;
+	vm->region.map_start = (USER_END / 3) & LARGE_PAGE_MASK;
+	vm->region.map_end = proc->vm->region.map_start;
 	memcpy(proc->rlimit, pn->rlimit, sizeof(struct rlimit) * MCK_RLIM_MAX);
 
 	/* TODO: Clear it at the proper timing */
 	cpu_local_var(scp).post_idx = 0;
 
-	if (prepare_process_ranges_args_envs(proc, pn, p, attr, 
+	if (prepare_process_ranges_args_envs(thread, pn, p, attr, 
 				NULL, 0, NULL, 0) != 0) {
 		kprintf("error: preparing process ranges, args, envs, stack\n");
 		goto err;
 	}
 
-	dkprintf("new process : %p [%d] / table : %p\n", proc, proc->ftn->pid,
-	        proc->vm->page_table);
+	dkprintf("new process : %p [%d] / table : %p\n", proc, proc->pid,
+	        vm->address_space->page_table);
 
 	ihk_mc_free(pn);
 
@@ -401,8 +408,7 @@ err:
 	ihk_mc_free(pn);
 	ihk_mc_unmap_virtual(p, npages, 1);
 	ihk_mc_unmap_memory(NULL, phys, sz);
-	free_process_memory(proc);
-	destroy_process(proc);
+	destroy_thread(thread);
 	return -ENOMEM;
 }
 
@@ -476,8 +482,8 @@ static void syscall_channel_send(struct ihk_ikc_channel_desc *c,
 	ihk_ikc_send(c, packet, 0);
 }
 
-extern unsigned long do_kill(int, int, int, struct siginfo *, int ptracecont);
-extern void settid(struct process *proc, int mode, int newcpuid, int oldcpuid);
+extern unsigned long do_kill(struct thread *, int, int, int, struct siginfo *, int ptracecont);
+extern void settid(struct thread *proc, int mode, int newcpuid, int oldcpuid);
 
 extern void process_procfs_request(unsigned long rarg);
 extern int memcheckall();
@@ -492,6 +498,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	struct ikc_scd_packet *packet = __packet;
 	struct ikc_scd_packet pckt;
 	int rc;
+	struct thread *thread;
 	struct process *proc;
 	struct mcctrl_signal {
 		int	cond;
@@ -539,13 +546,17 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 			return -1;
 		}
 		dkprintf("SCD_MSG_SCHEDULE_PROCESS: %lx\n", packet->arg);
-		proc = (struct process *)packet->arg;
+		thread = (struct thread *)packet->arg;
+		proc = thread->proc;
 
-		settid(proc, 0, cpuid, -1);
-		proc->ftn->status = PS_RUNNING;
-		runq_add_proc(proc, cpuid);
+		settid(thread, 0, cpuid, -1);
+		proc->pstatus = PS_RUNNING;
+		thread->tstatus = PS_RUNNING;
+		chain_thread(thread);
+		chain_process(proc);
+		runq_add_thread(thread, cpuid);
 					  
-		//cpu_local_var(next) = (struct process *)packet->arg;
+		//cpu_local_var(next) = (struct thread *)packet->arg;
 		return 0;
 	case SCD_MSG_SEND_SIGNAL:
 		pp = ihk_mc_map_memory(NULL, packet->arg, sizeof(struct mcctrl_signal));
@@ -559,7 +570,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		pckt.arg = packet->arg;
 		syscall_channel_send(c, &pckt);
 
-		rc = do_kill(info.pid, info.tid, info.sig, &info.info, 0);
+		rc = do_kill(NULL, info.pid, info.tid, info.sig, &info.info, 0);
 		kprintf("SCD_MSG_SEND_SIGNAL: do_kill(pid=%d, tid=%d, sig=%d)=%d\n", info.pid, info.tid, info.sig, rc);
 		return 0;
 	case SCD_MSG_PROCFS_REQUEST:

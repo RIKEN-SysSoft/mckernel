@@ -51,6 +51,7 @@
 #define	VRFLAG_PROT_TO_MAXPROT(vrflag)	(((vrflag) & VR_PROT_MASK) << 4)
 #define	VRFLAG_MAXPROT_TO_PROT(vrflag)	(((vrflag) & VR_MAXPROT_MASK) >> 4)
 
+// struct process.status, struct thread.status
 #define PS_RUNNING           0x1
 #define PS_INTERRUPTIBLE     0x2
 #define PS_UNINTERRUPTIBLE   0x4
@@ -58,15 +59,19 @@
 #define PS_EXITED            0x10
 #define PS_STOPPED           0x20
 #define PS_TRACED            0x40 /* Set to "not running" by a ptrace related event */
+#define PS_STOPPING          0x80
+#define PS_TRACING           0x100
 
 #define PS_NORMAL	(PS_INTERRUPTIBLE | PS_UNINTERRUPTIBLE)
 
+// struct process.ptrace
 #define PT_TRACED 0x80     /* The process is ptraced */
 #define PT_TRACE_EXEC 0x100 /* Trace execve(2) */
 #define PT_TRACE_SYSCALL_ENTER 0x200 /* Trace syscall enter */
 #define PT_TRACE_SYSCALL_EXIT  0x400 /* Trace syscall exit */
 #define PT_TRACE_SYSCALL_MASK  (PT_TRACE_SYSCALL_ENTER | PT_TRACE_SYSCALL_EXIT)
 
+// ptrace(2) request
 #define	PTRACE_TRACEME 0
 #define	PTRACE_PEEKTEXT 1
 #define	PTRACE_PEEKDATA 2
@@ -95,6 +100,7 @@
 #define	PTRACE_GETREGSET 0x4204
 #define	PTRACE_SETREGSET 0x4205
 
+// ptrace(2) options
 #define PTRACE_O_TRACESYSGOOD 1
 #define PTRACE_O_TRACEFORK 2
 #define PTRACE_O_TRACEVFORK 4
@@ -104,6 +110,7 @@
 #define PTRACE_O_TRACEEXIT 0x40
 #define PTRACE_O_MASK 0x7f
 
+// ptrace(2) events
 #define	PTRACE_EVENT_FORK 1
 #define	PTRACE_EVENT_VFORK 2
 #define	PTRACE_EVENT_CLONE 3
@@ -157,6 +164,66 @@
 
 #include <waitq.h>
 #include <futex.h>
+
+struct resource_set;
+struct process_hash;
+struct thread_hash;
+struct address_space;
+struct process;
+struct thread;
+struct process_vm;
+struct vm_regions;
+struct vm_range;
+
+#define HASH_SIZE	73
+
+struct resource_set {
+	struct list_head	list;
+	char			*path;
+	struct process_hash	*process_hash;
+	struct thread_hash	*thread_hash;
+	struct list_head	phys_mem_list;
+	mcs_rwlock_lock_t		phys_mem_lock;
+	cpu_set_t		cpu_set;
+	mcs_rwlock_lock_t		cpu_set_lock;
+	struct process		*pid1;
+};
+
+extern struct list_head	resource_set_list;
+extern mcs_rwlock_lock_t	resource_set_lock;
+
+struct process_hash {
+	struct list_head	list[HASH_SIZE];
+	mcs_rwlock_lock_t		lock[HASH_SIZE];
+};
+
+static inline int
+process_hash(int pid)
+{
+	return pid % HASH_SIZE;
+}
+
+static inline int
+thread_hash(int tid)
+{
+	return tid % HASH_SIZE;
+}
+
+struct thread_hash {
+	struct list_head	list[HASH_SIZE];
+	mcs_rwlock_lock_t		lock[HASH_SIZE];
+};
+
+struct address_space {
+	struct page_table	*page_table;
+	struct list_head	siblings_list;
+	struct resource_set	*res;
+	int			type;
+#define ADDRESS_SPACE_NORMAL	1
+#define ADDRESS_SPACE_PVAS	2
+	int			nslots;
+	int			pids[];
+};
 
 struct user_fpregs_struct
 {
@@ -234,6 +301,7 @@ struct vm_range {
 };
 
 struct vm_regions {
+	unsigned long vm_start, vm_end;
 	unsigned long text_start, text_end;
 	unsigned long data_start, data_end;
 	unsigned long brk_start, brk_end;
@@ -252,11 +320,12 @@ struct sigfd {
 #define SFD_CLOEXEC 02000000
 #define SFD_NONBLOCK 04000
 
-struct sig_handler {
+struct sig_common {
 	ihk_spinlock_t	lock;
-	ihk_atomic_t	use;
+	ihk_atomic_t use;
 	struct sigfd *sigfd;
 	struct k_sigaction action[_NSIG];
+	struct list_head sigpending;
 };
 
 struct sig_pending {
@@ -266,27 +335,60 @@ struct sig_pending {
 	int ptracecont;
 };
 
-struct sig_shared {
-	ihk_spinlock_t  lock;
-	ihk_atomic_t    use;
-	struct list_head sigpending;
-};
-
 typedef void pgio_func_t(void *arg);
 
 /* Represents a node in the process fork tree, it may exist even after the 
  * corresponding process exited due to references from the parent and/or 
  * children and is used for implementing wait/waitpid without having a 
  * special "init" process */
-struct fork_tree_node {
-	ihk_spinlock_t lock;
-	ihk_atomic_t refcount;
-	int exit_status;
-	int status;
+struct process {
+	struct list_head hash_list;
+	mcs_rwlock_lock_t update_lock; // lock for parent, status, ...?
 
-	struct process *owner;
+	// process vm
+	struct process_vm *vm;
+
+	// threads and children
+	struct list_head threads_list;
+	mcs_rwlock_lock_t threads_lock; // lock for threads_list
+
+	/* The ptracing process behave as the parent of the ptraced process
+	   after using PTRACE_ATTACH except getppid. So we save it here. */
+	struct process *parent;
+	struct process *ppid_parent;
+	struct list_head children_list;
+	struct list_head ptraced_children_list;
+	mcs_rwlock_lock_t children_lock; // lock for children_list and ptraced_children_list
+	struct list_head siblings_list; // lock parent
+	struct list_head ptraced_siblings_list; // lock ppid_parent
+
+	ihk_atomic_t refcount;
+
+	// process status and exit status
+	int pstatus;	// PS_RUNNING -> PS_EXITED -> PS_ZOMBIE
+			// |       ^       ^
+			// |       |---+   |
+			// V           |   |
+			// PS_STOPPING |   |
+			// (PS_TRACING)|   |
+			// |           |   |
+			// V       +----   |
+			// PS_STOPPED -----+
+			// (PS_TRACED)
+	int exit_status;
+
+	/* Store exit_status for a group of threads when stopped by SIGSTOP.
+	   exit_status can't be used because values of exit_status of threads
+	   might divert while the threads are exiting by group_exit(). */
+	int group_exit_status;
+
+	/* Manage ptraced processes in the separate list to make it easy to
+	   restore the orginal parent child relationship when 
+	   performing PTRACE_DETACH */
+	struct waitq waitpid_q;
+
+	// process info and credentials etc.
 	int pid;
-	int tid;
 	int pgid;
 	int ruid;
 	int euid;
@@ -296,50 +398,36 @@ struct fork_tree_node {
 	int egid;
 	int sgid;
 	int fsgid;
-	
-	struct fork_tree_node *parent;
-	struct list_head children;
-	struct list_head siblings_list;
-	
-    /* The ptracing process behave as the parent of the ptraced process
-       after using PTRACE_ATTACH except getppid. So we save it here. */
-	struct fork_tree_node *ppid_parent;
+	int execed;
+	int nohost;
+	struct rlimit rlimit[MCK_RLIM_MAX];
+	unsigned long saved_auxv[AUXV_LEN];
+	char *saved_cmdline;
+	long saved_cmdline_len;
 
-    /* Manage ptraced processes in the separate list to make it easy to
-       restore the orginal parent child relationship when 
-       performing PTRACE_DETACH */
-	struct list_head ptrace_children;
-	struct list_head ptrace_siblings_list;
+	/* Store ptrace flags.
+	 * The lower 8 bits are PTRACE_O_xxx of the PTRACE_SETOPTIONS request.
+	 * Other bits are for inner use of the McKernel.
+	 */
+	int ptrace;
 
-	struct waitq waitpid_q;
+	/* Store ptrace event message.
+	 * PTRACE_O_xxx will store event message here.
+	 * PTRACE_GETEVENTMSG will get from here.
+	 */
+	unsigned long ptrace_eventmsg;
 
-    /* Store exit_status for a group of threads when stopped by SIGSTOP.
-       exit_status can't be used because values of exit_status of threads
-       might divert while the threads are exiting by group_exit(). */
-    int group_exit_status;
+	/* Store event related to signal. For example, 
+	   it represents that the proceess has been resumed by SIGCONT. */
+	int signal_flags;
 
-    /* Store ptrace flags.
-     * The lower 8 bits are PTRACE_O_xxx of the PTRACE_SETOPTIONS request.
-     * Other bits are for inner use of the McKernel.
-     */
-    int ptrace;
+	/* Store signal sent to parent when the process terminates. */
+	int termsig;
 
-    /* Store ptrace event message.
-       PTRACE_O_xxx will store event message here.
-       PTRACE_GETEVENTMSG will get from here.
-     */
-    unsigned long ptrace_eventmsg;
-
-    /* Store event related to signal. For example, 
-       it represents that the proceess has been resumed by SIGCONT. */
-    int signal_flags;
-
-    /* Store signal sent to parent when the process terminates. */
-    int termsig;
 };
 
-void hold_fork_tree_node(struct fork_tree_node *ftn);
-void release_fork_tree_node(struct fork_tree_node *ftn);
+void hold_thread(struct thread *ftn);
+void release_thread(struct thread *ftn);
 
 /*
  * Scheduling policies
@@ -364,101 +452,109 @@ struct sched_param {
 	int sched_priority;
 };
 
-struct process {
+struct thread {
+	struct list_head hash_list;
+	// thread info
 	int cpu_id;
+	int tid;
+	int tstatus;
 
-	ihk_atomic_t refcount;
+	// process vm
 	struct process_vm *vm;
 
+	// context
 	ihk_mc_kernel_context_t ctx;
 	ihk_mc_user_context_t  *uctx;
 	
+	// sibling
+	struct process *proc;
+	struct list_head siblings_list; // lock process
+
 	// Runqueue list entry
-	struct list_head sched_list;  
+	struct list_head sched_list;	// lock cls
 	int sched_policy;
 	struct sched_param sched_param;
 	
 	ihk_spinlock_t spin_sleep_lock;
 	int spin_sleep;
 
-	struct thread {
+	ihk_atomic_t refcount;
+
+	struct {
 		int	*clear_child_tid;
 		unsigned long tlsblock_base, tlsblock_limit;
 	} thread;
 
-	volatile int sigevent;
-	int nohost;
-	int execed;
+	// thread info
+	cpu_set_t cpu_set;
+	fp_regs_struct *fp_regs;
+	int in_syscall_offload;
+
+	// signal
+	struct sig_common *sigcommon;
 	sigset_t sigmask;
 	stack_t sigstack;
-	ihk_spinlock_t	sigpendinglock;
 	struct list_head sigpending;
-	struct sig_shared *sigshared;
-	struct sig_handler *sighandler;
+	ihk_spinlock_t	sigpendinglock;
+	volatile int sigevent;
 
-	struct rlimit rlimit[MCK_RLIM_MAX];
+	// gpio
 	pgio_func_t *pgio_fp;
 	void *pgio_arg;
 
-	struct fork_tree_node *ftn;
-
-	cpu_set_t cpu_set;
-	unsigned long saved_auxv[AUXV_LEN];
-
+	// for ptrace
 	unsigned long *ptrace_debugreg;	/* debug registers for ptrace */
 	struct sig_pending *ptrace_recvsig;
 	struct sig_pending *ptrace_sendsig;
-	fp_regs_struct *fp_regs;
-	char *saved_cmdline;
-	long saved_cmdline_len;
-	int in_syscall_offload;
 };
 
 struct process_vm {
-	ihk_atomic_t refcount;
-
-	struct page_table *page_table;
+	struct address_space *address_space;
 	struct list_head vm_range_list;
 	struct vm_regions region;
-	struct process *owner_process;		/* process that reside on the same page */
+	struct process *proc;		/* process that reside on the same page */
  	
-    ihk_spinlock_t page_table_lock;
-    ihk_spinlock_t memory_range_lock;
+	ihk_spinlock_t page_table_lock;
+	ihk_spinlock_t memory_range_lock;
     // to protect the followings:
     // 1. addition of process "memory range" (extend_process_region, add_process_memory_range)
     // 2. addition of process page table (allocate_pages, update_process_page_table)
     // note that physical memory allocator (ihk_mc_alloc_pages, ihk_pagealloc_alloc)
     // is protected by its own lock (see ihk/manycore/generic/page_alloc.c)
 
+	ihk_atomic_t refcount;
 	cpu_set_t cpu_set;
 	ihk_spinlock_t cpu_set_lock;
 	int exiting;
 };
 
 
-struct process *create_process(unsigned long user_pc);
-struct process *clone_process(struct process *org, unsigned long pc,
+struct thread *create_thread(unsigned long user_pc);
+struct thread *clone_thread(struct thread *org, unsigned long pc,
                               unsigned long sp, int clone_flags);
-void destroy_process(struct process *proc);
-void hold_process(struct process *proc);
-void release_process(struct process *proc);
-void flush_process_memory(struct process *proc);
-void free_process_memory(struct process *proc);
-void free_process_memory_ranges(struct process *proc);
-int populate_process_memory(struct process *proc, void *start, size_t len);
+void destroy_thread(struct thread *thread);
+void hold_thread(struct thread *thread);
+void release_thread(struct thread *thread);
+void flush_process_memory(struct process_vm *vm);
+void hold_process_vm(struct process_vm *vm);
+void release_process_vm(struct process_vm *vm);
+void hold_process(struct process *);
+void release_process(struct process *);
+void free_process_memory_ranges(struct process_vm *vm);
+int populate_process_memory(struct process_vm *vm, void *start, size_t len);
 
-int add_process_memory_range(struct process *process,
+int add_process_memory_range(struct process_vm *vm,
                              unsigned long start, unsigned long end,
                              unsigned long phys, unsigned long flag,
 			     struct memobj *memobj, off_t objoff);
-int remove_process_memory_range(struct process *process, unsigned long start,
+int remove_process_memory_range(struct process_vm *vm, unsigned long start,
 		unsigned long end, int *ro_freedp);
-int split_process_memory_range(struct process *process,
+int split_process_memory_range(struct process_vm *vm,
 		struct vm_range *range, uintptr_t addr, struct vm_range **splitp);
-int join_process_memory_range(struct process *process, struct vm_range *surviving,
+int join_process_memory_range(struct process_vm *vm, struct vm_range *surviving,
 		struct vm_range *merging);
 int change_prot_process_memory_range(
-		struct process *process, struct vm_range *range,
+		struct process_vm *vm, struct vm_range *range,
 		unsigned long newflag);
 int remap_process_memory_range(struct process_vm *vm, struct vm_range *range,
 		uintptr_t start, uintptr_t end, off_t off);
@@ -477,24 +573,24 @@ int extend_up_process_memory_range(struct process_vm *vm,
 
 int page_fault_process_vm(struct process_vm *fault_vm, void *fault_addr,
 		uint64_t reason);
-int remove_process_region(struct process *proc,
+int remove_process_region(struct process_vm *vm,
                           unsigned long start, unsigned long end);
 struct program_load_desc;
-int init_process_stack(struct process *process, struct program_load_desc *pn,
+int init_process_stack(struct thread *thread, struct program_load_desc *pn,
                         int argc, char **argv, 
                         int envc, char **env);
-unsigned long extend_process_region(struct process *proc,
+unsigned long extend_process_region(struct process_vm *vm,
                                     unsigned long start, unsigned long end,
                                     unsigned long address, unsigned long flag);
 extern enum ihk_mc_pt_attribute arch_vrflag_to_ptattr(unsigned long flag, uint64_t fault, pte_t *ptep);
 enum ihk_mc_pt_attribute common_vrflag_to_ptattr(unsigned long flag, uint64_t fault, pte_t *ptep);
 
 void schedule(void);
-void runq_add_proc(struct process *proc, int cpu_id);
-void runq_del_proc(struct process *proc, int cpu_id);
-int sched_wakeup_process(struct process *proc, int valid_states);
+void runq_add_thread(struct thread *thread, int cpu_id);
+void runq_del_thread(struct thread *thread, int cpu_id);
+int sched_wakeup_thread(struct thread *thread, int valid_states);
 
-void sched_request_migrate(int cpu_id, struct process *proc);
+void sched_request_migrate(int cpu_id, struct thread *thread);
 void check_need_resched(void);
 
 void cpu_set(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock);
@@ -502,8 +598,14 @@ void cpu_clear(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock);
 void cpu_clear_and_set(int c_cpu, int s_cpu, 
 		cpu_set_t *cpu_set, ihk_spinlock_t *lock);
 
-struct process *findthread_and_lock(int pid, int tid, ihk_spinlock_t **savelock, unsigned long *irqstate);
-void process_unlock(void *savelock, unsigned long irqstate);
 void release_cpuid(int cpuid);
+
+struct thread *find_thread(int pid, int tid, struct mcs_rwlock_node_irqsave *lock);
+void thread_unlock(struct thread *thread, struct mcs_rwlock_node_irqsave *lock);
+struct process *find_process(int pid, struct mcs_rwlock_node_irqsave *lock);
+void process_unlock(struct process *proc, struct mcs_rwlock_node_irqsave *lock);
+void chain_process(struct process *);
+void chain_thread(struct thread *);
+void proc_init();
 
 #endif

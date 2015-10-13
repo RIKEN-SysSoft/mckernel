@@ -103,7 +103,7 @@ int futex_cmpxchg_enabled;
 struct futex_q {
 	struct plist_node list;
 
-	struct process *task;
+	struct thread *task;
 	ihk_spinlock_t *lock_ptr;
 	union futex_key key;
 	union futex_key *requeue_pi_key;
@@ -243,7 +243,7 @@ static int get_futex_value_locked(uint32_t *dest, uint32_t *from)
  */
 static void wake_futex(struct futex_q *q)
 {
-	struct process *p = q->task;
+	struct thread *p = q->task;
 
 	/*
 	 * We set q->lock_ptr = NULL _before_ we wake up the task. If
@@ -263,7 +263,7 @@ static void wake_futex(struct futex_q *q)
 	barrier();
 	q->lock_ptr = NULL;
 
-	sched_wakeup_process(p, PS_NORMAL);
+	sched_wakeup_thread(p, PS_NORMAL);
 }
 
 /*
@@ -658,7 +658,7 @@ static uint64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q
 	 * queue_me() calls spin_unlock() upon completion, both serializing
 	 * access to the hash list and forcing another memory barrier.
 	 */
-	xchg4(&(cpu_local_var(current)->ftn->status), PS_INTERRUPTIBLE);
+	xchg4(&(cpu_local_var(current)->tstatus), PS_INTERRUPTIBLE);
 	queue_me(q, hb);
 	
 	if (!plist_node_empty(&q->list)) {
@@ -674,7 +674,7 @@ static uint64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q
 	}
 	
 	/* This does not need to be serialized */
-	cpu_local_var(current)->ftn->status = PS_RUNNING;
+	cpu_local_var(current)->tstatus = PS_RUNNING;
 	
 	return time_remain;
 }

@@ -28,7 +28,7 @@ void kputs(char *buf)
 	int len = strlen(buf);
 	unsigned long flags;
 
-	flags = ihk_mc_spinlock_lock(&kmsg_lock);
+	flags = __ihk_mc_spinlock_lock(&kmsg_lock);
 
 	if (len + kmsg_buf.tail > kmsg_buf.len) {
 		kmsg_buf.tail = 0;
@@ -40,19 +40,19 @@ void kputs(char *buf)
 	memcpy(kmsg_buf.str + kmsg_buf.tail, buf, len);
 	kmsg_buf.tail += len;
 
-	ihk_mc_spinlock_unlock(&kmsg_lock, flags);
+	__ihk_mc_spinlock_unlock(&kmsg_lock, flags);
 }
 
 #define KPRINTF_LOCAL_BUF_LEN 1024
 
 unsigned long kprintf_lock(void)
 {
-	return ihk_mc_spinlock_lock(&kmsg_lock);
+	return __ihk_mc_spinlock_lock(&kmsg_lock);
 }
 
 void kprintf_unlock(unsigned long irqflags)
 {
-	ihk_mc_spinlock_unlock(&kmsg_lock, irqflags);
+	__ihk_mc_spinlock_unlock(&kmsg_lock, irqflags);
 }
 
 /* Caller must hold kmsg_lock! */
@@ -85,7 +85,7 @@ int kprintf(const char *format, ...)
 	unsigned long flags;
 	char buf[KPRINTF_LOCAL_BUF_LEN];
 
-	flags = ihk_mc_spinlock_lock(&kmsg_lock);
+	flags = __ihk_mc_spinlock_lock(&kmsg_lock);
 
 	/* Copy into the local buf */
 	len = sprintf(buf, "[%3d]: ", ihk_mc_get_processor_id());
@@ -101,7 +101,7 @@ int kprintf(const char *format, ...)
 	memcpy(kmsg_buf.str + kmsg_buf.tail, buf, len);
 	kmsg_buf.tail += len;
 
-	ihk_mc_spinlock_unlock(&kmsg_lock, flags);
+	__ihk_mc_spinlock_unlock(&kmsg_lock, flags);
 
 	return len;
 }

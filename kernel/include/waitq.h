@@ -19,7 +19,7 @@
 #include <ihk/lock.h>
 #include <list.h>
 
-struct process;
+struct thread;
 struct waitq_entry;
 
 typedef int (*waitq_func_t)(struct waitq_entry *wait, unsigned mode,
@@ -58,7 +58,7 @@ typedef struct waitq_entry {
 	}
 
 extern void waitq_init(waitq_t *waitq);
-extern void waitq_init_entry(waitq_entry_t *entry, struct process *proc);
+extern void waitq_init_entry(waitq_entry_t *entry, struct thread *proc);
 extern int waitq_active(waitq_t *waitq);
 extern void waitq_add_entry(waitq_t *waitq, waitq_entry_t *entry);
 extern void waitq_add_entry_locked(waitq_t *waitq, waitq_entry_t *entry);

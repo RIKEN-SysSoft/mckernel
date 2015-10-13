@@ -225,6 +225,8 @@ static void rest_init(void)
 
 	ikc_master_init();
 
+	proc_init();
+
 	sched_init();
 }
 

@@ -2191,7 +2191,7 @@ int read_process_vm(struct process_vm *vm, void *kdst, const void *usrc, size_t 
 			cpsize = remain;
 		}
 
-		error = ihk_mc_pt_virt_to_phys(vm->page_table, from, &pa);
+		error = ihk_mc_pt_virt_to_phys(vm->address_space->page_table, from, &pa);
 		if (error) {
 			return error;
 		}
@@ -2274,7 +2274,7 @@ int write_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t
 			cpsize = remain;
 		}
 
-		error = ihk_mc_pt_virt_to_phys(vm->page_table, to, &pa);
+		error = ihk_mc_pt_virt_to_phys(vm->address_space->page_table, to, &pa);
 		if (error) {
 			return error;
 		}
@@ -2330,7 +2330,7 @@ int patch_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t
 			cpsize = remain;
 		}
 
-		error = ihk_mc_pt_virt_to_phys(vm->page_table, to, &pa);
+		error = ihk_mc_pt_virt_to_phys(vm->address_space->page_table, to, &pa);
 		if (error) {
 			kprintf("patch_process_vm(%p,%p,%p,%lx):v2p(%p):%d\n", vm, udst, ksrc, siz, to, error);
 			return error;
