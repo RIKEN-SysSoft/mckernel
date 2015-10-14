@@ -1823,7 +1823,6 @@ fork_child_sync_pipe:
 				
 			    /* Parent */
 			    default:
-fprintf(stderr, "fork %d->%d\n", getpid(), pid);
 				fs->pid = pid;
 				while ((rc = sem_trywait(&fs->sem)) == -1 && (errno == EAGAIN || errno == EINTR)) {
 					int st;
@@ -1872,7 +1871,6 @@ fork_err:
 			siginfo_t info;
 			int opt;
 
-fprintf(stderr, "wait4: pid=%d\n", pid);
 			opt = WEXITED | (options & WNOWAIT);
 			memset(&info, '\0', sizeof info);
 			while((ret = waitid(P_PID, pid, &info, opt)) == -1 &&
