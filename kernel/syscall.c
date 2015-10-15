@@ -47,6 +47,7 @@
 #include <memobj.h>
 #include <shm.h>
 #include <prio.h>
+#include <arch/cpu.h>
 
 /* Headers taken from kitten LWK */
 #include <lwk/stddef.h>
@@ -95,6 +96,8 @@ static char *syscall_name[] MCKERNEL_UNUSED = {
 };
 
 struct timespec origin_ts;
+static ihk_spinlock_t origin_ts_lock = SPIN_LOCK_UNLOCKED;
+ihk_atomic64_t origin_ts_version = IHK_ATOMIC64_INIT(0);
 unsigned long clocks_per_sec;
 
 void check_signal(unsigned long, void *, int);
@@ -4791,9 +4794,26 @@ SYSCALL_DECLARE(get_cpu_id)
 
 static void calculate_time_from_tsc(struct timespec *ts)
 {
+	long ver;
 	unsigned long current_tsc;
 	time_t sec_delta;
 	long ns_delta;
+
+	for (;;) {
+		while ((ver = ihk_atomic64_read(&origin_ts_version)) & 1) {
+			/* settimeofday() is in progress */
+			cpu_pause();
+		}
+		rmb();
+		*ts = origin_ts;
+		rmb();
+		if (ver == ihk_atomic64_read(&origin_ts_version)) {
+			break;
+		}
+
+		/* settimeofday() has intervened */
+		cpu_pause();
+	}
 
 	current_tsc = rdtsc();
 	sec_delta = current_tsc / clocks_per_sec;
@@ -4801,8 +4821,8 @@ static void calculate_time_from_tsc(struct timespec *ts)
 		/ clocks_per_sec;
 	/* calc. of ns_delta overflows if clocks_per_sec exceeds 18.44 GHz */
 
-	ts->tv_sec = origin_ts.tv_sec + sec_delta;
-	ts->tv_nsec = origin_ts.tv_nsec + ns_delta;
+	ts->tv_sec += sec_delta;
+	ts->tv_nsec += ns_delta;
 	if (ts->tv_nsec >= NS_PER_SEC) {
 		ts->tv_nsec -= NS_PER_SEC;
 		++ts->tv_sec;
@@ -4847,6 +4867,56 @@ SYSCALL_DECLARE(gettimeofday)
 	return do_syscall(&request, ihk_mc_get_processor_id(), 0);
 }
 
+SYSCALL_DECLARE(settimeofday)
+{
+	long error;
+	struct timeval * const utv = (void *)ihk_mc_syscall_arg0(ctx);
+	struct timezone * const utz = (void *)ihk_mc_syscall_arg1(ctx);
+	struct timeval tv;
+	struct timespec newts;
+	unsigned long tsc;
+
+	dkprintf("sys_settimeofday(%p,%p)\n", utv, utz);
+	ihk_mc_spinlock_lock_noirq(&origin_ts_lock);
+	if (ihk_atomic64_read(&origin_ts_version) & 1) {
+		panic("settimeofday");
+	}
+
+	if (utv && gettime_local_support) {
+		if (copy_from_user(&tv, utv, sizeof(tv))) {
+			error = -EFAULT;
+			goto out;
+		}
+		newts.tv_sec = tv.tv_sec;
+		newts.tv_nsec = (long)tv.tv_usec * 1000;
+
+		tsc = rdtsc();
+		newts.tv_sec -= tsc / clocks_per_sec;
+		newts.tv_nsec -= NS_PER_SEC * (tsc % clocks_per_sec)
+			/ clocks_per_sec;
+		if (newts.tv_nsec < 0) {
+			--newts.tv_sec;
+			newts.tv_nsec += NS_PER_SEC;
+		}
+	}
+
+	error = syscall_generic_forwarding(n, ctx);
+
+	if (!error && utv && gettime_local_support) {
+		dkprintf("sys_settimeofday(%p,%p):origin_ts <-- %ld.%ld\n",
+				utv, utz, newts.tv_sec, newts.tv_nsec);
+		ihk_atomic64_inc(&origin_ts_version);
+		wmb();
+		origin_ts = newts;
+		wmb();
+		ihk_atomic64_inc(&origin_ts_version);
+	}
+
+out:
+	ihk_mc_spinlock_unlock_noirq(&origin_ts_lock);
+	dkprintf("sys_settimeofday(%p,%p): %ld\n", utv, utz, error);
+	return error;
+}
 
 SYSCALL_DECLARE(nanosleep)
 {
