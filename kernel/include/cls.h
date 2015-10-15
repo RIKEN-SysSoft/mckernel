@@ -73,11 +73,6 @@ struct cpu_local_var {
 	int in_interrupt;
 	int no_preempt;
 	int timer_enabled;
-
-	unsigned long tv_sec;
-	unsigned long tv_nsec;
-	unsigned long last_tsc;
-
 } __attribute__((aligned(64)));
 
 

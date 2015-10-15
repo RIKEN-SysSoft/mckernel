@@ -94,6 +94,9 @@ static char *syscall_name[] MCKERNEL_UNUSED = {
 #undef	SYSCALL_DELEGATED
 };
 
+struct timespec origin_ts;
+unsigned long clocks_per_sec;
+
 void check_signal(unsigned long, void *, int);
 void do_signal(long rc, void *regs, struct thread *thread, struct sig_pending *pending, int num);
 extern unsigned long do_kill(struct thread *thread, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
@@ -4786,30 +4789,26 @@ SYSCALL_DECLARE(get_cpu_id)
 	return ihk_mc_get_processor_id();
 }
 
-void __update_time_from_tsc_delta(unsigned long *tv_sec,
-	unsigned long *tv_nsec,
-	unsigned long tsc_delta)
+static void calculate_time_from_tsc(struct timespec *ts)
 {
-	unsigned long ns_delta = tsc_delta * ihk_mc_get_ns_per_tsc() / 1000;
+	unsigned long current_tsc;
+	time_t sec_delta;
+	long ns_delta;
 
-	*tv_sec += (ns_delta / NS_PER_SEC);
-	*tv_nsec += (ns_delta % NS_PER_SEC);
-	if (*tv_nsec > NS_PER_SEC) {
-		*tv_nsec -= NS_PER_SEC;
-		++*tv_sec;
+	current_tsc = rdtsc();
+	sec_delta = current_tsc / clocks_per_sec;
+	ns_delta = NS_PER_SEC * (current_tsc % clocks_per_sec)
+		/ clocks_per_sec;
+	/* calc. of ns_delta overflows if clocks_per_sec exceeds 18.44 GHz */
+
+	ts->tv_sec = origin_ts.tv_sec + sec_delta;
+	ts->tv_nsec = origin_ts.tv_nsec + ns_delta;
+	if (ts->tv_nsec >= NS_PER_SEC) {
+		ts->tv_nsec -= NS_PER_SEC;
+		++ts->tv_sec;
 	}
-}
 
-void update_cpu_local_time(void)
-{
-	unsigned long tsc = rdtsc();
-
-	__update_time_from_tsc_delta(
-		&cpu_local_var(tv_sec),
-		&cpu_local_var(tv_nsec),
-		tsc - cpu_local_var(last_tsc));
-
-	cpu_local_var(last_tsc) = tsc;
+	return;
 }
 
 
@@ -4820,6 +4819,7 @@ SYSCALL_DECLARE(gettimeofday)
 	struct timezone *tz = (struct timezone *)ihk_mc_syscall_arg1(ctx);
 	struct timeval atv;
 	int error;
+	struct timespec ats;
 
 	if (!tv && !tz) {
 		/* nothing to do */
@@ -4828,10 +4828,10 @@ SYSCALL_DECLARE(gettimeofday)
 
 	/* Do it locally if supported */
 	if (!tz && gettime_local_support) {
-		update_cpu_local_time();
+		calculate_time_from_tsc(&ats);
 
-		atv.tv_sec = cpu_local_var(tv_sec);
-		atv.tv_usec = cpu_local_var(tv_nsec) / 1000;
+		atv.tv_sec = ats.tv_sec;
+		atv.tv_usec = ats.tv_nsec / 1000;
 
 		error = copy_to_user(tv, &atv, sizeof(atv));
 

@@ -201,11 +201,21 @@ static void pc_test(void)
 }
 
 extern void ihk_mc_get_boot_time(unsigned long *tv_sec, unsigned long *tv_nsec);
+extern unsigned long ihk_mc_get_ns_per_tsc(void);
+
 static void time_init(void)
 {
-	ihk_mc_get_boot_time(&cpu_local_var(tv_sec),
-		&cpu_local_var(tv_nsec));
-	cpu_local_var(last_tsc) = 0;
+	unsigned long tv_sec, tv_nsec;
+	unsigned long ns_per_kclock;
+
+	ihk_mc_get_boot_time(&tv_sec, &tv_nsec);
+	ns_per_kclock = ihk_mc_get_ns_per_tsc();
+
+	origin_ts.tv_sec = tv_sec;
+	origin_ts.tv_nsec = tv_nsec;
+	clocks_per_sec = (1000L * NS_PER_SEC) / ns_per_kclock;
+
+	return;
 }
 
 static void rest_init(void)
@@ -233,11 +243,9 @@ static void rest_init(void)
 int host_ikc_inited = 0;
 extern int num_processors;
 extern void zero_tsc(void);
-extern void update_cpu_local_time(void);
 
 static void post_init(void)
 {
-	int i;
 	cpu_enable_interrupt();
 
 	while (!host_ikc_inited) {
@@ -253,16 +261,9 @@ static void post_init(void)
 		ihk_mc_spinlock_init(&syscall_lock);
 	}
 
-	/* Update time elapsed so far during boot, distribute the current
-	 * date to all cores and zero TSC.
+	/* Zero TSC.
 	 * All AP cores are wait spinning for ap_start() and they will zero
 	 * their TSC immediatly. */
-	update_cpu_local_time();
-	cpu_local_var(last_tsc) = 0;
-	for (i = 0; i < num_processors; ++i) {
-		get_cpu_local_var(i)->tv_sec = cpu_local_var(tv_sec);
-		get_cpu_local_var(i)->tv_nsec = cpu_local_var(tv_nsec);
-	}
 	zero_tsc();
 	ap_start();
 

@@ -16,6 +16,7 @@
 #include <ihk/context.h>
 #include <ihk/memconst.h>
 #include <rlimit.h>
+#include <time.h>
 
 #define NUM_SYSCALLS 255
 
@@ -286,4 +287,9 @@ struct procfs_file {
 };
 
 extern void terminate(int, int);
+
+/* kernel/syscall.c */
+extern struct timespec origin_ts;		/* realtime when tsc=0 */
+extern unsigned long clocks_per_sec;
+
 #endif
