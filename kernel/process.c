@@ -2090,7 +2090,7 @@ out:
 
 void hold_thread(struct thread *thread)
 {
-	if (thread->proc->pstatus & (PS_ZOMBIE | PS_EXITED)) {
+	if (thread->tstatus == PS_EXITED) {
 		panic("hold_thread: already exited process");
 	}
 
@@ -2130,14 +2130,14 @@ void destroy_thread(struct thread *thread)
 	struct resource_set *resource_set = cpu_local_var(resource_set);
 	int hash;
 
-	mcs_rwlock_writer_lock(&proc->threads_lock, &lock);
-	list_del(&thread->siblings_list);
-	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
-
 	hash = thread_hash(thread->tid);
 	mcs_rwlock_writer_lock(&resource_set->thread_hash->lock[hash], &lock);
 	list_del(&thread->hash_list);
 	mcs_rwlock_writer_unlock(&resource_set->thread_hash->lock[hash], &lock);
+
+	mcs_rwlock_writer_lock(&proc->threads_lock, &lock);
+	list_del(&thread->siblings_list);
+	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 
 	cpu_clear(thread->cpu_id, &thread->vm->cpu_set, &thread->vm->cpu_set_lock);
 	list_for_each_entry_safe(pending, signext, &thread->sigpending, list){
@@ -2801,7 +2801,7 @@ find_thread(int pid, int tid, struct mcs_rwlock_node_irqsave *lock)
 		if(thread->tid == tid){
 			if(pid <= 0)
 				return thread;
-			if(pid == thread->proc->pid)
+			if(thread->proc->pid == pid)
 				return thread;
 		}
 	}
@@ -2833,8 +2833,7 @@ find_process(int pid, struct mcs_rwlock_node_irqsave *lock)
 	mcs_rwlock_reader_lock(&phash->lock[hash], lock);
 	list_for_each_entry(proc, &phash->list[hash], hash_list){
 		if(proc->pid == pid){
-			if(pid == proc->pid)
-				return proc;
+			return proc;
 		}
 	}
 	mcs_rwlock_reader_unlock(&phash->lock[hash], lock);

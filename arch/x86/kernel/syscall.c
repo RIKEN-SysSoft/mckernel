@@ -804,19 +804,26 @@ do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
         int ptracecont)
 {
 	dkprintf("do_kill,pid=%d,tid=%d,sig=%d\n", pid, tid, sig);
-	struct cpu_local_var *v;
 	struct thread *t;
+	struct process *tproc;
+	struct process *proc = thread? thread->proc: NULL;
 	struct thread *tthread = NULL;
 	int i;
 	__sigset_t mask;
-	struct list_head *head;
+	ihk_spinlock_t *savelock = NULL;
+	struct list_head *head = NULL;
 	int rc;
 	unsigned long irqstate = 0;
 	struct k_sigaction *k;
 	int doint;
-	ihk_spinlock_t *savelock = NULL;
 	int found = 0;
 	siginfo_t info0;
+	struct resource_set *rset = cpu_local_var(resource_set);
+	int hash;
+	struct thread_hash *thash = rset->thread_hash;
+	struct process_hash *phash = rset->process_hash;
+	struct mcs_rwlock_node lock;
+	struct mcs_rwlock_node updatelock;
 
 	if(sig > 64 || sig < 0)
 		return -EINVAL;
@@ -829,10 +836,11 @@ do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
 	}
 
 	if(tid == -1 && pid <= 0){
+		struct process *p;
+		struct mcs_rwlock_node_irqsave slock;
 		int	pgid = -pid;
 		int	rc = -ESRCH;
 		int	*pids;
-		int	i;
 		int	n = 0;
 		int	sendme = 0;
 
@@ -844,30 +852,21 @@ do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
 		pids = kmalloc(sizeof(int) * num_processors, IHK_MC_AP_NOWAIT);
 		if(!pids)
 			return -ENOMEM;
-		for(i = 0; i < num_processors; i++){
-			v = get_cpu_local_var(i);
-			irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
-			list_for_each_entry(t, &(v->runq), sched_list){
-				int	j;
+		for(i = 0; i < HASH_SIZE; i++){
+			mcs_rwlock_reader_lock(&phash->lock[i], &slock);
+			list_for_each_entry(p, &phash->list[i], hash_list){
+				if(pgid != 1 && p->pgid != pgid)
+					continue;
 
-				if(t->proc->pid <= 0)
-					continue;
-				if(pgid != 1 && t->proc->pgid != pgid)
-					continue;
-				if(thread && t->proc->pid == thread->proc->pid){
+				if(thread && p->pid == thread->proc->pid){
 					sendme = 1;
 					continue;
 				}
 
-				for(j = 0; j < n; j++)
-					if(pids[j] == t->proc->pid)
-						break;
-				if(j == n){
-					pids[n] = t->proc->pid;
-					n++;
-				}
+				pids[n] = p->pid;
+				n++;
 			}
-			ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+			mcs_rwlock_reader_unlock(&phash->lock[i], &slock);
 		}
 		for(i = 0; i < n; i++)
 			rc = do_kill(thread, pids[i], -1, sig, info, ptracecont);
@@ -877,130 +876,132 @@ do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
 		kfree(pids);
 		return rc;
 	}
+
 	irqstate = cpu_disable_interrupt_save();
 	mask = __sigmask(sig);
 	if(tid == -1){
 		struct thread *tthread0 = NULL;
-		ihk_spinlock_t *savelock0 = NULL;
+		struct mcs_rwlock_node plock;
+		struct mcs_rwlock_node updatelock;
 
-		for(i = 0; i < num_processors; i++){
-			v = get_cpu_local_var(i);
-			found = 0;
-			ihk_mc_spinlock_lock_noirq(&(v->runq_lock));
-			list_for_each_entry(t, &(v->runq), sched_list){
-				if(t->proc->pid == pid){
-					if(t->tid == pid || tthread == NULL){
-						if(!(mask & t->sigmask.__val[0])){
-							tthread = t;
-							if(!found && savelock) {
-								ihk_mc_spinlock_unlock_noirq(savelock);
-							}
-							found = 1;
-							savelock =  &(v->runq_lock);
-							if(savelock0 && savelock0 != savelock){
-								ihk_mc_spinlock_unlock_noirq(savelock0);
-								savelock0 = NULL;
-							}
-						}
-						else if(tthread == NULL && tthread0 == NULL){
-							tthread0 = t;
-							found = 1;
-							savelock0 = &(v->runq_lock);
-						}
-					}
-					if(!(mask & t->sigmask.__val[0])){
-						if(t->tid == pid || tthread == NULL){
-
-						}
-					}
-				}
+		found = 0;
+		hash = process_hash(pid);
+		mcs_rwlock_reader_lock_noirq(&phash->lock[hash], &plock);
+		list_for_each_entry(tproc, &phash->list[hash], hash_list){
+			if(tproc->pid == pid){
+				found = 1;
+				break;
 			}
-			if(!found) {
-				ihk_mc_spinlock_unlock_noirq(&(v->runq_lock));
+		}
+		if(!found){
+			mcs_rwlock_reader_unlock_noirq(&phash->lock[hash], &plock);
+			cpu_restore_interrupt(irqstate);
+			return -ESRCH;
+		}
+
+		mcs_rwlock_reader_lock_noirq(&tproc->update_lock, &updatelock);
+		if(tproc->pstatus == PS_EXITED || tproc->pstatus == PS_ZOMBIE){
+			goto done;
+		}
+		mcs_rwlock_reader_lock_noirq(&tproc->threads_lock, &lock);
+		list_for_each_entry(t, &tproc->threads_list, siblings_list){
+			if(t->tid == pid || tthread == NULL){
+				if(t->tstatus == PS_EXITED){
+					continue;
+				}
+				if(!(mask & t->sigmask.__val[0])){
+					tthread = t;
+					found = 1;
+				}
+				else if(tthread == NULL && tthread0 == NULL){
+					tthread0 = t;
+					found = 1;
+				}
 			}
 		}
 		if(tthread == NULL){
 			tthread = tthread0;
-			savelock = savelock0;
 		}
-	}
-	else if(pid == -1){
-		for(i = 0; i < num_processors; i++){
-			v = get_cpu_local_var(i);
-			found = 0;
-			ihk_mc_spinlock_lock_noirq(&(v->runq_lock));
-			list_for_each_entry(t, &(v->runq), sched_list){
-				if(t->proc->pid > 0 &&
-				   t->tid == tid){
-					savelock = &(v->runq_lock);
-					found = 1;
-					tthread = t;
-					break;
-				}
-			}
-			if(!found)
-				ihk_mc_spinlock_unlock_noirq(&(v->runq_lock));
+		if(tthread && tthread->tstatus != PS_EXITED){
+			savelock = &tthread->sigcommon->lock;
+			head = &tthread->sigcommon->sigpending;
+			hold_thread(tthread);
 		}
+		else
+			tthread = NULL;
+		mcs_rwlock_reader_unlock_noirq(&tproc->threads_lock, &lock);
+done:
+		mcs_rwlock_reader_unlock_noirq(&tproc->update_lock, &updatelock);
+		mcs_rwlock_reader_unlock_noirq(&phash->lock[hash], &plock);
 	}
 	else{
-		for(i = 0; i < num_processors; i++){
-			v = get_cpu_local_var(i);
-			found = 0;
-			ihk_mc_spinlock_lock_noirq(&(v->runq_lock));
-			list_for_each_entry(t, &(v->runq), sched_list){
-				if(t->proc->pid == pid &&
-				   t->tid == tid){
-					savelock = &(v->runq_lock);
-					found = 1;
-					tthread = t;
-					break;
-				}
+		found = 0;
+		hash = thread_hash(tid);
+		mcs_rwlock_reader_lock_noirq(&thash->lock[hash], &lock);
+		list_for_each_entry(tthread, &thash->list[hash], hash_list){
+			if(pid != -1 && tthread->proc->pid != pid){
+				continue;
 			}
-			if(found)
+			if(tthread->tid == tid){
+				found = 1;
 				break;
-			ihk_mc_spinlock_unlock_noirq(&(v->runq_lock));
+			}
 		}
+
+		if(!found){
+			mcs_rwlock_reader_unlock_noirq(&thash->lock[hash], &lock);
+			cpu_restore_interrupt(irqstate);
+			return -ESRCH;
+		}
+
+		tproc = tthread->proc;
+		mcs_rwlock_reader_lock_noirq(&tproc->update_lock, &updatelock);
+		savelock = &tthread->sigpendinglock;
+		head = &tthread->sigpending;
+		if(sig == SIGKILL ||
+		   (tproc->pstatus != PS_EXITED &&
+		    tproc->pstatus != PS_ZOMBIE &&
+		    tthread->tstatus != PS_EXITED)){
+			hold_thread(tthread);
+		}
+		else{
+			tthread = NULL;
+		}
+		mcs_rwlock_reader_unlock_noirq(&tproc->update_lock, &updatelock);
+		mcs_rwlock_reader_unlock_noirq(&thash->lock[hash], &lock);
 	}
 
-	if(!tthread){
-		cpu_restore_interrupt(irqstate);
-		return -ESRCH;
-	}
 
 	if(sig != SIGCONT &&
-	   thread &&
-	   thread->proc->euid != 0 &&
-	   thread->proc->ruid != tthread->proc->ruid &&
-	   thread->proc->euid != tthread->proc->ruid &&
-	   thread->proc->ruid != tthread->proc->suid &&
-	   thread->proc->euid != tthread->proc->suid){
-		ihk_mc_spinlock_unlock_noirq(savelock);
+	   proc &&
+	   proc->euid != 0 &&
+	   proc->ruid != tproc->ruid &&
+	   proc->euid != tproc->ruid &&
+	   proc->ruid != tproc->suid &&
+	   proc->euid != tproc->suid){
+		if(tthread)
+			release_thread(tthread);
 		cpu_restore_interrupt(irqstate);
 		return -EPERM;
 	}
 
-	if(sig == 0){
-		ihk_mc_spinlock_unlock_noirq(savelock);
+	if(sig == 0 || tthread == NULL || tthread->tstatus == PS_EXITED){
+		if(tthread)
+			release_thread(tthread);
 		cpu_restore_interrupt(irqstate);
 		return 0;
 	}
 
 	doint = 0;
-	if(tid == -1){
-		ihk_mc_spinlock_lock_noirq(&tthread->sigcommon->lock);
-		head = &tthread->sigcommon->sigpending;
-	}
-	else{
-		ihk_mc_spinlock_lock_noirq(&tthread->sigpendinglock);
-		head = &tthread->sigpending;
-	}
+
+	ihk_mc_spinlock_lock_noirq(savelock);
 
 	/* Put signal event even when handler is SIG_IGN or SIG_DFL
 	   because target ptraced thread must call ptrace_report_signal 
 	   in check_signal */
 	rc = 0;
 	k = tthread->sigcommon->action + sig - 1;
-	if((sig != SIGKILL && (tthread->proc->ptrace & PT_TRACED)) ||
+	if((sig != SIGKILL && (tproc->ptrace & PT_TRACED)) ||
 			(k->sa.sa_handler != (void *)1 &&
 			 (k->sa.sa_handler != NULL ||
 			  (sig != SIGCHLD && sig != SIGURG)))){
@@ -1032,27 +1033,20 @@ do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
 			}
 		}
 	}
-
-	if(tid == -1){
-		ihk_mc_spinlock_unlock_noirq(&tthread->sigcommon->lock);
-	}
-	else{
-		ihk_mc_spinlock_unlock_noirq(&tthread->sigpendinglock);
-	}
+	ihk_mc_spinlock_unlock_noirq(savelock);
+	cpu_restore_interrupt(irqstate);
 
 	if (doint && !(mask & tthread->sigmask.__val[0])) {
 		int cpuid = tthread->cpu_id;
-		int pid = tthread->proc->pid;
+		int pid = tproc->pid;
 		int status = tthread->tstatus;
 
 		if (thread != tthread) {
 			dkprintf("do_kill,ipi,pid=%d,cpu_id=%d\n",
-				 tthread->proc->pid, tthread->cpu_id);
+				 tproc->pid, tthread->cpu_id);
 			ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(tthread->cpu_id)->apic_id, 0xd0);
 		}
 
-		ihk_mc_spinlock_unlock_noirq(savelock);
-		cpu_restore_interrupt(irqstate);
 		if(!tthread->proc->nohost)
 			interrupt_syscall(pid, cpuid);
 
@@ -1067,10 +1061,7 @@ do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
 			}
 		}
 	}
-	else {
-		ihk_mc_spinlock_unlock_noirq(savelock);
-		cpu_restore_interrupt(irqstate);
-	}
+	release_thread(tthread);
 	return rc;
 }
 

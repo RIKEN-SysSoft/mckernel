@@ -606,6 +606,7 @@ terminate(int rc, int sig)
 			do_kill(mythread, proc->pid, ids[i], SIGKILL, NULL, 0);
 		}
 		kfree(ids);
+		ids = NULL;
 	}
 	mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 
@@ -3527,7 +3528,14 @@ SYSCALL_DECLARE(exit)
 		      FUTEX_WAKE, 1, 0, NULL, 0, 0);
 	}
 
+	mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
+	if(proc->pstatus == PS_EXITED){
+		mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
+		terminate(exit_status, 0);
+		return 0;
+	}
 	thread->tstatus = PS_EXITED;
+	mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 	release_thread(thread);
 
 	schedule();
