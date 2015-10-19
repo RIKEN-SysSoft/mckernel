@@ -369,6 +369,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	vm = thread->vm;
 
 	proc->pid = pn->pid;
+	proc->vm->address_space->pids[0] = pn->pid;
 	proc->pgid = pn->pgid;
 	proc->ruid = pn->cred[0];
 	proc->euid = pn->cred[1];

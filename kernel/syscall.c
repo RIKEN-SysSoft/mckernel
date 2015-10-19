@@ -1514,16 +1514,16 @@ static int ptrace_report_exec(struct thread *thread)
 static void ptrace_syscall_enter(struct thread *thread)
 {
 	int ptrace = thread->proc->ptrace;
+	struct mcs_rwlock_node_irqsave lock;
 
 	if (ptrace & PT_TRACE_SYSCALL_ENTER) {
 		int sig = (SIGTRAP | ((ptrace & PTRACE_O_TRACESYSGOOD) ? 0x80 : 0));
 		ptrace_report_signal(thread, sig);
-		// TODO(sira): フラグ設定を排他的に行う必要がある！
-		//?ihk_mc_spinlock_lock_noirq(&thread->proc->lock);	
+		mcs_rwlock_writer_lock(&thread->proc->update_lock, &lock);
 		if (thread->proc->ptrace & PT_TRACE_SYSCALL_ENTER) {
 			thread->proc->ptrace |= PT_TRACE_SYSCALL_EXIT;
 		}
-		//?ihk_mc_spinlock_unlock_noirq(&thread->proc->lock);	
+		mcs_rwlock_writer_unlock(&thread->proc->update_lock, &lock);
 	}
 }
 
@@ -1564,58 +1564,46 @@ static int ptrace_check_clone_event(struct thread *thread, int clone_flags)
 	return event;
 }
 
-// TODO(sira): 全体的にチェック必要
 static int ptrace_report_clone(struct thread *thread, struct thread *new, int event)
 {
 	dkprintf("ptrace_report_clone,enter\n");
 	int error = 0;
 	long rc;
 	struct siginfo info;
-	mcs_rwlock_node_t lock;
+	struct mcs_rwlock_node lock;
+	struct mcs_rwlock_node updatelock;
+	int parent_pid;
 
 	/* Save reason why stopped and process state for wait4() to reap */
-	// TODO(sira): フラグ設定を排他的に行う必要がある！
-	//?ihk_mc_spinlock_lock_noirq(&thread->proc->lock);
+	mcs_rwlock_writer_lock_noirq(&thread->proc->update_lock, &lock);
 	thread->proc->exit_status = (SIGTRAP | (event << 8));
 	/* Transition process state */
 	thread->proc->pstatus = PS_TRACED;
 	thread->tstatus = PS_TRACED;
 	thread->proc->ptrace_eventmsg = new->tid;
 	thread->proc->ptrace &= ~PT_TRACE_SYSCALL_MASK;
-	//?ihk_mc_spinlock_unlock_noirq(&thread->proc->lock);	
+	parent_pid = thread->proc->parent->pid;
+	mcs_rwlock_writer_unlock_noirq(&thread->proc->update_lock, &lock);
 
 	dkprintf("ptrace_report_clone,kill SIGCHLD\n");
-	if (thread->proc->parent) {
-		/* kill SIGCHLD */
-		// このロックは不要と思われる
-		//?ihk_mc_spinlock_lock_noirq(&thread->proc->parent->lock);
-		// 条件も不要 必ず親がある
-		if (thread->proc->parent) {
-			memset(&info, '\0', sizeof info);
-			info.si_signo = SIGCHLD;
-			info.si_code = CLD_TRAPPED;
-			info._sifields._sigchld.si_pid = thread->proc->pid;
-			info._sifields._sigchld.si_status = thread->proc->exit_status;
-			rc = do_kill(cpu_local_var(current), thread->proc->parent->pid, -1, SIGCHLD, &info, 0);
-			if(rc < 0) {
-				dkprintf("ptrace_report_clone,do_kill failed\n");
-			}
-		}
-		//?ihk_mc_spinlock_unlock_noirq(&thread->proc->parent->lock);	
-
-		/* Wake parent (if sleeping in wait4()) */
-		waitq_wakeup(&thread->proc->parent->waitpid_q);
+	memset(&info, '\0', sizeof info);
+	info.si_signo = SIGCHLD;
+	info.si_code = CLD_TRAPPED;
+	info._sifields._sigchld.si_pid = thread->proc->pid;
+	info._sifields._sigchld.si_status = thread->proc->exit_status;
+	rc = do_kill(cpu_local_var(current), parent_pid, -1, SIGCHLD, &info, 0);
+	if(rc < 0) {
+		dkprintf("ptrace_report_clone,do_kill failed\n");
 	}
+
+	/* Wake parent (if sleeping in wait4()) */
+	waitq_wakeup(&thread->proc->parent->waitpid_q);
 
 	if (event != PTRACE_EVENT_VFORK_DONE) {
 		/* PTRACE_EVENT_FORK or PTRACE_EVENT_VFORK or PTRACE_EVENT_CLONE */
 
-		struct process *child, *next;
-
+		mcs_rwlock_writer_lock_noirq(&new->proc->update_lock, &updatelock);
 		/* set ptrace features to new process */
-		// このロックは不要と思われる
-		//?ihk_mc_spinlock_lock_noirq(&new->proc->lock);
-
 		new->proc->ptrace = thread->proc->ptrace;
 		new->proc->ppid_parent = new->proc->parent; /* maybe proc */
 
@@ -1624,30 +1612,21 @@ static int ptrace_report_clone(struct thread *thread, struct thread *new, int ev
 		}
 
 		mcs_rwlock_writer_lock_noirq(&new->proc->parent->children_lock, &lock);
-		list_for_each_entry_safe(child, next, &new->proc->parent->children_list, siblings_list) {
-			if(child == new->proc) {
-				list_del(&child->siblings_list);
-				goto found;
-			}
-		}
-		panic("ptrace_report_clone: missing parent-child relationship.");
-found:
+		list_del(&new->proc->siblings_list);
+		list_add_tail(&new->proc->ptraced_siblings_list, &new->proc->parent->ptraced_children_list);
 		mcs_rwlock_writer_unlock_noirq(&new->proc->parent->children_lock, &lock);
 
 		new->proc->parent = thread->proc->parent; /* new ptracing parent */
-
-/* TODO(sira): 作り直し
-		ihk_mc_spinlock_lock_noirq(&new->proc->parent->children_lock);
-		list_add_tail(&new->proc->ptrace_siblings_list, &new->proc->parent->ptrace_children);
-		ihk_mc_spinlock_unlock_noirq(&new->proc->parent->children_lock);
-*/
+		mcs_rwlock_writer_lock_noirq(&new->proc->parent->children_lock, &lock);
+		list_add_tail(&new->siblings_list, &new->proc->parent->children_list);
+		mcs_rwlock_writer_unlock_noirq(&new->proc->parent->children_lock, &lock);
 
 		/* trace and SIGSTOP */
 		new->proc->exit_status = SIGSTOP;
 		new->proc->pstatus = PS_TRACED;
 		new->tstatus = PS_TRACED;
 
-		//?ihk_mc_spinlock_unlock_noirq(&new->proc->lock);
+		mcs_rwlock_writer_unlock_noirq(&new->proc->update_lock, &updatelock);
 	}
 
 	return error;
@@ -1876,6 +1855,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 
 		/* In a single threaded process TID equals to PID */
 		settid(new, 0, cpuid, -1);
+		new->vm->address_space->pids[0] = new->proc->pid;
 
 		dkprintf("fork(): new pid: %d\n", new->proc->pid);
 		/* clear user space PTEs and set new rpgtable so that consequent 

@@ -216,8 +216,6 @@ struct thread_hash {
 
 struct address_space {
 	struct page_table	*page_table;
-	struct list_head	siblings_list;
-	struct resource_set	*res;
 	int			type;
 #define ADDRESS_SPACE_NORMAL	1
 #define ADDRESS_SPACE_PVAS	2
@@ -369,7 +367,7 @@ struct process {
 			// |       ^       ^
 			// |       |---+   |
 			// V           |   |
-			// PS_STOPPING |   |
+			// PS_STOPPING-)---+
 			// (PS_TRACING)|   |
 			// |           |   |
 			// V       +----   |
@@ -457,7 +455,14 @@ struct thread {
 	// thread info
 	int cpu_id;
 	int tid;
-	int tstatus;
+	int tstatus;	// PS_RUNNING -> PS_EXITED
+			// |       ^       ^
+			// |       |       |
+			// V       |       |
+			// PS_STOPPED------+
+			// PS_TRACED
+			// PS_INTERRPUTIBLE
+			// PS_UNINTERRUPTIBLE
 
 	// process vm
 	struct process_vm *vm;

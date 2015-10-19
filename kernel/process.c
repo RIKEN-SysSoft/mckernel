@@ -156,7 +156,6 @@ create_address_space(struct resource_set *res, int type, int n)
 	}
 
 	memset(asp, '\0', sizeof(struct address_space) + sizeof(int) * n);
-	asp->res = res;
 	asp->type = type;
 	asp->nslots = n;
 	asp->page_table = pt;
