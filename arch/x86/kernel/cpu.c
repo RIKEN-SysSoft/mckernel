@@ -1332,7 +1332,7 @@ ihk_mc_user_context_t *lookup_user_context(struct thread *thread)
 {
 	ihk_mc_user_context_t *uctx = thread->uctx;
 
-	if ((!(thread->tstatus & (PS_INTERRUPTIBLE | PS_UNINTERRUPTIBLE
+	if ((!(thread->status & (PS_INTERRUPTIBLE | PS_UNINTERRUPTIBLE
 						| PS_STOPPED | PS_TRACED))
 				&& (thread != cpu_local_var(current)))
 			|| !uctx->is_gpr_valid) {

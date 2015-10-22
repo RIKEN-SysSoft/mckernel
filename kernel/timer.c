@@ -100,9 +100,9 @@ uint64_t schedule_timeout(uint64_t timeout)
 			/* Give a chance to another thread (if any) in case the core is
 			 * oversubscribed, but make sure we will be re-scheduled */
 			if (need_schedule) {
-				xchg4(&(cpu_local_var(current)->tstatus), PS_RUNNING);
+				xchg4(&(cpu_local_var(current)->status), PS_RUNNING);
 				schedule();
-				xchg4(&(cpu_local_var(current)->tstatus), 
+				xchg4(&(cpu_local_var(current)->status), 
 						PS_INTERRUPTIBLE);
 			}
 			else {
@@ -137,9 +137,9 @@ uint64_t schedule_timeout(uint64_t timeout)
 				ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 
 				if (need_schedule) {
-					xchg4(&(cpu_local_var(current)->tstatus), PS_RUNNING);
+					xchg4(&(cpu_local_var(current)->status), PS_RUNNING);
 					schedule();
-					xchg4(&(cpu_local_var(current)->tstatus), 
+					xchg4(&(cpu_local_var(current)->status), 
 							PS_INTERRUPTIBLE);
 				}
 			}

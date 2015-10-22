@@ -658,7 +658,7 @@ static uint64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q
 	 * queue_me() calls spin_unlock() upon completion, both serializing
 	 * access to the hash list and forcing another memory barrier.
 	 */
-	xchg4(&(cpu_local_var(current)->tstatus), PS_INTERRUPTIBLE);
+	xchg4(&(cpu_local_var(current)->status), PS_INTERRUPTIBLE);
 	queue_me(q, hb);
 	
 	if (!plist_node_empty(&q->list)) {
@@ -674,7 +674,7 @@ static uint64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q
 	}
 	
 	/* This does not need to be serialized */
-	cpu_local_var(current)->tstatus = PS_RUNNING;
+	cpu_local_var(current)->status = PS_RUNNING;
 	
 	return time_remain;
 }

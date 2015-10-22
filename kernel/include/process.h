@@ -363,7 +363,7 @@ struct process {
 	ihk_atomic_t refcount;
 
 	// process status and exit status
-	int pstatus;	// PS_RUNNING -> PS_EXITED -> PS_ZOMBIE
+	int status;	// PS_RUNNING -> PS_EXITED -> PS_ZOMBIE
 			// |       ^       ^
 			// |       |---+   |
 			// V           |   |
@@ -455,7 +455,7 @@ struct thread {
 	// thread info
 	int cpu_id;
 	int tid;
-	int tstatus;	// PS_RUNNING -> PS_EXITED
+	int status;	// PS_RUNNING -> PS_EXITED
 			// |       ^       ^
 			// |       |       |
 			// V       |       |

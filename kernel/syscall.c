@@ -304,7 +304,7 @@ static int wait_stopped(struct thread *thread, struct process *child, int *statu
 	int ret;
 
 	/* Copy exit_status created in do_signal */
-	int *exit_status = child->pstatus == PS_STOPPED ? 
+	int *exit_status = child->status == PS_STOPPED ? 
 		&child->group_exit_status :
 		&child->exit_status;
 
@@ -384,7 +384,7 @@ do_wait(int pid, int *status, int options, void *rusage)
 			empty = 0;
 
 			if((options & WEXITED) &&
-			   child->pstatus == PS_ZOMBIE) {
+			   child->status == PS_ZOMBIE) {
 				ret = wait_zombie(thread, child, status, options);
 				if(ret == child->pid){
 					mcs_rwlock_writer_unlock_noirq(&thread->proc->children_lock, &lock);
@@ -410,7 +410,7 @@ do_wait(int pid, int *status, int options, void *rusage)
 			}
 
 			if((child->ptrace & PT_TRACED) &&
-			   (child->pstatus & (PS_STOPPED | PS_TRACED))) {
+			   (child->status & (PS_STOPPED | PS_TRACED))) {
 				ret = wait_stopped(thread, child, status, options);
 				if(ret == child->pid){
 					if(!(options & WNOWAIT)){
@@ -566,17 +566,17 @@ terminate(int rc, int sig)
 	// clean up threads
 	mcs_rwlock_reader_lock(&proc->threads_lock, &lock); // conflict clone
 	mcs_rwlock_writer_lock_noirq(&proc->update_lock, &updatelock);
-	if(proc->pstatus == PS_EXITED){
+	if(proc->status == PS_EXITED){
 		mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
 		mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
-		mythread->tstatus = PS_EXITED;
+		mythread->status = PS_EXITED;
 		release_thread(mythread);
 		schedule();
 		// no return
 		return;
 	}
 	proc->exit_status = ((rc & 0x00ff) << 8) | (sig & 0xff);
-	proc->pstatus = PS_EXITED;
+	proc->status = PS_EXITED;
 	mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
 	mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 
@@ -672,7 +672,7 @@ terminate(int rc, int sig)
 			mcs_rwlock_writer_lock_noirq(&child->update_lock,
 			                         &updatelock);
 			if(child->ppid_parent == proc &&
-			   child->pstatus == PS_ZOMBIE){
+			   child->status == PS_ZOMBIE){
 				list_del(&child->hash_list);
 				list_del(&child->siblings_list);
 				kfree(child);
@@ -721,11 +721,11 @@ terminate(int rc, int sig)
 
 	// Send signal to parent
 	if (proc->parent == pid1) {
-		proc->pstatus = PS_ZOMBIE;
+		proc->status = PS_ZOMBIE;
 		release_process(proc);
 	}
 	else {
-		proc->pstatus = PS_ZOMBIE;
+		proc->status = PS_ZOMBIE;
 
 		dkprintf("terminate,wakeup\n");
 
@@ -749,7 +749,7 @@ terminate(int rc, int sig)
 		waitq_wakeup(&proc->parent->waitpid_q);
 	}
 
-	mythread->tstatus = PS_EXITED;
+	mythread->status = PS_EXITED;
 	release_thread(mythread);
 	schedule();
 	// no return
@@ -1578,8 +1578,8 @@ static int ptrace_report_clone(struct thread *thread, struct thread *new, int ev
 	mcs_rwlock_writer_lock_noirq(&thread->proc->update_lock, &lock);
 	thread->proc->exit_status = (SIGTRAP | (event << 8));
 	/* Transition process state */
-	thread->proc->pstatus = PS_TRACED;
-	thread->tstatus = PS_TRACED;
+	thread->proc->status = PS_TRACED;
+	thread->status = PS_TRACED;
 	thread->proc->ptrace_eventmsg = new->tid;
 	thread->proc->ptrace &= ~PT_TRACE_SYSCALL_MASK;
 	parent_pid = thread->proc->parent->pid;
@@ -1623,8 +1623,8 @@ static int ptrace_report_clone(struct thread *thread, struct thread *new, int ev
 
 		/* trace and SIGSTOP */
 		new->proc->exit_status = SIGSTOP;
-		new->proc->pstatus = PS_TRACED;
-		new->tstatus = PS_TRACED;
+		new->proc->status = PS_TRACED;
+		new->status = PS_TRACED;
 
 		mcs_rwlock_writer_unlock_noirq(&new->proc->update_lock, &updatelock);
 	}
@@ -1925,10 +1925,10 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		}
 	}
 
-	new->tstatus = PS_RUNNING;
+	new->status = PS_RUNNING;
 	chain_thread(new);
 	if (!(clone_flags & CLONE_VM)) {
-		new->proc->pstatus = PS_RUNNING;
+		new->proc->status = PS_RUNNING;
 		chain_process(new->proc);
 	}
 
@@ -3509,12 +3509,12 @@ SYSCALL_DECLARE(exit)
 	}
 
 	mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
-	if(proc->pstatus == PS_EXITED){
+	if(proc->status == PS_EXITED){
 		mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 		terminate(exit_status, 0);
 		return 0;
 	}
-	thread->tstatus = PS_EXITED;
+	thread->status = PS_EXITED;
 	mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 	release_thread(thread);
 
@@ -3722,7 +3722,7 @@ static long ptrace_pokeuser(int pid, long addr, long data)
 	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if(child->proc->pstatus == PS_TRACED){
+	if(child->proc->status == PS_TRACED){
 		rc = ptrace_write_user(child, addr, (unsigned long)data);
 	}
 	thread_unlock(child, &lock);
@@ -3742,7 +3742,7 @@ static long ptrace_peekuser(int pid, long addr, long data)
 	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if(child->proc->pstatus == PS_TRACED){
+	if(child->proc->status == PS_TRACED){
 		unsigned long value;
 		rc = ptrace_read_user(child, addr, &value);
 		if (rc == 0) {
@@ -3764,7 +3764,7 @@ static long ptrace_getregs(int pid, long data)
 	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if(child->proc->pstatus == PS_TRACED){
+	if(child->proc->status == PS_TRACED){
 		struct user_regs_struct user_regs;
 		long addr;
 		unsigned long *p;
@@ -3794,7 +3794,7 @@ static long ptrace_setregs(int pid, long data)
 	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if(child->proc->pstatus == PS_TRACED){
+	if(child->proc->status == PS_TRACED){
 		struct user_regs_struct user_regs;
 		rc = copy_from_user(&user_regs, regs, sizeof(struct user_regs_struct));
 		if (rc == 0) {
@@ -3824,7 +3824,7 @@ static long ptrace_arch_prctl(int pid, long code, long addr)
 	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if (child->proc->pstatus == PS_TRACED) {
+	if (child->proc->status == PS_TRACED) {
 		switch (code) {
 		case ARCH_GET_FS: {
 			unsigned long value;
@@ -3880,7 +3880,7 @@ static long ptrace_getfpregs(int pid, long data)
 	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if (child->proc->pstatus == PS_TRACED) {
+	if (child->proc->status == PS_TRACED) {
 		rc = ptrace_read_fpregs(child, (void *)data);
 	}
 	thread_unlock(child, &lock);
@@ -3897,7 +3897,7 @@ static long ptrace_setfpregs(int pid, long data)
 	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if (child->proc->pstatus == PS_TRACED) {
+	if (child->proc->status == PS_TRACED) {
 		rc = ptrace_write_fpregs(child, (void *)data);
 	}
 	thread_unlock(child, &lock);
@@ -3917,7 +3917,7 @@ static long ptrace_getregset(int pid, long type, long data)
 	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if (child->proc->pstatus == PS_TRACED) {
+	if (child->proc->status == PS_TRACED) {
 		struct iovec iov;
 
 		rc = copy_from_user(&iov, (struct iovec *)data, sizeof(iov));
@@ -3943,7 +3943,7 @@ static long ptrace_setregset(int pid, long type, long data)
 	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if (child->proc->pstatus == PS_TRACED) {
+	if (child->proc->status == PS_TRACED) {
 		struct iovec iov;
 
 		rc = copy_from_user(&iov, (struct iovec *)data, sizeof(iov));
@@ -3970,7 +3970,7 @@ static long ptrace_peektext(int pid, long addr, long data)
 	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if(child->proc->pstatus == PS_TRACED){
+	if(child->proc->status == PS_TRACED){
 		unsigned long value;
 		rc = read_process_vm(child->vm, &value, (void *)addr, sizeof(value));
 		if (rc != 0) { 
@@ -3993,7 +3993,7 @@ static long ptrace_poketext(int pid, long addr, long data)
 	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if(child->proc->pstatus == PS_TRACED){
+	if(child->proc->status == PS_TRACED){
 		rc = patch_process_vm(child->vm, (void *)addr, &data, sizeof(data));
 		if (rc) {
 			dkprintf("ptrace_poketext: bad address 0x%llx\n", addr);
@@ -4203,7 +4203,7 @@ static long ptrace_geteventmsg(int pid, long data)
 	if (!child) {
 		return -ESRCH;
 	}
-	if (child->proc->pstatus == PS_TRACED) {
+	if (child->proc->status == PS_TRACED) {
 		if (copy_to_user(msg_p, &child->proc->ptrace_eventmsg, sizeof(*msg_p))) {
 			rc = -EFAULT;
 		} else {
@@ -4227,7 +4227,7 @@ ptrace_getsiginfo(int pid, siginfo_t *data)
 		return -ESRCH;
 	}
 
-	if (child->proc->pstatus != PS_TRACED) {
+	if (child->proc->status != PS_TRACED) {
 		rc = -ESRCH;
 	}
 	else if (child->ptrace_recvsig) {
@@ -4254,7 +4254,7 @@ ptrace_setsiginfo(int pid, siginfo_t *data)
 		return -ESRCH;
 	}
 
-	if (child->proc->pstatus != PS_TRACED) {
+	if (child->proc->status != PS_TRACED) {
 		rc = -ESRCH;
 	}
 	else {
@@ -6054,7 +6054,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 {
 	long l;
 
-	if(cpu_local_var(current)->proc->pstatus == PS_EXITED &&
+	if(cpu_local_var(current)->proc->status == PS_EXITED &&
 	   (num != __NR_exit && num != __NR_exit_group)){
 		check_signal(-EINVAL, NULL, 0);
 		return -EINVAL;

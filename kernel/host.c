@@ -551,8 +551,8 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		proc = thread->proc;
 
 		settid(thread, 0, cpuid, -1);
-		proc->pstatus = PS_RUNNING;
-		thread->tstatus = PS_RUNNING;
+		proc->status = PS_RUNNING;
+		thread->status = PS_RUNNING;
 		chain_thread(thread);
 		chain_process(proc);
 		runq_add_thread(thread, cpuid);

@@ -176,7 +176,7 @@ void fill_prpsinfo(struct note *head, struct thread *thread, void *regs)
 	memcpy(name, "CORE", sizeof("CORE"));
 	prpsinfo = (struct elf_prpsinfo64 *)(name + align32(sizeof("CORE")));
 
-	prpsinfo->pr_state = thread->tstatus;
+	prpsinfo->pr_state = thread->status;
 	prpsinfo->pr_pid = thread->proc->pid;
 
 /*

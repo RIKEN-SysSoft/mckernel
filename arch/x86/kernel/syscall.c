@@ -49,7 +49,7 @@ uintptr_t debug_constants[] = {
 	offsetof(struct thread, ctx),
 	offsetof(struct thread, sched_list),
 	offsetof(struct thread, proc),
-	offsetof(struct thread, tstatus),
+	offsetof(struct thread, status),
 	offsetof(struct process, pid),
 	offsetof(struct thread, tid),
 	-1,
@@ -445,8 +445,8 @@ void ptrace_report_signal(struct thread *thread, int sig)
 	}
 	proc->exit_status = sig;
 	/* Transition thread state */
-	proc->pstatus = PS_TRACED;
-	thread->tstatus = PS_TRACED;
+	proc->status = PS_TRACED;
+	thread->status = PS_TRACED;
 	proc->ptrace &= ~PT_TRACE_SYSCALL_MASK;
 	if (sig == SIGSTOP || sig == SIGTSTP ||
 			sig == SIGTTIN || sig == SIGTTOU) {
@@ -636,8 +636,8 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 				/* Reap and set new signal_flags */
 				proc->signal_flags = SIGNAL_STOP_STOPPED;
 
-				proc->pstatus = PS_STOPPED;
-				thread->tstatus = PS_STOPPED;
+				proc->status = PS_STOPPED;
+				thread->status = PS_STOPPED;
 				mcs_rwlock_writer_unlock(&proc->update_lock, &lock);	
 
 				/* Wake up the parent who tried wait4 and sleeping */
@@ -658,8 +658,8 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 			/* Update thread state in fork tree */
 			mcs_rwlock_writer_lock(&proc->update_lock, &lock);	
 			proc->exit_status = SIGTRAP;
-			proc->pstatus = PS_TRACED;
-			thread->tstatus = PS_TRACED;
+			proc->status = PS_TRACED;
+			thread->status = PS_TRACED;
 			mcs_rwlock_writer_unlock(&proc->update_lock, &lock);	
 
 			/* Wake up the parent who tried wait4 and sleeping */
@@ -774,9 +774,9 @@ check_signal(unsigned long rc, void *regs0, int num)
 		list_for_each_entry(t, &(cpu_local_var(runq)), sched_list){
 			if(t == &cpu_local_var(idle))
 				continue;
-			if(t->tstatus == PS_INTERRUPTIBLE &&
+			if(t->status == PS_INTERRUPTIBLE &&
 			   hassigpending(t)){
-				t->tstatus = PS_RUNNING;
+				t->status = PS_RUNNING;
 				break;
 			}
 		}
@@ -900,13 +900,13 @@ do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
 		}
 
 		mcs_rwlock_reader_lock_noirq(&tproc->update_lock, &updatelock);
-		if(tproc->pstatus == PS_EXITED || tproc->pstatus == PS_ZOMBIE){
+		if(tproc->status == PS_EXITED || tproc->status == PS_ZOMBIE){
 			goto done;
 		}
 		mcs_rwlock_reader_lock_noirq(&tproc->threads_lock, &lock);
 		list_for_each_entry(t, &tproc->threads_list, siblings_list){
 			if(t->tid == pid || tthread == NULL){
-				if(t->tstatus == PS_EXITED){
+				if(t->status == PS_EXITED){
 					continue;
 				}
 				if(!(mask & t->sigmask.__val[0])){
@@ -922,7 +922,7 @@ do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
 		if(tthread == NULL){
 			tthread = tthread0;
 		}
-		if(tthread && tthread->tstatus != PS_EXITED){
+		if(tthread && tthread->status != PS_EXITED){
 			savelock = &tthread->sigcommon->lock;
 			head = &tthread->sigcommon->sigpending;
 			hold_thread(tthread);
@@ -959,9 +959,9 @@ done:
 		savelock = &tthread->sigpendinglock;
 		head = &tthread->sigpending;
 		if(sig == SIGKILL ||
-		   (tproc->pstatus != PS_EXITED &&
-		    tproc->pstatus != PS_ZOMBIE &&
-		    tthread->tstatus != PS_EXITED)){
+		   (tproc->status != PS_EXITED &&
+		    tproc->status != PS_ZOMBIE &&
+		    tthread->status != PS_EXITED)){
 			hold_thread(tthread);
 		}
 		else{
@@ -985,7 +985,7 @@ done:
 		return -EPERM;
 	}
 
-	if(sig == 0 || tthread == NULL || tthread->tstatus == PS_EXITED){
+	if(sig == 0 || tthread == NULL || tthread->status == PS_EXITED){
 		if(tthread)
 			release_thread(tthread);
 		cpu_restore_interrupt(irqstate);
@@ -1039,7 +1039,7 @@ done:
 	if (doint && !(mask & tthread->sigmask.__val[0])) {
 		int cpuid = tthread->cpu_id;
 		int pid = tproc->pid;
-		int status = tthread->tstatus;
+		int status = tthread->status;
 
 		if (thread != tthread) {
 			dkprintf("do_kill,ipi,pid=%d,cpu_id=%d\n",

@@ -73,7 +73,7 @@ init_process(struct process *proc, struct process *parent)
 	/* These will be filled out when changing status */
 	proc->pid = -1;
 	proc->exit_status = -1;
-	proc->pstatus = PS_RUNNING;
+	proc->status = PS_RUNNING;
 
 	if(parent){
 		proc->parent = parent;
@@ -2089,7 +2089,7 @@ out:
 
 void hold_thread(struct thread *thread)
 {
-	if (thread->tstatus == PS_EXITED) {
+	if (thread->status == PS_EXITED) {
 		panic("hold_thread: already exited process");
 	}
 
@@ -2260,7 +2260,7 @@ static void idle(void)
 
 			s = ihk_mc_spinlock_lock(&v->runq_lock);
 			list_for_each_entry(t, &v->runq, sched_list) {
-				if (t->tstatus == PS_RUNNING) {
+				if (t->status == PS_RUNNING) {
 					v->status = CPU_STATUS_RUNNING;
 					break;
 				}
@@ -2512,7 +2512,7 @@ redo:
 		--v->runq_len;
 
 		/* Round-robin if not exited yet */
-		if (prev->tstatus != PS_EXITED) {
+		if (prev->status != PS_EXITED) {
 			list_add_tail(&prev->sched_list, &(v->runq));
 			++v->runq_len;
 		}
@@ -2537,7 +2537,7 @@ redo:
 	} else {
 		/* Pick a new running process */
 		list_for_each_entry_safe(thread, tmp, &(v->runq), sched_list) {
-			if (thread->tstatus == PS_RUNNING) {
+			if (thread->status == PS_RUNNING) {
 				next = thread;
 				break;
 			}
@@ -2609,7 +2609,7 @@ redo:
 			goto redo;
 		}
 
-		if ((last != NULL) && (last->tstatus == PS_EXITED)) {
+		if ((last != NULL) && (last->status == PS_EXITED)) {
 			release_thread(last);
 		}
 	}
@@ -2654,7 +2654,7 @@ sched_wakeup_thread(struct thread *thread, int valid_states)
 	struct cpu_local_var *v = get_cpu_local_var(thread->cpu_id);
 
 	dkprintf("sched_wakeup_process,proc->pid=%d,valid_states=%08x,proc->status=%08x,proc->cpu_id=%d,my cpu_id=%d\n",
-			 thread->proc->pid, valid_states, thread->tstatus, thread->cpu_id, ihk_mc_get_processor_id());
+			 thread->proc->pid, valid_states, thread->status, thread->cpu_id, ihk_mc_get_processor_id());
 
 	irqstate = ihk_mc_spinlock_lock(&(thread->spin_sleep_lock));
 	if (thread->spin_sleep > 0) {
@@ -2673,8 +2673,8 @@ sched_wakeup_thread(struct thread *thread, int valid_states)
 
 	irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 
-	if (thread->tstatus & valid_states) {
-		xchg4((int *)(&thread->tstatus), PS_RUNNING);
+	if (thread->status & valid_states) {
+		xchg4((int *)(&thread->status), PS_RUNNING);
 		status = 0;
 	}
 	else {
@@ -2868,7 +2868,7 @@ debug_log(unsigned long arg)
 			__mcs_rwlock_reader_lock(&phash->lock[i], &lock);
 			list_for_each_entry(p, &phash->list[i], hash_list){
 				kprintf("pid=%d ppid=%d status=%d\n",
-				        p->pid, p->ppid_parent->pid, p->pstatus);
+				        p->pid, p->ppid_parent->pid, p->status);
 			}
 			__mcs_rwlock_reader_unlock(&phash->lock[i], &lock);
 		}
@@ -2879,7 +2879,7 @@ debug_log(unsigned long arg)
 			list_for_each_entry(t, &thash->list[i], hash_list){
 				kprintf("cpu=%d pid=%d tid=%d status=%d offload=%d\n",
 				        t->cpu_id, t->proc->pid, t->tid,
-				        t->tstatus, t->in_syscall_offload);
+				        t->status, t->in_syscall_offload);
 			}
 			__mcs_rwlock_reader_unlock(&thash->lock[i], &lock);
 		}
@@ -2890,7 +2890,7 @@ debug_log(unsigned long arg)
 				kprintf("phash[i] is locked\n");
 			list_for_each_entry(p, &phash->list[i], hash_list){
 				kprintf("pid=%d ppid=%d status=%d\n",
-				        p->pid, p->ppid_parent->pid, p->pstatus);
+				        p->pid, p->ppid_parent->pid, p->status);
 			}
 		}
 		break;
@@ -2901,7 +2901,7 @@ debug_log(unsigned long arg)
 			list_for_each_entry(t, &thash->list[i], hash_list){
 				kprintf("cpu=%d pid=%d tid=%d status=%d\n",
 				        t->cpu_id, t->proc->pid, t->tid,
-				        t->tstatus);
+				        t->status);
 			}
 		}
 		break;
