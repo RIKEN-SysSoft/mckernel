@@ -688,6 +688,8 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 		case SIGSEGV:
 		case SIGBUS:
 		case SIGSYS:
+		case SIGXCPU:
+		case SIGXFSZ:
 		core:
 			dkprintf("do_signal,default,core,sig=%d\n", sig);
 			coredump(thread, regs);
