@@ -13,6 +13,10 @@
 #ifndef HEADER_X86_COMMON_IHK_ATOMIC_H
 #define HEADER_X86_COMMON_IHK_ATOMIC_H
  
+/***********************************************************************
+ * ihk_atomic_t
+ */
+
 typedef struct {
 	int counter;
 } ihk_atomic_t;
@@ -94,6 +98,30 @@ static inline int ihk_atomic_sub_return(int i, ihk_atomic_t *v)
 
 #define ihk_atomic_inc_return(v)  (ihk_atomic_add_return(1, v))
 #define ihk_atomic_dec_return(v)  (ihk_atomic_sub_return(1, v))
+
+/***********************************************************************
+ * ihk_atomic64_t
+ */
+
+typedef struct {
+	long counter64;
+} ihk_atomic64_t;
+
+#define IHK_ATOMIC64_INIT(i) { .counter64 = (i) }
+
+static inline long ihk_atomic64_read(const ihk_atomic64_t *v)
+{
+	return *(volatile long *)&(v)->counter64;
+}
+
+static inline void ihk_atomic64_inc(ihk_atomic64_t *v)
+{
+	asm volatile ("lock incq %0" : "+m"(v->counter64));
+}
+
+/***********************************************************************
+ * others
+ */
 
 /*
  * Note: no "lock" prefix even on SMP: xchg always implies lock anyway
