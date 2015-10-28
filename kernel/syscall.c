@@ -2691,6 +2691,8 @@ SYSCALL_DECLARE(madvise)
 	uintptr_t addr;
 	struct vm_range *range;
 	int error;
+	uintptr_t s;
+	uintptr_t e;
 
 	dkprintf("[%d]sys_madvise(%lx,%lx,%x)\n",
 			ihk_mc_get_processor_id(), start, len0, advice);
@@ -2732,10 +2734,7 @@ SYSCALL_DECLARE(madvise)
 	case MADV_DONTNEED:
 	case MADV_DONTFORK:
 	case MADV_DOFORK:
-		break;
-
 	case MADV_REMOVE:
-		error = -EACCES;
 		break;
 
 	case MADV_HWPOISON:
@@ -2777,7 +2776,17 @@ SYSCALL_DECLARE(madvise)
 			goto out;
 		}
 
-		if (!range->memobj || !memobj_has_pager(range->memobj)) {
+		if (advice == MADV_REMOVE) {
+			if (!range->memobj || !memobj_is_removable(range->memobj)) {
+				dkprintf("sys_madvise(%lx,%lx,%x):"
+						"not removable [%lx-%lx)\n",
+						start, len0, advice,
+						range->start, range->end);
+				error = -EACCES;
+				goto out;
+			}
+		}
+		else if (!range->memobj || !memobj_has_pager(range->memobj)) {
 			dkprintf("[%d]sys_madvise(%lx,%lx,%x):has not pager"
 					"[%lx-%lx) %lx\n",
 					ihk_mc_get_processor_id(), start,
@@ -2796,6 +2805,28 @@ SYSCALL_DECLARE(madvise)
 					range->end, range->flag);
 			error = -EINVAL;
 			goto out;
+		}
+
+		s = start;
+		if (s < range->start) {
+			s = range->start;
+		}
+		e = end;
+		if (range->end < e) {
+			e = range->end;
+		}
+
+		if (advice == MADV_REMOVE) {
+			error = invalidate_process_memory_range(
+					thread->vm, range, s, e);
+			if (error) {
+				kprintf("sys_madvise(%lx,%lx,%x):[%lx-%lx):"
+						"invalidate failed. %d\n",
+						start, len0, advice,
+						range->start, range->end,
+						error);
+				goto out;
+			}
 		}
 	}
 

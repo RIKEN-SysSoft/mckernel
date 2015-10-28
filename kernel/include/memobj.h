@@ -31,6 +31,7 @@ enum {
 	/* for memobj.flags */
 	MF_HAS_PAGER	= 0x0001,
 	MF_SHMDT_OK	= 0x0002,
+	MF_IS_REMOVABLE	= 0x0004,
 };
 
 struct memobj {
@@ -118,6 +119,11 @@ static inline void memobj_unlock(struct memobj *obj)
 static inline int memobj_has_pager(struct memobj *obj)
 {
 	return !!(obj->flags & MF_HAS_PAGER);
+}
+
+static inline int memobj_is_removable(struct memobj *obj)
+{
+	return !!(obj->flags & MF_IS_REMOVABLE);
 }
 
 int fileobj_create(int fd, struct memobj **objp, int *maxprotp);

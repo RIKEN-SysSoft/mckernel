@@ -33,11 +33,13 @@ static ihk_spinlock_t shmobj_list_lock_body = SPIN_LOCK_UNLOCKED;
 static memobj_release_func_t shmobj_release;
 static memobj_ref_func_t shmobj_ref;
 static memobj_get_page_func_t shmobj_get_page;
+static memobj_invalidate_page_func_t shmobj_invalidate_page;
 
 static struct memobj_ops shmobj_ops = {
 	.release =	&shmobj_release,
 	.ref =		&shmobj_ref,
 	.get_page =	&shmobj_get_page,
+	.invalidate_page =	&shmobj_invalidate_page,
 };
 
 static struct shmobj *to_shmobj(struct memobj *memobj)
@@ -158,7 +160,7 @@ int shmobj_create_indexed(struct shmid_ds *ds, struct shmobj **objp)
 
 	error = shmobj_create(ds, &obj);
 	if (!error) {
-		obj->flags |= MF_SHMDT_OK;
+		obj->flags |= MF_SHMDT_OK | MF_IS_REMOVABLE;
 		*objp = to_shmobj(obj);
 	}
 	return error;
@@ -367,5 +369,32 @@ out:
 	}
 	dkprintf("shmobj_get_page(%p,%#lx,%d,%p):%d\n",
 			memobj, off, p2align, physp, error);
+	return error;
+}
+
+static int shmobj_invalidate_page(struct memobj *memobj, uintptr_t phys,
+		size_t pgsize)
+{
+	struct shmobj *obj = to_shmobj(memobj);
+	int error;
+	struct page *page;
+
+	dkprintf("shmobj_invalidate_page(%p,%#lx,%#lx)\n", memobj, phys, pgsize);
+
+	if (!(page = phys_to_page(phys))
+			|| !(page = page_list_lookup(obj, page->offset))) {
+		error = 0;
+		goto out;
+	}
+
+	if (ihk_atomic_read(&page->count) == 1) {
+		if (page_unmap(page)) {
+			ihk_mc_free_pages(phys_to_virt(phys), pgsize/PAGE_SIZE);
+		}
+	}
+
+	error = 0;
+out:
+	dkprintf("shmobj_invalidate_page(%p,%#lx,%#lx):%d\n", memobj, phys, pgsize, error);
 	return error;
 }
