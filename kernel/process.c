@@ -2581,10 +2581,10 @@ redo:
 		ihk_mc_load_page_table(next->vm->address_space->page_table);
 
 		dkprintf("[%d] schedule: tlsblock_base: 0x%lX\n",
-		         ihk_mc_get_processor_id(), next->thread.tlsblock_base);
+		         ihk_mc_get_processor_id(), next->tlsblock_base);
 
 		/* Set up new TLS.. */
-		do_arch_prctl(ARCH_SET_FS, next->thread.tlsblock_base);
+		do_arch_prctl(ARCH_SET_FS, next->tlsblock_base);
 
 		if (prev) {
 			last = ihk_mc_switch_context(&prev->ctx, &next->ctx, prev);

@@ -485,10 +485,8 @@ struct thread {
 
 	ihk_atomic_t refcount;
 
-	struct {
-		int	*clear_child_tid;
-		unsigned long tlsblock_base, tlsblock_limit;
-	} thread;
+	int	*clear_child_tid;
+	unsigned long tlsblock_base, tlsblock_limit;
 
 	// thread info
 	cpu_set_t cpu_set;

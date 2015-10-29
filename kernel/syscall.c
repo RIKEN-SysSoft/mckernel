@@ -1475,7 +1475,7 @@ long do_arch_prctl(unsigned long code, unsigned long address)
 		case ARCH_SET_FS:
 			dkprintf("[%d] arch_prctl: ARCH_SET_FS: 0x%lX\n",
 			        ihk_mc_get_processor_id(), address);
-			cpu_local_var(current)->thread.tlsblock_base = address;
+			cpu_local_var(current)->tlsblock_base = address;
 			err = ihk_mc_arch_set_special_register(type, address);
 			break;
 		case ARCH_SET_GS:
@@ -1893,7 +1893,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		dkprintf("clone_flags & CLONE_CHILD_CLEARTID: 0x%lX\n", 
 			     child_tidptr);
 
-		new->thread.clear_child_tid = (int*)child_tidptr;
+		new->clear_child_tid = (int*)child_tidptr;
 	}
 	
 	if (clone_flags & CLONE_CHILD_SETTID) {
@@ -1915,11 +1915,11 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		dkprintf("clone_flags & CLONE_SETTLS: 0x%lX\n", 
 			     tlsblock_base);
 		
-		new->thread.tlsblock_base = tlsblock_base;
+		new->tlsblock_base = tlsblock_base;
 	}
 	else { 
-		new->thread.tlsblock_base = 
-			cpu_local_var(current)->thread.tlsblock_base;
+		new->tlsblock_base = 
+			cpu_local_var(current)->tlsblock_base;
 	}
 
 	ihk_mc_syscall_ret(new->uctx) = 0;
@@ -1967,7 +1967,7 @@ SYSCALL_DECLARE(clone)
 
 SYSCALL_DECLARE(set_tid_address)
 {
-	cpu_local_var(current)->thread.clear_child_tid = 
+	cpu_local_var(current)->clear_child_tid = 
 	                        (int*)ihk_mc_syscall_arg0(ctx);
 
 	return cpu_local_var(current)->proc->pid;
@@ -3535,13 +3535,13 @@ SYSCALL_DECLARE(exit)
 	 */
 	/* If there is a clear_child_tid address set, clear it and wake it.
 	 * This unblocks any pthread_join() waiters. */
-	if (thread->thread.clear_child_tid) {
+	if (thread->clear_child_tid) {
 		
 		dkprintf("exit clear_child!\n");
 
-		*thread->thread.clear_child_tid = 0;
+		*thread->clear_child_tid = 0;
 		barrier();
-		futex((uint32_t *)thread->thread.clear_child_tid,
+		futex((uint32_t *)thread->clear_child_tid,
 		      FUTEX_WAKE, 1, 0, NULL, 0, 0);
 	}
 

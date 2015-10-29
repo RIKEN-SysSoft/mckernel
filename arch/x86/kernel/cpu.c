@@ -1340,7 +1340,7 @@ ihk_mc_user_context_t *lookup_user_context(struct thread *thread)
 	}
 
 	if (!uctx->is_sr_valid) {
-		uctx->sr.fs_base = thread->thread.tlsblock_base;
+		uctx->sr.fs_base = thread->tlsblock_base;
 		uctx->sr.gs_base = 0;
 		uctx->sr.ds = 0;
 		uctx->sr.es = 0;
