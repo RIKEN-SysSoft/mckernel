@@ -414,11 +414,13 @@ do_wait(int pid, int *status, int options, void *rusage)
 			if((child->ptrace & PT_TRACED) &&
 			   (child->status & (PS_STOPPED | PS_TRACED))) {
 				ret = wait_stopped(thread, child, status, options);
-				if(!(options & WNOWAIT)){
-					child->signal_flags &= ~SIGNAL_STOP_STOPPED;
+				if(ret == child->pid){
+					if(!(options & WNOWAIT)){
+						child->signal_flags &= ~SIGNAL_STOP_STOPPED;
+					}
+					mcs_rwlock_writer_unlock_noirq(&thread->proc->children_lock, &lock);
+					goto out_found;
 				}
-				mcs_rwlock_writer_unlock_noirq(&thread->proc->children_lock, &lock);
-				goto out_found;
 			}
 
 			if((child->signal_flags & SIGNAL_STOP_CONTINUED) &&
