@@ -392,13 +392,11 @@ do_wait(int pid, int *status, int options, void *rusage)
 			if((options & WEXITED) &&
 			   child->status == PS_ZOMBIE) {
 				ret = wait_zombie(thread, child, status, options);
-				if(ret == child->pid){
-					mcs_rwlock_writer_unlock_noirq(&thread->proc->children_lock, &lock);
-					if(!(options & WNOWAIT)){
-						release_process(child);
-					}
-					goto out_found;
+				mcs_rwlock_writer_unlock_noirq(&thread->proc->children_lock, &lock);
+				if(!(options & WNOWAIT)){
+					release_process(child);
 				}
+				goto out_found;
 			}
 
 			if(!(child->ptrace & PT_TRACED) &&
@@ -406,37 +404,31 @@ do_wait(int pid, int *status, int options, void *rusage)
 			   (options & WUNTRACED)) {
 				/* Not ptraced and in stopped state and WUNTRACED is specified */
 				ret = wait_stopped(thread, child, status, options);
-				if(ret == child->pid){
-					if(!(options & WNOWAIT)){
-						child->signal_flags &= ~SIGNAL_STOP_STOPPED;
-					}
-					mcs_rwlock_writer_unlock_noirq(&thread->proc->children_lock, &lock);
-					goto out_found;
+				if(!(options & WNOWAIT)){
+					child->signal_flags &= ~SIGNAL_STOP_STOPPED;
 				}
+				mcs_rwlock_writer_unlock_noirq(&thread->proc->children_lock, &lock);
+				goto out_found;
 			}
 
 			if((child->ptrace & PT_TRACED) &&
 			   (child->status & (PS_STOPPED | PS_TRACED))) {
 				ret = wait_stopped(thread, child, status, options);
-				if(ret == child->pid){
-					if(!(options & WNOWAIT)){
-						child->signal_flags &= ~SIGNAL_STOP_STOPPED;
-					}
-					mcs_rwlock_writer_unlock_noirq(&thread->proc->children_lock, &lock);
-					goto out_found;
+				if(!(options & WNOWAIT)){
+					child->signal_flags &= ~SIGNAL_STOP_STOPPED;
 				}
+				mcs_rwlock_writer_unlock_noirq(&thread->proc->children_lock, &lock);
+				goto out_found;
 			}
 
 			if((child->signal_flags & SIGNAL_STOP_CONTINUED) &&
 			   (options & WCONTINUED)) {
 				ret = wait_continued(thread, child, status, options);
-				if(ret == child->pid){
-					if(!(options & WNOWAIT)){
-						child->signal_flags &= ~SIGNAL_STOP_CONTINUED;
-					}
-					mcs_rwlock_writer_unlock_noirq(&thread->proc->children_lock, &lock);
-					goto out_found;
+				if(!(options & WNOWAIT)){
+					child->signal_flags &= ~SIGNAL_STOP_CONTINUED;
 				}
+				mcs_rwlock_writer_unlock_noirq(&thread->proc->children_lock, &lock);
+				goto out_found;
 			}
 		}
 
@@ -1624,7 +1616,7 @@ static int ptrace_report_clone(struct thread *thread, struct thread *new, int ev
 
 		new->proc->parent = thread->proc->parent; /* new ptracing parent */
 		mcs_rwlock_writer_lock_noirq(&new->proc->parent->children_lock, &lock);
-		list_add_tail(&new->siblings_list, &new->proc->parent->children_list);
+		list_add_tail(&new->proc->siblings_list, &new->proc->parent->children_list);
 		mcs_rwlock_writer_unlock_noirq(&new->proc->parent->children_lock, &lock);
 
 		/* trace and SIGSTOP */
@@ -1924,18 +1916,18 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 
 	ihk_mc_syscall_ret(new->uctx) = 0;
 
-	if (cpu_local_var(current)->proc->ptrace) {
-		ptrace_event = ptrace_check_clone_event(cpu_local_var(current), clone_flags);
-		if (ptrace_event) {
-			ptrace_report_clone(cpu_local_var(current), new, ptrace_event);
-		}
-	}
-
 	new->status = PS_RUNNING;
 	chain_thread(new);
 	if (!(clone_flags & CLONE_VM)) {
 		new->proc->status = PS_RUNNING;
 		chain_process(new->proc);
+	}
+
+	if (cpu_local_var(current)->proc->ptrace) {
+		ptrace_event = ptrace_check_clone_event(cpu_local_var(current), clone_flags);
+		if (ptrace_event) {
+			ptrace_report_clone(cpu_local_var(current), new, ptrace_event);
+		}
 	}
 
 	dkprintf("clone: kicking scheduler!,cpuid=%d pid=%d tid %d -> tid=%d\n", 
