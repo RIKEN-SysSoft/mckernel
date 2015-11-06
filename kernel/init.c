@@ -213,8 +213,14 @@ static void time_init(void)
 
 	origin_ts.tv_sec = tv_sec;
 	origin_ts.tv_nsec = tv_nsec;
-	clocks_per_sec = (1000L * NS_PER_SEC) / ns_per_kclock;
 
+	if (ns_per_kclock) {
+		clocks_per_sec = (1000L * NS_PER_SEC) / ns_per_kclock;
+	}
+
+	if (!ns_per_kclock) {
+		gettime_local_support = 0;
+	}
 	return;
 }
 
