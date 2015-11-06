@@ -5001,7 +5001,7 @@ SYSCALL_DECLARE(nanosleep)
 	/* Otherwise offload */
 	request.number = __NR_nanosleep;
 	request.args[0] = (unsigned long)tv;
-	request.args[0] = (unsigned long)rem;
+	request.args[1] = (unsigned long)rem;
 
 	return do_syscall(&request, ihk_mc_get_processor_id(), 0);
 }
