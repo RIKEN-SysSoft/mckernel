@@ -598,6 +598,7 @@ terminate(int rc, int sig)
 			}
 		}
 	}
+	mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 	if(ids){
 		for(i = 0; i < n; i++){
 			do_kill(mythread, proc->pid, ids[i], SIGKILL, NULL, 0);
@@ -605,7 +606,6 @@ terminate(int rc, int sig)
 		kfree(ids);
 		ids = NULL;
 	}
-	mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 
 	for(;;){
 		__mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
