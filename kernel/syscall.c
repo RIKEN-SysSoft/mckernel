@@ -95,10 +95,11 @@ static char *syscall_name[] MCKERNEL_UNUSED = {
 #undef	SYSCALL_DELEGATED
 };
 
-struct timespec origin_ts;
-static ihk_spinlock_t origin_ts_lock = SPIN_LOCK_UNLOCKED;
-ihk_atomic64_t origin_ts_version = IHK_ATOMIC64_INIT(0);
-unsigned long clocks_per_sec;
+struct tod_data_s tod_data = {
+	.do_local =	0,
+	.version =	IHK_ATOMIC64_INIT(0),
+};
+static ihk_spinlock_t tod_data_lock = SPIN_LOCK_UNLOCKED;
 
 void check_signal(unsigned long, void *, int);
 void do_signal(long rc, void *regs, struct thread *thread, struct sig_pending *pending, int num);
@@ -4825,14 +4826,14 @@ static void calculate_time_from_tsc(struct timespec *ts)
 	long ns_delta;
 
 	for (;;) {
-		while ((ver = ihk_atomic64_read(&origin_ts_version)) & 1) {
+		while ((ver = ihk_atomic64_read(&tod_data.version)) & 1) {
 			/* settimeofday() is in progress */
 			cpu_pause();
 		}
 		rmb();
-		*ts = origin_ts;
+		*ts = tod_data.origin;
 		rmb();
-		if (ver == ihk_atomic64_read(&origin_ts_version)) {
+		if (ver == ihk_atomic64_read(&tod_data.version)) {
 			break;
 		}
 
@@ -4841,9 +4842,9 @@ static void calculate_time_from_tsc(struct timespec *ts)
 	}
 
 	current_tsc = rdtsc();
-	sec_delta = current_tsc / clocks_per_sec;
-	ns_delta = NS_PER_SEC * (current_tsc % clocks_per_sec)
-		/ clocks_per_sec;
+	sec_delta = current_tsc / tod_data.clocks_per_sec;
+	ns_delta = NS_PER_SEC * (current_tsc % tod_data.clocks_per_sec)
+		/ tod_data.clocks_per_sec;
 	/* calc. of ns_delta overflows if clocks_per_sec exceeds 18.44 GHz */
 
 	ts->tv_sec += sec_delta;
@@ -4902,8 +4903,8 @@ SYSCALL_DECLARE(settimeofday)
 	unsigned long tsc;
 
 	dkprintf("sys_settimeofday(%p,%p)\n", utv, utz);
-	ihk_mc_spinlock_lock_noirq(&origin_ts_lock);
-	if (ihk_atomic64_read(&origin_ts_version) & 1) {
+	ihk_mc_spinlock_lock_noirq(&tod_data_lock);
+	if (ihk_atomic64_read(&tod_data.version) & 1) {
 		panic("settimeofday");
 	}
 
@@ -4916,9 +4917,9 @@ SYSCALL_DECLARE(settimeofday)
 		newts.tv_nsec = (long)tv.tv_usec * 1000;
 
 		tsc = rdtsc();
-		newts.tv_sec -= tsc / clocks_per_sec;
-		newts.tv_nsec -= NS_PER_SEC * (tsc % clocks_per_sec)
-			/ clocks_per_sec;
+		newts.tv_sec -= tsc / tod_data.clocks_per_sec;
+		newts.tv_nsec -= NS_PER_SEC * (tsc % tod_data.clocks_per_sec)
+			/ tod_data.clocks_per_sec;
 		if (newts.tv_nsec < 0) {
 			--newts.tv_sec;
 			newts.tv_nsec += NS_PER_SEC;
@@ -4928,17 +4929,17 @@ SYSCALL_DECLARE(settimeofday)
 	error = syscall_generic_forwarding(n, ctx);
 
 	if (!error && utv && gettime_local_support) {
-		dkprintf("sys_settimeofday(%p,%p):origin_ts <-- %ld.%ld\n",
+		dkprintf("sys_settimeofday(%p,%p):origin <-- %ld.%ld\n",
 				utv, utz, newts.tv_sec, newts.tv_nsec);
-		ihk_atomic64_inc(&origin_ts_version);
+		ihk_atomic64_inc(&tod_data.version);
 		wmb();
-		origin_ts = newts;
+		tod_data.origin = newts;
 		wmb();
-		ihk_atomic64_inc(&origin_ts_version);
+		ihk_atomic64_inc(&tod_data.version);
 	}
 
 out:
-	ihk_mc_spinlock_unlock_noirq(&origin_ts_lock);
+	ihk_mc_spinlock_unlock_noirq(&tod_data_lock);
 	dkprintf("sys_settimeofday(%p,%p): %ld\n", utv, utz, error);
 	return error;
 }

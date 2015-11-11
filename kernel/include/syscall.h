@@ -13,6 +13,7 @@
 #ifndef __HEADER_SYSCALL_H
 #define __HEADER_SYSCALL_H
 
+#include <ihk/atomic.h>
 #include <ihk/context.h>
 #include <ihk/memconst.h>
 #include <rlimit.h>
@@ -288,8 +289,13 @@ struct procfs_file {
 
 extern void terminate(int, int);
 
-/* kernel/syscall.c */
-extern struct timespec origin_ts;		/* realtime when tsc=0 */
-extern unsigned long clocks_per_sec;
+struct tod_data_s {
+	int8_t do_local;
+	int8_t padding[7];
+	ihk_atomic64_t version;
+	unsigned long clocks_per_sec;
+	struct timespec origin;		/* realtime when tsc=0 */
+};
+extern struct tod_data_s tod_data;
 
 #endif
