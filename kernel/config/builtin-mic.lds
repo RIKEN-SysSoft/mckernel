@@ -26,6 +26,7 @@ SECTIONS
 
 		. = vsyscall_page + 0x000;
 		*(.vsyscall.gettimeofday)
+		*(.vsyscall.gettimeofday.*)
 
 		. = vsyscall_page + 0x400;
 		*(.vsyscall.time)

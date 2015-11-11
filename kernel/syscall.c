@@ -95,10 +95,6 @@ static char *syscall_name[] MCKERNEL_UNUSED = {
 #undef	SYSCALL_DELEGATED
 };
 
-struct tod_data_s tod_data = {
-	.do_local =	0,
-	.version =	IHK_ATOMIC64_INIT(0),
-};
 static ihk_spinlock_t tod_data_lock = SPIN_LOCK_UNLOCKED;
 
 void check_signal(unsigned long, void *, int);

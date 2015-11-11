@@ -296,6 +296,6 @@ struct tod_data_s {
 	unsigned long clocks_per_sec;
 	struct timespec origin;		/* realtime when tsc=0 */
 };
-extern struct tod_data_s tod_data;
+extern struct tod_data_s tod_data;	/* residing in arch-dependent file */
 
 #endif
