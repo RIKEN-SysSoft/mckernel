@@ -79,6 +79,8 @@
 #define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
 #endif
 
+extern struct sigpending *hassigpending(struct thread *thread);
+
 int futex_cmpxchg_enabled;
 
 /**
@@ -774,6 +776,11 @@ retry:
 	/* RIKEN: timer expired case (indicated by !time_remain) */
 	if (timeout && !time_remain)
 		goto out_put_key;
+
+	if(hassigpending(cpu_local_var(current))){
+		ret = -EINTR;
+		goto out_put_key;
+        }
 
 	/* RIKEN: no signals */
 	put_futex_key(fshared, &q.key);
