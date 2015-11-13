@@ -96,6 +96,7 @@ static char *syscall_name[] MCKERNEL_UNUSED = {
 };
 
 static ihk_spinlock_t tod_data_lock = SPIN_LOCK_UNLOCKED;
+static void calculate_time_from_tsc(struct timespec *ts);
 
 void check_signal(unsigned long, void *, int);
 void do_signal(long rc, void *regs, struct thread *thread, struct sig_pending *pending, int num);
@@ -3419,6 +3420,7 @@ SYSCALL_DECLARE(futex)
 {
 	uint64_t timeout = 0; // No timeout
 	uint32_t val2 = 0;
+	int futex_clock_realtime = 0;
 
 	uint32_t *uaddr = (uint32_t *)ihk_mc_syscall_arg0(ctx);
 	int op = (int)ihk_mc_syscall_arg1(ctx);
@@ -3429,6 +3431,9 @@ SYSCALL_DECLARE(futex)
     
 	/* Mask off the FUTEX_PRIVATE_FLAG,
 	 * assume all futexes are address space private */
+	if (op & FUTEX_CLOCK_REALTIME) {
+		futex_clock_realtime = 1;
+	}
 	op = (op & FUTEX_CMD_MASK);
 	
 	dkprintf("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%lx, uaddr2=%lx, val3=%x, []=%x\n", 
@@ -3478,9 +3483,20 @@ SYSCALL_DECLARE(futex)
 		}
 		/* Compute timeout based on TSC/nanosec ratio */
 		else {
-			unsigned long nsec_timeout = ((long)utime->tv_sec * 1000000000ULL) 
-				+ utime->tv_nsec;
+			unsigned long nsec_timeout;
 
+			if (!(futex_clock_realtime)) {
+				nsec_timeout = ((long)utime->tv_sec * NS_PER_SEC) 
+					+ utime->tv_nsec;
+			}
+			else { /* FUTEX_CLOCK_REALTIME denotes absolute time */
+				struct timespec ats;
+				calculate_time_from_tsc(&ats);
+				
+				nsec_timeout = (utime->tv_sec * NS_PER_SEC + utime->tv_nsec) -
+					(ats.tv_sec * NS_PER_SEC + ats.tv_nsec);
+			}
+			
 			timeout = nsec_timeout * 1000 / ihk_mc_get_ns_per_tsc();
 			dkprintf("futex timeout: %lu\n", timeout);
 		}
