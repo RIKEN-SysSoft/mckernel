@@ -1878,7 +1878,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		dkprintf("clone_flags & CLONE_PARENT_SETTID: 0x%lX\n",
 		         parent_tidptr);
 		
-		*(int*)parent_tidptr = new->proc->pid;
+		*(int*)parent_tidptr = new->tid;
 	}
 	
 	if (clone_flags & CLONE_CHILD_CLEARTID) {
