@@ -2485,8 +2485,7 @@ void schedule(void)
 	struct thread *last;
 
 	if (cpu_local_var(no_preempt)) {
-		kprintf("no schedule() while no preemption! \n");
-panic("panic schedule\n");
+		dkprintf("no schedule() while no preemption! \n");
 		return;
 	}
 
