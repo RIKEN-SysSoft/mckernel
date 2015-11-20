@@ -30,6 +30,7 @@
 #include <init.h>
 #include <cls.h>
 #include <syscall.h>
+#include <sysfs.h>
 
 //#define IOCTL_FUNC_EXTENSION
 #ifdef IOCTL_FUNC_EXTENSION
@@ -278,6 +279,7 @@ static void post_init(void)
 	ap_start();
 
 	create_os_procfs_files();
+	sysfs_init();
 }
 #ifdef DCFA_RUN
 extern void user_main();

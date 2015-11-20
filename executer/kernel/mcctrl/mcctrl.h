@@ -33,10 +33,12 @@
 #define HEADER_MCCTRL_H
 
 #include <ihk/ihk_host_driver.h>
+#include <linux/resource.h>
 #include <uprotocol.h>
 #include <linux/wait.h>
 #include <ihk/ikc.h>
 #include <ikc/master.h>
+#include <linux/semaphore.h>
 
 #define SCD_MSG_PREPARE_PROCESS         0x1
 #define SCD_MSG_PREPARE_PROCESS_ACKED   0x2
@@ -57,6 +59,27 @@
 
 #define SCD_MSG_DEBUG_LOG		0x20
 
+#define SCD_MSG_SYSFS_REQ_CREATE        0x30
+/* #define SCD_MSG_SYSFS_RESP_CREATE    0x31 */
+#define SCD_MSG_SYSFS_REQ_MKDIR         0x32
+/* #define SCD_MSG_SYSFS_RESP_MKDIR     0x33 */
+#define SCD_MSG_SYSFS_REQ_SYMLINK       0x34
+/* #define SCD_MSG_SYSFS_RESP_SYMLINK   0x35 */
+#define SCD_MSG_SYSFS_REQ_LOOKUP        0x36
+/* #define SCD_MSG_SYSFS_RESP_LOOKUP    0x37 */
+#define SCD_MSG_SYSFS_REQ_UNLINK        0x38
+/* #define SCD_MSG_SYSFS_RESP_UNLINK    0x39 */
+#define SCD_MSG_SYSFS_REQ_SHOW          0x3a
+#define SCD_MSG_SYSFS_RESP_SHOW         0x3b
+#define SCD_MSG_SYSFS_REQ_STORE         0x3c
+#define SCD_MSG_SYSFS_RESP_STORE        0x3d
+#define SCD_MSG_SYSFS_REQ_RELEASE       0x3e
+#define SCD_MSG_SYSFS_RESP_RELEASE      0x3f
+#define SCD_MSG_SYSFS_REQ_SETUP         0x40
+#define SCD_MSG_SYSFS_RESP_SETUP        0x41
+/* #define SCD_MSG_SYSFS_REQ_CLEANUP    0x42 */
+/* #define SCD_MSG_SYSFS_RESP_CLEANUP   0x43 */
+
 #define DMA_PIN_SHIFT                   21
 
 #define DO_USER_MODE
@@ -70,11 +93,24 @@ struct coretable {
 
 struct ikc_scd_packet {
 	int msg;
-	int ref;
-	int osnum;
-	int pid;
 	int err;
-	unsigned long arg;
+	union {
+		/* for traditional SCD_MSG_* */
+		struct {
+			int ref;
+			int osnum;
+			int pid;
+			int padding;
+			unsigned long arg;
+		};
+
+		/* for SCD_MSG_SYSFS_* */
+		struct {
+			long sysfs_arg1;
+			long sysfs_arg2;
+			long sysfs_arg3;
+		};
+	};
 };
 
 struct mcctrl_priv { 
@@ -128,6 +164,31 @@ struct mcctrl_per_proc_data {
 	unsigned long rpgtable;	/* per process, not per OS */
 };
 
+struct sysfsm_req {
+	int busy;
+	int padding;
+	long lresult;
+	wait_queue_head_t wq;
+};
+
+struct sysfsm_data {
+	size_t sysfs_bufsize;
+	void *sysfs_buf;
+	long sysfs_buf_rpa;
+	long sysfs_buf_pa;
+	struct kobject *sysfs_kobj;
+	struct sysfsm_node *sysfs_root;
+	struct semaphore sysfs_tree_sem;
+	struct semaphore sysfs_io_sem;
+	struct sysfsm_req sysfs_req;
+	ihk_os_t sysfs_os;
+};
+
+static inline int sysfs_inited(struct sysfsm_data *sdp)
+{
+	return !!(sdp->sysfs_buf);
+} /* sysfs_inited() */
+
 struct mcctrl_usrdata {
 	struct ihk_ikc_listen_param listen_param;
 	struct ihk_ikc_listen_param listen_param2;
@@ -146,6 +207,7 @@ struct mcctrl_usrdata {
 	struct list_head per_proc_list;
 	ihk_spinlock_t per_proc_list_lock;
 	void **keys;
+	struct sysfsm_data sysfsm_data;
 };
 
 struct mcctrl_signal {
@@ -187,5 +249,9 @@ struct procfs_file {
 	int mode;			/* file mode (request) */
 	char fname[PROCFS_NAME_MAX];	/* procfs filename (request) */
 };
+
+/* sysfs.c */
+void sysfsm_cleanup(ihk_os_t os);
+void sysfsm_packet_handler(void *os, int msg, int err, long arg1, long arg2);
 
 #endif

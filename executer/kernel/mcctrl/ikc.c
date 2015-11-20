@@ -84,6 +84,26 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	case SCD_MSG_SEND_SIGNAL:
 		sig_done(pisp->arg, pisp->err);
 		break;
+
+	case SCD_MSG_SYSFS_REQ_CREATE:
+	case SCD_MSG_SYSFS_REQ_MKDIR:
+	case SCD_MSG_SYSFS_REQ_SYMLINK:
+	case SCD_MSG_SYSFS_REQ_LOOKUP:
+	case SCD_MSG_SYSFS_REQ_UNLINK:
+	case SCD_MSG_SYSFS_REQ_SETUP:
+	case SCD_MSG_SYSFS_RESP_SHOW:
+	case SCD_MSG_SYSFS_RESP_STORE:
+	case SCD_MSG_SYSFS_RESP_RELEASE:
+		sysfsm_packet_handler(__os, pisp->msg, pisp->err,
+				pisp->sysfs_arg1, pisp->sysfs_arg2);
+		break;
+
+	default:
+		printk(KERN_ERR "mcctrl:syscall_packet_handler:"
+				"unknown message (%d.%d.%d.%d.%d.%#lx)\n",
+				pisp->msg, pisp->ref, pisp->osnum, pisp->pid,
+				pisp->err, pisp->arg);
+		break;
 	}
 	return 0;
 }

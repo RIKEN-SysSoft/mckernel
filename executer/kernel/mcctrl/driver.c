@@ -25,6 +25,7 @@
 #include <linux/fs.h>
 #include <linux/miscdevice.h>
 #include <linux/slab.h>
+#include <linux/device.h>
 #include "mcctrl.h"
 
 #define OS_MAX_MINOR 64
@@ -137,6 +138,7 @@ static void __exit mcctrl_exit(void)
 	printk("mcctrl: unregistered.\n");
 	for(i = 0; i < OS_MAX_MINOR; i++){
 		if(os[i]){
+			sysfsm_cleanup(os[i]);
 			ihk_os_unregister_user_call_handlers(os[i], mcctrl_uc + i);
 			destroy_ikc_channels(os[i]);
 			procfs_exit(i);

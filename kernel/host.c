@@ -30,6 +30,7 @@
 #include <mman.h>
 #include <init.h>
 #include <kmalloc.h>
+#include <sysfs.h>
 
 //#define DEBUG_PRINT_HOST
 
@@ -607,6 +608,22 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		dkprintf("SCD_MSG_DEBUG_LOG code=%lx\n", packet->arg);
 		debug_log(packet->arg);
 		return 0;
+
+	case SCD_MSG_SYSFS_REQ_SHOW:
+	case SCD_MSG_SYSFS_REQ_STORE:
+	case SCD_MSG_SYSFS_REQ_RELEASE:
+		sysfss_packet_handler(c, packet->msg, packet->err,
+				packet->sysfs_arg1, packet->sysfs_arg2,
+				packet->sysfs_arg3);
+		return 0;
+
+	default:
+		kprintf("syscall_pakcet_handler:unknown message "
+				"(%d.%d.%d.%d.%d.%#lx)\n",
+				packet->msg, packet->ref, packet->osnum,
+				packet->pid, packet->err, packet->arg);
+		return 0;
+
 	}
 	return 0;
 }

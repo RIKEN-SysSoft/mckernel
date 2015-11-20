@@ -1,0 +1,1634 @@
+/**
+ * \file sysfs.c
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  sysfs framework, IHK-Master side
+ * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
+ * 	Copyright (C) 2015  RIKEN AICS
+ */
+/*
+ * HISTORY:
+ */
+
+#include <linux/kernel.h>
+#include <linux/slab.h>
+#include <linux/device.h>
+#include "mcctrl.h"
+#include "sysfs_msg.h"
+
+#define dprintk(...) do { if (0) printk(KERN_DEBUG __VA_ARGS__); } while (0)
+#define wprintk(...) do { if (1) printk(KERN_WARNING __VA_ARGS__); } while (0)
+#define eprintk(...) do { if (1) printk(KERN_ERR __VA_ARGS__); } while (0)
+
+enum {
+	/* sysfsm_node.type */
+	SNT_FILE = 1,
+	SNT_DIR = 2,
+	SNT_LINK = 3,
+};
+
+struct sysfsm_node {
+	int8_t type;
+	int8_t padding[7];
+	char *name;
+	struct sysfsm_node *parent;
+	struct sysfsm_data *sdp;
+	struct list_head chain;
+	union {
+		/* SNT_DIR */
+		struct {
+			struct kobject kobj;
+			struct list_head children;
+		};
+
+		/* SNT_FILE */
+		struct {
+			struct attribute attr;
+			long client_ops;
+			long client_instance;
+		};
+	};
+}; /* struct sysfsm_node */
+
+struct sysfs_work {
+	void *os;
+	int msg;
+	int err;
+	long arg1;
+	long arg2;
+	struct work_struct work;
+}; /* struct sysfs_work */
+
+static struct sysfs_ops the_ops;
+static struct kobj_type the_ktype;
+
+static ssize_t
+sysfsm_show(struct kobject *kobj, struct attribute *attr, char *buf)
+{
+	int error;
+	struct semaphore *held_sem = NULL;
+	struct ikc_scd_packet packet;
+	struct sysfsm_node *np;
+	ssize_t ssize = -EIO;
+	struct sysfsm_data *sdp;
+	struct sysfsm_req *req;
+
+	dprintk("mcctrl:sysfsm_show(%s,%s,%p)\n", kobj->name, attr->name, buf);
+
+	np = container_of(attr, struct sysfsm_node, attr);
+	sdp = np->sdp;
+	req = &sdp->sysfs_req;
+
+	if (!sysfs_inited(sdp)) {
+		/* emulate EOF */
+		error = 0;
+		ssize = 0;
+		eprintk("mcctrl:sysfsm_show:not initialized. %d\n", error);
+		goto out;
+	}
+
+	error = down_interruptible(&sdp->sysfs_io_sem);
+	if (error) {
+		eprintk("mcctrl:sysfsm_show:down failed. %d\n", error);
+		goto out;
+	}
+	held_sem = &sdp->sysfs_io_sem;
+
+	/* for the case that last wait_event_interruptible() was interrupted */
+	error = wait_event_interruptible(req->wq, !req->busy);
+	if (error) {
+		eprintk("mcctrl:sysfsm_show:wait_event_interruptible0 failed. %d\n",
+				error);
+		error = -EINTR;
+		goto out;
+	}
+
+	packet.msg = SCD_MSG_SYSFS_REQ_SHOW;
+	packet.sysfs_arg1 = (long)np;
+	packet.sysfs_arg2 = (long)np->client_ops;
+	packet.sysfs_arg3 = (long)np->client_instance;
+
+	req->busy = 1;
+#define SYSFS_MCK_CPU 0
+	error = mcctrl_ikc_send(sdp->sysfs_os, SYSFS_MCK_CPU, &packet);
+	if (error) {
+		eprintk("mcctrl:sysfsm_show:mcctrl_ikc_send failed. %d\n",
+				error);
+		goto out;
+	}
+
+	error = wait_event_interruptible(req->wq, !req->busy);
+	if (error) {
+		eprintk("mcctrl:sysfsm_show:wait_event_interruptible failed. %d\n",
+				error);
+		error = -EINTR;
+		goto out;
+	}
+
+	ssize = req->lresult;
+	if (ssize < 0) {
+		error = ssize;
+		eprintk("mcctrl:sysfsm_show:SCD_MSG_SYSFS_REQ_SHOW failed. %d\n",
+				error);
+		goto out;
+	}
+
+	if (ssize > 0) {
+		memcpy(buf, sdp->sysfs_buf, ssize);
+	}
+
+	error = 0;
+out:
+	if (held_sem) {
+		up(held_sem);
+	}
+	if (error) {
+		eprintk("mcctrl:sysfsm_show(%s,%s,%p): %d\n",
+				kobj->name, attr->name, buf, error);
+		ssize = error;
+	}
+	dprintk("mcctrl:sysfsm_show(%s,%s,%p): %ld %d\n",
+			kobj->name, attr->name, buf, ssize, error);
+	return ssize;
+} /* sysfsm_show() */
+
+static ssize_t
+sysfsm_store(struct kobject *kobj, struct attribute *attr, const char *buf,
+		size_t bufsize)
+{
+	int error;
+	struct semaphore *held_sem = NULL;
+	struct ikc_scd_packet packet;
+	struct sysfsm_node *np;
+	ssize_t ssize = -EIO;
+	struct sysfsm_data *sdp;
+	struct sysfsm_req *req;
+
+	dprintk("mcctrl:sysfsm_store(%s,%s,%p,%ld)\n",
+			kobj->name, attr->name, buf, bufsize);
+
+	np = container_of(attr, struct sysfsm_node, attr);
+	sdp = np->sdp;
+	req = &sdp->sysfs_req;
+
+	if (!sysfs_inited(sdp)) {
+		/* emulate EOF */
+		error = -ENOSPC;
+		eprintk("mcctrl:sysfsm_store:not initialized. %d\n", error);
+		goto out;
+	}
+
+	error = down_interruptible(&sdp->sysfs_io_sem);
+	if (error) {
+		eprintk("mcctrl:sysfsm_store:down failed. %d\n", error);
+		goto out;
+	}
+	held_sem = &sdp->sysfs_io_sem;
+
+	/* for the case that last wait_event_interruptible() was interrupted */
+	error = wait_event_interruptible(req->wq, !req->busy);
+	if (error) {
+		eprintk("mcctrl:sysfsm_store:wait_event_interruptible0 failed. %d\n",
+				error);
+		error = -EINTR;
+		goto out;
+	}
+
+	if (bufsize > sdp->sysfs_bufsize) {
+		error = -ENOSPC;
+		eprintk("mcctrl:sysfsm_store:too large size %#lx. %d\n",
+				bufsize, error);
+		goto out;
+	}
+
+	memcpy(sdp->sysfs_buf, buf, bufsize);
+
+	packet.msg = SCD_MSG_SYSFS_REQ_STORE;
+	packet.sysfs_arg1 = (long)np;
+	packet.sysfs_arg2 = (long)np->client_ops;
+	packet.sysfs_arg3 = (long)np->client_instance;
+	packet.err = bufsize;
+
+	req->busy = 1;
+#define SYSFS_MCK_CPU 0
+	error = mcctrl_ikc_send(sdp->sysfs_os, SYSFS_MCK_CPU, &packet);
+	if (error) {
+		eprintk("mcctrl:sysfsm_store:mcctrl_ikc_send failed. %d\n",
+				error);
+		goto out;
+	}
+
+	error = wait_event_interruptible(req->wq, !req->busy);
+	if (error) {
+		eprintk("mcctrl:sysfsm_store:wait_event_interruptible failed. %d\n",
+				error);
+		error = -EINTR;
+		goto out;
+	}
+
+	ssize = req->lresult;
+	if (ssize < 0) {
+		error = ssize;
+		eprintk("mcctrl:sysfsm_store:SCD_MSG_SYSFS_REQ_STORE failed. %d\n",
+				error);
+		goto out;
+	}
+
+	error = 0;
+out:
+	if (held_sem) {
+		up(held_sem);
+	}
+	if (error) {
+		eprintk("mcctrl:sysfsm_store(%s,%s,%p,%ld): %d\n",
+				kobj->name, attr->name, buf, bufsize, error);
+		ssize = error;
+	}
+	dprintk("mcctrl:sysfsm_store(%s,%s,%p,%ld): %ld %d\n",
+			kobj->name, attr->name, buf, bufsize, ssize, error);
+	return ssize;
+} /* sysfsm_store() */
+
+static int
+release_i(struct sysfsm_node *np)
+{
+	int error;
+	struct semaphore *held_sem = NULL;
+	struct sysfsm_data *sdp;
+	struct ikc_scd_packet packet;
+	struct sysfsm_req *req;
+
+	BUG_ON(!np);
+	dprintk("mcctrl:release_i(%p %s)\n", np, np->name);
+
+	sdp = np->sdp;
+	req = &sdp->sysfs_req;
+
+	if ((np->type == SNT_FILE)
+			&& (np->client_ops || np->client_instance)
+			&& sysfs_inited(sdp)) {
+		error = down_interruptible(&sdp->sysfs_io_sem);
+		if (error) {
+			eprintk("mcctrl:release_i:down failed. %d\n", error);
+			goto out;
+		}
+		held_sem = &sdp->sysfs_io_sem;
+
+		/* for the case that last wait_event_interruptible() was interrupted */
+		error = wait_event_interruptible(req->wq, !req->busy);
+		if (error) {
+			eprintk("mcctrl:release_i:wait_event_interruptible0 failed. %d\n",
+					error);
+			error = -EINTR;
+			goto out;
+		}
+
+		packet.msg = SCD_MSG_SYSFS_REQ_RELEASE;
+		packet.sysfs_arg1 = (long)np;
+		packet.sysfs_arg2 = np->client_ops;
+		packet.sysfs_arg3 = np->client_instance;
+
+		req->busy = 1;
+#define SYSFS_MCK_CPU 0
+		error = mcctrl_ikc_send(sdp->sysfs_os, SYSFS_MCK_CPU, &packet);
+		if (error) {
+			eprintk("mcctrl:release_i:mcctrl_ikc_send failed. %d\n",
+					error);
+			goto out;
+		}
+
+		error = wait_event_interruptible(req->wq, !req->busy);
+		if (error) {
+			eprintk("mcctrl:release_i:wait_event_interruptible failed. %d\n",
+					error);
+			error = -EINTR;
+			goto out;
+		}
+	}
+
+	kfree(np->name);
+	kfree(np);
+
+	error = 0;
+out:
+	if (held_sem) {
+		up(held_sem);
+	}
+	if (error) {
+		eprintk("mcctrl:release_i(%p %s): %d\n", np, np->name, error);
+	}
+	dprintk("mcctrl:release_i(%p): %d\n", np, error);
+	return error;
+} /* release_i() */
+
+static void
+sysfsm_release(struct kobject *kobj)
+{
+	int error;
+	struct sysfsm_node *np = container_of(kobj, struct sysfsm_node, kobj);
+
+	dprintk("mcctrl:sysfsm_release(%p %s)\n", kobj, kobj->name);
+
+	error = release_i(np);
+	if (error) {
+		eprintk("mcctrl:sysfsm_release:release_i failed. %d\n", error);
+		goto out;
+	}
+
+	error = 0;
+out:
+	if (error) {
+		eprintk("mcctrl:sysfsm_release(%p %s): %d\n",
+				kobj, kobj->name, error);
+	}
+	dprintk("mcctrl:sysfsm_release(%p): %d\n", kobj, error);
+	return;
+} /* sysfsm_release() */
+
+static struct sysfsm_node *
+lookup_i(struct sysfsm_node *dirp, const char *name)
+{
+	int error;
+	struct sysfsm_node *np;
+
+	BUG_ON(!dirp);
+	BUG_ON(!name);
+	dprintk("mcctrl:lookup_i(%s,%s)\n", dirp->name, name);
+
+	if (dirp->type != SNT_DIR) {
+		error = -ENOTDIR;
+		eprintk("mcctrl:lookup_i:not a directory. %d\n", error);
+		goto out;
+	}
+
+	if (name[0] == '\0') {
+		error = -ENOENT;
+		eprintk("mcctrl:lookup_i:null component. %d\n", error);
+		goto out;
+	}
+
+	list_for_each_entry(np, &dirp->children, chain) {
+		if (!strcmp(np->name, name)) {
+			/* found */
+			error = 0;
+			goto out;
+		}
+	}
+
+	/* this is usual when called from create_i(), mkdir_i() and symlink_i(). */
+#define ENOENT_NOMSG 1
+	error = ENOENT_NOMSG;
+out:
+	if (error) {
+		if (error < 0) {
+			eprintk("mcctrl:lookup_i(%s,%s): %d\n",
+					dirp->name, name, error);
+		}
+		else if (error == ENOENT_NOMSG) {
+			error = -ENOENT;
+		}
+		np = ERR_PTR(error);
+	}
+	dprintk("mcctrl:lookup_i(%s,%s): %p %d\n",
+			dirp->name, name, np, error);
+	return np;
+} /* lookup_i() */
+
+static struct sysfsm_node *
+create_i(struct sysfsm_node *parent, const char *name, mode_t mode,
+		long client_ops, long client_instance)
+{
+	int error;
+	struct sysfsm_node *np = NULL;
+	struct sysfsm_data *sdp;
+
+	BUG_ON(!parent);
+	BUG_ON(!name);
+	dprintk("mcctrl:create_i(%s,%s,%#o,%#lx,%#lx)\n",
+			parent->name, name, mode, client_ops, client_instance);
+
+	sdp = parent->sdp;
+
+	if (parent == sdp->sysfs_root) {
+		error = -EPERM;
+		eprintk("mcctrl:create_i:root dir. %d\n", error);
+		goto out;
+	}
+
+	if (parent->type != SNT_DIR) {
+		error = -ENOTDIR;
+		eprintk("mcctrl:create_i:not a directory. %d\n", error);
+		goto out;
+	}
+
+	if (name[0] == '\0') {
+		error = -EINVAL;
+		eprintk("mcctrl:create_i:null filename. %d\n", error);
+		goto out;
+	}
+
+	np = lookup_i(parent, name);
+	if (!IS_ERR(np)) {
+		error = -EEXIST;
+		eprintk("mcctrl:create_i:already exist. %d\n", error);
+		np = NULL;
+		goto out;
+	}
+
+	np = kzalloc(sizeof(*np), GFP_KERNEL);
+	if (!np) {
+		error = -ENOMEM;
+		eprintk("mcctrl:create_i:kzalloc failed. %d\n", error);
+		goto out;
+	}
+
+	np->type = SNT_FILE;
+	np->name = kstrdup(name, GFP_KERNEL);
+	np->parent = parent;
+	np->sdp = sdp;
+	INIT_LIST_HEAD(&np->chain);
+	np->attr.name = np->name;
+	np->attr.mode = mode;
+	np->client_ops = client_ops;
+	np->client_instance = client_instance;
+
+	if (!np->name) {
+		error = -ENOMEM;
+		eprintk("mcctrl:create_i:kstrdup failed. %d\n", error);
+		goto out;
+	}
+
+	error = sysfs_create_file(&parent->kobj, &np->attr);
+	if (error) {
+		eprintk("mcctrl:create_i:sysfs_create_file failed. %d\n",
+				error);
+		goto out;
+	}
+
+	list_add(&np->chain, &parent->children);
+
+	error = 0;
+out:
+	if (error) {
+		if (np) {
+			kfree(np->name);
+			kfree(np);
+		}
+		np = ERR_PTR(error);
+		eprintk("mcctrl:create_i(%s,%s,%#o,%#lx,%#lx) : %d\n",
+				parent->name, name, mode, client_ops,
+				client_instance, error);
+	}
+	dprintk("mcctrl:create_i(%s,%s,%#o,%#lx,%#lx) : %p %d\n",
+			parent->name, name, mode, client_ops, client_instance,
+			np, error);
+	return np;
+} /* create_i() */
+
+static struct sysfsm_node *
+mkdir_i(struct sysfsm_node *parent, const char *name)
+{
+	int error;
+	struct sysfsm_node *np = NULL;
+	struct kobject *parent_kobj;
+	struct sysfsm_data *sdp;
+
+	BUG_ON(!parent);
+	BUG_ON(!name);
+	dprintk("mcctrl:mkdir_i(%s,%s)\n", parent->name, name);
+
+	sdp = parent->sdp;
+
+	if ((parent == sdp->sysfs_root) && strcmp(name, "sys")) {
+		error = -EPERM;
+		eprintk("mcctrl:mkdir_i:root dir. %d\n", error);
+		goto out;
+	}
+
+	if (parent->type != SNT_DIR) {
+		error = -ENOTDIR;
+		eprintk("mcctrl:mkdir_i:not a directory. %d\n", error);
+		goto out;
+	}
+
+	if (name[0] == '\0') {
+		error = -EINVAL;
+		eprintk("mcctrl:mkdir_i:null dirname. %d\n", error);
+		goto out;
+	}
+
+	np = lookup_i(parent, name);
+	if (!IS_ERR(np)) {
+		error = -EEXIST;
+		eprintk("mcctrl:mkdir_i:already exist. %d\n", error);
+		np = NULL;
+		goto out;
+	}
+
+	np = kzalloc(sizeof(*np), GFP_KERNEL);
+	if (!np) {
+		error = -ENOMEM;
+		eprintk("mcctrl:mkdir_i:kzalloc failed. %d\n", error);
+		goto out;
+	}
+
+	np->type = SNT_DIR;
+	np->name = kstrdup(name, GFP_KERNEL);
+	np->parent = parent;
+	np->sdp = sdp;
+	INIT_LIST_HEAD(&np->chain);
+	INIT_LIST_HEAD(&np->children);
+
+	if (!np->name) {
+		error = -ENOMEM;
+		eprintk("mcctrl:mkdir_i:kstrdup failed. %d\n", error);
+		goto out;
+	}
+
+	parent_kobj = &parent->kobj;
+	if (parent == sdp->sysfs_root) {
+		parent_kobj = sdp->sysfs_kobj;
+	}
+
+	error = kobject_init_and_add(&np->kobj, &the_ktype, parent_kobj,
+			np->name);
+	if (error) {
+		eprintk("mcctrl:mkdir_i:kobject_init_and_add failed. %d\n",
+				error);
+		goto out;
+	}
+
+	list_add(&np->chain, &parent->children);
+
+	error = 0;
+out:
+	if (error) {
+		if (np) {
+			kfree(np->name);
+			kfree(np);
+		}
+		np = ERR_PTR(error);
+		eprintk("mcctrl:mkdir_i(%s,%s): %d\n",
+				parent->name, name, error);
+	}
+	dprintk("mcctrl:mkdir_i(%s,%s): %p %d\n",
+			parent->name, name, np, error);
+	return np;
+} /* mkdir_i() */
+
+static struct sysfsm_node *
+symlink_i(struct sysfsm_node *target, struct sysfsm_node *parent,
+		const char *name)
+{
+	int error;
+	struct sysfsm_node *np = NULL;
+	struct sysfsm_data *sdp;
+
+	BUG_ON(!target);
+	BUG_ON(!parent);
+	BUG_ON(!name);
+	dprintk("mcctrl:symlink_i(%s,%s,%s)\n",
+			target->name, parent->name, name);
+
+	sdp = parent->sdp;
+
+	if (target->type != SNT_DIR) {
+		error = -EINVAL;
+		eprintk("mcctrl:symlink_i:target isn't a directory. %d\n",
+				error);
+		goto out;
+	}
+
+	if (parent == sdp->sysfs_root) {
+		error = -EPERM;
+		eprintk("mcctrl:symlink_i:root directory. %d\n", error);
+		goto out;
+	}
+
+	if (parent->type != SNT_DIR) {
+		error = -ENOTDIR;
+		eprintk("mcctrl:symlink_i:parent isn't a directory. %d\n",
+				error);
+		goto out;
+	}
+
+	if (name[0] == '\0') {
+		error = -EINVAL;
+		eprintk("mcctrl:symlink_i:null linkname. %d\n", error);
+		goto out;
+	}
+
+	np = lookup_i(parent, name);
+	if (!IS_ERR(np)) {
+		error = -EEXIST;
+		eprintk("mcctrl:symlink_i:already exist. %d\n", error);
+		np = NULL;
+		goto out;
+	}
+
+	np = kzalloc(sizeof(*np), GFP_KERNEL);
+	if (!np) {
+		error = -ENOMEM;
+		eprintk("mcctrl:symlink_i:kzalloc failed. %d\n", error);
+		goto out;
+	}
+
+	np->type = SNT_LINK;
+	np->name = kstrdup(name, GFP_KERNEL);
+	np->parent = parent;
+	np->sdp = sdp;
+	INIT_LIST_HEAD(&np->chain);
+
+	if (!np->name) {
+		error = -ENOMEM;
+		eprintk("mcctrl:symlink_i:kstrdup failed. %d\n", error);
+		goto out;
+	}
+
+	error = sysfs_create_link(&parent->kobj, &target->kobj, name);
+	if (error) {
+		eprintk("mcctrl:symlink_i:sysfs_create_link failed. %d\n",
+				error);
+		goto out;
+	}
+
+	list_add(&np->chain, &parent->children);
+
+	error = 0;
+out:
+	if (error) {
+		if (np) {
+			kfree(np->name);
+			kfree(np);
+		}
+		np = ERR_PTR(error);
+		eprintk("mcctrl:symlink_i(%s,%s,%s): %d\n",
+				target->name, parent->name, name, error);
+	}
+	dprintk("mcctrl:symlink_i(%s,%s,%s): %p %d\n",
+			target->name, parent->name, name, np, error);
+	return np;
+} /* symlink_i() */
+
+static int
+unlink_i(struct sysfsm_node *np)
+{
+	int error;
+	struct sysfsm_data *sdp;
+
+	BUG_ON(!np);
+	dprintk("mcctrl:unlink_i(%s)\n", np->name);
+
+	sdp = np->sdp;
+
+	if ((np == sdp->sysfs_root) || (np->parent == sdp->sysfs_root)) {
+		error = -EPERM;
+		eprintk("mcctrl:unlink_i:protected directory. %d\n", error);
+		goto out;
+	}
+
+	if ((np->type == SNT_DIR) && !list_empty(&np->children)) {
+		/* this is usual when called from cleanup_ancestor() */
+		error = -ENOTEMPTY;
+		dprintk("mcctrl:unlink_i:not empty dir. %d\n", error);
+		goto out;
+	}
+
+	list_del(&np->chain);
+	if (np->type == SNT_FILE) {
+		sysfs_remove_file(&np->parent->kobj, &np->attr);
+	}
+	else if (np->type == SNT_DIR) {
+		if (np->parent != np) {
+			kobject_del(&np->kobj);
+			error = 0;
+			goto out;
+		}
+	}
+	else if (np->type == SNT_LINK) {
+		sysfs_remove_link(&np->parent->kobj, np->name);
+	}
+	else {
+		BUG();
+	}
+
+	error = release_i(np);
+	if (error) {
+		eprintk("mcctrl:unlink_i:release_i failed. %d\n", error);
+		goto out;
+	}
+
+	error = 0;
+out:
+	if (error) {
+		eprintk("mcctrl:unlink_i(%s): %d\n", np->name, error);
+	}
+	dprintk("mcctrl:unlink_i(%s): %d\n", (!error)?NULL:np->name, error);
+	return error;
+} /* unlink_i() */
+
+static int
+remove(struct sysfsm_node *target)
+{
+	int error;
+	struct sysfsm_node *np;
+	struct sysfsm_node *next_np;
+
+	BUG_ON(!target);
+	dprintk("mcctrl:remove(%s)\n", target->name);
+
+	for (np = target; np; np = next_np) {
+		while ((np->type == SNT_DIR) && !list_empty(&np->children)) {
+			np = list_first_entry(&np->children,
+					struct sysfsm_node, chain);
+		}
+
+		next_np = np->parent;
+		if (np == target) {
+			next_np = NULL;
+		}
+
+		error = unlink_i(np);
+		if (error) {
+			eprintk("mcctrl:remove:unlink_i(%s) failed. %d\n",
+					np->name, error);
+			goto out;
+		}
+	}
+
+	error = 0;
+out:
+	if (error) {
+		eprintk("mcctrl:remove(%s): %d\n", target->name, error);
+	}
+	dprintk("mcctrl:remove(%s): %d\n", (!error)?NULL:target->name, error);
+	return error;
+} /* remove() */
+
+static struct sysfsm_node *
+lookup(struct sysfsm_node *from, char *path)
+{
+	int error;
+	struct sysfsm_node *dirp;
+	struct sysfsm_node *np;
+	char *p;
+	char *name;
+
+	BUG_ON(!from);
+	BUG_ON(!path);
+	dprintk("mcctrl:lookup(%s,%s)\n", from->name, path);
+
+	dirp = from;
+	np = from;
+	p = path;
+	while (!!(name = strsep(&p, "/"))) {
+		if (!*name) {
+			continue;
+		}
+
+		np = lookup_i(dirp, name);
+		if (IS_ERR(np)) {
+			error = PTR_ERR(np);
+			eprintk("mcctrl:lookup:lookup_i(%s,%s) failed. %d\n",
+					dirp->name, name, error);
+			goto out;
+		}
+		dirp = np;
+	}
+
+	error = 0;
+out:
+	if (error) {
+		np = ERR_PTR(error);
+		eprintk("mcctrl:lookup(%s,%s): %d\n", from->name, path, error);
+	}
+	dprintk("mcctrl:lookup(%s,%s): %p %d\n", from->name, path, np, error);
+	return np;
+} /* lookup() */
+
+static struct sysfsm_node *
+dig(struct sysfsm_node *from, char *path)
+{
+	int error;
+	struct sysfsm_node *dirp;
+	char *p;
+	char *name;
+	struct sysfsm_node *np;
+
+	BUG_ON(!from);
+	BUG_ON(!path);
+	dprintk("mcctrl:dig(%s,%s)\n", from->name, path);
+
+	dirp = from;
+	p = path;
+	while (!!(name = strsep(&p, "/"))) {
+		if (!*name) {
+			continue;
+		}
+
+		np = lookup_i(dirp, name);
+		if (IS_ERR(np)) {
+			error = PTR_ERR(np);
+			if (error != -ENOENT) {
+				eprintk("mcctrl:dig:lookup_i(%s,%s) failed. %d\n",
+						dirp->name, name, error);
+				goto out;
+			}
+
+			np = mkdir_i(dirp, name);
+			if (IS_ERR(np)) {
+				error = PTR_ERR(np);
+				eprintk("mcctrl:dig:mkdir_i(%s,%s) failed. %d\n",
+						dirp->name, name, error);
+				goto out;
+			}
+		}
+		dirp = np;
+	}
+
+	if (dirp->type != SNT_DIR) {
+		error = -ENOTDIR;
+		eprintk("mcctrl:dig:%s:not a directory. %d\n",
+				dirp->name, error);
+		goto out;
+	}
+
+	error = 0;
+out:
+	if (error) {
+		dirp = ERR_PTR(error);
+		eprintk("mcctrl:dig(%s): %d\n", from->name, error);
+	}
+	dprintk("mcctrl:dig(%s): %p %d\n", from->name, dirp, error);
+	return dirp;
+} /* dig() */
+
+static void
+cleanup_ancestor(struct sysfsm_node *target)
+{
+	int error;
+	struct sysfsm_node *np;
+	struct sysfsm_node *next_np;
+
+	BUG_ON(!target);
+	dprintk("mcctrl:cleanup_ancestor(%p {%s})\n", target, target->name);
+
+	error = 0;
+	for (np = target; !error; np = next_np) {
+		next_np = np->parent;
+		error = unlink_i(np);
+	}
+
+	dprintk("mcctrl:cleanup_ancestor(%p):\n", target);
+	return;
+} /* cleanup_ancestor() */
+
+static struct sysfsm_node *
+sysfsm_create(struct sysfsm_data *sdp, const char *path0, mode_t mode,
+		long client_ops, long client_instance)
+{
+	int error;
+	char *path = NULL;
+	struct semaphore *held_sem = NULL;
+	struct sysfsm_node *dirp;
+	char *name;
+	struct sysfsm_node *np = ERR_PTR(-EIO);
+
+	BUG_ON(!sdp);
+	dprintk("mcctrl:sysfsm_create(%p,%s,%#o,%#lx,%#lx)\n",
+			sdp, path0, mode, client_ops, client_instance);
+
+	path = kstrdup(path0, GFP_KERNEL);
+	if (!path) {
+		error = -ENOMEM;
+		eprintk("mcctrl:sysfsm_create:kstrdup failed. %d\n", error);
+		goto out;
+	}
+
+	error = down_interruptible(&sdp->sysfs_tree_sem);
+	if (error) {
+		eprintk("mcctrl:sysfsm_create:down failed. %d\n", error);
+		goto out;
+	}
+	held_sem = &sdp->sysfs_tree_sem;
+
+	dirp = sdp->sysfs_root;
+	name = strrchr(path, '/');
+	if (!name) {
+		name = path;
+	}
+	else {
+		*name = '\0';
+		++name;
+
+		dirp = dig(dirp, path);
+		if (IS_ERR(dirp)) {
+			error = PTR_ERR(dirp);
+			eprintk("mcctrl:sysfsm_create:dig failed. %d\n",
+					error);
+			goto out;
+		}
+	}
+
+	np = create_i(dirp, name, mode, client_ops, client_instance);
+	if (IS_ERR(np)) {
+		error = PTR_ERR(np);
+		eprintk("mcctrl:sysfsm_create:create_i(%s,%s) failed. %d\n",
+				dirp->name, name, error);
+		goto out;
+	}
+
+	error = 0;
+out:
+	if (held_sem) {
+		up(held_sem);
+	}
+	kfree(path);
+	if (error) {
+		np = ERR_PTR(error);
+		eprintk("mcctrl:sysfsm_create(%p,%s,%#o,%#lx,%#lx): %d\n",
+				sdp, path0, mode, client_ops, client_instance,
+				error);
+	}
+	dprintk("mcctrl:sysfsm_create(%p,%s,%#o,%#lx,%#lx): %p %d\n",
+			sdp, path0, mode, client_ops, client_instance, np,
+			error);
+	return np;
+} /* sysfsm_create() */
+
+struct sysfsm_node *
+sysfsm_mkdir(struct sysfsm_data *sdp, const char *path0)
+{
+	int error;
+	char *path = NULL;
+	struct semaphore *held_sem = NULL;
+	struct sysfsm_node *dirp;
+	char *name;
+	struct sysfsm_node *np = ERR_PTR(-EIO);
+
+	BUG_ON(!sdp);
+	dprintk("mcctrl:sysfsm_mkdir(%p,%s)\n", sdp, path0);
+
+	path = kstrdup(path0, GFP_KERNEL);
+	if (!path) {
+		error = -ENOMEM;
+		eprintk("mcctrl:sysfsm_mkdir:kstrdup failed. %d\n", error);
+		goto out;
+	}
+
+	error = down_interruptible(&sdp->sysfs_tree_sem);
+	if (error) {
+		eprintk("mcctrl:sysfsm_mkdir:down failed. %d\n", error);
+		goto out;
+	}
+	held_sem = &sdp->sysfs_tree_sem;
+
+	dirp = sdp->sysfs_root;
+	name = strrchr(path, '/');
+	if (!name) {
+		name = path;
+	}
+	else {
+		*name = '\0';
+		++name;
+
+		dirp = dig(dirp, path);
+		if (IS_ERR(dirp)) {
+			error = PTR_ERR(dirp);
+			eprintk("mcctrl:sysfsm_mkdir:dig failed. %d\n", error);
+			goto out;
+		}
+	}
+
+	np = mkdir_i(dirp, name);
+	if (IS_ERR(np)) {
+		error = PTR_ERR(np);
+		eprintk("mcctrl:sysfsm_mkdir:mkdir_i failed. %d\n", error);
+		goto out;
+	}
+
+	error = 0;
+out:
+	if (held_sem) {
+		up(held_sem);
+	}
+	kfree(path);
+	if (error) {
+		np = ERR_PTR(error);
+		eprintk("mcctrl:sysfsm_mkdir(%p,%s): %d\n", sdp, path0, error);
+	}
+	dprintk("mcctrl:sysfsm_mkdir(%p,%s): %p %d\n", sdp, path0, np, error);
+	return np;
+} /* sysfsm_mkdir() */
+
+struct sysfsm_node *
+sysfsm_symlink(struct sysfsm_data *sdp, struct sysfsm_node *target,
+		const char *path0)
+{
+	int error;
+	char *path = NULL;
+	struct semaphore *held_sem = NULL;
+	char *name;
+	struct sysfsm_node *dirp;
+	struct sysfsm_node *np = ERR_PTR(-EIO);
+
+	BUG_ON(!sdp);
+	BUG_ON(!target);
+	dprintk("mcctrl:sysfsm_symlink(%p,%s,%s)\n", sdp, target->name, path0);
+
+	path = kstrdup(path0, GFP_KERNEL);
+	if (!path) {
+		error = -ENOMEM;
+		eprintk("mcctrl:sysfsm_symlink:kstrdup failed. %d\n", error);
+		goto out;
+	}
+
+	error = down_interruptible(&sdp->sysfs_tree_sem);
+	if (error) {
+		eprintk("mcctrl:sysfsm_symlink:down failed. %d\n", error);
+		goto out;
+	}
+	held_sem = &sdp->sysfs_tree_sem;
+
+	dirp = sdp->sysfs_root;
+	name = strrchr(path, '/');
+	if (!name) {
+		name = path;
+	}
+	else {
+		*name = '\0';
+		++name;
+
+		dirp = dig(dirp, path);
+		if (IS_ERR(dirp)) {
+			error = PTR_ERR(dirp);
+			eprintk("mcctrl:sysfsm_symlink:dig failed. %d\n",
+					error);
+			goto out;
+		}
+	}
+
+	np = symlink_i(target, dirp, name);
+	if (IS_ERR(np)) {
+		error = PTR_ERR(np);
+		eprintk("mcctrl:sysfsm_symlink:symlink_i(%s,%s,%s) failed. %d\n",
+				target->name, dirp->name, name, error);
+		goto out;
+	}
+
+	error = 0;
+out:
+	if (held_sem) {
+		up(held_sem);
+	}
+	kfree(path);
+	if (error) {
+		np = ERR_PTR(error);
+		eprintk("mcctrl:sysfsm_symlink(%p,%s,%s): %d\n",
+				sdp, target->name, path0, error);
+	}
+	dprintk("mcctrl:sysfsm_symlink(%p,%s,%s): %p %d\n",
+			sdp, target->name, path0, np, error);
+	return np;
+} /* sysfsm_symlink() */
+
+static struct sysfsm_node *
+sysfsm_lookup(struct sysfsm_data *sdp, const char *path0)
+{
+	int error;
+	char *path = NULL;
+	struct semaphore *held_sem = NULL;
+	struct sysfsm_node *np;
+
+	BUG_ON(!sdp);
+	dprintk("mcctrl:sysfsm_lookup(%p,%s)\n", sdp, path0);
+
+	path = kstrdup(path0, GFP_KERNEL);
+	if (!path) {
+		error = -ENOMEM;
+		eprintk("mcctrl:sysfsm_lookup:kstrdup failed. %d\n", error);
+		goto out;
+	}
+
+	error = down_interruptible(&sdp->sysfs_tree_sem);
+	if (error) {
+		eprintk("mcctrl:sysfsm_lookup:down failed. %d\n", error);
+		goto out;
+	}
+	held_sem = &sdp->sysfs_tree_sem;
+
+	np = lookup(sdp->sysfs_root, path);
+	if (IS_ERR(np)) {
+		error = PTR_ERR(np);
+		eprintk("mcctrl:sysfsm_lookup:lookup failed. %d\n", error);
+		goto out;
+	}
+
+	error = 0;
+out:
+	if (held_sem) {
+		up(held_sem);
+	}
+	kfree(path);
+	if (error) {
+		np = ERR_PTR(error);
+		eprintk("mcctrl:sysfsm_lookup(%p,%s): %d\n",
+				sdp, path0, error);
+	}
+	dprintk("mcctrl:sysfsm_lookup(%p,%s): %p %d\n", sdp, path0, np, error);
+	return np;
+} /* sysfsm_lookup() */
+
+static int
+sysfsm_unlink(struct sysfsm_data *sdp, const char *path0, int flags)
+{
+	int error;
+	char *path = NULL;
+	struct semaphore *held_sem = NULL;
+	struct sysfsm_node *dirp;
+	struct sysfsm_node *np;
+
+	BUG_ON(!sdp);
+	dprintk("mcctrl:sysfsm_unlink(%p,%s,%#x)\n", sdp, path0, flags);
+
+	path = kstrdup(path0, GFP_KERNEL);
+	if (!path) {
+		error = -ENOMEM;
+		eprintk("mcctrl:sysfsm_unlink:kstrdup failed. %d\n", error);
+		goto out;
+	}
+
+	error = down_interruptible(&sdp->sysfs_tree_sem);
+	if (error) {
+		eprintk("mcctrl:sysfsm_unlink:down failed. %d\n", error);
+		goto out;
+	}
+	held_sem = &sdp->sysfs_tree_sem;
+
+	np = lookup(sdp->sysfs_root, path);
+	if (IS_ERR(np)) {
+		error = PTR_ERR(np);
+		eprintk("mcctrl:sysfsm_unlink:lookup failed. %d\n", error);
+		goto out;
+	}
+
+	dirp = np->parent;
+
+	error = remove(np);
+	if (error) {
+		eprintk("mcctrl:sysfsm_unlink:remove failed. %d\n", error);
+		goto out;
+	}
+
+	if (!flags & SYSFS_UNLINK_KEEP_ANCESTOR) {
+		cleanup_ancestor(dirp);
+	}
+
+	error = 0;
+out:
+	if (held_sem) {
+		up(held_sem);
+	}
+	kfree(path);
+	if (error) {
+		eprintk("mcctrl:sysfsm_unlink(%p,%s,%#x): %d\n",
+				sdp, path0, flags, error);
+	}
+	dprintk("mcctrl:sysfsm_unlink(%p,%s,%#x): %d\n",
+			sdp, path0, flags, error);
+	return error;
+} /* sysfsm_unlink() */
+
+void
+sysfsm_cleanup(ihk_os_t os)
+{
+	int error;
+	ihk_device_t dev = ihk_os_to_dev(os);
+	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
+	struct sysfsm_data *sdp = &udp->sysfsm_data;
+	struct sysfsm_node *np;
+
+	dprintk("mcctrl:sysfsm_cleanup(%p)\n", os);
+
+	if (sdp->sysfs_buf) {
+		ihk_device_unmap_virtual(dev, sdp->sysfs_buf,
+				sdp->sysfs_bufsize);
+		ihk_device_unmap_memory(dev, sdp->sysfs_buf_pa,
+				sdp->sysfs_bufsize);
+		sdp->sysfs_buf = NULL;
+		sdp->sysfs_buf_pa = 0;
+		sdp->sysfs_buf_rpa = 0;
+	}
+
+	np = sdp->sysfs_root;
+	sdp->sysfs_root = NULL;
+
+	if (np) {
+		error = remove(np);
+		if (error) {
+			wprintk("mcctrl:sysfsm_cleanup:remove failed. %d\n",
+					error);
+			/* through */
+		}
+	}
+
+	dprintk("mcctrl:sysfsm_cleanup(%p):\n", os);
+	return;
+} /* sysfsm_cleanup() */
+
+int
+sysfsm_setup(ihk_os_t os, void *buf, long buf_pa, size_t bufsize)
+{
+	int error;
+	struct device *dev = ihk_os_get_linux_device(os);
+	struct sysfsm_node *np = NULL;
+	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
+	struct sysfsm_data *sdp = &udp->sysfsm_data;
+	struct sysfsm_req *req = &sdp->sysfs_req;
+
+	dprintk("mcctrl:sysfsm_setup(%p)\n", os);
+
+	req->busy = 0;
+	init_waitqueue_head(&req->wq);
+
+	np = kzalloc(sizeof(*np), GFP_KERNEL);
+	if (!np) {
+		error = -ENOMEM;
+		eprintk("mcctrl:sysfsm_setup:kzalloc failed. %d\n", error);
+		goto out;
+	}
+
+	np->type = SNT_DIR;
+	np->name = kstrdup("(the_root)", GFP_KERNEL);
+	np->parent = np;
+	np->sdp = sdp;
+	INIT_LIST_HEAD(&np->chain);
+	INIT_LIST_HEAD(&np->children);
+
+	if (!np->name) {
+		error = -ENOMEM;
+		eprintk("mcctrl:sysfsm_setup:kstrdup failed. %d\n", error);
+		goto out;
+	}
+
+	sdp->sysfs_os = os;
+	sdp->sysfs_kobj = &dev->kobj;
+	sema_init(&sdp->sysfs_io_sem, 1);
+	sema_init(&sdp->sysfs_tree_sem, 1);
+
+	sdp->sysfs_root = np;
+	np = NULL;
+
+	np = mkdir_i(sdp->sysfs_root, "sys");
+	if (IS_ERR(np)) {
+		error = PTR_ERR(np);
+		eprintk("mcctrl:sysfsm_setup:mkdir_i failed. %d\n", error);
+		goto out;
+	}
+
+	sdp->sysfs_bufsize = bufsize;
+	sdp->sysfs_buf_pa = buf_pa;
+	wmb();
+	sdp->sysfs_buf = buf;
+
+	error = 0;
+out:
+	if (error) {
+		if (np) {
+			kfree(np->name);
+			kfree(np);
+		}
+		sysfsm_cleanup(os);
+		eprintk("mcctrl:sysfsm_setup(%p): %d\n", os, error);
+	}
+	dprintk("mcctrl:sysfsm_setup(%p): %d\n", os, error);
+	return error;
+} /* sysfsm_setup() */
+
+static void
+sysfsm_req_setup(void *os, long param_rpa)
+{
+	int error;
+	ihk_device_t dev = ihk_os_to_dev(os);
+	long param_pa;
+	struct sysfs_req_setup_param *param;
+	long buf_pa;
+	void *buf;
+
+	param_pa = ihk_device_map_memory(dev, param_rpa, sizeof(*param));
+	param = ihk_device_map_virtual(dev, param_pa, sizeof(*param), NULL, 0);
+
+	buf_pa = ihk_device_map_memory(dev, param->buf_rpa, param->bufsize);
+	buf = ihk_device_map_virtual(dev, buf_pa, param->bufsize, NULL, 0);
+
+	error = sysfsm_setup(os, buf, buf_pa, param->bufsize);
+
+	param->error = error;
+	wmb();
+	param->busy = 0;
+
+	if (error) {
+		ihk_device_unmap_virtual(dev, buf, param->bufsize);
+		ihk_device_unmap_memory(dev, buf_pa, param->bufsize);
+	}
+	ihk_device_unmap_virtual(dev, param, sizeof(*param));
+	ihk_device_unmap_memory(dev, param_pa, sizeof(*param));
+	return;
+} /* sysfsm_req_setup() */
+
+static void
+sysfsm_req_create(void *os, long param_rpa)
+{
+	int error;
+	ihk_device_t dev = ihk_os_to_dev(os);
+	long param_pa;
+	struct sysfs_req_create_param *param;
+	struct sysfsm_node *np;
+	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
+
+	param_pa = ihk_device_map_memory(dev, param_rpa, sizeof(*param));
+	param = ihk_device_map_virtual(dev, param_pa, sizeof(*param), NULL, 0);
+
+	np = sysfsm_create(&udp->sysfsm_data, param->path, param->mode,
+			param->client_ops, param->client_instance);
+	if (IS_ERR(np)) {
+		error = PTR_ERR(np);
+		goto out;
+	}
+
+	error = 0;
+
+out:
+	param->error = error;
+	wmb();
+	param->busy = 0;
+
+	ihk_device_unmap_virtual(dev, param, sizeof(*param));
+	ihk_device_unmap_memory(dev, param_pa, sizeof(*param));
+	return;
+} /* sysfsm_req_create() */
+
+static void
+sysfsm_req_mkdir(void *os, long param_rpa)
+{
+	int error;
+	ihk_device_t dev = ihk_os_to_dev(os);
+	long param_pa;
+	struct sysfs_req_mkdir_param *param;
+	struct sysfsm_node *np;
+	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
+
+	param_pa = ihk_device_map_memory(dev, param_rpa, sizeof(*param));
+	param = ihk_device_map_virtual(dev, param_pa, sizeof(*param), NULL, 0);
+
+	np = sysfsm_mkdir(&udp->sysfsm_data, param->path);
+	if (IS_ERR(np)) {
+		error = PTR_ERR(np);
+		goto out;
+	}
+
+	error = 0;
+	param->handle = (long)np;
+
+out:
+	param->error = error;
+	wmb();
+	param->busy = 0;
+
+	ihk_device_unmap_virtual(dev, param, sizeof(*param));
+	ihk_device_unmap_memory(dev, param_pa, sizeof(*param));
+	return;
+} /* sysfsm_req_mkdir() */
+
+static void
+sysfsm_req_symlink(void *os, long param_rpa)
+{
+	int error;
+	ihk_device_t dev = ihk_os_to_dev(os);
+	long param_pa;
+	struct sysfs_req_symlink_param *param;
+	struct sysfsm_node *np;
+	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
+
+	param_pa = ihk_device_map_memory(dev, param_rpa, sizeof(*param));
+	param = ihk_device_map_virtual(dev, param_pa, sizeof(*param), NULL, 0);
+
+	np = sysfsm_symlink(&udp->sysfsm_data, (void *)param->target,
+			param->path);
+	if (IS_ERR(np)) {
+		error = PTR_ERR(np);
+		goto out;
+	}
+
+	error = 0;
+out:
+	param->error = error;
+	wmb();
+	param->busy = 0;
+
+	ihk_device_unmap_virtual(dev, param, sizeof(*param));
+	ihk_device_unmap_memory(dev, param_pa, sizeof(*param));
+	return;
+} /* sysfsm_req_symlink() */
+
+static void
+sysfsm_req_lookup(void *os, long param_rpa)
+{
+	int error;
+	ihk_device_t dev = ihk_os_to_dev(os);
+	long param_pa;
+	struct sysfs_req_lookup_param *param;
+	struct sysfsm_node *np;
+	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
+
+	param_pa = ihk_device_map_memory(dev, param_rpa, sizeof(*param));
+	param = ihk_device_map_virtual(dev, param_pa, sizeof(*param), NULL, 0);
+
+	np = sysfsm_lookup(&udp->sysfsm_data, param->path);
+	if (IS_ERR(np)) {
+		error = PTR_ERR(np);
+		goto out;
+	}
+
+	error = 0;
+	param->handle = (long)np;
+
+out:
+	param->error = error;
+	wmb();
+	param->busy = 0;
+
+	ihk_device_unmap_virtual(dev, param, sizeof(*param));
+	ihk_device_unmap_memory(dev, param_pa, sizeof(*param));
+	return;
+} /* sysfsm_req_lookup() */
+
+static void
+sysfsm_req_unlink(void *os, long param_rpa)
+{
+	int error;
+	ihk_device_t dev = ihk_os_to_dev(os);
+	long param_pa;
+	struct sysfs_req_unlink_param *param;
+	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
+
+	param_pa = ihk_device_map_memory(dev, param_rpa, sizeof(*param));
+	param = ihk_device_map_virtual(dev, param_pa, sizeof(*param), NULL, 0);
+
+	error = sysfsm_unlink(&udp->sysfsm_data, param->path, param->flags);
+	if (error) {
+		goto out;
+	}
+
+	error = 0;
+out:
+	param->error = error;
+	wmb();
+	param->busy = 0;
+
+	ihk_device_unmap_virtual(dev, param, sizeof(*param));
+	ihk_device_unmap_memory(dev, param_pa, sizeof(*param));
+	return;
+} /* sysfsm_req_unlink() */
+
+static void
+sysfsm_resp_show(void *os, struct sysfsm_node *np, ssize_t ssize)
+{
+	struct sysfsm_data *sdp = np->sdp;
+	struct sysfsm_req *req = &sdp->sysfs_req;
+
+	dprintk("mcctrl:sysfsm_resp_show(%p,%s,%ld)\n", os, np->name, ssize);
+
+	req->lresult = ssize;
+	wmb();
+	req->busy = 0;
+	wake_up(&req->wq);
+
+	dprintk("mcctrl:sysfsm_resp_show(%p,%s,%ld):\n", os, np->name, ssize);
+	return;
+} /* sysfsm_resp_show() */
+
+static void
+sysfsm_resp_store(void *os, struct sysfsm_node *np, ssize_t ssize)
+{
+	struct sysfsm_data *sdp = np->sdp;
+	struct sysfsm_req *req = &sdp->sysfs_req;
+
+	dprintk("mcctrl:sysfsm_resp_store(%p,%s,%ld)\n", os, np->name, ssize);
+
+	req->lresult = ssize;
+	wmb();
+	req->busy = 0;
+	wake_up(&req->wq);
+
+	dprintk("mcctrl:sysfsm_resp_store(%p,%s,%ld):\n", os, np->name, ssize);
+	return;
+} /* sysfsm_resp_store() */
+
+static void
+sysfsm_resp_release(void *os, struct sysfsm_node *np, int error)
+{
+	struct sysfsm_data *sdp = np->sdp;
+	struct sysfsm_req *req = &sdp->sysfs_req;
+
+	dprintk("mcctrl:sysfsm_resp_release(%p,%p %s,%d)\n",
+			os, np, np->name, error);
+
+	req->lresult = error;
+	wmb();
+	req->busy = 0;
+	wake_up(&req->wq);
+
+	dprintk("mcctrl:sysfsm_resp_release(%p,%p,%d):\n", os, np, error);
+	return;
+} /* sysfsm_resp_release() */
+
+static void
+sysfsm_work_main(struct work_struct *work0)
+{
+	struct sysfs_work *work = container_of(work0, struct sysfs_work, work);
+
+	switch (work->msg) {
+		case SCD_MSG_SYSFS_REQ_SETUP:
+			sysfsm_req_setup(work->os, work->arg1);
+			break;
+
+		case SCD_MSG_SYSFS_REQ_CREATE:
+			sysfsm_req_create(work->os, work->arg1);
+			break;
+
+		case SCD_MSG_SYSFS_REQ_MKDIR:
+			sysfsm_req_mkdir(work->os, work->arg1);
+			break;
+
+		case SCD_MSG_SYSFS_REQ_SYMLINK:
+			sysfsm_req_symlink(work->os, work->arg1);
+			break;
+
+		case SCD_MSG_SYSFS_REQ_LOOKUP:
+			sysfsm_req_lookup(work->os, work->arg1);
+			break;
+
+		case SCD_MSG_SYSFS_REQ_UNLINK:
+			sysfsm_req_unlink(work->os, work->arg1);
+			break;
+
+		case SCD_MSG_SYSFS_RESP_SHOW:
+			sysfsm_resp_show(work->os, (void *)work->arg1,
+					work->arg2);
+			break;
+
+		case SCD_MSG_SYSFS_RESP_STORE:
+			sysfsm_resp_store(work->os, (void *)work->arg1,
+					work->arg2);
+			break;
+
+		case SCD_MSG_SYSFS_RESP_RELEASE:
+			sysfsm_resp_release(work->os, (void *)work->arg1,
+					work->err);
+			break;
+
+		default:
+			wprintk("mcctrl:sysfsm_work_main:unknown work (%d,%p,%#lx,%#lx)\n",
+					work->msg, work->os, work->arg1, work->arg2);
+			break;
+
+	}
+
+	kfree(work);
+	return;
+} /* sysfsm_work_main() */
+
+void
+sysfsm_packet_handler(void *os, int msg, int err, long arg1, long arg2)
+{
+	struct sysfs_work *work = NULL;
+
+	work = kzalloc(sizeof(*work), GFP_ATOMIC);
+	if (!work) {
+		eprintk("mcctrl:sysfsm_packet_handler:kzalloc failed\n");
+		return;
+	}
+
+	work->os = os;
+	work->msg = msg;
+	work->err = err;
+	work->arg1 = arg1;
+	work->arg2 = arg2;
+	INIT_WORK(&work->work, &sysfsm_work_main);
+
+	schedule_work(&work->work);
+	return;
+} /* sysfsm_packet_handler() */
+
+static struct sysfs_ops the_ops = {
+	.show =	&sysfsm_show,
+	.store = &sysfsm_store,
+};
+
+static struct kobj_type the_ktype = {
+	.sysfs_ops = &the_ops,
+	.release = &sysfsm_release,
+};
+
+/**** End of File ****/

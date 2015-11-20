@@ -46,6 +46,27 @@
 
 #define	SCD_MSG_DEBUG_LOG		0x20
 
+#define SCD_MSG_SYSFS_REQ_CREATE        0x30
+/* #define SCD_MSG_SYSFS_RESP_CREATE    0x31 */
+#define SCD_MSG_SYSFS_REQ_MKDIR         0x32
+/* #define SCD_MSG_SYSFS_RESP_MKDIR     0x33 */
+#define SCD_MSG_SYSFS_REQ_SYMLINK       0x34
+/* #define SCD_MSG_SYSFS_RESP_SYMLINK   0x35 */
+#define SCD_MSG_SYSFS_REQ_LOOKUP        0x36
+/* #define SCD_MSG_SYSFS_RESP_LOOKUP    0x37 */
+#define SCD_MSG_SYSFS_REQ_UNLINK        0x38
+/* #define SCD_MSG_SYSFS_RESP_UNLINK    0x39 */
+#define SCD_MSG_SYSFS_REQ_SHOW          0x3a
+#define SCD_MSG_SYSFS_RESP_SHOW         0x3b
+#define SCD_MSG_SYSFS_REQ_STORE         0x3c
+#define SCD_MSG_SYSFS_RESP_STORE        0x3d
+#define SCD_MSG_SYSFS_REQ_RELEASE       0x3e
+#define SCD_MSG_SYSFS_RESP_RELEASE      0x3f
+#define SCD_MSG_SYSFS_REQ_SETUP         0x40
+#define SCD_MSG_SYSFS_RESP_SETUP        0x41
+/* #define SCD_MSG_SYSFS_REQ_CLEANUP    0x42 */
+/* #define SCD_MSG_SYSFS_RESP_CLEANUP   0x43 */
+
 #define ARCH_SET_GS 0x1001
 #define ARCH_SET_FS 0x1002
 #define ARCH_GET_FS 0x1003
@@ -94,13 +115,27 @@ struct user_desc {
 	unsigned int  useable:1;
 	unsigned int  lm:1;
 };
+
 struct ikc_scd_packet {
 	int msg;
-	int ref;
-	int osnum;
-	int pid;
 	int err;
-	unsigned long arg;
+	union {
+		/* for traditional SCD_MSG_* */
+		struct {
+			int ref;
+			int osnum;
+			int pid;
+			int padding;
+			unsigned long arg;
+		};
+
+		/* for SCD_MSG_SYSFS_* */
+		struct {
+			long sysfs_arg1;
+			long sysfs_arg2;
+			long sysfs_arg3;
+		};
+	};
 };
 
 struct program_image_section {

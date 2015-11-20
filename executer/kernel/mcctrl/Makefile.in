@@ -9,7 +9,7 @@ obj-m += mcctrl.o
 
 ccflags-y := -I$(IHK_BASE)/linux/include -I$(IHK_BASE)/ikc/include -I$(IHK_BASE)/include -I$(src)/../../include -mcmodel=kernel -mno-red-zone -DMCEXEC_PATH=\"$(BINDIR)/mcexec\"
 
-mcctrl-y := driver.o control.o ikc.o syscall.o procfs.o binfmt_mcexec.o
+mcctrl-y := driver.o control.o ikc.o syscall.o procfs.o binfmt_mcexec.o sysfs.o
 
 KBUILD_EXTRA_SYMBOLS = @abs_builddir@/../../../../ihk/linux/core/Module.symvers
 
