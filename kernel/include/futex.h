@@ -241,13 +241,11 @@ static inline int futex_atomic_cmpxchg_inatomic(int __user *uaddr, int oldval,
 struct process_vm;
 
 union futex_key {
-#if 0
 	struct {
 		unsigned long pgoff;
-		struct inode *inode;
+		void *phys;
 		int offset;
 	} shared;
-#endif	
 	struct {
 		unsigned long address;
 		struct process_vm *mm;
@@ -261,6 +259,7 @@ union futex_key {
 };
 
 #define FUTEX_KEY_INIT (union futex_key) { .both = { .ptr = NULL } }
+#define FUT_OFF_MMSHARED 2
 
 extern int futex_init(void);
 
@@ -272,7 +271,8 @@ futex(
 	uint64_t				timeout,
 	uint32_t __user *		uaddr2,
 	uint32_t				val2,
-	uint32_t				val3
+	uint32_t				val3,
+	int                     fshared
 );
 
 

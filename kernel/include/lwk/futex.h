@@ -92,7 +92,8 @@ futex(
 	uint64_t			timeout,
 	uint32_t __user *		uaddr2,
 	uint32_t			val2,
-	uint32_t			val3
+	uint32_t			val3,
+	int                 fshared
 );
 
 extern long

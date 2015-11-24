@@ -153,7 +153,7 @@ static inline int match_futex(union futex_key *key1, union futex_key *key2)
  */
 static void get_futex_key_refs(union futex_key *key)
 {
-	/* RIKEN: only !fshared futexes... */
+	/* RIKEN: no swapping in McKernel */
 	return;
 }
 
@@ -163,7 +163,7 @@ static void get_futex_key_refs(union futex_key *key)
  */
 static void drop_futex_key_refs(union futex_key *key)
 {
-	/* RIKEN: only !fshared futexes... */
+	/* RIKEN: no swapping in McKernel */
 	return;
 }
 /**
@@ -185,6 +185,7 @@ static int
 get_futex_key(uint32_t *uaddr, int fshared, union futex_key *key)
 {
 	unsigned long address = (unsigned long)uaddr;
+	unsigned long phys;
 	struct process_vm *mm = cpu_local_var(current)->vm;
 
 	/*
@@ -203,15 +204,31 @@ get_futex_key(uint32_t *uaddr, int fshared, union futex_key *key)
 	 *        but access_ok() should be faster than find_vma()
 	 */
 	if (!fshared) {
-
 		key->private.mm = mm;
 		key->private.address = address;
 		get_futex_key_refs(key);
 		return 0;
 	}
 
-	/* RIKEN: No shared futex support... */
-	return -EFAULT;
+	key->both.offset |= FUT_OFF_MMSHARED;
+
+retry_v2p:
+	/* Just use physical address of page, McKernel does not do swapping */
+	if (ihk_mc_pt_virt_to_phys(mm->address_space->page_table, 
+				(void *)uaddr, &phys)) { 
+
+		/* Check if we can fault in page */
+		if (page_fault_process_vm(mm, uaddr, PF_POPULATE | PF_WRITE | PF_USER)) {
+			kprintf("error: get_futex_key() virt to phys translation failed\n");
+			return -EFAULT;
+		}
+
+		goto retry_v2p;
+	}
+	key->shared.phys = (void *)phys;
+	key->shared.pgoff = 0;
+
+	return 0;
 }
 
 
@@ -265,6 +282,7 @@ static void wake_futex(struct futex_q *q)
 	barrier();
 	q->lock_ptr = NULL;
 
+	dkprintf("wake_futex(): waking up tid %d\n", p->tid);
 	sched_wakeup_thread(p, PS_NORMAL);
 }
 
@@ -667,12 +685,16 @@ static uint64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q
 		
 		/* RIKEN: use mcos timers */
 		if (timeout) {
+			dkprintf("futex_wait_queue_me(): tid: %d schedule_timeout()\n", cpu_local_var(current)->tid);
 			time_remain = schedule_timeout(timeout);
 		}
 		else {
+			dkprintf("futex_wait_queue_me(): tid: %d schedule()\n", cpu_local_var(current)->tid);
 			schedule();
 			time_remain = 0;
 		}
+		
+		dkprintf("futex_wait_queue_me(): tid: %d woken up\n", cpu_local_var(current)->tid);
 	}
 	
 	/* This does not need to be serialized */
@@ -777,10 +799,10 @@ retry:
 	if (timeout && !time_remain)
 		goto out_put_key;
 
-	if(hassigpending(cpu_local_var(current))){
+	if (hassigpending(cpu_local_var(current))) {
 		ret = -EINTR;
 		goto out_put_key;
-        }
+	}
 
 	/* RIKEN: no signals */
 	put_futex_key(fshared, &q.key);
@@ -793,17 +815,10 @@ out:
 }
 
 int futex(uint32_t *uaddr, int op, uint32_t val, uint64_t timeout,
-		uint32_t *uaddr2, uint32_t val2, uint32_t val3)
+		uint32_t *uaddr2, uint32_t val2, uint32_t val3, int fshared)
 {
 	int clockrt, ret = -ENOSYS;
 	int cmd = op & FUTEX_CMD_MASK;
-	int fshared = 0;
-
-	/* RIKEN: Assume address space private futexes. 
-	if (!(op & FUTEX_PRIVATE_FLAG)) {
-		fshared = 1;
-	}
-	*/
 
 	clockrt = op & FUTEX_CLOCK_REALTIME;
 	if (clockrt && cmd != FUTEX_WAIT_BITSET && cmd != FUTEX_WAIT_REQUEUE_PI)
@@ -824,8 +839,7 @@ int futex(uint32_t *uaddr, int op, uint32_t val, uint64_t timeout,
 		ret = futex_requeue(uaddr, fshared, uaddr2, val, val2, NULL, 0);
 		break;
 	case FUTEX_CMP_REQUEUE:
-		ret = futex_requeue(uaddr, fshared, uaddr2, val, val2, &val3,
-				    0);
+		ret = futex_requeue(uaddr, fshared, uaddr2, val, val2, &val3, 0);
 		break;
 	case FUTEX_WAKE_OP:
 		ret = futex_wake_op(uaddr, fshared, uaddr2, val, val2, val3);

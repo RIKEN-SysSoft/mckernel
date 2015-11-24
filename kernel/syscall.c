@@ -3420,7 +3420,10 @@ SYSCALL_DECLARE(futex)
 {
 	uint64_t timeout = 0; // No timeout
 	uint32_t val2 = 0;
-	int futex_clock_realtime = 0;
+	// Only one clock is used, ignore FUTEX_CLOCK_REALTIME
+	//int futex_clock_realtime = 0; 
+	int fshared = 1;
+	int ret = 0;
 
 	uint32_t *uaddr = (uint32_t *)ihk_mc_syscall_arg0(ctx);
 	int op = (int)ihk_mc_syscall_arg1(ctx);
@@ -3429,32 +3432,32 @@ SYSCALL_DECLARE(futex)
 	uint32_t *uaddr2 = (uint32_t *)ihk_mc_syscall_arg4(ctx);
 	uint32_t val3 = (uint32_t)ihk_mc_syscall_arg5(ctx);
     
-	/* Mask off the FUTEX_PRIVATE_FLAG,
-	 * assume all futexes are address space private */
-	if (op & FUTEX_CLOCK_REALTIME) {
-		futex_clock_realtime = 1;
+	/* Cross-address space futex? */
+	if (op & FUTEX_PRIVATE_FLAG) {
+		fshared = 0;
 	}
 	op = (op & FUTEX_CMD_MASK);
 	
-	dkprintf("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%lx, uaddr2=%lx, val3=%x, []=%x\n", 
-	op,
-	(op == FUTEX_WAIT) ? "FUTEX_WAIT" :
-	(op == FUTEX_WAIT_BITSET) ? "FUTEX_WAIT_BITSET" :
-	(op == FUTEX_WAKE) ? "FUTEX_WAKE" :
-	(op == FUTEX_WAKE_OP) ? "FUTEX_WAKE_OP" :
-	(op == FUTEX_WAKE_BITSET) ? "FUTEX_WAKE_BITSET" :
-	(op == FUTEX_CMP_REQUEUE) ? "FUTEX_CMP_REQUEUE" :
-	(op == FUTEX_REQUEUE) ? "FUTEX_REQUEUE (NOT IMPL!)" : "unknown",
-	(unsigned long)uaddr, op, val, utime, uaddr2, val3, *uaddr);
+	dkprintf("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%lx, uaddr2=%lx, val3=%x, []=%x, shared: %d\n", 
+			op,
+			(op == FUTEX_WAIT) ? "FUTEX_WAIT" :
+			(op == FUTEX_WAIT_BITSET) ? "FUTEX_WAIT_BITSET" :
+			(op == FUTEX_WAKE) ? "FUTEX_WAKE" :
+			(op == FUTEX_WAKE_OP) ? "FUTEX_WAKE_OP" :
+			(op == FUTEX_WAKE_BITSET) ? "FUTEX_WAKE_BITSET" :
+			(op == FUTEX_CMP_REQUEUE) ? "FUTEX_CMP_REQUEUE" :
+			(op == FUTEX_REQUEUE) ? "FUTEX_REQUEUE (NOT IMPL!)" : "unknown",
+			(unsigned long)uaddr, val, utime, uaddr2, val3, *uaddr, fshared);
 
 	if (utime && (op == FUTEX_WAIT_BITSET || op == FUTEX_WAIT)) {
+		unsigned long nsec_timeout;
+		struct timespec ats;
+
 		if (!gettime_local_support) {
 			struct syscall_request request IHK_DMA_ALIGN; 
 			struct timeval tv_now;
 			request.number = n;
 			unsigned long __phys;                                          
-
-			dkprintf("futex,utime and FUTEX_WAIT_*, uaddr=%lx, []=%x\n", (unsigned long)uaddr, *uaddr);
 
 			if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->address_space->page_table, 
 						(void *)&tv_now, &__phys)) { 
@@ -3469,37 +3472,26 @@ SYSCALL_DECLARE(futex)
 				return -EFAULT;
 			}
 
-			dkprintf("futex, FUTEX_WAIT_*, arg3 != NULL, pc=%lx\n", (unsigned long)ihk_mc_syscall_pc(ctx));
-			dkprintf("now->tv_sec=%016ld,tv_nsec=%016ld\n", tv_now.tv_sec, tv_now.tv_usec * 1000);
-			dkprintf("utime->tv_sec=%016ld,tv_nsec=%016ld\n", utime->tv_sec, utime->tv_nsec);
-			unsigned long nsec_timeout = ((long)utime->tv_sec * 1000000000ULL) 
-				+ utime->tv_nsec;
-
-			long nsec_now = ((long)tv_now.tv_sec * 1000000000ULL) + 
-				tv_now.tv_usec * 1000;
-			long diff_nsec = nsec_timeout - nsec_now;
-
-			timeout = (diff_nsec / 1000) * 1100; // (usec * 1.1GHz)
+			ats.tv_sec = tv_now.tv_sec;
+			ats.tv_nsec = tv_now.tv_usec * 1000;
 		}
 		/* Compute timeout based on TSC/nanosec ratio */
 		else {
-			unsigned long nsec_timeout;
-
-			if (!(futex_clock_realtime)) {
-				nsec_timeout = ((long)utime->tv_sec * NS_PER_SEC) 
-					+ utime->tv_nsec;
-			}
-			else { /* FUTEX_CLOCK_REALTIME denotes absolute time */
-				struct timespec ats;
-				calculate_time_from_tsc(&ats);
-				
-				nsec_timeout = (utime->tv_sec * NS_PER_SEC + utime->tv_nsec) -
-					(ats.tv_sec * NS_PER_SEC + ats.tv_nsec);
-			}
-			
-			timeout = nsec_timeout * 1000 / ihk_mc_get_ns_per_tsc();
-			dkprintf("futex timeout: %lu\n", timeout);
+			calculate_time_from_tsc(&ats);
 		}
+
+		/* As per the Linux implementation FUTEX_WAIT specifies the duration of
+		 * the timeout, while FUTEX_WAIT_BITSET specifies the absolute timestamp */
+		if (op == FUTEX_WAIT_BITSET) {
+			nsec_timeout = (utime->tv_sec * NS_PER_SEC + utime->tv_nsec) -
+				(ats.tv_sec * NS_PER_SEC + ats.tv_nsec);
+		}
+		else {
+			nsec_timeout = (utime->tv_sec * NS_PER_SEC + utime->tv_nsec);
+		}
+
+		timeout = nsec_timeout * 1000 / ihk_mc_get_ns_per_tsc();
+		dkprintf("futex timeout: %lu\n", timeout);
 	}
 
 	/* Requeue parameter in 'utime' if op == FUTEX_CMP_REQUEUE.
@@ -3507,7 +3499,20 @@ SYSCALL_DECLARE(futex)
 	if (op == FUTEX_CMP_REQUEUE || op == FUTEX_WAKE_OP)
 		val2 = (uint32_t) (unsigned long) ihk_mc_syscall_arg3(ctx);
 
-	return futex(uaddr, op, val, timeout, uaddr2, val2, val3);
+	ret = futex(uaddr, op, val, timeout, uaddr2, val2, val3, fshared);
+
+	dkprintf("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%lx, uaddr2=%lx, val3=%x, []=%x, shared: %d, ret: %d\n", 
+			op,
+			(op == FUTEX_WAIT) ? "FUTEX_WAIT" :
+			(op == FUTEX_WAIT_BITSET) ? "FUTEX_WAIT_BITSET" :
+			(op == FUTEX_WAKE) ? "FUTEX_WAKE" :
+			(op == FUTEX_WAKE_OP) ? "FUTEX_WAKE_OP" :
+			(op == FUTEX_WAKE_BITSET) ? "FUTEX_WAKE_BITSET" :
+			(op == FUTEX_CMP_REQUEUE) ? "FUTEX_CMP_REQUEUE" :
+			(op == FUTEX_REQUEUE) ? "FUTEX_REQUEUE (NOT IMPL!)" : "unknown",
+			(unsigned long)uaddr, val, utime, uaddr2, val3, *uaddr, fshared, ret);
+
+	return ret;
 }
 
 SYSCALL_DECLARE(exit)
@@ -3549,7 +3554,7 @@ SYSCALL_DECLARE(exit)
 		*thread->clear_child_tid = 0;
 		barrier();
 		futex((uint32_t *)thread->clear_child_tid,
-		      FUTEX_WAKE, 1, 0, NULL, 0, 0);
+		      FUTEX_WAKE, 1, 0, NULL, 0, 0, 1);
 	}
 
 	mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
@@ -4869,6 +4874,36 @@ static void calculate_time_from_tsc(struct timespec *ts)
 	return;
 }
 
+SYSCALL_DECLARE(clock_gettime)
+{
+	/* TODO: handle clock_id */
+	struct timespec *ts = (struct timespec *)ihk_mc_syscall_arg1(ctx);
+	struct syscall_request request IHK_DMA_ALIGN;
+	int error;
+	struct timespec ats;
+
+	if (!ts) {
+		/* nothing to do */
+		return 0;
+	}
+
+	/* Do it locally if supported */
+	if (gettime_local_support) {
+		calculate_time_from_tsc(&ats);
+
+		error = copy_to_user(ts, &ats, sizeof(ats));
+
+		dkprintf("clock_gettime(): %d\n", error);
+		return error;
+	}
+
+	/* Otherwise offload */
+	request.number = __NR_clock_gettime;
+	request.args[0] = ihk_mc_syscall_arg0(ctx);
+	request.args[1] = ihk_mc_syscall_arg1(ctx);
+
+	return do_syscall(&request, ihk_mc_get_processor_id(), 0);
+}
 
 SYSCALL_DECLARE(gettimeofday)
 {
