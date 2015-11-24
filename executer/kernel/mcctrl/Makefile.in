@@ -3,15 +3,15 @@ ARCH ?= @ARCH@
 src = @abs_srcdir@
 KMODDIR=@KMODDIR@
 BINDIR=@BINDIR@
-IHK_BASE=$(src)/../../../ihk
+IHK_BASE=$(src)/../../../../ihk
 
 obj-m += mcctrl.o
 
-ccflags-y := -I$(IHK_BASE)/linux/include -I$(IHK_BASE)/ikc/include -I$(IHK_BASE)/include -I$(src)/../include -mcmodel=kernel -mno-red-zone -DMCEXEC_PATH=\"$(BINDIR)/mcexec\"
+ccflags-y := -I$(IHK_BASE)/linux/include -I$(IHK_BASE)/ikc/include -I$(IHK_BASE)/include -I$(src)/../../include -mcmodel=kernel -mno-red-zone -DMCEXEC_PATH=\"$(BINDIR)/mcexec\"
 
 mcctrl-y := driver.o control.o ikc.o syscall.o procfs.o binfmt_mcexec.o
 
-KBUILD_EXTRA_SYMBOLS = @abs_builddir@/../../../ihk/linux/core/Module.symvers
+KBUILD_EXTRA_SYMBOLS = @abs_builddir@/../../../../ihk/linux/core/Module.symvers
 
 .PHONY: clean install modules
 
