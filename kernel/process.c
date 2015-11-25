@@ -124,6 +124,7 @@ chain_thread(struct thread *thread)
 {
 	struct mcs_rwlock_node_irqsave lock;
 	struct process *proc = thread->proc;
+	struct process_vm *vm = thread->vm;
 	int hash;
 	struct thread_hash *thash;
 
@@ -137,7 +138,7 @@ chain_thread(struct thread *thread)
 	list_add_tail(&thread->hash_list, &thash->list[hash]);
 	mcs_rwlock_writer_unlock(&thash->lock[hash], &lock);
 
-	ihk_atomic_inc(&proc->refcount);
+	ihk_atomic_inc(&vm->refcount);
 }
 
 struct address_space *
@@ -159,12 +160,26 @@ create_address_space(struct resource_set *res, int type, int n)
 	asp->type = type;
 	asp->nslots = n;
 	asp->page_table = pt;
+	ihk_atomic_set(&asp->refcount, 1);
+	memset(&asp->cpu_set, 0, sizeof(cpu_set_t));
+	ihk_mc_spinlock_init(&asp->cpu_set_lock);
 	return asp;
 }
 
 void
-remove_address_space(struct address_space *asp)
+hold_address_space(struct address_space *asp)
 {
+	ihk_atomic_inc(&asp->refcount);
+}
+
+void
+release_address_space(struct address_space *asp)
+{
+	if (!ihk_atomic_dec_and_test(&asp->refcount)) {
+		return;
+	}
+	if(asp->free_cb)
+		asp->free_cb(asp, asp->opt);
 	ihk_mc_pt_destroy(asp->page_table);
 	kfree(asp);
 }
@@ -172,19 +187,15 @@ remove_address_space(struct address_space *asp)
 void
 detach_address_space(struct address_space *asp, int pid)
 {
-	if(asp->type == ADDRESS_SPACE_NORMAL){
-		remove_address_space(asp);
-	}
-	else if(asp->type == ADDRESS_SPACE_PVAS){
-		int i;
+	int i;
 
-		for(i = 0; i < asp->nslots; i++){
-			if(asp->pids[i] == pid){
-				asp->pids[i] = 0;
-				break;
-			}
+	for(i = 0; i < asp->nslots; i++){
+		if(asp->pids[i] == pid){
+			asp->pids[i] = 0;
+			break;
 		}
 	}
+	release_address_space(asp);
 }
 
 static int
@@ -197,8 +208,6 @@ init_process_vm(struct process *owner, struct address_space *asp, struct process
 	INIT_LIST_HEAD(&vm->vm_range_list);
 	vm->address_space = asp;
 	vm->proc = owner;
-	memset(&vm->cpu_set, 0, sizeof(cpu_set_t));
-	ihk_mc_spinlock_init(&vm->cpu_set_lock);
 	vm->exiting = 0;
 
 	return 0;
@@ -270,8 +279,8 @@ create_thread(unsigned long user_pc)
 		goto err;
 	}
 
-	cpu_set(ihk_mc_get_processor_id(), &thread->vm->cpu_set,
-			&thread->vm->cpu_set_lock);
+	cpu_set(ihk_mc_get_processor_id(), &thread->vm->address_space->cpu_set,
+			&thread->vm->address_space->cpu_set_lock);
 
 	ihk_mc_spinlock_init(&thread->spin_sleep_lock);
 	thread->spin_sleep = 0;
@@ -284,7 +293,7 @@ err:
 	if(vm)
 		kfree(vm);
 	if(asp)
-		remove_address_space(asp);
+		release_address_space(asp);
 	if(thread->sigcommon)
 		kfree(thread->sigcommon);
 	ihk_mc_free_pages(thread, KERNEL_STACK_NR_PAGES);
@@ -366,7 +375,7 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 		}
 		proc->vm = kmalloc(sizeof(struct process_vm), IHK_MC_AP_NOWAIT);
 		if(!proc->vm){
-			remove_address_space(asp);
+			release_address_space(asp);
 			kfree(proc);
 			goto err_free_proc;
 		}
@@ -374,7 +383,7 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 
 		dkprintf("fork(): init_process_vm()\n");
 		if (init_process_vm(proc, asp, proc->vm) != 0) {
-			remove_address_space(asp);
+			release_address_space(asp);
 			kfree(proc->vm);
 			kfree(proc);
 			goto err_free_proc;
@@ -388,7 +397,7 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 		/* Copy user-space mappings.
 		 * TODO: do this with COW later? */
 		if (copy_user_ranges(proc->vm, org->vm) != 0) {
-			remove_address_space(asp);
+			release_address_space(asp);
 			kfree(proc->vm);
 			kfree(proc);
 			goto err_free_proc;
@@ -2034,14 +2043,10 @@ hold_process_vm(struct process_vm *vm)
 }
 
 void
-release_process_vm(struct process_vm *vm)
+free_all_process_memory_range(struct process_vm *vm)
 {
 	struct vm_range *range, *next;
 	int error;
-
-	if (!ihk_atomic_dec_and_test(&vm->refcount)) {
-		return;
-	}
 
 	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 	list_for_each_entry_safe(range, next, &vm->vm_range_list, list) {
@@ -2056,12 +2061,24 @@ release_process_vm(struct process_vm *vm)
 	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 }
 
-static void
-free_process_vm(struct process_vm *vm)
+void
+release_process_vm(struct process_vm *vm)
 {
+	struct process *proc = vm->proc;
+
+	if (!ihk_atomic_dec_and_test(&vm->refcount)) {
+		return;
+	}
+
+	if(vm->free_cb)
+		vm->free_cb(vm, vm->opt);
+
+	free_all_process_memory_range(vm);
+
 	detach_address_space(vm->address_space, vm->proc->pid);
+	proc->vm = NULL;
+	release_process(proc);
 	kfree(vm);
-	release_process(vm->proc);
 }
 
 int populate_process_memory(struct process_vm *vm, void *start, size_t len)
@@ -2138,7 +2155,8 @@ void destroy_thread(struct thread *thread)
 	list_del(&thread->siblings_list);
 	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 
-	cpu_clear(thread->cpu_id, &thread->vm->cpu_set, &thread->vm->cpu_set_lock);
+	cpu_clear(thread->cpu_id, &thread->vm->address_space->cpu_set,
+	          &thread->vm->address_space->cpu_set_lock);
 	list_for_each_entry_safe(pending, signext, &thread->sigpending, list){
 		list_del(&pending->list);
 		kfree(pending);
@@ -2165,20 +2183,16 @@ void destroy_thread(struct thread *thread)
 void release_thread(struct thread *thread)
 {
 	struct process_vm *vm;
-	struct process *proc;
 
 	if (!ihk_atomic_dec_and_test(&thread->refcount)) {
 		return;
 	}
 
 	vm = thread->vm;
-	proc = thread->proc;
 
 	destroy_thread(thread);
 
-	if(ihk_atomic_read(&vm->refcount) == 0)
-		free_process_vm(vm);
-	release_process(proc);
+	release_process_vm(vm);
 }
 
 void cpu_set(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock)
@@ -2374,6 +2388,7 @@ void sched_init(void)
 	idle_thread->vm->address_space = &cpu_local_var(idle_asp);
 	idle_thread->proc = &cpu_local_var(idle_proc);
 	init_process(idle_thread->proc, NULL);
+	cpu_local_var(idle_proc).nohost = 1;
 	idle_thread->proc->vm = &cpu_local_var(idle_vm);
 	list_add_tail(&idle_thread->siblings_list,
 	               &idle_thread->proc->children_list);
@@ -2461,8 +2476,9 @@ static void do_migrate(void)
 		v->runq_len += 1;
 		
 		/* update cpu_set of the VM for remote TLB invalidation */
-		cpu_clear_and_set(old_cpu_id, cpu_id, &req->thread->vm->cpu_set,
-				&req->thread->vm->cpu_set_lock);
+		cpu_clear_and_set(old_cpu_id, cpu_id,
+		                  &req->thread->vm->address_space->cpu_set,
+		                  &req->thread->vm->address_space->cpu_set_lock);
 
 		dkprintf("do_migrate(): migrated TID %d from CPU %d to CPU %d\n",
 			req->thread->tid, old_cpu_id, cpu_id);

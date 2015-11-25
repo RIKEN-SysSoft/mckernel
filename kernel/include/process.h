@@ -216,9 +216,14 @@ struct thread_hash {
 
 struct address_space {
 	struct page_table	*page_table;
+	void			*opt;
+	void			(*free_cb)(struct address_space *, void *);
+	ihk_atomic_t		refcount;
 	int			type;
 #define ADDRESS_SPACE_NORMAL	1
 #define ADDRESS_SPACE_PVAS	2
+	cpu_set_t cpu_set;
+	ihk_spinlock_t cpu_set_lock;
 	int			nslots;
 	int			pids[];
 };
@@ -516,6 +521,8 @@ struct process_vm {
 	struct list_head vm_range_list;
 	struct vm_regions region;
 	struct process *proc;		/* process that reside on the same page */
+	void *opt;
+	void (*free_cb)(struct process_vm *, void *);
  	
 	ihk_spinlock_t page_table_lock;
 	ihk_spinlock_t memory_range_lock;
@@ -526,12 +533,12 @@ struct process_vm {
     // is protected by its own lock (see ihk/manycore/generic/page_alloc.c)
 
 	ihk_atomic_t refcount;
-	cpu_set_t cpu_set;
-	ihk_spinlock_t cpu_set_lock;
 	int exiting;
 };
 
 
+void hold_address_space(struct address_space *);
+void release_address_space(struct address_space *);
 struct thread *create_thread(unsigned long user_pc);
 struct thread *clone_thread(struct thread *org, unsigned long pc,
                               unsigned long sp, int clone_flags);

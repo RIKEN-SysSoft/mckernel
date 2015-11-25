@@ -111,6 +111,7 @@ extern int num_processors;
 extern unsigned long ihk_mc_get_ns_per_tsc(void);
 extern int ptrace_detach(int pid, int data);
 extern void debug_log(unsigned long);
+extern void free_all_process_memory_range(struct process_vm *vm);
 
 int prepare_process_ranges_args_envs(struct thread *thread, 
 		struct program_load_desc *pn,
@@ -197,15 +198,17 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	int islock = 0;
 	unsigned long irqstate;
 	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
 
 	dkprintf("SC(%d)[%3d] sending syscall\n",
 		ihk_mc_get_processor_id(),
 		req->number);
 
 	if(req->number != __NR_exit_group){
-
-		if(thread->proc->nohost) // host is down
+		if(proc->nohost && // host is down
+		   pid == proc->pid) {
 			return -EPIPE;
+		}
 		++thread->in_syscall_offload;
 	}
 
@@ -552,6 +555,7 @@ terminate(int rc, int sig)
 	struct process *child;
 	struct process *next;
 	struct process *pid1 = resource_set->pid1;
+	struct process_vm *vm;
 	struct mcs_rwlock_node_irqsave lock;
 	struct mcs_rwlock_node updatelock;
 	struct mcs_rwlock_node childlock;
@@ -624,10 +628,8 @@ terminate(int rc, int sig)
 
 	delete_proc_procfs_files(proc->pid);
 
-	release_process_vm(proc->vm);
-	while (ihk_atomic_read(&proc->vm->refcount) != 0) {
-		cpu_pause();
-	}
+	vm = proc->vm;
+	free_all_process_memory_range(vm);
 
 	if (proc->saved_cmdline) {
 		kfree(proc->saved_cmdline);
@@ -715,6 +717,7 @@ terminate(int rc, int sig)
 		request.number = __NR_exit_group;
 		request.args[0] = proc->exit_status;
 		do_syscall(&request, ihk_mc_get_processor_id(), proc->pid);
+		proc->nohost = 1;
 	}
 
 	// Send signal to parent
@@ -749,6 +752,7 @@ terminate(int rc, int sig)
 
 	mythread->status = PS_EXITED;
 	release_thread(mythread);
+	release_process_vm(vm);
 	schedule();
 	// no return
 }
@@ -1426,14 +1430,15 @@ SYSCALL_DECLARE(getppid)
 void
 settid(struct thread *thread, int mode, int newcpuid, int oldcpuid)
 {
-	ihk_mc_user_context_t ctx;
+	struct syscall_request request IHK_DMA_ALIGN;
 	unsigned long rc;
 
-	ihk_mc_syscall_arg0(&ctx) = mode;
-	ihk_mc_syscall_arg1(&ctx) = thread->proc->pid;
-	ihk_mc_syscall_arg2(&ctx) = newcpuid;
-	ihk_mc_syscall_arg3(&ctx) = oldcpuid;
-	rc = syscall_generic_forwarding(__NR_gettid, &ctx);
+	request.number = __NR_gettid;
+	request.args[0] = mode;
+	request.args[1] = thread->proc->pid;
+	request.args[2] = newcpuid;
+	request.args[3] = oldcpuid;
+	rc = do_syscall(&request, ihk_mc_get_processor_id(), thread->proc->pid);
 	if (mode != 2) {
 		thread->tid = rc;
 	}
@@ -1833,10 +1838,10 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		return -ENOMEM;
 	}
 
-	cpu_set(cpuid, &new->vm->cpu_set, &new->vm->cpu_set_lock);
+	cpu_set(cpuid, &new->vm->address_space->cpu_set,
+	        &new->vm->address_space->cpu_set_lock);
 
 	if (clone_flags & CLONE_VM) {
-		new->proc->pid = cpu_local_var(current)->proc->pid;
 		settid(new, 1, cpuid, -1);
 	}
 	/* fork() a new process on the host */

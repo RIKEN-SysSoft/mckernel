@@ -285,9 +285,9 @@ void remote_flush_tlb_cpumask(struct process_vm *vm,
 
 	/* Take a copy of the cpu set so that we don't hold the lock
 	 * all the way while interrupting other cores */
-	ihk_mc_spinlock_lock_noirq(&vm->cpu_set_lock);
-	memcpy(&_cpu_set, &vm->cpu_set, sizeof(cpu_set_t));
-	ihk_mc_spinlock_unlock_noirq(&vm->cpu_set_lock);
+	ihk_mc_spinlock_lock_noirq(&vm->address_space->cpu_set_lock);
+	memcpy(&_cpu_set, &vm->address_space->cpu_set, sizeof(cpu_set_t));
+	ihk_mc_spinlock_unlock_noirq(&vm->address_space->cpu_set_lock);
 	
 	dkprintf("trying to aquire flush_entry->lock flush_ind: %d\n", flush_ind);
 	
