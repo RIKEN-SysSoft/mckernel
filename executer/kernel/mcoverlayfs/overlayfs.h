@@ -131,6 +131,7 @@ static inline int ovl_do_whiteout(struct inode *dir, struct dentry *dentry)
 	return err;
 }
 
+bool ovl_is_nocopyupw(struct dentry *dentry);
 enum ovl_path_type ovl_path_type(struct dentry *dentry);
 u64 ovl_dentry_version_get(struct dentry *dentry);
 void ovl_dentry_version_inc(struct dentry *dentry);

@@ -24,12 +24,22 @@ MODULE_AUTHOR("Miklos Szeredi <miklos@szeredi.hu>");
 MODULE_DESCRIPTION("Overlay filesystem");
 MODULE_LICENSE("GPL");
 
-#define OVERLAYFS_SUPER_MAGIC 0x794c7630
+#define MCOVERLAYFS_SUPER_MAGIC 0x4d634f56
+
+enum ovl_opt_bit {
+	__OVL_OPT_DEFAULT	= 0,
+	__OVL_OPT_NOCOPYUPW	= (1 << 0),
+	__OVL_OPT_NOFSCHECK	= (1 << 1),
+};
+
+#define OVL_OPT_NOCOPYUPW(opt)	((opt) & __OVL_OPT_NOCOPYUPW)
+#define OVL_OPT_NOFSCHECK(opt)	((opt) & __OVL_OPT_NOFSCHECK)
 
 struct ovl_config {
 	char *lowerdir;
 	char *upperdir;
 	char *workdir;
+	unsigned opt;
 };
 
 /* private information held for overlayfs's superblock */
@@ -61,6 +71,16 @@ struct ovl_entry {
 };
 
 #define OVL_MAX_STACK 500
+
+bool ovl_is_nocopyupw(struct dentry *dentry)
+{
+	struct ovl_fs *ofs = dentry->d_sb->s_fs_info;
+
+	if (OVL_OPT_NOCOPYUPW(ofs->config.opt))
+		return true;
+
+	return false;
+}
 
 static struct dentry *__ovl_dentry_lower(struct ovl_entry *oe)
 {
@@ -500,7 +520,7 @@ static int ovl_statfs(struct dentry *dentry, struct kstatfs *buf)
 	err = vfs_statfs(&path, buf);
 	if (!err) {
 		buf->f_namelen = max(buf->f_namelen, ofs->lower_namelen);
-		buf->f_type = OVERLAYFS_SUPER_MAGIC;
+		buf->f_type = MCOVERLAYFS_SUPER_MAGIC;
 	}
 
 	return err;
@@ -521,6 +541,12 @@ static int ovl_show_options(struct seq_file *m, struct dentry *dentry)
 	if (ufs->config.upperdir) {
 		seq_printf(m, ",upperdir=%s", ufs->config.upperdir);
 		seq_printf(m, ",workdir=%s", ufs->config.workdir);
+	}
+	if (OVL_OPT_NOCOPYUPW(ufs->config.opt)) {
+		seq_printf(m, ",nocopyupw");
+	}
+	if (OVL_OPT_NOFSCHECK(ufs->config.opt)) {
+		seq_printf(m, ",nofscheck");
 	}
 	return 0;
 }
@@ -546,6 +572,8 @@ enum {
 	OPT_LOWERDIR,
 	OPT_UPPERDIR,
 	OPT_WORKDIR,
+	OPT_NOCOPYUPW,
+	OPT_NOFSCHECK,
 	OPT_ERR,
 };
 
@@ -553,6 +581,8 @@ static const match_table_t ovl_tokens = {
 	{OPT_LOWERDIR,			"lowerdir=%s"},
 	{OPT_UPPERDIR,			"upperdir=%s"},
 	{OPT_WORKDIR,			"workdir=%s"},
+	{OPT_NOCOPYUPW,			"nocopyupw"},
+	{OPT_NOFSCHECK,			"nofscheck"},
 	{OPT_ERR,			NULL}
 };
 
@@ -583,6 +613,8 @@ static int ovl_parse_opt(char *opt, struct ovl_config *config)
 {
 	char *p;
 
+	config->opt = __OVL_OPT_DEFAULT;
+
 	while ((p = ovl_next_opt(&opt)) != NULL) {
 		int token;
 		substring_t args[MAX_OPT_ARGS];
@@ -611,6 +643,14 @@ static int ovl_parse_opt(char *opt, struct ovl_config *config)
 			config->workdir = match_strdup(&args[0]);
 			if (!config->workdir)
 				return -ENOMEM;
+			break;
+
+		case OPT_NOCOPYUPW:
+			config->opt = config->opt | __OVL_OPT_NOCOPYUPW;
+			break;
+
+		case OPT_NOFSCHECK:
+			config->opt = config->opt | __OVL_OPT_NOFSCHECK;
 			break;
 
 		default:
@@ -713,7 +753,7 @@ static bool ovl_is_allowed_fs_type(struct dentry *root)
 	return true;
 }
 
-static int ovl_mount_dir_noesc(const char *name, struct path *path)
+static int ovl_mount_dir_noesc(const char *name, struct path *path, unsigned opt)
 {
 	int err = -EINVAL;
 
@@ -727,9 +767,11 @@ static int ovl_mount_dir_noesc(const char *name, struct path *path)
 		goto out;
 	}
 	err = -EINVAL;
-	if (!ovl_is_allowed_fs_type(path->dentry)) {
-		pr_err("overlayfs: filesystem on '%s' not supported\n", name);
-		goto out_put;
+	if (!OVL_OPT_NOFSCHECK(opt)) {
+		if (!ovl_is_allowed_fs_type(path->dentry)) {
+			pr_err("overlayfs: filesystem on '%s' not supported\n", name);
+			goto out_put;
+		}
 	}
 	if (!S_ISDIR(path->dentry->d_inode->i_mode)) {
 		pr_err("overlayfs: '%s' not a directory\n", name);
@@ -743,26 +785,26 @@ out:
 	return err;
 }
 
-static int ovl_mount_dir(const char *name, struct path *path)
+static int ovl_mount_dir(const char *name, struct path *path, unsigned opt)
 {
 	int err = -ENOMEM;
 	char *tmp = kstrdup(name, GFP_KERNEL);
 
 	if (tmp) {
 		ovl_unescape(tmp);
-		err = ovl_mount_dir_noesc(tmp, path);
+		err = ovl_mount_dir_noesc(tmp, path, opt);
 		kfree(tmp);
 	}
 	return err;
 }
 
 static int ovl_lower_dir(const char *name, struct path *path, long *namelen,
-			 int *stack_depth)
+			 int *stack_depth, unsigned opt)
 {
 	int err;
 	struct kstatfs statfs;
 
-	err = ovl_mount_dir_noesc(name, path);
+	err = ovl_mount_dir_noesc(name, path, opt);
 	if (err)
 		goto out;
 
@@ -851,7 +893,7 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 			goto out_free_config;
 		}
 
-		err = ovl_mount_dir(ufs->config.upperdir, &upperpath);
+		err = ovl_mount_dir(ufs->config.upperdir, &upperpath, ufs->config.opt);
 		if (err)
 			goto out_free_config;
 
@@ -862,7 +904,7 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 			goto out_put_upperpath;
 		}
 
-		err = ovl_mount_dir(ufs->config.workdir, &workpath);
+		err = ovl_mount_dir(ufs->config.workdir, &workpath, ufs->config.opt);
 		if (err)
 			goto out_put_upperpath;
 
@@ -900,7 +942,8 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 	lower = lowertmp;
 	for (numlower = 0; numlower < stacklen; numlower++) {
 		err = ovl_lower_dir(lower, &stack[numlower],
-				    &ufs->lower_namelen, &sb->s_stack_depth);
+				    &ufs->lower_namelen, &sb->s_stack_depth,
+				    ufs->config.opt);
 		if (err)
 			goto out_put_lowerpath;
 
@@ -948,15 +991,20 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 		 * Make lower_mnt R/O.  That way fchmod/fchown on lower file
 		 * will fail instead of modifying lower fs.
 		 */
-		mnt->mnt_flags |= MNT_READONLY;
+		if (!OVL_OPT_NOCOPYUPW(ufs->config.opt)) {
+			mnt->mnt_flags |= MNT_READONLY;
+		}
 
 		ufs->lower_mnt[ufs->numlower] = mnt;
 		ufs->numlower++;
 	}
 
 	/* If the upper fs is nonexistent, we mark overlayfs r/o too */
-	if (!ufs->upper_mnt)
-		sb->s_flags |= MS_RDONLY;
+	if (!ufs->upper_mnt) {
+		if (!OVL_OPT_NOCOPYUPW(ufs->config.opt)) {
+			sb->s_flags |= MS_RDONLY;
+		}
+	}
 
 	sb->s_d_op = &ovl_dentry_operations;
 
@@ -983,7 +1031,7 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 
 	root_dentry->d_fsdata = oe;
 
-	sb->s_magic = OVERLAYFS_SUPER_MAGIC;
+	sb->s_magic = MCOVERLAYFS_SUPER_MAGIC;
 	sb->s_op = &ovl_super_operations;
 	sb->s_root = root_dentry;
 	sb->s_fs_info = ufs;
@@ -1026,11 +1074,11 @@ static struct dentry *ovl_mount(struct file_system_type *fs_type, int flags,
 
 static struct file_system_type ovl_fs_type = {
 	.owner		= THIS_MODULE,
-	.name		= "overlay",
+	.name		= "mcoverlay",
 	.mount		= ovl_mount,
 	.kill_sb	= kill_anon_super,
 };
-MODULE_ALIAS_FS("overlay");
+MODULE_ALIAS_FS("mcoverlay");
 
 static int __init ovl_init(void)
 {

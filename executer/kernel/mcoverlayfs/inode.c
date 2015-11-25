@@ -345,20 +345,22 @@ static int ovl_dentry_open(struct dentry *dentry, struct file *file,
 	bool want_write = false;
 
 	type = ovl_path_real(dentry, &realpath);
-	if (ovl_open_need_copy_up(file->f_flags, type, realpath.dentry)) {
-		want_write = true;
-		err = ovl_want_write(dentry);
-		if (err)
-			goto out;
+	if (!ovl_is_nocopyupw(dentry)) {
+		if (ovl_open_need_copy_up(file->f_flags, type, realpath.dentry)) {
+			want_write = true;
+			err = ovl_want_write(dentry);
+			if (err)
+				goto out;
 
-		if (file->f_flags & O_TRUNC)
-			err = ovl_copy_up_last(dentry, NULL, true);
-		else
-			err = ovl_copy_up(dentry);
-		if (err)
-			goto out_drop_write;
+			if (file->f_flags & O_TRUNC)
+				err = ovl_copy_up_last(dentry, NULL, true);
+			else
+				err = ovl_copy_up(dentry);
+			if (err)
+				goto out_drop_write;
 
-		ovl_path_upper(dentry, &realpath);
+			ovl_path_upper(dentry, &realpath);
+		}
 	}
 
 	err = vfs_open(&realpath, file, cred);
