@@ -4,6 +4,7 @@ MANDIR = @MANDIR@
 
 all::
 	@(cd executer/kernel/mcctrl; make modules)
+	@(cd executer/kernel/mcoverlayfs; make modules)
 	@(cd executer/user; make)
 	@case "$(TARGET)" in \
 	    attached-mic | builtin-x86 | builtin-mic | smp-x86) \
@@ -17,6 +18,7 @@ all::
 
 install::
 	@(cd executer/kernel/mcctrl; make install)
+	@(cd executer/kernel/mcoverlayfs; make install)
 	@(cd executer/user; make install)
 	@case "$(TARGET)" in \
 	    attached-mic | builtin-x86 | builtin-mic | smp-x86) \
@@ -57,6 +59,7 @@ install::
 
 clean::
 	@(cd executer/kernel/mcctrl; make clean)
+	@(cd executer/kernel/mcoverlayfs; make clean)
 	@(cd executer/user; make clean)
 	@case "$(TARGET)" in \
 	    attached-mic | builtin-x86 | builtin-mic | smp-x86) \

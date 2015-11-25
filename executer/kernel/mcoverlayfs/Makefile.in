@@ -1,0 +1,27 @@
+KDIR ?= @KDIR@
+ARCH ?= @ARCH@
+KMODDIR=@KMODDIR@
+
+RELEASE=$(shell uname -r)
+ENABLE_BUILD=$(shell if [[ ${RELEASE} =~ ^4.* ]]; then echo "yes"; fi)
+
+obj-m += mcoverlay.o
+
+mcoverlay-y := copy_up.o dir.o inode.o readdir.o super.o
+
+.PHONY: clean install modules
+
+modules:
+ifeq ($(ENABLE_BUILD),yes)
+	$(MAKE) -C $(KDIR) M=$(PWD) SUBDIRS=$(PWD) ARCH=$(ARCH) modules
+endif
+
+clean:
+	$(RM) .*.cmd *.mod.c *.o *.ko* Module.symvers modules.order -r .tmp*
+
+install:
+ifeq ($(ENABLE_BUILD),yes)
+	mkdir -p -m 755 $(KMODDIR)
+	install -m 644 mcoverlay.ko $(KMODDIR)
+endif
+
