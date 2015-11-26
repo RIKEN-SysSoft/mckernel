@@ -282,6 +282,7 @@ long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx)
 static int wait_zombie(struct thread *thread, struct process *child, int *status, int options) {
     int ret;
     struct syscall_request request IHK_DMA_ALIGN;
+	int ppid = 0;
     
     dkprintf("wait_zombie,found PS_ZOMBIE process: %d\n", child->pid);
     
@@ -289,12 +290,15 @@ static int wait_zombie(struct thread *thread, struct process *child, int *status
         *status = child->exit_status;
     }
     
+	ppid = child->ppid_parent->pid;
+	if(ppid == 1)
+		return 0;
 	request.number = __NR_wait4;
 	request.args[0] = child->pid;
 	request.args[1] = 0;
 	request.args[2] = options;
 	/* Ask host to clean up exited child */
-	ret = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+	ret = do_syscall(&request, ihk_mc_get_processor_id(), ppid);
 
 	if (ret != child->pid)
 		kprintf("WARNING: host waitpid failed?\n");
