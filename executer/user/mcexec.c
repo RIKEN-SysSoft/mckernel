@@ -489,6 +489,7 @@ retry:
 			fprintf(stderr, "lookup_exec_path(): error readlink\n");
 			return EINVAL;
 		}
+		link_path[error] = '\0';
 
 		__dprintf("lookup_exec_path(): %s is link -> %s\n", path, link_path);
 
