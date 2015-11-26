@@ -251,6 +251,11 @@ static void rest_init(void)
 	sched_init();
 }
 
+static void populate_sysfs(void)
+{
+	cpu_sysfs_setup();
+} /* populate_sysfs() */
+
 int host_ikc_inited = 0;
 extern int num_processors;
 extern void zero_tsc(void);
@@ -280,6 +285,7 @@ static void post_init(void)
 
 	create_os_procfs_files();
 	sysfs_init();
+	populate_sysfs();
 }
 #ifdef DCFA_RUN
 extern void user_main();

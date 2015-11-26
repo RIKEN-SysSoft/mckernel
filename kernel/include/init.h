@@ -28,6 +28,7 @@ extern void init_host_syscall_channel(void);
 extern void init_host_syscall_channel2(void);
 extern void sched_init(void);
 extern void pc_ap_init(void);
+extern void cpu_sysfs_setup(void);
 
 extern char *find_command_line(char *name);
 
