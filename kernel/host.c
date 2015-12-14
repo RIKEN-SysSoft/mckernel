@@ -84,6 +84,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	struct process *proc = thread->proc;
 	struct process_vm *vm = proc->vm;
 	struct address_space *as = vm->address_space;
+	long delta = -1;
 	
 	n = p->num_sections;
 
@@ -100,6 +101,19 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		if (pn->sections[i].interp) {
 			pn->sections[i].vaddr -= interp_obase;
 			pn->sections[i].vaddr += interp_nbase;
+			p->sections[i].vaddr = pn->sections[i].vaddr;
+		}
+		else{
+			if(delta == -1){
+				if(pn->reloc){
+					delta = vm->region.user_start;
+					pn->at_phdr += delta;
+					pn->at_entry += delta;
+				}
+				else
+					delta = 0;
+			}
+			pn->sections[i].vaddr += delta;
 			p->sections[i].vaddr = pn->sections[i].vaddr;
 		}
 		s = (pn->sections[i].vaddr) & PAGE_MASK;
@@ -382,6 +396,14 @@ static int process_msg_prepare_process(unsigned long rphys)
 
 	vm->region.user_start = pn->user_start;
 	vm->region.user_end = pn->user_end;
+	/* TODO: review this code
+	if(vm->region.user_end > USER_END)
+		vm->region.user_end = USER_END;
+	vm->region.map_start =
+	        (vm->region.user_start +
+	         (vm->region.user_end - vm->region.user_start) / 3) &
+	        LARGE_PAGE_MASK;
+	*/
 	vm->region.map_start = (USER_END / 3) & LARGE_PAGE_MASK;
 	vm->region.map_end = proc->vm->region.map_start;
 	memcpy(proc->rlimit, pn->rlimit, sizeof(struct rlimit) * MCK_RLIM_MAX);

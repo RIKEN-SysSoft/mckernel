@@ -183,6 +183,7 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	
 	desc = malloc(sizeof(struct program_load_desc)
 	              + sizeof(struct program_image_section) * nhdrs);
+	memset(desc, '\0', sizeof(struct program_load_desc));
 	desc->shell_path[0] = '\0';
 	fseek(fp, hdr.e_phoff, SEEK_SET);
 	j = 0;
@@ -243,6 +244,8 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	}
 	desc->pid = getpid();
 	desc->pgid = getpgid(0);
+	if(*interp_pathp)
+		desc->reloc = hdr.e_type == ET_DYN;
 	desc->entry = hdr.e_entry;
 	ioctl(fd, MCEXEC_UP_GET_CREDV, desc->cred);
 	desc->at_phdr = load_addr + hdr.e_phoff;

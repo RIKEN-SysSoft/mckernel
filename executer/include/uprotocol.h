@@ -83,6 +83,7 @@ struct program_load_desc {
 	int stack_prot;
 	int pgid;
 	int cred[8];
+	int reloc;
 	unsigned long entry;
 	unsigned long user_start;
 	unsigned long user_end;
