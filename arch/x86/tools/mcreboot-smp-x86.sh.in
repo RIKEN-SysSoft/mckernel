@@ -22,6 +22,9 @@ mem="512M@0"
 cpus=""
 ihk_ikc_irq_core=0
 
+kernel_release=`uname -r`
+enable_mcoverlay=`if [[ ${kernel_release} =~ ^4.* ]]; then echo "yes"; fi`
+
 
 if [ "$cpus" == "" ]; then
 	# Get the number of CPUs on NUMA node 0
@@ -36,6 +39,16 @@ fi
 # Remove delegator if loaded
 if [ "`lsmod | grep mcctrl`" != "" ]; then
         if ! rmmod mcctrl; then echo "error: removing mcctrl"; exit; fi
+fi
+
+# Remove mcoverlay if loaded
+if [ "$enable_mcoverlay" != "" ]; then
+	if [ "`lsmod | grep mcoverlay`" != "" ]; then
+		if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_proc`" != "" ]; then umount -l /tmp/mcos/mcos0_proc; fi
+		if [ "`cat /proc/mounts | grep /tmp/mcos`" != "" ]; then umount -l /tmp/mcos; fi
+		if [ -e /tmp/mcos ]; then rm -rf /tmp/mcos; fi
+		if ! rmmod mcoverlay; then echo "error: removing mcoverlay"; exit; fi
+	fi
 fi
 
 # Load IHK if not loaded
@@ -96,3 +109,19 @@ if ! ${SBINDIR}/ihkosctl 0 kargs hidos; then echo "error: setting kernel argumen
 if ! ${SBINDIR}/ihkosctl 0 boot; then echo "error: booting"; exit; fi
 if ! insmod ${KMODDIR}/mcctrl.ko; then echo "error: inserting mcctrl.ko"; exit; fi
 if ! chown `logname` /dev/mcd* /dev/mcos*; then echo "error: chowning device files"; exit; fi
+
+if [ "$enable_mcoverlay" != "" ]; then
+	if ! insmod ${KMODDIR}/mcoverlay.ko; then echo "error: inserting mcoverlay.ko"; exit; fi
+	while [ ! -e /proc/mcos0 ]
+	do
+		sleep 1
+	done
+	if [ ! -e /tmp/mcos ]; then mkdir -p /tmp/mcos; fi
+	if ! mount -t tmpfs tmpfs /tmp/mcos; then echo "error: mount /tmp/mcos"; exit; fi
+	if [ ! -e /tmp/mcos/mcos0_proc ]; then mkdir -p /tmp/mcos/mcos0_proc; fi
+	if [ ! -e /tmp/mcos/mcos0_proc_upper ]; then mkdir -p /tmp/mcos/mcos0_proc_upper; fi
+	if [ ! -e /tmp/mcos/mcos0_proc_work ]; then mkdir -p /tmp/mcos/mcos0_proc_work; fi
+	if ! mount -t mcoverlay mcoverlay -o lowerdir=/proc/mcos0:/proc,upperdir=/tmp/mcos/mcos0_proc_upper,workdir=/tmp/mcos/mcos0_proc_work,nocopyupw,nofscheck /tmp/mcos/mcos0_proc; then echo "error: mount /tmp/mcos/mcos0_proc"; exit; fi
+	mount --make-rprivate /proc
+fi
+

@@ -59,6 +59,8 @@
 #include <semaphore.h>
 #include <signal.h>
 #include <sys/signalfd.h>
+#include <sys/mount.h>
+#include <linux/version.h>
 #include "../include/uprotocol.h"
 
 //#define DEBUG
@@ -1073,6 +1075,80 @@ void init_worker_threads(int fd)
 	pthread_barrier_wait(&init_ready);
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
+#define READ_BUFSIZE 1024
+static int isunshare(void)
+{
+	int err = 0;
+	int ret;
+	int fd;
+	char proc_path[PATH_MAX];
+	ssize_t len_read;
+	char buf_read[READ_BUFSIZE + 1];
+	char *buf_read_off;
+	char *buf_find;
+	char buf_cmp[READ_BUFSIZE + 1];
+	char *buf_cmp_off;
+	ssize_t len_copy;
+
+	snprintf(proc_path, sizeof(proc_path), "/proc/%d/mounts", getpid());
+	fd = open(proc_path, O_RDONLY);
+	if (fd < 0) {
+		fprintf(stderr, "Error: Failed to open %s.\n", proc_path);
+		return -1;
+	}
+
+	buf_cmp_off = buf_cmp;
+	while (1) {
+		len_read = read(fd, buf_read, READ_BUFSIZE);
+		if (len_read == -1) {
+			fprintf(stderr, "Error: Failed to read.\n");
+			err = -1;
+			break;
+		}
+
+		buf_read_off = buf_read;
+		while (1) {
+			if ((len_read - (buf_read_off - buf_read)) <= 0) {
+				break;
+			}
+			buf_find = memchr(buf_read_off, '\n', 
+				len_read - (buf_read_off - buf_read));
+			if (buf_find) {
+				len_copy = buf_find - buf_read_off;	
+			} else {
+				len_copy = len_read - (buf_read_off - buf_read);
+			}
+			memcpy(buf_cmp_off, buf_read_off, len_copy);
+			*(buf_cmp_off + len_copy) = '\0';
+
+			if (buf_find) {
+				buf_read_off = buf_read_off + len_copy + 1;
+				buf_cmp_off = buf_cmp;
+				ret = strncmp(buf_cmp, "mcoverlay /proc ", 16);
+				if (!ret) {
+					err = 1;
+					break;
+				}
+			} else {
+				buf_read_off = buf_read_off + len_copy;
+				buf_cmp_off = buf_cmp_off + len_copy;
+				break;
+			}
+		}
+
+		if (err == 1 || len_read == 0) {
+			break;
+		}
+	}
+
+	close(fd);
+
+	__dprintf("err=%d\n", err);
+	return err;
+}
+#endif
+
 #define MCK_RLIMIT_AS	0
 #define MCK_RLIMIT_CORE	1
 #define MCK_RLIMIT_CPU	2
@@ -1216,6 +1292,39 @@ int main(int argc, char **argv)
 		mcosid = atoi(argv[optind]);
 		++optind;
 	}
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
+	__dprintf("mcoverlay enable\n");
+	char mcos_procdir[PATH_MAX];
+
+	error = isunshare();
+	if (error == 0) {
+		if (unshare(CLONE_NEWNS)) {
+			fprintf(stderr, "Error: Failed to unshare. (%s)\n", 
+				strerror(errno));
+			return 1;
+		}
+
+		sprintf(mcos_procdir, "/tmp/mcos/mcos%d_proc", mcosid);
+		if (mount(mcos_procdir, "/proc", NULL, MS_BIND, NULL)) {
+			fprintf(stderr, "Error: Failed to mount. (%s)\n", 
+				strerror(errno));
+			return 1;
+		}
+	} else if (error == -1) {
+		return 1;
+	}
+#else
+	__dprintf("mcoverlay disable\n");
+#endif
+
+	__dprintf("before seteuid(): uid=%d, euid=%d\n", getuid(), geteuid());
+	if (seteuid(getuid())) {
+		fprintf(stderr, "Error: Failed to seteuid. (%s)\n", 
+			strerror(errno));
+		return 1;
+	}
+	__dprintf("after seteuid():  uid=%d, euid=%d\n", getuid(), geteuid());
 
 	sprintf(dev, "/dev/mcos%d", mcosid);
 
@@ -1567,6 +1676,9 @@ chgpath(char *in, char *buf)
 	char	*fn = in;
 	struct stat	sb;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
+	if(!strcmp(fn, "/sys/devices/system/cpu/online")){
+#else
 	if (!strncmp(fn, "/proc/self/", 11)){
 		sprintf(buf, "/proc/mcos%d/%d/%s", mcosid, getpid(), fn + 11);
 		fn = buf;
@@ -1576,6 +1688,7 @@ chgpath(char *in, char *buf)
 		fn = buf;
 	}
 	else if(!strcmp(fn, "/sys/devices/system/cpu/online")){
+#endif
 		fn = "/admin/fs/attached/files/sys/devices/system/cpu/online";
 	}
 	else
