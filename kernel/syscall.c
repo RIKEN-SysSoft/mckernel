@@ -1592,20 +1592,6 @@ static int ptrace_report_clone(struct thread *thread, struct thread *new, int ev
 	parent_pid = thread->proc->parent->pid;
 	mcs_rwlock_writer_unlock_noirq(&thread->proc->update_lock, &lock);
 
-	dkprintf("ptrace_report_clone,kill SIGCHLD\n");
-	memset(&info, '\0', sizeof info);
-	info.si_signo = SIGCHLD;
-	info.si_code = CLD_TRAPPED;
-	info._sifields._sigchld.si_pid = thread->proc->pid;
-	info._sifields._sigchld.si_status = thread->proc->exit_status;
-	rc = do_kill(cpu_local_var(current), parent_pid, -1, SIGCHLD, &info, 0);
-	if(rc < 0) {
-		dkprintf("ptrace_report_clone,do_kill failed\n");
-	}
-
-	/* Wake parent (if sleeping in wait4()) */
-	waitq_wakeup(&thread->proc->parent->waitpid_q);
-
 	if (event != PTRACE_EVENT_VFORK_DONE) {
 		/* PTRACE_EVENT_FORK or PTRACE_EVENT_VFORK or PTRACE_EVENT_CLONE */
 
@@ -1635,6 +1621,20 @@ static int ptrace_report_clone(struct thread *thread, struct thread *new, int ev
 
 		mcs_rwlock_writer_unlock_noirq(&new->proc->update_lock, &updatelock);
 	}
+
+	dkprintf("ptrace_report_clone,kill SIGCHLD\n");
+	memset(&info, '\0', sizeof info);
+	info.si_signo = SIGCHLD;
+	info.si_code = CLD_TRAPPED;
+	info._sifields._sigchld.si_pid = thread->proc->pid;
+	info._sifields._sigchld.si_status = thread->proc->exit_status;
+	rc = do_kill(cpu_local_var(current), parent_pid, -1, SIGCHLD, &info, 0);
+	if(rc < 0) {
+		dkprintf("ptrace_report_clone,do_kill failed\n");
+	}
+
+	/* Wake parent (if sleeping in wait4()) */
+	waitq_wakeup(&thread->proc->parent->waitpid_q);
 
 	return error;
 }
@@ -4203,18 +4203,19 @@ int ptrace_detach(int pid, int data)
 		goto out;
 	}
 
-	mcs_rwlock_writer_lock_noirq(&proc->update_lock, &updatelock);
 	child = thread->proc;
+	mcs_rwlock_writer_lock_noirq(&child->update_lock, &updatelock);
 	parent = child->ppid_parent;
-	if (!(proc->ptrace & PT_TRACED) || proc->parent != proc) {
-		mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
+	if (!(child->ptrace & PT_TRACED) || child->parent != proc) {
+		mcs_rwlock_writer_unlock_noirq(&child->update_lock, &updatelock);
 		thread_unlock(thread, &lock);
 		error = -ESRCH;
 		goto out;
 	}
+	mcs_rwlock_writer_unlock_noirq(&child->update_lock, &updatelock);
 
 	mcs_rwlock_writer_lock_noirq(&proc->children_lock, &childlock);
-	list_del(&proc->siblings_list);
+	list_del(&child->siblings_list);
 	mcs_rwlock_writer_unlock_noirq(&proc->children_lock, &childlock);
 
 	mcs_rwlock_writer_lock_noirq(&parent->children_lock, &childlock);
