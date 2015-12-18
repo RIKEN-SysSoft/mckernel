@@ -1688,6 +1688,7 @@ SYSCALL_DECLARE(execve)
 	struct process_vm *vm = thread->vm;
 	struct vm_range *range;
 	struct process *proc = thread->proc;
+	int i;
 
 	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 
@@ -1784,6 +1785,12 @@ SYSCALL_DECLARE(execve)
 	if (ret != 0) {
 		kprintf("execve(): PANIC: host failed to load elf image\n");
 		panic("");
+	}
+
+	for(i = 0; i < _NSIG; i++){
+		if(thread->sigcommon->action[i].sa.sa_handler != SIG_IGN &&
+		   thread->sigcommon->action[i].sa.sa_handler != SIG_DFL)
+			thread->sigcommon->action[i].sa.sa_handler = SIG_DFL;
 	}
 
 	error = ptrace_report_exec(cpu_local_var(current));
