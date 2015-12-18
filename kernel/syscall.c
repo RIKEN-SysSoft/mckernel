@@ -48,6 +48,7 @@
 #include <shm.h>
 #include <prio.h>
 #include <arch/cpu.h>
+#include <limits.h>
 
 /* Headers taken from kitten LWK */
 #include <lwk/stddef.h>
@@ -5930,13 +5931,45 @@ static int do_process_vm_read_writev(int pid,
 	unsigned long rphys;
 	unsigned long rpage_left;
 	void *rva;
+	struct vm_range *range;
 
 	/* Sanity checks */
 	if (flags) {
 		return -EINVAL;
 	}
 	
-	/* TODO: IOV_MAX and PTRACE_ATTACH permission checks.. */	
+	if (liovcnt > IOV_MAX || riovcnt > IOV_MAX) {
+		return -EINVAL;
+	}
+
+	/* Check if parameters are okay */
+	ihk_mc_spinlock_lock_noirq(&lthread->vm->memory_range_lock);
+
+	range = lookup_process_memory_range(lthread->vm, 
+			(uintptr_t)local_iov, 
+			(uintptr_t)(local_iov + liovcnt * sizeof(struct iovec)));
+
+	if (!range) {
+		ret = -EFAULT; 
+		goto arg_out;
+	}
+
+	range = lookup_process_memory_range(lthread->vm, 
+			(uintptr_t)remote_iov, 
+			(uintptr_t)(remote_iov + riovcnt * sizeof(struct iovec)));
+
+	if (!range) {
+		ret = -EFAULT; 
+		goto arg_out;
+	}
+
+	ret = 0;
+arg_out:
+	ihk_mc_spinlock_unlock_noirq(&lthread->vm->memory_range_lock);
+
+	if (ret != 0) {
+		goto out;
+	}
 
 	for (li = 0; li < liovcnt; ++li) {
 		llen += local_iov[li].iov_len;
@@ -5977,6 +6010,16 @@ static int do_process_vm_read_writev(int pid,
 		ret = -ESRCH;
 		goto out;
 	}
+
+	if (rthread->proc->ruid != lthread->proc->ruid ||
+		rthread->proc->euid != lthread->proc->euid ||
+		rthread->proc->rgid != lthread->proc->rgid ||
+		rthread->proc->egid != lthread->proc->egid) {
+
+		ret = -EPERM;
+		goto out;
+	}
+
 	
 	dkprintf("pid %d found, doing %s \n", pid, 
 		(op == PROCESS_VM_READ) ? "PROCESS_VM_READ" : "PROCESS_VM_WRITE");
@@ -5994,10 +6037,21 @@ static int do_process_vm_read_writev(int pid,
 			
 			ihk_mc_spinlock_lock_noirq(&lthread->vm->memory_range_lock);
 			
+			/* Is base valid? */
+			range = lookup_process_memory_range(lthread->vm, 
+					(uintptr_t)local_iov[li].iov_base, 
+					(uintptr_t)(local_iov[li].iov_base + 1));
+
+			if (!range) {
+				ret = -EFAULT; 
+				goto pli_out;
+			}
+
+			/* Is length valid? */
 			range = lookup_process_memory_range(lthread->vm, 
 					(uintptr_t)local_iov[li].iov_base, 
 					(uintptr_t)(local_iov[li].iov_base + local_iov[li].iov_len));
-			
+
 			if (range == NULL) {
 				ret = -EINVAL; 
 				goto pli_out;
@@ -6005,7 +6059,7 @@ static int do_process_vm_read_writev(int pid,
 
 			if (!(range->flag & ((op == PROCESS_VM_READ) ? 
 				VR_PROT_WRITE : VR_PROT_READ))) {
-				ret = -EPERM;
+				ret = -EFAULT;
 				goto pli_out;
 			}
 
@@ -6024,22 +6078,60 @@ pli_out:
 		if (pri != ri) {
 			uint64_t reason = PF_POPULATE | PF_WRITE | PF_USER;
 			void *addr;
+			struct vm_range *range;
 
+			ihk_mc_spinlock_lock_noirq(&rthread->vm->memory_range_lock);
+
+			/* Is base valid? */
+			range = lookup_process_memory_range(rthread->vm,
+					(uintptr_t)remote_iov[li].iov_base,
+					(uintptr_t)(remote_iov[li].iov_base + 1));
+
+			if (!range) {
+				ret = -EFAULT;
+				goto pri_out;
+			}
+
+			/* Is length valid? */
+			range = lookup_process_memory_range(lthread->vm,
+					(uintptr_t)remote_iov[li].iov_base,
+					(uintptr_t)(remote_iov[li].iov_base + remote_iov[li].iov_len));
+
+			if (range == NULL) {
+				ret = -EINVAL;
+				goto pri_out;
+			}
+
+			if (!(range->flag & ((op == PROCESS_VM_READ) ?
+				VR_PROT_READ : VR_PROT_WRITE))) {
+				ret = -EFAULT;
+				goto pri_out;
+			}
+
+			ret = 0;
+pri_out:
+			ihk_mc_spinlock_unlock_noirq(&rthread->vm->memory_range_lock);
+
+			if (ret != 0) {
+				goto out;
+			}
+
+			/* Fault in pages */
 			for (addr = (void *)
-					((unsigned long)remote_iov[ri].iov_base & PAGE_MASK); 
-					addr < (remote_iov[ri].iov_base + remote_iov[ri].iov_len); 
+					((unsigned long)remote_iov[ri].iov_base & PAGE_MASK);
+					addr < (remote_iov[ri].iov_base + remote_iov[ri].iov_len);
 					addr += PAGE_SIZE) {
 
 				ret = page_fault_process_vm(rthread->vm, addr, reason);
 				if (ret) {
-					ret = -EINVAL;
+					ret = -EFAULT;
 					goto out;
 				}
 			}
 
 			pri = ri;
 		}
-		
+
 		/* Figure out how much we can copy at most in this iteration */
 		to_copy = (local_iov[li].iov_len - loff);	
 		if ((remote_iov[ri].iov_len - roff) < to_copy) {
@@ -6058,7 +6150,7 @@ pli_out:
 				remote_iov[ri].iov_base + roff, &rphys);
 
 		if (ret) {
-			ret = -EINVAL;
+			ret = -EFAULT;
 			goto out;
 		}
 		
