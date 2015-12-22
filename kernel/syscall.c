@@ -5920,18 +5920,22 @@ static int do_process_vm_read_writev(int pid,
 		int op)
 {
 	int ret = -EINVAL;	
-	int li, ri, i;
+	int li, ri;
 	int pli, pri;
 	off_t loff, roff;
 	size_t llen = 0, rlen = 0;
 	size_t copied = 0;
 	size_t to_copy;
 	struct thread *lthread = cpu_local_var(current);
-	struct thread *rthread, *p;
+	struct process *rproc;
+	struct process *lproc = lthread->proc;
+	struct process_vm *rvm = NULL;
 	unsigned long rphys;
 	unsigned long rpage_left;
 	void *rva;
 	struct vm_range *range;
+	struct mcs_rwlock_node_irqsave lock;
+	struct mcs_rwlock_node update_lock;
 
 	/* Sanity checks */
 	if (flags) {
@@ -5987,40 +5991,37 @@ arg_out:
 		return -EINVAL;
 	}
 	
-	/* Find remote process 
-	 * XXX: are we going to have a hash table/function for this?? */
-	rthread = NULL;
-	for (i = 0; i < num_processors; i++) {
-		struct cpu_local_var *v = get_cpu_local_var(i);
-		
-		ihk_mc_spinlock_lock_noirq(&(v->runq_lock));
-		list_for_each_entry(p, &(v->runq), sched_list) {
-			if (p->proc->pid == pid) {
-				rthread = p;
-				break;
-			}
-		}
-		ihk_mc_spinlock_unlock_noirq(&(v->runq_lock));
-
-		if (rthread)
-			break;
-	}
-
-	if (!rthread) {
+	/* Find remote process */
+	rproc = find_process(pid, &lock);
+	if (!rproc) {
 		ret = -ESRCH;
 		goto out;
 	}
 
-	if (rthread->proc->ruid != lthread->proc->ruid ||
-		rthread->proc->euid != lthread->proc->euid ||
-		rthread->proc->rgid != lthread->proc->rgid ||
-		rthread->proc->egid != lthread->proc->egid) {
+	mcs_rwlock_reader_lock_noirq(&rproc->update_lock, &update_lock);
+	if(rproc->status == PS_EXITED ||
+	   rproc->status == PS_ZOMBIE){
+		mcs_rwlock_reader_unlock_noirq(&rproc->update_lock, &update_lock);
+		process_unlock(rproc, &lock);
+		ret = -ESRCH;
+		goto out;
+	}
+	rvm = rproc->vm;
+	hold_process_vm(rvm);
+	mcs_rwlock_reader_unlock_noirq(&rproc->update_lock, &update_lock);
+	process_unlock(rproc, &lock);
 
+	if (lproc->euid != 0 &&
+	    (lproc->ruid != rproc->ruid ||
+	     lproc->ruid != rproc->euid ||
+	     lproc->ruid != rproc->suid ||
+	     lproc->rgid != rproc->rgid ||
+	     lproc->rgid != rproc->egid ||
+	     lproc->rgid != rproc->sgid)) {
 		ret = -EPERM;
 		goto out;
 	}
 
-	
 	dkprintf("pid %d found, doing %s \n", pid, 
 		(op == PROCESS_VM_READ) ? "PROCESS_VM_READ" : "PROCESS_VM_WRITE");
 	
@@ -6080,10 +6081,10 @@ pli_out:
 			void *addr;
 			struct vm_range *range;
 
-			ihk_mc_spinlock_lock_noirq(&rthread->vm->memory_range_lock);
+			ihk_mc_spinlock_lock_noirq(&rvm->memory_range_lock);
 
 			/* Is base valid? */
-			range = lookup_process_memory_range(rthread->vm,
+			range = lookup_process_memory_range(rvm,
 					(uintptr_t)remote_iov[li].iov_base,
 					(uintptr_t)(remote_iov[li].iov_base + 1));
 
@@ -6110,7 +6111,7 @@ pli_out:
 
 			ret = 0;
 pri_out:
-			ihk_mc_spinlock_unlock_noirq(&rthread->vm->memory_range_lock);
+			ihk_mc_spinlock_unlock_noirq(&rvm->memory_range_lock);
 
 			if (ret != 0) {
 				goto out;
@@ -6122,7 +6123,7 @@ pri_out:
 					addr < (remote_iov[ri].iov_base + remote_iov[ri].iov_len);
 					addr += PAGE_SIZE) {
 
-				ret = page_fault_process_vm(rthread->vm, addr, reason);
+				ret = page_fault_process_vm(rvm, addr, reason);
 				if (ret) {
 					ret = -EFAULT;
 					goto out;
@@ -6146,7 +6147,7 @@ pri_out:
 		}
 
 		/* TODO: remember page and do this only if necessary */
-		ret = ihk_mc_pt_virt_to_phys(rthread->vm->address_space->page_table, 
+		ret = ihk_mc_pt_virt_to_phys(rvm->address_space->page_table, 
 				remote_iov[ri].iov_base + roff, &rphys);
 
 		if (ret) {
@@ -6180,9 +6181,13 @@ pri_out:
 		}
 	}
 
+	release_process_vm(rvm);
+
 	return copied;
 
 out:
+	if(rvm)
+		release_process_vm(rvm);
 	return ret;
 }
 
