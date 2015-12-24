@@ -2486,9 +2486,20 @@ SYSCALL_DECLARE(rt_sigtimedwait)
 	siginfo_t *info = (siginfo_t *)ihk_mc_syscall_arg1(ctx);
 	void *timeout = (void *)ihk_mc_syscall_arg2(ctx);
 	size_t sigsetsize = (size_t)ihk_mc_syscall_arg3(ctx);
+	struct thread *thread = cpu_local_var(current);
 	siginfo_t winfo;
+	__sigset_t bset;
 	__sigset_t wset;
-	long wtimeout[2];
+	__sigset_t nset;
+	struct timespec wtimeout;
+	unsigned long flag;
+	struct sig_pending *pending;
+	struct list_head *head;
+	ihk_spinlock_t *lock;
+	int w;
+	int sig;
+        struct timespec ats;
+        struct timespec ets;
 
 	if (sigsetsize > sizeof(sigset_t))
 		return -EINVAL;
@@ -2498,16 +2509,127 @@ SYSCALL_DECLARE(rt_sigtimedwait)
 	memset(&winfo, '\0', sizeof winfo);
 	if(copy_from_user(&wset, set, sizeof wset))
 		return -EFAULT;
-	if(timeout)
-		if(copy_from_user(wtimeout, timeout, sizeof wtimeout))
+	if(timeout){
+		if(copy_from_user(&wtimeout, timeout, sizeof wtimeout))
 			return -EFAULT;
+		if(wtimeout.tv_nsec >= 1000000000L || wtimeout.tv_nsec < 0 ||
+		   wtimeout.tv_sec < 0)
+			return -EINVAL;
+		if (!gettime_local_support &&
+		    (wtimeout.tv_sec || wtimeout.tv_nsec)) {
+			return -EOPNOTSUPP;
+		}
+	}
 
+	wset &= ~__sigmask(SIGKILL);
+	wset &= ~__sigmask(SIGSTOP);
+	bset = thread->sigmask.__val[0];
+	thread->sigmask.__val[0] = bset | wset;
+	nset = ~(bset | wset);
 
-	if(info)
-		if(copy_to_user(info, &winfo, sizeof winfo))
+	if(timeout){
+		if (gettime_local_support) {
+			calculate_time_from_tsc(&ets);
+			ets.tv_sec += wtimeout.tv_sec;
+			ets.tv_nsec += wtimeout.tv_nsec;
+			if(ets.tv_nsec >= 1000000000L){
+				ets.tv_sec++;
+				ets.tv_nsec -= 1000000000L;
+			}
+kprintf("ets=%ld.%09ld\n", ets.tv_sec, ets.tv_nsec);
+		}
+		else {
+			memset(&ats, '\0', sizeof ats);
+			memset(&ets, '\0', sizeof ets);
+		}
+	}
+
+	thread->sigevent = 1;
+	for(;;){
+		while(thread->sigevent == 0){
+			if(timeout){
+				if (gettime_local_support)
+					calculate_time_from_tsc(&ats);
+kprintf("ats=%ld.%09ld\n", ats.tv_sec, ats.tv_nsec);
+				if(ats.tv_sec > ets.tv_sec ||
+				   (ats.tv_sec == ets.tv_sec &&
+				    ats.tv_nsec >= ets.tv_nsec)){
+					return -EAGAIN;
+				}
+			}
+
+			cpu_pause();
+		}
+
+		lock = &thread->sigcommon->lock;
+		head = &thread->sigcommon->sigpending;
+		flag = ihk_mc_spinlock_lock(lock);
+		list_for_each_entry(pending, head, list){
+			if(pending->sigmask.__val[0] & wset)
+				break;
+		}
+
+		if(&pending->list == head){
+			ihk_mc_spinlock_unlock(lock, flag);
+
+			lock = &thread->sigpendinglock;
+			head = &thread->sigpending;
+			flag = ihk_mc_spinlock_lock(lock);
+			list_for_each_entry(pending, head, list){
+				if(pending->sigmask.__val[0] & wset)
+					break;
+			}
+		}
+
+		if(&pending->list != head){
+			list_del(&pending->list);
+			thread->sigmask.__val[0] = bset;
+			ihk_mc_spinlock_unlock(lock, flag);
+			break;
+		}
+		ihk_mc_spinlock_unlock(lock, flag);
+
+		lock = &thread->sigcommon->lock;
+		head = &thread->sigcommon->sigpending;
+		flag = ihk_mc_spinlock_lock(lock);
+		list_for_each_entry(pending, head, list){
+			if(pending->sigmask.__val[0] & nset)
+				break;
+		}
+
+		if(&pending->list == head){
+			ihk_mc_spinlock_unlock(lock, flag);
+
+			lock = &thread->sigpendinglock;
+			head = &thread->sigpending;
+			flag = ihk_mc_spinlock_lock(lock);
+			list_for_each_entry(pending, head, list){
+				if(pending->sigmask.__val[0] & nset)
+					break;
+			}
+		}
+
+		if(&pending->list != head){
+			list_del(&pending->list);
+			thread->sigmask.__val[0] = bset;
+			ihk_mc_spinlock_unlock(lock, flag);
+			do_signal(-EINTR, NULL, thread, pending, 0);
+			return -EINTR;
+		}
+		ihk_mc_spinlock_unlock(lock, flag);
+		thread->sigevent = 0;
+	}
+
+	if(info){
+		if(copy_to_user(info, &pending->info, sizeof(siginfo_t))){
+			kfree(pending);
 			return -EFAULT;
+		}
+	}
+	for(w = pending->sigmask.__val[0], sig = 0; w; sig++, w >>= 1);
+	kfree(pending);
 
-	return -EOPNOTSUPP;
+	return sig;
 }
 
 SYSCALL_DECLARE(rt_sigqueueinfo)
@@ -2531,7 +2653,7 @@ do_sigsuspend(struct thread *thread, const sigset_t *set)
 {
 	__sigset_t wset;
 	__sigset_t bset;
-	int flag;
+	unsigned long flag;
 	struct sig_pending *pending;
 	struct list_head *head;
 	ihk_spinlock_t *lock;
@@ -2580,7 +2702,6 @@ do_sigsuspend(struct thread *thread, const sigset_t *set)
 	}
 	return -EINTR;
 }
-
 
 SYSCALL_DECLARE(pause)
 {
