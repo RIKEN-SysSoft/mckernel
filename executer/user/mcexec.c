@@ -483,7 +483,7 @@ retry:
 	}
 
 	if ((sb.st_mode & S_IFMT) == S_IFLNK) {
-		char *link_path = malloc(max_len);
+		link_path = malloc(max_len);
 		if (!link_path) {
 			fprintf(stderr, "lookup_exec_path(): error allocating\n");
 			return ENOMEM;
@@ -498,6 +498,14 @@ retry:
 
 		__dprintf("lookup_exec_path(): %s is link -> %s\n", path, link_path);
 
+		if(link_path[0] != '/'){
+			char *t = strrchr(path, '/');
+			if(t){
+				t++;
+				strcpy(t, link_path);
+				strcpy(link_path, path);
+			}
+		}
 		filename = link_path;
 		goto retry; 
 	}
