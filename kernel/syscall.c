@@ -3786,8 +3786,9 @@ SYSCALL_DECLARE(setrlimit)
 			mcresource = rlimits[i + 1];
 			break;
 		}
-	if(i >= sizeof(rlimits) / sizeof(int))
-		return -EINVAL;
+	if(i >= sizeof(rlimits) / sizeof(int)){
+		return syscall_generic_forwarding(__NR_setrlimit, ctx);
+	}
 
 	if(copy_from_user(thread->proc->rlimit + mcresource, rlm, sizeof(struct rlimit)))
 		return -EFAULT;
@@ -3808,8 +3809,9 @@ SYSCALL_DECLARE(getrlimit)
 			mcresource = rlimits[i + 1];
 			break;
 		}
-	if(i >= sizeof(rlimits) / sizeof(int))
-		return -EINVAL;
+	if(i >= sizeof(rlimits) / sizeof(int)){
+		return syscall_generic_forwarding(__NR_getrlimit, ctx);
+	}
 
 // TODO: check limit
 	if(copy_to_user(rlm, thread->proc->rlimit + mcresource, sizeof(struct rlimit)))
