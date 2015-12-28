@@ -389,7 +389,6 @@ long ptrace_read_regset(struct thread *thread, long type, struct iovec *iov)
 
 	switch (type) {
 	case NT_X86_XSTATE:
-		save_fp_regs(thread);
 		if (thread->fp_regs == NULL) {
 			return -ENOMEM;
 		}
@@ -411,7 +410,6 @@ long ptrace_write_regset(struct thread *thread, long type, struct iovec *iov)
 
 	switch (type) {
 	case NT_X86_XSTATE:
-		save_fp_regs(thread);
 		if (thread->fp_regs == NULL) {
 			return -ENOMEM;
 		}
