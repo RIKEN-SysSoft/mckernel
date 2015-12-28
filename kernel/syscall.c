@@ -3837,8 +3837,7 @@ static int ptrace_wakeup_sig(int pid, long request, long data) {
 		error = -ESRCH;
 		goto out;
 	}
-// TODO: この位置で unlock してはいけない。
-// ここで unlock すると thread が生存していることが保証できなくなる。
+	hold_thread(child);
 	thread_unlock(child, &lock);
 
 	if (data > 64 || data < 0) {
@@ -3861,12 +3860,12 @@ static int ptrace_wakeup_sig(int pid, long request, long data) {
 		if (request == PTRACE_SINGLESTEP) {
 			set_single_step(child);
 		}
-		//? ihk_mc_spinlock_lock_noirq(&child->proc->lock);
+		mcs_rwlock_writer_lock(&child->proc->update_lock, &lock);
 		child->proc->ptrace &= ~PT_TRACE_SYSCALL_MASK;
 		if (request == PTRACE_SYSCALL) {
 			child->proc->ptrace |= PT_TRACE_SYSCALL_ENTER;
 		}
-		//? ihk_mc_spinlock_unlock_noirq(&child->proc->lock);
+		mcs_rwlock_writer_unlock(&child->proc->update_lock, &lock);
 		if(data != 0 && data != SIGSTOP) {
 
 			/* TODO: Tracing process replace the original
@@ -3894,6 +3893,8 @@ static int ptrace_wakeup_sig(int pid, long request, long data) {
 
 	sched_wakeup_thread(child, PS_TRACED | PS_STOPPED);
 out:
+	if(child)
+		release_thread(child);
 	return error;
 }
 
