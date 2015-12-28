@@ -39,7 +39,7 @@ extern ihk_spinlock_t	cpu_status_lock;
 struct cpu_local_var {
 	/* malloc */
 	struct malloc_header free_list;
-	ihk_spinlock_t free_list_lock;
+	struct malloc_header *remote_free_list;
 
 	struct thread idle;
 	struct process idle_proc;

@@ -931,7 +931,6 @@ void kmalloc_init(void)
 {
 	struct cpu_local_var *v = get_this_cpu_local_var();
 	struct malloc_header *h = &v->free_list;
-	ihk_mc_spinlock_init(&v->free_list_lock);
 	int i;
 
 	h->check = 0x5a5a5a5a;
@@ -950,80 +949,11 @@ void kmalloc_init(void)
 	ihk_mc_spinlock_init(&alloclock);
 }
 
-
-void *___kmalloc(int size, enum ihk_mc_ap_flag flag)
+void ____kfree(struct cpu_local_var *v, struct malloc_header *p)
 {
-	struct cpu_local_var *v = get_this_cpu_local_var();
-	struct malloc_header *h = &v->free_list, *prev, *p;
-	int u, req_page;
-	unsigned long flags;
-
-	if (size >= PAGE_SIZE * 4) {
-		return NULL;
-	}
-
-	u = (size + sizeof(*h) - 1) / sizeof(*h);
-
-	flags = ihk_mc_spinlock_lock(&v->free_list_lock);
-
-	prev = h;
-	h = h->next;
-
-	while (1) {
-		if (h == &v->free_list) {
-			req_page = ((u + 2) * sizeof(*h) + PAGE_SIZE - 1)
-				>> PAGE_SHIFT;
-
-			h = allocate_pages(req_page, flag);
-			if(h == NULL) {
-				kprintf("kmalloc(%#x,%#x): out of memory\n", size, flag);
-				ihk_mc_spinlock_unlock(&v->free_list_lock, flags);
-				return NULL;
-			}
-			h->check = 0x5a5a5a5a;
-			prev->next = h;
-			h->size = (req_page * PAGE_SIZE) / sizeof(*h) - 2;
-			/* Guard entry */
-			p = h + h->size + 1;
-			p->check = 0x5a5a5a5a;
-			p->next = &v->free_list;
-			p->size = 0;
-			h->next = p;
-		}
-
-		if (h->size >= u) {
-			if (h->size == u || h->size == u + 1) {
-				prev->next = h->next;
-				h->cpu_id = ihk_mc_get_processor_id();
-
-				ihk_mc_spinlock_unlock(&v->free_list_lock, flags);
-				return h + 1;
-			} else { /* Divide */
-				h->size -= u + 1;
-				
-				p = h + h->size + 1;
-				p->check = 0x5a5a5a5a;
-				p->size = u;
-				p->cpu_id = ihk_mc_get_processor_id();
-
-				ihk_mc_spinlock_unlock(&v->free_list_lock, flags);
-				return p + 1;
-			}
-		}
-		prev = h;
-		h = h->next;
-	}
-}
-
-void ___kfree(void *ptr)
-{
-	struct malloc_header *p = (struct malloc_header *)ptr;
-	struct cpu_local_var *v = get_cpu_local_var((--p)->cpu_id);
 	struct malloc_header *h = &v->free_list;
 	int combined = 0;
-	unsigned long flags;
 
-	flags = ihk_mc_spinlock_lock(&v->free_list_lock);
 	h = h->next;
 
 	while ((p < h || p > h->next) && h != &v->free_list) {
@@ -1050,7 +980,94 @@ void ___kfree(void *ptr)
 		p->next = h->next;
 		h->next = p;
 	}
-	ihk_mc_spinlock_unlock(&v->free_list_lock, flags);
+}
+
+void *___kmalloc(int size, enum ihk_mc_ap_flag flag)
+{
+	struct cpu_local_var *v = get_this_cpu_local_var();
+	struct malloc_header *h = &v->free_list, *prev, *p;
+	int u, req_page;
+
+	p = (struct malloc_header *)xchg8((unsigned long *)&v->remote_free_list, 0L);
+	while(p){
+		struct malloc_header *n = p->next;
+		____kfree(v, p);
+		p = n; 
+	}
+
+	if (size >= PAGE_SIZE * 4) {
+		return NULL;
+	}
+
+	u = (size + sizeof(*h) - 1) / sizeof(*h);
+
+	prev = h;
+	h = h->next;
+
+	while (1) {
+		if (h == &v->free_list) {
+			req_page = ((u + 2) * sizeof(*h) + PAGE_SIZE - 1)
+				>> PAGE_SHIFT;
+
+			h = allocate_pages(req_page, flag);
+			if(h == NULL) {
+				kprintf("kmalloc(%#x,%#x): out of memory\n", size, flag);
+				return NULL;
+			}
+			h->check = 0x5a5a5a5a;
+			prev->next = h;
+			h->size = (req_page * PAGE_SIZE) / sizeof(*h) - 2;
+			/* Guard entry */
+			p = h + h->size + 1;
+			p->check = 0x5a5a5a5a;
+			p->next = &v->free_list;
+			p->size = 0;
+			h->next = p;
+		}
+
+		if (h->size >= u) {
+			if (h->size == u || h->size == u + 1) {
+				prev->next = h->next;
+				h->cpu_id = ihk_mc_get_processor_id();
+
+				return h + 1;
+			} else { /* Divide */
+				h->size -= u + 1;
+				
+				p = h + h->size + 1;
+				p->check = 0x5a5a5a5a;
+				p->size = u;
+				p->cpu_id = ihk_mc_get_processor_id();
+
+				return p + 1;
+			}
+		}
+		prev = h;
+		h = h->next;
+	}
+}
+
+void ___kfree(void *ptr)
+{
+	struct malloc_header *p = (struct malloc_header *)ptr;
+	struct cpu_local_var *v = get_cpu_local_var((--p)->cpu_id);
+
+	if(p->cpu_id == ihk_mc_get_processor_id()){
+		____kfree(v, p);
+	}
+	else{
+		unsigned long oldval;
+		unsigned long newval;
+		unsigned long rval;
+		do{
+			p->next = v->remote_free_list;
+			oldval = (unsigned long)p->next;
+			newval = (unsigned long)p;
+			rval = atomic_cmpxchg8(
+			          (unsigned long *)&v->remote_free_list,
+			          oldval, newval);
+		}while(rval != oldval);
+	}
 }
 
 void print_free_list(void)
