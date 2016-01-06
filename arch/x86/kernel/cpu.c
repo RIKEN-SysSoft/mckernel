@@ -52,6 +52,11 @@
 #define APIC_DIVISOR            16
 #define APIC_LVT_TIMER_PERIODIC (1 << 17)
 
+#define APIC_BASE_MSR		0x800
+#define IA32_X2APIC_APICID	0x802
+#define IA32_X2APIC_ICR		0x830
+#define X2APIC_ENABLE		(1UL << 10)
+#define NMI_VECTOR		0x02
 
 //#define DEBUG_PRINT_CPU
 
@@ -61,6 +66,13 @@
 #define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
 #endif
 
+static void *lapic_vp;
+static int x2apic;
+static void (*lapic_write)(int reg, unsigned int value);
+static unsigned int (*lapic_read)(int reg);
+static void (*lapic_icr_write)(unsigned int h, unsigned int l);
+static void (*lapic_wait_icr_idle)(void);
+void (*x86_issue_ipi)(unsigned int apicid, unsigned int low);
 
 void init_processors_local(int max_id);
 void assign_processor_id(void);
@@ -238,25 +250,39 @@ void init_gdt(void)
 	reload_gdt(&gdt_desc);
 }
 
-static void *lapic_vp;
-void lapic_write(int reg, unsigned int value)
+static void
+apic_write(int reg, unsigned int value)
 {
 	*(volatile unsigned int *)((char *)lapic_vp + reg) = value;
 }
 
-unsigned int lapic_read(int reg)
+static void
+x2apic_write(int reg, unsigned int value)
+{
+	reg >>= 4;
+	reg |= APIC_BASE_MSR;
+	wrmsr(reg, value);
+}
+
+static unsigned int
+apic_read(int reg)
 {
 	return *(volatile unsigned int *)((char *)lapic_vp + reg);
 }
 
-void lapic_icr_write(unsigned int h, unsigned int l)
+static unsigned int
+x2apic_read(int reg)
 {
-	lapic_write(LAPIC_ICR2, (unsigned int)h);
-	lapic_write(LAPIC_ICR0, l);
+	unsigned long value;
+
+	reg >>= 4;
+	reg |= APIC_BASE_MSR;
+	value = rdmsr(reg);
+	return (int)value;
 }
 
-
-void lapic_timer_enable(unsigned int clocks)
+void
+lapic_timer_enable(unsigned int clocks)
 {
 	unsigned int lvtt_value;
 
@@ -268,9 +294,114 @@ void lapic_timer_enable(unsigned int clocks)
 	lapic_write(LAPIC_TIMER, lvtt_value);
 }
 
-void lapic_timer_disable()
+void
+lapic_timer_disable()
 {
 	lapic_write(LAPIC_TIMER_INITIAL, 0);
+}
+
+void
+lapic_ack(void)
+{
+	lapic_write(LAPIC_EOI, 0);
+}
+
+static void
+x2apic_wait_icr_idle(void)
+{
+}
+
+static void
+apic_wait_icr_idle(void)
+{
+	while (lapic_read(LAPIC_ICR0) & APIC_ICR_BUSY) {
+		cpu_pause();
+	}
+}
+
+static void
+x2apic_icr_write(unsigned int low, unsigned int apicid)
+{
+	wrmsr(IA32_X2APIC_ICR, (((unsigned long)apicid) << 32) | low);
+}
+
+static void
+apic_icr_write(unsigned int h, unsigned int l)
+{
+	lapic_write(LAPIC_ICR2, (unsigned int)h);
+	lapic_write(LAPIC_ICR0, l);
+}
+
+static void
+x2apic_x86_issue_ipi(unsigned int apicid, unsigned int low)
+{
+	unsigned long icr = low;
+	unsigned long flags;
+
+	ihk_mc_mb();
+	flags = cpu_disable_interrupt_save();
+	x2apic_icr_write(icr, apicid);
+	cpu_restore_interrupt(flags);
+}
+
+static void
+apic_x86_issue_ipi(unsigned int apicid, unsigned int low)
+{
+	unsigned long flags;
+
+	flags = cpu_disable_interrupt_save();
+	apic_wait_icr_idle();
+	apic_icr_write(apicid << LAPIC_ICR_ID_SHIFT, low);
+	cpu_restore_interrupt(flags);
+}
+
+unsigned long
+x2apic_is_enabled()
+{
+	unsigned long msr;
+
+	msr = rdmsr(MSR_IA32_APIC_BASE);
+
+	return (msr & X2APIC_ENABLE);
+}
+
+void init_lapic_bsp(void)
+{
+	if(x2apic_is_enabled()){
+		x2apic = 1;
+		lapic_write = x2apic_write;
+		lapic_read = x2apic_read;
+		lapic_icr_write = x2apic_icr_write;
+		lapic_wait_icr_idle = x2apic_wait_icr_idle;
+		x86_issue_ipi = x2apic_x86_issue_ipi;
+	}
+	else{
+		x2apic = 0;
+		lapic_write = apic_write;
+		lapic_read = apic_read;
+		lapic_icr_write = apic_icr_write;
+		lapic_wait_icr_idle = apic_wait_icr_idle;
+		x86_issue_ipi = apic_x86_issue_ipi;
+
+	}
+}
+
+void
+init_lapic()
+{
+	if(!x2apic){
+		unsigned long baseaddr;
+
+		/* Enable Local APIC */
+		baseaddr = rdmsr(MSR_IA32_APIC_BASE);
+		if (!lapic_vp) {
+			lapic_vp = map_fixed_area(baseaddr & PAGE_MASK, PAGE_SIZE, 1);
+		}
+		baseaddr |= 0x800;
+		wrmsr(MSR_IA32_APIC_BASE, baseaddr);
+	}
+
+	lapic_write(LAPIC_SPURIOUS, 0x1ff);
 }
 
 void print_msr(int idx)
@@ -423,26 +554,6 @@ void init_pat(void)
 	dkprintf("PAT support detected and reconfigured.\n");
 }
 
-void init_lapic(void)
-{
-	unsigned long baseaddr;
-
-	/* Enable Local APIC */
-	baseaddr = rdmsr(MSR_IA32_APIC_BASE);
-	if (!lapic_vp) {
-		lapic_vp = map_fixed_area(baseaddr & PAGE_MASK, PAGE_SIZE, 1);
-	}
-	baseaddr |= 0x800;
-	wrmsr(MSR_IA32_APIC_BASE, baseaddr);
-
-	lapic_write(LAPIC_SPURIOUS, 0x1ff);
-}
-
-void lapic_ack(void)
-{
-	lapic_write(LAPIC_EOI, 0);
-}
-
 static void set_kstack(unsigned long ptr)
 {
 	struct x86_cpu_local_variables *v;
@@ -460,7 +571,12 @@ static void init_smp_processor(void)
 	v = get_x86_this_cpu_local();
 	tss_addr = (unsigned long)&v->tss;
 
-	v->apic_id = lapic_read(LAPIC_ID) >> LAPIC_ID_SHIFT;
+	if(x2apic_is_enabled()){
+		v->apic_id = rdmsr(IA32_X2APIC_APICID);
+	}
+	else{
+		v->apic_id = lapic_read(LAPIC_ID) >> LAPIC_ID_SHIFT;
+	}
 
 	memcpy(v->gdt, gdt, sizeof(v->gdt));
 	
@@ -497,9 +613,6 @@ void ihk_mc_init_ap(void)
 	kprintf("# of cpus : %d\n", cpu_info->ncpus);
 	init_processors_local(cpu_info->ncpus);
 	
-	kprintf("IKC IRQ vector: %d, IKC target CPU APIC: %d\n", 
-			ihk_ikc_irq, ihk_ikc_irq_apicid);
-
 	/* Do initialization for THIS cpu (BSP) */
 	assign_processor_id();
 
@@ -620,6 +733,8 @@ void setup_x86(void)
 	init_page_table();
 
 	check_no_execute();
+
+	init_lapic_bsp();
 
 	init_cpu();
 
@@ -809,22 +924,6 @@ void int3_handler(struct x86_user_context *regs)
 	check_need_resched();
 }
 
-static void wait_icr_idle(void)
-{
-	while (lapic_read(LAPIC_ICR0) & APIC_ICR_BUSY) {
-		cpu_pause();
-	}
-}
-
-void x86_issue_ipi(unsigned int apicid, unsigned int low)
-{
-	unsigned long flags;
-
-	flags = cpu_disable_interrupt_save();
-	wait_icr_idle();
-	lapic_icr_write(apicid << LAPIC_ICR_ID_SHIFT, low);
-	cpu_restore_interrupt(flags);
-}
 
 static void outb(uint8_t v, uint16_t port)
 {
@@ -852,12 +951,12 @@ static void __x86_wakeup(int apicid, unsigned long ip)
 
 	x86_issue_ipi(apicid, 
 	              APIC_INT_LEVELTRIG | APIC_DM_INIT);
-	wait_icr_idle();
+	lapic_wait_icr_idle();
 
 	while (retry--) {
 		lapic_read(LAPIC_ESR);
 		x86_issue_ipi(apicid, APIC_DM_STARTUP | (ip >> 12));
-		wait_icr_idle();
+		lapic_wait_icr_idle();
 
 		arch_delay(200);
 
