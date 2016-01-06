@@ -244,7 +244,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 
 	dkprintf("args copy, nr: %d\n", *((int*)args_envs_r));
 
-	memcpy_long(args_envs, args_envs_r, p->args_len + 8);
+	memcpy_long(args_envs, args_envs_r, p->args_len + sizeof(long) - 1);
 
 	/* Only unmap remote address if it wasn't specified as an argument */
 	if (!args) {
@@ -279,7 +279,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 
 	dkprintf("envs copy, nr: %d\n", *((int*)args_envs_r));
 
-	memcpy_long(args_envs + p->args_len, args_envs_r, p->envs_len + 8);
+	memcpy_long(args_envs + p->args_len, args_envs_r, p->envs_len + sizeof(long) - 1);
 
 	/* Only map remote address if it wasn't specified as an argument */
 	if (!envs) {
