@@ -388,6 +388,7 @@ void destroy_ikc_channels(ihk_os_t os)
 	}
 	free_page((unsigned long)usrdata->mcctrl_doorbell_va);
 
+	destroy_peer_channel_registry(usrdata);
 	kfree(usrdata->channels);
 	kfree(usrdata);
 }

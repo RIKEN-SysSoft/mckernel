@@ -83,6 +83,13 @@ int init_peer_channel_registry(struct mcctrl_usrdata *ud)
 	return 0;
 }
 
+void destroy_peer_channel_registry(struct mcctrl_usrdata *ud)
+{
+	kfree(ud->keys);
+	ud->keys = NULL;
+	return;
+}
+
 int register_peer_channel(struct mcctrl_usrdata *ud, void *key, struct mcctrl_channel *ch)
 {
 	int cpu;

@@ -226,6 +226,7 @@ int reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp,
 
 /* syscall.c */
 int init_peer_channel_registry(struct mcctrl_usrdata *ud);
+void destroy_peer_channel_registry(struct mcctrl_usrdata *ud);
 int register_peer_channel(struct mcctrl_usrdata *ud, void *key, struct mcctrl_channel *ch);
 int deregister_peer_channel(struct mcctrl_usrdata *ud, void *key, struct mcctrl_channel *ch);
 struct mcctrl_channel *get_peer_channel(struct mcctrl_usrdata *ud, void *key);
