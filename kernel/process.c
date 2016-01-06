@@ -142,7 +142,7 @@ chain_thread(struct thread *thread)
 }
 
 struct address_space *
-create_address_space(struct resource_set *res, int type, int n)
+create_address_space(struct resource_set *res, int n)
 {
 	struct address_space *asp;
 	void *pt;
@@ -157,7 +157,6 @@ create_address_space(struct resource_set *res, int type, int n)
 	}
 
 	memset(asp, '\0', sizeof(struct address_space) + sizeof(int) * n);
-	asp->type = type;
 	asp->nslots = n;
 	asp->page_table = pt;
 	ihk_atomic_set(&asp->refcount, 1);
@@ -228,8 +227,7 @@ create_thread(unsigned long user_pc)
 	ihk_atomic_set(&thread->refcount, 2);
 	proc = kmalloc(sizeof(struct process), IHK_MC_AP_NOWAIT);
 	vm = kmalloc(sizeof(struct process_vm), IHK_MC_AP_NOWAIT);
-	asp = create_address_space(cpu_local_var(resource_set),
-				   ADDRESS_SPACE_NORMAL, 1);
+	asp = create_address_space(cpu_local_var(resource_set), 1);
 	if (!proc || !vm || !asp)
 		goto err;
 	memset(proc, 0, sizeof(struct process));
@@ -367,8 +365,7 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 		init_process(proc, org->proc);
 
 		proc->termsig = termsig;
-		asp = create_address_space(cpu_local_var(resource_set),
-		                           ADDRESS_SPACE_NORMAL, 1);
+		asp = create_address_space(cpu_local_var(resource_set), 1);
 		if(!asp){
 			kfree(proc);
 			goto err_free_proc;

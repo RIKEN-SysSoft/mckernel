@@ -219,9 +219,6 @@ struct address_space {
 	void			*opt;
 	void			(*free_cb)(struct address_space *, void *);
 	ihk_atomic_t		refcount;
-	int			type;
-#define ADDRESS_SPACE_NORMAL	1
-#define ADDRESS_SPACE_PVAS	2
 	cpu_set_t cpu_set;
 	ihk_spinlock_t cpu_set_lock;
 	int			nslots;
