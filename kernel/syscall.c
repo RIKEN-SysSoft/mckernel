@@ -788,7 +788,7 @@ interrupt_syscall(int pid, int cpuid)
 
 	lerror = syscall_generic_forwarding(__NR_kill, &ctx);
 	if (lerror) {
-		kprintf("clear_host_pte failed. %ld\n", lerror);
+		kprintf("interrupt_syscall failed. %ld\n", lerror);
 	}
 	return;
 }
