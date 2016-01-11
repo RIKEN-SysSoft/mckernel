@@ -4517,6 +4517,12 @@ ptrace_setsiginfo(int pid, siginfo_t *data)
 		    copy_from_user(&child->ptrace_sendsig->info, data, sizeof(siginfo_t))) {
 			rc = -EFAULT;
 		}
+		if (!rc &&
+		    child->ptrace_recvsig){
+			    if(copy_from_user(&child->ptrace_recvsig->info, data, sizeof(siginfo_t))) {
+				rc = -EFAULT;
+			}
+		}
 	}
 	thread_unlock(child, &lock);
 	return rc;
