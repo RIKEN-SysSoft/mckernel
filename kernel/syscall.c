@@ -3927,6 +3927,11 @@ static int ptrace_wakeup_sig(int pid, long request, long data) {
 				kfree(child->ptrace_sendsig);
 				child->ptrace_sendsig = NULL;
 			}
+			else if (request == PTRACE_CONT && child->ptrace_recvsig) {
+				memcpy(&info, &child->ptrace_recvsig->info, sizeof info);
+				kfree(child->ptrace_recvsig);
+				child->ptrace_recvsig = NULL;
+			}
 			else {
 				memset(&info, '\0', sizeof info);
 				info.si_signo = data;
