@@ -292,7 +292,7 @@ static int wait_zombie(struct thread *thread, struct process *child, int *status
     }
     
 	ppid = child->ppid_parent->pid;
-	if(ppid == 1)
+	if(ppid == 1 || child->nowait)
 		return 0;
 	request.number = __NR_wait4;
 	request.args[0] = child->pid;
@@ -379,6 +379,7 @@ do_wait(int pid, int *status, int options, void *rusage)
 	struct mcs_rwlock_node lock;
 
 	dkprintf("wait4,thread->pid=%d,pid=%d\n", thread->proc->pid, pid);
+
  rescan:
 	pid = orgpid;
 
@@ -1823,6 +1824,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	struct thread *new;
 	struct syscall_request request1 IHK_DMA_ALIGN;
 	int ptrace_event = 0;
+	int termsig = clone_flags & 0x000000ff;
 
     dkprintf("do_fork,flags=%08x,newsp=%lx,ptidptr=%lx,ctidptr=%lx,tls=%lx,curpc=%lx,cursp=%lx",
             clone_flags, newsp, parent_tidptr, child_tidptr, tlsblock_base, curpc, cursp);
@@ -1833,6 +1835,31 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	if (((clone_flags & CLONE_VM) && !(clone_flags & CLONE_THREAD)) ||
 		(!(clone_flags & CLONE_VM) && (clone_flags & CLONE_THREAD))) {
 		kprintf("clone(): ERROR: CLONE_VM and CLONE_THREAD should be set together\n");
+		return -EINVAL;
+	}
+
+	if (termsig < 0 || _NSIG < termsig) {
+		return -EINVAL;
+	}
+
+	if((clone_flags & CLONE_SIGHAND) &&
+	   !(clone_flags & CLONE_VM)){
+		return -EINVAL;
+	}
+	if((clone_flags & CLONE_THREAD) &&
+	   !(clone_flags & CLONE_SIGHAND)){
+		return -EINVAL;
+	}
+	if((clone_flags & CLONE_FS) &&
+	   (clone_flags & CLONE_NEWNS)){
+		return -EINVAL;
+	}
+	if((clone_flags & CLONE_NEWIPC) &&
+	   (clone_flags & CLONE_SYSVSEM)){
+		return -EINVAL;
+	}
+	if((clone_flags & CLONE_NEWPID) &&
+	   (clone_flags & CLONE_THREAD)){
 		return -EINVAL;
 	}
 
@@ -1859,6 +1886,11 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	/* fork() a new process on the host */
 	else {
 		request1.number = __NR_fork;
+		request1.args[0] = 0;
+		if(clone_flags & CLONE_PARENT){
+			if(cpu_local_var(current)->proc->ppid_parent->pid != 1)
+				request1.args[0] = clone_flags;
+		}
 		new->proc->pid = do_syscall(&request1, ihk_mc_get_processor_id(), 0);
 		if (new->proc->pid == -1) {
 			kprintf("ERROR: forking host process\n");
@@ -1937,7 +1969,29 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	chain_thread(new);
 	if (!(clone_flags & CLONE_VM)) {
 		new->proc->status = PS_RUNNING;
-		chain_process(new->proc);
+		if(clone_flags & CLONE_PARENT){
+			struct mcs_rwlock_node_irqsave lock;
+			struct process *proc = cpu_local_var(current)->proc;
+			struct process *parent;
+			struct mcs_rwlock_node parent_lock;
+
+			mcs_rwlock_reader_lock(&proc->update_lock, &lock);
+			parent = proc->ppid_parent;
+			mcs_rwlock_reader_lock_noirq(&parent->update_lock, &parent_lock);
+			if(parent->status == PS_EXITED || parent->status == PS_ZOMBIE){
+				mcs_rwlock_reader_unlock_noirq(&parent->update_lock, &parent_lock);
+				parent = cpu_local_var(resource_set)->pid1;
+				mcs_rwlock_reader_lock_noirq(&parent->update_lock, &parent_lock);
+			}
+			new->proc->parent = parent;
+			new->proc->ppid_parent = parent;
+			new->proc->nowait = 1;
+			chain_process(new->proc);
+			mcs_rwlock_reader_unlock_noirq(&parent->update_lock, &parent_lock);
+			mcs_rwlock_reader_unlock(&proc->update_lock, &lock);
+		}
+		else
+			chain_process(new->proc);
 	}
 
 	if (cpu_local_var(current)->proc->ptrace) {
@@ -2536,7 +2590,6 @@ SYSCALL_DECLARE(rt_sigtimedwait)
 				ets.tv_sec++;
 				ets.tv_nsec -= 1000000000L;
 			}
-kprintf("ets=%ld.%09ld\n", ets.tv_sec, ets.tv_nsec);
 		}
 		else {
 			memset(&ats, '\0', sizeof ats);
@@ -2550,7 +2603,6 @@ kprintf("ets=%ld.%09ld\n", ets.tv_sec, ets.tv_nsec);
 			if(timeout){
 				if (gettime_local_support)
 					calculate_time_from_tsc(&ats);
-kprintf("ats=%ld.%09ld\n", ats.tv_sec, ats.tv_nsec);
 				if(ats.tv_sec > ets.tv_sec ||
 				   (ats.tv_sec == ets.tv_sec &&
 				    ats.tv_nsec >= ets.tv_nsec)){

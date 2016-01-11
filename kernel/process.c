@@ -308,28 +308,6 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 	struct process *proc = NULL;
 	struct address_space *asp = NULL;
 
-
-	if (termsig < 0 || _NSIG < termsig) {
-		return (void *)-EINVAL;
-	}
-
-	if((clone_flags & CLONE_SIGHAND) &&
-	   !(clone_flags & CLONE_VM))
-		return (void *)-EINVAL;
-	if((clone_flags & CLONE_THREAD) &&
-	   !(clone_flags & CLONE_SIGHAND))
-		return (void *)-EINVAL;
-	if((clone_flags & CLONE_FS) &&
-	   (clone_flags & CLONE_NEWNS))
-		return (void *)-EINVAL;
-	if((clone_flags & CLONE_NEWIPC) &&
-	   (clone_flags & CLONE_SYSVSEM))
-		return (void *)-EINVAL;
-	if((clone_flags & CLONE_NEWPID) &&
-	   (clone_flags & CLONE_THREAD))
-		return (void *)-EINVAL;
-
-
 	if ((thread = ihk_mc_alloc_pages(KERNEL_STACK_NR_PAGES,
 					IHK_MC_AP_NOWAIT)) == NULL) {
 		return NULL;

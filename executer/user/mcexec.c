@@ -1859,6 +1859,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			struct fork_sync_container *fsc;
 			struct fork_sync_container *fp;
 			struct fork_sync_container *fb;
+			int flag = w.sr.args[0];
 			int rc = -1;
 			pid_t pid;
 
@@ -1878,7 +1879,41 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			memset(fs, '\0', sizeof(struct fork_sync));
 			sem_init(&fs->sem, 1, 0);
 
-			pid = fork();
+			if(flag){
+				int pipefds[2];
+
+				if(pipe(pipefds) == -1){
+					rc = -errno;
+					sem_destroy(&fs->sem);
+					goto fork_err;
+				}
+				pid = fork();
+				if(pid == 0){
+					close(pipefds[0]);
+					pid = fork();
+					if(pid != 0){
+						write(pipefds[1], &pid, sizeof pid);
+						exit(0);
+					}
+				}
+				else if(pid != -1){
+					int npid;
+					int st;
+
+					close(pipefds[1]);
+					read(pipefds[0], &npid, sizeof npid);
+					close(pipefds[0]);
+					waitpid(pid, &st, 0);
+					pid = npid;
+				}
+				else{
+					rc = -errno;
+					sem_destroy(&fs->sem);
+					goto fork_err;
+				}
+			}
+			else
+				pid = fork();
 
 			switch (pid) {
 			    /* Error */

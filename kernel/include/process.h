@@ -400,6 +400,7 @@ struct process {
 	int fsgid;
 	int execed;
 	int nohost;
+	int nowait;
 	struct rlimit rlimit[MCK_RLIM_MAX];
 	unsigned long saved_auxv[AUXV_LEN];
 	char *saved_cmdline;
