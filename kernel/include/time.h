@@ -20,6 +20,10 @@
 #define __TIME_H
 
 #define NS_PER_SEC	1000000000UL
+#define CLOCK_REALTIME			0
+#define CLOCK_MONOTONIC			1
+#define CLOCK_PROCESS_CPUTIME_ID	2
+#define CLOCK_THREAD_CPUTIME_ID		3
 
 typedef long int __time_t;
 

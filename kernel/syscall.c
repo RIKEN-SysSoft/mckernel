@@ -5083,6 +5083,7 @@ SYSCALL_DECLARE(clock_gettime)
 {
 	/* TODO: handle clock_id */
 	struct timespec *ts = (struct timespec *)ihk_mc_syscall_arg1(ctx);
+	int clock_id = (int)ihk_mc_syscall_arg0(ctx);
 	struct syscall_request request IHK_DMA_ALIGN;
 	int error;
 	struct timespec ats;
@@ -5093,7 +5094,7 @@ SYSCALL_DECLARE(clock_gettime)
 	}
 
 	/* Do it locally if supported */
-	if (gettime_local_support) {
+	if (gettime_local_support && clock_id == CLOCK_REALTIME) {
 		calculate_time_from_tsc(&ats);
 
 		error = copy_to_user(ts, &ats, sizeof(ats));
