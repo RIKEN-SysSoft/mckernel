@@ -2056,12 +2056,13 @@ fork_err:
 				char path[1024];
 				char *filename;
 				int ret;
-				char *shell = NULL;
+				char *shell;
 				char shell_path[1024];
 
 				/* Load descriptor phase */
 				case 1:
 					
+					shell = NULL;
 					filename = (char *)w.sr.args[1];
 					
 					if ((ret = lookup_exec_path(filename, path, sizeof(path))) 
