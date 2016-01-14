@@ -2084,7 +2084,7 @@ getcred(int *_buf)
 	struct syscall_request request IHK_DMA_ALIGN;
 	unsigned long phys;
 
-	if(((unsigned long)_buf) & ((unsigned long)(_buf + 8)) & ~4095)
+	if((((unsigned long)_buf) ^ ((unsigned long)(_buf + 8))) & ~4095)
 		buf = _buf + 8;
 	else
 		buf = _buf;
@@ -3621,6 +3621,7 @@ SYSCALL_DECLARE(futex)
 	struct timespec *utime = (struct timespec*)ihk_mc_syscall_arg3(ctx);
 	uint32_t *uaddr2 = (uint32_t *)ihk_mc_syscall_arg4(ctx);
 	uint32_t val3 = (uint32_t)ihk_mc_syscall_arg5(ctx);
+	int flags = op;
     
 	/* Cross-address space futex? */
 	if (op & FUTEX_PRIVATE_FLAG) {
@@ -3629,7 +3630,7 @@ SYSCALL_DECLARE(futex)
 	op = (op & FUTEX_CMD_MASK);
 	
 	dkprintf("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%lx, uaddr2=%lx, val3=%x, []=%x, shared: %d\n", 
-			op,
+			flags,
 			(op == FUTEX_WAIT) ? "FUTEX_WAIT" :
 			(op == FUTEX_WAIT_BITSET) ? "FUTEX_WAIT_BITSET" :
 			(op == FUTEX_WAKE) ? "FUTEX_WAKE" :
@@ -3641,38 +3642,45 @@ SYSCALL_DECLARE(futex)
 
 	if (utime && (op == FUTEX_WAIT_BITSET || op == FUTEX_WAIT)) {
 		unsigned long nsec_timeout;
-		struct timespec ats;
-
-		if (!gettime_local_support) {
-			struct syscall_request request IHK_DMA_ALIGN; 
-			struct timeval tv_now;
-			request.number = n;
-			unsigned long __phys;                                          
-
-			if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->address_space->page_table, 
-						(void *)&tv_now, &__phys)) { 
-				return -EFAULT; 
-			}
-
-			request.args[0] = __phys;               
-
-			int r = do_syscall(&request, ihk_mc_get_processor_id(), 0);
-
-			if (r < 0) {
-				return -EFAULT;
-			}
-
-			ats.tv_sec = tv_now.tv_sec;
-			ats.tv_nsec = tv_now.tv_usec * 1000;
-		}
-		/* Compute timeout based on TSC/nanosec ratio */
-		else {
-			calculate_time_from_tsc(&ats);
-		}
 
 		/* As per the Linux implementation FUTEX_WAIT specifies the duration of
 		 * the timeout, while FUTEX_WAIT_BITSET specifies the absolute timestamp */
 		if (op == FUTEX_WAIT_BITSET) {
+			struct timespec ats;
+
+			if (!gettime_local_support ||
+			    !(flags & FUTEX_CLOCK_REALTIME)) {
+				struct syscall_request request IHK_DMA_ALIGN; 
+				struct timespec tv[2];
+				struct timespec *tv_now = tv;
+				request.number = n;
+				unsigned long __phys;                                          
+
+				if((((unsigned long)tv) ^ ((unsigned long)(tv + 1))) & ~4095)
+					tv_now = tv + 1;
+				if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->address_space->page_table, 
+						(void *)tv_now, &__phys)) { 
+					return -EFAULT; 
+				}
+
+				request.args[0] = __phys;               
+				request.args[1] = (flags & FUTEX_CLOCK_REALTIME)?
+						      CLOCK_REALTIME: CLOCK_MONOTONIC;
+
+				int r = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+
+				if (r < 0) {
+					return -EFAULT;
+				}
+
+				ats.tv_sec = tv_now->tv_sec;
+				ats.tv_nsec = tv_now->tv_nsec;
+			}
+			/* Compute timeout based on TSC/nanosec ratio */
+			else {
+				calculate_time_from_tsc(&ats);
+			}
+
 			nsec_timeout = (utime->tv_sec * NS_PER_SEC + utime->tv_nsec) -
 				(ats.tv_sec * NS_PER_SEC + ats.tv_nsec);
 		}

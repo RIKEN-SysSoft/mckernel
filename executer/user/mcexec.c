@@ -1714,7 +1714,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 	char *fn;
 	int sig;
 	int term;
-	struct timeval tv;
+	struct timespec tv;
 	char pathbuf[PATH_MAX];
 	char tmpbuf[PATH_MAX];
 
@@ -1753,13 +1753,13 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			break;
 
 		case __NR_futex:
-			ret = gettimeofday(&tv, NULL);
+			ret = clock_gettime(w.sr.args[1], &tv);
 			SET_ERR(ret);
-			__dprintf("gettimeofday=%016ld,%09ld\n",
+			__dprintf("clock_gettime=%016ld,%09ld\n",
 					tv.tv_sec,
-					tv.tv_usec);
+					tv.tv_nsec);
 			do_syscall_return(fd, cpu, ret, 1, (unsigned long)&tv,
-			                  w.sr.args[0], sizeof(struct timeval));
+			                  w.sr.args[0], sizeof(struct timespec));
 			break;
 
 		case __NR_kill: // interrupt syscall
