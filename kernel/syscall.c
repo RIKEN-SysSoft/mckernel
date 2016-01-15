@@ -4917,14 +4917,13 @@ SYSCALL_DECLARE(sched_setaffinity)
 	int tid = (int)ihk_mc_syscall_arg0(ctx);
 	size_t len = (size_t)ihk_mc_syscall_arg1(ctx);
 	cpu_set_t *u_cpu_set = (cpu_set_t *)ihk_mc_syscall_arg2(ctx);
-
 	cpu_set_t k_cpu_set, cpu_set;
 	struct thread *thread;
 	int cpu_id;
 	int empty_set = 1; 
-	unsigned long irqstate;
 	extern int num_processors;
 
+kprintf("sched_setaffinity tid=%d len=%d set=%p\n", tid, len, u_cpu_set);
 	if (sizeof(k_cpu_set) > len) {
 		memset(&k_cpu_set, 0, sizeof(k_cpu_set));
 	}
@@ -4956,47 +4955,35 @@ SYSCALL_DECLARE(sched_setaffinity)
 		tid = cpu_local_var(current)->tid;
 		thread = cpu_local_var(current);
 		cpu_id = ihk_mc_get_processor_id();
-		irqstate = ihk_mc_spinlock_lock(&get_cpu_local_var(cpu_id)->runq_lock);
-
-		goto found;
+		hold_thread(thread);
 	}
 	else {
-		for (cpu_id = 0; cpu_id < num_processors; cpu_id++) {
-			irqstate = ihk_mc_spinlock_lock(
-				&get_cpu_local_var(cpu_id)->runq_lock);
+		struct mcs_rwlock_node_irqsave lock;
+		struct thread *mythread = cpu_local_var(current);
 
-			list_for_each_entry(thread, 
-				&get_cpu_local_var(cpu_id)->runq, sched_list) {
-
-				if (thread->proc->pid && thread->tid == tid) {
-					goto found; /* without unlocking runq_lock */
-				}
-			}
-
-			ihk_mc_spinlock_unlock(&get_cpu_local_var(cpu_id)->runq_lock, 
-				irqstate);
+		thread = find_thread(0, tid, &lock);
+		if(!thread)
+			return -ESRCH;
+		if(mythread->proc->euid != 0 &&
+		   mythread->proc->euid != thread->proc->ruid &&
+		   mythread->proc->euid != thread->proc->euid){
+			thread_unlock(thread, &lock);
+			return -EPERM;
 		}
+		hold_thread(thread);
+		thread_unlock(thread, &lock);
+		cpu_id = thread->cpu_id;
 	}
 
-	kprintf("%s:%d Thread not found.\n", __FILE__, __LINE__);
-	return -ESRCH;
-
-found:
 	memcpy(&thread->cpu_set, &cpu_set, sizeof(cpu_set));
 
 	if (!CPU_ISSET(cpu_id, &thread->cpu_set)) {
-		hold_thread(thread);
-		ihk_mc_spinlock_unlock(&get_cpu_local_var(cpu_id)->runq_lock, irqstate);
 		dkprintf("sched_setaffinity(): tid %d sched_request_migrate\n",
 				cpu_local_var(current)->tid, cpu_id);
 		sched_request_migrate(cpu_id, thread);
-		release_thread(thread);
-		return 0;
 	} 
-	else {
-		ihk_mc_spinlock_unlock(&get_cpu_local_var(cpu_id)->runq_lock, irqstate);
-		return 0;
-	}
+	release_thread(thread);
+	return 0;
 }
 
 // see linux-2.6.34.13/kernel/sched.c
@@ -5005,38 +4992,37 @@ SYSCALL_DECLARE(sched_getaffinity)
 	int tid = (int)ihk_mc_syscall_arg0(ctx);
 	size_t len = (size_t)ihk_mc_syscall_arg1(ctx);
 	cpu_set_t k_cpu_set, *u_cpu_set = (cpu_set_t *)ihk_mc_syscall_arg2(ctx);
-
+	struct thread *thread;
 	int ret;
-	int found = 0;
-	int i;
-	unsigned long irqstate;
-	extern int num_processors;
 
 	if (!len)
 		return -EINVAL;
 
 	len = MIN2(len, sizeof(k_cpu_set));
 
-	if(tid == 0)
-		tid = cpu_local_var(current)->tid;
+	if(tid == 0){
+		thread = cpu_local_var(current);
+		hold_thread(thread);
+	}
+	else{
+		struct mcs_rwlock_node_irqsave lock;
+		struct thread *mythread = cpu_local_var(current);
 
-	for (i = 0; i < num_processors && !found; i++) {
-		struct thread *thread;
-		irqstate = ihk_mc_spinlock_lock(&get_cpu_local_var(i)->runq_lock);
-		list_for_each_entry(thread, &get_cpu_local_var(i)->runq, sched_list) {
-			if (thread->proc->pid && thread->tid == tid) {
-				found = 1;
-				memcpy(&k_cpu_set, &thread->cpu_set, sizeof(k_cpu_set));
-				break;
-			}
+		thread = find_thread(0, tid, &lock);
+		if(!thread)
+			return -ESRCH;
+		if(mythread->proc->euid != 0 &&
+		   mythread->proc->euid != thread->proc->ruid &&
+		   mythread->proc->euid != thread->proc->euid){
+			thread_unlock(thread, &lock);
+			return -EPERM;
 		}
-		ihk_mc_spinlock_unlock(&get_cpu_local_var(i)->runq_lock, irqstate);
+		hold_thread(thread);
+		thread_unlock(thread, &lock);
 	}
-	if (!found) {
-		kprintf("%s:%d Thread not found.\n", __FILE__, __LINE__);
-		return -ESRCH;
-	}
-	ret = copy_to_user(u_cpu_set, &k_cpu_set, len);
+
+	ret = copy_to_user(u_cpu_set, &thread->cpu_set, len);
+	release_thread(thread);
 	dkprintf("%s() ret: %d\n", __FUNCTION__, ret);
 	if (ret < 0)
 		return ret;
