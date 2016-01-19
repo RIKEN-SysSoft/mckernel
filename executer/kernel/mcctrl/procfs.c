@@ -83,7 +83,8 @@ static const struct file_operations mckernel_procfs_file_operations = {
  *
  * \param p a name of the procfs file
  * \param osnum os number
- * \param mode if zero create a directory otherwise a file
+ * \param mode if zero create a directory otherwise a file or link
+ * \param opaque additional context dependent information
  *
  * return value: NULL: Something wrong has occurred.
  *               otherwise: address of the proc_dir_entry structure of the procfs file
@@ -103,7 +104,7 @@ static const struct file_operations mckernel_procfs_file_operations = {
  * ancestor directory which was not explicitly created were racing.
  */
 
-static struct procfs_list_entry *get_procfs_list_entry(char *p, int osnum, int mode)
+struct procfs_list_entry *get_procfs_list_entry(char *p, int osnum, int mode, void *opaque)
 {
 	char *r;
 	struct proc_dir_entry *pde = NULL;
@@ -133,7 +134,7 @@ static struct procfs_list_entry *get_procfs_list_entry(char *p, int osnum, int m
 		/* We have non-null parent dir. */
 		strncpy(name, p, r - p);
 		name[r - p] = '\0'; 
-		parent = get_procfs_list_entry(name, osnum, 0);
+		parent = get_procfs_list_entry(name, osnum, 0, NULL);
 		if (parent == NULL) {
 			/* We counld not get a parent procfs entry. Give up.*/
 			return NULL;
@@ -158,7 +159,9 @@ static struct procfs_list_entry *get_procfs_list_entry(char *p, int osnum, int m
 #else		
 		pde = proc_mkdir_data(name, 0555, parent ? parent->entry : NULL, ret);
 #endif		
-	} else {	
+	} else if (mode & S_IFLNK) {
+		pde = proc_symlink(name, parent->entry, (char *)opaque);
+	} else {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
 		pde = create_proc_entry(name, mode, parent->entry);
 		if (pde) 
@@ -189,6 +192,36 @@ static struct procfs_list_entry *get_procfs_list_entry(char *p, int osnum, int m
 }
 
 /**
+ * \brief Create procfs create (internal, can be called directly from host Linux).
+ *
+ * \param os (opaque) os variable
+ * \param ref cpuid of the requesting mckernel process
+ * \param osnum osnum of the requesting mckernel process
+ * \param pid pid of the requesting mckernel process
+ * \param name path of the file
+ * \param mode mode of the file (e.g., dir, link, regular, etc.)
+ * \param opaque context dependent additional argument
+ */
+
+int procfs_create_entry(void *os, int ref, int osnum, int pid, char *name,
+		int mode, void *opaque)
+{
+	struct procfs_list_entry *e;
+
+	e = get_procfs_list_entry(name, osnum, mode, opaque);
+	if (e == NULL) {
+		printk("ERROR: could not create a procfs entry for %s.\n", name);
+		return EINVAL;
+	}
+
+	e->os = os;
+	e->cpu = ref;
+	e->pid = pid;
+
+	return 0;
+}
+
+/**
  * \brief Create a procfs entry.
  *
  * \param __os (opeque) os variable
@@ -200,7 +233,6 @@ static struct procfs_list_entry *get_procfs_list_entry(char *p, int osnum, int m
 
 void procfs_create(void *__os, int ref, int osnum, int pid, unsigned long arg)
 {
-	struct procfs_list_entry *e;
 	ihk_device_t dev = ihk_os_to_dev(__os);
 	unsigned long parg;
 	struct procfs_file *f;
@@ -221,15 +253,11 @@ void procfs_create(void *__os, int ref, int osnum, int pid, unsigned long arg)
 			printk("ERROR: procfs_creat: file name not properly terminated.\n");
 			goto quit;
 	}
-	e = get_procfs_list_entry(name, osnum, mode);
-	if (e == NULL) {
+
+	if (procfs_create_entry(__os, ref, osnum, pid, name, mode, NULL) != 0) {
 		printk("ERROR: could not create a procfs entry for %s.\n", name);
 		goto quit;
 	}
-
-	e->os = __os;
-	e->cpu = ref;
-	e->pid = pid;
 
 quit:
 	f->status = 1; /* Now the peer can free the data. */
@@ -239,31 +267,24 @@ quit:
 }
 
 /**
- * \brief Delete a procfs entry.
+ * \brief Delete a procfs entry (internal).
  *
  * \param __os (opaque) os variable
  * \param osnum os number
- * \param arg sent argument
  */
 
-void procfs_delete(void *__os, int osnum, unsigned long arg)
+/* TODO: detect when a directory becomes empty remove it automatically */
+void procfs_delete_entry(void *os, int osnum, char *fname)
 {
-	ihk_device_t dev = ihk_os_to_dev(__os);
-	unsigned long parg;
-	struct procfs_file *f;
 	struct procfs_list_entry *e;
 	struct procfs_list_entry *parent = NULL;
 	char name[PROCFS_NAME_MAX];
 	char *r;
 	unsigned long irqflags;
 
-	dprintk("procfs_delete: \n");
-	parg = ihk_device_map_memory(dev, arg, sizeof(struct procfs_file));
-	f = ihk_device_map_virtual(dev, parg, sizeof(struct procfs_file), NULL, 0);
-	dprintk("fname: %s.\n", f->fname);
 	irqflags = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
 	list_for_each_entry(e, &procfs_file_list, list) {
-		if ((strncmp(e->fname, f->fname, PROCFS_NAME_MAX) == 0) &&
+		if ((strncmp(e->fname, fname, PROCFS_NAME_MAX) == 0) &&
 		    (e->osnum == osnum)) {
 			list_del(&e->list);
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
@@ -272,18 +293,41 @@ void procfs_delete(void *__os, int osnum, unsigned long arg)
 #endif
 			parent = e->parent;
 			kfree(e);
-			r = strrchr(f->fname, '/');
+			r = strrchr(fname, '/');
 			if (r == NULL) {
-				strncpy(name, f->fname, PROCFS_NAME_MAX);
+				strncpy(name, fname, PROCFS_NAME_MAX);
 			} else {
 				strncpy(name, r + 1, PROCFS_NAME_MAX);
 			}
-			dprintk("found and remove %s from the list.\n", name);
+			printk("found and remove %s from the list.\n", name);
 			remove_proc_entry(name, parent->entry);
 			break;
 		}
 	}
 	ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflags);
+}
+
+/**
+ * \brief Delete a procfs entry (internal, can be called directly from host Linux).
+ *
+ * \param __os (opaque) os variable
+ * \param osnum os number
+ * \param arg sent argument
+ */
+
+void procfs_delete(void *__os, int osnum, unsigned long arg)
+{
+	struct procfs_file *f;
+	ihk_device_t dev = ihk_os_to_dev(__os);
+	unsigned long parg;
+
+	dprintk("procfs_delete: \n");
+	parg = ihk_device_map_memory(dev, arg, sizeof(struct procfs_file));
+	f = ihk_device_map_virtual(dev, parg, sizeof(struct procfs_file), NULL, 0);
+	dprintk("fname: %s.\n", f->fname);
+
+	procfs_delete_entry(__os, osnum, f->fname);
+
 	f->status = 1; /* Now the peer can free the data. */
 	ihk_device_unmap_virtual(dev, f, sizeof(struct procfs_file));
 	ihk_device_unmap_memory(dev, parg, sizeof(struct procfs_file));

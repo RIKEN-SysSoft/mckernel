@@ -146,9 +146,7 @@ void delete_proc_procfs_files(int pid)
 	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/auxv", osnum, pid);
 	delete_proc_procfs_file(pid, fname);
 
-	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d", osnum, pid);
-	delete_proc_procfs_file(pid, fname);
-
+	/* NOTE: Directory is removed on the host when mcexec drops the executable */
 	dprintf("delete procfs files for pid %d: done\n", pid);
 }
 

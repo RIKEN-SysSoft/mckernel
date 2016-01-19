@@ -49,6 +49,9 @@
 //static DECLARE_WAIT_QUEUE_HEAD(wq_prepare);
 //extern struct mcctrl_channel *channels;
 int mcctrl_ikc_set_recv_cpu(ihk_os_t os, int cpu);
+extern int procfs_create_entry(void *os, int ref, int osnum, int pid, char *name,
+		int mode, void *opaque);
+extern void procfs_delete_entry(void *os, int osnum, char *fname);
 
 static long mcexec_prepare_image(ihk_os_t os,
                                  struct program_load_desc * __user udesc)
@@ -834,6 +837,12 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	struct mckernel_exec_file *mcef;
 	struct mckernel_exec_file *mcef_iter;
 	int retval;
+	int os_ind = ihk_host_os_get_index(os);
+	char proc_name[1024];
+
+	if (os_ind < 0) {
+		return EINVAL;
+	}
 
 	file = open_exec(filename);
 	retval = PTR_ERR(file);
@@ -847,6 +856,8 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 		goto out_put_file;
 	}
 
+	snprintf(proc_name, 1024, "mcos%d/%d/exe", os_ind, current->tgid);
+
 	spin_lock_irq(&mckernel_exec_file_lock);
 	/* Find previous file (if exists) and drop it */
 	list_for_each_entry(mcef_iter, &mckernel_exec_files, list) {
@@ -855,6 +866,8 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 			fput(mcef_iter->fp);
 			list_del(&mcef_iter->list);
 			kfree(mcef_iter);
+			/* Drop old /proc/self/exe */
+			procfs_delete_entry(os, os_ind, proc_name);
 			dprintk("%d open_exec dropped previous executable \n", (int)current->tgid);
 			break;
 		}
@@ -865,6 +878,12 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	mcef->pid = current->tgid;
 	mcef->fp = file;
 	list_add_tail(&mcef->list, &mckernel_exec_files);
+
+	/* Create /proc/self/exe entry */
+	if (procfs_create_entry(os, 0, os_ind, current->tgid, proc_name, 
+				S_IFLNK, filename) != 0) {
+		printk("ERROR: could not create a procfs entry for %s.\n", proc_name);
+	}
 	spin_unlock(&mckernel_exec_file_lock);
 
 	dprintk("%d open_exec and holding file: %s\n", (int)current->tgid, filename);
@@ -882,6 +901,12 @@ int mcexec_close_exec(ihk_os_t os)
 {
 	struct mckernel_exec_file *mcef = NULL;
 	int found = 0;
+	int os_ind = ihk_host_os_get_index(os);	
+	char proc_name[1024];
+
+	if (os_ind < 0) {
+		return EINVAL;
+	}
 		
 	spin_lock_irq(&mckernel_exec_file_lock);
 	list_for_each_entry(mcef, &mckernel_exec_files, list) {
@@ -895,6 +920,15 @@ int mcexec_close_exec(ihk_os_t os)
 			break;
 		}
 	}
+
+	/* Remove /proc/self/exe and /proc/self directory 
+	 * TODO: instead of removing directory explicitly, detect in procfs_delete_entry() 
+	 * when a directory becomes empty and remove it automatically */
+	snprintf(proc_name, 1024, "mcos%d/%d/exe", os_ind, current->tgid);
+	procfs_delete_entry(os, os_ind, proc_name);
+	snprintf(proc_name, 1024, "mcos%d/%d", os_ind, current->tgid);
+	procfs_delete_entry(os, os_ind, proc_name);
+
 	spin_unlock(&mckernel_exec_file_lock);
 
 	return (found ? 0 : EINVAL);
