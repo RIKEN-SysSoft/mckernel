@@ -394,6 +394,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	proc->egid = pn->cred[5];
 	proc->sgid = pn->cred[6];
 	proc->fsgid = pn->cred[7];
+	proc->termsig = SIGCHLD;
 
 	vm->region.user_start = pn->user_start;
 	vm->region.user_end = pn->user_end;
