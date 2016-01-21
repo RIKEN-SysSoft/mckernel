@@ -267,40 +267,67 @@ quit:
 }
 
 /**
+ * \brief Delete a procfs entry and all of its subtree (internal).
+ *
+ * \param __os (opaque) os variable
+ * \param osnum os number
+ *
+ * NOTE: procfs_file_list_lock has to be held here.
+ */
+
+void __procfs_delete_entry_recursively(struct procfs_list_entry *e)
+{
+	struct procfs_list_entry *le;
+	struct procfs_list_entry *parent = NULL;
+	char name[PROCFS_NAME_MAX];
+	char *r;
+
+	/* See if there are any children of this entry */
+retry:
+	list_for_each_entry(le, &procfs_file_list, list) {
+		if (le->parent != e) {
+			continue;
+		}
+
+		__procfs_delete_entry_recursively(le);
+		/* List may have changed... */
+		goto retry;
+	}
+
+	/* No more children, remove entry */
+	list_del(&e->list);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
+	e->entry->read_proc = NULL;
+	e->entry->data = NULL;
+#endif
+	parent = e->parent;
+	r = strrchr(e->fname, '/');
+	if (r == NULL) {
+		strncpy(name, e->fname, PROCFS_NAME_MAX);
+	} else {
+		strncpy(name, r + 1, PROCFS_NAME_MAX);
+	}
+	dprintk("found and removed %s from the list.\n", name);
+	remove_proc_entry(name, parent->entry);
+	kfree(e);
+}
+
+/**
  * \brief Delete a procfs entry (internal).
  *
  * \param __os (opaque) os variable
  * \param osnum os number
  */
 
-/* TODO: detect when a directory becomes empty remove it automatically */
 void procfs_delete_entry(void *os, int osnum, char *fname)
 {
 	struct procfs_list_entry *e;
-	struct procfs_list_entry *parent = NULL;
-	char name[PROCFS_NAME_MAX];
-	char *r;
 	unsigned long irqflags;
 
 	irqflags = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
 	list_for_each_entry(e, &procfs_file_list, list) {
-		if ((strncmp(e->fname, fname, PROCFS_NAME_MAX) == 0) &&
-		    (e->osnum == osnum)) {
-			list_del(&e->list);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
-			e->entry->read_proc = NULL;
-			e->entry->data = NULL;
-#endif
-			parent = e->parent;
-			kfree(e);
-			r = strrchr(fname, '/');
-			if (r == NULL) {
-				strncpy(name, fname, PROCFS_NAME_MAX);
-			} else {
-				strncpy(name, r + 1, PROCFS_NAME_MAX);
-			}
-			printk("found and remove %s from the list.\n", name);
-			remove_proc_entry(name, parent->entry);
+		if ((strncmp(e->fname, fname, PROCFS_NAME_MAX) == 0) && (e->osnum == osnum)) {
+			__procfs_delete_entry_recursively(e);
 			break;
 		}
 	}
