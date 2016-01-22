@@ -1653,15 +1653,18 @@ out:
 int set_range_l3(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 		uintptr_t end)
 {
-	struct set_range_args *args = args0;
+	struct page_table *newpt = NULL;
+	pte_t pte;
 	struct page_table *pt;
 	int error;
 #ifdef USE_LARGE_PAGES
+	struct set_range_args *args = args0;
 	uintptr_t phys;
 #endif
 
 	dkprintf("set_range_l3(%lx,%lx,%lx)\n", base, start, end);
 
+retry:
 	if (*ptep == PTE_NULL) {
 #ifdef USE_LARGE_PAGES
 		if ((start <= base) && ((base + PTL3_SIZE) <= end)
@@ -1678,24 +1681,32 @@ int set_range_l3(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 		}
 #endif
 
-		pt = __alloc_new_pt(IHK_MC_AP_NOWAIT);
-		if (pt == NULL) {
-			error = -ENOMEM;
-			ekprintf("set_range_l3(%lx,%lx,%lx):"
-					"__alloc_new_pt failed. %d %lx\n",
-					base, start, end, error, *ptep);
-			(void)clear_range(args->pt, args->vm, start, base,
-					KEEP_PHYSICAL, NULL);
-			goto out;
+		if (!newpt) {
+			newpt = __alloc_new_pt(IHK_MC_AP_NOWAIT);
+			if (newpt == NULL) {
+				error = -ENOMEM;
+				ekprintf("set_range_l3(%lx,%lx,%lx):"
+						"__alloc_new_pt failed. %d %lx\n",
+						base, start, end, error, *ptep);
+				goto out;
+			}
 		}
-		*ptep = virt_to_phys(pt) | PFL3_PDIR_ATTR;
+
+		pte = virt_to_phys(newpt) | PFL3_PDIR_ATTR;
+		pte = atomic_cmpxchg8(ptep, PTE_NULL, pte);
+		if (pte != PTE_NULL) {
+			/* failed to set PDPTe */
+			goto retry;
+		}
+
+		pt = newpt;
+		newpt = NULL;
 	}
 	else if (*ptep & PFL3_SIZE) {
 		error = -EBUSY;
 		ekprintf("set_range_l3(%lx,%lx,%lx):"
 				"page exists. %d %lx\n",
 				base, start, end, error, *ptep);
-		(void)clear_range(args->pt, args->vm, start, base, KEEP_PHYSICAL, NULL);
 		goto out;
 	}
 	else {
@@ -1712,6 +1723,9 @@ int set_range_l3(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 
 	error = 0;
 out:
+	if (newpt) {
+		arch_free_page(newpt);
+	}
 	dkprintf("set_range_l3(%lx,%lx,%lx): %d\n",
 			base, start, end, error, *ptep);
 	return error;
@@ -1720,24 +1734,35 @@ out:
 int set_range_l4(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 		uintptr_t end)
 {
-	struct set_range_args *args = args0;
+	struct page_table *newpt = NULL;
+	pte_t pte;
 	struct page_table *pt;
 	int error;
 
 	dkprintf("set_range_l4(%lx,%lx,%lx)\n", base, start, end);
 
+retry:
 	if (*ptep == PTE_NULL) {
-		pt = __alloc_new_pt(IHK_MC_AP_NOWAIT);
-		if (pt == NULL) {
-			error = -ENOMEM;
-			ekprintf("set_range_l4(%lx,%lx,%lx):"
-					"__alloc_new_pt failed. %d %lx\n",
-					base, start, end, error, *ptep);
-			(void)clear_range(args->pt, args->vm, start, base,
-					KEEP_PHYSICAL, NULL);
-			goto out;
+		if (!newpt) {
+			newpt = __alloc_new_pt(IHK_MC_AP_NOWAIT);
+			if (newpt == NULL) {
+				error = -ENOMEM;
+				ekprintf("set_range_l4(%lx,%lx,%lx):"
+						"__alloc_new_pt failed. %d %lx\n",
+						base, start, end, error, *ptep);
+				goto out;
+			}
 		}
-		*ptep = virt_to_phys(pt) | PFL4_PDIR_ATTR;
+
+		pte = virt_to_phys(newpt) | PFL4_PDIR_ATTR;
+		pte = atomic_cmpxchg8(ptep, PTE_NULL, pte);
+		if (pte != PTE_NULL) {
+			/* failed to set PML4e */
+			goto retry;
+		}
+
+		pt = newpt;
+		newpt = NULL;
 	}
 	else {
 		pt = phys_to_virt(*ptep & PT_PHYSMASK);
@@ -1753,6 +1778,9 @@ int set_range_l4(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 
 	error = 0;
 out:
+	if (newpt) {
+		arch_free_page(newpt);
+	}
 	dkprintf("set_range_l4(%lx,%lx,%lx): %d %lx\n",
 			base, start, end, error, *ptep);
 	return error;
