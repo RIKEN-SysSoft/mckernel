@@ -32,6 +32,7 @@
 #ifndef HEADER_MCCTRL_H
 #define HEADER_MCCTRL_H
 
+#include <linux/fs.h>
 #include <ihk/ihk_host_driver.h>
 #include <linux/resource.h>
 #include <uprotocol.h>
@@ -251,5 +252,8 @@ struct procfs_file {
 	int mode;			/* file mode (request) */
 	char fname[PROCFS_NAME_MAX];	/* procfs filename (request) */
 };
+
+/* sysfs_files.c */
+void setup_sysfs_files(ihk_os_t os);
 
 #endif

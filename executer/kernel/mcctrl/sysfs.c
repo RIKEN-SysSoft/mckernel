@@ -1302,6 +1302,8 @@ sysfsm_setup(ihk_os_t os, void *buf, long buf_pa, size_t bufsize)
 	wmb();
 	sdp->sysfs_buf = buf;
 
+	setup_sysfs_files(os);
+
 	error = 0;
 out:
 	if (error) {
