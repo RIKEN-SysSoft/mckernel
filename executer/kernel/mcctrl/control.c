@@ -838,16 +838,33 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	struct mckernel_exec_file *mcef_iter;
 	int retval;
 	int os_ind = ihk_host_os_get_index(os);
-	char proc_name[1024];
+	char *proc_name, *pathbuf, *fullpath;
 
 	if (os_ind < 0) {
 		return EINVAL;
 	}
 
+	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+	if (!pathbuf) {
+		return ENOMEM;
+	}
+
+	proc_name = kmalloc(PATH_MAX, GFP_TEMPORARY);
+	if (!proc_name) {
+		retval = ENOMEM;
+		goto out_error_free_path;
+	}
+
 	file = open_exec(filename);
 	retval = PTR_ERR(file);
 	if (IS_ERR(file)) {
-		goto out_return;
+		goto out_error_free;
+	}
+
+	fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
+	if (IS_ERR(fullpath)) {
+		retval = PTR_ERR(fullpath);
+		goto out_error_free;
 	}
 
 	mcef = kmalloc(sizeof(*mcef), GFP_KERNEL);
@@ -881,18 +898,26 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 
 	/* Create /proc/self/exe entry */
 	if (procfs_create_entry(os, 0, os_ind, current->tgid, proc_name, 
-				S_IFLNK, filename) != 0) {
+				S_IFLNK, fullpath) != 0) {
 		printk("ERROR: could not create a procfs entry for %s.\n", proc_name);
 	}
 	spin_unlock(&mckernel_exec_file_lock);
 
 	dprintk("%d open_exec and holding file: %s\n", (int)current->tgid, filename);
+
+	kfree(proc_name);
+	kfree(pathbuf);
+
 	return 0;
 	
 out_put_file:
 	fput(file);
 
-out_return:
+out_error_free:
+	kfree(proc_name);
+
+out_error_free_path:
+	kfree(pathbuf);
 	return -retval;
 }
 
