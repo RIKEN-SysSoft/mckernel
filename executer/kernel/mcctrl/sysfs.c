@@ -376,16 +376,15 @@ lookup_i(struct sysfsm_node *dirp, const char *name)
 	}
 
 	/* this is usual when called from create_i(), mkdir_i() and symlink_i(). */
-#define ENOENT_NOMSG 1
-	error = ENOENT_NOMSG;
+	error = ENOENT; /* positive value means suppressing error message */
 out:
 	if (error) {
 		if (error < 0) {
 			eprintk("mcctrl:lookup_i(%s,%s): %d\n",
 					dirp->name, name, error);
 		}
-		else if (error == ENOENT_NOMSG) {
-			error = -ENOENT;
+		else {
+			error = -error;
 		}
 		np = ERR_PTR(error);
 	}
