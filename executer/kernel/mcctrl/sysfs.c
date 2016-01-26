@@ -4,7 +4,7 @@
  * \brief
  *  sysfs framework, IHK-Master side
  * \author Gou Nakamura  <go.nakamura.yw@hitachi-solutions.com> \par
- * 	Copyright (C) 2015  RIKEN AICS
+ * 	Copyright (C) 2015 - 2016  RIKEN AICS
  */
 /*
  * HISTORY:
@@ -44,6 +44,7 @@ struct sysfsm_node {
 		/* SNT_FILE */
 		struct {
 			struct attribute attr;
+			struct sysfsm_ops *server_ops;
 			long client_ops;
 			long client_instance;
 		};
@@ -61,21 +62,23 @@ struct sysfs_work {
 
 static struct sysfs_ops the_ops;
 static struct kobj_type the_ktype;
+static struct sysfsm_ops remote_ops;
+static struct sysfsm_ops local_ops;
 
 static ssize_t
-sysfsm_show(struct kobject *kobj, struct attribute *attr, char *buf)
+remote_show(struct sysfsm_ops *ops, void *instance, void *buf, size_t bufsize)
 {
 	int error;
 	struct semaphore *held_sem = NULL;
 	struct ikc_scd_packet packet;
-	struct sysfsm_node *np;
+	struct sysfsm_node *np = instance;
 	ssize_t ssize = -EIO;
 	struct sysfsm_data *sdp;
 	struct sysfsm_req *req;
 
-	dprintk("mcctrl:sysfsm_show(%s,%s,%p)\n", kobj->name, attr->name, buf);
+	dprintk("mcctrl:remote_show(%p,%p,%p,%#lx)\n",
+			ops, instance, buf, bufsize);
 
-	np = container_of(attr, struct sysfsm_node, attr);
 	sdp = np->sdp;
 	req = &sdp->sysfs_req;
 
@@ -83,13 +86,13 @@ sysfsm_show(struct kobject *kobj, struct attribute *attr, char *buf)
 		/* emulate EOF */
 		error = 0;
 		ssize = 0;
-		eprintk("mcctrl:sysfsm_show:not initialized. %d\n", error);
+		eprintk("mcctrl:remote_show:not initialized. %d\n", error);
 		goto out;
 	}
 
 	error = down_interruptible(&sdp->sysfs_io_sem);
 	if (error) {
-		eprintk("mcctrl:sysfsm_show:down failed. %d\n", error);
+		eprintk("mcctrl:remote_show:down failed. %d\n", error);
 		goto out;
 	}
 	held_sem = &sdp->sysfs_io_sem;
@@ -97,7 +100,7 @@ sysfsm_show(struct kobject *kobj, struct attribute *attr, char *buf)
 	/* for the case that last wait_event_interruptible() was interrupted */
 	error = wait_event_interruptible(req->wq, !req->busy);
 	if (error) {
-		eprintk("mcctrl:sysfsm_show:wait_event_interruptible0 failed. %d\n",
+		eprintk("mcctrl:remote_show:wait_event_interruptible0 failed. %d\n",
 				error);
 		error = -EINTR;
 		goto out;
@@ -112,14 +115,14 @@ sysfsm_show(struct kobject *kobj, struct attribute *attr, char *buf)
 #define SYSFS_MCK_CPU 0
 	error = mcctrl_ikc_send(sdp->sysfs_os, SYSFS_MCK_CPU, &packet);
 	if (error) {
-		eprintk("mcctrl:sysfsm_show:mcctrl_ikc_send failed. %d\n",
+		eprintk("mcctrl:remote_show:mcctrl_ikc_send failed. %d\n",
 				error);
 		goto out;
 	}
 
 	error = wait_event_interruptible(req->wq, !req->busy);
 	if (error) {
-		eprintk("mcctrl:sysfsm_show:wait_event_interruptible failed. %d\n",
+		eprintk("mcctrl:remote_show:wait_event_interruptible failed. %d\n",
 				error);
 		error = -EINTR;
 		goto out;
@@ -128,7 +131,7 @@ sysfsm_show(struct kobject *kobj, struct attribute *attr, char *buf)
 	ssize = req->lresult;
 	if (ssize < 0) {
 		error = ssize;
-		eprintk("mcctrl:sysfsm_show:SCD_MSG_SYSFS_REQ_SHOW failed. %d\n",
+		eprintk("mcctrl:remote_show:SCD_MSG_SYSFS_REQ_SHOW failed. %d\n",
 				error);
 		goto out;
 	}
@@ -143,44 +146,43 @@ out:
 		up(held_sem);
 	}
 	if (error) {
-		eprintk("mcctrl:sysfsm_show(%s,%s,%p): %d\n",
-				kobj->name, attr->name, buf, error);
+		eprintk("mcctrl:remote_show(%p,%p,%p,%#lx): %d\n",
+				ops, instance, buf, bufsize, error);
 		ssize = error;
 	}
-	dprintk("mcctrl:sysfsm_show(%s,%s,%p): %ld %d\n",
-			kobj->name, attr->name, buf, ssize, error);
+	dprintk("mcctrl:remote_show(%p,%p,%p,%#lx): %ld %d\n",
+			ops, instance, buf, bufsize, ssize, error);
 	return ssize;
-} /* sysfsm_show() */
+} /* remote_show() */
 
 static ssize_t
-sysfsm_store(struct kobject *kobj, struct attribute *attr, const char *buf,
+remote_store(struct sysfsm_ops *ops, void *instance, const void *buf,
 		size_t bufsize)
 {
 	int error;
 	struct semaphore *held_sem = NULL;
 	struct ikc_scd_packet packet;
-	struct sysfsm_node *np;
+	struct sysfsm_node *np = instance;
 	ssize_t ssize = -EIO;
 	struct sysfsm_data *sdp;
 	struct sysfsm_req *req;
 
-	dprintk("mcctrl:sysfsm_store(%s,%s,%p,%ld)\n",
-			kobj->name, attr->name, buf, bufsize);
+	dprintk("mcctrl:remote_store(%p,%p,%p,%#lx)\n",
+			ops, instance, buf, bufsize);
 
-	np = container_of(attr, struct sysfsm_node, attr);
 	sdp = np->sdp;
 	req = &sdp->sysfs_req;
 
 	if (!sysfs_inited(sdp)) {
 		/* emulate EOF */
 		error = -ENOSPC;
-		eprintk("mcctrl:sysfsm_store:not initialized. %d\n", error);
+		eprintk("mcctrl:remote_store:not initialized. %d\n", error);
 		goto out;
 	}
 
 	error = down_interruptible(&sdp->sysfs_io_sem);
 	if (error) {
-		eprintk("mcctrl:sysfsm_store:down failed. %d\n", error);
+		eprintk("mcctrl:remote_store:down failed. %d\n", error);
 		goto out;
 	}
 	held_sem = &sdp->sysfs_io_sem;
@@ -188,7 +190,7 @@ sysfsm_store(struct kobject *kobj, struct attribute *attr, const char *buf,
 	/* for the case that last wait_event_interruptible() was interrupted */
 	error = wait_event_interruptible(req->wq, !req->busy);
 	if (error) {
-		eprintk("mcctrl:sysfsm_store:wait_event_interruptible0 failed. %d\n",
+		eprintk("mcctrl:remote_store:wait_event_interruptible0 failed. %d\n",
 				error);
 		error = -EINTR;
 		goto out;
@@ -196,7 +198,7 @@ sysfsm_store(struct kobject *kobj, struct attribute *attr, const char *buf,
 
 	if (bufsize > sdp->sysfs_bufsize) {
 		error = -ENOSPC;
-		eprintk("mcctrl:sysfsm_store:too large size %#lx. %d\n",
+		eprintk("mcctrl:remote_store:too large size %#lx. %d\n",
 				bufsize, error);
 		goto out;
 	}
@@ -213,14 +215,14 @@ sysfsm_store(struct kobject *kobj, struct attribute *attr, const char *buf,
 #define SYSFS_MCK_CPU 0
 	error = mcctrl_ikc_send(sdp->sysfs_os, SYSFS_MCK_CPU, &packet);
 	if (error) {
-		eprintk("mcctrl:sysfsm_store:mcctrl_ikc_send failed. %d\n",
+		eprintk("mcctrl:remote_store:mcctrl_ikc_send failed. %d\n",
 				error);
 		goto out;
 	}
 
 	error = wait_event_interruptible(req->wq, !req->busy);
 	if (error) {
-		eprintk("mcctrl:sysfsm_store:wait_event_interruptible failed. %d\n",
+		eprintk("mcctrl:remote_store:wait_event_interruptible failed. %d\n",
 				error);
 		error = -EINTR;
 		goto out;
@@ -229,7 +231,7 @@ sysfsm_store(struct kobject *kobj, struct attribute *attr, const char *buf,
 	ssize = req->lresult;
 	if (ssize < 0) {
 		error = ssize;
-		eprintk("mcctrl:sysfsm_store:SCD_MSG_SYSFS_REQ_STORE failed. %d\n",
+		eprintk("mcctrl:remote_store:SCD_MSG_SYSFS_REQ_STORE failed. %d\n",
 				error);
 		goto out;
 	}
@@ -240,36 +242,62 @@ out:
 		up(held_sem);
 	}
 	if (error) {
-		eprintk("mcctrl:sysfsm_store(%s,%s,%p,%ld): %d\n",
-				kobj->name, attr->name, buf, bufsize, error);
+		eprintk("mcctrl:remote_store(%p,%p,%p,%#lx): %d\n",
+				ops, instance, buf, bufsize, error);
 		ssize = error;
 	}
-	dprintk("mcctrl:sysfsm_store(%s,%s,%p,%ld): %ld %d\n",
-			kobj->name, attr->name, buf, bufsize, ssize, error);
+	dprintk("mcctrl:remote_store(%p,%p,%p,%#lx): %ld %d\n",
+			ops, instance, buf, bufsize, ssize, error);
 	return ssize;
-} /* sysfsm_store() */
+} /* remote_store() */
 
 static int
 release_i(struct sysfsm_node *np)
 {
 	int error;
-	struct semaphore *held_sem = NULL;
 	struct sysfsm_data *sdp;
-	struct ikc_scd_packet packet;
-	struct sysfsm_req *req;
 
 	BUG_ON(!np);
 	dprintk("mcctrl:release_i(%p %s)\n", np, np->name);
 
 	sdp = np->sdp;
-	req = &sdp->sysfs_req;
 
-	if ((np->type == SNT_FILE)
-			&& (np->client_ops || np->client_instance)
-			&& sysfs_inited(sdp)) {
+	if (np->server_ops && np->server_ops->release) {
+		(*np->server_ops->release)(np->server_ops, np);
+	}
+	kfree(np->name);
+	kfree(np);
+
+	error = 0;
+#if 0
+out:
+#endif
+	if (error) {
+		eprintk("mcctrl:release_i(%p %s): %d\n", np, np->name, error);
+	}
+	dprintk("mcctrl:release_i(%p): %d\n", np, error);
+	return error;
+} /* release_i() */
+
+static void
+remote_release(struct sysfsm_ops *ops, void *instance)
+{
+	int error;
+	struct sysfsm_node *np = instance;
+	struct semaphore *held_sem = NULL;
+	struct sysfsm_data *sdp;
+	struct sysfsm_req *req;
+	struct ikc_scd_packet packet;
+
+	dprintk("mcctrl:remote_release(%p,%p)\n", ops, instance);
+
+	sdp = np->sdp;
+	req = &sdp->sysfs_req;
+	if ((np->type == SNT_FILE) && np->client_ops && sysfs_inited(sdp)) {
 		error = down_interruptible(&sdp->sysfs_io_sem);
 		if (error) {
-			eprintk("mcctrl:release_i:down failed. %d\n", error);
+			eprintk("mcctrl:remote_release:down failed. %d\n",
+					error);
 			goto out;
 		}
 		held_sem = &sdp->sysfs_io_sem;
@@ -277,7 +305,7 @@ release_i(struct sysfsm_node *np)
 		/* for the case that last wait_event_interruptible() was interrupted */
 		error = wait_event_interruptible(req->wq, !req->busy);
 		if (error) {
-			eprintk("mcctrl:release_i:wait_event_interruptible0 failed. %d\n",
+			eprintk("mcctrl:remote_release:wait_event_interruptible0 failed. %d\n",
 					error);
 			error = -EINTR;
 			goto out;
@@ -292,22 +320,19 @@ release_i(struct sysfsm_node *np)
 #define SYSFS_MCK_CPU 0
 		error = mcctrl_ikc_send(sdp->sysfs_os, SYSFS_MCK_CPU, &packet);
 		if (error) {
-			eprintk("mcctrl:release_i:mcctrl_ikc_send failed. %d\n",
+			eprintk("mcctrl:remote_release:mcctrl_ikc_send failed. %d\n",
 					error);
 			goto out;
 		}
 
 		error = wait_event_interruptible(req->wq, !req->busy);
 		if (error) {
-			eprintk("mcctrl:release_i:wait_event_interruptible failed. %d\n",
+			eprintk("mcctrl:remote_release:wait_event_interruptible failed. %d\n",
 					error);
 			error = -EINTR;
 			goto out;
 		}
 	}
-
-	kfree(np->name);
-	kfree(np);
 
 	error = 0;
 out:
@@ -315,35 +340,12 @@ out:
 		up(held_sem);
 	}
 	if (error) {
-		eprintk("mcctrl:release_i(%p %s): %d\n", np, np->name, error);
+		eprintk("mcctrl:remote_release(%p,%p): %d\n",
+				ops, instance, error);
 	}
-	dprintk("mcctrl:release_i(%p): %d\n", np, error);
-	return error;
-} /* release_i() */
-
-static void
-sysfsm_release(struct kobject *kobj)
-{
-	int error;
-	struct sysfsm_node *np = container_of(kobj, struct sysfsm_node, kobj);
-
-	dprintk("mcctrl:sysfsm_release(%p %s)\n", kobj, kobj->name);
-
-	error = release_i(np);
-	if (error) {
-		eprintk("mcctrl:sysfsm_release:release_i failed. %d\n", error);
-		goto out;
-	}
-
-	error = 0;
-out:
-	if (error) {
-		eprintk("mcctrl:sysfsm_release(%p %s): %d\n",
-				kobj, kobj->name, error);
-	}
-	dprintk("mcctrl:sysfsm_release(%p): %d\n", kobj, error);
+	dprintk("mcctrl:remote_release(%p,%p): %d\n", ops, instance, error);
 	return;
-} /* sysfsm_release() */
+} /* remote_release() */
 
 static struct sysfsm_node *
 lookup_i(struct sysfsm_node *dirp, const char *name)
@@ -395,7 +397,8 @@ out:
 
 static struct sysfsm_node *
 create_i(struct sysfsm_node *parent, const char *name, mode_t mode,
-		long client_ops, long client_instance)
+		struct sysfsm_ops *server_ops, long client_ops,
+		long client_instance)
 {
 	int error;
 	struct sysfsm_node *np = NULL;
@@ -448,6 +451,7 @@ create_i(struct sysfsm_node *parent, const char *name, mode_t mode,
 	INIT_LIST_HEAD(&np->chain);
 	np->attr.name = np->name;
 	np->attr.mode = mode;
+	np->server_ops = server_ops;
 	np->client_ops = client_ops;
 	np->client_instance = client_instance;
 
@@ -890,7 +894,8 @@ cleanup_ancestor(struct sysfsm_node *target)
 
 static struct sysfsm_node *
 sysfsm_create(struct sysfsm_data *sdp, const char *path0, mode_t mode,
-		long client_ops, long client_instance)
+		struct sysfsm_ops *server_ops, long client_ops,
+		long client_instance)
 {
 	int error;
 	char *path = NULL;
@@ -935,7 +940,8 @@ sysfsm_create(struct sysfsm_data *sdp, const char *path0, mode_t mode,
 		}
 	}
 
-	np = create_i(dirp, name, mode, client_ops, client_instance);
+	np = create_i(dirp, name, mode, server_ops, client_ops,
+			client_instance);
 	if (IS_ERR(np)) {
 		error = PTR_ERR(np);
 		eprintk("mcctrl:sysfsm_create:create_i(%s,%s) failed. %d\n",
@@ -1355,7 +1361,7 @@ sysfsm_req_create(void *os, long param_rpa)
 	param = ihk_device_map_virtual(dev, param_pa, sizeof(*param), NULL, 0);
 
 	np = sysfsm_create(&udp->sysfsm_data, param->path, param->mode,
-			param->client_ops, param->client_instance);
+			&remote_ops, param->client_ops, param->client_instance);
 	if (IS_ERR(np)) {
 		error = PTR_ERR(np);
 		goto out;
@@ -1626,6 +1632,48 @@ sysfsm_packet_handler(void *os, int msg, int err, long arg1, long arg2)
 	return;
 } /* sysfsm_packet_handler() */
 
+static ssize_t
+sysfsm_show(struct kobject *kobj, struct attribute *attr, char *buf)
+{
+	struct sysfsm_node *np = container_of(attr, struct sysfsm_node, attr);
+	ssize_t ssize;
+
+	ssize = -ENOSPC;
+	if (np->server_ops && np->server_ops->show) {
+		ssize = (*np->server_ops->show)(np->server_ops, np, buf, PAGE_SIZE);
+	}
+
+	return ssize;
+} /* sysfsm_show() */
+
+static ssize_t
+sysfsm_store(struct kobject *kobj, struct attribute *attr, const char *buf,
+		size_t bufsize)
+{
+	struct sysfsm_node *np = container_of(attr, struct sysfsm_node, attr);
+	ssize_t ssize;
+
+	ssize = -ENOSPC;
+	if (np->server_ops && np->server_ops->store) {
+		ssize = (*np->server_ops->store)(np->server_ops, np, buf,
+				bufsize);
+	}
+
+	return ssize;
+} /* sysfsm_store() */
+
+static void
+sysfsm_release(struct kobject *kobj)
+{
+	struct sysfsm_node *np = container_of(kobj, struct sysfsm_node, kobj);
+
+	if (np->server_ops && np->server_ops->release) {
+		(*np->server_ops->release)(np->server_ops, np);
+	}
+
+	return;
+} /* sysfsm_release() */
+
 static struct sysfs_ops the_ops = {
 	.show =	&sysfsm_show,
 	.store = &sysfsm_store,
@@ -1635,5 +1683,370 @@ static struct kobj_type the_ktype = {
 	.sysfs_ops = &the_ops,
 	.release = &sysfsm_release,
 };
+
+static struct sysfsm_ops remote_ops = {
+	.show = &remote_show,
+	.store = &remote_store,
+	.release = &remote_release,
+};
+
+static ssize_t
+local_show(struct sysfsm_ops *ops, void *instance, void *buf, size_t bufsize)
+{
+	struct sysfsm_node *np = instance;
+	struct sysfsm_ops *client_ops;
+	ssize_t ssize;
+
+	dprintk("mcctrl:local_show(%p,%p,%p,%#lx)\n",
+			ops, instance, buf, bufsize);
+	client_ops = (void *)np->client_ops;
+
+	ssize = -ENOSPC;
+	if (client_ops && client_ops->show) {
+		ssize = (*client_ops->show)(client_ops,
+				(void *)np->client_instance, buf, PAGE_SIZE);
+	}
+
+	dprintk("mcctrl:local_show(%p,%p,%p,%#lx): %ld\n",
+			ops, instance, buf, bufsize, ssize);
+	return ssize;
+} /* local_show() */
+
+static ssize_t
+local_store(struct sysfsm_ops *ops, void *instance, const void *buf,
+		size_t bufsize)
+{
+	struct sysfsm_node *np = instance;
+	struct sysfsm_ops *client_ops;
+	ssize_t ssize;
+
+	dprintk("mcctrl:local_store(%p,%p,%p,%#lx)\n",
+			ops, instance, buf, bufsize);
+	client_ops = (void *)np->client_ops;
+
+	ssize = -ENOSPC;
+	if (client_ops && client_ops->store) {
+		ssize = (*client_ops->store)(client_ops,
+				(void *)np->client_instance, buf, bufsize);
+	}
+
+	dprintk("mcctrl:local_store(%p,%p,%p,%#lx): %ld\n",
+			ops, instance, buf, bufsize, ssize);
+	return ssize;
+} /* local_store() */
+
+static void
+local_release(struct sysfsm_ops *ops, void *instance)
+{
+	struct sysfsm_node *np = instance;
+	struct sysfsm_ops *client_ops;
+
+	dprintk("mcctrl:local_release(%p,%p)\n", ops, instance);
+	client_ops = (void *)np->client_ops;
+
+	if ((np->type == SNT_FILE) && client_ops && client_ops->release) {
+		(*client_ops->release)(client_ops,
+				(void *)np->client_instance);
+	}
+
+	dprintk("mcctrl:local_release(%p,%p):\n", ops, instance);
+	return;
+} /* local_release() */
+
+static struct sysfsm_ops local_ops = {
+	.show = &local_show,
+	.store = &local_store,
+	.release = &local_release,
+};
+
+int
+sysfsm_createf(ihk_os_t os, struct sysfsm_ops *ops, void *instance, int mode,
+		const char *fmt, ...)
+{
+	int error;
+	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
+	va_list ap;
+	ssize_t n;
+	struct sysfs_req_create_param *param = NULL;
+	struct sysfsm_node *np;
+
+	dprintk("mcctrl:sysfsm_createf(%p,%p,%p,%#o,%s,...)\n",
+			os, ops, instance, mode, fmt);
+
+	param = (void *)__get_free_page(GFP_KERNEL);
+	if (!param) {
+		error = -ENOMEM;
+		eprintk("mcctrl:sysfsm_createf:__get_free_page failed. %d\n",
+				error);
+		goto out;
+	}
+
+	va_start(ap, fmt);
+	n = vsnprintf(param->path, sizeof(param->path), fmt, ap);
+	va_end(ap);
+	if (n >= sizeof(param->path)) {
+		error = -ENAMETOOLONG;
+		eprintk("mcctrl:sysfsm_createf:vsnprintf failed. %d\n", error);
+		goto out;
+	}
+	dprintk("mcctrl:sysfsm_createf:path %s\n", param->path);
+	if (param->path[0] != '/') {
+		error = -ENOENT;
+		eprintk("mcctrl:sysfsm_createf:not an absolute path. %d\n",
+				error);
+		goto out;
+	}
+
+	np = sysfsm_create(&udp->sysfsm_data, param->path, mode, &local_ops,
+			(long)ops, (long)instance);
+	if (IS_ERR(np)) {
+		error = PTR_ERR(np);
+		eprintk("mcctrl:sysfsm_createf:sysfsm_create failed. %d\n", error);
+		goto out;
+	}
+
+	error = 0;
+out:
+	free_page((uintptr_t)param);
+	if (error) {
+		eprintk("mcctrl:sysfsm_createf(%p,%p,%p,%#o,%s,...): %d\n",
+				os, ops, instance, mode, fmt, error);
+	}
+	dprintk("mcctrl:sysfsm_createf(%p,%p,%p,%#o,%s,...): %d\n",
+			os, ops, instance, mode, fmt, error);
+	return error;
+} /* sysfsm_createf() */
+
+int
+sysfsm_mkdirf(ihk_os_t os, sysfs_handle_t *dirhp, const char *fmt, ...)
+{
+	int error;
+	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
+	struct sysfs_req_mkdir_param *param = NULL;
+	va_list ap;
+	int n;
+	struct sysfsm_node *np;
+
+	dprintk("mcctrl:sysfsm_mkdirf(%p,%p,%s,...)\n", os, dirhp, fmt);
+
+	param = (void *)__get_free_page(GFP_KERNEL);
+	if (!param) {
+		error = -ENOMEM;
+		eprintk("mcctrl:sysfsm_mkdirf:__get_free_page failed. %d\n",
+				error);
+		goto out;
+	}
+
+	va_start(ap, fmt);
+	n = vsnprintf(param->path, sizeof(param->path), fmt, ap);
+	va_end(ap);
+	if (n >= sizeof(param->path)) {
+		error = -ENAMETOOLONG;
+		eprintk("mcctrl:sysfsm_mkdirf:vsnprintf failed. %d\n", error);
+		goto out;
+	}
+	dprintk("mcctrl:sysfsm_mkdirf:path %s\n", param->path);
+	if (param->path[0] != '/') {
+		error = -ENOENT;
+		eprintk("mcctrl:sysfsm_mkdirf:not an absolute path. %d\n",
+				error);
+		goto out;
+	}
+
+	np = sysfsm_mkdir(&udp->sysfsm_data, param->path);
+	if (IS_ERR(np)) {
+		error = PTR_ERR(np);
+		eprintk("mcctrl:sysfsm_mkdirf:sysfsm_mkdir failed. %d\n",
+				error);
+		goto out;
+	}
+
+	error = 0;
+	if (dirhp) {
+		dirhp->handle = (long)np;
+	}
+
+out:
+	free_page((uintptr_t)param);
+	if (error) {
+		eprintk("mcctrl:sysfsm_mkdirf(%p,%p,%s,...): %d\n",
+				os, dirhp, fmt, error);
+	}
+	dprintk("mcctrl:sysfsm_mkdirf(%p,%p,%s,...): %d %#lx\n", os, dirhp,
+			fmt, error, (dirhp)?dirhp->handle:0);
+	return error;
+} /* sysfsm_mkdirf() */
+
+int
+sysfsm_symlinkf(ihk_os_t os, sysfs_handle_t targeth, const char *fmt, ...)
+{
+	int error;
+	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
+	struct sysfs_req_symlink_param *param = NULL;
+	va_list ap;
+	int n;
+	struct sysfsm_node *np;
+
+	dprintk("mcctrl:sysfsm_symlinkf(%p,%#lx,%s,...)\n",
+			os, targeth.handle, fmt);
+
+	param = (void *)__get_free_page(GFP_KERNEL);
+	if (!param) {
+		error = -ENOMEM;
+		eprintk("mcctrl:sysfsm_symlinkf:__get_free_page failed. %d\n",
+				error);
+		goto out;
+	}
+
+	va_start(ap, fmt);
+	n = vsnprintf(param->path, sizeof(param->path), fmt, ap);
+	va_end(ap);
+	if (n >= sizeof(param->path)) {
+		error = -ENAMETOOLONG;
+		eprintk("mcctrl:sysfsm_symlinkf:vsnprintf failed. %d\n", error);
+		goto out;
+	}
+	dprintk("mcctrl:sysfsm_symlinkf:path %s\n", param->path);
+	if (param->path[0] != '/') {
+		error = -ENOENT;
+		eprintk("mcctrl:sysfsm_symlinkf:not an absolute path. %d\n",
+				error);
+		goto out;
+	}
+
+	np = sysfsm_symlink(&udp->sysfsm_data, (void *)targeth.handle,
+			param->path);
+	if (IS_ERR(np)) {
+		error = PTR_ERR(np);
+		eprintk("mcctrl:sysfsm_symlinkf:sysfsm_symlink failed. %d\n",
+				error);
+		goto out;
+	}
+
+	error = 0;
+out:
+	free_page((uintptr_t)param);
+	if (error) {
+		eprintk("mcctrl:sysfsm_symlinkf(%p,%#lx,%s,...): %d\n",
+				os, targeth.handle, fmt, error);
+	}
+	dprintk("mcctrl:sysfsm_symlinkf(%p,%#lx,%s,...): %d\n",
+			os, targeth.handle, fmt, error);
+	return error;
+} /* sysfsm_symlinkf() */
+
+int
+sysfsm_lookupf(ihk_os_t os, sysfs_handle_t *objhp, const char *fmt, ...)
+{
+	int error;
+	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
+	struct sysfs_req_lookup_param *param = NULL;
+	va_list ap;
+	int n;
+	struct sysfsm_node *np;
+
+	dprintk("mcctrl:sysfsm_lookupf(%p,%p,%s,...)\n", os, objhp, fmt);
+
+	param = (void *)__get_free_page(GFP_KERNEL);
+	if (!param) {
+		error = -ENOMEM;
+		eprintk("mcctrl:sysfsm_lookupf:__get_free_page failed. %d\n",
+				error);
+		goto out;
+	}
+
+	va_start(ap, fmt);
+	n = vsnprintf(param->path, sizeof(param->path), fmt, ap);
+	va_end(ap);
+	if (n >= sizeof(param->path)) {
+		error = -ENAMETOOLONG;
+		eprintk("mcctrl:sysfsm_lookupf:vsnprintf failed. %d\n", error);
+		goto out;
+	}
+	dprintk("mcctrl:sysfsm_lookupf:path %s\n", param->path);
+	if (param->path[0] != '/') {
+		error = -ENOENT;
+		eprintk("mcctrl:sysfsm_lookupf:not an absolute path. %d\n",
+				error);
+		goto out;
+	}
+
+	np = sysfsm_lookup(&udp->sysfsm_data, param->path);
+	if (IS_ERR(np)) {
+		error = PTR_ERR(np);
+		eprintk("mcctrl:sysfsm_lookupf:sysfsm_lookup failed. %d\n",
+				error);
+		goto out;
+	}
+
+	error = 0;
+	if (objhp) {
+		objhp->handle = (long)np;
+	}
+
+out:
+	free_page((uintptr_t)param);
+	if (error) {
+		eprintk("mcctrl:sysfsm_lookupf(%p,%p,%s,...): %d\n",
+				os, objhp, fmt, error);
+	}
+	dprintk("mcctrl:sysfsm_lookupf(%p,%p,%s,...): %d %#lx\n", os, objhp,
+			fmt, error, (objhp)?objhp->handle:0);
+	return error;
+} /* sysfsm_lookupf() */
+
+int
+sysfsm_unlinkf(ihk_os_t os, int flags, const char *fmt, ...)
+{
+	int error;
+	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
+	struct sysfs_req_unlink_param *param = NULL;
+	va_list ap;
+	int n;
+
+	dprintk("mcctrl:sysfsm_unlinkf(%p,%#x,%s,...)\n", os, flags, fmt);
+
+	param = (void *)__get_free_page(GFP_KERNEL);
+	if (!param) {
+		error = -ENOMEM;
+		eprintk("mcctrl:sysfsm_unlinkf:__get_free_page failed. %d\n",
+				error);
+		goto out;
+	}
+
+	va_start(ap, fmt);
+	n = vsnprintf(param->path, sizeof(param->path), fmt, ap);
+	va_end(ap);
+	if (n >= sizeof(param->path)) {
+		error = -ENAMETOOLONG;
+		eprintk("mcctrl:sysfsm_unlinkf:vsnprintf failed. %d\n", error);
+		goto out;
+	}
+	dprintk("mcctrl:sysfsm_unlinkf:path %s\n", param->path);
+	if (param->path[0] != '/') {
+		error = -ENOENT;
+		eprintk("mcctrl:sysfsm_unlinkf:not an absolute path. %d\n",
+				error);
+		goto out;
+	}
+
+	error = sysfsm_unlink(&udp->sysfsm_data, param->path, flags);
+	if (error) {
+		eprintk("mcctrl:sysfsm_unlinkf:sysfsm_unlink failed. %d\n",
+				error);
+		goto out;
+	}
+
+	error = 0;
+out:
+	free_page((uintptr_t)param);
+	if (error) {
+		eprintk("mcctrl:sysfsm_unlinkf(%p,%#x,%s,...): %d\n",
+				os, flags, fmt, error);
+	}
+	dprintk("mcctrl:sysfsm_unlinkf(%p,%#x,%s,...): %d\n",
+			os, flags, fmt, error);
+	return error;
+} /* sysfsm_unlinkf() */
 
 /**** End of File ****/

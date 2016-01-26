@@ -39,6 +39,7 @@
 #include <ihk/ikc.h>
 #include <ikc/master.h>
 #include <linux/semaphore.h>
+#include "sysfs.h"
 
 #define SCD_MSG_PREPARE_PROCESS         0x1
 #define SCD_MSG_PREPARE_PROCESS_ACKED   0x2
@@ -250,9 +251,5 @@ struct procfs_file {
 	int mode;			/* file mode (request) */
 	char fname[PROCFS_NAME_MAX];	/* procfs filename (request) */
 };
-
-/* sysfs.c */
-void sysfsm_cleanup(ihk_os_t os);
-void sysfsm_packet_handler(void *os, int msg, int err, long arg1, long arg2);
 
 #endif
