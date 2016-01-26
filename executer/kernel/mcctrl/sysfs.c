@@ -687,9 +687,8 @@ unlink_i(struct sysfsm_node *np)
 	}
 
 	if ((np->type == SNT_DIR) && !list_empty(&np->children)) {
-		/* this is usual when called from cleanup_ancestor() */
 		error = -ENOTEMPTY;
-		dprintk("mcctrl:unlink_i:not empty dir. %d\n", error);
+		eprintk("mcctrl:unlink_i:not empty dir. %d\n", error);
 		goto out;
 	}
 
@@ -875,6 +874,13 @@ cleanup_ancestor(struct sysfsm_node *target)
 	error = 0;
 	for (np = target; !error; np = next_np) {
 		next_np = np->parent;
+
+		if ((np == np->sdp->sysfs_root)
+				|| (np->parent == np->sdp->sysfs_root)
+				|| !list_empty(&np->children)) {
+			break;
+		}
+
 		error = unlink_i(np);
 	}
 
