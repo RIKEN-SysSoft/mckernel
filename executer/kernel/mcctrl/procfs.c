@@ -104,7 +104,7 @@ static const struct file_operations mckernel_procfs_file_operations = {
  * ancestor directory which was not explicitly created were racing.
  */
 
-struct procfs_list_entry *get_procfs_list_entry(char *p, int osnum, int mode, void *opaque)
+struct procfs_list_entry *get_procfs_list_entry(char *p, int osnum, int mode, void *opaque, const struct cred *cred)
 {
 	char *r;
 	struct proc_dir_entry *pde = NULL;
@@ -134,7 +134,7 @@ struct procfs_list_entry *get_procfs_list_entry(char *p, int osnum, int mode, vo
 		/* We have non-null parent dir. */
 		strncpy(name, p, r - p);
 		name[r - p] = '\0'; 
-		parent = get_procfs_list_entry(name, osnum, 0, NULL);
+		parent = get_procfs_list_entry(name, osnum, 0, NULL, cred);
 		if (parent == NULL) {
 			/* We counld not get a parent procfs entry. Give up.*/
 			return NULL;
@@ -170,6 +170,8 @@ struct procfs_list_entry *get_procfs_list_entry(char *p, int osnum, int mode, vo
 		pde = proc_create_data(name, mode, parent->entry, 
 				&mckernel_procfs_file_operations, ret);
 #endif		
+		if(pde && cred)
+			proc_set_user(pde, cred->uid, cred->gid);
 	}
 	if (pde == NULL) {
 		kprintf("ERROR: cannot create a PROCFS entry for %s.\n", p);
@@ -204,11 +206,11 @@ struct procfs_list_entry *get_procfs_list_entry(char *p, int osnum, int mode, vo
  */
 
 int procfs_create_entry(void *os, int ref, int osnum, int pid, char *name,
-		int mode, void *opaque)
+		int mode, void *opaque, const struct cred *cred)
 {
 	struct procfs_list_entry *e;
 
-	e = get_procfs_list_entry(name, osnum, mode, opaque);
+	e = get_procfs_list_entry(name, osnum, mode, opaque, cred);
 	if (e == NULL) {
 		printk("ERROR: could not create a procfs entry for %s.\n", name);
 		return EINVAL;
@@ -238,6 +240,15 @@ void procfs_create(void *__os, int ref, int osnum, int pid, unsigned long arg)
 	struct procfs_file *f;
 	int mode;
 	char name[PROCFS_NAME_MAX];
+	struct task_struct *task = NULL;
+	const struct cred *tcred = NULL;
+
+	if(pid > 0){
+		task = pid_task(find_vpid(pid), PIDTYPE_PID);
+		if(task){
+			tcred = __task_cred(task);
+		}
+	}
 
 	dprintk("procfs_create: osnum: %d, cpu: %d, pid: %d\n", osnum, ref, pid);
 
@@ -254,7 +265,7 @@ void procfs_create(void *__os, int ref, int osnum, int pid, unsigned long arg)
 			goto quit;
 	}
 
-	if (procfs_create_entry(__os, ref, osnum, pid, name, mode, NULL) != 0) {
+	if (procfs_create_entry(__os, ref, osnum, pid, name, mode, NULL, tcred) != 0) {
 		printk("ERROR: could not create a procfs entry for %s.\n", name);
 		goto quit;
 	}
