@@ -1,6 +1,7 @@
 KDIR ?= @KDIR@
 ARCH ?= @ARCH@
 KMODDIR=@KMODDIR@
+src = @abs_srcdir@
 
 RELEASE=$(shell uname -r)
 ENABLE_BUILD=$(shell if [[ ${RELEASE} =~ ^4.* ]]; then echo "yes"; fi)
