@@ -620,7 +620,7 @@ void process_procfs_request(unsigned long rarg)
 	 * mcos%d/PID/auxv
 	 */
 	if (strcmp(p, "auxv") == 0) {
-		unsigned int limit = AUXV_LEN * sizeof(int);
+		unsigned int limit = AUXV_LEN * sizeof(unsigned long);
 		unsigned int len = r->count;
 		if (r->offset < limit) {
 			if (limit < r->offset + r->count) {
