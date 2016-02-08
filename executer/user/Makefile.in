@@ -16,5 +16,5 @@ clean:
 
 install:
 	mkdir -p -m 755 $(BINDIR)
-	install -o root -m 4755 mcexec $(BINDIR)
+	install -m 755 mcexec $(BINDIR)
 

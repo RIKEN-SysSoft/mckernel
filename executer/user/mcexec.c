@@ -1301,47 +1301,6 @@ int main(int argc, char **argv)
 		++optind;
 	}
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
-	__dprintf("mcoverlay enable\n");
-	char mcos_procdir[PATH_MAX];
-	char mcos_sysdir[PATH_MAX];
-
-	error = isunshare();
-	if (error == 0) {
-		if (unshare(CLONE_NEWNS)) {
-			fprintf(stderr, "Error: Failed to unshare. (%s)\n", 
-				strerror(errno));
-			return 1;
-		}
-
-		sprintf(mcos_procdir, "/tmp/mcos/mcos%d_proc", mcosid);
-		if (mount(mcos_procdir, "/proc", NULL, MS_BIND, NULL)) {
-			fprintf(stderr, "Error: Failed to mount. (%s)\n", 
-				strerror(errno));
-			return 1;
-		}
-
-		sprintf(mcos_sysdir, "/tmp/mcos/mcos%d_sys", mcosid);
-		if (mount(mcos_sysdir, "/sys", NULL, MS_BIND, NULL)) {
-			fprintf(stderr, "Error: Failed to mount. (%s)\n", 
-				strerror(errno));
-			return 1;
-		}
-	} else if (error == -1) {
-		return 1;
-	}
-#else
-	__dprintf("mcoverlay disable\n");
-#endif
-
-	__dprintf("before seteuid(): uid=%d, euid=%d\n", getuid(), geteuid());
-	if (seteuid(getuid())) {
-		fprintf(stderr, "Error: Failed to seteuid. (%s)\n", 
-			strerror(errno));
-		return 1;
-	}
-	__dprintf("after seteuid():  uid=%d, euid=%d\n", getuid(), geteuid());
-
 	sprintf(dev, "/dev/mcos%d", mcosid);
 
 	/* No more arguments? */
@@ -1362,6 +1321,55 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error: Failed to open %s.\n", dev);
 		return 1;
 	}
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
+	__dprintf("mcoverlay enable\n");
+	char mcos_procdir[PATH_MAX];
+	char mcos_sysdir[PATH_MAX];
+	struct sys_unshare_desc unshare_desc;
+	struct sys_mount_desc mount_desc;
+
+	error = isunshare();
+	if (error == 0) {
+		unshare_desc.unshare_flags = CLONE_NEWNS;
+		if (ioctl(fd, MCEXEC_UP_SYS_UNSHARE, 
+			(unsigned long)&unshare_desc) != 0) {
+			fprintf(stderr, "Error: Failed to unshare. (%s)\n", 
+				strerror(errno));
+			return 1;
+		}
+
+		sprintf(mcos_procdir, "/tmp/mcos/mcos%d_proc", mcosid);
+		mount_desc.dev_name = mcos_procdir;
+		mount_desc.dir_name = "/proc";
+		mount_desc.type = NULL;
+		mount_desc.flags = MS_BIND;
+		mount_desc.data = NULL;
+		if (ioctl(fd, MCEXEC_UP_SYS_MOUNT, 
+			(unsigned long)&mount_desc) != 0) {
+			fprintf(stderr, "Error: Failed to mount /proc. (%s)\n", 
+				strerror(errno));
+			return 1;
+		}
+
+		sprintf(mcos_sysdir, "/tmp/mcos/mcos%d_sys", mcosid);
+		mount_desc.dev_name = mcos_sysdir;
+		mount_desc.dir_name = "/sys";
+		mount_desc.type = NULL;
+		mount_desc.flags = MS_BIND;
+		mount_desc.data = NULL;
+		if (ioctl(fd, MCEXEC_UP_SYS_MOUNT, 
+			(unsigned long)&mount_desc) != 0) {
+			fprintf(stderr, "Error: Failed to mount /sys. (%s)\n", 
+				strerror(errno));
+			return 1;
+		}
+	} else if (error == -1) {
+		return 1;
+	}
+#else
+	__dprintf("mcoverlay disable\n");
+#endif
 
 	if (lookup_exec_path(argv[optind], path, sizeof(path)) != 0) {
 		fprintf(stderr, "error: finding file: %s\n", argv[optind]);
