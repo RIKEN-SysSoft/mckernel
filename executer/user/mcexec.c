@@ -1304,6 +1304,7 @@ int main(int argc, char **argv)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
 	__dprintf("mcoverlay enable\n");
 	char mcos_procdir[PATH_MAX];
+	char mcos_sysdir[PATH_MAX];
 
 	error = isunshare();
 	if (error == 0) {
@@ -1315,6 +1316,13 @@ int main(int argc, char **argv)
 
 		sprintf(mcos_procdir, "/tmp/mcos/mcos%d_proc", mcosid);
 		if (mount(mcos_procdir, "/proc", NULL, MS_BIND, NULL)) {
+			fprintf(stderr, "Error: Failed to mount. (%s)\n", 
+				strerror(errno));
+			return 1;
+		}
+
+		sprintf(mcos_sysdir, "/tmp/mcos/mcos%d_sys", mcosid);
+		if (mount(mcos_sysdir, "/sys", NULL, MS_BIND, NULL)) {
 			fprintf(stderr, "Error: Failed to mount. (%s)\n", 
 				strerror(errno));
 			return 1;

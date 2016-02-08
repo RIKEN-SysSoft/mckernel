@@ -44,6 +44,7 @@ fi
 # Remove mcoverlay if loaded
 if [ "$enable_mcoverlay" != "" ]; then
 	if [ "`lsmod | grep mcoverlay`" != "" ]; then
+		if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_sys`" != "" ]; then umount -l /tmp/mcos/mcos0_sys; fi
 		if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_proc`" != "" ]; then umount -l /tmp/mcos/mcos0_proc; fi
 		if [ "`cat /proc/mounts | grep /tmp/mcos`" != "" ]; then umount -l /tmp/mcos; fi
 		if [ -e /tmp/mcos ]; then rm -rf /tmp/mcos; fi
@@ -123,5 +124,20 @@ if [ "$enable_mcoverlay" != "" ]; then
 	if [ ! -e /tmp/mcos/mcos0_proc_work ]; then mkdir -p /tmp/mcos/mcos0_proc_work; fi
 	if ! mount -t mcoverlay mcoverlay -o lowerdir=/proc/mcos0:/proc,upperdir=/tmp/mcos/mcos0_proc_upper,workdir=/tmp/mcos/mcos0_proc_work,nocopyupw,nofscheck /tmp/mcos/mcos0_proc; then echo "error: mount /tmp/mcos/mcos0_proc"; exit; fi
 	mount --make-rprivate /proc
+	if [ ! -e /tmp/mcos/mcos0_sys ]; then mkdir -p /tmp/mcos/mcos0_sys; fi
+	if [ ! -e /tmp/mcos/mcos0_sys_upper ]; then mkdir -p /tmp/mcos/mcos0_sys_upper; fi
+	if [ ! -e /tmp/mcos/mcos0_sys_work ]; then mkdir -p /tmp/mcos/mcos0_sys_work; fi
+	if ! mount -t mcoverlay mcoverlay -o lowerdir=/sys/devices/virtual/mcos/mcos0/sys:/sys,upperdir=/tmp/mcos/mcos0_sys_upper,workdir=/tmp/mcos/mcos0_sys_work,nocopyupw,nofscheck /tmp/mcos/mcos0_sys; then echo "error: mount /tmp/mcos/mcos0_sys"; exit; fi
+	mount --make-rprivate /sys
+	for cpuid in `find /sys/devices/system/cpu/* -maxdepth 0 -name "cpu[0123456789]*" -printf "%f "`; do
+		if [ ! -e "/sys/devices/virtual/mcos/mcos0/sys/devices/system/cpu/$cpuid" ]; then
+			rm -rf /tmp/mcos/mcos0_sys/devices/system/cpu/$cpuid
+		fi
+	done
+	for cpuid in `find /sys/bus/cpu/devices/* -maxdepth 0 -name "cpu[0123456789]*" -printf "%f "`; do
+		if [ ! -e "/sys/devices/virtual/mcos/mcos0/sys/bus/cpu/devices/$cpuid" ]; then
+			rm -rf /tmp/mcos/mcos0_sys/bus/cpu/devices/$cpuid
+		fi
+	done
 fi
 
