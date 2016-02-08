@@ -27,6 +27,11 @@ AC_ARG_WITH([target],
     [--with-target={attached-mic | builtin-mic | builtin-x86 | smp-x86}],[target, default is attached-mic]),
   [WITH_TARGET=$withval],[WITH_TARGET=yes])
 
+AC_ARG_WITH([system_map],
+  AS_HELP_STRING(
+    [--with-system_map=path],[Path to 'System.map file', default is /boot/System.map-uname_r]),
+  [WITH_SYSTEM_MAP=$withval],[WITH_SYSTEM_MAP=yes])
+
 AC_ARG_ENABLE([dcfa],
   [AS_HELP_STRING(
   	[--enable-dcfa],[Enable DCFA modules])],[],[enable_dcfa=no])
@@ -139,6 +144,65 @@ esac
 KDIR="$WITH_KERNELSRC"
 TARGET="$WITH_TARGET"
 
+MCCTRL_LINUX_SYMTAB=""
+case "X$WITH_SYSTEM_MAP" in
+    Xyes | Xno | X)
+	MCCTRL_LINUX_SYMTAB=""
+	;;
+    *)
+	MCCTRL_LINUX_SYMTAB="$WITH_SYSTEM_MAP"
+	;;
+esac
+
+AC_MSG_CHECKING([[for System.map]])
+if test -f "$MCCTRL_LINUX_SYMTAB"; then
+	MCCTRL_LINUX_SYMTAB="$MCCTRL_LINUX_SYMTAB"
+elif test -f "/boot/System.map-`uname -r`"; then
+	MCCTRL_LINUX_SYMTAB="/boot/System.map-`uname -r`"
+elif test -f "$KDIR/System.map"; then
+	MCCTRL_LINUX_SYMTAB="$KDIR/System.map"
+fi
+
+if test "$MCCTRL_LINUX_SYMTAB" == ""; then
+	AC_MSG_ERROR([could not find])
+fi
+
+if test -z "`eval cat $MCCTRL_LINUX_SYMTAB`"; then
+	AC_MSG_ERROR([could not read System.map file, no read permission?])
+fi
+AC_MSG_RESULT([$MCCTRL_LINUX_SYMTAB])
+
+MCCTRL_LINUX_SYMTAB_CMD="cat $MCCTRL_LINUX_SYMTAB"
+
+# MCCTRL_FIND_KSYM(SYMBOL)
+# ------------------------------------------------------
+# Search System.map for address of the given symbol and
+# do one of three things in config.h:
+# If not found, leave MCCTRL_KSYM_foo undefined
+# If found to be exported, "#define MCCTRL_KSYM_foo 0"
+# If found not to be exported, "#define MCCTRL_KSYM_foo 0x<value>"
+AC_DEFUN([MCCTRL_FIND_KSYM],[
+  AC_MSG_CHECKING([[System.map for symbol $1]])
+  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " $1\$" | cut -d\  -f1`
+  if test -z $mcctrl_addr; then
+    AC_MSG_RESULT([not found])
+  else
+    mcctrl_result=$mcctrl_addr
+    mcctrl_addr="0x$mcctrl_addr"
+    m4_ifval([$2],[],[
+      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_$1\$" >/dev/null`; then
+        mcctrl_result="exported"
+        mcctrl_addr="0"
+      fi
+    ])
+    AC_MSG_RESULT([$mcctrl_result])
+    AC_DEFINE_UNQUOTED(MCCTRL_KSYM_[]$1,$mcctrl_addr,[Define to address of kernel symbol $1, or 0 if exported])
+  fi
+])
+
+MCCTRL_FIND_KSYM([sys_mount])
+MCCTRL_FIND_KSYM([sys_unshare])
+
 AC_SUBST(CC)
 AC_SUBST(XCC)
 AC_SUBST(ARCH)
@@ -157,6 +221,7 @@ AC_SUBST(IHK_RELEASE_DATE)
 AC_SUBST(MCKERNEL_RELEASE_DATE)
 AC_SUBST(DCFA_RESEASE_DATE)
 
+AC_CONFIG_HEADERS([executer/kernel/mcctrl/config.h])
 AC_CONFIG_FILES([
 	Makefile
 	executer/user/Makefile

@@ -36,6 +36,7 @@
 #include <asm/delay.h>
 #include <asm/msr.h>
 #include <asm/io.h>
+#include "config.h"
 #include "mcctrl.h"
 
 //#define DEBUG
@@ -44,6 +45,28 @@
 #define dprintk printk
 #else
 #define dprintk(...)
+#endif
+
+#ifdef MCCTRL_KSYM_sys_unshare
+#if MCCTRL_KSYM_sys_unshare
+typedef int (*int_star_fn_ulong_t)(unsigned long);
+int (*mcctrl_sys_unshare)(unsigned long unshare_flags) =
+        (int_star_fn_ulong_t)
+        MCCTRL_KSYM_sys_unshare;
+#else // exported
+int (*mcctrl_sys_unshare)(unsigned long unshare_flags) = NULL;
+#endif
+#endif
+
+#ifdef MCCTRL_KSYM_sys_mount
+#if MCCTRL_KSYM_sys_mount
+typedef int (*int_star_fn_char_char_char_ulong_void_t)(char *, char *, char *, unsigned long, void *);
+int (*mcctrl_sys_mount)(char *dev_name,char *dir_name, char *type, unsigned long flags, void *data) =
+        (int_star_fn_char_char_char_ulong_void_t)
+        MCCTRL_KSYM_sys_mount;
+#else // exported
+int (*mcctrl_sys_mount)(char *dev_name,char *dir_name, char *type, unsigned long flags, void *data) = NULL;
+#endif
 #endif
 
 //static DECLARE_WAIT_QUEUE_HEAD(wq_prepare);
@@ -1011,6 +1034,67 @@ long mcexec_strncpy_from_user(ihk_os_t os, struct strncpy_from_user_desc * __use
 	return 0;
 }
 
+long mcexec_sys_mount(struct sys_mount_desc *__user arg)
+{
+	struct sys_mount_desc desc;
+	struct cred *promoted;
+	const struct cred *original;
+	int ret;
+
+	if (copy_from_user(&desc, arg, sizeof(desc))) {
+		return -EFAULT;
+	}
+
+	promoted = prepare_creds();
+	if (!promoted) {
+		return -ENOMEM;
+	}
+	cap_raise(promoted->cap_effective, CAP_SYS_ADMIN);
+	original = override_creds(promoted);
+
+#if MCCTRL_KSYM_sys_mount
+	ret = mcctrl_sys_mount(desc.dev_name, desc.dir_name, desc.type,
+		desc.flags, desc.data);
+#else
+	ret = -EFAULT;
+#endif
+
+	revert_creds(original);
+	put_cred(promoted);
+
+	return ret;
+}
+
+long mcexec_sys_unshare(struct sys_unshare_desc *__user arg)
+{
+	struct sys_unshare_desc desc;
+	struct cred *promoted;
+	const struct cred *original;
+	int ret;
+
+	if (copy_from_user(&desc, arg, sizeof(desc))) {
+		return -EFAULT;
+	}
+
+	promoted = prepare_creds();
+	if (!promoted) {
+		return -ENOMEM;
+	}
+	cap_raise(promoted->cap_effective, CAP_SYS_ADMIN);
+	original = override_creds(promoted);
+
+#if MCCTRL_KSYM_sys_unshare
+	ret = mcctrl_sys_unshare(desc.unshare_flags);
+#else
+	ret = -EFAULT;
+#endif
+
+	revert_creds(original);
+	put_cred(promoted);
+
+	return ret;
+}
+
 long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
                       struct file *file)
 {
@@ -1064,6 +1148,12 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 
 	case MCEXEC_UP_GET_CREDV:
 		return mcexec_getcredv((int *)arg);
+
+	case MCEXEC_UP_SYS_MOUNT:
+		return mcexec_sys_mount((struct sys_mount_desc *)arg);
+
+	case MCEXEC_UP_SYS_UNSHARE:
+		return mcexec_sys_unshare((struct sys_unshare_desc *)arg);
 
 	case MCEXEC_UP_DEBUG_LOG:
 		return mcexec_debug_log(os, arg);
