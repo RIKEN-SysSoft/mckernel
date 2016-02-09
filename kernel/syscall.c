@@ -632,8 +632,6 @@ terminate(int rc, int sig)
 	list_add_tail(&mythread->siblings_list, &proc->threads_list);
 	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 
-	delete_proc_procfs_files(proc->pid);
-
 	vm = proc->vm;
 	free_all_process_memory_range(vm);
 

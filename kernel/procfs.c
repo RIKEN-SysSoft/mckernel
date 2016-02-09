@@ -38,212 +38,37 @@ extern int sscanf(const char * buf, const char * fmt, ...);
 
 extern int osnum;
 
-void create_proc_procfs_files(int pid, int cpuid);
-void delete_proc_procfs_files(int pid);
-void create_os_procfs_files(void);
-void delete_os_procfs_files(void);
-
-static void create_proc_procfs_file(int pid, char *fname, int mode, int cpuid);
-static void delete_proc_procfs_file(int pid, char *fname);
-static void operate_proc_procfs_file(int pid, char *fname, int msg, int mode, int cpuid);
-
 int copy_from_user(void *dst, const void *src, size_t siz);
 int copy_to_user(void *dst, const void *src, size_t siz);
 
-/**
- * \brief Create all procfs files for process.
- *
- * \param pid pid of the process
- * \param cpuid cpuid of the process
- */
-
-void create_proc_procfs_files(int pid, int cpuid)
-{
-	char fname[PROCFS_NAME_MAX];
-
-	dprintf("create procfs files:\n");
-
-	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/auxv", osnum, pid);
-	create_proc_procfs_file(pid, fname, 0400, cpuid);
-
-	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/cmdline", osnum, pid);
-	create_proc_procfs_file(pid, fname, 0444, cpuid);
-
-	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/mem", osnum, pid);
-	create_proc_procfs_file(pid, fname, 0400, cpuid);
-
-	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/maps", osnum, pid);
-	create_proc_procfs_file(pid, fname, 0444, cpuid);
-
-	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/pagemap", osnum, pid);
-	create_proc_procfs_file(pid, fname, 0444, cpuid);
-
-	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/status", osnum, pid);
-	create_proc_procfs_file(pid, fname, 0444, cpuid);
-
-	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task/%d/mem", osnum, pid, pid);
-	create_proc_procfs_file(pid, fname, 0400, cpuid);
-
-	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task/%d/stat", osnum, pid, pid);
-	create_proc_procfs_file(pid, fname, 0444, cpuid);
-
-	dprintf("create procfs files: done\n");
-}
-
-/**
- * \brief Create a procfs file for process.
- *
- * \param pid pid of the process
- * \param fname file name of the procfs file
- * \param mode file mode
- * \param cpuid cpuid of the process
- */
-
-static void create_proc_procfs_file(int pid, char *fname, int mode, int cpuid)
-{
-	dprintf("create procfs file: %s, mode: %o, cpuid: %d\n", fname, mode, cpuid);
-	operate_proc_procfs_file(pid, fname, SCD_MSG_PROCFS_CREATE, mode, cpuid);
-}
-
-/**
- * \brief Delete all procfs files for process.
- *
- * \param pid pid of the process
- */
-
-void delete_proc_procfs_files(int pid)
-{
-	char fname[PROCFS_NAME_MAX];
-
-	dprintf("delete procfs files for pid %d.\n", pid);
-	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task/%d/mem", osnum, pid, pid);
-	delete_proc_procfs_file(pid, fname);
-
-	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task/%d/stat", osnum, pid, pid);
-	delete_proc_procfs_file(pid, fname);
-
-	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task/%d", osnum, pid, pid);
-	delete_proc_procfs_file(pid, fname);
-
-	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/task", osnum, pid);
-	delete_proc_procfs_file(pid, fname);
-
-	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/mem", osnum, pid);
-	delete_proc_procfs_file(pid, fname);
-
-	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/maps", osnum, pid);
-	delete_proc_procfs_file(pid, fname);
-
-	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/status", osnum, pid);
-	delete_proc_procfs_file(pid, fname);
-
-	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/pagemap", osnum, pid);
-	delete_proc_procfs_file(pid, fname);
-
-	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/cmdline", osnum, pid);
-	delete_proc_procfs_file(pid, fname);
-
-	snprintf(fname, PROCFS_NAME_MAX, "mcos%d/%d/auxv", osnum, pid);
-	delete_proc_procfs_file(pid, fname);
-
-	/* NOTE: Directory is removed on the host when mcexec drops the executable */
-	dprintf("delete procfs files for pid %d: done\n", pid);
-}
-
-/**
- * \brief Delete a procfs file for process.
- *
- * \param pid pid of the process
- * \param fname file name of the procfs file
- */
-
-static void delete_proc_procfs_file(int pid, char *fname)
-{
-	dprintf("delete procfs file: %s\n", fname);
-	operate_proc_procfs_file(pid, fname, SCD_MSG_PROCFS_DELETE, 0, 0);
-	dprintf("delete procfs file: %s done\n", fname);
-}
-
-/**
- * \brief create a procfs file for this operating system
- * \param fname relative path name from "host:/proc".
- * \param mode permissions of the file to be created
- *
- * Though operate_proc_procfs_file() is intended to create a process
- * specific file, it is reused to create a OS specific file by
- * specifying -1 as the pid parameter.
- */
-static void create_os_procfs_file(char *fname, int mode)
-{
-	const pid_t pid = -1;
-	const int msg = SCD_MSG_PROCFS_CREATE;
-	const int cpuid = ihk_mc_get_processor_id();	/* i.e. BSP */
-
-	operate_proc_procfs_file(pid, fname, msg, mode, cpuid);
-	return;
-}
-
-/**
- * \brief create all procfs files for this operating system
- */
-void create_os_procfs_files(void)
-{
-	char *fname = NULL;
-	size_t n;
-
-	fname = kmalloc(PROCFS_NAME_MAX, IHK_MC_AP_CRITICAL);
-
-	n = snprintf(fname, PROCFS_NAME_MAX, "mcos%d/stat", osnum);
-	if (n >= PROCFS_NAME_MAX) panic("/proc/stat");
-	create_os_procfs_file(fname, 0444);
-
-	return;
-}
-
-/**
- * \brief Create/delete a procfs file for process.
- *
- * \param pid pid of the process
- * \param fname file name of the procfs file
- * \param msg message (create/delete) 
- * \param mode file mode
- * \param cpuid cpuid of the process
- */
-
-static void operate_proc_procfs_file(int pid, char *fname, int msg, int mode, int cpuid)
+static void
+procfs_thread_ctl(struct thread *thread, int msg)
 {
 	struct ihk_ikc_channel_desc *syscall_channel;
-	struct ikc_scd_packet pckt;
-	struct procfs_file *f;
-	int ret;
+	struct ikc_scd_packet packet;
 
 	syscall_channel = cpu_local_var(syscall_channel);
+	memset(&packet, '\0', sizeof packet);
+	packet.arg = thread->tid;
+	packet.msg = msg;
+	packet.osnum = osnum;
+	packet.ref = thread->cpu_id;
+	packet.pid = thread->proc->pid;
+	packet.err = 0;
 
-	f = kmalloc(sizeof(struct procfs_file), IHK_MC_AP_NOWAIT);
-	if (!f) {
-		kprintf("ERROR: not enough memory for dealing procfs file %s!",
-			fname);
-		return;
-	}
-	f->status = 0;
-	f->mode = mode;
-	strncpy(f->fname, fname, PROCFS_NAME_MAX);
-	pckt.arg = virt_to_phys(f);
-	pckt.msg = msg;
-	pckt.osnum = osnum;
-	pckt.ref = cpuid;
-	pckt.pid = pid;
-	pckt.err = 0;
+	ihk_ikc_send(syscall_channel, &packet, 0);
+}
 
-	ret = ihk_ikc_send(syscall_channel, &pckt, 0);
-	if (ret < 0) {
-		kprintf("ERROR: sending IKC msg, ret: %d\n", ret);
-	}
+void
+procfs_create_thread(struct thread *thread)
+{
+	procfs_thread_ctl(thread, SCD_MSG_PROCFS_TID_CREATE);
+}
 
-	while (f->status != 1) {
-		cpu_pause();
-	}
-	kfree(f);
+void
+procfs_delete_thread(struct thread *thread)
+{
+	procfs_thread_ctl(thread, SCD_MSG_PROCFS_TID_DELETE);
 }
 
 /**
@@ -251,12 +76,13 @@ static void operate_proc_procfs_file(int pid, char *fname, int msg, int mode, in
  *
  * \param rarg returned argument
  */
-
-void process_procfs_request(unsigned long rarg)
+void
+process_procfs_request(unsigned long rarg)
 {
 	unsigned long parg, pbuf;
-        struct thread *thread = cpu_local_var(current);
-	struct process *proc = thread->proc;
+        struct thread *thread = NULL;
+	struct process *proc = NULL;
+	struct process_vm *vm = NULL;
 	struct procfs_read *r;
 	struct ikc_scd_packet packet;
 	int rosnum, ret, pid, tid, ans = -EIO, eof = 0;
@@ -266,7 +92,8 @@ void process_procfs_request(unsigned long rarg)
 	unsigned long offset;
 	int count;
 	int npages;
-	int is_current = 1;	/* is 'proc' same as 'current'? */
+	int readwrite = 0;
+
 
 	dprintf("process_procfs_request: invoked.\n");
 
@@ -296,6 +123,7 @@ void process_procfs_request(unsigned long rarg)
 		goto bufunavail;
 	}
 
+	readwrite = r->readwrite;
 	count = r->count;
 	offset = r->offset;
 	dprintf("fname: %s, offset: %lx, count:%d.\n", r->fname, r->offset, r->count);
@@ -334,32 +162,38 @@ void process_procfs_request(unsigned long rarg)
 	 */
 	ret = sscanf(p, "%d/", &pid);
 	if (ret == 1) {
-		if (pid != cpu_local_var(current)->proc->pid) {
-			/* We are not located in the proper cpu for some reason. */
-
-			dprintf("mismatched pid. We are %d, but requested pid is %d.\n",
-				pid, cpu_local_var(current)->pid);
-			tid = pid;	/* main thread */
-			thread = find_thread(pid, tid, &lock);
-			if (!thread) {
-				dprintf("We cannot find the proper cpu for requested pid.\n");
-				goto end;
-			}
-			else if (thread->cpu_id != ihk_mc_get_processor_id()) {
-				/* The target process has gone by migration. */
-				r->newcpu = thread->cpu_id;
-				dprintf("expected cpu id is %d.\n", thread->cpu_id);
-				thread_unlock(thread, &lock);
-				ans = 0;
-				goto end;
-			}
-			else {
-				thread_unlock(thread, &lock);
-				/* 'proc' is not 'current' */
-				is_current = 0;
-			}
-			proc = thread->proc;
+		proc = find_process(pid, &lock);
+		if(proc == NULL){
+			kprintf("process_procfs_request: no such pid %d\n", pid);
+			goto end;
 		}
+		p = strchr(p, '/') + 1;
+		ret = sscanf(p, "task/%d/", &tid);
+		if(ret == 1){
+			struct mcs_rwlock_node tlock;
+			mcs_rwlock_reader_lock_noirq(&proc->threads_lock, &tlock);
+			list_for_each_entry(thread, &proc->threads_list,
+			                    siblings_list) {
+				if(thread->tid == tid)
+					break;
+			}
+			if(thread == NULL){
+				mcs_rwlock_reader_unlock_noirq(&proc->threads_lock,
+				                         &tlock);
+				process_unlock(proc, &lock);
+				kprintf("process_procfs_request: no such tid %d-%d\n", pid, tid);
+				goto end;
+			}
+			hold_thread(thread);
+			mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &tlock);
+			p = strchr(p, '/') + 1;
+			p = strchr(p, '/') + 1;
+		}
+		hold_process(proc);
+		vm = proc->vm;
+		if(vm)
+			hold_process_vm(vm);
+		process_unlock(proc, &lock);
 	}
 	else if (!strcmp(p, "stat")) {	/* "/proc/stat" */
 		extern int num_processors;	/* kernel/ap.c */
@@ -390,10 +224,9 @@ void process_procfs_request(unsigned long rarg)
 		goto end;
 	}
 	else {
+		kprintf("unsupported procfs entry: %s\n", p);
 		goto end;
 	}
-	dprintf("matched PID: %d.\n", pid);
-	p = strchr(p, '/') + 1;
 
 	/* 
 	 * mcos%d/PID/mem
@@ -403,9 +236,8 @@ void process_procfs_request(unsigned long rarg)
 	 */
 	if (strcmp(p, "mem") == 0) {
 		struct vm_range *range;
-		struct process_vm *vm = proc->vm;
 
-		if (!is_current) {
+		if (proc != cpu_local_var(current)->proc) {
 			uint64_t reason = PF_POPULATE | PF_WRITE | PF_USER;
 			unsigned long offset = r->offset;
 			unsigned long left = r->count;
@@ -423,8 +255,8 @@ void process_procfs_request(unsigned long rarg)
 
 				if(size > left)
 					size = left;
-				ret = page_fault_process_vm(proc->vm,
-				                (void *)offset, reason);
+				ret = page_fault_process_vm(vm, (void *)offset,
+				                            reason);
 				if(ret){
 					if(ans == 0)
 						ans = -EIO;
@@ -479,7 +311,6 @@ void process_procfs_request(unsigned long rarg)
 	 */
 	if (strcmp(p, "maps") == 0) {
 		struct vm_range *range;
-		struct process_vm *vm = proc->vm;
 		int left = r->count - 1; /* extra 1 for terminating NULL */
 		int written = 0;
 		char *_buf = buf;
@@ -537,7 +368,6 @@ void process_procfs_request(unsigned long rarg)
 	 * mcos%d/PID/pagemap
 	 */
 	if (strcmp(p, "pagemap") == 0) {
-		struct process_vm *vm = proc->vm;
 		uint64_t *_buf = (uint64_t *)buf;
 		uint64_t start, end;
 		
@@ -673,112 +503,72 @@ void process_procfs_request(unsigned long rarg)
 	 * The offset is treated as the beginning of the virtual address area
 	 * of the process. The count is the length of the area.
 	 */
-	tid = pid;
-	ret = sscanf(p, "task/%d/", &tid);
-	if (ret == 1) {
-		p = strchr(p, '/') + 1;
-		p = strchr(p, '/') + 1;
 
-		if (!strcmp(p, "mem")){
-			struct vm_range *range;
-			struct process_vm *vm = proc->vm;
+	if (!strcmp(p, "stat")) {
+		char tmp[1024];
+		int len;
 
-			if (!is_current) {
-				goto end;
+		/*
+		 * pid (comm) state ppid
+		 * pgrp session tty_nr tpgid
+		 * flags minflt cminflt majflt
+		 * cmajflt utime stime cutime
+		 * cstime priority nice num_threads
+		 * itrealvalue starttime vsize rss
+		 * rsslim startcode endcode startstack
+		 * kstkesp kstkeip signal blocked
+		 * sigignore sigcatch wchan nswap
+		 * cnswap exit_signal processor rt_priority
+		 * policy delayacct_blkio_ticks guest_time cguest_time
+		 */
+		ans = sprintf(tmp,
+		    "%d (%s) %c %d "	      // pid...
+		    "%d %d %d %d "	      // pgrp...
+		    "%u %lu %lu %lu "	      // flags...
+		    "%lu %lu %lu %ld "	      // cmajflt...
+		    "%ld %ld %ld %ld "	      // cstime...
+		    "%ld %llu %lu %ld "	      // itrealvalue...
+		    "%lu %lu %lu %lu "	      // rsslim...
+		    "%lu %lu %lu %lu "	      // kstkesp...
+		    "%lu %lu %lu %lu "	      // sigignore...
+		    "%lu %d %d %u "	      // cnswap...
+		    "%u %llu %lu %ld\n",      // policy...
+		    0, "exe", 'R', 0,	      // pid...
+		    0, 0, 0, 0,      	      // pgrp...
+		    0, 0L, 0L, 0L,	      // flags...
+		    0L, 0L, 0L, 0L,	      // cmajflt...
+		    0L, 0L, 0L, 0L,	      // cstime...
+		    0L, 0LL, 0L, 0L,	      // itrealvalue...
+		    0L, 0L, 0L, 0L,	      // rsslim...
+		    0L, 0L, 0L, 0L,	      // kstkesp...
+		    0L, 0L, 0L, 0L,	      // sigignore...
+		    0L, 0, thread->cpu_id, 0, // cnswap...
+		    0, 0LL, 0L, 0L	      // policy...
+		);
+		thread_unlock(thread, &lock);
+		dprintf("tmp=%s\n", tmp);
+
+		len = strlen(tmp);
+		if (r->offset < len) {
+			if (r->offset + r->count < len) {
+				ans = r->count;
+			} else {
+				eof = 1;
+				ans = len;
 			}
-			if (pid != tid) {
-				/* We are not multithreaded yet. */
-				goto end;
-			} 
-			list_for_each_entry(range, &vm->vm_range_list, list) {
-				dprintf("range: %lx - %lx\n", range->start, range->end);
-				if ((range->start <= r->offset) && 
-				    (r->offset < range->end)) {
-					unsigned int len = r->count;
-					if (range->end < r->offset + r->count) {
-						len = range->end - r->offset;
-					}
-					memcpy((void *)buf, (void *)range->start, len);
-					ans = len;
-					break;
-				}
-			}
-			goto end;
+			strncpy(buf, tmp + r->offset, ans);
+		} else if (r->offset == len) {
+			ans = 0;
+			eof = 1;
 		}
-
-		if (!strcmp(p, "stat")) {
-			char tmp[1024];
-			int len;
-
-			if ((thread = find_thread(pid, tid, &lock))){
-				dprintf("thread found! pid=%d tid=%d\n", pid, tid);
-				/*
-				 * pid (comm) state ppid
-				 * pgrp session tty_nr tpgid
-				 * flags minflt cminflt majflt
-				 * cmajflt utime stime cutime
-				 * cstime priority nice num_threads
-				 * itrealvalue starttime vsize rss
-				 * rsslim startcode endcode startstack
-				 * kstkesp kstkeip signal blocked
-				 * sigignore sigcatch wchan nswap
-				 * cnswap exit_signal processor rt_priority
-				 * policy delayacct_blkio_ticks guest_time cguest_time
-				 */
-				ans = sprintf(tmp,
-				    "%d (%s) %c %d "	      // pid...
-				    "%d %d %d %d "	      // pgrp...
-				    "%u %lu %lu %lu "	      // flags...
-				    "%lu %lu %lu %ld "	      // cmajflt...
-				    "%ld %ld %ld %ld "	      // cstime...
-				    "%ld %llu %lu %ld "	      // itrealvalue...
-				    "%lu %lu %lu %lu "	      // rsslim...
-				    "%lu %lu %lu %lu "	      // kstkesp...
-				    "%lu %lu %lu %lu "	      // sigignore...
-				    "%lu %d %d %u "	      // cnswap...
-				    "%u %llu %lu %ld\n",      // policy...
-				    0, "exe", 'R', 0,	      // pid...
-				    0, 0, 0, 0,      	      // pgrp...
-				    0, 0L, 0L, 0L,	      // flags...
-				    0L, 0L, 0L, 0L,	      // cmajflt...
-				    0L, 0L, 0L, 0L,	      // cstime...
-				    0L, 0LL, 0L, 0L,	      // itrealvalue...
-				    0L, 0L, 0L, 0L,	      // rsslim...
-				    0L, 0L, 0L, 0L,	      // kstkesp...
-				    0L, 0L, 0L, 0L,	      // sigignore...
-				    0L, 0, thread->cpu_id, 0, // cnswap...
-				    0, 0LL, 0L, 0L	      // policy...
-				);
-				thread_unlock(thread, &lock);
-				dprintf("tmp=%s\n", tmp);
-
-				len = strlen(tmp);
-				if (r->offset < len) {
-					if (r->offset + r->count < len) {
-						ans = r->count;
-					} else {
-						eof = 1;
-						ans = len;
-					}
-					strncpy(buf, tmp + r->offset, ans);
-				} else if (r->offset == len) {
-					ans = 0;
-					eof = 1;
-				}
-				goto end;
-			}
-			else{
-				dprintf("no thread found pid=%d tid=%d\n", pid, tid);
-			}
-		}
-		dprintf("could not find a matching entry for task/%d/%s.\n", tid, p); 
 		goto end;
 	}
 
-	/* 
-	 * Processing for pattern "mcos%d/PID/xxx" files should be here.
-	*/
-	dprintf("could not find a matching entry for %s.\n", p); 
+	if(thread)
+		kprintf("unsupported procfs entry: %d/task/%d/%s\n", pid, tid, p);
+	else
+		kprintf("unsupported procfs entry: %d/%s\n", pid, p);
+
 end:
 	ihk_mc_unmap_virtual(buf, npages, 0);
 	dprintf("ret: %d, eof: %d\n", ans, eof);
@@ -799,6 +589,12 @@ dataunavail:
 	if (ret < 0) {
 		kprintf("ERROR: sending IKC msg, ret: %d\n", ret);
 	}
+	if(proc)
+		release_process(proc);
+	if(thread)
+		release_thread(thread);
+	if(vm)
+		release_process_vm(vm);
 	return;
 
 }

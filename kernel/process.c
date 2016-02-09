@@ -63,6 +63,8 @@ extern int num_processors;
 extern ihk_spinlock_t cpuid_head_lock;
 int ptrace_detach(int pid, int data);
 extern unsigned long do_kill(struct thread *, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
+extern void procfs_create_thread(struct thread *);
+extern void procfs_delete_thread(struct thread *);
 
 struct list_head resource_set_list;
 mcs_rwlock_lock_t    resource_set_lock;
@@ -2166,6 +2168,7 @@ void release_thread(struct thread *thread)
 
 	vm = thread->vm;
 
+	procfs_delete_thread(thread);
 	destroy_thread(thread);
 
 	release_process_vm(vm);
@@ -2753,7 +2756,7 @@ void runq_add_thread(struct thread *thread, int cpu_id)
 	__runq_add_thread(thread, cpu_id);
 	ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 
-	create_proc_procfs_files(thread->proc->pid, cpu_id);
+	procfs_create_thread(thread);
 
 	/* Kick scheduler */
 	if (cpu_id != ihk_mc_get_processor_id())

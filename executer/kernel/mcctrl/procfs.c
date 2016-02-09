@@ -28,6 +28,35 @@
 #define	dprintk(...)
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,5,0)
+typedef uid_t kuid_t;
+typedef gid_t kgid_t;
+#endif
+
+struct procfs_entry {
+	char *name;
+	mode_t mode;
+	const struct file_operations *fops;
+};
+
+#define NOD(NAME, MODE, FOP) {				\
+	.name = (NAME),					\
+	.mode = MODE,					\
+	.fops  = FOP,					\
+}
+#define PROC_DIR(NAME, MODE)				\
+	NOD(NAME, (S_IFDIR|(MODE)), NULL)
+#define PROC_REG(NAME, MODE, fops)			\
+	NOD(NAME, (S_IFREG|(MODE)), fops)
+#define PROC_TERM					\
+	NOD(NULL, 0, NULL)
+
+static const struct procfs_entry tid_entry_stuff[];
+static const struct procfs_entry pid_entry_stuff[];
+static const struct procfs_entry base_entry_stuff[];
+static const struct file_operations mckernel_forward_ro;
+static const struct file_operations mckernel_forward;
+
 static DECLARE_WAIT_QUEUE_HEAD(procfsq);
 static ssize_t mckernel_procfs_read(struct file *file, char __user *buf, 
 		size_t nbytes, loff_t *ppos);
@@ -39,11 +68,10 @@ struct procfs_list_entry {
 	struct list_head list;
 	struct proc_dir_entry *entry;
 	struct procfs_list_entry *parent;
-	ihk_os_t os;
+	struct list_head children;
 	int osnum;
-	int pid;
-	int cpu;
-	char fname[PROCFS_NAME_MAX];
+	char *data;
+	char name[0];
 };
 
 /*
@@ -52,324 +80,25 @@ struct procfs_list_entry {
  * always nearer to the list top than its parent node 
  * file.
  */
-
 LIST_HEAD(procfs_file_list);
 static ihk_spinlock_t procfs_file_list_lock;
 
-loff_t mckernel_procfs_lseek(struct file *file, loff_t offset, int orig)
+static char *
+getpath(struct procfs_list_entry *e, char *buf, int bufsize)
 {
-	switch (orig) {
-	case 0:
-		file->f_pos = offset;
-		break;
-	case 1:
-		file->f_pos += offset;
-		break;
-	default:
-		return -EINVAL;
+	char	*w = buf + bufsize - 1;
+
+	*w = '\0';
+	for(;;){
+		int l = strlen(e->name);
+		w -= l;
+		memcpy(w, e->name, l);
+		e = e->parent;
+		if(!e)
+			return w;
+		w--;
+		*w = '/';
 	}
-	return file->f_pos;
-}
-
-static const struct file_operations mckernel_procfs_file_operations = {
-	.llseek		= mckernel_procfs_lseek,
-	.read		= mckernel_procfs_read,
-	.write		= NULL,
-};
-
-
-/**
- * \brief Return specified procfs entry. 
- *
- * \param p a name of the procfs file
- * \param osnum os number
- * \param mode if zero create a directory otherwise a file or link
- * \param opaque additional context dependent information
- *
- * return value: NULL: Something wrong has occurred.
- *               otherwise: address of the proc_dir_entry structure of the procfs file
- *
- * p should not be NULL nor terminated by "/".
- *
- * We create a procfs entry if there is not already one.
- * This process is recursive to the root of the procfs tree.
- */
-/*
- * XXX: Two or more entries which have same name can be created.
- *
- * get_procfs_list_entry() avoids creating an entry which has already been created.
- * But, it allows creating an entry which is being created by another thread.
- *
- * This problem occurred when two requests which created files with a common
- * ancestor directory which was not explicitly created were racing.
- */
-
-struct procfs_list_entry *get_procfs_list_entry(char *p, int osnum, int mode, void *opaque, const struct cred *cred)
-{
-	char *r;
-	struct proc_dir_entry *pde = NULL;
-	struct procfs_list_entry *e, *ret = NULL, *parent = NULL;
-	char name[PROCFS_NAME_MAX];
-	unsigned long irqflags;
-
-	dprintk("get_procfs_list_entry: %s for osnum %d mode %o\n", p, osnum, mode);
-	irqflags = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
-	list_for_each_entry(e, &procfs_file_list, list) {
-		if (e == NULL) {
-			kprintf("ERROR: The procfs_file_list has a null entry.\n");
-			return NULL;
-		}
-		if (strncmp(e->fname, p, PROCFS_NAME_MAX) == 0) {
-			/* We found the entry */
-			ret = e;
-			break;
-		}
-	}
-	ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflags);
-	if (ret != NULL) {
-		return ret;
-	}
-	r = strrchr(p, '/');
-	if (r != NULL) {
-		/* We have non-null parent dir. */
-		strncpy(name, p, r - p);
-		name[r - p] = '\0'; 
-		parent = get_procfs_list_entry(name, osnum, 0, NULL, cred);
-		if (parent == NULL) {
-			/* We counld not get a parent procfs entry. Give up.*/
-			return NULL;
-		}
-	}
-	ret = kmalloc(sizeof(struct procfs_list_entry), GFP_KERNEL);
-	if (ret == NULL) {
-		kprintf("ERROR: not enough memory to create PROCFS entry.\n");
-		return NULL;
-	}
-	/* Fill the fname field of the entry */
-	strncpy(ret->fname, p, PROCFS_NAME_MAX);
-
-	if (r != NULL) {
-		strncpy(name, r + 1, p + PROCFS_NAME_MAX - r - 1);
-	} else {
-		strncpy(name, p, PROCFS_NAME_MAX);
-	}
-	if (mode == 0) {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
-		pde = proc_mkdir(name, parent ? parent->entry : NULL);
-#else		
-		pde = proc_mkdir_data(name, 0555, parent ? parent->entry : NULL, ret);
-#endif		
-	} else if (mode & S_IFLNK) {
-		pde = proc_symlink(name, parent->entry, (char *)opaque);
-	} else {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
-		pde = create_proc_entry(name, mode, parent->entry);
-		if (pde) 
-			pde->proc_fops = &mckernel_procfs_file_operations;
-#else		
-		pde = proc_create_data(name, mode, parent->entry, 
-				&mckernel_procfs_file_operations, ret);
-#endif		
-		if(pde && cred)
-			proc_set_user(pde, cred->uid, cred->gid);
-	}
-	if (pde == NULL) {
-		kprintf("ERROR: cannot create a PROCFS entry for %s.\n", p);
-		kfree(ret);
-		return NULL;
-	}
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
-	pde->data = ret;
-#endif
-	ret->osnum = osnum;
-	ret->entry = pde;
-	ret->parent = parent;
-
-	irqflags = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
-	list_add(&(ret->list), &procfs_file_list);
-	ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflags);
-
-	dprintk("get_procfs_list_entry: %s done\n", p);
-	return ret;
-}
-
-/**
- * \brief Create procfs create (internal, can be called directly from host Linux).
- *
- * \param os (opaque) os variable
- * \param ref cpuid of the requesting mckernel process
- * \param osnum osnum of the requesting mckernel process
- * \param pid pid of the requesting mckernel process
- * \param name path of the file
- * \param mode mode of the file (e.g., dir, link, regular, etc.)
- * \param opaque context dependent additional argument
- */
-
-int procfs_create_entry(void *os, int ref, int osnum, int pid, char *name,
-		int mode, void *opaque, const struct cred *cred)
-{
-	struct procfs_list_entry *e;
-
-	e = get_procfs_list_entry(name, osnum, mode, opaque, cred);
-	if (e == NULL) {
-		printk("ERROR: could not create a procfs entry for %s.\n", name);
-		return EINVAL;
-	}
-
-	e->os = os;
-	e->cpu = ref;
-	e->pid = pid;
-
-	return 0;
-}
-
-/**
- * \brief Create a procfs entry.
- *
- * \param __os (opeque) os variable
- * \param ref cpuid of the requesting mckernel process
- * \param osnum osnum of the requesting mckernel process
- * \param pid pid of the requesting mckernel process
- * \param arg sent argument
- */
-
-void procfs_create(void *__os, int ref, int osnum, int pid, unsigned long arg)
-{
-	ihk_device_t dev = ihk_os_to_dev(__os);
-	unsigned long parg;
-	struct procfs_file *f;
-	int mode;
-	char name[PROCFS_NAME_MAX];
-	struct task_struct *task = NULL;
-	const struct cred *tcred = NULL;
-
-	if(pid > 0){
-		task = pid_task(find_vpid(pid), PIDTYPE_PID);
-		if(task){
-			tcred = __task_cred(task);
-		}
-	}
-
-	dprintk("procfs_create: osnum: %d, cpu: %d, pid: %d\n", osnum, ref, pid);
-
-	parg = ihk_device_map_memory(dev, arg, sizeof(struct procfs_file));
-	f = ihk_device_map_virtual(dev, parg, sizeof(struct procfs_file), NULL, 0);
-
-	dprintk("name: %s mode: %o\n", f->fname, f->mode);
-
-	strncpy(name, f->fname, PROCFS_NAME_MAX);
-	mode = f->mode;
-
-	if (name[PROCFS_NAME_MAX - 1] != '\0') {
-			printk("ERROR: procfs_creat: file name not properly terminated.\n");
-			goto quit;
-	}
-
-	if (procfs_create_entry(__os, ref, osnum, pid, name, mode, NULL, tcred) != 0) {
-		printk("ERROR: could not create a procfs entry for %s.\n", name);
-		goto quit;
-	}
-
-quit:
-	f->status = 1; /* Now the peer can free the data. */
-	ihk_device_unmap_virtual(dev, f, sizeof(struct procfs_file));
-	ihk_device_unmap_memory(dev, parg, sizeof(struct procfs_file));
-	dprintk("procfs_create: done\n");
-}
-
-/**
- * \brief Delete a procfs entry and all of its subtree (internal).
- *
- * \param __os (opaque) os variable
- * \param osnum os number
- *
- * NOTE: procfs_file_list_lock has to be held here.
- */
-
-void __procfs_delete_entry_recursively(struct procfs_list_entry *e)
-{
-	struct procfs_list_entry *le;
-	struct procfs_list_entry *parent = NULL;
-	char name[PROCFS_NAME_MAX];
-	char *r;
-
-	/* See if there are any children of this entry */
-retry:
-	list_for_each_entry(le, &procfs_file_list, list) {
-		if (le->parent != e) {
-			continue;
-		}
-
-		__procfs_delete_entry_recursively(le);
-		/* List may have changed... */
-		goto retry;
-	}
-
-	/* No more children, remove entry */
-	list_del(&e->list);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
-	e->entry->read_proc = NULL;
-	e->entry->data = NULL;
-#endif
-	parent = e->parent;
-	r = strrchr(e->fname, '/');
-	if (r == NULL) {
-		strncpy(name, e->fname, PROCFS_NAME_MAX);
-	} else {
-		strncpy(name, r + 1, PROCFS_NAME_MAX);
-	}
-	dprintk("found and removed %s from the list.\n", name);
-	remove_proc_entry(name, parent->entry);
-	kfree(e);
-}
-
-/**
- * \brief Delete a procfs entry (internal).
- *
- * \param __os (opaque) os variable
- * \param osnum os number
- */
-
-void procfs_delete_entry(void *os, int osnum, char *fname)
-{
-	struct procfs_list_entry *e;
-	unsigned long irqflags;
-
-	irqflags = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
-	list_for_each_entry(e, &procfs_file_list, list) {
-		if ((strncmp(e->fname, fname, PROCFS_NAME_MAX) == 0) && (e->osnum == osnum)) {
-			__procfs_delete_entry_recursively(e);
-			break;
-		}
-	}
-	ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflags);
-}
-
-/**
- * \brief Delete a procfs entry (internal, can be called directly from host Linux).
- *
- * \param __os (opaque) os variable
- * \param osnum os number
- * \param arg sent argument
- */
-
-void procfs_delete(void *__os, int osnum, unsigned long arg)
-{
-	struct procfs_file *f;
-	ihk_device_t dev = ihk_os_to_dev(__os);
-	unsigned long parg;
-
-	dprintk("procfs_delete: \n");
-	parg = ihk_device_map_memory(dev, arg, sizeof(struct procfs_file));
-	f = ihk_device_map_virtual(dev, parg, sizeof(struct procfs_file), NULL, 0);
-	dprintk("fname: %s.\n", f->fname);
-
-	procfs_delete_entry(__os, osnum, f->fname);
-
-	f->status = 1; /* Now the peer can free the data. */
-	ihk_device_unmap_virtual(dev, f, sizeof(struct procfs_file));
-	ihk_device_unmap_memory(dev, parg, sizeof(struct procfs_file));
-	dprintk("procfs_delete: done\n");
 }
 
 /**
@@ -378,11 +107,388 @@ void procfs_delete(void *__os, int osnum, unsigned long arg)
  * \param arg sent argument
  * \param err error info (redundant)
  */
-
-void procfs_answer(unsigned int arg, int err)
+void
+procfs_answer(unsigned int arg, int err)
 {
 	dprintk("procfs: received SCD_MSG_PROCFS_ANSWER message(err = %d).\n", err);
 	wake_up_interruptible(&procfsq);
+}
+
+static struct procfs_list_entry *
+find_procfs_entry(struct procfs_list_entry *parent, const char *name)
+{
+	struct list_head *list;
+	struct procfs_list_entry *e;
+
+	if(parent == NULL)
+		list = &procfs_file_list;
+	else
+		list = &parent->children;
+
+	list_for_each_entry(e, list, list) {
+		if(!strcmp(e->name, name))
+			return e;
+	}
+
+	return NULL;
+}
+
+static void
+delete_procfs_entries(struct procfs_list_entry *top)
+{
+	struct procfs_list_entry *e;
+	struct procfs_list_entry *n;
+
+	list_del(&top->list);
+
+	list_for_each_entry_safe(e, n, &top->children, list) {
+		delete_procfs_entries(e);
+	}
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
+	e->entry->read_proc = NULL;
+	e->entry->data = NULL;
+#endif
+	remove_proc_entry(top->name, top->parent? top->parent->entry: NULL);
+	if(top->data)
+		kfree(top->data);
+	kfree(top);
+}
+
+static struct procfs_list_entry *
+add_procfs_entry(struct procfs_list_entry *parent, const char *name, int mode,
+                 kuid_t uid, kgid_t gid, const void *opaque)
+{
+	struct procfs_list_entry *e = find_procfs_entry(parent, name);
+	struct proc_dir_entry *pde;
+	struct proc_dir_entry *parent_pde = NULL;
+	int f_mode = mode & 0777;
+
+	if(e)
+		delete_procfs_entries(e);
+
+	e = kmalloc(sizeof(struct procfs_list_entry) + strlen(name) + 1,
+	            GFP_KERNEL);
+	if(!e){
+		kprintf("ERROR: not enough memory to create PROCFS entry.\n");
+		return NULL;
+	}
+	memset(e, '\0', sizeof(struct procfs_list_entry));
+	INIT_LIST_HEAD(&e->children);
+	strcpy(e->name, name);
+
+	if(parent)
+		parent_pde = parent->entry;
+
+	if (mode & S_IFDIR) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
+		pde = proc_mkdir(name, parent_pde);
+#else
+		pde = proc_mkdir_data(name, f_mode, parent_pde, e);
+#endif
+	}
+	else if ((mode & S_IFLNK) == S_IFLNK) {
+		pde = proc_symlink(name, parent_pde, (char *)opaque);
+	}
+	else {
+		const struct file_operations *fop;
+
+		if(opaque)
+			fop = (const struct file_operations *)opaque;
+		else if(mode & S_IWUSR)
+			fop = &mckernel_forward;
+		else
+			fop = &mckernel_forward_ro;
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
+		pde = create_proc_entry(name, f_mode, parent_pde);
+		if(pde)
+			pde->proc_fops = fop;
+#else
+		pde = proc_create_data(name, f_mode, parent_pde, fop, e);
+		if(pde)
+			proc_set_user(pde, uid, gid);
+#endif
+	}
+	if(!pde){
+		kprintf("ERROR: cannot create a PROCFS entry for %s.\n", name);
+		kfree(e);
+		return NULL;
+	}
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
+	pde->uid = uid;
+	pde->gid = gid;
+	pde->data = e;
+#endif
+
+	if(parent)
+		e->osnum = parent->osnum;
+	e->entry = pde;
+	e->parent = parent;
+	list_add(&(e->list), parent? &(parent->children): &procfs_file_list);
+
+	return e;
+}
+
+static void
+add_procfs_entries(struct procfs_list_entry *parent,
+                   const struct procfs_entry *entries, kuid_t uid, kgid_t gid)
+{
+	const struct procfs_entry *p;
+
+	for(p = entries; p->name; p++){
+		add_procfs_entry(parent, p->name, p->mode, uid, gid, p->fops);
+	}
+}
+
+static const struct cred *
+get_pid_cred(int pid)
+{
+	struct task_struct *task = NULL;
+
+	if(pid > 0){
+		task = pid_task(find_vpid(pid), PIDTYPE_PID);
+		if(task){
+			return __task_cred(task);
+		}
+	}
+	return NULL;
+}
+
+static struct procfs_list_entry *
+find_base_entry(int osnum)
+{
+	char name[12];
+
+	sprintf(name, "mcos%d", osnum);
+	return find_procfs_entry(NULL, name);
+}
+
+static struct procfs_list_entry *
+find_pid_entry(int osnum, int pid)
+{
+	struct procfs_list_entry *e;
+	char name[12];
+
+	if(!(e = find_base_entry(osnum)))
+		return NULL;
+	sprintf(name, "%d", pid);
+	return find_procfs_entry(e, name);
+}
+
+static struct procfs_list_entry *
+find_tid_entry(int osnum, int pid, int tid)
+{
+	struct procfs_list_entry *e;
+	char name[12];
+
+	if(!(e = find_pid_entry(osnum, pid)))
+		return NULL;
+	if(!(e = find_procfs_entry(e, "task")))
+		return NULL;
+	sprintf(name, "%d", tid);
+	return find_procfs_entry(e, name);
+}
+
+static struct procfs_list_entry *
+get_base_entry(int osnum)
+{
+	struct procfs_list_entry *e;
+	char name[12];
+	kuid_t uid = KUIDT_INIT(0);
+	kgid_t gid = KGIDT_INIT(0);
+
+	sprintf(name, "mcos%d", osnum);
+	e = find_procfs_entry(NULL, name);
+	if(!e){
+		e = add_procfs_entry(NULL, name, S_IFDIR | 0555,
+		                     uid, gid, NULL);
+		e->osnum = osnum;
+	}
+	return e;
+}
+
+static struct procfs_list_entry *
+get_pid_entry(int osnum, int pid)
+{
+	struct procfs_list_entry *parent;
+	struct procfs_list_entry *e;
+	char name[12];
+	kuid_t uid = KUIDT_INIT(0);
+	kgid_t gid = KGIDT_INIT(0);
+
+	sprintf(name, "mcos%d", osnum);
+	if(!(parent = find_procfs_entry(NULL, name)))
+		return NULL;
+	sprintf(name, "%d", pid);
+	e = find_procfs_entry(parent, name);
+	if(!e)
+		e = add_procfs_entry(parent, name, S_IFDIR | 0555,
+		                     uid, gid, NULL);
+	return e;
+}
+
+static struct procfs_list_entry *
+get_tid_entry(int osnum, int pid, int tid)
+{
+	struct procfs_list_entry *parent;
+	struct procfs_list_entry *e;
+	char name[12];
+	kuid_t uid = KUIDT_INIT(0);
+	kgid_t gid = KGIDT_INIT(0);
+
+	sprintf(name, "mcos%d", osnum);
+	if(!(parent = find_procfs_entry(NULL, name)))
+		return NULL;
+	sprintf(name, "%d", pid);
+	if(!(parent = find_procfs_entry(parent, name)))
+		return NULL;
+	if(!(parent = find_procfs_entry(parent, "task")))
+		return NULL;
+	sprintf(name, "%d", tid);
+	e = find_procfs_entry(parent, name);
+	if(!e)
+		e = add_procfs_entry(parent, name, S_IFDIR | 0555,
+		                     uid, gid, NULL);
+	return e;
+}
+
+static void
+_add_tid_entry(int osnum, int pid, int tid, const struct cred *cred)
+{
+	struct procfs_list_entry *parent;
+	struct procfs_list_entry *exe;
+
+	parent = get_tid_entry(osnum, pid, tid);
+	if(parent){
+		add_procfs_entries(parent, tid_entry_stuff,
+		                   cred->uid, cred->gid);
+		exe = find_procfs_entry(parent->parent->parent, "exe");
+		if(exe){
+			add_procfs_entry(parent, "exe", S_IFLNK | 0777,
+			                 cred->uid, cred->gid, exe->data);
+		}
+		
+	}
+}
+
+void
+add_tid_entry(int osnum, int pid, int tid)
+{
+	unsigned long irqflag;
+	const struct cred *cred = get_pid_cred(pid);
+
+	if(!cred)
+		return;
+	irqflag = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
+	_add_tid_entry(osnum, pid, tid, cred);
+	ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflag);
+}
+
+void
+add_pid_entry(int osnum, int pid)
+{
+	struct procfs_list_entry *parent;
+	unsigned long irqflag;
+	const struct cred *cred = get_pid_cred(pid);
+
+	if(!cred)
+		return;
+	irqflag = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
+	parent = get_pid_entry(osnum, pid);
+	add_procfs_entries(parent, pid_entry_stuff, cred->uid, cred->gid);
+	_add_tid_entry(osnum, pid, pid, cred);
+	ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflag);
+}
+
+void
+delete_tid_entry(int osnum, int pid, int tid)
+{
+	unsigned long irqflag;
+	struct procfs_list_entry *e;
+
+	irqflag = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
+	e = find_tid_entry(osnum, pid, tid);
+	if(e)
+		delete_procfs_entries(e);
+	ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflag);
+}
+
+void
+delete_pid_entry(int osnum, int pid)
+{
+	unsigned long irqflag;
+	struct procfs_list_entry *e;
+
+	irqflag = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
+	e = find_pid_entry(osnum, pid);
+	if(e)
+		delete_procfs_entries(e);
+	ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflag);
+}
+
+void
+proc_exe_link(int osnum, int pid, const char *path)
+{
+	struct procfs_list_entry *parent;
+	unsigned long irqflag;
+	kuid_t uid = KUIDT_INIT(0);
+	kgid_t gid = KGIDT_INIT(0);
+
+	irqflag = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
+	parent = find_pid_entry(osnum, pid);
+	if(parent){
+		struct procfs_list_entry *task;
+		struct procfs_list_entry *e;
+
+		e = add_procfs_entry(parent, "exe", S_IFLNK | 0777, uid, gid,
+		                     path);
+		e->data = kmalloc(strlen(path) + 1, GFP_KERNEL);
+		strcpy(e->data, path);
+		task = find_procfs_entry(parent, "task");
+		list_for_each_entry(parent, &task->children, list) {
+			add_procfs_entry(parent, "exe", S_IFLNK | 0777,
+			                 uid, gid, path);
+		}
+	}
+	ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflag);
+}
+
+/**
+ * \brief Initialization for procfs
+ *
+ * \param osnum os number
+ */
+void
+procfs_init(int osnum)
+{
+	struct procfs_list_entry *parent;
+	unsigned long irqflag;
+	kuid_t uid = KUIDT_INIT(0);
+	kgid_t gid = KGIDT_INIT(0);
+
+	irqflag = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
+	parent = get_base_entry(osnum);
+	add_procfs_entries(parent, base_entry_stuff, uid, gid);
+	ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflag);
+}
+
+/**
+ * \brief Finalization for procfs
+ *
+ * \param osnum os number
+ */
+void
+procfs_exit(int osnum)
+{
+	unsigned long irqflag;
+	struct procfs_list_entry *e;
+
+	irqflag = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
+	e = find_base_entry(osnum);
+	if(e)
+		delete_procfs_entries(e);
+	ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflag);
 }
 
 /**
@@ -396,11 +502,11 @@ mckernel_procfs_read(struct file *file, char __user *buf, size_t nbytes,
 	       loff_t *ppos)
 {
 	struct inode * inode = file->f_path.dentry->d_inode;
-	char *kern_buffer;
+	char *kern_buffer = NULL;
 	int order = 0;
-	volatile struct procfs_read *r;
+	volatile struct procfs_read *r = NULL;
 	struct ikc_scd_packet isp;
-	int ret, retrycount = 0;
+	int ret;
 	unsigned long pbuf;
 	unsigned long count = nbytes;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
@@ -410,9 +516,12 @@ mckernel_procfs_read(struct file *file, char __user *buf, size_t nbytes,
 	struct procfs_list_entry *e = PDE_DATA(inode);
 #endif	
 	loff_t offset = *ppos;
+	char pathbuf[PROCFS_NAME_MAX];
+	char *path;
 
+	path = getpath(e, pathbuf, 256);
 	dprintk("mckernel_procfs_read: invoked for %s, offset: %lu, count: %d\n", 
-			e->fname, offset, count); 
+			path, offset, count); 
 	
 	if (count <= 0 || offset < 0) {
 		return 0;
@@ -437,23 +546,22 @@ mckernel_procfs_read(struct file *file, char __user *buf, size_t nbytes,
 
 	r = kmalloc(sizeof(struct procfs_read), GFP_KERNEL);
 	if (r == NULL) {
-		return -ENOMEM;
+		ret = -ENOMEM;
+		goto out;
 	}
-retry:
-	dprintk("offset: %lx, count: %d, cpu: %d\n", offset, count, e->cpu);
-
 	r->pbuf = pbuf;
 	r->eof = 0;
 	r->ret = -EIO; /* default */
 	r->status = 0;
 	r->offset = offset;
 	r->count = count;
-	strncpy((char *)r->fname, e->fname, PROCFS_NAME_MAX);
+	r->readwrite = 0;
+	strncpy((char *)r->fname, path, PROCFS_NAME_MAX);
 	isp.msg = SCD_MSG_PROCFS_REQUEST;
-	isp.ref = e->cpu;
+	isp.ref = 0;
 	isp.arg = virt_to_phys(r);
 	
-	ret = mcctrl_ikc_send(e->os, e->cpu, &isp);
+	ret = mcctrl_ikc_send(osnum_to_os(e->osnum), 0, &isp);
 	
 	if (ret < 0) {
 		goto out; /* error */
@@ -471,18 +579,6 @@ retry:
 	
 	/* Wake up and check the result. */
 	dprintk("mckernel_procfs_read: woke up. ret: %d, eof: %d\n", r->ret, r->eof);
-	if ((r->ret == 0) && (r->eof != 1)) {
-		/* A miss-hit caused by migration has occurred.
-		 * We simply retry the query with a new CPU.
-		 */
-		if (retrycount++ > 10) {
-			kprintf("ERROR: mckernel_procfs_read: excessive retry.\n");
-			goto out;
-		}
-		e->cpu = r->newcpu;
-		dprintk("retry\n");
-		goto retry;
-	}
 	
 	if (r->ret > 0) {
 		if (copy_to_user(buf, kern_buffer, r->ret)) {
@@ -496,75 +592,198 @@ retry:
 	ret = r->ret;
 
 out:
-	free_pages((uintptr_t)kern_buffer, order);
-	kfree((void *)r);
+	if(kern_buffer)
+		free_pages((uintptr_t)kern_buffer, order);
+	if(r)
+		kfree((void *)r);
 	
 	return ret;
 }
 
-/**
- * \brief Initialization for procfs
- *
- * \param osnum os number
- */
-
-void procfs_init(int osnum) {
-}
-
-/**
- * \brief Finalization for procfs
- *
- * \param osnum os number
- */
-
-void procfs_exit(int osnum) {
-	char buf[20], *r;
-	int error;
-	mm_segment_t old_fs = get_fs();
-	struct kstat stat;
-	struct procfs_list_entry *parent;
-	struct procfs_list_entry *e, *temp = NULL;
-	unsigned long irqflags;
-
-	dprintk("remove remaining mckernel procfs files.\n");
-
-	irqflags = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
-	list_for_each_entry_safe(e, temp, &procfs_file_list, list) {
-		if (e->osnum == osnum) {
-			dprintk("found entry for %s.\n", e->fname);
-			list_del(&e->list);
+static ssize_t
+mckernel_procfs_write(struct file *file, const char __user *buf, size_t nbytes,
+	       loff_t *ppos)
+{
+	struct inode * inode = file->f_path.dentry->d_inode;
+	char *kern_buffer = NULL;
+	int order = 0;
+	volatile struct procfs_read *r = NULL;
+	struct ikc_scd_packet isp;
+	int ret;
+	unsigned long pbuf;
+	unsigned long count = nbytes;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
-			e->entry->read_proc = NULL;
-			e->entry->data = NULL;
-#endif
-			parent = e->parent;
-			r = strrchr(e->fname, '/');
-			if (r == NULL) {
-				r = e->fname;
-			} else {
-				r += 1;
-			}
-			if (parent) {
-				remove_proc_entry(r, parent->entry);
-			}
-			dprintk("free the entry\n");
-			kfree(e);
-		}
-		dprintk("iterate it.\n");
+	struct proc_dir_entry *dp = PDE(inode);
+	struct procfs_list_entry *e = dp->data;
+#else	
+	struct procfs_list_entry *e = PDE_DATA(inode);
+#endif	
+	loff_t offset = *ppos;
+	char pathbuf[PROCFS_NAME_MAX];
+	char *path;
+
+	path = getpath(e, pathbuf, 256);
+	dprintk("mckernel_procfs_read: invoked for %s, offset: %lu, count: %d\n", 
+			path, offset, count); 
+	
+	if (count <= 0 || offset < 0) {
+		return 0;
 	}
-	ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflags);
-
-	sprintf(buf, "/proc/mcos%d", osnum);
-
-	set_fs(KERNEL_DS);
-	error = vfs_stat (buf, &stat);
-	set_fs(old_fs);
-	if (error != 0) {
-		return;
+	
+	while ((1 << order) < count) ++order;
+	if (order > 12) {
+		order -= 12;
+	}
+	else {
+		order = 1;
 	}
 
-	printk("procfs_exit: We have to remove unexpectedly remaining %s.\n", buf);
+	/* NOTE: we need physically contigous memory to pass through IKC */
+	kern_buffer = (char *)__get_free_pages(GFP_KERNEL, order);
+	if (!kern_buffer) {
+		printk("mckernel_procfs_read(): ERROR: allocating kernel buffer\n");
+		return -ENOMEM;
+	}
+	if (copy_from_user(kern_buffer, buf, nbytes)) {
+		ret = -EFAULT;
+		goto out;
+	}
+	
+	pbuf = virt_to_phys(kern_buffer);
 
-	/* remove remnant of previous mcos%d */
-	remove_proc_entry(buf + 6, NULL);
+	r = kmalloc(sizeof(struct procfs_read), GFP_KERNEL);
+	if (r == NULL) {
+		ret = -ENOMEM;
+		goto out;
+	}
+	dprintk("offset: %lx, count: %d, cpu: %d\n", offset, count, e->cpu);
+
+	r->pbuf = pbuf;
+	r->eof = 0;
+	r->ret = -EIO; /* default */
+	r->status = 0;
+	r->offset = offset;
+	r->count = count;
+	r->readwrite = 1;
+	strncpy((char *)r->fname, path, PROCFS_NAME_MAX);
+	isp.msg = SCD_MSG_PROCFS_REQUEST;
+	isp.ref = 0;
+	isp.arg = virt_to_phys(r);
+	
+	ret = mcctrl_ikc_send(osnum_to_os(e->osnum), 0, &isp);
+	
+	if (ret < 0) {
+		goto out; /* error */
+	}
+	
+	/* Wait for a reply. */
+	ret = -EIO; /* default exit code */
+	dprintk("now wait for a relpy\n");
+	
+	/* Wait for the status field of the procfs_read structure set ready. */
+	if (wait_event_interruptible_timeout(procfsq, r->status != 0, HZ) == 0) {
+		kprintf("ERROR: mckernel_procfs_read: timeout (1 sec).\n");
+		goto out;
+	}
+	
+	/* Wake up and check the result. */
+	dprintk("mckernel_procfs_read: woke up. ret: %d, eof: %d\n", r->ret, r->eof);
+	
+	if (r->ret > 0) {
+		*ppos += r->ret;
+	}
+	ret = r->ret;
+
+out:
+	if(kern_buffer)
+		free_pages((uintptr_t)kern_buffer, order);
+	if(r)
+		kfree((void *)r);
+	
+	return ret;
 }
+
+static loff_t
+mckernel_procfs_lseek(struct file *file, loff_t offset, int orig)
+{
+	switch (orig) {
+	case 0:
+		file->f_pos = offset;
+		break;
+	case 1:
+		file->f_pos += offset;
+		break;
+	default:
+		return -EINVAL;
+	}
+	return file->f_pos;
+}
+
+static const struct file_operations mckernel_forward_ro = {
+	.llseek		= mckernel_procfs_lseek,
+	.read		= mckernel_procfs_read,
+	.write		= NULL,
+};
+
+static const struct file_operations mckernel_forward = {
+	.llseek		= mckernel_procfs_lseek,
+	.read		= mckernel_procfs_read,
+	.write		= mckernel_procfs_write,
+};
+
+static const struct procfs_entry tid_entry_stuff[] = {
+	PROC_REG("auxv",       S_IRUSR, NULL),
+	PROC_REG("clear_refs", S_IWUSR, NULL),
+	PROC_REG("cmdline",    S_IRUGO, NULL),
+	PROC_REG("comm",       S_IRUGO|S_IWUSR, NULL),
+	PROC_REG("environ",    S_IRUSR, NULL),
+//	PROC_LNK("exe",        mckernel_readlink),
+	PROC_REG("limits",     S_IRUSR|S_IWUSR, NULL),
+	PROC_REG("maps",       S_IRUGO, NULL),
+	PROC_REG("mem",        S_IRUSR|S_IWUSR, NULL),
+	PROC_REG("pagemap",    S_IRUGO, NULL),
+	PROC_REG("smaps",      S_IRUGO, NULL),
+	PROC_REG("stat",       S_IRUGO, NULL),
+	PROC_REG("statm",      S_IRUGO, NULL),
+	PROC_REG("status",     S_IRUGO, NULL),
+	PROC_REG("syscall",    S_IRUGO, NULL),
+	PROC_REG("wchan",      S_IRUGO, NULL),
+	PROC_TERM
+};
+
+static const struct procfs_entry pid_entry_stuff[] = {
+	PROC_REG("auxv",       S_IRUSR, NULL),
+	PROC_REG("clear_refs", S_IWUSR, NULL),
+	PROC_REG("cmdline",    S_IRUGO, NULL),
+	PROC_REG("comm",       S_IRUGO|S_IWUSR, NULL),
+	PROC_REG("coredump_filter", S_IRUGO|S_IWUSR, NULL),
+	PROC_REG("environ",    S_IRUSR, NULL),
+//	PROC_LNK("exe",        mckernel_readlink),
+	PROC_REG("limits",     S_IRUSR|S_IWUSR, NULL),
+	PROC_REG("maps",       S_IRUGO, NULL),
+	PROC_REG("mem",        S_IRUSR|S_IWUSR, NULL),
+	PROC_REG("pagemap",    S_IRUGO, NULL),
+	PROC_REG("smaps",      S_IRUGO, NULL),
+	PROC_REG("stat",       S_IRUGO, NULL),
+	PROC_REG("statm",      S_IRUGO, NULL),
+	PROC_REG("status",     S_IRUGO, NULL),
+	PROC_REG("syscall",    S_IRUGO, NULL),
+	PROC_DIR("task",       S_IRUGO|S_IXUGO),
+	PROC_REG("wchan",      S_IRUGO, NULL),
+	PROC_TERM
+};
+
+static const struct procfs_entry base_entry_stuff[] = {
+	PROC_REG("cmdline",    S_IRUGO, NULL),
+	PROC_REG("cpuinfo",    S_IRUGO, NULL),
+	PROC_REG("meminfo",    S_IRUGO, NULL),
+	PROC_REG("pagetypeinfo",S_IRUGO, NULL),
+	PROC_REG("softirq",    S_IRUGO, NULL),
+	PROC_REG("stat",       S_IRUGO, NULL),
+	PROC_REG("uptime",     S_IRUGO, NULL),
+	PROC_REG("version",    S_IRUGO, NULL),
+	PROC_REG("vmallocinfo",S_IRUSR, NULL),
+	PROC_REG("vmstat",     S_IRUGO, NULL),
+	PROC_REG("zoneinfo",   S_IRUGO, NULL),
+	PROC_TERM
+};

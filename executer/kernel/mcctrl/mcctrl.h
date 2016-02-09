@@ -81,6 +81,8 @@
 #define SCD_MSG_SYSFS_RESP_SETUP        0x41
 /* #define SCD_MSG_SYSFS_REQ_CLEANUP    0x42 */
 /* #define SCD_MSG_SYSFS_RESP_CLEANUP   0x43 */
+#define SCD_MSG_PROCFS_TID_CREATE	0x44
+#define SCD_MSG_PROCFS_TID_DELETE	0x45
 
 #define DMA_PIN_SHIFT                   21
 
@@ -226,6 +228,8 @@ int mcctrl_ikc_is_valid_thread(ihk_os_t os, int cpu);
 int reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp,
 		unsigned long *endp);
 
+ihk_os_t osnum_to_os(int n);
+
 /* syscall.c */
 int init_peer_channel_registry(struct mcctrl_usrdata *ud);
 void destroy_peer_channel_registry(struct mcctrl_usrdata *ud);
@@ -244,6 +248,7 @@ struct procfs_read {
 	int ret;		/* read bytes (answer) */
 	int status;		/* non-zero if done (answer) */
 	int newcpu;		/* migrated new cpu (answer) */
+	int readwrite;		/* 0:read, 1:write */
 	char fname[PROCFS_NAME_MAX];	/* procfs filename (request) */
 };
 
@@ -252,6 +257,15 @@ struct procfs_file {
 	int mode;			/* file mode (request) */
 	char fname[PROCFS_NAME_MAX];	/* procfs filename (request) */
 };
+
+void procfs_answer(unsigned int arg, int err);
+void add_tid_entry(int osnum, int pid, int tid);
+void add_pid_entry(int osnum, int pid);
+void delete_tid_entry(int osnum, int pid, int tid);
+void delete_pid_entry(int osnum, int pid);
+void proc_exe_link(int osnum, int pid, const char *path);
+void procfs_init(int osnum);
+void procfs_exit(int osnum);
 
 /* sysfs_files.c */
 void setup_sysfs_files(ihk_os_t os);

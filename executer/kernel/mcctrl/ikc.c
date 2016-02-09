@@ -41,9 +41,6 @@
 void mcexec_prepare_ack(ihk_os_t os, unsigned long arg, int err);
 static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ihk_ikc_channel_desc *c);
 int mcexec_syscall(struct mcctrl_channel *c, int pid, unsigned long arg);
-void procfs_create(void *__os, int ref, int osnum, int pid, unsigned long arg);
-void procfs_delete(void *__os, int osnum, unsigned long arg);
-void procfs_answer(unsigned long arg, int err);
 void sig_done(unsigned long arg, int err);
 
 static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
@@ -69,14 +66,6 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		mcexec_syscall(usrdata->channels + pisp->ref, pisp->pid, pisp->arg);
 		break;
 
-	case SCD_MSG_PROCFS_CREATE:
-		procfs_create(__os, pisp->ref, pisp->osnum, pisp->pid, pisp->arg);
-		break;
-
-	case SCD_MSG_PROCFS_DELETE:
-		procfs_delete(__os, pisp->osnum, pisp->arg);
-		break;
-
 	case SCD_MSG_PROCFS_ANSWER:
 		procfs_answer(pisp->arg, pisp->err);
 		break;
@@ -96,6 +85,14 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	case SCD_MSG_SYSFS_RESP_RELEASE:
 		sysfsm_packet_handler(__os, pisp->msg, pisp->err,
 				pisp->sysfs_arg1, pisp->sysfs_arg2);
+		break;
+
+	case SCD_MSG_PROCFS_TID_CREATE:
+		add_tid_entry(ihk_host_os_get_index(__os), pisp->pid, pisp->arg);
+		break;
+
+	case SCD_MSG_PROCFS_TID_DELETE:
+		delete_tid_entry(ihk_host_os_get_index(__os), pisp->pid, pisp->arg);
 		break;
 
 	default:

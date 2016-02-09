@@ -82,6 +82,12 @@ static struct ihk_os_user_call mcctrl_uc[OS_MAX_MINOR];
 
 static ihk_os_t os[OS_MAX_MINOR];
 
+ihk_os_t
+osnum_to_os(int n)
+{
+	return os[n];
+}
+
 static int __init mcctrl_init(void)
 {
 	int	i;
