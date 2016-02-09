@@ -312,18 +312,22 @@ struct vm_regions {
 
 struct process_vm;
 
-struct sigfd {
-	struct sigfd *next;
+struct mckfd {
+	struct mckfd *next;
 	int fd;
-	__sigset_t mask;
+	long data;
+	void *opt;
+	long (*read_cb)(struct mckfd *, ihk_mc_user_context_t *);
+	int (*ioctl_cb)(struct mckfd *, ihk_mc_user_context_t *);
+	int (*close_cb)(struct mckfd *, ihk_mc_user_context_t *);
 };
+
 #define SFD_CLOEXEC 02000000
 #define SFD_NONBLOCK 04000
 
 struct sig_common {
 	ihk_spinlock_t	lock;
 	ihk_atomic_t use;
-	struct sigfd *sigfd;
 	struct k_sigaction action[_NSIG];
 	struct list_head sigpending;
 };
@@ -425,6 +429,8 @@ struct process {
 	/* Store signal sent to parent when the process terminates. */
 	int termsig;
 
+	ihk_spinlock_t mckfd_lock;
+	struct mckfd *mckfd;
 };
 
 void hold_thread(struct thread *ftn);

@@ -20,7 +20,7 @@
  *     syscall_name[] only, no handler exists.
  */
 
-SYSCALL_DELEGATED(0, read)
+SYSCALL_HANDLED(0, read)
 SYSCALL_DELEGATED(1, write)
 SYSCALL_DELEGATED(2, open)
 SYSCALL_HANDLED(3, close)
@@ -35,7 +35,7 @@ SYSCALL_HANDLED(12, brk)
 SYSCALL_HANDLED(13, rt_sigaction)
 SYSCALL_HANDLED(14, rt_sigprocmask)
 SYSCALL_HANDLED(15, rt_sigreturn)
-SYSCALL_DELEGATED(16, ioctl)
+SYSCALL_HANDLED(16, ioctl)
 SYSCALL_DELEGATED(17, pread64)
 SYSCALL_DELEGATED(18, pwrite64)
 SYSCALL_DELEGATED(20, writev)
@@ -133,6 +133,7 @@ SYSCALL_HANDLED(279, move_pages)
 SYSCALL_DELEGATED(281, epoll_pwait)
 SYSCALL_HANDLED(282, signalfd)
 SYSCALL_HANDLED(289, signalfd4)
+SYSCALL_HANDLED(298, perf_event_open)
 #ifdef DCFA_KMOD
 SYSCALL_HANDLED(303, mod_call)
 #endif

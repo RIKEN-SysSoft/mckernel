@@ -2198,6 +2198,11 @@ return_execve2:
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 
+		case __NR_perf_event_open:
+			ret = open("/dev/null", O_RDONLY);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+
 		case __NR_rt_sigaction:
 			act_sigaction(&w);
 			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);

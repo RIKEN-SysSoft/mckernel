@@ -2359,34 +2359,85 @@ do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
 	return 0;
 }
 
+SYSCALL_DECLARE(read)
+{
+	int fd = ihk_mc_syscall_arg0(ctx);
+	long rc;
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
+	struct mckfd *fdp;
+	long irqstate;
+
+	irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
+	for(fdp = proc->mckfd; fdp; fdp = fdp->next)
+		if(fdp->fd == fd)
+			break;
+	ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
+
+	if(fdp && fdp->read_cb){
+kprintf("read: found system fd %d\n", fd);
+		rc = fdp->read_cb(fdp, ctx);
+	}
+	else{
+		rc = syscall_generic_forwarding(__NR_read, ctx);
+	}
+	return rc;
+}
+
+SYSCALL_DECLARE(ioctl)
+{
+	int fd = ihk_mc_syscall_arg0(ctx);
+	long rc;
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
+	struct mckfd *fdp;
+	long irqstate;
+
+	irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
+	for(fdp = proc->mckfd; fdp; fdp = fdp->next)
+		if(fdp->fd == fd)
+			break;
+	ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
+
+	if(fdp && fdp->ioctl_cb){
+kprintf("ioctl: found system fd %d\n", fd);
+		rc = fdp->ioctl_cb(fdp, ctx);
+	}
+	else{
+		rc = syscall_generic_forwarding(__NR_ioctl, ctx);
+	}
+	return rc;
+}
+
 SYSCALL_DECLARE(close)
 {
 	int fd = ihk_mc_syscall_arg0(ctx);
-	int rc;
+	long rc;
 	struct thread *thread = cpu_local_var(current);
-	struct sigfd *sfd;
-	struct sigfd *sb;
-	long	irqstate;
+	struct process *proc = thread->proc;
+	struct mckfd *fdp;
+	struct mckfd *fdq;
+	long irqstate;
 
-	irqstate = ihk_mc_spinlock_lock(&thread->sigcommon->lock);
-	for(sfd = thread->sigcommon->sigfd, sb = NULL; sfd; sb = sfd, sfd = sfd->next)
-		if(sfd->fd == fd)
+	irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
+	for(fdp = proc->mckfd, fdq = NULL; fdp; fdq = fdp, fdp = fdp->next)
+		if(fdp->fd == fd)
 			break;
-	if(sfd){
-		struct syscall_request request IHK_DMA_ALIGN;
-		if(sb)
-			sb->next = sfd->next;
+
+	if(fdp){
+kprintf("close: found system fd %d pid=%d\n", fd, proc->pid);
+		if(fdq)
+			fdq->next = fdp->next;
 		else
-			thread->sigcommon->sigfd = sfd->next;
-		ihk_mc_spinlock_unlock(&thread->sigcommon->lock, irqstate);
-		request.number = __NR_signalfd4;
-		request.args[0] = 1;
-		request.args[1] = sfd->fd;
-		kfree(sfd);
-		rc = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+			proc->mckfd = fdp->next;
+		ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
+		if(fdp->close_cb)
+			fdp->close_cb(fdp, ctx);
+		kfree(fdp);
+		rc = syscall_generic_forwarding(__NR_close, ctx);
 	}
 	else{
-		ihk_mc_spinlock_unlock(&thread->sigcommon->lock, irqstate);
+		ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
 		rc = syscall_generic_forwarding(__NR_close, ctx);
 	}
 	return rc;
@@ -2487,7 +2538,8 @@ SYSCALL_DECLARE(signalfd4)
 {
 	int fd = ihk_mc_syscall_arg0(ctx);
 	struct thread *thread = cpu_local_var(current);
-	struct sigfd *sfd;
+	struct process *proc = thread->proc;
+	struct mckfd *sfd;
 	long    irqstate;
 	sigset_t *maskp = (sigset_t *)ihk_mc_syscall_arg1(ctx);;
 	__sigset_t mask;
@@ -2501,10 +2553,9 @@ SYSCALL_DECLARE(signalfd4)
 	if(flags & ~(SFD_NONBLOCK | SFD_CLOEXEC))
 		return -EINVAL;
 
-	irqstate = ihk_mc_spinlock_lock(&thread->sigcommon->lock);
 	if(fd == -1){
 		struct syscall_request request IHK_DMA_ALIGN;
-		ihk_mc_spinlock_unlock(&thread->sigcommon->lock, irqstate);
+
 		request.number = __NR_signalfd4;
 		request.args[0] = 0;
 		request.args[1] = flags;
@@ -2512,25 +2563,73 @@ SYSCALL_DECLARE(signalfd4)
 		if(fd < 0){
 			return fd;
 		}
-		sfd = kmalloc(sizeof(struct sigfd), IHK_MC_AP_NOWAIT);
+		sfd = kmalloc(sizeof(struct mckfd), IHK_MC_AP_NOWAIT);
 		if(!sfd)
 			return -ENOMEM;
 		sfd->fd = fd;
-		irqstate = ihk_mc_spinlock_lock(&thread->sigcommon->lock);
-		sfd->next = thread->sigcommon->sigfd;
-		thread->sigcommon->sigfd = sfd;
+		irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
+		sfd->next = proc->mckfd;
+		proc->mckfd = sfd;
 	}
 	else{
-		for(sfd = thread->sigcommon->sigfd; sfd; sfd = sfd->next)
+		irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
+		for(sfd = proc->mckfd; sfd; sfd = sfd->next)
 			if(sfd->fd == fd)
 				break;
 		if(!sfd){
-			ihk_mc_spinlock_unlock(&thread->sigcommon->lock, irqstate);
+			ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
 			return -EINVAL;
 		}
 	}
-	memcpy(&sfd->mask, &mask, sizeof mask);
-	ihk_mc_spinlock_unlock(&thread->sigcommon->lock, irqstate);
+	memcpy(&sfd->data, &mask, sizeof mask);
+	ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
+	return sfd->fd;
+}
+
+static long
+perf_event_read(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
+{
+	return 0;
+}
+
+static int
+perf_event_ioctl(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
+{
+	return 0;
+}
+
+static int
+perf_event_close(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
+{
+	return 0;
+}
+
+SYSCALL_DECLARE(perf_event_open)
+{
+	struct syscall_request request IHK_DMA_ALIGN;
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
+	struct mckfd *sfd;
+	int fd;
+	long irqstate;
+
+	request.number = __NR_perf_event_open;
+	request.args[0] = 0;
+	fd = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+	if(fd < 0){
+		return fd;
+	}
+	sfd = kmalloc(sizeof(struct mckfd), IHK_MC_AP_NOWAIT);
+	if(!sfd)
+		return -ENOMEM;
+	sfd->fd = fd;
+	sfd->read_cb = perf_event_read;
+	sfd->ioctl_cb = perf_event_ioctl;
+	sfd->close_cb = perf_event_close;
+	irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
+	sfd->next = proc->mckfd;
+	proc->mckfd = sfd;
+	ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
 	return sfd->fd;
 }
 
