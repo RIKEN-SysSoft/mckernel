@@ -60,7 +60,7 @@
 #include <signal.h>
 #include <sys/signalfd.h>
 #include <sys/mount.h>
-#include <linux/version.h>
+#include <include/generated/uapi/linux/version.h>
 #include "../include/uprotocol.h"
 
 //#define DEBUG

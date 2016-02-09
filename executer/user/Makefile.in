@@ -1,5 +1,6 @@
 CC=@CC@
 BINDIR=@BINDIR@
+KDIR ?= @KDIR@
 CFLAGS=-Wall -O -fPIE -pie
 VPATH=@abs_srcdir@
 TARGET=mcexec
@@ -7,7 +8,7 @@ TARGET=mcexec
 all: $(TARGET)
 
 mcexec: mcexec.c
-	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -pthread -o $@ $^ $(EXTRA_OBJS)
+	$(CC) -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) -pthread -o $@ $^ $(EXTRA_OBJS)
 
 clean:
 	$(RM) $(TARGET) *.o
