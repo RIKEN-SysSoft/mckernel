@@ -449,7 +449,7 @@ static void process_msg_init(struct ikc_scd_init_param *pcp, struct syscall_para
 
 static void process_msg_init_acked(struct ihk_ikc_channel_desc *c, unsigned long pphys)
 {
-	struct ikc_scd_init_param *param = (void *)pphys;
+	struct ikc_scd_init_param *param = phys_to_virt(pphys);
 	struct syscall_params *lparam;
 	enum ihk_mc_pt_attribute attr;
 
