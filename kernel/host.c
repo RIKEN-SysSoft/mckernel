@@ -242,7 +242,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		p->args_len = args_len;
 	}
 
-	dkprintf("args copy, nr: %d\n", *((int*)args_envs_r));
+	dkprintf("args copy, nr: %d\n", *((long *)args_envs_r));
 
 	memcpy_long(args_envs, args_envs_r, p->args_len + sizeof(long) - 1);
 
@@ -277,7 +277,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		p->envs_len = envs_len;
 	}
 
-	dkprintf("envs copy, nr: %d\n", *((int*)args_envs_r));
+	dkprintf("envs copy, nr: %d\n", *((long *)args_envs_r));
 
 	memcpy_long(args_envs + p->args_len, args_envs_r, p->envs_len + sizeof(long) - 1);
 
@@ -289,10 +289,10 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	flush_tlb();
 
 	// Update variables
-	argc = *((int*)(args_envs));
+	argc = *((long *)(args_envs));
 	dkprintf("argc: %d\n", argc);
 
-	argv = (char **)(args_envs + (sizeof(int)));
+	argv = (char **)(args_envs + (sizeof(long)));
 	if(proc->saved_cmdline){
 		kfree(proc->saved_cmdline);
 		proc->saved_cmdline_len = 0;
@@ -309,17 +309,17 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		*a = (char *)addr + (unsigned long)*a; // Process' address space!
 	}
 
-	envc = *((int*)(args_envs + p->args_len));
+	envc = *((long *)(args_envs + p->args_len));
 	dkprintf("envc: %d\n", envc);
 
-	env = (char **)(args_envs + p->args_len + sizeof(int));
+	env = (char **)(args_envs + p->args_len + sizeof(long));
 	while (*env) {
 		char **_env = env;
 		//dkprintf("%s\n", args_envs + p->args_len + (unsigned long)*env);
 		*env = (char *)addr + p->args_len + (unsigned long)*env;
 		env = ++_env;
 	}
-	env = (char **)(args_envs + p->args_len + sizeof(int));
+	env = (char **)(args_envs + p->args_len + sizeof(long));
 
 	dkprintf("env OK\n");
 

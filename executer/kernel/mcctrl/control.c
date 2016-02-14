@@ -125,10 +125,10 @@ static long mcexec_prepare_image(ihk_os_t os,
 
 	pdesc->args = (void*)virt_to_phys(args);
 	printk("args: 0x%lX\n", (unsigned long)pdesc->args);
-	printk("argc: %d\n", *(int*)args);
+	printk("argc: %ld\n", *(long *)args);
 	pdesc->envs = (void*)virt_to_phys(envs);
 	printk("envs: 0x%lX\n", (unsigned long)pdesc->envs);
-	printk("envc: %d\n", *(int*)envs);
+	printk("envc: %ld\n", *(long *)envs);
 
 	isp.msg = SCD_MSG_PREPARE_PROCESS;
 	isp.ref = pdesc->cpu;
