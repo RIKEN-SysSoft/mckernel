@@ -545,7 +545,6 @@ process_procfs_request(unsigned long rarg)
 		    0L, 0, thread->cpu_id, 0, // cnswap...
 		    0, 0LL, 0L, 0L	      // policy...
 		);
-		thread_unlock(thread, &lock);
 		dprintf("tmp=%s\n", tmp);
 
 		len = strlen(tmp);
