@@ -185,7 +185,8 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	
 	desc = malloc(sizeof(struct program_load_desc)
 	              + sizeof(struct program_image_section) * nhdrs);
-	memset(desc, '\0', sizeof(struct program_load_desc));
+	memset(desc, '\0', sizeof(struct program_load_desc)
+	                   + sizeof(struct program_image_section) * nhdrs);
 	desc->shell_path[0] = '\0';
 	fseek(fp, hdr.e_phoff, SEEK_SET);
 	j = 0;
@@ -673,6 +674,7 @@ void transfer_image(int fd, struct program_load_desc *desc)
 		          desc->sections[i].offset, flen);
 
 		while (s < e) {
+			memset(&pt, '\0', sizeof pt);
 			pt.rphys = rpa;
 			pt.userp = dma_buf;
 			pt.size = PAGE_SIZE;
@@ -894,6 +896,7 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 		remote_tid = -1;
 	}
 
+	memset(&sigdesc, '\0', sizeof sigdesc);
 	sigdesc.cpu = cpu;
 	sigdesc.pid = (int)pid;
 	sigdesc.tid = remote_tid;
@@ -920,6 +923,7 @@ act_signalfd4(struct syscall_wait_desc *w)
 	switch(mode){
 	    case 0: /* new signalfd */
 		sfd = malloc(sizeof(struct sigfd));
+		memset(sfd, '\0', sizeof(struct sigfd));
 		tmp = w->sr.args[1];
 		flags = 0;
 		if(tmp & SFD_NONBLOCK)
@@ -1328,11 +1332,14 @@ int main(int argc, char **argv)
 	__dprintf("mcoverlay enable\n");
 	char mcos_procdir[PATH_MAX];
 	char mcos_sysdir[PATH_MAX];
-	struct sys_unshare_desc unshare_desc;
-	struct sys_mount_desc mount_desc;
 
 	error = isunshare();
 	if (error == 0) {
+		struct sys_unshare_desc unshare_desc;
+		struct sys_mount_desc mount_desc;
+
+		memset(&unshare_desc, '\0', sizeof unshare_desc);
+		memset(&mount_desc, '\0', sizeof mount_desc);
 		unshare_desc.unshare_flags = CLONE_NEWNS;
 		if (ioctl(fd, MCEXEC_UP_SYS_UNSHARE, 
 			(unsigned long)&unshare_desc) != 0) {
@@ -1540,6 +1547,7 @@ void do_syscall_return(int fd, int cpu,
 {
 	struct syscall_ret_desc desc;
 
+	memset(&desc, '\0', sizeof desc);
 	desc.cpu = cpu;
 	desc.ret = ret;
 	desc.src = src;
@@ -1556,6 +1564,7 @@ void do_syscall_load(int fd, int cpu, unsigned long dest, unsigned long src,
 {
 	struct syscall_load_desc desc;
 
+	memset(&desc, '\0', sizeof desc);
 	desc.cpu = cpu;
 	desc.src = src;
 	desc.dest = dest;
@@ -1605,6 +1614,7 @@ static long do_strncpy_from_user(int fd, void *dest, void *src, unsigned long n)
 	struct strncpy_from_user_desc desc;
 	int ret;
 
+	memset(&desc, '\0', sizeof desc);
 	desc.dest = dest;
 	desc.src = src;
 	desc.n = n;
@@ -1736,6 +1746,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 	char pathbuf[PATH_MAX];
 	char tmpbuf[PATH_MAX];
 
+	memset(&w, '\0', sizeof w);
 	w.cpu = cpu;
 	w.pid = getpid();
 
@@ -2158,6 +2169,7 @@ return_execve1:
 						fprintf(stderr, "execve(): error allocating desc\n");
 						goto return_execve2;
 					}
+					memset(desc, '\0', w.sr.args[2]);
 
 					/* Copy descriptor from co-kernel side */
 					trans.userp = (void*)desc;
