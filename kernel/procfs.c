@@ -94,7 +94,6 @@ process_procfs_request(unsigned long rarg)
 	int npages;
 	int readwrite = 0;
 
-
 	dprintf("process_procfs_request: invoked.\n");
 
 	syscall_channel = get_cpu_local_var(0)->syscall_channel;
@@ -162,33 +161,42 @@ process_procfs_request(unsigned long rarg)
 	 */
 	ret = sscanf(p, "%d/", &pid);
 	if (ret == 1) {
+		struct mcs_rwlock_node tlock;
+		int tids;
+		struct thread *thread1 = NULL;
+
 		proc = find_process(pid, &lock);
 		if(proc == NULL){
 			kprintf("process_procfs_request: no such pid %d\n", pid);
 			goto end;
 		}
 		p = strchr(p, '/') + 1;
-		ret = sscanf(p, "task/%d/", &tid);
-		if(ret == 1){
-			struct mcs_rwlock_node tlock;
-			mcs_rwlock_reader_lock_noirq(&proc->threads_lock, &tlock);
-			list_for_each_entry(thread, &proc->threads_list,
-			                    siblings_list) {
-				if(thread->tid == tid)
-					break;
-			}
-			if(thread == NULL){
-				mcs_rwlock_reader_unlock_noirq(&proc->threads_lock,
-				                         &tlock);
-				process_unlock(proc, &lock);
-				kprintf("process_procfs_request: no such tid %d-%d\n", pid, tid);
-				goto end;
-			}
-			hold_thread(thread);
-			mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &tlock);
+		if((tids = sscanf(p, "task/%d/", &tid)) == 1){
 			p = strchr(p, '/') + 1;
 			p = strchr(p, '/') + 1;
 		}
+		else
+			tid = pid;
+
+		mcs_rwlock_reader_lock_noirq(&proc->threads_lock, &tlock);
+		list_for_each_entry(thread, &proc->threads_list, siblings_list){
+			if(thread->tid == tid)
+				break;
+			if(!thread1)
+				thread1 = thread;
+		}
+		if(thread == NULL){
+			kprintf("process_procfs_request: no such tid %d-%d\n", pid, tid);
+			if(tids){
+				process_unlock(proc, &lock);
+				mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &tlock);
+				goto end;
+			}
+			thread = thread1;
+		}
+		if(thread)
+			hold_thread(thread);
+		mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &tlock);
 		hold_process(proc);
 		vm = proc->vm;
 		if(vm)
@@ -235,73 +243,52 @@ process_procfs_request(unsigned long rarg)
 	 * of the process. The count is the length of the area.
 	 */
 	if (strcmp(p, "mem") == 0) {
-		struct vm_range *range;
+		uint64_t reason = PF_POPULATE | PF_WRITE | PF_USER;
+		unsigned long offset = r->offset;
+		unsigned long left = r->count;
+		int ret;
+		struct page_table *pt = vm->address_space->page_table;
 
-		if (proc != cpu_local_var(current)->proc) {
-			uint64_t reason = PF_POPULATE | PF_WRITE | PF_USER;
-			unsigned long offset = r->offset;
-			unsigned long left = r->count;
-			int ret;
+		ans = 0;
+		if(left == 0)
+			goto end;
 
-			ans = 0;
-			if(left == 0)
-				goto end;
-
-			while(left){
-				unsigned long pa;
-				char *va;
-				int pos = offset & (PAGE_SIZE - 1);
-				int size = PAGE_SIZE - pos;
-
-				if(size > left)
-					size = left;
-				ret = page_fault_process_vm(vm, (void *)offset,
-				                            reason);
-				if(ret){
-					if(ans == 0)
-						ans = -EIO;
-					goto end;
-				}
-				ret = ihk_mc_pt_virt_to_phys(vm->address_space->page_table,
-				                (void *)offset, &pa);
-				if(ret){
-					if(ans == 0)
-						ans = -EIO;
-					goto end;
-				}
-				va = phys_to_virt(pa);
-				memcpy(buf + ans, va, size);
-				offset += size;
-				left -= size;
-				ans += size;
-			}
+#if 0
+		if(!(proc->ptrace & PT_TRACED) ||
+		   !(proc->status & (PS_STOPPED | PS_TRACED))){
+			ans = -EIO;
+			goto end;
 		}
-		else{
-			unsigned long offset = r->offset;
-			unsigned long left = r->count;
-			unsigned long pos;
-			unsigned long l;
-			ans = 0;
-			list_for_each_entry(range, &vm->vm_range_list, list) {
-				dprintf("range: %lx - %lx\n", range->start, range->end);
-				while (left &&
-				       (range->start <= offset) && 
-				       (offset < range->end)) {
-					pos = offset & (PAGE_SIZE - 1);
-					l = PAGE_SIZE - pos;
-					if(l > left)
-						l = left;
-					if(copy_from_user(buf, (void *)offset, l)){
-						if(ans == 0)
-							ans = -EIO;
-						goto end;
-					}
-					buf += l;
-					ans += l;
-					offset += l;
-					left -= l;
-				}
+#endif
+
+		while(left){
+			unsigned long pa;
+			char *va;
+			int pos = offset & (PAGE_SIZE - 1);
+			int size = PAGE_SIZE - pos;
+
+			if(size > left)
+				size = left;
+			ret = page_fault_process_vm(vm, (void *)offset, reason);
+			if(ret){
+				if(ans == 0)
+					ans = -EIO;
+				goto end;
 			}
+			ret = ihk_mc_pt_virt_to_phys(pt, (void *)offset, &pa);
+			if(ret){
+				if(ans == 0)
+					ans = -EIO;
+				goto end;
+			}
+			va = phys_to_virt(pa);
+			if(readwrite)
+				memcpy(va, buf + ans, size);
+			else
+				memcpy(buf + ans, va, size);
+			offset += size;
+			left -= size;
+			ans += size;
 		}
 		goto end;
 	}
