@@ -2075,6 +2075,24 @@ SYSCALL_DECLARE(tgkill)
 	return do_kill(thread, tgid, tid, sig, &info, 0);
 }
 
+SYSCALL_DECLARE(tkill)
+{
+	int tid = ihk_mc_syscall_arg0(ctx);
+	int sig = ihk_mc_syscall_arg1(ctx);
+	struct thread *thread = cpu_local_var(current);
+	struct siginfo info;
+
+	memset(&info, '\0', sizeof info);
+	info.si_signo = sig;
+	info.si_code = SI_TKILL;
+	info._sifields._kill.si_pid = thread->proc->pid;
+
+	if(tid <= 0)
+		return -EINVAL;
+
+	return do_kill(thread, -1, tid, sig, &info, 0);
+}
+
 int *
 getcred(int *_buf)
 {
