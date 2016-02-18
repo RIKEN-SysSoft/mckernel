@@ -435,6 +435,10 @@ struct process {
 	// cpu time (summary)
 	struct timespec stime;
 	struct timespec utime;
+
+	// cpu time (children)
+	struct timespec stime_children;
+	struct timespec utime_children;
 };
 
 void hold_thread(struct thread *ftn);
@@ -527,6 +531,8 @@ struct thread {
 	struct timespec stime;
 	struct timespec utime;
 	struct timespec btime;
+	int times_update;
+	int in_kernel;
 };
 
 struct process_vm {

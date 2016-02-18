@@ -403,8 +403,10 @@ do_wait(int pid, int *status, int options, void *rusage)
 				mcs_rwlock_writer_unlock_noirq(&thread->proc->children_lock, &lock);
 				if(!(options & WNOWAIT)){
 					mcs_rwlock_writer_lock_noirq(&proc->update_lock, &lock);
-					ts_add(&proc->stime, &child->stime);
-					ts_add(&proc->utime, &child->utime);
+					ts_add(&proc->stime_children, &child->stime);
+					ts_add(&proc->utime_children, &child->utime);
+					ts_add(&proc->stime_children, &child->stime_children);
+					ts_add(&proc->utime_children, &child->utime_children);
 					mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &lock);
 					release_process(child);
 				}
@@ -2057,16 +2059,28 @@ SYSCALL_DECLARE(times)
 	struct tms *buf = (struct tms *)ihk_mc_syscall_arg0(ctx);
 	struct thread *thread = cpu_local_var(current);
 	struct process *proc = thread->proc;
-	struct timespec ats = {0, 0};
+	struct timespec ats;
 
 	mytms.tms_utime = timespec_to_jiffy(&thread->utime);
 	mytms.tms_stime = timespec_to_jiffy(&thread->stime);
-	mytms.tms_cutime = timespec_to_jiffy(&proc->utime);
-	mytms.tms_cstime = timespec_to_jiffy(&proc->stime);
+	ats.tv_sec = proc->utime.tv_sec;
+	ats.tv_nsec = proc->utime.tv_nsec;
+	ts_add(&ats, &proc->utime_children);
+	mytms.tms_cutime = timespec_to_jiffy(&ats);
+	ats.tv_sec = proc->stime.tv_sec;
+	ats.tv_nsec = proc->stime.tv_nsec;
+	ts_add(&ats, &proc->stime_children);
+	mytms.tms_cstime = timespec_to_jiffy(&ats);
 	if(copy_to_user(buf, &mytms, sizeof mytms))
 		return -EFAULT;
-	if(gettime_local_support)
+	if(gettime_local_support){
 		calculate_time_from_tsc(&ats);
+	}
+	else{
+		ats.tv_sec = 0;
+		ats.tv_nsec = 0;
+	}
+
 	return timespec_to_jiffy(&ats);
 }
 
@@ -5247,6 +5261,41 @@ SYSCALL_DECLARE(clock_gettime)
 		dkprintf("clock_gettime(): %d\n", error);
 		return error;
 	}
+	else if(clock_id == CLOCK_PROCESS_CPUTIME_ID){
+		struct thread *thread = cpu_local_var(current);
+		struct process *proc = thread->proc;
+		struct thread *child;
+		struct mcs_rwlock_node lock;
+
+		mcs_rwlock_reader_lock_noirq(&proc->children_lock, &lock);
+		list_for_each_entry(child, &proc->threads_list, siblings_list){
+			if(child != thread &&
+			   child->status == PS_RUNNING &&
+			   !child->in_kernel){
+				child->times_update = 0;
+				ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(child->cpu_id)->apic_id, 0xd1);
+			}
+		}
+		ats.tv_sec = proc->utime.tv_sec;
+		ats.tv_nsec = proc->utime.tv_nsec;
+		ts_add(&ats, &proc->stime);
+		list_for_each_entry(child, &proc->threads_list, siblings_list){
+			while(!child->times_update)
+				cpu_pause();
+			ts_add(&ats, &child->utime);
+			ts_add(&ats, &child->stime);
+		}
+		mcs_rwlock_reader_unlock_noirq(&proc->children_lock, &lock);
+		return copy_to_user(ts, &ats, sizeof ats);
+	}
+	else if(clock_id == CLOCK_THREAD_CPUTIME_ID){
+		struct thread *thread = cpu_local_var(current);
+
+		ats.tv_sec = thread->utime.tv_sec;
+		ats.tv_nsec = thread->utime.tv_nsec;
+		ts_add(&ats, &thread->stime);
+		return copy_to_user(ts, &ats, sizeof ats);
+	}
 
 	/* Otherwise offload */
 	request.number = __NR_clock_gettime;
@@ -6655,20 +6704,29 @@ reset_cputime()
 	thread->btime.tv_nsec = 0;
 }
 
+/**
+ * mode == 0: kernel -> user
+ * mode == 1: user -> kernel
+ * mode == 2: kernel -> kernel
+ */
 void
 set_cputime(int mode)
 {
 	struct thread *thread;
 	struct timespec ats;
-
-	if(!gettime_local_support)
-		return;
+	struct cpu_local_var *v;
 
 	if(clv == NULL)
 		return;
 
-	if(!(thread = cpu_local_var(current)))
+	v = get_this_cpu_local_var();
+	if(!(thread = v->current))
 		return;
+
+	if(!gettime_local_support){
+		thread->times_update = 1;
+		return;
+	}
 
 	calculate_time_from_tsc(&ats);
 	if(thread->btime.tv_sec != 0 && thread->btime.tv_nsec != 0){
@@ -6690,6 +6748,8 @@ set_cputime(int mode)
 		thread->btime.tv_sec = ats.tv_sec;
 		thread->btime.tv_nsec = ats.tv_nsec;
 	}
+	thread->times_update = 1;
+	thread->in_kernel = mode;
 }
 
 long syscall(int num, ihk_mc_user_context_t *ctx)
