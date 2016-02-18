@@ -756,6 +756,14 @@ hassigpending(struct thread *thread)
 	return getsigpending(thread, 0);
 }
 
+int
+interrupt_from_user(void *regs0)
+{
+	struct x86_user_context *regs = regs0;
+
+	return !(regs->gpr.rsp & 0x8000000000000000);
+}
+
 void
 check_signal(unsigned long rc, void *regs0, int num)
 {
@@ -785,7 +793,7 @@ check_signal(unsigned long rc, void *regs0, int num)
 		return;
 	}
 
-	if(regs != NULL && (regs->gpr.rsp & 0x8000000000000000)) {
+	if(regs != NULL && !interrupt_from_user(regs)) {
 		return;
 	}
 

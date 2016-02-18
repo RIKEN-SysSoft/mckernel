@@ -53,6 +53,7 @@ static unsigned long pa_start, pa_end;
 static struct page *pa_pages;
 
 extern int ihk_mc_pt_print_pte(struct page_table *pt, void *virt);
+extern int interrupt_from_user(void *);
 
 struct tlb_flush_entry tlb_flush_vector[IHK_TLB_FLUSH_IRQ_VECTOR_SIZE];
 
@@ -369,6 +370,7 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 	struct thread *thread = cpu_local_var(current);
 	int error;
 
+	set_cputime(interrupt_from_user(regs)? 1: 2);
 	dkprintf("[%d]page_fault_handler(%p,%lx,%p)\n",
 			ihk_mc_get_processor_id(), fault_addr, reason, regs);
 
@@ -427,6 +429,7 @@ out:
 			ihk_mc_get_processor_id(), fault_addr, reason,
 			regs, error);
 	check_need_resched();
+	set_cputime(0);
 	return;
 }
 

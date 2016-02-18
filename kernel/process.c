@@ -2161,10 +2161,16 @@ void destroy_thread(struct thread *thread)
 void release_thread(struct thread *thread)
 {
 	struct process_vm *vm;
+	struct mcs_rwlock_node lock;
 
 	if (!ihk_atomic_dec_and_test(&thread->refcount)) {
 		return;
 	}
+
+	mcs_rwlock_writer_lock_noirq(&thread->proc->update_lock, &lock);
+	ts_add(&thread->proc->stime, &thread->stime);
+	ts_add(&thread->proc->utime, &thread->utime);
+	mcs_rwlock_writer_unlock_noirq(&thread->proc->update_lock, &lock);
 
 	vm = thread->vm;
 
@@ -2547,6 +2553,7 @@ redo:
 	if (prev != next) {
 		switch_ctx = 1;
 		v->current = next;
+		reset_cputime();
 	}
 
 	if (switch_ctx) {

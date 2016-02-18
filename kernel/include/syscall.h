@@ -337,4 +337,7 @@ struct tod_data_s {
 };
 extern struct tod_data_s tod_data;	/* residing in arch-dependent file */
 
+void reset_cputime();
+void set_cputime(int mode);
+
 #endif

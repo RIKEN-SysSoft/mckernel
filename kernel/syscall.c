@@ -113,6 +113,7 @@ extern unsigned long ihk_mc_get_ns_per_tsc(void);
 extern int ptrace_detach(int pid, int data);
 extern void debug_log(unsigned long);
 extern void free_all_process_memory_range(struct process_vm *vm);
+extern struct cpu_local_var *clv;
 
 int prepare_process_ranges_args_envs(struct thread *thread, 
 		struct program_load_desc *pn,
@@ -401,6 +402,10 @@ do_wait(int pid, int *status, int options, void *rusage)
 				ret = wait_zombie(thread, child, status, options);
 				mcs_rwlock_writer_unlock_noirq(&thread->proc->children_lock, &lock);
 				if(!(options & WNOWAIT)){
+					mcs_rwlock_writer_lock_noirq(&proc->update_lock, &lock);
+					ts_add(&proc->stime, &child->stime);
+					ts_add(&proc->utime, &child->utime);
+					mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &lock);
 					release_process(child);
 				}
 				goto out_found;
@@ -2032,6 +2037,37 @@ SYSCALL_DECLARE(set_tid_address)
 	                        (int*)ihk_mc_syscall_arg0(ctx);
 
 	return cpu_local_var(current)->proc->pid;
+}
+
+static unsigned long
+timespec_to_jiffy(const struct timespec *ats)
+{
+	return ats->tv_sec * 100 + ats->tv_nsec / 10000000;
+}
+
+SYSCALL_DECLARE(times)
+{
+	struct tms {
+		unsigned long tms_utime;
+		unsigned long tms_stime;
+		unsigned long tms_cutime;
+		unsigned long tms_cstime;
+	};
+	struct tms mytms;
+	struct tms *buf = (struct tms *)ihk_mc_syscall_arg0(ctx);
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
+	struct timespec ats = {0, 0};
+
+	mytms.tms_utime = timespec_to_jiffy(&thread->utime);
+	mytms.tms_stime = timespec_to_jiffy(&thread->stime);
+	mytms.tms_cutime = timespec_to_jiffy(&proc->utime);
+	mytms.tms_cstime = timespec_to_jiffy(&proc->stime);
+	if(copy_to_user(buf, &mytms, sizeof mytms))
+		return -EFAULT;
+	if(gettime_local_support)
+		calculate_time_from_tsc(&ats);
+	return timespec_to_jiffy(&ats);
 }
 
 SYSCALL_DECLARE(kill)
@@ -6604,13 +6640,67 @@ SYSCALL_DECLARE(pmc_reset)
     return ihk_mc_perfctr_reset(counter);
 }
 
+void
+reset_cputime()
+{
+	struct thread *thread;
+
+	if(clv == NULL)
+		return;
+
+	if(!(thread = cpu_local_var(current)))
+		return;
+
+	thread->btime.tv_sec = 0;
+	thread->btime.tv_nsec = 0;
+}
+
+void
+set_cputime(int mode)
+{
+	struct thread *thread;
+	struct timespec ats;
+
+	if(!gettime_local_support)
+		return;
+
+	if(clv == NULL)
+		return;
+
+	if(!(thread = cpu_local_var(current)))
+		return;
+
+	calculate_time_from_tsc(&ats);
+	if(thread->btime.tv_sec != 0 && thread->btime.tv_nsec != 0){
+		struct timespec dts;
+
+		dts.tv_sec = ats.tv_sec;
+		dts.tv_nsec = ats.tv_nsec;
+		ts_sub(&dts, &thread->btime);
+		if(mode == 1)
+			ts_add(&thread->utime, &dts);
+		else
+			ts_add(&thread->stime, &dts);
+	}
+	if(mode == 2){
+		thread->btime.tv_sec = 0;
+		thread->btime.tv_nsec = 0;
+	}
+	else{
+		thread->btime.tv_sec = ats.tv_sec;
+		thread->btime.tv_nsec = ats.tv_nsec;
+	}
+}
+
 long syscall(int num, ihk_mc_user_context_t *ctx)
 {
 	long l;
 
+	set_cputime(1);
 	if(cpu_local_var(current)->proc->status == PS_EXITED &&
 	   (num != __NR_exit && num != __NR_exit_group)){
 		check_signal(-EINVAL, NULL, 0);
+		set_cputime(0);
 		return -EINVAL;
 	}
 
@@ -6669,5 +6759,6 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		ptrace_syscall_exit(cpu_local_var(current));
 	}
 
+	set_cputime(0);
 	return l;
 }

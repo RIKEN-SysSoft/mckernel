@@ -53,5 +53,27 @@ struct timezone
     int tz_dsttime;		/* Nonzero if DST is ever in effect.  */
   };
 
+static inline void
+ts_add(struct timespec *ats, const struct timespec *bts)
+{
+	ats->tv_sec += bts->tv_sec;
+	ats->tv_nsec += bts->tv_nsec;
+	while(ats->tv_nsec >= 1000000000){
+		ats->tv_sec++;
+		ats->tv_nsec -= 1000000000;
+	}
+}
+
+static inline void
+ts_sub(struct timespec *ats, const struct timespec *bts)
+{
+	ats->tv_sec -= bts->tv_sec;
+	ats->tv_nsec -= bts->tv_nsec;
+	while(ats->tv_nsec < 0){
+		ats->tv_sec--;
+		ats->tv_nsec += 1000000000;
+	}
+}
+
 #endif // __TIME_H
 

@@ -347,7 +347,7 @@ typedef void pgio_func_t(void *arg);
  * special "init" process */
 struct process {
 	struct list_head hash_list;
-	mcs_rwlock_lock_t update_lock; // lock for parent, status, ...?
+	mcs_rwlock_lock_t update_lock; // lock for parent, status, cpu time...
 
 	// process vm
 	struct process_vm *vm;
@@ -431,6 +431,10 @@ struct process {
 
 	ihk_spinlock_t mckfd_lock;
 	struct mckfd *mckfd;
+
+	// cpu time (summary)
+	struct timespec stime;
+	struct timespec utime;
 };
 
 void hold_thread(struct thread *ftn);
@@ -518,6 +522,11 @@ struct thread {
 	unsigned long *ptrace_debugreg;	/* debug registers for ptrace */
 	struct sig_pending *ptrace_recvsig;
 	struct sig_pending *ptrace_sendsig;
+
+	// cpu time
+	struct timespec stime;
+	struct timespec utime;
+	struct timespec btime;
 };
 
 struct process_vm {
