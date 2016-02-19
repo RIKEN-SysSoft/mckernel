@@ -533,6 +533,13 @@ struct thread {
 	struct timespec btime;
 	int times_update;
 	int in_kernel;
+
+	// interval timers
+	int itimer_enabled;
+	struct itimerval itimer_virtual;
+	struct itimerval itimer_prof;
+	struct timespec itimer_virtual_value;
+	struct timespec itimer_prof_value;
 };
 
 struct process_vm {
@@ -636,5 +643,6 @@ void process_unlock(struct process *proc, struct mcs_rwlock_node_irqsave *lock);
 void chain_process(struct process *);
 void chain_thread(struct thread *);
 void proc_init();
+void set_timer();
 
 #endif

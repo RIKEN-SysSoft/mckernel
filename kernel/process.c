@@ -2478,6 +2478,26 @@ ack:
 	ihk_mc_spinlock_unlock(&cur_v->migq_lock, irqstate);
 }
 
+void
+set_timer()
+{
+	struct cpu_local_var *v = get_this_cpu_local_var();
+
+	/* Toggle timesharing if CPU core is oversubscribed */
+	if (v->runq_len > 1 || v->current->itimer_enabled) {
+		if (!cpu_local_var(timer_enabled)) {
+			lapic_timer_enable(10000000);
+			cpu_local_var(timer_enabled) = 1;
+		}
+	}
+	else {
+		if (cpu_local_var(timer_enabled)) {
+			lapic_timer_disable();
+			cpu_local_var(timer_enabled) = 0;
+		}
+	}
+}
+
 void schedule(void)
 {
 	struct cpu_local_var *v;
@@ -2516,20 +2536,6 @@ redo:
 			list_add_tail(&prev->sched_list, &(v->runq));
 			++v->runq_len;
 		}
-
-		/* Toggle timesharing if CPU core is oversubscribed */
-		if (v->runq_len > 1) {
-			if (!cpu_local_var(timer_enabled)) {
-				lapic_timer_enable(10000000);
-				cpu_local_var(timer_enabled) = 1;
-			}
-		}
-		else {
-			if (cpu_local_var(timer_enabled)) {
-				lapic_timer_disable();
-				cpu_local_var(timer_enabled) = 0;
-			}
-		}
 	}
 
 	if (v->flags & CPU_FLAG_NEED_MIGRATE) {
@@ -2555,6 +2561,8 @@ redo:
 		v->current = next;
 		reset_cputime();
 	}
+
+	set_timer();
 
 	if (switch_ctx) {
 		dkprintf("schedule: %d => %d \n",

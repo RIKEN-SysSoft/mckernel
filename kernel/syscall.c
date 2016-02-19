@@ -5238,6 +5238,125 @@ static void calculate_time_from_tsc(struct timespec *ts)
 	return;
 }
 
+SYSCALL_DECLARE(setitimer)
+{
+	int which = (int)ihk_mc_syscall_arg0(ctx);
+	struct itimerval *new = (struct itimerval *)ihk_mc_syscall_arg1(ctx);
+	struct itimerval *old = (struct itimerval *)ihk_mc_syscall_arg2(ctx);
+	struct syscall_request request IHK_DMA_ALIGN;
+	struct thread *thread = cpu_local_var(current);
+	int timer_start = 1;
+	struct itimerval wkval;
+	struct timeval tv;
+
+	if(which != ITIMER_REAL &&
+	   which != ITIMER_VIRTUAL &&
+	   which != ITIMER_PROF)
+		return -EINVAL;
+
+	if(which == ITIMER_REAL){
+		request.number = __NR_setitimer;
+		request.args[0] = ihk_mc_syscall_arg0(ctx);
+		request.args[1] = ihk_mc_syscall_arg1(ctx);
+		request.args[2] = ihk_mc_syscall_arg2(ctx);
+
+		return do_syscall(&request, ihk_mc_get_processor_id(), 0);
+	}
+	else if(which == ITIMER_VIRTUAL){
+		if(old){
+			memcpy(&wkval, &thread->itimer_virtual, sizeof wkval);
+			if(wkval.it_value.tv_sec != 0 ||
+			   wkval.it_value.tv_usec != 0){
+				ts_to_tv(&tv, &thread->itimer_virtual_value);
+				tv_sub(&wkval.it_value, &tv);
+			}
+			if(copy_to_user(old, &wkval, sizeof wkval))
+				return -EFAULT;
+		}
+		if(!new){
+			return 0;
+		}
+		if(copy_from_user(&thread->itimer_virtual, new, sizeof(struct itimerval)))
+		thread->itimer_virtual_value.tv_sec = 0;
+		thread->itimer_virtual_value.tv_nsec = 0;
+		if(thread->itimer_virtual.it_value.tv_sec == 0 &&
+		   thread->itimer_virtual.it_value.tv_usec == 0)
+			timer_start = 0;
+	}
+	else if(which == ITIMER_PROF){
+		if(old){
+			memcpy(&wkval, &thread->itimer_prof, sizeof wkval);
+			if(wkval.it_value.tv_sec != 0 ||
+			   wkval.it_value.tv_usec != 0){
+				ts_to_tv(&tv, &thread->itimer_prof_value);
+				tv_sub(&wkval.it_value, &tv);
+			}
+			if(copy_to_user(old, &wkval, sizeof wkval))
+				return -EFAULT;
+		}
+		if(!new){
+			return 0;
+		}
+		if(copy_from_user(&thread->itimer_prof, new, sizeof(struct itimerval)))
+		thread->itimer_prof_value.tv_sec = 0;
+		thread->itimer_prof_value.tv_nsec = 0;
+		if(thread->itimer_prof.it_value.tv_sec == 0 &&
+		   thread->itimer_prof.it_value.tv_usec == 0)
+			timer_start = 0;
+	}
+	thread->itimer_enabled = timer_start;
+	set_timer();
+	return 0;
+}
+
+SYSCALL_DECLARE(getitimer)
+{
+	int which = (int)ihk_mc_syscall_arg0(ctx);
+	struct itimerval *old = (struct itimerval *)ihk_mc_syscall_arg1(ctx);
+	struct syscall_request request IHK_DMA_ALIGN;
+	struct thread *thread = cpu_local_var(current);
+	struct itimerval wkval;
+	struct timeval tv;
+
+	if(which != ITIMER_REAL &&
+	   which != ITIMER_VIRTUAL &&
+	   which != ITIMER_PROF)
+		return -EINVAL;
+
+	if(which == ITIMER_REAL){
+		request.number = __NR_getitimer;
+		request.args[0] = ihk_mc_syscall_arg0(ctx);
+		request.args[1] = ihk_mc_syscall_arg1(ctx);
+
+		return do_syscall(&request, ihk_mc_get_processor_id(), 0);
+	}
+	else if(which == ITIMER_VIRTUAL){
+		if(old){
+			memcpy(&wkval, &thread->itimer_virtual, sizeof wkval);
+			if(wkval.it_value.tv_sec != 0 ||
+			   wkval.it_value.tv_usec != 0){
+				ts_to_tv(&tv, &thread->itimer_virtual_value);
+				tv_sub(&wkval.it_value, &tv);
+			}
+			if(copy_to_user(old, &wkval, sizeof wkval))
+				return -EFAULT;
+		}
+	}
+	else if(which == ITIMER_PROF){
+		if(old){
+			memcpy(&wkval, &thread->itimer_prof, sizeof wkval);
+			if(wkval.it_value.tv_sec != 0 ||
+			   wkval.it_value.tv_usec != 0){
+				ts_to_tv(&tv, &thread->itimer_prof_value);
+				tv_sub(&wkval.it_value, &tv);
+			}
+			if(copy_to_user(old, &wkval, sizeof wkval))
+				return -EFAULT;
+		}
+	}
+	return 0;
+}
+
 SYSCALL_DECLARE(clock_gettime)
 {
 	/* TODO: handle clock_id */
@@ -6735,11 +6854,17 @@ set_cputime(int mode)
 		dts.tv_sec = ats.tv_sec;
 		dts.tv_nsec = ats.tv_nsec;
 		ts_sub(&dts, &thread->btime);
-		if(mode == 1)
+		if(mode == 1){
 			ts_add(&thread->utime, &dts);
-		else
+			ts_add(&thread->itimer_virtual_value, &dts);
+			ts_add(&thread->itimer_prof_value, &dts);
+		}
+		else{
 			ts_add(&thread->stime, &dts);
+			ts_add(&thread->itimer_prof_value, &dts);
+		}
 	}
+
 	if(mode == 2){
 		thread->btime.tv_sec = 0;
 		thread->btime.tv_nsec = 0;
@@ -6750,6 +6875,58 @@ set_cputime(int mode)
 	}
 	thread->times_update = 1;
 	thread->in_kernel = mode;
+
+	if(thread->itimer_enabled){
+		struct timeval tv;
+		int ev = 0;
+
+		if(thread->itimer_virtual.it_value.tv_sec != 0 ||
+		   thread->itimer_virtual.it_value.tv_usec){
+			ts_to_tv(&tv, &thread->itimer_virtual_value);
+			tv_sub(&tv, &thread->itimer_virtual.it_value);
+			if(tv.tv_sec > 0 ||
+			   (tv.tv_sec == 0 &&
+			    tv.tv_usec > 0)){
+				thread->itimer_virtual_value.tv_sec = 0;
+				thread->itimer_virtual_value.tv_nsec = 0;
+				thread->itimer_virtual.it_value.tv_sec =
+				    thread->itimer_virtual.it_interval.tv_sec;
+				thread->itimer_virtual.it_value.tv_usec =
+				    thread->itimer_virtual.it_interval.tv_usec;
+				do_kill(thread, thread->proc->pid, thread->tid,
+				        SIGVTALRM, NULL, 0);
+				ev = 1;
+			}
+		}
+
+		if(thread->itimer_prof.it_value.tv_sec != 0 ||
+		   thread->itimer_prof.it_value.tv_usec){
+			ts_to_tv(&tv, &thread->itimer_prof_value);
+			tv_sub(&tv, &thread->itimer_prof.it_value);
+			if(tv.tv_sec > 0 ||
+			   (tv.tv_sec == 0 &&
+			    tv.tv_usec > 0)){
+				thread->itimer_prof_value.tv_sec = 0;
+				thread->itimer_prof_value.tv_nsec = 0;
+				thread->itimer_prof.it_value.tv_sec =
+				    thread->itimer_prof.it_interval.tv_sec;
+				thread->itimer_prof.it_value.tv_usec =
+				    thread->itimer_prof.it_interval.tv_usec;
+				do_kill(thread, thread->proc->pid, thread->tid,
+				        SIGPROF, NULL, 0);
+				ev = 1;
+			}
+		}
+		if(ev){
+			if(thread->itimer_virtual.it_value.tv_sec == 0 &&
+			   thread->itimer_virtual.it_value.tv_usec == 0 &&
+			   thread->itimer_prof.it_value.tv_sec == 0 &&
+			   thread->itimer_prof.it_value.tv_usec == 0){
+				thread->itimer_enabled = 0;
+				set_timer();
+			}
+		}
+	}
 }
 
 long syscall(int num, ihk_mc_user_context_t *ctx)
