@@ -893,7 +893,6 @@ void debug_handler(struct x86_user_context *regs)
 	struct siginfo info;
 
 	set_cputime(interrupt_from_user(regs)? 1: 2);
-kprintf("debug_handler rip=%lx\n", regs->gpr.rip);
 #ifdef DEBUG_PRINT_CPU
 	kprintf("debug exception (err: %lx, %lx:%lx)\n",
 	        regs->gpr.error, regs->gpr.cs, regs->gpr.rip);
@@ -921,7 +920,6 @@ void int3_handler(struct x86_user_context *regs)
 	struct siginfo info;
 
 	set_cputime(interrupt_from_user(regs)? 1: 2);
-kprintf("int3_handler rip=%lx\n", regs->gpr.rip);
 #ifdef DEBUG_PRINT_CPU
 	kprintf("int3 exception (err: %lx, %lx:%lx)\n",
 	        regs->gpr.error, regs->gpr.cs, regs->gpr.rip);
