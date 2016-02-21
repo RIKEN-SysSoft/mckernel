@@ -261,6 +261,9 @@ process_procfs_request(unsigned long rarg)
 		}
 #endif
 
+		if(readwrite == 0)
+			reason = PF_POPULATE | PF_USER;
+
 		while(left){
 			unsigned long pa;
 			char *va;
