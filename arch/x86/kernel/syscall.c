@@ -32,6 +32,8 @@ int write_process_vm(struct process_vm *vm, void *dst, const void *src, size_t s
 long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
 long syscall(int num, ihk_mc_user_context_t *ctx);
 extern void save_fp_regs(struct thread *proc);
+void set_signal(int sig, void *regs0, siginfo_t *info);
+void check_signal(unsigned long rc, void *regs0, int num);
 
 //#define DEBUG_PRINT_SC
 
@@ -177,6 +179,17 @@ SYSCALL_DECLARE(rt_sigreturn)
 	thread->sigstack.ss_flags = sigsp->ssflags;
 	if(sigsp->restart){
 		return syscall(sigsp->num, (ihk_mc_user_context_t *)regs);
+	}
+	if(regs->gpr.rflags & RFLAGS_TF){
+		struct siginfo info;
+
+		regs->gpr.rax = sigsp->sigrc;
+		memset(&info, '\0', sizeof info);
+		regs->gpr.rflags &= ~RFLAGS_TF;
+		info.si_code = TRAP_TRACE;
+		set_signal(SIGTRAP, regs, &info);
+		check_signal(0, regs, 0);
+		check_need_resched();
 	}
 	return sigsp->sigrc;
 }
@@ -595,6 +608,16 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 			thread->sigmask.__val[0] |= pending->sigmask.__val[0];
 		kfree(pending);
 		ihk_mc_spinlock_unlock(&thread->sigcommon->lock, irqstate);
+		if(regs->gpr.rflags & RFLAGS_TF){
+			struct siginfo info;
+
+			memset(&info, '\0', sizeof info);
+			regs->gpr.rflags &= ~RFLAGS_TF;
+			info.si_code = TRAP_TRACE;
+			set_signal(SIGTRAP, regs, &info);
+			check_signal(0, regs, 0);
+			check_need_resched();
+		}
 	}
 	else {
 		int	coredumped = 0;
@@ -756,6 +779,14 @@ hassigpending(struct thread *thread)
 	return getsigpending(thread, 0);
 }
 
+int
+interrupt_from_user(void *regs0)
+{
+	struct x86_user_context *regs = regs0;
+
+	return !(regs->gpr.rsp & 0x8000000000000000);
+}
+
 void
 check_signal(unsigned long rc, void *regs0, int num)
 {
@@ -785,7 +816,7 @@ check_signal(unsigned long rc, void *regs0, int num)
 		return;
 	}
 
-	if(regs != NULL && (regs->gpr.rsp & 0x8000000000000000)) {
+	if(regs != NULL && !interrupt_from_user(regs)) {
 		return;
 	}
 

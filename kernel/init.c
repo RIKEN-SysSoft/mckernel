@@ -283,7 +283,6 @@ static void post_init(void)
 	zero_tsc();
 	ap_start();
 
-	create_os_procfs_files();
 	sysfs_init();
 	populate_sysfs();
 }

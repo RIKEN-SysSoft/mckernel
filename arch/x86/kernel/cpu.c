@@ -82,6 +82,7 @@ void x86_init_perfctr(void);
 int gettime_local_support = 0;
 
 extern int kprintf(const char *format, ...);
+extern int interrupt_from_user(void *);
 
 static struct idt_entry{
 	uint32_t desc[4];
@@ -786,6 +787,8 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 	lapic_ack();
 	++v->in_interrupt;
 
+	set_cputime(interrupt_from_user(regs)? 1: 2);
+
 	dkprintf("CPU[%d] got interrupt, vector: %d, RIP: 0x%lX\n", 
 	         ihk_mc_get_processor_id(), vector, regs->gpr.rip);
 
@@ -862,12 +865,14 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 
 	check_signal(0, regs, 0);
 	check_need_resched();
+	set_cputime(0);
 
 	--v->in_interrupt;
 }
 
 void gpe_handler(struct x86_user_context *regs)
 {
+	set_cputime(interrupt_from_user(regs)? 1: 2);
 	kprintf("General protection fault (err: %lx, %lx:%lx)\n",
 	        regs->gpr.error, regs->gpr.cs, regs->gpr.rip);
 	arch_show_interrupt_context(regs);
@@ -877,6 +882,7 @@ void gpe_handler(struct x86_user_context *regs)
 	set_signal(SIGSEGV, regs, NULL);
 	check_signal(0, regs, 0);
 	check_need_resched();
+	set_cputime(0);
 	// panic("GPF");
 }
 
@@ -886,6 +892,7 @@ void debug_handler(struct x86_user_context *regs)
 	int si_code = 0;
 	struct siginfo info;
 
+	set_cputime(interrupt_from_user(regs)? 1: 2);
 #ifdef DEBUG_PRINT_CPU
 	kprintf("debug exception (err: %lx, %lx:%lx)\n",
 	        regs->gpr.error, regs->gpr.cs, regs->gpr.rip);
@@ -905,12 +912,14 @@ void debug_handler(struct x86_user_context *regs)
 	set_signal(SIGTRAP, regs, &info);
 	check_signal(0, regs, 0);
 	check_need_resched();
+	set_cputime(0);
 }
 
 void int3_handler(struct x86_user_context *regs)
 {
 	struct siginfo info;
 
+	set_cputime(interrupt_from_user(regs)? 1: 2);
 #ifdef DEBUG_PRINT_CPU
 	kprintf("int3 exception (err: %lx, %lx:%lx)\n",
 	        regs->gpr.error, regs->gpr.cs, regs->gpr.rip);
@@ -922,6 +931,7 @@ void int3_handler(struct x86_user_context *regs)
 	set_signal(SIGTRAP, regs, &info);
 	check_signal(0, regs, 0);
 	check_need_resched();
+	set_cputime(0);
 }
 
 

@@ -36,6 +36,7 @@
 #include <asm/delay.h>
 #include <asm/msr.h>
 #include <asm/io.h>
+#include "config.h"
 #include "mcctrl.h"
 
 //#define DEBUG
@@ -46,12 +47,31 @@
 #define dprintk(...)
 #endif
 
+#ifdef MCCTRL_KSYM_sys_unshare
+#if MCCTRL_KSYM_sys_unshare
+typedef int (*int_star_fn_ulong_t)(unsigned long);
+int (*mcctrl_sys_unshare)(unsigned long unshare_flags) =
+        (int_star_fn_ulong_t)
+        MCCTRL_KSYM_sys_unshare;
+#else // exported
+int (*mcctrl_sys_unshare)(unsigned long unshare_flags) = NULL;
+#endif
+#endif
+
+#ifdef MCCTRL_KSYM_sys_mount
+#if MCCTRL_KSYM_sys_mount
+typedef int (*int_star_fn_char_char_char_ulong_void_t)(char *, char *, char *, unsigned long, void *);
+int (*mcctrl_sys_mount)(char *dev_name,char *dir_name, char *type, unsigned long flags, void *data) =
+        (int_star_fn_char_char_char_ulong_void_t)
+        MCCTRL_KSYM_sys_mount;
+#else // exported
+int (*mcctrl_sys_mount)(char *dev_name,char *dir_name, char *type, unsigned long flags, void *data) = NULL;
+#endif
+#endif
+
 //static DECLARE_WAIT_QUEUE_HEAD(wq_prepare);
 //extern struct mcctrl_channel *channels;
 int mcctrl_ikc_set_recv_cpu(ihk_os_t os, int cpu);
-extern int procfs_create_entry(void *os, int ref, int osnum, int pid, char *name,
-		int mode, void *opaque);
-extern void procfs_delete_entry(void *os, int osnum, char *fname);
 
 static long mcexec_prepare_image(ihk_os_t os,
                                  struct program_load_desc * __user udesc)
@@ -105,10 +125,10 @@ static long mcexec_prepare_image(ihk_os_t os,
 
 	pdesc->args = (void*)virt_to_phys(args);
 	printk("args: 0x%lX\n", (unsigned long)pdesc->args);
-	printk("argc: %d\n", *(int*)args);
+	printk("argc: %ld\n", *(long *)args);
 	pdesc->envs = (void*)virt_to_phys(envs);
 	printk("envs: 0x%lX\n", (unsigned long)pdesc->envs);
-	printk("envc: %d\n", *(int*)envs);
+	printk("envc: %ld\n", *(long *)envs);
 
 	isp.msg = SCD_MSG_PREPARE_PROCESS;
 	isp.ref = pdesc->cpu;
@@ -267,12 +287,15 @@ static void release_handler(ihk_os_t os, void *param)
 {
 	struct handlerinfo *info = param;
 	struct ikc_scd_packet isp;
+	int os_ind = ihk_host_os_get_index(os);
 
 	memset(&isp, '\0', sizeof isp);
 	isp.msg = SCD_MSG_CLEANUP_PROCESS;
 	isp.pid = info->pid;
 
 	mcctrl_ikc_send(os, 0, &isp);
+	if(os_ind >= 0)
+		delete_pid_entry(os_ind, info->pid);
 	kfree(param);
 }
 
@@ -838,7 +861,7 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	struct mckernel_exec_file *mcef_iter;
 	int retval;
 	int os_ind = ihk_host_os_get_index(os);
-	char *proc_name, *pathbuf, *fullpath;
+	char *pathbuf, *fullpath;
 
 	if (os_ind < 0) {
 		return EINVAL;
@@ -847,12 +870,6 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
 	if (!pathbuf) {
 		return ENOMEM;
-	}
-
-	proc_name = kmalloc(PATH_MAX, GFP_TEMPORARY);
-	if (!proc_name) {
-		retval = ENOMEM;
-		goto out_error_free_path;
 	}
 
 	file = open_exec(filename);
@@ -873,8 +890,6 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 		goto out_put_file;
 	}
 
-	snprintf(proc_name, 1024, "mcos%d/%d/exe", os_ind, current->tgid);
-
 	spin_lock_irq(&mckernel_exec_file_lock);
 	/* Find previous file (if exists) and drop it */
 	list_for_each_entry(mcef_iter, &mckernel_exec_files, list) {
@@ -883,9 +898,6 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 			fput(mcef_iter->fp);
 			list_del(&mcef_iter->list);
 			kfree(mcef_iter);
-			/* Drop old /proc/self/exe */
-			procfs_delete_entry(os, os_ind, proc_name);
-			dprintk("%d open_exec dropped previous executable \n", (int)current->tgid);
 			break;
 		}
 	}
@@ -897,15 +909,12 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	list_add_tail(&mcef->list, &mckernel_exec_files);
 
 	/* Create /proc/self/exe entry */
-	if (procfs_create_entry(os, 0, os_ind, current->tgid, proc_name, 
-				S_IFLNK, fullpath) != 0) {
-		printk("ERROR: could not create a procfs entry for %s.\n", proc_name);
-	}
+	add_pid_entry(os_ind, current->tgid);
+	proc_exe_link(os_ind, current->tgid, fullpath);
 	spin_unlock(&mckernel_exec_file_lock);
 
 	dprintk("%d open_exec and holding file: %s\n", (int)current->tgid, filename);
 
-	kfree(proc_name);
 	kfree(pathbuf);
 
 	return 0;
@@ -914,9 +923,6 @@ out_put_file:
 	fput(file);
 
 out_error_free:
-	kfree(proc_name);
-
-out_error_free_path:
 	kfree(pathbuf);
 	return -retval;
 }
@@ -927,7 +933,6 @@ int mcexec_close_exec(ihk_os_t os)
 	struct mckernel_exec_file *mcef = NULL;
 	int found = 0;
 	int os_ind = ihk_host_os_get_index(os);	
-	char proc_name[1024];
 
 	if (os_ind < 0) {
 		return EINVAL;
@@ -945,14 +950,6 @@ int mcexec_close_exec(ihk_os_t os)
 			break;
 		}
 	}
-
-	/* Remove /proc/self/exe and /proc/self directory 
-	 * TODO: instead of removing directory explicitly, detect in procfs_delete_entry() 
-	 * when a directory becomes empty and remove it automatically */
-	snprintf(proc_name, 1024, "mcos%d/%d/exe", os_ind, current->tgid);
-	procfs_delete_entry(os, os_ind, proc_name);
-	snprintf(proc_name, 1024, "mcos%d/%d", os_ind, current->tgid);
-	procfs_delete_entry(os, os_ind, proc_name);
 
 	spin_unlock(&mckernel_exec_file_lock);
 
@@ -1011,6 +1008,67 @@ long mcexec_strncpy_from_user(ihk_os_t os, struct strncpy_from_user_desc * __use
 	return 0;
 }
 
+long mcexec_sys_mount(struct sys_mount_desc *__user arg)
+{
+	struct sys_mount_desc desc;
+	struct cred *promoted;
+	const struct cred *original;
+	int ret;
+
+	if (copy_from_user(&desc, arg, sizeof(desc))) {
+		return -EFAULT;
+	}
+
+	promoted = prepare_creds();
+	if (!promoted) {
+		return -ENOMEM;
+	}
+	cap_raise(promoted->cap_effective, CAP_SYS_ADMIN);
+	original = override_creds(promoted);
+
+#if MCCTRL_KSYM_sys_mount
+	ret = mcctrl_sys_mount(desc.dev_name, desc.dir_name, desc.type,
+		desc.flags, desc.data);
+#else
+	ret = -EFAULT;
+#endif
+
+	revert_creds(original);
+	put_cred(promoted);
+
+	return ret;
+}
+
+long mcexec_sys_unshare(struct sys_unshare_desc *__user arg)
+{
+	struct sys_unshare_desc desc;
+	struct cred *promoted;
+	const struct cred *original;
+	int ret;
+
+	if (copy_from_user(&desc, arg, sizeof(desc))) {
+		return -EFAULT;
+	}
+
+	promoted = prepare_creds();
+	if (!promoted) {
+		return -ENOMEM;
+	}
+	cap_raise(promoted->cap_effective, CAP_SYS_ADMIN);
+	original = override_creds(promoted);
+
+#if MCCTRL_KSYM_sys_unshare
+	ret = mcctrl_sys_unshare(desc.unshare_flags);
+#else
+	ret = -EFAULT;
+#endif
+
+	revert_creds(original);
+	put_cred(promoted);
+
+	return ret;
+}
+
 long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
                       struct file *file)
 {
@@ -1064,6 +1122,12 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 
 	case MCEXEC_UP_GET_CREDV:
 		return mcexec_getcredv((int *)arg);
+
+	case MCEXEC_UP_SYS_MOUNT:
+		return mcexec_sys_mount((struct sys_mount_desc *)arg);
+
+	case MCEXEC_UP_SYS_UNSHARE:
+		return mcexec_sys_unshare((struct sys_unshare_desc *)arg);
 
 	case MCEXEC_UP_DEBUG_LOG:
 		return mcexec_debug_log(os, arg);

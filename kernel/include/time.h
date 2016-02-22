@@ -53,5 +53,72 @@ struct timezone
     int tz_dsttime;		/* Nonzero if DST is ever in effect.  */
   };
 
+#define ITIMER_REAL	0
+#define ITIMER_VIRTUAL	1
+#define ITIMER_PROF	2
+
+struct itimerval {
+	struct timeval it_interval;
+	struct timeval it_value;
+};
+
+static inline void
+ts_add(struct timespec *ats, const struct timespec *bts)
+{
+	ats->tv_sec += bts->tv_sec;
+	ats->tv_nsec += bts->tv_nsec;
+	while(ats->tv_nsec >= 1000000000){
+		ats->tv_sec++;
+		ats->tv_nsec -= 1000000000;
+	}
+}
+
+static inline void
+ts_sub(struct timespec *ats, const struct timespec *bts)
+{
+	ats->tv_sec -= bts->tv_sec;
+	ats->tv_nsec -= bts->tv_nsec;
+	while(ats->tv_nsec < 0){
+		ats->tv_sec--;
+		ats->tv_nsec += 1000000000;
+	}
+}
+
+static inline void
+tv_add(struct timeval *ats, const struct timeval *bts)
+{
+	ats->tv_sec += bts->tv_sec;
+	ats->tv_usec += bts->tv_usec;
+	while(ats->tv_usec >= 1000000){
+		ats->tv_sec++;
+		ats->tv_usec -= 1000000;
+	}
+}
+
+static inline void
+tv_sub(struct timeval *ats, const struct timeval *bts)
+{
+	ats->tv_sec -= bts->tv_sec;
+	ats->tv_usec -= bts->tv_usec;
+	while(ats->tv_usec < 0){
+		ats->tv_sec--;
+		ats->tv_usec += 1000000;
+	}
+}
+
+static inline void
+tv_to_ts(struct timespec *ats, const struct timeval *bts)
+{
+	ats->tv_sec = bts->tv_sec;
+	ats->tv_nsec = bts->tv_usec * 1000;
+}
+
+static inline void
+ts_to_tv(struct timeval *ats, const struct timespec *bts)
+{
+	ats->tv_sec = bts->tv_sec;
+	ats->tv_usec = bts->tv_nsec / 1000;
+}
+
 #endif // __TIME_H
 

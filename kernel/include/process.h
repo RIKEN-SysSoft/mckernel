@@ -312,18 +312,22 @@ struct vm_regions {
 
 struct process_vm;
 
-struct sigfd {
-	struct sigfd *next;
+struct mckfd {
+	struct mckfd *next;
 	int fd;
-	__sigset_t mask;
+	long data;
+	void *opt;
+	long (*read_cb)(struct mckfd *, ihk_mc_user_context_t *);
+	int (*ioctl_cb)(struct mckfd *, ihk_mc_user_context_t *);
+	int (*close_cb)(struct mckfd *, ihk_mc_user_context_t *);
 };
+
 #define SFD_CLOEXEC 02000000
 #define SFD_NONBLOCK 04000
 
 struct sig_common {
 	ihk_spinlock_t	lock;
 	ihk_atomic_t use;
-	struct sigfd *sigfd;
 	struct k_sigaction action[_NSIG];
 	struct list_head sigpending;
 };
@@ -343,7 +347,7 @@ typedef void pgio_func_t(void *arg);
  * special "init" process */
 struct process {
 	struct list_head hash_list;
-	mcs_rwlock_lock_t update_lock; // lock for parent, status, ...?
+	mcs_rwlock_lock_t update_lock; // lock for parent, status, cpu time...
 
 	// process vm
 	struct process_vm *vm;
@@ -425,6 +429,16 @@ struct process {
 	/* Store signal sent to parent when the process terminates. */
 	int termsig;
 
+	ihk_spinlock_t mckfd_lock;
+	struct mckfd *mckfd;
+
+	// cpu time (summary)
+	struct timespec stime;
+	struct timespec utime;
+
+	// cpu time (children)
+	struct timespec stime_children;
+	struct timespec utime_children;
 };
 
 void hold_thread(struct thread *ftn);
@@ -512,6 +526,20 @@ struct thread {
 	unsigned long *ptrace_debugreg;	/* debug registers for ptrace */
 	struct sig_pending *ptrace_recvsig;
 	struct sig_pending *ptrace_sendsig;
+
+	// cpu time
+	struct timespec stime;
+	struct timespec utime;
+	struct timespec btime;
+	int times_update;
+	int in_kernel;
+
+	// interval timers
+	int itimer_enabled;
+	struct itimerval itimer_virtual;
+	struct itimerval itimer_prof;
+	struct timespec itimer_virtual_value;
+	struct timespec itimer_prof_value;
 };
 
 struct process_vm {
@@ -615,5 +643,6 @@ void process_unlock(struct process *proc, struct mcs_rwlock_node_irqsave *lock);
 void chain_process(struct process *);
 void chain_thread(struct thread *);
 void proc_init();
+void set_timer();
 
 #endif

@@ -223,7 +223,7 @@ int flatten_strings(int nr_strings, char *first, char **strings, char **flat)
 	}
 
 	/* Count full length */
-	full_len = sizeof(int) + sizeof(char *); // Counter and terminating NULL
+	full_len = sizeof(long) + sizeof(char *); // Counter and terminating NULL
 	if (first) {
 		full_len += sizeof(char *) + strlen(first) + 1; 
 	}
@@ -233,6 +233,8 @@ int flatten_strings(int nr_strings, char *first, char **strings, char **flat)
 		full_len += sizeof(char *) + strlen(strings[string_i]) + 1; 
 	}
 
+	full_len = (full_len + sizeof(long) - 1) & ~(sizeof(long) - 1);
+
 	_flat = (char *)kmalloc(full_len, IHK_MC_AP_NOWAIT);
 	if (!_flat) {
 		return 0;
@@ -241,14 +243,14 @@ int flatten_strings(int nr_strings, char *first, char **strings, char **flat)
 	memset(_flat, 0, full_len);
 
 	/* Number of strings */
-	*((int*)_flat) = nr_strings + (first ? 1 : 0);
+	*((long *)_flat) = nr_strings + (first ? 1 : 0);
 	
 	// Actual offset
-	flat_offset = sizeof(int) + sizeof(char *) * (nr_strings + 1 + 
+	flat_offset = sizeof(long) + sizeof(char *) * (nr_strings + 1 + 
 			(first ? 1 : 0)); 
 
 	if (first) {
-		*((char **)(_flat + sizeof(int))) = (void *)flat_offset;
+		*((char **)(_flat + sizeof(long))) = (void *)flat_offset;
 		memcpy(_flat + flat_offset, first, strlen(first) + 1);
 		flat_offset += strlen(first) + 1;
 	}
@@ -256,7 +258,7 @@ int flatten_strings(int nr_strings, char *first, char **strings, char **flat)
 	for (string_i = 0; string_i < nr_strings; ++string_i) {
 		
 		/* Fabricate the string */
-		*((char **)(_flat + sizeof(int) + (string_i + (first ? 1 : 0)) 
+		*((char **)(_flat + sizeof(long) + (string_i + (first ? 1 : 0)) 
 					* sizeof(char *))) = (void *)flat_offset;
 		memcpy(_flat + flat_offset, strings[string_i], strlen(strings[string_i]) + 1);
 		flat_offset += strlen(strings[string_i]) + 1;

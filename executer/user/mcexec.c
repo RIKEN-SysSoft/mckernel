@@ -60,7 +60,7 @@
 #include <signal.h>
 #include <sys/signalfd.h>
 #include <sys/mount.h>
-#include <linux/version.h>
+#include <include/generated/uapi/linux/version.h>
 #include "../include/uprotocol.h"
 
 //#define DEBUG
@@ -185,7 +185,8 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	
 	desc = malloc(sizeof(struct program_load_desc)
 	              + sizeof(struct program_image_section) * nhdrs);
-	memset(desc, '\0', sizeof(struct program_load_desc));
+	memset(desc, '\0', sizeof(struct program_load_desc)
+	                   + sizeof(struct program_image_section) * nhdrs);
 	desc->shell_path[0] = '\0';
 	fseek(fp, hdr.e_phoff, SEEK_SET);
 	j = 0;
@@ -673,6 +674,7 @@ void transfer_image(int fd, struct program_load_desc *desc)
 		          desc->sections[i].offset, flen);
 
 		while (s < e) {
+			memset(&pt, '\0', sizeof pt);
 			pt.rphys = rpa;
 			pt.userp = dma_buf;
 			pt.size = PAGE_SIZE;
@@ -776,7 +778,7 @@ int flatten_strings(int nr_strings, char *first, char **strings, char **flat)
 	}
 
 	/* Count full length */
-	full_len = sizeof(int) + sizeof(char *); // Counter and terminating NULL
+	full_len = sizeof(long) + sizeof(char *); // Counter and terminating NULL
 	if (first) {
 		full_len += sizeof(char *) + strlen(first) + 1; 
 	}
@@ -786,6 +788,8 @@ int flatten_strings(int nr_strings, char *first, char **strings, char **flat)
 		full_len += sizeof(char *) + strlen(strings[string_i]) + 1; 
 	}
 
+	full_len = (full_len + sizeof(long) - 1) & ~(sizeof(long) - 1);
+
 	_flat = (char *)malloc(full_len);
 	if (!_flat) {
 		return 0;
@@ -794,14 +798,14 @@ int flatten_strings(int nr_strings, char *first, char **strings, char **flat)
 	memset(_flat, 0, full_len);
 
 	/* Number of strings */
-	*((int*)_flat) = nr_strings + (first ? 1 : 0);
+	*((long *)_flat) = nr_strings + (first ? 1 : 0);
 	
 	// Actual offset
-	flat_offset = sizeof(int) + sizeof(char *) * (nr_strings + 1 + 
+	flat_offset = sizeof(long) + sizeof(char *) * (nr_strings + 1 + 
 			(first ? 1 : 0)); 
 
 	if (first) {
-		*((char **)(_flat + sizeof(int))) = (void *)flat_offset;
+		*((char **)(_flat + sizeof(long))) = (void *)flat_offset;
 		memcpy(_flat + flat_offset, first, strlen(first) + 1);
 		flat_offset += strlen(first) + 1;
 	}
@@ -809,7 +813,7 @@ int flatten_strings(int nr_strings, char *first, char **strings, char **flat)
 	for (string_i = 0; string_i < nr_strings; ++string_i) {
 		
 		/* Fabricate the string */
-		*((char **)(_flat + sizeof(int) + (string_i + (first ? 1 : 0)) 
+		*((char **)(_flat + sizeof(long) + (string_i + (first ? 1 : 0)) 
 					* sizeof(char *))) = (void *)flat_offset;
 		memcpy(_flat + flat_offset, strings[string_i], strlen(strings[string_i]) + 1);
 		flat_offset += strlen(strings[string_i]) + 1;
@@ -892,6 +896,7 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 		remote_tid = -1;
 	}
 
+	memset(&sigdesc, '\0', sizeof sigdesc);
 	sigdesc.cpu = cpu;
 	sigdesc.pid = (int)pid;
 	sigdesc.tid = remote_tid;
@@ -918,6 +923,7 @@ act_signalfd4(struct syscall_wait_desc *w)
 	switch(mode){
 	    case 0: /* new signalfd */
 		sfd = malloc(sizeof(struct sigfd));
+		memset(sfd, '\0', sizeof(struct sigfd));
 		tmp = w->sr.args[1];
 		flags = 0;
 		if(tmp & SFD_NONBLOCK)
@@ -1301,39 +1307,6 @@ int main(int argc, char **argv)
 		++optind;
 	}
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
-	__dprintf("mcoverlay enable\n");
-	char mcos_procdir[PATH_MAX];
-
-	error = isunshare();
-	if (error == 0) {
-		if (unshare(CLONE_NEWNS)) {
-			fprintf(stderr, "Error: Failed to unshare. (%s)\n", 
-				strerror(errno));
-			return 1;
-		}
-
-		sprintf(mcos_procdir, "/tmp/mcos/mcos%d_proc", mcosid);
-		if (mount(mcos_procdir, "/proc", NULL, MS_BIND, NULL)) {
-			fprintf(stderr, "Error: Failed to mount. (%s)\n", 
-				strerror(errno));
-			return 1;
-		}
-	} else if (error == -1) {
-		return 1;
-	}
-#else
-	__dprintf("mcoverlay disable\n");
-#endif
-
-	__dprintf("before seteuid(): uid=%d, euid=%d\n", getuid(), geteuid());
-	if (seteuid(getuid())) {
-		fprintf(stderr, "Error: Failed to seteuid. (%s)\n", 
-			strerror(errno));
-		return 1;
-	}
-	__dprintf("after seteuid():  uid=%d, euid=%d\n", getuid(), geteuid());
-
 	sprintf(dev, "/dev/mcos%d", mcosid);
 
 	/* No more arguments? */
@@ -1354,6 +1327,58 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error: Failed to open %s.\n", dev);
 		return 1;
 	}
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
+	__dprintf("mcoverlay enable\n");
+	char mcos_procdir[PATH_MAX];
+	char mcos_sysdir[PATH_MAX];
+
+	error = isunshare();
+	if (error == 0) {
+		struct sys_unshare_desc unshare_desc;
+		struct sys_mount_desc mount_desc;
+
+		memset(&unshare_desc, '\0', sizeof unshare_desc);
+		memset(&mount_desc, '\0', sizeof mount_desc);
+		unshare_desc.unshare_flags = CLONE_NEWNS;
+		if (ioctl(fd, MCEXEC_UP_SYS_UNSHARE, 
+			(unsigned long)&unshare_desc) != 0) {
+			fprintf(stderr, "Error: Failed to unshare. (%s)\n", 
+				strerror(errno));
+			return 1;
+		}
+
+		sprintf(mcos_procdir, "/tmp/mcos/mcos%d_proc", mcosid);
+		mount_desc.dev_name = mcos_procdir;
+		mount_desc.dir_name = "/proc";
+		mount_desc.type = NULL;
+		mount_desc.flags = MS_BIND;
+		mount_desc.data = NULL;
+		if (ioctl(fd, MCEXEC_UP_SYS_MOUNT, 
+			(unsigned long)&mount_desc) != 0) {
+			fprintf(stderr, "Error: Failed to mount /proc. (%s)\n", 
+				strerror(errno));
+			return 1;
+		}
+
+		sprintf(mcos_sysdir, "/tmp/mcos/mcos%d_sys", mcosid);
+		mount_desc.dev_name = mcos_sysdir;
+		mount_desc.dir_name = "/sys";
+		mount_desc.type = NULL;
+		mount_desc.flags = MS_BIND;
+		mount_desc.data = NULL;
+		if (ioctl(fd, MCEXEC_UP_SYS_MOUNT, 
+			(unsigned long)&mount_desc) != 0) {
+			fprintf(stderr, "Error: Failed to mount /sys. (%s)\n", 
+				strerror(errno));
+			return 1;
+		}
+	} else if (error == -1) {
+		return 1;
+	}
+#else
+	__dprintf("mcoverlay disable\n");
+#endif
 
 	if (lookup_exec_path(argv[optind], path, sizeof(path)) != 0) {
 		fprintf(stderr, "error: finding file: %s\n", argv[optind]);
@@ -1522,6 +1547,7 @@ void do_syscall_return(int fd, int cpu,
 {
 	struct syscall_ret_desc desc;
 
+	memset(&desc, '\0', sizeof desc);
 	desc.cpu = cpu;
 	desc.ret = ret;
 	desc.src = src;
@@ -1538,6 +1564,7 @@ void do_syscall_load(int fd, int cpu, unsigned long dest, unsigned long src,
 {
 	struct syscall_load_desc desc;
 
+	memset(&desc, '\0', sizeof desc);
 	desc.cpu = cpu;
 	desc.src = src;
 	desc.dest = dest;
@@ -1587,6 +1614,7 @@ static long do_strncpy_from_user(int fd, void *dest, void *src, unsigned long n)
 	struct strncpy_from_user_desc desc;
 	int ret;
 
+	memset(&desc, '\0', sizeof desc);
 	desc.dest = dest;
 	desc.src = src;
 	desc.n = n;
@@ -1718,6 +1746,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 	char pathbuf[PATH_MAX];
 	char tmpbuf[PATH_MAX];
 
+	memset(&w, '\0', sizeof w);
 	w.cpu = cpu;
 	w.pid = getpid();
 
@@ -2140,6 +2169,7 @@ return_execve1:
 						fprintf(stderr, "execve(): error allocating desc\n");
 						goto return_execve2;
 					}
+					memset(desc, '\0', w.sr.args[2]);
 
 					/* Copy descriptor from co-kernel side */
 					trans.userp = (void*)desc;
@@ -2179,6 +2209,11 @@ return_execve2:
 
 		case __NR_signalfd4:
 			ret = act_signalfd4(&w);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+
+		case __NR_perf_event_open:
+			ret = open("/dev/null", O_RDONLY);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 

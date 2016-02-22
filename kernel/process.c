@@ -63,6 +63,8 @@ extern int num_processors;
 extern ihk_spinlock_t cpuid_head_lock;
 int ptrace_detach(int pid, int data);
 extern unsigned long do_kill(struct thread *, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
+extern void procfs_create_thread(struct thread *);
+extern void procfs_delete_thread(struct thread *);
 
 struct list_head resource_set_list;
 mcs_rwlock_lock_t    resource_set_lock;
@@ -96,6 +98,7 @@ init_process(struct process *proc, struct process *parent)
 	INIT_LIST_HEAD(&proc->ptraced_children_list);
 	mcs_rwlock_init(&proc->threads_lock);
 	mcs_rwlock_init(&proc->children_lock);
+	ihk_mc_spinlock_init(&proc->mckfd_lock);
 	waitq_init(&proc->waitpid_q);
 	ihk_atomic_set(&proc->refcount, 2);
 }
@@ -2158,13 +2161,20 @@ void destroy_thread(struct thread *thread)
 void release_thread(struct thread *thread)
 {
 	struct process_vm *vm;
+	struct mcs_rwlock_node lock;
 
 	if (!ihk_atomic_dec_and_test(&thread->refcount)) {
 		return;
 	}
 
+	mcs_rwlock_writer_lock_noirq(&thread->proc->update_lock, &lock);
+	ts_add(&thread->proc->stime, &thread->stime);
+	ts_add(&thread->proc->utime, &thread->utime);
+	mcs_rwlock_writer_unlock_noirq(&thread->proc->update_lock, &lock);
+
 	vm = thread->vm;
 
+	procfs_delete_thread(thread);
 	destroy_thread(thread);
 
 	release_process_vm(vm);
@@ -2468,6 +2478,26 @@ ack:
 	ihk_mc_spinlock_unlock(&cur_v->migq_lock, irqstate);
 }
 
+void
+set_timer()
+{
+	struct cpu_local_var *v = get_this_cpu_local_var();
+
+	/* Toggle timesharing if CPU core is oversubscribed */
+	if (v->runq_len > 1 || v->current->itimer_enabled) {
+		if (!cpu_local_var(timer_enabled)) {
+			lapic_timer_enable(10000000);
+			cpu_local_var(timer_enabled) = 1;
+		}
+	}
+	else {
+		if (cpu_local_var(timer_enabled)) {
+			lapic_timer_disable();
+			cpu_local_var(timer_enabled) = 0;
+		}
+	}
+}
+
 void schedule(void)
 {
 	struct cpu_local_var *v;
@@ -2506,20 +2536,6 @@ redo:
 			list_add_tail(&prev->sched_list, &(v->runq));
 			++v->runq_len;
 		}
-
-		/* Toggle timesharing if CPU core is oversubscribed */
-		if (v->runq_len > 1) {
-			if (!cpu_local_var(timer_enabled)) {
-				lapic_timer_enable(10000000);
-				cpu_local_var(timer_enabled) = 1;
-			}
-		}
-		else {
-			if (cpu_local_var(timer_enabled)) {
-				lapic_timer_disable();
-				cpu_local_var(timer_enabled) = 0;
-			}
-		}
 	}
 
 	if (v->flags & CPU_FLAG_NEED_MIGRATE) {
@@ -2543,7 +2559,10 @@ redo:
 	if (prev != next) {
 		switch_ctx = 1;
 		v->current = next;
+		reset_cputime();
 	}
+
+	set_timer();
 
 	if (switch_ctx) {
 		dkprintf("schedule: %d => %d \n",
@@ -2752,7 +2771,7 @@ void runq_add_thread(struct thread *thread, int cpu_id)
 	__runq_add_thread(thread, cpu_id);
 	ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 
-	create_proc_procfs_files(thread->proc->pid, cpu_id);
+	procfs_create_thread(thread);
 
 	/* Kick scheduler */
 	if (cpu_id != ihk_mc_get_processor_id())

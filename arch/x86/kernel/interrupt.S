@@ -209,7 +209,9 @@ enter_user_mode:
 		callq	release_runq_lock
 		movq	$0,  %rdi
 		movq	%rsp, %rsi
-		call check_signal
+		call	check_signal
+		movq	$0,  %rdi
+		call	set_cputime
 		POP_ALL_REGS
 		addq	$8, %rsp
 		iretq

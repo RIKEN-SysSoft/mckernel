@@ -48,6 +48,9 @@
 #define MCEXEC_UP_OPEN_EXEC      0x30a02912
 #define MCEXEC_UP_CLOSE_EXEC     0x30a02913
 
+#define MCEXEC_UP_SYS_MOUNT      0x30a02914
+#define MCEXEC_UP_SYS_UNSHARE    0x30a02915
+
 #define MCEXEC_UP_DEBUG_LOG     0x40000000
 
 #define MCEXEC_UP_TRANSFER_TO_REMOTE	0
@@ -165,6 +168,18 @@ struct signal_desc {
 
 struct newprocess_desc {
 	int pid;
+};
+
+struct sys_mount_desc {
+	char *dev_name;
+	char *dir_name;
+	char *type;
+	unsigned long flags;
+	void *data;
+};
+
+struct sys_unshare_desc {
+	unsigned long unshare_flags;
 };
 
 #endif

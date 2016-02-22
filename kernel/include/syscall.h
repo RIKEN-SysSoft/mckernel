@@ -66,6 +66,8 @@
 #define SCD_MSG_SYSFS_RESP_SETUP        0x41
 /* #define SCD_MSG_SYSFS_REQ_CLEANUP    0x42 */
 /* #define SCD_MSG_SYSFS_RESP_CLEANUP   0x43 */
+#define SCD_MSG_PROCFS_TID_CREATE	0x44
+#define SCD_MSG_PROCFS_TID_DELETE	0x45
 
 #define ARCH_SET_GS 0x1001
 #define ARCH_SET_FS 0x1002
@@ -314,6 +316,7 @@ struct procfs_read {
 	int ret;		/* read bytes (answer) */
 	int status;		/* non-zero if done (answer) */
 	int newcpu;		/* migrated new cpu (answer) */
+	int readwrite;		/* 0:read, 1:write */
 	char fname[PROCFS_NAME_MAX];	/* procfs filename (request) */
 };
 
@@ -333,5 +336,8 @@ struct tod_data_s {
 	struct timespec origin;		/* realtime when tsc=0 */
 };
 extern struct tod_data_s tod_data;	/* residing in arch-dependent file */
+
+void reset_cputime();
+void set_cputime(int mode);
 
 #endif
