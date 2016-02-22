@@ -18,6 +18,42 @@ SBINDIR="@SBINDIR@"
 KMODDIR="@KMODDIR@"
 KERNDIR="@KERNDIR@"
 
+INTERVAL=1
+LOGMODE=0
+while getopts :i:k: OPT
+do
+	case ${OPT} in
+	i)	INTERVAL=${OPTARG}
+		expr "${INTERVAL}" + 1 > /dev/null 2>&1
+		if [ $? -ge 2 ]
+		then
+			echo "invalid -i value"
+			exit 1
+		fi
+		if [ ${INTERVAL} -le 0 ]
+		then
+			echo "invalid -i value"
+			exit 1
+		fi
+		;;
+	k)	LOGMODE=${OPTARG}
+		expr "${LOGMODE}" + 1 > /dev/null 2>&1
+		if [ $? -ge 2 ]
+		then
+			echo "invalid -k value"
+			exit 1
+		fi
+		if [ ${LOGMODE} -lt 0 -o ${LOGMODE} -gt 2 ]
+		then
+			echo "invalid -k value"
+			exit 1
+		fi
+		;;
+	*)  echo "invalid option -${OPT}"
+		exit 1
+	esac
+done
+
 mem="512M@0"
 cpus=""
 ihk_ikc_irq_core=0
@@ -105,7 +141,7 @@ if ! ${SBINDIR}/ihkconfig 0 create; then echo "error: create"; exit; fi
 if ! ${SBINDIR}/ihkosctl 0 assign cpu ${cpus}; then echo "error: assign CPUs"; exit; fi
 if ! ${SBINDIR}/ihkosctl 0 assign mem ${mem}; then echo "error: assign memory"; exit; fi
 if ! ${SBINDIR}/ihkosctl 0 load ${KERNDIR}/mckernel.img; then echo "error: loading kernel image"; exit; fi
-if ! ${SBINDIR}/ihkosctl 0 kargs hidos; then echo "error: setting kernel arguments"; exit; fi
+if ! ${SBINDIR}/ihkosctl 0 kargs "hidos ksyslogd=${LOGMODE}"; then echo "error: setting kernel arguments"; exit; fi
 if ! ${SBINDIR}/ihkosctl 0 boot; then echo "error: booting"; exit; fi
 if ! insmod ${KMODDIR}/mcctrl.ko; then echo "error: inserting mcctrl.ko"; exit; fi
 if ! chown `logname` /dev/mcd* /dev/mcos*; then echo "error: chowning device files"; exit; fi
@@ -124,4 +160,7 @@ if [ "$enable_mcoverlay" != "" ]; then
 	if ! mount -t mcoverlay mcoverlay -o lowerdir=/proc/mcos0:/proc,upperdir=/tmp/mcos/mcos0_proc_upper,workdir=/tmp/mcos/mcos0_proc_work,nocopyupw,nofscheck /tmp/mcos/mcos0_proc; then echo "error: mount /tmp/mcos/mcos0_proc"; exit; fi
 	mount --make-rprivate /proc
 fi
-
+if [ ${LOGMODE} -ne 0 ]
+then
+	SBINDIR=${SBINDIR} ${SBINDIR}/mcklogd -i ${INTERVAL}
+fi

@@ -298,7 +298,15 @@ extern void ibmic_cmd_init(void);
 
 int main(void)
 {
-	kmsg_init();
+	char *ptr;
+	int mode = 0;
+
+	ptr = find_command_line("ksyslogd=");
+	if (ptr) {
+	    mode = ptr[9] - 0x30;
+	    if (mode < 0 || mode > 2) mode = 0;
+	}
+	kmsg_init(mode);
 
 	kputs("MCK started.\n");
 

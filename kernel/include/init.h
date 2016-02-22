@@ -14,7 +14,7 @@
 #define INIT_H
 
 extern void arch_init(void);
-extern void kmsg_init(void);
+extern void kmsg_init(int);
 extern void mem_init(void);
 extern void ikc_master_init(void);
 extern void ap_init(void);

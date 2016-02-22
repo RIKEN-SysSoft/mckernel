@@ -22,13 +22,44 @@ extern int vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
 extern int sprintf(char * buf, const char *fmt, ...);
 static ihk_spinlock_t kmsg_lock;
 
+static unsigned long kprintf_lock_head(void);
+static void kprintf_unlock_head(unsigned long irqflags);
+
+static void kprintf_wait(int len, unsigned long *flags_head, int *slide) {
+	int head, tail, buf_len, mode, adj;
+
+	mode = kmsg_buf.mode;
+	while (1) {
+		adj = 0;
+		tail = kmsg_buf.tail;
+		buf_len = kmsg_buf.len;
+		head = kmsg_buf.head;
+		if (head < tail) head += buf_len;
+		if (tail + len > buf_len) adj = buf_len - tail;
+		if (head > tail && head <= tail + len + adj) {
+			if (mode != 1) {
+				*slide = 1;
+				break;
+			} else {
+				kprintf_unlock_head(*flags_head);
+				*flags_head = kprintf_lock_head();
+			}
+		} else {
+			break;
+		}
+	}
+}
+
 /* TODO: lock */
 void kputs(char *buf)
 {
 	int len = strlen(buf);
-	unsigned long flags;
+	int slide = 0;
+	unsigned long flags_tail, flags_head;
 
-	flags = __ihk_mc_spinlock_lock(&kmsg_lock);
+	flags_tail = kprintf_lock();
+	flags_head = kprintf_lock_head();
+	kprintf_wait(len, &flags_head, &slide);
 
 	if (len + kmsg_buf.tail > kmsg_buf.len) {
 		kmsg_buf.tail = 0;
@@ -39,8 +70,12 @@ void kputs(char *buf)
 	
 	memcpy(kmsg_buf.str + kmsg_buf.tail, buf, len);
 	kmsg_buf.tail += len;
-
-	__ihk_mc_spinlock_unlock(&kmsg_lock, flags);
+	if (slide == 1) {
+		kmsg_buf.head = kmsg_buf.tail + 1;
+		if (kmsg_buf.head >= kmsg_buf.len) kmsg_buf.head = 0;
+	}
+	kprintf_unlock_head(flags_head);
+	kprintf_unlock(flags_tail);
 }
 
 #define KPRINTF_LOCAL_BUF_LEN 1024
@@ -55,17 +90,32 @@ void kprintf_unlock(unsigned long irqflags)
 	__ihk_mc_spinlock_unlock(&kmsg_lock, irqflags);
 }
 
+static unsigned long kprintf_lock_head(void)
+{
+	return __ihk_mc_spinlock_lock(&kmsg_buf.lock);
+}
+
+static void kprintf_unlock_head(unsigned long irqflags)
+{
+	__ihk_mc_spinlock_unlock(&kmsg_buf.lock, irqflags);
+}
+
 /* Caller must hold kmsg_lock! */
 int __kprintf(const char *format, ...)
 {
 	int len = 0;
+	int slide = 0;
 	va_list va;
+	unsigned long flags_head;
 	char buf[KPRINTF_LOCAL_BUF_LEN];
 
 	/* Copy into the local buf */
 	va_start(va, format);
 	len += vsnprintf(buf + len, KPRINTF_LOCAL_BUF_LEN - len - 2, format, va);
 	va_end(va);
+
+	flags_head = kprintf_lock_head();
+	kprintf_wait(len, &flags_head, &slide);
 
 	/* Append to kmsg buffer */
 	if (kmsg_buf.tail + len > kmsg_buf.len) {
@@ -74,18 +124,22 @@ int __kprintf(const char *format, ...)
 
 	memcpy(kmsg_buf.str + kmsg_buf.tail, buf, len);
 	kmsg_buf.tail += len;
+	if (slide == 1) {
+		kmsg_buf.head = kmsg_buf.tail + 1;
+		if (kmsg_buf.head >= kmsg_buf.len) kmsg_buf.head = 0;
+	}
 
+	kprintf_unlock_head(flags_head);
 	return len;
 }
 
 int kprintf(const char *format, ...)
 {
 	int len = 0;
+	int slide = 0;
 	va_list va;
-	unsigned long flags;
+	unsigned long flags_tail, flags_head;
 	char buf[KPRINTF_LOCAL_BUF_LEN];
-
-	flags = __ihk_mc_spinlock_lock(&kmsg_lock);
 
 	/* Copy into the local buf */
 	len = sprintf(buf, "[%3d]: ", ihk_mc_get_processor_id());
@@ -93,6 +147,10 @@ int kprintf(const char *format, ...)
 	len += vsnprintf(buf + len, KPRINTF_LOCAL_BUF_LEN - len - 2, format, va);
 	va_end(va);
 
+	flags_tail = kprintf_lock();
+	flags_head = kprintf_lock_head();
+	kprintf_wait(len, &flags_head, &slide);
+
 	/* Append to kmsg buffer */
 	if (kmsg_buf.tail + len > kmsg_buf.len) {
 		kmsg_buf.tail = 0;
@@ -100,16 +158,24 @@ int kprintf(const char *format, ...)
 
 	memcpy(kmsg_buf.str + kmsg_buf.tail, buf, len);
 	kmsg_buf.tail += len;
+	if (slide == 1) {
+		kmsg_buf.head = kmsg_buf.tail + 1;
+		if (kmsg_buf.head >= kmsg_buf.len) kmsg_buf.head = 0;
+	}
 
-	__ihk_mc_spinlock_unlock(&kmsg_lock, flags);
+	kprintf_unlock_head(flags_head);
+	kprintf_unlock(flags_tail);
 
 	return len;
 }
 
-void kmsg_init(void)
+void kmsg_init(int mode)
 {
 	ihk_mc_spinlock_init(&kmsg_lock);
 	kmsg_buf.tail = 0;
 	kmsg_buf.len = sizeof(kmsg_buf.str);
+	kmsg_buf.head = 0;
+	kmsg_buf.mode = mode;
+	ihk_mc_spinlock_init(&kmsg_buf.lock);
 	memset(kmsg_buf.str, 0, kmsg_buf.len);
 }

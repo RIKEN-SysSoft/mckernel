@@ -16,6 +16,6 @@
 void kputs(char *buf);
 int kprintf(const char *format, ...);
 
-void kmsg_init(void);
+void kmsg_init(int);
 
 #endif
