@@ -398,16 +398,19 @@ static int process_msg_prepare_process(unsigned long rphys)
 
 	vm->region.user_start = pn->user_start;
 	vm->region.user_end = pn->user_end;
-	/* TODO: review this code
 	if(vm->region.user_end > USER_END)
 		vm->region.user_end = USER_END;
-	vm->region.map_start =
-	        (vm->region.user_start +
-	         (vm->region.user_end - vm->region.user_start) / 3) &
-	        LARGE_PAGE_MASK;
-	*/
-	vm->region.map_start = (USER_END / 3) & LARGE_PAGE_MASK;
-	vm->region.map_end = proc->vm->region.map_start;
+	if(vm->region.user_start != 0UL ||
+	   vm->region.user_end < TASK_UNMAPPED_BASE){
+		vm->region.map_start = 
+			(vm->region.user_start +
+			 (vm->region.user_end - vm->region.user_start) / 3) &
+			LARGE_PAGE_MASK;
+	}
+	else{
+		vm->region.map_start = TASK_UNMAPPED_BASE;
+	}
+	vm->region.map_end = vm->region.map_start;
 	memcpy(proc->rlimit, pn->rlimit, sizeof(struct rlimit) * MCK_RLIM_MAX);
 
 	/* TODO: Clear it at the proper timing */

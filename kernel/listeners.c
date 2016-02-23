@@ -17,6 +17,7 @@
 #include <ihk/debug.h>
 #include <ihk/ikc.h>
 #include <ikc/master.h>
+#include <arch/cpu.h>
 
 //#define DEBUG_LISTENERS
 
@@ -27,16 +28,6 @@
 #define dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
 #define	ekprintf(...)	kprintf(__VA_ARGS__)
 #endif
-
-static unsigned long read_tsc(void)
-{
-	unsigned int low, high;
-
-	asm volatile("rdtsc" : "=a"(low), "=d"(high));
- 
-	return (low | ((unsigned long)high << 32));
-}
-
 
 void testmem(void *v, unsigned long size)
 {

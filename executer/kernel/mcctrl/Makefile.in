@@ -7,7 +7,7 @@ IHK_BASE=$(src)/../../../../ihk
 
 obj-m += mcctrl.o
 
-ccflags-y := -I$(IHK_BASE)/linux/include -I$(IHK_BASE)/ikc/include -I$(IHK_BASE)/include -I$(src)/../../include -mcmodel=kernel -mno-red-zone -DMCEXEC_PATH=\"$(BINDIR)/mcexec\" -I@abs_builddir@
+ccflags-y := -I$(IHK_BASE)/linux/include -I$(IHK_BASE)/linux/include/ihk/arch/$(ARCH) -I$(IHK_BASE)/ikc/include -I$(IHK_BASE)/ikc/include/ikc/arch/$(ARCH) -I$(IHK_BASE)/include -I$(IHK_BASE)/include/arch/$(ARCH) -I$(src)/../../include -mcmodel=kernel -mno-red-zone -DMCEXEC_PATH=\"$(BINDIR)/mcexec\" -I@abs_builddir@
 
 mcctrl-y := driver.o control.o ikc.o syscall.o procfs.o binfmt_mcexec.o
 mcctrl-y += sysfs.o sysfs_files.o

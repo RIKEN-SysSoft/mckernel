@@ -1701,7 +1701,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	int s_ind = 0;
 	int arg_ind;
 	unsigned long size;
-	unsigned long end = thread->vm->region.user_end;
+	unsigned long end;
 	unsigned long start;
 	int rc;
 	unsigned long vrflag;
@@ -1713,6 +1713,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	struct process *proc = thread->proc;
 
 	/* create stack range */
+	end = STACK_TOP(&thread->vm->region);
 	minsz = PAGE_SIZE;
 	size = proc->rlimit[MCK_RLIMIT_STACK].rlim_cur & PAGE_MASK;
 	if (size > (USER_END / 2)) {

@@ -34,7 +34,6 @@
 #include <linux/version.h>
 #include <asm/uaccess.h>
 #include <asm/delay.h>
-#include <asm/msr.h>
 #include <asm/io.h>
 #include "config.h"
 #include "mcctrl.h"
@@ -551,12 +550,12 @@ printk("mcexec_wait_syscall:stray wakeup\n");
 #else
 	while (1) {
 		c = usrdata->channels + swd.cpu;
-		rdtscll(s);
+		ihk_get_tsc(s);
 		if (!usrdata->remaining_job) {
 			while (!(*c->param.doorbell_va)) {
 				mb();
 				cpu_relax();
-				rdtscll(w);
+				ihk_get_tsc(w);
 				if (w > s + 1024UL * 1024 * 1024 * 10) {
 					return -EINTR;
 				}

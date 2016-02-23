@@ -25,4 +25,13 @@ static inline void wmb(void)
 	barrier();
 }
 
+static unsigned long read_tsc(void)
+{
+	unsigned int low, high;
+
+	asm volatile("rdtsc" : "=a"(low), "=d"(high));
+
+	return (low | ((unsigned long)high << 32));
+}
+
 #endif /* ARCH_CPU_H */

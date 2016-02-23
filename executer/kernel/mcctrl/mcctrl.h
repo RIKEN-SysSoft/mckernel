@@ -39,6 +39,7 @@
 #include <linux/wait.h>
 #include <ihk/ikc.h>
 #include <ikc/master.h>
+#include <ihk/msr.h>
 #include <linux/semaphore.h>
 #include "sysfs.h"
 
