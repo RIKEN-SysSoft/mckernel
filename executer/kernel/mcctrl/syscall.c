@@ -44,6 +44,7 @@
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/io.h>
+#include "config.h"
 #include "mcctrl.h"
 #include <linux/version.h>
 
@@ -55,6 +56,17 @@
 #define	dprintk(...)	printk(__VA_ARGS__)
 #else
 #define	dprintk(...)
+#endif
+
+#ifdef MCCTRL_KSYM_zap_page_range
+static void
+(*mcctrl_zap_page_range)(struct vm_area_struct *vma, unsigned long start,
+		unsigned long size, struct zap_details *details)
+#if MCCTRL_KSYM_zap_page_range
+	= (void *)MCCTRL_KSYM_zap_page_range;
+#else
+	= &zap_page_range;
+#endif
 #endif
 
 static long pager_call(ihk_os_t os, struct syscall_request *req);
@@ -1516,6 +1528,10 @@ static int clear_pte_range(uintptr_t start, uintptr_t len)
 		}
 		if (addr < end) {
 			error = zap_vma_ptes(vma, addr, end-addr);
+			if (error) {
+				mcctrl_zap_page_range(vma, addr, end-addr, NULL);
+				error = 0;
+			}
 			if (ret == 0) {
 				ret = error;
 			}
@@ -1663,12 +1679,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 				ppd->pid, ppd->rpgtable);
 		}
 
-		error = clear_pte_range(sc->args[0], sc->args[1]);
-		if (error) {
-			error = -ENOSYS;
-			goto out;
-		}
-		ret = 0;
+		ret = clear_pte_range(sc->args[0], sc->args[1]);
 		break;
 
 	case __NR_mprotect:
