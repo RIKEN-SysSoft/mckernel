@@ -82,6 +82,7 @@ if [ "$enable_mcoverlay" != "" ]; then
 	if [ "`lsmod | grep mcoverlay`" != "" ]; then
 		if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_sys`" != "" ]; then umount -l /tmp/mcos/mcos0_sys; fi
 		if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_proc`" != "" ]; then umount -l /tmp/mcos/mcos0_proc; fi
+		if [ "`cat /proc/mounts | grep /tmp/mcos/linux_proc`" != "" ]; then umount -l /tmp/mcos/linux_proc; fi
 		if [ "`cat /proc/mounts | grep /tmp/mcos`" != "" ]; then umount -l /tmp/mcos; fi
 		if [ -e /tmp/mcos ]; then rm -rf /tmp/mcos; fi
 		if ! rmmod mcoverlay; then echo "error: removing mcoverlay"; exit; fi
@@ -148,13 +149,15 @@ if ! insmod ${KMODDIR}/mcctrl.ko; then echo "error: inserting mcctrl.ko"; exit; 
 if ! chown `logname` /dev/mcd* /dev/mcos*; then echo "error: chowning device files"; exit; fi
 
 if [ "$enable_mcoverlay" != "" ]; then
+	if [ ! -e /tmp/mcos ]; then mkdir -p /tmp/mcos; fi
+	if ! mount -t tmpfs tmpfs /tmp/mcos; then echo "error: mount /tmp/mcos"; exit; fi
+	if [ ! -e /tmp/mcos/linux_proc ]; then mkdir -p /tmp/mcos/linux_proc; fi
+	if ! mount --bind /proc /tmp/mcos/linux_proc; then echo "error: mount /tmp/mcos/linux_proc"; exit; fi
 	if ! insmod ${KMODDIR}/mcoverlay.ko; then echo "error: inserting mcoverlay.ko"; exit; fi
 	while [ ! -e /proc/mcos0 ]
 	do
 		sleep 1
 	done
-	if [ ! -e /tmp/mcos ]; then mkdir -p /tmp/mcos; fi
-	if ! mount -t tmpfs tmpfs /tmp/mcos; then echo "error: mount /tmp/mcos"; exit; fi
 	if [ ! -e /tmp/mcos/mcos0_proc ]; then mkdir -p /tmp/mcos/mcos0_proc; fi
 	if [ ! -e /tmp/mcos/mcos0_proc_upper ]; then mkdir -p /tmp/mcos/mcos0_proc_upper; fi
 	if [ ! -e /tmp/mcos/mcos0_proc_work ]; then mkdir -p /tmp/mcos/mcos0_proc_work; fi
