@@ -61,6 +61,7 @@
 #include <sys/signalfd.h>
 #include <sys/mount.h>
 #include <include/generated/uapi/linux/version.h>
+#include <sys/user.h>
 #include "../include/uprotocol.h"
 
 //#define DEBUG
@@ -649,9 +650,6 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 	*desc_p = desc;
 	return 0;
 }
-
-#define PAGE_SIZE 4096
-#define PAGE_MASK ~((unsigned long)PAGE_SIZE - 1)
 
 void transfer_image(int fd, struct program_load_desc *desc)
 {
