@@ -2239,6 +2239,25 @@ return_execve2:
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 
+		case __NR_readlink:
+			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[0], PATH_MAX);
+			if (ret >= PATH_MAX) {
+				ret = -ENAMETOOLONG;
+			}
+			if (ret < 0) {
+				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+				break;
+			}
+
+			fn = chgpath(pathbuf, tmpbuf);
+
+			ret = readlink(fn, (char *)w.sr.args[1], w.sr.args[2]);
+			__dprintf("readlink: path=%s, buf=%s, ret=%ld\n", 
+				fn, (char *)w.sr.args[1], ret);
+			SET_ERR(ret);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+
 		default:
 			ret = do_generic_syscall(&w);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
