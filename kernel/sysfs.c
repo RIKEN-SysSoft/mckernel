@@ -30,6 +30,37 @@
 static size_t sysfs_data_bufsize;
 static void *sysfs_data_buf;
 
+static int setup_special_create(struct sysfs_req_create_param *param, struct sysfs_bitmap_param *pbp)
+{
+	void *cinstance = (void *)param->client_instance;
+
+	switch (param->client_ops) {
+	case (long)SYSFS_SNOOPING_OPS_d32:
+	case (long)SYSFS_SNOOPING_OPS_d64:
+	case (long)SYSFS_SNOOPING_OPS_u32:
+	case (long)SYSFS_SNOOPING_OPS_u64:
+	case (long)SYSFS_SNOOPING_OPS_u32K:
+		param->client_instance = virt_to_phys(cinstance);
+		return 0;
+
+	case (long)SYSFS_SNOOPING_OPS_s:
+		pbp->nbits = 8 * (strlen(cinstance) + 1);
+		pbp->ptr = (void *)virt_to_phys(cinstance);
+		param->client_instance = virt_to_phys(pbp);
+		return 0;
+
+	case (long)SYSFS_SNOOPING_OPS_pbl:
+	case (long)SYSFS_SNOOPING_OPS_pb:
+		*pbp = *(struct sysfs_bitmap_param *)cinstance;
+		pbp->ptr = (void *)virt_to_phys(pbp->ptr);
+		param->client_instance = virt_to_phys(pbp);
+		return 0;
+	}
+
+	ekprintf("setup_special_create:unknown ops %#lx\n", param->client_ops);
+	return -EINVAL;
+} /* setup_special_create() */
+
 int
 sysfs_createf(struct sysfs_ops *ops, void *instance, int mode,
 		const char *fmt, ...)
@@ -39,6 +70,7 @@ sysfs_createf(struct sysfs_ops *ops, void *instance, int mode,
 	ssize_t n;
 	struct sysfs_req_create_param *param = NULL;
 	struct ikc_scd_packet packet;
+	struct sysfs_bitmap_param asbp;
 
 	dkprintf("sysfs_createf(%p,%p,%#o,%s,...)\n",
 			ops, instance, mode, fmt);
@@ -68,6 +100,14 @@ sysfs_createf(struct sysfs_ops *ops, void *instance, int mode,
 		error = -ENOENT;
 		ekprintf("sysfs_createf:not an absolute path. %d\n", error);
 		goto out;
+	}
+
+	if (is_special_sysfs_ops(ops)) {
+		error = setup_special_create(param, &asbp);
+		if (error) {
+			ekprintf("sysfs_createf:setup_special_create failed. %d\n", error);
+			goto out;
+		}
 	}
 
 	packet.msg = SCD_MSG_SYSFS_REQ_CREATE;

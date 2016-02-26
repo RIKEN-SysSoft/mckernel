@@ -13,6 +13,7 @@
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/device.h>
+#include <linux/version.h>
 #include "mcctrl.h"
 #include "sysfs_msg.h"
 
@@ -64,6 +65,20 @@ static struct sysfs_ops the_ops;
 static struct kobj_type the_ktype;
 static struct sysfsm_ops remote_ops;
 static struct sysfsm_ops local_ops;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
+static inline int
+bitmap_scnprintf(char *buf, unsigned buflen, const unsigned long *maskp, int nmaskbits)
+{
+	return scnprintf(buf, buflen, "%*pb\n", nmaskbits, maskp);
+} /* bitmap_scnprintf() */
+
+static inline int
+bitmap_scnlistprintf(char *buf, unsigned buflen, const unsigned long *maskp, int nmaskbits)
+{
+	return scnprintf(buf, buflen, "%*pbl\n", nmaskbits, maskp);
+} /* bitmap_scnlistprintf() */
+#endif
 
 static ssize_t
 remote_show(struct sysfsm_ops *ops, void *instance, void *buf, size_t bufsize)
@@ -1318,6 +1333,247 @@ out:
 	return error;
 } /* sysfsm_setup() */
 
+/***********************************************************************
+ * remote snooping
+ */
+struct remote_snooping_param {
+	ihk_device_t dev;
+	int nbits;
+	int size;
+	long phys;
+	void *ptr;
+};
+
+static void cleanup_special_remote_create(struct sysfsm_ops *ops, void *instance)
+{
+	struct sysfsm_node *np = instance;
+	struct remote_snooping_param *param = (void *)np->client_instance;
+
+	ihk_device_unmap_virtual(param->dev, param->ptr, param->size);
+	ihk_device_unmap_memory(param->dev, param->phys, param->size);
+	kfree(param);
+	return;
+} /* cleanup_special_remote_create() */
+
+/**** remote int ****/
+static ssize_t snooping_remote_show_d32(struct sysfsm_ops *ops, void *instance, void *buf, size_t bufsize)
+{
+	struct sysfsm_node *np = instance;
+	struct remote_snooping_param *p = (void *)np->client_instance;
+
+	return sprintf(buf, "%d\n", *(int *)p->ptr);
+} /* snooping_remote_show_d32() */
+
+static struct sysfsm_ops snooping_remote_ops_d32 = {
+	.show = &snooping_remote_show_d32,
+	.release = &cleanup_special_remote_create,
+};
+
+/**** remote long ****/
+static ssize_t snooping_remote_show_d64(struct sysfsm_ops *ops, void *instance, void *buf, size_t bufsize)
+{
+	struct sysfsm_node *np = instance;
+	struct remote_snooping_param *p = (void *)np->client_instance;
+
+	return sprintf(buf, "%ld\n", *(long *)p->ptr);
+} /* snooping_remote_show_d64() */
+
+static struct sysfsm_ops snooping_remote_ops_d64 = {
+	.show = &snooping_remote_show_d64,
+	.release = &cleanup_special_remote_create,
+};
+
+/**** remote unsigned int ****/
+static ssize_t snooping_remote_show_u32(struct sysfsm_ops *ops, void *instance, void *buf, size_t bufsize)
+{
+	struct sysfsm_node *np = instance;
+	struct remote_snooping_param *p = (void *)np->client_instance;
+
+	return sprintf(buf, "%u\n", *(unsigned *)p->ptr);
+} /* snooping_remote_show_u32() */
+
+static struct sysfsm_ops snooping_remote_ops_u32 = {
+	.show = &snooping_remote_show_u32,
+	.release = &cleanup_special_remote_create,
+};
+
+/**** remote unsigned long ****/
+static ssize_t snooping_remote_show_u64(struct sysfsm_ops *ops, void *instance, void *buf, size_t bufsize)
+{
+	struct sysfsm_node *np = instance;
+	struct remote_snooping_param *p = (void *)np->client_instance;
+
+	return sprintf(buf, "%lu\n", *(unsigned long *)p->ptr);
+} /* snooping_remote_show_u64() */
+
+static struct sysfsm_ops snooping_remote_ops_u64 = {
+	.show = &snooping_remote_show_u64,
+	.release = &cleanup_special_remote_create,
+};
+
+/**** remote string ****/
+static ssize_t snooping_remote_show_s(struct sysfsm_ops *ops, void *instance, void *buf, size_t bufsize)
+{
+	struct sysfsm_node *np = instance;
+	struct remote_snooping_param *p = (void *)np->client_instance;
+
+	return sprintf(buf, "%.*s\n", (int)p->size, (char *)p->ptr);
+} /* snooping_remote_show_s() */
+
+static struct sysfsm_ops snooping_remote_ops_s = {
+	.show = &snooping_remote_show_s,
+	.release = &cleanup_special_remote_create,
+};
+
+/**** remote list ****/
+static ssize_t snooping_remote_show_pbl(struct sysfsm_ops *ops, void *instance, void *buf, size_t bufsize)
+{
+	struct sysfsm_node *np = instance;
+	struct remote_snooping_param *p = (void *)np->client_instance;
+
+	return bitmap_scnlistprintf(buf, bufsize, p->ptr, p->nbits);
+} /* snooping_remote_show_pbl() */
+
+static struct sysfsm_ops snooping_remote_ops_pbl = {
+	.show = &snooping_remote_show_pbl,
+	.release = &cleanup_special_remote_create,
+};
+
+/**** remote map ****/
+static ssize_t snooping_remote_show_pb(struct sysfsm_ops *ops, void *instance, void *buf, size_t bufsize)
+{
+	struct sysfsm_node *np = instance;
+	struct remote_snooping_param *p = (void *)np->client_instance;
+
+	return bitmap_scnprintf(buf, bufsize, p->ptr, p->nbits);
+} /* snooping_remote_show_pb() */
+
+static struct sysfsm_ops snooping_remote_ops_pb = {
+	.show = &snooping_remote_show_pb,
+	.release = &cleanup_special_remote_create,
+};
+
+/**** remote K unsigned int ****/
+static ssize_t snooping_remote_show_u32K(struct sysfsm_ops *ops, void *instance, void *buf, size_t bufsize)
+{
+	struct sysfsm_node *np = instance;
+	struct remote_snooping_param *p = (void *)np->client_instance;
+
+	return sprintf(buf, "%uK\n", (*(unsigned *)p->ptr >> 10));
+} /* snooping_remote_show_u32K() */
+
+static struct sysfsm_ops snooping_remote_ops_u32K = {
+	.show = &snooping_remote_show_u32K,
+	.release = &cleanup_special_remote_create,
+};
+
+struct sysfsm_ops * const remote_snooping_ops_table[] = {
+	[(long)SYSFS_SNOOPING_OPS_d32] = &snooping_remote_ops_d32,
+	[(long)SYSFS_SNOOPING_OPS_d64] = &snooping_remote_ops_d64,
+	[(long)SYSFS_SNOOPING_OPS_u32] = &snooping_remote_ops_u32,
+	[(long)SYSFS_SNOOPING_OPS_u64] = &snooping_remote_ops_u64,
+	[(long)SYSFS_SNOOPING_OPS_s] = &snooping_remote_ops_s,
+	[(long)SYSFS_SNOOPING_OPS_pbl] = &snooping_remote_ops_pbl,
+	[(long)SYSFS_SNOOPING_OPS_pb] = &snooping_remote_ops_pb,
+	[(long)SYSFS_SNOOPING_OPS_u32K] = &snooping_remote_ops_u32K,
+};
+
+static int setup_special_remote_create(ihk_device_t dev, const struct sysfs_req_create_param *param, struct sysfsm_ops **mopsp, long *cinstancep)
+{
+	int error;
+	struct remote_snooping_param *rsp = NULL;
+	long phys = -1;
+	struct sysfsm_bitmap_param *pbp = NULL;
+	long rpa;
+
+	switch (param->client_ops) {
+	case (long)SYSFS_SNOOPING_OPS_d32:
+	case (long)SYSFS_SNOOPING_OPS_d64:
+	case (long)SYSFS_SNOOPING_OPS_u32:
+	case (long)SYSFS_SNOOPING_OPS_u64:
+	case (long)SYSFS_SNOOPING_OPS_s:
+	case (long)SYSFS_SNOOPING_OPS_pbl:
+	case (long)SYSFS_SNOOPING_OPS_pb:
+	case (long)SYSFS_SNOOPING_OPS_u32K:
+		break;
+
+	default:
+		eprintk("mcctrl:setup_special_remote_create:unknown ops %#lx\n", param->client_ops);
+		return -EINVAL;
+	}
+
+	rsp = kmalloc(sizeof(*rsp), GFP_KERNEL);
+	if (!rsp) {
+		eprintk("mcctrl:setup_special_remote_create:kmalloc failed.\n");
+		return -ENOMEM;
+	}
+
+	switch (param->client_ops) {
+	case (long)SYSFS_SNOOPING_OPS_s:
+	case (long)SYSFS_SNOOPING_OPS_pbl:
+	case (long)SYSFS_SNOOPING_OPS_pb:
+		phys = ihk_device_map_memory(dev, *cinstancep, sizeof(*pbp));
+		pbp = ihk_device_map_virtual(dev, phys, sizeof(*pbp), NULL, 0);
+		break;
+	}
+
+	rsp->dev = dev;
+
+	switch (param->client_ops) {
+	case (long)SYSFS_SNOOPING_OPS_d32:
+		rsp->size = sizeof(int);
+		rpa = *cinstancep;
+		break;
+
+	case (long)SYSFS_SNOOPING_OPS_d64:
+		rsp->size = sizeof(long);
+		rpa = *cinstancep;
+		break;
+
+	case (long)SYSFS_SNOOPING_OPS_u32:
+	case (long)SYSFS_SNOOPING_OPS_u32K:
+		rsp->size = sizeof(unsigned);
+		rpa = *cinstancep;
+		break;
+
+	case (long)SYSFS_SNOOPING_OPS_u64:
+		rsp->size = sizeof(unsigned long);
+		rpa = *cinstancep;
+		break;
+
+	case (long)SYSFS_SNOOPING_OPS_s:
+	case (long)SYSFS_SNOOPING_OPS_pbl:
+	case (long)SYSFS_SNOOPING_OPS_pb:
+		rsp->nbits = pbp->nbits;
+		rsp->size = (rsp->nbits + 7) / 8;	/* how many bytes */
+		rpa = (long)pbp->ptr;
+		break;
+
+	default:
+		BUG();
+	}
+
+	rsp->phys = ihk_device_map_memory(dev, rpa, rsp->size);
+	rsp->ptr = ihk_device_map_virtual(dev, rsp->phys, rsp->size, NULL, 0);
+
+	error = 0;
+	*mopsp = remote_snooping_ops_table[param->client_ops];
+	*cinstancep = (long)rsp;
+	rsp = NULL;
+
+#if 0
+out:
+#endif
+	if (pbp) {
+		ihk_device_unmap_virtual(dev, pbp, sizeof(*pbp));
+		ihk_device_unmap_memory(dev, phys, sizeof(*pbp));
+	}
+	if (rsp) {
+		kfree(rsp);
+	}
+	return error;
+} /* setup_special_remote_create() */
+
 static void
 sysfsm_req_setup(void *os, long param_rpa)
 {
@@ -1358,14 +1614,28 @@ sysfsm_req_create(void *os, long param_rpa)
 	struct sysfs_req_create_param *param;
 	struct sysfsm_node *np;
 	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
+	struct sysfsm_ops *ops;
+	long cinstance;
 
 	param_pa = ihk_device_map_memory(dev, param_rpa, sizeof(*param));
 	param = ihk_device_map_virtual(dev, param_pa, sizeof(*param), NULL, 0);
 
+	ops = &remote_ops;
+	cinstance = param->client_instance;
+	if (is_special_sysfs_ops((void *)param->client_ops)) {
+		error = setup_special_remote_create(dev, param, &ops, &cinstance);
+		if (error) {
+			goto out;
+		}
+	}
+
 	np = sysfsm_create(&udp->sysfsm_data, param->path, param->mode,
-			&remote_ops, param->client_ops, param->client_instance);
+			ops, param->client_ops, cinstance);
 	if (IS_ERR(np)) {
 		error = PTR_ERR(np);
+		if (is_special_sysfs_ops((void *)param->client_ops)) {
+			cleanup_special_remote_create(ops, (void *)cinstance);
+		}
 		goto out;
 	}
 
@@ -1761,6 +2031,145 @@ static struct sysfsm_ops local_ops = {
 	.release = &local_release,
 };
 
+/***********************************************************************
+ * local snooping
+ */
+static void cleanup_special_local_create(struct sysfsm_ops *ops, void *instance)
+{
+	kfree(instance);
+	return;
+} /* cleanup_special_local_create() */
+
+
+/**** local int ****/
+static ssize_t snooping_local_show_d32(struct sysfsm_ops *ops, void *instance, void *buf, size_t bufsize)
+{
+	return sprintf(buf, "%d\n", *(int *)instance);
+} /* snooping_local_show_d32() */
+
+struct sysfsm_ops snooping_local_ops_d32 = {
+	.show = &snooping_local_show_d32,
+};
+
+/**** local long ****/
+static ssize_t snooping_local_show_d64(struct sysfsm_ops *ops, void *instance, void *buf, size_t bufsize)
+{
+	return sprintf(buf, "%ld\n", *(long *)instance);
+} /* snooping_local_show_d64() */
+
+struct sysfsm_ops snooping_local_ops_d64 = {
+	.show = &snooping_local_show_d64,
+};
+
+/**** local unsigned ****/
+static ssize_t snooping_local_show_u32(struct sysfsm_ops *ops, void *instance, void *buf, size_t bufsize)
+{
+	return sprintf(buf, "%u\n", *(unsigned *)instance);
+} /* snooping_local_show_u32() */
+
+struct sysfsm_ops snooping_local_ops_u32 = {
+	.show = &snooping_local_show_u32,
+};
+
+/**** local unsigned long ****/
+static ssize_t snooping_local_show_u64(struct sysfsm_ops *ops, void *instance, void *buf, size_t bufsize)
+{
+	return sprintf(buf, "%lu\n", *(unsigned long *)instance);
+} /* snooping_local_show_u64() */
+
+struct sysfsm_ops snooping_local_ops_u64 = {
+	.show = &snooping_local_show_u64,
+};
+
+/**** local string ****/
+static ssize_t snooping_local_show_s(struct sysfsm_ops *ops, void *instance, void *buf, size_t bufsize)
+{
+	return sprintf(buf, "%s\n", (char *)instance);
+} /* snooping_local_show_s() */
+
+struct sysfsm_ops snooping_local_ops_s = {
+	.show = &snooping_local_show_s,
+};
+
+/**** local list ****/
+static ssize_t snooping_local_show_pbl(struct sysfsm_ops *ops, void *instance, void *buf, size_t bufsize)
+{
+	const struct sysfsm_bitmap_param *p = instance;
+
+	return bitmap_scnlistprintf(buf, bufsize, p->ptr, p->nbits);
+} /* snooping_local_show_pbl() */
+
+struct sysfsm_ops snooping_local_ops_pbl = {
+	.show = &snooping_local_show_pbl,
+	.release = &cleanup_special_local_create,
+};
+
+/**** local map ****/
+static ssize_t snooping_local_show_pb(struct sysfsm_ops *ops, void *instance, void *buf, size_t bufsize)
+{
+	const struct sysfsm_bitmap_param *p = instance;
+
+	return bitmap_scnprintf(buf, bufsize, p->ptr, p->nbits);
+} /* snooping_local_show_pb() */
+
+struct sysfsm_ops snooping_local_ops_pb = {
+	.show = &snooping_local_show_pb,
+	.release = &cleanup_special_local_create,
+};
+
+/**** local K unsigned ****/
+static ssize_t snooping_local_show_u32K(struct sysfsm_ops *ops, void *instance, void *buf, size_t bufsize)
+{
+	return sprintf(buf, "%uK\n", (*(unsigned *)instance >> 10));
+} /* snooping_local_show_u32K() */
+
+struct sysfsm_ops snooping_local_ops_u32K = {
+	.show = &snooping_local_show_u32K,
+};
+
+struct sysfsm_ops * const local_snooping_ops_table[] = {
+	[(long)SYSFS_SNOOPING_OPS_d32] = &snooping_local_ops_d32,
+	[(long)SYSFS_SNOOPING_OPS_d64] = &snooping_local_ops_d64,
+	[(long)SYSFS_SNOOPING_OPS_u32] = &snooping_local_ops_u32,
+	[(long)SYSFS_SNOOPING_OPS_u64] = &snooping_local_ops_u64,
+	[(long)SYSFS_SNOOPING_OPS_s] = &snooping_local_ops_s,
+	[(long)SYSFS_SNOOPING_OPS_pbl] = &snooping_local_ops_pbl,
+	[(long)SYSFS_SNOOPING_OPS_pb] = &snooping_local_ops_pb,
+	[(long)SYSFS_SNOOPING_OPS_u32K] = &snooping_local_ops_u32K,
+};
+
+static int setup_special_local_create(struct sysfs_req_create_param *param)
+{
+	struct sysfsm_bitmap_param *p = NULL;
+
+	switch (param->client_ops) {
+	case (long)SYSFS_SNOOPING_OPS_d32:
+	case (long)SYSFS_SNOOPING_OPS_d64:
+	case (long)SYSFS_SNOOPING_OPS_u32:
+	case (long)SYSFS_SNOOPING_OPS_u64:
+	case (long)SYSFS_SNOOPING_OPS_s:
+	case (long)SYSFS_SNOOPING_OPS_u32K:
+		param->client_ops = (long)local_snooping_ops_table[param->client_ops];
+		return 0;
+
+	case (long)SYSFS_SNOOPING_OPS_pbl:
+	case (long)SYSFS_SNOOPING_OPS_pb:
+		p = kmalloc(sizeof(*p), GFP_KERNEL);
+		if (!p) {
+			return -ENOMEM;
+		}
+
+		memcpy(p, (void *)param->client_instance, sizeof(*p));
+
+		param->client_ops = (long)local_snooping_ops_table[param->client_ops];
+		param->client_instance = (long)p;
+		return 0;
+	}
+
+	eprintk("mcctrl:setup_special_local_create:unknown ops %#lx\n", param->client_ops);
+	return -EINVAL;
+} /* setup_special_local_create() */
+
 int
 sysfsm_createf(ihk_os_t os, struct sysfsm_ops *ops, void *instance, int mode,
 		const char *fmt, ...)
@@ -1771,6 +2180,7 @@ sysfsm_createf(ihk_os_t os, struct sysfsm_ops *ops, void *instance, int mode,
 	ssize_t n;
 	struct sysfs_req_create_param *param = NULL;
 	struct sysfsm_node *np;
+	char special = 0;
 
 	dprintk("mcctrl:sysfsm_createf(%p,%p,%p,%#o,%s,...)\n",
 			os, ops, instance, mode, fmt);
@@ -1782,6 +2192,10 @@ sysfsm_createf(ihk_os_t os, struct sysfsm_ops *ops, void *instance, int mode,
 				error);
 		goto out;
 	}
+
+	param->client_ops = (long)ops;
+	param->client_instance = (long)instance;
+	param->mode = mode;
 
 	va_start(ap, fmt);
 	n = vsnprintf(param->path, sizeof(param->path), fmt, ap);
@@ -1799,8 +2213,17 @@ sysfsm_createf(ihk_os_t os, struct sysfsm_ops *ops, void *instance, int mode,
 		goto out;
 	}
 
-	np = sysfsm_create(&udp->sysfsm_data, param->path, mode, &local_ops,
-			(long)ops, (long)instance);
+	if (is_special_sysfs_ops((void *)param->client_ops)) {
+		error = setup_special_local_create(param);
+		if (error) {
+			eprintk("mcctrl:sysfsm_createf:setup_special_local_create failed. %d\n", error);
+			goto out;
+		}
+		special = 1;
+	}
+
+	np = sysfsm_create(&udp->sysfsm_data, param->path, param->mode, &local_ops,
+			param->client_ops, param->client_instance);
 	if (IS_ERR(np)) {
 		error = PTR_ERR(np);
 		eprintk("mcctrl:sysfsm_createf:sysfsm_create failed. %d\n", error);
@@ -1809,6 +2232,9 @@ sysfsm_createf(ihk_os_t os, struct sysfsm_ops *ops, void *instance, int mode,
 
 	error = 0;
 out:
+	if (error && special) {
+		cleanup_special_local_create((void *)param->client_ops, (void *)param->client_instance);
+	}
 	free_page((uintptr_t)param);
 	if (error) {
 		eprintk("mcctrl:sysfsm_createf(%p,%p,%p,%#o,%s,...): %d\n",

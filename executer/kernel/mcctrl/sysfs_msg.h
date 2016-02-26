@@ -25,6 +25,18 @@ struct sysfs_req_create_param {
 	int busy;
 }; /* struct sysfs_req_create_param */
 
+#define SYSFS_SPECIAL_OPS_MIN ((void *)1)
+#define SYSFS_SPECIAL_OPS_MAX ((void *)1000)
+
+#define SYSFS_SNOOPING_OPS_d32 ((void *)1)
+#define SYSFS_SNOOPING_OPS_d64 ((void *)2)
+#define SYSFS_SNOOPING_OPS_u32 ((void *)3)
+#define SYSFS_SNOOPING_OPS_u64 ((void *)4)
+#define SYSFS_SNOOPING_OPS_s ((void *)5)
+#define SYSFS_SNOOPING_OPS_pbl ((void *)6)
+#define SYSFS_SNOOPING_OPS_pb ((void *)7)
+#define SYSFS_SNOOPING_OPS_u32K ((void *)8)
+
 struct sysfs_req_mkdir_param {
 	int error;
 	int padding;

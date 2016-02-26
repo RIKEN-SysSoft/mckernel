@@ -32,6 +32,29 @@ struct sysfs_handle {
 };
 typedef struct sysfs_handle sysfs_handle_t;
 
+struct sysfsm_bitmap_param {
+	int nbits;
+	int padding;
+	void *ptr;
+};
+
+#define SYSFS_SPECIAL_OPS_MIN ((void *)1)
+#define SYSFS_SPECIAL_OPS_MAX ((void *)1000)
+
+#define SYSFS_SNOOPING_OPS_d32 ((void *)1)
+#define SYSFS_SNOOPING_OPS_d64 ((void *)2)
+#define SYSFS_SNOOPING_OPS_u32 ((void *)3)
+#define SYSFS_SNOOPING_OPS_u64 ((void *)4)
+#define SYSFS_SNOOPING_OPS_s ((void *)5)
+#define SYSFS_SNOOPING_OPS_pbl ((void *)6)
+#define SYSFS_SNOOPING_OPS_pb ((void *)7)
+#define SYSFS_SNOOPING_OPS_u32K ((void *)8)
+
+static inline int is_special_sysfs_ops(void *ops)
+{
+	return (((long)SYSFS_SPECIAL_OPS_MIN <= (long)ops)
+			&& ((long)ops <= (long)SYSFS_SPECIAL_OPS_MAX));
+}
 
 extern int sysfsm_createf(ihk_os_t os, struct sysfsm_ops *ops, void *instance,
 		int mode, const char *fmt, ...);
