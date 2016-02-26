@@ -24,23 +24,30 @@
 #include <errno.h>
 #include <kmalloc.h>
 #include <uio.h>
+#include <mman.h>
 
 void terminate(int, int);
 int copy_from_user(void *dst, const void *src, size_t siz);
 int copy_to_user(void *dst, const void *src, size_t siz);
 int write_process_vm(struct process_vm *vm, void *dst, const void *src, size_t siz);
-long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
+extern long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
 long syscall(int num, ihk_mc_user_context_t *ctx);
 extern void save_fp_regs(struct thread *proc);
 void set_signal(int sig, void *regs0, siginfo_t *info);
 void check_signal(unsigned long rc, void *regs0, int num);
+extern unsigned long do_fork(int, unsigned long, unsigned long, unsigned long,
+	unsigned long, unsigned long, unsigned long);
+extern unsigned long do_mmap(const intptr_t, const size_t, const int, const int,
+	const int, const off_t);
 
 //#define DEBUG_PRINT_SC
 
 #ifdef DEBUG_PRINT_SC
 #define dkprintf kprintf
+#define ekprintf(...) kprintf(__VA_ARGS__)
 #else
 #define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
+#define ekprintf(...) kprintf(__VA_ARGS__)
 #endif
 
 uintptr_t debug_constants[] = {
@@ -1112,4 +1119,109 @@ set_signal(int sig, void *regs0, siginfo_t *info)
 		terminate(0, sig | 0x80);
 	}
 		do_kill(thread, thread->proc->pid, thread->tid, sig, info, 0);
+}
+
+SYSCALL_DECLARE(mmap)
+{
+	const int supported_flags = 0
+		| MAP_SHARED		// 01
+		| MAP_PRIVATE		// 02
+		| MAP_FIXED		// 10
+		| MAP_ANONYMOUS		// 20
+		| MAP_LOCKED		// 2000
+		| MAP_POPULATE		// 8000
+		;
+	const int ignored_flags = 0
+#ifdef	USE_NOCACHE_MMAP
+		| MAP_32BIT		// 40
+#endif /* USE_NOCACHE_MMAP */
+		| MAP_DENYWRITE		// 0800
+		| MAP_NORESERVE		// 4000
+		| MAP_STACK		// 00020000
+		;
+	const int error_flags = 0
+#ifndef	USE_NOCACHE_MMAP
+		| MAP_32BIT		// 40
+#endif /* ndef USE_NOCACHE_MMAP */
+		| MAP_GROWSDOWN		// 0100
+		| MAP_EXECUTABLE	// 1000
+		| MAP_NONBLOCK		// 00010000
+		| MAP_HUGETLB		// 00040000
+		;
+
+	const intptr_t addr0 = ihk_mc_syscall_arg0(ctx);
+	const size_t len0 = ihk_mc_syscall_arg1(ctx);
+	const int prot = ihk_mc_syscall_arg2(ctx);
+	const int flags = ihk_mc_syscall_arg3(ctx);
+	const int fd = ihk_mc_syscall_arg4(ctx);
+	const off_t off0 = ihk_mc_syscall_arg5(ctx);
+	struct thread *thread = cpu_local_var(current);
+	struct vm_regions *region = &thread->vm->region;
+	unsigned long error = 0;
+	intptr_t addr;
+	size_t len;
+
+	dkprintf("[%d]sys_mmap(%lx,%lx,%x,%x,%d,%lx)\n",
+			ihk_mc_get_processor_id(),
+			addr0, len0, prot, flags, fd, off0);
+
+	/* check constants for flags */
+	if (1) {
+		int dup_flags;
+
+		dup_flags = (supported_flags & ignored_flags);
+		dup_flags |= (ignored_flags & error_flags);
+		dup_flags |= (error_flags & supported_flags);
+
+		if (dup_flags) {
+			ekprintf("sys_mmap:duplicate flags: %lx\n", dup_flags);
+			ekprintf("s-flags: %08x\n", supported_flags);
+			ekprintf("i-flags: %08x\n", ignored_flags);
+			ekprintf("e-flags: %08x\n", error_flags);
+			panic("sys_mmap:duplicate flags\n");
+			/* no return */
+		}
+	}
+
+	/* check arguments */
+#define	VALID_DUMMY_ADDR	(region->user_start)
+	addr = (flags & MAP_FIXED)? addr0: VALID_DUMMY_ADDR;
+	len = (len0 + PAGE_SIZE - 1) & PAGE_MASK;
+	if ((addr & (PAGE_SIZE - 1))
+			|| (addr < region->user_start)
+			|| (region->user_end <= addr)
+			|| (len == 0)
+			|| (len > (region->user_end - region->user_start))
+			|| ((region->user_end - len) < addr)
+			|| !(flags & (MAP_SHARED | MAP_PRIVATE))
+			|| ((flags & MAP_SHARED) && (flags & MAP_PRIVATE))
+			|| (off0 & (PAGE_SIZE - 1))) {
+		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):EINVAL\n",
+				addr0, len0, prot, flags, fd, off0);
+		error = -EINVAL;
+		goto out2;
+	}
+
+	/* check not supported requests */
+	if ((flags & error_flags)
+			|| (flags & ~(supported_flags | ignored_flags))) {
+		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):unknown flags %x\n",
+				addr0, len0, prot, flags, fd, off0,
+				(flags & ~(supported_flags | ignored_flags)));
+		error = -EINVAL;
+		goto out2;
+	}
+
+	return do_mmap(addr, len, prot, flags, fd, off0);
+
+out2:
+	return error;
+}
+
+SYSCALL_DECLARE(clone)
+{
+    return do_fork((int)ihk_mc_syscall_arg0(ctx), ihk_mc_syscall_arg1(ctx),
+                   ihk_mc_syscall_arg2(ctx), ihk_mc_syscall_arg3(ctx),
+                   ihk_mc_syscall_arg4(ctx), ihk_mc_syscall_pc(ctx),
+                   ihk_mc_syscall_sp(ctx));
 }

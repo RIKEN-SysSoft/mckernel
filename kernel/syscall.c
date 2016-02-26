@@ -913,45 +913,14 @@ out:
 	return error;
 }
 
-SYSCALL_DECLARE(mmap)
+unsigned long
+do_mmap(const intptr_t addr0, const size_t len0, const int prot,
+	const int flags, const int fd, const off_t off0)
 {
-	const int supported_flags = 0
-		| MAP_SHARED		// 01
-		| MAP_PRIVATE		// 02
-		| MAP_FIXED		// 10
-		| MAP_ANONYMOUS		// 20
-		| MAP_LOCKED		// 2000
-		| MAP_POPULATE		// 8000
-		;
-	const int ignored_flags = 0
-#ifdef	USE_NOCACHE_MMAP
-		| MAP_32BIT		// 40
-#endif /* USE_NOCACHE_MMAP */
-		| MAP_DENYWRITE		// 0800
-		| MAP_NORESERVE		// 4000
-		| MAP_STACK		// 00020000
-		;
-	const int error_flags = 0
-#ifndef	USE_NOCACHE_MMAP
-		| MAP_32BIT		// 40
-#endif /* ndef USE_NOCACHE_MMAP */
-		| MAP_GROWSDOWN		// 0100
-		| MAP_EXECUTABLE	// 1000
-		| MAP_NONBLOCK		// 00010000
-		| MAP_HUGETLB		// 00040000
-		;
-
-	const intptr_t addr0 = ihk_mc_syscall_arg0(ctx);
-	const size_t len0 = ihk_mc_syscall_arg1(ctx);
-	const int prot = ihk_mc_syscall_arg2(ctx);
-	const int flags = ihk_mc_syscall_arg3(ctx);
-	const int fd = ihk_mc_syscall_arg4(ctx);
-	const off_t off0 = ihk_mc_syscall_arg5(ctx);
-
 	struct thread *thread = cpu_local_var(current);
 	struct vm_regions *region = &thread->vm->region;
-	intptr_t addr;
-	size_t len;
+	intptr_t addr = addr0;
+	size_t len = len0;
 	off_t off;
 	int error;
 	intptr_t npages;
@@ -965,57 +934,6 @@ SYSCALL_DECLARE(mmap)
 	int ro_vma_mapped = 0;
 	struct shmid_ds ads;
 	int populated_mapping = 0;
-
-	dkprintf("[%d]sys_mmap(%lx,%lx,%x,%x,%d,%lx)\n",
-			ihk_mc_get_processor_id(),
-			addr0, len0, prot, flags, fd, off0);
-
-	/* check constants for flags */
-	if (1) {
-		int dup_flags;
-
-		dup_flags = (supported_flags & ignored_flags);
-		dup_flags |= (ignored_flags & error_flags);
-		dup_flags |= (error_flags & supported_flags);
-
-		if (dup_flags) {
-			ekprintf("sys_mmap:duplicate flags: %lx\n", dup_flags);
-			ekprintf("s-flags: %08x\n", supported_flags);
-			ekprintf("i-flags: %08x\n", ignored_flags);
-			ekprintf("e-flags: %08x\n", error_flags);
-			panic("sys_mmap:duplicate flags\n");
-			/* no return */
-		}
-	}
-
-	/* check arguments */
-#define	VALID_DUMMY_ADDR	(region->user_start)
-	addr = (flags & MAP_FIXED)? addr0: VALID_DUMMY_ADDR;
-	len = (len0 + PAGE_SIZE - 1) & PAGE_MASK;
-	if ((addr & (PAGE_SIZE - 1))
-			|| (addr < region->user_start)
-			|| (region->user_end <= addr)
-			|| (len == 0)
-			|| (len > (region->user_end - region->user_start))
-			|| ((region->user_end - len) < addr)
-			|| !(flags & (MAP_SHARED | MAP_PRIVATE))
-			|| ((flags & MAP_SHARED) && (flags & MAP_PRIVATE))
-			|| (off0 & (PAGE_SIZE - 1))) {
-		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):EINVAL\n",
-				addr0, len0, prot, flags, fd, off0);
-		error = -EINVAL;
-		goto out2;
-	}
-
-	/* check not supported requests */
-	if ((flags & error_flags)
-			|| (flags & ~(supported_flags | ignored_flags))) {
-		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):unknown flags %x\n",
-				addr0, len0, prot, flags, fd, off0,
-				(flags & ~(supported_flags | ignored_flags)));
-		error = -EINVAL;
-		goto out2;
-	}
 
 	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
 
@@ -1206,7 +1124,6 @@ out:
 		}
 	}
 
-out2:
 	if (p) {
 		ihk_mc_free_pages(p, npages);
 	}
@@ -2023,14 +1940,6 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 SYSCALL_DECLARE(vfork)
 {
     return do_fork(CLONE_VFORK|SIGCHLD, 0, 0, 0, 0, ihk_mc_syscall_pc(ctx), ihk_mc_syscall_sp(ctx));
-}
-
-SYSCALL_DECLARE(clone)
-{
-    return do_fork((int)ihk_mc_syscall_arg0(ctx), ihk_mc_syscall_arg1(ctx),
-                   ihk_mc_syscall_arg2(ctx), ihk_mc_syscall_arg3(ctx),
-                   ihk_mc_syscall_arg4(ctx), ihk_mc_syscall_pc(ctx),
-                   ihk_mc_syscall_sp(ctx));
 }
 
 SYSCALL_DECLARE(set_tid_address)
