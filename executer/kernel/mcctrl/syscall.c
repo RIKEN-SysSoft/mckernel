@@ -583,12 +583,10 @@ static struct file_operations rus_fops = {
 	.mmap = &rus_mmap,
 };
 
-int reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp, unsigned long *endp)
+unsigned long
+reserve_user_space_common(struct mcctrl_usrdata *usrdata, unsigned long start, unsigned long end)
 {
 	struct file *file;
-	struct vm_area_struct *vma;
-	unsigned long start;
-	unsigned long end;
 	struct cred *promoted;
 	const struct cred *original;
 
@@ -609,38 +607,22 @@ int reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp, un
 	cap_raise(promoted->cap_effective, CAP_SYS_RAWIO);
 	original = override_creds(promoted);
 
-#define	DESIRED_USER_END	0x800000000000
-#define	GAP_FOR_MCEXEC		0x008000000000UL
-	end = DESIRED_USER_END;
-	down_write(&current->mm->mmap_sem);
-	vma = find_vma(current->mm, 0);
-	if (vma) {
-		end = (vma->vm_start - GAP_FOR_MCEXEC) & ~(GAP_FOR_MCEXEC - 1);
-	}
-
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,5,0)
-	start = do_mmap_pgoff(file, 0, end,
+	start = vm_mmap_pgoff(file, start, end,
 			PROT_READ|PROT_WRITE, MAP_FIXED|MAP_SHARED, 0);
-#endif			
-
-	up_write(&current->mm->mmap_sem);
-	
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,5,0)
-	start = vm_mmap(file, 0, end,
+#else
+	start = vm_mmap(file, start, end,
 			PROT_READ|PROT_WRITE, MAP_FIXED|MAP_SHARED, 0);
-#endif			
+#endif
 
 	revert_creds(original);
 	put_cred(promoted);
 	fput(file);
 	if (IS_ERR_VALUE(start)) {
 		printk("mcctrl:user space reservation failed.\n");
-		return start;
 	}
 
-	*startp = start;
-	*endp = end;
-	return 0;
+	return start;
 }
 
 //unsigned long last_thread_exec = 0;
