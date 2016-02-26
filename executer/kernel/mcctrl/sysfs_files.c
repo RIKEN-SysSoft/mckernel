@@ -11,6 +11,7 @@
  */
 
 #include <linux/kernel.h>
+#include <linux/slab.h>
 #include "mcctrl.h"
 #include "sysfs_msg.h"
 
@@ -29,6 +30,62 @@ show_int(struct sysfsm_ops *ops, void *instance, void *buf, size_t size)
 struct sysfsm_ops show_int_ops = {
 	.show = &show_int,
 };
+
+void setup_local_snooping_samples(ihk_os_t os)
+{
+	static long lvalue = 0xf123456789abcde0;
+	static char *svalue = "string(local)";
+	int error;
+	struct sysfsm_bitmap_param param;
+
+	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_d32, &lvalue, 0444, "/sys/test/local/d32");
+	if (error) {
+		panic("setup_local_snooping_samples: d32");
+	}
+
+	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_d64, &lvalue, 0444, "/sys/test/local/d64");
+	if (error) {
+		panic("setup_local_snooping_samples: d64");
+	}
+
+	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_u32, &lvalue, 0444, "/sys/test/local/u32");
+	if (error) {
+		panic("setup_local_snooping_samples: u32");
+	}
+
+	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_u64, &lvalue, 0444, "/sys/test/local/u64");
+	if (error) {
+		panic("setup_local_snooping_samples: u64");
+	}
+
+	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_s, svalue, 0444, "/sys/test/local/s");
+	if (error) {
+		panic("setup_local_snooping_samples: s");
+	}
+
+	param.nbits = 40;
+	param.ptr = &lvalue;
+
+	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_pbl, &param, 0444, "/sys/test/local/pbl");
+	if (error) {
+		panic("setup_local_snooping_samples: pbl");
+	}
+
+	param.nbits = 40;
+	param.ptr = &lvalue;
+
+	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_pb, &param, 0444, "/sys/test/local/pb");
+	if (error) {
+		panic("setup_local_snooping_samples: pb");
+	}
+
+	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_u32K, &lvalue, 0444, "/sys/test/local/u32K");
+	if (error) {
+		panic("setup_local_snooping_samples: u32K");
+	}
+
+	return;
+}
 
 void setup_sysfs_files(ihk_os_t os)
 {
@@ -62,6 +119,7 @@ void setup_sysfs_files(ihk_os_t os)
 		panic("sysfsm_unlinkf");
 	}
 
+	setup_local_snooping_samples(os);
 	return;
 } /* setup_files() */
 

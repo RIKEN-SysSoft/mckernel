@@ -251,9 +251,66 @@ static void rest_init(void)
 	sched_init();
 }
 
+static void setup_remote_snooping_samples(void)
+{
+	static long lvalue = 0xf123456789abcde0;
+	static char *svalue = "string(remote)";
+	int error;
+	struct sysfs_bitmap_param param;
+
+	error = sysfs_createf(SYSFS_SNOOPING_OPS_d32, &lvalue, 0444, "/sys/test/remote/d32");
+	if (error) {
+		panic("setup_remote_snooping_samples: d32");
+	}
+
+	error = sysfs_createf(SYSFS_SNOOPING_OPS_d64, &lvalue, 0444, "/sys/test/remote/d64");
+	if (error) {
+		panic("setup_remote_snooping_samples: d64");
+	}
+
+	error = sysfs_createf(SYSFS_SNOOPING_OPS_u32, &lvalue, 0444, "/sys/test/remote/u32");
+	if (error) {
+		panic("setup_remote_snooping_samples: u32");
+	}
+
+	error = sysfs_createf(SYSFS_SNOOPING_OPS_u64, &lvalue, 0444, "/sys/test/remote/u64");
+	if (error) {
+		panic("setup_remote_snooping_samples: u64");
+	}
+
+	error = sysfs_createf(SYSFS_SNOOPING_OPS_s, svalue, 0444, "/sys/test/remote/s");
+	if (error) {
+		panic("setup_remote_snooping_samples: s");
+	}
+
+	param.nbits = 40;
+	param.ptr = &lvalue;
+
+	error = sysfs_createf(SYSFS_SNOOPING_OPS_pbl, &param, 0444, "/sys/test/remote/pbl");
+	if (error) {
+		panic("setup_remote_snooping_samples: pbl");
+	}
+
+	param.nbits = 40;
+	param.ptr = &lvalue;
+
+	error = sysfs_createf(SYSFS_SNOOPING_OPS_pb, &param, 0444, "/sys/test/remote/pb");
+	if (error) {
+		panic("setup_remote_snooping_samples: pb");
+	}
+
+	error = sysfs_createf(SYSFS_SNOOPING_OPS_u32K, &lvalue, 0444, "/sys/test/remote/u32K");
+	if (error) {
+		panic("setup_remote_snooping_samples: u32K");
+	}
+
+	return;
+} /* setup_remote_snooping_samples() */
+
 static void populate_sysfs(void)
 {
 	cpu_sysfs_setup();
+	setup_remote_snooping_samples();
 } /* populate_sysfs() */
 
 int host_ikc_inited = 0;
