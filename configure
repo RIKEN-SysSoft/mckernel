@@ -3947,7 +3947,7 @@ _ACEOF
 
 ac_config_headers="$ac_config_headers executer/kernel/mcctrl/config.h"
 
-ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/kernel/mcctrl/Makefile executer/kernel/mcoverlayfs/Makefile kernel/Makefile kernel/Makefile.build arch/x86/tools/mcreboot-attached-mic.sh arch/x86/tools/mcshutdown-attached-mic.sh arch/x86/tools/mcreboot-builtin-x86.sh arch/x86/tools/mcreboot-smp-x86.sh arch/x86/tools/mcstop+release-smp-x86.sh arch/x86/tools/mcshutdown-builtin-x86.sh arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in"
+ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/kernel/mcctrl/Makefile executer/kernel/mcctrl/arch/x86_64/Makefile executer/kernel/mcoverlayfs/Makefile kernel/Makefile kernel/Makefile.build arch/x86/tools/mcreboot-attached-mic.sh arch/x86/tools/mcshutdown-attached-mic.sh arch/x86/tools/mcreboot-builtin-x86.sh arch/x86/tools/mcreboot-smp-x86.sh arch/x86/tools/mcstop+release-smp-x86.sh arch/x86/tools/mcshutdown-builtin-x86.sh arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in"
 
 
 if test "x$enable_dcfa" = xyes; then :
@@ -4649,6 +4649,7 @@ do
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "executer/user/Makefile") CONFIG_FILES="$CONFIG_FILES executer/user/Makefile" ;;
     "executer/kernel/mcctrl/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcctrl/Makefile" ;;
+    "executer/kernel/mcctrl/arch/x86_64/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcctrl/arch/x86_64/Makefile" ;;
     "executer/kernel/mcoverlayfs/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcoverlayfs/Makefile" ;;
     "kernel/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/Makefile" ;;
     "kernel/Makefile.build") CONFIG_FILES="$CONFIG_FILES kernel/Makefile.build" ;;
