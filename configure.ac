@@ -227,6 +227,7 @@ AC_CONFIG_FILES([
 	Makefile
 	executer/user/Makefile
 	executer/kernel/mcctrl/Makefile
+	executer/kernel/mcctrl/arch/x86_64/Makefile
 	executer/kernel/mcoverlayfs/Makefile
 	kernel/Makefile
 	kernel/Makefile.build

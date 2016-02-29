@@ -1,6 +1,6 @@
 #include <linux/version.h>
 #include "config.h"
-#include "mcctrl.h"
+#include "../../mcctrl.h"
 
 unsigned long
 reserve_user_space_common(struct mcctrl_usrdata *usrdata, unsigned long start, unsigned long end);
