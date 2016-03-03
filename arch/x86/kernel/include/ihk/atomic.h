@@ -202,4 +202,17 @@ static inline unsigned long atomic_cmpxchg8(unsigned long *addr,
 	return oldval;
 }
 
+static inline unsigned long atomic_cmpxchg4(unsigned int *addr,
+		unsigned int oldval,
+		unsigned int newval)
+{
+	asm volatile("lock; cmpxchgl %2, %1\n"
+		     : "=a" (oldval), "+m" (*addr)
+		     : "r" (newval), "0" (oldval)
+		     : "memory"
+	);
+
+	return oldval;
+}
+
 #endif

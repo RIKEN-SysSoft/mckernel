@@ -13,7 +13,6 @@
 #if defined(DEBUG_SPINLOCK) || defined(DEBUG_MCS_RWLOCK)
 int __kprintf(const char *format, ...);
 #endif
-extern void panic(const char *);
 
 typedef int ihk_spinlock_t;
 
@@ -189,10 +188,8 @@ typedef struct mcs_rwlock_node {
 	char locked;		// lock
 #define MCS_RWLOCK_LOCKED	1
 #define MCS_RWLOCK_UNLOCKED	0
-	char status;
-#define MCS_RWLOCK_STAT_INACTIVE	0
-#define MCS_RWLOCK_STAT_INPROGRESS	1
 	char dmy1;		// unused
+	char dmy2;		// unused
 	struct mcs_rwlock_node *next;
 } __attribute__((aligned(64))) mcs_rwlock_node_t;
 
@@ -211,7 +208,6 @@ mcs_rwlock_init(struct mcs_rwlock_lock *lock)
 {
 	ihk_atomic_set(&lock->reader.count, 0);
 	lock->reader.type = MCS_RWLOCK_TYPE_COMMON_READER;
-	lock->reader.status = MCS_RWLOCK_STAT_INACTIVE;
 	lock->node = NULL;
 }
 
@@ -252,11 +248,12 @@ mcs_rwlock_unlock_readers(struct mcs_rwlock_lock *lock)
 	struct mcs_rwlock_node *p;
 	struct mcs_rwlock_node *f = NULL;
 	struct mcs_rwlock_node *n;
+	int breakf = 0;
 
 	ihk_atomic_inc(&lock->reader.count); // protect to unlock reader
 	for(p = &lock->reader; p->next; p = n){
 		n = p->next;
-		if(n->type == MCS_RWLOCK_TYPE_READER){
+		if(p->next->type == MCS_RWLOCK_TYPE_READER){
 			p->next = n->next;
 			if(lock->node == n){
 				struct mcs_rwlock_node *old;
@@ -272,6 +269,9 @@ mcs_rwlock_unlock_readers(struct mcs_rwlock_lock *lock)
 					}
 					p->next = n->next;
 				}
+				else{
+					breakf = 1;
+				}
 			}
 			else if(p->next == NULL){
 				while (n->next == NULL) {
@@ -286,6 +286,8 @@ mcs_rwlock_unlock_readers(struct mcs_rwlock_lock *lock)
 			else
 				f = n;
 			n = p;
+			if(breakf)
+				break;
 		}
 		if(n->next == NULL && lock->node != n){
 			while (n->next == NULL && lock->node != n) {
@@ -294,7 +296,6 @@ mcs_rwlock_unlock_readers(struct mcs_rwlock_lock *lock)
 		}
 	}
 
-	lock->reader.status = MCS_RWLOCK_STAT_INACTIVE;
 	f->locked = MCS_RWLOCK_UNLOCKED;
 }
 
@@ -325,10 +326,6 @@ __mcs_rwlock_writer_unlock_noirq(struct mcs_rwlock_lock *lock, struct mcs_rwlock
 	}
 
 	if(node->next->type == MCS_RWLOCK_TYPE_READER){
-if(lock->reader.status == MCS_RWLOCK_STAT_INPROGRESS){
-panic("panic __mcs_rwlock_writer_unlock_noirq\n");
-}
-		lock->reader.status = MCS_RWLOCK_STAT_INPROGRESS;
 		lock->reader.next = node->next;
 		mcs_rwlock_unlock_readers(lock);
 	}
@@ -349,6 +346,24 @@ __kprintf("[%d] ret mcs_rwlock_reader_lock_noirq\n", ihk_mc_get_processor_id());
 #else
 #define mcs_rwlock_reader_lock_noirq __mcs_rwlock_reader_lock_noirq
 #endif
+
+static inline unsigned int
+atomic_inc_ifnot0(ihk_atomic_t *v)
+{
+	unsigned int *p = (unsigned int *)(&(v)->counter);
+	unsigned int old;
+	unsigned int new;
+	unsigned int val;
+
+	do{
+		if(!(old = *p))
+			break;
+		new = old + 1;
+		val = atomic_cmpxchg4(p, old, new);
+	}while(val != old);
+	return old;
+}
+
 static void
 __mcs_rwlock_reader_lock_noirq(struct mcs_rwlock_lock *lock, struct mcs_rwlock_node *node)
 {
@@ -356,8 +371,6 @@ __mcs_rwlock_reader_lock_noirq(struct mcs_rwlock_lock *lock, struct mcs_rwlock_n
 
 	preempt_disable();
 
-	while(lock->reader.status != MCS_RWLOCK_STAT_INACTIVE)
-		cpu_pause();
 	node->type = MCS_RWLOCK_TYPE_READER;
 	node->next = NULL;
 	node->dmy1 = ihk_mc_get_processor_id();
@@ -367,7 +380,7 @@ __mcs_rwlock_reader_lock_noirq(struct mcs_rwlock_lock *lock, struct mcs_rwlock_n
 
 	if (pred) {
 		if(pred == &lock->reader){
-			if(ihk_atomic_inc_return(&pred->count) != 1){
+			if(atomic_inc_ifnot0(&pred->count)){
 				struct mcs_rwlock_node *old;
 
 				old = (struct mcs_rwlock_node *)atomic_cmpxchg8(
@@ -383,17 +396,12 @@ __mcs_rwlock_reader_lock_noirq(struct mcs_rwlock_lock *lock, struct mcs_rwlock_n
 					cpu_pause();
 				}
 
-				pred->next = node->next;
-				if(node->next->type == MCS_RWLOCK_TYPE_READER){
-if(lock->reader.status == MCS_RWLOCK_STAT_INPROGRESS){
-panic("panic __mcs_rwlock_reader_lock_noirq 1\n");
-}
-					lock->reader.status = MCS_RWLOCK_STAT_INPROGRESS;
-					mcs_rwlock_unlock_readers(lock);
-				}
+				node->locked = MCS_RWLOCK_LOCKED;
+				lock->reader.next = node;
+				mcs_rwlock_unlock_readers(lock);
+				ihk_atomic_dec(&pred->count);
 				goto out;
 			}
-			ihk_atomic_dec(&pred->count);
 		}
 		node->locked = MCS_RWLOCK_LOCKED;
 		pred->next = node;
@@ -402,10 +410,6 @@ panic("panic __mcs_rwlock_reader_lock_noirq 1\n");
 		}
 	}
 	else {
-if(lock->reader.status == MCS_RWLOCK_STAT_INPROGRESS){
-panic("panic __mcs_rwlock_reader_lock_noirq 2\n");
-}
-		lock->reader.status = MCS_RWLOCK_STAT_INPROGRESS;
 		lock->reader.next = node;
 		mcs_rwlock_unlock_readers(lock);
 	}
@@ -446,10 +450,6 @@ __mcs_rwlock_reader_unlock_noirq(struct mcs_rwlock_lock *lock, struct mcs_rwlock
 	}
 
 	if(lock->reader.next->type == MCS_RWLOCK_TYPE_READER){
-if(lock->reader.status == MCS_RWLOCK_STAT_INPROGRESS){
-panic("panic __mcs_rwlock_reader_unlock_noirq\n");
-}
-		lock->reader.status = MCS_RWLOCK_STAT_INPROGRESS;
 		mcs_rwlock_unlock_readers(lock);
 	}
 	else{
