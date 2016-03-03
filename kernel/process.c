@@ -2613,14 +2613,13 @@ redo:
 		ihk_mc_spinlock_unlock(&(cpu_local_var(runq_lock)),
 			cpu_local_var(runq_irqstate));
 
-		/* Have we migrated to another core meanwhile? */
-		if (v != get_this_cpu_local_var()) {
-			dkprintf("migrated, skipping freeing last\n");
-			goto redo;
-		}
-
 		if ((last != NULL) && (last->status == PS_EXITED)) {
 			release_thread(last);
+		}
+
+		/* Have we migrated to another core meanwhile? */
+		if (v != get_this_cpu_local_var()) {
+			goto redo;
 		}
 	}
 	else {
