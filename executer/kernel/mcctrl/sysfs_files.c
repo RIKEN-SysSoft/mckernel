@@ -87,6 +87,62 @@ void setup_local_snooping_samples(ihk_os_t os)
 	return;
 }
 
+void setup_local_snooping_files(ihk_os_t os)
+{
+	struct ihk_cpu_info *info;
+	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
+	struct sysfsm_bitmap_param param;
+	static unsigned long cpu_offline = 0x0;
+	int i;
+	int error;
+
+	info = ihk_os_get_cpu_info(os);
+	if (!info) {
+		eprintk("mcctrl:ihk_os_get_cpu_info failed.\n");
+		return;
+	}
+
+	memset(udp->cpu_online, 0, sizeof(udp->cpu_online));
+	for (i = 0; i < info->n_cpus; i++) {
+		udp->cpu_online[i / BITS_PER_LONG] = 
+			udp->cpu_online[i / BITS_PER_LONG] | (1 << (i % BITS_PER_LONG));
+	}
+
+	param.nbits = CPU_LONGS * BITS_PER_LONG;
+	param.ptr = udp->cpu_online;
+	dprintk("mcctrl:setup_local_snooping_files: CPU_LONGS=%d, BITS_PER_LONG=%d\n", 
+		CPU_LONGS, BITS_PER_LONG);
+
+	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
+		"/sys/devices/system/cpu/online");
+	if (error) {
+		panic("setup_local_snooping_files: devices/system/cpu/online");
+	}
+
+	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
+		"/sys/devices/system/cpu/possible");
+	if (error) {
+		panic("setup_local_snooping_files: devices/system/cpu/possible");
+	}
+
+	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
+		"/sys/devices/system/cpu/present");
+	if (error) {
+		panic("setup_local_snooping_files: devices/system/cpu/present");
+	}
+
+	param.nbits = BITS_PER_LONG;
+	param.ptr = &cpu_offline;
+
+	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
+		"/sys/devices/system/cpu/offline");
+	if (error) {
+		panic("setup_local_snooping_files: devices/system/cpu/offline");
+	}
+
+	return;
+}
+
 void setup_sysfs_files(ihk_os_t os)
 {
 	static int a_value = 35;
@@ -120,6 +176,7 @@ void setup_sysfs_files(ihk_os_t os)
 	}
 
 	setup_local_snooping_samples(os);
+	setup_local_snooping_files(os);
 	return;
 } /* setup_files() */
 

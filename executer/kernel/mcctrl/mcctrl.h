@@ -41,6 +41,7 @@
 #include <ikc/master.h>
 #include <ihk/msr.h>
 #include <linux/semaphore.h>
+#include <linux/threads.h>
 #include "sysfs.h"
 
 #define SCD_MSG_PREPARE_PROCESS         0x1
@@ -194,6 +195,8 @@ static inline int sysfs_inited(struct sysfsm_data *sdp)
 	return !!(sdp->sysfs_buf);
 } /* sysfs_inited() */
 
+#define CPU_LONGS (((NR_CPUS) + (BITS_PER_LONG) - 1) / (BITS_PER_LONG))
+
 struct mcctrl_usrdata {
 	struct ihk_ikc_listen_param listen_param;
 	struct ihk_ikc_listen_param listen_param2;
@@ -213,6 +216,7 @@ struct mcctrl_usrdata {
 	ihk_spinlock_t per_proc_list_lock;
 	void **keys;
 	struct sysfsm_data sysfsm_data;
+	unsigned long cpu_online[CPU_LONGS];
 };
 
 struct mcctrl_signal {
