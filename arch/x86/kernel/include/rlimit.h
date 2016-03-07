@@ -90,10 +90,6 @@ enum __rlimit_resource
 #define RLIM_NLIMITS __RLIM_NLIMITS
 };
 
-
-struct rlimit {
-	uint64_t rlim_cur;  /* Soft limit */
-	uint64_t rlim_max;  /* Hard limit (ceiling for rlim_cur) */
-};
+#include <generic-rlimit.h>
 
 #endif
