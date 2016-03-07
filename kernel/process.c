@@ -381,6 +381,9 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 			goto err_free_proc;
 		}
 
+		thread->proc->maxrss = org->proc->maxrss;
+		thread->vm->currss = org->vm->currss;
+
 		dkprintf("fork(): copy_user_ranges() OK\n");
 	}
 
@@ -1570,6 +1573,9 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 	flush_tlb_single(fault_addr);
 	error = 0;
 	page = NULL;
+	vm->currss += PAGE_SIZE;
+	if(vm->currss > vm->proc->maxrss)
+		vm->proc->maxrss = vm->currss;
 out:
 	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 	if (page) {

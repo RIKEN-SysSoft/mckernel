@@ -1102,6 +1102,7 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 		if (page && page_unmap(page)) {
 			ihk_mc_free_pages(phys_to_virt(phys), 1);
 		}
+		args->vm->currss -= PAGE_SIZE;
 	}
 	
 	remote_flush_tlb_cpumask(args->vm, base, ihk_mc_get_processor_id());
@@ -1150,6 +1151,7 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
 			if (page && page_unmap(page)) {
 				ihk_mc_free_pages(phys_to_virt(phys), PTL2_SIZE/PTL1_SIZE);
 			}
+			args->vm->currss -= LARGE_PAGE_SIZE;
 		}
 
 		remote_flush_tlb_cpumask(args->vm, base, ihk_mc_get_processor_id());

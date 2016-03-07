@@ -407,6 +407,10 @@ do_wait(int pid, int *status, int options, void *rusage)
 					ts_add(&proc->utime_children, &child->utime);
 					ts_add(&proc->stime_children, &child->stime_children);
 					ts_add(&proc->utime_children, &child->utime_children);
+					if(child->maxrss > proc->maxrss_children)
+						proc->maxrss_children = child->maxrss;
+					if(child->maxrss_children > proc->maxrss_children)
+						proc->maxrss_children = child->maxrss_children;
 					mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &lock);
 					release_process(child);
 				}
@@ -3954,6 +3958,75 @@ SYSCALL_DECLARE(getrlimit)
 	return 0;
 }
 
+SYSCALL_DECLARE(getrusage)
+{
+	int who = ihk_mc_syscall_arg0(ctx);
+	struct rusage *usage = (struct rusage *)ihk_mc_syscall_arg1(ctx);
+	struct rusage kusage;
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
+	struct timespec utime;
+	struct timespec stime;
+	struct mcs_rwlock_node lock;
+
+	if(who != RUSAGE_SELF &&
+	   who != RUSAGE_CHILDREN &&
+	   who != RUSAGE_THREAD)
+		return -EINVAL;
+
+	memset(&kusage, '\0', sizeof kusage);
+
+	if(who == RUSAGE_SELF){
+		struct thread *child;
+
+		memset(&utime, '\0', sizeof utime);
+		memset(&stime, '\0', sizeof stime);
+		mcs_rwlock_reader_lock_noirq(&proc->threads_lock, &lock);
+		list_for_each_entry(child, &proc->threads_list, siblings_list){
+			if(child != thread &&
+			   child->status == PS_RUNNING &&
+			   !child->in_kernel){
+				child->times_update = 0;
+				ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(child->cpu_id)->apic_id, 0xd1);
+			}
+			else
+				child->times_update = 1;
+		}
+		utime.tv_sec = proc->utime.tv_sec;
+		utime.tv_nsec = proc->utime.tv_nsec;
+		stime.tv_sec = proc->stime.tv_sec;
+		stime.tv_nsec = proc->stime.tv_nsec;
+		list_for_each_entry(child, &proc->threads_list, siblings_list){
+			while(!child->times_update)
+				cpu_pause();
+			ts_add(&utime, &child->utime);
+			ts_add(&stime, &child->stime);
+		}
+		mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &lock);
+		ts_to_tv(&kusage.ru_utime, &utime);
+		ts_to_tv(&kusage.ru_stime, &stime);
+
+		kusage.ru_maxrss = proc->maxrss / 1024;
+	}
+	else if(who == RUSAGE_CHILDREN){
+		ts_to_tv(&kusage.ru_utime, &proc->utime_children);
+		ts_to_tv(&kusage.ru_stime, &proc->stime_children);
+
+		kusage.ru_maxrss = proc->maxrss_children / 1024;
+	}
+	else if(who == RUSAGE_THREAD){
+		ts_to_tv(&kusage.ru_utime, &thread->utime);
+		ts_to_tv(&kusage.ru_stime, &thread->stime);
+
+		kusage.ru_maxrss = proc->maxrss / 1024;
+	}
+
+	if(copy_to_user(usage, &kusage, sizeof kusage))
+		return -EFAULT;
+
+	return 0;
+}
+
 extern int ptrace_traceme(void);
 extern void clear_single_step(struct thread *thread);
 extern void set_single_step(struct thread *thread);
@@ -4997,7 +5070,6 @@ SYSCALL_DECLARE(sched_setaffinity)
 	int empty_set = 1; 
 	extern int num_processors;
 
-kprintf("sched_setaffinity tid=%d len=%d set=%p\n", tid, len, u_cpu_set);
 	if (sizeof(k_cpu_set) > len) {
 		memset(&k_cpu_set, 0, sizeof(k_cpu_set));
 	}
@@ -5295,7 +5367,7 @@ SYSCALL_DECLARE(clock_gettime)
 		struct thread *child;
 		struct mcs_rwlock_node lock;
 
-		mcs_rwlock_reader_lock_noirq(&proc->children_lock, &lock);
+		mcs_rwlock_reader_lock_noirq(&proc->threads_lock, &lock);
 		list_for_each_entry(child, &proc->threads_list, siblings_list){
 			if(child != thread &&
 			   child->status == PS_RUNNING &&
@@ -5313,7 +5385,7 @@ SYSCALL_DECLARE(clock_gettime)
 			ts_add(&ats, &child->utime);
 			ts_add(&ats, &child->stime);
 		}
-		mcs_rwlock_reader_unlock_noirq(&proc->children_lock, &lock);
+		mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &lock);
 		return copy_to_user(ts, &ats, sizeof ats);
 	}
 	else if(clock_id == CLOCK_THREAD_CPUTIME_ID){

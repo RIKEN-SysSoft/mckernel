@@ -439,6 +439,9 @@ struct process {
 	// cpu time (children)
 	struct timespec stime_children;
 	struct timespec utime_children;
+
+	long maxrss;
+	long maxrss_children;
 };
 
 void hold_thread(struct thread *ftn);
@@ -560,6 +563,8 @@ struct process_vm {
 
 	ihk_atomic_t refcount;
 	int exiting;
+
+	long currss;
 };
 
 
