@@ -1,6 +1,5 @@
 CC = /usr/linux-k1om-4.7/bin/x86_64-k1om-linux-gcc
 LD = /usr/linux-k1om-4.7/bin/x86_64-k1om-linux-ld
 
-CFLAGS += -mno-sse -mno-mmx -mno-sse2 -mno-3dnow
 LDFLAGS += -m elf_k1om -T $(SRC)/config/attached-mic.lds
 LDFLAGS_MKIMAGE = -m elf_k1om

@@ -1,2 +1,1 @@
-CFLAGS += -mno-sse -mno-mmx -mno-sse2 -mno-3dnow
 LDFLAGS += -T $(SRC)/config/smp-x86.lds
