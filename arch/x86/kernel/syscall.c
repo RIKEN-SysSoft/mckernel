@@ -473,6 +473,7 @@ void ptrace_report_signal(struct thread *thread, int sig)
 		proc->signal_flags &= ~SIGNAL_STOP_STOPPED;
 	}
 	parent_pid = proc->parent->pid;
+	save_debugreg(thread->ptrace_debugreg);
 	mcs_rwlock_writer_unlock(&proc->update_lock, &lock);
 
 	memset(&info, '\0', sizeof info);
@@ -646,16 +647,16 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 		case SIGTSTP:
 		case SIGTTIN:
 		case SIGTTOU:
-			memset(&info, '\0', sizeof info);
-			info.si_signo = SIGCHLD;
-			info.si_code = CLD_STOPPED;
-			info._sifields._sigchld.si_pid = thread->proc->pid;
-			info._sifields._sigchld.si_status = (sig << 8) | 0x7f;
-			do_kill(cpu_local_var(current), thread->proc->parent->pid, -1, SIGCHLD, &info, 0);
 			if(ptraceflag){
 				ptrace_report_signal(thread, orgsig);
 			}
 			else{
+				memset(&info, '\0', sizeof info);
+				info.si_signo = SIGCHLD;
+				info.si_code = CLD_STOPPED;
+				info._sifields._sigchld.si_pid = thread->proc->pid;
+				info._sifields._sigchld.si_status = (sig << 8) | 0x7f;
+				do_kill(cpu_local_var(current), thread->proc->parent->pid, -1, SIGCHLD, &info, 0);
 				dkprintf("do_signal,SIGSTOP,changing state\n");
 
 				/* Update thread state in fork tree */
@@ -708,6 +709,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 			info._sifields._sigchld.si_status = 0x0000ffff;
 			do_kill(cpu_local_var(current), proc->parent->pid, -1, SIGCHLD, &info, 0);
 			proc->signal_flags = SIGNAL_STOP_CONTINUED;
+			proc->status = PS_RUNNING;
 			dkprintf("do_signal,SIGCONT,do nothing\n");
 			break;
 		case SIGQUIT:
@@ -1097,6 +1099,7 @@ done:
 			else if(sig == SIGCONT || ptracecont){
 				/* Wake up the target only when stopped by SIGSTOP */
 				sched_wakeup_thread(tthread, PS_STOPPED);
+				tthread->proc->status = PS_RUNNING;
 			}
 		}
 	}

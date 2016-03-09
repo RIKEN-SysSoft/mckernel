@@ -2689,6 +2689,7 @@ sched_wakeup_thread(struct thread *thread, int valid_states)
 	irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 
 	if (thread->status & valid_states) {
+		xchg4((int *)(&thread->proc->status), PS_RUNNING);
 		xchg4((int *)(&thread->status), PS_RUNNING);
 		status = 0;
 	}
