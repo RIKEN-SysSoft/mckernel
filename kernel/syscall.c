@@ -51,6 +51,7 @@
 #include <limits.h>
 #include <mc_perf_event.h>
 #include <march.h>
+#include <process.h>
 
 /* Headers taken from kitten LWK */
 #include <lwk/stddef.h>
@@ -3816,7 +3817,8 @@ SYSCALL_DECLARE(shmctl)
 			dkprintf("shmctl(%#x,%d,%p): lookup: %d\n", shmid, cmd, buf, error);
 			return error;
 		}
-		if ((obj->ds.shm_perm.uid != proc->euid)
+		if (!has_cap_sys_admin(thread)
+				&& (obj->ds.shm_perm.uid != proc->euid)
 				&& (obj->ds.shm_perm.cuid != proc->euid)) {
 			shmobj_list_unlock();
 			dkprintf("shmctl(%#x,%d,%p): -EPERM\n", shmid, cmd, buf);
