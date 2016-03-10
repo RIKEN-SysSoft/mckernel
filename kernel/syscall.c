@@ -3965,7 +3965,16 @@ SYSCALL_DECLARE(shmctl)
 			dkprintf("shmctl(%#x,%d,%p): lookup: %d\n", shmid, cmd, buf, error);
 			return error;
 		}
-		if (obj->ds.shm_perm.mode & SHM_LOCKED) {
+		if (!has_cap_ipc_lock(thread)
+				&& (obj->ds.shm_perm.cuid != proc->euid)
+				&& (obj->ds.shm_perm.uid != proc->euid)) {
+			shmobj_list_unlock();
+			dkprintf("shmctl(%#x,%d,%p): perm shm: %d\n", shmid, cmd, buf, error);
+			return -EPERM;
+		}
+		if ((obj->ds.shm_perm.mode & SHM_LOCKED)
+			       && ((obj->pgshift == 0)
+				       || (obj->pgshift == PAGE_SHIFT))) {
 			size = (obj->ds.shm_segsz + PAGE_SIZE - 1) & PAGE_MASK;
 			shmlock_users_lock();
 			user = obj->user;
