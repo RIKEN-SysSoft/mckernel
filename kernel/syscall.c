@@ -3783,6 +3783,9 @@ SYSCALL_DECLARE(shmctl)
 	int req;
 	int maxi;
 	struct shmobj *obj;
+	size_t size;
+	struct shmlock_user *user;
+	uid_t ruid = proc->ruid;
 
 	dkprintf("shmctl(%#x,%d,%p)\n", shmid, cmd, buf);
 	if (0) ;
@@ -3909,7 +3912,21 @@ SYSCALL_DECLARE(shmctl)
 			dkprintf("shmctl(%#x,%d,%p): lookup: %d\n", shmid, cmd, buf, error);
 			return error;
 		}
-		obj->ds.shm_perm.mode |= SHM_LOCKED;
+		if (!(obj->ds.shm_perm.mode & SHM_LOCKED)) {
+			shmlock_users_lock();
+			error = shmlock_user_get(ruid, &user);
+			if (error) {
+				shmlock_users_unlock();
+				shmobj_list_unlock();
+				ekprintf("shmctl(%#x,%d,%p): user lookup: %d\n", shmid, cmd, buf, error);
+				return -ENOMEM;
+			}
+			size = (obj->ds.shm_segsz + PAGE_SIZE - 1) & PAGE_MASK;
+			obj->ds.shm_perm.mode |= SHM_LOCKED;
+			obj->user = user;
+			user->locked += size;
+			shmlock_users_unlock();
+		}
 		shmobj_list_unlock();
 
 		dkprintf("shmctl(%#x,%d,%p): 0\n", shmid, cmd, buf);
@@ -3923,7 +3940,18 @@ SYSCALL_DECLARE(shmctl)
 			dkprintf("shmctl(%#x,%d,%p): lookup: %d\n", shmid, cmd, buf, error);
 			return error;
 		}
-		obj->ds.shm_perm.mode &= ~SHM_LOCKED;
+		if (obj->ds.shm_perm.mode & SHM_LOCKED) {
+			size = (obj->ds.shm_segsz + PAGE_SIZE - 1) & PAGE_MASK;
+			shmlock_users_lock();
+			user = obj->user;
+			obj->user = NULL;
+			user->locked -= size;
+			if (!user->locked) {
+				shmlock_user_free(user);
+			}
+			shmlock_users_unlock();
+			obj->ds.shm_perm.mode &= ~SHM_LOCKED;
+		}
 		shmobj_list_unlock();
 		dkprintf("shmctl(%#x,%d,%p): 0\n", shmid, cmd, buf);
 		return 0;

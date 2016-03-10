@@ -47,11 +47,14 @@ enum {
 	SHM_INFO	= 14,
 };
 
+struct shmlock_user;
+
 struct shmobj {
 	struct memobj		memobj;		/* must be first */
 	int			index;
 	int			pgshift;
 	size_t			real_segsz;
+	struct shmlock_user *	user;
 	struct shmid_ds		ds;
 	struct list_head	page_list;
 	struct list_head	chain;		/* shmobj_list */
@@ -76,9 +79,33 @@ struct shm_info {
 	uint64_t	swap_successes;
 };
 
+struct shmlock_user {
+	uid_t ruid;
+	int padding;
+	size_t locked;
+
+	struct list_head chain;
+};
+
+extern ihk_spinlock_t shmlock_users_lock_body;
+
+static inline void shmlock_users_lock(void)
+{
+	ihk_mc_spinlock_lock_noirq(&shmlock_users_lock_body);
+	return;
+}
+
+static inline void shmlock_users_unlock(void)
+{
+	ihk_mc_spinlock_unlock_noirq(&shmlock_users_lock_body);
+	return;
+}
+
 void shmobj_list_lock(void);
 void shmobj_list_unlock(void);
 int shmobj_create_indexed(struct shmid_ds *ds, struct shmobj **objp);
 void shmobj_destroy(struct shmobj *obj);
+void shmlock_user_free(struct shmlock_user *user);
+int shmlock_user_get(uid_t ruid, struct shmlock_user **userp);
 
 #endif /* HEADER_SHM_H */

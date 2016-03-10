@@ -113,6 +113,43 @@ void shmobj_list_unlock(void)
 }
 
 /***********************************************************************
+ * shmlock_users
+ */
+ihk_spinlock_t shmlock_users_lock_body = SPIN_LOCK_UNLOCKED;
+static LIST_HEAD(shmlock_users);
+
+void shmlock_user_free(struct shmlock_user *user)
+{
+	if (user->locked) {
+		panic("shmlock_user_free()");
+	}
+	list_del(&user->chain);
+	kfree(user);
+}
+
+int shmlock_user_get(uid_t ruid, struct shmlock_user **userp)
+{
+	struct shmlock_user *user;
+
+	list_for_each_entry(user, &shmlock_users, chain) {
+		if (user->ruid == ruid) {
+			break;
+		}
+	}
+	if (&user->chain == &shmlock_users) {
+		user = kmalloc(sizeof(*user), IHK_MC_AP_NOWAIT);
+		if (!user) {
+			return -ENOMEM;
+		}
+		user->ruid = ruid;
+		user->locked = 0;
+		list_add(&user->chain, &shmlock_users);
+	}
+	*userp = user;
+	return 0;
+}
+
+/***********************************************************************
  * operations
  */
 int the_seq = 0;
@@ -172,8 +209,21 @@ void shmobj_destroy(struct shmobj *obj)
 	extern struct shm_info the_shm_info;
 	extern struct list_head kds_free_list;
 	extern int the_maxi;
+	struct shmlock_user *user;
+	size_t size;
 
 	dkprintf("shmobj_destroy(%p [%d %o])\n", obj, obj->index, obj->ds.shm_perm.mode);
+	if (obj->user) {
+		user = obj->user;
+		obj->user = NULL;
+		shmlock_users_lock();
+		size = (obj->ds.shm_segsz + PAGE_SIZE - 1) & PAGE_MASK;
+		user->locked -= size;
+		if (!user->locked) {
+			shmlock_user_free(user);
+		}
+		shmlock_users_unlock();
+	}
 	/* zap page_list */
 	for (;;) {
 		struct page *page;
