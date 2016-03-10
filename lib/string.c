@@ -13,6 +13,10 @@
 #include <kmalloc.h>
 #include <string.h>
 
+extern int strlen_user(const char *);
+extern int strcpy_from_user(char *, const char *);
+extern long getlong_user(const void *);
+
 size_t strlen(const char *p)
 {
 	const char *head = p;
@@ -268,3 +272,70 @@ int flatten_strings(int nr_strings, char *first, char **strings, char **flat)
 	return full_len;
 }
 
+int flatten_strings_from_user(int nr_strings, char *first, char **strings, char **flat)
+{
+	int full_len, string_i;
+	long *_flat;
+	char *p;
+	long r;
+	int n;
+
+	/* How many strings do we have? */
+	if (nr_strings == -1) {
+		for (nr_strings = 0; (r = getlong_user(strings + nr_strings)) > 0; ++nr_strings); 
+		if(r < 0)
+			return r;
+	}
+
+	/* Count full length */
+	full_len = sizeof(long) + sizeof(char *); // Counter and terminating NULL
+	if (first) {
+		int len = strlen(first);
+
+		if(len < 0)
+			return len;
+		full_len += sizeof(char *) + len + 1; 
+	}
+
+	for (string_i = 0; string_i < nr_strings; ++string_i) {
+		char *userp = (char *)getlong_user(strings + string_i);
+		int len = strlen_user(userp);
+
+		if(len < 0)
+			return len;
+		// Pointer + actual value
+		full_len += sizeof(char *) + len + 1; 
+	}
+
+	full_len = (full_len + sizeof(long) - 1) & ~(sizeof(long) - 1);
+
+	_flat = kmalloc(full_len, IHK_MC_AP_NOWAIT);
+	if (!_flat) {
+		return -ENOMEM;
+	}
+
+	/* Number of strings */
+	n = first? 1: 0;
+	_flat[0] = nr_strings + n;
+	
+	// Actual offset
+	p = (char *)(_flat + nr_strings + 2 + n);
+
+	n = 1;
+	if (first) {
+		_flat[n++] = p - (char *)_flat;
+		strcpy(p, first);
+		p = strchr(p, '\0') + 1;
+	}
+
+	for (string_i = 0; string_i < nr_strings; ++string_i) {
+		char *userp = (char *)getlong_user(strings + string_i);
+		_flat[n++] = p - (char *)_flat;
+		strcpy_from_user(p, userp);
+		p = strchr(p, '\0') + 1;
+	}
+	_flat[n] = 0;
+
+	*flat = (char *)_flat;
+	return full_len;
+}

@@ -1660,14 +1660,14 @@ SYSCALL_DECLARE(execve)
 	}
 
 	/* Flatten argv and envp into kernel-space buffers */
-	argv_flat_len = flatten_strings(-1, (desc->shell_path[0] ? 
+	argv_flat_len = flatten_strings_from_user(-1, (desc->shell_path[0] ? 
 				desc->shell_path : NULL), argv, &argv_flat);
 	if (argv_flat_len == 0) {
 		kprintf("ERROR: no argv for executable: %s?\n", filename);
 		return -EINVAL;
 	}
 
-	envp_flat_len = flatten_strings(-1, NULL, envp, &envp_flat);
+	envp_flat_len = flatten_strings_from_user(-1, NULL, envp, &envp_flat);
 	if (envp_flat_len == 0) {
 		kprintf("ERROR: no envp for executable: %s?\n", filename);
 		return -EINVAL;

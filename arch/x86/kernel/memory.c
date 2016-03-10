@@ -2184,6 +2184,128 @@ int copy_from_user(void *dst, const void *src, size_t siz)
 	return 0;
 }
 
+int strlen_user(const char *s)
+{
+	struct process_vm *vm = cpu_local_var(current)->vm;
+	struct vm_range *range;
+	unsigned long pgstart;
+	int maxlen;
+	const char *head = s;
+
+	maxlen = 4096 - (((unsigned long)s) & 0x0000000000000fffUL);
+	pgstart = ((unsigned long)s) & 0xfffffffffffff000UL;
+	if(!pgstart || pgstart >= MAP_KERNEL_START)
+		return -EFAULT;
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	for(;;){
+		range = lookup_process_memory_range(vm, pgstart, pgstart+1);
+		if(range == NULL){
+			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+			return -EFAULT;
+		}
+		if((range->flag & VR_PROT_MASK) == VR_PROT_NONE){
+			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+			return -EFAULT;
+		}
+		while(*s && maxlen > 0){
+			s++;
+			maxlen--;
+		}
+		if(!*s)
+			break;
+		maxlen = 4096;
+		pgstart += 4096;
+	}
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	return s - head;
+}
+
+int strcpy_from_user(char *dst, const char *src)
+{
+	struct process_vm *vm = cpu_local_var(current)->vm;
+	struct vm_range *range;
+	unsigned long pgstart;
+	int maxlen;
+	int err = 0;
+
+	maxlen = 4096 - (((unsigned long)src) & 0x0000000000000fffUL);
+	pgstart = ((unsigned long)src) & 0xfffffffffffff000UL;
+	if(!pgstart || pgstart >= MAP_KERNEL_START)
+		return -EFAULT;
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	for(;;){
+		range = lookup_process_memory_range(vm, pgstart, pgstart + 1);
+		if(range == NULL){
+			err = -EFAULT;
+			break;
+		}
+		if((range->flag & VR_PROT_MASK) == VR_PROT_NONE){
+			err = -EFAULT;
+			break;
+		}
+		while(*src && maxlen > 0){
+			*(dst++) = *(src++);
+			maxlen--;
+		}
+		if(!*src){
+			*dst = '\0';
+			break;
+		}
+		maxlen = 4096;
+		pgstart += 4096;
+	}
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	return err;
+}
+
+long getlong_user(const long *p)
+{
+	struct process_vm *vm = cpu_local_var(current)->vm;
+	struct vm_range *range;
+	unsigned long plong = (unsigned long)p;
+	unsigned long pgstart;
+
+	pgstart = plong & 0xfffffffffffff000UL;
+	if(!pgstart || pgstart >= MAP_KERNEL_START)
+		return -EFAULT;
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	range = lookup_process_memory_range(vm, plong, plong + sizeof(long));
+	if(range == NULL){
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		return -EFAULT;
+	}
+	if((range->flag & VR_PROT_MASK) == VR_PROT_NONE){
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		return -EFAULT;
+	}
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	return *p;
+}
+
+int getint_user(const int *p)
+{
+	struct process_vm *vm = cpu_local_var(current)->vm;
+	struct vm_range *range;
+	unsigned long pint = (unsigned long)p;
+	unsigned long pgstart;
+
+	pgstart = pint & 0xfffffffffffff000UL;
+	if(!pgstart || pgstart >= MAP_KERNEL_START)
+		return -EFAULT;
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	range = lookup_process_memory_range(vm, pint, pint + sizeof(int));
+	if(range == NULL){
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		return -EFAULT;
+	}
+	if((range->flag & VR_PROT_MASK) == VR_PROT_NONE){
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		return -EFAULT;
+	}
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	return *p;
+}
+
 int read_process_vm(struct process_vm *vm, void *kdst, const void *usrc, size_t siz)
 {
 	const uintptr_t ustart = (uintptr_t)usrc;
@@ -2264,6 +2386,58 @@ int copy_to_user(void *dst, const void *src, size_t siz)
 	}
 	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 	memcpy(dst, src, siz);
+	return 0;
+}
+
+int setlong_user(long *dst, long data)
+{
+	struct process_vm *vm = cpu_local_var(current)->vm;
+	struct vm_range *range;
+	unsigned long plong = (unsigned long)dst;
+	unsigned long pgstart;
+
+	pgstart = plong & 0xfffffffffffff000UL;
+	if(!pgstart || pgstart >= MAP_KERNEL_START)
+		return -EFAULT;
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	range = lookup_process_memory_range(vm, plong, plong + sizeof(long));
+	if(range == NULL){
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		return -EFAULT;
+	}
+	if(((range->flag & VR_PROT_MASK) == VR_PROT_NONE) ||
+	    !(range->flag & VR_PROT_WRITE)){
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		return -EFAULT;
+	}
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	*dst = data;
+	return 0;
+}
+
+int setint_user(int *dst, int data)
+{
+	struct process_vm *vm = cpu_local_var(current)->vm;
+	struct vm_range *range;
+	unsigned long pint = (unsigned long)dst;
+	unsigned long pgstart;
+
+	pgstart = pint & 0xfffffffffffff000UL;
+	if(!pgstart || pgstart >= MAP_KERNEL_START)
+		return -EFAULT;
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	range = lookup_process_memory_range(vm, pint, pint + sizeof(int));
+	if(range == NULL){
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		return -EFAULT;
+	}
+	if(((range->flag & VR_PROT_MASK) == VR_PROT_NONE) ||
+	    !(range->flag & VR_PROT_WRITE)){
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		return -EFAULT;
+	}
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	*dst = data;
 	return 0;
 }
 
