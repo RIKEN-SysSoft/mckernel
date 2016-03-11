@@ -28,7 +28,6 @@
 
 int num_processors = 1;
 static volatile int ap_stop = 1;
-extern void zero_tsc(void);
 
 static void ap_wait(void)
 {
@@ -36,8 +35,6 @@ static void ap_wait(void)
 		barrier();
 		cpu_pause();
 	}
-
-	zero_tsc();
 
 	kmalloc_init();
 	sched_init();

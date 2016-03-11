@@ -1517,9 +1517,3 @@ ihk_mc_user_context_t *lookup_user_context(struct thread *thread)
 
 	return uctx;
 } /* lookup_user_context() */
-
-
-void zero_tsc(void)
-{
-	wrmsr(MSR_IA32_TIME_STAMP_COUNTER, 0);
-}

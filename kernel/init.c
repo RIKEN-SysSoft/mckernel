@@ -315,7 +315,6 @@ static void populate_sysfs(void)
 
 int host_ikc_inited = 0;
 extern int num_processors;
-extern void zero_tsc(void);
 
 static void post_init(void)
 {
@@ -334,10 +333,6 @@ static void post_init(void)
 		ihk_mc_spinlock_init(&syscall_lock);
 	}
 
-	/* Zero TSC.
-	 * All AP cores are wait spinning for ap_start() and they will zero
-	 * their TSC immediatly. */
-	zero_tsc();
 	ap_start();
 
 	sysfs_init();
