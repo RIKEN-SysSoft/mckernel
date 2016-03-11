@@ -31,10 +31,12 @@ static volatile int ap_stop = 1;
 
 static void ap_wait(void)
 {
+	init_tick();
 	while (ap_stop) {
 		barrier();
 		cpu_pause();
 	}
+	sync_tick();
 
 	kmalloc_init();
 	sched_init();
@@ -53,7 +55,9 @@ static void ap_wait(void)
 
 void ap_start(void)
 {
+	init_tick();
 	ap_stop = 0;
+	sync_tick();
 }
 
 void ap_init(void)
@@ -63,6 +67,7 @@ void ap_init(void)
 	int bsp_hw_id;
 
 	ihk_mc_init_ap();
+	init_delay();
 	
 	cpu_info = ihk_mc_get_cpu_info();
 	bsp_hw_id = ihk_mc_get_hardware_processor_id();

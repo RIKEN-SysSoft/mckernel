@@ -104,4 +104,8 @@ extern unsigned int ihk_ikc_irq_apicid;
 
 extern int gettime_local_support;
 
+void init_tick(void);
+void init_delay(void);
+void sync_tick(void);
+
 #endif

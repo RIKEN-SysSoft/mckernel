@@ -1517,3 +1517,21 @@ ihk_mc_user_context_t *lookup_user_context(struct thread *thread)
 
 	return uctx;
 } /* lookup_user_context() */
+
+void init_tick(void)
+{
+	dkprintf("init_tick():\n");
+	return;
+}
+
+void init_delay(void)
+{
+	dkprintf("init_delay():\n");
+	return;
+}
+
+void sync_tick(void)
+{
+	dkprintf("sync_tick():\n");
+	return;
+}
