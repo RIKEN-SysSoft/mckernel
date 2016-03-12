@@ -161,12 +161,41 @@ fault:
 }
 
 struct sigsp {
-	struct x86_user_context regs;
+	unsigned long flags;
+	void *link;
+	stack_t sigstack;
+	unsigned long regs[23];
+#define _r8 regs[0] 
+#define _r9 regs[1] 
+#define _r10 regs[2] 
+#define _r11 regs[3] 
+#define _r12 regs[4] 
+#define _r13 regs[5] 
+#define _r14 regs[6] 
+#define _r15 regs[7] 
+#define _rdi regs[8] 
+#define _rsi regs[9] 
+#define _rbp regs[10] 
+#define _rbx regs[11] 
+#define _rdx regs[12] 
+#define _rax regs[13] 
+#define _rcx regs[14] 
+#define _rsp regs[15] 
+#define _rip regs[16] 
+#define _rflags regs[17] 
+#define _csgsfs regs[18] 
+#define _error regs[19] 
+#define _trapno regs[20] 
+#define _oldmask regs[21] 
+#define _cr2 regs[22] 
+	void *fpregs;
+	unsigned long reserve[8];
+
 	unsigned long sigrc;
 	unsigned long sigmask;
-	int ssflags;
 	int num;
 	int restart;
+	unsigned long ss;
 	siginfo_t info;
 };
 
@@ -174,16 +203,38 @@ SYSCALL_DECLARE(rt_sigreturn)
 {
 	struct thread *thread = cpu_local_var(current);
 	struct x86_user_context *regs;
+	struct sigsp ksigsp;
 	struct sigsp *sigsp;
 
 	asm("movq %%gs:132, %0" : "=r" (regs));
 	--regs;
 
 	sigsp = (struct sigsp *)regs->gpr.rsp;
-	if(copy_from_user(regs, &sigsp->regs, sizeof(struct x86_user_context)))
+	if(copy_from_user(&ksigsp, sigsp, sizeof ksigsp))
 		return -EFAULT;
-	thread->sigmask.__val[0] = sigsp->sigmask;
-	thread->sigstack.ss_flags = sigsp->ssflags;
+
+	regs->gpr.r15 = ksigsp._r15;
+	regs->gpr.r14 = ksigsp._r14;
+	regs->gpr.r13 = ksigsp._r13;
+	regs->gpr.r12 = ksigsp._r12;
+	regs->gpr.rbp = ksigsp._rbp;
+	regs->gpr.rbx = ksigsp._rbx;
+	regs->gpr.r11 = ksigsp._r11;
+	regs->gpr.r10 = ksigsp._r10;
+	regs->gpr.r9 = ksigsp._r9;
+	regs->gpr.r8 = ksigsp._r8;
+	regs->gpr.rax = ksigsp._rax;
+	regs->gpr.rcx = ksigsp._rcx;
+	regs->gpr.rdx = ksigsp._rdx;
+	regs->gpr.rsi = ksigsp._rsi;
+	regs->gpr.rdi = ksigsp._rdi;
+	regs->gpr.error = ksigsp._error;
+	regs->gpr.rip = ksigsp._rip;
+	regs->gpr.rflags = ksigsp._rflags;
+	regs->gpr.rsp = ksigsp._rsp;
+	thread->sigmask.__val[0] = ksigsp._oldmask;
+
+	memcpy(&thread->sigstack, &ksigsp.sigstack, sizeof(stack_t));
 	if(sigsp->restart){
 		return syscall(sigsp->num, (ihk_mc_user_context_t *)regs);
 	}
@@ -567,9 +618,8 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 	}
 	else if(k->sa.sa_handler){
 		unsigned long *usp; /* user stack */
+		struct sigsp ksigsp;
 		struct sigsp *sigsp;
-		int	ssflags = thread->sigstack.ss_flags;
-		unsigned long	mask = (unsigned long)thread->sigmask.__val[0];
 
 		if((k->sa.sa_flags & SA_ONSTACK) &&
 		   !(thread->sigstack.ss_flags & SS_DISABLE) &&
@@ -584,31 +634,56 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 		}
 		sigsp = ((struct sigsp *)usp) - 1;
 		sigsp = (struct sigsp *)((unsigned long)sigsp & 0xfffffffffffffff0UL);
-		if(write_process_vm(thread->vm, &sigsp->regs, regs, sizeof(struct x86_user_context)) ||
-		   write_process_vm(thread->vm, &sigsp->sigrc, &rc, sizeof(long))){
+		memset(&ksigsp, '\0', sizeof ksigsp);
+
+		ksigsp._r15 = regs->gpr.r15;
+		ksigsp._r14 = regs->gpr.r14;
+		ksigsp._r13 = regs->gpr.r13;
+		ksigsp._r12 = regs->gpr.r12;
+		ksigsp._rbp = regs->gpr.rbp;
+		ksigsp._rbx = regs->gpr.rbx;
+		ksigsp._r11 = regs->gpr.r11;
+		ksigsp._r10 = regs->gpr.r10;
+		ksigsp._r9 = regs->gpr.r9;
+		ksigsp._r8 = regs->gpr.r8;
+		ksigsp._rax = regs->gpr.rax;
+		ksigsp._rcx = regs->gpr.rcx;
+		ksigsp._rdx = regs->gpr.rdx;
+		ksigsp._rsi = regs->gpr.rsi;
+		ksigsp._rdi = regs->gpr.rdi;
+		ksigsp._error = regs->gpr.error;
+		ksigsp._rip = regs->gpr.rip;
+		ksigsp._rflags = regs->gpr.rflags;
+		ksigsp._rsp = regs->gpr.rsp;
+		ksigsp._cr2 = (unsigned long)pending->info._sifields._sigfault.si_addr;
+		ksigsp._oldmask = thread->sigmask.__val[0];
+
+		memcpy(&ksigsp.sigstack, &thread->sigstack, sizeof(stack_t));
+		ksigsp.sigrc = rc;
+		ksigsp.num = num;
+		ksigsp.restart = isrestart(num, rc, sig, k->sa.sa_flags & SA_RESTART);
+		if(num != 0 && rc == -EINTR && sig == SIGCHLD)
+			ksigsp.restart = 1;
+		memcpy(&ksigsp.info, &pending->info, sizeof(siginfo_t));
+
+		if(copy_to_user(sigsp, &ksigsp, sizeof ksigsp)){
 			kfree(pending);
 			ihk_mc_spinlock_unlock(&thread->sigcommon->lock, irqstate);
 			kprintf("do_signal,write_process_vm failed\n");
 			terminate(0, sig);
 			return;
 		}
-		sigsp->sigmask = mask;
-		sigsp->ssflags = ssflags;
-		sigsp->num = num;
-		sigsp->restart = isrestart(num, rc, sig, k->sa.sa_flags & SA_RESTART);
-		if(num != 0 && rc == -EINTR && sig == SIGCHLD)
-			sigsp->restart = 1;
-		memcpy(&sigsp->info, &pending->info, sizeof(siginfo_t));
+
+
+
 
 		usp = (unsigned long *)sigsp;
 		usp--;
 		*usp = (unsigned long)k->sa.sa_restorer;
 
 		regs->gpr.rdi = (unsigned long)sig;
-		if(k->sa.sa_flags & SA_SIGINFO){
-			regs->gpr.rsi = (unsigned long)&sigsp->info;
-			regs->gpr.rdx = 0;
-		}
+		regs->gpr.rsi = (unsigned long)&sigsp->info;
+		regs->gpr.rdx = (unsigned long)sigsp;
 		regs->gpr.rip = (unsigned long)k->sa.sa_handler;
 		regs->gpr.rsp = (unsigned long)usp;
 
