@@ -227,7 +227,7 @@ AC_SUBST(IHK_RELEASE_DATE)
 AC_SUBST(MCKERNEL_RELEASE_DATE)
 AC_SUBST(DCFA_RESEASE_DATE)
 
-AC_CONFIG_HEADERS([executer/kernel/mcctrl/config.h])
+AC_CONFIG_HEADERS([executer/config.h])
 AC_CONFIG_FILES([
 	Makefile
 	executer/user/Makefile

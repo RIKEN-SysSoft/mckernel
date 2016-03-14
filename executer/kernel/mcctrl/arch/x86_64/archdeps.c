@@ -1,5 +1,5 @@
 #include <linux/version.h>
-#include "config.h"
+#include "../../config.h"
 #include "../../mcctrl.h"
 
 unsigned long

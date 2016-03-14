@@ -44,7 +44,7 @@
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/io.h>
-#include "config.h"
+#include "../../config.h"
 #include "mcctrl.h"
 #include <linux/version.h>
 
