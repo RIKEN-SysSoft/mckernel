@@ -3254,10 +3254,18 @@ SYSCALL_DECLARE(mincore)
 		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 		ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
 				(void *)addr, NULL, NULL, NULL);
-		/*
-		 * XXX: It might be necessary to consider whether this page is COW page or not.
-		 */
-		value = (pte_is_present(ptep))? 1: 0;
+		if (ptep && pte_is_present(ptep)) {
+			value = 1;
+		}
+		else if (range->memobj) {
+			error = memobj_lookup_page(range->memobj,
+					range->objoff + (addr - range->start),
+					PAGE_P2ALIGN, NULL, NULL);
+			value = (!error)? 1: 0;
+		}
+		else {
+			value = 0;
+		}
 		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 
