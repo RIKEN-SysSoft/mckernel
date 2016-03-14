@@ -3231,6 +3231,13 @@ SYSCALL_DECLARE(mincore)
 		dkprintf("mincore(0x%lx,0x%lx,%p): EINVAL\n", start, len, vec);
 		return -EINVAL;
 	}
+	if ((start < vm->region.user_start)
+			|| (vm->region.user_end <= start)
+			|| ((vm->region.user_end - start) < len))
+	{
+		dkprintf("mincore(0x%lx,0x%lx,%p): EINVAL\n", start, len, vec);
+		return -ENOMEM;
+	}
 
 	range = NULL;
 	up = vec;
