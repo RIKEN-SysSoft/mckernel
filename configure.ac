@@ -36,6 +36,12 @@ AC_ARG_ENABLE([dcfa],
   [AS_HELP_STRING(
   	[--enable-dcfa],[Enable DCFA modules])],[],[enable_dcfa=no])
 
+AC_ARG_ENABLE([memdump],
+	      AC_HELP_STRING([--enable-memdump],
+			     [enable dumping memory and analyzing a dump]),
+	      [ENABLE_MEMDUMP=$enableval],
+	      [ENABLE_MEMDUMP=default])
+
 case "X$WITH_KERNELSRC" in
     Xyes | Xno | X)
 	WITH_KERNELSRC='/lib/modules/`uname -r`/build'
@@ -209,6 +215,41 @@ MCCTRL_FIND_KSYM([sys_mount])
 MCCTRL_FIND_KSYM([sys_unshare])
 MCCTRL_FIND_KSYM([zap_page_range])
 
+case $ENABLE_MEMDUMP in
+	yes|no|auto)
+		;;
+	default)
+		if test "x$WITH_TARGET" = "xsmp-x86" ; then
+			ENABLE_MEMDUMP=auto
+		else
+			ENABLE_MEMDUMP=no
+		fi
+		;;
+	*)
+		AC_MSG_ERROR([unknown memdump argument: $ENABLE_MEMDUMP])
+		;;
+esac
+
+if test "x$ENABLE_MEMDUMP" != "xno" ; then
+	enableval=yes
+	AC_CHECK_LIB([bfd],[bfd_init],[],[enableval=no])
+	AC_CHECK_HEADER([bfd.h],[],[enableval=no])
+
+	if test "x$ENABLE_MEMDUMP" = "xyes" -a "x$enableval" = "xno" ; then
+		AC_MSG_ERROR([memdump feature needs bfd.h and libbfd a.k.a bunutils-devel])
+	fi
+	ENABLE_MEMDUMP=$enableval
+fi
+
+if test "x$ENABLE_MEMDUMP" = "xyes" ; then
+	AC_MSG_NOTICE([memdump feature is enabled])
+	AC_DEFINE([ENABLE_MEMDUMP],[1],[whether memdump feature is enabled])
+	uncomment_if_ENABLE_MEMDUMP=''
+else
+	AC_MSG_NOTICE([memdump feature is disabled])
+	uncomment_if_ENABLE_MEMDUMP='#'
+fi
+
 AC_SUBST(CC)
 AC_SUBST(XCC)
 AC_SUBST(ARCH)
@@ -226,6 +267,7 @@ AC_SUBST(DCFA_VERSION)
 AC_SUBST(IHK_RELEASE_DATE)
 AC_SUBST(MCKERNEL_RELEASE_DATE)
 AC_SUBST(DCFA_RESEASE_DATE)
+AC_SUBST(uncomment_if_ENABLE_MEMDUMP)
 
 AC_CONFIG_HEADERS([executer/config.h])
 AC_CONFIG_FILES([
