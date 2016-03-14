@@ -34,12 +34,14 @@ static memobj_release_func_t shmobj_release;
 static memobj_ref_func_t shmobj_ref;
 static memobj_get_page_func_t shmobj_get_page;
 static memobj_invalidate_page_func_t shmobj_invalidate_page;
+static memobj_lookup_page_func_t shmobj_lookup_page;
 
 static struct memobj_ops shmobj_ops = {
 	.release =	&shmobj_release,
 	.ref =		&shmobj_ref,
 	.get_page =	&shmobj_get_page,
 	.invalidate_page =	&shmobj_invalidate_page,
+	.lookup_page =	&shmobj_lookup_page,
 };
 
 static struct shmobj *to_shmobj(struct memobj *memobj)
@@ -451,3 +453,60 @@ out:
 	dkprintf("shmobj_invalidate_page(%p,%#lx,%#lx):%d\n", memobj, phys, pgsize, error);
 	return error;
 }
+
+static int shmobj_lookup_page(struct memobj *memobj, off_t off, int p2align,
+		uintptr_t *physp, unsigned long *pflag)
+{
+	struct shmobj *obj = to_shmobj(memobj);
+	int error;
+	struct page *page;
+	uintptr_t phys;
+
+	dkprintf("shmobj_lookup_page(%p,%#lx,%d,%p)\n",
+			memobj, off, p2align, physp);
+	memobj_lock(&obj->memobj);
+	if (off & ~PAGE_MASK) {
+		error = -EINVAL;
+		ekprintf("shmobj_lookup_page(%p,%#lx,%d,%p):invalid argument. %d\n",
+				memobj, off, p2align, physp, error);
+		goto out;
+	}
+	if (p2align != PAGE_P2ALIGN) {		/* XXX:NYI:large pages */
+		error = -ENOMEM;
+		ekprintf("shmobj_lookup_page(%p,%#lx,%d,%p):large page. %d\n",
+				memobj, off, p2align, physp, error);
+		goto out;
+	}
+	if (obj->real_segsz <= off) {
+		error = -ERANGE;
+		ekprintf("shmobj_lookup_page(%p,%#lx,%d,%p):beyond the end. %d\n",
+				memobj, off, p2align, physp, error);
+		goto out;
+	}
+	if ((obj->real_segsz - off) < (PAGE_SIZE << p2align)) {
+		error = -ENOSPC;
+		ekprintf("shmobj_lookup_page(%p,%#lx,%d,%p):too large. %d\n",
+				memobj, off, p2align, physp, error);
+		goto out;
+	}
+
+	page = page_list_lookup(obj, off);
+	if (!page) {
+		error = -ENOENT;
+		dkprintf("shmobj_lookup_page(%p,%#lx,%d,%p):page not found. %d\n",
+				memobj, off, p2align, physp, error);
+		goto out;
+	}
+	phys = page_to_phys(page);
+
+	error = 0;
+	if (physp) {
+		*physp = phys;
+	}
+
+out:
+	memobj_unlock(&obj->memobj);
+	dkprintf("shmobj_lookup_page(%p,%#lx,%d,%p):%d %#lx\n",
+			memobj, off, p2align, physp, error, phys);
+	return error;
+} /* shmobj_lookup_page() */
