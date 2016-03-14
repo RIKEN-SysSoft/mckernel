@@ -1,4 +1,4 @@
-/* executer/kernel/mcctrl/config.h.in.  Generated from configure.ac by autoheader.  */
+/* executer/config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* Define to address of kernel symbol sys_mount, or 0 if exported */
 #undef MCCTRL_KSYM_sys_mount
