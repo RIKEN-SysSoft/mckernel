@@ -753,7 +753,7 @@ static void command(char *cmd, char *res) {
 
 static void options(int argc, char *argv[]) {
 	memset(&opt, 0, sizeof(opt));
-	opt.kernel_path = "./kernel.img";
+	opt.kernel_path = "./mckernel.img";
 	opt.dump_path = "./mcdump";
 
 	for (;;) {
@@ -870,7 +870,7 @@ int main(int argc, char *argv[]) {
 	char *lbp;
 	char *p;
 
-	printf("eclair 0.20151110\n");
+	printf("eclair 0.20160314\n");
 	options(argc, argv);
 	if (opt.help) {
 		print_usage();
