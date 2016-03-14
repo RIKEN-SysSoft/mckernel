@@ -47,6 +47,7 @@ static memobj_get_page_func_t fileobj_get_page;
 static memobj_copy_page_func_t fileobj_copy_page;
 static memobj_flush_page_func_t fileobj_flush_page;
 static memobj_invalidate_page_func_t fileobj_invalidate_page;
+static memobj_lookup_page_func_t fileobj_lookup_page;
 
 static struct memobj_ops fileobj_ops = {
 	.release =	&fileobj_release,
@@ -55,6 +56,7 @@ static struct memobj_ops fileobj_ops = {
 	.copy_page =	&fileobj_copy_page,
 	.flush_page =	&fileobj_flush_page,
 	.invalidate_page =	&fileobj_invalidate_page,
+	.lookup_page =	&fileobj_lookup_page,
 };
 
 static struct fileobj *to_fileobj(struct memobj *memobj)
@@ -607,5 +609,39 @@ static int fileobj_invalidate_page(struct memobj *memobj, uintptr_t phys,
 out:
 	dkprintf("fileobj_invalidate_page(%p,%#lx,%#lx):%d\n",
 			memobj, phys, pgsize, error);
+	return error;
+}
+
+static int fileobj_lookup_page(struct memobj *memobj, off_t off, int p2align, uintptr_t *physp, unsigned long *pflag)
+{
+	struct fileobj *obj = to_fileobj(memobj);
+	int error;
+	uintptr_t phys = -1;
+	struct page *page;
+
+	dkprintf("fileobj_lookup_page(%p,%lx,%x,%p)\n", obj, off, p2align, physp);
+
+	memobj_lock(&obj->memobj);
+	if (p2align != PAGE_P2ALIGN) {
+		error = -ENOMEM;
+		goto out;
+	}
+
+	page = page_list_lookup(obj, off);
+	if (!page) {
+		error = -ENOENT;
+		dkprintf("fileobj_lookup_page(%p,%lx,%x,%p): page not found. %d\n", obj, off, p2align, physp, error);
+		goto out;
+	}
+	phys = page_to_phys(page);
+
+	error = 0;
+	if (physp) {
+		*physp = phys;
+	}
+out:
+	memobj_unlock(&obj->memobj);
+	dkprintf("fileobj_lookup_page(%p,%lx,%x,%p): %d %lx\n",
+			obj, off, p2align, physp, error, phys);
 	return error;
 }
