@@ -89,12 +89,12 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	
 	n = p->num_sections;
 
-	aout_base = (pn->reloc)? vm->region.user_start: 0;
+	aout_base = (pn->reloc)? vm->region.map_end: 0;
 	for (i = 0; i < n; i++) {
 		if (pn->sections[i].interp && (interp_nbase == (uintptr_t)-1)) {
 			interp_obase = pn->sections[i].vaddr;
 			interp_obase -= (interp_obase % pn->interp_align);
-			interp_nbase = vm->region.map_start;
+			interp_nbase = vm->region.map_end;
 			interp_nbase = (interp_nbase + pn->interp_align - 1)
 				& ~(pn->interp_align - 1);
 		}
@@ -176,6 +176,10 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 			vm->region.data_end = 
 				(e > vm->region.data_end ? 
 				 e : vm->region.data_end);
+		}
+
+		if (aout_base) {
+			vm->region.map_end = e;
 		}
 	}
 
