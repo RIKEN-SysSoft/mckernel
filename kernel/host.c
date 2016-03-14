@@ -85,12 +85,12 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	struct process *proc = thread->proc;
 	struct process_vm *vm = proc->vm;
 	struct address_space *as = vm->address_space;
-	long delta = -1;
+	long aout_base;
 	
 	n = p->num_sections;
 
+	aout_base = (pn->reloc)? vm->region.user_start: 0;
 	for (i = 0; i < n; i++) {
-		
 		if (pn->sections[i].interp && (interp_nbase == (uintptr_t)-1)) {
 			interp_obase = pn->sections[i].vaddr;
 			interp_obase -= (interp_obase % pn->interp_align);
@@ -105,16 +105,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 			p->sections[i].vaddr = pn->sections[i].vaddr;
 		}
 		else{
-			if(delta == -1){
-				if(pn->reloc){
-					delta = vm->region.user_start;
-					pn->at_phdr += delta;
-					pn->at_entry += delta;
-				}
-				else
-					delta = 0;
-			}
-			pn->sections[i].vaddr += delta;
+			pn->sections[i].vaddr += aout_base;
 			p->sections[i].vaddr = pn->sections[i].vaddr;
 		}
 		s = (pn->sections[i].vaddr) & PAGE_MASK;
@@ -195,6 +186,11 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		ihk_mc_modify_user_context(thread->uctx,
 		                           IHK_UCR_PROGRAM_COUNTER, 
 		                           pn->entry);
+	}
+
+	if (aout_base) {
+		pn->at_phdr += aout_base;
+		pn->at_entry += aout_base;
 	}
 
 	vm->region.brk_start = vm->region.brk_end = vm->region.data_end;
