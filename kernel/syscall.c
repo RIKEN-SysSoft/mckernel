@@ -3228,7 +3228,7 @@ SYSCALL_DECLARE(mincore)
 	pte_t *ptep;
 
 	if (start & (PAGE_SIZE - 1)) {
-		kprintf("mincore(0x%lx,0x%lx,%p): EINVAL\n", start, len, vec);
+		dkprintf("mincore(0x%lx,0x%lx,%p): EINVAL\n", start, len, vec);
 		return -EINVAL;
 	}
 
@@ -3239,12 +3239,14 @@ SYSCALL_DECLARE(mincore)
 		range = lookup_process_memory_range(vm, addr, addr+1);
 		if (!range) {
 			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
-			kprintf("mincore(0x%lx,0x%lx,%p):lookup failed. ENOMEM\n", start, len, vec);
+			dkprintf("mincore(0x%lx,0x%lx,%p):lookup failed. ENOMEM\n",
+					start, len, vec);
 			return -ENOMEM;
 		}
 
 		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
-		ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table, (void *)addr, NULL, NULL, NULL);
+		ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+				(void *)addr, NULL, NULL, NULL);
 		/*
 		 * XXX: It might be necessary to consider whether this page is COW page or not.
 		 */
@@ -3254,13 +3256,14 @@ SYSCALL_DECLARE(mincore)
 
 		error = copy_to_user(up, &value, sizeof(value));
 		if (error) {
-			kprintf("mincore(0x%lx,0x%lx,%p):copy failed. %d\n", start, len, vec, error);
+			dkprintf("mincore(0x%lx,0x%lx,%p):copy failed. %d\n",
+					start, len, vec, error);
 			return error;
 		}
 		++up;
 	}
 
-	kprintf("mincore(0x%lx,0x%lx,%p): 0\n", start, len, vec);
+	dkprintf("mincore(0x%lx,0x%lx,%p): 0\n", start, len, vec);
 	return 0;
 } /* sys_mincore() */
 
