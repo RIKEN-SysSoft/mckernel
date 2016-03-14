@@ -47,6 +47,7 @@ typedef int memobj_get_page_func_t(struct memobj *obj, off_t off, int p2align, u
 typedef uintptr_t memobj_copy_page_func_t(struct memobj *obj, uintptr_t orgphys, int p2align);
 typedef int memobj_flush_page_func_t(struct memobj *obj, uintptr_t phys, size_t pgsize);
 typedef int memobj_invalidate_page_func_t(struct memobj *obj, uintptr_t phys, size_t pgsize);
+typedef int memobj_lookup_page_func_t(struct memobj *obj, off_t off, int p2align, uintptr_t *physp, unsigned long *flag);
 
 struct memobj_ops {
 	memobj_release_func_t *		release;
@@ -55,6 +56,7 @@ struct memobj_ops {
 	memobj_copy_page_func_t *	copy_page;
 	memobj_flush_page_func_t *	flush_page;
 	memobj_invalidate_page_func_t *	invalidate_page;
+	memobj_lookup_page_func_t *	lookup_page;
 };
 
 static inline void memobj_release(struct memobj *obj)
@@ -104,6 +106,15 @@ static inline int memobj_invalidate_page(struct memobj *obj, uintptr_t phys,
 		return (*obj->ops->invalidate_page)(obj, phys, pgsize);
 	}
 	return 0;
+}
+
+static inline int memobj_lookup_page(struct memobj *obj, off_t off,
+		int p2align, uintptr_t *physp, unsigned long *pflag)
+{
+	if (obj->ops->lookup_page) {
+		return (*obj->ops->lookup_page)(obj, off, p2align, physp, pflag);
+	}
+	return -ENXIO;
 }
 
 static inline void memobj_lock(struct memobj *obj)
