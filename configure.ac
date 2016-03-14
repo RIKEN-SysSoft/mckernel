@@ -54,9 +54,26 @@ fi
 test "x$prefix" = xNONE && prefix="$ac_default_prefix"
 
 case $WITH_TARGET in
-    attached-mic)
+    attached-mic|builtin-x86|smp-x86)
 	ARCH=`uname -m`
 	AC_PROG_CC
+	XCC=$CC
+	;;
+    builtin-mic)
+	ARCH=k1om
+	AC_CHECK_PROG(XCC,
+		[x86_64-$ARCH-linux-gcc],
+		[x86_64-$ARCH-linux-gcc],
+		[no])
+	CC=$XCC
+	;;
+    *)
+	AC_MSG_ERROR([target $WITH_TARGET is unknwon])
+	;;
+esac
+
+case $WITH_TARGET in
+    attached-mic)
 	if test "X$KERNDIR" = X; then
 		KERNDIR="$prefix/attached/kernel"
 	fi
@@ -74,12 +91,6 @@ case $WITH_TARGET in
 	fi
 	;;
     builtin-mic)
-	ARCH=k1om
-	AC_CHECK_PROG(XCC,
-		[x86_64-$ARCH-linux-gcc],
-		[x86_64-$ARCH-linux-gcc],
-		[no])
-	CC=$XCC
 	if test "X$KERNDIR" = X; then
 		KERNDIR="$prefix/attached/kernel"
 	fi
@@ -97,9 +108,6 @@ case $WITH_TARGET in
 	fi
 	;;
     builtin-x86)
-	ARCH=`uname -m`
-	AC_PROG_CC
-	XCC=$CC
 	if test "X$KERNDIR" = X; then
 		KERNDIR="$prefix/attached/kernel"
 	fi
@@ -117,9 +125,6 @@ case $WITH_TARGET in
 	fi
 	;;
     smp-x86)
-	ARCH=`uname -m`
-	AC_PROG_CC
-	XCC=$CC
 	if test "X$KERNDIR" = X; then
 		KERNDIR="$prefix/smp-x86/kernel"
 	fi
