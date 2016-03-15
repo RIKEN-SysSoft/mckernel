@@ -1117,7 +1117,8 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	}
 	vrflags |= VRFLAG_PROT_TO_MAXPROT(PROT_TO_VR_FLAG(maxprot));
 
-	error = add_process_memory_range(thread->vm, addr, addr+len, phys, vrflags, memobj, off);
+	error = add_process_memory_range(thread->vm, addr, addr+len, phys,
+			vrflags, memobj, off, PAGE_SHIFT);
 	if (error) {
 		ekprintf("do_mmap:add_process_memory_range"
 				"(%p,%lx,%lx,%lx,%lx) failed %d\n",
@@ -3756,7 +3757,8 @@ SYSCALL_DECLARE(shmat)
 
 	memobj_ref(&obj->memobj);
 
-	error = add_process_memory_range(thread->vm, addr, addr+len, -1, vrflags, &obj->memobj, 0);
+	error = add_process_memory_range(thread->vm, addr, addr+len, -1,
+			vrflags, &obj->memobj, 0, PAGE_SHIFT);
 	if (error) {
 		if (!(prot & PROT_WRITE)) {
 			(void)set_host_vma(addr, len, PROT_READ|PROT_WRITE);
@@ -6457,7 +6459,8 @@ SYSCALL_DECLARE(mremap)
 		}
 		error = add_process_memory_range(thread->vm, newstart, newend, -1,
 				range->flag, range->memobj,
-				range->objoff + (oldstart - range->start));
+				range->objoff + (oldstart - range->start),
+				range->pgshift);
 		if (error) {
 			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
 					"add failed. %d\n",

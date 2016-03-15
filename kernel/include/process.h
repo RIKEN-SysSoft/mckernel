@@ -298,6 +298,8 @@ struct vm_range {
 	unsigned long flag;
 	struct memobj *memobj;
 	off_t objoff;
+	int pgshift;	/* page size. 0 means THP */
+	int padding;
 };
 
 struct vm_regions {
@@ -588,7 +590,7 @@ int populate_process_memory(struct process_vm *vm, void *start, size_t len);
 int add_process_memory_range(struct process_vm *vm,
                              unsigned long start, unsigned long end,
                              unsigned long phys, unsigned long flag,
-			     struct memobj *memobj, off_t objoff);
+			     struct memobj *memobj, off_t objoff, int pgshift);
 int remove_process_memory_range(struct process_vm *vm, unsigned long start,
 		unsigned long end, int *ro_freedp);
 int split_process_memory_range(struct process_vm *vm,

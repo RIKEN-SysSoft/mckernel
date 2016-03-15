@@ -132,7 +132,8 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		} 
 		
 		up = virt_to_phys(up_v);
-		if (add_process_memory_range(vm, s, e, up, flags, NULL, 0) != 0) {
+		if (add_process_memory_range(vm, s, e, up, flags, NULL, 0,
+					PAGE_SHIFT) != 0) {
 			ihk_mc_free_pages(up_v, range_npages);
 			kprintf("ERROR: adding memory range for ELF section %i\n", i);
 			goto err;
@@ -211,7 +212,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	args_envs_p = virt_to_phys(args_envs);
 
 	if(add_process_memory_range(vm, addr, e, args_envs_p,
-				flags, NULL, 0) != 0){
+				flags, NULL, 0, PAGE_SHIFT) != 0){
 		ihk_mc_free_pages(args_envs, ARGENV_PAGE_COUNT);
 		kprintf("ERROR: adding memory range for args/envs\n");
 		goto err;

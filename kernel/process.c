@@ -983,7 +983,8 @@ enum ihk_mc_pt_attribute common_vrflag_to_ptattr(unsigned long flag, uint64_t fa
 int add_process_memory_range(struct process_vm *vm,
                              unsigned long start, unsigned long end,
                              unsigned long phys, unsigned long flag,
-			     struct memobj *memobj, off_t offset)
+			     struct memobj *memobj, off_t offset,
+			     int pgshift)
 {
 	struct vm_range *range;
 	int rc;
@@ -1011,6 +1012,7 @@ int add_process_memory_range(struct process_vm *vm,
 	range->flag = flag;
 	range->memobj = memobj;
 	range->objoff = offset;
+	range->pgshift = pgshift;
 
     if(range->flag & VR_DEMAND_PAGING) {
 	dkprintf("range: 0x%lX - 0x%lX => physicall memory area is allocated on demand (%ld) [%lx]\n",
@@ -1756,7 +1758,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	vrflag |= VR_MAXPROT_READ | VR_MAXPROT_WRITE | VR_MAXPROT_EXEC;
 #define	NOPHYS	((uintptr_t)-1)
 	if ((rc = add_process_memory_range(thread->vm, start, end, NOPHYS,
-					vrflag, NULL, 0)) != 0) {
+					vrflag, NULL, 0, PAGE_SHIFT)) != 0) {
 		return rc;
 	}
 
@@ -1869,7 +1871,8 @@ unsigned long extend_process_region(struct process_vm *vm,
 				return end;
 			}
 			if((rc = add_process_memory_range(vm, old_aligned_end,
-                                        aligned_end, virt_to_phys(p), flag)) != 0){
+                                        aligned_end, virt_to_phys(p), flag,
+					LARGE_PAGE_SHIFT)) != 0){
 				free_pages(p, (aligned_end - old_aligned_end) >> PAGE_SHIFT);
 				return end;
 			}
@@ -1899,7 +1902,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 
 		if((rc = add_process_memory_range(vm, aligned_end,
                                aligned_new_end, virt_to_phys((void *)p_aligned),
-                               flag)) != 0){
+                               flag, LARGE_PAGE_SHIFT)) != 0){
 			free_pages(p, (aligned_new_end - aligned_end + LARGE_PAGE_SIZE) >> PAGE_SHIFT);
 			return end;
 		}
@@ -1925,7 +1928,8 @@ unsigned long extend_process_region(struct process_vm *vm,
 	}
     }
 	if((rc = add_process_memory_range(vm, aligned_end, aligned_new_end,
-                                      (p==0?0:virt_to_phys(p)), flag, NULL, 0)) != 0){
+                                      (p==0?0:virt_to_phys(p)), flag, NULL, 0,
+				      PAGE_SHIFT)) != 0){
 		free_pages(p, (aligned_new_end - aligned_end) >> PAGE_SHIFT);
 		return end;
 	}
