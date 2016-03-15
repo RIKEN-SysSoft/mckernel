@@ -1228,14 +1228,18 @@ SYSCALL_DECLARE(mprotect)
 	end = start + len;
 
 	/* check arguments */
-	if ((start & (PAGE_SIZE - 1))
-			|| (start < region->user_start)
-			|| (region->user_end <= start)
-			|| (len > (region->user_end - region->user_start)
-			|| ((region->user_end - len) < start))) {
+	if (start & (PAGE_SIZE - 1)) {
 		ekprintf("[%d]sys_mprotect(%lx,%lx,%x): -EINVAL\n",
 				ihk_mc_get_processor_id(), start, len0, prot);
 		return -EINVAL;
+	}
+
+	if ((start < region->user_start)
+			|| (region->user_end <= start)
+			|| ((region->user_end - start) < len)) {
+		ekprintf("[%d]sys_mprotect(%lx,%lx,%x): -ENOMEM\n",
+				ihk_mc_get_processor_id(), start, len0, prot);
+		return -ENOMEM;
 	}
 
 	if (len == 0) {
