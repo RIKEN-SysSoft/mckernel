@@ -1260,17 +1260,22 @@ SYSCALL_DECLARE(mmap)
 	addr = (flags & MAP_FIXED)? addr0: VALID_DUMMY_ADDR;
 	len = (len0 + PAGE_SIZE - 1) & PAGE_MASK;
 	if ((addr & (PAGE_SIZE - 1))
-			|| (addr < region->user_start)
-			|| (region->user_end <= addr)
 			|| (len == 0)
-			|| (len > (region->user_end - region->user_start))
-			|| ((region->user_end - len) < addr)
 			|| !(flags & (MAP_SHARED | MAP_PRIVATE))
 			|| ((flags & MAP_SHARED) && (flags & MAP_PRIVATE))
 			|| (off0 & (PAGE_SIZE - 1))) {
 		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):EINVAL\n",
 				addr0, len0, prot, flags, fd, off0);
 		error = -EINVAL;
+		goto out;
+	}
+
+	if ((addr < region->user_start)
+			|| (region->user_end <= addr)
+			|| ((region->user_end - addr) < len)) {
+		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):ENOMEM\n",
+				addr0, len0, prot, flags, fd, off0);
+		error = -ENOMEM;
 		goto out;
 	}
 
