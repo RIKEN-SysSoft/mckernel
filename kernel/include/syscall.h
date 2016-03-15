@@ -362,5 +362,7 @@ extern struct tod_data_s tod_data;	/* residing in arch-dependent file */
 
 void reset_cputime();
 void set_cputime(int mode);
+intptr_t do_mmap(intptr_t addr0, size_t len0, int prot, int flags, int fd,
+		off_t off0);
 
 #endif

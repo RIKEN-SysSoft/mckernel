@@ -918,7 +918,7 @@ out:
 	return error;
 }
 
-unsigned long
+intptr_t
 do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	const int flags, const int fd, const off_t off0)
 {
@@ -942,6 +942,9 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	struct process *proc = thread->proc;
 	struct mckfd *fdp = NULL;
 	
+	dkprintf("do_mmap(%lx,%lx,%x,%x,%d,%lx)\n",
+			addr0, len0, prot, flags, fd, off0);
+
 	if (!(flags & MAP_ANONYMOUS)) {
 		ihk_mc_spinlock_lock_noirq(&proc->mckfd_lock);
 		for(fdp = proc->mckfd; fdp; fdp = fdp->next)
@@ -973,7 +976,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		/* clear specified address range */
 		error = do_munmap((void *)addr, len);
 		if (error) {
-			ekprintf("sys_mmap:do_munmap(%lx,%lx) failed. %d\n",
+			ekprintf("do_mmap:do_munmap(%lx,%lx) failed. %d\n",
 					addr, len, error);
 			goto out;
 		}
@@ -982,7 +985,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		/* choose mapping address */
 		error = search_free_space(len, region->map_end, &addr);
 		if (error) {
-			ekprintf("sys_mmap:search_free_space(%lx,%lx) failed. %d\n",
+			ekprintf("do_mmap:search_free_space(%lx,%lx) failed. %d\n",
 					len, region->map_end, error);
 			goto out;
 		}
@@ -1022,7 +1025,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	if (!(prot & PROT_WRITE)) {
 		error = set_host_vma(addr, len, PROT_READ);
 		if (error) {
-			kprintf("sys_mmap:set_host_vma failed. %d\n", error);
+			kprintf("do_mmap:set_host_vma failed. %d\n", error);
 			goto out;
 		}
 
@@ -1048,7 +1051,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		}
 #endif
 		if (error == -ESRCH) {
-			kprintf("sys_mmap:hit non VREG\n");
+			kprintf("do_mmap:hit non VREG\n");
 			/*
 			 * XXX: temporary:
 			 *
@@ -1062,7 +1065,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 			error = devobj_create(fd, len, off, &memobj, &maxprot);
 		}
 		if (error) {
-			ekprintf("sys_mmap:fileobj_create failed. %d\n", error);
+			ekprintf("do_mmap:fileobj_create failed. %d\n", error);
 			goto out;
 		}
 	}
@@ -1078,7 +1081,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 #endif /* USE_LARGE_PAGES */
 		p = ihk_mc_alloc_aligned_pages(npages, p2align, IHK_MC_AP_NOWAIT);
 		if (p == NULL) {
-			ekprintf("sys_mmap:allocate_pages(%d,%d) failed.\n",
+			ekprintf("do_mmap:allocate_pages(%d,%d) failed.\n",
 					npages, p2align);
 			error = -ENOMEM;
 			goto out;
@@ -1091,14 +1094,14 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		ads.shm_perm.mode = SHM_DEST;
 		error = shmobj_create(&ads, &memobj);
 		if (error) {
-			ekprintf("sys_mmap:shmobj_create failed. %d\n", error);
+			ekprintf("do_mmap:shmobj_create failed. %d\n", error);
 			goto out;
 		}
 	}
 	else {
 		error = zeroobj_create(&memobj);
 		if (error) {
-			ekprintf("sys_mmap:zeroobj_create failed. %d\n", error);
+			ekprintf("do_mmap:zeroobj_create failed. %d\n", error);
 			goto out;
 		}
 	}
@@ -1108,7 +1111,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	}
 	denied = prot & ~maxprot;
 	if (denied) {
-		ekprintf("sys_mmap:denied %x. %x %x\n", denied, prot, maxprot);
+		ekprintf("do_mmap:denied %x. %x %x\n", denied, prot, maxprot);
 		error = (denied == PROT_EXEC)? -EPERM: -EACCES;
 		goto out;
 	}
@@ -1116,7 +1119,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 
 	error = add_process_memory_range(thread->vm, addr, addr+len, phys, vrflags, memobj, off);
 	if (error) {
-		ekprintf("sys_mmap:add_process_memory_range"
+		ekprintf("do_mmap:add_process_memory_range"
 				"(%p,%lx,%lx,%lx,%lx) failed %d\n",
 				thread->vm, addr, addr+len,
 				virt_to_phys(p), vrflags, error);
@@ -1137,7 +1140,7 @@ out:
 	if (!error && populated_mapping) {
 		error = populate_process_memory(thread->vm, (void *)addr, len);
 		if (error) {
-			ekprintf("sys_mmap:populate_process_memory"
+			ekprintf("do_mmap:populate_process_memory"
 					"(%p,%p,%lx) failed %d\n",
 					thread->vm, (void *)addr, len, error);
 			/*
@@ -1162,8 +1165,7 @@ out:
 	if (memobj) {
 		memobj_release(memobj);
 	}
-	dkprintf("[%d]sys_mmap(%lx,%lx,%x,%x,%d,%lx): %ld %lx\n",
-			ihk_mc_get_processor_id(),
+	dkprintf("do_mmap(%lx,%lx,%x,%x,%d,%lx): %ld %lx\n",
 			addr0, len0, prot, flags, fd, off0, error, addr);
 	return (!error)? addr: error;
 }

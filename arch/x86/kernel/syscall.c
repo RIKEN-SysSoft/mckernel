@@ -34,8 +34,6 @@ void set_signal(int sig, void *regs0, siginfo_t *info);
 void check_signal(unsigned long rc, void *regs0, int num);
 extern unsigned long do_fork(int, unsigned long, unsigned long, unsigned long,
 	unsigned long, unsigned long, unsigned long);
-extern unsigned long do_mmap(const intptr_t, const size_t, const int, const int,
-	const int, const off_t);
 
 //#define DEBUG_PRINT_SC
 
@@ -1232,12 +1230,11 @@ SYSCALL_DECLARE(mmap)
 	const off_t off0 = ihk_mc_syscall_arg5(ctx);
 	struct thread *thread = cpu_local_var(current);
 	struct vm_regions *region = &thread->vm->region;
-	unsigned long error = 0;
+	int error;
 	intptr_t addr;
 	size_t len;
 
-	dkprintf("[%d]sys_mmap(%lx,%lx,%x,%x,%d,%lx)\n",
-			ihk_mc_get_processor_id(),
+	dkprintf("sys_mmap(%lx,%lx,%x,%x,%d,%lx)\n",
 			addr0, len0, prot, flags, fd, off0);
 
 	/* check constants for flags */
@@ -1274,7 +1271,7 @@ SYSCALL_DECLARE(mmap)
 		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):EINVAL\n",
 				addr0, len0, prot, flags, fd, off0);
 		error = -EINVAL;
-		goto out2;
+		goto out;
 	}
 
 	/* check not supported requests */
@@ -1284,13 +1281,16 @@ SYSCALL_DECLARE(mmap)
 				addr0, len0, prot, flags, fd, off0,
 				(flags & ~(supported_flags | ignored_flags)));
 		error = -EINVAL;
-		goto out2;
+		goto out;
 	}
 
-	return do_mmap(addr, len, prot, flags, fd, off0);
+	addr = do_mmap(addr, len, prot, flags, fd, off0);
 
-out2:
-	return error;
+	error = 0;
+out:
+	dkprintf("sys_mmap(%lx,%lx,%x,%x,%d,%lx): %ld %lx\n",
+			addr0, len0, prot, flags, fd, off0, error, addr);
+	return (!error)? addr: error;
 }
 
 SYSCALL_DECLARE(clone)
