@@ -271,6 +271,17 @@ void fill_note(void *note, struct thread *thread, void *regs)
  * should be zero.
  */
 
+/*@
+  @ requires \valid(thread);
+  @ requires \valid(regs);
+  @ requires \valid(coretable);
+  @ requires \valid(chunks);
+  @ behavior success:
+  @   ensures \result == 0;
+  @   assigns coretable;
+  @ behavior failure:
+  @   ensures \result == -1;
+  @*/
 int gencore(struct thread *thread, void *regs, 
 	    struct coretable **coretable, int *chunks)
 {
@@ -510,6 +521,10 @@ int gencore(struct thread *thread, void *regs,
  * \param coretable An array of core chunks.
  */
 
+/*@
+  @ requires \valid(coretable);
+  @ assigns \nothing;
+  @*/
 void freecore(struct coretable **coretable)
 {
 	struct coretable *ct = *coretable;

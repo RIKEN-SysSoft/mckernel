@@ -38,6 +38,11 @@ void init_processors_local(int max_id)
 	kprintf("locals = %p\n", locals);
 }
 
+/*@
+  @ requires \valid(id);
+  @ ensures \result == locals + (LOCALS_SPAN * id);
+  @ assigns \nothing;
+  @*/
 struct x86_cpu_local_variables *get_x86_cpu_local_variable(int id)
 {
 	return (struct x86_cpu_local_variables *)
@@ -98,6 +103,10 @@ void init_boot_processor_local(void)
 }
 
 /** IHK **/
+/*@
+  @ ensures \result == %gs;
+  @ assigns \nothing;
+  */
 int ihk_mc_get_processor_id(void)
 {
 	int id;
@@ -107,6 +116,10 @@ int ihk_mc_get_processor_id(void)
 	return id;
 }
 
+/*@
+  @ ensures \result == (locals + (LOCALS_SPAN * %gs))->apic_id;
+  @ assigns \nothing;
+  */
 int ihk_mc_get_hardware_processor_id(void)
 {
 	struct x86_cpu_local_variables *v =  get_x86_this_cpu_local();

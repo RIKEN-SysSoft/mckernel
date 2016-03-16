@@ -1033,6 +1033,10 @@ static void __x86_wakeup(int apicid, unsigned long ip)
 
 /** IHK Functions **/
 
+/*@
+  @ assigns \nothing;
+  @ ensures \interrupt_disabled == 0;
+  @*/
 void cpu_halt(void)
 {
 	asm volatile("hlt");
@@ -1335,6 +1339,10 @@ void arch_show_extended_context(void)
 }
 #endif
 
+/*@
+  @ requires \valid(reg);
+  @ assigns \nothing;
+  @*/
 void arch_show_interrupt_context(const void *reg)
 {
 	const struct x86_user_context *uctx = reg;
@@ -1423,8 +1431,8 @@ int ihk_mc_interrupt_cpu(int cpu, int vector)
 }
 
 /*@
-  @ requires \valid(proc);
-  @ ensures proc->fp_regs == NULL;
+  @ requires \valid(thread);
+  @ ensures thread->fp_regs == NULL;
   @*/
 void
 release_fp_regs(struct thread *thread)
@@ -1439,6 +1447,9 @@ release_fp_regs(struct thread *thread)
 	thread->fp_regs = NULL;
 }
 
+/*@
+  @ requires \valid(thread);
+  @*/
 void
 save_fp_regs(struct thread *thread)
 {
@@ -1470,6 +1481,10 @@ save_fp_regs(struct thread *thread)
 	}
 }
 
+/*@
+  @ requires \valid(thread);
+  @ assigns thread->fp_regs;
+  @*/
 void
 restore_fp_regs(struct thread *thread)
 {
@@ -1518,18 +1533,27 @@ ihk_mc_user_context_t *lookup_user_context(struct thread *thread)
 	return uctx;
 } /* lookup_user_context() */
 
+/*@
+  @ assigns \nothing;
+  @*/
 void init_tick(void)
 {
 	dkprintf("init_tick():\n");
 	return;
 }
 
+/*@
+  @ assigns \nothing;
+  @*/
 void init_delay(void)
 {
 	dkprintf("init_delay():\n");
 	return;
 }
 
+/*@
+  @ assigns \nothing;
+  @*/
 void sync_tick(void)
 {
 	dkprintf("sync_tick():\n");
