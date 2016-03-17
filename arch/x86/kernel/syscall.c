@@ -25,6 +25,7 @@
 #include <kmalloc.h>
 #include <uio.h>
 #include <mman.h>
+#include <shm.h>
 
 void terminate(int, int);
 extern long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
@@ -1326,3 +1327,18 @@ SYSCALL_DECLARE(clone)
                    ihk_mc_syscall_arg4(ctx), ihk_mc_syscall_pc(ctx),
                    ihk_mc_syscall_sp(ctx));
 }
+
+SYSCALL_DECLARE(shmget)
+{
+	const key_t key = ihk_mc_syscall_arg0(ctx);
+	const size_t size = ihk_mc_syscall_arg1(ctx);
+	const int shmflg = ihk_mc_syscall_arg2(ctx);
+	int shmid;
+
+	dkprintf("shmget(%#lx,%#lx,%#x)\n", key, size, shmflg);
+
+	shmid = do_shmget(key, size, shmflg);
+
+	dkprintf("shmget(%#lx,%#lx,%#x): %d\n", key, size, shmflg, shmid);
+	return shmid;
+} /* sys_shmget() */

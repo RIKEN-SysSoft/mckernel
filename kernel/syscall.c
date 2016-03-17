@@ -3527,11 +3527,8 @@ int shmobj_list_lookup_by_index(int index, struct shmobj **objp)
 	return 0;
 } /* shmobj_list_lookup_by_index() */
 
-SYSCALL_DECLARE(shmget)
+int do_shmget(const key_t key, const size_t size, const int shmflg)
 {
-	const key_t key = ihk_mc_syscall_arg0(ctx);
-	const size_t size = ihk_mc_syscall_arg1(ctx);
-	const int shmflg = ihk_mc_syscall_arg2(ctx);
 	struct thread *thread = cpu_local_var(current);
 	struct process *proc = thread->proc;
 	time_t now = time();
@@ -3540,10 +3537,10 @@ SYSCALL_DECLARE(shmget)
 	struct shmid_ds ads;
 	struct shmobj *obj;
 
-	dkprintf("shmget(%#lx,%#lx,%#x)\n", key, size, shmflg);
+	dkprintf("do_shmget(%#lx,%#lx,%#x)\n", key, size, shmflg);
 
 	if (size < the_shminfo.shmmin) {
-		dkprintf("shmget(%#lx,%#lx,%#x): -EINVAL\n", key, size, shmflg);
+		dkprintf("do_shmget(%#lx,%#lx,%#x): -EINVAL\n", key, size, shmflg);
 		return -EINVAL;
 	}
 
@@ -3556,17 +3553,17 @@ SYSCALL_DECLARE(shmget)
 		}
 		else if (error) {
 			shmobj_list_unlock();
-			dkprintf("shmget(%#lx,%#lx,%#x): lookup: %d\n", key, size, shmflg, error);
+			dkprintf("do_shmget(%#lx,%#lx,%#x): lookup: %d\n", key, size, shmflg, error);
 			return error;
 		}
 		if (!obj && !(shmflg & IPC_CREAT)) {
 			shmobj_list_unlock();
-			dkprintf("shmget(%#lx,%#lx,%#x): -ENOENT\n", key, size, shmflg);
+			dkprintf("do_shmget(%#lx,%#lx,%#x): -ENOENT\n", key, size, shmflg);
 			return -ENOENT;
 		}
 		if (obj && (shmflg & IPC_CREAT) && (shmflg & IPC_EXCL)) {
 			shmobj_list_unlock();
-			dkprintf("shmget(%#lx,%#lx,%#x): -EEXIST\n", key, size, shmflg);
+			dkprintf("do_shmget(%#lx,%#lx,%#x): -EEXIST\n", key, size, shmflg);
 			return -EEXIST;
 		}
 	}
@@ -3592,24 +3589,24 @@ SYSCALL_DECLARE(shmget)
 			}
 			if (req & ~obj->ds.shm_perm.mode) {
 				shmobj_list_unlock();
-				dkprintf("shmget(%#lx,%#lx,%#x): -EINVAL\n", key, size, shmflg);
+				dkprintf("do_shmget(%#lx,%#lx,%#x): -EINVAL\n", key, size, shmflg);
 				return -EACCES;
 			}
 		}
 		if (obj->ds.shm_segsz < size) {
 			shmobj_list_unlock();
-			dkprintf("shmget(%#lx,%#lx,%#x): -EINVAL\n", key, size, shmflg);
+			dkprintf("do_shmget(%#lx,%#lx,%#x): -EINVAL\n", key, size, shmflg);
 			return -EINVAL;
 		}
 		shmid = make_shmid(obj);
 		shmobj_list_unlock();
-		dkprintf("shmget(%#lx,%#lx,%#x): %d\n", key, size, shmflg, shmid);
+		dkprintf("do_shmget(%#lx,%#lx,%#x): %d\n", key, size, shmflg, shmid);
 		return shmid;
 	}
 
 	if (the_shm_info.used_ids >= the_shminfo.shmmni) {
 		shmobj_list_unlock();
-		dkprintf("shmget(%#lx,%#lx,%#x): -ENOSPC\n", key, size, shmflg);
+		dkprintf("do_shmget(%#lx,%#lx,%#x): -ENOSPC\n", key, size, shmflg);
 		return -ENOSPC;
 	}
 
@@ -3627,7 +3624,7 @@ SYSCALL_DECLARE(shmget)
 	error = shmobj_create_indexed(&ads, &obj);
 	if (error) {
 		shmobj_list_unlock();
-		dkprintf("shmget(%#lx,%#lx,%#x): shmobj_create: %d\n", key, size, shmflg, error);
+		dkprintf("do_shmget(%#lx,%#lx,%#x): shmobj_create: %d\n", key, size, shmflg, error);
 		return error;
 	}
 
@@ -3640,9 +3637,9 @@ SYSCALL_DECLARE(shmget)
 	shmobj_list_unlock();
 	memobj_release(&obj->memobj);
 
-	dkprintf("shmget(%#lx,%#lx,%#x): %d\n", key, size, shmflg, shmid);
+	dkprintf("do_shmget(%#lx,%#lx,%#x): %d\n", key, size, shmflg, shmid);
 	return shmid;
-} /* sys_shmget() */
+} /* do_shmget()() */
 
 SYSCALL_DECLARE(shmat)
 {
