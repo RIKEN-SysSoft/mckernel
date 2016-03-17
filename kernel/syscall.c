@@ -3444,22 +3444,6 @@ struct shminfo the_shminfo = {
 };
 struct shm_info the_shm_info = { 0, };
 
-static uid_t geteuid(void) {
-	struct syscall_request sreq IHK_DMA_ALIGN;
-	struct thread *thread = cpu_local_var(current);
-
-	sreq.number = __NR_geteuid;
-	return (uid_t)do_syscall(&sreq, ihk_mc_get_processor_id(), thread->proc->pid);
-}
-
-static gid_t getegid(void) {
-	struct syscall_request sreq IHK_DMA_ALIGN;
-	struct thread *thread = cpu_local_var(current);
-
-	sreq.number = __NR_getegid;
-	return (gid_t)do_syscall(&sreq, ihk_mc_get_processor_id(), thread->proc->pid);
-}
-
 time_t time(void) {
 	struct syscall_request sreq IHK_DMA_ALIGN;
 	struct thread *thread = cpu_local_var(current);
@@ -3467,12 +3451,6 @@ time_t time(void) {
 	sreq.number = __NR_time;
 	sreq.args[0] = (uintptr_t)NULL;
 	return (time_t)do_syscall(&sreq, ihk_mc_get_processor_id(), thread->proc->pid);
-}
-
-pid_t getpid(void) {
-	struct thread *thread = cpu_local_var(current);
-
-	return thread->proc->pid;
 }
 
 static int make_shmid(struct shmobj *obj)
@@ -3554,10 +3532,9 @@ SYSCALL_DECLARE(shmget)
 	const key_t key = ihk_mc_syscall_arg0(ctx);
 	const size_t size = ihk_mc_syscall_arg1(ctx);
 	const int shmflg = ihk_mc_syscall_arg2(ctx);
-	uid_t euid = geteuid();
-	gid_t egid = getegid();
-	time_t now = time();
 	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
+	time_t now = time();
 	int shmid;
 	int error;
 	struct shmid_ds ads;
@@ -3595,16 +3572,16 @@ SYSCALL_DECLARE(shmget)
 	}
 
 	if (obj) {
-		if (euid) {
+		if (proc->euid) {
 			int req;
 
 			req = (shmflg | (shmflg << 3) | (shmflg << 6)) & 0700;
-			if ((obj->ds.shm_perm.uid == euid)
-					|| (obj->ds.shm_perm.cuid == euid)) {
+			if ((obj->ds.shm_perm.uid == proc->euid)
+					|| (obj->ds.shm_perm.cuid == proc->euid)) {
 				/*  nothing to do */
 			}
-			else if ((obj->ds.shm_perm.gid == egid)
-					|| (obj->ds.shm_perm.cgid == egid)) {
+			else if ((obj->ds.shm_perm.gid == proc->egid)
+					|| (obj->ds.shm_perm.cgid == proc->egid)) {
 				/*
 				 * XXX: need to check supplementary group IDs
 				 */
@@ -3638,14 +3615,14 @@ SYSCALL_DECLARE(shmget)
 
 	memset(&ads, 0, sizeof(ads));
 	ads.shm_perm.key = key;
-	ads.shm_perm.uid = euid;
-	ads.shm_perm.cuid = euid;
-	ads.shm_perm.gid = egid;
-	ads.shm_perm.cgid = egid;
+	ads.shm_perm.uid = proc->euid;
+	ads.shm_perm.cuid = proc->euid;
+	ads.shm_perm.gid = proc->egid;
+	ads.shm_perm.cgid = proc->egid;
 	ads.shm_perm.mode = shmflg & 0777;
 	ads.shm_segsz = size;
 	ads.shm_ctime = now;
-	ads.shm_cpid = thread->proc->pid;
+	ads.shm_cpid = proc->pid;
 
 	error = shmobj_create_indexed(&ads, &obj);
 	if (error) {
@@ -3673,15 +3650,15 @@ SYSCALL_DECLARE(shmat)
 	void * const shmaddr = (void *)ihk_mc_syscall_arg1(ctx);
 	const int shmflg = ihk_mc_syscall_arg2(ctx);
 	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
+	struct process_vm *vm = thread->vm;
 	size_t len;
 	int error;
-	struct vm_regions *region = &thread->vm->region;
+	struct vm_regions *region = &vm->region;
 	intptr_t addr;
 	int prot;
 	int vrflags;
 	int req;
-	uid_t euid = geteuid();
-	gid_t egid = getegid();
 	struct shmobj *obj;
 
 	dkprintf("shmat(%#x,%p,%#x)\n", shmid, shmaddr, shmflg);
@@ -3709,13 +3686,15 @@ SYSCALL_DECLARE(shmat)
 		req |= 2;
 	}
 
-	if (!euid) {
+	if (!proc->euid) {
 		req = 0;
 	}
-	else if ((euid == obj->ds.shm_perm.uid) || (euid == obj->ds.shm_perm.cuid)) {
+	else if ((proc->euid == obj->ds.shm_perm.uid)
+			|| (proc->euid == obj->ds.shm_perm.cuid)) {
 		req <<= 6;
 	}
-	else if ((egid == obj->ds.shm_perm.gid) || (egid == obj->ds.shm_perm.cgid)) {
+	else if ((proc->egid == obj->ds.shm_perm.gid)
+			|| (proc->egid == obj->ds.shm_perm.cgid)) {
 		req <<= 3;
 	}
 	else {
@@ -3727,11 +3706,11 @@ SYSCALL_DECLARE(shmat)
 		return -EACCES;
 	}
 
-	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 
 	if (addr) {
-		if (lookup_process_memory_range(thread->vm, addr, addr+len)) {
-			ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
+		if (lookup_process_memory_range(vm, addr, addr+len)) {
+			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 			shmobj_list_unlock();
 			dkprintf("shmat(%#x,%p,%#x):lookup_process_memory_range succeeded. -ENOMEM\n", shmid, shmaddr, shmflg);
 			return -ENOMEM;
@@ -3740,7 +3719,7 @@ SYSCALL_DECLARE(shmat)
 	else {
 		error = search_free_space(len, region->map_end, &addr);
 		if (error) {
-			ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
+			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 			shmobj_list_unlock();
 			dkprintf("shmat(%#x,%p,%#x):search_free_space failed. %d\n", shmid, shmaddr, shmflg, error);
 			return error;
@@ -3756,7 +3735,7 @@ SYSCALL_DECLARE(shmat)
 	if (!(prot & PROT_WRITE)) {
 		error = set_host_vma(addr, len, PROT_READ);
 		if (error) {
-			ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
+			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 			shmobj_list_unlock();
 			dkprintf("shmat(%#x,%p,%#x):set_host_vma failed. %d\n", shmid, shmaddr, shmflg, error);
 			return error;
@@ -3765,20 +3744,20 @@ SYSCALL_DECLARE(shmat)
 
 	memobj_ref(&obj->memobj);
 
-	error = add_process_memory_range(thread->vm, addr, addr+len, -1,
+	error = add_process_memory_range(vm, addr, addr+len, -1,
 			vrflags, &obj->memobj, 0, PAGE_SHIFT);
 	if (error) {
 		if (!(prot & PROT_WRITE)) {
 			(void)set_host_vma(addr, len, PROT_READ|PROT_WRITE);
 		}
 		memobj_release(&obj->memobj);
-		ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 		shmobj_list_unlock();
 		dkprintf("shmat(%#x,%p,%#x):add_process_memory_range failed. %d\n", shmid, shmaddr, shmflg, error);
 		return error;
 	}
 
-	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 	shmobj_list_unlock();
 
 	dkprintf("shmat:bump shm_nattach %p %d\n", obj, obj->ds.shm_nattch);
@@ -3791,10 +3770,10 @@ SYSCALL_DECLARE(shmctl)
 	const int shmid = ihk_mc_syscall_arg0(ctx);
 	const int cmd = ihk_mc_syscall_arg1(ctx);
 	struct shmid_ds * const buf = (void *)ihk_mc_syscall_arg2(ctx);
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
 	int error;
 	struct shmid_ds ads;
-	uid_t euid = geteuid();
-	gid_t egid = getegid();
 	time_t now = time();
 	int req;
 	int maxi;
@@ -3810,8 +3789,8 @@ SYSCALL_DECLARE(shmctl)
 			dkprintf("shmctl(%#x,%d,%p): lookup: %d\n", shmid, cmd, buf, error);
 			return error;
 		}
-		if ((obj->ds.shm_perm.uid != euid)
-				&& (obj->ds.shm_perm.cuid != euid)) {
+		if ((obj->ds.shm_perm.uid != proc->euid)
+				&& (obj->ds.shm_perm.cuid != proc->euid)) {
 			shmobj_list_unlock();
 			dkprintf("shmctl(%#x,%d,%p): -EPERM\n", shmid, cmd, buf);
 			return -EPERM;
@@ -3833,8 +3812,8 @@ SYSCALL_DECLARE(shmctl)
 			dkprintf("shmctl(%#x,%d,%p): lookup: %d\n", shmid, cmd, buf, error);
 			return error;
 		}
-		if ((obj->ds.shm_perm.uid != euid)
-				&& (obj->ds.shm_perm.cuid != euid)) {
+		if ((obj->ds.shm_perm.uid != proc->euid)
+				&& (obj->ds.shm_perm.cuid != proc->euid)) {
 			shmobj_list_unlock();
 			dkprintf("shmctl(%#x,%d,%p): -EPERM\n", shmid, cmd, buf);
 			return -EPERM;
@@ -3863,13 +3842,15 @@ SYSCALL_DECLARE(shmctl)
 			dkprintf("shmctl(%#x,%d,%p): lookup: %d\n", shmid, cmd, buf, error);
 			return error;
 		}
-		if (!euid) {
+		if (!proc->euid) {
 			req = 0;
 		}
-		else if ((euid == obj->ds.shm_perm.uid) || (euid == obj->ds.shm_perm.cuid)) {
+		else if ((proc->euid == obj->ds.shm_perm.uid)
+				|| (proc->euid == obj->ds.shm_perm.cuid)) {
 			req = 0400;
 		}
-		else if ((egid == obj->ds.shm_perm.gid) || (egid == obj->ds.shm_perm.cgid)) {
+		else if ((proc->egid == obj->ds.shm_perm.gid)
+				|| (proc->egid == obj->ds.shm_perm.cgid)) {
 			req = 0040;
 		}
 		else {
@@ -3985,27 +3966,28 @@ SYSCALL_DECLARE(shmdt)
 {
 	void * const shmaddr = (void *)ihk_mc_syscall_arg0(ctx);
 	struct thread *thread = cpu_local_var(current);
+	struct process_vm *vm = thread->vm;
 	struct vm_range *range;
 	int error;
 
 	dkprintf("shmdt(%p)\n", shmaddr);
-	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
-	range = lookup_process_memory_range(thread->vm, (uintptr_t)shmaddr, (uintptr_t)shmaddr+1);
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	range = lookup_process_memory_range(vm, (uintptr_t)shmaddr, (uintptr_t)shmaddr+1);
 	if (!range || (range->start != (uintptr_t)shmaddr) || !range->memobj
 			|| !(range->memobj->flags & MF_SHMDT_OK)) {
-		ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 		dkprintf("shmdt(%p): -EINVAL\n", shmaddr);
 		return -EINVAL;
 	}
 
 	error = do_munmap((void *)range->start, (range->end - range->start));
 	if (error) {
-		ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 		dkprintf("shmdt(%p): %d\n", shmaddr, error);
 		return error;
 	}
 
-	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 	dkprintf("shmdt(%p): 0\n", shmaddr);
 	return 0;
 } /* sys_shmdt() */
@@ -6219,19 +6201,19 @@ SYSCALL_DECLARE(mlockall)
 {
 	const int flags = ihk_mc_syscall_arg0(ctx);
 	struct thread *thread = cpu_local_var(current);
-	uid_t euid = geteuid();
+	struct process *proc = thread->proc;
 
 	if (!flags || (flags & ~(MCL_CURRENT|MCL_FUTURE))) {
 		kprintf("mlockall(0x%x):invalid flags: EINVAL\n", flags);
 		return -EINVAL;
 	}
 
-	if (!euid) {
+	if (!proc->euid) {
 		kprintf("mlockall(0x%x):priv user: 0\n", flags);
 		return 0;
 	}
 
-	if (thread->proc->rlimit[MCK_RLIMIT_MEMLOCK].rlim_cur != 0) {
+	if (proc->rlimit[MCK_RLIMIT_MEMLOCK].rlim_cur != 0) {
 		kprintf("mlockall(0x%x):limits exists: ENOMEM\n", flags);
 		return -ENOMEM;
 	}

@@ -235,16 +235,17 @@ void shmobj_destroy(struct shmobj *obj)
 static void shmobj_release(struct memobj *memobj)
 {
 	struct shmobj *obj = to_shmobj(memobj);
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
 	struct shmobj *freeobj = NULL;
 	long newref;
 	extern time_t time(void);
-	extern pid_t getpid(void);
 
 	dkprintf("shmobj_release(%p)\n", memobj);
 	memobj_lock(&obj->memobj);
 	if (obj->index >= 0) {
 		obj->ds.shm_dtime = time();
-		obj->ds.shm_lpid = getpid();
+		obj->ds.shm_lpid = proc->pid;
 		dkprintf("shmobj_release:drop shm_nattach %p %d\n", obj, obj->ds.shm_nattch);
 	}
 	newref = --obj->ds.shm_nattch;
@@ -272,16 +273,17 @@ static void shmobj_release(struct memobj *memobj)
 static void shmobj_ref(struct memobj *memobj)
 {
 	struct shmobj *obj = to_shmobj(memobj);
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
 	long newref;
 	extern time_t time(void);
-	extern pid_t getpid(void);
 
 	dkprintf("shmobj_ref(%p)\n", memobj);
 	memobj_lock(&obj->memobj);
 	newref = ++obj->ds.shm_nattch;
 	if (obj->index >= 0) {
 		obj->ds.shm_atime = time();
-		obj->ds.shm_lpid = getpid();
+		obj->ds.shm_lpid = proc->pid;
 	}
 	memobj_unlock(&obj->memobj);
 	dkprintf("shmobj_ref(%p): newref %ld\n", memobj, newref);
