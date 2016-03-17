@@ -1203,6 +1203,8 @@ SYSCALL_DECLARE(mmap)
 		| MAP_ANONYMOUS		// 20
 		| MAP_LOCKED		// 2000
 		| MAP_POPULATE		// 8000
+		| MAP_HUGETLB		// 00040000
+		| (0x3F << MAP_HUGE_SHIFT) // FC000000
 		;
 	const int ignored_flags = 0
 #ifdef	USE_NOCACHE_MMAP
@@ -1219,13 +1221,12 @@ SYSCALL_DECLARE(mmap)
 		| MAP_GROWSDOWN		// 0100
 		| MAP_EXECUTABLE	// 1000
 		| MAP_NONBLOCK		// 00010000
-		| MAP_HUGETLB		// 00040000
 		;
 
 	const intptr_t addr0 = ihk_mc_syscall_arg0(ctx);
 	const size_t len0 = ihk_mc_syscall_arg1(ctx);
 	const int prot = ihk_mc_syscall_arg2(ctx);
-	const int flags = ihk_mc_syscall_arg3(ctx);
+	const int flags0 = ihk_mc_syscall_arg3(ctx);
 	const int fd = ihk_mc_syscall_arg4(ctx);
 	const off_t off0 = ihk_mc_syscall_arg5(ctx);
 	struct thread *thread = cpu_local_var(current);
@@ -1233,9 +1234,10 @@ SYSCALL_DECLARE(mmap)
 	int error;
 	intptr_t addr;
 	size_t len;
+	int flags = flags0;
 
 	dkprintf("sys_mmap(%lx,%lx,%x,%x,%d,%lx)\n",
-			addr0, len0, prot, flags, fd, off0);
+			addr0, len0, prot, flags0, fd, off0);
 
 	/* check constants for flags */
 	if (1) {
@@ -1265,7 +1267,7 @@ SYSCALL_DECLARE(mmap)
 			|| ((flags & MAP_SHARED) && (flags & MAP_PRIVATE))
 			|| (off0 & (PAGE_SIZE - 1))) {
 		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):EINVAL\n",
-				addr0, len0, prot, flags, fd, off0);
+				addr0, len0, prot, flags0, fd, off0);
 		error = -EINVAL;
 		goto out;
 	}
@@ -1274,7 +1276,7 @@ SYSCALL_DECLARE(mmap)
 			|| (region->user_end <= addr)
 			|| ((region->user_end - addr) < len)) {
 		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):ENOMEM\n",
-				addr0, len0, prot, flags, fd, off0);
+				addr0, len0, prot, flags0, fd, off0);
 		error = -ENOMEM;
 		goto out;
 	}
@@ -1283,10 +1285,29 @@ SYSCALL_DECLARE(mmap)
 	if ((flags & error_flags)
 			|| (flags & ~(supported_flags | ignored_flags))) {
 		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):unknown flags %x\n",
-				addr0, len0, prot, flags, fd, off0,
+				addr0, len0, prot, flags0, fd, off0,
 				(flags & ~(supported_flags | ignored_flags)));
 		error = -EINVAL;
 		goto out;
+	}
+
+	if (flags & MAP_HUGETLB) {
+		switch (flags & (0x3F << MAP_HUGE_SHIFT)) {
+		case 0:
+			flags |= MAP_HUGE_2MB;	/* default hugepage size */
+			break;
+
+		case MAP_HUGE_2MB:
+		case MAP_HUGE_1GB:
+			break;
+
+		default:
+			ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):"
+					"not supported page size.\n",
+					addr0, len0, prot, flags0, fd, off0);
+			error = -EINVAL;
+			goto out;
+		}
 	}
 
 	addr = do_mmap(addr, len, prot, flags, fd, off0);
@@ -1294,7 +1315,7 @@ SYSCALL_DECLARE(mmap)
 	error = 0;
 out:
 	dkprintf("sys_mmap(%lx,%lx,%x,%x,%d,%lx): %ld %lx\n",
-			addr0, len0, prot, flags, fd, off0, error, addr);
+			addr0, len0, prot, flags0, fd, off0, error, addr);
 	return (!error)? addr: error;
 }
 

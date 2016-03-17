@@ -27,6 +27,10 @@
 #define	MAP_STACK	0x00020000
 #define	MAP_HUGETLB	0x00040000
 
+#define MAP_HUGE_SHIFT  26
+#define MAP_HUGE_2MB    (21 << MAP_HUGE_SHIFT)
+#define MAP_HUGE_1GB    (30 << MAP_HUGE_SHIFT)
+
 /*
  * for mlockall()
  */

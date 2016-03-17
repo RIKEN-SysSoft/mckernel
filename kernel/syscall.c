@@ -941,6 +941,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	int populated_mapping = 0;
 	struct process *proc = thread->proc;
 	struct mckfd *fdp = NULL;
+	int pgshift;
 	
 	dkprintf("do_mmap(%lx,%lx,%x,%x,%d,%lx)\n",
 			addr0, len0, prot, flags, fd, off0);
@@ -1117,13 +1118,20 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	}
 	vrflags |= VRFLAG_PROT_TO_MAXPROT(PROT_TO_VR_FLAG(maxprot));
 
+	if (flags & MAP_HUGETLB) {
+		pgshift = (flags >> MAP_HUGE_SHIFT) & 0x3F;
+	}
+	else {
+		pgshift = PAGE_SHIFT;	/* basic page size */
+	}
+
 	error = add_process_memory_range(thread->vm, addr, addr+len, phys,
-			vrflags, memobj, off, PAGE_SHIFT);
+			vrflags, memobj, off, pgshift);
 	if (error) {
 		ekprintf("do_mmap:add_process_memory_range"
-				"(%p,%lx,%lx,%lx,%lx) failed %d\n",
+				"(%p,%lx,%lx,%lx,%lx,%d) failed %d\n",
 				thread->vm, addr, addr+len,
-				virt_to_phys(p), vrflags, error);
+				virt_to_phys(p), vrflags, pgshift, error);
 		goto out;
 	}
 
