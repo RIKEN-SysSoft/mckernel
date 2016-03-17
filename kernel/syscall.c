@@ -3536,6 +3536,7 @@ int do_shmget(const key_t key, const size_t size, const int shmflg)
 	int error;
 	struct shmid_ds ads;
 	struct shmobj *obj;
+	int pgshift;
 
 	dkprintf("do_shmget(%#lx,%#lx,%#x)\n", key, size, shmflg);
 
@@ -3610,6 +3611,11 @@ int do_shmget(const key_t key, const size_t size, const int shmflg)
 		return -ENOSPC;
 	}
 
+	pgshift = PAGE_SHIFT;
+	if (shmflg & SHM_HUGETLB) {
+		pgshift = (shmflg >> SHM_HUGE_SHIFT) & 0x3F;
+	}
+
 	memset(&ads, 0, sizeof(ads));
 	ads.shm_perm.key = key;
 	ads.shm_perm.uid = proc->euid;
@@ -3629,6 +3635,7 @@ int do_shmget(const key_t key, const size_t size, const int shmflg)
 	}
 
 	obj->index = ++the_maxi;
+	obj->pgshift = pgshift;
 
 	list_add(&obj->chain, &kds_list);
 	++the_shm_info.used_ids;

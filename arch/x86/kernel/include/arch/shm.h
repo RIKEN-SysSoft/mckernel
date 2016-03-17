@@ -13,6 +13,11 @@
 #ifndef HEADER_ARCH_SHM_H
 #define HEADER_ARCH_SHM_H
 
+/* shmflg */
+#define SHM_HUGE_SHIFT  26
+#define SHM_HUGE_2MB    (21 << SHM_HUGE_SHIFT)
+#define SHM_HUGE_1GB    (30 << SHM_HUGE_SHIFT)
+
 struct ipc_perm {
 	key_t		key;
 	uid_t		uid;

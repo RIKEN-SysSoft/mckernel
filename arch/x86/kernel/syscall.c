@@ -1332,13 +1332,33 @@ SYSCALL_DECLARE(shmget)
 {
 	const key_t key = ihk_mc_syscall_arg0(ctx);
 	const size_t size = ihk_mc_syscall_arg1(ctx);
-	const int shmflg = ihk_mc_syscall_arg2(ctx);
+	const int shmflg0 = ihk_mc_syscall_arg2(ctx);
 	int shmid;
+	int error;
+	int shmflg = shmflg0;
 
-	dkprintf("shmget(%#lx,%#lx,%#x)\n", key, size, shmflg);
+	dkprintf("shmget(%#lx,%#lx,%#x)\n", key, size, shmflg0);
+
+	if (shmflg & SHM_HUGETLB) {
+		switch (shmflg & (0x3F << SHM_HUGE_SHIFT)) {
+		case 0:
+			shmflg |= SHM_HUGE_2MB;	/* default hugepage size */
+			break;
+
+		case SHM_HUGE_2MB:
+		case SHM_HUGE_1GB:
+			break;
+
+		default:
+			error = -EINVAL;
+			goto out;
+		}
+	}
 
 	shmid = do_shmget(key, size, shmflg);
 
-	dkprintf("shmget(%#lx,%#lx,%#x): %d\n", key, size, shmflg, shmid);
-	return shmid;
+	error = 0;
+out:
+	dkprintf("shmget(%#lx,%#lx,%#x): %d %d\n", key, size, shmflg0, error, shmid);
+	return (error)?: shmid;
 } /* sys_shmget() */

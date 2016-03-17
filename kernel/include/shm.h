@@ -25,6 +25,7 @@ enum {
 	IPC_CREAT	= 01000,
 	IPC_EXCL	= 02000,
 
+	SHM_HUGETLB	= 04000,
 	SHM_RDONLY	= 010000,
 	SHM_RND		= 020000,
 	SHM_REMAP	= 040000,
@@ -49,7 +50,7 @@ enum {
 struct shmobj {
 	struct memobj		memobj;		/* must be first */
 	int			index;
-	uint8_t			padding[4];
+	int			pgshift;
 	size_t			real_segsz;
 	struct shmid_ds		ds;
 	struct list_head	page_list;

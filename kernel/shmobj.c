@@ -136,6 +136,7 @@ int shmobj_create(struct shmid_ds *ds, struct memobj **objp)
 	obj->ds.shm_perm.seq = the_seq++;
 	obj->ds.shm_nattch = 1;
 	obj->index = -1;
+	obj->pgshift = PAGE_SHIFT;
 	obj->real_segsz = (obj->ds.shm_segsz + PAGE_SIZE - 1) & PAGE_MASK;
 	page_list_init(obj);
 	ihk_mc_spinlock_init(&obj->memobj.lock);
