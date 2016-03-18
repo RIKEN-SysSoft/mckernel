@@ -902,7 +902,10 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 		dprintk("pager_req_create(%d,%lx):vfs_stat failed. %d\n", fd, (long)result_pa, error);
 		goto out;
 	}
-	if (!S_ISREG(st.mode)) {
+	if (S_ISCHR(st.mode) && (MAJOR(st.rdev) == 1)) {
+		/* treat memory devices as regular files */
+	}
+	else if (!S_ISREG(st.mode)) {
 		error = -ESRCH;
 		dprintk("pager_req_create(%d,%lx):not VREG. %x\n", fd, (long)result_pa, st.mode);
 		goto out;
