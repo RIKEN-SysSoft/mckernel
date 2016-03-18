@@ -1211,23 +1211,24 @@ struct rfp_args {
 };
 
 static int remap_one_page(void *arg0, page_table_t pt, pte_t *ptep,
-		void *pgaddr, size_t pgsize)
+		void *pgaddr, int pgshift)
 {
 	struct rfp_args * const args = arg0;
+	const size_t pgsize = (size_t)1 << pgshift;
 	int error;
 	off_t off;
 	pte_t apte;
 	uintptr_t phys;
 	struct page *page;
 
-	dkprintf("remap_one_page(%p,%p,%p %#lx,%p,%#lx)\n",
-			arg0, pt, ptep, *ptep, pgaddr, pgsize);
+	dkprintf("remap_one_page(%p,%p,%p %#lx,%p,%d)\n",
+			arg0, pt, ptep, *ptep, pgaddr, pgshift);
 
 	/* XXX: NYI: large pages */
 	if (pgsize != PAGE_SIZE) {
 		error = -E2BIG;
-		ekprintf("remap_one_page(%p,%p,%p %#lx,%p,%#lx):%d\n",
-				arg0, pt, ptep, *ptep, pgaddr, pgsize, error);
+		ekprintf("remap_one_page(%p,%p,%p %#lx,%p,%d):%d\n",
+				arg0, pt, ptep, *ptep, pgaddr, pgshift, error);
 		goto out;
 	}
 
@@ -1254,8 +1255,8 @@ static int remap_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 
 	error = 0;
 out:
-	dkprintf("remap_one_page(%p,%p,%p %#lx,%p,%#lx): %d\n",
-			arg0, pt, ptep, *ptep, pgaddr, pgsize, error);
+	dkprintf("remap_one_page(%p,%p,%p %#lx,%p,%d): %d\n",
+			arg0, pt, ptep, *ptep, pgaddr, pgshift, error);
 	return error;
 }
 
@@ -1297,14 +1298,15 @@ struct sync_args {
 };
 
 static int sync_one_page(void *arg0, page_table_t pt, pte_t *ptep,
-		void *pgaddr, size_t pgsize)
+		void *pgaddr, int pgshift)
 {
 	struct sync_args *args = arg0;
+	const size_t pgsize = (size_t)1 << pgshift;
 	int error;
 	uintptr_t phys;
 
-	dkprintf("sync_one_page(%p,%p,%p %#lx,%p,%#lx)\n",
-			arg0, pt, ptep, *ptep, pgaddr, pgsize);
+	dkprintf("sync_one_page(%p,%p,%p %#lx,%p,%d)\n",
+			arg0, pt, ptep, *ptep, pgaddr, pgshift);
 	if (pte_is_null(ptep) || pte_is_fileoff(ptep, pgsize)
 			|| !pte_is_dirty(ptep, pgsize)) {
 		error = 0;
@@ -1317,17 +1319,17 @@ static int sync_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 	phys = pte_get_phys(ptep);
 	error = memobj_flush_page(args->memobj, phys, pgsize);
 	if (error) {
-		ekprintf("sync_one_page(%p,%p,%p %#lx,%p,%#lx):"
+		ekprintf("sync_one_page(%p,%p,%p %#lx,%p,%d):"
 				"flush failed. %d\n",
-				arg0, pt, ptep, *ptep, pgaddr, pgsize, error);
+				arg0, pt, ptep, *ptep, pgaddr, pgshift, error);
 		pte_set_dirty(ptep, pgsize);
 		goto out;
 	}
 
 	error = 0;
 out:
-	dkprintf("sync_one_page(%p,%p,%p %#lx,%p,%#lx):%d\n",
-			arg0, pt, ptep, *ptep, pgaddr, pgsize, error);
+	dkprintf("sync_one_page(%p,%p,%p %#lx,%p,%d):%d\n",
+			arg0, pt, ptep, *ptep, pgaddr, pgshift, error);
 	return error;
 }
 
@@ -1365,18 +1367,19 @@ struct invalidate_args {
 };
 
 static int invalidate_one_page(void *arg0, page_table_t pt, pte_t *ptep,
-		void *pgaddr, size_t pgsize)
+		void *pgaddr, int pgshift)
 {
 	struct invalidate_args *args = arg0;
 	struct vm_range *range = args->range;
+	const size_t pgsize = (size_t)1 << pgshift;
 	int error;
 	uintptr_t phys;
 	struct page *page;
 	off_t linear_off;
 	pte_t apte;
 
-	dkprintf("invalidate_one_page(%p,%p,%p %#lx,%p,%#lx)\n",
-			arg0, pt, ptep, *ptep, pgaddr, pgsize);
+	dkprintf("invalidate_one_page(%p,%p,%p %#lx,%p,%d)\n",
+			arg0, pt, ptep, *ptep, pgaddr, pgshift);
 	if (pte_is_null(ptep) || pte_is_fileoff(ptep, pgsize)) {
 		error = 0;
 		goto out;
@@ -1400,16 +1403,16 @@ static int invalidate_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 
 	error = memobj_invalidate_page(range->memobj, phys, pgsize);
 	if (error) {
-		ekprintf("invalidate_one_page(%p,%p,%p %#lx,%p,%#lx):"
+		ekprintf("invalidate_one_page(%p,%p,%p %#lx,%p,%d):"
 				"invalidate failed. %d\n",
-				arg0, pt, ptep, *ptep, pgaddr, pgsize, error);
+				arg0, pt, ptep, *ptep, pgaddr, pgshift, error);
 		goto out;
 	}
 
 	error = 0;
 out:
-	dkprintf("invalidate_one_page(%p,%p,%p %#lx,%p,%#lx):%d\n",
-			arg0, pt, ptep, *ptep, pgaddr, pgsize, error);
+	dkprintf("invalidate_one_page(%p,%p,%p %#lx,%p,%d):%d\n",
+			arg0, pt, ptep, *ptep, pgaddr, pgshift, error);
 	return error;
 }
 

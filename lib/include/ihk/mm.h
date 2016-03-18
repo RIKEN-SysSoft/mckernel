@@ -136,7 +136,7 @@ int ihk_mc_pt_prepare_map(page_table_t pt, void *virt, unsigned long size,
                           enum ihk_mc_pt_prepare_flag);
 
 typedef int pte_visitor_t(void *arg, page_table_t pt, pte_t *ptep,
-		void *pgaddr, size_t pgsize);
+		void *pgaddr, int pgshift);
 int visit_pte_range(page_table_t pt, void *start, void *end,
 		enum visit_pte_flag flags, pte_visitor_t *funcp, void *arg);
 int move_pte_range(page_table_t pt, struct process_vm *vm, 

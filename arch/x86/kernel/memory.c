@@ -939,7 +939,7 @@ static int visit_pte_l1(void *arg0, pte_t *ptep, uintptr_t base,
 	}
 
 	return (*args->funcp)(args->arg, args->pt, ptep, (void *)base,
-			PTL1_SIZE);
+			PTL1_SHIFT);
 }
 
 static int visit_pte_l2(void *arg0, pte_t *ptep, uintptr_t base,
@@ -959,7 +959,7 @@ static int visit_pte_l2(void *arg0, pte_t *ptep, uintptr_t base,
 			&& (((base + PTL2_SIZE) <= end)
 				|| (end == 0))) {
 		error = (*args->funcp)(args->arg, args->pt, ptep,
-				(void *)base, PTL2_SIZE);
+				(void *)base, PTL2_SHIFT);
 		if (error != -E2BIG) {
 			return error;
 		}
@@ -1003,7 +1003,7 @@ static int visit_pte_l3(void *arg0, pte_t *ptep, uintptr_t base,
 			&& (((base + PTL3_SIZE) <= end)
 				|| (end == 0))) {
 		error = (*args->funcp)(args->arg, args->pt, ptep,
-				(void *)base, PTL3_SIZE);
+				(void *)base, PTL3_SHIFT);
 		if (error != -E2BIG) {
 			return error;
 		}
@@ -1921,21 +1921,22 @@ struct move_args {
 };
 
 static int move_one_page(void *arg0, page_table_t pt, pte_t *ptep, 
-		void *pgaddr, size_t pgsize)
+		void *pgaddr, int pgshift)
 {
 	int error;
 	struct move_args *args = arg0;
+	const size_t pgsize = (size_t)1 << pgshift;
 	uintptr_t dest;
 	pte_t apte;
 	uintptr_t phys;
 	enum ihk_mc_pt_attribute attr;
 
-	dkprintf("move_one_page(%p,%p,%p %#lx,%p,%#lx)\n",
-			arg0, pt, ptep, *ptep, pgaddr, pgsize);
+	dkprintf("move_one_page(%p,%p,%p %#lx,%p,%d)\n",
+			arg0, pt, ptep, *ptep, pgaddr, pgshift);
 	if (pte_is_fileoff(ptep, pgsize)) {
 		error = -ENOTSUPP;
-		kprintf("move_one_page(%p,%p,%p %#lx,%p,%#lx):fileoff. %d\n",
-				arg0, pt, ptep, *ptep, pgaddr, pgsize, error);
+		kprintf("move_one_page(%p,%p,%p %#lx,%p,%d):fileoff. %d\n",
+				arg0, pt, ptep, *ptep, pgaddr, pgshift, error);
 		goto out;
 	}
 
@@ -1950,16 +1951,16 @@ static int move_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 	error = ihk_mc_pt_set_range(pt, args->vm, (void *)dest,
 			(void *)(dest + pgsize), phys, attr);
 	if (error) {
-		kprintf("move_one_page(%p,%p,%p %#lx,%p,%#lx):"
+		kprintf("move_one_page(%p,%p,%p %#lx,%p,%d):"
 				"set failed. %d\n",
-				arg0, pt, ptep, *ptep, pgaddr, pgsize, error);
+				arg0, pt, ptep, *ptep, pgaddr, pgshift, error);
 		goto out;
 	}
 
 	error = 0;
 out:
-	dkprintf("move_one_page(%p,%p,%p %#lx,%p,%#lx):%d\n",
-			arg0, pt, ptep, *ptep, pgaddr, pgsize, error);
+	dkprintf("move_one_page(%p,%p,%p %#lx,%p,%d):%d\n",
+			arg0, pt, ptep, *ptep, pgaddr, pgshift, error);
 	return error;
 }
 
