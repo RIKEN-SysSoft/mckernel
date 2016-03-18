@@ -570,6 +570,12 @@ struct process_vm {
 	long currss;
 };
 
+static inline int has_cap_ipc_lock(struct thread *th)
+{
+	/* CAP_IPC_LOCK (= 14) */
+	return !(th->proc->euid);
+}
+
 static inline int has_cap_sys_admin(struct thread *th)
 {
 	/* CAP_SYS_ADMIN (= 21) */
