@@ -463,24 +463,97 @@ ptrace_traceme(void)
 	return error;
 }
 
+struct copy_args {
+	struct process_vm *new_vm;
+	unsigned long new_vrflag;
+
+	/* out */
+	intptr_t fault_addr;
+};
+
+static int copy_user_pte(void *arg0, page_table_t src_pt, pte_t *src_ptep, void *pgaddr, int pgshift)
+{
+	struct copy_args * const args = arg0;
+	int error;
+	intptr_t src_phys;
+	struct page *src_page;
+	void *src_kvirt;
+	const size_t pgsize = (size_t)1 << pgshift;
+	int npages;
+	void *virt = NULL;
+	intptr_t phys;
+	const int pgalign = pgshift - PAGE_SHIFT;
+	enum ihk_mc_pt_attribute attr;
+
+	if (!pte_is_present(src_ptep)) {
+		error = 0;
+		goto out;
+	}
+
+	src_phys = pte_get_phys(src_ptep);
+	src_page = phys_to_page(src_phys);
+	src_kvirt = phys_to_virt(src_phys);
+
+	if (src_page && page_is_in_memobj(src_page)) {
+		error = 0;
+		goto out;
+	}
+
+	dkprintf("copy_user_pte(): 0x%lx PTE found\n", pgaddr);
+	dkprintf("copy_user_pte(): page size: %d\n", pgsize);
+
+	npages = pgsize / PAGE_SIZE;
+	virt = ihk_mc_alloc_aligned_pages(npages, pgalign, IHK_MC_AP_NOWAIT);
+	if (!virt) {
+		kprintf("ERROR: copy_user_pte() allocating new page\n");
+		error = -ENOMEM;
+		goto out;
+	}
+	phys = virt_to_phys(virt);
+	dkprintf("copy_user_pte(): phys page allocated\n");
+
+	memcpy(virt, src_kvirt, pgsize);
+	dkprintf("copy_user_pte(): memcpy OK\n");
+
+	attr = arch_vrflag_to_ptattr(args->new_vrflag, PF_POPULATE, NULL);
+	error = ihk_mc_pt_set_range(args->new_vm->address_space->page_table, args->new_vm, pgaddr, pgaddr+pgsize, phys, attr);
+	if (error) {
+		args->fault_addr = (intptr_t)pgaddr;
+		goto out;
+	}
+
+	dkprintf("copy_user_pte(): new PTE set\n");
+	error = 0;
+	virt = NULL;
+
+out:
+	if (virt) {
+		ihk_mc_free_pages(virt, npages);
+	}
+	return error;
+}
+
 static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm)
 {
+	int error;
 	struct vm_range *src_range;
 	struct vm_range *range;
+	struct copy_args args;
 
 	ihk_mc_spinlock_lock_noirq(&orgvm->memory_range_lock);
 
 	/* Iterate original process' vm_range list and take a copy one-by-one */
-	list_for_each_entry(src_range, &orgvm->vm_range_list, list) {
-		void *ptepgaddr;
-		size_t ptepgsize;
-		int ptep2align;
-		void *pg_vaddr;
-		size_t pgsize;
-		void *vaddr;
-		int p2align;
-		enum ihk_mc_pt_attribute attr;
-		pte_t *ptep;
+	src_range = NULL;
+	for (;;) {
+		if (!src_range) {
+			src_range = lookup_process_memory_range(orgvm, 0, -1);
+		}
+		else {
+			src_range = next_process_memory_range(orgvm, src_range);
+		}
+		if (!src_range) {
+			break;
+		}
 
 		range = kmalloc(sizeof(struct vm_range), IHK_MC_AP_NOWAIT);
 		if (!range) {
@@ -498,77 +571,22 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm)
 		}
 
 		/* Copy actual mappings */
-		vaddr = (void *)range->start;
-		while ((unsigned long)vaddr < range->end) {
-			/* Get source PTE */
-			ptep = ihk_mc_pt_lookup_pte(orgvm->address_space->
-			                                 page_table, vaddr,
-			                            &ptepgaddr, &ptepgsize,
-			                            &ptep2align);
+		args.new_vrflag = range->flag;
+		args.new_vm = vm;
+		args.fault_addr = -1;
 
-			if (!ptep || pte_is_null(ptep) || !pte_is_present(ptep)) {
-				vaddr += PAGE_SIZE;
-				continue;
-			}
-			if (1) {
-				struct page *page;
-
-				page = phys_to_page(pte_get_phys(ptep));
-				if (page && page_is_in_memobj(page)) {
-					vaddr += PAGE_SIZE;
-					continue;
-				}
-			}
-
-			dkprintf("copy_user_ranges(): 0x%lx PTE found\n", vaddr);
-
-			/* Page size */
-			if (arch_get_smaller_page_size(NULL, -1, &ptepgsize,
-						&ptep2align)) {
-
+		error = visit_pte_range(orgvm->address_space->page_table,
+				(void *)range->start, (void *)range->end,
+				VPTEF_SKIP_NULL, &copy_user_pte, &args);
+		if (error) {
+			if (args.fault_addr != -1) {
 				kprintf("ERROR: copy_user_ranges() "
 						"(%p,%lx-%lx %lx,%lx):"
 						"get pgsize failed\n", orgvm,
 						range->start, range->end,
-						range->flag, vaddr);
-
-				goto err_free_range_rollback;
+						range->flag, args.fault_addr);
 			}
-
-			pgsize = ptepgsize;
-			p2align = ptep2align;
-			dkprintf("copy_user_ranges(): page size: %d\n", pgsize);
-
-			/* Get physical page */
-			pg_vaddr = ihk_mc_alloc_aligned_pages(1, p2align, IHK_MC_AP_NOWAIT);
-
-			if (!pg_vaddr) {
-				kprintf("ERROR: copy_user_ranges() allocating new page\n");
-				goto err_free_range_rollback;
-			}
-			dkprintf("copy_user_ranges(): phys page allocated\n", pgsize);
-
-			/* Copy content */
-			memcpy(pg_vaddr, vaddr, pgsize);
-			dkprintf("copy_user_ranges(): memcpy OK\n", pgsize);
-
-			/* Set up new PTE */
-			attr = arch_vrflag_to_ptattr(range->flag, PF_POPULATE, NULL);
-
-			if (ihk_mc_pt_set_range(vm->address_space->page_table,
-			                        vm, vaddr, vaddr + pgsize,
-			                        virt_to_phys(pg_vaddr), attr)) {
-				kprintf("ERROR: copy_user_ranges() "
-						"(%p,%lx-%lx %lx,%lx):"
-						"set range failed.\n",
-						orgvm, range->start, range->end,
-						range->flag, vaddr);
-
-				goto err_free_range_rollback;
-			}
-			dkprintf("copy_user_ranges(): new PTE set\n", pgsize);
-
-			vaddr += pgsize;
+			goto err_free_range_rollback;
 		}
 
 		insert_vm_range_list(vm, range);
