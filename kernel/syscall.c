@@ -3783,6 +3783,7 @@ SYSCALL_DECLARE(shmctl)
 	int req;
 	int maxi;
 	struct shmobj *obj;
+	struct rlimit *rlim;
 	size_t size;
 	struct shmlock_user *user;
 	uid_t ruid = proc->ruid;
@@ -3912,7 +3913,22 @@ SYSCALL_DECLARE(shmctl)
 			dkprintf("shmctl(%#x,%d,%p): lookup: %d\n", shmid, cmd, buf, error);
 			return error;
 		}
-		if (!(obj->ds.shm_perm.mode & SHM_LOCKED)) {
+		if (!has_cap_ipc_lock(thread)
+				&& (obj->ds.shm_perm.cuid != proc->euid)
+				&& (obj->ds.shm_perm.uid != proc->euid)) {
+			shmobj_list_unlock();
+			dkprintf("shmctl(%#x,%d,%p): perm shm: %d\n", shmid, cmd, buf, error);
+			return -EPERM;
+		}
+		rlim = &proc->rlimit[MCK_RLIMIT_MEMLOCK];
+		if (!rlim->rlim_cur && !has_cap_ipc_lock(thread)) {
+			shmobj_list_unlock();
+			dkprintf("shmctl(%#x,%d,%p): perm proc: %d\n", shmid, cmd, buf, error);
+			return -EPERM;
+		}
+		if (!(obj->ds.shm_perm.mode & SHM_LOCKED)
+				&& ((obj->pgshift == 0)
+					|| (obj->pgshift == PAGE_SHIFT))) {
 			shmlock_users_lock();
 			error = shmlock_user_get(ruid, &user);
 			if (error) {
@@ -3922,6 +3938,15 @@ SYSCALL_DECLARE(shmctl)
 				return -ENOMEM;
 			}
 			size = (obj->ds.shm_segsz + PAGE_SIZE - 1) & PAGE_MASK;
+			if (!has_cap_ipc_lock(thread)
+					&& (rlim->rlim_cur != (rlim_t)-1)
+					&& ((rlim->rlim_cur < user->locked)
+						|| ((rlim->rlim_cur - user->locked) < size))) {
+				shmlock_users_unlock();
+				shmobj_list_unlock();
+				dkprintf("shmctl(%#x,%d,%p): too large: %d\n", shmid, cmd, buf, error);
+				return -ENOMEM;
+			}
 			obj->ds.shm_perm.mode |= SHM_LOCKED;
 			obj->user = user;
 			user->locked += size;
