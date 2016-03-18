@@ -27,9 +27,6 @@
 #include <mman.h>
 
 void terminate(int, int);
-int copy_from_user(void *dst, const void *src, size_t siz);
-int copy_to_user(void *dst, const void *src, size_t siz);
-int write_process_vm(struct process_vm *vm, void *dst, const void *src, size_t siz);
 extern long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
 long syscall(int num, ihk_mc_user_context_t *ctx);
 extern void save_fp_regs(struct thread *proc);

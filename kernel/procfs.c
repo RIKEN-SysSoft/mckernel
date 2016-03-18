@@ -38,9 +38,6 @@ extern int sscanf(const char * buf, const char * fmt, ...);
 
 extern int osnum;
 
-int copy_from_user(void *dst, const void *src, size_t siz);
-int copy_to_user(void *dst, const void *src, size_t siz);
-
 static void
 procfs_thread_ctl(struct thread *thread, int msg)
 {

@@ -28,8 +28,21 @@ static void *phys_to_virt(unsigned long p)
 }
 #endif
 
+struct process_vm;
+
 unsigned long virt_to_phys(void *v);
 void *phys_to_virt(unsigned long p);
+int copy_from_user(void *dst, const void *src, size_t siz);
+int strlen_user(const char *s);
+int strcpy_from_user(char *dst, const char *src);
+long getlong_user(const long *p);
+int getint_user(const int *p);
+int read_process_vm(struct process_vm *vm, void *kdst, const void *usrc, size_t siz);
+int copy_to_user(void *dst, const void *src, size_t siz);
+int setlong_user(long *dst, long data);
+int setint_user(int *dst, int data);
+int write_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t siz);
+int patch_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t siz);
 
 #endif
 

@@ -12,10 +12,7 @@
 
 #include <kmalloc.h>
 #include <string.h>
-
-extern int strlen_user(const char *);
-extern int strcpy_from_user(char *, const char *);
-extern long getlong_user(const void *);
+#include <memory.h>
 
 size_t strlen(const char *p)
 {
