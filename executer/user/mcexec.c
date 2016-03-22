@@ -1707,12 +1707,12 @@ int close_cloexec_fds(int mcos_fd)
 char *
 chgpath(char *in, char *buf)
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
+	return in;
+#else
 	char	*fn = in;
 	struct stat	sb;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
-	if(!strcmp(fn, "/sys/devices/system/cpu/online")){
-#else
 	if (!strncmp(fn, "/proc/self/", 11)){
 		sprintf(buf, "/proc/mcos%d/%d/%s", mcosid, getpid(), fn + 11);
 		fn = buf;
@@ -1722,7 +1722,6 @@ chgpath(char *in, char *buf)
 		fn = buf;
 	}
 	else if(!strcmp(fn, "/sys/devices/system/cpu/online")){
-#endif
 		fn = "/admin/fs/attached/files/sys/devices/system/cpu/online";
 	}
 	else
@@ -1731,6 +1730,7 @@ chgpath(char *in, char *buf)
 	if(stat(fn, &sb) == -1)
 		return in;
 	return fn;
+#endif
 }
 
 int main_loop(int fd, int cpu, pthread_mutex_t *lock)
