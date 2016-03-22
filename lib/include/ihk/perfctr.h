@@ -49,6 +49,7 @@ enum ihk_perfctr_type {
 };
 
 int ihk_mc_perfctr_init(int counter, enum ihk_perfctr_type type, int mode);
+int ihk_mc_perfctr_init_raw(int counter, unsigned int code, int mode);
 int ihk_mc_perfctr_start(unsigned long counter_mask);
 int ihk_mc_perfctr_stop(unsigned long counter_mask);
 int ihk_mc_perfctr_reset(int counter);

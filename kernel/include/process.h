@@ -319,6 +319,7 @@ struct mckfd {
 	void *opt;
 	long (*read_cb)(struct mckfd *, ihk_mc_user_context_t *);
 	int (*ioctl_cb)(struct mckfd *, ihk_mc_user_context_t *);
+	long (*mmap_cb)(struct mckfd *, ihk_mc_user_context_t *);
 	int (*close_cb)(struct mckfd *, ihk_mc_user_context_t *);
 };
 

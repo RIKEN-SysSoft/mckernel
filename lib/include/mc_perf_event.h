@@ -1,17 +1,10 @@
 #ifndef MC_PERF_EVNET_H
 #define MC_PERF_EVENT_H
 
-#define PERF_ATTR_SIZE_VER0	64	/* sizeof first published struct */
-#define PERF_ATTR_SIZE_VER1	72	/* add: config2 */
-#define PERF_ATTR_SIZE_VER2	80	/* add: branch_sample_type */
-#define PERF_ATTR_SIZE_VER3	96	/* add: sample_regs_user */
-					/* add: sample_stack_user */
-#define PERF_ATTR_SIZE_VER4	104	/* add: sample_regs_intr */
-
 struct perf_event_attr;
 
 /**
- * IOC Macro
+ * IOC Macro start
  */
 #define _IOC_NRBITS     8
 #define _IOC_TYPEBITS   8
@@ -59,7 +52,9 @@ struct perf_event_attr;
 #define _IOR_BAD(type,nr,size)  _IOC(_IOC_READ,(type),(nr),sizeof(size))
 #define _IOW_BAD(type,nr,size)  _IOC(_IOC_WRITE,(type),(nr),sizeof(size))
 #define _IOWR_BAD(type,nr,size) _IOC(_IOC_READ|_IOC_WRITE,(type),(nr),sizeof(size))
-
+/**
+ * IOC Macro end
+ */
 
 #define PERF_EVENT_IOC_ENABLE           _IO ('$', 0)
 #define PERF_EVENT_IOC_DISABLE          _IO ('$', 1)
@@ -75,19 +70,6 @@ enum perf_type_id {
         PERF_TYPE_BREAKPOINT                    = 5,
 
         PERF_TYPE_MAX,                          /* non-ABI */
-};
-
-/**
- * enum perf_event_active_state - the states of a event
- */
-enum perf_event_active_state {
-#ifndef __GENKSYMS__
-        PERF_EVENT_STATE_EXIT           = -3,
-#endif
-        PERF_EVENT_STATE_ERROR          = -2,
-        PERF_EVENT_STATE_OFF            = -1,
-        PERF_EVENT_STATE_INACTIVE       =  0,
-        PERF_EVENT_STATE_ACTIVE         =  1,
 };
 
 enum perf_event_read_format {
@@ -232,26 +214,18 @@ struct perf_event_attr {
 
 
 struct mc_perf_event {
-	// open時の引数に渡されたattr
 	struct perf_event_attr		attr;
-
-	enum perf_event_active_state	state;
+	int 				cpu_id;
 	int 				counter;
-
-	// group関連
 	struct mc_perf_event 		*group_leader;
 	struct list_head		sibling_list;
 	int 				nr_siblings;
-
-	struct list_head		child_list;
 	struct list_head		group_entry;
- 
 };
 
 struct perf_event_mmap_page {
 	unsigned int version;
 	unsigned int compat_version;
-
 	unsigned int lock;
 	unsigned int index;
 	long	offset;
@@ -259,26 +233,16 @@ struct perf_event_mmap_page {
 	unsigned long time_running;
 	union {
 		unsigned long   capabilities;
-		//struct {
-		unsigned long   cap_bit0                : 1, /* Always 0, deprecated, see commit 860f085b74e9 */
-				cap_bit0_is_deprecated  : 1, /* Always 1, signals that bit 0 is zero */
-				cap_user_rdpmc          : 1, /* The RDPMC instruction can be used to read counts */
-				cap_user_time           : 1, /* The time_* fields are used */
-				cap_user_time_zero      : 1, /* The time_zero field is used */
-				cap_____res             : 59;
-		//};
+		unsigned long   cap_usr_time            : 1, 
+		                cap_usr_rdpmc           : 1, 
+				cap_____res             : 62;
 	};
 	unsigned short pmc_width;
-
 	unsigned short time_shift;
 	unsigned int time_mult;
 	unsigned long time_offset;
 
-	unsigned long time_zero;
-	unsigned int size;
-
-	unsigned char __reserved[118*8+4];
-
+	unsigned long __reserved[120];
 	unsigned long data_head;
 	unsigned long data_tail;
 };

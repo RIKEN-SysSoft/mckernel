@@ -49,6 +49,8 @@
 #include <prio.h>
 #include <arch/cpu.h>
 #include <limits.h>
+#include <mc_perf_event.h>
+#include <march.h>
 
 /* Headers taken from kitten LWK */
 #include <lwk/stddef.h>
@@ -125,6 +127,9 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 #ifdef DCFA_KMOD
 static void do_mod_exit(int status);
 #endif
+
+// for perf_event
+static unsigned int counter_flag[X86_IA32_NUM_PERF_COUNTERS] = {};
 
 static void send_syscall(struct syscall_request *req, int cpu, int pid)
 {
@@ -938,6 +943,33 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	int ro_vma_mapped = 0;
 	struct shmid_ds ads;
 	int populated_mapping = 0;
+	struct process *proc = thread->proc;
+	struct mckfd *fdp = NULL;
+	
+	if (!(flags & MAP_ANONYMOUS)) {
+		ihk_mc_spinlock_lock_noirq(&proc->mckfd_lock);
+		for(fdp = proc->mckfd; fdp; fdp = fdp->next)
+			if(fdp->fd == fd)
+				break;
+		ihk_mc_spinlock_unlock_noirq(&proc->mckfd_lock);
+
+		if(fdp){
+			ihk_mc_user_context_t ctx;
+
+			memset(&ctx, '\0', sizeof ctx);
+			ihk_mc_syscall_arg0(&ctx) = addr0;
+			ihk_mc_syscall_arg1(&ctx) = len0;
+			ihk_mc_syscall_arg2(&ctx) = prot;
+			ihk_mc_syscall_arg3(&ctx) = flags;
+			ihk_mc_syscall_arg4(&ctx) = fd;
+			ihk_mc_syscall_arg5(&ctx) = off0;
+
+			if(fdp->mmap_cb){
+				return fdp->mmap_cb(fdp, &ctx);
+			}
+			return -EBADF;
+		}
+	}
 
 	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
 
@@ -2565,22 +2597,235 @@ SYSCALL_DECLARE(signalfd4)
 	return sfd->fd;
 }
 
+int
+release_counter(int cpu_id, int cnt)
+{
+	int ret = -1;
+
+	if(cnt >= 0 && cnt < X86_IA32_NUM_PERF_COUNTERS) {
+		counter_flag[cpu_id] &= ~(1 << cnt);
+		ret = 0;
+	}
+
+	return ret;
+}
+
+int
+get_avail_counter(int cpu_id, int cnt)
+{
+	int i = 0;
+	int ret = -1;
+	// find avail counter
+	if(cnt < 0) {
+		for(i = 0; i < X86_IA32_NUM_PERF_COUNTERS; i++) {
+			if(!(counter_flag[cpu_id] & 1 << i)) {
+				ret = i;
+				break;
+			}
+		}
+	// check specified counter is available.
+	} else if (cnt < X86_IA32_NUM_PERF_COUNTERS) {
+		if(counter_flag[cpu_id] ^ 1 << cnt) {
+			ret = cnt;
+		}
+	}
+
+	return ret;
+}
+
+int 
+perf_counter_init(struct perf_event_attr *attr, int cpu_id, int counter)
+{
+	int ret = 0;
+	enum ihk_perfctr_type type;
+	int mode = 0x00;
+
+	if(!attr->exclude_kernel) {
+		mode |= PERFCTR_KERNEL_MODE;
+	}
+	if(!attr->exclude_user) {
+		mode |= PERFCTR_USER_MODE;
+	}
+
+	if(attr->type == PERF_TYPE_HARDWARE) {
+		switch(attr->config){
+		case PERF_COUNT_HW_CPU_CYCLES :
+			type = APT_TYPE_CYCLE;
+			break;
+		case PERF_COUNT_HW_INSTRUCTIONS :
+			type = APT_TYPE_INSTRUCTIONS;
+			break;
+		default :
+			// Not supported config.
+			type = PERFCTR_MAX_TYPE;
+		}
+
+		ret = ihk_mc_perfctr_init(counter, type, mode);
+	
+	} else if(attr->type == PERF_TYPE_RAW) {
+		// apply MODE to config(event_code)
+		attr->config &= ~(3 << 16);
+		if(mode &= PERFCTR_USER_MODE) {
+			attr->config |= 1 << 16;
+		}
+		if(mode &= PERFCTR_KERNEL_MODE) {
+			attr->config |= 1 << 17;
+		}
+
+		ret = ihk_mc_perfctr_init_raw(counter, attr->config, mode);
+	} else {
+		// Not supported type.
+		ret = -1;
+	}
+
+	if(ret >= 0) {
+	        ret = ihk_mc_perfctr_reset(counter);
+       		ret = ihk_mc_perfctr_start(1 << counter);
+		counter_flag[cpu_id] |= 1 << counter;
+	}
+
+	return ret;
+}
+
+unsigned long perf_event_read_value(struct mc_perf_event *event)
+{
+	unsigned long total = 0;
+	int counter = event->counter;
+
+	total += ihk_mc_perfctr_read(counter);
+
+	return total;
+}
+
+static int
+perf_event_read_group(struct mc_perf_event *event, unsigned long read_format, char  *buf)
+{
+	struct mc_perf_event *leader = event->group_leader, *sub;
+	int n = 0, size = 0, ret;
+	unsigned long count;
+	unsigned long  values[5];
+
+	count = perf_event_read_value(leader);
+
+	values[n++] = 1 + leader->nr_siblings;
+	values[n++] = count;
+
+	size = n * sizeof(unsigned long);
+
+	if (copy_to_user(buf, values, size))
+		return -EFAULT;
+
+	ret = size;
+	
+	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
+		n = 0;
+		values[n++] = perf_event_read_value(sub);
+
+		size = n * sizeof(unsigned long);
+
+		if (copy_to_user(buf + ret, values, size)) {
+			return -EFAULT;
+		}
+
+		ret += size;
+	}
+	return ret;
+}
+
+static int
+perf_event_read_one(struct mc_perf_event *event, unsigned long read_format, char *buf)
+{
+        unsigned long values[4];
+        int n = 0;
+	int size = 0;
+
+        values[n++] = perf_event_read_value(event);
+
+	size = n * sizeof(unsigned long);
+
+	if (copy_to_user(buf, values, size))
+		return -EFAULT;
+
+        return size;
+}
+
 static long
-perf_event_read(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
+perf_read(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 {
+	char *buf  = (char *)ihk_mc_syscall_arg1(ctx);
+	struct mc_perf_event *event = (struct mc_perf_event*)sfd->data;
+	unsigned long read_format = event->attr.read_format;
+	long ret;
+
+	if (read_format & PERF_FORMAT_GROUP) {
+		ret = perf_event_read_group(event, read_format, buf);
+	} else {
+		ret = perf_event_read_one(event, read_format, buf);
+	}
+	return ret;
+
+}
+
+static int
+perf_ioctl(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
+{
+	unsigned int cmd = ihk_mc_syscall_arg1(ctx);
+	struct mc_perf_event *event = (struct mc_perf_event*)sfd->data;
+	int counter = event->counter;
+
+	switch (cmd) {
+        case PERF_EVENT_IOC_ENABLE:
+		ihk_mc_perfctr_start(1 << counter);
+                break;
+        case PERF_EVENT_IOC_DISABLE:
+		ihk_mc_perfctr_stop(1 << counter);
+                break;
+        case PERF_EVENT_IOC_RESET:
+		ihk_mc_perfctr_reset(counter);
+                break;
+        case PERF_EVENT_IOC_REFRESH:
+		ihk_mc_perfctr_reset(counter);
+		break;
+	default :
+		return -1;
+	}
+
 	return 0;
 }
 
 static int
-perf_event_ioctl(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
+perf_close(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 {
+	struct mc_perf_event *event = (struct mc_perf_event*)sfd->data;
+	int cpu_id = event->cpu_id;
+
+	kfree(event);
+	release_counter(cpu_id, event->counter);
+
 	return 0;
 }
 
-static int
-perf_event_close(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
+static long
+perf_mmap(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 {
-	return 0;
+	intptr_t addr0 = ihk_mc_syscall_arg0(ctx);
+	size_t len0 = ihk_mc_syscall_arg1(ctx);
+	int prot = ihk_mc_syscall_arg2(ctx);
+	int flags = ihk_mc_syscall_arg3(ctx);
+	int fd = ihk_mc_syscall_arg4(ctx);
+	off_t off0 = ihk_mc_syscall_arg5(ctx);
+	struct perf_event_mmap_page *page = NULL;
+	long rc;
+
+	flags |= MAP_ANONYMOUS;
+	prot |= PROT_WRITE;
+	rc = do_mmap(addr0, len0, prot, flags, fd, off0);
+
+	// setup perf_event_mmap_page
+	page = (struct perf_event_mmap_page *)rc;
+	page->cap_usr_rdpmc = 0;
+
+	return rc;
 }
 
 SYSCALL_DECLARE(perf_event_open)
@@ -2588,26 +2833,94 @@ SYSCALL_DECLARE(perf_event_open)
 	struct syscall_request request IHK_DMA_ALIGN;
 	struct thread *thread = cpu_local_var(current);
 	struct process *proc = thread->proc;
-	struct mckfd *sfd;
+	struct mckfd *sfd, *cfd;
 	int fd;
 	long irqstate;
+	struct perf_event_attr *attr = (void *)ihk_mc_syscall_arg0(ctx);
+	int pid = ihk_mc_syscall_arg1(ctx);
+	int cpu = ihk_mc_syscall_arg2(ctx);
+	int group_fd = ihk_mc_syscall_arg3(ctx);
+	unsigned long flags = ihk_mc_syscall_arg4(ctx);
+	struct mc_perf_event *event;
+
+	int not_supported_flag = 0;
+
+	// check Not supported 
+	if(pid != 0) {
+		not_supported_flag = 1;	
+	}
+	if(cpu != -1) {
+		not_supported_flag = 1;	
+	}
+	if(flags > 0) {
+		not_supported_flag = 1;	
+	}
+	if(attr->read_format & PERF_FORMAT_TOTAL_TIME_ENABLED) {
+		not_supported_flag = 1;
+	}
+	if(attr->read_format & PERF_FORMAT_TOTAL_TIME_RUNNING) {
+		not_supported_flag = 1;
+	}
+	if(attr->read_format & PERF_FORMAT_ID) {
+		not_supported_flag = 1;
+	}
+
+	if(not_supported_flag) {
+		return -1;
+	}
+	
+	// process of perf_event_open
+	event = kmalloc(sizeof(struct mc_perf_event), IHK_MC_AP_NOWAIT);
+	event->cpu_id = thread->cpu_id;
+	event->attr = (struct perf_event_attr)*attr;
+	event->counter = get_avail_counter(event->cpu_id, -1); 
+	if(event->counter < 0) {
+		return -1;
+	}
+	event->nr_siblings = 0;
+	INIT_LIST_HEAD(&event->group_entry);
+	INIT_LIST_HEAD(&event->sibling_list);
+	if(group_fd == -1) {
+		event->group_leader = event; 
+	} else {
+		for(cfd = proc->mckfd; cfd; cfd = cfd->next) {
+			if(cfd->fd == group_fd) {
+				event->group_leader = (struct mc_perf_event*)cfd->data;
+				list_add_tail(&event->group_entry, &event->group_leader->sibling_list);
+				event->group_leader->nr_siblings++;
+				break;
+			}
+		}
+	}
+
+	perf_counter_init(attr, event->cpu_id, event->counter);
 
 	request.number = __NR_perf_event_open;
 	request.args[0] = 0;
 	fd = do_syscall(&request, ihk_mc_get_processor_id(), 0);
 	if(fd < 0){
 		return fd;
-	}
+	} 
+
 	sfd = kmalloc(sizeof(struct mckfd), IHK_MC_AP_NOWAIT);
 	if(!sfd)
 		return -ENOMEM;
 	sfd->fd = fd;
-	sfd->read_cb = perf_event_read;
-	sfd->ioctl_cb = perf_event_ioctl;
-	sfd->close_cb = perf_event_close;
+	sfd->read_cb = perf_read;
+	sfd->ioctl_cb = perf_ioctl;
+	sfd->close_cb = perf_close;
+	sfd->mmap_cb = perf_mmap;
+	sfd->data = (long)event;
 	irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
-	sfd->next = proc->mckfd;
-	proc->mckfd = sfd;
+
+	if(proc->mckfd == NULL) {
+		proc->mckfd = sfd;
+		sfd->next = NULL;
+	} else {
+		sfd->next = proc->mckfd;
+		proc->mckfd = sfd;
+	}
+
 	ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
 	return sfd->fd;
 }

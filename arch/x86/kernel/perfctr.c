@@ -57,6 +57,14 @@ static int set_perfctr_x86(int counter, int event, int mask, int inv, int count,
 	                              CVAL2(event, mask, inv, count));
 }
 
+int ihk_mc_perfctr_init_raw(int counter, unsigned int code, int mode)
+{
+	if (counter < 0 || counter >= X86_IA32_NUM_PERF_COUNTERS) {
+		return -EINVAL;
+	}
+
+	return set_perfctr_x86_direct(counter, mode, code);
+}
 int ihk_mc_perfctr_init(int counter, enum ihk_perfctr_type type, int mode)
 {
 	if (counter < 0 || counter >= X86_IA32_NUM_PERF_COUNTERS) {
