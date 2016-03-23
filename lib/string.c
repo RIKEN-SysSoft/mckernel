@@ -279,7 +279,7 @@ int flatten_strings_from_user(int nr_strings, char *first, char **strings, char 
 
 	/* How many strings do we have? */
 	if (nr_strings == -1) {
-		for (nr_strings = 0; (r = getlong_user(strings + nr_strings)) > 0; ++nr_strings); 
+		for (nr_strings = 0; (r = getlong_user((void *)(strings + nr_strings))) > 0; ++nr_strings);
 		if(r < 0)
 			return r;
 	}
@@ -295,7 +295,7 @@ int flatten_strings_from_user(int nr_strings, char *first, char **strings, char 
 	}
 
 	for (string_i = 0; string_i < nr_strings; ++string_i) {
-		char *userp = (char *)getlong_user(strings + string_i);
+		char *userp = (char *)getlong_user((void *)(strings + string_i));
 		int len = strlen_user(userp);
 
 		if(len < 0)
@@ -326,7 +326,7 @@ int flatten_strings_from_user(int nr_strings, char *first, char **strings, char 
 	}
 
 	for (string_i = 0; string_i < nr_strings; ++string_i) {
-		char *userp = (char *)getlong_user(strings + string_i);
+		char *userp = (char *)getlong_user((void *)(strings + string_i));
 		_flat[n++] = p - (char *)_flat;
 		strcpy_from_user(p, userp);
 		p = strchr(p, '\0') + 1;
