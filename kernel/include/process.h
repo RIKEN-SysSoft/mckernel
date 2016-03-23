@@ -570,6 +570,11 @@ struct process_vm {
 	long currss;
 };
 
+static inline int has_cap_sys_admin(struct thread *th)
+{
+	/* CAP_SYS_ADMIN (= 21) */
+	return !(th->proc->euid);
+}
 
 void hold_address_space(struct address_space *);
 void release_address_space(struct address_space *);
