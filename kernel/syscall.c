@@ -112,6 +112,7 @@ extern unsigned long ihk_mc_get_ns_per_tsc(void);
 extern int ptrace_detach(int pid, int data);
 extern void debug_log(unsigned long);
 extern void free_all_process_memory_range(struct process_vm *vm);
+extern int arch_clear_host_user_space();
 extern struct cpu_local_var *clv;
 
 int prepare_process_ranges_args_envs(struct thread *thread, 
@@ -1734,13 +1735,7 @@ SYSCALL_DECLARE(execve)
 	}
 	
 	/* Clear host user space PTEs */
-	request.number = __NR_munmap;
-	request.args[0] = cpu_local_var(current)->vm->region.user_start;
-	request.args[1] = cpu_local_var(current)->vm->region.user_end - 
-		cpu_local_var(current)->vm->region.user_start;
-	dkprintf("execve(): requesting host PTE clear\n");
-
-	if (do_syscall(&request, ihk_mc_get_processor_id(), 0)) {
+	if (arch_clear_host_user_space()) {
 		kprintf("execve(): ERROR: clearing PTEs in host process\n");
 		panic("");
 	}		

@@ -127,6 +127,19 @@ int obtain_clone_cpuid() {
     return cpuid;
 }
 
+int
+arch_clear_host_user_space()
+{
+	struct syscall_request request IHK_DMA_ALIGN;
+
+	request.number = __NR_munmap;
+	request.args[0] = cpu_local_var(current)->vm->region.user_start;
+	request.args[1] = cpu_local_var(current)->vm->region.user_end -
+	                      cpu_local_var(current)->vm->region.user_start;
+
+	return do_syscall(&request, ihk_mc_get_processor_id(), 0);
+}
+
 SYSCALL_DECLARE(rt_sigaction)
 {
 	int sig = ihk_mc_syscall_arg0(ctx);
