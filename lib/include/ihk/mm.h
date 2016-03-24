@@ -18,6 +18,7 @@
 #include <memory.h>
 #include <ihk/lock.h>
 #include <ihk/atomic.h>
+#include <arch/mm.h>
 
 struct memobj;
 struct process_vm;

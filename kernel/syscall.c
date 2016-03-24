@@ -973,6 +973,8 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		}
 	}
 
+	flush_nfo_tlb();
+
 	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
 
 	if (flags & MAP_FIXED) {
@@ -1258,6 +1260,8 @@ SYSCALL_DECLARE(mprotect)
 		return 0;
 	}
 
+	flush_nfo_tlb();
+
 	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
 
 	first = lookup_process_memory_range(thread->vm, start, start+PAGE_SIZE);
@@ -1363,6 +1367,8 @@ SYSCALL_DECLARE(brk)
 
 	dkprintf("SC(%d)[sys_brk] brk_start=%lx,end=%lx\n",
 			ihk_mc_get_processor_id(), region->brk_start, region->brk_end);
+
+	flush_nfo_tlb();
 
 	/* brk change fail, including glibc trick brk(0) to obtain current brk */
 	if(address < region->brk_start) {
@@ -6353,6 +6359,8 @@ SYSCALL_DECLARE(remap_file_pages)
 		error = -EINVAL;
 		goto out;
 	}
+
+	flush_nfo_tlb();
 
 	range->flag |= VR_FILEOFF;
 	error = remap_process_memory_range(thread->vm, range, start, end, off);

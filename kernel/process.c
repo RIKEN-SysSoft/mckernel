@@ -2083,6 +2083,7 @@ release_process_vm(struct process_vm *vm)
 	if(vm->free_cb)
 		vm->free_cb(vm, vm->opt);
 
+	flush_nfo_tlb_mm(vm);
 	free_all_process_memory_range(vm);
 
 	detach_address_space(vm->address_space, vm->proc->pid);
