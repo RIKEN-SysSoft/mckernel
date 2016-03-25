@@ -6379,6 +6379,7 @@ SYSCALL_DECLARE(mremap)
 			newend = newstart + newsize;
 			error = extend_up_process_memory_range(vm, range,
 					newend);
+			flush_nfo_tlb();
 			if (!error) {
 				if (range->flag & VR_LOCKED) {
 					lckstart = oldend;
@@ -6441,6 +6442,7 @@ SYSCALL_DECLARE(mremap)
 			}
 			goto out;
 		}
+		flush_nfo_tlb();
 		if (range->flag & VR_LOCKED) {
 			lckstart = newstart;
 			lckend = newend;
