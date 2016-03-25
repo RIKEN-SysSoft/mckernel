@@ -26,6 +26,7 @@
 #include <uio.h>
 #include <mman.h>
 #include <shm.h>
+#include <prctl.h>
 
 void terminate(int, int);
 extern long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
@@ -550,6 +551,75 @@ void ptrace_report_signal(struct thread *thread, int sig)
 	schedule();
 	dkprintf("ptrace_report_signal,wake up\n");
 }
+
+static long
+ptrace_arch_prctl(int pid, long code, long addr)
+{
+	long rc = -EIO;
+	struct thread *child;
+	struct mcs_rwlock_node_irqsave lock;
+
+	child = find_thread(pid, pid, &lock);
+	if (!child)
+		return -ESRCH;
+	if (child->proc->status == PS_TRACED) {
+		switch (code) {
+		case ARCH_GET_FS: {
+			unsigned long value;
+			unsigned long *p = (unsigned long *)addr;
+			rc = ptrace_read_user(child,
+					offsetof(struct user_regs_struct, fs_base),
+					&value);
+			if (rc == 0) {
+				rc = copy_to_user(p, (char *)&value, sizeof(value));
+			}
+			break;
+		}
+		case ARCH_GET_GS: {
+			unsigned long value;
+			unsigned long *p = (unsigned long *)addr;
+			rc = ptrace_read_user(child,
+					offsetof(struct user_regs_struct, gs_base),
+					&value);
+			if (rc == 0) {
+				rc = copy_to_user(p, (char *)&value, sizeof(value));
+			}
+			break;
+		}
+		case ARCH_SET_FS:
+			rc = ptrace_write_user(child,
+					offsetof(struct user_regs_struct, fs_base),
+					(unsigned long)addr);
+			break;
+		case ARCH_SET_GS:
+			rc = ptrace_write_user(child,
+					offsetof(struct user_regs_struct, gs_base),
+					(unsigned long)addr);
+			break;
+		default:
+			rc = -EINVAL;
+			break;
+		}
+	}
+	thread_unlock(child, &lock);
+
+	return rc;
+}
+
+long
+arch_ptrace(long request, int pid, long addr, long data)
+{
+	switch(request) {
+	    case PTRACE_ARCH_PRCTL:
+		return ptrace_arch_prctl(pid, data, addr);
+		break;
+
+	    default:
+		break;
+	}
+	return -EOPNOTSUPP;
+}
+
 static int
 isrestart(int num, unsigned long rc, int sig, int restart)
 {
@@ -1387,3 +1457,52 @@ out:
 	dkprintf("shmget(%#lx,%#lx,%#x): %d %d\n", key, size, shmflg0, error, shmid);
 	return (error)?: shmid;
 } /* sys_shmget() */
+
+long do_arch_prctl(unsigned long code, unsigned long address)
+{
+	int err = 0;
+	enum ihk_asr_type type;
+
+	switch (code) {
+		case ARCH_SET_FS:
+		case ARCH_GET_FS:
+			type = IHK_ASR_X86_FS;
+			break;
+		case ARCH_GET_GS:
+			type = IHK_ASR_X86_GS;
+			break;
+		case ARCH_SET_GS:
+			return -ENOTSUPP;
+		default:
+			return -EINVAL;
+	}
+
+	switch (code) {
+		case ARCH_SET_FS:
+			dkprintf("[%d] arch_prctl: ARCH_SET_FS: 0x%lX\n",
+			        ihk_mc_get_processor_id(), address);
+			cpu_local_var(current)->tlsblock_base = address;
+			err = ihk_mc_arch_set_special_register(type, address);
+			break;
+		case ARCH_SET_GS:
+			err = ihk_mc_arch_set_special_register(type, address);
+			break;
+		case ARCH_GET_FS:
+		case ARCH_GET_GS:
+			err = ihk_mc_arch_get_special_register(type,
+												   (unsigned long*)address);
+			break;
+		default:
+			break;
+	}
+
+	return err;
+}
+
+
+SYSCALL_DECLARE(arch_prctl)
+{
+	return do_arch_prctl(ihk_mc_syscall_arg0(ctx), 
+	                     ihk_mc_syscall_arg1(ctx));
+}
+

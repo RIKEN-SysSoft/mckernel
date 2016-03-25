@@ -69,11 +69,6 @@
 #define SCD_MSG_PROCFS_TID_CREATE	0x44
 #define SCD_MSG_PROCFS_TID_DELETE	0x45
 
-#define ARCH_SET_GS 0x1001
-#define ARCH_SET_FS 0x1002
-#define ARCH_GET_FS 0x1003
-#define ARCH_GET_GS 0x1004
-
 /* Cloning flags.  */
 # define CSIGNAL       0x000000ff /* Signal mask to be sent at exit.  */
 # define CLONE_VM      0x00000100 /* Set if VM shared between processes.  */

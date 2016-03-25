@@ -76,6 +76,9 @@ void ihk_mc_init_user_process(ihk_mc_kernel_context_t *ctx,
                               void *stack_pointer, unsigned long user_pc,
                               unsigned long user_sp);
 
+void ihk_mc_init_user_tlsbase(ihk_mc_user_context_t *ctx,
+                              unsigned long tls_base_addr);
+
 enum ihk_mc_user_context_regtype {
 	IHK_UCR_STACK_POINTER = 1,
 	IHK_UCR_PROGRAM_COUNTER = 2,

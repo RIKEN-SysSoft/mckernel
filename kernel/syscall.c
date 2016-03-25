@@ -114,6 +114,7 @@ extern void debug_log(unsigned long);
 extern void free_all_process_memory_range(struct process_vm *vm);
 extern int arch_clear_host_user_space();
 extern int arch_range_check(unsigned long addr, unsigned long len);
+extern long arch_ptrace(long request, int pid, long addr, long data);
 extern struct cpu_local_var *clv;
 
 int prepare_process_ranges_args_envs(struct thread *thread, 
@@ -1424,54 +1425,6 @@ settid(struct thread *thread, int mode, int newcpuid, int oldcpuid)
 SYSCALL_DECLARE(gettid)
 {
 	return cpu_local_var(current)->tid;
-}
-
-long do_arch_prctl(unsigned long code, unsigned long address)
-{
-	int err = 0;
-	enum ihk_asr_type type;
-
-	switch (code) {
-		case ARCH_SET_FS:
-		case ARCH_GET_FS:
-			type = IHK_ASR_X86_FS;
-			break;
-		case ARCH_GET_GS:
-			type = IHK_ASR_X86_GS;
-			break;
-		case ARCH_SET_GS:
-			return -ENOTSUPP;
-		default:
-			return -EINVAL;
-	}
-
-	switch (code) {
-		case ARCH_SET_FS:
-			dkprintf("[%d] arch_prctl: ARCH_SET_FS: 0x%lX\n",
-			        ihk_mc_get_processor_id(), address);
-			cpu_local_var(current)->tlsblock_base = address;
-			err = ihk_mc_arch_set_special_register(type, address);
-			break;
-		case ARCH_SET_GS:
-			err = ihk_mc_arch_set_special_register(type, address);
-			break;
-		case ARCH_GET_FS:
-		case ARCH_GET_GS:
-			err = ihk_mc_arch_get_special_register(type,
-												   (unsigned long*)address);
-			break;
-		default:
-			break;
-	}
-
-	return err;
-}
-
-
-SYSCALL_DECLARE(arch_prctl)
-{
-	return do_arch_prctl(ihk_mc_syscall_arg0(ctx), 
-	                     ihk_mc_syscall_arg1(ctx));
 }
 
 extern void ptrace_report_signal(struct thread *thread, int sig);
@@ -4606,59 +4559,6 @@ static long ptrace_setregs(int pid, long data)
 	return rc;
 }
 
-static long ptrace_arch_prctl(int pid, long code, long addr)
-{
-	long rc = -EIO;
-	struct thread *child;
-	struct mcs_rwlock_node_irqsave lock;
-
-	child = find_thread(pid, pid, &lock);
-	if (!child)
-		return -ESRCH;
-	if (child->proc->status == PS_TRACED) {
-		switch (code) {
-		case ARCH_GET_FS: {
-			unsigned long value;
-			unsigned long *p = (unsigned long *)addr;
-			rc = ptrace_read_user(child,
-					offsetof(struct user_regs_struct, fs_base),
-					&value);
-			if (rc == 0) {
-				rc = copy_to_user(p, (char *)&value, sizeof(value));
-			}
-			break;
-		}
-		case ARCH_GET_GS: {
-			unsigned long value;
-			unsigned long *p = (unsigned long *)addr;
-			rc = ptrace_read_user(child,
-					offsetof(struct user_regs_struct, gs_base),
-					&value);
-			if (rc == 0) {
-				rc = copy_to_user(p, (char *)&value, sizeof(value));
-			}
-			break;
-		}
-		case ARCH_SET_FS:
-			rc = ptrace_write_user(child,
-					offsetof(struct user_regs_struct, fs_base),
-					(unsigned long)addr);
-			break;
-		case ARCH_SET_GS:
-			rc = ptrace_write_user(child,
-					offsetof(struct user_regs_struct, gs_base),
-					(unsigned long)addr);
-			break;
-		default:
-			rc = -EINVAL;
-			break;
-		}
-	}
-	thread_unlock(child, &lock);
-
-	return rc;
-}
-
 extern long ptrace_read_fpregs(struct thread *thread, void *fpregs);
 extern long ptrace_write_fpregs(struct thread *thread, void *fpregs);
 
@@ -5169,16 +5069,12 @@ SYSCALL_DECLARE(ptrace)
 		dkprintf("ptrace: PTRACE_SETREGSET: addr=0x%x, data=%p\n", addr, data);
 		error = ptrace_setregset(pid, addr, data);
 		break;
-	case PTRACE_ARCH_PRCTL:
-		error = ptrace_arch_prctl(pid, data, addr);
-		dkprintf("PTRACE_ARCH_PRCTL: data=%p addr=%p return=%p\n", data, addr, error);
-		break;
 	case PTRACE_GETEVENTMSG:
 		dkprintf("ptrace: PTRACE_GETEVENTMSG: data=%p\n", data);
 		error = ptrace_geteventmsg(pid, data);
 		break;
 	default:
-		kprintf("ptrace: unimplemented ptrace(%d) called.\n", request);
+		error = arch_ptrace(request, pid, addr, data);
 		break;
 	}
 

@@ -42,7 +42,6 @@
 #define ekprintf(...) kprintf(__VA_ARGS__)
 #endif
 
-extern long do_arch_prctl(unsigned long code, unsigned long address);
 extern long alloc_debugreg(struct thread *proc);
 extern void save_debugreg(unsigned long *debugreg);
 extern void restore_debugreg(unsigned long *debugreg);
@@ -2626,7 +2625,7 @@ redo:
 		         ihk_mc_get_processor_id(), next->tlsblock_base);
 
 		/* Set up new TLS.. */
-		do_arch_prctl(ARCH_SET_FS, next->tlsblock_base);
+		ihk_mc_init_user_tlsbase(next->uctx, next->tlsblock_base);
 
 		if (prev) {
 			last = ihk_mc_switch_context(&prev->ctx, &next->ctx, prev);

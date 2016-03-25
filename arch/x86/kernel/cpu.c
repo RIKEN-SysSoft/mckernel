@@ -28,6 +28,7 @@
 #include <signal.h>
 #include <process.h>
 #include <cls.h>
+#include <prctl.h>
 
 #define LAPIC_ID            0x020
 #define LAPIC_TIMER         0x320
@@ -1532,6 +1533,15 @@ ihk_mc_user_context_t *lookup_user_context(struct thread *thread)
 
 	return uctx;
 } /* lookup_user_context() */
+
+extern long do_arch_prctl(unsigned long code, unsigned long address);
+void
+ihk_mc_init_user_tlsbase(ihk_mc_user_context_t *ctx,
+                         unsigned long tls_base_addr)
+{
+	do_arch_prctl(ARCH_SET_FS, tls_base_addr);
+}
+
 
 /*@
   @ assigns \nothing;
