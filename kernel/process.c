@@ -1252,7 +1252,7 @@ static int remap_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 	}
 
 	off = args->off + ((uintptr_t)pgaddr - args->start);
-	pte_make_fileoff(off, 0, pgsize, &apte);
+	pte_make_fileoff(off, 0, &apte);
 
 	pte_xchg(ptep, &apte);
 	flush_tlb_single((uintptr_t)pgaddr);	/* XXX: TLB flush */
@@ -1411,7 +1411,7 @@ static int invalidate_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 		pte_make_null(&apte, pgsize);
 	}
 	else {
-		pte_make_fileoff(page->offset, 0, pgsize, &apte);
+		pte_make_fileoff(page->offset, 0, &apte);
 	}
 	pte_xchg(ptep, &apte);
 	flush_tlb_single((uintptr_t)pgaddr);	/* XXX: TLB flush */
