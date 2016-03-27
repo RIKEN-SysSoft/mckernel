@@ -1661,13 +1661,29 @@ SYSCALL_DECLARE(execve)
 	argv_flat_len = flatten_strings_from_user(-1, (desc->shell_path[0] ? 
 				desc->shell_path : NULL), argv, &argv_flat);
 	if (argv_flat_len == 0) {
-		kprintf("ERROR: no argv for executable: %s?\n", filename);
+		char *kfilename;
+		int len = strlen_user(filename);
+
+		kfilename = kmalloc(len + 1, IHK_MC_AP_NOWAIT);
+		if(kfilename)
+			strcpy_from_user(kfilename, filename);
+		kprintf("ERROR: no argv for executable: %s?\n", kfilename? kfilename: "");
+		if(kfilename)
+			kfree(kfilename);
 		return -EINVAL;
 	}
 
 	envp_flat_len = flatten_strings_from_user(-1, NULL, envp, &envp_flat);
 	if (envp_flat_len == 0) {
-		kprintf("ERROR: no envp for executable: %s?\n", filename);
+		char *kfilename;
+		int len = strlen_user(filename);
+
+		kfilename = kmalloc(len + 1, IHK_MC_AP_NOWAIT);
+		if(kfilename)
+			strcpy_from_user(kfilename, filename);
+		kprintf("ERROR: no envp for executable: %s?\n", kfilename? kfilename: "");
+		if(kfilename)
+			kfree(kfilename);
 		return -EINVAL;
 	}
 
@@ -1845,7 +1861,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		dkprintf("clone_flags & CLONE_PARENT_SETTID: 0x%lX\n",
 		         parent_tidptr);
 		
-		*(int*)parent_tidptr = new->tid;
+		setint_user((int*)parent_tidptr, new->tid);
 	}
 	
 	if (clone_flags & CLONE_CHILD_CLEARTID) {
@@ -4169,7 +4185,7 @@ SYSCALL_DECLARE(exit)
 		
 		dkprintf("exit clear_child!\n");
 
-		*thread->clear_child_tid = 0;
+		setint_user((int*)thread->clear_child_tid, 0);
 		barrier();
 		futex((uint32_t *)thread->clear_child_tid,
 		      FUTEX_WAKE, 1, 0, NULL, 0, 0, 1);

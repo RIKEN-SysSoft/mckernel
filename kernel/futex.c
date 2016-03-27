@@ -251,7 +251,7 @@ static int cmpxchg_futex_value_locked(uint32_t __user *uaddr, uint32_t uval, uin
 static int get_futex_value_locked(uint32_t *dest, uint32_t *from)
 {
 	/* RIKEN: futexes are always on not swappable pages */
-	*dest = *from;
+	*dest = getint_user((int *)from);
 
 	return 0;
 }
