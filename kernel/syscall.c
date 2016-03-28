@@ -113,7 +113,6 @@ extern int ptrace_detach(int pid, int data);
 extern void debug_log(unsigned long);
 extern void free_all_process_memory_range(struct process_vm *vm);
 extern int arch_clear_host_user_space();
-extern int arch_range_check(unsigned long addr, unsigned long len);
 extern long arch_ptrace(long request, int pid, long addr, long data);
 extern struct cpu_local_var *clv;
 
@@ -1190,6 +1189,7 @@ SYSCALL_DECLARE(munmap)
 	const uintptr_t addr = ihk_mc_syscall_arg0(ctx);
 	const size_t len0 = ihk_mc_syscall_arg1(ctx);
 	struct thread *thread = cpu_local_var(current);
+	struct vm_regions *region = &thread->vm->region;
 	size_t len;
 	int error;
 
@@ -1198,8 +1198,11 @@ SYSCALL_DECLARE(munmap)
 
 	len = (len0 + PAGE_SIZE - 1) & PAGE_MASK;
 	if ((addr & (PAGE_SIZE - 1))
-			|| arch_range_check(addr, len)
-			|| len <= 0) {
+			|| (addr < region->user_start)
+			|| (region->user_end <= addr)
+			|| (len == 0)
+			|| (len > (region->user_end - region->user_start))
+			|| ((region->user_end - len) < addr)) {
 		error = -EINVAL;
 		goto out;
 	}
@@ -1220,6 +1223,7 @@ SYSCALL_DECLARE(mprotect)
 	const size_t len0 = ihk_mc_syscall_arg1(ctx);
 	const int prot = ihk_mc_syscall_arg2(ctx);
 	struct thread *thread = cpu_local_var(current);
+	struct vm_regions *region = &thread->vm->region;
 	size_t len;
 	intptr_t end;
 	struct vm_range *first;
@@ -1244,7 +1248,9 @@ SYSCALL_DECLARE(mprotect)
 		return -EINVAL;
 	}
 
-	if (arch_range_check(start, len)) {
+	if ((start < region->user_start)
+			|| (region->user_end <= start)
+			|| ((region->user_end - start) < len)) {
 		ekprintf("[%d]sys_mprotect(%lx,%lx,%x): -ENOMEM\n",
 				ihk_mc_get_processor_id(), start, len0, prot);
 		return -ENOMEM;
@@ -6379,8 +6385,7 @@ SYSCALL_DECLARE(mremap)
 					error);
 			goto out;
 		}
-		if (((newstart < oldend) && (oldstart < newend)) ||
-		    arch_range_check(newstart, newsize)) {
+		if ((newstart < oldend) && (oldstart < newend)) {
 			error = -EINVAL;
 			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
 					"fixed:overlapped. %d\n",
