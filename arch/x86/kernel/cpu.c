@@ -103,6 +103,12 @@ static uint64_t gdt[] __attribute__((aligned(16))) = {
 	0x00aff3000000ffff, /* 56 : USER_DS */
 	0x0000890000000067, /* 64 : TSS */
 	0,                  /* (72: TSS) */
+	0,                  /* 80 */
+	0,                  /* 88 */
+	0,                  /* 96 */
+	0,                  /* 104 */
+	0,                  /* 112 */
+	0x0000f10000000000, /* 120 : GETCPU */
 };
 
 struct tss64 tss __attribute__((aligned(16)));
@@ -570,6 +576,7 @@ static void init_smp_processor(void)
 {
 	struct x86_cpu_local_variables *v;
 	unsigned long tss_addr;
+	unsigned node_cpu;
 
 	v = get_x86_this_cpu_local();
 	tss_addr = (unsigned long)&v->tss;
@@ -590,6 +597,9 @@ static void init_smp_processor(void)
 		| (0x89UL << 40) | ((tss_addr & 0xff000000) << 32);
 	v->gdt[GLOBAL_TSS_ENTRY + 1] = (tss_addr >> 32);
 
+	node_cpu = v->processor_id;	/* assumes NUMA node 0 */
+	v->gdt[GETCPU_ENTRY] |= node_cpu;
+
 	v->gdt_ptr.size = sizeof(v->gdt) - 1;
 	v->gdt_ptr.address = (unsigned long)v->gdt;
         
@@ -597,6 +607,8 @@ static void init_smp_processor(void)
 	reload_gdt(&v->gdt_ptr);
 
 	set_kstack((unsigned long)get_x86_this_cpu_kstack());
+#define MSR_IA32_TSC_AUX 0xc0000103
+	wrmsr(MSR_IA32_TSC_AUX, node_cpu);
 }
 
 static char *trampoline_va, *first_page_va;

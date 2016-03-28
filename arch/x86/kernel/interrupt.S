@@ -13,7 +13,7 @@
  * 2013/?? - bgerofi + shimosawa: handle rsp correctly for nested interrupts
  */
 
-#define X86_CPU_LOCAL_OFFSET_TSS    128
+#define X86_CPU_LOCAL_OFFSET_TSS    176
 #define X86_TSS_OFFSET_SP0          4
 #define X86_CPU_LOCAL_OFFSET_SP0 \
 		(X86_CPU_LOCAL_OFFSET_TSS + X86_TSS_OFFSET_SP0)

@@ -22,6 +22,7 @@
 #define USER_CS_ENTRY      6
 #define USER_DS_ENTRY      7
 #define GLOBAL_TSS_ENTRY   8
+#define GETCPU_ENTRY       15
 
 #define KERNEL_CS          (KERNEL_CS_ENTRY * 8)
 #define KERNEL_DS          (KERNEL_DS_ENTRY * 8)

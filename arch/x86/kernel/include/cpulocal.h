@@ -22,7 +22,7 @@
  * - 4096 : kernel stack
  */
 
-#define X86_CPU_LOCAL_OFFSET_TSS    128
+#define X86_CPU_LOCAL_OFFSET_TSS    176
 #define X86_CPU_LOCAL_OFFSET_KSTACK 16
 #define X86_CPU_LOCAL_OFFSET_USTACK 24
 
@@ -39,13 +39,13 @@ struct x86_cpu_local_variables {
 	struct x86_desc_ptr gdt_ptr;
 	unsigned short pad[3];
 /* 48 */
-	uint64_t gdt[10];
-/* 128 */
+	uint64_t gdt[16];
+/* 176 */
 	struct tss64 tss;
-/* 232 */
+/* 280 */
 	unsigned long paniced;
 	uint64_t panic_regs[21];
-/* 408 */
+/* 456 */
 } __attribute__((packed));
 
 struct x86_cpu_local_variables *get_x86_cpu_local_variable(int id);

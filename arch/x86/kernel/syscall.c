@@ -216,7 +216,9 @@ SYSCALL_DECLARE(rt_sigreturn)
 	struct sigsp ksigsp;
 	struct sigsp *sigsp;
 
-	asm("movq %%gs:132, %0" : "=r" (regs));
+	asm ("movq %%gs:(%1),%0"
+			: "=r"(regs)
+			: "r"(offsetof(struct x86_cpu_local_variables, tss.rsp0)));
 	--regs;
 
 	sigsp = (struct sigsp *)regs->gpr.rsp;
@@ -680,7 +682,9 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 	}
 
 	if(regs == NULL){ /* call from syscall */
-		asm("movq %%gs:132, %0" : "=r" (regs));
+		asm ("movq %%gs:(%1),%0"
+				: "=r"(regs)
+				: "r"(offsetof(struct x86_cpu_local_variables, tss.rsp0)));
 		--regs;
 	}
 	else{
