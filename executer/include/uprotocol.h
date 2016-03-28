@@ -87,6 +87,8 @@ struct program_load_desc {
 	int pgid;
 	int cred[8];
 	int reloc;
+	char enable_vdso;
+	char padding[7];
 	unsigned long entry;
 	unsigned long user_start;
 	unsigned long user_end;

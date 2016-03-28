@@ -1,6 +1,8 @@
 #ifndef _LINUX_AUXVEC_H
 #define _LINUX_AUXVEC_H
 
+#include <arch/auxvec.h>
+
 /* Symbolic values for the entries in the auxiliary table
    put on the initial stack */
 #define AT_NULL   0	/* end of vector */

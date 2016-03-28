@@ -27,6 +27,8 @@
 #include <mman.h>
 #include <shm.h>
 #include <prctl.h>
+#include <ihk/ikc.h>
+#include <page.h>
 
 void terminate(int, int);
 extern long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
@@ -60,6 +62,10 @@ uintptr_t debug_constants[] = {
 	offsetof(struct thread, tid),
 	-1,
 };
+
+static struct vdso vdso;
+static size_t container_size = 0;
+static ptrdiff_t vdso_offset;
 
 /*
 See dkprintf("BSP HW ID = %d, ", bsp_hw_id); (in ./mcos/kernel/ap.c)
@@ -1498,3 +1504,280 @@ SYSCALL_DECLARE(arch_prctl)
 	                     ihk_mc_syscall_arg1(ctx));
 }
 
+static int vdso_get_vdso_info(void)
+{
+	int error;
+	struct ikc_scd_packet packet;
+	struct ihk_ikc_channel_desc *ch = cpu_local_var(syscall_channel);
+
+	dkprintf("vdso_get_vdso_info()\n");
+	vdso.busy = 1;
+	vdso.vdso_npages = 0;
+
+	packet.msg = SCD_MSG_GET_VDSO_INFO;
+	packet.arg = virt_to_phys(&vdso);
+
+	error = ihk_ikc_send(ch, &packet, 0);
+	if (error) {
+		ekprintf("vdso_get_vdso_info: ihk_ikc_send failed. %d\n", error);
+		goto out;
+	}
+
+	while (vdso.busy) {
+		cpu_pause();
+	}
+
+	error = 0;
+out:
+	if (error) {
+		vdso.vdso_npages = 0;
+	}
+	dkprintf("vdso_get_vdso_info(): %d\n", error);
+	return error;
+} /* vdso_get_vdso_info() */
+
+static int vdso_map_global_pages(void)
+{
+	int error;
+	enum ihk_mc_pt_attribute attr;
+	int i;
+	void *virt;
+	intptr_t phys;
+
+	dkprintf("vdso_map_global_pages()\n");
+	if (vdso.vvar_virt && vdso.vvar_is_global) {
+		attr = PTATTR_ACTIVE | PTATTR_USER | PTATTR_NO_EXECUTE;
+		error = ihk_mc_pt_set_page(NULL, vdso.vvar_virt, vdso.vvar_phys, attr);
+		if (error) {
+			ekprintf("vdso_map_global_pages: mapping vvar failed. %d\n", error);
+			goto out;
+		}
+	}
+
+	if (vdso.hpet_virt && vdso.hpet_is_global) {
+		attr = PTATTR_ACTIVE | PTATTR_USER | PTATTR_NO_EXECUTE | PTATTR_UNCACHABLE;
+		error = ihk_mc_pt_set_page(NULL, vdso.hpet_virt, vdso.hpet_phys, attr);
+		if (error) {
+			ekprintf("vdso_map_global_pages: mapping hpet failed. %d\n", error);
+			goto out;
+		}
+	}
+
+	if (vdso.pvti_virt && vdso.pvti_is_global) {
+		error = arch_setup_pvclock();
+		if (error) {
+			ekprintf("vdso_map_global_pages: arch_setup_pvclock failed. %d\n", error);
+			goto out;
+		}
+
+		attr = PTATTR_ACTIVE | PTATTR_USER | PTATTR_NO_EXECUTE;
+		for (i = 0; i < pvti_npages; ++i) {
+			virt = vdso.pvti_virt - (i * PAGE_SIZE);
+			phys = virt_to_phys(pvti + (i * PAGE_SIZE));
+			error = ihk_mc_pt_set_page(NULL, virt, phys, attr);
+			if (error) {
+				ekprintf("vdso_map_global_pages: mapping pvti failed. %d\n", error);
+				goto out;
+			}
+		}
+	}
+
+	error = 0;
+out:
+	dkprintf("vdso_map_global_pages(): %d\n", error);
+	return error;
+} /* vdso_map_global_pages() */
+
+static void vdso_calc_container_size(void)
+{
+	intptr_t start, end;
+	intptr_t s, e;
+
+	dkprintf("vdso_calc_container_size()\n");
+	start = 0;
+	end = vdso.vdso_npages * PAGE_SIZE;
+
+	if (vdso.vvar_virt && !vdso.vvar_is_global) {
+		s = (intptr_t)vdso.vvar_virt;
+		e = s + PAGE_SIZE;
+
+		if (s < start) {
+			start = s;
+		}
+		if (end < e) {
+			end = e;
+		}
+	}
+	if (vdso.hpet_virt && !vdso.hpet_is_global) {
+		s = (intptr_t)vdso.hpet_virt;
+		e = s + PAGE_SIZE;
+
+		if (s < start) {
+			start = s;
+		}
+		if (end < e) {
+			end = e;
+		}
+	}
+	if (vdso.pvti_virt && !vdso.pvti_is_global) {
+		s = (intptr_t)vdso.pvti_virt;
+		e = s + PAGE_SIZE;
+
+		if (s < start) {
+			start = s;
+		}
+		if (end < e) {
+			end = e;
+		}
+	}
+
+	vdso_offset = 0;
+	if (start < 0) {
+		vdso_offset = -start;
+	}
+
+	container_size = end - start;
+	dkprintf("vdso_calc_container_size(): %#lx %#lx\n", container_size, vdso_offset);
+	return;
+} /* vdso_calc_container_size() */
+
+int arch_setup_vdso()
+{
+	int error;
+
+	dkprintf("arch_setup_vdso()\n");
+	error = vdso_get_vdso_info();
+	if (error) {
+		ekprintf("arch_setup_vdso: vdso_get_vdso_info failed. %d\n", error);
+		goto out;
+	}
+
+	if (vdso.vdso_npages <= 0) {
+		error = 0;
+		goto out;
+	}
+
+	error = vdso_map_global_pages();
+	if (error) {
+		ekprintf("arch_setup_vdso: vdso_map_global_pages failed. %d\n", error);
+		goto out;
+	}
+
+	vdso_calc_container_size();
+
+	error = 0;
+out:
+	if (container_size > 0) {
+		kprintf("vdso is enabled\n");
+	}
+	else {
+		kprintf("vdso is disabled\n");
+	}
+	dkprintf("arch_setup_vdso(): %d\n", error);
+	return error;
+} /* arch_setup_vdso() */
+
+int arch_map_vdso(struct process_vm *vm)
+{
+	struct address_space *as = vm->address_space;
+	page_table_t pt = as->page_table;
+	void *container;
+	void *s;
+	void *e;
+	unsigned long vrflags;
+	enum ihk_mc_pt_attribute attr;
+	int error;
+	int i;
+
+	dkprintf("arch_map_vdso()\n");
+	if (container_size <= 0) {
+		/* vdso pages are not available */
+		dkprintf("arch_map_vdso(): not available\n");
+		error = 0;
+		goto out;
+	}
+
+	container = (void *)vm->region.map_end;
+	vm->region.map_end += container_size;
+
+	s = container + vdso_offset;
+	e = s + (vdso.vdso_npages * PAGE_SIZE);
+	vrflags = VR_REMOTE;
+	vrflags |= VR_PROT_READ | VR_PROT_EXEC;
+	vrflags |= VRFLAG_PROT_TO_MAXPROT(vrflags);
+	error = add_process_memory_range(vm, (intptr_t)s, (intptr_t)e, NOPHYS, vrflags, NULL, 0, PAGE_SHIFT);
+	if (error) {
+		ekprintf("ERROR: adding memory range for vdso. %d\n", error);
+		goto out;
+	}
+	vm->vdso_addr = s;
+
+	attr = PTATTR_ACTIVE | PTATTR_USER;
+	for (i = 0; i < vdso.vdso_npages; ++i) {
+		s = vm->vdso_addr + (i * PAGE_SIZE);
+		e = s + PAGE_SIZE;
+		error = ihk_mc_pt_set_range(pt, vm, s, e, vdso.vdso_physlist[i], attr);
+		if (error) {
+			ekprintf("ihk_mc_pt_set_range failed. %d\n", error);
+			goto out;
+		}
+	}
+
+	if (container_size > (vdso.vdso_npages * PAGE_SIZE)) {
+		if (vdso_offset) {
+			s = container;
+			e = container + vdso_offset;
+		}
+		else {
+			s = container + (vdso.vdso_npages * PAGE_SIZE);
+			e = container + container_size;
+		}
+		vrflags = VR_REMOTE;
+		vrflags |= VR_PROT_READ;
+		vrflags |= VRFLAG_PROT_TO_MAXPROT(vrflags);
+		error = add_process_memory_range(vm, (intptr_t)s, (intptr_t)e, NOPHYS, vrflags, NULL, 0, PAGE_SHIFT);
+		if (error) {
+			ekprintf("ERROR: adding memory range for vvar. %d\n", error);
+			goto out;
+		}
+		vm->vvar_addr = s;
+
+		if (vdso.vvar_virt && !vdso.vvar_is_global) {
+			s = vm->vdso_addr + (intptr_t)vdso.vvar_virt;
+			e = s + PAGE_SIZE;
+			attr = PTATTR_ACTIVE | PTATTR_USER | PTATTR_NO_EXECUTE;
+			error = ihk_mc_pt_set_range(pt, vm, s, e, vdso.vvar_phys, attr);
+			if (error) {
+				ekprintf("ihk_mc_pt_set_range failed. %d\n", error);
+				goto out;
+			}
+		}
+		if (vdso.hpet_virt && !vdso.hpet_is_global) {
+			s = vm->vdso_addr + (intptr_t)vdso.hpet_virt;
+			e = s + PAGE_SIZE;
+			attr = PTATTR_ACTIVE | PTATTR_USER | PTATTR_NO_EXECUTE | PTATTR_UNCACHABLE;
+			error = ihk_mc_pt_set_range(pt, vm, s, e, vdso.hpet_phys, attr);
+			if (error) {
+				ekprintf("ihk_mc_pt_set_range failed. %d\n", error);
+				goto out;
+			}
+		}
+		if (vdso.pvti_virt && !vdso.pvti_is_global) {
+			s = vm->vdso_addr + (intptr_t)vdso.pvti_virt;
+			e = s + PAGE_SIZE;
+			attr = PTATTR_ACTIVE | PTATTR_USER | PTATTR_NO_EXECUTE;
+			error = ihk_mc_pt_set_range(pt, vm, s, e, vdso.pvti_phys, attr);
+			if (error) {
+				ekprintf("ihk_mc_pt_set_range failed. %d\n", error);
+				goto out;
+			}
+		}
+	}
+
+	error = 0;
+out:
+	dkprintf("arch_map_vdso(): %d %p\n", error, vm->vdso_addr);
+	return error;
+} /* arch_map_vdso() */
+
+/*** End of File ***/

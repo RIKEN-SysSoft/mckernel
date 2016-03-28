@@ -214,6 +214,13 @@ AC_DEFUN([MCCTRL_FIND_KSYM],[
 MCCTRL_FIND_KSYM([sys_mount])
 MCCTRL_FIND_KSYM([sys_unshare])
 MCCTRL_FIND_KSYM([zap_page_range])
+MCCTRL_FIND_KSYM([vdso_image_64])
+MCCTRL_FIND_KSYM([vdso_start])
+MCCTRL_FIND_KSYM([vdso_end])
+MCCTRL_FIND_KSYM([vdso_pages])
+MCCTRL_FIND_KSYM([__vvar_page])
+MCCTRL_FIND_KSYM([hpet_address])
+MCCTRL_FIND_KSYM([hv_clock])
 
 case $ENABLE_MEMDUMP in
 	yes|no|auto)

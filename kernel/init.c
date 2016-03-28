@@ -343,6 +343,8 @@ static void post_init(void)
 		ihk_mc_spinlock_init(&syscall_lock);
 	}
 
+	arch_setup_vdso();
+	arch_start_pvclock();
 	ap_start();
 
 	sysfs_init();

@@ -292,7 +292,7 @@ struct user
 	unsigned long int  u_debugreg [8];
 };
 
-#define	AUXV_LEN	16
+#define	AUXV_LEN	18
 
 struct vm_range {
 	struct list_head list;
@@ -557,6 +557,8 @@ struct process_vm {
 	struct process *proc;		/* process that reside on the same page */
 	void *opt;
 	void (*free_cb)(struct process_vm *, void *);
+	void *vdso_addr;
+	void *vvar_addr;
  	
 	ihk_spinlock_t page_table_lock;
 	ihk_spinlock_t memory_range_lock;

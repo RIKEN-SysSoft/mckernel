@@ -63,6 +63,7 @@
 #include <include/generated/uapi/linux/version.h>
 #include <sys/user.h>
 #include "../include/uprotocol.h"
+#include <getopt.h>
 
 //#define DEBUG
 
@@ -132,6 +133,7 @@ static char *exec_path = NULL;
 static char *altroot;
 static const char rlimit_stack_envname[] = "MCKERNEL_RLIMIT_STACK";
 static int ischild;
+static int enable_vdso = 1;
 
 struct fork_sync {
 	pid_t pid;
@@ -1231,6 +1233,24 @@ static int rlimits[] = {
 
 char dev[64];
 
+static struct option mcexec_options[] = {
+	{
+		.name =		"disable-vdso",
+		.has_arg =	no_argument,
+		.flag =		&enable_vdso,
+		.val =		0,
+	},
+	{
+		.name =		"enable-vdso",
+		.has_arg =	no_argument,
+		.flag =		&enable_vdso,
+		.val =		1,
+	},
+
+	/* end */
+	{ NULL, 0, NULL, 0, },
+};
+
 int main(int argc, char **argv)
 {
 //	int fd;
@@ -1282,12 +1302,15 @@ int main(int argc, char **argv)
 	}
            
 	/* Parse options ("+" denotes stop at the first non-option) */
-	while ((opt = getopt(argc, argv, "+c:")) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:", mcexec_options, NULL)) != -1) {
 		switch (opt) {
 			case 'c':
 				target_core = atoi(optarg);
 				break;
 			
+			case 0:	/* long opt */
+				break;
+
 			default: /* '?' */
 				print_usage(argv);
 				exit(EXIT_FAILURE);
@@ -1416,6 +1439,8 @@ int main(int argc, char **argv)
 	//print_flat(args);
 
 	desc->cpu = target_core;
+	desc->enable_vdso = enable_vdso;
+
 	p = getenv(rlimit_stack_envname);
 	if (p) {
 		errno = 0;

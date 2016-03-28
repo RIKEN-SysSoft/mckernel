@@ -86,6 +86,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	struct process_vm *vm = proc->vm;
 	struct address_space *as = vm->address_space;
 	long aout_base;
+	int error;
 	
 	n = p->num_sections;
 
@@ -323,6 +324,14 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	env = (char **)(args_envs + p->args_len + sizeof(long));
 
 	dkprintf("env OK\n");
+
+	if (pn->enable_vdso) {
+		error = arch_map_vdso(vm);
+		if (error) {
+			kprintf("ERROR: mapping vdso pages. %d\n", error);
+			goto err;
+		}
+	}
 
 	p->rprocess = (unsigned long)thread;
 	p->rpgtable = virt_to_phys(as->page_table);

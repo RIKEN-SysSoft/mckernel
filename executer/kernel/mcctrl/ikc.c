@@ -95,6 +95,10 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		delete_tid_entry(ihk_host_os_get_index(__os), pisp->pid, pisp->arg);
 		break;
 
+	case SCD_MSG_GET_VDSO_INFO:
+		get_vdso_info(__os, pisp->arg);
+		break;
+
 	default:
 		printk(KERN_ERR "mcctrl:syscall_packet_handler:"
 				"unknown message (%d.%d.%d.%d.%d.%#lx)\n",

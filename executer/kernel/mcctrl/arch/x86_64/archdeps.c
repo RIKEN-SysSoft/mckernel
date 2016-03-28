@@ -2,6 +2,58 @@
 #include "../../config.h"
 #include "../../mcctrl.h"
 
+#ifdef MCCTRL_KSYM_vdso_image_64
+#if MCCTRL_KSYM_vdso_image_64
+struct vdso_image *vdso_image = (void *)MCCTRL_KSYM_vdso_image_64;
+#endif
+#endif
+
+#ifdef MCCTRL_KSYM_vdso_start
+#if MCCTRL_KSYM_vdso_start
+void *vdso_start = (void *)MCCTRL_KSYM_vdso_start;
+#endif
+#endif
+
+#ifdef MCCTRL_KSYM_vdso_end
+#if MCCTRL_KSYM_vdso_end
+void *vdso_end = (void *)MCCTRL_KSYM_vdso_end;
+#endif
+#endif
+
+#ifdef MCCTRL_KSYM_vdso_pages
+#if MCCTRL_KSYM_vdso_pages
+struct page **vdso_pages = (void *)MCCTRL_KSYM_vdso_pages;
+#endif
+#endif
+
+#ifdef MCCTRL_KSYM___vvar_page
+#if MCCTRL_KSYM___vvar_page
+void *__vvar_page = (void *)MCCTRL_KSYM___vvar_page;
+#endif
+#endif
+
+long *hpet_addressp
+#ifdef MCCTRL_KSYM_hpet_address
+#if MCCTRL_KSYM_hpet_address
+	= (void *)MCCTRL_KSYM_hpet_address;
+#else
+	= &hpet_address;
+#endif
+#else
+	= NULL;
+#endif
+
+void **hv_clockp
+#ifdef MCCTRL_KSYM_hv_clock
+#if MCCTRL_KSYM_hv_clock
+	= (void *)MCCTRL_KSYM_hv_clock;
+#else
+	= &hv_clock;
+#endif
+#else
+	= NULL;
+#endif
+
 unsigned long
 reserve_user_space_common(struct mcctrl_usrdata *usrdata, unsigned long start, unsigned long end);
 
@@ -36,3 +88,107 @@ reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp, unsign
 	*endp = end;
 	return 0;
 }
+
+void get_vdso_info(ihk_os_t os, long vdso_rpa)
+{
+	ihk_device_t dev = ihk_os_to_dev(os);
+	long vdso_pa;
+	struct vdso *vdso;
+	size_t size;
+	int i;
+
+	vdso_pa = ihk_device_map_memory(dev, vdso_rpa, sizeof(*vdso));
+	vdso = ihk_device_map_virtual(dev, vdso_pa, sizeof(*vdso), NULL, 0);
+
+	memset(vdso, 0, sizeof(*vdso));
+
+	/* VDSO pages */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,16,0)
+	size = vdso_image->size;
+	vdso->vdso_npages = size >> PAGE_SHIFT;
+
+	if (vdso->vdso_npages > VDSO_MAXPAGES) {
+		vdso->vdso_npages = 0;
+		goto out;
+	}
+
+	for (i = 0; i < vdso->vdso_npages; ++i) {
+		vdso->vdso_physlist[i] = virt_to_phys(
+				vdso_image->data + (i * PAGE_SIZE));
+	}
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
+	size = vdso_end - vdso_start;
+	size = (size + PAGE_SIZE - 1) & PAGE_MASK;
+
+	vdso->vdso_npages = size >> PAGE_SHIFT;
+	if (vdso->vdso_npages > VDSO_MAXPAGES) {
+		vdso->vdso_npages = 0;
+		goto out;
+	}
+
+	for (i = 0; i < vdso->vdso_npages; ++i) {
+		vdso->vdso_physlist[i] = page_to_phys(vdso_pages[i]);
+	}
+#endif
+
+	/* VVAR page */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,5,0)
+	vdso->vvar_is_global = 0;
+	vdso->vvar_virt = -3 * PAGE_SIZE;
+	vdso->vvar_phys = virt_to_phys(__vvar_page);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)
+	vdso->vvar_is_global = 0;
+	vdso->vvar_virt = -2 * PAGE_SIZE;
+	vdso->vvar_phys = virt_to_phys(__vvar_page);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,16,0)
+	vdso->vvar_is_global = 0;
+	vdso->vvar_virt = (void *)(vdso->vdso_npages * PAGE_SIZE);
+	vdso->vvar_phys = virt_to_phys(__vvar_page);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,1,0)
+	vdso->vvar_is_global = 1;
+	vdso->vvar_virt = (void *)fix_to_virt(VVAR_PAGE);
+	vdso->vvar_phys = virt_to_phys(__vvar_page);
+#endif
+
+	/* HPET page */
+	if (hpet_addressp && *hpet_addressp) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,5,0)
+		vdso->hpet_is_global = 0;
+		vdso->hpet_virt = -2 * PAGE_SIZE;
+		vdso->hpet_phys = *hpet_addressp;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)
+		vdso->hpet_is_global = 0;
+		vdso->hpet_virt = -1 * PAGE_SIZE;
+		vdso->hpet_phys = *hpet_addressp;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,16,0)
+		vdso->hpet_is_global = 0;
+		vdso->hpet_virt = (void *)((vdso->vdso_npages + 1) * PAGE_SIZE);
+		vdso->hpet_phys = *hpet_addressp;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
+		vdso->hpet_is_global = 1;
+		vdso->hpet_virt = (void *)fix_to_virt(VSYSCALL_HPET);
+		vdso->hpet_phys = *hpet_addressp;
+#endif
+	}
+
+	/* struct pvlock_vcpu_time_info table */
+	if (hv_clockp && *hv_clockp) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,5,0)
+		vdso->pvti_is_global = 0;
+		vdso->pvti_virt = -1 * PAGE_SIZE;
+		vdso->pvti_phys = virt_to_phys(*hv_clockp);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
+		vdso->pvti_is_global = 1;
+		vdso->pvti_virt = (void *)fix_to_virt(PVCLOCK_FIXMAP_BEGIN);
+		vdso->pvti_phys = virt_to_phys(*hv_clockp);
+#endif
+	}
+
+out:
+	wmb();
+	vdso->busy = 0;
+
+	ihk_device_unmap_virtual(dev, vdso, sizeof(*vdso));
+	ihk_device_unmap_memory(dev, vdso_pa, sizeof(*vdso));
+	return;
+} /* get_vdso_info() */

@@ -38,6 +38,7 @@
 #define SCD_MSG_SYSCALL_ONESIDE         0x4
 #define SCD_MSG_SEND_SIGNAL		0x8
 #define	SCD_MSG_CLEANUP_PROCESS		0x9
+#define SCD_MSG_GET_VDSO_INFO           0xa
 
 #define	SCD_MSG_PROCFS_CREATE		0x10
 #define	SCD_MSG_PROCFS_DELETE		0x11
@@ -176,6 +177,8 @@ struct program_load_desc {
 	int pgid;
 	int cred[8];
 	int reloc;
+	char enable_vdso;
+	char padding[7];
 	unsigned long entry;
 	unsigned long user_start;
 	unsigned long user_end;
@@ -361,5 +364,25 @@ intptr_t do_mmap(intptr_t addr0, size_t len0, int prot, int flags, int fd,
 		off_t off0);
 typedef int32_t key_t;
 int do_shmget(key_t key, size_t size, int shmflg);
+struct process_vm;
+int arch_map_vdso(struct process_vm *vm);	/* arch dependent */
+int arch_setup_vdso(void);
+
+#define VDSO_MAXPAGES 2
+struct vdso {
+	long busy;
+	int vdso_npages;
+	char vvar_is_global;
+	char hpet_is_global;
+	char pvti_is_global;
+	char padding;
+	long vdso_physlist[VDSO_MAXPAGES];
+	void *vvar_virt;
+	long vvar_phys;
+	void *hpet_virt;
+	long hpet_phys;
+	void *pvti_virt;
+	long pvti_phys;
+};
 
 #endif

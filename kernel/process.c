@@ -498,23 +498,30 @@ static int copy_user_pte(void *arg0, page_table_t src_pt, pte_t *src_ptep, void 
 		goto out;
 	}
 
-	dkprintf("copy_user_pte(): 0x%lx PTE found\n", pgaddr);
-	dkprintf("copy_user_pte(): page size: %d\n", pgsize);
-
-	npages = pgsize / PAGE_SIZE;
-	virt = ihk_mc_alloc_aligned_pages(npages, pgalign, IHK_MC_AP_NOWAIT);
-	if (!virt) {
-		kprintf("ERROR: copy_user_pte() allocating new page\n");
-		error = -ENOMEM;
-		goto out;
+	if (args->new_vrflag & VR_REMOTE) {
+		phys = src_phys;
+		attr = pte_get_attr(src_ptep, pgsize);
 	}
-	phys = virt_to_phys(virt);
-	dkprintf("copy_user_pte(): phys page allocated\n");
+	else {
+		dkprintf("copy_user_pte(): 0x%lx PTE found\n", pgaddr);
+		dkprintf("copy_user_pte(): page size: %d\n", pgsize);
 
-	memcpy(virt, src_kvirt, pgsize);
-	dkprintf("copy_user_pte(): memcpy OK\n");
+		npages = pgsize / PAGE_SIZE;
+		virt = ihk_mc_alloc_aligned_pages(npages, pgalign, IHK_MC_AP_NOWAIT);
+		if (!virt) {
+			kprintf("ERROR: copy_user_pte() allocating new page\n");
+			error = -ENOMEM;
+			goto out;
+		}
+		phys = virt_to_phys(virt);
+		dkprintf("copy_user_pte(): phys page allocated\n");
 
-	attr = arch_vrflag_to_ptattr(args->new_vrflag, PF_POPULATE, NULL);
+		memcpy(virt, src_kvirt, pgsize);
+		dkprintf("copy_user_pte(): memcpy OK\n");
+
+		attr = arch_vrflag_to_ptattr(args->new_vrflag, PF_POPULATE, NULL);
+	}
+
 	error = ihk_mc_pt_set_range(args->new_vm->address_space->page_table, args->new_vm, pgaddr, pgaddr+pgsize, phys, attr);
 	if (error) {
 		args->fault_addr = (intptr_t)pgaddr;
@@ -1815,6 +1822,11 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	p[s_ind--] = AT_CLKTCK;
 	p[s_ind--] = at_rand; /* AT_RANDOM */
 	p[s_ind--] = AT_RANDOM;
+#ifndef AT_SYSINFO_EHDR
+#define AT_SYSINFO_EHDR AT_IGNORE
+#endif
+	p[s_ind--] = (long)(thread->vm->vdso_addr);
+	p[s_ind--] = (thread->vm->vdso_addr)? AT_SYSINFO_EHDR: AT_IGNORE;
 
 	/* Save auxiliary vector for later use. */
 	memcpy(proc->saved_auxv, &p[s_ind + 1], sizeof(proc->saved_auxv));

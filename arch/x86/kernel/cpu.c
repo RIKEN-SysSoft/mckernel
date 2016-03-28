@@ -29,6 +29,7 @@
 #include <process.h>
 #include <cls.h>
 #include <prctl.h>
+#include <page.h>
 
 #define LAPIC_ID            0x020
 #define LAPIC_TIMER         0x320
@@ -63,8 +64,10 @@
 
 #ifdef DEBUG_PRINT_CPU
 #define dkprintf kprintf
+#define ekprintf kprintf
 #else
 #define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
+#define ekprintf kprintf
 #endif
 
 static void *lapic_vp;
@@ -143,6 +146,12 @@ extern char debug_exception[], int3_exception[];
 
 uint64_t boot_pat_state = 0;
 int no_turbo = 0; /* May be updated by early parsing of kargs */
+
+extern int num_processors; /* kernel/ap.c */
+struct pvclock_vcpu_time_info *pvti = NULL;
+int pvti_npages;
+static long pvti_msr = -1;
+
 
 static void init_idt(void)
 {
@@ -1581,3 +1590,88 @@ void sync_tick(void)
 	dkprintf("sync_tick():\n");
 	return;
 }
+
+static int is_pvclock_available(void)
+{
+	uint32_t eax;
+	uint32_t ebx;
+	uint32_t ecx;
+	uint32_t edx;
+
+	dkprintf("is_pvclock_available()\n");
+#define KVM_CPUID_SIGNATURE 0x40000000
+	asm ("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
+			: "a" (KVM_CPUID_SIGNATURE));
+	if ((eax && (eax < 0x40000001))
+			|| (ebx != 0x4b4d564b)
+			|| (ecx != 0x564b4d56)
+			|| (edx != 0x0000004d)) {
+		dkprintf("is_pvclock_available(): false (not kvm)\n");
+		return 0;
+	}
+
+#define KVM_CPUID_FEATURES 0x40000001
+	asm ("cpuid" : "=a"(eax)
+			: "a"(KVM_CPUID_FEATURES)
+			: "%ebx", "%ecx", "%edx");
+#define KVM_FEATURE_CLOCKSOURCE2 3
+	if (eax & (1 << KVM_FEATURE_CLOCKSOURCE2)) {
+#define MSR_KVM_SYSTEM_TIME_NEW 0x4b564d01
+		pvti_msr = MSR_KVM_SYSTEM_TIME_NEW;
+		dkprintf("is_pvclock_available(): true (new)\n");
+		return 1;
+	}
+#define KVM_FEATURE_CLOCKSOURCE 0
+	else if (eax & (1 << KVM_FEATURE_CLOCKSOURCE)) {
+#define MSR_KVM_SYSTEM_TIME 0x12
+		pvti_msr = MSR_KVM_SYSTEM_TIME;
+		dkprintf("is_pvclock_available(): true (old)\n");
+		return 1;
+	}
+
+	dkprintf("is_pvclock_available(): false (not supported)\n");
+	return 0;
+} /* is_pvclock_available() */
+
+int arch_setup_pvclock(void)
+{
+	size_t size;
+	int npages;
+
+	dkprintf("arch_setup_pvclock()\n");
+	if (!is_pvclock_available()) {
+		dkprintf("arch_setup_pvclock(): not supported\n");
+		return 0;
+	}
+
+	size = num_processors * sizeof(*pvti);
+	npages = (size + PAGE_SIZE - 1) / PAGE_SIZE;
+	pvti_npages = npages;
+
+	pvti = allocate_pages(npages, IHK_MC_AP_NOWAIT);
+	if (!pvti) {
+		ekprintf("arch_setup_pvclock: allocate_pages failed.\n");
+		return -ENOMEM;
+	}
+
+	dkprintf("arch_setup_pvclock(): ok\n");
+	return 0;
+} /* arch_setup_pvclock() */
+
+void arch_start_pvclock(void)
+{
+	int cpu;
+
+	dkprintf("arch_start_pvclock()\n");
+	if (!pvti) {
+		dkprintf("arch_start_pvclock(): not supported\n");
+		return;
+	}
+
+	cpu = ihk_mc_get_processor_id();
+	wrmsr(pvti_msr,(intptr_t)&pvti[cpu]);
+	dkprintf("arch_start_pvclock(): ok\n");
+	return;
+} /* arch_start_pvclock() */
+
+/*** end of file ***/

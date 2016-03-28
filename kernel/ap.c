@@ -40,6 +40,7 @@ static void ap_wait(void)
 
 	kmalloc_init();
 	sched_init();
+	arch_start_pvclock();
 
 	if (find_command_line("hidos")) {
 		init_host_syscall_channel();

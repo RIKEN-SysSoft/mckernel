@@ -55,6 +55,7 @@
 #define SCD_MSG_SYSCALL_ONESIDE         0x4
 #define SCD_MSG_SEND_SIGNAL     	0x8
 #define SCD_MSG_CLEANUP_PROCESS         0x9
+#define SCD_MSG_GET_VDSO_INFO           0xa
 
 #define	SCD_MSG_PROCFS_CREATE		0x10
 #define	SCD_MSG_PROCFS_DELETE		0x11
@@ -230,8 +231,6 @@ struct mcctrl_signal {
 int mcctrl_ikc_send(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp);
 int mcctrl_ikc_send_msg(ihk_os_t os, int cpu, int msg, int ref, unsigned long arg);
 int mcctrl_ikc_is_valid_thread(ihk_os_t os, int cpu);
-int reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp,
-		unsigned long *endp);
 
 ihk_os_t osnum_to_os(int n);
 
@@ -274,5 +273,27 @@ void procfs_exit(int osnum);
 
 /* sysfs_files.c */
 void setup_sysfs_files(ihk_os_t os);
+
+/* archdep.c */
+#define VDSO_MAXPAGES 2
+struct vdso {
+	long busy;
+	int vdso_npages;
+	char vvar_is_global;
+	char hpet_is_global;
+	char pvti_is_global;
+	char padding;
+	long vdso_physlist[VDSO_MAXPAGES];
+	void *vvar_virt;
+	long vvar_phys;
+	void *hpet_virt;
+	long hpet_phys;
+	void *pvti_virt;
+	long pvti_phys;
+};
+
+int reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp,
+		unsigned long *endp);
+void get_vdso_info(ihk_os_t os, long vdso_pa);
 
 #endif
