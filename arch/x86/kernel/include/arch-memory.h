@@ -67,6 +67,8 @@
 
 #define	PF_PRESENT	((pte_t)0x01)	/* entry is valid */
 #define PF_WRITABLE	((pte_t)0x02)
+#define PFLX_PWT        ((pte_t)0x08)
+#define PFLX_PCD        ((pte_t)0x10)
 #define	PF_SIZE		((pte_t)0x80)	/* entry points large page */
 
 #define PFL4_PRESENT    ((pte_t)0x01)
@@ -76,8 +78,8 @@
 #define PFL3_PRESENT    ((pte_t)0x01)
 #define PFL3_WRITABLE   ((pte_t)0x02)
 #define PFL3_USER       ((pte_t)0x04)
-#define PFL3_PWT        ((pte_t)0x08)
-#define PFL3_PCD        ((pte_t)0x10)
+#define PFL3_PWT        PFLX_PWT
+#define PFL3_PCD        PFLX_PCD
 #define PFL3_ACCESSED   ((pte_t)0x20)
 #define PFL3_DIRTY      ((pte_t)0x40)
 #define PFL3_SIZE       ((pte_t)0x80)   /* Used in 1G page */
@@ -88,8 +90,8 @@
 #define PFL2_PRESENT    ((pte_t)0x01)
 #define PFL2_WRITABLE   ((pte_t)0x02)
 #define PFL2_USER       ((pte_t)0x04)
-#define PFL2_PWT        ((pte_t)0x08)
-#define PFL2_PCD        ((pte_t)0x10)
+#define PFL2_PWT        PFLX_PWT
+#define PFL2_PCD        PFLX_PCD
 #define PFL2_ACCESSED   ((pte_t)0x20)
 #define PFL2_DIRTY      ((pte_t)0x40)
 #define PFL2_SIZE       ((pte_t)0x80)   /* Used in 2M page */
@@ -100,8 +102,8 @@
 #define PFL1_PRESENT    ((pte_t)0x01)
 #define PFL1_WRITABLE   ((pte_t)0x02)
 #define PFL1_USER       ((pte_t)0x04)
-#define PFL1_PWT        ((pte_t)0x08)
-#define PFL1_PCD        ((pte_t)0x10)
+#define PFL1_PWT        PFLX_PWT
+#define PFL1_PCD        PFLX_PCD
 #define PFL1_ACCESSED   ((pte_t)0x20)
 #define PFL1_DIRTY      ((pte_t)0x40)
 #define PFL1_IGNORED_11 ((pte_t)1 << 11)
@@ -153,6 +155,8 @@ enum ihk_mc_pt_attribute {
 	PTATTR_FOR_USER   = 0x20000,
 	PTATTR_WRITE_COMBINED = 0x40000,
 };
+
+enum ihk_mc_pt_attribute attr_mask;
 
 static inline int pte_is_null(pte_t *ptep)
 {
@@ -208,6 +212,27 @@ static inline off_t pte_get_off(pte_t *ptep, size_t pgsize)
 {
 	return (off_t)(*ptep & PAGE_MASK);
 }
+
+static inline enum ihk_mc_pt_attribute pte_get_attr(pte_t *ptep, size_t pgsize)
+{
+	enum ihk_mc_pt_attribute attr;
+
+	attr = *ptep & attr_mask;
+	if (*ptep & PFLX_PWT) {
+		if (*ptep & PFLX_PCD) {
+			attr |= PTATTR_UNCACHABLE;
+		}
+		else {
+			attr |= PTATTR_WRITE_COMBINED;
+		}
+	}
+	if (((pgsize == PTL2_SIZE) && (*ptep & PFL2_SIZE))
+			|| ((pgsize == PTL3_SIZE) && (*ptep & PFL3_SIZE))) {
+		attr |= PTATTR_LARGEPAGE;
+	}
+
+	return attr;
+} /* pte_get_attr() */
 
 static inline void pte_make_null(pte_t *ptep, size_t pgsize)
 {

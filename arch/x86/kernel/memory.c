@@ -223,7 +223,7 @@ static struct page_table *__alloc_new_pt(enum ihk_mc_ap_flag ap_flag)
  *      but L2 and L1 do not!
  */
 
-static enum ihk_mc_pt_attribute attr_mask
+enum ihk_mc_pt_attribute attr_mask
 		= 0
 		| PTATTR_FILEOFF
 		| PTATTR_WRITABLE
