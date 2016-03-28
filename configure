@@ -3152,6 +3152,181 @@ _ACEOF
   fi
 
 
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol vdso_image_64" >&5
+$as_echo_n "checking System.map for symbol vdso_image_64... " >&6; }
+  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " vdso_image_64\$" | cut -d\  -f1`
+  if test -z $mcctrl_addr; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+  else
+    mcctrl_result=$mcctrl_addr
+    mcctrl_addr="0x$mcctrl_addr"
+
+      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_vdso_image_64\$" >/dev/null`; then
+        mcctrl_result="exported"
+        mcctrl_addr="0"
+      fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
+$as_echo "$mcctrl_result" >&6; }
+
+cat >>confdefs.h <<_ACEOF
+#define MCCTRL_KSYM_vdso_image_64 $mcctrl_addr
+_ACEOF
+
+  fi
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol vdso_start" >&5
+$as_echo_n "checking System.map for symbol vdso_start... " >&6; }
+  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " vdso_start\$" | cut -d\  -f1`
+  if test -z $mcctrl_addr; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+  else
+    mcctrl_result=$mcctrl_addr
+    mcctrl_addr="0x$mcctrl_addr"
+
+      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_vdso_start\$" >/dev/null`; then
+        mcctrl_result="exported"
+        mcctrl_addr="0"
+      fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
+$as_echo "$mcctrl_result" >&6; }
+
+cat >>confdefs.h <<_ACEOF
+#define MCCTRL_KSYM_vdso_start $mcctrl_addr
+_ACEOF
+
+  fi
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol vdso_end" >&5
+$as_echo_n "checking System.map for symbol vdso_end... " >&6; }
+  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " vdso_end\$" | cut -d\  -f1`
+  if test -z $mcctrl_addr; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+  else
+    mcctrl_result=$mcctrl_addr
+    mcctrl_addr="0x$mcctrl_addr"
+
+      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_vdso_end\$" >/dev/null`; then
+        mcctrl_result="exported"
+        mcctrl_addr="0"
+      fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
+$as_echo "$mcctrl_result" >&6; }
+
+cat >>confdefs.h <<_ACEOF
+#define MCCTRL_KSYM_vdso_end $mcctrl_addr
+_ACEOF
+
+  fi
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol vdso_pages" >&5
+$as_echo_n "checking System.map for symbol vdso_pages... " >&6; }
+  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " vdso_pages\$" | cut -d\  -f1`
+  if test -z $mcctrl_addr; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+  else
+    mcctrl_result=$mcctrl_addr
+    mcctrl_addr="0x$mcctrl_addr"
+
+      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_vdso_pages\$" >/dev/null`; then
+        mcctrl_result="exported"
+        mcctrl_addr="0"
+      fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
+$as_echo "$mcctrl_result" >&6; }
+
+cat >>confdefs.h <<_ACEOF
+#define MCCTRL_KSYM_vdso_pages $mcctrl_addr
+_ACEOF
+
+  fi
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol __vvar_page" >&5
+$as_echo_n "checking System.map for symbol __vvar_page... " >&6; }
+  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __vvar_page\$" | cut -d\  -f1`
+  if test -z $mcctrl_addr; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+  else
+    mcctrl_result=$mcctrl_addr
+    mcctrl_addr="0x$mcctrl_addr"
+
+      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab___vvar_page\$" >/dev/null`; then
+        mcctrl_result="exported"
+        mcctrl_addr="0"
+      fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
+$as_echo "$mcctrl_result" >&6; }
+
+cat >>confdefs.h <<_ACEOF
+#define MCCTRL_KSYM___vvar_page $mcctrl_addr
+_ACEOF
+
+  fi
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol hpet_address" >&5
+$as_echo_n "checking System.map for symbol hpet_address... " >&6; }
+  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " hpet_address\$" | cut -d\  -f1`
+  if test -z $mcctrl_addr; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+  else
+    mcctrl_result=$mcctrl_addr
+    mcctrl_addr="0x$mcctrl_addr"
+
+      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_hpet_address\$" >/dev/null`; then
+        mcctrl_result="exported"
+        mcctrl_addr="0"
+      fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
+$as_echo "$mcctrl_result" >&6; }
+
+cat >>confdefs.h <<_ACEOF
+#define MCCTRL_KSYM_hpet_address $mcctrl_addr
+_ACEOF
+
+  fi
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol hv_clock" >&5
+$as_echo_n "checking System.map for symbol hv_clock... " >&6; }
+  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " hv_clock\$" | cut -d\  -f1`
+  if test -z $mcctrl_addr; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+  else
+    mcctrl_result=$mcctrl_addr
+    mcctrl_addr="0x$mcctrl_addr"
+
+      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_hv_clock\$" >/dev/null`; then
+        mcctrl_result="exported"
+        mcctrl_addr="0"
+      fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
+$as_echo "$mcctrl_result" >&6; }
+
+cat >>confdefs.h <<_ACEOF
+#define MCCTRL_KSYM_hv_clock $mcctrl_addr
+_ACEOF
+
+  fi
+
+
 case $ENABLE_MEMDUMP in
 	yes|no|auto)
 		;;
