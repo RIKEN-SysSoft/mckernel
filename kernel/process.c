@@ -1023,7 +1023,14 @@ int add_process_memory_range(struct process_vm *vm,
 				range->flag);
     }
 
-	if (flag & VR_REMOTE) {
+    rc = 0;
+    if (0) {
+	    /* dummy */
+    }
+    else if (phys == NOPHYS) {
+	    /* nothing to map */
+    }
+    else if (flag & VR_REMOTE) {
 		rc = update_process_page_table(vm, range, phys, IHK_PTA_REMOTE);
 	} else if (flag & VR_IO_NOCACHE) {
 		rc = update_process_page_table(vm, range, phys, PTATTR_UNCACHABLE);
