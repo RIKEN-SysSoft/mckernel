@@ -208,6 +208,7 @@ static void time_init(void)
 {
 	unsigned long tv_sec, tv_nsec;
 	unsigned long ns_per_kclock;
+	unsigned long tsc;
 
 	ihk_mc_get_boot_time(&tv_sec, &tv_nsec);
 	ns_per_kclock = ihk_mc_get_ns_per_tsc();
@@ -217,6 +218,15 @@ static void time_init(void)
 
 	if (ns_per_kclock) {
 		tod_data.clocks_per_sec = (1000L * NS_PER_SEC) / ns_per_kclock;
+
+		tsc = rdtsc();
+		tod_data.origin.tv_sec -= tsc / tod_data.clocks_per_sec;
+		tod_data.origin.tv_nsec -= NS_PER_SEC * (tsc % tod_data.clocks_per_sec)
+			/ tod_data.clocks_per_sec;
+		if (tod_data.origin.tv_nsec < 0) {
+			--tod_data.origin.tv_sec;
+			tod_data.origin.tv_nsec += NS_PER_SEC;
+		}
 	}
 
 	if (!ns_per_kclock) {
