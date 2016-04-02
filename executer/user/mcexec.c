@@ -1089,6 +1089,7 @@ void init_worker_threads(int fd)
 	pthread_barrier_wait(&init_ready);
 }
 
+#ifdef ENABLE_MCOVERLAYFS
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
 #define READ_BUFSIZE 1024
 static int isunshare(void)
@@ -1162,6 +1163,7 @@ static int isunshare(void)
 	return err;
 }
 #endif
+#endif // ENABLE_MCOVERLAYFS
 
 #define MCK_RLIMIT_AS	0
 #define MCK_RLIMIT_CORE	1
@@ -1349,6 +1351,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+#ifdef ENABLE_MCOVERLAYFS
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
 	__dprintf("mcoverlay enable\n");
 	char mcos_procdir[PATH_MAX];
@@ -1397,9 +1400,10 @@ int main(int argc, char **argv)
 	} else if (error == -1) {
 		return 1;
 	}
+#endif // LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
 #else
 	__dprintf("mcoverlay disable\n");
-#endif
+#endif // ENABLE_MCOVERLAYFS
 
 	if (lookup_exec_path(argv[optind], path, sizeof(path)) != 0) {
 		fprintf(stderr, "error: finding file: %s\n", argv[optind]);

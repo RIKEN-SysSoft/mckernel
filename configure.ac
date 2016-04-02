@@ -42,6 +42,12 @@ AC_ARG_ENABLE([memdump],
 	      [ENABLE_MEMDUMP=$enableval],
 	      [ENABLE_MEMDUMP=default])
 
+AC_ARG_ENABLE([mcoverlayfs],
+	      AC_HELP_STRING([--enable-mcoverlayfs],
+			     [enable mcoverlayfs implementation]),
+	      [ENABLE_MCOVERLAYFS=$enableval],
+	      [ENABLE_MCOVERLAYFS=yes])
+
 case "X$WITH_KERNELSRC" in
     Xyes | Xno | X)
 	WITH_KERNELSRC='/lib/modules/`uname -r`/build'
@@ -257,6 +263,13 @@ else
 	uncomment_if_ENABLE_MEMDUMP='#'
 fi
 
+if test "x$ENABLE_MCOVERLAYFS" = "xyes" ; then
+	AC_DEFINE([ENABLE_MCOVERLAYFS],[1],[whether mcoverlayfs is enabled])
+	AC_MSG_NOTICE([mcoverlayfs is enabled])
+else
+	AC_MSG_NOTICE([mcoverlayfs is disabled])
+fi
+
 AC_SUBST(CC)
 AC_SUBST(XCC)
 AC_SUBST(ARCH)
@@ -267,6 +280,7 @@ AC_SUBST(SBINDIR)
 AC_SUBST(KMODDIR)
 AC_SUBST(KERNDIR)
 AC_SUBST(MANDIR)
+AC_SUBST(ENABLE_MCOVERLAYFS)
 
 AC_SUBST(IHK_VERSION)
 AC_SUBST(MCKERNEL_VERSION)

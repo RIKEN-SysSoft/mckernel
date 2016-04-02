@@ -628,6 +628,7 @@ IHK_RELEASE_DATE
 DCFA_VERSION
 MCKERNEL_VERSION
 IHK_VERSION
+ENABLE_MCOVERLAYFS
 MANDIR
 KERNDIR
 KMODDIR
@@ -693,6 +694,7 @@ with_target
 with_system_map
 enable_dcfa
 enable_memdump
+enable_mcoverlayfs
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1314,6 +1316,7 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-dcfa           Enable DCFA modules
   --enable-memdump        enable dumping memory and analyzing a dump
+  --enable-mcoverlayfs    enable mcoverlayfs implementation
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -2097,6 +2100,14 @@ if test "${enable_memdump+set}" = set; then :
   enableval=$enable_memdump; ENABLE_MEMDUMP=$enableval
 else
   ENABLE_MEMDUMP=default
+fi
+
+
+# Check whether --enable-mcoverlayfs was given.
+if test "${enable_mcoverlayfs+set}" = set; then :
+  enableval=$enable_mcoverlayfs; ENABLE_MCOVERLAYFS=$enableval
+else
+  ENABLE_MCOVERLAYFS=yes
 fi
 
 
@@ -3816,6 +3827,18 @@ else
 $as_echo "$as_me: memdump feature is disabled" >&6;}
 	uncomment_if_ENABLE_MEMDUMP='#'
 fi
+
+if test "x$ENABLE_MCOVERLAYFS" = "xyes" ; then
+
+$as_echo "#define ENABLE_MCOVERLAYFS 1" >>confdefs.h
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: mcoverlayfs is enabled" >&5
+$as_echo "$as_me: mcoverlayfs is enabled" >&6;}
+else
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: mcoverlayfs is disabled" >&5
+$as_echo "$as_me: mcoverlayfs is disabled" >&6;}
+fi
+
 
 
 

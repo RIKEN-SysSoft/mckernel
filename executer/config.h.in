@@ -1,5 +1,8 @@
 /* executer/config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* whether mcoverlayfs is enabled */
+#undef ENABLE_MCOVERLAYFS
+
 /* whether memdump feature is enabled */
 #undef ENABLE_MEMDUMP
 

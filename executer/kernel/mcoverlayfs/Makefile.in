@@ -2,9 +2,14 @@ KDIR ?= @KDIR@
 ARCH ?= @ARCH@
 KMODDIR=@KMODDIR@
 src = @abs_srcdir@
+ENABLE_MCOVERLAYFS=@ENABLE_MCOVERLAYFS@
 
-RELEASE=$(shell uname -r)
-ENABLE_BUILD=$(shell if [[ ${RELEASE} =~ ^4.* ]]; then echo "yes"; fi)
+RELEASE=$(shell uname -r | cut -d"." -f1)
+ifeq ($(ENABLE_MCOVERLAYFS),yes)
+ENABLE_BUILD=$(shell if [ "${RELEASE}" == "4" ]; then echo "yes"; fi)
+else
+ENABLE_BUILD=no
+endif
 
 obj-m += mcoverlay.o
 

@@ -17,6 +17,7 @@ BINDIR="@BINDIR@"
 SBINDIR="@SBINDIR@"
 KMODDIR="@KMODDIR@"
 KERNDIR="@KERNDIR@"
+ENABLE_MCOVERLAYFS="@ENABLE_MCOVERLAYFS@"
 
 INTERVAL=1
 LOGMODE=0
@@ -59,7 +60,7 @@ cpus=""
 ihk_ikc_irq_core=0
 
 kernel_release=`uname -r`
-enable_mcoverlay=`if [[ ${kernel_release} =~ ^4.* ]]; then echo "yes"; fi`
+enable_mcoverlay=`if [[ ${kernel_release} =~ ^4.* && "${ENABLE_MCOVERLAYFS}" == "yes" ]]; then echo "yes"; fi`
 
 
 if [ "$cpus" == "" ]; then
