@@ -1662,6 +1662,7 @@ int arch_setup_pvclock(void)
 void arch_start_pvclock(void)
 {
 	int cpu;
+	intptr_t phys;
 
 	dkprintf("arch_start_pvclock()\n");
 	if (!pvti) {
@@ -1670,7 +1671,8 @@ void arch_start_pvclock(void)
 	}
 
 	cpu = ihk_mc_get_processor_id();
-	wrmsr(pvti_msr,(intptr_t)&pvti[cpu]);
+	phys = virt_to_phys(&pvti[cpu]);
+	wrmsr(pvti_msr, phys);
 	dkprintf("arch_start_pvclock(): ok\n");
 	return;
 } /* arch_start_pvclock() */
