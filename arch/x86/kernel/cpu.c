@@ -148,7 +148,7 @@ uint64_t boot_pat_state = 0;
 int no_turbo = 0; /* May be updated by early parsing of kargs */
 
 extern int num_processors; /* kernel/ap.c */
-struct pvclock_vcpu_time_info *pvti = NULL;
+struct pvclock_vsyscall_time_info *pvti = NULL;
 int pvti_npages;
 static long pvti_msr = -1;
 

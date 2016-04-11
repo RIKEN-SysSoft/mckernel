@@ -111,11 +111,11 @@ void init_tick(void);
 void init_delay(void);
 void sync_tick(void);
 
-struct pvclock_vcpu_time_info {
-	long contents[32/sizeof(long)];
+struct pvclock_vsyscall_time_info {
+	long contents[64/sizeof(long)];
 };
 
-extern struct pvclock_vcpu_time_info *pvti;
+extern struct pvclock_vsyscall_time_info *pvti;
 extern int pvti_npages;
 
 int arch_setup_pvclock(void);
