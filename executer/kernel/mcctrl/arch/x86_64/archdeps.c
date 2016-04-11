@@ -134,11 +134,11 @@ void get_vdso_info(ihk_os_t os, long vdso_rpa)
 	/* VVAR page */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,5,0)
 	vdso->vvar_is_global = 0;
-	vdso->vvar_virt = -3 * PAGE_SIZE;
+	vdso->vvar_virt = (void *)(-3 * PAGE_SIZE);
 	vdso->vvar_phys = virt_to_phys(__vvar_page);
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)
 	vdso->vvar_is_global = 0;
-	vdso->vvar_virt = -2 * PAGE_SIZE;
+	vdso->vvar_virt = (void *)(-2 * PAGE_SIZE);
 	vdso->vvar_phys = virt_to_phys(__vvar_page);
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,16,0)
 	vdso->vvar_is_global = 0;
@@ -154,11 +154,11 @@ void get_vdso_info(ihk_os_t os, long vdso_rpa)
 	if (hpet_addressp && *hpet_addressp) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,5,0)
 		vdso->hpet_is_global = 0;
-		vdso->hpet_virt = -2 * PAGE_SIZE;
+		vdso->hpet_virt = (void *)(-2 * PAGE_SIZE);
 		vdso->hpet_phys = *hpet_addressp;
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)
 		vdso->hpet_is_global = 0;
-		vdso->hpet_virt = -1 * PAGE_SIZE;
+		vdso->hpet_virt = (void *)(-1 * PAGE_SIZE);
 		vdso->hpet_phys = *hpet_addressp;
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,16,0)
 		vdso->hpet_is_global = 0;
@@ -175,7 +175,7 @@ void get_vdso_info(ihk_os_t os, long vdso_rpa)
 	if (hv_clockp && *hv_clockp) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,5,0)
 		vdso->pvti_is_global = 0;
-		vdso->pvti_virt = -1 * PAGE_SIZE;
+		vdso->pvti_virt = (void *)(-1 * PAGE_SIZE);
 		vdso->pvti_phys = virt_to_phys(*hv_clockp);
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
 		vdso->pvti_is_global = 1;
