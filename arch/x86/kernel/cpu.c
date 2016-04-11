@@ -1653,6 +1653,7 @@ int arch_setup_pvclock(void)
 		ekprintf("arch_setup_pvclock: allocate_pages failed.\n");
 		return -ENOMEM;
 	}
+	memset(pvti, 0, PAGE_SIZE*npages);
 
 	dkprintf("arch_setup_pvclock(): ok\n");
 	return 0;
