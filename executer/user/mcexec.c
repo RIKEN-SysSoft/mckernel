@@ -64,6 +64,7 @@
 #include <sys/user.h>
 #include "../include/uprotocol.h"
 #include <getopt.h>
+#include "../config.h"
 
 //#define DEBUG
 

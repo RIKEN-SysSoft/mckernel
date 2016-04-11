@@ -1,7 +1,7 @@
 CC=@CC@
 BINDIR=@BINDIR@
 KDIR ?= @KDIR@
-CFLAGS=-Wall -O
+CFLAGS=-Wall -O -I.
 VPATH=@abs_srcdir@
 TARGET=mcexec
 @uncomment_if_ENABLE_MEMDUMP@TARGET+=eclair
