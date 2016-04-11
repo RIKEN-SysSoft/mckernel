@@ -3338,6 +3338,31 @@ _ACEOF
   fi
 
 
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol sys_readlink" >&5
+$as_echo_n "checking System.map for symbol sys_readlink... " >&6; }
+  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " sys_readlink\$" | cut -d\  -f1`
+  if test -z $mcctrl_addr; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+  else
+    mcctrl_result=$mcctrl_addr
+    mcctrl_addr="0x$mcctrl_addr"
+
+      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_sys_readlink\$" >/dev/null`; then
+        mcctrl_result="exported"
+        mcctrl_addr="0"
+      fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
+$as_echo "$mcctrl_result" >&6; }
+
+cat >>confdefs.h <<_ACEOF
+#define MCCTRL_KSYM_sys_readlink $mcctrl_addr
+_ACEOF
+
+  fi
+
+
 case $ENABLE_MEMDUMP in
 	yes|no|auto)
 		;;

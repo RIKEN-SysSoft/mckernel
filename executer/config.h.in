@@ -48,6 +48,9 @@
 /* Define to address of kernel symbol sys_mount, or 0 if exported */
 #undef MCCTRL_KSYM_sys_mount
 
+/* Define to address of kernel symbol sys_readlink, or 0 if exported */
+#undef MCCTRL_KSYM_sys_readlink
+
 /* Define to address of kernel symbol sys_unshare, or 0 if exported */
 #undef MCCTRL_KSYM_sys_unshare
 
