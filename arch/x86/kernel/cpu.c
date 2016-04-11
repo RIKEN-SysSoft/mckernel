@@ -1672,7 +1672,8 @@ void arch_start_pvclock(void)
 
 	cpu = ihk_mc_get_processor_id();
 	phys = virt_to_phys(&pvti[cpu]);
-	wrmsr(pvti_msr, phys);
+#define KVM_SYSTEM_TIME_ENABLE 0x1
+	wrmsr(pvti_msr, phys|KVM_SYSTEM_TIME_ENABLE);
 	dkprintf("arch_start_pvclock(): ok\n");
 	return;
 } /* arch_start_pvclock() */
