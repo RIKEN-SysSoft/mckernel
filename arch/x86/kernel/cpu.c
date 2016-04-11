@@ -1678,4 +1678,42 @@ void arch_start_pvclock(void)
 	return;
 } /* arch_start_pvclock() */
 
+static struct cpu_mapping *cpu_mapping = NULL;
+
+int arch_get_cpu_mapping(struct cpu_mapping **buf, int *nelemsp)
+{
+	int error;
+	size_t size;
+	int npages;
+	struct cpu_mapping *mapping;
+	int cpu;
+	struct x86_cpu_local_variables *v;
+
+	if (!cpu_mapping) {
+		size = sizeof(*mapping) * num_processors;
+		npages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
+		mapping = allocate_pages(npages, IHK_MC_AP_NOWAIT);
+		if (!mapping) {
+			error = -ENOMEM;
+			ekprintf("arch_get_cpu_mapping:allocate_pages failed. %d\n", error);
+			goto out;
+		}
+
+		for (cpu = 0; cpu < num_processors; ++cpu) {
+			v = get_x86_cpu_local_variable(cpu);
+			mapping[cpu].cpu_number = cpu;
+			mapping[cpu].hw_id = v->apic_id;
+		}
+
+		cpu_mapping = mapping;
+	}
+
+	error = 0;
+	*buf = cpu_mapping;
+	*nelemsp = num_processors;
+
+out:
+	return error;
+} /* arch_get_cpu_mapping() */
+
 /*** end of file ***/

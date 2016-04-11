@@ -57,6 +57,9 @@
 #define SCD_MSG_CLEANUP_PROCESS         0x9
 #define SCD_MSG_GET_VDSO_INFO           0xa
 
+#define SCD_MSG_GET_CPU_MAPPING         0xc
+#define SCD_MSG_REPLY_GET_CPU_MAPPING   0xd
+
 #define	SCD_MSG_PROCFS_CREATE		0x10
 #define	SCD_MSG_PROCFS_DELETE		0x11
 #define	SCD_MSG_PROCFS_REQUEST		0x12
@@ -196,6 +199,35 @@ static inline int sysfs_inited(struct sysfsm_data *sdp)
 	return !!(sdp->sysfs_buf);
 } /* sysfs_inited() */
 
+struct cpu_mapping {
+	int cpu_number;
+	int hw_id;
+};
+
+struct cache_topology {
+	struct ihk_cache_topology *saved;
+	cpumask_t shared_cpu_map;
+
+	struct list_head chain;
+};
+
+struct cpu_topology {
+	struct cpu_mapping *cpu_mapping;
+	struct ihk_cpu_topology *saved;
+	cpumask_t core_siblings;
+	cpumask_t thread_siblings;
+
+	struct list_head chain;
+	struct list_head cache_list;
+};
+
+struct node_topology {
+	struct ihk_node_topology *saved;
+	cpumask_t cpumap;
+
+	struct list_head chain;
+};
+
 #define CPU_LONGS (((NR_CPUS) + (BITS_PER_LONG) - 1) / (BITS_PER_LONG))
 
 struct mcctrl_usrdata {
@@ -218,6 +250,12 @@ struct mcctrl_usrdata {
 	void **keys;
 	struct sysfsm_data sysfsm_data;
 	unsigned long cpu_online[CPU_LONGS];
+	int cpu_mapping_elems;
+	int padding;
+	struct cpu_mapping *cpu_mapping;
+	long cpu_mapping_pa;
+	struct list_head cpu_topology_list;
+	struct list_head node_topology_list;
 };
 
 struct mcctrl_signal {
@@ -273,6 +311,8 @@ void procfs_exit(int osnum);
 
 /* sysfs_files.c */
 void setup_sysfs_files(ihk_os_t os);
+void reply_get_cpu_mapping(long req_pa);
+void free_topology_info(ihk_os_t os);
 
 /* archdep.c */
 #define VDSO_MAXPAGES 2
@@ -295,5 +335,16 @@ struct vdso {
 int reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp,
 		unsigned long *endp);
 void get_vdso_info(ihk_os_t os, long vdso_pa);
+
+struct get_cpu_mapping_req {
+	int busy;		/* INOUT: */
+	int error;		/* OUT: */
+	long buf_rpa;		/* OUT: physical address of struct cpu_mapping */
+	int buf_elems;		/* OUT: # of elements of buf */
+	int padding;
+
+	/* work for mcctrl */
+	wait_queue_head_t wq;
+};
 
 #endif

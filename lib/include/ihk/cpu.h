@@ -121,4 +121,7 @@ extern int pvti_npages;
 int arch_setup_pvclock(void);
 void arch_start_pvclock(void);
 
+struct cpu_mapping;
+int arch_get_cpu_mapping(struct cpu_mapping **buf, int *nelemsp);
+
 #endif

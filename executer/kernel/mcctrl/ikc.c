@@ -99,6 +99,10 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		get_vdso_info(__os, pisp->arg);
 		break;
 
+	case SCD_MSG_REPLY_GET_CPU_MAPPING:
+		reply_get_cpu_mapping(pisp->arg);
+		break;
+
 	default:
 		printk(KERN_ERR "mcctrl:syscall_packet_handler:"
 				"unknown message (%d.%d.%d.%d.%d.%#lx)\n",
@@ -345,6 +349,9 @@ int prepare_ikc_channels(ihk_os_t os)
 
 	INIT_LIST_HEAD(&usrdata->per_proc_list);
 	spin_lock_init(&usrdata->per_proc_list_lock);
+
+	INIT_LIST_HEAD(&usrdata->cpu_topology_list);
+	INIT_LIST_HEAD(&usrdata->node_topology_list);
 
 	error = init_peer_channel_registry(usrdata);
 	if (error) {

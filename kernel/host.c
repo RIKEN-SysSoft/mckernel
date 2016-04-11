@@ -530,6 +530,31 @@ extern int runcount;
 extern void terminate_host(int pid);
 extern void debug_log(long);
 
+static void req_get_cpu_mapping(long req_rpa)
+{
+	size_t mapsize;
+	size_t size;
+	int npages;
+	long phys;
+	struct get_cpu_mapping_req *req;
+	struct cpu_mapping *buf;
+
+	size = sizeof(*req);
+	mapsize = size + (req_rpa & (PAGE_SIZE - 1));
+	npages = (mapsize + PAGE_SIZE - 1) >> PAGE_SHIFT;
+	phys = ihk_mc_map_memory(NULL, req_rpa, size);
+	req = ihk_mc_map_virtual(phys, npages, PTATTR_WRITABLE);
+
+	req->error = arch_get_cpu_mapping(&buf, &req->buf_elems);
+	if (!req->error) {
+		req->buf_rpa = virt_to_phys(buf);
+	}
+
+	ihk_mc_unmap_virtual(req, npages, 0);
+	ihk_mc_unmap_memory(NULL, phys, size);
+	return;
+} /* req_get_cpu_mapping() */
+
 static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *ihk_os)
 {
@@ -629,6 +654,14 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		sysfss_packet_handler(c, packet->msg, packet->err,
 				packet->sysfs_arg1, packet->sysfs_arg2,
 				packet->sysfs_arg3);
+		return 0;
+
+	case SCD_MSG_GET_CPU_MAPPING:
+		req_get_cpu_mapping(packet->arg);
+
+		pckt.msg = SCD_MSG_REPLY_GET_CPU_MAPPING;
+		pckt.arg = packet->arg;
+		syscall_channel_send(c, &pckt);
 		return 0;
 
 	default:

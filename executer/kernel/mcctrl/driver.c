@@ -147,6 +147,7 @@ static void __exit mcctrl_exit(void)
 	for(i = 0; i < OS_MAX_MINOR; i++){
 		if(os[i]){
 			sysfsm_cleanup(os[i]);
+			free_topology_info(os[i]);
 			ihk_os_unregister_user_call_handlers(os[i], mcctrl_uc + i);
 			destroy_ikc_channels(os[i]);
 			procfs_exit(i);

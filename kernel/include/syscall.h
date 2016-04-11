@@ -40,6 +40,9 @@
 #define	SCD_MSG_CLEANUP_PROCESS		0x9
 #define SCD_MSG_GET_VDSO_INFO           0xa
 
+#define SCD_MSG_GET_CPU_MAPPING         0xc
+#define SCD_MSG_REPLY_GET_CPU_MAPPING   0xd
+
 #define	SCD_MSG_PROCFS_CREATE		0x10
 #define	SCD_MSG_PROCFS_DELETE		0x11
 #define	SCD_MSG_PROCFS_REQUEST		0x12
@@ -383,6 +386,24 @@ struct vdso {
 	long hpet_phys;
 	void *pvti_virt;
 	long pvti_phys;
+};
+
+struct cpu_mapping {
+	int cpu_number;
+	int hw_id;
+};
+
+struct get_cpu_mapping_req {
+	int busy;		/* INOUT: */
+	int error;		/* OUT: */
+	long buf_rpa;		/* OUT: physical address of struct cpu_mapping */
+	int buf_elems;		/* OUT: # of elements of buf */
+	int padding;
+
+	/* work for mcctrl */
+#if 0
+	wait_queue_head_t wq;
+#endif
 };
 
 #endif

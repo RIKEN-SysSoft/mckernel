@@ -227,6 +227,7 @@ MCCTRL_FIND_KSYM([vdso_pages])
 MCCTRL_FIND_KSYM([__vvar_page])
 MCCTRL_FIND_KSYM([hpet_address])
 MCCTRL_FIND_KSYM([hv_clock])
+MCCTRL_FIND_KSYM([sys_readlink])
 
 case $ENABLE_MEMDUMP in
 	yes|no|auto)
