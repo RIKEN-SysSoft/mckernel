@@ -404,9 +404,11 @@ do_wait(int pid, int *status, int options, void *rusage)
 			if((options & WEXITED) &&
 			   child->status == PS_ZOMBIE) {
 				ret = wait_zombie(thread, child, status, options);
-				mcs_rwlock_writer_unlock_noirq(&thread->proc->children_lock, &lock);
 				if(!(options & WNOWAIT)){
-					mcs_rwlock_writer_lock_noirq(&proc->update_lock, &lock);
+					struct mcs_rwlock_node updatelock;
+					struct mcs_rwlock_node childlock;
+					struct process *pid1 = cpu_local_var(resource_set)->pid1;
+					mcs_rwlock_writer_lock_noirq(&proc->update_lock, &updatelock);
 					ts_add(&proc->stime_children, &child->stime);
 					ts_add(&proc->utime_children, &child->utime);
 					ts_add(&proc->stime_children, &child->stime_children);
@@ -415,9 +417,28 @@ do_wait(int pid, int *status, int options, void *rusage)
 						proc->maxrss_children = child->maxrss;
 					if(child->maxrss_children > proc->maxrss_children)
 						proc->maxrss_children = child->maxrss_children;
-					mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &lock);
+					mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
+					list_del(&child->siblings_list);
+					mcs_rwlock_writer_unlock_noirq(&proc->children_lock, &lock);
+
+					if(child->ptrace & PT_TRACED){
+						struct process *parent = child->ppid_parent;
+						mcs_rwlock_writer_lock_noirq(&parent->children_lock, &childlock);
+						list_del(&child->ptraced_siblings_list);
+						mcs_rwlock_writer_unlock_noirq(&parent->children_lock, &childlock);
+					}
+					mcs_rwlock_writer_lock_noirq(&child->update_lock, &updatelock);
+					child->ptrace = 0;
+					child->parent = pid1;
+					child->ppid_parent = pid1;
+					mcs_rwlock_writer_lock_noirq(&pid1->children_lock, &childlock);
+					list_add_tail(&child->siblings_list, &pid1->children_list);
+					mcs_rwlock_writer_unlock_noirq(&pid1->children_lock, &childlock);
+					mcs_rwlock_writer_unlock_noirq(&child->update_lock, &updatelock);
 					release_process(child);
 				}
+				else
+					mcs_rwlock_writer_unlock_noirq(&proc->children_lock, &lock);
 				goto out_found;
 			}
 
