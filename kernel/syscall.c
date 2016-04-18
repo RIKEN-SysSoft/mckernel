@@ -127,9 +127,6 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 static void do_mod_exit(int status);
 #endif
 
-// for perf_event
-static unsigned int counter_flag[X86_IA32_NUM_PERF_COUNTERS] = {};
-
 static void send_syscall(struct syscall_request *req, int cpu, int pid)
 {
 	struct ikc_scd_packet packet;
@@ -2389,7 +2386,7 @@ SYSCALL_DECLARE(read)
 	ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
 
 	if(fdp && fdp->read_cb){
-kprintf("read: found system fd %d\n", fd);
+//kprintf("read: found system fd %d\n", fd);
 		rc = fdp->read_cb(fdp, ctx);
 	}
 	else{
@@ -2414,7 +2411,7 @@ SYSCALL_DECLARE(ioctl)
 	ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
 
 	if(fdp && fdp->ioctl_cb){
-kprintf("ioctl: found system fd %d\n", fd);
+//kprintf("ioctl: found system fd %d\n", fd);
 		rc = fdp->ioctl_cb(fdp, ctx);
 	}
 	else{
@@ -2439,7 +2436,7 @@ SYSCALL_DECLARE(close)
 			break;
 
 	if(fdp){
-kprintf("close: found system fd %d pid=%d\n", fd, proc->pid);
+//kprintf("close: found system fd %d pid=%d\n", fd, proc->pid);
 		if(fdq)
 			fdq->next = fdp->next;
 		else
@@ -2601,47 +2598,12 @@ SYSCALL_DECLARE(signalfd4)
 	return sfd->fd;
 }
 
-int
-release_counter(int cpu_id, int cnt)
-{
-	int ret = -1;
-
-	if(cnt >= 0 && cnt < X86_IA32_NUM_PERF_COUNTERS) {
-		counter_flag[cpu_id] &= ~(1 << cnt);
-		ret = 0;
-	}
-
-	return ret;
-}
-
-int
-get_avail_counter(int cpu_id, int cnt)
-{
-	int i = 0;
-	int ret = -1;
-	// find avail counter
-	if(cnt < 0) {
-		for(i = 0; i < X86_IA32_NUM_PERF_COUNTERS; i++) {
-			if(!(counter_flag[cpu_id] & 1 << i)) {
-				ret = i;
-				break;
-			}
-		}
-	// check specified counter is available.
-	} else if (cnt < X86_IA32_NUM_PERF_COUNTERS) {
-		if(counter_flag[cpu_id] ^ 1 << cnt) {
-			ret = cnt;
-		}
-	}
-
-	return ret;
-}
-
 int 
-perf_counter_init(struct perf_event_attr *attr, int cpu_id, int counter)
+perf_counter_init(struct mc_perf_event *event)
 {
 	int ret = 0;
 	enum ihk_perfctr_type type;
+	struct perf_event_attr *attr = &event->attr;
 	int mode = 0x00;
 
 	if(!attr->exclude_kernel) {
@@ -2664,28 +2626,35 @@ perf_counter_init(struct perf_event_attr *attr, int cpu_id, int counter)
 			type = PERFCTR_MAX_TYPE;
 		}
 
-		ret = ihk_mc_perfctr_init(counter, type, mode);
+		event->counter = ihk_mc_perfctr_alloc_counter(); 
+		ret = ihk_mc_perfctr_init(event->counter, type, mode);
 	
 	} else if(attr->type == PERF_TYPE_RAW) {
+		// PAPI_REF_CYC counted by fixed counter
+		if((attr->config & 0x0000ffff) == 0x00000300) {
+			event->counter = 2 + X86_IA32_BASE_FIXED_PERF_COUNTERS;
+			ret = ihk_mc_perfctr_fixed_init(event->counter, mode);
+			return ret;
+		}
+
 		// apply MODE to config(event_code)
 		attr->config &= ~(3 << 16);
-		if(mode &= PERFCTR_USER_MODE) {
+		if(mode & PERFCTR_USER_MODE) {
 			attr->config |= 1 << 16;
 		}
-		if(mode &= PERFCTR_KERNEL_MODE) {
+		if(mode & PERFCTR_KERNEL_MODE) {
 			attr->config |= 1 << 17;
 		}
 
-		ret = ihk_mc_perfctr_init_raw(counter, attr->config, mode);
+		event->counter = ihk_mc_perfctr_alloc_counter(); 
+		ret = ihk_mc_perfctr_init_raw(event->counter, attr->config, mode);
 	} else {
 		// Not supported type.
 		ret = -1;
 	}
 
 	if(ret >= 0) {
-	        ret = ihk_mc_perfctr_reset(counter);
-       		ret = ihk_mc_perfctr_start(1 << counter);
-		counter_flag[cpu_id] |= 1 << counter;
+	        ret = ihk_mc_perfctr_reset(event->counter);
 	}
 
 	return ret;
@@ -2770,6 +2739,28 @@ perf_read(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 
 }
 
+static void 
+perf_start(struct mc_perf_event *event)
+{
+	int counter = event->counter;
+
+	if((1UL << counter & X86_IA32_PERF_COUNTERS_MASK) | 
+	(1UL << counter & X86_IA32_FIXED_PERF_COUNTERS_MASK)) {
+		ihk_mc_perfctr_start(1UL << counter);
+	}
+}
+
+static void
+perf_stop(struct mc_perf_event *event)
+{
+	int counter = event->counter;
+
+	if((1UL << counter & X86_IA32_PERF_COUNTERS_MASK) | 
+	(1UL << counter & X86_IA32_FIXED_PERF_COUNTERS_MASK)) {
+		ihk_mc_perfctr_stop(1UL << counter);
+	}
+}
+
 static int
 perf_ioctl(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 {
@@ -2779,16 +2770,16 @@ perf_ioctl(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 
 	switch (cmd) {
         case PERF_EVENT_IOC_ENABLE:
-		ihk_mc_perfctr_start(1 << counter);
+		perf_start(event);
                 break;
         case PERF_EVENT_IOC_DISABLE:
-		ihk_mc_perfctr_stop(1 << counter);
+		perf_stop(event);
                 break;
         case PERF_EVENT_IOC_RESET:
-		ihk_mc_perfctr_reset(counter);
+		ihk_mc_perfctr_set(counter, event->sample_freq * -1);
                 break;
         case PERF_EVENT_IOC_REFRESH:
-		ihk_mc_perfctr_reset(counter);
+		ihk_mc_perfctr_set(counter, event->sample_freq * -1);
 		break;
 	default :
 		return -1;
@@ -2801,10 +2792,9 @@ static int
 perf_close(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 {
 	struct mc_perf_event *event = (struct mc_perf_event*)sfd->data;
-	int cpu_id = event->cpu_id;
 
+	ihk_mc_perfctr_release_counter(event->counter);
 	kfree(event);
-	release_counter(cpu_id, event->counter);
 
 	return 0;
 }
@@ -2827,11 +2817,12 @@ perf_mmap(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 
 	// setup perf_event_mmap_page
 	page = (struct perf_event_mmap_page *)rc;
-	page->cap_usr_rdpmc = 0;
+	page->cap_user_rdpmc = 1;
 
 	return rc;
 }
 
+extern unsigned long ihk_mc_perfctr_get_info();
 SYSCALL_DECLARE(perf_event_open)
 {
 	struct syscall_request request IHK_DMA_ALIGN;
@@ -2872,15 +2863,15 @@ SYSCALL_DECLARE(perf_event_open)
 	if(not_supported_flag) {
 		return -1;
 	}
-	
+
 	// process of perf_event_open
 	event = kmalloc(sizeof(struct mc_perf_event), IHK_MC_AP_NOWAIT);
+	if(!event)
+		return -ENOMEM;
 	event->cpu_id = thread->cpu_id;
 	event->attr = (struct perf_event_attr)*attr;
-	event->counter = get_avail_counter(event->cpu_id, -1); 
-	if(event->counter < 0) {
-		return -1;
-	}
+
+	event->sample_freq = attr->sample_freq;
 	event->nr_siblings = 0;
 	INIT_LIST_HEAD(&event->group_entry);
 	INIT_LIST_HEAD(&event->sibling_list);
@@ -2897,7 +2888,10 @@ SYSCALL_DECLARE(perf_event_open)
 		}
 	}
 
-	perf_counter_init(attr, event->cpu_id, event->counter);
+	if(perf_counter_init(event) < 0)
+		return -1;
+	if(event->counter < 0)
+		return -1;
 
 	request.number = __NR_perf_event_open;
 	request.args[0] = 0;

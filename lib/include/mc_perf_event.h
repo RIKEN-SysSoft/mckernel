@@ -1,6 +1,8 @@
 #ifndef MC_PERF_EVNET_H
 #define MC_PERF_EVENT_H
 
+#include <march.h>
+
 struct perf_event_attr;
 
 /**
@@ -217,6 +219,8 @@ struct mc_perf_event {
 	struct perf_event_attr		attr;
 	int 				cpu_id;
 	int 				counter;
+	unsigned long			sample_freq;
+
 	struct mc_perf_event 		*group_leader;
 	struct list_head		sibling_list;
 	int 				nr_siblings;
@@ -224,25 +228,32 @@ struct mc_perf_event {
 };
 
 struct perf_event_mmap_page {
-	unsigned int version;
-	unsigned int compat_version;
-	unsigned int lock;
-	unsigned int index;
-	long	offset;
-	unsigned long time_enabled;
-	unsigned long time_running;
+	unsigned int version;		// version number of this structure
+	unsigned int compat_version;	// lowest version this is compat with
+	unsigned int lock;		// seqlock for synchronization
+	unsigned int index;		// hardware event identifier
+	long	offset;			// add to hardware event value
+	unsigned long time_enabled;	// time evet active
+	unsigned long time_running;	// time event on cpu
 	union {
 		unsigned long   capabilities;
-		unsigned long   cap_usr_time            : 1, 
-		                cap_usr_rdpmc           : 1, 
-				cap_____res             : 62;
+		struct {
+			unsigned long   cap_bit0          : 1, // Always 0, deprecated
+		                cap_bit0_is_deprecated    : 1, // Always 1, signals that bit 0 is zero
+				cap_user_rdpmc            : 1, // The RDPMC instruction can be used to read counts
+				cap_user_time             : 1, // The time_* fields are used
+				cap_user_time_zero        : 1, // The time_zero field is used
+				cap_____res               : 59;
+		};
 	};
 	unsigned short pmc_width;
 	unsigned short time_shift;
 	unsigned int time_mult;
 	unsigned long time_offset;
+	unsigned long time_zero;
+	unsigned int size;
 
-	unsigned long __reserved[120];
+	unsigned char __reserved[118*8+4];
 	unsigned long data_head;
 	unsigned long data_tail;
 };

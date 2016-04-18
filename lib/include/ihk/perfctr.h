@@ -52,9 +52,14 @@ int ihk_mc_perfctr_init(int counter, enum ihk_perfctr_type type, int mode);
 int ihk_mc_perfctr_init_raw(int counter, unsigned int code, int mode);
 int ihk_mc_perfctr_start(unsigned long counter_mask);
 int ihk_mc_perfctr_stop(unsigned long counter_mask);
+int ihk_mc_perfctr_fixed_init(int counter, int mode);
 int ihk_mc_perfctr_reset(int counter);
+int ihk_mc_perfctr_set(int counter, unsigned long value);
 int ihk_mc_perfctr_read_mask(unsigned long counter_mask, unsigned long *value);
 unsigned long ihk_mc_perfctr_read(int counter);
+unsigned long ihk_mc_perfctr_read_msr(int counter);
+int ihk_mc_perfctr_alloc_counter();
+void ihk_mc_perfctr_release_counter(int counter);
 
 #endif
 
