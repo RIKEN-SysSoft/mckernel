@@ -619,81 +619,23 @@ int update_process_page_table(struct process_vm *vm,
                           struct vm_range *range, uint64_t phys,
 			  enum ihk_mc_pt_attribute flag)
 {
-	unsigned long p, pa = phys;
-	unsigned long pp;
+	int error;
 	unsigned long flags;
 	enum ihk_mc_pt_attribute attr;
 
+	attr = arch_vrflag_to_ptattr(range->flag, PF_POPULATE, NULL);
 	flags = ihk_mc_spinlock_lock(&vm->page_table_lock);
-	attr = flag | PTATTR_USER | PTATTR_FOR_USER;
-	attr |= (range->flag & VR_PROT_WRITE)? PTATTR_WRITABLE: 0;
-	attr |= (range->flag & VR_PROT_EXEC)? 0: PTATTR_NO_EXECUTE;
-
-	p = range->start;
-	while (p < range->end) {
-#ifdef USE_LARGE_PAGES
-		/* Use large PTE if both virtual and physical addresses are large page
-		 * aligned and more than LARGE_PAGE_SIZE is left from the range */
-		if ((p & (LARGE_PAGE_SIZE - 1)) == 0 &&
-				(pa & (LARGE_PAGE_SIZE - 1)) == 0 &&
-				(range->end - p) >= LARGE_PAGE_SIZE) {
-
-			if (ihk_mc_pt_set_large_page(vm->address_space->
-			                             page_table, (void *)p,
-			                             pa, attr) != 0) {
-				kprintf("ERROR: setting large page for 0x%lX -> 0x%lX\n",
-						p, pa);
-				goto err;
-			}
-
-			dkprintf("large page set for 0x%lX -> 0x%lX\n", p, pa);
-
-			pa += LARGE_PAGE_SIZE;
-			p += LARGE_PAGE_SIZE;
-		}
-		else {
-#endif
-			if(ihk_mc_pt_set_page(vm->address_space->page_table,
-			                      (void *)p, pa, attr) != 0){
-				kprintf("ERROR: setting page for 0x%lX -> 0x%lX\n", p, pa);
-				goto err;
-			}
-
-			pa += PAGE_SIZE;
-			p += PAGE_SIZE;
-#ifdef USE_LARGE_PAGES
-		}
-#endif
-	}
-	ihk_mc_spinlock_unlock(&vm->page_table_lock, flags);
-	return 0;
-
-err:
-	pp = range->start;
-	pa = phys;
-	while(pp < p){
-#ifdef USE_LARGE_PAGES
-		if ((p & (LARGE_PAGE_SIZE - 1)) == 0 &&
-				(pa & (LARGE_PAGE_SIZE - 1)) == 0 &&
-				(range->end - p) >= LARGE_PAGE_SIZE) {
-			ihk_mc_pt_clear_large_page(vm->address_space->
-			                           page_table, (void *)pp);
-			pa += LARGE_PAGE_SIZE;
-			pp += LARGE_PAGE_SIZE;
-		}
-		else{
-#endif
-			ihk_mc_pt_clear_page(vm->address_space->page_table,
-			                     (void *)pp);
-			pa += PAGE_SIZE;
-			pp += PAGE_SIZE;
-#ifdef USE_LARGE_PAGES
-		}
-#endif
+	error = ihk_mc_pt_set_range(vm->address_space->page_table, vm,
+			(void *)range->start, (void *)range->end, phys, attr);
+	if (error) {
+		kprintf("update_process_page_table:ihk_mc_pt_set_range failed. %d\n", error);
+		goto out;
 	}
 
+	error = 0;
+out:
 	ihk_mc_spinlock_unlock(&vm->page_table_lock, flags);
-	return -ENOMEM;
+	return error;
 }
 
 int split_process_memory_range(struct process_vm *vm, struct vm_range *range,
