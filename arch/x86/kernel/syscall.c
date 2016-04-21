@@ -137,14 +137,12 @@ int obtain_clone_cpuid() {
 int
 arch_clear_host_user_space()
 {
-	struct syscall_request request IHK_DMA_ALIGN;
+	struct thread *th = cpu_local_var(current);
 
-	request.number = __NR_munmap;
-	request.args[0] = cpu_local_var(current)->vm->region.user_start;
-	request.args[1] = cpu_local_var(current)->vm->region.user_end -
-	                      cpu_local_var(current)->vm->region.user_start;
-
-	return do_syscall(&request, ihk_mc_get_processor_id(), 0);
+	/* XXX: might be unnecessary */
+	clear_host_pte(th->vm->region.user_start,
+			(th->vm->region.user_end - th->vm->region.user_start));
+	return 0;
 }
 
 SYSCALL_DECLARE(rt_sigaction)

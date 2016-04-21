@@ -833,7 +833,7 @@ SYSCALL_DECLARE(exit_group)
 	return 0;
 }
 
-static void clear_host_pte(uintptr_t addr, size_t len)
+void clear_host_pte(uintptr_t addr, size_t len)
 {
 	ihk_mc_user_context_t ctx;
 	long lerror;

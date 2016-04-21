@@ -365,6 +365,7 @@ void reset_cputime();
 void set_cputime(int mode);
 intptr_t do_mmap(intptr_t addr0, size_t len0, int prot, int flags, int fd,
 		off_t off0);
+void clear_host_pte(uintptr_t addr, size_t len);
 typedef int32_t key_t;
 int do_shmget(key_t key, size_t size, int shmflg);
 struct process_vm;
