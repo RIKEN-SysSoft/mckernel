@@ -276,14 +276,14 @@ retry_alloc:
 		}
 
 		/* Prepare per-process wait queue head */
-		wqhln->pid = current->tgid;	
+		wqhln->pid = task_tgid_vnr(current);	
 		wqhln->req = 0;
 		init_waitqueue_head(&wqhln->wq_syscall);
 
 		irqflags = ihk_ikc_spinlock_lock(&channel->wq_list_lock);
 		/* First see if there is a wait queue already */
 		list_for_each_entry(wqhln_iter, &channel->wq_list, list) {
-			if (wqhln_iter->pid == current->tgid) {
+			if (wqhln_iter->pid == task_tgid_vnr(current)) {
 				kfree(wqhln);
 				wqhln = wqhln_iter;
 				list_del(&wqhln->list);
@@ -482,7 +482,7 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	flags = ihk_ikc_spinlock_lock(&usrdata->per_proc_list_lock);
 	
 	list_for_each_entry(ppd_iter, &usrdata->per_proc_list, list) {
-		if (ppd_iter->pid == current->tgid) {
+		if (ppd_iter->pid == task_tgid_vnr(current)) {
 			ppd = ppd_iter;
 			break;
 		}
@@ -490,7 +490,7 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	ihk_ikc_spinlock_unlock(&usrdata->per_proc_list_lock, flags);
 
 	if (!ppd) {
-		printk("ERROR: no per process data for pid %d\n", current->tgid);
+		printk("ERROR: no per process data for pid %d\n", task_tgid_vnr(current));
 		return VM_FAULT_SIGBUS;
 	}
 
@@ -1653,7 +1653,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 				goto out;
 			}
 
-			ppd->pid = current->tgid;
+			ppd->pid = task_tgid_vnr(current);
 			ppd->rpgtable = sc->args[2];
 
 			flags = ihk_ikc_spinlock_lock(&usrdata->per_proc_list_lock);
@@ -1679,7 +1679,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 		flags = ihk_ikc_spinlock_lock(&usrdata->per_proc_list_lock);
 		
 		list_for_each_entry(ppd_iter, &usrdata->per_proc_list, list) {
-			if (ppd_iter->pid == current->tgid) {
+			if (ppd_iter->pid == task_tgid_vnr(current)) {
 				ppd = ppd_iter;
 				break;
 			}
@@ -1689,13 +1689,13 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 			list_del(&ppd->list);
 			
 			dprintk("pid: %d, tid: %d: rpgtable for %d (0x%lx) removed\n", 
-				current->tgid, current->pid, ppd->pid, ppd->rpgtable);
+				task_tgid_vnr(current), current->pid, ppd->pid, ppd->rpgtable);
 			
 			kfree(ppd);
 		}
 		else {
 			printk("WARNING: no per process data for pid %d ?\n", 
-					current->tgid);
+					task_tgid_vnr(current));
 		}
 
 		ihk_ikc_spinlock_unlock(&usrdata->per_proc_list_lock, flags);

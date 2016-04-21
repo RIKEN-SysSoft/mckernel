@@ -505,7 +505,7 @@ retry_alloc:
 	irqflags = ihk_ikc_spinlock_lock(&c->wq_list_lock);
 	/* First see if there is one wait queue already */
 	list_for_each_entry(wqhln_iter, &c->wq_list, list) {
-		if (wqhln_iter->pid == current->tgid) {
+		if (wqhln_iter->pid == task_tgid_vnr(current)) {
 			kfree(wqhln);
 			wqhln = wqhln_iter;
 			list_del(&wqhln->list);
@@ -532,8 +532,8 @@ retry_alloc:
 			c->param.request_va->args[0] == swd.pid) {
 
 		dprintk("pid: %d, tid: %d: SC %d, swd.cpu: %d, WARNING: wait4() for self?\n",
-				current->tgid,
-				current->pid,
+				task_tgid_vnr(current),
+				task_pid_vnr(current);
 				c->param.request_va->number,
 				swd.cpu);
 
@@ -892,7 +892,7 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	spin_lock_irq(&mckernel_exec_file_lock);
 	/* Find previous file (if exists) and drop it */
 	list_for_each_entry(mcef_iter, &mckernel_exec_files, list) {
-		if (mcef_iter->os == os && mcef_iter->pid == current->tgid) {
+		if (mcef_iter->os == os && mcef_iter->pid == task_tgid_vnr(current)) {
 			allow_write_access(mcef_iter->fp);
 			fput(mcef_iter->fp);
 			list_del(&mcef_iter->list);
@@ -903,16 +903,16 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	
 	/* Add new exec file to the list */
 	mcef->os = os;
-	mcef->pid = current->tgid;
+	mcef->pid = task_tgid_vnr(current);
 	mcef->fp = file;
 	list_add_tail(&mcef->list, &mckernel_exec_files);
 
 	/* Create /proc/self/exe entry */
-	add_pid_entry(os_ind, current->tgid);
-	proc_exe_link(os_ind, current->tgid, fullpath);
+	add_pid_entry(os_ind, task_tgid_vnr(current));
+	proc_exe_link(os_ind, task_tgid_vnr(current), fullpath);
 	spin_unlock(&mckernel_exec_file_lock);
 
-	dprintk("%d open_exec and holding file: %s\n", (int)current->tgid, filename);
+	dprintk("%d open_exec and holding file: %s\n", (int)task_tgid_vnr(current), filename);
 
 	kfree(pathbuf);
 
@@ -939,13 +939,13 @@ int mcexec_close_exec(ihk_os_t os)
 		
 	spin_lock_irq(&mckernel_exec_file_lock);
 	list_for_each_entry(mcef, &mckernel_exec_files, list) {
-		if (mcef->os == os && mcef->pid == current->tgid) {
+		if (mcef->os == os && mcef->pid == task_tgid_vnr(current)) {
 			allow_write_access(mcef->fp);
 			fput(mcef->fp);
 			list_del(&mcef->list);
 			kfree(mcef);
 			found = 1;
-			dprintk("%d close_exec dropped executable \n", (int)current->tgid);
+			dprintk("%d close_exec dropped executable \n", (int)task_tgid_vnr(current));
 			break;
 		}
 	}
