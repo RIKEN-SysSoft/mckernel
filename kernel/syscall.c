@@ -294,8 +294,8 @@ static int wait_zombie(struct thread *thread, struct process *child, int *status
     }
     
 	ppid = child->ppid_parent->pid;
-	if(ppid == 1 || child->nowait)
-		return 0;
+	if(child->ppid_parent->pid != thread->proc->pid || child->nowait)
+		return child->pid;
 	request.number = __NR_wait4;
 	request.args[0] = child->pid;
 	request.args[1] = 0;
