@@ -570,7 +570,7 @@ ptrace_arch_prctl(int pid, long code, long addr)
 	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if (child->proc->status == PS_TRACED) {
+	if (child->proc->status & (PS_TRACED | PS_STOPPED)) {
 		switch (code) {
 		case ARCH_GET_FS: {
 			unsigned long value;

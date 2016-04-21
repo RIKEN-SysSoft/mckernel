@@ -4503,7 +4503,7 @@ static long ptrace_pokeuser(int pid, long addr, long data)
 	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if(child->proc->status == PS_TRACED){
+	if(child->status & (PS_STOPPED | PS_TRACED)){
 		rc = ptrace_write_user(child, addr, (unsigned long)data);
 	}
 	thread_unlock(child, &lock);
@@ -4523,7 +4523,7 @@ static long ptrace_peekuser(int pid, long addr, long data)
 	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if(child->proc->status == PS_TRACED){
+	if(child->status & (PS_STOPPED | PS_TRACED)){
 		unsigned long value;
 		rc = ptrace_read_user(child, addr, &value);
 		if (rc == 0) {
@@ -4545,7 +4545,7 @@ static long ptrace_getregs(int pid, long data)
 	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if(child->proc->status == PS_TRACED){
+	if(child->status & (PS_STOPPED | PS_TRACED)){
 		struct user_regs_struct user_regs;
 		long addr;
 		unsigned long *p;
@@ -4575,7 +4575,7 @@ static long ptrace_setregs(int pid, long data)
 	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if(child->proc->status == PS_TRACED){
+	if(child->status & (PS_STOPPED | PS_TRACED)){
 		struct user_regs_struct user_regs;
 		rc = copy_from_user(&user_regs, regs, sizeof(struct user_regs_struct));
 		if (rc == 0) {
@@ -4608,7 +4608,7 @@ static long ptrace_getfpregs(int pid, long data)
 	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if (child->proc->status == PS_TRACED) {
+	if(child->status & (PS_STOPPED | PS_TRACED)){
 		rc = ptrace_read_fpregs(child, (void *)data);
 	}
 	thread_unlock(child, &lock);
@@ -4625,7 +4625,7 @@ static long ptrace_setfpregs(int pid, long data)
 	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if (child->proc->status == PS_TRACED) {
+	if(child->status & (PS_STOPPED | PS_TRACED)){
 		rc = ptrace_write_fpregs(child, (void *)data);
 	}
 	thread_unlock(child, &lock);
@@ -4645,7 +4645,7 @@ static long ptrace_getregset(int pid, long type, long data)
 	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if (child->proc->status == PS_TRACED) {
+	if(child->status & (PS_STOPPED | PS_TRACED)){
 		struct iovec iov;
 
 		rc = copy_from_user(&iov, (struct iovec *)data, sizeof(iov));
@@ -4671,7 +4671,7 @@ static long ptrace_setregset(int pid, long type, long data)
 	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if (child->proc->status == PS_TRACED) {
+	if(child->status & (PS_STOPPED | PS_TRACED)){
 		struct iovec iov;
 
 		rc = copy_from_user(&iov, (struct iovec *)data, sizeof(iov));
@@ -4698,7 +4698,7 @@ static long ptrace_peektext(int pid, long addr, long data)
 	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if(child->proc->status == PS_TRACED){
+	if(child->status & (PS_STOPPED | PS_TRACED)){
 		unsigned long value;
 		rc = read_process_vm(child->vm, &value, (void *)addr, sizeof(value));
 		if (rc != 0) { 
@@ -4721,7 +4721,7 @@ static long ptrace_poketext(int pid, long addr, long data)
 	child = find_thread(pid, pid, &lock);
 	if (!child)
 		return -ESRCH;
-	if(child->proc->status == PS_TRACED){
+	if(child->status & (PS_STOPPED | PS_TRACED)){
 		rc = patch_process_vm(child->vm, (void *)addr, &data, sizeof(data));
 		if (rc) {
 			dkprintf("ptrace_poketext: bad address 0x%llx\n", addr);
@@ -4815,7 +4815,7 @@ static int ptrace_attach(int pid)
 
 	mcs_rwlock_writer_lock_noirq(&proc->children_lock, &childlock);
 	list_add_tail(&child->siblings_list, &proc->children_list);
-	thread->proc->parent = proc;
+	child->parent = proc;
 	mcs_rwlock_writer_unlock_noirq(&proc->children_lock, &childlock);
 
 	child->ptrace = PT_TRACED | PT_TRACE_EXEC;
@@ -4838,12 +4838,11 @@ static int ptrace_attach(int pid)
 	info.si_signo = SIGSTOP;
 	info.si_code = SI_USER;
 	info._sifields._kill.si_pid = proc->pid;
-	error = do_kill(mythread, pid, -1, SIGSTOP, &info, 0);
+	error = do_kill(mythread, pid, -1, SIGSTOP, &info, 1);
 	if (error < 0) {
 		goto out;
 	}
 
-	sched_wakeup_thread(thread, PS_TRACED | PS_STOPPED);
   out:
 	dkprintf("ptrace_attach,returning,error=%d\n", error);
 	return error;
@@ -4932,7 +4931,7 @@ static long ptrace_geteventmsg(int pid, long data)
 	if (!child) {
 		return -ESRCH;
 	}
-	if (child->proc->status == PS_TRACED) {
+	if(child->status & (PS_STOPPED | PS_TRACED)){
 		if (copy_to_user(msg_p, &child->proc->ptrace_eventmsg, sizeof(*msg_p))) {
 			rc = -EFAULT;
 		} else {
@@ -4956,7 +4955,7 @@ ptrace_getsiginfo(int pid, siginfo_t *data)
 		return -ESRCH;
 	}
 
-	if (child->proc->status != PS_TRACED) {
+	if(!(child->status & (PS_STOPPED | PS_TRACED))){
 		rc = -ESRCH;
 	}
 	else if (child->ptrace_recvsig) {
@@ -4983,7 +4982,7 @@ ptrace_setsiginfo(int pid, siginfo_t *data)
 		return -ESRCH;
 	}
 
-	if (child->proc->status != PS_TRACED) {
+	if(!(child->status & (PS_STOPPED | PS_TRACED))){
 		rc = -ESRCH;
 	}
 	else {
