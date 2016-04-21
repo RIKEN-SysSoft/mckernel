@@ -127,16 +127,18 @@ int ihk_mc_pt_free_range(page_table_t pt, struct process_vm *vm,
 int ihk_mc_pt_change_attr_range(page_table_t pt, void *start, void *end,
 		enum ihk_mc_pt_attribute clrattr,
 		enum ihk_mc_pt_attribute setattr);
-pte_t *ihk_mc_pt_lookup_pte(page_table_t pt, void *virt, void **pgbasep, size_t *pgsizep, int *p2alignp);
+pte_t *ihk_mc_pt_lookup_pte(page_table_t pt, void *virt, int pgshift, void **pgbasep, size_t *pgsizep, int *p2alignp);
 int ihk_mc_pt_set_range(page_table_t pt, struct process_vm *vm, void *start, 
-		void *end, uintptr_t phys, enum ihk_mc_pt_attribute attr);
+		void *end, uintptr_t phys, enum ihk_mc_pt_attribute attr,
+		int pgshift);
 int ihk_mc_pt_set_pte(page_table_t pt, pte_t *ptep, size_t pgsize, uintptr_t phys, enum ihk_mc_pt_attribute attr);
 int ihk_mc_pt_prepare_map(page_table_t pt, void *virt, unsigned long size,
                           enum ihk_mc_pt_prepare_flag);
+int ihk_mc_pt_split(page_table_t pt, struct process_vm *vm, void *addr);
 
 typedef int pte_visitor_t(void *arg, page_table_t pt, pte_t *ptep,
 		void *pgaddr, int pgshift);
-int visit_pte_range(page_table_t pt, void *start, void *end,
+int visit_pte_range(page_table_t pt, void *start, void *end, int pgshift,
 		enum visit_pte_flag flags, pte_visitor_t *funcp, void *arg);
 int move_pte_range(page_table_t pt, struct process_vm *vm, 
 		void *src, void *dest, size_t size);

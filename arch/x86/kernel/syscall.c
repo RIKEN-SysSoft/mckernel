@@ -1327,6 +1327,7 @@ SYSCALL_DECLARE(mmap)
 	intptr_t addr;
 	size_t len;
 	int flags = flags0;
+	size_t pgsize;
 
 	dkprintf("sys_mmap(%lx,%lx,%x,%x,%d,%lx)\n",
 			addr0, len0, prot, flags0, fd, off0);
@@ -1350,14 +1351,36 @@ SYSCALL_DECLARE(mmap)
 	}
 
 	/* check arguments */
-#define	VALID_DUMMY_ADDR	(region->user_start)
+	pgsize = PAGE_SIZE;
+	if (flags & MAP_HUGETLB) {
+		switch (flags & (0x3F << MAP_HUGE_SHIFT)) {
+		case 0:
+			flags |= MAP_HUGE_2MB;	/* default hugepage size */
+			break;
+
+		case MAP_HUGE_2MB:
+		case MAP_HUGE_1GB:
+			break;
+
+		default:
+			ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):"
+					"not supported page size.\n",
+					addr0, len0, prot, flags0, fd, off0);
+			error = -EINVAL;
+			goto out;
+		}
+
+		pgsize = (size_t)1 << ((flags >> MAP_HUGE_SHIFT) & 0x3F);
+	}
+
+#define	VALID_DUMMY_ADDR	((region->user_start + PTL3_SIZE - 1) & ~(PTL3_SIZE - 1))
 	addr = (flags & MAP_FIXED)? addr0: VALID_DUMMY_ADDR;
-	len = (len0 + PAGE_SIZE - 1) & PAGE_MASK;
-	if ((addr & (PAGE_SIZE - 1))
+	len = (len0 + pgsize - 1) & ~(pgsize - 1);
+	if ((addr & (pgsize - 1))
 			|| (len == 0)
 			|| !(flags & (MAP_SHARED | MAP_PRIVATE))
 			|| ((flags & MAP_SHARED) && (flags & MAP_PRIVATE))
-			|| (off0 & (PAGE_SIZE - 1))) {
+			|| (off0 & (pgsize - 1))) {
 		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):EINVAL\n",
 				addr0, len0, prot, flags0, fd, off0);
 		error = -EINVAL;
@@ -1381,25 +1404,6 @@ SYSCALL_DECLARE(mmap)
 				(flags & ~(supported_flags | ignored_flags)));
 		error = -EINVAL;
 		goto out;
-	}
-
-	if (flags & MAP_HUGETLB) {
-		switch (flags & (0x3F << MAP_HUGE_SHIFT)) {
-		case 0:
-			flags |= MAP_HUGE_2MB;	/* default hugepage size */
-			break;
-
-		case MAP_HUGE_2MB:
-		case MAP_HUGE_1GB:
-			break;
-
-		default:
-			ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):"
-					"not supported page size.\n",
-					addr0, len0, prot, flags0, fd, off0);
-			error = -EINVAL;
-			goto out;
-		}
 	}
 
 	addr = do_mmap(addr, len, prot, flags, fd, off0);
@@ -1714,7 +1718,8 @@ int arch_map_vdso(struct process_vm *vm)
 	for (i = 0; i < vdso.vdso_npages; ++i) {
 		s = vm->vdso_addr + (i * PAGE_SIZE);
 		e = s + PAGE_SIZE;
-		error = ihk_mc_pt_set_range(pt, vm, s, e, vdso.vdso_physlist[i], attr);
+		error = ihk_mc_pt_set_range(pt, vm, s, e,
+				vdso.vdso_physlist[i], attr, 0);
 		if (error) {
 			ekprintf("ihk_mc_pt_set_range failed. %d\n", error);
 			goto out;
@@ -1744,7 +1749,8 @@ int arch_map_vdso(struct process_vm *vm)
 			s = vm->vdso_addr + (intptr_t)vdso.vvar_virt;
 			e = s + PAGE_SIZE;
 			attr = PTATTR_ACTIVE | PTATTR_USER | PTATTR_NO_EXECUTE;
-			error = ihk_mc_pt_set_range(pt, vm, s, e, vdso.vvar_phys, attr);
+			error = ihk_mc_pt_set_range(pt, vm, s, e,
+					vdso.vvar_phys, attr, 0);
 			if (error) {
 				ekprintf("ihk_mc_pt_set_range failed. %d\n", error);
 				goto out;
@@ -1754,7 +1760,8 @@ int arch_map_vdso(struct process_vm *vm)
 			s = vm->vdso_addr + (intptr_t)vdso.hpet_virt;
 			e = s + PAGE_SIZE;
 			attr = PTATTR_ACTIVE | PTATTR_USER | PTATTR_NO_EXECUTE | PTATTR_UNCACHABLE;
-			error = ihk_mc_pt_set_range(pt, vm, s, e, vdso.hpet_phys, attr);
+			error = ihk_mc_pt_set_range(pt, vm, s, e,
+					vdso.hpet_phys, attr, 0);
 			if (error) {
 				ekprintf("ihk_mc_pt_set_range failed. %d\n", error);
 				goto out;
@@ -1764,7 +1771,8 @@ int arch_map_vdso(struct process_vm *vm)
 			s = vm->vdso_addr + (intptr_t)vdso.pvti_virt;
 			e = s + PAGE_SIZE;
 			attr = PTATTR_ACTIVE | PTATTR_USER | PTATTR_NO_EXECUTE;
-			error = ihk_mc_pt_set_range(pt, vm, s, e, vdso.pvti_phys, attr);
+			error = ihk_mc_pt_set_range(pt, vm, s, e,
+					vdso.pvti_phys, attr, 0);
 			if (error) {
 				ekprintf("ihk_mc_pt_set_range failed. %d\n", error);
 				goto out;

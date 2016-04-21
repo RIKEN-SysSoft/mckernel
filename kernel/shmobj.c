@@ -159,8 +159,16 @@ int shmobj_create(struct shmid_ds *ds, struct memobj **objp)
 {
 	struct shmobj *obj = NULL;
 	int error;
+	int pgshift;
+	size_t pgsize;
 
 	dkprintf("shmobj_create(%p %#lx,%p)\n", ds, ds->shm_segsz, objp);
+	pgshift = ds->init_pgshift;
+	if (!pgshift) {
+		pgshift = PAGE_SHIFT;
+	}
+	pgsize = (size_t)1 << pgshift;
+
 	obj = kmalloc(sizeof(*obj), IHK_MC_AP_NOWAIT);
 	if (!obj) {
 		error = -ENOMEM;
@@ -174,9 +182,10 @@ int shmobj_create(struct shmid_ds *ds, struct memobj **objp)
 	obj->ds = *ds;
 	obj->ds.shm_perm.seq = the_seq++;
 	obj->ds.shm_nattch = 1;
+	obj->ds.init_pgshift = 0;
 	obj->index = -1;
-	obj->pgshift = PAGE_SHIFT;
-	obj->real_segsz = (obj->ds.shm_segsz + PAGE_SIZE - 1) & PAGE_MASK;
+	obj->pgshift = pgshift;
+	obj->real_segsz = (obj->ds.shm_segsz + pgsize - 1) & ~(pgsize - 1);
 	page_list_init(obj);
 	ihk_mc_spinlock_init(&obj->memobj.lock);
 
@@ -213,13 +222,14 @@ void shmobj_destroy(struct shmobj *obj)
 	extern int the_maxi;
 	struct shmlock_user *user;
 	size_t size;
+	int npages;
 
 	dkprintf("shmobj_destroy(%p [%d %o])\n", obj, obj->index, obj->ds.shm_perm.mode);
 	if (obj->user) {
 		user = obj->user;
 		obj->user = NULL;
 		shmlock_users_lock();
-		size = (obj->ds.shm_segsz + PAGE_SIZE - 1) & PAGE_MASK;
+		size = obj->real_segsz;
 		user->locked -= size;
 		if (!user->locked) {
 			shmlock_user_free(user);
@@ -227,6 +237,7 @@ void shmobj_destroy(struct shmobj *obj)
 		shmlock_users_unlock();
 	}
 	/* zap page_list */
+	npages = (size_t)1 << (obj->pgshift - PAGE_SHIFT);
 	for (;;) {
 		struct page *page;
 		int count;
@@ -253,9 +264,8 @@ void shmobj_destroy(struct shmobj *obj)
 			panic("shmobj_release");
 		}
 
-		/* XXX:NYI: large pages */
 		page->mode = PM_NONE;
-		free_pages(phys_to_virt(page_to_phys(page)), 1);
+		free_pages(phys_to_virt(page_to_phys(page)), npages);
 	}
 	if (obj->index < 0) {
 		kfree(obj);
@@ -362,9 +372,9 @@ static int shmobj_get_page(struct memobj *memobj, off_t off, int p2align,
 				memobj, off, p2align, physp, error);
 		goto out;
 	}
-	if (p2align != PAGE_P2ALIGN) {		/* XXX:NYI:large pages */
+	if (p2align != (obj->pgshift - PAGE_SHIFT)) {
 		error = -ENOMEM;
-		ekprintf("shmobj_get_page(%p,%#lx,%d,%p):large page. %d\n",
+		ekprintf("shmobj_get_page(%p,%#lx,%d,%p):pgsize mismatch. %d\n",
 				memobj, off, p2align, physp, error);
 		goto out;
 	}
@@ -384,7 +394,8 @@ static int shmobj_get_page(struct memobj *memobj, off_t off, int p2align,
 	page = page_list_lookup(obj, off);
 	if (!page) {
 		npages = 1 << p2align;
-		virt = ihk_mc_alloc_pages(npages, IHK_MC_AP_NOWAIT);
+		virt = ihk_mc_alloc_aligned_pages(npages, p2align,
+				IHK_MC_AP_NOWAIT);
 		if (!virt) {
 			error = -ENOMEM;
 			ekprintf("shmobj_get_page(%p,%#lx,%d,%p):"
@@ -460,7 +471,7 @@ static int shmobj_lookup_page(struct memobj *memobj, off_t off, int p2align,
 	struct shmobj *obj = to_shmobj(memobj);
 	int error;
 	struct page *page;
-	uintptr_t phys;
+	uintptr_t phys = NOPHYS;
 
 	dkprintf("shmobj_lookup_page(%p,%#lx,%d,%p)\n",
 			memobj, off, p2align, physp);
@@ -471,9 +482,9 @@ static int shmobj_lookup_page(struct memobj *memobj, off_t off, int p2align,
 				memobj, off, p2align, physp, error);
 		goto out;
 	}
-	if (p2align != PAGE_P2ALIGN) {		/* XXX:NYI:large pages */
+	if (p2align != (obj->pgshift - PAGE_SHIFT)) {
 		error = -ENOMEM;
-		ekprintf("shmobj_lookup_page(%p,%#lx,%d,%p):large page. %d\n",
+		ekprintf("shmobj_lookup_page(%p,%#lx,%d,%p):pgsize mismatch. %d\n",
 				memobj, off, p2align, physp, error);
 		goto out;
 	}

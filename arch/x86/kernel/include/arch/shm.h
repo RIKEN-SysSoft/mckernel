@@ -39,7 +39,8 @@ struct shmid_ds {
 	pid_t		shm_cpid;
 	pid_t		shm_lpid;
 	uint64_t	shm_nattch;
-	uint8_t		padding[16];
+	uint8_t		padding[12];
+	int		init_pgshift;
 };
 
 #endif /* HEADER_ARCH_SHM_H */

@@ -522,7 +522,9 @@ static int copy_user_pte(void *arg0, page_table_t src_pt, pte_t *src_ptep, void 
 		attr = arch_vrflag_to_ptattr(args->new_vrflag, PF_POPULATE, NULL);
 	}
 
-	error = ihk_mc_pt_set_range(args->new_vm->address_space->page_table, args->new_vm, pgaddr, pgaddr+pgsize, phys, attr);
+	error = ihk_mc_pt_set_range(args->new_vm->address_space->page_table,
+			args->new_vm, pgaddr, pgaddr+pgsize, phys, attr,
+			pgshift);
 	if (error) {
 		args->fault_addr = (intptr_t)pgaddr;
 		goto out;
@@ -572,6 +574,7 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm)
 		range->flag = src_range->flag;
 		range->memobj = src_range->memobj;
 		range->objoff = src_range->objoff;
+		range->pgshift = src_range->pgshift;
 		if (range->memobj) {
 			memobj_ref(range->memobj);
 		}
@@ -583,7 +586,8 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm)
 
 		error = visit_pte_range(orgvm->address_space->page_table,
 				(void *)range->start, (void *)range->end,
-				VPTEF_SKIP_NULL, &copy_user_pte, &args);
+				range->pgshift, VPTEF_SKIP_NULL,
+				&copy_user_pte, &args);
 		if (error) {
 			if (args.fault_addr != -1) {
 				kprintf("ERROR: copy_user_ranges() "
@@ -626,7 +630,8 @@ int update_process_page_table(struct process_vm *vm,
 	attr = arch_vrflag_to_ptattr(range->flag, PF_POPULATE, NULL);
 	flags = ihk_mc_spinlock_lock(&vm->page_table_lock);
 	error = ihk_mc_pt_set_range(vm->address_space->page_table, vm,
-			(void *)range->start, (void *)range->end, phys, attr);
+			(void *)range->start, (void *)range->end, phys, attr,
+			range->pgshift);
 	if (error) {
 		kprintf("update_process_page_table:ihk_mc_pt_set_range failed. %d\n", error);
 		goto out;
@@ -647,6 +652,13 @@ int split_process_memory_range(struct process_vm *vm, struct vm_range *range,
 	dkprintf("split_process_memory_range(%p,%lx-%lx,%lx,%p)\n",
 			vm, range->start, range->end, addr, splitp);
 
+	error = ihk_mc_pt_split(vm->address_space->page_table, vm, (void *)addr);
+	if (error) {
+		ekprintf("split_process_memory_range:"
+				"ihk_mc_pt_split failed. %d\n", error);
+		goto out;
+	}
+
 	newrange = kmalloc(sizeof(struct vm_range), IHK_MC_AP_NOWAIT);
 	if (!newrange) {
 		ekprintf("split_process_memory_range(%p,%lx-%lx,%lx,%p):"
@@ -659,6 +671,7 @@ int split_process_memory_range(struct process_vm *vm, struct vm_range *range,
 	newrange->start = addr;
 	newrange->end = range->end;
 	newrange->flag = range->flag;
+	newrange->pgshift = range->pgshift;
 
 	if (range->memobj) {
 		memobj_ref(range->memobj);
@@ -735,11 +748,10 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 	int error;
 	intptr_t start;
 	intptr_t end;
-#ifdef USE_LARGE_PAGES
 	struct vm_range *neighbor;
 	intptr_t lpstart;
 	intptr_t lpend;
-#endif /* USE_LARGE_PAGES */
+	size_t pgsize;
 
 	dkprintf("free_process_memory_range(%p, 0x%lx - 0x%lx)\n",
 			vm, range->start, range->end);
@@ -747,25 +759,40 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 	start = range->start;
 	end = range->end;
 	if (!(range->flag & (VR_REMOTE | VR_IO_NOCACHE | VR_RESERVED))) {
-#ifdef USE_LARGE_PAGES
-		lpstart = start & LARGE_PAGE_MASK;
-		lpend = (end + LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
-
-
-		if (lpstart < start) {
-			neighbor = previous_process_memory_range(vm, range);
-			if ((neighbor == NULL) || (neighbor->end <= lpstart)) {
+		neighbor = previous_process_memory_range(vm, range);
+		pgsize = -1;
+		for (;;) {
+			error = arch_get_smaller_page_size(
+					NULL, pgsize, &pgsize, NULL);
+			if (error) {
+				kprintf("free_process_memory_range:"
+						"arch_get_smaller_page_size failed."
+						" %d\n", error);
+				break;
+			}
+			lpstart = start & ~(pgsize - 1);
+			if (!neighbor || (neighbor->end <= lpstart)) {
 				start = lpstart;
+				break;
 			}
 		}
-
-		if (end < lpend) {
-			neighbor = next_process_memory_range(vm, range);
-			if ((neighbor == NULL) || (lpend <= neighbor->start)) {
+		neighbor = next_process_memory_range(vm, range);
+		pgsize = -1;
+		for (;;) {
+			error = arch_get_smaller_page_size(
+					NULL, pgsize, &pgsize, NULL);
+			if (error) {
+				kprintf("free_process_memory_range:"
+						"arch_get_smaller_page_size failed."
+						" %d\n", error);
+				break;
+			}
+			lpend = (end + pgsize - 1) & ~(pgsize - 1);
+			if (!neighbor || (lpend <= neighbor->start)) {
 				end = lpend;
+				break;
 			}
 		}
-#endif /* USE_LARGE_PAGES */
 
 		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 		if (range->memobj) {
@@ -928,6 +955,7 @@ enum ihk_mc_pt_attribute common_vrflag_to_ptattr(unsigned long flag, uint64_t fa
 	return attr;
 }
 
+/* XXX: インデントを揃える必要がある */
 int add_process_memory_range(struct process_vm *vm,
                              unsigned long start, unsigned long end,
                              unsigned long phys, unsigned long flag,
@@ -1236,7 +1264,8 @@ int remap_process_memory_range(struct process_vm *vm, struct vm_range *range,
 	args.memobj = range->memobj;
 
 	error = visit_pte_range(vm->address_space->page_table, (void *)start,
-			(void *)end, VPTEF_DEFAULT, &remap_one_page, &args);
+			(void *)end, range->pgshift, VPTEF_DEFAULT,
+			&remap_one_page, &args);
 	if (error) {
 		ekprintf("remap_process_memory_range(%p,%p,%#lx,%#lx,%#lx):"
 				"visit pte failed %d\n",
@@ -1306,8 +1335,8 @@ int sync_process_memory_range(struct process_vm *vm, struct vm_range *range,
 	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 	memobj_lock(range->memobj);
 	error = visit_pte_range(vm->address_space->page_table, (void *)start,
-	                        (void *)end, VPTEF_SKIP_NULL, &sync_one_page,
-	                        &args);
+	                        (void *)end, range->pgshift, VPTEF_SKIP_NULL,
+				&sync_one_page, &args);
 	memobj_unlock(range->memobj);
 	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 	if (error) {
@@ -1389,7 +1418,7 @@ int invalidate_process_memory_range(struct process_vm *vm,
 	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 	memobj_lock(range->memobj);
 	error = visit_pte_range(vm->address_space->page_table, (void *)start,
-	                        (void *)end, VPTEF_SKIP_NULL,
+	                        (void *)end, range->pgshift, VPTEF_SKIP_NULL,
 	                        &invalidate_one_page, &args);
 	memobj_unlock(range->memobj);
 	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
@@ -1421,8 +1450,8 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 	/*****/
 	ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
-	                            (void *)fault_addr, &pgaddr, &pgsize,
-	                            &p2align);
+			(void *)fault_addr, range->pgshift, &pgaddr, &pgsize,
+			&p2align);
 	if (!(reason & (PF_PROT | PF_PATCH)) && ptep && !pte_is_null(ptep)
 			&& !pte_is_fileoff(ptep, pgsize)) {
 		if (!pte_is_present(ptep)) {
@@ -1439,13 +1468,19 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 		goto out;
 	}
 	/*****/
-	if (!ptep || (pgsize != PAGE_SIZE)) {
+	while (((uintptr_t)pgaddr < range->start)
+			|| (range->end < ((uintptr_t)pgaddr + pgsize))) {
 		ptep = NULL;
-		pgsize = PAGE_SIZE;
-		p2align = PAGE_P2ALIGN;
+		error = arch_get_smaller_page_size(NULL, pgsize, &pgsize, &p2align);
+		if (error) {
+			kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):arch_get_smaller_page_size(pte) failed. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
+			goto out;
+		}
+		pgaddr = (void *)(fault_addr & ~(pgsize - 1));
 	}
-	pgaddr = (void *)(fault_addr & ~(pgsize - 1));
+	/*****/
 	if (!ptep || pte_is_null(ptep) || pte_is_fileoff(ptep, pgsize)) {
+		phys = NOPHYS;
 		if (range->memobj) {
 			off_t off;
 
@@ -1458,17 +1493,34 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 			error = memobj_get_page(range->memobj, off, p2align,
 					&phys, &memobj_flag);
 			if (error) {
-				if (error != -ERESTART) {
+				struct memobj *obj;
+
+				if (zeroobj_create(&obj)) {
+					panic("PFPMR: zeroobj_crate");
 				}
-				goto out;
+
+				if (range->memobj != obj) {
+					goto out;
+				}
 			}
 		}
-		else {
+		if (phys == NOPHYS) {
 			void *virt;
 			size_t npages;
 
+retry:
 			npages = pgsize / PAGE_SIZE;
 			virt = ihk_mc_alloc_aligned_pages(npages, p2align, IHK_MC_AP_NOWAIT);
+			if (!virt && !range->pgshift && (pgsize != PAGE_SIZE)) {
+				error = arch_get_smaller_page_size(NULL, pgsize, &pgsize, &p2align);
+				if (error) {
+					kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):arch_get_smaller_page_size(anon) failed. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
+					goto out;
+				}
+				ptep = NULL;
+				pgaddr = (void *)(fault_addr & ~(pgsize - 1));
+				goto retry;
+			}
 			if (!virt) {
 				error = -ENOMEM;
 				kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):cannot allocate new page. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
@@ -1527,18 +1579,20 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 	else {
 		error = ihk_mc_pt_set_range(vm->address_space->page_table, vm,
 		                            pgaddr, pgaddr + pgsize, phys,
-		                            attr);
+		                            attr, range->pgshift);
 		if (error) {
 			kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):set_range failed. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
 			goto out;
 		}
 	}
 	flush_tlb_single(fault_addr);
-	error = 0;
-	page = NULL;
-	vm->currss += PAGE_SIZE;
+	vm->currss += pgsize;
 	if(vm->currss > vm->proc->maxrss)
 		vm->proc->maxrss = vm->currss;
+
+	error = 0;
+	page = NULL;
+
 out:
 	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 	if (page) {
@@ -1712,7 +1766,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	                            thread->vm, (void *)(end-minsz),
 	                            (void *)end, virt_to_phys(stack),
 	                            arch_vrflag_to_ptattr(vrflag, PF_POPULATE,
-	                                                  NULL));
+	                                                  NULL), 0);
 	if (error) {
 		kprintf("init_process_stack:"
 				"set range %lx-%lx %lx failed. %d\n",

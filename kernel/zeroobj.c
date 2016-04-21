@@ -182,7 +182,7 @@ static int zeroobj_get_page(struct memobj *memobj, off_t off, int p2align,
 	}
 	if (p2align != PAGE_P2ALIGN) {		/* XXX:NYI:large pages */
 		error = -ENOMEM;
-		ekprintf("zeroobj_get_page(%p,%#lx,%d,%p):large page. %d\n",
+		dkprintf("zeroobj_get_page(%p,%#lx,%d,%p):large page. %d\n",
 				memobj, off, p2align, physp, error);
 		goto out;
 	}

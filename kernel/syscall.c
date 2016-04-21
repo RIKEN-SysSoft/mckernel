@@ -895,24 +895,20 @@ static int do_munmap(void *addr, size_t len)
 	return error;
 }
 
-static int search_free_space(size_t len, intptr_t hint, intptr_t *addrp)
+static int search_free_space(size_t len, intptr_t hint, int pgshift, intptr_t *addrp)
 {
 	struct thread *thread = cpu_local_var(current);
 	struct vm_regions *region = &thread->vm->region;
 	intptr_t addr;
 	int error;
 	struct vm_range *range;
+	size_t pgsize = (size_t)1 << pgshift;
 
-	dkprintf("search_free_space(%lx,%lx,%p)\n", len, hint, addrp);
+	dkprintf("search_free_space(%lx,%lx,%d,%p)\n", len, hint, pgshift, addrp);
 
 	addr = hint;
 	for (;;) {
-#ifdef USE_LARGE_PAGES
-		if (len >= LARGE_PAGE_SIZE) {
-			addr = (addr + LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
-		}
-#endif /* USE_LARGE_PAGES */
-
+		addr = (addr + pgsize - 1) & ~(pgsize - 1);
 		if ((region->user_end <= addr)
 				|| ((region->user_end - len) < addr)) {
 			ekprintf("search_free_space(%lx,%lx,%p):"
@@ -934,8 +930,8 @@ static int search_free_space(size_t len, intptr_t hint, intptr_t *addrp)
 	*addrp = addr;
 
 out:
-	dkprintf("search_free_space(%lx,%lx,%p): %d %lx\n",
-			len, hint, addrp, error, addr);
+	dkprintf("search_free_space(%lx,%lx,%d,%p): %d %lx\n",
+			len, hint, pgshift, addrp, error, addr);
 	return error;
 }
 
@@ -994,6 +990,27 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 
 	flush_nfo_tlb();
 
+	if (flags & MAP_HUGETLB) {
+		pgshift = (flags >> MAP_HUGE_SHIFT) & 0x3F;
+		p2align = pgshift - PAGE_SHIFT;
+	}
+	else if ((flags & MAP_PRIVATE) && (flags & MAP_ANONYMOUS)) {
+		pgshift = 0;		/* transparent huge page */
+		p2align = PAGE_P2ALIGN;
+
+		if (len > PAGE_SIZE) {
+			error = arch_get_smaller_page_size(NULL, len+1, NULL, &p2align);
+			if (error) {
+				ekprintf("do_mmap:arch_get_smaller_page_size failed. %d\n", error);
+				goto out;
+			}
+		}
+	}
+	else {
+		pgshift = PAGE_SHIFT;	/* basic page size */
+		p2align = PAGE_P2ALIGN;
+	}
+
 	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
 
 	if (flags & MAP_FIXED) {
@@ -1007,10 +1024,11 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	}
 	else {
 		/* choose mapping address */
-		error = search_free_space(len, region->map_end, &addr);
+		error = search_free_space(len, region->map_end,
+				PAGE_SHIFT+p2align, &addr);
 		if (error) {
-			ekprintf("do_mmap:search_free_space(%lx,%lx) failed. %d\n",
-					len, region->map_end, error);
+			ekprintf("do_mmap:search_free_space(%lx,%lx,%d) failed. %d\n",
+					len, region->map_end, p2align, error);
 			goto out;
 		}
 		region->map_end = addr + len;
@@ -1096,13 +1114,6 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	else if (!(vrflags & VR_DEMAND_PAGING)
 			&& ((vrflags & VR_PROT_MASK) != VR_PROT_NONE)) {
 		npages = len >> PAGE_SHIFT;
-		p2align = PAGE_P2ALIGN;
-#ifdef USE_LARGE_PAGES
-		if ((len >= LARGE_PAGE_SIZE)
-				&& ((addr & (LARGE_PAGE_SIZE - 1)) == 0)) {
-			p2align = LARGE_PAGE_P2ALIGN;
-		}
-#endif /* USE_LARGE_PAGES */
 		p = ihk_mc_alloc_aligned_pages(npages, p2align, IHK_MC_AP_NOWAIT);
 		if (p == NULL) {
 			ekprintf("do_mmap:allocate_pages(%d,%d) failed.\n",
@@ -1116,6 +1127,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		memset(&ads, 0, sizeof(ads));
 		ads.shm_segsz = len;
 		ads.shm_perm.mode = SHM_DEST;
+		ads.init_pgshift = PAGE_SHIFT;
 		error = shmobj_create(&ads, &memobj);
 		if (error) {
 			ekprintf("do_mmap:shmobj_create failed. %d\n", error);
@@ -1140,13 +1152,6 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		goto out;
 	}
 	vrflags |= VRFLAG_PROT_TO_MAXPROT(PROT_TO_VR_FLAG(maxprot));
-
-	if (flags & MAP_HUGETLB) {
-		pgshift = (flags >> MAP_HUGE_SHIFT) & 0x3F;
-	}
-	else {
-		pgshift = PAGE_SHIFT;	/* basic page size */
-	}
 
 	error = add_process_memory_range(thread->vm, addr, addr+len, phys,
 			vrflags, memobj, off, pgshift);
@@ -3238,7 +3243,7 @@ SYSCALL_DECLARE(mincore)
 
 		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 		ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
-				(void *)addr, NULL, NULL, NULL);
+				(void *)addr, 0, NULL, NULL, NULL);
 		if (ptep && pte_is_present(ptep)) {
 			value = 1;
 		}
@@ -3630,6 +3635,7 @@ int do_shmget(const key_t key, const size_t size, const int shmflg)
 	ads.shm_segsz = size;
 	ads.shm_ctime = now;
 	ads.shm_cpid = proc->pid;
+	ads.init_pgshift = pgshift;
 
 	error = shmobj_create_indexed(&ads, &obj);
 	if (error) {
@@ -3639,7 +3645,6 @@ int do_shmget(const key_t key, const size_t size, const int shmflg)
 	}
 
 	obj->index = ++the_maxi;
-	obj->pgshift = pgshift;
 
 	list_add(&obj->chain, &kds_list);
 	++the_shm_info.used_ids;
@@ -3668,6 +3673,7 @@ SYSCALL_DECLARE(shmat)
 	int vrflags;
 	int req;
 	struct shmobj *obj;
+	size_t pgsize;
 
 	dkprintf("shmat(%#x,%p,%#x)\n", shmid, shmaddr, shmflg);
 
@@ -3679,13 +3685,14 @@ SYSCALL_DECLARE(shmat)
 		return error;
 	}
 
-	if (shmaddr && ((uintptr_t)shmaddr & (PAGE_SIZE - 1)) && !(shmflg & SHM_RND)) {
+	pgsize = (size_t)1 << obj->pgshift;
+	if (shmaddr && ((uintptr_t)shmaddr & (pgsize - 1)) && !(shmflg & SHM_RND)) {
 		shmobj_list_unlock();
 		dkprintf("shmat(%#x,%p,%#x): -EINVAL\n", shmid, shmaddr, shmflg);
 		return -EINVAL;
 	}
-	addr = (uintptr_t)shmaddr & PAGE_MASK;
-	len = (obj->ds.shm_segsz + PAGE_SIZE - 1) & PAGE_MASK;
+	addr = (uintptr_t)shmaddr & ~(pgsize - 1);
+	len = obj->real_segsz;
 
 	prot = PROT_READ;
 	req = 4;
@@ -3725,7 +3732,7 @@ SYSCALL_DECLARE(shmat)
 		}
 	}
 	else {
-		error = search_free_space(len, region->map_end, &addr);
+		error = search_free_space(len, region->map_end, obj->pgshift, &addr);
 		if (error) {
 			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 			shmobj_list_unlock();
@@ -3753,7 +3760,7 @@ SYSCALL_DECLARE(shmat)
 	memobj_ref(&obj->memobj);
 
 	error = add_process_memory_range(vm, addr, addr+len, -1,
-			vrflags, &obj->memobj, 0, PAGE_SHIFT);
+			vrflags, &obj->memobj, 0, obj->pgshift);
 	if (error) {
 		if (!(prot & PROT_WRITE)) {
 			(void)set_host_vma(addr, len, PROT_READ|PROT_WRITE);
@@ -3940,7 +3947,7 @@ SYSCALL_DECLARE(shmctl)
 				ekprintf("shmctl(%#x,%d,%p): user lookup: %d\n", shmid, cmd, buf, error);
 				return -ENOMEM;
 			}
-			size = (obj->ds.shm_segsz + PAGE_SIZE - 1) & PAGE_MASK;
+			size = obj->real_segsz;
 			if (!has_cap_ipc_lock(thread)
 					&& (rlim->rlim_cur != (rlim_t)-1)
 					&& ((rlim->rlim_cur < user->locked)
@@ -3978,7 +3985,7 @@ SYSCALL_DECLARE(shmctl)
 		if ((obj->ds.shm_perm.mode & SHM_LOCKED)
 			       && ((obj->pgshift == 0)
 				       || (obj->pgshift == PAGE_SHIFT))) {
-			size = (obj->ds.shm_segsz + PAGE_SIZE - 1) & PAGE_MASK;
+			size = obj->real_segsz;
 			shmlock_users_lock();
 			user = obj->user;
 			obj->user = NULL;
@@ -6433,7 +6440,7 @@ SYSCALL_DECLARE(mremap)
 		}
 		need_relocate = 1;
 		error = search_free_space(newsize, vm->region.map_end,
-				(intptr_t *)&newstart);
+				range->pgshift, (intptr_t *)&newstart);
 		if (error) {
 			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
 					"search failed. %d\n",
