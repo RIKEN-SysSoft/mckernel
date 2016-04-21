@@ -1214,21 +1214,6 @@ int change_prot_process_memory_range(struct process_vm *vm,
 		goto out;
 	}
 
-	if (((range->flag & VR_PROT_MASK) == PROT_NONE)
-			&& !(range->flag & VR_DEMAND_PAGING)) {
-		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
-		error = ihk_mc_pt_alloc_range(vm->address_space->page_table,
-				(void *)range->start, (void *)range->end,
-				newattr);
-		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
-		if (error) {
-			ekprintf("change_prot_process_memory_range(%p,%lx-%lx,%lx):"
-					"ihk_mc_pt_alloc_range failed: %d\n",
-					vm, range->start, range->end, protflag, error);
-			goto out;
-		}
-	}
-
 	range->flag = newflag;
 	error = 0;
 out:

@@ -127,8 +127,6 @@ int ihk_mc_pt_free_range(page_table_t pt, struct process_vm *vm,
 int ihk_mc_pt_change_attr_range(page_table_t pt, void *start, void *end,
 		enum ihk_mc_pt_attribute clrattr,
 		enum ihk_mc_pt_attribute setattr);
-int ihk_mc_pt_alloc_range(page_table_t pt, void *start, void *end,
-		enum ihk_mc_pt_attribute attr);
 pte_t *ihk_mc_pt_lookup_pte(page_table_t pt, void *virt, void **pgbasep, size_t *pgsizep, int *p2alignp);
 int ihk_mc_pt_set_range(page_table_t pt, struct process_vm *vm, void *start, 
 		void *end, uintptr_t phys, enum ihk_mc_pt_attribute attr);
