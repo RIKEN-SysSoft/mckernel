@@ -447,6 +447,14 @@ struct process {
 
 	long maxrss;
 	long maxrss_children;
+
+	// perf_event
+	int perf_status;
+#define PP_NONE 0
+#define PP_RESET 1
+#define PP_COUNT 2
+#define PP_STOP 3
+	struct mc_perf_event *monitoring_event;
 };
 
 void hold_thread(struct thread *ftn);

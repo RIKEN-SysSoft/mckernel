@@ -33,6 +33,7 @@
 
 #define LAPIC_ID            0x020
 #define LAPIC_TIMER         0x320
+#define LAPIC_LVTPC         0x340
 #define LAPIC_TIMER_INITIAL 0x380
 #define LAPIC_TIMER_CURRENT 0x390
 #define LAPIC_TIMER_DIVIDE  0x3e0
@@ -42,6 +43,7 @@
 #define LAPIC_ICR2          0x310
 #define LAPIC_ESR           0x280
 #define LOCAL_TIMER_VECTOR  0xef
+#define LOCAL_PERF_VECTOR   0xf0
 
 #define APIC_INT_LEVELTRIG      0x08000
 #define APIC_INT_ASSERT         0x04000
@@ -420,6 +422,7 @@ init_lapic()
 	}
 
 	lapic_write(LAPIC_SPURIOUS, 0x1ff);
+	lapic_write(LAPIC_LVTPC, LOCAL_PERF_VECTOR);
 }
 
 void print_msr(int idx)
@@ -872,6 +875,15 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 		v->flags |= CPU_FLAG_NEED_RESCHED;
 		ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
 		dkprintf("timer[%lu]: CPU_FLAG_NEED_RESCHED \n", rdtsc());
+	}
+	else if (vector == LOCAL_PERF_VECTOR) {
+		unsigned long value;
+
+		value = rdmsr(MSR_PERF_GLOBAL_STATUS);
+		wrmsr(MSR_PERF_GLOBAL_OVF_CTRL, value);
+		wrmsr(MSR_PERF_GLOBAL_OVF_CTRL, 0);
+		//TODO: counter overflow signal
+		//set_signal(0x1d, regs, NULL); // SIGIO
 	}
 	else if (vector >= IHK_TLB_FLUSH_IRQ_VECTOR_START && 
 	         vector < IHK_TLB_FLUSH_IRQ_VECTOR_END) {

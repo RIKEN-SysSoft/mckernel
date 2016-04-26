@@ -214,16 +214,20 @@ struct perf_event_attr {
 #endif
 };
 
-
 struct mc_perf_event {
 	struct perf_event_attr		attr;
 	int 				cpu_id;
-	int 				counter;
+	int 				counter_id;	// counter_id
+	unsigned long			count;		// counter_value
+	unsigned long			child_count_total;	// child_counter_value
+	unsigned long 			pmc_status;
 	unsigned long			sample_freq;
 
+	struct mc_perf_event		*parent;
 	struct mc_perf_event 		*group_leader;
 	struct list_head		sibling_list;
 	int 				nr_siblings;
+	int				pid;
 	struct list_head		group_entry;
 };
 

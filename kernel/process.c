@@ -64,6 +64,8 @@ int ptrace_detach(int pid, int data);
 extern unsigned long do_kill(struct thread *, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
 extern void procfs_create_thread(struct thread *);
 extern void procfs_delete_thread(struct thread *);
+extern void perf_start(struct mc_perf_event *event);
+extern void perf_reset(struct mc_perf_event *event);
 
 struct list_head resource_set_list;
 mcs_rwlock_lock_t    resource_set_lock;
@@ -100,6 +102,7 @@ init_process(struct process *proc, struct process *parent)
 	ihk_mc_spinlock_init(&proc->mckfd_lock);
 	waitq_init(&proc->waitpid_q);
 	ihk_atomic_set(&proc->refcount, 2);
+	proc->monitoring_event = NULL;
 }
 
 void
@@ -2627,6 +2630,15 @@ redo:
 		/* Set up new TLS.. */
 		ihk_mc_init_user_tlsbase(next->uctx, next->tlsblock_base);
 
+		/* Performance monitoring inherit */
+		if(next->proc->monitoring_event) {
+			if(next->proc->perf_status == PP_RESET)
+				perf_reset(next->proc->monitoring_event);
+			if(next->proc->perf_status != PP_COUNT) {
+				perf_reset(next->proc->monitoring_event);
+				perf_start(next->proc->monitoring_event);
+			}
+		}
 		if (prev) {
 			last = ihk_mc_switch_context(&prev->ctx, &next->ctx, prev);
 		}

@@ -14,18 +14,24 @@
 #include <registers.h>
 
 extern unsigned int *x86_march_perfmap;
-static unsigned long pmc_status = 0x0;
 
 #define X86_CR4_PCE     0x00000100
 
 void x86_init_perfctr(void)
 {
 	unsigned long reg;
+	unsigned long value = 0;
 
 	/* Allow PMC to be read from user space */
 	asm volatile("movq %%cr4, %0" : "=r"(reg));
 	reg |= X86_CR4_PCE;
 	asm volatile("movq %0, %%cr4" : : "r"(reg));
+
+	/* Enable PMC Control */
+        value = rdmsr(MSR_PERF_GLOBAL_CTRL);
+        value |= X86_IA32_PERF_COUNTERS_MASK;
+        value |= X86_IA32_FIXED_PERF_COUNTERS_MASK;
+        wrmsr(MSR_PERF_GLOBAL_CTRL, value);
 }
 
 static int set_perfctr_x86_direct(int counter, int mode, unsigned int value)
@@ -287,7 +293,7 @@ unsigned long ihk_mc_perfctr_read_msr(int counter)
 	return retval;
 }
 
-int ihk_mc_perfctr_alloc_counter()
+int ihk_mc_perfctr_alloc_counter(unsigned long pmc_status)
 {
 	int i = 0;
         int ret = -1;
@@ -307,15 +313,3 @@ int ihk_mc_perfctr_alloc_counter()
 
         return ret;
 }
-
-void ihk_mc_perfctr_release_counter(int counter)
-{
-	unsigned long value = 0;
-
-	value = rdmsr(MSR_PERF_GLOBAL_CTRL);
-	value &= ~(1UL << counter);
-	pmc_status &= ~(1UL << counter);
-
-	wrmsr(MSR_PERF_GLOBAL_CTRL, 0);
-}
-
