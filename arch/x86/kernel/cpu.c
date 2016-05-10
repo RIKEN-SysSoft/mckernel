@@ -898,8 +898,11 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 		}
 	}
 
-	check_signal(0, regs, 0);
-	check_need_resched();
+	if(interrupt_from_user(regs)){
+		cpu_enable_interrupt();
+		check_signal(0, regs, 0);
+		check_need_resched();
+	}
 	set_cputime(0);
 
 	--v->in_interrupt;
@@ -915,8 +918,11 @@ void gpe_handler(struct x86_user_context *regs)
 		panic("gpe_handler");
 	}
 	set_signal(SIGSEGV, regs, NULL);
-	check_signal(0, regs, 0);
-	check_need_resched();
+	if(interrupt_from_user(regs)){
+		cpu_enable_interrupt();
+		check_signal(0, regs, 0);
+		check_need_resched();
+	}
 	set_cputime(0);
 	// panic("GPF");
 }
@@ -945,8 +951,11 @@ void debug_handler(struct x86_user_context *regs)
 	memset(&info, '\0', sizeof info);
 	info.si_code = si_code;
 	set_signal(SIGTRAP, regs, &info);
-	check_signal(0, regs, 0);
-	check_need_resched();
+	if(interrupt_from_user(regs)){
+		cpu_enable_interrupt();
+		check_signal(0, regs, 0);
+		check_need_resched();
+	}
 	set_cputime(0);
 }
 
@@ -964,8 +973,11 @@ void int3_handler(struct x86_user_context *regs)
 	memset(&info, '\0', sizeof info);
 	info.si_code = TRAP_BRKPT;
 	set_signal(SIGTRAP, regs, &info);
-	check_signal(0, regs, 0);
-	check_need_resched();
+	if(interrupt_from_user(regs)){
+		cpu_enable_interrupt();
+		check_signal(0, regs, 0);
+		check_need_resched();
+	}
 	set_cputime(0);
 }
 

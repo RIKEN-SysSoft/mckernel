@@ -363,7 +363,10 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 			info._sifields._sigfault.si_addr = fault_addr;
 			set_signal(SIGSEGV, regs, &info);
 		}
-		check_signal(0, regs, 0);
+		if(interrupt_from_user(regs)){
+			cpu_enable_interrupt();
+			check_signal(0, regs, 0);
+		}
 		goto out;
 	}
 
