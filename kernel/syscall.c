@@ -4987,7 +4987,7 @@ static int ptrace_attach(int pid)
 	info.si_signo = SIGSTOP;
 	info.si_code = SI_USER;
 	info._sifields._kill.si_pid = proc->pid;
-	error = do_kill(mythread, pid, -1, SIGSTOP, &info, 1);
+	error = do_kill(mythread, pid, -1, SIGSTOP, &info, 2);
 	if (error < 0) {
 		goto out;
 	}

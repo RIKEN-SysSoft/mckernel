@@ -1258,7 +1258,7 @@ done:
 				/* Wake up the target only when stopped by ptrace-reporting */
 				sched_wakeup_thread(tthread, PS_TRACED | PS_STOPPED);
 			}
-			else if(sig == SIGCONT || ptracecont){
+			else if(sig == SIGCONT || ptracecont == 1){
 				/* Wake up the target only when stopped by SIGSTOP */
 				sched_wakeup_thread(tthread, PS_STOPPED);
 				tthread->proc->status = PS_RUNNING;
