@@ -120,9 +120,15 @@ static int load_elf(struct linux_binprm *bprm
 		for(i = 0, st = 0; mode != 2;){
 			if(st == 0){
 				off = p & ~PAGE_MASK;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
+				rc = get_user_pages_remote(current, bprm->mm,
+				                        bprm->p, 1, 0, 1,
+				                        &page, NULL);
+#else
 				rc = get_user_pages(current, bprm->mm,
 				                        bprm->p, 1, 0, 1,
 				                        &page, NULL);
+#endif
 				if(rc <= 0)
 					return -EFAULT;
 				addr = kmap_atomic(page
