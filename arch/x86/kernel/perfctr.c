@@ -14,6 +14,7 @@
 #include <registers.h>
 
 extern unsigned int *x86_march_perfmap;
+extern int running_on_kvm(void);
 
 #define X86_CR4_PCE     0x00000100
 
@@ -21,6 +22,9 @@ void x86_init_perfctr(void)
 {
 	unsigned long reg;
 	unsigned long value = 0;
+
+	/* Do not do it on KVM */
+	if (running_on_kvm()) return;
 
 	/* Allow PMC to be read from user space */
 	asm volatile("movq %%cr4, %0" : "=r"(reg));

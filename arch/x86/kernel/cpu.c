@@ -79,6 +79,7 @@ static unsigned int (*lapic_read)(int reg);
 static void (*lapic_icr_write)(unsigned int h, unsigned int l);
 static void (*lapic_wait_icr_idle)(void);
 void (*x86_issue_ipi)(unsigned int apicid, unsigned int low);
+int running_on_kvm(void);
 
 void init_processors_local(int max_id);
 void assign_processor_id(void);
@@ -454,6 +455,8 @@ void init_pstate_and_turbo(void)
 	uint64_t value;
 	uint64_t eax, ecx;
 
+	if (running_on_kvm()) return;
+
 	asm volatile("cpuid" : "=a" (eax), "=c" (ecx) : "a" (0x6) : "%rbx", "%rdx");
 	if (!(ecx & 0x01)) {
 		/* P-states and/or Turbo Boost are not supported. */
@@ -619,6 +622,9 @@ static void init_smp_processor(void)
 	reload_gdt(&v->gdt_ptr);
 
 	set_kstack((unsigned long)get_x86_this_cpu_kstack());
+
+	/* MSR_IA32_TSC_AUX on KVM seems broken */
+	if (running_on_kvm()) return;
 #define MSR_IA32_TSC_AUX 0xc0000103
 	wrmsr(MSR_IA32_TSC_AUX, node_cpu);
 }
@@ -1739,5 +1745,26 @@ int arch_get_cpu_mapping(struct cpu_mapping **buf, int *nelemsp)
 out:
 	return error;
 } /* arch_get_cpu_mapping() */
+
+#define KVM_CPUID_SIGNATURE	0x40000000
+
+int running_on_kvm(void) {
+	static const char signature[12] = "KVMKVMKVM\0\0";
+	const uint32_t *sigptr = (const uint32_t *)signature;
+	uint64_t op;
+	uint64_t eax;
+	uint64_t ebx;
+	uint64_t ecx;
+	uint64_t edx;
+
+	op = KVM_CPUID_SIGNATURE;
+	asm volatile("cpuid" : "=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx) : "a" (op));
+
+	if (ebx == sigptr[0] && ecx == sigptr[1] && edx == sigptr[2]) {
+		return 1;
+	}
+
+	return 0;
+}
 
 /*** end of file ***/
