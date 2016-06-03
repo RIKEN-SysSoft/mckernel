@@ -2577,6 +2577,7 @@ SYSCALL_DECLARE(signalfd4)
 		sfd = kmalloc(sizeof(struct mckfd), IHK_MC_AP_NOWAIT);
 		if(!sfd)
 			return -ENOMEM;
+		memset(sfd, '\0', sizeof(struct mckfd));
 		sfd->fd = fd;
 		irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
 		sfd->next = proc->mckfd;
