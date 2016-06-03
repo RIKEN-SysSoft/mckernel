@@ -4,9 +4,15 @@ KMODDIR=@KMODDIR@
 src = @abs_srcdir@
 ENABLE_MCOVERLAYFS=@ENABLE_MCOVERLAYFS@
 
-RELEASE=$(shell uname -r | cut -d"." -f1)
+RELEASE=$(shell uname -r)
+MAJOR=$(shell echo ${RELEASE} | sed -e 's/^\([0-9]*\).*/\1/')
+MINOR=$(shell echo ${RELEASE} | sed -e 's/^[0-9]*.\([0-9]*\).*/\1/')
+PATCH=$(shell echo ${RELEASE} | sed -e 's/^[0-9]*.[0-9]*.\([0-9]*\).*/\1/')
+LINUX_VERSION_CODE=$(shell expr \( ${MAJOR} \* 65536 \) + \( ${MINOR} \* 256 \) + ${PATCH})
+RHEL_RELEASE=$(shell echo ${RELEASE} | sed -e 's/^[0-9]*.[0-9]*.[0-9]*-\([0-9]*\).*/\1/')
+RHEL_RELEASE=$(shell if [ "${RELEASE}" == "${RHEL_RELEASE}" ]; then echo ""; else echo ${RHEL_RELEASE}; fi)
 ifeq ($(ENABLE_MCOVERLAYFS),yes)
-ENABLE_BUILD=$(shell if [ "${RELEASE}" == "4" ]; then echo "yes"; fi)
+ENABLE_BUILD=$(shell if ( [ ${LINUX_VERSION_CODE} -ge 262144 ] && [ ${LINUX_VERSION_CODE} -lt 262400 ] ); then echo "yes"; else echo "no"; fi)
 else
 ENABLE_BUILD=no
 endif

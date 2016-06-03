@@ -59,9 +59,18 @@ mem="512M@0"
 cpus=""
 ihk_ikc_irq_core=0
 
-kernel_release=`uname -r`
-enable_mcoverlay=`if [[ ${kernel_release} =~ ^4.* && "${ENABLE_MCOVERLAYFS}" == "yes" ]]; then echo "yes"; fi`
-
+release=`uname -r`
+major=`echo ${release} | sed -e 's/^\([0-9]*\).*/\1/'`
+minor=`echo ${release} | sed -e 's/^[0-9]*.\([0-9]*\).*/\1/'`
+patch=`echo ${release} | sed -e 's/^[0-9]*.[0-9]*.\([0-9]*\).*/\1/'`
+linux_version_code=`expr \( ${major} \* 65536 \) + \( ${minor} \* 256 \) + ${patch}`
+rhel_release=`echo ${release} | sed -e 's/^[0-9]*.[0-9]*.[0-9]*-\([0-9]*\).*/\1/'`
+if [ "${release}" == "${rhel_release}" ]; then rhel_release=""; fi
+if [ "${ENABLE_MCOVERLAYFS}" == "yes" ]; then
+	enable_mcoverlay=`if ( [ ${linux_version_code} -ge 262144 ] && [ ${linux_version_code} -lt 262400 ] ); then echo "yes"; else echo "no"; fi`
+else
+	enable_mcoverlay=no
+fi
 
 if [ "$cpus" == "" ]; then
 	# Get the number of CPUs on NUMA node 0
@@ -79,7 +88,7 @@ if [ "`lsmod | grep mcctrl`" != "" ]; then
 fi
 
 # Remove mcoverlay if loaded
-if [ "$enable_mcoverlay" != "" ]; then
+if [ "$enable_mcoverlay" == "yes" ]; then
 	if [ "`lsmod | grep mcoverlay`" != "" ]; then
 		if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_sys`" != "" ]; then umount -l /tmp/mcos/mcos0_sys; fi
 		if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_proc`" != "" ]; then umount -l /tmp/mcos/mcos0_proc; fi
@@ -149,7 +158,7 @@ if ! ${SBINDIR}/ihkosctl 0 boot; then echo "error: booting"; exit; fi
 if ! insmod ${KMODDIR}/mcctrl.ko; then echo "error: inserting mcctrl.ko"; exit; fi
 if ! chown `logname` /dev/mcd* /dev/mcos*; then echo "error: chowning device files"; exit; fi
 
-if [ "$enable_mcoverlay" != "" ]; then
+if [ "$enable_mcoverlay" == "yes" ]; then
 	if [ ! -e /tmp/mcos ]; then mkdir -p /tmp/mcos; fi
 	if ! mount -t tmpfs tmpfs /tmp/mcos; then echo "error: mount /tmp/mcos"; exit; fi
 	if [ ! -e /tmp/mcos/linux_proc ]; then mkdir -p /tmp/mcos/linux_proc; fi

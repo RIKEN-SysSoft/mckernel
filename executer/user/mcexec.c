@@ -1091,7 +1091,7 @@ void init_worker_threads(int fd)
 }
 
 #ifdef ENABLE_MCOVERLAYFS
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0) && LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0)
 #define READ_BUFSIZE 1024
 static int isunshare(void)
 {
@@ -1353,7 +1353,7 @@ int main(int argc, char **argv)
 	}
 
 #ifdef ENABLE_MCOVERLAYFS
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0) && LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0)
 	__dprintf("mcoverlay enable\n");
 	char mcos_procdir[PATH_MAX];
 	char mcos_sysdir[PATH_MAX];
@@ -1401,7 +1401,7 @@ int main(int argc, char **argv)
 	} else if (error == -1) {
 		return 1;
 	}
-#endif // LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
+#endif
 #else
 	__dprintf("mcoverlay disable\n");
 #endif // ENABLE_MCOVERLAYFS
@@ -1737,9 +1737,11 @@ int close_cloexec_fds(int mcos_fd)
 char *
 chgpath(char *in, char *buf)
 {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
+#ifdef ENABLE_MCOVERLAYFS
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0) && LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0)
 	return in;
-#else
+#endif
+#endif // ENABLE_MCOVERLAYFS
 	char	*fn = in;
 	struct stat	sb;
 
@@ -1760,7 +1762,6 @@ chgpath(char *in, char *buf)
 	if(stat(fn, &sb) == -1)
 		return in;
 	return fn;
-#endif
 }
 
 int main_loop(int fd, int cpu, pthread_mutex_t *lock)
