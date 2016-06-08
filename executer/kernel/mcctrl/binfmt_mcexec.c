@@ -45,7 +45,6 @@ static int load_elf(struct linux_binprm *bprm
 #endif
 )
 {
-	char mcexec[BINPRM_BUF_SIZE];
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36)
 	const
 #endif
@@ -60,12 +59,8 @@ static int load_elf(struct linux_binprm *bprm
 		int	l;
 	} envdata;
 	envdata env[] = {
-		{.name = "MCEXEC"},
-#define env_mcexec (env[0].val)
 		{.name = "MCEXEC_WL"},
-#define env_mcexec_wl (env[1].val)
-		{.name = "MCEXEC_BL"},
-#define env_mcexec_bl (env[2].val)
+#define env_mcexec_wl (env[0].val)
 		{.name = NULL}
 	};
 	envdata *ep;
@@ -196,23 +191,10 @@ static int load_elf(struct linux_binprm *bprm
 		}
 	}
 
-	if(!env_mcexec || !strcmp(env_mcexec, "0") || !strcmp(env_mcexec, "off"))
-		rc = 1;
-	else{
-		rc = 0;
-		if(strchr(env_mcexec, '/') && strlen(env_mcexec) < BINPRM_BUF_SIZE)
-			strcpy(mcexec, env_mcexec);
-		else
-			strcpy(mcexec, MCEXEC_PATH);
-	}
-
-	if(rc);
-	else if(env_mcexec_wl)
+	if(env_mcexec_wl)
 		rc = !pathcheck(path, env_mcexec_wl);
-	else if(env_mcexec_bl)
-		rc = pathcheck(path, env_mcexec_bl);
 	else
-		rc = pathcheck(path, "/usr:/bin:/sbin:/opt");
+		rc = 1;
 
 	for(ep = env; ep->name; ep++)
 		if(ep->val)
@@ -220,7 +202,7 @@ static int load_elf(struct linux_binprm *bprm
 	if(rc)
 		return -ENOEXEC;
 
-	file = open_exec(mcexec);
+	file = open_exec(MCEXEC_PATH);
 	if (IS_ERR(file))
 		return -ENOEXEC;
 
@@ -235,29 +217,18 @@ static int load_elf(struct linux_binprm *bprm
 		return rc; 
 	}
 	bprm->argc++;
-	wp = mcexec;
+	wp = MCEXEC_PATH;
 	rc = copy_strings_kernel(1, &wp, bprm);
 	if (rc){
 		fput(file);
 		return rc; 
 	}
 	bprm->argc++;
-#if 1
-	rc = bprm_change_interp(mcexec, bprm);
+	rc = bprm_change_interp(MCEXEC_PATH, bprm);
 	if (rc < 0){
 		fput(file);
 		return rc;
 	}
-#else
-	if(brpm->interp != bprm->filename)
-		kfree(brpm->interp);
-	kfree(brpm->filename);
-	bprm->filename = bprm->interp = kstrdup(mcexec, GFP_KERNEL);
-	if(!bprm->interp){
-		fput(file);
-		return -ENOMEM;
-	}
-#endif
 
 	allow_write_access(bprm->file);
 	fput(bprm->file);
