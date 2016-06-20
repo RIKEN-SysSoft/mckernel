@@ -1208,7 +1208,8 @@ struct pager_map_result {
 	int8_t		padding[4];
 };
 
-static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off, uintptr_t result_rpa)
+static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
+		uintptr_t result_rpa, int prot)
 {
 	const ihk_device_t dev = ihk_os_to_dev(os);
 	const off_t pgoff = off / PAGE_SIZE;
@@ -1239,7 +1240,7 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off, uintptr_t r
 	if (file->f_mode & FMODE_READ) {
 		maxprot |= PROT_READ;
 	}
-	if (file->f_mode & FMODE_WRITE) {
+	if ((file->f_mode & FMODE_WRITE) && (prot ? (prot & PROT_WRITE) : 1)) {
 		maxprot |= PROT_WRITE;
 	}
 	if (!(file->f_path.mnt->mnt_flags & MNT_NOEXEC)) {
@@ -1414,7 +1415,8 @@ static long pager_call(ihk_os_t os, struct syscall_request *req)
 		break;
 
 	case PAGER_REQ_MAP:
-		ret = pager_req_map(os, req->args[1], req->args[2], req->args[3], req->args[4]);
+		ret = pager_req_map(os, req->args[1], req->args[2], req->args[3], req->args[4],
+				req->args[5]);
 		break;
 
 	case PAGER_REQ_PFN:

@@ -1108,7 +1108,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 				vrflags &= ~VR_MEMTYPE_MASK;
 				vrflags |= VR_MEMTYPE_UC;
 			}
-			error = devobj_create(fd, len, off, &memobj, &maxprot);
+			error = devobj_create(fd, len, off, &memobj, &maxprot, prot);
 		}
 		if (error) {
 			ekprintf("do_mmap:fileobj_create failed. %d\n", error);

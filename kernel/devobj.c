@@ -78,7 +78,8 @@ static struct memobj *to_memobj(struct devobj *devobj)
 /***********************************************************************
  * devobj
  */
-int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxprotp)
+int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxprotp,
+	int prot)
 {
 	ihk_mc_user_context_t ctx;
 	struct pager_map_result result;	// XXX: assumes contiguous physical
@@ -115,6 +116,7 @@ int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxp
 	ihk_mc_syscall_arg2(&ctx) = len;
 	ihk_mc_syscall_arg3(&ctx) = off;
 	ihk_mc_syscall_arg4(&ctx) = virt_to_phys(&result);
+	ihk_mc_syscall_arg5(&ctx) = prot;
 
 	error = syscall_generic_forwarding(__NR_mmap, &ctx);
 	if (error) {
