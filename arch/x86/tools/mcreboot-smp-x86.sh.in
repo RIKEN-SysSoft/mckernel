@@ -13,15 +13,18 @@
 # Note that the script does not output anything unless an error occurs.
 
 prefix="@prefix@"
-BINDIR="@BINDIR@"
-SBINDIR="@SBINDIR@"
-KMODDIR="@KMODDIR@"
-KERNDIR="@KERNDIR@"
+BINDIR="${prefix}/bin"
+SBINDIR="${prefix}/sbin"
+KMODDIR="${prefix}/kmod"
+KERNDIR="${prefix}/@TARGET@/kernel"
 ENABLE_MCOVERLAYFS="@ENABLE_MCOVERLAYFS@"
+
+mem="512M@0"
+cpus=""
 
 INTERVAL=1
 LOGMODE=0
-while getopts :i:k: OPT
+while getopts :i:k:c:m: OPT
 do
 	case ${OPT} in
 	i)	INTERVAL=${OPTARG}
@@ -50,13 +53,15 @@ do
 			exit 1
 		fi
 		;;
+	c) cpus=${OPTARG}
+		;;
+	m) mem=${OPTARG}
+		;;
 	*)  echo "invalid option -${OPT}"
 		exit 1
 	esac
 done
 
-mem="512M@0"
-cpus=""
 ihk_ikc_irq_core=0
 
 release=`uname -r`
