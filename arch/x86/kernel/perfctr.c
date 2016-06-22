@@ -18,10 +18,21 @@ extern int running_on_kvm(void);
 
 #define X86_CR4_PCE     0x00000100
 
+int perf_counters_discovered = 0;
+int X86_IA32_NUM_PERF_COUNTERS = 0;
+unsigned long X86_IA32_PERF_COUNTERS_MASK = 0;
+int X86_IA32_NUM_FIXED_PERF_COUNTERS = 0;
+unsigned long X86_IA32_FIXED_PERF_COUNTERS_MASK = 0;
+
 void x86_init_perfctr(void)
 {
 	unsigned long reg;
 	unsigned long value = 0;
+	uint64_t op;
+	uint64_t eax;
+	uint64_t ebx;
+	uint64_t ecx;
+	uint64_t edx;
 
 	/* Do not do it on KVM */
 	if (running_on_kvm()) return;
@@ -30,12 +41,31 @@ void x86_init_perfctr(void)
 	asm volatile("movq %%cr4, %0" : "=r"(reg));
 	reg |= X86_CR4_PCE;
 	asm volatile("movq %0, %%cr4" : : "r"(reg));
+	
+	/* Detect number of supported performance counters */
+	if (!perf_counters_discovered) {
+		/* See Table 35.2 - Architectural MSRs in Vol 3C */
+		op = 0x0a;
+		asm volatile("cpuid" : "=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(op));
+
+		X86_IA32_NUM_PERF_COUNTERS = ((eax & 0xFF00) >> 8);
+		X86_IA32_PERF_COUNTERS_MASK = (1 << X86_IA32_NUM_PERF_COUNTERS) - 1;
+		
+		X86_IA32_NUM_FIXED_PERF_COUNTERS = (edx & 0x0F);
+		X86_IA32_FIXED_PERF_COUNTERS_MASK = 
+			((1UL << X86_IA32_NUM_FIXED_PERF_COUNTERS) - 1) <<
+			X86_IA32_BASE_FIXED_PERF_COUNTERS;
+	
+		perf_counters_discovered = 1;
+		kprintf("X86_IA32_NUM_PERF_COUNTERS: %d, X86_IA32_NUM_FIXED_PERF_COUNTERS: %d\n",
+				X86_IA32_NUM_PERF_COUNTERS, X86_IA32_NUM_FIXED_PERF_COUNTERS);
+	}
 
 	/* Enable PMC Control */
-        value = rdmsr(MSR_PERF_GLOBAL_CTRL);
-        value |= X86_IA32_PERF_COUNTERS_MASK;
-        value |= X86_IA32_FIXED_PERF_COUNTERS_MASK;
-        wrmsr(MSR_PERF_GLOBAL_CTRL, value);
+	value = rdmsr(MSR_PERF_GLOBAL_CTRL);
+	value |= X86_IA32_PERF_COUNTERS_MASK;
+	value |= X86_IA32_FIXED_PERF_COUNTERS_MASK;
+	wrmsr(MSR_PERF_GLOBAL_CTRL, value);
 }
 
 static int set_perfctr_x86_direct(int counter, int mode, unsigned int value)
