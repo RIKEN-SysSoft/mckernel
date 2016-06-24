@@ -899,7 +899,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 
 	error = vfs_fstat(fd, &st);
 	if (error) {
-		dprintk("pager_req_create(%d,%lx):vfs_stat failed. %d\n", fd, (long)result_pa, error);
+		printk("pager_req_create(%d,%lx):vfs_stat failed. %d\n", fd, (long)result_pa, error);
 		goto out;
 	}
 	if (S_ISCHR(st.mode) && (MAJOR(st.rdev) == 1)) {
@@ -914,7 +914,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 	file = fget(fd);
 	if (!file) {
 		error = -EBADF;
-		dprintk("pager_req_create(%d,%lx):file not found. %d\n", fd, (long)result_pa, error);
+		printk("pager_req_create(%d,%lx):file not found. %d\n", fd, (long)result_pa, error);
 		goto out;
 	}
 
@@ -937,7 +937,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 	}
 	if (!(maxprot & PROT_READ)) {
 		error = -EACCES;
-		dprintk("pager_req_create(%d,%lx):cannot read file. %d\n", fd, (long)result_pa, error);
+		printk("pager_req_create(%d,%lx):cannot read file. %d\n", fd, (long)result_pa, error);
 		goto out;
 	}
 
@@ -1209,7 +1209,7 @@ struct pager_map_result {
 };
 
 static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
-		uintptr_t result_rpa, int prot)
+		uintptr_t result_rpa, int prot_and_flags)
 {
 	const ihk_device_t dev = ihk_os_to_dev(os);
 	const off_t pgoff = off / PAGE_SIZE;
@@ -1237,27 +1237,33 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
 	}
 
 	maxprot = 0;
-	if (file->f_mode & FMODE_READ) {
+	if ((file->f_mode & FMODE_READ) && 
+			(prot_and_flags ? (prot_and_flags & PROT_READ) : 1)) {
 		maxprot |= PROT_READ;
 	}
-	if ((file->f_mode & FMODE_WRITE) && (prot ? (prot & PROT_WRITE) : 1)) {
+	if ((file->f_mode & FMODE_WRITE) && 
+			(prot_and_flags ? (prot_and_flags & PROT_WRITE) : 1)) {
 		maxprot |= PROT_WRITE;
 	}
-	if (!(file->f_path.mnt->mnt_flags & MNT_NOEXEC)) {
+	if (!(file->f_path.mnt->mnt_flags & MNT_NOEXEC) &&
+			(prot_and_flags ? (prot_and_flags & PROT_EXEC) : 1)) {
 		maxprot |= PROT_EXEC;
 	}
 
 	down_write(&current->mm->mmap_sem);
 #define	ANY_WHERE 0
+	if (prot_and_flags & MAP_LOCKED) prot_and_flags |= MAP_POPULATE;
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,5,0)
-	va = do_mmap_pgoff(file, ANY_WHERE, len, maxprot, MAP_SHARED, pgoff);
+	va = do_mmap_pgoff(file, ANY_WHERE, len, maxprot, 
+			MAP_SHARED | (prot_and_flags & (MAP_POPULATE | MAP_LOCKED)), pgoff);
 #endif	
 
 	up_write(&current->mm->mmap_sem);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,5,0)
-	va = vm_mmap(file, ANY_WHERE, len, maxprot, MAP_SHARED, pgoff << PAGE_SHIFT);
+	va = vm_mmap(file, ANY_WHERE, len, maxprot, MAP_SHARED | 
+			(prot_and_flags & (MAP_POPULATE | MAP_LOCKED)), pgoff << PAGE_SHIFT);
 #endif
 
 	if (IS_ERR_VALUE(va)) {
@@ -1271,8 +1277,8 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
 	pager->map_len = len;
 	pager->map_off = off;
 	
-	dprintk("pager_req_map(%s): 0x%lx - 0x%lx (len: %lu)\n", 
-			file->f_dentry->d_name.name, va, va + len, len);
+	dprintk("pager_req_map(%s): 0x%lx - 0x%lx (len: %lu), map_off: %lu\n", 
+			file->f_dentry->d_name.name, va, va + len, len, off);
 
 	phys = ihk_device_map_memory(dev, result_rpa, sizeof(*resp));
 	resp = ihk_device_map_virtual(dev, phys, sizeof(*resp), NULL, 0);
@@ -1309,6 +1315,7 @@ static int pager_req_pfn(ihk_os_t os, uintptr_t handle, off_t off, uintptr_t ppf
 	pte_t *pte;
 	uintptr_t phys;
 	uintptr_t *ppfn;
+	int page_fault_attempted = 0;
 
 	dprintk("pager_req_pfn(%p,%lx,%lx)\n", os, handle, off);
 
@@ -1324,6 +1331,7 @@ static int pager_req_pfn(ihk_os_t os, uintptr_t handle, off_t off, uintptr_t ppf
 	pfn = PFN_VALID;	/* デフォルトは not present */
 
 	down_read(&current->mm->mmap_sem);
+retry:	
 	pgd = pgd_offset(current->mm, va);
 	if (!pgd_none(*pgd) && !pgd_bad(*pgd) && pgd_present(*pgd)) {
 		pud = pud_offset(pgd, va);
@@ -1346,6 +1354,33 @@ static int pager_req_pfn(ihk_os_t os, uintptr_t handle, off_t off, uintptr_t ppf
 			}
 		}
 	}
+
+	/* If not present, try to fault it */
+	if (!(pfn & PFN_PRESENT) && !page_fault_attempted) {
+		unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
+		struct vm_area_struct *vma;
+		int fault;
+
+		flags |= FAULT_FLAG_USER;
+
+		vma = find_vma(current->mm, va);
+		if (!vma || (va < vma->vm_start)) {
+			printk("%s: couldn't find VMA for va %lx\n", __FUNCTION__, va); 
+			error = -EINVAL;
+			goto out_release;
+		}
+
+		fault = handle_mm_fault(current->mm, vma, va, flags);
+		if (fault != 0) {
+			printk("%s: error: faulting %lx at off: %lu\n", 
+					__FUNCTION__, va, off);
+		}
+
+		page_fault_attempted = 1;
+		goto retry;
+	}
+
+out_release:
 	up_read(&current->mm->mmap_sem);
 
 	phys = ihk_device_map_memory(dev, ppfn_rpa, sizeof(*ppfn));

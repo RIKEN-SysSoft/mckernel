@@ -1641,6 +1641,18 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 				"access denied. %d\n",
 				ihk_mc_get_processor_id(), vm,
 				fault_addr0, reason, error);
+		kprintf("%s: reason: %s%s%s%s%s%s%s%s\n", __FUNCTION__, 
+			(reason & PF_PROT) ? "PF_PROT " : "",
+			(reason & PF_WRITE) ? "PF_WRITE " : "",
+			(reason & PF_USER) ? "PF_USER " : "",
+			(reason & PF_RSVD) ? "PF_RSVD " : "",
+			(reason & PF_INSTR) ? "PF_INSTR " : "",
+			(reason & PF_PATCH) ? "PF_PATCH " : "",
+			(reason & PF_POPULATE) ? "PF_POPULATE " : "");
+		kprintf("%s: range->flag & (%s%s%s)\n", __FUNCTION__,
+			(range->flag & VR_PROT_READ) ? "VR_PROT_READ " : "",
+			(range->flag & VR_PROT_WRITE) ? "VR_PROT_WRITE " : "",
+			(range->flag & VR_PROT_EXEC) ? "VR_PROT_EXEC " : "");
 		if (((range->flag & VR_PROT_MASK) == VR_PROT_NONE))
 			kprintf("if (((range->flag & VR_PROT_MASK) == VR_PROT_NONE))\n");
 		if (((reason & PF_WRITE) && !(reason & PF_PATCH)))

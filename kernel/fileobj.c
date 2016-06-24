@@ -182,7 +182,7 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp)
 
 	error = syscall_generic_forwarding(__NR_mmap, &ctx);
 	if (error) {
-		kprintf("fileobj_create(%d):create failed. %d\n", fd, error);
+		dkprintf("fileobj_create(%d):create failed. %d\n", fd, error);
 		goto out;
 	}
 

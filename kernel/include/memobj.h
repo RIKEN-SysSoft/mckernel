@@ -142,6 +142,6 @@ struct shmid_ds;
 int shmobj_create(struct shmid_ds *ds, struct memobj **objp);
 int zeroobj_create(struct memobj **objp);
 int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxprotp,
-	int prot);
+	int prot, int populate_flags);
 
 #endif /* HEADER_MEMOBJ_H */

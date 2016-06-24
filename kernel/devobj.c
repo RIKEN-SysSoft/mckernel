@@ -79,7 +79,7 @@ static struct memobj *to_memobj(struct devobj *devobj)
  * devobj
  */
 int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxprotp,
-	int prot)
+	int prot, int populate_flags)
 {
 	ihk_mc_user_context_t ctx;
 	struct pager_map_result result;	// XXX: assumes contiguous physical
@@ -116,7 +116,7 @@ int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxp
 	ihk_mc_syscall_arg2(&ctx) = len;
 	ihk_mc_syscall_arg3(&ctx) = off;
 	ihk_mc_syscall_arg4(&ctx) = virt_to_phys(&result);
-	ihk_mc_syscall_arg5(&ctx) = prot;
+	ihk_mc_syscall_arg5(&ctx) = prot | populate_flags;
 
 	error = syscall_generic_forwarding(__NR_mmap, &ctx);
 	if (error) {
@@ -206,7 +206,7 @@ static void devobj_release(struct memobj *memobj)
 
 static int devobj_get_page(struct memobj *memobj, off_t off, int p2align, uintptr_t *physp, unsigned long *flag)
 {
-	const off_t pgoff = off >> PAGE_SHIFT;
+	const off_t pgoff = off / PAGE_SIZE;
 	struct devobj *obj = to_devobj(memobj);
 	int error;
 	uintptr_t pfn;
@@ -218,7 +218,7 @@ static int devobj_get_page(struct memobj *memobj, off_t off, int p2align, uintpt
 
 	if ((pgoff < obj->pfn_pgoff) || ((obj->pfn_pgoff + obj->npages) <= pgoff)) {
 		error = -EFBIG;
-		kprintf("devobj_get_page(%p %lx,%lx,%d): out of range. %d\n", memobj, obj->handle, off, p2align, error);
+		kprintf("%s: error: out of range: off: %lu, page off: %lu obj->npages: %d\n", __FUNCTION__, off, pgoff, obj->npages);
 		goto out;
 	}
 	ix = pgoff - obj->pfn_pgoff;

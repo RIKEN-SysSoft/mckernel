@@ -1097,7 +1097,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		}
 #endif
 		if (error == -ESRCH) {
-			kprintf("do_mmap:hit non VREG\n");
+			dkprintf("do_mmap:hit non VREG\n");
 			/*
 			 * XXX: temporary:
 			 *
@@ -1108,10 +1108,17 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 				vrflags &= ~VR_MEMTYPE_MASK;
 				vrflags |= VR_MEMTYPE_UC;
 			}
-			error = devobj_create(fd, len, off, &memobj, &maxprot, prot);
+			error = devobj_create(fd, len, off, &memobj, &maxprot, 
+					prot, (flags & (MAP_POPULATE | MAP_LOCKED)));
+
+			if (!error) {
+				dkprintf("%s: device fd: %d off: %lu mapping at %p - %p\n", 
+						__FUNCTION__, fd, off, addr, addr + len); 
+			}
 		}
 		if (error) {
-			ekprintf("do_mmap:fileobj_create failed. %d\n", error);
+			kprintf("%s: error: file mapping failed, fd: %d, error: %d\n",
+					__FUNCTION__, error);
 			goto out;
 		}
 	}
@@ -1181,9 +1188,12 @@ out:
 	if (!error && populated_mapping) {
 		error = populate_process_memory(thread->vm, (void *)addr, len);
 		if (error) {
-			ekprintf("do_mmap:populate_process_memory"
-					"(%p,%p,%lx) failed %d\n",
-					thread->vm, (void *)addr, len, error);
+			ekprintf("%s: error :populate_process_memory"
+					"vm: %p, addr: %p, len: %d (flags: %s%s) failed %d\n", __FUNCTION__,
+					thread->vm, (void *)addr, len,
+					(flags & MAP_POPULATE) ? "MAP_POPULATE " : "",
+					(flags & MAP_LOCKED) ? "MAP_LOCKED ": "",
+					error);
 			/*
 			 * In this case,
 			 * the mapping established by this call should be unmapped
@@ -5574,7 +5584,7 @@ SYSCALL_DECLARE(sched_setaffinity)
 	len = MIN2(len, sizeof(k_cpu_set));
 
 	if (copy_from_user(&k_cpu_set, u_cpu_set, len)) {
-		kprintf("%s:%d copy_from_user failed.\n", __FILE__, __LINE__);
+		kprintf("%s: error: copy_from_user failed for %p:%d\n", __FUNCTION__, u_cpu_set, len);
 		return -EFAULT;
 	}
 
