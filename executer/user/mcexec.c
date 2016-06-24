@@ -654,7 +654,7 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 	return 0;
 }
 
-void transfer_image(int fd, struct program_load_desc *desc)
+int transfer_image(int fd, struct program_load_desc *desc)
 {
 	struct remote_transfer pt;
 	unsigned long s, e, flen, rpa;
@@ -668,7 +668,10 @@ void transfer_image(int fd, struct program_load_desc *desc)
 		     + PAGE_SIZE - 1) & PAGE_MASK;
 		rpa = desc->sections[i].remote_pa;
 
-		fseek(fp, desc->sections[i].offset, SEEK_SET);
+		if (fseek(fp, desc->sections[i].offset, SEEK_SET) != 0) {
+			fprintf(stderr, "transfer_image(): error: seeking file position\n");
+			return -1;
+		}
 		flen = desc->sections[i].filesz;
 
 		__dprintf("seeked to %lx | size %ld\n",
@@ -690,7 +693,20 @@ void transfer_image(int fd, struct program_load_desc *desc)
 				if (lr > flen) {
 					lr = flen;
 				}
-				fread(dma_buf + l, 1, lr, fp); 
+				if (fread(dma_buf + l, 1, lr, fp) != lr) {
+					if (ferror(fp) > 0) {
+						fprintf(stderr, "transfer_image(): error: accessing file\n");
+						return -EINVAL;
+					}
+					else if (feof(fp) > 0) {
+						fprintf(stderr, "transfer_image(): file too short?\n");
+						return -EINVAL;
+					}
+					else {
+						/* TODO: handle smaller reads.. */
+						return -EINVAL;
+					}
+				}
 				flen -= lr;
 			} 
 			else if (flen > 0) {
@@ -699,7 +715,20 @@ void transfer_image(int fd, struct program_load_desc *desc)
 				} else {
 					lr = flen;
 				}
-				fread(dma_buf, 1, lr, fp);
+				if (fread(dma_buf, 1, lr, fp) != lr) {
+					if (ferror(fp) > 0) {
+						fprintf(stderr, "transfer_image(): error: accessing file\n");
+						return -EINVAL;
+					}
+					else if (feof(fp) > 0) {
+						fprintf(stderr, "transfer_image(): file too short?\n");
+						return -EINVAL;
+					}
+					else {
+						/* TODO: handle smaller reads.. */
+						return -EINVAL;
+					}
+				}
 				flen -= lr;
 			} 
 			s += PAGE_SIZE;
@@ -715,6 +744,8 @@ void transfer_image(int fd, struct program_load_desc *desc)
 			}
 		}
 	}
+
+	return 0;
 }
 
 void print_desc(struct program_load_desc *desc)
@@ -931,7 +962,10 @@ act_signalfd4(struct syscall_wait_desc *w)
 			flags |= O_NONBLOCK;
 		if(tmp & SFD_CLOEXEC)
 			flags |= O_CLOEXEC;
-		pipe2(sfd->sigpipe, flags);
+		if (pipe2(sfd->sigpipe, flags) < 0) {
+			perror("pipe2 failed:");
+			return -1;
+		}
 		sfd->next = sigfdtop;
 		sigfdtop = sfd;
 		rc = sfd->sigpipe[0];
@@ -962,7 +996,11 @@ act_signalfd4(struct syscall_wait_desc *w)
 			rc = -EBADF;
 		else{
 			info = (struct signalfd_siginfo *)w->sr.args[2];
-			write(sfd->sigpipe[1], info, sizeof(struct signalfd_siginfo));
+			if (write(sfd->sigpipe[1], info, sizeof(struct signalfd_siginfo))
+					!= sizeof(struct signalfd_siginfo)) {
+				fprintf(stderr, "error: writing sigpipe\n");
+				rc = -EBADF;
+			}
 		}
 		break;
 	}
@@ -1522,7 +1560,10 @@ int main(int argc, char **argv)
 	}
 
 	print_desc(desc);
-	transfer_image(fd, desc);
+	if (transfer_image(fd, desc) < 0) {
+		fprintf(stderr, "error: transferring image\n");
+		return -1;
+	}
 	fflush(stdout);
 	fflush(stderr);
 	
@@ -1945,7 +1986,9 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 					close(pipefds[0]);
 					pid = fork();
 					if(pid != 0){
-						write(pipefds[1], &pid, sizeof pid);
+						if (write(pipefds[1], &pid, sizeof pid) != sizeof(pid)) {
+							fprintf(stderr, "error: writing pipefds\n");
+						}
 						exit(0);
 					}
 				}
@@ -1954,7 +1997,9 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 					int st;
 
 					close(pipefds[1]);
-					read(pipefds[0], &npid, sizeof npid);
+					if (read(pipefds[0], &npid, sizeof npid) != sizeof(npid)) {
+						fprintf(stderr, "error: reading pipefds\n");
+					}
 					close(pipefds[0]);
 					waitpid(pid, &st, 0);
 					pid = npid;
@@ -2210,7 +2255,10 @@ return_execve1:
 					
 					__dprintf("%s", "execve(): transfer ELF desc OK\n");
 
-					transfer_image(fd, desc);	
+					if (transfer_image(fd, desc) != 0) {
+						fprintf(stderr, "error: transferring image\n");
+						return -1;
+					}
 					__dprintf("%s", "execve(): image transferred\n");
 
 					if (close_cloexec_fds(fd) < 0) {
