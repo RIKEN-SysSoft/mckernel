@@ -54,11 +54,11 @@ int ihk_mc_perfctr_start(unsigned long counter_mask);
 int ihk_mc_perfctr_stop(unsigned long counter_mask);
 int ihk_mc_perfctr_fixed_init(int counter, int mode);
 int ihk_mc_perfctr_reset(int counter);
-int ihk_mc_perfctr_set(int counter, unsigned long value);
+int ihk_mc_perfctr_set(int counter, long value);
 int ihk_mc_perfctr_read_mask(unsigned long counter_mask, unsigned long *value);
 unsigned long ihk_mc_perfctr_read(int counter);
 unsigned long ihk_mc_perfctr_read_msr(int counter);
-int ihk_mc_perfctr_alloc_counter(unsigned long pmc_status);
+int ihk_mc_perfctr_alloc_counter(unsigned int *type, unsigned long *config, unsigned long pmc_status);
 
 #endif
 

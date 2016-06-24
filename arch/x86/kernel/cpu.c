@@ -883,13 +883,36 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 		dkprintf("timer[%lu]: CPU_FLAG_NEED_RESCHED \n", rdtsc());
 	}
 	else if (vector == LOCAL_PERF_VECTOR) {
+		struct siginfo info;
 		unsigned long value;
+		struct thread *thread = cpu_local_var(current);
+        	struct process *proc = thread->proc;
+		long irqstate;
+		struct mckfd *fdp;
+
+		lapic_write(LAPIC_LVTPC, LOCAL_PERF_VECTOR);
 
 		value = rdmsr(MSR_PERF_GLOBAL_STATUS);
 		wrmsr(MSR_PERF_GLOBAL_OVF_CTRL, value);
 		wrmsr(MSR_PERF_GLOBAL_OVF_CTRL, 0);
-		//TODO: counter overflow signal
-		//set_signal(0x1d, regs, NULL); // SIGIO
+
+		irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
+	        for(fdp = proc->mckfd; fdp; fdp = fdp->next) {
+			if(fdp->sig_no > 0)
+                	        break;
+		}
+	        ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
+
+		if(fdp) {
+			memset(&info, '\0', sizeof info);
+			info.si_signo = fdp->sig_no;
+			info._sifields._sigfault.si_addr = (void *)regs->gpr.rip;
+			info._sifields._sigpoll.si_fd = fdp->fd;
+			set_signal(fdp->sig_no, regs, &info); 
+		}
+		else {
+			set_signal(SIGIO, regs, NULL);
+		}
 	}
 	else if (vector >= IHK_TLB_FLUSH_IRQ_VECTOR_START && 
 	         vector < IHK_TLB_FLUSH_IRQ_VECTOR_END) {

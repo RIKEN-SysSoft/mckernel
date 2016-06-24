@@ -2470,6 +2470,31 @@ SYSCALL_DECLARE(close)
 	return rc;
 }
 
+SYSCALL_DECLARE(fcntl)
+{
+	int fd = ihk_mc_syscall_arg0(ctx);
+	// int cmd = ihk_mc_syscall_arg1(ctx);
+	long rc;
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
+	struct mckfd *fdp;
+	long irqstate;
+
+	irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
+	for(fdp = proc->mckfd; fdp; fdp = fdp->next)
+		if(fdp->fd == fd)
+			break;
+	ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
+
+	if(fdp && fdp->fcntl_cb){
+		rc = fdp->fcntl_cb(fdp, ctx);
+	}
+	else{
+		rc = syscall_generic_forwarding(__NR_fcntl, ctx);
+	}
+	return rc;
+}
+
 SYSCALL_DECLARE(rt_sigprocmask)
 {
 	int how = ihk_mc_syscall_arg0(ctx);
@@ -2621,26 +2646,12 @@ perf_counter_alloc(struct mc_perf_event *event)
 	struct perf_event_attr *attr = &event->attr;
 	struct mc_perf_event *leader = event->group_leader;
 
-	if(attr->type == PERF_TYPE_HARDWARE) {
-
-		event->counter_id = ihk_mc_perfctr_alloc_counter(leader->pmc_status); 
-	
-	} else if(attr->type == PERF_TYPE_RAW) {
-		// PAPI_REF_CYC counted by fixed counter
-		if((attr->config & 0x0000ffff) == 0x00000300) {
-			event->counter_id = 2 + X86_IA32_BASE_FIXED_PERF_COUNTERS;
-			return ret;
-		}
-
-		event->counter_id = ihk_mc_perfctr_alloc_counter(leader->pmc_status); 
-	} else {
-		// Not supported type.
-		ret = -1;
-	}
+	ret = ihk_mc_perfctr_alloc_counter(&attr->type, &attr->config, leader->pmc_status); 
 
 	if(ret >= 0) {
-		leader->pmc_status |= 1UL << event->counter_id;
+		leader->pmc_status |= 1UL << ret;
 	}
+	event->counter_id = ret;
 
 	return ret;
 }
@@ -2649,7 +2660,6 @@ int
 perf_counter_start(struct mc_perf_event *event)
 {
 	int ret = 0;
-	enum ihk_perfctr_type type;
 	struct perf_event_attr *attr = &event->attr;
 	int mode = 0x00;
 
@@ -2660,52 +2670,34 @@ perf_counter_start(struct mc_perf_event *event)
 		mode |= PERFCTR_USER_MODE;
 	}
 
-	if(attr->type == PERF_TYPE_HARDWARE) {
-		switch(attr->config){
-		case PERF_COUNT_HW_CPU_CYCLES :
-			type = APT_TYPE_CYCLE;
-			break;
-		case PERF_COUNT_HW_INSTRUCTIONS :
-			type = APT_TYPE_INSTRUCTIONS;
-			break;
-		default :
-			// Not supported config.
-			type = PERFCTR_MAX_TYPE;
-		}
-
-		ret = ihk_mc_perfctr_init(event->counter_id, type, mode);
-		ihk_mc_perfctr_set(event->counter_id, event->sample_freq * -1);
-		ihk_mc_perfctr_start(1UL << event->counter_id);
-	
-	} else if(attr->type == PERF_TYPE_RAW) {
-		// PAPI_REF_CYC counted by fixed counter
-		if(event->counter_id >= X86_IA32_BASE_FIXED_PERF_COUNTERS) {
-			ret = ihk_mc_perfctr_fixed_init(event->counter_id, mode);
-			ihk_mc_perfctr_set(event->counter_id, event->sample_freq * -1);
-			ihk_mc_perfctr_start(1UL << event->counter_id);
-			return ret;
-		}
-
+	if(event->counter_id >= 0 && event->counter_id < X86_IA32_NUM_PERF_COUNTERS) {
 		ret = ihk_mc_perfctr_init_raw(event->counter_id, attr->config, mode);
-		ihk_mc_perfctr_set(event->counter_id, event->sample_freq * -1);
 		ihk_mc_perfctr_start(1UL << event->counter_id);
-	} else {
-		// Not supported type.
+	}
+	else if(event->counter_id >= X86_IA32_BASE_FIXED_PERF_COUNTERS &&
+		event->counter_id < X86_IA32_BASE_FIXED_PERF_COUNTERS + X86_IA32_NUM_FIXED_PERF_COUNTERS) {
+		ret = ihk_mc_perfctr_fixed_init(event->counter_id, mode);
+		ihk_mc_perfctr_start(1UL << event->counter_id);
+	}
+	else {
 		ret = -1;
 	}
-
+		
 	return ret;
 }
 
 unsigned long perf_event_read_value(struct mc_perf_event *event)
 {
 	unsigned long rtn_count = 0;
+	unsigned long pmc_count = 0;
 	int counter_id = event->counter_id;
 
-	if(event->pid == 0)
-		event->count = ihk_mc_perfctr_read(counter_id);
+	if(event->pid == 0) {
+		pmc_count = ihk_mc_perfctr_read(counter_id) + event->attr.sample_freq;
+		pmc_count &= 0x000000ffffffffffL; // 40bit MASK
+	}
 
-	rtn_count += event->count;
+	rtn_count += event->count + pmc_count;
 
 	if(event->attr.inherit)
 		rtn_count += event->child_count_total;
@@ -2922,11 +2914,21 @@ perf_ioctl(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
                 break;
         case PERF_EVENT_IOC_RESET:
 		// TODO: reset other process
-		ihk_mc_perfctr_reset(counter_id);
+		ihk_mc_perfctr_set(counter_id, event->attr.sample_freq * -1);
+		event->count = 0L;
                 break;
         case PERF_EVENT_IOC_REFRESH:
 		// TODO: refresh other process
-		ihk_mc_perfctr_set(counter_id, event->sample_freq * -1);
+		
+		// not supported on inherited events
+		if(event->attr.inherit)
+			return -EINVAL;
+
+		event->count += event->attr.sample_freq;
+		ihk_mc_perfctr_set(counter_id, event->attr.sample_freq * -1);
+
+		perf_start(event);
+
 		break;
 	default :
 		return -1;
@@ -2943,6 +2945,28 @@ perf_close(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 	kfree(event);
 
 	return 0;
+}
+
+static int
+perf_fcntl(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
+{
+	int cmd = ihk_mc_syscall_arg1(ctx);
+	long arg = ihk_mc_syscall_arg2(ctx);
+	int rc = 0;
+
+	switch(cmd) {
+	case 10: // F_SETSIG
+		sfd->sig_no = arg;
+		break;
+	case 0xf: // F_SETOWN_EX
+		break;
+	default : 
+		break;
+	}
+
+	rc = syscall_generic_forwarding(__NR_fcntl, ctx);
+
+	return rc;
 }
 
 static long
@@ -2963,6 +2987,7 @@ perf_mmap(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 
 	// setup perf_event_mmap_page
 	page = (struct perf_event_mmap_page *)rc;
+	page->data_head = 16;
 	page->cap_user_rdpmc = 1;
 
 	return rc;
@@ -3014,7 +3039,7 @@ SYSCALL_DECLARE(perf_event_open)
 
 	event->sample_freq = attr->sample_freq;
 	event->nr_siblings = 0;
-	event->count = 0;
+	event->count = 0L;
 	event->child_count_total = 0;
 	event->parent = NULL;
 	event->pid = pid;
@@ -3050,10 +3075,12 @@ SYSCALL_DECLARE(perf_event_open)
 	if(!sfd)
 		return -ENOMEM;
 	sfd->fd = fd;
+	sfd->sig_no = -1;
 	sfd->read_cb = perf_read;
 	sfd->ioctl_cb = perf_ioctl;
 	sfd->close_cb = perf_close;
 	sfd->mmap_cb = perf_mmap;
+	sfd->fcntl_cb = perf_fcntl;
 	sfd->data = (long)event;
 	irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
 

@@ -319,12 +319,14 @@ struct process_vm;
 struct mckfd {
 	struct mckfd *next;
 	int fd;
+	int sig_no;
 	long data;
 	void *opt;
 	long (*read_cb)(struct mckfd *, ihk_mc_user_context_t *);
 	int (*ioctl_cb)(struct mckfd *, ihk_mc_user_context_t *);
 	long (*mmap_cb)(struct mckfd *, ihk_mc_user_context_t *);
 	int (*close_cb)(struct mckfd *, ihk_mc_user_context_t *);
+	int (*fcntl_cb)(struct mckfd *, ihk_mc_user_context_t *);
 };
 
 #define SFD_CLOEXEC 02000000
