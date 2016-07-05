@@ -231,16 +231,43 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 
 	send_syscall(req, cpu, pid);
 
-	dkprintf("SC(%d)[%3d] waiting for host.. \n", 
-	        ihk_mc_get_processor_id(),
-	        req->number);
+	dkprintf("%s: syscall num: %d waiting for Linux.. \n",
+		__FUNCTION__, req->number);
 	
 #define	STATUS_IN_PROGRESS	0
 #define	STATUS_COMPLETED	1
 #define	STATUS_PAGE_FAULT	3
 	while (res->status != STATUS_COMPLETED) {
 		while (res->status == STATUS_IN_PROGRESS) {
+			struct cpu_local_var *v;
+			int call_schedule = 0;
+			long runq_irqstate;
+
 			cpu_pause();
+
+			/* XXX: Intel MPI + Intel OpenMP situation:
+			 * While the MPI helper thread waits in a poll() call the OpenMP master
+			 * thread is iterating through the CPU cores using setaffinity().
+			 * Unless we give a chance to it on this core the two threads seem to
+			 * hang in deadlock. If the new thread would make a system call on this
+			 * core we would be in trouble. For now, allow it, but in the future
+			 * we should have syscall channels for each thread instead of per core,
+			 * or we should multiplex syscall threads in mcexec */
+			runq_irqstate =
+				ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
+			v = get_this_cpu_local_var();
+
+			if (v->flags & CPU_FLAG_NEED_RESCHED) {
+				call_schedule = 1;
+				--thread->in_syscall_offload;
+			}
+
+			ihk_mc_spinlock_unlock(&v->runq_lock, runq_irqstate);
+
+			if (call_schedule) {
+				schedule();
+				++thread->in_syscall_offload;
+			}
 		}
 	
 		if (res->status == STATUS_PAGE_FAULT) {
@@ -260,9 +287,8 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		}
 	}
 
-	dkprintf("SC(%d)[%3d] got host reply: %d \n", 
-	        ihk_mc_get_processor_id(),
-	        req->number, res->ret);
+	dkprintf("%s: syscall num: %d got host reply: %d \n",
+		__FUNCTION__, req->number, res->ret);
 
 	rc = res->ret;
 	if(islock){
@@ -1066,6 +1092,11 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 
 	if (flags & (MAP_POPULATE | MAP_LOCKED)) {
 		populated_mapping = 1;
+	}
+
+	/* XXX: Intel MPI 128MB mapping.. */
+	if (len == 134217728) {
+		populated_mapping = 0;
 	}
 
 	if (!(prot & PROT_WRITE)) {

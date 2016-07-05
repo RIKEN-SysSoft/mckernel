@@ -2503,7 +2503,6 @@ static void do_migrate(void)
 		cur_v->runq_len -= 1;
 		old_cpu_id = req->thread->cpu_id;
 		req->thread->cpu_id = cpu_id;
-		settid(req->thread, 2, cpu_id, old_cpu_id);
 		list_add_tail(&req->thread->sched_list, &v->runq);
 		v->runq_len += 1;
 		
@@ -2518,6 +2517,7 @@ static void do_migrate(void)
 		v->flags |= CPU_FLAG_NEED_RESCHED;
 		ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
 		double_rq_unlock(cur_v, v, irqstate);
+		settid(req->thread, 2, cpu_id, old_cpu_id);
 
 ack:
 		waitq_wakeup(&req->wq);
