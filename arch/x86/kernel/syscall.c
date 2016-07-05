@@ -38,6 +38,7 @@ void set_signal(int sig, void *regs0, siginfo_t *info);
 void check_signal(unsigned long rc, void *regs0, int num);
 extern unsigned long do_fork(int, unsigned long, unsigned long, unsigned long,
 	unsigned long, unsigned long, unsigned long);
+extern int get_xsave_size();
 
 //#define DEBUG_PRINT_SC
 
@@ -219,6 +220,7 @@ SYSCALL_DECLARE(rt_sigreturn)
 	struct x86_user_context *regs;
 	struct sigsp ksigsp;
 	struct sigsp *sigsp;
+	int xsavesize = get_xsave_size();
 
 	asm ("movq %%gs:(%1),%0"
 			: "=r"(regs)
@@ -265,6 +267,24 @@ SYSCALL_DECLARE(rt_sigreturn)
 		check_signal(0, regs, 0);
 		check_need_resched();
 	}
+
+	if(ksigsp.fpregs && xsavesize){
+		void *fpregs = kmalloc(xsavesize + 64, IHK_MC_AP_NOWAIT);
+
+		if(fpregs){
+			unsigned int low = 0x7;
+			unsigned int high = 0;
+			struct xsave_struct *kfpregs;
+
+			kfpregs = (void *)((((unsigned long)fpregs) + 63) & ~63);
+
+			if(copy_from_user(kfpregs, ksigsp.fpregs, xsavesize))
+				return -EFAULT;
+			asm volatile("xrstor %0" : : "m"(*kfpregs), "a"(low), "d"(high) : "memory");
+			kfree(fpregs);
+		}
+	}
+
 	return sigsp->sigrc;
 }
 
@@ -707,6 +727,8 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 		unsigned long *usp; /* user stack */
 		struct sigsp ksigsp;
 		struct sigsp *sigsp;
+		int xsavesize = get_xsave_size();
+		unsigned long fpregs;
 
 		if((k->sa.sa_flags & SA_ONSTACK) &&
 		   !(thread->sigstack.ss_flags & SS_DISABLE) &&
@@ -719,7 +741,8 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 		else{
 			usp = (unsigned long *)regs->gpr.rsp;
 		}
-		sigsp = ((struct sigsp *)usp) - 1;
+		fpregs = (unsigned long)usp - xsavesize;
+		sigsp = ((struct sigsp *)fpregs) - 1;
 		sigsp = (struct sigsp *)((unsigned long)sigsp & 0xfffffffffffffff0UL);
 		memset(&ksigsp, '\0', sizeof ksigsp);
 
@@ -751,6 +774,32 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 		ksigsp.restart = isrestart(num, rc, sig, k->sa.sa_flags & SA_RESTART);
 		if(num != 0 && rc == -EINTR && sig == SIGCHLD)
 			ksigsp.restart = 1;
+		if(xsavesize){
+			unsigned int low = 0x7;
+			unsigned int high = 0;
+			void *_kfpregs = kmalloc(xsavesize + 64, IHK_MC_AP_NOWAIT);
+			struct xsave_struct *kfpregs;
+
+			if(!_kfpregs){
+				kfree(pending);
+				kfree(_kfpregs);
+				kprintf("do_signal,no space available\n");
+				terminate(0, sig);
+				return;
+			}
+			kfpregs = (void *)((((unsigned long)_kfpregs) + 63) & ~63);
+			memset(kfpregs, '\0', xsavesize);
+			asm volatile("xsave %0" : : "m"(*kfpregs), "a"(low), "d"(high) : "memory");
+			if(copy_to_user((void *)fpregs, kfpregs, xsavesize)){
+				kfree(pending);
+				kfree(_kfpregs);
+				kprintf("do_signal,write_process_vm failed\n");
+				terminate(0, sig);
+				return;
+			}
+			ksigsp.fpregs = (void *)fpregs;
+			kfree(_kfpregs);
+		}
 		memcpy(&ksigsp.info, &pending->info, sizeof(siginfo_t));
 
 		if(copy_to_user(sigsp, &ksigsp, sizeof ksigsp)){
@@ -760,9 +809,6 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 			terminate(0, sig);
 			return;
 		}
-
-
-
 
 		usp = (unsigned long *)sigsp;
 		usp--;

@@ -181,6 +181,7 @@ static void init_idt(void)
 }
 
 static int xsave_available = 0;
+static int xsave_size = 0;
 
 void init_fpu(void)
 {
@@ -224,6 +225,14 @@ void init_fpu(void)
 		xsetbv(0, reg);
 		dkprintf("init_fpu(): AVX init: XCR0 = 0x%016lX\n", reg);
 	}
+	if(xsave_available){
+		unsigned long eax;
+		unsigned long ebx;
+		unsigned long ecx;
+		unsigned long edx;
+		asm volatile("cpuid" : "=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx) : "a" (0x0d), "c" (0x00));
+		xsave_size = ecx;
+	}
 
 	/* TODO: set MSR_IA32_XSS to enable xsaves/xrstors */
 
@@ -232,6 +241,12 @@ void init_fpu(void)
 #endif
 
 	asm volatile("finit");
+}
+
+int
+get_xsave_size()
+{
+	return xsave_size;
 }
 
 void reload_gdt(struct x86_desc_ptr *gdt_ptr)
