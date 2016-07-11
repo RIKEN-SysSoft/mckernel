@@ -82,38 +82,75 @@ static struct ihk_os_user_call mcctrl_uc[OS_MAX_MINOR];
 
 static ihk_os_t os[OS_MAX_MINOR];
 
-ihk_os_t
-osnum_to_os(int n)
+ihk_os_t osnum_to_os(int n)
 {
 	return os[n];
 }
 
-static int __init mcctrl_init(void)
+/* OS event notifier implementation */
+int mcctrl_os_boot_notifier(int os_index)
 {
-	int	i;
 	int	rc;
 
-	rc = -ENOENT;
-	for(i = 0; i < OS_MAX_MINOR; i++){
-		os[i] = ihk_host_find_os(i, NULL);
-		if (os[i]) {
-			printk("OS #%d found.\n", i);
-			rc = 0;
-		}
-	}
-	if(rc){
-		printk("OS not found.\n");
-		return rc;
+	os[os_index] = ihk_host_find_os(os_index, NULL);
+	if (!os[os_index]) {
+		printk("mcctrl: error: OS ID %d couldn't be found\n", os_index);
+		return -EINVAL;
 	}
 
-	for(i = 0; i < OS_MAX_MINOR; i++){
-		if (os[i]) {
-			if (prepare_ikc_channels(os[i]) != 0) {
-				printk("Preparing syscall channels failed.\n");
-				os[i] = NULL;
-			}
-		}
+	if (prepare_ikc_channels(os[os_index]) != 0) {
+		printk("mcctrl: error: preparing IKC channels for OS %d\n", os_index);
+
+		os[os_index] = NULL;
+		return -EFAULT;
 	}
+
+	memcpy(mcctrl_uc + os_index, &mcctrl_uc_proto, sizeof mcctrl_uc_proto);
+
+	rc = ihk_os_register_user_call_handlers(os[os_index], mcctrl_uc + os_index);
+	if (rc < 0) {
+		destroy_ikc_channels(os[os_index]);
+		printk("mcctrl: error: registering callbacks for OS %d\n", os_index);
+
+		goto error_cleanup_channels;
+	}
+
+	procfs_init(os_index);
+	printk("mcctrl: OS ID %d boot event handled\n", os_index);
+
+	return 0;
+
+error_cleanup_channels:
+	destroy_ikc_channels(os[os_index]);
+
+	os[os_index] = NULL;
+	return rc;
+}
+
+int mcctrl_os_shutdown_notifier(int os_index)
+{
+	sysfsm_cleanup(os[os_index]);
+	free_topology_info(os[os_index]);
+	ihk_os_unregister_user_call_handlers(os[os_index], mcctrl_uc + os_index);
+	destroy_ikc_channels(os[os_index]);
+	procfs_exit(os_index);
+
+	printk("mcctrl: OS ID %d shutdown event handled\n", os_index);
+	return 0;
+}
+
+static struct ihk_os_notifier_ops mcctrl_os_notifier_ops = {
+	.boot = mcctrl_os_boot_notifier,
+	.shutdown = mcctrl_os_shutdown_notifier,
+};
+
+static struct ihk_os_notifier mcctrl_os_notifier = {
+	.ops = &mcctrl_os_notifier_ops,
+};
+
+static int __init mcctrl_init(void)
+{
+	int ret = 0;
 
 #ifndef DO_USER_MODE
 	mcctrl_syscall_init();
@@ -121,40 +158,33 @@ static int __init mcctrl_init(void)
 
 	rus_page_hash_init();
 
-	for(i = 0; i < OS_MAX_MINOR; i++){
-		if (os[i]) {
-			memcpy(mcctrl_uc + i, &mcctrl_uc_proto, sizeof mcctrl_uc_proto);
-			rc = ihk_os_register_user_call_handlers(os[i], mcctrl_uc + i);
-			if(rc < 0){
-				destroy_ikc_channels(os[i]);
-				os[i] = NULL;
-			}
-			procfs_init(i);
-		}
-	}
-
 	binfmt_mcexec_init();
 
-	return 0;
+	if ((ret = ihk_host_register_os_notifier(&mcctrl_os_notifier)) != 0) {
+		printk("mcctrl: error: registering OS notifier\n");
+		goto error;
+	}
+
+	printk("mcctrl: initialized successfully.\n");
+	return ret;
+
+error:
+	binfmt_mcexec_exit();
+	rus_page_hash_put_pages();
+
+	return ret;
 }
 
 static void __exit mcctrl_exit(void)
 {
-	int	i;
-
-	binfmt_mcexec_exit();
-	printk("mcctrl: unregistered.\n");
-	for(i = 0; i < OS_MAX_MINOR; i++){
-		if(os[i]){
-			sysfsm_cleanup(os[i]);
-			free_topology_info(os[i]);
-			ihk_os_unregister_user_call_handlers(os[i], mcctrl_uc + i);
-			destroy_ikc_channels(os[i]);
-			procfs_exit(i);
-		}
+	if (ihk_host_deregister_os_notifier(&mcctrl_os_notifier) != 0) {
+		printk("mcctrl: warning: failed to deregister OS notifier??\n");
 	}
 
+	binfmt_mcexec_exit();
 	rus_page_hash_put_pages();
+
+	printk("mcctrl: unregistered.\n");
 }
 
 MODULE_LICENSE("GPL v2");

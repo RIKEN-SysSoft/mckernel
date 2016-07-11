@@ -255,7 +255,7 @@ void __init binfmt_mcexec_init(void)
 	insert_binfmt(&mcexec_format);
 }
 
-void __exit binfmt_mcexec_exit(void)
+void binfmt_mcexec_exit(void)
 {
 	unregister_binfmt(&mcexec_format);
 }

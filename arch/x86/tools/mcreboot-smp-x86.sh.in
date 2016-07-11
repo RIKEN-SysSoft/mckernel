@@ -87,11 +87,6 @@ if [ "$cpus" == "" ]; then
 	if [ "$cpus" == "" ]; then echo "error: no available CPUs on NUMA node 0?"; exit; fi
 fi
 
-# Remove delegator if loaded
-if [ "`lsmod | grep mcctrl`" != "" ]; then
-        if ! rmmod mcctrl; then echo "error: removing mcctrl"; exit; fi
-fi
-
 # Remove mcoverlay if loaded
 if [ "$enable_mcoverlay" == "yes" ]; then
 	if [ "`lsmod | grep mcoverlay`" != "" ]; then
@@ -137,6 +132,11 @@ else
 		fi
 fi
 
+# Load mcctrl if not loaded
+if [ "`lsmod | grep mcctrl`" == "" ]; then
+	if ! insmod ${KMODDIR}/mcctrl.ko; then echo "error: inserting mcctrl.ko"; exit; fi
+fi
+
 # Check for existing OS instance and destroy
 if [ -c /dev/mcos0 ]; then
         # Query CPU cores and memory of OS instance so that the same values are used as previously
@@ -160,7 +160,6 @@ if ! ${SBINDIR}/ihkosctl 0 assign mem ${mem}; then echo "error: assign memory"; 
 if ! ${SBINDIR}/ihkosctl 0 load ${KERNDIR}/mckernel.img; then echo "error: loading kernel image"; exit; fi
 if ! ${SBINDIR}/ihkosctl 0 kargs "hidos ksyslogd=${LOGMODE}"; then echo "error: setting kernel arguments"; exit; fi
 if ! ${SBINDIR}/ihkosctl 0 boot; then echo "error: booting"; exit; fi
-if ! insmod ${KMODDIR}/mcctrl.ko; then echo "error: inserting mcctrl.ko"; exit; fi
 if ! chown `logname` /dev/mcd* /dev/mcos*; then echo "error: chowning device files"; exit; fi
 
 if [ "$enable_mcoverlay" == "yes" ]; then
