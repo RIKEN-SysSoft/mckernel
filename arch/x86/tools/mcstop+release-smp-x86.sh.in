@@ -19,11 +19,6 @@ cpus=""
 # No SMP module? Exit.
 if [ "`lsmod | grep ihk_smp_x86`" == "" ]; then exit; fi
 
-# Remove delegator if loaded
-if [ "`lsmod | grep mcctrl`" != "" ]; then
-        if ! rmmod mcctrl; then echo "error: removing mcctrl"; exit; fi
-fi
-
 # Destroy all LWK instances
 for i in /dev/mcos*; do
 	ind=`echo $i|cut -c10-`;
@@ -38,6 +33,11 @@ if ! ${SBINDIR}/ihkconfig 0 release cpu $cpus > /dev/null; then echo "error: rel
 if ! ${SBINDIR}/ihkconfig 0 query mem > /dev/null; then echo "error: querying memory"; exit; fi
 mem=`${SBINDIR}/ihkconfig 0 query mem`	
 if ! ${SBINDIR}/ihkconfig 0 release mem $mem > /dev/null; then echo "error: releasing memory"; exit; fi
+
+# Remove delegator if loaded
+if [ "`lsmod | grep mcctrl`" != "" ]; then
+        if ! rmmod mcctrl; then echo "error: removing mcctrl"; exit; fi
+fi
 
 # Remove SMP module
 if [ "`lsmod | grep ihk_smp_x86`" != "" ]; then
