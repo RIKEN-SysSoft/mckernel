@@ -86,30 +86,27 @@ int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxp
 	int error;
 	struct devobj *obj  = NULL;
 	const size_t npages = (len + PAGE_SIZE - 1) / PAGE_SIZE;
+	const size_t pfn_npages = (npages / (PAGE_SIZE / sizeof(uintptr_t))) + 1;
 
-	dkprintf("devobj_create(%d,%lx,%lx)\n", fd, len, off);
-#define MAX_PAGES_IN_DEVOBJ (PAGE_SIZE / sizeof(uintptr_t))
-	if (npages > MAX_PAGES_IN_DEVOBJ) {
-		error = -EFBIG;
-		kprintf("devobj_create(%d,%lx,%lx):too large len. %d\n", fd, len, off, error);
-		goto out;
-	}
+	dkprintf("%s: fd: %d, len: %lu, off: %lu \n", __FUNCTION__, fd, len, off);
 
 	obj = kmalloc(sizeof(*obj), IHK_MC_AP_NOWAIT);
 	if (!obj) {
 		error = -ENOMEM;
-		kprintf("devobj_create(%d,%lx,%lx):kmalloc failed. %d\n", fd, len, off, error);
+		kprintf("%s: error: fd: %d, len: %lu, off: %lu kmalloc failed.\n", 
+			__FUNCTION__, fd, len, off);
 		goto out;
 	}
 	memset(obj, 0, sizeof(*obj));
 
-	obj->pfn_table = allocate_pages(1, IHK_MC_AP_NOWAIT);
+	obj->pfn_table = allocate_pages(pfn_npages, IHK_MC_AP_NOWAIT);
 	if (!obj->pfn_table) {
 		error = -ENOMEM;
-		kprintf("devobj_create(%d,%lx,%lx):allocate_pages failed. %d\n", fd, len, off, error);
+		kprintf("%s: error: fd: %d, len: %lu, off: %lu allocating PFN failed.\n", 
+			__FUNCTION__, fd, len, off);
 		goto out;
 	}
-	memset(obj->pfn_table, 0, 1*PAGE_SIZE);
+	memset(obj->pfn_table, 0, pfn_npages * PAGE_SIZE);
 
 	ihk_mc_syscall_arg0(&ctx) = PAGER_REQ_MAP;
 	ihk_mc_syscall_arg1(&ctx) = fd;
@@ -120,11 +117,13 @@ int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxp
 
 	error = syscall_generic_forwarding(__NR_mmap, &ctx);
 	if (error) {
-		kprintf("devobj_create(%d,%lx,%lx):map failed. %d\n", fd, len, off, error);
+		kprintf("%s: error: fd: %d, len: %lu, off: %lu map failed.\n", 
+			__FUNCTION__, fd, len, off);
 		goto out;
 	}
-	dkprintf("devobj_create:handle: %lx\n", result.handle);
-	dkprintf("devobj_create:maxprot: %x\n", result.maxprot);
+
+	dkprintf("%s: fd: %d, len: %lu, off: %lu, handle: %p, maxprot: %x\n", 
+		__FUNCTION__, fd, len, off, result.handle, result.maxprot);
 
 	obj->memobj.ops = &devobj_ops;
 	obj->memobj.flags = MF_HAS_PAGER;
@@ -142,11 +141,12 @@ int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxp
 out:
 	if (obj) {
 		if (obj->pfn_table) {
-			free_pages(obj->pfn_table, 1);
+			free_pages(obj->pfn_table, pfn_npages);
 		}
 		kfree(obj);
 	}
-	dkprintf("devobj_create(%d,%lx,%lx): %d %p %x%d\n", fd, len, off, error, *objp, *maxprotp);
+	dkprintf("%s: ret: %d, fd: %d, len: %lu, off: %lu, handle: %p, maxprot: %x \n", 
+		__FUNCTION__, error, fd, len, off, result.handle, result.maxprot);
 	return error;
 }
 
