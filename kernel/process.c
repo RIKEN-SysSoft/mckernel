@@ -338,6 +338,10 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 		proc = org->proc;
 		thread->vm = org->vm;
 		thread->proc = proc;
+
+		thread->sigstack.ss_sp = NULL;
+		thread->sigstack.ss_flags = SS_DISABLE;
+		thread->sigstack.ss_size = 0;
 	}
 	/* fork() */
 	else {
@@ -386,6 +390,10 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 		thread->proc->maxrss = org->proc->maxrss;
 		thread->vm->currss = org->vm->currss;
 
+		thread->sigstack.ss_sp = org->sigstack.ss_sp;
+		thread->sigstack.ss_flags = org->sigstack.ss_flags;
+		thread->sigstack.ss_size = org->sigstack.ss_size;
+
 		dkprintf("fork(): copy_user_ranges() OK\n");
 	}
 
@@ -413,9 +421,6 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 		INIT_LIST_HEAD(&thread->sigcommon->sigpending);
 		// TODO: copy signalfd
 	}
-	thread->sigstack.ss_sp = NULL;
-	thread->sigstack.ss_flags = SS_DISABLE;
-	thread->sigstack.ss_size = 0;
 	ihk_mc_spinlock_init(&thread->sigpendinglock);
 	INIT_LIST_HEAD(&thread->sigpending);
 	thread->sigmask = org->sigmask;
