@@ -1302,7 +1302,7 @@ done:
 		if (status != PS_RUNNING) {
 			if(sig == SIGKILL){
 				/* Wake up the target only when stopped by ptrace-reporting */
-				sched_wakeup_thread(tthread, PS_TRACED | PS_STOPPED);
+				sched_wakeup_thread(tthread, PS_TRACED | PS_STOPPED | PS_INTERRUPTIBLE);
 			}
 			else if(sig == SIGCONT || ptracecont == 1){
 				/* Wake up the target only when stopped by SIGSTOP */
