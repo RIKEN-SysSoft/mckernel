@@ -1361,7 +1361,9 @@ retry:
 		struct vm_area_struct *vma;
 		int fault;
 
+#if defined(FAULT_FLAG_USER)
 		flags |= FAULT_FLAG_USER;
+#endif
 
 		vma = find_vma(current->mm, va);
 		if (!vma || (va < vma->vm_start)) {
