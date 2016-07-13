@@ -2283,9 +2283,8 @@ SYSCALL_DECLARE(setfsgid)
 	unsigned long newfsgid;
 	struct syscall_request request IHK_DMA_ALIGN;
 
-	request.number = __NR_setfsuid;
+	request.number = __NR_setfsgid;
 	request.args[0] = fsgid;
-	request.args[1] = 0;
 	newfsgid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
 	do_setresgid();
 	return newfsgid;
