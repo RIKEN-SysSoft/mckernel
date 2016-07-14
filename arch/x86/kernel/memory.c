@@ -910,11 +910,17 @@ static int split_large_page(pte_t *ptep, size_t pgsize)
 
 	*ptep = (virt_to_phys(pt) & PT_PHYSMASK) | PFL2_PDIR_ATTR;
 
-	if (phys_base != NOPHYS) {
-		page = phys_to_page(phys_base);
-		if (page && page_unmap(page)) {
-			kprintf("split_large_page:page_unmap:%p\n", page);
-			panic("split_large_page:page_unmap\n");
+	/* Do not do this check for large pages as they don't come from the zeroobj
+	 * and are not actually mapped.
+	 * TODO: clean up zeroobj as we don't really need it, anonymous mappings
+	 * should be allocated for real */
+	if (pgsize != PTL2_SIZE) {
+		if (phys_base != NOPHYS) {
+			page = phys_to_page(phys_base);
+			if (pgsize != PTL2_SIZE && page && page_unmap(page)) {
+				kprintf("split_large_page:page_unmap:%p\n", page);
+				panic("split_large_page:page_unmap\n");
+			}
 		}
 	}
 	return 0;
