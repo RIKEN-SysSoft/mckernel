@@ -281,6 +281,13 @@ process_procfs_request(unsigned long rarg)
 					ans = -EIO;
 				goto end;
 			}
+
+			if (pa < ihk_mc_get_memory_address(IHK_MC_GMA_MAP_START, 0) ||
+					pa >= ihk_mc_get_memory_address(IHK_MC_GMA_MAP_END, 0)) {
+				ans = -EIO;
+				goto end;
+			}
+
 			va = phys_to_virt(pa);
 			if(readwrite)
 				memcpy(va, buf + ans, size);
