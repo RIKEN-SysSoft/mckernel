@@ -167,6 +167,7 @@ enum {
 	CURRENT_OFFSET,
 	RUNQ_OFFSET,
 	CPU_STATUS_OFFSET,
+	IDLE_THREAD_OFFSET,
 
 	/* process */
 	CTX_OFFSET,
@@ -204,6 +205,7 @@ static int setup_constants(void) {
 		printf("CURRENT_OFFSET: %ld\n", K(CURRENT_OFFSET));
 		printf("RUNQ_OFFSET: %ld\n", K(RUNQ_OFFSET));
 		printf("CPU_STATUS_OFFSET: %ld\n", K(CPU_STATUS_OFFSET));
+		printf("IDLE_THREAD_OFFSET: %ld\n", K(IDLE_THREAD_OFFSET));
 		printf("CTX_OFFSET: %ld\n", K(CTX_OFFSET));
 		printf("SCHED_LIST_OFFSET: %ld\n", K(SCHED_LIST_OFFSET));
 		printf("PROC_OFFSET: %ld\n", K(PROC_OFFSET));
@@ -250,6 +252,64 @@ static int setup_threads(void) {
 
 	ihk_mc_switch_context = lookup_symbol("ihk_mc_switch_context");
 	if (0) printf("ihk_mc_switch_context: %lx\n", ihk_mc_switch_context);
+
+	/* Set up idle threads first */
+	for (cpu = 0; cpu < num_processors; ++cpu) {
+		uintptr_t v;
+		uintptr_t thread;
+		uintptr_t proc;
+		int pid;
+		int tid;
+		struct thread_info *ti;
+		int status;
+
+		v = clv + (cpu * K(CPU_LOCAL_VAR_SIZE));
+
+		ti = malloc(sizeof(*ti));
+		if (!ti) {
+			perror("malloc");
+			return 1;
+		}
+
+		thread = v+K(IDLE_THREAD_OFFSET);
+
+		error = read_64(thread+K(PROC_OFFSET), &proc);
+		if (error) {
+			perror("proc");
+			return 1;
+		}
+
+		error = read_32(thread+K(STATUS_OFFSET), &status);
+		if (error) {
+			perror("status");
+			return 1;
+		}
+
+		error = read_32(proc+K(PID_OFFSET), &pid);
+		if (error) {
+			perror("pid");
+			return 1;
+		}
+
+		error = read_32(thread+K(TID_OFFSET), &tid);
+		if (error) {
+			perror("tid");
+			return 1;
+		}
+
+		ti->next = NULL;
+		ti->status = status;
+		ti->pid = pid;
+		ti->tid = tid;
+		ti->cpu = cpu;
+		ti->lcpu = cpu;
+		ti->process = thread;
+		ti->clv = v;
+		ti->x86_clv = locals + locals_span*cpu;
+
+		*titailp = ti;
+		titailp = &ti->next;
+	}
 
 	for (cpu = 0; cpu < num_processors; ++cpu) {
 		uintptr_t v;
