@@ -79,8 +79,6 @@
 #define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
 #endif
 
-extern struct sigpending *hassigpending(struct thread *thread);
-
 int futex_cmpxchg_enabled;
 
 /**

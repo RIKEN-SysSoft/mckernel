@@ -105,7 +105,6 @@ static void calculate_time_from_tsc(struct timespec *ts);
 void check_signal(unsigned long, void *, int);
 void do_signal(long rc, void *regs, struct thread *thread, struct sig_pending *pending, int num);
 extern unsigned long do_kill(struct thread *thread, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
-extern struct sigpending *hassigpending(struct thread *thread);
 extern long alloc_debugreg(struct thread *thread);
 extern int num_processors;
 extern unsigned long ihk_mc_get_ns_per_tsc(void);

@@ -677,5 +677,6 @@ void chain_process(struct process *);
 void chain_thread(struct thread *);
 void proc_init();
 void set_timer();
+struct sig_pending *hassigpending(struct thread *thread);
 
 #endif
