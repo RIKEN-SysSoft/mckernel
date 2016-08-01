@@ -19,6 +19,7 @@
 #include <linux/resource.h>
 #include "mcctrl.h"
 #include <linux/version.h>
+#include <linux/semaphore.h>
 
 //#define PROCFS_DEBUG
 
@@ -81,7 +82,7 @@ struct procfs_list_entry {
  * file.
  */
 LIST_HEAD(procfs_file_list);
-static ihk_spinlock_t procfs_file_list_lock;
+DEFINE_SEMAPHORE(procfs_file_list_lock);
 
 static char *
 getpath(struct procfs_list_entry *e, char *buf, int bufsize)
@@ -375,67 +376,62 @@ _add_tid_entry(int osnum, int pid, int tid, const struct cred *cred)
 void
 add_tid_entry(int osnum, int pid, int tid)
 {
-	unsigned long irqflag;
 	const struct cred *cred = get_pid_cred(pid);
 
 	if(!cred)
 		return;
-	irqflag = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
+	down(&procfs_file_list_lock);
 	_add_tid_entry(osnum, pid, tid, cred);
-	ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflag);
+	up(&procfs_file_list_lock);
 }
 
 void
 add_pid_entry(int osnum, int pid)
 {
 	struct procfs_list_entry *parent;
-	unsigned long irqflag;
 	const struct cred *cred = get_pid_cred(pid);
 
 	if(!cred)
 		return;
-	irqflag = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
+	down(&procfs_file_list_lock);
 	parent = get_pid_entry(osnum, pid);
 	add_procfs_entries(parent, pid_entry_stuff, cred->uid, cred->gid);
 	_add_tid_entry(osnum, pid, pid, cred);
-	ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflag);
+	up(&procfs_file_list_lock);
 }
 
 void
 delete_tid_entry(int osnum, int pid, int tid)
 {
-	unsigned long irqflag;
 	struct procfs_list_entry *e;
 
-	irqflag = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
+	down(&procfs_file_list_lock);
 	e = find_tid_entry(osnum, pid, tid);
 	if(e)
 		delete_procfs_entries(e);
-	ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflag);
+	up(&procfs_file_list_lock);
 }
 
 void
 delete_pid_entry(int osnum, int pid)
 {
-	unsigned long irqflag;
 	struct procfs_list_entry *e;
 
-	irqflag = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
+	down(&procfs_file_list_lock);
 	e = find_pid_entry(osnum, pid);
 	if(e)
 		delete_procfs_entries(e);
-	ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflag);
+	up(&procfs_file_list_lock);
 }
 
 void
 proc_exe_link(int osnum, int pid, const char *path)
 {
 	struct procfs_list_entry *parent;
-	unsigned long irqflag;
 	kuid_t uid = KUIDT_INIT(0);
 	kgid_t gid = KGIDT_INIT(0);
 
-	irqflag = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
+	down(&procfs_file_list_lock);
 	parent = find_pid_entry(osnum, pid);
 	if(parent){
 		struct procfs_list_entry *task;
@@ -451,7 +447,7 @@ proc_exe_link(int osnum, int pid, const char *path)
 			                 uid, gid, path);
 		}
 	}
-	ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflag);
+	up(&procfs_file_list_lock);
 }
 
 /**
@@ -463,14 +459,13 @@ void
 procfs_init(int osnum)
 {
 	struct procfs_list_entry *parent;
-	unsigned long irqflag;
 	kuid_t uid = KUIDT_INIT(0);
 	kgid_t gid = KGIDT_INIT(0);
 
-	irqflag = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
+	down(&procfs_file_list_lock);
 	parent = get_base_entry(osnum);
 	add_procfs_entries(parent, base_entry_stuff, uid, gid);
-	ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflag);
+	up(&procfs_file_list_lock);
 }
 
 /**
@@ -481,14 +476,13 @@ procfs_init(int osnum)
 void
 procfs_exit(int osnum)
 {
-	unsigned long irqflag;
 	struct procfs_list_entry *e;
 
-	irqflag = ihk_ikc_spinlock_lock(&procfs_file_list_lock);
+	down(&procfs_file_list_lock);
 	e = find_base_entry(osnum);
 	if(e)
 		delete_procfs_entries(e);
-	ihk_ikc_spinlock_unlock(&procfs_file_list_lock, irqflag);
+	up(&procfs_file_list_lock);
 }
 
 /**

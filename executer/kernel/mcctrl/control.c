@@ -32,6 +32,7 @@
 #include <linux/fs.h>
 #include <linux/file.h>
 #include <linux/version.h>
+#include <linux/semaphore.h>
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/io.h>
@@ -802,7 +803,7 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 }
 
 LIST_HEAD(mckernel_exec_files);
-DEFINE_SPINLOCK(mckernel_exec_file_lock);
+DEFINE_SEMAPHORE(mckernel_exec_file_lock);
  
 
 struct mckernel_exec_file {
@@ -889,7 +890,7 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 		goto out_put_file;
 	}
 
-	spin_lock_irq(&mckernel_exec_file_lock);
+	down(&mckernel_exec_file_lock);
 	/* Find previous file (if exists) and drop it */
 	list_for_each_entry(mcef_iter, &mckernel_exec_files, list) {
 		if (mcef_iter->os == os && mcef_iter->pid == task_tgid_vnr(current)) {
@@ -910,7 +911,7 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	/* Create /proc/self/exe entry */
 	add_pid_entry(os_ind, task_tgid_vnr(current));
 	proc_exe_link(os_ind, task_tgid_vnr(current), fullpath);
-	spin_unlock(&mckernel_exec_file_lock);
+	up(&mckernel_exec_file_lock);
 
 	dprintk("%d open_exec and holding file: %s\n", (int)task_tgid_vnr(current), filename);
 
@@ -937,7 +938,7 @@ int mcexec_close_exec(ihk_os_t os)
 		return EINVAL;
 	}
 		
-	spin_lock_irq(&mckernel_exec_file_lock);
+	down(&mckernel_exec_file_lock);
 	list_for_each_entry(mcef, &mckernel_exec_files, list) {
 		if (mcef->os == os && mcef->pid == task_tgid_vnr(current)) {
 			allow_write_access(mcef->fp);
@@ -950,7 +951,7 @@ int mcexec_close_exec(ihk_os_t os)
 		}
 	}
 
-	spin_unlock(&mckernel_exec_file_lock);
+	up(&mckernel_exec_file_lock);
 
 	return (found ? 0 : EINVAL);
 }
