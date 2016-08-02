@@ -348,6 +348,11 @@ struct sig_pending {
 
 typedef void pgio_func_t(void *arg);
 
+struct mcexec_tid {
+	int tid;
+	struct thread *thread;
+};
+
 /* Represents a node in the process fork tree, it may exist even after the 
  * corresponding process exited due to references from the parent and/or 
  * children and is used for implementing wait/waitpid without having a 
@@ -362,6 +367,9 @@ struct process {
 	// threads and children
 	struct list_head threads_list;
 	mcs_rwlock_lock_t threads_lock; // lock for threads_list
+	/* TID set of proxy process */
+	struct mcexec_tid *tids;
+	int nr_tids;
 
 	/* The ptracing process behave as the parent of the ptraced process
 	   after using PTRACE_ATTACH except getppid. So we save it here. */
@@ -678,5 +686,7 @@ void chain_thread(struct thread *);
 void proc_init();
 void set_timer();
 struct sig_pending *hassigpending(struct thread *thread);
+void settid(struct thread *thread, int mode, int newcpuid, int oldcpuid,
+	int nr_tids, int *tids);
 
 #endif

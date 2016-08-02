@@ -1944,6 +1944,39 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 				thread_data[oldcpuid].remote_tid = wtid;
 			}
 
+			/*
+			 * Number of TIDs and the remote physical address where TIDs are
+			 * expected are passed in arg 4 and 5, respectively.
+			 */
+			if (w.sr.args[4] > 0) {
+				struct remote_transfer trans;
+				int i = 0;
+				int *tids = malloc(sizeof(int) * w.sr.args[4]);
+				if (!tids) {
+					fprintf(stderr, "__NR_gettid(): error allocating TIDs\n");
+					goto gettid_out;
+				}
+
+				for (i = 0; i < ncpu && i < w.sr.args[4]; ++i) {
+					tids[i] = thread_data[i].tid;
+				}
+
+				for (; i < ncpu; ++i) {
+					tids[i] = 0;
+				}
+
+				trans.userp = (void*)tids;
+				trans.rphys = w.sr.args[5];
+				trans.size = sizeof(int) * w.sr.args[4];
+				trans.direction = MCEXEC_UP_TRANSFER_TO_REMOTE;
+
+				if (ioctl(fd, MCEXEC_UP_TRANSFER, &trans) != 0) {
+					fprintf(stderr, "__NR_gettid(): error transfering TIDs\n");
+				}
+
+				free(tids);
+			}
+gettid_out:
 			do_syscall_return(fd, cpu, thread_data[newcpuid].remote_tid, 0, 0, 0, 0);
 			break;
 		}

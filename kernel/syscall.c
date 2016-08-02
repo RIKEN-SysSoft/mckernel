@@ -1478,8 +1478,8 @@ SYSCALL_DECLARE(getppid)
 	return thread->proc->ppid_parent->pid;
 }
 
-void
-settid(struct thread *thread, int mode, int newcpuid, int oldcpuid)
+void settid(struct thread *thread, int mode, int newcpuid, int oldcpuid,
+	int nr_tids, int *tids)
 {
 	struct syscall_request request IHK_DMA_ALIGN;
 	unsigned long rc;
@@ -1489,6 +1489,12 @@ settid(struct thread *thread, int mode, int newcpuid, int oldcpuid)
 	request.args[1] = thread->proc->pid;
 	request.args[2] = newcpuid;
 	request.args[3] = oldcpuid;
+	/*
+	 * If nr_tids is non-zero, tids should point to an array of ints
+	 * where the thread ids of the mcexec process are expected.
+	 */
+	request.args[4] = nr_tids;
+	request.args[5] = virt_to_phys(tids);
 	rc = do_syscall(&request, ihk_mc_get_processor_id(), thread->proc->pid);
 	if (mode != 2) {
 		thread->tid = rc;
@@ -1893,7 +1899,55 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	        &new->vm->address_space->cpu_set_lock);
 
 	if (clone_flags & CLONE_VM) {
-		settid(new, 1, cpuid, -1);
+		int *tids = NULL;
+		int i;
+		struct mcs_rwlock_node_irqsave lock;
+
+		mcs_rwlock_writer_lock(&newproc->threads_lock, &lock);
+		/* Obtain mcexec TIDs if not known yet */
+		if (!newproc->nr_tids) {
+			tids = kmalloc(sizeof(int) * num_processors, IHK_MC_AP_NOWAIT);
+			if (!tids) {
+				mcs_rwlock_writer_unlock(&newproc->threads_lock, &lock);
+				release_cpuid(cpuid);
+				return -ENOMEM;
+			}
+
+			newproc->tids = kmalloc(sizeof(struct mcexec_tid) * num_processors, IHK_MC_AP_NOWAIT);
+			if (!newproc->tids) {
+				mcs_rwlock_writer_unlock(&newproc->threads_lock, &lock);
+				kfree(tids);
+				release_cpuid(cpuid);
+				return -ENOMEM;
+			}
+
+			settid(new, 1, cpuid, -1, num_processors, tids);
+
+			for (i = 0; (i < num_processors) && tids[i]; ++i) {
+				dkprintf("%s: tid[%d]: %d\n", __FUNCTION__, i, tids[i]);
+				newproc->tids[i].tid = tids[i];
+				newproc->tids[i].thread = NULL;
+				++newproc->nr_tids;
+			}
+		}
+
+		/* Find an unused TID */
+		for (i = 0; i < newproc->nr_tids; ++i) {
+			if (!newproc->tids[i].thread) {
+				newproc->tids[i].thread = new;
+				new->tid = newproc->tids[i].tid;
+				dkprintf("%s: tid %d assigned to %p\n", __FUNCTION__, new->tid, new);
+				break;
+			}
+		}
+
+		/* TODO: spawn more mcexec threads */
+		if (!new->tid) {
+			kprintf("%s: no more TIDs available\n");
+			panic("");
+		}
+
+		mcs_rwlock_writer_unlock(&newproc->threads_lock, &lock);
 	}
 	/* fork() a new process on the host */
 	else {
@@ -1913,7 +1967,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		}
 
 		/* In a single threaded process TID equals to PID */
-		settid(new, 0, cpuid, -1);
+		settid(new, 0, cpuid, -1, 0, NULL);
 		new->vm->address_space->pids[0] = new->proc->pid;
 
 		dkprintf("fork(): new pid: %d\n", new->proc->pid);

@@ -521,8 +521,6 @@ static void syscall_channel_send(struct ihk_ikc_channel_desc *c,
 }
 
 extern unsigned long do_kill(struct thread *, int, int, int, struct siginfo *, int ptracecont);
-extern void settid(struct thread *proc, int mode, int newcpuid, int oldcpuid);
-
 extern void process_procfs_request(unsigned long rarg);
 extern int memcheckall();
 extern int freecheck(int runcount);
@@ -612,7 +610,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		thread = (struct thread *)packet->arg;
 		proc = thread->proc;
 
-		settid(thread, 0, cpuid, -1);
+		settid(thread, 0, cpuid, -1, 0, NULL);
 		proc->status = PS_RUNNING;
 		thread->status = PS_RUNNING;
 		chain_thread(thread);

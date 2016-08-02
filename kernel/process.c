@@ -53,7 +53,6 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm);
 extern void release_fp_regs(struct thread *proc);
 extern void save_fp_regs(struct thread *proc);
 extern void restore_fp_regs(struct thread *proc);
-void settid(struct thread *proc, int mode, int newcpuid, int oldcpuid);
 extern void __runq_add_proc(struct thread *proc, int cpu_id);
 extern void terminate_host(int pid);
 extern void lapic_timer_enable(unsigned int clocks);
@@ -2062,6 +2061,7 @@ release_process(struct process *proc)
 		mcs_rwlock_writer_unlock(&parent->children_lock, &lock);
 	}
 
+	if (proc->tids) kfree(proc->tids);
 	kfree(proc);
 }
 
@@ -2167,6 +2167,23 @@ release_sigcommon(struct sig_common *sigcommon)
 	kfree(sigcommon);
 }
 
+/*
+ * Release the TID from the process' TID set corresponding to this thread.
+ * NOTE: threads_lock must be held.
+ */
+void __release_tid(struct process *proc, struct thread *thread) {
+	int i;
+
+	for (i = 0; i < proc->nr_tids; ++i) {
+		if (proc->tids[i].thread != thread) continue;
+
+		proc->tids[i].thread = NULL;
+		dkprintf("%s: tid %d has been released by %p\n",
+			__FUNCTION__, thread->tid, thread);
+		break;
+	}
+}
+
 void destroy_thread(struct thread *thread)
 {
 	struct sig_pending *pending;
@@ -2183,6 +2200,7 @@ void destroy_thread(struct thread *thread)
 
 	mcs_rwlock_writer_lock(&proc->threads_lock, &lock);
 	list_del(&thread->siblings_list);
+	__release_tid(proc, thread);
 	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 
 	cpu_clear(thread->cpu_id, &thread->vm->address_space->cpu_set,
@@ -2522,7 +2540,7 @@ static void do_migrate(void)
 		v->flags |= CPU_FLAG_NEED_RESCHED;
 		ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
 		double_rq_unlock(cur_v, v, irqstate);
-		settid(req->thread, 2, cpu_id, old_cpu_id);
+		//settid(req->thread, 2, cpu_id, old_cpu_id, 0, NULL);
 
 ack:
 		waitq_wakeup(&req->wq);
