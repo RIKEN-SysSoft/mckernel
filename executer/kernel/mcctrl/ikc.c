@@ -88,11 +88,8 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		break;
 
 	case SCD_MSG_PROCFS_TID_CREATE:
-		add_tid_entry(ihk_host_os_get_index(__os), pisp->pid, pisp->arg);
-		break;
-
 	case SCD_MSG_PROCFS_TID_DELETE:
-		delete_tid_entry(ihk_host_os_get_index(__os), pisp->pid, pisp->arg);
+		return procfsm_packet_handler(__os, pisp->msg, pisp->pid, pisp->arg);
 		break;
 
 	case SCD_MSG_GET_VDSO_INFO:

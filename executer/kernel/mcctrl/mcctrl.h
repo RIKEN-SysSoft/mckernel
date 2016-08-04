@@ -301,6 +301,7 @@ struct procfs_file {
 };
 
 void procfs_answer(unsigned int arg, int err);
+int procfsm_packet_handler(void *os, int msg, int pid, unsigned long arg);
 void add_tid_entry(int osnum, int pid, int tid);
 void add_pid_entry(int osnum, int pid);
 void delete_tid_entry(int osnum, int pid, int tid);
