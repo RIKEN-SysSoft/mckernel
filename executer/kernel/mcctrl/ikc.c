@@ -43,6 +43,7 @@ static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ih
 int mcexec_syscall(struct mcctrl_channel *c, int pid, unsigned long arg);
 void sig_done(unsigned long arg, int err);
 
+/* XXX: this runs in atomic context! */
 static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *__os)
 {
@@ -89,7 +90,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 
 	case SCD_MSG_PROCFS_TID_CREATE:
 	case SCD_MSG_PROCFS_TID_DELETE:
-		return procfsm_packet_handler(__os, pisp->msg, pisp->pid, pisp->arg);
+		procfsm_packet_handler(__os, pisp->msg, pisp->pid, pisp->arg);
 		break;
 
 	case SCD_MSG_GET_VDSO_INFO:
@@ -190,12 +191,12 @@ static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ih
 #endif
 
 	pmc->param.request_va =
-		(void *)__get_free_pages(GFP_KERNEL,
+		(void *)__get_free_pages(GFP_ATOMIC,
 		                         REQUEST_SHIFT - PAGE_SHIFT);
 	pmc->param.request_pa = virt_to_phys(pmc->param.request_va);
 	pmc->param.doorbell_va = usrdata->mcctrl_doorbell_va;
 	pmc->param.doorbell_pa = usrdata->mcctrl_doorbell_pa;
-	pmc->param.post_va = (void *)__get_free_page(GFP_KERNEL);
+	pmc->param.post_va = (void *)__get_free_page(GFP_ATOMIC);
 	pmc->param.post_pa = virt_to_phys(pmc->param.post_va);
 	memset(pmc->param.doorbell_va, 0, PAGE_SIZE);
 	memset(pmc->param.request_va, 0, PAGE_SIZE);
@@ -215,7 +216,7 @@ static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ih
 													PAGE_SIZE, NULL, 0);
 #endif
 
-	pmc->dma_buf = (void *)__get_free_pages(GFP_KERNEL,
+	pmc->dma_buf = (void *)__get_free_pages(GFP_ATOMIC,
 	                                        DMA_PIN_SHIFT - PAGE_SHIFT);
 
 	rpm->request_page = pmc->param.request_pa;
