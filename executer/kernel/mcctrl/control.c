@@ -453,13 +453,6 @@ retry_alloc:
 	return 0;
 }
 
-#ifndef DO_USER_MODE
-// static int remaining_job, base_cpu, job_pos;
-#endif
-
-// extern int num_channels;
-// extern int mcctrl_dma_abort;
-
 int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 {
 	struct syscall_wait_desc swd;
@@ -469,9 +462,6 @@ int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 	struct wait_queue_head_list_node *wqhln_iter;
 	int ret = 0;
 	unsigned long irqflags;
-#ifndef DO_USER_MODE
-	unsigned long s, w, d;
-#endif
 	
 //printk("mcexec_wait_syscall swd=%p req=%p size=%d\n", &swd, req, sizeof(swd.cpu));
 	if (copy_from_user(&swd, req, sizeof(swd))) {
@@ -489,7 +479,6 @@ int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 	}
 	c = usrdata->channels + swd.cpu;
 
-#ifdef DO_USER_MODE
 retry:
 	/* Prepare per-process wait queue head */
 retry_alloc:
@@ -517,7 +506,6 @@ retry_alloc:
 	ihk_ikc_spinlock_unlock(&c->wq_list_lock, irqflags);
 
 	ret = wait_event_interruptible(wqhln->wq_syscall, wqhln->req);
-	
 
 	/* Remove per-process wait queue head */
 	irqflags = ihk_ikc_spinlock_lock(&c->wq_list_lock);
@@ -541,79 +529,34 @@ retry_alloc:
 		return -EINTR;
 	}
 
-#if 1
 	mb();
 	if (!c->param.request_va->valid) {
-printk("mcexec_wait_syscall:stray wakeup\n");
+		printk("mcexec_wait_syscall:stray wakeup pid: %d, tid: %d: SC %d, swd.cpu: %d\n",
+				task_tgid_vnr(current),
+				task_pid_vnr(current),
+				c->param.request_va->number,
+				swd.cpu);
 		goto retry;
 	}
-#endif
-#else
-	while (1) {
-		c = usrdata->channels + swd.cpu;
-		ihk_get_tsc(s);
-		if (!usrdata->remaining_job) {
-			while (!(*c->param.doorbell_va)) {
-				mb();
-				cpu_relax();
-				ihk_get_tsc(w);
-				if (w > s + 1024UL * 1024 * 1024 * 10) {
-					return -EINTR;
-				}
-			}
-			d = (*c->param.doorbell_va) - 1;
-			*c->param.doorbell_va = 0;
 
-			if (d < 0 || d >= usrdata->num_channels) {
-				d = 0;
-			}
-			usrdata->base_cpu = d;
-			usrdata->job_pos = 0;
-			usrdata->remaining_job = 1;
-		} else { 
-			usrdata->job_pos++;
+	c->param.request_va->valid = 0; /* ack */
+	dprintk("SC #%lx, %lx\n",
+			c->param.request_va->number,
+			c->param.request_va->args[0]);
+	register_peer_channel(usrdata, current, c);
+
+	if (__do_in_kernel_syscall(os, c, c->param.request_va)) {
+		if (copy_to_user(&req->sr, c->param.request_va,
+					sizeof(struct syscall_request))) {
+			deregister_peer_channel(usrdata, current, c);
+			return -EFAULT;
 		}
-		
-		for (; usrdata->job_pos < usrdata->num_channels; usrdata->job_pos++) {
-			if (base_cpu + job_pos >= num_channels) {
-				c = usrdata->channels + 
-					(usrdata->base_cpu + usrdata->job_pos - usrdata->num_channels);
-			} else {
-				c = usrdata->channels + usrdata->base_cpu + usrdata->job_pos;
-			}
-			if (!c) {
-				continue;
-			}
-			if (c->param.request_va &&
-			    c->param.request_va->valid) {
-#endif
-				c->param.request_va->valid = 0; /* ack */
-				dprintk("SC #%lx, %lx\n",
-				        c->param.request_va->number,
-				        c->param.request_va->args[0]);
-				register_peer_channel(usrdata, current, c);
-				if (__do_in_kernel_syscall(os, c, c->param.request_va)) {
-					if (copy_to_user(&req->sr, c->param.request_va,
-							 sizeof(struct syscall_request))) {
-						deregister_peer_channel(usrdata, current, c);
-						return -EFAULT;
-					}
-					return 0;
-				}
-				deregister_peer_channel(usrdata, current, c);
-#ifdef	DO_USER_MODE
-				goto retry;
-#endif
-#ifndef DO_USER_MODE
-				if (usrdata->mcctrl_dma_abort) {
-					return -2;
-				}
-			}
-		}
-		usrdata->remaining_job = 0;
+		return 0;
 	}
-#endif
-	return 0;
+
+	deregister_peer_channel(usrdata, current, c);
+
+	goto retry;
 }
 
 long mcexec_pin_region(ihk_os_t os, unsigned long *__user arg)
