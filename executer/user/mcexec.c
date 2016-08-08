@@ -1870,12 +1870,12 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			sig = 0;
 			term = 0;
 			
+			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
+
 			/* Drop executable file */
 			if ((ret = ioctl(fd, MCEXEC_UP_CLOSE_EXEC)) != 0) {
 				fprintf(stderr, "WARNING: close_exec() couldn't find exec file?\n");
 			}
-
-			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
 
 			__dprintf("__NR_exit/__NR_exit_group: %ld (cpu_id: %d)\n",
 					w.sr.args[0], cpu);

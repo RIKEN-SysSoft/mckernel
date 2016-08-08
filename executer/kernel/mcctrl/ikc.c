@@ -40,7 +40,7 @@
 
 void mcexec_prepare_ack(ihk_os_t os, unsigned long arg, int err);
 static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ihk_ikc_channel_desc *c);
-int mcexec_syscall(struct mcctrl_channel *c, int pid, unsigned long arg);
+int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet);
 void sig_done(unsigned long arg, int err);
 
 /* XXX: this runs in atomic context! */
@@ -64,7 +64,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		break;
 
 	case SCD_MSG_SYSCALL_ONESIDE:
-		mcexec_syscall(usrdata->channels + pisp->ref, pisp->pid, pisp->arg);
+		mcexec_syscall(usrdata, pisp);
 		break;
 
 	case SCD_MSG_PROCFS_ANSWER:
@@ -263,9 +263,6 @@ static int connect_handler(struct ihk_ikc_channel_info *param)
 	}
 	param->packet_handler = syscall_packet_handler;
 	
-	INIT_LIST_HEAD(&usrdata->channels[cpu].wq_list);
-	spin_lock_init(&usrdata->channels[cpu].wq_list_lock);
-
 	usrdata->channels[cpu].c = c;
 	kprintf("syscall: MC CPU %d connected. c=%p\n", cpu, c);
 
@@ -284,9 +281,6 @@ static int connect_handler2(struct ihk_ikc_channel_info *param)
 
 	param->packet_handler = syscall_packet_handler;
 	
-	INIT_LIST_HEAD(&usrdata->channels[cpu].wq_list);
-	spin_lock_init(&usrdata->channels[cpu].wq_list_lock);
-
 	usrdata->channels[cpu].c = c;
 	kprintf("syscall: MC CPU %d connected. c=%p\n", cpu, c);
 
@@ -313,7 +307,6 @@ int prepare_ikc_channels(ihk_os_t os)
 {
 	struct ihk_cpu_info *info;
 	struct mcctrl_usrdata   *usrdata;
-	int error;
 
 	usrdata = kzalloc(sizeof(struct mcctrl_usrdata), GFP_KERNEL);
 	usrdata->mcctrl_doorbell_va = (void *)__get_free_page(GFP_KERNEL);
@@ -350,11 +343,6 @@ int prepare_ikc_channels(ihk_os_t os)
 
 	INIT_LIST_HEAD(&usrdata->cpu_topology_list);
 	INIT_LIST_HEAD(&usrdata->node_topology_list);
-
-	error = init_peer_channel_registry(usrdata);
-	if (error) {
-		return error;
-	}
 
 	return 0;
 }
@@ -394,7 +382,6 @@ void destroy_ikc_channels(ihk_os_t os)
 	}
 	free_page((unsigned long)usrdata->mcctrl_doorbell_va);
 
-	destroy_peer_channel_registry(usrdata);
 	kfree(usrdata->channels);
 	kfree(usrdata);
 }

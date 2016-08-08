@@ -227,6 +227,10 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		scp = &get_cpu_local_var(cpu)->scp;
 	}
 	res = scp->response_va;
+	/* The current thread is the requester and any thread from 
+	 * the pool may serve the request */
+	req->rtid = cpu_local_var(current)->tid;
+	req->ttid = 0;
 
 	send_syscall(req, cpu, pid);
 
@@ -281,6 +285,10 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 #define PAGER_RESUME_PAGE_FAULT	0x0101
 			req2.args[0] = PAGER_RESUME_PAGE_FAULT;
 			req2.args[1] = error;
+			/* The current thread is the requester and only the waiting thread
+			 * may serve the request */
+			req2.rtid = cpu_local_var(current)->tid;
+			req2.ttid = res->stid;
 
 			send_syscall(&req2, cpu, pid);
 		}

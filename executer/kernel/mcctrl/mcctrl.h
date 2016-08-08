@@ -41,6 +41,7 @@
 #include <ikc/master.h>
 #include <ihk/msr.h>
 #include <linux/semaphore.h>
+#include <linux/rwlock.h>
 #include <linux/threads.h>
 #include "sysfs.h"
 
@@ -154,8 +155,11 @@ struct syscall_params {
 struct wait_queue_head_list_node {
 	struct list_head list;
 	wait_queue_head_t wq_syscall;
-	int pid;
+	struct task_struct *task;
+	/* Denotes an exclusive wait for requester TID rtid */
+	int rtid;
 	int req;
+	struct ikc_scd_packet packet;
 };
 
 struct mcctrl_channel {
@@ -163,15 +167,29 @@ struct mcctrl_channel {
 	struct syscall_params param;
 	struct ikc_scd_init_param init;
 	void *dma_buf;
-
-	struct list_head wq_list;
-	ihk_spinlock_t wq_list_lock;
 };
+
+struct mcctrl_per_thread_data {
+	struct list_head hash;
+	struct task_struct *task;
+	void *data;
+};
+
+#define MCCTRL_PER_THREAD_DATA_HASH_SHIFT 8
+#define MCCTRL_PER_THREAD_DATA_HASH_SIZE (1 << MCCTRL_PER_THREAD_DATA_HASH_SHIFT)
+#define MCCTRL_PER_THREAD_DATA_HASH_MASK (MCCTRL_PER_THREAD_DATA_HASH_SIZE - 1) 
 
 struct mcctrl_per_proc_data {
 	struct list_head list;
 	int pid;
 	unsigned long rpgtable;	/* per process, not per OS */
+
+	struct list_head wq_list;
+	struct list_head wq_list_exact;
+	ihk_spinlock_t wq_list_lock;
+
+	struct list_head per_thread_data_hash[MCCTRL_PER_THREAD_DATA_HASH_SIZE];
+	rwlock_t per_thread_data_hash_lock[MCCTRL_PER_THREAD_DATA_HASH_SIZE];
 };
 
 struct sysfsm_req {
@@ -273,12 +291,16 @@ int mcctrl_ikc_is_valid_thread(ihk_os_t os, int cpu);
 ihk_os_t osnum_to_os(int n);
 
 /* syscall.c */
-int init_peer_channel_registry(struct mcctrl_usrdata *ud);
-void destroy_peer_channel_registry(struct mcctrl_usrdata *ud);
-int register_peer_channel(struct mcctrl_usrdata *ud, void *key, struct mcctrl_channel *ch);
-int deregister_peer_channel(struct mcctrl_usrdata *ud, void *key, struct mcctrl_channel *ch);
-struct mcctrl_channel *get_peer_channel(struct mcctrl_usrdata *ud, void *key);
 int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall_request *sc);
+struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(
+		struct mcctrl_usrdata *ud,
+		int pid);
+int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data* ppd,
+	struct task_struct *task, void *data);
+int mcctrl_delete_per_thread_data(struct mcctrl_per_proc_data* ppd,
+	struct task_struct *task);
+struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(
+	struct mcctrl_per_proc_data *ppd, struct task_struct *task);
 
 #define PROCFS_NAME_MAX 1000
 

@@ -84,88 +84,96 @@ static void print_dma_lastreq(void)
 }
 #endif
 
-int init_peer_channel_registry(struct mcctrl_usrdata *ud)
+int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data* ppd, 
+	struct task_struct *task, void *data)
 {
-	ud->keys = kzalloc(sizeof(void *) * ud->num_channels, GFP_KERNEL);
-	if (!ud->keys) {
-		printk("Error: cannot allocate usrdata.keys[].\n");
-		return -ENOMEM;
+	struct mcctrl_per_thread_data *ptd_iter, *ptd = NULL;
+	struct mcctrl_per_thread_data *ptd_alloc = NULL;
+	int hash = (((uint64_t)task >> 4) & MCCTRL_PER_THREAD_DATA_HASH_MASK);
+	int ret = 0;
+	unsigned long flags;
+
+	ptd_alloc = kmalloc(sizeof(*ptd), GFP_ATOMIC);
+	if (!ptd_alloc) {
+		kprintf("%s: error allocate per thread data\n", __FUNCTION__);
+		ret = -ENOMEM;
+		goto out_noalloc;
 	}
 
-	return 0;
-}
-
-void destroy_peer_channel_registry(struct mcctrl_usrdata *ud)
-{
-	kfree(ud->keys);
-	ud->keys = NULL;
-	return;
-}
-
-int register_peer_channel(struct mcctrl_usrdata *ud, void *key, struct mcctrl_channel *ch)
-{
-	int cpu;
-
-	cpu = ch - ud->channels;
-	if ((cpu < 0) || (ud->num_channels <= cpu)) {
-		printk("register_peer_channel(%p,%p,%p):"
-				"not a syscall channel. cpu=%d\n",
-				ud, key, ch, cpu);
-		return -EINVAL;
-	}
-
-	if (ud->keys[cpu] != NULL) {
-		printk("register_peer_channel(%p,%p,%p):"
-				"already registered. cpu=%d\n",
-				ud, key, ch, cpu);
-		/*
-		 * When mcexec receives a signal,
-		 * it may be finished without doing deregister_peer_channel().
-		 * Therefore a substitute registration is necessary.
-		 */
-#if 0
-		return -EBUSY;
-#endif
-	}
-
-	ud->keys[cpu] = key;
-	return 0;
-}
-
-int deregister_peer_channel(struct mcctrl_usrdata *ud, void *key, struct mcctrl_channel *ch)
-{
-	int cpu;
-
-	cpu = ch - ud->channels;
-	if ((cpu < 0) || (ud->num_channels <= cpu)) {
-		printk("deregister_peer_channel(%p,%p,%p):"
-				"not a syscall channel. cpu=%d\n",
-				ud, key, ch, cpu);
-		return -EINVAL;
-	}
-
-	if (ud->keys[cpu] && (ud->keys[cpu] != key)) {
-		printk("deregister_peer_channel(%p,%p,%p):"
-				"not registered. cpu=%d\n",
-				ud, key, ch, cpu);
-		return -EBUSY;
-	}
-
-	ud->keys[cpu] = NULL;
-	return 0;
-}
-
-struct mcctrl_channel *get_peer_channel(struct mcctrl_usrdata *ud, void *key)
-{
-	int cpu;
-
-	for (cpu = 0; cpu < ud->num_channels; ++cpu) {
-		if (ud->keys[cpu] == key) {
-			return &ud->channels[cpu];
+	/* Check if data for this thread exists and add if not */
+	write_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
+	list_for_each_entry(ptd_iter, &ppd->per_thread_data_hash[hash], hash) {
+		if (ptd_iter->task == task) {
+			ptd = ptd_iter;
+			break;
 		}
 	}
 
-	return NULL;
+	if (ptd) {
+		ret = -EBUSY;
+		kfree(ptd_alloc);
+		goto out;
+	}
+
+	ptd = ptd_alloc;
+	ptd->task = task;
+	ptd->data = data;
+	list_add_tail(&ptd->hash, &ppd->per_thread_data_hash[hash]); 
+
+out:
+	write_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
+out_noalloc:
+	return ret;
+}
+
+int mcctrl_delete_per_thread_data(struct mcctrl_per_proc_data* ppd, 
+	struct task_struct *task)
+{
+	struct mcctrl_per_thread_data *ptd_iter, *ptd = NULL;
+	int hash = (((uint64_t)task >> 4) & MCCTRL_PER_THREAD_DATA_HASH_MASK);
+	int ret = 0;
+	unsigned long flags;
+	
+	/* Check if data for this thread exists and delete it */
+	write_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
+	list_for_each_entry(ptd_iter, &ppd->per_thread_data_hash[hash], hash) {
+		if (ptd_iter->task == task) {
+			ptd = ptd_iter;
+			break;
+		}
+	}
+
+	if (!ptd) {
+		ret = -EINVAL;
+		goto out;
+	}
+
+	list_del(&ptd->hash);
+	kfree(ptd);
+
+out:
+	write_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
+	return ret;
+}
+
+struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc_data *ppd, struct task_struct *task)
+{
+	struct mcctrl_per_thread_data *ptd_iter, *ptd = NULL;
+	int hash = (((uint64_t)task >> 4) & MCCTRL_PER_THREAD_DATA_HASH_MASK);
+	unsigned long flags;
+
+	/* Check if data for this thread exists and return it */
+	read_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
+
+	list_for_each_entry(ptd_iter, &ppd->per_thread_data_hash[hash], hash) {
+		if (ptd_iter->task == task) {
+			ptd = ptd_iter;
+			break;
+		}
+	}
+
+	read_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
+	return ptd ? ptd->data : NULL;
 }
 
 #if 1	/* x86 depend, host OS side */
@@ -238,10 +246,23 @@ static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, u
 	struct syscall_request *req;
 	struct syscall_response *resp;
 	int error;
+	struct wait_queue_head_list_node *wqhln;
+	unsigned long irqflags;
+	struct mcctrl_per_proc_data *ppd;
 	
-	dprintk("remote_page_fault(%p,%p,%llx)\n", usrdata, fault_addr, reason);
+	dprintk("%s: tid: %d, fault_addr: %p\n", 
+		__FUNCTION__, task_pid_vnr(current), fault_addr);
+	
+	/* Look up per-process structure */
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 
-	channel = get_peer_channel(usrdata, current);
+	if (!ppd) {
+		kprintf("%s: ERROR: no per-process structure for PID %d??\n", 
+				__FUNCTION__, task_tgid_vnr(current));
+		return -EINVAL;
+	}
+
+	channel = (struct mcctrl_channel *)mcctrl_get_per_thread_data(ppd, current);
 	if (!channel) {
 		error = -ENOENT;
 		printk("remote_page_fault(%p,%p,%llx):channel not found. %d\n",
@@ -252,10 +273,28 @@ static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, u
 	req = channel->param.request_va;
 	resp = channel->param.response_va;
 
-	/* request page fault */
+retry_alloc:
+	wqhln = kmalloc(sizeof(*wqhln), GFP_KERNEL);
+	if (!wqhln) {
+		printk("WARNING: coudln't alloc wait queue head, retrying..\n");
+		goto retry_alloc;
+	}
+
+	/* Prepare per-thread wait queue head */
+	wqhln->task = current;
+	wqhln->req = 0;
+	init_waitqueue_head(&wqhln->wq_syscall);
+
+	irqflags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
+	/* Add to exact list */
+	list_add_tail(&wqhln->list, &ppd->wq_list_exact);
+	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, irqflags);
+
+	/* Request page fault */
 	resp->ret = -EFAULT;
 	resp->fault_address = (unsigned long)fault_addr;
 	resp->fault_reason = reason;
+	resp->stid = task_pid_vnr(current);
 
 #define STATUS_PAGER_COMPLETED	1
 #define	STATUS_PAGE_FAULT	3
@@ -264,43 +303,18 @@ static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, u
 	resp->status = STATUS_PAGE_FAULT;
 
 	for (;;) {
-		struct wait_queue_head_list_node *wqhln;
-		struct wait_queue_head_list_node *wqhln_iter;
-		unsigned long irqflags;
-		
-retry_alloc:
-		wqhln = kmalloc(sizeof(*wqhln), GFP_KERNEL);
-		if (!wqhln) {
-			printk("WARNING: coudln't alloc wait queue head, retrying..\n");
-			goto retry_alloc;
-		}
-
-		/* Prepare per-process wait queue head */
-		wqhln->pid = task_tgid_vnr(current);	
-		wqhln->req = 0;
-		init_waitqueue_head(&wqhln->wq_syscall);
-
-		irqflags = ihk_ikc_spinlock_lock(&channel->wq_list_lock);
-		/* First see if there is a wait queue already */
-		list_for_each_entry(wqhln_iter, &channel->wq_list, list) {
-			if (wqhln_iter->pid == task_tgid_vnr(current)) {
-				kfree(wqhln);
-				wqhln = wqhln_iter;
-				list_del(&wqhln->list);
-				break;
-			}
-		}
-		list_add_tail(&wqhln->list, &channel->wq_list);
-		ihk_ikc_spinlock_unlock(&channel->wq_list_lock, irqflags);
-
+		dprintk("%s: tid: %d, fault_addr: %p SLEEPING\n", 
+				__FUNCTION__, task_pid_vnr(current), fault_addr);
 		/* wait for response */
 		error = wait_event_interruptible(wqhln->wq_syscall, wqhln->req);
-
-		/* Remove per-process wait queue head */
-		irqflags = ihk_ikc_spinlock_lock(&channel->wq_list_lock);
+		
+		/* Remove per-thread wait queue head */
+		irqflags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
 		list_del(&wqhln->list);
-		ihk_ikc_spinlock_unlock(&channel->wq_list_lock, irqflags);
+		ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, irqflags);
 		kfree(wqhln);
+		dprintk("%s: tid: %d, fault_addr: %p WOKEN UP\n", 
+				__FUNCTION__, task_pid_vnr(current), fault_addr);
 
 		if (error) {
 			printk("remote_page_fault:interrupted. %d\n", error);
@@ -472,26 +486,18 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 #if USE_VM_INSERT_PFN
 	size_t			pix;
 #endif
-	struct mcctrl_per_proc_data *ppd, *ppd_iter;
-	unsigned long flags;
+	struct mcctrl_per_proc_data *ppd;
 
 	dprintk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
 			vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
 	
-	ppd = NULL;
-	flags = ihk_ikc_spinlock_lock(&usrdata->per_proc_list_lock);
-	
-	list_for_each_entry(ppd_iter, &usrdata->per_proc_list, list) {
-		if (ppd_iter->pid == task_tgid_vnr(current)) {
-			ppd = ppd_iter;
-			break;
-		}
-	}
-	ihk_ikc_spinlock_unlock(&usrdata->per_proc_list_lock, flags);
+	/* Look up per-process structure */
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 
 	if (!ppd) {
-		printk("ERROR: no per process data for pid %d\n", task_tgid_vnr(current));
-		return VM_FAULT_SIGBUS;
+		kprintf("%s: ERROR: no per-process structure for PID %d??\n", 
+				__FUNCTION__, task_tgid_vnr(current));
+		return -EINVAL;
 	}
 
 	for (try = 1; ; ++try) {
@@ -1711,33 +1717,6 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 		break;
 
 	case __NR_exit_group: {
-		unsigned long flags;
-		struct mcctrl_per_proc_data *ppd = NULL, *ppd_iter;
-
-		ppd = NULL;
-		flags = ihk_ikc_spinlock_lock(&usrdata->per_proc_list_lock);
-		
-		list_for_each_entry(ppd_iter, &usrdata->per_proc_list, list) {
-			if (ppd_iter->pid == task_tgid_vnr(current)) {
-				ppd = ppd_iter;
-				break;
-			}
-		}
-		
-		if (ppd) {	
-			list_del(&ppd->list);
-			
-			dprintk("pid: %d, tid: %d: rpgtable for %d (0x%lx) removed\n", 
-				task_tgid_vnr(current), current->pid, ppd->pid, ppd->rpgtable);
-			
-			kfree(ppd);
-		}
-		else {
-			printk("WARNING: no per process data for pid %d ?\n", 
-					task_tgid_vnr(current));
-		}
-
-		ihk_ikc_spinlock_unlock(&usrdata->per_proc_list_lock, flags);
 	
 		/* Make sure the user space handler will be called as well */
 		error = -ENOSYS;
