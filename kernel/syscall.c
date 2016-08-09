@@ -249,7 +249,6 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 			if (call_schedule) {
 				schedule();
 				++thread->in_syscall_offload;
-				v->wait_in_syscall = NULL;
 			}
 		}
 	
