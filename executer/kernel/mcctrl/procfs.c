@@ -17,6 +17,7 @@
 #include <linux/uaccess.h>
 #include <linux/fs.h>
 #include <linux/resource.h>
+#include <linux/interrupt.h>
 #include "mcctrl.h"
 #include <linux/version.h>
 #include <linux/semaphore.h>
@@ -748,7 +749,7 @@ int procfsm_packet_handler(void *os, int msg, int pid, unsigned long arg)
 {
 	struct procfs_work *work = NULL;
 
-	work = kzalloc(sizeof(*work), GFP_ATOMIC);
+	work = kzalloc(sizeof(*work), GFP_KERNEL);
 	if (!work) {
 		printk("%s: kzalloc failed\n", __FUNCTION__);
 		return -1;

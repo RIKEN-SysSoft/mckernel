@@ -27,6 +27,7 @@
 #include <linux/miscdevice.h>
 #include <linux/slab.h>
 #include <linux/string.h>
+#include <linux/interrupt.h>
 #include "mcctrl.h"
 #ifdef ATTACHED_MIC
 #include <sysdeps/mic/mic/micconst.h>
@@ -49,8 +50,9 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 {
 	struct ikc_scd_packet *pisp = __packet;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(__os);
+	int msg = pisp->msg;
 
-	switch (pisp->msg) {
+	switch (msg) {
 	case SCD_MSG_INIT_CHANNEL:
 		mcctrl_ikc_init(__os, pisp->ref, pisp->arg, c);
 		break;
@@ -108,6 +110,14 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 				pisp->err, pisp->arg);
 		break;
 	}
+
+	/* 
+	 * SCD_MSG_SYSCALL_ONESIDE holds the packet and frees is it
+	 * mcexec_ret_syscall(), for the rest, free it here.
+	 */
+	if (msg != SCD_MSG_SYSCALL_ONESIDE) {
+		kfree(pisp);
+	}
 	return 0;
 }
 
@@ -144,8 +154,6 @@ int mcctrl_ikc_set_recv_cpu(ihk_os_t os, int cpu)
 
 	ihk_ikc_channel_set_cpu(usrdata->channels[cpu].c,
 	                        ihk_ikc_get_processor_id());
-	kprintf("Setting the target to %d\n",
-	        ihk_ikc_get_processor_id());
 	return 0;
 }
 
@@ -191,12 +199,13 @@ static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ih
 #endif
 
 	pmc->param.request_va =
-		(void *)__get_free_pages(GFP_ATOMIC,
+		(void *)__get_free_pages(in_interrupt() ? GFP_ATOMIC : GFP_KERNEL,
 		                         REQUEST_SHIFT - PAGE_SHIFT);
 	pmc->param.request_pa = virt_to_phys(pmc->param.request_va);
 	pmc->param.doorbell_va = usrdata->mcctrl_doorbell_va;
 	pmc->param.doorbell_pa = usrdata->mcctrl_doorbell_pa;
-	pmc->param.post_va = (void *)__get_free_page(GFP_ATOMIC);
+	pmc->param.post_va = (void *)__get_free_page(in_interrupt() ? 
+			GFP_ATOMIC : GFP_KERNEL);
 	pmc->param.post_pa = virt_to_phys(pmc->param.post_va);
 	memset(pmc->param.doorbell_va, 0, PAGE_SIZE);
 	memset(pmc->param.request_va, 0, PAGE_SIZE);
@@ -216,8 +225,9 @@ static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ih
 													PAGE_SIZE, NULL, 0);
 #endif
 
-	pmc->dma_buf = (void *)__get_free_pages(GFP_ATOMIC,
-	                                        DMA_PIN_SHIFT - PAGE_SHIFT);
+	pmc->dma_buf = (void *)__get_free_pages(in_interrupt() ? 
+			GFP_ATOMIC : GFP_KERNEL,
+			DMA_PIN_SHIFT - PAGE_SHIFT);
 
 	rpm->request_page = pmc->param.request_pa;
 	rpm->doorbell_page = pmc->param.doorbell_pa;

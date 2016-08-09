@@ -570,12 +570,14 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	} *sp, info;
 	unsigned long pp;
 	int cpuid;
+	int ret = 0;
 
 	switch (packet->msg) {
 	case SCD_MSG_INIT_CHANNEL_ACKED:
 		dkprintf("SCD_MSG_INIT_CHANNEL_ACKED\n");
 		process_msg_init_acked(c, packet->arg);
-		return 0;
+		ret = 0;
+		break;
 
 	case SCD_MSG_PREPARE_PROCESS:
 
@@ -598,13 +600,15 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		pckt.arg = packet->arg;
 		syscall_channel_send(c, &pckt);
 
-		return 0;
+		ret = 0;
+		break;
 
 	case SCD_MSG_SCHEDULE_PROCESS:
 		cpuid = obtain_clone_cpuid();
 		if(cpuid == -1){
 			kprintf("No CPU available\n");
-			return -1;
+			ret = -1;
+			break;
 		}
 		dkprintf("SCD_MSG_SCHEDULE_PROCESS: %lx\n", packet->arg);
 		thread = (struct thread *)packet->arg;
@@ -618,7 +622,9 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		runq_add_thread(thread, cpuid);
 					  
 		//cpu_local_var(next) = (struct thread *)packet->arg;
-		return 0;
+		ret = 0;
+		break;
+
 	case SCD_MSG_SEND_SIGNAL:
 		pp = ihk_mc_map_memory(NULL, packet->arg, sizeof(struct mcctrl_signal));
 		sp = (struct mcctrl_signal *)ihk_mc_map_virtual(pp, 1, PTATTR_WRITABLE | PTATTR_ACTIVE);
@@ -633,18 +639,25 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 
 		rc = do_kill(NULL, info.pid, info.tid, info.sig, &info.info, 0);
 		kprintf("SCD_MSG_SEND_SIGNAL: do_kill(pid=%d, tid=%d, sig=%d)=%d\n", info.pid, info.tid, info.sig, rc);
-		return 0;
+		ret = 0;
+		break;
+
 	case SCD_MSG_PROCFS_REQUEST:
 		process_procfs_request(packet->arg);
-		return 0;
+		ret = 0;
+		break;
+
 	case SCD_MSG_CLEANUP_PROCESS:
 		dkprintf("SCD_MSG_CLEANUP_PROCESS pid=%d\n", packet->pid);
 		terminate_host(packet->pid);
-		return 0;
+		ret = 0;
+		break;
+
 	case SCD_MSG_DEBUG_LOG:
 		dkprintf("SCD_MSG_DEBUG_LOG code=%lx\n", packet->arg);
 		debug_log(packet->arg);
-		return 0;
+		ret = 0;
+		break;
 
 	case SCD_MSG_SYSFS_REQ_SHOW:
 	case SCD_MSG_SYSFS_REQ_STORE:
@@ -652,7 +665,8 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		sysfss_packet_handler(c, packet->msg, packet->err,
 				packet->sysfs_arg1, packet->sysfs_arg2,
 				packet->sysfs_arg3);
-		return 0;
+		ret = 0;
+		break;
 
 	case SCD_MSG_GET_CPU_MAPPING:
 		req_get_cpu_mapping(packet->arg);
@@ -660,17 +674,21 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		pckt.msg = SCD_MSG_REPLY_GET_CPU_MAPPING;
 		pckt.arg = packet->arg;
 		syscall_channel_send(c, &pckt);
-		return 0;
+		ret = 0;
+		break;
 
 	default:
 		kprintf("syscall_pakcet_handler:unknown message "
 				"(%d.%d.%d.%d.%d.%#lx)\n",
 				packet->msg, packet->ref, packet->osnum,
 				packet->pid, packet->err, packet->arg);
-		return 0;
+		ret = 0;
+		break;
 
 	}
-	return 0;
+
+	kfree(packet);
+	return ret;
 }
 
 void init_host_syscall_channel(void)

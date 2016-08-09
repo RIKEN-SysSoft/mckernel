@@ -33,6 +33,7 @@
 #include <linux/file.h>
 #include <linux/version.h>
 #include <linux/semaphore.h>
+#include <linux/interrupt.h>
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/io.h>
@@ -125,30 +126,30 @@ static long mcexec_prepare_image(ihk_os_t os,
 	}
 
 	pdesc->args = (void*)virt_to_phys(args);
-	printk("args: 0x%lX\n", (unsigned long)pdesc->args);
-	printk("argc: %ld\n", *(long *)args);
+	dprintk("args: 0x%lX\n", (unsigned long)pdesc->args);
+	dprintk("argc: %ld\n", *(long *)args);
 	pdesc->envs = (void*)virt_to_phys(envs);
-	printk("envs: 0x%lX\n", (unsigned long)pdesc->envs);
-	printk("envc: %ld\n", *(long *)envs);
+	dprintk("envs: 0x%lX\n", (unsigned long)pdesc->envs);
+	dprintk("envc: %ld\n", *(long *)envs);
 
 	isp.msg = SCD_MSG_PREPARE_PROCESS;
 	isp.ref = pdesc->cpu;
 	isp.arg = virt_to_phys(pdesc);
 
-	printk("# of sections: %d\n", pdesc->num_sections);
-	printk("%p (%lx)\n", pdesc, isp.arg);
+	dprintk("# of sections: %d\n", pdesc->num_sections);
+	dprintk("%p (%lx)\n", pdesc, isp.arg);
 	
 	pdesc->status = 0;
 	mcctrl_ikc_send(os, pdesc->cpu, &isp);
 
-	wait_event_interruptible(usrdata->wq_prepare, pdesc->status);
+	while (wait_event_interruptible(usrdata->wq_prepare, pdesc->status) != 0);
 
 	if(pdesc->err < 0){
 		ret = pdesc->err;	
 		goto free_out;
 	}
 
-	ppd = kmalloc(sizeof(*ppd), GFP_ATOMIC);
+	ppd = kmalloc(sizeof(*ppd), GFP_KERNEL);
 	if (!ppd) {
 		printk("ERROR: allocating per process data\n");
 		ret = -ENOMEM;
@@ -170,14 +171,14 @@ static long mcexec_prepare_image(ihk_os_t os,
 	list_add_tail(&ppd->list, &usrdata->per_proc_list);
 	ihk_ikc_spinlock_unlock(&usrdata->per_proc_list_lock, flags);
 	
-	dprintk("pid %d, rpgtable: 0x%lx added\n", 
-		ppd->pid, ppd->rpgtable);
-
 	if (copy_to_user(udesc, pdesc, sizeof(struct program_load_desc) + 
 	             sizeof(struct program_image_section) * desc.num_sections)) {
 		ret = -EFAULT;	
 		goto free_out;
 	}
+
+	dprintk("%s: pid %d, rpgtable: 0x%lx added\n", 
+		__FUNCTION__, ppd->pid, ppd->rpgtable);
 
 	ret = 0;
 
@@ -454,7 +455,6 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 	struct wait_queue_head_list_node *wqhln = NULL;
 	struct wait_queue_head_list_node *wqhln_iter;
 	struct wait_queue_head_list_node *wqhln_alloc = NULL;
-	struct mcctrl_channel *c = ud->channels + packet->ref;
 	int pid = packet->pid;
 	unsigned long flags;
 	struct mcctrl_per_proc_data *ppd;
@@ -477,9 +477,9 @@ retry_alloc:
 
 	dprintk("%s: (packet_handler) rtid: %d, ttid: %d, sys nr: %d\n",
 			__FUNCTION__,
-			c->param.request_va->rtid,
-			c->param.request_va->ttid,
-			c->param.request_va->number);
+			packet->req.rtid,
+			packet->req.ttid,
+			packet->req.number);
 	/*
 	 * Three scenarios are possible:
 	 * - Find the designated thread if req->ttid is specified.
@@ -489,9 +489,9 @@ retry_alloc:
 	flags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
 
 	/* Is this a request for a specific thread? See if it's waiting */
-	if (c->param.request_va->ttid) {
+	if (packet->req.ttid) {
 		list_for_each_entry(wqhln_iter, &ppd->wq_list_exact, list) {
-			if (c->param.request_va->ttid != task_pid_vnr(wqhln_iter->task))
+			if (packet->req.ttid != task_pid_vnr(wqhln_iter->task))
 				continue;
 
 			wqhln = wqhln_iter;
@@ -524,7 +524,7 @@ retry_alloc:
 		kfree(wqhln_alloc);
 	}
 
-	memcpy(&wqhln->packet, packet, sizeof(*packet));
+	wqhln->packet = packet;
 	wqhln->req = 1;
 	wake_up(&wqhln->wq_syscall);
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, flags);
@@ -537,8 +537,7 @@ retry_alloc:
  */
 int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 {
-	struct syscall_wait_desc swd;
-	struct mcctrl_channel *c;
+	struct ikc_scd_packet *packet;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct wait_queue_head_list_node *wqhln;
 	struct wait_queue_head_list_node *wqhln_iter;
@@ -555,18 +554,10 @@ int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 			return -EINVAL;
 	}
 
-	//printk("mcexec_wait_syscall swd=%p req=%p size=%d\n", &swd, req, sizeof(swd.cpu));
-	if (copy_from_user(&swd, req, sizeof(swd))) {
-		return -EFAULT;
-	}
-
-	if (swd.cpu >= usrdata->num_channels)
-		return -EINVAL;
-
-	c = (struct mcctrl_channel *)mcctrl_get_per_thread_data(ppd, current);
-	if (c) {
-		printk("mcexec_wait_syscall:already registered. task %p ch %p\n",
-				current, c);
+	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
+	if (packet) {
+		printk("%s: ERROR: packet %p is already registered for thread %d\n",
+				__FUNCTION__, packet, task_pid_vnr(current));
 		return -EBUSY;
 	}
 
@@ -613,49 +604,44 @@ retry_alloc:
 		return -EINTR;
 	}
 
-	/* Channel is determined by request */
-	dprintk("%s: tid: %d request from CPU %d\n",
-			__FUNCTION__, task_pid_vnr(current), wqhln->packet.ref);
-
-	c = usrdata->channels + wqhln->packet.ref;
+	packet = wqhln->packet;
 	kfree(wqhln);
 
-#if 0
-	if (c->param.request_va->number == 61 &&
-			c->param.request_va->args[0] == swd.pid) {
-
-		dprintk("pid: %d, tid: %d: SC %d, swd.cpu: %d, WARNING: wait4() for self?\n",
-				task_tgid_vnr(current),
-				task_pid_vnr(current);
-				c->param.request_va->number,
-				swd.cpu);
-
-		return -EINTR;
-	}
-#endif
+	dprintk("%s: tid: %d request from CPU %d\n",
+			__FUNCTION__, task_pid_vnr(current), packet->ref);
 
 	mb();
-	if (!c->param.request_va->valid) {
-		printk("mcexec_wait_syscall:stray wakeup pid: %d, tid: %d: SC %d, swd.cpu: %d\n",
+	if (!packet->req.valid) {
+		printk("%s: ERROR: stray wakeup pid: %d, tid: %d: SC %lu\n",
+				__FUNCTION__,
 				task_tgid_vnr(current),
 				task_pid_vnr(current),
-				c->param.request_va->number,
-				swd.cpu);
+				packet->req.number);
+		kfree(packet);
 		goto retry;
 	}
 
-	c->param.request_va->valid = 0; /* ack */
-	dprintk("SC #%lx, %lx\n",
-			c->param.request_va->number,
-			c->param.request_va->args[0]);
-	if (mcctrl_add_per_thread_data(ppd, current, c) < 0) {
+	packet->req.valid = 0; /* ack */
+	dprintk("%s: system call: %d, args[0]: %lu, args[1]: %lu, args[2]: %lu, "
+			"args[3]: %lu, args[4]: %lu, args[5]: %lu\n",
+			__FUNCTION__,
+			packet->req.number,
+			packet->req.args[0],
+			packet->req.args[1],
+			packet->req.args[2],
+			packet->req.args[3],
+			packet->req.args[4],
+			packet->req.args[5]);
+	
+	if (mcctrl_add_per_thread_data(ppd, current, packet) < 0) {
 		kprintf("%s: error adding per-thread data\n", __FUNCTION__);
 		return -EINVAL;
 	}
 
-	if (__do_in_kernel_syscall(os, c, c->param.request_va)) {
-		if (copy_to_user(&req->sr, c->param.request_va,
+	if (__do_in_kernel_syscall(os, packet)) {
+		if (copy_to_user(&req->sr, &packet->req,
 					sizeof(struct syscall_request))) {
+
 			if (mcctrl_delete_per_thread_data(ppd, current) < 0) {
 				kprintf("%s: error deleting per-thread data\n", __FUNCTION__);
 				return -EINVAL;
@@ -753,33 +739,6 @@ long mcexec_load_syscall(ihk_os_t os, struct syscall_load_desc *__user arg)
 #endif
 	
 	ihk_device_unmap_memory(ihk_os_to_dev(os), phys, desc.size);	
-	
-/*
-	ihk_dma_channel_t channel;
-	struct ihk_dma_request request;
-	unsigned long dma_status = 0;
-
-	channel = ihk_device_get_dma_channel(ihk_os_to_dev(os), 0);
-	if (!channel) {
-		return -EINVAL;
-	}
-
-	memset(&request, 0, sizeof(request));
-	request.src_os = os;
-	request.src_phys = desc.src;
-	request.dest_os = NULL;
-	request.dest_phys = desc.dest;
-	request.size = desc.size;
-	request.notify = (void *)virt_to_phys(&dma_status);
-	request.priv = (void *)1;
-
-	ihk_dma_request(channel, &request);
-
-	while (!dma_status) {
-		mb();
-		udelay(1);
-	}
-*/
 
 	return 0;
 }
@@ -787,18 +746,9 @@ long mcexec_load_syscall(ihk_os_t os, struct syscall_load_desc *__user arg)
 long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 {
 	struct syscall_ret_desc ret;
-	struct mcctrl_channel *mc;
+	struct ikc_scd_packet *packet;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
-#if 0	
-	ihk_dma_channel_t channel;
-	struct ihk_dma_request request;
-
-	channel = ihk_device_get_dma_channel(ihk_os_to_dev(os), 0);
-	if (!channel) {
-		return -EINVAL;
-	}
-#endif	
 
 	if (copy_from_user(&ret, arg, sizeof(struct syscall_ret_desc))) {
 		return -EFAULT;
@@ -812,37 +762,30 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 		return -EINVAL;
 	}
 
-	mc = (struct mcctrl_channel *)mcctrl_get_per_thread_data(ppd, current);
-	if (!mc) {
-		kprintf("%s: ERROR: no peer channel registerred??\n", __FUNCTION__);
+	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
+	if (!packet) {
+		kprintf("%s: ERROR: no packet registered for TID %d\n", 
+			__FUNCTION__, task_pid_vnr(current));
 		return -EINVAL;
 	}
 
 	mcctrl_delete_per_thread_data(ppd, current);
-
-	mc->param.response_va->ret = ret.ret;
-	mc->param.response_va->stid = task_pid_vnr(current);
 
 	if (ret.size > 0) {
 		/* Host => Accel. Write is fast. */
 		unsigned long phys;
 		void *rpm;
 
-		phys = ihk_device_map_memory(ihk_os_to_dev(os), ret.dest,
-		                             ret.size);
+		phys = ihk_device_map_memory(ihk_os_to_dev(os), ret.dest, ret.size);
 #ifdef CONFIG_MIC
 		rpm = ioremap_wc(phys, ret.size);
 #else
 		rpm = ihk_device_map_virtual(ihk_os_to_dev(os), phys, 
 		                             ret.size, NULL, 0);
 #endif
-		
 		if (copy_from_user(rpm, (void *__user)ret.src, ret.size)) {
 			return -EFAULT;
 		}
-
-		mb();
-		mc->param.response_va->status = 1;
 
 #ifdef CONFIG_MIC
 		iounmap(rpm);
@@ -850,24 +793,12 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 		ihk_device_unmap_virtual(ihk_os_to_dev(os), rpm, ret.size);
 #endif
 		ihk_device_unmap_memory(ihk_os_to_dev(os), phys, ret.size);
+	} 
 
-/*
-		memset(&request, 0, sizeof(request));
-		request.src_os = NULL;
-		request.src_phys = ret.src;
-		request.dest_os = os;
-		request.dest_phys = ret.dest;
-		request.size = ret.size;
-		request.notify_os = os;
-		request.notify = (void *)mc->param.response_rpa;
-		request.priv = (void *)1;
-		
-		ihk_dma_request(channel, &request);
-*/
-	} else {
-		mb();
-		mc->param.response_va->status = 1;
-	}
+	__return_syscall(os, packet, ret.ret, task_pid_vnr(current));
+
+	/* Free packet */
+	kfree(packet);
 
 	return 0;
 }

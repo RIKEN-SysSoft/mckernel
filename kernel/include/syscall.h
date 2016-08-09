@@ -117,28 +117,6 @@ struct user_desc {
 	unsigned int  lm:1;
 };
 
-struct ikc_scd_packet {
-	int msg;
-	int err;
-	union {
-		/* for traditional SCD_MSG_* */
-		struct {
-			int ref;
-			int osnum;
-			int pid;
-			int padding;
-			unsigned long arg;
-		};
-
-		/* for SCD_MSG_SYSFS_* */
-		struct {
-			long sysfs_arg1;
-			long sysfs_arg2;
-			long sysfs_arg3;
-		};
-	};
-};
-
 struct program_image_section {
 	unsigned long vaddr;
 	unsigned long len;
@@ -220,6 +198,30 @@ struct syscall_request {
 	unsigned long valid;
 	unsigned long number;
 	unsigned long args[6];
+};
+
+struct ikc_scd_packet {
+	int msg;
+	int err;
+	union {
+		/* for traditional SCD_MSG_* */
+		struct {
+			int ref;
+			int osnum;
+			int pid;
+			int padding;
+			unsigned long arg;
+			struct syscall_request req;
+			unsigned long resp_pa;
+		};
+
+		/* for SCD_MSG_SYSFS_* */
+		struct {
+			long sysfs_arg1;
+			long sysfs_arg2;
+			long sysfs_arg3;
+		};
+	};
 };
 
 struct syscall_response {

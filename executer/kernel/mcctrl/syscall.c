@@ -40,6 +40,7 @@
 #include <linux/cred.h>
 #include <linux/capability.h>
 #include <linux/semaphore.h>
+#include <linux/spinlock.h>
 #include <linux/mount.h>
 #include <asm/uaccess.h>
 #include <asm/delay.h>
@@ -93,7 +94,7 @@ int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data* ppd,
 	int ret = 0;
 	unsigned long flags;
 
-	ptd_alloc = kmalloc(sizeof(*ptd), GFP_ATOMIC);
+	ptd_alloc = kmalloc(sizeof(*ptd), GFP_KERNEL);
 	if (!ptd_alloc) {
 		kprintf("%s: error allocate per thread data\n", __FUNCTION__);
 		ret = -ENOMEM;
@@ -242,16 +243,17 @@ out:
 
 static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t reason)
 {
-	struct mcctrl_channel *channel;
+	struct ikc_scd_packet *packet;
 	struct syscall_request *req;
 	struct syscall_response *resp;
 	int error;
 	struct wait_queue_head_list_node *wqhln;
 	unsigned long irqflags;
 	struct mcctrl_per_proc_data *ppd;
+	unsigned long phys;
 	
-	dprintk("%s: tid: %d, fault_addr: %p\n", 
-		__FUNCTION__, task_pid_vnr(current), fault_addr);
+	dprintk("%s: tid: %d, fault_addr: %lu, reason: %lu\n",
+		__FUNCTION__, task_pid_vnr(current), fault_addr, reason);
 	
 	/* Look up per-process structure */
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
@@ -262,16 +264,21 @@ static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, u
 		return -EINVAL;
 	}
 
-	channel = (struct mcctrl_channel *)mcctrl_get_per_thread_data(ppd, current);
-	if (!channel) {
+	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
+	if (!packet) {
 		error = -ENOENT;
-		printk("remote_page_fault(%p,%p,%llx):channel not found. %d\n",
-				usrdata, fault_addr, reason, error);
-		goto out;
+		printk("%s: no packet registered for TID %d\n",
+				__FUNCTION__, task_pid_vnr(current));
+		goto out_no_unmap;
 	}
 
-	req = channel->param.request_va;
-	resp = channel->param.response_va;
+	req = &packet->req;
+
+	/* XXX: we need to map response structure here..  */
+	phys = ihk_device_map_memory(ihk_os_to_dev(usrdata->os), 
+			packet->resp_pa, sizeof(*resp));
+	resp = ihk_device_map_virtual(ihk_os_to_dev(usrdata->os), 
+			phys, sizeof(*resp), NULL, 0);
 
 retry_alloc:
 	wqhln = kmalloc(sizeof(*wqhln), GFP_KERNEL);
@@ -312,14 +319,35 @@ retry_alloc:
 		irqflags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
 		list_del(&wqhln->list);
 		ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, irqflags);
-		kfree(wqhln);
+
 		dprintk("%s: tid: %d, fault_addr: %p WOKEN UP\n", 
 				__FUNCTION__, task_pid_vnr(current), fault_addr);
 
 		if (error) {
+			kfree(wqhln);
 			printk("remote_page_fault:interrupted. %d\n", error);
 			goto out;
 		}
+		else {
+			/* Update packet reference */
+			packet = wqhln->packet;
+			req = &packet->req;
+			{
+				unsigned long phys2;
+				struct syscall_response *resp2;
+				phys2 = ihk_device_map_memory(ihk_os_to_dev(usrdata->os), 
+						packet->resp_pa, sizeof(*resp));
+				resp2 = ihk_device_map_virtual(ihk_os_to_dev(usrdata->os), 
+						phys2, sizeof(*resp), NULL, 0);
+
+				if (resp != resp2) {
+					resp = resp2;
+					phys = phys2;
+					printk("%s: updated new remote PA for resp\n", __FUNCTION__);
+				}
+			}
+		}
+
 		if (!req->valid) {
 			printk("remote_page_fault:not valid\n");
 		}
@@ -337,21 +365,29 @@ retry_alloc:
 			resp->ret = pager_call(usrdata->os, (void *)req);
 			mb();
 			resp->status = STATUS_PAGER_COMPLETED;
-			continue;
+			break;
+			//continue;
 		}
 		else {
 			error = req->args[1];
 			if (error) {
 				printk("remote_page_fault:response %d\n", error);
+				kfree(wqhln);
 				goto out;
 			}
 		}
 		break;
 	}
 
+	kfree(wqhln);
 	error = 0;
 out:
-	dprintk("remote_page_fault(%p,%p,%llx): %d\n", usrdata, fault_addr, reason, error);
+	ihk_device_unmap_virtual(ihk_os_to_dev(usrdata->os), resp, sizeof(*resp));
+	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
+
+out_no_unmap:
+	dprintk("%s: tid: %d, fault_addr: %lu, reason: %lu, error: %d\n",
+		__FUNCTION__, task_pid_vnr(current), fault_addr, reason, error);
 	return error;
 }
 
@@ -403,8 +439,9 @@ static int rus_page_hash_insert(struct page *page)
 {
 	int ret = 0;
 	struct rus_page *rp;
+	unsigned long flags;
 
-	spin_lock(&rus_page_hash_lock);
+	spin_lock_irqsave(&rus_page_hash_lock, flags);
 
 	rp = _rus_page_hash_lookup(page);
 	if (!rp) {
@@ -431,7 +468,7 @@ static int rus_page_hash_insert(struct page *page)
 
 
 out:
-	spin_unlock(&rus_page_hash_lock);
+	spin_unlock_irqrestore(&rus_page_hash_lock, flags);
 	return ret;
 }
 
@@ -440,8 +477,9 @@ void rus_page_hash_put_pages(void)
 	int i;
 	struct rus_page *rp_iter;
 	struct rus_page *rp_iter_next;
+	unsigned long flags;
 
-	spin_lock(&rus_page_hash_lock);
+	spin_lock_irqsave(&rus_page_hash_lock, flags);
 
 	for (i = 0; i < RUS_PAGE_HASH_SIZE; ++i) {
 
@@ -454,7 +492,7 @@ void rus_page_hash_put_pages(void)
 		}
 	}
 
-	spin_unlock(&rus_page_hash_lock);
+	spin_unlock_irqrestore(&rus_page_hash_lock, flags);
 }
 
 
@@ -630,237 +668,6 @@ reserve_user_space_common(struct mcctrl_usrdata *usrdata, unsigned long start, u
 
 	return start;
 }
-
-//unsigned long last_thread_exec = 0;
-
-#ifndef DO_USER_MODE
-static struct {
-	long (*do_sys_open)(int, const char __user *, int, int);
-	long (*sys_lseek)(unsigned int, off_t, unsigned int);
-	long (*sys_read)(unsigned int, char __user *, size_t);
-	long (*sys_write)(unsigned int, const char __user *, size_t);
-} syscalls;
-
-void
-mcctrl_syscall_init(void)
-{
-	printk("mcctrl_syscall_init\n");
-	syscalls.do_sys_open = (void *)kallsyms_lookup_name("do_sys_open");
-	syscalls.sys_lseek = (void *)kallsyms_lookup_name("sys_lseek");
-	syscalls.sys_read = (void *)kallsyms_lookup_name("sys_read");
-	syscalls.sys_write = (void *)kallsyms_lookup_name("sys_write");
-	printk("syscalls.do_sys_open=%lx\n", (long)syscalls.do_sys_open);
-	printk("syscalls.sys_lseek=%lx\n", (long)syscalls.sys_lseek);
-	printk("syscalls.sys_read=%lx\n", (long)syscalls.sys_read);
-	printk("syscalls.sys_write=%lx\n", (long)syscalls.sys_write);
-}
-
-static int do_async_copy(ihk_os_t os, unsigned long dest, unsigned long src,
-                         unsigned long size, unsigned int inbound)
-{
-	struct ihk_dma_request request;
-	ihk_dma_channel_t channel;
-	unsigned long asize = ALIGN_WAIT_BUF(size);
-
-	channel = ihk_device_get_dma_channel(ihk_os_to_dev(os), 0);
-	if (!channel) {
-		return -EINVAL;
-	}
-
-	memset(&request, 0, sizeof(request));
-	request.src_os = inbound ? os : NULL;
-	request.src_phys = src;
-	request.dest_os = inbound ? NULL : os;
-	request.dest_phys = dest;
-	request.size = size;
-	request.notify = (void *)(inbound ? dest + asize : src + asize);
-	request.priv = (void *)1;
-
-	*(unsigned long *)phys_to_virt((unsigned long)request.notify) = 0;
-#ifdef SC_DEBUG
-	last_request = request;
-#endif
-
-	ihk_dma_request(channel, &request);
-
-	return 0;
-}
-
-//int mcctrl_dma_abort;
-
-static void async_wait(ihk_os_t os, unsigned char *p, int size)
-{
-	int asize = ALIGN_WAIT_BUF(size);
-	unsigned long long s, w;
-	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
-
-	rdtscll(s);
-	while (!p[asize]) {
-		mb();
-		cpu_relax();
-		rdtscll(w);
-		if (w > s + 1024UL * 1024 * 1024 * 10) {
-			printk("DMA Timed out : %p (%p + %d) => %d\n",
-			       p + asize, p, size, p[asize]);
-#ifdef SC_DEBUG
-			print_dma_lastreq();
-#endif
-			usrdata->mcctrl_dma_abort = 1;
-			return;
-		}
-	}
-}
-
-static void clear_wait(unsigned char *p, int size)
-{
-	//int asize = ALIGN_WAIT_BUF(size);
-	p[size] = 0;
-}
-
-static unsigned long translate_remote_va(struct mcctrl_channel *c,
-                                         unsigned long rva)
-{
-	int i, n;
-	struct syscall_post *p;
-
-	p = c->param.post_va;
-
-	n = (int)p->v[0];
-	if (n < 0 || n >= PAGE_SIZE / sizeof(struct syscall_post)) {
-		return -EINVAL;
-	}
-	for (i = 0; i < n; i++) {
-		if (p[i + 1].v[0] != 1) {
-			continue;
-		}
-		if (rva >= p[i + 1].v[1] && rva < p[i + 1].v[2]) {
-			return p[i + 1].v[3] + (rva - p[i + 1].v[1]);
-		}
-	}
-
-	return -EFAULT;
-}
-
-//extern struct mcctrl_channel *channels;
-
-#if 0
-int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c,
-                           struct syscall_request *sc)
-{
-	int ret;
-	mm_segment_t fs;
-	unsigned long pa;
-	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
-
-	switch (sc->number) {
-	case 0: /* read */
-	case 1024:
-		if (sc->number & 1024) {
-			sc->args[1] = translate_remote_va(c, sc->args[1]);
-			if ((long)sc->args[1] < 0) {
-				__return_syscall(c, -EFAULT);
-				return 0;
-			}
-		}
-
-		clear_wait(c->dma_buf, sc->args[2]);
-		fs = get_fs();
-		set_fs(KERNEL_DS);
-		ret = syscalls.sys_read(sc->args[0], c->dma_buf, sc->args[2]);
-		if (ret > 0) {
-			do_async_copy(os, sc->args[1], virt_to_phys(c->dma_buf),
-			              sc->args[2], 0);
-			set_fs(fs);
-			
-			async_wait(os, c->dma_buf, sc->args[2]);
-		}
-		__return_syscall(c, ret);
-		return 0;
-
-	case 1: /* write */
-	case 1025:
-		if (sc->number & 1024) {
-			sc->args[1] = translate_remote_va(c, sc->args[1]);
-			if ((long)sc->args[1] < 0) {
-				__return_syscall(c, -EFAULT);
-				return 0;
-			}
-		}
-
-		clear_wait(c->dma_buf, sc->args[2]);
-		do_async_copy(os, virt_to_phys(c->dma_buf), sc->args[1],
-		              sc->args[2], 1);
-		fs = get_fs();
-		set_fs(KERNEL_DS);
-		async_wait(os, c->dma_buf, sc->args[2]);
-
-		ret = syscalls.sys_write(sc->args[0], c->dma_buf, sc->args[2]);
-		set_fs(fs);
-
-		__return_syscall(c, ret);
-		return 0;
-		
-	case 2: /* open */
-	case 1026:
-		if (sc->number & 1024) {
-			sc->args[0] = translate_remote_va(c, sc->args[0]);
-			if ((long)sc->args[0] < 0) {
-				__return_syscall(c, -EFAULT);
-				return 0;
-			}
-		}
-
-		clear_wait(c->dma_buf, 256);
-		do_async_copy(os, virt_to_phys(c->dma_buf), sc->args[0], 
-		              256, 1);
-		fs = get_fs();
-		set_fs(KERNEL_DS);
-		async_wait(os, c->dma_buf, 256);
-
-		ret = syscalls.do_sys_open(AT_FDCWD, c->dma_buf, sc->args[1],
-		                  sc->args[2]);
-		set_fs(fs);
-
-		__return_syscall(c, ret);
-		return 0;
-
-	case 3: /* Close */
-		ret = sys_close(sc->args[0]);
-		__return_syscall(c, ret);
-		return 0;
-
-	case 8: /* lseek */
-		ret = syscalls.sys_lseek(sc->args[0], sc->args[1], sc->args[2]);
-		__return_syscall(c, ret);
-		return 0;
-
-	case 56: /* Clone */
-		usrdata->last_thread_exec++;
-		if (mcctrl_ikc_is_valid_thread(usrdata->last_thread_exec)) {
-			printk("Clone notification: %lx\n", sc->args[0]);
-			if (channels[usrdata->last_thread_exec].param.post_va) {
-				memcpy(usrdata->channels[usrdata->last_thread_exec].param.post_va,
-				       c->param.post_va, PAGE_SIZE);
-			}
-			mcctrl_ikc_send_msg(usrdata->last_thread_exec,
-			                    SCD_MSG_SCHEDULE_PROCESS,
-			                    usrdata->last_thread_exec, sc->args[0]);
-		}
-
-		__return_syscall(c, 0);
-		return 0;
-		
-	default:
-		if (sc->number & 1024) {
-			__return_syscall(c, -EFAULT);
-			return 0;
-		} else {
-			return -ENOSYS;
-		}
-	}
-}
-#endif
-#endif /* !DO_USER_MODE */
 
 struct pager {
 	struct list_head	list;
@@ -1480,11 +1287,25 @@ static long pager_call(ihk_os_t os, struct syscall_request *req)
 	return ret;
 }
 
-static void __return_syscall(struct mcctrl_channel *c, int ret)
+void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet,
+		int ret, int stid)
 {
-	c->param.response_va->ret = ret;
+	unsigned long phys;
+	struct syscall_response *res;
+
+	phys = ihk_device_map_memory(ihk_os_to_dev(os),
+			packet->resp_pa, sizeof(*res));
+	res = ihk_device_map_virtual(ihk_os_to_dev(os),
+			phys, sizeof(*res), NULL, 0);
+
+	/* Map response structure and notify offloading thread */
+	res->ret = ret;
+	res->stid = stid;
 	mb();
-	c->param.response_va->status = 1;
+	res->status = 1;
+
+	ihk_device_unmap_virtual(ihk_os_to_dev(os), res, sizeof(*res));
+	ihk_device_unmap_memory(ihk_os_to_dev(os), phys, sizeof(*res));
 }
 
 static int remap_user_space(uintptr_t rva, size_t len, int prot)
@@ -1673,13 +1494,14 @@ fail:
 #define SCHED_CHECK_SAME_OWNER        0x01
 #define SCHED_CHECK_ROOT              0x02
 
-int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall_request *sc)
+int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 {
+	struct syscall_request *sc = &packet->req;
 	int error;
 	long ret = -1;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 
-	dprintk("__do_in_kernel_syscall(%p,%p,%ld %lx)\n", os, c, sc->number, sc->args[0]);
+	dprintk("%s: system call: %d\n", __FUNCTION__, sc->args[0]);
 	switch (sc->number) {
 	case __NR_mmap:
 		ret = pager_call(os, sc);
@@ -1690,8 +1512,9 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 		if (sc->args[2]) {
 			unsigned long flags;
 			struct mcctrl_per_proc_data *ppd = NULL;
+			int i;
 
-			ppd = kmalloc(sizeof(*ppd), GFP_ATOMIC);
+			ppd = kmalloc(sizeof(*ppd), GFP_KERNEL);
 			if (!ppd) {
 				printk("ERROR: allocating per process data\n");
 				error = -ENOMEM;
@@ -1700,6 +1523,14 @@ int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall
 
 			ppd->pid = task_tgid_vnr(current);
 			ppd->rpgtable = sc->args[2];
+			INIT_LIST_HEAD(&ppd->wq_list);
+			INIT_LIST_HEAD(&ppd->wq_list_exact);
+			spin_lock_init(&ppd->wq_list_lock);
+
+			for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; ++i) {
+				INIT_LIST_HEAD(&ppd->per_thread_data_hash[i]);
+				rwlock_init(&ppd->per_thread_data_hash_lock[i]);
+			}
 
 			flags = ihk_ikc_spinlock_lock(&usrdata->per_proc_list_lock);
 			list_add_tail(&ppd->list, &usrdata->per_proc_list);
@@ -1799,10 +1630,11 @@ sched_setparam_out:
 		break;
 	}
 
-	__return_syscall(c, ret);
+	__return_syscall(os, packet, ret, 0);
 
 	error = 0;
 out:
-	dprintk("__do_in_kernel_syscall(%p,%p,%ld %lx): %d %ld\n", os, c, sc->number, sc->args[0], error, ret);
+	dprintk("%s: system call: %d, error: %d, ret: %ld\n", 
+		__FUNCTION__, sc->number, sc->args[0], error, ret);
 	return error;
 }

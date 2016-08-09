@@ -127,11 +127,9 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 static void do_mod_exit(int status);
 #endif
 
-static void send_syscall(struct syscall_request *req, int cpu, int pid)
+static void send_syscall(struct syscall_request *req, int cpu, int pid, struct syscall_response *res)
 {
 	struct ikc_scd_packet packet;
-	struct syscall_response *res;
-	struct syscall_params *scp;
 	struct ihk_ikc_channel_desc *syscall_channel;
 	int ret;
 
@@ -140,7 +138,6 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid)
 	   req->number == __NR_kill){ // interrupt syscall
 		extern int num_processors;
 
-		scp = &get_cpu_local_var(0)->scp2;
 		syscall_channel = get_cpu_local_var(0)->syscall_channel2;
 		
 		/* XXX: is this really going to work if multiple processes 
@@ -152,34 +149,22 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid)
 			pid = req->args[1];
 	}
 	else{
-		scp = &get_cpu_local_var(cpu)->scp;
 		syscall_channel = get_cpu_local_var(cpu)->syscall_channel;
 	}
-	res = scp->response_va;
 
 	res->status = 0;
 	req->valid = 0;
 
-#ifdef USE_DMA
-	memcpy_async(scp->request_pa,
-	             virt_to_phys(req), sizeof(*req), 0, &fin);
-
-	memcpy_async_wait(&scp->post_fin);
-	scp->post_va->v[0] = scp->post_idx;
-	memcpy_async_wait(&fin);
-#else
-	memcpy(scp->request_va, req, sizeof(*req));
-#endif
+	memcpy(&packet.req, req, sizeof(*req));
 
 	barrier();
-	scp->request_va->valid = 1;
-	*(unsigned int *)scp->doorbell_va = cpu + 1;
+	packet.req.valid = 1;
 
 #ifdef SYSCALL_BY_IKC
 	packet.msg = SCD_MSG_SYSCALL_ONESIDE;
 	packet.ref = cpu;
 	packet.pid = pid ? pid : cpu_local_var(current)->proc->pid;
-	packet.arg = scp->request_rpa;	
+	packet.resp_pa = virt_to_phys(res);
 	dkprintf("send syscall, nr: %d, pid: %d\n", req->number, packet.pid);
 
 	ret = ihk_ikc_send(syscall_channel, &packet, 0);
@@ -193,9 +178,8 @@ ihk_spinlock_t syscall_lock;
 
 long do_syscall(struct syscall_request *req, int cpu, int pid)
 {
-	struct syscall_response *res;
+	struct syscall_response res;
 	struct syscall_request req2 IHK_DMA_ALIGN;
-	struct syscall_params *scp;
 	int error;
 	long rc;
 	int islock = 0;
@@ -219,20 +203,15 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	if(req->number == __NR_exit_group ||
 	   req->number == __NR_gettid ||
 	   req->number == __NR_kill){ // interrupt syscall
-		scp = &get_cpu_local_var(0)->scp2;
 		islock = 1;
 		irqstate = ihk_mc_spinlock_lock(&syscall_lock);
 	}
-	else{
-		scp = &get_cpu_local_var(cpu)->scp;
-	}
-	res = scp->response_va;
 	/* The current thread is the requester and any thread from 
 	 * the pool may serve the request */
 	req->rtid = cpu_local_var(current)->tid;
 	req->ttid = 0;
 
-	send_syscall(req, cpu, pid);
+	send_syscall(req, cpu, pid, &res);
 
 	dkprintf("%s: syscall num: %d waiting for Linux.. \n",
 		__FUNCTION__, req->number);
@@ -240,8 +219,8 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 #define	STATUS_IN_PROGRESS	0
 #define	STATUS_COMPLETED	1
 #define	STATUS_PAGE_FAULT	3
-	while (res->status != STATUS_COMPLETED) {
-		while (res->status == STATUS_IN_PROGRESS) {
+	while (res.status != STATUS_COMPLETED) {
+		while (res.status == STATUS_IN_PROGRESS) {
 			struct cpu_local_var *v;
 			int call_schedule = 0;
 			long runq_irqstate;
@@ -270,15 +249,16 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 			if (call_schedule) {
 				schedule();
 				++thread->in_syscall_offload;
+				v->wait_in_syscall = NULL;
 			}
 		}
 	
-		if (res->status == STATUS_PAGE_FAULT) {
+		if (res.status == STATUS_PAGE_FAULT) {
 			dkprintf("STATUS_PAGE_FAULT in syscall, pid: %d\n", 
 					cpu_local_var(current)->proc->pid);
 			error = page_fault_process_vm(thread->vm,
-					(void *)res->fault_address,
-					res->fault_reason|PF_POPULATE);
+					(void *)res.fault_address,
+					res.fault_reason|PF_POPULATE);
 
 			/* send result */
 			req2.number = __NR_mmap;
@@ -288,16 +268,16 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 			/* The current thread is the requester and only the waiting thread
 			 * may serve the request */
 			req2.rtid = cpu_local_var(current)->tid;
-			req2.ttid = res->stid;
+			req2.ttid = res.stid;
 
-			send_syscall(&req2, cpu, pid);
+			send_syscall(&req2, cpu, pid, &res);
 		}
 	}
 
 	dkprintf("%s: syscall num: %d got host reply: %d \n",
-		__FUNCTION__, req->number, res->ret);
+		__FUNCTION__, req->number, res.ret);
 
-	rc = res->ret;
+	rc = res.ret;
 	if(islock){
 		ihk_mc_spinlock_unlock(&syscall_lock, irqstate);
 	}

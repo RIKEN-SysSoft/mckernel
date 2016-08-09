@@ -113,6 +113,8 @@ struct ikc_scd_packet {
 			int pid;
 			int padding;
 			unsigned long arg;
+			struct syscall_request req;
+			unsigned long resp_pa;
 		};
 
 		/* for SCD_MSG_SYSFS_* */
@@ -159,7 +161,7 @@ struct wait_queue_head_list_node {
 	/* Denotes an exclusive wait for requester TID rtid */
 	int rtid;
 	int req;
-	struct ikc_scd_packet packet;
+	struct ikc_scd_packet *packet;
 };
 
 struct mcctrl_channel {
@@ -291,7 +293,7 @@ int mcctrl_ikc_is_valid_thread(ihk_os_t os, int cpu);
 ihk_os_t osnum_to_os(int n);
 
 /* syscall.c */
-int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall_request *sc);
+int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet);
 struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(
 		struct mcctrl_usrdata *ud,
 		int pid);
@@ -301,6 +303,8 @@ int mcctrl_delete_per_thread_data(struct mcctrl_per_proc_data* ppd,
 	struct task_struct *task);
 struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(
 	struct mcctrl_per_proc_data *ppd, struct task_struct *task);
+void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet, 
+		int ret, int stid);
 
 #define PROCFS_NAME_MAX 1000
 

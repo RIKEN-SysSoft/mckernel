@@ -14,6 +14,7 @@
 #include <linux/slab.h>
 #include <linux/device.h>
 #include <linux/version.h>
+#include <linux/interrupt.h>
 #include "mcctrl.h"
 #include "sysfs_msg.h"
 
@@ -1887,7 +1888,7 @@ sysfsm_packet_handler(void *os, int msg, int err, long arg1, long arg2)
 {
 	struct sysfs_work *work = NULL;
 
-	work = kzalloc(sizeof(*work), GFP_ATOMIC);
+	work = kzalloc(sizeof(*work), GFP_KERNEL);
 	if (!work) {
 		eprintk("mcctrl:sysfsm_packet_handler:kzalloc failed\n");
 		return;
