@@ -20,10 +20,12 @@ cpus=""
 if [ "`lsmod | grep ihk_smp_x86`" == "" ]; then exit; fi
 
 # Destroy all LWK instances
+if ls /dev/mcos* 1>/dev/null 2>&1; then
 for i in /dev/mcos*; do
 	ind=`echo $i|cut -c10-`;
     if ! ${SBINDIR}/ihkconfig 0 destroy $ind; then echo "error: destroying LWK instance $ind failed"; exit; fi	
 done
+fi
 
 # Query IHK-SMP resources and release them
 if ! ${SBINDIR}/ihkconfig 0 query cpu > /dev/null; then echo "error: querying cpus"; exit; fi
