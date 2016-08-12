@@ -617,7 +617,8 @@ retry_alloc:
 				task_tgid_vnr(current),
 				task_pid_vnr(current),
 				packet->req.number);
-		kfree(packet);
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
+				(usrdata->channels + packet->ref)->c);
 		goto retry;
 	}
 
@@ -650,6 +651,9 @@ retry_alloc:
 		}
 		return 0;
 	}
+
+	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
+			(usrdata->channels + packet->ref)->c);
 
 	if (mcctrl_delete_per_thread_data(ppd, current) < 0) {
 		kprintf("%s: error deleting per-thread data\n", __FUNCTION__);
@@ -798,7 +802,8 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 	__return_syscall(os, packet, ret.ret, task_pid_vnr(current));
 
 	/* Free packet */
-	kfree(packet);
+	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
+			(usrdata->channels + packet->ref)->c);
 
 	return 0;
 }

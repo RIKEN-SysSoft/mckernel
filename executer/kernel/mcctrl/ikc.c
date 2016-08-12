@@ -116,7 +116,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	 * mcexec_ret_syscall(), for the rest, free it here.
 	 */
 	if (msg != SCD_MSG_SYSCALL_ONESIDE) {
-		kfree(pisp);
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)__packet, c);
 	}
 	return 0;
 }
