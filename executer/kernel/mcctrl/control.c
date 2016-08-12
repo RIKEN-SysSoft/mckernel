@@ -459,13 +459,6 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 	unsigned long flags;
 	struct mcctrl_per_proc_data *ppd;
 
-retry_alloc:
-	wqhln_alloc = kmalloc(sizeof(*wqhln), GFP_KERNEL);
-	if (!wqhln_alloc) {
-		printk("WARNING: coudln't alloc wait queue head, retrying..\n");
-		goto retry_alloc;
-	}
-
 	/* Look up per-process structure */
 	ppd = mcctrl_get_per_proc_data(ud, pid);
 
@@ -514,14 +507,18 @@ retry_alloc:
 
 	/* If no match found, add request */
 	if (!wqhln) {
+retry_alloc:
+		wqhln_alloc = kmalloc(sizeof(*wqhln), GFP_ATOMIC);
+		if (!wqhln_alloc) {
+			printk("WARNING: coudln't alloc wait queue head, retrying..\n");
+			goto retry_alloc;
+		}
+
 		wqhln = wqhln_alloc;
 		wqhln->req = 0;
 		wqhln->task = NULL;
 		init_waitqueue_head(&wqhln->wq_syscall);
 		list_add_tail(&wqhln->list, &ppd->wq_list);
-	}
-	else {
-		kfree(wqhln_alloc);
 	}
 
 	wqhln->packet = packet;
@@ -539,7 +536,7 @@ int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 {
 	struct ikc_scd_packet *packet;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
-	struct wait_queue_head_list_node *wqhln;
+	struct wait_queue_head_list_node *wqhln = NULL;
 	struct wait_queue_head_list_node *wqhln_iter;
 	int ret = 0;
 	unsigned long irqflags;
@@ -563,27 +560,28 @@ int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 
 retry:
 	/* Prepare per-thread wait queue head or find a valid request */
-retry_alloc:
-	wqhln = kmalloc(sizeof(*wqhln), GFP_KERNEL);
-	if (!wqhln) {
-		printk("WARNING: coudln't alloc wait queue head, retrying..\n");
-		goto retry_alloc;
-	}
-
-	wqhln->task = current;
-	wqhln->req = 0;
-	init_waitqueue_head(&wqhln->wq_syscall);
-	
 	irqflags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
 	/* First see if there is a valid request already that is not yet taken */
 	list_for_each_entry(wqhln_iter, &ppd->wq_list, list) {
 		if (wqhln_iter->task == NULL && wqhln_iter->req) {
-			kfree(wqhln);
 			wqhln = wqhln_iter;
 			wqhln->task = current;
 			list_del(&wqhln->list);
 			break;
 		}
+	}
+
+	if (!wqhln) {
+retry_alloc:
+		wqhln = kmalloc(sizeof(*wqhln), GFP_ATOMIC);
+		if (!wqhln) {
+			printk("WARNING: coudln't alloc wait queue head, retrying..\n");
+			goto retry_alloc;
+		}
+
+		wqhln->task = current;
+		wqhln->req = 0;
+		init_waitqueue_head(&wqhln->wq_syscall);
 	}
 
 	/* No valid request? Wait for one.. */
@@ -601,11 +599,13 @@ retry_alloc:
 
 	if (ret && !wqhln->req) {
 		kfree(wqhln);
+		wqhln = NULL;
 		return -EINTR;
 	}
 
 	packet = wqhln->packet;
 	kfree(wqhln);
+	wqhln = NULL;
 
 	dprintk("%s: tid: %d request from CPU %d\n",
 			__FUNCTION__, task_pid_vnr(current), packet->ref);
