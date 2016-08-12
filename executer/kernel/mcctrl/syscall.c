@@ -94,7 +94,7 @@ int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data* ppd,
 	int ret = 0;
 	unsigned long flags;
 
-	ptd_alloc = kmalloc(sizeof(*ptd), GFP_KERNEL);
+	ptd_alloc = kmalloc(sizeof(*ptd), GFP_ATOMIC);
 	if (!ptd_alloc) {
 		kprintf("%s: error allocate per thread data\n", __FUNCTION__);
 		ret = -ENOMEM;
@@ -110,7 +110,7 @@ int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data* ppd,
 		}
 	}
 
-	if (ptd) {
+	if (unlikely(ptd)) {
 		ret = -EBUSY;
 		kfree(ptd_alloc);
 		goto out;
@@ -1524,6 +1524,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 			ppd->pid = task_tgid_vnr(current);
 			ppd->rpgtable = sc->args[2];
 			INIT_LIST_HEAD(&ppd->wq_list);
+			INIT_LIST_HEAD(&ppd->wq_req_list);
 			INIT_LIST_HEAD(&ppd->wq_list_exact);
 			spin_lock_init(&ppd->wq_list_lock);
 

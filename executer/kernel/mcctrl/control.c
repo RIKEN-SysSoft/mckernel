@@ -159,6 +159,7 @@ static long mcexec_prepare_image(ihk_os_t os,
 	ppd->pid = pdesc->pid;
 	ppd->rpgtable = pdesc->rpgtable;
 	INIT_LIST_HEAD(&ppd->wq_list);
+	INIT_LIST_HEAD(&ppd->wq_req_list);
 	INIT_LIST_HEAD(&ppd->wq_list_exact);
 	spin_lock_init(&ppd->wq_list_lock);
 
@@ -427,7 +428,7 @@ static long mcexec_get_cpu(ihk_os_t os)
 	return info->n_cpus;
 }
 
-struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(
+inline struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(
 		struct mcctrl_usrdata *ud,
 		int pid)
 {
@@ -462,7 +463,7 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 	/* Look up per-process structure */
 	ppd = mcctrl_get_per_proc_data(ud, pid);
 
-	if (!ppd) {
+	if (unlikely(!ppd)) {
 		kprintf("%s: ERROR: no per-process structure for PID %d??\n",
 			__FUNCTION__, task_tgid_vnr(current));
 			return 0;
@@ -482,7 +483,7 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 	flags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
 
 	/* Is this a request for a specific thread? See if it's waiting */
-	if (packet->req.ttid) {
+	if (unlikely(packet->req.ttid)) {
 		list_for_each_entry(wqhln_iter, &ppd->wq_list_exact, list) {
 			if (packet->req.ttid != task_pid_vnr(wqhln_iter->task))
 				continue;
@@ -505,8 +506,8 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 		}
 	}
 
-	/* If no match found, add request */
-	if (!wqhln) {
+	/* If no match found, add request to pending request list */
+	if (unlikely(!wqhln)) {
 retry_alloc:
 		wqhln_alloc = kmalloc(sizeof(*wqhln), GFP_ATOMIC);
 		if (!wqhln_alloc) {
@@ -518,7 +519,7 @@ retry_alloc:
 		wqhln->req = 0;
 		wqhln->task = NULL;
 		init_waitqueue_head(&wqhln->wq_syscall);
-		list_add_tail(&wqhln->list, &ppd->wq_list);
+		list_add_tail(&wqhln->list, &ppd->wq_req_list);
 	}
 
 	wqhln->packet = packet;
@@ -545,7 +546,7 @@ int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 	/* Look up per-process structure */
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 
-	if (!ppd) {
+	if (unlikely(!ppd)) {
 		kprintf("%s: ERROR: no per-process structure for PID %d??\n",
 			__FUNCTION__, task_tgid_vnr(current));
 			return -EINVAL;
@@ -562,7 +563,7 @@ retry:
 	/* Prepare per-thread wait queue head or find a valid request */
 	irqflags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
 	/* First see if there is a valid request already that is not yet taken */
-	list_for_each_entry(wqhln_iter, &ppd->wq_list, list) {
+	list_for_each_entry(wqhln_iter, &ppd->wq_req_list, list) {
 		if (wqhln_iter->task == NULL && wqhln_iter->req) {
 			wqhln = wqhln_iter;
 			wqhln->task = current;
@@ -582,11 +583,9 @@ retry_alloc:
 		wqhln->task = current;
 		wqhln->req = 0;
 		init_waitqueue_head(&wqhln->wq_syscall);
-	}
 
-	/* No valid request? Wait for one.. */
-	if (wqhln->req == 0) {
-		list_add_tail(&wqhln->list, &ppd->wq_list);
+		/* Wait for a request.. */
+		list_add(&wqhln->list, &ppd->wq_list);
 		ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, irqflags);
 
 		ret = wait_event_interruptible(wqhln->wq_syscall, wqhln->req);

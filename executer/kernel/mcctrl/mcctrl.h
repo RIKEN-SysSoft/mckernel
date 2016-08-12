@@ -187,6 +187,7 @@ struct mcctrl_per_proc_data {
 	unsigned long rpgtable;	/* per process, not per OS */
 
 	struct list_head wq_list;
+	struct list_head wq_req_list;
 	struct list_head wq_list_exact;
 	ihk_spinlock_t wq_list_lock;
 
@@ -294,7 +295,7 @@ ihk_os_t osnum_to_os(int n);
 
 /* syscall.c */
 int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet);
-struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(
+inline struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(
 		struct mcctrl_usrdata *ud,
 		int pid);
 int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data* ppd,
