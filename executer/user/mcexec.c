@@ -868,7 +868,10 @@ struct thread_data_s {
 	pthread_mutex_t *lock;
 	pthread_barrier_t *init_ready;
 } *thread_data;
+
 int ncpu;
+int n_threads;
+
 pid_t master_tid;
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -1106,9 +1109,9 @@ void init_worker_threads(int fd)
 	int i;
 
 	pthread_mutex_init(&lock, NULL);
-	pthread_barrier_init(&init_ready, NULL, ncpu + 2);
+	pthread_barrier_init(&init_ready, NULL, n_threads + 2);
 
-	for (i = 0; i <= ncpu; ++i) {
+	for (i = 0; i <= n_threads; ++i) {
 		int ret;
 
 		thread_data[i].fd = fd;
@@ -1518,6 +1521,19 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+	n_threads = ncpu;
+	if (ncpu > 16) {
+		n_threads = 16;
+	}
+
+	/* 
+	 * XXX: keep thread_data ncpu sized despite that there are only
+	 * n_threads worker threads in the pool so that signaling code
+	 * keeps working.
+	 *
+	 * TODO: fix signaling code to be independent of TIDs.
+	 * TODO: implement dynaic thread pool resizing.
+	 */
 	thread_data = (struct thread_data_s *)malloc(sizeof(struct thread_data_s) * (ncpu + 1));
 	memset(thread_data, '\0', sizeof(struct thread_data_s) * (ncpu + 1));
 
@@ -1602,7 +1618,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	for (i = 0; i <= ncpu; ++i) {
+	for (i = 0; i <= n_threads; ++i) {
 		pthread_join(thread_data[i].thread_id, NULL);
 	}
 
@@ -1666,13 +1682,13 @@ do_generic_syscall(
 static void
 kill_thread(unsigned long cpu)
 {
-	if(cpu >= 0 && cpu < ncpu){
+	if(cpu >= 0 && cpu < n_threads){
 		pthread_kill(thread_data[cpu].thread_id, LOCALSIG);
 	}
 	else{
 		int	i;
 
-		for (i = 0; i < ncpu; ++i) {
+		for (i = 0; i < n_threads; ++i) {
 			pthread_kill(thread_data[i].thread_id, LOCALSIG);
 		}
 	}
