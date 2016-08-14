@@ -129,7 +129,7 @@ static void do_mod_exit(int status);
 
 static void send_syscall(struct syscall_request *req, int cpu, int pid, struct syscall_response *res)
 {
-	struct ikc_scd_packet packet;
+	struct ikc_scd_packet packet IHK_DMA_ALIGN;
 	struct ihk_ikc_channel_desc *syscall_channel;
 	int ret;
 

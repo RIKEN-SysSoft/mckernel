@@ -209,7 +209,6 @@ struct ikc_scd_packet {
 			int ref;
 			int osnum;
 			int pid;
-			int padding;
 			unsigned long arg;
 			struct syscall_request req;
 			unsigned long resp_pa;
@@ -222,6 +221,7 @@ struct ikc_scd_packet {
 			long sysfs_arg3;
 		};
 	};
+	char padding[12];
 };
 
 struct syscall_response {
