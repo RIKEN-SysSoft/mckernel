@@ -371,7 +371,7 @@ int main(void)
 	}
 	kmsg_init(mode);
 
-	kputs("MCK started.\n");
+	kputs("IHK/McKernel started.\n");
 
 	arch_init();
 
@@ -393,7 +393,7 @@ int main(void)
 
 	futex_init();
 
-	kputs("MCK/IHK booted.\n");
+	kputs("IHK/McKernel booted.\n");
 
 #ifdef DCFA_KMOD
 	mc_cmd_client_init();
