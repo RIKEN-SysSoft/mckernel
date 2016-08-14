@@ -281,7 +281,7 @@ static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, u
 			phys, sizeof(*resp), NULL, 0);
 
 retry_alloc:
-	wqhln = kmalloc(sizeof(*wqhln), GFP_KERNEL);
+	wqhln = kmalloc(sizeof(*wqhln), GFP_ATOMIC);
 	if (!wqhln) {
 		printk("WARNING: coudln't alloc wait queue head, retrying..\n");
 		goto retry_alloc;
@@ -779,7 +779,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 
 		up(&pager_sem);
 
-		newpager = kzalloc(sizeof(*newpager), GFP_KERNEL);
+		newpager = kzalloc(sizeof(*newpager), GFP_ATOMIC);
 		if (!newpager) {
 			error = -ENOMEM;
 			printk("pager_req_create(%d,%lx):kzalloc failed. %d\n", fd, (long)result_pa, error);
@@ -1035,7 +1035,7 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
 	uintptr_t phys;
 
 	dprintk("pager_req_map(%p,%d,%lx,%lx,%lx)\n", os, fd, len, off, result_rpa);
-	pager = kzalloc(sizeof(*pager), GFP_KERNEL);
+	pager = kzalloc(sizeof(*pager), GFP_ATOMIC);
 	if (!pager) {
 		error = -ENOMEM;
 		printk("pager_req_map(%p,%d,%lx,%lx,%lx):kzalloc failed. %d\n", os, fd, len, off, result_rpa, error);
@@ -1514,7 +1514,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 			struct mcctrl_per_proc_data *ppd = NULL;
 			int i;
 
-			ppd = kmalloc(sizeof(*ppd), GFP_KERNEL);
+			ppd = kmalloc(sizeof(*ppd), GFP_ATOMIC);
 			if (!ppd) {
 				printk("ERROR: allocating per process data\n");
 				error = -ENOMEM;

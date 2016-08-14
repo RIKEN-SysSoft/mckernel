@@ -749,7 +749,7 @@ int procfsm_packet_handler(void *os, int msg, int pid, unsigned long arg)
 {
 	struct procfs_work *work = NULL;
 
-	work = kzalloc(sizeof(*work), GFP_KERNEL);
+	work = kzalloc(sizeof(*work), GFP_ATOMIC);
 	if (!work) {
 		printk("%s: kzalloc failed\n", __FUNCTION__);
 		return -1;

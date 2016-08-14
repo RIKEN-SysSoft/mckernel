@@ -1888,7 +1888,7 @@ sysfsm_packet_handler(void *os, int msg, int err, long arg1, long arg2)
 {
 	struct sysfs_work *work = NULL;
 
-	work = kzalloc(sizeof(*work), GFP_KERNEL);
+	work = kzalloc(sizeof(*work), GFP_ATOMIC);
 	if (!work) {
 		eprintk("mcctrl:sysfsm_packet_handler:kzalloc failed\n");
 		return;

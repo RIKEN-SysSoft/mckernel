@@ -190,6 +190,9 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	dkprintf("SC(%d)[%3d] sending syscall\n",
 		ihk_mc_get_processor_id(),
 		req->number);
+	
+	irqstate = 0;	/* for avoidance of warning */
+	barrier();
 
 	if(req->number != __NR_exit_group){
 		if(proc->nohost && // host is down
@@ -199,7 +202,6 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		++thread->in_syscall_offload;
 	}
 
-	irqstate = 0;	/* for avoidance of warning */
 	if(req->number == __NR_exit_group ||
 	   req->number == __NR_gettid ||
 	   req->number == __NR_kill){ // interrupt syscall
