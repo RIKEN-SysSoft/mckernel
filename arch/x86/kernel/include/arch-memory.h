@@ -318,5 +318,5 @@ extern unsigned long ap_trampoline;
 #define AP_TRAMPOLINE_SIZE  0x2000
 
 /* Local is cachable */
-#define IHK_IKC_QUEUE_PT_ATTR (PTATTR_NO_EXECUTE | PTATTR_WRITABLE | PTATTR_UNCACHABLE)
+#define IHK_IKC_QUEUE_PT_ATTR (PTATTR_NO_EXECUTE | PTATTR_WRITABLE)
 #endif
