@@ -49,6 +49,7 @@
 #define SCD_MSG_PREPARE_PROCESS_ACKED   0x2
 #define SCD_MSG_PREPARE_PROCESS_NACKED  0x7
 #define SCD_MSG_SCHEDULE_PROCESS        0x3
+#define SCD_MSG_WAKE_UP_SYSCALL_THREAD  0x14
 
 #define SCD_MSG_INIT_CHANNEL            0x5
 #define SCD_MSG_INIT_CHANNEL_ACKED      0x6
@@ -121,6 +122,11 @@ struct ikc_scd_packet {
 			long sysfs_arg1;
 			long sysfs_arg2;
 			long sysfs_arg3;
+		};
+
+		/* SCD_MSG_SCHEDULE_THREAD */
+		struct {
+			int ttid;
 		};
 	};
 	char padding[12];

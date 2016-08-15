@@ -241,6 +241,43 @@ out:
 }
 #endif
 
+static int __notify_syscall_requester(ihk_os_t os, struct ikc_scd_packet *packet,
+		struct syscall_response *res)
+{
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct ihk_ikc_channel_desc *c = (usrdata->channels + packet->ref)->c;
+	struct ikc_scd_packet r_packet;
+	int ret = 0;
+
+	/* If spinning, no need for IKC message */
+	if (__sync_bool_compare_and_swap(&res->req_thread_status,
+				IHK_SCD_REQ_THREAD_SPINNING,
+				IHK_SCD_REQ_THREAD_TO_BE_WOKEN)) {
+		dprintk("%s: no need to send IKC message for PID %d\n",
+				__FUNCTION__, packet->pid);
+		return ret;
+	}
+
+	/* The thread is not spinning any more, make sure it's descheduled */
+	if (!__sync_bool_compare_and_swap(&res->req_thread_status,
+				IHK_SCD_REQ_THREAD_DESCHEDULED,
+				IHK_SCD_REQ_THREAD_TO_BE_WOKEN)) {
+		printk("%s: WARNING: inconsistent requester status, "
+				"pid: %d, req status: %lu, syscall nr: %lu\n",
+				__FUNCTION__, packet->pid,
+				res->req_thread_status, packet->req.number);
+		dump_stack();
+
+		return -EINVAL;
+	}
+
+	r_packet.msg = SCD_MSG_WAKE_UP_SYSCALL_THREAD;
+	r_packet.ttid = packet->req.rtid;
+	ret = ihk_ikc_send(c, &r_packet, 0);
+
+	return ret;
+}
+
 static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t reason)
 {
 	struct ikc_scd_packet *packet;
@@ -274,7 +311,7 @@ static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, u
 
 	req = &packet->req;
 
-	/* XXX: we need to map response structure here..  */
+	/* Map response structure */
 	phys = ihk_device_map_memory(ihk_os_to_dev(usrdata->os), 
 			packet->resp_pa, sizeof(*resp));
 	resp = ihk_device_map_virtual(ihk_os_to_dev(usrdata->os), 
@@ -306,6 +343,12 @@ retry_alloc:
 #define STATUS_PAGER_COMPLETED	1
 #define	STATUS_PAGE_FAULT	3
 	req->valid = 0;
+
+	if (__notify_syscall_requester(usrdata->os, packet, resp) < 0) {
+		printk("%s: WARNING: failed to notify PID %d\n",
+			__FUNCTION__, packet->pid);
+	}
+
 	mb();
 	resp->status = STATUS_PAGE_FAULT;
 
@@ -363,6 +406,12 @@ retry_alloc:
 #define	PAGER_REQ_RESUME	0x0101
 		else if (req->args[0] != PAGER_REQ_RESUME) {
 			resp->ret = pager_call(usrdata->os, (void *)req);
+
+			if (__notify_syscall_requester(usrdata->os, packet, resp) < 0) {
+				printk("%s: WARNING: failed to notify PID %d\n",
+						__FUNCTION__, packet->pid);
+			}
+
 			mb();
 			resp->status = STATUS_PAGER_COMPLETED;
 			break;
@@ -1301,6 +1350,12 @@ void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet,
 	/* Map response structure and notify offloading thread */
 	res->ret = ret;
 	res->stid = stid;
+
+	if (__notify_syscall_requester(os, packet, res) < 0) {
+		printk("%s: WARNING: failed to notify PID %d\n",
+			__FUNCTION__, packet->pid);
+	}
+
 	mb();
 	res->status = 1;
 
