@@ -2576,13 +2576,8 @@ void schedule(void)
 	struct thread *last;
 
 	if (cpu_local_var(no_preempt)) {
-		dkprintf("no schedule() while no preemption! \n");
-		return;
-	}
-
-	if (cpu_local_var(current)
-			&& cpu_local_var(current)->in_syscall_offload) {
-		dkprintf("no schedule() while syscall offload!\n");
+		kprintf("%s: WARNING can't schedule() while no preemption, cnt: %d\n",
+			__FUNCTION__, cpu_local_var(no_preempt));
 		return;
 	}
 

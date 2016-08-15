@@ -186,6 +186,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	unsigned long irqstate;
 	struct thread *thread = cpu_local_var(current);
 	struct process *proc = thread->proc;
+	DECLARE_WAITQ_ENTRY(scd_wq_entry, thread);
 
 	dkprintf("SC(%d)[%3d] sending syscall\n",
 		ihk_mc_get_processor_id(),
@@ -212,7 +213,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	 * the pool may serve the request */
 	req->rtid = cpu_local_var(current)->tid;
 	req->ttid = 0;
-
+	res.req_thread_status = IHK_SCD_REQ_THREAD_SPINNING;
 	send_syscall(req, cpu, pid, &res);
 
 	dkprintf("%s: syscall num: %d waiting for Linux.. \n",
@@ -224,36 +225,55 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	while (res.status != STATUS_COMPLETED) {
 		while (res.status == STATUS_IN_PROGRESS) {
 			struct cpu_local_var *v;
-			int call_schedule = 0;
+			int do_schedule = 0;
 			long runq_irqstate;
+			unsigned long flags;
+
+			DECLARE_WAITQ_ENTRY(scd_wq_entry, cpu_local_var(current));
 
 			cpu_pause();
 
-			/* XXX: Intel MPI + Intel OpenMP situation:
-			 * While the MPI helper thread waits in a poll() call the OpenMP master
-			 * thread is iterating through the CPU cores using setaffinity().
-			 * Unless we give a chance to it on this core the two threads seem to
-			 * hang in deadlock. If the new thread would make a system call on this
-			 * core we would be in trouble. For now, allow it, but in the future
-			 * we should have syscall channels for each thread instead of per core,
-			 * or we should multiplex syscall threads in mcexec */
+			/* Spin if not preemptable */
+			if (cpu_local_var(no_preempt) || !thread->tid) {
+				continue;
+			}
+
+			/* Spin by default, but if re-schedule is requested let
+			 * the other thread run */
 			runq_irqstate =
 				ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
 			v = get_this_cpu_local_var();
 
 			if (v->flags & CPU_FLAG_NEED_RESCHED) {
-				call_schedule = 1;
-				--thread->in_syscall_offload;
+				do_schedule = 1;
 			}
 
 			ihk_mc_spinlock_unlock(&v->runq_lock, runq_irqstate);
 
-			if (call_schedule) {
-				schedule();
-				++thread->in_syscall_offload;
+			if (!do_schedule) {
+				continue;
 			}
+
+			flags = cpu_disable_interrupt_save();
+
+			/* Try to sleep until notified */
+			if (__sync_bool_compare_and_swap(&res.req_thread_status,
+				IHK_SCD_REQ_THREAD_SPINNING,
+				IHK_SCD_REQ_THREAD_DESCHEDULED)) {
+
+				dkprintf("%s: tid %d waiting for syscall reply...\n",
+						__FUNCTION__, thread->tid);
+				waitq_init(&thread->scd_wq);
+				waitq_prepare_to_wait(&thread->scd_wq, &scd_wq_entry,
+					PS_INTERRUPTIBLE);
+				cpu_restore_interrupt(flags);
+				schedule();
+				waitq_finish_wait(&thread->scd_wq, &scd_wq_entry);
+			}
+
+			cpu_restore_interrupt(flags);
 		}
-	
+
 		if (res.status == STATUS_PAGE_FAULT) {
 			dkprintf("STATUS_PAGE_FAULT in syscall, pid: %d\n", 
 					cpu_local_var(current)->proc->pid);
@@ -271,6 +291,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 			req2.rtid = cpu_local_var(current)->tid;
 			req2.ttid = res.stid;
 
+			res.req_thread_status = IHK_SCD_REQ_THREAD_SPINNING;
 			send_syscall(&req2, cpu, pid, &res);
 		}
 	}
@@ -809,7 +830,8 @@ terminate(int rc, int sig)
 	release_thread(mythread);
 	release_process_vm(vm);
 	schedule();
-	// no return
+	kprintf("%s: ERROR: returned from terminate() -> schedule()\n", __FUNCTION__);
+	panic("panic");
 }
 
 void

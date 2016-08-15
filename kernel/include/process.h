@@ -566,6 +566,9 @@ struct thread {
 	struct itimerval itimer_prof;
 	struct timespec itimer_virtual_value;
 	struct timespec itimer_prof_value;
+
+	/* Syscall offload wait queue head */
+	struct waitq scd_wq;
 };
 
 struct process_vm {

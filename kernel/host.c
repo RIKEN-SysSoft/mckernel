@@ -559,6 +559,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	struct ikc_scd_packet *packet = __packet;
 	struct ikc_scd_packet pckt;
 	int rc;
+	struct mcs_rwlock_node_irqsave lock;
 	struct thread *thread;
 	struct process *proc;
 	struct mcctrl_signal {
@@ -622,6 +623,26 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		runq_add_thread(thread, cpuid);
 					  
 		//cpu_local_var(next) = (struct thread *)packet->arg;
+		ret = 0;
+		break;
+
+	/*
+	 * Used for syscall offload reply message to explicitly schedule in
+	 * the waiting thread
+	 */
+	case SCD_MSG_WAKE_UP_SYSCALL_THREAD:
+		thread = find_thread(0, packet->ttid, &lock);
+		if (!thread) {
+			kprintf("%s: WARNING: no thread for SCD reply? TID: %d\n",
+				__FUNCTION__, packet->ttid);
+			ret = -EINVAL;
+			break;
+		}
+		thread_unlock(thread, &lock);
+
+		dkprintf("%s: SCD_MSG_WAKE_UP_SYSCALL_THREAD: waking up tid %d\n",
+			__FUNCTION__, packet->ttid);
+		waitq_wakeup(&thread->scd_wq);
 		ret = 0;
 		break;
 
