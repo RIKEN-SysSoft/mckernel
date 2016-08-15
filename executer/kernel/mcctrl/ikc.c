@@ -317,6 +317,7 @@ int prepare_ikc_channels(ihk_os_t os)
 {
 	struct ihk_cpu_info *info;
 	struct mcctrl_usrdata   *usrdata;
+	int i;
 
 	usrdata = kzalloc(sizeof(struct mcctrl_usrdata), GFP_KERNEL);
 	usrdata->mcctrl_doorbell_va = (void *)__get_free_page(GFP_KERNEL);
@@ -348,8 +349,10 @@ int prepare_ikc_channels(ihk_os_t os)
 	memcpy(&usrdata->listen_param2, &listen_param2, sizeof listen_param2);
 	ihk_ikc_listen_port(os, &usrdata->listen_param2);
 
-	INIT_LIST_HEAD(&usrdata->per_proc_list);
-	spin_lock_init(&usrdata->per_proc_list_lock);
+	for (i = 0; i < MCCTRL_PER_PROC_DATA_HASH_SIZE; ++i) {
+		INIT_LIST_HEAD(&usrdata->per_proc_data_hash[i]);
+		rwlock_init(&usrdata->per_proc_data_hash_lock[i]);
+	}
 
 	INIT_LIST_HEAD(&usrdata->cpu_topology_list);
 	INIT_LIST_HEAD(&usrdata->node_topology_list);

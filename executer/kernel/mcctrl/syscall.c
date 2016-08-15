@@ -1510,7 +1510,6 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 	case __NR_munmap:
 		/* Set new remote page table if not zero */
 		if (sc->args[2]) {
-			unsigned long flags;
 			struct mcctrl_per_proc_data *ppd = NULL;
 			int i;
 
@@ -1533,9 +1532,12 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 				rwlock_init(&ppd->per_thread_data_hash_lock[i]);
 			}
 
-			flags = ihk_ikc_spinlock_lock(&usrdata->per_proc_list_lock);
-			list_add_tail(&ppd->list, &usrdata->per_proc_list);
-			ihk_ikc_spinlock_unlock(&usrdata->per_proc_list_lock, flags);
+			if (mcctrl_add_per_proc_data(usrdata, ppd->pid, ppd) < 0) {
+				printk("%s: error adding per process data\n", __FUNCTION__);
+				error = -EBUSY;
+				kfree(ppd);
+				goto out;
+			}
 
 			dprintk("pid: %d, rpgtable: 0x%lx added\n", 
 				ppd->pid, ppd->rpgtable);

@@ -82,7 +82,6 @@ static long mcexec_prepare_image(ihk_os_t os,
 	void *args, *envs;
 	long ret = 0;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
-	unsigned long flags;
 	struct mcctrl_per_proc_data *ppd = NULL;
 	int i;
 
@@ -168,9 +167,11 @@ static long mcexec_prepare_image(ihk_os_t os,
 		rwlock_init(&ppd->per_thread_data_hash_lock[i]);
 	}
 
-	flags = ihk_ikc_spinlock_lock(&usrdata->per_proc_list_lock);
-	list_add_tail(&ppd->list, &usrdata->per_proc_list);
-	ihk_ikc_spinlock_unlock(&usrdata->per_proc_list_lock, flags);
+	if (mcctrl_add_per_proc_data(usrdata, ppd->pid, ppd) < 0) {
+		printk("%s: error adding per process data\n", __FUNCTION__);
+		ret = -EINVAL;
+		goto free_out;
+	}
 	
 	if (copy_to_user(udesc, pdesc, sizeof(struct program_load_desc) + 
 	             sizeof(struct program_image_section) * desc.num_sections)) {
@@ -184,6 +185,10 @@ static long mcexec_prepare_image(ihk_os_t os,
 	ret = 0;
 
 free_out:
+	/* Only free ppd if error */
+	if (ret != 0 && ppd) {
+		kfree(ppd);
+	}
 	kfree(args);
 	kfree(pdesc);
 	kfree(envs);
@@ -428,23 +433,75 @@ static long mcexec_get_cpu(ihk_os_t os)
 	return info->n_cpus;
 }
 
-inline struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(
-		struct mcctrl_usrdata *ud,
-		int pid)
+int mcctrl_add_per_proc_data(struct mcctrl_usrdata *ud, int pid, 
+	struct mcctrl_per_proc_data *ppd)
 {
-	struct mcctrl_per_proc_data *ppd = NULL, *ppd_iter;
+	struct mcctrl_per_proc_data *ppd_iter;
+	int hash = (pid & MCCTRL_PER_PROC_DATA_HASH_MASK);
+	int ret = 0;
 	unsigned long flags;
 
-	/* Look up per-process structure */
-	flags = ihk_ikc_spinlock_lock(&ud->per_proc_list_lock);
-	list_for_each_entry(ppd_iter, &ud->per_proc_list, list) {
+	/* Check if data for this thread exists and add if not */
+	write_lock_irqsave(&ud->per_proc_data_hash_lock[hash], flags);
+	list_for_each_entry(ppd_iter, &ud->per_proc_data_hash[hash], hash) {
+		if (ppd_iter->pid == pid) {
+			ret = -EBUSY;
+			goto out;
+		}
+	}
+
+	list_add_tail(&ppd->hash, &ud->per_proc_data_hash[hash]);
+
+out:
+	write_unlock_irqrestore(&ud->per_proc_data_hash_lock[hash], flags);
+	return ret;
+}
+
+int mcctrl_delete_per_proc_data(struct mcctrl_usrdata *ud, int pid)
+{
+	struct mcctrl_per_proc_data *ppd_iter, *ppd = NULL;
+	int hash = (pid & MCCTRL_PER_PROC_DATA_HASH_MASK);
+	int ret = 0;
+	unsigned long flags;
+
+	write_lock_irqsave(&ud->per_proc_data_hash_lock[hash], flags);
+	list_for_each_entry(ppd_iter, &ud->per_proc_data_hash[hash], hash) {
 		if (ppd_iter->pid == pid) {
 			ppd = ppd_iter;
 			break;
 		}
 	}
-	ihk_ikc_spinlock_unlock(&ud->per_proc_list_lock, flags);
 
+	if (!ppd) {
+		ret = -EINVAL;
+		goto out;
+	}
+
+	list_del(&ppd->hash);
+
+out:
+	write_unlock_irqrestore(&ud->per_proc_data_hash_lock[hash], flags);
+	return ret;
+}
+
+inline struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(
+		struct mcctrl_usrdata *ud, int pid)
+{
+	struct mcctrl_per_proc_data *ppd_iter, *ppd = NULL;
+	int hash = (pid & MCCTRL_PER_PROC_DATA_HASH_MASK);
+	unsigned long flags;
+
+	/* Check if data for this process exists and return it */
+	read_lock_irqsave(&ud->per_proc_data_hash_lock[hash], flags);
+
+	list_for_each_entry(ppd_iter, &ud->per_proc_data_hash[hash], hash) {
+		if (ppd_iter->pid == pid) {
+			ppd = ppd_iter;
+			break;
+		}
+	}
+
+	read_unlock_irqrestore(&ud->per_proc_data_hash_lock[hash], flags);
 	return ppd;
 }
 
@@ -939,23 +996,14 @@ int mcexec_close_exec(ihk_os_t os)
 	int found = 0;
 	int os_ind = ihk_host_os_get_index(os);	
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
-	unsigned long flags;
-	struct mcctrl_per_proc_data *ppd = NULL, *ppd_iter;
+	struct mcctrl_per_proc_data *ppd = NULL;
 
-	ppd = NULL;
-	flags = ihk_ikc_spinlock_lock(&usrdata->per_proc_list_lock);
-
-	list_for_each_entry(ppd_iter, &usrdata->per_proc_list, list) {
-		if (ppd_iter->pid == task_tgid_vnr(current)) {
-			ppd = ppd_iter;
-			break;
-		}
-	}
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 
 	if (ppd) {
-		list_del(&ppd->list);
+		mcctrl_delete_per_proc_data(usrdata, ppd->pid);
 
-		dprintk("pid: %d, tid: %d: rpgtable for %d (0x%lx) removed\n", 
+		dprintk("pid: %d, tid: %d: rpgtable for %d (0x%lx) removed\n",
 				task_tgid_vnr(current), current->pid, ppd->pid, ppd->rpgtable);
 
 		kfree(ppd);
@@ -964,8 +1012,6 @@ int mcexec_close_exec(ihk_os_t os)
 		printk("WARNING: no per process data for pid %d ?\n", 
 				task_tgid_vnr(current));
 	}
-
-	ihk_ikc_spinlock_unlock(&usrdata->per_proc_list_lock, flags);
 
 	if (os_ind < 0) {
 		return EINVAL;

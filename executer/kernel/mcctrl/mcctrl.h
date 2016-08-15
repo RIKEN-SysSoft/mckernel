@@ -182,7 +182,7 @@ struct mcctrl_per_thread_data {
 #define MCCTRL_PER_THREAD_DATA_HASH_MASK (MCCTRL_PER_THREAD_DATA_HASH_SIZE - 1) 
 
 struct mcctrl_per_proc_data {
-	struct list_head list;
+	struct list_head hash;
 	int pid;
 	unsigned long rpgtable;	/* per process, not per OS */
 
@@ -251,6 +251,10 @@ struct node_topology {
 
 #define CPU_LONGS (((NR_CPUS) + (BITS_PER_LONG) - 1) / (BITS_PER_LONG))
 
+#define MCCTRL_PER_PROC_DATA_HASH_SHIFT 7
+#define MCCTRL_PER_PROC_DATA_HASH_SIZE (1 << MCCTRL_PER_PROC_DATA_HASH_SHIFT)
+#define MCCTRL_PER_PROC_DATA_HASH_MASK (MCCTRL_PER_PROC_DATA_HASH_SIZE - 1)
+
 struct mcctrl_usrdata {
 	struct ihk_ikc_listen_param listen_param;
 	struct ihk_ikc_listen_param listen_param2;
@@ -266,8 +270,9 @@ struct mcctrl_usrdata {
 	unsigned long	last_thread_exec;
 	wait_queue_head_t	wq_prepare;
 	
-	struct list_head per_proc_list;
-	ihk_spinlock_t per_proc_list_lock;
+	struct list_head per_proc_data_hash[MCCTRL_PER_PROC_DATA_HASH_SIZE];
+	rwlock_t per_proc_data_hash_lock[MCCTRL_PER_PROC_DATA_HASH_SIZE];
+
 	void **keys;
 	struct sysfsm_data sysfsm_data;
 	unsigned long cpu_online[CPU_LONGS];
@@ -295,15 +300,19 @@ ihk_os_t osnum_to_os(int n);
 
 /* syscall.c */
 int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet);
+int mcctrl_add_per_proc_data(struct mcctrl_usrdata *ud, int pid, 
+	struct mcctrl_per_proc_data *ppd);
+int mcctrl_delete_per_proc_data(struct mcctrl_usrdata *ud, int pid);
 inline struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(
-		struct mcctrl_usrdata *ud,
-		int pid);
+		struct mcctrl_usrdata *ud, int pid);
+
 int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data* ppd,
 	struct task_struct *task, void *data);
 int mcctrl_delete_per_thread_data(struct mcctrl_per_proc_data* ppd,
 	struct task_struct *task);
-struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(
+inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(
 	struct mcctrl_per_proc_data *ppd, struct task_struct *task);
+
 void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet, 
 		int ret, int stid);
 
