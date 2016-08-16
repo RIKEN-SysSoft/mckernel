@@ -166,6 +166,8 @@ static void devobj_release(struct memobj *memobj)
 	struct devobj *obj = to_devobj(memobj);
 	struct devobj *free_obj = NULL;
 	uintptr_t handle;
+	const size_t pfn_npages =
+		(obj->npages / (PAGE_SIZE / sizeof(uintptr_t))) + 1;
 
 	dkprintf("devobj_release(%p %lx)\n", obj, obj->handle);
 
@@ -194,7 +196,7 @@ static void devobj_release(struct memobj *memobj)
 		}
 
 		if (obj->pfn_table) {
-			free_pages(obj->pfn_table, 1);
+			free_pages(obj->pfn_table, pfn_npages);
 		}
 		kfree(free_obj);
 	}
