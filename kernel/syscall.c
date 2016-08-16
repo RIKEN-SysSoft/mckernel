@@ -1941,9 +1941,13 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		}
 
 		/* Find an unused TID */
+retry_tid:
 		for (i = 0; i < newproc->nr_tids; ++i) {
 			if (!newproc->tids[i].thread) {
-				newproc->tids[i].thread = new;
+				if (!__sync_bool_compare_and_swap(
+					&newproc->tids[i].thread, NULL, new)) {
+					goto retry_tid;
+				}
 				new->tid = newproc->tids[i].tid;
 				dkprintf("%s: tid %d assigned to %p\n", __FUNCTION__, new->tid, new);
 				break;
