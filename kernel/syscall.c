@@ -186,7 +186,6 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	unsigned long irqstate;
 	struct thread *thread = cpu_local_var(current);
 	struct process *proc = thread->proc;
-	DECLARE_WAITQ_ENTRY(scd_wq_entry, thread);
 
 	dkprintf("SC(%d)[%3d] sending syscall\n",
 		ihk_mc_get_processor_id(),
@@ -228,7 +227,6 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 			int do_schedule = 0;
 			long runq_irqstate;
 			unsigned long flags;
-
 			DECLARE_WAITQ_ENTRY(scd_wq_entry, cpu_local_var(current));
 
 			cpu_pause();

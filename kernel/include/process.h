@@ -160,7 +160,7 @@
 #endif
 
 #define USER_STACK_NR_PAGES 8192
-#define KERNEL_STACK_NR_PAGES 25
+#define KERNEL_STACK_NR_PAGES 32
 
 #define NOPHYS ((uintptr_t)-1)
 
