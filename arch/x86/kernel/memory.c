@@ -23,6 +23,7 @@
 #include <process.h>
 #include <page.h>
 #include <cls.h>
+#include <kmalloc.h>
 
 #define	dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
 #define	ekprintf(...)	kprintf(__VA_ARGS__)
@@ -84,20 +85,14 @@ void ihk_mc_free_pages(void *p, int npages)
 		pa_ops->free_page(p, npages);
 }
 
-void *ihk_mc_allocate(int size, enum ihk_mc_ap_flag flag)
+void *ihk_mc_allocate(int size, int flag)
 {
-	if (pa_ops && pa_ops->alloc)
-		return pa_ops->alloc(size, flag);
-	else
-		return ihk_mc_alloc_pages(1, flag);
+	return kmalloc(size, IHK_MC_AP_NOWAIT);
 }
 
 void ihk_mc_free(void *p)
 {
-	if (pa_ops && pa_ops->free)
-		return pa_ops->free(p);
-	else
-		return ihk_mc_free_pages(p, 1);
+	kfree(p);
 }
 
 void *get_last_early_heap(void)

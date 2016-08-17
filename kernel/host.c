@@ -375,8 +375,9 @@ static int process_msg_prepare_process(unsigned long rphys)
 	n = p->num_sections;
 	dkprintf("# of sections: %d\n", n);
 
-	if((pn = ihk_mc_allocate(sizeof(struct program_load_desc) 
-	       + sizeof(struct program_image_section) * n, IHK_MC_AP_NOWAIT)) == NULL){
+	if((pn = kmalloc(sizeof(struct program_load_desc) 
+					+ sizeof(struct program_image_section) * n,
+					IHK_MC_AP_NOWAIT)) == NULL){
 		ihk_mc_unmap_virtual(p, npages, 0);
 		ihk_mc_unmap_memory(NULL, phys, sz);
 		return -ENOMEM;
@@ -385,7 +386,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	            + sizeof(struct program_image_section) * n);
 
 	if((thread = create_thread(p->entry)) == NULL){
-		ihk_mc_free(pn);
+		kfree(pn);
 		ihk_mc_unmap_virtual(p, npages, 1);
 		ihk_mc_unmap_memory(NULL, phys, sz);
 		return -ENOMEM;
@@ -435,7 +436,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	dkprintf("new process : %p [%d] / table : %p\n", proc, proc->pid,
 	        vm->address_space->page_table);
 
-	ihk_mc_free(pn);
+	kfree(pn);
 
 	ihk_mc_unmap_virtual(p, npages, 1);
 	ihk_mc_unmap_memory(NULL, phys, sz);
@@ -443,7 +444,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 
 	return 0;
 err:
-	ihk_mc_free(pn);
+	kfree(pn);
 	ihk_mc_unmap_virtual(p, npages, 1);
 	ihk_mc_unmap_memory(NULL, phys, sz);
 	destroy_thread(thread);
@@ -452,7 +453,7 @@ err:
 
 static void process_msg_init(struct ikc_scd_init_param *pcp, struct syscall_params *lparam)
 {
-	lparam->response_va = allocate_pages(RESPONSE_PAGE_COUNT, 0);
+	lparam->response_va = ihk_mc_alloc_pages(RESPONSE_PAGE_COUNT, 0);
 	lparam->response_pa = virt_to_phys(lparam->response_va);
 
 	pcp->request_page = 0;

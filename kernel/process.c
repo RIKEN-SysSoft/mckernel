@@ -739,7 +739,7 @@ int join_process_memory_range(struct process_vm *vm,
 		memobj_release(merging->memobj);
 	}
 	list_del(&merging->list);
-	ihk_mc_free(merging);
+	kfree(merging);
 
 	error = 0;
 out:
@@ -835,8 +835,9 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 	if (range->memobj) {
 		memobj_release(range->memobj);
 	}
+
 	list_del(&range->list);
-	ihk_mc_free(range);
+	kfree(range);
 
 	dkprintf("free_process_memory_range(%p,%lx-%lx): 0\n",
 			vm, start0, end0);
@@ -1888,14 +1889,14 @@ unsigned long extend_process_region(struct process_vm *vm,
 			aligned_end = (aligned_end + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
 			/* Fill in the gap between old_aligned_end and aligned_end
 			 * with regular pages */
-			if((p = allocate_pages((aligned_end - old_aligned_end) >> PAGE_SHIFT,
+			if((p = ihk_mc_alloc_pages((aligned_end - old_aligned_end) >> PAGE_SHIFT,
                                  IHK_MC_AP_NOWAIT)) == NULL){
 				return end;
 			}
 			if((rc = add_process_memory_range(vm, old_aligned_end,
                                         aligned_end, virt_to_phys(p), flag,
 					LARGE_PAGE_SHIFT)) != 0){
-				free_pages(p, (aligned_end - old_aligned_end) >> PAGE_SHIFT);
+				ihk_mc_free_pages(p, (aligned_end - old_aligned_end) >> PAGE_SHIFT);
 				return end;
 			}
 
@@ -1908,7 +1909,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 				(LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
 		address = aligned_new_end;
 
-		if((p = allocate_pages((aligned_new_end - aligned_end + LARGE_PAGE_SIZE) >> PAGE_SHIFT,
+		if((p = ihk_mc_alloc_pages((aligned_new_end - aligned_end + LARGE_PAGE_SIZE) >> PAGE_SHIFT,
                             IHK_MC_AP_NOWAIT)) == NULL){
 			return end;
 		}
@@ -1916,16 +1917,16 @@ unsigned long extend_process_region(struct process_vm *vm,
 		p_aligned = ((unsigned long)p + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
 
 		if (p_aligned > (unsigned long)p) {
-			free_pages(p, (p_aligned - (unsigned long)p) >> PAGE_SHIFT);
+			ihk_mc_free_pages(p, (p_aligned - (unsigned long)p) >> PAGE_SHIFT);
 		}
-		free_pages(
+		ihk_mc_free_pages(
 			(void *)(p_aligned + aligned_new_end - aligned_end),
 			(LARGE_PAGE_SIZE - (p_aligned - (unsigned long)p)) >> PAGE_SHIFT);
 
 		if((rc = add_process_memory_range(vm, aligned_end,
                                aligned_new_end, virt_to_phys((void *)p_aligned),
                                flag, LARGE_PAGE_SHIFT)) != 0){
-			free_pages(p, (aligned_new_end - aligned_end + LARGE_PAGE_SIZE) >> PAGE_SHIFT);
+			ihk_mc_free_pages(p, (aligned_new_end - aligned_end + LARGE_PAGE_SIZE) >> PAGE_SHIFT);
 			return end;
 		}
 
@@ -1943,7 +1944,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 	  p=0;
 	}else{
 
-	p = allocate_pages((aligned_new_end - aligned_end) >> PAGE_SHIFT, IHK_MC_AP_NOWAIT);
+	p = ihk_mc_alloc_pages((aligned_new_end - aligned_end) >> PAGE_SHIFT, IHK_MC_AP_NOWAIT);
 
 	if (!p) {
 		return end;
@@ -1952,7 +1953,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 	if((rc = add_process_memory_range(vm, aligned_end, aligned_new_end,
                                       (p==0?0:virt_to_phys(p)), flag, NULL, 0,
 				      PAGE_SHIFT)) != 0){
-		free_pages(p, (aligned_new_end - aligned_end) >> PAGE_SHIFT);
+		ihk_mc_free_pages(p, (aligned_new_end - aligned_end) >> PAGE_SHIFT);
 		return end;
 	}
 
