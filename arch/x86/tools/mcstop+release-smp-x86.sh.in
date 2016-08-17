@@ -49,3 +49,5 @@ if [ "`lsmod | grep -E 'ihk\s' | awk '{print $1}'`" != "" ]; then
         if ! rmmod ihk; then echo "error: removing ihk" >&2; exit 1; fi
 fi
 
+# Stop mcklogd
+pkill mcklogd

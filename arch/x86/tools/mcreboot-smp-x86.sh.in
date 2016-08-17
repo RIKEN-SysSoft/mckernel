@@ -24,11 +24,14 @@ cpus=""
 
 INTERVAL=1
 LOGMODE=0
+facility="LOG_LOCAL6"
 chown_option=`logname`
 
-while getopts :i:k:c:m:o: OPT
+while getopts :i:k:c:m:o:f: OPT
 do
 	case ${OPT} in
+	f)	facility=${OPTARG}
+		;;
 	o)	chown_option=${OPTARG}
 		;;
 	i)	INTERVAL=${OPTARG}
@@ -203,5 +206,7 @@ if [ "$enable_mcoverlay" == "yes" ]; then
 fi
 if [ ${LOGMODE} -ne 0 ]
 then
-	SBINDIR=${SBINDIR} ${SBINDIR}/mcklogd -i ${INTERVAL}
+# mcklogd survives when McKernel isn't shut down by mcstop+release.sh
+	pkill mcklogd    
+	SBINDIR=${SBINDIR} ${SBINDIR}/mcklogd -i ${INTERVAL} -f ${facility}
 fi
