@@ -110,6 +110,7 @@ int __kprintf(const char *format, ...)
 	char buf[KPRINTF_LOCAL_BUF_LEN];
 
 	/* Copy into the local buf */
+	len = sprintf(buf, "[%3d]: ", ihk_mc_get_processor_id());
 	va_start(va, format);
 	len += vsnprintf(buf + len, KPRINTF_LOCAL_BUF_LEN - len - 2, format, va);
 	va_end(va);

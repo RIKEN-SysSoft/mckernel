@@ -342,10 +342,9 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 			// no return
 		}
 
-		kprintf("[%d]page_fault_handler(%p,%lx,%p):"
-				"fault vm failed. %d, TID: %d\n",
-				ihk_mc_get_processor_id(), fault_addr,
-				reason, regs, error, thread->tid);
+		kprintf("%s fault VM failed for TID: %d, addr: 0x%lx, "
+				"reason: %d, error: %d\n",
+				thread->tid, fault_addr, reason, error);
 		unhandled_page_fault(thread, fault_addr, regs);
 		preempt_enable();
 		memset(&info, '\0', sizeof info);
