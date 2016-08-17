@@ -17,31 +17,35 @@ mem=""
 cpus=""
 
 # No SMP module? Exit.
-if [ "`lsmod | grep ihk_smp_x86`" == "" ]; then exit; fi
+if [ "`lsmod | grep ihk_smp_x86`" == "" ]; then exit 0; fi
 
 # Destroy all LWK instances
 for i in /dev/mcos*; do
 	ind=`echo $i|cut -c10-`;
-    if ! ${SBINDIR}/ihkconfig 0 destroy $ind; then echo "error: destroying LWK instance $ind failed"; exit; fi	
+    if ! ${SBINDIR}/ihkconfig 0 destroy $ind; then echo "error: destroying LWK instance $ind failed" >&2; exit 1; fi	
 done
 
 # Query IHK-SMP resources and release them
-if ! ${SBINDIR}/ihkconfig 0 query cpu > /dev/null; then echo "error: querying cpus"; exit; fi
+if ! ${SBINDIR}/ihkconfig 0 query cpu > /dev/null; then echo "error: querying cpus" >&2; exit 1; fi
 cpus=`${SBINDIR}/ihkconfig 0 query cpu`
-if ! ${SBINDIR}/ihkconfig 0 release cpu $cpus > /dev/null; then echo "error: releasing CPUs"; exit; fi
+if ! ${SBINDIR}/ihkconfig 0 release cpu $cpus > /dev/null; then echo "error: releasing CPUs" >&2; exit 1; fi
 
-if ! ${SBINDIR}/ihkconfig 0 query mem > /dev/null; then echo "error: querying memory"; exit; fi
+if ! ${SBINDIR}/ihkconfig 0 query mem > /dev/null; then echo "error: querying memory" >&2; exit 1; fi
 mem=`${SBINDIR}/ihkconfig 0 query mem`	
-if ! ${SBINDIR}/ihkconfig 0 release mem $mem > /dev/null; then echo "error: releasing memory"; exit; fi
+if ! ${SBINDIR}/ihkconfig 0 release mem $mem > /dev/null; then echo "error: releasing memory" >&2; exit 1; fi
 
 # Remove delegator if loaded
 if [ "`lsmod | grep mcctrl`" != "" ]; then
-        if ! rmmod mcctrl; then echo "error: removing mcctrl"; exit; fi
+        if ! rmmod mcctrl; then echo "error: removing mcctrl" >&2; exit 1; fi
 fi
 
 # Remove SMP module
 if [ "`lsmod | grep ihk_smp_x86`" != "" ]; then
-        if ! rmmod ihk_smp_x86; then echo "error: removing ihk_smp_x86"; exit; fi
+        if ! rmmod ihk_smp_x86; then echo "error: removing ihk_smp_x86" >&2; exit 1; fi
 fi
 
+# Remove core module
+if [ "`lsmod | grep -E 'ihk\s' | awk '{print $1}'`" != "" ]; then
+        if ! rmmod ihk; then echo "error: removing ihk" >&2; exit 1; fi
+fi
 
