@@ -1079,25 +1079,18 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	vrflags |= PROT_TO_VR_FLAG(prot);
 	vrflags |= (flags & MAP_PRIVATE)? VR_PRIVATE: 0;
 	vrflags |= (flags & MAP_LOCKED)? VR_LOCKED: 0;
+	vrflags |= VR_DEMAND_PAGING;
 	if (flags & MAP_ANONYMOUS) {
-		if (0) {
-			/* dummy */
+		if (!anon_on_demand) {
+			populated_mapping = 1;
 		}
 #ifdef	USE_NOCACHE_MMAP
 #define	X_MAP_NOCACHE	MAP_32BIT
 		else if (flags & X_MAP_NOCACHE) {
+			vrflags &= ~VR_DEMAND_PAGING;
 			vrflags |= VR_IO_NOCACHE;
 		}
 #endif
-		else {
-			vrflags |= VR_DEMAND_PAGING;
-			if (!anon_on_demand) {
-				populated_mapping = 1;
-			}
-		}
-	}
-	else {
-		vrflags |= VR_DEMAND_PAGING;
 	}
 
 	if (flags & (MAP_POPULATE | MAP_LOCKED)) {
