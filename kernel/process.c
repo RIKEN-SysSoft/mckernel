@@ -1533,6 +1533,8 @@ retry:
 				kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):cannot allocate new page. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
 				goto out;
 			}
+			dkprintf("%s: clearing 0x%lx:%lu\n",
+					__FUNCTION__, pgaddr, pgsize);
 			memset(virt, 0, pgsize);
 			phys = virt_to_phys(virt);
 			page_map(phys_to_page(phys));
@@ -1565,6 +1567,8 @@ retry:
 				kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):cannot allocate copy page. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
 				goto out;
 			}
+			dkprintf("%s: copying 0x%lx:%lu\n",
+				__FUNCTION__, pgaddr, pgsize);
 			memcpy(virt, phys_to_virt(phys), pgsize);
 
 			phys = virt_to_phys(virt);

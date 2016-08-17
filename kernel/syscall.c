@@ -930,6 +930,8 @@ static int do_munmap(void *addr, size_t len)
 		}
 	}
 	finish_free_pages_pending();
+	dkprintf("%s: 0x%lx:%lu, error: %ld\n",
+		__FUNCTION__, addr, len, error);
 	return error;
 }
 
@@ -1171,6 +1173,8 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 			error = -ENOMEM;
 			goto out;
 		}
+		dkprintf("%s: 0x%x:%lu allocated %d pages, p2align: %lx\n",
+				__FUNCTION__, addr, len, npages, p2align);
 		phys = virt_to_phys(p);
 	}
 	else if (flags & MAP_SHARED) {
@@ -1255,8 +1259,12 @@ out:
 	if (memobj) {
 		memobj_release(memobj);
 	}
-	dkprintf("do_mmap(%lx,%lx,%x,%x,%d,%lx): %ld %lx\n",
-			addr0, len0, prot, flags, fd, off0, error, addr);
+	dkprintf("%s: 0x%lx:%8lu, (req: 0x%lx:%lu), prot: %x, flags: %x, "
+			"fd: %d, off: %lu, error: %ld, addr: 0x%lx\n",
+			__FUNCTION__,
+			addr, len, addr0, len0, prot, flags,
+			fd, off0, error, addr);
+
 	return (!error)? addr: error;
 }
 

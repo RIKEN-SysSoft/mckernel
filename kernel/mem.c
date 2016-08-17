@@ -425,8 +425,9 @@ static void page_allocator_init(void)
 	
 	ihk_mc_reserve_arch_pages(pa_start, pa_end, reserve_pages);
 
-	kprintf("Available pages: %ld pages\n",
-	        ihk_pagealloc_count(pa_allocator));
+	kprintf("Available memory: %ld bytes in %ld pages\n",
+	        (ihk_pagealloc_count(pa_allocator) * PAGE_SIZE), 
+			ihk_pagealloc_count(pa_allocator));
 
 	/* Notify the ihk to use my page allocator */
 	ihk_mc_set_page_allocator(&allocator);
