@@ -265,6 +265,13 @@ void remote_flush_tlb_cpumask(struct process_vm *vm,
 		unsigned long tsc;
 		tsc = rdtsc() + 12884901888;  /* 1.2GHz =>10 sec */
 #endif
+		if (flush_entry->addr) {
+			flush_tlb_single(flush_entry->addr & PAGE_MASK);
+		}
+		/* Zero address denotes full TLB flush */
+		else {
+			flush_tlb();
+		}
 
 		/* Wait for all cores */
 		while (ihk_atomic_read(&flush_entry->pending) != 0) {

@@ -917,8 +917,6 @@ static int do_munmap(void *addr, size_t len)
 	begin_free_pages_pending();
 	error = remove_process_memory_range(cpu_local_var(current)->vm,
 			(intptr_t)addr, (intptr_t)addr+len, &ro_freed);
-	// XXX: TLB flush
-	flush_tlb();
 	if (error || !ro_freed) {
 		clear_host_pte((uintptr_t)addr, len);
 	}
