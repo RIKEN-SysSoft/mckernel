@@ -156,13 +156,18 @@ void sbox_write(int offset, unsigned int value);
 
 static void query_free_mem_interrupt_handler(void *priv)
 {
-#ifdef ATTACHED_MIC
-	dkprintf("query free mem handler!\n");
-
+	extern int runcount;
 	int pages = ihk_pagealloc_query_free(pa_allocator);
 	
-	dkprintf("free pages: %d\n", pages);
+	kprintf("McKernel free pages: %d\n", pages);
 
+	if (find_command_line("memdebug")) {
+		memcheckall();
+		freecheck(runcount);
+		runcount++;
+	}
+
+#ifdef ATTACHED_MIC
 	sbox_write(SBOX_SCRATCH0, pages);
 	sbox_write(SBOX_SCRATCH1, 1);
 #endif

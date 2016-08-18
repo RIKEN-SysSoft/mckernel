@@ -1201,10 +1201,10 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	error = add_process_memory_range(thread->vm, addr, addr+len, phys,
 			vrflags, memobj, off, pgshift);
 	if (error) {
-		ekprintf("do_mmap:add_process_memory_range"
-				"(%p,%lx,%lx,%lx,%lx,%d) failed %d\n",
-				thread->vm, addr, addr+len,
-				virt_to_phys(p), vrflags, pgshift, error);
+		kprintf("%s: add_process_memory_range failed for 0x%lx:%lu"
+				" flags: %lx, vrflags: %lx, pgshift: %d, error: %d\n",
+				__FUNCTION__, addr, addr+len,
+				flags, vrflags, pgshift, error);
 		goto out;
 	}
 
