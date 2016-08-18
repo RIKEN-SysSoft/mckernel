@@ -1937,6 +1937,8 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 				newproc->tids[i].thread = NULL;
 				++newproc->nr_tids;
 			}
+
+			kfree(tids);
 		}
 
 		/* Find an unused TID */

@@ -73,6 +73,7 @@ struct cpu_local_var {
 	int in_interrupt;
 	int no_preempt;
 	int timer_enabled;
+	int kmalloc_initialized;
 } __attribute__((aligned(64)));
 
 

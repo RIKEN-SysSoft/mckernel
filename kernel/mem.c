@@ -664,8 +664,8 @@ static struct alloc *allochash[HASHNUM];
 static struct location *lochash[HASHNUM];
 static ihk_spinlock_t alloclock;
 int runcount;
-static unsigned char *page;
-static int space;
+static unsigned char *page = NULL;
+static int space = 0;
 
 static void *dalloc(unsigned long size)
 {
@@ -896,14 +896,17 @@ void kmalloc_init(void)
 	h->size = 0;
 
 	register_kmalloc();
+	v->kmalloc_initialized = 1;
 
 	memdebug = find_command_line("memdebug");
 	for (i = 0; i < HASHNUM; i++) {
 		allochash[i] = NULL;
 		lochash[i] = NULL;
 	}
-	page = allocate_pages(16, IHK_MC_AP_NOWAIT);
-	space = 16 * 4096;
+	if (!page) {
+		page = allocate_pages(16, IHK_MC_AP_NOWAIT);
+		space = 16 * 4096;
+	}
 	ihk_mc_spinlock_init(&alloclock);
 }
 

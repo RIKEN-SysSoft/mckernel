@@ -373,6 +373,11 @@ static int process_msg_prepare_process(unsigned long rphys)
 	}
 
 	n = p->num_sections;
+	if (n > 16) {
+		kprintf("%s: ERROR: more ELF sections than 16??\n",
+			__FUNCTION__);
+		return -ENOMEM;
+	}
 	dkprintf("# of sections: %d\n", n);
 
 	if((pn = kmalloc(sizeof(struct program_load_desc) 

@@ -87,11 +87,19 @@ void ihk_mc_free_pages(void *p, int npages)
 
 void *ihk_mc_allocate(int size, int flag)
 {
+	if (!cpu_local_var(kmalloc_initialized)) {
+		kprintf("%s: error, kmalloc not yet initialized\n", __FUNCTION__);
+		return NULL;
+	}
 	return kmalloc(size, IHK_MC_AP_NOWAIT);
 }
 
 void ihk_mc_free(void *p)
 {
+	if (!cpu_local_var(kmalloc_initialized)) {
+		kprintf("%s: error, kmalloc not yet initialized\n", __FUNCTION__);
+		return;
+	}
 	kfree(p);
 }
 

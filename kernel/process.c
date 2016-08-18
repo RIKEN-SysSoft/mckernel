@@ -963,7 +963,6 @@ enum ihk_mc_pt_attribute common_vrflag_to_ptattr(unsigned long flag, uint64_t fa
 	return attr;
 }
 
-/* XXX: インデントを揃える必要がある */
 int add_process_memory_range(struct process_vm *vm,
                              unsigned long start, unsigned long end,
                              unsigned long phys, unsigned long flag,
