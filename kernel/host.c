@@ -528,9 +528,6 @@ static void syscall_channel_send(struct ihk_ikc_channel_desc *c,
 
 extern unsigned long do_kill(struct thread *, int, int, int, struct siginfo *, int ptracecont);
 extern void process_procfs_request(unsigned long rarg);
-extern int memcheckall();
-extern int freecheck(int runcount);
-extern int runcount;
 extern void terminate_host(int pid);
 extern void debug_log(long);
 
@@ -587,13 +584,6 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		break;
 
 	case SCD_MSG_PREPARE_PROCESS:
-
-		if (find_command_line("memdebug")) {
-			memcheckall();
-			if (runcount)
-				freecheck(runcount);
-			runcount++;
-		}
 
 		if((rc = process_msg_prepare_process(packet->arg)) == 0){
 			pckt.msg = SCD_MSG_PREPARE_PROCESS_ACKED;

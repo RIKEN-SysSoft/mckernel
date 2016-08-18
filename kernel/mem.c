@@ -156,16 +156,9 @@ void sbox_write(int offset, unsigned int value);
 
 static void query_free_mem_interrupt_handler(void *priv)
 {
-	extern int runcount;
 	int pages = ihk_pagealloc_query_free(pa_allocator);
 	
 	kprintf("McKernel free pages: %d\n", pages);
-
-	if (find_command_line("memdebug")) {
-		memcheckall();
-		freecheck(runcount);
-		runcount++;
-	}
 
 #ifdef ATTACHED_MIC
 	sbox_write(SBOX_SCRATCH0, pages);
@@ -519,6 +512,9 @@ static void page_init(void)
 
 static char *memdebug = NULL;
 
+static void *___kmalloc(int size, enum ihk_mc_ap_flag flag);
+static void ___kfree(void *ptr);
+
 void register_kmalloc(void)
 {
 	if(memdebug){
@@ -648,60 +644,25 @@ void mem_init(void)
 	}
 }
 
-struct location {
-	struct location *next;
-	int line;
-	int cnt;
-	char file[0];
-};
 
-struct alloc {
-	struct alloc *next;
-	struct malloc_header *p;
-	struct location *loc;
-	int size;
-	int runcount;
-};
-
-#define HASHNUM 129
-
-static struct alloc *allochash[HASHNUM];
-static struct location *lochash[HASHNUM];
-static ihk_spinlock_t alloclock;
-int runcount;
-static unsigned char *page = NULL;
-static int space = 0;
-
-static void *dalloc(unsigned long size)
+void kmalloc_init(void)
 {
-	void *r;
-	static int pos = 0;
-	unsigned long irqstate;
+	struct cpu_local_var *v = get_this_cpu_local_var();
 
-	irqstate = ihk_mc_spinlock_lock(&alloclock);
-	size = (size + 7) & 0xfffffffffffffff8L;
-	if (pos + size > space) {
-		page = allocate_pages(1, IHK_MC_AP_NOWAIT);
-		space = 4096;
-		pos = 0;
-	}
-	r = page + pos;
-	pos += size;
-	ihk_mc_spinlock_unlock(&alloclock, irqstate);
+	register_kmalloc();
 
-	return r;
+	INIT_LIST_HEAD(&v->free_list);
+	INIT_LIST_HEAD(&v->remote_free_list);
+	ihk_mc_spinlock_init(&v->remote_free_list_lock);
+
+	v->kmalloc_initialized = 1;
 }
 
+
+/* Top level routines called from macro */
 void *_kmalloc(int size, enum ihk_mc_ap_flag flag, char *file, int line)
 {
-	char *r = ___kmalloc(size, flag);
-	struct malloc_header *h;
-	unsigned long hash;
-	char *t;
-	struct location *lp;
-	struct alloc *ap;
-	unsigned long alcsize;
-	unsigned long chksize;
+	void *r = ___kmalloc(size, flag);
 
 	if (!memdebug)
 		return r;
@@ -709,177 +670,22 @@ void *_kmalloc(int size, enum ihk_mc_ap_flag flag, char *file, int line)
 	if (!r)
 		return r;
 
-	h = ((struct malloc_header *)r) - 1;
-	alcsize = h->size * sizeof(struct malloc_header);
-	chksize = alcsize - size;
-	memset(r + size, '\x5a', chksize);
+	/* TODO: kmalloc() debug code */
 
-	for (hash = 0, t = file; *t; t++) {
-		hash <<= 1;
-		hash += *t;
-	}
-	hash += line;
-	hash %= HASHNUM;
-	for (lp = lochash[hash]; lp; lp = lp->next)
-		if (lp->line == line &&
-		   !strcmp(lp->file, file))
-			break;
-	if (!lp) {
-		lp = dalloc(sizeof(struct location) + strlen(file) + 1);
-		memset(lp, '\0', sizeof(struct location));
-		lp->line = line;
-		strcpy(lp->file, file);
-		do {
-			lp->next = lochash[hash];
-		} while (!compare_and_swap(lochash + hash, (unsigned long)lp->next, (unsigned long)lp));
-	}
-
-	hash = (unsigned long)h % HASHNUM;
-	do {
-		for (ap = allochash[hash]; ap; ap = ap->next)
-			if (!ap->p)
-				break;
-	} while (ap && !compare_and_swap(&ap->p, 0UL, (unsigned long)h));
-	if (!ap) {
-		ap = dalloc(sizeof(struct alloc));
-		memset(ap, '\0', sizeof(struct alloc));
-		ap->p = h;
-		do {
-			ap->next = allochash[hash];
-		} while (!compare_and_swap(allochash + hash, (unsigned long)ap->next, (unsigned long)ap));
-	}
-
-	ap->loc = lp;
-	ap->size = size;
-	ap->runcount = runcount;
-
-	return r;
-}
-
-int _memcheck(void *ptr, char *msg, char *file, int line, int flags)
-{
-	struct malloc_header *h = ((struct malloc_header *)ptr) - 1;
-	struct malloc_header *next;
-	unsigned long hash = (unsigned long)h % HASHNUM;
-	struct alloc *ap;
-	static unsigned long check = 0x5a5a5a5a5a5a5a5aUL;
-	unsigned long alcsize;
-	unsigned long chksize;
-
-
-	if (h->check != 0x5a5a5a5a) {
-		int i;
-		unsigned long max = 0;
-		unsigned long cur = (unsigned long)h;
-		struct alloc *maxap = NULL;
-
-		for (i = 0; i < HASHNUM; i++)
-			for (ap = allochash[i]; ap; ap = ap->next)
-				if ((unsigned long)ap->p < cur &&
-				   (unsigned long)ap->p > max) {
-					max = (unsigned long)ap->p;
-					maxap = ap;
-				}
-
-		kprintf("%s: detect buffer overrun, alc=%s:%d size=%ld h=%p, s=%ld\n", msg, maxap->loc->file, maxap->loc->line, maxap->size, maxap->p, maxap->p->size);
-		kprintf("broken header: h=%p next=%p size=%ld cpu_id=%d\n", h, h->next, h->size, h->cpu_id);
-	}
-
-	for (ap = allochash[hash]; ap; ap = ap->next)
-		if (ap->p == h)
-			break;
-	if (!ap) {
-		if(file)
-			kprintf("%s: address not found, %s:%d p=%p\n", msg, file, line, ptr);
-		else
-			kprintf("%s: address not found p=%p\n", msg, ptr);
-		return 1;
-	}
-
-	alcsize = h->size * sizeof(struct malloc_header);
-	chksize = alcsize - ap->size;
-	if (chksize > 8)
-		chksize = 8;
-	next = (struct malloc_header *)((char *)ptr + alcsize);
-
-	if (next->check != 0x5a5a5a5a ||
-	    memcmp((char *)ptr + ap->size, &check, chksize)) {
-		unsigned long buf = 0x5a5a5a5a5a5a5a5aUL;
-		unsigned char *p;
-		unsigned char *q;
-		memcpy(&buf, (char *)ptr + ap->size, chksize);
-		p = (unsigned char *)&(next->check);
-		q = (unsigned char *)&buf;
-
-		if (file)
-			kprintf("%s: broken, %s:%d alc=%s:%d %02x%02x%02x%02x%02x%02x%02x%02x %02x%02x%02x%02x size=%ld\n", msg, file, line, ap->loc->file, ap->loc->line, q[0], q[1], q[2], q[3], q[4], q[5], q[6], q[7], p[0], p[1], p[2], p[3], ap->size);
-		else
-			kprintf("%s: broken, alc=%s:%d %02x%02x%02x%02x%02x%02x%02x%02x %02x%02x%02x%02x size=%ld\n", msg, ap->loc->file, ap->loc->line, q[0], q[1], q[2], q[3], q[4], q[5], q[6], q[7], p[0], p[1], p[2], p[3], ap->size);
-
-
-		if (next->check != 0x5a5a5a5a)
-			kprintf("next->HEADER: next=%p size=%ld cpu_id=%d\n", next->next, next->size, next->cpu_id);
-
-		return 1;
-	}
-
-	if(flags & 1){
-		ap->p = NULL;
-		ap->loc = NULL;
-		ap->size = 0;
-	}
-	return 0;
-}
-
-int memcheckall()
-{
-	int i;
-	struct alloc *ap;
-	int r = 0;
-
-	for(i = 0; i < HASHNUM; i++)
-		for(ap = allochash[i]; ap; ap = ap->next)
-			if(ap->p)
-				r |= _memcheck(ap->p + 1, "memcheck", NULL, 0, 2);
-	return r;
-}
-
-int freecheck(int runcount)
-{
-	int i;
-	struct alloc *ap;
-	struct location *lp;
-	int r = 0;
-
-	for (i = 0; i < HASHNUM; i++)
-		for (lp = lochash[i]; lp; lp = lp->next)
-			lp->cnt = 0;
-
-	for (i = 0; i < HASHNUM; i++)
-		for (ap = allochash[i]; ap; ap = ap->next)
-			if (ap->p && ap->runcount == runcount) {
-				ap->loc->cnt++;
-				r++;
-			}
-
-	if (r) {
-		kprintf("memory leak?\n");
-		for (i = 0; i < HASHNUM; i++)
-			for (lp = lochash[i]; lp; lp = lp->next)
-				if (lp->cnt)
-					kprintf(" alc=%s:%d cnt=%d\n", lp->file, lp->line, lp->cnt);
-	}
 
 	return r;
 }
 
 void _kfree(void *ptr, char *file, int line)
 {
-	if (memdebug)
-		_memcheck(ptr, "KFREE", file, line, 1);
+	if (memdebug) {
+		/* TODO: kfree() debug code */
+	}
+
 	___kfree(ptr);
 }
 
+/* Redirection routines registered in alloc structure */
 void *__kmalloc(int size, enum ihk_mc_ap_flag flag)
 {
 	return kmalloc(size, flag);
@@ -890,163 +696,188 @@ void __kfree(void *ptr)
 	kfree(ptr);
 }
 
-void kmalloc_init(void)
+
+static void ___kmalloc_insert_chunk(struct list_head *free_list,
+	struct kmalloc_header *chunk)
 {
-	struct cpu_local_var *v = get_this_cpu_local_var();
-	struct malloc_header *h = &v->free_list;
-	int i;
+	struct kmalloc_header *chunk_iter, *next_chunk = NULL;
 
-	h->check = 0x5a5a5a5a;
-	h->next = &v->free_list;
-	h->size = 0;
-
-	register_kmalloc();
-	v->kmalloc_initialized = 1;
-
-	memdebug = find_command_line("memdebug");
-	for (i = 0; i < HASHNUM; i++) {
-		allochash[i] = NULL;
-		lochash[i] = NULL;
-	}
-	if (!page) {
-		page = allocate_pages(16, IHK_MC_AP_NOWAIT);
-		space = 16 * 4096;
-	}
-	ihk_mc_spinlock_init(&alloclock);
-}
-
-void ____kfree(struct cpu_local_var *v, struct malloc_header *p)
-{
-	struct malloc_header *h = &v->free_list;
-	int combined = 0;
-
-	h = h->next;
-
-	while ((p < h || p > h->next) && h != &v->free_list) {
-		h = h->next;
-	}
-
-	if (h + h->size + 1 == p && h->size != 0) {
-		combined = 1;
-		h->size += p->size + 1;
-		h->check = 0x5a5a5a5a;
-	}
-	if (h->next == p + p->size + 1 && h->next->size != 0) {
-		if (combined) {
-			h->check = 0x5a5a5a5a;
-			h->size += h->next->size + 1;
-			h->next = h->next->next;
-		} else { 
-			p->check = 0x5a5a5a5a;
-			p->size += h->next->size + 1;
-			p->next = h->next->next;
-			h->next = p;
+	/* Find out where to insert */
+	list_for_each_entry(chunk_iter, free_list, list) {
+		if ((void *)chunk < (void *)chunk_iter) {
+			next_chunk = chunk_iter;
+			break;
 		}
-	} else if (!combined) {
-		p->next = h->next;
-		h->next = p;
 	}
+
+	/* Add in front of next */
+	if (next_chunk) {
+		list_add_tail(&chunk->list, &next_chunk->list);
+	}
+	/* Add after the head */
+	else {
+		list_add(&chunk->list, free_list);
+	}
+
+	return;
 }
 
-void *___kmalloc(int size, enum ihk_mc_ap_flag flag)
+static void ___kmalloc_init_chunk(struct kmalloc_header *h, int size)
 {
-	struct cpu_local_var *v = get_this_cpu_local_var();
-	struct malloc_header *h = &v->free_list, *prev, *p;
-	int u, req_page;
+	h->size = size;
+	h->front_magic = 0x5c5c5c5c;
+	h->end_magic = 0x6d6d6d6d;
+	h->cpu_id = ihk_mc_get_processor_id();
+}
 
-	p = (struct malloc_header *)xchg8((unsigned long *)&v->remote_free_list, 0L);
-	while(p){
-		struct malloc_header *n = p->next;
-		____kfree(v, p);
-		p = n; 
+static void ___kmalloc_consolidate_list(struct list_head *list)
+{
+	struct kmalloc_header *chunk_iter, *chunk, *next_chunk;
+
+reiterate:
+	chunk_iter = NULL;
+	chunk = NULL;
+
+	list_for_each_entry(next_chunk, list, list) {
+
+		if (chunk_iter && (((void *)chunk_iter + sizeof(struct kmalloc_header)
+						+ chunk_iter->size) == (void *)next_chunk)) {
+			chunk = chunk_iter;
+			break;
+		}
+
+		chunk_iter = next_chunk;
 	}
 
-	if (size >= PAGE_SIZE * 4) {
+	if (!chunk) {
+		return;
+	}
+
+	chunk->size += (next_chunk->size + sizeof(struct kmalloc_header));
+	list_del(&next_chunk->list);
+	goto reiterate;
+}
+
+
+/* Actual low-level allocation routines */
+static void *___kmalloc(int size, enum ihk_mc_ap_flag flag)
+{
+	struct kmalloc_header *chunk_iter, *tmp;
+	struct kmalloc_header *chunk = NULL;
+	unsigned long irqflags;
+	int npages;
+	unsigned long kmalloc_irq_flags = cpu_disable_interrupt_save();
+
+	/*
+	 * 32 bytes aligned size, as this leaves us at cache line boundary
+	 * (including the header) even for the smallest allocations
+	 */
+	if ((size % 32) != 0) size = ((size + 31) & ~((int)32-1));
+
+	/* Clean up remotely deallocated chunks */
+	irqflags = ihk_mc_spinlock_lock(&cpu_local_var(remote_free_list_lock));
+	list_for_each_entry_safe(chunk, tmp,
+			&cpu_local_var(remote_free_list), list) {
+
+		list_del(&chunk->list);
+		___kmalloc_insert_chunk(&cpu_local_var(free_list), chunk);
+	}
+	ihk_mc_spinlock_unlock(&cpu_local_var(remote_free_list_lock), irqflags);
+
+	chunk = NULL;
+	/* Find a chunk that is big enough */
+	list_for_each_entry(chunk_iter, &cpu_local_var(free_list), list) {
+		if (chunk_iter->size >= size) {
+			chunk = chunk_iter;
+			break;
+		}
+	}
+
+split_and_return:
+	/* Did we find one? */
+	if (chunk) {
+		/* Do we need to split it? Only if there is enough space for
+		 * another header and some actual content */
+		if (chunk->size > (size + sizeof(struct kmalloc_header))) {
+			struct kmalloc_header *leftover;
+
+			leftover = (struct kmalloc_header *)
+				((void *)chunk + sizeof(struct kmalloc_header) + size);
+			___kmalloc_init_chunk(leftover,
+				(chunk->size - size - sizeof(struct kmalloc_header)));
+			list_add(&leftover->list, &chunk->list);
+			chunk->size = size;
+		}
+
+		list_del(&chunk->list);
+		___kmalloc_consolidate_list(&cpu_local_var(free_list));
+		cpu_restore_interrupt(kmalloc_irq_flags);
+		return ((void *)chunk + sizeof(struct kmalloc_header));
+	}
+
+
+	/* Allocate new memory and add it to free list */
+	npages = (size + sizeof(struct kmalloc_header) + (PAGE_SIZE - 1))
+		>> PAGE_SHIFT;
+	chunk = ihk_mc_alloc_pages(npages, flag);
+
+	if (!chunk) {
+		cpu_restore_interrupt(kmalloc_irq_flags);
 		return NULL;
 	}
 
-	u = (size + sizeof(*h) - 1) / sizeof(*h);
+	___kmalloc_init_chunk(chunk,
+			(npages * PAGE_SIZE - sizeof(struct kmalloc_header)));
+	___kmalloc_insert_chunk(&cpu_local_var(free_list), chunk);
 
-	prev = h;
-	h = h->next;
-
-	while (1) {
-		if (h == &v->free_list) {
-			req_page = ((u + 2) * sizeof(*h) + PAGE_SIZE - 1)
-				>> PAGE_SHIFT;
-
-			h = allocate_pages(req_page, flag);
-			if(h == NULL) {
-				kprintf("kmalloc(%#x,%#x): out of memory\n", size, flag);
-				return NULL;
-			}
-			h->check = 0x5a5a5a5a;
-			prev->next = h;
-			h->size = (req_page * PAGE_SIZE) / sizeof(*h) - 2;
-			/* Guard entry */
-			p = h + h->size + 1;
-			p->check = 0x5a5a5a5a;
-			p->next = &v->free_list;
-			p->size = 0;
-			h->next = p;
-		}
-
-		if (h->size >= u) {
-			if (h->size == u || h->size == u + 1) {
-				prev->next = h->next;
-				h->cpu_id = ihk_mc_get_processor_id();
-
-				return h + 1;
-			} else { /* Divide */
-				h->size -= u + 1;
-				
-				p = h + h->size + 1;
-				p->check = 0x5a5a5a5a;
-				p->size = u;
-				p->cpu_id = ihk_mc_get_processor_id();
-
-				return p + 1;
-			}
-		}
-		prev = h;
-		h = h->next;
-	}
+	goto split_and_return;
 }
 
-void ___kfree(void *ptr)
+static void ___kfree(void *ptr)
 {
-	struct malloc_header *p = (struct malloc_header *)ptr;
-	struct cpu_local_var *v = get_cpu_local_var((--p)->cpu_id);
+	struct kmalloc_header *chunk =
+		(struct kmalloc_header*)(ptr - sizeof(struct kmalloc_header));
+	unsigned long kmalloc_irq_flags = cpu_disable_interrupt_save();
 
-	if(p->cpu_id == ihk_mc_get_processor_id()){
-		____kfree(v, p);
+	/* Sanity check */
+	if (chunk->front_magic != 0x5c5c5c5c || chunk->end_magic != 0x6d6d6d6d) {
+		kprintf("%s: memory corruption at address 0x%p\n", __FUNCTION__, ptr);
+		panic("panic");
 	}
-	else{
-		unsigned long oldval;
-		unsigned long newval;
-		unsigned long rval;
-		do{
-			p->next = v->remote_free_list;
-			oldval = (unsigned long)p->next;
-			newval = (unsigned long)p;
-			rval = atomic_cmpxchg8(
-			          (unsigned long *)&v->remote_free_list,
-			          oldval, newval);
-		}while(rval != oldval);
+
+	/* Does this chunk belong to this CPU? */
+	if (chunk->cpu_id == ihk_mc_get_processor_id()) {
+
+		___kmalloc_insert_chunk(&cpu_local_var(free_list), chunk);
+		___kmalloc_consolidate_list(&cpu_local_var(free_list));
 	}
+	else {
+		struct cpu_local_var *v = get_cpu_local_var(chunk->cpu_id);
+		unsigned long irqflags;
+
+		irqflags = ihk_mc_spinlock_lock(&v->remote_free_list_lock);
+		list_add(&chunk->list, &v->remote_free_list);
+		ihk_mc_spinlock_unlock(&v->remote_free_list_lock, irqflags);
+	}
+
+	cpu_restore_interrupt(kmalloc_irq_flags);
 }
 
-void print_free_list(void)
+
+void ___kmalloc_print_free_list(struct list_head *list)
 {
-	struct cpu_local_var *v = get_this_cpu_local_var();
-	struct malloc_header *h = &v->free_list;
+	struct kmalloc_header *chunk_iter;
+	unsigned long irqflags = kprintf_lock();
 
-	h = h->next;
-
-	kprintf("free_list : \n");
-	while (h != &v->free_list) {
-		kprintf("  %p : %p, %d ->\n", h, h->next, h->size);
-		h = h->next;
+	__kprintf("%s: [ \n", __FUNCTION__);
+	list_for_each_entry(chunk_iter, &cpu_local_var(free_list), list) {
+		__kprintf("%s: 0x%lx:%d (VA PFN: %lu, off: %lu)\n", __FUNCTION__,
+			(unsigned long)chunk_iter,
+			chunk_iter->size,
+			(unsigned long)chunk_iter >> PAGE_SHIFT,
+			(unsigned long)chunk_iter % PAGE_SIZE);
 	}
-	kprintf("\n");
+	__kprintf("%s: ] \n", __FUNCTION__);
+	kprintf_unlock(irqflags);
 }
+

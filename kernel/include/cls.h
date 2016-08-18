@@ -19,11 +19,13 @@
  * CPU Local Storage (cls)
  */
 
-struct malloc_header {
-	unsigned int check;
+struct kmalloc_header {
+	unsigned int front_magic;
 	unsigned int cpu_id;
-	struct malloc_header *next;
-	unsigned long size;
+	struct list_head list;
+	int size; /* The size of this chunk without the header */
+	unsigned int end_magic;
+	/* 32 bytes */
 };
 
 #include <ihk/lock.h>
@@ -38,8 +40,9 @@ extern ihk_spinlock_t	cpu_status_lock;
 
 struct cpu_local_var {
 	/* malloc */
-	struct malloc_header free_list;
-	struct malloc_header *remote_free_list;
+	struct list_head free_list;
+	struct list_head remote_free_list;
+	ihk_spinlock_t remote_free_list_lock;
 
 	struct thread idle;
 	struct process idle_proc;
