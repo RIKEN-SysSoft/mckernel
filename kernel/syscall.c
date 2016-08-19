@@ -5674,6 +5674,10 @@ SYSCALL_DECLARE(sched_setaffinity)
 	int empty_set = 1; 
 	extern int num_processors;
 
+	if (!u_cpu_set) {
+		return -EINVAL;
+	}
+
 	if (sizeof(k_cpu_set) > len) {
 		memset(&k_cpu_set, 0, sizeof(k_cpu_set));
 	}
@@ -5681,7 +5685,7 @@ SYSCALL_DECLARE(sched_setaffinity)
 	len = MIN2(len, sizeof(k_cpu_set));
 
 	if (copy_from_user(&k_cpu_set, u_cpu_set, len)) {
-		kprintf("%s: error: copy_from_user failed for %p:%d\n", __FUNCTION__, u_cpu_set, len);
+		dkprintf("%s: error: copy_from_user failed for %p:%d\n", __FUNCTION__, u_cpu_set, len);
 		return -EFAULT;
 	}
 

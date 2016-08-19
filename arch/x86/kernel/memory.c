@@ -2278,6 +2278,9 @@ int read_process_vm(struct process_vm *vm, void *kdst, const void *usrc, size_t 
 
 	reason = PF_USER;	/* page not present */
 	for (addr = ustart & PAGE_MASK; addr < uend; addr += PAGE_SIZE) {
+		if (!addr)
+			return -EINVAL;
+
 		error = page_fault_process_vm(vm, (void *)addr, reason);
 		if (error) {
 			kprintf("%s: error: PF for %p failed\n", __FUNCTION__, addr);
