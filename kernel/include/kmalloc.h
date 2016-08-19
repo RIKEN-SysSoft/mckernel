@@ -36,5 +36,6 @@ void __kfree(void *ptr);
 int _memcheck(void *ptr, char *msg, char *file, int line, int free);
 int memcheckall();
 int freecheck(int runcount);
+void kmalloc_consolidate_free_list(void);
 
 #endif

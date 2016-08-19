@@ -160,6 +160,12 @@ static void query_free_mem_interrupt_handler(void *priv)
 	
 	kprintf("McKernel free pages: %d\n", pages);
 
+	if (find_command_line("memdebug")) {
+		extern void kmalloc_memcheck(void);
+
+		kmalloc_memcheck();
+	}
+
 #ifdef ATTACHED_MIC
 	sbox_write(SBOX_SCRATCH0, pages);
 	sbox_write(SBOX_SCRATCH1, 1);
@@ -644,6 +650,36 @@ void mem_init(void)
 	}
 }
 
+#define KMALLOC_TRACK_HASH_SHIFT	(8)
+#define KMALLOC_TRACK_HASH_SIZE     (1 << KMALLOC_TRACK_HASH_SHIFT)
+#define KMALLOC_TRACK_HASH_MASK     (KMALLOC_TRACK_HASH_SIZE - 1)
+
+struct list_head kmalloc_track_hash[KMALLOC_TRACK_HASH_SIZE];
+ihk_spinlock_t kmalloc_track_hash_locks[KMALLOC_TRACK_HASH_SIZE];
+
+struct list_head kmalloc_addr_hash[KMALLOC_TRACK_HASH_SIZE];
+ihk_spinlock_t kmalloc_addr_hash_locks[KMALLOC_TRACK_HASH_SIZE];
+
+int kmalloc_track_initialized = 0;
+int kmalloc_runcount = 0;
+
+struct kmalloc_track_addr_entry {
+	void *addr;
+	int runcount;
+	struct list_head list; /* track_entry's list */
+	struct kmalloc_track_entry *entry;
+	struct list_head hash; /* address hash */
+};
+
+struct kmalloc_track_entry {
+	char *file;
+	int line;
+	int size;
+	ihk_atomic_t alloc_count;
+	struct list_head hash;
+	struct list_head addr_list;
+	ihk_spinlock_t addr_list_lock;
+};
 
 void kmalloc_init(void)
 {
@@ -656,12 +692,57 @@ void kmalloc_init(void)
 	ihk_mc_spinlock_init(&v->remote_free_list_lock);
 
 	v->kmalloc_initialized = 1;
+
+	if (!kmalloc_track_initialized) {
+		int i;
+
+		memdebug = find_command_line("memdebug");
+
+		kmalloc_track_initialized = 1;
+		for (i = 0; i < KMALLOC_TRACK_HASH_SIZE; ++i) {
+			ihk_mc_spinlock_init(&kmalloc_track_hash_locks[i]);
+			INIT_LIST_HEAD(&kmalloc_track_hash[i]);
+			ihk_mc_spinlock_init(&kmalloc_addr_hash_locks[i]);
+			INIT_LIST_HEAD(&kmalloc_addr_hash[i]);
+		}
+	}
 }
 
+/* NOTE: Hash lock must be held */
+struct kmalloc_track_entry *__kmalloc_track_find_entry(
+		int size, char *file, int line)
+{
+	struct kmalloc_track_entry *entry_iter, *entry = NULL;
+	int hash = (strlen(file) + line + size) & KMALLOC_TRACK_HASH_MASK;
+
+	list_for_each_entry(entry_iter, &kmalloc_track_hash[hash], hash) {
+		if (!strcmp(entry_iter->file, file) &&
+				entry_iter->size == size &&
+				entry_iter->line == line) {
+			entry = entry_iter;
+			break;
+		}
+	}
+
+	if (entry) {
+		dkprintf("%s found entry %s:%d size: %d\n", __FUNCTION__,
+				file, line, size);
+	}
+	else {
+		dkprintf("%s couldn't find entry %s:%d size: %d\n", __FUNCTION__,
+				file, line, size);
+	}
+
+	return entry;
+}
 
 /* Top level routines called from macro */
 void *_kmalloc(int size, enum ihk_mc_ap_flag flag, char *file, int line)
 {
+	unsigned long irqflags;
+	struct kmalloc_track_entry *entry;
+	struct kmalloc_track_addr_entry *addr_entry;
+	int hash, addr_hash;
 	void *r = ___kmalloc(size, flag);
 
 	if (!memdebug)
@@ -670,19 +751,174 @@ void *_kmalloc(int size, enum ihk_mc_ap_flag flag, char *file, int line)
 	if (!r)
 		return r;
 
-	/* TODO: kmalloc() debug code */
+	hash = (strlen(file) + line + size) & KMALLOC_TRACK_HASH_MASK;
+	irqflags = ihk_mc_spinlock_lock(&kmalloc_track_hash_locks[hash]);
 
+	entry = __kmalloc_track_find_entry(size, file, line);
 
+	if (!entry) {
+		entry = ___kmalloc(sizeof(*entry), IHK_MC_AP_NOWAIT);
+		if (!entry) {
+			kprintf("%s: ERROR: allocating tracking entry\n");
+			goto out;
+		}
+
+		entry->line = line;
+		entry->size = size;
+		ihk_atomic_set(&entry->alloc_count, 0);
+		ihk_mc_spinlock_init(&entry->addr_list_lock);
+		INIT_LIST_HEAD(&entry->addr_list);
+
+		entry->file = ___kmalloc(strlen(file) + 1, IHK_MC_AP_NOWAIT);
+		if (!entry->file) {
+			kprintf("%s: ERROR: allocating file string\n");
+			___kfree(entry);
+			ihk_mc_spinlock_unlock(&kmalloc_track_hash_locks[hash], irqflags);
+			goto out;
+		}
+
+		strcpy(entry->file, file);
+		entry->file[strlen(file)] = 0;
+		list_add(&entry->hash, &kmalloc_track_hash[hash]);
+		dkprintf("%s entry %s:%d size: %d added\n", __FUNCTION__,
+			file, line, size);
+	}
+	ihk_mc_spinlock_unlock(&kmalloc_track_hash_locks[hash], irqflags);
+
+	ihk_atomic_inc(&entry->alloc_count);
+
+	/* Add new addr entry for this allocation entry */
+	addr_entry = ___kmalloc(sizeof(*addr_entry), IHK_MC_AP_NOWAIT);
+	if (!addr_entry) {
+		kprintf("%s: ERROR: allocating addr entry\n");
+		goto out;
+	}
+
+	addr_entry->addr = r;
+	addr_entry->runcount = kmalloc_runcount;
+	addr_entry->entry = entry;
+
+	irqflags = ihk_mc_spinlock_lock(&entry->addr_list_lock);
+	list_add(&addr_entry->list, &entry->addr_list);
+	ihk_mc_spinlock_unlock(&entry->addr_list_lock, irqflags);
+
+	/* Add addr entry to address hash */
+	addr_hash = ((unsigned long)r >> 5) & KMALLOC_TRACK_HASH_MASK;
+	irqflags = ihk_mc_spinlock_lock(&kmalloc_addr_hash_locks[addr_hash]);
+	list_add(&addr_entry->hash, &kmalloc_addr_hash[addr_hash]);
+	ihk_mc_spinlock_unlock(&kmalloc_addr_hash_locks[addr_hash], irqflags);
+
+	dkprintf("%s addr_entry %p added\n", __FUNCTION__, r);
+
+out:
 	return r;
 }
 
 void _kfree(void *ptr, char *file, int line)
 {
-	if (memdebug) {
-		/* TODO: kfree() debug code */
+	unsigned long irqflags;
+	struct kmalloc_track_entry *entry;
+	struct kmalloc_track_addr_entry *addr_entry_iter, *addr_entry = NULL;
+	int hash;
+
+	if (!memdebug) {
+		goto out;
 	}
 
+	hash = ((unsigned long)ptr >> 5) & KMALLOC_TRACK_HASH_MASK;
+	irqflags = ihk_mc_spinlock_lock(&kmalloc_addr_hash_locks[hash]);
+	list_for_each_entry(addr_entry_iter,
+			&kmalloc_addr_hash[hash], hash) {
+		if (addr_entry_iter->addr == ptr) {
+			addr_entry = addr_entry_iter;
+			break;
+		}
+	}
+
+	if (addr_entry) {
+		list_del(&addr_entry->hash);
+	}
+	ihk_mc_spinlock_unlock(&kmalloc_addr_hash_locks[hash], irqflags);
+
+	if (!addr_entry) {
+		kprintf("%s: ERROR: kfree()ing invalid pointer\n", __FUNCTION__);
+		panic("panic");
+	}
+
+	entry = addr_entry->entry;
+
+	irqflags = ihk_mc_spinlock_lock(&entry->addr_list_lock);
+	list_del(&addr_entry->list);
+	ihk_mc_spinlock_unlock(&entry->addr_list_lock, irqflags);
+
+	dkprintf("%s addr_entry %p removed\n", __FUNCTION__, addr_entry->addr);
+	___kfree(addr_entry);
+
+	/* Do we need to remove tracking entry as well? */
+	if (!ihk_atomic_dec_and_test(&entry->alloc_count)) {
+		goto out;
+	}
+
+	hash = (strlen(entry->file) + entry->line + entry->size) &
+		KMALLOC_TRACK_HASH_MASK;
+	irqflags = ihk_mc_spinlock_lock(&kmalloc_track_hash_locks[hash]);
+	list_del(&entry->hash);
+	ihk_mc_spinlock_unlock(&kmalloc_track_hash_locks[hash], irqflags);
+
+	dkprintf("%s entry %s:%d size: %d removed\n", __FUNCTION__,
+			entry->file, entry->line, entry->size);
+	___kfree(entry->file);
+	___kfree(entry);
+
+out:
 	___kfree(ptr);
+}
+
+void kmalloc_memcheck(void)
+{
+	int i;
+	unsigned long irqflags;
+	struct kmalloc_track_entry *entry = NULL;
+
+	for (i = 0; i < KMALLOC_TRACK_HASH_SIZE; ++i) {
+		irqflags = ihk_mc_spinlock_lock(&kmalloc_track_hash_locks[i]);
+		list_for_each_entry(entry, &kmalloc_track_hash[i], hash) {
+			struct kmalloc_track_addr_entry *addr_entry = NULL;
+			int cnt = 0;
+
+			ihk_mc_spinlock_lock_noirq(&entry->addr_list_lock);
+			list_for_each_entry(addr_entry, &entry->addr_list, list) {
+
+			dkprintf("%s memory leak: %p @ %s:%d size: %d runcount: %d\n",
+				__FUNCTION__,
+				addr_entry->addr,
+				entry->file,
+				entry->line,
+				entry->size,
+				addr_entry->runcount);
+
+				if (kmalloc_runcount != addr_entry->runcount)
+					continue;
+
+				cnt++;
+			}
+			ihk_mc_spinlock_unlock_noirq(&entry->addr_list_lock);
+
+			if (!cnt)
+				continue;
+
+			kprintf("%s memory leak: %s:%d size: %d cnt: %d, runcount: %d\n",
+				__FUNCTION__,
+				entry->file,
+				entry->line,
+				entry->size,
+				cnt,
+				kmalloc_runcount);
+		}
+		ihk_mc_spinlock_unlock(&kmalloc_track_hash_locks[i], irqflags);
+	}
+
+	++kmalloc_runcount;
 }
 
 /* Redirection routines registered in alloc structure */
@@ -759,12 +995,32 @@ reiterate:
 }
 
 
+void kmalloc_consolidate_free_list(void)
+{
+	struct kmalloc_header *chunk, *tmp;
+	unsigned long irqflags =
+		ihk_mc_spinlock_lock(&cpu_local_var(remote_free_list_lock));
+
+	/* Clean up remotely deallocated chunks */
+	list_for_each_entry_safe(chunk, tmp,
+			&cpu_local_var(remote_free_list), list) {
+
+		list_del(&chunk->list);
+		___kmalloc_insert_chunk(&cpu_local_var(free_list), chunk);
+	}
+
+	/* Free list lock ensures IRQs are disabled */
+	___kmalloc_consolidate_list(&cpu_local_var(free_list));
+
+	ihk_mc_spinlock_unlock(&cpu_local_var(remote_free_list_lock), irqflags);
+}
+
+
 /* Actual low-level allocation routines */
 static void *___kmalloc(int size, enum ihk_mc_ap_flag flag)
 {
-	struct kmalloc_header *chunk_iter, *tmp;
+	struct kmalloc_header *chunk_iter;
 	struct kmalloc_header *chunk = NULL;
-	unsigned long irqflags;
 	int npages;
 	unsigned long kmalloc_irq_flags = cpu_disable_interrupt_save();
 
@@ -773,16 +1029,6 @@ static void *___kmalloc(int size, enum ihk_mc_ap_flag flag)
 	 * (including the header) even for the smallest allocations
 	 */
 	if ((size % 32) != 0) size = ((size + 31) & ~((int)32-1));
-
-	/* Clean up remotely deallocated chunks */
-	irqflags = ihk_mc_spinlock_lock(&cpu_local_var(remote_free_list_lock));
-	list_for_each_entry_safe(chunk, tmp,
-			&cpu_local_var(remote_free_list), list) {
-
-		list_del(&chunk->list);
-		___kmalloc_insert_chunk(&cpu_local_var(free_list), chunk);
-	}
-	ihk_mc_spinlock_unlock(&cpu_local_var(remote_free_list_lock), irqflags);
 
 	chunk = NULL;
 	/* Find a chunk that is big enough */
@@ -810,7 +1056,6 @@ split_and_return:
 		}
 
 		list_del(&chunk->list);
-		___kmalloc_consolidate_list(&cpu_local_var(free_list));
 		cpu_restore_interrupt(kmalloc_irq_flags);
 		return ((void *)chunk + sizeof(struct kmalloc_header));
 	}

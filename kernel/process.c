@@ -2342,6 +2342,8 @@ static void idle(void)
 		}
 		if (v->status == CPU_STATUS_IDLE ||
 		    v->status == CPU_STATUS_RESERVED) {
+			/* No work to do? Consolidate the kmalloc free list */
+			kmalloc_consolidate_free_list();
 			cpu_safe_halt();
 		}
 		else {
