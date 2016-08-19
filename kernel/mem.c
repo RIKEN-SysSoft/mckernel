@@ -1015,6 +1015,9 @@ void kmalloc_consolidate_free_list(void)
 	ihk_mc_spinlock_unlock(&cpu_local_var(remote_free_list_lock), irqflags);
 }
 
+#define KMALLOC_MIN_SHIFT   (5)
+#define KMALLOC_MIN_SIZE    (1 << KMALLOC_TRACK_HASH_SHIFT)
+#define KMALLOC_MIN_MASK    (KMALLOC_MIN_SIZE - 1)
 
 /* Actual low-level allocation routines */
 static void *___kmalloc(int size, enum ihk_mc_ap_flag flag)
@@ -1024,11 +1027,10 @@ static void *___kmalloc(int size, enum ihk_mc_ap_flag flag)
 	int npages;
 	unsigned long kmalloc_irq_flags = cpu_disable_interrupt_save();
 
-	/*
-	 * 32 bytes aligned size, as this leaves us at cache line boundary
-	 * (including the header) even for the smallest allocations
-	 */
-	if ((size % 32) != 0) size = ((size + 31) & ~((int)32-1));
+	/* KMALLOC_MIN_SIZE bytes aligned size. */
+	if (size & KMALLOC_MIN_MASK) {
+		size = ((size + KMALLOC_MIN_SIZE - 1) & ~(KMALLOC_MIN_MASK));
+	}
 
 	chunk = NULL;
 	/* Find a chunk that is big enough */
