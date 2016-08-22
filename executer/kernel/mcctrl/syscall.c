@@ -482,7 +482,8 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	flags = ihk_ikc_spinlock_lock(&usrdata->per_proc_list_lock);
 	
 	list_for_each_entry(ppd_iter, &usrdata->per_proc_list, list) {
-		if (ppd_iter->pid == task_tgid_vnr(current)) {
+		if (ppd_iter->pid == task_tgid_vnr(current) || 
+			ppd_iter->pid == vma->vm_mm->owner->pid) {
 			ppd = ppd_iter;
 			break;
 		}
