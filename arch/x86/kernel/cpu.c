@@ -182,6 +182,7 @@ static void init_idt(void)
 
 static int xsave_available = 0;
 static int xsave_size = 0;
+static uint64_t xsave_mask = 0x0;
 
 void init_fpu(void)
 {
@@ -232,7 +233,19 @@ void init_fpu(void)
 		unsigned long edx;
 		asm volatile("cpuid" : "=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx) : "a" (0x0d), "c" (0x00));
 		xsave_size = ecx;
+		dkprintf("init_fpu(): xsave_size = %d\n", xsave_size);
+
+		if ((eax & (1 << 5)) && (eax & (1 << 6)) && (eax & (1 << 7))) {
+			/* Set xcr0[7:5] to enable avx-512 ops */
+			reg = xgetbv(0);
+			reg |= 0xe6;
+			xsetbv(0, reg);
+			dkprintf("init_fpu(): AVX-512 init: XCR0 = 0x%016lX\n", reg);
+		}
 	}
+
+	xsave_mask = xgetbv(0);
+	dkprintf("init_fpu(): xsave_mask = 0x%016lX\n", xsave_mask);
 
 	/* TODO: set MSR_IA32_XSS to enable xsaves/xrstors */
 
@@ -247,6 +260,11 @@ int
 get_xsave_size()
 {
 	return xsave_size;
+}
+
+uint64_t get_xsave_mask()
+{
+	return xsave_mask;
 }
 
 void reload_gdt(struct x86_desc_ptr *gdt_ptr)
@@ -1532,7 +1550,8 @@ release_fp_regs(struct thread *thread)
 	if (thread && !thread->fp_regs)
 		return;
 
-	pages = (sizeof(fp_regs_struct) + 4095) >> 12;
+	pages = (xsave_size + (PAGE_SIZE - 1)) >> PAGE_SHIFT;
+	dkprintf("release_fp_regs: pages=%d\n", pages);
 	ihk_mc_free_pages(thread->fp_regs, pages);
 	thread->fp_regs = NULL;
 }
@@ -1546,7 +1565,8 @@ save_fp_regs(struct thread *thread)
 	int	pages;
 
 	if (!thread->fp_regs) {
-		pages = (sizeof(fp_regs_struct) + 4095) >> 12;
+		pages = (xsave_size + (PAGE_SIZE - 1)) >> PAGE_SHIFT;
+		dkprintf("save_fp_regs: pages=%d\n", pages);
 		thread->fp_regs = ihk_mc_alloc_pages(pages, IHK_MC_AP_NOWAIT);
 
 		if (!thread->fp_regs) {
@@ -1555,14 +1575,15 @@ save_fp_regs(struct thread *thread)
 		}
 
 		memset(thread->fp_regs, 0, sizeof(fp_regs_struct));
+		memset(thread->fp_regs, 0, pages * PAGE_SIZE);
 	}
 
 	if (xsave_available) {
 		unsigned int low, high;
 
-		/* Request full save of x87, SSE and AVX states */
-		low = 0x7;
-		high = 0;
+		/* Request full save of x87, SSE, AVX and AVX-512 states */
+		low = (unsigned int)xsave_mask;
+		high = (unsigned int)(xsave_mask >> 32);
 
 		asm volatile("xsave %0" : : "m" (*thread->fp_regs), "a" (low), "d" (high) 
 			: "memory");
@@ -1584,9 +1605,9 @@ restore_fp_regs(struct thread *thread)
 	if (xsave_available) {
 		unsigned int low, high;
 
-		/* Request full restore of x87, SSE and AVX states */
-		low = 0x7;
-		high = 0;
+		/* Request full restore of x87, SSE, AVX and AVX-512 states */
+		low = (unsigned int)xsave_mask;
+		high = (unsigned int)(xsave_mask >> 32);
 
 		asm volatile("xrstor %0" : : "m" (*thread->fp_regs), 
 				"a" (low), "d" (high));

@@ -39,6 +39,7 @@ void check_signal(unsigned long rc, void *regs0, int num);
 extern unsigned long do_fork(int, unsigned long, unsigned long, unsigned long,
 	unsigned long, unsigned long, unsigned long);
 extern int get_xsave_size();
+extern uint64_t get_xsave_mask();
 
 //#define DEBUG_PRINT_SC
 
@@ -273,8 +274,9 @@ SYSCALL_DECLARE(rt_sigreturn)
 		void *fpregs = kmalloc(xsavesize + 64, IHK_MC_AP_NOWAIT);
 
 		if(fpregs){
-			unsigned int low = 0x7;
-			unsigned int high = 0;
+			uint64_t xsave_mask = get_xsave_mask();
+			unsigned int low = (unsigned int)xsave_mask;
+			unsigned int high = (unsigned int)(xsave_mask >> 32);
 			struct xsave_struct *kfpregs;
 
 			kfpregs = (void *)((((unsigned long)fpregs) + 63) & ~63);
@@ -776,8 +778,9 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 		if(num != 0 && rc == -EINTR && sig == SIGCHLD)
 			ksigsp.restart = 1;
 		if(xsavesize){
-			unsigned int low = 0x7;
-			unsigned int high = 0;
+			uint64_t xsave_mask = get_xsave_mask();
+			unsigned int low = (unsigned int)xsave_mask;
+			unsigned int high = (unsigned int)(xsave_mask >> 32);
 			void *_kfpregs = kmalloc(xsavesize + 64, IHK_MC_AP_NOWAIT);
 			struct xsave_struct *kfpregs;
 
