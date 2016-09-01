@@ -3479,6 +3479,90 @@ SYSCALL_DECLARE(mincore)
 	return 0;
 } /* sys_mincore() */
 
+static int
+set_memory_range_flag(struct vm_range *range, unsigned long arg)
+{
+	range->flag |= arg;
+	return 0;
+}
+
+static int
+clear_memory_range_flag(struct vm_range *range, unsigned long arg)
+{
+	range->flag &= ~arg;
+	return 0;
+}
+
+static int
+change_attr_process_memory_range(struct process_vm *vm,
+                                 uintptr_t start, uintptr_t end,
+                                 int (*change_proc)(struct vm_range *,
+                                                    unsigned long),
+                                 unsigned long arg)
+{
+	uintptr_t addr;
+	int error;
+	struct vm_range *range;
+	struct vm_range *prev;
+	struct vm_range *next;
+	int join_flag = 0;
+
+	error = 0;
+	range = lookup_process_memory_range(vm, start, start + PAGE_SIZE);
+	if(!range){
+		error = -ENOMEM;
+		goto out;
+	}
+
+	prev = previous_process_memory_range(vm, range);
+	if(!prev)
+		prev = range;
+	for (addr = start; addr < end; addr = range->end) {
+		if (range->start < addr) {
+			if((error = split_process_memory_range(vm, range, addr, &range))) {
+				break;
+			}
+		}
+		if (end < range->end) {
+			if((error = split_process_memory_range(vm, range, end, NULL))) {
+				break;
+			}
+		}
+
+		if(!(error = change_proc(range, arg))){
+			break;
+		}
+		range = next_process_memory_range(vm, range);
+	}
+	if(error){
+		next = next_process_memory_range(vm, range);
+		if(!next)
+			next = range;
+	}
+	else{
+		next = range;
+	}
+
+	while(prev != next){
+		int wkerr;
+
+		range = next_process_memory_range(vm, prev);
+		if(!range)
+			break;
+		wkerr = join_process_memory_range(vm, prev, range);
+		if(range == next)
+			join_flag = 1;
+		if (wkerr) {
+			if(join_flag)
+				break;
+			prev = range;
+		}
+	}
+
+out:
+	return error;
+}
+
 SYSCALL_DECLARE(madvise)
 {
 	const uintptr_t start = (uintptr_t)ihk_mc_syscall_arg0(ctx);
@@ -3587,6 +3671,7 @@ SYSCALL_DECLARE(madvise)
 				goto out;
 			}
 		}
+		else if(advice == MADV_DONTFORK || advice == MADV_DOFORK);
 		else if (!range->memobj || !memobj_has_pager(range->memobj)) {
 			dkprintf("[%d]sys_madvise(%lx,%lx,%x):has not pager"
 					"[%lx-%lx) %lx\n",
@@ -3629,6 +3714,27 @@ SYSCALL_DECLARE(madvise)
 				goto out;
 			}
 		}
+	}
+
+	if(advice == MADV_DONTFORK){
+		error = change_attr_process_memory_range(thread->vm, start, end,
+		                                         set_memory_range_flag,
+		                                         VR_DONTFORK);
+		if(error){
+			goto out;
+		}
+	}
+	if(advice == MADV_DOFORK){
+		error = change_attr_process_memory_range(thread->vm, start, end,
+		                                         clear_memory_range_flag,
+		                                         VR_DONTFORK);
+		if(error){
+			goto out;
+		}
+	}
+	if(advice == MADV_DONTFORK ||
+	   advice == MADV_DOFORK){
+		error = syscall_generic_forwarding(__NR_madvise, ctx);
 	}
 
 	error = 0;

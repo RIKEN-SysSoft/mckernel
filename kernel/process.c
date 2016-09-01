@@ -571,6 +571,9 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm)
 			break;
 		}
 
+		if(src_range->flag & VR_DONTFORK)
+			continue;
+
 		range = kmalloc(sizeof(struct vm_range), IHK_MC_AP_NOWAIT);
 		if (!range) {
 			goto err_rollback;
