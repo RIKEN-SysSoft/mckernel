@@ -75,7 +75,8 @@ static void reserve_pages(unsigned long start, unsigned long end, int type)
 	ihk_pagealloc_reserve(pa_allocator, start, end);
 }
 
-void *allocate_aligned_pages(int npages, int p2align, enum ihk_mc_ap_flag flag)
+static void *allocate_aligned_pages(int npages, int p2align, 
+		enum ihk_mc_ap_flag flag)
 {
 	unsigned long pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
 	/* all_pagealloc_alloc returns zero when error occured, 
@@ -87,12 +88,12 @@ void *allocate_aligned_pages(int npages, int p2align, enum ihk_mc_ap_flag flag)
 	return NULL;
 }
 
-void *allocate_pages(int npages, enum ihk_mc_ap_flag flag)
+static void *allocate_pages(int npages, enum ihk_mc_ap_flag flag)
 {
 	return allocate_aligned_pages(npages, PAGE_P2ALIGN, flag);
 }
 
-void free_pages(void *va, int npages)
+static void free_pages(void *va, int npages)
 {
 	struct list_head *pendings = &cpu_local_var(pending_free_pages);
 	struct page *page;
@@ -511,7 +512,7 @@ static void page_init(void)
 	allocsize = sizeof(struct page) * npages;
 	allocpages = (allocsize + PAGE_SIZE - 1) >> PAGE_SHIFT;
 
-	pa_pages = allocate_pages(allocpages, IHK_MC_AP_CRITICAL);
+	pa_pages = ihk_mc_alloc_pages(allocpages, IHK_MC_AP_CRITICAL);
 	memset(pa_pages, 0, allocsize);
 	return;
 }

@@ -32,7 +32,7 @@ void cpu_local_var_init(void)
 	z = sizeof(struct cpu_local_var) * num_processors;
 	z = (z + PAGE_SIZE - 1) >> PAGE_SHIFT;
 
-	clv = allocate_pages(z, IHK_MC_AP_CRITICAL);
+	clv = ihk_mc_alloc_pages(z, IHK_MC_AP_CRITICAL);
 	memset(clv, 0, z * PAGE_SIZE);
 	cpu_local_var_initialized = 1;
 }

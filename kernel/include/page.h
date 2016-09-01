@@ -39,8 +39,6 @@ struct page *phys_to_page(uintptr_t phys);
 uintptr_t page_to_phys(struct page *page);
 int page_unmap(struct page *page);
 
-void *allocate_pages(int npages, enum ihk_mc_ap_flag flag);
-void free_pages(void *va, int npages);
 void begin_free_pages_pending(void);
 void finish_free_pages_pending(void);
 

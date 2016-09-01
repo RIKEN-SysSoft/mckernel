@@ -52,7 +52,7 @@ void *__ihk_pagealloc_init(unsigned long start, unsigned long size,
 		desc = initial;
 		*pdescsize = descsize;
 	} else {
-		desc = (void *)allocate_pages(descsize, IHK_MC_AP_CRITICAL);
+		desc = (void *)ihk_mc_alloc_pages(descsize, IHK_MC_AP_CRITICAL);
 	}
 	if (!desc) {
 		kprintf("IHK: failed to allocate page-allocator-desc "\
@@ -92,7 +92,7 @@ void ihk_pagealloc_destroy(void *__desc)
 {
 	struct ihk_page_allocator_desc *desc = __desc;
 
-	free_pages(desc, desc->flag);
+	ihk_mc_free_pages(desc, desc->flag);
 }
 
 static unsigned long __ihk_pagealloc_large(struct ihk_page_allocator_desc *desc,

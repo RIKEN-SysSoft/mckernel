@@ -265,7 +265,7 @@ void shmobj_destroy(struct shmobj *obj)
 		}
 
 		page->mode = PM_NONE;
-		free_pages(phys_to_virt(page_to_phys(page)), npages);
+		ihk_mc_free_pages(phys_to_virt(page_to_phys(page)), npages);
 	}
 	if (obj->index < 0) {
 		kfree(obj);

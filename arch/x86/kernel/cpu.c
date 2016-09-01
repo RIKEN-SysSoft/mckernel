@@ -1736,7 +1736,7 @@ int arch_setup_pvclock(void)
 	npages = (size + PAGE_SIZE - 1) / PAGE_SIZE;
 	pvti_npages = npages;
 
-	pvti = allocate_pages(npages, IHK_MC_AP_NOWAIT);
+	pvti = ihk_mc_alloc_pages(npages, IHK_MC_AP_NOWAIT);
 	if (!pvti) {
 		ekprintf("arch_setup_pvclock: allocate_pages failed.\n");
 		return -ENOMEM;
@@ -1780,7 +1780,7 @@ int arch_get_cpu_mapping(struct cpu_mapping **buf, int *nelemsp)
 	if (!cpu_mapping) {
 		size = sizeof(*mapping) * num_processors;
 		npages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
-		mapping = allocate_pages(npages, IHK_MC_AP_NOWAIT);
+		mapping = ihk_mc_alloc_pages(npages, IHK_MC_AP_NOWAIT);
 		if (!mapping) {
 			error = -ENOMEM;
 			ekprintf("arch_get_cpu_mapping:allocate_pages failed. %d\n", error);

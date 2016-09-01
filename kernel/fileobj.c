@@ -281,7 +281,7 @@ static void fileobj_release(struct memobj *memobj)
 			}
 
 			page->mode = PM_NONE;
-			free_pages(phys_to_virt(page_to_phys(page)), 1);
+			ihk_mc_free_pages(phys_to_virt(page_to_phys(page)), 1);
 		}
 		obj_list_remove(free_obj);
 		ihk_mc_spinlock_unlock_noirq(&fileobj_list_lock);
