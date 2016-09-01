@@ -25,7 +25,7 @@ cpus=""
 INTERVAL=1
 LOGMODE=0
 facility="LOG_LOCAL6"
-chown_option=`logname`
+chown_option=`logname 2> /dev/null`
 
 while getopts :i:k:c:m:o:f: OPT
 do
