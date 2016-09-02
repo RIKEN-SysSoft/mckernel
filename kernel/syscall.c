@@ -1981,7 +1981,7 @@ retry_tid:
 		}
 
 		/* In a single threaded process TID equals to PID */
-		settid(new, 0, cpuid, -1, 0, NULL);
+		new->tid = newproc->pid;
 		new->vm->address_space->pids[0] = new->proc->pid;
 
 		dkprintf("fork(): new pid: %d\n", new->proc->pid);

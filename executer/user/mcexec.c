@@ -2088,7 +2088,6 @@ gettid_out:
 
 				/* Reinit signals and syscall threads */
 				init_sigaction();
-				init_worker_threads(fd);
 
 				__dprintf("pid(%d): signals and syscall threads OK\n", 
 						getpid());
@@ -2101,6 +2100,8 @@ gettid_out:
 					fs->status = -errno;
 					goto fork_child_sync_pipe;
 				}
+
+				init_worker_threads(fd);
 
 fork_child_sync_pipe:
 				sem_post(&fs->sem);

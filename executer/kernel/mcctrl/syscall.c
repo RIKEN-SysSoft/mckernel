@@ -1566,36 +1566,18 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 		/* Set new remote page table if not zero */
 		if (sc->args[2]) {
 			struct mcctrl_per_proc_data *ppd = NULL;
-			int i;
 
-			ppd = kmalloc(sizeof(*ppd), GFP_ATOMIC);
-			if (!ppd) {
-				printk("ERROR: allocating per process data\n");
-				error = -ENOMEM;
-				goto out;
+			ppd = mcctrl_get_per_proc_data(usrdata, sc->args[3]);
+			if (unlikely(!ppd)) {
+				kprintf("%s: ERROR: no per-process structure for PID %d??\n",
+						__FUNCTION__, task_tgid_vnr(current));
+				return -1;
 			}
 
-			ppd->pid = task_tgid_vnr(current);
 			ppd->rpgtable = sc->args[2];
-			INIT_LIST_HEAD(&ppd->wq_list);
-			INIT_LIST_HEAD(&ppd->wq_req_list);
-			INIT_LIST_HEAD(&ppd->wq_list_exact);
-			spin_lock_init(&ppd->wq_list_lock);
 
-			for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; ++i) {
-				INIT_LIST_HEAD(&ppd->per_thread_data_hash[i]);
-				rwlock_init(&ppd->per_thread_data_hash_lock[i]);
-			}
-
-			if (mcctrl_add_per_proc_data(usrdata, ppd->pid, ppd) < 0) {
-				printk("%s: error adding per process data\n", __FUNCTION__);
-				error = -EBUSY;
-				kfree(ppd);
-				goto out;
-			}
-
-			dprintk("pid: %d, rpgtable: 0x%lx added\n", 
-				ppd->pid, ppd->rpgtable);
+			dprintk("%s: pid: %d, rpgtable: 0x%lx updated\n",
+				__FUNCTION__, ppd->pid, ppd->rpgtable);
 		}
 
 		ret = clear_pte_range(sc->args[0], sc->args[1]);

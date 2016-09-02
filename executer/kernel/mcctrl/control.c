@@ -83,7 +83,6 @@ static long mcexec_prepare_image(ihk_os_t os,
 	long ret = 0;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd = NULL;
-	int i;
 
 	if (copy_from_user(&desc, udesc,
 	                    sizeof(struct program_load_desc))) {
@@ -148,30 +147,15 @@ static long mcexec_prepare_image(ihk_os_t os,
 		goto free_out;
 	}
 
-	ppd = kmalloc(sizeof(*ppd), GFP_KERNEL);
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 	if (!ppd) {
-		printk("ERROR: allocating per process data\n");
-		ret = -ENOMEM;
-		goto free_out;
-	}
-
-	ppd->pid = pdesc->pid;
-	ppd->rpgtable = pdesc->rpgtable;
-	INIT_LIST_HEAD(&ppd->wq_list);
-	INIT_LIST_HEAD(&ppd->wq_req_list);
-	INIT_LIST_HEAD(&ppd->wq_list_exact);
-	spin_lock_init(&ppd->wq_list_lock);
-
-	for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; ++i) {
-		INIT_LIST_HEAD(&ppd->per_thread_data_hash[i]);
-		rwlock_init(&ppd->per_thread_data_hash_lock[i]);
-	}
-
-	if (mcctrl_add_per_proc_data(usrdata, ppd->pid, ppd) < 0) {
-		printk("%s: error adding per process data\n", __FUNCTION__);
+		printk("ERROR: no per process data for PID %d\n", task_tgid_vnr(current));
 		ret = -EINVAL;
 		goto free_out;
 	}
+
+	/* Update rpgtable */
+	ppd->rpgtable = pdesc->rpgtable;
 	
 	if (copy_to_user(udesc, pdesc, sizeof(struct program_load_desc) + 
 	             sizeof(struct program_image_section) * desc.num_sections)) {
@@ -185,10 +169,6 @@ static long mcexec_prepare_image(ihk_os_t os,
 	ret = 0;
 
 free_out:
-	/* Only free ppd if error */
-	if (ret != 0 && ppd) {
-		kfree(ppd);
-	}
 	kfree(args);
 	kfree(pdesc);
 	kfree(envs);
@@ -924,14 +904,53 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	int retval;
 	int os_ind = ihk_host_os_get_index(os);
 	char *pathbuf, *fullpath;
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_per_proc_data *ppd = NULL;
+	int i;
 
 	if (os_ind < 0) {
 		return EINVAL;
 	}
 
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+
+	if (!ppd) {
+		ppd = kmalloc(sizeof(*ppd), GFP_KERNEL);
+		if (!ppd) {
+			printk("ERROR: allocating per process data\n");
+			return -ENOMEM;
+		}
+
+		ppd->pid = task_tgid_vnr(current);
+		/*
+		 * XXX: rpgtable will be updated in __do_in_kernel_syscall()
+		 * under case __NR_munmap
+		 */
+		INIT_LIST_HEAD(&ppd->wq_list);
+		INIT_LIST_HEAD(&ppd->wq_req_list);
+		INIT_LIST_HEAD(&ppd->wq_list_exact);
+		spin_lock_init(&ppd->wq_list_lock);
+
+		for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; ++i) {
+			INIT_LIST_HEAD(&ppd->per_thread_data_hash[i]);
+			rwlock_init(&ppd->per_thread_data_hash_lock[i]);
+		}
+
+		if (mcctrl_add_per_proc_data(usrdata, ppd->pid, ppd) < 0) {
+			printk("%s: error adding per process data\n", __FUNCTION__);
+			retval = EINVAL;
+			goto out_free_ppd;
+		}
+	}
+	else {
+		/* Only deallocate in case of an error if we added it above */
+		ppd = NULL;
+	}
+
 	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
 	if (!pathbuf) {
-		return ENOMEM;
+		retval = ENOMEM;
+		goto out_error_drop_ppd;
 	}
 
 	file = open_exec(filename);
@@ -963,7 +982,7 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 			break;
 		}
 	}
-	
+
 	/* Add new exec file to the list */
 	mcef->os = os;
 	mcef->pid = task_tgid_vnr(current);
@@ -980,12 +999,15 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	kfree(pathbuf);
 
 	return 0;
-	
+
 out_put_file:
 	fput(file);
-
 out_error_free:
 	kfree(pathbuf);
+out_error_drop_ppd:
+	if (ppd) mcctrl_delete_per_proc_data(usrdata, ppd->pid);
+out_free_ppd:
+	if (ppd) kfree(ppd);
 	return -retval;
 }
 
