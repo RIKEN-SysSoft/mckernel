@@ -451,6 +451,31 @@ static void page_allocator_init(void)
 		&query_free_mem_handler);
 }
 
+static void numa_init(void)
+{
+	int i;
+
+	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
+		int linux_numa_id, type;
+
+		ihk_mc_get_numa_node(i, &linux_numa_id, &type);
+
+		kprintf("NUMA %d, Linux NUMA id: %d, type: %d\n",
+			i, linux_numa_id, type);
+	}
+
+	for (i = 0; i < ihk_mc_get_nr_memory_chunks(); ++i) {
+		unsigned long start, end;
+		int linux_numa_id;
+
+		ihk_mc_get_memory_chunk(i, &start, &end, &linux_numa_id);
+
+		kprintf("Physical memory region: %p - %p @ Linux NUMA id: %d\n",
+			start, end, linux_numa_id);
+	}
+}
+
+
 struct page *phys_to_page(uintptr_t phys)
 {
 	int64_t ix;
@@ -641,6 +666,7 @@ void ihk_mc_clean_micpa(void){
 
 void mem_init(void)
 {
+	numa_init();
 	page_allocator_init();
 	page_init();
 
