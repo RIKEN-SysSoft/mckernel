@@ -1649,7 +1649,7 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 				"access denied. %d\n",
 				ihk_mc_get_processor_id(), vm,
 				fault_addr0, reason, error);
-		kprintf("%s: reason: %s%s%s%s%s%s%s%s\n", __FUNCTION__, 
+		kprintf("%s: reason: %s%s%s%s%s%s%s\n", __FUNCTION__,
 			(reason & PF_PROT) ? "PF_PROT " : "",
 			(reason & PF_WRITE) ? "PF_WRITE " : "",
 			(reason & PF_USER) ? "PF_USER " : "",
