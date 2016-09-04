@@ -1563,6 +1563,7 @@ static int vdso_get_vdso_info(void)
 	struct ihk_ikc_channel_desc *ch = cpu_local_var(syscall_channel);
 
 	dkprintf("vdso_get_vdso_info()\n");
+	memset(&vdso, '\0', sizeof vdso);
 	vdso.busy = 1;
 	vdso.vdso_npages = 0;
 

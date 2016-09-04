@@ -2198,6 +2198,7 @@ fork_err:
 						strcpy(desc->shell_path, shell_path);
 					}
 
+					desc->enable_vdso = enable_vdso;
 					__dprintf("execve(): load_elf_desc() for %s OK, num sections: %d\n",
 						path, desc->num_sections);
 

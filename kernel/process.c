@@ -387,6 +387,8 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 			goto err_free_proc;
 		}
 
+		thread->vm->vdso_addr = org->vm->vdso_addr;
+		thread->vm->vvar_addr = org->vm->vvar_addr;
 		thread->proc->maxrss = org->proc->maxrss;
 		thread->vm->currss = org->vm->currss;
 

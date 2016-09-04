@@ -100,8 +100,6 @@ void get_vdso_info(ihk_os_t os, long vdso_rpa)
 	vdso_pa = ihk_device_map_memory(dev, vdso_rpa, sizeof(*vdso));
 	vdso = ihk_device_map_virtual(dev, vdso_pa, sizeof(*vdso), NULL, 0);
 
-	memset(vdso, 0, sizeof(*vdso));
-
 	/* VDSO pages */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,16,0)
 	size = vdso_image->size;

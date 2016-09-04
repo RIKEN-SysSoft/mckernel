@@ -332,6 +332,9 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 			goto err;
 		}
 	}
+	else {
+		vm->vdso_addr = NULL;
+	}
 
 	p->rprocess = (unsigned long)thread;
 	p->rpgtable = virt_to_phys(as->page_table);
