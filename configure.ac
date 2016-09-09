@@ -146,6 +146,9 @@ case $WITH_TARGET in
 	if test "X$SBINDIR" = X; then
 		SBINDIR="$prefix/sbin"
 	fi
+	if test "X$ETCDIR" = X; then
+		ETCDIR="$prefix/etc"
+	fi
 	if test "X$KMODDIR" = X; then
 		KMODDIR="$prefix/kmod"
 	fi
@@ -278,6 +281,7 @@ AC_SUBST(KDIR)
 AC_SUBST(TARGET)
 AC_SUBST(BINDIR)
 AC_SUBST(SBINDIR)
+AC_SUBST(ETCDIR)
 AC_SUBST(KMODDIR)
 AC_SUBST(KERNDIR)
 AC_SUBST(MANDIR)
@@ -307,6 +311,8 @@ AC_CONFIG_FILES([
 	arch/x86/tools/mcstop+release-smp-x86.sh
 	arch/x86/tools/mcshutdown-builtin-x86.sh
 	arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in
+	arch/x86/tools/irqbalance_mck.service
+	arch/x86/tools/irqbalance_mck.in
 ])
 
 AS_IF([test "x$enable_dcfa" = xyes], [

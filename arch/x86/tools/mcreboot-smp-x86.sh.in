@@ -15,6 +15,7 @@
 prefix="@prefix@"
 BINDIR="${prefix}/bin"
 SBINDIR="${prefix}/sbin"
+ETCDIR=@ETCDIR@
 KMODDIR="${prefix}/kmod"
 KERNDIR="${prefix}/@TARGET@/kernel"
 ENABLE_MCOVERLAYFS="@ENABLE_MCOVERLAYFS@"
@@ -210,3 +211,24 @@ then
 	pkill mcklogd    
 	SBINDIR=${SBINDIR} ${SBINDIR}/mcklogd -i ${INTERVAL} -f ${facility}
 fi
+
+# Modify interrupt load-balance policy
+if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" -o "`systemctl status irqbalance.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
+    systemctl stop irqbalance_mck.service 2>/dev/null
+    if ! systemctl stop irqbalance.service 2>/dev/null ; then echo "error: stopping irqbalance" >&2; exit 1; fi;
+
+    if ! etcdir=@ETCDIR@ perl -e 'use File::Copy qw(copy); $etcdir=$ENV{'etcdir'}; @files = grep { -f } glob "/proc/irq/*/smp_affinity"; foreach $file (@files) { $rel = substr($file, 1); $dir=substr($rel, 0, length($rel)-length("/smp_affinity")); if(0) { print "cp $file $etcdir/$rel\n";} if(system("mkdir -p $etcdir/$dir")){ exit 1;} if(!copy($file,"$etcdir/$rel")){ exit 1;} }' ; then echo "error: saving /proc/irq/*/smp_affinity" >&2; exit 1; fi;
+
+    ncpus=`lscpu | grep -E '^CPU\(s\):' | awk '{print $2}'`
+    smp_affinity_mask=`echo $cpus | ncpus=$ncpus perl -e 'while(<>){@tokens = split /,/;foreach $token (@tokens) {@nums = split /-/,$token; for($num = $nums[0]; $num <= $nums[$#nums]; $num++) {$ndx=int($num/32); $mask[$ndx] |= (1<<($num % 32))}}} $nint32s = int(($ENV{'ncpus'}+31)/32); for($j = $nint32s - 1; $j >= 0; $j--) { if($j != $nint32s - 1){print ",";} $nblks = $j == $nint32s - 1 ? int(($ENV{'ncpus'} % 32)/4) : 8; for($i = $nblks - 1;$i >= 0;$i--){ printf("%01x",($mask[$j] >> ($i*4)) & 0xf);}}'`
+
+    if ! ncpus=$ncpus smp_affinity_mask=$smp_affinity_mask perl -e '@dirs = grep { -d } glob "/proc/irq/*"; foreach $dir (@dirs) { $hit = 0; $affinity_str = `cat $dir/smp_affinity`; chomp $affinity_str; @int32strs = split /,/, $affinity_str; @int32strs_mask=split /,/, $ENV{'smp_affinity_mask'}; for($i=0;$i <= $#int32strs_mask; $i++) { $int32strs_inv[$i] = sprintf("%08x",hex($int32strs_mask[$i])^0xffffffff); if($i == 0) { $len = int((($ENV{'ncpus'}%32)+3)/4); $int32strs_inv[$i] = substr($int32strs_inv[$i], -$len, $len); } } $inv = join(",", @int32strs_inv); $nint32s = int(($ENV{'ncpus'}+31)/32); for($j = $nint32s - 1; $j >= 0; $j--) { if(hex($int32strs[$nint32s - 1 - $j]) & hex($int32strs_mask[$nint32s - 1 - $j])) { $hit = 1; }} if($hit == 1) { $cmd = "echo $inv > $dir/smp_affinity 2>/dev/null"; system $cmd;}}'; then echo "error: modifying /proc/irq/*/smp_affinity" >&2; exit 1; fi;
+
+    banirq=`cat /proc/interrupts| perl -e 'while(<>) { if(/^\s*(\d+).*IHK\-SMP\s*$/) {print $1;}}'`
+
+    sed "s/%mask%/$smp_affinity_mask/g" $ETCDIR/irqbalance_mck.in | sed "s/%banirq%/$banirq/g" > $ETCDIR/irqbalance_mck
+    if ! systemctl link $ETCDIR/irqbalance_mck.service >/dev/null 2>/dev/null; then echo "error: linking irqbalance_mck" >&2; exit 1; fi;
+    if ! systemctl start irqbalance_mck.service 2>/dev/null ; then echo "error: starting irqbalance_mck" >&2; exit 1; fi;
+#    echo cpus=$cpus mask=$smp_affinity_mask banirq=$banirq
+fi
+

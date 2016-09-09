@@ -10,6 +10,7 @@
 prefix="@prefix@"
 BINDIR="@BINDIR@"
 SBINDIR="@SBINDIR@"
+ETCDIR=@ETCDIR@
 KMODDIR="@KMODDIR@"
 KERNDIR="@KERNDIR@"
 
@@ -51,3 +52,11 @@ fi
 
 # Stop mcklogd
 pkill mcklogd
+
+# Restore interrupt load-balance policy
+if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
+    if ! systemctl stop irqbalance_mck.service 2>/dev/null ; then echo "error: stopping irqbalance_mck" >&2; exit 1; fi;
+    if ! systemctl disable irqbalance_mck.service >/dev/null 2>/dev/null; then echo "error: disabling irqbalance_mck" >&2; exit 1; fi;
+    if ! etcdir=@ETCDIR@ perl -e '$etcdir=$ENV{'etcdir'}; @files = grep { -f } glob "$etcdir/proc/irq/*/smp_affinity"; foreach $file (@files) { $dest = substr($file, length($etcdir)); if(0) {print "cp $file $dest\n";} system("cp $file $dest 2>/dev/null"); }' ; then echo "error: restoring /proc/irq/*/smp_affinity" >&2; exit 1; fi;
+    if ! systemctl start irqbalance.service; then echo "error: starting irqbalance" >&2; exit 1; fi;
+fi
