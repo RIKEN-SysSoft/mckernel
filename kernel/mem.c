@@ -50,7 +50,6 @@
 
 static struct ihk_page_allocator_desc *pa_allocator;
 static unsigned long pa_start, pa_end;
-static struct page *pa_pages;
 
 extern void unhandled_page_fault(struct thread *, void *, void *);
 extern int interrupt_from_user(void *);
@@ -99,17 +98,16 @@ static void free_pages(void *va, int npages)
 	struct page *page;
 
 	page = phys_to_page(virt_to_phys(va));
-	if (!page) {
-		panic("free_pages:struct page not found");
-	}
-	if (page->mode != PM_NONE) {
-		panic("free_pages:not PM_NONE");
-	}
-	if (pendings->next != NULL) {
-		page->mode = PM_PENDING_FREE;
-		page->offset = npages;
-		list_add_tail(&page->list, pendings);
-		return;
+	if (page) {
+		if (page->mode != PM_NONE) {
+			panic("free_pages:not PM_NONE");
+		}
+		if (pendings->next != NULL) {
+			page->mode = PM_PENDING_FREE;
+			page->offset = npages;
+			list_add_tail(&page->list, pendings);
+			return;
+		}
 	}
 
 	ihk_pagealloc_free(pa_allocator, virt_to_phys(va), npages);
@@ -392,16 +390,11 @@ out:
 	return;
 }
 
-static void page_allocator_init(void)
+static void page_allocator_init(uint64_t start, uint64_t end, int initial)
 {
 	unsigned long page_map_pa, pages;
 	void *page_map;
 	unsigned int i;
-	uint64_t start;
-	uint64_t end;
-
-	start = ihk_mc_get_memory_address(IHK_MC_GMA_AVAIL_START, 0);
-	end = ihk_mc_get_memory_address(IHK_MC_GMA_AVAIL_END, 0);
 
 	start &= PAGE_MASK;
 	pa_start = start & LARGE_PAGE_MASK;
@@ -475,32 +468,94 @@ static void numa_init(void)
 	}
 }
 
+#define PHYS_PAGE_HASH_SHIFT	(10)
+#define PHYS_PAGE_HASH_SIZE     (1 << PHYS_PAGE_HASH_SHIFT)
+#define PHYS_PAGE_HASH_MASK     (PHYS_PAGE_HASH_SIZE - 1)
+
+/*
+ * Page hash only tracks pages that are mapped in non-anymous mappings
+ * and thus it is initially empty.
+ */
+struct list_head page_hash[PHYS_PAGE_HASH_SIZE];
+ihk_spinlock_t page_hash_locks[PHYS_PAGE_HASH_SIZE];
+
+static void page_init(void)
+{
+	int i;
+
+	for (i = 0; i < PHYS_PAGE_HASH_SIZE; ++i) {
+		ihk_mc_spinlock_init(&page_hash_locks[i]);
+		INIT_LIST_HEAD(&page_hash[i]);
+	}
+
+	return;
+}
+
+/* XXX: page_hash_lock must be held */
+static struct page *__phys_to_page(uintptr_t phys)
+{
+	int hash = (phys >> PAGE_SHIFT) & PHYS_PAGE_HASH_MASK;
+	struct page *page_iter, *page = NULL;
+
+	list_for_each_entry(page_iter, &page_hash[hash], hash) {
+		if (page_iter->phys == phys) {
+			page = page_iter;
+			break;
+		}
+	}
+
+	return page;
+}
 
 struct page *phys_to_page(uintptr_t phys)
 {
-	int64_t ix;
+	int hash = (phys >> PAGE_SHIFT) & PHYS_PAGE_HASH_MASK;
+	struct page *page = NULL;
+	unsigned long irqflags;
 
-	if ((phys < pa_start) || (pa_end <= phys)) {
-		return NULL;
-	}
+	irqflags = ihk_mc_spinlock_lock(&page_hash_locks[hash]);
+	page = __phys_to_page(phys);
+	ihk_mc_spinlock_unlock(&page_hash_locks[hash], irqflags);
 
-	ix = (phys - pa_start) >> PAGE_SHIFT;
-	return &pa_pages[ix];
+	return page;
 }
 
 uintptr_t page_to_phys(struct page *page)
 {
-	int64_t ix;
-	uintptr_t phys;
+	return page ? page->phys : 0;
+}
 
-	ix = page - pa_pages;
-	phys = pa_start + (ix << PAGE_SHIFT);
-	if ((phys < pa_start) || (pa_end <= phys)) {
-		ekprintf("page_to_phys(%p):not a pa_pages[]:%p %lx-%lx\n",
-				page, pa_pages, pa_start, pa_end);
-		panic("page_to_phys");
+/*
+ * Allocate page and add to hash if it doesn't exist yet.
+ * NOTE: page->count is zero for new pages and the caller
+ * is responsible to increase it.
+ */
+struct page *phys_to_page_insert_hash(uint64_t phys)
+{
+	int hash = (phys >> PAGE_SHIFT) & PHYS_PAGE_HASH_MASK;
+	struct page *page = NULL;
+	unsigned long irqflags;
+
+	irqflags = ihk_mc_spinlock_lock(&page_hash_locks[hash]);
+	page = __phys_to_page(phys);
+	if (!page) {
+		int hash = (phys >> PAGE_SHIFT) & PHYS_PAGE_HASH_MASK;
+		page = kmalloc(sizeof(*page), IHK_MC_AP_CRITICAL);
+		if (!page) {
+			kprintf("%s: error allocating page\n", __FUNCTION__);
+			goto out;
+		}
+
+		list_add(&page->hash, &page_hash[hash]);
+		page->phys = phys;
+		page->mode = PM_NONE;
+		INIT_LIST_HEAD(&page->list);
+		ihk_atomic_set(&page->count, 0);
 	}
-	return phys;
+out:
+	ihk_mc_spinlock_unlock(&page_hash_locks[hash], irqflags);
+
+	return page;
 }
 
 int page_unmap(struct page *page)
@@ -513,33 +568,17 @@ int page_unmap(struct page *page)
 		return 0;
 	}
 
-	/* no mapping exist */
+	/* no mapping exist  TODO: why is this check??
 	if (page->mode != PM_MAPPED) {
 		return 1;
 	}
+	*/
 
-	list_del(&page->list);
+	list_del(&page->hash);
 	page->mode = PM_NONE;
+	kfree(page);
 	dkprintf("page_unmap(%p %x %d): 1\n", page, page->mode, page->count);
 	return 1;
-}
-
-static void page_init(void)
-{
-	size_t npages;
-	size_t allocsize;
-	size_t allocpages;
-
-	if (sizeof(ihk_atomic_t) != sizeof(uint32_t)) {
-		panic("sizeof(ihk_atomic_t) is not 32 bit");
-	}
-	npages = (pa_end - pa_start) >> PAGE_SHIFT;
-	allocsize = sizeof(struct page) * npages;
-	allocpages = (allocsize + PAGE_SIZE - 1) >> PAGE_SHIFT;
-
-	pa_pages = ihk_mc_alloc_pages(allocpages, IHK_MC_AP_CRITICAL);
-	memset(pa_pages, 0, allocsize);
-	return;
 }
 
 static char *memdebug = NULL;
@@ -667,7 +706,10 @@ void ihk_mc_clean_micpa(void){
 void mem_init(void)
 {
 	numa_init();
-	page_allocator_init();
+	page_allocator_init(
+		ihk_mc_get_memory_address(IHK_MC_GMA_AVAIL_START, 0),
+		ihk_mc_get_memory_address(IHK_MC_GMA_AVAIL_END, 0), 1);
+
 	page_init();
 
 	/* Prepare the kernel virtual map space */

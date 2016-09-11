@@ -1542,7 +1542,9 @@ retry:
 					__FUNCTION__, pgaddr, pgsize);
 			memset(virt, 0, pgsize);
 			phys = virt_to_phys(virt);
-			page_map(phys_to_page(phys));
+			if (phys_to_page(phys)) {
+				page_map(phys_to_page(phys));
+			}
 		}
 	}
 	else {

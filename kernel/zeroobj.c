@@ -112,7 +112,7 @@ static int alloc_zeroobj(void)
 		goto out;
 	}
 	phys = virt_to_phys(virt);
-	page = phys_to_page(phys);
+	page = phys_to_page_insert_hash(phys);
 
 	if (page->mode != PM_NONE) {
 		fkprintf("alloc_zeroobj():"

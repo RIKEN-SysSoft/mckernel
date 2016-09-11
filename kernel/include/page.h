@@ -17,8 +17,9 @@
 
 struct page {
 	struct list_head	list;
+	struct list_head	hash;
 	uint8_t			mode;
-	uint8_t			padding[3];
+	uint64_t		phys;
 	ihk_atomic_t		count;
 	off_t			offset;
 };
@@ -38,6 +39,7 @@ enum page_mode {
 struct page *phys_to_page(uintptr_t phys);
 uintptr_t page_to_phys(struct page *page);
 int page_unmap(struct page *page);
+struct page *phys_to_page_insert_hash(uint64_t phys);
 
 void begin_free_pages_pending(void);
 void finish_free_pages_pending(void);

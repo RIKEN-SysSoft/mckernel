@@ -404,7 +404,7 @@ static int shmobj_get_page(struct memobj *memobj, off_t off, int p2align,
 			goto out;
 		}
 		phys = virt_to_phys(virt);
-		page = phys_to_page(phys);
+		page = phys_to_page_insert_hash(phys);
 		if (page->mode != PM_NONE) {
 			fkprintf("shmobj_get_page(%p,%#lx,%d,%p):"
 					"page %p %#lx %d %d %#lx\n",

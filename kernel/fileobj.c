@@ -430,7 +430,7 @@ static int fileobj_get_page(struct memobj *memobj, off_t off, int p2align, uintp
 				goto out;
 			}
 			phys = virt_to_phys(virt);
-			page = phys_to_page(phys);
+			page = phys_to_page_insert_hash(phys);
 			if (page->mode != PM_NONE) {
 				panic("fileobj_get_page:invalid new page");
 			}
@@ -502,10 +502,10 @@ static uintptr_t fileobj_copy_page(
 
 	memobj_lock(memobj);
 	for (;;) {
-		if (orgpage->mode != PM_MAPPED) {
+		if (!orgpage || orgpage->mode != PM_MAPPED) {
 			kprintf("fileobj_copy_page(%p,%lx,%d):"
 					"invalid cow page. %x\n",
-					memobj, orgpa, p2align, orgpage->mode);
+					memobj, orgpa, p2align, orgpage ? orgpage->mode : 0);
 			panic("fileobj_copy_page:invalid cow page");
 		}
 		count = ihk_atomic_read(&orgpage->count);
@@ -527,7 +527,9 @@ static uintptr_t fileobj_copy_page(
 			memcpy(newkva, orgkva, pgsize);
 			ihk_atomic_dec(&orgpage->count);
 			newpa = virt_to_phys(newkva);
-			page_map(phys_to_page(newpa));
+			if (phys_to_page(newpa)) {
+				page_map(phys_to_page(newpa));
+			}
 			newkva = NULL;	/* avoid ihk_mc_free_pages() */
 			break;
 		}
@@ -563,6 +565,11 @@ static int fileobj_flush_page(struct memobj *memobj, uintptr_t phys,
 	ssize_t ss;
 
 	page = phys_to_page(phys);
+	if (!page) {
+		kprintf("%s: warning: tried to flush non-existing page for phys addr: 0x%lx\n", 
+			__FUNCTION__, phys);
+		return 0;
+	}
 	memobj_unlock(&obj->memobj);
 
 	ihk_mc_syscall_arg0(&ctx) = PAGER_REQ_WRITE;
