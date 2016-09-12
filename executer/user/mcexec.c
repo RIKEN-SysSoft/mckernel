@@ -882,7 +882,7 @@ static void *main_loop_thread_func(void *arg)
 	struct thread_data_s *td = (struct thread_data_s *)arg;
 
 	td->tid = gettid();
-	td->remote_tid = (int)td->tid;
+	td->remote_tid = -1;
 	pthread_barrier_wait(&init_ready);
 	td->ret = main_loop(td->fd, td->cpu, td->lock);
 
@@ -1680,16 +1680,14 @@ do_generic_syscall(
 }
 
 static void
-kill_thread(unsigned long cpu)
+kill_thread(unsigned long tid)
 {
-	if(cpu >= 0 && cpu < n_threads){
-		pthread_kill(thread_data[cpu].thread_id, LOCALSIG);
-	}
-	else{
-		int	i;
+	int	i;
 
-		for (i = 0; i < n_threads; ++i) {
+	for (i = 0; i < n_threads; ++i) {
+		if(thread_data[i].remote_tid == tid){
 			pthread_kill(thread_data[i].thread_id, LOCALSIG);
+			break;
 		}
 	}
 }
@@ -1847,6 +1845,8 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			__dprintf("[%d] got syscall: %ld\n", cpu, w.sr.number);
 		
 		//pthread_mutex_lock(lock);
+
+		thread_data[cpu].remote_tid = w.sr.rtid;
 
 		switch (w.sr.number) {
 		case __NR_open:
@@ -2440,7 +2440,9 @@ return_execve2:
 			break;
 
 		}
-		
+
+		thread_data[cpu].remote_tid = -1;
+
 		//pthread_mutex_unlock(lock);
 	}
 	__dprint("timed out.\n");

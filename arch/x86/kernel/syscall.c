@@ -291,7 +291,7 @@ SYSCALL_DECLARE(rt_sigreturn)
 
 extern struct cpu_local_var *clv;
 extern unsigned long do_kill(struct thread *thread, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
-extern void interrupt_syscall(int all, int pid);
+extern void interrupt_syscall(int pid, int tid);
 extern int num_processors;
 
 #define RFLAGS_MASK (RFLAGS_CF | RFLAGS_PF | RFLAGS_AF | RFLAGS_ZF | \
@@ -1287,7 +1287,7 @@ done:
 	cpu_restore_interrupt(irqstate);
 
 	if (doint && !(mask & tthread->sigmask.__val[0])) {
-		int cpuid = tthread->cpu_id;
+		int tid = tthread->tid;
 		int pid = tproc->pid;
 		int status = tthread->status;
 
@@ -1298,7 +1298,7 @@ done:
 		}
 
 		if(!tthread->proc->nohost)
-			interrupt_syscall(pid, cpuid);
+			interrupt_syscall(pid, tid);
 
 		if (status != PS_RUNNING) {
 			if(sig == SIGKILL){

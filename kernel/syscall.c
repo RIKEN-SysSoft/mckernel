@@ -847,14 +847,15 @@ terminate_host(int pid)
 }
 
 void
-interrupt_syscall(int pid, int cpuid)
+interrupt_syscall(int pid, int tid)
 {
-	dkprintf("interrupt_syscall,target pid=%d,target cpuid=%d\n", pid, cpuid);
+	dkprintf("interrupt_syscall,target pid=%d,target tid=%d\n", pid, tid);
 	ihk_mc_user_context_t ctx;
 	long lerror;
 
+kprintf("interrupt_syscall pid=%d tid=%d\n", pid, tid);
 	ihk_mc_syscall_arg0(&ctx) = pid;
-	ihk_mc_syscall_arg1(&ctx) = cpuid;
+	ihk_mc_syscall_arg1(&ctx) = tid;
 
 	lerror = syscall_generic_forwarding(__NR_kill, &ctx);
 	if (lerror) {
