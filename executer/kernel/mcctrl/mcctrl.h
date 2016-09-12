@@ -320,7 +320,7 @@ inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(
 	struct mcctrl_per_proc_data *ppd, struct task_struct *task);
 
 void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet, 
-		int ret, int stid);
+		long ret, int stid);
 
 #define PROCFS_NAME_MAX 1000
 

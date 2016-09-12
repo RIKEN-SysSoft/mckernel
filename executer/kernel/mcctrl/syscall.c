@@ -1337,7 +1337,7 @@ static long pager_call(ihk_os_t os, struct syscall_request *req)
 }
 
 void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet,
-		int ret, int stid)
+		long ret, int stid)
 {
 	unsigned long phys;
 	struct syscall_response *res;
