@@ -2360,6 +2360,53 @@ return_execve2:
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 
+		case __NR_setresuid:
+			ret = setresuid(w.sr.args[0], w.sr.args[1], w.sr.args[2]);
+			if(ret == -1)
+				ret = -errno;
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+
+		case __NR_setreuid:
+			ret = setreuid(w.sr.args[0], w.sr.args[1]);
+			if(ret == -1)
+				ret = -errno;
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+
+		case __NR_setuid:
+			ret = setuid(w.sr.args[0]);
+			if(ret == -1)
+				ret = -errno;
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+
+		case __NR_setresgid:
+			ret = setresgid(w.sr.args[0], w.sr.args[1], w.sr.args[2]);
+			if(ret == -1)
+				ret = -errno;
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+
+		case __NR_setregid:
+			ret = setregid(w.sr.args[0], w.sr.args[1]);
+			if(ret == -1)
+				ret = -errno;
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+
+		case __NR_setgid:
+			ret = setgid(w.sr.args[0]);
+			if(ret == -1)
+				ret = -errno;
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+
+		case __NR_setfsgid:
+			ret = setfsgid(w.sr.args[0]);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+
 		case __NR_close:
 			if(w.sr.args[0] == fd)
 				ret = -EBADF;
