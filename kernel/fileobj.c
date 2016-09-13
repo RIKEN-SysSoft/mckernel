@@ -258,6 +258,7 @@ static void fileobj_release(struct memobj *memobj)
 		/* zap page_list */
 		for (;;) {
 			struct page *page;
+			void *page_va;
 			int count;
 
 			page = page_list_first(obj);
@@ -265,6 +266,17 @@ static void fileobj_release(struct memobj *memobj)
 				break;
 			}
 			page_list_remove(obj, page);
+			page_va = phys_to_virt(page_to_phys(page));
+
+			if (ihk_atomic_read(&page->count) != 1) {
+				kprintf("%s: WARNING: page count for phys 0x%lx is invalid\n",
+					__FUNCTION__, page->phys);
+			}
+
+			if (page_unmap(page)) {
+				ihk_mc_free_pages(page_va, 1);
+			}
+#if 0
 			count = ihk_atomic_sub_return(1, &page->count);
 
 			if (!((page->mode == PM_WILL_PAGEIO)
@@ -281,7 +293,7 @@ static void fileobj_release(struct memobj *memobj)
 			}
 
 			page->mode = PM_NONE;
-			ihk_mc_free_pages(phys_to_virt(page_to_phys(page)), 1);
+#endif
 		}
 		obj_list_remove(free_obj);
 		ihk_mc_spinlock_unlock_noirq(&fileobj_list_lock);

@@ -240,6 +240,7 @@ void shmobj_destroy(struct shmobj *obj)
 	npages = (size_t)1 << (obj->pgshift - PAGE_SHIFT);
 	for (;;) {
 		struct page *page;
+		void *page_va;
 		int count;
 
 		page = page_list_first(obj);
@@ -247,7 +248,17 @@ void shmobj_destroy(struct shmobj *obj)
 			break;
 		}
 		page_list_remove(obj, page);
+		page_va = phys_to_virt(page_to_phys(page));
 
+		if (ihk_atomic_read(&page->count) != 1) {
+			kprintf("%s: WARNING: page count for phys 0x%lx is invalid\n",
+					__FUNCTION__, page->phys);
+		}
+
+		if (page_unmap(page)) {
+			ihk_mc_free_pages(page_va, npages);
+		}
+#if 0
 		dkprintf("shmobj_destroy(%p):"
 				"release page. %p %#lx %d %d",
 				obj, page, page_to_phys(page),
@@ -266,6 +277,7 @@ void shmobj_destroy(struct shmobj *obj)
 
 		page->mode = PM_NONE;
 		ihk_mc_free_pages(phys_to_virt(page_to_phys(page)), npages);
+#endif
 	}
 	if (obj->index < 0) {
 		kfree(obj);
