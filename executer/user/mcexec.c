@@ -401,21 +401,6 @@ retry:
 				return ENAMETOOLONG;
 			}
 			
-			/* See first whether file is available in current working dir */
-			error = access(filename, X_OK);
-			if (error == 0) {
-				__dprintf("lookup_exec_path(): found %s in cwd\n", filename);
-				error = snprintf(path, max_len, "%s", filename);
-
-				if (error < 0 || error >= max_len) {
-					fprintf(stderr, "lookup_exec_path(): array too small?\n");
-					return ENOMEM;
-				}
-
-				found = 1;
-				break;
-			}
-
 			__dprintf("PATH: %s\n", PATH);
 
 			/* strsep() modifies string! */
@@ -442,6 +427,9 @@ retry:
 			}
 
 			free(tofree);
+			if(!found){
+				return ENOENT;
+			}
 			break;
 		}
 
