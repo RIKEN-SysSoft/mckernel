@@ -375,7 +375,7 @@ struct program_load_desc *load_interp(struct program_load_desc *desc0, FILE *fp)
 
 unsigned char *dma_buf;
 
-int lookup_exec_path(char *filename, char *path, int max_len) 
+int lookup_exec_path(char *filename, char *path, int max_len, int execvp) 
 {
 	int found;
 	int error;
@@ -393,14 +393,28 @@ retry:
 
 			char *token, *string, *tofree;
 			char *PATH = getenv("COKERNEL_PATH");
-			if (!PATH) {
+
+			if (!execvp) {
+				if (strlen(filename) + 1 > max_len) {
+					return ENAMETOOLONG;
+				}
+				strcpy(path, filename);
+				error = access(path, X_OK);
+				if (error) {
+					return errno;
+				}
+				found = 1;
+				break;
+			}
+
+			if (!(PATH = getenv("COKERNEL_PATH"))) {
 				PATH = getenv("PATH");
 			}
 
 			if (strlen(filename) >= 255) {
 				return ENAMETOOLONG;
 			}
-			
+
 			__dprintf("PATH: %s\n", PATH);
 
 			/* strsep() modifies string! */
@@ -1432,7 +1446,7 @@ int main(int argc, char **argv)
 	__dprintf("mcoverlay disable\n");
 #endif // ENABLE_MCOVERLAYFS
 
-	if (lookup_exec_path(argv[optind], path, sizeof(path)) != 0) {
+	if (lookup_exec_path(argv[optind], path, sizeof(path), 1) != 0) {
 		fprintf(stderr, "error: finding file: %s\n", argv[optind]);
 		return 1;
 	}
@@ -1444,7 +1458,7 @@ int main(int argc, char **argv)
 
 	/* Check whether shell script */
 	if (shell) {
-		if (lookup_exec_path(shell, shell_path, sizeof(shell_path)) != 0) {
+		if (lookup_exec_path(shell, shell_path, sizeof(shell_path), 0) != 0) {
 			fprintf(stderr, "error: finding file: %s\n", shell);
 			return 1;
 		}
@@ -2151,7 +2165,7 @@ fork_err:
 					shell = NULL;
 					filename = (char *)w.sr.args[1];
 					
-					if ((ret = lookup_exec_path(filename, path, sizeof(path))) 
+					if ((ret = lookup_exec_path(filename, path, sizeof(path), 0)) 
 						!= 0) {
 						goto return_execve1;
 					}
@@ -2165,7 +2179,7 @@ fork_err:
 					/* Check whether shell script */
 					if (shell) {
 						if ((ret = lookup_exec_path(shell, shell_path, 
-									sizeof(shell_path))) != 0) {
+									sizeof(shell_path), 0)) != 0) {
 							fprintf(stderr, "execve(): error: finding file: %s\n", shell);
 							goto return_execve1;
 						}
