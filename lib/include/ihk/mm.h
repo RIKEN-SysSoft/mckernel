@@ -72,8 +72,11 @@ struct ihk_mc_memory_node {
 
 unsigned long ihk_mc_get_memory_address(enum ihk_mc_gma_type, int);
 
-void ihk_mc_reserve_arch_pages(unsigned long start, unsigned long end,
-                               void (*cb)(unsigned long, unsigned long, int));
+struct ihk_page_allocator_desc *pa_allocator;
+void ihk_mc_reserve_arch_pages(struct ihk_page_allocator_desc *pa_allocator,
+		unsigned long start, unsigned long end,
+		void (*cb)(struct ihk_page_allocator_desc *, 
+			unsigned long, unsigned long, int));
 
 struct ihk_mc_pa_ops {
 	void *(*alloc_page)(int, int, enum ihk_mc_ap_flag);

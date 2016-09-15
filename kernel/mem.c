@@ -48,8 +48,8 @@
 #define	ekprintf(...)	kprintf(__VA_ARGS__)
 #endif
 
-static struct ihk_page_allocator_desc *pa_allocator;
 static unsigned long pa_start, pa_end;
+static struct ihk_mc_numa_node *memory_nodes = NULL;
 
 extern void unhandled_page_fault(struct thread *, void *, void *);
 extern int interrupt_from_user(void *);
@@ -58,13 +58,14 @@ struct tlb_flush_entry tlb_flush_vector[IHK_TLB_FLUSH_IRQ_VECTOR_SIZE];
 
 int anon_on_demand = 0;
 
-static void reserve_pages(unsigned long start, unsigned long end, int type)
+static void reserve_pages(struct ihk_page_allocator_desc *pa_allocator,
+		unsigned long start, unsigned long end, int type)
 {
-	if (start < pa_start) {
+	if (start < pa_allocator->start) {
 		start = pa_allocator->start;
 	}
-	if (end > pa_end) {
-		end = pa_allocator->last;
+	if (end > pa_allocator->end) {
+		end = pa_allocator->end;
 	}
 	if (start >= end) {
 		return;
@@ -77,7 +78,22 @@ static void reserve_pages(unsigned long start, unsigned long end, int type)
 static void *allocate_aligned_pages(int npages, int p2align, 
 		enum ihk_mc_ap_flag flag)
 {
-	unsigned long pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+	unsigned long pa;
+	int i;
+
+	/* TODO: match NUMA id and distance matrix with allocating core */
+	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
+		struct ihk_page_allocator_desc *pa_allocator;
+
+		list_for_each_entry(pa_allocator,
+				&memory_nodes[i].allocators, list) {
+			pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+
+			if (pa) break;
+		}
+
+		if (pa) break;
+	}
 	/* all_pagealloc_alloc returns zero when error occured, 
 	   and callee (in mcos/kernel/process.c) so propagate it */
 	if(pa)
@@ -91,6 +107,29 @@ static void *allocate_pages(int npages, enum ihk_mc_ap_flag flag)
 {
 	return allocate_aligned_pages(npages, PAGE_P2ALIGN, flag);
 }
+
+static void __free_pages_in_allocator(void *va, int npages)
+{
+	int i;
+	unsigned long pa_start = virt_to_phys(va);
+	unsigned long pa_end = pa_start + (npages * PAGE_SIZE);
+
+	/* Find corresponding memory allocator */
+	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
+		struct ihk_page_allocator_desc *pa_allocator;
+
+		list_for_each_entry(pa_allocator,
+				&memory_nodes[i].allocators, list) {
+
+			if (pa_start >= pa_allocator->start &&
+					pa_end <= pa_allocator->end) {
+				ihk_pagealloc_free(pa_allocator, pa_start, npages);
+				return;
+			}
+		}
+	}
+}
+
 
 static void free_pages(void *va, int npages)
 {
@@ -110,7 +149,7 @@ static void free_pages(void *va, int npages)
 		}
 	}
 
-	ihk_pagealloc_free(pa_allocator, virt_to_phys(va), npages);
+	__free_pages_in_allocator(va, npages);
 }
 
 void begin_free_pages_pending(void) {
@@ -139,7 +178,8 @@ void finish_free_pages_pending(void)
 		}
 		page->mode = PM_NONE;
 		list_del(&page->list);
-		ihk_pagealloc_free(pa_allocator, page_to_phys(page), page->offset);
+		__free_pages_in_allocator(phys_to_virt(page_to_phys(page)), 
+				page->offset);
 	}
 
 	pendings->next = pendings->prev = NULL;
@@ -155,9 +195,22 @@ void sbox_write(int offset, unsigned int value);
 
 static void query_free_mem_interrupt_handler(void *priv)
 {
-	int pages = ihk_pagealloc_query_free(pa_allocator);
-	
-	kprintf("McKernel free pages: %d\n", pages);
+	int i, pages = 0;
+
+	/* Iterate memory allocators */
+	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
+		struct ihk_page_allocator_desc *pa_allocator;
+
+		list_for_each_entry(pa_allocator,
+				&memory_nodes[i].allocators, list) {
+			int __pages = ihk_pagealloc_query_free(pa_allocator);
+			kprintf("McKernel free pages in (0x%lx - 0x%lx): %d\n",
+					pa_allocator->start, pa_allocator->end, __pages);
+			pages += __pages;
+		}
+	}
+
+	kprintf("McKernel free pages in total: %d\n", pages);
 
 	if (find_command_line("memdebug")) {
 		extern void kmalloc_memcheck(void);
@@ -390,81 +443,97 @@ out:
 	return;
 }
 
-static void page_allocator_init(uint64_t start, uint64_t end, int initial)
+static struct ihk_page_allocator_desc *page_allocator_init(uint64_t start, 
+		uint64_t end, int initial)
 {
+	struct ihk_page_allocator_desc *pa_allocator;
 	unsigned long page_map_pa, pages;
 	void *page_map;
 	unsigned int i;
 
 	start &= PAGE_MASK;
-	pa_start = start & LARGE_PAGE_MASK;
-	pa_end = (end + PAGE_SIZE - 1) & PAGE_MASK;
+	pa_start = (start + PAGE_SIZE - 1) & PAGE_MASK;
+	pa_end = end & PAGE_MASK;
 
-#ifndef ATTACHED_MIC
-	page_map_pa = ihk_mc_get_memory_address(IHK_MC_GMA_HEAP_START, 0);
-#else
+#ifdef ATTACHED_MIC
 	/* 
 	 * Can't allocate in reserved area 
 	 * TODO: figure this out automatically! 
 	*/
 	page_map_pa = 0x100000;
+#else
+	page_map_pa = initial ? virt_to_phys(get_last_early_heap()) : pa_start;
 #endif
+
 	page_map = phys_to_virt(page_map_pa);
 
 	pa_allocator = __ihk_pagealloc_init(pa_start, pa_end - pa_start,
 	                                    PAGE_SIZE, page_map, &pages);
 
-	reserve_pages(page_map_pa, page_map_pa + pages * PAGE_SIZE, 0);
+	reserve_pages(pa_allocator, page_map_pa, 
+			page_map_pa + pages * PAGE_SIZE, 0);
+
 	if (pa_start < start) {
-		reserve_pages(pa_start, start, 0);
+		reserve_pages(pa_allocator, pa_start, start, 0);
 	}
 
 	/* BIOS reserved ranges */
 	for (i = 1; i <= ihk_mc_get_memory_address(IHK_MC_NR_RESERVED_AREAS, 0); 
 	     ++i) {
-
-		reserve_pages(ihk_mc_get_memory_address(IHK_MC_RESERVED_AREA_START, i),
-		              ihk_mc_get_memory_address(IHK_MC_RESERVED_AREA_END, i), 0);
+		reserve_pages(pa_allocator,
+				ihk_mc_get_memory_address(IHK_MC_RESERVED_AREA_START, i),
+				ihk_mc_get_memory_address(IHK_MC_RESERVED_AREA_END, i), 0);
 	}
 	
-	ihk_mc_reserve_arch_pages(pa_start, pa_end, reserve_pages);
+	ihk_mc_reserve_arch_pages(pa_allocator, pa_start, pa_end, reserve_pages);
 
-	kprintf("Available memory: %ld bytes in %ld pages\n",
-	        (ihk_pagealloc_count(pa_allocator) * PAGE_SIZE), 
-			ihk_pagealloc_count(pa_allocator));
-
-	/* Notify the ihk to use my page allocator */
-	ihk_mc_set_page_allocator(&allocator);
-
-	/* And prepare some exception handlers */
-	ihk_mc_set_page_fault_handler(page_fault_handler);
-
-	/* Register query free mem handler */
-	ihk_mc_register_interrupt_handler(ihk_mc_get_vector(IHK_GV_QUERY_FREE_MEM),
-		&query_free_mem_handler);
+	return pa_allocator;
 }
 
 static void numa_init(void)
 {
-	int i;
+	int i, j;
+	struct ihk_mc_numa_node *node;
+	memory_nodes = early_alloc_pages((sizeof(*memory_nodes) * 
+				ihk_mc_get_nr_numa_nodes() + PAGE_SIZE - 1) 
+			>> PAGE_SHIFT);
 
 	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
 		int linux_numa_id, type;
 
 		ihk_mc_get_numa_node(i, &linux_numa_id, &type);
+		memory_nodes[i].id = i;
+		memory_nodes[i].linux_numa_id = linux_numa_id;
+		memory_nodes[i].type = type;
+		INIT_LIST_HEAD(&memory_nodes[i].allocators);
 
-		kprintf("NUMA %d, Linux NUMA id: %d, type: %d\n",
+		kprintf("NUMA: %d, Linux NUMA: %d, type: %d\n",
 			i, linux_numa_id, type);
 	}
 
-	for (i = 0; i < ihk_mc_get_nr_memory_chunks(); ++i) {
+	node = memory_nodes;
+	for (j = 0; j < ihk_mc_get_nr_memory_chunks(); ++j) {
 		unsigned long start, end;
 		int linux_numa_id;
+		struct ihk_page_allocator_desc *allocator;
 
-		ihk_mc_get_memory_chunk(i, &start, &end, &linux_numa_id);
+		ihk_mc_get_memory_chunk(j, &start, &end, &linux_numa_id);
 
-		kprintf("Physical memory region: %p - %p @ Linux NUMA id: %d\n",
-			start, end, linux_numa_id);
+		allocator = page_allocator_init(start, end, (j == 0));
+		while (node->linux_numa_id != linux_numa_id &&
+				node < (memory_nodes + ihk_mc_get_nr_numa_nodes())) ++node;
+
+		if (node == (memory_nodes + ihk_mc_get_nr_numa_nodes())) {
+			panic("invalid memory chunk: no corresponding NUMA node found\n");
+		}
+
+		list_add_tail(&allocator->list, &node->allocators);
+
+		kprintf("Physical memory: 0x%lx - 0x%lx, %lu bytes, %d pages available @ NUMA: %d\n",
+				start, end,
+				ihk_pagealloc_count(allocator) * PAGE_SIZE,
+				ihk_pagealloc_count(allocator),
+				node->id);
 	}
 }
 
@@ -705,11 +774,20 @@ void ihk_mc_clean_micpa(void){
 
 void mem_init(void)
 {
+	/* Initialize NUMA information and memory allocator bitmaps */
 	numa_init();
-	page_allocator_init(
-		ihk_mc_get_memory_address(IHK_MC_GMA_AVAIL_START, 0),
-		ihk_mc_get_memory_address(IHK_MC_GMA_AVAIL_END, 0), 1);
 
+	/* Notify the ihk to use my page allocator */
+	ihk_mc_set_page_allocator(&allocator);
+
+	/* And prepare some exception handlers */
+	ihk_mc_set_page_fault_handler(page_fault_handler);
+
+	/* Register query free mem handler */
+	ihk_mc_register_interrupt_handler(ihk_mc_get_vector(IHK_GV_QUERY_FREE_MEM),
+			&query_free_mem_handler);
+
+	/* Init page frame hash */
 	page_init();
 
 	/* Prepare the kernel virtual map space */

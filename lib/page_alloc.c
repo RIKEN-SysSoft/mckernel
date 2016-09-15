@@ -64,13 +64,14 @@ void *__ihk_pagealloc_init(unsigned long start, unsigned long size,
 	memset(desc, 0, descsize * PAGE_SIZE);
 
 	desc->start = start;
+	desc->end = start + size;
 	desc->last = 0;
 	desc->count = mapaligned >> 3;
 	desc->shift = page_shift;
 	desc->flag = flag;
 
-	kprintf("Page allocator: %lx - %lx (%d)\n", start, start + size,
-	        page_shift);
+	//kprintf("page allocator @ %lx - %lx (%d)\n", start, start + size,
+	//        page_shift);
 
 	ihk_mc_spinlock_init(&desc->lock);
 

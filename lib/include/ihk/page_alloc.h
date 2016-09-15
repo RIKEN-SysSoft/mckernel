@@ -14,14 +14,24 @@
 #ifndef __HEADER_GENERIC_IHK_PAGE_ALLOC
 #define __HEADER_GENERIC_IHK_PAGE_ALLOC
 
+#include <list.h>
+
+/* XXX: Physical memory management shouldn't be part of IHK */
+struct ihk_mc_numa_node {
+	int id;
+	int linux_numa_id;
+	int type;
+	struct list_head allocators;
+};
+
 struct ihk_page_allocator_desc {
-	unsigned long start;
+	unsigned long start, end;
 	unsigned int last;
 	unsigned int count;
 	unsigned int flag;
 	unsigned int shift;
 	ihk_spinlock_t lock;
-	unsigned int pad;
+	struct list_head list;
 	
 	unsigned long map[0];
 };

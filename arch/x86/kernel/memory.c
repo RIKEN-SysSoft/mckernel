@@ -35,7 +35,7 @@ static struct ihk_mc_pa_ops *pa_ops;
 
 extern unsigned long x86_kernel_phys_base;
 
-void *early_alloc_page(void)
+void *early_alloc_pages(int nr_pages)
 {
 	void *p;
 
@@ -48,7 +48,7 @@ void *early_alloc_page(void)
 		panic("Early allocator is already finalized. Do not use it.\n");
 	}
 	p = last_page;
-	last_page += PAGE_SIZE;
+	last_page += (nr_pages * PAGE_SIZE);
 
 	return p;
 }
@@ -58,7 +58,7 @@ void *arch_alloc_page(enum ihk_mc_ap_flag flag)
 	if (pa_ops)
 		return pa_ops->alloc_page(1, PAGE_P2ALIGN, flag);
 	else
-		return early_alloc_page();
+		return early_alloc_pages(1);
 }
 void arch_free_page(void *ptr)
 {
@@ -2111,18 +2111,24 @@ void init_page_table(void)
 }
 
 extern void __reserve_arch_pages(unsigned long, unsigned long,
-                                 void (*)(unsigned long, unsigned long, int));
+		void (*)(struct ihk_page_allocator_desc *, 
+			unsigned long, unsigned long, int));
 
-void ihk_mc_reserve_arch_pages(unsigned long start, unsigned long end,
-                               void (*cb)(unsigned long, unsigned long, int))
+void ihk_mc_reserve_arch_pages(struct ihk_page_allocator_desc *pa_allocator,
+		unsigned long start, unsigned long end,
+		void (*cb)(struct ihk_page_allocator_desc *, 
+			unsigned long, unsigned long, int))
 {
 	/* Reserve Text + temporal heap */
-	cb(virt_to_phys(_head), virt_to_phys(get_last_early_heap()), 0);
+	cb(pa_allocator, virt_to_phys(_head), virt_to_phys(get_last_early_heap()), 0);
 	/* Reserve trampoline area to boot the second ap */
-	cb(ap_trampoline, ap_trampoline + AP_TRAMPOLINE_SIZE, 0);
+	cb(pa_allocator, ap_trampoline, ap_trampoline + AP_TRAMPOLINE_SIZE, 0);
 	/* Reserve the null page */
-	cb(0, PAGE_SIZE, 0);
-	/* Micro-arch specific */
+	cb(pa_allocator, 0, PAGE_SIZE, 0);
+	/* 
+	 * Micro-arch specific 
+	 * TODO: this does nothing in SMP mode, update it for KNC if necessary 
+	 */
 	__reserve_arch_pages(start, end, cb);
 }
 

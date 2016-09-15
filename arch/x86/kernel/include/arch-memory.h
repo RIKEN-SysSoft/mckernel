@@ -306,7 +306,7 @@ struct page_table;
 void set_pte(pte_t *ppte, unsigned long phys, enum ihk_mc_pt_attribute attr);
 pte_t *get_pte(struct page_table *pt, void *virt, enum ihk_mc_pt_attribute attr);
 
-void *early_alloc_page(void);
+void *early_alloc_pages(int nr_pages);
 void *get_last_early_heap(void);
 void flush_tlb(void);
 void flush_tlb_single(unsigned long addr);
