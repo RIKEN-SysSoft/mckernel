@@ -28,6 +28,12 @@ LOGMODE=0
 facility="LOG_LOCAL6"
 chown_option=`logname 2> /dev/null`
 
+if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" -o "`systemctl status irqbalance.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
+irqbalance_used="yes"
+else
+irqbalance_used="no"
+fi
+
 while getopts :i:k:c:m:o:f: OPT
 do
 	case ${OPT} in
@@ -105,6 +111,12 @@ if [ "$enable_mcoverlay" == "yes" ]; then
 		if [ -e /tmp/mcos ]; then rm -rf /tmp/mcos; fi
 		if ! rmmod mcoverlay; then echo "error: removing mcoverlay" >&2; exit 1; fi
 	fi
+fi
+
+# Stop irqbalance
+if [ "${irqbalance_used}" == "yes" ]; then
+    systemctl stop irqbalance_mck.service 2>/dev/null
+    if ! systemctl stop irqbalance.service 2>/dev/null ; then echo "error: stopping irqbalance" >&2; exit 1; fi;
 fi
 
 # Load IHK if not loaded
@@ -212,11 +224,8 @@ then
 	SBINDIR=${SBINDIR} ${SBINDIR}/mcklogd -i ${INTERVAL} -f ${facility}
 fi
 
-# Modify interrupt load-balance policy
-if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" -o "`systemctl status irqbalance.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
-    systemctl stop irqbalance_mck.service 2>/dev/null
-    if ! systemctl stop irqbalance.service 2>/dev/null ; then echo "error: stopping irqbalance" >&2; exit 1; fi;
-
+# Start irqbalance with CPUs and IRQ for McKernel banned
+if [ "${irqbalance_used}" == "yes" ]; then
     if ! etcdir=@ETCDIR@ perl -e 'use File::Copy qw(copy); $etcdir=$ENV{'etcdir'}; @files = grep { -f } glob "/proc/irq/*/smp_affinity"; foreach $file (@files) { $rel = substr($file, 1); $dir=substr($rel, 0, length($rel)-length("/smp_affinity")); if(0) { print "cp $file $etcdir/$rel\n";} if(system("mkdir -p $etcdir/$dir")){ exit 1;} if(!copy($file,"$etcdir/$rel")){ exit 1;} }' ; then echo "error: saving /proc/irq/*/smp_affinity" >&2; exit 1; fi;
 
     ncpus=`lscpu | grep -E '^CPU\(s\):' | awk '{print $2}'`

@@ -53,7 +53,7 @@ fi
 # Stop mcklogd
 pkill mcklogd
 
-# Restore interrupt load-balance policy
+# Start irqbalance with the original settings
 if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
     if ! systemctl stop irqbalance_mck.service 2>/dev/null ; then echo "error: stopping irqbalance_mck" >&2; exit 1; fi;
     if ! systemctl disable irqbalance_mck.service >/dev/null 2>/dev/null; then echo "error: disabling irqbalance_mck" >&2; exit 1; fi;
