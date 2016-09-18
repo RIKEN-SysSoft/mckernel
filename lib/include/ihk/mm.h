@@ -155,7 +155,9 @@ int ihk_mc_pt_virt_to_phys(struct page_table *pt,
 uint64_t ihk_mc_pt_virt_to_pagemap(struct page_table *pt, unsigned long virt);
 
 int ihk_mc_get_nr_numa_nodes(void);
-int ihk_mc_get_numa_node(int id, int *linux_numa_id, int *type);
+struct smp_coreset;
+int ihk_mc_get_numa_node(int id, int *linux_numa_id, int *type,
+		struct smp_coreset **cpu_hw_ids);
 int ihk_mc_get_nr_memory_chunks(void);
 int ihk_mc_get_memory_chunk(int id,
 	unsigned long *start,

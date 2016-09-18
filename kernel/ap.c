@@ -65,7 +65,7 @@ void ap_init(void)
 {
 	struct ihk_mc_cpu_info *cpu_info;
 	int i;
-	int bsp_hw_id;
+	int bsp_hw_id, bsp_cpu_id;
 
 	ihk_mc_init_ap();
 	init_delay();
@@ -78,13 +78,23 @@ void ap_init(void)
 		return;
 	}
 
-	kprintf("BSP HW ID = %d\n", bsp_hw_id);
+	bsp_cpu_id = 0;
+	for (i = 0; i < cpu_info->ncpus; ++i) {
+		if (cpu_info->hw_ids[i] == bsp_hw_id) {
+			bsp_cpu_id = i;
+			break;
+		}
+	}
+
+	kprintf("BSP: %d (HW ID: %d @ NUMA %d)\n", bsp_cpu_id,
+			bsp_hw_id, cpu_info->nodes[0]);
 
 	for (i = 0; i < cpu_info->ncpus; i++) {
 		if (cpu_info->hw_ids[i] == bsp_hw_id) {
 			continue;
 		}
-		kprintf("AP Booting: %d (HW ID: %d)\n", i, cpu_info->hw_ids[i]);
+		kprintf("AP Booting: %d (HW ID: %d @ NUMA %d)\n", i,
+			cpu_info->hw_ids[i], cpu_info->nodes[i]);
 		ihk_mc_boot_cpu(cpu_info->hw_ids[i], (unsigned long)ap_wait);
 
 		num_processors++;
