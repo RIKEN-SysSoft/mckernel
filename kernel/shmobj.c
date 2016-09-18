@@ -241,7 +241,6 @@ void shmobj_destroy(struct shmobj *obj)
 	for (;;) {
 		struct page *page;
 		void *page_va;
-		int count;
 
 		page = page_list_first(obj);
 		if (!page) {
