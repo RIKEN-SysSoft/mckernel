@@ -86,7 +86,8 @@ static void *allocate_aligned_pages(int npages, int p2align,
 		struct ihk_page_allocator_desc *pa_allocator;
 
 		list_for_each_entry(pa_allocator,
-				&memory_nodes[i].allocators, list) {
+				&memory_nodes[(ihk_mc_get_numa_id() + i) %
+				ihk_mc_get_nr_numa_nodes()].allocators, list) {
 			pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
 
 			if (pa) break;
@@ -94,12 +95,13 @@ static void *allocate_aligned_pages(int npages, int p2align,
 
 		if (pa) break;
 	}
-	/* all_pagealloc_alloc returns zero when error occured, 
-	   and callee (in mcos/kernel/process.c) so propagate it */
-	if(pa)
+
+	if (pa)
 		return phys_to_virt(pa);
+	/*
 	if(flag != IHK_MC_AP_NOWAIT)
 		panic("Not enough space\n");
+	*/
 	return NULL;
 }
 

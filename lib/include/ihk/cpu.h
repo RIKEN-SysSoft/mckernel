@@ -55,6 +55,7 @@ struct ihk_mc_cpu_info *ihk_mc_get_cpu_info(void);
 void ihk_mc_boot_cpu(int cpuid, unsigned long pc);
 int ihk_mc_get_processor_id(void);
 int ihk_mc_get_hardware_processor_id(void);
+int ihk_mc_get_numa_id(void);
 
 void ihk_mc_delay_us(int us);
 void ihk_mc_set_syscall_handler(long (*handler)(int, ihk_mc_user_context_t *));
