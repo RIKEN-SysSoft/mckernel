@@ -347,7 +347,7 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 		}
 
 		kprintf("%s fault VM failed for TID: %d, addr: 0x%lx, "
-				"reason: %d, error: %d\n",
+				"reason: %d, error: %d\n", __FUNCTION__,
 				thread->tid, fault_addr, reason, error);
 		unhandled_page_fault(thread, fault_addr, regs);
 		preempt_enable();
