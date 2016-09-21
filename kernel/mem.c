@@ -1228,7 +1228,7 @@ void kmalloc_consolidate_free_list(void)
 }
 
 #define KMALLOC_MIN_SHIFT   (5)
-#define KMALLOC_MIN_SIZE    (1 << KMALLOC_TRACK_HASH_SHIFT)
+#define KMALLOC_MIN_SIZE    (1 << KMALLOC_MIN_SHIFT)
 #define KMALLOC_MIN_MASK    (KMALLOC_MIN_SIZE - 1)
 
 /* Actual low-level allocation routines */
