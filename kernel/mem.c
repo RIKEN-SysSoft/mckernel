@@ -195,6 +195,7 @@ static struct ihk_mc_pa_ops allocator = {
 
 void sbox_write(int offset, unsigned int value);
 
+static int page_hash_count_pages(void);
 static void query_free_mem_interrupt_handler(void *priv)
 {
 	int i, pages = 0;
@@ -219,6 +220,8 @@ static void query_free_mem_interrupt_handler(void *priv)
 
 		kmalloc_memcheck();
 	}
+
+	kprintf("Page hash: %d pages active\n", page_hash_count_pages());
 
 #ifdef ATTACHED_MIC
 	sbox_write(SBOX_SCRATCH0, pages);
@@ -560,6 +563,27 @@ static void page_init(void)
 	}
 
 	return;
+}
+
+static int page_hash_count_pages(void)
+{
+	int i;
+	int cnt = 0;
+
+	for (i = 0; i < PHYS_PAGE_HASH_SIZE; ++i) {
+		unsigned long irqflags;
+		struct page *page_iter;
+
+		irqflags = ihk_mc_spinlock_lock(&page_hash_locks[i]);
+
+		list_for_each_entry(page_iter, &page_hash[i], hash) {
+			++cnt;
+		}
+
+		ihk_mc_spinlock_unlock(&page_hash_locks[i], irqflags);
+	}
+
+	return cnt;
 }
 
 /* XXX: page_hash_lock must be held */
