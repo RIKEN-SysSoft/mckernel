@@ -29,8 +29,8 @@ int ihk_mc_ikc_init_first_local(struct ihk_ikc_channel_desc *channel,
 	memset(channel, 0, sizeof(struct ihk_ikc_channel_desc));
 
 	/* Place both sides in this side */
-	rq = arch_alloc_page(IHK_MC_AP_CRITICAL);
-	wq = arch_alloc_page(IHK_MC_AP_CRITICAL);
+	rq = ihk_mc_alloc_pages(1, IHK_MC_AP_CRITICAL);
+	wq = ihk_mc_alloc_pages(1, IHK_MC_AP_CRITICAL);
 
 	ihk_ikc_init_queue(rq, 0, 0, PAGE_SIZE, MASTER_IKCQ_PKTSIZE);
 	ihk_ikc_init_queue(wq, 0, 0, PAGE_SIZE, MASTER_IKCQ_PKTSIZE);

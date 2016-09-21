@@ -58,6 +58,38 @@ struct tlb_flush_entry tlb_flush_vector[IHK_TLB_FLUSH_IRQ_VECTOR_SIZE];
 
 int anon_on_demand = 0;
 
+static struct ihk_mc_pa_ops *pa_ops;
+
+extern void *early_alloc_pages(int nr_pages);
+extern void early_alloc_invalidate(void);
+
+/* High level allocation routines (used by regular kernel code) */
+void *ihk_mc_alloc_aligned_pages(int npages, int p2align, enum ihk_mc_ap_flag flag)
+{
+	if (pa_ops)
+		return pa_ops->alloc_page(npages, p2align, flag);
+	else
+		return early_alloc_pages(npages);
+}
+
+void *ihk_mc_alloc_pages(int npages, enum ihk_mc_ap_flag flag)
+{
+	return ihk_mc_alloc_aligned_pages(npages, PAGE_P2ALIGN, flag);
+}
+
+void ihk_mc_free_pages(void *p, int npages)
+{
+	if (pa_ops)
+		pa_ops->free_page(p, npages);
+}
+
+void ihk_mc_set_page_allocator(struct ihk_mc_pa_ops *ops)
+{
+	early_alloc_invalidate();
+	pa_ops = ops;
+}
+
+/* Low level allocation routines */
 static void reserve_pages(struct ihk_page_allocator_desc *pa_allocator,
 		unsigned long start, unsigned long end, int type)
 {

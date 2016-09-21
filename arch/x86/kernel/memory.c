@@ -31,10 +31,9 @@
 static char *last_page;
 extern char _head[], _end[];
 
-static struct ihk_mc_pa_ops *pa_ops;
-
 extern unsigned long x86_kernel_phys_base;
 
+/* Arch specific early allocation routine */
 void *early_alloc_pages(int nr_pages)
 {
 	void *p;
@@ -53,36 +52,9 @@ void *early_alloc_pages(int nr_pages)
 	return p;
 }
 
-void *arch_alloc_page(enum ihk_mc_ap_flag flag)
+void early_alloc_invalidate(void)
 {
-	if (pa_ops)
-		return pa_ops->alloc_page(1, PAGE_P2ALIGN, flag);
-	else
-		return early_alloc_pages(1);
-}
-void arch_free_page(void *ptr)
-{
-	if (pa_ops)
-		pa_ops->free_page(ptr, 1);
-}
-
-void *ihk_mc_alloc_aligned_pages(int npages, int p2align, enum ihk_mc_ap_flag flag)
-{
-	if (pa_ops)
-		return pa_ops->alloc_page(npages, p2align, flag);
-	else
-		return NULL;
-}
-
-void *ihk_mc_alloc_pages(int npages, enum ihk_mc_ap_flag flag)
-{
-	return ihk_mc_alloc_aligned_pages(npages, PAGE_P2ALIGN, flag);
-}
-
-void ihk_mc_free_pages(void *p, int npages)
-{
-	if (pa_ops)
-		pa_ops->free_page(p, npages);
+	last_page = (void *)-1;
 }
 
 void *ihk_mc_allocate(int size, int flag)
@@ -175,7 +147,7 @@ static unsigned long setup_l3(struct page_table *pt,
 			pt->entry[i] = 0;
 			continue;
 		}
-		pt_phys = setup_l2(arch_alloc_page(IHK_MC_AP_CRITICAL), phys, start, end);
+		pt_phys = setup_l2(ihk_mc_alloc_pages(1, IHK_MC_AP_CRITICAL), phys, start, end);
 
 		pt->entry[i] = pt_phys | PFL3_PDIR_ATTR;
 	}
@@ -199,7 +171,7 @@ static void init_normal_area(struct page_table *pt)
 
 	for (phys = (map_start & ~(PTL4_SIZE - 1)); phys < map_end;
 	     phys += PTL4_SIZE) {
-		pt_phys = setup_l3(arch_alloc_page(IHK_MC_AP_CRITICAL), phys,
+		pt_phys = setup_l3(ihk_mc_alloc_pages(1, IHK_MC_AP_CRITICAL), phys,
 		                   map_start, map_end);
 
 		pt->entry[ident_index++] = pt_phys | PFL4_PDIR_ATTR;
@@ -209,7 +181,7 @@ static void init_normal_area(struct page_table *pt)
 
 static struct page_table *__alloc_new_pt(enum ihk_mc_ap_flag ap_flag)
 {
-	struct page_table *newpt = arch_alloc_page(ap_flag);
+	struct page_table *newpt = ihk_mc_alloc_pages(1, ap_flag);
 
 	if(newpt)
 		memset(newpt, 0, sizeof(struct page_table));
@@ -718,7 +690,7 @@ static void destroy_page_table(int level, struct page_table *pt)
 		}
 	}
 
-	arch_free_page(pt);
+	ihk_mc_free_pages(pt, 1);
 	return;
 }
 
@@ -1181,7 +1153,7 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
 		*ptep = PTE_NULL;
 		remote_flush_tlb_cpumask(args->vm, base,
 				ihk_mc_get_processor_id());
-		arch_free_page(pt);
+		ihk_mc_free_pages(pt, 1);
 	}
 
 	return 0;
@@ -1245,7 +1217,7 @@ static int clear_range_l3(void *args0, pte_t *ptep, uint64_t base,
 		*ptep = PTE_NULL;
 		remote_flush_tlb_cpumask(args->vm, base,
 				ihk_mc_get_processor_id());
-		arch_free_page(pt);
+		ihk_mc_free_pages(pt, 1);
 	}
 
 	return 0;
@@ -1596,7 +1568,7 @@ retry:
 	error = 0;
 out:
 	if (newpt) {
-		arch_free_page(newpt);
+		ihk_mc_free_pages(newpt, 1);
 	}
 	dkprintf("set_range_l2(%lx,%lx,%lx): %d %lx\n",
 			base, start, end, error, *ptep);
@@ -1679,7 +1651,7 @@ retry:
 	error = 0;
 out:
 	if (newpt) {
-		arch_free_page(newpt);
+		ihk_mc_free_pages(newpt, 1);
 	}
 	dkprintf("set_range_l3(%lx,%lx,%lx): %d\n",
 			base, start, end, error, *ptep);
@@ -1737,7 +1709,7 @@ retry:
 	error = 0;
 out:
 	if (newpt) {
-		arch_free_page(newpt);
+		ihk_mc_free_pages(newpt, 1);
 	}
 	dkprintf("set_range_l4(%lx,%lx,%lx): %d %lx\n",
 			base, start, end, error, *ptep);
@@ -2094,7 +2066,7 @@ static void init_vsyscall_area(struct page_table *pt)
 void init_page_table(void)
 {
 	check_available_page_size();
-	init_pt = arch_alloc_page(IHK_MC_AP_CRITICAL);
+	init_pt = ihk_mc_alloc_pages(1, IHK_MC_AP_CRITICAL);
 	ihk_mc_spinlock_init(&init_pt_lock);
 	
 	memset(init_pt, 0, sizeof(PAGE_SIZE));
@@ -2130,12 +2102,6 @@ void ihk_mc_reserve_arch_pages(struct ihk_page_allocator_desc *pa_allocator,
 	 * TODO: this does nothing in SMP mode, update it for KNC if necessary 
 	 */
 	__reserve_arch_pages(start, end, cb);
-}
-
-void ihk_mc_set_page_allocator(struct ihk_mc_pa_ops *ops)
-{
-	last_page = (void *)-1;
-	pa_ops = ops;
 }
 
 unsigned long virt_to_phys(void *v)

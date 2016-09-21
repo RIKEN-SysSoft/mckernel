@@ -109,8 +109,6 @@ void ihk_mc_free_pages(void *p, int npages);
 void *ihk_mc_allocate(int size, int flag);
 void ihk_mc_free(void *p);
 
-void *arch_alloc_page(enum ihk_mc_ap_flag flag);
-void arch_free_page(void *ptr);
 int arch_get_smaller_page_size(void *args, size_t origsize, size_t *sizep, int *p2alignp);
 
 typedef void *page_table_t;
