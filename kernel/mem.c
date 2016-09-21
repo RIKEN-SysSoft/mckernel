@@ -631,11 +631,16 @@ out:
 
 int page_unmap(struct page *page)
 {
+	int hash = (page->phys >> PAGE_SHIFT) & PHYS_PAGE_HASH_MASK;
+	unsigned long irqflags;
+
+	irqflags = ihk_mc_spinlock_lock(&page_hash_locks[hash]);
 	dkprintf("page_unmap(%p %x %d)\n", page, page->mode, page->count);
 	if (ihk_atomic_sub_return(1, &page->count) > 0) {
 		/* other mapping exist */
 		dkprintf("page_unmap(%p %x %d): 0\n",
 				page, page->mode, page->count);
+		ihk_mc_spinlock_unlock(&page_hash_locks[hash], irqflags);
 		return 0;
 	}
 
@@ -645,10 +650,10 @@ int page_unmap(struct page *page)
 	}
 	*/
 
-	list_del(&page->hash);
-	page->mode = PM_NONE;
-	kfree(page);
 	dkprintf("page_unmap(%p %x %d): 1\n", page, page->mode, page->count);
+	list_del(&page->hash);
+	kfree(page);
+	ihk_mc_spinlock_unlock(&page_hash_locks[hash], irqflags);
 	return 1;
 }
 
