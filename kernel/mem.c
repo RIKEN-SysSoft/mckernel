@@ -242,6 +242,7 @@ void _ihk_mc_free_pages(void *ptr, int npages, char *file, int line)
 	struct pagealloc_track_entry *entry;
 	struct pagealloc_track_addr_entry *addr_entry_iter, *addr_entry = NULL;
 	int hash;
+	int rehash_addr_entry = 0;
 
 	if (!memdebug || !pagealloc_track_initialized) {
 		goto out;
@@ -259,14 +260,8 @@ void _ihk_mc_free_pages(void *ptr, int npages, char *file, int line)
 
 	if (addr_entry) {
 		if (addr_entry->entry->npages != npages) {
-			kprintf("%s: ERROR: freeing %d pages @ %s:%d "
-					"for allocation @ %s:%d of %d pages\n",
-					__FUNCTION__,
-					npages, file, line,
-					addr_entry->entry->file,
-					addr_entry->entry->line,
-					addr_entry->entry->npages);
-			panic("panic: this is not an error, but needs more processing...");
+			addr_entry->addr += (npages * PAGE_SIZE);
+			rehash_addr_entry = 1;
 		}
 
 		list_del(&addr_entry->hash);
@@ -276,6 +271,15 @@ void _ihk_mc_free_pages(void *ptr, int npages, char *file, int line)
 	if (!addr_entry) {
 		kprintf("%s: ERROR: invalid address @ %s:%d\n", __FUNCTION__, file, line);
 		panic("panic: this may not be an error");
+	}
+
+	if (rehash_addr_entry) {
+		int addr_hash = ((unsigned long)addr_entry->addr >> 5) &
+			PAGEALLOC_TRACK_HASH_MASK;
+		irqflags = ihk_mc_spinlock_lock(&pagealloc_addr_hash_locks[addr_hash]);
+		list_add(&addr_entry->hash, &pagealloc_addr_hash[addr_hash]);
+		ihk_mc_spinlock_unlock(&pagealloc_addr_hash_locks[addr_hash], irqflags);
+		goto out;
 	}
 
 	entry = addr_entry->entry;
