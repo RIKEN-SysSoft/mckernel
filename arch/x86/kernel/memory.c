@@ -1084,7 +1084,7 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 	}
 
 	if (!(old & PFL1_FILEOFF) && args->free_physical) {
-		if (page && page_unmap(page)) {
+		if (!page || (page && page_unmap(page))) {
 			ihk_mc_free_pages(phys_to_virt(phys), 1);
 			dkprintf("%s: freeing regular page at 0x%lx\n", __FUNCTION__, base);
 		}
@@ -1133,7 +1133,7 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
 		}
 
 		if (!(old & PFL2_FILEOFF) && args->free_physical) {
-			if (page && page_unmap(page)) {
+			if (!page || (page && page_unmap(page))) {
 				ihk_mc_free_pages(phys_to_virt(phys), PTL2_SIZE/PTL1_SIZE);
 				dkprintf("%s: freeing large page at 0x%lx\n", __FUNCTION__, base);
 			}
@@ -1198,7 +1198,7 @@ static int clear_range_l3(void *args0, pte_t *ptep, uint64_t base,
 		}
 
 		if (!(old & PFL3_FILEOFF) && args->free_physical) {
-			if (page && page_unmap(page)) {
+			if (!page || (page && page_unmap(page))) {
 				ihk_mc_free_pages(phys_to_virt(phys), PTL3_SIZE/PTL1_SIZE);
 			}
 			args->vm->currss -= PTL3_SIZE;
