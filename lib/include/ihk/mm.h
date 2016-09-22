@@ -103,9 +103,25 @@ void ihk_mc_map_micpa(unsigned long host_pa, unsigned long* mic_pa);
 int ihk_mc_free_micpa(unsigned long mic_pa);
 void ihk_mc_clean_micpa(void);
 
-void *ihk_mc_alloc_aligned_pages(int npages, int p2align, enum ihk_mc_ap_flag flag);
-void *ihk_mc_alloc_pages(int npages, enum ihk_mc_ap_flag flag);
-void ihk_mc_free_pages(void *p, int npages);
+void *_ihk_mc_alloc_aligned_pages(int npages, int p2align,
+	enum ihk_mc_ap_flag flag, char *file, int line);
+#define ihk_mc_alloc_aligned_pages(npages, p2align, flag) ({\
+void *r = _ihk_mc_alloc_aligned_pages(npages, p2align, flag, __FILE__, __LINE__);\
+r;\
+})
+
+void *_ihk_mc_alloc_pages(int npages, enum ihk_mc_ap_flag flag,
+		char *file, int line);
+#define ihk_mc_alloc_pages(npages, flag) ({\
+void *r = _ihk_mc_alloc_pages(npages, flag, __FILE__, __LINE__);\
+r;\
+})
+
+void _ihk_mc_free_pages(void *ptr, int npages, char *file, int line);
+#define ihk_mc_free_pages(p, npages) ({\
+_ihk_mc_free_pages(p, npages, __FILE__, __LINE__);\
+})
+
 void *ihk_mc_allocate(int size, int flag);
 void ihk_mc_free(void *p);
 
