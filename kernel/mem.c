@@ -96,6 +96,7 @@ struct pagealloc_track_addr_entry {
 	struct list_head list; /* track_entry's list */
 	struct pagealloc_track_entry *entry;
 	struct list_head hash; /* address hash */
+	int npages_freed;
 };
 
 struct pagealloc_track_entry {
@@ -213,6 +214,7 @@ void *_ihk_mc_alloc_aligned_pages(int npages, int p2align,
 	addr_entry->addr = r;
 	addr_entry->runcount = pagealloc_runcount;
 	addr_entry->entry = entry;
+	addr_entry->npages_freed = 0;
 
 	irqflags = ihk_mc_spinlock_lock(&entry->addr_list_lock);
 	list_add(&addr_entry->list, &entry->addr_list);
@@ -259,9 +261,14 @@ void _ihk_mc_free_pages(void *ptr, int npages, char *file, int line)
 	}
 
 	if (addr_entry) {
-		if (addr_entry->entry->npages != npages) {
+		if (addr_entry->entry->npages > npages) {
 			addr_entry->addr += (npages * PAGE_SIZE);
-			rehash_addr_entry = 1;
+			addr_entry->npages_freed += npages;
+
+			/* Only rehash if haven't freed all pages yet */
+			if (addr_entry->npages_freed < addr_entry->entry->npages) {
+				rehash_addr_entry = 1;
+			}
 		}
 
 		list_del(&addr_entry->hash);
