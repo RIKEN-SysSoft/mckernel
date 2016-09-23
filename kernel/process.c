@@ -1517,7 +1517,7 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 			}
 		}
 		if (phys == NOPHYS) {
-			void *virt;
+			void *virt = NULL;
 			size_t npages;
 
 retry:
@@ -1556,10 +1556,12 @@ retry:
 	attr = arch_vrflag_to_ptattr(range->flag | memobj_flag, reason, ptep);
 
 	/*****/
-	if (((range->flag & VR_PRIVATE)
-				|| ((reason & PF_PATCH)
-					&& !(range->flag & VR_PROT_WRITE)))
-			&& (!page || page_is_in_memobj(page) || page_is_multi_mapped(page))) {
+	if (((range->flag & VR_PRIVATE) ||
+				((reason & PF_PATCH) && !(range->flag & VR_PROT_WRITE)))
+			&& ((!page && phys == NOPHYS) || (page &&
+					(page_is_in_memobj(page) ||
+					 page_is_multi_mapped(page))))) {
+
 		if (!(attr & PTATTR_DIRTY)) {
 			attr &= ~PTATTR_WRITABLE;
 		}
