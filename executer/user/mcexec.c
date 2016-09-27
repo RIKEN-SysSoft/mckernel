@@ -870,7 +870,10 @@ struct thread_data_s {
 	pthread_mutex_t *lock;
 	pthread_barrier_t *init_ready;
 } *thread_data;
+
 int ncpu;
+int n_threads;
+
 pid_t master_tid;
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -881,7 +884,7 @@ static void *main_loop_thread_func(void *arg)
 	struct thread_data_s *td = (struct thread_data_s *)arg;
 
 	td->tid = gettid();
-	td->remote_tid = (int)td->tid;
+	td->remote_tid = -1;
 	pthread_barrier_wait(&init_ready);
 	td->ret = main_loop(td->fd, td->cpu, td->lock);
 
@@ -1108,9 +1111,9 @@ void init_worker_threads(int fd)
 	int i;
 
 	pthread_mutex_init(&lock, NULL);
-	pthread_barrier_init(&init_ready, NULL, ncpu + 2);
+	pthread_barrier_init(&init_ready, NULL, n_threads + 2);
 
-	for (i = 0; i <= ncpu; ++i) {
+	for (i = 0; i <= n_threads; ++i) {
 		int ret;
 
 		thread_data[i].fd = fd;
@@ -1520,6 +1523,19 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+	n_threads = ncpu;
+	if (ncpu > 16) {
+		n_threads = 16;
+	}
+
+	/* 
+	 * XXX: keep thread_data ncpu sized despite that there are only
+	 * n_threads worker threads in the pool so that signaling code
+	 * keeps working.
+	 *
+	 * TODO: fix signaling code to be independent of TIDs.
+	 * TODO: implement dynaic thread pool resizing.
+	 */
 	thread_data = (struct thread_data_s *)malloc(sizeof(struct thread_data_s) * (ncpu + 1));
 	memset(thread_data, '\0', sizeof(struct thread_data_s) * (ncpu + 1));
 
@@ -1604,7 +1620,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	for (i = 0; i <= ncpu; ++i) {
+	for (i = 0; i <= n_threads; ++i) {
 		pthread_join(thread_data[i].thread_id, NULL);
 	}
 
@@ -1666,16 +1682,14 @@ do_generic_syscall(
 }
 
 static void
-kill_thread(unsigned long cpu)
+kill_thread(unsigned long tid)
 {
-	if(cpu >= 0 && cpu < ncpu){
-		pthread_kill(thread_data[cpu].thread_id, LOCALSIG);
-	}
-	else{
-		int	i;
+	int	i;
 
-		for (i = 0; i < ncpu; ++i) {
+	for (i = 0; i < n_threads; ++i) {
+		if(thread_data[i].remote_tid == tid){
 			pthread_kill(thread_data[i].thread_id, LOCALSIG);
+			break;
 		}
 	}
 }
@@ -1834,6 +1848,8 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 		
 		//pthread_mutex_lock(lock);
 
+		thread_data[cpu].remote_tid = w.sr.rtid;
+
 		switch (w.sr.number) {
 		case __NR_open:
 			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[0], PATH_MAX);
@@ -1872,12 +1888,12 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			sig = 0;
 			term = 0;
 			
+			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
+
 			/* Drop executable file */
 			if ((ret = ioctl(fd, MCEXEC_UP_CLOSE_EXEC)) != 0) {
 				fprintf(stderr, "WARNING: close_exec() couldn't find exec file?\n");
 			}
-
-			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
 
 			__dprintf("__NR_exit/__NR_exit_group: %ld (cpu_id: %d)\n",
 					w.sr.args[0], cpu);
@@ -1946,6 +1962,39 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 				thread_data[oldcpuid].remote_tid = wtid;
 			}
 
+			/*
+			 * Number of TIDs and the remote physical address where TIDs are
+			 * expected are passed in arg 4 and 5, respectively.
+			 */
+			if (w.sr.args[4] > 0) {
+				struct remote_transfer trans;
+				int i = 0;
+				int *tids = malloc(sizeof(int) * w.sr.args[4]);
+				if (!tids) {
+					fprintf(stderr, "__NR_gettid(): error allocating TIDs\n");
+					goto gettid_out;
+				}
+
+				for (i = 0; i < ncpu && i < w.sr.args[4]; ++i) {
+					tids[i] = thread_data[i].tid;
+				}
+
+				for (; i < ncpu; ++i) {
+					tids[i] = 0;
+				}
+
+				trans.userp = (void*)tids;
+				trans.rphys = w.sr.args[5];
+				trans.size = sizeof(int) * w.sr.args[4];
+				trans.direction = MCEXEC_UP_TRANSFER_TO_REMOTE;
+
+				if (ioctl(fd, MCEXEC_UP_TRANSFER, &trans) != 0) {
+					fprintf(stderr, "__NR_gettid(): error transfering TIDs\n");
+				}
+
+				free(tids);
+			}
+gettid_out:
 			do_syscall_return(fd, cpu, thread_data[newcpuid].remote_tid, 0, 0, 0, 0);
 			break;
 		}
@@ -2041,7 +2090,6 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 
 				/* Reinit signals and syscall threads */
 				init_sigaction();
-				init_worker_threads(fd);
 
 				__dprintf("pid(%d): signals and syscall threads OK\n", 
 						getpid());
@@ -2054,6 +2102,8 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 					fs->status = -errno;
 					goto fork_child_sync_pipe;
 				}
+
+				init_worker_threads(fd);
 
 fork_child_sync_pipe:
 				sem_post(&fs->sem);
@@ -2313,6 +2363,53 @@ return_execve2:
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 
+		case __NR_setresuid:
+			ret = setresuid(w.sr.args[0], w.sr.args[1], w.sr.args[2]);
+			if(ret == -1)
+				ret = -errno;
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+
+		case __NR_setreuid:
+			ret = setreuid(w.sr.args[0], w.sr.args[1]);
+			if(ret == -1)
+				ret = -errno;
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+
+		case __NR_setuid:
+			ret = setuid(w.sr.args[0]);
+			if(ret == -1)
+				ret = -errno;
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+
+		case __NR_setresgid:
+			ret = setresgid(w.sr.args[0], w.sr.args[1], w.sr.args[2]);
+			if(ret == -1)
+				ret = -errno;
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+
+		case __NR_setregid:
+			ret = setregid(w.sr.args[0], w.sr.args[1]);
+			if(ret == -1)
+				ret = -errno;
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+
+		case __NR_setgid:
+			ret = setgid(w.sr.args[0]);
+			if(ret == -1)
+				ret = -errno;
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+
+		case __NR_setfsgid:
+			ret = setfsgid(w.sr.args[0]);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+
 		case __NR_close:
 			if(w.sr.args[0] == fd)
 				ret = -EBADF;
@@ -2346,7 +2443,9 @@ return_execve2:
 			break;
 
 		}
-		
+
+		thread_data[cpu].remote_tid = -1;
+
 		//pthread_mutex_unlock(lock);
 	}
 	__dprint("timed out.\n");

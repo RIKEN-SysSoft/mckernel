@@ -14,6 +14,7 @@
 #include <linux/slab.h>
 #include <linux/device.h>
 #include <linux/version.h>
+#include <linux/interrupt.h>
 #include "mcctrl.h"
 #include "sysfs_msg.h"
 

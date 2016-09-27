@@ -31,6 +31,7 @@
 #define SCD_MSG_PREPARE_PROCESS_ACKED   0x2
 #define SCD_MSG_PREPARE_PROCESS_NACKED  0x7
 #define SCD_MSG_SCHEDULE_PROCESS        0x3
+#define SCD_MSG_WAKE_UP_SYSCALL_THREAD  0x14
 
 #define SCD_MSG_INIT_CHANNEL            0x5
 #define SCD_MSG_INIT_CHANNEL_ACKED      0x6
@@ -117,28 +118,6 @@ struct user_desc {
 	unsigned int  lm:1;
 };
 
-struct ikc_scd_packet {
-	int msg;
-	int err;
-	union {
-		/* for traditional SCD_MSG_* */
-		struct {
-			int ref;
-			int osnum;
-			int pid;
-			int padding;
-			unsigned long arg;
-		};
-
-		/* for SCD_MSG_SYSFS_* */
-		struct {
-			long sysfs_arg1;
-			long sysfs_arg2;
-			long sysfs_arg3;
-		};
-	};
-};
-
 struct program_image_section {
 	unsigned long vaddr;
 	unsigned long len;
@@ -210,13 +189,58 @@ struct ikc_scd_init_param {
 };
 
 struct syscall_request {
+	/* TID of requesting thread */
+	int rtid;
+	/*
+	 * TID of target thread. Remote page fault response needs to designate the
+	 * thread that must serve the request, 0 indicates any thread from the pool
+	 */
+	int ttid;
 	unsigned long valid;
 	unsigned long number;
 	unsigned long args[6];
 };
 
+struct ikc_scd_packet {
+	int msg;
+	int err;
+	union {
+		/* for traditional SCD_MSG_* */
+		struct {
+			int ref;
+			int osnum;
+			int pid;
+			unsigned long arg;
+			struct syscall_request req;
+			unsigned long resp_pa;
+		};
+
+		/* for SCD_MSG_SYSFS_* */
+		struct {
+			long sysfs_arg1;
+			long sysfs_arg2;
+			long sysfs_arg3;
+		};
+
+		/* SCD_MSG_SCHEDULE_THREAD */
+		struct {
+			int ttid;
+		};
+	};
+	char padding[12];
+};
+
+#define IHK_SCD_REQ_THREAD_SPINNING         0
+#define IHK_SCD_REQ_THREAD_TO_BE_WOKEN      1
+#define IHK_SCD_REQ_THREAD_DESCHEDULED      2
+
 struct syscall_response {
+	/* TID of the thread that requested the service */
+	int ttid;
+	/* TID of the mcexec thread that is serving the request */
+	int stid;
 	unsigned long status;
+	unsigned long req_thread_status;
 	long ret;
 	unsigned long fault_address;
 	unsigned long fault_reason;

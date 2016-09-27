@@ -23,6 +23,7 @@
 #include <process.h>
 #include <page.h>
 #include <cls.h>
+#include <kmalloc.h>
 
 #define	dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
 #define	ekprintf(...)	kprintf(__VA_ARGS__)
@@ -84,20 +85,22 @@ void ihk_mc_free_pages(void *p, int npages)
 		pa_ops->free_page(p, npages);
 }
 
-void *ihk_mc_allocate(int size, enum ihk_mc_ap_flag flag)
+void *ihk_mc_allocate(int size, int flag)
 {
-	if (pa_ops && pa_ops->alloc)
-		return pa_ops->alloc(size, flag);
-	else
-		return ihk_mc_alloc_pages(1, flag);
+	if (!cpu_local_var(kmalloc_initialized)) {
+		kprintf("%s: error, kmalloc not yet initialized\n", __FUNCTION__);
+		return NULL;
+	}
+	return kmalloc(size, IHK_MC_AP_NOWAIT);
 }
 
 void ihk_mc_free(void *p)
 {
-	if (pa_ops && pa_ops->free)
-		return pa_ops->free(p);
-	else
-		return ihk_mc_free_pages(p, 1);
+	if (!cpu_local_var(kmalloc_initialized)) {
+		kprintf("%s: error, kmalloc not yet initialized\n", __FUNCTION__);
+		return;
+	}
+	kfree(p);
 }
 
 void *get_last_early_heap(void)
@@ -1111,6 +1114,7 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 	if (!(old & PFL1_FILEOFF) && args->free_physical) {
 		if (page && page_unmap(page)) {
 			ihk_mc_free_pages(phys_to_virt(phys), 1);
+			dkprintf("%s: freeing regular page at 0x%lx\n", __FUNCTION__, base);
 		}
 		args->vm->currss -= PTL1_SIZE;
 	}
@@ -1159,6 +1163,7 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
 		if (!(old & PFL2_FILEOFF) && args->free_physical) {
 			if (page && page_unmap(page)) {
 				ihk_mc_free_pages(phys_to_virt(phys), PTL2_SIZE/PTL1_SIZE);
+				dkprintf("%s: freeing large page at 0x%lx\n", __FUNCTION__, base);
 			}
 			args->vm->currss -= PTL2_SIZE;
 		}
@@ -2273,6 +2278,9 @@ int read_process_vm(struct process_vm *vm, void *kdst, const void *usrc, size_t 
 
 	reason = PF_USER;	/* page not present */
 	for (addr = ustart & PAGE_MASK; addr < uend; addr += PAGE_SIZE) {
+		if (!addr)
+			return -EINVAL;
+
 		error = page_fault_process_vm(vm, (void *)addr, reason);
 		if (error) {
 			kprintf("%s: error: PF for %p failed\n", __FUNCTION__, addr);

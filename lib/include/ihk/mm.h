@@ -103,7 +103,7 @@ void ihk_mc_clean_micpa(void);
 void *ihk_mc_alloc_aligned_pages(int npages, int p2align, enum ihk_mc_ap_flag flag);
 void *ihk_mc_alloc_pages(int npages, enum ihk_mc_ap_flag flag);
 void ihk_mc_free_pages(void *p, int npages);
-void *ihk_mc_allocate(int size, enum ihk_mc_ap_flag flag);
+void *ihk_mc_allocate(int size, int flag);
 void ihk_mc_free(void *p);
 
 void *arch_alloc_page(enum ihk_mc_ap_flag flag);

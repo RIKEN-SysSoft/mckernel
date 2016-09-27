@@ -1054,9 +1054,8 @@ unhandled_page_fault(struct thread *thread, void *fault_addr, void *regs)
 	unsigned long error = ((struct x86_user_context *)regs)->gpr.error;
 
 	irqflags = kprintf_lock();
-	dkprintf("[%d] Page fault for 0x%lX\n",
-			ihk_mc_get_processor_id(), address);
-	dkprintf("%s for %s access in %s mode (reserved bit %s set), "
+	__kprintf("Page fault for 0x%lx\n", address);
+	__kprintf("%s for %s access in %s mode (reserved bit %s set), "
 			"it %s an instruction fetch\n",
 			(error & PF_PROT ? "protection fault" : "no page found"),
 			(error & PF_WRITE ? "write" : "read"),
@@ -1068,14 +1067,14 @@ unhandled_page_fault(struct thread *thread, void *fault_addr, void *regs)
 	list_for_each_entry(range, &vm->vm_range_list, list) {
 		if (range->start <= address && range->end > address) {
 			found = 1;
-			dkprintf("address is in range, flag: 0x%X! \n",
+			__kprintf("address is in range, flag: 0x%lx\n",
 					range->flag);
 			ihk_mc_pt_print_pte(vm->address_space->page_table, (void*)address);
 			break;
 		}
 	}
 	if (!found) {
-		dkprintf("address is out of range! \n");
+		__kprintf("address is out of range! \n");
 	}
 
 	kprintf_unlock(irqflags);

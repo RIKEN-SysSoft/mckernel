@@ -41,6 +41,7 @@
 #include <ikc/master.h>
 #include <ihk/msr.h>
 #include <linux/semaphore.h>
+#include <linux/rwlock.h>
 #include <linux/threads.h>
 #include "sysfs.h"
 
@@ -48,6 +49,7 @@
 #define SCD_MSG_PREPARE_PROCESS_ACKED   0x2
 #define SCD_MSG_PREPARE_PROCESS_NACKED  0x7
 #define SCD_MSG_SCHEDULE_PROCESS        0x3
+#define SCD_MSG_WAKE_UP_SYSCALL_THREAD  0x14
 
 #define SCD_MSG_INIT_CHANNEL            0x5
 #define SCD_MSG_INIT_CHANNEL_ACKED      0x6
@@ -110,8 +112,9 @@ struct ikc_scd_packet {
 			int ref;
 			int osnum;
 			int pid;
-			int padding;
 			unsigned long arg;
+			struct syscall_request req;
+			unsigned long resp_pa;
 		};
 
 		/* for SCD_MSG_SYSFS_* */
@@ -120,7 +123,13 @@ struct ikc_scd_packet {
 			long sysfs_arg2;
 			long sysfs_arg3;
 		};
+
+		/* SCD_MSG_SCHEDULE_THREAD */
+		struct {
+			int ttid;
+		};
 	};
+	char padding[12];
 };
 
 struct mcctrl_priv { 
@@ -154,8 +163,11 @@ struct syscall_params {
 struct wait_queue_head_list_node {
 	struct list_head list;
 	wait_queue_head_t wq_syscall;
-	int pid;
+	struct task_struct *task;
+	/* Denotes an exclusive wait for requester TID rtid */
+	int rtid;
 	int req;
+	struct ikc_scd_packet *packet;
 };
 
 struct mcctrl_channel {
@@ -163,15 +175,30 @@ struct mcctrl_channel {
 	struct syscall_params param;
 	struct ikc_scd_init_param init;
 	void *dma_buf;
-
-	struct list_head wq_list;
-	ihk_spinlock_t wq_list_lock;
 };
 
+struct mcctrl_per_thread_data {
+	struct list_head hash;
+	struct task_struct *task;
+	void *data;
+};
+
+#define MCCTRL_PER_THREAD_DATA_HASH_SHIFT 8
+#define MCCTRL_PER_THREAD_DATA_HASH_SIZE (1 << MCCTRL_PER_THREAD_DATA_HASH_SHIFT)
+#define MCCTRL_PER_THREAD_DATA_HASH_MASK (MCCTRL_PER_THREAD_DATA_HASH_SIZE - 1) 
+
 struct mcctrl_per_proc_data {
-	struct list_head list;
+	struct list_head hash;
 	int pid;
 	unsigned long rpgtable;	/* per process, not per OS */
+
+	struct list_head wq_list;
+	struct list_head wq_req_list;
+	struct list_head wq_list_exact;
+	ihk_spinlock_t wq_list_lock;
+
+	struct list_head per_thread_data_hash[MCCTRL_PER_THREAD_DATA_HASH_SIZE];
+	rwlock_t per_thread_data_hash_lock[MCCTRL_PER_THREAD_DATA_HASH_SIZE];
 };
 
 struct sysfsm_req {
@@ -230,6 +257,10 @@ struct node_topology {
 
 #define CPU_LONGS (((NR_CPUS) + (BITS_PER_LONG) - 1) / (BITS_PER_LONG))
 
+#define MCCTRL_PER_PROC_DATA_HASH_SHIFT 7
+#define MCCTRL_PER_PROC_DATA_HASH_SIZE (1 << MCCTRL_PER_PROC_DATA_HASH_SHIFT)
+#define MCCTRL_PER_PROC_DATA_HASH_MASK (MCCTRL_PER_PROC_DATA_HASH_SIZE - 1)
+
 struct mcctrl_usrdata {
 	struct ihk_ikc_listen_param listen_param;
 	struct ihk_ikc_listen_param listen_param2;
@@ -245,8 +276,9 @@ struct mcctrl_usrdata {
 	unsigned long	last_thread_exec;
 	wait_queue_head_t	wq_prepare;
 	
-	struct list_head per_proc_list;
-	ihk_spinlock_t per_proc_list_lock;
+	struct list_head per_proc_data_hash[MCCTRL_PER_PROC_DATA_HASH_SIZE];
+	rwlock_t per_proc_data_hash_lock[MCCTRL_PER_PROC_DATA_HASH_SIZE];
+
 	void **keys;
 	struct sysfsm_data sysfsm_data;
 	unsigned long cpu_online[CPU_LONGS];
@@ -273,12 +305,22 @@ int mcctrl_ikc_is_valid_thread(ihk_os_t os, int cpu);
 ihk_os_t osnum_to_os(int n);
 
 /* syscall.c */
-int init_peer_channel_registry(struct mcctrl_usrdata *ud);
-void destroy_peer_channel_registry(struct mcctrl_usrdata *ud);
-int register_peer_channel(struct mcctrl_usrdata *ud, void *key, struct mcctrl_channel *ch);
-int deregister_peer_channel(struct mcctrl_usrdata *ud, void *key, struct mcctrl_channel *ch);
-struct mcctrl_channel *get_peer_channel(struct mcctrl_usrdata *ud, void *key);
-int __do_in_kernel_syscall(ihk_os_t os, struct mcctrl_channel *c, struct syscall_request *sc);
+int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet);
+int mcctrl_add_per_proc_data(struct mcctrl_usrdata *ud, int pid, 
+	struct mcctrl_per_proc_data *ppd);
+int mcctrl_delete_per_proc_data(struct mcctrl_usrdata *ud, int pid);
+inline struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(
+		struct mcctrl_usrdata *ud, int pid);
+
+int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data* ppd,
+	struct task_struct *task, void *data);
+int mcctrl_delete_per_thread_data(struct mcctrl_per_proc_data* ppd,
+	struct task_struct *task);
+inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(
+	struct mcctrl_per_proc_data *ppd, struct task_struct *task);
+
+void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet, 
+		long ret, int stid);
 
 #define PROCFS_NAME_MAX 1000
 
@@ -301,6 +343,7 @@ struct procfs_file {
 };
 
 void procfs_answer(unsigned int arg, int err);
+int procfsm_packet_handler(void *os, int msg, int pid, unsigned long arg);
 void add_tid_entry(int osnum, int pid, int tid);
 void add_pid_entry(int osnum, int pid);
 void delete_tid_entry(int osnum, int pid, int tid);

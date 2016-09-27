@@ -127,11 +127,9 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 static void do_mod_exit(int status);
 #endif
 
-static void send_syscall(struct syscall_request *req, int cpu, int pid)
+static void send_syscall(struct syscall_request *req, int cpu, int pid, struct syscall_response *res)
 {
-	struct ikc_scd_packet packet;
-	struct syscall_response *res;
-	struct syscall_params *scp;
+	struct ikc_scd_packet packet IHK_DMA_ALIGN;
 	struct ihk_ikc_channel_desc *syscall_channel;
 	int ret;
 
@@ -140,7 +138,6 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid)
 	   req->number == __NR_kill){ // interrupt syscall
 		extern int num_processors;
 
-		scp = &get_cpu_local_var(0)->scp2;
 		syscall_channel = get_cpu_local_var(0)->syscall_channel2;
 		
 		/* XXX: is this really going to work if multiple processes 
@@ -152,34 +149,22 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid)
 			pid = req->args[1];
 	}
 	else{
-		scp = &get_cpu_local_var(cpu)->scp;
 		syscall_channel = get_cpu_local_var(cpu)->syscall_channel;
 	}
-	res = scp->response_va;
 
 	res->status = 0;
 	req->valid = 0;
 
-#ifdef USE_DMA
-	memcpy_async(scp->request_pa,
-	             virt_to_phys(req), sizeof(*req), 0, &fin);
-
-	memcpy_async_wait(&scp->post_fin);
-	scp->post_va->v[0] = scp->post_idx;
-	memcpy_async_wait(&fin);
-#else
-	memcpy(scp->request_va, req, sizeof(*req));
-#endif
+	memcpy(&packet.req, req, sizeof(*req));
 
 	barrier();
-	scp->request_va->valid = 1;
-	*(unsigned int *)scp->doorbell_va = cpu + 1;
+	packet.req.valid = 1;
 
 #ifdef SYSCALL_BY_IKC
 	packet.msg = SCD_MSG_SYSCALL_ONESIDE;
 	packet.ref = cpu;
 	packet.pid = pid ? pid : cpu_local_var(current)->proc->pid;
-	packet.arg = scp->request_rpa;	
+	packet.resp_pa = virt_to_phys(res);
 	dkprintf("send syscall, nr: %d, pid: %d\n", req->number, packet.pid);
 
 	ret = ihk_ikc_send(syscall_channel, &packet, 0);
@@ -193,9 +178,8 @@ ihk_spinlock_t syscall_lock;
 
 long do_syscall(struct syscall_request *req, int cpu, int pid)
 {
-	struct syscall_response *res;
+	struct syscall_response res;
 	struct syscall_request req2 IHK_DMA_ALIGN;
-	struct syscall_params *scp;
 	int error;
 	long rc;
 	int islock = 0;
@@ -206,6 +190,9 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	dkprintf("SC(%d)[%3d] sending syscall\n",
 		ihk_mc_get_processor_id(),
 		req->number);
+	
+	irqstate = 0;	/* for avoidance of warning */
+	barrier();
 
 	if(req->number != __NR_exit_group){
 		if(proc->nohost && // host is down
@@ -215,20 +202,18 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		++thread->in_syscall_offload;
 	}
 
-	irqstate = 0;	/* for avoidance of warning */
 	if(req->number == __NR_exit_group ||
 	   req->number == __NR_gettid ||
 	   req->number == __NR_kill){ // interrupt syscall
-		scp = &get_cpu_local_var(0)->scp2;
 		islock = 1;
 		irqstate = ihk_mc_spinlock_lock(&syscall_lock);
 	}
-	else{
-		scp = &get_cpu_local_var(cpu)->scp;
-	}
-	res = scp->response_va;
-
-	send_syscall(req, cpu, pid);
+	/* The current thread is the requester and any thread from 
+	 * the pool may serve the request */
+	req->rtid = cpu_local_var(current)->tid;
+	req->ttid = 0;
+	res.req_thread_status = IHK_SCD_REQ_THREAD_SPINNING;
+	send_syscall(req, cpu, pid, &res);
 
 	dkprintf("%s: syscall num: %d waiting for Linux.. \n",
 		__FUNCTION__, req->number);
@@ -236,60 +221,83 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 #define	STATUS_IN_PROGRESS	0
 #define	STATUS_COMPLETED	1
 #define	STATUS_PAGE_FAULT	3
-	while (res->status != STATUS_COMPLETED) {
-		while (res->status == STATUS_IN_PROGRESS) {
+	while (res.status != STATUS_COMPLETED) {
+		while (res.status == STATUS_IN_PROGRESS) {
 			struct cpu_local_var *v;
-			int call_schedule = 0;
+			int do_schedule = 0;
 			long runq_irqstate;
+			unsigned long flags;
+			DECLARE_WAITQ_ENTRY(scd_wq_entry, cpu_local_var(current));
 
 			cpu_pause();
 
-			/* XXX: Intel MPI + Intel OpenMP situation:
-			 * While the MPI helper thread waits in a poll() call the OpenMP master
-			 * thread is iterating through the CPU cores using setaffinity().
-			 * Unless we give a chance to it on this core the two threads seem to
-			 * hang in deadlock. If the new thread would make a system call on this
-			 * core we would be in trouble. For now, allow it, but in the future
-			 * we should have syscall channels for each thread instead of per core,
-			 * or we should multiplex syscall threads in mcexec */
+			/* Spin if not preemptable */
+			if (cpu_local_var(no_preempt) || !thread->tid) {
+				continue;
+			}
+
+			/* Spin by default, but if re-schedule is requested let
+			 * the other thread run */
 			runq_irqstate =
 				ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
 			v = get_this_cpu_local_var();
 
 			if (v->flags & CPU_FLAG_NEED_RESCHED) {
-				call_schedule = 1;
-				--thread->in_syscall_offload;
+				do_schedule = 1;
 			}
 
 			ihk_mc_spinlock_unlock(&v->runq_lock, runq_irqstate);
 
-			if (call_schedule) {
-				schedule();
-				++thread->in_syscall_offload;
+			if (!do_schedule) {
+				continue;
 			}
+
+			flags = cpu_disable_interrupt_save();
+
+			/* Try to sleep until notified */
+			if (__sync_bool_compare_and_swap(&res.req_thread_status,
+				IHK_SCD_REQ_THREAD_SPINNING,
+				IHK_SCD_REQ_THREAD_DESCHEDULED)) {
+
+				dkprintf("%s: tid %d waiting for syscall reply...\n",
+						__FUNCTION__, thread->tid);
+				waitq_init(&thread->scd_wq);
+				waitq_prepare_to_wait(&thread->scd_wq, &scd_wq_entry,
+					PS_INTERRUPTIBLE);
+				cpu_restore_interrupt(flags);
+				schedule();
+				waitq_finish_wait(&thread->scd_wq, &scd_wq_entry);
+			}
+
+			cpu_restore_interrupt(flags);
 		}
-	
-		if (res->status == STATUS_PAGE_FAULT) {
+
+		if (res.status == STATUS_PAGE_FAULT) {
 			dkprintf("STATUS_PAGE_FAULT in syscall, pid: %d\n", 
 					cpu_local_var(current)->proc->pid);
 			error = page_fault_process_vm(thread->vm,
-					(void *)res->fault_address,
-					res->fault_reason|PF_POPULATE);
+					(void *)res.fault_address,
+					res.fault_reason|PF_POPULATE);
 
 			/* send result */
 			req2.number = __NR_mmap;
 #define PAGER_RESUME_PAGE_FAULT	0x0101
 			req2.args[0] = PAGER_RESUME_PAGE_FAULT;
 			req2.args[1] = error;
+			/* The current thread is the requester and only the waiting thread
+			 * may serve the request */
+			req2.rtid = cpu_local_var(current)->tid;
+			req2.ttid = res.stid;
 
-			send_syscall(&req2, cpu, pid);
+			res.req_thread_status = IHK_SCD_REQ_THREAD_SPINNING;
+			send_syscall(&req2, cpu, pid, &res);
 		}
 	}
 
 	dkprintf("%s: syscall num: %d got host reply: %d \n",
-		__FUNCTION__, req->number, res->ret);
+		__FUNCTION__, req->number, res.ret);
 
-	rc = res->ret;
+	rc = res.ret;
 	if(islock){
 		ihk_mc_spinlock_unlock(&syscall_lock, irqstate);
 	}
@@ -820,7 +828,8 @@ terminate(int rc, int sig)
 	release_thread(mythread);
 	release_process_vm(vm);
 	schedule();
-	// no return
+	kprintf("%s: ERROR: returned from terminate() -> schedule()\n", __FUNCTION__);
+	panic("panic");
 }
 
 void
@@ -838,14 +847,15 @@ terminate_host(int pid)
 }
 
 void
-interrupt_syscall(int pid, int cpuid)
+interrupt_syscall(int pid, int tid)
 {
-	dkprintf("interrupt_syscall,target pid=%d,target cpuid=%d\n", pid, cpuid);
+	dkprintf("interrupt_syscall,target pid=%d,target tid=%d\n", pid, tid);
 	ihk_mc_user_context_t ctx;
 	long lerror;
 
+kprintf("interrupt_syscall pid=%d tid=%d\n", pid, tid);
 	ihk_mc_syscall_arg0(&ctx) = pid;
-	ihk_mc_syscall_arg1(&ctx) = cpuid;
+	ihk_mc_syscall_arg1(&ctx) = tid;
 
 	lerror = syscall_generic_forwarding(__NR_kill, &ctx);
 	if (lerror) {
@@ -908,8 +918,6 @@ static int do_munmap(void *addr, size_t len)
 	begin_free_pages_pending();
 	error = remove_process_memory_range(cpu_local_var(current)->vm,
 			(intptr_t)addr, (intptr_t)addr+len, &ro_freed);
-	// XXX: TLB flush
-	flush_tlb();
 	if (error || !ro_freed) {
 		clear_host_pte((uintptr_t)addr, len);
 	}
@@ -921,6 +929,8 @@ static int do_munmap(void *addr, size_t len)
 		}
 	}
 	finish_free_pages_pending();
+	dkprintf("%s: 0x%lx:%lu, error: %ld\n",
+		__FUNCTION__, addr, len, error);
 	return error;
 }
 
@@ -1068,25 +1078,18 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	vrflags |= PROT_TO_VR_FLAG(prot);
 	vrflags |= (flags & MAP_PRIVATE)? VR_PRIVATE: 0;
 	vrflags |= (flags & MAP_LOCKED)? VR_LOCKED: 0;
+	vrflags |= VR_DEMAND_PAGING;
 	if (flags & MAP_ANONYMOUS) {
-		if (0) {
-			/* dummy */
+		if (!anon_on_demand) {
+			populated_mapping = 1;
 		}
 #ifdef	USE_NOCACHE_MMAP
 #define	X_MAP_NOCACHE	MAP_32BIT
 		else if (flags & X_MAP_NOCACHE) {
+			vrflags &= ~VR_DEMAND_PAGING;
 			vrflags |= VR_IO_NOCACHE;
 		}
 #endif
-		else {
-			vrflags |= VR_DEMAND_PAGING;
-			if (!anon_on_demand) {
-				populated_mapping = 1;
-			}
-		}
-	}
-	else {
-		vrflags |= VR_DEMAND_PAGING;
 	}
 
 	if (flags & (MAP_POPULATE | MAP_LOCKED)) {
@@ -1162,6 +1165,8 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 			error = -ENOMEM;
 			goto out;
 		}
+		dkprintf("%s: 0x%x:%lu allocated %d pages, p2align: %lx\n",
+				__FUNCTION__, addr, len, npages, p2align);
 		phys = virt_to_phys(p);
 	}
 	else if (flags & MAP_SHARED) {
@@ -1197,10 +1202,10 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	error = add_process_memory_range(thread->vm, addr, addr+len, phys,
 			vrflags, memobj, off, pgshift);
 	if (error) {
-		ekprintf("do_mmap:add_process_memory_range"
-				"(%p,%lx,%lx,%lx,%lx,%d) failed %d\n",
-				thread->vm, addr, addr+len,
-				virt_to_phys(p), vrflags, pgshift, error);
+		kprintf("%s: add_process_memory_range failed for 0x%lx:%lu"
+				" flags: %lx, vrflags: %lx, pgshift: %d, error: %d\n",
+				__FUNCTION__, addr, addr+len,
+				flags, vrflags, pgshift, error);
 		goto out;
 	}
 
@@ -1246,8 +1251,12 @@ out:
 	if (memobj) {
 		memobj_release(memobj);
 	}
-	dkprintf("do_mmap(%lx,%lx,%x,%x,%d,%lx): %ld %lx\n",
-			addr0, len0, prot, flags, fd, off0, error, addr);
+	dkprintf("%s: 0x%lx:%8lu, (req: 0x%lx:%lu), prot: %x, flags: %x, "
+			"fd: %d, off: %lu, error: %ld, addr: 0x%lx\n",
+			__FUNCTION__,
+			addr, len, addr0, len0, prot, flags,
+			fd, off0, error, addr);
+
 	return (!error)? addr: error;
 }
 
@@ -1478,8 +1487,8 @@ SYSCALL_DECLARE(getppid)
 	return thread->proc->ppid_parent->pid;
 }
 
-void
-settid(struct thread *thread, int mode, int newcpuid, int oldcpuid)
+void settid(struct thread *thread, int mode, int newcpuid, int oldcpuid,
+	int nr_tids, int *tids)
 {
 	struct syscall_request request IHK_DMA_ALIGN;
 	unsigned long rc;
@@ -1489,6 +1498,12 @@ settid(struct thread *thread, int mode, int newcpuid, int oldcpuid)
 	request.args[1] = thread->proc->pid;
 	request.args[2] = newcpuid;
 	request.args[3] = oldcpuid;
+	/*
+	 * If nr_tids is non-zero, tids should point to an array of ints
+	 * where the thread ids of the mcexec process are expected.
+	 */
+	request.args[4] = nr_tids;
+	request.args[5] = virt_to_phys(tids);
 	rc = do_syscall(&request, ihk_mc_get_processor_id(), thread->proc->pid);
 	if (mode != 2) {
 		thread->tid = rc;
@@ -1893,7 +1908,61 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	        &new->vm->address_space->cpu_set_lock);
 
 	if (clone_flags & CLONE_VM) {
-		settid(new, 1, cpuid, -1);
+		int *tids = NULL;
+		int i;
+		struct mcs_rwlock_node_irqsave lock;
+
+		mcs_rwlock_writer_lock(&newproc->threads_lock, &lock);
+		/* Obtain mcexec TIDs if not known yet */
+		if (!newproc->nr_tids) {
+			tids = kmalloc(sizeof(int) * num_processors, IHK_MC_AP_NOWAIT);
+			if (!tids) {
+				mcs_rwlock_writer_unlock(&newproc->threads_lock, &lock);
+				release_cpuid(cpuid);
+				return -ENOMEM;
+			}
+
+			newproc->tids = kmalloc(sizeof(struct mcexec_tid) * num_processors, IHK_MC_AP_NOWAIT);
+			if (!newproc->tids) {
+				mcs_rwlock_writer_unlock(&newproc->threads_lock, &lock);
+				kfree(tids);
+				release_cpuid(cpuid);
+				return -ENOMEM;
+			}
+
+			settid(new, 1, cpuid, -1, num_processors, tids);
+
+			for (i = 0; (i < num_processors) && tids[i]; ++i) {
+				dkprintf("%s: tid[%d]: %d\n", __FUNCTION__, i, tids[i]);
+				newproc->tids[i].tid = tids[i];
+				newproc->tids[i].thread = NULL;
+				++newproc->nr_tids;
+			}
+
+			kfree(tids);
+		}
+
+		/* Find an unused TID */
+retry_tid:
+		for (i = 0; i < newproc->nr_tids; ++i) {
+			if (!newproc->tids[i].thread) {
+				if (!__sync_bool_compare_and_swap(
+					&newproc->tids[i].thread, NULL, new)) {
+					goto retry_tid;
+				}
+				new->tid = newproc->tids[i].tid;
+				dkprintf("%s: tid %d assigned to %p\n", __FUNCTION__, new->tid, new);
+				break;
+			}
+		}
+
+		/* TODO: spawn more mcexec threads */
+		if (!new->tid) {
+			kprintf("%s: no more TIDs available\n");
+			panic("");
+		}
+
+		mcs_rwlock_writer_unlock(&newproc->threads_lock, &lock);
 	}
 	/* fork() a new process on the host */
 	else {
@@ -1913,7 +1982,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		}
 
 		/* In a single threaded process TID equals to PID */
-		settid(new, 0, cpuid, -1);
+		new->tid = newproc->pid;
 		new->vm->address_space->pids[0] = new->proc->pid;
 
 		dkprintf("fork(): new pid: %d\n", new->proc->pid);
@@ -5712,6 +5781,10 @@ SYSCALL_DECLARE(sched_setaffinity)
 	int empty_set = 1; 
 	extern int num_processors;
 
+	if (!u_cpu_set) {
+		return -EINVAL;
+	}
+
 	if (sizeof(k_cpu_set) > len) {
 		memset(&k_cpu_set, 0, sizeof(k_cpu_set));
 	}
@@ -5719,7 +5792,7 @@ SYSCALL_DECLARE(sched_setaffinity)
 	len = MIN2(len, sizeof(k_cpu_set));
 
 	if (copy_from_user(&k_cpu_set, u_cpu_set, len)) {
-		kprintf("%s: error: copy_from_user failed for %p:%d\n", __FUNCTION__, u_cpu_set, len);
+		dkprintf("%s: error: copy_from_user failed for %p:%d\n", __FUNCTION__, u_cpu_set, len);
 		return -EFAULT;
 	}
 

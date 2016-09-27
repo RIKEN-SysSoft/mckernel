@@ -17,6 +17,7 @@
 #include <linux/uaccess.h>
 #include <linux/fs.h>
 #include <linux/resource.h>
+#include <linux/interrupt.h>
 #include "mcctrl.h"
 #include <linux/version.h>
 #include <linux/semaphore.h>
@@ -711,6 +712,57 @@ mckernel_procfs_lseek(struct file *file, loff_t offset, int orig)
 		return -EINVAL;
 	}
 	return file->f_pos;
+}
+
+struct procfs_work {
+	void *os;
+	int msg;
+	int pid;
+	unsigned long arg;
+	struct work_struct work;
+};
+
+static void procfsm_work_main(struct work_struct *work0)
+{
+	struct procfs_work *work = container_of(work0, struct procfs_work, work);
+
+	switch (work->msg) {
+		case SCD_MSG_PROCFS_TID_CREATE:
+			add_tid_entry(ihk_host_os_get_index(work->os), work->pid, work->arg);
+			break;
+
+		case SCD_MSG_PROCFS_TID_DELETE:
+			delete_tid_entry(ihk_host_os_get_index(work->os), work->pid, work->arg);
+			break;
+
+		default:
+			printk("%s: unknown work: msg: %d, pid: %d, arg: %lu)\n",
+					__FUNCTION__, work->msg, work->pid, work->arg);
+			break;
+	}
+
+	kfree(work);
+	return;
+}
+
+int procfsm_packet_handler(void *os, int msg, int pid, unsigned long arg)
+{
+	struct procfs_work *work = NULL;
+
+	work = kzalloc(sizeof(*work), GFP_ATOMIC);
+	if (!work) {
+		printk("%s: kzalloc failed\n", __FUNCTION__);
+		return -1;
+	}
+
+	work->os = os;
+	work->msg = msg;
+	work->pid = pid;
+	work->arg = arg;
+	INIT_WORK(&work->work, &procfsm_work_main);
+
+	schedule_work(&work->work);
+	return 0;
 }
 
 static const struct file_operations mckernel_forward_ro = {

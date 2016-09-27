@@ -27,6 +27,7 @@
 #include <linux/miscdevice.h>
 #include <linux/slab.h>
 #include <linux/string.h>
+#include <linux/interrupt.h>
 #include "mcctrl.h"
 #ifdef ATTACHED_MIC
 #include <sysdeps/mic/mic/micconst.h>
@@ -40,16 +41,18 @@
 
 void mcexec_prepare_ack(ihk_os_t os, unsigned long arg, int err);
 static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ihk_ikc_channel_desc *c);
-int mcexec_syscall(struct mcctrl_channel *c, int pid, unsigned long arg);
+int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet);
 void sig_done(unsigned long arg, int err);
 
+/* XXX: this runs in atomic context! */
 static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *__os)
 {
 	struct ikc_scd_packet *pisp = __packet;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(__os);
+	int msg = pisp->msg;
 
-	switch (pisp->msg) {
+	switch (msg) {
 	case SCD_MSG_INIT_CHANNEL:
 		mcctrl_ikc_init(__os, pisp->ref, pisp->arg, c);
 		break;
@@ -63,7 +66,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		break;
 
 	case SCD_MSG_SYSCALL_ONESIDE:
-		mcexec_syscall(usrdata->channels + pisp->ref, pisp->pid, pisp->arg);
+		mcexec_syscall(usrdata, pisp);
 		break;
 
 	case SCD_MSG_PROCFS_ANSWER:
@@ -88,11 +91,8 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		break;
 
 	case SCD_MSG_PROCFS_TID_CREATE:
-		add_tid_entry(ihk_host_os_get_index(__os), pisp->pid, pisp->arg);
-		break;
-
 	case SCD_MSG_PROCFS_TID_DELETE:
-		delete_tid_entry(ihk_host_os_get_index(__os), pisp->pid, pisp->arg);
+		procfsm_packet_handler(__os, pisp->msg, pisp->pid, pisp->arg);
 		break;
 
 	case SCD_MSG_GET_VDSO_INFO:
@@ -109,6 +109,14 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 				pisp->msg, pisp->ref, pisp->osnum, pisp->pid,
 				pisp->err, pisp->arg);
 		break;
+	}
+
+	/* 
+	 * SCD_MSG_SYSCALL_ONESIDE holds the packet and frees is it
+	 * mcexec_ret_syscall(), for the rest, free it here.
+	 */
+	if (msg != SCD_MSG_SYSCALL_ONESIDE) {
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)__packet, c);
 	}
 	return 0;
 }
@@ -146,8 +154,6 @@ int mcctrl_ikc_set_recv_cpu(ihk_os_t os, int cpu)
 
 	ihk_ikc_channel_set_cpu(usrdata->channels[cpu].c,
 	                        ihk_ikc_get_processor_id());
-	kprintf("Setting the target to %d\n",
-	        ihk_ikc_get_processor_id());
 	return 0;
 }
 
@@ -193,12 +199,13 @@ static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ih
 #endif
 
 	pmc->param.request_va =
-		(void *)__get_free_pages(GFP_KERNEL,
+		(void *)__get_free_pages(in_interrupt() ? GFP_ATOMIC : GFP_KERNEL,
 		                         REQUEST_SHIFT - PAGE_SHIFT);
 	pmc->param.request_pa = virt_to_phys(pmc->param.request_va);
 	pmc->param.doorbell_va = usrdata->mcctrl_doorbell_va;
 	pmc->param.doorbell_pa = usrdata->mcctrl_doorbell_pa;
-	pmc->param.post_va = (void *)__get_free_page(GFP_KERNEL);
+	pmc->param.post_va = (void *)__get_free_page(in_interrupt() ? 
+			GFP_ATOMIC : GFP_KERNEL);
 	pmc->param.post_pa = virt_to_phys(pmc->param.post_va);
 	memset(pmc->param.doorbell_va, 0, PAGE_SIZE);
 	memset(pmc->param.request_va, 0, PAGE_SIZE);
@@ -218,8 +225,9 @@ static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ih
 													PAGE_SIZE, NULL, 0);
 #endif
 
-	pmc->dma_buf = (void *)__get_free_pages(GFP_KERNEL,
-	                                        DMA_PIN_SHIFT - PAGE_SHIFT);
+	pmc->dma_buf = (void *)__get_free_pages(in_interrupt() ? 
+			GFP_ATOMIC : GFP_KERNEL,
+			DMA_PIN_SHIFT - PAGE_SHIFT);
 
 	rpm->request_page = pmc->param.request_pa;
 	rpm->doorbell_page = pmc->param.doorbell_pa;
@@ -265,9 +273,6 @@ static int connect_handler(struct ihk_ikc_channel_info *param)
 	}
 	param->packet_handler = syscall_packet_handler;
 	
-	INIT_LIST_HEAD(&usrdata->channels[cpu].wq_list);
-	spin_lock_init(&usrdata->channels[cpu].wq_list_lock);
-
 	usrdata->channels[cpu].c = c;
 	kprintf("syscall: MC CPU %d connected. c=%p\n", cpu, c);
 
@@ -286,9 +291,6 @@ static int connect_handler2(struct ihk_ikc_channel_info *param)
 
 	param->packet_handler = syscall_packet_handler;
 	
-	INIT_LIST_HEAD(&usrdata->channels[cpu].wq_list);
-	spin_lock_init(&usrdata->channels[cpu].wq_list_lock);
-
 	usrdata->channels[cpu].c = c;
 	kprintf("syscall: MC CPU %d connected. c=%p\n", cpu, c);
 
@@ -315,7 +317,7 @@ int prepare_ikc_channels(ihk_os_t os)
 {
 	struct ihk_cpu_info *info;
 	struct mcctrl_usrdata   *usrdata;
-	int error;
+	int i;
 
 	usrdata = kzalloc(sizeof(struct mcctrl_usrdata), GFP_KERNEL);
 	usrdata->mcctrl_doorbell_va = (void *)__get_free_page(GFP_KERNEL);
@@ -347,16 +349,13 @@ int prepare_ikc_channels(ihk_os_t os)
 	memcpy(&usrdata->listen_param2, &listen_param2, sizeof listen_param2);
 	ihk_ikc_listen_port(os, &usrdata->listen_param2);
 
-	INIT_LIST_HEAD(&usrdata->per_proc_list);
-	spin_lock_init(&usrdata->per_proc_list_lock);
+	for (i = 0; i < MCCTRL_PER_PROC_DATA_HASH_SIZE; ++i) {
+		INIT_LIST_HEAD(&usrdata->per_proc_data_hash[i]);
+		rwlock_init(&usrdata->per_proc_data_hash_lock[i]);
+	}
 
 	INIT_LIST_HEAD(&usrdata->cpu_topology_list);
 	INIT_LIST_HEAD(&usrdata->node_topology_list);
-
-	error = init_peer_channel_registry(usrdata);
-	if (error) {
-		return error;
-	}
 
 	return 0;
 }
@@ -396,7 +395,6 @@ void destroy_ikc_channels(ihk_os_t os)
 	}
 	free_page((unsigned long)usrdata->mcctrl_doorbell_va);
 
-	destroy_peer_channel_registry(usrdata);
 	kfree(usrdata->channels);
 	kfree(usrdata);
 }

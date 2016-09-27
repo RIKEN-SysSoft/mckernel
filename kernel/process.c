@@ -53,7 +53,6 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm);
 extern void release_fp_regs(struct thread *proc);
 extern void save_fp_regs(struct thread *proc);
 extern void restore_fp_regs(struct thread *proc);
-void settid(struct thread *proc, int mode, int newcpuid, int oldcpuid);
 extern void __runq_add_proc(struct thread *proc, int cpu_id);
 extern void terminate_host(int pid);
 extern void lapic_timer_enable(unsigned int clocks);
@@ -745,7 +744,7 @@ int join_process_memory_range(struct process_vm *vm,
 		memobj_release(merging->memobj);
 	}
 	list_del(&merging->list);
-	ihk_mc_free(merging);
+	kfree(merging);
 
 	error = 0;
 out:
@@ -841,8 +840,9 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 	if (range->memobj) {
 		memobj_release(range->memobj);
 	}
+
 	list_del(&range->list);
-	ihk_mc_free(range);
+	kfree(range);
 
 	dkprintf("free_process_memory_range(%p,%lx-%lx): 0\n",
 			vm, start0, end0);
@@ -968,7 +968,6 @@ enum ihk_mc_pt_attribute common_vrflag_to_ptattr(unsigned long flag, uint64_t fa
 	return attr;
 }
 
-/* XXX: インデントを揃える必要がある */
 int add_process_memory_range(struct process_vm *vm,
                              unsigned long start, unsigned long end,
                              unsigned long phys, unsigned long flag,
@@ -1539,6 +1538,8 @@ retry:
 				kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):cannot allocate new page. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
 				goto out;
 			}
+			dkprintf("%s: clearing 0x%lx:%lu\n",
+					__FUNCTION__, pgaddr, pgsize);
 			memset(virt, 0, pgsize);
 			phys = virt_to_phys(virt);
 			page_map(phys_to_page(phys));
@@ -1571,6 +1572,8 @@ retry:
 				kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):cannot allocate copy page. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
 				goto out;
 			}
+			dkprintf("%s: copying 0x%lx:%lu\n",
+				__FUNCTION__, pgaddr, pgsize);
 			memcpy(virt, phys_to_virt(phys), pgsize);
 
 			phys = virt_to_phys(virt);
@@ -1651,7 +1654,7 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 				"access denied. %d\n",
 				ihk_mc_get_processor_id(), vm,
 				fault_addr0, reason, error);
-		kprintf("%s: reason: %s%s%s%s%s%s%s%s\n", __FUNCTION__, 
+		kprintf("%s: reason: %s%s%s%s%s%s%s\n", __FUNCTION__,
 			(reason & PF_PROT) ? "PF_PROT " : "",
 			(reason & PF_WRITE) ? "PF_WRITE " : "",
 			(reason & PF_USER) ? "PF_USER " : "",
@@ -1890,14 +1893,14 @@ unsigned long extend_process_region(struct process_vm *vm,
 			aligned_end = (aligned_end + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
 			/* Fill in the gap between old_aligned_end and aligned_end
 			 * with regular pages */
-			if((p = allocate_pages((aligned_end - old_aligned_end) >> PAGE_SHIFT,
+			if((p = ihk_mc_alloc_pages((aligned_end - old_aligned_end) >> PAGE_SHIFT,
                                  IHK_MC_AP_NOWAIT)) == NULL){
 				return end;
 			}
 			if((rc = add_process_memory_range(vm, old_aligned_end,
                                         aligned_end, virt_to_phys(p), flag,
 					LARGE_PAGE_SHIFT)) != 0){
-				free_pages(p, (aligned_end - old_aligned_end) >> PAGE_SHIFT);
+				ihk_mc_free_pages(p, (aligned_end - old_aligned_end) >> PAGE_SHIFT);
 				return end;
 			}
 
@@ -1910,7 +1913,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 				(LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
 		address = aligned_new_end;
 
-		if((p = allocate_pages((aligned_new_end - aligned_end + LARGE_PAGE_SIZE) >> PAGE_SHIFT,
+		if((p = ihk_mc_alloc_pages((aligned_new_end - aligned_end + LARGE_PAGE_SIZE) >> PAGE_SHIFT,
                             IHK_MC_AP_NOWAIT)) == NULL){
 			return end;
 		}
@@ -1918,16 +1921,16 @@ unsigned long extend_process_region(struct process_vm *vm,
 		p_aligned = ((unsigned long)p + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
 
 		if (p_aligned > (unsigned long)p) {
-			free_pages(p, (p_aligned - (unsigned long)p) >> PAGE_SHIFT);
+			ihk_mc_free_pages(p, (p_aligned - (unsigned long)p) >> PAGE_SHIFT);
 		}
-		free_pages(
+		ihk_mc_free_pages(
 			(void *)(p_aligned + aligned_new_end - aligned_end),
 			(LARGE_PAGE_SIZE - (p_aligned - (unsigned long)p)) >> PAGE_SHIFT);
 
 		if((rc = add_process_memory_range(vm, aligned_end,
                                aligned_new_end, virt_to_phys((void *)p_aligned),
                                flag, LARGE_PAGE_SHIFT)) != 0){
-			free_pages(p, (aligned_new_end - aligned_end + LARGE_PAGE_SIZE) >> PAGE_SHIFT);
+			ihk_mc_free_pages(p, (aligned_new_end - aligned_end + LARGE_PAGE_SIZE) >> PAGE_SHIFT);
 			return end;
 		}
 
@@ -1945,7 +1948,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 	  p=0;
 	}else{
 
-	p = allocate_pages((aligned_new_end - aligned_end) >> PAGE_SHIFT, IHK_MC_AP_NOWAIT);
+	p = ihk_mc_alloc_pages((aligned_new_end - aligned_end) >> PAGE_SHIFT, IHK_MC_AP_NOWAIT);
 
 	if (!p) {
 		return end;
@@ -1954,7 +1957,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 	if((rc = add_process_memory_range(vm, aligned_end, aligned_new_end,
                                       (p==0?0:virt_to_phys(p)), flag, NULL, 0,
 				      PAGE_SHIFT)) != 0){
-		free_pages(p, (aligned_new_end - aligned_end) >> PAGE_SHIFT);
+		ihk_mc_free_pages(p, (aligned_new_end - aligned_end) >> PAGE_SHIFT);
 		return end;
 	}
 
@@ -2067,6 +2070,7 @@ release_process(struct process *proc)
 		mcs_rwlock_writer_unlock(&parent->children_lock, &lock);
 	}
 
+	if (proc->tids) kfree(proc->tids);
 	kfree(proc);
 }
 
@@ -2172,6 +2176,23 @@ release_sigcommon(struct sig_common *sigcommon)
 	kfree(sigcommon);
 }
 
+/*
+ * Release the TID from the process' TID set corresponding to this thread.
+ * NOTE: threads_lock must be held.
+ */
+void __release_tid(struct process *proc, struct thread *thread) {
+	int i;
+
+	for (i = 0; i < proc->nr_tids; ++i) {
+		if (proc->tids[i].thread != thread) continue;
+
+		proc->tids[i].thread = NULL;
+		dkprintf("%s: tid %d has been released by %p\n",
+			__FUNCTION__, thread->tid, thread);
+		break;
+	}
+}
+
 void destroy_thread(struct thread *thread)
 {
 	struct sig_pending *pending;
@@ -2188,6 +2209,7 @@ void destroy_thread(struct thread *thread)
 
 	mcs_rwlock_writer_lock(&proc->threads_lock, &lock);
 	list_del(&thread->siblings_list);
+	__release_tid(proc, thread);
 	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 
 	cpu_clear(thread->cpu_id, &thread->vm->address_space->cpu_set,
@@ -2325,6 +2347,8 @@ static void idle(void)
 		}
 		if (v->status == CPU_STATUS_IDLE ||
 		    v->status == CPU_STATUS_RESERVED) {
+			/* No work to do? Consolidate the kmalloc free list */
+			kmalloc_consolidate_free_list();
 			cpu_safe_halt();
 		}
 		else {
@@ -2527,7 +2551,7 @@ static void do_migrate(void)
 		v->flags |= CPU_FLAG_NEED_RESCHED;
 		ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
 		double_rq_unlock(cur_v, v, irqstate);
-		settid(req->thread, 2, cpu_id, old_cpu_id);
+		//settid(req->thread, 2, cpu_id, old_cpu_id, 0, NULL);
 
 ack:
 		waitq_wakeup(&req->wq);
@@ -2563,13 +2587,8 @@ void schedule(void)
 	struct thread *last;
 
 	if (cpu_local_var(no_preempt)) {
-		dkprintf("no schedule() while no preemption! \n");
-		return;
-	}
-
-	if (cpu_local_var(current)
-			&& cpu_local_var(current)->in_syscall_offload) {
-		dkprintf("no schedule() while syscall offload!\n");
+		kprintf("%s: WARNING can't schedule() while no preemption, cnt: %d\n",
+			__FUNCTION__, cpu_local_var(no_preempt));
 		return;
 	}
 

@@ -75,7 +75,7 @@ sysfs_createf(struct sysfs_ops *ops, void *instance, int mode,
 	dkprintf("sysfs_createf(%p,%p,%#o,%s,...)\n",
 			ops, instance, mode, fmt);
 
-	param = allocate_pages(1, IHK_MC_AP_NOWAIT);
+	param = ihk_mc_alloc_pages(1, IHK_MC_AP_NOWAIT);
 	if (!param) {
 		error = -ENOMEM;
 		ekprintf("sysfs_createf:allocate_pages failed. %d\n", error);
@@ -134,7 +134,7 @@ sysfs_createf(struct sysfs_ops *ops, void *instance, int mode,
 	error = 0;
 out:
 	if (param) {
-		free_pages(param, 1);
+		ihk_mc_free_pages(param, 1);
 	}
 	if (error) {
 		ekprintf("sysfs_createf(%p,%p,%#o,%s,...): %d\n",
@@ -156,7 +156,7 @@ sysfs_mkdirf(sysfs_handle_t *dirhp, const char *fmt, ...)
 
 	dkprintf("sysfs_mkdirf(%p,%s,...)\n", dirhp, fmt);
 
-	param = allocate_pages(1, IHK_MC_AP_NOWAIT);
+	param = ihk_mc_alloc_pages(1, IHK_MC_AP_NOWAIT);
 	if (!param) {
 		error = -ENOMEM;
 		ekprintf("sysfs_mkdirf:allocate_pages failed. %d\n", error);
@@ -208,7 +208,7 @@ sysfs_mkdirf(sysfs_handle_t *dirhp, const char *fmt, ...)
 
 out:
 	if (param) {
-		free_pages(param, 1);
+		ihk_mc_free_pages(param, 1);
 	}
 	if (error) {
 		ekprintf("sysfs_mkdirf(%p,%s,...): %d\n", dirhp, fmt, error);
@@ -229,7 +229,7 @@ sysfs_symlinkf(sysfs_handle_t targeth, const char *fmt, ...)
 
 	dkprintf("sysfs_symlinkf(%#lx,%s,...)\n", targeth.handle, fmt);
 
-	param = allocate_pages(1, IHK_MC_AP_NOWAIT);
+	param = ihk_mc_alloc_pages(1, IHK_MC_AP_NOWAIT);
 	if (!param) {
 		error = -ENOMEM;
 		ekprintf("sysfs_symlinkf:allocate_pages failed. %d\n", error);
@@ -279,7 +279,7 @@ sysfs_symlinkf(sysfs_handle_t targeth, const char *fmt, ...)
 	error = 0;
 out:
 	if (param) {
-		free_pages(param, 1);
+		ihk_mc_free_pages(param, 1);
 	}
 	if (error) {
 		ekprintf("sysfs_symlinkf(%#lx,%s,...): %d\n",
@@ -301,7 +301,7 @@ sysfs_lookupf(sysfs_handle_t *objhp, const char *fmt, ...)
 
 	dkprintf("sysfs_lookupf(%p,%s,...)\n", objhp, fmt);
 
-	param = allocate_pages(1, IHK_MC_AP_NOWAIT);
+	param = ihk_mc_alloc_pages(1, IHK_MC_AP_NOWAIT);
 	if (!param) {
 		error = -ENOMEM;
 		ekprintf("sysfs_lookupf:allocate_pages failed. %d\n", error);
@@ -353,7 +353,7 @@ sysfs_lookupf(sysfs_handle_t *objhp, const char *fmt, ...)
 
 out:
 	if (param) {
-		free_pages(param, 1);
+		ihk_mc_free_pages(param, 1);
 	}
 	if (error) {
 		ekprintf("sysfs_lookupf(%p,%s,...): %d\n", objhp, fmt, error);
@@ -374,7 +374,7 @@ sysfs_unlinkf(int flags, const char *fmt, ...)
 
 	dkprintf("sysfs_unlinkf(%#x,%s,...)\n", flags, fmt);
 
-	param = allocate_pages(1, IHK_MC_AP_NOWAIT);
+	param = ihk_mc_alloc_pages(1, IHK_MC_AP_NOWAIT);
 	if (!param) {
 		error = -ENOMEM;
 		ekprintf("sysfs_unlinkf:allocate_pages failed. %d\n", error);
@@ -423,7 +423,7 @@ sysfs_unlinkf(int flags, const char *fmt, ...)
 	error = 0;
 out:
 	if (param) {
-		free_pages(param, 1);
+		ihk_mc_free_pages(param, 1);
 	}
 	if (error) {
 		ekprintf("sysfs_unlinkf(%#x,%s,...): %d\n", flags, fmt, error);
@@ -601,14 +601,14 @@ sysfs_init(void)
 	}
 
 	sysfs_data_bufsize = PAGE_SIZE;
-	sysfs_data_buf = allocate_pages(1, IHK_MC_AP_NOWAIT);
+	sysfs_data_buf = ihk_mc_alloc_pages(1, IHK_MC_AP_NOWAIT);
 	if (!sysfs_data_buf) {
 		error = -ENOMEM;
 		ekprintf("sysfs_init:allocate_pages(buf) failed. %d\n", error);
 		goto out;
 	}
 
-	param = allocate_pages(1, IHK_MC_AP_NOWAIT);
+	param = ihk_mc_alloc_pages(1, IHK_MC_AP_NOWAIT);
 	if (!param) {
 		error = -ENOMEM;
 		ekprintf("sysfs_init:allocate_pages(param) failed. %d\n",
@@ -644,7 +644,7 @@ sysfs_init(void)
 	error = 0;
 out:
 	if (param) {
-		free_pages(param, 1);
+		ihk_mc_free_pages(param, 1);
 	}
 	if (error) {
 		ekprintf("sysfs_init(): %d\n", error);

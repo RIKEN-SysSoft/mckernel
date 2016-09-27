@@ -110,6 +110,13 @@ struct program_load_desc {
 };
 
 struct syscall_request {
+	/* TID of requesting thread */
+	int rtid;
+	/*
+	 * TID of target thread. Remote page fault response needs to designate the
+	 * thread that must serve the request, 0 indicates any thread from the pool
+	 */
+	int ttid;
 	unsigned long valid;
 	unsigned long number;
 	unsigned long args[6];
@@ -128,8 +135,17 @@ struct syscall_load_desc {
 	unsigned long size;
 };
 
+#define IHK_SCD_REQ_THREAD_SPINNING         0
+#define IHK_SCD_REQ_THREAD_TO_BE_WOKEN      1
+#define IHK_SCD_REQ_THREAD_DESCHEDULED      2
+
 struct syscall_response {
+	/* TID of the thread that requested the service */
+	int ttid;
+	/* TID of the mcexec thread that is serving or has served the request */
+	int stid;
 	unsigned long status;
+	unsigned long req_thread_status;
 	long ret;
 	unsigned long fault_address;
 	unsigned long fault_reason;

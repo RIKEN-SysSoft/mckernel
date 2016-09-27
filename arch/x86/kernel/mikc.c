@@ -38,7 +38,7 @@ int ihk_mc_ikc_init_first_local(struct ihk_ikc_channel_desc *channel,
 	arch_master_channel_packet_handler = packet_handler;
 
 	ihk_ikc_init_desc(channel, IKC_OS_HOST, 0, rq, wq,
-	                  ihk_ikc_master_channel_packet_handler);
+	                  ihk_ikc_master_channel_packet_handler, channel);
 	ihk_ikc_enable_channel(channel);
 
 	/* Set boot parameter */

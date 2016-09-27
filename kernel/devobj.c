@@ -99,7 +99,7 @@ int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxp
 	}
 	memset(obj, 0, sizeof(*obj));
 
-	obj->pfn_table = allocate_pages(pfn_npages, IHK_MC_AP_NOWAIT);
+	obj->pfn_table = ihk_mc_alloc_pages(pfn_npages, IHK_MC_AP_NOWAIT);
 	if (!obj->pfn_table) {
 		error = -ENOMEM;
 		kprintf("%s: error: fd: %d, len: %lu, off: %lu allocating PFN failed.\n", 
@@ -141,7 +141,7 @@ int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxp
 out:
 	if (obj) {
 		if (obj->pfn_table) {
-			free_pages(obj->pfn_table, pfn_npages);
+			ihk_mc_free_pages(obj->pfn_table, pfn_npages);
 		}
 		kfree(obj);
 	}
@@ -166,6 +166,8 @@ static void devobj_release(struct memobj *memobj)
 	struct devobj *obj = to_devobj(memobj);
 	struct devobj *free_obj = NULL;
 	uintptr_t handle;
+	const size_t pfn_npages =
+		(obj->npages / (PAGE_SIZE / sizeof(uintptr_t))) + 1;
 
 	dkprintf("devobj_release(%p %lx)\n", obj, obj->handle);
 
@@ -194,7 +196,7 @@ static void devobj_release(struct memobj *memobj)
 		}
 
 		if (obj->pfn_table) {
-			free_pages(obj->pfn_table, 1);
+			ihk_mc_free_pages(obj->pfn_table, pfn_npages);
 		}
 		kfree(free_obj);
 	}

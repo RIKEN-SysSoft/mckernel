@@ -105,7 +105,7 @@ static int set_perfctr_x86_direct(int counter, int mode, unsigned int value)
 	wrmsr(MSR_IA32_PERFEVTSEL0 + counter, value);
 
 	//kprintf("wrmsr: %d <= %x\n", MSR_PERF_GLOBAL_CTRL, 0);
-	kprintf("wrmsr: %d <= %x\n", MSR_IA32_PERFEVTSEL0 + counter, value);
+	//kprintf("wrmsr: %d <= %x\n", MSR_IA32_PERFEVTSEL0 + counter, value);
 
 	return 0;
 }

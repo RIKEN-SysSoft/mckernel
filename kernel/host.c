@@ -376,10 +376,16 @@ static int process_msg_prepare_process(unsigned long rphys)
 	}
 
 	n = p->num_sections;
+	if (n > 16) {
+		kprintf("%s: ERROR: more ELF sections than 16??\n",
+			__FUNCTION__);
+		return -ENOMEM;
+	}
 	dkprintf("# of sections: %d\n", n);
 
-	if((pn = ihk_mc_allocate(sizeof(struct program_load_desc) 
-	       + sizeof(struct program_image_section) * n, IHK_MC_AP_NOWAIT)) == NULL){
+	if((pn = kmalloc(sizeof(struct program_load_desc) 
+					+ sizeof(struct program_image_section) * n,
+					IHK_MC_AP_NOWAIT)) == NULL){
 		ihk_mc_unmap_virtual(p, npages, 0);
 		ihk_mc_unmap_memory(NULL, phys, sz);
 		return -ENOMEM;
@@ -388,7 +394,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	            + sizeof(struct program_image_section) * n);
 
 	if((thread = create_thread(p->entry)) == NULL){
-		ihk_mc_free(pn);
+		kfree(pn);
 		ihk_mc_unmap_virtual(p, npages, 1);
 		ihk_mc_unmap_memory(NULL, phys, sz);
 		return -ENOMEM;
@@ -438,7 +444,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	dkprintf("new process : %p [%d] / table : %p\n", proc, proc->pid,
 	        vm->address_space->page_table);
 
-	ihk_mc_free(pn);
+	kfree(pn);
 
 	ihk_mc_unmap_virtual(p, npages, 1);
 	ihk_mc_unmap_memory(NULL, phys, sz);
@@ -446,7 +452,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 
 	return 0;
 err:
-	ihk_mc_free(pn);
+	kfree(pn);
 	ihk_mc_unmap_virtual(p, npages, 1);
 	ihk_mc_unmap_memory(NULL, phys, sz);
 	destroy_thread(thread);
@@ -455,7 +461,7 @@ err:
 
 static void process_msg_init(struct ikc_scd_init_param *pcp, struct syscall_params *lparam)
 {
-	lparam->response_va = allocate_pages(RESPONSE_PAGE_COUNT, 0);
+	lparam->response_va = ihk_mc_alloc_pages(RESPONSE_PAGE_COUNT, 0);
 	lparam->response_pa = virt_to_phys(lparam->response_va);
 
 	pcp->request_page = 0;
@@ -524,12 +530,7 @@ static void syscall_channel_send(struct ihk_ikc_channel_desc *c,
 }
 
 extern unsigned long do_kill(struct thread *, int, int, int, struct siginfo *, int ptracecont);
-extern void settid(struct thread *proc, int mode, int newcpuid, int oldcpuid);
-
 extern void process_procfs_request(unsigned long rarg);
-extern int memcheckall();
-extern int freecheck(int runcount);
-extern int runcount;
 extern void terminate_host(int pid);
 extern void debug_log(long);
 
@@ -564,6 +565,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	struct ikc_scd_packet *packet = __packet;
 	struct ikc_scd_packet pckt;
 	int rc;
+	struct mcs_rwlock_node_irqsave lock;
 	struct thread *thread;
 	struct process *proc;
 	struct mcctrl_signal {
@@ -575,21 +577,16 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	} *sp, info;
 	unsigned long pp;
 	int cpuid;
+	int ret = 0;
 
 	switch (packet->msg) {
 	case SCD_MSG_INIT_CHANNEL_ACKED:
 		dkprintf("SCD_MSG_INIT_CHANNEL_ACKED\n");
 		process_msg_init_acked(c, packet->arg);
-		return 0;
+		ret = 0;
+		break;
 
 	case SCD_MSG_PREPARE_PROCESS:
-
-		if (find_command_line("memdebug")) {
-			memcheckall();
-			if (runcount)
-				freecheck(runcount);
-			runcount++;
-		}
 
 		if((rc = process_msg_prepare_process(packet->arg)) == 0){
 			pckt.msg = SCD_MSG_PREPARE_PROCESS_ACKED;
@@ -603,19 +600,21 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		pckt.arg = packet->arg;
 		syscall_channel_send(c, &pckt);
 
-		return 0;
+		ret = 0;
+		break;
 
 	case SCD_MSG_SCHEDULE_PROCESS:
 		cpuid = obtain_clone_cpuid();
 		if(cpuid == -1){
 			kprintf("No CPU available\n");
-			return -1;
+			ret = -1;
+			break;
 		}
 		dkprintf("SCD_MSG_SCHEDULE_PROCESS: %lx\n", packet->arg);
 		thread = (struct thread *)packet->arg;
 		proc = thread->proc;
 
-		settid(thread, 0, cpuid, -1);
+		settid(thread, 0, cpuid, -1, 0, NULL);
 		proc->status = PS_RUNNING;
 		thread->status = PS_RUNNING;
 		chain_thread(thread);
@@ -623,7 +622,29 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		runq_add_thread(thread, cpuid);
 					  
 		//cpu_local_var(next) = (struct thread *)packet->arg;
-		return 0;
+		ret = 0;
+		break;
+
+	/*
+	 * Used for syscall offload reply message to explicitly schedule in
+	 * the waiting thread
+	 */
+	case SCD_MSG_WAKE_UP_SYSCALL_THREAD:
+		thread = find_thread(0, packet->ttid, &lock);
+		if (!thread) {
+			kprintf("%s: WARNING: no thread for SCD reply? TID: %d\n",
+				__FUNCTION__, packet->ttid);
+			ret = -EINVAL;
+			break;
+		}
+		thread_unlock(thread, &lock);
+
+		dkprintf("%s: SCD_MSG_WAKE_UP_SYSCALL_THREAD: waking up tid %d\n",
+			__FUNCTION__, packet->ttid);
+		waitq_wakeup(&thread->scd_wq);
+		ret = 0;
+		break;
+
 	case SCD_MSG_SEND_SIGNAL:
 		pp = ihk_mc_map_memory(NULL, packet->arg, sizeof(struct mcctrl_signal));
 		sp = (struct mcctrl_signal *)ihk_mc_map_virtual(pp, 1, PTATTR_WRITABLE | PTATTR_ACTIVE);
@@ -638,18 +659,25 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 
 		rc = do_kill(NULL, info.pid, info.tid, info.sig, &info.info, 0);
 		kprintf("SCD_MSG_SEND_SIGNAL: do_kill(pid=%d, tid=%d, sig=%d)=%d\n", info.pid, info.tid, info.sig, rc);
-		return 0;
+		ret = 0;
+		break;
+
 	case SCD_MSG_PROCFS_REQUEST:
 		process_procfs_request(packet->arg);
-		return 0;
+		ret = 0;
+		break;
+
 	case SCD_MSG_CLEANUP_PROCESS:
 		dkprintf("SCD_MSG_CLEANUP_PROCESS pid=%d\n", packet->pid);
 		terminate_host(packet->pid);
-		return 0;
+		ret = 0;
+		break;
+
 	case SCD_MSG_DEBUG_LOG:
 		dkprintf("SCD_MSG_DEBUG_LOG code=%lx\n", packet->arg);
 		debug_log(packet->arg);
-		return 0;
+		ret = 0;
+		break;
 
 	case SCD_MSG_SYSFS_REQ_SHOW:
 	case SCD_MSG_SYSFS_REQ_STORE:
@@ -657,7 +685,8 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		sysfss_packet_handler(c, packet->msg, packet->err,
 				packet->sysfs_arg1, packet->sysfs_arg2,
 				packet->sysfs_arg3);
-		return 0;
+		ret = 0;
+		break;
 
 	case SCD_MSG_GET_CPU_MAPPING:
 		req_get_cpu_mapping(packet->arg);
@@ -665,17 +694,21 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		pckt.msg = SCD_MSG_REPLY_GET_CPU_MAPPING;
 		pckt.arg = packet->arg;
 		syscall_channel_send(c, &pckt);
-		return 0;
+		ret = 0;
+		break;
 
 	default:
 		kprintf("syscall_pakcet_handler:unknown message "
 				"(%d.%d.%d.%d.%d.%#lx)\n",
 				packet->msg, packet->ref, packet->osnum,
 				packet->pid, packet->err, packet->arg);
-		return 0;
+		ret = 0;
+		break;
 
 	}
-	return 0;
+
+	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet, c);
+	return ret;
 }
 
 void init_host_syscall_channel(void)

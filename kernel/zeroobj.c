@@ -172,6 +172,10 @@ static int zeroobj_get_page(struct memobj *memobj, off_t off, int p2align,
 	struct zeroobj *obj = to_zeroobj(memobj);
 	struct page *page;
 
+	/* Don't bother about zero page, page fault handler will
+	 * allocate and clear pages */
+	return 0;
+
 	dkprintf("zeroobj_get_page(%p,%#lx,%d,%p)\n",
 			memobj, off, p2align, physp);
 	if (off & ~PAGE_MASK) {
