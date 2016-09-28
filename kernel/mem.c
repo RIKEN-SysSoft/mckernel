@@ -96,13 +96,12 @@ struct pagealloc_track_addr_entry {
 	struct list_head list; /* track_entry's list */
 	struct pagealloc_track_entry *entry;
 	struct list_head hash; /* address hash */
-	int npages_freed;
+	int npages;
 };
 
 struct pagealloc_track_entry {
 	char *file;
 	int line;
-	int npages;
 	ihk_atomic_t alloc_count;
 	struct list_head hash;
 	struct list_head addr_list;
@@ -126,14 +125,13 @@ void pagealloc_track_init(void)
 
 /* NOTE: Hash lock must be held */
 struct pagealloc_track_entry *__pagealloc_track_find_entry(
-		int npages, char *file, int line)
+		char *file, int line)
 {
 	struct pagealloc_track_entry *entry_iter, *entry = NULL;
-	int hash = (strlen(file) + line + npages) & PAGEALLOC_TRACK_HASH_MASK;
+	int hash = (strlen(file) + line) & PAGEALLOC_TRACK_HASH_MASK;
 
 	list_for_each_entry(entry_iter, &pagealloc_track_hash[hash], hash) {
 		if (!strcmp(entry_iter->file, file) &&
-				entry_iter->npages == npages &&
 				entry_iter->line == line) {
 			entry = entry_iter;
 			break;
@@ -141,12 +139,12 @@ struct pagealloc_track_entry *__pagealloc_track_find_entry(
 	}
 
 	if (entry) {
-		dkprintf("%s found entry %s:%d npages: %d\n", __FUNCTION__,
-				file, line, npages);
+		dkprintf("%s found entry %s:%d\n", __FUNCTION__,
+				file, line);
 	}
 	else {
-		dkprintf("%s couldn't find entry %s:%d npages: %d\n", __FUNCTION__,
-				file, line, npages);
+		dkprintf("%s couldn't find entry %s:%d\n", __FUNCTION__,
+				file, line);
 	}
 
 	return entry;
@@ -168,10 +166,10 @@ void *_ihk_mc_alloc_aligned_pages(int npages, int p2align,
 	if (!r)
 		return r;
 
-	hash = (strlen(file) + line + npages) & PAGEALLOC_TRACK_HASH_MASK;
+	hash = (strlen(file) + line) & PAGEALLOC_TRACK_HASH_MASK;
 	irqflags = ihk_mc_spinlock_lock(&pagealloc_track_hash_locks[hash]);
 
-	entry = __pagealloc_track_find_entry(npages, file, line);
+	entry = __pagealloc_track_find_entry(file, line);
 
 	if (!entry) {
 		entry = ___kmalloc(sizeof(*entry), IHK_MC_AP_NOWAIT);
@@ -181,7 +179,6 @@ void *_ihk_mc_alloc_aligned_pages(int npages, int p2align,
 		}
 
 		entry->line = line;
-		entry->npages = npages;
 		ihk_atomic_set(&entry->alloc_count, 0);
 		ihk_mc_spinlock_init(&entry->addr_list_lock);
 		INIT_LIST_HEAD(&entry->addr_list);
@@ -214,7 +211,7 @@ void *_ihk_mc_alloc_aligned_pages(int npages, int p2align,
 	addr_entry->addr = r;
 	addr_entry->runcount = pagealloc_runcount;
 	addr_entry->entry = entry;
-	addr_entry->npages_freed = 0;
+	addr_entry->npages = npages;
 
 	irqflags = ihk_mc_spinlock_lock(&entry->addr_list_lock);
 	list_add(&addr_entry->list, &entry->addr_list);
@@ -243,6 +240,7 @@ void _ihk_mc_free_pages(void *ptr, int npages, char *file, int line)
 	unsigned long irqflags;
 	struct pagealloc_track_entry *entry;
 	struct pagealloc_track_addr_entry *addr_entry_iter, *addr_entry = NULL;
+	struct pagealloc_track_addr_entry *addr_entry_next = NULL;
 	int hash;
 	int rehash_addr_entry = 0;
 
@@ -261,12 +259,12 @@ void _ihk_mc_free_pages(void *ptr, int npages, char *file, int line)
 	}
 
 	if (addr_entry) {
-		if (addr_entry->entry->npages > npages) {
+		if (addr_entry->npages > npages) {
 			addr_entry->addr += (npages * PAGE_SIZE);
-			addr_entry->npages_freed += npages;
+			addr_entry->npages -= npages;
 
 			/* Only rehash if haven't freed all pages yet */
-			if (addr_entry->npages_freed < addr_entry->entry->npages) {
+			if (addr_entry->npages) {
 				rehash_addr_entry = 1;
 			}
 		}
@@ -276,9 +274,93 @@ void _ihk_mc_free_pages(void *ptr, int npages, char *file, int line)
 	ihk_mc_spinlock_unlock(&pagealloc_addr_hash_locks[hash], irqflags);
 
 	if (!addr_entry) {
-		kprintf("%s: ERROR: invalid address @ %s:%d\n", __FUNCTION__, file, line);
-		panic("panic: this may not be an error");
+		/*
+		 * Deallocations that don't start at the allocated address are
+		 * valid but can't be found in addr hash, scan the entire table
+		 * and split the matching entry
+		 */
+		for (hash = 0; hash < PAGEALLOC_TRACK_HASH_SIZE; ++hash) {
+			irqflags = ihk_mc_spinlock_lock(&pagealloc_addr_hash_locks[hash]);
+			list_for_each_entry(addr_entry_iter,
+					&pagealloc_addr_hash[hash], hash) {
+				if (addr_entry_iter->addr < ptr &&
+					(addr_entry_iter->addr + addr_entry_iter->npages * PAGE_SIZE)
+					>= ptr + (npages * PAGE_SIZE)) {
+					addr_entry = addr_entry_iter;
+					break;
+				}
+			}
+
+			if (addr_entry) {
+				list_del(&addr_entry->hash);
+			}
+			ihk_mc_spinlock_unlock(&pagealloc_addr_hash_locks[hash], irqflags);
+
+			if (addr_entry) break;
+		}
+
+		/* Still not? Invalid deallocation */
+		if (!addr_entry) {
+			kprintf("%s: ERROR: invalid deallocation @ %s:%d\n",
+				__FUNCTION__, file, line);
+			panic("invalid deallocation");
+		}
+
+		dkprintf("%s: found covering addr_entry: 0x%lx:%d\n", __FUNCTION__,
+			addr_entry->addr, addr_entry->npages);
+
+		entry = addr_entry->entry;
+
+		/*
+		 * Now split, allocate new entry and rehash.
+		 * Is there a remaining piece after the deallocation?
+		 */
+		if ((ptr + (npages * PAGE_SIZE)) <
+				(addr_entry->addr + (addr_entry->npages * PAGE_SIZE))) {
+			int addr_hash;
+
+			addr_entry_next =
+				___kmalloc(sizeof(*addr_entry_next), IHK_MC_AP_NOWAIT);
+			if (!addr_entry_next) {
+				kprintf("%s: ERROR: allocating addr entry prev\n", __FUNCTION__);
+				goto out;
+			}
+
+			addr_entry_next->addr = ptr + (npages * PAGE_SIZE);
+			addr_entry_next->npages = ((addr_entry->addr +
+				(addr_entry->npages * PAGE_SIZE)) -
+				(ptr + npages * PAGE_SIZE)) / PAGE_SIZE;
+			addr_entry_next->runcount = addr_entry->runcount;
+
+			addr_hash = ((unsigned long)addr_entry_next->addr >> 5) &
+				PAGEALLOC_TRACK_HASH_MASK;
+			irqflags = ihk_mc_spinlock_lock(&pagealloc_addr_hash_locks[addr_hash]);
+			list_add(&addr_entry_next->hash, &pagealloc_addr_hash[addr_hash]);
+			ihk_mc_spinlock_unlock(&pagealloc_addr_hash_locks[addr_hash], irqflags);
+
+			/* Add to allocation entry */
+			addr_entry_next->entry = entry;
+			ihk_atomic_inc(&entry->alloc_count);
+			ihk_mc_spinlock_lock_noirq(&entry->addr_list_lock);
+			list_add(&addr_entry_next->list, &entry->addr_list);
+			ihk_mc_spinlock_unlock_noirq(&entry->addr_list_lock);
+
+			dkprintf("%s: addr_entry_next: 0x%lx:%d\n", __FUNCTION__,
+					addr_entry_next->addr, addr_entry_next->npages);
+		}
+
+		/*
+		 * We know that addr_entry->addr != ptr, addr_entry will cover
+		 * the region before the deallocation.
+		 */
+		addr_entry->npages = (ptr - addr_entry->addr) / PAGE_SIZE;
+		rehash_addr_entry = 1;
+
+		dkprintf("%s: modified addr_entry: 0x%lx:%d\n", __FUNCTION__,
+			addr_entry->addr, addr_entry->npages);
 	}
+
+	entry = addr_entry->entry;
 
 	if (rehash_addr_entry) {
 		int addr_hash = ((unsigned long)addr_entry->addr >> 5) &
@@ -288,8 +370,6 @@ void _ihk_mc_free_pages(void *ptr, int npages, char *file, int line)
 		ihk_mc_spinlock_unlock(&pagealloc_addr_hash_locks[addr_hash], irqflags);
 		goto out;
 	}
-
-	entry = addr_entry->entry;
 
 	irqflags = ihk_mc_spinlock_lock(&entry->addr_list_lock);
 	list_del(&addr_entry->list);
@@ -303,14 +383,14 @@ void _ihk_mc_free_pages(void *ptr, int npages, char *file, int line)
 		goto out;
 	}
 
-	hash = (strlen(entry->file) + entry->line + entry->npages) &
+	hash = (strlen(entry->file) + entry->line) &
 		PAGEALLOC_TRACK_HASH_MASK;
 	irqflags = ihk_mc_spinlock_lock(&pagealloc_track_hash_locks[hash]);
 	list_del(&entry->hash);
 	ihk_mc_spinlock_unlock(&pagealloc_track_hash_locks[hash], irqflags);
 
-	dkprintf("%s entry %s:%d npages: %d removed\n", __FUNCTION__,
-			entry->file, entry->line, entry->npages);
+	dkprintf("%s entry %s:%d removed\n", __FUNCTION__,
+			entry->file, entry->line);
 	___kfree(entry->file);
 	___kfree(entry);
 
@@ -333,12 +413,11 @@ void pagealloc_memcheck(void)
 			ihk_mc_spinlock_lock_noirq(&entry->addr_list_lock);
 			list_for_each_entry(addr_entry, &entry->addr_list, list) {
 
-			dkprintf("%s memory leak: %p @ %s:%d npages: %d runcount: %d\n",
+			dkprintf("%s memory leak: %p @ %s:%d runcount: %d\n",
 				__FUNCTION__,
 				addr_entry->addr,
 				entry->file,
 				entry->line,
-				entry->npages,
 				addr_entry->runcount);
 
 				if (pagealloc_runcount != addr_entry->runcount)
@@ -351,11 +430,10 @@ void pagealloc_memcheck(void)
 			if (!cnt)
 				continue;
 
-			kprintf("%s memory leak: %s:%d npages: %d cnt: %d, runcount: %d\n",
+			kprintf("%s memory leak: %s:%d cnt: %d, runcount: %d\n",
 				__FUNCTION__,
 				entry->file,
 				entry->line,
-				entry->npages,
 				cnt,
 				pagealloc_runcount);
 		}
