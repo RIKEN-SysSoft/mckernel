@@ -85,10 +85,17 @@ patch=`echo ${release} | sed -e 's/^[0-9]*.[0-9]*.\([0-9]*\).*/\1/'`
 linux_version_code=`expr \( ${major} \* 65536 \) + \( ${minor} \* 256 \) + ${patch}`
 rhel_release=`echo ${release} | sed -e 's/^[0-9]*.[0-9]*.[0-9]*-\([0-9]*\).*/\1/'`
 if [ "${release}" == "${rhel_release}" ]; then rhel_release=""; fi
+enable_mcoverlay="no"
 if [ "${ENABLE_MCOVERLAYFS}" == "yes" ]; then
-	enable_mcoverlay=`if ( [ ${linux_version_code} -ge 262144 ] && [ ${linux_version_code} -lt 262400 ] ); then echo "yes"; else echo "no"; fi`
-else
-	enable_mcoverlay=no
+	if [ "${rhel_release}" == "" ]; then
+		if [ ${linux_version_code} -ge 262144 -a ${linux_version_code} -lt 262400 ]; then
+			enable_mcoverlay="yes"
+		fi
+	else
+		if [ ${linux_version_code} -eq 199168 -a ${rhel_release} -ge 327 ]; then
+			enable_mcoverlay="yes"
+		fi
+	fi
 fi
 
 if [ "$cpus" == "" ]; then

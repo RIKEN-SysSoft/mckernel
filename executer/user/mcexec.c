@@ -101,6 +101,19 @@ int __glob_argc = -1;
 char **__glob_argv = 0;
 #endif
 
+#ifdef ENABLE_MCOVERLAYFS
+#undef ENABLE_MCOVERLAYFS
+#ifndef RHEL_RELEASE_CODE
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0) && LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0)
+#define ENABLE_MCOVERLAYFS 1
+#endif // LINUX_VERSION_CODE == 4.0
+#else
+#if RHEL_RELEASE_CODE == RHEL_RELEASE_VERSION(7,2)
+#define ENABLE_MCOVERLAYFS 1
+#endif // RHEL_RELEASE_CODE == 7.2
+#endif // RHEL_RELEASE_CODE
+#endif // ENABLE_MCOVERLAYFS
+
 typedef unsigned char   cc_t;
 typedef unsigned int    speed_t;
 typedef unsigned int    tcflag_t;
@@ -1134,7 +1147,6 @@ void init_worker_threads(int fd)
 }
 
 #ifdef ENABLE_MCOVERLAYFS
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0) && LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0)
 #define READ_BUFSIZE 1024
 static int isunshare(void)
 {
@@ -1206,7 +1218,6 @@ static int isunshare(void)
 	__dprintf("err=%d\n", err);
 	return err;
 }
-#endif
 #endif // ENABLE_MCOVERLAYFS
 
 #define MCK_RLIMIT_AS	0
@@ -1396,7 +1407,6 @@ int main(int argc, char **argv)
 	}
 
 #ifdef ENABLE_MCOVERLAYFS
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0) && LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0)
 	__dprintf("mcoverlay enable\n");
 	char mcos_procdir[PATH_MAX];
 	char mcos_sysdir[PATH_MAX];
@@ -1444,7 +1454,6 @@ int main(int argc, char **argv)
 	} else if (error == -1) {
 		return 1;
 	}
-#endif
 #else
 	__dprintf("mcoverlay disable\n");
 #endif // ENABLE_MCOVERLAYFS
@@ -1795,9 +1804,7 @@ char *
 chgpath(char *in, char *buf)
 {
 #ifdef ENABLE_MCOVERLAYFS
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0) && LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0)
 	return in;
-#endif
 #endif // ENABLE_MCOVERLAYFS
 	char	*fn = in;
 	struct stat	sb;

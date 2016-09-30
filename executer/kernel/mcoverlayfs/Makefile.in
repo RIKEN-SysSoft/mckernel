@@ -16,9 +16,9 @@ BUILD_MODULE=$(shell if [ ${LINUX_VERSION_CODE} -ge 262144 -a ${LINUX_VERSION_CO
 endif
 endif
 ifeq ($(BUILD_MODULE_TMP),rhel)
-#ifeq ($(BUILD_MODULE),none)
-#BUILD_MODULE=$(shell if [ ${LINUX_VERSION_CODE} -eq 199168 -a ${RHEL_RELEASE} -eq 327 ]; then echo "linux-3.10.0-327.36.1.el7"; else echo "none"; fi)
-#endif
+ifeq ($(BUILD_MODULE),none)
+BUILD_MODULE=$(shell if [ ${LINUX_VERSION_CODE} -eq 199168 -a ${RHEL_RELEASE} -eq 327 ]; then echo "linux-3.10.0-327.36.1.el7"; else echo "none"; fi)
+endif
 endif
 endif
 
@@ -30,7 +30,7 @@ ifneq ($(BUILD_MODULE),none)
 endif
 
 clean:
-#	@(cd linux-3.10.0-327.36.1.el7; make clean)
+	@(cd linux-3.10.0-327.36.1.el7; make clean)
 	@(cd linux-4.0.9; make clean)
 
 install:
