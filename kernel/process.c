@@ -2551,7 +2551,6 @@ static void do_migrate(void)
 		v->flags |= CPU_FLAG_NEED_RESCHED;
 		ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
 		double_rq_unlock(cur_v, v, irqstate);
-		//settid(req->thread, 2, cpu_id, old_cpu_id, 0, NULL);
 
 ack:
 		waitq_wakeup(&req->wq);

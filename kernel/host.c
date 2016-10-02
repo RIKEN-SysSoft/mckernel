@@ -613,8 +613,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		dkprintf("SCD_MSG_SCHEDULE_PROCESS: %lx\n", packet->arg);
 		thread = (struct thread *)packet->arg;
 		proc = thread->proc;
-
-		settid(thread, 0, cpuid, -1, 0, NULL);
+		thread->tid = proc->pid;
 		proc->status = PS_RUNNING;
 		thread->status = PS_RUNNING;
 		chain_thread(thread);

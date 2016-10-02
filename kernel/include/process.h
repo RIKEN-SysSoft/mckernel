@@ -690,7 +690,5 @@ void chain_thread(struct thread *);
 void proc_init();
 void set_timer();
 struct sig_pending *hassigpending(struct thread *thread);
-void settid(struct thread *thread, int mode, int newcpuid, int oldcpuid,
-	int nr_tids, int *tids);
 
 #endif

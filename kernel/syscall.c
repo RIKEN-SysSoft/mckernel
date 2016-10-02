@@ -143,9 +143,11 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid, struct s
 		/* XXX: is this really going to work if multiple processes 
 		 * exit/receive signals at the same time?? */
 		cpu = num_processors;
-		if(req->number == __NR_kill)
+		if (req->number == __NR_kill) {
+			req->rtid = -1;
 			pid = req->args[0];
-		if(req->number == __NR_gettid)
+		}
+		if (req->number == __NR_gettid)
 			pid = req->args[1];
 	}
 	else{
@@ -1487,27 +1489,18 @@ SYSCALL_DECLARE(getppid)
 	return thread->proc->ppid_parent->pid;
 }
 
-void settid(struct thread *thread, int mode, int newcpuid, int oldcpuid,
-	int nr_tids, int *tids)
+static void settid(struct thread *thread, int nr_tids, int *tids)
 {
 	struct syscall_request request IHK_DMA_ALIGN;
-	unsigned long rc;
 
 	request.number = __NR_gettid;
-	request.args[0] = mode;
-	request.args[1] = thread->proc->pid;
-	request.args[2] = newcpuid;
-	request.args[3] = oldcpuid;
 	/*
 	 * If nr_tids is non-zero, tids should point to an array of ints
 	 * where the thread ids of the mcexec process are expected.
 	 */
 	request.args[4] = nr_tids;
 	request.args[5] = virt_to_phys(tids);
-	rc = do_syscall(&request, ihk_mc_get_processor_id(), thread->proc->pid);
-	if (mode != 2) {
-		thread->tid = rc;
-	}
+	do_syscall(&request, ihk_mc_get_processor_id(), thread->proc->pid);
 }
 
 SYSCALL_DECLARE(gettid)
@@ -1930,7 +1923,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 				return -ENOMEM;
 			}
 
-			settid(new, 1, cpuid, -1, num_processors, tids);
+			settid(new, num_processors, tids);
 
 			for (i = 0; (i < num_processors) && tids[i]; ++i) {
 				dkprintf("%s: tid[%d]: %d\n", __FUNCTION__, i, tids[i]);

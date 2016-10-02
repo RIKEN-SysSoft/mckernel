@@ -1954,21 +1954,6 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 #endif
 
 		case __NR_gettid:{
-			int mode = w.sr.args[0];
-			int remote_pid = w.sr.args[1];
-			int newcpuid = w.sr.args[2];
-			int oldcpuid = w.sr.args[3];
-			int wtid = thread_data[newcpuid].remote_tid;
-
-			if(mode == 0){
-				thread_data[ncpu].remote_tid = wtid;
-				thread_data[newcpuid].remote_tid = remote_pid;
-			}
-			else if(mode == 2){
-				thread_data[newcpuid].remote_tid = thread_data[oldcpuid].remote_tid;
-				thread_data[oldcpuid].remote_tid = wtid;
-			}
-
 			/*
 			 * Number of TIDs and the remote physical address where TIDs are
 			 * expected are passed in arg 4 and 5, respectively.
@@ -2002,7 +1987,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 				free(tids);
 			}
 gettid_out:
-			do_syscall_return(fd, cpu, thread_data[newcpuid].remote_tid, 0, 0, 0, 0);
+			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
 			break;
 		}
 
