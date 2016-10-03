@@ -17,6 +17,20 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+/* From ihk/linux/include/ihk/ihk_host_user.h */
+#define PHYS_CHUNKS_DESC_SIZE 8192
+
+struct dump_mem_chunk {
+	unsigned long addr;
+	unsigned long size;
+};
+
+typedef struct dump_mem_chunks_s {
+	int nr_chunks;
+	struct dump_mem_chunk chunks[];
+} dump_mem_chunks_t;
+/* ---------- */
+
 #define CPU_TID_BASE 1000000
 
 struct options {
@@ -53,6 +67,7 @@ static volatile int f_done = 0;
 static bfd *symbfd = NULL;
 static bfd *dumpbfd = NULL;
 static asection *dumpscn = NULL;
+static dump_mem_chunks_t *mem_chunks;
 static int num_processors = -1;
 static asymbol **symtab = NULL;
 static ssize_t nsyms;
@@ -91,25 +106,35 @@ static uintptr_t virt_to_phys(uintptr_t va) {
 static int read_physmem(uintptr_t pa, void *buf, size_t size) {
 	off_t off;
 	bfd_boolean ok;
+	int i;
 
-	if (pa < dumpscn->vma) {
-		printf("read_physmem(%lx,%p,%lx):too small pa. vma %lx\n", pa, buf, size, dumpscn->vma);
+	off = 0;
+	/* Check if pa is valid in any chunks and figure
+	 * out the global offset in dump section */
+	for (i = 0; i < mem_chunks->nr_chunks; ++i) {
+
+		if (mem_chunks->chunks[i].addr <= pa &&
+				((pa + size) <= (mem_chunks->chunks[i].addr +
+					mem_chunks->chunks[i].size))) {
+
+			off += (pa - mem_chunks->chunks[i].addr);
+			break;
+		}
+
+		off += mem_chunks->chunks[i].size;
+	}
+
+	if (i == mem_chunks->nr_chunks) {
+		printf("read_physmem: invalid addr 0x%lx\n", pa);
 		return 1;
 	}
-	off = pa - dumpscn->vma;
-	if (off >= dumpscn->size) {
-		printf("read_physmem(%lx,%p,%lx):too large pa. vma %lx size %lx\n", pa, buf, size, dumpscn->vma, dumpscn->size);
-		return 1;
-	}
-	if ((dumpscn->size - off) < size) {
-		printf("read_physmem(%lx,%p,%lx):too large size. vma %lx size %lx\n", pa, buf, size, dumpscn->vma, dumpscn->size);
-		return 1;
-	}
+
 	ok = bfd_get_section_contents(dumpbfd, dumpscn, buf, off, size);
 	if (!ok) {
 		bfd_perror("read_physmem:bfd_get_section_contents");
 		return 1;
 	}
+
 	return 0;
 } /* read_physmem() */
 
@@ -505,6 +530,25 @@ static int setup_dump(char *fname) {
 	ok = bfd_check_format(dumpbfd, bfd_object);
 	if (!ok) {
 		bfd_perror("bfd_check_format");
+		return 1;
+	}
+
+	mem_chunks = malloc(PHYS_CHUNKS_DESC_SIZE);
+	if (!mem_chunks) {
+		perror("allocating mem chunks descriptor: ");
+		return 1;
+	}
+
+	dumpscn = bfd_get_section_by_name(dumpbfd, "physchunks");
+	if (!dumpscn) {
+		bfd_perror("bfd_get_section_by_name");
+		return 1;
+	}
+
+	ok = bfd_get_section_contents(dumpbfd, dumpscn, mem_chunks,
+			0, PHYS_CHUNKS_DESC_SIZE);
+	if (!ok) {
+		bfd_perror("read_physmem:bfd_get_section_contents");
 		return 1;
 	}
 
