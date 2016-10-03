@@ -179,7 +179,7 @@ void *_ihk_mc_alloc_aligned_pages(int npages, int p2align,
 		}
 
 		entry->line = line;
-		ihk_atomic_set(&entry->alloc_count, 0);
+		ihk_atomic_set(&entry->alloc_count, 1);
 		ihk_mc_spinlock_init(&entry->addr_list_lock);
 		INIT_LIST_HEAD(&entry->addr_list);
 
@@ -197,9 +197,10 @@ void *_ihk_mc_alloc_aligned_pages(int npages, int p2align,
 		dkprintf("%s entry %s:%d npages: %d added\n", __FUNCTION__,
 			file, line, npages);
 	}
+	else {
+		ihk_atomic_inc(&entry->alloc_count);
+	}
 	ihk_mc_spinlock_unlock(&pagealloc_track_hash_locks[hash], irqflags);
-
-	ihk_atomic_inc(&entry->alloc_count);
 
 	/* Add new addr entry for this allocation entry */
 	addr_entry = ___kmalloc(sizeof(*addr_entry), IHK_MC_AP_NOWAIT);
@@ -379,13 +380,15 @@ void _ihk_mc_free_pages(void *ptr, int npages, char *file, int line)
 	___kfree(addr_entry);
 
 	/* Do we need to remove tracking entry as well? */
-	if (!ihk_atomic_dec_and_test(&entry->alloc_count)) {
-		goto out;
-	}
-
 	hash = (strlen(entry->file) + entry->line) &
 		PAGEALLOC_TRACK_HASH_MASK;
 	irqflags = ihk_mc_spinlock_lock(&pagealloc_track_hash_locks[hash]);
+
+	if (!ihk_atomic_dec_and_test(&entry->alloc_count)) {
+		ihk_mc_spinlock_unlock(&pagealloc_track_hash_locks[hash], irqflags);
+		goto out;
+	}
+
 	list_del(&entry->hash);
 	ihk_mc_spinlock_unlock(&pagealloc_track_hash_locks[hash], irqflags);
 
@@ -1351,13 +1354,14 @@ void *_kmalloc(int size, enum ihk_mc_ap_flag flag, char *file, int line)
 	if (!entry) {
 		entry = ___kmalloc(sizeof(*entry), IHK_MC_AP_NOWAIT);
 		if (!entry) {
+			ihk_mc_spinlock_unlock(&kmalloc_track_hash_locks[hash], irqflags);
 			kprintf("%s: ERROR: allocating tracking entry\n");
 			goto out;
 		}
 
 		entry->line = line;
 		entry->size = size;
-		ihk_atomic_set(&entry->alloc_count, 0);
+		ihk_atomic_set(&entry->alloc_count, 1);
 		ihk_mc_spinlock_init(&entry->addr_list_lock);
 		INIT_LIST_HEAD(&entry->addr_list);
 
@@ -1371,13 +1375,15 @@ void *_kmalloc(int size, enum ihk_mc_ap_flag flag, char *file, int line)
 
 		strcpy(entry->file, file);
 		entry->file[strlen(file)] = 0;
+		INIT_LIST_HEAD(&entry->hash);
 		list_add(&entry->hash, &kmalloc_track_hash[hash]);
 		dkprintf("%s entry %s:%d size: %d added\n", __FUNCTION__,
 			file, line, size);
 	}
+	else {
+		ihk_atomic_inc(&entry->alloc_count);
+	}
 	ihk_mc_spinlock_unlock(&kmalloc_track_hash_locks[hash], irqflags);
-
-	ihk_atomic_inc(&entry->alloc_count);
 
 	/* Add new addr entry for this allocation entry */
 	addr_entry = ___kmalloc(sizeof(*addr_entry), IHK_MC_AP_NOWAIT);
@@ -1447,13 +1453,15 @@ void _kfree(void *ptr, char *file, int line)
 	___kfree(addr_entry);
 
 	/* Do we need to remove tracking entry as well? */
-	if (!ihk_atomic_dec_and_test(&entry->alloc_count)) {
-		goto out;
-	}
-
 	hash = (strlen(entry->file) + entry->line + entry->size) &
 		KMALLOC_TRACK_HASH_MASK;
 	irqflags = ihk_mc_spinlock_lock(&kmalloc_track_hash_locks[hash]);
+
+	if (!ihk_atomic_dec_and_test(&entry->alloc_count)) {
+		ihk_mc_spinlock_unlock(&kmalloc_track_hash_locks[hash], irqflags);
+		goto out;
+	}
+
 	list_del(&entry->hash);
 	ihk_mc_spinlock_unlock(&kmalloc_track_hash_locks[hash], irqflags);
 
