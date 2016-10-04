@@ -1695,7 +1695,7 @@ kill_thread(unsigned long tid)
 {
 	int	i;
 
-	for (i = 0; i < n_threads; ++i) {
+	for (i = 0; i <= n_threads; ++i) {
 		if(thread_data[i].remote_tid == tid){
 			pthread_kill(thread_data[i].thread_id, LOCALSIG);
 			break;
