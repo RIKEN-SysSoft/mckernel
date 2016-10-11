@@ -580,8 +580,10 @@ void ihk_mc_unmap_virtual(void *va, int npages, int free_physical)
 		ihk_mc_pt_clear_page(NULL, (char *)va + (i << PAGE_SHIFT));
 	}
 	
-	if (free_physical)
+	if (free_physical) {
 		ihk_pagealloc_free(vmap_allocator, (unsigned long)va, npages);
+		flush_tlb_single((unsigned long)va);
+	}
 }
 
 #ifdef ATTACHED_MIC
