@@ -918,7 +918,6 @@ static struct ihk_page_allocator_desc *page_allocator_init(uint64_t start,
 static void numa_init(void)
 {
 	int i, j;
-	struct ihk_mc_numa_node *node;
 	memory_nodes = early_alloc_pages((sizeof(*memory_nodes) * 
 				ihk_mc_get_nr_numa_nodes() + PAGE_SIZE - 1) 
 			>> PAGE_SHIFT);
@@ -926,7 +925,7 @@ static void numa_init(void)
 	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
 		int linux_numa_id, type;
 
-		ihk_mc_get_numa_node(i, &linux_numa_id, &type, NULL);
+		ihk_mc_get_numa_node(i, &linux_numa_id, &type);
 		memory_nodes[i].id = i;
 		memory_nodes[i].linux_numa_id = linux_numa_id;
 		memory_nodes[i].type = type;
@@ -936,29 +935,21 @@ static void numa_init(void)
 			i, linux_numa_id, type);
 	}
 
-	node = memory_nodes;
 	for (j = 0; j < ihk_mc_get_nr_memory_chunks(); ++j) {
 		unsigned long start, end;
-		int linux_numa_id;
+		int numa_id;
 		struct ihk_page_allocator_desc *allocator;
 
-		ihk_mc_get_memory_chunk(j, &start, &end, &linux_numa_id);
+		ihk_mc_get_memory_chunk(j, &start, &end, &numa_id);
 
 		allocator = page_allocator_init(start, end, (j == 0));
-		while (node->linux_numa_id != linux_numa_id &&
-				node < (memory_nodes + ihk_mc_get_nr_numa_nodes())) ++node;
-
-		if (node == (memory_nodes + ihk_mc_get_nr_numa_nodes())) {
-			panic("invalid memory chunk: no corresponding NUMA node found\n");
-		}
-
-		list_add_tail(&allocator->list, &node->allocators);
+		list_add_tail(&allocator->list, &memory_nodes[numa_id].allocators);
 
 		kprintf("Physical memory: 0x%lx - 0x%lx, %lu bytes, %d pages available @ NUMA: %d\n",
 				start, end,
 				ihk_pagealloc_count(allocator) * PAGE_SIZE,
 				ihk_pagealloc_count(allocator),
-				node->id);
+				numa_id);
 	}
 }
 
