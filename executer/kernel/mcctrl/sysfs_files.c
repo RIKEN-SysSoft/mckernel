@@ -538,6 +538,34 @@ static void setup_cpu_sysfs_files(struct mcctrl_usrdata *udp,
 	return;
 } /* setup_cpu_sysfs_files() */
 
+static void setup_cpus_sysfs_files_node_link(struct mcctrl_usrdata *udp)
+{
+	int error;
+	int cpu;
+	struct sysfs_handle handle;
+
+	for (cpu = 0; cpu < udp->cpu_info->n_cpus; ++cpu) {
+		int node = linux_numa_2_mckernel_numa(udp,
+				cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu)));
+
+		error = sysfsm_lookupf(udp->os, &handle,
+				"/sys/devices/system/node/node%d", node);
+		if (error) {
+			panic("sysfsm_lookupf: node for CPU");
+		}
+
+		error = sysfsm_symlinkf(udp->os, handle,
+				"/sys/devices/system/cpu/cpu%d/node%d",
+				cpu, node);
+		if (error) {
+			panic("sysfsm_symlinkf(CPU in node)");
+		}
+	}
+
+	error = 0;
+	return;
+}
+
 static void setup_cpus_sysfs_files(struct mcctrl_usrdata *udp)
 {
 	int error;
@@ -1028,7 +1056,14 @@ void setup_sysfs_files(ihk_os_t os)
 	setup_local_snooping_files(os);
 	setup_cpus_sysfs_files(udp);
 	setup_node_files(udp);
+	setup_cpus_sysfs_files_node_link(udp);
 	setup_pci_files(udp);
+
+	/* Indicate sysfs files setup completion for boot script */
+	error = sysfsm_mkdirf(os, NULL, "/sys/setup_complete");
+	if (error) {
+		panic("sysfsm_mkdir(complete)");
+	}
 
 	return;
 } /* setup_files() */

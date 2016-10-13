@@ -205,7 +205,7 @@ if [ "$enable_mcoverlay" == "yes" ]; then
 	if ! mount -t mcoverlay mcoverlay -o lowerdir=/proc/mcos0:/proc,upperdir=/tmp/mcos/mcos0_proc_upper,workdir=/tmp/mcos/mcos0_proc_work,nocopyupw,nofscheck /tmp/mcos/mcos0_proc; then echo "error: mount /tmp/mcos/mcos0_proc" >&2; exit 1; fi
 	mount --make-rprivate /proc
 
-	while [ ! -e /sys/devices/virtual/mcos/mcos0/sys/devices/system/node ]
+	while [ ! -e /sys/devices/virtual/mcos/mcos0/sys/setup_complete ]
 	do
 		sleep 1
 	done
@@ -214,9 +214,16 @@ if [ "$enable_mcoverlay" == "yes" ]; then
 	if [ ! -e /tmp/mcos/mcos0_sys_work ]; then mkdir -p /tmp/mcos/mcos0_sys_work; fi
 	if ! mount -t mcoverlay mcoverlay -o lowerdir=/sys/devices/virtual/mcos/mcos0/sys:/sys,upperdir=/tmp/mcos/mcos0_sys_upper,workdir=/tmp/mcos/mcos0_sys_work,nocopyupw,nofscheck /tmp/mcos/mcos0_sys; then echo "error: mount /tmp/mcos/mcos0_sys" >&2; exit 1; fi
 	mount --make-rprivate /sys
+	rm -rf /tmp/mcos/mcos0_sys/setup_complete
 	for cpuid in `find /sys/devices/system/cpu/* -maxdepth 0 -name "cpu[0123456789]*" -printf "%f "`; do
 		if [ ! -e "/sys/devices/virtual/mcos/mcos0/sys/devices/system/cpu/$cpuid" ]; then
 			rm -rf /tmp/mcos/mcos0_sys/devices/system/cpu/$cpuid
+		else
+			for nodeid in `find /sys/devices/system/cpu/$cpuid/* -maxdepth 0 -name "node[0123456789]*" -printf "%f "`; do
+				if [ ! -e "/sys/devices/virtual/mcos/mcos0/sys/devices/system/cpu/$cpuid/$nodeid" ]; then
+					rm -f /tmp/mcos/mcos0_sys/devices/system/cpu/$cpuid/$nodeid
+				fi
+			done
 		fi
 	done
 	for nodeid in `find /sys/devices/system/node/* -maxdepth 0 -name "node[0123456789]*" -printf "%f "`; do
