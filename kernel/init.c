@@ -320,7 +320,7 @@ static void setup_remote_snooping_samples(void)
 static void populate_sysfs(void)
 {
 	cpu_sysfs_setup();
-	setup_remote_snooping_samples();
+	//setup_remote_snooping_samples();
 } /* populate_sysfs() */
 
 int host_ikc_inited = 0;

@@ -204,7 +204,8 @@ if [ "$enable_mcoverlay" == "yes" ]; then
 	if [ ! -e /tmp/mcos/mcos0_proc_work ]; then mkdir -p /tmp/mcos/mcos0_proc_work; fi
 	if ! mount -t mcoverlay mcoverlay -o lowerdir=/proc/mcos0:/proc,upperdir=/tmp/mcos/mcos0_proc_upper,workdir=/tmp/mcos/mcos0_proc_work,nocopyupw,nofscheck /tmp/mcos/mcos0_proc; then echo "error: mount /tmp/mcos/mcos0_proc" >&2; exit 1; fi
 	mount --make-rprivate /proc
-	while [ ! -e /sys/devices/virtual/mcos/mcos0/sys ]
+
+	while [ ! -e /sys/devices/virtual/mcos/mcos0/sys/devices/system/node ]
 	do
 		sleep 1
 	done
@@ -216,6 +217,20 @@ if [ "$enable_mcoverlay" == "yes" ]; then
 	for cpuid in `find /sys/devices/system/cpu/* -maxdepth 0 -name "cpu[0123456789]*" -printf "%f "`; do
 		if [ ! -e "/sys/devices/virtual/mcos/mcos0/sys/devices/system/cpu/$cpuid" ]; then
 			rm -rf /tmp/mcos/mcos0_sys/devices/system/cpu/$cpuid
+		fi
+	done
+	for nodeid in `find /sys/devices/system/node/* -maxdepth 0 -name "node[0123456789]*" -printf "%f "`; do
+		if [ ! -e "/sys/devices/virtual/mcos/mcos0/sys/devices/system/node/$nodeid" ]; then
+			rm -rf /tmp/mcos/mcos0_sys/devices/system/node/$nodeid
+		else
+			# Delete non-existent symlinks
+			for cpuid in `find /sys/devices/system/node/$nodeid/* -maxdepth 0 -name "cpu[0123456789]*" -printf "%f "`; do
+				if [ ! -e "/sys/devices/virtual/mcos/mcos0/sys/devices/system/node/$nodeid/$cpuid" ]; then
+					rm -f /tmp/mcos/mcos0_sys/devices/system/node/$nodeid/$cpuid
+				fi
+			done
+
+			rm -f /tmp/mcos/mcos0_sys/devices/system/node/$nodeid/memory*
 		fi
 	done
 	for cpuid in `find /sys/bus/cpu/devices/* -maxdepth 0 -name "cpu[0123456789]*" -printf "%f "`; do

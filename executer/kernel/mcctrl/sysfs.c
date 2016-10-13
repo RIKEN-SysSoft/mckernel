@@ -18,7 +18,7 @@
 #include "mcctrl.h"
 #include "sysfs_msg.h"
 
-#define dprintk(...) do { if (0) printk(KERN_DEBUG __VA_ARGS__); } while (0)
+#define dprintk(...) do { if (0) printk(__VA_ARGS__); } while (0)
 #define wprintk(...) do { if (1) printk(KERN_WARNING __VA_ARGS__); } while (0)
 #define eprintk(...) do { if (1) printk(KERN_ERR __VA_ARGS__); } while (0)
 

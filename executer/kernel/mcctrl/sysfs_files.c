@@ -18,7 +18,7 @@
 #include "mcctrl.h"
 #include "sysfs_msg.h"
 
-#define dprintk(...) do { if (0) printk(KERN_DEBUG __VA_ARGS__); } while (0)
+#define dprintk(...) do { if (0) printk(__VA_ARGS__); } while (0)
 #define wprintk(...) do { if (1) printk(KERN_WARNING __VA_ARGS__); } while (0)
 #define eprintk(...) do { if (1) printk(KERN_ERR __VA_ARGS__); } while (0)
 
@@ -187,141 +187,117 @@ static void free_cpu_topology(struct mcctrl_usrdata *udp)
 	return;
 } /* free_cpu_topology() */
 
-static void free_cpu_mapping(struct mcctrl_usrdata *udp)
-{
-	ihk_device_t dev = ihk_os_to_dev(udp->os);
-	size_t size;
-
-	size = udp->cpu_mapping_elems * sizeof(struct cpu_mapping);
-	ihk_device_unmap_virtual(dev, udp->cpu_mapping, size);
-	ihk_device_unmap_memory(dev, udp->cpu_mapping_pa, size);
-
-	return;
-} /* free_cpu_mapping() */
-
 void free_topology_info(ihk_os_t os)
 {
 	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
 
 	free_node_topology(udp);
 	free_cpu_topology(udp);
-	free_cpu_mapping(udp);
 
 	return;
 } /* free_topology_info() */
 
-void reply_get_cpu_mapping(long req_pa)
+/*
+ * CPU and NUMA node mapping conversion functions.
+ */
+static int mckernel_cpu_2_linux_cpu(struct mcctrl_usrdata *udp, int cpu_id)
 {
-	struct get_cpu_mapping_req *req = phys_to_virt(req_pa);
+	return (cpu_id < udp->cpu_info->n_cpus) ?
+		udp->cpu_info->mapping[cpu_id] : -1;
+}
 
-	req->busy = 0;
-	wake_up(&req->wq);
-
-	return;
-} /* reply_get_cpu_mapping() */
-
-static int get_cpu_mapping(struct mcctrl_usrdata *udp)
+static int mckernel_cpu_2_hw_id(struct mcctrl_usrdata *udp, int cpu_id)
 {
-	int error;
-	ihk_device_t dev = ihk_os_to_dev(udp->os);
-	struct get_cpu_mapping_req *req = NULL;
-	struct ikc_scd_packet packet;
-	size_t size;
+	return (cpu_id < udp->cpu_info->n_cpus) ?
+		udp->cpu_info->hw_ids[cpu_id] : -1;
+}
 
-	dprintk("get_cpu_mapping(%p)\n", udp);
-
-	req = kmalloc(sizeof(*req), GFP_KERNEL);
-	if (!req) {
-		error = -ENOMEM;
-		eprintk("mcctrl:get_cpu_mapping:kmalloc failed. %d\n", error);
-		goto out;
-	}
-
-	req->busy = 1;
-	req->error = -1;
-	init_waitqueue_head(&req->wq);
-
-	packet.msg = SCD_MSG_GET_CPU_MAPPING;
-	packet.arg = virt_to_phys(req);
-
-#define GET_CPU_MAPPING_CPU 0
-	error = mcctrl_ikc_send(udp->os, GET_CPU_MAPPING_CPU, &packet);
-	if (error) {
-		eprintk("mcctrl:get_cpu_mapping:"
-				"mcctrl_ikc_send failed. %d\n", error);
-		goto out;
-	}
-
-	error = wait_event_interruptible(req->wq, !req->busy);
-	if (error) {
-		eprintk("mcctrl:get_cpu_mapping:"
-				"wait_event_interruptible failed. %d\n", error);
-		req = NULL;	/* XXX */
-		goto out;
-	}
-
-	if (req->error) {
-		error = req->error;
-		eprintk("mcctrl:get_cpu_mapping:"
-				"SCD_MSG_GET_CPU_MAPPING failed. %d\n", error);
-		goto out;
-	}
-
-	size = req->buf_elems * sizeof(struct cpu_mapping);
-	udp->cpu_mapping_elems = req->buf_elems;
-	udp->cpu_mapping_pa = ihk_device_map_memory(dev, req->buf_rpa, size);
-	udp->cpu_mapping = ihk_device_map_virtual(
-			dev, udp->cpu_mapping_pa, size, NULL, 0);
-
-	error = 0;
-out:
-	dprintk("get_cpu_mapping(%p): %d\n", udp, error);
-	kfree(req);
-	return error;
-} /* get_cpu_mapping() */
-
-static int hwid_to_cpu(struct mcctrl_usrdata *udp, int hw_id)
+static int linux_cpu_2_mckernel_cpu(struct mcctrl_usrdata *udp, int cpu_id)
 {
 	int i;
 
-	for (i = 0; i < udp->cpu_mapping_elems; ++i) {
-		if (udp->cpu_mapping[i].hw_id == hw_id) {
-			return udp->cpu_mapping[i].cpu_number;
+	for (i = 0; i < udp->cpu_info->n_cpus; ++i) {
+		if (udp->cpu_info->mapping[i] == cpu_id)
+			return i;
+	}
+
+	return -1;
+}
+
+#if 0
+static int hw_id_2_mckernel_cpu(struct mcctrl_usrdata *udp, int hw_id)
+{
+	int i;
+
+	for (i = 0; i < udp->cpu_info->n_cpus; ++i) {
+		if (udp->cpu_info->hw_ids[i] == hw_id) {
+			return i;
 		}
 	}
 
 	return -1;
 }
 
+static int hw_id_2_linux_cpu(struct mcctrl_usrdata *udp, int hw_id)
+{
+	int i;
+
+	for (i = 0; i < udp->cpu_info->n_cpus; ++i) {
+		if (udp->cpu_info->hw_ids[i] == hw_id) {
+			return mckernel_cpu_2_linux_cpu(udp, i);
+		}
+	}
+
+	return -1;
+}
+
+static int linux_cpu_2_hw_id(struct mcctrl_usrdata *udp, int cpu)
+{
+	int mckernel_cpu = linux_cpu_2_mckernel_cpu(udp, cpu);
+
+	return (mckernel_cpu >= 0 && mckernel_cpu < udp->cpu_info->n_cpus) ?
+		udp->cpu_info->hw_ids[mckernel_cpu] : -1;
+}
+#endif
+
+static int mckernel_numa_2_linux_numa(struct mcctrl_usrdata *udp, int numa_id)
+{
+	return (numa_id < udp->mem_info->n_numa_nodes) ?
+		udp->mem_info->numa_mapping[numa_id] : -1;
+}
+
+static int linux_numa_2_mckernel_numa(struct mcctrl_usrdata *udp, int numa_id)
+{
+	int i;
+
+	for (i = 0; i < udp->mem_info->n_numa_nodes; ++i) {
+		if (udp->mem_info->numa_mapping[i] == numa_id)
+			return i;
+	}
+
+	return -1;
+}
+
+
+
 static int translate_cpumap(struct mcctrl_usrdata *udp,
 		cpumask_t *linmap, cpumask_t *mckmap)
 {
 	int error;
-	ihk_device_t dev = ihk_os_to_dev(udp->os);
 	int lincpu;
-	int hw_id;
 	int mckcpu;
 
 	dprintk("translate_cpumap(%p,%p,%p)\n", udp, linmap, mckmap);
 	cpumask_clear(mckmap);
 	for_each_cpu(lincpu, linmap) {
-		hw_id = ihk_device_linux_cpu_to_hw_id(dev, lincpu);
-		if (hw_id < 0) {
-			error = hw_id;
-			eprintk("mcctrl:translate_cpumap:"
-					"ihk_device_linux_cpu_to_hw_id failed."
-					" %d\n", error);
-			goto out;
-		}
+		mckcpu = linux_cpu_2_mckernel_cpu(udp, lincpu);
 
-		mckcpu = hwid_to_cpu(udp, hw_id);
 		if (mckcpu >= 0) {
 			cpumask_set_cpu(mckcpu, mckmap);
 		}
 	}
 
 	error = 0;
-out:
 	dprintk("translate_cpumap(%p,%p,%p): %d\n", udp, linmap, mckmap, error);
 	return error;
 } /* translate_cpumap() */
@@ -361,7 +337,7 @@ out:
 	return (error)? ERR_PTR(error): topo;
 } /* get_cache_topology() */
 
-static struct cpu_topology *get_cpu_topology_one(struct mcctrl_usrdata *udp,
+static struct cpu_topology *get_one_cpu_topology(struct mcctrl_usrdata *udp,
 		int index)
 {
 	int error;
@@ -370,41 +346,43 @@ static struct cpu_topology *get_cpu_topology_one(struct mcctrl_usrdata *udp,
 	struct cache_topology *cache;
 	struct ihk_cache_topology *saved_cache;
 
-	dprintk("get_cpu_topology_one(%p,%d)\n", udp, index);
+	dprintk("get_one_cpu_topology(%p,%d)\n", udp, index);
 	topology = kmalloc(sizeof(*topology), GFP_KERNEL);
 	if (!topology) {
 		error = -ENOMEM;
-		eprintk("mcctrl:get_cpu_topology_one:"
+		eprintk("mcctrl:get_one_cpu_topology:"
 				"kmalloc failed. %d\n", error);
 		goto out;
 	}
 
 	INIT_LIST_HEAD(&topology->cache_list);
-	topology->cpu_mapping = &udp->cpu_mapping[index];
+	topology->mckernel_cpu_id = index;
+	topology->saved = ihk_device_get_cpu_topology(dev, 
+			mckernel_cpu_2_hw_id(udp, index));
 
-	topology->saved = ihk_device_get_cpu_topology(
-			dev, topology->cpu_mapping->hw_id);
 	if (IS_ERR(topology->saved)) {
 		error = PTR_ERR(topology->saved);
-		eprintk("mcctrl:get_cpu_topology_one:"
+		eprintk("mcctrl:get_one_cpu_topology:"
 				"ihk_device_get_cpu_topology failed. %d\n",
 				error);
 		goto out;
 	}
 
-	error = translate_cpumap(udp, &topology->saved->core_siblings,
+	error = translate_cpumap(udp, 
+			&topology->saved->core_siblings,
 			&topology->core_siblings);
 	if (error) {
-		eprintk("mcctrl:get_cpu_topology_one:"
+		eprintk("mcctrl:get_one_cpu_topology:"
 				"translate_cpumap(core_siblings) failed."
 				" %d\n", error);
 		goto out;
 	}
 
-	error = translate_cpumap(udp, &topology->saved->thread_siblings,
+	error = translate_cpumap(udp, 
+			&topology->saved->thread_siblings,
 			&topology->thread_siblings);
 	if (error) {
-		eprintk("mcctrl:get_cpu_topology_one:"
+		eprintk("mcctrl:get_one_cpu_topology:"
 				"translate_cpumap(thread_siblings) failed."
 				" %d\n", error);
 		goto out;
@@ -415,7 +393,7 @@ static struct cpu_topology *get_cpu_topology_one(struct mcctrl_usrdata *udp,
 		cache = get_cache_topology(udp, topology, saved_cache);
 		if (IS_ERR(cache)) {
 			error = PTR_ERR(cache);
-			eprintk("mcctrl:get_cpu_topology_one:"
+			eprintk("mcctrl:get_one_cpu_topology:"
 					"get_cache_topology failed. %d\n",
 					error);
 			goto out;
@@ -429,10 +407,10 @@ out:
 	if (error && !IS_ERR_OR_NULL(topology)) {
 		free_cpu_topology_one(udp, topology);
 	}
-	dprintk("get_cpu_topology_one(%p,%d): %d %p\n",
+	dprintk("get_one_cpu_topology(%p,%d): %d %p\n",
 			udp, index, error, topology);
 	return (error)? ERR_PTR(error): topology;
-} /* get_cpu_topology_one() */
+} /* get_one_cpu_topology() */
 
 static int get_cpu_topology(struct mcctrl_usrdata *udp)
 {
@@ -441,12 +419,12 @@ static int get_cpu_topology(struct mcctrl_usrdata *udp)
 	struct cpu_topology *topology;
 
 	dprintk("get_cpu_topology(%p)\n", udp);
-	for (index = 0; index < udp->cpu_mapping_elems; ++index) {
-		topology = get_cpu_topology_one(udp, index);
+	for (index = 0; index < udp->cpu_info->n_cpus; ++index) {
+		topology = get_one_cpu_topology(udp, index);
 		if (IS_ERR(topology)) {
 			error = PTR_ERR(topology);
-			eprintk("mcctrl:get_cpu_topology:"
-					"get_cpu_topology_one failed. %d\n",
+			eprintk("mcctrl:get_cpu_topology: "
+					"get_one_cpu_topology failed. %d\n",
 					error);
 			goto out;
 		}
@@ -460,15 +438,15 @@ out:
 	return error;
 } /* get_cpu_topology() */
 
-static void setup_one_cache_files(struct mcctrl_usrdata *udp,
+static void setup_cpu_sysfs_cache_files(struct mcctrl_usrdata *udp,
 		struct cpu_topology *cpu, struct cache_topology *cache)
 {
 	char *prefix = "/sys/devices/system/cpu";
-	int cpu_number = cpu->cpu_mapping->cpu_number;
+	int cpu_number = cpu->mckernel_cpu_id;
 	int index = cache->saved->index;
 	struct sysfsm_bitmap_param param;
 
-	dprintk("setup_one_cache_files(%p,%p,%p)\n", udp, cpu, cache);
+	dprintk("setup_cpu_sysfs_cache_files(%p,%p,%p)\n", udp, cpu, cache);
 
 	sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_d64,
 			&cache->saved->level, 0444,
@@ -509,19 +487,19 @@ static void setup_one_cache_files(struct mcctrl_usrdata *udp,
 			"%s/cpu%d/cache/index%d/shared_cpu_list",
 			prefix, cpu_number, index);
 
-	dprintk("setup_one_cache_files(%p,%p,%p):\n", udp, cpu, cache);
+	dprintk("setup_cpu_sysfs_cache_files(%p,%p,%p):\n", udp, cpu, cache);
 	return;
-} /* setup_one_cache_files() */
+} /* setup_cpu_sysfs_cache_files() */
 
-static void setup_one_cpu_files(struct mcctrl_usrdata *udp,
+static void setup_cpu_sysfs_files(struct mcctrl_usrdata *udp,
 		struct cpu_topology *cpu)
 {
 	char *prefix = "/sys/devices/system/cpu";
-	int cpu_number = cpu->cpu_mapping->cpu_number;
+	int cpu_number = cpu->mckernel_cpu_id;
 	struct sysfsm_bitmap_param param;
 	struct cache_topology *cache;
 
-	dprintk("setup_one_cpu_files(%p,%p)\n", udp, cpu);
+	dprintk("setup_cpu_sysfs_files(%p,%p)\n", udp, cpu);
 
 	sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_d32,
 			&cpu->saved->physical_package_id, 0444,
@@ -553,41 +531,33 @@ static void setup_one_cpu_files(struct mcctrl_usrdata *udp,
 			prefix, cpu_number);
 
 	list_for_each_entry(cache, &cpu->cache_list, chain) {
-		setup_one_cache_files(udp, cpu, cache);
+		setup_cpu_sysfs_cache_files(udp, cpu, cache);
 	}
 
-	dprintk("setup_one_cpu_files(%p,%p):\n", udp, cpu);
+	dprintk("setup_cpu_sysfs_files(%p,%p):\n", udp, cpu);
 	return;
-} /* setup_one_cpu_files() */
+} /* setup_cpu_sysfs_files() */
 
-static void setup_cpu_files(struct mcctrl_usrdata *udp)
+static void setup_cpus_sysfs_files(struct mcctrl_usrdata *udp)
 {
 	int error;
 	struct cpu_topology *cpu;
 
-	dprintk("setup_cpu_file(%p)\n", udp);
-	error = get_cpu_mapping(udp);
-	if (error) {
-		eprintk("mcctrl:setup_cpu_files:"
-				"get_cpu_mapping failed. %d\n", error);
-		goto out;
-	}
-
 	error = get_cpu_topology(udp);
 	if (error) {
-		eprintk("mcctrl:setup_cpu_files:"
+		eprintk("mcctrl:setup_cpus_sysfs_files:"
 				"get_cpu_topology failed. %d\n", error);
 		goto out;
 	}
 
 	list_for_each_entry(cpu, &udp->cpu_topology_list, chain) {
-		setup_one_cpu_files(udp, cpu);
+		setup_cpu_sysfs_files(udp, cpu);
 	}
 	error = 0;
 out:
 	dprintk("setup_cpu_file(%p):\n", udp);
 	return;
-} /* setup_cpu_files() */
+} /* setup_cpus_sysfs_files() */
 
 static struct node_topology *get_one_node_topology(struct mcctrl_usrdata *udp,
 		struct ihk_node_topology *saved)
@@ -629,8 +599,10 @@ static int get_node_topology(struct mcctrl_usrdata *udp)
 	struct node_topology *topology;
 
 	dprintk("get_node_topology(%p)\n", udp);
-	for (node = 0; ; ++node) {
-		saved = ihk_device_get_node_topology(dev, node);
+	for (node = 0; node < udp->mem_info->n_numa_nodes; ++node) {
+		saved = ihk_device_get_node_topology(dev,
+				mckernel_numa_2_linux_numa(udp, node));
+
 		if (IS_ERR(saved)) {
 			break;
 		}
@@ -646,6 +618,8 @@ static int get_node_topology(struct mcctrl_usrdata *udp)
 					error);
 			goto out;
 		}
+
+		topology->mckernel_numa_id = node;
 
 		list_add(&topology->chain, &udp->node_topology_list);
 	}
@@ -671,15 +645,39 @@ static int setup_node_files(struct mcctrl_usrdata *udp)
 	}
 
 	list_for_each_entry(p, &udp->node_topology_list, chain) {
+		struct sysfs_handle handle;
+		int cpu;
 		param.nbits = nr_cpumask_bits;
 		param.ptr = &p->cpumap;
 
 		sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_pb, &param, 0444,
 				"/sys/devices/system/node/node%d/cpumap",
-				p->saved->node_number);
+				p->mckernel_numa_id);
 		sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
 				"/sys/devices/system/node/node%d/cpulist",
-				p->saved->node_number);
+				p->mckernel_numa_id);
+
+		/* Add CPU symlinks for this node */
+		for (cpu = 0; cpu < udp->cpu_info->n_cpus; ++cpu) {
+			if (linux_numa_2_mckernel_numa(udp,
+						cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu)))
+					!= p->mckernel_numa_id) {
+				continue;
+			}
+
+			error = sysfsm_lookupf(udp->os, &handle,
+					"/sys/devices/system/cpu/cpu%d", cpu);
+			if (error) {
+				panic("sysfsm_lookupf(CPU in node)");
+			}
+
+			error = sysfsm_symlinkf(udp->os, handle,
+					"/sys/devices/system/node/node%d/cpu%d",
+					p->mckernel_numa_id, cpu);
+			if (error) {
+				panic("sysfsm_symlinkf(CPU in node)");
+			}
+		}
 	}
 
 	error = 0;
@@ -1026,9 +1024,9 @@ void setup_sysfs_files(ihk_os_t os)
 		panic("sysfsm_unlinkf");
 	}
 
-	setup_local_snooping_samples(os);
+	//setup_local_snooping_samples(os);
 	setup_local_snooping_files(os);
-	setup_cpu_files(udp);
+	setup_cpus_sysfs_files(udp);
 	setup_node_files(udp);
 	setup_pci_files(udp);
 

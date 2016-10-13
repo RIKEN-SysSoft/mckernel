@@ -59,8 +59,8 @@
 #define SCD_MSG_CLEANUP_PROCESS         0x9
 #define SCD_MSG_GET_VDSO_INFO           0xa
 
-#define SCD_MSG_GET_CPU_MAPPING         0xc
-#define SCD_MSG_REPLY_GET_CPU_MAPPING   0xd
+//#define SCD_MSG_GET_CPU_MAPPING         0xc
+//#define SCD_MSG_REPLY_GET_CPU_MAPPING   0xd
 
 #define	SCD_MSG_PROCFS_CREATE		0x10
 #define	SCD_MSG_PROCFS_DELETE		0x11
@@ -226,11 +226,6 @@ static inline int sysfs_inited(struct sysfsm_data *sdp)
 	return !!(sdp->sysfs_buf);
 } /* sysfs_inited() */
 
-struct cpu_mapping {
-	int cpu_number;
-	int hw_id;
-};
-
 struct cache_topology {
 	struct ihk_cache_topology *saved;
 	cpumask_t shared_cpu_map;
@@ -239,8 +234,9 @@ struct cache_topology {
 };
 
 struct cpu_topology {
-	struct cpu_mapping *cpu_mapping;
+	//struct mcctrl_usrdata *udp;
 	struct ihk_cpu_topology *saved;
+	int mckernel_cpu_id;
 	cpumask_t core_siblings;
 	cpumask_t thread_siblings;
 
@@ -250,6 +246,7 @@ struct cpu_topology {
 
 struct node_topology {
 	struct ihk_node_topology *saved;
+	int mckernel_numa_id;
 	cpumask_t cpumap;
 
 	struct list_head chain;
@@ -282,10 +279,8 @@ struct mcctrl_usrdata {
 	void **keys;
 	struct sysfsm_data sysfsm_data;
 	unsigned long cpu_online[CPU_LONGS];
-	int cpu_mapping_elems;
-	int padding;
-	struct cpu_mapping *cpu_mapping;
-	long cpu_mapping_pa;
+	struct ihk_cpu_info *cpu_info;
+	struct ihk_mem_info *mem_info;
 	struct list_head cpu_topology_list;
 	struct list_head node_topology_list;
 };

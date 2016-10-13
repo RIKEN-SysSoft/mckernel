@@ -99,10 +99,6 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		get_vdso_info(__os, pisp->arg);
 		break;
 
-	case SCD_MSG_REPLY_GET_CPU_MAPPING:
-		reply_get_cpu_mapping(pisp->arg);
-		break;
-
 	default:
 		printk(KERN_ERR "mcctrl:syscall_packet_handler:"
 				"unknown message (%d.%d.%d.%d.%d.%#lx)\n",
@@ -315,27 +311,32 @@ static struct ihk_ikc_listen_param listen_param2 = {
 
 int prepare_ikc_channels(ihk_os_t os)
 {
-	struct ihk_cpu_info *info;
-	struct mcctrl_usrdata   *usrdata;
+	struct mcctrl_usrdata *usrdata;
 	int i;
 
 	usrdata = kzalloc(sizeof(struct mcctrl_usrdata), GFP_KERNEL);
+
+	usrdata->cpu_info = ihk_os_get_cpu_info(os);
+	usrdata->mem_info = ihk_os_get_memory_info(os);
+
+	if (!usrdata->cpu_info || !usrdata->mem_info) {
+		printk("Error: cannot obtain OS CPU and memory information.\n");
+		return -EINVAL;
+	}
+
 	usrdata->mcctrl_doorbell_va = (void *)__get_free_page(GFP_KERNEL);
 	usrdata->mcctrl_doorbell_pa = virt_to_phys(usrdata->mcctrl_doorbell_va);
 
-	info = ihk_os_get_cpu_info(os);
-	if (!info) {
-		printk("Error: cannot retrieve CPU info.\n");
-		return -EINVAL;
-	}
-	if (info->n_cpus < 1) {
+	if (usrdata->cpu_info->n_cpus < 1) {
 		printk("Error: # of cpu is invalid.\n");
 		return -EINVAL;
 	}
 
-	usrdata->num_channels = info->n_cpus + 1;
-	usrdata->channels = kzalloc(sizeof(struct mcctrl_channel) * usrdata->num_channels,
-	                   GFP_KERNEL);
+	usrdata->num_channels = usrdata->cpu_info->n_cpus + 1;
+	usrdata->channels = kzalloc(sizeof(struct mcctrl_channel) *
+			usrdata->num_channels,
+			GFP_KERNEL);
+
 	if (!usrdata->channels) {
 		printk("Error: cannot allocate channels.\n");
 		return -ENOMEM;
