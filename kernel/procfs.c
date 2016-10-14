@@ -23,6 +23,7 @@
 #include <process.h>
 #include <page.h>
 #include <mman.h>
+#include <bitmap.h>
 
 //#define DEBUG_PRINT_PROCFS
 
@@ -35,6 +36,7 @@
 extern int snprintf(char * buf, size_t size, const char *fmt, ...);
 extern int sprintf(char * buf, const char *fmt, ...);
 extern int sscanf(const char * buf, const char * fmt, ...);
+extern int scnprintf(char * buf, size_t size, const char *fmt, ...);
 
 extern int osnum;
 
@@ -404,11 +406,32 @@ process_procfs_request(unsigned long rarg)
 	/* 
 	 * mcos%d/PID/status
 	 */
+#define BITMASKS_BUF_SIZE	2048
 	if (strcmp(p, "status") == 0) {
 		struct vm_range *range;
 		unsigned long lockedsize = 0;
-		char tmp[1024];
+		char *tmp;
+		char *bitmasks;
+		int bitmasks_offset = 0;
+		char *cpu_bitmask, *cpu_list, *numa_bitmask, *numa_list;
 		int len;
+
+		tmp = kmalloc(8192, IHK_MC_AP_CRITICAL);
+		if (!tmp) {
+			kprintf("%s: error allocating /proc/self/status buffer\n",
+				__FUNCTION__);
+			ans = 0;
+			goto end;
+		}
+
+		bitmasks = kmalloc(BITMASKS_BUF_SIZE, IHK_MC_AP_CRITICAL);
+		if (!tmp) {
+			kprintf("%s: error allocating /proc/self/status bitmaks buffer\n",
+				__FUNCTION__);
+			kfree(tmp);
+			ans = 0;
+			goto end;
+		}
 
 		ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
 		list_for_each_entry(range, &proc->vm->vm_range_list, list) {
@@ -417,13 +440,42 @@ process_procfs_request(unsigned long rarg)
 		}
 		ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
 
+		cpu_bitmask = &bitmasks[bitmasks_offset];
+		bitmasks_offset += bitmap_scnprintf(cpu_bitmask,
+				BITMASKS_BUF_SIZE - bitmasks_offset,
+				thread->cpu_set.__bits, __CPU_SETSIZE);
+		bitmasks_offset++;
+
+		cpu_list = &bitmasks[bitmasks_offset];
+		bitmasks_offset += bitmap_scnlistprintf(cpu_list,
+				BITMASKS_BUF_SIZE - bitmasks_offset,
+				thread->cpu_set.__bits, __CPU_SETSIZE);
+		bitmasks_offset++;
+
+		numa_bitmask = &bitmasks[bitmasks_offset];
+		bitmasks_offset += bitmap_scnprintf(numa_bitmask,
+				BITMASKS_BUF_SIZE - bitmasks_offset,
+				proc->vm->numa_mask, PROCESS_NUMA_MASK_BITS);
+		bitmasks_offset++;
+
+		numa_list = &bitmasks[bitmasks_offset];
+		bitmasks_offset += bitmap_scnlistprintf(numa_list,
+				BITMASKS_BUF_SIZE - bitmasks_offset,
+				proc->vm->numa_mask, PROCESS_NUMA_MASK_BITS);
+		bitmasks_offset++;
+
 		sprintf(tmp,
 		        "Uid:\t%d\t%d\t%d\t%d\n"
 		        "Gid:\t%d\t%d\t%d\t%d\n"
-		        "VmLck:\t%9lu kB\n",
+		        "VmLck:\t%9lu kB\n"
+				"Cpus_allowed:\t%s\n"
+				"Cpus_allowed_list:\t%s\n"
+				"Mems_allowed:\t%s\n"
+				"Mems_allowed_list:\t%s\n",
 		        proc->ruid, proc->euid, proc->suid, proc->fsuid,
 		        proc->rgid, proc->egid, proc->sgid, proc->fsgid,
-		        (lockedsize + 1023) >> 10);
+		        (lockedsize + 1023) >> 10,
+				cpu_bitmask, cpu_list, numa_bitmask, numa_list);
 		len = strlen(tmp);
 		if (r->offset < len) {
 			if (r->offset + r->count < len) {
@@ -437,6 +489,8 @@ process_procfs_request(unsigned long rarg)
 			ans = 0;
 			eof = 1;
 		}
+		kfree(tmp);
+		kfree(bitmasks);
 		goto end;
 	}
 

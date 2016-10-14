@@ -13,6 +13,8 @@
 #ifndef HEADER_X86_COMMON_ARCH_BITOPS_H
 #define HEADER_X86_COMMON_ARCH_BITOPS_H
 
+#define ARCH_HAS_FAST_MULTIPLIER 1
+
 static inline int fls(int x)
 {
 	int r;

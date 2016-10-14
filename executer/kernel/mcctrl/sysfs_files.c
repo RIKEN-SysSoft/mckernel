@@ -1057,7 +1057,7 @@ void setup_sysfs_files(ihk_os_t os)
 	setup_cpus_sysfs_files(udp);
 	setup_node_files(udp);
 	setup_cpus_sysfs_files_node_link(udp);
-	setup_pci_files(udp);
+	//setup_pci_files(udp);
 
 	/* Indicate sysfs files setup completion for boot script */
 	error = sysfsm_mkdirf(os, NULL, "/sys/setup_complete");

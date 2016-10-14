@@ -27,6 +27,31 @@ unsigned long find_first_bit(const unsigned long *addr,
 unsigned long find_first_zero_bit(const unsigned long *addr, 
 				  unsigned long size);
 
+static inline int test_bit(int nr, const void *addr)
+{
+	const uint32_t *p = (const uint32_t *)addr;
+	return ((1UL << (nr & 31)) & (p[nr >> 5])) != 0;
+}
+
+extern unsigned int __sw_hweight32(unsigned int w);
+extern unsigned int __sw_hweight16(unsigned int w);
+extern unsigned int __sw_hweight8(unsigned int w);
+extern unsigned long __sw_hweight64(uint64_t w);
+
+static inline unsigned long hweight_long(unsigned long w)
+{
+	return sizeof(w) == 4 ? __sw_hweight32(w) : __sw_hweight64(w);
+}
+
+#define BIT(nr)			(1UL << (nr))
+#define BIT_WORD(nr)		((nr) / BITS_PER_LONG)
+#define BITS_PER_BYTE		8
+
+#define __ALIGN_KERNEL_MASK(x, mask)	(((x) + (mask)) & ~(mask))
+#define __ALIGN_MASK(x, mask)	__ALIGN_KERNEL_MASK((x), (mask))
+#define __ALIGN_KERNEL(x, a)		__ALIGN_KERNEL_MASK(x, (typeof(x))(a) - 1)
+#define ALIGN(x, a)		__ALIGN_KERNEL((x), (a))
+
 #endif /*__ASSEMBLY__*/
 
 #include <arch-bitops.h>

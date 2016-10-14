@@ -29,6 +29,11 @@ void *memcpy_long(void *dest, const void *src, size_t n);
 int memcmp(const void *s1, const void *s2, size_t n);
 void *memset(void *s, int n, size_t l);
 
+extern int snprintf(char * buf, size_t size, const char *fmt, ...);
+extern int sprintf(char * buf, const char *fmt, ...);
+extern int sscanf(const char * buf, const char * fmt, ...);
+extern int scnprintf(char * buf, size_t size, const char *fmt, ...);
+
 unsigned long strtol(const char *cp, char **endp, unsigned int base);
 int flatten_strings(int nr_strings, char *first, char **strings, char **flat);
 int flatten_strings_from_user(int nr_strings, char *first, char **strings, char **flat);
