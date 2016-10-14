@@ -2095,9 +2095,16 @@ struct sysfsm_ops snooping_local_ops_s = {
 /**** local list ****/
 static ssize_t snooping_local_show_pbl(struct sysfsm_ops *ops, void *instance, void *buf, size_t bufsize)
 {
+	size_t ret;
 	const struct sysfsm_bitmap_param *p = instance;
 
-	return bitmap_scnlistprintf(buf, bufsize, p->ptr, p->nbits);
+	ret = bitmap_scnlistprintf(buf, bufsize, p->ptr, p->nbits);
+	if (ret < bufsize - 1) {
+		sprintf(buf + ret, "\n");
+		return ret + 1;
+	}
+
+	return 0;
 } /* snooping_local_show_pbl() */
 
 struct sysfsm_ops snooping_local_ops_pbl = {
@@ -2108,9 +2115,16 @@ struct sysfsm_ops snooping_local_ops_pbl = {
 /**** local map ****/
 static ssize_t snooping_local_show_pb(struct sysfsm_ops *ops, void *instance, void *buf, size_t bufsize)
 {
+	size_t ret;
 	const struct sysfsm_bitmap_param *p = instance;
 
-	return bitmap_scnprintf(buf, bufsize, p->ptr, p->nbits);
+	ret = bitmap_scnprintf(buf, bufsize, p->ptr, p->nbits);
+	if (ret < bufsize - 1) {
+		sprintf(buf + ret, "\n");
+		return ret + 1;
+	}
+
+	return 0;
 } /* snooping_local_show_pb() */
 
 struct sysfsm_ops snooping_local_ops_pb = {
