@@ -7073,22 +7073,61 @@ out:
 	return error;
 } /* sys_getcpu() */
 
+/* XXX: move this to header.. */
+enum {
+	MPOL_DEFAULT,
+	MPOL_PREFERRED,
+	MPOL_BIND,
+	MPOL_INTERLEAVE,
+	MPOL_LOCAL,
+	MPOL_MAX,	/* always last member of enum */
+};
+
 SYSCALL_DECLARE(mbind)
 {
-	dkprintf("sys_mbind\n");
 	return -ENOSYS;
 } /* sys_mbind() */
 
 SYSCALL_DECLARE(set_mempolicy)
 {
-	dkprintf("sys_set_mempolicy\n");
 	return -ENOSYS;
 } /* sys_set_mempolicy() */
 
 SYSCALL_DECLARE(get_mempolicy)
 {
-	dkprintf("sys_get_mempolicy\n");
-	return -ENOSYS;
+	int *mode = (int *)ihk_mc_syscall_arg0(ctx);
+	unsigned long *nodemask =
+		(unsigned long *)ihk_mc_syscall_arg1(ctx);
+	unsigned long maxnode = ihk_mc_syscall_arg2(ctx);
+	unsigned long addr = ihk_mc_syscall_arg3(ctx);
+	unsigned long flags = ihk_mc_syscall_arg4(ctx);
+	int error;
+
+	if (flags || addr) {
+		return -EINVAL;
+	}
+
+	if (mode) {
+		error = copy_to_user(mode, MPOL_DEFAULT, sizeof(*mode));
+		if (error) {
+			error = -EINVAL;
+			goto out;
+		}
+	}
+
+	if (nodemask) {
+		error = copy_to_user(nodemask,
+				cpu_local_var(current)->vm->numa_mask,
+				maxnode < (PROCESS_NUMA_MASK_BITS >> 3) ?
+				maxnode : (PROCESS_NUMA_MASK_BITS >> 3));
+		if (error) {
+			error = -EINVAL;
+			goto out;
+		}
+	}
+
+out:
+	return error;
 } /* sys_get_mempolicy() */
 
 SYSCALL_DECLARE(migrate_pages)
