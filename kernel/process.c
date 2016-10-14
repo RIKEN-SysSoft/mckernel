@@ -204,6 +204,7 @@ detach_address_space(struct address_space *asp, int pid)
 static int
 init_process_vm(struct process *owner, struct address_space *asp, struct process_vm *vm)
 {
+	int i;
 	ihk_mc_spinlock_init(&vm->memory_range_lock);
 	ihk_mc_spinlock_init(&vm->page_table_lock);
 
@@ -212,6 +213,16 @@ init_process_vm(struct process *owner, struct address_space *asp, struct process
 	vm->address_space = asp;
 	vm->proc = owner;
 	vm->exiting = 0;
+
+	memset(&vm->numa_mask, 0, sizeof(vm->numa_mask));
+	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
+		if (i >= PROCESS_NUMA_MASK_BITS) {
+			kprintf("%s: error: NUMA id is larger than mask size!\n",
+				__FUNCTION__);
+			break;
+		}
+		set_bit(i, &vm->numa_mask[0]);
+	}
 
 	return 0;
 }
@@ -371,6 +382,9 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 			kfree(proc);
 			goto err_free_proc;
 		}
+		memcpy(&proc->vm->numa_mask, &org->vm->numa_mask,
+				sizeof(proc->vm->numa_mask));
+
 		thread->proc = proc;
 		thread->vm = proc->vm;
 

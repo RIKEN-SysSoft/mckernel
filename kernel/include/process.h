@@ -22,6 +22,7 @@
 #include <memobj.h>
 #include <affinity.h>
 #include <syscall.h>
+#include <bitops.h>
 
 #define VR_NONE            0x0
 #define VR_STACK           0x1
@@ -164,6 +165,8 @@
 #define KERNEL_STACK_NR_PAGES 32
 
 #define NOPHYS ((uintptr_t)-1)
+
+#define PROCESS_NUMA_MASK_BITS 64
 
 #include <waitq.h>
 #include <futex.h>
@@ -594,6 +597,7 @@ struct process_vm {
 	int exiting;
 
 	long currss;
+	DECLARE_BITMAP(numa_mask, PROCESS_NUMA_MASK_BITS);
 };
 
 static inline int has_cap_ipc_lock(struct thread *th)
