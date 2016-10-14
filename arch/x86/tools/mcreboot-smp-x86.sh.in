@@ -131,6 +131,9 @@ if [ "`lsmod | grep ihk`" == "" ]; then
         if ! insmod ${KMODDIR}/ihk.ko; then echo "error: loading ihk" >&2; exit 1; fi;
 fi
 
+# Drop Linux caches to free memory
+sync && echo 3 > /proc/sys/vm/drop_caches
+
 # Load IHK-SMP if not loaded and reserve CPUs and memory
 if [ "`lsmod | grep ihk_smp_x86`" == "" ]; then
         ihk_irq=""
