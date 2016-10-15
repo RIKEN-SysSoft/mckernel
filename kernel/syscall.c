@@ -134,7 +134,6 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid, struct s
 	int ret;
 
 	if(req->number == __NR_exit_group ||
-	   req->number == __NR_gettid ||
 	   req->number == __NR_kill){ // interrupt syscall
 		extern int num_processors;
 
@@ -205,7 +204,6 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	}
 
 	if(req->number == __NR_exit_group ||
-	   req->number == __NR_gettid ||
 	   req->number == __NR_kill){ // interrupt syscall
 		islock = 1;
 		irqstate = ihk_mc_spinlock_lock(&syscall_lock);
@@ -1491,6 +1489,7 @@ SYSCALL_DECLARE(getppid)
 
 static void settid(struct thread *thread, int nr_tids, int *tids)
 {
+	int ret;
 	struct syscall_request request IHK_DMA_ALIGN;
 
 	request.number = __NR_gettid;
@@ -1500,7 +1499,11 @@ static void settid(struct thread *thread, int nr_tids, int *tids)
 	 */
 	request.args[4] = nr_tids;
 	request.args[5] = virt_to_phys(tids);
-	do_syscall(&request, ihk_mc_get_processor_id(), thread->proc->pid);
+	if ((ret = do_syscall(&request, ihk_mc_get_processor_id(),
+				thread->proc->pid)) < 0) {
+		kprintf("%s: WARNING: do_syscall returns %d\n",
+			__FUNCTION__, ret);
+	}
 }
 
 SYSCALL_DECLARE(gettid)
@@ -1936,6 +1939,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		}
 
 		/* Find an unused TID */
+		new->tid = 0;
 retry_tid:
 		for (i = 0; i < newproc->nr_tids; ++i) {
 			if (!newproc->tids[i].thread) {

@@ -501,9 +501,10 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 	ppd = mcctrl_get_per_proc_data(ud, pid);
 
 	if (unlikely(!ppd)) {
-		kprintf("%s: ERROR: no per-process structure for PID %d??\n",
-			__FUNCTION__, task_tgid_vnr(current));
-			return 0;
+		kprintf("%s: ERROR: no per-process structure for PID %d, "
+				"syscall nr: %d\n",
+				__FUNCTION__, pid, packet->req.number);
+		return -1;
 	}
 
 	dprintk("%s: (packet_handler) rtid: %d, ttid: %d, sys nr: %d\n",
