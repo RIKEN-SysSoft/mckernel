@@ -223,6 +223,7 @@ init_process_vm(struct process *owner, struct address_space *asp, struct process
 		}
 		set_bit(i, &vm->numa_mask[0]);
 	}
+	vm->numa_mem_policy = MPOL_DEFAULT;
 
 	return 0;
 }
@@ -384,6 +385,8 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 		}
 		memcpy(&proc->vm->numa_mask, &org->vm->numa_mask,
 				sizeof(proc->vm->numa_mask));
+		proc->vm->numa_mem_policy =
+			org->vm->numa_mem_policy;
 
 		thread->proc = proc;
 		thread->vm = proc->vm;

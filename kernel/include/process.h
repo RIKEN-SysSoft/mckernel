@@ -168,6 +168,15 @@
 
 #define PROCESS_NUMA_MASK_BITS 64
 
+enum {
+	MPOL_DEFAULT,
+	MPOL_PREFERRED,
+	MPOL_BIND,
+	MPOL_INTERLEAVE,
+	MPOL_LOCAL,
+	MPOL_MAX,	/* always last member of enum */
+};
+
 #include <waitq.h>
 #include <futex.h>
 
@@ -598,6 +607,7 @@ struct process_vm {
 
 	long currss;
 	DECLARE_BITMAP(numa_mask, PROCESS_NUMA_MASK_BITS);
+	int numa_mem_policy;
 };
 
 static inline int has_cap_ipc_lock(struct thread *th)

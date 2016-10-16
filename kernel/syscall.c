@@ -7077,16 +7077,6 @@ out:
 	return error;
 } /* sys_getcpu() */
 
-/* XXX: move this to header.. */
-enum {
-	MPOL_DEFAULT,
-	MPOL_PREFERRED,
-	MPOL_BIND,
-	MPOL_INTERLEAVE,
-	MPOL_LOCAL,
-	MPOL_MAX,	/* always last member of enum */
-};
-
 SYSCALL_DECLARE(mbind)
 {
 	return -ENOSYS;
@@ -7112,7 +7102,9 @@ SYSCALL_DECLARE(get_mempolicy)
 	}
 
 	if (mode) {
-		error = copy_to_user(mode, MPOL_DEFAULT, sizeof(*mode));
+		error = copy_to_user(mode,
+				&cpu_local_var(current)->vm->numa_mem_policy,
+				sizeof(int));
 		if (error) {
 			error = -EINVAL;
 			goto out;
