@@ -52,6 +52,8 @@
 #include <mc_perf_event.h>
 #include <march.h>
 #include <process.h>
+#include <bitops.h>
+#include <bitmap.h>
 
 /* Headers taken from kitten LWK */
 #include <lwk/stddef.h>
@@ -7084,7 +7086,132 @@ SYSCALL_DECLARE(mbind)
 
 SYSCALL_DECLARE(set_mempolicy)
 {
-	return -ENOSYS;
+	int mode = ihk_mc_syscall_arg0(ctx);
+	unsigned long *nodemask =
+		(unsigned long *)ihk_mc_syscall_arg1(ctx);
+	unsigned long maxnode = ihk_mc_syscall_arg2(ctx);
+	unsigned long nodemask_bits = 0;
+	struct process_vm *vm = cpu_local_var(current)->vm;
+	int error = 0;
+	int bit, valid_mask;
+	DECLARE_BITMAP(numa_mask, PROCESS_NUMA_MASK_BITS);
+
+	memset(numa_mask, 0, sizeof(numa_mask));
+
+	if (maxnode) {
+		nodemask_bits = ALIGN(maxnode, 8);
+		if (maxnode > (PAGE_SIZE << 3)) {
+			dkprintf("%s: ERROR: nodemask_bits bigger than PAGE_SIZE bits\n",
+				__FUNCTION__);
+			error = -EINVAL;
+			goto out;
+		}
+
+		if (nodemask_bits > PROCESS_NUMA_MASK_BITS) {
+			kprintf("%s: WARNING: process NUMA mask bits is insufficient\n",
+				__FUNCTION__);
+			nodemask_bits = PROCESS_NUMA_MASK_BITS;
+		}
+	}
+
+	switch (mode) {
+		case MPOL_DEFAULT:
+			if (nodemask && nodemask_bits) {
+				error = copy_from_user(numa_mask, nodemask,
+						(nodemask_bits >> 3));
+				if (error) {
+					error = -EFAULT;
+					goto out;
+				}
+
+				if (!bitmap_empty(numa_mask, nodemask_bits)) {
+					dkprintf("%s: ERROR: nodemask not empty for MPOL_DEFAULT\n",
+							__FUNCTION__);
+					error = -EINVAL;
+					goto out;
+				}
+			}
+
+			memset(vm->numa_mask, 0, sizeof(numa_mask));
+			for (bit = 0; bit < ihk_mc_get_nr_numa_nodes(); ++bit) {
+				set_bit(bit, vm->numa_mask);
+			}
+
+			/* TODO: delete all mbind() specified regions */
+
+			vm->numa_mem_policy = mode;
+			error = 0;
+			break;
+
+		case MPOL_BIND:
+		case MPOL_INTERLEAVE:
+		case MPOL_PREFERRED:
+			/* Special case for MPOL_PREFERRED with empty nodemask */
+			if (mode == MPOL_PREFERRED && !nodemask) {
+				memset(vm->numa_mask, 0, sizeof(numa_mask));
+				for (bit = 0; bit < ihk_mc_get_nr_numa_nodes(); ++bit) {
+					set_bit(bit, vm->numa_mask);
+				}
+
+				vm->numa_mem_policy = mode;
+				error = 0;
+				break;
+			}
+
+			if (!nodemask) {
+				dkprintf("%s: ERROR: nodemask not specified\n",
+						__FUNCTION__);
+				error = -EINVAL;
+				goto out;
+			}
+
+			error = copy_from_user(numa_mask, nodemask,
+					(nodemask_bits >> 3));
+			if (error) {
+				error = -EFAULT;
+				goto out;
+			}
+
+			/* Verify NUMA mask */
+			valid_mask = 0;
+			for_each_set_bit(bit, numa_mask, maxnode) {
+				if (bit >= ihk_mc_get_nr_numa_nodes()) {
+					dkprintf("%s: %d is bigger than # of NUMA nodes\n", 
+						__FUNCTION__, bit);
+					error = -EINVAL;
+					goto out;
+				}
+
+				/* Is there at least one node which is allowed
+				 * in current mask? */
+				if (test_bit(bit, vm->numa_mask)) {
+					valid_mask = 1;
+				}
+			}
+
+			if (!valid_mask) {
+				dkprintf("%s: ERROR: invalid nodemask\n", __FUNCTION__);
+				error = -EINVAL;
+				goto out;
+			}
+
+			/* Update current mask by clearing non-requested nodes */
+			for_each_set_bit(bit, vm->numa_mask, maxnode) {
+				if (!test_bit(bit, numa_mask)) {
+					clear_bit(bit, vm->numa_mask);
+				}
+			}
+
+			vm->numa_mem_policy = mode;
+			error = 0;
+			break;
+
+		default:
+			error = -EINVAL;
+	}
+
+out:
+	return error;
 } /* sys_set_mempolicy() */
 
 SYSCALL_DECLARE(get_mempolicy)
@@ -7092,13 +7219,32 @@ SYSCALL_DECLARE(get_mempolicy)
 	int *mode = (int *)ihk_mc_syscall_arg0(ctx);
 	unsigned long *nodemask =
 		(unsigned long *)ihk_mc_syscall_arg1(ctx);
+	unsigned long nodemask_bits = 0;
 	unsigned long maxnode = ihk_mc_syscall_arg2(ctx);
 	unsigned long addr = ihk_mc_syscall_arg3(ctx);
 	unsigned long flags = ihk_mc_syscall_arg4(ctx);
+	struct process_vm *vm = cpu_local_var(current)->vm;
 	int error;
 
-	if (flags || addr) {
+	if (((flags & MPOL_F_ADDR) && !addr) ||
+		(!(flags & MPOL_F_ADDR) && addr) ||
+		(flags & ~(MPOL_F_ADDR | MPOL_F_NODE | MPOL_F_MEMS_ALLOWED)) ||
+		((flags & MPOL_F_NODE) && !(flags & MPOL_F_ADDR) &&
+		 vm->numa_mem_policy == MPOL_INTERLEAVE)) {
 		return -EINVAL;
+	}
+
+	if (maxnode) {
+		if (maxnode < ihk_mc_get_nr_numa_nodes()) {
+			return -EINVAL;
+		}
+
+		nodemask_bits = ALIGN(maxnode, 8);
+		if (nodemask_bits > PROCESS_NUMA_MASK_BITS) {
+			dkprintf("%s: WARNING: process NUMA mask bits is insufficient\n",
+				__FUNCTION__);
+			nodemask_bits = PROCESS_NUMA_MASK_BITS;
+		}
 	}
 
 	if (mode) {
@@ -7106,7 +7252,7 @@ SYSCALL_DECLARE(get_mempolicy)
 				&cpu_local_var(current)->vm->numa_mem_policy,
 				sizeof(int));
 		if (error) {
-			error = -EINVAL;
+			error = -EFAULT;
 			goto out;
 		}
 	}
@@ -7114,10 +7260,9 @@ SYSCALL_DECLARE(get_mempolicy)
 	if (nodemask) {
 		error = copy_to_user(nodemask,
 				cpu_local_var(current)->vm->numa_mask,
-				maxnode < (PROCESS_NUMA_MASK_BITS >> 3) ?
-				maxnode : (PROCESS_NUMA_MASK_BITS >> 3));
+				(nodemask_bits >> 3));
 		if (error) {
-			error = -EINVAL;
+			error = -EFAULT;
 			goto out;
 		}
 	}
