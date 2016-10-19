@@ -37,6 +37,8 @@ static void kprintf_wait(int len, unsigned long *flags_head, int *slide) {
 		if (head < tail) head += buf_len;
 		if (tail + len > buf_len) adj = buf_len - tail;
 		if (head > tail && head <= tail + len + adj) {
+			/* When proceeding tail (producer pointer) by len would
+			   cross head (consumer pointer) in ring-buffer */
 			if (mode != 1) {
 				*slide = 1;
 				break;
@@ -70,6 +72,9 @@ void kputs(char *buf)
 	
 	memcpy(kmsg_buf.str + kmsg_buf.tail, buf, len);
 	kmsg_buf.tail += len;
+	/* When proceeding tail (producer pointer) by len would
+	   cross head (consumer pointer) in ring-buffer, give up
+	   [head, tail] because the range is overwritten */
 	if (slide == 1) {
 		kmsg_buf.head = kmsg_buf.tail + 1;
 		if (kmsg_buf.head >= kmsg_buf.len) kmsg_buf.head = 0;
@@ -170,6 +175,17 @@ int kprintf(const char *format, ...)
 	return len;
 }
 
+/* mode:
+    0: mcklogd is not running.
+       When kmsg buffer is full, writer doesn't block
+       and overwrites the buffer.
+    1: mcklogd periodically retrieves kmsg.
+       When kmsg buffer is full, writer blocks until 
+       someone retrieves kmsg.
+    2: mcklogd periodically retrieves kmsg.
+       When kmsg buffer is full, writer doesn't block
+       and overwrites the buffer.
+*/
 void kmsg_init(int mode)
 {
 	ihk_mc_spinlock_init(&kmsg_lock);

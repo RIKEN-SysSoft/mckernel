@@ -126,6 +126,16 @@ if [ "${irqbalance_used}" == "yes" ]; then
     if ! systemctl stop irqbalance.service 2>/dev/null ; then echo "error: stopping irqbalance" >&2; exit 1; fi;
 fi
 
+# Start mcklogd. Note that McKernel blocks when kmsg buffer is full
+# with '-k 1' until mcklogd unblocks it so starting mcklogd must preceeds
+# booting McKernel
+if [ ${LOGMODE} -ne 0 ]
+then
+# Stop mcklogd which has survived McKernel shutdown because mcstop+release.sh is not used
+	pkill mcklogd    
+	SBINDIR=${SBINDIR} ${SBINDIR}/mcklogd -i ${INTERVAL} -f ${facility}
+fi
+
 # Load IHK if not loaded
 if [ "`lsmod | grep ihk`" == "" ]; then
         if ! insmod ${KMODDIR}/ihk.ko; then echo "error: loading ihk" >&2; exit 1; fi;
@@ -248,12 +258,6 @@ if [ "$enable_mcoverlay" == "yes" ]; then
 			rm -rf /tmp/mcos/mcos0_sys/bus/cpu/devices/$cpuid
 		fi
 	done
-fi
-if [ ${LOGMODE} -ne 0 ]
-then
-# mcklogd survives when McKernel isn't shut down by mcstop+release.sh
-	pkill mcklogd    
-	SBINDIR=${SBINDIR} ${SBINDIR}/mcklogd -i ${INTERVAL} -f ${facility}
 fi
 
 # Start irqbalance with CPUs and IRQ for McKernel banned
