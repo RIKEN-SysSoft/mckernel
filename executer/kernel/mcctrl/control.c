@@ -77,31 +77,48 @@ int mcctrl_ikc_set_recv_cpu(ihk_os_t os, int cpu);
 static long mcexec_prepare_image(ihk_os_t os,
                                  struct program_load_desc * __user udesc)
 {
-	struct program_load_desc desc, *pdesc;
+	struct program_load_desc *desc, *pdesc;
 	struct ikc_scd_packet isp;
 	void *args, *envs;
 	long ret = 0;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd = NULL;
+	int num_sections;
 
-	if (copy_from_user(&desc, udesc,
+	desc = kmalloc(sizeof(*desc), GFP_KERNEL);
+	if (!desc) {
+		printk("%s: error: allocating program_load_desc\n",
+			__FUNCTION__);
+		return -ENOMEM;
+	}
+
+	if (copy_from_user(desc, udesc,
 	                    sizeof(struct program_load_desc))) {
+		printk("%s: error: copying program_load_desc\n",
+			__FUNCTION__);
+		kfree(desc);
 		return -EFAULT;
 	}
-	if (desc.num_sections <= 0 || desc.num_sections > 16) {
-		printk("# of sections: %d\n", desc.num_sections);
+
+	num_sections = desc->num_sections;
+
+	if (num_sections <= 0 || num_sections > 16) {
+		printk("# of sections: %d\n", num_sections);
 		return -EINVAL;
 	}
 	pdesc = kmalloc(sizeof(struct program_load_desc) + 
 	                sizeof(struct program_image_section)
-	                * desc.num_sections, GFP_KERNEL);
-	memcpy(pdesc, &desc, sizeof(struct program_load_desc));
+	                * num_sections, GFP_KERNEL);
+	memcpy(pdesc, desc, sizeof(struct program_load_desc));
 	if (copy_from_user(pdesc->sections, udesc->sections,
 	                   sizeof(struct program_image_section)
-	                   * desc.num_sections)) {
+	                   * num_sections)) {
+		kfree(desc);
 		kfree(pdesc);
 		return -EFAULT;
 	}
+
+	kfree(desc);
 
 	pdesc->pid = task_tgid_vnr(current);
 
@@ -158,7 +175,7 @@ static long mcexec_prepare_image(ihk_os_t os,
 	ppd->rpgtable = pdesc->rpgtable;
 	
 	if (copy_to_user(udesc, pdesc, sizeof(struct program_load_desc) + 
-	             sizeof(struct program_image_section) * desc.num_sections)) {
+	             sizeof(struct program_image_section) * num_sections)) {
 		ret = -EFAULT;	
 		goto free_out;
 	}
@@ -315,33 +332,42 @@ static long mcexec_start_image(ihk_os_t os,
                                struct program_load_desc * __user udesc,
                                struct file *file)
 {
-	struct program_load_desc desc;
+	struct program_load_desc *desc;
 	struct ikc_scd_packet isp;
 	struct mcctrl_channel *c;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct handlerinfo *info;
 
-	if (copy_from_user(&desc, udesc,
+	desc = kmalloc(sizeof(*desc), GFP_KERNEL);
+	if (!desc) {
+		printk("%s: error: allocating program_load_desc\n",
+			__FUNCTION__);
+		return -ENOMEM;
+	}
+
+	if (copy_from_user(desc, udesc,
 	                   sizeof(struct program_load_desc))) {
+		kfree(desc);
 		return -EFAULT;
 	}
 
 	info = kmalloc(sizeof(struct handlerinfo), GFP_KERNEL);
-	info->pid = desc.pid;
+	info->pid = desc->pid;
 	ihk_os_register_release_handler(file, release_handler, info);
 
-	c = usrdata->channels + desc.cpu;
+	c = usrdata->channels + desc->cpu;
 
-	mcctrl_ikc_set_recv_cpu(os, desc.cpu);
+	mcctrl_ikc_set_recv_cpu(os, desc->cpu);
 
-	usrdata->last_thread_exec = desc.cpu;
+	usrdata->last_thread_exec = desc->cpu;
 	
 	isp.msg = SCD_MSG_SCHEDULE_PROCESS;
-	isp.ref = desc.cpu;
-	isp.arg = desc.rprocess;
+	isp.ref = desc->cpu;
+	isp.arg = desc->rprocess;
 
-	mcctrl_ikc_send(os, desc.cpu, &isp);
+	mcctrl_ikc_send(os, desc->cpu, &isp);
 
+	kfree(desc);
 	return 0;
 }
 
@@ -502,7 +528,7 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 
 	if (unlikely(!ppd)) {
 		kprintf("%s: ERROR: no per-process structure for PID %d, "
-				"syscall nr: %d\n",
+				"syscall nr: %lu\n",
 				__FUNCTION__, pid, packet->req.number);
 		return -1;
 	}

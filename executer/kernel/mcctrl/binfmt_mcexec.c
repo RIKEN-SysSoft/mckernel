@@ -75,7 +75,7 @@ static int load_elf(struct linux_binprm *bprm
 	char buf[32];
 	int l;
 	int pass;
-	char pbuf[1024];
+	char *pbuf;
 	const char *path;
 
 	if(bprm->envc == 0)
@@ -88,6 +88,11 @@ static int load_elf(struct linux_binprm *bprm
 	if(elf_ex->e_ident[EI_CLASS] != ELFCLASS64)
 		return -ENOEXEC;
 
+	pbuf = kmalloc(1024, GFP_ATOMIC);
+	if (!pbuf) {
+		printk("%s: error: allocating pbuf\n", __FUNCTION__);
+		return -ENOMEM;
+	}
 	path = d_path(&bprm->file->f_path, pbuf, 1024);
 	if(!path || IS_ERR(path))
 		path = bprm->interp;
@@ -96,8 +101,10 @@ static int load_elf(struct linux_binprm *bprm
 	if(!cp ||
 	   !strcmp(cp, "/mcexec") ||
 	   !strcmp(cp, "/ihkosctl") ||
-	   !strcmp(cp, "/ihkconfig"))
+	   !strcmp(cp, "/ihkconfig")) {
+		kfree(pbuf);
 		return -ENOEXEC;
+	}
 
 	cnt[0] = bprm->argc;
 	cnt[1] = bprm->envc;
@@ -124,8 +131,10 @@ static int load_elf(struct linux_binprm *bprm
 				                        bprm->p, 1, 0, 1,
 				                        &page, NULL);
 #endif
-				if(rc <= 0)
+				if(rc <= 0) {
+					kfree(pbuf);
 					return -EFAULT;
+				}
 				addr = kmap_atomic(page
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0)
 				                   , KM_USER0
@@ -199,21 +208,27 @@ static int load_elf(struct linux_binprm *bprm
 	for(ep = env; ep->name; ep++)
 		if(ep->val)
 			kfree(ep->val);
-	if(rc)
+	if(rc) {
+		kfree(pbuf);
 		return -ENOEXEC;
+	}
 
 	file = open_exec(MCEXEC_PATH);
-	if (IS_ERR(file))
+	if (IS_ERR(file)) {
+		kfree(pbuf);
 		return -ENOEXEC;
+	}
 
 	rc = remove_arg_zero(bprm);
 	if (rc){
 		fput(file);
+		kfree(pbuf);
 		return rc;
 	}
 	rc = copy_strings_kernel(1, &bprm->interp, bprm);
 	if (rc < 0){
 		fput(file);
+		kfree(pbuf);
 		return rc; 
 	}
 	bprm->argc++;
@@ -221,12 +236,14 @@ static int load_elf(struct linux_binprm *bprm
 	rc = copy_strings_kernel(1, &wp, bprm);
 	if (rc){
 		fput(file);
+		kfree(pbuf);
 		return rc; 
 	}
 	bprm->argc++;
 	rc = bprm_change_interp(MCEXEC_PATH, bprm);
 	if (rc < 0){
 		fput(file);
+		kfree(pbuf);
 		return rc;
 	}
 
@@ -236,8 +253,12 @@ static int load_elf(struct linux_binprm *bprm
 
 	rc = prepare_binprm(bprm);
 	if (rc < 0){
+		kfree(pbuf);
 		return rc;
 	}
+
+	kfree(pbuf);
+
 	return search_binary_handler(bprm
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
 	                             , regs

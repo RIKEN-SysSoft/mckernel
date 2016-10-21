@@ -331,7 +331,7 @@ void delete_proc_procfs_files(int pid);
 void create_os_procfs_files(void);
 void delete_os_procfs_files(void);
 
-#define PROCFS_NAME_MAX 1000
+#define PROCFS_NAME_MAX 768
 
 struct procfs_read {
 	unsigned long pbuf;	/* physical address of the host buffer (request) */

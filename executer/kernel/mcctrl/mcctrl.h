@@ -317,7 +317,7 @@ inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(
 void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet, 
 		long ret, int stid);
 
-#define PROCFS_NAME_MAX 1000
+#define PROCFS_NAME_MAX 768
 
 struct procfs_read {
 	unsigned long pbuf;	/* physical address of the host buffer (request) */
