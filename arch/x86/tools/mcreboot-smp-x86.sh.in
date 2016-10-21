@@ -179,19 +179,7 @@ fi
 
 # Check for existing OS instance and destroy
 if [ -c /dev/mcos0 ]; then
-        # Query CPU cores and memory of OS instance so that the same values are used as previously
-        if ! ${SBINDIR}/ihkosctl 0 query cpu > /dev/null; then echo "error: querying cpus" >&2; exit 1; fi
-        cpus=`${SBINDIR}/ihkosctl 0 query cpu`
-        if ! ${SBINDIR}/ihkosctl 0 query mem > /dev/null; then echo "error: querying memory" >&2; exit 1; fi
-        mem=`${SBINDIR}/ihkosctl 0 query mem`
-
-        if ! ${SBINDIR}/ihkconfig 0 destroy 0; then echo "warning: destroy failed" >&2; fi	
-else
-        # Otherwise query IHK-SMP for resources
-        if ! ${SBINDIR}/ihkconfig 0 query cpu > /dev/null; then echo "error: querying cpus" >&2; exit 1; fi
-        cpus=`${SBINDIR}/ihkconfig 0 query cpu`
-        if ! ${SBINDIR}/ihkconfig 0 query mem > /dev/null; then echo "error: querying memory" >&2; exit 1; fi
-        mem=`${SBINDIR}/ihkconfig 0 query mem`	
+	if ! ${SBINDIR}/ihkconfig 0 destroy 0; then echo "warning: destroy failed" >&2; fi
 fi
 
 if ! ${SBINDIR}/ihkconfig 0 create; then echo "error: create" >&2; exit; fi
