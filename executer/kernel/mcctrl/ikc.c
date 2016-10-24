@@ -35,6 +35,16 @@
 
 #define REQUEST_SHIFT    16
 
+//#define DEBUG_IKC
+
+#ifdef DEBUG_IKC
+#define	dkprintf(...) kprintf(__VA_ARGS__)
+#define	ekprintf(...) kprintf(__VA_ARGS__)
+#else
+#define dkprintf(...) do { if (0) printk(__VA_ARGS__); } while (0)
+#define	ekprintf(...) printk(__VA_ARGS__)
+#endif
+
 //int num_channels;
 
 //struct mcctrl_channel *channels;
@@ -164,93 +174,26 @@ int mcctrl_ikc_is_valid_thread(ihk_os_t os, int cpu)
 	}
 }
 
-//unsigned long *mcctrl_doorbell_va;
-//unsigned long mcctrl_doorbell_pa;
-
 static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ihk_ikc_channel_desc *c)
 {
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct ikc_scd_packet packet;
 	struct mcctrl_channel *pmc = usrdata->channels + cpu;
-	unsigned long phys;
-	struct ikc_scd_init_param *rpm;
 
-	if(c->port == 502)
+	if (c->port == 502) {
 		pmc = usrdata->channels + usrdata->num_channels - 1;
-
-	if (!pmc) {
-		return;
 	}
 
-	printk("IKC init: cpu=%d port=%d\n", cpu, c->port);
-
-	phys = ihk_device_map_memory(ihk_os_to_dev(os), rphys,
-	                             sizeof(struct ikc_scd_init_param));
-#ifdef CONFIG_MIC
-	rpm = ioremap_wc(phys, sizeof(struct ikc_scd_init_param));
-#else
-	rpm = ihk_device_map_virtual(ihk_os_to_dev(os), phys, 
-	                             sizeof(struct ikc_scd_init_param),
-								 NULL, 0);
-#endif
-
-	pmc->param.request_va =
-		(void *)__get_free_pages(in_interrupt() ? GFP_ATOMIC : GFP_KERNEL,
-		                         REQUEST_SHIFT - PAGE_SHIFT);
-	pmc->param.request_pa = virt_to_phys(pmc->param.request_va);
-	pmc->param.doorbell_va = usrdata->mcctrl_doorbell_va;
-	pmc->param.doorbell_pa = usrdata->mcctrl_doorbell_pa;
-	pmc->param.post_va = (void *)__get_free_page(in_interrupt() ? 
-			GFP_ATOMIC : GFP_KERNEL);
-	pmc->param.post_pa = virt_to_phys(pmc->param.post_va);
-	memset(pmc->param.doorbell_va, 0, PAGE_SIZE);
-	memset(pmc->param.request_va, 0, PAGE_SIZE);
-	memset(pmc->param.post_va, 0, PAGE_SIZE);
-	
-	pmc->param.response_rpa = rpm->response_page;
-	pmc->param.response_pa 
-		= ihk_device_map_memory(ihk_os_to_dev(os),
-		                        pmc->param.response_rpa,
-		                        PAGE_SIZE);
-#ifdef CONFIG_MIC							
-	pmc->param.response_va = ioremap_cache(pmc->param.response_pa,
-	                                       PAGE_SIZE);
-#else
-	pmc->param.response_va = ihk_device_map_virtual(ihk_os_to_dev(os), 
-	                                                pmc->param.response_pa,
-													PAGE_SIZE, NULL, 0);
-#endif
-
-	pmc->dma_buf = (void *)__get_free_pages(in_interrupt() ? 
-			GFP_ATOMIC : GFP_KERNEL,
-			DMA_PIN_SHIFT - PAGE_SHIFT);
-
-	rpm->request_page = pmc->param.request_pa;
-	rpm->doorbell_page = pmc->param.doorbell_pa;
-	rpm->post_page = pmc->param.post_pa;
+	if (!pmc) {
+		kprintf("%s: error: no channel found?\n", __FUNCTION__);
+		return;
+	}
 
 	packet.msg = SCD_MSG_INIT_CHANNEL_ACKED;
 	packet.ref = cpu;
 	packet.arg = rphys;
 
-	printk("Request: %lx, Response: %lx, Doorbell: %lx\n",
-	       pmc->param.request_pa, pmc->param.response_rpa,
-	       pmc->param.doorbell_pa);
-	printk("Request: %p, Response: %p, Doorbell: %p\n",
-	       pmc->param.request_va, pmc->param.response_va,
-	       pmc->param.doorbell_va);
-
 	ihk_ikc_send(pmc->c, &packet, 0);
-
-#ifdef CONFIG_MIC							
-	iounmap(rpm);
-#else
-	ihk_device_unmap_virtual(ihk_os_to_dev(os), rpm, 
-	                         sizeof(struct ikc_scd_init_param));
-#endif
-
-	ihk_device_unmap_memory(ihk_os_to_dev(os), phys,
-	                        sizeof(struct ikc_scd_init_param));
 }
 
 static int connect_handler(struct ihk_ikc_channel_info *param)
@@ -270,7 +213,7 @@ static int connect_handler(struct ihk_ikc_channel_info *param)
 	param->packet_handler = syscall_packet_handler;
 	
 	usrdata->channels[cpu].c = c;
-	kprintf("syscall: MC CPU %d connected. c=%p\n", cpu, c);
+	dkprintf("syscall: MC CPU %d connected. c=%p\n", cpu, c);
 
 	return 0;
 }
@@ -288,7 +231,7 @@ static int connect_handler2(struct ihk_ikc_channel_info *param)
 	param->packet_handler = syscall_packet_handler;
 	
 	usrdata->channels[cpu].c = c;
-	kprintf("syscall: MC CPU %d connected. c=%p\n", cpu, c);
+	dkprintf("syscall: MC CPU %d connected. c=%p\n", cpu, c);
 
 	return 0;
 }
@@ -323,9 +266,6 @@ int prepare_ikc_channels(ihk_os_t os)
 		printk("Error: cannot obtain OS CPU and memory information.\n");
 		return -EINVAL;
 	}
-
-	usrdata->mcctrl_doorbell_va = (void *)__get_free_page(GFP_KERNEL);
-	usrdata->mcctrl_doorbell_pa = virt_to_phys(usrdata->mcctrl_doorbell_va);
 
 	if (usrdata->cpu_info->n_cpus < 1) {
 		printk("Error: # of cpu is invalid.\n");
@@ -363,20 +303,7 @@ int prepare_ikc_channels(ihk_os_t os)
 
 void __destroy_ikc_channel(ihk_os_t os, struct mcctrl_channel *pmc)
 {
-	free_pages((unsigned long)pmc->param.request_va,
-	           REQUEST_SHIFT - PAGE_SHIFT);
-	free_page((unsigned long)pmc->param.post_va);
-
-#ifdef CONFIG_MIC
-	iounmap(pmc->param.response_va);
-#else
-	ihk_device_unmap_virtual(ihk_os_to_dev(os), pmc->param.response_va, 
-	                         PAGE_SIZE);
-#endif
-	ihk_device_unmap_memory(ihk_os_to_dev(os),
-	                        pmc->param.response_pa, PAGE_SIZE);
-	free_pages((unsigned long)pmc->dma_buf,
-	           DMA_PIN_SHIFT - PAGE_SHIFT);
+	return;
 }
 
 void destroy_ikc_channels(ihk_os_t os)
@@ -394,7 +321,6 @@ void destroy_ikc_channels(ihk_os_t os)
 			printk("Channel #%d freed.\n", i);
 		}
 	}
-	free_page((unsigned long)usrdata->mcctrl_doorbell_va);
 
 	kfree(usrdata->channels);
 	kfree(usrdata);

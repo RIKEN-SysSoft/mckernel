@@ -172,7 +172,6 @@ struct wait_queue_head_list_node {
 
 struct mcctrl_channel {
 	struct ihk_ikc_channel_desc *c;
-	struct syscall_params param;
 	struct ikc_scd_init_param init;
 	void *dma_buf;
 };
@@ -263,9 +262,7 @@ struct mcctrl_usrdata {
 	struct ihk_ikc_listen_param listen_param2;
 	ihk_os_t	os;
 	int	num_channels;
-	struct mcctrl_channel	*channels;
-	unsigned long	*mcctrl_doorbell_va;
-	unsigned long	mcctrl_doorbell_pa;
+	struct mcctrl_channel *channels;
 	int	remaining_job;
 	int	base_cpu;
 	int	job_pos;
