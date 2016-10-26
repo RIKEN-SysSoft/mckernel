@@ -129,11 +129,15 @@ error_cleanup_channels:
 
 int mcctrl_os_shutdown_notifier(int os_index)
 {
-	sysfsm_cleanup(os[os_index]);
-	free_topology_info(os[os_index]);
-	ihk_os_unregister_user_call_handlers(os[os_index], mcctrl_uc + os_index);
-	destroy_ikc_channels(os[os_index]);
-	procfs_exit(os_index);
+	if (os[os_index]) {
+		sysfsm_cleanup(os[os_index]);
+		free_topology_info(os[os_index]);
+		ihk_os_unregister_user_call_handlers(os[os_index], mcctrl_uc + os_index);
+		destroy_ikc_channels(os[os_index]);
+		procfs_exit(os_index);
+	}
+
+	os[os_index] = NULL;
 
 	printk("mcctrl: OS ID %d shutdown event handled\n", os_index);
 	return 0;
@@ -151,10 +155,15 @@ static struct ihk_os_notifier mcctrl_os_notifier = {
 static int __init mcctrl_init(void)
 {
 	int ret = 0;
+	int i;
 
 #ifndef DO_USER_MODE
 	mcctrl_syscall_init();
 #endif
+
+	for (i = 0; i < OS_MAX_MINOR; ++i) {
+		os[i] = NULL;
+	}
 
 	rus_page_hash_init();
 

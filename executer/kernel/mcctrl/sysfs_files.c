@@ -191,6 +191,11 @@ void free_topology_info(ihk_os_t os)
 {
 	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
 
+	if (!udp) {
+		printk("%s: WARNING: no mcctrl_usrdata found\n", __FUNCTION__);
+		return;
+	}
+
 	free_node_topology(udp);
 	free_cpu_topology(udp);
 

@@ -311,6 +311,11 @@ void destroy_ikc_channels(ihk_os_t os)
 	int i;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 
+	if (!usrdata) {
+		printk("%s: WARNING: no mcctrl_usrdata found\n", __FUNCTION__);
+		return;
+	}
+
 	ihk_host_os_set_usrdata(os, NULL);
 
 	for (i = 0; i < usrdata->num_channels; i++) {

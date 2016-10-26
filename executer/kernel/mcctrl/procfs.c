@@ -481,8 +481,9 @@ procfs_exit(int osnum)
 
 	down(&procfs_file_list_lock);
 	e = find_base_entry(osnum);
-	if(e)
+	if (e) {
 		delete_procfs_entries(e);
+	}
 	up(&procfs_file_list_lock);
 }
 

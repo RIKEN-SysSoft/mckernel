@@ -1232,8 +1232,15 @@ sysfsm_cleanup(ihk_os_t os)
 	int error;
 	ihk_device_t dev = ihk_os_to_dev(os);
 	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
-	struct sysfsm_data *sdp = &udp->sysfsm_data;
+	struct sysfsm_data *sdp;
 	struct sysfsm_node *np;
+
+	if (!udp) {
+		printk("%s: WARNING: no mcctrl_usrdata found\n", __FUNCTION__);
+		return;
+	}
+
+	sdp = &udp->sysfsm_data;
 
 	dprintk("mcctrl:sysfsm_cleanup(%p)\n", os);
 
