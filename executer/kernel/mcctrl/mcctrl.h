@@ -243,9 +243,12 @@ struct cpu_topology {
 	struct list_head cache_list;
 };
 
+#define NODE_DISTANCE_S_SIZE	1024
+
 struct node_topology {
 	struct ihk_node_topology *saved;
 	int mckernel_numa_id;
+	char mckernel_numa_distance_s[NODE_DISTANCE_S_SIZE];
 	cpumask_t cpumap;
 
 	struct list_head chain;

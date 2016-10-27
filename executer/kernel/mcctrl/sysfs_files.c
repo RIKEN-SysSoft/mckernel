@@ -680,8 +680,30 @@ static int setup_node_files(struct mcctrl_usrdata *udp)
 	list_for_each_entry(p, &udp->node_topology_list, chain) {
 		struct sysfs_handle handle;
 		int cpu;
+		int node;
+		size_t offset = 0;
 		param.nbits = nr_cpumask_bits;
 		param.ptr = &p->cpumap;
+
+		for (node = 0; node < udp->mem_info->n_numa_nodes; ++node) {
+			if (node > 0) {
+				offset += snprintf(&p->mckernel_numa_distance_s[offset],
+						NODE_DISTANCE_S_SIZE - offset, "%s", " ");
+			}
+			offset += snprintf(&p->mckernel_numa_distance_s[offset],
+					NODE_DISTANCE_S_SIZE - offset, "%d",
+					node_distance(
+						mckernel_numa_2_linux_numa(udp, p->mckernel_numa_id),
+						mckernel_numa_2_linux_numa(udp, node)
+						));
+		}
+		offset += snprintf(&p->mckernel_numa_distance_s[offset],
+				NODE_DISTANCE_S_SIZE - offset, "%s", "\n");
+
+		sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_s,
+				p->mckernel_numa_distance_s, 0444,
+				"/sys/devices/system/node/node%d/distance",
+				p->mckernel_numa_id);
 
 		sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_pb, &param, 0444,
 				"/sys/devices/system/node/node%d/cpumap",
