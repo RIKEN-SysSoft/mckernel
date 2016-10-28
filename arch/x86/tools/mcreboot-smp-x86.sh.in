@@ -3,13 +3,13 @@
 # IHK SMP-x86 example boot script.
 # author: Balazs Gerofi <bgerofi@riken.jp>
 #      Copyright (C) 2014  RIKEN AICS
-# 
-# This is an example script for loading IHK, configuring a partition and 
-# booting McKernel on it. 
-# The script reserves half of the CPU cores and 512MB of RAM from NUMA node 0 
-# when IHK is loaded for the first time, otherwise it destroys the current 
-# McKernel instance and reboots it using the same set of resources as it used
-# previously. 
+#
+# This is an example script for loading IHK, configuring a partition and
+# booting McKernel on it.  Unless specific CPUs and memory are requested,
+# the script reserves half of the CPU cores and 512MB of RAM from
+# NUMA node 0 when IHK is loaded for the first time.
+# Otherwise, it destroys the current McKernel instance and reboots it using
+# the same set of resources as it used previously.
 # Note that the script does not output anything unless an error occurs.
 
 prefix="@prefix@"
@@ -23,15 +23,20 @@ ENABLE_MCOVERLAYFS="@ENABLE_MCOVERLAYFS@"
 mem="512M@0"
 cpus=""
 
+if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
+	echo "You need at least bash-4.0 to run this script." >&2
+	exit 1
+fi
+
 INTERVAL=1
 LOGMODE=0
 facility="LOG_LOCAL6"
 chown_option=`logname 2> /dev/null`
 
 if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" -o "`systemctl status irqbalance.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
-irqbalance_used="yes"
+	irqbalance_used="yes"
 else
-irqbalance_used="no"
+	irqbalance_used="no"
 fi
 
 while getopts :i:k:c:m:o:f: OPT
@@ -76,6 +81,103 @@ do
 	esac
 done
 
+#
+# Revert any state that has been initialized before the error occured.
+#
+error_exit() {
+	local status=$1
+
+	case $status in
+	mcos_sys_mounted)
+		if [ "$enable_mcoverlay" == "yes" ]; then
+			umount /tmp/mcos/mcos0_sys
+		fi
+		;&
+	mcos_proc_mounted)
+		if [ "$enable_mcoverlay" == "yes" ]; then
+			umount /tmp/mcos/mcos0_proc
+		fi
+		;&
+	mcoverlayfs_loaded)
+		if [ "$enable_mcoverlay" == "yes" ]; then
+			rmmod mcoverlay
+		fi
+		;&
+	linux_proc_bind_mounted)
+		if [ "$enable_mcoverlay" == "yes" ]; then
+			umount /tmp/mcos/linux_proc
+		fi
+		;&
+	tmp_mcos_mounted)
+		if [ "$enable_mcoverlay" == "yes" ]; then
+			umount /tmp/mcos
+		fi
+		;&
+	tmp_mcos_created)
+		if [ "$enable_mcoverlay" == "yes" ]; then
+			rm -rf /tmp/mcos
+		fi
+		;&
+	os_created)
+		# Destroy all LWK instances
+		if ls /dev/mcos* 1>/dev/null 2>&1; then
+			for i in /dev/mcos*; do
+				ind=`echo $i|cut -c10-`;
+				if ! ${SBINDIR}/ihkconfig 0 destroy $ind; then
+					echo "warning: failed to destroy LWK instance $ind" >&2
+				fi
+			done
+		fi
+		;&
+	mcctrl_loaded)
+		rmmod mcctrl || echo "warning: failed to remove mcctrl" >&2
+		;&
+	mem_reserved)
+		mem=`${SBINDIR}/ihkconfig 0 query mem`
+		if [ "${mem}" != "" ]; then
+			if ! ${SBINDIR}/ihkconfig 0 release mem $mem > /dev/null; then
+				echo "warning: failed to release memory" >&2
+			fi
+		fi
+		;&
+	cpus_reserved)
+		cpus=`${SBINDIR}/ihkconfig 0 query cpu`
+		if [ "${cpus}" != "" ]; then
+			if ! ${SBINDIR}/ihkconfig 0 release cpu $cpus > /dev/null; then
+				echo "warning: failed to release CPUs" >&2
+			fi
+		fi
+		;&
+	ihk_smp_loaded)
+		rmmod ihk_smp_x86 || echo "warning: failed to remove ihk_smp_x86" >&2
+		;&
+	ihk_loaded)
+		rmmod ihk || echo "warning: failed to remove ihk" >&2
+		;&
+	irqbalance_stopped)
+		if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
+			if ! systemctl stop irqbalance_mck.service 2>/dev/null; then
+				echo "warning: failed to stop irqbalance_mck" >&2
+			fi
+			if ! systemctl disable irqbalance_mck.service >/dev/null 2>/dev/null; then
+				echo "warning: failed to disable irqbalance_mck" >&2
+			fi
+			if ! etcdir=@ETCDIR@ perl -e '$etcdir=$ENV{'etcdir'}; @files = grep { -f } glob "$etcdir/proc/irq/*/smp_affinity"; foreach $file (@files) { $dest = substr($file, length($etcdir)); if(0) {print "cp $file $dest\n";} system("cp $file $dest 2>/dev/null"); }'; then
+				echo "warning: failed to restore /proc/irq/*/smp_affinity" >&2
+			fi
+			if ! systemctl start irqbalance.service; then
+				echo "warning: failed to start irqbalance" >&2;
+			fi
+		fi
+		;&
+	initial)
+		# Nothing more to revert
+		;;
+	esac
+
+	exit 1
+}
+
 ihk_ikc_irq_core=0
 
 release=`uname -r`
@@ -84,8 +186,12 @@ minor=`echo ${release} | sed -e 's/^[0-9]*.\([0-9]*\).*/\1/'`
 patch=`echo ${release} | sed -e 's/^[0-9]*.[0-9]*.\([0-9]*\).*/\1/'`
 linux_version_code=`expr \( ${major} \* 65536 \) + \( ${minor} \* 256 \) + ${patch}`
 rhel_release=`echo ${release} | sed -e 's/^[0-9]*.[0-9]*.[0-9]*-\([0-9]*\).*/\1/'`
-if [ "${release}" == "${rhel_release}" ]; then rhel_release=""; fi
+if [ "${release}" == "${rhel_release}" ]; then
+	rhel_release="";
+fi
+
 enable_mcoverlay="no"
+
 if [ "${ENABLE_MCOVERLAYFS}" == "yes" ]; then
 	if [ "${rhel_release}" == "" ]; then
 		if [ ${linux_version_code} -ge 262144 -a ${linux_version_code} -lt 262400 ]; then
@@ -98,6 +204,7 @@ if [ "${ENABLE_MCOVERLAYFS}" == "yes" ]; then
 	fi
 fi
 
+# Figure out CPUs if not requested by user
 if [ "$cpus" == "" ]; then
 	# Get the number of CPUs on NUMA node 0
 	nr_cpus=`lscpu --parse | awk -F"," '{if ($4 == 0) print $4}' | wc -l`
@@ -105,7 +212,10 @@ if [ "$cpus" == "" ]; then
 	# Use the second half of the cores
 	let nr_cpus="$nr_cpus / 2"
 	cpus=`lscpu --parse | awk -F"," '{if ($4 == 0) print $1}' | tail -n $nr_cpus | xargs echo -n | sed 's/ /,/g'`
-	if [ "$cpus" == "" ]; then echo "error: no available CPUs on NUMA node 0?" >&2; exit 1; fi
+	if [ "$cpus" == "" ]; then
+		echo "error: no available CPUs on NUMA node 0?" >&2
+		exit 1
+	fi
 fi
 
 # Remove mcoverlay if loaded
@@ -116,29 +226,38 @@ if [ "$enable_mcoverlay" == "yes" ]; then
 		if [ "`cat /proc/mounts | grep /tmp/mcos/linux_proc`" != "" ]; then umount -l /tmp/mcos/linux_proc; fi
 		if [ "`cat /proc/mounts | grep /tmp/mcos`" != "" ]; then umount -l /tmp/mcos; fi
 		if [ -e /tmp/mcos ]; then rm -rf /tmp/mcos; fi
-		if ! rmmod mcoverlay; then echo "error: removing mcoverlay" >&2; exit 1; fi
+		if ! rmmod mcoverlay; then
+			echo "error: removing mcoverlay" >&2
+			error_exit "initial"
+		fi
 	fi
 fi
 
 # Stop irqbalance
 if [ "${irqbalance_used}" == "yes" ]; then
     systemctl stop irqbalance_mck.service 2>/dev/null
-    if ! systemctl stop irqbalance.service 2>/dev/null ; then echo "error: stopping irqbalance" >&2; exit 1; fi;
+    if ! systemctl stop irqbalance.service 2>/dev/null ; then
+		echo "error: stopping irqbalance" >&2
+		error_exit "initial"
+	fi;
 fi
 
 # Start mcklogd. Note that McKernel blocks when kmsg buffer is full
-# with '-k 1' until mcklogd unblocks it so starting mcklogd must preceeds
+# with '-k 1' until mcklogd unblocks it so starting mcklogd must preceed
 # booting McKernel
-if [ ${LOGMODE} -ne 0 ]
-then
-# Stop mcklogd which has survived McKernel shutdown because mcstop+release.sh is not used
-	pkill mcklogd    
+if [ ${LOGMODE} -ne 0 ]; then
+	# Stop mcklogd which has survived McKernel shutdown because
+	# mcstop+release.sh is not used
+	pkill mcklogd
 	SBINDIR=${SBINDIR} ${SBINDIR}/mcklogd -i ${INTERVAL} -f ${facility}
 fi
 
 # Load IHK if not loaded
 if [ "`lsmod | grep ihk`" == "" ]; then
-        if ! insmod ${KMODDIR}/ihk.ko; then echo "error: loading ihk" >&2; exit 1; fi;
+	if ! insmod ${KMODDIR}/ihk.ko; then
+		echo "error: loading ihk" >&2
+		error_exit "irqbalance_stopped"
+	fi
 fi
 
 # Drop Linux caches to free memory
@@ -149,56 +268,107 @@ echo 1 > /proc/sys/vm/compact_memory 2>/dev/null
 
 # Load IHK-SMP if not loaded and reserve CPUs and memory
 if [ "`lsmod | grep ihk_smp_x86`" == "" ]; then
-        ihk_irq=""
-        for i in `seq 64 255`; do 
-                if [ ! -d /proc/irq/$i ] && [ "`cat /proc/interrupts | grep ":" | awk '{print $1}' | grep -o '[0-9]*' | grep -e '^$i$'`" == "" ]; then
-                        ihk_irq=$i 
-                        break
-                fi
-        done
-        if [ "$ihk_irq" == "" ]; then echo "error: no IRQ available" >&2; exit 1; fi
-        if ! insmod ${KMODDIR}/ihk-smp-x86.ko ihk_start_irq=$ihk_irq ihk_ikc_irq_core=$ihk_ikc_irq_core; then echo "error: loading ihk-smp-x86" >&2; exit 1; fi;
-        if ! ${SBINDIR}/ihkconfig 0 reserve cpu ${cpus}; then echo "error: reserving CPUs" >&2; exit 1; fi
-        if ! ${SBINDIR}/ihkconfig 0 reserve mem ${mem}; then echo "error: reserving memory" >&2; exit 1; fi
-# If loaded, but no resources allocated, get CPUs and memory
-else
-        if ! ${SBINDIR}/ihkconfig 0 query cpu > /dev/null; then echo "error: querying cpus" >&2; exit 1; fi
-        cpus_allocated=`${SBINDIR}/ihkosctl 0 query cpu`
-		if [ "$cpus_allocated" == "" ]; then
-			if ! ${SBINDIR}/ihkconfig 0 reserve cpu ${cpus}; then echo "error: reserving CPUs" >&2; exit 1; fi
+	ihk_irq=""
+	for i in `seq 64 255`; do
+		if [ ! -d /proc/irq/$i ] && [ "`cat /proc/interrupts | grep ":" | awk '{print $1}' | grep -o '[0-9]*' | grep -e '^$i$'`" == "" ]; then
+			ihk_irq=$i
+			break
 		fi
-
-        if ! ${SBINDIR}/ihkosctl 0 query mem > /dev/null; then echo "error: querying memory" >&2; exit 1; fi
-        mem_allocated=`${SBINDIR}/ihkosctl 0 query mem`
-		if [ "$mem_allocated" == "" ]; then
-			if ! ${SBINDIR}/ihkconfig 0 reserve mem ${mem}; then echo "error: reserving memory" >&2; exit 1; fi
-		fi
+	done
+	if [ "$ihk_irq" == "" ]; then
+		echo "error: no IRQ available" >&2
+		error_exit "ihk_loaded"
+	fi
+	if ! insmod ${KMODDIR}/ihk-smp-x86.ko ihk_start_irq=$ihk_irq ihk_ikc_irq_core=$ihk_ikc_irq_core; then
+		echo "error: loading ihk-smp-x86" >&2
+		error_exit "ihk_loaded"
+	fi
+	if ! ${SBINDIR}/ihkconfig 0 reserve cpu ${cpus}; then
+		echo "error: reserving CPUs" >&2;
+		error_exit "ihk_smp_loaded"
+	fi
+	if ! ${SBINDIR}/ihkconfig 0 reserve mem ${mem}; then
+		echo "error: reserving memory" >&2
+		error_exit "cpus_reserved"
+	fi
 fi
 
 # Load mcctrl if not loaded
 if [ "`lsmod | grep mcctrl`" == "" ]; then
-	if ! insmod ${KMODDIR}/mcctrl.ko; then echo "error: inserting mcctrl.ko" >&2; exit 1; fi
+	if ! insmod ${KMODDIR}/mcctrl.ko; then
+		echo "error: inserting mcctrl.ko" >&2
+		error_exit "mem_reserved"
+	fi
 fi
 
-# Check for existing OS instance and destroy
-if [ -c /dev/mcos0 ]; then
-	if ! ${SBINDIR}/ihkconfig 0 destroy 0; then echo "warning: destroy failed" >&2; fi
+# Destroy all LWK instances
+if ls /dev/mcos* 1>/dev/null 2>&1; then
+	for i in /dev/mcos*; do
+		ind=`echo $i|cut -c10-`;
+		if ! ${SBINDIR}/ihkconfig 0 destroy $ind; then
+			echo "error: destroying LWK instance $ind failed" >&2
+			error_exit "mcctrl_loaded"
+		fi
+	done
 fi
 
-if ! ${SBINDIR}/ihkconfig 0 create; then echo "error: create" >&2; exit; fi
-if ! ${SBINDIR}/ihkosctl 0 assign cpu ${cpus}; then echo "error: assign CPUs" >&2; exit 1; fi
-if ! ${SBINDIR}/ihkosctl 0 assign mem ${mem}; then echo "error: assign memory" >&2; exit 1; fi
-if ! ${SBINDIR}/ihkosctl 0 load ${KERNDIR}/mckernel.img; then echo "error: loading kernel image" >&2; exit 1; fi
-if ! ${SBINDIR}/ihkosctl 0 kargs "hidos ksyslogd=${LOGMODE}"; then echo "error: setting kernel arguments" >&2; exit 1; fi
-if ! ${SBINDIR}/ihkosctl 0 boot; then echo "error: booting" >&2; exit 1; fi
-if ! chown ${chown_option} /dev/mcd* /dev/mcos*; then echo "error: chowning device files" >&2; exit 1; fi
+# Create OS instance
+if ! ${SBINDIR}/ihkconfig 0 create; then
+	echo "error: creating OS instance" >&2
+	error_exit "mcctrl_loaded"
+fi
 
+# Assign CPUs
+if ! ${SBINDIR}/ihkosctl 0 assign cpu ${cpus}; then
+	echo "error: assign CPUs" >&2
+	error_exit "os_created"
+fi
+
+# Assign memory
+if ! ${SBINDIR}/ihkosctl 0 assign mem ${mem}; then
+	echo "error: assign memory" >&2
+	error_exit "os_created"
+fi
+
+# Load kernel image
+if ! ${SBINDIR}/ihkosctl 0 load ${KERNDIR}/mckernel.img; then
+	echo "error: loading kernel image: ${KERNDIR}/mckernel.img" >&2
+	error_exit "os_created"
+fi
+
+# Set kernel arguments
+if ! ${SBINDIR}/ihkosctl 0 kargs "hidos ksyslogd=${LOGMODE}"; then
+	echo "error: setting kernel arguments" >&2
+	error_exit "os_created"
+fi
+
+# Boot OS instance
+if ! ${SBINDIR}/ihkosctl 0 boot; then
+	echo "error: booting" >&2
+	error_exit "os_created"
+fi
+
+# Set device file ownership
+if ! chown ${chown_option} /dev/mcd* /dev/mcos*; then
+	echo "warning: failed to chown device files" >&2
+fi
+
+# Overlay /proc, /sys with McKernel specific contents
 if [ "$enable_mcoverlay" == "yes" ]; then
 	if [ ! -e /tmp/mcos ]; then mkdir -p /tmp/mcos; fi
-	if ! mount -t tmpfs tmpfs /tmp/mcos; then echo "error: mount /tmp/mcos" >&2; exit 1; fi
+	if ! mount -t tmpfs tmpfs /tmp/mcos; then
+		echo "error: mount /tmp/mcos" >&2
+		error_exit "tmp_mcos_created"
+	fi
 	if [ ! -e /tmp/mcos/linux_proc ]; then mkdir -p /tmp/mcos/linux_proc; fi
-	if ! mount --bind /proc /tmp/mcos/linux_proc; then echo "error: mount /tmp/mcos/linux_proc" >&2; exit 1; fi
-	if ! insmod ${KMODDIR}/mcoverlay.ko; then echo "error: inserting mcoverlay.ko" >&2; exit 1; fi
+	if ! mount --bind /proc /tmp/mcos/linux_proc; then
+		echo "error: mount /tmp/mcos/linux_proc" >&2
+		error_exit "tmp_mcos_mounted"
+	fi
+	if ! insmod ${KMODDIR}/mcoverlay.ko; then
+		echo "error: inserting mcoverlay.ko" >&2
+		error_exit "linux_proc_bind_mounted"
+	fi
 	while [ ! -e /proc/mcos0 ]
 	do
 		sleep 1
@@ -206,19 +376,29 @@ if [ "$enable_mcoverlay" == "yes" ]; then
 	if [ ! -e /tmp/mcos/mcos0_proc ]; then mkdir -p /tmp/mcos/mcos0_proc; fi
 	if [ ! -e /tmp/mcos/mcos0_proc_upper ]; then mkdir -p /tmp/mcos/mcos0_proc_upper; fi
 	if [ ! -e /tmp/mcos/mcos0_proc_work ]; then mkdir -p /tmp/mcos/mcos0_proc_work; fi
-	if ! mount -t mcoverlay mcoverlay -o lowerdir=/proc/mcos0:/proc,upperdir=/tmp/mcos/mcos0_proc_upper,workdir=/tmp/mcos/mcos0_proc_work,nocopyupw,nofscheck /tmp/mcos/mcos0_proc; then echo "error: mount /tmp/mcos/mcos0_proc" >&2; exit 1; fi
+	if ! mount -t mcoverlay mcoverlay -o lowerdir=/proc/mcos0:/proc,upperdir=/tmp/mcos/mcos0_proc_upper,workdir=/tmp/mcos/mcos0_proc_work,nocopyupw,nofscheck /tmp/mcos/mcos0_proc; then
+		echo "error: mounting /tmp/mcos/mcos0_proc" >&2
+		error_exit "mcoverlayfs_loaded"
+	fi
+	# TODO: How de we revert this in case of failure??
 	mount --make-rprivate /proc
 
 	while [ ! -e /sys/devices/virtual/mcos/mcos0/sys/setup_complete ]
 	do
-		sleep 1
+		sleep 0.1
 	done
 	if [ ! -e /tmp/mcos/mcos0_sys ]; then mkdir -p /tmp/mcos/mcos0_sys; fi
 	if [ ! -e /tmp/mcos/mcos0_sys_upper ]; then mkdir -p /tmp/mcos/mcos0_sys_upper; fi
 	if [ ! -e /tmp/mcos/mcos0_sys_work ]; then mkdir -p /tmp/mcos/mcos0_sys_work; fi
-	if ! mount -t mcoverlay mcoverlay -o lowerdir=/sys/devices/virtual/mcos/mcos0/sys:/sys,upperdir=/tmp/mcos/mcos0_sys_upper,workdir=/tmp/mcos/mcos0_sys_work,nocopyupw,nofscheck /tmp/mcos/mcos0_sys; then echo "error: mount /tmp/mcos/mcos0_sys" >&2; exit 1; fi
+	if ! mount -t mcoverlay mcoverlay -o lowerdir=/sys/devices/virtual/mcos/mcos0/sys:/sys,upperdir=/tmp/mcos/mcos0_sys_upper,workdir=/tmp/mcos/mcos0_sys_work,nocopyupw,nofscheck /tmp/mcos/mcos0_sys; then
+		echo "error: mount /tmp/mcos/mcos0_sys" >&2
+		error_exit "mcos_proc_mounted"
+	fi
+	# TODO: How de we revert this in case of failure??
 	mount --make-rprivate /sys
 	rm -rf /tmp/mcos/mcos0_sys/setup_complete
+
+	# Hide NUMA related files which are outside the LWK partition
 	for cpuid in `find /sys/devices/system/cpu/* -maxdepth 0 -name "cpu[0123456789]*" -printf "%f "`; do
 		if [ ! -e "/sys/devices/virtual/mcos/mcos0/sys/devices/system/cpu/$cpuid" ]; then
 			rm -rf /tmp/mcos/mcos0_sys/devices/system/cpu/$cpuid
@@ -253,18 +433,31 @@ fi
 
 # Start irqbalance with CPUs and IRQ for McKernel banned
 if [ "${irqbalance_used}" == "yes" ]; then
-    if ! etcdir=@ETCDIR@ perl -e 'use File::Copy qw(copy); $etcdir=$ENV{'etcdir'}; @files = grep { -f } glob "/proc/irq/*/smp_affinity"; foreach $file (@files) { $rel = substr($file, 1); $dir=substr($rel, 0, length($rel)-length("/smp_affinity")); if(0) { print "cp $file $etcdir/$rel\n";} if(system("mkdir -p $etcdir/$dir")){ exit 1;} if(!copy($file,"$etcdir/$rel")){ exit 1;} }' ; then echo "error: saving /proc/irq/*/smp_affinity" >&2; exit 1; fi;
+    if ! etcdir=@ETCDIR@ perl -e 'use File::Copy qw(copy); $etcdir=$ENV{'etcdir'}; @files = grep { -f } glob "/proc/irq/*/smp_affinity"; foreach $file (@files) { $rel = substr($file, 1); $dir=substr($rel, 0, length($rel)-length("/smp_affinity")); if(0) { print "cp $file $etcdir/$rel\n";} if(system("mkdir -p $etcdir/$dir")){ exit 1;} if(!copy($file,"$etcdir/$rel")){ exit 1;} }'; then
+		echo "error: saving /proc/irq/*/smp_affinity" >&2
+		error_exit "mcos_sys_mounted"
+	fi;
 
     ncpus=`lscpu | grep -E '^CPU\(s\):' | awk '{print $2}'`
     smp_affinity_mask=`echo $cpus | ncpus=$ncpus perl -e 'while(<>){@tokens = split /,/;foreach $token (@tokens) {@nums = split /-/,$token; for($num = $nums[0]; $num <= $nums[$#nums]; $num++) {$ndx=int($num/32); $mask[$ndx] |= (1<<($num % 32))}}} $nint32s = int(($ENV{'ncpus'}+31)/32); for($j = $nint32s - 1; $j >= 0; $j--) { if($j != $nint32s - 1){print ",";} $nblks = $j == $nint32s - 1 ? int(($ENV{'ncpus'} % 32)/4) : 8; for($i = $nblks - 1;$i >= 0;$i--){ printf("%01x",($mask[$j] >> ($i*4)) & 0xf);}}'`
 
-    if ! ncpus=$ncpus smp_affinity_mask=$smp_affinity_mask perl -e '@dirs = grep { -d } glob "/proc/irq/*"; foreach $dir (@dirs) { $hit = 0; $affinity_str = `cat $dir/smp_affinity`; chomp $affinity_str; @int32strs = split /,/, $affinity_str; @int32strs_mask=split /,/, $ENV{'smp_affinity_mask'}; for($i=0;$i <= $#int32strs_mask; $i++) { $int32strs_inv[$i] = sprintf("%08x",hex($int32strs_mask[$i])^0xffffffff); if($i == 0) { $len = int((($ENV{'ncpus'}%32)+3)/4); $int32strs_inv[$i] = substr($int32strs_inv[$i], -$len, $len); } } $inv = join(",", @int32strs_inv); $nint32s = int(($ENV{'ncpus'}+31)/32); for($j = $nint32s - 1; $j >= 0; $j--) { if(hex($int32strs[$nint32s - 1 - $j]) & hex($int32strs_mask[$nint32s - 1 - $j])) { $hit = 1; }} if($hit == 1) { $cmd = "echo $inv > $dir/smp_affinity 2>/dev/null"; system $cmd;}}'; then echo "error: modifying /proc/irq/*/smp_affinity" >&2; exit 1; fi;
+    if ! ncpus=$ncpus smp_affinity_mask=$smp_affinity_mask perl -e '@dirs = grep { -d } glob "/proc/irq/*"; foreach $dir (@dirs) { $hit = 0; $affinity_str = `cat $dir/smp_affinity`; chomp $affinity_str; @int32strs = split /,/, $affinity_str; @int32strs_mask=split /,/, $ENV{'smp_affinity_mask'}; for($i=0;$i <= $#int32strs_mask; $i++) { $int32strs_inv[$i] = sprintf("%08x",hex($int32strs_mask[$i])^0xffffffff); if($i == 0) { $len = int((($ENV{'ncpus'}%32)+3)/4); $int32strs_inv[$i] = substr($int32strs_inv[$i], -$len, $len); } } $inv = join(",", @int32strs_inv); $nint32s = int(($ENV{'ncpus'}+31)/32); for($j = $nint32s - 1; $j >= 0; $j--) { if(hex($int32strs[$nint32s - 1 - $j]) & hex($int32strs_mask[$nint32s - 1 - $j])) { $hit = 1; }} if($hit == 1) { $cmd = "echo $inv > $dir/smp_affinity 2>/dev/null"; system $cmd;}}'; then
+		echo "error: modifying /proc/irq/*/smp_affinity" >&2
+		error_exit "mcos_sys_mounted"
+	fi
 
     banirq=`cat /proc/interrupts| perl -e 'while(<>) { if(/^\s*(\d+).*IHK\-SMP\s*$/) {print $1;}}'`
 
     sed "s/%mask%/$smp_affinity_mask/g" $ETCDIR/irqbalance_mck.in | sed "s/%banirq%/$banirq/g" > $ETCDIR/irqbalance_mck
-    if ! systemctl link $ETCDIR/irqbalance_mck.service >/dev/null 2>/dev/null; then echo "error: linking irqbalance_mck" >&2; exit 1; fi;
-    if ! systemctl start irqbalance_mck.service 2>/dev/null ; then echo "error: starting irqbalance_mck" >&2; exit 1; fi;
+    if ! systemctl link $ETCDIR/irqbalance_mck.service >/dev/null 2>/dev/null; then
+		echo "error: linking irqbalance_mck" >&2
+		error_exit "mcos_sys_mounted"
+	fi
+
+    if ! systemctl start irqbalance_mck.service 2>/dev/null ; then
+		echo "error: starting irqbalance_mck" >&2
+		error_exit "mcos_sys_mounted"
+	fi
 #    echo cpus=$cpus mask=$smp_affinity_mask banirq=$banirq
 fi
 
