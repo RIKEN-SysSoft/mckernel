@@ -1686,6 +1686,40 @@ do_generic_syscall(
 		ret = -errno;
 	}
 
+	/* Overlayfs /sys/X directory lseek() problem work around */
+	if (w->sr.number == __NR_lseek && ret == -EINVAL) {
+		char proc_path[512];
+		char path[512];
+		struct stat sb;
+
+		sprintf(proc_path, "/proc/self/fd/%d", (int)w->sr.args[0]);
+
+		/* Get filename */
+		if (readlink(proc_path, path, sizeof(path)) < 0) {
+			fprintf(stderr, "%s: error: readlink() failed for %s\n",
+				__FUNCTION__, proc_path);
+			goto out;
+		}
+
+		/* Not in /sys? */
+		if (strncmp(path, "/sys/", 5))
+			goto out;
+
+		/* Stat */
+		if (stat(path, &sb) < 0) {
+			fprintf(stderr, "%s: error stat() failed for %s\n",
+				__FUNCTION__, path);
+			goto out;
+		}
+
+		/* Not dir? */
+		if ((sb.st_mode & S_IFMT) != S_IFDIR)
+			goto out;
+
+		ret = 0;
+	}
+
+out:
 	__dprintf("do_generic_syscall(%ld):%ld (%#lx)\n", w->sr.number, ret, ret);
 	return ret;
 }
