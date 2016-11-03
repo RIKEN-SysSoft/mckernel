@@ -689,8 +689,6 @@ static int setup_node_files(struct mcctrl_usrdata *udp)
 						mckernel_numa_2_linux_numa(udp, node)
 						));
 		}
-		offset += snprintf(&p->mckernel_numa_distance_s[offset],
-				NODE_DISTANCE_S_SIZE - offset, "%s", "\n");
 
 		sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_s,
 				p->mckernel_numa_distance_s, 0444,
