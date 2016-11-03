@@ -412,7 +412,7 @@ if [ "$enable_mcoverlay" == "yes" ]; then
 	done
 	for nodeid in `find /sys/devices/system/node/* -maxdepth 0 -name "node[0123456789]*" -printf "%f "`; do
 		if [ ! -e "/sys/devices/virtual/mcos/mcos0/sys/devices/system/node/$nodeid" ]; then
-			rm -rf /tmp/mcos/mcos0_sys/devices/system/node/$nodeid
+			rm -rf /tmp/mcos/mcos0_sys/devices/system/node/$nodeid/*
 		else
 			# Delete non-existent symlinks
 			for cpuid in `find /sys/devices/system/node/$nodeid/* -maxdepth 0 -name "cpu[0123456789]*" -printf "%f "`; do
@@ -424,6 +424,7 @@ if [ "$enable_mcoverlay" == "yes" ]; then
 			rm -f /tmp/mcos/mcos0_sys/devices/system/node/$nodeid/memory*
 		fi
 	done
+	rm -f /tmp/mcos/mcos0_sys/devices/system/node/has_*
 	for cpuid in `find /sys/bus/cpu/devices/* -maxdepth 0 -name "cpu[0123456789]*" -printf "%f "`; do
 		if [ ! -e "/sys/devices/virtual/mcos/mcos0/sys/bus/cpu/devices/$cpuid" ]; then
 			rm -rf /tmp/mcos/mcos0_sys/bus/cpu/devices/$cpuid
