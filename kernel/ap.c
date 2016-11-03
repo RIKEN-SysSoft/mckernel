@@ -209,7 +209,7 @@ cpu_sysfs_setup(void)
 	/* setup table */
 	info = kmalloc(sizeof(*info) * num_processors, IHK_MC_AP_CRITICAL);
 	for (cpu = 0; cpu < num_processors; ++cpu) {
-		info[cpu].online = 10+cpu;
+		info[cpu].online = 1;
 	}
 	fake_cpu_infos = info;
 
