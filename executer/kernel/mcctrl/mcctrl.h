@@ -281,6 +281,7 @@ struct mcctrl_usrdata {
 	unsigned long cpu_online[CPU_LONGS];
 	struct ihk_cpu_info *cpu_info;
 	struct ihk_mem_info *mem_info;
+	nodemask_t numa_online;
 	struct list_head cpu_topology_list;
 	struct list_head node_topology_list;
 };

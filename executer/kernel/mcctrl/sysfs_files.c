@@ -658,6 +658,7 @@ out:
 static int setup_node_files(struct mcctrl_usrdata *udp)
 {
 	int error;
+	int node;
 	struct node_topology *p;
 	struct sysfsm_bitmap_param param;
 
@@ -669,10 +670,19 @@ static int setup_node_files(struct mcctrl_usrdata *udp)
 		goto out;
 	}
 
+	memset(&udp->numa_online, 0, sizeof(udp->numa_online));
+	for (node = 0; node < udp->mem_info->n_numa_nodes; ++node) {
+		node_set(node, udp->numa_online);
+	}
+
+	param.nbits = MAX_NUMNODES;
+	param.ptr = &udp->numa_online;
+	sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
+			"/sys/devices/system/node/online");
+
 	list_for_each_entry(p, &udp->node_topology_list, chain) {
 		struct sysfs_handle handle;
 		int cpu;
-		int node;
 		size_t offset = 0;
 		param.nbits = nr_cpumask_bits;
 		param.ptr = &p->cpumap;
