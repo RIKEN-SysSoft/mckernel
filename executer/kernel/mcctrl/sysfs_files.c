@@ -92,27 +92,19 @@ void setup_local_snooping_samples(ihk_os_t os)
 
 void setup_local_snooping_files(ihk_os_t os)
 {
-	struct ihk_cpu_info *info;
 	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
 	struct sysfsm_bitmap_param param;
 	static unsigned long cpu_offline = 0x0;
 	int i;
 	int error;
 
-	info = ihk_os_get_cpu_info(os);
-	if (!info) {
-		eprintk("mcctrl:ihk_os_get_cpu_info failed.\n");
-		return;
-	}
-
 	memset(udp->cpu_online, 0, sizeof(udp->cpu_online));
-	for (i = 0; i < info->n_cpus; i++) {
-		udp->cpu_online[i / BITS_PER_LONG] = 
-			udp->cpu_online[i / BITS_PER_LONG] | (1 << (i % BITS_PER_LONG));
+	for (i = 0; i < udp->cpu_info->n_cpus; i++) {
+		set_bit(i, udp->cpu_online);
 	}
 
 	param.nbits = CPU_LONGS * BITS_PER_LONG;
-	param.ptr = udp->cpu_online;
+	param.ptr = &udp->cpu_online;
 	dprintk("mcctrl:setup_local_snooping_files: CPU_LONGS=%d, BITS_PER_LONG=%d\n", 
 		CPU_LONGS, BITS_PER_LONG);
 
