@@ -49,7 +49,8 @@
 #define MCEXEC_UP_CLOSE_EXEC     0x30a02913
 
 #define MCEXEC_UP_SYS_MOUNT      0x30a02914
-#define MCEXEC_UP_SYS_UNSHARE    0x30a02915
+#define MCEXEC_UP_SYS_UMOUNT     0x30a02915
+#define MCEXEC_UP_SYS_UNSHARE    0x30a02916
 
 #define MCEXEC_UP_DEBUG_LOG     0x40000000
 
@@ -194,6 +195,10 @@ struct sys_mount_desc {
 	char *type;
 	unsigned long flags;
 	void *data;
+};
+
+struct sys_umount_desc {
+	char *dir_name;
 };
 
 struct sys_unshare_desc {

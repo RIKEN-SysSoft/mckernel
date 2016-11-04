@@ -66,7 +66,18 @@ int (*mcctrl_sys_mount)(char *dev_name,char *dir_name, char *type, unsigned long
         (int_star_fn_char_char_char_ulong_void_t)
         MCCTRL_KSYM_sys_mount;
 #else // exported
-int (*mcctrl_sys_mount)(char *dev_name,char *dir_name, char *type, unsigned long flags, void *data) = NULL;
+int (*mcctrl_sys_mount)(char *dev_name,char *dir_name, char *type, unsigned long flags, void *data) = sys_mount;
+#endif
+#endif
+
+#ifdef MCCTRL_KSYM_sys_umount
+#if MCCTRL_KSYM_sys_umount
+typedef int (*int_fn_char_star_int_t)(char *, int);
+int (*mcctrl_sys_umount)(char *dir_name, int flags) =
+        (int_fn_char_star_int_t)
+        MCCTRL_KSYM_sys_umount;
+#else // exported
+int (*mcctrl_sys_umount)(char *dir_name, int flags) = sys_umount;
 #endif
 #endif
 
@@ -1154,11 +1165,43 @@ long mcexec_sys_mount(struct sys_mount_desc *__user arg)
 	cap_raise(promoted->cap_effective, CAP_SYS_ADMIN);
 	original = override_creds(promoted);
 
-#if MCCTRL_KSYM_sys_mount
+#ifdef MCCTRL_KSYM_sys_mount
 	ret = mcctrl_sys_mount(desc.dev_name, desc.dir_name, desc.type,
 		desc.flags, desc.data);
 #else
 	ret = -EFAULT;
+#endif
+
+	revert_creds(original);
+	put_cred(promoted);
+
+	return ret;
+}
+
+long mcexec_sys_umount(struct sys_mount_desc *__user arg)
+{
+	struct sys_umount_desc desc;
+	struct cred *promoted;
+	const struct cred *original;
+	int ret;
+
+	if (copy_from_user(&desc, arg, sizeof(desc))) {
+		return -EFAULT;
+	}
+
+	promoted = prepare_creds();
+	if (!promoted) {
+		return -ENOMEM;
+	}
+	cap_raise(promoted->cap_effective, CAP_SYS_ADMIN);
+	original = override_creds(promoted);
+
+#ifdef MCCTRL_KSYM_sys_umount
+	ret = mcctrl_sys_umount(desc.dir_name, MNT_FORCE);
+	kprintf("%s: mcctrl_sys_umount: %d\n", __FUNCTION__, ret);
+#else
+	ret = -EFAULT;
+	kprintf("%s: mcctrl_sys_umount not defined?\n", __FUNCTION__);
 #endif
 
 	revert_creds(original);
@@ -1253,6 +1296,9 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 
 	case MCEXEC_UP_SYS_MOUNT:
 		return mcexec_sys_mount((struct sys_mount_desc *)arg);
+
+	case MCEXEC_UP_SYS_UMOUNT:
+		return mcexec_sys_umount((struct sys_mount_desc *)arg);
 
 	case MCEXEC_UP_SYS_UNSHARE:
 		return mcexec_sys_unshare((struct sys_unshare_desc *)arg);

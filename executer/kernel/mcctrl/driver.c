@@ -69,6 +69,7 @@ static struct ihk_os_user_call_handler mcctrl_uchs[] = {
 	{ .request = MCEXEC_UP_GET_CRED, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_GET_CREDV, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_SYS_MOUNT, .func = mcctrl_ioctl },
+	{ .request = MCEXEC_UP_SYS_UMOUNT, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_SYS_UNSHARE, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_DEBUG_LOG, .func = mcctrl_ioctl },
 };

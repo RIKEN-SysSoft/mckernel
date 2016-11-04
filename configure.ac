@@ -221,6 +221,7 @@ AC_DEFUN([MCCTRL_FIND_KSYM],[
 ])
 
 MCCTRL_FIND_KSYM([sys_mount])
+MCCTRL_FIND_KSYM([sys_umount])
 MCCTRL_FIND_KSYM([sys_unshare])
 MCCTRL_FIND_KSYM([zap_page_range])
 MCCTRL_FIND_KSYM([vdso_image_64])

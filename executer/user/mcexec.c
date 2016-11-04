@@ -1148,75 +1148,41 @@ void init_worker_threads(int fd)
 
 #ifdef ENABLE_MCOVERLAYFS
 #define READ_BUFSIZE 1024
-static int isunshare(void)
+static int find_mount_prefix(char *prefix)
 {
-	int err = 0;
-	int ret;
-	int fd;
+	FILE *fp;
+	char *line = NULL;
+	size_t len = 0;
+	ssize_t read;
 	char proc_path[PATH_MAX];
-	ssize_t len_read;
-	char buf_read[READ_BUFSIZE + 1];
-	char *buf_read_off;
-	char *buf_find;
-	char buf_cmp[READ_BUFSIZE + 1];
-	char *buf_cmp_off;
-	ssize_t len_copy;
+	int ret = 0;
 
 	snprintf(proc_path, sizeof(proc_path), "/proc/%d/mounts", getpid());
-	fd = open(proc_path, O_RDONLY);
-	if (fd < 0) {
-		fprintf(stderr, "Error: Failed to open %s.\n", proc_path);
+
+	fp = fopen(proc_path, "r");
+	if (fp == NULL) {
 		return -1;
 	}
 
-	buf_cmp_off = buf_cmp;
-	while (1) {
-		len_read = read(fd, buf_read, READ_BUFSIZE);
-		if (len_read == -1) {
-			fprintf(stderr, "Error: Failed to read.\n");
-			err = -1;
-			break;
-		}
+	while ((read = getline(&line, &len, fp)) != -1) {
+		if (strlen(line) < strlen(prefix))
+			continue;
 
-		buf_read_off = buf_read;
-		while (1) {
-			if ((len_read - (buf_read_off - buf_read)) <= 0) {
-				break;
-			}
-			buf_find = memchr(buf_read_off, '\n', 
-				len_read - (buf_read_off - buf_read));
-			if (buf_find) {
-				len_copy = buf_find - buf_read_off;	
-			} else {
-				len_copy = len_read - (buf_read_off - buf_read);
-			}
-			memcpy(buf_cmp_off, buf_read_off, len_copy);
-			*(buf_cmp_off + len_copy) = '\0';
-
-			if (buf_find) {
-				buf_read_off = buf_read_off + len_copy + 1;
-				buf_cmp_off = buf_cmp;
-				ret = strncmp(buf_cmp, "mcoverlay /proc ", 16);
-				if (!ret) {
-					err = 1;
-					break;
-				}
-			} else {
-				buf_read_off = buf_read_off + len_copy;
-				buf_cmp_off = buf_cmp_off + len_copy;
-				break;
-			}
-		}
-
-		if (err == 1 || len_read == 0) {
+		if (!strncmp(line, prefix, strlen(prefix))) {
+			ret = 1;
 			break;
 		}
 	}
 
-	close(fd);
+	if (line)
+		free(line);
 
-	__dprintf("err=%d\n", err);
-	return err;
+	return ret;
+}
+
+static int isunshare(void)
+{
+	return find_mount_prefix("mcoverlay /proc ");
 }
 #endif // ENABLE_MCOVERLAYFS
 
@@ -1415,6 +1381,7 @@ int main(int argc, char **argv)
 	if (error == 0) {
 		struct sys_unshare_desc unshare_desc;
 		struct sys_mount_desc mount_desc;
+		struct sys_umount_desc umount_desc;
 
 		memset(&unshare_desc, '\0', sizeof unshare_desc);
 		memset(&mount_desc, '\0', sizeof mount_desc);
@@ -1424,6 +1391,53 @@ int main(int argc, char **argv)
 			fprintf(stderr, "Error: Failed to unshare. (%s)\n", 
 				strerror(errno));
 			return 1;
+		}
+
+		/*
+		 * Umount cgroup filesystems that may expose invalid NUMA
+		 * information
+		 */
+		if (find_mount_prefix("cgroup /sys/fs/cgroup/cpu,cpuacct")) {
+			umount_desc.dir_name = "/sys/fs/cgroup/cpu,cpuacct";
+
+			if (ioctl(fd, MCEXEC_UP_SYS_UMOUNT,
+						(unsigned long)&umount_desc) != 0) {
+				fprintf(stderr,
+						"WARNING: Failed to umount cgroup/cpu,cpuacct. (%s)\n",
+						strerror(errno));
+			}
+		}
+		else if (find_mount_prefix("cgroup /sys/fs/cgroup/cpu")) {
+			umount_desc.dir_name = "/sys/fs/cgroup/cpu";
+
+			if (ioctl(fd, MCEXEC_UP_SYS_UMOUNT,
+						(unsigned long)&umount_desc) != 0) {
+				fprintf(stderr,
+						"WARNING: Failed to umount cgroup/cpu. (%s)\n",
+						strerror(errno));
+			}
+		}
+
+		if (find_mount_prefix("cgroup /sys/fs/cgroup/cpuset")) {
+			umount_desc.dir_name = "/sys/fs/cgroup/cpuset";
+
+			if (ioctl(fd, MCEXEC_UP_SYS_UMOUNT,
+						(unsigned long)&umount_desc) != 0) {
+				fprintf(stderr,
+						"WARNING: Failed to umount cgroup/cpuset. (%s)\n",
+						strerror(errno));
+			}
+		}
+
+		if (find_mount_prefix("cgroup /sys/fs/cgroup/memory")) {
+			umount_desc.dir_name = "/sys/fs/cgroup/memory/";
+
+			if (ioctl(fd, MCEXEC_UP_SYS_UMOUNT,
+						(unsigned long)&umount_desc) != 0) {
+				fprintf(stderr,
+						"WARNING: Failed to umount cgroup/memory. (%s)\n",
+						strerror(errno));
+			}
 		}
 
 		sprintf(mcos_procdir, "/tmp/mcos/mcos%d_proc", mcosid);
