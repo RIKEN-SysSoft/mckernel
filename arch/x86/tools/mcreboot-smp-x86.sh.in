@@ -396,12 +396,15 @@ if [ "$enable_mcoverlay" == "yes" ]; then
 	fi
 	# TODO: How de we revert this in case of failure??
 	mount --make-rprivate /sys
+
 	rm -rf /tmp/mcos/mcos0_sys/setup_complete
 
 	# Hide NUMA related files which are outside the LWK partition
 	for cpuid in `find /sys/devices/system/cpu/* -maxdepth 0 -name "cpu[0123456789]*" -printf "%f "`; do
 		if [ ! -e "/sys/devices/virtual/mcos/mcos0/sys/devices/system/cpu/$cpuid" ]; then
 			rm -rf /tmp/mcos/mcos0_sys/devices/system/cpu/$cpuid
+			rm -rf /tmp/mcos/mcos0_sys/bus/cpu/devices/$cpuid
+			rm -rf /tmp/mcos/mcos0_sys/bus/cpu/drivers/processor/$cpuid
 		else
 			for nodeid in `find /sys/devices/system/cpu/$cpuid/* -maxdepth 0 -name "node[0123456789]*" -printf "%f "`; do
 				if [ ! -e "/sys/devices/virtual/mcos/mcos0/sys/devices/system/cpu/$cpuid/$nodeid" ]; then
@@ -413,6 +416,7 @@ if [ "$enable_mcoverlay" == "yes" ]; then
 	for nodeid in `find /sys/devices/system/node/* -maxdepth 0 -name "node[0123456789]*" -printf "%f "`; do
 		if [ ! -e "/sys/devices/virtual/mcos/mcos0/sys/devices/system/node/$nodeid" ]; then
 			rm -rf /tmp/mcos/mcos0_sys/devices/system/node/$nodeid/*
+			rm -rf /tmp/mcos/mcos0_sys/bus/node/devices/$nodeid
 		else
 			# Delete non-existent symlinks
 			for cpuid in `find /sys/devices/system/node/$nodeid/* -maxdepth 0 -name "cpu[0123456789]*" -printf "%f "`; do
