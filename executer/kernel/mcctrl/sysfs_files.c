@@ -679,6 +679,8 @@ static int setup_node_files(struct mcctrl_usrdata *udp)
 	param.ptr = &udp->numa_online;
 	sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
 			"/sys/devices/system/node/online");
+	sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
+			"/sys/devices/system/node/possible");
 
 	list_for_each_entry(p, &udp->node_topology_list, chain) {
 		struct sysfs_handle handle;

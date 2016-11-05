@@ -450,6 +450,16 @@ static long mcexec_get_cpu(ihk_os_t os)
 	return info->n_cpus;
 }
 
+static long mcexec_get_nodes(ihk_os_t os)
+{
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+
+	if (!usrdata || !usrdata->mem_info)
+		return -EINVAL;
+
+	return usrdata->mem_info->n_numa_nodes;
+}
+
 int mcctrl_add_per_proc_data(struct mcctrl_usrdata *ud, int pid, 
 	struct mcctrl_per_proc_data *ppd)
 {
@@ -1267,6 +1277,9 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 
 	case MCEXEC_UP_GET_CPU:
 		return mcexec_get_cpu(os);
+
+	case MCEXEC_UP_GET_NODES:
+		return mcexec_get_nodes(os);
 
 	case MCEXEC_UP_STRNCPY_FROM_USER:
 		return mcexec_strncpy_from_user(os, 

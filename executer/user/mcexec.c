@@ -41,6 +41,7 @@
 #include <sys/mman.h>
 #include <asm/unistd.h>
 #include <sched.h>
+#include <dirent.h>
 
 #include <termios.h>
 #include <sys/ioctl.h>
@@ -1731,6 +1732,63 @@ do_generic_syscall(
 			goto out;
 
 		ret = 0;
+	}
+	/* Fake that nodeX in /sys/devices/system/node do not exist,
+	 * where X >= number of LWK NUMA nodes */
+	else if (w->sr.number == __NR_getdents && ret > 0) {
+		struct linux_dirent {
+			long           d_ino;
+			off_t          d_off;
+			unsigned short d_reclen;
+			char           d_name[];
+		};
+		struct linux_dirent *d;
+		char *buf = (char *)w->sr.args[1];
+		int bpos = 0;
+		int nodes,len;
+		char proc_path[PATH_MAX];
+		char path[PATH_MAX];
+
+		sprintf(proc_path, "/proc/self/fd/%d", (int)w->sr.args[0]);
+
+		/* Get filename */
+		if ((len = readlink(proc_path, path, sizeof(path))) < 0) {
+			fprintf(stderr, "%s: error: readlink() failed for %s\n",
+				__FUNCTION__, proc_path);
+			goto out;
+		}
+		path[len] = 0;
+
+		/* Not /sys/devices/system/node ? */
+		if (strcmp(path, "/sys/devices/system/node"))
+			goto out;
+
+		nodes = ioctl(fd, MCEXEC_UP_GET_NODES, 0);
+		if (nodes == -1) {
+			goto out;
+		}
+
+		d = (struct linux_dirent *) (buf + bpos);
+		for (bpos = 0; bpos < ret; ) {
+			int nodeid, tmp_reclen;
+			d = (struct linux_dirent *) (buf + bpos);
+
+			if (sscanf(d->d_name, "node%d", &nodeid) != 1) {
+				bpos += d->d_reclen;
+				continue;
+			}
+
+			if (nodeid >= nodes) {
+				tmp_reclen = d->d_reclen;
+				memmove(buf + bpos,
+						buf + bpos + tmp_reclen,
+						ret - bpos - tmp_reclen);
+				ret -= tmp_reclen;
+				continue;
+			}
+
+			bpos += d->d_reclen;
+		}
 	}
 
 out:
