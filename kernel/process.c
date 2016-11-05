@@ -210,6 +210,7 @@ init_process_vm(struct process *owner, struct address_space *asp, struct process
 
 	ihk_atomic_set(&vm->refcount, 1);
 	INIT_LIST_HEAD(&vm->vm_range_list);
+	INIT_LIST_HEAD(&vm->vm_range_numa_policy_list);
 	vm->address_space = asp;
 	vm->proc = owner;
 	vm->exiting = 0;
@@ -2483,6 +2484,7 @@ void sched_init(void)
 	ihk_mc_init_context(&idle_thread->ctx, NULL, idle);
 	ihk_mc_spinlock_init(&idle_thread->vm->memory_range_lock);
 	INIT_LIST_HEAD(&idle_thread->vm->vm_range_list);
+	INIT_LIST_HEAD(&idle_thread->vm->vm_range_numa_policy_list);
 	idle_thread->proc->pid = 0;
 	idle_thread->tid = ihk_mc_get_processor_id();
 

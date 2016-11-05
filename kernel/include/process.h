@@ -369,6 +369,13 @@ struct vm_range {
 	int padding;
 };
 
+struct vm_range_numa_policy {
+	struct list_head list;
+	unsigned long start, end;
+	DECLARE_BITMAP(numa_mask, PROCESS_NUMA_MASK_BITS);
+	int numa_mem_policy;
+};
+
 struct vm_regions {
 	unsigned long vm_start, vm_end;
 	unsigned long text_start, text_end;
@@ -660,6 +667,8 @@ struct process_vm {
 	long currss;
 	DECLARE_BITMAP(numa_mask, PROCESS_NUMA_MASK_BITS);
 	int numa_mem_policy;
+	/* Protected by memory_range_lock */
+	struct list_head vm_range_numa_policy_list;
 };
 
 static inline int has_cap_ipc_lock(struct thread *th)

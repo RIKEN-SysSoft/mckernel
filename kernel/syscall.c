@@ -7081,7 +7081,332 @@ out:
 
 SYSCALL_DECLARE(mbind)
 {
-	return -ENOSYS;
+	unsigned long addr = ihk_mc_syscall_arg0(ctx);
+	unsigned long len = ihk_mc_syscall_arg1(ctx);
+	int mode = ihk_mc_syscall_arg2(ctx);
+	unsigned long *nodemask =
+		(unsigned long *)ihk_mc_syscall_arg3(ctx);
+	unsigned long maxnode = ihk_mc_syscall_arg4(ctx);
+	unsigned flags = ihk_mc_syscall_arg5(ctx);
+	struct process_vm *vm = cpu_local_var(current)->vm;
+	unsigned long nodemask_bits = 0;
+	int mode_flags = 0;
+	int error = 0;
+	int bit;
+	struct vm_range *range;
+	struct vm_range_numa_policy *range_policy, *range_policy_iter;
+	struct vm_range_numa_policy *range_policy_next = NULL;
+	DECLARE_BITMAP(numa_mask, PROCESS_NUMA_MASK_BITS);
+
+	/* Validate arguments */
+	if (addr & ~PAGE_MASK) {
+		return -EINVAL;
+	}
+
+	len = (len + PAGE_SIZE - 1) & PAGE_MASK;
+	if (addr + len < addr || addr == (addr + len)) {
+		return -EINVAL;
+	}
+
+	memset(numa_mask, 0, sizeof(numa_mask));
+
+	if (maxnode) {
+		nodemask_bits = ALIGN(maxnode, 8);
+		if (maxnode > (PAGE_SIZE << 3)) {
+			dkprintf("%s: ERROR: nodemask_bits bigger than PAGE_SIZE bits\n",
+				__FUNCTION__);
+			error = -EINVAL;
+			goto out;
+		}
+
+		if (nodemask_bits > PROCESS_NUMA_MASK_BITS) {
+			dkprintf("%s: WARNING: process NUMA mask bits is insufficient\n",
+				__FUNCTION__);
+			nodemask_bits = PROCESS_NUMA_MASK_BITS;
+		}
+	}
+
+	if ((mode & MPOL_F_STATIC_NODES) && (mode & MPOL_F_RELATIVE_NODES)) {
+		dkprintf("%s: error: MPOL_F_STATIC_NODES & MPOL_F_RELATIVE_NODES\n",
+				__FUNCTION__);
+		error = -EINVAL;
+		goto out;
+	}
+
+	if ((flags & MPOL_MF_STRICT) && (flags & MPOL_MF_MOVE)) {
+		dkprintf("%s: error: MPOL_MF_STRICT & MPOL_MF_MOVE\n",
+				__FUNCTION__);
+		/*
+		 * XXX: man page claims the correct error code is EIO,
+		 * but LTP tests for EINVAL.
+		 */
+		error = -EINVAL;
+		goto out;
+	}
+
+	mode_flags = (mode & (MPOL_F_STATIC_NODES | MPOL_F_RELATIVE_NODES));
+	mode &= ~(MPOL_F_STATIC_NODES | MPOL_F_RELATIVE_NODES);
+
+	if (mode_flags & MPOL_F_RELATIVE_NODES) {
+		/* Not supported.. */
+		dkprintf("%s: error: MPOL_F_RELATIVE_NODES not supported\n",
+				__FUNCTION__);
+		error = -EINVAL;
+		goto out;
+	}
+
+	switch (mode) {
+		case MPOL_DEFAULT:
+			if (nodemask && nodemask_bits) {
+				error = copy_from_user(numa_mask, nodemask,
+						(nodemask_bits >> 3));
+				if (error) {
+					dkprintf("%s: error: copy_from_user numa_mask\n",
+							__FUNCTION__);
+					error = -EFAULT;
+					goto out;
+				}
+
+				if (!bitmap_empty(numa_mask, nodemask_bits)) {
+					dkprintf("%s: ERROR: nodemask not empty for MPOL_DEFAULT\n",
+							__FUNCTION__);
+					error = -EINVAL;
+					goto out;
+				}
+			}
+			break;
+
+		case MPOL_BIND:
+		case MPOL_INTERLEAVE:
+		case MPOL_PREFERRED:
+			/* Special case for MPOL_PREFERRED with empty nodemask */
+			if (mode == MPOL_PREFERRED && !nodemask) {
+				error = 0;
+				break;
+			}
+
+			if (flags & MPOL_MF_STRICT) {
+				error = -EIO;
+				goto out;
+			}
+
+			error = copy_from_user(numa_mask, nodemask,
+					(nodemask_bits >> 3));
+			if (error) {
+				error = -EFAULT;
+				goto out;
+			}
+
+			if (!nodemask || bitmap_empty(numa_mask, nodemask_bits)) {
+				dkprintf("%s: ERROR: nodemask not specified\n",
+						__FUNCTION__);
+				error = -EINVAL;
+				goto out;
+			}
+
+			/* Verify NUMA mask */
+			for_each_set_bit(bit, numa_mask, maxnode) {
+				if (bit >= ihk_mc_get_nr_numa_nodes()) {
+					dkprintf("%s: %d is bigger than # of NUMA nodes\n",
+						__FUNCTION__, bit);
+					error = -EINVAL;
+					goto out;
+				}
+			}
+
+			break;
+
+		default:
+			error = -EINVAL;
+			goto out;
+	}
+
+	/* Validate address range */
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+
+	range = lookup_process_memory_range(vm, addr, addr + len);
+	if (!range) {
+		dkprintf("%s: ERROR: range is invalid\n", __FUNCTION__);
+		error = -EFAULT;
+		goto unlock_out;
+	}
+
+	/* Do the actual policy setting */
+	switch (mode) {
+	/*
+	 * Man page claims MPOL_DEFAULT should remove any range specific
+	 * policies so that process wise policy will be used. LTP on the
+	 * other hand seems to test if MPOL_DEFAULT is set as a range policy.
+	 * MPOL_DEFAULT thus behaves the same as the rest of the policies
+	 * for now.
+	 */
+#if 0
+		case MPOL_DEFAULT:
+			/* Delete or adjust any overlapping range settings */
+			list_for_each_entry_safe(range_policy_iter, range_policy_next,
+					&vm->vm_range_numa_policy_list, list) {
+				int keep = 0;
+				unsigned long orig_end = range_policy_iter->end;
+
+				if (range_policy_iter->end < addr ||
+					range_policy_iter->start > addr + len) {
+					continue;
+				}
+
+				/* Do we need to keep the front? */
+				if (range_policy_iter->start < addr) {
+					range_policy_iter->end = addr;
+					keep = 1;
+				}
+
+				/* Do we need to keep the end? */
+				if (orig_end > addr + len) {
+					/* Are we keeping front already? */
+					if (keep) {
+						/* Add a new entry after */
+						range_policy = kmalloc(sizeof(*range_policy),
+								IHK_MC_AP_NOWAIT);
+						if (!range_policy) {
+							kprintf("%s: error allocating range_policy\n",
+								__FUNCTION__);
+							error = -ENOMEM;
+							goto unlock_out;
+						}
+
+						memcpy(range_policy, range_policy_iter,
+								sizeof(*range_policy));
+						range_policy->start = addr + len;
+						range_policy->end = orig_end;
+						list_add(&range_policy->list,
+								&range_policy_iter->list);
+					}
+					else {
+						range_policy_iter->start = addr + len;
+						keep = 1;
+					}
+				}
+
+				if (!keep) {
+					list_del(&range_policy_iter->list);
+					kfree(range_policy_iter);
+				}
+			}
+
+			break;
+#endif
+		case MPOL_DEFAULT:
+		case MPOL_BIND:
+		case MPOL_INTERLEAVE:
+		case MPOL_PREFERRED:
+			/* Adjust any overlapping range settings and add new one */
+			range_policy_next = NULL;
+			list_for_each_entry(range_policy_iter,
+					&vm->vm_range_numa_policy_list, list) {
+				int adjusted = 0;
+				unsigned long orig_end = range_policy_iter->end;
+
+				if (range_policy_iter->end < addr)
+					continue;
+
+				/* Special case of entirely overlapping */
+				if (range_policy_iter->start == addr &&
+						range_policy_iter->end == addr + len) {
+					range_policy = range_policy_iter;
+					goto mbind_update_only;
+				}
+
+				/* Overlapping partially? */
+				if (range_policy_iter->start < addr) {
+					orig_end = range_policy_iter->end;
+					range_policy_iter->end = addr;
+					adjusted = 1;
+				}
+
+				/* Do we need to keep the end? */
+				if (orig_end > addr + len) {
+					if (adjusted) {
+						/* Add a new entry after */
+						range_policy = kmalloc(sizeof(*range_policy),
+								IHK_MC_AP_NOWAIT);
+						if (!range_policy) {
+							dkprintf("%s: error allocating range_policy\n",
+									__FUNCTION__);
+							error = -ENOMEM;
+							goto unlock_out;
+						}
+
+						memcpy(range_policy, range_policy_iter,
+								sizeof(*range_policy));
+						range_policy->start = addr + len;
+						range_policy->end = orig_end;
+						list_add(&range_policy->list,
+								&range_policy_iter->list);
+						range_policy_next = range_policy;
+						break;
+					}
+					else {
+						range_policy_iter->start = addr + len;
+						range_policy_next = range_policy_iter;
+						break;
+					}
+				}
+
+				/* Next one in ascending address order? */
+				if (range_policy_iter->start >= addr + len) {
+					range_policy_next = range_policy_iter;
+					break;
+				}
+			}
+
+			/* Add a new entry */
+			range_policy = kmalloc(sizeof(*range_policy),
+					IHK_MC_AP_NOWAIT);
+			if (!range_policy) {
+				dkprintf("%s: error allocating range_policy\n",
+						__FUNCTION__);
+				error = -ENOMEM;
+				goto unlock_out;
+			}
+
+			memset(range_policy, 0, sizeof(*range_policy));
+			range_policy->start = addr;
+			range_policy->end = addr + len;
+
+			if (range_policy_next) {
+				list_add_tail(&range_policy->list,
+						&range_policy_next->list);
+			}
+			else {
+				list_add_tail(&range_policy->list,
+						&vm->vm_range_numa_policy_list);
+			}
+
+mbind_update_only:
+			if (mode == MPOL_DEFAULT) {
+				memset(range_policy->numa_mask, 0, sizeof(numa_mask));
+				for (bit = 0; bit < ihk_mc_get_nr_numa_nodes(); ++bit) {
+					set_bit(bit, range_policy->numa_mask);
+				}
+			}
+			else {
+				memcpy(range_policy->numa_mask, &numa_mask,
+					sizeof(numa_mask));
+			}
+			range_policy->numa_mem_policy = mode;
+
+			break;
+
+		default:
+			error = -EINVAL;
+			goto out;
+	}
+
+	error = 0;
+
+unlock_out:
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+out:
+	return error;
 } /* sys_mbind() */
 
 SYSCALL_DECLARE(set_mempolicy)
@@ -7094,6 +7419,8 @@ SYSCALL_DECLARE(set_mempolicy)
 	struct process_vm *vm = cpu_local_var(current)->vm;
 	int error = 0;
 	int bit, valid_mask;
+	struct vm_range_numa_policy *range_policy_iter;
+	struct vm_range_numa_policy *range_policy_next = NULL;
 	DECLARE_BITMAP(numa_mask, PROCESS_NUMA_MASK_BITS);
 
 	memset(numa_mask, 0, sizeof(numa_mask));
@@ -7108,7 +7435,7 @@ SYSCALL_DECLARE(set_mempolicy)
 		}
 
 		if (nodemask_bits > PROCESS_NUMA_MASK_BITS) {
-			kprintf("%s: WARNING: process NUMA mask bits is insufficient\n",
+			dkprintf("%s: WARNING: process NUMA mask bits is insufficient\n",
 				__FUNCTION__);
 			nodemask_bits = PROCESS_NUMA_MASK_BITS;
 		}
@@ -7137,7 +7464,14 @@ SYSCALL_DECLARE(set_mempolicy)
 				set_bit(bit, vm->numa_mask);
 			}
 
-			/* TODO: delete all mbind() specified regions */
+			/* Delete all range settings */
+			ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+			list_for_each_entry_safe(range_policy_iter, range_policy_next,
+					&vm->vm_range_numa_policy_list, list) {
+				list_del(&range_policy_iter->list);
+				kfree(range_policy_iter);
+			}
+			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 
 			vm->numa_mem_policy = mode;
 			error = 0;
@@ -7176,7 +7510,7 @@ SYSCALL_DECLARE(set_mempolicy)
 			valid_mask = 0;
 			for_each_set_bit(bit, numa_mask, maxnode) {
 				if (bit >= ihk_mc_get_nr_numa_nodes()) {
-					dkprintf("%s: %d is bigger than # of NUMA nodes\n", 
+					dkprintf("%s: %d is bigger than # of NUMA nodes\n",
 						__FUNCTION__, bit);
 					error = -EINVAL;
 					goto out;
@@ -7224,14 +7558,23 @@ SYSCALL_DECLARE(get_mempolicy)
 	unsigned long addr = ihk_mc_syscall_arg3(ctx);
 	unsigned long flags = ihk_mc_syscall_arg4(ctx);
 	struct process_vm *vm = cpu_local_var(current)->vm;
-	int error;
+	struct vm_range_numa_policy *range_policy = NULL;
+	int error = 0;
+	int policy;
 
-	if (((flags & MPOL_F_ADDR) && !addr) ||
-		(!(flags & MPOL_F_ADDR) && addr) ||
+	if ((!(flags & MPOL_F_ADDR) && addr) ||
 		(flags & ~(MPOL_F_ADDR | MPOL_F_NODE | MPOL_F_MEMS_ALLOWED)) ||
 		((flags & MPOL_F_NODE) && !(flags & MPOL_F_ADDR) &&
 		 vm->numa_mem_policy == MPOL_INTERLEAVE)) {
 		return -EINVAL;
+	}
+
+	/*
+	 * XXX: man page claims the correct error code is EINVAL,
+	 * but LTP tests for EFAULT.
+	 */
+	if ((flags & MPOL_F_ADDR) && !addr) {
+		return -EFAULT;
 	}
 
 	if (maxnode) {
@@ -7247,18 +7590,62 @@ SYSCALL_DECLARE(get_mempolicy)
 		}
 	}
 
+	/* Special case of MPOL_F_MEMS_ALLOWED */
+	if (flags == MPOL_F_MEMS_ALLOWED) {
+		if (nodemask) {
+			error = copy_to_user(nodemask,
+					cpu_local_var(current)->vm->numa_mask,
+					(nodemask_bits >> 3));
+			if (error) {
+				error = -EFAULT;
+			}
+		}
+
+		goto out;
+	}
+
+	/* Address range specific? */
+	if (flags & MPOL_F_ADDR) {
+		struct vm_range_numa_policy *range_policy_iter;
+		struct vm_range *range;
+
+		ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+		range = lookup_process_memory_range(vm, addr, addr + 1);
+		if (!range) {
+			dkprintf("%s: ERROR: range is invalid\n", __FUNCTION__);
+			error = -EFAULT;
+			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+			goto out;
+		}
+
+		list_for_each_entry(range_policy_iter,
+					&vm->vm_range_numa_policy_list, list) {
+			if (range_policy_iter->start > addr ||
+				range_policy_iter->end <= addr) {
+				continue;
+			}
+
+			range_policy = range_policy_iter;
+			break;
+		}
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	}
+
+	/* Return policy */
+	policy = range_policy ? range_policy->numa_mem_policy :
+		vm->numa_mem_policy;
+
 	if (mode) {
-		error = copy_to_user(mode,
-				&cpu_local_var(current)->vm->numa_mem_policy,
-				sizeof(int));
+		error = copy_to_user(mode, &policy, sizeof(int));
 		if (error) {
 			error = -EFAULT;
 			goto out;
 		}
 	}
 
-	if (nodemask) {
+	if (nodemask && (policy != MPOL_DEFAULT)) {
 		error = copy_to_user(nodemask,
+				range_policy ? range_policy->numa_mask :
 				cpu_local_var(current)->vm->numa_mask,
 				(nodemask_bits >> 3));
 		if (error) {
