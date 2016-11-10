@@ -1208,10 +1208,8 @@ long mcexec_sys_umount(struct sys_mount_desc *__user arg)
 
 #ifdef MCCTRL_KSYM_sys_umount
 	ret = mcctrl_sys_umount(desc.dir_name, MNT_FORCE);
-	kprintf("%s: mcctrl_sys_umount: %d\n", __FUNCTION__, ret);
 #else
 	ret = -EFAULT;
-	kprintf("%s: mcctrl_sys_umount not defined?\n", __FUNCTION__);
 #endif
 
 	revert_creds(original);
