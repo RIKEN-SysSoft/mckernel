@@ -305,6 +305,7 @@ AC_CONFIG_FILES([
 	executer/kernel/mcoverlayfs/Makefile
 	executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile
 	executer/kernel/mcoverlayfs/linux-4.0.9/Makefile
+	executer/kernel/mcoverlayfs/linux-4.6.7/Makefile
 	kernel/Makefile
 	kernel/Makefile.build
 	arch/x86/tools/mcreboot-attached-mic.sh

@@ -1,0 +1,21 @@
+KDIR ?= @KDIR@
+ARCH ?= @ARCH@
+KMODDIR = @KMODDIR@
+src = @abs_srcdir@
+
+obj-m += mcoverlay.o
+
+mcoverlay-y := copy_up.o dir.o inode.o readdir.o super.o
+
+.PHONY: clean install modules
+
+modules:
+	$(MAKE) -C $(KDIR) M=$(PWD) SUBDIRS=$(PWD) ARCH=$(ARCH) modules
+
+clean:
+	$(RM) .*.cmd *.mod.c *.o *.ko* Module.symvers modules.order -r .tmp*
+
+install:
+	mkdir -p -m 755 $(KMODDIR)
+	install -m 644 mcoverlay.ko $(KMODDIR)
+

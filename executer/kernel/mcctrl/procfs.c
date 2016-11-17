@@ -497,7 +497,7 @@ static ssize_t
 mckernel_procfs_read(struct file *file, char __user *buf, size_t nbytes,
 	       loff_t *ppos)
 {
-	struct inode * inode = file->f_path.dentry->d_inode;
+	struct inode * inode = file->f_inode;
 	char *kern_buffer = NULL;
 	int order = 0;
 	volatile struct procfs_read *r = NULL;
@@ -600,7 +600,7 @@ static ssize_t
 mckernel_procfs_write(struct file *file, const char __user *buf, size_t nbytes,
 	       loff_t *ppos)
 {
-	struct inode * inode = file->f_path.dentry->d_inode;
+	struct inode * inode = file->f_inode;
 	char *kern_buffer = NULL;
 	int order = 0;
 	volatile struct procfs_read *r = NULL;
