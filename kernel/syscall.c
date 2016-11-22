@@ -7694,6 +7694,7 @@ static int do_process_vm_read_writev(int pid,
 	struct process_vm *rvm = NULL;
 	unsigned long rphys;
 	unsigned long rpage_left;
+	unsigned long psize;
 	void *rva;
 	struct vm_range *range;
 	struct mcs_rwlock_node_irqsave lock;

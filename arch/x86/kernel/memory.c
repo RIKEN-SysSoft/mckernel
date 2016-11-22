@@ -490,8 +490,10 @@ uint64_t ihk_mc_pt_virt_to_pagemap(struct page_table *pt, unsigned long virt)
 	return pagemap;
 }
 
-int ihk_mc_pt_virt_to_phys(struct page_table *pt,
-                           const void *virt, unsigned long *phys)
+int ihk_mc_pt_virt_to_phys_size(struct page_table *pt,
+                           const void *virt,
+						   unsigned long *phys,
+						   unsigned long *size)
 {
 	int l4idx, l3idx, l2idx, l1idx;
 	unsigned long v = (unsigned long)virt;
@@ -513,6 +515,7 @@ int ihk_mc_pt_virt_to_phys(struct page_table *pt,
 	if ((pt->entry[l3idx] & PFL3_SIZE)) {
 		*phys = pte_get_phys(&pt->entry[l3idx])
 			| (v & (PTL3_SIZE - 1));
+		if (size) *size = PTL3_SIZE;
 		return 0;
 	}
 	pt = phys_to_virt(pte_get_phys(&pt->entry[l3idx]));
@@ -523,6 +526,7 @@ int ihk_mc_pt_virt_to_phys(struct page_table *pt,
 	if ((pt->entry[l2idx] & PFL2_SIZE)) {
 		*phys = pte_get_phys(&pt->entry[l2idx])
 			| (v & (PTL2_SIZE - 1));
+		if (size) *size = PTL2_SIZE;
 		return 0;
 	}
 	pt = phys_to_virt(pte_get_phys(&pt->entry[l2idx]));
@@ -532,8 +536,16 @@ int ihk_mc_pt_virt_to_phys(struct page_table *pt,
 	}
 
 	*phys = pte_get_phys(&pt->entry[l1idx]) | (v & (PTL1_SIZE - 1));
+	if (size) *size = PTL1_SIZE;
 	return 0;
 }
+
+int ihk_mc_pt_virt_to_phys(struct page_table *pt,
+                           const void *virt, unsigned long *phys)
+{
+	return ihk_mc_pt_virt_to_phys_size(pt, virt, phys, NULL);
+}
+
 
 int ihk_mc_pt_print_pte(struct page_table *pt, void *virt)
 {
