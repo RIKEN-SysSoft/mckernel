@@ -2422,6 +2422,23 @@ return_execve1:
 
 					ret = 0;
 return_execve2:					
+#ifdef ENABLE_MCOVERLAYFS
+				{
+					struct sys_mount_desc mount_desc;
+
+					mount_desc.dev_name = NULL;
+					mount_desc.dir_name = "/proc";
+					mount_desc.type = NULL;
+					mount_desc.flags = MS_REMOUNT;
+					mount_desc.data = NULL;
+					if (ioctl(fd, MCEXEC_UP_SYS_MOUNT,
+								(unsigned long)&mount_desc) != 0) {
+						fprintf(stderr,
+								"WARNING: failed to remount /proc (%s)\n",
+								strerror(errno));
+					}
+				}
+#endif
 					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 					break;
 
