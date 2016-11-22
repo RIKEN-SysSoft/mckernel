@@ -14,6 +14,7 @@
 #define __STRING_H
 
 #include <types.h>
+#include <arch-string.h>
 
 size_t strlen(const char *p);
 size_t strnlen(const char *p, size_t maxlen);
@@ -28,6 +29,12 @@ void *memcpy(void *dest, const void *src, size_t n);
 void *memcpy_long(void *dest, const void *src, size_t n);
 int memcmp(const void *s1, const void *s2, size_t n);
 void *memset(void *s, int n, size_t l);
+
+#ifdef ARCH_FAST_MEMCPY
+#define fast_memcpy	__inline_memcpy
+#else
+#define fast_memcpy memcpy
+#endif
 
 extern int snprintf(char * buf, size_t size, const char *fmt, ...);
 extern int sprintf(char * buf, const char *fmt, ...);

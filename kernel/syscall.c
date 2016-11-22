@@ -7909,10 +7909,11 @@ retry_lookup:
 		}
 
 		rva = phys_to_virt(rphys);
-		
-		memcpy((op == PROCESS_VM_READ) ? local_iov[li].iov_base + loff : rva,
-			(op == PROCESS_VM_READ) ? rva : local_iov[li].iov_base + loff,
-			to_copy);
+
+		fast_memcpy(
+				(op == PROCESS_VM_READ) ? local_iov[li].iov_base + loff : rva,
+				(op == PROCESS_VM_READ) ? rva : local_iov[li].iov_base + loff,
+				to_copy);
 
 		copied += to_copy;
 		dkprintf("local_iov[%d]: 0x%lx %s remote_iov[%d]: 0x%lx, %lu copied, psize: %lu, rpage_left: %lu\n",
