@@ -643,6 +643,8 @@ struct thread {
 	struct waitq scd_wq;
 };
 
+#define VM_RANGE_CACHE_SIZE	4
+
 struct process_vm {
 	struct address_space *address_space;
 	struct list_head vm_range_list;
@@ -669,6 +671,8 @@ struct process_vm {
 	int numa_mem_policy;
 	/* Protected by memory_range_lock */
 	struct list_head vm_range_numa_policy_list;
+	struct vm_range *range_cache[VM_RANGE_CACHE_SIZE];
+	int range_cache_ind;
 };
 
 static inline int has_cap_ipc_lock(struct thread *th)

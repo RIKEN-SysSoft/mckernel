@@ -226,6 +226,11 @@ init_process_vm(struct process *owner, struct address_space *asp, struct process
 	}
 	vm->numa_mem_policy = MPOL_DEFAULT;
 
+	for (i = 0; i < VM_RANGE_CACHE_SIZE; ++i) {
+		vm->range_cache[i] = NULL;
+	}
+	vm->range_cache_ind = 0;
+
 	return 0;
 }
 
@@ -734,6 +739,7 @@ int join_process_memory_range(struct process_vm *vm,
 		struct vm_range *surviving, struct vm_range *merging)
 {
 	int error;
+	int i;
 
 	dkprintf("join_process_memory_range(%p,%lx-%lx,%lx-%lx)\n",
 			vm, surviving->start, surviving->end,
@@ -762,6 +768,10 @@ int join_process_memory_range(struct process_vm *vm,
 		memobj_release(merging->memobj);
 	}
 	list_del(&merging->list);
+	for (i = 0; i < VM_RANGE_CACHE_SIZE; ++i) {
+		if (vm->range_cache[i] == merging)
+			vm->range_cache[i] = surviving;
+	}
 	kfree(merging);
 
 	error = 0;
@@ -775,7 +785,7 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 {
 	const intptr_t start0 = range->start;
 	const intptr_t end0 = range->end;
-	int error;
+	int error, i;
 	intptr_t start;
 	intptr_t end;
 	struct vm_range *neighbor;
@@ -860,6 +870,10 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 	}
 
 	list_del(&range->list);
+	for (i = 0; i < VM_RANGE_CACHE_SIZE; ++i) {
+		if (vm->range_cache[i] == range)
+			vm->range_cache[i] = NULL;
+	}
 	kfree(range);
 
 	dkprintf("free_process_memory_range(%p,%lx-%lx): 0\n",
@@ -1076,12 +1090,23 @@ int add_process_memory_range(struct process_vm *vm,
 struct vm_range *lookup_process_memory_range(
 		struct process_vm *vm, uintptr_t start, uintptr_t end)
 {
+	int i;
 	struct vm_range *range = NULL;
 
 	dkprintf("lookup_process_memory_range(%p,%lx,%lx)\n", vm, start, end);
 
 	if (end <= start) {
 		goto out;
+	}
+
+	for (i = 0; i < VM_RANGE_CACHE_SIZE; ++i) {
+		int c_i = (i + vm->range_cache_ind) % VM_RANGE_CACHE_SIZE;
+		if (!vm->range_cache[c_i])
+			continue;
+
+		if (vm->range_cache[c_i]->start <= start &&
+			vm->range_cache[c_i]->end >= end)
+			return vm->range_cache[c_i];
 	}
 
 	list_for_each_entry(range, &vm->vm_range_list, list) {
@@ -1095,6 +1120,12 @@ struct vm_range *lookup_process_memory_range(
 
 	range = NULL;
 out:
+	if (range) {
+		vm->range_cache_ind = (vm->range_cache_ind - 1 + VM_RANGE_CACHE_SIZE)
+			% VM_RANGE_CACHE_SIZE;
+		vm->range_cache[vm->range_cache_ind] = range;
+	}
+
 	dkprintf("lookup_process_memory_range(%p,%lx,%lx): %p %lx-%lx\n",
 			vm, start, end, range,
 			range? range->start: 0, range? range->end: 0);
