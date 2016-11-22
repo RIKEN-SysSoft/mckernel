@@ -7544,6 +7544,15 @@ SYSCALL_DECLARE(set_mempolicy)
 			error = -EINVAL;
 	}
 
+	dkprintf("%s: %s set for PID %d\n",
+			__FUNCTION__,
+			mode == MPOL_DEFAULT ? "MPOL_DEFAULT" :
+			mode == MPOL_INTERLEAVE ? "MPOL_INTERLEAVE" :
+			mode == MPOL_BIND ? "MPOL_BIND" :
+			mode == MPOL_PREFERRED ? "MPOL_PREFERRED" :
+			"unknown",
+			cpu_local_var(current)->proc->pid);
+
 out:
 	return error;
 } /* sys_set_mempolicy() */
