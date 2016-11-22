@@ -7785,43 +7785,35 @@ arg_out:
 		goto out;
 	}
 
-	dkprintf("pid %d found, doing %s \n", pid, 
-		(op == PROCESS_VM_READ) ? "PROCESS_VM_READ" : "PROCESS_VM_WRITE");
-	
+	dkprintf("pid %d found, doing %s: liovcnt: %d, riovcnt: %d \n", pid,
+		(op == PROCESS_VM_READ) ? "PROCESS_VM_READ" : "PROCESS_VM_WRITE",
+		liovcnt, riovcnt);
+
 	pli = pri = -1; /* Previous indeces in iovecs */
 	li = ri = 0; /* Current indeces in iovecs */
 	loff = roff = 0; /* Offsets in current iovec */
 
 	/* Now iterate and do the copy */
 	while (copied < llen) {
-		
+		int faulted = 0;
+
 		/* New local vector? */
 		if (pli != li) {
 			struct vm_range *range;
-			
+
 			ihk_mc_spinlock_lock_noirq(&lthread->vm->memory_range_lock);
-			
-			/* Is base valid? */
-			range = lookup_process_memory_range(lthread->vm, 
-					(uintptr_t)local_iov[li].iov_base, 
-					(uintptr_t)(local_iov[li].iov_base + 1));
 
-			if (!range) {
-				ret = -EFAULT; 
-				goto pli_out;
-			}
-
-			/* Is length valid? */
-			range = lookup_process_memory_range(lthread->vm, 
-					(uintptr_t)local_iov[li].iov_base, 
+			/* Is range valid? */
+			range = lookup_process_memory_range(lthread->vm,
+					(uintptr_t)local_iov[li].iov_base,
 					(uintptr_t)(local_iov[li].iov_base + local_iov[li].iov_len));
 
 			if (range == NULL) {
-				ret = -EINVAL; 
+				ret = -EINVAL;
 				goto pli_out;
 			}
 
-			if (!(range->flag & ((op == PROCESS_VM_READ) ? 
+			if (!(range->flag & ((op == PROCESS_VM_READ) ?
 				VR_PROT_WRITE : VR_PROT_READ))) {
 				ret = -EFAULT;
 				goto pli_out;
@@ -7840,24 +7832,12 @@ pli_out:
 
 		/* New remote vector? */
 		if (pri != ri) {
-			uint64_t reason = PF_POPULATE | PF_WRITE | PF_USER;
-			void *addr;
 			struct vm_range *range;
 
 			ihk_mc_spinlock_lock_noirq(&rvm->memory_range_lock);
 
-			/* Is base valid? */
+			/* Is range valid? */
 			range = lookup_process_memory_range(rvm,
-					(uintptr_t)remote_iov[li].iov_base,
-					(uintptr_t)(remote_iov[li].iov_base + 1));
-
-			if (!range) {
-				ret = -EFAULT;
-				goto pri_out;
-			}
-
-			/* Is length valid? */
-			range = lookup_process_memory_range(lthread->vm,
 					(uintptr_t)remote_iov[li].iov_base,
 					(uintptr_t)(remote_iov[li].iov_base + remote_iov[li].iov_len));
 
@@ -7880,19 +7860,6 @@ pri_out:
 				goto out;
 			}
 
-			/* Fault in pages */
-			for (addr = (void *)
-					((unsigned long)remote_iov[ri].iov_base & PAGE_MASK);
-					addr < (remote_iov[ri].iov_base + remote_iov[ri].iov_len);
-					addr += PAGE_SIZE) {
-
-				ret = page_fault_process_vm(rvm, addr, reason);
-				if (ret) {
-					ret = -EFAULT;
-					goto out;
-				}
-			}
-
 			pri = ri;
 		}
 
@@ -7902,22 +7869,45 @@ pri_out:
 			to_copy = remote_iov[ri].iov_len - roff;
 		}
 
-		rpage_left = ((((unsigned long)remote_iov[ri].iov_base + roff + 
-			PAGE_SIZE) & PAGE_MASK) - 
+retry_lookup:
+		/* TODO: remember page and do this only if necessary */
+		ret = ihk_mc_pt_virt_to_phys_size(rvm->address_space->page_table,
+				remote_iov[ri].iov_base + roff, &rphys, &psize);
+
+		if (ret) {
+			uint64_t reason = PF_POPULATE | PF_WRITE | PF_USER;
+			void *addr;
+
+			if (faulted) {
+				ret = -EFAULT;
+				goto out;
+			}
+
+			/* Fault in pages */
+			for (addr = (void *)
+					(((unsigned long)remote_iov[ri].iov_base + roff)
+					& PAGE_MASK);
+					addr < (remote_iov[ri].iov_base + roff + to_copy);
+					addr += PAGE_SIZE) {
+
+				ret = page_fault_process_vm(rvm, addr, reason);
+				if (ret) {
+					ret = -EFAULT;
+					goto out;
+				}
+			}
+
+			faulted = 1;
+			goto retry_lookup;
+		}
+
+		rpage_left = ((((unsigned long)remote_iov[ri].iov_base + roff +
+			psize) & ~(psize - 1)) -
 			((unsigned long)remote_iov[ri].iov_base + roff));
-		if (rpage_left < to_copy) {	
+		if (rpage_left < to_copy) {
 			to_copy = rpage_left;
 		}
 
-		/* TODO: remember page and do this only if necessary */
-		ret = ihk_mc_pt_virt_to_phys(rvm->address_space->page_table, 
-				remote_iov[ri].iov_base + roff, &rphys);
-
-		if (ret) {
-			ret = -EFAULT;
-			goto out;
-		}
-		
 		rva = phys_to_virt(rphys);
 		
 		memcpy((op == PROCESS_VM_READ) ? local_iov[li].iov_base + loff : rva,
@@ -7925,10 +7915,11 @@ pri_out:
 			to_copy);
 
 		copied += to_copy;
-		dkprintf("local_iov[%d]: 0x%lx %s remote_iov[%d]: 0x%lx, %lu copied\n",
+		dkprintf("local_iov[%d]: 0x%lx %s remote_iov[%d]: 0x%lx, %lu copied, psize: %lu, rpage_left: %lu\n",
 			li, local_iov[li].iov_base + loff, 
 			(op == PROCESS_VM_READ) ? "<-" : "->", 
-			ri, remote_iov[ri].iov_base + roff, to_copy);
+			ri, remote_iov[ri].iov_base + roff, to_copy,
+			psize, rpage_left);
 
 		loff += to_copy;
 		roff += to_copy;
@@ -7937,7 +7928,7 @@ pri_out:
 			li++;
 			loff = 0;
 		}
-		
+
 		if (roff == remote_iov[ri].iov_len) {
 			ri++;
 			roff = 0;
