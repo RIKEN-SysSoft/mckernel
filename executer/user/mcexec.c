@@ -1550,10 +1550,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	n_threads = ncpu;
-	if (ncpu > 16) {
-		n_threads = 16;
-	}
+	n_threads = ncpu + 1;
 
 	/* 
 	 * XXX: keep thread_data ncpu sized despite that there are only
