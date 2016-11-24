@@ -408,6 +408,7 @@ process_procfs_request(unsigned long rarg)
 	 */
 #define BITMASKS_BUF_SIZE	2048
 	if (strcmp(p, "status") == 0) {
+		extern int num_processors;	/* kernel/ap.c */
 		struct vm_range *range;
 		unsigned long lockedsize = 0;
 		char *tmp;
@@ -443,7 +444,7 @@ process_procfs_request(unsigned long rarg)
 		cpu_bitmask = &bitmasks[bitmasks_offset];
 		bitmasks_offset += bitmap_scnprintf(cpu_bitmask,
 				BITMASKS_BUF_SIZE - bitmasks_offset,
-				thread->cpu_set.__bits, __CPU_SETSIZE);
+				thread->cpu_set.__bits, num_processors);
 		bitmasks_offset++;
 
 		cpu_list = &bitmasks[bitmasks_offset];

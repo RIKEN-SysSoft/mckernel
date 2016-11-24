@@ -5781,7 +5781,7 @@ SYSCALL_DECLARE(sched_setaffinity)
 	extern int num_processors;
 
 	if (!u_cpu_set) {
-		return -EINVAL;
+		return -EFAULT;
 	}
 
 	if (sizeof(k_cpu_set) > len) {
@@ -5838,7 +5838,7 @@ SYSCALL_DECLARE(sched_setaffinity)
 	memcpy(&thread->cpu_set, &cpu_set, sizeof(cpu_set));
 
 	if (!CPU_ISSET(cpu_id, &thread->cpu_set)) {
-		dkprintf("sched_setaffinity(): tid %d sched_request_migrate\n",
+		dkprintf("sched_setaffinity(): tid %d sched_request_migrate: %d\n",
 				cpu_local_var(current)->tid, cpu_id);
 		sched_request_migrate(cpu_id, thread);
 	} 
@@ -5855,7 +5855,11 @@ SYSCALL_DECLARE(sched_getaffinity)
 	struct thread *thread;
 	int ret;
 
+	dkprintf("%s() len: %d, mask: %p\n", __FUNCTION__, len, u_cpu_set);
 	if (!len)
+		return -EINVAL;
+
+	if ((len * BITS_PER_BYTE) < __CPU_SETSIZE)
 		return -EINVAL;
 
 	len = MIN2(len, sizeof(k_cpu_set));
@@ -5883,9 +5887,14 @@ SYSCALL_DECLARE(sched_getaffinity)
 
 	ret = copy_to_user(u_cpu_set, &thread->cpu_set, len);
 	release_thread(thread);
-	dkprintf("%s() ret: %d\n", __FUNCTION__, ret);
-	if (ret < 0)
-		return ret;
+	if (ret < 0) {
+		ret = -EFAULT;
+	}
+	else {
+		ret = len;
+	}
+
+	dkprintf("%s() len: %d, ret: %d\n", __FUNCTION__, len, ret);
 	return len;
 }
 
