@@ -7812,6 +7812,16 @@ arg_out:
 
 			ihk_mc_spinlock_lock_noirq(&lthread->vm->memory_range_lock);
 
+			/* Is base valid? */
+			range = lookup_process_memory_range(lthread->vm,
+					(uintptr_t)local_iov[li].iov_base,
+					(uintptr_t)(local_iov[li].iov_base + 1));
+
+			if (!range) {
+				ret = -EFAULT;
+				goto pli_out;
+			}
+
 			/* Is range valid? */
 			range = lookup_process_memory_range(lthread->vm,
 					(uintptr_t)local_iov[li].iov_base,
@@ -7844,6 +7854,16 @@ pli_out:
 			struct vm_range *range;
 
 			ihk_mc_spinlock_lock_noirq(&rvm->memory_range_lock);
+
+			/* Is base valid? */
+			range = lookup_process_memory_range(rvm,
+					(uintptr_t)remote_iov[li].iov_base,
+					(uintptr_t)(remote_iov[li].iov_base + 1));
+
+			if (range == NULL) {
+				ret = -EFAULT;
+				goto pri_out;
+			}
 
 			/* Is range valid? */
 			range = lookup_process_memory_range(rvm,
