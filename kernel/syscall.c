@@ -7066,7 +7066,7 @@ SYSCALL_DECLARE(getcpu)
 	const uintptr_t cpup = ihk_mc_syscall_arg0(ctx);
 	const uintptr_t nodep = ihk_mc_syscall_arg1(ctx);
 	const int cpu = ihk_mc_get_processor_id();
-	const int node = 0;
+	const int node = ihk_mc_get_numa_id();
 	int error;
 
 	if (cpup) {
