@@ -1550,7 +1550,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	n_threads = ncpu + 1;
+	n_threads = ncpu;
 
 	/* 
 	 * XXX: keep thread_data ncpu sized despite that there are only
@@ -1561,6 +1561,10 @@ int main(int argc, char **argv)
 	 * TODO: implement dynaic thread pool resizing.
 	 */
 	thread_data = (struct thread_data_s *)malloc(sizeof(struct thread_data_s) * (ncpu + 1));
+	if (!thread_data) {
+		fprintf(stderr, "error: allocating thread pool data\n");
+		return 1;
+	}
 	memset(thread_data, '\0', sizeof(struct thread_data_s) * (ncpu + 1));
 
 #if 0	
