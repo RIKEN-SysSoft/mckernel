@@ -5856,7 +5856,7 @@ SYSCALL_DECLARE(sched_getaffinity)
 	int ret;
 
 	dkprintf("%s() len: %d, mask: %p\n", __FUNCTION__, len, u_cpu_set);
-	if (!len)
+	if (!len || u_cpu_set == (cpu_set_t *)-1)
 		return -EINVAL;
 
 	if ((len * BITS_PER_BYTE) < __CPU_SETSIZE)
