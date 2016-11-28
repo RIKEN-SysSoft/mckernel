@@ -5590,8 +5590,8 @@ SYSCALL_DECLARE(sched_setparam)
 	struct sched_param param;
 	struct thread *thread = cpu_local_var(current);
 	struct mcs_rwlock_node_irqsave lock;
-	
 	struct syscall_request request1 IHK_DMA_ALIGN;
+	int other_thread = 0;
 
 	dkprintf("sched_setparam: pid: %d, uparam: 0x%lx\n", pid, uparam);
 
@@ -5603,12 +5603,11 @@ SYSCALL_DECLARE(sched_setparam)
 		pid = thread->proc->pid;
 
 	if (thread->proc->pid != pid) {
+		other_thread = 1;
 		thread = find_thread(pid, pid, &lock);
 		if (!thread) {
 			return -ESRCH;
 		}
-		// TODO: unlock 場所のチェック
-		// 何をしようとしているのか理解
 		thread_unlock(thread, &lock);
 		
 		/* Ask Linux about ownership.. */
@@ -5627,7 +5626,17 @@ SYSCALL_DECLARE(sched_setparam)
 		return -EFAULT;
 	}
 
-	return setscheduler(thread, thread->sched_policy, &param);
+	if (other_thread) {
+		thread = find_thread(pid, pid, &lock);
+		if (!thread) {
+			return -ESRCH;
+		}
+	}
+	retval = setscheduler(thread, thread->sched_policy, &param);
+	if (other_thread) {
+		thread_unlock(thread, &lock);
+	}
+	return retval;
 }
 
 SYSCALL_DECLARE(sched_getparam)
