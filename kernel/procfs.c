@@ -24,6 +24,7 @@
 #include <page.h>
 #include <mman.h>
 #include <bitmap.h>
+#include <init.h>
 
 //#define DEBUG_PRINT_PROCFS
 

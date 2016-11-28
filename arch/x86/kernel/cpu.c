@@ -1079,6 +1079,10 @@ unhandled_page_fault(struct thread *thread, void *fault_addr, void *regs)
 
 	kprintf_unlock(irqflags);
 
+	if (!(error & PF_USER)) {
+		panic("panic: kernel mode PF");
+	}
+
 	/* TODO */
 	ihk_mc_debug_show_interrupt_context(regs);
 

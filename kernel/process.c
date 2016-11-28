@@ -74,7 +74,6 @@ init_process(struct process *proc, struct process *parent)
 {
 	/* These will be filled out when changing status */
 	proc->pid = -1;
-	proc->exit_status = -1;
 	proc->status = PS_RUNNING;
 
 	if(parent){
@@ -298,6 +297,7 @@ create_thread(unsigned long user_pc)
 	if(init_process_vm(proc, asp, vm) != 0){
 		goto err;
 	}
+	thread->exit_status = -1;
 
 	cpu_set(ihk_mc_get_processor_id(), &thread->vm->address_space->cpu_set,
 			&thread->vm->address_space->cpu_set_lock);
@@ -1690,10 +1690,9 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 	range = lookup_process_memory_range(vm, fault_addr, fault_addr+1);
 	if (range == NULL) {
 		error = -EFAULT;
-		dkprintf("[%d]do_page_fault_process_vm(%p,%lx,%lx):"
-				"out of range. %d\n",
-				ihk_mc_get_processor_id(), vm,
-				fault_addr0, reason, error);
+		dkprintf("do_page_fault_process_vm(): vm: %p, addr: %p, reason: %lx):"
+				"out of range: %d\n",
+				vm, fault_addr0, reason, error);
 		goto out;
 	}
 
@@ -1723,10 +1722,18 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 			kprintf("if (((range->flag & VR_PROT_MASK) == VR_PROT_NONE))\n");
 		if (((reason & PF_WRITE) && !(reason & PF_PATCH)))
 			kprintf("if (((reason & PF_WRITE) && !(reason & PF_PATCH)))\n");
-		if (!(range->flag & VR_PROT_WRITE))
+		if (!(range->flag & VR_PROT_WRITE)) {
 			kprintf("if (!(range->flag & VR_PROT_WRITE))\n");
-		if ((reason & PF_INSTR) && !(range->flag & VR_PROT_EXEC))
+			//kprintf("setting VR_PROT_WRITE\n");
+			//range->flag |= VR_PROT_WRITE;
+			//goto cont;
+		}
+		if ((reason & PF_INSTR) && !(range->flag & VR_PROT_EXEC)) {
 			kprintf("if ((reason & PF_INSTR) && !(range->flag & VR_PROT_EXEC))\n");
+			//kprintf("setting VR_PROT_EXEC\n");
+			//range->flag |= VR_PROT_EXEC;
+			//goto cont;
+		}
 		goto out;
 	}
 
@@ -2949,6 +2956,7 @@ find_thread(int pid, int tid, struct mcs_rwlock_node_irqsave *lock)
 	if(tid <= 0)
 		return NULL;
 	mcs_rwlock_reader_lock(&thash->lock[hash], lock);
+retry:
 	list_for_each_entry(thread, &thash->list[hash], hash_list){
 		if(thread->tid == tid){
 			if(pid <= 0)
@@ -2956,6 +2964,13 @@ find_thread(int pid, int tid, struct mcs_rwlock_node_irqsave *lock)
 			if(thread->proc->pid == pid)
 				return thread;
 		}
+	}
+	/* If no thread with pid == tid was found, then we may be looking for a
+	 * specific thread (not the main thread of the process), try to find it
+	 * based on tid only */
+	if (pid > 0 && pid == tid) {
+		pid = 0;
+		goto retry;
 	}
 	mcs_rwlock_reader_unlock(&thash->lock[hash], lock);
 	return NULL;

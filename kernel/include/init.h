@@ -32,4 +32,6 @@ extern void cpu_sysfs_setup(void);
 
 extern char *find_command_line(char *name);
 
+extern int num_processors;
+
 #endif

@@ -466,7 +466,7 @@ struct process {
 			// V       +----   |
 			// PS_STOPPED -----+
 			// (PS_TRACED)
-	int exit_status;
+	int exit_status; // only for zombie
 
 	/* Store exit_status for a group of threads when stopped by SIGSTOP.
 	   exit_status can't be used because values of exit_status of threads
@@ -578,6 +578,7 @@ struct thread {
 			// PS_TRACED
 			// PS_INTERRPUTIBLE
 			// PS_UNINTERRUPTIBLE
+	int exit_status;
 
 	// process vm
 	struct process_vm *vm;

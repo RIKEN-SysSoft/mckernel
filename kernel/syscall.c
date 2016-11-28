@@ -347,16 +347,16 @@ static int wait_zombie(struct thread *thread, struct process *child, int *status
     return ret;
 }
 
-static int wait_stopped(struct thread *thread, struct process *child, int *status, int options)
+static int wait_stopped(struct thread *thread, struct process *child, struct thread *c_thread, int *status, int options)
 {
 	dkprintf("wait_stopped,proc->pid=%d,child->pid=%d,options=%08x\n",
 			 thread->proc->pid, child->pid, options);
 	int ret;
 
 	/* Copy exit_status created in do_signal */
-	int *exit_status = child->status == PS_STOPPED ? 
+	int *exit_status = (child->status == PS_STOPPED || !c_thread) ? 
 		&child->group_exit_status :
-		&child->exit_status;
+		&c_thread->exit_status;
 
 	/* Skip this process because exit_status has been reaped. */
 	if (!*exit_status) {
@@ -400,6 +400,26 @@ static int wait_continued(struct thread *thread, struct process *child, int *sta
 	return ret;
 }
 
+struct thread *find_thread_of_process(struct process *child, int pid)
+{
+	int c_found = 0;
+	struct mcs_rwlock_node c_lock;
+	struct thread *c_thread = NULL;
+
+	mcs_rwlock_reader_lock_noirq(&child->threads_lock, &c_lock);
+	list_for_each_entry(c_thread, &child->threads_list, siblings_list) {
+		if (c_thread->tid == pid) {
+			c_found = 1;
+			break;
+		}
+	}
+	mcs_rwlock_reader_unlock_noirq(&child->threads_lock, &c_lock);
+	if (!c_found) c_thread = NULL;
+
+	return c_thread;
+}
+
+
 /* 
  * From glibc: INLINE_SYSCALL (wait4, 4, pid, stat_loc, options, NULL);
  */
@@ -415,22 +435,30 @@ do_wait(int pid, int *status, int options, void *rusage)
 	int empty = 1;
 	int orgpid = pid;
 	struct mcs_rwlock_node lock;
+	struct thread *c_thread = NULL;
 
-	dkprintf("wait4,thread->pid=%d,pid=%d\n", thread->proc->pid, pid);
+	dkprintf("wait4(): current->proc->pid: %d, pid: %d\n", thread->proc->pid, pid);
 
  rescan:
 	pid = orgpid;
 
 	mcs_rwlock_writer_lock_noirq(&thread->proc->children_lock, &lock);
 	list_for_each_entry_safe(child, next, &proc->children_list, siblings_list) {	
+		/*
 		if (!(!!(options & __WCLONE) ^ (child->termsig == SIGCHLD))) {
 			continue;
 		}
+		*/
+
+		/* Find thread with pid == tid, this will be either the main thread
+		 * or the one we are looking for specifically when __WCLONE is passed */
+		//if (options & __WCLONE) 
+		c_thread = find_thread_of_process(child, pid);
 
 		if ((pid < 0 && -pid == child->pgid) ||
 			pid == -1 ||
 			(pid == 0 && pgid == child->pgid) ||
-			(pid > 0 && pid == child->pid)) {
+			(pid > 0 && pid == child->pid) || c_thread != NULL) {
 
 			empty = 0;
 
@@ -478,8 +506,11 @@ do_wait(int pid, int *status, int options, void *rusage)
 			if(!(child->ptrace & PT_TRACED) &&
 			   (child->signal_flags & SIGNAL_STOP_STOPPED) &&
 			   (options & WUNTRACED)) {
+				/* Find main thread of process if pid == -1 */
+				if (pid == -1)
+					c_thread = find_thread_of_process(child, child->pid);
 				/* Not ptraced and in stopped state and WUNTRACED is specified */
-				ret = wait_stopped(thread, child, status, options);
+				ret = wait_stopped(thread, child, c_thread, status, options);
 				if(!(options & WNOWAIT)){
 					child->signal_flags &= ~SIGNAL_STOP_STOPPED;
 				}
@@ -489,8 +520,15 @@ do_wait(int pid, int *status, int options, void *rusage)
 
 			if((child->ptrace & PT_TRACED) &&
 			   (child->status & (PS_STOPPED | PS_TRACED))) {
-				ret = wait_stopped(thread, child, status, options);
-				if(ret == child->pid){
+				/* Find main thread of process if pid == -1 */
+				if (pid == -1)
+					c_thread = find_thread_of_process(child, child->pid);
+				ret = wait_stopped(thread, child, c_thread, status, options);
+				if(c_thread && ret == child->pid){
+					/* Are we looking for a specific thread? */
+					if (pid == c_thread->tid) {
+						ret = c_thread->tid;
+					}
 					if(!(options & WNOWAIT)){
 						child->signal_flags &= ~SIGNAL_STOP_STOPPED;
 					}
@@ -639,6 +677,7 @@ terminate(int rc, int sig)
 	int n;
 	int *ids = NULL;
 	struct syscall_request request IHK_DMA_ALIGN;
+	int exit_status;
 
 	// sync perf info
 	if(proc->monitoring_event)
@@ -655,7 +694,7 @@ terminate(int rc, int sig)
 		// no return
 		return;
 	}
-	proc->exit_status = ((rc & 0x00ff) << 8) | (sig & 0xff);
+	exit_status = mythread->exit_status = ((rc & 0x00ff) << 8) | (sig & 0xff);
 	proc->status = PS_EXITED;
 	mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
 	mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
@@ -791,7 +830,7 @@ terminate(int rc, int sig)
 	// clean up memory
 	if(!proc->nohost){
 		request.number = __NR_exit_group;
-		request.args[0] = proc->exit_status;
+		request.args[0] = exit_status;
 		do_syscall(&request, ihk_mc_get_processor_id(), proc->pid);
 		proc->nohost = 1;
 	}
@@ -803,6 +842,7 @@ terminate(int rc, int sig)
 	}
 	else {
 		proc->status = PS_ZOMBIE;
+		proc->exit_status = exit_status;
 
 		dkprintf("terminate,wakeup\n");
 
@@ -813,11 +853,11 @@ terminate(int rc, int sig)
 
 			memset(&info, '\0', sizeof info);
 			info.si_signo = SIGCHLD;
-			info.si_code = (proc->exit_status & 0x7f)?
-			               ((proc->exit_status & 0x80)?
+			info.si_code = (exit_status & 0x7f)?
+			               ((exit_status & 0x80)?
 			                CLD_DUMPED: CLD_KILLED): CLD_EXITED;
 			info._sifields._sigchld.si_pid = proc->pid;
-			info._sifields._sigchld.si_status = proc->exit_status;
+			info._sifields._sigchld.si_status = exit_status;
 			error = do_kill(NULL, proc->parent->pid, -1, SIGCHLD, &info, 0);
 			dkprintf("terminate,klll %d,error=%d\n",
 					proc->termsig, error);
@@ -1065,7 +1105,8 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	}
 	else {
 		/* choose mapping address */
-		error = search_free_space(len, region->map_end,
+		error = search_free_space(len, region->map_end +
+				(fd > 0) ? PTL4_SIZE : 0,
 				PAGE_SHIFT+p2align, &addr);
 		if (error) {
 			ekprintf("do_mmap:search_free_space(%lx,%lx,%d) failed. %d\n",
@@ -1222,7 +1263,7 @@ out:
 	}
 	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
 
-	if (!error && populated_mapping) {
+	if (!error && populated_mapping && !((vrflags & VR_PROT_MASK) == VR_PROT_NONE)) {
 		error = populate_process_memory(thread->vm, (void *)addr, len);
 		if (error) {
 			ekprintf("%s: error :populate_process_memory"
@@ -1595,7 +1636,7 @@ static int ptrace_report_clone(struct thread *thread, struct thread *new, int ev
 
 	/* Save reason why stopped and process state for wait4() to reap */
 	mcs_rwlock_writer_lock_noirq(&thread->proc->update_lock, &lock);
-	thread->proc->exit_status = (SIGTRAP | (event << 8));
+	thread->exit_status = (SIGTRAP | (event << 8));
 	/* Transition process state */
 	thread->proc->status = PS_TRACED;
 	thread->status = PS_TRACED;
@@ -1610,24 +1651,26 @@ static int ptrace_report_clone(struct thread *thread, struct thread *new, int ev
 		mcs_rwlock_writer_lock_noirq(&new->proc->update_lock, &updatelock);
 		/* set ptrace features to new process */
 		new->proc->ptrace = thread->proc->ptrace;
-		new->proc->ppid_parent = new->proc->parent; /* maybe proc */
+		if (event != PTRACE_EVENT_CLONE) {
+			new->proc->ppid_parent = new->proc->parent; /* maybe proc */
+		}
 
 		if ((new->proc->ptrace & PT_TRACED) && new->ptrace_debugreg == NULL) {
 			alloc_debugreg(new);
 		}
 
-		mcs_rwlock_writer_lock_noirq(&new->proc->parent->children_lock, &lock);
-		list_del(&new->proc->siblings_list);
-		list_add_tail(&new->proc->ptraced_siblings_list, &new->proc->parent->ptraced_children_list);
-		mcs_rwlock_writer_unlock_noirq(&new->proc->parent->children_lock, &lock);
-
-		new->proc->parent = thread->proc->parent; /* new ptracing parent */
-		mcs_rwlock_writer_lock_noirq(&new->proc->parent->children_lock, &lock);
-		list_add_tail(&new->proc->siblings_list, &new->proc->parent->children_list);
-		mcs_rwlock_writer_unlock_noirq(&new->proc->parent->children_lock, &lock);
-
+		if (event != PTRACE_EVENT_CLONE) {
+			mcs_rwlock_writer_lock_noirq(&new->proc->parent->children_lock, &lock);
+			list_del(&new->proc->siblings_list);
+			list_add_tail(&new->proc->ptraced_siblings_list, &new->proc->parent->ptraced_children_list);
+			mcs_rwlock_writer_unlock_noirq(&new->proc->parent->children_lock, &lock);
+			new->proc->parent = thread->proc->parent; /* new ptracing parent */
+			mcs_rwlock_writer_lock_noirq(&new->proc->parent->children_lock, &lock);
+			list_add_tail(&new->proc->siblings_list, &new->proc->parent->children_list);
+			mcs_rwlock_writer_unlock_noirq(&new->proc->parent->children_lock, &lock);
+		}
 		/* trace and SIGSTOP */
-		new->proc->exit_status = SIGSTOP;
+		new->exit_status = SIGSTOP;
 		new->proc->status = PS_TRACED;
 		new->status = PS_TRACED;
 
@@ -1639,7 +1682,7 @@ static int ptrace_report_clone(struct thread *thread, struct thread *new, int ev
 	info.si_signo = SIGCHLD;
 	info.si_code = CLD_TRAPPED;
 	info._sifields._sigchld.si_pid = thread->proc->pid;
-	info._sifields._sigchld.si_status = thread->proc->exit_status;
+	info._sifields._sigchld.si_status = thread->exit_status;
 	rc = do_kill(cpu_local_var(current), parent_pid, -1, SIGCHLD, &info, 0);
 	if(rc < 0) {
 		dkprintf("ptrace_report_clone,do_kill failed\n");
@@ -2083,8 +2126,8 @@ retry_tid:
 		}
 	}
 
-	dkprintf("clone: kicking scheduler!,cpuid=%d pid=%d tid %d -> tid=%d\n", 
-		cpuid, newproc->pid, 
+	dkprintf("clone: kicking scheduler!,cpuid=%d pid=%d tid %d -> tid=%d\n",
+		cpuid, newproc->pid,
 		old->tid,
 		new->tid);
 
@@ -5183,29 +5226,37 @@ static int ptrace_attach(int pid)
 		goto out;
 	}
 	child = thread->proc;
-	dkprintf("ptrace_attach,pid=%d,thread->proc->parent=%p\n", thread->proc->pid, thread->proc->parent);
+	dkprintf("ptrace_attach(): pid requested:%d, thread->tid:%d, thread->proc->pid=%d, thread->proc->parent=%p\n", pid, thread->tid, thread->proc->pid, thread->proc->parent);
 
 	mcs_rwlock_writer_lock_noirq(&child->update_lock, &updatelock);
-	if (thread->proc->ptrace & PT_TRACED) {
-		mcs_rwlock_writer_unlock_noirq(&child->update_lock, &updatelock);
-		thread_unlock(thread, &lock);
-		error = -EPERM;
-		goto out;
+
+	/* Only for the first thread of a process XXX: fix this */
+	if (thread->tid == child->pid) {
+		if (thread->proc->ptrace & PT_TRACED) {
+			mcs_rwlock_writer_unlock_noirq(&child->update_lock, &updatelock);
+			thread_unlock(thread, &lock);
+			dkprintf("ptrace_attach: -EPERM\n");
+			error = -EPERM;
+			goto out;
+		}
 	}
 
 	parent = child->parent;
+	/* XXX: tmp */
+	if (parent != proc) {
 
-	dkprintf("ptrace_attach,parent->pid=%d\n", parent->pid);
+		dkprintf("ptrace_attach() parent->pid=%d\n", parent->pid);
 
-	mcs_rwlock_writer_lock_noirq(&parent->children_lock, &childlock);
-	list_del(&child->siblings_list);
-	list_add_tail(&child->ptraced_siblings_list, &parent->ptraced_children_list);
-	mcs_rwlock_writer_unlock_noirq(&parent->children_lock, &childlock);
+		mcs_rwlock_writer_lock_noirq(&parent->children_lock, &childlock);
+		list_del(&child->siblings_list);
+		list_add_tail(&child->ptraced_siblings_list, &parent->ptraced_children_list);
+		mcs_rwlock_writer_unlock_noirq(&parent->children_lock, &childlock);
 
-	mcs_rwlock_writer_lock_noirq(&proc->children_lock, &childlock);
-	list_add_tail(&child->siblings_list, &proc->children_list);
-	child->parent = proc;
-	mcs_rwlock_writer_unlock_noirq(&proc->children_lock, &childlock);
+		mcs_rwlock_writer_lock_noirq(&proc->children_lock, &childlock);
+		list_add_tail(&child->siblings_list, &proc->children_list);
+		child->parent = proc;
+		mcs_rwlock_writer_unlock_noirq(&proc->children_lock, &childlock);
+	}
 
 	child->ptrace = PT_TRACED | PT_TRACE_EXEC;
 
@@ -5227,7 +5278,7 @@ static int ptrace_attach(int pid)
 	info.si_signo = SIGSTOP;
 	info.si_code = SI_USER;
 	info._sifields._kill.si_pid = proc->pid;
-	error = do_kill(mythread, pid, -1, SIGSTOP, &info, 2);
+	error = do_kill(mythread, -1, pid, SIGSTOP, &info, 2);
 	if (error < 0) {
 		goto out;
 	}

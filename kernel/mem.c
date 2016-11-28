@@ -754,6 +754,8 @@ void remote_flush_tlb_cpumask(struct process_vm *vm,
 			flush_tlb();
 		}
 
+		/* Flush on this core */
+		flush_tlb_single(addr & PAGE_MASK);
 		/* Wait for all cores */
 		while (ihk_atomic_read(&flush_entry->pending) != 0) {
 			cpu_pause();

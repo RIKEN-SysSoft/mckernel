@@ -2367,8 +2367,18 @@ int write_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t
 			return error;
 		}
 
-		va = phys_to_virt(pa);
-		memcpy(va, from, cpsize);
+		if (pa < ihk_mc_get_memory_address(IHK_MC_GMA_MAP_START, 0) ||
+			pa >= ihk_mc_get_memory_address(IHK_MC_GMA_MAP_END, 0)) {
+			dkprintf("%s: pa is outside of LWK memory, from: %p,"
+				"pa: %p, cpsize: %d\n", __FUNCTION__, from, pa, cpsize);
+			va = ihk_mc_map_virtual(pa, 1, PTATTR_ACTIVE);
+			memcpy(va, from, cpsize);
+			ihk_mc_unmap_virtual(va, 1, 1);
+		}
+		else {
+			va = phys_to_virt(pa);
+			memcpy(va, from, cpsize);
+		}
 
 		from += cpsize;
 		to += cpsize;

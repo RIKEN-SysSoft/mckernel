@@ -544,14 +544,14 @@ void ptrace_report_signal(struct thread *thread, int sig)
 	int parent_pid;
 	struct siginfo info;
 
-	dkprintf("ptrace_report_signal,pid=%d\n", thread->proc->pid);
+	dkprintf("ptrace_report_signal, tid=%d, pid=%d\n", thread->tid, thread->proc->pid);
 
 	mcs_rwlock_writer_lock(&proc->update_lock, &lock);	
 	if(!(proc->ptrace & PT_TRACED)){
 		mcs_rwlock_writer_unlock(&proc->update_lock, &lock);
 		return;
 	}
-	proc->exit_status = sig;
+	thread->exit_status = sig;
 	/* Transition thread state */
 	proc->status = PS_TRACED;
 	thread->status = PS_TRACED;
@@ -569,8 +569,8 @@ void ptrace_report_signal(struct thread *thread, int sig)
 	memset(&info, '\0', sizeof info);
 	info.si_signo = SIGCHLD;
 	info.si_code = CLD_TRAPPED;
-	info._sifields._sigchld.si_pid = thread->proc->pid;
-	info._sifields._sigchld.si_status = thread->proc->exit_status;
+	info._sifields._sigchld.si_pid = thread->tid;
+	info._sifields._sigchld.si_status = thread->exit_status;
 	do_kill(cpu_local_var(current), parent_pid, -1, SIGCHLD, &info, 0);
 	/* Wake parent (if sleeping in wait4()) */
 	waitq_wakeup(&proc->parent->waitpid_q);
@@ -698,7 +698,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 	unsigned long irqstate;
 
 	for(w = pending->sigmask.__val[0], sig = 0; w; sig++, w >>= 1);
-	dkprintf("do_signal,pid=%d,sig=%d\n", proc->pid, sig);
+	dkprintf("do_signal(): tid=%d, pid=%d, sig=%d\n", thread->tid, proc->pid, sig);
 	orgsig = sig;
 
 	if((proc->ptrace & PT_TRACED) &&
@@ -885,7 +885,8 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 				/* Wake up the parent who tried wait4 and sleeping */
 				waitq_wakeup(&proc->parent->waitpid_q);
 
-				dkprintf("do_signal,SIGSTOP,sleeping\n");
+				dkprintf("do_signal(): pid: %d, tid: %d SIGSTOP, sleeping\n", 
+					proc->pid, thread->tid);
 				/* Sleep */
 				schedule();
 				dkprintf("SIGSTOP(): woken up\n");
@@ -899,7 +900,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 
 			/* Update thread state in fork tree */
 			mcs_rwlock_writer_lock(&proc->update_lock, &lock);	
-			proc->exit_status = SIGTRAP;
+			thread->exit_status = SIGTRAP;
 			proc->status = PS_TRACED;
 			thread->status = PS_TRACED;
 			mcs_rwlock_writer_unlock(&proc->update_lock, &lock);	
