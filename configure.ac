@@ -70,6 +70,7 @@ case $WITH_TARGET in
 	ARCH=`uname -m`
 	AC_PROG_CC
 	XCC=$CC
+	CFLAGS="$CFLAGS -ffreestanding -fno-tree-loop-distribute-patterns"
 	;;
     builtin-mic)
 	ARCH=k1om
@@ -286,6 +287,7 @@ AC_SUBST(ETCDIR)
 AC_SUBST(KMODDIR)
 AC_SUBST(KERNDIR)
 AC_SUBST(MANDIR)
+AC_SUBST(CFLAGS)
 AC_SUBST(ENABLE_MCOVERLAYFS)
 
 AC_SUBST(IHK_VERSION)
