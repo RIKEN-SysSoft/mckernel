@@ -11,7 +11,7 @@ LDFLAGS += -e arch_start
 IHKOBJ = ihk/ihk.o
 
 include $(SRC)/config/config.$(TARGET)
-include $(IHKBASE)/Makefile.common
+include @abs_builddir@/../../ihk/cokernel/Makefile.common
 
 # CFLAGS += -I$(SRC)/../arch/$(IHKARCH)/kernel/include -I$(SRC)/../lib/include
 
