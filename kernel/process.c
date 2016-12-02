@@ -2724,7 +2724,9 @@ redo:
 			restore_fp_regs(next);
 		}
 
-		ihk_mc_load_page_table(next->vm->address_space->page_table);
+		if (prev && prev->vm->address_space->page_table !=
+				next->vm->address_space->page_table)
+			ihk_mc_load_page_table(next->vm->address_space->page_table);
 
 		dkprintf("[%d] schedule: tlsblock_base: 0x%lX\n",
 		         ihk_mc_get_processor_id(), next->tlsblock_base);
