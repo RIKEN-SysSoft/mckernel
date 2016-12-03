@@ -232,6 +232,8 @@ enum mpol_rebind_step {
 #include <waitq.h>
 #include <futex.h>
 
+//#define TRACK_SYSCALLS
+
 struct resource_set;
 struct process_hash;
 struct thread_hash;
@@ -608,6 +610,14 @@ struct thread {
 	cpu_set_t cpu_set;
 	fp_regs_struct *fp_regs;
 	int in_syscall_offload;
+
+#ifdef TRACK_SYSCALLS
+	int socc_enabled;
+	uint64_t *syscall_times;
+	uint32_t *syscall_cnts;
+	uint64_t *offload_times;
+	uint32_t *offload_cnts;
+#endif // TRACK_SYSCALLS
 
 	// signal
 	struct sig_common *sigcommon;

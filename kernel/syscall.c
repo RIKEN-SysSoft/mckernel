@@ -129,6 +129,96 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 static void do_mod_exit(int status);
 #endif
 
+#ifdef TRACK_SYSCALLS
+
+#define SOCC_CLEAR  1
+#define SOCC_ON     2
+#define SOCC_OFF    4
+#define SOCC_PRINT  8
+
+void print_syscall_stats(struct thread *thread)
+{
+	int i;
+	unsigned long flags;
+
+	flags = kprintf_lock();
+
+	for (i = 0; i < 300; ++i) {
+		if (!thread->syscall_cnts[i] &&
+				!thread->offload_cnts[i]) continue;
+
+		//__kprintf("(%20s): sys.cnt: %3lu (%15lukC)\n",
+		__kprintf("(%3d,%20s): sys.cnt: %5lu (%10lukC), offl.cnt: %5lu (%10lukC)\n",
+				i,
+				syscall_name[i],
+				thread->syscall_cnts[i],
+				(thread->syscall_times[i] /
+				 (thread->syscall_cnts[i] ? thread->syscall_cnts[i] : 1))
+				/ 1000,
+				thread->offload_cnts[i],
+				(thread->offload_times[i] /
+				 (thread->offload_cnts[i] ? thread->offload_cnts[i] : 1))
+				/ 1000
+				);
+	}
+
+	kprintf_unlock(flags);
+}
+
+void alloc_syscall_counters(struct thread *thread)
+{
+	thread->syscall_times = kmalloc(sizeof(*thread->syscall_times) * 300, IHK_MC_AP_NOWAIT);
+	thread->syscall_cnts = kmalloc(sizeof(*thread->syscall_cnts) * 300, IHK_MC_AP_NOWAIT);
+	thread->offload_times = kmalloc(sizeof(*thread->offload_times) * 300, IHK_MC_AP_NOWAIT);
+	thread->offload_cnts = kmalloc(sizeof(*thread->offload_cnts) * 300, IHK_MC_AP_NOWAIT);
+
+	if (!thread->syscall_times ||
+			!thread->syscall_cnts ||
+			!thread->offload_times ||
+			!thread->offload_cnts) {
+		kprintf("ERROR: allocating counters\n");
+		panic("");
+	}
+
+	memset(thread->syscall_times, 0, sizeof(*thread->syscall_times) * 300);
+	memset(thread->syscall_cnts, 0, sizeof(*thread->syscall_cnts) * 300);
+	memset(thread->offload_times, 0, sizeof(*thread->offload_times) * 300);
+	memset(thread->offload_cnts, 0, sizeof(*thread->offload_cnts) * 300);
+	thread->socc_enabled = 1;
+}
+
+SYSCALL_DECLARE(syscall_offload_clr_cntrs)
+{
+	int flag = (int)ihk_mc_syscall_arg0(ctx);
+	struct thread *thread = cpu_local_var(current);
+	int i;
+
+	if (flag & SOCC_PRINT)
+		print_syscall_stats(thread);
+
+	if (flag & SOCC_CLEAR) {
+		for (i = 0; i < 300; ++i) {
+			if (!thread->syscall_cnts[i] &&
+					!thread->offload_cnts[i]) continue;
+
+			thread->syscall_cnts[i] = 0;
+			thread->syscall_times[i] = 0;
+			thread->offload_cnts[i] = 0;
+			thread->offload_times[i] = 0;
+		}
+	}
+
+	if (flag & SOCC_ON) {
+		thread->socc_enabled = 1;
+	}
+	else if (flag & SOCC_OFF) {
+		thread->socc_enabled = 0;
+	}
+
+	return 0;
+}
+#endif // TRACK_SYSCALLS
+
 static void send_syscall(struct syscall_request *req, int cpu, int pid, struct syscall_response *res)
 {
 	struct ikc_scd_packet packet IHK_DMA_ALIGN;
@@ -189,6 +279,10 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	unsigned long irqstate;
 	struct thread *thread = cpu_local_var(current);
 	struct process *proc = thread->proc;
+#ifdef TRACK_SYSCALLS
+	uint64_t t_s;
+	t_s = rdtsc();
+#endif // TRACK_SYSCALLS
 
 	dkprintf("SC(%d)[%3d] sending syscall\n",
 		ihk_mc_get_processor_id(),
@@ -307,6 +401,23 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	if(req->number != __NR_exit_group){
 		--thread->in_syscall_offload;
 	}
+
+#ifdef TRACK_SYSCALLS
+	if (req->number < 300) {
+		if (!cpu_local_var(current)->offload_cnts) {
+			alloc_syscall_counters(cpu_local_var(current));
+		}
+		if (cpu_local_var(current)->socc_enabled) {
+			cpu_local_var(current)->offload_times[req->number] += 
+				(rdtsc() - t_s);
+			cpu_local_var(current)->offload_cnts[req->number]++;
+		}
+	}
+	else {
+		dkprintf("offload syscall > 300?? : %d\n", req->number);
+	}
+#endif // TRACK_SYSCALLS
+
 	return rc;
 }
 
@@ -8284,6 +8395,9 @@ set_cputime(int mode)
 long syscall(int num, ihk_mc_user_context_t *ctx)
 {
 	long l;
+#ifdef TRACK_SYSCALLS
+	uint64_t t_s;
+#endif // TRACK_SYSCALLS
 
 	set_cputime(1);
 	if(cpu_local_var(current)->proc->status == PS_EXITED &&
@@ -8325,6 +8439,9 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 #endif
     dkprintf("\n");
 
+#ifdef TRACK_SYSCALLS
+	t_s = rdtsc();
+#endif // TRACK_SYSCALLS
 
 	if ((0 <= num) && (num < (sizeof(syscall_table) / sizeof(syscall_table[0])))
 			&& (syscall_table[num] != NULL)) {
@@ -8342,6 +8459,22 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	}
 
 	check_signal(l, NULL, num);
+	
+#ifdef TRACK_SYSCALLS
+	if (num < 300) {
+		if (!cpu_local_var(current)->syscall_cnts) {
+			alloc_syscall_counters(cpu_local_var(current));
+		}
+		if (cpu_local_var(current)->socc_enabled) {
+			cpu_local_var(current)->syscall_times[num] += (rdtsc() - t_s);
+			cpu_local_var(current)->syscall_cnts[num]++;
+		}
+	}
+	else {
+		dkprintf("syscall > 300?? : %d\n", num);
+	}
+#endif // TRACK_SYSCALLS
+
 	check_need_resched();
 
 	if (cpu_local_var(current)->proc->ptrace) {
