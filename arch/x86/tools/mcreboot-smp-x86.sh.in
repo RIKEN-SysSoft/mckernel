@@ -39,7 +39,9 @@ else
 	irqbalance_used="no"
 fi
 
-while getopts :i:k:c:m:o:f: OPT
+turbo=""
+
+while getopts :ti:k:c:m:o:f: OPT
 do
 	case ${OPT} in
 	f)	facility=${OPTARG}
@@ -75,6 +77,8 @@ do
 	c) cpus=${OPTARG}
 		;;
 	m) mem=${OPTARG}
+		;;
+	t) turbo="turbo"
 		;;
 	*)  echo "invalid option -${OPT}" >&2
 		exit 1
@@ -340,7 +344,7 @@ if ! ${SBINDIR}/ihkosctl 0 load ${KERNDIR}/mckernel.img; then
 fi
 
 # Set kernel arguments
-if ! ${SBINDIR}/ihkosctl 0 kargs "hidos ksyslogd=${LOGMODE}"; then
+if ! ${SBINDIR}/ihkosctl 0 kargs "hidos ksyslogd=${LOGMODE} $turbo"; then
 	echo "error: setting kernel arguments" >&2
 	error_exit "os_created"
 fi

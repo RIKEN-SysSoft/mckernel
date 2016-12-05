@@ -148,7 +148,7 @@ extern char page_fault[], general_protection_exception[];
 extern char debug_exception[], int3_exception[];
 
 uint64_t boot_pat_state = 0;
-int no_turbo = 0; /* May be updated by early parsing of kargs */
+int no_turbo = 1; /* May be updated by early parsing of kargs */
 
 extern int num_processors; /* kernel/ap.c */
 struct pvclock_vsyscall_time_info *pvti = NULL;
