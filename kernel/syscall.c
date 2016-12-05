@@ -184,7 +184,6 @@ void alloc_syscall_counters(struct thread *thread)
 	memset(thread->syscall_cnts, 0, sizeof(*thread->syscall_cnts) * 300);
 	memset(thread->offload_times, 0, sizeof(*thread->offload_times) * 300);
 	memset(thread->offload_cnts, 0, sizeof(*thread->offload_cnts) * 300);
-	thread->socc_enabled = 1;
 }
 
 SYSCALL_DECLARE(syscall_offload_clr_cntrs)
@@ -1006,7 +1005,7 @@ interrupt_syscall(int pid, int tid)
 	ihk_mc_user_context_t ctx;
 	long lerror;
 
-kprintf("interrupt_syscall pid=%d tid=%d\n", pid, tid);
+	dkprintf("interrupt_syscall pid=%d tid=%d\n", pid, tid);
 	ihk_mc_syscall_arg0(&ctx) = pid;
 	ihk_mc_syscall_arg1(&ctx) = tid;
 
