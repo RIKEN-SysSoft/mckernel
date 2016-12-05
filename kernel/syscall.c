@@ -6449,7 +6449,23 @@ SYSCALL_DECLARE(nanosleep)
 
 SYSCALL_DECLARE(sched_yield)
 {
-	schedule();
+	struct cpu_local_var *v;
+	int do_schedule = 0;
+	long runq_irqstate;
+
+	runq_irqstate =
+		ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
+	v = get_this_cpu_local_var();
+
+	if (v->flags & CPU_FLAG_NEED_RESCHED || v->runq_len > 1) {
+		do_schedule = 1;
+	}
+
+	ihk_mc_spinlock_unlock(&v->runq_lock, runq_irqstate);
+
+	if (do_schedule) {
+		schedule();
+	}
 
 	return 0;
 }
