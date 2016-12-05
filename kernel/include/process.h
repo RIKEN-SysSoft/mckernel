@@ -407,7 +407,7 @@ struct mckfd {
 #define SFD_NONBLOCK 04000
 
 struct sig_common {
-	ihk_spinlock_t	lock;
+	mcs_rwlock_lock_t lock;
 	ihk_atomic_t use;
 	struct k_sigaction action[_NSIG];
 	struct list_head sigpending;
@@ -624,7 +624,7 @@ struct thread {
 	sigset_t sigmask;
 	stack_t sigstack;
 	struct list_head sigpending;
-	ihk_spinlock_t	sigpendinglock;
+	mcs_rwlock_lock_t sigpendinglock;
 	volatile int sigevent;
 
 	// gpio

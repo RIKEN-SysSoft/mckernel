@@ -277,10 +277,10 @@ create_thread(unsigned long user_pc)
 	dkprintf("fork(): sigshared\n");
 
 	ihk_atomic_set(&thread->sigcommon->use, 1);
-	ihk_mc_spinlock_init(&thread->sigcommon->lock);
+	mcs_rwlock_init(&thread->sigcommon->lock);
 	INIT_LIST_HEAD(&thread->sigcommon->sigpending);
 
-	ihk_mc_spinlock_init(&thread->sigpendinglock);
+	mcs_rwlock_init(&thread->sigpendinglock);
 	INIT_LIST_HEAD(&thread->sigpending);
 
 	thread->sigstack.ss_sp = NULL;
@@ -441,11 +441,11 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 		memcpy(thread->sigcommon->action, org->sigcommon->action,
 		       sizeof(struct k_sigaction) * _NSIG);
 		ihk_atomic_set(&thread->sigcommon->use, 1);
-		ihk_mc_spinlock_init(&thread->sigcommon->lock);
+		mcs_rwlock_init(&thread->sigcommon->lock);
 		INIT_LIST_HEAD(&thread->sigcommon->sigpending);
 		// TODO: copy signalfd
 	}
-	ihk_mc_spinlock_init(&thread->sigpendinglock);
+	mcs_rwlock_init(&thread->sigpendinglock);
 	INIT_LIST_HEAD(&thread->sigpending);
 	thread->sigmask = org->sigmask;
 

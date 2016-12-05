@@ -2627,16 +2627,16 @@ do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
 {
 	struct thread *thread = cpu_local_var(current);
 	struct k_sigaction *k;
-	long	irqstate;
+	struct mcs_rwlock_node_irqsave mcs_rw_node;
 	ihk_mc_user_context_t ctx0;
 
-	irqstate = ihk_mc_spinlock_lock(&thread->sigcommon->lock);
+	mcs_rwlock_writer_lock(&thread->sigcommon->lock, &mcs_rw_node);
 	k = thread->sigcommon->action + sig - 1;
 	if(oact)
 		memcpy(oact, k, sizeof(struct k_sigaction));
 	if(act)
 		memcpy(k, act, sizeof(struct k_sigaction));
-	ihk_mc_spinlock_unlock(&thread->sigcommon->lock, irqstate);
+	mcs_rwlock_writer_unlock(&thread->sigcommon->lock, &mcs_rw_node);
 
 	if(act){
 		ihk_mc_syscall_arg0(&ctx0) = sig;
@@ -2808,10 +2808,10 @@ fault:
 
 SYSCALL_DECLARE(rt_sigpending)
 {
-	int flag;
 	struct sig_pending *pending;
 	struct list_head *head;
-	ihk_spinlock_t *lock;
+	mcs_rwlock_lock_t *lock;
+	struct mcs_rwlock_node_irqsave mcs_rw_node;
 	__sigset_t w = 0;
 	struct thread *thread = cpu_local_var(current);
 	sigset_t *set = (sigset_t *)ihk_mc_syscall_arg0(ctx);
@@ -2822,19 +2822,19 @@ SYSCALL_DECLARE(rt_sigpending)
 
 	lock = &thread->sigcommon->lock;
 	head = &thread->sigcommon->sigpending;
-	flag = ihk_mc_spinlock_lock(lock);
+	mcs_rwlock_writer_lock(lock, &mcs_rw_node);
 	list_for_each_entry(pending, head, list){
 		w |= pending->sigmask.__val[0];
 	}
-	ihk_mc_spinlock_unlock(lock, flag);
+	mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
 
 	lock = &thread->sigpendinglock;
 	head = &thread->sigpending;
-	flag = ihk_mc_spinlock_lock(lock);
+	mcs_rwlock_writer_lock(lock, &mcs_rw_node);
 	list_for_each_entry(pending, head, list){
 		w |= pending->sigmask.__val[0];
 	}
-	ihk_mc_spinlock_unlock(lock, flag);
+	mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
 
 	if(copy_to_user(set->__val, &w, sizeof w))
 		return -EFAULT;
@@ -3369,10 +3369,10 @@ SYSCALL_DECLARE(rt_sigtimedwait)
 	__sigset_t wset;
 	__sigset_t nset;
 	struct timespec wtimeout;
-	unsigned long flag;
 	struct sig_pending *pending;
 	struct list_head *head;
-	ihk_spinlock_t *lock;
+	mcs_rwlock_lock_t *lock;
+	struct mcs_rwlock_node_irqsave mcs_rw_node;
 	int w;
 	int sig;
         struct timespec ats;
@@ -3438,18 +3438,18 @@ SYSCALL_DECLARE(rt_sigtimedwait)
 
 		lock = &thread->sigcommon->lock;
 		head = &thread->sigcommon->sigpending;
-		flag = ihk_mc_spinlock_lock(lock);
+		mcs_rwlock_writer_lock(lock, &mcs_rw_node);
 		list_for_each_entry(pending, head, list){
 			if(pending->sigmask.__val[0] & wset)
 				break;
 		}
 
 		if(&pending->list == head){
-			ihk_mc_spinlock_unlock(lock, flag);
+			mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
 
 			lock = &thread->sigpendinglock;
 			head = &thread->sigpending;
-			flag = ihk_mc_spinlock_lock(lock);
+			mcs_rwlock_writer_lock(lock, &mcs_rw_node);
 			list_for_each_entry(pending, head, list){
 				if(pending->sigmask.__val[0] & wset)
 					break;
@@ -3459,25 +3459,25 @@ SYSCALL_DECLARE(rt_sigtimedwait)
 		if(&pending->list != head){
 			list_del(&pending->list);
 			thread->sigmask.__val[0] = bset;
-			ihk_mc_spinlock_unlock(lock, flag);
+			mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
 			break;
 		}
-		ihk_mc_spinlock_unlock(lock, flag);
+		mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
 
 		lock = &thread->sigcommon->lock;
 		head = &thread->sigcommon->sigpending;
-		flag = ihk_mc_spinlock_lock(lock);
+		mcs_rwlock_writer_lock(lock, &mcs_rw_node);
 		list_for_each_entry(pending, head, list){
 			if(pending->sigmask.__val[0] & nset)
 				break;
 		}
 
 		if(&pending->list == head){
-			ihk_mc_spinlock_unlock(lock, flag);
+			mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
 
 			lock = &thread->sigpendinglock;
 			head = &thread->sigpending;
-			flag = ihk_mc_spinlock_lock(lock);
+			mcs_rwlock_writer_lock(lock, &mcs_rw_node);
 			list_for_each_entry(pending, head, list){
 				if(pending->sigmask.__val[0] & nset)
 					break;
@@ -3487,11 +3487,11 @@ SYSCALL_DECLARE(rt_sigtimedwait)
 		if(&pending->list != head){
 			list_del(&pending->list);
 			thread->sigmask.__val[0] = bset;
-			ihk_mc_spinlock_unlock(lock, flag);
+			mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
 			do_signal(-EINTR, NULL, thread, pending, 0);
 			return -EINTR;
 		}
-		ihk_mc_spinlock_unlock(lock, flag);
+		mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
 		thread->sigevent = 0;
 	}
 
@@ -3528,10 +3528,10 @@ do_sigsuspend(struct thread *thread, const sigset_t *set)
 {
 	__sigset_t wset;
 	__sigset_t bset;
-	unsigned long flag;
 	struct sig_pending *pending;
 	struct list_head *head;
-	ihk_spinlock_t *lock;
+	mcs_rwlock_lock_t *lock;
+	struct mcs_rwlock_node_irqsave mcs_rw_node;
 
 	wset = set->__val[0];
 	wset &= ~__sigmask(SIGKILL);
@@ -3546,31 +3546,31 @@ do_sigsuspend(struct thread *thread, const sigset_t *set)
 
 		lock = &thread->sigcommon->lock;
 		head = &thread->sigcommon->sigpending;
-		flag = ihk_mc_spinlock_lock(lock);
+		mcs_rwlock_writer_lock(lock, &mcs_rw_node);
 		list_for_each_entry(pending, head, list){
 			if(!(pending->sigmask.__val[0] & wset))
 				break;
 		}
 
 		if(&pending->list == head){
-			ihk_mc_spinlock_unlock(lock, flag);
+			mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
 
 			lock = &thread->sigpendinglock;
 			head = &thread->sigpending;
-			flag = ihk_mc_spinlock_lock(lock);
+			mcs_rwlock_writer_lock(lock, &mcs_rw_node);
 			list_for_each_entry(pending, head, list){
 				if(!(pending->sigmask.__val[0] & wset))
 					break;
 			}
 		}
 		if(&pending->list == head){
-			ihk_mc_spinlock_unlock(lock, flag);
+			mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
 			thread->sigevent = 0;
 			continue;
 		}
 
 		list_del(&pending->list);
-		ihk_mc_spinlock_unlock(lock, flag);
+		mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
 		thread->sigmask.__val[0] = bset;
 		do_signal(-EINTR, NULL, thread, pending, 0);
 		break;
@@ -8458,8 +8458,11 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		l = syscall_generic_forwarding(num, ctx);
 	}
 
-	check_signal(l, NULL, num);
-	
+	if (num != __NR_sched_yield &&
+			num != __NR_futex) {
+		check_signal(l, NULL, num);
+	}
+
 #ifdef TRACK_SYSCALLS
 	if (num < 300) {
 		if (!cpu_local_var(current)->syscall_cnts) {
@@ -8471,11 +8474,15 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		}
 	}
 	else {
-		dkprintf("syscall > 300?? : %d\n", num);
+		if (num != 701)
+			kprintf("syscall > 300?? : %d\n", num);
 	}
 #endif // TRACK_SYSCALLS
 
-	check_need_resched();
+	if (num != __NR_sched_yield &&
+			num != __NR_futex) {
+		check_need_resched();
+	}
 
 	if (cpu_local_var(current)->proc->ptrace) {
 		ptrace_syscall_exit(cpu_local_var(current));

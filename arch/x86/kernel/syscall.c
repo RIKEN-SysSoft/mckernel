@@ -695,7 +695,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 	int	orgsig;
 	int	ptraceflag = 0;
 	struct mcs_rwlock_node_irqsave lock;
-	unsigned long irqstate;
+	struct mcs_rwlock_node_irqsave mcs_rw_node;
 
 	for(w = pending->sigmask.__val[0], sig = 0; w; sig++, w >>= 1);
 	dkprintf("do_signal(): tid=%d, pid=%d, sig=%d\n", thread->tid, proc->pid, sig);
@@ -718,12 +718,12 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 		rc = regs->gpr.rax;
 	}
 
-	irqstate = ihk_mc_spinlock_lock(&thread->sigcommon->lock);
+	mcs_rwlock_writer_lock(&thread->sigcommon->lock, &mcs_rw_node);
 	k = thread->sigcommon->action + sig - 1;
 
 	if(k->sa.sa_handler == SIG_IGN){
 		kfree(pending);
-		ihk_mc_spinlock_unlock(&thread->sigcommon->lock, irqstate);
+		mcs_rwlock_writer_unlock(&thread->sigcommon->lock, &mcs_rw_node);
 		return;
 	}
 	else if(k->sa.sa_handler){
@@ -808,7 +808,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 
 		if(copy_to_user(sigsp, &ksigsp, sizeof ksigsp)){
 			kfree(pending);
-			ihk_mc_spinlock_unlock(&thread->sigcommon->lock, irqstate);
+			mcs_rwlock_writer_unlock(&thread->sigcommon->lock, &mcs_rw_node);
 			kprintf("do_signal,write_process_vm failed\n");
 			terminate(0, sig);
 			return;
@@ -827,7 +827,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 		if(!(k->sa.sa_flags & SA_NODEFER))
 			thread->sigmask.__val[0] |= pending->sigmask.__val[0];
 		kfree(pending);
-		ihk_mc_spinlock_unlock(&thread->sigcommon->lock, irqstate);
+		mcs_rwlock_writer_unlock(&thread->sigcommon->lock, &mcs_rw_node);
 		if(regs->gpr.rflags & RFLAGS_TF){
 			struct siginfo info;
 
@@ -853,7 +853,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 		}
 		else
 			kfree(pending);
-		ihk_mc_spinlock_unlock(&thread->sigcommon->lock, irqstate);
+		mcs_rwlock_writer_unlock(&thread->sigcommon->lock, &mcs_rw_node);
 		switch (sig) {
 		case SIGSTOP:
 		case SIGTSTP:
@@ -954,11 +954,11 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 static struct sig_pending *
 getsigpending(struct thread *thread, int delflag){
 	struct list_head *head;
-	ihk_spinlock_t *lock;
+	mcs_rwlock_lock_t *lock;
+	struct mcs_rwlock_node_irqsave mcs_rw_node;
 	struct sig_pending *next;
 	struct sig_pending *pending;
 	__sigset_t w;
-	int	irqstate;
 	__sigset_t x;
 	int sig;
 	struct k_sigaction *k;
@@ -967,8 +967,12 @@ getsigpending(struct thread *thread, int delflag){
 
 	lock = &thread->sigcommon->lock;
 	head = &thread->sigcommon->sigpending;
-	for(;;){
-		irqstate = ihk_mc_spinlock_lock(lock);
+	for(;;) {
+		if (delflag)
+			mcs_rwlock_writer_lock(lock, &mcs_rw_node);
+		else 
+			mcs_rwlock_reader_lock(lock, &mcs_rw_node);
+
 		list_for_each_entry_safe(pending, next, head, list){
 			for(x = pending->sigmask.__val[0], sig = 0; x; sig++, x >>= 1);
 			k = thread->sigcommon->action + sig - 1;
@@ -977,17 +981,26 @@ getsigpending(struct thread *thread, int delflag){
 			   (k->sa.sa_handler != (void *)1 &&
 			    k->sa.sa_handler != NULL)){
 				if(!(pending->sigmask.__val[0] & w)){
-					if(delflag)
+					if(delflag) 
 						list_del(&pending->list);
-					ihk_mc_spinlock_unlock(lock, irqstate);
+
+					if (delflag)
+						mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
+					else 
+						mcs_rwlock_reader_unlock(lock, &mcs_rw_node);
 					return pending;
 				}
 			}
 		}
-		ihk_mc_spinlock_unlock(lock, irqstate);
+
+		if (delflag)
+			mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
+		else 
+			mcs_rwlock_reader_unlock(lock, &mcs_rw_node);
 
 		if(lock == &thread->sigpendinglock)
 			return NULL;
+
 		lock = &thread->sigpendinglock;
 		head = &thread->sigpending;
 	}
@@ -1035,22 +1048,25 @@ check_signal(unsigned long rc, void *regs0, int num)
 			}
 		}
 		ihk_mc_spinlock_unlock(&(cpu_local_var(runq_lock)), irqstate);
-		return;
+		goto out;
 	}
 
 	if(regs != NULL && !interrupt_from_user(regs)) {
-		return;
+		goto out;
 	}
 
 	for(;;){
 		pending = getsigpending(thread, 1);
 		if(!pending) {
 			dkprintf("check_signal,queue is empty\n");
-			return;
+			goto out;
 		}
 
 		do_signal(rc, regs, thread, pending, num);
 	}
+
+out:
+	return;
 }
 
 unsigned long
@@ -1064,7 +1080,8 @@ do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
 	struct thread *tthread = NULL;
 	int i;
 	__sigset_t mask;
-	ihk_spinlock_t *savelock = NULL;
+	mcs_rwlock_lock_t *savelock = NULL;
+	struct mcs_rwlock_node mcs_rw_node;
 	struct list_head *head = NULL;
 	int rc;
 	unsigned long irqstate = 0;
@@ -1248,7 +1265,7 @@ done:
 
 	doint = 0;
 
-	ihk_mc_spinlock_lock_noirq(savelock);
+	mcs_rwlock_writer_lock_noirq(savelock, &mcs_rw_node);
 
 	/* Put signal event even when handler is SIG_IGN or SIG_DFL
 	   because target ptraced thread must call ptrace_report_signal 
@@ -1287,7 +1304,7 @@ done:
 			}
 		}
 	}
-	ihk_mc_spinlock_unlock_noirq(savelock);
+	mcs_rwlock_writer_unlock_noirq(savelock, &mcs_rw_node);
 	cpu_restore_interrupt(irqstate);
 
 	if (doint && !(mask & tthread->sigmask.__val[0])) {
