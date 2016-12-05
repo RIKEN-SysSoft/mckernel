@@ -374,7 +374,7 @@ if [ "$enable_mcoverlay" == "yes" ]; then
 	fi
 	while [ ! -e /proc/mcos0 ]
 	do
-		sleep 1
+		sleep 0.1
 	done
 	if [ ! -e /tmp/mcos/mcos0_proc ]; then mkdir -p /tmp/mcos/mcos0_proc; fi
 	if [ ! -e /tmp/mcos/mcos0_proc_upper ]; then mkdir -p /tmp/mcos/mcos0_proc_upper; fi
