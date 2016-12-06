@@ -404,6 +404,8 @@ if [ "$enable_mcoverlay" == "yes" ]; then
 	# TODO: How de we revert this in case of failure??
 	mount --make-rprivate /sys
 
+	touch /tmp/mcos/mcos0_proc/mckernel
+
 	rm -rf /tmp/mcos/mcos0_sys/setup_complete
 
 	# Hide NUMA related files which are outside the LWK partition
