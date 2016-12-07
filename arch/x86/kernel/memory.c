@@ -1779,9 +1779,19 @@ int ihk_mc_pt_set_pte(page_table_t pt, pte_t *ptep, size_t pgsize,
 		*ptep = phys | attr_to_l1attr(attr);
 	}
 	else if (pgsize == PTL2_SIZE) {
+		if (phys & (PTL2_SIZE - 1)) {
+			kprintf("%s: error: phys needs to be PTL2_SIZE aligned\n", __FUNCTION__);
+			error = -1;
+			goto out;
+		}
 		*ptep = phys | attr_to_l2attr(attr | PTATTR_LARGEPAGE);
 	}
 	else if ((pgsize == PTL3_SIZE) && (use_1gb_page)) {
+		if (phys & (PTL3_SIZE - 1)) {
+			kprintf("%s: error: phys needs to be PTL3_SIZE aligned\n", __FUNCTION__);
+			error = -1;
+			goto out;
+		}
 		*ptep = phys | attr_to_l3attr(attr | PTATTR_LARGEPAGE);
 	}
 	else {
