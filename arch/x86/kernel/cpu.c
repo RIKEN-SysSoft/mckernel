@@ -972,7 +972,7 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 			tlb_flush_handler(vector);
 	} 
 	else if (vector == 133) {
-		show_context_stack(regs->gpr.rbp);
+		show_context_stack((uintptr_t *)regs->gpr.rbp);
 	}
 	else {
 		list_for_each_entry(h, &handlers[vector - 32], list) {
