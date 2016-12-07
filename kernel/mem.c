@@ -806,8 +806,8 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 	int error;
 
 	set_cputime(interrupt_from_user(regs)? 1: 2);
-	dkprintf("[%d]page_fault_handler(%p,%lx,%p)\n",
-			ihk_mc_get_processor_id(), fault_addr, reason, regs);
+	dkprintf("%s: addr: %p, reason: %lx, regs: %p\n",
+			__FUNCTION__, fault_addr, reason, regs);
 
 	preempt_disable();
 
@@ -862,9 +862,8 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 	error = 0;
 	preempt_enable();
 out:
-	dkprintf("[%d]page_fault_handler(%p,%lx,%p): (%d)\n",
-			ihk_mc_get_processor_id(), fault_addr, reason,
-			regs, error);
+	dkprintf("%s: addr: %p, reason: %lx, regs: %p -> error: %d\n",
+			__FUNCTION__, fault_addr, reason, regs, error);
 	check_need_resched();
 	set_cputime(0);
 	return;
