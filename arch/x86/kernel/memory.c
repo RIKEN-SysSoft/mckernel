@@ -558,28 +558,34 @@ int ihk_mc_pt_print_pte(struct page_table *pt, void *virt)
 
 	GET_VIRT_INDICES(v, l4idx, l3idx, l2idx, l1idx);
 
+	__kprintf("l4 table: 0x%lX l4idx: %d \n", virt_to_phys(pt), l4idx);
 	if (!(pt->entry[l4idx] & PFL4_PRESENT)) {
 		__kprintf("0x%lX l4idx not present! \n", (unsigned long)virt);
-		__kprintf("l4 entry: 0x%lX\n", pt->entry[l4idx]);
 		return -EFAULT;
 	}
+	__kprintf("l4 entry: 0x%lX\n", pt->entry[l4idx]);
 	pt = phys_to_virt(pt->entry[l4idx] & PAGE_MASK);
 
 	__kprintf("l3 table: 0x%lX l3idx: %d \n", virt_to_phys(pt), l3idx);
 	if (!(pt->entry[l3idx] & PFL3_PRESENT)) {
 		__kprintf("0x%lX l3idx not present! \n", (unsigned long)virt);
-		__kprintf("l3 entry: 0x%lX\n", pt->entry[l3idx]);
 		return -EFAULT;
+	}
+	__kprintf("l3 entry: 0x%lX\n", pt->entry[l3idx]);
+	if ((pt->entry[l3idx] & PFL3_SIZE)) {
+		__kprintf("l3 entry is 1G page\n");
+		return 0;
 	}
 	pt = phys_to_virt(pt->entry[l3idx] & PAGE_MASK);
 	
 	__kprintf("l2 table: 0x%lX l2idx: %d \n", virt_to_phys(pt), l2idx);
 	if (!(pt->entry[l2idx] & PFL2_PRESENT)) {
 		__kprintf("0x%lX l2idx not present! \n", (unsigned long)virt);
-		__kprintf("l2 entry: 0x%lX\n", pt->entry[l2idx]);
 		return -EFAULT;
 	}
+	__kprintf("l2 entry: 0x%lX\n", pt->entry[l2idx]);
 	if ((pt->entry[l2idx] & PFL2_SIZE)) {
+		__kprintf("l2 entry is 2M page\n");
 		return 0;
 	}
 	pt = phys_to_virt(pt->entry[l2idx] & PAGE_MASK);
