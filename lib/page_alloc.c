@@ -104,7 +104,7 @@ static unsigned long __ihk_pagealloc_large(struct ihk_page_allocator_desc *desc,
 	int nblocks;
 	int nfrags;
 	unsigned long mask;
-	int mialign;
+	unsigned long align_mask = ((PAGE_SIZE << p2align) - 1);
 
 	nblocks = (npages / 64);
 	mask = -1;
@@ -113,14 +113,13 @@ static unsigned long __ihk_pagealloc_large(struct ihk_page_allocator_desc *desc,
 		++nblocks;
 		mask = (1UL << nfrags) - 1;
 	}
-	mialign = (p2align <= 6)? 1: (1 << (p2align - 6));
 
 	flags = ihk_mc_spinlock_lock(&desc->lock);
 	for (i = 0, mi = desc->last; i < desc->count; i++, mi++) {
 		if (mi >= desc->count) {
 			mi = 0;
 		}
-		if ((mi + nblocks >= desc->count) || (mi % mialign)) {
+		if ((mi + nblocks >= desc->count) || (ADDRESS(desc, mi, 0) & align_mask)) {
 			continue;
 		}
 		for (j = mi; j < mi + nblocks - 1; j++) {
