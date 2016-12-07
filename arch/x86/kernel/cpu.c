@@ -844,6 +844,25 @@ void set_signal(int sig, void *regs, struct siginfo *info);
 void check_signal(unsigned long, void *, int);
 extern void tlb_flush_handler(int vector);
 
+void __show_stack(uintptr_t *sp) {
+	while (((uintptr_t)sp >= 0xffff800000000000)
+			&& ((uintptr_t)sp <  0xffffffff80000000)) {
+		uintptr_t fp;
+		uintptr_t ip;
+
+		fp = sp[0];
+		ip = sp[1];
+		kprintf("IP: %016lx, SP: %016lx, FP: %016lx\n", ip, (uintptr_t)sp, fp);
+		sp = (void *)fp;
+	}
+	return;
+}
+
+void show_context_stack(uintptr_t *rbp) {
+	__show_stack(rbp);
+	return;
+}
+
 void handle_interrupt(int vector, struct x86_user_context *regs)
 {
 	struct ihk_mc_interrupt_handler *h;
@@ -952,6 +971,9 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 
 			tlb_flush_handler(vector);
 	} 
+	else if (vector == 133) {
+		show_context_stack(regs->gpr.rbp);
+	}
 	else {
 		list_for_each_entry(h, &handlers[vector - 32], list) {
 			if (h->func) {
