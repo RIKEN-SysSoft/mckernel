@@ -502,7 +502,7 @@ retry:
 
 	/* Check whether the resolved path is a symlink */
 	if (lstat(path, &sb) == -1) {
-		fprintf(stderr, "lookup_exec_path(): error stat\n");
+		__dprintf(stderr, "lookup_exec_path(): error stat\n");
 		return errno;
 	}
 

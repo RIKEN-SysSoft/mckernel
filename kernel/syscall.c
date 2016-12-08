@@ -1884,7 +1884,7 @@ SYSCALL_DECLARE(execve)
 	ret = do_syscall(&request, ihk_mc_get_processor_id(), 0);
 
 	if (ret != 0) {
-		kprintf("execve(): ERROR: host failed to load elf header, errno: %d\n", 
+		dkprintf("execve(): ERROR: host failed to load elf header, errno: %d\n", 
 				ret);
 		return -ret;
 	}
