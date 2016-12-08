@@ -70,71 +70,37 @@ static struct vdso vdso;
 static size_t container_size = 0;
 static ptrdiff_t vdso_offset;
 
-/*
-See dkprintf("BSP HW ID = %d, ", bsp_hw_id); (in ./mcos/kernel/ap.c)
+extern int num_processors;
 
-Core with BSP HW ID 224 is 1st logical core of last physical core.
-It                      boots first and is given SW-ID of 0
+int obtain_clone_cpuid(cpu_set_t *cpu_set) {
+	int min_queue_len = -1;
+	int cpu, min_cpu = -1;
 
-Core with BSP HW ID 0 is 1st logical core of 1st physical core. 
-It                      boots next and is given  SW-ID of 1.
-Core with BSP HW ID 1   boots next and is given  SW-ID of 2.
-Core with BSP HW ID 2   boots next and is given  SW-ID of 3.
-Core with BSP HW ID 3   boots next and is given  SW-ID of 4.
-...
-Core with BSP HW ID 220 is 1st logical core of 56-th physical core.
-It                      boots next and is given  SW-ID of 221.
-Core with BSP HW ID 221 boots next and is given  SW-ID of 222.
-Core with BSP HW ID 222 boots next and is given  SW-ID of 223.
-Core with BSP HW ID 223 boots next and is given  SW-ID of 224.
+	/* Find the first allowed core with the shortest run queue */
+	for (cpu = 0; cpu < num_processors; ++cpu) {
+		struct cpu_local_var *v;
+		unsigned long irqstate;
 
-Core with BSP HW ID 225 is 2nd logical core of last physical core.
-It                      boots next and is given  SW-ID of 225.
-Core with BSP HW ID 226 boots next and is given  SW-ID of 226.
-Core with BSP HW ID 227 boots next and is given  SW-ID of 227.
-*/
-ihk_spinlock_t cpuid_head_lock = 0;
-static int cpuid_head = 0;
+		if (!CPU_ISSET(cpu, cpu_set)) continue;
 
-/* archtecture-depended syscall handlers */
-int obtain_clone_cpuid() {
-    /* see above on BSP HW ID */
-	struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
-    int cpuid, nretry = 0;
-    ihk_mc_spinlock_lock_noirq(&cpuid_head_lock);
-	
-	/* Always start from 0 to fill in LWK cores linearily */
-	cpuid_head = 0;
- retry:
-    /* Try to obtain next physical core */
-    cpuid = cpuid_head;
+		v = get_cpu_local_var(cpu);
+		irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
+		if (min_queue_len == -1 || v->runq_len < min_queue_len) {
+			min_queue_len = v->runq_len;
+			min_cpu = cpu;
+		}
+		ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
 
-    /* A hyper-threading core on the same physical core as
-       the parent process might be chosen. Use sched_setaffinity
-       if you want to skip that kind of busy physical core for
-       performance reason. */
-    cpuid_head += 1;
-    if(cpuid_head >= cpu_info->ncpus) {
-        cpuid_head = 0;
-    }
+		if (min_queue_len == 0)
+			break;
+	}
 
-    /* A hyper-threading core whose parent physical core has a
-       process on one of its hyper-threading core might
-       be chosen. Use sched_setaffinity if you want to skip that
-       kind of busy physical core for performance reason. */
-    if(get_cpu_local_var(cpuid)->status != CPU_STATUS_IDLE) {
-        nretry++;
-        if(nretry >= cpu_info->ncpus) {
-            cpuid = -1;
-            ihk_mc_spinlock_unlock_noirq(&cpuid_head_lock);
-            goto out;
-        }
-        goto retry; 
-    }
-	get_cpu_local_var(cpuid)->status = CPU_STATUS_RESERVED;
-    ihk_mc_spinlock_unlock_noirq(&cpuid_head_lock);
- out:
-    return cpuid;
+	if (min_cpu != -1) {
+		if (get_cpu_local_var(min_cpu)->status != CPU_STATUS_RESERVED)
+			get_cpu_local_var(min_cpu)->status = CPU_STATUS_RESERVED;
+	}
+
+    return min_cpu;
 }
 
 int

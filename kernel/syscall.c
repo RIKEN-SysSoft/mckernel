@@ -2039,7 +2039,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		return -EINVAL;
 	}
 
-	cpuid = obtain_clone_cpuid();
+	cpuid = obtain_clone_cpuid(&old->cpu_set);
     if (cpuid == -1) {
 		kprintf("do_fork,core not available\n");
         return -EAGAIN;
