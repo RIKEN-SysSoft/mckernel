@@ -7400,7 +7400,9 @@ SYSCALL_DECLARE(mbind)
 			}
 
 			/* Verify NUMA mask */
-			for_each_set_bit(bit, numa_mask, maxnode) {
+			for_each_set_bit(bit, numa_mask,
+					maxnode < PROCESS_NUMA_MASK_BITS ?
+					maxnode : PROCESS_NUMA_MASK_BITS) {
 				if (bit >= ihk_mc_get_nr_numa_nodes()) {
 					dkprintf("%s: %d is bigger than # of NUMA nodes\n",
 						__FUNCTION__, bit);
@@ -7703,7 +7705,9 @@ SYSCALL_DECLARE(set_mempolicy)
 
 			/* Verify NUMA mask */
 			valid_mask = 0;
-			for_each_set_bit(bit, numa_mask, maxnode) {
+			for_each_set_bit(bit, numa_mask,
+					maxnode < PROCESS_NUMA_MASK_BITS ?
+					maxnode : PROCESS_NUMA_MASK_BITS) {
 				if (bit >= ihk_mc_get_nr_numa_nodes()) {
 					dkprintf("%s: %d is bigger than # of NUMA nodes\n",
 						__FUNCTION__, bit);
@@ -7725,7 +7729,9 @@ SYSCALL_DECLARE(set_mempolicy)
 			}
 
 			/* Update current mask by clearing non-requested nodes */
-			for_each_set_bit(bit, vm->numa_mask, maxnode) {
+			for_each_set_bit(bit, vm->numa_mask,
+					maxnode < PROCESS_NUMA_MASK_BITS ?
+					maxnode : PROCESS_NUMA_MASK_BITS) {
 				if (!test_bit(bit, numa_mask)) {
 					clear_bit(bit, vm->numa_mask);
 				}

@@ -166,7 +166,7 @@
 
 #define NOPHYS ((uintptr_t)-1)
 
-#define PROCESS_NUMA_MASK_BITS 64
+#define PROCESS_NUMA_MASK_BITS 256
 
 /*
  * Both the MPOL_* mempolicy mode and the MPOL_F_* optional mode flags are
