@@ -21,7 +21,7 @@ static struct ihk_ikc_channel_desc *mchannel;
 static int arch_master_channel_packet_handler(struct ihk_ikc_channel_desc *,
                                          void *__packet, void *arg);
 
-void ikc_master_init(void)
+void ihk_ikc_master_init(void)
 {
 	mchannel = kmalloc(sizeof(struct ihk_ikc_channel_desc) +
 	                   sizeof(struct ihk_ikc_master_packet),

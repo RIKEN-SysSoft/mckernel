@@ -16,7 +16,7 @@
 extern void arch_init(void);
 extern void kmsg_init(int);
 extern void mem_init(void);
-extern void ikc_master_init(void);
+extern void ihk_ikc_master_init(void);
 extern void ap_init(void);
 extern void arch_ready(void);
 extern void mc_ikc_test_init(void);
