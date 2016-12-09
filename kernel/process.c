@@ -233,13 +233,15 @@ init_process_vm(struct process *owner, struct address_space *asp, struct process
 	return 0;
 }
 
-struct thread *
-create_thread(unsigned long user_pc)
+struct thread *create_thread(unsigned long user_pc,
+		unsigned long *__cpu_set, size_t cpu_set_size)
 {
 	struct thread *thread;
 	struct process *proc;
 	struct process_vm *vm = NULL;
 	struct address_space *asp = NULL;
+	int cpu;
+	int cpu_set_empty = 1;
 
 	thread = ihk_mc_alloc_pages(KERNEL_STACK_NR_PAGES, IHK_MC_AP_NOWAIT);
 	if (!thread)
@@ -255,7 +257,20 @@ create_thread(unsigned long user_pc)
 	memset(vm, 0, sizeof(struct process_vm));
 	init_process(proc, cpu_local_var(resource_set)->pid1);
 
-	if (1) {
+	/* Use requested CPU cores */
+	for_each_set_bit(cpu, __cpu_set, cpu_set_size * BITS_PER_BYTE) {
+		if (cpu >= num_processors) {
+			kprintf("%s: invalid CPU requested in initial cpu_set\n",
+				__FUNCTION__);
+			goto err;
+		}
+
+		CPU_SET(cpu, &thread->cpu_set);
+		cpu_set_empty = 0;
+	}
+
+	/* Default allows all cores */
+	if (cpu_set_empty) {
 		struct ihk_mc_cpu_info *infop;
 		int i;
 

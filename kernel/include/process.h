@@ -700,7 +700,8 @@ static inline int has_cap_sys_admin(struct thread *th)
 
 void hold_address_space(struct address_space *);
 void release_address_space(struct address_space *);
-struct thread *create_thread(unsigned long user_pc);
+struct thread *create_thread(unsigned long user_pc,
+		unsigned long *__cpu_set, size_t cpu_set_size);
 struct thread *clone_thread(struct thread *org, unsigned long pc,
                               unsigned long sp, int clone_flags);
 void destroy_thread(struct thread *thread);

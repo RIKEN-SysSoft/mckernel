@@ -149,6 +149,10 @@ struct program_image_section {
 #define MCK_RLIMIT_SIGPENDING	14
 #define MCK_RLIMIT_STACK	15
 
+#define PLD_CPU_SET_MAX_CPUS 1024
+typedef unsigned long __cpu_set_unit;
+#define PLD_CPU_SET_SIZE (PLD_CPU_SET_MAX_CPUS / (8 * sizeof(__cpu_set_unit)))
+
 struct program_load_desc {
 	int num_sections;
 	int status;
@@ -178,6 +182,7 @@ struct program_load_desc {
 	struct rlimit rlimit[MCK_RLIM_MAX];
 	unsigned long interp_align;
 	char shell_path[SHELL_PATH_MAX_LEN];
+	__cpu_set_unit cpu_set[PLD_CPU_SET_SIZE];
 	struct program_image_section sections[0];
 };
 
