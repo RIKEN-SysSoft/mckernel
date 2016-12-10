@@ -265,6 +265,8 @@ struct thread *create_thread(unsigned long user_pc,
 			goto err;
 		}
 
+		dkprintf("%s: pid: %d, CPU: %d\n",
+			__FUNCTION__, proc->pid, cpu); 
 		CPU_SET(cpu, &thread->cpu_set);
 		cpu_set_empty = 0;
 	}

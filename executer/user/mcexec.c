@@ -153,6 +153,9 @@ static const char rlimit_stack_envname[] = "MCKERNEL_RLIMIT_STACK";
 static int ischild;
 static int enable_vdso = 1;
 
+/* Partitioned execution (e.g., for MPI) */
+static int nr_processes = 0;
+
 struct fork_sync {
 	pid_t pid;
 	int status;
@@ -1102,7 +1105,7 @@ static int reduce_stack(struct rlimit *orig_rlim, char *argv[])
 
 void print_usage(char **argv)
 {
-	fprintf(stderr, "Usage: %s [-c target_core] [<mcos-id>] (program) [args...]\n", argv[0]);
+	fprintf(stderr, "Usage: %s [-c target_core] [-n nr_partitions] [<mcos-id>] (program) [args...]\n", argv[0]);
 }
 
 void init_sigaction(void)
@@ -1329,12 +1332,16 @@ int main(int argc, char **argv)
 	}
            
 	/* Parse options ("+" denotes stop at the first non-option) */
-	while ((opt = getopt_long(argc, argv, "+c:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:", mcexec_options, NULL)) != -1) {
 		switch (opt) {
 			case 'c':
 				target_core = atoi(optarg);
 				break;
-			
+
+			case 'n':
+				nr_processes = atoi(optarg);
+				break;
+
 			case 0:	/* long opt */
 				break;
 
@@ -1599,6 +1606,24 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
+	/* Partitioned execution, obtain CPU set */
+	if (nr_processes > 0) {
+		struct get_cpu_set_arg cpu_set_arg;
+
+		cpu_set_arg.cpu_set = (void *)&desc->cpu_set;
+		cpu_set_arg.cpu_set_size = sizeof(desc->cpu_set);
+		cpu_set_arg.nr_processes = nr_processes;
+		cpu_set_arg.target_core = &target_core;
+		
+		if (ioctl(fd, MCEXEC_UP_GET_CPUSET, (void *)&cpu_set_arg) != 0) {
+			perror("getting CPU set for partitioned execution");
+			close(fd);
+			return 1;
+		}
+		
+		desc->cpu = target_core;
+	}
+	
 	if (ioctl(fd, MCEXEC_UP_PREPARE_IMAGE, (unsigned long)desc) != 0) {
 		perror("prepare");
 		close(fd);

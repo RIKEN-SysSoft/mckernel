@@ -254,6 +254,13 @@ struct node_topology {
 	struct list_head chain;
 };
 
+struct mcctrl_part_exec {
+	struct mutex lock;	
+	int nr_processes;
+	int nr_processes_left;
+	cpumask_t cpus_used;
+};
+
 #define CPU_LONGS (((NR_CPUS) + (BITS_PER_LONG) - 1) / (BITS_PER_LONG))
 
 #define MCCTRL_PER_PROC_DATA_HASH_SHIFT 7
@@ -284,6 +291,7 @@ struct mcctrl_usrdata {
 	nodemask_t numa_online;
 	struct list_head cpu_topology_list;
 	struct list_head node_topology_list;
+	struct mcctrl_part_exec part_exec;
 };
 
 struct mcctrl_signal {

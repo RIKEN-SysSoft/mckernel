@@ -42,6 +42,7 @@
 #define MCEXEC_UP_GET_CRED	 0x30a0290a
 #define MCEXEC_UP_GET_CREDV	 0x30a0290b
 #define MCEXEC_UP_GET_NODES  0x30a0290c
+#define MCEXEC_UP_GET_CPUSET  0x30a0290d
 
 #define MCEXEC_UP_PREPARE_DMA    0x30a02910
 #define MCEXEC_UP_FREE_DMA       0x30a02911
@@ -78,6 +79,13 @@ struct program_image_section {
 
 #define SHELL_PATH_MAX_LEN	1024
 #define MCK_RLIM_MAX	20
+
+struct get_cpu_set_arg {
+	int nr_processes;
+	void *cpu_set;
+	size_t cpu_set_size;	// Size in bytes
+	int *target_core;
+};
 
 #define PLD_CPU_SET_MAX_CPUS 1024
 typedef unsigned long __cpu_set_unit;

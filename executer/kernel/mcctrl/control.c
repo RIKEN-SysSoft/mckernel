@@ -34,6 +34,7 @@
 #include <linux/version.h>
 #include <linux/semaphore.h>
 #include <linux/interrupt.h>
+#include <linux/cpumask.h>
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/io.h>
@@ -458,6 +459,183 @@ static long mcexec_get_nodes(ihk_os_t os)
 		return -EINVAL;
 
 	return usrdata->mem_info->n_numa_nodes;
+}
+
+extern int linux_numa_2_mckernel_numa(struct mcctrl_usrdata *udp, int numa_id);
+extern int mckernel_cpu_2_linux_cpu(struct mcctrl_usrdata *udp, int cpu_id);
+
+static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
+{
+	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
+	struct mcctrl_part_exec *pe;
+	struct get_cpu_set_arg req;
+	struct cpu_topology *cpu_top, *cpu_top_i;
+	struct cache_topology *cache_top;
+	int cpu, cpus_assigned, cpus_to_assign, cpu_prev;
+	int ret = 0;
+	cpumask_t cpus_used;
+	cpumask_t cpus_to_use;
+
+	if (!udp) {
+		return -EINVAL;
+	}
+	pe = &udp->part_exec;
+
+	if (copy_from_user(&req, (void *)arg, sizeof(req))) {
+		printk("%s: error copying user request\n", __FUNCTION__);
+		return -EINVAL;
+	}
+
+	mutex_lock(&pe->lock);
+
+	memcpy(&cpus_used, &pe->cpus_used, sizeof(cpumask_t));
+	memset(&cpus_to_use, 0, sizeof(cpus_to_use));
+
+	/* First process to enter CPU partitioning */
+	if (pe->nr_processes == -1) {
+		pe->nr_processes = req.nr_processes;
+		pe->nr_processes_left = req.nr_processes;
+		dprintk("%s: nr_processes: %d (partitioned exec starts)\n",
+				__FUNCTION__,
+				pe->nr_processes);
+	}
+
+	if (pe->nr_processes != req.nr_processes) {
+		printk("%s: error: requested number of processes"
+				" doesn't match current partitioned execution\n",
+				__FUNCTION__);
+		ret = -EINVAL;
+		goto unlock_out;
+	}
+
+	--pe->nr_processes_left;
+	dprintk("%s: nr_processes: %d, nr_processes_left: %d\n",
+			__FUNCTION__,
+			pe->nr_processes,
+			pe->nr_processes_left);
+
+	cpus_to_assign = udp->cpu_info->n_cpus / req.nr_processes;
+
+	/* Find the first unused CPU */
+	cpu = cpumask_next_zero(-1, &cpus_used);
+	if (cpu >= udp->cpu_info->n_cpus) {
+		printk("%s: error: no more CPUs available\n",
+				__FUNCTION__);
+		ret = -EINVAL;
+		goto unlock_out;
+	}
+
+	cpu_set(cpu, cpus_used);
+	cpu_set(cpu, cpus_to_use);
+	cpu_prev = cpu;
+	dprintk("%s: CPU %d assigned (first)\n", __FUNCTION__, cpu);
+
+	for (cpus_assigned = 1; cpus_assigned < cpus_to_assign;
+			++cpus_assigned) {
+		int node;
+
+		cpu_top = NULL;
+		/* Find the topology object of the last core assigned */
+		list_for_each_entry(cpu_top_i, &udp->cpu_topology_list, chain) {
+			if (cpu_top_i->mckernel_cpu_id == cpu_prev) {
+				cpu_top = cpu_top_i;
+				break;
+			}
+		}
+
+		if (!cpu_top) {
+			printk("%s: error: couldn't find CPU topology info\n",
+					__FUNCTION__);
+			ret = -EINVAL;
+			goto unlock_out;
+		}
+
+		/* Find a core sharing the same cache iterating caches from
+		 * the most inner one outwards */
+		list_for_each_entry(cache_top, &cpu_top->cache_list, chain) {
+			for_each_cpu(cpu, &cache_top->shared_cpu_map) {
+				if (!cpu_isset(cpu, cpus_used)) {
+					cpu_set(cpu, cpus_used);
+					cpu_set(cpu, cpus_to_use);
+					cpu_prev = cpu;
+					dprintk("%s: CPU %d assigned (same cache L%lu)\n",
+						__FUNCTION__, cpu, cache_top->saved->level);
+					goto next_cpu;
+				}
+			}
+		}
+
+		/* No CPU? Find a core from the same NUMA node */
+		node = linux_numa_2_mckernel_numa(udp,
+				cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu_prev)));
+
+		for_each_cpu_not(cpu, &cpus_used) {
+			/* Found one */
+			if (node == linux_numa_2_mckernel_numa(udp,
+						cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu)))) {
+				cpu_set(cpu, cpus_used);
+				cpu_set(cpu, cpus_to_use);
+				cpu_prev = cpu;
+				dprintk("%s: CPU %d assigned (same NUMA)\n",
+						__FUNCTION__, cpu);
+				goto next_cpu;
+			}
+		}
+
+		/* No CPU? Simply find the next unused one */
+		cpu = cpumask_next_zero(-1, &cpus_used);
+		if (cpu >= udp->cpu_info->n_cpus) {
+			printk("%s: error: no more CPUs available\n",
+					__FUNCTION__);
+			ret = -EINVAL;
+			goto unlock_out;
+		}
+
+		cpu_set(cpu, cpus_used);
+		cpu_set(cpu, cpus_to_use);
+		cpu_prev = cpu;
+		dprintk("%s: CPU %d assigned (unused)\n",
+				__FUNCTION__, cpu);
+
+next_cpu:
+		continue;
+	}
+
+	/* Found all cores, let user know */
+	if (copy_to_user(req.cpu_set, &cpus_to_use,
+				(req.cpu_set_size < sizeof(cpus_to_use) ?
+				 req.cpu_set_size : sizeof(cpus_to_use)))) {
+		printk("%s: error copying mask to user\n", __FUNCTION__);
+		ret = -EINVAL;
+		goto unlock_out;
+	}
+
+	cpu = cpumask_next(-1, &cpus_to_use);
+	if (copy_to_user(req.target_core, &cpu, sizeof(cpu))) {
+		printk("%s: error copying target core to user\n",
+				__FUNCTION__);
+		ret = -EINVAL;
+		goto unlock_out;
+	}
+
+	/* Commit used cores to OS structure */
+	memcpy(&pe->cpus_used, &cpus_used, sizeof(cpus_used));
+
+	/* Reset if last process */
+	if (pe->nr_processes_left == 0) {
+		dprintk("%s: nr_processes: %d (partitioned exec ends)\n",
+				__FUNCTION__,
+				pe->nr_processes);
+		pe->nr_processes = -1;
+		memset(&pe->cpus_used, 0, sizeof(pe->cpus_used));
+	}
+
+	ret = 0;
+
+unlock_out:
+	mutex_unlock(&pe->lock);
+
+	return ret;
 }
 
 int mcctrl_add_per_proc_data(struct mcctrl_usrdata *ud, int pid, 
@@ -1278,6 +1456,9 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 
 	case MCEXEC_UP_GET_NODES:
 		return mcexec_get_nodes(os);
+
+	case MCEXEC_UP_GET_CPUSET:
+		return mcexec_get_cpuset(os, arg);
 
 	case MCEXEC_UP_STRNCPY_FROM_USER:
 		return mcexec_strncpy_from_user(os, 
