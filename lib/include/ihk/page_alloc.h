@@ -18,7 +18,7 @@
 
 /* XXX: Physical memory management shouldn't be part of IHK */
 struct node_distance {
-	int node;
+	int id;
 	int distance;
 };
 

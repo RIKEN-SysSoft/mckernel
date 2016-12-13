@@ -494,18 +494,96 @@ static void reserve_pages(struct ihk_page_allocator_desc *pa_allocator,
 	ihk_pagealloc_reserve(pa_allocator, start, end);
 }
 
-static void *allocate_aligned_pages(int npages, int p2align, 
+extern int cpu_local_var_initialized;
+static void *allocate_aligned_pages(int npages, int p2align,
 		enum ihk_mc_ap_flag flag)
 {
-	unsigned long pa;
-	int i;
+	unsigned long pa = 0;
+	int i, node;
+	struct ihk_page_allocator_desc *pa_allocator;
 
-	/* TODO: match NUMA id and distance matrix with allocating core */
+	/* Not yet initialized or idle process */
+	if (!cpu_local_var_initialized ||
+			!cpu_local_var(current) ||
+			!cpu_local_var(current)->vm)
+		goto distance_based;
+
+	/* User requested policy? */
+	switch (cpu_local_var(current)->vm->numa_mem_policy) {
+		case MPOL_BIND:
+		case MPOL_PREFERRED:
+			for_each_set_bit(node,
+					cpu_local_var(current)->proc->vm->numa_mask,
+					ihk_mc_get_nr_numa_nodes()) {
+
+				list_for_each_entry(pa_allocator,
+						&memory_nodes[node].allocators, list) {
+					pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+
+					if (pa) {
+						dkprintf("%s: policy: CPU @ node %d allocated "
+								"%d pages from node %d\n",
+								__FUNCTION__,
+								ihk_mc_get_numa_id(),
+								npages, node);
+						break;
+					}
+				}
+
+				if (pa) break;
+			}
+			break;
+
+		case MPOL_INTERLEAVE:
+			/* TODO: */
+			break;
+
+		default:
+			break;
+	}
+
+	if (pa)
+		return phys_to_virt(pa);
+
+distance_based:
+	node = ihk_mc_get_numa_id();
+
+	/* Look at nodes in the order of distance */
+	if (!memory_nodes[node].nodes_by_distance)
+		goto order_based;
+
 	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
-		struct ihk_page_allocator_desc *pa_allocator;
 
 		list_for_each_entry(pa_allocator,
-				&memory_nodes[(ihk_mc_get_numa_id() + i) %
+				&memory_nodes[memory_nodes[node].
+				nodes_by_distance[i].id].allocators, list) {
+			pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+
+			if (pa) {
+				dkprintf("%s: distance: CPU @ node %d allocated "
+						"%d pages from node %d\n",
+						__FUNCTION__,
+						ihk_mc_get_numa_id(),
+						npages,
+						memory_nodes[node].nodes_by_distance[i].id);
+				break;
+			}
+		}
+
+		if (pa) break;
+	}
+
+	if (pa)
+		return phys_to_virt(pa);
+
+order_based:
+	node = ihk_mc_get_numa_id();
+
+	/* Fall back to regular order */
+	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
+
+		list_for_each_entry(pa_allocator,
+				&memory_nodes[(node + i) %
 				ihk_mc_get_nr_numa_nodes()].allocators, list) {
 			pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
 
@@ -973,7 +1051,7 @@ static void numa_distances_init()
 		}
 
 		for (j = 0; j < ihk_mc_get_nr_numa_nodes(); ++j) {
-			memory_nodes[i].nodes_by_distance[j].node = j;
+			memory_nodes[i].nodes_by_distance[j].id = j;
 			memory_nodes[i].nodes_by_distance[j].distance =
 				ihk_mc_get_numa_distance(i, j);
 		}
@@ -987,14 +1065,14 @@ static void numa_distances_init()
 							memory_nodes[i].nodes_by_distance[j].distance) ||
 						((memory_nodes[i].nodes_by_distance[j - 1].distance ==
 						  memory_nodes[i].nodes_by_distance[j].distance) &&
-						 (memory_nodes[i].nodes_by_distance[j - 1].node >
-						  memory_nodes[i].nodes_by_distance[j].node))) {
-					memory_nodes[i].nodes_by_distance[j - 1].node ^=
-						memory_nodes[i].nodes_by_distance[j].node;
-					memory_nodes[i].nodes_by_distance[j].node ^=
-						memory_nodes[i].nodes_by_distance[j - 1].node;
-					memory_nodes[i].nodes_by_distance[j - 1].node ^=
-						memory_nodes[i].nodes_by_distance[j].node;
+						 (memory_nodes[i].nodes_by_distance[j - 1].id >
+						  memory_nodes[i].nodes_by_distance[j].id))) {
+					memory_nodes[i].nodes_by_distance[j - 1].id ^=
+						memory_nodes[i].nodes_by_distance[j].id;
+					memory_nodes[i].nodes_by_distance[j].id ^=
+						memory_nodes[i].nodes_by_distance[j - 1].id;
+					memory_nodes[i].nodes_by_distance[j - 1].id ^=
+						memory_nodes[i].nodes_by_distance[j].id;
 
 					memory_nodes[i].nodes_by_distance[j - 1].distance ^=
 						memory_nodes[i].nodes_by_distance[j].distance;
@@ -1013,7 +1091,7 @@ static void numa_distances_init()
 			pbuf += sprintf(pbuf, "NUMA %d distances: ", i);
 			for (j = 0; j < ihk_mc_get_nr_numa_nodes(); ++j) {
 				pbuf += sprintf(pbuf, "%d (%d), ",
-						memory_nodes[i].nodes_by_distance[j].node,
+						memory_nodes[i].nodes_by_distance[j].id,
 						memory_nodes[i].nodes_by_distance[j].distance);
 			}
 			kprintf("%s\n", buf);
