@@ -570,6 +570,10 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 				cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu_prev)));
 
 		for_each_cpu_not(cpu, &cpus_used) {
+			/* Invalid CPU? */
+			if (cpu >= udp->cpu_info->n_cpus)
+				break;
+
 			/* Found one */
 			if (node == linux_numa_2_mckernel_numa(udp,
 						cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu)))) {
