@@ -931,6 +931,7 @@ static void numa_init(void)
 		memory_nodes[i].linux_numa_id = linux_numa_id;
 		memory_nodes[i].type = type;
 		INIT_LIST_HEAD(&memory_nodes[i].allocators);
+		memory_nodes[i].nodes_by_distance = 0;
 
 		kprintf("NUMA: %d, Linux NUMA: %d, type: %d\n",
 			i, linux_numa_id, type);
@@ -951,6 +952,72 @@ static void numa_init(void)
 				ihk_pagealloc_count(allocator) * PAGE_SIZE,
 				ihk_pagealloc_count(allocator),
 				numa_id);
+	}
+}
+
+static void numa_distances_init()
+{
+	int i, j, swapped;
+
+	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
+		/* TODO: allocate on target node */
+		memory_nodes[i].nodes_by_distance =
+			ihk_mc_alloc_pages((sizeof(struct node_distance) *
+						ihk_mc_get_nr_numa_nodes() + PAGE_SIZE - 1)
+					>> PAGE_SHIFT, IHK_MC_AP_NOWAIT);
+
+		if (!memory_nodes[i].nodes_by_distance) {
+			kprintf("%s: error: allocating nodes_by_distance\n",
+				__FUNCTION__);
+			continue;
+		}
+
+		for (j = 0; j < ihk_mc_get_nr_numa_nodes(); ++j) {
+			memory_nodes[i].nodes_by_distance[j].node = j;
+			memory_nodes[i].nodes_by_distance[j].distance =
+				ihk_mc_get_numa_distance(i, j);
+		}
+
+		/* Sort by distance and node ID */
+		swapped = 1;
+		while (swapped) {
+			swapped = 0;
+			for (j = 1; j < ihk_mc_get_nr_numa_nodes(); ++j) {
+				if ((memory_nodes[i].nodes_by_distance[j - 1].distance >
+							memory_nodes[i].nodes_by_distance[j].distance) ||
+						((memory_nodes[i].nodes_by_distance[j - 1].distance ==
+						  memory_nodes[i].nodes_by_distance[j].distance) &&
+						 (memory_nodes[i].nodes_by_distance[j - 1].node >
+						  memory_nodes[i].nodes_by_distance[j].node))) {
+					memory_nodes[i].nodes_by_distance[j - 1].node ^=
+						memory_nodes[i].nodes_by_distance[j].node;
+					memory_nodes[i].nodes_by_distance[j].node ^=
+						memory_nodes[i].nodes_by_distance[j - 1].node;
+					memory_nodes[i].nodes_by_distance[j - 1].node ^=
+						memory_nodes[i].nodes_by_distance[j].node;
+
+					memory_nodes[i].nodes_by_distance[j - 1].distance ^=
+						memory_nodes[i].nodes_by_distance[j].distance;
+					memory_nodes[i].nodes_by_distance[j].distance ^=
+						memory_nodes[i].nodes_by_distance[j - 1].distance;
+					memory_nodes[i].nodes_by_distance[j - 1].distance ^=
+						memory_nodes[i].nodes_by_distance[j].distance;
+					swapped = 1;
+				}
+			}
+		}
+		{
+			char buf[1024];
+			char *pbuf = buf;
+
+			pbuf += sprintf(pbuf, "NUMA %d distances: ", i);
+			for (j = 0; j < ihk_mc_get_nr_numa_nodes(); ++j) {
+				pbuf += sprintf(pbuf, "%d (%d), ",
+						memory_nodes[i].nodes_by_distance[j].node,
+						memory_nodes[i].nodes_by_distance[j].distance);
+			}
+			kprintf("%s\n", buf);
+		}
 	}
 }
 
@@ -1235,6 +1302,9 @@ void mem_init(void)
 		kprintf("Demand paging on ANONYMOUS mappings enabled.\n");
 		anon_on_demand = 1;
 	}
+	
+	/* Init distance vectors */
+	numa_distances_init();
 }
 
 #define KMALLOC_TRACK_HASH_SHIFT	(8)
