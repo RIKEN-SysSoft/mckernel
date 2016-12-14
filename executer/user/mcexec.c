@@ -155,6 +155,7 @@ static int enable_vdso = 1;
 
 /* Partitioned execution (e.g., for MPI) */
 static int nr_processes = 0;
+static int nr_threads = -1;
 
 struct fork_sync {
 	pid_t pid;
@@ -1332,7 +1333,7 @@ int main(int argc, char **argv)
 	}
            
 	/* Parse options ("+" denotes stop at the first non-option) */
-	while ((opt = getopt_long(argc, argv, "+c:n:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:t:", mcexec_options, NULL)) != -1) {
 		switch (opt) {
 			case 'c':
 				target_core = atoi(optarg);
@@ -1340,6 +1341,10 @@ int main(int argc, char **argv)
 
 			case 'n':
 				nr_processes = atoi(optarg);
+				break;
+
+			case 't':
+				nr_threads = atoi(optarg);
 				break;
 
 			case 0:	/* long opt */
@@ -1557,7 +1562,16 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	n_threads = ncpu;
+	if (nr_threads > 0) {
+		n_threads = nr_threads;
+	}
+	else if (getenv("OMP_NUM_THREADS")) {
+		/* Leave some headroom for helper threads.. */
+		n_threads = atoi(getenv("OMP_NUM_THREADS")) + 4;
+	}
+	else {
+		n_threads = ncpu;
+	}
 
 	/* 
 	 * XXX: keep thread_data ncpu sized despite that there are only
