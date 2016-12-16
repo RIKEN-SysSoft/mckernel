@@ -1949,9 +1949,18 @@ int close_cloexec_fds(int mcos_fd)
 	return 0;
 }
 
+void chgdevpath(char *in, char *buf)
+{
+	if(!strcmp(in, "/dev/xpmem")){
+		sprintf(in, "/dev/null");
+	}
+}
+
 char *
 chgpath(char *in, char *buf)
 {
+	chgdevpath(in, buf);
+
 #ifdef ENABLE_MCOVERLAYFS
 	return in;
 #endif // ENABLE_MCOVERLAYFS

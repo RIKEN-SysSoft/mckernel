@@ -3,7 +3,7 @@ SRC=$(VPATH)
 IHKDIR=$(IHKBASE)/$(TARGETDIR)
 OBJS = init.o mem.o debug.o mikc.o listeners.o ap.o syscall.o cls.o host.o
 OBJS += process.o copy.o waitq.o futex.o timer.o plist.o fileobj.o shmobj.o
-OBJS += zeroobj.o procfs.o devobj.o sysfs.o
+OBJS += zeroobj.o procfs.o devobj.o sysfs.o xpmem.o
 DEPSRCS=$(wildcard $(SRC)/*.c)
 
 CFLAGS += -I$(SRC)/include -D__KERNEL__ -g -fno-omit-frame-pointer -fno-inline -fno-inline-small-functions

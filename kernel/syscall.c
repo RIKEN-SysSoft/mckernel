@@ -54,6 +54,7 @@
 #include <process.h>
 #include <bitops.h>
 #include <bitmap.h>
+#include <xpmem.h>
 
 /* Headers taken from kitten LWK */
 #include <lwk/stddef.h>
@@ -1062,7 +1063,7 @@ out:
 	return (int)lerror;
 }
 
-static int do_munmap(void *addr, size_t len)
+int do_munmap(void *addr, size_t len)
 {
 	int error;
 	int ro_freed;
@@ -2693,6 +2694,21 @@ SYSCALL_DECLARE(ioctl)
 	else{
 		rc = syscall_generic_forwarding(__NR_ioctl, ctx);
 	}
+	return rc;
+}
+
+SYSCALL_DECLARE(open)
+{
+	const char *pathname = (const char *)ihk_mc_syscall_arg0(ctx);
+	long rc;
+
+	dkprintf("open(): pathname=%s\n", pathname);
+	if (!strcmp(pathname, XPMEM_DEV_PATH)) {
+		rc = xpmem_open(ctx);
+	} else {
+		rc = syscall_generic_forwarding(__NR_open, ctx);
+	}
+
 	return rc;
 }
 
