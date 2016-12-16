@@ -198,7 +198,8 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		pn->at_entry += aout_base;
 	}
 
-	vm->region.brk_start = vm->region.brk_end = vm->region.data_end;
+	vm->region.brk_start = vm->region.brk_end =
+		vm->region.brk_end_reported = vm->region.data_end;
 
 	/* Map, copy and update args and envs */
 	flags = VR_PROT_READ | VR_PROT_WRITE;
