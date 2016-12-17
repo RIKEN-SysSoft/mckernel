@@ -131,6 +131,7 @@ static void __ihk_mc_spinlock_unlock(ihk_spinlock_t *lock, unsigned long flags)
 typedef struct mcs_lock_node {
 	unsigned long locked;
 	struct mcs_lock_node *next;
+	unsigned long irqsave;
 } __attribute__((aligned(64))) mcs_lock_node_t;
 
 static void mcs_lock_init(struct mcs_lock_node *node)
@@ -139,7 +140,7 @@ static void mcs_lock_init(struct mcs_lock_node *node)
 	node->next = NULL;
 }
 
-static void mcs_lock_lock(struct mcs_lock_node *lock,
+static void __mcs_lock_lock(struct mcs_lock_node *lock,
 		struct mcs_lock_node *node)
 {
 	struct mcs_lock_node *pred;
@@ -158,7 +159,7 @@ static void mcs_lock_lock(struct mcs_lock_node *lock,
 	}
 }
 
-static void mcs_lock_unlock(struct mcs_lock_node *lock,
+static void __mcs_lock_unlock(struct mcs_lock_node *lock,
 		struct mcs_lock_node *node)
 {
 	if (node->next == NULL) {
@@ -177,6 +178,35 @@ static void mcs_lock_unlock(struct mcs_lock_node *lock,
 
 	node->next->locked = 0;
 }
+
+static void mcs_lock_lock_noirq(struct mcs_lock_node *lock,
+		struct mcs_lock_node *node)
+{
+	preempt_disable();
+	__mcs_lock_lock(lock, node);
+}
+
+static void mcs_lock_unlock_noirq(struct mcs_lock_node *lock,
+		struct mcs_lock_node *node)
+{
+	__mcs_lock_unlock(lock, node);
+	preempt_enable();
+}
+
+static void mcs_lock_lock(struct mcs_lock_node *lock,
+		struct mcs_lock_node *node)
+{
+	node->irqsave = cpu_disable_interrupt_save();
+	mcs_lock_lock_noirq(lock, node);
+}
+
+static void mcs_lock_unlock(struct mcs_lock_node *lock,
+		struct mcs_lock_node *node)
+{
+	mcs_lock_unlock_noirq(lock, node);
+	cpu_restore_interrupt(node->irqsave);
+}
+
 
 // reader/writer lock
 typedef struct mcs_rwlock_node {
