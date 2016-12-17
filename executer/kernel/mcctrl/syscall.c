@@ -839,6 +839,32 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 			list_add(&newpager->list, &pager_list);
 			pager = newpager;
 			newpager = NULL;
+
+			/* Intel MPI library and shared memory "prefetch" */
+			{
+				char *pathbuf, *fullpath;
+
+				pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+				if (pathbuf) {
+					fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
+					if (!IS_ERR(fullpath)) {
+						if (!strncmp("/dev/shm/Intel_MPI", fullpath, 18)) {
+							//mf_flags = (MF_PREFETCH | MF_ZEROFILL);
+							mf_flags = (MF_ZEROFILL);
+							dprintk("%s: filename: %s, zerofill\n",
+									__FUNCTION__, fullpath);
+						}
+						else if (strstr(fullpath, "libmpi") != NULL) {
+							mf_flags = MF_PREFETCH;
+							dprintk("%s: filename: %s, prefetch\n",
+									__FUNCTION__, fullpath);
+						}
+					}
+
+					kfree(pathbuf);
+				}
+			}
+
 			break;
 		}
 
