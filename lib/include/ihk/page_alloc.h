@@ -36,7 +36,7 @@ struct ihk_page_allocator_desc {
 	unsigned int count;
 	unsigned int flag;
 	unsigned int shift;
-	ihk_spinlock_t lock;
+	mcs_lock_node_t lock;
 	struct list_head list;
 	
 	unsigned long map[0];

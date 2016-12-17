@@ -73,7 +73,7 @@ void *__ihk_pagealloc_init(unsigned long start, unsigned long size,
 	//kprintf("page allocator @ %lx - %lx (%d)\n", start, start + size,
 	//        page_shift);
 
-	ihk_mc_spinlock_init(&desc->lock);
+	mcs_lock_init(&desc->lock);
 
 	/* Reserve align padding area */
 	for (i = mapsize; i < mapaligned * 8; i++) {
@@ -99,12 +99,12 @@ void ihk_pagealloc_destroy(void *__desc)
 static unsigned long __ihk_pagealloc_large(struct ihk_page_allocator_desc *desc,
                                            int npages, int p2align)
 {
-	unsigned long flags;
 	unsigned int i, j, mi;
 	int nblocks;
 	int nfrags;
 	unsigned long mask;
 	unsigned long align_mask = ((PAGE_SIZE << p2align) - 1);
+	mcs_lock_node_t node;
 
 	nblocks = (npages / 64);
 	mask = -1;
@@ -114,7 +114,7 @@ static unsigned long __ihk_pagealloc_large(struct ihk_page_allocator_desc *desc,
 		mask = (1UL << nfrags) - 1;
 	}
 
-	flags = ihk_mc_spinlock_lock(&desc->lock);
+	mcs_lock_lock(&desc->lock, &node);
 	for (i = 0, mi = desc->last; i < desc->count; i++, mi++) {
 		if (mi >= desc->count) {
 			mi = 0;
@@ -132,11 +132,11 @@ static unsigned long __ihk_pagealloc_large(struct ihk_page_allocator_desc *desc,
 				desc->map[j] = (unsigned long)-1;
 			}
 			desc->map[j] |= mask;
-			ihk_mc_spinlock_unlock(&desc->lock, flags);
+			mcs_lock_unlock(&desc->lock, &node);
 			return ADDRESS(desc, mi, 0);
 		}
 	}
-	ihk_mc_spinlock_unlock(&desc->lock, flags);
+	mcs_lock_unlock(&desc->lock, &node);
 
 	return 0;
 }
@@ -146,8 +146,9 @@ unsigned long ihk_pagealloc_alloc(void *__desc, int npages, int p2align)
 	struct ihk_page_allocator_desc *desc = __desc;
 	unsigned int i, mi;
 	int j;
-	unsigned long v, mask, flags;
+	unsigned long v, mask;
 	int jalign;
+	mcs_lock_node_t node;
 
 	if ((npages >= 32) || (p2align >= 5)) {
 		return __ihk_pagealloc_large(desc, npages, p2align);
@@ -156,7 +157,7 @@ unsigned long ihk_pagealloc_alloc(void *__desc, int npages, int p2align)
 	mask = (1UL << npages) - 1;
 	jalign = (p2align <= 0)? 1: (1 << p2align);
 
-	flags = ihk_mc_spinlock_lock(&desc->lock);
+	mcs_lock_lock(&desc->lock, &node);
 	for (i = 0, mi = desc->last; i < desc->count; i++, mi++) {
 		if (mi >= desc->count) {
 			mi = 0;
@@ -173,12 +174,12 @@ unsigned long ihk_pagealloc_alloc(void *__desc, int npages, int p2align)
 			if (!(v & (mask << j))) { /* free */
 				desc->map[mi] |= (mask << j);
 
-				ihk_mc_spinlock_unlock(&desc->lock, flags);
+				mcs_lock_unlock(&desc->lock, &node);
 				return ADDRESS(desc, mi, j);
 			}
 		}
 	}
-	ihk_mc_spinlock_unlock(&desc->lock, flags);
+	mcs_lock_unlock(&desc->lock, &node);
 
 	/* We use null pointer for failure */
 	return 0;
@@ -188,7 +189,7 @@ void ihk_pagealloc_reserve(void *__desc, unsigned long start, unsigned long end)
 {
 	int i, n;
 	struct ihk_page_allocator_desc *desc = __desc;
-	unsigned long flags;
+	mcs_lock_node_t node;
 
 	n = (end + (1 << desc->shift) - 1 - desc->start) >> desc->shift;
 	i = ((start - desc->start) >> desc->shift);
@@ -196,7 +197,7 @@ void ihk_pagealloc_reserve(void *__desc, unsigned long start, unsigned long end)
 		return;
 	}
 
-	flags = ihk_mc_spinlock_lock(&desc->lock);
+	mcs_lock_lock(&desc->lock, &node);
 	for (; i < n; i++) {
 		if (!(i & 63) && i + 63 < n) {
 			desc->map[MAP_INDEX(i)] = (unsigned long)-1L;
@@ -205,7 +206,7 @@ void ihk_pagealloc_reserve(void *__desc, unsigned long start, unsigned long end)
 			desc->map[MAP_INDEX(i)] |= (1UL << MAP_BIT(i));
 		}
 	}
-	ihk_mc_spinlock_unlock(&desc->lock, flags);
+	mcs_lock_unlock(&desc->lock, &node);
 }
 
 void ihk_pagealloc_free(void *__desc, unsigned long address, int npages)
@@ -213,24 +214,24 @@ void ihk_pagealloc_free(void *__desc, unsigned long address, int npages)
 	struct ihk_page_allocator_desc *desc = __desc;
 	int i;
 	unsigned mi;
-	unsigned long flags;
+	mcs_lock_node_t node;
 
 	/* XXX: Parameter check */
-	flags = ihk_mc_spinlock_lock(&desc->lock);
+	mcs_lock_lock(&desc->lock, &node);
 	mi = (address - desc->start) >> desc->shift;
 	for (i = 0; i < npages; i++, mi++) {
 		desc->map[MAP_INDEX(mi)] &= ~(1UL << MAP_BIT(mi));
 	}
-	ihk_mc_spinlock_unlock(&desc->lock, flags);
+	mcs_lock_unlock(&desc->lock, &node);
 }
 
 unsigned long ihk_pagealloc_count(void *__desc)
 {
 	struct ihk_page_allocator_desc *desc = __desc;
 	unsigned long i, j, n = 0;
-	unsigned long flags;
+	mcs_lock_node_t node;
 
-	flags = ihk_mc_spinlock_lock(&desc->lock);
+	mcs_lock_lock(&desc->lock, &node);
 	/* XXX: Very silly counting */
 	for (i = 0; i < desc->count; i++) {
 		for (j = 0; j < 64; j++) {
@@ -239,7 +240,7 @@ unsigned long ihk_pagealloc_count(void *__desc)
 			}
 		}
 	}
-	ihk_mc_spinlock_unlock(&desc->lock, flags);
+	mcs_lock_unlock(&desc->lock, &node);
 	
 	return n;
 }
@@ -249,10 +250,11 @@ int ihk_pagealloc_query_free(void *__desc)
 	struct ihk_page_allocator_desc *desc = __desc;
 	unsigned int mi;
 	int j;
-	unsigned long v, flags;
+	unsigned long v;
 	int npages = 0;
+	mcs_lock_node_t node;
 
-	flags = ihk_mc_spinlock_lock(&desc->lock);
+	mcs_lock_lock(&desc->lock, &node);
 	for (mi = 0; mi < desc->count; mi++) {
 		
 		v = desc->map[mi];
@@ -265,7 +267,7 @@ int ihk_pagealloc_query_free(void *__desc)
 			}
 		}
 	}
-	ihk_mc_spinlock_unlock(&desc->lock, flags);
+	mcs_lock_unlock(&desc->lock, &node);
 
 	return npages;
 }
@@ -275,11 +277,12 @@ void __ihk_pagealloc_zero_free_pages(void *__desc)
 	struct ihk_page_allocator_desc *desc = __desc;
 	unsigned int mi;
 	int j;
-	unsigned long v, flags;
+	unsigned long v;
+	mcs_lock_node_t node;
 
 kprintf("zeroing free memory... ");
 
-	flags = ihk_mc_spinlock_lock(&desc->lock);
+	mcs_lock_lock(&desc->lock, &node);
 	for (mi = 0; mi < desc->count; mi++) {
 		
 		v = desc->map[mi];
@@ -293,7 +296,7 @@ kprintf("zeroing free memory... ");
 			}
 		}
 	}
-	ihk_mc_spinlock_unlock(&desc->lock, flags);
+	mcs_lock_unlock(&desc->lock, &node);
 
 kprintf("\nzeroing done\n");
 }
