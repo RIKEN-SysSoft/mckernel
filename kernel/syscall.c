@@ -1363,6 +1363,10 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		goto out;
 	}
 
+	if (memobj->flags & MF_PREFETCH) {
+		populated_mapping = 1;
+	}
+
 	error = 0;
 	p = NULL;
 	memobj = NULL;

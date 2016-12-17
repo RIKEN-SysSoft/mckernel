@@ -746,6 +746,17 @@ static struct list_head pager_list = LIST_HEAD_INIT(pager_list);
 struct pager_create_result {
 	uintptr_t	handle;
 	int		maxprot;
+	uint32_t flags;
+};
+
+enum {
+	/* for memobj.flags */
+	MF_HAS_PAGER	= 0x0001,
+	MF_SHMDT_OK	= 0x0002,
+	MF_IS_REMOVABLE	= 0x0004,
+	MF_PREFETCH = 0x0008,
+	MF_ZEROFILL = 0x0010,
+	MF_END
 };
 
 static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
@@ -760,6 +771,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 	struct pager *newpager = NULL;
 	uintptr_t phys;
 	struct kstat st;
+	int mf_flags = 0;
 
 	dprintk("pager_req_create(%d,%lx)\n", fd, (long)result_pa);
 
@@ -856,6 +868,7 @@ found:
 	resp = ihk_device_map_virtual(dev, phys, sizeof(*resp), NULL, 0);
 	resp->handle = (uintptr_t)pager;
 	resp->maxprot = maxprot;
+	resp->flags = mf_flags;
 	ihk_device_unmap_virtual(dev, resp, sizeof(*resp));
 	ihk_device_unmap_memory(dev, phys, sizeof(*resp));
 

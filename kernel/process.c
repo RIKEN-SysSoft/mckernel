@@ -1384,6 +1384,11 @@ static int sync_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 	flush_tlb_single((uintptr_t)pgaddr);	/* XXX: TLB flush */
 
 	phys = pte_get_phys(ptep);
+	if (args->memobj->flags & MF_ZEROFILL) {
+		error = 0;
+		goto out;
+	}
+
 	error = memobj_flush_page(args->memobj, phys, pgsize);
 	if (error) {
 		ekprintf("sync_one_page(%p,%p,%p %#lx,%p,%d):"
@@ -1411,11 +1416,19 @@ int sync_process_memory_range(struct process_vm *vm, struct vm_range *range,
 	args.memobj = range->memobj;
 
 	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
-	memobj_lock(range->memobj);
+
+	if (!(range->memobj->flags & MF_ZEROFILL)) {
+		memobj_lock(range->memobj);
+	}
+
 	error = visit_pte_range(vm->address_space->page_table, (void *)start,
-	                        (void *)end, range->pgshift, VPTEF_SKIP_NULL,
-				&sync_one_page, &args);
-	memobj_unlock(range->memobj);
+			(void *)end, range->pgshift, VPTEF_SKIP_NULL,
+			&sync_one_page, &args);
+
+	if (!(range->memobj->flags & MF_ZEROFILL)) {
+		memobj_unlock(range->memobj);
+	}
+
 	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 	if (error) {
 		ekprintf("sync_process_memory_range(%p,%p,%#lx,%#lx):"

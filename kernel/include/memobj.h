@@ -32,6 +32,9 @@ enum {
 	MF_HAS_PAGER	= 0x0001,
 	MF_SHMDT_OK	= 0x0002,
 	MF_IS_REMOVABLE	= 0x0004,
+	MF_PREFETCH = 0x0008,
+	MF_ZEROFILL = 0x0010,
+	MF_END
 };
 
 struct memobj {
