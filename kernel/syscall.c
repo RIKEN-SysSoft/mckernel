@@ -1363,9 +1363,12 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		goto out;
 	}
 
-	if (memobj->flags & MF_PREFETCH) {
+	memobj_lock(memobj);
+	if (memobj->status == MEMOBJ_TO_BE_PREFETCHED) {
+		memobj->status = MEMOBJ_READY;
 		populated_mapping = 1;
 	}
+	memobj_unlock(memobj);
 
 	error = 0;
 	p = NULL;

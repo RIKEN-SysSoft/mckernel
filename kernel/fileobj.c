@@ -226,12 +226,26 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp)
 		obj_list_insert(newobj);
 		obj = newobj;
 		to_memobj(obj)->flags |= result.flags;
+		to_memobj(obj)->status = MEMOBJ_READY;
+		if (to_memobj(obj)->flags & MF_PREFETCH) {
+			to_memobj(obj)->status = MEMOBJ_TO_BE_PREFETCHED;
+		}
 		newobj = NULL;
+		dkprintf("%s: new obj 0x%lx cref: %d, %s\n",
+			__FUNCTION__,
+			obj,
+			obj->cref,
+			to_memobj(obj)->flags & MF_ZEROFILL ? "zerofill" : "");
 	}
 	else {
 		++obj->sref;
 		++obj->cref;
 		memobj_unlock(&obj->memobj);	/* locked by obj_list_lookup() */
+		dkprintf("%s: existing obj 0x%lx cref: %d, %s\n",
+			__FUNCTION__,
+			obj,
+			obj->cref,
+			to_memobj(obj)->flags & MF_ZEROFILL ? "zerofill" : "");
 	}
 
 	mcs_rwlock_writer_unlock_noirq(&fileobj_list_lock, &node);
@@ -281,7 +295,13 @@ static void fileobj_release(struct memobj *memobj)
 	memobj_unlock(&obj->memobj);
 
 	if (free_obj) {
-		mcs_lock_lock_noirq(&fileobj_list_lock, &node);
+		dkprintf("%s: release obj 0x%lx cref: %d, free_obj: 0x%lx, %s\n",
+				__FUNCTION__,
+				obj,
+				obj->cref,
+				free_obj,
+				to_memobj(obj)->flags & MF_ZEROFILL ? "zerofill" : "");
+		mcs_rwlock_writer_lock_noirq(&fileobj_list_lock, &node);
 		/* zap page_list */
 		for (;;) {
 			struct page *page;

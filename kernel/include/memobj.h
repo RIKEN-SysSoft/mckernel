@@ -37,11 +37,14 @@ enum {
 	MF_END
 };
 
+#define MEMOBJ_READY              0
+#define MEMOBJ_TO_BE_PREFETCHED   1
+
 struct memobj {
-	struct memobj_ops *	ops;
-	uint32_t		flags;
-	int8_t			padding[4];
-	ihk_spinlock_t		lock;
+	struct memobj_ops *ops;
+	uint32_t flags;
+	uint32_t status;
+	ihk_spinlock_t lock;
 };
 
 typedef void memobj_release_func_t(struct memobj *obj);
