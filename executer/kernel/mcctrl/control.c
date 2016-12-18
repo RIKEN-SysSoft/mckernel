@@ -293,8 +293,9 @@ int mcexec_transfer_image(ihk_os_t os, struct remote_transfer *__user upt)
 
 //extern unsigned long last_thread_exec;
 
-struct handlerinfo {
-	int	pid;
+struct release_handler_info {
+	int pid;
+	int cpu;
 };
 
 static long mcexec_debug_log(ihk_os_t os, unsigned long arg)
@@ -310,7 +311,7 @@ static long mcexec_debug_log(ihk_os_t os, unsigned long arg)
 
 static void release_handler(ihk_os_t os, void *param)
 {
-	struct handlerinfo *info = param;
+	struct release_handler_info *info = param;
 	struct ikc_scd_packet isp;
 	int os_ind = ihk_host_os_get_index(os);
 
@@ -318,10 +319,15 @@ static void release_handler(ihk_os_t os, void *param)
 	isp.msg = SCD_MSG_CLEANUP_PROCESS;
 	isp.pid = info->pid;
 
-	mcctrl_ikc_send(os, 0, &isp);
-	if(os_ind >= 0)
+	dprintk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p, cpu: %d\n",
+			__FUNCTION__, info, info->cpu);
+	mcctrl_ikc_send(os, info->cpu, &isp);
+	if (os_ind >= 0) {
 		delete_pid_entry(os_ind, info->pid);
+	}
 	kfree(param);
+	dprintk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p OK\n",
+			__FUNCTION__, info);
 }
 
 static long mcexec_newprocess(ihk_os_t os,
@@ -329,12 +335,12 @@ static long mcexec_newprocess(ihk_os_t os,
                               struct file *file)
 {
 	struct newprocess_desc desc;
-	struct handlerinfo *info;
+	struct release_handler_info *info;
 
 	if (copy_from_user(&desc, udesc, sizeof(struct newprocess_desc))) {
 		return -EFAULT;
 	}
-	info = kmalloc(sizeof(struct handlerinfo), GFP_KERNEL);
+	info = kmalloc(sizeof(struct release_handler_info), GFP_KERNEL);
 	info->pid = desc.pid;
 	ihk_os_register_release_handler(file, release_handler, info);
 	return 0;
@@ -348,7 +354,7 @@ static long mcexec_start_image(ihk_os_t os,
 	struct ikc_scd_packet isp;
 	struct mcctrl_channel *c;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
-	struct handlerinfo *info;
+	struct release_handler_info *info;
 
 	desc = kmalloc(sizeof(*desc), GFP_KERNEL);
 	if (!desc) {
@@ -363,8 +369,9 @@ static long mcexec_start_image(ihk_os_t os,
 		return -EFAULT;
 	}
 
-	info = kmalloc(sizeof(struct handlerinfo), GFP_KERNEL);
+	info = kmalloc(sizeof(struct release_handler_info), GFP_KERNEL);
 	info->pid = desc->pid;
+	info->cpu = desc->cpu;
 	ihk_os_register_release_handler(file, release_handler, info);
 
 	c = usrdata->channels + desc->cpu;
