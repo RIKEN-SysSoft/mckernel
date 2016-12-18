@@ -240,7 +240,7 @@ static struct ihk_ikc_listen_param listen_param = {
 	.port = 501,
 	.handler = connect_handler,
 	.pkt_size = sizeof(struct ikc_scd_packet),
-	.queue_size = PAGE_SIZE,
+	.queue_size = PAGE_SIZE * 4,
 	.magic = 0x1129,
 };
 
@@ -248,7 +248,7 @@ static struct ihk_ikc_listen_param listen_param2 = {
 	.port = 502,
 	.handler = connect_handler2,
 	.pkt_size = sizeof(struct ikc_scd_packet),
-	.queue_size = PAGE_SIZE,
+	.queue_size = PAGE_SIZE * 4,
 	.magic = 0x1329,
 };
 

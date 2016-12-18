@@ -687,7 +687,7 @@ void init_host_syscall_channel(void)
 
 	param.port = 501;
 	param.pkt_size = sizeof(struct ikc_scd_packet);
-	param.queue_size = PAGE_SIZE;
+	param.queue_size = PAGE_SIZE * 4;
 	param.magic = 0x1129;
 	param.handler = syscall_packet_handler;
 
@@ -714,7 +714,7 @@ void init_host_syscall_channel2(void)
 
 	param.port = 502;
 	param.pkt_size = sizeof(struct ikc_scd_packet);
-	param.queue_size = PAGE_SIZE;
+	param.queue_size = PAGE_SIZE * 4;
 	param.magic = 0x1329;
 	param.handler = syscall_packet_handler;
 
