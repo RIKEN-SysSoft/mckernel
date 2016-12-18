@@ -482,10 +482,18 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 	int ret = 0;
 	cpumask_t cpus_used;
 	cpumask_t cpus_to_use;
+	struct mcctrl_per_proc_data *ppd;
 
 	if (!udp) {
 		return -EINVAL;
 	}
+
+	/* Look up per-process structure */
+	ppd = mcctrl_get_per_proc_data(udp, task_tgid_vnr(current));
+	if (!ppd) {
+		return -EINVAL;
+	}
+
 	pe = &udp->part_exec;
 
 	if (copy_from_user(&req, (void *)arg, sizeof(req))) {
@@ -628,6 +636,10 @@ next_cpu:
 		ret = -EINVAL;
 		goto unlock_out;
 	}
+
+	/* Save in per-process structure */
+	memcpy(&ppd->cpu_set, &cpus_to_use, sizeof(cpumask_t));
+	ppd->ikc_target_cpu = cpu;
 
 	/* Commit used cores to OS structure */
 	memcpy(&pe->cpus_used, &cpus_used, sizeof(cpus_used));
@@ -1167,6 +1179,8 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 		INIT_LIST_HEAD(&ppd->wq_req_list);
 		INIT_LIST_HEAD(&ppd->wq_list_exact);
 		spin_lock_init(&ppd->wq_list_lock);
+		memset(&ppd->cpu_set, 0, sizeof(cpumask_t));
+		ppd->ikc_target_cpu = 0;
 
 		for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; ++i) {
 			INIT_LIST_HEAD(&ppd->per_thread_data_hash[i]);

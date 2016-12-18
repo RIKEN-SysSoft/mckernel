@@ -198,6 +198,8 @@ struct mcctrl_per_proc_data {
 
 	struct list_head per_thread_data_hash[MCCTRL_PER_THREAD_DATA_HASH_SIZE];
 	rwlock_t per_thread_data_hash_lock[MCCTRL_PER_THREAD_DATA_HASH_SIZE];
+	cpumask_t cpu_set;
+	int ikc_target_cpu;
 };
 
 struct sysfsm_req {
