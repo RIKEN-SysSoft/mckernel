@@ -31,6 +31,7 @@ struct pager_create_result {
 	uintptr_t	handle;
 	int		maxprot;
 	uint32_t flags;
+	size_t size;
 };
 
 /*

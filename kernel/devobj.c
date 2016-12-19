@@ -127,6 +127,7 @@ int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxp
 
 	obj->memobj.ops = &devobj_ops;
 	obj->memobj.flags = MF_HAS_PAGER;
+	obj->memobj.size = len;
 	obj->handle = result.handle;
 	obj->ref = 1;
 	obj->pfn_pgoff = off / PAGE_SIZE;

@@ -1384,8 +1384,9 @@ out:
 	if (!error && populated_mapping && !((vrflags & VR_PROT_MASK) == VR_PROT_NONE)) {
 		error = populate_process_memory(thread->vm, (void *)addr, len);
 		if (error) {
-			ekprintf("%s: error :populate_process_memory"
-					"vm: %p, addr: %p, len: %d (flags: %s%s) failed %d\n", __FUNCTION__,
+			ekprintf("%s: WARNING: populate_process_memory(): "
+					"vm: %p, addr: %p, len: %d (flags: %s%s) failed %d\n",
+					__FUNCTION__,
 					thread->vm, (void *)addr, len,
 					(flags & MAP_POPULATE) ? "MAP_POPULATE " : "",
 					(flags & MAP_LOCKED) ? "MAP_LOCKED ": "",

@@ -747,6 +747,7 @@ struct pager_create_result {
 	uintptr_t	handle;
 	int		maxprot;
 	uint32_t flags;
+	size_t size;
 };
 
 enum {
@@ -895,6 +896,7 @@ found:
 	resp->handle = (uintptr_t)pager;
 	resp->maxprot = maxprot;
 	resp->flags = mf_flags;
+	resp->size = st.size;
 	ihk_device_unmap_virtual(dev, resp, sizeof(*resp));
 	ihk_device_unmap_memory(dev, phys, sizeof(*resp));
 

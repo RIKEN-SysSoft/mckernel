@@ -225,6 +225,7 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp)
 	if (!obj) {
 		obj_list_insert(newobj);
 		obj = newobj;
+		to_memobj(obj)->size = result.size;
 		to_memobj(obj)->flags |= result.flags;
 		to_memobj(obj)->status = MEMOBJ_READY;
 		if (to_memobj(obj)->flags & MF_PREFETCH) {

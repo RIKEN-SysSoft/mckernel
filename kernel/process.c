@@ -2160,9 +2160,10 @@ int populate_process_memory(struct process_vm *vm, void *start, size_t len)
 	for (addr = (uintptr_t)start; addr < end; addr += PAGE_SIZE) {
 		error = page_fault_process_vm(vm, (void *)addr, reason);
 		if (error) {
-			ekprintf("populate_process_range:page_fault_process_vm"
-					"(%p,%lx,%lx) failed %d\n",
-					vm, addr, reason, error);
+			ekprintf("%s: WARNING: page_fault_process_vm(): vm: %p, "
+					"addr: %lx, reason: %lx, off: %lu, len: %lu returns %d\n",
+					__FUNCTION__, vm, addr, reason,
+					((void *)addr - start), len, error);
 			goto out;
 		}
 	}

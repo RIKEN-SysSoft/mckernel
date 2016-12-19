@@ -44,6 +44,7 @@ struct memobj {
 	struct memobj_ops *ops;
 	uint32_t flags;
 	uint32_t status;
+	size_t size;
 	ihk_spinlock_t lock;
 };
 
