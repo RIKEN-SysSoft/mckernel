@@ -382,7 +382,7 @@ struct vm_regions {
 	unsigned long vm_start, vm_end;
 	unsigned long text_start, text_end;
 	unsigned long data_start, data_end;
-	unsigned long brk_start, brk_end, brk_end_reported;
+	unsigned long brk_start, brk_end;
 	unsigned long map_start, map_end;
 	unsigned long stack_start, stack_end;
 	unsigned long user_start, user_end;

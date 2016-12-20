@@ -1603,51 +1603,35 @@ SYSCALL_DECLARE(brk)
 	struct vm_regions *region = &cpu_local_var(current)->vm->region;
 	unsigned long r;
 	unsigned long vrflag;
-	long diff = address - region->brk_end;
 
-	dkprintf("%s: len: %ld, address: %lx\n",
-			__FUNCTION__, diff, address);
+	dkprintf("SC(%d)[sys_brk] brk_start=%lx,end=%lx\n",
+			ihk_mc_get_processor_id(), region->brk_start, region->brk_end);
 
 	flush_nfo_tlb();
 
-	/* Don't shrink, including glibc trick brk(0) to obtain current brk */
-	if (address < region->brk_end_reported) {
-		r = region->brk_end_reported;
+	/* brk change fail, including glibc trick brk(0) to obtain current brk */
+	if(address < region->brk_start) {
+		r = region->brk_end;
 		goto out;
 	}
 
-	/* If inside allocated area, simply report and update reported value */
-	if (address < region->brk_end) {
-		region->brk_end_reported = address;
-		r = region->brk_end_reported;
+	/* brk change fail, because we don't shrink memory region  */
+	if(address < region->brk_end) {
+		r = region->brk_end;
 		goto out;
 	}
 
-	/* We need to extend, do it by at least n large page size */
+	/* try to extend memory region */
 	vrflag = VR_PROT_READ | VR_PROT_WRITE;
 	vrflag |= VRFLAG_PROT_TO_MAXPROT(vrflag);
 	ihk_mc_spinlock_lock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
 	region->brk_end = extend_process_region(cpu_local_var(current)->vm,
-			region->brk_start,
-			region->brk_end,
-			(address + (5 * LARGE_PAGE_SIZE) - 1) & LARGE_PAGE_MASK,
-			vrflag);
+			region->brk_start, region->brk_end, address, vrflag);
 	ihk_mc_spinlock_unlock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
+	dkprintf("SC(%d)[sys_brk] brk_end set to %lx\n",
+			ihk_mc_get_processor_id(), region->brk_end);
 
-	/* Did we succeed with extending? */
-	if (region->brk_end >= address) {
-		region->brk_end_reported = address;
-		r = region->brk_end_reported;
-	}
-	else {
-		r = region->brk_end;
-	}
-
-	dkprintf("%s: len: %ld, brk_end_reported: 0x%lx, brk_end: 0x%lx\n",
-			__FUNCTION__,
-			diff,
-			region->brk_end_reported,
-			region->brk_end);
+	r = region->brk_end;
 
 out:
 	return r;
