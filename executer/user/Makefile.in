@@ -6,6 +6,7 @@ VPATH=@abs_srcdir@
 TARGET=mcexec
 @uncomment_if_ENABLE_MEMDUMP@TARGET+=eclair
 LIBS=@LIBS@
+IHKDIR ?= $(VPATH)/../../../ihk/linux/include/
 
 all: $(TARGET)
 
@@ -13,7 +14,7 @@ mcexec: mcexec.c
 	$(CC) -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) -fPIE -pie -lrt -pthread -o $@ $^ $(EXTRA_OBJS)
 
 eclair: eclair.c
-	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+	$(CC) $(CFLAGS) -I${IHKDIR} -o $@ $^ $(LIBS)
 
 clean:
 	$(RM) $(TARGET) *.o

@@ -2394,7 +2394,9 @@ static void idle(void)
 	cpu_enable_interrupt();
 
 	while (1) {
+		cpu_local_var(current)->status = PS_STOPPED;
 		schedule();
+		cpu_local_var(current)->status = PS_RUNNING;
 		cpu_disable_interrupt();
 
 		/* See if we need to migrate a process somewhere */
@@ -2440,7 +2442,9 @@ static void idle(void)
 		    v->status == CPU_STATUS_RESERVED) {
 			/* No work to do? Consolidate the kmalloc free list */
 			kmalloc_consolidate_free_list();
+			cpu_local_var(current)->status = PS_INTERRUPTIBLE;
 			cpu_safe_halt();
+			cpu_local_var(current)->status = PS_RUNNING;
 		}
 		else {
 			cpu_enable_interrupt();

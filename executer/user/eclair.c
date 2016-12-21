@@ -16,20 +16,8 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-
-/* From ihk/linux/include/ihk/ihk_host_user.h */
-#define PHYS_CHUNKS_DESC_SIZE 8192
-
-struct dump_mem_chunk {
-	unsigned long addr;
-	unsigned long size;
-};
-
-typedef struct dump_mem_chunks_s {
-	int nr_chunks;
-	struct dump_mem_chunk chunks[];
-} dump_mem_chunks_t;
-/* ---------- */
+#include <sys/ioctl.h>
+#include <ihk/ihk_host_user.h>
 
 #define CPU_TID_BASE 1000000
 
@@ -39,6 +27,10 @@ struct options {
 	char *kernel_path;
 	char *dump_path;
 	char *log_path;
+	int interactive;
+	int os_id;
+	int mcos_fd;
+	int print_idle;
 }; /* struct options */
 
 struct thread_info {
@@ -56,7 +48,7 @@ struct thread_info {
 	int tid;
 	int cpu;
 	int lcpu;
-	int padding;
+	int idle;
 	uintptr_t process;
 	uintptr_t clv;
 	uintptr_t x86_clv;
@@ -150,7 +142,21 @@ static int read_mem(uintptr_t va, void *buf, size_t size) {
 		}
 		return 1;
 	}
-	error = read_physmem(pa, buf, size);
+
+	if (opt.interactive) {
+		dumpargs_t args;
+
+		args.cmd = DUMP_READ;
+		args.start = pa;
+		args.size = size;
+		args.buf = buf;
+
+		error = ioctl(opt.mcos_fd, IHK_OS_DUMP, &args);
+	}
+	else {
+		error = read_physmem(pa, buf, size);
+	}
+
 	if (error) {
 		perror("read_mem:read_physmem");
 		return 1;
@@ -256,6 +262,7 @@ static int setup_threads(void) {
 		perror("num_processors");
 		return 1;
 	}
+	printf("%s: num_processors: %d\n", __FUNCTION__, num_processors);
 
 	error = read_symbol_64("locals", &locals);
 	if (error) {
@@ -278,70 +285,15 @@ static int setup_threads(void) {
 	ihk_mc_switch_context = lookup_symbol("ihk_mc_switch_context");
 	if (0) printf("ihk_mc_switch_context: %lx\n", ihk_mc_switch_context);
 
-	/* Set up idle threads first */
-	for (cpu = 0; cpu < num_processors; ++cpu) {
-		uintptr_t v;
-		uintptr_t thread;
-		uintptr_t proc;
-		int pid;
-		int tid;
-		struct thread_info *ti;
-		int status;
-
-		v = clv + (cpu * K(CPU_LOCAL_VAR_SIZE));
-
-		ti = malloc(sizeof(*ti));
-		if (!ti) {
-			perror("malloc");
-			return 1;
-		}
-
-		thread = v+K(IDLE_THREAD_OFFSET);
-
-		error = read_64(thread+K(PROC_OFFSET), &proc);
-		if (error) {
-			perror("proc");
-			return 1;
-		}
-
-		error = read_32(thread+K(STATUS_OFFSET), &status);
-		if (error) {
-			perror("status");
-			return 1;
-		}
-
-		error = read_32(proc+K(PID_OFFSET), &pid);
-		if (error) {
-			perror("pid");
-			return 1;
-		}
-
-		error = read_32(thread+K(TID_OFFSET), &tid);
-		if (error) {
-			perror("tid");
-			return 1;
-		}
-
-		ti->next = NULL;
-		ti->status = status;
-		ti->pid = pid;
-		ti->tid = tid;
-		ti->cpu = cpu;
-		ti->lcpu = cpu;
-		ti->process = thread;
-		ti->clv = v;
-		ti->x86_clv = locals + locals_span*cpu;
-
-		*titailp = ti;
-		titailp = &ti->next;
-	}
-
 	for (cpu = 0; cpu < num_processors; ++cpu) {
 		uintptr_t v;
 		uintptr_t head;
 		uintptr_t entry;
+		uintptr_t idle;
 
 		v = clv + (cpu * K(CPU_LOCAL_VAR_SIZE));
+
+		idle = v+K(IDLE_THREAD_OFFSET);
 
 		error = read_64(v+K(CURRENT_OFFSET), &current);
 		if (error) {
@@ -400,15 +352,19 @@ static int setup_threads(void) {
 			ti->status = status;
 			ti->pid = pid;
 			ti->tid = tid;
-			ti->cpu = (thread == current)? cpu: -1;
+			ti->cpu = (thread == current) ? cpu : -1;
 			ti->lcpu = cpu;
 			ti->process = thread;
+			ti->idle = 0;
 			ti->clv = v;
 			ti->x86_clv = locals + locals_span*cpu;
 
 			*titailp = ti;
 			titailp = &ti->next;
 
+			if (!curr_thread)
+				curr_thread = ti;
+next_thread:
 			error = read_64(entry, &entry);
 			if (error) {
 				perror("process2");
@@ -417,8 +373,78 @@ static int setup_threads(void) {
 		}
 	}
 
+	/* Set up idle threads */
+	if (opt.print_idle) {
+		for (cpu = 0; cpu < num_processors; ++cpu) {
+			uintptr_t v;
+			uintptr_t thread;
+			uintptr_t proc;
+			int pid;
+			int tid;
+			struct thread_info *ti;
+			int status;
+
+			v = clv + (cpu * K(CPU_LOCAL_VAR_SIZE));
+
+			error = read_64(v+K(CURRENT_OFFSET), &current);
+			if (error) {
+				perror("current");
+				return 1;
+			}
+
+			ti = malloc(sizeof(*ti));
+			if (!ti) {
+				perror("malloc");
+				return 1;
+			}
+
+			thread = v+K(IDLE_THREAD_OFFSET);
+
+			error = read_64(thread+K(PROC_OFFSET), &proc);
+			if (error) {
+				perror("proc");
+				return 1;
+			}
+
+			error = read_32(thread+K(STATUS_OFFSET), &status);
+			if (error) {
+				perror("status");
+				return 1;
+			}
+
+			error = read_32(proc+K(PID_OFFSET), &pid);
+			if (error) {
+				perror("pid");
+				return 1;
+			}
+
+			error = read_32(thread+K(TID_OFFSET), &tid);
+			if (error) {
+				perror("tid");
+				return 1;
+			}
+
+			ti->next = NULL;
+			ti->status = status;
+			ti->pid = 1;
+			ti->tid = 2000000000 + tid;
+			ti->cpu = (thread == current) ? cpu : -1;
+			ti->lcpu = cpu;
+			ti->process = thread;
+			ti->idle = 1;
+			ti->clv = v;
+			ti->x86_clv = locals + locals_span*cpu;
+
+			*titailp = ti;
+			titailp = &ti->next;
+
+			if (!curr_thread)
+				curr_thread = ti;
+		}
+	}
+
 	if (!tihead) {
-		printf("thread not found. cpu mode forcibly\n");
+		printf("No threads found, forcing CPU mode.\n");
 		opt.cpu = 1;
 	}
 
@@ -459,6 +485,7 @@ static int setup_threads(void) {
 			ti->tid = CPU_TID_BASE + cpu;
 			ti->cpu = cpu;
 			ti->process = current;
+			ti->idle = 1;
 			ti->clv = v;
 			ti->x86_clv = locals + locals_span*cpu;
 
@@ -471,7 +498,9 @@ static int setup_threads(void) {
 		printf("thread not found\n");
 		return 1;
 	}
-	curr_thread = tihead;
+
+	if (!curr_thread)
+		curr_thread = tihead;
 
 	return 0;
 } /* setup_threads() */
@@ -713,18 +742,21 @@ static void command(char *cmd, char *res) {
 					break;
 				}
 
+				//if (regs[17] > MAP_KERNEL) {}
 				pu8 = (void *)&regs;
 				for (i = 0; i < sizeof(regs)-4; ++i) {
 					rbp += sprintf(rbp, "%02x", pu8[i]);
 				}
 			}
 		}
+		/*
 		else if (!strcmp(p, "mffffffff80018a82,1")) {
 			rbp += sprintf(rbp, "b8");
 		}
 		else if (!strcmp(p, "mffffffff80018a82,9")) {
 			rbp += sprintf(rbp, "b8f2ffffff41564155");
 		}
+		*/
 		else if (!strncmp(p, "m", 1)) {
 			int n;
 			uintptr_t start;
@@ -821,25 +853,29 @@ static void command(char *cmd, char *res) {
 			}
 			q = buf;
 			if (ti->status & PS_RUNNING) {
-				q += sprintf(q, "running on cpu%d", ti->cpu);
+				q += sprintf(q, "%srunning on cpu %d",
+					ti->idle ? "idle " : "", ti->cpu);
 			}
 			else if (ti->status & (PS_INTERRUPTIBLE | PS_UNINTERRUPTIBLE)) {
-				q += sprintf(q, "waiting on cpu%d", ti->lcpu);
+				q += sprintf(q, "%swaiting on cpu %d",
+					ti->idle ? "idle " : "", ti->lcpu);
 			}
 			else if (ti->status & PS_STOPPED) {
-				q += sprintf(q, "stopped on cpu%d", ti->lcpu);
+				q += sprintf(q, "%sstopped on cpu %d",
+					ti->idle ? "idle " : "", ti->lcpu);
 			}
 			else if (ti->status & PS_TRACED) {
-				q += sprintf(q, "traced on cpu%d", ti->lcpu);
+				q += sprintf(q, "%straced on cpu %d",
+					ti->idle ? "idle " : "", ti->lcpu);
 			}
 			else if (ti->status == CS_IDLE) {
-				q += sprintf(q, "cpu%d idle", ti->cpu);
+				q += sprintf(q, "cpu %d idle", ti->cpu);
 			}
 			else if (ti->status == CS_RUNNING) {
-				q += sprintf(q, "cpu%d running", ti->cpu);
+				q += sprintf(q, "cpu %d running", ti->cpu);
 			}
 			else if (ti->status == CS_RESERVED) {
-				q += sprintf(q, "cpu%d reserved", ti->cpu);
+				q += sprintf(q, "cpu %d reserved", ti->cpu);
 			}
 			else {
 				q += sprintf(q, "status=%#x", ti->status);
@@ -859,11 +895,12 @@ static void options(int argc, char *argv[]) {
 	memset(&opt, 0, sizeof(opt));
 	opt.kernel_path = "./mckernel.img";
 	opt.dump_path = "./mcdump";
+	opt.mcos_fd = -1;
 
 	for (;;) {
 		int c;
 
-		c = getopt(argc, argv, "cd:hk:");
+		c = getopt(argc, argv, "ilcd:hk:o:");
 		if (c < 0) {
 			break;
 		}
@@ -881,10 +918,30 @@ static void options(int argc, char *argv[]) {
 		case 'd':
 			opt.dump_path = optarg;
 			break;
+		case 'i':
+			opt.interactive = 1;
+			break;
+		case 'o':
+			opt.os_id = atoi(optarg);
+			break;
+		case 'l':
+			opt.print_idle = 1;
+			break;
 		}
 	}
 	if (optind < argc) {
 		opt.help = 1;
+	}
+
+	if (opt.interactive) {
+		char fn[128];
+		sprintf(fn, "/dev/mcos%d", opt.os_id);
+
+		opt.mcos_fd = open(fn, O_RDONLY);
+		if (opt.mcos_fd < 0) {
+			perror("open");
+			exit(1);
+		}
 	}
 
 	return;
@@ -969,7 +1026,7 @@ int main(int argc, char *argv[]) {
 	uint8_t sum;
 	uint8_t check;
 	static char lbuf[1024];
-	static char rbuf[1024];
+	static char rbuf[8192];
 	static char cbuf[3];
 	char *lbp;
 	char *p;
