@@ -82,16 +82,17 @@ int (*mcctrl_sys_umount)(char *dir_name, int flags) = sys_umount;
 #endif
 #endif
 
-//static DECLARE_WAIT_QUEUE_HEAD(wq_prepare);
 //extern struct mcctrl_channel *channels;
 int mcctrl_ikc_set_recv_cpu(ihk_os_t os, int cpu);
 
 static long mcexec_prepare_image(ihk_os_t os,
                                  struct program_load_desc * __user udesc)
 {
-	struct program_load_desc *desc, *pdesc;
+	struct program_load_desc *desc = NULL;
+	struct program_load_desc *pdesc = NULL;
 	struct ikc_scd_packet isp;
-	void *args, *envs;
+	void *args = NULL;
+	void *envs = NULL;
 	long ret = 0;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd = NULL;
@@ -108,42 +109,53 @@ static long mcexec_prepare_image(ihk_os_t os,
 	                    sizeof(struct program_load_desc))) {
 		printk("%s: error: copying program_load_desc\n",
 			__FUNCTION__);
-		kfree(desc);
-		return -EFAULT;
+		ret = -EFAULT;
+		goto free_out;
+	}
+
+	ppd = mcctrl_get_per_proc_data(usrdata, desc->pid);
+	if (!ppd) {
+		printk("%s: ERROR: no per process data for PID %d\n",
+			__FUNCTION__, desc->pid);
+		ret = -EINVAL;
+		goto free_out;
 	}
 
 	num_sections = desc->num_sections;
 
 	if (num_sections <= 0 || num_sections > 16) {
-		printk("# of sections: %d\n", num_sections);
-		return -EINVAL;
+		printk("%s: ERROR: # of sections: %d\n",
+			__FUNCTION__, num_sections);
+		ret = -EINVAL;
+		goto free_out;
 	}
+
 	pdesc = kmalloc(sizeof(struct program_load_desc) + 
 	                sizeof(struct program_image_section)
 	                * num_sections, GFP_KERNEL);
 	memcpy(pdesc, desc, sizeof(struct program_load_desc));
+
 	if (copy_from_user(pdesc->sections, udesc->sections,
 	                   sizeof(struct program_image_section)
 	                   * num_sections)) {
-		kfree(desc);
-		kfree(pdesc);
-		return -EFAULT;
+		ret = -EFAULT;
+		goto free_out;
 	}
 
 	kfree(desc);
+	desc = NULL;
 
 	pdesc->pid = task_tgid_vnr(current);
 
 	if (reserve_user_space(usrdata, &pdesc->user_start, &pdesc->user_end)) {
-		kfree(pdesc);
-		return -ENOMEM;
+		ret = -ENOMEM;
+		goto free_out;
 	}
 
 	args = kmalloc(pdesc->args_len, GFP_KERNEL);
 	if (copy_from_user(args, pdesc->args, pdesc->args_len)) {
-		kfree(args);
-		kfree(pdesc);
-		return -EFAULT;
+		ret = -EFAULT;
+		goto free_out;
 	}
 	
 	envs = kmalloc(pdesc->envs_len, GFP_KERNEL);
@@ -169,17 +181,10 @@ static long mcexec_prepare_image(ihk_os_t os,
 	pdesc->status = 0;
 	mcctrl_ikc_send(os, pdesc->cpu, &isp);
 
-	while (wait_event_interruptible(usrdata->wq_prepare, pdesc->status) != 0);
+	while (wait_event_interruptible(ppd->wq_prepare, pdesc->status) != 0);
 
-	if(pdesc->err < 0){
+	if (pdesc->err < 0) {
 		ret = pdesc->err;	
-		goto free_out;
-	}
-
-	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
-	if (!ppd) {
-		printk("ERROR: no per process data for PID %d\n", task_tgid_vnr(current));
-		ret = -EINVAL;
 		goto free_out;
 	}
 
@@ -201,6 +206,7 @@ free_out:
 	kfree(args);
 	kfree(pdesc);
 	kfree(envs);
+	kfree(desc);
 
 	return ret;
 }
@@ -1178,6 +1184,7 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 		INIT_LIST_HEAD(&ppd->wq_list);
 		INIT_LIST_HEAD(&ppd->wq_req_list);
 		INIT_LIST_HEAD(&ppd->wq_list_exact);
+		init_waitqueue_head(&ppd->wq_prepare);
 		spin_lock_init(&ppd->wq_list_lock);
 		memset(&ppd->cpu_set, 0, sizeof(cpumask_t));
 		ppd->ikc_target_cpu = 0;
@@ -1530,10 +1537,18 @@ void mcexec_prepare_ack(ihk_os_t os, unsigned long arg, int err)
 {
 	struct program_load_desc *desc = phys_to_virt(arg);
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_per_proc_data *ppd = NULL;
+
+	ppd = mcctrl_get_per_proc_data(usrdata, desc->pid);
+	if (!ppd) {
+		printk("%s: ERROR: no per process data for PID %d\n",
+			__FUNCTION__, desc->pid);
+		return;
+	}
 
 	desc->err = err;
 	desc->status = 1;
 	
-	wake_up_all(&usrdata->wq_prepare);
+	wake_up_all(&ppd->wq_prepare);
 }
 

@@ -195,6 +195,7 @@ struct mcctrl_per_proc_data {
 	struct list_head wq_req_list;
 	struct list_head wq_list_exact;
 	ihk_spinlock_t wq_list_lock;
+	wait_queue_head_t wq_prepare;
 
 	struct list_head per_thread_data_hash[MCCTRL_PER_THREAD_DATA_HASH_SIZE];
 	rwlock_t per_thread_data_hash_lock[MCCTRL_PER_THREAD_DATA_HASH_SIZE];
@@ -280,7 +281,6 @@ struct mcctrl_usrdata {
 	int	job_pos;
 	int	mcctrl_dma_abort;
 	unsigned long	last_thread_exec;
-	wait_queue_head_t	wq_prepare;
 	
 	struct list_head per_proc_data_hash[MCCTRL_PER_PROC_DATA_HASH_SIZE];
 	rwlock_t per_proc_data_hash_lock[MCCTRL_PER_PROC_DATA_HASH_SIZE];
