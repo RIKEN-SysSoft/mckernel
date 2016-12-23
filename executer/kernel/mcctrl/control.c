@@ -127,7 +127,7 @@ static long mcexec_prepare_image(ihk_os_t os,
 		printk("%s: ERROR: # of sections: %d\n",
 			__FUNCTION__, num_sections);
 		ret = -EINVAL;
-		goto free_out;
+		goto put_and_free_out;
 	}
 
 	pdesc = kmalloc(sizeof(struct program_load_desc) + 
@@ -139,7 +139,7 @@ static long mcexec_prepare_image(ihk_os_t os,
 	                   sizeof(struct program_image_section)
 	                   * num_sections)) {
 		ret = -EFAULT;
-		goto free_out;
+		goto put_and_free_out;
 	}
 
 	kfree(desc);
@@ -149,19 +149,19 @@ static long mcexec_prepare_image(ihk_os_t os,
 
 	if (reserve_user_space(usrdata, &pdesc->user_start, &pdesc->user_end)) {
 		ret = -ENOMEM;
-		goto free_out;
+		goto put_and_free_out;
 	}
 
 	args = kmalloc(pdesc->args_len, GFP_KERNEL);
 	if (copy_from_user(args, pdesc->args, pdesc->args_len)) {
 		ret = -EFAULT;
-		goto free_out;
+		goto put_and_free_out;
 	}
 	
 	envs = kmalloc(pdesc->envs_len, GFP_KERNEL);
 	if (copy_from_user(envs, pdesc->envs, pdesc->envs_len)) {
 		ret = -EFAULT;	
-		goto free_out;
+		goto put_and_free_out;
 	}
 
 	pdesc->args = (void*)virt_to_phys(args);
@@ -185,7 +185,7 @@ static long mcexec_prepare_image(ihk_os_t os,
 
 	if (pdesc->err < 0) {
 		ret = pdesc->err;	
-		goto free_out;
+		goto put_and_free_out;
 	}
 
 	/* Update rpgtable */
@@ -194,7 +194,7 @@ static long mcexec_prepare_image(ihk_os_t os,
 	if (copy_to_user(udesc, pdesc, sizeof(struct program_load_desc) + 
 	             sizeof(struct program_image_section) * num_sections)) {
 		ret = -EFAULT;	
-		goto free_out;
+		goto put_and_free_out;
 	}
 
 	dprintk("%s: pid %d, rpgtable: 0x%lx added\n", 
@@ -202,6 +202,8 @@ static long mcexec_prepare_image(ihk_os_t os,
 
 	ret = 0;
 
+put_and_free_out:
+	mcctrl_put_per_proc_data(ppd);
 free_out:
 	kfree(args);
 	kfree(pdesc);
@@ -428,7 +430,7 @@ static long mcexec_send_signal(ihk_os_t os, struct signal_desc *sigparam)
 	isp.pid = sig.pid;
 	isp.arg = virt_to_phys(msigp);
 
-	if((rc = mcctrl_ikc_send(os, sig.cpu, &isp)) < 0){
+	if ((rc = mcctrl_ikc_send(os, sig.cpu, &isp)) < 0) {
 		printk("mcexec_send_signal: mcctrl_ikc_send ret=%d\n", rc);
 		return rc;
 	}
@@ -504,7 +506,8 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 
 	if (copy_from_user(&req, (void *)arg, sizeof(req))) {
 		printk("%s: error copying user request\n", __FUNCTION__);
-		return -EINVAL;
+		ret = -EINVAL;
+		goto put_and_unlock_out;
 	}
 
 	mutex_lock(&pe->lock);
@@ -526,7 +529,7 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 				" doesn't match current partitioned execution\n",
 				__FUNCTION__);
 		ret = -EINVAL;
-		goto unlock_out;
+		goto put_and_unlock_out;
 	}
 
 	--pe->nr_processes_left;
@@ -543,7 +546,7 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 		printk("%s: error: no more CPUs available\n",
 				__FUNCTION__);
 		ret = -EINVAL;
-		goto unlock_out;
+		goto put_and_unlock_out;
 	}
 
 	cpu_set(cpu, cpus_used);
@@ -568,7 +571,7 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 			printk("%s: error: couldn't find CPU topology info\n",
 					__FUNCTION__);
 			ret = -EINVAL;
-			goto unlock_out;
+			goto put_and_unlock_out;
 		}
 
 		/* Find a core sharing the same cache iterating caches from
@@ -613,7 +616,7 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 			printk("%s: error: no more CPUs available\n",
 					__FUNCTION__);
 			ret = -EINVAL;
-			goto unlock_out;
+			goto put_and_unlock_out;
 		}
 
 		cpu_set(cpu, cpus_used);
@@ -632,7 +635,7 @@ next_cpu:
 				 req.cpu_set_size : sizeof(cpus_to_use)))) {
 		printk("%s: error copying mask to user\n", __FUNCTION__);
 		ret = -EINVAL;
-		goto unlock_out;
+		goto put_and_unlock_out;
 	}
 
 	cpu = cpumask_next(-1, &cpus_to_use);
@@ -640,7 +643,7 @@ next_cpu:
 		printk("%s: error copying target core to user\n",
 				__FUNCTION__);
 		ret = -EINVAL;
-		goto unlock_out;
+		goto put_and_unlock_out;
 	}
 
 	/* Save in per-process structure */
@@ -661,7 +664,8 @@ next_cpu:
 
 	ret = 0;
 
-unlock_out:
+put_and_unlock_out:
+	mcctrl_put_per_proc_data(ppd);
 	mutex_unlock(&pe->lock);
 
 	return ret;
@@ -691,34 +695,10 @@ out:
 	return ret;
 }
 
-int mcctrl_delete_per_proc_data(struct mcctrl_usrdata *ud, int pid)
-{
-	struct mcctrl_per_proc_data *ppd_iter, *ppd = NULL;
-	int hash = (pid & MCCTRL_PER_PROC_DATA_HASH_MASK);
-	int ret = 0;
-	unsigned long flags;
 
-	write_lock_irqsave(&ud->per_proc_data_hash_lock[hash], flags);
-	list_for_each_entry(ppd_iter, &ud->per_proc_data_hash[hash], hash) {
-		if (ppd_iter->pid == pid) {
-			ppd = ppd_iter;
-			break;
-		}
-	}
-
-	if (!ppd) {
-		ret = -EINVAL;
-		goto out;
-	}
-
-	list_del(&ppd->hash);
-
-out:
-	write_unlock_irqrestore(&ud->per_proc_data_hash_lock[hash], flags);
-	return ret;
-}
-
-inline struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(
+/* NOTE: per-process data is refcounted.
+ * For every get call the user should call put. */
+struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(
 		struct mcctrl_usrdata *ud, int pid)
 {
 	struct mcctrl_per_proc_data *ppd_iter, *ppd = NULL;
@@ -727,7 +707,6 @@ inline struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(
 
 	/* Check if data for this process exists and return it */
 	read_lock_irqsave(&ud->per_proc_data_hash_lock[hash], flags);
-
 	list_for_each_entry(ppd_iter, &ud->per_proc_data_hash[hash], hash) {
 		if (ppd_iter->pid == pid) {
 			ppd = ppd_iter;
@@ -735,9 +714,37 @@ inline struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(
 		}
 	}
 
+	if (ppd) {
+		atomic_inc(&ppd->refcount);
+	}
+
 	read_unlock_irqrestore(&ud->per_proc_data_hash_lock[hash], flags);
+
 	return ppd;
 }
+
+/* Drop reference. If zero, remove and deallocate */
+void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
+{
+	int hash;
+	unsigned long flags;
+
+	if (!ppd)
+		return;
+
+	if (!atomic_dec_and_test(&ppd->refcount))
+		return;
+
+	dprintk("%s: deallocating PPD for pid %d\n", __FUNCTION__, ppd->pid);
+	hash = (ppd->pid & MCCTRL_PER_PROC_DATA_HASH_MASK);
+
+	write_lock_irqsave(&ppd->ud->per_proc_data_hash_lock[hash], flags);
+	list_del(&ppd->hash);
+	write_unlock_irqrestore(&ppd->ud->per_proc_data_hash_lock[hash], flags);
+
+	kfree(ppd);
+}
+
 
 /*
  * Called indirectly from the IKC message handler.
@@ -751,7 +758,7 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 	unsigned long flags;
 	struct mcctrl_per_proc_data *ppd;
 
-	/* Look up per-process structure */
+	/* Get a reference to per-process structure */
 	ppd = mcctrl_get_per_proc_data(ud, pid);
 
 	if (unlikely(!ppd)) {
@@ -816,8 +823,10 @@ retry_alloc:
 
 	wqhln->packet = packet;
 	wqhln->req = 1;
-	wake_up(&wqhln->wq_syscall);
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, flags);
+	wake_up(&wqhln->wq_syscall);
+
+	mcctrl_put_per_proc_data(ppd);
 
 	return 0;
 }
@@ -835,7 +844,7 @@ int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 	unsigned long irqflags;
 	struct mcctrl_per_proc_data *ppd;
 
-	/* Look up per-process structure */
+	/* Get a reference to per-process structure */
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 
 	if (unlikely(!ppd)) {
@@ -848,7 +857,8 @@ int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 	if (packet) {
 		printk("%s: ERROR: packet %p is already registered for thread %d\n",
 				__FUNCTION__, packet, task_pid_vnr(current));
-		return -EBUSY;
+		ret = -EBUSY;
+		goto put_ppd_out;
 	}
 
 retry:
@@ -874,12 +884,13 @@ retry_alloc:
 
 		wqhln->task = current;
 		wqhln->req = 0;
+		wqhln->packet = NULL;
 		init_waitqueue_head(&wqhln->wq_syscall);
 
-		/* Wait for a request.. */
 		list_add(&wqhln->list, &ppd->wq_list);
 		ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, irqflags);
 
+		/* Wait for a request.. */
 		ret = wait_event_interruptible(wqhln->wq_syscall, wqhln->req);
 
 		/* Remove per-thread wait queue head */
@@ -891,7 +902,8 @@ retry_alloc:
 	if (ret && !wqhln->req) {
 		kfree(wqhln);
 		wqhln = NULL;
-		return -EINTR;
+		ret = -EINTR;
+		goto put_ppd_out;
 	}
 
 	packet = wqhln->packet;
@@ -927,7 +939,8 @@ retry_alloc:
 	
 	if (mcctrl_add_per_thread_data(ppd, current, packet) < 0) {
 		kprintf("%s: error adding per-thread data\n", __FUNCTION__);
-		return -EINVAL;
+		ret = -EINVAL;;
+		goto put_ppd_out;
 	}
 
 	if (__do_in_kernel_syscall(os, packet)) {
@@ -936,11 +949,13 @@ retry_alloc:
 
 			if (mcctrl_delete_per_thread_data(ppd, current) < 0) {
 				kprintf("%s: error deleting per-thread data\n", __FUNCTION__);
-				return -EINVAL;
 			}
-			return -EFAULT;
+			ret = -EINVAL;;
+			goto put_ppd_out;
 		}
-		return 0;
+
+		ret = 0;
+		goto put_ppd_out;
 	}
 
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
@@ -948,10 +963,15 @@ retry_alloc:
 
 	if (mcctrl_delete_per_thread_data(ppd, current) < 0) {
 		kprintf("%s: error deleting per-thread data\n", __FUNCTION__);
-		return -EINVAL;
+		ret = -EINVAL;;
+		goto put_ppd_out;
 	}
 
 	goto retry;
+
+put_ppd_out:
+	mcctrl_put_per_proc_data(ppd);
+	return ret;
 }
 
 long mcexec_pin_region(ihk_os_t os, unsigned long *__user arg)
@@ -1061,6 +1081,7 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 	if (!packet) {
 		kprintf("%s: ERROR: no packet registered for TID %d\n", 
 			__FUNCTION__, task_pid_vnr(current));
+		mcctrl_put_per_proc_data(ppd);
 		return -EINVAL;
 	}
 
@@ -1079,6 +1100,7 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 		                             ret.size, NULL, 0);
 #endif
 		if (copy_from_user(rpm, (void *__user)ret.src, ret.size)) {
+			mcctrl_put_per_proc_data(ppd);
 			return -EFAULT;
 		}
 
@@ -1096,6 +1118,7 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 			(usrdata->channels + packet->ref)->c);
 
+	mcctrl_put_per_proc_data(ppd);
 	return 0;
 }
 
@@ -1164,7 +1187,7 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	int i;
 
 	if (os_ind < 0) {
-		return EINVAL;
+		return -EINVAL;
 	}
 
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
@@ -1176,6 +1199,7 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 			return -ENOMEM;
 		}
 
+		ppd->ud = usrdata;
 		ppd->pid = task_tgid_vnr(current);
 		/*
 		 * XXX: rpgtable will be updated in __do_in_kernel_syscall()
@@ -1188,6 +1212,8 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 		spin_lock_init(&ppd->wq_list_lock);
 		memset(&ppd->cpu_set, 0, sizeof(cpumask_t));
 		ppd->ikc_target_cpu = 0;
+		/* Final ref will be dropped in close_exec() */
+		atomic_set(&ppd->refcount, 1);
 
 		for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; ++i) {
 			INIT_LIST_HEAD(&ppd->per_thread_data_hash[i]);
@@ -1196,36 +1222,33 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 
 		if (mcctrl_add_per_proc_data(usrdata, ppd->pid, ppd) < 0) {
 			printk("%s: error adding per process data\n", __FUNCTION__);
-			retval = EINVAL;
-			goto out_free_ppd;
+			retval = -EINVAL;
+			kfree(ppd);
+			goto out;
 		}
-	}
-	else {
-		/* Only deallocate in case of an error if we added it above */
-		ppd = NULL;
 	}
 
 	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
 	if (!pathbuf) {
-		retval = ENOMEM;
-		goto out_error_drop_ppd;
+		retval = -ENOMEM;
+		goto out_put_ppd;
 	}
 
 	file = open_exec(filename);
 	retval = PTR_ERR(file);
 	if (IS_ERR(file)) {
-		goto out_error_free;
+		goto out_free;
 	}
 
 	fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
 	if (IS_ERR(fullpath)) {
 		retval = PTR_ERR(fullpath);
-		goto out_error_free;
+		goto out_free;
 	}
 
 	mcef = kmalloc(sizeof(*mcef), GFP_KERNEL);
 	if (!mcef) {
-		retval = ENOMEM;
+		retval = -ENOMEM;
 		goto out_put_file;
 	}
 
@@ -1260,13 +1283,12 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 
 out_put_file:
 	fput(file);
-out_error_free:
+out_free:
 	kfree(pathbuf);
-out_error_drop_ppd:
-	if (ppd) mcctrl_delete_per_proc_data(usrdata, ppd->pid);
-out_free_ppd:
-	if (ppd) kfree(ppd);
-	return -retval;
+out_put_ppd:
+	mcctrl_put_per_proc_data(ppd);
+out:
+	return retval;
 }
 
 
@@ -1281,12 +1303,12 @@ int mcexec_close_exec(ihk_os_t os)
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 
 	if (ppd) {
-		mcctrl_delete_per_proc_data(usrdata, ppd->pid);
+		/* One for the reference and one for deallocation */
+		mcctrl_put_per_proc_data(ppd);
+		mcctrl_put_per_proc_data(ppd);
 
 		dprintk("pid: %d, tid: %d: rpgtable for %d (0x%lx) removed\n",
 				task_tgid_vnr(current), current->pid, ppd->pid, ppd->rpgtable);
-
-		kfree(ppd);
 	}
 	else {
 		printk("WARNING: no per process data for pid %d ?\n", 
@@ -1550,5 +1572,6 @@ void mcexec_prepare_ack(ihk_os_t os, unsigned long arg, int err)
 	desc->status = 1;
 	
 	wake_up_all(&ppd->wq_prepare);
+	mcctrl_put_per_proc_data(ppd);
 }
 

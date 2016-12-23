@@ -187,6 +187,7 @@ struct mcctrl_per_thread_data {
 #define MCCTRL_PER_THREAD_DATA_HASH_MASK (MCCTRL_PER_THREAD_DATA_HASH_SIZE - 1) 
 
 struct mcctrl_per_proc_data {
+	struct mcctrl_usrdata *ud;
 	struct list_head hash;
 	int pid;
 	unsigned long rpgtable;	/* per process, not per OS */
@@ -201,6 +202,7 @@ struct mcctrl_per_proc_data {
 	rwlock_t per_thread_data_hash_lock[MCCTRL_PER_THREAD_DATA_HASH_SIZE];
 	cpumask_t cpu_set;
 	int ikc_target_cpu;
+	atomic_t refcount;
 };
 
 struct sysfsm_req {
@@ -315,8 +317,9 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet);
 int mcctrl_add_per_proc_data(struct mcctrl_usrdata *ud, int pid, 
 	struct mcctrl_per_proc_data *ppd);
 int mcctrl_delete_per_proc_data(struct mcctrl_usrdata *ud, int pid);
-inline struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(
+struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(
 		struct mcctrl_usrdata *ud, int pid);
+void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd);
 
 int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data* ppd,
 	struct task_struct *task, void *data);

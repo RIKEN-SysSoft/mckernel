@@ -306,7 +306,7 @@ static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, u
 		error = -ENOENT;
 		printk("%s: no packet registered for TID %d\n",
 				__FUNCTION__, task_pid_vnr(current));
-		goto out_no_unmap;
+		goto out_put_ppd;
 	}
 
 	req = &packet->req;
@@ -434,9 +434,11 @@ out:
 	ihk_device_unmap_virtual(ihk_os_to_dev(usrdata->os), resp, sizeof(*resp));
 	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
 
-out_no_unmap:
+out_put_ppd:
 	dprintk("%s: tid: %d, fault_addr: %lu, reason: %lu, error: %d\n",
 		__FUNCTION__, task_pid_vnr(current), fault_addr, reason, error);
+
+	mcctrl_put_per_proc_data(ppd);
 	return error;
 }
 
@@ -574,6 +576,7 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	size_t			pix;
 #endif
 	struct mcctrl_per_proc_data *ppd;
+	int ret = 0;
 
 	dprintk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
 			vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
@@ -583,7 +586,6 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	if (!ppd) {
 		ppd = mcctrl_get_per_proc_data(usrdata, vma->vm_mm->owner->pid);
 	}
-
 
 	if (!ppd) {
 		kprintf("%s: ERROR: no per-process structure for PID %d??\n", 
@@ -618,7 +620,8 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	if (error) {
 		printk("mcctrl:page fault error:flags %#x pgoff %#lx va %p page %p\n",
 				vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
-		return VM_FAULT_SIGBUS;
+		ret = VM_FAULT_SIGBUS;
+		goto put_and_out;
 	}
 
 	rva = (unsigned long)vmf->virtual_address & ~(pgsize - 1);
@@ -655,10 +658,15 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	if (error) {
 		printk("mcctrl:page fault:remap error:flags %#x pgoff %#lx va %p page %p\n",
 				vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
-		return VM_FAULT_SIGBUS;
+		ret = VM_FAULT_SIGBUS;
+		goto put_and_out;
 	}
 
-	return VM_FAULT_NOPAGE;
+	ret = VM_FAULT_NOPAGE;
+
+put_and_out:
+	mcctrl_put_per_proc_data(ppd);
+	return ret;
 }
 
 static struct vm_operations_struct rus_vmops = {
@@ -1623,6 +1631,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 
 			dprintk("%s: pid: %d, rpgtable: 0x%lx updated\n",
 				__FUNCTION__, ppd->pid, ppd->rpgtable);
+			mcctrl_put_per_proc_data(ppd);
 		}
 
 		ret = clear_pte_range(sc->args[0], sc->args[1]);
