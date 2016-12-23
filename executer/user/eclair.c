@@ -289,11 +289,8 @@ static int setup_threads(void) {
 		uintptr_t v;
 		uintptr_t head;
 		uintptr_t entry;
-		uintptr_t idle;
 
 		v = clv + (cpu * K(CPU_LOCAL_VAR_SIZE));
-
-		idle = v+K(IDLE_THREAD_OFFSET);
 
 		error = read_64(v+K(CURRENT_OFFSET), &current);
 		if (error) {
@@ -364,7 +361,7 @@ static int setup_threads(void) {
 
 			if (!curr_thread)
 				curr_thread = ti;
-next_thread:
+
 			error = read_64(entry, &entry);
 			if (error) {
 				perror("process2");
