@@ -248,9 +248,11 @@ get_pid_cred(int pid)
 {
 	struct task_struct *task = NULL;
 
-	if(pid > 0){
+	if (pid > 0) {
+		rcu_read_lock();
 		task = pid_task(find_vpid(pid), PIDTYPE_PID);
-		if(task){
+		rcu_read_unlock();
+		if (task) {
 			return __task_cred(task);
 		}
 	}
