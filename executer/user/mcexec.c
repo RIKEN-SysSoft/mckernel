@@ -1746,8 +1746,8 @@ do_generic_syscall(
 
 	/* Overlayfs /sys/X directory lseek() problem work around */
 	if (w->sr.number == __NR_lseek && ret == -EINVAL) {
-		char proc_path[512];
-		char path[512];
+		char proc_path[PATH_MAX];
+		char path[PATH_MAX];
 		struct stat sb;
 
 		sprintf(proc_path, "/proc/self/fd/%d", (int)w->sr.args[0]);
@@ -1756,6 +1756,7 @@ do_generic_syscall(
 		if (readlink(proc_path, path, sizeof(path)) < 0) {
 			fprintf(stderr, "%s: error: readlink() failed for %s\n",
 				__FUNCTION__, proc_path);
+			perror(": ");
 			goto out;
 		}
 
