@@ -851,7 +851,7 @@ static void command(char *cmd, char *res) {
 			q = buf;
 			if (ti->status & PS_RUNNING) {
 				q += sprintf(q, "%srunning on cpu %d",
-					ti->idle ? "idle " : "", ti->cpu);
+					ti->idle ? "idle " : "", ti->lcpu);
 			}
 			else if (ti->status & (PS_INTERRUPTIBLE | PS_UNINTERRUPTIBLE)) {
 				q += sprintf(q, "%swaiting on cpu %d",
