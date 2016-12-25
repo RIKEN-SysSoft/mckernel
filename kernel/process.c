@@ -2641,8 +2641,8 @@ static void do_migrate(void)
 		                  &req->thread->vm->address_space->cpu_set,
 		                  &req->thread->vm->address_space->cpu_set_lock);
 
-		dkprintf("do_migrate(): migrated TID %d from CPU %d to CPU %d\n",
-			req->thread->tid, old_cpu_id, cpu_id);
+		dkprintf("%s: migrated TID %d from CPU %d to CPU %d\n",
+			__FUNCTION__, req->thread->tid, old_cpu_id, cpu_id);
 		
 		v->flags |= CPU_FLAG_NEED_RESCHED;
 		ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
@@ -2930,6 +2930,8 @@ void sched_request_migrate(int cpu_id, struct thread *thread)
 	if (cpu_id != ihk_mc_get_processor_id())
 		ihk_mc_interrupt_cpu(/* Kick scheduler */
 				get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
+	dkprintf("%s: tid: %d -> cpu: %d\n",
+			__FUNCTION__, thread->tid, cpu_id);
 
 	schedule();
 	waitq_finish_wait(&req.wq, &entry);
