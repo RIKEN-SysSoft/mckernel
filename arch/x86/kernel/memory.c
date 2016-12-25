@@ -2418,7 +2418,7 @@ int patch_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t
 	unsigned long pa;
 	void *va;
 
-	kprintf("patch_process_vm(%p,%p,%p,%lx)\n", vm, udst, ksrc, siz);
+	dkprintf("patch_process_vm(%p,%p,%p,%lx)\n", vm, udst, ksrc, siz);
 	if ((ustart < vm->region.user_start)
 			|| (vm->region.user_end <= ustart)
 			|| ((vm->region.user_end - ustart) < siz)) {
@@ -2468,6 +2468,6 @@ int patch_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t
 		remain -= cpsize;
 	}
 
-	kprintf("patch_process_vm(%p,%p,%p,%lx):%d\n", vm, udst, ksrc, siz, 0);
+	dkprintf("patch_process_vm(%p,%p,%p,%lx):%d\n", vm, udst, ksrc, siz, 0);
 	return 0;
 } /* patch_process_vm() */
