@@ -179,6 +179,7 @@ static long mcexec_prepare_image(ihk_os_t os,
 	dprintk("%p (%lx)\n", pdesc, isp.arg);
 	
 	pdesc->status = 0;
+	mb();
 	mcctrl_ikc_send(os, pdesc->cpu, &isp);
 
 	while (wait_event_interruptible(ppd->wq_prepare, pdesc->status) != 0);
@@ -1570,6 +1571,7 @@ void mcexec_prepare_ack(ihk_os_t os, unsigned long arg, int err)
 
 	desc->err = err;
 	desc->status = 1;
+	mb();
 	
 	wake_up_all(&ppd->wq_prepare);
 	mcctrl_put_per_proc_data(ppd);
