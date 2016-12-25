@@ -3563,9 +3563,28 @@ do_sigsuspend(struct thread *thread, const sigset_t *set)
 	thread->sigmask.__val[0] = wset;
 
 	thread->sigevent = 1;
-	for(;;){
-		while(thread->sigevent == 0)
-			cpu_pause();
+	for (;;) {
+		while (thread->sigevent == 0) {
+			int do_schedule = 0;
+			struct cpu_local_var *v;
+			long runq_irqstate;
+			runq_irqstate =
+				ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
+			v = get_this_cpu_local_var();
+
+			if (v->flags & CPU_FLAG_NEED_RESCHED) {
+				do_schedule = 1;
+			}
+
+			ihk_mc_spinlock_unlock(&v->runq_lock, runq_irqstate);
+			
+			if (do_schedule) {
+				schedule();
+			}
+			else {
+				cpu_pause();
+			}
+		}
 
 		lock = &thread->sigcommon->lock;
 		head = &thread->sigcommon->sigpending;
