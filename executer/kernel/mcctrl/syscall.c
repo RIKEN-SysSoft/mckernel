@@ -326,6 +326,9 @@ retry_alloc:
 
 	/* Prepare per-thread wait queue head */
 	wqhln->task = current;
+	/* Save the TID explicitly, because mcexec_syscall(), where the request
+	 * will be matched, is in IRQ context and can't call task_pid_vnr() */
+	wqhln->rtid = task_pid_vnr(current);
 	wqhln->req = 0;
 	init_waitqueue_head(&wqhln->wq_syscall);
 

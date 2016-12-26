@@ -789,7 +789,7 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 	/* Is this a request for a specific thread? See if it's waiting */
 	if (unlikely(packet->req.ttid)) {
 		list_for_each_entry(wqhln_iter, &ppd->wq_list_exact, list) {
-			if (packet->req.ttid != task_pid_vnr(wqhln_iter->task))
+			if (packet->req.ttid != wqhln_iter->rtid)
 				continue;
 
 			wqhln = wqhln_iter;
