@@ -93,7 +93,7 @@ static long mcexec_prepare_image(ihk_os_t os,
 	struct ikc_scd_packet isp;
 	void *args = NULL;
 	void *envs = NULL;
-	long ret = 0;
+	int ret = 0;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd = NULL;
 	int num_sections;
@@ -182,7 +182,11 @@ static long mcexec_prepare_image(ihk_os_t os,
 	mb();
 	mcctrl_ikc_send(os, pdesc->cpu, &isp);
 
-	while (wait_event_interruptible(ppd->wq_prepare, pdesc->status) != 0);
+	ret = wait_event_interruptible(ppd->wq_prepare, pdesc->status);
+	if (ret < 0) {
+		printk("%s: ERROR after wait: %d\n", __FUNCTION__, ret);
+		goto put_and_free_out;
+	}
 
 	if (pdesc->err < 0) {
 		ret = pdesc->err;	
