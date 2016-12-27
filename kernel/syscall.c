@@ -1135,6 +1135,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	struct vm_regions *region = &thread->vm->region;
 	intptr_t addr = addr0;
 	size_t len = len0;
+	size_t populate_len;
 	off_t off;
 	int error;
 	intptr_t npages;
@@ -1363,10 +1364,13 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		goto out;
 	}
 
+	populate_len = len;
+
 	memobj_lock(memobj);
 	if (memobj->status == MEMOBJ_TO_BE_PREFETCHED) {
 		memobj->status = MEMOBJ_READY;
 		populated_mapping = 1;
+		populate_len = memobj->size;
 	}
 	memobj_unlock(memobj);
 
@@ -1382,7 +1386,9 @@ out:
 	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
 
 	if (!error && populated_mapping && !((vrflags & VR_PROT_MASK) == VR_PROT_NONE)) {
-		error = populate_process_memory(thread->vm, (void *)addr, len);
+		error = populate_process_memory(thread->vm,
+				(void *)addr, populate_len);
+
 		if (error) {
 			ekprintf("%s: WARNING: populate_process_memory(): "
 					"vm: %p, addr: %p, len: %d (flags: %s%s) failed %d\n",
