@@ -136,19 +136,19 @@ error_exit() {
 	mcctrl_loaded)
 		rmmod mcctrl || echo "warning: failed to remove mcctrl" >&2
 		;&
-	mem_reserved)
-		mem=`${SBINDIR}/ihkconfig 0 query mem`
-		if [ "${mem}" != "" ]; then
-			if ! ${SBINDIR}/ihkconfig 0 release mem $mem > /dev/null; then
-				echo "warning: failed to release memory" >&2
-			fi
-		fi
-		;&
 	cpus_reserved)
 		cpus=`${SBINDIR}/ihkconfig 0 query cpu`
 		if [ "${cpus}" != "" ]; then
 			if ! ${SBINDIR}/ihkconfig 0 release cpu $cpus > /dev/null; then
 				echo "warning: failed to release CPUs" >&2
+			fi
+		fi
+		;&
+	mem_reserved)
+		mem=`${SBINDIR}/ihkconfig 0 query mem`
+		if [ "${mem}" != "" ]; then
+			if ! ${SBINDIR}/ihkconfig 0 release mem $mem > /dev/null; then
+				echo "warning: failed to release memory" >&2
 			fi
 		fi
 		;&
@@ -290,13 +290,13 @@ if [ "`lsmod | grep ihk_smp_x86`" == "" ]; then
 		echo "error: loading ihk-smp-x86" >&2
 		error_exit "ihk_loaded"
 	fi
-	if ! ${SBINDIR}/ihkconfig 0 reserve cpu ${cpus}; then
-		echo "error: reserving CPUs" >&2;
-		error_exit "ihk_smp_loaded"
-	fi
 	if ! ${SBINDIR}/ihkconfig 0 reserve mem ${mem}; then
 		echo "error: reserving memory" >&2
-		error_exit "cpus_reserved"
+		error_exit "ihk_smp_loaded"
+	fi
+	if ! ${SBINDIR}/ihkconfig 0 reserve cpu ${cpus}; then
+		echo "error: reserving CPUs" >&2;
+		error_exit "mem_reserved"
 	fi
 fi
 
@@ -304,7 +304,7 @@ fi
 if [ "`lsmod | grep mcctrl`" == "" ]; then
 	if ! insmod ${KMODDIR}/mcctrl.ko; then
 		echo "error: inserting mcctrl.ko" >&2
-		error_exit "mem_reserved"
+		error_exit "cpus_reserved"
 	fi
 fi
 
@@ -362,12 +362,16 @@ fi
 
 # Overlay /proc, /sys with McKernel specific contents
 if [ "$enable_mcoverlay" == "yes" ]; then
-	if [ ! -e /tmp/mcos ]; then mkdir -p /tmp/mcos; fi
+	if [ ! -e /tmp/mcos ]; then 
+		mkdir -p /tmp/mcos; 
+	fi
 	if ! mount -t tmpfs tmpfs /tmp/mcos; then
 		echo "error: mount /tmp/mcos" >&2
 		error_exit "tmp_mcos_created"
 	fi
-	if [ ! -e /tmp/mcos/linux_proc ]; then mkdir -p /tmp/mcos/linux_proc; fi
+	if [ ! -e /tmp/mcos/linux_proc ]; then 
+		mkdir -p /tmp/mcos/linux_proc; 
+	fi
 	if ! mount --bind /proc /tmp/mcos/linux_proc; then
 		echo "error: mount /tmp/mcos/linux_proc" >&2
 		error_exit "tmp_mcos_mounted"
@@ -380,9 +384,15 @@ if [ "$enable_mcoverlay" == "yes" ]; then
 	do
 		sleep 0.1
 	done
-	if [ ! -e /tmp/mcos/mcos0_proc ]; then mkdir -p /tmp/mcos/mcos0_proc; fi
-	if [ ! -e /tmp/mcos/mcos0_proc_upper ]; then mkdir -p /tmp/mcos/mcos0_proc_upper; fi
-	if [ ! -e /tmp/mcos/mcos0_proc_work ]; then mkdir -p /tmp/mcos/mcos0_proc_work; fi
+	if [ ! -e /tmp/mcos/mcos0_proc ]; then 
+		mkdir -p /tmp/mcos/mcos0_proc; 
+	fi
+	if [ ! -e /tmp/mcos/mcos0_proc_upper ]; then 
+		mkdir -p /tmp/mcos/mcos0_proc_upper; 
+	fi
+	if [ ! -e /tmp/mcos/mcos0_proc_work ]; then 
+		mkdir -p /tmp/mcos/mcos0_proc_work; 
+	fi
 	if ! mount -t mcoverlay mcoverlay -o lowerdir=/proc/mcos0:/proc,upperdir=/tmp/mcos/mcos0_proc_upper,workdir=/tmp/mcos/mcos0_proc_work,nocopyupw,nofscheck /tmp/mcos/mcos0_proc; then
 		echo "error: mounting /tmp/mcos/mcos0_proc" >&2
 		error_exit "mcoverlayfs_loaded"
@@ -394,9 +404,15 @@ if [ "$enable_mcoverlay" == "yes" ]; then
 	do
 		sleep 0.1
 	done
-	if [ ! -e /tmp/mcos/mcos0_sys ]; then mkdir -p /tmp/mcos/mcos0_sys; fi
-	if [ ! -e /tmp/mcos/mcos0_sys_upper ]; then mkdir -p /tmp/mcos/mcos0_sys_upper; fi
-	if [ ! -e /tmp/mcos/mcos0_sys_work ]; then mkdir -p /tmp/mcos/mcos0_sys_work; fi
+	if [ ! -e /tmp/mcos/mcos0_sys ]; then 
+		mkdir -p /tmp/mcos/mcos0_sys; 
+	fi
+	if [ ! -e /tmp/mcos/mcos0_sys_upper ]; then 
+		mkdir -p /tmp/mcos/mcos0_sys_upper; 
+	fi
+	if [ ! -e /tmp/mcos/mcos0_sys_work ]; then 
+		mkdir -p /tmp/mcos/mcos0_sys_work; 
+	fi
 	if ! mount -t mcoverlay mcoverlay -o lowerdir=/sys/devices/virtual/mcos/mcos0/sys:/sys,upperdir=/tmp/mcos/mcos0_sys_upper,workdir=/tmp/mcos/mcos0_sys_work,nocopyupw,nofscheck /tmp/mcos/mcos0_sys; then
 		echo "error: mount /tmp/mcos/mcos0_sys" >&2
 		error_exit "mcos_proc_mounted"
