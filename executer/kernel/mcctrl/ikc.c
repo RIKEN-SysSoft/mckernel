@@ -325,7 +325,6 @@ void destroy_ikc_channels(ihk_os_t os)
 //			ihk_ikc_disconnect(usrdata->channels[i].c);
 			ihk_ikc_free_channel(usrdata->channels[i].c);
 			__destroy_ikc_channel(os, usrdata->channels + i);
-			printk("Channel #%d freed.\n", i);
 		}
 	}
 
