@@ -80,7 +80,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		break;
 
 	case SCD_MSG_PROCFS_ANSWER:
-		procfs_answer(pisp->arg, pisp->err);
+		procfs_answer(usrdata, pisp->pid);
 		break;
 
 	case SCD_MSG_SEND_SIGNAL:
@@ -288,6 +288,7 @@ int prepare_ikc_channels(ihk_os_t os)
 	ihk_ikc_listen_port(os, &usrdata->listen_param);
 	memcpy(&usrdata->listen_param2, &listen_param2, sizeof listen_param2);
 	ihk_ikc_listen_port(os, &usrdata->listen_param2);
+	init_waitqueue_head(&usrdata->wq_procfs);
 
 	for (i = 0; i < MCCTRL_PER_PROC_DATA_HASH_SIZE; ++i) {
 		INIT_LIST_HEAD(&usrdata->per_proc_data_hash[i]);

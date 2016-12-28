@@ -76,11 +76,11 @@ procfs_delete_thread(struct thread *thread)
  *
  * \param rarg returned argument
  */
-void
-process_procfs_request(unsigned long rarg)
+void process_procfs_request(struct ikc_scd_packet *rpacket)
 {
+	unsigned long rarg = rpacket->arg;
 	unsigned long parg, pbuf;
-        struct thread *thread = NULL;
+	struct thread *thread = NULL;
 	struct process *proc = NULL;
 	struct process_vm *vm = NULL;
 	struct procfs_read *r;
@@ -633,6 +633,7 @@ dataunavail:
 
 	packet.msg = SCD_MSG_PROCFS_ANSWER;
 	packet.arg = rarg;
+	packet.pid = rpacket->pid;
 
 	ret = ihk_ikc_send(syscall_channel, &packet, 0);
 	if (ret < 0) {

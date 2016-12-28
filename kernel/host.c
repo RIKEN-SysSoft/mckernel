@@ -532,7 +532,7 @@ static void syscall_channel_send(struct ihk_ikc_channel_desc *c,
 }
 
 extern unsigned long do_kill(struct thread *, int, int, int, struct siginfo *, int ptracecont);
-extern void process_procfs_request(unsigned long rarg);
+extern void process_procfs_request(struct ikc_scd_packet *rpacket);
 extern void terminate_host(int pid);
 extern void debug_log(long);
 
@@ -640,7 +640,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		break;
 
 	case SCD_MSG_PROCFS_REQUEST:
-		process_procfs_request(packet->arg);
+		process_procfs_request(packet);
 		ret = 0;
 		break;
 

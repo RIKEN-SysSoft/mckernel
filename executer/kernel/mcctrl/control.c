@@ -1214,6 +1214,7 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 		INIT_LIST_HEAD(&ppd->wq_req_list);
 		INIT_LIST_HEAD(&ppd->wq_list_exact);
 		init_waitqueue_head(&ppd->wq_prepare);
+		init_waitqueue_head(&ppd->wq_procfs);
 		spin_lock_init(&ppd->wq_list_lock);
 		memset(&ppd->cpu_set, 0, sizeof(cpumask_t));
 		ppd->ikc_target_cpu = 0;
