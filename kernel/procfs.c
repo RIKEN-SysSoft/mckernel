@@ -161,7 +161,7 @@ process_procfs_request(unsigned long rarg)
 	 */
 	ret = sscanf(p, "%d/", &pid);
 	if (ret == 1) {
-		struct mcs_rwlock_node tlock;
+		struct mcs_rwlock_node_irqsave tlock;
 		int tids;
 		struct thread *thread1 = NULL;
 
@@ -178,7 +178,7 @@ process_procfs_request(unsigned long rarg)
 		else
 			tid = pid;
 
-		mcs_rwlock_reader_lock_noirq(&proc->threads_lock, &tlock);
+		mcs_rwlock_reader_lock(&proc->threads_lock, &tlock);
 		list_for_each_entry(thread, &proc->threads_list, siblings_list){
 			if(thread->tid == tid)
 				break;
@@ -188,15 +188,15 @@ process_procfs_request(unsigned long rarg)
 		if(thread == NULL){
 			kprintf("process_procfs_request: no such tid %d-%d\n", pid, tid);
 			if(tids){
+				mcs_rwlock_reader_unlock(&proc->threads_lock, &tlock);
 				process_unlock(proc, &lock);
-				mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &tlock);
 				goto end;
 			}
 			thread = thread1;
 		}
 		if(thread)
 			hold_thread(thread);
-		mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &tlock);
+		mcs_rwlock_reader_unlock(&proc->threads_lock, &tlock);
 		hold_process(proc);
 		vm = proc->vm;
 		if(vm)
