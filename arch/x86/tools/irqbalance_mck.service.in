@@ -3,7 +3,7 @@ Description=irqbalance daemon
 After=syslog.target
 
 [Service]
-EnvironmentFile=@ETCDIR@/irqbalance_mck
+EnvironmentFile=/tmp/irqbalance_mck
 ExecStart=/usr/sbin/irqbalance --foreground $IRQBALANCE_ARGS
 
 [Install]

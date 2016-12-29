@@ -478,8 +478,9 @@ if [ "${irqbalance_used}" == "yes" ]; then
 
     banirq=`cat /proc/interrupts| perl -e 'while(<>) { if(/^\s*(\d+).*IHK\-SMP\s*$/) {print $1;}}'`
 
-    sed "s/%mask%/$smp_affinity_mask/g" $ETCDIR/irqbalance_mck.in | sed "s/%banirq%/$banirq/g" > $ETCDIR/irqbalance_mck
-    if ! systemctl link $ETCDIR/irqbalance_mck.service >/dev/null 2>/dev/null; then
+    sed "s/%mask%/$smp_affinity_mask/g" $ETCDIR/irqbalance_mck.in | sed "s/%banirq%/$banirq/g" > /tmp/irqbalance_mck
+	systemctl disable irqbalance_mck.service >/dev/null 2>/dev/null
+	if ! systemctl link $ETCDIR/irqbalance_mck.service >/dev/null 2>/dev/null; then
 		echo "error: linking irqbalance_mck" >&2
 		error_exit "mcos_sys_mounted"
 	fi
