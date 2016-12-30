@@ -179,7 +179,7 @@ static void init_normal_area(struct page_table *pt)
 	}
 }
 
-static struct page_table *__alloc_new_pt(enum ihk_mc_ap_flag ap_flag)
+static struct page_table *__alloc_new_pt(ihk_mc_ap_flag ap_flag)
 {
 	struct page_table *newpt = ihk_mc_alloc_pages(1, ap_flag);
 
@@ -278,7 +278,7 @@ void set_pte(pte_t *ppte, unsigned long phys, enum ihk_mc_pt_attribute attr)
  *             and returns a pointer to the PTE corresponding to the
  *             virtual address.
  */
-pte_t *get_pte(struct page_table *pt, void *virt, enum ihk_mc_pt_attribute attr, enum ihk_mc_ap_flag ap_flag)
+pte_t *get_pte(struct page_table *pt, void *virt, enum ihk_mc_pt_attribute attr, ihk_mc_ap_flag ap_flag)
 {
 	int l4idx, l3idx, l2idx, l1idx;
 	unsigned long v = (unsigned long)virt;
@@ -339,7 +339,7 @@ static int __set_pt_page(struct page_table *pt, void *virt, unsigned long phys,
 	int l4idx, l3idx, l2idx, l1idx;
 	unsigned long v = (unsigned long)virt;
 	struct page_table *newpt;
-	enum ihk_mc_ap_flag ap_flag;
+	ihk_mc_ap_flag ap_flag;
 	int in_kernel =
 		(((unsigned long long)virt) >= 0xffff000000000000ULL);
 	unsigned long init_pt_lock_flags;
@@ -664,7 +664,7 @@ int ihk_mc_pt_prepare_map(page_table_t p, void *virt, unsigned long size,
 	return ret;
 }
 
-struct page_table *ihk_mc_pt_create(enum ihk_mc_ap_flag ap_flag)
+struct page_table *ihk_mc_pt_create(ihk_mc_ap_flag ap_flag)
 {
 	struct page_table *pt = ihk_mc_alloc_pages(1, ap_flag);
 

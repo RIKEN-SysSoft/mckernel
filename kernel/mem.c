@@ -65,12 +65,12 @@ extern void early_alloc_invalidate(void);
 
 static char *memdebug = NULL;
 
-static void *___kmalloc(int size, enum ihk_mc_ap_flag flag);
+static void *___kmalloc(int size, ihk_mc_ap_flag flag);
 static void ___kfree(void *ptr);
 
 static void *___ihk_mc_alloc_aligned_pages_node(int npages,
-		int p2align, enum ihk_mc_ap_flag flag, int node);
-static void *___ihk_mc_alloc_pages(int npages, enum ihk_mc_ap_flag flag);
+		int p2align, ihk_mc_ap_flag flag, int node);
+static void *___ihk_mc_alloc_pages(int npages, ihk_mc_ap_flag flag);
 static void ___ihk_mc_free_pages(void *p, int npages);
 
 /*
@@ -152,7 +152,7 @@ struct pagealloc_track_entry *__pagealloc_track_find_entry(
 
 /* Top level routines called from macros */
 void *_ihk_mc_alloc_aligned_pages_node(int npages, int p2align,
-	enum ihk_mc_ap_flag flag, int node, char *file, int line)
+	ihk_mc_ap_flag flag, int node, char *file, int line)
 {
 	unsigned long irqflags;
 	struct pagealloc_track_entry *entry;
@@ -445,7 +445,7 @@ void pagealloc_memcheck(void)
 
 /* Actual allocation routines */
 static void *___ihk_mc_alloc_aligned_pages_node(int npages, int p2align,
-	enum ihk_mc_ap_flag flag, int node)
+	ihk_mc_ap_flag flag, int node)
 {
 	if (pa_ops)
 		return pa_ops->alloc_page(npages, p2align, flag, node);
@@ -453,7 +453,7 @@ static void *___ihk_mc_alloc_aligned_pages_node(int npages, int p2align,
 		return early_alloc_pages(npages);
 }
 
-static void *___ihk_mc_alloc_pages(int npages, enum ihk_mc_ap_flag flag)
+static void *___ihk_mc_alloc_pages(int npages, ihk_mc_ap_flag flag)
 {
 	return ___ihk_mc_alloc_aligned_pages_node(npages, PAGE_P2ALIGN, flag, -1);
 }
@@ -491,7 +491,7 @@ static void reserve_pages(struct ihk_page_allocator_desc *pa_allocator,
 
 extern int cpu_local_var_initialized;
 static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
-		enum ihk_mc_ap_flag flag, int pref_node)
+		ihk_mc_ap_flag flag, int pref_node)
 {
 	unsigned long pa = 0;
 	int i, node;
@@ -1463,7 +1463,7 @@ struct kmalloc_track_entry *__kmalloc_track_find_entry(
 }
 
 /* Top level routines called from macro */
-void *_kmalloc(int size, enum ihk_mc_ap_flag flag, char *file, int line)
+void *_kmalloc(int size, ihk_mc_ap_flag flag, char *file, int line)
 {
 	unsigned long irqflags;
 	struct kmalloc_track_entry *entry;
@@ -1653,7 +1653,7 @@ void kmalloc_memcheck(void)
 }
 
 /* Redirection routines registered in alloc structure */
-void *__kmalloc(int size, enum ihk_mc_ap_flag flag)
+void *__kmalloc(int size, ihk_mc_ap_flag flag)
 {
 	return kmalloc(size, flag);
 }
@@ -1751,7 +1751,7 @@ void kmalloc_consolidate_free_list(void)
 #define KMALLOC_MIN_MASK    (KMALLOC_MIN_SIZE - 1)
 
 /* Actual low-level allocation routines */
-static void *___kmalloc(int size, enum ihk_mc_ap_flag flag)
+static void *___kmalloc(int size, ihk_mc_ap_flag flag)
 {
 	struct kmalloc_header *chunk_iter;
 	struct kmalloc_header *chunk = NULL;

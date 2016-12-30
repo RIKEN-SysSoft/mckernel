@@ -28,9 +28,9 @@ r;\
 })
 #define kfree(ptr) _kfree(ptr, __FILE__, __LINE__)
 #define memcheck(ptr, msg) _memcheck(ptr, msg, __FILE__, __LINE__, 0)
-void *_kmalloc(int size, enum ihk_mc_ap_flag flag, char *file, int line);
+void *_kmalloc(int size, ihk_mc_ap_flag flag, char *file, int line);
 void _kfree(void *ptr, char *file, int line);
-void *__kmalloc(int size, enum ihk_mc_ap_flag flag);
+void *__kmalloc(int size, ihk_mc_ap_flag flag);
 void __kfree(void *ptr);
 
 int _memcheck(void *ptr, char *msg, char *file, int line, int free);
