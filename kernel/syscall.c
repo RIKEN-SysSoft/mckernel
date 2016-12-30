@@ -1152,6 +1152,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	struct process *proc = thread->proc;
 	struct mckfd *fdp = NULL;
 	int pgshift;
+	struct vm_range *range = NULL;
 	
 	dkprintf("do_mmap(%lx,%lx,%x,%x,%d,%lx)\n",
 			addr0, len0, prot, flags, fd, off0);
@@ -1235,8 +1236,8 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	vrflags |= (flags & MAP_LOCKED)? VR_LOCKED: 0;
 	vrflags |= VR_DEMAND_PAGING;
 	if (flags & MAP_ANONYMOUS) {
-		if (!anon_on_demand) {
-			populated_mapping = 1;
+		if (!anon_on_demand && (flags & MAP_PRIVATE)) {
+			vrflags &= ~VR_DEMAND_PAGING;
 		}
 #ifdef	USE_NOCACHE_MMAP
 #define	X_MAP_NOCACHE	MAP_32BIT
@@ -1253,6 +1254,8 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 
 	/* XXX: Intel MPI 128MB mapping.. */
 	if (len == 134217728) {
+		kprintf("%s: 128MB mapping -> no prefault\n",
+			__FUNCTION__, len);
 		populated_mapping = 0;
 	}
 
@@ -1310,19 +1313,35 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 			goto out;
 		}
 	}
+	/* Prepopulated ANONYMOUS mapping */
 	else if (!(vrflags & VR_DEMAND_PAGING)
 			&& ((vrflags & VR_PROT_MASK) != VR_PROT_NONE)) {
 		npages = len >> PAGE_SHIFT;
+
 		p = ihk_mc_alloc_aligned_pages(npages, p2align, IHK_MC_AP_NOWAIT);
 		if (p == NULL) {
-			ekprintf("do_mmap:allocate_pages(%d,%d) failed.\n",
+			ekprintf("%s: warning: failed to allocate %d contiguous pages"
+					" (pgshift: %d), enabling demand paging\n",
+					__FUNCTION__,
 					npages, p2align);
-			error = -ENOMEM;
-			goto out;
+
+			/* Give demand paging a chance */
+			vrflags |= VR_DEMAND_PAGING;
+			populated_mapping = 0;
+
+			error = zeroobj_create(&memobj);
+			if (error) {
+				ekprintf("%s: zeroobj_create failed, error: %d\n",
+						__FUNCTION__, error);
+				goto out;
+			}
 		}
-		dkprintf("%s: 0x%x:%lu allocated %d pages, p2align: %lx\n",
-				__FUNCTION__, addr, len, npages, p2align);
-		phys = virt_to_phys(p);
+		else {
+			dkprintf("%s: 0x%x:%lu MAP_ANONYMOUS "
+					"allocated %d pages, p2align: %lx\n",
+					__FUNCTION__, addr, len, npages, p2align);
+			phys = virt_to_phys(p);
+		}
 	}
 	else if (flags & MAP_SHARED) {
 		memset(&ads, 0, sizeof(ads));
@@ -1355,7 +1374,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	vrflags |= VRFLAG_PROT_TO_MAXPROT(PROT_TO_VR_FLAG(maxprot));
 
 	error = add_process_memory_range(thread->vm, addr, addr+len, phys,
-			vrflags, memobj, off, pgshift, NULL);
+			vrflags, memobj, off, pgshift, &range);
 	if (error) {
 		kprintf("%s: add_process_memory_range failed for 0x%lx:%lu"
 				" flags: %lx, vrflags: %lx, pgshift: %d, error: %d\n",
@@ -1364,15 +1383,18 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		goto out;
 	}
 
+	/* Determine pre-populated size */
 	populate_len = len;
 
-	memobj_lock(memobj);
-	if (memobj->status == MEMOBJ_TO_BE_PREFETCHED) {
-		memobj->status = MEMOBJ_READY;
-		populated_mapping = 1;
-		populate_len = memobj->size;
+	if (!(flags & MAP_ANONYMOUS)) {
+		memobj_lock(memobj);
+		if (memobj->status == MEMOBJ_TO_BE_PREFETCHED) {
+			memobj->status = MEMOBJ_READY;
+			populated_mapping = 1;
+			populate_len = memobj->size;
+		}
+		memobj_unlock(memobj);
 	}
-	memobj_unlock(memobj);
 
 	error = 0;
 	p = NULL;
