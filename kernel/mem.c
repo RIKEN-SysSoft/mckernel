@@ -68,8 +68,8 @@ static char *memdebug = NULL;
 static void *___kmalloc(int size, enum ihk_mc_ap_flag flag);
 static void ___kfree(void *ptr);
 
-static void *___ihk_mc_alloc_aligned_pages(int npages,
-		int p2align, enum ihk_mc_ap_flag flag);
+static void *___ihk_mc_alloc_aligned_pages_node(int npages,
+		int p2align, enum ihk_mc_ap_flag flag, int node);
 static void *___ihk_mc_alloc_pages(int npages, enum ihk_mc_ap_flag flag);
 static void ___ihk_mc_free_pages(void *p, int npages);
 
@@ -151,14 +151,15 @@ struct pagealloc_track_entry *__pagealloc_track_find_entry(
 }
 
 /* Top level routines called from macros */
-void *_ihk_mc_alloc_aligned_pages(int npages, int p2align,
-	enum ihk_mc_ap_flag flag, char *file, int line)
+void *_ihk_mc_alloc_aligned_pages_node(int npages, int p2align,
+	enum ihk_mc_ap_flag flag, int node, char *file, int line)
 {
 	unsigned long irqflags;
 	struct pagealloc_track_entry *entry;
 	struct pagealloc_track_addr_entry *addr_entry;
 	int hash, addr_hash;
-	void *r = ___ihk_mc_alloc_aligned_pages(npages, p2align, flag);
+	void *r = ___ihk_mc_alloc_aligned_pages_node(npages,
+					p2align, flag, node);
 
 	if (!memdebug || !pagealloc_track_initialized)
 		return r;
@@ -228,12 +229,6 @@ void *_ihk_mc_alloc_aligned_pages(int npages, int p2align,
 
 out:
 	return r;
-}
-
-void *_ihk_mc_alloc_pages(int npages, enum ihk_mc_ap_flag flag,
-		char *file, int line)
-{
-	return _ihk_mc_alloc_aligned_pages(npages, PAGE_P2ALIGN, flag, file, line);
 }
 
 void _ihk_mc_free_pages(void *ptr, int npages, char *file, int line)
@@ -449,18 +444,18 @@ void pagealloc_memcheck(void)
 
 
 /* Actual allocation routines */
-static void *___ihk_mc_alloc_aligned_pages(int npages, int p2align,
-	enum ihk_mc_ap_flag flag)
+static void *___ihk_mc_alloc_aligned_pages_node(int npages, int p2align,
+	enum ihk_mc_ap_flag flag, int node)
 {
 	if (pa_ops)
-		return pa_ops->alloc_page(npages, p2align, flag);
+		return pa_ops->alloc_page(npages, p2align, flag, node);
 	else
 		return early_alloc_pages(npages);
 }
 
 static void *___ihk_mc_alloc_pages(int npages, enum ihk_mc_ap_flag flag)
 {
-	return ___ihk_mc_alloc_aligned_pages(npages, PAGE_P2ALIGN, flag);
+	return ___ihk_mc_alloc_aligned_pages_node(npages, PAGE_P2ALIGN, flag, -1);
 }
 
 static void ___ihk_mc_free_pages(void *p, int npages)
@@ -495,8 +490,8 @@ static void reserve_pages(struct ihk_page_allocator_desc *pa_allocator,
 }
 
 extern int cpu_local_var_initialized;
-static void *allocate_aligned_pages(int npages, int p2align,
-		enum ihk_mc_ap_flag flag)
+static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
+		enum ihk_mc_ap_flag flag, int pref_node)
 {
 	unsigned long pa = 0;
 	int i, node;
@@ -602,12 +597,7 @@ order_based:
 	return NULL;
 }
 
-static void *allocate_pages(int npages, enum ihk_mc_ap_flag flag)
-{
-	return allocate_aligned_pages(npages, PAGE_P2ALIGN, flag);
-}
-
-static void __free_pages_in_allocator(void *va, int npages)
+static void __mckernel_free_pages_in_allocator(void *va, int npages)
 {
 	int i;
 	unsigned long pa_start = virt_to_phys(va);
@@ -630,7 +620,7 @@ static void __free_pages_in_allocator(void *va, int npages)
 }
 
 
-static void free_pages(void *va, int npages)
+static void mckernel_free_pages(void *va, int npages)
 {
 	struct list_head *pendings = &cpu_local_var(pending_free_pages);
 	struct page *page;
@@ -638,7 +628,8 @@ static void free_pages(void *va, int npages)
 	page = phys_to_page(virt_to_phys(va));
 	if (page) {
 		if (page->mode != PM_NONE) {
-			panic("free_pages:not PM_NONE");
+			kprintf("%s: WARNING: page phys 0x%lx is not PM_NONE",
+					__FUNCTION__, page->phys);
 		}
 		if (pendings->next != NULL) {
 			page->mode = PM_PENDING_FREE;
@@ -648,7 +639,7 @@ static void free_pages(void *va, int npages)
 		}
 	}
 
-	__free_pages_in_allocator(va, npages);
+	__mckernel_free_pages_in_allocator(va, npages);
 }
 
 void begin_free_pages_pending(void) {
@@ -677,7 +668,7 @@ void finish_free_pages_pending(void)
 		}
 		page->mode = PM_NONE;
 		list_del(&page->list);
-		__free_pages_in_allocator(phys_to_virt(page_to_phys(page)), 
+		__mckernel_free_pages_in_allocator(phys_to_virt(page_to_phys(page)),
 				page->offset);
 	}
 
@@ -686,8 +677,8 @@ void finish_free_pages_pending(void)
 }
 
 static struct ihk_mc_pa_ops allocator = {
-	.alloc_page = allocate_aligned_pages,
-	.free_page = free_pages,
+	.alloc_page = mckernel_allocate_aligned_pages_node,
+	.free_page = mckernel_free_pages,
 };
 
 void sbox_write(int offset, unsigned int value);

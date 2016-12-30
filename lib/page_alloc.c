@@ -19,7 +19,6 @@
 #include <memory.h>
 #include <bitops.h>
 
-void *allocate_pages(int npages, enum ihk_mc_ap_flag flag);
 void free_pages(void *, int npages);
 
 #define MAP_INDEX(n)    ((n) >> 6)

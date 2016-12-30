@@ -79,7 +79,7 @@ void ihk_mc_reserve_arch_pages(struct ihk_page_allocator_desc *pa_allocator,
 			unsigned long, unsigned long, int));
 
 struct ihk_mc_pa_ops {
-	void *(*alloc_page)(int, int, enum ihk_mc_ap_flag);
+	void *(*alloc_page)(int, int, enum ihk_mc_ap_flag, int node);
 	void (*free_page)(void *, int);
 
 	void *(*alloc)(int, enum ihk_mc_ap_flag);
@@ -103,17 +103,20 @@ void ihk_mc_map_micpa(unsigned long host_pa, unsigned long* mic_pa);
 int ihk_mc_free_micpa(unsigned long mic_pa);
 void ihk_mc_clean_micpa(void);
 
-void *_ihk_mc_alloc_aligned_pages(int npages, int p2align,
-	enum ihk_mc_ap_flag flag, char *file, int line);
-#define ihk_mc_alloc_aligned_pages(npages, p2align, flag) ({\
-void *r = _ihk_mc_alloc_aligned_pages(npages, p2align, flag, __FILE__, __LINE__);\
+void *_ihk_mc_alloc_aligned_pages_node(int npages, int p2align,
+	enum ihk_mc_ap_flag flag, int node, char *file, int line);
+#define ihk_mc_alloc_aligned_pages_node(npages, p2align, flag, node) ({\
+void *r = _ihk_mc_alloc_aligned_pages_node(npages, p2align, flag, node, __FILE__, __LINE__);\
 r;\
 })
 
-void *_ihk_mc_alloc_pages(int npages, enum ihk_mc_ap_flag flag,
-		char *file, int line);
+#define ihk_mc_alloc_aligned_pages(npages, p2align, flag) ({\
+void *r = _ihk_mc_alloc_aligned_pages_node(npages, p2align, flag, -1, __FILE__, __LINE__);\
+r;\
+})
+
 #define ihk_mc_alloc_pages(npages, flag) ({\
-void *r = _ihk_mc_alloc_pages(npages, flag, __FILE__, __LINE__);\
+void *r = _ihk_mc_alloc_aligned_pages_node(npages, PAGE_P2ALIGN, flag, -1, __FILE__, __LINE__);\
 r;\
 })
 
