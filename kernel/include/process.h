@@ -716,9 +716,10 @@ void free_process_memory_ranges(struct process_vm *vm);
 int populate_process_memory(struct process_vm *vm, void *start, size_t len);
 
 int add_process_memory_range(struct process_vm *vm,
-                             unsigned long start, unsigned long end,
-                             unsigned long phys, unsigned long flag,
-			     struct memobj *memobj, off_t objoff, int pgshift);
+		unsigned long start, unsigned long end,
+		unsigned long phys, unsigned long flag,
+		struct memobj *memobj, off_t offset,
+		int pgshift, struct vm_range **rp);
 int remove_process_memory_range(struct process_vm *vm, unsigned long start,
 		unsigned long end, int *ro_freedp);
 int split_process_memory_range(struct process_vm *vm,

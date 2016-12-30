@@ -1018,21 +1018,18 @@ enum ihk_mc_pt_attribute common_vrflag_to_ptattr(unsigned long flag, uint64_t fa
 }
 
 int add_process_memory_range(struct process_vm *vm,
-                             unsigned long start, unsigned long end,
-                             unsigned long phys, unsigned long flag,
-			     struct memobj *memobj, off_t offset,
-			     int pgshift)
+		unsigned long start, unsigned long end,
+		unsigned long phys, unsigned long flag,
+		struct memobj *memobj, off_t offset,
+		int pgshift, struct vm_range **rp)
 {
 	struct vm_range *range;
 	int rc;
-#if 0
-	extern void __host_update_process_range(struct thread *process,
-						struct vm_range *range);
-#endif
 
 	if ((start < vm->region.user_start)
 			|| (vm->region.user_end < end)) {
-		kprintf("range(%#lx - %#lx) is not in user avail(%#lx - %#lx)\n",
+		kprintf("%s: error: range %lx - %lx is not in user available area\n",
+				__FUNCTION__,
 				start, end, vm->region.user_start,
 				vm->region.user_end);
 		return -EINVAL;
@@ -1040,9 +1037,10 @@ int add_process_memory_range(struct process_vm *vm,
 
 	range = kmalloc(sizeof(struct vm_range), IHK_MC_AP_NOWAIT);
 	if (!range) {
-		kprintf("ERROR: allocating pages for range\n");
+		kprintf("%s: ERROR: allocating pages for range\n", __FUNCTION__);
 		return -ENOMEM;
 	}
+
 	INIT_LIST_HEAD(&range->list);
 	range->start = start;
 	range->end = end;
@@ -1051,47 +1049,33 @@ int add_process_memory_range(struct process_vm *vm,
 	range->objoff = offset;
 	range->pgshift = pgshift;
 
-    if(range->flag & VR_DEMAND_PAGING) {
-	dkprintf("range: 0x%lX - 0x%lX => physicall memory area is allocated on demand (%ld) [%lx]\n",
-	        range->start, range->end, range->end - range->start,
-		range->flag);
-    } else {
-		dkprintf("range: 0x%lX - 0x%lX (%ld) [%lx]\n",
-				range->start, range->end, range->end - range->start,
-				range->flag);
-    }
-
-    rc = 0;
-    if (0) {
-	    /* dummy */
-    }
-    else if (phys == NOPHYS) {
-	    /* nothing to map */
-    }
-    else if (flag & VR_REMOTE) {
+	rc = 0;
+	if (phys == NOPHYS) {
+		/* Nothing to map */
+	}
+	else if (flag & VR_REMOTE) {
 		rc = update_process_page_table(vm, range, phys, IHK_PTA_REMOTE);
-	} else if (flag & VR_IO_NOCACHE) {
+	}
+	else if (flag & VR_IO_NOCACHE) {
 		rc = update_process_page_table(vm, range, phys, PTATTR_UNCACHABLE);
-	} else if(flag & VR_DEMAND_PAGING){
-	  //demand paging no need to update process table now
-	  dkprintf("demand paging do not update process page table\n");
-      rc = 0;
-	} else if ((range->flag & VR_PROT_MASK) == VR_PROT_NONE) {
+	}
+	else if (flag & VR_DEMAND_PAGING) {
+		dkprintf("%s: range: 0x%lx - 0x%lx is demand paging\n",
+				__FUNCTION__, range->start, range->end);
 		rc = 0;
-	} else {
+	}
+	else if ((range->flag & VR_PROT_MASK) == VR_PROT_NONE) {
+		rc = 0;
+	}
+	else {
 		rc = update_process_page_table(vm, range, phys, 0);
 	}
-	if(rc != 0){
-		kprintf("ERROR: preparing page tables\n");
+
+	if (rc != 0) {
+		kprintf("%s: ERROR: preparing page tables\n", __FUNCTION__);
 		kfree(range);
 		return rc;
 	}
-
-#if 0 // disable __host_update_process_range() in add_process_memory_range(), because it has no effect on the actual mapping on the MICs side.
-	if (!(flag & VR_REMOTE)) {
-		__host_update_process_range(process, range);
-	}
-#endif
 
 	insert_vm_range_list(vm, range);
 
@@ -1099,6 +1083,11 @@ int add_process_memory_range(struct process_vm *vm,
 	if (!(flag & (VR_REMOTE | VR_DEMAND_PAGING))
 			&& ((flag & VR_PROT_MASK) != VR_PROT_NONE)) {
 		memset((void*)phys_to_virt(phys), 0, end - start);
+	}
+
+	/* Return range object if requested */
+	if (rp) {
+		*rp = range;
 	}
 
 	return 0;
@@ -1870,7 +1859,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	vrflag |= VR_MAXPROT_READ | VR_MAXPROT_WRITE | VR_MAXPROT_EXEC;
 #define	NOPHYS	((uintptr_t)-1)
 	if ((rc = add_process_memory_range(thread->vm, start, end, NOPHYS,
-					vrflag, NULL, 0, PAGE_SHIFT)) != 0) {
+					vrflag, NULL, 0, PAGE_SHIFT, NULL)) != 0) {
 		return rc;
 	}
 
@@ -1989,7 +1978,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 			}
 			if((rc = add_process_memory_range(vm, old_aligned_end,
                                         aligned_end, virt_to_phys(p), flag,
-					LARGE_PAGE_SHIFT)) != 0){
+					LARGE_PAGE_SHIFT, NULL)) != 0){
 				ihk_mc_free_pages(p, (aligned_end - old_aligned_end) >> PAGE_SHIFT);
 				return end;
 			}
@@ -2019,7 +2008,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 
 		if((rc = add_process_memory_range(vm, aligned_end,
                                aligned_new_end, virt_to_phys((void *)p_aligned),
-                               flag, LARGE_PAGE_SHIFT)) != 0){
+                               flag, LARGE_PAGE_SHIFT, NULL)) != 0){
 			ihk_mc_free_pages(p, (aligned_new_end - aligned_end + LARGE_PAGE_SIZE) >> PAGE_SHIFT);
 			return end;
 		}
@@ -2044,9 +2033,9 @@ unsigned long extend_process_region(struct process_vm *vm,
 		return end;
 	}
     }
-	if((rc = add_process_memory_range(vm, aligned_end, aligned_new_end,
-                                      (p==0?0:virt_to_phys(p)), flag, NULL, 0,
-				      PAGE_SHIFT)) != 0){
+	if ((rc = add_process_memory_range(vm, aligned_end, aligned_new_end,
+					(p == 0 ? 0 : virt_to_phys(p)), flag, NULL, 0,
+					PAGE_SHIFT, NULL)) != 0) {
 		ihk_mc_free_pages(p, (aligned_new_end - aligned_end) >> PAGE_SHIFT);
 		return end;
 	}

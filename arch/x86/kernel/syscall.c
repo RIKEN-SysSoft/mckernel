@@ -1741,7 +1741,8 @@ int arch_map_vdso(struct process_vm *vm)
 	vrflags = VR_REMOTE;
 	vrflags |= VR_PROT_READ | VR_PROT_EXEC;
 	vrflags |= VRFLAG_PROT_TO_MAXPROT(vrflags);
-	error = add_process_memory_range(vm, (intptr_t)s, (intptr_t)e, NOPHYS, vrflags, NULL, 0, PAGE_SHIFT);
+	error = add_process_memory_range(vm, (intptr_t)s, (intptr_t)e,
+			NOPHYS, vrflags, NULL, 0, PAGE_SHIFT, NULL);
 	if (error) {
 		ekprintf("ERROR: adding memory range for vdso. %d\n", error);
 		goto out;
@@ -1772,7 +1773,8 @@ int arch_map_vdso(struct process_vm *vm)
 		vrflags = VR_REMOTE;
 		vrflags |= VR_PROT_READ;
 		vrflags |= VRFLAG_PROT_TO_MAXPROT(vrflags);
-		error = add_process_memory_range(vm, (intptr_t)s, (intptr_t)e, NOPHYS, vrflags, NULL, 0, PAGE_SHIFT);
+		error = add_process_memory_range(vm, (intptr_t)s, (intptr_t)e,
+				NOPHYS, vrflags, NULL, 0, PAGE_SHIFT, NULL);
 		if (error) {
 			ekprintf("ERROR: adding memory range for vvar. %d\n", error);
 			goto out;
