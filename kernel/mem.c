@@ -504,6 +504,10 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 		goto distance_based;
 
 	/* User requested policy? */
+	if (!(flag & IHK_MC_AP_USER)) {
+		goto distance_based;
+	}
+
 	switch (cpu_local_var(current)->vm->numa_mem_policy) {
 		case MPOL_BIND:
 		case MPOL_PREFERRED:
