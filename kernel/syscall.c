@@ -1252,12 +1252,14 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		populated_mapping = 1;
 	}
 
+#if 0
 	/* XXX: Intel MPI 128MB mapping.. */
 	if (len == 134217728) {
 		kprintf("%s: 128MB mapping -> no prefault\n",
 			__FUNCTION__, len);
 		populated_mapping = 0;
 	}
+#endif
 
 	if (!(prot & PROT_WRITE)) {
 		error = set_host_vma(addr, len, PROT_READ);
@@ -1317,8 +1319,12 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	else if (!(vrflags & VR_DEMAND_PAGING)
 			&& ((vrflags & VR_PROT_MASK) != VR_PROT_NONE)) {
 		npages = len >> PAGE_SHIFT;
+		/* Small allocations mostly benefit from closest RAM,
+		 * otherwise follow user requested policy */
+		unsigned long __flag = (len >= 1048576) ? IHK_MC_AP_USER : 0;
 
-		p = ihk_mc_alloc_aligned_pages(npages, p2align, IHK_MC_AP_NOWAIT);
+		p = ihk_mc_alloc_aligned_pages(npages, p2align,
+				IHK_MC_AP_NOWAIT | __flag);
 		if (p == NULL) {
 			ekprintf("%s: warning: failed to allocate %d contiguous pages"
 					" (pgshift: %d), enabling demand paging\n",
