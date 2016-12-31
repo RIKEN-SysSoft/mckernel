@@ -541,8 +541,13 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 			break;
 	}
 
-	if (pa)
+	if (pa) {
 		return phys_to_virt(pa);
+	}
+	else {
+		dkprintf("%s: couldn't fulfill user policy for %d pages\n",
+			__FUNCTION__, npages);
+	}
 
 distance_based:
 	node = ihk_mc_get_numa_id();
