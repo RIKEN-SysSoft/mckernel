@@ -1841,6 +1841,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	unsigned long minsz;
 	unsigned long at_rand;
 	struct process *proc = thread->proc;
+	unsigned long __flag;
 
 	/* create stack range */
 	end = STACK_TOP(&thread->vm->region);
@@ -1863,8 +1864,11 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 		return rc;
 	}
 
+	__flag = (size >= 16777216) ? IHK_MC_AP_USER : 0;
 	/* map physical pages for initial stack frame */
-	stack = ihk_mc_alloc_pages(minsz >> PAGE_SHIFT, IHK_MC_AP_NOWAIT);
+	stack = ihk_mc_alloc_pages(minsz >> PAGE_SHIFT,
+			IHK_MC_AP_NOWAIT | __flag);
+
 	if (!stack) {
 		return -ENOMEM;
 	}
@@ -2027,7 +2031,8 @@ unsigned long extend_process_region(struct process_vm *vm,
 	  p=0;
 	}else{
 
-	p = ihk_mc_alloc_pages((aligned_new_end - aligned_end) >> PAGE_SHIFT, IHK_MC_AP_NOWAIT);
+	p = ihk_mc_alloc_pages((aligned_new_end - aligned_end) >> PAGE_SHIFT,
+		IHK_MC_AP_NOWAIT | IHK_MC_AP_USER);
 
 	if (!p) {
 		return end;

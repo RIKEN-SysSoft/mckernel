@@ -1321,15 +1321,15 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		npages = len >> PAGE_SHIFT;
 		/* Small allocations mostly benefit from closest RAM,
 		 * otherwise follow user requested policy */
-		unsigned long __flag = (len >= 1048576) ? IHK_MC_AP_USER : 0;
+		unsigned long __flag = (len >= 2097152) ? IHK_MC_AP_USER : 0;
 
 		p = ihk_mc_alloc_aligned_pages(npages, p2align,
 				IHK_MC_AP_NOWAIT | __flag);
 		if (p == NULL) {
-			ekprintf("%s: warning: failed to allocate %d contiguous pages"
-					" (pgshift: %d), enabling demand paging\n",
+			dkprintf("%s: warning: failed to allocate %d contiguous pages "
+					" (bytes: %lu, pgshift: %d), enabling demand paging\n",
 					__FUNCTION__,
-					npages, p2align);
+					npages, npages * PAGE_SIZE, p2align);
 
 			/* Give demand paging a chance */
 			vrflags |= VR_DEMAND_PAGING;
