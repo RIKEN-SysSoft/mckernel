@@ -2861,6 +2861,7 @@ sched_wakeup_thread(struct thread *thread, int valid_states)
 			proc->status = PS_RUNNING;
 		mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
 		xchg4((int *)(&thread->status), PS_RUNNING);
+		barrier();
 		status = 0;
 	}
 	else {

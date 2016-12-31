@@ -677,6 +677,7 @@ static uint64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q
 	 * access to the hash list and forcing another memory barrier.
 	 */
 	xchg4(&(cpu_local_var(current)->status), PS_INTERRUPTIBLE);
+	barrier();
 	queue_me(q, hb);
 	
 	if (!plist_node_empty(&q->list)) {
