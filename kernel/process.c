@@ -1910,41 +1910,52 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	struct process *proc = thread->proc;
 	unsigned long __flag;
 
-	/* create stack range */
-	end = STACK_TOP(&thread->vm->region);
-	minsz = PAGE_SIZE;
-	size = proc->rlimit[MCK_RLIMIT_STACK].rlim_cur & PAGE_MASK;
+	/* Create stack range */
+	end = STACK_TOP(&thread->vm->region) & LARGE_PAGE_MASK;
+	minsz = LARGE_PAGE_SIZE;
+	size = (proc->rlimit[MCK_RLIMIT_STACK].rlim_cur
+			+ LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
 	if (size > (USER_END / 2)) {
 		size = USER_END / 2;
 	}
 	else if (size < minsz) {
 		size = minsz;
 	}
-	start = end - size;
+	start = (end - size) & LARGE_PAGE_MASK;
+
+	/* Put large stacks in user requested region */
+	__flag = (size >= (2 * 1024 * 1024)) ? IHK_MC_AP_USER : 0;
+	kprintf("%s: size: %lu %s\n", __FUNCTION__, size,
+			__flag ? "(IHK_MC_AP_USER)" : "");
+
+	stack = ihk_mc_alloc_aligned_pages(minsz >> PAGE_SHIFT,
+				LARGE_PAGE_P2ALIGN, IHK_MC_AP_NOWAIT | __flag);
+
+	if (!stack) {
+		kprintf("%s: error: couldn't allocate initial stack\n",
+				__FUNCTION__);
+		return -ENOMEM;
+	}
+
+	memset(stack, 0, minsz);
 
 	vrflag = VR_STACK | VR_DEMAND_PAGING;
 	vrflag |= PROT_TO_VR_FLAG(pn->stack_prot);
 	vrflag |= VR_MAXPROT_READ | VR_MAXPROT_WRITE | VR_MAXPROT_EXEC;
 #define	NOPHYS	((uintptr_t)-1)
 	if ((rc = add_process_memory_range(thread->vm, start, end, NOPHYS,
-					vrflag, NULL, 0, PAGE_SHIFT, NULL)) != 0) {
+					vrflag, NULL, 0, LARGE_PAGE_SHIFT, NULL)) != 0) {
+		ihk_mc_free_pages(stack, minsz >> PAGE_SHIFT);
 		return rc;
 	}
 
-	__flag = (size >= 16777216) ? IHK_MC_AP_USER : 0;
-	/* map physical pages for initial stack frame */
-	stack = ihk_mc_alloc_pages(minsz >> PAGE_SHIFT,
-			IHK_MC_AP_NOWAIT | __flag);
-
-	if (!stack) {
-		return -ENOMEM;
-	}
-	memset(stack, 0, minsz);
+	/* Map physical pages for initial stack frame */
 	error = ihk_mc_pt_set_range(thread->vm->address_space->page_table,
-	                            thread->vm, (void *)(end-minsz),
-	                            (void *)end, virt_to_phys(stack),
-	                            arch_vrflag_to_ptattr(vrflag, PF_POPULATE,
-	                                                  NULL), 0);
+			thread->vm, (void *)(end - minsz),
+			(void *)end, virt_to_phys(stack),
+			arch_vrflag_to_ptattr(vrflag, PF_POPULATE, NULL),
+			LARGE_PAGE_SHIFT);
+
 	if (error) {
 		kprintf("init_process_stack:"
 				"set range %lx-%lx %lx failed. %d\n",
