@@ -2042,90 +2042,29 @@ unsigned long extend_process_region(struct process_vm *vm,
 		return end;
 	}
 
-	aligned_end = ((end + PAGE_SIZE - 1) & PAGE_MASK);
+	aligned_end = ((end + LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK);
 
 	if (aligned_end >= address) {
 		return address;
 	}
 
-	aligned_new_end = (address + PAGE_SIZE - 1) & PAGE_MASK;
+	aligned_new_end = (address + LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
 
-#ifdef USE_LARGE_PAGES
-	if (aligned_new_end - aligned_end >= LARGE_PAGE_SIZE) {
-	  if(flag & VR_DEMAND_PAGING){panic("demand paging for large page is not available!");}
-		unsigned long p_aligned;
-		unsigned long old_aligned_end = aligned_end;
+	if (flag & VR_DEMAND_PAGING) {
+		p = 0;
+	}
+	else {
+		p = ihk_mc_alloc_aligned_pages((aligned_new_end - aligned_end) >> PAGE_SHIFT,
+				LARGE_PAGE_P2ALIGN, IHK_MC_AP_NOWAIT | IHK_MC_AP_USER);
 
-		if ((aligned_end & (LARGE_PAGE_SIZE - 1)) != 0) {
-
-			aligned_end = (aligned_end + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
-			/* Fill in the gap between old_aligned_end and aligned_end
-			 * with regular pages */
-			if((p = ihk_mc_alloc_pages((aligned_end - old_aligned_end) >> PAGE_SHIFT,
-                                 IHK_MC_AP_NOWAIT)) == NULL){
-				return end;
-			}
-			if((rc = add_process_memory_range(vm, old_aligned_end,
-                                        aligned_end, virt_to_phys(p), flag,
-					LARGE_PAGE_SHIFT, NULL)) != 0){
-				ihk_mc_free_pages(p, (aligned_end - old_aligned_end) >> PAGE_SHIFT);
-				return end;
-			}
-
-			dkprintf("filled in gap for LARGE_PAGE_SIZE aligned start: 0x%lX -> 0x%lX\n",
-					old_aligned_end, aligned_end);
-		}
-
-		/* Add large region for the actual mapping */
-		aligned_new_end = (aligned_new_end + (aligned_end - old_aligned_end) +
-				(LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
-		address = aligned_new_end;
-
-		if((p = ihk_mc_alloc_pages((aligned_new_end - aligned_end + LARGE_PAGE_SIZE) >> PAGE_SHIFT,
-                            IHK_MC_AP_NOWAIT)) == NULL){
+		if (!p) {
 			return end;
 		}
-
-		p_aligned = ((unsigned long)p + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
-
-		if (p_aligned > (unsigned long)p) {
-			ihk_mc_free_pages(p, (p_aligned - (unsigned long)p) >> PAGE_SHIFT);
-		}
-		ihk_mc_free_pages(
-			(void *)(p_aligned + aligned_new_end - aligned_end),
-			(LARGE_PAGE_SIZE - (p_aligned - (unsigned long)p)) >> PAGE_SHIFT);
-
-		if((rc = add_process_memory_range(vm, aligned_end,
-                               aligned_new_end, virt_to_phys((void *)p_aligned),
-                               flag, LARGE_PAGE_SHIFT, NULL)) != 0){
-			ihk_mc_free_pages(p, (aligned_new_end - aligned_end + LARGE_PAGE_SIZE) >> PAGE_SHIFT);
-			return end;
-		}
-
-		dkprintf("largePTE area: 0x%lX - 0x%lX (s: %lu) -> 0x%lX - \n",
-				aligned_end, aligned_new_end,
-				(aligned_new_end - aligned_end),
-				virt_to_phys((void *)p_aligned));
-
-		return address;
 	}
-#endif
-	if(flag & VR_DEMAND_PAGING){
-	  // demand paging no need to allocate page now
-	  kprintf("demand page do not allocate page\n");
-	  p=0;
-	}else{
 
-	p = ihk_mc_alloc_pages((aligned_new_end - aligned_end) >> PAGE_SHIFT,
-		IHK_MC_AP_NOWAIT | IHK_MC_AP_USER);
-
-	if (!p) {
-		return end;
-	}
-    }
 	if ((rc = add_process_memory_range(vm, aligned_end, aligned_new_end,
 					(p == 0 ? 0 : virt_to_phys(p)), flag, NULL, 0,
-					PAGE_SHIFT, NULL)) != 0) {
+					LARGE_PAGE_SHIFT, NULL)) != 0) {
 		ihk_mc_free_pages(p, (aligned_new_end - aligned_end) >> PAGE_SHIFT);
 		return end;
 	}
