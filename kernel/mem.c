@@ -508,15 +508,27 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 		goto distance_based;
 	}
 
+	node = ihk_mc_get_numa_id();
+	if (!memory_nodes[node].nodes_by_distance)
+		goto order_based;
+
 	switch (cpu_local_var(current)->vm->numa_mem_policy) {
 		case MPOL_BIND:
 		case MPOL_PREFERRED:
-			for_each_set_bit(node,
-					cpu_local_var(current)->proc->vm->numa_mask,
-					ihk_mc_get_nr_numa_nodes()) {
+
+			/* Look at nodes in the order of distance but consider
+			 * only the ones requested in user policy */
+			for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
+
+				/* Not part of user requested policy? */
+				if (!test_bit(memory_nodes[node].nodes_by_distance[i].id,
+						cpu_local_var(current)->proc->vm->numa_mask)) {
+					continue;
+				}
 
 				list_for_each_entry(pa_allocator,
-						&memory_nodes[node].allocators, list) {
+						&memory_nodes[memory_nodes[node].
+						nodes_by_distance[i].id].allocators, list) {
 					pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
 
 					if (pa) {
