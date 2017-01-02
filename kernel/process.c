@@ -1925,7 +1925,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 
 	/* Put large stacks in user requested region */
 	__flag = (size >= (2 * 1024 * 1024)) ? IHK_MC_AP_USER : 0;
-	kprintf("%s: size: %lu %s\n", __FUNCTION__, size,
+	dkprintf("%s: size: %lu %s\n", __FUNCTION__, size,
 			__flag ? "(IHK_MC_AP_USER)" : "");
 
 	stack = ihk_mc_alloc_aligned_pages(minsz >> PAGE_SHIFT,
