@@ -113,3 +113,5 @@ if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: ac
 	fi
 fi
 
+# Set back default swappiness
+echo 60 > /proc/sys/vm/swappiness

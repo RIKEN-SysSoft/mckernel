@@ -267,6 +267,9 @@ if [ "`lsmod | grep ihk`" == "" ]; then
 	fi
 fi
 
+# Increase swappiness so that we have better chance to allocate memory for IHK
+echo 100 > /proc/sys/vm/swappiness
+
 # Drop Linux caches to free memory
 sync && echo 3 > /proc/sys/vm/drop_caches
 
