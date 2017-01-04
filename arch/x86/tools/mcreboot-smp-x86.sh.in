@@ -104,7 +104,7 @@ error_exit() {
 		;&
 	mcoverlayfs_loaded)
 		if [ "$enable_mcoverlay" == "yes" ]; then
-			rmmod mcoverlay
+			rmmod mcoverlay 2>/dev/null
 		fi
 		;&
 	linux_proc_bind_mounted)
@@ -134,7 +134,7 @@ error_exit() {
 		fi
 		;&
 	mcctrl_loaded)
-		rmmod mcctrl || echo "warning: failed to remove mcctrl" >&2
+		rmmod mcctrl 2>/dev/null || echo "warning: failed to remove mcctrl" >&2
 		;&
 	cpus_reserved)
 		cpus=`${SBINDIR}/ihkconfig 0 query cpu`
@@ -153,10 +153,10 @@ error_exit() {
 		fi
 		;&
 	ihk_smp_loaded)
-		rmmod ihk_smp_x86 || echo "warning: failed to remove ihk_smp_x86" >&2
+		rmmod ihk_smp_x86 2>/dev/null || echo "warning: failed to remove ihk_smp_x86" >&2
 		;&
 	ihk_loaded)
-		rmmod ihk || echo "warning: failed to remove ihk" >&2
+		rmmod ihk 2>/dev/null || echo "warning: failed to remove ihk" >&2
 		;&
 	irqbalance_stopped)
 		if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
@@ -227,13 +227,13 @@ fi
 
 # Remove mcoverlay if loaded
 if [ "$enable_mcoverlay" == "yes" ]; then
-	if [ "`lsmod | grep mcoverlay`" != "" ]; then
+	if grep mcoverlay /proc/modules &>/dev/null; then
 		if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_sys`" != "" ]; then umount -l /tmp/mcos/mcos0_sys; fi
 		if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_proc`" != "" ]; then umount -l /tmp/mcos/mcos0_proc; fi
 		if [ "`cat /proc/mounts | grep /tmp/mcos/linux_proc`" != "" ]; then umount -l /tmp/mcos/linux_proc; fi
 		if [ "`cat /proc/mounts | grep /tmp/mcos`" != "" ]; then umount -l /tmp/mcos; fi
 		if [ -e /tmp/mcos ]; then rm -rf /tmp/mcos; fi
-		if ! rmmod mcoverlay; then
+		if ! rmmod mcoverlay 2>/dev/null; then
 			echo "error: removing mcoverlay" >&2
 			error_exit "initial"
 		fi
@@ -260,8 +260,8 @@ if [ ${LOGMODE} -ne 0 ]; then
 fi
 
 # Load IHK if not loaded
-if [ "`lsmod | grep ihk`" == "" ]; then
-	if ! insmod ${KMODDIR}/ihk.ko; then
+if ! grep -E 'ihk\s' /proc/modules &>/dev/null; then
+	if ! insmod ${KMODDIR}/ihk.ko 2>/dev/null; then
 		echo "error: loading ihk" >&2
 		error_exit "irqbalance_stopped"
 	fi
@@ -276,8 +276,10 @@ sync && echo 3 > /proc/sys/vm/drop_caches
 # Merge free memory areas into large, physically contigous ones
 echo 1 > /proc/sys/vm/compact_memory 2>/dev/null
 
+sync
+
 # Load IHK-SMP if not loaded and reserve CPUs and memory
-if [ "`lsmod | grep ihk_smp_x86`" == "" ]; then
+if ! grep ihk_smp_x86 /proc/modules &>/dev/null; then
 	ihk_irq=""
 	for i in `seq 64 255`; do
 		if [ ! -d /proc/irq/$i ] && [ "`cat /proc/interrupts | grep ":" | awk '{print $1}' | grep -o '[0-9]*' | grep -e '^$i$'`" == "" ]; then
@@ -289,7 +291,7 @@ if [ "`lsmod | grep ihk_smp_x86`" == "" ]; then
 		echo "error: no IRQ available" >&2
 		error_exit "ihk_loaded"
 	fi
-	if ! insmod ${KMODDIR}/ihk-smp-x86.ko ihk_start_irq=$ihk_irq ihk_ikc_irq_core=$ihk_ikc_irq_core; then
+	if ! insmod ${KMODDIR}/ihk-smp-x86.ko ihk_start_irq=$ihk_irq ihk_ikc_irq_core=$ihk_ikc_irq_core 2>/dev/null; then
 		echo "error: loading ihk-smp-x86" >&2
 		error_exit "ihk_loaded"
 	fi
@@ -304,8 +306,8 @@ if [ "`lsmod | grep ihk_smp_x86`" == "" ]; then
 fi
 
 # Load mcctrl if not loaded
-if [ "`lsmod | grep mcctrl`" == "" ]; then
-	if ! insmod ${KMODDIR}/mcctrl.ko; then
+if ! grep mcctrl /proc/modules &>/dev/null; then
+	if ! insmod ${KMODDIR}/mcctrl.ko 2>/dev/null; then
 		echo "error: inserting mcctrl.ko" >&2
 		error_exit "cpus_reserved"
 	fi
@@ -379,7 +381,7 @@ if [ "$enable_mcoverlay" == "yes" ]; then
 		echo "error: mount /tmp/mcos/linux_proc" >&2
 		error_exit "tmp_mcos_mounted"
 	fi
-	if ! insmod ${KMODDIR}/mcoverlay.ko; then
+	if ! insmod ${KMODDIR}/mcoverlay.ko 2>/dev/null; then
 		echo "error: inserting mcoverlay.ko" >&2
 		error_exit "linux_proc_bind_mounted"
 	fi
