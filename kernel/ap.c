@@ -26,6 +26,16 @@
 #include <march.h>
 #include <cls.h>
 
+//#define DEBUG_PRINT_AP
+
+#ifdef DEBUG_PRINT_AP
+#define	dkprintf(...) kprintf(__VA_ARGS__)
+#define	ekprintf(...) kprintf(__VA_ARGS__)
+#else
+#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
+#define	ekprintf(...) kprintf(__VA_ARGS__)
+#endif
+
 int num_processors = 1;
 static volatile int ap_stop = 1;
 
@@ -93,13 +103,13 @@ void ap_init(void)
 		if (cpu_info->hw_ids[i] == bsp_hw_id) {
 			continue;
 		}
-		kprintf("AP Booting: %d (HW ID: %d @ NUMA %d)\n", i,
+		dkprintf("AP Booting: %d (HW ID: %d @ NUMA %d)\n", i,
 			cpu_info->hw_ids[i], cpu_info->nodes[i]);
 		ihk_mc_boot_cpu(cpu_info->hw_ids[i], (unsigned long)ap_wait);
 
 		num_processors++;
 	}
-	kprintf("AP Booting: Done\n");
+	kprintf("BSP: booted %d AP CPUs\n", cpu_info->ncpus - 1);
 }
 
 #include <sysfs.h>
