@@ -1016,7 +1016,12 @@ static void numa_init(void)
 	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
 		int linux_numa_id, type;
 
-		ihk_mc_get_numa_node(i, &linux_numa_id, &type);
+		if (ihk_mc_get_numa_node(i, &linux_numa_id, &type) != 0) {
+			kprintf("%s: error: obtaining NUMA info for node %d\n",
+					__FUNCTION__, i);
+			panic("");
+		}
+
 		memory_nodes[i].id = i;
 		memory_nodes[i].linux_numa_id = linux_numa_id;
 		memory_nodes[i].type = type;
