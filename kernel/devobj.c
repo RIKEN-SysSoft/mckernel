@@ -126,7 +126,7 @@ int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxp
 		__FUNCTION__, fd, len, off, result.handle, result.maxprot);
 
 	obj->memobj.ops = &devobj_ops;
-	obj->memobj.flags = MF_HAS_PAGER;
+	obj->memobj.flags = MF_HAS_PAGER | MF_DEV_FILE;
 	obj->memobj.size = len;
 	obj->handle = result.handle;
 	obj->ref = 1;

@@ -1097,7 +1097,8 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 		page = phys_to_page(phys);
 	}
 
-	if (page && page_is_in_memobj(page) && (old & PFL1_DIRTY)) {
+	if (page && page_is_in_memobj(page) && (old & PFL1_DIRTY) &&
+			!(args->memobj->flags & MF_ZEROFILL)) {
 		memobj_flush_page(args->memobj, phys, PTL1_SIZE);
 	}
 
@@ -1271,6 +1272,9 @@ static int clear_range(struct page_table *pt, struct process_vm *vm,
 	}
 
 	args.free_physical = free_physical;
+	if (memobj && (memobj->flags & MF_DEV_FILE)) {
+		args.free_physical = 0;
+	}
 	args.memobj = memobj;
 	args.vm = vm;
 
