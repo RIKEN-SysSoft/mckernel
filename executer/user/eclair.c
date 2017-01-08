@@ -849,6 +849,7 @@ static void command(char *cmd, char *res) {
 				break;
 			}
 			q = buf;
+			q += sprintf(q, "PID %d, ", ti->pid);
 			if (ti->status & PS_RUNNING) {
 				q += sprintf(q, "%srunning on cpu %d",
 					ti->idle ? "idle " : "", ti->lcpu);
@@ -876,9 +877,6 @@ static void command(char *cmd, char *res) {
 			}
 			else {
 				q += sprintf(q, "status=%#x", ti->status);
-			}
-			if (ti->tid != ti->pid) {
-				q += sprintf(q, ",pid=%d", ti->pid);
 			}
 			rbp += print_hex(rbp, buf);
 		}
