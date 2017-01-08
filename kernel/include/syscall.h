@@ -255,22 +255,6 @@ struct syscall_post {
 	unsigned long v[8];
 };
 
-struct syscall_params {
-	unsigned long request_rpa, request_pa;
-	struct syscall_request *request_va;
-	unsigned long response_pa;
-	struct syscall_response *response_va;
-
-	unsigned long doorbell_rpa, doorbell_pa;
-	unsigned long *doorbell_va;
-
-	unsigned int post_idx;
-	unsigned long post_rpa, post_pa;
-	struct syscall_post *post_va;
-	unsigned long post_fin;
-	struct syscall_post post_buf IHK_DMA_ALIGN;
-};
-
 #define SYSCALL_DECLARE(name) long sys_##name(int n, ihk_mc_user_context_t *ctx)
 #define SYSCALL_HEADER struct syscall_request request IHK_DMA_ALIGN; \
 	request.number = n

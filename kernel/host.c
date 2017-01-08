@@ -434,9 +434,6 @@ static int process_msg_prepare_process(unsigned long rphys)
 	vm->region.map_end = vm->region.map_start;
 	memcpy(proc->rlimit, pn->rlimit, sizeof(struct rlimit) * MCK_RLIM_MAX);
 
-	/* TODO: Clear it at the proper timing */
-	cpu_local_var(scp).post_idx = 0;
-
 	if (prepare_process_ranges_args_envs(thread, pn, p, attr, 
 				NULL, 0, NULL, 0) != 0) {
 		kprintf("error: preparing process ranges, args, envs, stack\n");
@@ -459,70 +456,6 @@ err:
 	ihk_mc_unmap_memory(NULL, phys, sz);
 	destroy_thread(thread);
 	return -ENOMEM;
-}
-
-static void process_msg_init(struct ikc_scd_init_param *pcp, struct syscall_params *lparam)
-{
-	lparam->response_va = ihk_mc_alloc_pages(RESPONSE_PAGE_COUNT, 0);
-	lparam->response_pa = virt_to_phys(lparam->response_va);
-
-	pcp->request_page = 0;
-	pcp->doorbell_page = 0;
-	pcp->response_page = lparam->response_pa;
-}
-
-static void process_msg_init_acked(struct ihk_ikc_channel_desc *c, unsigned long pphys)
-{
-	struct ikc_scd_init_param *param = phys_to_virt(pphys);
-	struct syscall_params *lparam;
-	enum ihk_mc_pt_attribute attr;
-
-	attr = PTATTR_NO_EXECUTE | PTATTR_WRITABLE | PTATTR_FOR_USER;
-
-	lparam = &cpu_local_var(scp);
-	if(cpu_local_var(syscall_channel2) == c)
-		lparam = &cpu_local_var(scp2);
-	lparam->request_rpa = param->request_page;
-	lparam->request_pa = ihk_mc_map_memory(NULL, param->request_page,
-	                                       REQUEST_PAGE_COUNT * PAGE_SIZE);
-	if((lparam->request_va = ihk_mc_map_virtual(lparam->request_pa,
-	                                        REQUEST_PAGE_COUNT,
-	                                        attr)) == NULL){
-		// TODO: 
-		panic("ENOMEM");
-	}
-
-	lparam->doorbell_rpa = param->doorbell_page;
-	lparam->doorbell_pa = ihk_mc_map_memory(NULL, param->doorbell_page,
-	                                        DOORBELL_PAGE_COUNT * 
-	                                        PAGE_SIZE);
-	if((lparam->doorbell_va = ihk_mc_map_virtual(lparam->doorbell_pa,
-	                                         DOORBELL_PAGE_COUNT,
-	                                         attr)) == NULL){
-		// TODO: 
-		panic("ENOMEM");
-	}
-
-	lparam->post_rpa = param->post_page;
-	lparam->post_pa = ihk_mc_map_memory(NULL, param->post_page,
-	                                    PAGE_SIZE);
-	if((lparam->post_va = ihk_mc_map_virtual(lparam->post_pa, 1,
-	                                     attr)) == NULL){
-		// TODO: 
-		panic("ENOMEM");
-	}
-
-	lparam->post_fin = 1;
-
-	dkprintf("Syscall parameters: (%d)\n", ihk_mc_get_processor_id());
-	dkprintf(" Response: %lx, %p\n",
-	        lparam->response_pa, lparam->response_va);
-	dkprintf(" Request : %lx, %lx, %p\n",
-	        lparam->request_pa, lparam->request_rpa, lparam->request_va);
-	dkprintf(" Doorbell: %lx, %lx, %p\n",
-	        lparam->doorbell_pa, lparam->doorbell_rpa, lparam->doorbell_va);
-	dkprintf(" Post: %lx, %lx, %p\n",
-	        lparam->post_pa, lparam->post_rpa, lparam->post_va);
 }
 
 static void syscall_channel_send(struct ihk_ikc_channel_desc *c,
@@ -559,7 +492,6 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	switch (packet->msg) {
 	case SCD_MSG_INIT_CHANNEL_ACKED:
 		dkprintf("SCD_MSG_INIT_CHANNEL_ACKED\n");
-		process_msg_init_acked(c, packet->arg);
 		ret = 0;
 		break;
 
@@ -699,7 +631,6 @@ void init_host_syscall_channel(void)
 
 	get_this_cpu_local_var()->syscall_channel = param.channel;
 
-	process_msg_init(&cpu_local_var(iip), &cpu_local_var(scp));
 	pckt.msg = SCD_MSG_INIT_CHANNEL;
 	pckt.ref = ihk_mc_get_processor_id();
 	pckt.arg = virt_to_phys(&cpu_local_var(iip));
@@ -726,7 +657,6 @@ void init_host_syscall_channel2(void)
 
 	get_this_cpu_local_var()->syscall_channel2 = param.channel;
 
-	process_msg_init(&cpu_local_var(iip2), &cpu_local_var(scp2));
 	pckt.msg = SCD_MSG_INIT_CHANNEL;
 	pckt.ref = ihk_mc_get_processor_id();
 	pckt.arg = virt_to_phys(&cpu_local_var(iip2));
