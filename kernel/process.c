@@ -2346,7 +2346,7 @@ void release_thread(struct thread *thread)
 
 void cpu_set(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock)
 {
-	unsigned int flags;
+	unsigned long flags;
 	flags = ihk_mc_spinlock_lock(lock);
 	CPU_SET(cpu, cpu_set);
 	ihk_mc_spinlock_unlock(lock, flags);
@@ -2354,7 +2354,7 @@ void cpu_set(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock)
 
 void cpu_clear(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock)
 {
-	unsigned int flags;
+	unsigned long flags;
 	flags = ihk_mc_spinlock_lock(lock);
 	CPU_CLR(cpu, cpu_set);
 	ihk_mc_spinlock_unlock(lock, flags);
@@ -2363,7 +2363,7 @@ void cpu_clear(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock)
 void cpu_clear_and_set(int c_cpu, int s_cpu,
 	cpu_set_t *cpu_set, ihk_spinlock_t *lock)
 {
-	unsigned int flags;
+	unsigned long flags;
 	flags = ihk_mc_spinlock_lock(lock);
 	CPU_CLR(c_cpu, cpu_set);
 	CPU_SET(s_cpu, cpu_set);
