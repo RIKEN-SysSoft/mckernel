@@ -336,11 +336,8 @@ static void post_init(void)
 	}
 
 	if (find_command_line("hidos")) {
-		extern ihk_spinlock_t syscall_lock;
-
 		init_host_syscall_channel();
 		init_host_syscall_channel2();
-		ihk_mc_spinlock_init(&syscall_lock);
 	}
 
 	arch_setup_vdso();

@@ -267,16 +267,12 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid, struct s
 #endif
 }
 
-ihk_spinlock_t syscall_lock;
-
 long do_syscall(struct syscall_request *req, int cpu, int pid)
 {
 	struct syscall_response res;
 	struct syscall_request req2 IHK_DMA_ALIGN;
 	int error;
 	long rc;
-	int islock = 0;
-	unsigned long irqstate;
 	struct thread *thread = cpu_local_var(current);
 	struct process *proc = thread->proc;
 #ifdef TRACK_SYSCALLS
@@ -288,7 +284,6 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		ihk_mc_get_processor_id(),
 		req->number);
 	
-	irqstate = 0;	/* for avoidance of warning */
 	barrier();
 
 	if(req->number != __NR_exit_group){
@@ -299,11 +294,6 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		++thread->in_syscall_offload;
 	}
 
-	if(req->number == __NR_exit_group ||
-	   req->number == __NR_kill){ // interrupt syscall
-		islock = 1;
-		irqstate = ihk_mc_spinlock_lock(&syscall_lock);
-	}
 	/* The current thread is the requester and any thread from 
 	 * the pool may serve the request */
 	req->rtid = cpu_local_var(current)->tid;
@@ -394,9 +384,6 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		__FUNCTION__, req->number, res.ret);
 
 	rc = res.ret;
-	if(islock){
-		ihk_mc_spinlock_unlock(&syscall_lock, irqstate);
-	}
 
 	if(req->number != __NR_exit_group){
 		--thread->in_syscall_offload;
