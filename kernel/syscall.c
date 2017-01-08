@@ -6669,15 +6669,18 @@ SYSCALL_DECLARE(nanosleep)
 	return do_syscall(&request, ihk_mc_get_processor_id(), 0);
 }
 
+//#define DISABLE_SCHED_YIELD
 SYSCALL_DECLARE(sched_yield)
 {
-	struct cpu_local_var *v;
 	int do_schedule = 0;
 	long runq_irqstate;
+	struct cpu_local_var *v = get_this_cpu_local_var();
 
-	runq_irqstate =
-		ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
-	v = get_this_cpu_local_var();
+#ifdef DISABLE_SCHED_YIELD
+	return 0;
+#endif
+
+	runq_irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
 
 	if (v->flags & CPU_FLAG_NEED_RESCHED || v->runq_len > 1) {
 		do_schedule = 1;
@@ -8653,7 +8656,11 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 #endif // TRACK_SYSCALLS
 	struct thread *thread = cpu_local_var(current);
 
-	set_cputime(1);
+#ifdef DISABLE_SCHED_YIELD
+	if (num != __NR_sched_yield)
+#endif // DISABLE_SCHED_YIELD
+		set_cputime(1);
+
 	if(cpu_local_var(current)->proc->status == PS_EXITED &&
 	   (num != __NR_exit && num != __NR_exit_group)){
 		check_signal(-EINVAL, NULL, 0);
@@ -8745,6 +8752,10 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		ptrace_syscall_exit(cpu_local_var(current));
 	}
 
-	set_cputime(0);
+#ifdef DISABLE_SCHED_YIELD
+	if (num != __NR_sched_yield)
+#endif // DISABLE_SCHED_YIELD
+		set_cputime(0);
+
 	return l;
 }
