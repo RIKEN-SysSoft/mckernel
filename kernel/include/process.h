@@ -759,6 +759,7 @@ extern enum ihk_mc_pt_attribute arch_vrflag_to_ptattr(unsigned long flag, uint64
 enum ihk_mc_pt_attribute common_vrflag_to_ptattr(unsigned long flag, uint64_t fault, pte_t *ptep);
 
 void schedule(void);
+void spin_sleep_or_schedule(void);
 void runq_add_thread(struct thread *thread, int cpu_id);
 void runq_del_thread(struct thread *thread, int cpu_id);
 int sched_wakeup_thread(struct thread *thread, int valid_states);

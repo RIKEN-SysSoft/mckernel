@@ -2233,30 +2233,28 @@ int strcpy_from_user(char *dst, const char *src)
 	return err;
 }
 
-long getlong_user(const long *p)
+long getlong_user(long *dest, const long *p)
 {
 	int error;
-	long l;
 
-	error = copy_from_user(&l, p, sizeof(l));
+	error = copy_from_user(dest, p, sizeof(long));
 	if (error) {
 		return error;
 	}
 
-	return l;
+	return 0;
 }
 
-int getint_user(const int *p)
+int getint_user(int *dest, const int *p)
 {
 	int error;
-	int i;
 
-	error = copy_from_user(&i, p, sizeof(i));
+	error = copy_from_user(dest, p, sizeof(int));
 	if (error) {
 		return error;
 	}
 
-	return i;
+	return 0;
 }
 
 int read_process_vm(struct process_vm *vm, void *kdst, const void *usrc, size_t siz)

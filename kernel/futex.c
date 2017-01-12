@@ -248,9 +248,13 @@ static int cmpxchg_futex_value_locked(uint32_t __user *uaddr, uint32_t uval, uin
 
 static int get_futex_value_locked(uint32_t *dest, uint32_t *from)
 {
-	/* RIKEN: futexes are always on not swappable pages */
-	*dest = getint_user((int *)from);
-
+	/*
+	 * Officially we should call:
+	 * return getint_user((int *)dest, (int *)from);
+	 *
+	 * but McKernel on x86 can just access user-space.
+	 */
+	*dest = *(volatile uint32_t *)from;
 	return 0;
 }
 
@@ -670,26 +674,32 @@ static uint64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q
 				uint64_t timeout)
 {
 	uint64_t time_remain = 0;
+	unsigned long irqstate;
+	struct thread *thread = cpu_local_var(current);
 	/*
 	 * The task state is guaranteed to be set before another task can
-	 * wake it. set_current_state() is implemented using set_mb() and
-	 * queue_me() calls spin_unlock() upon completion, both serializing
-	 * access to the hash list and forcing another memory barrier.
+	 * wake it. 
+	 * queue_me() calls spin_unlock() upon completion, serializing
+	 * access to the hash list and forcing a memory barrier.
 	 */
 	xchg4(&(cpu_local_var(current)->status), PS_INTERRUPTIBLE);
-	barrier();
+
+	/* Indicate spin sleep */
+	irqstate = ihk_mc_spinlock_lock(&thread->spin_sleep_lock);
+	thread->spin_sleep = 1;
+	ihk_mc_spinlock_unlock(&thread->spin_sleep_lock, irqstate);
+
 	queue_me(q, hb);
 	
 	if (!plist_node_empty(&q->list)) {
 		
-		/* RIKEN: use mcos timers */
 		if (timeout) {
 			dkprintf("futex_wait_queue_me(): tid: %d schedule_timeout()\n", cpu_local_var(current)->tid);
 			time_remain = schedule_timeout(timeout);
 		}
 		else {
 			dkprintf("futex_wait_queue_me(): tid: %d schedule()\n", cpu_local_var(current)->tid);
-			schedule();
+			spin_sleep_or_schedule();
 			time_remain = 0;
 		}
 		
@@ -698,6 +708,7 @@ static uint64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q
 	
 	/* This does not need to be serialized */
 	cpu_local_var(current)->status = PS_RUNNING;
+	thread->spin_sleep = 0;
 	
 	return time_remain;
 }
@@ -744,14 +755,17 @@ static int futex_wait_setup(uint32_t __user *uaddr, uint32_t val, int fshared,
 	 */
 	q->key = FUTEX_KEY_INIT;
 	ret = get_futex_key(uaddr, fshared, &q->key);
-	if ((ret != 0))
+	if (ret != 0)
 		return ret;
 
 	*hb = queue_lock(q);
 
 	ret = get_futex_value_locked(&uval, uaddr);
-
-	/* RIKEN: get_futex_value_locked() always returns 0 on mckernel */
+	if (ret) {
+		queue_unlock(q, *hb);
+		put_futex_key(fshared, &q->key);
+		return ret;
+	}
 
 	if (uval != val) {
 		queue_unlock(q, *hb);
@@ -776,8 +790,6 @@ static int futex_wait(uint32_t __user *uaddr, int fshared,
 
 	q.bitset = bitset;
 	q.requeue_pi_key = NULL;
-
-	/* RIKEN: futex_wait_queue_me() calls schedule_timeout() if timer is set */
 
 retry:
 	/* Prepare to wait on uaddr. */

@@ -2668,6 +2668,65 @@ set_timer()
 	}
 }
 
+/*
+ * NOTE: it is assumed that a wait-queue (or futex queue) is
+ * set before calling this function.
+ * NOTE: one must set thread->spin_sleep to 1 before evaluating
+ * the wait condition to avoid lost wake-ups.
+ */
+void spin_sleep_or_schedule(void)
+{
+	struct thread *thread = cpu_local_var(current);
+	struct cpu_local_var *v;
+	int do_schedule = 0;
+	int woken = 0;
+	long irqstate;
+
+	/* Try to spin sleep */
+	irqstate = ihk_mc_spinlock_lock(&thread->spin_sleep_lock);
+	if (thread->spin_sleep == 0) {
+		dkprintf("%s: caught a lost wake-up!\n", __FUNCTION__);
+	}
+	ihk_mc_spinlock_unlock(&thread->spin_sleep_lock, irqstate);
+
+	for (;;) {
+		/* Check if we need to reschedule */
+		irqstate =
+			ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
+		v = get_this_cpu_local_var();
+
+		if (v->flags & CPU_FLAG_NEED_RESCHED || v->runq_len > 1) {
+			do_schedule = 1;
+		}
+
+		ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
+
+		/* Check if we were woken up */
+		irqstate = ihk_mc_spinlock_lock(&thread->spin_sleep_lock);
+		if (thread->spin_sleep == 0) {
+			woken = 1;
+		}
+
+		/* Indicate that we are not spinning any more */
+		if (do_schedule) {
+			thread->spin_sleep = 0;
+		}
+		ihk_mc_spinlock_unlock(&thread->spin_sleep_lock, irqstate);
+
+		if (woken) {
+			return;
+		}
+
+		if (do_schedule) {
+			break;
+		}
+
+		cpu_pause();
+	}
+
+	schedule();
+}
+
 void schedule(void)
 {
 	struct cpu_local_var *v;
@@ -2834,7 +2893,6 @@ int
 sched_wakeup_thread(struct thread *thread, int valid_states)
 {
 	int status;
-	int spin_slept = 0;
 	unsigned long irqstate;
 	struct cpu_local_var *v = get_cpu_local_var(thread->cpu_id);
 	struct process *proc = thread->proc;
@@ -2844,29 +2902,23 @@ sched_wakeup_thread(struct thread *thread, int valid_states)
 			 proc->pid, valid_states, thread->status, thread->cpu_id, ihk_mc_get_processor_id());
 
 	irqstate = ihk_mc_spinlock_lock(&(thread->spin_sleep_lock));
-	if (thread->spin_sleep > 0) {
+	if (thread->spin_sleep == 1) {
 		dkprintf("sched_wakeup_process() spin wakeup: cpu_id: %d\n",
 				 thread->cpu_id);
 
-		spin_slept = 1;
 		status = 0;
 	}
-	--thread->spin_sleep;
+	thread->spin_sleep = 0;
 	ihk_mc_spinlock_unlock(&(thread->spin_sleep_lock), irqstate);
-
-	if (spin_slept) {
-		return status;
-	}
 
 	irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 
 	if (thread->status & valid_states) {
 		mcs_rwlock_writer_lock_noirq(&proc->update_lock, &updatelock);
-		if(proc->status != PS_EXITED)
+		if (proc->status != PS_EXITED)
 			proc->status = PS_RUNNING;
 		mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
 		xchg4((int *)(&thread->status), PS_RUNNING);
-		barrier();
 		status = 0;
 	}
 	else {
