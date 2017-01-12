@@ -1431,6 +1431,10 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		 * otherwise follow user requested policy */
 		unsigned long __flag = (len >= 2097152) ? IHK_MC_AP_USER : 0;
 
+		if (__flag) {
+			vrflags |= VR_AP_USER;
+		}
+
 		p = ihk_mc_alloc_aligned_pages(npages, p2align,
 				IHK_MC_AP_NOWAIT | __flag);
 		if (p == NULL) {

@@ -27,6 +27,7 @@
 #define VR_NONE            0x0
 #define VR_STACK           0x1
 #define VR_RESERVED        0x2
+#define VR_AP_USER         0x4
 #define VR_IO_NOCACHE      0x100
 #define VR_REMOTE          0x200
 #define VR_WRITE_COMBINED  0x400

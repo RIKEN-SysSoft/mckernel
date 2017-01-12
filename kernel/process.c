@@ -1652,7 +1652,9 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 
 retry:
 			npages = pgsize / PAGE_SIZE;
-			virt = ihk_mc_alloc_aligned_pages(npages, p2align, IHK_MC_AP_NOWAIT);
+			virt = ihk_mc_alloc_aligned_pages(npages, p2align,
+					IHK_MC_AP_NOWAIT |
+					(range->flag & VR_AP_USER) ? IHK_MC_AP_USER : 0);
 			if (!virt && !range->pgshift && (pgsize != PAGE_SIZE)) {
 				error = arch_get_smaller_page_size(NULL, pgsize, &pgsize, &p2align);
 				if (error) {
@@ -1685,7 +1687,7 @@ retry:
 
 	attr = arch_vrflag_to_ptattr(range->flag | memobj_flag, reason, ptep);
 
-	/*****/
+	/* Copy on write */
 	if (((range->flag & VR_PRIVATE) ||
 				((reason & PF_PATCH) && !(range->flag & VR_PROT_WRITE)))
 			&& ((!page && phys == NOPHYS) || (page &&
@@ -1940,6 +1942,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	memset(stack, 0, minsz);
 
 	vrflag = VR_STACK | VR_DEMAND_PAGING;
+	vrflag |= (__flag ? VR_AP_USER : 0);
 	vrflag |= PROT_TO_VR_FLAG(pn->stack_prot);
 	vrflag |= VR_MAXPROT_READ | VR_MAXPROT_WRITE | VR_MAXPROT_EXEC;
 #define	NOPHYS	((uintptr_t)-1)
