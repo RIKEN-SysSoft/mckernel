@@ -174,6 +174,11 @@ error_exit() {
 			fi
 		fi
 		;&
+	aslr_disabled)
+		if [ -f /tmp/mckernel_randomize_va_space ]; then
+			cat /tmp/mckernel_randomize_va_space > /proc/sys/kernel/randomize_va_space
+		fi
+		;&
 	initial)
 		# Nothing more to revert
 		;;
@@ -225,6 +230,12 @@ if [ "$cpus" == "" ]; then
 	fi
 fi
 
+# Disable address space layout randomization
+if [ -f /proc/sys/kernel/randomize_va_space ] && [ "`cat /proc/sys/kernel/randomize_va_space`" != "0" ]; then
+	cat /proc/sys/kernel/randomize_va_space > /tmp/mckernel_randomize_va_space
+	echo "0" > /proc/sys/kernel/randomize_va_space
+fi
+
 # Remove mcoverlay if loaded
 if [ "$enable_mcoverlay" == "yes" ]; then
 	if grep mcoverlay /proc/modules &>/dev/null; then
@@ -235,7 +246,7 @@ if [ "$enable_mcoverlay" == "yes" ]; then
 		if [ -e /tmp/mcos ]; then rm -rf /tmp/mcos; fi
 		if ! rmmod mcoverlay 2>/dev/null; then
 			echo "error: removing mcoverlay" >&2
-			error_exit "initial"
+			error_exit "aslr_disabled"
 		fi
 	fi
 fi
@@ -245,7 +256,7 @@ if [ "${irqbalance_used}" == "yes" ]; then
     systemctl stop irqbalance_mck.service 2>/dev/null
     if ! systemctl stop irqbalance.service 2>/dev/null ; then
 		echo "error: stopping irqbalance" >&2
-		error_exit "initial"
+		error_exit "aslr_disabled"
 	fi;
 fi
 

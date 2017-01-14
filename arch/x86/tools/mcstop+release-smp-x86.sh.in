@@ -113,5 +113,10 @@ if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: ac
 	fi
 fi
 
+# Re-enable ASLR
+if [ -f /tmp/mckernel_randomize_va_space ]; then
+	cat /tmp/mckernel_randomize_va_space > /proc/sys/kernel/randomize_va_space
+fi
+
 # Set back default swappiness
 echo 60 > /proc/sys/vm/swappiness
