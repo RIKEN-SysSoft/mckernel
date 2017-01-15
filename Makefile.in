@@ -49,6 +49,7 @@ install::
 		mkdir -p -m 755 $(SBINDIR); \
 		install -m 755 arch/x86/tools/mcreboot-smp-x86.sh $(SBINDIR)/mcreboot.sh; \
 		install -m 755 arch/x86/tools/mcstop+release-smp-x86.sh $(SBINDIR)/mcstop+release.sh; \
+		install -m 755 arch/x86/tools/eclair-dump-backtrace.exp $(SBINDIR)/eclair-dump-backtrace.exp;\
 		mkdir -p -m 755 $(ETCDIR); \
 		install -m 644 arch/x86/tools/irqbalance_mck.service $(ETCDIR)/irqbalance_mck.service; \
 		install -m 644 arch/x86/tools/irqbalance_mck.in $(ETCDIR)/irqbalance_mck.in; \
