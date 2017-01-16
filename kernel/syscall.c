@@ -1226,13 +1226,6 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		if (!anon_on_demand && (flags & MAP_PRIVATE)) {
 			vrflags &= ~VR_DEMAND_PAGING;
 		}
-#ifdef	USE_NOCACHE_MMAP
-#define	X_MAP_NOCACHE	MAP_32BIT
-		else if (flags & X_MAP_NOCACHE) {
-			vrflags &= ~VR_DEMAND_PAGING;
-			vrflags |= VR_IO_NOCACHE;
-		}
-#endif
 	}
 
 	if (flags & (MAP_POPULATE | MAP_LOCKED)) {
