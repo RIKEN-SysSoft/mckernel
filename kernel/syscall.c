@@ -1908,6 +1908,7 @@ SYSCALL_DECLARE(execve)
 	if (ret != 0) {
 		dkprintf("execve(): ERROR: host failed to load elf header, errno: %d\n", 
 				ret);
+		ihk_mc_free_pages(desc, 1);
 		return -ret;
 	}
 
@@ -1931,6 +1932,7 @@ SYSCALL_DECLARE(execve)
 		kprintf("ERROR: no argv for executable: %s?\n", kfilename? kfilename: "");
 		if(kfilename)
 			kfree(kfilename);
+		ihk_mc_free_pages(desc, 1);
 		return -EINVAL;
 	}
 
@@ -1998,6 +2000,10 @@ SYSCALL_DECLARE(execve)
 	/* Switch to new execution context */
 	dkprintf("execve(): switching to new process\n");
 	proc->execed = 1;
+	
+	ihk_mc_free_pages(desc, 1);
+	kfree(argv_flat);
+	kfree(envp_flat);
 	
 	/* Lock run queue because enter_user_mode expects to release it */
 	cpu_local_var(runq_irqstate) = 
