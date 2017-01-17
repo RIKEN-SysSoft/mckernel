@@ -1232,14 +1232,13 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		populated_mapping = 1;
 	}
 
-#if 0
 	/* XXX: Intel MPI 128MB mapping.. */
 	if (len == 134217728) {
-		kprintf("%s: 128MB mapping -> no prefault\n",
+		dkprintf("%s: %ld bytes mapping -> no prefault\n",
 			__FUNCTION__, len);
+		vrflags |= VR_DEMAND_PAGING;
 		populated_mapping = 0;
 	}
-#endif
 
 	if (!(prot & PROT_WRITE)) {
 		error = set_host_vma(addr, len, PROT_READ);
