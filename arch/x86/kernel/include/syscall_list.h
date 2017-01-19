@@ -151,7 +151,7 @@ SYSCALL_HANDLED(603, pmc_stop)
 SYSCALL_HANDLED(604, pmc_reset)
 SYSCALL_HANDLED(700, get_cpu_id)
 #ifdef TRACK_SYSCALLS
-SYSCALL_HANDLED(701, syscall_offload_clr_cntrs)
+SYSCALL_HANDLED(__NR_track_syscalls, track_syscalls)
 #endif // TRACK_SYSCALLS
 
 /**** End of File ****/

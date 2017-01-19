@@ -101,6 +101,13 @@ init_process(struct process *proc, struct process *parent)
 	waitq_init(&proc->waitpid_q);
 	ihk_atomic_set(&proc->refcount, 2);
 	proc->monitoring_event = NULL;
+#ifdef TRACK_SYSCALLS
+	mcs_lock_init(&proc->st_lock);
+	proc->syscall_times = NULL;
+	proc->syscall_cnts = NULL;
+	proc->offload_times = NULL;
+	proc->offload_cnts = NULL;
+#endif
 }
 
 void
@@ -468,6 +475,9 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 
 	ihk_mc_spinlock_init(&thread->spin_sleep_lock);
 	thread->spin_sleep = 0;
+#ifdef TRACK_SYSCALLS
+	thread->track_syscalls = org->track_syscalls;
+#endif
 
 	return thread;
 
@@ -2155,6 +2165,10 @@ release_process(struct process *proc)
 	}
 
 	if (proc->tids) kfree(proc->tids);
+#ifdef TRACK_SYSCALLS
+	track_syscalls_print_proc_stats(proc);
+	track_syscalls_dealloc_proc_counters(proc);
+#endif // TRACK_SYSCALLS
 	kfree(proc);
 }
 
@@ -2338,6 +2352,11 @@ void release_thread(struct thread *thread)
 
 	vm = thread->vm;
 
+#ifdef TRACK_SYSCALLS
+	track_syscalls_accumulate_counters(thread, thread->proc);
+	//track_syscalls_print_thread_stats(thread);
+	track_syscalls_dealloc_thread_counters(thread);
+#endif // TRACK_SYSCALLS
 	procfs_delete_thread(thread);
 	destroy_thread(thread);
 
