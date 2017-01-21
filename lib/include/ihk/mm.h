@@ -54,6 +54,8 @@ typedef unsigned long ihk_mc_ap_flag;
 #define IHK_MC_AP_BANDWIDTH       0x010000
 #define IHK_MC_AP_LATENCY         0x020000
 
+#define AP_USER_THRESHOLD         (2097152)
+
 enum ihk_mc_pt_prepare_flag {
 	IHK_MC_PT_FIRST_LEVEL,
 	IHK_MC_PT_LAST_LEVEL,

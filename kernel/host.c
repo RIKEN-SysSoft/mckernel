@@ -91,11 +91,15 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	struct address_space *as = vm->address_space;
 	long aout_base;
 	int error;
+	struct vm_range *range;
+	unsigned long ap_flags;
+	enum ihk_mc_pt_attribute ptattr;
 	
 	n = p->num_sections;
 
 	aout_base = (pn->reloc)? vm->region.map_end: 0;
 	for (i = 0; i < n; i++) {
+		ap_flags = 0;
 		if (pn->sections[i].interp && (interp_nbase == (uintptr_t)-1)) {
 			interp_obase = pn->sections[i].vaddr;
 			interp_obase -= (interp_obase % pn->interp_align);
@@ -116,48 +120,49 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		s = (pn->sections[i].vaddr) & PAGE_MASK;
 		e = (pn->sections[i].vaddr + pn->sections[i].len
 				+ PAGE_SIZE - 1) & PAGE_MASK;
-		range_npages = (e - s) >> PAGE_SHIFT;
+		range_npages = ((pn->sections[i].vaddr - s) +
+			pn->sections[i].filesz + PAGE_SIZE - 1) >> PAGE_SHIFT;
 		flags = VR_NONE;
 		flags |= PROT_TO_VR_FLAG(pn->sections[i].prot);
 		flags |= VRFLAG_PROT_TO_MAXPROT(flags);
+		flags |= VR_DEMAND_PAGING;
 
-		if ((up_v = ihk_mc_alloc_pages(range_npages, IHK_MC_AP_NOWAIT)) 
-				== NULL) {
-			kprintf("ERROR: alloc pages for ELF section %i\n", i);
-			goto err;
-		} 
-		
-		up = virt_to_phys(up_v);
-		if (add_process_memory_range(vm, s, e, up, flags, NULL, 0,
-					PAGE_SHIFT, NULL) != 0) {
-			ihk_mc_free_pages(up_v, range_npages);
+		/* Non-TEXT sections that are large respect user allocation policy */
+		if (i >= 1 && pn->sections[i].len >= AP_USER_THRESHOLD) {
+			dkprintf("%s: section: %d size: %d pages -> IHK_MC_AP_USER\n",
+					__FUNCTION__, i, range_npages);
+			ap_flags = IHK_MC_AP_USER;
+			flags |= VR_AP_USER;
+		}
+
+		if (add_process_memory_range(vm, s, e, NOPHYS, flags, NULL, 0,
+					pn->sections[i].len > LARGE_PAGE_SIZE ?
+					LARGE_PAGE_SHIFT : PAGE_SHIFT,
+					&range) != 0) {
 			kprintf("ERROR: adding memory range for ELF section %i\n", i);
 			goto err;
 		}
 
-		{
-			void *_virt = (void *)s;
-			unsigned long _phys;
-			if (ihk_mc_pt_virt_to_phys(as->page_table, 
-						_virt, &_phys)) {
-				kprintf("ERROR: no mapping for 0x%lX\n", _virt);
-			}
-			for (_virt = (void *)s + PAGE_SIZE; 
-					(unsigned long)_virt < e; _virt += PAGE_SIZE) {
-				unsigned long __phys;
-				if (ihk_mc_pt_virt_to_phys(as->page_table, 
-							_virt, &__phys)) {
-					kprintf("ERROR: no mapping for 0x%lX\n", _virt);
-					panic("mapping");
-				}
-				if (__phys != _phys + PAGE_SIZE) {
-					kprintf("0x%lX + PAGE_SIZE is not physically contigous, from 0x%lX to 0x%lX\n", _virt - PAGE_SIZE, _phys, __phys);
-					panic("mondai");
-				}
+		if ((up_v = ihk_mc_alloc_pages(range_npages,
+						IHK_MC_AP_NOWAIT | ap_flags)) == NULL) {
+			kprintf("ERROR: alloc pages for ELF section %i\n", i);
+			goto err;
+		}
 
-				_phys = __phys;
-			}
-			dkprintf("0x%lX -> 0x%lX is physically contigous\n", s, e);
+		up = virt_to_phys(up_v);
+
+		ptattr = arch_vrflag_to_ptattr(range->flag, PF_POPULATE, NULL);
+		error = ihk_mc_pt_set_range(vm->address_space->page_table, vm,
+				(void *)range->start,
+				(void *)range->start + (range_npages * PAGE_SIZE),
+				up, ptattr,
+				range->pgshift);
+
+		if (error) {
+			kprintf("%s: ihk_mc_pt_set_range failed. %d\n",
+					__FUNCTION__, error);
+			ihk_mc_free_pages(up_v, range_npages);
+			goto err;
 		}
 
 		p->sections[i].remote_pa = up;

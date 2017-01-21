@@ -1429,14 +1429,16 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		npages = len >> PAGE_SHIFT;
 		/* Small allocations mostly benefit from closest RAM,
 		 * otherwise follow user requested policy */
-		unsigned long __flag = (len >= 2097152) ? IHK_MC_AP_USER : 0;
+		unsigned long ap_flag =
+			(len >= AP_USER_THRESHOLD || flags & MAP_STACK) ?
+			IHK_MC_AP_USER : 0;
 
-		if (__flag) {
+		if (ap_flag) {
 			vrflags |= VR_AP_USER;
 		}
 
 		p = ihk_mc_alloc_aligned_pages(npages, p2align,
-				IHK_MC_AP_NOWAIT | __flag);
+				IHK_MC_AP_NOWAIT | ap_flag);
 		if (p == NULL) {
 			dkprintf("%s: warning: failed to allocate %d contiguous pages "
 					" (bytes: %lu, pgshift: %d), enabling demand paging\n",

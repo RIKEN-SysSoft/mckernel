@@ -1910,7 +1910,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	unsigned long minsz;
 	unsigned long at_rand;
 	struct process *proc = thread->proc;
-	unsigned long __flag;
+	unsigned long ap_flag;
 
 	/* Create stack range */
 	end = STACK_TOP(&thread->vm->region) & LARGE_PAGE_MASK;
@@ -1925,13 +1925,14 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	}
 	start = (end - size) & LARGE_PAGE_MASK;
 
-	/* Put large stacks in user requested region */
-	__flag = (size >= (2 * 1024 * 1024)) ? IHK_MC_AP_USER : 0;
+	/* Apply user allocation policy to stacks */
+	/* TODO: make threshold kernel or mcexec argument */
+	ap_flag = (size >= AP_USER_THRESHOLD) ? IHK_MC_AP_USER : 0;
 	dkprintf("%s: size: %lu %s\n", __FUNCTION__, size,
-			__flag ? "(IHK_MC_AP_USER)" : "");
+			ap_flag ? "(IHK_MC_AP_USER)" : "");
 
 	stack = ihk_mc_alloc_aligned_pages(minsz >> PAGE_SHIFT,
-				LARGE_PAGE_P2ALIGN, IHK_MC_AP_NOWAIT | __flag);
+				LARGE_PAGE_P2ALIGN, IHK_MC_AP_NOWAIT | ap_flag);
 
 	if (!stack) {
 		kprintf("%s: error: couldn't allocate initial stack\n",
@@ -1942,7 +1943,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	memset(stack, 0, minsz);
 
 	vrflag = VR_STACK | VR_DEMAND_PAGING;
-	vrflag |= (__flag ? VR_AP_USER : 0);
+	vrflag |= (ap_flag ? VR_AP_USER : 0);
 	vrflag |= PROT_TO_VR_FLAG(pn->stack_prot);
 	vrflag |= VR_MAXPROT_READ | VR_MAXPROT_WRITE | VR_MAXPROT_EXEC;
 #define	NOPHYS	((uintptr_t)-1)
