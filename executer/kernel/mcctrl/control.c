@@ -493,6 +493,7 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 	struct cache_topology *cache_top;
 	int cpu, cpus_assigned, cpus_to_assign, cpu_prev;
 	int ret = 0;
+	int mcexec_linux_numa;
 	cpumask_t cpus_used;
 	cpumask_t cpus_to_use;
 	struct mcctrl_per_proc_data *ppd;
@@ -643,9 +644,19 @@ next_cpu:
 		goto put_and_unlock_out;
 	}
 
+	/* Copy IKC target core and mcexec Linux NUMA id */
 	cpu = cpumask_next(-1, &cpus_to_use);
 	if (copy_to_user(req.target_core, &cpu, sizeof(cpu))) {
 		printk("%s: error copying target core to user\n",
+				__FUNCTION__);
+		ret = -EINVAL;
+		goto put_and_unlock_out;
+	}
+
+	mcexec_linux_numa = cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu));
+	if (copy_to_user(req.mcexec_linux_numa, &mcexec_linux_numa,
+				sizeof(mcexec_linux_numa))) {
+		printk("%s: error copying mcexec Linux NUMA id\n",
 				__FUNCTION__);
 		ret = -EINVAL;
 		goto put_and_unlock_out;

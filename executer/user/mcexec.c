@@ -66,6 +66,8 @@
 #include "../include/uprotocol.h"
 #include <getopt.h>
 #include "../config.h"
+#include <numa.h>
+#include <numaif.h>
 
 //#define DEBUG
 
@@ -1623,21 +1625,50 @@ int main(int argc, char **argv)
 	/* Partitioned execution, obtain CPU set */
 	if (nr_processes > 0) {
 		struct get_cpu_set_arg cpu_set_arg;
+		int mcexec_linux_numa = 0;
 
 		cpu_set_arg.cpu_set = (void *)&desc->cpu_set;
 		cpu_set_arg.cpu_set_size = sizeof(desc->cpu_set);
 		cpu_set_arg.nr_processes = nr_processes;
 		cpu_set_arg.target_core = &target_core;
-		
+		cpu_set_arg.mcexec_linux_numa = &mcexec_linux_numa;
+
 		if (ioctl(fd, MCEXEC_UP_GET_CPUSET, (void *)&cpu_set_arg) != 0) {
 			perror("getting CPU set for partitioned execution");
 			close(fd);
 			return 1;
 		}
-		
+
 		desc->cpu = target_core;
+
+		/* This call may not succeed, but that is fine */
+		if (numa_run_on_node(mcexec_linux_numa) < 0) {
+			__dprint("%s: WARNING: couldn't bind to NUMA %d\n",
+				__FUNCTION__, mcexec_linux_numa);
+		}
+#ifdef DEBUG
+		else {
+			cpu_set_t cpuset;
+			char affinity[BUFSIZ];
+
+			CPU_ZERO(&cpuset);
+			if ((sched_getaffinity(0, sizeof(cpu_set_t), &cpuset)) != 0) {
+				perror("Error sched_getaffinity");
+				exit(1);
+			}
+
+			affinity[0] = '\0';
+			for (i = 0; i < 512; i++) {
+				if (CPU_ISSET(i, &cpuset) == 1) {
+					sprintf(affinity, "%s %d", affinity, i);
+				}
+			}
+			__dprint("%s: PID: %d affinity: %s\n",
+					__FUNCTION__, getpid(), affinity);
+		}
+#endif
 	}
-	
+
 	if (ioctl(fd, MCEXEC_UP_PREPARE_IMAGE, (unsigned long)desc) != 0) {
 		perror("prepare");
 		close(fd);

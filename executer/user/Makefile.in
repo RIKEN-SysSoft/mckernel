@@ -11,7 +11,7 @@ IHKDIR ?= $(VPATH)/../../../ihk/linux/include/
 all: $(TARGET)
 
 mcexec: mcexec.c
-	$(CC) -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) -fPIE -pie -lrt -pthread -o $@ $^ $(EXTRA_OBJS)
+	$(CC) -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) -fPIE -pie -lrt -lnuma -pthread -o $@ $^ $(EXTRA_OBJS)
 
 eclair: eclair.c
 	$(CC) $(CFLAGS) -I${IHKDIR} -o $@ $^ $(LIBS)
