@@ -289,6 +289,7 @@ int prepare_ikc_channels(ihk_os_t os)
 	memcpy(&usrdata->listen_param2, &listen_param2, sizeof listen_param2);
 	ihk_ikc_listen_port(os, &usrdata->listen_param2);
 	init_waitqueue_head(&usrdata->wq_procfs);
+	mutex_init(&usrdata->reserve_lock);
 
 	for (i = 0; i < MCCTRL_PER_PROC_DATA_HASH_SIZE; ++i) {
 		INIT_LIST_HEAD(&usrdata->per_proc_data_hash[i]);

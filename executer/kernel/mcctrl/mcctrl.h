@@ -283,6 +283,7 @@ struct mcctrl_usrdata {
 	int	base_cpu;
 	int	job_pos;
 	int	mcctrl_dma_abort;
+	struct mutex reserve_lock;
 	unsigned long	last_thread_exec;
 	wait_queue_head_t wq_procfs;
 	struct list_head per_proc_data_hash[MCCTRL_PER_PROC_DATA_HASH_SIZE];
