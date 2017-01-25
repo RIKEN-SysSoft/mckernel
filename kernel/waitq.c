@@ -22,6 +22,13 @@ default_wake_function(waitq_entry_t *entry, unsigned mode,
 	return sched_wakeup_thread(entry->private, PS_NORMAL);
 }
 
+int
+locked_wake_function(waitq_entry_t *entry, unsigned mode,
+					  int flags, void *key)
+{
+	return sched_wakeup_thread_locked(entry->private, PS_NORMAL);
+}
+
 void
 waitq_init(waitq_t *waitq)
 {

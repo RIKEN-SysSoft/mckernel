@@ -2658,9 +2658,9 @@ static void do_migrate(void)
 			__FUNCTION__, req->thread->tid, old_cpu_id, cpu_id);
 		
 		v->flags |= CPU_FLAG_NEED_RESCHED;
-		ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
+		waitq_wakeup(&req->wq);
 		double_rq_unlock(cur_v, v, irqstate);
-
+		continue;
 ack:
 		waitq_wakeup(&req->wq);
 	}
@@ -2908,8 +2908,8 @@ void check_need_resched(void)
 	}
 }
 
-int
-sched_wakeup_thread(struct thread *thread, int valid_states)
+int __sched_wakeup_thread(struct thread *thread,
+		int valid_states, int runq_locked)
 {
 	int status;
 	unsigned long irqstate;
@@ -2917,20 +2917,25 @@ sched_wakeup_thread(struct thread *thread, int valid_states)
 	struct process *proc = thread->proc;
 	struct mcs_rwlock_node updatelock;
 
-	dkprintf("sched_wakeup_process,proc->pid=%d,valid_states=%08x,proc->status=%08x,proc->cpu_id=%d,my cpu_id=%d\n",
-			 proc->pid, valid_states, thread->status, thread->cpu_id, ihk_mc_get_processor_id());
+	dkprintf("%s: proc->pid=%d, valid_states=%08x, "
+			"proc->status=%08x, proc->cpu_id=%d,my cpu_id=%d\n",
+			__FUNCTION__,
+			proc->pid, valid_states, thread->status,
+			thread->cpu_id, ihk_mc_get_processor_id());
 
 	irqstate = ihk_mc_spinlock_lock(&(thread->spin_sleep_lock));
 	if (thread->spin_sleep == 1) {
-		dkprintf("sched_wakeup_process() spin wakeup: cpu_id: %d\n",
-				 thread->cpu_id);
+		dkprintf("%s: spin wakeup: cpu_id: %d\n",
+				__FUNCTION__, thread->cpu_id);
 
 		status = 0;
 	}
 	thread->spin_sleep = 0;
 	ihk_mc_spinlock_unlock(&(thread->spin_sleep_lock), irqstate);
 
-	irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
+	if (!runq_locked) {
+		irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
+	}
 
 	if (thread->status & valid_states) {
 		mcs_rwlock_writer_lock_noirq(&proc->update_lock, &updatelock);
@@ -2944,17 +2949,31 @@ sched_wakeup_thread(struct thread *thread, int valid_states)
 		status = -EINVAL;
 	}
 
-	ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+	if (!runq_locked) {
+		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+	}
 
 	if (!status && (thread->cpu_id != ihk_mc_get_processor_id())) {
-		dkprintf("sched_wakeup_process,issuing IPI,thread->cpu_id=%d\n",
-				 thread->cpu_id);
-		ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(thread->cpu_id)->apic_id,
-		                     0xd1);
+		dkprintf("%s: issuing IPI, thread->cpu_id=%d\n",
+				__FUNCTION__, thread->cpu_id);
+		ihk_mc_interrupt_cpu(
+				get_x86_cpu_local_variable(thread->cpu_id)->apic_id,
+				0xd1);
 	}
 
 	return status;
 }
+
+int sched_wakeup_thread_locked(struct thread *thread, int valid_states)
+{
+	return __sched_wakeup_thread(thread, valid_states, 1);
+}
+
+int sched_wakeup_thread(struct thread *thread, int valid_states)
+{
+	return __sched_wakeup_thread(thread, valid_states, 0);
+}
+
 
 /*
  * 1. Add current process to waitq
@@ -2979,7 +2998,7 @@ void sched_request_migrate(int cpu_id, struct thread *thread)
 	struct cpu_local_var *v = get_cpu_local_var(cpu_id);
 	struct migrate_request req = { .thread = thread };
 	unsigned long irqstate;
-	DECLARE_WAITQ_ENTRY(entry, cpu_local_var(current));
+	DECLARE_WAITQ_ENTRY_LOCKED(entry, cpu_local_var(current));
 
 	waitq_init(&req.wq);
 	waitq_prepare_to_wait(&req.wq, &entry, PS_UNINTERRUPTIBLE);

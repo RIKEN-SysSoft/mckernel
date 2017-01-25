@@ -790,6 +790,7 @@ void spin_sleep_or_schedule(void);
 void runq_add_thread(struct thread *thread, int cpu_id);
 void runq_del_thread(struct thread *thread, int cpu_id);
 int sched_wakeup_thread(struct thread *thread, int valid_states);
+int sched_wakeup_thread_locked(struct thread *thread, int valid_states);
 
 void sched_request_migrate(int cpu_id, struct thread *thread);
 void check_need_resched(void);
