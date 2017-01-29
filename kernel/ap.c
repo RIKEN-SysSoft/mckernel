@@ -39,6 +39,8 @@
 int num_processors = 1;
 static volatile int ap_stop = 1;
 
+mcs_lock_node_t ap_syscall_semaphore;
+
 static void ap_wait(void)
 {
 	init_tick();
@@ -53,7 +55,11 @@ static void ap_wait(void)
 	arch_start_pvclock();
 
 	if (find_command_line("hidos")) {
+		mcs_lock_node_t mcs_node;
+
+		mcs_lock_lock_noirq(&ap_syscall_semaphore, &mcs_node);
 		init_host_syscall_channel();
+		mcs_lock_unlock_noirq(&ap_syscall_semaphore, &mcs_node);
 	}
 	
 	pc_ap_init();
@@ -67,6 +73,7 @@ static void ap_wait(void)
 void ap_start(void)
 {
 	init_tick();
+	mcs_lock_init(&ap_syscall_semaphore);
 	ap_stop = 0;
 	sync_tick();
 }
