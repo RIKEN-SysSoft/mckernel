@@ -555,8 +555,13 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 		goto put_and_unlock_out;
 	}
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
+	cpumask_set_cpu(cpu, &cpus_used);
+	cpumask_set_cpu(cpu, &cpus_to_use);
+#else
 	cpu_set(cpu, cpus_used);
 	cpu_set(cpu, cpus_to_use);
+#endif
 	cpu_prev = cpu;
 	dprintk("%s: CPU %d assigned (first)\n", __FUNCTION__, cpu);
 
@@ -584,9 +589,18 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 		 * the most inner one outwards */
 		list_for_each_entry(cache_top, &cpu_top->cache_list, chain) {
 			for_each_cpu(cpu, &cache_top->shared_cpu_map) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
+				if (!cpumask_test_cpu(cpu, &cpus_used)) {
+#else
 				if (!cpu_isset(cpu, cpus_used)) {
+#endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
+					cpumask_set_cpu(cpu, &cpus_used);
+					cpumask_set_cpu(cpu, &cpus_to_use);
+#else
 					cpu_set(cpu, cpus_used);
 					cpu_set(cpu, cpus_to_use);
+#endif
 					cpu_prev = cpu;
 					dprintk("%s: CPU %d assigned (same cache L%lu)\n",
 						__FUNCTION__, cpu, cache_top->saved->level);
@@ -607,8 +621,13 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 			/* Found one */
 			if (node == linux_numa_2_mckernel_numa(udp,
 						cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu)))) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
+				cpumask_set_cpu(cpu, &cpus_used);
+				cpumask_set_cpu(cpu, &cpus_to_use);
+#else
 				cpu_set(cpu, cpus_used);
 				cpu_set(cpu, cpus_to_use);
+#endif
 				cpu_prev = cpu;
 				dprintk("%s: CPU %d assigned (same NUMA)\n",
 						__FUNCTION__, cpu);
@@ -625,8 +644,13 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 			goto put_and_unlock_out;
 		}
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
+		cpumask_set_cpu(cpu, &cpus_used);
+		cpumask_set_cpu(cpu, &cpus_to_use);
+#else
 		cpu_set(cpu, cpus_used);
 		cpu_set(cpu, cpus_to_use);
+#endif
 		cpu_prev = cpu;
 		dprintk("%s: CPU %d assigned (unused)\n",
 				__FUNCTION__, cpu);
