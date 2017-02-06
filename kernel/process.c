@@ -92,6 +92,7 @@ init_process(struct process *proc, struct process *parent)
 		proc->egid = parent->egid;
 		proc->sgid = parent->sgid;
 		proc->fsgid = parent->fsgid;
+		proc->mpol_flags = parent->mpol_flags;
 		memcpy(proc->rlimit, parent->rlimit,
 		       sizeof(struct rlimit) * MCK_RLIM_MAX);
 	}
@@ -1927,7 +1928,8 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 
 	/* Apply user allocation policy to stacks */
 	/* TODO: make threshold kernel or mcexec argument */
-	ap_flag = (size >= AP_USER_THRESHOLD) ? IHK_MC_AP_USER : 0;
+	ap_flag = (size >= AP_USER_THRESHOLD &&
+		!(proc->mpol_flags & MPOL_NO_STACK)) ? IHK_MC_AP_USER : 0;
 	dkprintf("%s: size: %lu %s\n", __FUNCTION__, size,
 			ap_flag ? "(IHK_MC_AP_USER)" : "");
 
@@ -1943,7 +1945,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	memset(stack, 0, minsz);
 
 	vrflag = VR_STACK | VR_DEMAND_PAGING;
-	vrflag |= (ap_flag ? VR_AP_USER : 0);
+	vrflag |= ((ap_flag & IHK_MC_AP_USER) ? VR_AP_USER : 0);
 	vrflag |= PROT_TO_VR_FLAG(pn->stack_prot);
 	vrflag |= VR_MAXPROT_READ | VR_MAXPROT_WRITE | VR_MAXPROT_EXEC;
 #define	NOPHYS	((uintptr_t)-1)
@@ -2070,7 +2072,8 @@ unsigned long extend_process_region(struct process_vm *vm,
 	}
 	else {
 		p = ihk_mc_alloc_aligned_pages((aligned_new_end - aligned_end) >> PAGE_SHIFT,
-				LARGE_PAGE_P2ALIGN, IHK_MC_AP_NOWAIT | IHK_MC_AP_USER);
+				LARGE_PAGE_P2ALIGN, IHK_MC_AP_NOWAIT |
+				(!(vm->proc->mpol_flags & MPOL_NO_HEAP) ? IHK_MC_AP_USER : 0));
 
 		if (!p) {
 			return end;

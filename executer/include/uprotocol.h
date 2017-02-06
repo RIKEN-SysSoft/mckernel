@@ -92,6 +92,10 @@ struct get_cpu_set_arg {
 typedef unsigned long __cpu_set_unit;
 #define PLD_CPU_SET_SIZE (PLD_CPU_SET_MAX_CPUS / (8 * sizeof(__cpu_set_unit)))
 
+#define MPOL_NO_HEAP              0x01
+#define MPOL_NO_STACK             0x02
+#define MPOL_NO_BSS               0x04
+
 struct program_load_desc {
 	int num_sections;
 	int status;
@@ -120,6 +124,7 @@ struct program_load_desc {
 	unsigned long envs_len;
 	struct rlimit rlimit[MCK_RLIM_MAX];
 	unsigned long interp_align;
+	unsigned long mpol_flags;
 	char shell_path[SHELL_PATH_MAX_LEN];
 	__cpu_set_unit cpu_set[PLD_CPU_SET_SIZE];
 	struct program_image_section sections[0];

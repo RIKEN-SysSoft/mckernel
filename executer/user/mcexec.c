@@ -154,6 +154,9 @@ static char *altroot;
 static const char rlimit_stack_envname[] = "MCKERNEL_RLIMIT_STACK";
 static int ischild;
 static int enable_vdso = 1;
+static int mpol_no_heap = 0;
+static int mpol_no_stack = 0;
+static int mpol_no_bss = 0;
 
 /* Partitioned execution (e.g., for MPI) */
 static int nr_processes = 0;
@@ -1279,7 +1282,24 @@ static struct option mcexec_options[] = {
 		.flag =		&enable_vdso,
 		.val =		1,
 	},
-
+	{
+		.name =		"mpol-no-heap",
+		.has_arg =	no_argument,
+		.flag =		&mpol_no_heap,
+		.val =		1,
+	},
+	{
+		.name =		"mpol-no-stack",
+		.has_arg =	no_argument,
+		.flag =		&mpol_no_stack,
+		.val =		1,
+	},
+	{
+		.name =		"mpol-no-bss",
+		.has_arg =	no_argument,
+		.flag =		&mpol_no_bss,
+		.val =		1,
+	},
 	/* end */
 	{ NULL, 0, NULL, 0, },
 };
@@ -1667,6 +1687,19 @@ int main(int argc, char **argv)
 					__FUNCTION__, getpid(), affinity);
 		}
 #endif
+	}
+
+	desc->mpol_flags = 0;
+	if (mpol_no_heap) {
+		desc->mpol_flags |= MPOL_NO_HEAP;
+	}
+
+	if (mpol_no_stack) {
+		desc->mpol_flags |= MPOL_NO_STACK;
+	}
+
+	if (mpol_no_bss) {
+		desc->mpol_flags |= MPOL_NO_BSS;
 	}
 
 	if (ioctl(fd, MCEXEC_UP_PREPARE_IMAGE, (unsigned long)desc) != 0) {

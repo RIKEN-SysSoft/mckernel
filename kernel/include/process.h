@@ -553,6 +553,8 @@ struct process {
 
 	long maxrss;
 	long maxrss_children;
+	/* Memory policy flags */
+	unsigned long mpol_flags;
 
 	// perf_event
 	int perf_status;
