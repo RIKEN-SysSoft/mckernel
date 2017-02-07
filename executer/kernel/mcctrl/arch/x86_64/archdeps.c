@@ -64,7 +64,9 @@ reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp, unsign
 	unsigned long start = 0L;
 	unsigned long end;
 
-	mutex_lock(&usrdata->reserve_lock);
+	if (mutex_lock_killable(&usrdata->reserve_lock) < 0) {
+		return -1;
+	}
 
 #define	DESIRED_USER_END	0x800000000000
 #define	GAP_FOR_MCEXEC		0x008000000000UL

@@ -508,6 +508,9 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 	cpumask_t cpus_used;
 	cpumask_t cpus_to_use;
 	struct mcctrl_per_proc_data *ppd;
+	struct process_list_item *pli;
+	struct process_list_item *pli_next = NULL;
+	struct process_list_item *pli_iter;
 
 	if (!udp) {
 		return -EINVAL;
@@ -521,16 +524,13 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 
 	pe = &udp->part_exec;
 
+	mutex_lock(&pe->lock);
+
 	if (copy_from_user(&req, (void *)arg, sizeof(req))) {
 		printk("%s: error copying user request\n", __FUNCTION__);
 		ret = -EINVAL;
 		goto put_and_unlock_out;
 	}
-
-	mutex_lock(&pe->lock);
-
-	memcpy(&cpus_used, &pe->cpus_used, sizeof(cpumask_t));
-	memset(&cpus_to_use, 0, sizeof(cpus_to_use));
 
 	/* First process to enter CPU partitioning */
 	if (pe->nr_processes == -1) {
@@ -555,7 +555,72 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 			pe->nr_processes,
 			pe->nr_processes_left);
 
+	/* Wait for all processes */
+	pli = kmalloc(sizeof(*pli), GFP_KERNEL);
+	if (!pli) {
+		printk("%s: error: allocating pli\n", __FUNCTION__);
+		goto put_and_unlock_out;
+	}
+
+	pli->task = current;
+	pli->ready = 0;
+	init_waitqueue_head(&pli->pli_wq);
+
+	pli_next = NULL;
+	/* Add ourself to the list in order of start time */
+	list_for_each_entry(pli_iter, &pe->pli_list, list) {
+		if ((pli_iter->task->start_time.tv_sec >
+					current->start_time.tv_sec) ||
+				((pli_iter->task->start_time.tv_sec ==
+				  current->start_time.tv_sec) &&
+				 ((pli_iter->task->start_time.tv_nsec >
+				   current->start_time.tv_nsec)))) {
+			pli_next = pli_iter;
+			break;
+		}
+	}
+
+	/* Add in front of next */
+	if (pli_next) {
+		list_add_tail(&pli->list, &pli_next->list);
+	}
+	else {
+		list_add_tail(&pli->list, &pe->pli_list);
+	}
+	pli_next = NULL;
+
+	/* Last process? Wake up first in list */
+	if (pe->nr_processes_left == 0) {
+		pli_next = list_first_entry(&pe->pli_list,
+			struct process_list_item, list);
+		list_del(&pli_next->list);
+		pli_next->ready = 1;
+		wake_up_interruptible(&pli_next->pli_wq);
+		/* Reset process counter */
+		pe->nr_processes_left = pe->nr_processes;
+	}
+
+	/* Wait for the rest if not the last or if the last but
+	 * the woken process is different than the last */
+	if (pe->nr_processes_left || (pli_next && pli_next != pli)) {
+		dprintk("%s: pid: %d, waiting in list\n",
+				__FUNCTION__, task_tgid_vnr(current));
+		mutex_unlock(&pe->lock);
+		ret = wait_event_interruptible(pli->pli_wq, pli->ready);
+		mutex_lock(&pe->lock);
+		if (ret != 0) {
+			goto put_and_unlock_out;
+		}
+		dprintk("%s: pid: %d, woken up\n",
+				__FUNCTION__, task_tgid_vnr(current));
+	}
+
+	--pe->nr_processes_left;
+	kfree(pli);
+
 	cpus_to_assign = udp->cpu_info->n_cpus / req.nr_processes;
+	memcpy(&cpus_used, &pe->cpus_used, sizeof(cpumask_t));
+	memset(&cpus_to_use, 0, sizeof(cpus_to_use));
 
 	/* Find the first unused CPU */
 	cpu = cpumask_next_zero(-1, &cpus_used);
@@ -712,7 +777,16 @@ next_cpu:
 		pe->nr_processes = -1;
 		memset(&pe->cpus_used, 0, sizeof(pe->cpus_used));
 	}
+	/* Otherwise wake up next process in list */
+	else {
+		pli_next = list_first_entry(&pe->pli_list,
+			struct process_list_item, list);
+		list_del(&pli_next->list);
+		pli_next->ready = 1;
+		wake_up_interruptible(&pli_next->pli_wq);
+	}
 
+	dprintk("%s: pid: %d, ret: 0\n", __FUNCTION__, task_tgid_vnr(current));
 	ret = 0;
 
 put_and_unlock_out:

@@ -280,11 +280,19 @@ struct node_topology {
 	struct list_head chain;
 };
 
+struct process_list_item {
+	int ready;
+	struct task_struct *task;
+	struct list_head list;
+	wait_queue_head_t pli_wq;
+};
+
 struct mcctrl_part_exec {
 	struct mutex lock;	
 	int nr_processes;
 	int nr_processes_left;
 	cpumask_t cpus_used;
+	struct list_head pli_list;
 };
 
 #define CPU_LONGS (((NR_CPUS) + (BITS_PER_LONG) - 1) / (BITS_PER_LONG))

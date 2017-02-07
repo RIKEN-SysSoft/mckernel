@@ -305,6 +305,7 @@ int prepare_ikc_channels(ihk_os_t os)
 	INIT_LIST_HEAD(&usrdata->node_topology_list);
 
 	mutex_init(&usrdata->part_exec.lock);
+	INIT_LIST_HEAD(&usrdata->part_exec.pli_list);
 	usrdata->part_exec.nr_processes = -1;
 
 	return 0;
