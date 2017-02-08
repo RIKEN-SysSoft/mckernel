@@ -93,6 +93,7 @@ init_process(struct process *proc, struct process *parent)
 		proc->sgid = parent->sgid;
 		proc->fsgid = parent->fsgid;
 		proc->mpol_flags = parent->mpol_flags;
+		proc->mpol_threshold = parent->mpol_threshold;
 		memcpy(proc->rlimit, parent->rlimit,
 		       sizeof(struct rlimit) * MCK_RLIM_MAX);
 	}
@@ -1928,7 +1929,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 
 	/* Apply user allocation policy to stacks */
 	/* TODO: make threshold kernel or mcexec argument */
-	ap_flag = (size >= AP_USER_THRESHOLD &&
+	ap_flag = (size >= proc->mpol_threshold &&
 		!(proc->mpol_flags & MPOL_NO_STACK)) ? IHK_MC_AP_USER : 0;
 	dkprintf("%s: size: %lu %s\n", __FUNCTION__, size,
 			ap_flag ? "(IHK_MC_AP_USER)" : "");

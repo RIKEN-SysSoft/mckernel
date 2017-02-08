@@ -157,6 +157,7 @@ static int enable_vdso = 1;
 static int mpol_no_heap = 0;
 static int mpol_no_stack = 0;
 static int mpol_no_bss = 0;
+static unsigned long mpol_threshold = (1024*1024);
 
 /* Partitioned execution (e.g., for MPI) */
 static int nr_processes = 0;
@@ -1111,7 +1112,7 @@ static int reduce_stack(struct rlimit *orig_rlim, char *argv[])
 
 void print_usage(char **argv)
 {
-	fprintf(stderr, "Usage: %s [-c target_core] [-n nr_partitions] [<mcos-id>] (program) [args...]\n", argv[0]);
+	fprintf(stderr, "usage: %s [-c target_core] [-n nr_partitions] [--mpol-threshold=N] [--mpol-no-heap] [--mpol-no-bss] [--mpol-no-stack] [<mcos-id>] (program) [args...]\n", argv[0]);
 }
 
 void init_sigaction(void)
@@ -1300,6 +1301,12 @@ static struct option mcexec_options[] = {
 		.flag =		&mpol_no_bss,
 		.val =		1,
 	},
+	{
+		.name =		"mpol-threshold",
+		.has_arg =	required_argument,
+		.flag =		NULL,
+		.val =		'm',
+	},
 	/* end */
 	{ NULL, 0, NULL, 0, },
 };
@@ -1355,7 +1362,7 @@ int main(int argc, char **argv)
 	}
            
 	/* Parse options ("+" denotes stop at the first non-option) */
-	while ((opt = getopt_long(argc, argv, "+c:n:t:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:t:m:", mcexec_options, NULL)) != -1) {
 		switch (opt) {
 			case 'c':
 				target_core = atoi(optarg);
@@ -1367,6 +1374,10 @@ int main(int argc, char **argv)
 
 			case 't':
 				nr_threads = atoi(optarg);
+				break;
+
+			case 'm':
+				mpol_threshold = atol(optarg);
 				break;
 
 			case 0:	/* long opt */
@@ -1701,6 +1712,8 @@ int main(int argc, char **argv)
 	if (mpol_no_bss) {
 		desc->mpol_flags |= MPOL_NO_BSS;
 	}
+
+	desc->mpol_threshold = mpol_threshold;
 
 	if (ioctl(fd, MCEXEC_UP_PREPARE_IMAGE, (unsigned long)desc) != 0) {
 		perror("prepare");

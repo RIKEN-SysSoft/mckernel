@@ -129,7 +129,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 
 		/* Non-TEXT sections that are large respect user allocation policy
 		 * unless user explicitly requests otherwise */
-		if (i >= 1 && pn->sections[i].len >= AP_USER_THRESHOLD &&
+		if (i >= 1 && pn->sections[i].len >= pn->mpol_threshold &&
 				!(pn->mpol_flags & MPOL_NO_BSS)) {
 			dkprintf("%s: section: %d size: %d pages -> IHK_MC_AP_USER\n",
 					__FUNCTION__, i, range_npages);
@@ -429,6 +429,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	proc->fsgid = pn->cred[7];
 	proc->termsig = SIGCHLD;
 	proc->mpol_flags = pn->mpol_flags;
+	proc->mpol_threshold = pn->mpol_threshold;
 
 	vm->region.user_start = pn->user_start;
 	vm->region.user_end = pn->user_end;

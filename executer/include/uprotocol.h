@@ -125,6 +125,7 @@ struct program_load_desc {
 	struct rlimit rlimit[MCK_RLIM_MAX];
 	unsigned long interp_align;
 	unsigned long mpol_flags;
+	unsigned long mpol_threshold;
 	char shell_path[SHELL_PATH_MAX_LEN];
 	__cpu_set_unit cpu_set[PLD_CPU_SET_SIZE];
 	struct program_image_section sections[0];

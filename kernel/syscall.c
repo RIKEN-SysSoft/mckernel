@@ -1430,7 +1430,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		/* Small allocations mostly benefit from closest RAM,
 		 * otherwise follow user requested policy */
 		unsigned long ap_flag =
-			(!(flags & MAP_STACK) && len >= AP_USER_THRESHOLD) ||
+			(!(flags & MAP_STACK) && len >= thread->proc->mpol_threshold) ||
 			((flags & MAP_STACK) && !(thread->proc->mpol_flags & MPOL_NO_STACK)) ?
 			IHK_MC_AP_USER : 0;
 
