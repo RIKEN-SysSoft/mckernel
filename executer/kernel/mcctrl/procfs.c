@@ -640,11 +640,11 @@ retry_wait:
 	 */
 	if (pid > 0) {
 		retw = wait_event_interruptible_timeout(ppd->wq_procfs,
-				r->status != 0, HZ);
+				r->status != 0, 5 * HZ);
 	}
 	else {
 		retw = wait_event_interruptible_timeout(udp->wq_procfs,
-				r->status != 0, HZ);
+				r->status != 0, 5 * HZ);
 	}
 
 	/* Timeout? */
