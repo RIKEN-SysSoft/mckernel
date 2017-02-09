@@ -66,12 +66,7 @@ static void ap_wait(void)
 		mcs_lock_lock_noirq(&ap_syscall_semaphore, &mcs_node);
 /* Comment: 自CPUのikc2mckernel と ikc2linuxの準備 */
 		init_host_ikc2mckernel();
-		int num = cpu_info->ikc_cpus[ihk_mc_get_processor_id()];
-		if (num == 1 ) {
-			num = 0;
-		}
-		init_host_ikc2linux(num);
-		//init_host_ikc2linux(cpu_info->ikc_cpus[ihk_mc_get_processor_id()] - 1);
+		init_host_ikc2linux(cpu_info->ikc_cpus[ihk_mc_get_processor_id()]);
 		mcs_lock_unlock_noirq(&ap_syscall_semaphore, &mcs_node);
 	}
 	
