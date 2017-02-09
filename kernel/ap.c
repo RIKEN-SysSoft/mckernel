@@ -48,6 +48,7 @@ extern struct ihk_os_monitor *monitor;
 
 static void ap_wait(void)
 {
+	struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
 	init_tick();
 	while (ap_stop) {
 		barrier();
@@ -63,7 +64,14 @@ static void ap_wait(void)
 		mcs_lock_node_t mcs_node;
 
 		mcs_lock_lock_noirq(&ap_syscall_semaphore, &mcs_node);
-		init_host_syscall_channel();
+/* Comment: 自CPUのikc2mckernel と ikc2linuxの準備 */
+		init_host_ikc2mckernel();
+		int num = cpu_info->ikc_cpus[ihk_mc_get_processor_id()];
+		if (num == 1 ) {
+			num = 0;
+		}
+		init_host_ikc2linux(num);
+		//init_host_ikc2linux(cpu_info->ikc_cpus[ihk_mc_get_processor_id()] - 1);
 		mcs_lock_unlock_noirq(&ap_syscall_semaphore, &mcs_node);
 	}
 	

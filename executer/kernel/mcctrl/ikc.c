@@ -138,6 +138,14 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	return 0;
 }
 
+/* Comment: 受信を想定しないchannel用のパケットハンドラ */
+static int dummy_packet_handler(struct ihk_ikc_channel_desc *c,
+                                  void *__packet, void *__os)
+{
+	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)__packet, c);
+	return 0;
+}
+
 int mcctrl_ikc_send(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp)
 {
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
@@ -207,57 +215,58 @@ static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ih
 	ihk_ikc_send(pmc->c, &packet, 0);
 }
 
-static int connect_handler(struct ihk_ikc_channel_info *param)
+/* Comment: ikc2linuxのaccept後のchannelの処理 */
+static int connect_handler_ikc2linux(struct ihk_ikc_channel_info *param)
 {
 	struct ihk_ikc_channel_desc *c;
-	int cpu;
+	int linux_cpu;
 	ihk_os_t os = param->channel->remote_os;
-	struct mcctrl_usrdata   *usrdata = ihk_host_os_get_usrdata(os);
 
 	c = param->channel;
-	cpu = c->send.queue->read_cpu;
+	linux_cpu = c->recv.queue->read_cpu;
 
-	if (cpu < 0 || cpu >= usrdata->num_channels) {
-		kprintf("Invalid connect source processor: %d\n", cpu);
+	param->packet_handler = syscall_packet_handler;
+
+/* Comment: 指定されたCPUの割り込み処理channel_list へ追加 */
+	ihk_ikc_add_intr_channel(os, param->channel, linux_cpu);
+
+	return 0;
+}
+/* Comment: ikc2mckernelのaccept後のchannelの処理 */
+static int connect_handler_ikc2mckernel(struct ihk_ikc_channel_info *param)
+{
+	struct ihk_ikc_channel_desc *c;
+	int mck_cpu;
+	ihk_os_t os = param->channel->remote_os;
+	struct mcctrl_usrdata  *usrdata = ihk_host_os_get_usrdata(os);
+
+	c = param->channel;
+	mck_cpu = c->send.queue->read_cpu;
+
+	if (mck_cpu < 0 || mck_cpu >= usrdata->num_channels) {
+		kprintf("Invalid connect source processor: %d\n", mck_cpu);
 		return 1;
 	}
-	param->packet_handler = syscall_packet_handler;
+	param->packet_handler = dummy_packet_handler;
 	
-	usrdata->channels[cpu].c = c;
-	dkprintf("syscall: MC CPU %d connected. c=%p\n", cpu, c);
+/* Comment: MCK_CPU毎の送信channelとして管理 (従来通り) */
+	usrdata->channels[mck_cpu].c = c;
 
 	return 0;
 }
 
-static int connect_handler2(struct ihk_ikc_channel_info *param)
-{
-	struct ihk_ikc_channel_desc *c;
-	int cpu;
-	ihk_os_t os = param->channel->remote_os;
-	struct mcctrl_usrdata   *usrdata = ihk_host_os_get_usrdata(os);
-
-	c = param->channel;
-	cpu = usrdata->num_channels - 1;
-
-	param->packet_handler = syscall_packet_handler;
-	
-	usrdata->channels[cpu].c = c;
-	dkprintf("syscall: MC CPU %d connected. c=%p\n", cpu, c);
-
-	return 0;
-}
-
-static struct ihk_ikc_listen_param listen_param = {
-	.port = 501,
-	.handler = connect_handler,
+/* Comment: listen_paramの設定 */
+static struct ihk_ikc_listen_param lp_ikc2linux = {
+	.port = 503,
+	.handler = connect_handler_ikc2linux,
 	.pkt_size = sizeof(struct ikc_scd_packet),
 	.queue_size = PAGE_SIZE * 4,
 	.magic = 0x1129,
 };
 
-static struct ihk_ikc_listen_param listen_param2 = {
-	.port = 502,
-	.handler = connect_handler2,
+static struct ihk_ikc_listen_param lp_ikc2mckernel = {
+	.port = 501,
+	.handler = connect_handler_ikc2mckernel,
 	.pkt_size = sizeof(struct ikc_scd_packet),
 	.queue_size = PAGE_SIZE * 4,
 	.magic = 0x1329,
@@ -283,7 +292,8 @@ int prepare_ikc_channels(ihk_os_t os)
 		return -EINVAL;
 	}
 
-	usrdata->num_channels = usrdata->cpu_info->n_cpus + 1;
+/* Comment: syscall_channel2 廃止に伴い、num_channelsも減らす */
+	usrdata->num_channels = usrdata->cpu_info->n_cpus;
 	usrdata->channels = kzalloc(sizeof(struct mcctrl_channel) *
 			usrdata->num_channels,
 			GFP_KERNEL);
@@ -295,10 +305,10 @@ int prepare_ikc_channels(ihk_os_t os)
 
 	usrdata->os = os;
 	ihk_host_os_set_usrdata(os, usrdata);
-	memcpy(&usrdata->listen_param, &listen_param, sizeof listen_param);
-	ihk_ikc_listen_port(os, &usrdata->listen_param);
-	memcpy(&usrdata->listen_param2, &listen_param2, sizeof listen_param2);
-	ihk_ikc_listen_port(os, &usrdata->listen_param2);
+
+	ihk_ikc_listen_port(os, &lp_ikc2linux);
+	ihk_ikc_listen_port(os, &lp_ikc2mckernel);
+
 	init_waitqueue_head(&usrdata->wq_procfs);
 	mutex_init(&usrdata->reserve_lock);
 

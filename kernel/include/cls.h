@@ -75,11 +75,9 @@ struct cpu_local_var {
 	struct list_head runq;
 	size_t runq_len;
 
-	struct ihk_ikc_channel_desc *syscall_channel;
-	struct ikc_scd_init_param iip;
+/* Comment: 送信用するchannelをsyscall_channel から ikc2linux へ変更 */
+	struct ihk_ikc_channel_desc *ikc2linux;
 
-	struct ihk_ikc_channel_desc *syscall_channel2;
-	struct ikc_scd_init_param iip2;
 	struct resource_set *resource_set;
 	
 	int status;

@@ -50,6 +50,7 @@ struct ihk_mc_cpu_info {
 	int *hw_ids;
 	int *nodes;
 	int *linux_cpu_ids;
+	int *ikc_cpus;
 };
 
 struct ihk_mc_cpu_info *ihk_mc_get_cpu_info(void);
@@ -60,6 +61,7 @@ int ihk_mc_get_numa_id(void);
 int ihk_mc_get_nr_cores();
 int ihk_mc_get_core(int id, unsigned long *linux_core_id, unsigned long *apic_id,
                     int *numa_id);
+int ihk_mc_get_apicid(int linux_core_id);
 
 void ihk_mc_delay_us(int us);
 void ihk_mc_set_syscall_handler(long (*handler)(int, ihk_mc_user_context_t *));

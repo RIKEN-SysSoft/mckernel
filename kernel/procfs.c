@@ -47,7 +47,7 @@ procfs_thread_ctl(struct thread *thread, int msg)
 	struct ihk_ikc_channel_desc *syscall_channel;
 	struct ikc_scd_packet packet;
 
-	syscall_channel = cpu_local_var(syscall_channel);
+	syscall_channel = cpu_local_var(ikc2linux);
 	memset(&packet, '\0', sizeof packet);
 	packet.arg = thread->tid;
 	packet.msg = msg;
@@ -96,7 +96,7 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 
 	dprintf("process_procfs_request: invoked.\n");
 
-	syscall_channel = get_cpu_local_var(0)->syscall_channel;
+	syscall_channel = get_cpu_local_var(0)->ikc2linux;
 
 	dprintf("rarg: %x\n", rarg);
 	parg = ihk_mc_map_memory(NULL, rarg, sizeof(struct procfs_read));

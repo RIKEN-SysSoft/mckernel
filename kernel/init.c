@@ -360,6 +360,7 @@ extern int num_processors;
 
 static void post_init(void)
 {
+	struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
 	cpu_enable_interrupt();
 
 	while (!host_ikc_inited) {
@@ -368,8 +369,8 @@ static void post_init(void)
 	}
 
 	if (find_command_line("hidos")) {
-		init_host_syscall_channel();
-		init_host_syscall_channel2();
+		init_host_ikc2mckernel();
+		init_host_ikc2linux(cpu_info->ikc_cpus[ihk_mc_get_processor_id()]);
 	}
 
 	arch_setup_vdso();

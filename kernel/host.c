@@ -41,6 +41,11 @@
 #define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
 #endif
 
+/* Comment: McKernel側でのikc2linux(送信channel)の管理
+   nr_cpu_ids が利用できない？
+   配置場所の再考が必要？*/
+static struct ihk_ikc_channel_desc *ikc2linuxs[512];
+
 void check_mapping_for_proc(struct thread *thread, unsigned long addr)
 {
 	unsigned long __phys;
@@ -475,6 +480,9 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 {
 	struct ikc_scd_packet *packet = __packet;
 	struct ikc_scd_packet pckt;
+/* Comment: 受信したchannel に返事をする方式から、
+   自CPUのikc2linux に返事をするよう変更 */
+	struct ihk_ikc_channel_desc *resp_channel = cpu_local_var(ikc2linux);
 	int rc;
 	struct mcs_rwlock_node_irqsave lock;
 	struct thread *thread;
@@ -510,7 +518,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		}
 		pckt.ref = packet->ref;
 		pckt.arg = packet->arg;
-		syscall_channel_send(c, &pckt);
+		syscall_channel_send(resp_channel, &pckt);
 
 		ret = 0;
 		break;
@@ -567,7 +575,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		pckt.err = 0;
 		pckt.ref = packet->ref;
 		pckt.arg = packet->arg;
-		syscall_channel_send(c, &pckt);
+		syscall_channel_send(resp_channel, &pckt);
 
 		rc = do_kill(NULL, info.pid, info.tid, info.sig, &info.info, 0);
 		kprintf("SCD_MSG_SEND_SIGNAL: do_kill(pid=%d, tid=%d, sig=%d)=%d\n", info.pid, info.tid, info.sig, rc);
@@ -669,54 +677,64 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	return ret;
 }
 
-void init_host_syscall_channel(void)
+/* Comment: パケット受信を想定しないchannel用のハンドラ */
+static int dummy_packet_handler(struct ihk_ikc_channel_desc *c,
+                                  void *__packet, void *__os)
 {
-	struct ihk_ikc_connect_param param;
-	struct ikc_scd_packet pckt;
-
-	param.port = 501;
-	param.pkt_size = sizeof(struct ikc_scd_packet);
-	param.queue_size = PAGE_SIZE * 4;
-	param.magic = 0x1129;
-	param.handler = syscall_packet_handler;
-
-	dkprintf("(syscall) Trying to connect host ...");
-	while (ihk_ikc_connect(NULL, &param) != 0) {
-		dkprintf(".");
-		ihk_mc_delay_us(1000 * 1000);
-	}
-	dkprintf("connected.\n");
-
-	get_this_cpu_local_var()->syscall_channel = param.channel;
-
-	pckt.msg = SCD_MSG_INIT_CHANNEL;
-	pckt.ref = ihk_mc_get_processor_id();
-	pckt.arg = virt_to_phys(&cpu_local_var(iip));
-	syscall_channel_send(param.channel, &pckt);
+	struct ikc_scd_packet *packet = __packet;
+	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet, c);
+	return 0;
 }
 
-void init_host_syscall_channel2(void)
+/* Comment: ikc2linux の接続と自CPUへの設定を行う */
+void init_host_ikc2linux(int linux_cpu)
 {
 	struct ihk_ikc_connect_param param;
-	struct ikc_scd_packet pckt;
+	struct ihk_ikc_channel_desc *c = ikc2linuxs[linux_cpu];
 
-	param.port = 502;
+	if (!c) {
+/* Comment: 対象Linux_cpu 宛のikc2linuxが存在しなければ、接続 */
+		param.port = 503;
+		param.intr_cpu = linux_cpu;
+		param.pkt_size = sizeof(struct ikc_scd_packet);
+		param.queue_size = PAGE_SIZE * 4;
+		param.magic = 0x1129;
+		param.handler = dummy_packet_handler;
+
+		dkprintf("(ikc2linux) Trying to connect host ...");
+		while (ihk_ikc_connect(NULL, &param) != 0) {
+			dkprintf(".");
+			ihk_mc_delay_us(1000 * 1000);
+		}
+		dkprintf("connected.\n");
+
+		ikc2linuxs[linux_cpu] = param.channel;
+		c = param.channel;
+	}
+
+	get_this_cpu_local_var()->ikc2linux = c;
+}
+
+/* Comment: ikc2mckernelの接続と自CPUへの設定を行う */
+void init_host_ikc2mckernel(void)
+{
+	struct ihk_ikc_connect_param param;
+
+	param.port = 501;
+	param.intr_cpu = -1;
 	param.pkt_size = sizeof(struct ikc_scd_packet);
 	param.queue_size = PAGE_SIZE * 4;
 	param.magic = 0x1329;
 	param.handler = syscall_packet_handler;
 
-	dkprintf("(syscall) Trying to connect host ...");
+	dkprintf("(ikc2mckernel) Trying to connect host ...");
 	while (ihk_ikc_connect(NULL, &param) != 0) {
 		dkprintf(".");
 		ihk_mc_delay_us(1000 * 1000);
 	}
 	dkprintf("connected.\n");
 
-	get_this_cpu_local_var()->syscall_channel2 = param.channel;
-
-	pckt.msg = SCD_MSG_INIT_CHANNEL;
-	pckt.ref = ihk_mc_get_processor_id();
-	pckt.arg = virt_to_phys(&cpu_local_var(iip2));
-	syscall_channel_send(param.channel, &pckt);
+/* Comment: 待ち受け処理channel_list に追加する */
+	ihk_ikc_add_intr_channel(NULL, param.channel, ihk_ikc_get_processor_id());
 }
+

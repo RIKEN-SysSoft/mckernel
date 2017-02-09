@@ -337,27 +337,20 @@ SYSCALL_DECLARE(track_syscalls)
 static void send_syscall(struct syscall_request *req, int cpu, int pid, struct syscall_response *res)
 {
 	struct ikc_scd_packet packet IHK_DMA_ALIGN;
-	struct ihk_ikc_channel_desc *syscall_channel;
+	struct ihk_ikc_channel_desc *syscall_channel = get_cpu_local_var(cpu)->ikc2linux;
 	int ret;
 
 	if(req->number == __NR_exit_group ||
 	   req->number == __NR_kill){ // interrupt syscall
-		extern int num_processors;
 
-		syscall_channel = get_cpu_local_var(0)->syscall_channel2;
-		
 		/* XXX: is this really going to work if multiple processes 
 		 * exit/receive signals at the same time?? */
-		cpu = num_processors;
 		if (req->number == __NR_kill) {
 			req->rtid = -1;
 			pid = req->args[0];
 		}
 		if (req->number == __NR_gettid)
 			pid = req->args[1];
-	}
-	else{
-		syscall_channel = get_cpu_local_var(cpu)->syscall_channel;
 	}
 
 	res->status = 0;
