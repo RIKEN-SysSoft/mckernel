@@ -22,6 +22,7 @@ ENABLE_MCOVERLAYFS="@ENABLE_MCOVERLAYFS@"
 
 mem="512M@0"
 cpus=""
+ikc_map=""
 
 if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
 	echo "You need at least bash-4.0 to run this script." >&2
@@ -41,7 +42,7 @@ fi
 
 turbo=""
 
-while getopts :ti:k:c:m:o:f: OPT
+while getopts :ti:k:c:m:o:f:r: OPT
 do
 	case ${OPT} in
 	f)	facility=${OPTARG}
@@ -77,6 +78,8 @@ do
 	c) cpus=${OPTARG}
 		;;
 	m) mem=${OPTARG}
+		;;
+	r) ikc_map=${OPTARG}
 		;;
 	t) turbo="turbo"
 		;;
@@ -368,6 +371,14 @@ fi
 if ! ${SBINDIR}/ihkosctl 0 assign cpu ${cpus}; then
 	echo "error: assign CPUs" >&2
 	error_exit "os_created"
+fi
+
+if [ "$ikc_map" != "" ]; then
+	# Specify IKC map
+	if ! ${SBINDIR}/ihkosctl 0 ikc_map ${ikc_map}; then
+		echo "error: assign CPUs" >&2
+		error_exit "os_created"
+	fi
 fi
 
 # Assign memory
