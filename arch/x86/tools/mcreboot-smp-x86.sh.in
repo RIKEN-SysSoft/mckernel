@@ -41,8 +41,9 @@ else
 fi
 
 turbo=""
+ihk_irq=""
 
-while getopts :ti:k:c:m:o:f:r: OPT
+while getopts :ti:k:c:m:o:f:r:q: OPT
 do
 	case ${OPT} in
 	f)	facility=${OPTARG}
@@ -80,6 +81,8 @@ do
 	m) mem=${OPTARG}
 		;;
 	r) ikc_map=${OPTARG}
+		;;
+	q) ihk_irq=${OPTARG}
 		;;
 	t) turbo="turbo"
 		;;
@@ -304,16 +307,17 @@ sync
 
 # Load IHK-SMP if not loaded and reserve CPUs and memory
 if ! grep ihk_smp_x86 /proc/modules &>/dev/null; then
-	ihk_irq=""
-	for i in `seq 64 255`; do
-		if [ ! -d /proc/irq/$i ] && [ "`cat /proc/interrupts | grep ":" | awk '{print $1}' | grep -o '[0-9]*' | grep -e '^$i$'`" == "" ]; then
-			ihk_irq=$i
-			break
-		fi
-	done
 	if [ "$ihk_irq" == "" ]; then
-		echo "error: no IRQ available" >&2
-		error_exit "ihk_loaded"
+		for i in `seq 64 255`; do
+			if [ ! -d /proc/irq/$i ] && [ "`cat /proc/interrupts | grep ":" | awk '{print $1}' | grep -o '[0-9]*' | grep -e '^$i$'`" == "" ]; then
+				ihk_irq=$i
+				break
+			fi
+		done
+		if [ "$ihk_irq" == "" ]; then
+			echo "error: no IRQ available" >&2
+			error_exit "ihk_loaded"
+		fi
 	fi
 	if ! insmod ${KMODDIR}/ihk-smp-x86.ko ihk_start_irq=$ihk_irq ihk_ikc_irq_core=$ihk_ikc_irq_core 2>/dev/null; then
 		echo "error: loading ihk-smp-x86" >&2
