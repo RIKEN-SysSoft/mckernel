@@ -281,6 +281,7 @@ struct thread *create_thread(unsigned long user_pc,
 		dkprintf("%s: pid: %d, CPU: %d\n",
 			__FUNCTION__, proc->pid, cpu); 
 		CPU_SET(cpu, &thread->cpu_set);
+		CPU_SET(cpu, &proc->cpu_set);
 		cpu_set_empty = 0;
 	}
 
@@ -292,6 +293,7 @@ struct thread *create_thread(unsigned long user_pc,
 		infop = ihk_mc_get_cpu_info();
 		for (i = 0; i < infop->ncpus; ++i) {
 			CPU_SET(i, &thread->cpu_set);
+			CPU_SET(i, &proc->cpu_set);
 		}
 	}
 

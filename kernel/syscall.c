@@ -6188,26 +6188,12 @@ SYSCALL_DECLARE(sched_setaffinity)
 	len = MIN2(len, sizeof(k_cpu_set));
 
 	if (copy_from_user(&k_cpu_set, u_cpu_set, len)) {
-		dkprintf("%s: error: copy_from_user failed for %p:%d\n", __FUNCTION__, u_cpu_set, len);
+		dkprintf("%s: error: copy_from_user failed for %p:%d\n",
+				__FUNCTION__, u_cpu_set, len);
 		return -EFAULT;
 	}
-
-	// XXX: We should build something like cpu_available_mask in advance
-	CPU_ZERO(&cpu_set);
-	for (cpu_id = 0; cpu_id < num_processors; cpu_id++) {
-		if (CPU_ISSET(cpu_id, &k_cpu_set)) {
-			CPU_SET(cpu_id, &cpu_set);
-			dkprintf("sched_setaffinity(): tid %d: setting target core %d\n",
-					cpu_local_var(current)->tid, cpu_id);
-			empty_set = 0;
-		}
-	}
 	
-	/* Empty target set? */
-	if (empty_set) {
-		return -EINVAL;
-	}
-
+	/* Find thread */
 	if (tid == 0) {
 		tid = cpu_local_var(current)->tid;
 		thread = cpu_local_var(current);
@@ -6219,21 +6205,45 @@ SYSCALL_DECLARE(sched_setaffinity)
 		struct thread *mythread = cpu_local_var(current);
 
 		thread = find_thread(0, tid, &lock);
-		if(!thread)
+
+		if (!thread)
 			return -ESRCH;
-		if(mythread->proc->euid != 0 &&
-		   mythread->proc->euid != thread->proc->ruid &&
-		   mythread->proc->euid != thread->proc->euid){
+
+		if (mythread->proc->euid != 0 &&
+				mythread->proc->euid != thread->proc->ruid &&
+				mythread->proc->euid != thread->proc->euid) {
 			thread_unlock(thread, &lock);
 			return -EPERM;
 		}
+
 		hold_thread(thread);
 		thread_unlock(thread, &lock);
 		cpu_id = thread->cpu_id;
 	}
 
+	/* Only allow cores that are also in process' cpu_set */
+	CPU_ZERO(&cpu_set);
+	for (cpu_id = 0; cpu_id < num_processors; cpu_id++) {
+		if (CPU_ISSET(cpu_id, &k_cpu_set) &&
+			CPU_ISSET(cpu_id, &thread->proc->cpu_set)) {
+			CPU_SET(cpu_id, &cpu_set);
+			dkprintf("sched_setaffinity(): tid %d: setting target core %d\n",
+					cpu_local_var(current)->tid, cpu_id);
+			empty_set = 0;
+		}
+	}
+
+	/* Empty target set? */
+	if (empty_set) {
+		release_thread(thread);
+		return -EINVAL;
+	}
+
+	/* Update new affinity mask */
 	memcpy(&thread->cpu_set, &cpu_set, sizeof(cpu_set));
 
+	/* Current core not part of new mask? */
+	cpu_id = thread->cpu_id;
 	if (!CPU_ISSET(cpu_id, &thread->cpu_set)) {
 		dkprintf("sched_setaffinity(): tid %d sched_request_migrate: %d\n",
 				cpu_local_var(current)->tid, cpu_id);

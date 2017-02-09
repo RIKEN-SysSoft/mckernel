@@ -520,6 +520,7 @@ struct process {
 	unsigned long saved_auxv[AUXV_LEN];
 	char *saved_cmdline;
 	long saved_cmdline_len;
+	cpu_set_t cpu_set;
 
 	/* Store ptrace flags.
 	 * The lower 8 bits are PTRACE_O_xxx of the PTRACE_SETOPTIONS request.
