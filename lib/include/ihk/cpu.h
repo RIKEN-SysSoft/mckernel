@@ -60,6 +60,7 @@ int ihk_mc_get_processor_id(void);
 int ihk_mc_get_hardware_processor_id(void);
 int ihk_mc_get_numa_id(void);
 int ihk_mc_get_nr_cores();
+int ihk_mc_get_nr_linux_cores();
 int ihk_mc_get_core(int id, unsigned long *linux_core_id, unsigned long *apic_id,
                     int *numa_id);
 int ihk_mc_get_apicid(int linux_core_id);

@@ -41,10 +41,8 @@
 #define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
 #endif
 
-/* Comment: McKernel側でのikc2linux(送信channel)の管理
-   nr_cpu_ids が利用できない？
-   配置場所の再考が必要？*/
-static struct ihk_ikc_channel_desc *ikc2linuxs[512];
+/* Linux channel table, indexec by Linux CPU id */
+static struct ihk_ikc_channel_desc **ikc2linuxs = NULL;
 
 void check_mapping_for_proc(struct thread *thread, unsigned long addr)
 {
@@ -686,7 +684,22 @@ static int dummy_packet_handler(struct ihk_ikc_channel_desc *c,
 void init_host_ikc2linux(int linux_cpu)
 {
 	struct ihk_ikc_connect_param param;
-	struct ihk_ikc_channel_desc *c = ikc2linuxs[linux_cpu];
+	struct ihk_ikc_channel_desc *c;
+
+	/* Main thread allocates channel pointer table */
+	if (!ikc2linuxs) {
+		ikc2linuxs = kmalloc(sizeof(*ikc2linuxs) *
+				ihk_mc_get_nr_linux_cores(), IHK_MC_AP_NOWAIT);
+		if (!ikc2linuxs) {
+			kprintf("%s: error: allocating Linux channels\n", __FUNCTION__);
+			panic("");
+		}
+
+		memset(ikc2linuxs, 0, sizeof(*ikc2linuxs) *
+				ihk_mc_get_nr_linux_cores());
+	}
+
+	c = ikc2linuxs[linux_cpu];
 
 	if (!c) {
 		param.port = 503;
