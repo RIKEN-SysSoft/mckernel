@@ -505,8 +505,9 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 	int cpu, cpus_assigned, cpus_to_assign, cpu_prev;
 	int ret = 0;
 	int mcexec_linux_numa;
-	cpumask_t cpus_used;
-	cpumask_t cpus_to_use;
+	cpumask_t *mcexec_cpu_set = NULL;
+	cpumask_t *cpus_used = NULL;
+	cpumask_t *cpus_to_use = NULL;
 	struct mcctrl_per_proc_data *ppd;
 	struct process_list_item *pli;
 	struct process_list_item *pli_next = NULL;
@@ -619,11 +620,20 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 	kfree(pli);
 
 	cpus_to_assign = udp->cpu_info->n_cpus / req.nr_processes;
-	memcpy(&cpus_used, &pe->cpus_used, sizeof(cpumask_t));
-	memset(&cpus_to_use, 0, sizeof(cpus_to_use));
+	cpus_used = kmalloc(sizeof(cpumask_t), GFP_KERNEL);
+	cpus_to_use = kmalloc(sizeof(cpumask_t), GFP_KERNEL);
+	mcexec_cpu_set = kmalloc(sizeof(cpumask_t), GFP_KERNEL);
+	if (!cpus_used || !cpus_to_use || !mcexec_cpu_set) {
+		printk("%s: error: allocating cpu masks\n", __FUNCTION__);
+		ret = -ENOMEM;
+		goto put_and_unlock_out;
+	}
+	memcpy(cpus_used, &pe->cpus_used, sizeof(cpumask_t));
+	memset(cpus_to_use, 0, sizeof(cpumask_t));
+	memset(mcexec_cpu_set, 0, sizeof(cpumask_t));
 
 	/* Find the first unused CPU */
-	cpu = cpumask_next_zero(-1, &cpus_used);
+	cpu = cpumask_next_zero(-1, cpus_used);
 	if (cpu >= udp->cpu_info->n_cpus) {
 		printk("%s: error: no more CPUs available\n",
 				__FUNCTION__);
@@ -632,11 +642,17 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 	}
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
-	cpumask_set_cpu(cpu, &cpus_used);
-	cpumask_set_cpu(cpu, &cpus_to_use);
+	cpumask_set_cpu(cpu, cpus_used);
+	cpumask_set_cpu(cpu, cpus_to_use);
+	if (udp->cpu_info->ikc_mapped) {
+		cpumask_set_cpu(udp->cpu_info->ikc_map[cpu], mcexec_cpu_set);
+	}
 #else
-	cpu_set(cpu, cpus_used);
-	cpu_set(cpu, cpus_to_use);
+	cpu_set(cpu, *cpus_used);
+	cpu_set(cpu, *cpus_to_use);
+	if (udp->cpu_info->ikc_mapped) {
+		cpu_set(udp->cpu_info->ikc_map[cpu], *mcexec_cpu_set);
+	}
 #endif
 	cpu_prev = cpu;
 	dprintk("%s: CPU %d assigned (first)\n", __FUNCTION__, cpu);
@@ -666,16 +682,24 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 		list_for_each_entry(cache_top, &cpu_top->cache_list, chain) {
 			for_each_cpu(cpu, &cache_top->shared_cpu_map) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
-				if (!cpumask_test_cpu(cpu, &cpus_used)) {
+				if (!cpumask_test_cpu(cpu, cpus_used)) {
 #else
-				if (!cpu_isset(cpu, cpus_used)) {
+				if (!cpu_isset(cpu, *cpus_used)) {
 #endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
-					cpumask_set_cpu(cpu, &cpus_used);
-					cpumask_set_cpu(cpu, &cpus_to_use);
+					cpumask_set_cpu(cpu, cpus_used);
+					cpumask_set_cpu(cpu, cpus_to_use);
+					if (udp->cpu_info->ikc_mapped) {
+						cpumask_set_cpu(udp->cpu_info->ikc_map[cpu],
+								mcexec_cpu_set);
+					}
 #else
-					cpu_set(cpu, cpus_used);
-					cpu_set(cpu, cpus_to_use);
+					cpu_set(cpu, *cpus_used);
+					cpu_set(cpu, *cpus_to_use);
+					if (udp->cpu_info->ikc_mapped) {
+						cpu_set(udp->cpu_info->ikc_map[cpu],
+								*mcexec_cpu_set);
+					}
 #endif
 					cpu_prev = cpu;
 					dprintk("%s: CPU %d assigned (same cache L%lu)\n",
@@ -689,7 +713,7 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 		node = linux_numa_2_mckernel_numa(udp,
 				cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu_prev)));
 
-		for_each_cpu_not(cpu, &cpus_used) {
+		for_each_cpu_not(cpu, cpus_used) {
 			/* Invalid CPU? */
 			if (cpu >= udp->cpu_info->n_cpus)
 				break;
@@ -698,11 +722,19 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 			if (node == linux_numa_2_mckernel_numa(udp,
 						cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu)))) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
-				cpumask_set_cpu(cpu, &cpus_used);
-				cpumask_set_cpu(cpu, &cpus_to_use);
+				cpumask_set_cpu(cpu, cpus_used);
+				cpumask_set_cpu(cpu, cpus_to_use);
+				if (udp->cpu_info->ikc_mapped) {
+					cpumask_set_cpu(udp->cpu_info->ikc_map[cpu],
+							mcexec_cpu_set);
+				}
 #else
-				cpu_set(cpu, cpus_used);
-				cpu_set(cpu, cpus_to_use);
+				cpu_set(cpu, *cpus_used);
+				cpu_set(cpu, *cpus_to_use);
+				if (udp->cpu_info->ikc_mapped) {
+					cpu_set(udp->cpu_info->ikc_map[cpu],
+							*mcexec_cpu_set);
+				}
 #endif
 				cpu_prev = cpu;
 				dprintk("%s: CPU %d assigned (same NUMA)\n",
@@ -712,7 +744,7 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 		}
 
 		/* No CPU? Simply find the next unused one */
-		cpu = cpumask_next_zero(-1, &cpus_used);
+		cpu = cpumask_next_zero(-1, cpus_used);
 		if (cpu >= udp->cpu_info->n_cpus) {
 			printk("%s: error: no more CPUs available\n",
 					__FUNCTION__);
@@ -721,11 +753,17 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 		}
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
-		cpumask_set_cpu(cpu, &cpus_used);
-		cpumask_set_cpu(cpu, &cpus_to_use);
+		cpumask_set_cpu(cpu, cpus_used);
+		cpumask_set_cpu(cpu, cpus_to_use);
+		if (udp->cpu_info->ikc_mapped) {
+			cpumask_set_cpu(udp->cpu_info->ikc_map[cpu], mcexec_cpu_set);
+		}
 #else
-		cpu_set(cpu, cpus_used);
-		cpu_set(cpu, cpus_to_use);
+		cpu_set(cpu, *cpus_used);
+		cpu_set(cpu, *cpus_to_use);
+		if (udp->cpu_info->ikc_mapped) {
+			cpu_set(udp->cpu_info->ikc_map[cpu], *mcexec_cpu_set);
+		}
 #endif
 		cpu_prev = cpu;
 		dprintk("%s: CPU %d assigned (unused)\n",
@@ -736,16 +774,16 @@ next_cpu:
 	}
 
 	/* Found all cores, let user know */
-	if (copy_to_user(req.cpu_set, &cpus_to_use,
-				(req.cpu_set_size < sizeof(cpus_to_use) ?
-				 req.cpu_set_size : sizeof(cpus_to_use)))) {
+	if (copy_to_user(req.cpu_set, cpus_to_use,
+				(req.cpu_set_size < sizeof(cpumask_t) ?
+				 req.cpu_set_size : sizeof(cpumask_t)))) {
 		printk("%s: error copying mask to user\n", __FUNCTION__);
 		ret = -EINVAL;
 		goto put_and_unlock_out;
 	}
 
-	/* Copy IKC target core and mcexec Linux NUMA id */
-	cpu = cpumask_next(-1, &cpus_to_use);
+	/* Copy IKC target core */
+	cpu = cpumask_next(-1, cpus_to_use);
 	if (copy_to_user(req.target_core, &cpu, sizeof(cpu))) {
 		printk("%s: error copying target core to user\n",
 				__FUNCTION__);
@@ -753,6 +791,7 @@ next_cpu:
 		goto put_and_unlock_out;
 	}
 
+	/* mcexec NUMA to bind to */
 	mcexec_linux_numa = cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu));
 	if (copy_to_user(req.mcexec_linux_numa, &mcexec_linux_numa,
 				sizeof(mcexec_linux_numa))) {
@@ -762,12 +801,32 @@ next_cpu:
 		goto put_and_unlock_out;
 	}
 
+	/* mcexec cpu_set to bind to if user requested */
+	if (req.mcexec_cpu_set && udp->cpu_info->ikc_mapped) {
+		int ikc_mapped = 1;
+
+		if (copy_to_user(req.mcexec_cpu_set, mcexec_cpu_set,
+					(req.mcexec_cpu_set_size < sizeof(cpumask_t) ?
+					 req.mcexec_cpu_set_size : sizeof(cpumask_t)))) {
+			printk("%s: error copying mcexec CPU set to user\n", __FUNCTION__);
+			ret = -EINVAL;
+			goto put_and_unlock_out;
+		}
+
+		if (copy_to_user(req.ikc_mapped, &ikc_mapped,
+					sizeof(ikc_mapped))) {
+			printk("%s: error copying ikc_mapped\n", __FUNCTION__);
+			ret = -EINVAL;
+			goto put_and_unlock_out;
+		}
+	}
+
 	/* Save in per-process structure */
-	memcpy(&ppd->cpu_set, &cpus_to_use, sizeof(cpumask_t));
+	memcpy(&ppd->cpu_set, cpus_to_use, sizeof(cpumask_t));
 	ppd->ikc_target_cpu = cpu;
 
 	/* Commit used cores to OS structure */
-	memcpy(&pe->cpus_used, &cpus_used, sizeof(cpus_used));
+	memcpy(&pe->cpus_used, cpus_used, sizeof(*cpus_used));
 
 	/* Reset if last process */
 	if (pe->nr_processes_left == 0) {
@@ -790,6 +849,9 @@ next_cpu:
 	ret = 0;
 
 put_and_unlock_out:
+	kfree(cpus_to_use);
+	kfree(cpus_used);
+	kfree(mcexec_cpu_set);
 	mcctrl_put_per_proc_data(ppd);
 	mutex_unlock(&pe->lock);
 

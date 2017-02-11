@@ -1657,12 +1657,19 @@ int main(int argc, char **argv)
 	if (nr_processes > 0) {
 		struct get_cpu_set_arg cpu_set_arg;
 		int mcexec_linux_numa = 0;
+		int ikc_mapped = 0;
+		cpu_set_t mcexec_cpu_set;
+
+		CPU_ZERO(&mcexec_cpu_set);
 
 		cpu_set_arg.cpu_set = (void *)&desc->cpu_set;
 		cpu_set_arg.cpu_set_size = sizeof(desc->cpu_set);
 		cpu_set_arg.nr_processes = nr_processes;
 		cpu_set_arg.target_core = &target_core;
 		cpu_set_arg.mcexec_linux_numa = &mcexec_linux_numa;
+		cpu_set_arg.mcexec_cpu_set = &mcexec_cpu_set;
+		cpu_set_arg.mcexec_cpu_set_size = sizeof(mcexec_cpu_set);
+		cpu_set_arg.ikc_mapped = &ikc_mapped;
 
 		if (ioctl(fd, MCEXEC_UP_GET_CPUSET, (void *)&cpu_set_arg) != 0) {
 			perror("getting CPU set for partitioned execution");
@@ -1672,32 +1679,54 @@ int main(int argc, char **argv)
 
 		desc->cpu = target_core;
 
-		/* This call may not succeed, but that is fine */
-		if (numa_run_on_node(mcexec_linux_numa) < 0) {
-			__dprint("%s: WARNING: couldn't bind to NUMA %d\n",
-				__FUNCTION__, mcexec_linux_numa);
-		}
-#ifdef DEBUG
-		else {
-			cpu_set_t cpuset;
-			char affinity[BUFSIZ];
-
-			CPU_ZERO(&cpuset);
-			if ((sched_getaffinity(0, sizeof(cpu_set_t), &cpuset)) != 0) {
-				perror("Error sched_getaffinity");
-				exit(1);
+		/* Bind to CPU cores where the LWK process' IKC target maps to */
+		if (ikc_mapped) {
+			/* This call may not succeed, but that is fine */
+			if (sched_setaffinity(0, sizeof(mcexec_cpu_set),
+						&mcexec_cpu_set) < 0) {
+				__dprint("%s: WARNING: couldn't bind to mcexec_cpu_set\n",
+						__FUNCTION__);
 			}
-
-			affinity[0] = '\0';
-			for (i = 0; i < 512; i++) {
-				if (CPU_ISSET(i, &cpuset) == 1) {
-					sprintf(affinity, "%s %d", affinity, i);
+#ifdef DEBUG
+			else {
+				int i;
+				for (i = 0; i < numa_num_possible_cpus(); ++i) {
+					if (CPU_ISSET(i, &mcexec_cpu_set)) {
+						__dprint("%s: PID %d bound to CPU %d\n",
+							__FUNCTION__, getpid(), i);
+					}
 				}
 			}
-			__dprint("%s: PID: %d affinity: %s\n",
-					__FUNCTION__, getpid(), affinity);
+#endif // DEBUG			
 		}
-#endif
+		else {
+			/* This call may not succeed, but that is fine */
+			if (numa_run_on_node(mcexec_linux_numa) < 0) {
+				__dprint("%s: WARNING: couldn't bind to NUMA %d\n",
+						__FUNCTION__, mcexec_linux_numa);
+			}
+#ifdef DEBUG
+			else {
+				cpu_set_t cpuset;
+				char affinity[BUFSIZ];
+
+				CPU_ZERO(&cpuset);
+				if ((sched_getaffinity(0, sizeof(cpu_set_t), &cpuset)) != 0) {
+					perror("Error sched_getaffinity");
+					exit(1);
+				}
+
+				affinity[0] = '\0';
+				for (i = 0; i < 512; i++) {
+					if (CPU_ISSET(i, &cpuset) == 1) {
+						sprintf(affinity, "%s %d", affinity, i);
+					}
+				}
+				__dprint("%s: PID: %d affinity: %s\n",
+						__FUNCTION__, getpid(), affinity);
+			}
+#endif // DEBUG			
+		}
 	}
 
 	desc->mpol_flags = 0;

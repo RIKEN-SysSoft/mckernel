@@ -86,6 +86,9 @@ struct get_cpu_set_arg {
 	size_t cpu_set_size;	// Size in bytes
 	int *target_core;
 	int *mcexec_linux_numa; // NUMA domain to bind mcexec to
+	void *mcexec_cpu_set;
+	size_t mcexec_cpu_set_size;	// Size in bytes
+	int *ikc_mapped;
 };
 
 #define PLD_CPU_SET_MAX_CPUS 1024
