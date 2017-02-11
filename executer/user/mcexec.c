@@ -157,6 +157,7 @@ static int enable_vdso = 1;
 static int mpol_no_heap = 0;
 static int mpol_no_stack = 0;
 static int mpol_no_bss = 0;
+static int no_bind_ikc_map = 0;
 static unsigned long mpol_threshold = (1024*1024);
 
 /* Partitioned execution (e.g., for MPI) */
@@ -1302,6 +1303,12 @@ static struct option mcexec_options[] = {
 		.val =		1,
 	},
 	{
+		.name =		"no-bind-ikc-map",
+		.has_arg =	no_argument,
+		.flag =		&no_bind_ikc_map,
+		.val =		1,
+	},
+	{
 		.name =		"mpol-threshold",
 		.has_arg =	required_argument,
 		.flag =		NULL,
@@ -1680,7 +1687,7 @@ int main(int argc, char **argv)
 		desc->cpu = target_core;
 
 		/* Bind to CPU cores where the LWK process' IKC target maps to */
-		if (ikc_mapped) {
+		if (ikc_mapped && !no_bind_ikc_map) {
 			/* This call may not succeed, but that is fine */
 			if (sched_setaffinity(0, sizeof(mcexec_cpu_set),
 						&mcexec_cpu_set) < 0) {
@@ -1697,7 +1704,7 @@ int main(int argc, char **argv)
 					}
 				}
 			}
-#endif // DEBUG			
+#endif // DEBUG
 		}
 		else {
 			/* This call may not succeed, but that is fine */
