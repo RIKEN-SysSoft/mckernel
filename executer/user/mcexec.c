@@ -1318,6 +1318,9 @@ static struct option mcexec_options[] = {
 	{ NULL, 0, NULL, 0, },
 };
 
+#define	MCEXEC_DEF_CUR_STACK_SIZE	(2 * 1024 * 1024)	/* 2 MiB */
+#define	MCEXEC_DEF_MAX_STACK_SIZE	(64 * 1024 * 1024)	/* 64 MiB */
+
 int main(int argc, char **argv)
 {
 //	int fd;
@@ -1350,16 +1353,14 @@ int main(int argc, char **argv)
 	if (!altroot) {
 		altroot = "/usr/linux-k1om-4.7/linux-k1om";
 	}
-	
+
 	/* Collect environment variables */
 	envs_len = flatten_strings(-1, NULL, environ, &envs);
 	envs = envs;
 
-	error = getrlimit(RLIMIT_STACK, &rlim_stack);
-	if (error) {
-		fprintf(stderr, "Error: Failed to get stack limit.\n");
-		return 1;
-	}
+	rlim_stack.rlim_cur = MCEXEC_DEF_CUR_STACK_SIZE;
+	rlim_stack.rlim_max = MCEXEC_DEF_MAX_STACK_SIZE;
+
 #define	MCEXEC_MAX_STACK_SIZE	(1024 * 1024 * 1024)	/* 1 GiB */
 	if (rlim_stack.rlim_cur > MCEXEC_MAX_STACK_SIZE) {
 		/* need to call reduce_stack() before modifying the argv[] */
@@ -1367,7 +1368,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error: Failed to reduce stack.\n");
 		return 1;
 	}
-           
+
 	/* Parse options ("+" denotes stop at the first non-option) */
 	while ((opt = getopt_long(argc, argv, "+c:n:t:m:", mcexec_options, NULL)) != -1) {
 		switch (opt) {
@@ -1584,14 +1585,15 @@ int main(int argc, char **argv)
 					rlimit_stack_envname);
 			return 1;
 		}
-		if (lmax > rlim_stack.rlim_max) {
-			lmax = rlim_stack.rlim_max;
-		}
 		if (lcur > lmax) {
 			lcur = lmax;
 		}
-		rlim_stack.rlim_cur = lcur;
-		rlim_stack.rlim_max = lmax;
+		if (lmax > rlim_stack.rlim_max) {
+			rlim_stack.rlim_max = lmax;
+		}
+		if (lcur > rlim_stack.rlim_cur) {
+			rlim_stack.rlim_cur = lcur;
+		}
 	}
 	desc->rlimit[MCK_RLIMIT_STACK].rlim_cur = rlim_stack.rlim_cur;
 	desc->rlimit[MCK_RLIMIT_STACK].rlim_max = rlim_stack.rlim_max;

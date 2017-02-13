@@ -1918,9 +1918,14 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 
 	/* Create stack range */
 	end = STACK_TOP(&thread->vm->region) & LARGE_PAGE_MASK;
-	minsz = LARGE_PAGE_SIZE;
-	size = (proc->rlimit[MCK_RLIMIT_STACK].rlim_cur
+	minsz = (proc->rlimit[MCK_RLIMIT_STACK].rlim_cur
 			+ LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
+	size = (proc->rlimit[MCK_RLIMIT_STACK].rlim_max
+			+ LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
+	dkprintf("%s: rlim_max: %lu, rlim_cur: %lu\n",
+			__FUNCTION__,
+			proc->rlimit[MCK_RLIMIT_STACK].rlim_max,
+			proc->rlimit[MCK_RLIMIT_STACK].rlim_cur);
 	if (size > (USER_END / 2)) {
 		size = USER_END / 2;
 	}
@@ -1933,7 +1938,8 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	/* TODO: make threshold kernel or mcexec argument */
 	ap_flag = (size >= proc->mpol_threshold &&
 		!(proc->mpol_flags & MPOL_NO_STACK)) ? IHK_MC_AP_USER : 0;
-	dkprintf("%s: size: %lu %s\n", __FUNCTION__, size,
+	dkprintf("%s: max size: %lu, mapped size: %lu %s\n",
+			__FUNCTION__, size, minsz,
 			ap_flag ? "(IHK_MC_AP_USER)" : "");
 
 	stack = ihk_mc_alloc_aligned_pages(minsz >> PAGE_SHIFT,
