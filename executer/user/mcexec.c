@@ -158,7 +158,7 @@ static int mpol_no_heap = 0;
 static int mpol_no_stack = 0;
 static int mpol_no_bss = 0;
 static int no_bind_ikc_map = 0;
-static unsigned long mpol_threshold = (1024*1024);
+static unsigned long mpol_threshold = 0;
 
 /* Partitioned execution (e.g., for MPI) */
 static int nr_processes = 0;
