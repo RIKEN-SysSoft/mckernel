@@ -966,6 +966,8 @@ static struct ihk_page_allocator_desc *page_allocator_init(uint64_t start,
 	unsigned long page_map_pa, pages;
 	void *page_map;
 	unsigned int i;
+	extern char _end[];
+	unsigned long phys_end = virt_to_phys(_end);
 
 	start &= PAGE_MASK;
 	pa_start = (start + PAGE_SIZE - 1) & PAGE_MASK;
@@ -978,7 +980,18 @@ static struct ihk_page_allocator_desc *page_allocator_init(uint64_t start,
 	*/
 	page_map_pa = 0x100000;
 #else
+#if 0
 	page_map_pa = initial ? virt_to_phys(get_last_early_heap()) : pa_start;
+#else
+	if (pa_start <= phys_end && phys_end <= pa_end) {
+		page_map_pa = virt_to_phys(get_last_early_heap());
+kprintf("* start=%lx end=%lx pa_start=%lx\n", page_map_pa, pa_end, pa_start);
+	}
+	else {
+		page_map_pa = pa_start;
+kprintf("  start=%lx end=%lx\n", page_map_pa, pa_end);
+	}
+#endif
 #endif
 
 	page_map = phys_to_virt(page_map_pa);
