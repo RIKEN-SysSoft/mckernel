@@ -49,7 +49,7 @@
 #endif
 
 static unsigned long pa_start, pa_end;
-static struct ihk_mc_numa_node *memory_nodes = NULL;
+static struct ihk_mc_numa_node memory_nodes[512];
 
 extern void unhandled_page_fault(struct thread *, void *, void *);
 extern int interrupt_from_user(void *);
@@ -1016,9 +1016,6 @@ static struct ihk_page_allocator_desc *page_allocator_init(uint64_t start,
 static void numa_init(void)
 {
 	int i, j;
-	memory_nodes = early_alloc_pages((sizeof(*memory_nodes) * 
-				ihk_mc_get_nr_numa_nodes() + PAGE_SIZE - 1) 
-			>> PAGE_SHIFT);
 
 	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
 		int linux_numa_id, type;
