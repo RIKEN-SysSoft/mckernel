@@ -10,6 +10,7 @@
 #define PROFILE_EVENT_MIN            PROFILE_OFFLOAD_MAX
 #define __NR_profile                                 701
 
+#define PROF_JOB                       0x40000000
 #define PROF_PROC                      0x80000000
 #define PROF_CLEAR                           0x01
 #define PROF_ON                              0x02
@@ -21,13 +22,13 @@ struct profile_event {
 	uint64_t tsc;
 };
 
-/* 
+/*
  * The layout of profile events is as follows:
  * [0,PROFILE_SYSCALL_MAX) - syscalls
  * [PROFILE_SYSCALL_MAX,PROFILE_OFFLOAD_MAX) - syscall offloads
  * [PROFILE_OFFLOAD_MAX,PROFILE_EVENT_MAX) - general events
  *
- * XXX: Make sure to fill in prof_event_names in profile.c 
+ * XXX: Make sure to fill in prof_event_names in profile.c
  * for each added profiled event.
  */
 enum profile_event_type {
@@ -43,7 +44,9 @@ enum profile_event_type profile_syscall2offload(enum profile_event_type sc);
 void profile_event_add(enum profile_event_type type, uint64_t tsc);
 void profile_print_thread_stats(struct thread *thread);
 void profile_print_proc_stats(struct process *proc);
+void profile_print_job_stats(struct process *proc);
 void profile_accumulate_events(struct thread *thread, struct process *proc);
+int profile_accumulate_and_print_job_events(struct process *proc);
 int profile_alloc_events(struct thread *thread);
 void profile_dealloc_thread_events(struct thread *thread);
 void profile_dealloc_proc_events(struct process *proc);

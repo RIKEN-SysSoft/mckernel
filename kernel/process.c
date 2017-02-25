@@ -2218,7 +2218,12 @@ release_process(struct process *proc)
 
 	if (proc->tids) kfree(proc->tids);
 #ifdef PROFILE_ENABLE
-	profile_print_proc_stats(proc);
+	if (proc->nr_processes) {
+		profile_accumulate_and_print_job_events(proc);
+	}
+	else {
+		profile_print_proc_stats(proc);
+	}
 	profile_dealloc_proc_events(proc);
 #endif // PROFILE_ENABLE
 	kfree(proc);
