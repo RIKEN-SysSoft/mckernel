@@ -1868,9 +1868,14 @@ split_and_return:
 
 static void ___kfree(void *ptr)
 {
-	struct kmalloc_header *chunk =
-		(struct kmalloc_header*)(ptr - sizeof(struct kmalloc_header));
-	unsigned long kmalloc_irq_flags = cpu_disable_interrupt_save();
+	struct kmalloc_header *chunk;
+	unsigned long kmalloc_irq_flags;
+
+	if (!ptr)
+		return;
+
+	chunk = (struct kmalloc_header*)(ptr - sizeof(struct kmalloc_header));
+	kmalloc_irq_flags = cpu_disable_interrupt_save();
 
 	/* Sanity check */
 	if (chunk->front_magic != 0x5c5c5c5c || chunk->end_magic != 0x6d6d6d6d) {
