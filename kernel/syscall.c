@@ -56,6 +56,7 @@
 #include <bitmap.h>
 #include <xpmem.h>
 #include <rusage.h>
+#include <profile.h>
 
 /* Headers taken from kitten LWK */
 #include <lwk/stddef.h>
@@ -93,7 +94,7 @@ static long (*syscall_table[])(int, ihk_mc_user_context_t *) = {
 
 /* generate syscall_name[] */
 #define	MCKERNEL_UNUSED	__attribute__ ((unused))
-static char *syscall_name[] MCKERNEL_UNUSED = {
+char *syscall_name[] MCKERNEL_UNUSED = {
 #define	DECLARATOR(number,name)		[number] = #name,
 #define	SYSCALL_HANDLED(number,name)	DECLARATOR(number,#name)
 #define	SYSCALL_DELEGATED(number,name)	DECLARATOR(number,#name)
@@ -130,209 +131,6 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 #ifdef DCFA_KMOD
 static void do_mod_exit(int status);
 #endif
-
-#ifdef TRACK_SYSCALLS
-
-void track_syscalls_print_thread_stats(struct thread *thread)
-{
-	int i;
-	unsigned long flags;
-
-	flags = kprintf_lock();
-
-	for (i = 0; i < TRACK_SYSCALLS_MAX; ++i) {
-		if (!thread->syscall_cnts[i] &&
-				!thread->offload_cnts[i]) continue;
-
-		//__kprintf("(%20s): sys.cnt: %3lu (%15lukC)\n",
-		__kprintf("TID: %4d (%3d,%20s): sys: %6u %6lukC offl: %6u %6lukC\n",
-				thread->tid,
-				i,
-				syscall_name[i],
-				thread->syscall_cnts[i],
-				(thread->syscall_times[i] /
-				 (thread->syscall_cnts[i] ? thread->syscall_cnts[i] : 1))
-				/ 1000,
-				thread->offload_cnts[i],
-				(thread->offload_times[i] /
-				 (thread->offload_cnts[i] ? thread->offload_cnts[i] : 1))
-				/ 1000
-				);
-	}
-
-	kprintf_unlock(flags);
-}
-
-void track_syscalls_print_proc_stats(struct process *proc)
-{
-	int i;
-	unsigned long flags;
-
-	flags = kprintf_lock();
-
-	for (i = 0; i < TRACK_SYSCALLS_MAX; ++i) {
-		if (!proc->syscall_cnts[i] &&
-				!proc->offload_cnts[i]) continue;
-
-		//__kprintf("(%20s): sys.cnt: %3lu (%15lukC)\n",
-		__kprintf("PID: %4d (%3d,%20s): sys: %6u %6lukC offl: %6u %6lukC\n",
-				proc->pid,
-				i,
-				syscall_name[i],
-				proc->syscall_cnts[i],
-				(proc->syscall_times[i] /
-				 (proc->syscall_cnts[i] ? proc->syscall_cnts[i] : 1))
-				/ 1000,
-				proc->offload_cnts[i],
-				(proc->offload_times[i] /
-				 (proc->offload_cnts[i] ? proc->offload_cnts[i] : 1))
-				/ 1000
-				);
-	}
-
-	kprintf_unlock(flags);
-}
-
-void track_syscalls_accumulate_counters(struct thread *thread,
-		struct process *proc)
-{
-	int i;
-	struct mcs_lock_node mcs_node;
-
-	mcs_lock_lock(&proc->st_lock, &mcs_node);
-	for (i = 0; i < TRACK_SYSCALLS_MAX; ++i) {
-		if (thread->syscall_cnts[i]) {
-			proc->syscall_times[i] += thread->syscall_times[i];
-			proc->syscall_cnts[i] += thread->syscall_cnts[i];
-		}
-
-		if (thread->offload_cnts[i]) {
-			proc->offload_times[i] += thread->offload_times[i];
-			proc->offload_cnts[i] += thread->offload_cnts[i];
-		}
-	}
-	mcs_lock_unlock(&proc->st_lock, &mcs_node);
-}
-
-void track_syscalls_alloc_counters(struct thread *thread)
-{
-	struct process *proc = thread->proc;
-	struct mcs_lock_node mcs_node;
-
-	thread->syscall_times = kmalloc(sizeof(*thread->syscall_times) *
-			TRACK_SYSCALLS_MAX, IHK_MC_AP_NOWAIT);
-	thread->syscall_cnts = kmalloc(sizeof(*thread->syscall_cnts) *
-			TRACK_SYSCALLS_MAX, IHK_MC_AP_NOWAIT);
-	thread->offload_times = kmalloc(sizeof(*thread->offload_times) *
-			TRACK_SYSCALLS_MAX, IHK_MC_AP_NOWAIT);
-	thread->offload_cnts = kmalloc(sizeof(*thread->offload_cnts) *
-			TRACK_SYSCALLS_MAX, IHK_MC_AP_NOWAIT);
-
-	if (!thread->syscall_times ||
-			!thread->syscall_cnts ||
-			!thread->offload_times ||
-			!thread->offload_cnts) {
-		kprintf("%s: ERROR: allocating thread private counters\n",
-				__FUNCTION__);
-		panic("");
-	}
-
-	memset(thread->syscall_times, 0, sizeof(*thread->syscall_times) *
-			TRACK_SYSCALLS_MAX);
-	memset(thread->syscall_cnts, 0, sizeof(*thread->syscall_cnts) *
-			TRACK_SYSCALLS_MAX);
-	memset(thread->offload_times, 0, sizeof(*thread->offload_times) *
-			TRACK_SYSCALLS_MAX);
-	memset(thread->offload_cnts, 0, sizeof(*thread->offload_cnts) *
-			TRACK_SYSCALLS_MAX);
-
-	mcs_lock_lock(&proc->st_lock, &mcs_node);
-	if (!proc->syscall_times) {
-		proc->syscall_times = kmalloc(sizeof(*proc->syscall_times) *
-				TRACK_SYSCALLS_MAX, IHK_MC_AP_NOWAIT);
-		proc->syscall_cnts = kmalloc(sizeof(*proc->syscall_cnts) *
-				TRACK_SYSCALLS_MAX, IHK_MC_AP_NOWAIT);
-		proc->offload_times = kmalloc(sizeof(*proc->offload_times) *
-				TRACK_SYSCALLS_MAX, IHK_MC_AP_NOWAIT);
-		proc->offload_cnts = kmalloc(sizeof(*proc->offload_cnts) *
-				TRACK_SYSCALLS_MAX, IHK_MC_AP_NOWAIT);
-
-		if (!proc->syscall_times ||
-				!proc->syscall_cnts ||
-				!proc->offload_times ||
-				!proc->offload_cnts) {
-			kprintf("%s: ERROR: allocating process private counters\n",
-					__FUNCTION__);
-			panic("");
-		}
-
-		memset(proc->syscall_times, 0, sizeof(*proc->syscall_times) *
-				TRACK_SYSCALLS_MAX);
-		memset(proc->syscall_cnts, 0, sizeof(*proc->syscall_cnts) *
-				TRACK_SYSCALLS_MAX);
-		memset(proc->offload_times, 0, sizeof(*proc->offload_times) *
-				TRACK_SYSCALLS_MAX);
-		memset(proc->offload_cnts, 0, sizeof(*proc->offload_cnts) *
-				TRACK_SYSCALLS_MAX);
-	}
-	mcs_lock_unlock(&proc->st_lock, &mcs_node);
-}
-
-void track_syscalls_dealloc_thread_counters(struct thread *thread)
-{
-	kfree(thread->syscall_times);
-	kfree(thread->syscall_cnts);
-	kfree(thread->offload_times);
-	kfree(thread->offload_cnts);
-}
-
-void track_syscalls_dealloc_proc_counters(struct process *proc)
-{
-	kfree(proc->syscall_times);
-	kfree(proc->syscall_cnts);
-	kfree(proc->offload_times);
-	kfree(proc->offload_cnts);
-}
-
-int do_track_syscalls(int flag)
-{
-	struct thread *thread = cpu_local_var(current);
-	int i;
-
-	if (flag & TRACK_SYSCALLS_PRINT)
-		track_syscalls_print_thread_stats(thread);
-
-	if (flag & TRACK_SYSCALLS_PRINT_PROC)
-		track_syscalls_print_proc_stats(thread->proc);
-
-	if (flag & TRACK_SYSCALLS_CLEAR) {
-		for (i = 0; i < TRACK_SYSCALLS_MAX; ++i) {
-			if (!thread->syscall_cnts[i] &&
-					!thread->offload_cnts[i]) continue;
-
-			thread->syscall_cnts[i] = 0;
-			thread->syscall_times[i] = 0;
-			thread->offload_cnts[i] = 0;
-			thread->offload_times[i] = 0;
-		}
-	}
-
-	if (flag & TRACK_SYSCALLS_ON) {
-		thread->track_syscalls = 1;
-	}
-	else if (flag & TRACK_SYSCALLS_OFF) {
-		thread->track_syscalls = 0;
-	}
-
-	return 0;
-}
-
-SYSCALL_DECLARE(track_syscalls)
-{
-	int flag = (int)ihk_mc_syscall_arg0(ctx);
-	return do_track_syscalls(flag);
-}
-#endif // TRACK_SYSCALLS
 
 static void send_syscall(struct syscall_request *req, int cpu, int pid, struct syscall_response *res)
 {
@@ -386,10 +184,10 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	struct ihk_os_monitor *monitor = cpu_local_var(monitor);
 	int mstatus = 0;
 
-#ifdef TRACK_SYSCALLS
+#ifdef PROFILE_ENABLE
 	uint64_t t_s;
 	t_s = rdtsc();
-#endif // TRACK_SYSCALLS
+#endif // PROFILE_ENABLE
 
 	dkprintf("SC(%d)[%3d] sending syscall\n",
 		ihk_mc_get_processor_id(),
@@ -503,22 +301,16 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		--thread->in_syscall_offload;
 	}
 
-#ifdef TRACK_SYSCALLS
-	if (req->number < TRACK_SYSCALLS_MAX) {
-		if (!cpu_local_var(current)->offload_cnts) {
-			track_syscalls_alloc_counters(cpu_local_var(current));
-		}
-		if (cpu_local_var(current)->track_syscalls) {
-			cpu_local_var(current)->offload_times[req->number] += 
-				(rdtsc() - t_s);
-			cpu_local_var(current)->offload_cnts[req->number] += 1;
-		}
+#ifdef PROFILE_ENABLE
+	if (req->number < PROFILE_SYSCALL_MAX) {
+		profile_event_add(profile_syscall2offload(req->number),
+				(rdtsc() - t_s));
 	}
 	else {
 		dkprintf("%s: offload syscall > %d ?? : %d\n",
-				__FUNCTION__, TRACK_SYSCALLS_MAX, req->number);
+				__FUNCTION__, PROFILE_SYSCALL_MAX, req->number);
 	}
-#endif // TRACK_SYSCALLS
+#endif // PROFILE_ENABLE
 
 	monitor->status = mstatus;
 	monitor->counter++;
@@ -8668,9 +8460,9 @@ set_cputime(int mode)
 long syscall(int num, ihk_mc_user_context_t *ctx)
 {
 	long l;
-#ifdef TRACK_SYSCALLS
+#ifdef PROFILE_ENABLE
 	uint64_t t_s;
-#endif // TRACK_SYSCALLS
+#endif // PROFILE_ENABLE
 	struct thread *thread = cpu_local_var(current);
 
 #ifdef DISABLE_SCHED_YIELD
@@ -8717,10 +8509,10 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 #endif
     dkprintf("\n");
 
-#ifdef TRACK_SYSCALLS
-	if (num == __NR_clone) cpu_local_var(current)->track_syscalls = 1;
+#ifdef PROFILE_ENABLE
+	if (num == __NR_clone) cpu_local_var(current)->profile = 1;
 	t_s = rdtsc();
-#endif // TRACK_SYSCALLS
+#endif // PROFILE_ENABLE
 
 	if ((0 <= num) && (num < (sizeof(syscall_table) / sizeof(syscall_table[0])))
 			&& (syscall_table[num] != NULL)) {
@@ -8742,23 +8534,17 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		check_signal(l, NULL, num);
 	}
 
-#ifdef TRACK_SYSCALLS
-	if (num < TRACK_SYSCALLS_MAX) {
-		if (!cpu_local_var(current)->syscall_cnts) {
-			track_syscalls_alloc_counters(cpu_local_var(current));
-		}
-		if (cpu_local_var(current)->track_syscalls) {
-			cpu_local_var(current)->syscall_times[num] += (rdtsc() - t_s);
-			cpu_local_var(current)->syscall_cnts[num]++;
-		}
+#ifdef PROFILE_ENABLE
+	if (num < PROFILE_SYSCALL_MAX) {
+		profile_event_add(num, (rdtsc() - t_s));
 	}
 	else {
-		if (num != __NR_track_syscalls) {
+		if (num != __NR_profile) {
 			dkprintf("%s: syscall > %d ?? : %d\n",
-					__FUNCTION__, TRACK_SYSCALLS_MAX, num);
+					__FUNCTION__, PROFILE_SYSCALL_MAX, num);
 		}
 	}
-#endif // TRACK_SYSCALLS
+#endif // PROFILE_ENABLE
 
 	if (num != __NR_sched_yield &&
 			num != __NR_futex) {

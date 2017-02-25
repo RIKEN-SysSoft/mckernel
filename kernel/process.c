@@ -107,12 +107,9 @@ init_process(struct process *proc, struct process *parent)
 	waitq_init(&proc->waitpid_q);
 	ihk_atomic_set(&proc->refcount, 2);
 	proc->monitoring_event = NULL;
-#ifdef TRACK_SYSCALLS
-	mcs_lock_init(&proc->st_lock);
-	proc->syscall_times = NULL;
-	proc->syscall_cnts = NULL;
-	proc->offload_times = NULL;
-	proc->offload_cnts = NULL;
+#ifdef PROFILE_ENABLE
+	mcs_lock_init(&proc->profile_lock);
+	proc->profile_events = NULL;
 #endif
 }
 
@@ -524,8 +521,8 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 	}
 #endif
 
-#ifdef TRACK_SYSCALLS
-	thread->track_syscalls = org->track_syscalls;
+#ifdef PROFILE_ENABLE
+	thread->profile = org->profile;
 #endif
 
 	return thread;
@@ -2220,10 +2217,10 @@ release_process(struct process *proc)
 	}
 
 	if (proc->tids) kfree(proc->tids);
-#ifdef TRACK_SYSCALLS
-	track_syscalls_print_proc_stats(proc);
-	track_syscalls_dealloc_proc_counters(proc);
-#endif // TRACK_SYSCALLS
+#ifdef PROFILE_ENABLE
+	profile_print_proc_stats(proc);
+	profile_dealloc_proc_events(proc);
+#endif // PROFILE_ENABLE
 	kfree(proc);
 }
 
@@ -2436,11 +2433,11 @@ void release_thread(struct thread *thread)
 
 	vm = thread->vm;
 
-#ifdef TRACK_SYSCALLS
-	track_syscalls_accumulate_counters(thread, thread->proc);
-	//track_syscalls_print_thread_stats(thread);
-	track_syscalls_dealloc_thread_counters(thread);
-#endif // TRACK_SYSCALLS
+#ifdef PROFILE_ENABLE
+	profile_accumulate_events(thread, thread->proc);
+	//profile_print_thread_stats(thread);
+	profile_dealloc_thread_events(thread);
+#endif // PROFILE_ENABLE
 	procfs_delete_thread(thread);
 	destroy_thread(thread);
 

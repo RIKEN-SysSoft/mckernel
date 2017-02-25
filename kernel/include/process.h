@@ -23,6 +23,7 @@
 #include <affinity.h>
 #include <syscall.h>
 #include <bitops.h>
+#include <profile.h>
 
 #define VR_NONE            0x0
 #define VR_STACK           0x1
@@ -242,27 +243,6 @@ struct thread;
 struct process_vm;
 struct vm_regions;
 struct vm_range;
-
-//#define TRACK_SYSCALLS
-
-#ifdef TRACK_SYSCALLS
-#define TRACK_SYSCALLS_MAX               300
-#define __NR_track_syscalls              701
-
-#define TRACK_SYSCALLS_CLEAR             0x01
-#define TRACK_SYSCALLS_ON                0x02
-#define TRACK_SYSCALLS_OFF               0x04
-#define TRACK_SYSCALLS_PRINT             0x08
-#define TRACK_SYSCALLS_PRINT_PROC        0x10
-
-void track_syscalls_print_thread_stats(struct thread *thread);
-void track_syscalls_print_proc_stats(struct process *proc);
-void track_syscalls_accumulate_counters(struct thread *thread,
-		struct process *proc);
-void track_syscalls_alloc_counters(struct thread *thread);
-void track_syscalls_dealloc_thread_counters(struct thread *thread);
-void track_syscalls_dealloc_proc_counters(struct process *proc);
-#endif // TRACK_SYSCALLS
 
 
 #define HASH_SIZE	73
@@ -565,13 +545,10 @@ struct process {
 #define PP_COUNT 2
 #define PP_STOP 3
 	struct mc_perf_event *monitoring_event;
-#ifdef TRACK_SYSCALLS
-	mcs_lock_node_t st_lock;
-	uint64_t *syscall_times;
-	uint32_t *syscall_cnts;
-	uint64_t *offload_times;
-	uint32_t *offload_cnts;
-#endif // TRACK_SYSCALLS
+#ifdef PROFILE_ENABLE
+	mcs_lock_node_t profile_lock;
+	struct profile_event *profile_events;
+#endif // PROFILE_ENABLE
 };
 
 void hold_thread(struct thread *ftn);
@@ -644,13 +621,10 @@ struct thread {
 	fp_regs_struct *fp_regs;
 	int in_syscall_offload;
 
-#ifdef TRACK_SYSCALLS
-	int track_syscalls;
-	uint64_t *syscall_times;
-	uint32_t *syscall_cnts;
-	uint64_t *offload_times;
-	uint32_t *offload_cnts;
-#endif // TRACK_SYSCALLS
+#ifdef PROFILE_ENABLE
+	int profile;
+	struct profile_event *profile_events;
+#endif // PROFILE_ENABLE
 
 	// signal
 	struct sig_common *sigcommon;

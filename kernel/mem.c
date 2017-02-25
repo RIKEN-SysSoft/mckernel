@@ -38,6 +38,8 @@
 #include <init.h>
 #include <cas.h>
 #include <rusage.h>
+#include <syscall.h>
+#include <profile.h>
 
 //#define DEBUG_PRINT_MEM
 
@@ -906,6 +908,10 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 {
 	struct thread *thread = cpu_local_var(current);
 	int error;
+#ifdef PROFILE_ENABLE
+	uint64_t t_s;
+	t_s = rdtsc();
+#endif // PROFILE_ENABLE
 
 	set_cputime(interrupt_from_user(regs)? 1: 2);
 	dkprintf("%s: addr: %p, reason: %lx, regs: %p\n",
@@ -968,6 +974,9 @@ out:
 			__FUNCTION__, fault_addr, reason, regs, error);
 	check_need_resched();
 	set_cputime(0);
+#ifdef PROFILE_ENABLE
+	profile_event_add(PROFILE_page_fault, (rdtsc() - t_s));
+#endif // PROFILE_ENABLE
 	return;
 }
 
