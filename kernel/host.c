@@ -430,6 +430,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	proc->termsig = SIGCHLD;
 	proc->mpol_flags = pn->mpol_flags;
 	proc->mpol_threshold = pn->mpol_threshold;
+	proc->nr_processes = pn->nr_processes;
 
 	vm->region.user_start = pn->user_start;
 	vm->region.user_end = pn->user_end;

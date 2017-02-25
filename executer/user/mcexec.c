@@ -1738,6 +1738,7 @@ int main(int argc, char **argv)
 		}
 	}
 
+	desc->nr_processes = nr_processes;
 	desc->mpol_flags = 0;
 	if (mpol_no_heap) {
 		desc->mpol_flags |= MPOL_NO_HEAP;

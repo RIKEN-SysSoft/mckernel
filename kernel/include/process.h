@@ -549,6 +549,7 @@ struct process {
 	mcs_lock_node_t profile_lock;
 	struct profile_event *profile_events;
 #endif // PROFILE_ENABLE
+	int nr_processes; /* For partitioned execution */
 };
 
 void hold_thread(struct thread *ftn);
