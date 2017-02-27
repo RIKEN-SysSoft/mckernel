@@ -159,6 +159,7 @@ static int mpol_no_stack = 0;
 static int mpol_no_bss = 0;
 static int no_bind_ikc_map = 0;
 static unsigned long mpol_threshold = 0;
+static int profile = 0;
 
 /* Partitioned execution (e.g., for MPI) */
 static int nr_processes = 0;
@@ -1285,6 +1286,12 @@ static struct option mcexec_options[] = {
 		.val =		1,
 	},
 	{
+		.name =		"profile",
+		.has_arg =	no_argument,
+		.flag =		&profile,
+		.val =		1,
+	},
+	{
 		.name =		"mpol-no-heap",
 		.has_arg =	no_argument,
 		.flag =		&mpol_no_heap,
@@ -1738,6 +1745,7 @@ int main(int argc, char **argv)
 		}
 	}
 
+	desc->profile = profile;
 	desc->nr_processes = nr_processes;
 	desc->mpol_flags = 0;
 	if (mpol_no_heap) {

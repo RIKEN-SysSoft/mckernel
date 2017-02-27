@@ -44,6 +44,17 @@ extern char *syscall_name[];
 
 #ifdef PROFILE_ENABLE
 
+//#define DEBUG_PRINT_PROFILE
+
+#ifdef DEBUG_PRINT_PROFILE
+#define	dkprintf(...) kprintf(__VA_ARGS__)
+#define	ekprintf(...) kprintf(__VA_ARGS__)
+#else
+#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
+#define	ekprintf(...) kprintf(__VA_ARGS__)
+#endif
+
+
 char *profile_event_names[] =
 {
 	"page_fault",
@@ -101,7 +112,7 @@ void profile_print_thread_stats(struct thread *thread)
 				!thread->profile_events[i + PROFILE_SYSCALL_MAX].cnt) 
 			continue;
 
-		__kprintf("TID: %4d (%3d,%20s): %6u %6lukC offl: %6u %6lukC\n",
+		__kprintf("TID: %4d (%3d,%20s): %6u %6luk offl: %6u %6luk\n",
 				thread->tid,
 				i,
 				syscall_name[i],
@@ -123,9 +134,8 @@ void profile_print_thread_stats(struct thread *thread)
 		if (!thread->profile_events[i].cnt)
 			continue;
 
-		__kprintf("TID: %4d (%3d,%20s): %6u %6lukC \n",
+		__kprintf("TID: %4d (%24s): %6u %6luk \n",
 				thread->tid,
-				i,
 				profile_event_names[i - PROFILE_EVENT_MIN],
 				thread->profile_events[i].cnt,
 				(thread->profile_events[i].tsc /
@@ -152,7 +162,7 @@ void profile_print_proc_stats(struct process *proc)
 				!proc->profile_events[i + PROFILE_SYSCALL_MAX].cnt) 
 			continue;
 
-		__kprintf("PID: %4d (%3d,%20s): %6u %6lukC offl: %6u %6lukC\n",
+		__kprintf("PID: %4d (%3d,%20s): %6u %6luk offl: %6u %6luk\n",
 				proc->pid,
 				i,
 				syscall_name[i],
@@ -174,9 +184,8 @@ void profile_print_proc_stats(struct process *proc)
 		if (!proc->profile_events[i].cnt)
 			continue;
 
-		__kprintf("PID: %4d (%3d,%20s): %6u %6lukC \n",
+		__kprintf("PID: %4d (%24s): %6u %6luk \n",
 				proc->pid,
-				i,
 				profile_event_names[i - PROFILE_EVENT_MIN],
 				proc->profile_events[i].cnt,
 				(proc->profile_events[i].tsc /
@@ -240,7 +249,7 @@ int profile_accumulate_and_print_job_events(struct process *proc)
 					!job_profile_events[i + PROFILE_SYSCALL_MAX].cnt)
 				continue;
 
-			__kprintf("JOB: (%2d) (%3d,%20s): %6u %6lukC offl: %6u %6lukC\n",
+			__kprintf("JOB: (%2d) (%3d,%20s): %6u %6luk offl: %6u %6luk\n",
 					job_nr_processes,
 					i,
 					syscall_name[i],
@@ -265,9 +274,8 @@ int profile_accumulate_and_print_job_events(struct process *proc)
 			if (!job_profile_events[i].cnt)
 				continue;
 
-			__kprintf("JOB: (%2d) (%3d,%20s): %6u %6lukC \n",
+			__kprintf("JOB: (%2d) (%24s): %6u %6luk \n",
 					job_nr_processes,
-					i,
 					profile_event_names[i - PROFILE_EVENT_MIN],
 					job_profile_events[i].cnt,
 					(job_profile_events[i].tsc /
@@ -376,6 +384,8 @@ int do_profile(int flag)
 
 	/* Job level? */
 	if (flag & PROF_JOB) {
+		dkprintf("%s: JOB %d, flag: 0x%lx\n",
+				__FUNCTION__, proc->nr_processes, flag);
 		if (flag & PROF_PRINT) {
 			struct mcs_rwlock_node lock;
 			struct thread *_thread;
@@ -397,6 +407,8 @@ int do_profile(int flag)
 		struct mcs_rwlock_node lock;
 		struct thread *_thread;
 
+		dkprintf("%s: PID %d, flag: 0x%lx\n",
+				__FUNCTION__, proc->pid, flag);
 		/* Accumulate events from all threads */
 		mcs_rwlock_reader_lock_noirq(&proc->threads_lock, &lock);
 
@@ -420,12 +432,22 @@ int do_profile(int flag)
 
 		mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &lock);
 
+		/* Make sure future threads profile as well */
+		if (flag & PROF_ON) {
+			proc->profile = 1;
+		}
+		else if (flag & PROF_OFF) {
+			proc->profile = 0;
+		}
+
 		if (flag & PROF_PRINT) {
 			profile_print_proc_stats(proc);
 		}
 	}
 	/* Thread level */
 	else {
+		dkprintf("%s: TID %d, flag: 0x%lx\n",
+				__FUNCTION__, thread->tid, flag);
 		if (flag & PROF_PRINT) {
 			profile_print_thread_stats(thread);
 		}

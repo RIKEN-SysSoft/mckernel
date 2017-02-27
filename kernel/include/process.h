@@ -546,6 +546,7 @@ struct process {
 #define PP_STOP 3
 	struct mc_perf_event *monitoring_event;
 #ifdef PROFILE_ENABLE
+	int profile;
 	mcs_lock_node_t profile_lock;
 	struct profile_event *profile_events;
 #endif // PROFILE_ENABLE

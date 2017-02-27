@@ -132,6 +132,7 @@ struct program_load_desc {
 	int nr_processes;
 	char shell_path[SHELL_PATH_MAX_LEN];
 	__cpu_set_unit cpu_set[PLD_CPU_SET_SIZE];
+	int profile;
 	struct program_image_section sections[0];
 };
 

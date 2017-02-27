@@ -8510,7 +8510,6 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
     dkprintf("\n");
 
 #ifdef PROFILE_ENABLE
-	if (num == __NR_clone) cpu_local_var(current)->profile = 1;
 	t_s = rdtsc();
 #endif // PROFILE_ENABLE
 

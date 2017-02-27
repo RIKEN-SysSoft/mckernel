@@ -414,6 +414,9 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 			goto err_free_proc;
 		memset(proc, '\0', sizeof(struct process));
 		init_process(proc, org->proc);
+#ifdef PROFILE_ENABLE
+		proc->profile = org->proc->profile;
+#endif
 
 		proc->termsig = termsig;
 		asp = create_address_space(cpu_local_var(resource_set), 1);
@@ -522,7 +525,7 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 #endif
 
 #ifdef PROFILE_ENABLE
-	thread->profile = org->profile;
+	thread->profile = org->profile | proc->profile;
 #endif
 
 	return thread;
@@ -2218,11 +2221,13 @@ release_process(struct process *proc)
 
 	if (proc->tids) kfree(proc->tids);
 #ifdef PROFILE_ENABLE
-	if (proc->nr_processes) {
-		profile_accumulate_and_print_job_events(proc);
-	}
-	else {
-		profile_print_proc_stats(proc);
+	if (proc->profile) {
+		if (proc->nr_processes) {
+			profile_accumulate_and_print_job_events(proc);
+		}
+		else {
+			profile_print_proc_stats(proc);
+		}
 	}
 	profile_dealloc_proc_events(proc);
 #endif // PROFILE_ENABLE

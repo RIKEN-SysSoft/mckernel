@@ -431,6 +431,10 @@ static int process_msg_prepare_process(unsigned long rphys)
 	proc->mpol_flags = pn->mpol_flags;
 	proc->mpol_threshold = pn->mpol_threshold;
 	proc->nr_processes = pn->nr_processes;
+#ifdef PROFILE_ENABLE
+	proc->profile = pn->profile;
+	thread->profile = pn->profile;
+#endif
 
 	vm->region.user_start = pn->user_start;
 	vm->region.user_end = pn->user_end;
