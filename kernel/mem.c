@@ -507,7 +507,8 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 		goto distance_based;
 
 	/* User requested policy? */
-	if (!(flag & IHK_MC_AP_USER)) {
+	if (!(flag & IHK_MC_AP_USER) ||
+			cpu_local_var(current)->vm->numa_mem_policy == MPOL_DEFAULT) {
 		goto distance_based;
 	}
 
@@ -563,6 +564,7 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 		return phys_to_virt(pa);
 	}
 	else {
+		profile_event_add(PROFILE_mpol_alloc_missed, npages * 4096);
 		dkprintf("%s: couldn't fulfill user policy for %d pages\n",
 			__FUNCTION__, npages);
 	}
