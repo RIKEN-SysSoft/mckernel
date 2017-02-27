@@ -34,6 +34,7 @@ struct profile_event {
 enum profile_event_type {
 	PROFILE_page_fault = PROFILE_EVENT_MIN,
 	PROFILE_mpol_alloc_missed,
+	PROFILE_mmap_anon_no_contig_phys,
 	PROFILE_EVENT_MAX	/* Should be the last event type */
 };
 

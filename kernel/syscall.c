@@ -1242,6 +1242,9 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 			vrflags |= VR_DEMAND_PAGING;
 			populated_mapping = 0;
 
+#ifdef PROFILE_ENABLE
+			profile_event_add(PROFILE_mmap_anon_no_contig_phys, len);
+#endif // PROFILE_ENABLE
 			error = zeroobj_create(&memobj);
 			if (error) {
 				ekprintf("%s: zeroobj_create failed, error: %d\n",
