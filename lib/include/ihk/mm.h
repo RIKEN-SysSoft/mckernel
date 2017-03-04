@@ -34,6 +34,8 @@ enum ihk_mc_gma_type {
 	IHK_MC_RESERVED_AREA_END,
 };
 
+extern unsigned long bootstrap_mem_end;
+
 enum ihk_mc_ma_type {
 	IHK_MC_MA_AVAILABLE,
 	IHK_MC_MA_RESERVED,

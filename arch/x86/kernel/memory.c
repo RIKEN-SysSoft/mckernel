@@ -45,7 +45,11 @@ void *early_alloc_pages(int nr_pages)
 		last_page = phys_to_virt(virt_to_phys(last_page));
 	} else if (last_page == (void *)-1) {
 		panic("Early allocator is already finalized. Do not use it.\n");
-	}
+	} else {
+        if(virt_to_phys(last_page) >= bootstrap_mem_end) {
+            panic("Early allocator: Out of memory\n");
+        }
+    }
 	p = last_page;
 	last_page += (nr_pages * PAGE_SIZE);
 
