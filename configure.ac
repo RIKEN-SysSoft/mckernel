@@ -162,6 +162,9 @@ case $WITH_TARGET in
 	if test "X$BINDIR" = X; then
 		BINDIR="$prefix/bin"
 	fi
+	if test "X$LIBDIR" = X; then
+		LIBDIR="$prefix/lib"
+	fi
 	if test "X$SBINDIR" = X; then
 		SBINDIR="$prefix/sbin"
 	fi
@@ -295,6 +298,10 @@ else
 	AC_MSG_NOTICE([mcoverlayfs is disabled])
 fi
 
+if test "x$LIBDIR" != "x" ; then
+	AC_DEFINE_UNQUOTED(MCKERNEL_LIBDIR,"$LIBDIR",[McKernel specific libraries])
+fi
+
 AC_SUBST(CC)
 AC_SUBST(XCC)
 AC_SUBST(ARCH)
@@ -302,6 +309,7 @@ AC_SUBST(KDIR)
 AC_SUBST(UNAME_R)
 AC_SUBST(TARGET)
 AC_SUBST(BINDIR)
+AC_SUBST(LIBDIR)
 AC_SUBST(SBINDIR)
 AC_SUBST(ETCDIR)
 AC_SUBST(KMODDIR)

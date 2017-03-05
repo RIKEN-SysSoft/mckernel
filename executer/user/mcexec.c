@@ -152,6 +152,7 @@ static int fd;
 static char *exec_path = NULL;
 static char *altroot;
 static const char rlimit_stack_envname[] = "MCKERNEL_RLIMIT_STACK";
+static const char ld_preload_envname[] = "MCKERNEL_LD_PRELOAD";
 static int ischild;
 static int enable_vdso = 1;
 static int mpol_no_heap = 0;
@@ -160,6 +161,7 @@ static int mpol_no_bss = 0;
 static int no_bind_ikc_map = 0;
 static unsigned long mpol_threshold = 0;
 static int profile = 0;
+static int disable_sched_yield = 0;
 
 /* Partitioned execution (e.g., for MPI) */
 static int nr_processes = 0;
@@ -1321,6 +1323,12 @@ static struct option mcexec_options[] = {
 		.flag =		NULL,
 		.val =		'm',
 	},
+	{
+		.name =		"disable-sched-yield",
+		.has_arg =	no_argument,
+		.flag =		&disable_sched_yield,
+		.val =		1,
+	},
 	/* end */
 	{ NULL, 0, NULL, 0, },
 };
@@ -1360,10 +1368,6 @@ int main(int argc, char **argv)
 	if (!altroot) {
 		altroot = "/usr/linux-k1om-4.7/linux-k1om";
 	}
-
-	/* Collect environment variables */
-	envs_len = flatten_strings(-1, NULL, environ, &envs);
-	envs = envs;
 
 	rlim_stack.rlim_cur = MCEXEC_DEF_CUR_STACK_SIZE;
 	rlim_stack.rlim_max = MCEXEC_DEF_MAX_STACK_SIZE;
@@ -1435,6 +1439,29 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error: Failed to open %s.\n", dev);
 		return 1;
 	}
+
+	if (disable_sched_yield) {
+		char sched_yield_lib_path[PATH_MAX];
+		sprintf(sched_yield_lib_path, "%s/libsched_yield.so.1.0.0",
+			MCKERNEL_LIBDIR);
+		__dprintf("%s: %s\n", __FUNCTION__, sched_yield_lib_path);
+		if (setenv("LD_PRELOAD", sched_yield_lib_path, 1) < 0) {
+			printf("%s: warning: failed to set LD_PRELOAD for sched_yield\n",
+					__FUNCTION__);
+		}
+	}
+	/* Set LD_PRELOAD to McKernel specific value */
+	else if (getenv(ld_preload_envname)) {
+		if (setenv("LD_PRELOAD", getenv(ld_preload_envname), 1) < 0) {
+			printf("%s: warning: failed to set LD_PRELOAD environment variable\n",
+					__FUNCTION__);
+		}
+		unsetenv(ld_preload_envname);
+	}
+
+	/* Collect environment variables */
+	envs_len = flatten_strings(-1, NULL, environ, &envs);
+	envs = envs;
 
 #ifdef ENABLE_MCOVERLAYFS
 	__dprintf("mcoverlay enable\n");

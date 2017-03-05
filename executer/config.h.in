@@ -72,6 +72,9 @@
 /* Define to address of kernel symbol zap_page_range, or 0 if exported */
 #undef MCCTRL_KSYM_zap_page_range
 
+/* McKernel specific libraries */
+#undef MCKERNEL_LIBDIR
+
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
 

@@ -1,9 +1,10 @@
 CC=@CC@
 BINDIR=@BINDIR@
+LIBDIR=@LIBDIR@
 KDIR ?= @KDIR@
 CFLAGS=-Wall -O -I.
 VPATH=@abs_srcdir@
-TARGET=mcexec
+TARGET=mcexec libsched_yield
 @uncomment_if_ENABLE_MEMDUMP@TARGET+=eclair
 LIBS=@LIBS@
 IHKDIR ?= $(VPATH)/../../../ihk/linux/include/
@@ -16,6 +17,9 @@ mcexec: mcexec.c
 eclair: eclair.c
 	$(CC) $(CFLAGS) -I${IHKDIR} -o $@ $^ $(LIBS)
 
+libsched_yield: libsched_yield.c
+	$(CC) -shared -fPIC -Wl,-soname,sched_yield.so.1 -o libsched_yield.so.1.0.0 $^ -lc -ldl
+
 clean:
 	$(RM) $(TARGET) *.o
 
@@ -24,5 +28,7 @@ clean:
 install:
 	mkdir -p -m 755 $(BINDIR)
 	install -m 755 mcexec $(BINDIR)
+	mkdir -p -m 755 $(LIBDIR)
+	install -m 755 libsched_yield.so.1.0.0 $(LIBDIR)
 	@uncomment_if_ENABLE_MEMDUMP@install -m 755 eclair $(BINDIR)
 
