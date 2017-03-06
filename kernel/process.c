@@ -2057,51 +2057,43 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 
 
 unsigned long extend_process_region(struct process_vm *vm,
-                                    unsigned long start, unsigned long end,
-                                    unsigned long address, unsigned long flag)
+		unsigned long end_allocated,
+		unsigned long address, unsigned long flag)
 {
-	unsigned long aligned_end, aligned_new_end;
+	unsigned long new_end_allocated;
 	void *p;
 	int rc;
 
-	if (!address || address < start || address >= USER_END) {
-		return end;
-	}
-
-	aligned_end = ((end + LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK);
-
-	if (aligned_end >= address) {
-		return address;
-	}
-
-	aligned_new_end = (address + LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
+	new_end_allocated = (address + (8 * LARGE_PAGE_SIZE) - 1) & LARGE_PAGE_MASK;
 
 	if (flag & VR_DEMAND_PAGING) {
 		p = 0;
 	}
 	else {
-		p = ihk_mc_alloc_aligned_pages((aligned_new_end - aligned_end) >> PAGE_SHIFT,
+		p = ihk_mc_alloc_aligned_pages(
+				(new_end_allocated - end_allocated) >> PAGE_SHIFT,
 				LARGE_PAGE_P2ALIGN, IHK_MC_AP_NOWAIT |
 				(!(vm->proc->mpol_flags & MPOL_NO_HEAP) ? IHK_MC_AP_USER : 0));
 
 		if (!p) {
-			return end;
+			return end_allocated;
 		}
 	}
 
-	if ((rc = add_process_memory_range(vm, aligned_end, aligned_new_end,
+	if ((rc = add_process_memory_range(vm, end_allocated, new_end_allocated,
 					(p == 0 ? 0 : virt_to_phys(p)), flag, NULL, 0,
 					LARGE_PAGE_SHIFT, NULL)) != 0) {
-		ihk_mc_free_pages(p, (aligned_new_end - aligned_end) >> PAGE_SHIFT);
-		return end;
+		ihk_mc_free_pages(p, (new_end_allocated - end_allocated) >> PAGE_SHIFT);
+		return end_allocated;
 	}
+
 #ifdef ENABLE_RUSAGE
 {
 	int processor_id;
 	long curr;
 	processor_id = ihk_mc_get_processor_id();
-	rusage_rss[processor_id] += ((aligned_new_end - aligned_end) >> PAGE_SHIFT) * PAGE_SIZE;
-	curr = ihk_atomic_add_long_return (((aligned_new_end - aligned_end) >> PAGE_SHIFT) * PAGE_SIZE, &rusage_rss_current);
+	rusage_rss[processor_id] += ((new_end_allocated - end_allocated) >> PAGE_SHIFT) * PAGE_SIZE;
+	curr = ihk_atomic_add_long_return (((new_end_allocated - end_allocated) >> PAGE_SHIFT) * PAGE_SIZE, &rusage_rss_current);
 	if (rusage_rss_max < curr) {
 		atomic_cmpxchg8(&rusage_rss_max, rusage_rss_max, curr);
 	}
@@ -2110,7 +2102,8 @@ unsigned long extend_process_region(struct process_vm *vm,
 	}
 }
 #endif
-	return address;
+
+	return new_end_allocated;
 }
 
 // Original version retained because dcfa (src/mccmd/client/ibmic/main.c) calls this

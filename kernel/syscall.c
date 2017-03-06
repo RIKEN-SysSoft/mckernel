@@ -1565,27 +1565,36 @@ SYSCALL_DECLARE(brk)
 	flush_nfo_tlb();
 
 	/* brk change fail, including glibc trick brk(0) to obtain current brk */
-	if(address < region->brk_start) {
+	if (address < region->brk_start) {
 		r = region->brk_end;
 		goto out;
 	}
 
 	/* brk change fail, because we don't shrink memory region  */
-	if(address < region->brk_end) {
+	if (address < region->brk_end) {
 		r = region->brk_end;
 		goto out;
 	}
 
-	/* try to extend memory region */
+	/* If already allocated, just expand and return */
+	if (address < region->brk_end_allocated) {
+		region->brk_end = address;
+		r = region->brk_end;
+		goto out;
+	}
+
+	/* Try to extend memory region */
 	vrflag = VR_PROT_READ | VR_PROT_WRITE;
 	vrflag |= VRFLAG_PROT_TO_MAXPROT(vrflag);
 	ihk_mc_spinlock_lock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
-	region->brk_end = extend_process_region(cpu_local_var(current)->vm,
-			region->brk_start, region->brk_end, address, vrflag);
+	region->brk_end_allocated =
+		extend_process_region(cpu_local_var(current)->vm,
+				region->brk_end_allocated, address, vrflag);
 	ihk_mc_spinlock_unlock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
 	dkprintf("SC(%d)[sys_brk] brk_end set to %lx\n",
 			ihk_mc_get_processor_id(), region->brk_end);
 
+	region->brk_end = address;
 	r = region->brk_end;
 
 out:

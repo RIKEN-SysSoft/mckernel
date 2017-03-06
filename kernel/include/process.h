@@ -384,7 +384,7 @@ struct vm_regions {
 	unsigned long vm_start, vm_end;
 	unsigned long text_start, text_end;
 	unsigned long data_start, data_end;
-	unsigned long brk_start, brk_end;
+	unsigned long brk_start, brk_end, brk_end_allocated;
 	unsigned long map_start, map_end;
 	unsigned long stack_start, stack_end;
 	unsigned long user_start, user_end;
@@ -767,8 +767,8 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
                         int argc, char **argv, 
                         int envc, char **env);
 unsigned long extend_process_region(struct process_vm *vm,
-                                    unsigned long start, unsigned long end,
-                                    unsigned long address, unsigned long flag);
+		unsigned long end_allocated,
+		unsigned long address, unsigned long flag);
 extern enum ihk_mc_pt_attribute arch_vrflag_to_ptattr(unsigned long flag, uint64_t fault, pte_t *ptep);
 enum ihk_mc_pt_attribute common_vrflag_to_ptattr(unsigned long flag, uint64_t fault, pte_t *ptep);
 
