@@ -1189,6 +1189,11 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 			error = -ENODEV;
 		}
 #endif
+#ifdef PROFILE_ENABLE
+		if (!error) {
+			profile_event_add(PROFILE_mmap_regular_file, len);
+		}
+#endif // PROFILE_ENABLE
 		if (error == -ESRCH) {
 			dkprintf("do_mmap:hit non VREG\n");
 			/*
@@ -1205,6 +1210,9 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 					prot, (flags & (MAP_POPULATE | MAP_LOCKED)));
 
 			if (!error) {
+#ifdef PROFILE_ENABLE
+				profile_event_add(PROFILE_mmap_device_file, len);
+#endif // PROFILE_ENABLE
 				dkprintf("%s: device fd: %d off: %lu mapping at %p - %p\n", 
 						__FUNCTION__, fd, off, addr, addr + len); 
 			}
@@ -1253,6 +1261,9 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 			}
 		}
 		else {
+#ifdef PROFILE_ENABLE
+			profile_event_add(PROFILE_mmap_anon_contig_phys, len);
+#endif // PROFILE_ENABLE
 			dkprintf("%s: 0x%x:%lu MAP_ANONYMOUS "
 					"allocated %d pages, p2align: %lx\n",
 					__FUNCTION__, addr, len, npages, p2align);

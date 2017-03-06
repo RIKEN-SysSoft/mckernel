@@ -59,7 +59,10 @@ char *profile_event_names[] =
 {
 	"page_fault",
 	"mpol_alloc_missed",
+	"mmap_anon_contig_phys",
 	"mmap_anon_no_contig_phys",
+	"mmap_regular_file",
+	"mmap_device_file",
 	""
 };
 
