@@ -414,6 +414,9 @@ static void fileobj_do_pageio(void *args0)
 		if (to_memobj(obj)->flags & MF_ZEROFILL) {
 			void *virt = phys_to_virt(page_to_phys(page));
 			memset(virt, 0, PAGE_SIZE);
+#ifdef PROFILE_ENABLE
+			profile_event_add(PROFILE_page_fault_file_clr, PAGE_SIZE);
+#endif // PROFILE_ENABLE
 		}
 		else {
 			page->mode = PM_PAGEIO;

@@ -1676,6 +1676,9 @@ retry:
 			}
 			dkprintf("%s: clearing 0x%lx:%lu\n",
 					__FUNCTION__, pgaddr, pgsize);
+#ifdef PROFILE_ENABLE
+			profile_event_add(PROFILE_page_fault_anon_clr, pgsize);
+#endif // PROFILE_ENABLE
 			memset(virt, 0, pgsize);
 			phys = virt_to_phys(virt);
 			if (phys_to_page(phys)) {
