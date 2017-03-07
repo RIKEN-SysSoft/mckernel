@@ -375,6 +375,14 @@ void profile_dealloc_proc_events(struct process *proc)
 	kfree(proc->profile_events);
 }
 
+void static profile_clear_process(struct process *proc)
+{
+	if (!proc->profile_events) return;
+
+	memset(proc->profile_events, 0,
+			sizeof(*proc->profile_events) * PROFILE_EVENT_MAX);
+}
+
 void static profile_clear_thread(struct thread *thread)
 {
 	if (!thread->profile_events) return;
@@ -436,6 +444,9 @@ int do_profile(int flag)
 			}
 		}
 
+		if (flag & PROF_CLEAR) {
+			profile_clear_process(proc);
+		}
 		mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &lock);
 
 		/* Make sure future threads profile as well */
