@@ -1841,13 +1841,13 @@ SYSCALL_DECLARE(execve)
 	
 	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 
-	desc = ihk_mc_alloc_pages(1, IHK_MC_AP_NOWAIT);
+	desc = ihk_mc_alloc_pages(4, IHK_MC_AP_NOWAIT);
 	if (!desc) {
 		kprintf("execve(): ERROR: allocating program descriptor\n");
 		return -ENOMEM;
 	}
 
-	memset((void*)desc, 0, PAGE_SIZE);
+	memset((void*)desc, 0, 4 * PAGE_SIZE);
 
 	/* Request host to open executable and load ELF section descriptions */
 	request.number = __NR_execve;  
@@ -1859,7 +1859,7 @@ SYSCALL_DECLARE(execve)
 	if (ret != 0) {
 		dkprintf("execve(): ERROR: host failed to load elf header, errno: %d\n", 
 				ret);
-		ihk_mc_free_pages(desc, 1);
+		ihk_mc_free_pages(desc, 4);
 		return -ret;
 	}
 
@@ -1883,7 +1883,7 @@ SYSCALL_DECLARE(execve)
 		kprintf("ERROR: no argv for executable: %s?\n", kfilename? kfilename: "");
 		if(kfilename)
 			kfree(kfilename);
-		ihk_mc_free_pages(desc, 1);
+		ihk_mc_free_pages(desc, 4);
 		return -EINVAL;
 	}
 
@@ -1952,7 +1952,7 @@ SYSCALL_DECLARE(execve)
 	dkprintf("execve(): switching to new process\n");
 	proc->execed = 1;
 	
-	ihk_mc_free_pages(desc, 1);
+	ihk_mc_free_pages(desc, 4);
 	kfree(argv_flat);
 	kfree(envp_flat);
 	
