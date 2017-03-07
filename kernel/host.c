@@ -209,10 +209,43 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		pn->at_entry += aout_base;
 	}
 
-	vm->region.brk_start =
-	vm->region.brk_end =
-	vm->region.brk_end_allocated =
+	vm->region.brk_start = vm->region.brk_end =
 		(vm->region.data_end + LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
+
+#if 0
+	{
+		void *heap;
+
+		dkprintf("%s: requested heap size: %lu\n",
+				__FUNCTION__, proc->heap_extension);
+		heap = ihk_mc_alloc_aligned_pages(proc->heap_extension >> PAGE_SHIFT,
+				LARGE_PAGE_P2ALIGN, IHK_MC_AP_NOWAIT |
+				(!(proc->mpol_flags & MPOL_NO_HEAP) ? IHK_MC_AP_USER : 0));
+
+		if (!heap) {
+			kprintf("%s: error: allocating heap\n", __FUNCTION__);
+			goto err;
+		}
+
+		flags = VR_PROT_READ | VR_PROT_WRITE;
+		flags |= VRFLAG_PROT_TO_MAXPROT(flags);
+		if (add_process_memory_range(vm, vm->region.brk_start,
+					vm->region.brk_start + proc->heap_extension,
+					virt_to_phys(heap),
+					flags, NULL, 0, LARGE_PAGE_P2ALIGN, NULL) != 0) {
+			ihk_mc_free_pages(heap, proc->heap_extension >> PAGE_SHIFT);
+			kprintf("%s: error: adding memory range for heap\n", __FUNCTION__);
+			goto err;
+		}
+
+		vm->region.brk_end_allocated = vm->region.brk_end +
+			proc->heap_extension;
+		dkprintf("%s: heap @ 0x%lx:%lu\n",
+				__FUNCTION__, vm->region.brk_start, proc->heap_extension);
+	}
+#else
+	vm->region.brk_end_allocated = vm->region.brk_end;
+#endif
 
 	/* Map, copy and update args and envs */
 	flags = VR_PROT_READ | VR_PROT_WRITE;
@@ -433,6 +466,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	proc->mpol_flags = pn->mpol_flags;
 	proc->mpol_threshold = pn->mpol_threshold;
 	proc->nr_processes = pn->nr_processes;
+	proc->heap_extension = pn->heap_extension;
 #ifdef PROFILE_ENABLE
 	proc->profile = pn->profile;
 	thread->profile = pn->profile;

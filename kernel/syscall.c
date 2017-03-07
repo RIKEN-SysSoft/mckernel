@@ -1802,6 +1802,7 @@ static void munmap_all(void)
 
 	/* free vm_ranges which do_munmap() failed to remove. */
 	free_process_memory_ranges(thread->vm);
+
 	return;
 } /* munmap_all() */
 

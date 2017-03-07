@@ -534,9 +534,10 @@ struct process {
 
 	long maxrss;
 	long maxrss_children;
-	/* Memory policy flags */
+	/* Memory policy flags and memory specific options */
 	unsigned long mpol_flags;
 	size_t mpol_threshold;
+	unsigned long heap_extension;
 
 	// perf_event
 	int perf_status;

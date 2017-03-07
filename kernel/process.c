@@ -2067,7 +2067,8 @@ unsigned long extend_process_region(struct process_vm *vm,
 	void *p;
 	int rc;
 
-	new_end_allocated = (address + (8 * LARGE_PAGE_SIZE) - 1) & LARGE_PAGE_MASK;
+	new_end_allocated = (address + vm->proc->heap_extension +
+			(LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
 
 	if (flag & VR_DEMAND_PAGING) {
 		p = 0;
@@ -2085,7 +2086,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 
 	if ((rc = add_process_memory_range(vm, end_allocated, new_end_allocated,
 					(p == 0 ? 0 : virt_to_phys(p)), flag, NULL, 0,
-					LARGE_PAGE_SHIFT, NULL)) != 0) {
+					LARGE_PAGE_P2ALIGN, NULL)) != 0) {
 		ihk_mc_free_pages(p, (new_end_allocated - end_allocated) >> PAGE_SHIFT);
 		return end_allocated;
 	}
