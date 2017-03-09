@@ -273,6 +273,8 @@ int profile_accumulate_and_print_job_events(struct process *proc)
 
 			job_profile_events[i].tsc = 0;
 			job_profile_events[i].cnt = 0;
+			job_profile_events[i + PROFILE_SYSCALL_MAX].tsc = 0;
+			job_profile_events[i + PROFILE_SYSCALL_MAX].cnt = 0;
 		}
 
 		for (i = PROFILE_EVENT_MIN; i < PROFILE_EVENT_MAX; ++i) {
@@ -444,10 +446,15 @@ int do_profile(int flag)
 			}
 		}
 
+		mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &lock);
+
+		if (flag & PROF_PRINT) {
+			profile_print_proc_stats(proc);
+		}
+
 		if (flag & PROF_CLEAR) {
 			profile_clear_process(proc);
 		}
-		mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &lock);
 
 		/* Make sure future threads profile as well */
 		if (flag & PROF_ON) {
@@ -455,10 +462,6 @@ int do_profile(int flag)
 		}
 		else if (flag & PROF_OFF) {
 			proc->profile = 0;
-		}
-
-		if (flag & PROF_PRINT) {
-			profile_print_proc_stats(proc);
 		}
 	}
 	/* Thread level */
