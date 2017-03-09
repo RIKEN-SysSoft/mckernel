@@ -506,15 +506,41 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 			!cpu_local_var(current)->vm)
 		goto distance_based;
 
-	/* User requested policy? */
-	if (!(flag & IHK_MC_AP_USER) ||
-			cpu_local_var(current)->vm->numa_mem_policy == MPOL_DEFAULT) {
+	/* No explicitly requested NUMA or user policy? */
+	if ((pref_node == -1) && (!(flag & IHK_MC_AP_USER) ||
+				cpu_local_var(current)->vm->numa_mem_policy == MPOL_DEFAULT)) {
 		goto distance_based;
 	}
 
 	node = ihk_mc_get_numa_id();
 	if (!memory_nodes[node].nodes_by_distance)
 		goto order_based;
+
+	/* Explicit valid node? */
+	if (pref_node > -1 && pref_node < ihk_mc_get_nr_numa_nodes()) {
+		list_for_each_entry(pa_allocator,
+				&memory_nodes[pref_node].allocators, list) {
+			pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+
+			if (pa) {
+				dkprintf("%s: explicit (node: %d) CPU @ node %d allocated "
+						"%d pages from node %d\n",
+						__FUNCTION__,
+						pref_node,
+						ihk_mc_get_numa_id(),
+						npages, node);
+
+				return phys_to_virt(pa);
+			}
+			else {
+#ifdef PROFILE_ENABLE
+				//profile_event_add(PROFILE_numa_alloc_missed, npages * 4096);
+#endif
+				dkprintf("%s: couldn't fulfill explicit NUMA request for %d pages\n",
+						__FUNCTION__, npages);
+			}
+		}
+	}
 
 	switch (cpu_local_var(current)->vm->numa_mem_policy) {
 		case MPOL_BIND:
@@ -564,7 +590,9 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 		return phys_to_virt(pa);
 	}
 	else {
+#ifdef PROFILE_ENABLE
 		profile_event_add(PROFILE_mpol_alloc_missed, npages * 4096);
+#endif
 		dkprintf("%s: couldn't fulfill user policy for %d pages\n",
 			__FUNCTION__, npages);
 	}
