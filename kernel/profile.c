@@ -59,6 +59,8 @@ char *profile_event_names[] =
 {
 	"page_fault",
 	"page_fault_anon_clr_mem",
+	"page_fault_file",
+	"page_fault_dev_file",
 	"page_fault_file_clr_mem",
 	"mpol_alloc_missed",
 	"mmap_anon_contig_phys",

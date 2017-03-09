@@ -487,6 +487,10 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 		return -ENOMEM;
 	}
 
+#ifdef PROFILE_ENABLE
+	profile_event_add(PROFILE_page_fault_file, PAGE_SIZE);
+#endif // PROFILE_ENABLE
+
 	mcs_rwlock_writer_lock_noirq(&obj->page_hash_locks[hash],
 			&mcs_node);
 	page = __fileobj_page_hash_lookup(obj, hash, off);

@@ -34,6 +34,8 @@ struct profile_event {
 enum profile_event_type {
 	PROFILE_page_fault = PROFILE_EVENT_MIN,
 	PROFILE_page_fault_anon_clr,
+	PROFILE_page_fault_file,
+	PROFILE_page_fault_dev_file,
 	PROFILE_page_fault_file_clr,
 	PROFILE_mpol_alloc_missed,
 	PROFILE_mmap_anon_contig_phys,
