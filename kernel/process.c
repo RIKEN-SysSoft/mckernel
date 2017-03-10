@@ -2186,6 +2186,9 @@ free_all_process_memory_range(struct process_vm *vm)
 
 	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 	list_for_each_entry_safe(range, next, &vm->vm_range_list, list) {
+		if (range->memobj) {
+			range->memobj->flags |= MF_HOST_RELEASED;
+		}
 		error = free_process_memory_range(vm, range);
 		if (error) {
 			ekprintf("free_process_memory(%p):"

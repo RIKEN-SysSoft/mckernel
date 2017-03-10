@@ -181,19 +181,21 @@ static void devobj_release(struct memobj *memobj)
 	memobj_unlock(&obj->memobj);
 
 	if (free_obj) {
-		int error;
-		ihk_mc_user_context_t ctx;
+		if (!(free_obj->memobj.flags & MF_HOST_RELEASED)) {
+			int error;
+			ihk_mc_user_context_t ctx;
 
-		ihk_mc_syscall_arg0(&ctx) = PAGER_REQ_UNMAP;
-		ihk_mc_syscall_arg1(&ctx) = handle;
-		ihk_mc_syscall_arg2(&ctx) = 1;
+			ihk_mc_syscall_arg0(&ctx) = PAGER_REQ_UNMAP;
+			ihk_mc_syscall_arg1(&ctx) = handle;
+			ihk_mc_syscall_arg2(&ctx) = 1;
 
-		error = syscall_generic_forwarding(__NR_mmap, &ctx);
-		if (error) {
-			kprintf("devobj_release(%p %lx):"
-					"release failed. %d\n",
-					free_obj, handle, error);
-			/* through */
+			error = syscall_generic_forwarding(__NR_mmap, &ctx);
+			if (error) {
+				kprintf("devobj_release(%p %lx):"
+						"release failed. %d\n",
+						free_obj, handle, error);
+				/* through */
+			}
 		}
 
 		if (obj->pfn_table) {

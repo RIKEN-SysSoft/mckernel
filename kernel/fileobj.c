@@ -294,6 +294,9 @@ static void fileobj_release(struct memobj *memobj)
 	obj->sref -= free_sref;
 	free_handle = obj->handle;
 	memobj_unlock(&obj->memobj);
+	if (obj->memobj.flags & MF_HOST_RELEASED) {
+		free_sref = 0; // don't call syscall_generic_forwarding
+	}
 
 	if (free_obj) {
 		dkprintf("%s: release obj 0x%lx cref: %d, free_obj: 0x%lx, %s\n",
