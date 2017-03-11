@@ -322,11 +322,21 @@ static long mcexec_debug_log(ihk_os_t os, unsigned long arg)
 	return 0;
 }
 
+int mcexec_close_exec(ihk_os_t os);
+
 static void release_handler(ihk_os_t os, void *param)
 {
 	struct release_handler_info *info = param;
 	struct ikc_scd_packet isp;
 	int os_ind = ihk_host_os_get_index(os);
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_per_proc_data *ppd = NULL;
+
+	ppd = mcctrl_get_per_proc_data(usrdata, info->pid);
+	if (ppd) {
+		mcctrl_put_per_proc_data(ppd);
+		mcexec_close_exec(os);
+	}
 
 	memset(&isp, '\0', sizeof isp);
 	isp.msg = SCD_MSG_CLEANUP_PROCESS;
@@ -768,6 +778,7 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 {
 	int hash;
 	unsigned long flags;
+	int i;
 
 	if (!ppd)
 		return;
@@ -781,6 +792,24 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	write_lock_irqsave(&ppd->ud->per_proc_data_hash_lock[hash], flags);
 	list_del(&ppd->hash);
 	write_unlock_irqrestore(&ppd->ud->per_proc_data_hash_lock[hash], flags);
+
+	for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; i++) {
+		struct mcctrl_per_thread_data *ptd;
+		struct mcctrl_per_thread_data *next;
+		struct ikc_scd_packet *packet;
+
+		list_for_each_entry_safe(ptd, next,
+		                         ppd->per_thread_data_hash + i, hash) {
+			packet = ptd->data;
+			list_del(&ptd->hash);
+			kfree(ptd);
+			__return_syscall(ppd->ud->os, packet, -EINTR,
+			                 task_pid_vnr(current));
+			ihk_ikc_release_packet(
+			            (struct ihk_ikc_free_packet *)packet,
+			            (ppd->ud->channels + packet->ref)->c);
+		}
+	}
 
 	kfree(ppd);
 }
