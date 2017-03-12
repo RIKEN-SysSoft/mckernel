@@ -158,6 +158,7 @@ static int enable_vdso = 1;
 static int mpol_no_heap = 0;
 static int mpol_no_stack = 0;
 static int mpol_no_bss = 0;
+static int mpol_shm_premap = 0;
 static int no_bind_ikc_map = 0;
 static unsigned long mpol_threshold = 0;
 static unsigned long heap_extension = (2*1024*1024);
@@ -1313,6 +1314,12 @@ static struct option mcexec_options[] = {
 		.val =		1,
 	},
 	{
+		.name =		"mpol-shm-premap",
+		.has_arg =	no_argument,
+		.flag =		&mpol_shm_premap,
+		.val =		1,
+	},
+	{
 		.name =		"no-bind-ikc-map",
 		.has_arg =	no_argument,
 		.flag =		&no_bind_ikc_map,
@@ -1796,6 +1803,10 @@ int main(int argc, char **argv)
 
 	if (mpol_no_bss) {
 		desc->mpol_flags |= MPOL_NO_BSS;
+	}
+
+	if (mpol_shm_premap) {
+		desc->mpol_flags |= MPOL_SHM_PREMAP;
 	}
 
 	desc->mpol_threshold = mpol_threshold;

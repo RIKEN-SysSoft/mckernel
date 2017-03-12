@@ -1075,7 +1075,7 @@ int visit_pte_range(page_table_t pt, void *start0, void *end0, int pgshift,
 
 struct clear_range_args {
 	int free_physical;
-	uint8_t padding[4];
+	int dont_walk_l1;
 	struct memobj *memobj;
 	struct process_vm *vm;
 };
@@ -1167,9 +1167,11 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
 	}
 
 	pt = phys_to_virt(*ptep & PT_PHYSMASK);
-	error = walk_pte_l1(pt, base, start, end, &clear_range_l1, args0);
-	if (error && (error != -ENOENT)) {
-		return error;
+	if (!args->dont_walk_l1) {
+		error = walk_pte_l1(pt, base, start, end, &clear_range_l1, args0);
+		if (error && (error != -ENOENT)) {
+			return error;
+		}
 	}
 
 	if ((start <= base) && ((base + PTL2_SIZE) <= end)) {
@@ -1278,6 +1280,10 @@ static int clear_range(struct page_table *pt, struct process_vm *vm,
 	args.free_physical = free_physical;
 	if (memobj && (memobj->flags & MF_DEV_FILE)) {
 		args.free_physical = 0;
+	}
+	args.dont_walk_l1 = 0;
+	if (memobj && ((memobj->flags & MF_PREMAP))) {
+		args.dont_walk_l1 = 1;
 	}
 	args.memobj = memobj;
 	args.vm = vm;

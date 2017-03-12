@@ -770,6 +770,7 @@ enum {
 	MF_ZEROFILL = 0x0010,
 	MF_REG_FILE = 0x1000,
 	MF_DEV_FILE = 0x2000,
+	MF_PREMAP   = 0x8000,
 	MF_END
 };
 
@@ -863,9 +864,8 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 					fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
 					if (!IS_ERR(fullpath)) {
 						if (!strncmp("/dev/shm/Intel_MPI", fullpath, 18)) {
-							//mf_flags = (MF_PREFETCH | MF_ZEROFILL);
-							mf_flags = (MF_ZEROFILL);
-							dprintk("%s: filename: %s, zerofill\n",
+							mf_flags = (MF_PREMAP | MF_ZEROFILL);
+							dprintk("%s: filename: %s, premap & zerofill\n",
 									__FUNCTION__, fullpath);
 						}
 						else if (strstr(fullpath, "libmpi") != NULL) {

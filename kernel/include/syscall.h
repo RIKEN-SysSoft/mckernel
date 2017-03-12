@@ -163,6 +163,7 @@ typedef unsigned long __cpu_set_unit;
 #define MPOL_NO_HEAP              0x01
 #define MPOL_NO_STACK             0x02
 #define MPOL_NO_BSS               0x04
+#define MPOL_SHM_PREMAP           0x08
 
 struct program_load_desc {
 	int num_sections;
