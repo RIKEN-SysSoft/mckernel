@@ -1,4 +1,4 @@
-# Makefile COPYRIGHT FUJITSU LIMITED 2016
+# Makefile.in COPYRIGHT FUJITSU LIMITED 2016
 # @ref.impl arch/arm64/kernel/vdso/Makefile
 # Building a vDSO image for AArch64.
 

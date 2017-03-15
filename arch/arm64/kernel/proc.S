@@ -1,4 +1,4 @@
-/* proc.S COPYRIGHT FUJITSU LIMITED 2015 */
+/* proc.S COPYRIGHT FUJITSU LIMITED 2015-2017 */
 
 #include <linkage.h>
 #include <arch-memory.h>

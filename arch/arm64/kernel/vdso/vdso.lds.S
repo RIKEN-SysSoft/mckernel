@@ -1,4 +1,4 @@
-/* vdso.lds COPYRIGHT FUJITSU LIMITED 2016 */
+/* vdso.lds.S COPYRIGHT FUJITSU LIMITED 2016 */
 /* @ref.impl arch/arm64/kernel/vdso/vdso.lds.S */
 /*
  * GNU linker script for the VDSO library.

@@ -1,4 +1,4 @@
-/* mikc.c COPYRIGHT FUJITSU LIMITED 2015 */
+/* mikc.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
 #include <ihk/ikc.h>
 #include <ihk/lock.h>
 #include <ikc/msg.h>

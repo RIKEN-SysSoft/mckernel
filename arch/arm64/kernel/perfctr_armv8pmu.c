@@ -1,3 +1,4 @@
+/* perfctr_armv8pmu.c COPYRIGHT FUJITSU LIMITED 2016 */
 #include <arch-perfctr.h>
 #include <mc_perf_event.h>
 #include <ihk/perfctr.h>

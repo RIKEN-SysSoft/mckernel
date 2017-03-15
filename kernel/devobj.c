@@ -1,3 +1,4 @@
+/* devobj.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
 /**
  * \file devobj.c
  *  License details are found in the file LICENSE.

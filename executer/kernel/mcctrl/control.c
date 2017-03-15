@@ -1,4 +1,4 @@
-/* control.c COPYRIGHT FUJITSU LIMITED 2015 */
+/* control.c COPYRIGHT FUJITSU LIMITED 2016-2017 */
 /**
  * \file executer/kernel/control.c
  *  License details are found in the file LICENSE.

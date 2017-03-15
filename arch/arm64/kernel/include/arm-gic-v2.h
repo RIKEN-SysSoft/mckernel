@@ -1,4 +1,4 @@
-/* arm-gic-v2.h COPYRIGHT FUJITSU LIMITED 2015 */
+/* arm-gic-v2.h COPYRIGHT FUJITSU LIMITED 2015-2017 */
 /*
  *  include/linux/irqchip/arm-gic.h
  *

@@ -1,3 +1,4 @@
+/* sysreg.h COPYRIGHT FUJITSU LIMITED 2016 */
 /*
  * Macros for accessing system registers with older binutils.
  *

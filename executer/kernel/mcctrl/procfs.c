@@ -9,7 +9,7 @@
 /*
  * HISTORY:
  */
-/* procfs.c COPYRIGHT FUJITSU LIMITED 2016 */
+/* procfs.c COPYRIGHT FUJITSU LIMITED 2016-2017 */
 
 #include <linux/slab.h>
 #include <linux/string.h>

@@ -1,4 +1,4 @@
-/* perfctr.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
+/* perfctr.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
 #include <arch-perfctr.h>
 #include <ihk/perfctr.h>
 #include <mc_perf_event.h>

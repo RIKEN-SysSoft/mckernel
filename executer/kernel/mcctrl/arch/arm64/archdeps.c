@@ -1,4 +1,4 @@
-/* archdeps.c COPYRIGHT FUJITSU LIMITED 2015 */
+/* archdeps.c COPYRIGHT FUJITSU LIMITED 2016 */
 #include <linux/version.h>
 #include <linux/mm_types.h>
 #include <asm/vdso.h>

@@ -1,3 +1,4 @@
+/* config.h.in COPYRIGHT FUJITSU LIMITED 2016 */
 /* executer/kernel/mcctrl/config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* whether mcoverlayfs is enabled */

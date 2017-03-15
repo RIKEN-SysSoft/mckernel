@@ -1,3 +1,4 @@
+/* vsprintf.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
 /*
  *  linux/lib/vsprintf.c
  *

@@ -1,4 +1,4 @@
-/* process.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
+/* process.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
 /**
  * \file process.c
  *  License details are found in the file LICENSE.

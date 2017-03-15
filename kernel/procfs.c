@@ -9,7 +9,7 @@
 /*
  * HISTORY:
  */
-/* procfs.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
+/* procfs.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
 
 #include <types.h>
 #include <kmsg.h>

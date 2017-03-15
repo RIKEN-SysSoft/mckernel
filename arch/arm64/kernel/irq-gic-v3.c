@@ -1,4 +1,4 @@
-/* irq-gic-v3.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
+/* irq-gic-v3.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
 
 #include <irq.h>
 #include <arm-gic-v2.h>

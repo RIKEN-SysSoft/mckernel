@@ -1,3 +1,4 @@
+/* mc_perf_event.h COPYRIGHT FUJITSU LIMITED 2016 */
 #ifndef MC_PERF_EVNET_H
 #define MC_PERF_EVENT_H
 

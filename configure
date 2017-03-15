@@ -11,6 +11,7 @@
 ## -------------------- ##
 ## M4sh Initialization. ##
 ## -------------------- ##
+# configure COPYRIGHT FUJITSU LIMITED 2015-2016
 
 # Be more Bourne compatible
 DUALCASE=1; export DUALCASE # for MKS sh

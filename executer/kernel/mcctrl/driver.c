@@ -1,3 +1,4 @@
+/* driver.c COPYRIGHT FUJITSU LIMITED 2016 */
 /**
  * \file executer/kernel/driver.c
  *  License details are found in the file LICENSE.

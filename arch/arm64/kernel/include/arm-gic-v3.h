@@ -1,4 +1,4 @@
-/* arm-gic-v3.h COPYRIGHT FUJITSU LIMITED 2015-2016 */
+/* arm-gic-v3.h COPYRIGHT FUJITSU LIMITED 2015-2017 */
 /*
  * Copyright (C) 2013, 2014 ARM Limited, All Rights Reserved.
  * Author: Marc Zyngier <marc.zyngier@arm.com>
