@@ -31,6 +31,7 @@
 #include <auxvec.h>
 #include <timer.h>
 #include <mman.h>
+#include <rusage.h>
 
 //#define DEBUG_PRINT_PROCESS
 
@@ -65,6 +66,7 @@ extern void procfs_create_thread(struct thread *);
 extern void procfs_delete_thread(struct thread *);
 extern void perf_start(struct mc_perf_event *event);
 extern void perf_reset(struct mc_perf_event *event);
+extern void event_signal();
 
 struct list_head resource_set_list;
 mcs_rwlock_lock_t    resource_set_lock;
@@ -328,7 +330,25 @@ struct thread *create_thread(unsigned long user_pc,
 
 	ihk_mc_spinlock_init(&thread->spin_sleep_lock);
 	thread->spin_sleep = 0;
-
+#ifdef ENABLE_RUSAGE
+	{
+		int processor_id;
+		unsigned long curr;
+		processor_id = ihk_mc_get_processor_id();
+		rusage_rss[processor_id] += KERNEL_STACK_NR_PAGES * PAGE_SIZE;
+		curr = ihk_atomic_add_long_return ( KERNEL_STACK_NR_PAGES * PAGE_SIZE, &rusage_rss_current);
+		if (rusage_rss_max < curr) {
+			atomic_cmpxchg8(&rusage_rss_max, rusage_rss_max, curr);
+		}
+		if (rusage_max_memory - curr < RUSAGE_MEM_LIMIT) {
+			event_signal();
+		}
+		ihk_atomic_add_ulong ( 1, &rusage_num_threads);
+		if (rusage_max_num_threads < rusage_num_threads) {
+			atomic_cmpxchg8(&rusage_max_num_threads, rusage_max_num_threads, rusage_num_threads);
+		}
+	}
+#endif
 	return thread;
 
 err:
@@ -475,6 +495,29 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 
 	ihk_mc_spinlock_init(&thread->spin_sleep_lock);
 	thread->spin_sleep = 0;
+
+#ifdef ENABLE_RUSAGE
+	{
+		int processor_id;
+		long curr;
+		processor_id = ihk_mc_get_processor_id();
+		rusage_rss[processor_id] += KERNEL_STACK_NR_PAGES * PAGE_SIZE;
+		curr = ihk_atomic_add_long_return (KERNEL_STACK_NR_PAGES * PAGE_SIZE, &rusage_rss_current);
+		if (rusage_rss_max < curr) {
+			atomic_cmpxchg8(&rusage_rss_max, rusage_rss_max, curr);
+		}
+		if (rusage_max_memory - curr < RUSAGE_MEM_LIMIT) {
+			event_signal();
+		}
+
+		ihk_atomic_add_ulong ( 1, &rusage_num_threads);
+
+		if (rusage_max_num_threads < rusage_num_threads) {
+			atomic_cmpxchg8(&rusage_max_num_threads, rusage_max_num_threads, rusage_num_threads);
+		}
+	}
+#endif
+
 #ifdef TRACK_SYSCALLS
 	thread->track_syscalls = org->track_syscalls;
 #endif
@@ -1951,6 +1994,24 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	                           end + sizeof(unsigned long) * s_ind);
 	thread->vm->region.stack_end = end;
 	thread->vm->region.stack_start = start;
+
+#ifdef ENABLE_RUSAGE
+{
+	int processor_id;
+	long curr;
+
+	processor_id = ihk_mc_get_processor_id();
+	rusage_rss[processor_id] += (minsz >> PAGE_SHIFT) * PAGE_SIZE;
+	curr = ihk_atomic_add_long_return ((minsz >> PAGE_SHIFT) * PAGE_SIZE, &rusage_rss_current);
+	if (rusage_rss_max < curr) {
+		atomic_cmpxchg8(&rusage_rss_max, rusage_rss_max, curr);
+	}
+	if (rusage_max_memory - curr < RUSAGE_MEM_LIMIT) {
+		event_signal();
+	}
+}
+#endif
+
 	return 0;
 }
 
@@ -2054,7 +2115,21 @@ unsigned long extend_process_region(struct process_vm *vm,
 		ihk_mc_free_pages(p, (aligned_new_end - aligned_end) >> PAGE_SHIFT);
 		return end;
 	}
-
+#ifdef ENABLE_RUSAGE
+{
+	int processor_id;
+	long curr;
+	processor_id = ihk_mc_get_processor_id();
+	rusage_rss[processor_id] += ((aligned_new_end - aligned_end) >> PAGE_SHIFT) * PAGE_SIZE;
+	curr = ihk_atomic_add_long_return (((aligned_new_end - aligned_end) >> PAGE_SHIFT) * PAGE_SIZE, &rusage_rss_current);
+	if (rusage_rss_max < curr) {
+		atomic_cmpxchg8(&rusage_rss_max, rusage_rss_max, curr);
+	}
+	if (rusage_max_memory - curr < RUSAGE_MEM_LIMIT) {
+		event_signal();
+	}
+}
+#endif
 	return address;
 }
 
@@ -2336,6 +2411,16 @@ void destroy_thread(struct thread *thread)
 
 	release_sigcommon(thread->sigcommon);
 
+#ifdef ENABLE_RUSAGE
+{
+	int processor_id;
+	processor_id = ihk_mc_get_processor_id();
+	rusage_rss[processor_id] -= KERNEL_STACK_NR_PAGES * PAGE_SIZE;
+	ihk_atomic_add_long_return(KERNEL_STACK_NR_PAGES * PAGE_SIZE * (-1) , &rusage_rss_current);
+	ihk_atomic_add_ulong ( -1, &rusage_num_threads);
+}
+#endif
+
 	ihk_mc_free_pages(thread, KERNEL_STACK_NR_PAGES);
 }
 
@@ -2343,14 +2428,17 @@ void release_thread(struct thread *thread)
 {
 	struct process_vm *vm;
 	struct mcs_rwlock_node lock;
+	struct timespec ats;
 
 	if (!ihk_atomic_dec_and_test(&thread->refcount)) {
 		return;
 	}
 
 	mcs_rwlock_writer_lock_noirq(&thread->proc->update_lock, &lock);
-	ts_add(&thread->proc->stime, &thread->stime);
-	ts_add(&thread->proc->utime, &thread->utime);
+	tsc_to_ts(thread->system_tsc, &ats);
+	ts_add(&thread->proc->stime, &ats);
+	tsc_to_ts(thread->user_tsc, &ats);
+	ts_add(&thread->proc->utime, &ats);
 	mcs_rwlock_writer_unlock_noirq(&thread->proc->update_lock, &lock);
 
 	vm = thread->vm;
@@ -2398,6 +2486,7 @@ static void do_migrate(void);
 static void idle(void)
 {
 	struct cpu_local_var *v = get_this_cpu_local_var();
+	struct ihk_os_monitor *monitor = v->monitor;
 
 	/* Release runq_lock before starting the idle loop.
 	 * See comments at release_runq_lock().
@@ -2458,8 +2547,11 @@ static void idle(void)
 		    v->status == CPU_STATUS_RESERVED) {
 			/* No work to do? Consolidate the kmalloc free list */
 			kmalloc_consolidate_free_list();
+			monitor->status = IHK_OS_MONITOR_IDLE;
 			cpu_local_var(current)->status = PS_INTERRUPTIBLE;
 			cpu_safe_halt();
+			monitor->status = IHK_OS_MONITOR_KERNEL;
+			monitor->counter++;
 			cpu_local_var(current)->status = PS_RUNNING;
 		}
 		else {

@@ -25,21 +25,26 @@
 #include <init.h>
 #include <march.h>
 #include <cls.h>
+#include <time.h>
+#include <syscall.h>
+#include <rusage.h>
 
 //#define DEBUG_PRINT_AP
 
 #ifdef DEBUG_PRINT_AP
-#define	dkprintf(...) kprintf(__VA_ARGS__)
-#define	ekprintf(...) kprintf(__VA_ARGS__)
+#define dkprintf(...) kprintf(__VA_ARGS__)
+#define ekprintf(...) kprintf(__VA_ARGS__)
 #else
 #define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...) kprintf(__VA_ARGS__)
+#define ekprintf(...) kprintf(__VA_ARGS__)
 #endif
 
 int num_processors = 1;
 static volatile int ap_stop = 1;
 
 mcs_lock_node_t ap_syscall_semaphore;
+
+extern struct ihk_os_monitor *monitor;
 
 static void ap_wait(void)
 {
@@ -117,6 +122,10 @@ void ap_init(void)
 		num_processors++;
 	}
 	kprintf("BSP: booted %d AP CPUs\n", cpu_info->ncpus - 1);
+#ifdef ENABLE_RUSAGE
+    rusage_num_threads = 0;
+    rusage_max_num_threads = 0;
+#endif
 }
 
 #include <sysfs.h>

@@ -664,9 +664,14 @@ struct thread {
 	struct sig_pending *ptrace_sendsig;
 
 	// cpu time
+	/*
 	struct timespec stime;
 	struct timespec utime;
 	struct timespec btime;
+	*/
+	unsigned long system_tsc;
+	unsigned long user_tsc;
+	unsigned long base_tsc;
 	int times_update;
 	int in_kernel;
 

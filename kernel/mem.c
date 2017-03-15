@@ -37,6 +37,7 @@
 #include <cpulocal.h>
 #include <init.h>
 #include <cas.h>
+#include <rusage.h>
 
 //#define DEBUG_PRINT_MEM
 
@@ -537,6 +538,9 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 								__FUNCTION__,
 								ihk_mc_get_numa_id(),
 								npages, node);
+#ifdef ENABLE_RUSAGE
+						rusage_numa_stat[ihk_mc_get_numa_id()] += npages * PAGE_SIZE;
+#endif
 						break;
 					}
 				}
@@ -582,6 +586,9 @@ distance_based:
 						ihk_mc_get_numa_id(),
 						npages,
 						memory_nodes[node].nodes_by_distance[i].id);
+#ifdef ENABLE_RUSAGE
+				rusage_numa_stat[ihk_mc_get_numa_id()] += npages * PAGE_SIZE;
+#endif
 				break;
 			}
 		}
@@ -602,7 +609,9 @@ order_based:
 				&memory_nodes[(node + i) %
 				ihk_mc_get_nr_numa_nodes()].allocators, list) {
 			pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
-
+#ifdef ENABLE_RUSAGE
+			rusage_numa_stat[ihk_mc_get_numa_id()] += npages * PAGE_SIZE;
+#endif
 			if (pa) break;
 		}
 
@@ -634,6 +643,9 @@ static void __mckernel_free_pages_in_allocator(void *va, int npages)
 			if (pa_start >= pa_allocator->start &&
 					pa_end <= pa_allocator->end) {
 				ihk_pagealloc_free(pa_allocator, pa_start, npages);
+#ifdef ENABLE_RUSAGE
+				rusage_numa_stat[i] -= npages * PAGE_SIZE;
+#endif
 				return;
 			}
 		}
@@ -1051,6 +1063,9 @@ static void numa_init(void)
 				ihk_pagealloc_count(allocator) * PAGE_SIZE,
 				ihk_pagealloc_count(allocator),
 				numa_id);
+#ifdef ENABLE_RUSAGE
+				rusage_max_memory = ihk_pagealloc_count(allocator) * PAGE_SIZE;
+#endif
 	}
 }
 
