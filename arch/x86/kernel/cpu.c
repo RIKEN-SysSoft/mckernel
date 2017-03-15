@@ -1820,11 +1820,6 @@ mod_nmi_ctx(void *nmi_ctx, void (*func)())
 	int i;
 	unsigned long flags;
 
-//struct x86_cpu_local_variables *v;
-
-//if(!ihk_mc_get_processor_id()) {
-//v = get_x86_this_cpu_local();
-//}
 	asm volatile("pushf; pop %0" : "=r"(flags) : : "memory", "cc");
 	for (i = 0; i < 22; i++)
 		l[i] = l[i + 5];
