@@ -1,3 +1,4 @@
+// mcctrl.h COPYRIGHT FUJITSU LIMITED 2016
 /**
  * \file mcctrl.h
  *  License details are found in the file LICENSE.
@@ -166,6 +167,10 @@ struct wait_queue_head_list_node {
 	struct task_struct *task;
 	/* Denotes an exclusive wait for requester TID rtid */
 	int rtid;
+#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
+	int cpu;
+	int num;
+#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 	int req;
 	struct ikc_scd_packet *packet;
 };
@@ -187,6 +192,7 @@ struct mcctrl_per_thread_data {
 #define MCCTRL_PER_THREAD_DATA_HASH_MASK (MCCTRL_PER_THREAD_DATA_HASH_SIZE - 1) 
 
 struct mcctrl_per_proc_data {
+	struct mcctrl_usrdata *ud;
 	struct list_head hash;
 	int pid;
 	unsigned long rpgtable;	/* per process, not per OS */
@@ -195,9 +201,11 @@ struct mcctrl_per_proc_data {
 	struct list_head wq_req_list;
 	struct list_head wq_list_exact;
 	ihk_spinlock_t wq_list_lock;
+	wait_queue_head_t wq_prepare;
 
 	struct list_head per_thread_data_hash[MCCTRL_PER_THREAD_DATA_HASH_SIZE];
 	rwlock_t per_thread_data_hash_lock[MCCTRL_PER_THREAD_DATA_HASH_SIZE];
+	atomic_t refcount;
 };
 
 struct sysfsm_req {
@@ -232,7 +240,11 @@ struct cache_topology {
 	struct list_head chain;
 };
 
+#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
+struct mcctrl_cpu_topology {
+#else /* POSTK_DEBUG_ARCH_DEP_40 */
 struct cpu_topology {
+#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 	//struct mcctrl_usrdata *udp;
 	struct ihk_cpu_topology *saved;
 	int mckernel_cpu_id;
@@ -271,7 +283,6 @@ struct mcctrl_usrdata {
 	int	job_pos;
 	int	mcctrl_dma_abort;
 	unsigned long	last_thread_exec;
-	wait_queue_head_t	wq_prepare;
 	
 	struct list_head per_proc_data_hash[MCCTRL_PER_PROC_DATA_HASH_SIZE];
 	rwlock_t per_proc_data_hash_lock[MCCTRL_PER_PROC_DATA_HASH_SIZE];
@@ -305,15 +316,39 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet);
 int mcctrl_add_per_proc_data(struct mcctrl_usrdata *ud, int pid, 
 	struct mcctrl_per_proc_data *ppd);
 int mcctrl_delete_per_proc_data(struct mcctrl_usrdata *ud, int pid);
-inline struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(
+struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(
 		struct mcctrl_usrdata *ud, int pid);
+void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd);
 
 int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data* ppd,
 	struct task_struct *task, void *data);
 int mcctrl_delete_per_thread_data(struct mcctrl_per_proc_data* ppd,
 	struct task_struct *task);
+#ifdef POSTK_DEBUG_ARCH_DEP_56 /* Strange how to use inline declaration fix. */
+static inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(
+	struct mcctrl_per_proc_data *ppd, struct task_struct *task)
+{
+	struct mcctrl_per_thread_data *ptd_iter, *ptd = NULL;
+	int hash = (((uint64_t)task >> 4) & MCCTRL_PER_THREAD_DATA_HASH_MASK);
+	unsigned long flags;
+
+	/* Check if data for this thread exists and return it */
+	read_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
+
+	list_for_each_entry(ptd_iter, &ppd->per_thread_data_hash[hash], hash) {
+		if (ptd_iter->task == task) {
+			ptd = ptd_iter;
+			break;
+		}
+	}
+
+	read_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
+	return ptd ? ptd->data : NULL;
+}
+#else /* POSTK_DEBUG_ARCH_DEP_56 */
 inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(
 	struct mcctrl_per_proc_data *ppd, struct task_struct *task);
+#endif /* POSTK_DEBUG_ARCH_DEP_56 */
 
 void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet, 
 		long ret, int stid);
@@ -354,6 +389,7 @@ void reply_get_cpu_mapping(long req_pa);
 void free_topology_info(ihk_os_t os);
 
 /* archdep.c */
+#ifndef POSTK_DEBUG_ARCH_DEP_52
 #define VDSO_MAXPAGES 2
 struct vdso {
 	long busy;
@@ -370,6 +406,7 @@ struct vdso {
 	void *pvti_virt;
 	long pvti_phys;
 };
+#endif /*POSTK_DEBUG_ARCH_DEP_52*/
 
 int reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp,
 		unsigned long *endp);

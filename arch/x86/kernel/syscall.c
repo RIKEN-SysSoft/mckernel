@@ -66,6 +66,25 @@ uintptr_t debug_constants[] = {
 	-1,
 };
 
+#ifdef POSTK_DEBUG_ARCH_DEP_52
+#define VDSO_MAXPAGES 2
+struct vdso {
+	long busy;
+	int vdso_npages;
+	char vvar_is_global;
+	char hpet_is_global;
+	char pvti_is_global;
+	char padding;
+	long vdso_physlist[VDSO_MAXPAGES];
+	void *vvar_virt;
+	long vvar_phys;
+	void *hpet_virt;
+	long hpet_phys;
+	void *pvti_virt;
+	long pvti_phys;
+};
+#endif /*POSTK_DEBUG_ARCH_DEP_52*/
+
 static struct vdso vdso;
 static size_t container_size = 0;
 static ptrdiff_t vdso_offset;
@@ -102,9 +121,6 @@ int obtain_clone_cpuid() {
 	struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
     int cpuid, nretry = 0;
     ihk_mc_spinlock_lock_noirq(&cpuid_head_lock);
-	
-	/* Always start from 0 to fill in LWK cores linearily */
-	cpuid_head = 0;
  retry:
     /* Try to obtain next physical core */
     cpuid = cpuid_head;

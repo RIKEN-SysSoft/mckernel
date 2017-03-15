@@ -1537,6 +1537,36 @@ int ihk_mc_interrupt_cpu(int cpu, int vector)
 	return 0;
 }
 
+#ifdef POSTK_DEBUG_ARCH_DEP_22
+struct thread *arch_switch_context(struct thread *prev, struct thread *next)
+{
+	struct thread *last;
+
+	/* Set up new TLS.. */
+	dkprintf("[%d] arch_switch_context: tlsblock_base: 0x%lX\n", 
+		 ihk_mc_get_processor_id(), next->thread.tlsblock_base);
+	ihk_mc_arch_set_special_register(IHK_ASR_X86_FS, next->thread.tlsblock_base);
+
+	/* Performance monitoring inherit */
+	if(next->proc->monitoring_event) {
+		if(next->proc->perf_status == PP_RESET)
+			perf_reset(next->proc->monitoring_event);
+		if(next->proc->perf_status != PP_COUNT) {
+			perf_reset(next->proc->monitoring_event);
+			perf_start(next->proc->monitoring_event);
+		}
+	}
+	if (prev) {
+		last = ihk_mc_switch_context(&prev->ctx, &next->ctx, prev);
+	}
+	else {
+		last = ihk_mc_switch_context(NULL, &next->ctx, prev);
+	}
+
+	return last;
+}
+#endif
+
 /*@
   @ requires \valid(thread);
   @ ensures thread->fp_regs == NULL;

@@ -1,3 +1,4 @@
+/* ap.c COPYRIGHT FUJITSU LIMITED 2015 */
 /**
  * \file ap.c
  * Licence details are found in the file LICENSE.
@@ -24,7 +25,6 @@
 #include <process.h>
 #include <init.h>
 #include <march.h>
-#include <cls.h>
 
 int num_processors = 1;
 static volatile int ap_stop = 1;

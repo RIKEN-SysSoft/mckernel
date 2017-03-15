@@ -618,6 +618,9 @@ static int fileobj_invalidate_page(struct memobj *memobj, uintptr_t phys,
 
 	if (ihk_atomic_read(&page->count) == 1) {
 		if (page_unmap(page)) {
+#ifdef POSTK_DEBUG_TEMP_FIX_44 /* fileobj_invalidate_page() add list_remove */
+			page_list_remove(obj, page);
+#endif /* POSTK_DEBUG_TEMP_FIX_44 */
 			ihk_mc_free_pages(phys_to_virt(phys),
 					pgsize/PAGE_SIZE);
 		}

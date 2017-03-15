@@ -1,4 +1,4 @@
-/* bitops.c COPYRIGHT FUJITSU LIMITED 2014 */
+/* bitops.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
 #include <bitops.h>
 
 #define BITOP_WORD(nr)		((nr) / BITS_PER_LONG)

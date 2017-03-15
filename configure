@@ -2130,8 +2130,21 @@ fi
 test "x$prefix" = xNONE && prefix="$ac_default_prefix"
 
 case $WITH_TARGET in
-    attached-mic|builtin-x86|smp-x86)
-	ARCH=`uname -m`
+# POSTK_DEBUG_ARCH_DEP_30, Expansion of the branch.
+#    attached-mic|builtin-x86|smp-x86)
+#	ARCH=`uname -m`
+#	AC_PROG_CC
+#	XCC=$CC
+#	;;
+    attached-mic|builtin-x86|smp-*)
+	case $WITH_TARGET in
+	    attached-mic|builtin-x86|smp-x86)
+		ARCH=`uname -m`
+		;;
+	    smp-arm64)
+		ARCH=arm64
+		;;
+	esac
 	ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -2965,6 +2978,48 @@ fi
 
 	CC=$XCC
 	;;
+    smp-arm64)
+	ARCH=arm64
+	# Extract the first word of "${CROSS_COMPILE}gcc", so it can be a program name with args.
+set dummy ${CROSS_COMPILE}gcc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_XCC+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$XCC"; then
+  ac_cv_prog_XCC="$XCC" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_XCC="${CROSS_COMPILE}gcc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_prog_XCC" && ac_cv_prog_XCC="no"
+fi
+fi
+XCC=$ac_cv_prog_XCC
+if test -n "$XCC"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $XCC" >&5
+$as_echo "$XCC" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+	CC=$XCC
+	;;
     *)
 	as_fn_error $? "target $WITH_TARGET is unknwon" "$LINENO" 5
 	;;
@@ -3015,6 +3070,9 @@ case $WITH_TARGET in
 	if test "X$SBINDIR" = X; then
 		SBINDIR="$prefix/sbin"
 	fi
+	if test "X$ETCDIR" = X; then
+		ETCDIR="$prefix/etc"
+	fi
 	if test "X$KMODDIR" = X; then
 		KMODDIR="$prefix/kmod"
 	fi
@@ -3032,14 +3090,28 @@ case $WITH_TARGET in
 	if test "X$SBINDIR" = X; then
 		SBINDIR="$prefix/sbin"
 	fi
-	if test "X$ETCDIR" = X; then
-		ETCDIR="$prefix/etc"
-	fi
 	if test "X$KMODDIR" = X; then
 		KMODDIR="$prefix/kmod"
 	fi
 	if test "X$MANDIR" = X; then
 		MANDIR="$prefix/smp-x86/man"
+	fi
+	;;
+    smp-arm64)
+	if test "X$KERNDIR" = X; then
+		KERNDIR="$prefix/smp-arm64/kernel"
+	fi
+	if test "X$BINDIR" = X; then
+		BINDIR="$prefix/bin"
+	fi
+	if test "X$SBINDIR" = X; then
+		SBINDIR="$prefix/sbin"
+	fi
+	if test "X$KMODDIR" = X; then
+		KMODDIR="$prefix/kmod"
+	fi
+	if test "X$MANDIR" = X; then
+		MANDIR="$prefix/smp-arm64/man"
 	fi
 	;;
     *)
@@ -3341,6 +3413,32 @@ _ACEOF
 
   fi
 
+# POSTK_DEBUG_ARCH_DEP_50, add:find kernel symbol.
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol vdso_spec" >&5
+$as_echo_n "checking System.map for symbol vdso_spec... " >&6; }
+  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " vdso_spec\$" | cut -d\  -f1`
+  if test -z $mcctrl_addr; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+  else
+    mcctrl_result=$mcctrl_addr
+    mcctrl_addr="0x$mcctrl_addr"
+
+      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_vdso_spec\$" >/dev/null`; then
+        mcctrl_result="exported"
+        mcctrl_addr="0"
+      fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
+$as_echo "$mcctrl_result" >&6; }
+
+cat >>confdefs.h <<_ACEOF
+#define MCCTRL_KSYM_vdso_spec $mcctrl_addr
+_ACEOF
+
+  fi
+
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol hv_clock" >&5
 $as_echo_n "checking System.map for symbol hv_clock... " >&6; }
@@ -3396,7 +3494,9 @@ case $ENABLE_MEMDUMP in
 	yes|no|auto)
 		;;
 	default)
-		if test "x$WITH_TARGET" = "xsmp-x86" ; then
+# POSTK_DEBUG_ARCH_DEP_30, Expansion of the branch.
+#		if test "x$WITH_TARGET" = "xsmp-x86" ; then
+		if test "x$WITH_TARGET" = "xsmp-*" ; then
 			ENABLE_MEMDUMP=auto
 		else
 			ENABLE_MEMDUMP=no
@@ -3409,8 +3509,56 @@ esac
 
 if test "x$ENABLE_MEMDUMP" != "xno" ; then
 	enableval=yes
+# POSTK_DEBUG_ARCH_DEP_32, AC_CHECK_LIB for libiberty
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_init in -lbfd" >&5
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for hex_init in -liberty" >&5
+$as_echo_n "checking for hex_init in -liberty... " >&6; }
+if ${ac_cv_lib_iberty_hex_init+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-liberty  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char hex_init ();
+int
+main ()
+{
+return hex_init ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_iberty_hex_init=yes
+else
+  ac_cv_lib_iberty_hex_init=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_iberty_hex_init" >&5
+$as_echo "$ac_cv_lib_iberty_hex_init" >&6; }
+if test "x$ac_cv_lib_iberty_hex_init" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBIBERTY 1
+_ACEOF
+
+  LIBS="-liberty $LIBS"
+
+else
+  enableval=no
+fi
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_init in -lbfd" >&5
 $as_echo_n "checking for bfd_init in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_init+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -3916,7 +4064,24 @@ fi
 
 ac_config_headers="$ac_config_headers executer/config.h"
 
-ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/kernel/mcctrl/Makefile executer/kernel/mcctrl/arch/x86_64/Makefile executer/kernel/mcoverlayfs/Makefile executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile executer/kernel/mcoverlayfs/linux-4.0.9/Makefile kernel/Makefile kernel/Makefile.build arch/x86/tools/mcreboot-attached-mic.sh arch/x86/tools/mcshutdown-attached-mic.sh arch/x86/tools/mcreboot-builtin-x86.sh arch/x86/tools/mcreboot-smp-x86.sh arch/x86/tools/mcstop+release-smp-x86.sh arch/x86/tools/mcshutdown-builtin-x86.sh arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in arch/x86/tools/irqbalance_mck.service arch/x86/tools/irqbalance_mck.in"
+# POSTK_DEBUG_ARCH_DEP_37
+#AC_CONFIG_FILES([
+#	Makefile
+#	executer/user/Makefile
+#	executer/kernel/mcctrl/Makefile
+#	executer/kernel/mcctrl/arch/x86_64/Makefile
+#	executer/kernel/mcoverlayfs/Makefile
+#	kernel/Makefile
+#	kernel/Makefile.build
+#	arch/x86/tools/mcreboot-attached-mic.sh
+#	arch/x86/tools/mcshutdown-attached-mic.sh
+#	arch/x86/tools/mcreboot-builtin-x86.sh
+#	arch/x86/tools/mcreboot-smp-x86.sh
+#	arch/x86/tools/mcstop+release-smp-x86.sh
+#	arch/x86/tools/mcshutdown-builtin-x86.sh
+#	arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in
+#])
+ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/kernel/mcctrl/Makefile executer/kernel/mcctrl/arch/$ARCH/Makefile executer/kernel/mcoverlayfs/Makefile executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile executer/kernel/mcoverlayfs/linux-4.0.9/Makefile kernel/Makefile kernel/Makefile.build arch/x86/tools/mcreboot-attached-mic.sh arch/x86/tools/mcshutdown-attached-mic.sh arch/x86/tools/mcreboot-builtin-x86.sh arch/x86/tools/mcreboot-smp-x86.sh arch/x86/tools/mcstop+release-smp-x86.sh arch/x86/tools/mcshutdown-builtin-x86.sh arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in arch/x86/tools/irqbalance_mck.service arch/x86/tools/irqbalance_mck.in kernel/config/config.smp-arm64 arch/arm64/kernel/vdso/Makefile"
 
 
 if test "x$enable_dcfa" = xyes; then :
@@ -4618,7 +4783,7 @@ do
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "executer/user/Makefile") CONFIG_FILES="$CONFIG_FILES executer/user/Makefile" ;;
     "executer/kernel/mcctrl/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcctrl/Makefile" ;;
-    "executer/kernel/mcctrl/arch/x86_64/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcctrl/arch/x86_64/Makefile" ;;
+    "executer/kernel/mcctrl/arch/$ARCH/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcctrl/arch/$ARCH/Makefile" ;;
     "executer/kernel/mcoverlayfs/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcoverlayfs/Makefile" ;;
     "executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile" ;;
     "executer/kernel/mcoverlayfs/linux-4.0.9/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcoverlayfs/linux-4.0.9/Makefile" ;;
@@ -4633,6 +4798,8 @@ do
     "arch/x86/tools/mcreboot.1") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in" ;;
     "arch/x86/tools/irqbalance_mck.service") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/irqbalance_mck.service" ;;
     "arch/x86/tools/irqbalance_mck.in") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/irqbalance_mck.in" ;;
+    "kernel/config/config.smp-arm64") CONFIG_FILES="$CONFIG_FILES kernel/config/config.smp-arm64" ;;
+    "arch/arm64/kernel/vdso/Makefile") CONFIG_FILES="$CONFIG_FILES arch/arm64/kernel/vdso/Makefile" ;;
     "kernel/Makefile.dcfa") CONFIG_FILES="$CONFIG_FILES kernel/Makefile.dcfa" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;

@@ -1,3 +1,4 @@
+/* syscall.c COPYRIGHT FUJITSU LIMITED 2016 */
 /**
  * \file executer/kernel/syscall.c
  *  License details are found in the file LICENSE.
@@ -157,6 +158,7 @@ out:
 	return ret;
 }
 
+#ifndef POSTK_DEBUG_ARCH_DEP_56 /* Strange how to use inline declaration fix. */
 struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc_data *ppd, struct task_struct *task)
 {
 	struct mcctrl_per_thread_data *ptd_iter, *ptd = NULL;
@@ -176,8 +178,121 @@ struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc
 	read_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
 	return ptd ? ptd->data : NULL;
 }
+#endif /* !POSTK_DEBUG_ARCH_DEP_56 */
+#ifdef __aarch64__
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,2,0)
+# define IHK_MC_PGTABLE_LEVELS CONFIG_ARM64_PGTABLE_LEVELS
+#else
+# define IHK_MC_PGTABLE_LEVELS CONFIG_PGTABLE_LEVELS
+#endif
+typedef unsigned long translation_table_t;
+struct page_table {
+	translation_table_t* tt;
+	translation_table_t* tt_pa;
+	int asid;
+};
 
-#if 1	/* x86 depend, host OS side */
+int translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva,
+		unsigned long *rpap, unsigned long *pgsizep)
+{
+	unsigned long rpa;
+	int i;
+	int ix;
+	unsigned long phys;
+	unsigned long *pt;
+	int error;
+	unsigned long pgsize;
+	struct page_table* tbl;
+
+	struct property {
+		int idx_bits;
+		int block;    /*block support flag*/
+		int pgshift;
+	} properties[3][4] = {
+		{	/* 4KB */
+			{.idx_bits = 47 - 39 + 1, .block = 0, .pgshift = 39},  /*zero*/
+			{.idx_bits = 38 - 30 + 1, .block = 1, .pgshift = 30},  /*first*/
+			{.idx_bits = 29 - 21 + 1, .block = 1, .pgshift = 21},  /*second*/
+			{.idx_bits = 20 - 12 + 1, .block = 0, .pgshift = 12},  /*third*/
+		},
+		{	/* 16KB */
+			{.idx_bits = 47 - 47 + 1, .block = 0, .pgshift = 47},  /*zero*/
+			{.idx_bits = 46 - 36 + 1, .block = 0, .pgshift = 36},  /*first*/
+			{.idx_bits = 35 - 25 + 1, .block = 1, .pgshift = 25},  /*second*/
+			{.idx_bits = 24 - 14 + 1, .block = 0, .pgshift = 14},  /*third*/
+		},
+		{	/* 64KB */
+			{0},  /*zero*/
+			{.idx_bits = 47 - 42 + 1, .block = 0, .pgshift = 42},  /*first*/
+			{.idx_bits = 41 - 29 + 1, .block = 1, .pgshift = 29},  /*second*/
+			{.idx_bits = 28 - 16 + 1, .block = 0, .pgshift = 16},  /*third*/
+		},
+	};
+	const struct property* prop =
+		(PAGE_SIZE == (1UL << 12)) ? &(properties[0][0]) :
+		(PAGE_SIZE == (1UL << 14)) ? &(properties[1][0]) :
+		(PAGE_SIZE == (1UL << 16)) ? &(properties[2][0]) : NULL;
+
+	// page table to translation_table.
+	phys = ihk_device_map_memory(ihk_os_to_dev(os), rpt, PAGE_SIZE);
+	tbl = ihk_device_map_virtual(ihk_os_to_dev(os), phys, PAGE_SIZE, NULL, 0);
+	rpa = (unsigned long)tbl->tt_pa;
+
+	/* i = 0:zero, 1:first, 2:second, 3:third */
+	for (i = 4 - IHK_MC_PGTABLE_LEVELS; i < 4; ++i) {
+		ix = (rva >> prop[i].pgshift) & ((1 << prop[i].idx_bits) - 1);
+		phys = ihk_device_map_memory(ihk_os_to_dev(os), rpa, PAGE_SIZE);
+		pt = ihk_device_map_virtual(ihk_os_to_dev(os), phys, PAGE_SIZE, NULL, 0);
+		dprintk("rpa %#lx offsh %d ix %#x phys %#lx pt %p pt[ix] %#lx\n",
+				rpa, prop[i].pgshift, ix, phys, pt, pt[ix]);
+
+#define	PG_DESC_VALID	0x1
+		if (!(pt[ix] & PG_DESC_VALID)) {
+			ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
+			ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
+			error = -EFAULT;
+			dprintk("Remote PTE is not present for 0x%lx (rpt: %lx) ?\n", rva, rpt);
+			goto out;
+		}
+
+#define	PG_DESC_TYEP_MASK	0x3
+#define	PG_DESC_BLOCK		0x1
+		if (prop[i].block && (pt[ix]&PG_DESC_TYEP_MASK) == PG_DESC_BLOCK) {
+			/* D_Block */
+			pgsize = 1UL << prop[i].pgshift;
+			rpa = (pt[ix] & ((1UL << 47) - 1)) & ~(pgsize - 1);
+			rpa |= rva & (pgsize - 1);
+			ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
+			ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
+			error = 0;
+			goto found;
+		}
+		/* D_Table */
+		rpa = (pt[ix] & ((1UL << 47) - 1)) & ~(PAGE_SIZE - 1);
+		ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
+		ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
+	}
+	/* D_Page */
+	pgsize = PAGE_SIZE;
+	rpa |= rva & (pgsize - 1);
+
+found:
+	error = 0;
+	*rpap = rpa;
+	*pgsizep = pgsize;
+
+out:
+	dprintk("translate_rva_to_rpa: %d rva %#lx --> rpa %#lx (%lx)\n",
+			error, rva, rpa, pgsize);
+	return error;
+}
+
+#define PFN_WRITE_COMBINED PTE_ATTRINDX(MT_NORMAL_NC)
+static inline bool pte_is_write_combined(pte_t pte)
+{
+	return ((pte_val(pte) & PTE_ATTRINDX_MASK) == PFN_WRITE_COMBINED);
+}
+#else	/* x86 depend, host OS side */
 int translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva,
 		unsigned long *rpap, unsigned long *pgsizep)
 {
@@ -238,6 +353,12 @@ out:
 	dprintk("translate_rva_to_rpa: %d rva %#lx --> rpa %#lx (%lx)\n",
 			error, rva, rpa, pgsize);
 	return error;
+}
+
+#define PFN_WRITE_COMBINED _PAGE_PWT
+static inline bool pte_is_write_combined(pte_t pte)
+{
+	return ((pte_flags(pte) & _PAGE_PWT) && !(pte_flags(pte) & _PAGE_PCD));
 }
 #endif
 
@@ -306,7 +427,7 @@ static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, u
 		error = -ENOENT;
 		printk("%s: no packet registered for TID %d\n",
 				__FUNCTION__, task_pid_vnr(current));
-		goto out_no_unmap;
+		goto out_put_ppd;
 	}
 
 	req = &packet->req;
@@ -326,7 +447,14 @@ retry_alloc:
 
 	/* Prepare per-thread wait queue head */
 	wqhln->task = current;
+	/* Save the TID explicitly, because mcexec_syscall(), where the request
+	 * will be matched, is in IRQ context and can't call task_pid_vnr() */
+	wqhln->rtid = task_pid_vnr(current);
 	wqhln->req = 0;
+#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
+	wqhln->cpu = packet->ref;
+	wqhln->num = 0;
+#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 	init_waitqueue_head(&wqhln->wq_syscall);
 
 	irqflags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
@@ -434,9 +562,11 @@ out:
 	ihk_device_unmap_virtual(ihk_os_to_dev(usrdata->os), resp, sizeof(*resp));
 	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
 
-out_no_unmap:
+out_put_ppd:
 	dprintk("%s: tid: %d, fault_addr: %lu, reason: %lu, error: %d\n",
 		__FUNCTION__, task_pid_vnr(current), fault_addr, reason, error);
+
+	mcctrl_put_per_proc_data(ppd);
 	return error;
 }
 
@@ -574,6 +704,7 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	size_t			pix;
 #endif
 	struct mcctrl_per_proc_data *ppd;
+	int ret = 0;
 
 	dprintk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
 			vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
@@ -583,7 +714,6 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	if (!ppd) {
 		ppd = mcctrl_get_per_proc_data(usrdata, vma->vm_mm->owner->pid);
 	}
-
 
 	if (!ppd) {
 		kprintf("%s: ERROR: no per-process structure for PID %d??\n", 
@@ -618,7 +748,8 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	if (error) {
 		printk("mcctrl:page fault error:flags %#x pgoff %#lx va %p page %p\n",
 				vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
-		return VM_FAULT_SIGBUS;
+		ret = VM_FAULT_SIGBUS;
+		goto put_and_out;
 	}
 
 	rva = (unsigned long)vmf->virtual_address & ~(pgsize - 1);
@@ -645,7 +776,15 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 		else
 		error = vm_insert_pfn(vma, rva+(pix*PAGE_SIZE), pfn+pix);
 		if (error) {
+#ifdef POSTK_DEBUG_TEMP_FIX_11 /* rus_vm_fault() multi-thread fix */
+			if (error == -EBUSY) {
+				error = 0;
+			} else {
+				break;
+			}
+#else /* POSTK_DEBUG_TEMP_FIX_11 */
 			break;
+#endif /* POSTK_DEBUG_TEMP_FIX_11 */
 		}
 	}
 #else
@@ -655,10 +794,15 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	if (error) {
 		printk("mcctrl:page fault:remap error:flags %#x pgoff %#lx va %p page %p\n",
 				vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
-		return VM_FAULT_SIGBUS;
+		ret = VM_FAULT_SIGBUS;
+		goto put_and_out;
 	}
 
-	return VM_FAULT_NOPAGE;
+	ret = VM_FAULT_NOPAGE;
+
+put_and_out:
+	mcctrl_put_per_proc_data(ppd);
+	return ret;
 }
 
 static struct vm_operations_struct rus_vmops = {
@@ -963,12 +1107,17 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 	pos = off;
 	ss = vfs_read(file, buf, size, &pos);
 	if ((ss != size) && (ss > 0)) {
+#ifdef POSTK_DEBUG_TEMP_FIX_12 /* clear_user() used by kernel area, fix */
+		memset(buf + ss, 0, size - ss);
+		ss = size;
+#else /* POSTK_DEBUG_TEMP_FIX_12 */
 		if (clear_user(buf+ss, size-ss) == 0) {
 			ss = size;
 		}
 		else {
 			ss = -EFAULT;
 		}
+#endif /* POSTK_DEBUG_TEMP_FIX_12 */
 	}
 	set_fs(fs);
 	if (ss < 0) {
@@ -1211,10 +1360,16 @@ retry:
 					pfn |= PFN_VALID | PFN_PRESENT;
 					
 					/* Check if mapping is write-combined */
+#ifdef POSTK_DEBUG_ARCH_DEP_12
+					if (pte_is_write_combined(*pte)) {
+						pfn |= PFN_WRITE_COMBINED;
+					}
+#else /* POSTK_DEBUG_ARCH_DEP_12 */
 					if ((pte_flags(*pte) & _PAGE_PWT) && 
 						!(pte_flags(*pte) & _PAGE_PCD)) {
 						pfn |= _PAGE_PWT;
 					}
+#endif /* POSTK_DEBUG_ARCH_DEP_12 */
 				}
 				pte_unmap(pte);
 			}
@@ -1238,7 +1393,11 @@ retry:
 			goto out_release;
 		}
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,8,0)
+		fault = handle_mm_fault(vma, va, flags);
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,8,0) */
 		fault = handle_mm_fault(current->mm, vma, va, flags);
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,8,0) */
 		if (fault != 0) {
 			printk("%s: error: faulting %lx at off: %lu\n", 
 					__FUNCTION__, va, off);
@@ -1486,7 +1645,15 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 	 * So we have a legitimate reason to do this.
 	 */
 	file = filp_open("core", O_CREAT | O_RDWR | O_LARGEFILE, 0600);
+#ifdef POSTK_DEBUG_ARCH_DEP_41 /* use writehandler version switch add */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0)
+	if (IS_ERR(file) || !file->f_op) {
+#else
 	if (IS_ERR(file) || !file->f_op || !file->f_op->write) {
+#endif
+#else /* POSTK_DEBUG_ARCH_DEP_41 */
+	if (IS_ERR(file) || !file->f_op || !file->f_op->write) {
+#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 		dprintk("cannot open core file\n");
 		error = PTR_ERR(file);
 		goto fail;
@@ -1505,9 +1672,22 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 			phys = ihk_device_map_memory(dev, rphys, size);
 			dprintk("physical %lx, ", phys);
 			pt = ihk_device_map_virtual(dev, phys, size, NULL, 0);
+#ifdef POSTK_DEBUG_TEMP_FIX_38
+			if (pt == NULL) {
+				pt = phys_to_virt(phys);
+			}
+#endif /*POSTK_DEBUG_TEMP_FIX_38*/
 			dprintk("virtual %p\n", pt);
 			if (pt != NULL) {
+#ifdef POSTK_DEBUG_ARCH_DEP_41 /* use writehandler version switch add */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0)
+				ret = __kernel_write(file, pt, size, &file->f_pos);
+#else
 				ret = file->f_op->write(file, pt, size, &file->f_pos);
+#endif
+#else /* POSTK_DEBUG_ARCH_DEP_41 */
+				ret = file->f_op->write(file, pt, size, &file->f_pos);
+#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 			} else {
 				dprintk("cannot map physical memory(%lx) to virtual memory.\n", 
 					phys);
@@ -1582,6 +1762,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 
 			dprintk("%s: pid: %d, rpgtable: 0x%lx updated\n",
 				__FUNCTION__, ppd->pid, ppd->rpgtable);
+			mcctrl_put_per_proc_data(ppd);
 		}
 
 		ret = clear_pte_range(sc->args[0], sc->args[1]);

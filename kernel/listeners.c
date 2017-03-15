@@ -1,3 +1,4 @@
+/* listeners.c COPYRIGHT FUJITSU LIMITED 2015 */
 /**
  * \file listeners.c
  *  License details are found in the file LICENSE.

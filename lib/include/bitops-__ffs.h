@@ -1,4 +1,4 @@
-/* bitops-__ffs.h COPYRIGHT FUJITSU LIMITED 2014 */
+/* bitops-__ffs.h COPYRIGHT FUJITSU LIMITED 2015-2016 */
 #ifndef INCLUDE_BITOPS___FFS_H
 #define INCLUDE_BITOPS___FFS_H
 

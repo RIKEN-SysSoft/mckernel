@@ -1,6 +1,9 @@
 #ifndef MC_PERF_EVNET_H
 #define MC_PERF_EVENT_H
 
+#ifdef POSTK_DEBUG_TEMP_FIX_32
+#include <list.h>
+#endif /*POSTK_DEBUG_TEMP_FIX_32*/
 #include <march.h>
 
 struct perf_event_attr;

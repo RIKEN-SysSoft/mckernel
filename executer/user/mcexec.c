@@ -1,3 +1,4 @@
+/* mcexec.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
 /**
  * \file executer/user/mcexec.c
  *  License details are found in the file LICENSE.
@@ -62,12 +63,16 @@
 #include <sys/signalfd.h>
 #include <sys/mount.h>
 #include <include/generated/uapi/linux/version.h>
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+#else	/* POSTK_DEBUG_ARCH_DEP_35 */
 #include <sys/user.h>
+#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 #include "../include/uprotocol.h"
 #include <getopt.h>
 #include "../config.h"
 
 //#define DEBUG
+#define ADD_ENVS_OPTION
 
 #ifndef DEBUG
 #define __dprint(msg, ...)
@@ -163,6 +168,11 @@ struct fork_sync_container {
 
 struct fork_sync_container *fork_sync_top;
 pthread_mutex_t fork_sync_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+unsigned long page_size;
+unsigned long page_mask;
+#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 
 pid_t gettid(void)
 {
@@ -509,6 +519,9 @@ retry:
 			fprintf(stderr, "lookup_exec_path(): error allocating\n");
 			return ENOMEM;
 		}
+#ifdef POSTK_DEBUG_TEMP_FIX_6 /* dynamic allocate area initialize clear */
+		memset(link_path, '\0', max_len);
+#endif /* POSTK_DEBUG_TEMP_FIX_6 */
 		
 		error = readlink(path, link_path, max_len);
 		if (error == -1 || error == max_len) {
@@ -679,9 +692,15 @@ int transfer_image(int fd, struct program_load_desc *desc)
 
 	for (i = 0; i < desc->num_sections; i++) {
 		fp = desc->sections[i].fp;
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+		s = (desc->sections[i].vaddr) & page_mask;
+		e = (desc->sections[i].vaddr + desc->sections[i].len
+		     + page_size - 1) & page_mask;
+#else	/* POSTK_DEBUG_ARCH_DEP_35 */
 		s = (desc->sections[i].vaddr) & PAGE_MASK;
 		e = (desc->sections[i].vaddr + desc->sections[i].len
-		     + PAGE_SIZE - 1) & PAGE_MASK;
+		     + page_size - 1) & PAGE_MASK;
+#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 		rpa = desc->sections[i].remote_pa;
 
 		if (fseek(fp, desc->sections[i].offset, SEEK_SET) != 0) {
@@ -697,15 +716,29 @@ int transfer_image(int fd, struct program_load_desc *desc)
 			memset(&pt, '\0', sizeof pt);
 			pt.rphys = rpa;
 			pt.userp = dma_buf;
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+			pt.size = page_size;
+#else	/* POSTK_DEBUG_ARCH_DEP_35 */
 			pt.size = PAGE_SIZE;
+#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 			pt.direction = MCEXEC_UP_TRANSFER_TO_REMOTE;
 			lr = 0;
 			
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+			memset(dma_buf, 0, page_size);
+#else	/* POSTK_DEBUG_ARCH_DEP_35 */
 			memset(dma_buf, 0, PAGE_SIZE);
+#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 			if (s < desc->sections[i].vaddr) {
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+				l = desc->sections[i].vaddr 
+					& (page_size - 1);
+				lr = page_size - l;
+#else	/* POSTK_DEBUG_ARCH_DEP_35 */
 				l = desc->sections[i].vaddr 
 					& (PAGE_SIZE - 1);
 				lr = PAGE_SIZE - l;
+#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 				if (lr > flen) {
 					lr = flen;
 				}
@@ -726,8 +759,13 @@ int transfer_image(int fd, struct program_load_desc *desc)
 				flen -= lr;
 			} 
 			else if (flen > 0) {
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+				if (flen > page_size) {
+					lr = page_size;
+#else	/* POSTK_DEBUG_ARCH_DEP_35 */
 				if (flen > PAGE_SIZE) {
 					lr = PAGE_SIZE;
+#endif	/*POSTK_DEBUG_ARCH_DEP_35 */
 				} else {
 					lr = flen;
 				}
@@ -747,8 +785,13 @@ int transfer_image(int fd, struct program_load_desc *desc)
 				}
 				flen -= lr;
 			} 
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+			s += page_size;
+			rpa += page_size;
+#else	/* POSTK_DEBUG_ARCH_DEP_35 */
 			s += PAGE_SIZE;
 			rpa += PAGE_SIZE;
+#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 			
 			/* No more left to upload.. */
 			if (lr == 0 && flen == 0) break;
@@ -1099,7 +1142,11 @@ static int reduce_stack(struct rlimit *orig_rlim, char *argv[])
 
 void print_usage(char **argv)
 {
+#ifdef ADD_ENVS_OPTION
+	fprintf(stderr, "Usage: %s [-c target_core] [<-e ENV_NAME=value>...] [<mcos-id>] (program) [args...]\n", argv[0]);
+#else /* ADD_ENVS_OPTION */
 	fprintf(stderr, "Usage: %s [-c target_core] [<mcos-id>] (program) [args...]\n", argv[0]);
+#endif /* ADD_ENVS_OPTION */
 }
 
 void init_sigaction(void)
@@ -1257,7 +1304,133 @@ static int rlimits[] = {
 
 char dev[64];
 
+#ifdef ADD_ENVS_OPTION
+struct env_list_entry {
+	char* str;
+	char* name;
+	char* value;
+	struct env_list_entry *next;
+};
+
+static int get_env_list_entry_count(struct env_list_entry *head)
+{
+	int list_count = 0;
+	struct env_list_entry *current = head;
+
+	while (current) {
+		list_count++;
+		current = current->next;
+	}
+	return list_count;
+}
+
+static struct env_list_entry *search_env_list(struct env_list_entry *head, char *name)
+{
+	struct env_list_entry *current = head;
+
+	while (current) {
+		if (!(strcmp(name, current->name))) {
+			return current;
+		}
+		current = current->next;
+	}
+	return NULL;
+}
+
+static void add_env_list(struct env_list_entry **head, char *add_string)
+{
+	struct env_list_entry *current = NULL;
+	char *value = NULL;
+	char *name = NULL;
+	struct env_list_entry *exist = NULL;
+
+	name = (char *)malloc(strlen(add_string) + 1);
+	strcpy(name, add_string);
+
+	/* include '=' ? */
+	if (!(value = strchr(name, '='))) {
+		printf("\"%s\" is not env value.\n", add_string);
+		free(name);
+		return;
+	}
+	*value = '\0';
+	value++;
+
+	/* name overlap serch */
+	if (*head) {
+		exist = search_env_list(*head, name);
+		if (exist) {
+			free(name);
+			return;
+		}
+	}
+
+	/* ADD env_list */
+	current = (struct env_list_entry *)malloc(sizeof(struct env_list_entry));
+	current->str = add_string;
+	current->name = name;
+	current->value = value;
+	if (*head) {
+		current->next = *head;
+	} else {
+		current->next = NULL;
+	}
+	*head = current;
+	return;
+}
+
+static void destroy_env_list(struct env_list_entry *head)
+{
+	struct env_list_entry *current = head;
+	struct env_list_entry *next = NULL;
+
+	while (current) {
+		next = current->next;
+		free(current->name);
+		free(current);
+		current = next;
+	}
+}
+
+static char **create_local_environ(struct env_list_entry *inc_list)
+{
+	int list_count = 0;
+	int i = 0;
+	struct env_list_entry *current = inc_list;
+	char **local_env = NULL;
+
+	list_count = get_env_list_entry_count(inc_list);
+	local_env = (char **)malloc(sizeof(char **) * (list_count + 1));
+	local_env[list_count] = NULL;
+
+	while (current) {
+		local_env[i] = (char *)malloc(strlen(current->str) + 1);
+		strcpy(local_env[i], current->str);
+		current = current->next;
+		i++;
+	}
+	return local_env;
+}
+
+static void destroy_local_environ(char **local_env)
+{
+	int i = 0;
+
+	if (!local_env) {
+		return;
+	}
+
+	for (i = 0; local_env[i]; i++) {
+		free(local_env[i]);
+		local_env[i] = NULL;
+	}
+	free(local_env);
+}
+#endif /* ADD_ENVS_OPTION */
+
 static struct option mcexec_options[] = {
+#ifdef POSTK_DEBUG_ARCH_DEP_53
+#ifndef __aarch64__
 	{
 		.name =		"disable-vdso",
 		.has_arg =	no_argument,
@@ -1270,6 +1443,8 @@ static struct option mcexec_options[] = {
 		.flag =		&enable_vdso,
 		.val =		1,
 	},
+#endif /*__aarch64__*/
+#endif /*POSTK_DEBUG_ARCH_DEP_53*/
 
 	/* end */
 	{ NULL, 0, NULL, 0, },
@@ -1297,20 +1472,32 @@ int main(int argc, char **argv)
 	char path[1024];
 	char *shell = NULL;
 	char shell_path[1024];
+#ifdef ADD_ENVS_OPTION
+	char **local_env = NULL;
+	struct env_list_entry *extra_env = NULL;
+#endif /* ADD_ENVS_OPTION */
 
 #ifdef USE_SYSCALL_MOD_CALL
 	__glob_argc = argc;
 	__glob_argv = argv;
 #endif
 
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+	page_size = sysconf(_SC_PAGESIZE);
+	page_mask = ~(page_size - 1);
+#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
+
 	altroot = getenv("MCEXEC_ALT_ROOT");
 	if (!altroot) {
 		altroot = "/usr/linux-k1om-4.7/linux-k1om";
 	}
 	
+#ifdef ADD_ENVS_OPTION
+#else /* ADD_ENVS_OPTION */
 	/* Collect environment variables */
 	envs_len = flatten_strings(-1, NULL, environ, &envs);
 	envs = envs;
+#endif /* ADD_ENVS_OPTION */
 
 	error = getrlimit(RLIMIT_STACK, &rlim_stack);
 	if (error) {
@@ -1326,13 +1513,22 @@ int main(int argc, char **argv)
 	}
            
 	/* Parse options ("+" denotes stop at the first non-option) */
+#ifdef ADD_ENVS_OPTION
+	while ((opt = getopt_long(argc, argv, "+c:e:", mcexec_options, NULL)) != -1) {
+#else /* ADD_ENVS_OPTION */
 	while ((opt = getopt_long(argc, argv, "+c:", mcexec_options, NULL)) != -1) {
+#endif /* ADD_ENVS_OPTION */
 		switch (opt) {
 			case 'c':
 				target_core = atoi(optarg);
 				break;
 			
-			case 0:	/* long opt */
+#ifdef ADD_ENVS_OPTION
+			case 'e':
+				add_env_list(&extra_env, optarg);
+				break;
+#endif /* ADD_ENVS_OPTION */
+			case 0: /* long opt */
 				break;
 
 			default: /* '?' */
@@ -1500,6 +1696,20 @@ int main(int argc, char **argv)
 		argv[optind] = path;
 	}
 
+#ifdef ADD_ENVS_OPTION
+	/* Collect environment variables */
+	for (i = 0; environ[i]; i++) {
+		add_env_list(&extra_env, environ[i]);
+	}
+	local_env = create_local_environ(extra_env);
+	envs_len = flatten_strings(-1, NULL, local_env, &envs);
+	envs = envs;
+	destroy_local_environ(local_env);
+	local_env = NULL;
+	destroy_env_list(extra_env);
+	extra_env = NULL;
+#endif /* ADD_ENVS_OPTION */
+
 	for(i = 0; i < sizeof(rlimits) / sizeof(int); i += 2)
 		getrlimit(rlimits[i], &desc->rlimit[rlimits[i + 1]]);
 	desc->envs_len = envs_len;
@@ -1547,10 +1757,11 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+#ifdef POSTK_DEBUG_TEMP_FIX_50 /* n_threads value too large fix */
 	n_threads = ncpu;
-	if (ncpu > 16) {
-		n_threads = 16;
-	}
+#else /* POSTK_DEBUG_TEMP_FIX_50 */
+	n_threads = ncpu + 1;
+#endif /* POSTK_DEBUG_TEMP_FIX_50 */
 
 	/* 
 	 * XXX: keep thread_data ncpu sized despite that there are only
@@ -1735,7 +1946,16 @@ do_generic_syscall(
 	}
 	/* Fake that nodeX in /sys/devices/system/node do not exist,
 	 * where X >= number of LWK NUMA nodes */
+#ifdef POSTK_DEBUG_ARCH_DEP_55
+# ifdef __aarch64__
+#  define __nr_getdents __NR_getdents64
+# else
+#  define __nr_getdents __NR_getdents
+# endif
+	else if (w->sr.number == __nr_getdents && ret > 0) {
+#else  /*POSTK_DEBUG_ARCH_DEP_55*/
 	else if (w->sr.number == __NR_getdents && ret > 0) {
+#endif /*POSTK_DEBUG_ARCH_DEP_55*/
 		struct linux_dirent {
 			long           d_ino;
 			off_t          d_off;
@@ -1790,7 +2010,6 @@ do_generic_syscall(
 			bpos += d->d_reclen;
 		}
 	}
-
 out:
 	__dprintf("do_generic_syscall(%ld):%ld (%#lx)\n", w->sr.number, ret, ret);
 	return ret;
@@ -1964,6 +2183,55 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 		thread_data[cpu].remote_tid = w.sr.rtid;
 
 		switch (w.sr.number) {
+#ifdef POSTK_DEBUG_ARCH_DEP_13 /* arch depend hide */
+#ifdef __aarch64__
+		case __NR_openat:
+			/* initialize buffer */
+			memset(tmpbuf, '\0', sizeof(tmpbuf));
+			memset(pathbuf, '\0', sizeof(pathbuf));
+
+			/* check argument 1 dirfd */
+			if ((int)w.sr.args[0] != AT_FDCWD) {
+				/* dirfd != AT_FDCWD */
+				__dprintf("openat(dirfd != AT_FDCWD)\n");
+				snprintf(tmpbuf, sizeof(tmpbuf), "/proc/self/fd/%d", (int)w.sr.args[0]);
+				ret = readlink(tmpbuf, pathbuf, sizeof(pathbuf) - 1);
+				if (ret < 0) {
+					do_syscall_return(fd, cpu, -errno, 0, 0, 0, 0);
+					break;
+				}
+				__dprintf("  %s -> %s\n", tmpbuf, pathbuf);
+				ret = do_strncpy_from_user(fd, tmpbuf, (void *)w.sr.args[1], PATH_MAX);
+				if (ret >= PATH_MAX) {
+					ret = -ENAMETOOLONG;
+				}
+				if (ret < 0) {
+					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+					break;
+				}
+				strncat(pathbuf, "/", 1);
+				strncat(pathbuf, tmpbuf, strlen(tmpbuf) + 1);
+			} else {
+				/* dirfd == AT_FDCWD */
+				__dprintf("openat(dirfd == AT_FDCWD)\n");
+				ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[1], PATH_MAX);
+				if (ret >= PATH_MAX) {
+					ret = -ENAMETOOLONG;
+				}
+				if (ret < 0) {
+					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+					break;
+				}
+			}
+			__dprintf("openat: %s\n", pathbuf);
+
+			fn = chgpath(pathbuf, tmpbuf);
+
+			ret = open(fn, w.sr.args[2], w.sr.args[3]);
+			SET_ERR(ret);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+#else /* __aarch64__ */
 		case __NR_open:
 			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[0], PATH_MAX);
 			if (ret >= PATH_MAX) {
@@ -1981,6 +2249,26 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
+#endif /* __aarch64__ */
+#else /* POSTK_DEBUG_ARCH_DEP_13 */
+		case __NR_open:
+			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[0], PATH_MAX);
+			if (ret >= PATH_MAX) {
+				ret = -ENAMETOOLONG;
+			}
+			if (ret < 0) {
+				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+				break;
+			}
+			__dprintf("open: %s\n", pathbuf);
+
+			fn = chgpath(pathbuf, tmpbuf);
+
+			ret = open(fn, w.sr.args[1], w.sr.args[2]);
+			SET_ERR(ret);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+#endif /* POSTK_DEBUG_ARCH_DEP_13 */
 
 		case __NR_futex:
 			ret = clock_gettime(w.sr.args[1], &tv);
@@ -2097,7 +2385,11 @@ gettid_out:
 			break;
 		}
 
+#ifdef POSTK_DEBUG_ARCH_DEP_13 /* arch depend hide */
+		case 1079: {
+#else /* POSTK_DEBUG_ARCH_DEP_13 */
 		case __NR_fork: {
+#endif /* POSTK_DEBUG_ARCH_DEP_13 */
 			struct fork_sync *fs;
 			struct fork_sync_container *fsc;
 			struct fork_sync_container *fp;
@@ -2338,16 +2630,23 @@ fork_err:
 							goto return_execve1;
 						}
 
+#ifdef POSTK_DEBUG_TEMP_FIX_9 /* shell-script run via execve arg[0] fix */
+						if (strlen(shell) >= SHELL_PATH_MAX_LEN) {
+#else /* POSTK_DEBUG_TEMP_FIX_9 */
 						if (strlen(shell_path) >= SHELL_PATH_MAX_LEN) {
+#endif /* POSTK_DEBUG_TEMP_FIX_9 */
 							fprintf(stderr, "execve(): error: shell path too long: %s\n", shell_path);
 							ret = ENAMETOOLONG;
 							goto return_execve1;
 						}
 
 						/* Let the LWK know the shell interpreter */
+#ifdef POSTK_DEBUG_TEMP_FIX_9 /* shell-script run via execve arg[0] fix */
+						strcpy(desc->shell_path, shell);
+#else /* POSTK_DEBUG_TEMP_FIX_9 */
 						strcpy(desc->shell_path, shell_path);
+#endif /* POSTK_DEBUG_TEMP_FIX_9 */
 					}
-
 					desc->enable_vdso = enable_vdso;
 					__dprintf("execve(): load_elf_desc() for %s OK, num sections: %d\n",
 						path, desc->num_sections);
@@ -2515,7 +2814,57 @@ return_execve2:
 				ret = do_generic_syscall(&w);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
+#ifdef POSTK_DEBUG_ARCH_DEP_36
+#ifdef __aarch64__
+		case __NR_readlinkat:
+			/* initialize buffer */
+			memset(tmpbuf, '\0', sizeof(tmpbuf));
+			memset(pathbuf, '\0', sizeof(pathbuf));
 
+			/* check argument 1 dirfd */
+			if ((int)w.sr.args[0] != AT_FDCWD) {
+				/* dirfd != AT_FDCWD */
+				__dprintf("readlinkat(dirfd != AT_FDCWD)\n");
+				snprintf(tmpbuf, sizeof(tmpbuf), "/proc/self/fd/%d", (int)w.sr.args[0]);
+				ret = readlink(tmpbuf, pathbuf, sizeof(pathbuf) - 1);
+				if (ret < 0) {
+					do_syscall_return(fd, cpu, -errno, 0, 0, 0, 0);
+					break;
+				}
+				__dprintf("  %s -> %s\n", tmpbuf, pathbuf);
+				ret = do_strncpy_from_user(fd, tmpbuf, (void *)w.sr.args[1], PATH_MAX);
+				if (ret >= PATH_MAX) {
+					ret = -ENAMETOOLONG;
+				}
+				if (ret < 0) {
+					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+					break;
+				}
+				strncat(pathbuf, "/", 1);
+				strncat(pathbuf, tmpbuf, strlen(tmpbuf) + 1);
+			} else {
+				/* dirfd == AT_FDCWD */
+				__dprintf("readlinkat(dirfd == AT_FDCWD)\n");
+				ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[1], PATH_MAX);
+				if (ret >= PATH_MAX) {
+					ret = -ENAMETOOLONG;
+				}
+				if (ret < 0) {
+					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+					break;
+				}
+			}
+			__dprintf("readlinkat: %s\n", pathbuf);
+
+			fn = chgpath(pathbuf, tmpbuf);
+
+			ret = readlink(fn, (char *)w.sr.args[2], w.sr.args[3]);
+			__dprintf("readlinkat: dirfd=%d, path=%s, buf=%s, ret=%ld\n", 
+				(int)w.sr.args[0], fn, (char *)w.sr.args[2], ret);
+			SET_ERR(ret);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+#else	/* __aarch64__ */
 		case __NR_readlink:
 			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[0], PATH_MAX);
 			if (ret >= PATH_MAX) {
@@ -2534,6 +2883,27 @@ return_execve2:
 			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
+#endif	/* __aarch64__ */
+#else	/* POSTK_DEBUG_ARCH_DEP_36 */
+		case __NR_readlink:
+			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[0], PATH_MAX);
+			if (ret >= PATH_MAX) {
+				ret = -ENAMETOOLONG;
+			}
+			if (ret < 0) {
+				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+				break;
+			}
+
+			fn = chgpath(pathbuf, tmpbuf);
+
+			ret = readlink(fn, (char *)w.sr.args[1], w.sr.args[2]);
+			__dprintf("readlink: path=%s, buf=%s, ret=%ld\n", 
+				fn, (char *)w.sr.args[1], ret);
+			SET_ERR(ret);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+#endif	/* POSTK_DEBUG_ARCH_DEP_36 */
 
 		default:
 			ret = do_generic_syscall(&w);

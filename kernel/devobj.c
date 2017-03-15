@@ -86,7 +86,12 @@ int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxp
 	int error;
 	struct devobj *obj  = NULL;
 	const size_t npages = (len + PAGE_SIZE - 1) / PAGE_SIZE;
+#ifdef POSTK_DEBUG_TEMP_FIX_36
+	const size_t uintptr_per_page = (PAGE_SIZE / sizeof(uintptr_t));
+	const size_t pfn_npages = (npages + uintptr_per_page - 1) / uintptr_per_page;
+#else
 	const size_t pfn_npages = (npages / (PAGE_SIZE / sizeof(uintptr_t))) + 1;
+#endif /*POSTK_DEBUG_TEMP_FIX_36*/
 
 	dkprintf("%s: fd: %d, len: %lu, off: %lu \n", __FUNCTION__, fd, len, off);
 
@@ -166,8 +171,10 @@ static void devobj_release(struct memobj *memobj)
 	struct devobj *obj = to_devobj(memobj);
 	struct devobj *free_obj = NULL;
 	uintptr_t handle;
+#ifndef POSTK_DEBUG_TEMP_FIX_36
 	const size_t pfn_npages =
 		(obj->npages / (PAGE_SIZE / sizeof(uintptr_t))) + 1;
+#endif /*!POSTK_DEBUG_TEMP_FIX_36*/
 
 	dkprintf("devobj_release(%p %lx)\n", obj, obj->handle);
 
@@ -196,7 +203,13 @@ static void devobj_release(struct memobj *memobj)
 		}
 
 		if (obj->pfn_table) {
+#ifdef POSTK_DEBUG_TEMP_FIX_36
+			const size_t uintptr_per_page = (PAGE_SIZE / sizeof(uintptr_t));
+			const size_t pfn_npages = (obj->npages + uintptr_per_page - 1) / uintptr_per_page;
 			ihk_mc_free_pages(obj->pfn_table, pfn_npages);
+#else
+			ihk_mc_free_pages(obj->pfn_table, pfn_npages);
+#endif /*POSTK_DEBUG_TEMP_FIX_36*/
 		}
 		kfree(free_obj);
 	}
@@ -250,7 +263,11 @@ static int devobj_get_page(struct memobj *memobj, off_t off, int p2align, uintpt
 			/* TODO: do an arch dependent PTE to mapping flag conversion 
 			 * instead of this inline check, also, we rely on having the
 			 * same PAT config as Linux here.. */
+#ifdef POSTK_DEBUG_ARCH_DEP_12
+			if (pfn_is_write_combined(pfn)) {
+#else /* POSTK_DEBUG_ARCH_DEP_12 */
 			if ((pfn & PFL1_PWT) && !(pfn & PFL1_PCD)) {
+#endif /* POSTK_DEBUG_ARCH_DEP_12 */
 				*flag |= VR_WRITE_COMBINED;
 			}
 

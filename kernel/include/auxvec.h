@@ -1,3 +1,4 @@
+/* auxvec.h COPYRIGHT FUJITSU LIMITED 2015-2016 */
 #ifndef _LINUX_AUXVEC_H
 #define _LINUX_AUXVEC_H
 
@@ -30,6 +31,5 @@
 #define AT_RANDOM 25	/* address of 16 random bytes */
 
 #define AT_EXECFN  31	/* filename of program */
-
 
 #endif /* _LINUX_AUXVEC_H */

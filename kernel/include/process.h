@@ -9,6 +9,7 @@
 /*
  * HISTORY
  */
+/* process.h COPYRIGHT FUJITSU LIMITED 2015-2016 */
 
 #ifndef HEADER_PROCESS_H
 #define HEADER_PROCESS_H
@@ -63,6 +64,10 @@
 #define PS_TRACED            0x40 /* Set to "not running" by a ptrace related event */
 #define PS_STOPPING          0x80
 #define PS_TRACING           0x100
+#ifdef POSTK_DEBUG_TEMP_FIX_41 /* early to wait4() wakeup for ptrace, fix. */
+#define PS_DELAY_STOPPED     0x200
+#define PS_DELAY_TRACED      0x400
+#endif /* POSTK_DEBUG_TEMP_FIX_41 */
 
 #define PS_NORMAL	(PS_INTERRUPTIBLE | PS_UNINTERRUPTIBLE)
 
@@ -132,6 +137,10 @@
 #define WEXITED		0x00000004
 #define WCONTINUED	0x00000008
 #define WNOWAIT		0x01000000	/* Don't reap, just poll status.  */
+
+#ifdef POSTK_DEBUG_ARCH_DEP_44 /* wait() add support __WALL */
+#define __WALL		0x40000000	/* Wait on all children, regardless of type */
+#endif /* POSTK_DEBUG_ARCH_DEP_44 */
 #define	__WCLONE	0x80000000
 
 /* idtype */

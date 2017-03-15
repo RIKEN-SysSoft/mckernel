@@ -9,6 +9,7 @@
 /*
  * HISTORY
  */
+/* cpu.h COPYRIGHT FUJITSU LIMITED 2015-2016 */
 
 #ifndef IHK_CPU_H
 #define IHK_CPU_H
@@ -80,10 +81,20 @@ void ihk_mc_init_user_process(ihk_mc_kernel_context_t *ctx,
 void ihk_mc_init_user_tlsbase(ihk_mc_user_context_t *ctx,
                               unsigned long tls_base_addr);
 
+#ifdef POSTK_DEBUG_ARCH_DEP_42 /* /proc/cpuinfo support added. */
+long ihk_mc_show_cpuinfo(char *buf, size_t buf_size, unsigned long read_off, int *eofp);
+#endif /* POSTK_DEBUG_ARCH_DEP_42 */
+
 enum ihk_mc_user_context_regtype {
 	IHK_UCR_STACK_POINTER = 1,
 	IHK_UCR_PROGRAM_COUNTER = 2,
 };
+
+#ifdef POSTK_DEBUG_ARCH_DEP_23 /* add arch dep. clone_process() function */
+struct thread;
+void arch_clone_thread(struct thread *othread, unsigned long pc,
+			unsigned long sp, struct thread *nthread);
+#endif /* POSTK_DEBUG_ARCH_DEP_23 */
 
 void ihk_mc_modify_user_context(ihk_mc_user_context_t *uctx,
                                 enum ihk_mc_user_context_regtype reg,

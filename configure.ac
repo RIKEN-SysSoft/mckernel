@@ -1,3 +1,4 @@
+# configure.ac COPYRIGHT FUJITSU LIMITED 2015-2016
 AC_PREREQ(2.63)
 m4_define([IHK_VERSION_m4],[0.9.0])dnl
 m4_define([MCKERNEL_VERSION_m4],[0.9.0])dnl
@@ -66,8 +67,21 @@ fi
 test "x$prefix" = xNONE && prefix="$ac_default_prefix"
 
 case $WITH_TARGET in
-    attached-mic|builtin-x86|smp-x86)
-	ARCH=`uname -m`
+# POSTK_DEBUG_ARCH_DEP_30, Expansion of the branch.
+#    attached-mic|builtin-x86|smp-x86)
+#	ARCH=`uname -m`
+#	AC_PROG_CC
+#	XCC=$CC
+#	;;
+    attached-mic|builtin-x86|smp-*)
+	case $WITH_TARGET in
+	    attached-mic|builtin-x86|smp-x86)
+		ARCH=`uname -m`
+		;;
+	    smp-arm64)
+		ARCH=arm64
+		;;
+	esac
 	AC_PROG_CC
 	XCC=$CC
 	;;
@@ -76,6 +90,14 @@ case $WITH_TARGET in
 	AC_CHECK_PROG(XCC,
 		[x86_64-$ARCH-linux-gcc],
 		[x86_64-$ARCH-linux-gcc],
+		[no])
+	CC=$XCC
+	;;
+    smp-arm64)
+	ARCH=arm64
+	AC_CHECK_PROG(XCC,
+		[${CROSS_COMPILE}gcc],
+		[${CROSS_COMPILE}gcc],
 		[no])
 	CC=$XCC
 	;;
@@ -129,6 +151,9 @@ case $WITH_TARGET in
 	if test "X$SBINDIR" = X; then
 		SBINDIR="$prefix/sbin"
 	fi
+	if test "X$ETCDIR" = X; then
+		ETCDIR="$prefix/etc"
+	fi
 	if test "X$KMODDIR" = X; then
 		KMODDIR="$prefix/kmod"
 	fi
@@ -146,14 +171,28 @@ case $WITH_TARGET in
 	if test "X$SBINDIR" = X; then
 		SBINDIR="$prefix/sbin"
 	fi
-	if test "X$ETCDIR" = X; then
-		ETCDIR="$prefix/etc"
-	fi
 	if test "X$KMODDIR" = X; then
 		KMODDIR="$prefix/kmod"
 	fi
 	if test "X$MANDIR" = X; then
 		MANDIR="$prefix/smp-x86/man"
+	fi
+	;;
+    smp-arm64)
+	if test "X$KERNDIR" = X; then
+		KERNDIR="$prefix/smp-arm64/kernel"
+	fi
+	if test "X$BINDIR" = X; then
+		BINDIR="$prefix/bin"
+	fi
+	if test "X$SBINDIR" = X; then
+		SBINDIR="$prefix/sbin"
+	fi
+	if test "X$KMODDIR" = X; then
+		KMODDIR="$prefix/kmod"
+	fi
+	if test "X$MANDIR" = X; then
+		MANDIR="$prefix/smp-arm64/man"
 	fi
 	;;
     *)
@@ -230,6 +269,8 @@ MCCTRL_FIND_KSYM([vdso_end])
 MCCTRL_FIND_KSYM([vdso_pages])
 MCCTRL_FIND_KSYM([__vvar_page])
 MCCTRL_FIND_KSYM([hpet_address])
+# POSTK_DEBUG_ARCH_DEP_50, add:find kernel symbol.
+MCCTRL_FIND_KSYM([vdso_spec])
 MCCTRL_FIND_KSYM([hv_clock])
 MCCTRL_FIND_KSYM([sys_readlink])
 
@@ -237,7 +278,9 @@ case $ENABLE_MEMDUMP in
 	yes|no|auto)
 		;;
 	default)
-		if test "x$WITH_TARGET" = "xsmp-x86" ; then
+# POSTK_DEBUG_ARCH_DEP_30, Expansion of the branch.
+#		if test "x$WITH_TARGET" = "xsmp-x86" ; then
+		if test "x$WITH_TARGET" = "xsmp-*" ; then
 			ENABLE_MEMDUMP=auto
 		else
 			ENABLE_MEMDUMP=no
@@ -250,6 +293,8 @@ esac
 
 if test "x$ENABLE_MEMDUMP" != "xno" ; then
 	enableval=yes
+# POSTK_DEBUG_ARCH_DEP_32, AC_CHECK_LIB for libiberty
+	AC_CHECK_LIB([iberty],[hex_init],[],[enableval=no])
 	AC_CHECK_LIB([bfd],[bfd_init],[],[enableval=no])
 	AC_CHECK_HEADER([bfd.h],[],[enableval=no])
 
@@ -297,11 +342,28 @@ AC_SUBST(DCFA_RESEASE_DATE)
 AC_SUBST(uncomment_if_ENABLE_MEMDUMP)
 
 AC_CONFIG_HEADERS([executer/config.h])
+# POSTK_DEBUG_ARCH_DEP_37
+#AC_CONFIG_FILES([
+#	Makefile
+#	executer/user/Makefile
+#	executer/kernel/mcctrl/Makefile
+#	executer/kernel/mcctrl/arch/x86_64/Makefile
+#	executer/kernel/mcoverlayfs/Makefile
+#	kernel/Makefile
+#	kernel/Makefile.build
+#	arch/x86/tools/mcreboot-attached-mic.sh
+#	arch/x86/tools/mcshutdown-attached-mic.sh
+#	arch/x86/tools/mcreboot-builtin-x86.sh
+#	arch/x86/tools/mcreboot-smp-x86.sh
+#	arch/x86/tools/mcstop+release-smp-x86.sh
+#	arch/x86/tools/mcshutdown-builtin-x86.sh
+#	arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in
+#])
 AC_CONFIG_FILES([
 	Makefile
 	executer/user/Makefile
 	executer/kernel/mcctrl/Makefile
-	executer/kernel/mcctrl/arch/x86_64/Makefile
+	executer/kernel/mcctrl/arch/$ARCH/Makefile
 	executer/kernel/mcoverlayfs/Makefile
 	executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile
 	executer/kernel/mcoverlayfs/linux-4.0.9/Makefile
@@ -316,6 +378,8 @@ AC_CONFIG_FILES([
 	arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in
 	arch/x86/tools/irqbalance_mck.service
 	arch/x86/tools/irqbalance_mck.in
+	kernel/config/config.smp-arm64
+	arch/arm64/kernel/vdso/Makefile
 ])
 
 AS_IF([test "x$enable_dcfa" = xyes], [

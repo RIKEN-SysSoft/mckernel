@@ -1,24 +1,33 @@
+# Makefile.build.in COPYRIGHT FUJITSU LIMITED 2015-2016
 VPATH=@abs_srcdir@
 SRC=$(VPATH)
 IHKDIR=$(IHKBASE)/$(TARGETDIR)
 OBJS = init.o mem.o debug.o mikc.o listeners.o ap.o syscall.o cls.o host.o
 OBJS += process.o copy.o waitq.o futex.o timer.o plist.o fileobj.o shmobj.o
 OBJS += zeroobj.o procfs.o devobj.o sysfs.o
+# POSTK_DEBUG_ARCH_DEP_18 coredump arch separation.
+# OBJS added gencore.o
+OBJS += gencore.o
 DEPSRCS=$(wildcard $(SRC)/*.c)
 
 CFLAGS += -I$(SRC)/include -D__KERNEL__ -g
 LDFLAGS += -e arch_start
 IHKOBJ = ihk/ihk.o
 
+# POSTK_DEBUG_ARCH_DEP_24
+default: all
+
 include $(SRC)/config/config.$(TARGET)
 include $(IHKBASE)/Makefile.common
 
 # CFLAGS += -I$(SRC)/../arch/$(IHKARCH)/kernel/include -I$(SRC)/../lib/include
 
-SUBCMD_OPTS = TARGET=$(TARGET) O=$(CURDIR)/ihk CC=$(CC) LD=$(LD) SRC=$(SRC)
-
 OBJDUMP ?= objdump
 OBJCOPY ?= objcopy
+
+# POSTK_DEBUG_ARCH_DEP_26
+#SUBCMD_OPTS = TARGET=$(TARGET) O=$(CURDIR)/ihk CC=$(CC) LD=$(LD) SRC=$(SRC)
+SUBCMD_OPTS = TARGET=$(TARGET) O=$(CURDIR)/ihk CC=$(CC) LD=$(LD) OBJCOPY=$(OBJCOPY) SRC=$(SRC)
 
 ld_kern_cmd_base = $(LD) $(LDFLAGS) -o $@.elf $^
 mkimage_cmd_base = [ -f $(SRC)/script/mkimage.$(TARGET) ] && CC=$(CC) LD=$(LD) LDFLAGS="$(LDFLAGS_MKIMAGE)" OBJDUMP=$(OBJDUMP) OBJCOPY=$(OBJCOPY) sh $(SRC)/script/mkimage.$(TARGET) '$@.elf' '$@' '$(SRC)' || cp $@.elf $@

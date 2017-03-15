@@ -9,6 +9,7 @@
 /*
  * HISTORY:
  */
+/* procfs.c COPYRIGHT FUJITSU LIMITED 2016 */
 
 #include <linux/slab.h>
 #include <linux/string.h>
@@ -487,6 +488,253 @@ procfs_exit(int osnum)
 	up(&procfs_file_list_lock);
 }
 
+#ifdef POSTK_DEBUG_TEMP_FIX_43 /* Failure of pread/pwrite greater than 4 MB fix. */
+static ssize_t
+mckernel_procfs_read(struct file *file, char __user *buf, size_t nbytes,
+	       loff_t *ppos)
+{
+	struct inode * inode = file->f_path.dentry->d_inode;
+	char *kern_buffer = NULL;
+	int order = 0;
+	volatile struct procfs_read *r = NULL;
+	struct ikc_scd_packet isp;
+	int ret;
+	unsigned long pbuf;
+	size_t count = nbytes;
+	size_t copy_size = 0;
+	size_t copied = 0;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
+	struct proc_dir_entry *dp = PDE(inode);
+	struct procfs_list_entry *e = dp->data;
+#else	
+	struct procfs_list_entry *e = PDE_DATA(inode);
+#endif	
+	loff_t offset = *ppos;
+	char pathbuf[PROCFS_NAME_MAX];
+	char *path;
+
+	path = getpath(e, pathbuf, 256);
+	dprintk("mckernel_procfs_read: invoked for %s, offset: %lu, count: %d\n", 
+			path, offset, count); 
+	
+	if (count <= 0 || offset < 0) {
+		return 0;
+	}
+	
+	/* NOTE: we need physically contigous memory to pass through IKC */
+	for (order = get_order(count); order >= 0; order--) {
+		kern_buffer = (char *)__get_free_pages(GFP_KERNEL, order);
+		if (kern_buffer) {
+			break;
+		}
+	}
+	if (!kern_buffer) {
+		printk("mckernel_procfs_read(): ERROR: allocating kernel buffer\n");
+		return -ENOMEM;
+	}
+	copy_size = PAGE_SIZE * (1 << order);
+
+	pbuf = virt_to_phys(kern_buffer);
+
+	r = kmalloc(sizeof(struct procfs_read), GFP_KERNEL);
+	if (r == NULL) {
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	while (count > 0) {
+		int this_len = min_t(ssize_t, count, copy_size);
+
+		r->pbuf = pbuf;
+		r->eof = 0;
+		r->ret = -EIO; /* default */
+		r->status = 0;
+		r->offset = offset;
+		r->count = this_len;
+		r->readwrite = 0;
+		strncpy((char *)r->fname, path, PROCFS_NAME_MAX);
+		isp.msg = SCD_MSG_PROCFS_REQUEST;
+		isp.ref = 0;
+		isp.arg = virt_to_phys(r);
+		
+		ret = mcctrl_ikc_send(osnum_to_os(e->osnum), 0, &isp);
+		
+		if (ret < 0) {
+			goto out; /* error */
+		}
+
+		/* Wait for a reply. */
+		ret = -EIO; /* default exit code */
+		dprintk("now wait for a relpy\n");
+		
+		/* Wait for the status field of the procfs_read structure set ready. */
+		if (wait_event_interruptible_timeout(procfsq, r->status != 0, HZ) == 0) {
+			kprintf("ERROR: mckernel_procfs_read: timeout (1 sec).\n");
+			goto out;
+		}
+		
+		/* Wake up and check the result. */
+		dprintk("mckernel_procfs_read: woke up. ret: %d, eof: %d\n", r->ret, r->eof);
+		
+		if (r->ret > 0) {
+			if (copy_to_user(buf, kern_buffer, r->ret)) {
+				kprintf("ERROR: mckernel_procfs_read: copy_to_user failed.\n");
+				ret = -EFAULT;
+				goto out;
+			}
+
+			buf += r->ret;
+			offset += r->ret;
+			copied += r->ret;
+			count -= r->ret;
+		} else {
+			if (!copied) {
+				/* Transmit error from McKernel */
+				copied = r->ret;
+			}
+			break;
+		}
+
+		if (r->eof != 0) {
+			break;
+		}
+	}
+	*ppos = offset;
+	ret = copied;
+
+out:
+	if(kern_buffer)
+		free_pages((uintptr_t)kern_buffer, order);
+	if(r)
+		kfree((void *)r);
+	
+	return ret;
+}
+
+static ssize_t
+mckernel_procfs_write(struct file *file, const char __user *buf, size_t nbytes,
+	      loff_t *ppos)
+{
+	struct inode * inode = file->f_path.dentry->d_inode;
+	char *kern_buffer = NULL;
+	int order = 0;
+	volatile struct procfs_read *r = NULL;
+	struct ikc_scd_packet isp;
+	int ret;
+	unsigned long pbuf;
+	size_t count = nbytes;
+	size_t copy_size = 0;
+	size_t copied = 0;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
+	struct proc_dir_entry *dp = PDE(inode);
+	struct procfs_list_entry *e = dp->data;
+#else	
+	struct procfs_list_entry *e = PDE_DATA(inode);
+#endif	
+	loff_t offset = *ppos;
+	char pathbuf[PROCFS_NAME_MAX];
+	char *path;
+
+	path = getpath(e, pathbuf, 256);
+	dprintk("mckernel_procfs_read: invoked for %s, offset: %lu, count: %d\n", 
+			path, offset, count); 
+	
+	if (count <= 0 || offset < 0) {
+		return 0;
+	}
+	
+	/* NOTE: we need physically contigous memory to pass through IKC */
+	for (order = get_order(count); order >= 0; order--) {
+		kern_buffer = (char *)__get_free_pages(GFP_KERNEL, order);
+		if (kern_buffer) {
+			break;
+		}
+	}
+	if (!kern_buffer) {
+		printk("mckernel_procfs_read(): ERROR: allocating kernel buffer\n");
+		return -ENOMEM;
+	}
+	copy_size = PAGE_SIZE * (1 << order);
+
+	pbuf = virt_to_phys(kern_buffer);
+
+	r = kmalloc(sizeof(struct procfs_read), GFP_KERNEL);
+	if (r == NULL) {
+		ret = -ENOMEM;
+		goto out;
+	}
+	dprintk("offset: %lx, count: %d, cpu: %d\n", offset, count, e->cpu);
+
+	while (count > 0) {
+		int this_len = min_t(ssize_t, count, copy_size);
+
+		if (copy_from_user(kern_buffer, buf, this_len)) {
+			ret = -EFAULT;
+			goto out;
+		}
+		
+		r->pbuf = pbuf;
+		r->eof = 0;
+		r->ret = -EIO; /* default */
+		r->status = 0;
+		r->offset = offset;
+		r->count = this_len;
+		r->readwrite = 1;
+		strncpy((char *)r->fname, path, PROCFS_NAME_MAX);
+		isp.msg = SCD_MSG_PROCFS_REQUEST;
+		isp.ref = 0;
+		isp.arg = virt_to_phys(r);
+		
+		ret = mcctrl_ikc_send(osnum_to_os(e->osnum), 0, &isp);
+		
+		if (ret < 0) {
+			goto out; /* error */
+		}
+		
+		/* Wait for a reply. */
+		ret = -EIO; /* default exit code */
+		dprintk("now wait for a relpy\n");
+		
+		/* Wait for the status field of the procfs_read structure set ready. */
+		if (wait_event_interruptible_timeout(procfsq, r->status != 0, HZ) == 0) {
+			kprintf("ERROR: mckernel_procfs_read: timeout (1 sec).\n");
+			goto out;
+		}
+		
+		/* Wake up and check the result. */
+		dprintk("mckernel_procfs_read: woke up. ret: %d, eof: %d\n", r->ret, r->eof);
+		
+		if (r->ret > 0) {
+			buf += r->ret;
+			offset += r->ret;
+			copied += r->ret;
+			count -= r->ret;
+		} else {
+			if (!copied){
+				/* Transmit error from McKernel */
+				copied = r->ret;
+			}
+			break;
+		}
+
+		if (r->eof != 0) {
+			break;
+		}
+	}
+	*ppos = offset;
+	ret = copied;
+
+out:
+	if(kern_buffer)
+		free_pages((uintptr_t)kern_buffer, order);
+	if(r)
+		kfree((void *)r);
+	
+	return ret;
+}
+
+#else /* POSTK_DEBUG_TEMP_FIX_43 */
+
 /**
  * \brief The callback funciton for McKernel procfs
  *
@@ -598,7 +846,7 @@ out:
 
 static ssize_t
 mckernel_procfs_write(struct file *file, const char __user *buf, size_t nbytes,
-	       loff_t *ppos)
+	      loff_t *ppos)
 {
 	struct inode * inode = file->f_path.dentry->d_inode;
 	char *kern_buffer = NULL;
@@ -698,6 +946,7 @@ out:
 	
 	return ret;
 }
+#endif /* POSTK_DEBUG_TEMP_FIX_43 */
 
 static loff_t
 mckernel_procfs_lseek(struct file *file, loff_t offset, int orig)
@@ -824,7 +1073,11 @@ static const struct procfs_entry pid_entry_stuff[] = {
 
 static const struct procfs_entry base_entry_stuff[] = {
 //	PROC_REG("cmdline",    S_IRUGO, NULL),
+#ifdef POSTK_DEBUG_ARCH_DEP_42 /* /proc/cpuinfo support added. */
+	PROC_REG("cpuinfo",    S_IRUGO, NULL),
+#else /* POSTK_DEBUG_ARCH_DEP_42 */
 //	PROC_REG("cpuinfo",    S_IRUGO, NULL),
+#endif /* POSTK_DEBUG_ARCH_DEP_42 */
 //	PROC_REG("meminfo",    S_IRUGO, NULL),
 //	PROC_REG("pagetypeinfo",S_IRUGO, NULL),
 //	PROC_REG("softirq",    S_IRUGO, NULL),

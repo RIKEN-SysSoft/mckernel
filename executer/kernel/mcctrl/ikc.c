@@ -283,7 +283,6 @@ int prepare_ikc_channels(ihk_os_t os)
 	}
 
 	usrdata->os = os;
-	init_waitqueue_head(&usrdata->wq_prepare);
 	ihk_host_os_set_usrdata(os, usrdata);
 	memcpy(&usrdata->listen_param, &listen_param, sizeof listen_param);
 	ihk_ikc_listen_port(os, &usrdata->listen_param);

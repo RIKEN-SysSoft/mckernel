@@ -1,3 +1,4 @@
+/* mem.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
 /**
  * \file mem.c
  *  License details are found in the file LICENSE.
@@ -691,6 +692,43 @@ void coredump(struct thread *thread, void *regs)
 	freecore(&coretable);
 }
 
+#ifdef POSTK_DEBUG_ARCH_DEP_8
+void remote_flush_tlb_cpumask(struct process_vm *vm, 
+		unsigned long addr, int cpu_id)
+{
+	unsigned long cpu;
+	cpu_set_t _cpu_set;
+	int flush_ind;
+
+	if (addr) {
+		flush_ind = (addr >> PAGE_SHIFT) % IHK_TLB_FLUSH_IRQ_VECTOR_SIZE;
+	}
+	/* Zero address denotes full TLB flush */
+	else {	
+		/* Random.. */
+		flush_ind = (rdtsc()) % IHK_TLB_FLUSH_IRQ_VECTOR_SIZE;
+	}
+
+	/* Take a copy of the cpu set so that we don't hold the lock
+	 * all the way while interrupting other cores */
+	ihk_mc_spinlock_lock_noirq(&vm->address_space->cpu_set_lock);
+	memcpy(&_cpu_set, &vm->address_space->cpu_set, sizeof(cpu_set_t));
+	ihk_mc_spinlock_unlock_noirq(&vm->address_space->cpu_set_lock);
+
+	/* Loop through CPUs in this address space and interrupt them for
+	 * TLB flush on the specified address */
+	for_each_set_bit(cpu, (const unsigned long*)&_cpu_set.__bits, CPU_SETSIZE) {
+		if (ihk_mc_get_processor_id() == cpu) 
+			continue;
+
+		dkprintf("remote_flush_tlb_cpumask: flush_ind: %d, addr: 0x%lX, interrupting cpu: %d\n",
+		        flush_ind, addr, cpu);
+
+		ihk_mc_interrupt_cpu(cpu,
+				     ihk_mc_get_vector(flush_ind + IHK_TLB_FLUSH_IRQ_VECTOR_START));
+	}
+}
+#else /* POSTK_DEBUG_ARCH_DEP_8 */
 void remote_flush_tlb_cpumask(struct process_vm *vm, 
 		unsigned long addr, int cpu_id)
 {
@@ -737,8 +775,14 @@ void remote_flush_tlb_cpumask(struct process_vm *vm,
 		dkprintf("remote_flush_tlb_cpumask: flush_ind: %d, addr: 0x%lX, interrupting cpu: %d\n",
 		        flush_ind, addr, cpu);
 
+#ifdef POSTK_DEBUG_ARCH_DEP_8 /* arch depend hide */
+		/* TODO(pka_idke) Interim support */
+		ihk_mc_interrupt_cpu(cpu, 
+				     ihk_mc_get_vector(flush_ind + IHK_TLB_FLUSH_IRQ_VECTOR_START));
+#else /* POSTK_DEBUG_ARCH_DEP_8 */
 		ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpu)->apic_id, 
 		                     flush_ind + IHK_TLB_FLUSH_IRQ_VECTOR_START);
+#endif /* POSTK_DEBUG_ARCH_DEP_8 */
 	}
 	
 #ifdef DEBUG_IC_TLB
@@ -771,6 +815,7 @@ void remote_flush_tlb_cpumask(struct process_vm *vm,
 	
 	ihk_mc_spinlock_unlock_noirq(&flush_entry->lock);
 }
+#endif /* POSTK_DEBUG_ARCH_DEP_8 */
 
 void tlb_flush_handler(int vector)
 {
@@ -1150,11 +1195,18 @@ void ihk_mc_unmap_virtual(void *va, int npages, int free_physical)
 	for (i = 0; i < npages; i++) {
 		ihk_mc_pt_clear_page(NULL, (char *)va + (i << PAGE_SHIFT));
 	}
+#ifdef POSTK_DEBUG_TEMP_FIX_42 /* add unmap virtual tlb flush. */
+	flush_tlb();
+#endif /* POSTK_DEBUG_TEMP_FIX_42 */
 	
+#ifdef POSTK_DEBUG_TEMP_FIX_51 /* ihk_mc_unmap_virtual() free_physical disabled */
+	ihk_pagealloc_free(vmap_allocator, (unsigned long)va, npages);
+#else /* POSTK_DEBUG_TEMP_FIX_51 */
 	if (free_physical) {
 		ihk_pagealloc_free(vmap_allocator, (unsigned long)va, npages);
 		flush_tlb_single((unsigned long)va);
 	}
+#endif /* POSTK_DEBUG_TEMP_FIX_51 */
 }
 
 #ifdef ATTACHED_MIC
@@ -1541,10 +1593,17 @@ static void ___kmalloc_insert_chunk(struct list_head *free_list,
 	if (next_chunk) {
 		list_add_tail(&chunk->list, &next_chunk->list);
 	}
+#ifdef POSTK_DEBUG_TEMP_FIX_46 /* kmalloc free_list consolidate bug fix. */
+	/* Add tail */
+	else {
+		list_add_tail(&chunk->list, free_list);
+	}
+#else /* POSTK_DEBUG_TEMP_FIX_46 */
 	/* Add after the head */
 	else {
 		list_add(&chunk->list, free_list);
 	}
+#endif /* POSTK_DEBUG_TEMP_FIX_46 */
 
 	return;
 }
@@ -1720,3 +1779,44 @@ void ___kmalloc_print_free_list(struct list_head *list)
 	kprintf_unlock(irqflags);
 }
 
+#ifdef POSTK_DEBUG_ARCH_DEP_27
+int search_free_space(struct thread *thread, size_t len, intptr_t hint,
+		      int pgshift, intptr_t *addrp)
+{
+	struct vm_regions *region = &thread->vm->region;
+	intptr_t addr;
+	int error;
+	struct vm_range *range;
+	size_t pgsize = (size_t)1 << pgshift;
+
+	dkprintf("search_free_space(%lx,%lx,%d,%p)\n", len, hint, pgshift, addrp);
+
+	addr = hint;
+	for (;;) {
+		addr = (addr + pgsize - 1) & ~(pgsize - 1);
+		if ((region->user_end <= addr)
+				|| ((region->user_end - len) < addr)) {
+			ekprintf("search_free_space(%lx,%lx,%p):"
+					"no space. %lx %lx\n",
+					len, hint, addrp, addr,
+					region->user_end);
+			error = -ENOMEM;
+			goto out;
+		}
+
+		range = lookup_process_memory_range(thread->vm, addr, addr+len);
+		if (range == NULL) {
+			break;
+		}
+		addr = range->end;
+	}
+
+	error = 0;
+	*addrp = addr;
+
+out:
+	dkprintf("search_free_space(%lx,%lx,%d,%p): %d %lx\n",
+			len, hint, pgshift, addrp, error, addr);
+	return error;
+}
+#endif	/* POSTK_DEBUG_ARCH_DEP_27 */

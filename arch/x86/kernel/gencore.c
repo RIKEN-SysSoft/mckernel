@@ -1,3 +1,4 @@
+#ifndef POSTK_DEBUG_ARCH_DEP_18 /* coredump arch separation. */
 #include <ihk/debug.h>
 #include <kmalloc.h>
 #include <cls.h>
@@ -532,3 +533,4 @@ void freecore(struct coretable **coretable)
 	kfree(phys_to_virt(ct[1].addr));	/* ph */
 	kfree(*coretable);
 }
+#endif /* !POSTK_DEBUG_ARCH_DEP_18 */

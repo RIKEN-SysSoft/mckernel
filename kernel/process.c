@@ -1,3 +1,4 @@
+/* process.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
 /**
  * \file process.c
  *  License details are found in the file LICENSE.
@@ -42,6 +43,9 @@
 #define ekprintf(...) kprintf(__VA_ARGS__)
 #endif
 
+#ifdef POSTK_DEBUG_ARCH_DEP_22
+extern struct thread *arch_switch_context(struct thread *prev, struct thread *next);
+#endif /* POSTK_DEBUG_ARCH_DEP_22 */
 extern long alloc_debugreg(struct thread *proc);
 extern void save_debugreg(unsigned long *debugreg);
 extern void restore_debugreg(unsigned long *debugreg);
@@ -337,6 +341,9 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 	/* NOTE: sp is the user mode stack! */
 	ihk_mc_init_user_process(&thread->ctx, &thread->uctx, ((char *)thread) +
 				 KERNEL_STACK_NR_PAGES * PAGE_SIZE, pc, sp);
+#ifdef POSTK_DEBUG_ARCH_DEP_23 /* add arch dep. clone_process() function */
+	arch_clone_thread(org, pc, sp, thread);
+#endif /* POSTK_DEBUG_ARCH_DEP_23 */
 
 	memcpy(thread->uctx, org->uctx, sizeof(*org->uctx));
 	ihk_mc_modify_user_context(thread->uctx, IHK_UCR_STACK_POINTER, sp);
@@ -806,6 +813,7 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 				break;
 			}
 		}
+
 		neighbor = next_process_memory_range(vm, range);
 		pgsize = -1;
 		for (;;) {
@@ -1596,15 +1604,46 @@ retry:
 			}
 			dkprintf("%s: copying 0x%lx:%lu\n",
 				__FUNCTION__, pgaddr, pgsize);
-			memcpy(virt, phys_to_virt(phys), pgsize);
+#ifdef POSTK_DEBUG_TEMP_FIX_14
+			if (page) {
+				// McKernel memory space
+				memcpy(virt, phys_to_virt(phys), pgsize);
+			} else {
+				// Host Kernel memory space
+				const enum ihk_mc_pt_attribute attr = 0;
+				const int remove_vmap_allocator_entry = 1;
+				void* vmap;
 
+				vmap = ihk_mc_map_virtual(phys, npages, attr);
+				if (!vmap) {
+					error = -ENOMEM;
+					kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):cannot virtual mapping. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
+					ihk_mc_free_pages(virt, npages);
+					goto out;
+				}
+				memcpy(virt, vmap, pgsize);
+				ihk_mc_unmap_virtual(vmap, npages, remove_vmap_allocator_entry);
+			}
 			phys = virt_to_phys(virt);
 			if (page) {
 				page_unmap(page);
 			}
 			page = phys_to_page(phys);
+#else /*POSTK_DEBUG_TEMP_FIX_14*/
+			memcpy(virt, phys_to_virt(phys), pgsize);
+#endif /*POSTK_DEBUG_TEMP_FIX_14*/
 		}
 	}
+#ifdef POSTK_DEBUG_ARCH_DEP_21
+	else if (!(range->flag & VR_PRIVATE)) { /*VR_SHARED*/
+		if (!(attr & PTATTR_DIRTY)) {
+			if (!(range->flag & VR_STACK)) {
+				attr &= ~PTATTR_WRITABLE;
+			}
+		}
+	}
+#endif /*POSTK_DEBUG_ARCH_DEP_21*/
+
 	/*****/
 	if (ptep) {
 		error = ihk_mc_pt_set_pte(vm->address_space->page_table, ptep,
@@ -1676,7 +1715,7 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 				"access denied. %d\n",
 				ihk_mc_get_processor_id(), vm,
 				fault_addr0, reason, error);
-		kprintf("%s: reason: %s%s%s%s%s%s%s\n", __FUNCTION__,
+		kprintf("%s: reason: %s%s%s%s%s%s%s\n", __FUNCTION__, 
 			(reason & PF_PROT) ? "PF_PROT " : "",
 			(reason & PF_WRITE) ? "PF_WRITE " : "",
 			(reason & PF_USER) ? "PF_USER " : "",
@@ -1829,6 +1868,12 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	p = (unsigned long *)(stack + minsz);
 	s_ind = -1;
 
+#ifdef POSTK_DEBUG_ARCH_DEP_15 /* userstack 16byte align */
+	if(!((envc + argc) % 2)){
+		p[s_ind--] = 0;
+	}
+#endif /* POSTK_DEBUG_ARCH_DEP_15 */
+
 	/* "random" 16 bytes on the very top */
 	p[s_ind--] = 0x010101011;
 	p[s_ind--] = 0x010101011;
@@ -1847,7 +1892,11 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	p[s_ind--] = AT_PHENT;
 	p[s_ind--] = pn->at_phdr;  /* AT_PHDR */
 	p[s_ind--] = AT_PHDR;
+#ifdef POSTK_DEBUG_ARCH_DEP_50
+	p[s_ind--] = PAGE_SIZE; /* AT_PAGESZ */
+#else
 	p[s_ind--] = 4096; /* AT_PAGESZ */
+#endif /* POSTK_DEBUG_ARCH_DEP_50 */
 	p[s_ind--] = AT_PAGESZ;
 	p[s_ind--] = pn->at_clktck; /* AT_CLKTCK */
 	p[s_ind--] = AT_CLKTCK;
@@ -1966,7 +2015,11 @@ unsigned long extend_process_region(struct process_vm *vm,
 #endif
 	if(flag & VR_DEMAND_PAGING){
 	  // demand paging no need to allocate page now
+#ifdef POSTK_DEBUG_ARCH_DEP_60 /* brk() use demand-paging */
+	  dkprintf("demand page do not allocate page\n");
+#else /* POSTK_DEBUG_ARCH_DEP_60 */
 	  kprintf("demand page do not allocate page\n");
+#endif /* POSTK_DEBUG_ARCH_DEP_60 */
 	  p=0;
 	}else{
 
@@ -2571,8 +2624,13 @@ static void do_migrate(void)
 		dkprintf("do_migrate(): migrated TID %d from CPU %d to CPU %d\n",
 			req->thread->tid, old_cpu_id, cpu_id);
 		
+#ifdef POSTK_DEBUG_ARCH_DEP_8 /* arch depend hide */
+		v->flags |= CPU_FLAG_NEED_RESCHED;
+		ihk_mc_interrupt_cpu(cpu_id, ihk_mc_get_vector(IHK_GV_IKC));
+#else /* POSTK_DEBUG_ARCH_DEP_8 */
 		v->flags |= CPU_FLAG_NEED_RESCHED;
 		ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
+#endif /* POSTK_DEBUG_ARCH_DEP_8 */
 		double_rq_unlock(cur_v, v, irqstate);
 
 ack:
@@ -2688,6 +2746,9 @@ redo:
 
 		ihk_mc_load_page_table(next->vm->address_space->page_table);
 
+#ifdef POSTK_DEBUG_ARCH_DEP_22
+		last = arch_switch_context(prev, next);
+#else
 		dkprintf("[%d] schedule: tlsblock_base: 0x%lX\n",
 		         ihk_mc_get_processor_id(), next->tlsblock_base);
 
@@ -2709,12 +2770,13 @@ redo:
 		else {
 			last = ihk_mc_switch_context(NULL, &next->ctx, prev);
 		}
+#endif /* POSTK_DEBUG_ARCH_DEP_22 */
 
 		/*
 		 * We must hold the lock throughout the context switch, otherwise
 		 * an IRQ could deschedule this process between page table loading and
 		 * context switching and leave the execution in an inconsistent state.
-		 * Since we may be migrated to another core meanwhile, we refer
+		 * Since we may be migrated to another core meanwhile, we refer 
 		 * directly to cpu_local_var.
 		 */
 		ihk_mc_spinlock_unlock(&(cpu_local_var(runq_lock)),
@@ -2733,6 +2795,91 @@ redo:
 		ihk_mc_spinlock_unlock(&(cpu_local_var(runq_lock)),
 			cpu_local_var(runq_irqstate));
 	}
+
+/* be gone later */
+//#if 1
+//	/* FIXME: temporary solution.
+//	 * move threads from the last CPU core to other available cores 
+//	 * if it's oversubscribed 
+//	 * Will be solved by proper timesharing in the future */
+//	if (ihk_mc_get_processor_id() == (num_processors - 1)) {
+//		int old_cpu_id;
+//		int cpu_id;
+//		struct cpu_local_var *v;
+//		struct cpu_local_var *cur_v;
+//		struct process *proc_to_move = NULL;
+//		int irqstate2;
+//
+//		irqstate = cpu_disable_interrupt_save();
+//
+//		ihk_mc_spinlock_lock_noirq(&(get_this_cpu_local_var()->runq_lock));
+//		v = get_this_cpu_local_var();
+//
+//		if (v->runq_len > 1) {
+//			/* Pick another process */
+//			list_for_each_entry_safe(proc, tmp, &(v->runq), sched_list) {
+//				if (proc != cpu_local_var(current)) {
+//					list_del(&proc->sched_list);
+//					--v->runq_len;
+//					proc_to_move = proc;
+//					break;
+//				}
+//			}
+//		}
+//		ihk_mc_spinlock_unlock_noirq(&(v->runq_lock));
+//
+//		if (proc_to_move) {
+//			ihk_mc_spinlock_lock_noirq(&cpuid_head_lock);
+//
+//			for (cpu_id = num_processors - 2; cpu_id > -1; --cpu_id) {
+//
+//				if (get_cpu_local_var(cpu_id)->status != 
+//						CPU_STATUS_IDLE) {
+//					continue;
+//				}
+//
+//				get_cpu_local_var(cpu_id)->status = CPU_STATUS_RESERVED;
+//				break;
+//			}
+//
+//			ihk_mc_spinlock_unlock_noirq(&cpuid_head_lock);
+//
+//			if (cpu_id == -1) {
+//				kprintf("error: no more CPUs left to balance oversubscribed tail core\n");
+//				terminate_host(proc_to_move->ftn->pid);
+//				cpu_restore_interrupt(irqstate);
+//				return;
+//			}
+//
+//			v = get_cpu_local_var(cpu_id);
+//			cur_v = get_this_cpu_local_var();
+//
+//			double_rq_lock(cur_v, v, &irqstate2);
+//
+//			old_cpu_id = proc_to_move->cpu_id;
+//			proc_to_move->cpu_id = cpu_id;
+//			CPU_CLR(old_cpu_id, &proc_to_move->cpu_set);
+//			CPU_SET(cpu_id, &proc_to_move->cpu_set);
+//			settid(proc_to_move, 2, cpu_id, old_cpu_id);
+//			__runq_add_proc(proc_to_move, cpu_id);
+//			cpu_clear_and_set(old_cpu_id, cpu_id, &proc_to_move->vm->cpu_set, 
+//					&proc_to_move->vm->cpu_set_lock);
+//
+//			double_rq_unlock(cur_v, v, irqstate2);
+//
+//			/* Kick scheduler */
+//			if (cpu_id != ihk_mc_get_processor_id())
+//				ihk_mc_interrupt_cpu(
+//
+//						get_x86_cpu_local_variable(cpu_id)->apic_id, 
+//						0xd1);
+//
+//			dkprintf("moved TID %d to CPU: %d\n", 
+//				proc_to_move->ftn->tid, cpu_id);
+//		}
+//		cpu_restore_interrupt(irqstate);
+//	}
+//#endif
 }
 
 void
@@ -2760,6 +2907,7 @@ void check_need_resched(void)
 		ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
 	}
 }
+
 
 int
 sched_wakeup_thread(struct thread *thread, int valid_states)
@@ -2806,10 +2954,15 @@ sched_wakeup_thread(struct thread *thread, int valid_states)
 	ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 
 	if (!status && (thread->cpu_id != ihk_mc_get_processor_id())) {
-		dkprintf("sched_wakeup_process,issuing IPI,thread->cpu_id=%d\n",
+		dkprintf("sched_wakeup_process,issuing IPI,proc->cpu_id=%d\n", 
 				 thread->cpu_id);
+#ifdef POSTK_DEBUG_ARCH_DEP_8 /* arch depend hide */
+		ihk_mc_interrupt_cpu(thread->cpu_id,
+		                     ihk_mc_get_vector(IHK_GV_IKC));
+#else /* POSTK_DEBUG_ARCH_DEP_8 */
 		ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(thread->cpu_id)->apic_id,
 		                     0xd1);
+#endif /* POSTK_DEBUG_ARCH_DEP_8 */
 	}
 
 	return status;
@@ -2852,9 +3005,15 @@ void sched_request_migrate(int cpu_id, struct thread *thread)
 	v->status = CPU_STATUS_RUNNING;
 	ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
 
+#ifdef POSTK_DEBUG_ARCH_DEP_8 /* arch depend hide */
+	if (cpu_id != ihk_mc_get_processor_id())
+		ihk_mc_interrupt_cpu(/* Kick scheduler */
+			thread->cpu_id, ihk_mc_get_vector(IHK_GV_IKC));
+#else /* POSTK_DEBUG_ARCH_DEP_8 */
 	if (cpu_id != ihk_mc_get_processor_id())
 		ihk_mc_interrupt_cpu(/* Kick scheduler */
 				get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
+#endif /* POSTK_DEBUG_ARCH_DEP_8 */
 
 	schedule();
 	waitq_finish_wait(&req.wq, &entry);
@@ -2868,7 +3027,7 @@ void __runq_add_thread(struct thread *thread, int cpu_id)
 	++v->runq_len;
 	v->flags |= CPU_FLAG_NEED_RESCHED;
 	thread->cpu_id = cpu_id;
-	//thread->proc->status = PS_RUNNING;	/* not set here */
+	//thread->ftn->status = PS_RUNNING;	/* not set here */
 	get_cpu_local_var(cpu_id)->status = CPU_STATUS_RUNNING;
 
 	dkprintf("runq_add_proc(): tid %d added to CPU[%d]'s runq\n", 
@@ -2887,9 +3046,15 @@ void runq_add_thread(struct thread *thread, int cpu_id)
 	procfs_create_thread(thread);
 
 	/* Kick scheduler */
+#ifdef POSTK_DEBUG_ARCH_DEP_8 /* arch depend hide */
+	if (cpu_id != ihk_mc_get_processor_id())
+		ihk_mc_interrupt_cpu(
+			thread->cpu_id, ihk_mc_get_vector(IHK_GV_IKC));
+#else /* POSTK_DEBUG_ARCH_DEP_8 */
 	if (cpu_id != ihk_mc_get_processor_id())
 		ihk_mc_interrupt_cpu(
 		         get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
+#endif /* POSTK_DEBUG_ARCH_DEP_8 */
 }
 
 /* NOTE: shouldn't remove a running process! */

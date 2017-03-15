@@ -1,4 +1,4 @@
-/* executer/config.h.in.  Generated from configure.ac by autoheader.  */
+/* executer/kernel/mcctrl/config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* whether mcoverlayfs is enabled */
 #undef ENABLE_MCOVERLAYFS
@@ -71,6 +71,9 @@
 
 /* Define to address of kernel symbol zap_page_range, or 0 if exported */
 #undef MCCTRL_KSYM_zap_page_range
+
+/* Define to address of kernel symbol vdso_spec, or 0 if exported. POSTK_DEBUG_ARCH_DEP_50 */
+#undef MCCTRL_KSYM_vdso_spec
 
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT

@@ -159,6 +159,11 @@ enum ihk_mc_pt_attribute {
 
 enum ihk_mc_pt_attribute attr_mask;
 
+static inline int pfn_is_write_combined(uintptr_t pfn)
+{
+	return ((pfn & PFL1_PWT) && !(pfn & PFL1_PCD));
+}
+
 static inline int pte_is_null(pte_t *ptep)
 {
 	return (*ptep == PTE_NULL);

@@ -1,3 +1,4 @@
+#ifndef POSTK_DEBUG_ARCH_DEP_18 /* coredump arch separation. */
 /* 
  * Structures and defines from GPLed file.
  */
@@ -92,3 +93,4 @@ struct elf_prpsinfo64
 	char pr_fname[16];
 	char pr_psargs[ELF_PRARGSZ];
 };
+#endif /* !POSTK_DEBUG_ARCH_DEP_18 */

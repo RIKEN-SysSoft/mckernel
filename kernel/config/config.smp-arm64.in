@@ -1,0 +1,39 @@
+CC = ${CROSS_COMPILE}gcc
+LD = ${CROSS_COMPILE}ld
+OBJDUMP = ${CROSS_COMPILE}objdump
+OBJCOPY = ${CROSS_COMPILE}objcopy
+
+#  ARM64_MEMORY_LAYOUT
+#  ----+-----------+-----------------------
+#    # | page size | virtual memory space
+#  ----+-----------+-----------------------
+#    1 |       4KB |  39bit [linux-linaro-tracking, upstream kernel]
+#    2 |       4KB |  48bit
+#    3 |      64KB |  42bit [CentOS]
+#    4 |      64KB |  48bit
+#  ----+-----------+-----------------------
+HOST_DIR=@KDIR@
+HOST_CONFIG=$(HOST_DIR)/.config
+HOST_KERNEL_CONFIG_ARM64_64K_PAGES=$(shell grep -E "^CONFIG_ARM64_64K_PAGES=y" $(HOST_CONFIG) | sed 's|CONFIG_ARM64_64K_PAGES=||g')
+HOST_KERNEL_CONFIG_ARM64_VA_BITS=$(shell grep -E "^CONFIG_ARM64_VA_BITS=" $(HOST_CONFIG) | sed 's|CONFIG_ARM64_VA_BITS=||g')
+
+ifeq ($(HOST_KERNEL_CONFIG_ARM64_64K_PAGES), y)
+ ifeq ($(HOST_KERNEL_CONFIG_ARM64_VA_BITS), 42)
+  $(info PAGE_SIZE:64KB VA_BITS:42 PGTABLE_LEVELS:2)
+  ARM64_MEMORY_LAYOUT=3
+ else
+  $(info PAGE_SIZE:64KB VA_BITS:48, PGTABLE_LEVELS:3)
+  ARM64_MEMORY_LAYOUT=4
+ endif
+else
+ ifeq ($(HOST_KERNEL_CONFIG_ARM64_VA_BITS), 39)
+  $(info PAGE_SIZE:4KB VA_BITS:39 PGTABLE_LEVELS:3)
+  ARM64_MEMORY_LAYOUT=1
+ else
+  $(info PAGE_SIZE:4KB VA_BITS:48 PGTABLE_LEVELS:4)
+  ARM64_MEMORY_LAYOUT=2
+ endif
+endif
+
+$(info linker script:smp-arm64_type$(ARM64_MEMORY_LAYOUT).lds)
+LDFLAGS += -T $(SRC)/config/smp-arm64_type$(ARM64_MEMORY_LAYOUT).lds
