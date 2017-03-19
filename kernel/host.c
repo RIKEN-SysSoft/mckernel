@@ -757,6 +757,9 @@ void init_host_ikc2linux(int linux_cpu)
 		param.intr_cpu = linux_cpu;
 		param.pkt_size = sizeof(struct ikc_scd_packet);
 		param.queue_size = 2 * num_processors * sizeof(struct ikc_scd_packet);
+		if (param.queue_size < PAGE_SIZE * 4) {
+			param.queue_size = PAGE_SIZE * 4;
+		}
 		param.magic = 0x1129;
 		param.handler = dummy_packet_handler;
 
