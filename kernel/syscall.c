@@ -8595,6 +8595,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 #ifdef TRACK_SYSCALLS
 	uint64_t t_s;
 #endif // TRACK_SYSCALLS
+	struct thread *thread = cpu_local_var(current);
 
 	set_cputime(1);
 	if(cpu_local_var(current)->proc->status == PS_EXITED &&
@@ -8656,8 +8657,8 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		l = syscall_generic_forwarding(num, ctx);
 	}
 
-	if (num != __NR_sched_yield &&
-			num != __NR_futex) {
+	if (!list_empty(&thread->sigpending) ||
+	    !list_empty(&thread->sigcommon->sigpending)) {
 		check_signal(l, NULL, num);
 	}
 

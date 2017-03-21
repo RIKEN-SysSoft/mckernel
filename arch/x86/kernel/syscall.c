@@ -1297,6 +1297,9 @@ done:
 				sched_wakeup_thread(tthread, PS_STOPPED);
 				tthread->proc->status = PS_RUNNING;
 			}
+			else {
+				sched_wakeup_thread(tthread, PS_INTERRUPTIBLE);
+			}
 		}
 	}
 	release_thread(tthread);
