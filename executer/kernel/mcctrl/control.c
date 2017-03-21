@@ -1250,10 +1250,12 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	struct mckernel_exec_file *mcef_iter;
 	int retval;
 	int os_ind = ihk_host_os_get_index(os);
-	char *pathbuf, *fullpath;
+	char *pathbuf = NULL;
+	char *fullpath = NULL;
+	char *kfilename = NULL;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd = NULL;
-	int i;
+	int i, len;
 
 	if (os_ind < 0) {
 		return -EINVAL;
@@ -1304,7 +1306,20 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 		goto out_put_ppd;
 	}
 
-	file = open_exec(filename);
+	kfilename = kmalloc(PATH_MAX, GFP_TEMPORARY);
+	if (!kfilename) {
+		retval = -ENOMEM;
+		kfree(pathbuf);
+		goto out_put_ppd;
+	}
+
+	len = strncpy_from_user(kfilename, filename, PATH_MAX);
+	if (unlikely(len < 0)) {
+		retval = -EINVAL;
+		goto out_free;
+	}
+
+	file = open_exec(kfilename);
 	retval = PTR_ERR(file);
 	if (IS_ERR(file)) {
 		goto out_free;
@@ -1345,7 +1360,8 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	proc_exe_link(os_ind, task_tgid_vnr(current), fullpath);
 	up(&mckernel_exec_file_lock);
 
-	dprintk("%d open_exec and holding file: %s\n", (int)task_tgid_vnr(current), filename);
+	dprintk("%d open_exec and holding file: %s\n", (int)task_tgid_vnr(current),
+			kfilename);
 
 	kfree(pathbuf);
 
@@ -1355,6 +1371,7 @@ out_put_file:
 	fput(file);
 out_free:
 	kfree(pathbuf);
+	kfree(kfilename);
 out_put_ppd:
 	mcctrl_put_per_proc_data(ppd);
 out:
