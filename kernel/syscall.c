@@ -1410,9 +1410,15 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	else {
 		/* choose mapping address */
 #ifdef POSTK_DEBUG_ARCH_DEP_27
+#ifdef POSTK_DEBUG_ARCH_DEP_61
+		error = search_free_space(cpu_local_var(current), len,
+					  region->map_end + (fd > 0) ? ((USER_END-TASK_UNMAPPED_BASE)/2) : 0,
+					  PAGE_SHIFT+p2align, &addr);
+#else
 		error = search_free_space(cpu_local_var(current), len,
 					  region->map_end + (fd > 0) ? PTL4_SIZE : 0,
 					  PAGE_SHIFT+p2align, &addr);
+#endif  /* POSTK_DEBUG_ARCH_DEP_61 */
 #else
 		error = search_free_space(len, region->map_end +
 				(fd > 0) ? PTL4_SIZE : 0,
