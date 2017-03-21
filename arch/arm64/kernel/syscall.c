@@ -117,7 +117,7 @@ extern unsigned long do_fork(int clone_flags, unsigned long newsp,
 			     unsigned long tlsblock_base, unsigned long curpc,
 			     unsigned long cursp);
 
-SYSCALL_DECLARE(arm64_clone)
+SYSCALL_DECLARE(clone)
 {
 	if ((int)ihk_mc_syscall_arg0(ctx) & CLONE_VFORK) {
 		return do_fork(CLONE_VFORK|SIGCHLD, 0, 0, 0, 0, ihk_mc_syscall_pc(ctx), ihk_mc_syscall_sp(ctx));
@@ -1489,14 +1489,6 @@ out:
 	dkprintf("sys_mmap(%lx,%lx,%x,%x,%d,%lx): %ld %lx\n",
 			addr0, len0, prot, flags0, fd, off0, error, addr);
 	return (!error)? addr: error;
-}
-
-SYSCALL_DECLARE(clone)
-{
-    return do_fork((int)ihk_mc_syscall_arg0(ctx), ihk_mc_syscall_arg1(ctx),
-                   ihk_mc_syscall_arg2(ctx), ihk_mc_syscall_arg3(ctx),
-                   ihk_mc_syscall_arg4(ctx), ihk_mc_syscall_pc(ctx),
-                   ihk_mc_syscall_sp(ctx));
 }
 
 SYSCALL_DECLARE(shmget)
