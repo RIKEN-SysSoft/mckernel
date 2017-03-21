@@ -84,6 +84,7 @@ case $WITH_TARGET in
 	esac
 	AC_PROG_CC
 	XCC=$CC
+	CFLAGS="$CFLAGS -ffreestanding -fno-tree-loop-distribute-patterns"
 	;;
     builtin-mic)
 	ARCH=k1om
@@ -331,6 +332,7 @@ AC_SUBST(ETCDIR)
 AC_SUBST(KMODDIR)
 AC_SUBST(KERNDIR)
 AC_SUBST(MANDIR)
+AC_SUBST(CFLAGS)
 AC_SUBST(ENABLE_MCOVERLAYFS)
 
 AC_SUBST(IHK_VERSION)
@@ -367,6 +369,7 @@ AC_CONFIG_FILES([
 	executer/kernel/mcoverlayfs/Makefile
 	executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile
 	executer/kernel/mcoverlayfs/linux-4.0.9/Makefile
+	executer/kernel/mcoverlayfs/linux-4.6.7/Makefile
 	kernel/Makefile
 	kernel/Makefile.build
 	arch/x86/tools/mcreboot-attached-mic.sh
@@ -374,6 +377,7 @@ AC_CONFIG_FILES([
 	arch/x86/tools/mcreboot-builtin-x86.sh
 	arch/x86/tools/mcreboot-smp-x86.sh
 	arch/x86/tools/mcstop+release-smp-x86.sh
+	arch/x86/tools/eclair-dump-backtrace.exp
 	arch/x86/tools/mcshutdown-builtin-x86.sh
 	arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in
 	arch/x86/tools/irqbalance_mck.service

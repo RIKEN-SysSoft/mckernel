@@ -118,6 +118,9 @@ SYSCALL_HANDLED(602, pmc_start)
 SYSCALL_HANDLED(603, pmc_stop)
 SYSCALL_HANDLED(604, pmc_reset)
 SYSCALL_HANDLED(700, get_cpu_id)
+#ifdef TRACK_SYSCALLS
+SYSCALL_HANDLED(__NR_track_syscalls, track_syscalls)
+#endif // TRACK_SYSCALLS
 SYSCALL_DELEGATED(1024, open)
 SYSCALL_DELEGATED(1035, readlink)
 SYSCALL_HANDLED(1045, signalfd)

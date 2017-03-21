@@ -36,13 +36,22 @@ enum {
 	MF_HAS_PAGER	= 0x0001,
 	MF_SHMDT_OK	= 0x0002,
 	MF_IS_REMOVABLE	= 0x0004,
+	MF_PREFETCH = 0x0008,
+	MF_ZEROFILL = 0x0010,
+	MF_REG_FILE = 0x1000,
+	MF_DEV_FILE = 0x2000,
+	MF_END
 };
 
+#define MEMOBJ_READY              0
+#define MEMOBJ_TO_BE_PREFETCHED   1
+
 struct memobj {
-	struct memobj_ops *	ops;
-	uint32_t		flags;
-	int8_t			padding[4];
-	ihk_spinlock_t		lock;
+	struct memobj_ops *ops;
+	uint32_t flags;
+	uint32_t status;
+	size_t size;
+	ihk_spinlock_t lock;
 };
 
 typedef void memobj_release_func_t(struct memobj *obj);

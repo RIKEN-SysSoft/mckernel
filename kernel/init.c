@@ -108,11 +108,11 @@ static void dma_test(void)
 }
 #endif
 
-extern char *ihk_mc_get_kernel_args(void);
+extern char *ihk_get_kargs(void);
 
 char *find_command_line(char *name)
 {
-	char *cmdline = ihk_mc_get_kernel_args();
+	char *cmdline = ihk_get_kargs();
 
 	if (!cmdline) {
 		return NULL;
@@ -122,7 +122,7 @@ char *find_command_line(char *name)
 
 static void parse_kargs(void)
 {
-	kprintf("KCommand Line: %s\n", ihk_mc_get_kernel_args());
+	kprintf("KCommand Line: %s\n", ihk_get_kargs());
 
 	if (1) {
 		char *key = "osnum=";
@@ -254,7 +254,7 @@ static void rest_init(void)
 	time_init();
 	kmalloc_init();
 
-	ikc_master_init();
+	ihk_ikc_master_init();
 
 	proc_init();
 
@@ -336,11 +336,8 @@ static void post_init(void)
 	}
 
 	if (find_command_line("hidos")) {
-		extern ihk_spinlock_t syscall_lock;
-
 		init_host_syscall_channel();
 		init_host_syscall_channel2();
-		ihk_mc_spinlock_init(&syscall_lock);
 	}
 
 	arch_setup_vdso();
@@ -373,6 +370,7 @@ int main(void)
 
 	kputs("IHK/McKernel started.\n");
 
+	ihk_set_kmsg(virt_to_phys(&kmsg_buf), IHK_KMSG_SIZE);
 	arch_init();
 
 	/*

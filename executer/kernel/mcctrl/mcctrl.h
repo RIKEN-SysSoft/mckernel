@@ -202,9 +202,12 @@ struct mcctrl_per_proc_data {
 	struct list_head wq_list_exact;
 	ihk_spinlock_t wq_list_lock;
 	wait_queue_head_t wq_prepare;
+	wait_queue_head_t wq_procfs;
 
 	struct list_head per_thread_data_hash[MCCTRL_PER_THREAD_DATA_HASH_SIZE];
 	rwlock_t per_thread_data_hash_lock[MCCTRL_PER_THREAD_DATA_HASH_SIZE];
+	cpumask_t cpu_set;
+	int ikc_target_cpu;
 	atomic_t refcount;
 };
 
@@ -266,6 +269,13 @@ struct node_topology {
 	struct list_head chain;
 };
 
+struct mcctrl_part_exec {
+	struct mutex lock;	
+	int nr_processes;
+	int nr_processes_left;
+	cpumask_t cpus_used;
+};
+
 #define CPU_LONGS (((NR_CPUS) + (BITS_PER_LONG) - 1) / (BITS_PER_LONG))
 
 #define MCCTRL_PER_PROC_DATA_HASH_SHIFT 7
@@ -282,8 +292,9 @@ struct mcctrl_usrdata {
 	int	base_cpu;
 	int	job_pos;
 	int	mcctrl_dma_abort;
+	struct mutex reserve_lock;
 	unsigned long	last_thread_exec;
-	
+	wait_queue_head_t wq_procfs;
 	struct list_head per_proc_data_hash[MCCTRL_PER_PROC_DATA_HASH_SIZE];
 	rwlock_t per_proc_data_hash_lock[MCCTRL_PER_PROC_DATA_HASH_SIZE];
 
@@ -295,6 +306,7 @@ struct mcctrl_usrdata {
 	nodemask_t numa_online;
 	struct list_head cpu_topology_list;
 	struct list_head node_topology_list;
+	struct mcctrl_part_exec part_exec;
 };
 
 struct mcctrl_signal {
@@ -373,7 +385,7 @@ struct procfs_file {
 	char fname[PROCFS_NAME_MAX];	/* procfs filename (request) */
 };
 
-void procfs_answer(unsigned int arg, int err);
+void procfs_answer(struct mcctrl_usrdata *ud, int pid);
 int procfsm_packet_handler(void *os, int msg, int pid, unsigned long arg);
 void add_tid_entry(int osnum, int pid, int tid);
 void add_pid_entry(int osnum, int pid);

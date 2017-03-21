@@ -39,7 +39,9 @@ else
 	irqbalance_used="no"
 fi
 
-while getopts :i:k:c:m:o:f: OPT
+turbo=""
+
+while getopts :ti:k:c:m:o:f: OPT
 do
 	case ${OPT} in
 	f)	facility=${OPTARG}
@@ -76,6 +78,8 @@ do
 		;;
 	m) mem=${OPTARG}
 		;;
+	t) turbo="turbo"
+		;;
 	*)  echo "invalid option -${OPT}" >&2
 		exit 1
 	esac
@@ -100,7 +104,7 @@ error_exit() {
 		;&
 	mcoverlayfs_loaded)
 		if [ "$enable_mcoverlay" == "yes" ]; then
-			rmmod mcoverlay
+			rmmod mcoverlay 2>/dev/null
 		fi
 		;&
 	linux_proc_bind_mounted)
@@ -130,15 +134,7 @@ error_exit() {
 		fi
 		;&
 	mcctrl_loaded)
-		rmmod mcctrl || echo "warning: failed to remove mcctrl" >&2
-		;&
-	mem_reserved)
-		mem=`${SBINDIR}/ihkconfig 0 query mem`
-		if [ "${mem}" != "" ]; then
-			if ! ${SBINDIR}/ihkconfig 0 release mem $mem > /dev/null; then
-				echo "warning: failed to release memory" >&2
-			fi
-		fi
+		rmmod mcctrl 2>/dev/null || echo "warning: failed to remove mcctrl" >&2
 		;&
 	cpus_reserved)
 		cpus=`${SBINDIR}/ihkconfig 0 query cpu`
@@ -148,11 +144,19 @@ error_exit() {
 			fi
 		fi
 		;&
+	mem_reserved)
+		mem=`${SBINDIR}/ihkconfig 0 query mem`
+		if [ "${mem}" != "" ]; then
+			if ! ${SBINDIR}/ihkconfig 0 release mem $mem > /dev/null; then
+				echo "warning: failed to release memory" >&2
+			fi
+		fi
+		;&
 	ihk_smp_loaded)
-		rmmod ihk_smp_x86 || echo "warning: failed to remove ihk_smp_x86" >&2
+		rmmod ihk_smp_x86 2>/dev/null || echo "warning: failed to remove ihk_smp_x86" >&2
 		;&
 	ihk_loaded)
-		rmmod ihk || echo "warning: failed to remove ihk" >&2
+		rmmod ihk 2>/dev/null || echo "warning: failed to remove ihk" >&2
 		;&
 	irqbalance_stopped)
 		if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
@@ -168,6 +172,11 @@ error_exit() {
 			if ! systemctl start irqbalance.service; then
 				echo "warning: failed to start irqbalance" >&2;
 			fi
+		fi
+		;&
+	aslr_disabled)
+		if [ -f /tmp/mckernel_randomize_va_space ]; then
+			cat /tmp/mckernel_randomize_va_space > /proc/sys/kernel/randomize_va_space
 		fi
 		;&
 	initial)
@@ -197,6 +206,9 @@ if [ "${ENABLE_MCOVERLAYFS}" == "yes" ]; then
 		if [ ${linux_version_code} -ge 262144 -a ${linux_version_code} -lt 262400 ]; then
 			enable_mcoverlay="yes"
 		fi
+		if [ ${linux_version_code} -ge 263680 -a ${linux_version_code} -lt 263936 ]; then
+			enable_mcoverlay="yes"
+		fi
 	else
 		if [ ${linux_version_code} -eq 199168 -a ${rhel_release} -ge 327 ]; then
 			enable_mcoverlay="yes"
@@ -218,17 +230,23 @@ if [ "$cpus" == "" ]; then
 	fi
 fi
 
+# Disable address space layout randomization
+if [ -f /proc/sys/kernel/randomize_va_space ] && [ "`cat /proc/sys/kernel/randomize_va_space`" != "0" ]; then
+	cat /proc/sys/kernel/randomize_va_space > /tmp/mckernel_randomize_va_space
+	echo "0" > /proc/sys/kernel/randomize_va_space
+fi
+
 # Remove mcoverlay if loaded
 if [ "$enable_mcoverlay" == "yes" ]; then
-	if [ "`lsmod | grep mcoverlay`" != "" ]; then
+	if grep mcoverlay /proc/modules &>/dev/null; then
 		if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_sys`" != "" ]; then umount -l /tmp/mcos/mcos0_sys; fi
 		if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_proc`" != "" ]; then umount -l /tmp/mcos/mcos0_proc; fi
 		if [ "`cat /proc/mounts | grep /tmp/mcos/linux_proc`" != "" ]; then umount -l /tmp/mcos/linux_proc; fi
 		if [ "`cat /proc/mounts | grep /tmp/mcos`" != "" ]; then umount -l /tmp/mcos; fi
 		if [ -e /tmp/mcos ]; then rm -rf /tmp/mcos; fi
-		if ! rmmod mcoverlay; then
+		if ! rmmod mcoverlay 2>/dev/null; then
 			echo "error: removing mcoverlay" >&2
-			error_exit "initial"
+			error_exit "aslr_disabled"
 		fi
 	fi
 fi
@@ -238,7 +256,7 @@ if [ "${irqbalance_used}" == "yes" ]; then
     systemctl stop irqbalance_mck.service 2>/dev/null
     if ! systemctl stop irqbalance.service 2>/dev/null ; then
 		echo "error: stopping irqbalance" >&2
-		error_exit "initial"
+		error_exit "aslr_disabled"
 	fi;
 fi
 
@@ -253,12 +271,15 @@ if [ ${LOGMODE} -ne 0 ]; then
 fi
 
 # Load IHK if not loaded
-if [ "`lsmod | grep ihk`" == "" ]; then
-	if ! insmod ${KMODDIR}/ihk.ko; then
+if ! grep -E 'ihk\s' /proc/modules &>/dev/null; then
+	if ! insmod ${KMODDIR}/ihk.ko 2>/dev/null; then
 		echo "error: loading ihk" >&2
 		error_exit "irqbalance_stopped"
 	fi
 fi
+
+# Increase swappiness so that we have better chance to allocate memory for IHK
+echo 100 > /proc/sys/vm/swappiness
 
 # Drop Linux caches to free memory
 sync && echo 3 > /proc/sys/vm/drop_caches
@@ -266,8 +287,10 @@ sync && echo 3 > /proc/sys/vm/drop_caches
 # Merge free memory areas into large, physically contigous ones
 echo 1 > /proc/sys/vm/compact_memory 2>/dev/null
 
+sync
+
 # Load IHK-SMP if not loaded and reserve CPUs and memory
-if [ "`lsmod | grep ihk_smp_x86`" == "" ]; then
+if ! grep ihk_smp_x86 /proc/modules &>/dev/null; then
 	ihk_irq=""
 	for i in `seq 64 255`; do
 		if [ ! -d /proc/irq/$i ] && [ "`cat /proc/interrupts | grep ":" | awk '{print $1}' | grep -o '[0-9]*' | grep -e '^$i$'`" == "" ]; then
@@ -279,25 +302,38 @@ if [ "`lsmod | grep ihk_smp_x86`" == "" ]; then
 		echo "error: no IRQ available" >&2
 		error_exit "ihk_loaded"
 	fi
-	if ! insmod ${KMODDIR}/ihk-smp-x86.ko ihk_start_irq=$ihk_irq ihk_ikc_irq_core=$ihk_ikc_irq_core; then
+	if ! insmod ${KMODDIR}/ihk-smp-x86.ko ihk_start_irq=$ihk_irq ihk_ikc_irq_core=$ihk_ikc_irq_core 2>/dev/null; then
 		echo "error: loading ihk-smp-x86" >&2
 		error_exit "ihk_loaded"
 	fi
-	if ! ${SBINDIR}/ihkconfig 0 reserve cpu ${cpus}; then
-		echo "error: reserving CPUs" >&2;
-		error_exit "ihk_smp_loaded"
+
+	# Free MCDRAM (special case for OFP SNC-4 mode)
+	if [ "`hostname | grep "c[0-9][0-9][0-9][0-9].ofp"`" != "" ] && [ "`cat /sys/devices/system/node/online`" == "0-7" ]; then
+		for i in 4 5 6 7; do
+			find /sys/devices/system/node/node$i/memory*/ -name "online" | while read f; do
+				echo 0 > $f 2>&1 > /dev/null;
+			done
+			find /sys/devices/system/node/node$i/memory*/ -name "online" | while read f; do
+				echo 1 > $f 2>&1 > /dev/null;
+			done
+		done
 	fi
+
 	if ! ${SBINDIR}/ihkconfig 0 reserve mem ${mem}; then
 		echo "error: reserving memory" >&2
-		error_exit "cpus_reserved"
+		error_exit "ihk_smp_loaded"
+	fi
+	if ! ${SBINDIR}/ihkconfig 0 reserve cpu ${cpus}; then
+		echo "error: reserving CPUs" >&2;
+		error_exit "mem_reserved"
 	fi
 fi
 
 # Load mcctrl if not loaded
-if [ "`lsmod | grep mcctrl`" == "" ]; then
-	if ! insmod ${KMODDIR}/mcctrl.ko; then
+if ! grep mcctrl /proc/modules &>/dev/null; then
+	if ! insmod ${KMODDIR}/mcctrl.ko 2>/dev/null; then
 		echo "error: inserting mcctrl.ko" >&2
-		error_exit "mem_reserved"
+		error_exit "cpus_reserved"
 	fi
 fi
 
@@ -337,7 +373,7 @@ if ! ${SBINDIR}/ihkosctl 0 load ${KERNDIR}/mckernel.img; then
 fi
 
 # Set kernel arguments
-if ! ${SBINDIR}/ihkosctl 0 kargs "hidos ksyslogd=${LOGMODE}"; then
+if ! ${SBINDIR}/ihkosctl 0 kargs "hidos ksyslogd=${LOGMODE} $turbo"; then
 	echo "error: setting kernel arguments" >&2
 	error_exit "os_created"
 fi
@@ -355,27 +391,37 @@ fi
 
 # Overlay /proc, /sys with McKernel specific contents
 if [ "$enable_mcoverlay" == "yes" ]; then
-	if [ ! -e /tmp/mcos ]; then mkdir -p /tmp/mcos; fi
+	if [ ! -e /tmp/mcos ]; then 
+		mkdir -p /tmp/mcos; 
+	fi
 	if ! mount -t tmpfs tmpfs /tmp/mcos; then
 		echo "error: mount /tmp/mcos" >&2
 		error_exit "tmp_mcos_created"
 	fi
-	if [ ! -e /tmp/mcos/linux_proc ]; then mkdir -p /tmp/mcos/linux_proc; fi
+	if [ ! -e /tmp/mcos/linux_proc ]; then 
+		mkdir -p /tmp/mcos/linux_proc; 
+	fi
 	if ! mount --bind /proc /tmp/mcos/linux_proc; then
 		echo "error: mount /tmp/mcos/linux_proc" >&2
 		error_exit "tmp_mcos_mounted"
 	fi
-	if ! insmod ${KMODDIR}/mcoverlay.ko; then
+	if ! insmod ${KMODDIR}/mcoverlay.ko 2>/dev/null; then
 		echo "error: inserting mcoverlay.ko" >&2
 		error_exit "linux_proc_bind_mounted"
 	fi
 	while [ ! -e /proc/mcos0 ]
 	do
-		sleep 1
+		sleep 0.1
 	done
-	if [ ! -e /tmp/mcos/mcos0_proc ]; then mkdir -p /tmp/mcos/mcos0_proc; fi
-	if [ ! -e /tmp/mcos/mcos0_proc_upper ]; then mkdir -p /tmp/mcos/mcos0_proc_upper; fi
-	if [ ! -e /tmp/mcos/mcos0_proc_work ]; then mkdir -p /tmp/mcos/mcos0_proc_work; fi
+	if [ ! -e /tmp/mcos/mcos0_proc ]; then 
+		mkdir -p /tmp/mcos/mcos0_proc; 
+	fi
+	if [ ! -e /tmp/mcos/mcos0_proc_upper ]; then 
+		mkdir -p /tmp/mcos/mcos0_proc_upper; 
+	fi
+	if [ ! -e /tmp/mcos/mcos0_proc_work ]; then 
+		mkdir -p /tmp/mcos/mcos0_proc_work; 
+	fi
 	if ! mount -t mcoverlay mcoverlay -o lowerdir=/proc/mcos0:/proc,upperdir=/tmp/mcos/mcos0_proc_upper,workdir=/tmp/mcos/mcos0_proc_work,nocopyupw,nofscheck /tmp/mcos/mcos0_proc; then
 		echo "error: mounting /tmp/mcos/mcos0_proc" >&2
 		error_exit "mcoverlayfs_loaded"
@@ -387,15 +433,23 @@ if [ "$enable_mcoverlay" == "yes" ]; then
 	do
 		sleep 0.1
 	done
-	if [ ! -e /tmp/mcos/mcos0_sys ]; then mkdir -p /tmp/mcos/mcos0_sys; fi
-	if [ ! -e /tmp/mcos/mcos0_sys_upper ]; then mkdir -p /tmp/mcos/mcos0_sys_upper; fi
-	if [ ! -e /tmp/mcos/mcos0_sys_work ]; then mkdir -p /tmp/mcos/mcos0_sys_work; fi
+	if [ ! -e /tmp/mcos/mcos0_sys ]; then 
+		mkdir -p /tmp/mcos/mcos0_sys; 
+	fi
+	if [ ! -e /tmp/mcos/mcos0_sys_upper ]; then 
+		mkdir -p /tmp/mcos/mcos0_sys_upper; 
+	fi
+	if [ ! -e /tmp/mcos/mcos0_sys_work ]; then 
+		mkdir -p /tmp/mcos/mcos0_sys_work; 
+	fi
 	if ! mount -t mcoverlay mcoverlay -o lowerdir=/sys/devices/virtual/mcos/mcos0/sys:/sys,upperdir=/tmp/mcos/mcos0_sys_upper,workdir=/tmp/mcos/mcos0_sys_work,nocopyupw,nofscheck /tmp/mcos/mcos0_sys; then
 		echo "error: mount /tmp/mcos/mcos0_sys" >&2
 		error_exit "mcos_proc_mounted"
 	fi
 	# TODO: How de we revert this in case of failure??
 	mount --make-rprivate /sys
+
+	touch /tmp/mcos/mcos0_proc/mckernel
 
 	rm -rf /tmp/mcos/mcos0_sys/setup_complete
 
@@ -453,8 +507,9 @@ if [ "${irqbalance_used}" == "yes" ]; then
 
     banirq=`cat /proc/interrupts| perl -e 'while(<>) { if(/^\s*(\d+).*IHK\-SMP\s*$/) {print $1;}}'`
 
-    sed "s/%mask%/$smp_affinity_mask/g" $ETCDIR/irqbalance_mck.in | sed "s/%banirq%/$banirq/g" > $ETCDIR/irqbalance_mck
-    if ! systemctl link $ETCDIR/irqbalance_mck.service >/dev/null 2>/dev/null; then
+    sed "s/%mask%/$smp_affinity_mask/g" $ETCDIR/irqbalance_mck.in | sed "s/%banirq%/$banirq/g" > /tmp/irqbalance_mck
+	systemctl disable irqbalance_mck.service >/dev/null 2>/dev/null
+	if ! systemctl link $ETCDIR/irqbalance_mck.service >/dev/null 2>/dev/null; then
 		echo "error: linking irqbalance_mck" >&2
 		error_exit "mcos_sys_mounted"
 	fi

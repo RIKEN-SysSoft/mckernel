@@ -4,13 +4,13 @@ SRC=$(VPATH)
 IHKDIR=$(IHKBASE)/$(TARGETDIR)
 OBJS = init.o mem.o debug.o mikc.o listeners.o ap.o syscall.o cls.o host.o
 OBJS += process.o copy.o waitq.o futex.o timer.o plist.o fileobj.o shmobj.o
-OBJS += zeroobj.o procfs.o devobj.o sysfs.o
+OBJS += zeroobj.o procfs.o devobj.o sysfs.o xpmem.o
 # POSTK_DEBUG_ARCH_DEP_18 coredump arch separation.
 # OBJS added gencore.o
 OBJS += gencore.o
 DEPSRCS=$(wildcard $(SRC)/*.c)
 
-CFLAGS += -I$(SRC)/include -D__KERNEL__ -g
+CFLAGS += -I$(SRC)/include -D__KERNEL__ -g -fno-omit-frame-pointer -fno-inline -fno-inline-small-functions
 LDFLAGS += -e arch_start
 IHKOBJ = ihk/ihk.o
 
@@ -18,7 +18,7 @@ IHKOBJ = ihk/ihk.o
 default: all
 
 include $(SRC)/config/config.$(TARGET)
-include $(IHKBASE)/Makefile.common
+include @abs_builddir@/../../ihk/cokernel/Makefile.common
 
 # CFLAGS += -I$(SRC)/../arch/$(IHKARCH)/kernel/include -I$(SRC)/../lib/include
 

@@ -179,7 +179,7 @@ static void init_normal_area(struct page_table *pt)
 	}
 }
 
-static struct page_table *__alloc_new_pt(enum ihk_mc_ap_flag ap_flag)
+static struct page_table *__alloc_new_pt(ihk_mc_ap_flag ap_flag)
 {
 	struct page_table *newpt = ihk_mc_alloc_pages(1, ap_flag);
 
@@ -278,7 +278,7 @@ void set_pte(pte_t *ppte, unsigned long phys, enum ihk_mc_pt_attribute attr)
  *             and returns a pointer to the PTE corresponding to the
  *             virtual address.
  */
-pte_t *get_pte(struct page_table *pt, void *virt, enum ihk_mc_pt_attribute attr, enum ihk_mc_ap_flag ap_flag)
+pte_t *get_pte(struct page_table *pt, void *virt, enum ihk_mc_pt_attribute attr, ihk_mc_ap_flag ap_flag)
 {
 	int l4idx, l3idx, l2idx, l1idx;
 	unsigned long v = (unsigned long)virt;
@@ -339,7 +339,7 @@ static int __set_pt_page(struct page_table *pt, void *virt, unsigned long phys,
 	int l4idx, l3idx, l2idx, l1idx;
 	unsigned long v = (unsigned long)virt;
 	struct page_table *newpt;
-	enum ihk_mc_ap_flag ap_flag;
+	ihk_mc_ap_flag ap_flag;
 	int in_kernel =
 		(((unsigned long long)virt) >= 0xffff000000000000ULL);
 	unsigned long init_pt_lock_flags;
@@ -490,8 +490,10 @@ uint64_t ihk_mc_pt_virt_to_pagemap(struct page_table *pt, unsigned long virt)
 	return pagemap;
 }
 
-int ihk_mc_pt_virt_to_phys(struct page_table *pt,
-                           const void *virt, unsigned long *phys)
+int ihk_mc_pt_virt_to_phys_size(struct page_table *pt,
+                           const void *virt,
+						   unsigned long *phys,
+						   unsigned long *size)
 {
 	int l4idx, l3idx, l2idx, l1idx;
 	unsigned long v = (unsigned long)virt;
@@ -513,6 +515,7 @@ int ihk_mc_pt_virt_to_phys(struct page_table *pt,
 	if ((pt->entry[l3idx] & PFL3_SIZE)) {
 		*phys = pte_get_phys(&pt->entry[l3idx])
 			| (v & (PTL3_SIZE - 1));
+		if (size) *size = PTL3_SIZE;
 		return 0;
 	}
 	pt = phys_to_virt(pte_get_phys(&pt->entry[l3idx]));
@@ -523,6 +526,7 @@ int ihk_mc_pt_virt_to_phys(struct page_table *pt,
 	if ((pt->entry[l2idx] & PFL2_SIZE)) {
 		*phys = pte_get_phys(&pt->entry[l2idx])
 			| (v & (PTL2_SIZE - 1));
+		if (size) *size = PTL2_SIZE;
 		return 0;
 	}
 	pt = phys_to_virt(pte_get_phys(&pt->entry[l2idx]));
@@ -532,8 +536,16 @@ int ihk_mc_pt_virt_to_phys(struct page_table *pt,
 	}
 
 	*phys = pte_get_phys(&pt->entry[l1idx]) | (v & (PTL1_SIZE - 1));
+	if (size) *size = PTL1_SIZE;
 	return 0;
 }
+
+int ihk_mc_pt_virt_to_phys(struct page_table *pt,
+                           const void *virt, unsigned long *phys)
+{
+	return ihk_mc_pt_virt_to_phys_size(pt, virt, phys, NULL);
+}
+
 
 int ihk_mc_pt_print_pte(struct page_table *pt, void *virt)
 {
@@ -546,28 +558,34 @@ int ihk_mc_pt_print_pte(struct page_table *pt, void *virt)
 
 	GET_VIRT_INDICES(v, l4idx, l3idx, l2idx, l1idx);
 
+	__kprintf("l4 table: 0x%lX l4idx: %d \n", virt_to_phys(pt), l4idx);
 	if (!(pt->entry[l4idx] & PFL4_PRESENT)) {
 		__kprintf("0x%lX l4idx not present! \n", (unsigned long)virt);
-		__kprintf("l4 entry: 0x%lX\n", pt->entry[l4idx]);
 		return -EFAULT;
 	}
+	__kprintf("l4 entry: 0x%lX\n", pt->entry[l4idx]);
 	pt = phys_to_virt(pt->entry[l4idx] & PAGE_MASK);
 
 	__kprintf("l3 table: 0x%lX l3idx: %d \n", virt_to_phys(pt), l3idx);
 	if (!(pt->entry[l3idx] & PFL3_PRESENT)) {
 		__kprintf("0x%lX l3idx not present! \n", (unsigned long)virt);
-		__kprintf("l3 entry: 0x%lX\n", pt->entry[l3idx]);
 		return -EFAULT;
+	}
+	__kprintf("l3 entry: 0x%lX\n", pt->entry[l3idx]);
+	if ((pt->entry[l3idx] & PFL3_SIZE)) {
+		__kprintf("l3 entry is 1G page\n");
+		return 0;
 	}
 	pt = phys_to_virt(pt->entry[l3idx] & PAGE_MASK);
 	
 	__kprintf("l2 table: 0x%lX l2idx: %d \n", virt_to_phys(pt), l2idx);
 	if (!(pt->entry[l2idx] & PFL2_PRESENT)) {
 		__kprintf("0x%lX l2idx not present! \n", (unsigned long)virt);
-		__kprintf("l2 entry: 0x%lX\n", pt->entry[l2idx]);
 		return -EFAULT;
 	}
+	__kprintf("l2 entry: 0x%lX\n", pt->entry[l2idx]);
 	if ((pt->entry[l2idx] & PFL2_SIZE)) {
+		__kprintf("l2 entry is 2M page\n");
 		return 0;
 	}
 	pt = phys_to_virt(pt->entry[l2idx] & PAGE_MASK);
@@ -646,7 +664,7 @@ int ihk_mc_pt_prepare_map(page_table_t p, void *virt, unsigned long size,
 	return ret;
 }
 
-struct page_table *ihk_mc_pt_create(enum ihk_mc_ap_flag ap_flag)
+struct page_table *ihk_mc_pt_create(ihk_mc_ap_flag ap_flag)
 {
 	struct page_table *pt = ihk_mc_alloc_pages(1, ap_flag);
 
@@ -1079,7 +1097,8 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 		page = phys_to_page(phys);
 	}
 
-	if (page && page_is_in_memobj(page) && (old & PFL1_DIRTY)) {
+	if (page && page_is_in_memobj(page) && (old & PFL1_DIRTY) &&
+			!(args->memobj->flags & MF_ZEROFILL)) {
 		memobj_flush_page(args->memobj, phys, PTL1_SIZE);
 	}
 
@@ -1253,6 +1272,9 @@ static int clear_range(struct page_table *pt, struct process_vm *vm,
 	}
 
 	args.free_physical = free_physical;
+	if (memobj && (memobj->flags & MF_DEV_FILE)) {
+		args.free_physical = 0;
+	}
 	args.memobj = memobj;
 	args.vm = vm;
 
@@ -1761,9 +1783,19 @@ int ihk_mc_pt_set_pte(page_table_t pt, pte_t *ptep, size_t pgsize,
 		*ptep = phys | attr_to_l1attr(attr);
 	}
 	else if (pgsize == PTL2_SIZE) {
+		if (phys & (PTL2_SIZE - 1)) {
+			kprintf("%s: error: phys needs to be PTL2_SIZE aligned\n", __FUNCTION__);
+			error = -1;
+			goto out;
+		}
 		*ptep = phys | attr_to_l2attr(attr | PTATTR_LARGEPAGE);
 	}
 	else if ((pgsize == PTL3_SIZE) && (use_1gb_page)) {
+		if (phys & (PTL3_SIZE - 1)) {
+			kprintf("%s: error: phys needs to be PTL3_SIZE aligned\n", __FUNCTION__);
+			error = -1;
+			goto out;
+		}
 		*ptep = phys | attr_to_l3attr(attr | PTATTR_LARGEPAGE);
 	}
 	else {
@@ -2201,30 +2233,28 @@ int strcpy_from_user(char *dst, const char *src)
 	return err;
 }
 
-long getlong_user(const long *p)
+long getlong_user(long *dest, const long *p)
 {
 	int error;
-	long l;
 
-	error = copy_from_user(&l, p, sizeof(l));
+	error = copy_from_user(dest, p, sizeof(long));
 	if (error) {
 		return error;
 	}
 
-	return l;
+	return 0;
 }
 
-int getint_user(const int *p)
+int getint_user(int *dest, const int *p)
 {
 	int error;
-	int i;
 
-	error = copy_from_user(&i, p, sizeof(i));
+	error = copy_from_user(dest, p, sizeof(int));
 	if (error) {
 		return error;
 	}
 
-	return i;
+	return 0;
 }
 
 int read_process_vm(struct process_vm *vm, void *kdst, const void *usrc, size_t siz)
@@ -2355,8 +2385,18 @@ int write_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t
 			return error;
 		}
 
-		va = phys_to_virt(pa);
-		memcpy(va, from, cpsize);
+		if (pa < ihk_mc_get_memory_address(IHK_MC_GMA_MAP_START, 0) ||
+			pa >= ihk_mc_get_memory_address(IHK_MC_GMA_MAP_END, 0)) {
+			dkprintf("%s: pa is outside of LWK memory, from: %p,"
+				"pa: %p, cpsize: %d\n", __FUNCTION__, from, pa, cpsize);
+			va = ihk_mc_map_virtual(pa, 1, PTATTR_ACTIVE);
+			memcpy(va, from, cpsize);
+			ihk_mc_unmap_virtual(va, 1, 1);
+		}
+		else {
+			va = phys_to_virt(pa);
+			memcpy(va, from, cpsize);
+		}
 
 		from += cpsize;
 		to += cpsize;
@@ -2380,7 +2420,7 @@ int patch_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t
 	unsigned long pa;
 	void *va;
 
-	kprintf("patch_process_vm(%p,%p,%p,%lx)\n", vm, udst, ksrc, siz);
+	dkprintf("patch_process_vm(%p,%p,%p,%lx)\n", vm, udst, ksrc, siz);
 	if ((ustart < vm->region.user_start)
 			|| (vm->region.user_end <= ustart)
 			|| ((vm->region.user_end - ustart) < siz)) {
@@ -2430,6 +2470,6 @@ int patch_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t
 		remain -= cpsize;
 	}
 
-	kprintf("patch_process_vm(%p,%p,%p,%lx):%d\n", vm, udst, ksrc, siz, 0);
+	dkprintf("patch_process_vm(%p,%p,%p,%lx):%d\n", vm, udst, ksrc, siz, 0);
 	return 0;
 } /* patch_process_vm() */

@@ -1,0 +1,388 @@
+/**
+ * \file xpmem_private.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *  Private Cross Partition Memory (XPMEM) structures and macros.
+ */
+/*
+ * This file is subject to the terms and conditions of the GNU General Public
+ * License.  See the file "COPYING" in the main directory of this archive
+ * for more details.
+ *
+ * Copyright (c) 2004-2007 Silicon Graphics, Inc.  All Rights Reserved.
+ * Copyright 2009, 2010, 2014 Cray Inc. All Rights Reserved
+ * Copyright (c) 2014-2016 Los Alamos National Security, LCC. All rights
+ *                         reserved.
+ */
+/*
+ * HISTORY
+ */
+
+#ifndef _XPMEM_PRIVATE_H
+#define _XPMEM_PRIVATE_H
+
+#include <mc_xpmem.h>
+#include <xpmem.h>
+
+#define XPMEM_CURRENT_VERSION           0x00026003
+
+//#define DEBUG_PRINT_XPMEM
+
+#ifdef DEBUG_PRINT_XPMEM
+#define dkprintf(...) kprintf(__VA_ARGS__)
+#define ekprintf(...) kprintf(__VA_ARGS__)
+#define XPMEM_DEBUG(format, a...) kprintf("[%d] %s: "format"\n", cpu_local_var(current)->proc->rgid, __func__, ##a)
+#else
+#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
+#define ekprintf(...) kprintf(__VA_ARGS__)
+#define XPMEM_DEBUG(format, a...) do { if (0) kprintf("\n"); } while (0)
+#endif
+
+//#define USE_DBUG_ON
+
+#ifdef USE_DBUG_ON
+#define DBUG_ON(condition) do { if (condition) kprintf("[%d] BUG: func=%s\n", cpu_local_var(current)->proc->rgid, __func__); } while (0)
+#else
+#define DBUG_ON(condition)
+#endif
+
+#define offset_in_page(p)	((unsigned long)(p) & ~PAGE_MASK)
+
+#define min(x, y)	({                                              \
+	__typeof__(x) _min1 = (x);                                      \
+	__typeof__(y) _min2 = (y);                                      \
+	(void) (&_min1 == &_min2);                                      \
+	_min1 < _min2 ? _min1 : _min2;})
+
+#define max(x, y)	({                                              \
+	__typeof__(x) _max1 = (x);                                      \
+	__typeof__(y) _max2 = (y);                                      \
+	(void) (&_max1 == &_max2);                                      \
+	_max1 > _max2 ? _max1 : _max2;})
+
+#define MAX_ERRNO	4095
+
+#define IS_ERR_VALUE(x)	((x) >= (unsigned long)-MAX_ERRNO)
+
+static inline void * ERR_PTR(long error)
+{
+	return (void *)error;
+}
+
+static inline long PTR_ERR(const void *ptr)
+{
+	return (long)ptr;
+}
+
+static inline long IS_ERR(const void *ptr)
+{
+	return IS_ERR_VALUE((unsigned long)ptr);
+}
+
+static inline long IS_ERR_OR_NULL(const void *ptr)
+{
+	return !ptr || IS_ERR_VALUE((unsigned long)ptr);
+}
+
+/*
+ * Both the xpmem_segid_t and xpmem_apid_t are of type __s64 and designed
+ * to be opaque to the user. Both consist of the same underlying fields.
+ *
+ * The 'uniq' field is designed to give each segid or apid a unique value.
+ * Each type is only unique with respect to itself.
+ *
+ * An ID is never less than or equal to zero.
+ */
+struct xpmem_id {
+	pid_t tgid;		/* thread group that owns ID */
+	unsigned int uniq;	/* this value makes the ID unique */
+};
+
+typedef union {
+	struct xpmem_id xpmem_id;
+	xpmem_segid_t segid;
+	xpmem_apid_t apid;
+} xpmem_id_t;
+
+/* Shift INT_MAX by one so we can tell when we overflow. */
+#define XPMEM_MAX_UNIQ_ID	(INT_MAX >> 1)
+
+static inline pid_t xpmem_segid_to_tgid(xpmem_segid_t segid)
+{
+	DBUG_ON(segid <= 0);
+	return ((xpmem_id_t *)&segid)->xpmem_id.tgid;
+}
+
+static inline pid_t xpmem_apid_to_tgid(xpmem_apid_t apid)
+{
+	DBUG_ON(apid <= 0);
+	return ((xpmem_id_t *)&apid)->xpmem_id.tgid;
+}
+
+/*
+ * Hash Tables
+ *
+ * XPMEM utilizes hash tables to enable faster lookups of list entries.
+ * These hash tables are implemented as arrays. A simple modulus of the hash
+ * key yields the appropriate array index. A hash table's array element (i.e.,
+ * hash table bucket) consists of a hash list and the lock that protects it.
+ *
+ * XPMEM has the following two hash tables:
+ *
+ * table                bucket                                  key
+ * part->tg_hashtable   list of struct xpmem_thread_group       tgid
+ * tg->ap_hashtable     list of struct xpmem_access_permit      apid.uniq
+ */
+struct xpmem_hashlist {
+        mcs_rwlock_lock_t lock;	/* lock for hash list */
+        struct list_head list;	/* hash list */
+};
+
+#define XPMEM_TG_HASHTABLE_SIZE 8
+#define XPMEM_AP_HASHTABLE_SIZE 8
+
+static inline int xpmem_tg_hashtable_index(pid_t tgid)
+{
+	int index;
+
+	index = (unsigned int)tgid % XPMEM_TG_HASHTABLE_SIZE;
+
+	XPMEM_DEBUG("return: tgid=%lu, index=%d", tgid, index);
+
+	return index;
+}
+
+static inline int xpmem_ap_hashtable_index(xpmem_apid_t apid)
+{
+	int index;
+
+        DBUG_ON(apid <= 0);
+
+	index = ((xpmem_id_t *)&apid)->xpmem_id.uniq % XPMEM_AP_HASHTABLE_SIZE;
+
+	XPMEM_DEBUG("return: apid=%lu, index=%d", apid, index);
+
+	return index;
+}
+
+/*
+ * general internal driver structures
+ */
+struct xpmem_thread_group {
+	ihk_spinlock_t lock;	/* tg lock */
+	pid_t tgid;		/* tg's tgid */
+	uid_t uid;		/* tg's uid */
+	gid_t gid;		/* tg's gid */
+	volatile int flags;	/* tg attributes and state */
+	ihk_atomic_t uniq_segid;
+	ihk_atomic_t uniq_apid;
+	mcs_rwlock_lock_t seg_list_lock;
+	struct list_head seg_list;	/* tg's list of segs */
+	ihk_atomic_t refcnt;	/* references to tg */
+	ihk_atomic_t n_pinned;	/* #of pages pinned by this tg */
+	struct list_head tg_hashlist;	/* tg hash list */
+	struct thread *group_leader;	/* thread group leader */
+	struct process_vm *vm;		/* tg's mm */
+	ihk_atomic_t n_recall_PFNs;	/* #of recall of PFNs in progress */
+	struct xpmem_hashlist ap_hashtable[];	/* locks + ap hash lists */
+};
+
+struct xpmem_segment {
+	ihk_spinlock_t lock;	/* seg lock */
+	mcs_rwlock_lock_t seg_lock;	/* seg sema */
+	xpmem_segid_t segid;	/* unique segid */
+	unsigned long vaddr;	/* starting address */
+	size_t size;		/* size of seg */
+	int permit_type;	/* permission scheme */
+	void *permit_value;	/* permission data */
+	volatile int flags;	/* seg attributes and state */
+	ihk_atomic_t refcnt;	/* references to seg */
+	struct xpmem_thread_group *tg;	/* creator tg */
+	struct list_head ap_list;	/* local access permits of seg */
+	struct list_head seg_list;	/* tg's list of segs */
+};
+
+struct xpmem_access_permit {
+	ihk_spinlock_t lock;	/* access permit lock */
+	xpmem_apid_t apid;	/* unique apid */
+	int mode;		/* read/write mode */
+	volatile int flags;	/* access permit attributes and state */
+	ihk_atomic_t refcnt;	/* references to access permit */
+	struct xpmem_segment *seg;	/* seg permitted to be accessed */
+	struct xpmem_thread_group *tg;	/* access permit's tg */
+	struct list_head att_list;	/* atts of this access permit's seg */
+	struct list_head ap_list;	/* access permits linked to seg */
+	struct list_head ap_hashlist;	/* access permit hash list */
+};
+
+struct xpmem_attachment {
+	mcs_rwlock_lock_t at_lock;	/* att lock for serialization */
+	struct mcs_rwlock_node_irqsave at_irqsave;	/* att lock for serialization */
+	unsigned long vaddr;	/* starting address of seg attached */
+	unsigned long at_vaddr;	/* address where seg is attached */
+	size_t at_size;		/* size of seg attachment */
+	struct vm_range *at_vma;	/* vma where seg is attachment */
+	volatile int flags;	/* att attributes and state */
+	ihk_atomic_t refcnt;	/* references to att */
+	struct xpmem_access_permit *ap;	/* associated access permit */
+	struct list_head att_list;	/* atts linked to access permit */
+	struct process_vm *vm;	/* mm struct attached to */
+	mcs_rwlock_lock_t invalidate_lock;	/* to serialize page table invalidates */
+};
+
+struct xpmem_partition {
+	ihk_atomic_t n_opened;	/* # of /dev/xpmem opened */
+	struct xpmem_hashlist tg_hashtable[];	/* locks + tg hash lists */
+};
+
+#define XPMEM_FLAG_DESTROYING		0x00040 /* being destroyed */
+#define XPMEM_FLAG_DESTROYED		0x00080 /* 'being destroyed' finished */
+
+#define XPMEM_FLAG_VALIDPTEs		0x00200 /* valid PTEs exist */
+
+struct xpmem_perm {
+	uid_t uid;
+	gid_t gid;
+	unsigned long mode;
+};
+
+#define XPMEM_PERM_IRUSR 00400
+#define XPMEM_PERM_IWUSR 00200
+
+static int xpmem_ioctl(struct mckfd *mckfd, ihk_mc_user_context_t *ctx);
+static int xpmem_close( struct mckfd *mckfd, ihk_mc_user_context_t *ctx);
+
+static int xpmem_init(void);
+static void xpmem_exit(void);
+static int __xpmem_open(void);
+static void xpmem_destroy_tg(struct xpmem_thread_group *);
+
+static int xpmem_make(unsigned long, size_t, int, void *, xpmem_segid_t *);
+static xpmem_segid_t xpmem_make_segid(struct xpmem_thread_group *);
+
+static int xpmem_remove(xpmem_segid_t);
+static void xpmem_remove_seg(struct xpmem_thread_group *,
+        struct xpmem_segment *);
+
+static void xpmem_clear_PTEs(struct xpmem_segment *);
+
+extern struct xpmem_partition *xpmem_my_part;
+
+static struct xpmem_thread_group * __xpmem_tg_ref_by_tgid_nolock_internal(
+	pid_t, int, int);
+
+static inline struct xpmem_thread_group *__xpmem_tg_ref_by_tgid(
+	pid_t tgid,
+	int return_destroying)
+{
+	struct xpmem_thread_group *tg;
+	int index;
+	struct mcs_rwlock_node_irqsave lock;
+
+	XPMEM_DEBUG("call: tgid=%d, return_destroying=%d", 
+		tgid, return_destroying);
+
+	index = xpmem_tg_hashtable_index(tgid);
+	mcs_rwlock_reader_lock(&xpmem_my_part->tg_hashtable[index].lock, &lock);
+	tg = __xpmem_tg_ref_by_tgid_nolock_internal(tgid, index, 
+		return_destroying);
+        mcs_rwlock_reader_unlock(&xpmem_my_part->tg_hashtable[index].lock, 
+		&lock);
+
+	XPMEM_DEBUG("return: tg=0x%p", tg);
+
+        return tg;
+}
+
+static inline struct xpmem_thread_group *__xpmem_tg_ref_by_tgid_nolock(
+	pid_t tgid,
+	int return_destroying)
+{
+	struct xpmem_thread_group *tg;
+
+	XPMEM_DEBUG("call: tgid=%d, return_destroying=%d", 
+		tgid, return_destroying);
+
+        tg = __xpmem_tg_ref_by_tgid_nolock_internal(tgid, 
+		xpmem_tg_hashtable_index(tgid), return_destroying);
+
+	XPMEM_DEBUG("return: tg=0x%p", tg);
+
+        return tg;
+}
+
+#define xpmem_tg_ref_by_tgid(t)             __xpmem_tg_ref_by_tgid(t, 0)
+#define xpmem_tg_ref_by_tgid_all(t)         __xpmem_tg_ref_by_tgid(t, 1)
+#define xpmem_tg_ref_by_tgid_nolock(t)      __xpmem_tg_ref_by_tgid_nolock(t, 0)
+#define xpmem_tg_ref_by_tgid_all_nolock(t)  __xpmem_tg_ref_by_tgid_nolock(t, 1)
+
+static struct xpmem_thread_group * xpmem_tg_ref_by_segid(xpmem_segid_t);
+static void xpmem_tg_deref(struct xpmem_thread_group *);
+static struct xpmem_segment *xpmem_seg_ref_by_segid(struct xpmem_thread_group *,
+	xpmem_segid_t);
+static void xpmem_seg_deref(struct xpmem_segment *);
+
+/*
+ * Inlines that mark an internal driver structure as being destroyable or not.
+ * The idea is to set the refcnt to 1 at structure creation time and then
+ * drop that reference at the time the structure is to be destroyed.
+ */
+static inline void xpmem_tg_not_destroyable(
+	struct xpmem_thread_group *tg)
+{
+	ihk_atomic_set(&tg->refcnt, 1);
+
+	XPMEM_DEBUG("return: tg->refcnt=%d", tg->refcnt);
+}
+
+static inline void xpmem_tg_destroyable(
+	struct xpmem_thread_group *tg)
+{
+	XPMEM_DEBUG("call: ");
+
+	xpmem_tg_deref(tg);
+
+	XPMEM_DEBUG("return: ");
+}
+
+static inline void xpmem_seg_not_destroyable(
+	struct xpmem_segment *seg)
+{
+	ihk_atomic_set(&seg->refcnt, 1);
+
+	XPMEM_DEBUG("return: seg->refcnt=%d", seg->refcnt);
+}
+
+static inline void xpmem_seg_destroyable(
+	struct xpmem_segment *seg)
+{
+	XPMEM_DEBUG("call: ");
+
+	xpmem_seg_deref(seg);
+
+	XPMEM_DEBUG("return: ");
+}
+
+/*
+ * Inlines that increment the refcnt for the specified structure.
+ */
+static inline void xpmem_tg_ref(
+	struct xpmem_thread_group *tg)
+{
+	DBUG_ON(ihk_atomic_read(&tg->refcnt) <= 0);
+	ihk_atomic_inc(&tg->refcnt);
+
+	XPMEM_DEBUG("return: tg->refcnt=%d", tg->refcnt);
+}
+
+static inline void xpmem_seg_ref(
+	struct xpmem_segment *seg)
+{
+	DBUG_ON(ihk_atomic_read(&seg->refcnt) <= 0);
+	ihk_atomic_inc(&seg->refcnt);
+
+	XPMEM_DEBUG("return: seg->refcnt=%d", seg->refcnt);
+}
+
+#endif /* _XPMEM_PRIVATE_H */
+

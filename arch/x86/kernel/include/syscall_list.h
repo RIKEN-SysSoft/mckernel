@@ -22,7 +22,7 @@
 
 SYSCALL_HANDLED(0, read)
 SYSCALL_DELEGATED(1, write)
-SYSCALL_DELEGATED(2, open)
+SYSCALL_HANDLED(2, open)
 SYSCALL_HANDLED(3, close)
 SYSCALL_DELEGATED(4, stat)
 SYSCALL_DELEGATED(5, fstat)
@@ -150,5 +150,8 @@ SYSCALL_HANDLED(602, pmc_start)
 SYSCALL_HANDLED(603, pmc_stop)
 SYSCALL_HANDLED(604, pmc_reset)
 SYSCALL_HANDLED(700, get_cpu_id)
+#ifdef TRACK_SYSCALLS
+SYSCALL_HANDLED(__NR_track_syscalls, track_syscalls)
+#endif // TRACK_SYSCALLS
 
 /**** End of File ****/

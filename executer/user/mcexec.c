@@ -70,6 +70,8 @@
 #include "../include/uprotocol.h"
 #include <getopt.h>
 #include "../config.h"
+#include <numa.h>
+#include <numaif.h>
 
 //#define DEBUG
 #define ADD_ENVS_OPTION
@@ -113,6 +115,9 @@ char **__glob_argv = 0;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0) && LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0)
 #define ENABLE_MCOVERLAYFS 1
 #endif // LINUX_VERSION_CODE == 4.0
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0) && LINUX_VERSION_CODE < KERNEL_VERSION(4,7,0)
+#define ENABLE_MCOVERLAYFS 1
+#endif // LINUX_VERSION_CODE == 4.6
 #else
 #if RHEL_RELEASE_CODE == RHEL_RELEASE_VERSION(7,2)
 #define ENABLE_MCOVERLAYFS 1
@@ -154,6 +159,10 @@ static char *altroot;
 static const char rlimit_stack_envname[] = "MCKERNEL_RLIMIT_STACK";
 static int ischild;
 static int enable_vdso = 1;
+
+/* Partitioned execution (e.g., for MPI) */
+static int nr_processes = 0;
+static int nr_threads = -1;
 
 struct fork_sync {
 	pid_t pid;
@@ -509,7 +518,7 @@ retry:
 
 	/* Check whether the resolved path is a symlink */
 	if (lstat(path, &sb) == -1) {
-		fprintf(stderr, "lookup_exec_path(): error stat\n");
+		__dprintf(stderr, "lookup_exec_path(): error stat\n");
 		return errno;
 	}
 
@@ -1143,9 +1152,9 @@ static int reduce_stack(struct rlimit *orig_rlim, char *argv[])
 void print_usage(char **argv)
 {
 #ifdef ADD_ENVS_OPTION
-	fprintf(stderr, "Usage: %s [-c target_core] [<-e ENV_NAME=value>...] [<mcos-id>] (program) [args...]\n", argv[0]);
+	fprintf(stderr, "Usage: %s [-c target_core] [-n nr_partitions] [<-e ENV_NAME=value>...] [<mcos-id>] (program) [args...]\n", argv[0]);
 #else /* ADD_ENVS_OPTION */
-	fprintf(stderr, "Usage: %s [-c target_core] [<mcos-id>] (program) [args...]\n", argv[0]);
+	fprintf(stderr, "Usage: %s [-c target_core] [-n nr_partitions] [<mcos-id>] (program) [args...]\n", argv[0]);
 #endif /* ADD_ENVS_OPTION */
 }
 
@@ -1514,15 +1523,23 @@ int main(int argc, char **argv)
            
 	/* Parse options ("+" denotes stop at the first non-option) */
 #ifdef ADD_ENVS_OPTION
-	while ((opt = getopt_long(argc, argv, "+c:e:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:t:e:", mcexec_options, NULL)) != -1) {
 #else /* ADD_ENVS_OPTION */
-	while ((opt = getopt_long(argc, argv, "+c:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:t:", mcexec_options, NULL)) != -1) {
 #endif /* ADD_ENVS_OPTION */
 		switch (opt) {
 			case 'c':
 				target_core = atoi(optarg);
 				break;
-			
+
+			case 'n':
+				nr_processes = atoi(optarg);
+				break;
+
+			case 't':
+				nr_threads = atoi(optarg);
+				break;
+
 #ifdef ADD_ENVS_OPTION
 			case 'e':
 				add_env_list(&extra_env, optarg);
@@ -1757,11 +1774,16 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_50 /* n_threads value too large fix */
-	n_threads = ncpu;
-#else /* POSTK_DEBUG_TEMP_FIX_50 */
-	n_threads = ncpu + 1;
-#endif /* POSTK_DEBUG_TEMP_FIX_50 */
+	if (nr_threads > 0) {
+		n_threads = nr_threads;
+	}
+	else if (getenv("OMP_NUM_THREADS")) {
+		/* Leave some headroom for helper threads.. */
+		n_threads = atoi(getenv("OMP_NUM_THREADS")) + 4;
+	}
+	else {
+		n_threads = ncpu;
+	}
 
 	/* 
 	 * XXX: keep thread_data ncpu sized despite that there are only
@@ -1772,6 +1794,10 @@ int main(int argc, char **argv)
 	 * TODO: implement dynaic thread pool resizing.
 	 */
 	thread_data = (struct thread_data_s *)malloc(sizeof(struct thread_data_s) * (ncpu + 1));
+	if (!thread_data) {
+		fprintf(stderr, "error: allocating thread pool data\n");
+		return 1;
+	}
 	memset(thread_data, '\0', sizeof(struct thread_data_s) * (ncpu + 1));
 
 #if 0	
@@ -1804,6 +1830,53 @@ int main(int argc, char **argv)
 	if (mlock(dma_buf, (size_t)PIN_SIZE)) {
 		__dprint("ERROR: locking dma_buf\n");
 		exit(1);
+	}
+
+	/* Partitioned execution, obtain CPU set */
+	if (nr_processes > 0) {
+		struct get_cpu_set_arg cpu_set_arg;
+		int mcexec_linux_numa = 0;
+
+		cpu_set_arg.cpu_set = (void *)&desc->cpu_set;
+		cpu_set_arg.cpu_set_size = sizeof(desc->cpu_set);
+		cpu_set_arg.nr_processes = nr_processes;
+		cpu_set_arg.target_core = &target_core;
+		cpu_set_arg.mcexec_linux_numa = &mcexec_linux_numa;
+
+		if (ioctl(fd, MCEXEC_UP_GET_CPUSET, (void *)&cpu_set_arg) != 0) {
+			perror("getting CPU set for partitioned execution");
+			close(fd);
+			return 1;
+		}
+
+		desc->cpu = target_core;
+
+		/* This call may not succeed, but that is fine */
+		if (numa_run_on_node(mcexec_linux_numa) < 0) {
+			__dprint("%s: WARNING: couldn't bind to NUMA %d\n",
+				__FUNCTION__, mcexec_linux_numa);
+		}
+#ifdef DEBUG
+		else {
+			cpu_set_t cpuset;
+			char affinity[BUFSIZ];
+
+			CPU_ZERO(&cpuset);
+			if ((sched_getaffinity(0, sizeof(cpu_set_t), &cpuset)) != 0) {
+				perror("Error sched_getaffinity");
+				exit(1);
+			}
+
+			affinity[0] = '\0';
+			for (i = 0; i < 512; i++) {
+				if (CPU_ISSET(i, &cpuset) == 1) {
+					sprintf(affinity, "%s %d", affinity, i);
+				}
+			}
+			__dprint("%s: PID: %d affinity: %s\n",
+					__FUNCTION__, getpid(), affinity);
+		}
+#endif
 	}
 
 	if (ioctl(fd, MCEXEC_UP_PREPARE_IMAGE, (unsigned long)desc) != 0) {
@@ -1914,8 +1987,8 @@ do_generic_syscall(
 
 	/* Overlayfs /sys/X directory lseek() problem work around */
 	if (w->sr.number == __NR_lseek && ret == -EINVAL) {
-		char proc_path[512];
-		char path[512];
+		char proc_path[PATH_MAX];
+		char path[PATH_MAX];
 		struct stat sb;
 
 		sprintf(proc_path, "/proc/self/fd/%d", (int)w->sr.args[0]);
@@ -1924,6 +1997,7 @@ do_generic_syscall(
 		if (readlink(proc_path, path, sizeof(path)) < 0) {
 			fprintf(stderr, "%s: error: readlink() failed for %s\n",
 				__FUNCTION__, proc_path);
+			perror(": ");
 			goto out;
 		}
 
@@ -2125,9 +2199,18 @@ int close_cloexec_fds(int mcos_fd)
 	return 0;
 }
 
+void chgdevpath(char *in, char *buf)
+{
+	if(!strcmp(in, "/dev/xpmem")){
+		sprintf(in, "/dev/null");
+	}
+}
+
 char *
 chgpath(char *in, char *buf)
 {
+	chgdevpath(in, buf);
+
 #ifdef ENABLE_MCOVERLAYFS
 	return in;
 #endif // ENABLE_MCOVERLAYFS
@@ -2718,6 +2801,23 @@ return_execve1:
 
 					ret = 0;
 return_execve2:					
+#ifdef ENABLE_MCOVERLAYFS
+				{
+					struct sys_mount_desc mount_desc;
+
+					mount_desc.dev_name = NULL;
+					mount_desc.dir_name = "/proc";
+					mount_desc.type = NULL;
+					mount_desc.flags = MS_REMOUNT;
+					mount_desc.data = NULL;
+					if (ioctl(fd, MCEXEC_UP_SYS_MOUNT,
+								(unsigned long)&mount_desc) != 0) {
+						fprintf(stderr,
+								"WARNING: failed to remount /proc (%s)\n",
+								strerror(errno));
+					}
+				}
+#endif
 					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 					break;
 

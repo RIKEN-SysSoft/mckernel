@@ -275,13 +275,21 @@ int flatten_strings_from_user(int nr_strings, char *first, char **strings, char 
 	long *_flat;
 	char *p;
 	long r;
-	int n;
+	int n, ret;
 
 	/* How many strings do we have? */
 	if (nr_strings == -1) {
-		for (nr_strings = 0; (r = getlong_user((void *)(strings + nr_strings))) > 0; ++nr_strings);
-		if(r < 0)
-			return r;
+		nr_strings = 0;
+		for (;;) {
+			ret = getlong_user(&r, (void *)(strings + nr_strings));
+			if (ret < 0)
+				return ret;
+
+			if (r == 0)
+				break;
+
+			++nr_strings;
+		}
 	}
 
 	/* Count full length */
@@ -295,13 +303,19 @@ int flatten_strings_from_user(int nr_strings, char *first, char **strings, char 
 	}
 
 	for (string_i = 0; string_i < nr_strings; ++string_i) {
-		char *userp = (char *)getlong_user((void *)(strings + string_i));
-		int len = strlen_user(userp);
+		char *userp;
+		int len;
+
+		ret = getlong_user((long *)&userp, (void *)(strings + string_i));
+		if (ret < 0)
+			return ret;
+
+		len = strlen_user(userp);
 
 		if(len < 0)
 			return len;
 		// Pointer + actual value
-		full_len += sizeof(char *) + len + 1; 
+		full_len += sizeof(char *) + len + 1;
 	}
 
 	full_len = (full_len + sizeof(long) - 1) & ~(sizeof(long) - 1);
@@ -326,8 +340,13 @@ int flatten_strings_from_user(int nr_strings, char *first, char **strings, char 
 	}
 
 	for (string_i = 0; string_i < nr_strings; ++string_i) {
-		char *userp = (char *)getlong_user((void *)(strings + string_i));
+		char *userp;
 		_flat[n++] = p - (char *)_flat;
+
+		ret = getlong_user((long *)&userp, (void *)(strings + string_i));
+		if (ret < 0)
+			return ret;
+
 		strcpy_from_user(p, userp);
 		p = strchr(p, '\0') + 1;
 	}

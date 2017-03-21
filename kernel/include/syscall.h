@@ -150,6 +150,10 @@ struct program_image_section {
 #define MCK_RLIMIT_SIGPENDING	14
 #define MCK_RLIMIT_STACK	15
 
+#define PLD_CPU_SET_MAX_CPUS 1024
+typedef unsigned long __cpu_set_unit;
+#define PLD_CPU_SET_SIZE (PLD_CPU_SET_MAX_CPUS / (8 * sizeof(__cpu_set_unit)))
+
 struct program_load_desc {
 	int num_sections;
 	int status;
@@ -179,6 +183,7 @@ struct program_load_desc {
 	struct rlimit rlimit[MCK_RLIM_MAX];
 	unsigned long interp_align;
 	char shell_path[SHELL_PATH_MAX_LEN];
+	__cpu_set_unit cpu_set[PLD_CPU_SET_SIZE];
 	struct program_image_section sections[0];
 };
 
@@ -249,22 +254,6 @@ struct syscall_response {
 
 struct syscall_post {
 	unsigned long v[8];
-};
-
-struct syscall_params {
-	unsigned long request_rpa, request_pa;
-	struct syscall_request *request_va;
-	unsigned long response_pa;
-	struct syscall_response *response_va;
-
-	unsigned long doorbell_rpa, doorbell_pa;
-	unsigned long *doorbell_va;
-
-	unsigned int post_idx;
-	unsigned long post_rpa, post_pa;
-	struct syscall_post *post_va;
-	unsigned long post_fin;
-	struct syscall_post post_buf IHK_DMA_ALIGN;
 };
 
 #define SYSCALL_DECLARE(name) long sys_##name(int n, ihk_mc_user_context_t *ctx)
@@ -393,6 +382,7 @@ extern struct tod_data_s tod_data;	/* residing in arch-dependent file */
 
 void reset_cputime();
 void set_cputime(int mode);
+int do_munmap(void *addr, size_t len);
 intptr_t do_mmap(intptr_t addr0, size_t len0, int prot, int flags, int fd,
 		off_t off0);
 void clear_host_pte(uintptr_t addr, size_t len);

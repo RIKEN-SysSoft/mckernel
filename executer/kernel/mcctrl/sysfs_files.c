@@ -208,19 +208,19 @@ void free_topology_info(ihk_os_t os)
 /*
  * CPU and NUMA node mapping conversion functions.
  */
-static int mckernel_cpu_2_linux_cpu(struct mcctrl_usrdata *udp, int cpu_id)
+int mckernel_cpu_2_linux_cpu(struct mcctrl_usrdata *udp, int cpu_id)
 {
 	return (cpu_id < udp->cpu_info->n_cpus) ?
 		udp->cpu_info->mapping[cpu_id] : -1;
 }
 
-static int mckernel_cpu_2_hw_id(struct mcctrl_usrdata *udp, int cpu_id)
+int mckernel_cpu_2_hw_id(struct mcctrl_usrdata *udp, int cpu_id)
 {
 	return (cpu_id < udp->cpu_info->n_cpus) ?
 		udp->cpu_info->hw_ids[cpu_id] : -1;
 }
 
-static int linux_cpu_2_mckernel_cpu(struct mcctrl_usrdata *udp, int cpu_id)
+int linux_cpu_2_mckernel_cpu(struct mcctrl_usrdata *udp, int cpu_id)
 {
 	int i;
 
@@ -233,7 +233,7 @@ static int linux_cpu_2_mckernel_cpu(struct mcctrl_usrdata *udp, int cpu_id)
 }
 
 #if 0
-static int hw_id_2_mckernel_cpu(struct mcctrl_usrdata *udp, int hw_id)
+int hw_id_2_mckernel_cpu(struct mcctrl_usrdata *udp, int hw_id)
 {
 	int i;
 
@@ -246,7 +246,7 @@ static int hw_id_2_mckernel_cpu(struct mcctrl_usrdata *udp, int hw_id)
 	return -1;
 }
 
-static int hw_id_2_linux_cpu(struct mcctrl_usrdata *udp, int hw_id)
+int hw_id_2_linux_cpu(struct mcctrl_usrdata *udp, int hw_id)
 {
 	int i;
 
@@ -259,7 +259,7 @@ static int hw_id_2_linux_cpu(struct mcctrl_usrdata *udp, int hw_id)
 	return -1;
 }
 
-static int linux_cpu_2_hw_id(struct mcctrl_usrdata *udp, int cpu)
+int linux_cpu_2_hw_id(struct mcctrl_usrdata *udp, int cpu)
 {
 	int mckernel_cpu = linux_cpu_2_mckernel_cpu(udp, cpu);
 
@@ -268,13 +268,13 @@ static int linux_cpu_2_hw_id(struct mcctrl_usrdata *udp, int cpu)
 }
 #endif
 
-static int mckernel_numa_2_linux_numa(struct mcctrl_usrdata *udp, int numa_id)
+int mckernel_numa_2_linux_numa(struct mcctrl_usrdata *udp, int numa_id)
 {
 	return (numa_id < udp->mem_info->n_numa_nodes) ?
 		udp->mem_info->numa_mapping[numa_id] : -1;
 }
 
-static int linux_numa_2_mckernel_numa(struct mcctrl_usrdata *udp, int numa_id)
+int linux_numa_2_mckernel_numa(struct mcctrl_usrdata *udp, int numa_id)
 {
 	int i;
 

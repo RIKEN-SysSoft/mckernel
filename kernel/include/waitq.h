@@ -27,6 +27,8 @@ typedef int (*waitq_func_t)(struct waitq_entry *wait, unsigned mode,
 
 int default_wake_function(struct waitq_entry *wait, unsigned mode, int flags,
 			              void *key);
+int locked_wake_function(struct waitq_entry *wait, unsigned mode, int flags,
+			              void *key);
 
 typedef struct waitq {
 	ihk_spinlock_t lock;
@@ -54,6 +56,13 @@ typedef struct waitq_entry {
 	waitq_entry_t name = {								\
 	    .private  = tsk,								\
 		.func = default_wake_function,					\
+	    .link  = { &(name).link, &(name).link }			\
+	}
+
+#define DECLARE_WAITQ_ENTRY_LOCKED(name, tsk)           \
+	waitq_entry_t name = {								\
+	    .private  = tsk,								\
+		.func = locked_wake_function,					\
 	    .link  = { &(name).link, &(name).link }			\
 	}
 

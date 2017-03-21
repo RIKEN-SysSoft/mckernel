@@ -18,7 +18,7 @@ mem=""
 cpus=""
 
 # No SMP module? Exit.
-if [ "`lsmod | grep ihk_smp_x86`" == "" ]; then exit 0; fi
+if ! grep ihk_smp_x86 /proc/modules &>/dev/null; then exit 0; fi
 
 # Destroy all LWK instances
 if ls /dev/mcos* 1>/dev/null 2>&1; then
@@ -59,36 +59,36 @@ if [ "${mem}" != "" ]; then
 fi
 
 # Remove delegator if loaded
-if [ "`lsmod | grep mcctrl`" != "" ]; then
-	if ! rmmod mcctrl; then
+if grep mcctrl /proc/modules &>/dev/null; then
+	if ! rmmod mcctrl 2>/dev/null; then
 		echo "error: removing mcctrl" >&2
 		exit 1
 	fi
 fi
 
 # Remove mcoverlay if loaded
-if [ "`lsmod | grep mcoverlay`" != "" ]; then
+if grep mcoverlay /proc/modules &>/dev/null; then
 	if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_sys`" != "" ]; then umount -l /tmp/mcos/mcos0_sys; fi
 	if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_proc`" != "" ]; then umount -l /tmp/mcos/mcos0_proc; fi
 	if [ "`cat /proc/mounts | grep /tmp/mcos/linux_proc`" != "" ]; then umount -l /tmp/mcos/linux_proc; fi
 	if [ "`cat /proc/mounts | grep /tmp/mcos`" != "" ]; then umount -l /tmp/mcos; fi
 	if [ -e /tmp/mcos ]; then rm -rf /tmp/mcos; fi
-	if ! rmmod mcoverlay; then
+	if ! rmmod mcoverlay 2>/dev/null; then
 		echo "warning: failed to remove mcoverlay" >&2
 	fi
 fi
 
 # Remove SMP module
-if [ "`lsmod | grep ihk_smp_x86`" != "" ]; then
-	if ! rmmod ihk_smp_x86; then
+if grep ihk_smp_x86 /proc/modules &>/dev/null; then
+	if ! rmmod ihk_smp_x86 2>/dev/null; then
 		echo "error: removing ihk_smp_x86" >&2
 		exit 1
 	fi
 fi
 
 # Remove core module
-if [ "`lsmod | grep -E 'ihk\s' | awk '{print $1}'`" != "" ]; then
-	if ! rmmod ihk; then
+if grep -E 'ihk\s' /proc/modules &>/dev/null; then
+	if ! rmmod ihk 2>/dev/null; then
 		echo "error: removing ihk" >&2
 		exit 1
 	fi
@@ -113,3 +113,10 @@ if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: ac
 	fi
 fi
 
+# Re-enable ASLR
+if [ -f /tmp/mckernel_randomize_va_space ]; then
+	cat /tmp/mckernel_randomize_va_space > /proc/sys/kernel/randomize_va_space
+fi
+
+# Set back default swappiness
+echo 60 > /proc/sys/vm/swappiness

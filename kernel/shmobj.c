@@ -179,6 +179,7 @@ int shmobj_create(struct shmid_ds *ds, struct memobj **objp)
 
 	memset(obj, 0, sizeof(*obj));
 	obj->memobj.ops = &shmobj_ops;
+	obj->memobj.size = ds->shm_segsz;
 	obj->ds = *ds;
 	obj->ds.shm_perm.seq = the_seq++;
 	obj->ds.shm_nattch = 1;

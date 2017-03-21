@@ -84,6 +84,8 @@ reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp, unsign
 	unsigned long start = 0L;
 	unsigned long end;
 
+	mutex_lock(&usrdata->reserve_lock);
+
 #define	DESIRED_USER_END	0x800000000000
 #define	GAP_FOR_MCEXEC		0x008000000000UL
 	end = DESIRED_USER_END;
@@ -100,6 +102,8 @@ reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp, unsign
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,5,0)
 	up_write(&current->mm->mmap_sem);
 #endif
+
+	mutex_unlock(&usrdata->reserve_lock);
 
 	if (IS_ERR_VALUE(start)) {
 		return start;

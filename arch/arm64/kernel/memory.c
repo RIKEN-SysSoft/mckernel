@@ -880,7 +880,7 @@ static void init_normal_area(struct page_table *pt)
 	setup(tt, map_start, map_end);
 }
 
-static translation_table_t* __alloc_new_tt(enum ihk_mc_ap_flag ap_flag)
+static translation_table_t* __alloc_new_tt(ihk_mc_ap_flag ap_flag)
 {
 	translation_table_t* newtt = ihk_mc_alloc_pages(1, ap_flag);
 
@@ -967,7 +967,7 @@ static int __set_pt_page(struct page_table *pt, void *virt, unsigned long phys,
 {
 	unsigned long v = (unsigned long)virt;
 	translation_table_t* newtt;
-	enum ihk_mc_ap_flag ap_flag;
+	ihk_mc_ap_flag ap_flag;
 	int in_kernel = (v >= USER_END);
 	unsigned long init_pt_lock_flags;
 	int ret = -ENOMEM;
@@ -1164,15 +1164,17 @@ out:
 }
 
 
-int ihk_mc_pt_virt_to_phys(struct page_table *pt,
-                           const void *virt, unsigned long *phys)
+int ihk_mc_pt_virt_to_phys_size(struct page_table *pt,
+                           const void *virt,
+						   unsigned long *phys,
+						   unsigned long *size)
 {
 	unsigned long v = (unsigned long)virt;
 	pte_t* ptep;
 	translation_table_t* tt;
 
 	unsigned long paddr;
-	unsigned long size;
+	unsigned long lsize;
 
 	if (!pt) {
 		pt = get_init_page_table();
@@ -1190,7 +1192,7 @@ int ihk_mc_pt_virt_to_phys(struct page_table *pt,
 	}
 	if (ptl3_type_block(ptep)) {
 		paddr = ptl3_phys(ptep);
-		size = PTL3_SIZE;
+		lsize = PTL3_SIZE;
 		goto out;
 	}
 
@@ -1200,7 +1202,7 @@ int ihk_mc_pt_virt_to_phys(struct page_table *pt,
 	}
 	if (ptl2_type_block(ptep)) {
 		paddr = ptl2_phys(ptep);
-		size = PTL2_SIZE;
+		lsize = PTL2_SIZE;
 		goto out;
 	}
 
@@ -1209,11 +1211,19 @@ int ihk_mc_pt_virt_to_phys(struct page_table *pt,
 		return -EFAULT;
 	}
 	paddr = ptl1_phys(ptep);
-	size = PTL1_SIZE;
+	lsize = PTL1_SIZE;
 out:
-	*phys = paddr | (v & (size - 1));
+	*phys = paddr | (v & (lsize - 1));
+	if(size) *size = lsize;
 	return 0;
 }
+
+int ihk_mc_pt_virt_to_phys(struct page_table *pt,
+                           const void *virt, unsigned long *phys)
+{
+	return ihk_mc_pt_virt_to_phys_size(pt, virt, phys, NULL);
+}
+
 
 int ihk_mc_pt_print_pte(struct page_table *pt, void *virt)
 {
@@ -1298,7 +1308,7 @@ int ihk_mc_pt_prepare_map(page_table_t p, void *virt, unsigned long size,
 	return 0;
 }
 
-struct page_table *ihk_mc_pt_create(enum ihk_mc_ap_flag ap_flag)
+struct page_table *ihk_mc_pt_create(ihk_mc_ap_flag ap_flag)
 {
 	struct page_table *pt;
 	translation_table_t* tt;
@@ -1760,7 +1770,8 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 		page = phys_to_page(phys);
 	}
 
-	if (page && page_is_in_memobj(page) && ptl1_dirty(&old)) {
+	if (page && page_is_in_memobj(page) && ptl1_dirty(&old) &&
+			!(args->memobj->flags & MF_ZEROFILL)) {
 		memobj_flush_page(args->memobj, phys, PTL1_SIZE);
 	}
 
@@ -1838,7 +1849,8 @@ static int clear_range_middle(void *args0, pte_t *ptep, uint64_t base,
 			page = phys_to_page(phys);
 		}
 
-		if (page && page_is_in_memobj(page) && ptl_dirty(&old, level)) {
+		if (page && page_is_in_memobj(page) && ptl_dirty(&old, level) &&
+				!(args->memobj->flags & MF_ZEROFILL)) {
 			memobj_flush_page(args->memobj, phys, tbl.pgsize);
 		}
 
@@ -1898,6 +1910,9 @@ static int clear_range(struct page_table *pt, struct process_vm *vm,
 	}
 
 	args.free_physical = free_physical;
+	if (memobj && (memobj->flags & MF_DEV_FILE)) {
+		args.free_physical = 0;
+	}
 	args.memobj = memobj;
 	args.vm = vm;
 
@@ -2766,30 +2781,28 @@ int strcpy_from_user(char *dst, const char *src)
 	return error;
 }
 
-long getlong_user(const long *p)
+long getlong_user(long *dest, const long *p)
 {
 	int error;
-	long l;
 
-	error = copy_from_user(&l, p, sizeof(l));
+	error = copy_from_user(dest, p, sizeof(long));
 	if (error) {
 		return error;
 	}
 
-	return l;
+	return 0;
 }
 
-int getint_user(const int *p)
+int getint_user(int *dest, const int *p)
 {
 	int error;
-	int i;
 
-	error = copy_from_user(&i, p, sizeof(i));
+	error = copy_from_user(dest, p, sizeof(int));
 	if (error) {
 		return error;
 	}
 
-	return i;
+	return 0;
 }
 
 int read_process_vm(struct process_vm *vm, void *kdst, const void *usrc, size_t siz)

@@ -17,11 +17,17 @@
 #include <list.h>
 
 /* XXX: Physical memory management shouldn't be part of IHK */
+struct node_distance {
+	int id;
+	int distance;
+};
+
 struct ihk_mc_numa_node {
 	int id;
 	int linux_numa_id;
 	int type;
 	struct list_head allocators;
+	struct node_distance *nodes_by_distance;
 };
 
 struct ihk_page_allocator_desc {
@@ -30,7 +36,7 @@ struct ihk_page_allocator_desc {
 	unsigned int count;
 	unsigned int flag;
 	unsigned int shift;
-	ihk_spinlock_t lock;
+	mcs_lock_node_t lock;
 	struct list_head list;
 	
 	unsigned long map[0];

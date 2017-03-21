@@ -16,7 +16,7 @@
 extern void arch_init(void);
 extern void kmsg_init(int);
 extern void mem_init(void);
-extern void ikc_master_init(void);
+extern void ihk_ikc_master_init(void);
 extern void ap_init(void);
 extern void arch_ready(void);
 extern void mc_ikc_test_init(void);
@@ -31,5 +31,7 @@ extern void pc_ap_init(void);
 extern void cpu_sysfs_setup(void);
 
 extern char *find_command_line(char *name);
+
+extern int num_processors;
 
 #endif

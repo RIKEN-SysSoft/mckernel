@@ -35,6 +35,7 @@
 #include <linux/version.h>
 #include <linux/semaphore.h>
 #include <linux/interrupt.h>
+#include <linux/cpumask.h>
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/io.h>
@@ -93,7 +94,7 @@ static long mcexec_prepare_image(ihk_os_t os,
 	struct ikc_scd_packet isp;
 	void *args = NULL;
 	void *envs = NULL;
-	long ret = 0;
+	int ret = 0;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd = NULL;
 	int num_sections;
@@ -182,7 +183,11 @@ static long mcexec_prepare_image(ihk_os_t os,
 	mb();
 	mcctrl_ikc_send(os, pdesc->cpu, &isp);
 
-	while (wait_event_interruptible(ppd->wq_prepare, pdesc->status) != 0);
+	ret = wait_event_interruptible(ppd->wq_prepare, pdesc->status);
+	if (ret < 0) {
+		printk("%s: ERROR after wait: %d\n", __FUNCTION__, ret);
+		goto put_and_free_out;
+	}
 
 	if (pdesc->err < 0) {
 		ret = pdesc->err;	
@@ -302,8 +307,9 @@ int mcexec_transfer_image(ihk_os_t os, struct remote_transfer *__user upt)
 
 //extern unsigned long last_thread_exec;
 
-struct handlerinfo {
-	int	pid;
+struct release_handler_info {
+	int pid;
+	int cpu;
 };
 
 static long mcexec_debug_log(ihk_os_t os, unsigned long arg)
@@ -319,7 +325,7 @@ static long mcexec_debug_log(ihk_os_t os, unsigned long arg)
 
 static void release_handler(ihk_os_t os, void *param)
 {
-	struct handlerinfo *info = param;
+	struct release_handler_info *info = param;
 	struct ikc_scd_packet isp;
 	int os_ind = ihk_host_os_get_index(os);
 
@@ -327,10 +333,15 @@ static void release_handler(ihk_os_t os, void *param)
 	isp.msg = SCD_MSG_CLEANUP_PROCESS;
 	isp.pid = info->pid;
 
-	mcctrl_ikc_send(os, 0, &isp);
-	if(os_ind >= 0)
+	dprintk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p, cpu: %d\n",
+			__FUNCTION__, info, info->cpu);
+	mcctrl_ikc_send(os, info->cpu, &isp);
+	if (os_ind >= 0) {
 		delete_pid_entry(os_ind, info->pid);
+	}
 	kfree(param);
+	dprintk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p OK\n",
+			__FUNCTION__, info);
 }
 
 static long mcexec_newprocess(ihk_os_t os,
@@ -338,12 +349,12 @@ static long mcexec_newprocess(ihk_os_t os,
                               struct file *file)
 {
 	struct newprocess_desc desc;
-	struct handlerinfo *info;
+	struct release_handler_info *info;
 
 	if (copy_from_user(&desc, udesc, sizeof(struct newprocess_desc))) {
 		return -EFAULT;
 	}
-	info = kmalloc(sizeof(struct handlerinfo), GFP_KERNEL);
+	info = kmalloc(sizeof(struct release_handler_info), GFP_KERNEL);
 	info->pid = desc.pid;
 	ihk_os_register_release_handler(file, release_handler, info);
 	return 0;
@@ -357,7 +368,7 @@ static long mcexec_start_image(ihk_os_t os,
 	struct ikc_scd_packet isp;
 	struct mcctrl_channel *c;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
-	struct handlerinfo *info;
+	struct release_handler_info *info;
 
 	desc = kmalloc(sizeof(*desc), GFP_KERNEL);
 	if (!desc) {
@@ -372,8 +383,9 @@ static long mcexec_start_image(ihk_os_t os,
 		return -EFAULT;
 	}
 
-	info = kmalloc(sizeof(struct handlerinfo), GFP_KERNEL);
+	info = kmalloc(sizeof(struct release_handler_info), GFP_KERNEL);
 	info->pid = desc->pid;
+	info->cpu = desc->cpu;
 	ihk_os_register_release_handler(file, release_handler, info);
 
 	c = usrdata->channels + desc->cpu;
@@ -470,6 +482,258 @@ static long mcexec_get_nodes(ihk_os_t os)
 	return usrdata->mem_info->n_numa_nodes;
 }
 
+extern int linux_numa_2_mckernel_numa(struct mcctrl_usrdata *udp, int numa_id);
+extern int mckernel_cpu_2_linux_cpu(struct mcctrl_usrdata *udp, int cpu_id);
+
+static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
+{
+	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
+	struct mcctrl_part_exec *pe;
+	struct get_cpu_set_arg req;
+#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
+	struct mcctrl_cpu_topology *cpu_top, *cpu_top_i;
+#else /* POSTK_DEBUG_ARCH_DEP_40 */
+	struct cpu_topology *cpu_top, *cpu_top_i;
+#endif /* POSTK_DEBUG_ARCH_DEP_40 */
+	struct cache_topology *cache_top;
+	int cpu, cpus_assigned, cpus_to_assign, cpu_prev;
+	int ret = 0;
+	int mcexec_linux_numa;
+	cpumask_t cpus_used;
+	cpumask_t cpus_to_use;
+	struct mcctrl_per_proc_data *ppd;
+
+	if (!udp) {
+		return -EINVAL;
+	}
+
+	/* Look up per-process structure */
+	ppd = mcctrl_get_per_proc_data(udp, task_tgid_vnr(current));
+	if (!ppd) {
+		return -EINVAL;
+	}
+
+	pe = &udp->part_exec;
+
+	if (copy_from_user(&req, (void *)arg, sizeof(req))) {
+		printk("%s: error copying user request\n", __FUNCTION__);
+		ret = -EINVAL;
+		goto put_and_unlock_out;
+	}
+
+	mutex_lock(&pe->lock);
+
+	memcpy(&cpus_used, &pe->cpus_used, sizeof(cpumask_t));
+	memset(&cpus_to_use, 0, sizeof(cpus_to_use));
+
+	/* First process to enter CPU partitioning */
+	if (pe->nr_processes == -1) {
+		pe->nr_processes = req.nr_processes;
+		pe->nr_processes_left = req.nr_processes;
+		dprintk("%s: nr_processes: %d (partitioned exec starts)\n",
+				__FUNCTION__,
+				pe->nr_processes);
+	}
+
+	if (pe->nr_processes != req.nr_processes) {
+		printk("%s: error: requested number of processes"
+				" doesn't match current partitioned execution\n",
+				__FUNCTION__);
+		ret = -EINVAL;
+		goto put_and_unlock_out;
+	}
+
+	--pe->nr_processes_left;
+	dprintk("%s: nr_processes: %d, nr_processes_left: %d\n",
+			__FUNCTION__,
+			pe->nr_processes,
+			pe->nr_processes_left);
+
+	cpus_to_assign = udp->cpu_info->n_cpus / req.nr_processes;
+
+	/* Find the first unused CPU */
+	cpu = cpumask_next_zero(-1, &cpus_used);
+	if (cpu >= udp->cpu_info->n_cpus) {
+		printk("%s: error: no more CPUs available\n",
+				__FUNCTION__);
+		ret = -EINVAL;
+		goto put_and_unlock_out;
+	}
+
+#ifdef POSTK_DEBUG_ARCH_DEP_54 /* cpu_set() & cpu_isset() linux version depend fix. */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0)
+	cpu_set(cpu, cpus_used);
+	cpu_set(cpu, cpus_to_use);
+#else /* LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0) */
+	cpumask_set_cpu(cpu, &cpus_used);
+	cpumask_set_cpu(cpu, &cpus_to_use);
+#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_54 */
+	cpu_set(cpu, cpus_used);
+	cpu_set(cpu, cpus_to_use);
+#endif /* POSTK_DEBUG_ARCH_DEP_54 */
+	cpu_prev = cpu;
+	dprintk("%s: CPU %d assigned (first)\n", __FUNCTION__, cpu);
+
+	for (cpus_assigned = 1; cpus_assigned < cpus_to_assign;
+			++cpus_assigned) {
+		int node;
+
+		cpu_top = NULL;
+		/* Find the topology object of the last core assigned */
+		list_for_each_entry(cpu_top_i, &udp->cpu_topology_list, chain) {
+			if (cpu_top_i->mckernel_cpu_id == cpu_prev) {
+				cpu_top = cpu_top_i;
+				break;
+			}
+		}
+
+		if (!cpu_top) {
+			printk("%s: error: couldn't find CPU topology info\n",
+					__FUNCTION__);
+			ret = -EINVAL;
+			goto put_and_unlock_out;
+		}
+
+		/* Find a core sharing the same cache iterating caches from
+		 * the most inner one outwards */
+		list_for_each_entry(cache_top, &cpu_top->cache_list, chain) {
+			for_each_cpu(cpu, &cache_top->shared_cpu_map) {
+#ifdef POSTK_DEBUG_ARCH_DEP_54 /* cpu_set() & cpu_isset() linux version depend fix. */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0)
+				if (!cpu_isset(cpu, cpus_used)) {
+					cpu_set(cpu, cpus_used);
+					cpu_set(cpu, cpus_to_use);
+#else /* LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0) */
+				if (!cpumask_test_cpu(cpu, &cpus_used)) {
+					cpumask_set_cpu(cpu, &cpus_used);
+					cpumask_set_cpu(cpu, &cpus_to_use);
+#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_54 */
+				if (!cpu_isset(cpu, cpus_used)) {
+					cpu_set(cpu, cpus_used);
+					cpu_set(cpu, cpus_to_use);
+#endif /* POSTK_DEBUG_ARCH_DEP_54 */
+					cpu_prev = cpu;
+					dprintk("%s: CPU %d assigned (same cache L%lu)\n",
+						__FUNCTION__, cpu, cache_top->saved->level);
+					goto next_cpu;
+				}
+			}
+		}
+
+		/* No CPU? Find a core from the same NUMA node */
+		node = linux_numa_2_mckernel_numa(udp,
+				cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu_prev)));
+
+		for_each_cpu_not(cpu, &cpus_used) {
+			/* Invalid CPU? */
+			if (cpu >= udp->cpu_info->n_cpus)
+				break;
+
+			/* Found one */
+			if (node == linux_numa_2_mckernel_numa(udp,
+						cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu)))) {
+#ifdef POSTK_DEBUG_ARCH_DEP_54 /* cpu_set() & cpu_isset() linux version depend fix. */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0)
+				cpu_set(cpu, cpus_used);
+				cpu_set(cpu, cpus_to_use);
+#else /* LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0) */
+				cpumask_set_cpu(cpu, &cpus_used);
+				cpumask_set_cpu(cpu, &cpus_to_use);
+#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_54 */
+				cpu_set(cpu, cpus_used);
+				cpu_set(cpu, cpus_to_use);
+#endif /* POSTK_DEBUG_ARCH_DEP_54 */
+				cpu_prev = cpu;
+				dprintk("%s: CPU %d assigned (same NUMA)\n",
+						__FUNCTION__, cpu);
+				goto next_cpu;
+			}
+		}
+
+		/* No CPU? Simply find the next unused one */
+		cpu = cpumask_next_zero(-1, &cpus_used);
+		if (cpu >= udp->cpu_info->n_cpus) {
+			printk("%s: error: no more CPUs available\n",
+					__FUNCTION__);
+			ret = -EINVAL;
+			goto put_and_unlock_out;
+		}
+
+#ifdef POSTK_DEBUG_ARCH_DEP_54 /* cpu_set() & cpu_isset() linux version depend fix. */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0)
+		cpu_set(cpu, cpus_used);
+		cpu_set(cpu, cpus_to_use);
+#else /* LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0) */
+		cpumask_set_cpu(cpu, &cpus_used);
+		cpumask_set_cpu(cpu, &cpus_to_use);
+#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_54 */
+		cpu_set(cpu, cpus_used);
+		cpu_set(cpu, cpus_to_use);
+#endif /* POSTK_DEBUG_ARCH_DEP_54 */
+		cpu_prev = cpu;
+		dprintk("%s: CPU %d assigned (unused)\n",
+				__FUNCTION__, cpu);
+
+next_cpu:
+		continue;
+	}
+
+	/* Found all cores, let user know */
+	if (copy_to_user(req.cpu_set, &cpus_to_use,
+				(req.cpu_set_size < sizeof(cpus_to_use) ?
+				 req.cpu_set_size : sizeof(cpus_to_use)))) {
+		printk("%s: error copying mask to user\n", __FUNCTION__);
+		ret = -EINVAL;
+		goto put_and_unlock_out;
+	}
+
+	/* Copy IKC target core and mcexec Linux NUMA id */
+	cpu = cpumask_next(-1, &cpus_to_use);
+	if (copy_to_user(req.target_core, &cpu, sizeof(cpu))) {
+		printk("%s: error copying target core to user\n",
+				__FUNCTION__);
+		ret = -EINVAL;
+		goto put_and_unlock_out;
+	}
+
+	mcexec_linux_numa = cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu));
+	if (copy_to_user(req.mcexec_linux_numa, &mcexec_linux_numa,
+				sizeof(mcexec_linux_numa))) {
+		printk("%s: error copying mcexec Linux NUMA id\n",
+				__FUNCTION__);
+		ret = -EINVAL;
+		goto put_and_unlock_out;
+	}
+
+	/* Save in per-process structure */
+	memcpy(&ppd->cpu_set, &cpus_to_use, sizeof(cpumask_t));
+	ppd->ikc_target_cpu = cpu;
+
+	/* Commit used cores to OS structure */
+	memcpy(&pe->cpus_used, &cpus_used, sizeof(cpus_used));
+
+	/* Reset if last process */
+	if (pe->nr_processes_left == 0) {
+		dprintk("%s: nr_processes: %d (partitioned exec ends)\n",
+				__FUNCTION__,
+				pe->nr_processes);
+		pe->nr_processes = -1;
+		memset(&pe->cpus_used, 0, sizeof(pe->cpus_used));
+	}
+
+	ret = 0;
+
+put_and_unlock_out:
+	mcctrl_put_per_proc_data(ppd);
+	mutex_unlock(&pe->lock);
+
+	return ret;
+}
+
 int mcctrl_add_per_proc_data(struct mcctrl_usrdata *ud, int pid, 
 	struct mcctrl_per_proc_data *ppd)
 {
@@ -493,6 +757,7 @@ out:
 	write_unlock_irqrestore(&ud->per_proc_data_hash_lock[hash], flags);
 	return ret;
 }
+
 
 /* NOTE: per-process data is refcounted.
  * For every get call the user should call put. */
@@ -1050,7 +1315,10 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 		INIT_LIST_HEAD(&ppd->wq_req_list);
 		INIT_LIST_HEAD(&ppd->wq_list_exact);
 		init_waitqueue_head(&ppd->wq_prepare);
+		init_waitqueue_head(&ppd->wq_procfs);
 		spin_lock_init(&ppd->wq_list_lock);
+		memset(&ppd->cpu_set, 0, sizeof(cpumask_t));
+		ppd->ikc_target_cpu = 0;
 		/* Final ref will be dropped in close_exec() */
 		atomic_set(&ppd->refcount, 1);
 
@@ -1370,6 +1638,9 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 
 	case MCEXEC_UP_GET_NODES:
 		return mcexec_get_nodes(os);
+
+	case MCEXEC_UP_GET_CPUSET:
+		return mcexec_get_cpuset(os, arg);
 
 	case MCEXEC_UP_STRNCPY_FROM_USER:
 		return mcexec_strncpy_from_user(os, 

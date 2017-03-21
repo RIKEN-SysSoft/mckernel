@@ -80,7 +80,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		break;
 
 	case SCD_MSG_PROCFS_ANSWER:
-		procfs_answer(pisp->arg, pisp->err);
+		procfs_answer(usrdata, pisp->pid);
 		break;
 
 	case SCD_MSG_SEND_SIGNAL:
@@ -240,7 +240,7 @@ static struct ihk_ikc_listen_param listen_param = {
 	.port = 501,
 	.handler = connect_handler,
 	.pkt_size = sizeof(struct ikc_scd_packet),
-	.queue_size = PAGE_SIZE,
+	.queue_size = PAGE_SIZE * 4,
 	.magic = 0x1129,
 };
 
@@ -248,7 +248,7 @@ static struct ihk_ikc_listen_param listen_param2 = {
 	.port = 502,
 	.handler = connect_handler2,
 	.pkt_size = sizeof(struct ikc_scd_packet),
-	.queue_size = PAGE_SIZE,
+	.queue_size = PAGE_SIZE * 4,
 	.magic = 0x1329,
 };
 
@@ -288,6 +288,8 @@ int prepare_ikc_channels(ihk_os_t os)
 	ihk_ikc_listen_port(os, &usrdata->listen_param);
 	memcpy(&usrdata->listen_param2, &listen_param2, sizeof listen_param2);
 	ihk_ikc_listen_port(os, &usrdata->listen_param2);
+	init_waitqueue_head(&usrdata->wq_procfs);
+	mutex_init(&usrdata->reserve_lock);
 
 	for (i = 0; i < MCCTRL_PER_PROC_DATA_HASH_SIZE; ++i) {
 		INIT_LIST_HEAD(&usrdata->per_proc_data_hash[i]);
@@ -296,6 +298,9 @@ int prepare_ikc_channels(ihk_os_t os)
 
 	INIT_LIST_HEAD(&usrdata->cpu_topology_list);
 	INIT_LIST_HEAD(&usrdata->node_topology_list);
+
+	mutex_init(&usrdata->part_exec.lock);
+	usrdata->part_exec.nr_processes = -1;
 
 	return 0;
 }
@@ -322,7 +327,6 @@ void destroy_ikc_channels(ihk_os_t os)
 //			ihk_ikc_disconnect(usrdata->channels[i].c);
 			ihk_ikc_free_channel(usrdata->channels[i].c);
 			__destroy_ikc_channel(os, usrdata->channels + i);
-			printk("Channel #%d freed.\n", i);
 		}
 	}
 

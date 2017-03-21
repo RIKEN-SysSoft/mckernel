@@ -2936,6 +2936,7 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 	XCC=$CC
+	CFLAGS="$CFLAGS -ffreestanding -fno-tree-loop-distribute-patterns"
 	;;
     builtin-mic)
 	ARCH=k1om
@@ -4063,6 +4064,7 @@ fi
 
 
 
+
 ac_config_headers="$ac_config_headers executer/config.h"
 
 # POSTK_DEBUG_ARCH_DEP_37
@@ -4082,7 +4084,7 @@ ac_config_headers="$ac_config_headers executer/config.h"
 #	arch/x86/tools/mcshutdown-builtin-x86.sh
 #	arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in
 #])
-ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/kernel/mcctrl/Makefile executer/kernel/mcctrl/arch/$ARCH/Makefile executer/kernel/mcoverlayfs/Makefile executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile executer/kernel/mcoverlayfs/linux-4.0.9/Makefile kernel/Makefile kernel/Makefile.build arch/x86/tools/mcreboot-attached-mic.sh arch/x86/tools/mcshutdown-attached-mic.sh arch/x86/tools/mcreboot-builtin-x86.sh arch/x86/tools/mcreboot-smp-x86.sh arch/x86/tools/mcstop+release-smp-x86.sh arch/x86/tools/mcshutdown-builtin-x86.sh arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in arch/x86/tools/irqbalance_mck.service arch/x86/tools/irqbalance_mck.in kernel/config/config.smp-arm64 arch/arm64/kernel/vdso/Makefile"
+ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/kernel/mcctrl/Makefile executer/kernel/mcctrl/arch/$ARCH/Makefile executer/kernel/mcoverlayfs/Makefile executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile executer/kernel/mcoverlayfs/linux-4.0.9/Makefile executer/kernel/mcoverlayfs/linux-4.6.7/Makefile kernel/Makefile kernel/Makefile.build arch/x86/tools/mcreboot-attached-mic.sh arch/x86/tools/mcshutdown-attached-mic.sh arch/x86/tools/mcreboot-builtin-x86.sh arch/x86/tools/mcreboot-smp-x86.sh arch/x86/tools/mcstop+release-smp-x86.sh arch/x86/tools/eclair-dump-backtrace.exp arch/x86/tools/mcshutdown-builtin-x86.sh arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in arch/x86/tools/irqbalance_mck.service arch/x86/tools/irqbalance_mck.in kernel/config/config.smp-arm64 arch/arm64/kernel/vdso/Makefile"
 
 
 if test "x$enable_dcfa" = xyes; then :
@@ -4788,6 +4790,7 @@ do
     "executer/kernel/mcoverlayfs/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcoverlayfs/Makefile" ;;
     "executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile" ;;
     "executer/kernel/mcoverlayfs/linux-4.0.9/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcoverlayfs/linux-4.0.9/Makefile" ;;
+    "executer/kernel/mcoverlayfs/linux-4.6.7/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcoverlayfs/linux-4.6.7/Makefile" ;;
     "kernel/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/Makefile" ;;
     "kernel/Makefile.build") CONFIG_FILES="$CONFIG_FILES kernel/Makefile.build" ;;
     "arch/x86/tools/mcreboot-attached-mic.sh") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/mcreboot-attached-mic.sh" ;;
@@ -4795,6 +4798,7 @@ do
     "arch/x86/tools/mcreboot-builtin-x86.sh") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/mcreboot-builtin-x86.sh" ;;
     "arch/x86/tools/mcreboot-smp-x86.sh") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/mcreboot-smp-x86.sh" ;;
     "arch/x86/tools/mcstop+release-smp-x86.sh") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/mcstop+release-smp-x86.sh" ;;
+    "arch/x86/tools/eclair-dump-backtrace.exp") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/eclair-dump-backtrace.exp" ;;
     "arch/x86/tools/mcshutdown-builtin-x86.sh") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/mcshutdown-builtin-x86.sh" ;;
     "arch/x86/tools/mcreboot.1") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in" ;;
     "arch/x86/tools/irqbalance_mck.service") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/irqbalance_mck.service" ;;

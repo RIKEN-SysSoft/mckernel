@@ -102,6 +102,7 @@ static int alloc_zeroobj(void)
 
 	memset(obj, 0, sizeof(*obj));
 	obj->memobj.ops = &zeroobj_ops;
+	obj->memobj.size = 0;
 	page_list_init(obj);
 	ihk_mc_spinlock_init(&obj->memobj.lock);
 

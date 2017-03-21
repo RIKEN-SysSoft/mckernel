@@ -126,7 +126,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		
 		up = virt_to_phys(up_v);
 		if (add_process_memory_range(vm, s, e, up, flags, NULL, 0,
-					PAGE_SHIFT) != 0) {
+					PAGE_SHIFT, NULL) != 0) {
 			ihk_mc_free_pages(up_v, range_npages);
 			kprintf("ERROR: adding memory range for ELF section %i\n", i);
 			goto err;
@@ -214,7 +214,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	args_envs_p = virt_to_phys(args_envs);
 
 	if(add_process_memory_range(vm, addr, e, args_envs_p,
-				flags, NULL, 0, PAGE_SHIFT) != 0){
+				flags, NULL, 0, PAGE_SHIFT, NULL) != 0){
 		ihk_mc_free_pages(args_envs, ARGENV_PAGE_COUNT);
 		kprintf("ERROR: adding memory range for args/envs\n");
 		goto err;
@@ -394,7 +394,9 @@ static int process_msg_prepare_process(unsigned long rphys)
 	memcpy_long(pn, p, sizeof(struct program_load_desc) 
 	            + sizeof(struct program_image_section) * n);
 
-	if((thread = create_thread(p->entry)) == NULL){
+	if ((thread = create_thread(p->entry,
+					(unsigned long *)&p->cpu_set,
+					sizeof(p->cpu_set))) == NULL) {
 		kfree(pn);
 		ihk_mc_unmap_virtual(p, npages, 1);
 		ihk_mc_unmap_memory(NULL, phys, sz);
@@ -433,9 +435,6 @@ static int process_msg_prepare_process(unsigned long rphys)
 	vm->region.map_end = vm->region.map_start;
 	memcpy(proc->rlimit, pn->rlimit, sizeof(struct rlimit) * MCK_RLIM_MAX);
 
-	/* TODO: Clear it at the proper timing */
-	cpu_local_var(scp).post_idx = 0;
-
 	if (prepare_process_ranges_args_envs(thread, pn, p, attr, 
 				NULL, 0, NULL, 0) != 0) {
 		kprintf("error: preparing process ranges, args, envs, stack\n");
@@ -460,70 +459,6 @@ err:
 	return -ENOMEM;
 }
 
-static void process_msg_init(struct ikc_scd_init_param *pcp, struct syscall_params *lparam)
-{
-	lparam->response_va = ihk_mc_alloc_pages(RESPONSE_PAGE_COUNT, 0);
-	lparam->response_pa = virt_to_phys(lparam->response_va);
-
-	pcp->request_page = 0;
-	pcp->doorbell_page = 0;
-	pcp->response_page = lparam->response_pa;
-}
-
-static void process_msg_init_acked(struct ihk_ikc_channel_desc *c, unsigned long pphys)
-{
-	struct ikc_scd_init_param *param = phys_to_virt(pphys);
-	struct syscall_params *lparam;
-	enum ihk_mc_pt_attribute attr;
-
-	attr = PTATTR_NO_EXECUTE | PTATTR_WRITABLE | PTATTR_FOR_USER;
-
-	lparam = &cpu_local_var(scp);
-	if(cpu_local_var(syscall_channel2) == c)
-		lparam = &cpu_local_var(scp2);
-	lparam->request_rpa = param->request_page;
-	lparam->request_pa = ihk_mc_map_memory(NULL, param->request_page,
-	                                       REQUEST_PAGE_COUNT * PAGE_SIZE);
-	if((lparam->request_va = ihk_mc_map_virtual(lparam->request_pa,
-	                                        REQUEST_PAGE_COUNT,
-	                                        attr)) == NULL){
-		// TODO: 
-		panic("ENOMEM");
-	}
-
-	lparam->doorbell_rpa = param->doorbell_page;
-	lparam->doorbell_pa = ihk_mc_map_memory(NULL, param->doorbell_page,
-	                                        DOORBELL_PAGE_COUNT * 
-	                                        PAGE_SIZE);
-	if((lparam->doorbell_va = ihk_mc_map_virtual(lparam->doorbell_pa,
-	                                         DOORBELL_PAGE_COUNT,
-	                                         attr)) == NULL){
-		// TODO: 
-		panic("ENOMEM");
-	}
-
-	lparam->post_rpa = param->post_page;
-	lparam->post_pa = ihk_mc_map_memory(NULL, param->post_page,
-	                                    PAGE_SIZE);
-	if((lparam->post_va = ihk_mc_map_virtual(lparam->post_pa, 1,
-	                                     attr)) == NULL){
-		// TODO: 
-		panic("ENOMEM");
-	}
-
-	lparam->post_fin = 1;
-
-	dkprintf("Syscall parameters: (%d)\n", ihk_mc_get_processor_id());
-	dkprintf(" Response: %lx, %p\n",
-	        lparam->response_pa, lparam->response_va);
-	dkprintf(" Request : %lx, %lx, %p\n",
-	        lparam->request_pa, lparam->request_rpa, lparam->request_va);
-	dkprintf(" Doorbell: %lx, %lx, %p\n",
-	        lparam->doorbell_pa, lparam->doorbell_rpa, lparam->doorbell_va);
-	dkprintf(" Post: %lx, %lx, %p\n",
-	        lparam->post_pa, lparam->post_rpa, lparam->post_va);
-}
-
 static void syscall_channel_send(struct ihk_ikc_channel_desc *c,
                                  struct ikc_scd_packet *packet)
 {
@@ -531,7 +466,7 @@ static void syscall_channel_send(struct ihk_ikc_channel_desc *c,
 }
 
 extern unsigned long do_kill(struct thread *, int, int, int, struct siginfo *, int ptracecont);
-extern void process_procfs_request(unsigned long rarg);
+extern void process_procfs_request(struct ikc_scd_packet *rpacket);
 extern void terminate_host(int pid);
 extern void debug_log(long);
 
@@ -558,7 +493,6 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	switch (packet->msg) {
 	case SCD_MSG_INIT_CHANNEL_ACKED:
 		dkprintf("SCD_MSG_INIT_CHANNEL_ACKED\n");
-		process_msg_init_acked(c, packet->arg);
 		ret = 0;
 		break;
 
@@ -580,14 +514,16 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		break;
 
 	case SCD_MSG_SCHEDULE_PROCESS:
-		cpuid = obtain_clone_cpuid();
-		if(cpuid == -1){
+		thread = (struct thread *)packet->arg;
+
+		cpuid = obtain_clone_cpuid(&thread->cpu_set);
+		if (cpuid == -1) {
 			kprintf("No CPU available\n");
 			ret = -1;
 			break;
 		}
+
 		dkprintf("SCD_MSG_SCHEDULE_PROCESS: %lx\n", packet->arg);
-		thread = (struct thread *)packet->arg;
 		proc = thread->proc;
 		thread->tid = proc->pid;
 		proc->status = PS_RUNNING;
@@ -595,8 +531,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		chain_thread(thread);
 		chain_process(proc);
 		runq_add_thread(thread, cpuid);
-					  
-		//cpu_local_var(next) = (struct thread *)packet->arg;
+
 		ret = 0;
 		break;
 
@@ -638,7 +573,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		break;
 
 	case SCD_MSG_PROCFS_REQUEST:
-		process_procfs_request(packet->arg);
+		process_procfs_request(packet);
 		ret = 0;
 		break;
 
@@ -684,7 +619,7 @@ void init_host_syscall_channel(void)
 
 	param.port = 501;
 	param.pkt_size = sizeof(struct ikc_scd_packet);
-	param.queue_size = PAGE_SIZE;
+	param.queue_size = PAGE_SIZE * 4;
 	param.magic = 0x1129;
 	param.handler = syscall_packet_handler;
 
@@ -697,7 +632,6 @@ void init_host_syscall_channel(void)
 
 	get_this_cpu_local_var()->syscall_channel = param.channel;
 
-	process_msg_init(&cpu_local_var(iip), &cpu_local_var(scp));
 	pckt.msg = SCD_MSG_INIT_CHANNEL;
 	pckt.ref = ihk_mc_get_processor_id();
 	pckt.arg = virt_to_phys(&cpu_local_var(iip));
@@ -711,7 +645,7 @@ void init_host_syscall_channel2(void)
 
 	param.port = 502;
 	param.pkt_size = sizeof(struct ikc_scd_packet);
-	param.queue_size = PAGE_SIZE;
+	param.queue_size = PAGE_SIZE * 4;
 	param.magic = 0x1329;
 	param.handler = syscall_packet_handler;
 
@@ -724,7 +658,6 @@ void init_host_syscall_channel2(void)
 
 	get_this_cpu_local_var()->syscall_channel2 = param.channel;
 
-	process_msg_init(&cpu_local_var(iip2), &cpu_local_var(scp2));
 	pckt.msg = SCD_MSG_INIT_CHANNEL;
 	pckt.ref = ihk_mc_get_processor_id();
 	pckt.arg = virt_to_phys(&cpu_local_var(iip2));

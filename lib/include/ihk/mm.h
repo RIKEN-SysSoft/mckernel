@@ -40,12 +40,17 @@ enum ihk_mc_ma_type {
 	IHK_MC_MA_SPECIAL,
 };
 
-enum ihk_mc_ap_flag {
-	IHK_MC_AP_FLAG,
-	IHK_MC_AP_CRITICAL, /* panic on no memory space */
-	IHK_MC_AP_NOWAIT,   /* error return on no memory space */
-	IHK_MC_AP_WAIT      /* wait on no memory space */
-};
+typedef unsigned long ihk_mc_ap_flag;
+/* Panic on no memory space */
+#define IHK_MC_AP_CRITICAL        0x000001
+/* Error return on no memory space */
+#define IHK_MC_AP_NOWAIT          0x000002
+/* Wait on no memory space */
+#define IHK_MC_AP_WAIT            0x000004
+#define IHK_MC_AP_USER            0x001000
+
+#define IHK_MC_AP_BANDWIDTH       0x010000
+#define IHK_MC_AP_LATENCY         0x020000
 
 enum ihk_mc_pt_prepare_flag {
 	IHK_MC_PT_FIRST_LEVEL,
@@ -79,10 +84,10 @@ void ihk_mc_reserve_arch_pages(struct ihk_page_allocator_desc *pa_allocator,
 			unsigned long, unsigned long, int));
 
 struct ihk_mc_pa_ops {
-	void *(*alloc_page)(int, int, enum ihk_mc_ap_flag);
+	void *(*alloc_page)(int, int, ihk_mc_ap_flag, int node);
 	void (*free_page)(void *, int);
 
-	void *(*alloc)(int, enum ihk_mc_ap_flag);
+	void *(*alloc)(int, ihk_mc_ap_flag);
 	void (*free)(void *);
 };
 
@@ -103,17 +108,20 @@ void ihk_mc_map_micpa(unsigned long host_pa, unsigned long* mic_pa);
 int ihk_mc_free_micpa(unsigned long mic_pa);
 void ihk_mc_clean_micpa(void);
 
-void *_ihk_mc_alloc_aligned_pages(int npages, int p2align,
-	enum ihk_mc_ap_flag flag, char *file, int line);
-#define ihk_mc_alloc_aligned_pages(npages, p2align, flag) ({\
-void *r = _ihk_mc_alloc_aligned_pages(npages, p2align, flag, __FILE__, __LINE__);\
+void *_ihk_mc_alloc_aligned_pages_node(int npages, int p2align,
+	ihk_mc_ap_flag flag, int node, char *file, int line);
+#define ihk_mc_alloc_aligned_pages_node(npages, p2align, flag, node) ({\
+void *r = _ihk_mc_alloc_aligned_pages_node(npages, p2align, flag, node, __FILE__, __LINE__);\
 r;\
 })
 
-void *_ihk_mc_alloc_pages(int npages, enum ihk_mc_ap_flag flag,
-		char *file, int line);
+#define ihk_mc_alloc_aligned_pages(npages, p2align, flag) ({\
+void *r = _ihk_mc_alloc_aligned_pages_node(npages, p2align, flag, -1, __FILE__, __LINE__);\
+r;\
+})
+
 #define ihk_mc_alloc_pages(npages, flag) ({\
-void *r = _ihk_mc_alloc_pages(npages, flag, __FILE__, __LINE__);\
+void *r = _ihk_mc_alloc_aligned_pages_node(npages, PAGE_P2ALIGN, flag, -1, __FILE__, __LINE__);\
 r;\
 })
 
@@ -160,10 +168,14 @@ int visit_pte_range(page_table_t pt, void *start, void *end, int pgshift,
 int move_pte_range(page_table_t pt, struct process_vm *vm, 
 		void *src, void *dest, size_t size);
 
-struct page_table *ihk_mc_pt_create(enum ihk_mc_ap_flag ap_flag);
+struct page_table *ihk_mc_pt_create(ihk_mc_ap_flag ap_flag);
 /* XXX: proper use of struct page_table and page_table_t is unknown */
 void ihk_mc_pt_destroy(struct page_table *pt);
 void ihk_mc_load_page_table(struct page_table *pt);
+int ihk_mc_pt_virt_to_phys_size(struct page_table *pt,
+                           const void *virt,
+						   unsigned long *phys,
+						   unsigned long *size);
 int ihk_mc_pt_virt_to_phys(struct page_table *pt,
                            const void *virt, unsigned long *phys);
 uint64_t ihk_mc_pt_virt_to_pagemap(struct page_table *pt, unsigned long virt);
@@ -180,6 +192,9 @@ int ihk_mc_get_memory_chunk(int id,
 
 void remote_flush_tlb_cpumask(struct process_vm *vm, 
 		unsigned long addr, int cpu_id);
+
+int ihk_set_kmsg(unsigned long addr, unsigned long size);
+char *ihk_get_kargs();
 
 extern void (*__tlb_flush_handler)(int vector);
 

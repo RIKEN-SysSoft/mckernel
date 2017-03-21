@@ -66,12 +66,12 @@ extern void early_alloc_invalidate(void);
 
 static char *memdebug = NULL;
 
-static void *___kmalloc(int size, enum ihk_mc_ap_flag flag);
+static void *___kmalloc(int size, ihk_mc_ap_flag flag);
 static void ___kfree(void *ptr);
 
-static void *___ihk_mc_alloc_aligned_pages(int npages,
-		int p2align, enum ihk_mc_ap_flag flag);
-static void *___ihk_mc_alloc_pages(int npages, enum ihk_mc_ap_flag flag);
+static void *___ihk_mc_alloc_aligned_pages_node(int npages,
+		int p2align, ihk_mc_ap_flag flag, int node);
+static void *___ihk_mc_alloc_pages(int npages, ihk_mc_ap_flag flag);
 static void ___ihk_mc_free_pages(void *p, int npages);
 
 /*
@@ -152,14 +152,15 @@ struct pagealloc_track_entry *__pagealloc_track_find_entry(
 }
 
 /* Top level routines called from macros */
-void *_ihk_mc_alloc_aligned_pages(int npages, int p2align,
-	enum ihk_mc_ap_flag flag, char *file, int line)
+void *_ihk_mc_alloc_aligned_pages_node(int npages, int p2align,
+	ihk_mc_ap_flag flag, int node, char *file, int line)
 {
 	unsigned long irqflags;
 	struct pagealloc_track_entry *entry;
 	struct pagealloc_track_addr_entry *addr_entry;
 	int hash, addr_hash;
-	void *r = ___ihk_mc_alloc_aligned_pages(npages, p2align, flag);
+	void *r = ___ihk_mc_alloc_aligned_pages_node(npages,
+					p2align, flag, node);
 
 	if (!memdebug || !pagealloc_track_initialized)
 		return r;
@@ -229,12 +230,6 @@ void *_ihk_mc_alloc_aligned_pages(int npages, int p2align,
 
 out:
 	return r;
-}
-
-void *_ihk_mc_alloc_pages(int npages, enum ihk_mc_ap_flag flag,
-		char *file, int line)
-{
-	return _ihk_mc_alloc_aligned_pages(npages, PAGE_P2ALIGN, flag, file, line);
 }
 
 void _ihk_mc_free_pages(void *ptr, int npages, char *file, int line)
@@ -450,18 +445,18 @@ void pagealloc_memcheck(void)
 
 
 /* Actual allocation routines */
-static void *___ihk_mc_alloc_aligned_pages(int npages, int p2align,
-	enum ihk_mc_ap_flag flag)
+static void *___ihk_mc_alloc_aligned_pages_node(int npages, int p2align,
+	ihk_mc_ap_flag flag, int node)
 {
 	if (pa_ops)
-		return pa_ops->alloc_page(npages, p2align, flag);
+		return pa_ops->alloc_page(npages, p2align, flag, node);
 	else
 		return early_alloc_pages(npages);
 }
 
-static void *___ihk_mc_alloc_pages(int npages, enum ihk_mc_ap_flag flag)
+static void *___ihk_mc_alloc_pages(int npages, ihk_mc_ap_flag flag)
 {
-	return ___ihk_mc_alloc_aligned_pages(npages, PAGE_P2ALIGN, flag);
+	return ___ihk_mc_alloc_aligned_pages_node(npages, PAGE_P2ALIGN, flag, -1);
 }
 
 static void ___ihk_mc_free_pages(void *p, int npages)
@@ -495,18 +490,117 @@ static void reserve_pages(struct ihk_page_allocator_desc *pa_allocator,
 	ihk_pagealloc_reserve(pa_allocator, start, end);
 }
 
-static void *allocate_aligned_pages(int npages, int p2align, 
-		enum ihk_mc_ap_flag flag)
+extern int cpu_local_var_initialized;
+static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
+		ihk_mc_ap_flag flag, int pref_node)
 {
-	unsigned long pa;
-	int i;
+	unsigned long pa = 0;
+	int i, node;
+	struct ihk_page_allocator_desc *pa_allocator;
 
-	/* TODO: match NUMA id and distance matrix with allocating core */
+	/* Not yet initialized or idle process */
+	if (!cpu_local_var_initialized ||
+			!cpu_local_var(current) ||
+			!cpu_local_var(current)->vm)
+		goto distance_based;
+
+	/* User requested policy? */
+	if (!(flag & IHK_MC_AP_USER)) {
+		goto distance_based;
+	}
+
+	node = ihk_mc_get_numa_id();
+	if (!memory_nodes[node].nodes_by_distance)
+		goto order_based;
+
+	switch (cpu_local_var(current)->vm->numa_mem_policy) {
+		case MPOL_BIND:
+		case MPOL_PREFERRED:
+
+			/* Look at nodes in the order of distance but consider
+			 * only the ones requested in user policy */
+			for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
+
+				/* Not part of user requested policy? */
+				if (!test_bit(memory_nodes[node].nodes_by_distance[i].id,
+						cpu_local_var(current)->proc->vm->numa_mask)) {
+					continue;
+				}
+
+				list_for_each_entry(pa_allocator,
+						&memory_nodes[memory_nodes[node].
+						nodes_by_distance[i].id].allocators, list) {
+					pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+
+					if (pa) {
+						dkprintf("%s: policy: CPU @ node %d allocated "
+								"%d pages from node %d\n",
+								__FUNCTION__,
+								ihk_mc_get_numa_id(),
+								npages, node);
+						break;
+					}
+				}
+
+				if (pa) break;
+			}
+			break;
+
+		case MPOL_INTERLEAVE:
+			/* TODO: */
+			break;
+
+		default:
+			break;
+	}
+
+	if (pa) {
+		return phys_to_virt(pa);
+	}
+	else {
+		dkprintf("%s: couldn't fulfill user policy for %d pages\n",
+			__FUNCTION__, npages);
+	}
+
+distance_based:
+	node = ihk_mc_get_numa_id();
+
+	/* Look at nodes in the order of distance */
+	if (!memory_nodes[node].nodes_by_distance)
+		goto order_based;
+
 	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
-		struct ihk_page_allocator_desc *pa_allocator;
 
 		list_for_each_entry(pa_allocator,
-				&memory_nodes[(ihk_mc_get_numa_id() + i) %
+				&memory_nodes[memory_nodes[node].
+				nodes_by_distance[i].id].allocators, list) {
+			pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+
+			if (pa) {
+				dkprintf("%s: distance: CPU @ node %d allocated "
+						"%d pages from node %d\n",
+						__FUNCTION__,
+						ihk_mc_get_numa_id(),
+						npages,
+						memory_nodes[node].nodes_by_distance[i].id);
+				break;
+			}
+		}
+
+		if (pa) break;
+	}
+
+	if (pa)
+		return phys_to_virt(pa);
+
+order_based:
+	node = ihk_mc_get_numa_id();
+
+	/* Fall back to regular order */
+	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
+
+		list_for_each_entry(pa_allocator,
+				&memory_nodes[(node + i) %
 				ihk_mc_get_nr_numa_nodes()].allocators, list) {
 			pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
 
@@ -525,12 +619,7 @@ static void *allocate_aligned_pages(int npages, int p2align,
 	return NULL;
 }
 
-static void *allocate_pages(int npages, enum ihk_mc_ap_flag flag)
-{
-	return allocate_aligned_pages(npages, PAGE_P2ALIGN, flag);
-}
-
-static void __free_pages_in_allocator(void *va, int npages)
+static void __mckernel_free_pages_in_allocator(void *va, int npages)
 {
 	int i;
 	unsigned long pa_start = virt_to_phys(va);
@@ -553,7 +642,7 @@ static void __free_pages_in_allocator(void *va, int npages)
 }
 
 
-static void free_pages(void *va, int npages)
+static void mckernel_free_pages(void *va, int npages)
 {
 	struct list_head *pendings = &cpu_local_var(pending_free_pages);
 	struct page *page;
@@ -561,7 +650,8 @@ static void free_pages(void *va, int npages)
 	page = phys_to_page(virt_to_phys(va));
 	if (page) {
 		if (page->mode != PM_NONE) {
-			panic("free_pages:not PM_NONE");
+			kprintf("%s: WARNING: page phys 0x%lx is not PM_NONE",
+					__FUNCTION__, page->phys);
 		}
 		if (pendings->next != NULL) {
 			page->mode = PM_PENDING_FREE;
@@ -571,7 +661,7 @@ static void free_pages(void *va, int npages)
 		}
 	}
 
-	__free_pages_in_allocator(va, npages);
+	__mckernel_free_pages_in_allocator(va, npages);
 }
 
 void begin_free_pages_pending(void) {
@@ -600,7 +690,7 @@ void finish_free_pages_pending(void)
 		}
 		page->mode = PM_NONE;
 		list_del(&page->list);
-		__free_pages_in_allocator(phys_to_virt(page_to_phys(page)), 
+		__mckernel_free_pages_in_allocator(phys_to_virt(page_to_phys(page)),
 				page->offset);
 	}
 
@@ -609,8 +699,8 @@ void finish_free_pages_pending(void)
 }
 
 static struct ihk_mc_pa_ops allocator = {
-	.alloc_page = allocate_aligned_pages,
-	.free_page = free_pages,
+	.alloc_page = mckernel_allocate_aligned_pages_node,
+	.free_page = mckernel_free_pages,
 };
 
 void sbox_write(int offset, unsigned int value);
@@ -798,6 +888,8 @@ void remote_flush_tlb_cpumask(struct process_vm *vm,
 			flush_tlb();
 		}
 
+		/* Flush on this core */
+		flush_tlb_single(addr & PAGE_MASK);
 		/* Wait for all cores */
 		while (ihk_atomic_read(&flush_entry->pending) != 0) {
 			cpu_pause();
@@ -849,8 +941,8 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 	int error;
 
 	set_cputime(interrupt_from_user(regs)? 1: 2);
-	dkprintf("[%d]page_fault_handler(%p,%lx,%p)\n",
-			ihk_mc_get_processor_id(), fault_addr, reason, regs);
+	dkprintf("%s: addr: %p, reason: %lx, regs: %p\n",
+			__FUNCTION__, fault_addr, reason, regs);
 
 	preempt_disable();
 
@@ -905,9 +997,8 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 	error = 0;
 	preempt_enable();
 out:
-	dkprintf("[%d]page_fault_handler(%p,%lx,%p): (%d)\n",
-			ihk_mc_get_processor_id(), fault_addr, reason,
-			regs, error);
+	dkprintf("%s: addr: %p, reason: %lx, regs: %p -> error: %d\n",
+			__FUNCTION__, fault_addr, reason, regs, error);
 	check_need_resched();
 	set_cputime(0);
 	return;
@@ -970,11 +1061,17 @@ static void numa_init(void)
 	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
 		int linux_numa_id, type;
 
-		ihk_mc_get_numa_node(i, &linux_numa_id, &type);
+		if (ihk_mc_get_numa_node(i, &linux_numa_id, &type) != 0) {
+			kprintf("%s: error: obtaining NUMA info for node %d\n",
+					__FUNCTION__, i);
+			panic("");
+		}
+
 		memory_nodes[i].id = i;
 		memory_nodes[i].linux_numa_id = linux_numa_id;
 		memory_nodes[i].type = type;
 		INIT_LIST_HEAD(&memory_nodes[i].allocators);
+		memory_nodes[i].nodes_by_distance = 0;
 
 		kprintf("NUMA: %d, Linux NUMA: %d, type: %d\n",
 			i, linux_numa_id, type);
@@ -995,6 +1092,72 @@ static void numa_init(void)
 				ihk_pagealloc_count(allocator) * PAGE_SIZE,
 				ihk_pagealloc_count(allocator),
 				numa_id);
+	}
+}
+
+static void numa_distances_init()
+{
+	int i, j, swapped;
+
+	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
+		/* TODO: allocate on target node */
+		memory_nodes[i].nodes_by_distance =
+			ihk_mc_alloc_pages((sizeof(struct node_distance) *
+						ihk_mc_get_nr_numa_nodes() + PAGE_SIZE - 1)
+					>> PAGE_SHIFT, IHK_MC_AP_NOWAIT);
+
+		if (!memory_nodes[i].nodes_by_distance) {
+			kprintf("%s: error: allocating nodes_by_distance\n",
+				__FUNCTION__);
+			continue;
+		}
+
+		for (j = 0; j < ihk_mc_get_nr_numa_nodes(); ++j) {
+			memory_nodes[i].nodes_by_distance[j].id = j;
+			memory_nodes[i].nodes_by_distance[j].distance =
+				ihk_mc_get_numa_distance(i, j);
+		}
+
+		/* Sort by distance and node ID */
+		swapped = 1;
+		while (swapped) {
+			swapped = 0;
+			for (j = 1; j < ihk_mc_get_nr_numa_nodes(); ++j) {
+				if ((memory_nodes[i].nodes_by_distance[j - 1].distance >
+							memory_nodes[i].nodes_by_distance[j].distance) ||
+						((memory_nodes[i].nodes_by_distance[j - 1].distance ==
+						  memory_nodes[i].nodes_by_distance[j].distance) &&
+						 (memory_nodes[i].nodes_by_distance[j - 1].id >
+						  memory_nodes[i].nodes_by_distance[j].id))) {
+					memory_nodes[i].nodes_by_distance[j - 1].id ^=
+						memory_nodes[i].nodes_by_distance[j].id;
+					memory_nodes[i].nodes_by_distance[j].id ^=
+						memory_nodes[i].nodes_by_distance[j - 1].id;
+					memory_nodes[i].nodes_by_distance[j - 1].id ^=
+						memory_nodes[i].nodes_by_distance[j].id;
+
+					memory_nodes[i].nodes_by_distance[j - 1].distance ^=
+						memory_nodes[i].nodes_by_distance[j].distance;
+					memory_nodes[i].nodes_by_distance[j].distance ^=
+						memory_nodes[i].nodes_by_distance[j - 1].distance;
+					memory_nodes[i].nodes_by_distance[j - 1].distance ^=
+						memory_nodes[i].nodes_by_distance[j].distance;
+					swapped = 1;
+				}
+			}
+		}
+		{
+			char buf[1024];
+			char *pbuf = buf;
+
+			pbuf += sprintf(pbuf, "NUMA %d distances: ", i);
+			for (j = 0; j < ihk_mc_get_nr_numa_nodes(); ++j) {
+				pbuf += sprintf(pbuf, "%d (%d), ",
+						memory_nodes[i].nodes_by_distance[j].id,
+						memory_nodes[i].nodes_by_distance[j].distance);
+			}
+			kprintf("%s\n", buf);
+		}
 	}
 }
 
@@ -1286,6 +1449,9 @@ void mem_init(void)
 		kprintf("Demand paging on ANONYMOUS mappings enabled.\n");
 		anon_on_demand = 1;
 	}
+	
+	/* Init distance vectors */
+	numa_distances_init();
 }
 
 #define KMALLOC_TRACK_HASH_SHIFT	(8)
@@ -1375,7 +1541,7 @@ struct kmalloc_track_entry *__kmalloc_track_find_entry(
 }
 
 /* Top level routines called from macro */
-void *_kmalloc(int size, enum ihk_mc_ap_flag flag, char *file, int line)
+void *_kmalloc(int size, ihk_mc_ap_flag flag, char *file, int line)
 {
 	unsigned long irqflags;
 	struct kmalloc_track_entry *entry;
@@ -1565,7 +1731,7 @@ void kmalloc_memcheck(void)
 }
 
 /* Redirection routines registered in alloc structure */
-void *__kmalloc(int size, enum ihk_mc_ap_flag flag)
+void *__kmalloc(int size, ihk_mc_ap_flag flag)
 {
 	return kmalloc(size, flag);
 }
@@ -1670,7 +1836,7 @@ void kmalloc_consolidate_free_list(void)
 #define KMALLOC_MIN_MASK    (KMALLOC_MIN_SIZE - 1)
 
 /* Actual low-level allocation routines */
-static void *___kmalloc(int size, enum ihk_mc_ap_flag flag)
+static void *___kmalloc(int size, ihk_mc_ap_flag flag)
 {
 	struct kmalloc_header *chunk_iter;
 	struct kmalloc_header *chunk = NULL;

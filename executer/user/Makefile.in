@@ -7,6 +7,7 @@ VPATH=@abs_srcdir@
 TARGET=mcexec
 @uncomment_if_ENABLE_MEMDUMP@TARGET+=eclair
 LIBS=@LIBS@
+IHKDIR ?= $(VPATH)/../../../ihk/linux/include/
 ARCH=@ARCH@
 
 CFLAGS += $(foreach i, $(shell seq 1 100), $(addprefix -DPOSTK_DEBUG_ARCH_DEP_, $(i)))
@@ -15,10 +16,10 @@ CFLAGS += $(foreach i, $(shell seq 1 100), $(addprefix -DPOSTK_DEBUG_TEMP_FIX_, 
 all: $(TARGET)
 
 mcexec: mcexec.c
-	$(CC) -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) -fPIE -pie -lrt -pthread -o $@ $^ $(EXTRA_OBJS)
+	$(CC) -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) -fPIE -pie -lrt -lnuma -pthread -o $@ $^ $(EXTRA_OBJS)
 
 eclair: eclair.c arch/$(ARCH)/arch-eclair.c
-	$(CC) -I.. -I. -I./arch/$(ARCH)/include $(CFLAGS) -o $@ $^ $(LIBS)
+	$(CC) -I.. -I. -I./arch/$(ARCH)/include -I${IHKDIR} $(CFLAGS) -o $@ $^ $(LIBS)
 
 clean:
 	$(RM) $(TARGET) *.o

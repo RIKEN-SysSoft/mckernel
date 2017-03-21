@@ -9,7 +9,7 @@ V ?= $(VERBOSE)
 KERNEL = kernel.img
 KERNELS = $(addsuffix /$(KERNEL),$(addprefix $(O)/,$(BUILD_TARGET)))
 
-SUBCMD_OPTS = V='$(V)'
+SUBCMD_OPTS = V='$(V)' BUILD_IHK_COKERNEL=@abs_builddir@/../../ihk/cokernel
 
 $(if $(O),,$(error Specify the compilation target directory))
 #$(if $(shell ls $(IHKBASE)/Makefile),,\

@@ -30,7 +30,8 @@ enum pager_op {
 struct pager_create_result {
 	uintptr_t	handle;
 	int		maxprot;
-	int8_t		padding[4];
+	uint32_t flags;
+	size_t size;
 };
 
 /*

@@ -25,6 +25,7 @@
 #include <page.h>
 #include <mman.h>
 #include <bitmap.h>
+#include <init.h>
 
 //#define DEBUG_PRINT_PROCFS
 
@@ -76,11 +77,11 @@ procfs_delete_thread(struct thread *thread)
  *
  * \param rarg returned argument
  */
-void
-process_procfs_request(unsigned long rarg)
+void process_procfs_request(struct ikc_scd_packet *rpacket)
 {
+	unsigned long rarg = rpacket->arg;
 	unsigned long parg, pbuf;
-        struct thread *thread = NULL;
+	struct thread *thread = NULL;
 	struct process *proc = NULL;
 	struct process_vm *vm = NULL;
 	struct procfs_read *r;
@@ -161,7 +162,7 @@ process_procfs_request(unsigned long rarg)
 	 */
 	ret = sscanf(p, "%d/", &pid);
 	if (ret == 1) {
-		struct mcs_rwlock_node tlock;
+		struct mcs_rwlock_node_irqsave tlock;
 		int tids;
 		struct thread *thread1 = NULL;
 
@@ -178,7 +179,7 @@ process_procfs_request(unsigned long rarg)
 		else
 			tid = pid;
 
-		mcs_rwlock_reader_lock_noirq(&proc->threads_lock, &tlock);
+		mcs_rwlock_reader_lock(&proc->threads_lock, &tlock);
 		list_for_each_entry(thread, &proc->threads_list, siblings_list){
 			if(thread->tid == tid)
 				break;
@@ -188,15 +189,15 @@ process_procfs_request(unsigned long rarg)
 		if(thread == NULL){
 			kprintf("process_procfs_request: no such tid %d-%d\n", pid, tid);
 			if(tids){
+				mcs_rwlock_reader_unlock(&proc->threads_lock, &tlock);
 				process_unlock(proc, &lock);
-				mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &tlock);
 				goto end;
 			}
 			thread = thread1;
 		}
 		if(thread)
 			hold_thread(thread);
-		mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &tlock);
+		mcs_rwlock_reader_unlock(&proc->threads_lock, &tlock);
 		hold_process(proc);
 		vm = proc->vm;
 		if(vm)
@@ -458,6 +459,7 @@ process_procfs_request(unsigned long rarg)
 	 */
 #define BITMASKS_BUF_SIZE	2048
 	if (strcmp(p, "status") == 0) {
+		extern int num_processors;	/* kernel/ap.c */
 		struct vm_range *range;
 		unsigned long lockedsize = 0;
 		char *tmp;
@@ -493,7 +495,7 @@ process_procfs_request(unsigned long rarg)
 		cpu_bitmask = &bitmasks[bitmasks_offset];
 		bitmasks_offset += bitmap_scnprintf(cpu_bitmask,
 				BITMASKS_BUF_SIZE - bitmasks_offset,
-				thread->cpu_set.__bits, __CPU_SETSIZE);
+				thread->cpu_set.__bits, num_processors);
 		bitmasks_offset++;
 
 		cpu_list = &bitmasks[bitmasks_offset];
@@ -681,6 +683,7 @@ dataunavail:
 
 	packet.msg = SCD_MSG_PROCFS_ANSWER;
 	packet.arg = rarg;
+	packet.pid = rpacket->pid;
 
 	ret = ihk_ikc_send(syscall_channel, &packet, 0);
 	if (ret < 0) {

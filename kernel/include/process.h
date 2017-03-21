@@ -175,7 +175,7 @@
 
 #define NOPHYS ((uintptr_t)-1)
 
-#define PROCESS_NUMA_MASK_BITS 64
+#define PROCESS_NUMA_MASK_BITS 256
 
 /*
  * Both the MPOL_* mempolicy mode and the MPOL_F_* optional mode flags are
@@ -250,6 +250,28 @@ struct thread;
 struct process_vm;
 struct vm_regions;
 struct vm_range;
+
+//#define TRACK_SYSCALLS
+
+#ifdef TRACK_SYSCALLS
+#define TRACK_SYSCALLS_MAX               300
+#define __NR_track_syscalls              701
+
+#define TRACK_SYSCALLS_CLEAR             0x01
+#define TRACK_SYSCALLS_ON                0x02
+#define TRACK_SYSCALLS_OFF               0x04
+#define TRACK_SYSCALLS_PRINT             0x08
+#define TRACK_SYSCALLS_PRINT_PROC        0x10
+
+void track_syscalls_print_thread_stats(struct thread *thread);
+void track_syscalls_print_proc_stats(struct process *proc);
+void track_syscalls_accumulate_counters(struct thread *thread,
+		struct process *proc);
+void track_syscalls_alloc_counters(struct thread *thread);
+void track_syscalls_dealloc_thread_counters(struct thread *thread);
+void track_syscalls_dealloc_proc_counters(struct process *proc);
+#endif // TRACK_SYSCALLS
+
 
 #define HASH_SIZE	73
 
@@ -414,7 +436,7 @@ struct mckfd {
 #define SFD_NONBLOCK 04000
 
 struct sig_common {
-	ihk_spinlock_t	lock;
+	mcs_rwlock_lock_t lock;
 	ihk_atomic_t use;
 	struct k_sigaction action[_NSIG];
 	struct list_head sigpending;
@@ -475,7 +497,7 @@ struct process {
 			// V       +----   |
 			// PS_STOPPED -----+
 			// (PS_TRACED)
-	int exit_status;
+	int exit_status; // only for zombie
 
 	/* Store exit_status for a group of threads when stopped by SIGSTOP.
 	   exit_status can't be used because values of exit_status of threads
@@ -546,6 +568,13 @@ struct process {
 #define PP_COUNT 2
 #define PP_STOP 3
 	struct mc_perf_event *monitoring_event;
+#ifdef TRACK_SYSCALLS
+	mcs_lock_node_t st_lock;
+	uint64_t *syscall_times;
+	uint32_t *syscall_cnts;
+	uint64_t *offload_times;
+	uint32_t *offload_cnts;
+#endif // TRACK_SYSCALLS
 };
 
 void hold_thread(struct thread *ftn);
@@ -587,6 +616,7 @@ struct thread {
 			// PS_TRACED
 			// PS_INTERRPUTIBLE
 			// PS_UNINTERRUPTIBLE
+	int exit_status;
 
 	// process vm
 	struct process_vm *vm;
@@ -617,12 +647,20 @@ struct thread {
 	fp_regs_struct *fp_regs;
 	int in_syscall_offload;
 
+#ifdef TRACK_SYSCALLS
+	int track_syscalls;
+	uint64_t *syscall_times;
+	uint32_t *syscall_cnts;
+	uint64_t *offload_times;
+	uint32_t *offload_cnts;
+#endif // TRACK_SYSCALLS
+
 	// signal
 	struct sig_common *sigcommon;
 	sigset_t sigmask;
 	stack_t sigstack;
 	struct list_head sigpending;
-	ihk_spinlock_t	sigpendinglock;
+	mcs_rwlock_lock_t sigpendinglock;
 	volatile int sigevent;
 
 	// gpio
@@ -652,6 +690,8 @@ struct thread {
 	struct waitq scd_wq;
 };
 
+#define VM_RANGE_CACHE_SIZE	4
+
 struct process_vm {
 	struct address_space *address_space;
 	struct list_head vm_range_list;
@@ -678,6 +718,8 @@ struct process_vm {
 	int numa_mem_policy;
 	/* Protected by memory_range_lock */
 	struct list_head vm_range_numa_policy_list;
+	struct vm_range *range_cache[VM_RANGE_CACHE_SIZE];
+	int range_cache_ind;
 };
 
 static inline int has_cap_ipc_lock(struct thread *th)
@@ -694,7 +736,8 @@ static inline int has_cap_sys_admin(struct thread *th)
 
 void hold_address_space(struct address_space *);
 void release_address_space(struct address_space *);
-struct thread *create_thread(unsigned long user_pc);
+struct thread *create_thread(unsigned long user_pc,
+		unsigned long *__cpu_set, size_t cpu_set_size);
 struct thread *clone_thread(struct thread *org, unsigned long pc,
                               unsigned long sp, int clone_flags);
 void destroy_thread(struct thread *thread);
@@ -709,9 +752,10 @@ void free_process_memory_ranges(struct process_vm *vm);
 int populate_process_memory(struct process_vm *vm, void *start, size_t len);
 
 int add_process_memory_range(struct process_vm *vm,
-                             unsigned long start, unsigned long end,
-                             unsigned long phys, unsigned long flag,
-			     struct memobj *memobj, off_t objoff, int pgshift);
+		unsigned long start, unsigned long end,
+		unsigned long phys, unsigned long flag,
+		struct memobj *memobj, off_t offset,
+		int pgshift, struct vm_range **rp);
 int remove_process_memory_range(struct process_vm *vm, unsigned long start,
 		unsigned long end, int *ro_freedp);
 int split_process_memory_range(struct process_vm *vm,
@@ -751,9 +795,11 @@ extern enum ihk_mc_pt_attribute arch_vrflag_to_ptattr(unsigned long flag, uint64
 enum ihk_mc_pt_attribute common_vrflag_to_ptattr(unsigned long flag, uint64_t fault, pte_t *ptep);
 
 void schedule(void);
+void spin_sleep_or_schedule(void);
 void runq_add_thread(struct thread *thread, int cpu_id);
 void runq_del_thread(struct thread *thread, int cpu_id);
 int sched_wakeup_thread(struct thread *thread, int valid_states);
+int sched_wakeup_thread_locked(struct thread *thread, int valid_states);
 
 void sched_request_migrate(int cpu_id, struct thread *thread);
 void check_need_resched(void);

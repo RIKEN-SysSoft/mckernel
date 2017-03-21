@@ -890,6 +890,20 @@ static struct list_head pager_list = LIST_HEAD_INIT(pager_list);
 struct pager_create_result {
 	uintptr_t	handle;
 	int		maxprot;
+	uint32_t flags;
+	size_t size;
+};
+
+enum {
+	/* for memobj.flags */
+	MF_HAS_PAGER	= 0x0001,
+	MF_SHMDT_OK	= 0x0002,
+	MF_IS_REMOVABLE	= 0x0004,
+	MF_PREFETCH = 0x0008,
+	MF_ZEROFILL = 0x0010,
+	MF_REG_FILE = 0x1000,
+	MF_DEV_FILE = 0x2000,
+	MF_END
 };
 
 static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
@@ -904,6 +918,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 	struct pager *newpager = NULL;
 	uintptr_t phys;
 	struct kstat st;
+	int mf_flags = 0;
 
 	dprintk("pager_req_create(%d,%lx)\n", fd, (long)result_pa);
 
@@ -971,6 +986,32 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 			list_add(&newpager->list, &pager_list);
 			pager = newpager;
 			newpager = NULL;
+
+			/* Intel MPI library and shared memory "prefetch" */
+			{
+				char *pathbuf, *fullpath;
+
+				pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+				if (pathbuf) {
+					fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
+					if (!IS_ERR(fullpath)) {
+						if (!strncmp("/dev/shm/Intel_MPI", fullpath, 18)) {
+							//mf_flags = (MF_PREFETCH | MF_ZEROFILL);
+							mf_flags = (MF_ZEROFILL);
+							dprintk("%s: filename: %s, zerofill\n",
+									__FUNCTION__, fullpath);
+						}
+						else if (strstr(fullpath, "libmpi") != NULL) {
+							mf_flags = MF_PREFETCH;
+							dprintk("%s: filename: %s, prefetch\n",
+									__FUNCTION__, fullpath);
+						}
+					}
+
+					kfree(pathbuf);
+				}
+			}
+
 			break;
 		}
 
@@ -1000,6 +1041,8 @@ found:
 	resp = ihk_device_map_virtual(dev, phys, sizeof(*resp), NULL, 0);
 	resp->handle = (uintptr_t)pager;
 	resp->maxprot = maxprot;
+	resp->flags = mf_flags;
+	resp->size = st.size;
 	ihk_device_unmap_virtual(dev, resp, sizeof(*resp));
 	ihk_device_unmap_memory(dev, phys, sizeof(*resp));
 
