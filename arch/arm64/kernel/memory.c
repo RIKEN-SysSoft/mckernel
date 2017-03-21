@@ -816,19 +816,26 @@ static inline void setup_middle_level(translation_table_t *tt, unsigned long bas
 			next = virt_to_phys(next_tt);
 			memset(next_tt, 0, PAGE_SIZE);
 		} else {
-			// 既存のページテーブルの領域を使って処理を進めたいが、
-			// ストレートマップ領域の初期化中なのでphys_to_virtしたアドレスは使えない。
-			// init_ptの情報を元にアドレスを算出して、カーネル領域を使ってアドレス解決させる。
-			//
-			// init_normal_area の初期化中のタイミングなので、既存のページテーブルは
-			// 'swapper_page_table'から'swapper_page_table + PAGE_SIZE * N'の領域に定義した
-			// ページテーブルのうちどれかになる。よってカーネル領域からアクセスできる。
-			struct page_table* pt = get_init_page_table();
-			unsigned long va = (unsigned long)pt->tt;
-			unsigned long pa = (unsigned long)pt->tt_pa;
-			unsigned long diff = va - pa;
+			unsigned long arm64_kernel_phys_end = arm64_kernel_phys_base + (_end - _head);
 			next = ptl_phys(ptr, level);
-			next_tt = (void*)(next + diff);
+			
+			if (arm64_kernel_phys_base <= next && next < arm64_kernel_phys_end) {
+				// 既存のページテーブルの領域を使って処理を進めたいが、
+				// ストレートマップ領域の初期化中なのでphys_to_virtしたアドレスでは、
+				// カーネルイメージの領域をアクセスできないタイミングがある。
+				// init_ptの情報を元にアドレスを算出して、カーネル領域を使ってアドレス解決させる。
+				//
+				// ここで対象にしているページテーブルは、
+				// 'swapper_page_table'から'swapper_page_table + PAGE_SIZE * N'の領域に定義した
+				// ページテーブルのうちどれかになる。よってカーネル領域からアクセスできる。
+				struct page_table* pt = get_init_page_table();
+				unsigned long va = (unsigned long)pt->tt;
+				unsigned long pa = (unsigned long)pt->tt_pa;
+				unsigned long diff = va - pa;
+				next_tt = (void*)(next + diff);
+			} else {
+				next_tt = phys_to_virt(next);
+			}
 		}
 		setup(next_tt, start, base_end);
 
@@ -868,16 +875,19 @@ static void init_normal_area(struct page_table *pt)
 {
 	setup_normal_area_t setup_func_table[] = {setup_l2, setup_l3, setup_l4};
 	setup_normal_area_t setup = setup_func_table[CONFIG_ARM64_PGTABLE_LEVELS - 2];
-	unsigned long map_start, map_end;
 	translation_table_t* tt;
-
-	map_start = ihk_mc_get_memory_address(IHK_MC_GMA_MAP_START, 0);
-	map_end = ihk_mc_get_memory_address(IHK_MC_GMA_MAP_END, 0);
-
-	kprintf("map_start = %lx, map_end = %lx\n", map_start, map_end);
-
+	int i;
+	
 	tt = get_translation_table(pt);
-	setup(tt, map_start, map_end);
+	
+	for (i = 0; i < ihk_mc_get_nr_memory_chunks(); i++) {
+		unsigned long map_start, map_end;
+		int numa_id;
+		ihk_mc_get_memory_chunk(i, &map_start, &map_end, &numa_id);		
+		kprintf("[%d] map_start = %lx, map_end = %lx @ NUMA: %d\n",
+			i, map_start, map_end, numa_id);
+		setup(tt, map_start, map_end);
+	}
 }
 
 static translation_table_t* __alloc_new_tt(ihk_mc_ap_flag ap_flag)
