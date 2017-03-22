@@ -1247,29 +1247,34 @@ int ihk_mc_pt_print_pte(struct page_table *pt, void *virt)
 	tt = get_translation_table(pt);
 
 	ptep = ptl4_offset(tt, v);
-	__kprintf("l4 table: 0x%lX l4idx: %d\n", pt, ptl4_index(v));
+	__kprintf("l4 table: 0x%lX l4idx: %d\n", virt_to_phys(tt), ptl4_index(v));
 	if (!(ptl4_present(ptep))) {
 		__kprintf("0x%lX l4idx not present! \n", v);
-		__kprintf("l4 entry: 0x%lX\n", ptl4_val(ptep));
 		return -EFAULT;
 	}
+	__kprintf("l4 entry: 0x%lX\n", ptl4_val(ptep));
 
 	ptep = ptl3_offset(ptep, v);
 	__kprintf("l3 table: 0x%lX l3idx: %d\n", ptl3_phys(ptep), ptl3_index(v));
 	if (!(ptl3_present(ptep))) {
 		__kprintf("0x%lX l3idx not present! \n", v);
-		__kprintf("l3 entry: 0x%lX\n", ptl3_val(ptep));
 		return -EFAULT;
 	}
-
+	__kprintf("l3 entry: 0x%lX\n", ptl3_val(ptep));
+	if (ptl3_type_block(ptep)) {
+		__kprintf("l3 entry size: 0x%lx\n", PTL3_SIZE);
+		return 0;
+	}
+	
 	ptep = ptl2_offset(ptep, v);
 	__kprintf("l2 table: 0x%lX l2idx: %d\n", ptl2_phys(ptep), ptl2_index(v));
 	if (!(ptl2_present(ptep))) {
 		__kprintf("0x%lX l2idx not present! \n", v);
-		__kprintf("l2 entry: 0x%lX\n", ptl2_val(ptep));
 		return -EFAULT;
 	}
+	__kprintf("l2 entry: 0x%lX\n", ptl2_val(ptep));
 	if (ptl2_type_block(ptep)) {
+		__kprintf("l2 entry size: 0x%lx\n", PTL2_SIZE);
 		return 0;
 	}
 
