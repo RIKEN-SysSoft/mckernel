@@ -2366,10 +2366,20 @@ int ihk_mc_pt_set_pte(page_table_t pt, pte_t *ptep, size_t pgsize,
 		ptl1_set(ptep, pte);
 	}
 	else if (pgsize == PTL2_SIZE) {
+		if (phys & (PTL2_SIZE - 1)) {
+			kprintf("%s: error: phys needs to be PTL2_SIZE aligned\n", __FUNCTION__);
+			error = -1;
+			goto out;
+		}
 		pte =  phys | attr_to_l2attr(attr | PTATTR_LARGEPAGE);
 		ptl2_set(ptep, pte);
 	}
 	else if (pgsize == PTL3_SIZE && FIRST_LEVEL_BLOCK_SUPPORT) {
+		if (phys & (PTL3_SIZE - 1)) {
+			kprintf("%s: error: phys needs to be PTL3_SIZE aligned\n", __FUNCTION__);
+			error = -1;
+			goto out;
+		}
 		pte =  phys | attr_to_l3attr(attr | PTATTR_LARGEPAGE);
 		ptl3_set(ptep, pte);
 	}
