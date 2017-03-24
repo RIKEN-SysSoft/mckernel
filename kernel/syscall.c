@@ -6499,8 +6499,10 @@ SYSCALL_DECLARE(sched_getaffinity)
 	if (!len || u_cpu_set == (cpu_set_t *)-1)
 		return -EINVAL;
 
+#ifndef POSTK_DEBUG_TEMP_FIX_5 /* sched_getaffinity arguments check add (S64FX_10) */
 	if ((len * BITS_PER_BYTE) < __CPU_SETSIZE)
 		return -EINVAL;
+#endif /* !POSTK_DEBUG_TEMP_FIX_5 */
 
 	len = MIN2(len, sizeof(k_cpu_set));
 
