@@ -977,7 +977,7 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 	else {
 		list_for_each_entry(h, &handlers[vector - 32], list) {
 			if (h->func) {
-				h->func(h->priv);
+				h->func(h->priv, vector);
 			}
 		}
 	}
