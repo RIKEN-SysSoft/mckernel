@@ -225,8 +225,6 @@ static int connect_handler_ikc2linux(struct ihk_ikc_channel_info *param)
 
 	param->packet_handler = syscall_packet_handler;
 
-	ihk_ikc_add_intr_channel(os, param->channel, linux_cpu);
-
 	return 0;
 }
 static int connect_handler_ikc2mckernel(struct ihk_ikc_channel_info *param)
