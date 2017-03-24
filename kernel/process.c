@@ -1104,10 +1104,18 @@ int add_process_memory_range(struct process_vm *vm,
 	insert_vm_range_list(vm, range);
 
 	/* Clear content! */
+#ifdef POSTK_DEBUG_TEMP_FIX_54 /* NO_PHYS access avoid */
+	if ((phys != NOPHYS)
+			&& !(flag & (VR_REMOTE | VR_DEMAND_PAGING))
+			&& ((flag & VR_PROT_MASK) != VR_PROT_NONE)) {
+		memset((void*)phys_to_virt(phys), 0, end - start);
+	}
+#else /* POSTK_DEBUG_TEMP_FIX_54 */
 	if (!(flag & (VR_REMOTE | VR_DEMAND_PAGING))
 			&& ((flag & VR_PROT_MASK) != VR_PROT_NONE)) {
 		memset((void*)phys_to_virt(phys), 0, end - start);
 	}
+#endif /* POSTK_DEBUG_TEMP_FIX_54 */
 
 	/* Return range object if requested */
 	if (rp) {
