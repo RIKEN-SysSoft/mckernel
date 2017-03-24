@@ -6495,14 +6495,13 @@ SYSCALL_DECLARE(sched_getaffinity)
 		kprintf("%s:%d Size not align to unsigned long.\n", __FILE__, __LINE__);
 		return -EINVAL;
 	}
-#endif /* POSTK_DEBUG_TEMP_FIX_5 */
+#else /* POSTK_DEBUG_TEMP_FIX_5 */
 	if (!len || u_cpu_set == (cpu_set_t *)-1)
 		return -EINVAL;
 
-#ifndef POSTK_DEBUG_TEMP_FIX_5 /* sched_getaffinity arguments check add (S64FX_10) */
 	if ((len * BITS_PER_BYTE) < __CPU_SETSIZE)
 		return -EINVAL;
-#endif /* !POSTK_DEBUG_TEMP_FIX_5 */
+#endif /* POSTK_DEBUG_TEMP_FIX_5 */
 
 	len = MIN2(len, sizeof(k_cpu_set));
 
@@ -6537,7 +6536,11 @@ SYSCALL_DECLARE(sched_getaffinity)
 	}
 
 	dkprintf("%s() len: %d, ret: %d\n", __FUNCTION__, len, ret);
+#ifdef POSTK_DEBUG_TEMP_FIX_58 /* sched_getafifnity return value fix */
+	return ret;
+#else /* POSTK_DEBUG_TEMP_FIX_58 */
 	return len;
+#endif /* POSTK_DEBUG_TEMP_FIX_58 */
 }
 
 SYSCALL_DECLARE(get_cpu_id)
