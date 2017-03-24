@@ -5798,6 +5798,19 @@ static int ptrace_attach(int pid)
 	}
 
 	parent = child->parent;
+#ifdef POSTK_DEBUG_TEMP_FIX_53 /* attach for child-process fix. */
+	dkprintf("ptrace_attach() parent->pid=%d\n", parent->pid);
+
+	mcs_rwlock_writer_lock_noirq(&parent->children_lock, &childlock);
+	list_del(&child->siblings_list);
+	list_add_tail(&child->ptraced_siblings_list, &parent->ptraced_children_list);
+	mcs_rwlock_writer_unlock_noirq(&parent->children_lock, &childlock);
+
+	mcs_rwlock_writer_lock_noirq(&proc->children_lock, &childlock);
+	list_add_tail(&child->siblings_list, &proc->children_list);
+	child->parent = proc;
+	mcs_rwlock_writer_unlock_noirq(&proc->children_lock, &childlock);
+#else /* POSTK_DEBUG_TEMP_FIX_53 */
 	/* XXX: tmp */
 	if (parent != proc) {
 
@@ -5813,6 +5826,7 @@ static int ptrace_attach(int pid)
 		child->parent = proc;
 		mcs_rwlock_writer_unlock_noirq(&proc->children_lock, &childlock);
 	}
+#endif /* POSTK_DEBUG_TEMP_FIX_53 */
 
 	child->ptrace = PT_TRACED | PT_TRACE_EXEC;
 
