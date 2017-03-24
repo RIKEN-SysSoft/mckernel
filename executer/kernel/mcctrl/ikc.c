@@ -138,7 +138,6 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	return 0;
 }
 
-/* Comment: 受信を想定しないchannel用のパケットハンドラ */
 static int dummy_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *__os)
 {
@@ -215,7 +214,6 @@ static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ih
 	ihk_ikc_send(pmc->c, &packet, 0);
 }
 
-/* Comment: ikc2linuxのaccept後のchannelの処理 */
 static int connect_handler_ikc2linux(struct ihk_ikc_channel_info *param)
 {
 	struct ihk_ikc_channel_desc *c;
@@ -227,12 +225,10 @@ static int connect_handler_ikc2linux(struct ihk_ikc_channel_info *param)
 
 	param->packet_handler = syscall_packet_handler;
 
-/* Comment: 指定されたCPUの割り込み処理channel_list へ追加 */
 	ihk_ikc_add_intr_channel(os, param->channel, linux_cpu);
 
 	return 0;
 }
-/* Comment: ikc2mckernelのaccept後のchannelの処理 */
 static int connect_handler_ikc2mckernel(struct ihk_ikc_channel_info *param)
 {
 	struct ihk_ikc_channel_desc *c;
@@ -249,13 +245,11 @@ static int connect_handler_ikc2mckernel(struct ihk_ikc_channel_info *param)
 	}
 	param->packet_handler = dummy_packet_handler;
 	
-/* Comment: MCK_CPU毎の送信channelとして管理 (従来通り) */
 	usrdata->channels[mck_cpu].c = c;
 
 	return 0;
 }
 
-/* Comment: listen_paramの設定 */
 static struct ihk_ikc_listen_param lp_ikc2linux = {
 	.port = 503,
 	.handler = connect_handler_ikc2linux,
@@ -292,7 +286,6 @@ int prepare_ikc_channels(ihk_os_t os)
 		return -EINVAL;
 	}
 
-/* Comment: syscall_channel2 廃止に伴い、num_channelsも減らす */
 	usrdata->num_channels = usrdata->cpu_info->n_cpus;
 	usrdata->channels = kzalloc(sizeof(struct mcctrl_channel) *
 			usrdata->num_channels,

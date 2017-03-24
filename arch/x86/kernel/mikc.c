@@ -47,7 +47,6 @@ int ihk_mc_ikc_init_first_local(struct ihk_ikc_channel_desc *channel,
 	ihk_ikc_init_desc(channel, IKC_OS_HOST, 0, rq, wq,
 	                  ihk_ikc_master_channel_packet_handler, channel);
 	ihk_ikc_enable_channel(channel);
-/* Comment: McKernel側のmaster_channel 割り込み処理channel_list に追加 */
 	ihk_ikc_add_intr_channel(NULL, channel, 0);
 
 	/* Set boot parameter */

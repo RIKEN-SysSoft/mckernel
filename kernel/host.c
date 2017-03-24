@@ -480,8 +480,6 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 {
 	struct ikc_scd_packet *packet = __packet;
 	struct ikc_scd_packet pckt;
-/* Comment: 受信したchannel に返事をする方式から、
-   自CPUのikc2linux に返事をするよう変更 */
 	struct ihk_ikc_channel_desc *resp_channel = cpu_local_var(ikc2linux);
 	int rc;
 	struct mcs_rwlock_node_irqsave lock;
@@ -677,7 +675,6 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	return ret;
 }
 
-/* Comment: パケット受信を想定しないchannel用のハンドラ */
 static int dummy_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *__os)
 {
@@ -686,14 +683,12 @@ static int dummy_packet_handler(struct ihk_ikc_channel_desc *c,
 	return 0;
 }
 
-/* Comment: ikc2linux の接続と自CPUへの設定を行う */
 void init_host_ikc2linux(int linux_cpu)
 {
 	struct ihk_ikc_connect_param param;
 	struct ihk_ikc_channel_desc *c = ikc2linuxs[linux_cpu];
 
 	if (!c) {
-/* Comment: 対象Linux_cpu 宛のikc2linuxが存在しなければ、接続 */
 		param.port = 503;
 		param.intr_cpu = linux_cpu;
 		param.pkt_size = sizeof(struct ikc_scd_packet);
@@ -715,7 +710,6 @@ void init_host_ikc2linux(int linux_cpu)
 	get_this_cpu_local_var()->ikc2linux = c;
 }
 
-/* Comment: ikc2mckernelの接続と自CPUへの設定を行う */
 void init_host_ikc2mckernel(void)
 {
 	struct ihk_ikc_connect_param param;
@@ -734,7 +728,6 @@ void init_host_ikc2mckernel(void)
 	}
 	dkprintf("connected.\n");
 
-/* Comment: 待ち受け処理channel_list に追加する */
 	ihk_ikc_add_intr_channel(NULL, param.channel, ihk_ikc_get_processor_id());
 }
 

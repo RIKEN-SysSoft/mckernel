@@ -75,7 +75,6 @@ struct cpu_local_var {
 	struct list_head runq;
 	size_t runq_len;
 
-/* Comment: 送信用するchannelをsyscall_channel から ikc2linux へ変更 */
 	struct ihk_ikc_channel_desc *ikc2linux;
 
 	struct resource_set *resource_set;
