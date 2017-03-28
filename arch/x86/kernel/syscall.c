@@ -1179,7 +1179,8 @@ done:
 			if(pid != -1 && tthread->proc->pid != pid){
 				continue;
 			}
-			if(tthread->tid == tid){
+			if (tthread->tid == tid &&
+			    tthread->status != PS_EXITED) {
 				found = 1;
 				break;
 			}
