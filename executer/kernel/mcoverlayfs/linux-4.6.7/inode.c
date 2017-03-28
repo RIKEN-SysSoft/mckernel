@@ -420,8 +420,8 @@ struct inode *ovl_d_select_inode(struct dentry *dentry, unsigned file_flags)
 				dentry, dentry->d_inode->i_ino);
 			OVL_DEBUG("sysfs: realpath.dentry=%pd4, i_ino=%lu\n", 
 				realpath.dentry, realpath.dentry->d_inode->i_ino);
-			if (!dentry->d_inode->i_private) {
-				dentry->d_inode->i_private = dentry->d_fsdata;
+			if (!ovl_find_d_fsdata(dentry)) {
+				ovl_add_d_fsdata(dentry);
 				dentry->d_fsdata = realpath.dentry->d_fsdata;
 			}
 		}

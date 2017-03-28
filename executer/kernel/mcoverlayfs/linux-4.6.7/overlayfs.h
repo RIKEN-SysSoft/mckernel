@@ -43,6 +43,12 @@ enum ovl_opt_bit {
 #define OVL_OPT_NOCOPYUPW(opt)	((opt) & __OVL_OPT_NOCOPYUPW)
 #define OVL_OPT_NOFSCHECK(opt)	((opt) & __OVL_OPT_NOFSCHECK)
 
+struct ovl_d_fsdata {
+	struct list_head list;
+	struct dentry *d;
+	struct ovl_entry *oe;
+};
+
 static inline int ovl_do_rmdir(struct inode *dir, struct dentry *dentry)
 {
 	int err = vfs_rmdir(dir, dentry);
@@ -149,6 +155,8 @@ static inline int ovl_do_whiteout(struct inode *dir, struct dentry *dentry)
 
 unsigned ovl_get_config_opt(struct dentry *dentry);
 void ovl_reset_ovl_entry(struct ovl_entry **oe, struct dentry *dentry);
+struct ovl_entry *ovl_find_d_fsdata(struct dentry *dentry);
+int ovl_add_d_fsdata(struct dentry *dentry);
 enum ovl_path_type ovl_path_type(struct dentry *dentry);
 u64 ovl_dentry_version_get(struct dentry *dentry);
 void ovl_dentry_version_inc(struct dentry *dentry);
