@@ -779,6 +779,9 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	int hash;
 	unsigned long flags;
 	int i;
+	struct wait_queue_head_list_node *wqhln;
+	struct wait_queue_head_list_node *wqhln_next;
+	struct ikc_scd_packet *packet;
 
 	if (!ppd)
 		return;
@@ -811,6 +814,18 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 		}
 	}
 
+	flags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
+	list_for_each_entry_safe(wqhln, wqhln_next, &ppd->wq_req_list, list) {
+		list_del(&wqhln->list);
+		packet = wqhln->packet;
+		kfree(wqhln);
+		__return_syscall(ppd->ud->os, packet, -EINTR,
+		task_pid_vnr(current));
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
+				       (ppd->ud->channels + packet->ref)->c);
+	}
+	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, flags);
+
 	kfree(ppd);
 }
 
@@ -834,6 +849,12 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 		kprintf("%s: ERROR: no per-process structure for PID %d, "
 				"syscall nr: %lu\n",
 				__FUNCTION__, pid, packet->req.number);
+
+		__return_syscall(ud->os, packet, -EINTR,
+				task_pid_vnr(current));
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
+				      (ud->channels + packet->ref)->c);
+
 		return -1;
 	}
 
