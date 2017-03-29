@@ -31,6 +31,7 @@
 #include <auxvec.h>
 #include <timer.h>
 #include <mman.h>
+#include <xpmem.h>
 
 //#define DEBUG_PRINT_PROCESS
 
@@ -637,6 +638,7 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm)
 		range->memobj = src_range->memobj;
 		range->objoff = src_range->objoff;
 		range->pgshift = src_range->pgshift;
+		range->private_data = src_range->private_data;
 		if (range->memobj) {
 			memobj_ref(range->memobj);
 		}
@@ -734,6 +736,7 @@ int split_process_memory_range(struct process_vm *vm, struct vm_range *range,
 	newrange->end = range->end;
 	newrange->flag = range->flag;
 	newrange->pgshift = range->pgshift;
+	newrange->private_data = range->private_data;
 
 	if (range->memobj) {
 		memobj_ref(range->memobj);
@@ -953,6 +956,10 @@ int remove_process_memory_range(struct process_vm *vm,
 			ro_freed = 1;
 		}
 
+		if (freerange->private_data) {
+			xpmem_remove_process_memory_range(vm, freerange);
+		}
+
 		error = free_process_memory_range(vm, freerange);
 		if (error) {
 			ekprintf("remove_process_memory_range(%p,%lx,%lx):"
@@ -1058,6 +1065,7 @@ int add_process_memory_range(struct process_vm *vm,
 	range->memobj = memobj;
 	range->objoff = offset;
 	range->pgshift = pgshift;
+	range->private_data = NULL;
 
 	rc = 0;
 	if (phys == NOPHYS) {
@@ -1793,7 +1801,12 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 		}
 	}
 
-	error = page_fault_process_memory_range(vm, range, fault_addr, reason);
+	if (!range->private_data) {
+		error = page_fault_process_memory_range(vm, range, fault_addr, reason);
+	}
+	else {
+		error = xpmem_fault_process_memory_range(vm, range, fault_addr, reason);
+	}
 	if (error == -ERESTART) {
 		goto out;
 	}
@@ -2207,6 +2220,19 @@ release_process_vm(struct process_vm *vm)
 
 	if (!ihk_atomic_dec_and_test(&vm->refcount)) {
 		return;
+	}
+
+	{
+		long irqstate;
+		struct mckfd *fdp;
+
+		irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
+		for (fdp = proc->mckfd; fdp; fdp = fdp->next) {
+			if (fdp->close_cb) {
+				fdp->close_cb(fdp, NULL);
+			}
+		}
+		ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
 	}
 
 	if(vm->free_cb)

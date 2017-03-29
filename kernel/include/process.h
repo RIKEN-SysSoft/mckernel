@@ -389,6 +389,7 @@ struct vm_range {
 	off_t objoff;
 	int pgshift;	/* page size. 0 means THP */
 	int padding;
+	void *private_data;
 };
 
 struct vm_range_numa_policy {

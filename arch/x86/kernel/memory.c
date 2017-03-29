@@ -1101,7 +1101,7 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 		page = phys_to_page(phys);
 	}
 
-	if (page && page_is_in_memobj(page) && (old & PFL1_DIRTY) &&
+	if (page && page_is_in_memobj(page) && (old & PFL1_DIRTY) && (args->memobj) &&
 			!(args->memobj->flags & MF_ZEROFILL)) {
 		memobj_flush_page(args->memobj, phys, PTL1_SIZE);
 	}
