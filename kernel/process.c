@@ -33,6 +33,7 @@
 #include <mman.h>
 #include <xpmem.h>
 #include <rusage.h>
+#include <xpmem.h>
 
 //#define DEBUG_PRINT_PROCESS
 
