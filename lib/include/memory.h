@@ -50,5 +50,9 @@ int search_free_space(struct thread *thread, size_t len, intptr_t hint,
 		      int pgshift, intptr_t *addrp);
 #endif	/* POSTK_DEBUG_ARCH_DEP_27 */
 
+#ifdef POSTK_DEBUG_TEMP_FIX_52 /* supports NUMA for memory area determination */
+int is_mckernel_memory(unsigned long phys);
+#endif /* POSTK_DEBUG_TEMP_FIX_52 */
+
 #endif
 

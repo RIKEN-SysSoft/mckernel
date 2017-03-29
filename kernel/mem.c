@@ -1986,3 +1986,22 @@ out:
 	return error;
 }
 #endif	/* POSTK_DEBUG_ARCH_DEP_27 */
+
+#ifdef POSTK_DEBUG_TEMP_FIX_52 /* supports NUMA for memory area determination */
+int is_mckernel_memory(unsigned long phys)
+{
+	int i;
+
+	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
+		struct ihk_page_allocator_desc *pa_allocator;
+
+		list_for_each_entry(pa_allocator,
+				    &memory_nodes[i].allocators, list) {
+			if (pa_allocator->start <= phys && phys < pa_allocator->end) {
+				return 1;
+			}
+		}
+	}
+	return 0;
+}
+#endif /* POSTK_DEBUG_TEMP_FIX_52 */

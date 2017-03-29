@@ -292,8 +292,12 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 				goto end;
 			}
 
+#ifdef POSTK_DEBUG_TEMP_FIX_52 /* NUMA support(memory area determination) */
+			if (!is_mckernel_memory(pa)) {
+#else
 			if (pa < ihk_mc_get_memory_address(IHK_MC_GMA_MAP_START, 0) ||
 					pa >= ihk_mc_get_memory_address(IHK_MC_GMA_MAP_END, 0)) {
+#endif /* POSTK_DEBUG_TEMP_FIX_52 */
 				ans = -EIO;
 				goto end;
 			}
