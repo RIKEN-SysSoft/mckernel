@@ -254,8 +254,22 @@ struct vm_range;
 //#define TRACK_SYSCALLS
 
 #ifdef TRACK_SYSCALLS
+#ifdef POSTK_DEBUG_ARCH_DEP_64 /* fix systemcall tracking terget. */
+#define SYSCALL_HANDLED(number,name)	unsigned char name[(number)];
+#define SYSCALL_DELEGATED(number,name)	unsigned char name[(number)];
+#define __NR_track_syscalls              701
+static const size_t TRACK_SYSCALLS_MAX =
+	sizeof(
+		union {
+#include <syscall_list.h>
+		}
+	) + 1;
+#undef	SYSCALL_HANDLED
+#undef	SYSCALL_DELEGATED
+#else /* POSTK_DEBUG_ARCH_DEP_64. fix systemcall tracking terget.*/
 #define TRACK_SYSCALLS_MAX               300
 #define __NR_track_syscalls              701
+#endif /* POSTK_DEBUG_ARCH_DEP_64. fix systemcall tracking terget.*/
 
 #define TRACK_SYSCALLS_CLEAR             0x01
 #define TRACK_SYSCALLS_ON                0x02
