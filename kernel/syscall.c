@@ -8996,17 +8996,22 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		        ihk_mc_syscall_sp(ctx));
 		l = syscall_generic_forwarding(num, ctx);
 	}
-
-#ifdef POSTK_DEBUG_TEMP_FIX_56 /* in futex_wait() signal handring fix. */
+#if defined(POSTK_DEBUG_TEMP_FIX_60) && defined(POSTK_DEBUG_TEMP_FIX_56)
+	check_signal(l, NULL, num);
+#elif defined(POSTK_DEBUG_TEMP_FIX_60) /* sched_yield called check_signal fix. */
+	if (num != __NR_futex) {
+		check_signal(l, NULL, num);
+	}
+#elif defined(POSTK_DEBUG_TEMP_FIX_56) /* in futex_wait() signal handring fix. */
 	if (num != __NR_sched_yield) {
 		check_signal(l, NULL, num);
 	}
-#else /* POSTK_DEBUG_TEMP_FIX_56 */
+#else /* POSTK_DEBUG_TEMP_FIX_56 && POSTK_DEBUG_TEMP_FIX_56 */
 	if (num != __NR_sched_yield &&
 			num != __NR_futex) {
 		check_signal(l, NULL, num);
 	}
-#endif /* POSTK_DEBUG_TEMP_FIX_56 */
+#endif /* POSTK_DEBUG_TEMP_FIX_60 && POSTK_DEBUG_TEMP_FIX_56 */
 
 #ifdef TRACK_SYSCALLS
 	if (num < TRACK_SYSCALLS_MAX) {
@@ -9026,16 +9031,22 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	}
 #endif // TRACK_SYSCALLS
 
-#ifdef POSTK_DEBUG_TEMP_FIX_56 /* in futex_wait() signal handring fix. */
+#if defined(POSTK_DEBUG_TEMP_FIX_60) && defined(POSTK_DEBUG_TEMP_FIX_56)
+	check_need_resched();
+#elif defined(POSTK_DEBUG_TEMP_FIX_60) /* sched_yield called check_signal fix. */
+	if (num != __NR_futex) {
+		check_need_resched();
+	}
+#elif defined(POSTK_DEBUG_TEMP_FIX_56) /* in futex_wait() signal handring fix. */
 	if (num != __NR_sched_yield) {
 		check_need_resched();
 	}
-#else /* POSTK_DEBUG_TEMP_FIX_56 */
+#else /* POSTK_DEBUG_TEMP_FIX_56 && POSTK_DEBUG_TEMP_FIX_56 */
 	if (num != __NR_sched_yield &&
 			num != __NR_futex) {
 		check_need_resched();
 	}
-#endif /* POSTK_DEBUG_TEMP_FIX_56 */
+#endif /* POSTK_DEBUG_TEMP_FIX_60 && POSTK_DEBUG_TEMP_FIX_56 */
 
 	if (cpu_local_var(current)->proc->ptrace) {
 		ptrace_syscall_exit(cpu_local_var(current));
