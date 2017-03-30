@@ -807,7 +807,7 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 			list_del(&ptd->hash);
 			kfree(ptd);
 			__return_syscall(ppd->ud->os, packet, -EINTR,
-			                 task_pid_vnr(current));
+					packet->req.rtid);
 			ihk_ikc_release_packet(
 			            (struct ihk_ikc_free_packet *)packet,
 			            (ppd->ud->channels + packet->ref)->c);
@@ -820,7 +820,7 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 		packet = wqhln->packet;
 		kfree(wqhln);
 		__return_syscall(ppd->ud->os, packet, -EINTR,
-		task_pid_vnr(current));
+				packet->req.rtid);
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 				       (ppd->ud->channels + packet->ref)->c);
 	}
