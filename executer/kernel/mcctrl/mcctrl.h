@@ -192,9 +192,10 @@ struct mcctrl_per_proc_data {
 	int pid;
 	unsigned long rpgtable;	/* per process, not per OS */
 
-	struct list_head wq_list;
-	struct list_head wq_req_list;
-	struct list_head wq_list_exact;
+	struct list_head wq_list; /* All these requests come from mcexec */
+	struct list_head wq_req_list; /* These requests come from IKC IRQ handler (can be processed by any threads) */
+	struct list_head wq_list_exact;  /* These requests come from IKC IRQ handler targeting a particular thread */
+
 	ihk_spinlock_t wq_list_lock;
 	wait_queue_head_t wq_prepare;
 	wait_queue_head_t wq_procfs;
