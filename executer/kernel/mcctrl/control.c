@@ -851,7 +851,7 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 				__FUNCTION__, pid, packet->req.number);
 
 		__return_syscall(ud->os, packet, -EINTR,
-				task_pid_vnr(current));
+				packet->req.rtid);
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 				      (ud->channels + packet->ref)->c);
 
