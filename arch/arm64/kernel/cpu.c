@@ -557,6 +557,41 @@ void setup_arm64_ap(void (*next_func)(void))
 void arch_show_interrupt_context(const void *reg);
 extern void tlb_flush_handler(int vector);
 
+static void show_context_stack(struct pt_regs *regs)
+{
+	const int min_stack_frame_size = 0x10;
+	uintptr_t sp;
+	uintptr_t stack_top;
+	int max_loop;
+	int i;
+
+	if (interrupt_from_user(regs)) {
+		kprintf("It is a user stack region and it ends.\n");
+		return;
+	}
+
+	sp = (uintptr_t)regs + sizeof(*regs);
+	stack_top = ALIGN_UP(sp, (uintptr_t)KERNEL_STACK_SIZE);
+	max_loop = (stack_top - sp) / min_stack_frame_size;
+
+	for (i = 0; i < max_loop; i++) {
+		uintptr_t *fp, *lr;
+		fp = (uintptr_t *)sp;
+		lr = (uintptr_t *)(sp + 8);
+
+		if ((*fp <= sp) || (*fp > stack_top)) {
+			break;
+		}
+
+		if ((*lr < MAP_KERNEL_START) || (*lr > MAP_KERNEL_START + MAP_KERNEL_SIZE)) {
+			break;
+		}
+
+		kprintf("LR: %016lx, SP: %016lx, FP: %016lx\n", *lr, sp, *fp);
+		sp = *fp;
+	}
+}
+
 void handle_IPI(unsigned int vector, struct pt_regs *regs)
 {
 	struct ihk_mc_interrupt_handler *h;
@@ -566,7 +601,10 @@ void handle_IPI(unsigned int vector, struct pt_regs *regs)
 
 	if (vector > ((sizeof(handlers) / sizeof(handlers[0])) - 1)) {
 		panic("Maybe BUG.");
-	} 
+	}
+	else if (vector == INTRID_STACK_TRACE) {
+		show_context_stack(regs);
+	}
 	else {
 		list_for_each_entry(h, &handlers[vector], list) {
 			if (h->func) {
