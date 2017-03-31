@@ -137,4 +137,11 @@ lr	.req	x30		// link register
 #define CPU_LE(code...) code
 //#endif
 
+#define ENDPIPROC(x)                    \
+	.globl  __pi_##x;               \
+	.type   __pi_##x, %function;    \
+	.set    __pi_##x, x;            \
+	.size   __pi_##x, . - x;        \
+	ENDPROC(x)
+
 #endif /* !__HEADER_ARM64_COMMON_ASSEMBLER_H */

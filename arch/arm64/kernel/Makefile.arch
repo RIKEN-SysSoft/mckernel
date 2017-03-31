@@ -9,6 +9,7 @@ IHK_OBJS += debug-monitors.o hw_breakpoint.o ptrace.o
 IHK_OBJS += $(notdir $(VDSO_SO_O)) memory.o syscall.o vdso.o
 
 IHK_OBJS += irq-gic-v2.o irq-gic-v3.o
+IHK_OBJS += memcpy.o
 
 # POSTK_DEBUG_ARCH_DEP_18 coredump arch separation.
 # IHK_OBJS added coredump.o
