@@ -29,7 +29,7 @@ unsigned long cpu_disable_interrupt_save(void);
 
 struct ihk_mc_interrupt_handler {
 	struct list_head list;
-	void (*func)(void *, int vector);
+	void (*func)(void *);
 	void *priv;
 };
 int ihk_mc_register_interrupt_handler(int vector,
@@ -38,8 +38,7 @@ int ihk_mc_unregister_interrupt_handler(int vector,
                                         struct ihk_mc_interrupt_handler *h);
 
 enum ihk_mc_gv_type {
-	IHK_GV_IKC_MASTER = 0,
-	IHK_GV_IKC_REGULAR = 1,
+	IHK_GV_IKC = 1,
 	IHK_GV_QUERY_FREE_MEM = 2
 };
 
@@ -111,8 +110,7 @@ enum ihk_asr_type {
 int ihk_mc_arch_set_special_register(enum ihk_asr_type, unsigned long value);
 int ihk_mc_arch_get_special_register(enum ihk_asr_type, unsigned long *value);
 
-extern unsigned int ihk_ikc_master_irq;
-extern unsigned int ihk_ikc_regular_irq;
+extern unsigned int ihk_ikc_irq;
 extern unsigned int ihk_ikc_irq_apicid;
 
 extern int gettime_local_support;

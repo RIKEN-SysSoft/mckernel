@@ -717,7 +717,7 @@ static struct ihk_mc_pa_ops allocator = {
 void sbox_write(int offset, unsigned int value);
 
 static int page_hash_count_pages(void);
-static void query_free_mem_interrupt_handler(void *priv, int vector)
+static void query_free_mem_interrupt_handler(void *priv)
 {
 	int i, pages = 0;
 
