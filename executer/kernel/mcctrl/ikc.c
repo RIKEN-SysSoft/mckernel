@@ -216,13 +216,6 @@ static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ih
 
 static int connect_handler_ikc2linux(struct ihk_ikc_channel_info *param)
 {
-	struct ihk_ikc_channel_desc *c;
-	int linux_cpu;
-	ihk_os_t os = param->channel->remote_os;
-
-	c = param->channel;
-	linux_cpu = c->recv.queue->read_cpu;
-
 	param->packet_handler = syscall_packet_handler;
 
 	return 0;

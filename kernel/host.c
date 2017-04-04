@@ -741,6 +741,6 @@ void init_host_ikc2mckernel(void)
 	}
 	dkprintf("connected.\n");
 
-	ihk_ikc_set_intr_channel(NULL, param.channel, ihk_ikc_get_processor_id());
+	ihk_ikc_set_regular_channel(NULL, param.channel, ihk_ikc_get_processor_id());
 }
 
