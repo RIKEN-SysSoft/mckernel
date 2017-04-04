@@ -19,6 +19,7 @@
 #ifndef __LINUX_IRQCHIP_ARM_GIC_V3_H
 #define __LINUX_IRQCHIP_ARM_GIC_V3_H
 
+#include <stringify.h>
 /* @ref.impl include/linux/irqchip/arm-gic-v3.h */
 #include <sysreg.h>
 
@@ -380,12 +381,5 @@
 #define ICH_AP1R1_EL2			__AP1Rx_EL2(1)
 #define ICH_AP1R2_EL2			__AP1Rx_EL2(2)
 #define ICH_AP1R3_EL2			__AP1Rx_EL2(3)
-
-
-/**
- * @ref.impl host-kernel/include/linux/stringify.h
- */
-#define __stringify_1(x...)	#x
-#define __stringify(x...)	__stringify_1(x)
 
 #endif /* __LINUX_IRQCHIP_ARM_GIC_V3_H */

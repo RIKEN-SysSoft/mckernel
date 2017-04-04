@@ -21,6 +21,8 @@ struct arm_pmu {
 	void (*write_evtype)(int, uint32_t);
 	int (*get_event_idx)(int, unsigned long);
 	int (*map_event)(uint32_t, uint64_t);
+	int (*enable_user_access_pmu_regs)(void);
+	int (*disable_user_access_pmu_regs)(void);
 	int num_events;
 };
 
@@ -33,6 +35,8 @@ int arm64_init_perfctr(void);
 int arm64_enable_pmu(void);
 void arm64_disable_pmu(void);
 int armv8pmu_init(struct arm_pmu* cpu_pmu);
+int arm64_enable_user_access_pmu_regs(void);
+int arm64_disable_user_access_pmu_regs(void);
 
 /* TODO[PMU]: 共通部に定義があっても良い。今後の動向を見てここの定義を削除する */
 /*

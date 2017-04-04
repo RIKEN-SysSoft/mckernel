@@ -76,6 +76,16 @@
 #define	ARMV8_INCLUDE_EL2	(1 << 27)
 
 /*
+ * @ref.impl arch/arm64/include/asm/perf_event.h
+ * PMUSERENR: user enable reg
+ */
+#define ARMV8_PMU_USERENR_MASK 0xf /* Mask for writable bits */
+#define ARMV8_PMU_USERENR_EN (1 << 0) /* PMU regs can be accessed at EL0 */
+#define ARMV8_PMU_USERENR_SW (1 << 1) /* PMSWINC can be written at EL0 */
+#define ARMV8_PMU_USERENR_CR (1 << 2) /* Cycle counter can be read at EL0 */
+#define ARMV8_PMU_USERENR_ER (1 << 3) /* Event counter can be read at EL0 */
+
+/*
  * @ref.impl arch/arm64/kernel/perf_event.c
  * ARMv8 PMUv3 Performance Events handling code.
  * Common event types.
@@ -533,9 +543,6 @@ static inline int armv8pmu_disable_counter(int idx)
 /* @ref.impl arch/arm64/kernel/perf_event.c */
 static int armv8pmu_start(void)
 {
-	/* Enable user-mode access to counters. */
-	asm volatile("msr pmuserenr_el0, %0" :: "r"(1));
-
 	/* Enable all counters */
 	armv8pmu_pmcr_write(armv8pmu_pmcr_read() | ARMV8_PMCR_E);
 	return 0;
@@ -546,9 +553,6 @@ static void armv8pmu_stop(void)
 {
 	/* Disable all counters */
 	armv8pmu_pmcr_write(armv8pmu_pmcr_read() & ~ARMV8_PMCR_E);
-
-	/* Disable user-mode access to counters. */
-	asm volatile("msr pmuserenr_el0, %0" :: "r" (0));
 }
 
 /* @ref.impl arch/arm64/kernel/perf_event.c */
@@ -577,9 +581,6 @@ static void armv8pmu_reset(void* info)
 	
 	/* Initialize & Reset PMNC: C and P bits. */
 	armv8pmu_pmcr_write(ARMV8_PMCR_P | ARMV8_PMCR_C);
-	
-	/* Disable access from userspace. */
-	asm volatile("msr pmuserenr_el0, %0" :: "r" (0));
 }
 
 /* @ref.impl arch/arm64/kernel/perf_event.c */
@@ -628,6 +629,20 @@ static void armv8pmu_handle_irq(void *priv)
 	 */
 }
 
+static int armv8pmu_enable_user_access_pmu_regs(void)
+{
+	uint32_t reg = ARMV8_PMU_USERENR_EN;
+	asm volatile("msr pmuserenr_el0, %0" :: "r" (reg));
+	return 0;
+}
+
+static int armv8pmu_disable_user_access_pmu_regs(void)
+{
+	uint32_t reg = 0;
+	asm volatile("msr pmuserenr_el0, %0" :: "r" (reg));
+	return 0;
+}
+
 static struct ihk_mc_interrupt_handler armv8pmu_handler = {
 	.func = armv8pmu_handle_irq,
 	.priv = NULL,
@@ -648,6 +663,9 @@ int armv8pmu_init(struct arm_pmu* cpu_pmu)
 	cpu_pmu->disable_pmu = armv8pmu_stop;
 	cpu_pmu->get_event_idx = armv8pmu_get_event_idx;
 	cpu_pmu->map_event = armv8_pmuv3_map_event;
+	cpu_pmu->enable_user_access_pmu_regs = &armv8pmu_enable_user_access_pmu_regs;
+	cpu_pmu->disable_user_access_pmu_regs = &armv8pmu_disable_user_access_pmu_regs;
 	cpu_pmu->handler = &armv8pmu_handler;
+
 	return 0;
 }
