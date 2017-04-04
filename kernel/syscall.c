@@ -3031,24 +3031,79 @@ SYSCALL_DECLARE(ioctl)
 	return rc;
 }
 
-#ifdef POSTK_DEBUG_ARCH_DEP_13 /* arch depend syscall hide */
-/* TODO, Instead openat() */
-#else /* POSTK_DEBUG_ARCH_DEP_13 */
 SYSCALL_DECLARE(open)
 {
-	const char *pathname = (const char *)ihk_mc_syscall_arg0(ctx);
 	long rc;
+#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
+	const char *pathname_user = (const char *)ihk_mc_syscall_arg0(ctx);
+	char *pathname;
+	int len = strlen_user(pathname_user) + 1;
+
+	pathname = kmalloc(len, IHK_MC_AP_NOWAIT);
+	if (!pathname) {
+		dkprintf("%s: error allocating pathname\n", __FUNCTION__);
+		return -ENOMEM;
+	}
+	if (copy_from_user(pathname, pathname_user, len)) {
+		dkprintf("%s: error: copy_from_user pathname\n", __FUNCTION__);
+		rc = -EFAULT;
+		goto out;
+	}
+#else /* POSTK_DEBUG_ARCH_DEP_46 */
+	const char *pathname = (const char *)ihk_mc_syscall_arg0(ctx);
+#endif /* POSTK_DEBUG_ARCH_DEP_46 */
 
 	dkprintf("open(): pathname=%s\n", pathname);
 	if (!strcmp(pathname, XPMEM_DEV_PATH)) {
+#if defined(POSTK_DEBUG_ARCH_DEP_46) || defined(POSTK_DEBUG_ARCH_DEP_62)
+		rc = xpmem_open(__NR_open ,pathname, (int)ihk_mc_syscall_arg1(ctx), ctx);
+#else /* POSTK_DEBUG_ARCH_DEP_46 || POSTK_DEBUG_ARCH_DEP_62 */
 		rc = xpmem_open(ctx);
+#endif /* POSTK_DEBUG_ARCH_DEP_46 || POSTK_DEBUG_ARCH_DEP_62 */
 	} else {
 		rc = syscall_generic_forwarding(__NR_open, ctx);
 	}
 
+#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
+out:
+	kfree(pathname);
+#endif /* POSTK_DEBUG_ARCH_DEP_46 */
+
 	return rc;
 }
-#endif /* POSTK_DEBUG_ARCH_DEP_13 */
+
+#ifdef POSTK_DEBUG_ARCH_DEP_62 /* Absorb the difference between open and openat args. */
+SYSCALL_DECLARE(openat)
+{
+	const char *pathname_user = (const char *)ihk_mc_syscall_arg1(ctx);
+	int flags = (int)ihk_mc_syscall_arg2(ctx);
+	char *pathname;
+	int len = strlen_user(pathname_user) + 1;
+	long rc;
+
+	pathname = kmalloc(len, IHK_MC_AP_NOWAIT);
+	if (!pathname) {
+		dkprintf("%s: error allocating pathname\n", __FUNCTION__);
+		return -ENOMEM;
+	}
+	if (copy_from_user(pathname, pathname_user, len)) {
+		dkprintf("%s: error: copy_from_user pathname\n", __FUNCTION__);
+		rc = -EFAULT;
+		goto out;
+	}
+
+	dkprintf("openat(): pathname=%s\n", pathname);
+	if (!strcmp(pathname, XPMEM_DEV_PATH)) {
+		rc = xpmem_open(__NR_openat, pathname, flags, ctx);
+	} else {
+		rc = syscall_generic_forwarding(__NR_openat, ctx);
+	}
+
+out:
+	kfree(pathname);
+	return rc;
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_62 */
 
 SYSCALL_DECLARE(close)
 {
