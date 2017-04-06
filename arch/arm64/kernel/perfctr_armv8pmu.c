@@ -663,8 +663,8 @@ int armv8pmu_init(struct arm_pmu* cpu_pmu)
 	cpu_pmu->disable_pmu = armv8pmu_stop;
 	cpu_pmu->get_event_idx = armv8pmu_get_event_idx;
 	cpu_pmu->map_event = armv8_pmuv3_map_event;
-	cpu_pmu->enable_user_access_pmu_regs = &armv8pmu_enable_user_access_pmu_regs;
-	cpu_pmu->disable_user_access_pmu_regs = &armv8pmu_disable_user_access_pmu_regs;
+	cpu_pmu->enable_user_access_pmu_regs = armv8pmu_enable_user_access_pmu_regs;
+	cpu_pmu->disable_user_access_pmu_regs = armv8pmu_disable_user_access_pmu_regs;
 	cpu_pmu->handler = &armv8pmu_handler;
 
 	return 0;
