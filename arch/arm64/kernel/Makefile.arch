@@ -11,6 +11,10 @@ IHK_OBJS += $(notdir $(VDSO_SO_O)) memory.o syscall.o vdso.o
 IHK_OBJS += irq-gic-v2.o irq-gic-v3.o
 IHK_OBJS += memcpy.o
 
+IHK_OBJS += xos_hwbdrv.o
+IHK_OBJS += xos_hpcdrv.o
+IHK_OBJS += xos_secdrv.o
+
 # POSTK_DEBUG_ARCH_DEP_18 coredump arch separation.
 # IHK_OBJS added coredump.o
 IHK_OBJS += coredump.o

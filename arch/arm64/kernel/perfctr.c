@@ -47,6 +47,20 @@ void arm64_disable_pmu(void)
 	cpu_pmu.disable_pmu();
 }
 
+int arm64_enable_user_access_pmu_regs(void)
+{
+	int ret;
+	ret = cpu_pmu.enable_user_access_pmu_regs();
+	return ret;
+}
+
+int arm64_disable_user_access_pmu_regs(void)
+{
+	int ret;
+	ret = cpu_pmu.disable_user_access_pmu_regs();
+	return ret;
+}
+
 extern unsigned int *arm64_march_perfmap;
 
 static int __ihk_mc_perfctr_init(int counter, uint32_t type, uint64_t config, int mode)

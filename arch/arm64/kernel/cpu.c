@@ -28,6 +28,10 @@
 #include <arch-perfctr.h>
 #include <bitops-fls.h>
 #include <debug-monitors.h>
+#include <xos_sys_common.h>
+#include <xos_hpcdrv.h>
+#include <xos_hwbdrv.h>
+#include <xos_secdrv.h>
 
 //#define DEBUG_PRINT_CPU
 
@@ -448,6 +452,13 @@ void init_cpu(void)
 	if(gic_enable) 
 		gic_enable();
 	arm64_enable_pmu();
+
+	if (xos_is_tchip_arch()) {
+		vhbm_barrier_registers_init();
+		scdrv_registers_init();
+		hpc_registers_init();
+	}
+	arm64_enable_user_access_pmu_regs();
 }
 
 #ifdef CONFIG_ARM64_VHE
