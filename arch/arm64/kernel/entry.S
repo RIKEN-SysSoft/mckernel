@@ -76,7 +76,7 @@
 	.endm
 
 	.macro	kernel_exit, el, ignore_check_signal = 0, need_enable_step = 0
-	.if 	\ignore_check_signal == 0
+	.if 	\el == 0 && \ignore_check_signal == 0
 	mov	x0, #0
 	mov	x1, sp
 	mov	x2, #0
