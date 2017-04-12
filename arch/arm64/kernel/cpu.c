@@ -274,8 +274,9 @@ static void setup_processor(void)
 	unsigned long features = read_cpuid(ID_AA64ISAR0_EL1);
 	unsigned long pfr = read_cpuid(ID_AA64PFR0_EL1);
 	unsigned long block;
+	long sblock;
 
-	elf_hwcap = 0;
+	elf_hwcap = HWCAP_CPUID;
 
 	block = (features >> 4) & 0xf;
 	if (!(block & 0x8)) {
@@ -302,24 +303,41 @@ static void setup_processor(void)
 	if (block && !(block & 0x8))
 		elf_hwcap |= HWCAP_CRC32;
 
+	block = (features >> 20) & 0xf;
+	if (block >= 2)
+		elf_hwcap |= HWCAP_ATOMICS;
+
+	block = (features >> 28) & 0xf;
+	if (block >= 1)
+		elf_hwcap |= HWCAP_ASIMDRDM;
+
 	/* @ref.impl drivers/clocksource/arm_arch_timer.c::arch_timer_evtstrm_enable */
 #ifdef CONFIG_ARM_ARCH_TIMER_EVTSTREAM
 	elf_hwcap |= HWCAP_EVTSTRM;
 #endif /* CONFIG_ARM_ARCH_TIMER_EVTSTREAM */
 
-	/* @ref.impl arch/arm64/kernel/fpsimd.c:fpsimd_init */
-	if (pfr & (0xf << 16)) {
-		kprintf("Floating-point is not implemented\n");
-	} else {
+	/* @ref.impl arch/arm64/kernel/cpufeature.c:setup_elf_hwcaps */
+	sblock = (long)(pfr << (64 - 4 - 16)) >> (64 - 4);
+	if (sblock >= 1) {
+		elf_hwcap |= HWCAP_FPHP;
+	}
+	if (sblock >= 0) {
 		elf_hwcap |= HWCAP_FP;
 	}
-
-	if (pfr & (0xf << 20)) {
-		kprintf("Advanced SIMD is not implemented\n");
-	} else {
-		elf_hwcap |= HWCAP_ASIMD;
+	if (sblock < 0) {
+		kprintf("Floating-point is not implemented\n");
 	}
 
+	sblock = (long)(pfr << (64 - 4 - 20)) >> (64 - 4);
+	if (sblock >= 1) {
+		elf_hwcap |= HWCAP_ASIMDHP;
+	}
+	if (sblock >= 0) {
+		elf_hwcap |= HWCAP_ASIMD;
+	}
+	if (sblock < 0) {
+		kprintf("Advanced SIMD is not implemented\n");
+	}
 	cpuinfo_store_cpu(&cpuinfo_data[0]);
 }
 
@@ -1021,7 +1039,7 @@ void ihk_mc_modify_user_context(ihk_mc_user_context_t *uctx,
 }
 
 /* @ref.impl arch/arm64/kernel/setup.c::hwcap_str */
-static const char *hwcap_str[] = {
+static const char *const hwcap_str[] = {
 	"fp",
 	"asimd",
 	"evtstrm",
@@ -1030,6 +1048,11 @@ static const char *hwcap_str[] = {
 	"sha1",
 	"sha2",
 	"crc32",
+	"atomics",
+	"fphp",
+	"asimdhp",
+	"cpuid",
+	"asimdrdm",
 	NULL
 };
 
