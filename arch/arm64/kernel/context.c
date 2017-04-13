@@ -80,7 +80,7 @@ static inline void __new_context(struct page_table *pgtbl)
 	/* set previous assigned context number */
 	cpu_last_asid = asid | (cpu_last_asid & VERSION_MASK);
 
-	set_mm_context(pgtbl, asid);
+	set_mm_context(pgtbl, cpu_last_asid);
 	ihk_mc_spinlock_unlock(&cpu_asid_lock, flags);
 }
 
