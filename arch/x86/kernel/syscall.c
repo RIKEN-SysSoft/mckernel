@@ -1198,7 +1198,8 @@ done:
 			if(pid != -1 && tthread->proc->pid != pid){
 				continue;
 			}
-			if(tthread->tid == tid){
+			if (tthread->tid == tid &&
+			    tthread->status != PS_EXITED) {
 				found = 1;
 				break;
 			}
@@ -1315,6 +1316,9 @@ done:
 				/* Wake up the target only when stopped by SIGSTOP */
 				sched_wakeup_thread(tthread, PS_STOPPED);
 				tthread->proc->status = PS_RUNNING;
+			}
+			else {
+				sched_wakeup_thread(tthread, PS_INTERRUPTIBLE);
 			}
 		}
 	}

@@ -323,11 +323,21 @@ static long mcexec_debug_log(ihk_os_t os, unsigned long arg)
 	return 0;
 }
 
+int mcexec_close_exec(ihk_os_t os);
+
 static void release_handler(ihk_os_t os, void *param)
 {
 	struct release_handler_info *info = param;
 	struct ikc_scd_packet isp;
 	int os_ind = ihk_host_os_get_index(os);
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_per_proc_data *ppd = NULL;
+
+	ppd = mcctrl_get_per_proc_data(usrdata, info->pid);
+	if (ppd) {
+		mcctrl_put_per_proc_data(ppd);
+		mcexec_close_exec(os);
+	}
 
 	memset(&isp, '\0', sizeof isp);
 	isp.msg = SCD_MSG_CLEANUP_PROCESS;
@@ -560,18 +570,13 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 		goto put_and_unlock_out;
 	}
 
-#ifdef POSTK_DEBUG_ARCH_DEP_54 /* cpu_set() & cpu_isset() linux version depend fix. */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0)
-	cpu_set(cpu, cpus_used);
-	cpu_set(cpu, cpus_to_use);
-#else /* LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0) */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
 	cpumask_set_cpu(cpu, &cpus_used);
 	cpumask_set_cpu(cpu, &cpus_to_use);
-#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0) */
-#else /* POSTK_DEBUG_ARCH_DEP_54 */
-	cpu_set(cpu, cpus_used);
-	cpu_set(cpu, cpus_to_use);
-#endif /* POSTK_DEBUG_ARCH_DEP_54 */
+#else
+ 	cpu_set(cpu, cpus_used);
+ 	cpu_set(cpu, cpus_to_use);
+#endif
 	cpu_prev = cpu;
 	dprintk("%s: CPU %d assigned (first)\n", __FUNCTION__, cpu);
 
@@ -599,21 +604,18 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 		 * the most inner one outwards */
 		list_for_each_entry(cache_top, &cpu_top->cache_list, chain) {
 			for_each_cpu(cpu, &cache_top->shared_cpu_map) {
-#ifdef POSTK_DEBUG_ARCH_DEP_54 /* cpu_set() & cpu_isset() linux version depend fix. */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0)
-				if (!cpu_isset(cpu, cpus_used)) {
-					cpu_set(cpu, cpus_used);
-					cpu_set(cpu, cpus_to_use);
-#else /* LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0) */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
 				if (!cpumask_test_cpu(cpu, &cpus_used)) {
+#else
+ 				if (!cpu_isset(cpu, cpus_used)) {
+#endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
 					cpumask_set_cpu(cpu, &cpus_used);
 					cpumask_set_cpu(cpu, &cpus_to_use);
-#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0) */
-#else /* POSTK_DEBUG_ARCH_DEP_54 */
-				if (!cpu_isset(cpu, cpus_used)) {
-					cpu_set(cpu, cpus_used);
-					cpu_set(cpu, cpus_to_use);
-#endif /* POSTK_DEBUG_ARCH_DEP_54 */
+#else
+ 					cpu_set(cpu, cpus_used);
+ 					cpu_set(cpu, cpus_to_use);
+#endif
 					cpu_prev = cpu;
 					dprintk("%s: CPU %d assigned (same cache L%lu)\n",
 						__FUNCTION__, cpu, cache_top->saved->level);
@@ -634,18 +636,13 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 			/* Found one */
 			if (node == linux_numa_2_mckernel_numa(udp,
 						cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu)))) {
-#ifdef POSTK_DEBUG_ARCH_DEP_54 /* cpu_set() & cpu_isset() linux version depend fix. */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0)
-				cpu_set(cpu, cpus_used);
-				cpu_set(cpu, cpus_to_use);
-#else /* LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0) */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
 				cpumask_set_cpu(cpu, &cpus_used);
 				cpumask_set_cpu(cpu, &cpus_to_use);
-#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0) */
-#else /* POSTK_DEBUG_ARCH_DEP_54 */
-				cpu_set(cpu, cpus_used);
-				cpu_set(cpu, cpus_to_use);
-#endif /* POSTK_DEBUG_ARCH_DEP_54 */
+#else
+ 				cpu_set(cpu, cpus_used);
+ 				cpu_set(cpu, cpus_to_use);
+#endif
 				cpu_prev = cpu;
 				dprintk("%s: CPU %d assigned (same NUMA)\n",
 						__FUNCTION__, cpu);
@@ -662,18 +659,13 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 			goto put_and_unlock_out;
 		}
 
-#ifdef POSTK_DEBUG_ARCH_DEP_54 /* cpu_set() & cpu_isset() linux version depend fix. */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0)
-		cpu_set(cpu, cpus_used);
-		cpu_set(cpu, cpus_to_use);
-#else /* LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0) */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
 		cpumask_set_cpu(cpu, &cpus_used);
 		cpumask_set_cpu(cpu, &cpus_to_use);
-#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0) */
-#else /* POSTK_DEBUG_ARCH_DEP_54 */
-		cpu_set(cpu, cpus_used);
-		cpu_set(cpu, cpus_to_use);
-#endif /* POSTK_DEBUG_ARCH_DEP_54 */
+#else
+ 		cpu_set(cpu, cpus_used);
+ 		cpu_set(cpu, cpus_to_use);
+#endif
 		cpu_prev = cpu;
 		dprintk("%s: CPU %d assigned (unused)\n",
 				__FUNCTION__, cpu);
@@ -791,6 +783,10 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 {
 	int hash;
 	unsigned long flags;
+	int i;
+	struct wait_queue_head_list_node *wqhln;
+	struct wait_queue_head_list_node *wqhln_next;
+	struct ikc_scd_packet *packet;
 
 	if (!ppd)
 		return;
@@ -804,6 +800,36 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	write_lock_irqsave(&ppd->ud->per_proc_data_hash_lock[hash], flags);
 	list_del(&ppd->hash);
 	write_unlock_irqrestore(&ppd->ud->per_proc_data_hash_lock[hash], flags);
+
+	for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; i++) {
+		struct mcctrl_per_thread_data *ptd;
+		struct mcctrl_per_thread_data *next;
+		struct ikc_scd_packet *packet;
+
+		list_for_each_entry_safe(ptd, next,
+		                         ppd->per_thread_data_hash + i, hash) {
+			packet = ptd->data;
+			list_del(&ptd->hash);
+			kfree(ptd);
+			__return_syscall(ppd->ud->os, packet, -EINTR,
+					packet->req.rtid);
+			ihk_ikc_release_packet(
+			            (struct ihk_ikc_free_packet *)packet,
+			            (ppd->ud->channels + packet->ref)->c);
+		}
+	}
+
+	flags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
+	list_for_each_entry_safe(wqhln, wqhln_next, &ppd->wq_req_list, list) {
+		list_del(&wqhln->list);
+		packet = wqhln->packet;
+		kfree(wqhln);
+		__return_syscall(ppd->ud->os, packet, -EINTR,
+				packet->req.rtid);
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
+				       (ppd->ud->channels + packet->ref)->c);
+	}
+	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, flags);
 
 	kfree(ppd);
 }
@@ -828,6 +854,12 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 		kprintf("%s: ERROR: no per-process structure for PID %d, "
 				"syscall nr: %lu\n",
 				__FUNCTION__, pid, packet->req.number);
+
+		__return_syscall(ud->os, packet, -EINTR,
+				packet->req.rtid);
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
+				      (ud->channels + packet->ref)->c);
+
 		return -1;
 	}
 
@@ -1284,13 +1316,12 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	struct mckernel_exec_file *mcef_iter;
 	int retval;
 	int os_ind = ihk_host_os_get_index(os);
-	char *pathbuf, *fullpath;
+	char *pathbuf = NULL;
+	char *fullpath = NULL;
+	char *kfilename = NULL;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd = NULL;
-	int i;
-#ifdef POSTK_DEBUG_ARCH_DEP_46
-	char *k_filename;
-#endif /* POSTK_DEBUG_ARCH_DEP_46 */
+	int i, len;
 
 	if (os_ind < 0) {
 		return -EINVAL;
@@ -1341,21 +1372,20 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 		goto out_put_ppd;
 	}
 
-#ifdef POSTK_DEBUG_ARCH_DEP_46
-	k_filename = kmalloc(PATH_MAX, GFP_TEMPORARY);
-	if (!k_filename) {
-		goto out_error_free_pathbuf;
+	kfilename = kmalloc(PATH_MAX, GFP_TEMPORARY);
+	if (!kfilename) {
+		retval = -ENOMEM;
+		kfree(pathbuf);
+		goto out_put_ppd;
 	}
 
-	retval = strncpy_from_user(k_filename, filename, 
-			  strnlen_user(filename, PATH_MAX));
-	if(retval <= 0) {
+	len = strncpy_from_user(kfilename, filename, PATH_MAX);
+	if (unlikely(len < 0)) {
+		retval = -EINVAL;
 		goto out_free;
 	}
-	file = open_exec(k_filename);
-#else /* POSTK_DEBUG_ARCH_DEP_46 */
-	file = open_exec(filename);
-#endif /* POSTK_DEBUG_ARCH_DEP_46 */
+
+	file = open_exec(kfilename);
 	retval = PTR_ERR(file);
 	if (IS_ERR(file)) {
 		goto out_free;
@@ -1396,11 +1426,9 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	proc_exe_link(os_ind, task_tgid_vnr(current), fullpath);
 	up(&mckernel_exec_file_lock);
 
-	dprintk("%d open_exec and holding file: %s\n", (int)task_tgid_vnr(current), filename);
+	dprintk("%d open_exec and holding file: %s\n", (int)task_tgid_vnr(current),
+			kfilename);
 
-#ifdef POSTK_DEBUG_ARCH_DEP_46
-	kfree(k_filename);
-#endif /* POSTK_DEBUG_ARCH_DEP_46 */
 	kfree(pathbuf);
 
 	return 0;
@@ -1408,11 +1436,8 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 out_put_file:
 	fput(file);
 out_free:
-#ifdef POSTK_DEBUG_ARCH_DEP_46
-	kfree(k_filename);
-out_error_free_pathbuf:
-#endif /* POSTK_DEBUG_ARCH_DEP_46 */
 	kfree(pathbuf);
+	kfree(kfilename);
 out_put_ppd:
 	mcctrl_put_per_proc_data(ppd);
 out:

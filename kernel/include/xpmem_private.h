@@ -160,7 +160,7 @@ static inline int xpmem_ap_hashtable_index(xpmem_apid_t apid)
 
 	index = ((xpmem_id_t *)&apid)->xpmem_id.uniq % XPMEM_AP_HASHTABLE_SIZE;
 
-	XPMEM_DEBUG("return: apid=%lu, index=%d", apid, index);
+	XPMEM_DEBUG("return: apid=0x%lx, index=%d", apid, index);
 
 	return index;
 }
@@ -174,22 +174,20 @@ struct xpmem_thread_group {
 	uid_t uid;		/* tg's uid */
 	gid_t gid;		/* tg's gid */
 	volatile int flags;	/* tg attributes and state */
-	ihk_atomic_t uniq_segid;
-	ihk_atomic_t uniq_apid;
-	mcs_rwlock_lock_t seg_list_lock;
+	ihk_atomic_t uniq_segid;	/* segid uniq */
+	ihk_atomic_t uniq_apid;	/* apid uniq */
+	mcs_rwlock_lock_t seg_list_lock;	/* tg's list of segs lock */
 	struct list_head seg_list;	/* tg's list of segs */
 	ihk_atomic_t refcnt;	/* references to tg */
 	ihk_atomic_t n_pinned;	/* #of pages pinned by this tg */
 	struct list_head tg_hashlist;	/* tg hash list */
 	struct thread *group_leader;	/* thread group leader */
-	struct process_vm *vm;		/* tg's mm */
-	ihk_atomic_t n_recall_PFNs;	/* #of recall of PFNs in progress */
+	struct process_vm *vm;		/* tg's process_vm */
 	struct xpmem_hashlist ap_hashtable[];	/* locks + ap hash lists */
 };
 
 struct xpmem_segment {
 	ihk_spinlock_t lock;	/* seg lock */
-	mcs_rwlock_lock_t seg_lock;	/* seg sema */
 	xpmem_segid_t segid;	/* unique segid */
 	unsigned long vaddr;	/* starting address */
 	size_t size;		/* size of seg */
@@ -216,18 +214,16 @@ struct xpmem_access_permit {
 };
 
 struct xpmem_attachment {
-	mcs_rwlock_lock_t at_lock;	/* att lock for serialization */
-	struct mcs_rwlock_node_irqsave at_irqsave;	/* att lock for serialization */
+	mcs_rwlock_lock_t at_lock;	/* att lock */
 	unsigned long vaddr;	/* starting address of seg attached */
 	unsigned long at_vaddr;	/* address where seg is attached */
 	size_t at_size;		/* size of seg attachment */
-	struct vm_range *at_vma;	/* vma where seg is attachment */
+	struct vm_range *at_vmr;	/* vm_range where seg is attachment */
 	volatile int flags;	/* att attributes and state */
 	ihk_atomic_t refcnt;	/* references to att */
 	struct xpmem_access_permit *ap;	/* associated access permit */
 	struct list_head att_list;	/* atts linked to access permit */
-	struct process_vm *vm;	/* mm struct attached to */
-	mcs_rwlock_lock_t invalidate_lock;	/* to serialize page table invalidates */
+	struct process_vm *vm;	/* process_vm attached to */
 };
 
 struct xpmem_partition {
@@ -249,8 +245,10 @@ struct xpmem_perm {
 #define XPMEM_PERM_IRUSR 00400
 #define XPMEM_PERM_IWUSR 00200
 
+extern struct xpmem_partition *xpmem_my_part;
+
 static int xpmem_ioctl(struct mckfd *mckfd, ihk_mc_user_context_t *ctx);
-static int xpmem_close( struct mckfd *mckfd, ihk_mc_user_context_t *ctx);
+static int xpmem_close(struct mckfd *mckfd, ihk_mc_user_context_t *ctx);
 
 static int xpmem_init(void);
 static void xpmem_exit(void);
@@ -263,10 +261,47 @@ static xpmem_segid_t xpmem_make_segid(struct xpmem_thread_group *);
 static int xpmem_remove(xpmem_segid_t);
 static void xpmem_remove_seg(struct xpmem_thread_group *,
         struct xpmem_segment *);
+static void xpmem_remove_segs_of_tg(struct xpmem_thread_group *seg_tg);
 
+static int xpmem_get(xpmem_segid_t, int, int, void *, xpmem_apid_t *);
+static int xpmem_check_permit_mode(int, struct xpmem_segment *);
+static int xpmem_perms(struct xpmem_perm *, short);
+static xpmem_apid_t xpmem_make_apid(struct xpmem_thread_group *);
+
+static int xpmem_release(xpmem_apid_t);
+static void xpmem_release_ap(struct xpmem_thread_group *,
+	struct xpmem_access_permit *);
+static void xpmem_release_aps_of_tg(struct xpmem_thread_group *ap_tg);
+
+static int xpmem_attach(struct mckfd *, xpmem_apid_t, off_t, size_t, 
+	unsigned long, int, int, unsigned long *);
+
+static int xpmem_detach(unsigned long);
+static int xpmem_vm_munmap(struct process_vm *vm, void *addr, size_t len);
+static int xpmem_remove_process_range(struct process_vm *vm, 
+	unsigned long start, unsigned long end, int *ro_freedp);
+static int xpmem_free_process_memory_range(struct process_vm *vm,
+	struct vm_range *range);
+static void xpmem_detach_att(struct xpmem_access_permit *, 
+	struct xpmem_attachment *);
 static void xpmem_clear_PTEs(struct xpmem_segment *);
+static void xpmem_clear_PTEs_range(struct xpmem_segment *, unsigned long,
+	unsigned long);
+static void xpmem_clear_PTEs_of_ap(struct xpmem_access_permit *, unsigned long, 
+	unsigned long);
+static void xpmem_clear_PTEs_of_att(struct xpmem_attachment *, unsigned long, 
+	unsigned long);
 
-extern struct xpmem_partition *xpmem_my_part;
+static int xpmem_remap_pte(struct process_vm *, struct vm_range *,
+	unsigned long, uint64_t, struct xpmem_segment *, unsigned long);
+
+static int xpmem_ensure_valid_page(struct xpmem_segment *, unsigned long);
+static pte_t * xpmem_vaddr_to_pte(struct process_vm *, unsigned long, 
+	size_t *pgsize);
+static int xpmem_pin_page(struct xpmem_thread_group *, struct thread *,
+	struct process_vm *, unsigned long);
+static void xpmem_unpin_pages(struct xpmem_segment *, struct process_vm *, 
+	unsigned long, size_t);
 
 static struct xpmem_thread_group * __xpmem_tg_ref_by_tgid_nolock_internal(
 	pid_t, int, int);
@@ -317,10 +352,17 @@ static inline struct xpmem_thread_group *__xpmem_tg_ref_by_tgid_nolock(
 #define xpmem_tg_ref_by_tgid_all_nolock(t)  __xpmem_tg_ref_by_tgid_nolock(t, 1)
 
 static struct xpmem_thread_group * xpmem_tg_ref_by_segid(xpmem_segid_t);
+static struct xpmem_thread_group * xpmem_tg_ref_by_apid(xpmem_apid_t);
 static void xpmem_tg_deref(struct xpmem_thread_group *);
 static struct xpmem_segment *xpmem_seg_ref_by_segid(struct xpmem_thread_group *,
 	xpmem_segid_t);
 static void xpmem_seg_deref(struct xpmem_segment *);
+static struct xpmem_access_permit * xpmem_ap_ref_by_apid(
+	struct xpmem_thread_group *, xpmem_apid_t);
+static void xpmem_ap_deref(struct xpmem_access_permit *);
+static void xpmem_att_deref(struct xpmem_attachment *);
+static int xpmem_validate_access(struct xpmem_access_permit *, off_t, size_t,
+	int, unsigned long *);
 
 /*
  * Inlines that mark an internal driver structure as being destroyable or not.
@@ -363,6 +405,42 @@ static inline void xpmem_seg_destroyable(
 	XPMEM_DEBUG("return: ");
 }
 
+static inline void xpmem_ap_not_destroyable(
+	struct xpmem_access_permit *ap)
+{
+	ihk_atomic_set(&ap->refcnt, 1);
+
+	XPMEM_DEBUG("return: ap->refcnt=%d", ap->refcnt);
+}
+
+static inline void xpmem_ap_destroyable(
+	struct xpmem_access_permit *ap)
+{
+	XPMEM_DEBUG("call: ");
+
+	xpmem_ap_deref(ap);
+
+	XPMEM_DEBUG("return: ");
+}
+
+static inline void xpmem_att_not_destroyable(
+	struct xpmem_attachment *att)
+{
+	ihk_atomic_set(&att->refcnt, 1);
+
+	XPMEM_DEBUG("return: att->refcnt=%d", att->refcnt);
+}
+
+static inline void xpmem_att_destroyable(
+	struct xpmem_attachment *att)
+{
+	XPMEM_DEBUG("call: ");
+
+	xpmem_att_deref(att);
+
+	XPMEM_DEBUG("return: ");
+}
+
 /*
  * Inlines that increment the refcnt for the specified structure.
  */
@@ -382,6 +460,30 @@ static inline void xpmem_seg_ref(
 	ihk_atomic_inc(&seg->refcnt);
 
 	XPMEM_DEBUG("return: seg->refcnt=%d", seg->refcnt);
+}
+
+static inline void xpmem_ap_ref(
+	struct xpmem_access_permit *ap)
+{
+	DBUG_ON(ihk_atomic_read(&ap->refcnt) <= 0);
+	ihk_atomic_inc(&ap->refcnt);
+
+	XPMEM_DEBUG("return: ap->refcnt=%d", ap->refcnt);
+}
+
+static inline void xpmem_att_ref(
+	struct xpmem_attachment *att)
+{
+	DBUG_ON(ihk_atomic_read(&att->refcnt) <= 0);
+	ihk_atomic_inc(&att->refcnt);
+
+	XPMEM_DEBUG("return: att->refcnt=%d", att->refcnt);
+}
+
+static inline int xpmem_is_private_data(
+	struct vm_range *vmr)
+{
+        return (vmr->private_data != NULL);
 }
 
 #endif /* _XPMEM_PRIVATE_H */

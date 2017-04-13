@@ -3005,6 +3005,25 @@ return_execve2:
 			break;
 #endif	/* POSTK_DEBUG_ARCH_DEP_36 */
 
+/* mck-0664 patch invalidation */
+/*		case __NR_stat:
+			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[0], PATH_MAX);
+			if (ret >= PATH_MAX) {
+				ret = -ENAMETOOLONG;
+			}
+			if (ret < 0) {
+				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+				break;
+			}
+
+			fn = chgpath(pathbuf, tmpbuf);
+
+			ret = stat(fn, (struct stat *)w.sr.args[1]);
+			__dprintf("stat: path=%s, ret=%ld\n", fn, ret);
+			SET_ERR(ret);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+*/
 		default:
 			ret = do_generic_syscall(&w);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);

@@ -1038,7 +1038,6 @@ terminate(int rc, int sig)
 	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 
 	vm = proc->vm;
-	free_all_process_memory_range(vm);
 
 	if (proc->saved_cmdline) {
 		kfree(proc->saved_cmdline);
@@ -8991,6 +8990,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 #ifdef TRACK_SYSCALLS
 	uint64_t t_s;
 #endif // TRACK_SYSCALLS
+	struct thread *thread = cpu_local_var(current);
 
 	set_cputime(1);
 	if(cpu_local_var(current)->proc->status == PS_EXITED &&
@@ -9061,9 +9061,9 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	if (num != __NR_sched_yield) {
 		check_signal(l, NULL, num);
 	}
-#else /* POSTK_DEBUG_TEMP_FIX_56 && POSTK_DEBUG_TEMP_FIX_56 */
-	if (num != __NR_sched_yield &&
-			num != __NR_futex) {
+#else /* POSTK_DEBUG_TEMP_FIX_60 && POSTK_DEBUG_TEMP_FIX_56 */
+	if (!list_empty(&thread->sigpending) ||
+	    !list_empty(&thread->sigcommon->sigpending)) {
 		check_signal(l, NULL, num);
 	}
 #endif /* POSTK_DEBUG_TEMP_FIX_60 && POSTK_DEBUG_TEMP_FIX_56 */
@@ -9096,7 +9096,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	if (num != __NR_sched_yield) {
 		check_need_resched();
 	}
-#else /* POSTK_DEBUG_TEMP_FIX_56 && POSTK_DEBUG_TEMP_FIX_56 */
+#else /* POSTK_DEBUG_TEMP_FIX_60 && POSTK_DEBUG_TEMP_FIX_56 */
 	if (num != __NR_sched_yield &&
 			num != __NR_futex) {
 		check_need_resched();

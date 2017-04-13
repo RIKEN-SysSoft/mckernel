@@ -45,6 +45,7 @@ struct ovl_fs {
 	long lower_namelen;
 	/* pathnames of lower and upper dirs, for show_options */
 	struct ovl_config config;
+	struct list_head d_fsdata_list;
 };
 
 struct ovl_dir_cache;
@@ -76,13 +77,74 @@ unsigned ovl_get_config_opt(struct dentry *dentry)
 void ovl_reset_ovl_entry(struct ovl_entry **oe, struct dentry *dentry)
 {
 	unsigned opt = ovl_get_config_opt(dentry);
+	struct ovl_entry *d_fsdata;
 
 	if (OVL_OPT_NOFSCHECK(opt)) {
-		if (dentry->d_inode && dentry->d_inode->i_private && 
-			!S_ISDIR(dentry->d_inode->i_mode)) {
-			*oe = dentry->d_inode->i_private;
+		if (dentry->d_inode && S_ISDIR(dentry->d_inode->i_mode)) {
+			return;
+		}
+
+		d_fsdata = ovl_find_d_fsdata(dentry);
+		if (d_fsdata) {
+			OVL_DEBUG("reset: dentry=%pd4, 0x%p, oe=0x%p\n", 
+				dentry, dentry, d_fsdata);
+			*oe = d_fsdata;
 		}
 	}
+}
+
+struct ovl_entry *ovl_find_d_fsdata(struct dentry *dentry)
+{
+	struct ovl_fs *ofs = dentry->d_sb->s_fs_info;
+	struct ovl_d_fsdata *d_fsdata;
+
+	list_for_each_entry(d_fsdata, &ofs->d_fsdata_list, list) {
+		if (dentry == d_fsdata->d) {
+			OVL_DEBUG("exist: dentry=%pd4, 0x%p, oe=0x%p\n", 
+				d_fsdata->d, d_fsdata->d, d_fsdata->oe);
+			return d_fsdata->oe;
+		}
+	}
+
+	return NULL;
+}
+
+int ovl_add_d_fsdata(struct dentry *dentry)
+{
+	struct ovl_fs *ofs = dentry->d_sb->s_fs_info;
+	struct ovl_d_fsdata *d_fsdata;
+
+	d_fsdata = kzalloc(sizeof(struct ovl_d_fsdata), GFP_KERNEL);
+	if (!d_fsdata) {
+		return -1;
+	}
+
+	d_fsdata->d = dentry;
+	d_fsdata->oe = dentry->d_fsdata;
+
+	list_add(&d_fsdata->list, &ofs->d_fsdata_list);
+
+	OVL_DEBUG("add: dentry=%pd4, 0x%p, oe=0x%p\n", 
+		d_fsdata->d, d_fsdata->d, d_fsdata->oe);
+
+	return 0;
+}
+
+static int ovl_clear_d_fsdata(struct ovl_fs *ofs)
+{
+	struct ovl_d_fsdata *d_fsdata;
+	struct ovl_d_fsdata *d_fsdata_next;
+
+	list_for_each_entry_safe(d_fsdata, d_fsdata_next, &ofs->d_fsdata_list, 
+		list) {
+		OVL_DEBUG("delete: dentry=%pd4, 0x%p\n", 
+			d_fsdata->d, d_fsdata->d);
+		list_del(&d_fsdata->list);
+
+		kfree(d_fsdata);
+	}
+
+	return 0;
 }
 
 static struct dentry *__ovl_dentry_lower(struct ovl_entry *oe)
@@ -658,6 +720,8 @@ static void ovl_put_super(struct super_block *sb)
 	struct ovl_fs *ufs = sb->s_fs_info;
 	unsigned i;
 
+	ovl_clear_d_fsdata(ufs);
+
 	dput(ufs->workdir);
 	mntput(ufs->upper_mnt);
 	for (i = 0; i < ufs->numlower; i++)
@@ -1049,6 +1113,7 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 	if (!ufs)
 		goto out;
 
+	INIT_LIST_HEAD(&ufs->d_fsdata_list);
 	err = ovl_parse_opt((char *) data, &ufs->config);
 	if (err)
 		goto out_free_config;

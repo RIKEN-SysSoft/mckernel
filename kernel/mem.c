@@ -50,7 +50,7 @@
 #endif
 
 static unsigned long pa_start, pa_end;
-static struct ihk_mc_numa_node *memory_nodes = NULL;
+static struct ihk_mc_numa_node memory_nodes[512];
 
 extern void unhandled_page_fault(struct thread *, void *, void *);
 extern int interrupt_from_user(void *);
@@ -1005,12 +1005,14 @@ out:
 }
 
 static struct ihk_page_allocator_desc *page_allocator_init(uint64_t start, 
-		uint64_t end, int initial)
+		uint64_t end)
 {
 	struct ihk_page_allocator_desc *pa_allocator;
 	unsigned long page_map_pa, pages;
 	void *page_map;
 	unsigned int i;
+	extern char _end[];
+	unsigned long phys_end = virt_to_phys(_end);
 
 	start &= PAGE_MASK;
 	pa_start = (start + PAGE_SIZE - 1) & PAGE_MASK;
@@ -1023,7 +1025,12 @@ static struct ihk_page_allocator_desc *page_allocator_init(uint64_t start,
 	*/
 	page_map_pa = 0x100000;
 #else
-	page_map_pa = initial ? virt_to_phys(get_last_early_heap()) : pa_start;
+	if (pa_start <= phys_end && phys_end <= pa_end) {
+		page_map_pa = virt_to_phys(get_last_early_heap());
+	}
+	else {
+		page_map_pa = pa_start;
+	}
 #endif
 
 	page_map = phys_to_virt(page_map_pa);
@@ -1054,9 +1061,6 @@ static struct ihk_page_allocator_desc *page_allocator_init(uint64_t start,
 static void numa_init(void)
 {
 	int i, j;
-	memory_nodes = early_alloc_pages((sizeof(*memory_nodes) * 
-				ihk_mc_get_nr_numa_nodes() + PAGE_SIZE - 1) 
-			>> PAGE_SHIFT);
 
 	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
 		int linux_numa_id, type;
@@ -1084,7 +1088,7 @@ static void numa_init(void)
 
 		ihk_mc_get_memory_chunk(j, &start, &end, &numa_id);
 
-		allocator = page_allocator_init(start, end, (j == 0));
+		allocator = page_allocator_init(start, end);
 		list_add_tail(&allocator->list, &memory_nodes[numa_id].allocators);
 
 		kprintf("Physical memory: 0x%lx - 0x%lx, %lu bytes, %d pages available @ NUMA: %d\n",
