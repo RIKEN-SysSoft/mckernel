@@ -48,6 +48,17 @@ AC_ARG_ENABLE([mcoverlayfs],
 	      [ENABLE_MCOVERLAYFS=$enableval],
 	      [ENABLE_MCOVERLAYFS=yes])
 
+AC_ARG_WITH([uname_r],
+  AC_HELP_STRING(
+    [--with-uname_r=uname_r],[Value of '`uname -r`' on the target platform, default is local value]),
+  [WITH_UNAME_R=$withval],[WITH_UNAME_R=yes])
+
+case "X$WITH_UNAME_R" in
+    Xyes | Xno | X)
+	WITH_UNAME_R='`uname -r`'
+	;;
+esac
+
 case "X$WITH_KERNELSRC" in
     Xyes | Xno | X)
 	WITH_KERNELSRC='/lib/modules/`uname -r`/build'
@@ -163,6 +174,7 @@ case $WITH_TARGET in
 esac
 
 KDIR="$WITH_KERNELSRC"
+UNAME_R="$WITH_UNAME_R"
 TARGET="$WITH_TARGET"
 
 MCCTRL_LINUX_SYMTAB=""
@@ -280,6 +292,7 @@ AC_SUBST(CC)
 AC_SUBST(XCC)
 AC_SUBST(ARCH)
 AC_SUBST(KDIR)
+AC_SUBST(UNAME_R)
 AC_SUBST(TARGET)
 AC_SUBST(BINDIR)
 AC_SUBST(SBINDIR)

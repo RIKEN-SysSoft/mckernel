@@ -1,6 +1,6 @@
 ENABLE_MCOVERLAYFS=@ENABLE_MCOVERLAYFS@
+RELEASE=@UNAME_R@
 
-RELEASE=$(shell uname -r)
 MAJOR=$(shell echo ${RELEASE} | sed -e 's/^\([0-9]*\).*/\1/')
 MINOR=$(shell echo ${RELEASE} | sed -e 's/^[0-9]*.\([0-9]*\).*/\1/')
 PATCH=$(shell echo ${RELEASE} | sed -e 's/^[0-9]*.[0-9]*.\([0-9]*\).*/\1/')
@@ -9,6 +9,7 @@ RHEL_RELEASE_TMP=$(shell echo ${RELEASE} | sed -e 's/^[0-9]*.[0-9]*.[0-9]*-\([0-
 RHEL_RELEASE=$(shell if [ "${RELEASE}" == "${RHEL_RELEASE_TMP}" ]; then echo ""; else echo ${RHEL_RELEASE_TMP}; fi)
 BUILD_MODULE_TMP=$(shell if [ "${RHEL_RELEASE}" == "" ]; then echo "org"; else echo "rhel"; fi)
 BUILD_MODULE=none
+#$(info "LINUX_VERSION_CODE: ${LINUX_VERSION_CODE}, RHEL_RELEASE: ${RHEL_RELEASE}")
 ifeq ($(ENABLE_MCOVERLAYFS),yes)
 ifeq ($(BUILD_MODULE_TMP),org)
 ifeq ($(BUILD_MODULE),none)
