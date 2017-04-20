@@ -816,25 +816,31 @@ static inline void setup_middle_level(translation_table_t *tt, unsigned long bas
 			next = virt_to_phys(next_tt);
 			memset(next_tt, 0, PAGE_SIZE);
 		} else {
-			unsigned long arm64_kernel_phys_end = arm64_kernel_phys_base + (_end - _head);
-			next = ptl_phys(ptr, level);
+			unsigned long arm64_kernel_phys_end;
+			unsigned long arm64_early_alloc_phys_end;
+#ifdef CONFIG_ARM64_64K_PAGES
+			arm64_kernel_phys_end = arm64_kernel_phys_base + (page_align_up(_end) - (unsigned long)_head);
+#else
+			arm64_kernel_phys_end = arm64_kernel_phys_base + (large_page_align_up(_end) - (unsigned long)_head);
+#endif
+			arm64_early_alloc_phys_end = arm64_kernel_phys_end + (MAP_EARLY_ALLOC_END - MAP_EARLY_ALLOC);
 			
+			next = ptl_phys(ptr, level);
 			if (arm64_kernel_phys_base <= next && next < arm64_kernel_phys_end) {
-				// 既存のページテーブルの領域を使って処理を進めたいが、
-				// ストレートマップ領域の初期化中なのでphys_to_virtしたアドレスでは、
-				// カーネルイメージの領域をアクセスできないタイミングがある。
-				// init_ptの情報を元にアドレスを算出して、カーネル領域を使ってアドレス解決させる。
-				//
-				// ここで対象にしているページテーブルは、
-				// 'swapper_page_table'から'swapper_page_table + PAGE_SIZE * N'の領域に定義した
-				// ページテーブルのうちどれかになる。よってカーネル領域からアクセスできる。
+				// phys_to_virt of kernel image area.
 				struct page_table* pt = get_init_page_table();
 				unsigned long va = (unsigned long)pt->tt;
 				unsigned long pa = (unsigned long)pt->tt_pa;
 				unsigned long diff = va - pa;
 				next_tt = (void*)(next + diff);
+			} else if (arm64_kernel_phys_end <= next && next < arm64_early_alloc_phys_end) {
+				// phys_to_virt of early alloc area.
+				unsigned long early_alloc_phys_base = arm64_kernel_phys_end;
+				unsigned long offset = next - early_alloc_phys_base;
+				next_tt = (void*)(MAP_EARLY_ALLOC + offset);
 			} else {
-				next_tt = phys_to_virt(next);
+				kprintf("init normal area: leval=%d, next_phys=%p\n", level, next);
+				panic("unexpected physical memory area.");
 			}
 		}
 		setup(next_tt, start, base_end);
