@@ -1,4 +1,4 @@
-# Makefile.arch COPYRIGHT FUJITSU LIMITED 2015-2016
+# Makefile.arch COPYRIGHT FUJITSU LIMITED 2015-2017
 VDSO_SRCDIR = $(SRC)/../arch/$(IHKARCH)/kernel/vdso
 VDSO_SO_O = $(O)/vdso.so.o
 
@@ -10,6 +10,7 @@ IHK_OBJS += $(notdir $(VDSO_SO_O)) memory.o syscall.o vdso.o
 
 IHK_OBJS += irq-gic-v2.o irq-gic-v3.o
 IHK_OBJS += memcpy.o
+IHK_OBJS += cpufeature.o
 
 IHK_OBJS += xos_hwbdrv.o
 IHK_OBJS += xos_hpcdrv.o
