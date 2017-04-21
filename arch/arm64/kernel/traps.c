@@ -1,11 +1,13 @@
-/* traps.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
+/* traps.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
 #include <ihk/context.h>
 #include <ihk/debug.h>
+#include <traps.h>
 #include <ptrace.h>
 #include <signal.h>
 #include <cpulocal.h>
 #include <cls.h>
 #include <syscall.h>
+#include <list.h>
 
 extern void arch_show_interrupt_context(const void *reg);
 extern int interrupt_from_user(void *);
@@ -71,17 +73,80 @@ void do_fpsimd_exc(unsigned int esr, struct pt_regs *regs)
 	set_cputime(0);
 }
 
+/* @ref.impl arch/arm64/kernel/traps.c */
+static LIST_HEAD(undef_hook);
+
+/* @ref.impl arch/arm64/kernel/traps.c */
+static ihk_spinlock_t undef_lock = SPIN_LOCK_UNLOCKED;
+
+/* @ref.impl arch/arm64/kernel/traps.c */
+void register_undef_hook(struct undef_hook *hook)
+{
+	unsigned long flags;
+
+	flags = ihk_mc_spinlock_lock(&undef_lock);
+	list_add(&hook->node, &undef_hook);
+	ihk_mc_spinlock_unlock(&undef_lock, flags);
+}
+
+/* @ref.impl arch/arm64/kernel/traps.c */
+void unregister_undef_hook(struct undef_hook *hook)
+{
+	unsigned long flags;
+
+	flags = ihk_mc_spinlock_lock(&undef_lock);
+	list_del(&hook->node);
+	ihk_mc_spinlock_unlock(&undef_lock, flags);
+}
+
+/* @ref.impl arch/arm64/kernel/traps.c */
+static int call_undef_hook(struct pt_regs *regs)
+{
+	struct undef_hook *hook;
+	unsigned long flags;
+	uint32_t instr;
+	int (*fn)(struct pt_regs *regs, uint32_t instr) = NULL;
+	void *pc = (void*)instruction_pointer(regs);
+
+	if (!interrupt_from_user(regs))
+		return 1;
+
+	/* 32-bit ARM instruction */
+	if (copy_from_user(&instr, pc, sizeof(instr)))
+		goto exit;
+#ifdef __AARCH64EB__
+# error It is necessary to byte swap here. (e.g. instr = le32_to_cpu(instr);)
+#endif
+
+	flags = ihk_mc_spinlock_lock(&undef_lock);
+	list_for_each_entry(hook, &undef_hook, node)
+		if ((instr & hook->instr_mask) == hook->instr_val &&
+		    (regs->pstate & hook->pstate_mask) == hook->pstate_val)
+			fn = hook->fn;
+
+	ihk_mc_spinlock_unlock(&undef_lock, flags);
+exit:
+	return fn ? fn(regs, instr) : 1;
+}
+
+/* @ref.impl arch/arm64/kernel/traps.c */
 void do_undefinstr(struct pt_regs *regs)
 {
 	siginfo_t info;
 
 	set_cputime(interrupt_from_user(regs)? 1: 2);
+
+	if (call_undef_hook(regs) == 0) {
+		goto out;
+	}
+
 	info.si_signo = SIGILL;
 	info.si_errno = 0;
 	info.si_code  = ILL_ILLOPC;
 	info._sifields._sigfault.si_addr  = (void*)regs->pc;
 
 	arm64_notify_die("Oops - undefined instruction", regs, &info, 0);
+out:
 	set_cputime(0);
 }
 

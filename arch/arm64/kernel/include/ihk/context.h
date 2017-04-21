@@ -1,4 +1,4 @@
-/* context.h COPYRIGHT FUJITSU LIMITED 2015 */
+/* context.h COPYRIGHT FUJITSU LIMITED 2015-2017 */
 #ifndef __HEADER_ARM64_IHK_CONTEXT_H
 #define __HEADER_ARM64_IHK_CONTEXT_H
 
@@ -31,6 +31,27 @@ struct pt_regs {
 };
 
 typedef struct pt_regs ihk_mc_user_context_t;
+
+/* @ref.impl include/asm-generic/ptrace.h */
+/* Helpers for working with the instruction pointer */
+#ifndef GET_IP
+#define GET_IP(regs) ((regs)->pc)
+#endif
+#ifndef SET_IP
+#define SET_IP(regs, val) (GET_IP(regs) = (val))
+#endif
+
+/* @ref.impl include/asm-generic/ptrace.h */
+static inline unsigned long instruction_pointer(struct pt_regs *regs)
+{
+	return GET_IP(regs);
+}
+/* @ref.impl include/asm-generic/ptrace.h */
+static inline void instruction_pointer_set(struct pt_regs *regs,
+					   unsigned long val)
+{
+	SET_IP(regs, val);
+}
 
 /* temp */
 #define ihk_mc_syscall_arg0(uc) (uc)->regs[0]
