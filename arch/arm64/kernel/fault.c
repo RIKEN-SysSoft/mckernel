@@ -1,4 +1,4 @@
-/* fault.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
+/* fault.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
 
 #include <ihk/context.h>
 #include <ihk/debug.h>
@@ -165,6 +165,11 @@ static void do_bad_area(unsigned long addr, unsigned int esr, struct pt_regs *re
 	set_cputime(0);
 }
 
+static int is_el0_instruction_abort(unsigned int esr)
+{
+	return ESR_ELx_EC(esr) == ESR_ELx_EC_IABT_LOW;
+}
+
 static int do_page_fault(unsigned long addr, unsigned int esr,
 				   struct pt_regs *regs)
 {
@@ -176,9 +181,9 @@ static int do_page_fault(unsigned long addr, unsigned int esr,
 		reason |= PF_USER;
 	}
 
-	if (esr & ESR_LNX_EXEC) {
+	if (is_el0_instruction_abort(esr)) {
 		reason |= PF_INSTR;
-	} else if ((esr & ESR_EL1_WRITE) && !(esr & ESR_EL1_CM)) {
+	} else if ((esr & ESR_ELx_WNR) && !(esr & ESR_ELx_CM)) {
 		reason |= PF_WRITE;
 		if (13 <= esr_ec_dfsc && esr_ec_dfsc <= 15 ) {
 			/* level [1-3] permission fault */
