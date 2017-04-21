@@ -390,6 +390,7 @@ static void setup_processor(void)
 		kprintf("Advanced SIMD is not implemented\n");
 	}
 	cpuinfo_store_boot_cpu();
+	enable_mrs_emulation();
 }
 
 static char *trampoline_va, *first_page_va;

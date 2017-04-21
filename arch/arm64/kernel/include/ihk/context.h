@@ -53,6 +53,18 @@ static inline void instruction_pointer_set(struct pt_regs *regs,
 	SET_IP(regs, val);
 }
 
+/* @ref.impl arch/arm64/include/asm/ptrace.h */
+/*
+ * Write a register given an architectural register index r.
+ * This handles the common case where 31 means XZR, not SP.
+ */
+static inline void pt_regs_write_reg(struct pt_regs *regs, int r,
+				     unsigned long val)
+{
+	if (r != 31)
+		regs->regs[r] = val;
+}
+
 /* temp */
 #define ihk_mc_syscall_arg0(uc) (uc)->regs[0]
 #define ihk_mc_syscall_arg1(uc) (uc)->regs[1]

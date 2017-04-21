@@ -97,6 +97,12 @@ cpuid_feature_extract_unsigned_field(uint64_t features, int field)
 }
 
 /* @ref.impl arch/arm64/include/asm/cpufeature.h */
+static inline uint64_t arm64_ftr_reg_user_value(const struct arm64_ftr_reg *reg)
+{
+	return (reg->user_val | (reg->sys_val & reg->user_mask));
+}
+
+/* @ref.impl arch/arm64/include/asm/cpufeature.h */
 static inline int
 cpuid_feature_extract_field_width(uint64_t features, int field, int width, int sign)
 {
@@ -131,5 +137,6 @@ void update_cpu_features(int cpu,
 			 struct cpuinfo_arm64 *boot);
 uint64_t read_system_reg(uint32_t id);
 void init_cpu_features(struct cpuinfo_arm64 *info);
+int enable_mrs_emulation(void);
 
 #endif /* __ASM_CPUFEATURE_H */

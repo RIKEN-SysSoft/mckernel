@@ -2,6 +2,12 @@
 
 #include <cpufeature.h>
 #include <ihk/debug.h>
+#include <traps.h>
+#include <bitops.h>
+#include <cputype.h>
+#include <sysreg.h>
+#include <generic-errno.h>
+#include <ptrace.h>
 
 /* @ref.impl arch/arm64/kernel/cpufeature.c */
 #define __ARM64_FTR_BITS(SIGNED, VISIBLE, STRICT, TYPE, SHIFT, WIDTH, SAFE_VAL) \
@@ -623,3 +629,248 @@ uint64_t read_system_reg(uint32_t id)
 	return regp->sys_val;
 }
 
+/* @ref.impl arch/arm64/include/asm/insn.h */
+enum aarch64_insn_imm_type {
+	AARCH64_INSN_IMM_ADR,
+	AARCH64_INSN_IMM_26,
+	AARCH64_INSN_IMM_19,
+	AARCH64_INSN_IMM_16,
+	AARCH64_INSN_IMM_14,
+	AARCH64_INSN_IMM_12,
+	AARCH64_INSN_IMM_9,
+	AARCH64_INSN_IMM_7,
+	AARCH64_INSN_IMM_6,
+	AARCH64_INSN_IMM_S,
+	AARCH64_INSN_IMM_R,
+	AARCH64_INSN_IMM_MAX
+};
+
+/* @ref.impl arch/arm64/include/asm/insn.h */
+enum aarch64_insn_register_type {
+	AARCH64_INSN_REGTYPE_RT,
+	AARCH64_INSN_REGTYPE_RN,
+	AARCH64_INSN_REGTYPE_RT2,
+	AARCH64_INSN_REGTYPE_RM,
+	AARCH64_INSN_REGTYPE_RD,
+	AARCH64_INSN_REGTYPE_RA,
+};
+
+/* @ref.impl arch/arm64/kernel/insn.c */
+static int aarch64_get_imm_shift_mask(enum aarch64_insn_imm_type type,
+				      uint32_t *maskp, int *shiftp)
+{
+	uint32_t mask;
+	int shift;
+
+	switch (type) {
+	case AARCH64_INSN_IMM_26:
+		mask = BIT(26) - 1;
+		shift = 0;
+		break;
+	case AARCH64_INSN_IMM_19:
+		mask = BIT(19) - 1;
+		shift = 5;
+		break;
+	case AARCH64_INSN_IMM_16:
+		mask = BIT(16) - 1;
+		shift = 5;
+		break;
+	case AARCH64_INSN_IMM_14:
+		mask = BIT(14) - 1;
+		shift = 5;
+		break;
+	case AARCH64_INSN_IMM_12:
+		mask = BIT(12) - 1;
+		shift = 10;
+		break;
+	case AARCH64_INSN_IMM_9:
+		mask = BIT(9) - 1;
+		shift = 12;
+		break;
+	case AARCH64_INSN_IMM_7:
+		mask = BIT(7) - 1;
+		shift = 15;
+		break;
+	case AARCH64_INSN_IMM_6:
+	case AARCH64_INSN_IMM_S:
+		mask = BIT(6) - 1;
+		shift = 10;
+		break;
+	case AARCH64_INSN_IMM_R:
+		mask = BIT(6) - 1;
+		shift = 16;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	*maskp = mask;
+	*shiftp = shift;
+
+	return 0;
+}
+
+/* @ref.impl arch/arm64/kernel/insn.c */
+#define ADR_IMM_HILOSPLIT	2
+#define ADR_IMM_SIZE		(1UL << 21) //2MiB
+#define ADR_IMM_LOMASK		((1 << ADR_IMM_HILOSPLIT) - 1)
+#define ADR_IMM_HIMASK		((ADR_IMM_SIZE >> ADR_IMM_HILOSPLIT) - 1)
+#define ADR_IMM_LOSHIFT		29
+#define ADR_IMM_HISHIFT		5
+
+/* @ref.impl arch/arm64/kernel/insn.c */
+uint64_t aarch64_insn_decode_immediate(enum aarch64_insn_imm_type type, uint32_t insn)
+{
+	uint32_t immlo, immhi, mask;
+	int shift;
+
+	switch (type) {
+	case AARCH64_INSN_IMM_ADR:
+		shift = 0;
+		immlo = (insn >> ADR_IMM_LOSHIFT) & ADR_IMM_LOMASK;
+		immhi = (insn >> ADR_IMM_HISHIFT) & ADR_IMM_HIMASK;
+		insn = (immhi << ADR_IMM_HILOSPLIT) | immlo;
+		mask = ADR_IMM_SIZE - 1;
+		break;
+	default:
+		if (aarch64_get_imm_shift_mask(type, &mask, &shift) < 0) {
+			kprintf("aarch64_insn_decode_immediate: unknown immediate encoding %d\n",
+			       type);
+			return 0;
+		}
+	}
+
+	return (insn >> shift) & mask;
+}
+
+/* @ref.impl arch/arm64/kernel/insn.c */
+uint32_t aarch64_insn_decode_register(enum aarch64_insn_register_type type,
+				      uint32_t insn)
+{
+	int shift;
+
+	switch (type) {
+	case AARCH64_INSN_REGTYPE_RT:
+	case AARCH64_INSN_REGTYPE_RD:
+		shift = 0;
+		break;
+	case AARCH64_INSN_REGTYPE_RN:
+		shift = 5;
+		break;
+	case AARCH64_INSN_REGTYPE_RT2:
+	case AARCH64_INSN_REGTYPE_RA:
+		shift = 10;
+		break;
+	case AARCH64_INSN_REGTYPE_RM:
+		shift = 16;
+		break;
+	default:
+		kprintf("%s: unknown register type encoding %d\n", __func__,
+		       type);
+		return 0;
+	}
+
+	return (insn >> shift) & GENMASK(4, 0);
+}
+
+/* @ref.impl arch/arm64/kernel/cpufeature.c */
+/*
+ * With CRm == 0, reg should be one of :
+ * MIDR_EL1, MPIDR_EL1 or REVIDR_EL1.
+ */
+static inline int emulate_id_reg(uint32_t id, uint64_t *valp)
+{
+	switch (id) {
+	case SYS_MIDR_EL1:
+		*valp = read_cpuid_id();
+		break;
+	case SYS_MPIDR_EL1:
+		*valp = SYS_MPIDR_SAFE_VAL;
+		break;
+	case SYS_REVIDR_EL1:
+		/* IMPLEMENTATION DEFINED values are emulated with 0 */
+		*valp = 0;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+/* @ref.impl arch/arm64/kernel/cpufeature.c */
+/*
+ * We emulate only the following system register space.
+ * Op0 = 0x3, CRn = 0x0, Op1 = 0x0, CRm = [0, 4 - 7]
+ * See Table C5-6 System instruction encodings for System register accesses,
+ * ARMv8 ARM(ARM DDI 0487A.f) for more details.
+ */
+static inline int is_emulated(uint32_t id)
+{
+	return (sys_reg_Op0(id) == 0x3 &&
+		sys_reg_CRn(id) == 0x0 &&
+		sys_reg_Op1(id) == 0x0 &&
+		(sys_reg_CRm(id) == 0 ||
+		 ((sys_reg_CRm(id) >= 4) && (sys_reg_CRm(id) <= 7))));
+}
+
+/* @ref.impl arch/arm64/kernel/cpufeature.c */
+static int emulate_sys_reg(uint32_t id, uint64_t *valp)
+{
+	struct arm64_ftr_reg *regp;
+
+	if (!is_emulated(id))
+		return -EINVAL;
+
+	if (sys_reg_CRm(id) == 0)
+		return emulate_id_reg(id, valp);
+
+	regp = get_arm64_ftr_reg(id);
+	if (regp)
+		*valp = arm64_ftr_reg_user_value(regp);
+	else
+		/*
+		 * The untracked registers are either IMPLEMENTATION DEFINED
+		 * (e.g, ID_AFR0_EL1) or reserved RAZ.
+		 */
+		*valp = 0;
+	return 0;
+}
+
+/* @ref.impl arch/arm64/kernel/cpufeature.c */
+static int emulate_mrs(struct pt_regs *regs, uint32_t insn)
+{
+	int rc;
+	uint32_t sys_reg, dst;
+	uint64_t val;
+
+	/*
+	 * sys_reg values are defined as used in mrs/msr instruction.
+	 * shift the imm value to get the encoding.
+	 */
+	sys_reg = (uint32_t)aarch64_insn_decode_immediate(AARCH64_INSN_IMM_16, insn) << 5;
+	rc = emulate_sys_reg(sys_reg, &val);
+	if (!rc) {
+		dst = aarch64_insn_decode_register(AARCH64_INSN_REGTYPE_RT, insn);
+		pt_regs_write_reg(regs, dst, val);
+		regs->pc += 4;
+	}
+
+	return rc;
+}
+
+/* @ref.impl arch/arm64/kernel/cpufeature.c */
+static struct undef_hook mrs_hook = {
+	.instr_mask = 0xfff00000,
+	.instr_val  = 0xd5300000,
+	.pstate_mask = PSR_MODE_MASK,
+	.pstate_val = PSR_MODE_EL0t,
+	.fn = emulate_mrs,
+};
+
+/* @ref.impl arch/arm64/kernel/cpufeature.c */
+int enable_mrs_emulation(void)
+{
+	register_undef_hook(&mrs_hook);
+	return 0;
+}
