@@ -5,7 +5,7 @@
 #include <cls.h>
 
 extern int nmi_mode;
-extern mod_nmi_ctx(void *, void(*)());
+extern void mod_nmi_ctx(void *, void(*)());
 extern void lapic_ack();
 extern void __freeze();
 

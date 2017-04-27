@@ -1,8 +1,6 @@
 #ifndef __RUSAGE_H
 #define __RUSAGE_H
 
-#define ENABLE_RUSAGE
-
 #define RUSAGE_DEFAULT_SIZE 10
 
 enum RUSAGE_MEMBER {
