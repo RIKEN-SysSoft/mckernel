@@ -31,6 +31,7 @@
 #include <init.h>
 #include <kmalloc.h>
 #include <sysfs.h>
+#include <ihk/perfctr.h>
 
 //#define DEBUG_PRINT_HOST
 
@@ -488,6 +489,8 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	unsigned long pp;
 	int cpuid;
 	int ret = 0;
+	struct perf_ctrl_desc *pcd;
+	unsigned int mode = 0;
 
 	switch (packet->msg) {
 	case SCD_MSG_INIT_CHANNEL_ACKED:
@@ -594,6 +597,50 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		sysfss_packet_handler(c, packet->msg, packet->err,
 				packet->sysfs_arg1, packet->sysfs_arg2,
 				packet->sysfs_arg3);
+		ret = 0;
+		break;
+
+	case SCD_MSG_PERF_CTRL:
+		pp = ihk_mc_map_memory(NULL, packet->arg, sizeof(struct perf_ctrl_desc));
+		pcd = (struct perf_ctrl_desc *)ihk_mc_map_virtual(pp, 1, PTATTR_WRITABLE | PTATTR_ACTIVE);
+
+		switch (pcd->ctrl_type) {
+		case PERF_CTRL_SET:
+			if (!pcd->exclude_kernel) {
+				mode |= PERFCTR_KERNEL_MODE;
+			}
+			if (!pcd->exclude_user) {
+				mode |= PERFCTR_USER_MODE;
+			}
+			ihk_mc_perfctr_init_raw(pcd->target_cntr, pcd->config, mode);
+			ihk_mc_perfctr_stop(1 << pcd->target_cntr);
+			ihk_mc_perfctr_reset(pcd->target_cntr);
+			break;
+
+		case PERF_CTRL_ENABLE:
+			ihk_mc_perfctr_start(pcd->target_cntr_mask);
+			break;
+			
+		case PERF_CTRL_DISABLE:
+			ihk_mc_perfctr_stop(pcd->target_cntr_mask);
+			break;
+
+		case PERF_CTRL_GET:
+			pcd->read_value = ihk_mc_perfctr_read(pcd->target_cntr);
+			break;
+			
+		default:
+			kprintf("%s: SCD_MSG_PERF_CTRL unexpected ctrl_type\n", __FUNCTION__);
+		}
+
+		ihk_mc_unmap_virtual(pcd, 1, 0);
+		ihk_mc_unmap_memory(NULL, pp, sizeof(struct perf_ctrl_desc));
+
+		pckt.msg = SCD_MSG_PERF_ACK;
+		pckt.err = 0;
+		pckt.arg = packet->arg;
+		ihk_ikc_send(c, &pckt, 0);
+
 		ret = 0;
 		break;
 

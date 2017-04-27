@@ -92,6 +92,9 @@
 #define SCD_MSG_PROCFS_TID_CREATE	0x44
 #define SCD_MSG_PROCFS_TID_DELETE	0x45
 
+#define SCD_MSG_PERF_CTRL               0x50
+#define SCD_MSG_PERF_ACK                0x51
+
 #define DMA_PIN_SHIFT                   21
 
 #define DO_USER_MODE
@@ -299,6 +302,7 @@ struct mcctrl_usrdata {
 	struct list_head cpu_topology_list;
 	struct list_head node_topology_list;
 	struct mcctrl_part_exec part_exec;
+	int perf_event_num;
 };
 
 struct mcctrl_signal {
@@ -400,6 +404,16 @@ struct get_cpu_mapping_req {
 
 	/* work for mcctrl */
 	wait_queue_head_t wq;
+};
+
+struct ihk_perf_event_attr{
+	unsigned long config; 
+	unsigned disabled:1;
+	unsigned pinned:1;
+	unsigned exclude_user:1;
+	unsigned exclude_kernel:1;
+	unsigned exclude_hv:1;
+	unsigned exclude_idle:1;
 };
 
 #endif

@@ -75,6 +75,9 @@
 #define SCD_MSG_PROCFS_TID_DELETE	0x45
 #define SCD_MSG_EVENT_SIGNAL		0x46
 
+#define SCD_MSG_PERF_CTRL               0x50
+#define SCD_MSG_PERF_ACK                0x51
+
 /* Cloning flags.  */
 # define CSIGNAL       0x000000ff /* Signal mask to be sent at exit.  */
 # define CLONE_VM      0x00000100 /* Set if VM shared between processes.  */
@@ -445,4 +448,34 @@ struct get_cpu_mapping_req {
 #endif
 };
 
+enum perf_ctrl_type {
+	PERF_CTRL_SET,
+	PERF_CTRL_GET,
+	PERF_CTRL_ENABLE,
+	PERF_CTRL_DISABLE,
+};
+
+struct perf_ctrl_desc {
+	enum perf_ctrl_type ctrl_type;
+	int status;
+	union {
+		/* for SET, GET */
+		struct {
+			unsigned int target_cntr;
+			unsigned long config;
+			unsigned long read_value;
+			unsigned disabled        :1,
+			         pinned          :1,
+			         exclude_user    :1,
+			         exclude_kernel  :1,
+			         exclude_hv      :1,
+			         exclude_idle    :1;
+		};
+
+		/* for START, STOP*/
+		struct {
+			unsigned long target_cntr_mask;
+		};
+	};
+};
 #endif

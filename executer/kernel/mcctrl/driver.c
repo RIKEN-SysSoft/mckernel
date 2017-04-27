@@ -27,6 +27,7 @@
 #include <linux/slab.h>
 #include <linux/device.h>
 #include "mcctrl.h"
+#include <ihk/ihk_host_user.h>
 
 #define OS_MAX_MINOR 64
 
@@ -74,6 +75,12 @@ static struct ihk_os_user_call_handler mcctrl_uchs[] = {
 	{ .request = MCEXEC_UP_SYS_UMOUNT, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_SYS_UNSHARE, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_DEBUG_LOG, .func = mcctrl_ioctl },
+	{ .request = IHK_OS_AUX_PERF_NUM, .func = mcctrl_ioctl },
+	{ .request = IHK_OS_AUX_PERF_SET, .func = mcctrl_ioctl },
+	{ .request = IHK_OS_AUX_PERF_GET, .func = mcctrl_ioctl },
+	{ .request = IHK_OS_AUX_PERF_ENABLE, .func = mcctrl_ioctl },
+	{ .request = IHK_OS_AUX_PERF_DISABLE, .func = mcctrl_ioctl },
+	{ .request = IHK_OS_AUX_PERF_DESTROY, .func = mcctrl_ioctl },
 };
 
 static struct ihk_os_user_call mcctrl_uc_proto = {

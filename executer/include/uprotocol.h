@@ -220,4 +220,34 @@ struct sys_unshare_desc {
 	unsigned long unshare_flags;
 };
 
+enum perf_ctrl_type {
+	PERF_CTRL_SET,
+	PERF_CTRL_GET,
+	PERF_CTRL_ENABLE,
+	PERF_CTRL_DISABLE,
+};
+
+struct perf_ctrl_desc {
+	enum perf_ctrl_type ctrl_type;
+	int status;
+	union {
+		/* for SET, GET */
+		struct {
+			unsigned int target_cntr;
+			unsigned long config;
+			unsigned long read_value;
+			unsigned disabled        :1,
+			         pinned          :1,
+			         exclude_user    :1,
+			         exclude_kernel  :1,
+			         exclude_hv      :1,
+			         exclude_idle    :1;
+		};
+
+		/* for START, STOP*/
+		struct {
+			unsigned long target_cntr_mask;
+		};
+	};
+};
 #endif
