@@ -130,11 +130,40 @@ general_protection_exception:
 		addq	$8, %rsp
 		iretq
 
+.global __freeze
+__freeze:
+		PUSH_ALL_REGS
+		callq	freeze
+		POP_ALL_REGS
+		iretq
+
 .globl nmi
 nmi:
 #define PANICED 232
 #define PANIC_REGS 240
 		movq	%rax,%gs:PANIC_REGS+0x00
+		movq	%rsp,%gs:PANIC_REGS+0x08
+
+		movl	nmi_mode(%rip),%eax
+		cmp	$1,%rax
+		je	1f
+		cmp	$2,%rax
+		jne	3f
+1:
+		cld
+		movq	%gs:PANIC_REGS+0x00,%rax
+		PUSH_ALL_REGS
+		subq	$40, %rsp
+		movq	%rsp,%gs:PANIC_REGS+0x10
+		movq	%rsp, %rdi
+		call	freeze_thaw
+		cmpq	$0, %rax
+		jnz	2f
+		addq	$40, %rsp
+2:
+		POP_ALL_REGS
+		iretq
+3:
 		movq	%rbx,%gs:PANIC_REGS+0x08
 		movq	%rcx,%gs:PANIC_REGS+0x10
 		movq	%rdx,%gs:PANIC_REGS+0x18

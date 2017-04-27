@@ -629,6 +629,7 @@ DCFA_VERSION
 MCKERNEL_VERSION
 IHK_VERSION
 ENABLE_MCOVERLAYFS
+ENABLE_RUSAGE
 MANDIR
 KERNDIR
 KMODDIR
@@ -698,6 +699,7 @@ enable_dcfa
 enable_memdump
 enable_mcoverlayfs
 with_uname_r
+enable_rusage
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1320,6 +1322,7 @@ Optional Features:
   --enable-dcfa           Enable DCFA modules
   --enable-memdump        enable dumping memory and analyzing a dump
   --enable-mcoverlayfs    enable mcoverlayfs implementation
+  --enable-rusage         enable rusage implementation
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -2115,6 +2118,12 @@ else
   ENABLE_MCOVERLAYFS=yes
 fi
 
+# Check whether --enable-rusage was given.
+if test "${enable_rusage+set}" = set; then :
+  enableval=$enable_rusage; ENABLE_RUSAGE=$enableval
+else
+  ENABLE_RUSAGE=no
+fi
 
 
 # Check whether --with-uname_r was given.
@@ -3915,6 +3924,16 @@ $as_echo "$as_me: mcoverlayfs is disabled" >&6;}
 fi
 
 
+if test "x$ENABLE_RUSAGE" = "xyes" ; then
+
+$as_echo "#define ENABLE_RUSAGE 1" >>confdefs.h
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: rusage is enabled" >&5
+$as_echo "$as_me: rusage is enabled" >&6;}
+else
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: rusage is disabled" >&5
+$as_echo "$as_me: rusage is disabled" >&6;}
+fi
 
 
 
@@ -5138,6 +5157,9 @@ _ACEOF
 # Neutralize VPATH when `$srcdir' = `.'.
 # Shell code in configure.ac might set extrasub.
 # FIXME: do we really want to maintain this feature?
+cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
+ENABLE_RUSAGE=$ENABLE_RUSAGE
+_ACEOF
 cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
 ac_sed_extra="$ac_vpsub
 $extrasub

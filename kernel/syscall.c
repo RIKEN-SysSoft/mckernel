@@ -55,6 +55,7 @@
 #include <bitops.h>
 #include <bitmap.h>
 #include <xpmem.h>
+#include <rusage.h>
 
 /* Headers taken from kitten LWK */
 #include <lwk/stddef.h>
@@ -389,6 +390,9 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	long rc;
 	struct thread *thread = cpu_local_var(current);
 	struct process *proc = thread->proc;
+	struct ihk_os_monitor *monitor = cpu_local_var(monitor);
+	int mstatus = 0;
+
 #ifdef TRACK_SYSCALLS
 	uint64_t t_s;
 	t_s = rdtsc();
@@ -397,6 +401,9 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	dkprintf("SC(%d)[%3d] sending syscall\n",
 		ihk_mc_get_processor_id(),
 		req->number);
+	
+	mstatus = monitor->status;
+	monitor->status = IHK_OS_MONITOR_KERNEL_OFFLOAD;
 	
 	barrier();
 
@@ -520,6 +527,8 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	}
 #endif // TRACK_SYSCALLS
 
+	monitor->status = mstatus;
+	monitor->counter++;
 	return rc;
 }
 
@@ -957,6 +966,7 @@ terminate(int rc, int sig)
 	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 
 	vm = proc->vm;
+	free_all_process_memory_range(vm);
 
 	if (proc->saved_cmdline) {
 		kfree(proc->saved_cmdline);
@@ -1098,6 +1108,18 @@ terminate_host(int pid)
 	proc->nohost = 1;
 	process_unlock(proc, &lock);
 	do_kill(cpu_local_var(current), pid, -1, SIGKILL, NULL, 0);
+}
+
+void 
+event_signal()
+{
+	struct ihk_ikc_channel_desc *syscall_channel;
+	struct ikc_scd_packet pckt;
+
+	syscall_channel = get_cpu_local_var(0)->syscall_channel2;
+	memset(&pckt, '\0', sizeof pckt);
+	pckt.msg = SCD_MSG_EVENT_SIGNAL;
+	ihk_ikc_send(syscall_channel, &pckt, 0);
 }
 
 void
@@ -2405,11 +2427,13 @@ SYSCALL_DECLARE(set_tid_address)
 	return cpu_local_var(current)->proc->pid;
 }
 
+/*
 static unsigned long
 timespec_to_jiffy(const struct timespec *ats)
 {
 	return ats->tv_sec * 100 + ats->tv_nsec / 10000000;
 }
+*/
 
 SYSCALL_DECLARE(times)
 {
@@ -2425,8 +2449,10 @@ SYSCALL_DECLARE(times)
 	struct process *proc = thread->proc;
 	struct timespec ats;
 
-	mytms.tms_utime = timespec_to_jiffy(&thread->utime);
-	mytms.tms_stime = timespec_to_jiffy(&thread->stime);
+	tsc_to_ts(thread->user_tsc, &ats);
+	mytms.tms_utime = timespec_to_jiffy(&ats);
+	tsc_to_ts(thread->system_tsc, &ats);
+	mytms.tms_stime = timespec_to_jiffy(&ats);
 	ats.tv_sec = proc->utime.tv_sec;
 	ats.tv_nsec = proc->utime.tv_nsec;
 	ts_add(&ats, &proc->utime_children);
@@ -3533,6 +3559,9 @@ SYSCALL_DECLARE(rt_sigtimedwait)
 	int sig;
         struct timespec ats;
         struct timespec ets;
+	struct ihk_os_monitor *monitor = cpu_local_var(monitor);
+
+	monitor->status = IHK_OS_MONITOR_KERNEL_HEAVY;
 
 	if (sigsetsize > sizeof(sigset_t))
 		return -EINVAL;
@@ -3688,6 +3717,9 @@ do_sigsuspend(struct thread *thread, const sigset_t *set)
 	struct list_head *head;
 	mcs_rwlock_lock_t *lock;
 	struct mcs_rwlock_node_irqsave mcs_rw_node;
+	struct ihk_os_monitor *monitor = cpu_local_var(monitor);
+
+	monitor->status = IHK_OS_MONITOR_KERNEL_HEAVY;
 
 	wset = set->__val[0];
 	wset &= ~__sigmask(SIGKILL);
@@ -4796,7 +4828,10 @@ SYSCALL_DECLARE(futex)
 	uint32_t *uaddr2 = (uint32_t *)ihk_mc_syscall_arg4(ctx);
 	uint32_t val3 = (uint32_t)ihk_mc_syscall_arg5(ctx);
 	int flags = op;
-    
+   	struct ihk_os_monitor *monitor = cpu_local_var(monitor);
+
+	monitor->status = IHK_OS_MONITOR_KERNEL_HEAVY;
+ 
 	/* Cross-address space futex? */
 	if (op & FUTEX_PRIVATE_FLAG) {
 		fshared = 0;
@@ -4907,6 +4942,9 @@ SYSCALL_DECLARE(exit)
 
 	if(nproc == 1){ // process has only one thread
 		terminate(exit_status, 0);
+#ifdef ENABLE_RUSAGE
+		rusage_num_threads--;
+#endif
 		return 0;
 	}
 
@@ -4933,6 +4971,9 @@ SYSCALL_DECLARE(exit)
 	if(proc->status == PS_EXITED){
 		mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 		terminate(exit_status, 0);
+#ifdef ENABLE_RUSAGE
+	rusage_num_threads--;
+#endif
 		return 0;
 	}
 	thread->status = PS_EXITED;
@@ -4941,6 +4982,9 @@ SYSCALL_DECLARE(exit)
 	release_thread(thread);
 
 	schedule();
+#ifdef ENABLE_RUSAGE
+	rusage_num_threads--;
+#endif
 
 	return 0;
 }
@@ -5065,6 +5109,7 @@ SYSCALL_DECLARE(getrusage)
 	struct timespec utime;
 	struct timespec stime;
 	struct mcs_rwlock_node lock;
+	struct timespec ats;
 
 	if(who != RUSAGE_SELF &&
 	   who != RUSAGE_CHILDREN &&
@@ -5096,8 +5141,10 @@ SYSCALL_DECLARE(getrusage)
 		list_for_each_entry(child, &proc->threads_list, siblings_list){
 			while(!child->times_update)
 				cpu_pause();
-			ts_add(&utime, &child->utime);
-			ts_add(&stime, &child->stime);
+				tsc_to_ts(child->user_tsc, &ats);
+				ts_add(&utime, &ats);
+				tsc_to_ts(child->system_tsc, &ats);
+				ts_add(&stime, &ats);
 		}
 		mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &lock);
 		ts_to_tv(&kusage.ru_utime, &utime);
@@ -5106,14 +5153,18 @@ SYSCALL_DECLARE(getrusage)
 		kusage.ru_maxrss = proc->maxrss / 1024;
 	}
 	else if(who == RUSAGE_CHILDREN){
-		ts_to_tv(&kusage.ru_utime, &proc->utime_children);
-		ts_to_tv(&kusage.ru_stime, &proc->stime_children);
+		tsc_to_ts(thread->user_tsc, &ats);
+		ts_to_tv(&kusage.ru_utime, &ats);
+		tsc_to_ts(thread->system_tsc, &ats);
+		ts_to_tv(&kusage.ru_stime, &ats);
 
 		kusage.ru_maxrss = proc->maxrss_children / 1024;
 	}
 	else if(who == RUSAGE_THREAD){
-		ts_to_tv(&kusage.ru_utime, &thread->utime);
-		ts_to_tv(&kusage.ru_stime, &thread->stime);
+		tsc_to_ts(thread->user_tsc, &ats);
+		ts_to_tv(&kusage.ru_utime, &ats);
+		tsc_to_ts(thread->system_tsc, &ats);
+		ts_to_tv(&kusage.ru_stime, &ats);
 
 		kusage.ru_maxrss = proc->maxrss / 1024;
 	}
@@ -6449,10 +6500,11 @@ SYSCALL_DECLARE(clock_gettime)
 		ats.tv_nsec = proc->utime.tv_nsec;
 		ts_add(&ats, &proc->stime);
 		list_for_each_entry(child, &proc->threads_list, siblings_list){
+			struct timespec wts;
 			while(!child->times_update)
 				cpu_pause();
-			ts_add(&ats, &child->utime);
-			ts_add(&ats, &child->stime);
+				tsc_to_ts(child->user_tsc + child->system_tsc, &wts);
+				ts_add(&ats, &wts);	
 		}
 		mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &lock);
 		return copy_to_user(ts, &ats, sizeof ats);
@@ -6460,9 +6512,7 @@ SYSCALL_DECLARE(clock_gettime)
 	else if(clock_id == CLOCK_THREAD_CPUTIME_ID){
 		struct thread *thread = cpu_local_var(current);
 
-		ats.tv_sec = thread->utime.tv_sec;
-		ats.tv_nsec = thread->utime.tv_nsec;
-		ts_add(&ats, &thread->stime);
+		tsc_to_ts(thread->user_tsc + thread->system_tsc, &ats);
 		return copy_to_user(ts, &ats, sizeof ats);
 	}
 
@@ -6565,6 +6615,9 @@ SYSCALL_DECLARE(nanosleep)
 	struct timespec *tv = (struct timespec *)ihk_mc_syscall_arg0(ctx);
 	struct timespec *rem = (struct timespec *)ihk_mc_syscall_arg1(ctx);
 	struct syscall_request request IHK_DMA_ALIGN;
+	struct ihk_os_monitor *monitor = cpu_local_var(monitor);
+
+	monitor->status = IHK_OS_MONITOR_KERNEL_HEAVY;
 
 	/* Do it locally if supported */
 	if (gettime_local_support) {
@@ -8479,8 +8532,7 @@ reset_cputime()
 	if(!(thread = cpu_local_var(current)))
 		return;
 
-	thread->btime.tv_sec = 0;
-	thread->btime.tv_nsec = 0;
+	thread->base_tsc = 0;
 }
 
 /**
@@ -8492,8 +8544,9 @@ void
 set_cputime(int mode)
 {
 	struct thread *thread;
-	struct timespec ats;
+	unsigned long tsc;	
 	struct cpu_local_var *v;
+	struct ihk_os_monitor *monitor;
 
 	if(clv == NULL)
 		return;
@@ -8501,38 +8554,48 @@ set_cputime(int mode)
 	v = get_this_cpu_local_var();
 	if(!(thread = v->current))
 		return;
+	if(thread == &v->idle)
+		return;
+	monitor = v->monitor;
+	if(mode == 0){
+		monitor->status = IHK_OS_MONITOR_USER;
+	}
+	else if(mode == 1){
+		monitor->counter++;
+		monitor->status = IHK_OS_MONITOR_KERNEL;
+	}
 
 	if(!gettime_local_support){
 		thread->times_update = 1;
 		return;
 	}
 
-	calculate_time_from_tsc(&ats);
-	if(thread->btime.tv_sec != 0 && thread->btime.tv_nsec != 0){
+	tsc = rdtsc();
+	if(thread->base_tsc != 0){
+		unsigned long dtsc = tsc - thread->base_tsc;
 		struct timespec dts;
 
-		dts.tv_sec = ats.tv_sec;
-		dts.tv_nsec = ats.tv_nsec;
-		ts_sub(&dts, &thread->btime);
+		tsc_to_ts(dtsc, &dts);
 		if(mode == 1){
-			ts_add(&thread->utime, &dts);
+			thread->user_tsc += dtsc;
+			monitor->user_tsc += dtsc;
 			ts_add(&thread->itimer_virtual_value, &dts);
 			ts_add(&thread->itimer_prof_value, &dts);
 		}
 		else{
-			ts_add(&thread->stime, &dts);
+			thread->system_tsc += dtsc;
+			monitor->system_tsc += dtsc;
 			ts_add(&thread->itimer_prof_value, &dts);
 		}
 	}
 
 	if(mode == 2){
-		thread->btime.tv_sec = 0;
-		thread->btime.tv_nsec = 0;
+		thread->base_tsc = 0;	
 	}
 	else{
-		thread->btime.tv_sec = ats.tv_sec;
-		thread->btime.tv_nsec = ats.tv_nsec;
+		thread->base_tsc = tsc;
 	}
+
 	thread->times_update = 1;
 	thread->in_kernel = mode;
 

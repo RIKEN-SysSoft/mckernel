@@ -23,8 +23,8 @@
 #include <ihk/debug.h>
 #include <ihk/ikc.h>
 #include <ikc/master.h>
-#include <syscall.h>
 #include <cls.h>
+#include <syscall.h>
 #include <process.h>
 #include <page.h>
 #include <mman.h>

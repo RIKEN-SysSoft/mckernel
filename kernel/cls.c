@@ -24,16 +24,22 @@ extern int num_processors;
 
 struct cpu_local_var *clv;
 int cpu_local_var_initialized = 0;
+extern struct ihk_os_monitor *monitor;
 
 void cpu_local_var_init(void)
 {
 	int z;
+	int i;
 
 	z = sizeof(struct cpu_local_var) * num_processors;
 	z = (z + PAGE_SIZE - 1) >> PAGE_SHIFT;
 
 	clv = ihk_mc_alloc_pages(z, IHK_MC_AP_CRITICAL);
 	memset(clv, 0, z * PAGE_SIZE);
+
+	for(i = 0; i < num_processors; i++)
+		clv[i].monitor = monitor + i;
+
 	cpu_local_var_initialized = 1;
 }
 

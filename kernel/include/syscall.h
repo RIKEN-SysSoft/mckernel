@@ -73,6 +73,7 @@
 /* #define SCD_MSG_SYSFS_RESP_CLEANUP   0x43 */
 #define SCD_MSG_PROCFS_TID_CREATE	0x44
 #define SCD_MSG_PROCFS_TID_DELETE	0x45
+#define SCD_MSG_EVENT_SIGNAL		0x46
 
 /* Cloning flags.  */
 # define CSIGNAL       0x000000ff /* Signal mask to be sent at exit.  */
@@ -373,6 +374,29 @@ struct tod_data_s {
 	struct timespec origin;		/* realtime when tsc=0 */
 };
 extern struct tod_data_s tod_data;	/* residing in arch-dependent file */
+
+static inline void tsc_to_ts(unsigned long tsc, struct timespec *ts)
+{
+	time_t sec_delta;
+	long ns_delta;
+
+	sec_delta = tsc / tod_data.clocks_per_sec;
+	ns_delta = NS_PER_SEC * (tsc % tod_data.clocks_per_sec)
+	           / tod_data.clocks_per_sec;
+	/* calc. of ns_delta overflows if clocks_per_sec exceeds 18.44 GHz */
+
+	ts->tv_sec = sec_delta;
+	ts->tv_nsec = ns_delta;
+	if (ts->tv_nsec >= NS_PER_SEC) {
+		ts->tv_nsec -= NS_PER_SEC;
+		++ts->tv_sec;
+	}
+}
+
+static inline unsigned long timespec_to_jiffy(const struct timespec *ats)
+{
+	return ats->tv_sec * 100 + ats->tv_nsec / 10000000;
+}
 
 void reset_cputime();
 void set_cputime(int mode);
