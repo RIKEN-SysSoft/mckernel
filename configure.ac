@@ -17,6 +17,13 @@ DCFA_RELEASE_DATE=DCFA_RELEASE_DATE_m4
 
 AC_PREFIX_DEFAULT([/opt/ppos])
 
+AC_CHECK_HEADER([numa.h],[numa_header_found=yes])
+AS_IF([test "x$numa_header_found" != "xyes"],
+	[AC_MSG_ERROR([Unable to find numa.h header file, missing numactl-devel?])])
+AC_CHECK_LIB([numa],[numa_run_on_node],[numa_lib_found=yes])
+AS_IF([test "x$numa_lib_found" != "xyes"],
+	[AC_MSG_ERROR([Unable to find NUMA library, missing numactl-devel?])])
+
 AC_ARG_WITH([kernelsrc],
   AC_HELP_STRING(
     [--with-kernelsrc=path],[Path to 'kernel src', default is /lib/modules/uname_r/build]),
