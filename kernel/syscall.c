@@ -1109,7 +1109,7 @@ event_signal()
 	struct ihk_ikc_channel_desc *syscall_channel;
 	struct ikc_scd_packet pckt;
 
-	syscall_channel = get_cpu_local_var(0)->syscall_channel2;
+	syscall_channel = get_cpu_local_var(0)->ikc2linux;
 	memset(&pckt, '\0', sizeof pckt);
 	pckt.msg = SCD_MSG_EVENT_SIGNAL;
 	ihk_ikc_send(syscall_channel, &pckt, 0);
