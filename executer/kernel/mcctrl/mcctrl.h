@@ -44,6 +44,7 @@
 #include <linux/rwlock.h>
 #include <linux/threads.h>
 #include "sysfs.h"
+#include "mcctrl_public.h"
 
 #define SCD_MSG_PREPARE_PROCESS         0x1
 #define SCD_MSG_PREPARE_PROCESS_ACKED   0x2
@@ -95,6 +96,9 @@
 #define SCD_MSG_PERF_CTRL               0x50
 #define SCD_MSG_PERF_ACK                0x51
 
+#define SCD_MSG_CPU_RW_REG              0x52
+#define SCD_MSG_CPU_RW_REG_RESP         0x53
+
 #define DMA_PIN_SHIFT                   21
 
 #define DO_USER_MODE
@@ -104,6 +108,12 @@
 struct coretable {
 	int len;
 	unsigned long addr;
+};
+
+enum mcctrl_os_cpu_operation {
+	MCCTRL_OS_CPU_READ_REGISTER,
+	MCCTRL_OS_CPU_WRITE_REGISTER,
+	MCCTRL_OS_CPU_MAX_OP
 };
 
 struct ikc_scd_packet {
@@ -130,6 +140,13 @@ struct ikc_scd_packet {
 		/* SCD_MSG_SCHEDULE_THREAD */
 		struct {
 			int ttid;
+		};
+
+		/* SCD_MSG_CPU_RW_REG */
+		struct {
+			struct mcctrl_os_cpu_register desc;
+			enum mcctrl_os_cpu_operation op;
+			void *resp;
 		};
 	};
 	char padding[12];

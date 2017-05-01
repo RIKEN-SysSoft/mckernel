@@ -54,6 +54,8 @@ static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ih
 int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet);
 void sig_done(unsigned long arg, int err);
 void mcctrl_perf_ack(ihk_os_t os, struct ikc_scd_packet *packet);
+void mcctrl_os_read_write_cpu_response(ihk_os_t os,
+		struct ikc_scd_packet *pisp);
 
 /* XXX: this runs in atomic context! */
 static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
@@ -113,6 +115,11 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	case SCD_MSG_PERF_ACK:
 		mcctrl_perf_ack(__os, pisp);
 		break;
+
+	case SCD_MSG_CPU_RW_REG_RESP:
+		mcctrl_os_read_write_cpu_response(__os, pisp);
+		break;
+
 	default:
 		printk(KERN_ERR "mcctrl:syscall_packet_handler:"
 				"unknown message (%d.%d.%d.%d.%d.%#lx)\n",

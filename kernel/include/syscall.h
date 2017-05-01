@@ -78,6 +78,9 @@
 #define SCD_MSG_PERF_CTRL               0x50
 #define SCD_MSG_PERF_ACK                0x51
 
+#define SCD_MSG_CPU_RW_REG              0x52
+#define SCD_MSG_CPU_RW_REG_RESP         0x53
+
 /* Cloning flags.  */
 # define CSIGNAL       0x000000ff /* Signal mask to be sent at exit.  */
 # define CLONE_VM      0x00000100 /* Set if VM shared between processes.  */
@@ -210,6 +213,18 @@ struct syscall_request {
 	unsigned long args[6];
 };
 
+struct mcctrl_os_cpu_register {
+	unsigned long addr;
+	unsigned long val;
+	unsigned long addr_ext;
+};
+
+enum mcctrl_os_cpu_operation {
+	MCCTRL_OS_CPU_READ_REGISTER,
+	MCCTRL_OS_CPU_WRITE_REGISTER,
+	MCCTRL_OS_CPU_MAX_OP
+};
+
 struct ikc_scd_packet {
 	int msg;
 	int err;
@@ -234,6 +249,13 @@ struct ikc_scd_packet {
 		/* SCD_MSG_SCHEDULE_THREAD */
 		struct {
 			int ttid;
+		};
+
+		/* SCD_MSG_CPU_RW_REG */
+		struct {
+			struct mcctrl_os_cpu_register desc;
+			enum mcctrl_os_cpu_operation op;
+			void *resp;
 		};
 	};
 	char padding[12];
@@ -412,6 +434,8 @@ int do_shmget(key_t key, size_t size, int shmflg);
 struct process_vm;
 int arch_map_vdso(struct process_vm *vm);	/* arch dependent */
 int arch_setup_vdso(void);
+int arch_cpu_read_write_register(struct mcctrl_os_cpu_register *desc,
+		enum mcctrl_os_cpu_operation op);
 
 #define VDSO_MAXPAGES 2
 struct vdso {

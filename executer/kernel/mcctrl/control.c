@@ -40,6 +40,7 @@
 #include <asm/io.h>
 #include "../../config.h"
 #include "mcctrl.h"
+#include "mcctrl_public.h"
 #include <ihk/ihk_host_user.h>
 
 //#define DEBUG
@@ -1936,4 +1937,150 @@ void mcexec_prepare_ack(ihk_os_t os, unsigned long arg, int err)
 	wake_up_all(&ppd->wq_prepare);
 	mcctrl_put_per_proc_data(ppd);
 }
+
+/* Per-CPU register manipulation functions */
+struct mcctrl_os_cpu_response {
+	int done;
+	unsigned long val;
+	wait_queue_head_t wq;
+};
+
+int mcctrl_get_request_os_cpu(ihk_os_t *ret_os, int *ret_cpu)
+{
+	ihk_os_t os;
+	struct mcctrl_usrdata *usrdata;
+	struct mcctrl_per_proc_data *ppd;
+	struct ikc_scd_packet *packet;
+	struct ihk_ikc_channel_desc *ch;
+	int ret = 0;
+
+	/* Look up IHK OS structure
+	 * TODO: iterate all possible indeces, currently only for OS 0
+	 */
+	os = ihk_host_find_os(0, NULL);
+	if (!os) {
+		printk("%s: ERROR: no OS found for index 0\n", __FUNCTION__);
+		return -EINVAL;
+	}
+
+	/* Look up per-OS mcctrl structure */
+	usrdata = ihk_host_os_get_usrdata(os);
+	if (!usrdata) {
+		printk("%s: ERROR: no usrdata found for OS %p\n", __FUNCTION__, os);
+		return -EINVAL;
+	}
+
+	/* Look up per-process structure */
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+	if (!ppd) {
+		kprintf("%s: ERROR: no per-process structure for PID %d??\n",
+				__FUNCTION__, task_tgid_vnr(current));
+		return -EINVAL;
+	}
+
+	/* Look up per-thread structure */
+	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
+	if (!packet) {
+		ret = -EINVAL;
+		printk("%s: ERROR: no packet registered for TID %d\n",
+				__FUNCTION__, task_pid_vnr(current));
+		goto out_put_ppd;
+	}
+
+	*ret_os = os;
+	/* TODO: define a new IHK query function instead of
+	 * accessing internals directly */
+	ch = (usrdata->channels + packet->ref)->c;
+	*ret_cpu = ch->send.queue->read_cpu;
+	ret = 0;
+
+	printk("%s: OS: %p, CPU: %d\n", __FUNCTION__, os, *ret_cpu);
+
+out_put_ppd:
+	mcctrl_put_per_proc_data(ppd);
+
+	return ret;
+}
+
+EXPORT_SYMBOL(mcctrl_get_request_os_cpu);
+
+void mcctrl_os_read_write_cpu_response(ihk_os_t os,
+		struct ikc_scd_packet *pisp)
+{
+	struct mcctrl_os_cpu_response *resp;
+
+	/* XXX: What if caller thread is unblocked by a signal
+	 * before this message arrives? */
+	resp = pisp->resp;
+	if (!resp) {
+		return;
+	}
+
+	resp->val = pisp->desc.val;
+	resp->done = 1;
+	wake_up_interruptible(&resp->wq);
+}
+
+int __mcctrl_os_read_write_cpu_register(ihk_os_t os, int cpu,
+		struct mcctrl_os_cpu_register *desc,
+		enum mcctrl_os_cpu_operation op)
+{
+	struct ikc_scd_packet isp;
+	struct mcctrl_os_cpu_response resp;
+	int ret = -EINVAL;
+
+	memset(&isp, '\0', sizeof(struct ikc_scd_packet));
+	isp.msg = SCD_MSG_CPU_RW_REG;
+	isp.op = op;
+	isp.desc = *desc;
+	isp.resp = &resp;
+
+	resp.done = 0;
+	init_waitqueue_head(&resp.wq);
+
+	mb();
+	ret = mcctrl_ikc_send(os, cpu, &isp);
+	if (ret < 0) {
+		printk("%s: ERROR sending IKC msg: %d\n", __FUNCTION__, ret);
+		goto out;
+	}
+
+	/* Wait for response */
+	ret = wait_event_interruptible(resp.wq, resp.done);
+	if (ret < 0) {
+		printk("%s: ERROR after wait: %d\n", __FUNCTION__, ret);
+		goto out;
+	}
+
+	/* Update if read */
+	if (ret == 0 && op == MCCTRL_OS_CPU_READ_REGISTER) {
+		desc->val = resp.val;
+	}
+
+	printk("%s: MCCTRL_OS_CPU_%s_REGISTER: reg: 0x%lx, val: 0x%lx\n",
+		__FUNCTION__,
+		(op == MCCTRL_OS_CPU_READ_REGISTER ? "READ" : "WRITE"),
+		desc->addr, desc->val);
+
+out:
+	return ret;
+}
+
+int mcctrl_os_read_cpu_register(ihk_os_t os, int cpu,
+		struct mcctrl_os_cpu_register *desc)
+{
+	return __mcctrl_os_read_write_cpu_register(os, cpu,
+			desc, MCCTRL_OS_CPU_READ_REGISTER);
+}
+
+EXPORT_SYMBOL(mcctrl_os_read_cpu_register);
+
+int mcctrl_os_write_cpu_register(ihk_os_t os, int cpu,
+		struct mcctrl_os_cpu_register *desc)
+{
+	return __mcctrl_os_read_write_cpu_register(os, cpu,
+			desc, MCCTRL_OS_CPU_WRITE_REGISTER);
+}
+
+EXPORT_SYMBOL(mcctrl_os_write_cpu_register);
 

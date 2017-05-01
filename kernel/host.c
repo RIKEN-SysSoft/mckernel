@@ -644,6 +644,17 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		ret = 0;
 		break;
 
+	case SCD_MSG_CPU_RW_REG:
+
+		pckt.msg = SCD_MSG_CPU_RW_REG_RESP;
+		memcpy(&pckt.desc, &packet->desc,
+				sizeof(struct mcctrl_os_cpu_register));
+		pckt.resp = packet->resp;
+		pckt.err = arch_cpu_read_write_register(&pckt.desc, pckt.op);
+
+		ihk_ikc_send(resp_channel, &pckt, 0);
+		break;
+
 	default:
 		kprintf("syscall_pakcet_handler:unknown message "
 				"(%d.%d.%d.%d.%d.%#lx)\n",

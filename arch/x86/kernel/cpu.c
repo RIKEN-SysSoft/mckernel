@@ -1834,4 +1834,22 @@ mod_nmi_ctx(void *nmi_ctx, void (*func)())
 	l[i++] = (unsigned long)(l + 27);	// ols rsp
 	l[i++] = 0x28;				// KERNEL DS
 }
+
+int arch_cpu_read_write_register(
+		struct mcctrl_os_cpu_register *desc,
+		enum mcctrl_os_cpu_operation op)
+{
+	if (op == MCCTRL_OS_CPU_READ_REGISTER) {
+		desc->val = rdmsr(desc->addr);
+	}
+	else if (op == MCCTRL_OS_CPU_WRITE_REGISTER) {
+		wrmsr(desc->addr, desc->val);
+	}
+	else {
+		return -1;
+	}
+
+	return 0;
+}
+
 /*** end of file ***/
