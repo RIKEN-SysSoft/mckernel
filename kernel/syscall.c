@@ -8087,9 +8087,258 @@ SYSCALL_DECLARE(migrate_pages)
 
 SYSCALL_DECLARE(move_pages)
 {
-	dkprintf("sys_move_pages\n");
-	return -ENOSYS;
-} /* sys_move_pages() */
+	int pid = ihk_mc_syscall_arg0(ctx);
+	unsigned long count = ihk_mc_syscall_arg1(ctx);
+	const void **user_virt_addr = (const void **)ihk_mc_syscall_arg2(ctx);
+	const int *user_nodes = (const int *)ihk_mc_syscall_arg3(ctx);
+	int *user_status = (int *)ihk_mc_syscall_arg4(ctx);
+	int flags = ihk_mc_syscall_arg5(ctx);
+
+	void **virt_addr = NULL;
+	int *nodes = NULL, *status = NULL;
+	int *nr_pages = NULL;
+	unsigned long *dst_phys = NULL;
+	pte_t **ptep = NULL;
+
+	struct process_vm *vm = cpu_local_var(current)->vm;
+	int i, ret = 0;
+
+	/* Only self is supported for now */
+	if (pid) {
+		kprintf("%s: ERROR: only self (pid == 0)"
+				" is supported\n", __FUNCTION__);
+		return -EINVAL;
+	}
+
+	if (flags == MPOL_MF_MOVE_ALL) {
+		kprintf("%s: ERROR: MPOL_MF_MOVE_ALL"
+				" not supported\n", __FUNCTION__);
+		return -EINVAL;
+	}
+
+	/* Allocate kernel arrays */
+	virt_addr = kmalloc(sizeof(void *) * count, IHK_MC_AP_NOWAIT);
+	if (!virt_addr) {
+		ret = -ENOMEM;
+		goto dealloc_out;
+	}
+
+	nr_pages = kmalloc(sizeof(int) * count, IHK_MC_AP_NOWAIT);
+	if (!nr_pages) {
+		ret = -ENOMEM;
+		goto dealloc_out;
+	}
+
+	nodes = kmalloc(sizeof(int) * count, IHK_MC_AP_NOWAIT);
+	if (!nodes) {
+		ret = -ENOMEM;
+		goto dealloc_out;
+	}
+
+	status = kmalloc(sizeof(int) * count, IHK_MC_AP_NOWAIT);
+	if (!status) {
+		ret = -ENOMEM;
+		goto dealloc_out;
+	}
+
+	ptep = kmalloc(sizeof(pte_t) * count, IHK_MC_AP_NOWAIT);
+	if (!ptep) {
+		ret = -ENOMEM;
+		goto dealloc_out;
+	}
+
+	dst_phys = kmalloc(sizeof(unsigned long) * count, IHK_MC_AP_NOWAIT);
+	if (!dst_phys) {
+		ret = -ENOMEM;
+		goto dealloc_out;
+	}
+
+	/* Get virt addresses and NUMA node numbers from user */
+	if (copy_from_user(virt_addr, user_virt_addr,
+				sizeof(void *) * count)) {
+		ret = -EFAULT;
+		goto dealloc_out;
+	}
+
+	if (copy_from_user(nodes, user_nodes, sizeof(int) * count)) {
+		ret = -EFAULT;
+		goto dealloc_out;
+	}
+
+	/* Won't use it but better to verify the user buffer before
+	 * doing anything.. */
+	if (copy_from_user(status, user_status, sizeof(int) * count)) {
+		ret = -EFAULT;
+		goto dealloc_out;
+	}
+
+	/* Verify target NUMA nodes are valid */
+	for (i = 0; i < count; i++) {
+		if (nodes[i] < 0 ||
+				nodes[i] >= ihk_mc_get_nr_numa_nodes() ||
+				!test_bit(nodes[i], vm->numa_mask)) {
+			ret = -EINVAL;
+			goto dealloc_out;
+		}
+	}
+
+	memset(ptep, 0, sizeof(pte_t) * count);
+	memset(status, 0, sizeof(int) * count);
+	memset(nr_pages, 0, sizeof(int) * count);
+
+	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
+
+	for (i = 0; i < count; i++) {
+		void *phys;
+		size_t pgsize;
+		int p2align;
+		/*
+		 * XXX: No page structures for anonymous mappings.
+		 * Look up physical addresses by scanning page tables.
+		 */
+		ptep[i] = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+				(void *)virt_addr[i], 0, &phys, &pgsize, &p2align);
+
+		/* PTE valid? */
+		if (!ptep[i] || !pte_is_present(ptep[i])) {
+			status[i] = -ENOENT;
+			ptep[i] = NULL;
+			continue;
+		}
+
+		/* PTE is file? */
+		if (pte_is_fileoff(ptep[i], PAGE_SIZE)) {
+			status[i] = -EINVAL;
+			ptep[i] = NULL;
+			continue;
+		}
+
+		dkprintf("%s: virt 0x%lx:%lu requested to be moved to node %d\n",
+			__FUNCTION__, virt_addr[i], pgsize, nodes[i]);
+
+		/* Large page? */
+		if (pgsize > PAGE_SIZE) {
+			int nr_sub_pages = (pgsize / PAGE_SIZE);
+			int j;
+
+			if (i + nr_sub_pages > count) {
+				kprintf("%s: ERROR: page at index %d exceeds the region\n",
+						__FUNCTION__, i);
+				status[i] = -EINVAL;
+				break;
+			}
+
+			/* Is it contiguous across nr_sub_pages and all
+			 * requested to be moved to the same target node? */
+			for (j = 0; j < nr_sub_pages; ++j) {
+				if (virt_addr[i + j] != (virt_addr[i] + (j * PAGE_SIZE)) ||
+						nodes[i] != nodes[i + j]) {
+					kprintf("%s: ERROR: virt address or node at index %d"
+							" is inconsistent\n",
+							__FUNCTION__, i + j);
+					ret = -EINVAL;
+
+					ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
+					goto dealloc_out;
+				}
+			}
+
+			nr_pages[i] = nr_sub_pages;
+			i += (nr_sub_pages - 1);
+		}
+		else {
+			nr_pages[i] = 1;
+		}
+	}
+
+	memset(dst_phys, 0, sizeof(unsigned long) * count);
+
+	/* Allocate new pages on target NUMA nodes */
+	for (i = 0; i < count; i++) {
+		int pgalign = 0;
+		int j;
+		void *dst;
+
+		if (!ptep[i] || status[i] < 0 || !nr_pages[i])
+			continue;
+
+		/* TODO: store pgalign info in an array as well? */
+		if (nr_pages[i] > 1) {
+			if (nr_pages[i] * PAGE_SIZE == PTL2_SIZE)
+				pgalign = PTL2_SHIFT - PTL1_SHIFT;
+		}
+
+		dst = ihk_mc_alloc_aligned_pages_node(nr_pages[i],
+				pgalign, IHK_MC_AP_USER, nodes[i]);
+
+		if (!dst) {
+			status[i] = -ENOMEM;
+			continue;
+		}
+
+		for (j = i; j < (i + nr_pages[i]); ++j) {
+			status[j] = nodes[i];
+		}
+
+		dst_phys[i] = virt_to_phys(dst);
+
+		dkprintf("%s: virt 0x%lx:%lu to node %d, pgalign: %d,"
+				" allocated phys: 0x%lx\n",
+				__FUNCTION__, virt_addr[i],
+				nr_pages[i] * PAGE_SIZE,
+				nodes[i], pgalign, dst_phys[i]);
+	}
+
+	/* Do the copy, update PTEs, free original memory */
+	/* TODO: do this in parallel */
+	for (i = 0; i < count; i++) {
+		if (!dst_phys[i])
+			continue;
+
+		fast_memcpy(phys_to_virt(dst_phys[i]),
+				phys_to_virt(pte_get_phys(ptep[i])),
+				nr_pages[i] * PAGE_SIZE);
+
+		ihk_mc_free_pages(phys_to_virt(pte_get_phys(ptep[i])),
+				nr_pages[i]);
+
+		pte_update_phys(ptep[i], dst_phys[i]);
+
+		dkprintf("%s: virt 0x%lx:%lu copied and remapped to phys: 0x%lu\n",
+				__FUNCTION__, virt_addr[i],
+				nr_pages[i] * PAGE_SIZE,
+				dst_phys[i]);
+	}
+
+	/* Invalidate TLBs */
+	/* TODO: do this on all cores in parallel */
+	for (i = 0; i < count; i++) {
+		if (!dst_phys[i])
+			continue;
+
+		flush_tlb_single((unsigned long)virt_addr[i]);
+	}
+
+	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
+
+	/* This shouldn't fail (verified above) */
+	if (copy_to_user(user_status, status, sizeof(int) * count)) {
+		ret = -EFAULT;
+		goto dealloc_out;
+	}
+
+	ret = 0;
+
+dealloc_out:
+	kfree(virt_addr);
+	kfree(nr_pages);
+	kfree(nodes);
+	kfree(status);
+	kfree(ptep);
+	kfree(dst_phys);
+
+	return ret;
+}
 
 #define PROCESS_VM_READ		0
 #define PROCESS_VM_WRITE	1
