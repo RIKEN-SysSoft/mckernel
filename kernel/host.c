@@ -652,7 +652,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		pckt.resp = packet->resp;
 		pckt.err = arch_cpu_read_write_register(&pckt.desc, pckt.op);
 
-		ihk_ikc_send(resp_channel, &pckt, 0);
+		ihk_ikc_send(c, &pckt, 0);
 		break;
 
 	default:
