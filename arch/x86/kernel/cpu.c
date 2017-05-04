@@ -42,8 +42,6 @@
 #define LAPIC_ICR0          0x300
 #define LAPIC_ICR2          0x310
 #define LAPIC_ESR           0x280
-#define LOCAL_TIMER_VECTOR  0xef
-#define LOCAL_PERF_VECTOR   0xf0
 
 #define APIC_INT_LEVELTRIG      0x08000
 #define APIC_INT_ASSERT         0x04000
