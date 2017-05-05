@@ -111,6 +111,8 @@ enum ihk_asr_type {
 #define IHK_TLB_FLUSH_IRQ_VECTOR_SIZE		64
 #define IHK_TLB_FLUSH_IRQ_VECTOR_END		(IHK_TLB_FLUSH_IRQ_VECTOR_START + IHK_TLB_FLUSH_IRQ_VECTOR_SIZE)
 
+#define LOCAL_SMP_FUNC_CALL_VECTOR   0xf1
+
 int ihk_mc_arch_set_special_register(enum ihk_asr_type, unsigned long value);
 int ihk_mc_arch_get_special_register(enum ihk_asr_type, unsigned long *value);
 
