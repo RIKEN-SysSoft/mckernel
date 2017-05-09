@@ -20,6 +20,9 @@ cpus=""
 # No SMP module? Exit.
 if ! grep ihk_smp_x86 /proc/modules &>/dev/null; then exit 0; fi
 
+# Stop mcklogd
+pkill mcklogd
+
 # Destroy all LWK instances
 if ls /dev/mcos* 1>/dev/null 2>&1; then
 	for i in /dev/mcos*; do
@@ -93,9 +96,6 @@ if grep -E 'ihk\s' /proc/modules &>/dev/null; then
 		exit 1
 	fi
 fi
-
-# Stop mcklogd
-pkill mcklogd
 
 # Start irqbalance with the original settings
 if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then

@@ -260,16 +260,6 @@ if [ "${irqbalance_used}" == "yes" ]; then
 	fi;
 fi
 
-# Start mcklogd. Note that McKernel blocks when kmsg buffer is full
-# with '-k 1' until mcklogd unblocks it so starting mcklogd must preceed
-# booting McKernel
-if [ ${LOGMODE} -ne 0 ]; then
-	# Stop mcklogd which has survived McKernel shutdown because
-	# mcstop+release.sh is not used
-	pkill mcklogd
-	SBINDIR=${SBINDIR} ${SBINDIR}/mcklogd -i ${INTERVAL} -f ${facility}
-fi
-
 # Load IHK if not loaded
 if ! grep -E 'ihk\s' /proc/modules &>/dev/null; then
 	if ! insmod ${KMODDIR}/ihk.ko 2>/dev/null; then
@@ -519,5 +509,15 @@ if [ "${irqbalance_used}" == "yes" ]; then
 		error_exit "mcos_sys_mounted"
 	fi
 #    echo cpus=$cpus mask=$smp_affinity_mask banirq=$banirq
+fi
+
+# Start mcklogd. Note that McKernel blocks when kmsg buffer is full
+# with '-k 1' until mcklogd unblocks it so starting mcklogd must preceed
+# booting McKernel
+if [ ${LOGMODE} -ne 0 ]; then
+	# Stop mcklogd which has survived McKernel shutdown because
+	# mcstop+release.sh is not used
+	pkill mcklogd
+	SBINDIR=${SBINDIR} ${SBINDIR}/mcklogd -i ${INTERVAL} -f ${facility}
 fi
 
