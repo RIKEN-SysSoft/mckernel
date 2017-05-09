@@ -1120,8 +1120,9 @@ void arch_clone_thread(struct thread *othread, unsigned long pc,
 
 	/* copy fp_regs values from parent. */
 	save_fp_regs(othread);
-	check_and_allocate_fp_regs(nthread);
-	memcpy(nthread->fp_regs, othread->fp_regs, sizeof(fp_regs_struct));
+	if (!othread->fp_regs && check_and_allocate_fp_regs(nthread) == 0) {
+		memcpy(nthread->fp_regs, othread->fp_regs, sizeof(fp_regs_struct));
+	}
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_23 */
 
@@ -1324,11 +1325,14 @@ check_and_allocate_fp_regs(struct thread *thread)
 		if (!thread->fp_regs) {
 			kprintf("error: allocating fp_regs pages\n");
 			result = 1;
+			panic("panic: error allocating fp_regs pages");
+			goto out;
 		}
 
 		memset(thread->fp_regs, 0, sizeof(fp_regs_struct));
 	}
 
+out:
 	return result;
 }
 
