@@ -21,7 +21,10 @@ cpus=""
 if ! grep ihk_smp_x86 /proc/modules &>/dev/null; then exit 0; fi
 
 # Stop mcklogd
-pkill mcklogd
+while pgrep "mcklogd" > /dev/null 2>&1;
+do
+	pkill -9 mcklogd
+done
 
 # Destroy all LWK instances
 if ls /dev/mcos* 1>/dev/null 2>&1; then
