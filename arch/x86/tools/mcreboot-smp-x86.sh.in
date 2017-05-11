@@ -487,8 +487,14 @@ if [ "${irqbalance_used}" == "yes" ]; then
 		error_exit "mcos_sys_mounted"
 	fi;
 
+# Prevent /proc/irq/*/smp_affinity from getting zero after offlining
+# McKernel CPUs by using the following algorithm.
+# if (smp_affinity & mck_cores) {
+#     smp_affinity = (mck_cores ^ -1);
+# }
     ncpus=`lscpu | grep -E '^CPU\(s\):' | awk '{print $2}'`
-    smp_affinity_mask=`echo $cpus | ncpus=$ncpus perl -e 'while(<>){@tokens = split /,/;foreach $token (@tokens) {@nums = split /-/,$token; for($num = $nums[0]; $num <= $nums[$#nums]; $num++) {$ndx=int($num/32); $mask[$ndx] |= (1<<($num % 32))}}} $nint32s = int(($ENV{'ncpus'}+31)/32); for($j = $nint32s - 1; $j >= 0; $j--) { if($j != $nint32s - 1){print ",";} $nblks = $j == $nint32s - 1 ? int(($ENV{'ncpus'} % 32)/4) : 8; for($i = $nblks - 1;$i >= 0;$i--){ printf("%01x",($mask[$j] >> ($i*4)) & 0xf);}}'`
+    smp_affinity_mask=`echo $cpus | ncpus=$ncpus perl -e 'while(<>){@tokens = split /,/;foreach $token (@tokens) {@nums = split /-/,$token; for($num = $nums[0]; $num <= $nums[$#nums]; $num++) {$ndx=int($num/32); $mask[$ndx] |= (1<<($num % 32))}}} $nint32s = int(($ENV{'ncpus'}+31)/32); for($j = $nint32s - 1; $j >= 0; $j--) { if($j != $nint32s - 1){print ",";} $nblks = ($j != $nint32s - 1) ? 8 : ($ENV{'ncpus'} % 32 != 0) ? int((($ENV{'ncpus'} + 3) % 32) / 4) : 8; for($i = $nblks - 1;$i >= 0;$i--){ printf("%01x",($mask[$j] >> ($i*4)) & 0xf);}}'`
+#    echo cpus=$cpus ncpus=$ncpus smp_affinity_mask=$smp_affinity_mask
 
     if ! ncpus=$ncpus smp_affinity_mask=$smp_affinity_mask perl -e '@dirs = grep { -d } glob "/proc/irq/*"; foreach $dir (@dirs) { $hit = 0; $affinity_str = `cat $dir/smp_affinity`; chomp $affinity_str; @int32strs = split /,/, $affinity_str; @int32strs_mask=split /,/, $ENV{'smp_affinity_mask'}; for($i=0;$i <= $#int32strs_mask; $i++) { $int32strs_inv[$i] = sprintf("%08x",hex($int32strs_mask[$i])^0xffffffff); if($i == 0) { $len = int((($ENV{'ncpus'}%32)+3)/4); $int32strs_inv[$i] = substr($int32strs_inv[$i], -$len, $len); } } $inv = join(",", @int32strs_inv); $nint32s = int(($ENV{'ncpus'}+31)/32); for($j = $nint32s - 1; $j >= 0; $j--) { if(hex($int32strs[$nint32s - 1 - $j]) & hex($int32strs_mask[$nint32s - 1 - $j])) { $hit = 1; }} if($hit == 1) { $cmd = "echo $inv > $dir/smp_affinity 2>/dev/null"; system $cmd;}}'; then
 		echo "error: modifying /proc/irq/*/smp_affinity" >&2
@@ -508,7 +514,7 @@ if [ "${irqbalance_used}" == "yes" ]; then
 		echo "error: starting irqbalance_mck" >&2
 		error_exit "mcos_sys_mounted"
 	fi
-#    echo cpus=$cpus mask=$smp_affinity_mask banirq=$banirq
+#    echo cpus=$cpus ncpus=$ncpus banirq=$banirq
 fi
 
 # Start mcklogd. Note that McKernel blocks when kmsg buffer is full
