@@ -7504,6 +7504,11 @@ SYSCALL_DECLARE(mbind)
 	struct vm_range_numa_policy *range_policy_next = NULL;
 	DECLARE_BITMAP(numa_mask, PROCESS_NUMA_MASK_BITS);
 
+	dkprintf("%s: addr: 0x%lx, len: %lu, mode: 0x%x, "
+		"nodemask: 0x%lx, flags: %lx\n",
+		__FUNCTION__,
+		addr, len, mode, nodemask, flags);
+
 	/* Validate arguments */
 	if (addr & ~PAGE_MASK) {
 		return -EINVAL;
