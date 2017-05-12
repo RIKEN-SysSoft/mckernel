@@ -2263,6 +2263,37 @@ int getint_user(int *dest, const int *p)
 	return 0;
 }
 
+int verify_process_vm(struct process_vm *vm,
+		const void *usrc, size_t size)
+{
+	const uintptr_t ustart = (uintptr_t)usrc;
+	const uintptr_t uend = ustart + size;
+	uint64_t reason;
+	uintptr_t addr;
+	int error = 0;
+
+	if ((ustart < vm->region.user_start)
+			|| (vm->region.user_end <= ustart)
+			|| ((vm->region.user_end - ustart) < size)) {
+		kprintf("%s: error: out of user range\n", __FUNCTION__);
+		return -EFAULT;
+	}
+
+	reason = PF_USER;	/* page not present */
+	for (addr = ustart & PAGE_MASK; addr < uend; addr += PAGE_SIZE) {
+		if (!addr)
+			return -EINVAL;
+
+		error = page_fault_process_vm(vm, (void *)addr, reason);
+		if (error) {
+			kprintf("%s: error: PF for %p failed\n", __FUNCTION__, addr);
+			return error;
+		}
+	}
+
+	return error;
+}
+
 int read_process_vm(struct process_vm *vm, void *kdst, const void *usrc, size_t siz)
 {
 	const uintptr_t ustart = (uintptr_t)usrc;
