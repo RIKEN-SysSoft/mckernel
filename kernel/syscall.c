@@ -8218,7 +8218,7 @@ int move_pages_smp_handler(int cpu_index, int nr_cpus, void *arg)
 
 	/* Barrier */
 	ihk_atomic_inc(&mpsr->phase_done);
-	while (ihk_atomic_read(&mpsr->phase_done) !=
+	while (ihk_atomic_read(&mpsr->phase_done) <
 			(phase * nr_cpus)) {
 		cpu_pause();
 	}
@@ -8227,7 +8227,7 @@ int move_pages_smp_handler(int cpu_index, int nr_cpus, void *arg)
 		goto out;
 	}
 
-	kprintf("%s: phase %d done\n", __FUNCTION__, phase);
+	dkprintf("%s: phase %d done\n", __FUNCTION__, phase);
 	++phase;
 
 	/* PTE lookup in parallel */
@@ -8296,7 +8296,7 @@ int move_pages_smp_handler(int cpu_index, int nr_cpus, void *arg)
 pte_out:
 	/* Barrier */
 	ihk_atomic_inc(&mpsr->phase_done);
-	while (ihk_atomic_read(&mpsr->phase_done) !=
+	while (ihk_atomic_read(&mpsr->phase_done) <
 			(phase * nr_cpus)) {
 		cpu_pause();
 	}
@@ -8305,7 +8305,7 @@ pte_out:
 		goto out;
 	}
 
-	kprintf("%s: phase %d done\n", __FUNCTION__, phase);
+	dkprintf("%s: phase %d done\n", __FUNCTION__, phase);
 	++phase;
 
 	if (cpu_index == 0) {
@@ -8348,7 +8348,7 @@ pte_out:
 
 	/* Barrier */
 	ihk_atomic_inc(&mpsr->phase_done);
-	while (ihk_atomic_read(&mpsr->phase_done) !=
+	while (ihk_atomic_read(&mpsr->phase_done) <
 			(phase * nr_cpus)) {
 		cpu_pause();
 	}
@@ -8357,7 +8357,7 @@ pte_out:
 		goto out;
 	}
 
-	kprintf("%s: phase %d done\n", __FUNCTION__, phase);
+	dkprintf("%s: phase %d done\n", __FUNCTION__, phase);
 	++phase;
 
 	/* Copy, PTE update, memfree in parallel */
