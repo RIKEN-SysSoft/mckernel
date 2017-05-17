@@ -49,7 +49,6 @@
 #define ekprintf kprintf
 #endif
 
-unsigned long elf_hwcap;
 struct cpuinfo_arm64 cpuinfo_data[NR_CPUS];	/* index is logical cpuid */
 static unsigned int per_cpu_timer_val[NR_CPUS] = { 0 };
 
@@ -319,76 +318,8 @@ static void cpuinfo_store_cpu(void)
 }
 
 /* @ref.impl arch/arm64/kernel/setup.c::setup_processor */
-/* build elf_hwcap value, BSP only function */
 static void setup_processor(void)
 {
-	unsigned long features = read_cpuid(ID_AA64ISAR0_EL1);
-	unsigned long pfr = read_cpuid(ID_AA64PFR0_EL1);
-	unsigned long block;
-	long sblock;
-
-	elf_hwcap = HWCAP_CPUID;
-
-	block = (features >> 4) & 0xf;
-	if (!(block & 0x8)) {
-		switch (block) {
-		default:
-		case 2:
-			elf_hwcap |= HWCAP_PMULL;
-		case 1:
-			elf_hwcap |= HWCAP_AES;
-		case 0:
-			break;
-		}
-	}
-
-	block = (features >> 8) & 0xf;
-	if (block && !(block & 0x8))
-		elf_hwcap |= HWCAP_SHA1;
-
-	block = (features >> 12) & 0xf;
-	if (block && !(block & 0x8))
-		elf_hwcap |= HWCAP_SHA2;
-
-	block = (features >> 16) & 0xf;
-	if (block && !(block & 0x8))
-		elf_hwcap |= HWCAP_CRC32;
-
-	block = (features >> 20) & 0xf;
-	if (block >= 2)
-		elf_hwcap |= HWCAP_ATOMICS;
-
-	block = (features >> 28) & 0xf;
-	if (block >= 1)
-		elf_hwcap |= HWCAP_ASIMDRDM;
-
-	/* @ref.impl drivers/clocksource/arm_arch_timer.c::arch_timer_evtstrm_enable */
-#ifdef CONFIG_ARM_ARCH_TIMER_EVTSTREAM
-	elf_hwcap |= HWCAP_EVTSTRM;
-#endif /* CONFIG_ARM_ARCH_TIMER_EVTSTREAM */
-
-	/* @ref.impl arch/arm64/kernel/cpufeature.c:setup_elf_hwcaps */
-	sblock = (long)(pfr << (64 - 4 - 16)) >> (64 - 4);
-	if (sblock >= 1) {
-		elf_hwcap |= HWCAP_FPHP;
-	}
-	if (sblock >= 0) {
-		elf_hwcap |= HWCAP_FP;
-	}
-	if (sblock < 0) {
-		kprintf("Floating-point is not implemented\n");
-	}
-
-	sblock = (long)(pfr << (64 - 4 - 20)) >> (64 - 4);
-	if (sblock >= 1) {
-		elf_hwcap |= HWCAP_ASIMDHP;
-	}
-	if (sblock >= 0) {
-		elf_hwcap |= HWCAP_ASIMD;
-	}
-	if (sblock < 0) {
-		kprintf("Advanced SIMD is not implemented\n");
-	}
 	cpuinfo_store_boot_cpu();
 	enable_mrs_emulation();
 }
@@ -917,6 +848,8 @@ void ihk_mc_boot_cpu(int cpuid, unsigned long pc)
 {
 	int virt_cpuid = get_virt_cpuid(cpuid);
 	extern void arch_ap_start();
+	extern int num_processors;
+	int ncpus;
 
 	/* virt cpuid check */
 	if (virt_cpuid == -1) {
@@ -942,6 +875,11 @@ void ihk_mc_boot_cpu(int cpuid, unsigned long pc)
 	/* wait for ap call call_ap_func() */
 	while (!cpu_boot_status) {
 		cpu_pause();
+	}
+
+	ncpus = ihk_mc_get_cpu_info()->ncpus;
+	if (ncpus - 1 <= num_processors) {
+		setup_cpu_features();
 	}
 }
 
@@ -1112,6 +1050,7 @@ static const char *const hwcap_str[] = {
 long ihk_mc_show_cpuinfo(char *buf, size_t buf_size, unsigned long read_off, int *eofp)
 {
 	extern int num_processors;
+	extern unsigned long elf_hwcap;
 	int i = 0;
 	char *lbuf = NULL;
 	const size_t lbuf_size = CPUINFO_LEN_PER_CORE * num_processors;
@@ -1420,6 +1359,7 @@ out:
 void
 save_fp_regs(struct thread *thread)
 {
+	extern unsigned long elf_hwcap;
 	if(check_and_allocate_fp_regs(thread) != 0) {
 		// alloc error.
 		return;
@@ -1439,6 +1379,8 @@ save_fp_regs(struct thread *thread)
 void
 restore_fp_regs(struct thread *thread)
 {
+	extern unsigned long elf_hwcap;
+
 	if (!thread->fp_regs) {
 		// only clear fpregs.
 		fp_regs_struct clear_fp;

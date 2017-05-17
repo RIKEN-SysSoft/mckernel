@@ -53,6 +53,37 @@ struct arm64_ftr_reg {
 /* @ref.impl arch/arm64/include/asm/cpufeature.h */
 extern struct arm64_ftr_reg arm64_ftr_reg_ctrel0;
 
+/* @ref.impl arch/arm64/include/asm/cpufeature.h */
+/* scope of capability check */
+enum {
+	SCOPE_SYSTEM,
+	SCOPE_LOCAL_CPU,
+};
+
+/* @ref.impl arch/arm64/include/asm/cpufeature.h */
+struct arm64_cpu_capabilities {
+	const char *desc;
+	uint16_t capability;
+	int def_scope;/* default scope */
+	int (*matches)(const struct arm64_cpu_capabilities *caps, int scope);
+	int (*enable)(void *);/* Called on all active CPUs */
+	union {
+		struct {/* To be used for erratum handling only */
+			uint32_t midr_model;
+			uint32_t midr_range_min, midr_range_max;
+		};
+
+		struct {/* Feature register checking */
+			uint32_t sys_reg;
+			uint8_t field_pos;
+			uint8_t min_field_value;
+			uint8_t hwcap_type;
+			int sign;
+			unsigned long hwcap;
+		};
+	};
+};
+
 /* @ref.impl include/linux/bitops.h */
 /*
  * Create a contiguous bitmask starting at bit position @l and ending at
@@ -132,11 +163,21 @@ static inline int id_aa64pfr0_32bit_el0(uint64_t pfr0)
 	return val == ID_AA64PFR0_EL0_32BIT_64BIT;
 }
 
+void setup_cpu_features(void);
 void update_cpu_features(int cpu,
 			 struct cpuinfo_arm64 *info,
 			 struct cpuinfo_arm64 *boot);
 uint64_t read_system_reg(uint32_t id);
 void init_cpu_features(struct cpuinfo_arm64 *info);
 int enable_mrs_emulation(void);
+
+/* @ref.impl arch/arm64/include/asm/hwcap.h */
+enum {
+	CAP_HWCAP = 1,
+#ifdef CONFIG_COMPAT
+	CAP_COMPAT_HWCAP,
+	CAP_COMPAT_HWCAP2,
+#endif
+};
 
 #endif /* __ASM_CPUFEATURE_H */

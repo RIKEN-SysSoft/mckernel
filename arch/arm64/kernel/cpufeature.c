@@ -8,6 +8,7 @@
 #include <sysreg.h>
 #include <generic-errno.h>
 #include <ptrace.h>
+#include <hwcap.h>
 
 #ifdef POSTK_DEBUG_ARCH_DEP_65
 unsigned long elf_hwcap;
@@ -877,6 +878,90 @@ int enable_mrs_emulation(void)
 {
 	register_undef_hook(&mrs_hook);
 	return 0;
+}
+
+/* @ref.impl arch/arm64/kernel/cpufeature.c */
+static int
+feature_matches(uint64_t reg, const struct arm64_cpu_capabilities *entry)
+{
+	int val = cpuid_feature_extract_field(reg, entry->field_pos, entry->sign);
+
+	return val >= entry->min_field_value;
+}
+
+/* @ref.impl arch/arm64/kernel/cpufeature.c */
+static int
+has_cpuid_feature(const struct arm64_cpu_capabilities *entry, int scope)
+{
+	uint64_t val;
+
+	//WARN_ON(scope == SCOPE_LOCAL_CPU && preemptible());
+	if (scope == SCOPE_SYSTEM) {
+		val = read_system_reg(entry->sys_reg);
+	} else {
+		panic("invalid argument. SCOPE_LOCAL_CPU is not implemented.");
+		//val = __raw_read_system_reg(entry->sys_reg);
+	}
+	return feature_matches(val, entry);
+}
+
+/* @ref.impl arch/arm64/kernel/cpufeature.c */
+#define HWCAP_CAP(reg, field, s, min_value, type, cap)	\
+	{						\
+		.desc = #cap,				\
+		.def_scope = SCOPE_SYSTEM,		\
+		.matches = has_cpuid_feature,		\
+		.sys_reg = reg,				\
+		.field_pos = field,			\
+		.sign = s,				\
+		.min_field_value = min_value,		\
+		.hwcap_type = type,			\
+		.hwcap = cap,				\
+	}
+
+/* @ref.impl arch/arm64/kernel/cpufeature.c */
+static const struct arm64_cpu_capabilities arm64_elf_hwcaps[] = {
+	HWCAP_CAP(SYS_ID_AA64ISAR0_EL1, ID_AA64ISAR0_AES_SHIFT, FTR_UNSIGNED, 2, CAP_HWCAP, HWCAP_PMULL),
+	HWCAP_CAP(SYS_ID_AA64ISAR0_EL1, ID_AA64ISAR0_AES_SHIFT, FTR_UNSIGNED, 1, CAP_HWCAP, HWCAP_AES),
+	HWCAP_CAP(SYS_ID_AA64ISAR0_EL1, ID_AA64ISAR0_SHA1_SHIFT, FTR_UNSIGNED, 1, CAP_HWCAP, HWCAP_SHA1),
+	HWCAP_CAP(SYS_ID_AA64ISAR0_EL1, ID_AA64ISAR0_SHA2_SHIFT, FTR_UNSIGNED, 1, CAP_HWCAP, HWCAP_SHA2),
+	HWCAP_CAP(SYS_ID_AA64ISAR0_EL1, ID_AA64ISAR0_CRC32_SHIFT, FTR_UNSIGNED, 1, CAP_HWCAP, HWCAP_CRC32),
+	HWCAP_CAP(SYS_ID_AA64ISAR0_EL1, ID_AA64ISAR0_ATOMICS_SHIFT, FTR_UNSIGNED, 2, CAP_HWCAP, HWCAP_ATOMICS),
+	HWCAP_CAP(SYS_ID_AA64ISAR0_EL1, ID_AA64ISAR0_RDM_SHIFT, FTR_UNSIGNED, 1, CAP_HWCAP, HWCAP_ASIMDRDM),
+	HWCAP_CAP(SYS_ID_AA64PFR0_EL1, ID_AA64PFR0_FP_SHIFT, FTR_SIGNED, 0, CAP_HWCAP, HWCAP_FP),
+	HWCAP_CAP(SYS_ID_AA64PFR0_EL1, ID_AA64PFR0_FP_SHIFT, FTR_SIGNED, 1, CAP_HWCAP, HWCAP_FPHP),
+	HWCAP_CAP(SYS_ID_AA64PFR0_EL1, ID_AA64PFR0_ASIMD_SHIFT, FTR_SIGNED, 0, CAP_HWCAP, HWCAP_ASIMD),
+	HWCAP_CAP(SYS_ID_AA64PFR0_EL1, ID_AA64PFR0_ASIMD_SHIFT, FTR_SIGNED, 1, CAP_HWCAP, HWCAP_ASIMDHP),
+	{},
+};
+
+/* @ref.impl arch/arm64/kernel/cpufeature.c */
+static void cap_set_elf_hwcap(const struct arm64_cpu_capabilities *cap)
+{
+	elf_hwcap |= cap->hwcap;
+}
+
+/* @ref.impl arch/arm64/kernel/cpufeature.c */
+static void setup_elf_hwcaps(const struct arm64_cpu_capabilities *hwcaps)
+{
+	/* @ref.impl drivers/clocksource/arm_arch_timer.c::arch_timer_evtstrm_enable */
+#ifdef CONFIG_ARM_ARCH_TIMER_EVTSTREAM
+	elf_hwcap |= HWCAP_EVTSTRM;
+#endif /* CONFIG_ARM_ARCH_TIMER_EVTSTREAM */
+
+	/* We support emulation of accesses to CPU ID feature registers */
+	elf_hwcap |= HWCAP_CPUID;
+	for (; hwcaps->matches; hwcaps++) {
+		if (hwcaps->matches(hwcaps, hwcaps->def_scope)) {
+			cap_set_elf_hwcap(hwcaps);
+		}
+	}
+}
+
+/* @ref.impl arch/arm64/kernel/cpufeature.c */
+void setup_cpu_features(void)
+{
+	setup_elf_hwcaps(arm64_elf_hwcaps);
 }
 
 #ifdef POSTK_DEBUG_ARCH_DEP_65
