@@ -9,6 +9,10 @@
 #include <generic-errno.h>
 #include <ptrace.h>
 
+#ifdef POSTK_DEBUG_ARCH_DEP_65
+unsigned long elf_hwcap;
+#endif /* POSTK_DEBUG_ARCH_DEP_65 */
+
 /* @ref.impl arch/arm64/kernel/cpufeature.c */
 #define __ARM64_FTR_BITS(SIGNED, VISIBLE, STRICT, TYPE, SHIFT, WIDTH, SAFE_VAL) \
 	{						\
@@ -874,3 +878,10 @@ int enable_mrs_emulation(void)
 	register_undef_hook(&mrs_hook);
 	return 0;
 }
+
+#ifdef POSTK_DEBUG_ARCH_DEP_65
+unsigned long arch_get_hwcap(void)
+{
+	return elf_hwcap;
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_65 */
