@@ -32,9 +32,6 @@
 #include <xos_hpcdrv.h>
 #include <xos_hwbdrv.h>
 #include <xos_secdrv.h>
-#ifdef POSTK_DEBUG_ARCH_DEP_65
-#include <hwcap.h>
-#endif /* POSTK_DEBUG_ARCH_DEP_65 */
 #include <cpufeature.h>
 
 //#define DEBUG_PRINT_CPU
@@ -1579,9 +1576,3 @@ void arch_start_pvclock(void)
 	return;
 }
 
-#ifdef POSTK_DEBUG_ARCH_DEP_65
-unsigned long arch_get_hwcap(void)
-{
-	return elf_hwcap;
-}
-#endif /* POSTK_DEBUG_ARCH_DEP_65 */
