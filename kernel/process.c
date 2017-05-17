@@ -2745,6 +2745,8 @@ static void do_migrate(void)
 		int cpu_id;
 		int old_cpu_id;
 		struct cpu_local_var *v;
+		struct thread *thread;
+		int clear_old_cpu = 1;
 
 		/* 0. check if migration is necessary */
 		list_del(&req->list);
@@ -2769,11 +2771,28 @@ static void do_migrate(void)
 		req->thread->cpu_id = cpu_id;
 		list_add_tail(&req->thread->sched_list, &v->runq);
 		v->runq_len += 1;
-		
-		/* update cpu_set of the VM for remote TLB invalidation */
-		cpu_clear_and_set(old_cpu_id, cpu_id,
-		                  &req->thread->vm->address_space->cpu_set,
-		                  &req->thread->vm->address_space->cpu_set_lock);
+
+		/* Find out whether there is another thread of the same process
+		 * on the source CPU */
+		list_for_each_entry(thread, &(cur_v->runq), sched_list) {
+			if (thread->vm && thread->vm == req->thread->vm) {
+				clear_old_cpu = 0;
+				break;
+			}
+		}
+
+		/* Update cpu_set of the VM for remote TLB invalidation */
+		if (clear_old_cpu) {
+			cpu_clear_and_set(old_cpu_id, cpu_id,
+					&req->thread->vm->address_space->cpu_set,
+					&req->thread->vm->address_space->cpu_set_lock);
+		}
+		else {
+			cpu_set(cpu_id,
+					&req->thread->vm->address_space->cpu_set,
+					&req->thread->vm->address_space->cpu_set_lock);
+
+		}
 
 		dkprintf("%s: migrated TID %d from CPU %d to CPU %d\n",
 			__FUNCTION__, req->thread->tid, old_cpu_id, cpu_id);
