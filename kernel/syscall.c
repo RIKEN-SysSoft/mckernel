@@ -715,6 +715,10 @@ do_wait(int pid, int *status, int options, void *rusage)
 	dkprintf("wait4(): current->proc->pid: %d, pid: %d\n", thread->proc->pid, pid);
 
  rescan:
+#ifdef POSTK_DEBUG_TEMP_FIX_65 /* wait4() lose infomation fix. */
+	waitq_init_entry(&waitpid_wqe, thread);
+	waitq_prepare_to_wait(&thread->proc->waitpid_q, &waitpid_wqe, PS_INTERRUPTIBLE);
+#endif /* POSTK_DEBUG_TEMP_FIX_65 */
 	pid = orgpid;
 
 	mcs_rwlock_writer_lock_noirq(&thread->proc->children_lock, &lock);
@@ -849,8 +853,10 @@ do_wait(int pid, int *status, int options, void *rusage)
 
 	/* Sleep */
 	dkprintf("wait4,sleeping\n");
+#ifndef POSTK_DEBUG_TEMP_FIX_65 /* wait4() lose infomation fix. */
 	waitq_init_entry(&waitpid_wqe, thread);
 	waitq_prepare_to_wait(&thread->proc->waitpid_q, &waitpid_wqe, PS_INTERRUPTIBLE);
+#endif /* !POSTK_DEBUG_TEMP_FIX_65 */
 
 	mcs_rwlock_writer_unlock_noirq(&thread->proc->children_lock, &lock);	
 	if(hassigpending(thread)){
@@ -866,6 +872,9 @@ do_wait(int pid, int *status, int options, void *rusage)
 	goto rescan;
 
  exit:
+#ifdef POSTK_DEBUG_TEMP_FIX_65 /* wait4() lose infomation fix. */
+	waitq_finish_wait(&thread->proc->waitpid_q, &waitpid_wqe);
+#endif /* POSTK_DEBUG_TEMP_FIX_65 */
 	return ret;
  out_found:
 	dkprintf("wait4,out_found\n");
