@@ -365,6 +365,12 @@ static long mcexec_newprocess(ihk_os_t os,
 		return -EFAULT;
 	}
 	info = kmalloc(sizeof(struct release_handler_info), GFP_KERNEL);
+#ifdef POSTK_DEBUG_TEMP_FIX_64 /* host process is SIGKILLed fix. */
+	if (info == NULL) {
+		return -ENOMEM;
+	}
+	memset(info, 0, sizeof(struct release_handler_info));
+#endif /* POSTK_DEBUG_TEMP_FIX_64 */
 	info->pid = desc.pid;
 	ihk_os_register_release_handler(file, release_handler, info);
 	return 0;
@@ -394,6 +400,13 @@ static long mcexec_start_image(ihk_os_t os,
 	}
 
 	info = kmalloc(sizeof(struct release_handler_info), GFP_KERNEL);
+#ifdef POSTK_DEBUG_TEMP_FIX_64 /* host process is SIGKILLed fix. */
+	if (info == NULL) {
+		kfree(desc);
+		return -ENOMEM;
+	}
+	memset(info, 0, sizeof(struct release_handler_info));
+#endif /* POSTK_DEBUG_TEMP_FIX_64 */
 	info->pid = desc->pid;
 	info->cpu = desc->cpu;
 	ihk_os_register_release_handler(file, release_handler, info);
