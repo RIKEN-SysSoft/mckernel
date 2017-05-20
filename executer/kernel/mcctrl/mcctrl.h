@@ -44,7 +44,6 @@
 #include <linux/rwlock.h>
 #include <linux/threads.h>
 #include "sysfs.h"
-#include "mcctrl_public.h"
 
 #define SCD_MSG_PREPARE_PROCESS         0x1
 #define SCD_MSG_PREPARE_PROCESS_ACKED   0x2
@@ -144,7 +143,7 @@ struct ikc_scd_packet {
 
 		/* SCD_MSG_CPU_RW_REG */
 		struct {
-			struct mcctrl_os_cpu_register desc;
+			struct ihk_os_cpu_register desc;
 			enum mcctrl_os_cpu_operation op;
 			void *resp;
 		};

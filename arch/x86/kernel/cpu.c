@@ -1831,7 +1831,7 @@ mod_nmi_ctx(void *nmi_ctx, void (*func)())
 }
 
 int arch_cpu_read_write_register(
-		struct mcctrl_os_cpu_register *desc,
+		struct ihk_os_cpu_register *desc,
 		enum mcctrl_os_cpu_operation op)
 {
 	if (op == MCCTRL_OS_CPU_READ_REGISTER) {

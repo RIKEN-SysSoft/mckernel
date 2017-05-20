@@ -652,11 +652,11 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 
 		pckt.msg = SCD_MSG_CPU_RW_REG_RESP;
 		memcpy(&pckt.desc, &packet->desc,
-				sizeof(struct mcctrl_os_cpu_register));
+				sizeof(struct ihk_os_cpu_register));
 		pckt.resp = packet->resp;
-		pckt.err = arch_cpu_read_write_register(&pckt.desc, pckt.op);
+		pckt.err = arch_cpu_read_write_register(&pckt.desc, packet->op);
 
-		ihk_ikc_send(c, &pckt, 0);
+		ihk_ikc_send(resp_channel, &pckt, 0);
 		break;
 
 	default:

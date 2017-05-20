@@ -40,7 +40,6 @@
 #include <asm/io.h>
 #include "../../config.h"
 #include "mcctrl.h"
-#include "mcctrl_public.h"
 #include <ihk/ihk_host_user.h>
 
 //#define DEBUG
@@ -1938,6 +1937,7 @@ void mcexec_prepare_ack(ihk_os_t os, unsigned long arg, int err)
 	mcctrl_put_per_proc_data(ppd);
 }
 
+
 /* Per-CPU register manipulation functions */
 struct mcctrl_os_cpu_response {
 	int done;
@@ -1945,21 +1945,15 @@ struct mcctrl_os_cpu_response {
 	wait_queue_head_t wq;
 };
 
-int mcctrl_get_request_os_cpu(ihk_os_t *ret_os, int *ret_cpu)
+int mcctrl_get_request_os_cpu(ihk_os_t os, int *ret_cpu)
 {
-	ihk_os_t os;
 	struct mcctrl_usrdata *usrdata;
 	struct mcctrl_per_proc_data *ppd;
 	struct ikc_scd_packet *packet;
 	struct ihk_ikc_channel_desc *ch;
 	int ret = 0;
 
-	/* Look up IHK OS structure
-	 * TODO: iterate all possible indeces, currently only for OS 0
-	 */
-	os = ihk_host_find_os(0, NULL);
 	if (!os) {
-		printk("%s: ERROR: no OS found for index 0\n", __FUNCTION__);
 		return -EINVAL;
 	}
 
@@ -1987,7 +1981,6 @@ int mcctrl_get_request_os_cpu(ihk_os_t *ret_os, int *ret_cpu)
 		goto out_put_ppd;
 	}
 
-	*ret_os = os;
 	/* TODO: define a new IHK query function instead of
 	 * accessing internals directly */
 	ch = (usrdata->channels + packet->ref)->c;
@@ -2001,8 +1994,6 @@ out_put_ppd:
 
 	return ret;
 }
-
-EXPORT_SYMBOL(mcctrl_get_request_os_cpu);
 
 void mcctrl_os_read_write_cpu_response(ihk_os_t os,
 		struct ikc_scd_packet *pisp)
@@ -2022,7 +2013,7 @@ void mcctrl_os_read_write_cpu_response(ihk_os_t os,
 }
 
 int __mcctrl_os_read_write_cpu_register(ihk_os_t os, int cpu,
-		struct mcctrl_os_cpu_register *desc,
+		struct ihk_os_cpu_register *desc,
 		enum mcctrl_os_cpu_operation op)
 {
 	struct ikc_scd_packet isp;
@@ -2057,7 +2048,7 @@ int __mcctrl_os_read_write_cpu_register(ihk_os_t os, int cpu,
 		desc->val = resp.val;
 	}
 
-	printk("%s: MCCTRL_OS_CPU_%s_REGISTER: reg: 0x%lx, val: 0x%lx\n",
+	dprintk("%s: MCCTRL_OS_CPU_%s_REGISTER: reg: 0x%lx, val: 0x%lx\n",
 		__FUNCTION__,
 		(op == MCCTRL_OS_CPU_READ_REGISTER ? "READ" : "WRITE"),
 		desc->addr, desc->val);
@@ -2067,20 +2058,16 @@ out:
 }
 
 int mcctrl_os_read_cpu_register(ihk_os_t os, int cpu,
-		struct mcctrl_os_cpu_register *desc)
+		struct ihk_os_cpu_register *desc)
 {
 	return __mcctrl_os_read_write_cpu_register(os, cpu,
 			desc, MCCTRL_OS_CPU_READ_REGISTER);
 }
 
-EXPORT_SYMBOL(mcctrl_os_read_cpu_register);
-
 int mcctrl_os_write_cpu_register(ihk_os_t os, int cpu,
-		struct mcctrl_os_cpu_register *desc)
+		struct ihk_os_cpu_register *desc)
 {
 	return __mcctrl_os_read_write_cpu_register(os, cpu,
 			desc, MCCTRL_OS_CPU_WRITE_REGISTER);
 }
-
-EXPORT_SYMBOL(mcctrl_os_write_cpu_register);
 

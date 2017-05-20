@@ -46,6 +46,12 @@ extern void rus_page_hash_put_pages(void);
 extern void binfmt_mcexec_init(void);
 extern void binfmt_mcexec_exit(void);
 
+extern int mcctrl_os_read_cpu_register(ihk_os_t os, int cpu,
+		struct ihk_os_cpu_register *desc);
+extern int mcctrl_os_write_cpu_register(ihk_os_t os, int cpu,
+		struct ihk_os_cpu_register *desc);
+extern int mcctrl_get_request_os_cpu(ihk_os_t os, int *cpu);
+
 static long mcctrl_ioctl(ihk_os_t os, unsigned int request, void *priv,
                          unsigned long arg, struct file *file)
 {
@@ -83,6 +89,12 @@ static struct ihk_os_user_call_handler mcctrl_uchs[] = {
 	{ .request = IHK_OS_AUX_PERF_DESTROY, .func = mcctrl_ioctl },
 };
 
+static struct ihk_os_kernel_call_handler mcctrl_kernel_handlers = {
+	.get_request_cpu = mcctrl_get_request_os_cpu,
+	.read_cpu_register = mcctrl_os_read_cpu_register,
+	.write_cpu_register = mcctrl_os_write_cpu_register,
+};
+
 static struct ihk_os_user_call mcctrl_uc_proto = {
 	.num_handlers = sizeof(mcctrl_uchs) / sizeof(mcctrl_uchs[0]),
 	.handlers = mcctrl_uchs,
@@ -117,12 +129,16 @@ int mcctrl_os_boot_notifier(int os_index)
 
 	memcpy(mcctrl_uc + os_index, &mcctrl_uc_proto, sizeof mcctrl_uc_proto);
 
+	rc = ihk_os_set_kernel_call_handlers(os[os_index], &mcctrl_kernel_handlers);
+	if (rc < 0) {
+		printk("mcctrl: error: setting kernel callbacks for OS %d\n", os_index);
+		goto error_cleanup_channels;
+	}
+
 	rc = ihk_os_register_user_call_handlers(os[os_index], mcctrl_uc + os_index);
 	if (rc < 0) {
-		destroy_ikc_channels(os[os_index]);
 		printk("mcctrl: error: registering callbacks for OS %d\n", os_index);
-
-		goto error_cleanup_channels;
+		goto error_clear_kernel_handlers;
 	}
 
 	procfs_init(os_index);
@@ -130,6 +146,8 @@ int mcctrl_os_boot_notifier(int os_index)
 
 	return 0;
 
+error_clear_kernel_handlers:
+	ihk_os_clear_kernel_call_handlers(os[os_index]);
 error_cleanup_channels:
 	destroy_ikc_channels(os[os_index]);
 
@@ -143,6 +161,7 @@ int mcctrl_os_shutdown_notifier(int os_index)
 		sysfsm_cleanup(os[os_index]);
 		free_topology_info(os[os_index]);
 		ihk_os_unregister_user_call_handlers(os[os_index], mcctrl_uc + os_index);
+		ihk_os_clear_kernel_call_handlers(os[os_index]);
 		destroy_ikc_channels(os[os_index]);
 		procfs_exit(os_index);
 	}

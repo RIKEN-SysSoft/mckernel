@@ -213,7 +213,7 @@ struct syscall_request {
 	unsigned long args[6];
 };
 
-struct mcctrl_os_cpu_register {
+struct ihk_os_cpu_register {
 	unsigned long addr;
 	unsigned long val;
 	unsigned long addr_ext;
@@ -253,7 +253,7 @@ struct ikc_scd_packet {
 
 		/* SCD_MSG_CPU_RW_REG */
 		struct {
-			struct mcctrl_os_cpu_register desc;
+			struct ihk_os_cpu_register desc;
 			enum mcctrl_os_cpu_operation op;
 			void *resp;
 		};
@@ -434,7 +434,7 @@ int do_shmget(key_t key, size_t size, int shmflg);
 struct process_vm;
 int arch_map_vdso(struct process_vm *vm);	/* arch dependent */
 int arch_setup_vdso(void);
-int arch_cpu_read_write_register(struct mcctrl_os_cpu_register *desc,
+int arch_cpu_read_write_register(struct ihk_os_cpu_register *desc,
 		enum mcctrl_os_cpu_operation op);
 
 #define VDSO_MAXPAGES 2
