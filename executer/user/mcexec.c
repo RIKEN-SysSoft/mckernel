@@ -161,7 +161,7 @@ static int mpol_no_bss = 0;
 static int mpol_shm_premap = 0;
 static int no_bind_ikc_map = 0;
 static unsigned long mpol_threshold = 0;
-static unsigned long heap_extension = (2*1024*1024);
+static unsigned long heap_extension = (4*1024);
 static int profile = 0;
 static int disable_sched_yield = 0;
 

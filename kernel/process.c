@@ -2067,8 +2067,15 @@ unsigned long extend_process_region(struct process_vm *vm,
 	void *p;
 	int rc;
 
+	size_t align_size = vm->proc->heap_extension > PAGE_SIZE ?
+		LARGE_PAGE_SIZE : PAGE_SIZE;
+	unsigned long align_mask = vm->proc->heap_extension > PAGE_SIZE ?
+		LARGE_PAGE_MASK : PAGE_MASK;
+	unsigned long align_p2align = vm->proc->heap_extension > PAGE_SHIFT ?
+		LARGE_PAGE_P2ALIGN : PAGE_P2ALIGN;
+
 	new_end_allocated = (address + vm->proc->heap_extension +
-			(LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
+			(align_size - 1)) & align_mask;
 
 	if (flag & VR_DEMAND_PAGING) {
 		p = 0;
@@ -2076,7 +2083,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 	else {
 		p = ihk_mc_alloc_aligned_pages(
 				(new_end_allocated - end_allocated) >> PAGE_SHIFT,
-				LARGE_PAGE_P2ALIGN, IHK_MC_AP_NOWAIT |
+				align_p2align, IHK_MC_AP_NOWAIT |
 				(!(vm->proc->mpol_flags & MPOL_NO_HEAP) ? IHK_MC_AP_USER : 0));
 
 		if (!p) {
@@ -2086,10 +2093,13 @@ unsigned long extend_process_region(struct process_vm *vm,
 
 	if ((rc = add_process_memory_range(vm, end_allocated, new_end_allocated,
 					(p == 0 ? 0 : virt_to_phys(p)), flag, NULL, 0,
-					LARGE_PAGE_P2ALIGN, NULL)) != 0) {
+					align_p2align, NULL)) != 0) {
 		ihk_mc_free_pages(p, (new_end_allocated - end_allocated) >> PAGE_SHIFT);
 		return end_allocated;
 	}
+
+	dkprintf("%s: new_end_allocated: 0x%lu, align_size: %lu, align_mask: %lx\n",
+		__FUNCTION__, new_end_allocated, align_size, align_mask);
 
 #ifdef ENABLE_RUSAGE
 {
