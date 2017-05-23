@@ -1276,6 +1276,33 @@ static int rlimits[] = {
 
 char dev[64];
 
+unsigned long atobytes(char *string)
+{
+	unsigned long mult = 1;
+	char *postfix;
+
+	if (!strlen(string)) {
+		return 0;
+	}
+
+	postfix = &string[strlen(string) - 1];
+
+	if (*postfix == 'k' || *postfix == 'K') {
+		mult = 1024;
+		*postfix = 0;
+	}
+	else if (*postfix == 'm' || *postfix == 'M') {
+		mult = 1024 * 1024;
+		*postfix = 0;
+	}
+	else if (*postfix == 'g' || *postfix == 'G') {
+		mult = 1024 * 1024 * 1024;
+		*postfix = 0;
+	}
+
+	return atol(string) * mult;
+}
+
 static struct option mcexec_options[] = {
 	{
 		.name =		"disable-vdso",
@@ -1410,11 +1437,11 @@ int main(int argc, char **argv)
 				break;
 
 			case 'm':
-				mpol_threshold = atol(optarg);
+				mpol_threshold = atobytes(optarg);
 				break;
 
 			case 'h':
-				heap_extension = atol(optarg);
+				heap_extension = atobytes(optarg);
 				break;
 
 			case 0:	/* long opt */
