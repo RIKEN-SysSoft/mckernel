@@ -1043,7 +1043,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	struct vm_regions *region = &thread->vm->region;
 	intptr_t addr = addr0;
 	size_t len = len0;
-	size_t populate_len;
+	size_t populate_len = 0;
 	off_t off;
 	int error;
 	intptr_t npages;
