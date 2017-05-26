@@ -1588,6 +1588,7 @@ SYSCALL_DECLARE(brk)
 	struct vm_regions *region = &cpu_local_var(current)->vm->region;
 	unsigned long r;
 	unsigned long vrflag;
+	unsigned long old_brk_end_allocated = 0;
 
 	dkprintf("SC(%d)[sys_brk] brk_start=%lx,end=%lx\n",
 			ihk_mc_get_processor_id(), region->brk_start, region->brk_end);
@@ -1616,6 +1617,7 @@ SYSCALL_DECLARE(brk)
 	/* Try to extend memory region */
 	vrflag = VR_PROT_READ | VR_PROT_WRITE;
 	vrflag |= VRFLAG_PROT_TO_MAXPROT(vrflag);
+	old_brk_end_allocated = region->brk_end_allocated;
 	ihk_mc_spinlock_lock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
 	region->brk_end_allocated =
 		extend_process_region(cpu_local_var(current)->vm,
@@ -1623,6 +1625,11 @@ SYSCALL_DECLARE(brk)
 	ihk_mc_spinlock_unlock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
 	dkprintf("SC(%d)[sys_brk] brk_end set to %lx\n",
 			ihk_mc_get_processor_id(), region->brk_end);
+
+	if (old_brk_end_allocated == region->brk_end_allocated) {
+		r = old_brk_end_allocated;
+		goto out;
+	}
 
 	region->brk_end = address;
 	r = region->brk_end;
