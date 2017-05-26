@@ -2074,8 +2074,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 	unsigned long align_p2align = vm->proc->heap_extension > PAGE_SHIFT ?
 		LARGE_PAGE_P2ALIGN : PAGE_P2ALIGN;
 
-	new_end_allocated = (address + vm->proc->heap_extension +
-			(align_size - 1)) & align_mask;
+	new_end_allocated = (address + (vm->proc->heap_extension - 1)) & align_mask;
 
 	if (flag & VR_DEMAND_PAGING) {
 		p = 0;
