@@ -1842,7 +1842,11 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 
 	case __NR_coredump:
 		error = writecore(os, sc->args[1], sc->args[0]);
+#ifdef POSTK_DEBUG_TEMP_FIX_62 /* Fix to notify McKernel that core file generation failed */
+		ret = error;
+#else /* POSTK_DEBUG_TEMP_FIX_62 */
 		ret = 0;
+#endif /* POSTK_DEBUG_TEMP_FIX_62 */
 		break;
 	
 	case __NR_sched_setparam: {
