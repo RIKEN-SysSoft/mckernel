@@ -8999,7 +8999,9 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 #ifdef TRACK_SYSCALLS
 	uint64_t t_s;
 #endif // TRACK_SYSCALLS
+#if !defined(POSTK_DEBUG_TEMP_FIX_60) && !defined(POSTK_DEBUG_TEMP_FIX_56)
 	struct thread *thread = cpu_local_var(current);
+#endif
 
 	set_cputime(1);
 	if(cpu_local_var(current)->proc->status == PS_EXITED &&
