@@ -805,7 +805,7 @@ static inline void setup_middle_level(translation_table_t *tt, unsigned long bas
 		pte_t* ptr;
 		pte_t val;
 		unsigned long next;
-		translation_table_t* next_tt;
+		translation_table_t* next_tt = NULL;
 
 		// 登録先エントリのアドレスを取得
 		ptr = &tt[i];
