@@ -1027,6 +1027,18 @@ interrupt_from_user(void *regs0)
 void
 check_signal(unsigned long rc, void *regs0, int num)
 {
+	__check_signal(rc, regs0, num, 0);
+}
+
+void
+check_signal_irq_disabled(unsigned long rc, void *regs0, int num)
+{
+	__check_signal(rc, regs0, num, 1);
+}
+
+static void
+__check_signal(unsigned long rc, void *regs0, int num, int irq_disabled)
+{
 	ihk_mc_user_context_t *regs = regs0;
 	struct thread *thread;
 	struct sig_pending *pending;
@@ -1067,10 +1079,16 @@ check_signal(unsigned long rc, void *regs0, int num)
 	}
 
 	for(;;){
+		if (irq_disabled == 1) {
+			irqstate = cpu_disable_interrupt_save();
+		}
 		pending = getsigpending(thread, 1);
 		if(!pending) {
 			dkprintf("check_signal,queue is empty\n");
 			goto out;
+		}
+		if (irq_disabled == 1) {
+			cpu_restore_interrupt(irqstate);
 		}
 		do_signal(rc, regs, thread, pending, num);
 	}

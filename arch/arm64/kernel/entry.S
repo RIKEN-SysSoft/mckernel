@@ -75,13 +75,17 @@
 	*/
 	.endm
 
-	.macro	kernel_exit, el, ignore_check_signal = 0, need_enable_step = 0
-	.if 	\el == 0 && \ignore_check_signal == 0
+	.macro	kernel_exit, el, need_enable_step = 0
+	.if 	\el == 0
 	mov	x0, #0
 	mov	x1, sp
 	mov	x2, #0
-	bl	check_signal			// Other than the svc call, check whether the signal is delivered
+	bl	check_signal			// check whether the signal is delivered
 	bl	check_need_resched		// or reschedule is needed.
+	mov	x0, #0
+	mov	x1, sp
+	mov	x2, #0
+	bl	check_signal_irq_disabled	// check whether the signal is delivered(for kernel_exit)
 	.endif
 	disable_irq x1				// disable interrupts
 	.if	\need_enable_step == 1
@@ -502,7 +506,7 @@ ENDPROC(cpu_switch_to)
 
 
 ret_fast_syscall:
-	kernel_exit 0, 1, 1			// Just only return from syscall, ignore check signal.
+	kernel_exit 0, 1
 ENDPROC(ret_fast_syscall)
 
 /*
@@ -510,7 +514,7 @@ ENDPROC(ret_fast_syscall)
  */
 ret_to_user:
 no_work_pending:
-	kernel_exit 0, 0, 1
+	kernel_exit 0, 1
 ENDPROC(ret_to_user)
 
 /*
