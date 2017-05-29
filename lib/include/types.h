@@ -14,11 +14,6 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-#ifdef POSTK_DEBUG_ARCH_DEP_19
-#define BITS_PER_BYTE	8
-#define BITS_PER_LONG	(sizeof(long) * BITS_PER_BYTE)
-#endif /* POSTK_DEBUG_ARCH_DEP_19 */
-
 #define BITS_PER_BYTE	8
 #define BITS_PER_LONG	(sizeof(long) * BITS_PER_BYTE)
 
