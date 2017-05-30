@@ -239,7 +239,9 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp)
 			int nr_pages = (result.size + (PAGE_SIZE - 1))
 				>> PAGE_SHIFT;
 			int j = 0;
-			int node = 4;
+			int node = ihk_mc_get_nr_numa_nodes() / 2;
+			dkprintf("%s: MF_PREMAP, start node: %d\n",
+				__FUNCTION__, node);
 
 			mo->pages = kmalloc(nr_pages * sizeof(void *), IHK_MC_AP_NOWAIT);
 			if (!mo->pages) {
@@ -266,7 +268,7 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp)
 
 					++node;
 					if (node == ihk_mc_get_nr_numa_nodes()) {
-						node = 4;
+						node = ihk_mc_get_nr_numa_nodes() / 2;
 					}
 				}
 				dkprintf("%s: allocated %d pages interleaved\n",
@@ -365,11 +367,13 @@ static void fileobj_release(struct memobj *memobj)
 			page_va = phys_to_virt(page_to_phys(page));
 
 			if (ihk_atomic_read(&page->count) != 1) {
-				kprintf("%s: WARNING: page count for phys 0x%lx is invalid\n",
-					__FUNCTION__, page->phys);
+				kprintf("%s: WARNING: page count %d for phys 0x%lx is invalid, flags: 0x%lx\n",
+					__FUNCTION__,
+					ihk_atomic_read(&page->count),
+					page->phys,
+					to_memobj(free_obj)->flags);
 			}
-
-			if (page_unmap(page)) {
+			else if (page_unmap(page)) {
 				ihk_mc_free_pages(page_va, 1);
 			}
 #if 0
