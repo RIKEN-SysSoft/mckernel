@@ -938,7 +938,13 @@ static const struct arm64_cpu_capabilities arm64_elf_hwcaps[] = {
 /* @ref.impl arch/arm64/kernel/cpufeature.c */
 static void cap_set_elf_hwcap(const struct arm64_cpu_capabilities *cap)
 {
-	elf_hwcap |= cap->hwcap;
+	switch (cap->hwcap_type) {
+	case CAP_HWCAP:
+		elf_hwcap |= cap->hwcap;
+		break;
+	default:
+		kprintf("invalid cpu capability type.\n");
+	}
 }
 
 /* @ref.impl arch/arm64/kernel/cpufeature.c */
