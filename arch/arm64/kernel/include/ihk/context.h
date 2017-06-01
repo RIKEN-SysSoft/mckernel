@@ -36,6 +36,10 @@ typedef struct pt_regs ihk_mc_user_context_t;
 #define GET_IP(regs)		((unsigned long)(regs)->pc)
 #define SET_IP(regs, value)	((regs)->pc = ((uint64_t) (value)))
 
+/* @ref.impl arch/arm64/include/asm/ptrace.h */
+/* AArch32 CPSR bits */
+#define COMPAT_PSR_MODE_MASK	0x0000001f
+
 /* @ref.impl include/asm-generic/ptrace.h */
 static inline unsigned long instruction_pointer(struct pt_regs *regs)
 {
