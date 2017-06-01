@@ -32,6 +32,10 @@
 #include <xos_hpcdrv.h>
 #include <xos_hwbdrv.h>
 #include <xos_secdrv.h>
+#include <cpufeature.h>
+#ifdef POSTK_DEBUG_ARCH_DEP_65
+#include <hwcap.h>
+#endif /* POSTK_DEBUG_ARCH_DEP_65 */
 
 //#define DEBUG_PRINT_CPU
 
@@ -45,7 +49,6 @@
 #define ekprintf kprintf
 #endif
 
-unsigned long elf_hwcap;
 struct cpuinfo_arm64 cpuinfo_data[NR_CPUS];	/* index is logical cpuid */
 static unsigned int per_cpu_timer_val[NR_CPUS] = { 0 };
 
@@ -257,67 +260,68 @@ static void init_smp_processor(void)
 	/* nothing */
 }
 
-/* @ref.impl arch/arm64/kernel/cpuinfo.c::__cpuinfo_store_cpu (reg_midr only) */
-static void cpuinfo_store_cpu(struct cpuinfo_arm64 *info)
+/* @ref.impl arch/arm64/include/asm/cputype.h */
+static inline uint32_t read_cpuid_cachetype(void)
 {
-	info->reg_midr = read_cpuid_id();
+	return read_cpuid(CTR_EL0);
+}
+
+/* @ref.impl arch/arm64/include/asm/arch_timer.h */
+static inline uint32_t arch_timer_get_cntfrq(void)
+{
+	return read_sysreg(cntfrq_el0);
+}
+
+/* @ref.impl arch/arm64/kernel/cpuinfo.c::__cpuinfo_store_cpu */
+static void __cpuinfo_store_cpu(struct cpuinfo_arm64 *info)
+{
 	info->hwid = ihk_mc_get_hardware_processor_id(); /* McKernel Original. */
+
+	info->reg_cntfrq = arch_timer_get_cntfrq();
+	info->reg_ctr = read_cpuid_cachetype();
+	info->reg_dczid = read_cpuid(DCZID_EL0);
+	info->reg_midr = read_cpuid_id();
+	info->reg_revidr = read_cpuid(REVIDR_EL1);
+
+	info->reg_id_aa64dfr0 = read_cpuid(ID_AA64DFR0_EL1);
+	info->reg_id_aa64dfr1 = read_cpuid(ID_AA64DFR1_EL1);
+	info->reg_id_aa64isar0 = read_cpuid(ID_AA64ISAR0_EL1);
+	info->reg_id_aa64isar1 = read_cpuid(ID_AA64ISAR1_EL1);
+	info->reg_id_aa64mmfr0 = read_cpuid(ID_AA64MMFR0_EL1);
+	info->reg_id_aa64mmfr1 = read_cpuid(ID_AA64MMFR1_EL1);
+	info->reg_id_aa64mmfr2 = read_cpuid(ID_AA64MMFR2_EL1);
+	info->reg_id_aa64pfr0 = read_cpuid(ID_AA64PFR0_EL1);
+	info->reg_id_aa64pfr1 = read_cpuid(ID_AA64PFR1_EL1);
+
+	/* Update the 32bit ID registers only if AArch32 is implemented */
+//	if (id_aa64pfr0_32bit_el0(info->reg_id_aa64pfr0)) {
+//		panic("AArch32 is not supported.");
+//	}
+}
+
+/* @ref.impl arch/arm64/kernel/cpuinfo.c */
+static void cpuinfo_store_boot_cpu(void)
+{
+	struct cpuinfo_arm64 *info = &cpuinfo_data[0];
+	__cpuinfo_store_cpu(info);
+	init_cpu_features(info);
+}
+
+/* @ref.impl arch/arm64/kernel/cpuinfo.c */
+static void cpuinfo_store_cpu(void)
+{
+	int cpuid = ihk_mc_get_processor_id();
+	struct cpuinfo_arm64 *boot_cpu_data = &cpuinfo_data[0];
+	struct cpuinfo_arm64 *info = &cpuinfo_data[cpuid];
+	__cpuinfo_store_cpu(info);
+	update_cpu_features(cpuid, info, boot_cpu_data);
 }
 
 /* @ref.impl arch/arm64/kernel/setup.c::setup_processor */
-/* build elf_hwcap value, BSP only function */
 static void setup_processor(void)
 {
-	unsigned long features = read_cpuid(ID_AA64ISAR0_EL1);
-	unsigned long pfr = read_cpuid(ID_AA64PFR0_EL1);
-	unsigned long block;
-
-	elf_hwcap = 0;
-
-	block = (features >> 4) & 0xf;
-	if (!(block & 0x8)) {
-		switch (block) {
-		default:
-		case 2:
-			elf_hwcap |= HWCAP_PMULL;
-		case 1:
-			elf_hwcap |= HWCAP_AES;
-		case 0:
-			break;
-		}
-	}
-
-	block = (features >> 8) & 0xf;
-	if (block && !(block & 0x8))
-		elf_hwcap |= HWCAP_SHA1;
-
-	block = (features >> 12) & 0xf;
-	if (block && !(block & 0x8))
-		elf_hwcap |= HWCAP_SHA2;
-
-	block = (features >> 16) & 0xf;
-	if (block && !(block & 0x8))
-		elf_hwcap |= HWCAP_CRC32;
-
-	/* @ref.impl drivers/clocksource/arm_arch_timer.c::arch_timer_evtstrm_enable */
-#ifdef CONFIG_ARM_ARCH_TIMER_EVTSTREAM
-	elf_hwcap |= HWCAP_EVTSTRM;
-#endif /* CONFIG_ARM_ARCH_TIMER_EVTSTREAM */
-
-	/* @ref.impl arch/arm64/kernel/fpsimd.c:fpsimd_init */
-	if (pfr & (0xf << 16)) {
-		kprintf("Floating-point is not implemented\n");
-	} else {
-		elf_hwcap |= HWCAP_FP;
-	}
-
-	if (pfr & (0xf << 20)) {
-		kprintf("Advanced SIMD is not implemented\n");
-	} else {
-		elf_hwcap |= HWCAP_ASIMD;
-	}
-
-	cpuinfo_store_cpu(&cpuinfo_data[0]);
+	cpuinfo_store_boot_cpu();
+	enable_mrs_emulation();
 }
 
 static char *trampoline_va, *first_page_va;
@@ -554,7 +558,7 @@ void setup_arm64_ap(void (*next_func)(void))
 	assign_processor_id();
 	verify_cpu_run_el();
 	arch_counter_set_user_access();
-	cpuinfo_store_cpu(&cpuinfo_data[ihk_mc_get_processor_id()]);
+	cpuinfo_store_cpu();
 	hw_breakpoint_reset();
 	debug_monitors_init();
 	arch_timer_configure_evtstream();
@@ -844,6 +848,8 @@ void ihk_mc_boot_cpu(int cpuid, unsigned long pc)
 {
 	int virt_cpuid = get_virt_cpuid(cpuid);
 	extern void arch_ap_start();
+	extern int num_processors;
+	int ncpus;
 
 	/* virt cpuid check */
 	if (virt_cpuid == -1) {
@@ -869,6 +875,11 @@ void ihk_mc_boot_cpu(int cpuid, unsigned long pc)
 	/* wait for ap call call_ap_func() */
 	while (!cpu_boot_status) {
 		cpu_pause();
+	}
+
+	ncpus = ihk_mc_get_cpu_info()->ncpus;
+	if (ncpus - 1 <= num_processors) {
+		setup_cpu_features();
 	}
 }
 
@@ -1018,7 +1029,7 @@ void ihk_mc_modify_user_context(ihk_mc_user_context_t *uctx,
 }
 
 /* @ref.impl arch/arm64/kernel/setup.c::hwcap_str */
-static const char *hwcap_str[] = {
+static const char *const hwcap_str[] = {
 	"fp",
 	"asimd",
 	"evtstrm",
@@ -1027,6 +1038,11 @@ static const char *hwcap_str[] = {
 	"sha1",
 	"sha2",
 	"crc32",
+	"atomics",
+	"fphp",
+	"asimdhp",
+	"cpuid",
+	"asimdrdm",
 	NULL
 };
 
@@ -1034,6 +1050,7 @@ static const char *hwcap_str[] = {
 long ihk_mc_show_cpuinfo(char *buf, size_t buf_size, unsigned long read_off, int *eofp)
 {
 	extern int num_processors;
+	extern unsigned long elf_hwcap;
 	int i = 0;
 	char *lbuf = NULL;
 	const size_t lbuf_size = CPUINFO_LEN_PER_CORE * num_processors;
@@ -1342,6 +1359,7 @@ out:
 void
 save_fp_regs(struct thread *thread)
 {
+	extern unsigned long elf_hwcap;
 	if(check_and_allocate_fp_regs(thread) != 0) {
 		// alloc error.
 		return;
@@ -1361,6 +1379,8 @@ save_fp_regs(struct thread *thread)
 void
 restore_fp_regs(struct thread *thread)
 {
+	extern unsigned long elf_hwcap;
+
 	if (!thread->fp_regs) {
 		// only clear fpregs.
 		fp_regs_struct clear_fp;

@@ -1,6 +1,8 @@
-/* types.h COPYRIGHT FUJITSU LIMITED 2015-2016 */
+/* types.h COPYRIGHT FUJITSU LIMITED 2015-2017 */
 #ifndef __HEADER_ARM64_IHK_TYPES_H
 #define __HEADER_ARM64_IHK_TYPES_H
+
+#ifndef __ASSEMBLY__
 
 typedef unsigned char      uint8_t;
 typedef unsigned short     uint16_t;
@@ -25,6 +27,8 @@ typedef uint32_t           gid_t;
 typedef int64_t            time_t;
 typedef int32_t            pid_t;
 #endif /* POSTK_DEBUG_ARCH_DEP_18 */
+
+#endif /* __ASSEMBLY__ */
 
 #define NULL ((void *)0)
 

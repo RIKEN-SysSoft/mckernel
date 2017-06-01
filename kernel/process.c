@@ -30,6 +30,9 @@
 #include <page.h>
 #include <cpulocal.h>
 #include <auxvec.h>
+#ifdef POSTK_DEBUG_ARCH_DEP_65
+#include <hwcap.h>
+#endif /* POSTK_DEBUG_ARCH_DEP_65 */
 #include <timer.h>
 #include <mman.h>
 #include <xpmem.h>
@@ -1982,6 +1985,10 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	   AUXV_LEN in include/process.h. */
 	p[s_ind--] = 0;     /* AT_NULL */
 	p[s_ind--] = 0;
+#ifdef POSTK_DEBUG_ARCH_DEP_65
+	p[s_ind--] = arch_get_hwcap(); /* AT_HWCAP */
+	p[s_ind--] = AT_HWCAP;
+#endif /* POSTK_DEBUG_ARCH_DEP_65 */
 	p[s_ind--] = pn->at_entry; /* AT_ENTRY */
 	p[s_ind--] = AT_ENTRY;
 	p[s_ind--] = pn->at_phnum; /* AT_PHNUM */
