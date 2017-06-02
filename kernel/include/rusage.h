@@ -1,6 +1,8 @@
 #ifndef __RUSAGE_H
 #define __RUSAGE_H
 
+#include "config.h"
+
 #define RUSAGE_DEFAULT_SIZE 10
 
 enum RUSAGE_MEMBER {
@@ -64,7 +66,6 @@ enum sys_delegate_state_enum {
 };
 enum sys_delegate_state_enum sys_delegate_state;
 
-unsigned long rusage_rss[sizeof(cpu_set_t)/8];
 unsigned long rusage_rss_max;
 long rusage_rss_current;
 unsigned long rusage_kmem_usage;
@@ -75,5 +76,8 @@ unsigned long rusage_numa_stat[1024];
 unsigned long rusage_max_memory;
 
 #define RUSAGE_MEM_LIMIT 2000000
+
+void rusage_init();
+void rusage_inc_num_threads(int count);
 
 #endif

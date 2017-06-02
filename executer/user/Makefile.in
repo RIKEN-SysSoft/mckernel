@@ -1,6 +1,6 @@
 CC=@CC@
 BINDIR=@BINDIR@
-LIBDIR=@LIBDIR@
+MCKERNEL_LIBDIR=@MCKERNEL_LIBDIR@
 KDIR ?= @KDIR@
 CFLAGS=-Wall -O -I.
 VPATH=@abs_srcdir@
@@ -28,7 +28,7 @@ clean:
 install:
 	mkdir -p -m 755 $(BINDIR)
 	install -m 755 mcexec $(BINDIR)
-	mkdir -p -m 755 $(LIBDIR)
-	install -m 755 libsched_yield.so.1.0.0 $(LIBDIR)
+	mkdir -p -m 755 $(MCKERNEL_LIBDIR)
+	install -m 755 libsched_yield.so.1.0.0 $(MCKERNEL_LIBDIR)
 	@uncomment_if_ENABLE_MEMDUMP@install -m 755 eclair $(BINDIR)
 

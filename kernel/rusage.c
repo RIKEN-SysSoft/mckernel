@@ -34,14 +34,40 @@ extern struct ihk_os_monitor *monitor;
 
 
 #ifdef ENABLE_RUSAGE
+/* initialize rusage */
+void rusage_init() {
+	int i;
+	rusage_num_threads = 0;
+	rusage_max_num_threads = 0;
+
+	os_status = IHK_STATUS_INACTIVE;
+	rusage_hugetlb_usage = 0;
+	rusage_hugetlb_max_usage = 0;
+	for (i = 0; i < 1024; i++) {
+		rusage_numa_stat[i] = 0;
+	}
+	rusage_rss_current = 0;
+	rusage_rss_max = 0;
+}
+
+void rusage_inc_num_threads(int count) {
+	volatile unsigned long max_obs1, max_obs2;
+	ihk_atomic_add_ulong(count, &rusage_num_threads);
+	max_obs1 = rusage_max_num_threads;
+	if (max_obs1 < rusage_num_threads) {
+	retry:
+		max_obs2 = atomic_cmpxchg8(&rusage_max_num_threads, max_obs1, rusage_num_threads);
+		if(max_obs2 != max_obs1 &&
+		   max_obs2 < rusage_num_threads) {
+			max_obs1 = max_obs2;
+			goto retry;
+		}
+	}
+}
+
 /* count total rss */
 unsigned long count_rss () {
-	int i;
-	unsigned long val = 0;
-	for(i = 0; i < sizeof(cpu_set_t)/8; i++){
-		val += rusage_rss[i];
-	}
-	return val;
+	return rusage_rss_current;
 }
 
 /* count total cache */

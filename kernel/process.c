@@ -334,23 +334,7 @@ struct thread *create_thread(unsigned long user_pc,
 	ihk_mc_spinlock_init(&thread->spin_sleep_lock);
 	thread->spin_sleep = 0;
 #ifdef ENABLE_RUSAGE
-	{
-		int processor_id;
-		unsigned long curr;
-		processor_id = ihk_mc_get_processor_id();
-		rusage_rss[processor_id] += KERNEL_STACK_NR_PAGES * PAGE_SIZE;
-		curr = ihk_atomic_add_long_return ( KERNEL_STACK_NR_PAGES * PAGE_SIZE, &rusage_rss_current);
-		if (rusage_rss_max < curr) {
-			atomic_cmpxchg8(&rusage_rss_max, rusage_rss_max, curr);
-		}
-		if (rusage_max_memory - curr < RUSAGE_MEM_LIMIT) {
-			event_signal();
-		}
-		ihk_atomic_add_ulong ( 1, &rusage_num_threads);
-		if (rusage_max_num_threads < rusage_num_threads) {
-			atomic_cmpxchg8(&rusage_max_num_threads, rusage_max_num_threads, rusage_num_threads);
-		}
-	}
+	rusage_inc_num_threads(1);
 #endif
 	return thread;
 
@@ -503,25 +487,7 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 	thread->spin_sleep = 0;
 
 #ifdef ENABLE_RUSAGE
-	{
-		int processor_id;
-		long curr;
-		processor_id = ihk_mc_get_processor_id();
-		rusage_rss[processor_id] += KERNEL_STACK_NR_PAGES * PAGE_SIZE;
-		curr = ihk_atomic_add_long_return (KERNEL_STACK_NR_PAGES * PAGE_SIZE, &rusage_rss_current);
-		if (rusage_rss_max < curr) {
-			atomic_cmpxchg8(&rusage_rss_max, rusage_rss_max, curr);
-		}
-		if (rusage_max_memory - curr < RUSAGE_MEM_LIMIT) {
-			event_signal();
-		}
-
-		ihk_atomic_add_ulong ( 1, &rusage_num_threads);
-
-		if (rusage_max_num_threads < rusage_num_threads) {
-			atomic_cmpxchg8(&rusage_max_num_threads, rusage_max_num_threads, rusage_num_threads);
-		}
-	}
+	rusage_inc_num_threads(1);
 #endif
 
 #ifdef PROFILE_ENABLE
@@ -2040,11 +2006,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 
 #ifdef ENABLE_RUSAGE
 {
-	int processor_id;
 	long curr;
-
-	processor_id = ihk_mc_get_processor_id();
-	rusage_rss[processor_id] += (minsz >> PAGE_SHIFT) * PAGE_SIZE;
 	curr = ihk_atomic_add_long_return ((minsz >> PAGE_SHIFT) * PAGE_SIZE, &rusage_rss_current);
 	if (rusage_rss_max < curr) {
 		atomic_cmpxchg8(&rusage_rss_max, rusage_rss_max, curr);
@@ -2054,7 +2016,6 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	}
 }
 #endif
-
 	return 0;
 }
 
@@ -2102,10 +2063,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 
 #ifdef ENABLE_RUSAGE
 {
-	int processor_id;
 	long curr;
-	processor_id = ihk_mc_get_processor_id();
-	rusage_rss[processor_id] += ((new_end_allocated - end_allocated) >> PAGE_SHIFT) * PAGE_SIZE;
 	curr = ihk_atomic_add_long_return (((new_end_allocated - end_allocated) >> PAGE_SHIFT) * PAGE_SIZE, &rusage_rss_current);
 	if (rusage_rss_max < curr) {
 		atomic_cmpxchg8(&rusage_rss_max, rusage_rss_max, curr);
@@ -2419,10 +2377,6 @@ void destroy_thread(struct thread *thread)
 
 #ifdef ENABLE_RUSAGE
 {
-	int processor_id;
-	processor_id = ihk_mc_get_processor_id();
-	rusage_rss[processor_id] -= KERNEL_STACK_NR_PAGES * PAGE_SIZE;
-	ihk_atomic_add_long_return(KERNEL_STACK_NR_PAGES * PAGE_SIZE * (-1) , &rusage_rss_current);
 	ihk_atomic_add_ulong ( -1, &rusage_num_threads);
 }
 #endif

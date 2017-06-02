@@ -644,13 +644,14 @@ IHK_RELEASE_DATE
 DCFA_VERSION
 MCKERNEL_VERSION
 IHK_VERSION
+ENABLE_RUSAGE
 ENABLE_MCOVERLAYFS
 MANDIR
 KERNDIR
 KMODDIR
 ETCDIR
+MCKERNEL_LIBDIR
 SBINDIR
-LIBDIR
 BINDIR
 TARGET
 UNAME_R
@@ -713,6 +714,7 @@ with_system_map
 enable_dcfa
 enable_memdump
 enable_mcoverlayfs
+enable_rusage
 with_uname_r
 '
       ac_precious_vars='build_alias
@@ -1348,6 +1350,7 @@ Optional Features:
   --enable-dcfa           Enable DCFA modules
   --enable-memdump        enable dumping memory and analyzing a dump
   --enable-mcoverlayfs    enable mcoverlayfs implementation
+  --enable-rusage         enable rusage implementation
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -3649,6 +3652,14 @@ else
 fi
 
 
+# Check whether --enable-rusage was given.
+if test "${enable_rusage+set}" = set; then :
+  enableval=$enable_rusage; ENABLE_RUSAGE=$enableval
+else
+  ENABLE_RUSAGE=yes
+fi
+
+
 
 # Check whether --with-uname_r was given.
 if test "${with_uname_r+set}" = set; then
@@ -4478,12 +4489,12 @@ case $WITH_TARGET in
 	if test "X$BINDIR" = X; then
 		BINDIR="$prefix/bin"
 	fi
-	if test "X$LIBDIR" = X; then
-		LIBDIR="$prefix/lib"
-	fi
 	if test "X$SBINDIR" = X; then
 		SBINDIR="$prefix/sbin"
 	fi
+        if test "X$MCKERNEL_LIBDIR" = X; then
+                MCKERNEL_LIBDIR="$prefix/lib"
+        fi
 	if test "X$ETCDIR" = X; then
 		ETCDIR="$prefix/etc"
 	fi
@@ -5118,10 +5129,32 @@ else
 $as_echo "$as_me: mcoverlayfs is disabled" >&6;}
 fi
 
-if test "x$LIBDIR" != "x" ; then
+case $ENABLE_RUSAGE in
+	yes|no)
+		;;
+	default)
+		ENABLE_RUSAGE=yes
+		;;
+	*)
+		as_fn_error $? "unknown rusage argument: $ENABLE_RUSAGE" "$LINENO" 5
+		;;
+esac
+
+if test "x$ENABLE_RUSAGE" = "xyes" ; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: rusage is enabled" >&5
+$as_echo "$as_me: rusage is enabled" >&6;}
+
+$as_echo "#define ENABLE_RUSAGE 1" >>confdefs.h
+
+else
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: rusage is disabled" >&5
+$as_echo "$as_me: rusage is disabled" >&6;}
+fi
+
+if test "x$MCKERNEL_LIBDIR" != "x" ; then
 
 cat >>confdefs.h <<_ACEOF
-#define MCKERNEL_LIBDIR "$LIBDIR"
+#define MCKERNEL_LIBDIR "$MCKERNEL_LIBDIR"
 _ACEOF
 
 fi
@@ -5149,6 +5182,9 @@ fi
 
 
 
+
+
+ac_config_headers="$ac_config_headers kernel/include/config.h"
 
 ac_config_headers="$ac_config_headers executer/config.h"
 
@@ -5755,6 +5791,7 @@ cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
 for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
+    "kernel/include/config.h") CONFIG_HEADERS="$CONFIG_HEADERS kernel/include/config.h" ;;
     "executer/config.h") CONFIG_HEADERS="$CONFIG_HEADERS executer/config.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "executer/user/Makefile") CONFIG_FILES="$CONFIG_FILES executer/user/Makefile" ;;
