@@ -428,6 +428,11 @@ static inline void tsc_to_ts(unsigned long tsc, struct timespec *ts)
 	}
 }
 
+static inline unsigned long timeval_to_jiffy(const struct timeval *ats)
+{
+	return ats->tv_sec * 100 + ats->tv_usec / 10000;
+}
+
 static inline unsigned long timespec_to_jiffy(const struct timespec *ats)
 {
 	return ats->tv_sec * 100 + ats->tv_nsec / 10000000;

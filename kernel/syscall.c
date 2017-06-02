@@ -426,6 +426,13 @@ struct thread *find_thread_of_process(struct process *child, int pid)
 	return c_thread;
 }
 
+static void
+set_process_rusage(struct process *proc, struct rusage *usage)
+{
+	ts_to_tv(&usage->ru_utime, &proc->utime);
+	ts_to_tv(&usage->ru_stime, &proc->stime);
+	usage->ru_maxrss = proc->maxrss / 1024;
+}
 
 /* 
  * From glibc: INLINE_SYSCALL (wait4, 4, pid, stat_loc, options, NULL);
@@ -485,6 +492,7 @@ do_wait(int pid, int *status, int options, void *rusage)
 						proc->maxrss_children = child->maxrss;
 					if(child->maxrss_children > proc->maxrss_children)
 						proc->maxrss_children = child->maxrss_children;
+					set_process_rusage(child, rusage);
 					mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
 					list_del(&child->siblings_list);
 					mcs_rwlock_writer_unlock_noirq(&proc->children_lock, &lock);
@@ -606,14 +614,18 @@ SYSCALL_DECLARE(wait4)
 	void *rusage = (void *)ihk_mc_syscall_arg3(ctx);
 	int st;
 	int rc;
+	struct rusage usage;
 
 	if(options & ~(WNOHANG | WUNTRACED | WCONTINUED | __WCLONE)){
 		dkprintf("wait4: unexpected options(%x).\n", options);
 		return -EINVAL;
 	}
-	rc = do_wait(pid, &st, WEXITED | options, rusage);
+	memset(&usage, '\0', sizeof usage);
+	rc = do_wait(pid, &st, WEXITED | options, &usage);
 	if(rc >= 0 && status)
 		copy_to_user(status, &st, sizeof(int));
+	if (rusage)
+		copy_to_user(rusage, &usage, sizeof usage);
 	return rc;
 }
 
@@ -626,6 +638,7 @@ SYSCALL_DECLARE(waitid)
 	int pid;
 	int status;
 	int rc;
+	struct rusage usage;
 
 	if(idtype == P_PID)
 		pid = id;
@@ -643,7 +656,8 @@ SYSCALL_DECLARE(waitid)
 		dkprintf("waitid: no waiting status(%x).\n", options);
 		return -EINVAL;
 	}
-	rc = do_wait(pid, &status, options, NULL);
+	memset(&usage, '\0', sizeof usage);
+	rc = do_wait(pid, &status, options, &usage);
 	if(rc < 0)
 		return rc;
 	if(rc && infop){
@@ -652,6 +666,10 @@ SYSCALL_DECLARE(waitid)
 		info.si_signo = SIGCHLD;
 		info._sifields._sigchld.si_pid = rc;
 		info._sifields._sigchld.si_status = status;
+		info._sifields._sigchld.si_utime =
+		                             timeval_to_jiffy(&usage.ru_utime);
+		info._sifields._sigchld.si_stime =
+		                             timeval_to_jiffy(&usage.ru_stime);
 		if((status & 0x000000ff) == 0x0000007f)
 			info.si_code = CLD_STOPPED;
 		else if((status & 0x0000ffff) == 0x0000ffff)
@@ -865,6 +883,10 @@ terminate(int rc, int sig)
 			                CLD_DUMPED: CLD_KILLED): CLD_EXITED;
 			info._sifields._sigchld.si_pid = proc->pid;
 			info._sifields._sigchld.si_status = exit_status;
+			info._sifields._sigchld.si_utime =
+			                        timespec_to_jiffy(&proc->utime);
+			info._sifields._sigchld.si_stime =
+			                        timespec_to_jiffy(&proc->stime);
 			error = do_kill(NULL, proc->parent->pid, -1, SIGCHLD, &info, 0);
 			dkprintf("terminate,klll %d,error=%d\n",
 					proc->termsig, error);
@@ -2279,14 +2301,6 @@ SYSCALL_DECLARE(set_tid_address)
 
 	return cpu_local_var(current)->proc->pid;
 }
-
-/*
-static unsigned long
-timespec_to_jiffy(const struct timespec *ats)
-{
-	return ats->tv_sec * 100 + ats->tv_nsec / 10000000;
-}
-*/
 
 SYSCALL_DECLARE(times)
 {
