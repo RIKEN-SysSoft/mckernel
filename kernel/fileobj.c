@@ -689,6 +689,10 @@ static int fileobj_flush_page(struct memobj *memobj, uintptr_t phys,
 		return 0;
 	}
 
+	if (memobj->flags |= MF_HOST_RELEASED) {
+		return 0;
+	}
+
 	page = phys_to_page(phys);
 	if (!page) {
 		kprintf("%s: warning: tried to flush non-existing page for phys addr: 0x%lx\n", 
