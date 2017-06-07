@@ -399,9 +399,6 @@ int main(void)
 	os_status = IHK_STATUS_INACTIVE;
 	rusage_hugetlb_usage = 0;
 	rusage_hugetlb_max_usage = 0;
-	for (i = 0; i < sizeof(cpu_set_t)/8; i++) {
-		rusage_rss[i] = 0;
-	}
 	for (i = 0; i < 1024; i++) {
 		rusage_numa_stat[i] = 0;
 	}
