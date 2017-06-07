@@ -316,6 +316,12 @@ static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, u
 			packet->resp_pa, sizeof(*resp));
 	resp = ihk_device_map_virtual(ihk_os_to_dev(usrdata->os), 
 			phys, sizeof(*resp), NULL, 0);
+	if (!resp) {
+		printk("%s: ERROR: invalid response structure address\n",
+			__FUNCTION__);
+		error = -EINVAL;
+		goto out;
+	}
 
 retry_alloc:
 	wqhln = kmalloc(sizeof(*wqhln), GFP_ATOMIC);
@@ -906,6 +912,13 @@ found:
 
 	phys = ihk_device_map_memory(dev, result_pa, sizeof(*resp));
 	resp = ihk_device_map_virtual(dev, phys, sizeof(*resp), NULL, 0);
+	if (!resp) {
+		printk("%s: ERROR: invalid response structure address\n",
+			__FUNCTION__);
+		error = -EINVAL;
+		goto out;
+	}
+
 	resp->handle = (uintptr_t)pager;
 	resp->maxprot = maxprot;
 	resp->flags = mf_flags;
@@ -1012,6 +1025,13 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 
 	phys = ihk_device_map_memory(dev, rpa, size);
 	buf = ihk_device_map_virtual(dev, phys, size, NULL, 0);
+	if (!buf) {
+		printk("%s: ERROR: invalid buffer address\n",
+			__FUNCTION__);
+		ss = -EINVAL;
+		goto out;
+	}
+
 	fs = get_fs();
 	set_fs(KERNEL_DS);
 	pos = off;
@@ -1094,6 +1114,13 @@ static int pager_req_write(ihk_os_t os, uintptr_t handle, off_t off, size_t size
 
 	phys = ihk_device_map_memory(dev, rpa, size);
 	buf = ihk_device_map_virtual(dev, phys, size, NULL, 0);
+	if (!buf) {
+		printk("%s: ERROR: invalid buffer address\n",
+			__FUNCTION__);
+		ss = -EINVAL;
+		goto out;
+	}
+
 	fs = get_fs();
 	set_fs(KERNEL_DS);
 	pos = off;
@@ -1202,6 +1229,13 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
 
 	phys = ihk_device_map_memory(dev, result_rpa, sizeof(*resp));
 	resp = ihk_device_map_virtual(dev, phys, sizeof(*resp), NULL, 0);
+	if (!resp) {
+		printk("%s: ERROR: invalid response structure address\n",
+			__FUNCTION__);
+		error = -EINVAL;
+		goto out;
+	}
+
 	resp->handle = (uintptr_t)pager;
 	resp->maxprot = maxprot;
 	ihk_device_unmap_virtual(dev, resp, sizeof(*resp));
@@ -1307,6 +1341,13 @@ out_release:
 
 	phys = ihk_device_map_memory(dev, ppfn_rpa, sizeof(*ppfn));
 	ppfn = ihk_device_map_virtual(dev, phys, sizeof(*ppfn), NULL, 0);
+	if (!ppfn) {
+		printk("%s: ERROR: invalid PFN address\n",
+			__FUNCTION__);
+		error = -EINVAL;
+		goto out;
+	}
+
 	*ppfn = pfn;
 	ihk_device_unmap_virtual(dev, ppfn, sizeof(*ppfn));
 	ihk_device_unmap_memory(dev, phys, sizeof(*ppfn));
