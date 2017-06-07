@@ -1741,6 +1741,13 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
+	/* Register per-process structure in mcctrl */
+	if (ioctl(fd, MCEXEC_UP_CREATE_PPD) != 0) {
+		perror("creating mcctrl per-process structure");
+		close(fd);
+		exit(1);
+	}
+
 	/* Partitioned execution, obtain CPU set */
 	if (nr_processes > 0) {
 		struct get_cpu_set_arg cpu_set_arg;
@@ -2437,6 +2444,13 @@ gettid_out:
 					fs->status = -errno;
 					fprintf(stderr, "ERROR: opening %s\n", dev);
 					
+					goto fork_child_sync_pipe;
+				}
+
+				if (ioctl(fd, MCEXEC_UP_CREATE_PPD) != 0) {
+					fs->status = -errno;
+					fprintf(stderr, "ERROR: creating PPD %s\n", dev);
+
 					goto fork_child_sync_pipe;
 				}
 

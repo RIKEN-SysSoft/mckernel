@@ -324,20 +324,17 @@ static long mcexec_debug_log(ihk_os_t os, unsigned long arg)
 }
 
 int mcexec_close_exec(ihk_os_t os);
+int mcexec_destroy_per_process_data(ihk_os_t os);
 
 static void release_handler(ihk_os_t os, void *param)
 {
 	struct release_handler_info *info = param;
 	struct ikc_scd_packet isp;
 	int os_ind = ihk_host_os_get_index(os);
-	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
-	struct mcctrl_per_proc_data *ppd = NULL;
 
-	ppd = mcctrl_get_per_proc_data(usrdata, info->pid);
-	if (ppd) {
-		mcctrl_put_per_proc_data(ppd);
-		mcexec_close_exec(os);
-	}
+	mcexec_close_exec(os);
+
+	mcexec_destroy_per_process_data(os);
 
 	memset(&isp, '\0', sizeof isp);
 	isp.msg = SCD_MSG_CLEANUP_PROCESS;
@@ -923,16 +920,20 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	if (!ppd)
 		return;
 
-	if (!atomic_dec_and_test(&ppd->refcount))
-		return;
-
-	dprintk("%s: deallocating PPD for pid %d\n", __FUNCTION__, ppd->pid);
 	hash = (ppd->pid & MCCTRL_PER_PROC_DATA_HASH_MASK);
 
+	/* Removal from hash table and the refcount reaching zero
+	 * have to happen atomically */
 	write_lock_irqsave(&ppd->ud->per_proc_data_hash_lock[hash], flags);
+	if (!atomic_dec_and_test(&ppd->refcount)) {
+		write_unlock_irqrestore(&ppd->ud->per_proc_data_hash_lock[hash], flags);
+		return;
+	}
+
 	list_del(&ppd->hash);
 	write_unlock_irqrestore(&ppd->ud->per_proc_data_hash_lock[hash], flags);
 
+	dprintk("%s: deallocating PPD for pid %d\n", __FUNCTION__, ppd->pid);
 	for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; i++) {
 		struct mcctrl_per_thread_data *ptd;
 		struct mcctrl_per_thread_data *next;
@@ -943,7 +944,9 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 			packet = ptd->data;
 			list_del(&ptd->hash);
 			kfree(ptd);
-			__return_syscall(ppd->ud->os, packet, -EINTR,
+			/* We use ERESTARTSYS to tell the LWK that the proxy
+			 * process is gone and the application should be terminated */
+			__return_syscall(ppd->ud->os, packet, -ERESTARTSYS,
 					packet->req.rtid);
 			ihk_ikc_release_packet(
 			            (struct ihk_ikc_free_packet *)packet,
@@ -956,7 +959,10 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 		list_del(&wqhln->list);
 		packet = wqhln->packet;
 		kfree(wqhln);
-		__return_syscall(ppd->ud->os, packet, -EINTR,
+
+		/* We use ERESTARTSYS to tell the LWK that the proxy
+		 * process is gone and the application should be terminated */
+		__return_syscall(ppd->ud->os, packet, -ERESTARTSYS,
 				packet->req.rtid);
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 				       (ppd->ud->channels + packet->ref)->c);
@@ -987,7 +993,9 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 				"syscall nr: %lu\n",
 				__FUNCTION__, pid, packet->req.number);
 
-		__return_syscall(ud->os, packet, -EINTR,
+		/* We use ERESTARTSYS to tell the LWK that the proxy
+		 * process is gone and the application should be terminated */
+		__return_syscall(ud->os, packet, -ERESTARTSYS,
 				packet->req.rtid);
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 				      (ud->channels + packet->ref)->c);
@@ -1126,11 +1134,21 @@ retry_alloc:
 	}
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, irqflags);
 
-	if (ret && !wqhln->req) {
-		kfree(wqhln);
-		wqhln = NULL;
-		ret = -EINTR;
-		goto put_ppd_out;
+	if (ret == -ERESTARTSYS) {
+		/* Is the request valid? */
+		if (wqhln->req) {
+			packet = wqhln->packet;
+			kfree(wqhln);
+			wqhln = NULL;
+			ret = -EINTR;
+			goto put_ppd_out;
+		}
+		else {
+			kfree(wqhln);
+			wqhln = NULL;
+			ret = -EINTR;
+			goto put_ppd_out;
+		}
 	}
 
 	packet = wqhln->packet;
@@ -1401,6 +1419,83 @@ mcexec_getcredv(int __user *virt)
 	return 0;
 }
 
+int mcexec_create_per_process_data(ihk_os_t os)
+{
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_per_proc_data *ppd = NULL;
+	int i;
+
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+	if (ppd) {
+		printk("%s: WARNING: per-process data for pid %d already exists\n",
+				__FUNCTION__, task_tgid_vnr(current));
+		mcctrl_put_per_proc_data(ppd);
+		return -EINVAL;
+	}
+
+	ppd = kmalloc(sizeof(*ppd), GFP_KERNEL);
+	if (!ppd) {
+		printk("%s: ERROR: allocating per-process data\n", __FUNCTION__);
+		return -ENOMEM;
+	}
+
+	ppd->ud = usrdata;
+	ppd->pid = task_tgid_vnr(current);
+	/*
+	 * XXX: rpgtable will be updated in __do_in_kernel_syscall()
+	 * under case __NR_munmap
+	 */
+	INIT_LIST_HEAD(&ppd->wq_list);
+	INIT_LIST_HEAD(&ppd->wq_req_list);
+	INIT_LIST_HEAD(&ppd->wq_list_exact);
+	init_waitqueue_head(&ppd->wq_prepare);
+	init_waitqueue_head(&ppd->wq_procfs);
+	spin_lock_init(&ppd->wq_list_lock);
+	memset(&ppd->cpu_set, 0, sizeof(cpumask_t));
+	ppd->ikc_target_cpu = 0;
+	/* Final ref will be dropped in release_handler() through
+	 * mcexec_destroy_per_process_data() */
+	atomic_set(&ppd->refcount, 1);
+
+	for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; ++i) {
+		INIT_LIST_HEAD(&ppd->per_thread_data_hash[i]);
+		rwlock_init(&ppd->per_thread_data_hash_lock[i]);
+	}
+
+	if (mcctrl_add_per_proc_data(usrdata, ppd->pid, ppd) < 0) {
+		printk("%s: error adding per process data\n", __FUNCTION__);
+		kfree(ppd);
+		return -EINVAL;
+	}
+
+	dprintk("%s: PID: %d, counter: %d\n",
+		__FUNCTION__, ppd->pid, atomic_read(&ppd->refcount));
+
+	return 0;
+}
+
+int mcexec_destroy_per_process_data(ihk_os_t os)
+{
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_per_proc_data *ppd = NULL;
+
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+
+	if (ppd) {
+		/* One for the reference and one for deallocation.
+		 * XXX: actual deallocation may not happen here */
+		mcctrl_put_per_proc_data(ppd);
+		mcctrl_put_per_proc_data(ppd);
+	}
+	else {
+		printk("WARNING: no per process data for PID %d ?\n",
+				task_tgid_vnr(current));
+	}
+
+	return 0;
+}
+
+
 int mcexec_open_exec(ihk_os_t os, char * __user filename)
 {
 	struct file *file;
@@ -1411,64 +1506,23 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	char *pathbuf = NULL;
 	char *fullpath = NULL;
 	char *kfilename = NULL;
-	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
-	struct mcctrl_per_proc_data *ppd = NULL;
-	int i, len;
+	int len;
 
 	if (os_ind < 0) {
 		return -EINVAL;
 	}
 
-	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
-
-	if (!ppd) {
-		ppd = kmalloc(sizeof(*ppd), GFP_KERNEL);
-		if (!ppd) {
-			printk("ERROR: allocating per process data\n");
-			return -ENOMEM;
-		}
-
-		ppd->ud = usrdata;
-		ppd->pid = task_tgid_vnr(current);
-		/*
-		 * XXX: rpgtable will be updated in __do_in_kernel_syscall()
-		 * under case __NR_munmap
-		 */
-		INIT_LIST_HEAD(&ppd->wq_list);
-		INIT_LIST_HEAD(&ppd->wq_req_list);
-		INIT_LIST_HEAD(&ppd->wq_list_exact);
-		init_waitqueue_head(&ppd->wq_prepare);
-		init_waitqueue_head(&ppd->wq_procfs);
-		spin_lock_init(&ppd->wq_list_lock);
-		memset(&ppd->cpu_set, 0, sizeof(cpumask_t));
-		ppd->ikc_target_cpu = 0;
-		/* Final ref will be dropped in close_exec() */
-		atomic_set(&ppd->refcount, 1);
-
-		for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; ++i) {
-			INIT_LIST_HEAD(&ppd->per_thread_data_hash[i]);
-			rwlock_init(&ppd->per_thread_data_hash_lock[i]);
-		}
-
-		if (mcctrl_add_per_proc_data(usrdata, ppd->pid, ppd) < 0) {
-			printk("%s: error adding per process data\n", __FUNCTION__);
-			retval = -EINVAL;
-			kfree(ppd);
-			goto out;
-		}
-	}
-
 	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
 	if (!pathbuf) {
 		retval = -ENOMEM;
-		goto out_put_ppd;
+		goto out;
 	}
 
 	kfilename = kmalloc(PATH_MAX, GFP_TEMPORARY);
 	if (!kfilename) {
 		retval = -ENOMEM;
 		kfree(pathbuf);
-		goto out_put_ppd;
+		goto out;
 	}
 
 	len = strncpy_from_user(kfilename, filename, PATH_MAX);
@@ -1530,35 +1584,15 @@ out_put_file:
 out_free:
 	kfree(pathbuf);
 	kfree(kfilename);
-out_put_ppd:
-	mcctrl_put_per_proc_data(ppd);
 out:
 	return retval;
 }
-
 
 int mcexec_close_exec(ihk_os_t os)
 {
 	struct mckernel_exec_file *mcef = NULL;
 	int found = 0;
 	int os_ind = ihk_host_os_get_index(os);	
-	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
-	struct mcctrl_per_proc_data *ppd = NULL;
-
-	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
-
-	if (ppd) {
-		/* One for the reference and one for deallocation */
-		mcctrl_put_per_proc_data(ppd);
-		mcctrl_put_per_proc_data(ppd);
-
-		dprintk("pid: %d, tid: %d: rpgtable for %d (0x%lx) removed\n",
-				task_tgid_vnr(current), current->pid, ppd->pid, ppd->rpgtable);
-	}
-	else {
-		printk("WARNING: no per process data for pid %d ?\n", 
-				task_tgid_vnr(current));
-	}
 
 	if (os_ind < 0) {
 		return EINVAL;
@@ -1986,6 +2020,9 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 
 	case MCEXEC_UP_GET_CPU:
 		return mcexec_get_cpu(os);
+
+	case MCEXEC_UP_CREATE_PPD:
+		return mcexec_create_per_process_data(os);
 
 	case MCEXEC_UP_GET_NODES:
 		return mcexec_get_nodes(os);

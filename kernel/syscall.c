@@ -301,6 +301,15 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		--thread->in_syscall_offload;
 	}
 
+	/* -ERESTARTSYS indicates that the proxy process is gone
+	 * and the application should be terminated */
+	if (rc == -ERESTARTSYS && req->number != __NR_exit_group) {
+		kprintf("%s: proxy PID %d is dead, terminate()\n",
+			__FUNCTION__, thread->proc->pid);
+		thread->proc->nohost = 1;
+		terminate(-1, 0);
+	}
+
 #ifdef PROFILE_ENABLE
 	if (req->number < PROFILE_SYSCALL_MAX) {
 		profile_event_add(profile_syscall2offload(req->number),
