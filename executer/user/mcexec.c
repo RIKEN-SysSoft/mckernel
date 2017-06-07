@@ -2236,6 +2236,54 @@ chgpath(char *in, char *buf)
 	return fn;
 }
 
+#ifdef POSTK_DEBUG_ARCH_DEP_72 /* add __NR_newfstat */
+static int
+syscall_pathname(int dirfd, char *pathname, size_t size)
+{
+	int ret = 0;
+	char *tempbuf = NULL;
+	size_t tempbuf_size;
+
+	if (pathname[0] == '/') {
+		goto out;
+	}
+
+	if (dirfd != AT_FDCWD) {
+		int len;
+		char dfdpath[64];
+		snprintf(dfdpath, sizeof(dfdpath), "/proc/self/fd/%d", dirfd);
+
+		tempbuf_size = size;
+		tempbuf = malloc(tempbuf_size);
+		if (tempbuf == NULL) {
+			ret = -ENOMEM;
+			goto out;
+		}
+
+		ret = readlink(dfdpath, tempbuf, tempbuf_size);
+		if (ret == -1) {
+			ret = -errno;
+			goto out;
+		}
+
+		len = strlen(pathname);
+		if (tempbuf_size <= ret + 1 + len + 1) {
+			ret = -ENAMETOOLONG;
+			goto out;
+		}
+		tempbuf[ret] = '/';
+		strncpy(&tempbuf[ret+1], pathname, len+1);
+
+		strcpy(pathname, tempbuf);
+	}
+out:
+	if (tempbuf) {
+		free(tempbuf);
+	}
+	return ret;
+}
+#endif /*POSTK_DEBUG_ARCH_DEP_72*/
+
 int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 {
 	struct syscall_wait_desc w;
@@ -3005,8 +3053,71 @@ return_execve2:
 			break;
 #endif	/* POSTK_DEBUG_ARCH_DEP_36 */
 
-/* mck-0664 patch invalidation */
-/*		case __NR_stat:
+#ifdef POSTK_DEBUG_ARCH_DEP_72 /* add __NR_newfstat */
+		case __NR_newfstatat:
+			/* initialize buffer */
+			memset(tmpbuf, '\0', sizeof(tmpbuf));
+			memset(pathbuf, '\0', sizeof(pathbuf));
+
+			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[1], PATH_MAX);
+			if (ret >= PATH_MAX) {
+				ret = -ENAMETOOLONG;
+			}
+			if (ret < 0) {
+				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+				break;
+			}
+
+			if (pathbuf[0] == '\0') {
+				// empty string
+				if ((int)w.sr.args[3] | AT_EMPTY_PATH) {
+					if ((int)w.sr.args[0] == AT_FDCWD) {
+						if (NULL == getcwd(pathbuf, PATH_MAX)) {
+							do_syscall_return(fd, cpu, -errno, 0, 0, 0, 0);
+							break;
+						}
+					} else {
+						char dfdpath[64];
+						snprintf(dfdpath, sizeof(dfdpath), "/proc/self/fd/%d", (int)w.sr.args[0]);
+						ret = readlink(dfdpath, pathbuf, PATH_MAX);
+						if (ret == -1) {
+							do_syscall_return(fd, cpu, -errno, 0, 0, 0, 0);
+							break;
+						}
+						pathbuf[ret] = '\0';
+					}
+				}
+			} else if (pathbuf[0] != '/') {
+				// relative path
+				ret = syscall_pathname((int)w.sr.args[0], pathbuf, PATH_MAX);
+				if (ret < 0) {
+					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+					break;
+				}
+			}
+
+			fn = chgpath(pathbuf, tmpbuf);
+			if (fn[0] == '/') {
+				ret = fstatat((int)w.sr.args[0],
+					      fn,
+					      (struct stat*)w.sr.args[2],
+					      (int)w.sr.args[3]);
+				__dprintf("fstatat: dirfd=%d, pathname=%s, buf=%p, flags=%x, ret=%ld\n",
+					  (int)w.sr.args[0], fn, (void*)w.sr.args[2], (int)w.sr.args[3], ret);
+			} else {
+				ret = fstatat((int)w.sr.args[0],
+					      (const char*)w.sr.args[1],
+					      (struct stat*)w.sr.args[2],
+					      (int)w.sr.args[3]);
+				__dprintf("fstatat: dirfd=%d, pathname=%s, buf=%p, flags=%x, ret=%ld\n",
+					  (int)w.sr.args[0], (char*)w.sr.args[1], (void*)w.sr.args[2], (int)w.sr.args[3], ret);
+			}
+
+			SET_ERR(ret);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+#ifdef __NR_stat
+		case __NR_stat:
 			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[0], PATH_MAX);
 			if (ret >= PATH_MAX) {
 				ret = -ENAMETOOLONG;
@@ -3023,7 +3134,26 @@ return_execve2:
 			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
-*/
+#endif /* __NR_stat */
+#else /* POSTK_DEBUG_ARCH_DEP_72 */
+		case __NR_stat:
+			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[0], PATH_MAX);
+			if (ret >= PATH_MAX) {
+				ret = -ENAMETOOLONG;
+			}
+			if (ret < 0) {
+				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+				break;
+			}
+
+			fn = chgpath(pathbuf, tmpbuf);
+
+			ret = stat(fn, (struct stat *)w.sr.args[1]);
+			__dprintf("stat: path=%s, ret=%ld\n", fn, ret);
+			SET_ERR(ret);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+#endif /* POSTK_DEBUG_ARCH_DEP_72 */
 		default:
 			ret = do_generic_syscall(&w);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
