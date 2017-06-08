@@ -2391,19 +2391,19 @@ void destroy_thread(struct thread *thread)
 void release_thread(struct thread *thread)
 {
 	struct process_vm *vm;
-	struct mcs_rwlock_node lock;
+	struct mcs_rwlock_node_irqsave lock;
 	struct timespec ats;
 
 	if (!ihk_atomic_dec_and_test(&thread->refcount)) {
 		return;
 	}
 
-	mcs_rwlock_writer_lock_noirq(&thread->proc->update_lock, &lock);
+	mcs_rwlock_writer_lock(&thread->proc->update_lock, &lock);
 	tsc_to_ts(thread->system_tsc, &ats);
 	ts_add(&thread->proc->stime, &ats);
 	tsc_to_ts(thread->user_tsc, &ats);
 	ts_add(&thread->proc->utime, &ats);
-	mcs_rwlock_writer_unlock_noirq(&thread->proc->update_lock, &lock);
+	mcs_rwlock_writer_unlock(&thread->proc->update_lock, &lock);
 
 	vm = thread->vm;
 

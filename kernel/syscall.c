@@ -307,7 +307,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		kprintf("%s: proxy PID %d is dead, terminate()\n",
 			__FUNCTION__, thread->proc->pid);
 		thread->proc->nohost = 1;
-		terminate(-1, 0);
+		terminate(0, SIGKILL);
 	}
 
 #ifdef PROFILE_ENABLE
