@@ -811,48 +811,50 @@ terminate(int rc, int sig)
 		kfree(ids);
 	}
 
-	// clean up children
-	for(i = 0; i < HASH_SIZE; i++){
-		mcs_rwlock_writer_lock(&resource_set->process_hash->lock[i],
-		                   &lock);
-		list_for_each_entry_safe(child, next,
-		                         &resource_set->process_hash->list[i],
-		                         hash_list){
-			mcs_rwlock_writer_lock_noirq(&child->update_lock,
-			                         &updatelock);
-			if(child->ppid_parent == proc &&
-			   child->status == PS_ZOMBIE){
-				list_del(&child->hash_list);
-				list_del(&child->siblings_list);
-				kfree(child);
-			}
-			else if(child->ppid_parent == proc){
-				mcs_rwlock_writer_lock_noirq(&proc->children_lock,
-				                         &childlock);
-				mcs_rwlock_writer_lock_noirq(&pid1->children_lock,
-				                         &childlock1);
-				child->ppid_parent = pid1;
-				if(child->parent == proc){
-					child->parent = pid1;
+	if (!list_empty(&proc->children_list)) {
+		// clean up children
+		for(i = 0; i < HASH_SIZE; i++){
+			mcs_rwlock_writer_lock(&resource_set->process_hash->lock[i],
+					&lock);
+			list_for_each_entry_safe(child, next,
+					&resource_set->process_hash->list[i],
+					hash_list){
+				mcs_rwlock_writer_lock_noirq(&child->update_lock,
+						&updatelock);
+				if(child->ppid_parent == proc &&
+						child->status == PS_ZOMBIE){
+					list_del(&child->hash_list);
 					list_del(&child->siblings_list);
-					list_add_tail(&child->siblings_list,
-					              &pid1->children_list);
+					kfree(child);
 				}
-				else{
-					list_del(&child->ptraced_siblings_list);
-					list_add_tail(&child->ptraced_siblings_list,
-					              &pid1->ptraced_children_list);
+				else if(child->ppid_parent == proc){
+					mcs_rwlock_writer_lock_noirq(&proc->children_lock,
+							&childlock);
+					mcs_rwlock_writer_lock_noirq(&pid1->children_lock,
+							&childlock1);
+					child->ppid_parent = pid1;
+					if(child->parent == proc){
+						child->parent = pid1;
+						list_del(&child->siblings_list);
+						list_add_tail(&child->siblings_list,
+								&pid1->children_list);
+					}
+					else{
+						list_del(&child->ptraced_siblings_list);
+						list_add_tail(&child->ptraced_siblings_list,
+								&pid1->ptraced_children_list);
+					}
+					mcs_rwlock_writer_unlock_noirq(&pid1->children_lock,
+							&childlock1);
+					mcs_rwlock_writer_unlock_noirq(&proc->children_lock,
+							&childlock);
 				}
-				mcs_rwlock_writer_unlock_noirq(&pid1->children_lock,
-				                         &childlock1);
-				mcs_rwlock_writer_unlock_noirq(&proc->children_lock,
-				                         &childlock);
+				mcs_rwlock_writer_unlock_noirq(&child->update_lock,
+						&updatelock);
 			}
-			mcs_rwlock_writer_unlock_noirq(&child->update_lock,
-			                           &updatelock);
+			mcs_rwlock_writer_unlock(&resource_set->process_hash->lock[i],
+					&lock);
 		}
-		mcs_rwlock_writer_unlock(&resource_set->process_hash->lock[i],
-		                   &lock);
 	}
 
 	dkprintf("terminate,pid=%d\n", proc->pid);
