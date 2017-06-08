@@ -24,6 +24,7 @@ extern long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *o
 long syscall(int num, ihk_mc_user_context_t *ctx);
 extern unsigned long do_fork(int, unsigned long, unsigned long, unsigned long,
 	unsigned long, unsigned long, unsigned long);
+static void __check_signal(unsigned long rc, void *regs, int num, int irq_disabled);
 
 //#define DEBUG_PRINT_SC
 
@@ -1079,6 +1080,10 @@ __check_signal(unsigned long rc, void *regs0, int num, int irq_disabled)
 	}
 
 	for(;;){
+		/* When this function called from check_signal_irq_disabled,
+		 * return with interrupt invalid.
+		 * This is to eliminate signal loss.
+		 */
 		if (irq_disabled == 1) {
 			irqstate = cpu_disable_interrupt_save();
 		}
