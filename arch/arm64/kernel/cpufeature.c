@@ -893,7 +893,7 @@ feature_matches(uint64_t reg, const struct arm64_cpu_capabilities *entry)
 static int
 has_cpuid_feature(const struct arm64_cpu_capabilities *entry, int scope)
 {
-	uint64_t val;
+	uint64_t val = 0;
 
 	//WARN_ON(scope == SCOPE_LOCAL_CPU && preemptible());
 	if (scope == SCOPE_SYSTEM) {
