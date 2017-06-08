@@ -29,8 +29,7 @@
 #define	dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
 #define	ekprintf(...)	kprintf(__VA_ARGS__)
 
-mcs_rwlock_lock_t fileobj_list_lock =
-	{{{0}, MCS_RWLOCK_TYPE_COMMON_READER, 0, 0, 0, NULL}, NULL};
+mcs_rwlock_lock_t fileobj_list_lock;
 static LIST_HEAD(fileobj_list);
 
 #define FILEOBJ_PAGE_HASH_SHIFT 9

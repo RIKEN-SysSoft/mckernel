@@ -3224,6 +3224,7 @@ process_unlock(struct process *proc, struct mcs_rwlock_node_irqsave *lock)
 void
 debug_log(unsigned long arg)
 {
+#if 0
 	struct process *p;
 	struct thread *t;
 	int i;
@@ -3276,4 +3277,5 @@ debug_log(unsigned long arg)
 		}
 		break;
 	}
+#endif
 }
