@@ -1575,6 +1575,7 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	dprintk("%d open_exec and holding file: %s\n", (int)task_tgid_vnr(current),
 			kfilename);
 
+	kfree(kfilename);
 	kfree(pathbuf);
 
 	return 0;
