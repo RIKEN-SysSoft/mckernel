@@ -288,7 +288,7 @@ fi
 
 # Load IHK if not loaded
 if ! grep -E 'ihk\s' /proc/modules &>/dev/null; then
-	if ! insmod ${KMODDIR}/ihk.ko 2>/dev/null; then
+	if ! taskset -c 0 insmod ${KMODDIR}/ihk.ko 2>/dev/null; then
 		echo "error: loading ihk" >&2
 		error_exit "irqbalance_stopped"
 	fi
@@ -319,7 +319,7 @@ if ! grep ihk_smp_x86 /proc/modules &>/dev/null; then
 			error_exit "ihk_loaded"
 		fi
 	fi
-	if ! insmod ${KMODDIR}/ihk-smp-x86.ko ihk_start_irq=$ihk_irq ihk_ikc_irq_core=$ihk_ikc_irq_core 2>/dev/null; then
+	if ! taskset -c 0 insmod ${KMODDIR}/ihk-smp-x86.ko ihk_start_irq=$ihk_irq ihk_ikc_irq_core=$ihk_ikc_irq_core 2>/dev/null; then
 		echo "error: loading ihk-smp-x86" >&2
 		error_exit "ihk_loaded"
 	fi
@@ -356,7 +356,7 @@ fi
 
 # Load mcctrl if not loaded
 if ! grep mcctrl /proc/modules &>/dev/null; then
-	if ! insmod ${KMODDIR}/mcctrl.ko 2>/dev/null; then
+	if ! taskset -c 0 insmod ${KMODDIR}/mcctrl.ko 2>/dev/null; then
 		echo "error: inserting mcctrl.ko" >&2
 		error_exit "cpus_reserved"
 	fi
@@ -438,7 +438,7 @@ if [ "$enable_mcoverlay" == "yes" ]; then
 		echo "error: mount /tmp/mcos/linux_proc" >&2
 		error_exit "tmp_mcos_mounted"
 	fi
-	if ! insmod ${KMODDIR}/mcoverlay.ko 2>/dev/null; then
+	if ! taskset -c 0 insmod ${KMODDIR}/mcoverlay.ko 2>/dev/null; then
 		echo "error: inserting mcoverlay.ko" >&2
 		error_exit "linux_proc_bind_mounted"
 	fi
