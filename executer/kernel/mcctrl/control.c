@@ -969,9 +969,8 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	}
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, flags);
 
+	pager_remove_process(ppd);
 	kfree(ppd);
-
-	pager_remove_process();
 }
 
 
@@ -1463,6 +1462,9 @@ int mcexec_create_per_process_data(ihk_os_t os)
 		INIT_LIST_HEAD(&ppd->per_thread_data_hash[i]);
 		rwlock_init(&ppd->per_thread_data_hash_lock[i]);
 	}
+
+	INIT_LIST_HEAD(&ppd->devobj_pager_list);
+	sema_init(&ppd->devobj_pager_lock, 1);
 
 	if (mcctrl_add_per_proc_data(usrdata, ppd->pid, ppd) < 0) {
 		printk("%s: error adding per process data\n", __FUNCTION__);

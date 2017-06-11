@@ -224,6 +224,9 @@ struct mcctrl_per_proc_data {
 	cpumask_t cpu_set;
 	int ikc_target_cpu;
 	atomic_t refcount;
+
+	struct list_head devobj_pager_list;
+	struct semaphore devobj_pager_lock;
 };
 
 struct sysfsm_req {
@@ -345,7 +348,7 @@ ihk_os_t osnum_to_os(int n);
 
 /* syscall.c */
 void pager_add_process(void);
-void pager_remove_process(void);
+void pager_remove_process(struct mcctrl_per_proc_data *ppd);
 
 int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet);
 int mcctrl_add_per_proc_data(struct mcctrl_usrdata *ud, int pid, 

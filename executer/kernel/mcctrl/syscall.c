@@ -775,12 +775,35 @@ void pager_add_process(void)
 	up(&pager_sem);
 }
 
-void pager_remove_process(void)
+void pager_remove_process(struct mcctrl_per_proc_data *ppd)
 {
 	int error;
 	struct pager *pager_next, *pager;
-	error = down_interruptible(&pager_sem);
 
+	if (in_atomic() || in_interrupt()) {
+		printk("%s: WARNING: shouldn't be called in IRQ context..\n",
+			__FUNCTION__);
+		return;
+	}
+
+	/* Clean up device file mappings of this process */
+	error = down_interruptible(&ppd->devobj_pager_lock);
+	if (error) {
+		return;
+	}
+
+	list_for_each_entry_safe(pager, pager_next,
+			&ppd->devobj_pager_list, list) {
+
+		dprintk("%s: devobj pager 0x%lx removed\n", __FUNCTION__, pager);
+		list_del(&pager->list);
+		kfree(pager);
+	}
+	up(&ppd->devobj_pager_lock);
+
+	/* Clean up global pagers for regular file mappings if this
+	 * was the last process */
+	error = down_interruptible(&pager_sem);
 	if (error) {
 		return;
 	}
@@ -1216,8 +1239,18 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
 	struct pager *pager = NULL;
 	struct pager_map_result *resp;
 	uintptr_t phys;
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_per_proc_data *ppd = NULL;
 
 	dprintk("pager_req_map(%p,%d,%lx,%lx,%lx)\n", os, fd, len, off, result_rpa);
+
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+	if (unlikely(!ppd)) {
+		kprintf("%s: ERROR: no per-process structure for PID %d??\n",
+				__FUNCTION__, task_tgid_vnr(current));
+		return -1;
+	}
+
 	pager = kzalloc(sizeof(*pager), GFP_ATOMIC);
 	if (!pager) {
 		error = -ENOMEM;
@@ -1290,8 +1323,17 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
 	ihk_device_unmap_virtual(dev, resp, sizeof(*resp));
 	ihk_device_unmap_memory(dev, phys, sizeof(*resp));
 
+	error = down_interruptible(&ppd->devobj_pager_lock);
+	if (error) {
+		error = -EINTR;
+		goto out;
+	}
+
+	list_add_tail(&pager->list, &ppd->devobj_pager_list);
+	up(&ppd->devobj_pager_lock);
+
+	pager = 0;
 	error = 0;
-	pager = 0; /* pager should be in list? */
 
 out:
 	if (file) {
@@ -1300,6 +1342,7 @@ out:
 	if (pager) {
 		kfree(pager);
 	}
+	mcctrl_put_per_proc_data(ppd);
 	dprintk("pager_req_map(%p,%d,%lx,%lx,%lx): %d\n", os, fd, len, off, result_rpa, error);
 	return error;
 }
@@ -1407,12 +1450,9 @@ out:
 	return error;
 }
 
-static int pager_req_unmap(ihk_os_t os, uintptr_t handle)
+static int __pager_unmap(struct pager *pager)
 {
-	struct pager * const pager = (void *)handle;
 	int error;
-
-	dprintk("pager_req_unmap(%p,%lx)\n", os, handle);
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,5,0)
 	down_write(&current->mm->mmap_sem);
@@ -1423,12 +1463,42 @@ static int pager_req_unmap(ihk_os_t os, uintptr_t handle)
 #endif
 
 	if (error) {
-		printk("pager_req_unmap(%p,%lx):do_munmap failed. %d\n", os, handle, error);
-		/* through */
+		printk("%s: WARNING: munmap failed for pager 0x%lx: %d\n",
+			__FUNCTION__, (uintptr_t)pager, error);
 	}
 
+	return error;
+}
+
+static int pager_req_unmap(ihk_os_t os, uintptr_t handle)
+{
+	struct pager * const pager = (void *)handle;
+	int error;
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_per_proc_data *ppd = NULL;
+
+	dprintk("pager_req_unmap(%p,%lx)\n", os, handle);
+
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+	if (unlikely(!ppd)) {
+		kprintf("%s: ERROR: no per-process structure for PID %d??\n",
+				__FUNCTION__, task_tgid_vnr(current));
+		return -1;
+	}
+
+	error = down_interruptible(&ppd->devobj_pager_lock);
+	if (error) {
+		error = -EINTR;
+		goto out;
+	}
+
+	list_del(&pager->list);
+	up(&ppd->devobj_pager_lock);
+
+	error = __pager_unmap(pager);
 	kfree(pager);
-	dprintk("pager_req_unmap(%p,%lx): %d\n", os, handle, error);
+
+out:
 	return error;
 }
 
