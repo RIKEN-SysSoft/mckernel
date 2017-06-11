@@ -3224,7 +3224,6 @@ process_unlock(struct process *proc, struct mcs_rwlock_node_irqsave *lock)
 void
 debug_log(unsigned long arg)
 {
-#if 0
 	struct process *p;
 	struct thread *t;
 	int i;
@@ -3232,50 +3231,59 @@ debug_log(unsigned long arg)
 	struct resource_set *rset = cpu_local_var(resource_set);
 	struct process_hash *phash = rset->process_hash;
 	struct thread_hash *thash = rset->thread_hash;
+	struct process *pid1 = rset->pid1;
+	int found = 0;
 
 	switch(arg){
 	    case 1:
 		for(i = 0; i < HASH_SIZE; i++){
 			__mcs_rwlock_reader_lock(&phash->lock[i], &lock);
 			list_for_each_entry(p, &phash->list[i], hash_list){
+				if (p == pid1)
+					continue;
+				found++;
 				kprintf("pid=%d ppid=%d status=%d\n",
 				        p->pid, p->ppid_parent->pid, p->status);
 			}
 			__mcs_rwlock_reader_unlock(&phash->lock[i], &lock);
 		}
+		kprintf("%d processes are found.\n", found);
 		break;
 	    case 2:
 		for(i = 0; i < HASH_SIZE; i++){
 			__mcs_rwlock_reader_lock(&thash->lock[i], &lock);
 			list_for_each_entry(t, &thash->list[i], hash_list){
+				found++;
 				kprintf("cpu=%d pid=%d tid=%d status=%d offload=%d\n",
 				        t->cpu_id, t->proc->pid, t->tid,
 				        t->status, t->in_syscall_offload);
 			}
 			__mcs_rwlock_reader_unlock(&thash->lock[i], &lock);
 		}
+		kprintf("%d threads are found.\n", found);
 		break;
 	    case 3:
 		for(i = 0; i < HASH_SIZE; i++){
-			if(phash->lock[i].node)
-				kprintf("phash[i] is locked\n");
 			list_for_each_entry(p, &phash->list[i], hash_list){
+				if (p == pid1)
+					continue;
+				found++;
 				kprintf("pid=%d ppid=%d status=%d\n",
 				        p->pid, p->ppid_parent->pid, p->status);
 			}
 		}
+		kprintf("%d processes are found.\n", found);
 		break;
 	    case 4:
 		for(i = 0; i < HASH_SIZE; i++){
-			if(thash->lock[i].node)
-				kprintf("thash[i] is locked\n");
 			list_for_each_entry(t, &thash->list[i], hash_list){
+				found++;
 				kprintf("cpu=%d pid=%d tid=%d status=%d\n",
 				        t->cpu_id, t->proc->pid, t->tid,
 				        t->status);
 			}
 		}
+		kprintf("%d threads are found.\n", found);
 		break;
 	}
-#endif
 }
