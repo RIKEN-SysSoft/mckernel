@@ -970,6 +970,8 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, flags);
 
 	kfree(ppd);
+
+	pager_remove_process();
 }
 
 
@@ -1467,6 +1469,8 @@ int mcexec_create_per_process_data(ihk_os_t os)
 		kfree(ppd);
 		return -EINVAL;
 	}
+
+	pager_add_process();
 
 	dprintk("%s: PID: %d, counter: %d\n",
 		__FUNCTION__, ppd->pid, atomic_read(&ppd->refcount));

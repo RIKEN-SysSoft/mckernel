@@ -760,6 +760,55 @@ struct pager {
 static DEFINE_SEMAPHORE(pager_sem);
 static struct list_head pager_list = LIST_HEAD_INIT(pager_list);
 
+int pager_nr_processes = 0;
+
+void pager_add_process(void)
+{
+	int error;
+	error = down_interruptible(&pager_sem);
+	if (error) {
+		return;
+	}
+
+	++pager_nr_processes;
+
+	up(&pager_sem);
+}
+
+void pager_remove_process(void)
+{
+	int error;
+	struct pager *pager_next, *pager;
+	error = down_interruptible(&pager_sem);
+
+	if (error) {
+		return;
+	}
+
+	--pager_nr_processes;
+	if (pager_nr_processes > 0) {
+		goto out;
+	}
+
+	list_for_each_entry_safe(pager, pager_next, &pager_list, list) {
+		list_del(&pager->list);
+
+		if (pager->rofile) {
+			fput(pager->rofile);
+		}
+
+		if (pager->rwfile) {
+			fput(pager->rwfile);
+		}
+
+		dprintk("%s: pager 0x%lx removed\n", __FUNCTION__, pager);
+		kfree(pager);
+	}
+
+out:
+	up(&pager_sem);
+}
+
 struct pager_create_result {
 	uintptr_t	handle;
 	int		maxprot;

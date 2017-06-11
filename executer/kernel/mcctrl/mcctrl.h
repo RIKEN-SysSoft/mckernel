@@ -344,6 +344,9 @@ int mcctrl_ikc_is_valid_thread(ihk_os_t os, int cpu);
 ihk_os_t osnum_to_os(int n);
 
 /* syscall.c */
+void pager_add_process(void);
+void pager_remove_process(void);
+
 int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet);
 int mcctrl_add_per_proc_data(struct mcctrl_usrdata *ud, int pid, 
 	struct mcctrl_per_proc_data *ppd);
