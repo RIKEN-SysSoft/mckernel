@@ -281,6 +281,7 @@ static int __notify_syscall_requester(ihk_os_t os, struct ikc_scd_packet *packet
 static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t reason)
 {
 	struct ikc_scd_packet *packet;
+	struct ikc_scd_packet *free_packet = NULL;
 	struct syscall_request *req;
 	struct syscall_response *resp;
 	int error;
@@ -383,6 +384,7 @@ retry_alloc:
 		else {
 			/* Update packet reference */
 			packet = wqhln->packet;
+			free_packet = packet;
 			req = &packet->req;
 			{
 				unsigned long phys2;
@@ -440,6 +442,12 @@ retry_alloc:
 	kfree(wqhln);
 	error = 0;
 out:
+	/* Release remote page-fault response packet */
+	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)free_packet,
+			(usrdata->ikc2linux[smp_processor_id()] ?
+			 usrdata->ikc2linux[smp_processor_id()] :
+			 usrdata->ikc2linux[0]));
+
 	ihk_device_unmap_virtual(ihk_os_to_dev(usrdata->os), resp, sizeof(*resp));
 	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
 
