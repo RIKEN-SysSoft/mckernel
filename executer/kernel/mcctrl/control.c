@@ -949,8 +949,10 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 			__return_syscall(ppd->ud->os, packet, -ERESTARTSYS,
 					packet->req.rtid);
 			ihk_ikc_release_packet(
-			            (struct ihk_ikc_free_packet *)packet,
-			            (ppd->ud->channels + packet->ref)->c);
+					(struct ihk_ikc_free_packet *)packet,
+					(ppd->ud->ikc2linux[smp_processor_id()] ?
+					 ppd->ud->ikc2linux[smp_processor_id()] :
+					 ppd->ud->ikc2linux[0]));
 		}
 	}
 
@@ -965,7 +967,9 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 		__return_syscall(ppd->ud->os, packet, -ERESTARTSYS,
 				packet->req.rtid);
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-				       (ppd->ud->channels + packet->ref)->c);
+				(ppd->ud->ikc2linux[smp_processor_id()] ?
+				 ppd->ud->ikc2linux[smp_processor_id()] :
+				 ppd->ud->ikc2linux[0]));
 	}
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, flags);
 
@@ -999,7 +1003,9 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 		__return_syscall(ud->os, packet, -ERESTARTSYS,
 				packet->req.rtid);
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-				      (ud->channels + packet->ref)->c);
+				(ud->ikc2linux[smp_processor_id()] ?
+				 ud->ikc2linux[smp_processor_id()] :
+				 ud->ikc2linux[0]));
 
 		return -1;
 	}
@@ -1167,7 +1173,9 @@ retry_alloc:
 				task_pid_vnr(current),
 				packet->req.number);
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-				(usrdata->channels + packet->ref)->c);
+				(usrdata->ikc2linux[smp_processor_id()] ?
+				 usrdata->ikc2linux[smp_processor_id()] :
+				 usrdata->ikc2linux[0]));
 		goto retry;
 	}
 
@@ -1205,7 +1213,9 @@ retry_alloc:
 	}
 
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-			(usrdata->channels + packet->ref)->c);
+			(usrdata->ikc2linux[smp_processor_id()] ?
+			 usrdata->ikc2linux[smp_processor_id()] :
+			 usrdata->ikc2linux[0]));
 
 	if (mcctrl_delete_per_thread_data(ppd, current) < 0) {
 		kprintf("%s: error deleting per-thread data\n", __FUNCTION__);
@@ -1310,6 +1320,7 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 	struct ikc_scd_packet *packet;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
+	int error = 0;
 
 	if (copy_from_user(&ret, arg, sizeof(struct syscall_ret_desc))) {
 		return -EFAULT;
@@ -1327,8 +1338,8 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 	if (!packet) {
 		kprintf("%s: ERROR: no packet registered for TID %d\n", 
 			__FUNCTION__, task_pid_vnr(current));
-		mcctrl_put_per_proc_data(ppd);
-		return -EINVAL;
+		error = -EINVAL;
+		goto out;
 	}
 
 	mcctrl_delete_per_thread_data(ppd, current);
@@ -1346,8 +1357,8 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 		                             ret.size, NULL, 0);
 #endif
 		if (copy_from_user(rpm, (void *__user)ret.src, ret.size)) {
-			mcctrl_put_per_proc_data(ppd);
-			return -EFAULT;
+			error = -EFAULT;
+			goto out;
 		}
 
 #ifdef CONFIG_MIC
@@ -1360,12 +1371,16 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 
 	__return_syscall(os, packet, ret.ret, task_pid_vnr(current));
 
+	error = 0;
+out:
 	/* Free packet */
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-			(usrdata->channels + packet->ref)->c);
+			(usrdata->ikc2linux[smp_processor_id()] ?
+			 usrdata->ikc2linux[smp_processor_id()] :
+			 usrdata->ikc2linux[0]));
 
 	mcctrl_put_per_proc_data(ppd);
-	return 0;
+	return error;
 }
 
 LIST_HEAD(mckernel_exec_files);
