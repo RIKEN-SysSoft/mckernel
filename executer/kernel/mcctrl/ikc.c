@@ -141,6 +141,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 static int dummy_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *__os)
 {
+	kprintf("%s: WARNING: packet received\n", __FUNCTION__);
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)__packet, c);
 	return 0;
 }
@@ -216,10 +217,26 @@ static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ih
 
 static int connect_handler_ikc2linux(struct ihk_ikc_channel_info *param)
 {
+	struct ihk_ikc_channel_desc *c;
+	ihk_os_t os = param->channel->remote_os;
+	struct mcctrl_usrdata  *usrdata = ihk_host_os_get_usrdata(os);
+	int linux_cpu;
+
+	c = param->channel;
+	linux_cpu = c->send.queue->write_cpu;
+	if (linux_cpu > nr_cpu_ids) {
+		kprintf("%s: invalid Linux CPU id %d\n",
+				__FUNCTION__, linux_cpu);
+		return -1;
+	}
+	dkprintf("%s: Linux CPU: %d\n", __FUNCTION__, linux_cpu);
+
 	param->packet_handler = syscall_packet_handler;
+	usrdata->ikc2linux[linux_cpu] = c;
 
 	return 0;
 }
+
 static int connect_handler_ikc2mckernel(struct ihk_ikc_channel_info *param)
 {
 	struct ihk_ikc_channel_desc *c;
@@ -235,7 +252,7 @@ static int connect_handler_ikc2mckernel(struct ihk_ikc_channel_info *param)
 		return 1;
 	}
 	param->packet_handler = dummy_packet_handler;
-	
+
 	usrdata->channels[mck_cpu].c = c;
 
 	return 0;
@@ -261,20 +278,29 @@ int prepare_ikc_channels(ihk_os_t os)
 {
 	struct mcctrl_usrdata *usrdata;
 	int i;
+	int ret = 0;
 
 	usrdata = kzalloc(sizeof(struct mcctrl_usrdata), GFP_KERNEL);
+	if (!usrdata) {
+		printk("%s: error: allocating mcctrl_usrdata\n", __FUNCTION__);
+		ret = -ENOMEM;
+		goto error;
+	}
 
 	usrdata->cpu_info = ihk_os_get_cpu_info(os);
 	usrdata->mem_info = ihk_os_get_memory_info(os);
 
 	if (!usrdata->cpu_info || !usrdata->mem_info) {
-		printk("Error: cannot obtain OS CPU and memory information.\n");
-		return -EINVAL;
+		printk("%s: cannot obtain OS CPU and memory information.\n",
+			__FUNCTION__);
+		ret = -EINVAL;
+		goto error;
 	}
 
 	if (usrdata->cpu_info->n_cpus < 1) {
-		printk("Error: # of cpu is invalid.\n");
-		return -EINVAL;
+		printk("%s: Error: # of cpu is invalid.\n", __FUNCTION__);
+		ret = -EINVAL;
+		goto error;
 	}
 
 	usrdata->num_channels = usrdata->cpu_info->n_cpus;
@@ -284,7 +310,17 @@ int prepare_ikc_channels(ihk_os_t os)
 
 	if (!usrdata->channels) {
 		printk("Error: cannot allocate channels.\n");
-		return -ENOMEM;
+		ret = -ENOMEM;
+		goto error;
+	}
+
+	usrdata->ikc2linux = kzalloc(sizeof(struct ihk_ikc_channel_desc *) *
+			nr_cpu_ids, GFP_KERNEL);
+
+	if (!usrdata->ikc2linux) {
+		printk("Error: cannot allocate ikc2linux channels.\n");
+		ret = -ENOMEM;
+		goto error;
 	}
 
 	usrdata->os = os;
@@ -309,6 +345,15 @@ int prepare_ikc_channels(ihk_os_t os)
 	usrdata->part_exec.nr_processes = -1;
 
 	return 0;
+
+error:
+	if (usrdata) {
+		if (usrdata->channels) kfree(usrdata->channels);
+		if (usrdata->ikc2linux) kfree(usrdata->ikc2linux);
+		kfree(usrdata);
+	}
+
+	return ret;
 }
 
 void __destroy_ikc_channel(ihk_os_t os, struct mcctrl_channel *pmc)
@@ -330,12 +375,17 @@ void destroy_ikc_channels(ihk_os_t os)
 
 	for (i = 0; i < usrdata->num_channels; i++) {
 		if (usrdata->channels[i].c) {
-//			ihk_ikc_disconnect(usrdata->channels[i].c);
-			ihk_ikc_free_channel(usrdata->channels[i].c);
-			__destroy_ikc_channel(os, usrdata->channels + i);
+			ihk_ikc_destroy_channel(usrdata->channels[i].c);
+		}
+	}
+
+	for (i = 0; i < nr_cpu_ids; i++) {
+		if (usrdata->ikc2linux[i]) {
+			ihk_ikc_destroy_channel(usrdata->ikc2linux[i]);
 		}
 	}
 
 	kfree(usrdata->channels);
+	kfree(usrdata->ikc2linux);
 	kfree(usrdata);
 }

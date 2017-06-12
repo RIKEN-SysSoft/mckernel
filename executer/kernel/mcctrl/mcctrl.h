@@ -309,7 +309,10 @@ struct mcctrl_usrdata {
 	struct ihk_ikc_listen_param listen_param2;
 	ihk_os_t	os;
 	int	num_channels;
+	/* Channels used for sending messages to LWK */
 	struct mcctrl_channel *channels;
+	/* Channels used for receiving messages from LWK */
+	struct ihk_ikc_channel_desc **ikc2linux;
 	int	remaining_job;
 	int	base_cpu;
 	int	job_pos;
