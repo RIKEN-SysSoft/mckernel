@@ -828,6 +828,9 @@ void pager_remove_process(struct mcctrl_per_proc_data *ppd)
 		kfree(pager);
 	}
 
+	/* Flush page hash as well */
+	rus_page_hash_put_pages();
+
 out:
 	up(&pager_sem);
 }
