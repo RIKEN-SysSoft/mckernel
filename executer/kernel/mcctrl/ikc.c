@@ -263,6 +263,7 @@ static int connect_handler_ikc2mckernel(struct ihk_ikc_channel_info *param)
 
 static struct ihk_ikc_listen_param lp_ikc2linux = {
 	.port = 503,
+	.ikc_direction = IHK_IKC_DIRECTION_RECV,
 	.handler = connect_handler_ikc2linux,
 	.pkt_size = sizeof(struct ikc_scd_packet),
 	.queue_size = PAGE_SIZE * 4,
@@ -271,6 +272,7 @@ static struct ihk_ikc_listen_param lp_ikc2linux = {
 
 static struct ihk_ikc_listen_param lp_ikc2mckernel = {
 	.port = 501,
+	.ikc_direction = IHK_IKC_DIRECTION_SEND,
 	.handler = connect_handler_ikc2mckernel,
 	.pkt_size = sizeof(struct ikc_scd_packet),
 	.queue_size = PAGE_SIZE * 4,
