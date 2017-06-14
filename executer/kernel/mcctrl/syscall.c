@@ -593,6 +593,7 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	size_t			pix;
 #endif
 	struct mcctrl_per_proc_data *ppd;
+	struct ikc_scd_packet *packet;
 	int ret = 0;
 
 	dprintk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
@@ -610,6 +611,14 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 		return -EINVAL;
 	}
 
+	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
+	if (!packet) {
+		error = -ENOENT;
+		printk("%s: no packet registered for TID %d\n",
+				__FUNCTION__, task_pid_vnr(current));
+		goto put_and_out;
+	}
+
 	for (try = 1; ; ++try) {
 		error = translate_rva_to_rpa(usrdata->os, ppd->rpgtable,
 				(unsigned long)vmf->virtual_address,
@@ -617,7 +626,10 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 #define	NTRIES 2
 		if (!error || (try >= NTRIES)) {
 			if (error) {
-				printk("translate_rva_to_rpa: error\n");
+				printk("%s: error translating 0x%p "
+						"(req: TID: %u, syscall: %lu)\n",
+						__FUNCTION__, vmf->virtual_address,
+						packet->req.rtid, packet->req.number);
 			}
 
 			break;
@@ -630,13 +642,14 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 		}
 		error = remote_page_fault(usrdata, vmf->virtual_address, reason);
 		if (error) {
-			printk("forward_page_fault failed. %d\n", error);
+				printk("%s: error forwarding PF for 0x%p "
+						"(req: TID: %d, syscall: %lu)\n",
+						__FUNCTION__, vmf->virtual_address,
+						packet->req.rtid, packet->req.number);
 			break;
 		}
 	}
 	if (error) {
-		printk("mcctrl:page fault error:flags %#x pgoff %#lx va %p page %p\n",
-				vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
 		ret = VM_FAULT_SIGBUS;
 		goto put_and_out;
 	}
@@ -650,16 +663,30 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	for (pix = 0; pix < (pgsize / PAGE_SIZE); ++pix) {
 		struct page *page;
 
+		/* LWK may hold large page based mappings that align rva outside
+		 * Linux' VMA, make sure we don't try to map to those pages */
+		if (rva + (pix * PAGE_SIZE) < vma->vm_start) {
+			continue;
+		}
+
 		if (pfn_valid(pfn+pix)) {
 			page = pfn_to_page(pfn+pix);
 
 			if ((error = rus_page_hash_insert(page)) < 0) {
-				printk("rus_vm_fault: error hashing page??\n");
+				printk("%s: error adding page to RUS hash for 0x%p "
+						"(req: TID: %d, syscall: %lu)\n",
+						__FUNCTION__, vmf->virtual_address,
+						packet->req.rtid, packet->req.number);
 			}
 
 			error = vm_insert_page(vma, rva+(pix*PAGE_SIZE), page);
 			if (error) {
-				printk("vm_insert_page: %d\n", error);
+				printk("%s: error inserting mapping for 0x%p "
+						"(req: TID: %d, syscall: %lu) error: %d, " 
+						"vm_start: 0x%lx, vm_end: 0x%lx\n",
+						__FUNCTION__, vmf->virtual_address,
+						packet->req.rtid, packet->req.number, error,
+						vma->vm_start, vma->vm_end);
 			}
 		}
 		else
@@ -673,8 +700,10 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 #endif
 	ihk_device_unmap_memory(dev, phys, pgsize);
 	if (error) {
-		printk("mcctrl:page fault:remap error:flags %#x pgoff %#lx va %p page %p\n",
-				vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
+		printk("%s: remote PF failed for 0x%p, pgoff: %lu "
+				"(req: TID: %d, syscall: %lu)\n",
+				__FUNCTION__, vmf->virtual_address, vmf->pgoff,
+				packet->req.rtid, packet->req.number);
 		ret = VM_FAULT_SIGBUS;
 		goto put_and_out;
 	}
