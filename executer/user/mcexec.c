@@ -1280,6 +1280,7 @@ unsigned long atobytes(char *string)
 {
 	unsigned long mult = 1;
 	char *postfix;
+	errno = ERANGE;
 
 	if (!strlen(string)) {
 		return 0;
@@ -1300,6 +1301,7 @@ unsigned long atobytes(char *string)
 		*postfix = 0;
 	}
 
+	errno = 0;
 	return atol(string) * mult;
 }
 
@@ -1650,20 +1652,38 @@ int main(int argc, char **argv)
 
 	p = getenv(rlimit_stack_envname);
 	if (p) {
+		char *saveptr;
+		char *token;
 		errno = 0;
-		lcur = strtoul(p, &p, 0);
-		if (errno || (*p != ',')) {
-			fprintf(stderr, "Error: Failed to parse %s\n",
+
+		token = strtok_r(p, ",", &saveptr);
+		if (!token) {
+			fprintf(stderr, "Error: Failed to parse %s 1\n",
 					rlimit_stack_envname);
 			return 1;
 		}
-		errno = 0;
-		lmax = strtoul(p+1, &p, 0);
-		if (errno || (*p != '\0')) {
-			fprintf(stderr, "Error: Failed to parse %s\n",
+
+		lcur = atobytes(token);
+		if (lcur == 0 || errno) {
+			fprintf(stderr, "Error: Failed to parse %s 2\n",
 					rlimit_stack_envname);
 			return 1;
 		}
+
+		token = strtok_r(NULL, ",", &saveptr);
+		if (!token) {
+			fprintf(stderr, "Error: Failed to parse %s 4\n",
+					rlimit_stack_envname);
+			return 1;
+		}
+
+		lmax = atobytes(token);
+		if (lmax == 0 || errno) {
+			fprintf(stderr, "Error: Failed to parse %s 5\n",
+					rlimit_stack_envname);
+			return 1;
+		}
+
 		if (lcur > lmax) {
 			lcur = lmax;
 		}
