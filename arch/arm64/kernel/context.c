@@ -1,4 +1,4 @@
-/* context.c COPYRIGHT FUJITSU LIMITED 2015 */
+/* context.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
 #include <ihk/context.h>
 #include <ihk/debug.h>
 #include <thread_info.h>

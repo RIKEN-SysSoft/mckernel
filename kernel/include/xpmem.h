@@ -1,3 +1,4 @@
+/* xpmem.h COPYRIGHT FUJITSU LIMITED 2017 */
 /**
  * \file xpmem.h
  *  License details are found in the file LICENSE.

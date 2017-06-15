@@ -1,3 +1,4 @@
+/* syscall_list.h COPYRIGHT FUJITSU LIMITED 2017 */
 /**
  * \file syscall_list.h
  *  License details are found in the file LICENSE.

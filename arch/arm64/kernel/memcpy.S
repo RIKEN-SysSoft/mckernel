@@ -1,3 +1,4 @@
+/* memcpy.S COPYRIGHT FUJITSU LIMITED 2017 */
 /*
  * Copyright (C) 2013 ARM Ltd.
  * Copyright (C) 2013 Linaro.
