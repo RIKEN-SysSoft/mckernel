@@ -1,7 +1,7 @@
 #ifndef __RUSAGE_H
 #define __RUSAGE_H
 
-#include "config.h"
+#include "../../config.h"
 
 #define RUSAGE_DEFAULT_SIZE 10
 

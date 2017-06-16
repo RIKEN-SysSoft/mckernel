@@ -1,5 +1,5 @@
 #include <linux/version.h>
-#include "../../config.h"
+#include "../../../config.h"
 #include "../../mcctrl.h"
 
 #ifdef MCCTRL_KSYM_vdso_image_64

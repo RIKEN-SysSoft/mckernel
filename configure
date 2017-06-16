@@ -3400,6 +3400,11 @@ fi
 
 test "x$prefix" = xNONE && prefix="$ac_default_prefix"
 
+cat >>confdefs.h <<_ACEOF
+#define ROOTFSDIR "$prefix/rootfs"
+_ACEOF
+
+
 case $WITH_TARGET in
     attached-mic|builtin-x86|smp-x86)
 	ARCH=`uname -m`
@@ -4576,9 +4581,7 @@ fi
 
 
 
-ac_config_headers="$ac_config_headers kernel/include/config.h"
-
-ac_config_headers="$ac_config_headers executer/config.h"
+ac_config_headers="$ac_config_headers config.h"
 
 ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/kernel/mcctrl/Makefile executer/kernel/mcctrl/arch/x86_64/Makefile executer/kernel/mcoverlayfs/Makefile executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile executer/kernel/mcoverlayfs/linux-4.0.9/Makefile executer/kernel/mcoverlayfs/linux-4.6.7/Makefile kernel/Makefile kernel/Makefile.build arch/x86/tools/mcreboot-attached-mic.sh arch/x86/tools/mcshutdown-attached-mic.sh arch/x86/tools/mcreboot-builtin-x86.sh arch/x86/tools/mcreboot-smp-x86.sh arch/x86/tools/mcstop+release-smp-x86.sh arch/x86/tools/eclair-dump-backtrace.exp arch/x86/tools/mcshutdown-builtin-x86.sh arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in arch/x86/tools/irqbalance_mck.service arch/x86/tools/irqbalance_mck.in"
 
@@ -5278,8 +5281,7 @@ cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
 for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
-    "kernel/include/config.h") CONFIG_HEADERS="$CONFIG_HEADERS kernel/include/config.h" ;;
-    "executer/config.h") CONFIG_HEADERS="$CONFIG_HEADERS executer/config.h" ;;
+    "config.h") CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "executer/user/Makefile") CONFIG_FILES="$CONFIG_FILES executer/user/Makefile" ;;
     "executer/kernel/mcctrl/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcctrl/Makefile" ;;

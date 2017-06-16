@@ -88,6 +88,7 @@ if test "X$WITH_TARGET" = Xyes -o "X$WITH_TARGET" = Xno; then
 fi
 
 test "x$prefix" = xNONE && prefix="$ac_default_prefix"
+AC_DEFINE_UNQUOTED(ROOTFSDIR,"$prefix/rootfs",[Path of bind-mount source directory])
 
 case $WITH_TARGET in
     attached-mic|builtin-x86|smp-x86)
@@ -351,8 +352,7 @@ AC_SUBST(MCKERNEL_RELEASE_DATE)
 AC_SUBST(DCFA_RESEASE_DATE)
 AC_SUBST(uncomment_if_ENABLE_MEMDUMP)
 
-AC_CONFIG_HEADERS([kernel/include/config.h])
-AC_CONFIG_HEADERS([executer/config.h])
+AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
 	Makefile
 	executer/user/Makefile

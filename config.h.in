@@ -1,10 +1,13 @@
-/* executer/config.h.in.  Generated from configure.ac by autoheader.  */
+/* config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* whether mcoverlayfs is enabled */
 #undef ENABLE_MCOVERLAYFS
 
 /* whether memdump feature is enabled */
 #undef ENABLE_MEMDUMP
+
+/* whether rusage is enabled */
+#undef ENABLE_RUSAGE
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
@@ -92,6 +95,9 @@
 
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
+
+/* Path of bind-mount source directory */
+#undef ROOTFSDIR
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS

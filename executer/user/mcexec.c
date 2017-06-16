@@ -65,7 +65,7 @@
 #include <sys/user.h>
 #include "../include/uprotocol.h"
 #include <getopt.h>
-#include "../config.h"
+#include "../../config.h"
 #include <numa.h>
 #include <numaif.h>
 
@@ -1379,6 +1379,65 @@ static struct option mcexec_options[] = {
 #define	MCEXEC_DEF_CUR_STACK_SIZE	(2 * 1024 * 1024)	/* 2 MiB */
 #define	MCEXEC_DEF_MAX_STACK_SIZE	(64 * 1024 * 1024)	/* 64 MiB */
 
+#ifdef ENABLE_MCOVERLAYFS
+void bind_mount_recursive(const char *root, char *prefix)
+{
+	DIR *dir;
+	struct dirent *entry;
+	char path[PATH_MAX];
+	int len;
+
+	len = snprintf(path, sizeof(path) - 1, "%s/%s", root, prefix);
+	path[len] = 0;
+
+	if (!(dir = opendir(path))) {
+		return;
+	}
+
+	if (!(entry = readdir(dir))) {
+		return;
+	}
+
+	do {
+		len = snprintf(path, sizeof(path) - 1,
+				"%s/%s", prefix, entry->d_name);
+		path[len] = 0;
+
+		if (entry->d_type == DT_DIR) {
+			if (strcmp(entry->d_name, ".") == 0 ||
+					strcmp(entry->d_name, "..") == 0)
+				continue;
+
+			bind_mount_recursive(root, path);
+		}
+		else if (entry->d_type == DT_REG) {
+			int ret;
+			struct sys_mount_desc mount_desc;
+			memset(&mount_desc, '\0', sizeof mount_desc);
+			char bind_path[PATH_MAX];
+
+			len = snprintf(bind_path, sizeof(bind_path) - 1,
+					"%s/%s/%s", root, prefix, entry->d_name);
+			bind_path[len] = 0;
+
+			mount_desc.dev_name = bind_path;
+			mount_desc.dir_name = path;
+			mount_desc.type = NULL;
+			mount_desc.flags = MS_BIND | MS_PRIVATE;
+			mount_desc.data = NULL;
+			if ((ret = ioctl(fd, MCEXEC_UP_SYS_MOUNT,
+						(unsigned long)&mount_desc)) != 0) {
+				fprintf(stderr, "WARNING: failed to bind mount %s over %s: %d\n",
+						bind_path, path, ret);
+			}
+		}
+	}
+	while ((entry = readdir(dir)) != NULL);
+
+	closedir(dir);
+}
+#endif
+
 int main(int argc, char **argv)
 {
 //	int fd;
@@ -1521,12 +1580,26 @@ int main(int argc, char **argv)
 		struct sys_mount_desc mount_desc;
 		struct sys_umount_desc umount_desc;
 
+		/* Unshare mount namespace */
 		memset(&unshare_desc, '\0', sizeof unshare_desc);
 		memset(&mount_desc, '\0', sizeof mount_desc);
 		unshare_desc.unshare_flags = CLONE_NEWNS;
-		if (ioctl(fd, MCEXEC_UP_SYS_UNSHARE, 
+		if (ioctl(fd, MCEXEC_UP_SYS_UNSHARE,
 			(unsigned long)&unshare_desc) != 0) {
-			fprintf(stderr, "Error: Failed to unshare. (%s)\n", 
+			fprintf(stderr, "Error: Failed to unshare. (%s)\n",
+				strerror(errno));
+			return 1;
+		}
+
+		/* Privatize mount namespace */
+		mount_desc.dev_name = NULL;
+		mount_desc.dir_name = "/";
+		mount_desc.type = NULL;
+		mount_desc.flags = MS_PRIVATE | MS_REC;
+		mount_desc.data = NULL;
+		if (ioctl(fd, MCEXEC_UP_SYS_MOUNT,
+			(unsigned long)&mount_desc) != 0) {
+			fprintf(stderr, "Error: Failed to privatize mounts. (%s)\n",
 				strerror(errno));
 			return 1;
 		}
@@ -1603,6 +1676,9 @@ int main(int argc, char **argv)
 				strerror(errno));
 			return 1;
 		}
+
+		bind_mount_recursive(ROOTFSDIR, "");
+
 	} else if (error == -1) {
 		return 1;
 	}
