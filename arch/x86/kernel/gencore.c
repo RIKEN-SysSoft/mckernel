@@ -182,7 +182,6 @@ void fill_prpsinfo(struct note *head, struct thread *thread, void *regs)
 /*
   We leave most of the fields unfilled.
 
-	char pr_state;
 	char pr_sname;
 	char pr_zomb;
 	char pr_nice;
