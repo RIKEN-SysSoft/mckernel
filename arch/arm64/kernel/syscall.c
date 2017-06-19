@@ -225,6 +225,7 @@ SYSCALL_DECLARE(rt_sigreturn)
 	ihk_mc_user_context_t *regs = ctx;
 	struct sigsp *sigsp;
 	void *aux;
+	siginfo_t info;
 
 	/*
 	 * Since we stacked the signal on a 128-bit boundary, then 'sp' should
@@ -260,9 +261,8 @@ SYSCALL_DECLARE(rt_sigreturn)
 	}
 
 	if (thread->ctx.thread->flags & (1 << TIF_SINGLESTEP)) {
-		siginfo_t info = {
-			.si_code = TRAP_HWBKPT,
-		};
+		memset(&info, 0, sizeof(info));
+		info.si_code = TRAP_HWBKPT;
 		regs->regs[0] = sigsp->sigrc;
 		clear_single_step(thread);
 		set_signal(SIGTRAP, regs, &info);
@@ -272,9 +272,13 @@ SYSCALL_DECLARE(rt_sigreturn)
 	return sigsp->sigrc;
 
 bad_frame:
-	ekprintf("Error occurred during the restoration of the signal frame.");
-	terminate(0, SIGSEGV);
-	return -EINVAL;
+	ekprintf("[pid:%d]: bad frame in %s: pc=%08llx sp=%08llx\n",
+			thread->proc->pid, __FUNCTION__, regs->pc, regs->sp);
+	memset(&info, 0, sizeof(info));
+	info.si_signo = SIGSEGV;
+	info.si_code = SI_KERNEL;
+	set_signal(info.si_signo, regs, &info);
+	return 0;
 }
 
 extern struct cpu_local_var *clv;
