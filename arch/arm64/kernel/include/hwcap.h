@@ -21,6 +21,7 @@
 #define HWCAP_ASIMDRDM		(1 << 12)
 
 unsigned long arch_get_hwcap(void);
+extern unsigned long elf_hwcap;
 
 #endif /* _UAPI__ASM_HWCAP_H */
 #endif /* POSTK_DEBUG_ARCH_DEP_65 */

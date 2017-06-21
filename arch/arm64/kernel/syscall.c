@@ -1,14 +1,7 @@
 /* syscall.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
-#include <ihk/cpu.h>
-#include <ihk/debug.h>
-#include <cls.h>
 #include <cpulocal.h>
-#include <syscall.h>
-#include <process.h>
 #include <string.h>
-#include <errno.h>
 #include <kmalloc.h>
-#include <uio.h>
 #include <ptrace.h>
 #include <vdso.h>
 #include <mman.h>
@@ -18,6 +11,7 @@
 #include <debug-monitors.h>
 #include <irq.h>
 
+extern void ptrace_report_signal(struct thread *thread, int sig);
 extern void clear_single_step(struct thread *thread);
 void terminate(int, int);
 extern long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
@@ -287,18 +281,6 @@ extern void interrupt_syscall(int pid, int tid);
 extern int num_processors;
 
 long
-ptrace_read_user(struct thread *thread, long addr, unsigned long *value)
-{
-	return -EIO;
-}
-
-long
-ptrace_write_user(struct thread *thread, long addr, unsigned long value)
-{
-	return -EIO;
-}
-
-long
 alloc_debugreg(struct thread *thread)
 {
 	struct user_hwdebug_state *hws = NULL;
@@ -391,230 +373,7 @@ void set_single_step(struct thread *thread)
 	set_regs_spsr_ss(thread->uctx);
 }
 
-long ptrace_read_fpregs(struct thread *thread, void *fpregs)
-{
-	return -EIO;
-}
-
-long ptrace_write_fpregs(struct thread *thread, void *fpregs)
-{
-	return -EIO;
-}
-
-long ptrace_read_regset(struct thread *thread, long type, struct iovec *iov)
-{
-	long rc = -EINVAL;
-
-	switch (type) {
-	case NT_PRSTATUS:
-		if (iov->iov_len > sizeof(struct user_pt_regs)) {
-			iov->iov_len = sizeof(struct user_pt_regs);
-		}
-		rc = copy_to_user(iov->iov_base, &thread->uctx->user_regs, iov->iov_len);
-		break;
-
-	case NT_PRFPREG:
-		if (thread->fp_regs == NULL) {
-			return -ENOMEM;
-		}
-		if (iov->iov_len > sizeof(struct user_fpsimd_state)) {
-			iov->iov_len = sizeof(struct user_fpsimd_state);
-		}
-		rc = copy_to_user(iov->iov_base, &thread->fp_regs->user_fpsimd, iov->iov_len);
-		break;
-
-	case NT_ARM_TLS:
-		if (iov->iov_len > sizeof(thread->tlsblock_base)) {
-			iov->iov_len = sizeof(thread->tlsblock_base);
-		}
-		rc = copy_to_user(iov->iov_base, &thread->tlsblock_base, iov->iov_len);
-		break;
-
-	case NT_ARM_HW_BREAK:
-	case NT_ARM_HW_WATCH:
-	{
-		struct user_hwdebug_state *hws = (struct user_hwdebug_state *)thread->ptrace_debugreg;
-		int bw = (type == NT_ARM_HW_BREAK ? HWS_BREAK : HWS_WATCH);
-
-		if (hws == NULL) {
-			return -ENOMEM;
-		}
-
-		if (iov->iov_len > sizeof(struct user_hwdebug_state)) {
-			iov->iov_len = sizeof(struct user_hwdebug_state);
-		}
-		rc = copy_to_user(iov->iov_base, &hws[bw], iov->iov_len);
-		break;
-	}
-
-	case NT_ARM_SYSTEM_CALL:
-		if (iov->iov_len > sizeof(thread->uctx->syscallno)) {
-			iov->iov_len = sizeof(thread->uctx->syscallno);
-		}
-		rc = copy_to_user(iov->iov_base, &thread->uctx->syscallno, iov->iov_len);
-		break;
-
-	default:
-		kprintf("ptrace_read_regset: not supported type 0x%x\n", type);
-		break;
-	}
-	return rc;
-}
-
-long ptrace_write_regset(struct thread *thread, long type, struct iovec *iov)
-{
-	long rc = -EINVAL;
-
-	switch (type) {
-	case NT_PRSTATUS:
-		if (iov->iov_len > sizeof(struct user_pt_regs)) {
-			iov->iov_len = sizeof(struct user_pt_regs);
-		}
-		rc = copy_from_user(&thread->uctx->user_regs, iov->iov_base, iov->iov_len);
-		break;
-
-	case NT_PRFPREG:
-		if (thread->fp_regs == NULL) {
-			return -ENOMEM;
-		}
-		if (iov->iov_len > sizeof(struct user_fpsimd_state)) {
-			iov->iov_len = sizeof(struct user_fpsimd_state);
-		}
-		rc = copy_from_user(&thread->fp_regs->user_fpsimd, iov->iov_base, iov->iov_len);
-		break;
-
-	case NT_ARM_TLS:
-		if (iov->iov_len > sizeof(thread->tlsblock_base)) {
-			iov->iov_len = sizeof(thread->tlsblock_base);
-		}
-		rc = copy_from_user(&thread->tlsblock_base, iov->iov_base, iov->iov_len);
-		break;
-
-	case NT_ARM_HW_BREAK:
-	case NT_ARM_HW_WATCH:
-	{
-		struct user_hwdebug_state *hws = (struct user_hwdebug_state *)thread->ptrace_debugreg;
-		struct user_hwdebug_state kwork;
-		int bw = (type == NT_ARM_HW_BREAK ? HWS_BREAK : HWS_WATCH);
-		int max_size = (type == NT_ARM_HW_BREAK ? max_br_size : max_wr_size);
-		int ret;
-		unsigned long offset = offsetof(struct user_hwdebug_state, dbg_regs);
-
-		/* ptrace_debugreg is NULL. */
-		if (hws == NULL) {
-			return -ENOMEM;
-		}
-
-		/* clear kernel work space. */
-		memset(&kwork, 0, sizeof(kwork));
-
-		/* iov_len check and fix. */
-		if (iov->iov_len > sizeof(struct user_hwdebug_state)) {
-			iov->iov_len = sizeof(struct user_hwdebug_state);
-		}
-
-		/* over support regnum check */
-		if (iov->iov_len > max_size) {
-			return -ENOSPC;
-		}
-
-		/* copy from user, kernel work space. */
-		rc = copy_from_user(&kwork, iov->iov_base, iov->iov_len);
-
-		/* check iov_base value. */
-		ret = arch_validate_hwbkpt_settings(type, &kwork, iov->iov_len);
-		if (ret) {
-			rc = ret;
-		} else {
-			/* check is OK, copy to ptrace_debugreg. */
-			/* dbg_info is no copy. */
-			memcpy(hws[bw].dbg_regs, kwork.dbg_regs, iov->iov_len - offset);
-		}
-		break;
-	}
-
-	case NT_ARM_SYSTEM_CALL:
-		if (iov->iov_len > sizeof(thread->uctx->syscallno)) {
-			iov->iov_len = sizeof(thread->uctx->syscallno);
-		}
-		rc = copy_from_user(&thread->uctx->syscallno, iov->iov_base, iov->iov_len);
-		break;
-
-	default:
-		kprintf("ptrace_write_regset: not supported type 0x%x\n", type);
-		break;
-	}
-	return rc;
-}
-
 extern void coredump(struct thread *thread, void *regs);
-
-void ptrace_report_signal(struct thread *thread, int sig)
-{
-	struct mcs_rwlock_node_irqsave lock;
-	struct process *proc = thread->proc;
-	int parent_pid;
-	siginfo_t info;
-	struct thread_info tinfo;
-
-	dkprintf("ptrace_report_signal, tid=%d, pid=%d\n", thread->tid, thread->proc->pid);
-
-	/* save thread_info, if called by ptrace_report_exec() */
-	if (sig == ((SIGTRAP | (PTRACE_EVENT_EXEC << 8)))) {
-		memcpy(&tinfo, thread->ctx.thread, sizeof(struct thread_info));
-	}
-
-	mcs_rwlock_writer_lock(&proc->update_lock, &lock);	
-	if(!(proc->ptrace & PT_TRACED)){
-		mcs_rwlock_writer_unlock(&proc->update_lock, &lock);
-		return;
-	}
-	thread->exit_status = sig;
-	/* Transition thread state */
-#ifdef POSTK_DEBUG_TEMP_FIX_41 /* early to wait4() wakeup for ptrace, fix. */
-	proc->status = PS_DELAY_TRACED;
-#else /* POSTK_DEBUG_TEMP_FIX_41 */
-	proc->status = PS_TRACED;
-#endif /* POSTK_DEBUG_TEMP_FIX_41 */
-	thread->status = PS_TRACED;
-	proc->ptrace &= ~PT_TRACE_SYSCALL_MASK;
-	if (sig == SIGSTOP || sig == SIGTSTP ||
-			sig == SIGTTIN || sig == SIGTTOU) {
-		proc->signal_flags |= SIGNAL_STOP_STOPPED;
-	} else {
-		proc->signal_flags &= ~SIGNAL_STOP_STOPPED;
-	}
-	parent_pid = proc->parent->pid;
-	save_debugreg(thread->ptrace_debugreg);
-	mcs_rwlock_writer_unlock(&proc->update_lock, &lock);
-
-	memset(&info, '\0', sizeof info);
-	info.si_signo = SIGCHLD;
-	info.si_code = CLD_TRAPPED;
-	info._sifields._sigchld.si_pid = thread->tid;
-	info._sifields._sigchld.si_status = thread->exit_status;
-	do_kill(cpu_local_var(current), parent_pid, -1, SIGCHLD, &info, 0);
-#ifndef POSTK_DEBUG_TEMP_FIX_41 /* early to wait4() wakeup for ptrace, fix. */
-	/* Wake parent (if sleeping in wait4()) */
-	waitq_wakeup(&proc->parent->waitpid_q);
-#endif /* !POSTK_DEBUG_TEMP_FIX_41 */
-
-	dkprintf("ptrace_report_signal,sleeping\n");
-	/* Sleep */
-	schedule();
-	dkprintf("ptrace_report_signal,wake up\n");
-
-	/* restore thread_info, if called by ptrace_report_exec() */
-	if (sig == ((SIGTRAP | (PTRACE_EVENT_EXEC << 8)))) {
-		memcpy(thread->ctx.thread, &tinfo, sizeof(struct thread_info));
-	}
-}
-
-long
-arch_ptrace(long request, int pid, long addr, long data)
-{
-	return -EIO;
-}
 
 static int
 isrestart(int syscallno, unsigned long rc, int sig, int restart)

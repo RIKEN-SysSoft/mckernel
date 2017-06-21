@@ -15,8 +15,6 @@ int arch_validate_hwbkpt_settings(long note_type, struct user_hwdebug_state *hws
 
 extern int core_num_brps;
 extern int core_num_wrps;
-extern int max_br_size;
-extern int max_wr_size;
 
 /* @ref.impl include/uapi/linux/hw_breakpoint.h::HW_BREAKPOINT_LEN_n, HW_BREAKPOINT_xxx, bp_type_idx */
 enum {

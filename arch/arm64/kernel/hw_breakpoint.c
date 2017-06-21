@@ -13,10 +13,6 @@
 int core_num_brps;
 int core_num_wrps;
 
-/* maxmum ptrace_write_regset(break or watch) size */
-int max_br_size;
-int max_wr_size;
-
 /* @ref.impl arch/arm64/kernel/hw_breakpoint.c::get_num_brps */
 /* Determine number of BRP registers available. */
 int get_num_brps(void)
@@ -166,9 +162,6 @@ void arch_hw_breakpoint_init(void)
 		kprintf("debugreg struct size is less than Determine number of WRP registers available.\n");
 		core_num_wrps = max_hws_dbg_regs;
 	}
-	max_br_size = sizeof(hws) - sizeof(hws.dbg_regs[0]) * (max_hws_dbg_regs - core_num_brps);
-	max_wr_size = sizeof(hws) - sizeof(hws.dbg_regs[0]) * (max_hws_dbg_regs - core_num_wrps);
-
 	hw_breakpoint_reset();
 }
 

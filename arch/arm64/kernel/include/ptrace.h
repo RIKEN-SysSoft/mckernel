@@ -1,4 +1,4 @@
-/* ptrace.h COPYRIGHT FUJITSU LIMITED 2015-2016 */
+/* ptrace.h COPYRIGHT FUJITSU LIMITED 2015-2017 */
 #ifndef __HEADER_ARM64_COMMON_PTRACE_H
 #define __HEADER_ARM64_COMMON_PTRACE_H
 
@@ -13,6 +13,9 @@
 #define PSR_MODE_EL3t   0x0000000c
 #define PSR_MODE_EL3h   0x0000000d
 #define PSR_MODE_MASK   0x0000000f
+
+/* AArch32 CPSR bits */
+#define PSR_MODE32_BIT	0x00000010
 
 /* AArch64 SPSR bits */
 #define PSR_F_BIT       0x00000040
@@ -44,16 +47,16 @@
 #ifndef __ASSEMBLY__
 
 struct user_hwdebug_state {
-	unsigned int dbg_info;
-	unsigned int pad;
+	uint32_t dbg_info;
+	uint32_t pad;
 	struct {
-		unsigned long addr;
-		unsigned int ctrl;
-		unsigned int pad;
+		uint64_t addr;
+		uint32_t ctrl;
+		uint32_t pad;
 	} dbg_regs[16];
 };
 
-unsigned int ptrace_hbp_get_resource_info(unsigned int note_type);
+extern unsigned int ptrace_hbp_get_resource_info(unsigned int note_type);
 
 #endif /* !__ASSEMBLY__ */
 
