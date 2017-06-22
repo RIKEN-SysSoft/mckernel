@@ -4,6 +4,6 @@
 
 #define ARCH_FAST_MEMCPY
 
-extern inline void *__inline_memcpy(void *to, const void *from, size_t t);
+extern void *__inline_memcpy(void *to, const void *from, size_t t);
 
 #endif	/* __HEADER_ARM64_COMMON_ARCH_TIMER_H */
