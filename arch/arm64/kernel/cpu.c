@@ -1050,7 +1050,6 @@ static const char *const hwcap_str[] = {
 long ihk_mc_show_cpuinfo(char *buf, size_t buf_size, unsigned long read_off, int *eofp)
 {
 	extern int num_processors;
-	extern unsigned long elf_hwcap;
 	int i = 0;
 	char *lbuf = NULL;
 	const size_t lbuf_size = CPUINFO_LEN_PER_CORE * num_processors;
@@ -1122,7 +1121,7 @@ err:
 	return ret;
 }
 
-int check_and_allocate_fp_regs(struct thread *thread);
+static int check_and_allocate_fp_regs(struct thread *thread);
 void save_fp_regs(struct thread *thread);
 
 #ifdef POSTK_DEBUG_ARCH_DEP_23 /* add arch dep. clone_thread() function */
@@ -1329,7 +1328,7 @@ release_fp_regs(struct thread *thread)
 	thread->fp_regs = NULL;
 }
 
-int 
+static int
 check_and_allocate_fp_regs(struct thread *thread)
 {
 	int	result = 0;
@@ -1359,7 +1358,6 @@ out:
 void
 save_fp_regs(struct thread *thread)
 {
-	extern unsigned long elf_hwcap;
 	if(check_and_allocate_fp_regs(thread) != 0) {
 		// alloc error.
 		return;
@@ -1379,8 +1377,6 @@ save_fp_regs(struct thread *thread)
 void
 restore_fp_regs(struct thread *thread)
 {
-	extern unsigned long elf_hwcap;
-
 	if (!thread->fp_regs) {
 		// only clear fpregs.
 		fp_regs_struct clear_fp;

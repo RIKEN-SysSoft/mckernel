@@ -303,8 +303,9 @@ struct ucontext {
  */
 struct user_fpsimd_state {
 	__uint128_t	vregs[32];
-	unsigned int	fpsr;
-	unsigned int	fpcr;
+	uint32_t	fpsr;
+	uint32_t	fpcr;
+	uint32_t	__reserved[2];
 };
 
 /*
