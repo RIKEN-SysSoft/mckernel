@@ -91,7 +91,6 @@ int mcctrl_ikc_set_recv_cpu(ihk_os_t os, int cpu);
 int syscall_backward(struct mcctrl_usrdata *, int, unsigned long, unsigned long,
                      unsigned long, unsigned long, unsigned long,
                      unsigned long, unsigned long *);
-long mcexec_switch_thread(ihk_os_t os, unsigned long code, struct file *file);
 
 static long mcexec_prepare_image(ihk_os_t os,
                                  struct program_load_desc * __user udesc)
@@ -357,28 +356,6 @@ static long mcexec_debug_log(ihk_os_t os, unsigned long arg)
 
 int mcexec_close_exec(ihk_os_t os);
 int mcexec_destroy_per_process_data(ihk_os_t os);
-
-#if 0
-static unsigned long mod_sys_call_table(int num, unsigned long func)
-{
-	static unsigned long *sys_call_table = NULL;
-	unsigned long oldval;
-
-	if (!sys_call_table) {
-		sys_call_table =
-		        (unsigned long *)kallsyms_lookup_name("sys_call_table");
-		if (!sys_call_table) {
-			printk("sys_call_table not found\n");
-			return -ENOENT;
-		}
-	}
-	oldval = sys_call_table[num];
-	if (func && sys_call_table[num] != func) {
-		sys_call_table[num] = func;
-	}
-	return oldval;
-}
-#endif
 
 static void release_handler(ihk_os_t os, void *param)
 {
@@ -2133,24 +2110,6 @@ mcexec_util_thread1(ihk_os_t os, unsigned long arg, struct file *file)
 	return rc;
 }
 
-#if 0
-static struct {
-	unsigned long org_futex;
-	unsigned long org_brk;
-	unsigned long org_clone;
-	unsigned long org_fork;
-	unsigned long org_vfork;
-	unsigned long org_gettid;
-	unsigned long org_mmap;
-	unsigned long org_munmap;
-	unsigned long org_mprotect;
-	unsigned long org_mremap;
-	unsigned long org_execve;
-	unsigned long org_exit_group;
-	unsigned long org_exit;
-} org_syscalls;
-#endif
-
 static inline struct host_thread *get_host_thread(void)
 {
 	int pid = task_tgid_vnr(current);
@@ -2166,225 +2125,6 @@ static inline struct host_thread *get_host_thread(void)
 
 	return thread;
 }
-
-#if 0
-#define DEF_SYSCALL(f, v, n) \
-static asmlinkage unsigned long f(unsigned long p1, unsigned long p2, \
-	unsigned long p3, unsigned long p4, unsigned long p5, \
-	unsigned long p6)\
-{\
-	struct host_thread *thread = get_host_thread();\
-\
-	if (thread) {\
-		unsigned long ret;\
-		int rc;\
-\
-		rc = syscall_backward(thread->handler->ud, n, p1, p2, p3, p4, \
-		                      p5, p6, &ret);\
-		if (rc < 0)\
-			return rc;\
-		return ret;\
-	}\
-\
-	return ((asmlinkage unsigned long (*)(unsigned long, unsigned long,\
-	        unsigned long, unsigned long, unsigned long, unsigned long))\
-	        org_syscalls.v)(p1, p2, p3, p4, p5, p6);\
-}
-
-#define BAD_SYSCALL(f, v) \
-static asmlinkage unsigned long f(unsigned long p1, unsigned long p2, \
-	unsigned long p3, unsigned long p4, unsigned long p5, \
-	unsigned long p6)\
-{\
-	struct host_thread *thread = get_host_thread();\
-\
-	if (thread) {\
-		return -ENOSYS;\
-	}\
-\
-	return ((asmlinkage unsigned long (*)(unsigned long, unsigned long,\
-	        unsigned long, unsigned long, unsigned long, unsigned long))\
-	        org_syscalls.v)(p1, p2, p3, p4, p5, p6);\
-}
-
-DEF_SYSCALL(mod_futex, org_futex, __NR_futex)
-DEF_SYSCALL(mod_brk, org_brk, __NR_brk)
-DEF_SYSCALL(mod_gettid, org_gettid, __NR_gettid)
-DEF_SYSCALL(mod_mmap, org_mmap, __NR_mmap)
-DEF_SYSCALL(mod_munmap, org_munmap, __NR_munmap)
-DEF_SYSCALL(mod_mremap, org_mremap, __NR_mremap)
-DEF_SYSCALL(mod_mprotect, org_mprotect, __NR_mprotect)
-BAD_SYSCALL(mod_clone, org_clone)
-BAD_SYSCALL(mod_fork, org_fork)
-BAD_SYSCALL(mod_vfork, org_vfork)
-BAD_SYSCALL(mod_execve, org_execve)
-
-static asmlinkage unsigned long mod_exit(int exit_status)
-{
-	struct host_thread *thread = get_host_thread();
-
-	if (thread) {
-		unsigned long code = (exit_status & 255) << 8;
-		ihk_os_t os = thread->handler->ud->os;
-		struct file *file = thread->handler->file;
-
-		mcexec_switch_thread(os, code, file);
-		return 0;
-	}
-
-	return ((asmlinkage unsigned long (*)(int))
-	        org_syscalls.org_exit)(exit_status);
-}
-
-static asmlinkage unsigned long mod_exit_group(int exit_status)
-{
-	struct host_thread *thread = get_host_thread();
-
-	if (thread) {
-		unsigned long code = (exit_status & 255) << 8;
-		ihk_os_t os = thread->handler->ud->os;
-		struct file *file = thread->handler->file;
-
-		code |= 0x100000000;
-		mcexec_switch_thread(os, code, file);
-		return 0;
-	}
-
-	return ((asmlinkage unsigned long (*)(int))
-	        org_syscalls.org_exit_group)(exit_status);
-}
-
-static void save_syscalls(void)
-{
-#define SAVE_SYSCALL(v, f, n) \
-do { \
-	unsigned long org; \
-	if (org_syscalls.v == 0L && \
-	    (org = mod_sys_call_table(n, 0L)) != (unsigned long)f) \
-		org_syscalls.v = org; \
-} while (0)
-
-	SAVE_SYSCALL(org_futex, mod_futex, __NR_futex);
-	SAVE_SYSCALL(org_brk, mod_brk, __NR_brk);
-	SAVE_SYSCALL(org_clone, mod_clone, __NR_clone);
-	SAVE_SYSCALL(org_fork, mod_fork, __NR_fork);
-	SAVE_SYSCALL(org_vfork, mod_vfork, __NR_vfork);
-	SAVE_SYSCALL(org_gettid, mod_gettid, __NR_gettid);
-	SAVE_SYSCALL(org_mmap, mod_mmap, __NR_mmap);
-	SAVE_SYSCALL(org_munmap, mod_munmap, __NR_munmap);
-	SAVE_SYSCALL(org_mprotect, mod_mprotect, __NR_mprotect);
-	SAVE_SYSCALL(org_mremap, mod_mremap, __NR_mremap);
-	SAVE_SYSCALL(org_execve, mod_execve, __NR_execve);
-	SAVE_SYSCALL(org_exit_group, mod_exit_group, __NR_exit_group);
-	SAVE_SYSCALL(org_exit, mod_exit, __NR_exit);
-}
-
-static void mod_syscalls(void)
-{
-#define MOD_SYSCALL(f, n) \
-do { \
-	mod_sys_call_table(n, (unsigned long)f); \
-} while (0)
-
-	MOD_SYSCALL(mod_futex, __NR_futex);
-	MOD_SYSCALL(mod_brk, __NR_brk);
-	MOD_SYSCALL(mod_clone, __NR_clone);
-	MOD_SYSCALL(mod_fork, __NR_fork);
-	MOD_SYSCALL(mod_vfork, __NR_vfork);
-	MOD_SYSCALL(mod_gettid, __NR_gettid);
-	MOD_SYSCALL(mod_mmap, __NR_mmap);
-	MOD_SYSCALL(mod_munmap, __NR_munmap);
-	MOD_SYSCALL(mod_mprotect, __NR_mprotect);
-	MOD_SYSCALL(mod_mremap, __NR_mremap);
-	MOD_SYSCALL(mod_execve, __NR_execve);
-	MOD_SYSCALL(mod_exit_group, __NR_exit_group);
-	MOD_SYSCALL(mod_exit, __NR_exit);
-}
-
-static void restore_syscalls(void)
-{
-#define RESTORE_SYSCALL(v, n) \
-do { \
-	mod_sys_call_table(n, org_syscalls.v); \
-} while (0)
-
-	RESTORE_SYSCALL(org_futex, __NR_futex);
-	RESTORE_SYSCALL(org_brk, __NR_brk);
-	RESTORE_SYSCALL(org_clone, __NR_clone);
-	RESTORE_SYSCALL(org_fork, __NR_fork);
-	RESTORE_SYSCALL(org_vfork, __NR_vfork);
-	RESTORE_SYSCALL(org_gettid, __NR_gettid);
-	RESTORE_SYSCALL(org_mmap, __NR_mmap);
-	RESTORE_SYSCALL(org_munmap, __NR_munmap);
-	RESTORE_SYSCALL(org_mprotect, __NR_mprotect);
-	RESTORE_SYSCALL(org_mremap, __NR_mremap);
-	RESTORE_SYSCALL(org_execve, __NR_execve);
-	RESTORE_SYSCALL(org_exit_group, __NR_exit_group);
-	RESTORE_SYSCALL(org_exit, __NR_exit);
-}
-
-static void process_exit_prober(void *data, struct task_struct *tsk)
-{
-	struct mcos_handler_info *info;
-	unsigned long flags;
-	struct host_thread *thread;
-	struct host_thread *prev;
-	int pid = task_tgid_vnr(tsk);
-	int tid = task_pid_vnr(tsk);
-	int code;
-	struct ikc_scd_packet *packet;
-	struct mcctrl_usrdata *usrdata = NULL;
-	struct mcctrl_per_proc_data *ppd = NULL;
-
-	if (!host_threads) {
-		return;
-	}
-	write_lock_irqsave(&host_thread_lock, flags);
-	for (prev = NULL, thread = host_threads; thread;
-	     prev = thread, thread = thread->next)
-		if(thread->pid == pid && thread->tid == tid)
-			break;
-	if (!thread) {
-		write_unlock_irqrestore(&host_thread_lock, flags);
-		return;
-	}
-	info = thread->handler;
-	if (!info)
-		goto err;
-
-	usrdata = info->ud;
-	code = tsk->exit_code;
-	ppd = mcctrl_get_per_proc_data(usrdata, pid);
-	if (!ppd) {
-		kprintf("%s: ERROR: no packet registered for TID %d\n",
-		        __FUNCTION__, task_pid_vnr(current));
-		goto err;
-	}
-	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, tsk);
-	if (!packet) {
-		goto err;
-	}
-	mcctrl_delete_per_thread_data(ppd, tsk);
-	__return_syscall(usrdata->os, packet, code, tid);
-	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-	                       (usrdata->channels + packet->ref)->c);
-err:
-	if (ppd)
-		mcctrl_put_per_proc_data(ppd);
-	if (prev)
-		prev->next = thread->next;
-	else
-		host_threads = thread->next;
-	write_unlock_irqrestore(&host_thread_lock, flags);
-	kfree(thread);
-	read_lock_irqsave(&host_thread_lock, flags);
-	if (!host_threads) {
-		restore_syscalls();
-		unregister_trace_sched_process_exit(process_exit_prober, NULL);
-	}
-	read_unlock_irqrestore(&host_thread_lock, flags);
-}
-#endif
 
 long
 mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
@@ -2409,18 +2149,9 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	thread->handler = info;
 
 	write_lock_irqsave(&host_thread_lock, flags);
-#if 0
-	if (!host_threads) {
-		save_syscalls();
-		register_trace_sched_process_exit(process_exit_prober, NULL);
-	}
-#endif
 	thread->next = host_threads;
 	host_threads = thread;
 	write_unlock_irqrestore(&host_thread_lock, flags);
-#if 0
-	mod_syscalls();
-#endif
 
 	return 0;
 }
@@ -2449,67 +2180,6 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 }
 
 long
-mcexec_switch_thread(ihk_os_t os, unsigned long code, struct file *file)
-{
-	int tid = task_pid_vnr(current);
-	int pid = task_tgid_vnr(current);
-	unsigned long flags;
-	struct host_thread *thread;
-	struct host_thread *prev;
-	struct ikc_scd_packet *packet;
-	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
-	struct mcctrl_per_proc_data *ppd;
-
-	write_lock_irqsave(&host_thread_lock, flags);
-	for (prev = NULL, thread = host_threads; thread;
-	     prev = thread, thread = thread->next)
-		if(thread->tid == tid)
-			break;
-	if (!thread) {
-		write_unlock_irqrestore(&host_thread_lock, flags);
-		return -EINVAL;
-	}
-
-	ppd = mcctrl_get_per_proc_data(usrdata, pid);
-	if (!ppd) {
-		kprintf("%s: ERROR: no per-process structure for PID %d??\n",
-		        __FUNCTION__, task_tgid_vnr(current));
-		goto err;
-	}
-	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd,
-	                                                             current);
-	if (!packet) {
-		kprintf("%s: ERROR: no packet registered for TID %d\n",
-		       __FUNCTION__, tid);
-		goto err;
-	}
-	mcctrl_delete_per_thread_data(ppd, current);
-	__return_syscall(usrdata->os, packet, code, tid);
-	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-	                       (usrdata->channels + packet->ref)->c);
-err:
-	if(ppd)
-		mcctrl_put_per_proc_data(ppd);
-
-	if (prev)
-		prev->next = thread->next;
-	else
-		host_threads = thread->next;
-	write_unlock_irqrestore(&host_thread_lock, flags);
-	kfree(thread);
-#if 0
-	read_lock_irqsave(&host_thread_lock, flags);
-	if (!host_threads) {
-		restore_syscalls();
-		unregister_trace_sched_process_exit(process_exit_prober, NULL);
-	}
-	read_unlock_irqrestore(&host_thread_lock, flags);
-#endif
-	set_user_sp(thread->usp);
-	return 0;
-}
-
-long
 mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
 {
 	int pid = param[0];
@@ -2522,17 +2192,14 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
 
-printk("mcexec_terminate_thread\n");
 	write_lock_irqsave(&host_thread_lock, flags);
 	for (prev = NULL, thread = host_threads; thread;
 	     prev = thread, thread = thread->next) {
-printk("thread tid=%d\n", thread->tid);
 		if(thread->tid == tid)
 			break;
 	}
 	if (!thread) {
 		write_unlock_irqrestore(&host_thread_lock, flags);
-printk("mcexec_terminate_thread no thread pid=%d tid=%d\n", pid, tid);
 		return -EINVAL;
 	}
 
@@ -2580,14 +2247,6 @@ mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 
 	if (copy_from_user(&param, uparam, sizeof param)) {
 		return -EFAULT;
-	}
-	if (param.number == __NR_exit ||
-	    param.number == __NR_exit_group) {
-		unsigned long code = (param.args[0] & 255) << 8;
-		if (param.number == __NR_exit_group)
-			code |= 0x100000000L;
-		mcexec_switch_thread(os, code, file);
-		return 0;
 	}
 	rc = syscall_backward(ihk_host_os_get_usrdata(os), param.number,
 	                      param.args[0], param.args[1], param.args[2],
@@ -2706,9 +2365,6 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 
 	case MCEXEC_UP_SIG_THREAD:
 		return mcexec_sig_thread(os, arg, file);
-
-	case MCEXEC_UP_SWITCH_THREAD:
-		return mcexec_switch_thread(os, arg, file);
 
 	case MCEXEC_UP_SYSCALL_THREAD:
 		return mcexec_syscall_thread(os, arg, file);

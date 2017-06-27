@@ -84,7 +84,6 @@ static struct ihk_os_user_call_handler mcctrl_uchs[] = {
 	{ .request = MCEXEC_UP_UTIL_THREAD1, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_UTIL_THREAD2, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_SIG_THREAD, .func = mcctrl_ioctl },
-	{ .request = MCEXEC_UP_SWITCH_THREAD, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_SYSCALL_THREAD, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_TERMINATE_THREAD, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_DEBUG_LOG, .func = mcctrl_ioctl },
