@@ -56,6 +56,7 @@
 #include <sys/wait.h>
 #include <dirent.h>
 #include <sys/syscall.h>
+#include <sys/ptrace.h>
 #include <pthread.h>
 #include <semaphore.h>
 #include <signal.h>
@@ -63,8 +64,12 @@
 #include <sys/mount.h>
 #include <include/generated/uapi/linux/version.h>
 #include <sys/user.h>
+#include <sys/prctl.h>
+#include <asm/prctl.h>
 #include "../include/uprotocol.h"
 #include <getopt.h>
+#include "archdep.h"
+#include "arch_args.h"
 #include "../../config.h"
 #include <numa.h>
 #include <numaif.h>
@@ -84,6 +89,8 @@
 #define __eprintf(format, ...)  {fprintf(stderr, "%s: " format, __FUNCTION__, \
                                         __VA_ARGS__);fflush(stderr);}
 #endif
+
+#undef DEBUG_UTI
 
 #ifdef USE_SYSCALL_MOD_CALL
 extern int mc_cmd_server_init();
@@ -131,6 +138,13 @@ struct sigfd {
 
 struct sigfd *sigfdtop;
 
+
+struct syscall_struct {
+	int number;
+	unsigned long args[6];
+	unsigned long ret;
+};
+
 #ifdef NCCS
 #undef NCCS
 #endif
@@ -145,7 +159,42 @@ struct kernel_termios {
 	cc_t c_cc[NCCS];                /* control characters */
 };
 
-int main_loop(int fd, int cpu, pthread_mutex_t *lock);
+#define UTI_FLAG_NUMA_SET (1ULL<<1) /* Indicates NUMA_SET is specified */
+
+#define UTI_FLAG_SAME_NUMA_DOMAIN (1ULL<<2)
+#define UTI_FLAG_DIFFERENT_NUMA_DOMAIN (1ULL<<3)
+
+#define UTI_FLAG_SAME_L1 (1ULL<<4)
+#define UTI_FLAG_SAME_L2 (1ULL<<5)
+#define UTI_FLAG_SAME_L3 (1ULL<<6)
+
+#define UTI_FLAG_DIFFERENT_L1 (1ULL<<7)
+#define UTI_FLAG_DIFFERENT_L2 (1ULL<<8)
+#define UTI_FLAG_DIFFERENT_L3 (1ULL<<9)
+
+#define UTI_FLAG_EXCLUSIVE_CPU (1ULL<<10)
+#define UTI_FLAG_CPU_INTENSIVE (1ULL<<11)
+#define UTI_FLAG_HIGH_PRIORITY (1ULL<<12)
+#define UTI_FLAG_NON_COOPERATIVE (1ULL<<13)
+
+/* Linux default value is used */
+#define UTI_MAX_NUMA_DOMAINS (1024)
+
+typedef struct uti_attr {
+	/* UTI_CPU_SET environmental variable is used to denote the preferred
+	   location of utility thread */
+	uint64_t numa_set[(UTI_MAX_NUMA_DOMAINS + sizeof(uint64_t) * 8 - 1) /
+	                  (sizeof(uint64_t) * 8)];
+	uint64_t flags; /* Representing location and behavior hints by bitmap */
+} uti_attr_t;
+
+struct kuti_attr {
+	long parent_cpuid;
+	struct uti_attr attr;
+};
+
+struct thread_data_s;
+int main_loop(struct thread_data_s *);
 
 static int mcosid;
 static int fd;
@@ -186,6 +235,11 @@ pthread_mutex_t fork_sync_mutex = PTHREAD_MUTEX_INITIALIZER;
 pid_t gettid(void)
 {
 	return syscall(SYS_gettid);
+}
+
+int tgkill(int tgid, int tid, int sig)
+{
+	return syscall(SYS_tgkill, tgid, tid, sig);
 }
 
 struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
@@ -893,13 +947,15 @@ int flatten_strings(int nr_strings, char *first, char **strings, char **flat)
 //#define NUM_HANDLER_THREADS	248
 
 struct thread_data_s {
+	struct thread_data_s *next;
 	pthread_t thread_id;
-	int fd;
 	int cpu;
 	int ret;
 	pid_t	tid;
 	int terminate;
 	int remote_tid;
+	int remote_cpu;
+	int joined;
 	pthread_mutex_t *lock;
 	pthread_barrier_t *init_ready;
 } *thread_data;
@@ -918,8 +974,9 @@ static void *main_loop_thread_func(void *arg)
 
 	td->tid = gettid();
 	td->remote_tid = -1;
-	pthread_barrier_wait(&init_ready);
-	td->ret = main_loop(td->fd, td->cpu, td->lock);
+	if (td->init_ready)
+		pthread_barrier_wait(td->init_ready);
+	td->ret = main_loop(td);
 
 	return NULL;
 }
@@ -929,54 +986,91 @@ static void *main_loop_thread_func(void *arg)
 void
 sendsig(int sig, siginfo_t *siginfo, void *context)
 {
-	pid_t	pid = getpid();
-	pid_t	tid = gettid();
+	pid_t	pid;
+	pid_t	tid;
 	int	remote_tid;
-	int	i;
 	int	cpu;
 	struct signal_desc sigdesc;
+	struct thread_data_s *tp;
+	int localthread;
 
-	if(siginfo->si_pid == pid &&
-	   siginfo->si_signo == LOCALSIG)
-		return;
+	localthread = ioctl(fd, MCEXEC_UP_SIG_THREAD, 1);
+	pid = getpid();
+	tid = gettid();
+	if (siginfo->si_pid == pid &&
+	    siginfo->si_signo == LOCALSIG)
+		goto out;
 
-	if(siginfo->si_signo == SIGCHLD)
-		return;
+	if (siginfo->si_signo == SIGCHLD)
+		goto out;
 
-	for(i = 0; i < ncpu; i++){
-		if(siginfo->si_pid == pid &&
-		   thread_data[i].tid == tid){
-			if(thread_data[i].terminate)
-				return;
+	for (tp = thread_data; tp; tp = tp->next) {
+		if (siginfo->si_pid == pid &&
+		    tp->tid == tid) {
+			if (tp->terminate)
+				goto out;
 			break;
 		}
-		if(siginfo->si_pid != pid &&
-		   thread_data[i].remote_tid == tid){
-			if(thread_data[i].terminate)
-				return;
+		if (siginfo->si_pid != pid &&
+		    tp->remote_tid == tid) {
+			if (tp->terminate)
+				goto out;
 			break;
 		}
 	}
-	if(i != ncpu){
-		remote_tid = thread_data[i].remote_tid;
-		cpu = thread_data[i].cpu;
+	if (tp) {
+		remote_tid = tp->remote_tid;
+		cpu = tp->remote_cpu;
 	}
-	else{
+	else {
 		cpu = 0;
 		remote_tid = -1;
 	}
 
-	memset(&sigdesc, '\0', sizeof sigdesc);
-	sigdesc.cpu = cpu;
-	sigdesc.pid = (int)pid;
-	sigdesc.tid = remote_tid;
-	sigdesc.sig = sig;
-	memcpy(&sigdesc.info, siginfo, 128);
-	if (ioctl(fd, MCEXEC_UP_SEND_SIGNAL, &sigdesc) != 0) {
-		perror("send_signal");
-		close(fd);
-		exit(1);
+	if (localthread) {
+		memset(&sigdesc, '\0', sizeof sigdesc);
+		sigdesc.cpu = cpu;
+		sigdesc.pid = (int)pid;
+		sigdesc.tid = remote_tid;
+		sigdesc.sig = sig;
+		memcpy(&sigdesc.info, siginfo, 128);
+		if (ioctl(fd, MCEXEC_UP_SEND_SIGNAL, &sigdesc) != 0) {
+			close(fd);
+			exit(1);
+		}
 	}
+	else {
+		struct syscall_struct param;
+		int rc;
+
+		param.number = SYS_rt_sigaction;
+		param.args[0] = sig;
+		rc = ioctl(fd, MCEXEC_UP_SYSCALL_THREAD, &param);
+		if (rc == -1);
+		else if (param.ret == (unsigned long)SIG_IGN);
+		else if (param.ret == (unsigned long)SIG_DFL) {
+			if (sig != SIGCHLD && sig != SIGURG && sig != SIGCONT) {
+				signal(sig, SIG_DFL);
+				kill(getpid(), sig);
+				for(;;)
+					sleep(1);
+#if 0
+				ioctl(fd, MCEXEC_UP_SWITCH_THREAD,
+				      0x100000000 | sig);
+				pthread_exit(NULL);
+#endif
+			}
+		}
+		else {
+			ioctl(fd, MCEXEC_UP_SIG_THREAD, 0);
+			((void (*)(int, siginfo_t *, void *))param.ret)(sig,
+			                                      siginfo, context);
+			ioctl(fd, MCEXEC_UP_SIG_THREAD, 1);
+		}
+	}
+out:
+	if (!localthread)
+		ioctl(fd, MCEXEC_UP_SIG_THREAD, 0);
 }
 
 long
@@ -1137,7 +1231,29 @@ void init_sigaction(void)
 			sigaction(i, &act, NULL);
 		}
 	}
-}		
+}
+
+static int max_cpuid;
+
+static int
+create_worker_thread(pthread_barrier_t *init_ready)
+{
+	struct thread_data_s *tp;
+
+	tp = malloc(sizeof(struct thread_data_s));
+	if (!tp)
+		return ENOMEM;
+	memset(tp, '\0', sizeof(struct thread_data_s));
+	tp->cpu = max_cpuid++;
+	tp->lock = &lock;
+	tp->init_ready = init_ready;
+	tp->terminate = 0;
+	tp->next = thread_data;
+	thread_data = tp;
+
+	return pthread_create(&tp->thread_id, NULL, 
+	                      &main_loop_thread_func, tp);
+}
 
 void init_worker_threads(int fd) 
 {
@@ -1146,19 +1262,12 @@ void init_worker_threads(int fd)
 	pthread_mutex_init(&lock, NULL);
 	pthread_barrier_init(&init_ready, NULL, n_threads + 2);
 
+	max_cpuid = 0;
 	for (i = 0; i <= n_threads; ++i) {
-		int ret;
+		int ret = create_worker_thread(&init_ready);
 
-		thread_data[i].fd = fd;
-		thread_data[i].cpu = i;
-		thread_data[i].lock = &lock;
-		thread_data[i].init_ready = &init_ready;
-		thread_data[i].terminate = 0;
-		ret = pthread_create(&thread_data[i].thread_id, NULL, 
-		                     &main_loop_thread_func, &thread_data[i]);
-
-		if (ret < 0) {
-			printf("ERROR: creating syscall threads\n");
+		if (ret) {
+			printf("ERROR: creating syscall threads(%d)\n", ret);
 			exit(1);
 		}
 	}
@@ -1438,13 +1547,44 @@ void bind_mount_recursive(const char *root, char *prefix)
 }
 #endif
 
+static void
+join_all_threads()
+{
+	struct thread_data_s *tp;
+	int live_thread;
+
+	do {
+		live_thread = 0;
+		for (tp = thread_data; tp; tp = tp->next) {
+			if (tp->joined)
+				continue;
+			live_thread = 1;
+			pthread_join(tp->thread_id, NULL);
+			tp->joined = 1;
+		}
+	} while (live_thread);
+}
+
+static int
+opendev()
+{
+	int f;
+
+	sprintf(dev, "/dev/mcos%d", mcosid);
+
+	/* Open OS chardev for ioctl() */
+	f = open(dev, O_RDWR);
+	if (f < 0) {
+		fprintf(stderr, "Error: Failed to open %s.\n", dev);
+		return -1;
+	}
+	fd = f;
+
+	return fd;
+}
+
 int main(int argc, char **argv)
 {
-//	int fd;
-#if 0	
-	int fdm;
-	long r;
-#endif
 	struct program_load_desc *desc;
 	int envs_len;
 	char *envs;
@@ -1460,6 +1600,7 @@ int main(int argc, char **argv)
 	char path[1024];
 	char *shell = NULL;
 	char shell_path[1024];
+	int num = 0;
 
 #ifdef USE_SYSCALL_MOD_CALL
 	__glob_argc = argc;
@@ -1521,11 +1662,9 @@ int main(int argc, char **argv)
 
 	/* Determine OS device */
 	if (isdigit(*argv[optind])) {
-		mcosid = atoi(argv[optind]);
+		num = atoi(argv[optind]);
 		++optind;
 	}
-
-	sprintf(dev, "/dev/mcos%d", mcosid);
 
 	/* No more arguments? */
 	if (optind >= argc) {
@@ -1533,18 +1672,9 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	__dprintf("target_core: %d, device: %s, command: ", target_core, dev);
-	for (i = optind; i < argc; ++i) {
-		__dprintf("%s ", argv[i]);
-	}
-	__dprintf("%s", "\n");
-
-	/* Open OS chardev for ioctl() */
-	fd = open(dev, O_RDWR);
-	if (fd < 0) {
-		fprintf(stderr, "Error: Failed to open %s.\n", dev);
-		return 1;
-	}
+	mcosid = num;
+	if (opendev() == -1)
+		exit(EXIT_FAILURE);
 
 	if (disable_sched_yield) {
 		char sched_yield_lib_path[PATH_MAX];
@@ -1567,7 +1697,6 @@ int main(int argc, char **argv)
 
 	/* Collect environment variables */
 	envs_len = flatten_strings(-1, NULL, environ, &envs);
-	envs = envs;
 
 #ifdef ENABLE_MCOVERLAYFS
 	__dprintf("mcoverlay enable\n");
@@ -1798,12 +1927,14 @@ int main(int argc, char **argv)
 	 * TODO: fix signaling code to be independent of TIDs.
 	 * TODO: implement dynaic thread pool resizing.
 	 */
+#if 0
 	thread_data = (struct thread_data_s *)malloc(sizeof(struct thread_data_s) * (ncpu + 1));
 	if (!thread_data) {
 		fprintf(stderr, "error: allocating thread pool data\n");
 		return 1;
 	}
 	memset(thread_data, '\0', sizeof(struct thread_data_s) * (ncpu + 1));
+#endif
 
 #if 0	
 	fdm = open("/dev/fmem", O_RDWR);
@@ -1991,9 +2122,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	for (i = 0; i <= n_threads; ++i) {
-		pthread_join(thread_data[i].thread_id, NULL);
-	}
+	join_all_threads();
 
 	return 0;
 }
@@ -2145,16 +2274,337 @@ out:
 }
 
 static void
-kill_thread(unsigned long tid)
+kill_thread(unsigned long tid, int sig)
 {
-	int	i;
+	struct thread_data_s *tp;
 
-	for (i = 0; i <= n_threads; ++i) {
-		if(thread_data[i].remote_tid == tid){
-			pthread_kill(thread_data[i].thread_id, LOCALSIG);
+	if (sig == 0)
+		sig = LOCALSIG;
+
+	for (tp = thread_data; tp; tp = tp->next) {
+		if (tp->remote_tid == tid) {
+			pthread_kill(tp->thread_id, sig);
 			break;
 		}
 	}
+}
+
+static int
+samepage(void *a, void *b)
+{
+	unsigned long aa = (unsigned long)a;
+	unsigned long bb = (unsigned long)b;
+
+	return (aa & PAGE_MASK) == (bb & PAGE_MASK);
+}
+
+#ifdef DEBUG_UTI
+long syscalls[512];
+
+static void
+debug_sig(int s)
+{
+	int i;
+	for (i = 0; i < 512; i++)
+		if (syscalls[i])
+			fprintf(stderr, "syscall %d called %ld\n", i,
+			                                           syscalls[i]);
+}
+#endif
+
+static int
+create_tracer(void *wp, int mck_tid, unsigned long key)
+{
+	int pid = getpid();
+	int tid = gettid();
+	int pfd[2];
+	int tpid;
+	int rc;
+	int st;
+	int sig = 0;
+	int i;
+	struct syscall_struct *param_top = NULL;
+	struct syscall_struct *param;
+	unsigned long code = 0;
+	int exited = 0;
+	int mode = 0;
+
+	if (pipe(pfd) == -1)
+		return -1;
+	tpid = fork();
+	if (tpid) {
+		struct timeval tv;
+		fd_set rfd;
+
+		if (tpid == -1)
+			return -1;
+		close(pfd[1]);
+		while ((rc = waitpid(tpid, &st, 0)) == -1 && errno == EINTR);
+		if (rc == -1 || !WIFEXITED(st) || WEXITSTATUS(st)) {
+			fprintf(stderr, "waitpid rc=%d st=%08x\n", rc, st);
+			return -ENOMEM;
+		}
+		FD_ZERO(&rfd);
+		FD_SET(pfd[0], &rfd);
+		tv.tv_sec = 1;
+		tv.tv_usec = 0;
+		while ((rc = select(pfd[0] + 1, &rfd, NULL, NULL, &tv)) == -1 &&
+		       errno == EINTR);
+		if (rc == 0) {
+			close(pfd[0]);
+			return -ETIMEDOUT;
+		}
+		if (rc == -1) {
+			close(pfd[0]);
+			return -errno;
+		}
+		rc = read(pfd[0], &st, 1);
+		close(pfd[0]);
+		if (rc != 1) {
+			return -EAGAIN;
+		}
+		return 0;
+	}
+	close(pfd[0]);
+	tpid = fork();
+	if (tpid) {
+		if (tpid == -1) {
+			fprintf(stderr, "fork errno=%d\n", errno);
+			exit(1);
+		}
+		exit(0);
+	}
+	if (ptrace(PTRACE_ATTACH, tid, 0, 0) == -1) {
+		fprintf(stderr, "PTRACE_ATTACH errno=%d\n", errno);
+		exit(1);
+	}
+	waitpid(-1, &st, __WALL);
+	if (ptrace(PTRACE_SETOPTIONS, tid, 0, PTRACE_O_TRACESYSGOOD) == -1) {
+		fprintf(stderr, "PTRACE_SETOPTIONS errno=%d\n", errno);
+		exit(1);
+	}
+	write(pfd[1], " ", 1);
+	close(pfd[1]);
+
+	for (i = 0; i < 4096; i++)
+		if (i != fd && i != 2)
+			close(i);
+	open("/dev/null", O_RDONLY);
+	open("/dev/null", O_WRONLY);
+//	open("/dev/null", O_WRONLY);
+
+	for (i = 1; i <= 10; i++) {
+		param = (struct syscall_struct *)wp + i;
+		*(void **)param = param_top;
+		param_top = param;
+	}
+	memset(wp, '\0', sizeof(long));
+
+fprintf(stderr, "tracer PID=%d\n", getpid());
+#ifdef DEBUG_UTI
+	fprintf(stderr, "tracer PID=%d\n", getpid());
+	signal(SIGINT, debug_sig);
+#endif
+	for (;;) {
+		ptrace(PTRACE_SYSCALL, tid, 0, sig);
+		sig = 0;
+		waitpid(-1, &st, __WALL);
+		if (WIFEXITED(st) || WIFSIGNALED(st)) {
+			unsigned long term_param[4];
+
+			term_param[0] = pid;
+			term_param[1] = tid;
+			term_param[3] = key;
+			code = st;
+			if (exited == 2 || // exit_group
+			    WIFSIGNALED(st)) {
+				code |= 0x0000000100000000;
+			}
+			term_param[2] = code;
+			ioctl(fd, MCEXEC_UP_TERMINATE_THREAD, term_param);
+			break;
+		}
+		if (!WIFSTOPPED(st)) {
+			continue;
+		}
+		if (WSTOPSIG(st) & 0x80) { // syscall
+			syscall_args args;
+
+			get_syscall_args(tid, &args);
+
+#ifdef DEBUG_UTI
+			if (get_syscall_return(&args) == -ENOSYS) {
+				if (get_syscall_number(&args) >= 0 &&
+				    get_syscall_number(&args) < 512) {
+					syscalls[get_syscall_number(&args)]++;
+				}
+			}
+#endif
+
+			if (get_syscall_number(&args) == __NR_ioctl &&
+			    get_syscall_return(&args) == -ENOSYS &&
+			    get_syscall_arg1(&args) == fd &&
+			    get_syscall_arg2(&args) == MCEXEC_UP_SIG_THREAD) {
+				mode = get_syscall_arg3(&args);
+			}
+
+			if (mode) {
+				continue;
+			}
+
+			switch (get_syscall_number(&args)) {
+			    case __NR_gettid:
+				set_syscall_number(&args, -1);
+				set_syscall_return(&args, mck_tid);
+				set_syscall_args(tid, &args);
+				continue;
+			    case __NR_futex:
+			    case __NR_brk:
+			    case __NR_mmap:
+			    case __NR_munmap:
+			    case __NR_mprotect:
+			    case __NR_mremap:
+				break;
+			    case __NR_exit_group:
+				exited++;
+			    case __NR_exit:
+				exited++;
+				continue;
+			    case __NR_clone:
+			    case __NR_fork:
+			    case __NR_vfork:
+			    case __NR_execve:
+				set_syscall_number(&args, -1);
+				set_syscall_args(tid, &args);
+				continue;
+			    case __NR_ioctl:
+				param = (struct syscall_struct *)
+					                get_syscall_arg3(&args);
+				if (get_syscall_return(&args) != -ENOSYS &&
+				    get_syscall_arg1(&args) == fd &&
+				    get_syscall_arg2(&args) ==
+				                     MCEXEC_UP_SYSCALL_THREAD &&
+				    samepage(wp, param)) {
+					set_syscall_arg1(&args, param->args[0]);
+					set_syscall_arg2(&args, param->args[1]);
+					set_syscall_arg3(&args, param->args[2]);
+					set_syscall_arg4(&args, param->args[3]);
+					set_syscall_arg5(&args, param->args[4]);
+					set_syscall_arg6(&args, param->args[5]);
+					set_syscall_return(&args, param->ret);
+					*(void **)param = param_top;
+					param_top = param;
+					set_syscall_args(tid, &args);
+				}
+				continue;
+			    default:
+				continue;
+			}
+			param = param_top;
+			if (!param) {
+				set_syscall_number(&args, -1);
+				set_syscall_return(&args, -ENOMEM);
+			}
+			else {
+				param_top = *(void **)param;
+				param->number = get_syscall_number(&args);
+				param->args[0] = get_syscall_arg1(&args);
+				param->args[1] = get_syscall_arg2(&args);
+				param->args[2] = get_syscall_arg3(&args);
+				param->args[3] = get_syscall_arg4(&args);
+				param->args[4] = get_syscall_arg5(&args);
+				param->args[5] = get_syscall_arg6(&args);
+				param->ret = -EINVAL;
+				set_syscall_number(&args, __NR_ioctl);
+				set_syscall_arg1(&args, fd);
+				set_syscall_arg2(&args,
+				                      MCEXEC_UP_SYSCALL_THREAD);
+				set_syscall_arg3(&args, (unsigned long)param);
+			}
+			set_syscall_args(tid, &args);
+		}
+		else { // signal
+			sig = WSTOPSIG(st) & 0x7f;
+		}
+	}
+
+#ifdef DEBUG_UTI
+	fprintf(stderr, "offloaded thread called these syscalls\n");
+	debug_sig(0);
+#endif
+
+	exit(0);
+}
+
+static void
+util_thread_setaffinity(unsigned long pattr)
+{
+	struct kuti_attr kattr;
+	unsigned long args[3];
+
+	args[0] = (unsigned long)&kattr;
+	args[1] = pattr;
+	args[2] = sizeof kattr;
+	if (ioctl(fd, MCEXEC_UP_COPY_FROM_MCK, args) == -1) {
+		return;
+	}
+
+
+
+
+}
+
+static long
+util_thread(unsigned long uctx_pa, int remote_tid, unsigned long pattr)
+{
+	void *lctx;
+	void *rctx;
+	void *wp;
+	void *param[6];
+	int rc = 0;
+
+	wp = mmap(NULL, PAGE_SIZE * 3, PROT_READ | PROT_WRITE,
+	          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+	if (wp == (void *)-1) {
+		rc = -errno;
+		goto out;
+	}
+	lctx = (char *)wp + PAGE_SIZE;
+	rctx = (char *)lctx + PAGE_SIZE;
+
+	param[0] = (void *)uctx_pa;
+	param[1] = rctx;
+	param[2] = lctx;
+	param[4] = wp;
+	param[5] = (void *)(PAGE_SIZE * 3);
+	if ((rc = ioctl(fd, MCEXEC_UP_UTIL_THREAD1, param)) == -1) {
+		fprintf(stderr, "util_thread1: %d errno=%d\n", rc, errno);
+		rc = -errno;
+		goto out;
+	}
+
+	create_worker_thread(NULL);
+	if ((rc = create_tracer(wp, remote_tid, (unsigned long)param[3]))) {
+		fprintf(stderr, "create tracer %d\n", rc);
+		rc = -errno;
+		goto out;
+	}
+
+	if (pattr) {
+		util_thread_setaffinity(pattr);
+	}
+
+	if ((rc = switch_ctx(fd, MCEXEC_UP_UTIL_THREAD2, param, lctx, rctx))
+	    < 0) {
+		fprintf(stderr, "util_thread2: %d\n", rc);
+	}
+	fprintf(stderr, "return from util_thread2 rc=%d\n", rc);
+	pthread_exit(NULL);
+
+out:
+	if (wp)
+		munmap(wp, PAGE_SIZE * 3);
+	return rc;
 }
 
 static long do_strncpy_from_user(int fd, void *dest, void *src, unsigned long n)
@@ -2291,7 +2741,7 @@ chgpath(char *in, char *buf)
 	return fn;
 }
 
-int main_loop(int fd, int cpu, pthread_mutex_t *lock)
+int main_loop(struct thread_data_s *my_thread)
 {
 	struct syscall_wait_desc w;
 	long ret;
@@ -2301,6 +2751,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 	struct timespec tv;
 	char pathbuf[PATH_MAX];
 	char tmpbuf[PATH_MAX];
+	int cpu = my_thread->cpu;
 
 	memset(&w, '\0', sizeof w);
 	w.cpu = cpu;
@@ -2318,7 +2769,8 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 		
 		//pthread_mutex_lock(lock);
 
-		thread_data[cpu].remote_tid = w.sr.rtid;
+		my_thread->remote_tid = w.sr.rtid;
+		my_thread->remote_cpu = w.cpu;
 
 		switch (w.sr.number) {
 		case __NR_open:
@@ -2350,7 +2802,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			break;
 
 		case __NR_kill: // interrupt syscall
-			kill_thread(w.sr.args[1]);
+			kill_thread(w.sr.args[1], w.sr.args[2]);
 			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
 			break;
 		case __NR_exit:
@@ -2423,6 +2875,7 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 			 */
 			if (w.sr.args[4] > 0) {
 				struct remote_transfer trans;
+				struct thread_data_s *tp;
 				int i = 0;
 				int *tids = malloc(sizeof(int) * w.sr.args[4]);
 				if (!tids) {
@@ -2430,8 +2883,11 @@ int main_loop(int fd, int cpu, pthread_mutex_t *lock)
 					goto gettid_out;
 				}
 
-				for (i = 0; i < ncpu && i < w.sr.args[4]; ++i) {
-					tids[i] = thread_data[i].tid;
+				for (tp = thread_data; tp && i < w.sr.args[4];
+				     tp = tp->next) {
+					if (tp->joined || tp->terminate)
+						continue;
+					tids[i++] = tp->tid;
 				}
 
 				for (; i < ncpu; ++i) {
@@ -2528,14 +2984,13 @@ gettid_out:
 
 			    /* Child process */
 			    case 0: {
-				int i;
 				int ret = 1;
 				struct newprocess_desc npdesc;
 
 				ischild = 1;
 				/* Reopen device fd */
 				close(fd);
-				fd = open(dev, O_RDWR);
+				fd = opendev();
 				if (fd < 0) {
 					fs->status = -errno;
 					fprintf(stderr, "ERROR: opening %s\n", dev);
@@ -2586,9 +3041,7 @@ fork_child_sync_pipe:
 				ioctl(fd, MCEXEC_UP_NEW_PROCESS, &npdesc);
 
 				/* TODO: does the forked thread run in a pthread context? */
-				for (i = 0; i <= ncpu; ++i) {
-					pthread_join(thread_data[i].thread_id, NULL);
-				}
+				join_all_threads();
 
 				return ret;
 			    }
@@ -2622,11 +3075,11 @@ fork_child_sync_pipe:
 			munmap(fs, sizeof(struct fork_sync));
 fork_err:
 			pthread_mutex_lock(&fork_sync_mutex);
-			for(fp = fork_sync_top, fb = NULL; fp; fb = fp, fp = fp->next)
-				if(fp == fsc)
+			for (fp = fork_sync_top, fb = NULL; fp; fb = fp, fp = fp->next)
+				if (fp == fsc)
 					break;
-			if(fp){
-				if(fb)
+			if (fp) {
+				if (fb)
 					fb->next = fsc->next;
 				else
 					fork_sync_top = fsc->next;
@@ -2645,13 +3098,13 @@ fork_err:
 
 			opt = WEXITED | (options & WNOWAIT);
 			memset(&info, '\0', sizeof info);
-			while((ret = waitid(P_PID, pid, &info, opt)) == -1 &&
-			      errno == EINTR);
-			if(ret == 0){
+			while ((ret = waitid(P_PID, pid, &info, opt)) == -1 &&
+			       errno == EINTR);
+			if (ret == 0) {
 				ret = info.si_pid;
 			}
 
-			if(ret != pid) {
+			if (ret != pid) {
 				fprintf(stderr, "ERROR: waiting for %lu rc=%d errno=%d\n", w.sr.args[0], ret, errno);
 			}
 
@@ -2934,6 +3387,21 @@ return_execve2:
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 
+		case __NR_sched_setaffinity:
+			if (w.sr.args[0] == 0) {
+				ret = util_thread(w.sr.args[1], w.sr.rtid,
+				                  w.sr.args[2]);
+			}
+			else {
+				ret = munmap((void *)w.sr.args[1],
+				             w.sr.args[2]);
+if(ret == -1)fprintf(stderr, "munmap rc=%ld errno=%d addr=%p size=%d\n", ret, errno, (void *)w.sr.args[1], (int)w.sr.args[2]);
+				if (ret == -1)
+					ret = -errno;
+			}
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+
 		default:
 			ret = do_generic_syscall(&w);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
@@ -2941,7 +3409,7 @@ return_execve2:
 
 		}
 
-		thread_data[cpu].remote_tid = -1;
+		my_thread->remote_tid = -1;
 
 		//pthread_mutex_unlock(lock);
 	}

@@ -215,10 +215,11 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 
 	dkprintf("%s: syscall num: %d waiting for Linux.. \n",
 		__FUNCTION__, req->number);
-	
+
 #define	STATUS_IN_PROGRESS	0
 #define	STATUS_COMPLETED	1
 #define	STATUS_PAGE_FAULT	3
+#define	STATUS_SYACALL		4
 	while (res.status != STATUS_COMPLETED) {
 		while (res.status == STATUS_IN_PROGRESS) {
 			struct cpu_local_var *v;
@@ -290,6 +291,75 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 			res.req_thread_status = IHK_SCD_REQ_THREAD_SPINNING;
 			send_syscall(&req2, cpu, pid, &res);
 		}
+
+		if (res.status == STATUS_SYACALL) {
+			struct syscall_request *requestp;
+			struct syscall_request request;
+			int num;
+			ihk_mc_user_context_t ctx;
+			int ns;
+			unsigned long syscall_ret;
+			unsigned long phys;
+
+			phys = ihk_mc_map_memory(NULL, res.fault_address,
+			                        sizeof(struct syscall_request));
+			requestp = ihk_mc_map_virtual(phys, 1,
+			                       PTATTR_WRITABLE | PTATTR_ACTIVE);
+			memcpy(&request, requestp, sizeof request);
+			ihk_mc_unmap_virtual(requestp, 1, 1);
+			ihk_mc_unmap_memory(NULL, phys,
+			                    sizeof(struct syscall_request));
+			num = request.number;
+
+			if (num == __NR_rt_sigaction) {
+				int sig = request.args[0];
+				struct thread *thread = cpu_local_var(current);
+
+				sig--;
+				if (sig < 0 || sig >= _NSIG)
+					syscall_ret = -EINVAL;
+				else
+					syscall_ret = (unsigned long)thread->
+					              sigcommon->action[sig].
+					              sa.sa_handler;
+			}
+			else {
+				ns = (sizeof syscall_table  /
+				      sizeof syscall_table[0]);
+				if (num >= 0 && num < ns &&
+				    syscall_table[num]) {
+					ihk_mc_syscall_arg0(&ctx) =
+					                       request.args[0];
+					ihk_mc_syscall_arg1(&ctx) =
+					                       request.args[1];
+					ihk_mc_syscall_arg2(&ctx) =
+					                       request.args[2];
+					ihk_mc_syscall_arg3(&ctx) =
+					                       request.args[3];
+					ihk_mc_syscall_arg4(&ctx) =
+					                       request.args[4];
+					ihk_mc_syscall_arg5(&ctx) =
+					                       request.args[5];
+					syscall_ret = syscall_table[num](num,
+					                                 &ctx);
+				}
+				else
+					syscall_ret = -ENOSYS;
+			}
+
+			/* send result */
+			req2.number = __NR_mmap;
+#define PAGER_RESUME_PAGE_FAULT	0x0101
+			req2.args[0] = PAGER_RESUME_PAGE_FAULT;
+			req2.args[1] = syscall_ret;
+			/* The current thread is the requester and only the waiting thread
+			 * may serve the request */
+			req2.rtid = cpu_local_var(current)->tid;
+			req2.ttid = res.stid;
+
+			res.req_thread_status = IHK_SCD_REQ_THREAD_SPINNING;
+			send_syscall(&req2, cpu, pid, &res);
+		}
 	}
 
 	dkprintf("%s: syscall num: %d got host reply: %d \n",
@@ -299,6 +369,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 
 	if(req->number != __NR_exit_group){
 		--thread->in_syscall_offload;
+if(req->number == __NR_sched_setaffinity)kprintf("do_syscall 2 offload=%d\n", thread->in_syscall_offload);
 	}
 
 	/* -ERESTARTSYS indicates that the proxy process is gone
@@ -941,15 +1012,16 @@ event_signal()
 }
 
 void
-interrupt_syscall(int pid, int tid)
+interrupt_syscall(struct thread *thread, int sig)
 {
-	dkprintf("interrupt_syscall,target pid=%d,target tid=%d\n", pid, tid);
 	ihk_mc_user_context_t ctx;
 	long lerror;
 
-	dkprintf("interrupt_syscall pid=%d tid=%d\n", pid, tid);
-	ihk_mc_syscall_arg0(&ctx) = pid;
-	ihk_mc_syscall_arg1(&ctx) = tid;
+	dkprintf("interrupt_syscall pid=%d tid=%d sig=%d\n", thread->proc->pid,
+	         thread->tid, sig);
+	ihk_mc_syscall_arg0(&ctx) = thread->proc->pid;
+	ihk_mc_syscall_arg1(&ctx) = thread->tid;
+	ihk_mc_syscall_arg2(&ctx) = sig;
 
 	lerror = syscall_generic_forwarding(__NR_kill, &ctx);
 	if (lerror) {
@@ -2044,6 +2116,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
                       unsigned long cursp)
 {
 	int cpuid;
+	int parent_cpuid;
 	struct thread *old = cpu_local_var(current);
 	struct process *oldproc = old->proc;
 	struct process *newproc;
@@ -2057,7 +2130,8 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 
 	dkprintf("do_fork(): stack_pointr passed in: 0x%lX, stack pointer of caller: 0x%lx\n",
 			 newsp, cursp);
-	
+
+	parent_cpuid = old->cpu_id;
 	if (((clone_flags & CLONE_VM) && !(clone_flags & CLONE_THREAD)) ||
 		(!(clone_flags & CLONE_VM) && (clone_flags & CLONE_THREAD))) {
 		kprintf("clone(): ERROR: CLONE_VM and CLONE_THREAD should be set together\n");
@@ -2249,9 +2323,14 @@ retry_tid:
 		new->tlsblock_base = old->tlsblock_base;
 	}
 
+	new->parent_cpuid = parent_cpuid;
+
 	ihk_mc_syscall_ret(new->uctx) = 0;
 
 	new->status = PS_RUNNING;
+	if (old->mod_clone == SPAWN_TO_REMOTE) {
+		new->mod_clone = SPAWNING_TO_REMOTE;
+	}
 	chain_thread(new);
 	if (!(clone_flags & CLONE_VM)) {
 		newproc->status = PS_RUNNING;
@@ -4800,14 +4879,16 @@ SYSCALL_DECLARE(futex)
 	return ret;
 }
 
-SYSCALL_DECLARE(exit)
+static void
+do_exit(int code)
 {
 	struct thread *thread = cpu_local_var(current);
 	struct thread *child;
 	struct process *proc = thread->proc;
 	struct mcs_rwlock_node_irqsave lock;
 	int nproc;
-	int exit_status = (int)ihk_mc_syscall_arg0(ctx);
+	int exit_status = (code >> 8) & 255;
+	int sig = code & 255;
 
 	dkprintf("sys_exit,pid=%d\n", proc->pid);
 
@@ -4819,11 +4900,11 @@ SYSCALL_DECLARE(exit)
 	mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 
 	if(nproc == 1){ // process has only one thread
-		terminate(exit_status, 0);
+		terminate(exit_status, sig);
 #ifdef ENABLE_RUSAGE
 		rusage_num_threads--;
 #endif
-		return 0;
+		return;
 	}
 
 #ifdef DCFA_KMOD
@@ -4852,7 +4933,7 @@ SYSCALL_DECLARE(exit)
 #ifdef ENABLE_RUSAGE
 	rusage_num_threads--;
 #endif
-		return 0;
+		return;
 	}
 	thread->status = PS_EXITED;
 	sync_child_event(thread->proc->monitoring_event);
@@ -4864,6 +4945,14 @@ SYSCALL_DECLARE(exit)
 	rusage_num_threads--;
 #endif
 
+	return;
+}
+
+SYSCALL_DECLARE(exit)
+{
+	int exit_status = (int)ihk_mc_syscall_arg0(ctx);
+
+	do_exit(exit_status << 8);
 	return 0;
 }
 
@@ -6053,7 +6142,6 @@ SYSCALL_DECLARE(sched_setaffinity)
 	struct thread *thread;
 	int cpu_id;
 	int empty_set = 1; 
-	extern int num_processors;
 
 	if (!u_cpu_set) {
 		return -EFAULT;
@@ -8410,6 +8498,123 @@ SYSCALL_DECLARE(pmc_reset)
 {
     int counter = ihk_mc_syscall_arg0(ctx);
     return ihk_mc_perfctr_reset(counter);
+}
+
+extern void save_uctx(void *, void *);
+
+int
+util_thread(struct uti_attr *arg)
+{
+	volatile unsigned long *context;
+	unsigned long pcontext;
+	struct syscall_request request IHK_DMA_ALIGN;
+	long rc;
+	struct thread *thread = cpu_local_var(current);
+	unsigned long free_address;
+	unsigned long free_size;
+	struct kuti_attr {
+		long parent_cpuid;
+		struct uti_attr attr;
+	} kattr;
+
+kprintf("util_thread called\n");
+	context = (volatile unsigned long *)ihk_mc_alloc_pages(1,
+	                                                      IHK_MC_AP_NOWAIT);
+	if (!context) {
+		return -ENOMEM;
+	}
+	pcontext = virt_to_phys((void *)context);
+	save_uctx((void *)context, NULL);
+
+	request.number = __NR_sched_setaffinity;
+	request.args[0] = 0;
+	request.args[1] = pcontext;
+	request.args[2] = 0;
+	if (arg) {
+		memcpy(&kattr.attr, arg, sizeof(struct uti_attr));
+		kattr.parent_cpuid = thread->parent_cpuid;
+		request.args[2] = virt_to_phys(&kattr);
+	}
+	thread->thread_offloaded = 1;
+	rc = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+	thread->thread_offloaded = 0;
+	free_address = context[0];
+	free_size = context[1];
+	ihk_mc_free_pages((void *)context, 1);
+
+	if (rc >= 0) {
+		if (rc & 0x10000007f) { // exit_group || signal
+			thread->proc->nohost = 1;
+			terminate((rc >> 8) & 255, rc & 255);
+		}
+		else {
+			request.number = __NR_sched_setaffinity;
+			request.args[0] = 1;
+			request.args[1] = free_address;
+			request.args[2] = free_size;
+			do_syscall(&request, ihk_mc_get_processor_id(), 0);
+			do_exit(rc);
+		}
+	}
+	return rc;
+}
+
+void
+utilthr_migrate()
+{
+	struct thread *thread = cpu_local_var(current);
+
+	if (thread->mod_clone == SPAWNING_TO_REMOTE) {
+		thread->mod_clone = SPAWN_TO_LOCAL;
+		util_thread(thread->mod_clone_arg);
+	}
+}
+
+SYSCALL_DECLARE(util_migrate_inter_kernel)
+{
+	struct uti_attr *arg = (void *)ihk_mc_syscall_arg0(ctx);
+	struct uti_attr kattr;
+
+	if (arg) {
+		if (copy_from_user(&kattr, arg, sizeof(struct uti_attr))) {
+			return -EFAULT;
+		}
+	}
+
+	return util_thread(arg? &kattr: NULL);
+}
+
+SYSCALL_DECLARE(util_indicate_clone)
+{
+	int mod = (int)ihk_mc_syscall_arg0(ctx);
+	struct uti_attr *arg = (void *)ihk_mc_syscall_arg1(ctx);
+	struct thread *thread = cpu_local_var(current);
+	struct uti_attr *kattr = NULL;
+
+	if (mod != SPAWN_TO_LOCAL &&
+	    mod != SPAWN_TO_REMOTE)
+		return -EINVAL;
+	if (arg) {
+		kattr = kmalloc(sizeof(struct uti_attr), IHK_MC_AP_NOWAIT);
+		if (copy_from_user(kattr, arg, sizeof(struct uti_attr))) {
+			kfree(kattr);
+			return -EFAULT;
+		}
+	}
+	thread->mod_clone = mod;
+	if (thread->mod_clone_arg) {
+		kfree(thread->mod_clone_arg);
+		thread->mod_clone_arg = NULL;
+	}
+	if (kattr) {
+		thread->mod_clone_arg = kattr;
+	}
+	return 0;
+}
+
+SYSCALL_DECLARE(get_system)
+{
+	return 0;
 }
 
 void

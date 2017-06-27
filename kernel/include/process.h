@@ -231,6 +231,10 @@ enum mpol_rebind_step {
 #define MPOL_F_MOF	(1 << 3) /* this policy wants migrate on fault */
 #define MPOL_F_MORON	(1 << 4) /* Migrate On pte_numa Reference On Node */
 
+#define SPAWN_TO_LOCAL 0
+#define SPAWN_TO_REMOTE 1
+#define SPAWNING_TO_REMOTE 1001
+
 #include <waitq.h>
 #include <futex.h>
 
@@ -667,6 +671,11 @@ struct thread {
 
 	/* Syscall offload wait queue head */
 	struct waitq scd_wq;
+
+	int thread_offloaded;
+	int mod_clone;
+	struct uti_attr *mod_clone_arg;
+	int parent_cpuid;
 };
 
 #define VM_RANGE_CACHE_SIZE	4

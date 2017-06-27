@@ -2864,10 +2864,15 @@ redo:
 	} else {
 		/* Pick a new running process or one that has a pending signal */
 		list_for_each_entry_safe(thread, tmp, &(v->runq), sched_list) {
-			if (thread->status == PS_RUNNING ||
-				(thread->status == PS_INTERRUPTIBLE && hassigpending(thread))) {
+			if (thread->status == PS_RUNNING &&
+			    thread->mod_clone == SPAWNING_TO_REMOTE){
 				next = thread;
 				break;
+			}
+			if (thread->status == PS_RUNNING ||
+				(thread->status == PS_INTERRUPTIBLE && hassigpending(thread))) {
+				if(!next)
+					next = thread;
 			}
 		}
 

@@ -239,6 +239,7 @@ enter_user_mode:
 		movq	$0,  %rdi
 		movq	%rsp, %rsi
 		call	check_signal
+		call	utilthr_migrate
 		movq	$0,  %rdi
 		call	set_cputime
 		POP_ALL_REGS

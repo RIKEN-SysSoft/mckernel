@@ -278,6 +278,174 @@ static int __notify_syscall_requester(ihk_os_t os, struct ikc_scd_packet *packet
 	return ret;
 }
 
+long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
+                      unsigned long arg1, unsigned long arg2,
+                      unsigned long arg3, unsigned long arg4,
+                      unsigned long arg5, unsigned long arg6,
+                      unsigned long *ret)
+{
+	struct ikc_scd_packet *packet;
+	struct syscall_request *req;
+	struct syscall_response *resp;
+	unsigned long syscall_ret;
+	struct wait_queue_head_list_node *wqhln;
+	unsigned long irqflags;
+	struct mcctrl_per_proc_data *ppd;
+	unsigned long phys;
+	struct syscall_request _request[2];
+	struct syscall_request *request;
+
+	if (((unsigned long)_request ^ (unsigned long)(_request + 1)) &
+	    ~(PAGE_SIZE -1))
+		request = _request + 1;
+	else
+		request = _request;
+	request->number = num;
+	request->args[0] = arg1;
+	request->args[1] = arg2;
+	request->args[2] = arg3;
+	request->args[3] = arg4;
+	request->args[4] = arg5;
+	request->args[5] = arg6;
+
+
+	/* Look up per-process structure */
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+
+	if (!ppd) {
+		kprintf("%s: ERROR: no per-process structure for PID %d??\n", 
+				__FUNCTION__, task_tgid_vnr(current));
+		return -EINVAL;
+	}
+
+	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
+	if (!packet) {
+		syscall_ret = -ENOENT;
+		printk("%s: no packet registered for TID %d\n",
+				__FUNCTION__, task_pid_vnr(current));
+		goto out_put_ppd;
+	}
+
+	req = &packet->req;
+
+	/* Map response structure */
+	phys = ihk_device_map_memory(ihk_os_to_dev(usrdata->os), 
+			packet->resp_pa, sizeof(*resp));
+	resp = ihk_device_map_virtual(ihk_os_to_dev(usrdata->os), 
+			phys, sizeof(*resp), NULL, 0);
+
+retry_alloc:
+	wqhln = kmalloc(sizeof(*wqhln), GFP_ATOMIC);
+	if (!wqhln) {
+		printk("WARNING: coudln't alloc wait queue head, retrying..\n");
+		goto retry_alloc;
+	}
+
+	/* Prepare per-thread wait queue head */
+	wqhln->task = current;
+	/* Save the TID explicitly, because mcexec_syscall(), where the request
+	 * will be matched, is in IRQ context and can't call task_pid_vnr() */
+	wqhln->rtid = task_pid_vnr(current);
+	wqhln->req = 0;
+	init_waitqueue_head(&wqhln->wq_syscall);
+
+	irqflags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
+	/* Add to exact list */
+	list_add_tail(&wqhln->list, &ppd->wq_list_exact);
+	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, irqflags);
+
+	resp->stid = task_pid_vnr(current);
+	resp->fault_address = virt_to_phys(request);
+
+#define STATUS_IN_PROGRESS	0
+#define	STATUS_SYSCALL		4
+	req->valid = 0;
+
+	if (__notify_syscall_requester(usrdata->os, packet, resp) < 0) {
+		printk("%s: WARNING: failed to notify PID %d\n",
+			__FUNCTION__, packet->pid);
+	}
+
+	mb();
+	resp->status = STATUS_SYSCALL;
+
+	dprintk("%s: tid: %d, syscall: %d SLEEPING\n", 
+			__FUNCTION__, task_pid_vnr(current), num);
+	/* wait for response */
+	syscall_ret = wait_event_interruptible(wqhln->wq_syscall, wqhln->req);
+	
+	/* Remove per-thread wait queue head */
+	irqflags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
+	list_del(&wqhln->list);
+	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, irqflags);
+
+	dprintk("%s: tid: %d, syscall: %d WOKEN UP\n", 
+			__FUNCTION__, task_pid_vnr(current), num);
+
+	if (syscall_ret) {
+		kfree(wqhln);
+		goto out;
+	}
+	else {
+		unsigned long phys2;
+		struct syscall_response *resp2;
+
+		/* Update packet reference */
+		packet = wqhln->packet;
+		req = &packet->req;
+		phys2 = ihk_device_map_memory(ihk_os_to_dev(usrdata->os), 
+				packet->resp_pa, sizeof(*resp));
+		resp2 = ihk_device_map_virtual(ihk_os_to_dev(usrdata->os), 
+				phys2, sizeof(*resp), NULL, 0);
+
+		if (resp != resp2) {
+			resp = resp2;
+			phys = phys2;
+			printk("%s: updated new remote PA for resp\n", __FUNCTION__);
+		}
+	}
+
+	if (!req->valid) {
+		printk("%s:not valid\n", __FUNCTION__);
+	}
+	req->valid = 0;
+
+	/* check result */
+	if (req->number != __NR_mmap) {
+		printk("%s:unexpected response. %lx %lx\n",
+		       __FUNCTION__, req->number, req->args[0]);
+		syscall_ret = -EIO;
+		goto out;
+	}
+#define	PAGER_REQ_RESUME	0x0101
+	else if (req->args[0] != PAGER_REQ_RESUME) {
+		resp->ret = pager_call(usrdata->os, (void *)req);
+
+		if (__notify_syscall_requester(usrdata->os, packet, resp) < 0) {
+			printk("%s: WARNING: failed to notify PID %d\n",
+					__FUNCTION__, packet->pid);
+		}
+
+		mb();
+	}
+	else {
+		*ret = req->args[1];
+	}
+
+	kfree(wqhln);
+	syscall_ret = 0;
+out:
+	ihk_device_unmap_virtual(ihk_os_to_dev(usrdata->os), resp, sizeof(*resp));
+	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
+
+out_put_ppd:
+	dprintk("%s: tid: %d, syscall: %d, reason: %lu, syscall_ret: %d\n",
+		__FUNCTION__, task_pid_vnr(current), num, reason, syscall_ret);
+
+	mcctrl_put_per_proc_data(ppd);
+	return syscall_ret;
+}
+
 static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t reason)
 {
 	struct ikc_scd_packet *packet;
@@ -598,7 +766,7 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 
 	dprintk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
 			vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
-	
+
 	/* Look up per-process structure */
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 	if (!ppd) {
@@ -608,6 +776,8 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	if (!ppd) {
 		kprintf("%s: ERROR: no per-process structure for PID %d??\n", 
 				__FUNCTION__, task_tgid_vnr(current));
+printk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
+vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
 		return -EINVAL;
 	}
 
@@ -759,11 +929,11 @@ reserve_user_space_common(struct mcctrl_usrdata *usrdata, unsigned long start, u
 	original = override_creds(promoted);
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,5,0)
-	start = vm_mmap_pgoff(file, start, end,
-			PROT_READ|PROT_WRITE, MAP_FIXED|MAP_SHARED, 0);
+	start = vm_mmap_pgoff(file, start, end, PROT_READ|PROT_WRITE|PROT_EXEC,
+	                      MAP_FIXED|MAP_SHARED, 0);
 #else
-	start = vm_mmap(file, start, end,
-			PROT_READ|PROT_WRITE, MAP_FIXED|MAP_SHARED, 0);
+	start = vm_mmap(file, start, end, PROT_READ|PROT_WRITE|PROT_EXEC,
+	                MAP_FIXED|MAP_SHARED, 0);
 #endif
 
 	revert_creds(original);

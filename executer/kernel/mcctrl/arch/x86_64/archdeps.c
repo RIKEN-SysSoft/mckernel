@@ -196,3 +196,65 @@ out:
 	ihk_device_unmap_memory(dev, vdso_pa, sizeof(*vdso));
 	return;
 } /* get_vdso_info() */
+
+void *
+get_user_sp(void)
+{
+	unsigned long usp;
+
+	asm volatile("movq %%gs:0xaf80, %0" : "=r" (usp));
+	return (void *)usp;
+}
+
+void
+set_user_sp(void *usp)
+{
+	asm volatile("movq %0, %%gs:0xaf80" :: "r" (usp));
+}
+
+struct trans_uctx {
+	volatile int cond;
+	int fregsize;
+
+	unsigned long rax;
+	unsigned long rbx;
+	unsigned long rcx;
+	unsigned long rdx;
+	unsigned long rsi;
+	unsigned long rdi;
+	unsigned long rbp;
+	unsigned long r8;
+	unsigned long r9;
+	unsigned long r10;
+	unsigned long r11;
+	unsigned long r12;
+	unsigned long r13;
+	unsigned long r14;
+	unsigned long r15;
+	unsigned long rflags;
+	unsigned long rip;
+	unsigned long rsp;
+	unsigned long fs;
+};
+
+void
+restore_fs(unsigned long fs)
+{
+	wrmsrl(MSR_FS_BASE, fs);
+}
+
+void
+save_fs_ctx(void *ctx)
+{
+	struct trans_uctx *tctx = ctx;
+
+	rdmsrl(MSR_FS_BASE, tctx->fs);
+}
+
+unsigned long
+get_fs_ctx(void *ctx)
+{
+	struct trans_uctx *tctx = ctx;
+
+	return tctx->fs;
+}

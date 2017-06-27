@@ -1,18 +1,22 @@
 CC=@CC@
 BINDIR=@BINDIR@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+LIBDIR=@libdir@
 MCKERNEL_LIBDIR=@MCKERNEL_LIBDIR@
 KDIR ?= @KDIR@
-CFLAGS=-Wall -O -I.
+CFLAGS=-Wall -O -I. -Iarch/${ARCH}
 VPATH=@abs_srcdir@
 TARGET=mcexec libsched_yield
 @uncomment_if_ENABLE_MEMDUMP@TARGET+=eclair
 LIBS=@LIBS@
+ARCH=@ARCH@
 IHKDIR ?= $(VPATH)/../../../ihk/linux/include/
 
 all: $(TARGET)
 
-mcexec: mcexec.c
-	$(CC) -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) -fPIE -pie -lrt -lnuma -pthread -o $@ $^ $(EXTRA_OBJS)
+mcexec: mcexec.c libmcexec.a
+	$(CC) -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) -DLIBDIR=\"$(LIBDIR)\" -fPIE -pie -L. -lmcexec -lrt -lnuma -pthread -o $@ $^ $(EXTRA_OBJS)
 
 eclair: eclair.c
 	$(CC) $(CFLAGS) -I${IHKDIR} -o $@ $^ $(LIBS)
@@ -20,12 +24,17 @@ eclair: eclair.c
 libsched_yield: libsched_yield.c
 	$(CC) -shared -fPIC -Wl,-soname,sched_yield.so.1 -o libsched_yield.so.1.0.0 $^ -lc -ldl
 
-clean:
+libmcexec.a::
+	(cd arch/${ARCH}; make)
+
+clean::
+	(cd arch/${ARCH}; make clean)
 	$(RM) $(TARGET) *.o
 
 .PHONY: all clean install
 
-install:
+install::
+	(cd arch/${ARCH}; make install)
 	mkdir -p -m 755 $(BINDIR)
 	install -m 755 mcexec $(BINDIR)
 	mkdir -p -m 755 $(MCKERNEL_LIBDIR)

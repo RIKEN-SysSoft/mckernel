@@ -153,5 +153,8 @@ SYSCALL_HANDLED(700, get_cpu_id)
 #ifdef PROFILE_ENABLE
 SYSCALL_HANDLED(__NR_profile, profile)
 #endif // PROFILE_ENABLE
+SYSCALL_HANDLED(730, util_migrate_inter_kernel)
+SYSCALL_HANDLED(731, util_indicate_clone)
+SYSCALL_HANDLED(732, get_system)
 
 /**** End of File ****/
