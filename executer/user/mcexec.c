@@ -1054,11 +1054,6 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 				kill(getpid(), sig);
 				for(;;)
 					sleep(1);
-#if 0
-				ioctl(fd, MCEXEC_UP_SWITCH_THREAD,
-				      0x100000000 | sig);
-				pthread_exit(NULL);
-#endif
 			}
 		}
 		else {
@@ -2387,11 +2382,17 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 	close(pfd[1]);
 
 	for (i = 0; i < 4096; i++)
-		if (i != fd && i != 2)
+		if (i != fd
+#ifdef DEBUG_UTI
+		   && i != 2
+#endif
+		   )
 			close(i);
 	open("/dev/null", O_RDONLY);
 	open("/dev/null", O_WRONLY);
-//	open("/dev/null", O_WRONLY);
+#ifndef DEBUG_UTI
+	open("/dev/null", O_WRONLY);
+#endif
 
 	for (i = 1; i <= 10; i++) {
 		param = (struct syscall_struct *)wp + i;
@@ -2400,7 +2401,6 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 	}
 	memset(wp, '\0', sizeof(long));
 
-fprintf(stderr, "tracer PID=%d\n", getpid());
 #ifdef DEBUG_UTI
 	fprintf(stderr, "tracer PID=%d\n", getpid());
 	signal(SIGINT, debug_sig);
