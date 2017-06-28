@@ -1,0 +1,23 @@
+CC=@CC@
+AR=ar
+BINDIR=@BINDIR@
+KDIR ?= @KDIR@
+CFLAGS=-Wall -O -I.
+VPATH=@abs_srcdir@
+TARGET=../../libmcexec.a
+LIBS=@LIBS@
+
+all: $(TARGET)
+
+../../libmcexec.a: archdep.o
+	$(AR) cr ../../libmcexec.a archdep.o 
+
+archdep.o: archdep.S
+	$(CC) -c -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) -fPIE -pie -pthread $<
+
+clean:
+	$(RM) $(TARGET) *.o
+
+.PHONY: all clean install
+
+install:
