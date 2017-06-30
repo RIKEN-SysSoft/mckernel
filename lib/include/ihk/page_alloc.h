@@ -5,16 +5,19 @@
  *  Declare functions acquire physical pages and assign virtual addresses
  *  to them. 
  * \author Taku Shimosawa  <shimosawa@is.s.u-tokyo.ac.jp> \par
- *      Copyright (C) 2011 - 2012  Taku Shimosawa
+ * \author Balazs Gerofi <bgerofi@riken.jp> \par
  */
 /*
  * HISTORY
+ * 2016/12 - bgerofi - NUMA support
+ * 2017/06 - bgerofi - rewrite physical memory mngt for red-black trees
  */
 
 #ifndef __HEADER_GENERIC_IHK_PAGE_ALLOC
 #define __HEADER_GENERIC_IHK_PAGE_ALLOC
 
 #include <list.h>
+#include <rbtree.h>
 
 /* XXX: Physical memory management shouldn't be part of IHK */
 struct node_distance {
@@ -22,13 +25,39 @@ struct node_distance {
 	int distance;
 };
 
+#define IHK_RBTREE_ALLOCATOR
+
+#ifdef IHK_RBTREE_ALLOCATOR
+struct free_chunk {
+	unsigned long addr, size;
+	struct rb_node node;
+};
+#endif
+
 struct ihk_mc_numa_node {
 	int id;
 	int linux_numa_id;
 	int type;
 	struct list_head allocators;
 	struct node_distance *nodes_by_distance;
+#ifdef IHK_RBTREE_ALLOCATOR
+	struct rb_root free_chunks;
+	mcs_lock_node_t lock;
+
+	unsigned long nr_free_pages;
+	unsigned long min_addr;
+	unsigned long max_addr;
+#endif
 };
+
+#ifdef IHK_RBTREE_ALLOCATOR
+unsigned long ihk_numa_alloc_pages(struct ihk_mc_numa_node *node,
+		int npages, int p2align);
+void ihk_numa_free_pages(struct ihk_mc_numa_node *node,
+		unsigned long addr, int npages);
+int ihk_numa_add_free_pages(struct ihk_mc_numa_node *node,
+		unsigned long addr, unsigned long size);
+#endif
 
 struct ihk_page_allocator_desc {
 	unsigned long start, end;

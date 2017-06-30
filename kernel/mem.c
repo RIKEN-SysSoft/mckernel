@@ -498,7 +498,9 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 {
 	unsigned long pa = 0;
 	int i, node;
+#ifndef IHK_RBTREE_ALLOCATOR
 	struct ihk_page_allocator_desc *pa_allocator;
+#endif
 	int numa_id;
 
 	/* Not yet initialized or idle process */
@@ -519,9 +521,14 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 
 	/* Explicit valid node? */
 	if (pref_node > -1 && pref_node < ihk_mc_get_nr_numa_nodes()) {
+#ifdef IHK_RBTREE_ALLOCATOR
+		{
+			pa = ihk_numa_alloc_pages(&memory_nodes[pref_node], npages, p2align);
+#else
 		list_for_each_entry(pa_allocator,
 				&memory_nodes[pref_node].allocators, list) {
 			pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+#endif
 
 			if (pa) {
 				dkprintf("%s: explicit (node: %d) CPU @ node %d allocated "
@@ -559,12 +566,16 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 					continue;
 				}
 
-				numa_id = memory_nodes[node].
-				                        nodes_by_distance[i].id;
+				numa_id = memory_nodes[node].nodes_by_distance[i].id;
+#ifdef IHK_RBTREE_ALLOCATOR
+				{
+					pa = ihk_numa_alloc_pages(&memory_nodes[memory_nodes[node].
+							nodes_by_distance[i].id], npages, p2align);
+#else
 				list_for_each_entry(pa_allocator,
-				                    &memory_nodes[numa_id].
-				                    allocators, list) {
+						&memory_nodes[numa_id].allocators, list) {
 					pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+#endif
 
 					if (pa) {
 						dkprintf("%s: policy: CPU @ node %d allocated "
@@ -612,9 +623,16 @@ distance_based:
 
 	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
 		numa_id = memory_nodes[node].nodes_by_distance[i].id;
+
+#ifdef IHK_RBTREE_ALLOCATOR
+		{
+			pa = ihk_numa_alloc_pages(&memory_nodes[memory_nodes[node].
+					nodes_by_distance[i].id], npages, p2align);
+#else
 		list_for_each_entry(pa_allocator,
 		                    &memory_nodes[numa_id].allocators, list) {
 			pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+#endif
 
 			if (pa) {
 				dkprintf("%s: distance: CPU @ node %d allocated "
@@ -640,11 +658,19 @@ order_based:
 	/* Fall back to regular order */
 	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
 		numa_id = (node + i) % ihk_mc_get_nr_numa_nodes();
+#ifdef IHK_RBTREE_ALLOCATOR
+		{
+			pa = ihk_numa_alloc_pages(&memory_nodes[(node + i) %
+					ihk_mc_get_nr_numa_nodes()], npages, p2align);
+#else
 		list_for_each_entry(pa_allocator,
 		                    &memory_nodes[numa_id].allocators, list) {
 			pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+#endif
 			if (pa) {
+#ifdef ENABLE_RUSAGE
 				rusage_numa_add(numa_id, npages * PAGE_SIZE);
+#endif
 				break;
 			}
 		}
@@ -669,15 +695,25 @@ static void __mckernel_free_pages_in_allocator(void *va, int npages)
 
 	/* Find corresponding memory allocator */
 	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
-		struct ihk_page_allocator_desc *pa_allocator;
 
+#ifdef IHK_RBTREE_ALLOCATOR
+		{
+			if (pa_start >= memory_nodes[i].min_addr &&
+					pa_end <= memory_nodes[i].max_addr) {
+
+				ihk_numa_free_pages(&memory_nodes[i], pa_start, npages);
+#else
+		struct ihk_page_allocator_desc *pa_allocator;
 		list_for_each_entry(pa_allocator,
 				&memory_nodes[i].allocators, list) {
 
 			if (pa_start >= pa_allocator->start &&
 					pa_end <= pa_allocator->end) {
 				ihk_pagealloc_free(pa_allocator, pa_start, npages);
+#endif
+#ifdef ENABLE_RUSAGE
 				rusage_numa_sub(i, npages * PAGE_SIZE);
+#endif
 				return;
 			}
 		}
@@ -755,6 +791,9 @@ static void query_free_mem_interrupt_handler(void *priv)
 
 	/* Iterate memory allocators */
 	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
+#ifdef IHK_RBTREE_ALLOCATOR
+		pages += memory_nodes[i].nr_free_pages;
+#else
 		struct ihk_page_allocator_desc *pa_allocator;
 
 		list_for_each_entry(pa_allocator,
@@ -764,6 +803,7 @@ static void query_free_mem_interrupt_handler(void *priv)
 					pa_allocator->start, pa_allocator->end, __pages);
 			pages += __pages;
 		}
+#endif
 	}
 
 	kprintf("McKernel free pages in total: %d\n", pages);
@@ -1082,6 +1122,13 @@ static void numa_init(void)
 		memory_nodes[i].type = type;
 		INIT_LIST_HEAD(&memory_nodes[i].allocators);
 		memory_nodes[i].nodes_by_distance = 0;
+#ifdef IHK_RBTREE_ALLOCATOR
+		memory_nodes[i].free_chunks.rb_node = 0;
+		mcs_lock_init(&memory_nodes[i].lock);
+		memory_nodes[i].min_addr = 0xFFFFFFFFFFFFFFFF;
+		memory_nodes[i].max_addr = 0;
+		memory_nodes[i].nr_free_pages = 0;
+#endif
 
 		kprintf("NUMA: %d, Linux NUMA: %d, type: %d\n",
 			i, linux_numa_id, type);
@@ -1090,21 +1137,48 @@ static void numa_init(void)
 	for (j = 0; j < ihk_mc_get_nr_memory_chunks(); ++j) {
 		unsigned long start, end;
 		int numa_id;
+#ifndef IHK_RBTREE_ALLOCATOR
 		struct ihk_page_allocator_desc *allocator;
+#endif
 
 		ihk_mc_get_memory_chunk(j, &start, &end, &numa_id);
 
+		if (virt_to_phys(get_last_early_heap()) >= start &&
+				virt_to_phys(get_last_early_heap()) < end) {
+			dkprintf("%s: start from 0x%lx\n",
+					__FUNCTION__, virt_to_phys(get_last_early_heap()));
+			start = virt_to_phys(get_last_early_heap());
+		}
+
+#ifdef IHK_RBTREE_ALLOCATOR
+		ihk_numa_add_free_pages(&memory_nodes[numa_id], start, end - start);
+#else
 		allocator = page_allocator_init(start, end);
 		list_add_tail(&allocator->list, &memory_nodes[numa_id].allocators);
+#endif
 
+#ifdef IHK_RBTREE_ALLOCATOR
+		kprintf("Physical memory: 0x%lx - 0x%lx, %lu bytes, %d pages available @ NUMA: %d\n",
+				start, end,
+				end - start,
+				(end - start) >> PAGE_SHIFT,
+				numa_id);
+#else
 		kprintf("Physical memory: 0x%lx - 0x%lx, %lu bytes, %d pages available @ NUMA: %d\n",
 				start, end,
 				ihk_pagealloc_count(allocator) * PAGE_SIZE,
 				ihk_pagealloc_count(allocator),
 				numa_id);
-
+#endif
+#ifdef ENABLE_RUSAGE
+#ifdef IHK_RBTREE_ALLOCATOR
+		rusage_max_memory_add(memory_nodes[numa_id].nr_free_pages *
+				PAGE_SIZE);
+#else
 		rusage_max_memory_add(ihk_pagealloc_count(allocator) *
-		                      PAGE_SIZE);
+				PAGE_SIZE);
+#endif
+#endif
 	}
 }
 
