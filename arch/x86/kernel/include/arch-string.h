@@ -20,4 +20,23 @@ static inline void *__inline_memcpy(void *to, const void *from, size_t n)
 	return to;
 }
 
+#define ARCH_FAST_MEMSET
+
+static inline void *__inline_memset(void *s, unsigned long c, size_t count)
+{
+	int d0, d1;
+	asm volatile("rep ; stosl\n\t"
+		     "testb $2,%b3\n\t"
+		     "je 1f\n\t"
+		     "stosw\n"
+		     "1:\ttestb $1,%b3\n\t"
+		     "je 2f\n\t"
+		     "stosb\n"
+		     "2:"
+		     : "=&c" (d0), "=&D" (d1)
+		     : "a" (c), "q" (count), "0" (count/4), "1" ((long)s)
+		     : "memory");
+	return s;
+}
+
 #endif

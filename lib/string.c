@@ -13,6 +13,7 @@
 #include <kmalloc.h>
 #include <string.h>
 #include <memory.h>
+#include <arch-string.h>
 
 size_t strlen(const char *p)
 {
@@ -153,6 +154,7 @@ void *memcpy_long(void *dest, const void *src, size_t n)
 	return dest;
 }
 
+#ifndef ARCH_FAST_MEMSET
 void *memset(void *s, int c, size_t n)
 {
 	char *s_aligned = (void *)(((unsigned long)s + 7) & ~7);
@@ -187,6 +189,7 @@ void *memset(void *s, int c, size_t n)
 
 	return s;
 }
+#endif
 
 int memcmp(const void *s1, const void *s2, size_t n)
 {
