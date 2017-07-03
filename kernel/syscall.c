@@ -140,11 +140,8 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid, struct s
 
 	if(req->number == __NR_exit_group ||
 	   req->number == __NR_kill){ // interrupt syscall
-
-		/* XXX: is this really going to work if multiple processes 
-		 * exit/receive signals at the same time?? */
 		if (req->number == __NR_kill) {
-			req->rtid = -1;
+			req->rtid = -1; // no response
 			pid = req->args[0];
 		}
 		if (req->number == __NR_gettid)
@@ -212,6 +209,11 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	req->ttid = 0;
 	res.req_thread_status = IHK_SCD_REQ_THREAD_SPINNING;
 	send_syscall(req, cpu, pid, &res);
+
+	if (req->rtid == -1) {
+		rc = 0;
+		goto out;
+	}
 
 	dkprintf("%s: syscall num: %d waiting for Linux.. \n",
 		__FUNCTION__, req->number);
@@ -380,6 +382,8 @@ if(req->number == __NR_sched_setaffinity)kprintf("do_syscall 2 offload=%d\n", th
 		thread->proc->nohost = 1;
 		terminate(0, SIGKILL);
 	}
+
+out:
 
 #ifdef PROFILE_ENABLE
 	if (req->number < PROFILE_SYSCALL_MAX) {

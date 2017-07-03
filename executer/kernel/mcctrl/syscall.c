@@ -1770,6 +1770,9 @@ void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet,
 	unsigned long phys;
 	struct syscall_response *res;
 
+	if (stid == -1)
+		return;
+
 	phys = ihk_device_map_memory(ihk_os_to_dev(os),
 			packet->resp_pa, sizeof(*res));
 	res = ihk_device_map_virtual(ihk_os_to_dev(os),
