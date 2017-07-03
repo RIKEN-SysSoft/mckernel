@@ -92,6 +92,8 @@
 #define SCD_MSG_PROCFS_TID_CREATE	0x44
 #define SCD_MSG_PROCFS_TID_DELETE	0x45
 
+#define SCD_MSG_EVENT_SIGNAL		0x46
+
 #define SCD_MSG_PERF_CTRL               0x50
 #define SCD_MSG_PERF_ACK                0x51
 
