@@ -124,10 +124,6 @@ void ap_init(void)
 		num_processors++;
 	}
 	kprintf("BSP: booted %d AP CPUs\n", cpu_info->ncpus - 1);
-#ifdef ENABLE_RUSAGE
-    rusage_num_threads = 0;
-    rusage_max_num_threads = 0;
-#endif
 }
 
 #include <sysfs.h>

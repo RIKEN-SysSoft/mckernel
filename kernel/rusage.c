@@ -50,21 +50,6 @@ void rusage_init() {
 	rusage_rss_max = 0;
 }
 
-void rusage_inc_num_threads(int count) {
-	volatile unsigned long max_obs1, max_obs2;
-	ihk_atomic_add_ulong(count, &rusage_num_threads);
-	max_obs1 = rusage_max_num_threads;
-	if (max_obs1 < rusage_num_threads) {
-	retry:
-		max_obs2 = atomic_cmpxchg8(&rusage_max_num_threads, max_obs1, rusage_num_threads);
-		if(max_obs2 != max_obs1 &&
-		   max_obs2 < rusage_num_threads) {
-			max_obs1 = max_obs2;
-			goto retry;
-		}
-	}
-}
-
 /* count total rss */
 unsigned long count_rss () {
 	return rusage_rss_current;

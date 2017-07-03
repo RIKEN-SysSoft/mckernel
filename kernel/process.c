@@ -333,9 +333,7 @@ struct thread *create_thread(unsigned long user_pc,
 
 	ihk_mc_spinlock_init(&thread->spin_sleep_lock);
 	thread->spin_sleep = 0;
-#ifdef ENABLE_RUSAGE
-	rusage_inc_num_threads(1);
-#endif
+
 	return thread;
 
 err:
@@ -485,10 +483,6 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 
 	ihk_mc_spinlock_init(&thread->spin_sleep_lock);
 	thread->spin_sleep = 0;
-
-#ifdef ENABLE_RUSAGE
-	rusage_inc_num_threads(1);
-#endif
 
 #ifdef PROFILE_ENABLE
 	thread->profile = org->profile | proc->profile;
@@ -2010,18 +2004,6 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	thread->vm->region.stack_end = end;
 	thread->vm->region.stack_start = start;
 
-#ifdef ENABLE_RUSAGE
-{
-	long curr;
-	curr = ihk_atomic_add_long_return ((minsz >> PAGE_SHIFT) * PAGE_SIZE, &rusage_rss_current);
-	if (rusage_rss_max < curr) {
-		atomic_cmpxchg8(&rusage_rss_max, rusage_rss_max, curr);
-	}
-	if (rusage_max_memory - curr < RUSAGE_MEM_LIMIT) {
-		event_signal();
-	}
-}
-#endif
 	return 0;
 }
 
@@ -2070,19 +2052,6 @@ unsigned long extend_process_region(struct process_vm *vm,
 
 	dkprintf("%s: new_end_allocated: 0x%lu, align_size: %lu, align_mask: %lx\n",
 		__FUNCTION__, new_end_allocated, align_size, align_mask);
-
-#ifdef ENABLE_RUSAGE
-{
-	long curr;
-	curr = ihk_atomic_add_long_return (((new_end_allocated - end_allocated) >> PAGE_SHIFT) * PAGE_SIZE, &rusage_rss_current);
-	if (rusage_rss_max < curr) {
-		atomic_cmpxchg8(&rusage_rss_max, rusage_rss_max, curr);
-	}
-	if (rusage_max_memory - curr < RUSAGE_MEM_LIMIT) {
-		event_signal();
-	}
-}
-#endif
 
 	return new_end_allocated;
 }
@@ -2385,12 +2354,6 @@ void destroy_thread(struct thread *thread)
 
 	release_sigcommon(thread->sigcommon);
 
-#ifdef ENABLE_RUSAGE
-{
-	ihk_atomic_add_ulong ( -1, &rusage_num_threads);
-}
-#endif
-
 	ihk_mc_free_pages(thread, KERNEL_STACK_NR_PAGES);
 }
 
@@ -2422,6 +2385,7 @@ void release_thread(struct thread *thread)
 	destroy_thread(thread);
 
 	release_process_vm(vm);
+	rusage_num_threads_dec();
 }
 
 void cpu_set(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock)
@@ -3136,6 +3100,8 @@ void runq_add_thread(struct thread *thread, int cpu_id)
 	ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 
 	procfs_create_thread(thread);
+
+	rusage_num_threads_inc();
 
 	/* Kick scheduler */
 	if (cpu_id != ihk_mc_get_processor_id())

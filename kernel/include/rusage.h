@@ -75,9 +75,116 @@ unsigned long rusage_hugetlb_max_usage;
 unsigned long rusage_numa_stat[1024];
 unsigned long rusage_max_memory;
 
-#define RUSAGE_MEM_LIMIT 2000000
+#define RUSAGE_MEM_LIMIT (2 * 1024 * 1024) // 2MB
 
 void rusage_init();
-void rusage_inc_num_threads(int count);
+
+#ifdef ENABLE_RUSAGE
+extern void event_signal();
+
+static inline void
+rusage_max_memory_add(unsigned long size)
+{
+	rusage_max_memory += size;
+}
+
+static inline void
+rusage_rss_add(unsigned long size)
+{
+	unsigned long newval = __sync_add_and_fetch(&rusage_rss_current, size);
+	unsigned long oldval = rusage_rss_max;
+	unsigned long retval;
+
+	while (newval > oldval) {
+		retval = __sync_val_compare_and_swap(&rusage_rss_max, oldval,
+		                                     newval);
+		if (retval == oldval) {
+			if (rusage_max_memory - newval < RUSAGE_MEM_LIMIT) {
+				event_signal();
+			}
+			break;
+		}
+		oldval = retval;
+	}
+}
+
+static inline void
+rusage_rss_sub(unsigned long size)
+{
+	__sync_sub_and_fetch(&rusage_rss_current, size);
+}
+
+static inline void
+rusage_numa_add(int numa_id, unsigned long size)
+{
+	__sync_add_and_fetch(rusage_numa_stat + numa_id, size);
+	rusage_rss_add(size);
+}
+
+static inline void
+rusage_numa_sub(int numa_id, unsigned long size)
+{
+	rusage_rss_sub(size);
+	__sync_sub_and_fetch(rusage_numa_stat + numa_id, size);
+}
+
+static inline void
+rusage_num_threads_inc()
+{
+	unsigned long newval = __sync_add_and_fetch(&rusage_num_threads, 1);
+	unsigned long oldval = rusage_max_num_threads;
+	unsigned long retval;
+
+	while (newval > oldval) {
+		retval = __sync_val_compare_and_swap(&rusage_max_num_threads,
+		                                     oldval, newval);
+		if (retval == oldval) {
+			break;
+		}
+		oldval = retval;
+	}
+}
+
+static inline void
+rusage_num_threads_dec()
+{
+	__sync_sub_and_fetch(&rusage_num_threads, 1);
+}
+#else
+static inline void
+rusage_max_memory_add(unsigned long size)
+{
+}
+
+static inline void
+rusage_rss_add(unsigned long size)
+{
+}
+
+static inline void
+rusage_rss_sub(unsigned long size)
+{
+}
+
+static inline void
+rusage_numa_add(int numa_id, unsigned long size)
+{
+}
+
+static inline void
+rusage_numa_sub(int numa_id, unsigned long size)
+{
+}
+
+static inline void
+rusage_num_threads_inc()
+{
+}
+
+static inline void
+rusage_num_threads_dec()
+{
+}
+#endif // ENABLE_RUSAGE
 
 #endif

@@ -4909,9 +4909,6 @@ do_exit(int code)
 
 	if(nproc == 1){ // process has only one thread
 		terminate(exit_status, sig);
-#ifdef ENABLE_RUSAGE
-		rusage_num_threads--;
-#endif
 		return;
 	}
 
@@ -4938,9 +4935,6 @@ do_exit(int code)
 	if(proc->status == PS_EXITED){
 		mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 		terminate(exit_status, 0);
-#ifdef ENABLE_RUSAGE
-	rusage_num_threads--;
-#endif
 		return;
 	}
 	preempt_disable();
@@ -4951,9 +4945,6 @@ do_exit(int code)
 	preempt_enable();
 
 	schedule();
-#ifdef ENABLE_RUSAGE
-	rusage_num_threads--;
-#endif
 
 	return;
 }

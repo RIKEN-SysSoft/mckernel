@@ -499,6 +499,7 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 	unsigned long pa = 0;
 	int i, node;
 	struct ihk_page_allocator_desc *pa_allocator;
+	int numa_id;
 
 	/* Not yet initialized or idle process */
 	if (!cpu_local_var_initialized ||
@@ -530,6 +531,8 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 						ihk_mc_get_numa_id(),
 						npages, node);
 
+				rusage_numa_add(pref_node, npages * PAGE_SIZE);
+
 				return phys_to_virt(pa);
 			}
 			else {
@@ -556,9 +559,11 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 					continue;
 				}
 
+				numa_id = memory_nodes[node].
+				                        nodes_by_distance[i].id;
 				list_for_each_entry(pa_allocator,
-						&memory_nodes[memory_nodes[node].
-						nodes_by_distance[i].id].allocators, list) {
+				                    &memory_nodes[numa_id].
+				                    allocators, list) {
 					pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
 
 					if (pa) {
@@ -567,9 +572,10 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 								__FUNCTION__,
 								ihk_mc_get_numa_id(),
 								npages, node);
-#ifdef ENABLE_RUSAGE
-						rusage_numa_stat[ihk_mc_get_numa_id()] += npages * PAGE_SIZE;
-#endif
+
+						rusage_numa_add(numa_id, 
+						            npages * PAGE_SIZE);
+
 						break;
 					}
 				}
@@ -605,10 +611,9 @@ distance_based:
 		goto order_based;
 
 	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
-
+		numa_id = memory_nodes[node].nodes_by_distance[i].id;
 		list_for_each_entry(pa_allocator,
-				&memory_nodes[memory_nodes[node].
-				nodes_by_distance[i].id].allocators, list) {
+		                    &memory_nodes[numa_id].allocators, list) {
 			pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
 
 			if (pa) {
@@ -618,9 +623,7 @@ distance_based:
 						ihk_mc_get_numa_id(),
 						npages,
 						memory_nodes[node].nodes_by_distance[i].id);
-#ifdef ENABLE_RUSAGE
-				rusage_numa_stat[ihk_mc_get_numa_id()] += npages * PAGE_SIZE;
-#endif
+				rusage_numa_add(numa_id, npages * PAGE_SIZE);
 				break;
 			}
 		}
@@ -636,15 +639,14 @@ order_based:
 
 	/* Fall back to regular order */
 	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
-
+		numa_id = (node + i) % ihk_mc_get_nr_numa_nodes();
 		list_for_each_entry(pa_allocator,
-				&memory_nodes[(node + i) %
-				ihk_mc_get_nr_numa_nodes()].allocators, list) {
+		                    &memory_nodes[numa_id].allocators, list) {
 			pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
-#ifdef ENABLE_RUSAGE
-			rusage_numa_stat[ihk_mc_get_numa_id()] += npages * PAGE_SIZE;
-#endif
-			if (pa) break;
+			if (pa) {
+				rusage_numa_add(numa_id, npages * PAGE_SIZE);
+				break;
+			}
 		}
 
 		if (pa) break;
@@ -675,9 +677,7 @@ static void __mckernel_free_pages_in_allocator(void *va, int npages)
 			if (pa_start >= pa_allocator->start &&
 					pa_end <= pa_allocator->end) {
 				ihk_pagealloc_free(pa_allocator, pa_start, npages);
-#ifdef ENABLE_RUSAGE
-				rusage_numa_stat[i] -= npages * PAGE_SIZE;
-#endif
+				rusage_numa_sub(i, npages * PAGE_SIZE);
 				return;
 			}
 		}
@@ -1102,9 +1102,9 @@ static void numa_init(void)
 				ihk_pagealloc_count(allocator) * PAGE_SIZE,
 				ihk_pagealloc_count(allocator),
 				numa_id);
-#ifdef ENABLE_RUSAGE
-		rusage_max_memory += ihk_pagealloc_count(allocator) * PAGE_SIZE;
-#endif
+
+		rusage_max_memory_add(ihk_pagealloc_count(allocator) *
+		                      PAGE_SIZE);
 	}
 }
 
