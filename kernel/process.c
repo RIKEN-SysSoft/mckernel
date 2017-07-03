@@ -1794,13 +1794,19 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 	}
 
 	/*
-	 * XXX: quick fix
-	 * Corrupt data was read by the following sequence.
-	 * 1) a process did mmap(MAP_PRIVATE|MAP_ANONYMOUS)
-	 * 2) the process fetched the contents of a page of (1)'s mapping.
-	 * 3) the process wrote the contents of the page of (1)'s mapping.
-	 * 4) the process changed the contents of the page of (1)'s mapping.
-	 * 5) the process read something in the page of (1)'s mapping.
+	 * Fix for #284
+	 * Symptom: read() writes data onto the zero page by the following sequence.
+	 * (1) A process performs mmap(MAP_PRIVATE|MAP_ANONYMOUS)
+	 * (2) The process loads data from the VM range to cause a PF
+	 *     to make the PTE point to the zero page.
+	 * (3) The process performs write() using the VM range as the source
+         *     to cause a PF on the Linux side to make the PTE point to the zero page.
+         *     Note that we can't make the PTE read-only because [mckernel] pseudo
+	 *     file covering the range is created with O_RDWR.
+	 * (4) The process stores data to the VM range to cause another PF to perform
+         *     copy-on-write.
+	 * (5) The process performs read() using the VM range as the destination.
+         *     However, no PF and hence copy-on-write occurs because of (3).
 	 *
 	 * In the case of the above sequence,
 	 * copy-on-write pages was mapped at (2). And their physical pages
