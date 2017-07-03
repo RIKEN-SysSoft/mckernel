@@ -793,8 +793,10 @@ terminate(int rc, int sig)
 	if(proc->status == PS_EXITED){
 		mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
 		mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
+		preempt_disable();
 		mythread->status = PS_EXITED;
 		release_thread(mythread);
+		preempt_enable();
 		schedule();
 		// no return
 		return;
@@ -977,9 +979,11 @@ terminate(int rc, int sig)
 		waitq_wakeup(&proc->parent->waitpid_q);
 	}
 
+	preempt_disable();
 	mythread->status = PS_EXITED;
 	release_thread(mythread);
 	release_process_vm(vm);
+	preempt_enable();
 	schedule();
 	kprintf("%s: ERROR: returned from terminate() -> schedule()\n", __FUNCTION__);
 	panic("panic");
@@ -4935,10 +4939,12 @@ do_exit(int code)
 #endif
 		return;
 	}
+	preempt_disable();
 	thread->status = PS_EXITED;
 	sync_child_event(thread->proc->monitoring_event);
 	mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 	release_thread(thread);
+	preempt_enable();
 
 	schedule();
 #ifdef ENABLE_RUSAGE
