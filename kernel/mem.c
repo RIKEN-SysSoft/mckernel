@@ -1103,7 +1103,7 @@ static void numa_init(void)
 				ihk_pagealloc_count(allocator),
 				numa_id);
 #ifdef ENABLE_RUSAGE
-				rusage_max_memory = ihk_pagealloc_count(allocator) * PAGE_SIZE;
+		rusage_max_memory += ihk_pagealloc_count(allocator) * PAGE_SIZE;
 #endif
 	}
 }
