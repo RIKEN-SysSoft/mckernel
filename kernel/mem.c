@@ -693,24 +693,34 @@ static void __mckernel_free_pages_in_allocator(void *va, int npages)
 	unsigned long pa_start = virt_to_phys(va);
 	unsigned long pa_end = pa_start + (npages * PAGE_SIZE);
 
+#ifdef IHK_RBTREE_ALLOCATOR
+	for (i = 0; i < ihk_mc_get_nr_memory_chunks(); ++i) {
+		unsigned long start, end;
+		int numa_id;
+
+		ihk_mc_get_memory_chunk(i, &start, &end, &numa_id);
+		if (start > pa_start || end < pa_end) {
+			continue;
+		}
+
+		ihk_numa_free_pages(&memory_nodes[numa_id], pa_start, npages);
+#ifdef ENABLE_RUSAGE
+		rusage_numa_sub(numa_id, npages * PAGE_SIZE);
+#endif
+		break;
+	}
+#else
+	struct ihk_page_allocator_desc *pa_allocator;
+
 	/* Find corresponding memory allocator */
 	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
 
-#ifdef IHK_RBTREE_ALLOCATOR
-		{
-			if (pa_start >= memory_nodes[i].min_addr &&
-					pa_end <= memory_nodes[i].max_addr) {
-
-				ihk_numa_free_pages(&memory_nodes[i], pa_start, npages);
-#else
-		struct ihk_page_allocator_desc *pa_allocator;
 		list_for_each_entry(pa_allocator,
 				&memory_nodes[i].allocators, list) {
 
 			if (pa_start >= pa_allocator->start &&
 					pa_end <= pa_allocator->end) {
 				ihk_pagealloc_free(pa_allocator, pa_start, npages);
-#endif
 #ifdef ENABLE_RUSAGE
 				rusage_numa_sub(i, npages * PAGE_SIZE);
 #endif
@@ -718,6 +728,7 @@ static void __mckernel_free_pages_in_allocator(void *va, int npages)
 			}
 		}
 	}
+#endif
 }
 
 
