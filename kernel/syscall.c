@@ -211,8 +211,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	send_syscall(req, cpu, pid, &res);
 
 	if (req->rtid == -1) {
-		rc = 0;
-		goto out;
+		preempt_disable();
 	}
 
 	dkprintf("%s: syscall num: %d waiting for Linux.. \n",
@@ -362,6 +361,9 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 			res.req_thread_status = IHK_SCD_REQ_THREAD_SPINNING;
 			send_syscall(&req2, cpu, pid, &res);
 		}
+	}
+	if (req->rtid == -1) {
+		preempt_enable();
 	}
 
 	dkprintf("%s: syscall num: %d got host reply: %d \n",
