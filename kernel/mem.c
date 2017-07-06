@@ -258,6 +258,15 @@ void _ihk_mc_free_pages(void *ptr, int npages, char *file, int line)
 	}
 
 	if (addr_entry) {
+		if (npages > addr_entry->npages) {
+			kprintf("%s: ERROR: trying to deallocate %d pages"
+					" for a %d pages allocation at %s:%d\n",
+					__FUNCTION__,
+					npages, addr_entry->npages,
+					file, line);
+			panic("invalid deallocation");
+		}
+
 		if (addr_entry->npages > npages) {
 			addr_entry->addr += (npages * PAGE_SIZE);
 			addr_entry->npages -= npages;
@@ -300,9 +309,9 @@ void _ihk_mc_free_pages(void *ptr, int npages, char *file, int line)
 
 		/* Still not? Invalid deallocation */
 		if (!addr_entry) {
-			kprintf("%s: ERROR: invalid deallocation @ %s:%d\n",
-				__FUNCTION__, file, line);
-			panic("invalid deallocation");
+			kprintf("%s: ERROR: invalid deallocation for addr: 0x%lx @ %s:%d\n",
+				__FUNCTION__, ptr, file, line);
+			panic("panic: invalid deallocation");
 		}
 
 		dkprintf("%s: found covering addr_entry: 0x%lx:%d\n", __FUNCTION__,
@@ -1719,6 +1728,10 @@ void _kfree(void *ptr, char *file, int line)
 	struct kmalloc_track_addr_entry *addr_entry_iter, *addr_entry = NULL;
 	int hash;
 
+	if (!ptr) {
+		return;
+	}
+
 	if (!memdebug) {
 		goto out;
 	}
@@ -1739,7 +1752,8 @@ void _kfree(void *ptr, char *file, int line)
 	ihk_mc_spinlock_unlock(&kmalloc_addr_hash_locks[hash], irqflags);
 
 	if (!addr_entry) {
-		kprintf("%s: ERROR: kfree()ing invalid pointer\n", __FUNCTION__);
+		kprintf("%s: ERROR: kfree()ing invalid pointer at %s:%d\n",
+			__FUNCTION__, file, line);
 		panic("panic");
 	}
 
