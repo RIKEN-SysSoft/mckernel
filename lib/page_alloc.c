@@ -228,7 +228,14 @@ void ihk_pagealloc_free(void *__desc, unsigned long address, int npages)
 	mcs_lock_lock(&desc->lock, &node);
 	mi = (address - desc->start) >> desc->shift;
 	for (i = 0; i < npages; i++, mi++) {
-		desc->map[MAP_INDEX(mi)] &= ~(1UL << MAP_BIT(mi));
+		if (!(desc->map[MAP_INDEX(mi)] & (1UL << MAP_BIT(mi)))) {
+			kprintf("%s: double-freeing page 0x%lx\n",
+				__FUNCTION__, address + i * PAGE_SIZE);
+			panic("panic");
+		}
+		else {
+			desc->map[MAP_INDEX(mi)] &= ~(1UL << MAP_BIT(mi));
+		}
 	}
 	mcs_lock_unlock(&desc->lock, &node);
 }
