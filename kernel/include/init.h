@@ -30,6 +30,7 @@ extern void init_host_ikc2mckernel(void);
 extern void sched_init(void);
 extern void pc_ap_init(void);
 extern void cpu_sysfs_setup(void);
+extern void numa_sysfs_setup(void);
 extern void rusage_sysfs_setup(void);
 extern void status_sysfs_setup(void);
 

@@ -595,6 +595,7 @@ int ihk_numa_add_free_pages(struct ihk_mc_numa_node *node,
 	if (addr + size > node->max_addr)
 		node->max_addr = addr + size;
 
+	node->nr_pages += (size >> PAGE_SHIFT);
 	node->nr_free_pages += (size >> PAGE_SHIFT);
 	dkprintf("%s: added free pages 0x%lx:%lu\n",
 		__FUNCTION__, addr, size);

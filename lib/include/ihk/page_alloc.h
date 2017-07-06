@@ -44,6 +44,7 @@ struct ihk_mc_numa_node {
 	struct rb_root free_chunks;
 	mcs_lock_node_t lock;
 
+	unsigned long nr_pages;
 	unsigned long nr_free_pages;
 	unsigned long min_addr;
 	unsigned long max_addr;

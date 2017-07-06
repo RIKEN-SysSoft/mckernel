@@ -40,6 +40,8 @@
 #include <rusage.h>
 #include <syscall.h>
 #include <profile.h>
+#include <limits.h>
+#include <sysfs.h>
 
 //#define DEBUG_PRINT_MEM
 
@@ -1147,6 +1149,7 @@ static void numa_init(void)
 		mcs_lock_init(&memory_nodes[i].lock);
 		memory_nodes[i].min_addr = 0xFFFFFFFFFFFFFFFF;
 		memory_nodes[i].max_addr = 0;
+		memory_nodes[i].nr_pages = 0;
 		memory_nodes[i].nr_free_pages = 0;
 #endif
 
@@ -1264,6 +1267,46 @@ static void numa_distances_init()
 						memory_nodes[i].nodes_by_distance[j].distance);
 			}
 			kprintf("%s\n", buf);
+		}
+	}
+}
+
+static ssize_t numa_sysfs_show_meminfo(struct sysfs_ops *ops,
+		void *instance, void *buf, size_t size)
+{
+	struct ihk_mc_numa_node *node =
+		(struct ihk_mc_numa_node *)instance;
+	char *sbuf = (char *)buf;
+	int len = 0;
+
+#ifdef IHK_RBTREE_ALLOCATOR
+	len += snprintf(&sbuf[len], size - len, "Node %d MemTotal:%15d kB\n",
+			node->id, node->nr_pages << 2);
+	len += snprintf(&sbuf[len], size - len, "Node %d MemFree:%16d kB\n",
+			node->id, node->nr_free_pages << 2);
+	len += snprintf(&sbuf[len], size - len, "Node %d MemUsed:%16d kB\n",
+			node->id, (node->nr_pages - node->nr_free_pages) << 2);
+#endif
+
+	return len;
+}
+
+struct sysfs_ops numa_sysfs_meminfo = {
+	.show = &numa_sysfs_show_meminfo,
+};
+
+void numa_sysfs_setup(void) {
+	int i;
+	int error;
+	char path[PATH_MAX];
+
+	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
+		sprintf(path, "/sys/devices/system/node/node%d/meminfo", i);
+
+		error = sysfs_createf(&numa_sysfs_meminfo, &memory_nodes[i],
+				0444, path);
+		if (error) {
+			kprintf("%s: ERROR: creating %s\n", __FUNCTION__, path);
 		}
 	}
 }

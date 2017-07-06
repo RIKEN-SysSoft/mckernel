@@ -350,6 +350,7 @@ static void setup_remote_snooping_samples(void)
 static void populate_sysfs(void)
 {
 	cpu_sysfs_setup();
+	numa_sysfs_setup();
 #ifdef ENABLE_RUSAGE
 	rusage_sysfs_setup();
 	status_sysfs_setup();
