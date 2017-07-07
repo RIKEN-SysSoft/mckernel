@@ -1042,6 +1042,58 @@ enum ihk_mc_pt_attribute common_vrflag_to_ptattr(unsigned long flag, uint64_t fa
 	return attr;
 }
 
+
+/* Parallel memset implementation on top of general
+ * SMP funcution call facility */
+struct memset_smp_req {
+	unsigned long phys;
+	size_t len;
+	int val;
+};
+
+int memset_smp_handler(int cpu_index, int nr_cpus, void *arg)
+{
+	struct memset_smp_req *req =
+		(struct memset_smp_req *)arg;
+	size_t len = req->len / nr_cpus;
+
+	if (!len) {
+		/* First core clears all */
+		if (!cpu_index) {
+			memset((void *)phys_to_virt(req->phys), req->val, req->len);
+		}
+	}
+	else {
+		/* Divide and clear */
+		unsigned long p_s = req->phys + (cpu_index * len);
+		unsigned long p_e = p_s + len;
+		if (cpu_index == nr_cpus - 1) {
+			p_e = req->phys + req->len;
+		}
+
+		memset((void *)phys_to_virt(p_s), req->val, p_e - p_s);
+		dkprintf("%s: cpu_index: %d, nr_cpus: %d, phys: 0x%lx, "
+				"len: %lu, p_s: 0x%lx, p_e: 0x%lx\n",
+				__FUNCTION__, cpu_index, nr_cpus,
+				req->phys, req->len,
+				p_s, p_e);
+	}
+
+	return 0;
+}
+
+void *memset_smp(cpu_set_t *cpu_set, void *s, int c, size_t n)
+{
+	struct memset_smp_req req = {
+		.phys = virt_to_phys(s),
+		.len = n,
+		.val = c,
+	};
+
+	smp_call_func(cpu_set, memset_smp_handler, &req);
+	return NULL;
+}
+
 int add_process_memory_range(struct process_vm *vm,
 		unsigned long start, unsigned long end,
 		unsigned long phys, unsigned long flag,
@@ -1108,7 +1160,17 @@ int add_process_memory_range(struct process_vm *vm,
 	/* Clear content! */
 	if (!(flag & (VR_REMOTE | VR_DEMAND_PAGING))
 			&& ((flag & VR_PROT_MASK) != VR_PROT_NONE)) {
-		memset((void*)phys_to_virt(phys), 0, end - start);
+#if 1
+			memset((void*)phys_to_virt(phys), 0, end - start);
+#else
+		if (end - start < (1024*1024)) {
+			memset((void*)phys_to_virt(phys), 0, end - start);
+		}
+		else {
+			memset_smp(&cpu_local_var(current)->cpu_set,
+					(void *)phys_to_virt(phys), 0, end - start);
+		}
+#endif
 	}
 
 	/* Return range object if requested */
