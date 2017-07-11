@@ -32,11 +32,11 @@
 //#define DEBUG_PRINT_AP
 
 #ifdef DEBUG_PRINT_AP
-#define dkprintf(...) kprintf(__VA_ARGS__)
-#define ekprintf(...) kprintf(__VA_ARGS__)
+#define dkprintf(...) do { kprintf(__VA_ARGS__); } while (0)
+#define ekprintf(...) do { kprintf(__VA_ARGS__); } while (0)
 #else
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define ekprintf(...) kprintf(__VA_ARGS__)
+#define dkprintf(...) do { } while (0)
+#define ekprintf(...) do { kprintf(__VA_ARGS__); } while (0)
 #endif
 
 int num_processors = 1;
@@ -48,7 +48,6 @@ extern struct ihk_os_monitor *monitor;
 
 static void ap_wait(void)
 {
-	struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
 	init_tick();
 	while (ap_stop) {
 		barrier();
@@ -62,10 +61,13 @@ static void ap_wait(void)
 
 	if (find_command_line("hidos")) {
 		mcs_lock_node_t mcs_node;
-
+		int ikc_cpu = ihk_mc_get_ikc_cpu(ihk_mc_get_processor_id());
+		if(ikc_cpu < 0) {
+			ekprintf("%s,ihk_mc_get_ikc_cpu failed\n", __FUNCTION__);
+		}
 		mcs_lock_lock_noirq(&ap_syscall_semaphore, &mcs_node);
 		init_host_ikc2mckernel();
-		init_host_ikc2linux(cpu_info->ikc_cpus[ihk_mc_get_processor_id()]);
+		init_host_ikc2linux(ikc_cpu);
 		mcs_lock_unlock_noirq(&ap_syscall_semaphore, &mcs_node);
 	}
 	

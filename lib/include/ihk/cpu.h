@@ -62,6 +62,7 @@ int ihk_mc_get_nr_cores();
 int ihk_mc_get_nr_linux_cores();
 int ihk_mc_get_core(int id, unsigned long *linux_core_id, unsigned long *apic_id,
                     int *numa_id);
+int ihk_mc_get_ikc_cpu(int id);
 int ihk_mc_get_apicid(int linux_core_id);
 
 void ihk_mc_delay_us(int us);

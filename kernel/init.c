@@ -41,9 +41,11 @@
 //#define DEBUG_PRINT_INIT
 
 #ifdef DEBUG_PRINT_INIT
-#define dkprintf kprintf
+#define dkprintf(...) do { kprintf(__VA_ARGS__); } while (0)
+#define ekprintf(...) do { kprintf(__VA_ARGS__); } while (0)
 #else
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
+#define dkprintf(...) do { } while (0)
+#define ekprintf(...) do { kprintf(__VA_ARGS__); } while (0)
 #endif
 
 int osnum = 0;
@@ -360,7 +362,6 @@ extern int num_processors;
 
 static void post_init(void)
 {
-	struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
 	cpu_enable_interrupt();
 
 	while (!host_ikc_inited) {
@@ -369,8 +370,12 @@ static void post_init(void)
 	}
 
 	if (find_command_line("hidos")) {
+		int ikc_cpu = ihk_mc_get_ikc_cpu(ihk_mc_get_processor_id());
+		if(ikc_cpu < 0) {
+			ekprintf("%s,ihk_mc_get_ikc_cpu failed\n", __FUNCTION__);
+		}
 		init_host_ikc2mckernel();
-		init_host_ikc2linux(cpu_info->ikc_cpus[ihk_mc_get_processor_id()]);
+		init_host_ikc2linux(ikc_cpu);
 	}
 
 	arch_setup_vdso();
