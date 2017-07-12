@@ -147,6 +147,12 @@ rusage_num_threads_dec()
 {
 	__sync_sub_and_fetch(&monitor->rusage_num_threads, 1);
 }
+
+static inline unsigned long
+rusage_num_threads_get()
+{
+	return monitor->rusage_num_threads;
+}
 #else
 static inline void
 rusage_total_memory_add(unsigned long size)
@@ -191,6 +197,12 @@ rusage_num_threads_inc()
 static inline void
 rusage_num_threads_dec()
 {
+}
+
+static inline unsigned long
+rusage_num_threads_get()
+{
+	return -1;
 }
 #endif // ENABLE_RUSAGE
 

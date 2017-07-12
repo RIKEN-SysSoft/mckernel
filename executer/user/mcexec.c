@@ -1956,6 +1956,10 @@ int main(int argc, char **argv)
 		n_threads = ncpu;
 	}
 
+	/* Quick fix for #900: Limit the number of clone() */
+	desc->rlimit[MCK_RLIMIT_NPROC].rlim_cur = n_threads;
+	desc->rlimit[MCK_RLIMIT_NPROC].rlim_max = n_threads;
+
 	/* 
 	 * XXX: keep thread_data ncpu sized despite that there are only
 	 * n_threads worker threads in the pool so that signaling code
