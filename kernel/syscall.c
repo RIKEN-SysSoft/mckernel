@@ -2127,7 +2127,6 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 {
 	int cpuid;
 	int parent_cpuid;
-	int nr_threads;
 	struct thread *old = cpu_local_var(current);
 	struct process *oldproc = old->proc;
 	struct process *newproc;
@@ -2172,17 +2171,6 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	if((clone_flags & CLONE_NEWPID) &&
 	   (clone_flags & CLONE_THREAD)){
 		return -EINVAL;
-	}
-
-	/* FIXME: It is not appropriate to enforce rlimit only when rusage is enabled */
-	nr_threads = rusage_num_threads_get();
-	if(nr_threads != -1) {
-		struct rlimit *rlim;
-		rlim = &oldproc->rlimit[MCK_RLIMIT_NPROC];
-		if (nr_threads >= rlim->rlim_cur) {
-			ekprintf("%s,resource limit exceeded,RLIMIT_NPROC=%d,nr_threads=%d\n", __FUNCTION__, rlim->rlim_cur, nr_threads);
-			return -EAGAIN;
-		}
 	}
 
 	cpuid = obtain_clone_cpuid(&old->cpu_set);
