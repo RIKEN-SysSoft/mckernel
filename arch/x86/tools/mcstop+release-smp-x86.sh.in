@@ -121,10 +121,5 @@ if [ "${irqbalance_used}" != "" ]; then
 	fi
 fi
 
-# Re-enable ASLR
-if [ -f /tmp/mckernel_randomize_va_space ]; then
-	cat /tmp/mckernel_randomize_va_space > /proc/sys/kernel/randomize_va_space
-fi
-
 # Set back default swappiness
 echo 60 > /proc/sys/vm/swappiness

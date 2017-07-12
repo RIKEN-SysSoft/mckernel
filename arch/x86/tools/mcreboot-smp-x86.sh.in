@@ -180,11 +180,6 @@ error_exit() {
 			fi
 		fi
 		;&
-	aslr_disabled)
-		if [ -f /tmp/mckernel_randomize_va_space ]; then
-			cat /tmp/mckernel_randomize_va_space > /proc/sys/kernel/randomize_va_space
-		fi
-		;&
 	initial)
 		# Nothing more to revert
 		;;
@@ -236,12 +231,6 @@ if [ "$cpus" == "" ]; then
 	fi
 fi
 
-# Disable address space layout randomization
-if [ -f /proc/sys/kernel/randomize_va_space ] && [ "`cat /proc/sys/kernel/randomize_va_space`" != "0" ]; then
-	cat /proc/sys/kernel/randomize_va_space > /tmp/mckernel_randomize_va_space
-	echo "0" > /proc/sys/kernel/randomize_va_space
-fi
-
 # Remove mcoverlay if loaded
 if [ "$enable_mcoverlay" == "yes" ]; then
 	if grep mcoverlay /proc/modules &>/dev/null; then
@@ -252,7 +241,7 @@ if [ "$enable_mcoverlay" == "yes" ]; then
 		if [ -e /tmp/mcos ]; then rm -rf /tmp/mcos; fi
 		if ! rmmod mcoverlay 2>/dev/null; then
 			echo "error: removing mcoverlay" >&2
-			error_exit "aslr_disabled"
+			exit 1
 		fi
 	fi
 fi
@@ -262,7 +251,7 @@ if [ "${irqbalance_used}" == "yes" ]; then
     systemctl stop irqbalance_mck.service 2>/dev/null
     if ! systemctl stop irqbalance.service 2>/dev/null ; then
 		echo "error: stopping irqbalance" >&2
-		error_exit "aslr_disabled"
+		exit 1
 	fi;
 
     if ! etcdir=@ETCDIR@ perl -e 'use File::Copy qw(copy); $etcdir=$ENV{'etcdir'}; @files = grep { -f } glob "/proc/irq/*/smp_affinity"; foreach $file (@files) { $rel = substr($file, 1); $dir=substr($rel, 0, length($rel)-length("/smp_affinity")); if(0) { print "cp $file $etcdir/$rel\n";} if(system("mkdir -p $etcdir/$dir")){ exit 1;} if(!copy($file,"$etcdir/$rel")){ exit 1;} }'; then

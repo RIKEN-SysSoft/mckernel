@@ -73,6 +73,7 @@
 #include "../../config.h"
 #include <numa.h>
 #include <numaif.h>
+#include <sys/personality.h>
 
 //#define DEBUG
 
@@ -89,6 +90,25 @@
 #define __eprintf(format, ...)  {fprintf(stderr, "%s: " format, __FUNCTION__, \
                                         __VA_ARGS__);fflush(stderr);}
 #endif
+	
+#define CHKANDJUMPF(cond, err, format, ...)								\
+	do {																\
+		if(cond) {														\
+			__eprintf(format, __VA_ARGS__);								\
+			ret = err;													\
+			goto fn_fail;												\
+		}																\
+	} while(0)
+
+#define CHKANDJUMP(cond, err, msg)										\
+	do {																\
+		if(cond) {														\
+			__eprint(msg);												\
+			ret = err;													\
+			goto fn_fail;												\
+		}																\
+	} while(0)
+
 
 #undef DEBUG_UTI
 
@@ -1580,6 +1600,7 @@ opendev()
 
 int main(int argc, char **argv)
 {
+	int ret = 0;
 	struct program_load_desc *desc;
 	int envs_len;
 	char *envs;
@@ -1596,6 +1617,7 @@ int main(int argc, char **argv)
 	char *shell = NULL;
 	char shell_path[1024];
 	int num = 0;
+	int persona;
 
 #ifdef USE_SYSCALL_MOD_CALL
 	__glob_argc = argc;
@@ -1605,6 +1627,26 @@ int main(int argc, char **argv)
 	altroot = getenv("MCEXEC_ALT_ROOT");
 	if (!altroot) {
 		altroot = "/usr/linux-k1om-4.7/linux-k1om";
+	}
+
+	/* Disable address space layout randomization */
+	persona = personality(0xffffffff);
+	__dprintf("persona=%08x\n", persona);
+	if ((persona & (PER_LINUX | ADDR_NO_RANDOMIZE)) == 0) {
+		CHKANDJUMP(getenv("MCEXEC_ADDR_NO_RANDOMIZE"), 1, "personality() and then execv() failed\n");
+
+		persona = personality(persona | PER_LINUX | ADDR_NO_RANDOMIZE);
+		CHKANDJUMPF(persona == -1, 1, "personality failed, persona=%08x, strerror=%s\n", persona, strerror(errno));
+
+		error = setenv("MCEXEC_ADDR_NO_RANDOMIZE", "1", 1);
+		CHKANDJUMP(error == -1, 1, "setenv failed\n");
+
+		error = execv("/proc/self/exe", argv);
+		CHKANDJUMPF(error == -1, 1, "execv failed, error=%d,strerror=%s\n", error, strerror(errno));
+	}
+	if (getenv("MCEXEC_ADDR_NO_RANDOMIZE")) {
+		error = unsetenv("MCEXEC_ADDR_NO_RANDOMIZE");
+		CHKANDJUMP(error == -1, 1, "unsetenv failed");
 	}
 
 	rlim_stack.rlim_cur = MCEXEC_DEF_CUR_STACK_SIZE;
@@ -2119,7 +2161,8 @@ int main(int argc, char **argv)
 
 	join_all_threads();
 
-	return 0;
+ fn_fail:
+	return ret;
 }
 
 
