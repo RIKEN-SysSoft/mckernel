@@ -592,7 +592,7 @@ retry:
 
 	/* Check whether the resolved path is a symlink */
 	if (lstat(path, &sb) == -1) {
-		__dprintf(stderr, "lookup_exec_path(): error stat\n");
+		__eprint("lookup_exec_path(): error stat\n");
 		return errno;
 	}
 
@@ -1736,7 +1736,7 @@ int main(int argc, char **argv)
 	envs_len = flatten_strings(-1, NULL, environ, &envs);
 
 #ifdef ENABLE_MCOVERLAYFS
-	__dprintf("mcoverlay enable\n");
+	__dprint("mcoverlay enable\n");
 	char mcos_procdir[PATH_MAX];
 	char mcos_sysdir[PATH_MAX];
 
@@ -2043,16 +2043,15 @@ int main(int argc, char **argv)
 			/* This call may not succeed, but that is fine */
 			if (sched_setaffinity(0, sizeof(mcexec_cpu_set),
 						&mcexec_cpu_set) < 0) {
-				__dprint("%s: WARNING: couldn't bind to mcexec_cpu_set\n",
-						__FUNCTION__);
+				__dprint("WARNING: couldn't bind to mcexec_cpu_set\n");
 			}
 #ifdef DEBUG
 			else {
 				int i;
 				for (i = 0; i < numa_num_possible_cpus(); ++i) {
 					if (CPU_ISSET(i, &mcexec_cpu_set)) {
-						__dprint("%s: PID %d bound to CPU %d\n",
-							__FUNCTION__, getpid(), i);
+						__dprintf("PID %d bound to CPU %d\n",
+							getpid(), i);
 					}
 				}
 			}
@@ -2061,8 +2060,8 @@ int main(int argc, char **argv)
 		else {
 			/* This call may not succeed, but that is fine */
 			if (numa_run_on_node(mcexec_linux_numa) < 0) {
-				__dprint("%s: WARNING: couldn't bind to NUMA %d\n",
-						__FUNCTION__, mcexec_linux_numa);
+				__dprintf("WARNING: couldn't bind to NUMA %d\n",
+						mcexec_linux_numa);
 			}
 #ifdef DEBUG
 			else {
@@ -2081,8 +2080,8 @@ int main(int argc, char **argv)
 						sprintf(affinity, "%s %d", affinity, i);
 					}
 				}
-				__dprint("%s: PID: %d affinity: %s\n",
-						__FUNCTION__, getpid(), affinity);
+				__dprintf("PID: %d affinity: %s\n",
+						getpid(), affinity);
 			}
 #endif // DEBUG			
 		}
