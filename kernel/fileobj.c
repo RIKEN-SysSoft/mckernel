@@ -689,9 +689,15 @@ static int fileobj_flush_page(struct memobj *memobj, uintptr_t phys,
 		return 0;
 	}
 
+#ifdef POSTK_DEBUG_TEMP_FIX_71 /* fix MF_HOST_RELEASED check in fileobj_flush_page() */
+	if (memobj->flags & MF_HOST_RELEASED) {
+		return 0;
+	}
+#else /* POSTK_DEBUG_TEMP_FIX_71 */
 	if (memobj->flags |= MF_HOST_RELEASED) {
 		return 0;
 	}
+#endif /* POSTK_DEBUG_TEMP_FIX_71 */
 
 	page = phys_to_page(phys);
 	if (!page) {
