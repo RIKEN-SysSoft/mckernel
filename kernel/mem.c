@@ -2230,6 +2230,23 @@ out:
 #endif	/* POSTK_DEBUG_ARCH_DEP_27 */
 
 #ifdef POSTK_DEBUG_TEMP_FIX_52 /* supports NUMA for memory area determination */
+#ifdef IHK_RBTREE_ALLOCATOR
+int is_mckernel_memory(unsigned long phys)
+{
+	int i;
+
+	for (i = 0; i < ihk_mc_get_nr_memory_chunks(); ++i) {
+		unsigned long start, end;
+		int numa_id;
+
+		ihk_mc_get_memory_chunk(i, &start, &end, &numa_id);
+		if (start <= phys && phys < end) {
+			return 1;
+		}
+	}
+	return 0;
+}
+#else /* IHK_RBTREE_ALLOCATOR */
 int is_mckernel_memory(unsigned long phys)
 {
 	int i;
@@ -2246,4 +2263,5 @@ int is_mckernel_memory(unsigned long phys)
 	}
 	return 0;
 }
+#endif /* IHK_RBTREE_ALLOCATOR */
 #endif /* POSTK_DEBUG_TEMP_FIX_52 */
