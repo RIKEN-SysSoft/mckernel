@@ -438,7 +438,12 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 
 	/* -ERESTARTSYS indicates that the proxy process is gone
 	 * and the application should be terminated */
+#ifdef POSTK_DEBUG_TEMP_FIX_70 /* interrupt_syscall returned -ERESTARTSYS fix */
+	if (rc == -ERESTARTSYS && req->number != __NR_exit_group
+		&& req->number != __NR_kill) {
+#else /* POSTK_DEBUG_TEMP_FIX_70 */
 	if (rc == -ERESTARTSYS && req->number != __NR_exit_group) {
+#endif /* POSTK_DEBUG_TEMP_FIX_70 */
 		kprintf("%s: proxy PID %d is dead, terminate()\n",
 			__FUNCTION__, thread->proc->pid);
 		thread->proc->nohost = 1;
