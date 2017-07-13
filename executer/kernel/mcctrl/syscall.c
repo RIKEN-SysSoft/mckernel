@@ -626,10 +626,6 @@ retry_alloc:
 	 * will be matched, is in IRQ context and can't call task_pid_vnr() */
 	wqhln->rtid = task_pid_vnr(current);
 	wqhln->req = 0;
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
-	wqhln->cpu = packet->ref;
-	wqhln->num = 0;
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 	init_waitqueue_head(&wqhln->wq_syscall);
 
 	irqflags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);

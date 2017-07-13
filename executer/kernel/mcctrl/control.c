@@ -1170,25 +1170,10 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 	/* Is there any thread available? */
 	else {
 		list_for_each_entry(wqhln_iter, &ppd->wq_list, list) {
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
-			if (wqhln_iter->task && !wqhln_iter->req) {
-				if (packet->req.number == __NR_setfsgid ||
-					packet->req.number == __NR_setfsuid) {
-					if (wqhln_iter->cpu == packet->ref) {
-						wqhln = wqhln_iter;
-						break;
-					}
-				} else {
-					wqhln = wqhln_iter;
-					break;
-				}
-			}
-#else /* POSTK_DEBUG_TEMP_FIX_45 */
 			if (wqhln_iter->task && !wqhln_iter->req) {
 				wqhln = wqhln_iter;
 				break;
 			}
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 		}
 	}
 
@@ -1204,10 +1189,6 @@ retry_alloc:
 		wqhln = wqhln_alloc;
 		wqhln->req = 0;
 		wqhln->task = NULL;
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
-		wqhln->cpu = packet->ref;
-		wqhln->num = packet->req.number;
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 		init_waitqueue_head(&wqhln->wq_syscall);
 		list_add_tail(&wqhln->list, &ppd->wq_req_list);
 	}
@@ -1234,15 +1215,6 @@ int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 	int ret = 0;
 	unsigned long irqflags;
 	struct mcctrl_per_proc_data *ppd;
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
-	struct syscall_wait_desc swd;
-	int cpu = 0;
-
-	if (copy_from_user(&swd, req, sizeof(swd))) {
-		return -EFAULT;
-	}
-	cpu = swd.cpu;
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 
 	/* Get a reference to per-process structure */
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
@@ -1267,14 +1239,6 @@ retry:
 	/* First see if there is a valid request already that is not yet taken */
 	list_for_each_entry(wqhln_iter, &ppd->wq_req_list, list) {
 		if (wqhln_iter->task == NULL && wqhln_iter->req) {
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
-			if (wqhln_iter->num == __NR_setfsuid ||
-				wqhln_iter->num == __NR_setfsgid) {
-				if (wqhln_iter->cpu != cpu) {
-					continue;
-				}
-			}
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 			wqhln = wqhln_iter;
 			wqhln->task = current;
 			list_del(&wqhln->list);
@@ -1293,10 +1257,6 @@ retry_alloc:
 		wqhln->task = current;
 		wqhln->req = 0;
 		wqhln->packet = NULL;
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
-		wqhln->cpu = cpu;
-		wqhln->num = 0;
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 		init_waitqueue_head(&wqhln->wq_syscall);
 
 		list_add(&wqhln->list, &ppd->wq_list);
@@ -1577,6 +1537,42 @@ mcexec_getcred(unsigned long phys)
 {
 	int	*virt = phys_to_virt(phys);
 
+#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
+	int ret = -EINVAL;
+
+	if (virt[0] == 0 || virt[0] == task_pid_vnr(current)) {
+		virt[0] = GUIDVAL(current_uid());
+		virt[1] = GUIDVAL(current_euid());
+		virt[2] = GUIDVAL(current_suid());
+		virt[3] = GUIDVAL(current_fsuid());
+		virt[4] = GUIDVAL(current_gid());
+		virt[5] = GUIDVAL(current_egid());
+		virt[6] = GUIDVAL(current_sgid());
+		virt[7] = GUIDVAL(current_fsgid());
+
+		ret = 0;
+	} else {
+		const struct task_struct *task_p =
+			pid_task(find_get_pid(virt[0]), PIDTYPE_PID);
+		if (task_p) {
+			const struct cred *t_cred = __task_cred(task_p);
+
+			rcu_read_lock();
+			virt[0] = GUIDVAL(t_cred->uid);
+			virt[1] = GUIDVAL(t_cred->euid);
+			virt[2] = GUIDVAL(t_cred->suid);
+			virt[3] = GUIDVAL(t_cred->fsuid);
+			virt[4] = GUIDVAL(t_cred->gid);
+			virt[5] = GUIDVAL(t_cred->egid);
+			virt[6] = GUIDVAL(t_cred->sgid);
+			virt[7] = GUIDVAL(t_cred->fsgid);
+			rcu_read_unlock();
+
+			ret = 0;
+		}
+	}
+	return ret;
+#else /* POSTK_DEBUG_TEMP_FIX_45 */
 	virt[0] = GUIDVAL(current_uid());
 	virt[1] = GUIDVAL(current_euid());
 	virt[2] = GUIDVAL(current_suid());
@@ -1586,6 +1582,7 @@ mcexec_getcred(unsigned long phys)
 	virt[6] = GUIDVAL(current_sgid());
 	virt[7] = GUIDVAL(current_fsgid());
 	return 0;
+#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 }
 
 int

@@ -195,10 +195,6 @@ struct wait_queue_head_list_node {
 	struct task_struct *task;
 	/* Denotes an exclusive wait for requester TID rtid */
 	int rtid;
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
-	int cpu;
-	int num;
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 	int req;
 	struct ikc_scd_packet *packet;
 };
