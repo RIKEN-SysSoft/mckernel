@@ -102,6 +102,10 @@ init_process(struct process *proc, struct process *parent)
 		proc->mpol_threshold = parent->mpol_threshold;
 		memcpy(proc->rlimit, parent->rlimit,
 		       sizeof(struct rlimit) * MCK_RLIM_MAX);
+#ifdef POSTK_DEBUG_TEMP_FIX_69 /* Fix problem not to inherit parent cpu_set. */
+		memcpy(&proc->cpu_set, &parent->cpu_set,
+		       sizeof(proc->cpu_set));
+#endif /* POSTK_DEBUG_TEMP_FIX_69 */
 	}
 
 #ifdef POSTK_DEBUG_ARCH_DEP_63 /* struct process member initialize add */
