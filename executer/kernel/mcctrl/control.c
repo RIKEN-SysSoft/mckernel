@@ -1337,7 +1337,18 @@ retry_alloc:
 			ret = -EINVAL;;
 			goto put_ppd_out;
 		}
+
+#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
+		if (copy_to_user(&req->cpu, &packet->ref, sizeof(req->cpu))) {
+			if (mcctrl_delete_per_thread_data(ppd, current) < 0) {
+				kprintf("%s: error deleting per-thread data\n", __FUNCTION__);
+			}
+			ret = -EINVAL;
+			goto put_ppd_out;
+		}
+#else /* POSTK_DEBUG_ARCH_DEP_46 */
 		req->cpu = packet->ref;
+#endif /* POSTK_DEBUG_ARCH_DEP_46 */
 
 		ret = 0;
 		goto put_ppd_out;
