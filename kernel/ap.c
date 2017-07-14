@@ -44,8 +44,6 @@ static volatile int ap_stop = 1;
 
 mcs_lock_node_t ap_syscall_semaphore;
 
-extern struct ihk_os_monitor *monitor;
-
 static void ap_wait(void)
 {
 	init_tick();

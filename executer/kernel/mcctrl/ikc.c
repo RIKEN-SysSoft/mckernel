@@ -56,7 +56,7 @@ void sig_done(unsigned long arg, int err);
 void mcctrl_perf_ack(ihk_os_t os, struct ikc_scd_packet *packet);
 void mcctrl_os_read_write_cpu_response(ihk_os_t os,
 		struct ikc_scd_packet *pisp);
-void mcctrl_event_signal(ihk_os_t os, struct ikc_scd_packet *pisp);
+void mcctrl_eventfd(ihk_os_t os, struct ikc_scd_packet *pisp);
 
 /* XXX: this runs in atomic context! */
 static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
@@ -121,8 +121,8 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		mcctrl_os_read_write_cpu_response(__os, pisp);
 		break;
 
-	case SCD_MSG_EVENT_SIGNAL:
-		mcctrl_event_signal(__os, pisp);
+	case SCD_MSG_EVENTFD:
+		mcctrl_eventfd(__os, pisp);
 		break;
 
 	default:
@@ -401,7 +401,7 @@ void destroy_ikc_channels(ihk_os_t os)
 }
 
 void
-mcctrl_event_signal(ihk_os_t os, struct ikc_scd_packet *pisp)
+mcctrl_eventfd(ihk_os_t os, struct ikc_scd_packet *pisp)
 {
-	ihk_os_event_signal(os, 0);
+	ihk_os_eventfd(os, 0);
 }

@@ -255,7 +255,7 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp)
 			if (cpu_local_var(current)->proc->mpol_flags & MPOL_SHM_PREMAP) {
 				/* Get the actual pages NUMA interleaved */
 				for (j = 0; j < nr_pages; ++j) {
-					mo->pages[j] = ihk_mc_alloc_aligned_pages_node(1,
+					mo->pages[j] = ihk_mc_alloc_aligned_pages_node_user(1,
 							PAGE_P2ALIGN, IHK_MC_AP_NOWAIT, node);
 					if (!mo->pages[j]) {
 						kprintf("%s: ERROR: allocating pages[%d]\n",
@@ -373,7 +373,7 @@ static void fileobj_release(struct memobj *memobj)
 					to_memobj(free_obj)->flags);
 			}
 			else if (page_unmap(page)) {
-				ihk_mc_free_pages(page_va, 1);
+				ihk_mc_free_pages_user(page_va, 1);
 			}
 #if 0
 			count = ihk_atomic_sub_return(1, &page->count);
@@ -401,7 +401,7 @@ static void fileobj_release(struct memobj *memobj)
 
 			for (i = 0; i < to_memobj(free_obj)->nr_pages; ++i) {
 				if (to_memobj(free_obj)->pages[i])
-					ihk_mc_free_pages(to_memobj(free_obj)->pages[i], 1);
+					ihk_mc_free_pages_user(to_memobj(free_obj)->pages[i], 1);
 			}
 
 			kfree(to_memobj(free_obj)->pages);
@@ -557,7 +557,7 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 		int page_ind = off >> PAGE_SHIFT;
 
 		if (!memobj->pages[page_ind]) {
-			virt = ihk_mc_alloc_pages(1, IHK_MC_AP_NOWAIT | IHK_MC_AP_USER);
+			virt = ihk_mc_alloc_pages_user(1, IHK_MC_AP_NOWAIT | IHK_MC_AP_USER);
 
 			if (!virt) {
 				error = -ENOMEM;
@@ -572,7 +572,7 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 			 * that if so */
 			if (!__sync_bool_compare_and_swap(&memobj->pages[page_ind],
 						NULL, virt)) {
-				ihk_mc_free_pages(virt, 1);
+				ihk_mc_free_pages_user(virt, 1);
 			}
 			else {
 				dkprintf("%s: MF_ZEROFILL: off: %lu -> 0x%lx allocated\n",
@@ -606,7 +606,7 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 		if (!page) {
 			npages = 1 << p2align;
 
-			virt = ihk_mc_alloc_pages(npages, IHK_MC_AP_NOWAIT |
+			virt = ihk_mc_alloc_pages_user(npages, IHK_MC_AP_NOWAIT |
 					(to_memobj(obj)->flags & MF_ZEROFILL) ? IHK_MC_AP_USER : 0);
 
 			if (!virt) {
@@ -666,7 +666,7 @@ out:
 			&mcs_node);
 out_nolock:
 	if (virt) {
-		ihk_mc_free_pages(virt, npages);
+		ihk_mc_free_pages_user(virt, npages);
 	}
 	if (args) {
 		kfree(args);

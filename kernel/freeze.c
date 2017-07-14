@@ -3,6 +3,7 @@
 #include <ihk/cpu.h>
 #include <ihk/debug.h>
 #include <cls.h>
+#include <rusage.h>
 
 extern int nmi_mode;
 extern void mod_nmi_ctx(void *, void(*)());
@@ -12,7 +13,7 @@ extern void __freeze();
 void
 freeze()
 {
-	struct ihk_os_monitor *monitor = cpu_local_var(monitor);
+	struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
 
 	monitor->status_bak = monitor->status;
 	monitor->status = IHK_OS_MONITOR_KERNEL_FROZEN;
@@ -24,7 +25,7 @@ freeze()
 long
 freeze_thaw(void *nmi_ctx)
 {
-	struct ihk_os_monitor *monitor = cpu_local_var(monitor);
+	struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
 
 	if (nmi_mode == 1) {
 		if (monitor->status != IHK_OS_MONITOR_KERNEL_FROZEN) {

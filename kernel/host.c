@@ -145,7 +145,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 			goto err;
 		}
 
-		if ((up_v = ihk_mc_alloc_pages(range_npages,
+		if ((up_v = ihk_mc_alloc_pages_user(range_npages,
 						IHK_MC_AP_NOWAIT | ap_flags)) == NULL) {
 			kprintf("ERROR: alloc pages for ELF section %i\n", i);
 			goto err;
@@ -163,7 +163,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		if (error) {
 			kprintf("%s: ihk_mc_pt_set_range failed. %d\n",
 					__FUNCTION__, error);
-			ihk_mc_free_pages(up_v, range_npages);
+			ihk_mc_free_pages_user(up_v, range_npages);
 			goto err;
 		}
 
@@ -253,7 +253,8 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	addr = vm->region.map_start - PAGE_SIZE * SCD_RESERVED_COUNT;
 	e = addr + PAGE_SIZE * ARGENV_PAGE_COUNT;
 
-	if((args_envs = ihk_mc_alloc_pages(ARGENV_PAGE_COUNT, IHK_MC_AP_NOWAIT)) == NULL){
+	if((args_envs = ihk_mc_alloc_pages_user(ARGENV_PAGE_COUNT,
+	                                        IHK_MC_AP_NOWAIT)) == NULL){
 		kprintf("ERROR: allocating pages for args/envs\n");
 		goto err;
 	}
@@ -261,7 +262,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 
 	if(add_process_memory_range(vm, addr, e, args_envs_p,
 				flags, NULL, 0, PAGE_SHIFT, NULL) != 0){
-		ihk_mc_free_pages(args_envs, ARGENV_PAGE_COUNT);
+		ihk_mc_free_pages_user(args_envs, ARGENV_PAGE_COUNT);
 		kprintf("ERROR: adding memory range for args/envs\n");
 		goto err;
 	}

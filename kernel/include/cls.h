@@ -28,26 +28,6 @@ struct kmalloc_header {
 	/* 32 bytes */
 };
 
-#define IHK_OS_MONITOR_NOT_BOOT 0
-#define IHK_OS_MONITOR_IDLE 1
-#define IHK_OS_MONITOR_USER 2
-#define IHK_OS_MONITOR_KERNEL 3
-#define IHK_OS_MONITOR_KERNEL_HEAVY 4
-#define IHK_OS_MONITOR_KERNEL_OFFLOAD 5
-#define IHK_OS_MONITOR_KERNEL_FREEZING 8
-#define IHK_OS_MONITOR_KERNEL_FROZEN 9
-#define IHK_OS_MONITOR_KERNEL_THAW 10
-#define IHK_OS_MONITOR_PANIC 99
-
-struct ihk_os_monitor {
-	int status;
-	int status_bak;
-	unsigned long counter;
-	unsigned long ocounter;
-	unsigned long user_tsc;
-	unsigned long system_tsc;
-};
-
 #include <ihk/lock.h>
 #define CPU_STATUS_DISABLE	(0)
 #define CPU_STATUS_IDLE		(1)
@@ -112,7 +92,7 @@ struct cpu_local_var {
 	int no_preempt;
 	int timer_enabled;
 	int kmalloc_initialized;
-	struct ihk_os_monitor *monitor;
+	struct ihk_os_cpu_monitor *monitor;
 
 	ihk_spinlock_t smp_func_req_lock;
 	struct list_head smp_func_req_list;

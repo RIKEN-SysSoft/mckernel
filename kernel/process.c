@@ -68,7 +68,6 @@ extern void procfs_create_thread(struct thread *);
 extern void procfs_delete_thread(struct thread *);
 extern void perf_start(struct mc_perf_event *event);
 extern void perf_reset(struct mc_perf_event *event);
-extern void event_signal();
 
 struct list_head resource_set_list;
 mcs_rwlock_lock_t    resource_set_lock;
@@ -575,7 +574,8 @@ static int copy_user_pte(void *arg0, page_table_t src_pt, pte_t *src_ptep, void 
 		dkprintf("copy_user_pte(): page size: %d\n", pgsize);
 
 		npages = pgsize / PAGE_SIZE;
-		virt = ihk_mc_alloc_aligned_pages(npages, pgalign, IHK_MC_AP_NOWAIT);
+		virt = ihk_mc_alloc_aligned_pages_user(npages, pgalign,
+		                                       IHK_MC_AP_NOWAIT);
 		if (!virt) {
 			kprintf("ERROR: copy_user_pte() allocating new page\n");
 			error = -ENOMEM;
@@ -1393,7 +1393,7 @@ static int remap_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 
 	page = phys_to_page(phys);
 	if (page && page_unmap(page)) {
-		ihk_mc_free_pages(phys_to_virt(phys), pgsize/PAGE_SIZE);
+		ihk_mc_free_pages_user(phys_to_virt(phys), pgsize/PAGE_SIZE);
 	}
 
 	error = 0;
@@ -1678,7 +1678,7 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 
 retry:
 			npages = pgsize / PAGE_SIZE;
-			virt = ihk_mc_alloc_aligned_pages(npages, p2align,
+			virt = ihk_mc_alloc_aligned_pages_user(npages, p2align,
 					IHK_MC_AP_NOWAIT |
 					(range->flag & VR_AP_USER) ? IHK_MC_AP_USER : 0);
 			if (!virt && !range->pgshift && (pgsize != PAGE_SIZE)) {
@@ -1731,7 +1731,8 @@ retry:
 			size_t npages;
 
 			npages = pgsize / PAGE_SIZE;
-			virt = ihk_mc_alloc_aligned_pages(npages, p2align, IHK_MC_AP_NOWAIT);
+			virt = ihk_mc_alloc_aligned_pages_user(npages, p2align,
+			                                      IHK_MC_AP_NOWAIT);
 			if (!virt) {
 				error = -ENOMEM;
 				kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):cannot allocate copy page. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
@@ -1973,7 +1974,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 			__FUNCTION__, size, minsz,
 			ap_flag ? "(IHK_MC_AP_USER)" : "");
 
-	stack = ihk_mc_alloc_aligned_pages(minsz >> PAGE_SHIFT,
+	stack = ihk_mc_alloc_aligned_pages_user(minsz >> PAGE_SHIFT,
 				LARGE_PAGE_P2ALIGN, IHK_MC_AP_NOWAIT | ap_flag);
 
 	if (!stack) {
@@ -1991,7 +1992,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 #define	NOPHYS	((uintptr_t)-1)
 	if ((rc = add_process_memory_range(thread->vm, start, end, NOPHYS,
 					vrflag, NULL, 0, LARGE_PAGE_SHIFT, NULL)) != 0) {
-		ihk_mc_free_pages(stack, minsz >> PAGE_SHIFT);
+		ihk_mc_free_pages_user(stack, minsz >> PAGE_SHIFT);
 		return rc;
 	}
 
@@ -2006,7 +2007,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 		kprintf("init_process_stack:"
 				"set range %lx-%lx %lx failed. %d\n",
 				(end-minsz), end, stack, error);
-		ihk_mc_free_pages(stack, minsz >> PAGE_SHIFT);
+		ihk_mc_free_pages_user(stack, minsz >> PAGE_SHIFT);
 		return error;
 	}
 
@@ -2095,7 +2096,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 		p = 0;
 	}
 	else {
-		p = ihk_mc_alloc_aligned_pages(
+		p = ihk_mc_alloc_aligned_pages_user(
 				(new_end_allocated - end_allocated) >> PAGE_SHIFT,
 				align_p2align, IHK_MC_AP_NOWAIT |
 				(!(vm->proc->mpol_flags & MPOL_NO_HEAP) ? IHK_MC_AP_USER : 0));
@@ -2108,7 +2109,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 	if ((rc = add_process_memory_range(vm, end_allocated, new_end_allocated,
 					(p == 0 ? 0 : virt_to_phys(p)), flag, NULL, 0,
 					align_p2align, NULL)) != 0) {
-		ihk_mc_free_pages(p, (new_end_allocated - end_allocated) >> PAGE_SHIFT);
+		ihk_mc_free_pages_user(p, (new_end_allocated - end_allocated) >> PAGE_SHIFT);
 		return end_allocated;
 	}
 
@@ -2482,7 +2483,7 @@ static void do_migrate(void);
 static void idle(void)
 {
 	struct cpu_local_var *v = get_this_cpu_local_var();
-	struct ihk_os_monitor *monitor = v->monitor;
+	struct ihk_os_cpu_monitor *monitor = v->monitor;
 
 	/* Release runq_lock before starting the idle loop.
 	 * See comments at release_runq_lock().

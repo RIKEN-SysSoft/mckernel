@@ -51,8 +51,10 @@
 int osnum = 0;
 
 extern struct ihk_kmsg_buf kmsg_buf;
-
+extern unsigned long ihk_mc_get_ns_per_tsc(void);
 extern long syscall(int, ihk_mc_user_context_t *);
+
+struct ihk_os_monitor *monitor;
 
 static void handler_init(void)
 {
@@ -242,19 +244,22 @@ static void time_init(void)
 	return;
 }
 
-struct ihk_os_monitor *monitor;
-
 static void monitor_init()
 {
 	int z;
 	unsigned long phys;
 
-	z = sizeof(struct ihk_os_monitor) * num_processors;
+	z = sizeof(struct ihk_os_monitor) +
+	    sizeof(struct ihk_os_cpu_monitor) * num_processors;
 	z = (z + PAGE_SIZE -1) >> PAGE_SHIFT;
 	monitor = ihk_mc_alloc_pages(z, IHK_MC_AP_CRITICAL);
 	memset(monitor, 0, z * PAGE_SIZE);
+	monitor->num_processors = num_processors;
+	monitor->num_numa_nodes = ihk_mc_get_nr_numa_nodes();
+	monitor->ns_per_tsc = ihk_mc_get_ns_per_tsc();
 	phys = virt_to_phys(monitor);
-	ihk_set_monitor(phys, sizeof(struct ihk_os_monitor) * num_processors);
+	ihk_set_monitor(phys, sizeof(struct ihk_os_monitor) +
+	                    sizeof(struct ihk_os_cpu_monitor) * num_processors);
 }
 
 int nmi_mode;
@@ -351,10 +356,6 @@ static void populate_sysfs(void)
 {
 	cpu_sysfs_setup();
 	numa_sysfs_setup();
-#ifdef ENABLE_RUSAGE
-	rusage_sysfs_setup();
-	status_sysfs_setup();
-#endif
 	//setup_remote_snooping_samples();
 } /* populate_sysfs() */
 
@@ -400,18 +401,6 @@ int main(void)
 	char *ptr;
 	int mode = 0;
 
-#ifdef ENABLE_RUSAGE
-	int i;
-	os_status = IHK_STATUS_INACTIVE;
-	rusage_hugetlb_usage = 0;
-	rusage_hugetlb_max_usage = 0;
-	for (i = 0; i < 1024; i++) {
-		rusage_numa_stat[i] = 0;
-	}
-	rusage_rss_current = 0;
-	rusage_rss_max = 0;
-#endif
-
 	ptr = find_command_line("ksyslogd=");
 	if (ptr) {
 	    mode = ptr[9] - 0x30;
@@ -420,9 +409,6 @@ int main(void)
 	kmsg_init(mode);
 
 	kputs("IHK/McKernel started.\n");
-#ifdef ENABLE_RUSAGE
-	os_status = IHK_STATUS_BOOTING;
-#endif
 	ihk_set_kmsg(virt_to_phys(&kmsg_buf), IHK_KMSG_SIZE);
 	arch_init();
 
@@ -445,9 +431,6 @@ int main(void)
 	futex_init();
 
 	kputs("IHK/McKernel booted.\n");
-#ifdef ENABLE_RUSAGE
-	os_status = IHK_STATUS_RUNNING;
-#endif
 
 #ifdef DCFA_KMOD
 	mc_cmd_client_init();

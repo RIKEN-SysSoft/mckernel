@@ -8,7 +8,7 @@ extern struct cpu_local_var *clv;
 void panic(const char *msg)
 {
 	if (clv) {
-		struct ihk_os_monitor *monitor = cpu_local_var(monitor);
+		struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
 
 		monitor->status = IHK_OS_MONITOR_PANIC;
 	}

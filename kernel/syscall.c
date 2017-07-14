@@ -178,7 +178,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	long rc;
 	struct thread *thread = cpu_local_var(current);
 	struct process *proc = thread->proc;
-	struct ihk_os_monitor *monitor = cpu_local_var(monitor);
+	struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
 	int mstatus = 0;
 
 #ifdef PROFILE_ENABLE
@@ -384,8 +384,6 @@ if(req->number == __NR_sched_setaffinity)kprintf("do_syscall 2 offload=%d\n", th
 		thread->proc->nohost = 1;
 		terminate(0, SIGKILL);
 	}
-
-out:
 
 #ifdef PROFILE_ENABLE
 	if (req->number < PROFILE_SYSCALL_MAX) {
@@ -790,6 +788,8 @@ terminate(int rc, int sig)
 	struct syscall_request request IHK_DMA_ALIGN;
 	int exit_status;
 
+kprintf("before terminate usage=%ld\n", monitor->rusage_rss_current);
+kprintf("before terminate systm=%ld\n", monitor->rusage_kmem_usage);
 	// sync perf info
 	if(proc->monitoring_event)
 		sync_child_event(proc->monitoring_event);
@@ -990,6 +990,8 @@ terminate(int rc, int sig)
 	release_thread(mythread);
 	release_process_vm(vm);
 	preempt_enable();
+kprintf("after terminate usage =%ld\n", monitor->rusage_rss_current);
+kprintf("after terminate system=%ld\n", monitor->rusage_kmem_usage);
 	schedule();
 	kprintf("%s: ERROR: returned from terminate() -> schedule()\n", __FUNCTION__);
 	panic("panic");
@@ -1010,14 +1012,14 @@ terminate_host(int pid)
 }
 
 void 
-event_signal()
+eventfd()
 {
 	struct ihk_ikc_channel_desc *syscall_channel;
 	struct ikc_scd_packet pckt;
 
 	syscall_channel = get_cpu_local_var(0)->ikc2linux;
 	memset(&pckt, '\0', sizeof pckt);
-	pckt.msg = SCD_MSG_EVENT_SIGNAL;
+	pckt.msg = SCD_MSG_EVENTFD;
 	ihk_ikc_send(syscall_channel, &pckt, 0);
 }
 
@@ -1353,7 +1355,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 			vrflags |= VR_AP_USER;
 		}
 
-		p = ihk_mc_alloc_aligned_pages(npages, p2align,
+		p = ihk_mc_alloc_aligned_pages_user(npages, p2align,
 				IHK_MC_AP_NOWAIT | ap_flag);
 		if (p == NULL) {
 			dkprintf("%s: warning: failed to allocate %d contiguous pages "
@@ -1508,7 +1510,7 @@ out:
 	}
 
 	if (p) {
-		ihk_mc_free_pages(p, npages);
+		ihk_mc_free_pages_user(p, npages);
 	}
 	if (memobj) {
 		memobj_release(memobj);
@@ -2135,6 +2137,8 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	int ptrace_event = 0;
 	int termsig = clone_flags & 0x000000ff;
 
+kprintf("before fork usage=%ld\n", monitor->rusage_rss_current);
+kprintf("before fork systm=%ld\n", monitor->rusage_kmem_usage);
     dkprintf("do_fork,flags=%08x,newsp=%lx,ptidptr=%lx,ctidptr=%lx,tls=%lx,curpc=%lx,cursp=%lx",
             clone_flags, newsp, parent_tidptr, child_tidptr, tlsblock_base, curpc, cursp);
 
@@ -2385,6 +2389,8 @@ retry_tid:
 	if (ptrace_event) {
 		schedule();
 	}
+kprintf("after fork usage =%ld\n", monitor->rusage_rss_current);
+kprintf("after fork system=%ld\n", monitor->rusage_kmem_usage);
 
 	return new->tid;
 }
@@ -3526,7 +3532,7 @@ SYSCALL_DECLARE(rt_sigtimedwait)
 	int sig;
         struct timespec ats;
         struct timespec ets;
-	struct ihk_os_monitor *monitor = cpu_local_var(monitor);
+	struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
 
 	monitor->status = IHK_OS_MONITOR_KERNEL_HEAVY;
 
@@ -3684,7 +3690,7 @@ do_sigsuspend(struct thread *thread, const sigset_t *set)
 	struct list_head *head;
 	mcs_rwlock_lock_t *lock;
 	struct mcs_rwlock_node_irqsave mcs_rw_node;
-	struct ihk_os_monitor *monitor = cpu_local_var(monitor);
+	struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
 
 	monitor->status = IHK_OS_MONITOR_KERNEL_HEAVY;
 
@@ -4795,7 +4801,7 @@ SYSCALL_DECLARE(futex)
 	uint32_t *uaddr2 = (uint32_t *)ihk_mc_syscall_arg4(ctx);
 	uint32_t val3 = (uint32_t)ihk_mc_syscall_arg5(ctx);
 	int flags = op;
-   	struct ihk_os_monitor *monitor = cpu_local_var(monitor);
+   	struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
 
 	monitor->status = IHK_OS_MONITOR_KERNEL_HEAVY;
  
@@ -6594,7 +6600,7 @@ SYSCALL_DECLARE(nanosleep)
 	struct timespec *tv = (struct timespec *)ihk_mc_syscall_arg0(ctx);
 	struct timespec *rem = (struct timespec *)ihk_mc_syscall_arg1(ctx);
 	struct syscall_request request IHK_DMA_ALIGN;
-	struct ihk_os_monitor *monitor = cpu_local_var(monitor);
+	struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
 
 	monitor->status = IHK_OS_MONITOR_KERNEL_HEAVY;
 
@@ -9185,7 +9191,7 @@ set_cputime(int mode)
 	struct thread *thread;
 	unsigned long tsc;	
 	struct cpu_local_var *v;
-	struct ihk_os_monitor *monitor;
+	struct ihk_os_cpu_monitor *monitor;
 
 	if(clv == NULL)
 		return;

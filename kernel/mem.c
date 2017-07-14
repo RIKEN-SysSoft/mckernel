@@ -74,9 +74,9 @@ static void *___kmalloc(int size, ihk_mc_ap_flag flag);
 static void ___kfree(void *ptr);
 
 static void *___ihk_mc_alloc_aligned_pages_node(int npages,
-		int p2align, ihk_mc_ap_flag flag, int node);
-static void *___ihk_mc_alloc_pages(int npages, ihk_mc_ap_flag flag);
-static void ___ihk_mc_free_pages(void *p, int npages);
+		int p2align, ihk_mc_ap_flag flag, int node, int is_user);
+static void *___ihk_mc_alloc_pages(int npages, ihk_mc_ap_flag flag, int is_user);
+static void ___ihk_mc_free_pages(void *p, int npages, int is_user);
 
 /*
  * Page allocator tracking routines
@@ -157,14 +157,15 @@ struct pagealloc_track_entry *__pagealloc_track_find_entry(
 
 /* Top level routines called from macros */
 void *_ihk_mc_alloc_aligned_pages_node(int npages, int p2align,
-	ihk_mc_ap_flag flag, int node, char *file, int line)
+	ihk_mc_ap_flag flag, int node, int is_user,
+	char *file, int line)
 {
 	unsigned long irqflags;
 	struct pagealloc_track_entry *entry;
 	struct pagealloc_track_addr_entry *addr_entry;
 	int hash, addr_hash;
 	void *r = ___ihk_mc_alloc_aligned_pages_node(npages,
-					p2align, flag, node);
+					p2align, flag, node, is_user);
 
 	if (!memdebug || !pagealloc_track_initialized)
 		return r;
@@ -236,7 +237,8 @@ out:
 	return r;
 }
 
-void _ihk_mc_free_pages(void *ptr, int npages, char *file, int line)
+void _ihk_mc_free_pages(void *ptr, int npages, int is_user,
+                        char *file, int line)
 {
 	unsigned long irqflags;
 	struct pagealloc_track_entry *entry;
@@ -407,7 +409,7 @@ void _ihk_mc_free_pages(void *ptr, int npages, char *file, int line)
 	___kfree(entry);
 
 out:
-	___ihk_mc_free_pages(ptr, npages);
+	___ihk_mc_free_pages(ptr, npages, is_user);
 }
 
 void pagealloc_memcheck(void)
@@ -459,23 +461,24 @@ void pagealloc_memcheck(void)
 
 /* Actual allocation routines */
 static void *___ihk_mc_alloc_aligned_pages_node(int npages, int p2align,
-	ihk_mc_ap_flag flag, int node)
+	ihk_mc_ap_flag flag, int node, int is_user)
 {
 	if (pa_ops)
-		return pa_ops->alloc_page(npages, p2align, flag, node);
+		return pa_ops->alloc_page(npages, p2align, flag, node, is_user);
 	else
 		return early_alloc_pages(npages);
 }
 
-static void *___ihk_mc_alloc_pages(int npages, ihk_mc_ap_flag flag)
+static void *___ihk_mc_alloc_pages(int npages, ihk_mc_ap_flag flag,
+	int is_user)
 {
-	return ___ihk_mc_alloc_aligned_pages_node(npages, PAGE_P2ALIGN, flag, -1);
+	return ___ihk_mc_alloc_aligned_pages_node(npages, PAGE_P2ALIGN, flag, -1, is_user);
 }
 
-static void ___ihk_mc_free_pages(void *p, int npages)
+static void ___ihk_mc_free_pages(void *p, int npages, int is_user)
 {
 	if (pa_ops)
-		pa_ops->free_page(p, npages);
+		pa_ops->free_page(p, npages, is_user);
 }
 
 void ihk_mc_set_page_allocator(struct ihk_mc_pa_ops *ops)
@@ -505,7 +508,7 @@ static void reserve_pages(struct ihk_page_allocator_desc *pa_allocator,
 
 extern int cpu_local_var_initialized;
 static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
-		ihk_mc_ap_flag flag, int pref_node)
+		ihk_mc_ap_flag flag, int pref_node, int is_user)
 {
 	unsigned long pa = 0;
 	int i, node;
@@ -549,7 +552,7 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 						ihk_mc_get_numa_id(),
 						npages, node);
 
-				rusage_numa_add(pref_node, npages * PAGE_SIZE);
+				rusage_page_add(pref_node, npages, is_user);
 
 				return phys_to_virt(pa);
 			}
@@ -595,8 +598,8 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 								ihk_mc_get_numa_id(),
 								npages, node);
 
-						rusage_numa_add(numa_id, 
-						            npages * PAGE_SIZE);
+						rusage_page_add(numa_id, npages,
+						               is_user);
 
 						break;
 					}
@@ -652,7 +655,7 @@ distance_based:
 						ihk_mc_get_numa_id(),
 						npages,
 						memory_nodes[node].nodes_by_distance[i].id);
-				rusage_numa_add(numa_id, npages * PAGE_SIZE);
+				rusage_page_add(numa_id, npages, is_user);
 				break;
 			}
 		}
@@ -679,9 +682,7 @@ order_based:
 			pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
 #endif
 			if (pa) {
-#ifdef ENABLE_RUSAGE
-				rusage_numa_add(numa_id, npages * PAGE_SIZE);
-#endif
+				rusage_page_add(numa_id, npages, is_user);
 				break;
 			}
 		}
@@ -698,7 +699,8 @@ order_based:
 	return NULL;
 }
 
-static void __mckernel_free_pages_in_allocator(void *va, int npages)
+static void __mckernel_free_pages_in_allocator(void *va, int npages,
+                                               int is_user)
 {
 	int i;
 	unsigned long pa_start = virt_to_phys(va);
@@ -715,9 +717,7 @@ static void __mckernel_free_pages_in_allocator(void *va, int npages)
 		}
 
 		ihk_numa_free_pages(&memory_nodes[numa_id], pa_start, npages);
-#ifdef ENABLE_RUSAGE
-		rusage_numa_sub(numa_id, npages * PAGE_SIZE);
-#endif
+		rusage_page_sub(numa_id, npages, is_user);
 		break;
 	}
 #else
@@ -732,9 +732,7 @@ static void __mckernel_free_pages_in_allocator(void *va, int npages)
 			if (pa_start >= pa_allocator->start &&
 					pa_end <= pa_allocator->end) {
 				ihk_pagealloc_free(pa_allocator, pa_start, npages);
-#ifdef ENABLE_RUSAGE
-				rusage_numa_sub(i, npages * PAGE_SIZE);
-#endif
+				rusage_page_sub(i, npages, is_user);
 				return;
 			}
 		}
@@ -743,7 +741,7 @@ static void __mckernel_free_pages_in_allocator(void *va, int npages)
 }
 
 
-static void mckernel_free_pages(void *va, int npages)
+static void mckernel_free_pages(void *va, int npages, int is_user)
 {
 	struct list_head *pendings = &cpu_local_var(pending_free_pages);
 	struct page *page;
@@ -762,7 +760,7 @@ static void mckernel_free_pages(void *va, int npages)
 		}
 	}
 
-	__mckernel_free_pages_in_allocator(va, npages);
+	__mckernel_free_pages_in_allocator(va, npages, is_user);
 }
 
 void begin_free_pages_pending(void) {
@@ -792,7 +790,7 @@ void finish_free_pages_pending(void)
 		page->mode = PM_NONE;
 		list_del(&page->list);
 		__mckernel_free_pages_in_allocator(phys_to_virt(page_to_phys(page)),
-				page->offset);
+				page->offset, IHK_MC_PG_USER);
 	}
 
 	pendings->next = pendings->prev = NULL;
@@ -1193,14 +1191,12 @@ static void numa_init(void)
 				ihk_pagealloc_count(allocator),
 				numa_id);
 #endif
-#ifdef ENABLE_RUSAGE
 #ifdef IHK_RBTREE_ALLOCATOR
-		rusage_max_memory_add(memory_nodes[numa_id].nr_free_pages *
+		rusage_total_memory_add(memory_nodes[numa_id].nr_free_pages *
 				PAGE_SIZE);
 #else
-		rusage_max_memory_add(ihk_pagealloc_count(allocator) *
+		rusage_total_memory_add(ihk_pagealloc_count(allocator) *
 				PAGE_SIZE);
-#endif
 #endif
 	}
 }
@@ -2024,7 +2020,7 @@ split_and_return:
 	npages = (size + sizeof(struct kmalloc_header) + (PAGE_SIZE - 1))
 		>> PAGE_SHIFT;
 	/* Use low-level page allocator to avoid tracking */
-	chunk = ___ihk_mc_alloc_pages(npages, flag);
+	chunk = ___ihk_mc_alloc_pages(npages, flag, IHK_MC_PG_KERNEL);
 
 	if (!chunk) {
 		cpu_restore_interrupt(kmalloc_irq_flags);

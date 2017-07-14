@@ -19,12 +19,12 @@
 #include <ihk/page_alloc.h>
 #include <cls.h>
 #include <page.h>
+#include <rusage.h>
 
 extern int num_processors;
 
 struct cpu_local_var *clv;
 int cpu_local_var_initialized = 0;
-extern struct ihk_os_monitor *monitor;
 
 void cpu_local_var_init(void)
 {
@@ -38,7 +38,7 @@ void cpu_local_var_init(void)
 	memset(clv, 0, z * PAGE_SIZE);
 
 	for (i = 0; i < num_processors; i++) {
-		clv[i].monitor = monitor + i;
+		clv[i].monitor = monitor->cpu + i;
 		INIT_LIST_HEAD(&clv[i].smp_func_req_list);
 	}
 
