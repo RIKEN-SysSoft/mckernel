@@ -373,7 +373,6 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 
 	if(req->number != __NR_exit_group){
 		--thread->in_syscall_offload;
-if(req->number == __NR_sched_setaffinity)kprintf("do_syscall 2 offload=%d\n", thread->in_syscall_offload);
 	}
 
 	/* -ERESTARTSYS indicates that the proxy process is gone
@@ -788,8 +787,6 @@ terminate(int rc, int sig)
 	struct syscall_request request IHK_DMA_ALIGN;
 	int exit_status;
 
-kprintf("before terminate usage=%ld\n", monitor->rusage_rss_current);
-kprintf("before terminate systm=%ld\n", monitor->rusage_kmem_usage);
 	// sync perf info
 	if(proc->monitoring_event)
 		sync_child_event(proc->monitoring_event);
@@ -990,8 +987,6 @@ kprintf("before terminate systm=%ld\n", monitor->rusage_kmem_usage);
 	release_thread(mythread);
 	release_process_vm(vm);
 	preempt_enable();
-kprintf("after terminate usage =%ld\n", monitor->rusage_rss_current);
-kprintf("after terminate system=%ld\n", monitor->rusage_kmem_usage);
 	schedule();
 	kprintf("%s: ERROR: returned from terminate() -> schedule()\n", __FUNCTION__);
 	panic("panic");
@@ -2137,8 +2132,6 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	int ptrace_event = 0;
 	int termsig = clone_flags & 0x000000ff;
 
-kprintf("before fork usage=%ld\n", monitor->rusage_rss_current);
-kprintf("before fork systm=%ld\n", monitor->rusage_kmem_usage);
     dkprintf("do_fork,flags=%08x,newsp=%lx,ptidptr=%lx,ctidptr=%lx,tls=%lx,curpc=%lx,cursp=%lx",
             clone_flags, newsp, parent_tidptr, child_tidptr, tlsblock_base, curpc, cursp);
 
@@ -2389,8 +2382,6 @@ retry_tid:
 	if (ptrace_event) {
 		schedule();
 	}
-kprintf("after fork usage =%ld\n", monitor->rusage_rss_current);
-kprintf("after fork system=%ld\n", monitor->rusage_kmem_usage);
 
 	return new->tid;
 }
@@ -9066,7 +9057,6 @@ util_thread(struct uti_attr *arg)
 		struct uti_attr attr;
 	} kattr;
 
-kprintf("util_thread called\n");
 	context = (volatile unsigned long *)ihk_mc_alloc_pages(1,
 	                                                      IHK_MC_AP_NOWAIT);
 	if (!context) {
