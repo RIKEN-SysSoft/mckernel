@@ -762,10 +762,10 @@ void init_gettime_support(void)
 	uint64_t edx;
 
 	/* Check if Invariant TSC supported.
-	 * Processor’s support for invariant TSC is indicated by
+	 * Processor's support for invariant TSC is indicated by
 	 * CPUID.80000007H:EDX[8].
 	 * See page 2498 of the Intel64 and IA-32 Architectures Software
-	 * Developer’s Manual - combined */
+	 * Developer's Manual - combined */
 
 	op = 0x80000007;
 	asm volatile("cpuid" : "=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx) : "a" (op));

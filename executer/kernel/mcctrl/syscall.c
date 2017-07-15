@@ -1385,8 +1385,8 @@ static int pager_req_write(ihk_os_t os, uintptr_t handle, off_t off, size_t size
 	}
 
 	/*
-	 * XXX: vfs_write 位の階層を使いつつ，
-	 * ファイルサイズ更新を回避する方法ないかな？
+	 * XXX: Find a way to avoid changing the file size
+	 * by using a function in the same abstraction level as vfs_write().
 	 */
 	fsize = i_size_read(file->f_mapping->host);
 	if (off >= fsize) {
@@ -1584,7 +1584,7 @@ static int pager_req_pfn(ihk_os_t os, uintptr_t handle, off_t off, uintptr_t ppf
 
 	va = pager->map_uaddr + (off - pager->map_off);
 #define	PFN_VALID	((uintptr_t)1 << 63)
-	pfn = PFN_VALID;	/* デフォルトは not present */
+	pfn = PFN_VALID;	/* Use "not present" as the default setting */
 
 	down_read(&current->mm->mmap_sem);
 retry:	
