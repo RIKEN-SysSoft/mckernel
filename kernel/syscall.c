@@ -2846,12 +2846,26 @@ SYSCALL_DECLARE(ioctl)
 SYSCALL_DECLARE(open)
 {
 	const char *pathname = (const char *)ihk_mc_syscall_arg0(ctx);
+	int len;
+	char *xpmem_wk;
 	long rc;
 
-	dkprintf("open(): pathname=%s\n", pathname);
-	if (!strcmp(pathname, XPMEM_DEV_PATH)) {
+	len = strlen_user(pathname);
+	if (len < 0)
+		return len;
+	if (!(xpmem_wk = kmalloc(len + 1, IHK_MC_AP_NOWAIT)))
+		return -ENOMEM;
+	if (copy_from_user(xpmem_wk, pathname, len + 1)) {
+		kfree(xpmem_wk);
+		return -EFAULT;
+	}
+	dkprintf("open(): pathname=%s\n", xpmem_wk);
+	rc = strcmp(xpmem_wk, XPMEM_DEV_PATH);
+	kfree(xpmem_wk);
+	if (!rc) {
 		rc = xpmem_open(ctx);
-	} else {
+	}
+	else {
 		rc = syscall_generic_forwarding(__NR_open, ctx);
 	}
 
