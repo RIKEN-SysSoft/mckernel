@@ -895,13 +895,14 @@ terminate(int rc, int sig)
 			list_for_each_entry_safe(child, next,
 					&resource_set->process_hash->list[i],
 					hash_list){
+				int free_child = 0;
 				mcs_rwlock_writer_lock_noirq(&child->update_lock,
 						&updatelock);
 				if(child->ppid_parent == proc &&
 						child->status == PS_ZOMBIE){
 					list_del(&child->hash_list);
 					list_del(&child->siblings_list);
-					kfree(child);
+					free_child = 1;
 				}
 				else if(child->ppid_parent == proc){
 					mcs_rwlock_writer_lock_noirq(&proc->children_lock,
@@ -927,6 +928,8 @@ terminate(int rc, int sig)
 				}
 				mcs_rwlock_writer_unlock_noirq(&child->update_lock,
 						&updatelock);
+				if (free_child)
+					kfree(child);
 			}
 			mcs_rwlock_writer_unlock(&resource_set->process_hash->lock[i],
 					&lock);
