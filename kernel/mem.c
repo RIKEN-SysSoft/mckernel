@@ -1192,8 +1192,7 @@ static void numa_init(void)
 				numa_id);
 #endif
 #ifdef IHK_RBTREE_ALLOCATOR
-		rusage_total_memory_add(memory_nodes[numa_id].nr_free_pages *
-				PAGE_SIZE);
+		rusage_total_memory_add(end - start);
 #else
 		rusage_total_memory_add(ihk_pagealloc_count(allocator) *
 				PAGE_SIZE);
