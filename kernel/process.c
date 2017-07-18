@@ -2002,8 +2002,12 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 
 	/* Create stack range */
 	end = STACK_TOP(&thread->vm->region) & LARGE_PAGE_MASK;
+#ifdef POSTK_DEBUG_ARCH_DEP_80 /* user stack prepage size fix */
+	minsz = LARGE_PAGE_SIZE;
+#else /* POSTK_DEBUG_ARCH_DEP_80 */
 	minsz = (proc->rlimit[MCK_RLIMIT_STACK].rlim_cur
 			+ LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
+#endif /* POSTK_DEBUG_ARCH_DEP_80 */
 	size = (proc->rlimit[MCK_RLIMIT_STACK].rlim_max
 			+ LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
 	dkprintf("%s: rlim_max: %lu, rlim_cur: %lu\n",
