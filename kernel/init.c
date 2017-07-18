@@ -244,10 +244,35 @@ static void time_init(void)
 	return;
 }
 
+#ifdef POSTK_DEBUG_TEMP_FIX_73 /* NULL access for *monitor fix */
+void monitor_init(void)
+#else /* POSTK_DEBUG_TEMP_FIX_73 */
 static void monitor_init()
+#endif /* POSTK_DEBUG_TEMP_FIX_73 */
 {
 	int z;
 	unsigned long phys;
+#ifdef POSTK_DEBUG_TEMP_FIX_73 /* NULL access for *monitor fix */
+	const struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
+
+	if (!cpu_info) {
+		panic("PANIC: in monitor_init() ihk_mc_cpu_info is NULL.");
+		return;
+	}
+
+	z = sizeof(struct ihk_os_monitor) +
+	    sizeof(struct ihk_os_cpu_monitor) * (cpu_info->ncpus - 1);
+	z = (z + PAGE_SIZE -1) >> PAGE_SHIFT;
+	monitor = ihk_mc_alloc_pages(z, IHK_MC_AP_CRITICAL);
+	memset(monitor, 0, z * PAGE_SIZE);
+	monitor->num_processors = (cpu_info->ncpus - 1);
+	monitor->num_numa_nodes = ihk_mc_get_nr_numa_nodes();
+	monitor->ns_per_tsc = ihk_mc_get_ns_per_tsc();
+	phys = virt_to_phys(monitor);
+	ihk_set_monitor(phys, sizeof(struct ihk_os_monitor) +
+	                    sizeof(struct ihk_os_cpu_monitor) * (cpu_info->ncpus - 1));
+	return;
+#else /* POSTK_DEBUG_TEMP_FIX_73 */
 
 	z = sizeof(struct ihk_os_monitor) +
 	    sizeof(struct ihk_os_cpu_monitor) * num_processors;
@@ -260,6 +285,7 @@ static void monitor_init()
 	phys = virt_to_phys(monitor);
 	ihk_set_monitor(phys, sizeof(struct ihk_os_monitor) +
 	                    sizeof(struct ihk_os_cpu_monitor) * num_processors);
+#endif /* POSTK_DEBUG_TEMP_FIX_73 */
 }
 
 int nmi_mode;
@@ -283,7 +309,9 @@ static void rest_init(void)
 	//pc_test();
 
 	ap_init();
+#ifndef POSTK_DEBUG_TEMP_FIX_73 /* NULL access for *monitor fix */
 	monitor_init();
+#endif /* !POSTK_DEBUG_TEMP_FIX_73 */
 	cpu_local_var_init();
 	nmi_init();
 	time_init();

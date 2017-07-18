@@ -1656,8 +1656,14 @@ void ihk_mc_clean_micpa(void){
 }
 #endif
 
+#ifdef POSTK_DEBUG_TEMP_FIX_73 /* NULL access for *monitor fix */
+extern void monitor_init(void);
+#endif /* POSTK_DEBUG_TEMP_FIX_73 */
 void mem_init(void)
 {
+#ifdef POSTK_DEBUG_TEMP_FIX_73 /* NULL access for *monitor fix */
+	monitor_init();
+#endif /* !POSTK_DEBUG_TEMP_FIX_73 */
 	/* Initialize NUMA information and memory allocator bitmaps */
 	numa_init();
 
