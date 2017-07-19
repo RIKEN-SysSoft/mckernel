@@ -2171,26 +2171,18 @@ int copy_from_user(void *dst, const void *src, size_t siz)
 int strlen_user(const char *s)
 {
 	struct process_vm *vm = cpu_local_var(current)->vm;
-	struct vm_range *range;
 	unsigned long pgstart;
 	int maxlen;
 	const char *head = s;
+	int err;
 
 	maxlen = 4096 - (((unsigned long)s) & 0x0000000000000fffUL);
 	pgstart = ((unsigned long)s) & 0xfffffffffffff000UL;
 	if(!pgstart || pgstart >= MAP_KERNEL_START)
 		return -EFAULT;
-	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 	for(;;){
-		range = lookup_process_memory_range(vm, pgstart, pgstart+1);
-		if(range == NULL){
-			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
-			return -EFAULT;
-		}
-		if((range->flag & VR_PROT_MASK) == VR_PROT_NONE){
-			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
-			return -EFAULT;
-		}
+		if ((err = verify_process_vm(vm, s, 1)))
+			return err;
 		while(*s && maxlen > 0){
 			s++;
 			maxlen--;
@@ -2200,14 +2192,12 @@ int strlen_user(const char *s)
 		maxlen = 4096;
 		pgstart += 4096;
 	}
-	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 	return s - head;
 }
 
 int strcpy_from_user(char *dst, const char *src)
 {
 	struct process_vm *vm = cpu_local_var(current)->vm;
-	struct vm_range *range;
 	unsigned long pgstart;
 	int maxlen;
 	int err = 0;
@@ -2216,17 +2206,9 @@ int strcpy_from_user(char *dst, const char *src)
 	pgstart = ((unsigned long)src) & 0xfffffffffffff000UL;
 	if(!pgstart || pgstart >= MAP_KERNEL_START)
 		return -EFAULT;
-	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 	for(;;){
-		range = lookup_process_memory_range(vm, pgstart, pgstart + 1);
-		if(range == NULL){
-			err = -EFAULT;
-			break;
-		}
-		if((range->flag & VR_PROT_MASK) == VR_PROT_NONE){
-			err = -EFAULT;
-			break;
-		}
+		if ((err = verify_process_vm(vm, src, 1)))
+			return err;
 		while(*src && maxlen > 0){
 			*(dst++) = *(src++);
 			maxlen--;
@@ -2238,7 +2220,6 @@ int strcpy_from_user(char *dst, const char *src)
 		maxlen = 4096;
 		pgstart += 4096;
 	}
-	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 	return err;
 }
 
