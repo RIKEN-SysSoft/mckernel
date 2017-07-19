@@ -1150,9 +1150,6 @@ static void numa_init(void)
 		memory_nodes[i].nr_pages = 0;
 		memory_nodes[i].nr_free_pages = 0;
 #endif
-
-		kprintf("NUMA: %d, Linux NUMA: %d, type: %d\n",
-			i, linux_numa_id, type);
 	}
 
 	for (j = 0; j < ihk_mc_get_nr_memory_chunks(); ++j) {
@@ -1179,13 +1176,13 @@ static void numa_init(void)
 #endif
 
 #ifdef IHK_RBTREE_ALLOCATOR
-		kprintf("Physical memory: 0x%lx - 0x%lx, %lu bytes, %d pages available @ NUMA: %d\n",
+		dkprintf("Physical memory: 0x%lx - 0x%lx, %lu bytes, %d pages available @ NUMA: %d\n",
 				start, end,
 				end - start,
 				(end - start) >> PAGE_SHIFT,
 				numa_id);
 #else
-		kprintf("Physical memory: 0x%lx - 0x%lx, %lu bytes, %d pages available @ NUMA: %d\n",
+		dkprintf("Physical memory: 0x%lx - 0x%lx, %lu bytes, %d pages available @ NUMA: %d\n",
 				start, end,
 				ihk_pagealloc_count(allocator) * PAGE_SIZE,
 				ihk_pagealloc_count(allocator),
@@ -1196,6 +1193,19 @@ static void numa_init(void)
 #else
 		rusage_total_memory_add(ihk_pagealloc_count(allocator) *
 				PAGE_SIZE);
+#endif
+	}
+
+	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
+#ifdef IHK_RBTREE_ALLOCATOR
+		kprintf("NUMA: %d, Linux NUMA: %d, type: %d, "
+				"available bytes: %lu, pages: %d\n",
+				i, memory_nodes[i].linux_numa_id, memory_nodes[i].type,
+				memory_nodes[i].nr_free_pages * PAGE_SIZE,
+				memory_nodes[i].nr_free_pages);
+#else
+		kprintf("NUMA: %d, Linux NUMA: %d, type: %d\n",
+				i, memory_nodes[i].linux_numa_id, memory_nodes[i].type);
 #endif
 	}
 }
