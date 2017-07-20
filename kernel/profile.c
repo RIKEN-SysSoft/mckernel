@@ -74,6 +74,7 @@ mcs_lock_node_t job_profile_lock = {0, NULL};
 struct profile_event *job_profile_events = NULL;
 int job_nr_processes = -1;
 int job_nr_processes_left = -1;
+unsigned long job_elapsed_ts;
 
 
 
@@ -111,16 +112,26 @@ void profile_print_thread_stats(struct thread *thread)
 	int i;
 	unsigned long flags;
 
-	if (!thread->profile_events) return;
+	if (!thread->profile_events)
+		return;
+
+	/* Not yet accumulated period? */
+	if (thread->profile_start_ts) {
+		thread->profile_elapsed_ts += (rdtsc() - thread->profile_start_ts);
+	}
 
 	flags = kprintf_lock();
 
+	__kprintf("TID: %4d elapsed cycles (excluding idle): %luk\n",
+			thread->tid,
+			thread->profile_elapsed_ts / 1000);
+
 	for (i = 0; i < PROFILE_SYSCALL_MAX; ++i) {
 		if (!thread->profile_events[i].cnt &&
-				!thread->profile_events[i + PROFILE_SYSCALL_MAX].cnt) 
+				!thread->profile_events[i + PROFILE_SYSCALL_MAX].cnt)
 			continue;
 
-		__kprintf("TID: %4d (%3d,%20s): %6u %6luk offl: %6u %6luk\n",
+		__kprintf("TID: %4d (%3d,%20s): %6u %6luk offl: %6u %6luk (%2d.%2d%%)\n",
 				thread->tid,
 				i,
 				syscall_name[i],
@@ -133,7 +144,13 @@ void profile_print_thread_stats(struct thread *thread)
 				(thread->profile_events[i + PROFILE_SYSCALL_MAX].tsc /
 				 (thread->profile_events[i + PROFILE_SYSCALL_MAX].cnt ?
 				  thread->profile_events[i + PROFILE_SYSCALL_MAX].cnt : 1))
-				/ 1000
+				/ 1000,
+				 (thread->profile_events[i].tsc ?
+				  thread->profile_events[i].tsc * 100
+				  / thread->profile_elapsed_ts : 0),
+				 (thread->profile_events[i].tsc ?
+				  (thread->profile_events[i].tsc * 10000
+				  / thread->profile_elapsed_ts) % 100 : 0)
 				);
 	}
 
@@ -149,7 +166,14 @@ void profile_print_thread_stats(struct thread *thread)
 				(thread->profile_events[i].tsc /
 				 (thread->profile_events[i].cnt ?
 				  thread->profile_events[i].cnt : 1))
-				/ 1000);
+				/ 1000,
+				(thread->profile_events[i].tsc ?
+				 thread->profile_events[i].tsc * 100
+				 / thread->profile_elapsed_ts : 0),
+				(thread->profile_events[i].tsc ?
+				 (thread->profile_events[i].tsc * 10000
+				  / thread->profile_elapsed_ts) % 100 : 0)
+				);
 	}
 
 
@@ -161,16 +185,20 @@ void profile_print_proc_stats(struct process *proc)
 	int i;
 	unsigned long flags;
 
-	if (!proc->profile_events) return;
+	if (!proc->profile_events || !proc->profile_elapsed_ts)
+		return;
 
 	flags = kprintf_lock();
+	__kprintf("PID: %4d elapsed cycles for all threads (excluding idle): %luk\n",
+			proc->pid,
+			proc->profile_elapsed_ts / 1000);
 
 	for (i = 0; i < PROFILE_SYSCALL_MAX; ++i) {
 		if (!proc->profile_events[i].cnt &&
-				!proc->profile_events[i + PROFILE_SYSCALL_MAX].cnt) 
+				!proc->profile_events[i + PROFILE_SYSCALL_MAX].cnt)
 			continue;
 
-		__kprintf("PID: %4d (%3d,%20s): %6u %6luk offl: %6u %6luk\n",
+		__kprintf("PID: %4d (%3d,%20s): %6u %6luk offl: %6u %6luk (%2d.%2d%%)\n",
 				proc->pid,
 				i,
 				syscall_name[i],
@@ -183,7 +211,13 @@ void profile_print_proc_stats(struct process *proc)
 				(proc->profile_events[i + PROFILE_SYSCALL_MAX].tsc /
 				 (proc->profile_events[i + PROFILE_SYSCALL_MAX].cnt ?
 				  proc->profile_events[i + PROFILE_SYSCALL_MAX].cnt : 1))
-				/ 1000
+				/ 1000,
+				(proc->profile_events[i].tsc ?
+				 proc->profile_events[i].tsc * 100
+				 / proc->profile_elapsed_ts : 0),
+				(proc->profile_events[i].tsc ?
+				 (proc->profile_events[i].tsc * 10000
+				  / proc->profile_elapsed_ts) % 100 : 0)
 				);
 	}
 
@@ -199,7 +233,16 @@ void profile_print_proc_stats(struct process *proc)
 				(proc->profile_events[i].tsc /
 				 (proc->profile_events[i].cnt ?
 				  proc->profile_events[i].cnt : 1))
-				/ 1000);
+				/ 1000,
+				(proc->profile_events[i].tsc &&
+				 proc->profile_elapsed_ts ?
+				 proc->profile_events[i].tsc * 100
+				 / proc->profile_elapsed_ts : 0),
+				(proc->profile_events[i].tsc &&
+				 proc->profile_elapsed_ts ?
+				 (proc->profile_events[i].tsc * 10000
+				  / proc->profile_elapsed_ts) % 100 : 0)
+				);
 	}
 
 	kprintf_unlock(flags);
@@ -217,6 +260,7 @@ int profile_accumulate_and_print_job_events(struct process *proc)
 	if (job_nr_processes == -1) {
 		job_nr_processes = proc->nr_processes;
 		job_nr_processes_left = proc->nr_processes;
+		job_elapsed_ts = 0;
 	}
 
 	--job_nr_processes_left;
@@ -248,16 +292,21 @@ int profile_accumulate_and_print_job_events(struct process *proc)
 		proc->profile_events[i].cnt = 0;
 	}
 
+	job_elapsed_ts += proc->profile_elapsed_ts;
+
 	/* Last process? */
 	if (job_nr_processes_left == 0) {
 		flags = kprintf_lock();
+		__kprintf("JOB: (%2d) elapsed cycles for all threads (excluding idle): %luk\n",
+				job_nr_processes,
+				job_elapsed_ts / 1000);
 
 		for (i = 0; i < PROFILE_SYSCALL_MAX; ++i) {
 			if (!job_profile_events[i].cnt &&
 					!job_profile_events[i + PROFILE_SYSCALL_MAX].cnt)
 				continue;
 
-			__kprintf("JOB: (%2d) (%3d,%20s): %6u %6luk offl: %6u %6luk\n",
+			__kprintf("JOB: (%2d) (%3d,%20s): %6u %6luk offl: %6u %6luk (%2d.%2d%%)\n",
 					job_nr_processes,
 					i,
 					syscall_name[i],
@@ -270,7 +319,13 @@ int profile_accumulate_and_print_job_events(struct process *proc)
 					(job_profile_events[i + PROFILE_SYSCALL_MAX].tsc /
 					 (job_profile_events[i + PROFILE_SYSCALL_MAX].cnt ?
 					  job_profile_events[i + PROFILE_SYSCALL_MAX].cnt : 1))
-					/ 1000
+					/ 1000,
+					(job_profile_events[i].tsc ?
+					 job_profile_events[i].tsc * 100
+					 / job_elapsed_ts : 0),
+					(job_profile_events[i].tsc ?
+					 (job_profile_events[i].tsc * 10000
+					  / job_elapsed_ts) % 100 : 0)
 					);
 
 			job_profile_events[i].tsc = 0;
@@ -302,6 +357,7 @@ int profile_accumulate_and_print_job_events(struct process *proc)
 		/* Reset job process indicators */
 		job_nr_processes = -1;
 		job_nr_processes_left = -1;
+		job_elapsed_ts = 0;
 	}
 
 	mcs_lock_unlock(&job_profile_lock, &mcs_node);
@@ -324,6 +380,12 @@ void profile_accumulate_events(struct thread *thread,
 		proc->profile_events[i].cnt += thread->profile_events[i].cnt;
 		thread->profile_events[i].tsc = 0;
 		thread->profile_events[i].cnt = 0;
+	}
+
+	proc->profile_elapsed_ts += thread->profile_elapsed_ts;
+	if (thread->profile_start_ts) {
+		proc->profile_elapsed_ts +=
+			(rdtsc() - thread->profile_start_ts);
 	}
 
 	mcs_lock_unlock(&proc->profile_lock, &mcs_node);
@@ -381,6 +443,7 @@ void profile_dealloc_proc_events(struct process *proc)
 
 void static profile_clear_process(struct process *proc)
 {
+	proc->profile_elapsed_ts = 0;
 	if (!proc->profile_events) return;
 
 	memset(proc->profile_events, 0,
@@ -389,6 +452,8 @@ void static profile_clear_process(struct process *proc)
 
 void static profile_clear_thread(struct thread *thread)
 {
+	thread->profile_start_ts = 0;
+	thread->profile_elapsed_ts = 0;
 	if (!thread->profile_events) return;
 
 	memset(thread->profile_events, 0,
@@ -399,6 +464,7 @@ int do_profile(int flag)
 {
 	struct thread *thread = cpu_local_var(current);
 	struct process *proc = thread->proc;
+	unsigned long now_ts = rdtsc();
 
 	/* Job level? */
 	if (flag & PROF_JOB) {
@@ -444,7 +510,14 @@ int do_profile(int flag)
 				_thread->profile = 1;
 			}
 			else if (flag & PROF_OFF) {
-				_thread->profile = 0;
+				if (_thread->profile) {
+					_thread->profile = 0;
+					if (_thread->profile_start_ts) {
+						_thread->profile_elapsed_ts +=
+							(now_ts - _thread->profile_start_ts);
+					}
+					_thread->profile_start_ts = 0;
+				}
 			}
 		}
 
@@ -460,7 +533,9 @@ int do_profile(int flag)
 
 		/* Make sure future threads profile as well */
 		if (flag & PROF_ON) {
-			proc->profile = 1;
+			if (!proc->profile) {
+				proc->profile = 1;
+			}
 		}
 		else if (flag & PROF_OFF) {
 			proc->profile = 0;
@@ -476,13 +551,28 @@ int do_profile(int flag)
 
 		if (flag & PROF_CLEAR) {
 			profile_clear_thread(thread);
+			/* If profiling, reset start and elapsed */
+			if (thread->profile) {
+				thread->profile_start_ts = 0;
+				thread->profile_elapsed_ts = 0;
+			}
 		}
 
 		if (flag & PROF_ON) {
-			thread->profile = 1;
+			if (!thread->profile) {
+				thread->profile = 1;
+				thread->profile_start_ts = 0;
+			}
 		}
 		else if (flag & PROF_OFF) {
-			thread->profile = 0;
+			if (thread->profile) {
+				thread->profile = 0;
+				if (thread->profile_start_ts) {
+					thread->profile_elapsed_ts +=
+						(now_ts - thread->profile_start_ts);
+				}
+				thread->profile_start_ts = 0;
+			}
 		}
 	}
 

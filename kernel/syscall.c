@@ -9307,15 +9307,20 @@ set_cputime(int mode)
 long syscall(int num, ihk_mc_user_context_t *ctx)
 {
 	long l;
-#ifdef PROFILE_ENABLE
-	uint64_t t_s;
-#endif // PROFILE_ENABLE
 	struct thread *thread = cpu_local_var(current);
 
 #ifdef DISABLE_SCHED_YIELD
 	if (num != __NR_sched_yield)
 #endif // DISABLE_SCHED_YIELD
 		set_cputime(1);
+
+#ifdef PROFILE_ENABLE
+	if (thread->profile && thread->profile_start_ts) {
+		unsigned long ts = rdtsc();
+		thread->profile_elapsed_ts += (ts - thread->profile_start_ts);
+		thread->profile_start_ts = ts;
+	}
+#endif // PROFILE_ENABLE
 
 	if(cpu_local_var(current)->proc->status == PS_EXITED &&
 	   (num != __NR_exit && num != __NR_exit_group)){
@@ -9356,10 +9361,6 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 #endif
     dkprintf("\n");
 
-#ifdef PROFILE_ENABLE
-	t_s = rdtsc();
-#endif // PROFILE_ENABLE
-
 	if ((0 <= num) && (num < (sizeof(syscall_table) / sizeof(syscall_table[0])))
 			&& (syscall_table[num] != NULL)) {
 		l = syscall_table[num](num, ctx);
@@ -9381,13 +9382,22 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	}
 
 #ifdef PROFILE_ENABLE
-	if (num < PROFILE_SYSCALL_MAX) {
-		profile_event_add(num, (rdtsc() - t_s));
-	}
-	else {
-		if (num != __NR_profile) {
-			dkprintf("%s: syscall > %d ?? : %d\n",
-					__FUNCTION__, PROFILE_SYSCALL_MAX, num);
+	if (thread->profile) {
+		unsigned long ts = rdtsc();
+
+		/*
+		 * futex_wait() and schedule() will internally reset
+		 * thread->profile_start_ts so that actual wait time
+		 * is not accounted for.
+		 */
+		if (num < PROFILE_SYSCALL_MAX) {
+			profile_event_add(num, (ts - thread->profile_start_ts));
+		}
+		else {
+			if (num != __NR_profile) {
+				dkprintf("%s: syscall > %d ?? : %d\n",
+						__FUNCTION__, PROFILE_SYSCALL_MAX, num);
+			}
 		}
 	}
 #endif // PROFILE_ENABLE

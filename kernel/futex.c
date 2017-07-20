@@ -788,6 +788,15 @@ static int futex_wait(uint32_t __user *uaddr, int fshared,
 	if (!bitset)
 		return -EINVAL;
 
+#ifdef PROFILE_ENABLE
+	if (cpu_local_var(current)->profile &&
+			cpu_local_var(current)->profile_start_ts) {
+		cpu_local_var(current)->profile_elapsed_ts +=
+			(rdtsc() - cpu_local_var(current)->profile_start_ts);
+		cpu_local_var(current)->profile_start_ts = 0;
+	}
+#endif
+
 	q.bitset = bitset;
 	q.requeue_pi_key = NULL;
 
@@ -822,6 +831,11 @@ retry:
 out_put_key:
 	put_futex_key(fshared, &q.key);
 out:
+#ifdef PROFILE_ENABLE
+	if (cpu_local_var(current)->profile) {
+		cpu_local_var(current)->profile_start_ts = rdtsc();
+	}
+#endif
 	return ret;
 }
 

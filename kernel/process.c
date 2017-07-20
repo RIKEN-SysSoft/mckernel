@@ -2966,6 +2966,19 @@ redo:
 				perf_start(next->proc->monitoring_event);
 			}
 		}
+
+#ifdef PROFILE_ENABLE
+		if (prev->profile && prev->profile_start_ts != 0) {
+			prev->profile_elapsed_ts +=
+				(rdtsc() - prev->profile_start_ts);
+			prev->profile_start_ts = 0;
+		}
+
+		if (next->profile && next->profile_start_ts == 0) {
+			next->profile_start_ts = rdtsc();
+		}
+#endif
+
 		if (prev) {
 			last = ihk_mc_switch_context(&prev->ctx, &next->ctx, prev);
 		}
