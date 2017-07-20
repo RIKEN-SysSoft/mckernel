@@ -970,6 +970,9 @@ void remote_flush_tlb_cpumask(struct process_vm *vm,
 
 void tlb_flush_handler(int vector)
 {
+#ifdef PROFILE_ENABLE
+	unsigned long t_s = rdtsc();
+#endif // PROFILE_ENABLE
 	int flags = cpu_disable_interrupt_save();
 
 	struct tlb_flush_entry *flush_entry = &tlb_flush_vector[vector - 
@@ -992,6 +995,15 @@ void tlb_flush_handler(int vector)
 	}
 	
 	cpu_restore_interrupt(flags);
+#ifdef PROFILE_ENABLE
+	{
+		unsigned long t_e = rdtsc();
+		profile_event_add(PROFILE_tlb_invalidate, (t_e - t_s));
+		if (cpu_local_var(current)->profile)
+			cpu_local_var(current)->profile_elapsed_ts +=
+				(t_e - t_s);
+	}
+#endif // PROFILE_ENABLE
 }
 
 static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)

@@ -57,6 +57,7 @@ extern char *syscall_name[];
 
 char *profile_event_names[] =
 {
+	"remote_tlb_invalidate",
 	"page_fault",
 	"page_fault_anon_clr_mem",
 	"page_fault_file",
