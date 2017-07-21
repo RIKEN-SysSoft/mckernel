@@ -1256,8 +1256,11 @@ create_worker_thread(pthread_barrier_t *init_ready)
 	struct thread_data_s *tp;
 
 	tp = malloc(sizeof(struct thread_data_s));
-	if (!tp)
+	if (!tp) {
+		fprintf(stderr, "%s: error: allocating thread structure\n",
+			__FUNCTION__);
 		return ENOMEM;
+	}
 	memset(tp, '\0', sizeof(struct thread_data_s));
 	tp->cpu = max_cpuid++;
 	tp->lock = &lock;
@@ -1270,7 +1273,7 @@ create_worker_thread(pthread_barrier_t *init_ready)
 	                      &main_loop_thread_func, tp);
 }
 
-void init_worker_threads(int fd) 
+int init_worker_threads(int fd)
 {
 	int i;
 
@@ -1282,12 +1285,13 @@ void init_worker_threads(int fd)
 		int ret = create_worker_thread(&init_ready);
 
 		if (ret) {
-			printf("ERROR: creating syscall threads(%d)\n", ret);
-			exit(1);
+			printf("ERROR: creating syscall threads (%d), check ulimit?\n", ret);
+			return ret;
 		}
 	}
 
 	pthread_barrier_wait(&init_ready);
+	return 0;
 }
 
 #ifdef ENABLE_MCOVERLAYFS
@@ -2150,7 +2154,11 @@ int main(int argc, char **argv)
 
 	init_sigaction();
 
-	init_worker_threads(fd);
+	if (init_worker_threads(fd) < 0) {
+		perror("worker threads: ");
+		close(fd);
+		return 1;
+	}
 
 	if (ioctl(fd, MCEXEC_UP_START_IMAGE, (unsigned long)desc) != 0) {
 		perror("exec");
@@ -3062,7 +3070,22 @@ gettid_out:
 					goto fork_child_sync_pipe;
 				}
 
-				init_worker_threads(fd);
+				/* Check if we need to limit number of threads in the pool */
+				if ((ret = ioctl(fd, MCEXEC_UP_GET_NUM_POOL_THREADS)) < 0) {
+					fprintf(stderr, "Error: obtaining thread pool count\n");
+				}
+
+				/* Limit number of threads */
+				if (ret == 1) {
+					n_threads = 4;
+				}
+
+				ret = 0;
+				if (init_worker_threads(fd) < 0) {
+					perror("worker threads: ");
+					close(fd);
+					ret = -1;
+				}
 
 fork_child_sync_pipe:
 				sem_post(&fs->sem);

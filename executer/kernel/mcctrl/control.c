@@ -898,6 +898,54 @@ put_and_unlock_out:
 	return ret;
 }
 
+#define THREAD_POOL_PER_CPU_THRESHOLD	(128)
+
+int mcctrl_get_num_pool_threads(ihk_os_t os)
+{
+	struct mcctrl_usrdata *ud = ihk_host_os_get_usrdata(os);
+	struct mcctrl_per_proc_data *ppd = NULL;
+	int hash;
+	unsigned long flags;
+	int nr_threads = 0;
+
+	if (!ud) {
+		return -EINVAL;
+	}
+
+	for (hash = 0; hash < MCCTRL_PER_PROC_DATA_HASH_SIZE; ++hash) {
+
+		read_lock_irqsave(&ud->per_proc_data_hash_lock[hash], flags);
+
+		list_for_each_entry(ppd, &ud->per_proc_data_hash[hash], hash) {
+			struct pid *vpid;
+			struct task_struct *ppd_task;
+
+			vpid = find_vpid(ppd->pid);
+			if (!vpid) {
+				printk("%s: WARNING: couldn't find vpid with PID number %d?\n",
+					__FUNCTION__, ppd->pid);
+				continue;
+			}
+
+			ppd_task = get_pid_task(vpid, PIDTYPE_PID);
+			if (!ppd_task) {
+				printk("%s: WARNING: couldn't find task with PID %d?\n",
+					__FUNCTION__, ppd->pid);
+				continue;
+			}
+
+			nr_threads += get_nr_threads(ppd_task);
+			put_task_struct(ppd_task);
+		}
+
+		read_unlock_irqrestore(&ud->per_proc_data_hash_lock[hash], flags);
+	}
+
+	dprintk("%s: nr_threads: %d, num_online_cpus: %d\n",
+		__FUNCTION__, nr_threads, num_online_cpus());
+	return (nr_threads > (num_online_cpus() * THREAD_POOL_PER_CPU_THRESHOLD));
+}
+
 int mcctrl_add_per_proc_data(struct mcctrl_usrdata *ud, int pid, 
 	struct mcctrl_per_proc_data *ppd)
 {
@@ -2371,6 +2419,9 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 
 	case MCEXEC_UP_TERMINATE_THREAD:
 		return mcexec_terminate_thread(os, (unsigned long *)arg, file);
+
+	case MCEXEC_UP_GET_NUM_POOL_THREADS:
+		return mcctrl_get_num_pool_threads(os);
 
 	case MCEXEC_UP_COPY_FROM_MCK:
 		return mcexec_copy_from_mck(os, (unsigned long *)arg);
