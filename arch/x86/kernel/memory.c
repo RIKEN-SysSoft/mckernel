@@ -1077,7 +1077,26 @@ struct clear_range_args {
 	int free_physical;
 	struct memobj *memobj;
 	struct process_vm *vm;
+	unsigned long *addr;
+	int nr_addr;
+	int max_nr_addr;
 };
+
+static void remote_flush_tlb_add_addr(struct clear_range_args *args,
+		unsigned long addr)
+{
+	if (args->nr_addr < args->max_nr_addr) {
+		args->addr[args->nr_addr] = addr;
+		++args->nr_addr;
+		return;
+	}
+
+	remote_flush_tlb_array_cpumask(args->vm, args->addr, args->nr_addr,
+			ihk_mc_get_processor_id());
+
+	args->addr[0] = addr;
+	args->nr_addr = 1;
+}
 
 static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 		uint64_t start, uint64_t end)
@@ -1092,7 +1111,7 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 	}
 
 	old = xchg(ptep, PTE_NULL);
-	remote_flush_tlb_cpumask(args->vm, base, ihk_mc_get_processor_id());
+	remote_flush_tlb_add_addr(args, base);
 
 	page = NULL;
 	if (!pte_is_fileoff(&old, PTL1_SIZE)) {
@@ -1141,8 +1160,7 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
 
 	if (*ptep & PFL2_SIZE) {
 		old = xchg(ptep, PTE_NULL);
-		remote_flush_tlb_cpumask(args->vm, base,
-				ihk_mc_get_processor_id());
+		remote_flush_tlb_add_addr(args, base);
 
 		page = NULL;
 		if (!pte_is_fileoff(&old, PTL2_SIZE)) {
@@ -1174,8 +1192,7 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
 
 	if ((start <= base) && ((base + PTL2_SIZE) <= end)) {
 		*ptep = PTE_NULL;
-		remote_flush_tlb_cpumask(args->vm, base,
-				ihk_mc_get_processor_id());
+		remote_flush_tlb_add_addr(args, base);
 		ihk_mc_free_pages(pt, 1);
 	}
 
@@ -1207,8 +1224,7 @@ static int clear_range_l3(void *args0, pte_t *ptep, uint64_t base,
 
 	if (*ptep & PFL3_SIZE) {
 		old = xchg(ptep, PTE_NULL);
-		remote_flush_tlb_cpumask(args->vm, base,
-				ihk_mc_get_processor_id());
+		remote_flush_tlb_add_addr(args, base);
 
 		page = NULL;
 		if (!pte_is_fileoff(&old, PTL3_SIZE)) {
@@ -1239,8 +1255,7 @@ static int clear_range_l3(void *args0, pte_t *ptep, uint64_t base,
 
 	if (use_1gb_page && (start <= base) && ((base + PTL3_SIZE) <= end)) {
 		*ptep = PTE_NULL;
-		remote_flush_tlb_cpumask(args->vm, base,
-				ihk_mc_get_processor_id());
+		remote_flush_tlb_add_addr(args, base);
 		ihk_mc_free_pages(pt, 1);
 	}
 
@@ -1260,8 +1275,10 @@ static int clear_range_l4(void *args0, pte_t *ptep, uint64_t base,
 	return walk_pte_l3(pt, base, start, end, &clear_range_l3, args0);
 }
 
-static int clear_range(struct page_table *pt, struct process_vm *vm, 
-		uintptr_t start, uintptr_t end, int free_physical, 
+#define TLB_INVALID_ARRAY_PAGES	(4)
+
+static int clear_range(struct page_table *pt, struct process_vm *vm,
+		uintptr_t start, uintptr_t end, int free_physical,
 		struct memobj *memobj)
 {
 	int error;
@@ -1276,6 +1293,17 @@ static int clear_range(struct page_table *pt, struct process_vm *vm,
 		return -EINVAL;
 	}
 
+	/* TODO: embedd this in tlb_flush_entry? */
+	args.addr = (unsigned long *)ihk_mc_alloc_pages(
+			TLB_INVALID_ARRAY_PAGES, IHK_MC_AP_CRITICAL);
+	if (!args.addr) {
+		ekprintf("%s: error: allocating address array\n", __FUNCTION__);
+		return -ENOMEM;
+	}
+	args.nr_addr = 0;
+	args.max_nr_addr = (TLB_INVALID_ARRAY_PAGES * PAGE_SIZE /
+			sizeof(uint64_t));
+
 	args.free_physical = free_physical;
 	if (memobj && (memobj->flags & MF_DEV_FILE)) {
 		args.free_physical = 0;
@@ -1287,6 +1315,13 @@ static int clear_range(struct page_table *pt, struct process_vm *vm,
 	args.vm = vm;
 
 	error = walk_pte_l4(pt, 0, start, end, &clear_range_l4, &args);
+	if (args.nr_addr) {
+		remote_flush_tlb_array_cpumask(vm, args.addr, args.nr_addr,
+				ihk_mc_get_processor_id());
+	}
+
+	ihk_mc_free_pages(args.addr, TLB_INVALID_ARRAY_PAGES);
+
 	return error;
 }
 

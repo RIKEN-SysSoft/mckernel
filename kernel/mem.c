@@ -885,86 +885,98 @@ void coredump(struct thread *thread, void *regs)
 	freecore(&coretable);
 }
 
-void remote_flush_tlb_cpumask(struct process_vm *vm, 
+void remote_flush_tlb_cpumask(struct process_vm *vm,
 		unsigned long addr, int cpu_id)
+{
+	unsigned long __addr = addr;
+	return remote_flush_tlb_array_cpumask(vm, &__addr, 1, cpu_id);
+}
+
+void remote_flush_tlb_array_cpumask(struct process_vm *vm,
+		unsigned long *addr,
+		int nr_addr,
+		int cpu_id)
 {
 	unsigned long cpu;
 	int flush_ind;
 	struct tlb_flush_entry *flush_entry;
 	cpu_set_t _cpu_set;
 
-	if (addr) {
-		flush_ind = (addr >> PAGE_SHIFT) % IHK_TLB_FLUSH_IRQ_VECTOR_SIZE;
+	if (addr[0]) {
+		flush_ind = (addr[0] >> PAGE_SHIFT) % IHK_TLB_FLUSH_IRQ_VECTOR_SIZE;
 	}
 	/* Zero address denotes full TLB flush */
-	else {	
+	else {
 		/* Random.. */
 		flush_ind = (rdtsc()) % IHK_TLB_FLUSH_IRQ_VECTOR_SIZE;
 	}
-	
-	flush_entry = &tlb_flush_vector[flush_ind]; 
+
+	flush_entry = &tlb_flush_vector[flush_ind];
 
 	/* Take a copy of the cpu set so that we don't hold the lock
 	 * all the way while interrupting other cores */
 	ihk_mc_spinlock_lock_noirq(&vm->address_space->cpu_set_lock);
 	memcpy(&_cpu_set, &vm->address_space->cpu_set, sizeof(cpu_set_t));
 	ihk_mc_spinlock_unlock_noirq(&vm->address_space->cpu_set_lock);
-	
+
 	dkprintf("trying to aquire flush_entry->lock flush_ind: %d\n", flush_ind);
-	
+
 	ihk_mc_spinlock_lock_noirq(&flush_entry->lock);
 
 	flush_entry->vm = vm;
 	flush_entry->addr = addr;
+	flush_entry->nr_addr = nr_addr;
 	ihk_atomic_set(&flush_entry->pending, 0);
 
 	dkprintf("lock aquired, iterating cpu mask.. flush_ind: %d\n", flush_ind);
-	
+
 	/* Loop through CPUs in this address space and interrupt them for
 	 * TLB flush on the specified address */
 	for_each_set_bit(cpu, (const unsigned long*)&_cpu_set.__bits, CPU_SETSIZE) {
-		
-		if (ihk_mc_get_processor_id() == cpu) 
+
+		if (ihk_mc_get_processor_id() == cpu)
 			continue;
 
 		ihk_atomic_inc(&flush_entry->pending);
 		dkprintf("remote_flush_tlb_cpumask: flush_ind: %d, addr: 0x%lX, interrupting cpu: %d\n",
 		        flush_ind, addr, cpu);
 
-		ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpu)->apic_id, 
+		ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpu)->apic_id,
 		                     flush_ind + IHK_TLB_FLUSH_IRQ_VECTOR_START);
 	}
-	
+
 #ifdef DEBUG_IC_TLB
 	{
 		unsigned long tsc;
 		tsc = rdtsc() + 12884901888;  /* 1.2GHz =>10 sec */
 #endif
-		if (flush_entry->addr) {
-			flush_tlb_single(flush_entry->addr & PAGE_MASK);
+		if (flush_entry->addr[0]) {
+			int i;
+
+			for (i = 0; i < flush_entry->nr_addr; ++i) {
+				flush_tlb_single(flush_entry->addr[i] & PAGE_MASK);
+			}
 		}
 		/* Zero address denotes full TLB flush */
 		else {
 			flush_tlb();
 		}
 
-		/* Flush on this core */
-		flush_tlb_single(addr & PAGE_MASK);
 		/* Wait for all cores */
 		while (ihk_atomic_read(&flush_entry->pending) != 0) {
 			cpu_pause();
 
 #ifdef DEBUG_IC_TLB
 			if (rdtsc() > tsc) {
-				kprintf("waited 10 secs for remote TLB!! -> panic_all()\n"); 
-				panic_all_cores("waited 10 secs for remote TLB!!\n"); 
+				kprintf("waited 10 secs for remote TLB!! -> panic_all()\n");
+				panic_all_cores("waited 10 secs for remote TLB!!\n");
 			}
 #endif
 		}
 #ifdef DEBUG_IC_TLB
 	}
 #endif
-	
+
 	ihk_mc_spinlock_unlock_noirq(&flush_entry->lock);
 }
 
@@ -975,25 +987,27 @@ void tlb_flush_handler(int vector)
 #endif // PROFILE_ENABLE
 	int flags = cpu_disable_interrupt_save();
 
-	struct tlb_flush_entry *flush_entry = &tlb_flush_vector[vector - 
+	struct tlb_flush_entry *flush_entry = &tlb_flush_vector[vector -
 		IHK_TLB_FLUSH_IRQ_VECTOR_START];
-	
-	dkprintf("decreasing pending cnt for %d\n", 
-			vector - IHK_TLB_FLUSH_IRQ_VECTOR_START);
 
-	/* Decrease counter */
-	ihk_atomic_dec(&flush_entry->pending);
+	if (flush_entry->addr[0]) {
+		int i;
 
-	dkprintf("flusing TLB for addr: 0x%lX\n", flush_entry->addr);
-		
-	if (flush_entry->addr) {
-		flush_tlb_single(flush_entry->addr & PAGE_MASK);	
+		for (i = 0; i < flush_entry->nr_addr; ++i) {
+			flush_tlb_single(flush_entry->addr[i] & PAGE_MASK);
+			dkprintf("flusing TLB for addr: 0x%lX\n", flush_entry->addr[i]);
+		}
 	}
 	/* Zero address denotes full TLB flush */
 	else {
 		flush_tlb();
 	}
-	
+
+	/* Decrease counter */
+	dkprintf("decreasing pending cnt for %d\n",
+			vector - IHK_TLB_FLUSH_IRQ_VECTOR_START);
+	ihk_atomic_dec(&flush_entry->pending);
+
 	cpu_restore_interrupt(flags);
 #ifdef PROFILE_ENABLE
 	{

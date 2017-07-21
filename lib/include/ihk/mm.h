@@ -215,6 +215,10 @@ int ihk_mc_get_memory_chunk(int id,
 
 void remote_flush_tlb_cpumask(struct process_vm *vm, 
 		unsigned long addr, int cpu_id);
+void remote_flush_tlb_array_cpumask(struct process_vm *vm,
+		unsigned long *addr,
+		int nr_addr,
+		int cpu_id);
 
 int ihk_set_kmsg(unsigned long addr, unsigned long size);
 char *ihk_get_kargs();
@@ -226,7 +230,8 @@ extern void (*__tlb_flush_handler)(int vector);
 
 struct tlb_flush_entry {
 	struct process_vm *vm;
-	unsigned long addr;
+	unsigned long *addr;
+	int nr_addr;
 	ihk_atomic_t pending;
 	ihk_spinlock_t lock;
 } __attribute__((aligned(64)));
