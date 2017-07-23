@@ -1,22 +1,33 @@
 CC=@CC@
+MCC=mpicc
 BINDIR=@BINDIR@
+SBINDIR=@SBINDIR@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 LIBDIR=@libdir@
+MCKERNEL_INCDIR=@MCKERNEL_INCDIR@
 MCKERNEL_LIBDIR=@MCKERNEL_LIBDIR@
 KDIR ?= @KDIR@
 CFLAGS=-Wall -O -I. -I$(VPATH)/arch/${ARCH}
+LDFLAGS=@LDFLAGS@
 VPATH=@abs_srcdir@
 TARGET=mcexec libsched_yield
 @uncomment_if_ENABLE_MEMDUMP@TARGET+=eclair
 LIBS=@LIBS@
 ARCH=@ARCH@
 IHKDIR ?= $(VPATH)/../../../ihk/linux/include/
+MCEXEC_LIBS=-lmcexec -lrt -lnuma -pthread
+ENABLE_QLMPI=@ENABLE_QLMPI@
+
+ifeq ($(ENABLE_QLMPI),yes)
+	MCEXEC_LIBS += -lmpi
+	TARGET+= libqlmpi.so ql_server ql_mpiexec_start ql_mpiexec_finalize ql_talker libqlfort.so
+endif
 
 all: $(TARGET)
 
 mcexec: mcexec.c libmcexec.a
-	$(CC) -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) -DLIBDIR=\"$(LIBDIR)\" -fPIE -pie -L. -lmcexec -lrt -lnuma -pthread -o $@ $^ $(EXTRA_OBJS)
+	$(CC) -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) $(LDFLAGS) -DLIBDIR=\"$(LIBDIR)\" -fPIE -pie -L. $(MCEXEC_LIBS) -o $@ $^ $(EXTRA_OBJS)
 
 eclair: eclair.c
 	$(CC) $(CFLAGS) -I${IHKDIR} -o $@ $^ $(LIBS)
@@ -26,6 +37,27 @@ libsched_yield: libsched_yield.c
 
 libmcexec.a::
 	(cd arch/${ARCH}; make)
+
+libqlmpi.so: qlmpilib.c
+	$(MCC) $(CFLAGS) $(LDFLAGS) -shared -fPIC -o $@ $<
+
+libqlfort.so: libqlfort.c
+	$(MCC) $(CFLAGS) $(LDFLAGS) -shared -fPIC -o $@ $< -ldl
+
+ql_server: ql_server.c
+	$(CC) $(CFLAGS) -o $@ $^ 
+
+ql_mpiexec_start: ql_mpiexec_start.o md5.o
+	$(CC) $^ $(CFLAGS) -pthread -o $@
+
+ql_mpiexec_finalize.o: ql_mpiexec_start.c
+	$(CC) $(CFLAGS) -DQL_MPIEXEC_FINALIZE -c -o $@ $<
+
+ql_mpiexec_finalize: ql_mpiexec_finalize.o md5.o
+	$(CC) $^ $(CFLAGS) -pthread -o $@
+
+ql_talker: ql_talker.o
+	$(CC) $^ $(CFLAGS) -o $@
 
 clean::
 	(cd arch/${ARCH}; make clean)
@@ -39,5 +71,13 @@ install::
 	install -m 755 mcexec $(BINDIR)
 	mkdir -p -m 755 $(MCKERNEL_LIBDIR)
 	install -m 755 libsched_yield.so.1.0.0 $(MCKERNEL_LIBDIR)
+ifeq ($(ENABLE_QLMPI),yes)
+	install -m 644 ../include/qlmpilib.h $(MCKERNEL_INCDIR)
+	install -m 755 libqlmpi.so $(MCKERNEL_LIBDIR)
+	install -m 755 libqlfort.so $(MCKERNEL_LIBDIR)
+	install -m 755 ql_server $(SBINDIR)
+	install -m 755 ql_mpiexec_start $(BINDIR)
+	install -m 755 ql_mpiexec_finalize $(BINDIR)
+	install -m 755 ql_talker $(SBINDIR)
+endif
 	@uncomment_if_ENABLE_MEMDUMP@install -m 755 eclair $(BINDIR)
-

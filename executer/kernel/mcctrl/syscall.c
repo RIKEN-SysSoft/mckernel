@@ -890,9 +890,11 @@ static struct vm_operations_struct rus_vmops = {
 static int rus_mmap(struct file *file, struct vm_area_struct *vma)
 {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,7,0)
-	vma->vm_flags |= VM_RESERVED | VM_DONTEXPAND | VM_MIXEDMAP;
+//	vma->vm_flags |= VM_RESERVED | VM_DONTEXPAND | VM_MIXEDMAP;
+	vma->vm_flags |= VM_RESERVED | VM_MIXEDMAP;
 #else
-	vma->vm_flags |= VM_DONTDUMP | VM_DONTEXPAND | VM_MIXEDMAP;
+//	vma->vm_flags |= VM_DONTDUMP | VM_DONTEXPAND | VM_MIXEDMAP;
+	vma->vm_flags |= VM_DONTDUMP | VM_MIXEDMAP;
 #endif
 	vma->vm_ops = &rus_vmops;
 	return 0;
@@ -1713,6 +1715,75 @@ out:
 	return error;
 }
 
+#ifdef MCCTRL_KSYM_walk_page_range
+static void
+(*mcctrl_walk_page_range)(unsigned long addr, unsigned long end, struct mm_walk *walk)
+#if MCCTRL_KSYM_walk_page_range
+	= (void *)MCCTRL_KSYM_walk_page_range;
+#else
+	= &walk_page_range;
+#endif
+#endif
+
+static int mywalk(pte_t *pte, unsigned long addr, unsigned long next, struct mm_walk *walk)
+{
+	unsigned long		pfn;
+	struct page		*page;
+
+	if (pte == NULL) {
+		kprintf("mywalk: ptr(%p)\n", pte);
+		return 0;
+	}
+	pfn = pte_pfn(*pte);
+	page = pfn_to_page(pfn);
+	if (page == NULL) {
+		kprintf("mywalk: pte(%p) page is null\n", pte);
+		return 0;
+	}
+	if (PageLocked(page)) {
+		kprintf("mywalk: MLOCK (%p)\n", (void*) addr);
+	}
+	if (addr > 0x700000 && addr < 0x705000) {
+		kprintf("mywalk: %p(%lx)\n", (void*) addr, page->flags);
+	}
+	return 0;
+}
+
+static long pager_req_mlock_list(ihk_os_t os, unsigned long start,
+				 unsigned long end, void *addr, int nent)
+{
+	struct addrpair {
+		unsigned long	start;
+		unsigned long	end;
+		unsigned long	flag;
+	} *addrpair = (struct addrpair *) addr;
+	int			cnt = 0;
+	struct mm_struct	*mm = current->mm;
+	struct vm_area_struct	*vma;
+
+	kprintf("pager_req_mlock_list: addr(%p)\n", addr);
+	vma = find_vma(current->mm, 0x7010a0);
+	for (vma = mm->mmap; vma != NULL; vma = vma->vm_next) {
+		if (vma->vm_start < start || vma->vm_start > end) continue;
+		kprintf("\t%p: %p -- %p\t%lx\n", vma,
+			(void*)vma->vm_start, (void*)vma->vm_end,
+			vma->vm_flags & VM_LOCKED);
+		if (vma->vm_flags & VM_LOCKED) {
+			kprintf("\t locked\n");
+			if (++cnt >= nent) { /* last entry is a marker */
+				addrpair->start = (unsigned long) -1;
+				goto full;
+			}
+			addrpair->start = vma->vm_start;
+			addrpair->end = vma->vm_end;
+			addrpair->flag = vma->vm_flags;
+			addrpair++;
+		}
+	}
+full:
+	return cnt;
+}
+
 static long pager_call(ihk_os_t os, struct syscall_request *req)
 {
 	long ret;
@@ -1726,6 +1797,7 @@ static long pager_call(ihk_os_t os, struct syscall_request *req)
 #define	PAGER_REQ_MAP		0x0005
 #define	PAGER_REQ_PFN		0x0006
 #define	PAGER_REQ_UNMAP		0x0007
+#define PAGER_REQ_MLOCK_LIST	0x0008
 	case PAGER_REQ_CREATE:
 		ret = pager_req_create(os, req->args[1], req->args[2]);
 		break;
@@ -1754,7 +1826,11 @@ static long pager_call(ihk_os_t os, struct syscall_request *req)
 	case PAGER_REQ_UNMAP:
 		ret = pager_req_unmap(os, req->args[1]);
 		break;
-
+	case PAGER_REQ_MLOCK_LIST:
+		ret = pager_req_mlock_list(os, (unsigned long) req->args[1],
+					   (unsigned long) req->args[2],
+					   (void*) req->args[3], (int) req->args[4]);
+		break;
 	default:
 		ret = -ENOSYS;
 		printk("pager_call(%#lx):unknown req %ld\n", req->args[0], ret);

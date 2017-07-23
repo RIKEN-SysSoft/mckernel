@@ -6,6 +6,9 @@
 /* whether memdump feature is enabled */
 #undef ENABLE_MEMDUMP
 
+/* whether mcoverlayfs is enabled */
+#undef ENABLE_QLMPI
+
 /* whether rusage is enabled */
 #undef ENABLE_RUSAGE
 
@@ -72,8 +75,14 @@
 /* Define to address of kernel symbol vdso_start, or 0 if exported */
 #undef MCCTRL_KSYM_vdso_start
 
+/* Define to address of kernel symbol walk_page_range, or 0 if exported */
+#undef MCCTRL_KSYM_walk_page_range
+
 /* Define to address of kernel symbol zap_page_range, or 0 if exported */
 #undef MCCTRL_KSYM_zap_page_range
+
+/* McKernel specific headers */
+#undef MCKERNEL_INCDIR
 
 /* McKernel specific libraries */
 #undef MCKERNEL_LIBDIR
@@ -101,3 +110,9 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
+
+/* install directory for system binary. */
+#undef SBINDIR
+
+/* install directory for binary. */
+#undef BINDIR

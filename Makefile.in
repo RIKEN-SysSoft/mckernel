@@ -1,5 +1,6 @@
 TARGET = @TARGET@
 SBINDIR = @SBINDIR@
+INCDIR =  @INCDIR@
 ETCDIR = @ETCDIR@
 MANDIR = @MANDIR@
 
@@ -53,6 +54,8 @@ install::
 		mkdir -p -m 755 $(ETCDIR); \
 		install -m 644 arch/x86/tools/irqbalance_mck.service $(ETCDIR)/irqbalance_mck.service; \
 		install -m 644 arch/x86/tools/irqbalance_mck.in $(ETCDIR)/irqbalance_mck.in; \
+		mkdir -p -m 755 $(INCDIR); \
+		install -m 644 kernel/include/swapfmt.h $(INCDIR); \
 		mkdir -p -m 755 $(MANDIR)/man1; \
 		install -m 644 arch/x86/tools/mcreboot.1 $(MANDIR)/man1/mcreboot.1; \
 		;; \

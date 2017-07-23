@@ -50,6 +50,7 @@
 #define	VR_MEMTYPE_WB      0x00000000	/* write-back */
 #define	VR_MEMTYPE_UC      0x01000000	/* uncachable */
 #define	VR_MEMTYPE_MASK    0x0f000000
+#define VR_PAGEOUT	   0x10000000
 
 #define	PROT_TO_VR_FLAG(prot)	(((unsigned long)(prot) << 16) & VR_PROT_MASK)
 #define	VRFLAG_PROT_TO_MAXPROT(vrflag)	(((vrflag) & VR_PROT_MASK) << 4)
@@ -248,6 +249,7 @@ struct process_vm;
 struct vm_regions;
 struct vm_range;
 
+struct swapinfo;
 
 #define HASH_SIZE	73
 
@@ -711,6 +713,7 @@ struct process_vm {
 	struct list_head vm_range_numa_policy_list;
 	struct vm_range *range_cache[VM_RANGE_CACHE_SIZE];
 	int range_cache_ind;
+	struct swapinfo *swapinfo;
 };
 
 static inline int has_cap_ipc_lock(struct thread *th)

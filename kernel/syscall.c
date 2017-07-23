@@ -9220,6 +9220,102 @@ SYSCALL_DECLARE(get_system)
 	return 0;
 }
 
+/*
+ * swapoout(const char *filename, void *workarea, size_t size)
+ */
+SYSCALL_DECLARE(swapout)
+{
+	extern int do_pageout(const char*, void*, size_t, int);
+	extern int do_pagein(int);
+	char	*fname = (char *)ihk_mc_syscall_arg0(ctx);
+	char	*buf = (char *)ihk_mc_syscall_arg1(ctx);
+	size_t	size = (size_t)ihk_mc_syscall_arg2(ctx);
+	int	flag = (int)ihk_mc_syscall_arg3(ctx);
+	ihk_mc_user_context_t ctx0;
+	int	cc;
+
+	dkprintf("[%d]swapout(%lx,%lx,%lx,%ld)\n",
+		 ihk_mc_get_processor_id(), fname, buf, size, flag);
+
+	if (fname == NULL || flag == 0x01) { /* for development purupse */
+		kprintf("swapout: skipping real swap\n");
+		cc = syscall_generic_forwarding(__NR_swapout, &ctx0);
+		kprintf("swapout: return from Linux\n");
+		return cc;
+	}
+	/* pageout */
+	cc = do_pageout(fname, buf, size, flag);
+	if (cc < 0) return cc;
+	if (flag == 0x02) {
+		kprintf("swapout: skipping calling swapout in Linux\n");
+	} else {
+		kprintf("swapout: before calling swapout in Linux\n");
+		cc = syscall_generic_forwarding(__NR_swapout, &ctx0);
+		kprintf("swapout: after calling swapout in Linux cc(%d)\n", cc);
+	}
+	/* Though swapout in Linux side returns error, needs to call
+	 * pagein to recover the image */
+	cc = do_pagein(flag);
+	kprintf("swapout: after calling do_pagein cc(%d)\n", cc);
+	return cc;
+}
+
+SYSCALL_DECLARE(linux_mlock)
+{
+	ihk_mc_user_context_t ctx0;
+	const uintptr_t addr = ihk_mc_syscall_arg0(ctx);
+	const size_t len = ihk_mc_syscall_arg1(ctx);
+	int		cc;
+
+	kprintf("linux_mlock: %p %ld\n", (void*) addr, len);
+	ihk_mc_syscall_arg0(&ctx0) = addr;
+	ihk_mc_syscall_arg1(&ctx0) = len;
+	cc = syscall_generic_forwarding(802, &ctx0);
+	return cc;
+}
+
+SYSCALL_DECLARE(linux_spawn)
+{
+	int rc;
+
+	rc = syscall_generic_forwarding(__NR_linux_spawn, ctx);
+	return rc;
+}
+
+SYSCALL_DECLARE(suspend_threads)
+{
+	struct thread *mythread = cpu_local_var(current);
+	struct thread *thread;
+	struct process *proc = mythread->proc;
+
+	list_for_each_entry(thread, &proc->threads_list, siblings_list) {
+		if (thread == mythread)
+			continue;
+		do_kill(mythread, proc->pid, thread->tid, SIGSTOP, NULL, 0);
+	}
+	list_for_each_entry(thread, &proc->threads_list, siblings_list) {
+		if (thread == mythread)
+			continue;
+		while (thread->status != PS_STOPPED)
+			cpu_pause();
+	}
+	return 0;
+}
+
+SYSCALL_DECLARE(resume_threads)
+{
+	struct thread *mythread = cpu_local_var(current);
+	struct thread *thread;
+	struct process *proc = mythread->proc;
+
+	list_for_each_entry(thread, &proc->threads_list, siblings_list) {
+		if (thread == mythread)
+			continue;
+		do_kill(mythread, proc->pid, thread->tid, SIGCONT, NULL, 0);
+	}
+	return 0;
+}
+
 void
 reset_cputime()
 {
