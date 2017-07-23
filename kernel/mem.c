@@ -558,7 +558,7 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 			}
 			else {
 #ifdef PROFILE_ENABLE
-				//profile_event_add(PROFILE_numa_alloc_missed, npages * 4096);
+				profile_event_add(PROFILE_mpol_alloc_missed, npages * 4096);
 #endif
 				dkprintf("%s: couldn't fulfill explicit NUMA request for %d pages\n",
 						__FUNCTION__, npages);
@@ -983,7 +983,10 @@ void remote_flush_tlb_array_cpumask(struct process_vm *vm,
 void tlb_flush_handler(int vector)
 {
 #ifdef PROFILE_ENABLE
-	unsigned long t_s = rdtsc();
+	unsigned long t_s = 0;
+	if (cpu_local_var(current)->profile) {
+		t_s = rdtsc();
+	}
 #endif // PROFILE_ENABLE
 	int flags = cpu_disable_interrupt_save();
 
@@ -1011,11 +1014,12 @@ void tlb_flush_handler(int vector)
 	cpu_restore_interrupt(flags);
 #ifdef PROFILE_ENABLE
 	{
-		unsigned long t_e = rdtsc();
-		profile_event_add(PROFILE_tlb_invalidate, (t_e - t_s));
-		if (cpu_local_var(current)->profile)
+		if (cpu_local_var(current)->profile) {
+			unsigned long t_e = rdtsc();
+			profile_event_add(PROFILE_tlb_invalidate, (t_e - t_s));
 			cpu_local_var(current)->profile_elapsed_ts +=
 				(t_e - t_s);
+		}
 	}
 #endif // PROFILE_ENABLE
 }
@@ -1025,8 +1029,9 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 	struct thread *thread = cpu_local_var(current);
 	int error;
 #ifdef PROFILE_ENABLE
-	uint64_t t_s;
-	t_s = rdtsc();
+	uint64_t t_s = 0;
+	if (thread->profile)
+		t_s = rdtsc();
 #endif // PROFILE_ENABLE
 
 	set_cputime(interrupt_from_user(regs)? 1: 2);
@@ -1091,7 +1096,8 @@ out:
 	check_need_resched();
 	set_cputime(0);
 #ifdef PROFILE_ENABLE
-	profile_event_add(PROFILE_page_fault, (rdtsc() - t_s));
+	if (thread->profile)
+		profile_event_add(PROFILE_page_fault, (rdtsc() - t_s));
 #endif // PROFILE_ENABLE
 	return;
 }

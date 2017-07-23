@@ -63,6 +63,7 @@ char *profile_event_names[] =
 	"page_fault_file",
 	"page_fault_dev_file",
 	"page_fault_file_clr_mem",
+	"remote_page_fault",
 	"mpol_alloc_missed",
 	"mmap_anon_contig_phys",
 	"mmap_anon_no_contig_phys",
