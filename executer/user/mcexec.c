@@ -2426,12 +2426,20 @@ do_generic_syscall(
 
 	__dprintf("do_generic_syscall(%ld)\n", w->sr.number);
 
+#ifdef POSTK_DEBUG_TEMP_FIX_75 /* syscall return value check add. */
+	ret = syscall(w->sr.number, w->sr.args[0], w->sr.args[1], w->sr.args[2],
+		 w->sr.args[3], w->sr.args[4], w->sr.args[5]);
+	if (ret == -1) {
+		ret = -errno;
+	}
+#else /* POSTK_DEBUG_TEMP_FIX_75 */
 	errno = 0;
 	ret = syscall(w->sr.number, w->sr.args[0], w->sr.args[1], w->sr.args[2],
 		 w->sr.args[3], w->sr.args[4], w->sr.args[5]);
 	if (errno != 0) {
 		ret = -errno;
 	}
+#endif /* POSTK_DEBUG_TEMP_FIX_75 */
 
 	/* Overlayfs /sys/X directory lseek() problem work around */
 	if (w->sr.number == __NR_lseek && ret == -EINVAL) {
