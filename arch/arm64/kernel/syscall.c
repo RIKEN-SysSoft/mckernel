@@ -1120,13 +1120,7 @@ done:
 	if (doint && !(mask & tthread->sigmask.__val[0])) {
 		int status = tthread->status;
 
-		if (thread != tthread) {
-			dkprintf("do_kill,ipi,pid=%d,cpu_id=%d\n",
-				 tproc->pid, tthread->cpu_id);
-#define IPI_CPU_NOTIFY 0
-			ihk_mc_interrupt_cpu(tthread->cpu_id, INTRID_CPU_NOTIFY);
-		}
-
+#ifdef POSTK_DEBUG_TEMP_FIX_74 /* interrupt_syscall() timing change */
 #ifdef POSTK_DEBUG_TEMP_FIX_48 /* nohost flag missed fix */
 		if(tthread->proc->status != PS_EXITED)
 			interrupt_syscall(tthread, 0);
@@ -1134,6 +1128,19 @@ done:
 		if(!tthread->proc->nohost)
 			interrupt_syscall(tthread, 0);
 #endif /* POSTK_DEBUG_TEMP_FIX_48 */
+#endif /* POSTK_DEBUG_TEMP_FIX_74 */
+
+		if (thread != tthread) {
+			dkprintf("do_kill,ipi,pid=%d,cpu_id=%d\n",
+				 tproc->pid, tthread->cpu_id);
+#define IPI_CPU_NOTIFY 0
+			ihk_mc_interrupt_cpu(tthread->cpu_id, INTRID_CPU_NOTIFY);
+		}
+
+#ifndef POSTK_DEBUG_TEMP_FIX_74 /* interrupt_syscall() timing change */
+		if(!tthread->proc->nohost)
+			interrupt_syscall(tthread, 0);
+#endif /* !POSTK_DEBUG_TEMP_FIX_74 */
 
 		if (status != PS_RUNNING) {
 			if(sig == SIGKILL){
