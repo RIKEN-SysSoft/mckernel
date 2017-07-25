@@ -2060,6 +2060,17 @@ void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet,
 	/* Map response structure and notify offloading thread */
 	res->ret = ret;
 	res->stid = stid;
+	res->private_data = 0;
+
+	/* Special case for open() to return private_data */
+	if (packet->req.number == __NR_open && ret > 0) {
+		struct fd f;
+		f = fdget(ret);
+		if (f.file) {
+			res->private_data = f.file->private_data;
+			fdput(f);
+		}
+	}
 
 	if (__notify_syscall_requester(os, packet, res) < 0) {
 		printk("%s: WARNING: failed to notify PID %d\n",
