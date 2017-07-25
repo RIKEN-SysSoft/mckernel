@@ -573,6 +573,8 @@ struct process {
 #endif // PROFILE_ENABLE
 	int nr_processes; /* For partitioned execution */
 	int process_rank; /* Rank in partition */
+
+	void *fd_priv_table[265];
 };
 
 /*

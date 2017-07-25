@@ -3307,7 +3307,6 @@ int main_loop(struct thread_data_s *my_thread)
 	memset(&w, '\0', sizeof w);
 	w.cpu = cpu;
 	w.pid = getpid();
-
 	while (((ret = ioctl(fd, MCEXEC_UP_WAIT_SYSCALL, (unsigned long)&w)) == 0) || (ret == -1 && errno == EINTR)) {
 
 		if (ret) {
@@ -4188,6 +4187,7 @@ return_execve2:
 			}
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
+
 		case 801: {// swapout
 #ifdef ENABLE_QLMPI
 			int rc;
@@ -4376,6 +4376,11 @@ return_linux_spawn:
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 		}
+
+		case __NR_writev:
+			ret = do_generic_syscall(&w);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
 
 		default:
 			if (archdep_syscall(&w, &ret)) {
