@@ -294,6 +294,7 @@ struct syscall_response {
 	long ret;
 	unsigned long fault_address;
 	unsigned long fault_reason;
+	void *private_data;
 };
 
 struct syscall_post {

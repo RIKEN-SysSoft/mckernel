@@ -268,6 +268,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	req->rtid = cpu_local_var(current)->tid;
 	req->ttid = 0;
 	res.req_thread_status = IHK_SCD_REQ_THREAD_SPINNING;
+	res.private_data = NULL;
 #ifdef POSTK_DEBUG_TEMP_FIX_26 /* do_syscall arg pid is not targetpid */
 	send_syscall(req, cpu, target_pid, &res);
 #else /* POSTK_DEBUG_TEMP_FIX_26 */
@@ -476,6 +477,13 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 				__FUNCTION__, PROFILE_SYSCALL_MAX, req->number);
 	}
 #endif // PROFILE_ENABLE
+
+	if (req->number == __NR_open && rc > 0) {
+		if (res.private_data) {
+			kprintf("%s: open fd: %d, private_data: 0x%lx\n",
+				__FUNCTION__, rc, res.private_data);
+		}
+	}
 
 	monitor->status = mstatus;
 	monitor->counter++;
