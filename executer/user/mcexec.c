@@ -3460,7 +3460,6 @@ return_execve2:
 			else {
 				ret = munmap((void *)w.sr.args[1],
 				             w.sr.args[2]);
-if(ret == -1)fprintf(stderr, "munmap rc=%ld errno=%d addr=%p size=%d\n", ret, errno, (void *)w.sr.args[1], (int)w.sr.args[2]);
 				if (ret == -1)
 					ret = -errno;
 			}
