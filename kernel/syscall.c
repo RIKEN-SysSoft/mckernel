@@ -479,9 +479,9 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 #endif // PROFILE_ENABLE
 
 	if (req->number == __NR_open && rc > 0) {
-		if (res.private_data) {
-			kprintf("%s: open fd: %d, private_data: 0x%lx\n",
-				__FUNCTION__, rc, res.private_data);
+		if (res.private_data && !strncmp(req->args[0], "/dev/hfi", 8)) {
+			kprintf("%s: PID: %d, open fd: %d, filename: %s, private_data: 0x%lx\n",
+				__FUNCTION__, thread->proc->pid, rc, req->args[0], res.private_data);
 		}
 	}
 
