@@ -43,6 +43,7 @@ extern void procfs_exit(int);
 
 extern void rus_page_hash_init(void);
 extern void rus_page_hash_put_pages(void);
+extern void uti_attr_finalize(void);
 extern void binfmt_mcexec_init(void);
 extern void binfmt_mcexec_exit(void);
 
@@ -87,6 +88,7 @@ static struct ihk_os_user_call_handler mcctrl_uchs[] = {
 	{ .request = MCEXEC_UP_SYSCALL_THREAD, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_TERMINATE_THREAD, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_GET_NUM_POOL_THREADS, .func = mcctrl_ioctl },
+	{ .request = MCEXEC_UP_UTI_ATTR, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_DEBUG_LOG, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_COPY_FROM_MCK, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_COPY_TO_MCK, .func = mcctrl_ioctl },
@@ -230,6 +232,7 @@ static void __exit mcctrl_exit(void)
 
 	binfmt_mcexec_exit();
 	rus_page_hash_put_pages();
+	uti_attr_finalize();
 
 	printk("mcctrl: unregistered.\n");
 }

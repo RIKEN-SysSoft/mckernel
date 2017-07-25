@@ -2307,6 +2307,290 @@ mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 	return rc;
 }
 
+static struct ihk_cache_topology *
+cache_topo_search(struct ihk_cpu_topology *cpu_topo, int level)
+{
+	struct ihk_cache_topology *lcache_topo;
+
+	list_for_each_entry(lcache_topo, &cpu_topo->cache_topology_list,
+	                    chain) {
+		if (lcache_topo->level == level)
+			return lcache_topo;
+	}
+	return NULL;
+}
+
+static long (*setaffinity)(pid_t pid, const struct cpumask *in_mask);
+static int (*setscheduler_nocheck)(struct task_struct *p, int policy,
+                                   const struct sched_param *param);
+static unsigned int *uti_rr;
+static int max_cpu;
+
+static int
+uti_attr_init(void)
+{
+	int i;
+	unsigned int *rr;
+	unsigned int *retval;
+
+	if (uti_rr)
+		return 0;
+
+	if (!setaffinity) {
+		setaffinity = (long (*)(pid_t, const struct cpumask *))
+		              kallsyms_lookup_name("sched_setaffinity");
+		if (!setaffinity)
+			return -ENOSYS;
+	}
+	if (!setscheduler_nocheck) {
+		setscheduler_nocheck = (int (*)(struct task_struct *, int,
+		                                const struct sched_param *))
+		            kallsyms_lookup_name("sched_setscheduler_nocheck");
+		if (!setscheduler_nocheck)
+			return -ENOSYS;
+	}
+
+	for_each_possible_cpu(i) {
+		max_cpu = i;
+	}
+	max_cpu++;
+	rr = (unsigned int *)kmalloc(sizeof(unsigned int) * max_cpu,
+	                             GFP_KERNEL);
+	if (!rr)
+		return -ENOMEM;
+	memset(rr, '\0', sizeof(unsigned int) * max_cpu);
+
+	retval = __sync_val_compare_and_swap(&uti_rr, NULL, rr);
+	if (retval != NULL) {
+		kfree(rr);
+	}
+
+	return 0;
+}
+
+void
+uti_attr_finalize(void)
+{
+	if (uti_rr)
+		kfree(uti_rr);
+}
+
+static cpumask_t *
+uti_cpu_select(cpumask_t *cpumask)
+{
+	int i;
+	int mincpu;
+	unsigned int minrr;
+	unsigned int newval;
+	unsigned int retval;
+
+retry:
+	minrr = (unsigned int)-1;
+	mincpu = -1;
+	for_each_cpu(i, cpumask) {
+		int rr = uti_rr[i];
+		if (rr < minrr) {
+			mincpu = i;
+			minrr = rr;
+		}
+	}
+	newval = minrr + 1;
+	retval = __sync_val_compare_and_swap(uti_rr + mincpu, minrr, newval);
+	if (retval != minrr)
+		goto retry;
+
+printk("sel cpu=%d rr=%d\n", mincpu, uti_rr[mincpu]);
+	for_each_cpu(i, cpumask) {
+		if (i != mincpu) {
+			cpumask_clear_cpu(i, cpumask);
+		}
+	}
+	
+	return cpumask;
+}
+
+static long
+mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *arg)
+{
+	struct uti_attr_desc desc;
+	struct kuti_attr *kattr;
+	cpumask_t *cpuset;
+	struct mcctrl_usrdata *ud = ihk_host_os_get_usrdata(os);
+	ihk_device_t dev = ihk_os_to_dev(os);
+	struct cpu_topology *cpu_topo;
+	struct cpu_topology *target_cpu = NULL;
+	struct node_topology *node_topo;
+	struct ihk_cache_topology *lcache_topo;
+	struct ihk_node_topology *lnode_topo;
+	cpumask_t *wkmask;
+	int i;
+	int rc = 0;
+	int mask_size = cpumask_size();
+
+	if ((rc = uti_attr_init())) {
+		return rc;
+	}
+	if (copy_from_user(&desc, arg, sizeof desc))
+		return -EFAULT;
+	if (!(kattr = kmalloc(sizeof(struct kuti_attr), GFP_KERNEL)))
+		return -ENOMEM;
+	if (copy_from_user(kattr, (struct kuti_attr __user *)desc.attr,
+	                   sizeof(struct kuti_attr))) {
+		kfree(kattr);
+		return -EFAULT;
+	}
+
+	if (((kattr->attr.flags & UTI_FLAG_SAME_L1) &&
+	     (kattr->attr.flags & UTI_FLAG_DIFFERENT_L1)) ||
+	    ((kattr->attr.flags & UTI_FLAG_SAME_L2) &&
+	     (kattr->attr.flags & UTI_FLAG_DIFFERENT_L2)) ||
+	    ((kattr->attr.flags & UTI_FLAG_SAME_L3) &&
+	     (kattr->attr.flags & UTI_FLAG_DIFFERENT_L3)) ||
+	    ((kattr->attr.flags & UTI_FLAG_SAME_NUMA_DOMAIN) &&
+	     (kattr->attr.flags & UTI_FLAG_DIFFERENT_NUMA_DOMAIN))) {
+		kfree(kattr);
+		return -EINVAL;
+	}
+
+	if (!(cpuset = kmalloc(mask_size * 2, GFP_KERNEL))) {
+		kfree(kattr);
+		return -ENOMEM;
+	}
+	wkmask = (cpumask_t *)(((char *)cpuset) + mask_size);
+
+	list_for_each_entry(cpu_topo, &ud->cpu_topology_list, chain) {
+		if (cpu_topo->mckernel_cpu_id == kattr->parent_cpuid) {
+			target_cpu = cpu_topo;
+		}
+	}
+
+	if (!target_cpu) {
+		return -EINVAL;
+	}
+
+	memcpy(cpuset, cpu_active_mask, mask_size);
+
+	if (kattr->attr.flags & UTI_FLAG_NUMA_SET) {
+		nodemask_t *numaset = (nodemask_t *)&kattr->attr.numa_set[0];
+		memset(wkmask, '\0', mask_size);
+		for_each_node_mask(i, *numaset) {
+			list_for_each_entry(node_topo, &ud->node_topology_list,
+			                    chain) {
+				if (node_topo->mckernel_numa_id == i) {
+					cpumask_or(wkmask, wkmask,
+					           &node_topo->saved->cpumap);
+					break;
+				}
+			}
+		}
+		cpumask_and(cpuset, cpuset, wkmask);
+	}
+
+	if ((kattr->attr.flags & UTI_FLAG_SAME_NUMA_DOMAIN) ||
+	    (kattr->attr.flags & UTI_FLAG_DIFFERENT_NUMA_DOMAIN)) {
+		memset(wkmask, '\0', mask_size);
+		for (i = 0; i < UTI_MAX_NUMA_DOMAINS; i++) {
+			lnode_topo = ihk_device_get_node_topology(dev, i);
+			if(!lnode_topo)
+				continue;
+			if(IS_ERR(lnode_topo))
+				continue;
+			if (cpu_isset(target_cpu->saved->cpu_number,
+			              lnode_topo->cpumap)) {
+				if (kattr->attr.flags &
+				    UTI_FLAG_SAME_NUMA_DOMAIN) {
+					cpumask_or(wkmask, wkmask,
+					           &lnode_topo->cpumap);
+				}
+			}
+			else {
+				if (kattr->attr.flags &
+				    UTI_FLAG_DIFFERENT_NUMA_DOMAIN) {
+					cpumask_or(wkmask, wkmask,
+					           &lnode_topo->cpumap);
+				}
+			}
+		}
+		cpumask_and(cpuset, cpuset, wkmask);
+	}
+
+	if (((kattr->attr.flags & UTI_FLAG_SAME_L1) ||
+	     (kattr->attr.flags & UTI_FLAG_DIFFERENT_L1)) &&
+	    (lcache_topo = cache_topo_search(target_cpu->saved, 1))) {
+		if (kattr->attr.flags & UTI_FLAG_SAME_L1) {
+			cpumask_and(cpuset, cpuset,
+			            &lcache_topo->shared_cpu_map);
+		}
+		else {
+			cpumask_complement(wkmask,
+			                   &lcache_topo->shared_cpu_map);
+			cpumask_and(cpuset, cpuset, wkmask);
+		}
+	}
+
+	if (((kattr->attr.flags & UTI_FLAG_SAME_L2) ||
+	     (kattr->attr.flags & UTI_FLAG_DIFFERENT_L2)) &&
+	    (lcache_topo = cache_topo_search(target_cpu->saved, 2))) {
+		if (kattr->attr.flags & UTI_FLAG_SAME_L2) {
+			cpumask_and(cpuset, cpuset,
+			            &lcache_topo->shared_cpu_map);
+		}
+		else {
+			cpumask_complement(wkmask,
+			                   &lcache_topo->shared_cpu_map);
+			cpumask_and(cpuset, cpuset, wkmask);
+		}
+	}
+
+	if (((kattr->attr.flags & UTI_FLAG_SAME_L3) ||
+	     (kattr->attr.flags & UTI_FLAG_DIFFERENT_L3)) &&
+	    (lcache_topo = cache_topo_search(target_cpu->saved, 3))) {
+		if (kattr->attr.flags & UTI_FLAG_SAME_L3) {
+			cpumask_and(cpuset, cpuset,
+			            &lcache_topo->shared_cpu_map);
+		}
+		else {
+			cpumask_complement(wkmask,
+			                   &lcache_topo->shared_cpu_map);
+			cpumask_and(cpuset, cpuset, wkmask);
+		}
+	}
+
+	rc = cpumask_weight(cpuset);
+	if (!rc); /* do nothing */
+	else if (kattr->attr.flags & UTI_FLAG_EXCLUSIVE_CPU) {
+		struct sched_param sp;
+
+		setaffinity(0, uti_cpu_select(cpuset));
+		sp.sched_priority = 1;
+		setscheduler_nocheck(current, SCHED_FIFO, &sp);
+		rc = 1;
+	}
+	else if (kattr->attr.flags & UTI_FLAG_CPU_INTENSIVE) {
+		setaffinity(0, uti_cpu_select(cpuset));
+		rc = 1;
+	}
+	else if (kattr->attr.flags & UTI_FLAG_HIGH_PRIORITY) {
+		struct sched_param sp;
+
+		setaffinity(0, uti_cpu_select(cpuset));
+		sp.sched_priority = 1;
+		setscheduler_nocheck(current, SCHED_FIFO, &sp);
+		rc = 1;
+	}
+	else if (kattr->attr.flags & UTI_FLAG_NON_COOPERATIVE) {
+		setaffinity(0, uti_cpu_select(cpuset));
+		rc = 1;
+	}
+	else {
+		setaffinity(0, cpuset);
+	}
+
+	kfree(kattr);
+	kfree(cpuset);
+	return rc;
+}
+
 long
 mcexec_copy_from_mck(ihk_os_t os, unsigned long *arg)
 {
@@ -2422,6 +2706,9 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 
 	case MCEXEC_UP_GET_NUM_POOL_THREADS:
 		return mcctrl_get_num_pool_threads(os);
+
+	case MCEXEC_UP_UTI_ATTR:
+		return mcexec_uti_attr(os, (struct uti_attr_desc __user *)arg);
 
 	case MCEXEC_UP_COPY_FROM_MCK:
 		return mcexec_copy_from_mck(os, (unsigned long *)arg);

@@ -246,7 +246,8 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 				ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
 			v = get_this_cpu_local_var();
 
-			if (v->flags & CPU_FLAG_NEED_RESCHED) {
+			if (v->flags & CPU_FLAG_NEED_RESCHED ||
+			    req->number == __NR_sched_setaffinity) {
 				do_schedule = 1;
 			}
 
@@ -2357,6 +2358,13 @@ retry_tid:
 	new->status = PS_RUNNING;
 	if (old->mod_clone == SPAWN_TO_REMOTE) {
 		new->mod_clone = SPAWNING_TO_REMOTE;
+		if (old->mod_clone_arg) {
+			new->mod_clone_arg = kmalloc(sizeof(struct uti_attr),
+			                             IHK_MC_AP_NOWAIT);
+			if (new->mod_clone_arg)
+				memcpy(new->mod_clone_arg, old->mod_clone_arg,
+				       sizeof(struct uti_attr));
+		}
 	}
 	chain_thread(new);
 	if (!(clone_flags & CLONE_VM)) {
