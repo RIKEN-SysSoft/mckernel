@@ -3256,6 +3256,11 @@ SYSCALL_DECLARE(close)
 		ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
 		rc = syscall_generic_forwarding(__NR_close, ctx);
 	}
+
+	if (fd < 256) {
+		thread->proc->fd_priv_table[fd] = NULL;
+	}
+
 	return rc;
 }
 
