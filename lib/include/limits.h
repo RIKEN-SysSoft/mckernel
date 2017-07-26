@@ -17,4 +17,8 @@
 #define INT_MIN -0x80000000
 #define IOV_MAX 1024
 
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
+
 #endif

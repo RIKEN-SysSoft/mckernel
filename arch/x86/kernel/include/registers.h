@@ -215,6 +215,7 @@ struct x86_sregs {
  *   bit 4 ==	1: fault was an instruction fetch
  *
  *   internal use:
+ *   bit 29 ==  1: Make PF map text modified by ptrace_poketext()
  *   bit 30 ==	1: don't use COW page to resolve page fault.
  */
 enum x86_pf_error_code {

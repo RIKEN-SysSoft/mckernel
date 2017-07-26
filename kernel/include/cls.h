@@ -38,6 +38,26 @@ extern ihk_spinlock_t	cpu_status_lock;
 #define CPU_FLAG_NEED_RESCHED	0x1U
 #define CPU_FLAG_NEED_MIGRATE	0x2U
 
+typedef int (*smp_func_t)(int cpu_index, int nr_cpus, void *arg);
+int smp_call_func(cpu_set_t *__cpu_set, smp_func_t __func, void *__arg);
+
+struct smp_func_call_data {
+	/* XXX: Sync MCS lock to avoid contention on counter */
+	// mcs_lock_node_t lock;
+	int nr_cpus;
+	ihk_atomic_t cpus_left;
+
+	smp_func_t func;
+	void *arg;
+};
+
+struct smp_func_call_request {
+	struct smp_func_call_data *sfcd;
+	int cpu_index;
+	int ret;
+	struct list_head list;
+};
+
 struct cpu_local_var {
 	/* malloc */
 	struct list_head free_list;
@@ -55,11 +75,8 @@ struct cpu_local_var {
 	struct list_head runq;
 	size_t runq_len;
 
-	struct ihk_ikc_channel_desc *syscall_channel;
-	struct ikc_scd_init_param iip;
+	struct ihk_ikc_channel_desc *ikc2linux;
 
-	struct ihk_ikc_channel_desc *syscall_channel2;
-	struct ikc_scd_init_param iip2;
 	struct resource_set *resource_set;
 	
 	int status;
@@ -75,6 +92,10 @@ struct cpu_local_var {
 	int no_preempt;
 	int timer_enabled;
 	int kmalloc_initialized;
+	struct ihk_os_cpu_monitor *monitor;
+
+	ihk_spinlock_t smp_func_req_lock;
+	struct list_head smp_func_req_list;
 } __attribute__((aligned(64)));
 
 

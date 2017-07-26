@@ -93,6 +93,14 @@
 #define SCD_MSG_PROCFS_TID_CREATE	0x44
 #define SCD_MSG_PROCFS_TID_DELETE	0x45
 
+#define SCD_MSG_EVENTFD			0x46
+
+#define SCD_MSG_PERF_CTRL               0x50
+#define SCD_MSG_PERF_ACK                0x51
+
+#define SCD_MSG_CPU_RW_REG              0x52
+#define SCD_MSG_CPU_RW_REG_RESP         0x53
+
 #define DMA_PIN_SHIFT                   21
 
 #define DO_USER_MODE
@@ -110,6 +118,12 @@ struct coretable {
 	unsigned long addr;
 };
 #endif /* POSTK_DEBUG_TEMP_FIX_61 */
+
+enum mcctrl_os_cpu_operation {
+	MCCTRL_OS_CPU_READ_REGISTER,
+	MCCTRL_OS_CPU_WRITE_REGISTER,
+	MCCTRL_OS_CPU_MAX_OP
+};
 
 struct ikc_scd_packet {
 	int msg;
@@ -135,6 +149,13 @@ struct ikc_scd_packet {
 		/* SCD_MSG_SCHEDULE_THREAD */
 		struct {
 			int ttid;
+		};
+
+		/* SCD_MSG_CPU_RW_REG */
+		struct {
+			struct ihk_os_cpu_register desc;
+			enum mcctrl_os_cpu_operation op;
+			void *resp;
 		};
 	};
 	char padding[12];
@@ -217,6 +238,9 @@ struct mcctrl_per_proc_data {
 	cpumask_t cpu_set;
 	int ikc_target_cpu;
 	atomic_t refcount;
+
+	struct list_head devobj_pager_list;
+	struct semaphore devobj_pager_lock;
 };
 
 struct sysfsm_req {
@@ -277,11 +301,19 @@ struct node_topology {
 	struct list_head chain;
 };
 
+struct process_list_item {
+	int ready;
+	struct task_struct *task;
+	struct list_head list;
+	wait_queue_head_t pli_wq;
+};
+
 struct mcctrl_part_exec {
 	struct mutex lock;	
 	int nr_processes;
 	int nr_processes_left;
 	cpumask_t cpus_used;
+	struct list_head pli_list;
 };
 
 #define CPU_LONGS (((NR_CPUS) + (BITS_PER_LONG) - 1) / (BITS_PER_LONG))
@@ -295,7 +327,10 @@ struct mcctrl_usrdata {
 	struct ihk_ikc_listen_param listen_param2;
 	ihk_os_t	os;
 	int	num_channels;
+	/* Channels used for sending messages to LWK */
 	struct mcctrl_channel *channels;
+	/* Channels used for receiving messages from LWK */
+	struct ihk_ikc_channel_desc **ikc2linux;
 	int	remaining_job;
 	int	base_cpu;
 	int	job_pos;
@@ -315,6 +350,7 @@ struct mcctrl_usrdata {
 	struct list_head cpu_topology_list;
 	struct list_head node_topology_list;
 	struct mcctrl_part_exec part_exec;
+	int perf_event_num;
 };
 
 struct mcctrl_signal {
@@ -332,6 +368,9 @@ int mcctrl_ikc_is_valid_thread(ihk_os_t os, int cpu);
 ihk_os_t osnum_to_os(int n);
 
 /* syscall.c */
+void pager_add_process(void);
+void pager_remove_process(struct mcctrl_per_proc_data *ppd);
+
 int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet);
 int mcctrl_add_per_proc_data(struct mcctrl_usrdata *ud, int pid, 
 	struct mcctrl_per_proc_data *ppd);
@@ -441,6 +480,16 @@ struct get_cpu_mapping_req {
 
 	/* work for mcctrl */
 	wait_queue_head_t wq;
+};
+
+struct ihk_perf_event_attr{
+	unsigned long config; 
+	unsigned disabled:1;
+	unsigned pinned:1;
+	unsigned exclude_user:1;
+	unsigned exclude_kernel:1;
+	unsigned exclude_hv:1;
+	unsigned exclude_idle:1;
 };
 
 #endif

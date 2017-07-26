@@ -56,7 +56,7 @@ static int vdso_get_vdso_info(void)
 {
 	int error;
 	struct ikc_scd_packet packet;
-	struct ihk_ikc_channel_desc *ch = cpu_local_var(syscall_channel);
+	struct ihk_ikc_channel_desc *ch = cpu_local_var(ikc2linux);
 
 	dkprintf("vdso_get_vdso_info()\n");
 	memset(&vdso, '\0', sizeof vdso);

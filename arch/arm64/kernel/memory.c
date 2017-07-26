@@ -1762,7 +1762,6 @@ int visit_pte_range(page_table_t pt, void *start0, void *end0, int pgshift,
 
 struct clear_range_args {
 	int free_physical;
-	uint8_t padding[4];
 	struct memobj *memobj;
 	struct process_vm *vm;
 };
@@ -1799,7 +1798,7 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 	if (!ptl1_fileoff(&old) && args->free_physical) {
 		if (!page || (page && page_unmap(page))) {
 			int npages = PTL1_SIZE / PAGE_SIZE;
-			ihk_mc_free_pages(phys_to_virt(phys), npages);
+			ihk_mc_free_pages_user(phys_to_virt(phys), npages);
 			dkprintf("%s: freeing regular page at 0x%lx\n", __FUNCTION__, base);
 		}
 		args->vm->currss -= PTL1_SIZE;
@@ -1879,7 +1878,7 @@ static int clear_range_middle(void *args0, pte_t *ptep, uint64_t base,
 		if (!ptl_fileoff(&old, level) && args->free_physical) {
 			if (!page || (page && page_unmap(page))) {
 				int npages = tbl.pgsize / PAGE_SIZE;
-				ihk_mc_free_pages(phys_to_virt(phys), npages);
+				ihk_mc_free_pages_user(phys_to_virt(phys), npages);
 				dkprintf("%s(level=%d): freeing large page at 0x%lx\n", __FUNCTION__, level, base);
 			}
 			args->vm->currss -= tbl.pgsize;
@@ -1932,6 +1931,9 @@ static int clear_range(struct page_table *pt, struct process_vm *vm,
 
 	args.free_physical = free_physical;
 	if (memobj && (memobj->flags & MF_DEV_FILE)) {
+		args.free_physical = 0;
+	}
+	if (memobj && ((memobj->flags & MF_PREMAP))) {
 		args.free_physical = 0;
 	}
 	args.memobj = memobj;
@@ -2661,7 +2663,9 @@ void *map_fixed_area(unsigned long phys, unsigned long size, int uncachable)
 		attr |= PTATTR_UNCACHABLE;
 	}
 
-	kprintf("map_fixed: %lx => %p (%d pages)\n", paligned, v, npages);
+	kprintf("map_fixed: phys: 0x%lx => 0x%lx (%d pages)\n",
+			paligned, v, npages);
+
 	pt = get_init_page_table();
 	for (i = 0; i < npages; i++) {
 		if(__set_pt_page(pt, (void *)fixed_virt, paligned, attr)){
@@ -2834,6 +2838,37 @@ int getint_user(int *dest, const int *p)
 	}
 
 	return 0;
+}
+
+int verify_process_vm(struct process_vm *vm,
+		const void *usrc, size_t size)
+{
+	const uintptr_t ustart = (uintptr_t)usrc;
+	const uintptr_t uend = ustart + size;
+	uint64_t reason;
+	uintptr_t addr;
+	int error = 0;
+
+	if ((ustart < vm->region.user_start)
+			|| (vm->region.user_end <= ustart)
+			|| ((vm->region.user_end - ustart) < size)) {
+		kprintf("%s: error: out of user range\n", __FUNCTION__);
+		return -EFAULT;
+	}
+
+	reason = PF_USER;	/* page not present */
+	for (addr = ustart & PAGE_MASK; addr < uend; addr += PAGE_SIZE) {
+		if (!addr)
+			return -EINVAL;
+
+		error = page_fault_process_vm(vm, (void *)addr, reason);
+		if (error) {
+			kprintf("%s: error: PF for %p failed\n", __FUNCTION__, addr);
+			return error;
+		}
+	}
+
+	return error;
 }
 
 int read_process_vm(struct process_vm *vm, void *kdst, const void *usrc, size_t siz)

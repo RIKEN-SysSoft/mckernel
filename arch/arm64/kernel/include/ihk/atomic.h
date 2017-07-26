@@ -309,4 +309,50 @@ static inline unsigned long __cmpxchg_mb(volatile void *ptr, unsigned long old,
 #define atomic_cmpxchg4(ptr, o, n)	cmpxchg(ptr,o,n)
 #define atomic_cmpxchg8(ptr, o, n)	cmpxchg(ptr,o,n)
 
+static inline void ihk_atomic_add_long(long i, long *v)
+{
+	long result;
+	unsigned long tmp;
+
+	asm volatile("// atomic64_add\n"
+"1:	ldxr	%0, %2\n"
+"	add	%0, %0, %3\n"
+"	stxr	%w1, %0, %2\n"
+"	cbnz	%w1, 1b"
+	: "=&r" (result), "=&r" (tmp), "+Q" (*v)
+	: "Ir" (i));
+}
+
+static inline void ihk_atomic_add_ulong(long i, unsigned long *v)
+{
+	long result;
+	unsigned long tmp;
+
+	asm volatile("// atomic64_add\n"
+"1:	ldxr	%0, %2\n"
+"	add	%0, %0, %3\n"
+"	stxr	%w1, %0, %2\n"
+"	cbnz	%w1, 1b"
+	: "=&r" (result), "=&r" (tmp), "+Q" (*v)
+	: "Ir" (i));
+}
+
+static inline unsigned long ihk_atomic_add_long_return(long i, long *v)
+{
+	unsigned long result;
+	unsigned long tmp;
+
+	asm volatile("// atomic64_add_return\n"
+"1:	ldxr	%0, %2\n"
+"	add	%0, %0, %3\n"
+"	stlxr	%w1, %0, %2\n"
+"	cbnz	%w1, 1b"
+	: "=&r" (result), "=&r" (tmp), "+Q" (*v)
+	: "Ir" (i)
+	: "memory");
+
+	smp_mb();
+	return result;
+}
+
 #endif /* !__HEADER_ARM64_COMMON_IHK_ATOMIC_H */

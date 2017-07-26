@@ -17,6 +17,7 @@
  * make sure that these are position-independent codes.
  */
 
+#include <cls.h>
 #include <syscall.h>
 #include <ihk/atomic.h>
 #include <arch/cpu.h>

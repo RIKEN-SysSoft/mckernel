@@ -36,6 +36,8 @@
 #include <timer.h>
 #include <mman.h>
 #include <xpmem.h>
+#include <rusage.h>
+#include <xpmem.h>
 
 //#define DEBUG_PRINT_PROCESS
 
@@ -96,6 +98,8 @@ init_process(struct process *proc, struct process *parent)
 		proc->egid = parent->egid;
 		proc->sgid = parent->sgid;
 		proc->fsgid = parent->fsgid;
+		proc->mpol_flags = parent->mpol_flags;
+		proc->mpol_threshold = parent->mpol_threshold;
 		memcpy(proc->rlimit, parent->rlimit,
 		       sizeof(struct rlimit) * MCK_RLIM_MAX);
 	}
@@ -115,12 +119,9 @@ init_process(struct process *proc, struct process *parent)
 	waitq_init(&proc->waitpid_q);
 	ihk_atomic_set(&proc->refcount, 2);
 	proc->monitoring_event = NULL;
-#ifdef TRACK_SYSCALLS
-	mcs_lock_init(&proc->st_lock);
-	proc->syscall_times = NULL;
-	proc->syscall_cnts = NULL;
-	proc->offload_times = NULL;
-	proc->offload_cnts = NULL;
+#ifdef PROFILE_ENABLE
+	mcs_lock_init(&proc->profile_lock);
+	proc->profile_events = NULL;
 #endif
 }
 
@@ -289,6 +290,7 @@ struct thread *create_thread(unsigned long user_pc,
 		dkprintf("%s: pid: %d, CPU: %d\n",
 			__FUNCTION__, proc->pid, cpu); 
 		CPU_SET(cpu, &thread->cpu_set);
+		CPU_SET(cpu, &proc->cpu_set);
 		cpu_set_empty = 0;
 	}
 
@@ -300,6 +302,7 @@ struct thread *create_thread(unsigned long user_pc,
 		infop = ihk_mc_get_cpu_info();
 		for (i = 0; i < infop->ncpus; ++i) {
 			CPU_SET(i, &thread->cpu_set);
+			CPU_SET(i, &proc->cpu_set);
 		}
 	}
 
@@ -408,6 +411,9 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 			goto err_free_proc;
 		memset(proc, '\0', sizeof(struct process));
 		init_process(proc, org->proc);
+#ifdef PROFILE_ENABLE
+		proc->profile = org->proc->profile;
+#endif
 
 		proc->termsig = termsig;
 		asp = create_address_space(cpu_local_var(resource_set), 1);
@@ -492,8 +498,9 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 
 	ihk_mc_spinlock_init(&thread->spin_sleep_lock);
 	thread->spin_sleep = 0;
-#ifdef TRACK_SYSCALLS
-	thread->track_syscalls = org->track_syscalls;
+
+#ifdef PROFILE_ENABLE
+	thread->profile = org->profile | proc->profile;
 #endif
 
 	return thread;
@@ -583,7 +590,8 @@ static int copy_user_pte(void *arg0, page_table_t src_pt, pte_t *src_ptep, void 
 		dkprintf("copy_user_pte(): page size: %d\n", pgsize);
 
 		npages = pgsize / PAGE_SIZE;
-		virt = ihk_mc_alloc_aligned_pages(npages, pgalign, IHK_MC_AP_NOWAIT);
+		virt = ihk_mc_alloc_aligned_pages_user(npages, pgalign,
+		                                       IHK_MC_AP_NOWAIT);
 		if (!virt) {
 			kprintf("ERROR: copy_user_pte() allocating new page\n");
 			error = -ENOMEM;
@@ -1051,6 +1059,58 @@ enum ihk_mc_pt_attribute common_vrflag_to_ptattr(unsigned long flag, uint64_t fa
 	return attr;
 }
 
+
+/* Parallel memset implementation on top of general
+ * SMP funcution call facility */
+struct memset_smp_req {
+	unsigned long phys;
+	size_t len;
+	int val;
+};
+
+int memset_smp_handler(int cpu_index, int nr_cpus, void *arg)
+{
+	struct memset_smp_req *req =
+		(struct memset_smp_req *)arg;
+	size_t len = req->len / nr_cpus;
+
+	if (!len) {
+		/* First core clears all */
+		if (!cpu_index) {
+			memset((void *)phys_to_virt(req->phys), req->val, req->len);
+		}
+	}
+	else {
+		/* Divide and clear */
+		unsigned long p_s = req->phys + (cpu_index * len);
+		unsigned long p_e = p_s + len;
+		if (cpu_index == nr_cpus - 1) {
+			p_e = req->phys + req->len;
+		}
+
+		memset((void *)phys_to_virt(p_s), req->val, p_e - p_s);
+		dkprintf("%s: cpu_index: %d, nr_cpus: %d, phys: 0x%lx, "
+				"len: %lu, p_s: 0x%lx, p_e: 0x%lx\n",
+				__FUNCTION__, cpu_index, nr_cpus,
+				req->phys, req->len,
+				p_s, p_e);
+	}
+
+	return 0;
+}
+
+void *memset_smp(cpu_set_t *cpu_set, void *s, int c, size_t n)
+{
+	struct memset_smp_req req = {
+		.phys = virt_to_phys(s),
+		.len = n,
+		.val = c,
+	};
+
+	smp_call_func(cpu_set, memset_smp_handler, &req);
+	return NULL;
+}
+
 int add_process_memory_range(struct process_vm *vm,
 		unsigned long start, unsigned long end,
 		unsigned long phys, unsigned long flag,
@@ -1115,18 +1175,20 @@ int add_process_memory_range(struct process_vm *vm,
 	insert_vm_range_list(vm, range);
 
 	/* Clear content! */
-#ifdef POSTK_DEBUG_TEMP_FIX_54 /* NO_PHYS access avoid */
-	if ((phys != NOPHYS)
-			&& !(flag & (VR_REMOTE | VR_DEMAND_PAGING))
+	if (phys != NOPHYS && !(flag & (VR_REMOTE | VR_DEMAND_PAGING))
 			&& ((flag & VR_PROT_MASK) != VR_PROT_NONE)) {
-		memset((void*)phys_to_virt(phys), 0, end - start);
+#if 1
+			memset((void*)phys_to_virt(phys), 0, end - start);
+#else
+		if (end - start < (1024*1024)) {
+			memset((void*)phys_to_virt(phys), 0, end - start);
+		}
+		else {
+			memset_smp(&cpu_local_var(current)->cpu_set,
+					(void *)phys_to_virt(phys), 0, end - start);
+		}
+#endif
 	}
-#else /* POSTK_DEBUG_TEMP_FIX_54 */
-	if (!(flag & (VR_REMOTE | VR_DEMAND_PAGING))
-			&& ((flag & VR_PROT_MASK) != VR_PROT_NONE)) {
-		memset((void*)phys_to_virt(phys), 0, end - start);
-	}
-#endif /* POSTK_DEBUG_TEMP_FIX_54 */
 
 	/* Return range object if requested */
 	if (rp) {
@@ -1348,7 +1410,7 @@ static int remap_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 
 	page = phys_to_page(phys);
 	if (page && page_unmap(page)) {
-		ihk_mc_free_pages(phys_to_virt(phys), pgsize/PAGE_SIZE);
+		ihk_mc_free_pages_user(phys_to_virt(phys), pgsize/PAGE_SIZE);
 	}
 
 	error = 0;
@@ -1633,7 +1695,9 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 
 retry:
 			npages = pgsize / PAGE_SIZE;
-			virt = ihk_mc_alloc_aligned_pages(npages, p2align, IHK_MC_AP_NOWAIT);
+			virt = ihk_mc_alloc_aligned_pages_user(npages, p2align,
+					IHK_MC_AP_NOWAIT |
+					(range->flag & VR_AP_USER) ? IHK_MC_AP_USER : 0);
 			if (!virt && !range->pgshift && (pgsize != PAGE_SIZE)) {
 				error = arch_get_smaller_page_size(NULL, pgsize, &pgsize, &p2align);
 				if (error) {
@@ -1651,6 +1715,9 @@ retry:
 			}
 			dkprintf("%s: clearing 0x%lx:%lu\n",
 					__FUNCTION__, pgaddr, pgsize);
+#ifdef PROFILE_ENABLE
+			profile_event_add(PROFILE_page_fault_anon_clr, pgsize);
+#endif // PROFILE_ENABLE
 			memset(virt, 0, pgsize);
 			phys = virt_to_phys(virt);
 			if (phys_to_page(phys)) {
@@ -1666,7 +1733,7 @@ retry:
 
 	attr = arch_vrflag_to_ptattr(range->flag | memobj_flag, reason, ptep);
 
-	/*****/
+	/* Copy on write */
 	if (((range->flag & VR_PRIVATE) ||
 				((reason & PF_PATCH) && !(range->flag & VR_PROT_WRITE)))
 			&& ((!page && phys == NOPHYS) || (page &&
@@ -1681,7 +1748,8 @@ retry:
 			size_t npages;
 
 			npages = pgsize / PAGE_SIZE;
-			virt = ihk_mc_alloc_aligned_pages(npages, p2align, IHK_MC_AP_NOWAIT);
+			virt = ihk_mc_alloc_aligned_pages_user(npages, p2align,
+			                                      IHK_MC_AP_NOWAIT);
 			if (!virt) {
 				error = -ENOMEM;
 				kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):cannot allocate copy page. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
@@ -1831,13 +1899,19 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 	}
 
 	/*
-	 * XXX: quick fix
-	 * Corrupt data was read by the following sequence.
-	 * 1) a process did mmap(MAP_PRIVATE|MAP_ANONYMOUS)
-	 * 2) the process fetched the contents of a page of (1)'s mapping.
-	 * 3) the process wrote the contents of the page of (1)'s mapping.
-	 * 4) the process changed the contents of the page of (1)'s mapping.
-	 * 5) the process read something in the page of (1)'s mapping.
+	 * Fix for #284
+	 * Symptom: read() writes data onto the zero page by the following sequence.
+	 * (1) A process performs mmap(MAP_PRIVATE|MAP_ANONYMOUS)
+	 * (2) The process loads data from the VM range to cause a PF
+	 *     to make the PTE point to the zero page.
+	 * (3) The process performs write() using the VM range as the source
+         *     to cause a PF on the Linux side to make the PTE point to the zero page.
+         *     Note that we can't make the PTE read-only because [mckernel] pseudo
+	 *     file covering the range is created with O_RDWR.
+	 * (4) The process stores data to the VM range to cause another PF to perform
+         *     copy-on-write.
+	 * (5) The process performs read() using the VM range as the destination.
+         *     However, no PF and hence copy-on-write occurs because of (3).
 	 *
 	 * In the case of the above sequence,
 	 * copy-on-write pages was mapped at (2). And their physical pages
@@ -1920,48 +1994,68 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	unsigned long minsz;
 	unsigned long at_rand;
 	struct process *proc = thread->proc;
-	unsigned long __flag;
+	unsigned long ap_flag;
 
-	/* create stack range */
-	end = STACK_TOP(&thread->vm->region);
-	minsz = PAGE_SIZE;
-	size = proc->rlimit[MCK_RLIMIT_STACK].rlim_cur & PAGE_MASK;
+	/* Create stack range */
+	end = STACK_TOP(&thread->vm->region) & LARGE_PAGE_MASK;
+	minsz = (proc->rlimit[MCK_RLIMIT_STACK].rlim_cur
+			+ LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
+	size = (proc->rlimit[MCK_RLIMIT_STACK].rlim_max
+			+ LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
+	dkprintf("%s: rlim_max: %lu, rlim_cur: %lu\n",
+			__FUNCTION__,
+			proc->rlimit[MCK_RLIMIT_STACK].rlim_max,
+			proc->rlimit[MCK_RLIMIT_STACK].rlim_cur);
 	if (size > (USER_END / 2)) {
 		size = USER_END / 2;
 	}
 	else if (size < minsz) {
 		size = minsz;
 	}
-	start = end - size;
+	start = (end - size) & LARGE_PAGE_MASK;
+
+	/* Apply user allocation policy to stacks */
+	/* TODO: make threshold kernel or mcexec argument */
+	ap_flag = (size >= proc->mpol_threshold &&
+		!(proc->mpol_flags & MPOL_NO_STACK)) ? IHK_MC_AP_USER : 0;
+	dkprintf("%s: max size: %lu, mapped size: %lu %s\n",
+			__FUNCTION__, size, minsz,
+			ap_flag ? "(IHK_MC_AP_USER)" : "");
+
+	stack = ihk_mc_alloc_aligned_pages_user(minsz >> PAGE_SHIFT,
+				LARGE_PAGE_P2ALIGN, IHK_MC_AP_NOWAIT | ap_flag);
+
+	if (!stack) {
+		kprintf("%s: error: couldn't allocate initial stack\n",
+				__FUNCTION__);
+		return -ENOMEM;
+	}
+
+	memset(stack, 0, minsz);
 
 	vrflag = VR_STACK | VR_DEMAND_PAGING;
+	vrflag |= ((ap_flag & IHK_MC_AP_USER) ? VR_AP_USER : 0);
 	vrflag |= PROT_TO_VR_FLAG(pn->stack_prot);
 	vrflag |= VR_MAXPROT_READ | VR_MAXPROT_WRITE | VR_MAXPROT_EXEC;
 #define	NOPHYS	((uintptr_t)-1)
 	if ((rc = add_process_memory_range(thread->vm, start, end, NOPHYS,
-					vrflag, NULL, 0, PAGE_SHIFT, NULL)) != 0) {
+					vrflag, NULL, 0, LARGE_PAGE_SHIFT, NULL)) != 0) {
+		ihk_mc_free_pages_user(stack, minsz >> PAGE_SHIFT);
 		return rc;
 	}
 
-	__flag = (size >= 16777216) ? IHK_MC_AP_USER : 0;
-	/* map physical pages for initial stack frame */
-	stack = ihk_mc_alloc_pages(minsz >> PAGE_SHIFT,
-			IHK_MC_AP_NOWAIT | __flag);
-
-	if (!stack) {
-		return -ENOMEM;
-	}
-	memset(stack, 0, minsz);
+	/* Map physical pages for initial stack frame */
 	error = ihk_mc_pt_set_range(thread->vm->address_space->page_table,
-	                            thread->vm, (void *)(end-minsz),
-	                            (void *)end, virt_to_phys(stack),
-	                            arch_vrflag_to_ptattr(vrflag, PF_POPULATE,
-	                                                  NULL), 0);
+			thread->vm, (void *)(end - minsz),
+			(void *)end, virt_to_phys(stack),
+			arch_vrflag_to_ptattr(vrflag, PF_POPULATE, NULL),
+			LARGE_PAGE_SHIFT);
+
 	if (error) {
 		kprintf("init_process_stack:"
 				"set range %lx-%lx %lx failed. %d\n",
 				(end-minsz), end, stack, error);
-		ihk_mc_free_pages(stack, minsz >> PAGE_SHIFT);
+		ihk_mc_free_pages_user(stack, minsz >> PAGE_SHIFT);
 		return error;
 	}
 
@@ -2034,115 +2128,57 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	                           end + sizeof(unsigned long) * s_ind);
 	thread->vm->region.stack_end = end;
 	thread->vm->region.stack_start = start;
+
 	return 0;
 }
 
 
 unsigned long extend_process_region(struct process_vm *vm,
-                                    unsigned long start, unsigned long end,
-                                    unsigned long address, unsigned long flag)
+		unsigned long end_allocated,
+		unsigned long address, unsigned long flag)
 {
-	unsigned long aligned_end, aligned_new_end;
+	unsigned long new_end_allocated;
 	void *p;
 	int rc;
 
-	if (!address || address < start || address >= USER_END) {
-		return end;
+	size_t align_size = vm->proc->heap_extension > PAGE_SIZE ?
+		LARGE_PAGE_SIZE : PAGE_SIZE;
+	unsigned long align_mask = vm->proc->heap_extension > PAGE_SIZE ?
+		LARGE_PAGE_MASK : PAGE_MASK;
+	unsigned long align_p2align = vm->proc->heap_extension > PAGE_SHIFT ?
+		LARGE_PAGE_P2ALIGN : PAGE_P2ALIGN;
+
+	new_end_allocated = (address + (PAGE_SIZE - 1)) & PAGE_MASK;
+	if ((new_end_allocated - end_allocated) < vm->proc->heap_extension) {
+		new_end_allocated = (end_allocated + vm->proc->heap_extension +
+				(align_size - 1)) & align_mask;
 	}
 
-	aligned_end = ((end + PAGE_SIZE - 1) & PAGE_MASK);
+	if (flag & VR_DEMAND_PAGING) {
+		p = 0;
+	}
+	else {
+		p = ihk_mc_alloc_aligned_pages_user(
+				(new_end_allocated - end_allocated) >> PAGE_SHIFT,
+				align_p2align, IHK_MC_AP_NOWAIT |
+				(!(vm->proc->mpol_flags & MPOL_NO_HEAP) ? IHK_MC_AP_USER : 0));
 
-	if (aligned_end >= address) {
-		return address;
+		if (!p) {
+			return end_allocated;
+		}
 	}
 
-	aligned_new_end = (address + PAGE_SIZE - 1) & PAGE_MASK;
-
-#ifdef USE_LARGE_PAGES
-	if (aligned_new_end - aligned_end >= LARGE_PAGE_SIZE) {
-	  if(flag & VR_DEMAND_PAGING){panic("demand paging for large page is not available!");}
-		unsigned long p_aligned;
-		unsigned long old_aligned_end = aligned_end;
-
-		if ((aligned_end & (LARGE_PAGE_SIZE - 1)) != 0) {
-
-			aligned_end = (aligned_end + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
-			/* Fill in the gap between old_aligned_end and aligned_end
-			 * with regular pages */
-			if((p = ihk_mc_alloc_pages((aligned_end - old_aligned_end) >> PAGE_SHIFT,
-                                 IHK_MC_AP_NOWAIT)) == NULL){
-				return end;
-			}
-			if((rc = add_process_memory_range(vm, old_aligned_end,
-                                        aligned_end, virt_to_phys(p), flag,
-					LARGE_PAGE_SHIFT, NULL)) != 0){
-				ihk_mc_free_pages(p, (aligned_end - old_aligned_end) >> PAGE_SHIFT);
-				return end;
-			}
-
-			dkprintf("filled in gap for LARGE_PAGE_SIZE aligned start: 0x%lX -> 0x%lX\n",
-					old_aligned_end, aligned_end);
-		}
-
-		/* Add large region for the actual mapping */
-		aligned_new_end = (aligned_new_end + (aligned_end - old_aligned_end) +
-				(LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
-		address = aligned_new_end;
-
-		if((p = ihk_mc_alloc_pages((aligned_new_end - aligned_end + LARGE_PAGE_SIZE) >> PAGE_SHIFT,
-                            IHK_MC_AP_NOWAIT)) == NULL){
-			return end;
-		}
-
-		p_aligned = ((unsigned long)p + (LARGE_PAGE_SIZE - 1)) & LARGE_PAGE_MASK;
-
-		if (p_aligned > (unsigned long)p) {
-			ihk_mc_free_pages(p, (p_aligned - (unsigned long)p) >> PAGE_SHIFT);
-		}
-		ihk_mc_free_pages(
-			(void *)(p_aligned + aligned_new_end - aligned_end),
-			(LARGE_PAGE_SIZE - (p_aligned - (unsigned long)p)) >> PAGE_SHIFT);
-
-		if((rc = add_process_memory_range(vm, aligned_end,
-                               aligned_new_end, virt_to_phys((void *)p_aligned),
-                               flag, LARGE_PAGE_SHIFT, NULL)) != 0){
-			ihk_mc_free_pages(p, (aligned_new_end - aligned_end + LARGE_PAGE_SIZE) >> PAGE_SHIFT);
-			return end;
-		}
-
-		dkprintf("largePTE area: 0x%lX - 0x%lX (s: %lu) -> 0x%lX - \n",
-				aligned_end, aligned_new_end,
-				(aligned_new_end - aligned_end),
-				virt_to_phys((void *)p_aligned));
-
-		return address;
-	}
-#endif
-	if(flag & VR_DEMAND_PAGING){
-	  // demand paging no need to allocate page now
-#ifdef POSTK_DEBUG_ARCH_DEP_60 /* brk() use demand-paging */
-	  dkprintf("demand page do not allocate page\n");
-#else /* POSTK_DEBUG_ARCH_DEP_60 */
-	  kprintf("demand page do not allocate page\n");
-#endif /* POSTK_DEBUG_ARCH_DEP_60 */
-	  p=0;
-	}else{
-
-	p = ihk_mc_alloc_pages((aligned_new_end - aligned_end) >> PAGE_SHIFT,
-		IHK_MC_AP_NOWAIT | IHK_MC_AP_USER);
-
-	if (!p) {
-		return end;
-	}
-    }
-	if ((rc = add_process_memory_range(vm, aligned_end, aligned_new_end,
+	if ((rc = add_process_memory_range(vm, end_allocated, new_end_allocated,
 					(p == 0 ? 0 : virt_to_phys(p)), flag, NULL, 0,
-					PAGE_SHIFT, NULL)) != 0) {
-		ihk_mc_free_pages(p, (aligned_new_end - aligned_end) >> PAGE_SHIFT);
-		return end;
+					align_p2align, NULL)) != 0) {
+		ihk_mc_free_pages_user(p, (new_end_allocated - end_allocated) >> PAGE_SHIFT);
+		return end_allocated;
 	}
 
-	return address;
+	dkprintf("%s: new_end_allocated: 0x%lu, align_size: %lu, align_mask: %lx\n",
+		__FUNCTION__, new_end_allocated, align_size, align_mask);
+
+	return new_end_allocated;
 }
 
 // Original version retained because dcfa (src/mccmd/client/ibmic/main.c) calls this
@@ -2252,10 +2288,17 @@ release_process(struct process *proc)
 	}
 
 	if (proc->tids) kfree(proc->tids);
-#ifdef TRACK_SYSCALLS
-	track_syscalls_print_proc_stats(proc);
-	track_syscalls_dealloc_proc_counters(proc);
-#endif // TRACK_SYSCALLS
+#ifdef PROFILE_ENABLE
+	if (proc->profile) {
+		if (proc->nr_processes) {
+			profile_accumulate_and_print_job_events(proc);
+		}
+		else {
+			profile_print_proc_stats(proc);
+		}
+	}
+	profile_dealloc_proc_events(proc);
+#endif // PROFILE_ENABLE
 	kfree(proc);
 }
 
@@ -2442,28 +2485,32 @@ void destroy_thread(struct thread *thread)
 void release_thread(struct thread *thread)
 {
 	struct process_vm *vm;
-	struct mcs_rwlock_node lock;
+	struct mcs_rwlock_node_irqsave lock;
+	struct timespec ats;
 
 	if (!ihk_atomic_dec_and_test(&thread->refcount)) {
 		return;
 	}
 
-	mcs_rwlock_writer_lock_noirq(&thread->proc->update_lock, &lock);
-	ts_add(&thread->proc->stime, &thread->stime);
-	ts_add(&thread->proc->utime, &thread->utime);
-	mcs_rwlock_writer_unlock_noirq(&thread->proc->update_lock, &lock);
+	mcs_rwlock_writer_lock(&thread->proc->update_lock, &lock);
+	tsc_to_ts(thread->system_tsc, &ats);
+	ts_add(&thread->proc->stime, &ats);
+	tsc_to_ts(thread->user_tsc, &ats);
+	ts_add(&thread->proc->utime, &ats);
+	mcs_rwlock_writer_unlock(&thread->proc->update_lock, &lock);
 
 	vm = thread->vm;
 
-#ifdef TRACK_SYSCALLS
-	track_syscalls_accumulate_counters(thread, thread->proc);
-	//track_syscalls_print_thread_stats(thread);
-	track_syscalls_dealloc_thread_counters(thread);
-#endif // TRACK_SYSCALLS
+#ifdef PROFILE_ENABLE
+	profile_accumulate_events(thread, thread->proc);
+	//profile_print_thread_stats(thread);
+	profile_dealloc_thread_events(thread);
+#endif // PROFILE_ENABLE
 	procfs_delete_thread(thread);
 	destroy_thread(thread);
 
 	release_process_vm(vm);
+	rusage_num_threads_dec();
 }
 
 void cpu_set(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock)
@@ -2498,6 +2545,7 @@ static void do_migrate(void);
 static void idle(void)
 {
 	struct cpu_local_var *v = get_this_cpu_local_var();
+	struct ihk_os_cpu_monitor *monitor = v->monitor;
 
 	/* Release runq_lock before starting the idle loop.
 	 * See comments at release_runq_lock().
@@ -2558,8 +2606,11 @@ static void idle(void)
 		    v->status == CPU_STATUS_RESERVED) {
 			/* No work to do? Consolidate the kmalloc free list */
 			kmalloc_consolidate_free_list();
+			monitor->status = IHK_OS_MONITOR_IDLE;
 			cpu_local_var(current)->status = PS_INTERRUPTIBLE;
 			cpu_safe_halt();
+			monitor->status = IHK_OS_MONITOR_KERNEL;
+			monitor->counter++;
 			cpu_local_var(current)->status = PS_RUNNING;
 		}
 		else {
@@ -2727,6 +2778,8 @@ static void do_migrate(void)
 		int cpu_id;
 		int old_cpu_id;
 		struct cpu_local_var *v;
+		struct thread *thread;
+		int clear_old_cpu = 1;
 
 		/* 0. check if migration is necessary */
 		list_del(&req->list);
@@ -2751,11 +2804,28 @@ static void do_migrate(void)
 		req->thread->cpu_id = cpu_id;
 		list_add_tail(&req->thread->sched_list, &v->runq);
 		v->runq_len += 1;
-		
-		/* update cpu_set of the VM for remote TLB invalidation */
-		cpu_clear_and_set(old_cpu_id, cpu_id,
-		                  &req->thread->vm->address_space->cpu_set,
-		                  &req->thread->vm->address_space->cpu_set_lock);
+
+		/* Find out whether there is another thread of the same process
+		 * on the source CPU */
+		list_for_each_entry(thread, &(cur_v->runq), sched_list) {
+			if (thread->vm && thread->vm == req->thread->vm) {
+				clear_old_cpu = 0;
+				break;
+			}
+		}
+
+		/* Update cpu_set of the VM for remote TLB invalidation */
+		if (clear_old_cpu) {
+			cpu_clear_and_set(old_cpu_id, cpu_id,
+					&req->thread->vm->address_space->cpu_set,
+					&req->thread->vm->address_space->cpu_set_lock);
+		}
+		else {
+			cpu_set(cpu_id,
+					&req->thread->vm->address_space->cpu_set,
+					&req->thread->vm->address_space->cpu_set_lock);
+
+		}
 
 		dkprintf("%s: migrated TID %d from CPU %d to CPU %d\n",
 			__FUNCTION__, req->thread->tid, old_cpu_id, cpu_id);
@@ -2898,10 +2968,15 @@ redo:
 	} else {
 		/* Pick a new running process or one that has a pending signal */
 		list_for_each_entry_safe(thread, tmp, &(v->runq), sched_list) {
-			if (thread->status == PS_RUNNING ||
-				(thread->status == PS_INTERRUPTIBLE && hassigpending(thread))) {
+			if (thread->status == PS_RUNNING &&
+			    thread->mod_clone == SPAWNING_TO_REMOTE){
 				next = thread;
 				break;
+			}
+			if (thread->status == PS_RUNNING ||
+				(thread->status == PS_INTERRUPTIBLE && hassigpending(thread))) {
+				if(!next)
+					next = thread;
 			}
 		}
 
@@ -2971,6 +3046,19 @@ redo:
 				perf_start(next->proc->monitoring_event);
 			}
 		}
+
+#ifdef PROFILE_ENABLE
+		if (prev->profile && prev->profile_start_ts != 0) {
+			prev->profile_elapsed_ts +=
+				(rdtsc() - prev->profile_start_ts);
+			prev->profile_start_ts = 0;
+		}
+
+		if (next->profile && next->profile_start_ts == 0) {
+			next->profile_start_ts = rdtsc();
+		}
+#endif
+
 		if (prev) {
 			last = ihk_mc_switch_context(&prev->ctx, &next->ctx, prev);
 		}
@@ -3271,6 +3359,8 @@ void runq_add_thread(struct thread *thread, int cpu_id)
 
 	procfs_create_thread(thread);
 
+	rusage_num_threads_inc();
+
 	/* Kick scheduler */
 #ifdef POSTK_DEBUG_ARCH_DEP_8 /* arch depend hide */
 	if (cpu_id != ihk_mc_get_processor_id())
@@ -3382,49 +3472,59 @@ debug_log(unsigned long arg)
 	struct resource_set *rset = cpu_local_var(resource_set);
 	struct process_hash *phash = rset->process_hash;
 	struct thread_hash *thash = rset->thread_hash;
+	struct process *pid1 = rset->pid1;
+	int found = 0;
 
 	switch(arg){
 	    case 1:
 		for(i = 0; i < HASH_SIZE; i++){
 			__mcs_rwlock_reader_lock(&phash->lock[i], &lock);
 			list_for_each_entry(p, &phash->list[i], hash_list){
+				if (p == pid1)
+					continue;
+				found++;
 				kprintf("pid=%d ppid=%d status=%d\n",
 				        p->pid, p->ppid_parent->pid, p->status);
 			}
 			__mcs_rwlock_reader_unlock(&phash->lock[i], &lock);
 		}
+		kprintf("%d processes are found.\n", found);
 		break;
 	    case 2:
 		for(i = 0; i < HASH_SIZE; i++){
 			__mcs_rwlock_reader_lock(&thash->lock[i], &lock);
 			list_for_each_entry(t, &thash->list[i], hash_list){
+				found++;
 				kprintf("cpu=%d pid=%d tid=%d status=%d offload=%d\n",
 				        t->cpu_id, t->proc->pid, t->tid,
 				        t->status, t->in_syscall_offload);
 			}
 			__mcs_rwlock_reader_unlock(&thash->lock[i], &lock);
 		}
+		kprintf("%d threads are found.\n", found);
 		break;
 	    case 3:
 		for(i = 0; i < HASH_SIZE; i++){
-			if(phash->lock[i].node)
-				kprintf("phash[i] is locked\n");
 			list_for_each_entry(p, &phash->list[i], hash_list){
+				if (p == pid1)
+					continue;
+				found++;
 				kprintf("pid=%d ppid=%d status=%d\n",
 				        p->pid, p->ppid_parent->pid, p->status);
 			}
 		}
+		kprintf("%d processes are found.\n", found);
 		break;
 	    case 4:
 		for(i = 0; i < HASH_SIZE; i++){
-			if(thash->lock[i].node)
-				kprintf("thash[i] is locked\n");
 			list_for_each_entry(t, &thash->list[i], hash_list){
+				found++;
 				kprintf("cpu=%d pid=%d tid=%d status=%d\n",
 				        t->cpu_id, t->proc->pid, t->tid,
 				        t->status);
 			}
 		}
+		kprintf("%d threads are found.\n", found);
 		break;
 	}
 }

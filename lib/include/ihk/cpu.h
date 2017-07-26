@@ -51,6 +51,7 @@ struct ihk_mc_cpu_info {
 	int *hw_ids;
 	int *nodes;
 	int *linux_cpu_ids;
+	int *ikc_cpus;
 };
 
 struct ihk_mc_cpu_info *ihk_mc_get_cpu_info(void);
@@ -59,8 +60,11 @@ int ihk_mc_get_processor_id(void);
 int ihk_mc_get_hardware_processor_id(void);
 int ihk_mc_get_numa_id(void);
 int ihk_mc_get_nr_cores();
+int ihk_mc_get_nr_linux_cores();
 int ihk_mc_get_core(int id, unsigned long *linux_core_id, unsigned long *apic_id,
                     int *numa_id);
+int ihk_mc_get_ikc_cpu(int id);
+int ihk_mc_get_apicid(int linux_core_id);
 
 void ihk_mc_delay_us(int us);
 void ihk_mc_set_syscall_handler(long (*handler)(int, ihk_mc_user_context_t *));
@@ -111,9 +115,19 @@ enum ihk_asr_type {
 	IHK_ASR_X86_GS,
 };
 
+#ifndef POSTK_DEBUG_ARCH_DEP_75 /* x86 depend hide */
+/* Local IRQ vectors */
+#define LOCAL_TIMER_VECTOR  0xef
+#define LOCAL_PERF_VECTOR   0xf0
+#endif /* !POSTK_DEBUG_ARCH_DEP_75 */
+
 #define IHK_TLB_FLUSH_IRQ_VECTOR_START		68
 #define IHK_TLB_FLUSH_IRQ_VECTOR_SIZE		64
 #define IHK_TLB_FLUSH_IRQ_VECTOR_END		(IHK_TLB_FLUSH_IRQ_VECTOR_START + IHK_TLB_FLUSH_IRQ_VECTOR_SIZE)
+
+#ifndef POSTK_DEBUG_ARCH_DEP_75 /* x86 depend hide */
+#define LOCAL_SMP_FUNC_CALL_VECTOR   0xf1
+#endif /* !POSTK_DEBUG_ARCH_DEP_75 */
 
 int ihk_mc_arch_set_special_register(enum ihk_asr_type, unsigned long value);
 int ihk_mc_arch_get_special_register(enum ihk_asr_type, unsigned long *value);

@@ -40,6 +40,7 @@ enum {
 	MF_ZEROFILL = 0x0010,
 	MF_REG_FILE = 0x1000,
 	MF_DEV_FILE = 0x2000,
+	MF_PREMAP   = 0x8000,
 	MF_HOST_RELEASED = 0x80000000,
 	MF_END
 };
@@ -53,6 +54,10 @@ struct memobj {
 	uint32_t status;
 	size_t size;
 	ihk_spinlock_t lock;
+
+	/* For pre-mapped memobjects */
+	void **pages;
+	int nr_pages;
 };
 
 typedef void memobj_release_func_t(struct memobj *obj);

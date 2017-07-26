@@ -1075,10 +1075,28 @@ int visit_pte_range(page_table_t pt, void *start0, void *end0, int pgshift,
 
 struct clear_range_args {
 	int free_physical;
-	uint8_t padding[4];
 	struct memobj *memobj;
 	struct process_vm *vm;
+	unsigned long *addr;
+	int nr_addr;
+	int max_nr_addr;
 };
+
+static void remote_flush_tlb_add_addr(struct clear_range_args *args,
+		unsigned long addr)
+{
+	if (args->nr_addr < args->max_nr_addr) {
+		args->addr[args->nr_addr] = addr;
+		++args->nr_addr;
+		return;
+	}
+
+	remote_flush_tlb_array_cpumask(args->vm, args->addr, args->nr_addr,
+			ihk_mc_get_processor_id());
+
+	args->addr[0] = addr;
+	args->nr_addr = 1;
+}
 
 static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 		uint64_t start, uint64_t end)
@@ -1093,7 +1111,7 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 	}
 
 	old = xchg(ptep, PTE_NULL);
-	remote_flush_tlb_cpumask(args->vm, base, ihk_mc_get_processor_id());
+	remote_flush_tlb_add_addr(args, base);
 
 	page = NULL;
 	if (!pte_is_fileoff(&old, PTL1_SIZE)) {
@@ -1108,7 +1126,7 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 
 	if (!(old & PFL1_FILEOFF) && args->free_physical) {
 		if (!page || (page && page_unmap(page))) {
-			ihk_mc_free_pages(phys_to_virt(phys), 1);
+			ihk_mc_free_pages_user(phys_to_virt(phys), 1);
 			dkprintf("%s: freeing regular page at 0x%lx\n", __FUNCTION__, base);
 		}
 		args->vm->currss -= PTL1_SIZE;
@@ -1142,8 +1160,7 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
 
 	if (*ptep & PFL2_SIZE) {
 		old = xchg(ptep, PTE_NULL);
-		remote_flush_tlb_cpumask(args->vm, base,
-				ihk_mc_get_processor_id());
+		remote_flush_tlb_add_addr(args, base);
 
 		page = NULL;
 		if (!pte_is_fileoff(&old, PTL2_SIZE)) {
@@ -1157,7 +1174,8 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
 
 		if (!(old & PFL2_FILEOFF) && args->free_physical) {
 			if (!page || (page && page_unmap(page))) {
-				ihk_mc_free_pages(phys_to_virt(phys), PTL2_SIZE/PTL1_SIZE);
+				ihk_mc_free_pages_user(phys_to_virt(phys),
+				                           PTL2_SIZE/PTL1_SIZE);
 				dkprintf("%s: freeing large page at 0x%lx\n", __FUNCTION__, base);
 			}
 			args->vm->currss -= PTL2_SIZE;
@@ -1174,8 +1192,7 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
 
 	if ((start <= base) && ((base + PTL2_SIZE) <= end)) {
 		*ptep = PTE_NULL;
-		remote_flush_tlb_cpumask(args->vm, base,
-				ihk_mc_get_processor_id());
+		remote_flush_tlb_add_addr(args, base);
 		ihk_mc_free_pages(pt, 1);
 	}
 
@@ -1207,8 +1224,7 @@ static int clear_range_l3(void *args0, pte_t *ptep, uint64_t base,
 
 	if (*ptep & PFL3_SIZE) {
 		old = xchg(ptep, PTE_NULL);
-		remote_flush_tlb_cpumask(args->vm, base,
-				ihk_mc_get_processor_id());
+		remote_flush_tlb_add_addr(args, base);
 
 		page = NULL;
 		if (!pte_is_fileoff(&old, PTL3_SIZE)) {
@@ -1222,7 +1238,8 @@ static int clear_range_l3(void *args0, pte_t *ptep, uint64_t base,
 
 		if (!(old & PFL3_FILEOFF) && args->free_physical) {
 			if (!page || (page && page_unmap(page))) {
-				ihk_mc_free_pages(phys_to_virt(phys), PTL3_SIZE/PTL1_SIZE);
+				ihk_mc_free_pages_user(phys_to_virt(phys),
+				                           PTL3_SIZE/PTL1_SIZE);
 			}
 			args->vm->currss -= PTL3_SIZE;
 		}
@@ -1238,8 +1255,7 @@ static int clear_range_l3(void *args0, pte_t *ptep, uint64_t base,
 
 	if (use_1gb_page && (start <= base) && ((base + PTL3_SIZE) <= end)) {
 		*ptep = PTE_NULL;
-		remote_flush_tlb_cpumask(args->vm, base,
-				ihk_mc_get_processor_id());
+		remote_flush_tlb_add_addr(args, base);
 		ihk_mc_free_pages(pt, 1);
 	}
 
@@ -1259,8 +1275,10 @@ static int clear_range_l4(void *args0, pte_t *ptep, uint64_t base,
 	return walk_pte_l3(pt, base, start, end, &clear_range_l3, args0);
 }
 
-static int clear_range(struct page_table *pt, struct process_vm *vm, 
-		uintptr_t start, uintptr_t end, int free_physical, 
+#define TLB_INVALID_ARRAY_PAGES	(4)
+
+static int clear_range(struct page_table *pt, struct process_vm *vm,
+		uintptr_t start, uintptr_t end, int free_physical,
 		struct memobj *memobj)
 {
 	int error;
@@ -1275,14 +1293,35 @@ static int clear_range(struct page_table *pt, struct process_vm *vm,
 		return -EINVAL;
 	}
 
+	/* TODO: embedd this in tlb_flush_entry? */
+	args.addr = (unsigned long *)ihk_mc_alloc_pages(
+			TLB_INVALID_ARRAY_PAGES, IHK_MC_AP_CRITICAL);
+	if (!args.addr) {
+		ekprintf("%s: error: allocating address array\n", __FUNCTION__);
+		return -ENOMEM;
+	}
+	args.nr_addr = 0;
+	args.max_nr_addr = (TLB_INVALID_ARRAY_PAGES * PAGE_SIZE /
+			sizeof(uint64_t));
+
 	args.free_physical = free_physical;
 	if (memobj && (memobj->flags & MF_DEV_FILE)) {
+		args.free_physical = 0;
+	}
+	if (memobj && ((memobj->flags & MF_PREMAP))) {
 		args.free_physical = 0;
 	}
 	args.memobj = memobj;
 	args.vm = vm;
 
 	error = walk_pte_l4(pt, 0, start, end, &clear_range_l4, &args);
+	if (args.nr_addr) {
+		remote_flush_tlb_array_cpumask(vm, args.addr, args.nr_addr,
+				ihk_mc_get_processor_id());
+	}
+
+	ihk_mc_free_pages(args.addr, TLB_INVALID_ARRAY_PAGES);
+
 	return error;
 }
 
@@ -2063,7 +2102,8 @@ void *map_fixed_area(unsigned long phys, unsigned long size, int uncachable)
 		attr |= PTATTR_UNCACHABLE;
 	}
 
-	kprintf("map_fixed: %lx => %p (%d pages)\n", paligned, v, npages);
+	kprintf("map_fixed: phys: 0x%lx => 0x%lx (%d pages)\n",
+			paligned, v, npages);
 
 	for (i = 0; i < npages; i++) {
 		if(__set_pt_page(init_pt, (void *)fixed_virt, paligned, attr)){
@@ -2166,26 +2206,18 @@ int copy_from_user(void *dst, const void *src, size_t siz)
 int strlen_user(const char *s)
 {
 	struct process_vm *vm = cpu_local_var(current)->vm;
-	struct vm_range *range;
 	unsigned long pgstart;
 	int maxlen;
 	const char *head = s;
+	int err;
 
 	maxlen = 4096 - (((unsigned long)s) & 0x0000000000000fffUL);
 	pgstart = ((unsigned long)s) & 0xfffffffffffff000UL;
 	if(!pgstart || pgstart >= MAP_KERNEL_START)
 		return -EFAULT;
-	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 	for(;;){
-		range = lookup_process_memory_range(vm, pgstart, pgstart+1);
-		if(range == NULL){
-			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
-			return -EFAULT;
-		}
-		if((range->flag & VR_PROT_MASK) == VR_PROT_NONE){
-			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
-			return -EFAULT;
-		}
+		if ((err = verify_process_vm(vm, s, 1)))
+			return err;
 		while(*s && maxlen > 0){
 			s++;
 			maxlen--;
@@ -2195,14 +2227,12 @@ int strlen_user(const char *s)
 		maxlen = 4096;
 		pgstart += 4096;
 	}
-	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 	return s - head;
 }
 
 int strcpy_from_user(char *dst, const char *src)
 {
 	struct process_vm *vm = cpu_local_var(current)->vm;
-	struct vm_range *range;
 	unsigned long pgstart;
 	int maxlen;
 	int err = 0;
@@ -2211,17 +2241,9 @@ int strcpy_from_user(char *dst, const char *src)
 	pgstart = ((unsigned long)src) & 0xfffffffffffff000UL;
 	if(!pgstart || pgstart >= MAP_KERNEL_START)
 		return -EFAULT;
-	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 	for(;;){
-		range = lookup_process_memory_range(vm, pgstart, pgstart + 1);
-		if(range == NULL){
-			err = -EFAULT;
-			break;
-		}
-		if((range->flag & VR_PROT_MASK) == VR_PROT_NONE){
-			err = -EFAULT;
-			break;
-		}
+		if ((err = verify_process_vm(vm, src, 1)))
+			return err;
 		while(*src && maxlen > 0){
 			*(dst++) = *(src++);
 			maxlen--;
@@ -2233,7 +2255,6 @@ int strcpy_from_user(char *dst, const char *src)
 		maxlen = 4096;
 		pgstart += 4096;
 	}
-	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 	return err;
 }
 
@@ -2259,6 +2280,37 @@ int getint_user(int *dest, const int *p)
 	}
 
 	return 0;
+}
+
+int verify_process_vm(struct process_vm *vm,
+		const void *usrc, size_t size)
+{
+	const uintptr_t ustart = (uintptr_t)usrc;
+	const uintptr_t uend = ustart + size;
+	uint64_t reason;
+	uintptr_t addr;
+	int error = 0;
+
+	if ((ustart < vm->region.user_start)
+			|| (vm->region.user_end <= ustart)
+			|| ((vm->region.user_end - ustart) < size)) {
+		kprintf("%s: error: out of user range\n", __FUNCTION__);
+		return -EFAULT;
+	}
+
+	reason = PF_USER;	/* page not present */
+	for (addr = ustart & PAGE_MASK; addr < uend; addr += PAGE_SIZE) {
+		if (!addr)
+			return -EINVAL;
+
+		error = page_fault_process_vm(vm, (void *)addr, reason);
+		if (error) {
+			kprintf("%s: error: PF for %p failed\n", __FUNCTION__, addr);
+			return error;
+		}
+	}
+
+	return error;
 }
 
 int read_process_vm(struct process_vm *vm, void *kdst, const void *usrc, size_t siz)

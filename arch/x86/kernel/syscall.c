@@ -278,7 +278,7 @@ SYSCALL_DECLARE(rt_sigreturn)
 
 extern struct cpu_local_var *clv;
 extern unsigned long do_kill(struct thread *thread, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
-extern void interrupt_syscall(int pid, int tid);
+extern void interrupt_syscall(struct thread *, int sig);
 extern int num_processors;
 
 #define RFLAGS_MASK (RFLAGS_CF | RFLAGS_PF | RFLAGS_AF | RFLAGS_ZF | \
@@ -1249,6 +1249,12 @@ done:
 		return 0;
 	}
 
+	if (tthread->thread_offloaded) {
+		interrupt_syscall(tthread, sig);
+		release_thread(tthread);
+		return 0;
+	}
+
 	doint = 0;
 
 	mcs_rwlock_writer_lock_noirq(savelock, &mcs_rw_node);
@@ -1294,8 +1300,6 @@ done:
 	cpu_restore_interrupt(irqstate);
 
 	if (doint && !(mask & tthread->sigmask.__val[0])) {
-		int tid = tthread->tid;
-		int pid = tproc->pid;
 		int status = tthread->status;
 
 		if (thread != tthread) {
@@ -1305,7 +1309,7 @@ done:
 		}
 
 		if(!tthread->proc->nohost)
-			interrupt_syscall(pid, tid);
+			interrupt_syscall(tthread, 0);
 
 		if (status != PS_RUNNING) {
 			if(sig == SIGKILL){
@@ -1566,7 +1570,7 @@ static int vdso_get_vdso_info(void)
 {
 	int error;
 	struct ikc_scd_packet packet;
-	struct ihk_ikc_channel_desc *ch = cpu_local_var(syscall_channel);
+	struct ihk_ikc_channel_desc *ch = cpu_local_var(ikc2linux);
 
 	dkprintf("vdso_get_vdso_info()\n");
 	memset(&vdso, '\0', sizeof vdso);
@@ -1844,5 +1848,62 @@ out:
 	dkprintf("arch_map_vdso(): %d %p\n", error, vm->vdso_addr);
 	return error;
 } /* arch_map_vdso() */
+
+void
+save_uctx(void *uctx, struct x86_user_context *regs)
+{
+	struct trans_uctx {
+		volatile int cond;
+		int fregsize;
+
+		unsigned long rax;
+		unsigned long rbx;
+		unsigned long rcx;
+		unsigned long rdx;
+		unsigned long rsi;
+		unsigned long rdi;
+		unsigned long rbp;
+		unsigned long r8;
+		unsigned long r9;
+		unsigned long r10;
+		unsigned long r11;
+		unsigned long r12;
+		unsigned long r13;
+		unsigned long r14;
+		unsigned long r15;
+		unsigned long rflags;
+		unsigned long rip;
+		unsigned long rsp;
+		unsigned long fs;
+	} *ctx = uctx;
+
+	if (!regs) {
+		asm ("movq %%gs:(%1),%0" : "=r"(regs) :
+		     "r"(offsetof(struct x86_cpu_local_variables, tss.rsp0)));
+		regs--;
+	}
+
+	ctx->cond = 0;
+	ctx->rax = regs->gpr.rax;
+	ctx->rbx = regs->gpr.rbx;
+	ctx->rcx = regs->gpr.rcx;
+	ctx->rdx = regs->gpr.rdx;
+	ctx->rsi = regs->gpr.rsi;
+	ctx->rdi = regs->gpr.rdi;
+	ctx->rbp = regs->gpr.rbp;
+	ctx->r8 = regs->gpr.r8;
+	ctx->r9 = regs->gpr.r9;
+	ctx->r10 = regs->gpr.r10;
+	ctx->r11 = regs->gpr.r11;
+	ctx->r12 = regs->gpr.r12;
+	ctx->r13 = regs->gpr.r13;
+	ctx->r14 = regs->gpr.r14;
+	ctx->r15 = regs->gpr.r15;
+	ctx->rflags = regs->gpr.rflags;
+	ctx->rsp = regs->gpr.rsp;
+	ctx->rip = regs->gpr.rip;
+	ihk_mc_arch_get_special_register(IHK_ASR_X86_FS, &ctx->fs);
+	ctx->fregsize = 0;
+}
 
 /*** End of File ***/

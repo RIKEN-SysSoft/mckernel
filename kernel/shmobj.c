@@ -256,7 +256,7 @@ void shmobj_destroy(struct shmobj *obj)
 		}
 
 		if (page_unmap(page)) {
-			ihk_mc_free_pages(page_va, npages);
+			ihk_mc_free_pages_user(page_va, npages);
 		}
 #if 0
 		dkprintf("shmobj_destroy(%p):"
@@ -406,7 +406,7 @@ static int shmobj_get_page(struct memobj *memobj, off_t off, int p2align,
 	page = page_list_lookup(obj, off);
 	if (!page) {
 		npages = 1 << p2align;
-		virt = ihk_mc_alloc_aligned_pages(npages, p2align,
+		virt = ihk_mc_alloc_aligned_pages_user(npages, p2align,
 				IHK_MC_AP_NOWAIT);
 		if (!virt) {
 			error = -ENOMEM;
@@ -443,7 +443,7 @@ static int shmobj_get_page(struct memobj *memobj, off_t off, int p2align,
 out:
 	memobj_unlock(&obj->memobj);
 	if (virt) {
-		ihk_mc_free_pages(virt, npages);
+		ihk_mc_free_pages_user(virt, npages);
 	}
 	dkprintf("shmobj_get_page(%p,%#lx,%d,%p):%d\n",
 			memobj, off, p2align, physp, error);
@@ -467,7 +467,8 @@ static int shmobj_invalidate_page(struct memobj *memobj, uintptr_t phys,
 
 	if (ihk_atomic_read(&page->count) == 1) {
 		if (page_unmap(page)) {
-			ihk_mc_free_pages(phys_to_virt(phys), pgsize/PAGE_SIZE);
+			ihk_mc_free_pages_user(phys_to_virt(phys),
+			                       pgsize/PAGE_SIZE);
 		}
 	}
 

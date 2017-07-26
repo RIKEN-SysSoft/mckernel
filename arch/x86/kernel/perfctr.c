@@ -20,7 +20,25 @@ extern int running_on_kvm(void);
 static int ihk_mc_perfctr_fixed_init(int counter, int mode);
 #endif/*POSTK_DEBUG_TEMP_FIX_31*/
 
+//#define PERFCTR_DEBUG
+#ifdef PERFCTR_DEBUG
+#define	dkprintf(...)	do { kprintf(__VA_ARGS__); } while (0)
+#define	ekprintf(...)	do { kprintf(__VA_ARGS__); } while (0)
+#else
+#define	dkprintf(...)	do { } while (0)
+#define	ekprintf(...)	do { kprintf(__VA_ARGS__); } while (0)
+#endif
+
 #define X86_CR4_PCE     0x00000100
+
+#define PERFCTR_CHKANDJUMP(cond, msg, err)								\
+    do {																\
+		if(cond) {														\
+			ekprintf("%s,"msg"\n", __FUNCTION__);						\
+			ret = err;                                                  \
+			goto fn_fail;                                               \
+		}                                                               \
+    } while(0)
 
 int perf_counters_discovered = 0;
 int X86_IA32_NUM_PERF_COUNTERS = 0;
@@ -242,11 +260,14 @@ int ihk_mc_perfctr_start(int counter)
 int ihk_mc_perfctr_start(unsigned long counter_mask)
 #endif /*POSTK_DEBUG_TEMP_FIX_30*/
 {
+	int ret = 0;
 	unsigned long value = 0;
 	unsigned long mask = X86_IA32_PERF_COUNTERS_MASK | X86_IA32_FIXED_PERF_COUNTERS_MASK;
 #ifdef POSTK_DEBUG_TEMP_FIX_30
 	unsigned long counter_mask = 1UL << counter;
 #endif /*POSTK_DEBUG_TEMP_FIX_30*/
+
+	PERFCTR_CHKANDJUMP(counter_mask & ~mask, "counter_mask out of range", -EINVAL);
 
 #ifdef HAVE_MARCH_PERFCTR_START
 	x86_march_perfctr_start(counter_mask);
@@ -255,8 +276,10 @@ int ihk_mc_perfctr_start(unsigned long counter_mask)
 	value = rdmsr(MSR_PERF_GLOBAL_CTRL);
 	value |= counter_mask;
 	wrmsr(MSR_PERF_GLOBAL_CTRL, value);
-
-	return 0;
+ fn_exit:
+	return ret;
+ fn_fail:
+	goto fn_exit;
 }
 
 #ifdef POSTK_DEBUG_TEMP_FIX_30
@@ -265,11 +288,14 @@ int ihk_mc_perfctr_stop(int counter)
 int ihk_mc_perfctr_stop(unsigned long counter_mask)
 #endif/*POSTK_DEBUG_TEMP_FIX_30*/
 {
+	int ret = 0;
 	unsigned long value;
 	unsigned long mask = X86_IA32_PERF_COUNTERS_MASK | X86_IA32_FIXED_PERF_COUNTERS_MASK;
 #ifdef POSTK_DEBUG_TEMP_FIX_30
 	unsigned long counter_mask = 1UL << counter;
 #endif/*POSTK_DEBUG_TEMP_FIX_30*/
+
+	PERFCTR_CHKANDJUMP(counter_mask & ~mask, "counter_mask out of range", -EINVAL);
 
 	counter_mask &= mask;
 	value = rdmsr(MSR_PERF_GLOBAL_CTRL);
@@ -293,8 +319,10 @@ int ihk_mc_perfctr_stop(unsigned long counter_mask)
 		value &= ~(0xf << 8);
 		wrmsr(MSR_PERF_FIXED_CTRL, value);
 	}
-
-	return 0;
+ fn_exit:
+	return ret;
+ fn_fail:
+	goto fn_exit;
 }
 
 // init for fixed counter

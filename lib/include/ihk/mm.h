@@ -54,6 +54,9 @@ typedef unsigned long ihk_mc_ap_flag;
 #define IHK_MC_AP_BANDWIDTH       0x010000
 #define IHK_MC_AP_LATENCY         0x020000
 
+#define IHK_MC_PG_KERNEL       0
+#define IHK_MC_PG_USER         1
+
 enum ihk_mc_pt_prepare_flag {
 	IHK_MC_PT_FIRST_LEVEL,
 	IHK_MC_PT_LAST_LEVEL,
@@ -86,8 +89,8 @@ void ihk_mc_reserve_arch_pages(struct ihk_page_allocator_desc *pa_allocator,
 			unsigned long, unsigned long, int));
 
 struct ihk_mc_pa_ops {
-	void *(*alloc_page)(int, int, ihk_mc_ap_flag, int node);
-	void (*free_page)(void *, int);
+	void *(*alloc_page)(int, int, ihk_mc_ap_flag, int node, int is_user);
+	void (*free_page)(void *, int, int is_user);
 
 	void *(*alloc)(int, ihk_mc_ap_flag);
 	void (*free)(void *);
@@ -111,25 +114,43 @@ int ihk_mc_free_micpa(unsigned long mic_pa);
 void ihk_mc_clean_micpa(void);
 
 void *_ihk_mc_alloc_aligned_pages_node(int npages, int p2align,
-	ihk_mc_ap_flag flag, int node, char *file, int line);
+	ihk_mc_ap_flag flag, int node, int is_user, char *file, int line);
 #define ihk_mc_alloc_aligned_pages_node(npages, p2align, flag, node) ({\
-void *r = _ihk_mc_alloc_aligned_pages_node(npages, p2align, flag, node, __FILE__, __LINE__);\
+void *r = _ihk_mc_alloc_aligned_pages_node(npages, p2align, flag, node, IHK_MC_PG_KERNEL, __FILE__, __LINE__);\
+r;\
+})
+#define ihk_mc_alloc_aligned_pages_node_user(npages, p2align, flag, node) ({\
+void *r = _ihk_mc_alloc_aligned_pages_node(npages, p2align, flag, node, IHK_MC_PG_USER, __FILE__, __LINE__);\
 r;\
 })
 
 #define ihk_mc_alloc_aligned_pages(npages, p2align, flag) ({\
-void *r = _ihk_mc_alloc_aligned_pages_node(npages, p2align, flag, -1, __FILE__, __LINE__);\
+void *r = _ihk_mc_alloc_aligned_pages_node(npages, p2align, flag, -1, IHK_MC_PG_KERNEL, __FILE__, __LINE__);\
+r;\
+})
+
+#define ihk_mc_alloc_aligned_pages_user(npages, p2align, flag) ({\
+void *r = _ihk_mc_alloc_aligned_pages_node(npages, p2align, flag, -1, IHK_MC_PG_USER, __FILE__, __LINE__);\
 r;\
 })
 
 #define ihk_mc_alloc_pages(npages, flag) ({\
-void *r = _ihk_mc_alloc_aligned_pages_node(npages, PAGE_P2ALIGN, flag, -1, __FILE__, __LINE__);\
+void *r = _ihk_mc_alloc_aligned_pages_node(npages, PAGE_P2ALIGN, flag, -1, IHK_MC_PG_KERNEL, __FILE__, __LINE__);\
 r;\
 })
 
-void _ihk_mc_free_pages(void *ptr, int npages, char *file, int line);
+#define ihk_mc_alloc_pages_user(npages, flag) ({\
+void *r = _ihk_mc_alloc_aligned_pages_node(npages, PAGE_P2ALIGN, flag, -1, IHK_MC_PG_USER, __FILE__, __LINE__);\
+r;\
+})
+
+void _ihk_mc_free_pages(void *ptr, int npages, int is_user, char *file, int line);
 #define ihk_mc_free_pages(p, npages) ({\
-_ihk_mc_free_pages(p, npages, __FILE__, __LINE__);\
+_ihk_mc_free_pages(p, npages, IHK_MC_PG_KERNEL, __FILE__, __LINE__);\
+})
+
+#define ihk_mc_free_pages_user(p, npages) ({\
+_ihk_mc_free_pages(p, npages, IHK_MC_PG_USER, __FILE__, __LINE__);\
 })
 
 void *ihk_mc_allocate(int size, int flag);
@@ -194,15 +215,23 @@ int ihk_mc_get_memory_chunk(int id,
 
 void remote_flush_tlb_cpumask(struct process_vm *vm, 
 		unsigned long addr, int cpu_id);
+void remote_flush_tlb_array_cpumask(struct process_vm *vm,
+		unsigned long *addr,
+		int nr_addr,
+		int cpu_id);
 
 int ihk_set_kmsg(unsigned long addr, unsigned long size);
 char *ihk_get_kargs();
+
+int ihk_set_monitor(unsigned long addr, unsigned long size);
+int ihk_set_nmi_mode_addr(unsigned long addr);
 
 extern void (*__tlb_flush_handler)(int vector);
 
 struct tlb_flush_entry {
 	struct process_vm *vm;
-	unsigned long addr;
+	unsigned long *addr;
+	int nr_addr;
 	ihk_atomic_t pending;
 	ihk_spinlock_t lock;
 } __attribute__((aligned(64)));

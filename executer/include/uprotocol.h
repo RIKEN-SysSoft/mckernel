@@ -43,6 +43,7 @@
 #define MCEXEC_UP_GET_CREDV	 0x30a0290b
 #define MCEXEC_UP_GET_NODES  0x30a0290c
 #define MCEXEC_UP_GET_CPUSET  0x30a0290d
+#define MCEXEC_UP_CREATE_PPD  0x30a0290e
 
 #define MCEXEC_UP_PREPARE_DMA    0x30a02910
 #define MCEXEC_UP_FREE_DMA       0x30a02911
@@ -53,6 +54,16 @@
 #define MCEXEC_UP_SYS_MOUNT      0x30a02914
 #define MCEXEC_UP_SYS_UMOUNT     0x30a02915
 #define MCEXEC_UP_SYS_UNSHARE    0x30a02916
+
+#define MCEXEC_UP_UTIL_THREAD1   0x30a02920
+#define MCEXEC_UP_UTIL_THREAD2   0x30a02921
+#define MCEXEC_UP_SIG_THREAD     0x30a02922
+#define MCEXEC_UP_SYSCALL_THREAD 0x30a02924
+#define MCEXEC_UP_TERMINATE_THREAD 0x30a02925
+#define MCEXEC_UP_GET_NUM_POOL_THREADS  0x30a02926
+
+#define MCEXEC_UP_COPY_FROM_MCK  0x30a03000
+#define MCEXEC_UP_COPY_TO_MCK    0x30a03001
 
 #define MCEXEC_UP_DEBUG_LOG     0x40000000
 
@@ -86,11 +97,19 @@ struct get_cpu_set_arg {
 	size_t cpu_set_size;	// Size in bytes
 	int *target_core;
 	int *mcexec_linux_numa; // NUMA domain to bind mcexec to
+	void *mcexec_cpu_set;
+	size_t mcexec_cpu_set_size;	// Size in bytes
+	int *ikc_mapped;
 };
 
 #define PLD_CPU_SET_MAX_CPUS 1024
 typedef unsigned long __cpu_set_unit;
 #define PLD_CPU_SET_SIZE (PLD_CPU_SET_MAX_CPUS / (8 * sizeof(__cpu_set_unit)))
+
+#define MPOL_NO_HEAP              0x01
+#define MPOL_NO_STACK             0x02
+#define MPOL_NO_BSS               0x04
+#define MPOL_SHM_PREMAP           0x08
 
 struct program_load_desc {
 	int num_sections;
@@ -120,8 +139,13 @@ struct program_load_desc {
 	unsigned long envs_len;
 	struct rlimit rlimit[MCK_RLIM_MAX];
 	unsigned long interp_align;
+	unsigned long mpol_flags;
+	unsigned long mpol_threshold;
+	unsigned long heap_extension;
+	int nr_processes;
 	char shell_path[SHELL_PATH_MAX_LEN];
 	__cpu_set_unit cpu_set[PLD_CPU_SET_SIZE];
+	int profile;
 	struct program_image_section sections[0];
 };
 
@@ -220,4 +244,34 @@ struct sys_unshare_desc {
 	unsigned long unshare_flags;
 };
 
+enum perf_ctrl_type {
+	PERF_CTRL_SET,
+	PERF_CTRL_GET,
+	PERF_CTRL_ENABLE,
+	PERF_CTRL_DISABLE,
+};
+
+struct perf_ctrl_desc {
+	enum perf_ctrl_type ctrl_type;
+	int status;
+	union {
+		/* for SET, GET */
+		struct {
+			unsigned int target_cntr;
+			unsigned long config;
+			unsigned long read_value;
+			unsigned disabled        :1,
+			         pinned          :1,
+			         exclude_user    :1,
+			         exclude_kernel  :1,
+			         exclude_hv      :1,
+			         exclude_idle    :1;
+		};
+
+		/* for START, STOP*/
+		struct {
+			unsigned long target_cntr_mask;
+		};
+	};
+};
 #endif

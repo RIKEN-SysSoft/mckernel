@@ -30,6 +30,7 @@
 #include <cls.h>
 #include <prctl.h>
 #include <page.h>
+#include <kmalloc.h>
 
 #define LAPIC_ID            0x020
 #define LAPIC_TIMER         0x320
@@ -42,8 +43,11 @@
 #define LAPIC_ICR0          0x300
 #define LAPIC_ICR2          0x310
 #define LAPIC_ESR           0x280
+#ifdef POSTK_DEBUG_ARCH_DEP_75 /* x86 depend hide */
 #define LOCAL_TIMER_VECTOR  0xef
 #define LOCAL_PERF_VECTOR   0xf0
+#define LOCAL_SMP_FUNC_CALL_VECTOR   0xf1
+#endif /* POSTK_DEBUG_ARCH_DEP_75 */
 
 #define APIC_INT_LEVELTRIG      0x08000
 #define APIC_INT_ASSERT         0x04000
@@ -80,6 +84,7 @@ static void (*lapic_icr_write)(unsigned int h, unsigned int l);
 static void (*lapic_wait_icr_idle)(void);
 void (*x86_issue_ipi)(unsigned int apicid, unsigned int low);
 int running_on_kvm(void);
+static void smp_func_call_handler(void);
 
 void init_processors_local(int max_id);
 void assign_processor_id(void);
@@ -971,6 +976,9 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 
 			tlb_flush_handler(vector);
 	} 
+	else if (vector == LOCAL_SMP_FUNC_CALL_VECTOR) {
+		smp_func_call_handler();
+	}
 	else if (vector == 133) {
 		show_context_stack((uintptr_t *)regs->gpr.rbp);
 	}
@@ -1101,13 +1109,12 @@ unhandled_page_fault(struct thread *thread, void *fault_addr, void *regs)
 
 	kprintf_unlock(irqflags);
 
-	if (!(error & PF_USER)) {
-		panic("panic: kernel mode PF");
-	}
-
 	/* TODO */
 	ihk_mc_debug_show_interrupt_context(regs);
 
+	if (!(error & PF_USER)) {
+		panic("panic: kernel mode PF");
+	}
 
 	//dkprintf("now dump a core file\n");
 	//coredump(proc, regs);
@@ -1841,6 +1848,180 @@ int running_on_kvm(void) {
 	}
 
 	return 0;
+}
+
+void
+mod_nmi_ctx(void *nmi_ctx, void (*func)())
+{
+	unsigned long *l = nmi_ctx;
+	int i;
+	unsigned long flags;
+
+	asm volatile("pushf; pop %0" : "=r"(flags) : : "memory", "cc");
+	for (i = 0; i < 22; i++)
+		l[i] = l[i + 5];
+	l[i++] = (unsigned long)func;		// return address
+	l[i++] = 0x20;				// KERNEL CS
+	l[i++] = flags & ~RFLAGS_IF;		// rflags (disable interrupt)
+	l[i++] = (unsigned long)(l + 27);	// ols rsp
+	l[i++] = 0x28;				// KERNEL DS
+}
+
+int arch_cpu_read_write_register(
+		struct ihk_os_cpu_register *desc,
+		enum mcctrl_os_cpu_operation op)
+{
+	if (op == MCCTRL_OS_CPU_READ_REGISTER) {
+		desc->val = rdmsr(desc->addr);
+	}
+	else if (op == MCCTRL_OS_CPU_WRITE_REGISTER) {
+		wrmsr(desc->addr, desc->val);
+	}
+	else {
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
+ * Generic remote CPU function invocation facility.
+ */
+static void smp_func_call_handler(void)
+{
+	int irq_flags;
+	struct smp_func_call_request *req;
+	int reqs_left;
+
+reiterate:
+	req = NULL;
+	reqs_left = 0;
+
+	irq_flags = ihk_mc_spinlock_lock(
+			&cpu_local_var(smp_func_req_lock));
+
+	/* Take requests one-by-one */
+	if (!list_empty(&cpu_local_var(smp_func_req_list))) {
+		req = list_first_entry(&cpu_local_var(smp_func_req_list),
+			struct smp_func_call_request, list);
+		list_del(&req->list);
+
+		reqs_left = !list_empty(&cpu_local_var(smp_func_req_list));
+	}
+
+	ihk_mc_spinlock_unlock(&cpu_local_var(smp_func_req_lock),
+			irq_flags);
+
+	if (req) {
+		req->ret = req->sfcd->func(req->cpu_index,
+				req->sfcd->nr_cpus, req->sfcd->arg);
+		ihk_atomic_dec(&req->sfcd->cpus_left);
+	}
+
+	if (reqs_left)
+		goto reiterate;
+}
+
+int smp_call_func(cpu_set_t *__cpu_set, smp_func_t __func, void *__arg)
+{
+	int cpu, nr_cpus = 0;
+	int cpu_index = 0;
+	int this_cpu_index = 0;
+	struct smp_func_call_data sfcd;
+	struct smp_func_call_request *reqs;
+	int ret = 0;
+	int call_on_this_cpu = 0;
+	cpu_set_t cpu_set;
+
+	/* Sanity checks */
+	if (!__cpu_set || !__func) {
+		return -EINVAL;
+	}
+
+	/* Make sure it won't change in between */
+	cpu_set = *__cpu_set;
+
+	for_each_set_bit(cpu, (unsigned long *)&cpu_set,
+			sizeof(cpu_set) * BITS_PER_BYTE) {
+
+		if (cpu == ihk_mc_get_processor_id()) {
+			call_on_this_cpu = 1;
+		}
+		++nr_cpus;
+	}
+
+	if (!nr_cpus) {
+		return -EINVAL;
+	}
+
+	reqs = kmalloc(sizeof(*reqs) * nr_cpus, IHK_MC_AP_NOWAIT);
+	if (!reqs) {
+		ret = -ENOMEM;
+		goto free_out;
+	}
+
+	sfcd.nr_cpus = nr_cpus;
+	sfcd.func = __func;
+	sfcd.arg = __arg;
+	ihk_atomic_set(&sfcd.cpus_left,
+			call_on_this_cpu ? nr_cpus - 1 : nr_cpus);
+
+	/* Add requests and send IPIs */
+	cpu_index = 0;
+	for_each_set_bit(cpu, (unsigned long *)&cpu_set,
+			sizeof(cpu_set) * BITS_PER_BYTE) {
+		unsigned long irq_flags;
+
+		reqs[cpu_index].cpu_index = cpu_index;
+		reqs[cpu_index].ret = 0;
+
+		if (cpu == ihk_mc_get_processor_id()) {
+			this_cpu_index = cpu_index;
+			++cpu_index;
+			continue;
+		}
+
+		reqs[cpu_index].sfcd = &sfcd;
+
+		irq_flags =
+			ihk_mc_spinlock_lock(&get_cpu_local_var(cpu)->smp_func_req_lock);
+		list_add_tail(&reqs[cpu_index].list,
+				&get_cpu_local_var(cpu)->smp_func_req_list);
+		ihk_mc_spinlock_unlock(&get_cpu_local_var(cpu)->smp_func_req_lock,
+			irq_flags);
+
+		ihk_mc_interrupt_cpu(
+				get_x86_cpu_local_variable(cpu)->apic_id,
+				LOCAL_SMP_FUNC_CALL_VECTOR);
+
+		++cpu_index;
+	}
+
+	/* Is this CPU involved? */
+	if (call_on_this_cpu) {
+		reqs[this_cpu_index].ret =
+			__func(this_cpu_index, nr_cpus, __arg);
+	}
+
+	/* Wait for the rest of the CPUs */
+	while (ihk_atomic_read(&sfcd.cpus_left) > 0) {
+		cpu_pause();
+	}
+
+	/* Check return values, if error, report the first non-zero */
+	for (cpu_index = 0; cpu_index < nr_cpus; ++cpu_index) {
+		if (reqs[cpu_index].ret != 0) {
+			ret = reqs[cpu_index].ret;
+			goto free_out;
+		}
+	}
+
+	ret = 0;
+
+free_out:
+	kfree(reqs);
+
+	return ret;
 }
 
 /*** end of file ***/

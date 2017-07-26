@@ -4,13 +4,14 @@ SRC=$(VPATH)
 IHKDIR=$(IHKBASE)/$(TARGETDIR)
 OBJS = init.o mem.o debug.o mikc.o listeners.o ap.o syscall.o cls.o host.o
 OBJS += process.o copy.o waitq.o futex.o timer.o plist.o fileobj.o shmobj.o
-OBJS += zeroobj.o procfs.o devobj.o sysfs.o xpmem.o
+OBJS += zeroobj.o procfs.o devobj.o sysfs.o xpmem.o profile.o freeze.o
+OBJS += rbtree.o
 # POSTK_DEBUG_ARCH_DEP_18 coredump arch separation.
 # OBJS added gencore.o
 OBJS += gencore.o
 DEPSRCS=$(wildcard $(SRC)/*.c)
 
-CFLAGS += -I$(SRC)/include -D__KERNEL__ -g -fno-omit-frame-pointer -fno-inline -fno-inline-small-functions
+CFLAGS += -I$(SRC)/include -I@abs_builddir@/../ -I@abs_builddir@/include -D__KERNEL__  -g -fno-omit-frame-pointer -fno-inline -fno-inline-small-functions
 LDFLAGS += -e arch_start
 IHKOBJ = ihk/ihk.o
 

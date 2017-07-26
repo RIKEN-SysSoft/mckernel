@@ -113,7 +113,7 @@ sysfs_createf(struct sysfs_ops *ops, void *instance, int mode,
 	packet.msg = SCD_MSG_SYSFS_REQ_CREATE;
 	packet.sysfs_arg1 = virt_to_phys(param);
 
-	error = ihk_ikc_send(cpu_local_var(syscall_channel), &packet, 0);
+	error = ihk_ikc_send(cpu_local_var(ikc2linux), &packet, 0);
 	if (error) {
 		ekprintf("sysfs_createf:ihk_ikc_send failed. %d\n", error);
 		goto out;
@@ -183,7 +183,7 @@ sysfs_mkdirf(sysfs_handle_t *dirhp, const char *fmt, ...)
 	packet.msg = SCD_MSG_SYSFS_REQ_MKDIR;
 	packet.sysfs_arg1 = virt_to_phys(param);
 
-	error = ihk_ikc_send(cpu_local_var(syscall_channel), &packet, 0);
+	error = ihk_ikc_send(cpu_local_var(ikc2linux), &packet, 0);
 	if (error) {
 		ekprintf("sysfs_mkdirf:ihk_ikc_send failed. %d\n", error);
 		goto out;
@@ -257,7 +257,7 @@ sysfs_symlinkf(sysfs_handle_t targeth, const char *fmt, ...)
 	packet.msg = SCD_MSG_SYSFS_REQ_SYMLINK;
 	packet.sysfs_arg1 = virt_to_phys(param);
 
-	error = ihk_ikc_send(cpu_local_var(syscall_channel), &packet, 0);
+	error = ihk_ikc_send(cpu_local_var(ikc2linux), &packet, 0);
 	if (error) {
 		ekprintf("sysfs_symlinkf:ihk_ikc_send failed. %d\n", error);
 		goto out;
@@ -328,7 +328,7 @@ sysfs_lookupf(sysfs_handle_t *objhp, const char *fmt, ...)
 	packet.msg = SCD_MSG_SYSFS_REQ_LOOKUP;
 	packet.sysfs_arg1 = virt_to_phys(param);
 
-	error = ihk_ikc_send(cpu_local_var(syscall_channel), &packet, 0);
+	error = ihk_ikc_send(cpu_local_var(ikc2linux), &packet, 0);
 	if (error) {
 		ekprintf("sysfs_lookupf:ihk_ikc_send failed. %d\n", error);
 		goto out;
@@ -402,7 +402,7 @@ sysfs_unlinkf(int flags, const char *fmt, ...)
 	packet.msg = SCD_MSG_SYSFS_REQ_UNLINK;
 	packet.sysfs_arg1 = virt_to_phys(param);
 
-	error = ihk_ikc_send(cpu_local_var(syscall_channel), &packet, 0);
+	error = ihk_ikc_send(cpu_local_var(ikc2linux), &packet, 0);
 	if (error) {
 		ekprintf("sysfs_unlinkf:ihk_ikc_send failed. %d\n", error);
 		goto out;
@@ -462,7 +462,7 @@ sysfss_req_show(long nodeh, struct sysfs_ops *ops, void *instance)
 	packet.sysfs_arg1 = nodeh;
 	packet.sysfs_arg2 = ssize;
 
-	error = ihk_ikc_send(cpu_local_var(syscall_channel), &packet, 0);
+	error = ihk_ikc_send(cpu_local_var(ikc2linux), &packet, 0);
 	if (error) {
 		ekprintf("sysfss_req_show:ihk_ikc_send failed. %d\n", error);
 		/* through */
@@ -508,7 +508,7 @@ sysfss_req_store(long nodeh, struct sysfs_ops *ops, void *instance,
 	packet.sysfs_arg1 = nodeh;
 	packet.sysfs_arg2 = ssize;
 
-	error = ihk_ikc_send(cpu_local_var(syscall_channel), &packet, 0);
+	error = ihk_ikc_send(cpu_local_var(ikc2linux), &packet, 0);
 	if (error) {
 		ekprintf("sysfss_req_store:ihk_ikc_send failed. %d\n", error);
 		/* through */
@@ -539,7 +539,7 @@ sysfss_req_release(long nodeh, struct sysfs_ops *ops, void *instance)
 	packet.err = 0;
 	packet.sysfs_arg1 = nodeh;
 
-	error = ihk_ikc_send(cpu_local_var(syscall_channel), &packet, 0);
+	error = ihk_ikc_send(cpu_local_var(ikc2linux), &packet, 0);
 	if (error) {
 		ekprintf("sysfss_req_release:ihk_ikc_send failed. %d\n",
 				error);
@@ -623,7 +623,7 @@ sysfs_init(void)
 	packet.msg = SCD_MSG_SYSFS_REQ_SETUP;
 	packet.sysfs_arg1 = virt_to_phys(param);
 
-	error = ihk_ikc_send(cpu_local_var(syscall_channel), &packet, 0);
+	error = ihk_ikc_send(cpu_local_var(ikc2linux), &packet, 0);
 	if (error) {
 		ekprintf("sysfs_init:ihk_ikc_send failed. %d\n", error);
 		goto out;

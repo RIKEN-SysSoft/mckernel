@@ -28,6 +28,7 @@
 #include <linux/slab.h>
 #include <linux/device.h>
 #include "mcctrl.h"
+#include <ihk/ihk_host_user.h>
 
 #define OS_MAX_MINOR 64
 
@@ -46,6 +47,12 @@ extern void rus_page_hash_put_pages(void);
 extern void binfmt_mcexec_init(void);
 extern void binfmt_mcexec_exit(void);
 
+extern int mcctrl_os_read_cpu_register(ihk_os_t os, int cpu,
+		struct ihk_os_cpu_register *desc);
+extern int mcctrl_os_write_cpu_register(ihk_os_t os, int cpu,
+		struct ihk_os_cpu_register *desc);
+extern int mcctrl_get_request_os_cpu(ihk_os_t os, int *cpu);
+
 static long mcctrl_ioctl(ihk_os_t os, unsigned int request, void *priv,
                          unsigned long arg, struct file *file)
 {
@@ -63,6 +70,7 @@ static struct ihk_os_user_call_handler mcctrl_uchs[] = {
 	{ .request = MCEXEC_UP_GET_CPU, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_GET_NODES, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_GET_CPUSET, .func = mcctrl_ioctl },
+	{ .request = MCEXEC_UP_CREATE_PPD, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_STRNCPY_FROM_USER, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_NEW_PROCESS, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_PREPARE_DMA, .func = mcctrl_ioctl },
@@ -74,7 +82,27 @@ static struct ihk_os_user_call_handler mcctrl_uchs[] = {
 	{ .request = MCEXEC_UP_SYS_MOUNT, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_SYS_UMOUNT, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_SYS_UNSHARE, .func = mcctrl_ioctl },
+	{ .request = MCEXEC_UP_UTIL_THREAD1, .func = mcctrl_ioctl },
+	{ .request = MCEXEC_UP_UTIL_THREAD2, .func = mcctrl_ioctl },
+	{ .request = MCEXEC_UP_SIG_THREAD, .func = mcctrl_ioctl },
+	{ .request = MCEXEC_UP_SYSCALL_THREAD, .func = mcctrl_ioctl },
+	{ .request = MCEXEC_UP_TERMINATE_THREAD, .func = mcctrl_ioctl },
+	{ .request = MCEXEC_UP_GET_NUM_POOL_THREADS, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_DEBUG_LOG, .func = mcctrl_ioctl },
+	{ .request = MCEXEC_UP_COPY_FROM_MCK, .func = mcctrl_ioctl },
+	{ .request = MCEXEC_UP_COPY_TO_MCK, .func = mcctrl_ioctl },
+	{ .request = IHK_OS_AUX_PERF_NUM, .func = mcctrl_ioctl },
+	{ .request = IHK_OS_AUX_PERF_SET, .func = mcctrl_ioctl },
+	{ .request = IHK_OS_AUX_PERF_GET, .func = mcctrl_ioctl },
+	{ .request = IHK_OS_AUX_PERF_ENABLE, .func = mcctrl_ioctl },
+	{ .request = IHK_OS_AUX_PERF_DISABLE, .func = mcctrl_ioctl },
+	{ .request = IHK_OS_AUX_PERF_DESTROY, .func = mcctrl_ioctl },
+};
+
+static struct ihk_os_kernel_call_handler mcctrl_kernel_handlers = {
+	.get_request_cpu = mcctrl_get_request_os_cpu,
+	.read_cpu_register = mcctrl_os_read_cpu_register,
+	.write_cpu_register = mcctrl_os_write_cpu_register,
 };
 
 static struct ihk_os_user_call mcctrl_uc_proto = {
@@ -111,12 +139,16 @@ int mcctrl_os_boot_notifier(int os_index)
 
 	memcpy(mcctrl_uc + os_index, &mcctrl_uc_proto, sizeof mcctrl_uc_proto);
 
+	rc = ihk_os_set_kernel_call_handlers(os[os_index], &mcctrl_kernel_handlers);
+	if (rc < 0) {
+		printk("mcctrl: error: setting kernel callbacks for OS %d\n", os_index);
+		goto error_cleanup_channels;
+	}
+
 	rc = ihk_os_register_user_call_handlers(os[os_index], mcctrl_uc + os_index);
 	if (rc < 0) {
-		destroy_ikc_channels(os[os_index]);
 		printk("mcctrl: error: registering callbacks for OS %d\n", os_index);
-
-		goto error_cleanup_channels;
+		goto error_clear_kernel_handlers;
 	}
 
 	procfs_init(os_index);
@@ -124,6 +156,8 @@ int mcctrl_os_boot_notifier(int os_index)
 
 	return 0;
 
+error_clear_kernel_handlers:
+	ihk_os_clear_kernel_call_handlers(os[os_index]);
 error_cleanup_channels:
 	destroy_ikc_channels(os[os_index]);
 
@@ -137,6 +171,7 @@ int mcctrl_os_shutdown_notifier(int os_index)
 		sysfsm_cleanup(os[os_index]);
 		free_topology_info(os[os_index]);
 		ihk_os_unregister_user_call_handlers(os[os_index], mcctrl_uc + os_index);
+		ihk_os_clear_kernel_call_handlers(os[os_index]);
 		destroy_ikc_channels(os[os_index]);
 		procfs_exit(os_index);
 	}

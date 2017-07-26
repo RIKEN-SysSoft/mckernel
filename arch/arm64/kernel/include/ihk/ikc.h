@@ -4,6 +4,9 @@
 
 #include <ikc/ihk.h>
 
+#define IKC_PORT_IKC2MCKERNEL 501
+#define IKC_PORT_IKC2LINUX    503
+
 /* manycore side */
 int ihk_mc_ikc_init_first(struct ihk_ikc_channel_desc *,
                           ihk_ikc_ph_t handler);

@@ -2,7 +2,7 @@
 #include <linux/version.h>
 #include <linux/mm_types.h>
 #include <asm/vdso.h>
-#include "../../config.h"
+#include "../../../config.h"
 #include "../../mcctrl.h"
 
 #define D(fmt, ...) printk("%s(%d) " fmt, __func__, __LINE__, ##__VA_ARGS__)
@@ -54,7 +54,9 @@ reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp, unsign
 	unsigned long start = 0L;
 	unsigned long end;
 
-	mutex_lock(&usrdata->reserve_lock);
+	if (mutex_lock_killable(&usrdata->reserve_lock) < 0) {
+		return -1;
+	}
 
 #define DESIRED_USER_END	TASK_UNMAPPED_BASE
 	end = DESIRED_USER_END;
@@ -125,3 +127,61 @@ out:
 	ihk_device_unmap_memory(dev, vdso_pa, sizeof(*vdso));
 	return;
 } /* get_vdso_info() */
+
+void *
+get_user_sp(void)
+{
+	/* TODO; skeleton for UTI */
+	return NULL;
+}
+
+void
+set_user_sp(void *usp)
+{
+	/* TODO; skeleton for UTI */
+}
+
+/* TODO; skeleton for UTI */
+struct trans_uctx {
+	volatile int cond;
+	int fregsize;
+
+	unsigned long rax;
+	unsigned long rbx;
+	unsigned long rcx;
+	unsigned long rdx;
+	unsigned long rsi;
+	unsigned long rdi;
+	unsigned long rbp;
+	unsigned long r8;
+	unsigned long r9;
+	unsigned long r10;
+	unsigned long r11;
+	unsigned long r12;
+	unsigned long r13;
+	unsigned long r14;
+	unsigned long r15;
+	unsigned long rflags;
+	unsigned long rip;
+	unsigned long rsp;
+	unsigned long fs;
+};
+
+void
+restore_fs(unsigned long fs)
+{
+	/* TODO; skeleton for UTI */
+}
+
+void
+save_fs_ctx(void *ctx)
+{
+	/* TODO; skeleton for UTI */
+}
+
+unsigned long
+get_fs_ctx(void *ctx)
+{
+	/* TODO; skeleton for UTI */
+	return 0;
+}

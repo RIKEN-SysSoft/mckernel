@@ -24,14 +24,15 @@
 #include <ihk/debug.h>
 #include <ihk/ikc.h>
 #include <ikc/master.h>
-#include <syscall.h>
 #include <cls.h>
+#include <syscall.h>
 #include <process.h>
 #include <page.h>
 #include <mman.h>
 #include <init.h>
 #include <kmalloc.h>
 #include <sysfs.h>
+#include <ihk/perfctr.h>
 
 //#define DEBUG_PRINT_HOST
 
@@ -40,6 +41,9 @@
 #else
 #define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
 #endif
+
+/* Linux channel table, indexec by Linux CPU id */
+static struct ihk_ikc_channel_desc **ikc2linuxs = NULL;
 
 void check_mapping_for_proc(struct thread *thread, unsigned long addr)
 {
@@ -88,11 +92,15 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	struct address_space *as = vm->address_space;
 	long aout_base;
 	int error;
+	struct vm_range *range;
+	unsigned long ap_flags;
+	enum ihk_mc_pt_attribute ptattr;
 	
 	n = p->num_sections;
 
 	aout_base = (pn->reloc)? vm->region.map_end: 0;
 	for (i = 0; i < n; i++) {
+		ap_flags = 0;
 		if (pn->sections[i].interp && (interp_nbase == (uintptr_t)-1)) {
 			interp_obase = pn->sections[i].vaddr;
 			interp_obase -= (interp_obase % pn->interp_align);
@@ -113,48 +121,51 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		s = (pn->sections[i].vaddr) & PAGE_MASK;
 		e = (pn->sections[i].vaddr + pn->sections[i].len
 				+ PAGE_SIZE - 1) & PAGE_MASK;
-		range_npages = (e - s) >> PAGE_SHIFT;
+		range_npages = ((pn->sections[i].vaddr - s) +
+			pn->sections[i].filesz + PAGE_SIZE - 1) >> PAGE_SHIFT;
 		flags = VR_NONE;
 		flags |= PROT_TO_VR_FLAG(pn->sections[i].prot);
 		flags |= VRFLAG_PROT_TO_MAXPROT(flags);
+		flags |= VR_DEMAND_PAGING;
 
-		if ((up_v = ihk_mc_alloc_pages(range_npages, IHK_MC_AP_NOWAIT)) 
-				== NULL) {
-			kprintf("ERROR: alloc pages for ELF section %i\n", i);
-			goto err;
-		} 
-		
-		up = virt_to_phys(up_v);
-		if (add_process_memory_range(vm, s, e, up, flags, NULL, 0,
-					PAGE_SHIFT, NULL) != 0) {
-			ihk_mc_free_pages(up_v, range_npages);
+		/* Non-TEXT sections that are large respect user allocation policy
+		 * unless user explicitly requests otherwise */
+		if (i >= 1 && pn->sections[i].len >= pn->mpol_threshold &&
+				!(pn->mpol_flags & MPOL_NO_BSS)) {
+			dkprintf("%s: section: %d size: %d pages -> IHK_MC_AP_USER\n",
+					__FUNCTION__, i, range_npages);
+			ap_flags = IHK_MC_AP_USER;
+			flags |= VR_AP_USER;
+		}
+
+		if (add_process_memory_range(vm, s, e, NOPHYS, flags, NULL, 0,
+					pn->sections[i].len > LARGE_PAGE_SIZE ?
+					LARGE_PAGE_SHIFT : PAGE_SHIFT,
+					&range) != 0) {
 			kprintf("ERROR: adding memory range for ELF section %i\n", i);
 			goto err;
 		}
 
-		{
-			void *_virt = (void *)s;
-			unsigned long _phys;
-			if (ihk_mc_pt_virt_to_phys(as->page_table, 
-						_virt, &_phys)) {
-				kprintf("ERROR: no mapping for 0x%lX\n", _virt);
-			}
-			for (_virt = (void *)s + PAGE_SIZE; 
-					(unsigned long)_virt < e; _virt += PAGE_SIZE) {
-				unsigned long __phys;
-				if (ihk_mc_pt_virt_to_phys(as->page_table, 
-							_virt, &__phys)) {
-					kprintf("ERROR: no mapping for 0x%lX\n", _virt);
-					panic("mapping");
-				}
-				if (__phys != _phys + PAGE_SIZE) {
-					kprintf("0x%lX + PAGE_SIZE is not physically contigous, from 0x%lX to 0x%lX\n", _virt - PAGE_SIZE, _phys, __phys);
-					panic("mondai");
-				}
+		if ((up_v = ihk_mc_alloc_pages_user(range_npages,
+						IHK_MC_AP_NOWAIT | ap_flags)) == NULL) {
+			kprintf("ERROR: alloc pages for ELF section %i\n", i);
+			goto err;
+		}
 
-				_phys = __phys;
-			}
-			dkprintf("0x%lX -> 0x%lX is physically contigous\n", s, e);
+		up = virt_to_phys(up_v);
+
+		ptattr = arch_vrflag_to_ptattr(range->flag, PF_POPULATE, NULL);
+		error = ihk_mc_pt_set_range(vm->address_space->page_table, vm,
+				(void *)range->start,
+				(void *)range->start + (range_npages * PAGE_SIZE),
+				up, ptattr,
+				range->pgshift);
+
+		if (error) {
+			kprintf("%s: ihk_mc_pt_set_range failed. %d\n",
+					__FUNCTION__, error);
+			ihk_mc_free_pages_user(up_v, range_npages);
+			goto err;
 		}
 
 		p->sections[i].remote_pa = up;
@@ -199,7 +210,43 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		pn->at_entry += aout_base;
 	}
 
-	vm->region.brk_start = vm->region.brk_end = vm->region.data_end;
+	vm->region.brk_start = vm->region.brk_end =
+		(vm->region.data_end + LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
+
+#if 0
+	{
+		void *heap;
+
+		dkprintf("%s: requested heap size: %lu\n",
+				__FUNCTION__, proc->heap_extension);
+		heap = ihk_mc_alloc_aligned_pages(proc->heap_extension >> PAGE_SHIFT,
+				LARGE_PAGE_P2ALIGN, IHK_MC_AP_NOWAIT |
+				(!(proc->mpol_flags & MPOL_NO_HEAP) ? IHK_MC_AP_USER : 0));
+
+		if (!heap) {
+			kprintf("%s: error: allocating heap\n", __FUNCTION__);
+			goto err;
+		}
+
+		flags = VR_PROT_READ | VR_PROT_WRITE;
+		flags |= VRFLAG_PROT_TO_MAXPROT(flags);
+		if (add_process_memory_range(vm, vm->region.brk_start,
+					vm->region.brk_start + proc->heap_extension,
+					virt_to_phys(heap),
+					flags, NULL, 0, LARGE_PAGE_P2ALIGN, NULL) != 0) {
+			ihk_mc_free_pages(heap, proc->heap_extension >> PAGE_SHIFT);
+			kprintf("%s: error: adding memory range for heap\n", __FUNCTION__);
+			goto err;
+		}
+
+		vm->region.brk_end_allocated = vm->region.brk_end +
+			proc->heap_extension;
+		dkprintf("%s: heap @ 0x%lx:%lu\n",
+				__FUNCTION__, vm->region.brk_start, proc->heap_extension);
+	}
+#else
+	vm->region.brk_end_allocated = vm->region.brk_end;
+#endif
 
 	/* Map, copy and update args and envs */
 	flags = VR_PROT_READ | VR_PROT_WRITE;
@@ -207,7 +254,8 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	addr = vm->region.map_start - PAGE_SIZE * SCD_RESERVED_COUNT;
 	e = addr + PAGE_SIZE * ARGENV_PAGE_COUNT;
 
-	if((args_envs = ihk_mc_alloc_pages(ARGENV_PAGE_COUNT, IHK_MC_AP_NOWAIT)) == NULL){
+	if((args_envs = ihk_mc_alloc_pages_user(ARGENV_PAGE_COUNT,
+	                                        IHK_MC_AP_NOWAIT)) == NULL){
 		kprintf("ERROR: allocating pages for args/envs\n");
 		goto err;
 	}
@@ -215,7 +263,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 
 	if(add_process_memory_range(vm, addr, e, args_envs_p,
 				flags, NULL, 0, PAGE_SHIFT, NULL) != 0){
-		ihk_mc_free_pages(args_envs, ARGENV_PAGE_COUNT);
+		ihk_mc_free_pages_user(args_envs, ARGENV_PAGE_COUNT);
 		kprintf("ERROR: adding memory range for args/envs\n");
 		goto err;
 	}
@@ -417,6 +465,14 @@ static int process_msg_prepare_process(unsigned long rphys)
 	proc->sgid = pn->cred[6];
 	proc->fsgid = pn->cred[7];
 	proc->termsig = SIGCHLD;
+	proc->mpol_flags = pn->mpol_flags;
+	proc->mpol_threshold = pn->mpol_threshold;
+	proc->nr_processes = pn->nr_processes;
+	proc->heap_extension = pn->heap_extension;
+#ifdef PROFILE_ENABLE
+	proc->profile = pn->profile;
+	thread->profile = pn->profile;
+#endif
 
 	vm->region.user_start = pn->user_start;
 	vm->region.user_end = pn->user_end;
@@ -475,6 +531,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 {
 	struct ikc_scd_packet *packet = __packet;
 	struct ikc_scd_packet pckt;
+	struct ihk_ikc_channel_desc *resp_channel = cpu_local_var(ikc2linux);
 	int rc;
 	struct mcs_rwlock_node_irqsave lock;
 	struct thread *thread;
@@ -489,6 +546,8 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	unsigned long pp;
 	int cpuid;
 	int ret = 0;
+	struct perf_ctrl_desc *pcd;
+	unsigned int mode = 0;
 
 	switch (packet->msg) {
 	case SCD_MSG_INIT_CHANNEL_ACKED:
@@ -508,7 +567,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		}
 		pckt.ref = packet->ref;
 		pckt.arg = packet->arg;
-		syscall_channel_send(c, &pckt);
+		syscall_channel_send(resp_channel, &pckt);
 
 		ret = 0;
 		break;
@@ -565,10 +624,10 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		pckt.err = 0;
 		pckt.ref = packet->ref;
 		pckt.arg = packet->arg;
-		syscall_channel_send(c, &pckt);
+		syscall_channel_send(resp_channel, &pckt);
 
 		rc = do_kill(NULL, info.pid, info.tid, info.sig, &info.info, 0);
-		kprintf("SCD_MSG_SEND_SIGNAL: do_kill(pid=%d, tid=%d, sig=%d)=%d\n", info.pid, info.tid, info.sig, rc);
+		dkprintf("SCD_MSG_SEND_SIGNAL: do_kill(pid=%d, tid=%d, sig=%d)=%d\n", info.pid, info.tid, info.sig, rc);
 		ret = 0;
 		break;
 
@@ -598,6 +657,61 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		ret = 0;
 		break;
 
+	case SCD_MSG_PERF_CTRL:
+		pp = ihk_mc_map_memory(NULL, packet->arg, sizeof(struct perf_ctrl_desc));
+		pcd = (struct perf_ctrl_desc *)ihk_mc_map_virtual(pp, 1, PTATTR_WRITABLE | PTATTR_ACTIVE);
+
+		switch (pcd->ctrl_type) {
+		case PERF_CTRL_SET:
+			if (!pcd->exclude_kernel) {
+				mode |= PERFCTR_KERNEL_MODE;
+			}
+			if (!pcd->exclude_user) {
+				mode |= PERFCTR_USER_MODE;
+			}
+			ihk_mc_perfctr_init_raw(pcd->target_cntr, pcd->config, mode);
+			ihk_mc_perfctr_stop(1 << pcd->target_cntr);
+			ihk_mc_perfctr_reset(pcd->target_cntr);
+			break;
+
+		case PERF_CTRL_ENABLE:
+			ihk_mc_perfctr_start(pcd->target_cntr_mask);
+			break;
+			
+		case PERF_CTRL_DISABLE:
+			ihk_mc_perfctr_stop(pcd->target_cntr_mask);
+			break;
+
+		case PERF_CTRL_GET:
+			pcd->read_value = ihk_mc_perfctr_read(pcd->target_cntr);
+			break;
+			
+		default:
+			kprintf("%s: SCD_MSG_PERF_CTRL unexpected ctrl_type\n", __FUNCTION__);
+		}
+
+		ihk_mc_unmap_virtual(pcd, 1, 0);
+		ihk_mc_unmap_memory(NULL, pp, sizeof(struct perf_ctrl_desc));
+
+		pckt.msg = SCD_MSG_PERF_ACK;
+		pckt.err = 0;
+		pckt.arg = packet->arg;
+		ihk_ikc_send(resp_channel, &pckt, 0);
+
+		ret = 0;
+		break;
+
+	case SCD_MSG_CPU_RW_REG:
+
+		pckt.msg = SCD_MSG_CPU_RW_REG_RESP;
+		memcpy(&pckt.desc, &packet->desc,
+				sizeof(struct ihk_os_cpu_register));
+		pckt.resp = packet->resp;
+		pckt.err = arch_cpu_read_write_register(&pckt.desc, packet->op);
+
+		ihk_ikc_send(resp_channel, &pckt, 0);
+		break;
+
 	default:
 		kprintf("syscall_pakcet_handler:unknown message "
 				"(%d.%d.%d.%d.%d.%#lx)\n",
@@ -612,54 +726,77 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	return ret;
 }
 
-void init_host_syscall_channel(void)
+static int dummy_packet_handler(struct ihk_ikc_channel_desc *c,
+                                  void *__packet, void *__os)
 {
-	struct ihk_ikc_connect_param param;
-	struct ikc_scd_packet pckt;
-
-	param.port = 501;
-	param.pkt_size = sizeof(struct ikc_scd_packet);
-	param.queue_size = PAGE_SIZE * 4;
-	param.magic = 0x1129;
-	param.handler = syscall_packet_handler;
-
-	dkprintf("(syscall) Trying to connect host ...");
-	while (ihk_ikc_connect(NULL, &param) != 0) {
-		dkprintf(".");
-		ihk_mc_delay_us(1000 * 1000);
-	}
-	dkprintf("connected.\n");
-
-	get_this_cpu_local_var()->syscall_channel = param.channel;
-
-	pckt.msg = SCD_MSG_INIT_CHANNEL;
-	pckt.ref = ihk_mc_get_processor_id();
-	pckt.arg = virt_to_phys(&cpu_local_var(iip));
-	syscall_channel_send(param.channel, &pckt);
+	struct ikc_scd_packet *packet = __packet;
+	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet, c);
+	return 0;
 }
 
-void init_host_syscall_channel2(void)
+void init_host_ikc2linux(int linux_cpu)
 {
 	struct ihk_ikc_connect_param param;
-	struct ikc_scd_packet pckt;
+	struct ihk_ikc_channel_desc *c;
 
-	param.port = 502;
+	/* Main thread allocates channel pointer table */
+	if (!ikc2linuxs) {
+		ikc2linuxs = kmalloc(sizeof(*ikc2linuxs) *
+				ihk_mc_get_nr_linux_cores(), IHK_MC_AP_NOWAIT);
+		if (!ikc2linuxs) {
+			kprintf("%s: error: allocating Linux channels\n", __FUNCTION__);
+			panic("");
+		}
+
+		memset(ikc2linuxs, 0, sizeof(*ikc2linuxs) *
+				ihk_mc_get_nr_linux_cores());
+	}
+
+	c = ikc2linuxs[linux_cpu];
+
+	if (!c) {
+		param.port = 503;
+		param.intr_cpu = linux_cpu;
+		param.pkt_size = sizeof(struct ikc_scd_packet);
+		param.queue_size = 2 * num_processors * sizeof(struct ikc_scd_packet);
+		if (param.queue_size < PAGE_SIZE * 4) {
+			param.queue_size = PAGE_SIZE * 4;
+		}
+		param.magic = 0x1129;
+		param.handler = dummy_packet_handler;
+
+		dkprintf("(ikc2linux) Trying to connect host ...");
+		while (ihk_ikc_connect(NULL, &param) != 0) {
+			dkprintf(".");
+			ihk_mc_delay_us(1000 * 1000);
+		}
+		dkprintf("connected.\n");
+
+		ikc2linuxs[linux_cpu] = param.channel;
+		c = param.channel;
+	}
+
+	get_this_cpu_local_var()->ikc2linux = c;
+}
+
+void init_host_ikc2mckernel(void)
+{
+	struct ihk_ikc_connect_param param;
+
+	param.port = 501;
+	param.intr_cpu = -1;
 	param.pkt_size = sizeof(struct ikc_scd_packet);
 	param.queue_size = PAGE_SIZE * 4;
 	param.magic = 0x1329;
 	param.handler = syscall_packet_handler;
 
-	dkprintf("(syscall) Trying to connect host ...");
+	dkprintf("(ikc2mckernel) Trying to connect host ...");
 	while (ihk_ikc_connect(NULL, &param) != 0) {
 		dkprintf(".");
 		ihk_mc_delay_us(1000 * 1000);
 	}
 	dkprintf("connected.\n");
 
-	get_this_cpu_local_var()->syscall_channel2 = param.channel;
-
-	pckt.msg = SCD_MSG_INIT_CHANNEL;
-	pckt.ref = ihk_mc_get_processor_id();
-	pckt.arg = virt_to_phys(&cpu_local_var(iip2));
-	syscall_channel_send(param.channel, &pckt);
+	ihk_ikc_set_regular_channel(NULL, param.channel, ihk_ikc_get_processor_id());
 }
+

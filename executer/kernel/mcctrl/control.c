@@ -39,8 +39,12 @@
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/io.h>
-#include "../../config.h"
+#include <linux/kallsyms.h>
+#include <linux/syscalls.h>
+#include <trace/events/sched.h>
+#include "../../../config.h"
 #include "mcctrl.h"
+#include <ihk/ihk_host_user.h>
 
 //#define DEBUG
 
@@ -85,6 +89,9 @@ int (*mcctrl_sys_umount)(char *dir_name, int flags) = sys_umount;
 
 //extern struct mcctrl_channel *channels;
 int mcctrl_ikc_set_recv_cpu(ihk_os_t os, int cpu);
+int syscall_backward(struct mcctrl_usrdata *, int, unsigned long, unsigned long,
+                     unsigned long, unsigned long, unsigned long,
+                     unsigned long, unsigned long *);
 
 static long mcexec_prepare_image(ihk_os_t os,
                                  struct program_load_desc * __user udesc)
@@ -305,12 +312,42 @@ int mcexec_transfer_image(ihk_os_t os, struct remote_transfer *__user upt)
 #endif
 }
 
-//extern unsigned long last_thread_exec;
-
-struct release_handler_info {
+struct mcos_handler_info {
 	int pid;
 	int cpu;
+	struct mcctrl_usrdata *ud;
+	struct file *file;
 };
+
+struct mcos_handler_info;
+static struct host_thread *host_threads;
+DEFINE_RWLOCK(host_thread_lock);
+
+struct host_thread {
+	struct host_thread *next;
+	struct mcos_handler_info *handler;
+	int     pid;
+	int     tid;
+	unsigned long usp;
+	unsigned long lfs;
+	unsigned long rfs;
+};
+
+struct mcos_handler_info *new_mcos_handler_info(ihk_os_t os, struct file *file)
+{
+	struct mcos_handler_info *info;
+
+	info = kmalloc(sizeof(struct mcos_handler_info), GFP_KERNEL);
+#ifdef POSTK_DEBUG_TEMP_FIX_64 /* host process is SIGKILLed fix. */
+	if (info == NULL) {
+		return NULL;
+	}
+#endif /* POSTK_DEBUG_TEMP_FIX_64 */
+	memset(info, '\0', sizeof(struct mcos_handler_info));
+	info->ud = ihk_host_os_get_usrdata(os);
+	info->file = file;
+	return info;
+}
 
 static long mcexec_debug_log(ihk_os_t os, unsigned long arg)
 {
@@ -324,20 +361,27 @@ static long mcexec_debug_log(ihk_os_t os, unsigned long arg)
 }
 
 int mcexec_close_exec(ihk_os_t os);
+int mcexec_destroy_per_process_data(ihk_os_t os);
 
 static void release_handler(ihk_os_t os, void *param)
 {
-	struct release_handler_info *info = param;
+	struct mcos_handler_info *info = param;
 	struct ikc_scd_packet isp;
 	int os_ind = ihk_host_os_get_index(os);
-	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
-	struct mcctrl_per_proc_data *ppd = NULL;
+	unsigned long flags;
+	struct host_thread *thread;
 
-	ppd = mcctrl_get_per_proc_data(usrdata, info->pid);
-	if (ppd) {
-		mcctrl_put_per_proc_data(ppd);
-		mcexec_close_exec(os);
+	write_lock_irqsave(&host_thread_lock, flags);
+	for (thread = host_threads; thread; thread = thread->next) {
+		if (thread->handler == info) {
+			thread->handler = NULL;
+		}
 	}
+	write_unlock_irqrestore(&host_thread_lock, flags);
+
+	mcexec_close_exec(os);
+
+	mcexec_destroy_per_process_data(os);
 
 	memset(&isp, '\0', sizeof isp);
 	isp.msg = SCD_MSG_CLEANUP_PROCESS;
@@ -359,20 +403,20 @@ static long mcexec_newprocess(ihk_os_t os,
                               struct file *file)
 {
 	struct newprocess_desc desc;
-	struct release_handler_info *info;
+	struct mcos_handler_info *info;
 
-	if (copy_from_user(&desc, udesc, sizeof(struct newprocess_desc))) {
+	if (copy_from_user(&desc, udesc, sizeof(struct newprocess_desc))) { 
 		return -EFAULT;
 	}
-	info = kmalloc(sizeof(struct release_handler_info), GFP_KERNEL);
+	info = new_mcos_handler_info(os, file);
 #ifdef POSTK_DEBUG_TEMP_FIX_64 /* host process is SIGKILLed fix. */
 	if (info == NULL) {
 		return -ENOMEM;
 	}
-	memset(info, 0, sizeof(struct release_handler_info));
 #endif /* POSTK_DEBUG_TEMP_FIX_64 */
 	info->pid = desc.pid;
 	ihk_os_register_release_handler(file, release_handler, info);
+	ihk_os_set_mcos_private_data(file, info);
 	return 0;
 }
 
@@ -384,7 +428,7 @@ static long mcexec_start_image(ihk_os_t os,
 	struct ikc_scd_packet isp;
 	struct mcctrl_channel *c;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
-	struct release_handler_info *info;
+	struct mcos_handler_info *info;
 
 	desc = kmalloc(sizeof(*desc), GFP_KERNEL);
 	if (!desc) {
@@ -399,17 +443,17 @@ static long mcexec_start_image(ihk_os_t os,
 		return -EFAULT;
 	}
 
-	info = kmalloc(sizeof(struct release_handler_info), GFP_KERNEL);
+	info = new_mcos_handler_info(os, file);
 #ifdef POSTK_DEBUG_TEMP_FIX_64 /* host process is SIGKILLed fix. */
 	if (info == NULL) {
 		kfree(desc);
 		return -ENOMEM;
 	}
-	memset(info, 0, sizeof(struct release_handler_info));
 #endif /* POSTK_DEBUG_TEMP_FIX_64 */
 	info->pid = desc->pid;
 	info->cpu = desc->cpu;
 	ihk_os_register_release_handler(file, release_handler, info);
+	ihk_os_set_mcos_private_data(file, info);
 
 	c = usrdata->channels + desc->cpu;
 
@@ -522,9 +566,13 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 	int cpu, cpus_assigned, cpus_to_assign, cpu_prev;
 	int ret = 0;
 	int mcexec_linux_numa;
-	cpumask_t cpus_used;
-	cpumask_t cpus_to_use;
+	cpumask_t *mcexec_cpu_set = NULL;
+	cpumask_t *cpus_used = NULL;
+	cpumask_t *cpus_to_use = NULL;
 	struct mcctrl_per_proc_data *ppd;
+	struct process_list_item *pli;
+	struct process_list_item *pli_next = NULL;
+	struct process_list_item *pli_iter;
 
 	if (!udp) {
 		return -EINVAL;
@@ -538,16 +586,13 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 
 	pe = &udp->part_exec;
 
+	mutex_lock(&pe->lock);
+
 	if (copy_from_user(&req, (void *)arg, sizeof(req))) {
 		printk("%s: error copying user request\n", __FUNCTION__);
 		ret = -EINVAL;
 		goto put_and_unlock_out;
 	}
-
-	mutex_lock(&pe->lock);
-
-	memcpy(&cpus_used, &pe->cpus_used, sizeof(cpumask_t));
-	memset(&cpus_to_use, 0, sizeof(cpus_to_use));
 
 	/* First process to enter CPU partitioning */
 	if (pe->nr_processes == -1) {
@@ -572,10 +617,103 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 			pe->nr_processes,
 			pe->nr_processes_left);
 
+	/* Wait for all processes */
+	pli = kmalloc(sizeof(*pli), GFP_KERNEL);
+	if (!pli) {
+		printk("%s: error: allocating pli\n", __FUNCTION__);
+		goto put_and_unlock_out;
+	}
+
+	pli->task = current;
+	pli->ready = 0;
+	init_waitqueue_head(&pli->pli_wq);
+
+	pli_next = NULL;
+	/* Add ourself to the list in order of start time */
+	list_for_each_entry(pli_iter, &pe->pli_list, list) {
+#ifdef POSTK_DEBUG_ARCH_DEP_74 /* Fix HOST-Linux version dependent code (task_struct.start_time) */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)
+		if (pli_iter->task->start_time > current->start_time) {
+			pli_next = pli_iter;
+			break;
+		}
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0) */
+		if ((pli_iter->task->start_time.tv_sec >
+					current->start_time.tv_sec) ||
+				((pli_iter->task->start_time.tv_sec ==
+				  current->start_time.tv_sec) &&
+				 ((pli_iter->task->start_time.tv_nsec >
+				   current->start_time.tv_nsec)))) {
+			pli_next = pli_iter;
+			break;
+		}
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_74 */
+		if ((pli_iter->task->start_time.tv_sec >
+					current->start_time.tv_sec) ||
+				((pli_iter->task->start_time.tv_sec ==
+				  current->start_time.tv_sec) &&
+				 ((pli_iter->task->start_time.tv_nsec >
+				   current->start_time.tv_nsec)))) {
+			pli_next = pli_iter;
+			break;
+		}
+#endif /* POSTK_DEBUG_ARCH_DEP_74 */
+	}
+
+	/* Add in front of next */
+	if (pli_next) {
+		list_add_tail(&pli->list, &pli_next->list);
+	}
+	else {
+		list_add_tail(&pli->list, &pe->pli_list);
+	}
+	pli_next = NULL;
+
+	/* Last process? Wake up first in list */
+	if (pe->nr_processes_left == 0) {
+		pli_next = list_first_entry(&pe->pli_list,
+			struct process_list_item, list);
+		list_del(&pli_next->list);
+		pli_next->ready = 1;
+		wake_up_interruptible(&pli_next->pli_wq);
+		/* Reset process counter */
+		pe->nr_processes_left = pe->nr_processes;
+	}
+
+	/* Wait for the rest if not the last or if the last but
+	 * the woken process is different than the last */
+	if (pe->nr_processes_left || (pli_next && pli_next != pli)) {
+		dprintk("%s: pid: %d, waiting in list\n",
+				__FUNCTION__, task_tgid_vnr(current));
+		mutex_unlock(&pe->lock);
+		ret = wait_event_interruptible(pli->pli_wq, pli->ready);
+		mutex_lock(&pe->lock);
+		if (ret != 0) {
+			goto put_and_unlock_out;
+		}
+		dprintk("%s: pid: %d, woken up\n",
+				__FUNCTION__, task_tgid_vnr(current));
+	}
+
+	--pe->nr_processes_left;
+	kfree(pli);
+
 	cpus_to_assign = udp->cpu_info->n_cpus / req.nr_processes;
+	cpus_used = kmalloc(sizeof(cpumask_t), GFP_KERNEL);
+	cpus_to_use = kmalloc(sizeof(cpumask_t), GFP_KERNEL);
+	mcexec_cpu_set = kmalloc(sizeof(cpumask_t), GFP_KERNEL);
+	if (!cpus_used || !cpus_to_use || !mcexec_cpu_set) {
+		printk("%s: error: allocating cpu masks\n", __FUNCTION__);
+		ret = -ENOMEM;
+		goto put_and_unlock_out;
+	}
+	memcpy(cpus_used, &pe->cpus_used, sizeof(cpumask_t));
+	memset(cpus_to_use, 0, sizeof(cpumask_t));
+	memset(mcexec_cpu_set, 0, sizeof(cpumask_t));
 
 	/* Find the first unused CPU */
-	cpu = cpumask_next_zero(-1, &cpus_used);
+	cpu = cpumask_next_zero(-1, cpus_used);
 	if (cpu >= udp->cpu_info->n_cpus) {
 		printk("%s: error: no more CPUs available\n",
 				__FUNCTION__);
@@ -584,11 +722,17 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 	}
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
-	cpumask_set_cpu(cpu, &cpus_used);
-	cpumask_set_cpu(cpu, &cpus_to_use);
+	cpumask_set_cpu(cpu, cpus_used);
+	cpumask_set_cpu(cpu, cpus_to_use);
+	if (udp->cpu_info->ikc_mapped) {
+		cpumask_set_cpu(udp->cpu_info->ikc_map[cpu], mcexec_cpu_set);
+	}
 #else
- 	cpu_set(cpu, cpus_used);
- 	cpu_set(cpu, cpus_to_use);
+	cpu_set(cpu, *cpus_used);
+	cpu_set(cpu, *cpus_to_use);
+	if (udp->cpu_info->ikc_mapped) {
+		cpu_set(udp->cpu_info->ikc_map[cpu], *mcexec_cpu_set);
+	}
 #endif
 	cpu_prev = cpu;
 	dprintk("%s: CPU %d assigned (first)\n", __FUNCTION__, cpu);
@@ -618,16 +762,24 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 		list_for_each_entry(cache_top, &cpu_top->cache_list, chain) {
 			for_each_cpu(cpu, &cache_top->shared_cpu_map) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
-				if (!cpumask_test_cpu(cpu, &cpus_used)) {
+				if (!cpumask_test_cpu(cpu, cpus_used)) {
 #else
- 				if (!cpu_isset(cpu, cpus_used)) {
+				if (!cpu_isset(cpu, *cpus_used)) {
 #endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
-					cpumask_set_cpu(cpu, &cpus_used);
-					cpumask_set_cpu(cpu, &cpus_to_use);
+					cpumask_set_cpu(cpu, cpus_used);
+					cpumask_set_cpu(cpu, cpus_to_use);
+					if (udp->cpu_info->ikc_mapped) {
+						cpumask_set_cpu(udp->cpu_info->ikc_map[cpu],
+								mcexec_cpu_set);
+					}
 #else
- 					cpu_set(cpu, cpus_used);
- 					cpu_set(cpu, cpus_to_use);
+					cpu_set(cpu, *cpus_used);
+					cpu_set(cpu, *cpus_to_use);
+					if (udp->cpu_info->ikc_mapped) {
+						cpu_set(udp->cpu_info->ikc_map[cpu],
+								*mcexec_cpu_set);
+					}
 #endif
 					cpu_prev = cpu;
 					dprintk("%s: CPU %d assigned (same cache L%lu)\n",
@@ -641,7 +793,7 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 		node = linux_numa_2_mckernel_numa(udp,
 				cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu_prev)));
 
-		for_each_cpu_not(cpu, &cpus_used) {
+		for_each_cpu_not(cpu, cpus_used) {
 			/* Invalid CPU? */
 			if (cpu >= udp->cpu_info->n_cpus)
 				break;
@@ -650,11 +802,19 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 			if (node == linux_numa_2_mckernel_numa(udp,
 						cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu)))) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
-				cpumask_set_cpu(cpu, &cpus_used);
-				cpumask_set_cpu(cpu, &cpus_to_use);
+				cpumask_set_cpu(cpu, cpus_used);
+				cpumask_set_cpu(cpu, cpus_to_use);
+				if (udp->cpu_info->ikc_mapped) {
+					cpumask_set_cpu(udp->cpu_info->ikc_map[cpu],
+							mcexec_cpu_set);
+				}
 #else
- 				cpu_set(cpu, cpus_used);
- 				cpu_set(cpu, cpus_to_use);
+				cpu_set(cpu, *cpus_used);
+				cpu_set(cpu, *cpus_to_use);
+				if (udp->cpu_info->ikc_mapped) {
+					cpu_set(udp->cpu_info->ikc_map[cpu],
+							*mcexec_cpu_set);
+				}
 #endif
 				cpu_prev = cpu;
 				dprintk("%s: CPU %d assigned (same NUMA)\n",
@@ -664,7 +824,7 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 		}
 
 		/* No CPU? Simply find the next unused one */
-		cpu = cpumask_next_zero(-1, &cpus_used);
+		cpu = cpumask_next_zero(-1, cpus_used);
 		if (cpu >= udp->cpu_info->n_cpus) {
 			printk("%s: error: no more CPUs available\n",
 					__FUNCTION__);
@@ -673,11 +833,17 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 		}
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
-		cpumask_set_cpu(cpu, &cpus_used);
-		cpumask_set_cpu(cpu, &cpus_to_use);
+		cpumask_set_cpu(cpu, cpus_used);
+		cpumask_set_cpu(cpu, cpus_to_use);
+		if (udp->cpu_info->ikc_mapped) {
+			cpumask_set_cpu(udp->cpu_info->ikc_map[cpu], mcexec_cpu_set);
+		}
 #else
- 		cpu_set(cpu, cpus_used);
- 		cpu_set(cpu, cpus_to_use);
+		cpu_set(cpu, *cpus_used);
+		cpu_set(cpu, *cpus_to_use);
+		if (udp->cpu_info->ikc_mapped) {
+			cpu_set(udp->cpu_info->ikc_map[cpu], *mcexec_cpu_set);
+		}
 #endif
 		cpu_prev = cpu;
 		dprintk("%s: CPU %d assigned (unused)\n",
@@ -688,16 +854,16 @@ next_cpu:
 	}
 
 	/* Found all cores, let user know */
-	if (copy_to_user(req.cpu_set, &cpus_to_use,
-				(req.cpu_set_size < sizeof(cpus_to_use) ?
-				 req.cpu_set_size : sizeof(cpus_to_use)))) {
+	if (copy_to_user(req.cpu_set, cpus_to_use,
+				(req.cpu_set_size < sizeof(cpumask_t) ?
+				 req.cpu_set_size : sizeof(cpumask_t)))) {
 		printk("%s: error copying mask to user\n", __FUNCTION__);
 		ret = -EINVAL;
 		goto put_and_unlock_out;
 	}
 
-	/* Copy IKC target core and mcexec Linux NUMA id */
-	cpu = cpumask_next(-1, &cpus_to_use);
+	/* Copy IKC target core */
+	cpu = cpumask_next(-1, cpus_to_use);
 	if (copy_to_user(req.target_core, &cpu, sizeof(cpu))) {
 		printk("%s: error copying target core to user\n",
 				__FUNCTION__);
@@ -705,6 +871,7 @@ next_cpu:
 		goto put_and_unlock_out;
 	}
 
+	/* mcexec NUMA to bind to */
 	mcexec_linux_numa = cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu));
 	if (copy_to_user(req.mcexec_linux_numa, &mcexec_linux_numa,
 				sizeof(mcexec_linux_numa))) {
@@ -714,12 +881,32 @@ next_cpu:
 		goto put_and_unlock_out;
 	}
 
+	/* mcexec cpu_set to bind to if user requested */
+	if (req.mcexec_cpu_set && udp->cpu_info->ikc_mapped) {
+		int ikc_mapped = 1;
+
+		if (copy_to_user(req.mcexec_cpu_set, mcexec_cpu_set,
+					(req.mcexec_cpu_set_size < sizeof(cpumask_t) ?
+					 req.mcexec_cpu_set_size : sizeof(cpumask_t)))) {
+			printk("%s: error copying mcexec CPU set to user\n", __FUNCTION__);
+			ret = -EINVAL;
+			goto put_and_unlock_out;
+		}
+
+		if (copy_to_user(req.ikc_mapped, &ikc_mapped,
+					sizeof(ikc_mapped))) {
+			printk("%s: error copying ikc_mapped\n", __FUNCTION__);
+			ret = -EINVAL;
+			goto put_and_unlock_out;
+		}
+	}
+
 	/* Save in per-process structure */
-	memcpy(&ppd->cpu_set, &cpus_to_use, sizeof(cpumask_t));
+	memcpy(&ppd->cpu_set, cpus_to_use, sizeof(cpumask_t));
 	ppd->ikc_target_cpu = cpu;
 
 	/* Commit used cores to OS structure */
-	memcpy(&pe->cpus_used, &cpus_used, sizeof(cpus_used));
+	memcpy(&pe->cpus_used, cpus_used, sizeof(*cpus_used));
 
 	/* Reset if last process */
 	if (pe->nr_processes_left == 0) {
@@ -729,14 +916,74 @@ next_cpu:
 		pe->nr_processes = -1;
 		memset(&pe->cpus_used, 0, sizeof(pe->cpus_used));
 	}
+	/* Otherwise wake up next process in list */
+	else {
+		pli_next = list_first_entry(&pe->pli_list,
+			struct process_list_item, list);
+		list_del(&pli_next->list);
+		pli_next->ready = 1;
+		wake_up_interruptible(&pli_next->pli_wq);
+	}
 
+	dprintk("%s: pid: %d, ret: 0\n", __FUNCTION__, task_tgid_vnr(current));
 	ret = 0;
 
 put_and_unlock_out:
+	kfree(cpus_to_use);
+	kfree(cpus_used);
+	kfree(mcexec_cpu_set);
 	mcctrl_put_per_proc_data(ppd);
 	mutex_unlock(&pe->lock);
 
 	return ret;
+}
+
+#define THREAD_POOL_PER_CPU_THRESHOLD	(128)
+
+int mcctrl_get_num_pool_threads(ihk_os_t os)
+{
+	struct mcctrl_usrdata *ud = ihk_host_os_get_usrdata(os);
+	struct mcctrl_per_proc_data *ppd = NULL;
+	int hash;
+	unsigned long flags;
+	int nr_threads = 0;
+
+	if (!ud) {
+		return -EINVAL;
+	}
+
+	for (hash = 0; hash < MCCTRL_PER_PROC_DATA_HASH_SIZE; ++hash) {
+
+		read_lock_irqsave(&ud->per_proc_data_hash_lock[hash], flags);
+
+		list_for_each_entry(ppd, &ud->per_proc_data_hash[hash], hash) {
+			struct pid *vpid;
+			struct task_struct *ppd_task;
+
+			vpid = find_vpid(ppd->pid);
+			if (!vpid) {
+				printk("%s: WARNING: couldn't find vpid with PID number %d?\n",
+					__FUNCTION__, ppd->pid);
+				continue;
+			}
+
+			ppd_task = get_pid_task(vpid, PIDTYPE_PID);
+			if (!ppd_task) {
+				printk("%s: WARNING: couldn't find task with PID %d?\n",
+					__FUNCTION__, ppd->pid);
+				continue;
+			}
+
+			nr_threads += get_nr_threads(ppd_task);
+			put_task_struct(ppd_task);
+		}
+
+		read_unlock_irqrestore(&ud->per_proc_data_hash_lock[hash], flags);
+	}
+
+	dprintk("%s: nr_threads: %d, num_online_cpus: %d\n",
+		__FUNCTION__, nr_threads, num_online_cpus());
+	return (nr_threads > (num_online_cpus() * THREAD_POOL_PER_CPU_THRESHOLD));
 }
 
 int mcctrl_add_per_proc_data(struct mcctrl_usrdata *ud, int pid, 
@@ -804,31 +1051,38 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	if (!ppd)
 		return;
 
-	if (!atomic_dec_and_test(&ppd->refcount))
-		return;
-
-	dprintk("%s: deallocating PPD for pid %d\n", __FUNCTION__, ppd->pid);
 	hash = (ppd->pid & MCCTRL_PER_PROC_DATA_HASH_MASK);
 
+	/* Removal from hash table and the refcount reaching zero
+	 * have to happen atomically */
 	write_lock_irqsave(&ppd->ud->per_proc_data_hash_lock[hash], flags);
+	if (!atomic_dec_and_test(&ppd->refcount)) {
+		write_unlock_irqrestore(&ppd->ud->per_proc_data_hash_lock[hash], flags);
+		return;
+	}
+
 	list_del(&ppd->hash);
 	write_unlock_irqrestore(&ppd->ud->per_proc_data_hash_lock[hash], flags);
 
+	dprintk("%s: deallocating PPD for pid %d\n", __FUNCTION__, ppd->pid);
 	for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; i++) {
 		struct mcctrl_per_thread_data *ptd;
 		struct mcctrl_per_thread_data *next;
-		struct ikc_scd_packet *packet;
 
 		list_for_each_entry_safe(ptd, next,
 		                         ppd->per_thread_data_hash + i, hash) {
 			packet = ptd->data;
 			list_del(&ptd->hash);
 			kfree(ptd);
-			__return_syscall(ppd->ud->os, packet, -EINTR,
+			/* We use ERESTARTSYS to tell the LWK that the proxy
+			 * process is gone and the application should be terminated */
+			__return_syscall(ppd->ud->os, packet, -ERESTARTSYS,
 					packet->req.rtid);
 			ihk_ikc_release_packet(
-			            (struct ihk_ikc_free_packet *)packet,
-			            (ppd->ud->channels + packet->ref)->c);
+					(struct ihk_ikc_free_packet *)packet,
+					(ppd->ud->ikc2linux[smp_processor_id()] ?
+					 ppd->ud->ikc2linux[smp_processor_id()] :
+					 ppd->ud->ikc2linux[0]));
 		}
 	}
 
@@ -837,13 +1091,19 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 		list_del(&wqhln->list);
 		packet = wqhln->packet;
 		kfree(wqhln);
-		__return_syscall(ppd->ud->os, packet, -EINTR,
+
+		/* We use ERESTARTSYS to tell the LWK that the proxy
+		 * process is gone and the application should be terminated */
+		__return_syscall(ppd->ud->os, packet, -ERESTARTSYS,
 				packet->req.rtid);
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-				       (ppd->ud->channels + packet->ref)->c);
+				(ppd->ud->ikc2linux[smp_processor_id()] ?
+				 ppd->ud->ikc2linux[smp_processor_id()] :
+				 ppd->ud->ikc2linux[0]));
 	}
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, flags);
 
+	pager_remove_process(ppd);
 	kfree(ppd);
 }
 
@@ -868,10 +1128,14 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 				"syscall nr: %lu\n",
 				__FUNCTION__, pid, packet->req.number);
 
-		__return_syscall(ud->os, packet, -EINTR,
+		/* We use ERESTARTSYS to tell the LWK that the proxy
+		 * process is gone and the application should be terminated */
+		__return_syscall(ud->os, packet, -ERESTARTSYS,
 				packet->req.rtid);
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-				      (ud->channels + packet->ref)->c);
+				(ud->ikc2linux[smp_processor_id()] ?
+				 ud->ikc2linux[smp_processor_id()] :
+				 ud->ikc2linux[0]));
 
 		return -1;
 	}
@@ -1047,11 +1311,21 @@ retry_alloc:
 	}
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, irqflags);
 
-	if (ret && !wqhln->req) {
-		kfree(wqhln);
-		wqhln = NULL;
-		ret = -EINTR;
-		goto put_ppd_out;
+	if (ret == -ERESTARTSYS) {
+		/* Is the request valid? */
+		if (wqhln->req) {
+			packet = wqhln->packet;
+			kfree(wqhln);
+			wqhln = NULL;
+			ret = -EINTR;
+			goto put_ppd_out;
+		}
+		else {
+			kfree(wqhln);
+			wqhln = NULL;
+			ret = -EINTR;
+			goto put_ppd_out;
+		}
 	}
 
 	packet = wqhln->packet;
@@ -1069,7 +1343,9 @@ retry_alloc:
 				task_pid_vnr(current),
 				packet->req.number);
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-				(usrdata->channels + packet->ref)->c);
+				(usrdata->ikc2linux[smp_processor_id()] ?
+				 usrdata->ikc2linux[smp_processor_id()] :
+				 usrdata->ikc2linux[0]));
 		goto retry;
 	}
 
@@ -1101,13 +1377,16 @@ retry_alloc:
 			ret = -EINVAL;;
 			goto put_ppd_out;
 		}
+		req->cpu = packet->ref;
 
 		ret = 0;
 		goto put_ppd_out;
 	}
 
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-			(usrdata->channels + packet->ref)->c);
+			(usrdata->ikc2linux[smp_processor_id()] ?
+			 usrdata->ikc2linux[smp_processor_id()] :
+			 usrdata->ikc2linux[0]));
 
 	if (mcctrl_delete_per_thread_data(ppd, current) < 0) {
 		kprintf("%s: error deleting per-thread data\n", __FUNCTION__);
@@ -1212,6 +1491,7 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 	struct ikc_scd_packet *packet;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
+	int error = 0;
 
 	if (copy_from_user(&ret, arg, sizeof(struct syscall_ret_desc))) {
 		return -EFAULT;
@@ -1229,8 +1509,8 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 	if (!packet) {
 		kprintf("%s: ERROR: no packet registered for TID %d\n", 
 			__FUNCTION__, task_pid_vnr(current));
-		mcctrl_put_per_proc_data(ppd);
-		return -EINVAL;
+		error = -EINVAL;
+		goto out;
 	}
 
 	mcctrl_delete_per_thread_data(ppd, current);
@@ -1248,8 +1528,8 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 		                             ret.size, NULL, 0);
 #endif
 		if (copy_from_user(rpm, (void *__user)ret.src, ret.size)) {
-			mcctrl_put_per_proc_data(ppd);
-			return -EFAULT;
+			error = -EFAULT;
+			goto out;
 		}
 
 #ifdef CONFIG_MIC
@@ -1262,12 +1542,16 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 
 	__return_syscall(os, packet, ret.ret, task_pid_vnr(current));
 
+	error = 0;
+out:
 	/* Free packet */
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-			(usrdata->channels + packet->ref)->c);
+			(usrdata->ikc2linux[smp_processor_id()] ?
+			 usrdata->ikc2linux[smp_processor_id()] :
+			 usrdata->ikc2linux[0]));
 
 	mcctrl_put_per_proc_data(ppd);
-	return 0;
+	return error;
 }
 
 LIST_HEAD(mckernel_exec_files);
@@ -1322,6 +1606,88 @@ mcexec_getcredv(int __user *virt)
 	return 0;
 }
 
+int mcexec_create_per_process_data(ihk_os_t os)
+{
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_per_proc_data *ppd = NULL;
+	int i;
+
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+	if (ppd) {
+		printk("%s: WARNING: per-process data for pid %d already exists\n",
+				__FUNCTION__, task_tgid_vnr(current));
+		mcctrl_put_per_proc_data(ppd);
+		return -EINVAL;
+	}
+
+	ppd = kmalloc(sizeof(*ppd), GFP_KERNEL);
+	if (!ppd) {
+		printk("%s: ERROR: allocating per-process data\n", __FUNCTION__);
+		return -ENOMEM;
+	}
+
+	ppd->ud = usrdata;
+	ppd->pid = task_tgid_vnr(current);
+	/*
+	 * XXX: rpgtable will be updated in __do_in_kernel_syscall()
+	 * under case __NR_munmap
+	 */
+	INIT_LIST_HEAD(&ppd->wq_list);
+	INIT_LIST_HEAD(&ppd->wq_req_list);
+	INIT_LIST_HEAD(&ppd->wq_list_exact);
+	init_waitqueue_head(&ppd->wq_prepare);
+	init_waitqueue_head(&ppd->wq_procfs);
+	spin_lock_init(&ppd->wq_list_lock);
+	memset(&ppd->cpu_set, 0, sizeof(cpumask_t));
+	ppd->ikc_target_cpu = 0;
+	/* Final ref will be dropped in release_handler() through
+	 * mcexec_destroy_per_process_data() */
+	atomic_set(&ppd->refcount, 1);
+
+	for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; ++i) {
+		INIT_LIST_HEAD(&ppd->per_thread_data_hash[i]);
+		rwlock_init(&ppd->per_thread_data_hash_lock[i]);
+	}
+
+	INIT_LIST_HEAD(&ppd->devobj_pager_list);
+	sema_init(&ppd->devobj_pager_lock, 1);
+
+	if (mcctrl_add_per_proc_data(usrdata, ppd->pid, ppd) < 0) {
+		printk("%s: error adding per process data\n", __FUNCTION__);
+		kfree(ppd);
+		return -EINVAL;
+	}
+
+	pager_add_process();
+
+	dprintk("%s: PID: %d, counter: %d\n",
+		__FUNCTION__, ppd->pid, atomic_read(&ppd->refcount));
+
+	return 0;
+}
+
+int mcexec_destroy_per_process_data(ihk_os_t os)
+{
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_per_proc_data *ppd = NULL;
+
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+
+	if (ppd) {
+		/* One for the reference and one for deallocation.
+		 * XXX: actual deallocation may not happen here */
+		mcctrl_put_per_proc_data(ppd);
+		mcctrl_put_per_proc_data(ppd);
+	}
+	else {
+		printk("WARNING: no per process data for PID %d ?\n",
+				task_tgid_vnr(current));
+	}
+
+	return 0;
+}
+
+
 int mcexec_open_exec(ihk_os_t os, char * __user filename)
 {
 	struct file *file;
@@ -1332,64 +1698,23 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	char *pathbuf = NULL;
 	char *fullpath = NULL;
 	char *kfilename = NULL;
-	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
-	struct mcctrl_per_proc_data *ppd = NULL;
-	int i, len;
+	int len;
 
 	if (os_ind < 0) {
 		return -EINVAL;
 	}
 
-	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
-
-	if (!ppd) {
-		ppd = kmalloc(sizeof(*ppd), GFP_KERNEL);
-		if (!ppd) {
-			printk("ERROR: allocating per process data\n");
-			return -ENOMEM;
-		}
-
-		ppd->ud = usrdata;
-		ppd->pid = task_tgid_vnr(current);
-		/*
-		 * XXX: rpgtable will be updated in __do_in_kernel_syscall()
-		 * under case __NR_munmap
-		 */
-		INIT_LIST_HEAD(&ppd->wq_list);
-		INIT_LIST_HEAD(&ppd->wq_req_list);
-		INIT_LIST_HEAD(&ppd->wq_list_exact);
-		init_waitqueue_head(&ppd->wq_prepare);
-		init_waitqueue_head(&ppd->wq_procfs);
-		spin_lock_init(&ppd->wq_list_lock);
-		memset(&ppd->cpu_set, 0, sizeof(cpumask_t));
-		ppd->ikc_target_cpu = 0;
-		/* Final ref will be dropped in close_exec() */
-		atomic_set(&ppd->refcount, 1);
-
-		for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; ++i) {
-			INIT_LIST_HEAD(&ppd->per_thread_data_hash[i]);
-			rwlock_init(&ppd->per_thread_data_hash_lock[i]);
-		}
-
-		if (mcctrl_add_per_proc_data(usrdata, ppd->pid, ppd) < 0) {
-			printk("%s: error adding per process data\n", __FUNCTION__);
-			retval = -EINVAL;
-			kfree(ppd);
-			goto out;
-		}
-	}
-
 	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
 	if (!pathbuf) {
 		retval = -ENOMEM;
-		goto out_put_ppd;
+		goto out;
 	}
 
 	kfilename = kmalloc(PATH_MAX, GFP_TEMPORARY);
 	if (!kfilename) {
 		retval = -ENOMEM;
 		kfree(pathbuf);
-		goto out_put_ppd;
+		goto out;
 	}
 
 	len = strncpy_from_user(kfilename, filename, PATH_MAX);
@@ -1442,6 +1767,7 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	dprintk("%d open_exec and holding file: %s\n", (int)task_tgid_vnr(current),
 			kfilename);
 
+	kfree(kfilename);
 	kfree(pathbuf);
 
 	return 0;
@@ -1451,35 +1777,15 @@ out_put_file:
 out_free:
 	kfree(pathbuf);
 	kfree(kfilename);
-out_put_ppd:
-	mcctrl_put_per_proc_data(ppd);
 out:
 	return retval;
 }
-
 
 int mcexec_close_exec(ihk_os_t os)
 {
 	struct mckernel_exec_file *mcef = NULL;
 	int found = 0;
 	int os_ind = ihk_host_os_get_index(os);	
-	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
-	struct mcctrl_per_proc_data *ppd = NULL;
-
-	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
-
-	if (ppd) {
-		/* One for the reference and one for deallocation */
-		mcctrl_put_per_proc_data(ppd);
-		mcctrl_put_per_proc_data(ppd);
-
-		dprintk("pid: %d, tid: %d: rpgtable for %d (0x%lx) removed\n",
-				task_tgid_vnr(current), current->pid, ppd->pid, ppd->rpgtable);
-	}
-	else {
-		printk("WARNING: no per process data for pid %d ?\n", 
-				task_tgid_vnr(current));
-	}
 
 	if (os_ind < 0) {
 		return EINVAL;
@@ -1646,6 +1952,467 @@ long mcexec_sys_unshare(struct sys_unshare_desc *__user arg)
 	return ret;
 }
 
+static DECLARE_WAIT_QUEUE_HEAD(perfctrlq);
+
+long mcctrl_perf_num(ihk_os_t os, unsigned long arg)
+{
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+
+	usrdata->perf_event_num = arg;
+
+	return 0;
+}
+
+long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
+{
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct ikc_scd_packet isp;
+	struct perf_ctrl_desc *perf_desc = NULL;
+	struct ihk_perf_event_attr attr;
+	struct ihk_cpu_info *info = ihk_os_get_cpu_info(os);
+	int ret = 0;
+	int i = 0, j = 0;
+
+	for (i = 0; i < usrdata->perf_event_num; i++) {
+		if (copy_from_user(&attr, &arg[i], sizeof(struct ihk_perf_event_attr))) {
+			printk("%s: error: copying ihk_perf_event_attr from user\n",
+			       __FUNCTION__);
+			return -EINVAL;
+		}
+
+		for (j = 0; j < info->n_cpus; j++) {
+			perf_desc = kmalloc(sizeof(struct perf_ctrl_desc), GFP_KERNEL);
+			if (!perf_desc) {
+				printk("%s: error: allocating perf_ctrl_desc\n",
+				       __FUNCTION__);
+				return -ENOMEM;
+			}
+			memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
+
+			perf_desc->ctrl_type = PERF_CTRL_SET;
+			perf_desc->status = 0;
+			perf_desc->target_cntr = i;
+			perf_desc->config = attr.config;
+			perf_desc->exclude_kernel = attr.exclude_kernel;
+			perf_desc->exclude_user = attr.exclude_user;
+
+			memset(&isp, '\0', sizeof(struct ikc_scd_packet));
+			isp.msg = SCD_MSG_PERF_CTRL;
+			isp.arg = virt_to_phys(perf_desc);
+
+			if ((ret = mcctrl_ikc_send(os, j, &isp)) < 0) {
+				printk("%s: mcctrl_ikc_send ret=%d\n", __FUNCTION__, ret);
+				kfree(perf_desc);
+				return -EINVAL;
+			}
+
+			ret = wait_event_interruptible(perfctrlq, perf_desc->status);
+			if (ret < 0) {
+				printk("%s: ERROR after wait: %d\n", __FUNCTION__, ret);
+				kfree(perf_desc);
+				return -EINVAL;
+			}
+				
+			kfree(perf_desc);
+		}
+	}
+
+	return usrdata->perf_event_num;
+}
+
+long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
+{
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct ikc_scd_packet isp;
+	struct perf_ctrl_desc *perf_desc = NULL;
+	struct ihk_cpu_info *info = ihk_os_get_cpu_info(os);
+	unsigned long value_sum = 0;
+	int ret = 0;
+	int i = 0, j = 0;
+
+	for (i = 0; i < usrdata->perf_event_num; i++) {
+		for (j = 0; j < info->n_cpus; j++) {
+			perf_desc = kmalloc(sizeof(struct perf_ctrl_desc), GFP_KERNEL);
+			if (!perf_desc) {
+				printk("%s: error: allocating perf_ctrl_desc\n",
+				       __FUNCTION__);
+				return -ENOMEM;
+			}
+			memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
+
+			perf_desc->ctrl_type = PERF_CTRL_GET;
+			perf_desc->status = 0;
+			perf_desc->target_cntr = i;
+
+			memset(&isp, '\0', sizeof(struct ikc_scd_packet));
+			isp.msg = SCD_MSG_PERF_CTRL;
+			isp.arg = virt_to_phys(perf_desc);
+
+			if ((ret = mcctrl_ikc_send(os, j, &isp)) < 0) {
+				printk("%s: mcctrl_ikc_send ret=%d\n", __FUNCTION__, ret);
+				kfree(perf_desc);
+				return -EINVAL;
+			}
+
+			ret = wait_event_interruptible(perfctrlq, perf_desc->status);
+			if (ret < 0) {
+				printk("%s: ERROR after wait: %d\n", __FUNCTION__, ret);
+				kfree(perf_desc);
+				return -EINVAL;
+			}
+			value_sum += perf_desc->read_value;
+			kfree(perf_desc);
+		}
+		if (copy_to_user(&arg[i], &value_sum, sizeof(unsigned long))) {
+			printk("%s: error: copying read_value to user\n",
+			       __FUNCTION__);
+			return -EINVAL;
+		}
+		value_sum = 0;
+	}
+
+	return 0;
+}
+
+long mcctrl_perf_enable(ihk_os_t os)
+{
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct ikc_scd_packet isp;
+	struct perf_ctrl_desc *perf_desc = NULL;
+	struct ihk_cpu_info *info = ihk_os_get_cpu_info(os);
+	unsigned int cntr_mask = 0;
+	int ret = 0;
+	int i = 0, j = 0;
+
+	for (i = 0; i < usrdata->perf_event_num; i++) {
+		cntr_mask |= 1 << i;
+	}
+	for (j = 0; j < info->n_cpus; j++) {
+		perf_desc = kmalloc(sizeof(struct perf_ctrl_desc), GFP_KERNEL);
+		if (!perf_desc) {
+			printk("%s: error: allocating perf_ctrl_desc\n",
+			       __FUNCTION__);
+			return -ENOMEM;
+		}
+		memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
+
+		perf_desc->ctrl_type = PERF_CTRL_ENABLE;
+		perf_desc->status = 0;
+		perf_desc->target_cntr_mask = cntr_mask;
+
+		memset(&isp, '\0', sizeof(struct ikc_scd_packet));
+		isp.msg = SCD_MSG_PERF_CTRL;
+		isp.arg = virt_to_phys(perf_desc);
+
+		if ((ret = mcctrl_ikc_send(os, j, &isp)) < 0) {
+			printk("%s: mcctrl_ikc_send ret=%d\n", __FUNCTION__, ret);
+			kfree(perf_desc);
+			return -EINVAL;
+		}
+
+		ret = wait_event_interruptible(perfctrlq, perf_desc->status);
+		if (ret < 0) {
+			printk("%s: ERROR after wait: %d\n", __FUNCTION__, ret);
+			kfree(perf_desc);
+			return -EINVAL;
+		}
+		kfree(perf_desc);
+	}
+
+	return 0;
+}
+
+long mcctrl_perf_disable(ihk_os_t os)
+{
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct ikc_scd_packet isp;
+	struct perf_ctrl_desc *perf_desc = NULL;
+	struct ihk_cpu_info *info = ihk_os_get_cpu_info(os);
+	unsigned int cntr_mask = 0;
+	int ret = 0;
+	int i = 0, j = 0;
+
+	for (i = 0; i < usrdata->perf_event_num; i++) {
+		cntr_mask |= 1 << i;
+	}
+	for (j = 0; j < info->n_cpus; j++) {
+		perf_desc = kmalloc(sizeof(struct perf_ctrl_desc), GFP_KERNEL);
+		if (!perf_desc) {
+			printk("%s: error: allocating perf_ctrl_desc\n",
+			       __FUNCTION__);
+			return -ENOMEM;
+		}
+		memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
+
+		perf_desc->ctrl_type = PERF_CTRL_DISABLE;
+		perf_desc->status = 0;
+		perf_desc->target_cntr_mask = cntr_mask;
+
+		memset(&isp, '\0', sizeof(struct ikc_scd_packet));
+		isp.msg = SCD_MSG_PERF_CTRL;
+		isp.arg = virt_to_phys(perf_desc);
+
+		if ((ret = mcctrl_ikc_send(os, j, &isp)) < 0) {
+			printk("%s: mcctrl_ikc_send ret=%d\n", __FUNCTION__, ret);
+			kfree(perf_desc);
+			return -EINVAL;
+		}
+
+		ret = wait_event_interruptible(perfctrlq, perf_desc->status);
+		if (ret < 0) {
+			printk("%s: ERROR after wait: %d\n", __FUNCTION__, ret);
+			kfree(perf_desc);
+			return -EINVAL;
+		}
+		kfree(perf_desc);
+	}
+
+	return 0;
+}
+
+long mcctrl_perf_destroy(ihk_os_t os)
+{
+	mcctrl_perf_disable(os);
+	mcctrl_perf_num(os, 0);
+	return 0;
+}
+
+void mcctrl_perf_ack(ihk_os_t os, struct ikc_scd_packet *packet)
+{
+	struct perf_ctrl_desc *perf_desc = phys_to_virt(packet->arg);
+
+	perf_desc->status = 1;
+	wake_up_interruptible(&perfctrlq);
+
+}
+
+extern void *get_user_sp(void);
+extern void set_user_sp(unsigned long);
+extern void restore_fs(unsigned long fs);
+extern void save_fs_ctx(void *);
+extern unsigned long get_fs_ctx(void *);
+
+long
+mcexec_util_thread1(ihk_os_t os, unsigned long arg, struct file *file)
+{
+	void **__user uparam = (void ** __user)arg;
+	void *param[6];
+	unsigned long p_rctx;
+	unsigned long phys;
+	void *__user u_rctx;
+	void *rctx;
+	int rc = 0;
+	unsigned long free_address;
+	unsigned long free_size;
+	unsigned long icurrent = (unsigned long)current;
+
+	if(copy_from_user(param, uparam, sizeof(void *) * 6)) {
+		return -EFAULT;
+	}
+	p_rctx = (unsigned long)param[0];
+	u_rctx = (void *__user)param[1];
+	free_address = (unsigned long)param[4];
+	free_size = (unsigned long)param[5];
+
+	phys = ihk_device_map_memory(ihk_os_to_dev(os), p_rctx, PAGE_SIZE);
+#ifdef CONFIG_MIC
+	rctx = ioremap_wc(phys, PAGE_SIZE);
+#else
+	rctx = ihk_device_map_virtual(ihk_os_to_dev(os), phys, PAGE_SIZE, NULL, 0);
+#endif
+	if(copy_to_user(u_rctx, rctx, PAGE_SIZE) ||
+	   copy_to_user((unsigned long *)(uparam + 3), &icurrent,
+	                sizeof(unsigned long)))
+		rc = -EFAULT;
+
+	((unsigned long *)rctx)[0] = free_address;
+	((unsigned long *)rctx)[1] = free_size;
+
+#ifdef CONFIG_MIC
+	iounmap(rctx);
+#else
+	ihk_device_unmap_virtual(ihk_os_to_dev(os), rctx, PAGE_SIZE);
+#endif
+	ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
+
+	return rc;
+}
+
+static inline struct host_thread *get_host_thread(void)
+{
+	int pid = task_tgid_vnr(current);
+	int tid = task_pid_vnr(current);
+	unsigned long flags;
+	struct host_thread *thread;
+	
+	read_lock_irqsave(&host_thread_lock, flags);
+	for (thread = host_threads; thread; thread = thread->next)
+		if(thread->pid == pid && thread->tid == tid)
+			break;
+	read_unlock_irqrestore(&host_thread_lock, flags);
+
+	return thread;
+}
+
+long
+mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
+{
+	void *usp = get_user_sp();
+	struct mcos_handler_info *info;
+	struct host_thread *thread;
+	unsigned long flags;
+	void **__user param = (void **__user )arg;
+	void *__user rctx = (void *__user)param[1];
+	void *__user lctx = (void *__user)param[2];
+
+	save_fs_ctx(lctx);
+	info = ihk_os_get_mcos_private_data(file);
+	thread = kmalloc(sizeof(struct host_thread), GFP_KERNEL);
+	memset(thread, '\0', sizeof(struct host_thread));
+	thread->pid = task_tgid_vnr(current);
+	thread->tid = task_pid_vnr(current);
+	thread->usp = (unsigned long)usp;
+	thread->lfs = get_fs_ctx(lctx);
+	thread->rfs = get_fs_ctx(rctx);
+	thread->handler = info;
+
+	write_lock_irqsave(&host_thread_lock, flags);
+	thread->next = host_threads;
+	host_threads = thread;
+	write_unlock_irqrestore(&host_thread_lock, flags);
+
+	return 0;
+}
+
+long
+mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
+{
+	int tid = task_pid_vnr(current);
+	int pid = task_tgid_vnr(current);
+	unsigned long flags;
+	struct host_thread *thread;
+
+	read_lock_irqsave(&host_thread_lock, flags);
+	for (thread = host_threads; thread; thread = thread->next)
+		if(thread->pid == pid && thread->tid == tid)
+			break;
+	read_unlock_irqrestore(&host_thread_lock, flags);
+	if (thread) {
+		if (arg)
+			restore_fs(thread->lfs);
+		else
+			restore_fs(thread->rfs);
+		return 0;
+	}
+	return -EINVAL;
+}
+
+long
+mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
+{
+	int pid = param[0];
+	int tid = param[1];
+	struct task_struct *tsk = (struct task_struct *)param[3];
+	unsigned long flags;
+	struct host_thread *thread;
+	struct host_thread *prev;
+	struct ikc_scd_packet *packet;
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_per_proc_data *ppd;
+
+	write_lock_irqsave(&host_thread_lock, flags);
+	for (prev = NULL, thread = host_threads; thread;
+	     prev = thread, thread = thread->next) {
+		if(thread->tid == tid)
+			break;
+	}
+	if (!thread) {
+		write_unlock_irqrestore(&host_thread_lock, flags);
+		return -EINVAL;
+	}
+
+	ppd = mcctrl_get_per_proc_data(usrdata, pid);
+	if (!ppd) {
+		kprintf("%s: ERROR: no per-process structure for PID %d??\n",
+		        __FUNCTION__, pid);
+		goto err;
+	}
+	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, tsk);
+	if (!packet) {
+		kprintf("%s: ERROR: no packet registered for TID %d\n",
+		       __FUNCTION__, tid);
+		goto err;
+	}
+	mcctrl_delete_per_thread_data(ppd, tsk);
+	__return_syscall(usrdata->os, packet, param[2], tid);
+	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
+	                       (usrdata->channels + packet->ref)->c);
+err:
+	if(ppd)
+		mcctrl_put_per_proc_data(ppd);
+
+	if (prev)
+		prev->next = thread->next;
+	else
+		host_threads = thread->next;
+	write_unlock_irqrestore(&host_thread_lock, flags);
+	kfree(thread);
+	return 0;
+}
+
+long
+mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
+{
+	struct syscall_struct {
+		int number;
+		unsigned long args[6];
+		unsigned long ret;
+	};
+	struct syscall_struct param;
+	struct syscall_struct __user *uparam =
+	                              (struct syscall_struct __user *)arg;
+	int rc;
+
+	if (copy_from_user(&param, uparam, sizeof param)) {
+		return -EFAULT;
+	}
+	rc = syscall_backward(ihk_host_os_get_usrdata(os), param.number,
+	                      param.args[0], param.args[1], param.args[2],
+	                      param.args[3], param.args[4], param.args[5],
+	                      &param.ret);
+
+	if (copy_to_user(&uparam->ret, &param.ret, sizeof(unsigned long))) {
+		return -EFAULT;
+	}
+	return rc;
+}
+
+long
+mcexec_copy_from_mck(ihk_os_t os, unsigned long *arg)
+{
+	void __user *to = (void *)arg[0];
+	void *from = phys_to_virt(arg[1]);
+	long len = arg[2];
+
+	if (copy_to_user(to, from, len)) {
+		return -EFAULT;
+	}
+	return 0;
+}
+
+long
+mcexec_copy_to_mck(ihk_os_t os, unsigned long *arg)
+{
+	void *to = phys_to_virt(arg[0]);
+	void __user *from = (void *)arg[1];
+	long len = arg[2];
+
+	if (copy_from_user(to, from, len)) {
+		return -EFAULT;
+	}
+	return 0;
+}
+
 long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
                       struct file *file)
 {
@@ -1673,6 +2440,9 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 
 	case MCEXEC_UP_GET_CPU:
 		return mcexec_get_cpu(os);
+
+	case MCEXEC_UP_CREATE_PPD:
+		return mcexec_create_per_process_data(os);
 
 	case MCEXEC_UP_GET_NODES:
 		return mcexec_get_nodes(os);
@@ -1715,8 +2485,50 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 	case MCEXEC_UP_SYS_UNSHARE:
 		return mcexec_sys_unshare((struct sys_unshare_desc *)arg);
 
+	case MCEXEC_UP_UTIL_THREAD1:
+		return mcexec_util_thread1(os, arg, file);
+
+	case MCEXEC_UP_UTIL_THREAD2:
+		return mcexec_util_thread2(os, arg, file);
+
+	case MCEXEC_UP_SIG_THREAD:
+		return mcexec_sig_thread(os, arg, file);
+
+	case MCEXEC_UP_SYSCALL_THREAD:
+		return mcexec_syscall_thread(os, arg, file);
+
+	case MCEXEC_UP_TERMINATE_THREAD:
+		return mcexec_terminate_thread(os, (unsigned long *)arg, file);
+
+	case MCEXEC_UP_GET_NUM_POOL_THREADS:
+		return mcctrl_get_num_pool_threads(os);
+
+	case MCEXEC_UP_COPY_FROM_MCK:
+		return mcexec_copy_from_mck(os, (unsigned long *)arg);
+
+	case MCEXEC_UP_COPY_TO_MCK:
+		return mcexec_copy_to_mck(os, (unsigned long *)arg);
+
 	case MCEXEC_UP_DEBUG_LOG:
 		return mcexec_debug_log(os, arg);
+
+	case IHK_OS_AUX_PERF_NUM:
+		return mcctrl_perf_num(os, arg);
+
+	case IHK_OS_AUX_PERF_SET:
+		return mcctrl_perf_set(os, (struct ihk_perf_event_attr *)arg);
+
+	case IHK_OS_AUX_PERF_GET:
+		return mcctrl_perf_get(os, (unsigned long *)arg);
+
+	case IHK_OS_AUX_PERF_ENABLE:
+		return mcctrl_perf_enable(os);
+
+	case IHK_OS_AUX_PERF_DISABLE:
+		return mcctrl_perf_disable(os);
+
+	case IHK_OS_AUX_PERF_DESTROY:
+		return mcctrl_perf_destroy(os);
 	}
 	return -EINVAL;
 }
@@ -1740,5 +2552,139 @@ void mcexec_prepare_ack(ihk_os_t os, unsigned long arg, int err)
 	
 	wake_up_all(&ppd->wq_prepare);
 	mcctrl_put_per_proc_data(ppd);
+}
+
+
+/* Per-CPU register manipulation functions */
+struct mcctrl_os_cpu_response {
+	int done;
+	unsigned long val;
+	wait_queue_head_t wq;
+};
+
+int mcctrl_get_request_os_cpu(ihk_os_t os, int *ret_cpu)
+{
+	struct mcctrl_usrdata *usrdata;
+	struct mcctrl_per_proc_data *ppd;
+	struct ikc_scd_packet *packet;
+	struct ihk_ikc_channel_desc *ch;
+	int ret = 0;
+
+	if (!os) {
+		return -EINVAL;
+	}
+
+	/* Look up per-OS mcctrl structure */
+	usrdata = ihk_host_os_get_usrdata(os);
+	if (!usrdata) {
+		printk("%s: ERROR: no usrdata found for OS %p\n", __FUNCTION__, os);
+		return -EINVAL;
+	}
+
+	/* Look up per-process structure */
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+	if (!ppd) {
+		kprintf("%s: ERROR: no per-process structure for PID %d??\n",
+				__FUNCTION__, task_tgid_vnr(current));
+		return -EINVAL;
+	}
+
+	/* Look up per-thread structure */
+	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
+	if (!packet) {
+		ret = -EINVAL;
+		printk("%s: ERROR: no packet registered for TID %d\n",
+				__FUNCTION__, task_pid_vnr(current));
+		goto out_put_ppd;
+	}
+
+	/* TODO: define a new IHK query function instead of
+	 * accessing internals directly */
+	ch = (usrdata->channels + packet->ref)->c;
+	*ret_cpu = ch->send.queue->read_cpu;
+	ret = 0;
+
+	printk("%s: OS: %p, CPU: %d\n", __FUNCTION__, os, *ret_cpu);
+
+out_put_ppd:
+	mcctrl_put_per_proc_data(ppd);
+
+	return ret;
+}
+
+void mcctrl_os_read_write_cpu_response(ihk_os_t os,
+		struct ikc_scd_packet *pisp)
+{
+	struct mcctrl_os_cpu_response *resp;
+
+	/* XXX: What if caller thread is unblocked by a signal
+	 * before this message arrives? */
+	resp = pisp->resp;
+	if (!resp) {
+		return;
+	}
+
+	resp->val = pisp->desc.val;
+	resp->done = 1;
+	wake_up_interruptible(&resp->wq);
+}
+
+int __mcctrl_os_read_write_cpu_register(ihk_os_t os, int cpu,
+		struct ihk_os_cpu_register *desc,
+		enum mcctrl_os_cpu_operation op)
+{
+	struct ikc_scd_packet isp;
+	struct mcctrl_os_cpu_response resp;
+	int ret = -EINVAL;
+
+	memset(&isp, '\0', sizeof(struct ikc_scd_packet));
+	isp.msg = SCD_MSG_CPU_RW_REG;
+	isp.op = op;
+	isp.desc = *desc;
+	isp.resp = &resp;
+
+	resp.done = 0;
+	init_waitqueue_head(&resp.wq);
+
+	mb();
+	ret = mcctrl_ikc_send(os, cpu, &isp);
+	if (ret < 0) {
+		printk("%s: ERROR sending IKC msg: %d\n", __FUNCTION__, ret);
+		goto out;
+	}
+
+	/* Wait for response */
+	ret = wait_event_interruptible(resp.wq, resp.done);
+	if (ret < 0) {
+		printk("%s: ERROR after wait: %d\n", __FUNCTION__, ret);
+		goto out;
+	}
+
+	/* Update if read */
+	if (ret == 0 && op == MCCTRL_OS_CPU_READ_REGISTER) {
+		desc->val = resp.val;
+	}
+
+	dprintk("%s: MCCTRL_OS_CPU_%s_REGISTER: reg: 0x%lx, val: 0x%lx\n",
+		__FUNCTION__,
+		(op == MCCTRL_OS_CPU_READ_REGISTER ? "READ" : "WRITE"),
+		desc->addr, desc->val);
+
+out:
+	return ret;
+}
+
+int mcctrl_os_read_cpu_register(ihk_os_t os, int cpu,
+		struct ihk_os_cpu_register *desc)
+{
+	return __mcctrl_os_read_write_cpu_register(os, cpu,
+			desc, MCCTRL_OS_CPU_READ_REGISTER);
+}
+
+int mcctrl_os_write_cpu_register(ihk_os_t os, int cpu,
+		struct ihk_os_cpu_register *desc)
+{
+	return __mcctrl_os_read_write_cpu_register(os, cpu,
+			desc, MCCTRL_OS_CPU_WRITE_REGISTER);
 }
 

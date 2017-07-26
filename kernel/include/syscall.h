@@ -74,6 +74,13 @@
 /* #define SCD_MSG_SYSFS_RESP_CLEANUP   0x43 */
 #define SCD_MSG_PROCFS_TID_CREATE	0x44
 #define SCD_MSG_PROCFS_TID_DELETE	0x45
+#define SCD_MSG_EVENTFD			0x46
+
+#define SCD_MSG_PERF_CTRL               0x50
+#define SCD_MSG_PERF_ACK                0x51
+
+#define SCD_MSG_CPU_RW_REG              0x52
+#define SCD_MSG_CPU_RW_REG_RESP         0x53
 
 /* Cloning flags.  */
 # define CSIGNAL       0x000000ff /* Signal mask to be sent at exit.  */
@@ -154,6 +161,11 @@ struct program_image_section {
 typedef unsigned long __cpu_set_unit;
 #define PLD_CPU_SET_SIZE (PLD_CPU_SET_MAX_CPUS / (8 * sizeof(__cpu_set_unit)))
 
+#define MPOL_NO_HEAP              0x01
+#define MPOL_NO_STACK             0x02
+#define MPOL_NO_BSS               0x04
+#define MPOL_SHM_PREMAP           0x08
+
 struct program_load_desc {
 	int num_sections;
 	int status;
@@ -182,8 +194,13 @@ struct program_load_desc {
 	unsigned long envs_len;
 	struct rlimit rlimit[MCK_RLIM_MAX];
 	unsigned long interp_align;
+	unsigned long mpol_flags;
+	unsigned long mpol_threshold;
+	unsigned long heap_extension;
+	int nr_processes;
 	char shell_path[SHELL_PATH_MAX_LEN];
 	__cpu_set_unit cpu_set[PLD_CPU_SET_SIZE];
+	int profile;
 	struct program_image_section sections[0];
 };
 
@@ -205,6 +222,18 @@ struct syscall_request {
 	unsigned long valid;
 	unsigned long number;
 	unsigned long args[6];
+};
+
+struct ihk_os_cpu_register {
+	unsigned long addr;
+	unsigned long val;
+	unsigned long addr_ext;
+};
+
+enum mcctrl_os_cpu_operation {
+	MCCTRL_OS_CPU_READ_REGISTER,
+	MCCTRL_OS_CPU_WRITE_REGISTER,
+	MCCTRL_OS_CPU_MAX_OP
 };
 
 struct ikc_scd_packet {
@@ -231,6 +260,13 @@ struct ikc_scd_packet {
 		/* SCD_MSG_SCHEDULE_THREAD */
 		struct {
 			int ttid;
+		};
+
+		/* SCD_MSG_CPU_RW_REG */
+		struct {
+			struct ihk_os_cpu_register desc;
+			enum mcctrl_os_cpu_operation op;
+			void *resp;
 		};
 	};
 	char padding[12];
@@ -387,6 +423,34 @@ struct tod_data_s {
 };
 extern struct tod_data_s tod_data;	/* residing in arch-dependent file */
 
+static inline void tsc_to_ts(unsigned long tsc, struct timespec *ts)
+{
+	time_t sec_delta;
+	long ns_delta;
+
+	sec_delta = tsc / tod_data.clocks_per_sec;
+	ns_delta = NS_PER_SEC * (tsc % tod_data.clocks_per_sec)
+	           / tod_data.clocks_per_sec;
+	/* calc. of ns_delta overflows if clocks_per_sec exceeds 18.44 GHz */
+
+	ts->tv_sec = sec_delta;
+	ts->tv_nsec = ns_delta;
+	if (ts->tv_nsec >= NS_PER_SEC) {
+		ts->tv_nsec -= NS_PER_SEC;
+		++ts->tv_sec;
+	}
+}
+
+static inline unsigned long timeval_to_jiffy(const struct timeval *ats)
+{
+	return ats->tv_sec * 100 + ats->tv_usec / 10000;
+}
+
+static inline unsigned long timespec_to_jiffy(const struct timespec *ats)
+{
+	return ats->tv_sec * 100 + ats->tv_nsec / 10000000;
+}
+
 void reset_cputime();
 void set_cputime(int mode);
 int do_munmap(void *addr, size_t len);
@@ -398,6 +462,8 @@ int do_shmget(key_t key, size_t size, int shmflg);
 struct process_vm;
 int arch_map_vdso(struct process_vm *vm);	/* arch dependent */
 int arch_setup_vdso(void);
+int arch_cpu_read_write_register(struct ihk_os_cpu_register *desc,
+		enum mcctrl_os_cpu_operation op);
 
 #ifndef POSTK_DEBUG_ARCH_DEP_52
 #define VDSO_MAXPAGES 2
@@ -435,5 +501,65 @@ struct get_cpu_mapping_req {
 	wait_queue_head_t wq;
 #endif
 };
+
+enum perf_ctrl_type {
+	PERF_CTRL_SET,
+	PERF_CTRL_GET,
+	PERF_CTRL_ENABLE,
+	PERF_CTRL_DISABLE,
+};
+
+struct perf_ctrl_desc {
+	enum perf_ctrl_type ctrl_type;
+	int status;
+	union {
+		/* for SET, GET */
+		struct {
+			unsigned int target_cntr;
+			unsigned long config;
+			unsigned long read_value;
+			unsigned disabled        :1,
+			         pinned          :1,
+			         exclude_user    :1,
+			         exclude_kernel  :1,
+			         exclude_hv      :1,
+			         exclude_idle    :1;
+		};
+
+		/* for START, STOP*/
+		struct {
+			unsigned long target_cntr_mask;
+		};
+	};
+};
+
+#define UTI_FLAG_NUMA_SET (1ULL<<1) /* Indicates NUMA_SET is specified */
+
+#define UTI_FLAG_SAME_NUMA_DOMAIN (1ULL<<2)
+#define UTI_FLAG_DIFFERENT_NUMA_DOMAIN (1ULL<<3)
+
+#define UTI_FLAG_SAME_L1 (1ULL<<4)
+#define UTI_FLAG_SAME_L2 (1ULL<<5)
+#define UTI_FLAG_SAME_L3 (1ULL<<6)
+
+#define UTI_FLAG_DIFFERENT_L1 (1ULL<<7)
+#define UTI_FLAG_DIFFERENT_L2 (1ULL<<8)
+#define UTI_FLAG_DIFFERENT_L3 (1ULL<<9)
+
+#define UTI_FLAG_EXCLUSIVE_CPU (1ULL<<10)
+#define UTI_FLAG_CPU_INTENSIVE (1ULL<<11)
+#define UTI_FLAG_HIGH_PRIORITY (1ULL<<12)
+#define UTI_FLAG_NON_COOPERATIVE (1ULL<<13)
+
+/* Linux default value is used */
+#define UTI_MAX_NUMA_DOMAINS (1024)
+
+typedef struct uti_attr {
+	/* UTI_CPU_SET environmental variable is used to denote the preferred
+	   location of utility thread */
+	uint64_t numa_set[(UTI_MAX_NUMA_DOMAINS + sizeof(uint64_t) * 8 - 1) /
+	                   (sizeof(uint64_t) * 8)];
+	uint64_t flags; /* Representing location and behavior hints by bitmap */
+} uti_attr_t;
 
 #endif

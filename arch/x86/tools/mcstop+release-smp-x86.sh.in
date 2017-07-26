@@ -16,9 +16,26 @@ KERNDIR="@KERNDIR@"
 
 mem=""
 cpus=""
+irqbalance_used=""
 
 # No SMP module? Exit.
 if ! grep ihk_smp_x86 /proc/modules &>/dev/null; then exit 0; fi
+
+# Stop mcklogd
+while pgrep "mcklogd" > /dev/null 2>&1;
+do
+	pkill -9 mcklogd
+done
+
+if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
+	irqbalance_used="yes"
+	if ! systemctl stop irqbalance_mck.service 2>/dev/null; then
+		echo "warning: failed to stop irqbalance_mck" >&2
+	fi
+	if ! systemctl disable irqbalance_mck.service >/dev/null 2>/dev/null; then
+		echo "warning: failed to disable irqbalance_mck" >&2
+	fi
+fi
 
 # Destroy all LWK instances
 if ls /dev/mcos* 1>/dev/null 2>&1; then
@@ -94,28 +111,14 @@ if grep -E 'ihk\s' /proc/modules &>/dev/null; then
 	fi
 fi
 
-# Stop mcklogd
-pkill mcklogd
-
 # Start irqbalance with the original settings
-if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
-	if ! systemctl stop irqbalance_mck.service 2>/dev/null; then
-		echo "warning: failed to stop irqbalance_mck" >&2
-	fi
-	if ! systemctl disable irqbalance_mck.service >/dev/null 2>/dev/null; then
-		echo "warning: failed to disable irqbalance_mck" >&2
-	fi
+if [ "${irqbalance_used}" != "" ]; then
 	if ! etcdir=@ETCDIR@ perl -e '$etcdir=$ENV{'etcdir'}; @files = grep { -f } glob "$etcdir/proc/irq/*/smp_affinity"; foreach $file (@files) { $dest = substr($file, length($etcdir)); if(0) {print "cp $file $dest\n";} system("cp $file $dest 2>/dev/null"); }'; then
 		echo "warning: failed to restore /proc/irq/*/smp_affinity" >&2
 	fi
 	if ! systemctl start irqbalance.service; then
 		echo "warning: failed to start irqbalance" >&2;
 	fi
-fi
-
-# Re-enable ASLR
-if [ -f /tmp/mckernel_randomize_va_space ]; then
-	cat /tmp/mckernel_randomize_va_space > /proc/sys/kernel/randomize_va_space
 fi
 
 # Set back default swappiness

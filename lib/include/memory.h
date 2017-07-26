@@ -38,6 +38,8 @@ int strlen_user(const char *s);
 int strcpy_from_user(char *dst, const char *src);
 long getlong_user(long *dest, const long *p);
 int getint_user(int *dest, const int *p);
+int verify_process_vm(struct process_vm *vm,
+		const void *usrc, size_t size);
 int read_process_vm(struct process_vm *vm, void *kdst, const void *usrc, size_t siz);
 int copy_to_user(void *dst, const void *src, size_t siz);
 int setlong_user(long *dst, long data);

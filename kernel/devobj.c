@@ -245,6 +245,9 @@ static int devobj_get_page(struct memobj *memobj, off_t off, int p2align, uintpt
 
 	memobj_lock(&obj->memobj);
 	pfn = obj->pfn_table[ix];
+#ifdef PROFILE_ENABLE
+	profile_event_add(PROFILE_page_fault_dev_file, PAGE_SIZE);
+#endif // PROFILE_ENABLE
 	if (!(pfn & PFN_VALID)) {
 		memobj_unlock(&obj->memobj);
 

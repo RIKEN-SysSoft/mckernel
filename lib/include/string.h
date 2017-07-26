@@ -36,6 +36,10 @@ void *memset(void *s, int n, size_t l);
 #define fast_memcpy memcpy
 #endif
 
+#ifdef ARCH_FAST_MEMSET
+#define memset __inline_memset
+#endif
+
 extern int snprintf(char * buf, size_t size, const char *fmt, ...);
 extern int sprintf(char * buf, const char *fmt, ...);
 extern int sscanf(const char * buf, const char * fmt, ...);

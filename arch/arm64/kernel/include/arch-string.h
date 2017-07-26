@@ -6,4 +6,8 @@
 
 extern void *__inline_memcpy(void *to, const void *from, size_t t);
 
+#define ARCH_FAST_MEMSET
+
+extern void *__inline_memset(void *s, unsigned long c, size_t count);
+
 #endif	/* __HEADER_ARM64_COMMON_ARCH_TIMER_H */

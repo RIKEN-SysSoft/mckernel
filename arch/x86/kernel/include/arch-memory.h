@@ -209,6 +209,11 @@ static inline int pte_is_fileoff(pte_t *ptep, size_t pgsize)
 	}
 }
 
+static inline void pte_update_phys(pte_t *ptep, unsigned long phys)
+{
+	*ptep = (*ptep & ~PT_PHYSMASK) | (phys & PT_PHYSMASK);
+}
+
 static inline uintptr_t pte_get_phys(pte_t *ptep)
 {
 	return (*ptep & PT_PHYSMASK);

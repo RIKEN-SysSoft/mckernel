@@ -53,6 +53,10 @@ void mcexec_prepare_ack(ihk_os_t os, unsigned long arg, int err);
 static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ihk_ikc_channel_desc *c);
 int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet);
 void sig_done(unsigned long arg, int err);
+void mcctrl_perf_ack(ihk_os_t os, struct ikc_scd_packet *packet);
+void mcctrl_os_read_write_cpu_response(ihk_os_t os,
+		struct ikc_scd_packet *pisp);
+void mcctrl_eventfd(ihk_os_t os, struct ikc_scd_packet *pisp);
 
 /* XXX: this runs in atomic context! */
 static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
@@ -109,6 +113,18 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		get_vdso_info(__os, pisp->arg);
 		break;
 
+	case SCD_MSG_PERF_ACK:
+		mcctrl_perf_ack(__os, pisp);
+		break;
+
+	case SCD_MSG_CPU_RW_REG_RESP:
+		mcctrl_os_read_write_cpu_response(__os, pisp);
+		break;
+
+	case SCD_MSG_EVENTFD:
+		mcctrl_eventfd(__os, pisp);
+		break;
+
 	default:
 		printk(KERN_ERR "mcctrl:syscall_packet_handler:"
 				"unknown message (%d.%d.%d.%d.%d.%#lx)\n",
@@ -122,8 +138,19 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	 * mcexec_ret_syscall(), for the rest, free it here.
 	 */
 	if (msg != SCD_MSG_SYSCALL_ONESIDE) {
-		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)__packet, c);
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)__packet,
+				(usrdata->ikc2linux[smp_processor_id()] ?
+				 usrdata->ikc2linux[smp_processor_id()] :
+				 usrdata->ikc2linux[0]));
 	}
+	return 0;
+}
+
+static int dummy_packet_handler(struct ihk_ikc_channel_desc *c,
+                                  void *__packet, void *__os)
+{
+	kprintf("%s: WARNING: packet received\n", __FUNCTION__);
+	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)__packet, c);
 	return 0;
 }
 
@@ -196,57 +223,62 @@ static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ih
 	ihk_ikc_send(pmc->c, &packet, 0);
 }
 
-static int connect_handler(struct ihk_ikc_channel_info *param)
+static int connect_handler_ikc2linux(struct ihk_ikc_channel_info *param)
 {
 	struct ihk_ikc_channel_desc *c;
-	int cpu;
 	ihk_os_t os = param->channel->remote_os;
-	struct mcctrl_usrdata   *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_usrdata  *usrdata = ihk_host_os_get_usrdata(os);
+	int linux_cpu;
 
 	c = param->channel;
-	cpu = c->send.queue->read_cpu;
+	linux_cpu = c->send.queue->write_cpu;
+	if (linux_cpu > nr_cpu_ids) {
+		kprintf("%s: invalid Linux CPU id %d\n",
+				__FUNCTION__, linux_cpu);
+		return -1;
+	}
+	dkprintf("%s: Linux CPU: %d\n", __FUNCTION__, linux_cpu);
 
-	if (cpu < 0 || cpu >= usrdata->num_channels) {
-		kprintf("Invalid connect source processor: %d\n", cpu);
+	param->packet_handler = syscall_packet_handler;
+	usrdata->ikc2linux[linux_cpu] = c;
+
+	return 0;
+}
+
+static int connect_handler_ikc2mckernel(struct ihk_ikc_channel_info *param)
+{
+	struct ihk_ikc_channel_desc *c;
+	int mck_cpu;
+	ihk_os_t os = param->channel->remote_os;
+	struct mcctrl_usrdata  *usrdata = ihk_host_os_get_usrdata(os);
+
+	c = param->channel;
+	mck_cpu = c->send.queue->read_cpu;
+
+	if (mck_cpu < 0 || mck_cpu >= usrdata->num_channels) {
+		kprintf("Invalid connect source processor: %d\n", mck_cpu);
 		return 1;
 	}
-	param->packet_handler = syscall_packet_handler;
-	
-	usrdata->channels[cpu].c = c;
-	dkprintf("syscall: MC CPU %d connected. c=%p\n", cpu, c);
+	param->packet_handler = dummy_packet_handler;
+
+	usrdata->channels[mck_cpu].c = c;
 
 	return 0;
 }
 
-static int connect_handler2(struct ihk_ikc_channel_info *param)
-{
-	struct ihk_ikc_channel_desc *c;
-	int cpu;
-	ihk_os_t os = param->channel->remote_os;
-	struct mcctrl_usrdata   *usrdata = ihk_host_os_get_usrdata(os);
-
-	c = param->channel;
-	cpu = usrdata->num_channels - 1;
-
-	param->packet_handler = syscall_packet_handler;
-	
-	usrdata->channels[cpu].c = c;
-	dkprintf("syscall: MC CPU %d connected. c=%p\n", cpu, c);
-
-	return 0;
-}
-
-static struct ihk_ikc_listen_param listen_param = {
-	.port = 501,
-	.handler = connect_handler,
+static struct ihk_ikc_listen_param lp_ikc2linux = {
+	.port = 503,
+	.ikc_direction = IHK_IKC_DIRECTION_RECV,
+	.handler = connect_handler_ikc2linux,
 	.pkt_size = sizeof(struct ikc_scd_packet),
 	.queue_size = PAGE_SIZE * 4,
 	.magic = 0x1129,
 };
 
-static struct ihk_ikc_listen_param listen_param2 = {
-	.port = 502,
-	.handler = connect_handler2,
+static struct ihk_ikc_listen_param lp_ikc2mckernel = {
+	.port = 501,
+	.ikc_direction = IHK_IKC_DIRECTION_SEND,
+	.handler = connect_handler_ikc2mckernel,
 	.pkt_size = sizeof(struct ikc_scd_packet),
 	.queue_size = PAGE_SIZE * 4,
 	.magic = 0x1329,
@@ -256,38 +288,57 @@ int prepare_ikc_channels(ihk_os_t os)
 {
 	struct mcctrl_usrdata *usrdata;
 	int i;
+	int ret = 0;
 
 	usrdata = kzalloc(sizeof(struct mcctrl_usrdata), GFP_KERNEL);
+	if (!usrdata) {
+		printk("%s: error: allocating mcctrl_usrdata\n", __FUNCTION__);
+		ret = -ENOMEM;
+		goto error;
+	}
 
 	usrdata->cpu_info = ihk_os_get_cpu_info(os);
 	usrdata->mem_info = ihk_os_get_memory_info(os);
 
 	if (!usrdata->cpu_info || !usrdata->mem_info) {
-		printk("Error: cannot obtain OS CPU and memory information.\n");
-		return -EINVAL;
+		printk("%s: cannot obtain OS CPU and memory information.\n",
+			__FUNCTION__);
+		ret = -EINVAL;
+		goto error;
 	}
 
 	if (usrdata->cpu_info->n_cpus < 1) {
-		printk("Error: # of cpu is invalid.\n");
-		return -EINVAL;
+		printk("%s: Error: # of cpu is invalid.\n", __FUNCTION__);
+		ret = -EINVAL;
+		goto error;
 	}
 
-	usrdata->num_channels = usrdata->cpu_info->n_cpus + 1;
+	usrdata->num_channels = usrdata->cpu_info->n_cpus;
 	usrdata->channels = kzalloc(sizeof(struct mcctrl_channel) *
 			usrdata->num_channels,
 			GFP_KERNEL);
 
 	if (!usrdata->channels) {
 		printk("Error: cannot allocate channels.\n");
-		return -ENOMEM;
+		ret = -ENOMEM;
+		goto error;
+	}
+
+	usrdata->ikc2linux = kzalloc(sizeof(struct ihk_ikc_channel_desc *) *
+			nr_cpu_ids, GFP_KERNEL);
+
+	if (!usrdata->ikc2linux) {
+		printk("Error: cannot allocate ikc2linux channels.\n");
+		ret = -ENOMEM;
+		goto error;
 	}
 
 	usrdata->os = os;
 	ihk_host_os_set_usrdata(os, usrdata);
-	memcpy(&usrdata->listen_param, &listen_param, sizeof listen_param);
-	ihk_ikc_listen_port(os, &usrdata->listen_param);
-	memcpy(&usrdata->listen_param2, &listen_param2, sizeof listen_param2);
-	ihk_ikc_listen_port(os, &usrdata->listen_param2);
+
+	ihk_ikc_listen_port(os, &lp_ikc2linux);
+	ihk_ikc_listen_port(os, &lp_ikc2mckernel);
+
 	init_waitqueue_head(&usrdata->wq_procfs);
 	mutex_init(&usrdata->reserve_lock);
 
@@ -300,9 +351,19 @@ int prepare_ikc_channels(ihk_os_t os)
 	INIT_LIST_HEAD(&usrdata->node_topology_list);
 
 	mutex_init(&usrdata->part_exec.lock);
+	INIT_LIST_HEAD(&usrdata->part_exec.pli_list);
 	usrdata->part_exec.nr_processes = -1;
 
 	return 0;
+
+error:
+	if (usrdata) {
+		if (usrdata->channels) kfree(usrdata->channels);
+		if (usrdata->ikc2linux) kfree(usrdata->ikc2linux);
+		kfree(usrdata);
+	}
+
+	return ret;
 }
 
 void __destroy_ikc_channel(ihk_os_t os, struct mcctrl_channel *pmc)
@@ -324,12 +385,23 @@ void destroy_ikc_channels(ihk_os_t os)
 
 	for (i = 0; i < usrdata->num_channels; i++) {
 		if (usrdata->channels[i].c) {
-//			ihk_ikc_disconnect(usrdata->channels[i].c);
-			ihk_ikc_free_channel(usrdata->channels[i].c);
-			__destroy_ikc_channel(os, usrdata->channels + i);
+			ihk_ikc_destroy_channel(usrdata->channels[i].c);
+		}
+	}
+
+	for (i = 0; i < nr_cpu_ids; i++) {
+		if (usrdata->ikc2linux[i]) {
+			ihk_ikc_destroy_channel(usrdata->ikc2linux[i]);
 		}
 	}
 
 	kfree(usrdata->channels);
+	kfree(usrdata->ikc2linux);
 	kfree(usrdata);
+}
+
+void
+mcctrl_eventfd(ihk_os_t os, struct ikc_scd_packet *pisp)
+{
+	ihk_os_eventfd(os, 0);
 }

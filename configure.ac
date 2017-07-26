@@ -18,6 +18,13 @@ DCFA_RELEASE_DATE=DCFA_RELEASE_DATE_m4
 
 AC_PREFIX_DEFAULT([/opt/ppos])
 
+AC_CHECK_HEADER([numa.h],[numa_header_found=yes])
+AS_IF([test "x$numa_header_found" != "xyes"],
+	[AC_MSG_ERROR([Unable to find numa.h header file, missing numactl-devel?])])
+AC_CHECK_LIB([numa],[numa_run_on_node],[numa_lib_found=yes])
+AS_IF([test "x$numa_lib_found" != "xyes"],
+	[AC_MSG_ERROR([Unable to find NUMA library, missing numactl-devel?])])
+
 AC_ARG_WITH([kernelsrc],
   AC_HELP_STRING(
     [--with-kernelsrc=path],[Path to 'kernel src', default is /lib/modules/uname_r/build]),
@@ -49,6 +56,23 @@ AC_ARG_ENABLE([mcoverlayfs],
 	      [ENABLE_MCOVERLAYFS=$enableval],
 	      [ENABLE_MCOVERLAYFS=yes])
 
+AC_ARG_ENABLE([rusage],
+	      AC_HELP_STRING([--enable-rusage],
+			     [enable rusage implementation]),
+	      [ENABLE_RUSAGE=$enableval],
+	      [ENABLE_RUSAGE=yes])
+
+AC_ARG_WITH([uname_r],
+  AC_HELP_STRING(
+    [--with-uname_r=uname_r],[Value of '`uname -r`' on the target platform, default is local value]),
+  [WITH_UNAME_R=$withval],[WITH_UNAME_R=yes])
+
+case "X$WITH_UNAME_R" in
+    Xyes | Xno | X)
+	WITH_UNAME_R='`uname -r`'
+	;;
+esac
+
 case "X$WITH_KERNELSRC" in
     Xyes | Xno | X)
 	WITH_KERNELSRC='/lib/modules/`uname -r`/build'
@@ -65,6 +89,7 @@ if test "X$WITH_TARGET" = Xyes -o "X$WITH_TARGET" = Xno; then
 fi
 
 test "x$prefix" = xNONE && prefix="$ac_default_prefix"
+AC_DEFINE_UNQUOTED(ROOTFSDIR,"$prefix/rootfs",[Path of bind-mount source directory])
 
 case $WITH_TARGET in
 # POSTK_DEBUG_ARCH_DEP_30, Expansion of the branch.
@@ -172,6 +197,9 @@ case $WITH_TARGET in
 	if test "X$SBINDIR" = X; then
 		SBINDIR="$prefix/sbin"
 	fi
+        if test "X$MCKERNEL_LIBDIR" = X; then
+                MCKERNEL_LIBDIR="$prefix/lib"
+        fi
 	if test "X$KMODDIR" = X; then
 		KMODDIR="$prefix/kmod"
 	fi
@@ -186,6 +214,9 @@ case $WITH_TARGET in
 	if test "X$BINDIR" = X; then
 		BINDIR="$prefix/bin"
 	fi
+        if test "X$MCKERNEL_LIBDIR" = X; then
+                MCKERNEL_LIBDIR="$prefix/lib"
+        fi
 	if test "X$SBINDIR" = X; then
 		SBINDIR="$prefix/sbin"
 	fi
@@ -202,6 +233,7 @@ case $WITH_TARGET in
 esac
 
 KDIR="$WITH_KERNELSRC"
+UNAME_R="$WITH_UNAME_R"
 TARGET="$WITH_TARGET"
 
 MCCTRL_LINUX_SYMTAB=""
@@ -321,19 +353,44 @@ else
 	AC_MSG_NOTICE([mcoverlayfs is disabled])
 fi
 
+case $ENABLE_RUSAGE in
+	yes|no)
+		;;
+	default)
+		ENABLE_RUSAGE=yes
+		;;
+	*)
+		AC_MSG_ERROR([unknown rusage argument: $ENABLE_RUSAGE])
+		;;
+esac
+
+if test "x$ENABLE_RUSAGE" = "xyes" ; then
+	AC_MSG_NOTICE([rusage is enabled])
+	AC_DEFINE([ENABLE_RUSAGE],[1],[whether rusage is enabled])
+else
+	AC_MSG_NOTICE([rusage is disabled])
+fi
+
+if test "x$MCKERNEL_LIBDIR" != "x" ; then
+   AC_DEFINE_UNQUOTED(MCKERNEL_LIBDIR,"$MCKERNEL_LIBDIR",[McKernel specific libraries])
+fi
+
 AC_SUBST(CC)
 AC_SUBST(XCC)
 AC_SUBST(ARCH)
 AC_SUBST(KDIR)
+AC_SUBST(UNAME_R)
 AC_SUBST(TARGET)
 AC_SUBST(BINDIR)
 AC_SUBST(SBINDIR)
+AC_SUBST(MCKERNEL_LIBDIR)
 AC_SUBST(ETCDIR)
 AC_SUBST(KMODDIR)
 AC_SUBST(KERNDIR)
 AC_SUBST(MANDIR)
 AC_SUBST(CFLAGS)
 AC_SUBST(ENABLE_MCOVERLAYFS)
+AC_SUBST(ENABLE_RUSAGE)
 
 AC_SUBST(IHK_VERSION)
 AC_SUBST(MCKERNEL_VERSION)
@@ -343,7 +400,7 @@ AC_SUBST(MCKERNEL_RELEASE_DATE)
 AC_SUBST(DCFA_RESEASE_DATE)
 AC_SUBST(uncomment_if_ENABLE_MEMDUMP)
 
-AC_CONFIG_HEADERS([executer/config.h])
+AC_CONFIG_HEADERS([config.h])
 # POSTK_DEBUG_ARCH_DEP_37
 #AC_CONFIG_FILES([
 #	Makefile
@@ -364,6 +421,7 @@ AC_CONFIG_HEADERS([executer/config.h])
 AC_CONFIG_FILES([
 	Makefile
 	executer/user/Makefile
+	executer/user/arch/$ARCH/Makefile
 	executer/kernel/mcctrl/Makefile
 	executer/kernel/mcctrl/arch/$ARCH/Makefile
 	executer/kernel/mcoverlayfs/Makefile

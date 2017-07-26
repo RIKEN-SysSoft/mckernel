@@ -277,7 +277,7 @@ bad_frame:
 
 extern struct cpu_local_var *clv;
 extern unsigned long do_kill(struct thread *thread, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
-extern void interrupt_syscall(int pid, int tid);
+extern void interrupt_syscall(struct thread *, int sig);
 extern int num_processors;
 
 long
@@ -1067,6 +1067,12 @@ done:
 		return 0;
 	}
 
+	if (tthread->thread_offloaded) {
+		interrupt_syscall(tthread, sig);
+		release_thread(tthread);
+		return 0;
+	}
+
 	doint = 0;
 
 	mcs_rwlock_writer_lock_noirq(savelock, &mcs_rw_node);
@@ -1112,8 +1118,6 @@ done:
 	cpu_restore_interrupt(irqstate);
 
 	if (doint && !(mask & tthread->sigmask.__val[0])) {
-		int tid = tthread->tid;
-		int pid = tproc->pid;
 		int status = tthread->status;
 
 		if (thread != tthread) {
@@ -1125,10 +1129,10 @@ done:
 
 #ifdef POSTK_DEBUG_TEMP_FIX_48 /* nohost flag missed fix */
 		if(tthread->proc->status != PS_EXITED)
-			interrupt_syscall(pid, tid);
+			interrupt_syscall(tthread, 0);
 #else /* POSTK_DEBUG_TEMP_FIX_48 */
 		if(!tthread->proc->nohost)
-			interrupt_syscall(pid, tid);
+			interrupt_syscall(tthread, 0);
 #endif /* POSTK_DEBUG_TEMP_FIX_48 */
 
 		if (status != PS_RUNNING) {
@@ -1324,3 +1328,11 @@ out:
 	dkprintf("shmget(%#lx,%#lx,%#x): %d %d\n", key, size, shmflg0, error, shmid);
 	return (error)?: shmid;
 } /* sys_shmget() */
+
+void
+save_uctx(void *uctx, struct pt_regs *regs)
+{
+	/* TODO: skeleton for UTI */
+}
+
+/*** End of File ***/

@@ -31,6 +31,7 @@
 #include <cls.h>
 #include <syscall.h>
 #include <sysfs.h>
+#include <rusage.h>
 
 //#define IOCTL_FUNC_EXTENSION
 #ifdef IOCTL_FUNC_EXTENSION
@@ -40,16 +41,20 @@
 //#define DEBUG_PRINT_INIT
 
 #ifdef DEBUG_PRINT_INIT
-#define dkprintf kprintf
+#define dkprintf(...) do { kprintf(__VA_ARGS__); } while (0)
+#define ekprintf(...) do { kprintf(__VA_ARGS__); } while (0)
 #else
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
+#define dkprintf(...) do { } while (0)
+#define ekprintf(...) do { kprintf(__VA_ARGS__); } while (0)
 #endif
 
 int osnum = 0;
 
 extern struct ihk_kmsg_buf kmsg_buf;
-
+extern unsigned long ihk_mc_get_ns_per_tsc(void);
 extern long syscall(int, ihk_mc_user_context_t *);
+
+struct ihk_os_monitor *monitor;
 
 static void handler_init(void)
 {
@@ -239,6 +244,34 @@ static void time_init(void)
 	return;
 }
 
+static void monitor_init()
+{
+	int z;
+	unsigned long phys;
+
+	z = sizeof(struct ihk_os_monitor) +
+	    sizeof(struct ihk_os_cpu_monitor) * num_processors;
+	z = (z + PAGE_SIZE -1) >> PAGE_SHIFT;
+	monitor = ihk_mc_alloc_pages(z, IHK_MC_AP_CRITICAL);
+	memset(monitor, 0, z * PAGE_SIZE);
+	monitor->num_processors = num_processors;
+	monitor->num_numa_nodes = ihk_mc_get_nr_numa_nodes();
+	monitor->ns_per_tsc = ihk_mc_get_ns_per_tsc();
+	phys = virt_to_phys(monitor);
+	ihk_set_monitor(phys, sizeof(struct ihk_os_monitor) +
+	                    sizeof(struct ihk_os_cpu_monitor) * num_processors);
+}
+
+int nmi_mode;
+
+static void nmi_init()
+{
+	unsigned long phys;
+
+	phys = virt_to_phys(&nmi_mode);
+	ihk_set_nmi_mode_addr(phys);
+}
+
 static void rest_init(void)
 {
 	handler_init();
@@ -250,7 +283,9 @@ static void rest_init(void)
 	//pc_test();
 
 	ap_init();
+	monitor_init();
 	cpu_local_var_init();
+	nmi_init();
 	time_init();
 	kmalloc_init();
 
@@ -320,6 +355,7 @@ static void setup_remote_snooping_samples(void)
 static void populate_sysfs(void)
 {
 	cpu_sysfs_setup();
+	numa_sysfs_setup();
 	//setup_remote_snooping_samples();
 } /* populate_sysfs() */
 
@@ -336,8 +372,12 @@ static void post_init(void)
 	}
 
 	if (find_command_line("hidos")) {
-		init_host_syscall_channel();
-		init_host_syscall_channel2();
+		int ikc_cpu = ihk_mc_get_ikc_cpu(ihk_mc_get_processor_id());
+		if(ikc_cpu < 0) {
+			ekprintf("%s,ihk_mc_get_ikc_cpu failed\n", __FUNCTION__);
+		}
+		init_host_ikc2mckernel();
+		init_host_ikc2linux(ikc_cpu);
 	}
 
 	arch_setup_vdso();
@@ -369,7 +409,6 @@ int main(void)
 	kmsg_init(mode);
 
 	kputs("IHK/McKernel started.\n");
-
 	ihk_set_kmsg(virt_to_phys(&kmsg_buf), IHK_KMSG_SIZE);
 	arch_init();
 

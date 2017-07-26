@@ -9,7 +9,7 @@
  */
 
 #ifdef POSTK_DEBUG_ARCH_DEP_33
-#include <config.h>
+#include "../config.h"
 #endif	/* POSTK_DEBUG_ARCH_DEP_33 */
 #include <bfd.h>
 #include <fcntl.h>
@@ -632,13 +632,13 @@ static int setup_dump(char *fname) {
 		return 1;
 	}
 
+	kernel_base = mem_chunks->kernel_base;
+
 	dumpscn = bfd_get_section_by_name(dumpbfd, "physmem");
 	if (!dumpscn) {
 		bfd_perror("bfd_get_section_by_name");
 		return 1;
 	}
-
-	kernel_base = dumpscn->vma + 0x200000;
 
 	return 0;
 } /* setup_dump() */

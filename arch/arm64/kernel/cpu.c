@@ -1449,13 +1449,12 @@ unhandled_page_fault(struct thread *thread, void *fault_addr, void *regs)
 
 	kprintf_unlock(irqflags);
 
-	if (!interrupt_from_user(regs)) {
-		panic("panic: kernel mode PF");
-	}
-
 	/* TODO */
 	ihk_mc_debug_show_interrupt_context(regs);
 
+	if (!interrupt_from_user(regs)) {
+		panic("panic: kernel mode PF");
+	}
 
 	//dkprintf("now dump a core file\n");
 	//coredump(proc, regs);
@@ -1517,3 +1516,34 @@ void arch_start_pvclock(void)
 	return;
 }
 
+void
+mod_nmi_ctx(void *nmi_ctx, void (*func)())
+{
+	/* TODO: skeleton for rusage */
+}
+
+int arch_cpu_read_write_register(
+		struct ihk_os_cpu_register *desc,
+		enum mcctrl_os_cpu_operation op)
+{
+	/* TODO: skeleton for patch:0676 */
+	if (op == MCCTRL_OS_CPU_READ_REGISTER) {
+//		desc->val = rdmsr(desc->addr);
+	}
+	else if (op == MCCTRL_OS_CPU_WRITE_REGISTER) {
+//		wrmsr(desc->addr, desc->val);
+	}
+	else {
+		return -1;
+	}
+
+	return 0;
+}
+
+int smp_call_func(cpu_set_t *__cpu_set, smp_func_t __func, void *__arg)
+{
+	/* TODO: skeleton for smp_call_func */
+	return -1;
+}
+
+/*** end of file ***/

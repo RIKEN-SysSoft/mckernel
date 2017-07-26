@@ -278,8 +278,10 @@ release_i(struct sysfsm_node *np)
 
 	sdp = np->sdp;
 
-	if (np->server_ops && np->server_ops->release) {
-		(*np->server_ops->release)(np->server_ops, np);
+	if (np->type != SNT_DIR) {
+		if (np->server_ops && np->server_ops->release) {
+			(*np->server_ops->release)(np->server_ops, np);
+		}
 	}
 	kfree(np->name);
 	kfree(np);
@@ -719,8 +721,6 @@ unlink_i(struct sysfsm_node *np)
 	else if (np->type == SNT_DIR) {
 		if (np->parent != np) {
 			kobject_del(&np->kobj);
-			error = 0;
-			goto out;
 		}
 	}
 	else if (np->type == SNT_LINK) {

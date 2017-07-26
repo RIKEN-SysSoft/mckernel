@@ -30,8 +30,7 @@
 #define	dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
 #define	ekprintf(...)	kprintf(__VA_ARGS__)
 
-mcs_rwlock_lock_t fileobj_list_lock =
-	{{{0}, MCS_RWLOCK_TYPE_COMMON_READER, 0, 0, 0, NULL}, NULL};
+mcs_rwlock_lock_t fileobj_list_lock;
 static LIST_HEAD(fileobj_list);
 
 #define FILEOBJ_PAGE_HASH_SHIFT 9
@@ -232,6 +231,54 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp)
 		if (to_memobj(obj)->flags & MF_PREFETCH) {
 			to_memobj(obj)->status = MEMOBJ_TO_BE_PREFETCHED;
 		}
+
+		/* XXX: KNL specific optimization for OFP runs */
+		if ((to_memobj(obj)->flags & MF_PREMAP) &&
+				(to_memobj(obj)->flags & MF_ZEROFILL)) {
+			struct memobj *mo = to_memobj(obj);
+			int nr_pages = (result.size + (PAGE_SIZE - 1))
+				>> PAGE_SHIFT;
+			int j = 0;
+			int node = ihk_mc_get_nr_numa_nodes() / 2;
+			dkprintf("%s: MF_PREMAP, start node: %d\n",
+				__FUNCTION__, node);
+
+			mo->pages = kmalloc(nr_pages * sizeof(void *), IHK_MC_AP_NOWAIT);
+			if (!mo->pages) {
+				kprintf("%s: WARNING: failed to allocate pages\n",
+						__FUNCTION__);
+				goto error_cleanup;
+			}
+
+			mo->nr_pages = nr_pages;
+			memset(mo->pages, 0, nr_pages * sizeof(*mo->pages));
+
+			if (cpu_local_var(current)->proc->mpol_flags & MPOL_SHM_PREMAP) {
+				/* Get the actual pages NUMA interleaved */
+				for (j = 0; j < nr_pages; ++j) {
+					mo->pages[j] = ihk_mc_alloc_aligned_pages_node_user(1,
+							PAGE_P2ALIGN, IHK_MC_AP_NOWAIT, node);
+					if (!mo->pages[j]) {
+						kprintf("%s: ERROR: allocating pages[%d]\n",
+								__FUNCTION__, j);
+						goto error_cleanup;
+					}
+
+					memset(mo->pages[j], 0, PAGE_SIZE);
+
+					++node;
+					if (node == ihk_mc_get_nr_numa_nodes()) {
+						node = ihk_mc_get_nr_numa_nodes() / 2;
+					}
+				}
+				dkprintf("%s: allocated %d pages interleaved\n",
+						__FUNCTION__, nr_pages);
+			}
+error_cleanup:
+			/* TODO: cleanup allocated portion */
+			;
+		}
+
 		newobj = NULL;
 		dkprintf("%s: new obj 0x%lx cref: %d, %s\n",
 			__FUNCTION__,
@@ -320,12 +367,14 @@ static void fileobj_release(struct memobj *memobj)
 			page_va = phys_to_virt(page_to_phys(page));
 
 			if (ihk_atomic_read(&page->count) != 1) {
-				kprintf("%s: WARNING: page count for phys 0x%lx is invalid\n",
-					__FUNCTION__, page->phys);
+				kprintf("%s: WARNING: page count %d for phys 0x%lx is invalid, flags: 0x%lx\n",
+					__FUNCTION__,
+					ihk_atomic_read(&page->count),
+					page->phys,
+					to_memobj(free_obj)->flags);
 			}
-
-			if (page_unmap(page)) {
-				ihk_mc_free_pages(page_va, 1);
+			else if (page_unmap(page)) {
+				ihk_mc_free_pages_user(page_va, 1);
 			}
 #if 0
 			count = ihk_atomic_sub_return(1, &page->count);
@@ -346,6 +395,19 @@ static void fileobj_release(struct memobj *memobj)
 			page->mode = PM_NONE;
 #endif
 		}
+
+		/* Pre-mapped? */
+		if (to_memobj(free_obj)->flags & MF_PREMAP) {
+			int i;
+
+			for (i = 0; i < to_memobj(free_obj)->nr_pages; ++i) {
+				if (to_memobj(free_obj)->pages[i])
+					ihk_mc_free_pages_user(to_memobj(free_obj)->pages[i], 1);
+			}
+
+			kfree(to_memobj(free_obj)->pages);
+		}
+
 		obj_list_remove(free_obj);
 		mcs_rwlock_writer_unlock_noirq(&fileobj_list_lock, &node);
 		kfree(free_obj);
@@ -415,6 +477,9 @@ static void fileobj_do_pageio(void *args0)
 		if (to_memobj(obj)->flags & MF_ZEROFILL) {
 			void *virt = phys_to_virt(page_to_phys(page));
 			memset(virt, 0, PAGE_SIZE);
+#ifdef PROFILE_ENABLE
+			profile_event_add(PROFILE_page_fault_file_clr, PAGE_SIZE);
+#endif // PROFILE_ENABLE
 		}
 		else {
 			page->mode = PM_PAGEIO;
@@ -485,6 +550,46 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 		return -ENOMEM;
 	}
 
+#ifdef PROFILE_ENABLE
+	profile_event_add(PROFILE_page_fault_file, PAGE_SIZE);
+#endif // PROFILE_ENABLE
+
+	if (memobj->flags & MF_PREMAP) {
+		int page_ind = off >> PAGE_SHIFT;
+
+		if (!memobj->pages[page_ind]) {
+			virt = ihk_mc_alloc_pages_user(1, IHK_MC_AP_NOWAIT | IHK_MC_AP_USER);
+
+			if (!virt) {
+				error = -ENOMEM;
+				kprintf("fileobj_get_page(%p,%lx,%x,%p):"
+						"alloc failed. %d\n",
+						obj, off, p2align, physp,
+						error);
+				goto out_nolock;
+			}
+
+			/* Update the array but see if someone did it already and use
+			 * that if so */
+			if (!__sync_bool_compare_and_swap(&memobj->pages[page_ind],
+						NULL, virt)) {
+				ihk_mc_free_pages_user(virt, 1);
+			}
+			else {
+				dkprintf("%s: MF_ZEROFILL: off: %lu -> 0x%lx allocated\n",
+						__FUNCTION__, off, virt_to_phys(virt));
+			}
+		}
+
+		virt = memobj->pages[page_ind];
+		error = 0;
+		*physp = virt_to_phys(virt);
+		dkprintf("%s: MF_ZEROFILL: off: %lu -> 0x%lx resolved\n",
+				__FUNCTION__, off, virt_to_phys(virt));
+		virt = NULL;
+		goto out_nolock;
+	}
+
 	mcs_rwlock_writer_lock_noirq(&obj->page_hash_locks[hash],
 			&mcs_node);
 	page = __fileobj_page_hash_lookup(obj, hash, off);
@@ -502,7 +607,7 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 		if (!page) {
 			npages = 1 << p2align;
 
-			virt = ihk_mc_alloc_pages(npages, IHK_MC_AP_NOWAIT |
+			virt = ihk_mc_alloc_pages_user(npages, IHK_MC_AP_NOWAIT |
 					(to_memobj(obj)->flags & MF_ZEROFILL) ? IHK_MC_AP_USER : 0);
 
 			if (!virt) {
@@ -560,8 +665,9 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 out:
 	mcs_rwlock_writer_unlock_noirq(&obj->page_hash_locks[hash],
 			&mcs_node);
+out_nolock:
 	if (virt) {
-		ihk_mc_free_pages(virt, npages);
+		ihk_mc_free_pages_user(virt, npages);
 	}
 	if (args) {
 		kfree(args);
@@ -580,6 +686,10 @@ static int fileobj_flush_page(struct memobj *memobj, uintptr_t phys,
 	ssize_t ss;
 
 	if (to_memobj(obj)->flags & MF_ZEROFILL) {
+		return 0;
+	}
+
+	if (memobj->flags |= MF_HOST_RELEASED) {
 		return 0;
 	}
 

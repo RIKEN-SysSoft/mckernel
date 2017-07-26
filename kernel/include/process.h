@@ -24,10 +24,12 @@
 #include <affinity.h>
 #include <syscall.h>
 #include <bitops.h>
+#include <profile.h>
 
 #define VR_NONE            0x0
 #define VR_STACK           0x1
 #define VR_RESERVED        0x2
+#define VR_AP_USER         0x4
 #define VR_IO_NOCACHE      0x100
 #define VR_REMOTE          0x200
 #define VR_WRITE_COMBINED  0x400
@@ -238,6 +240,10 @@ enum mpol_rebind_step {
 #define MPOL_F_MOF	(1 << 3) /* this policy wants migrate on fault */
 #define MPOL_F_MORON	(1 << 4) /* Migrate On pte_numa Reference On Node */
 
+#define SPAWN_TO_LOCAL 0
+#define SPAWN_TO_REMOTE 1
+#define SPAWNING_TO_REMOTE 1001
+
 #include <waitq.h>
 #include <futex.h>
 
@@ -250,41 +256,6 @@ struct thread;
 struct process_vm;
 struct vm_regions;
 struct vm_range;
-
-//#define TRACK_SYSCALLS
-
-#ifdef TRACK_SYSCALLS
-#ifdef POSTK_DEBUG_ARCH_DEP_64 /* fix systemcall tracking terget. */
-#define SYSCALL_HANDLED(number,name)	unsigned char name[(number)];
-#define SYSCALL_DELEGATED(number,name)	unsigned char name[(number)];
-#define __NR_track_syscalls              701
-static const size_t TRACK_SYSCALLS_MAX =
-	sizeof(
-		union {
-#include <syscall_list.h>
-		}
-	) + 1;
-#undef	SYSCALL_HANDLED
-#undef	SYSCALL_DELEGATED
-#else /* POSTK_DEBUG_ARCH_DEP_64. fix systemcall tracking terget.*/
-#define TRACK_SYSCALLS_MAX               300
-#define __NR_track_syscalls              701
-#endif /* POSTK_DEBUG_ARCH_DEP_64. fix systemcall tracking terget.*/
-
-#define TRACK_SYSCALLS_CLEAR             0x01
-#define TRACK_SYSCALLS_ON                0x02
-#define TRACK_SYSCALLS_OFF               0x04
-#define TRACK_SYSCALLS_PRINT             0x08
-#define TRACK_SYSCALLS_PRINT_PROC        0x10
-
-void track_syscalls_print_thread_stats(struct thread *thread);
-void track_syscalls_print_proc_stats(struct process *proc);
-void track_syscalls_accumulate_counters(struct thread *thread,
-		struct process *proc);
-void track_syscalls_alloc_counters(struct thread *thread);
-void track_syscalls_dealloc_thread_counters(struct thread *thread);
-void track_syscalls_dealloc_proc_counters(struct process *proc);
-#endif // TRACK_SYSCALLS
 
 
 #define HASH_SIZE	73
@@ -426,7 +397,7 @@ struct vm_regions {
 	unsigned long vm_start, vm_end;
 	unsigned long text_start, text_end;
 	unsigned long data_start, data_end;
-	unsigned long brk_start, brk_end;
+	unsigned long brk_start, brk_end, brk_end_allocated;
 	unsigned long map_start, map_end;
 	unsigned long stack_start, stack_end;
 	unsigned long user_start, user_end;
@@ -542,6 +513,7 @@ struct process {
 	unsigned long saved_auxv[AUXV_LEN];
 	char *saved_cmdline;
 	long saved_cmdline_len;
+	cpu_set_t cpu_set;
 
 	/* Store ptrace flags.
 	 * The lower 8 bits are PTRACE_O_xxx of the PTRACE_SETOPTIONS request.
@@ -575,6 +547,10 @@ struct process {
 
 	long maxrss;
 	long maxrss_children;
+	/* Memory policy flags and memory specific options */
+	unsigned long mpol_flags;
+	size_t mpol_threshold;
+	unsigned long heap_extension;
 
 	// perf_event
 	int perf_status;
@@ -583,13 +559,13 @@ struct process {
 #define PP_COUNT 2
 #define PP_STOP 3
 	struct mc_perf_event *monitoring_event;
-#ifdef TRACK_SYSCALLS
-	mcs_lock_node_t st_lock;
-	uint64_t *syscall_times;
-	uint32_t *syscall_cnts;
-	uint64_t *offload_times;
-	uint32_t *offload_cnts;
-#endif // TRACK_SYSCALLS
+#ifdef PROFILE_ENABLE
+	int profile;
+	mcs_lock_node_t profile_lock;
+	struct profile_event *profile_events;
+	unsigned long profile_elapsed_ts;
+#endif // PROFILE_ENABLE
+	int nr_processes; /* For partitioned execution */
 };
 
 void hold_thread(struct thread *ftn);
@@ -662,13 +638,12 @@ struct thread {
 	fp_regs_struct *fp_regs;
 	int in_syscall_offload;
 
-#ifdef TRACK_SYSCALLS
-	int track_syscalls;
-	uint64_t *syscall_times;
-	uint32_t *syscall_cnts;
-	uint64_t *offload_times;
-	uint32_t *offload_cnts;
-#endif // TRACK_SYSCALLS
+#ifdef PROFILE_ENABLE
+	int profile;
+	struct profile_event *profile_events;
+	unsigned long profile_start_ts;
+	unsigned long profile_elapsed_ts;
+#endif // PROFILE_ENABLE
 
 	// signal
 	struct sig_common *sigcommon;
@@ -688,9 +663,14 @@ struct thread {
 	struct sig_pending *ptrace_sendsig;
 
 	// cpu time
+	/*
 	struct timespec stime;
 	struct timespec utime;
 	struct timespec btime;
+	*/
+	unsigned long system_tsc;
+	unsigned long user_tsc;
+	unsigned long base_tsc;
 	int times_update;
 	int in_kernel;
 
@@ -703,6 +683,11 @@ struct thread {
 
 	/* Syscall offload wait queue head */
 	struct waitq scd_wq;
+
+	int thread_offloaded;
+	int mod_clone;
+	struct uti_attr *mod_clone_arg;
+	int parent_cpuid;
 };
 
 #define VM_RANGE_CACHE_SIZE	4
@@ -804,8 +789,8 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
                         int argc, char **argv, 
                         int envc, char **env);
 unsigned long extend_process_region(struct process_vm *vm,
-                                    unsigned long start, unsigned long end,
-                                    unsigned long address, unsigned long flag);
+		unsigned long end_allocated,
+		unsigned long address, unsigned long flag);
 extern enum ihk_mc_pt_attribute arch_vrflag_to_ptattr(unsigned long flag, uint64_t fault, pte_t *ptep);
 enum ihk_mc_pt_attribute common_vrflag_to_ptattr(unsigned long flag, uint64_t fault, pte_t *ptep);
 
