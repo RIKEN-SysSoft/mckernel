@@ -458,9 +458,6 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 	k = thread->sigcommon->action + sig - 1;
 
 	if(k->sa.sa_handler == SIG_IGN){
-		kprintf("do_signal(SIG_IGN): tid=%d, pid=%d, sig=%d, sys=%d, rc=%d, flags=0x%lx\n", 
-			thread->tid, proc->pid, sig, syscallno, rc, k->sa.sa_flags);
-
 		kfree(pending);
 		mcs_rwlock_writer_unlock(&thread->sigcommon->lock, &mcs_rw_node);
 		return;
@@ -471,9 +468,6 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 		struct sigsp *sigsp;
 		unsigned long *usp; /* user stack */
 		uintptr_t addr;
-
-		kprintf("do_signal(sa_handler): tid=%d, pid=%d, sig=%d, sys=%d, rc=%d, flags=0x%lx\n", 
-			thread->tid, proc->pid, sig, syscallno, rc, k->sa.sa_flags);
 
 		// check syscall to have restart ?
 		to_restart = isrestart(syscallno, rc, sig, k->sa.sa_flags & SA_RESTART);
@@ -612,9 +606,6 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 	else {
 		int	coredumped = 0;
 		siginfo_t info;
-
-		kprintf("do_signal(SIG_DFL): tid=%d, pid=%d, sig=%d, sys=%d, rc=%d, flags=0x%lx\n", 
-			thread->tid, proc->pid, sig, syscallno, rc, k->sa.sa_flags);
 
 		if(ptraceflag){
 			if(thread->ptrace_recvsig)
