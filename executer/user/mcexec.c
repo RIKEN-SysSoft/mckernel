@@ -2552,24 +2552,6 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 	exit(0);
 }
 
-static void
-util_thread_setaffinity(unsigned long pattr)
-{
-	struct kuti_attr kattr;
-	unsigned long args[3];
-	struct uti_attr_desc desc;
-
-	args[0] = (unsigned long)&kattr;
-	args[1] = pattr;
-	args[2] = sizeof kattr;
-	if (ioctl(fd, MCEXEC_UP_COPY_FROM_MCK, args) == -1) {
-		return;
-	}
-
-	desc.attr = &kattr;
-	ioctl(fd, MCEXEC_UP_UTI_ATTR, &desc);
-}
-
 static long
 util_thread(unsigned long uctx_pa, int remote_tid, unsigned long pattr)
 {
@@ -2607,7 +2589,10 @@ util_thread(unsigned long uctx_pa, int remote_tid, unsigned long pattr)
 	}
 
 	if (pattr) {
-		util_thread_setaffinity(pattr);
+		struct uti_attr_desc desc;
+
+		desc.phys_attr = pattr;
+		ioctl(fd, MCEXEC_UP_UTI_ATTR, &desc);
 	}
 
 	if ((rc = switch_ctx(fd, MCEXEC_UP_UTIL_THREAD2, param, lctx, rctx))

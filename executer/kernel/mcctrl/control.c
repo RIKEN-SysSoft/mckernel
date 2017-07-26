@@ -2399,7 +2399,6 @@ retry:
 	if (retval != minrr)
 		goto retry;
 
-printk("sel cpu=%d rr=%d\n", mincpu, uti_rr[mincpu]);
 	for_each_cpu(i, cpumask) {
 		if (i != mincpu) {
 			cpumask_clear_cpu(i, cpumask);
@@ -2432,13 +2431,8 @@ mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *arg)
 	}
 	if (copy_from_user(&desc, arg, sizeof desc))
 		return -EFAULT;
-	if (!(kattr = kmalloc(sizeof(struct kuti_attr), GFP_KERNEL)))
-		return -ENOMEM;
-	if (copy_from_user(kattr, (struct kuti_attr __user *)desc.attr,
-	                   sizeof(struct kuti_attr))) {
-		kfree(kattr);
-		return -EFAULT;
-	}
+
+	kattr = phys_to_virt(desc.phys_attr);
 
 	if (((kattr->attr.flags & UTI_FLAG_SAME_L1) &&
 	     (kattr->attr.flags & UTI_FLAG_DIFFERENT_L1)) ||
@@ -2448,12 +2442,10 @@ mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *arg)
 	     (kattr->attr.flags & UTI_FLAG_DIFFERENT_L3)) ||
 	    ((kattr->attr.flags & UTI_FLAG_SAME_NUMA_DOMAIN) &&
 	     (kattr->attr.flags & UTI_FLAG_DIFFERENT_NUMA_DOMAIN))) {
-		kfree(kattr);
 		return -EINVAL;
 	}
 
 	if (!(cpuset = kmalloc(mask_size * 2, GFP_KERNEL))) {
-		kfree(kattr);
 		return -ENOMEM;
 	}
 	wkmask = (cpumask_t *)(((char *)cpuset) + mask_size);
@@ -2586,35 +2578,8 @@ mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *arg)
 		setaffinity(0, cpuset);
 	}
 
-	kfree(kattr);
 	kfree(cpuset);
 	return rc;
-}
-
-long
-mcexec_copy_from_mck(ihk_os_t os, unsigned long *arg)
-{
-	void __user *to = (void *)arg[0];
-	void *from = phys_to_virt(arg[1]);
-	long len = arg[2];
-
-	if (copy_to_user(to, from, len)) {
-		return -EFAULT;
-	}
-	return 0;
-}
-
-long
-mcexec_copy_to_mck(ihk_os_t os, unsigned long *arg)
-{
-	void *to = phys_to_virt(arg[0]);
-	void __user *from = (void *)arg[1];
-	long len = arg[2];
-
-	if (copy_from_user(to, from, len)) {
-		return -EFAULT;
-	}
-	return 0;
 }
 
 long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
@@ -2709,12 +2674,6 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 
 	case MCEXEC_UP_UTI_ATTR:
 		return mcexec_uti_attr(os, (struct uti_attr_desc __user *)arg);
-
-	case MCEXEC_UP_COPY_FROM_MCK:
-		return mcexec_copy_from_mck(os, (unsigned long *)arg);
-
-	case MCEXEC_UP_COPY_TO_MCK:
-		return mcexec_copy_to_mck(os, (unsigned long *)arg);
 
 	case MCEXEC_UP_DEBUG_LOG:
 		return mcexec_debug_log(os, arg);

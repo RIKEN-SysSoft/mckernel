@@ -63,9 +63,6 @@
 #define MCEXEC_UP_GET_NUM_POOL_THREADS  0x30a02926
 #define MCEXEC_UP_UTI_ATTR       0x30a02927
 
-#define MCEXEC_UP_COPY_FROM_MCK  0x30a03000
-#define MCEXEC_UP_COPY_TO_MCK    0x30a03001
-
 #define MCEXEC_UP_DEBUG_LOG     0x40000000
 
 #define MCEXEC_UP_TRANSFER_TO_REMOTE	0
@@ -311,7 +308,7 @@ struct kuti_attr {
 };
 
 struct uti_attr_desc {
-	struct kuti_attr *attr;
+	unsigned long phys_attr;
 };
 
 #endif
