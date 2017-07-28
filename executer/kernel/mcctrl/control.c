@@ -2445,20 +2445,19 @@ mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *arg)
 		return -EINVAL;
 	}
 
-	if (!(cpuset = kmalloc(mask_size * 2, GFP_KERNEL))) {
-		return -ENOMEM;
-	}
-	wkmask = (cpumask_t *)(((char *)cpuset) + mask_size);
-
 	list_for_each_entry(cpu_topo, &ud->cpu_topology_list, chain) {
 		if (cpu_topo->mckernel_cpu_id == kattr->parent_cpuid) {
 			target_cpu = cpu_topo;
 		}
 	}
-
 	if (!target_cpu) {
 		return -EINVAL;
 	}
+
+	if (!(cpuset = kmalloc(mask_size * 2, GFP_KERNEL))) {
+		return -ENOMEM;
+	}
+	wkmask = (cpumask_t *)(((char *)cpuset) + mask_size);
 
 	memcpy(cpuset, cpu_active_mask, mask_size);
 
