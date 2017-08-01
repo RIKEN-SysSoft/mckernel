@@ -776,8 +776,6 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	if (!ppd) {
 		kprintf("%s: ERROR: no per-process structure for PID %d??\n", 
 				__FUNCTION__, task_tgid_vnr(current));
-printk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
-vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
 		return -EINVAL;
 	}
 
