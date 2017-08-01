@@ -1259,9 +1259,8 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	}
 	else {
 		/* choose mapping address */
-		error = search_free_space(len, region->map_end +
-				(fd > 0) ? PTL4_SIZE : 0,
-				PAGE_SHIFT+p2align, &addr);
+		error = search_free_space(len, region->map_end,
+				PAGE_SHIFT + p2align, &addr);
 		if (error) {
 			ekprintf("do_mmap:search_free_space(%lx,%lx,%d) failed. %d\n",
 					len, region->map_end, p2align, error);
