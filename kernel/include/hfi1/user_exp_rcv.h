@@ -46,8 +46,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-
+#ifdef __HFI1_ORIG__
 #include "hfi.h"
+#endif /* __HFI1_ORIG__ */
 
 #define EXP_TID_TIDLEN_MASK   0x7FFULL
 #define EXP_TID_TIDLEN_SHIFT  0
@@ -70,6 +71,7 @@
 		(tid) |= EXP_TID_SET(field, (value));			\
 	} while (0)
 
+#ifdef __HFI1_ORIG__
 struct tid_group {
 	struct list_head list;
 	unsigned base;
@@ -153,5 +155,7 @@ int hfi1_user_exp_rcv_free(struct hfi1_filedata *);
 int hfi1_user_exp_rcv_setup(struct file *, struct hfi1_tid_info *);
 int hfi1_user_exp_rcv_clear(struct file *, struct hfi1_tid_info *);
 int hfi1_user_exp_rcv_invalid(struct file *, struct hfi1_tid_info *);
+
+#endif /* __HFI1_ORIG__ */
 
 #endif /* _HFI1_USER_EXP_RCV_H */

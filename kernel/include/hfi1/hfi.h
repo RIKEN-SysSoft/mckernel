@@ -47,6 +47,10 @@
  *
  */
 
+#include <hfi1/user_sdma.h>
+
+#ifdef __HFI1_ORIG__
+
 #include <linux/interrupt.h>
 #include <linux/pci.h>
 #include <linux/dma-mapping.h>
@@ -92,7 +96,10 @@
 #define DROP_PACKET_OFF		0
 #define DROP_PACKET_ON		1
 
+#endif /* __HFI1_ORIG__ */
+
 extern unsigned long hfi1_cap_mask;
+
 #define HFI1_CAP_KGET_MASK(mask, cap) ((mask) & HFI1_CAP_##cap)
 #define HFI1_CAP_UGET_MASK(mask, cap) \
 	(((mask) >> HFI1_CAP_USER_SHIFT) & HFI1_CAP_##cap)
@@ -124,6 +131,8 @@ extern unsigned long hfi1_cap_mask;
 #define NUM_SEND_ERR_STATUS_COUNTERS 3
 #define NUM_SEND_CTXT_ERR_STATUS_COUNTERS 5
 #define NUM_SEND_DMA_ENG_ERR_STATUS_COUNTERS 24
+
+#ifdef __HFI1_ORIG__
 
 /*
  * per driver stats, either not device nor port-specific, or
@@ -194,7 +203,7 @@ struct tid_queue {
 	u32 enqueue;	/* count of tid enqueues */
 	u32 dequeue;	/* count of tid dequeues */
 };
-
+    
 struct hfi1_ctxtdata {
 	/* shadow the ctxt's RcvCtrl register */
 	u64 rcvctrl;
@@ -358,6 +367,15 @@ struct hfi1_ctxtdata {
 	int (*do_interrupt)(struct hfi1_ctxtdata *rcd, int threaded);
 };
 
+#endif /* __HFI1_ORIG__ */
+    
+#ifndef __HFI1_ORIG__
+struct hfi1_ctxtdata {
+	unsigned ctxt;
+};
+#endif /* __HFI1_ORIG__ */
+
+#ifdef __HFI1_ORIG__
 /*
  * Represents a single packet at a high level. Put commonly computed things in
  * here so we do not have to keep doing them over and over. The rule of thumb is
@@ -584,6 +602,7 @@ struct vl_arb_cache {
 	struct ib_vl_weight_elem table[VL_ARB_TABLE_SIZE];
 };
 
+
 /*
  * The structure below encapsulates data relevant to a physical IB Port.
  * Current chips support only one such port, but the separation
@@ -788,7 +807,15 @@ struct hfi1_pportdata {
 	/* Does this port need to prescan for FECNs */
 	bool cc_prescan;
 };
+#endif /* __HFI1_ORIG__ */
 
+#ifndef __HFI1_ORIG__
+struct hfi1_pportdata {
+
+};
+#endif /* __HFI1_ORIG__ */
+
+#ifdef __HFI1_ORIG__
 typedef int (*rhf_rcv_function_ptr)(struct hfi1_packet *packet);
 
 typedef void (*opcode_handler)(struct hfi1_packet *packet);
@@ -857,6 +884,7 @@ struct sdma_vl_map;
 #define SERIAL_MAX 16 /* length of the serial number */
 
 typedef int (*send_routine)(struct rvt_qp *, struct hfi1_pkt_state *, u64);
+
 struct hfi1_devdata {
 	struct hfi1_ibdev verbs_dev;     /* must be first */
 	struct list_head list;
@@ -1169,7 +1197,7 @@ struct hfi1_devdata {
 	/* hfi1_pportdata, points to array of (physical) port-specific
 	 * data structs, indexed by pidx (0..n-1)
 	 */
-	struct hfi1_pportdata *pport;
+	struct hfi1_pportdata *pport; //used
 	/* receive context data */
 	struct hfi1_ctxtdata **rcd;
 	u64 __percpu *int_counter;
@@ -1221,6 +1249,20 @@ struct hfi1_devdata {
 
 	struct kobject kobj;
 };
+#endif /* __HFI1_ORIG__ */
+
+#ifndef __HFI1_ORIG__
+struct hfi1_devdata {
+	struct list_head list;
+	/* pointers to related structs for this device */
+	/* pci access data structure */
+	struct pci_dev *pcidev;
+	dma_addr_t sdma_pad_phys;
+		/* array of engines sized by num_sdma */
+	struct sdma_engine                 *per_sdma;
+	struct hfi1_pportdata *pport;	
+};
+#endif /* __HFI1_ORIG__ */
 
 /* 8051 firmware version helper */
 #define dc8051_ver(a, b) ((a) << 8 | (b))
@@ -1229,6 +1271,8 @@ struct hfi1_devdata {
 #define PT_EXPECTED 0
 #define PT_EAGER    1
 #define PT_INVALID  2
+
+#ifdef __HFI1_ORIG__
 
 struct tid_rb_node;
 struct mmu_rb_node;
@@ -1254,6 +1298,19 @@ struct hfi1_filedata {
 	spinlock_t invalid_lock;
 	struct mm_struct *mm;
 };
+#endif /* __HFI1_ORIG__ */
+
+#ifndef __HFI1_ORIG__
+/* Private data for file operations */
+struct hfi1_filedata {
+	struct hfi1_ctxtdata *uctxt;
+	unsigned subctxt;
+	struct hfi1_user_sdma_comp_q *cq;
+	struct hfi1_user_sdma_pkt_q *pq;
+};
+#endif /* __HFI1_ORIG__ */
+
+#ifdef __HFI1_ORIG__
 
 extern struct list_head hfi1_dev_list;
 extern spinlock_t hfi1_devs_lock;
@@ -2039,10 +2096,12 @@ void hfi1_format_hwerrors(u64 hwerrs,
 			  const struct hfi1_hwerror_msgs *hwerrmsgs,
 			  size_t nhwerrmsgs, char *msg, size_t lmsg);
 
+#endif /* __HFI1_ORIG__ */
 #define USER_OPCODE_CHECK_VAL 0xC0
 #define USER_OPCODE_CHECK_MASK 0xC0
 #define OPCODE_CHECK_VAL_DISABLED 0x0
 #define OPCODE_CHECK_MASK_DISABLED 0x0
+#ifdef __HFI1_ORIG__
 
 static inline void hfi1_reset_cpu_counters(struct hfi1_devdata *dd)
 {
@@ -2149,4 +2208,6 @@ __print_symbolic(opcode,                                   \
 	ib_opcode_name(UD_SEND_ONLY),                      \
 	ib_opcode_name(UD_SEND_ONLY_WITH_IMMEDIATE),       \
 	ib_opcode_name(CNP))
+
+#endif /* __HFI1_ORIG__ */
 #endif                          /* _HFI1_KERNEL_H */

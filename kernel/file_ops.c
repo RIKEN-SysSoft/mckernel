@@ -44,6 +44,15 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
+
+#include <hfi1/file_ops.h>
+#include <hfi1/hfi.h>
+#include <hfi1/user_sdma.h>
+#include <hfi1/ihk_hfi1_common.h>
+#include <errno.h>
+
+#ifdef __HFI1_ORIG__
+
 #include <linux/poll.h>
 #include <linux/cdev.h>
 #include <linux/vmalloc.h>
@@ -404,15 +413,23 @@ static long hfi1_file_ioctl(struct file *fp, unsigned int cmd,
 
 	return ret;
 }
+#endif /* __HFI1_ORIG__ */
 
+#ifdef __HFI1_ORIG__
 static ssize_t hfi1_aio_write(struct kiocb *kiocb, const struct iovec *iovec,
 			      unsigned long dim, loff_t offset)
 {
 	struct hfi1_filedata *fd = kiocb->ki_filp->private_data;
+#else
+ssize_t hfi1_aio_write(void *private_data, const struct iovec *iovec, unsigned long dim)
+{
+	struct hfi1_filedata *fd = private_data;
+#endif /* __HFI1_ORIG__ */
 	struct hfi1_user_sdma_pkt_q *pq = fd->pq;
 	struct hfi1_user_sdma_comp_q *cq = fd->cq;
 	int done = 0, reqs = 0;
 
+	hfi1_cdbg(AIOWRITE, "+");
 	if (!cq || !pq)
 		return -EIO;
 
@@ -429,9 +446,15 @@ static ssize_t hfi1_aio_write(struct kiocb *kiocb, const struct iovec *iovec,
 		int ret;
 		unsigned long count = 0;
 
+#ifdef __HFI1_ORIG__
 		ret = hfi1_user_sdma_process_request(
 			kiocb->ki_filp,	(struct iovec *)(iovec + done),
 			dim, &count);
+#else
+		ret = hfi1_user_sdma_process_request(
+			private_data, (struct iovec *)(iovec + done),
+			dim, &count);
+#endif /* __HFI1_ORIG__ */	
 		if (ret) {
 			reqs = ret;
 			break;
@@ -440,9 +463,10 @@ static ssize_t hfi1_aio_write(struct kiocb *kiocb, const struct iovec *iovec,
 		done += count;
 		reqs++;
 	}
-
+	hfi1_cdbg(AIOWRITE, "-");
 	return reqs;
 }
+#ifdef __HFI1_ORIG__
 
 static int hfi1_file_mmap(struct file *fp, struct vm_area_struct *vma)
 {
@@ -1556,3 +1580,4 @@ void hfi1_device_remove(struct hfi1_devdata *dd)
 	user_remove(dd);
 	hfi1_diag_remove(dd);
 }
+#endif /* __HFI1_ORIG__ */

@@ -67,7 +67,7 @@
 #include <lwk/stddef.h>
 #include <futex.h>
 
-//#include <hfi1/hfi.h>
+#include <hfi1/file_ops.h>
 
 #define SYSCALL_BY_IKC
 
@@ -481,7 +481,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 #endif // PROFILE_ENABLE
 
 	if (req->number == __NR_open && rc > 0) {
-		if (res.private_data && !strncmp(req->args[0], "/dev/hfi", 8)) {
+		if (res.private_data && !strncmp((const char *)req->args[0], "/dev/hfi", 8)) {
 			thread->proc->fd_priv_table[rc] = res.private_data;
 			kprintf("%s: PID: %d, open fd: %d, filename: %s, private_data: 0x%lx\n",
 				__FUNCTION__, thread->proc->pid, rc, req->args[0], res.private_data);
@@ -3093,13 +3093,10 @@ SYSCALL_DECLARE(writev)
 {
 	struct process *proc = cpu_local_var(current)->proc;
 	int fd = ihk_mc_syscall_arg0(ctx);
+	struct iovec *iovec = (struct iovec *)ihk_mc_syscall_arg1(ctx);
 	int iovcnt = ihk_mc_syscall_arg2(ctx);
-	if (fd < 256) {
-		//struct hfi1_filedata *hf = (struct hfi1_filedata *)proc->fd_priv_table[fd];
-		kprintf("%s: fd[%d], 0x%lx, iovcnt[%d]\n", __FUNCTION__, fd, proc->fd_priv_table[fd], iovcnt);
-	} else {
-		kprintf("%s: fd[%d] > 256\n", __FUNCTION__, fd);
-	}
+	void *private_data = proc->fd_priv_table[fd];
+	if (!private_data) hfi1_aio_write(private_data, iovec, iovcnt);
 	return syscall_generic_forwarding(__NR_writev, ctx);
 }
 

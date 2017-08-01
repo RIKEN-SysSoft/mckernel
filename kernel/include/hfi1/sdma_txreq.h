@@ -48,6 +48,8 @@
 #ifndef HFI1_SDMA_TXREQ_H
 #define HFI1_SDMA_TXREQ_H
 
+#include <hfi1/iowait.h>
+
 /* increased for AHG */
 #define NUM_DESC 6
 
@@ -105,7 +107,7 @@ struct sdma_txreq {
 	/* private: */
 	struct iowait *wait;
 	/* private: */
-	callback_t                  complete;
+	callback_t complete;
 #ifdef CONFIG_HFI1_DEBUG_SDMA_ORDER
 	u64 sn;
 #endif

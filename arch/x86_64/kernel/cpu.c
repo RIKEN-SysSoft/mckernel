@@ -1225,6 +1225,13 @@ void cpu_pause(void)
 	asm volatile("pause" ::: "memory");
 }
 
+/* From: kernel-xppsl_1.5.2/arch/x86/include/asm/processor.h */
+/* REP NOP (PAUSE) is a good thing to insert into busy-wait loops. */
+void cpu_relax(void)
+{
+	asm volatile("rep; nop" ::: "memory");
+}
+
 /*@
   @ assigns \nothing;
   @ ensures \interrupt_disabled > 0;
