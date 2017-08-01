@@ -56,7 +56,11 @@
 #ifndef _LINUX__HFI1_USER_H
 #define _LINUX__HFI1_USER_H
 
+#ifdef __HFI1_ORIG__
+
 #include <linux/types.h>
+
+#endif /* __HFI1_ORIG__ */
 
 /*
  * This version number is given to the driver by the user code during
@@ -211,6 +215,8 @@ struct hfi1_cmd;
 #define HFI1_POLL_TYPE_ANYRCV     0x0
 #define HFI1_POLL_TYPE_URGENT     0x1
 
+#ifdef __HFI1_ORIG__
+
 /*
  * This structure is passed to the driver to tell it where
  * user code buffers are, sizes, etc.   The offsets and sizes of the
@@ -264,6 +270,7 @@ struct hfi1_tid_info {
 	/* length of transfer buffer programmed by this request */
 	__u32 length;
 };
+#endif /* __HFI1_ORIG__ */
 
 enum hfi1_sdma_comp_state {
 	FREE = 0,
@@ -279,6 +286,8 @@ struct hfi1_sdma_comp_entry {
 	__u32 status;
 	__u32 errcode;
 };
+
+#ifdef __HFI1_ORIG__
 
 /*
  * Device status and notifications from driver to user-space.
@@ -353,6 +362,7 @@ struct hfi1_base_info {
 	__u64 subctxt_rcvegrbuf;
 	__u64 subctxt_rcvhdrbuf;
 };
+#endif /* __HFI1_ORIG__ */
 
 enum sdma_req_opcode {
 	EXPECTED = 0,
@@ -391,7 +401,7 @@ struct sdma_req_info {
 	 * in charge of managing its own ring.
 	 */
 	__u16 comp_idx;
-} __packed;
+} __attribute__((packed));
 
 /*
  * SW KDETH header.
@@ -402,7 +412,7 @@ struct hfi1_kdeth_header {
 	__le16 jkey;
 	__le16 hcrc;
 	__le32 swdata[7];
-} __packed;
+} __attribute__((packed));
 
 /*
  * Structure describing the headers that User space uses. The
@@ -413,8 +423,9 @@ struct hfi1_pkt_header {
 	__be16 lrh[4];
 	__be32 bth[3];
 	struct hfi1_kdeth_header kdeth;
-} __packed;
+} __attribute__((packed));
 
+#ifdef __HFI1_ORIG__ 
 
 /*
  * The list of usermode accessible registers.
@@ -435,5 +446,5 @@ enum hfi1_ureg {
 	/* (RW)  Receive TID flow table */
 	ur_rcvtidflowtable = 256
 };
-
+#endif /* __HFI1_ORIG__ */
 #endif /* _LINIUX__HFI1_USER_H */

@@ -1,3 +1,7 @@
+
+#ifndef _HFI1_USER_SDMA_H
+#define _HFI1_USER_SDMA_H
+
 /*
  * Copyright(c) 2015, 2016 Intel Corporation.
  *
@@ -44,6 +48,17 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
+
+#include <hfi1/ihk_hfi1_common.h>
+#include <hfi1/iowait.h>
+#include <hfi1/sdma.h>
+#include <string.h>
+#include <hfi1/hfi.h>
+#include <hfi1/hfi1_user.h>
+#include <uio.h>
+
+#ifdef __HFI1_ORIG__
+
 #include <linux/device.h>
 #include <linux/wait.h>
 
@@ -53,6 +68,7 @@
 
 extern uint extended_psn;
 
+#endif /* __HFI1_ORIG__ */
 /*
  * Define fields in the KDETH header so we can update the header
  * template.
@@ -105,16 +121,24 @@ struct hfi1_user_sdma_pkt_q {
 	atomic_t n_reqs;
 	u16 reqidx;
 	struct hfi1_devdata *dd;
+#ifdef __HFI1_ORIG__	
 	struct kmem_cache *txreq_cache;
+#else
+	void *txreq_cache; //unused
+#endif /* __HFI1_ORIG__ */
 	struct user_sdma_request *reqs;
 	unsigned long *req_in_use;
 	struct iowait busy;
 	unsigned state;
+#ifdef __HFI1_ORIG__	
 	wait_queue_head_t wait;
 	unsigned long unpinned;
 	struct mmu_rb_handler *handler;
 	atomic_t n_locked;
 	struct mm_struct *mm;
+#else
+	//TODO:
+#endif /* __HFI1_ORIG__ */
 };
 
 struct hfi1_user_sdma_comp_q {
@@ -122,7 +146,14 @@ struct hfi1_user_sdma_comp_q {
 	struct hfi1_sdma_comp_entry *comps;
 };
 
+int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
+				   unsigned long dim, unsigned long *count);
+#ifdef __HFI1_ORIG__
+
 int hfi1_user_sdma_alloc_queues(struct hfi1_ctxtdata *, struct file *);
 int hfi1_user_sdma_free_queues(struct hfi1_filedata *);
 int hfi1_user_sdma_process_request(struct file *, struct iovec *, unsigned long,
 				   unsigned long *);
+
+#endif /* __HFI1_ORIG__ */
+#endif /* _HFI1_SDMA_H */

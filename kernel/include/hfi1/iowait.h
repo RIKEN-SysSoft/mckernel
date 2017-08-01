@@ -47,6 +47,7 @@
  *
  */
 
+#ifdef __HFI1_ORIG__
 #include <linux/list.h>
 #include <linux/workqueue.h>
 #include <linux/sched.h>
@@ -58,6 +59,7 @@
  * @work: pointer to work structure
  */
 typedef void (*restart_t)(struct work_struct *work);
+#endif /* __HFI1_ORIG__ */
 
 #define IOWAIT_PENDING_IB  0x0
 #define IOWAIT_PENDING_TID 0x1
@@ -88,7 +90,11 @@ struct sdma_engine;
  */
 struct iowait;
 struct iowait_work {
+#ifdef __HFI1_ORIG__
 	struct work_struct iowork;
+#else
+//TODO:
+#endif /* __HFI1_ORIG__ */
 	struct list_head tx_head;
 	struct iowait *iow;
 };
@@ -140,9 +146,13 @@ struct iowait {
 		unsigned seq);
 	void (*wakeup)(struct iowait *wait, int reason);
 	void (*sdma_drained)(struct iowait *wait);
+#ifdef __HFI1_ORIG__
 	seqlock_t *lock;
 	wait_queue_head_t wait_dma;
 	wait_queue_head_t wait_pio;
+#else
+//TODO:
+#endif /* __HFI1_ORIG__ */
 	atomic_t sdma_busy;
 	atomic_t pio_busy;
 	u32 count;
@@ -153,6 +163,8 @@ struct iowait {
 };
 
 #define SDMA_AVAIL_REASON 0
+
+#ifdef __HFI1_ORIG__
 
 void iowait_set_flag(struct iowait *wait, u32 flag);
 bool iowait_flag_set(struct iowait *wait, u32 flag);
@@ -182,6 +194,7 @@ static inline bool iowait_schedule(
 	struct workqueue_struct *wq,
 	int cpu)
 {
+	hfi1_cdbg(AIOWRITE, ".");
 	return !!queue_work_on(cpu, wq, &wait->wait[IOWAIT_IB_SE].iowork);
 }
 
@@ -196,6 +209,7 @@ static inline bool iowait_tid_schedule(
 	struct workqueue_struct *wq,
 	int cpu)
 {
+	hfi1_cdbg(AIOWRITE, ".");
 	return !!queue_work_on(cpu, wq, &wait->wait[IOWAIT_TID_SE].iowork);
 }
 
@@ -208,6 +222,7 @@ static inline bool iowait_tid_schedule(
  */
 static inline void iowait_sdma_drain(struct iowait *wait)
 {
+	hfi1_cdbg(AIOWRITE, ".");
 	wait_event(wait->wait_dma, !atomic_read(&wait->sdma_busy));
 }
 
@@ -219,6 +234,7 @@ static inline void iowait_sdma_drain(struct iowait *wait)
  */
 static inline int iowait_sdma_pending(struct iowait *wait)
 {
+	hfi1_cdbg(AIOWRITE, ".");
 	return atomic_read(&wait->sdma_busy);
 }
 
@@ -228,17 +244,21 @@ static inline int iowait_sdma_pending(struct iowait *wait)
  */
 static inline void iowait_sdma_inc(struct iowait *wait)
 {
+	hfi1_cdbg(AIOWRITE, ".");
 	atomic_inc(&wait->sdma_busy);
 }
 
+#endif
 /**
  * iowait_sdma_add - add count to pending
  * @wait: iowait_work structure
  */
 static inline void iowait_sdma_add(struct iowait *wait, int count)
 {
+	hfi1_cdbg(AIOWRITE, ".");
 	atomic_add(count, &wait->sdma_busy);
 }
+#ifdef __HFI1_ORIG__
 
 /**
  * iowait_pio_drain() - wait for pios to drain
@@ -250,6 +270,7 @@ static inline void iowait_sdma_add(struct iowait *wait, int count)
  */
 static inline void iowait_pio_drain(struct iowait *wait)
 {
+	hfi1_cdbg(AIOWRITE, ".");
 	wait_event_timeout(wait->wait_pio,
 			   !atomic_read(&wait->pio_busy),
 			   HZ);
@@ -263,6 +284,7 @@ static inline void iowait_pio_drain(struct iowait *wait)
  */
 static inline int iowait_pio_pending(struct iowait *w)
 {
+	hfi1_cdbg(AIOWRITE, ".");
 	return atomic_read(&w->pio_busy);
 }
 
@@ -274,6 +296,7 @@ static inline int iowait_pio_pending(struct iowait *w)
  */
 static inline void iowait_drain_wakeup(struct iowait *w)
 {
+	hfi1_cdbg(AIOWRITE, ".");
 	wake_up(&w->wait_dma);
 	wake_up(&w->wait_pio);
 	if (w->sdma_drained)
@@ -286,6 +309,7 @@ static inline void iowait_drain_wakeup(struct iowait *w)
  */
 static inline void iowait_pio_inc(struct iowait *wait)
 {
+	hfi1_cdbg(AIOWRITE, ".");
 	atomic_inc(&wait->pio_busy);
 }
 
@@ -295,6 +319,7 @@ static inline void iowait_pio_inc(struct iowait *wait)
  */
 static inline int iowait_pio_dec(struct iowait *wait)
 {
+	hfi1_cdbg(AIOWRITE, ".");
 	if (!wait)
 		return 0;
 	return atomic_dec_and_test(&wait->pio_busy);
@@ -306,6 +331,7 @@ static inline int iowait_pio_dec(struct iowait *wait)
  */
 static inline int iowait_sdma_dec(struct iowait *wait)
 {
+	hfi1_cdbg(AIOWRITE, ".");
 	if (!wait)
 		return 0;
 	return atomic_dec_and_test(&wait->sdma_busy);
@@ -319,6 +345,7 @@ static inline struct sdma_txreq *iowait_get_txhead(struct iowait_work *wait)
 {
 	struct sdma_txreq *tx = NULL;
 
+	hfi1_cdbg(AIOWRITE, ".");
 	if (!list_empty(&wait->tx_head)) {
 		tx = list_first_entry(
 			&wait->tx_head,
@@ -333,6 +360,7 @@ static inline u16 iowait_get_desc(struct iowait_work *w)
 {
 	u16 num_desc = 0;
 	struct sdma_txreq *tx = NULL;
+	hfi1_cdbg(AIOWRITE, ".");
 
 	if (!list_empty(&w->tx_head)) {
 		tx = list_first_entry(
@@ -348,6 +376,7 @@ static inline u32 iowait_get_all_desc(struct iowait *w)
 {
 	u32 num_desc = 0;
 
+	hfi1_cdbg(AIOWRITE, ".");
 	num_desc = iowait_get_desc(&w->wait[IOWAIT_IB_SE]);
 	num_desc += iowait_get_desc(&w->wait[IOWAIT_TID_SE]);
 	return num_desc;
@@ -359,9 +388,11 @@ static inline u32 iowait_get_all_desc(struct iowait *w)
  */
 static inline bool iowait_packet_queued(struct iowait_work *w)
 {
+	hfi1_cdbg(AIOWRITE, ".");
 	return !list_empty(&w->tx_head);
 }
 
+#endif /* __HFI1_ORIG__ */
 /**
  * inc_wait_count - increment wait counts
  * @w: the log work struct
@@ -369,11 +400,13 @@ static inline bool iowait_packet_queued(struct iowait_work *w)
  */
 static inline void iowait_inc_wait_count(struct iowait_work *w, u16 n)
 {
+	hfi1_cdbg(AIOWRITE, ".");
 	if (!w)
 		return;
 	w->iow->tx_count++;
 	w->iow->count += n;
 }
+#ifdef __HFI1_ORIG__
 
 /**
  * iowait_get_tid_work - return iowait_work for tid SE
@@ -381,15 +414,18 @@ static inline void iowait_inc_wait_count(struct iowait_work *w, u16 n)
  */
 static inline struct iowait_work *iowait_get_tid_work(struct iowait *w)
 {
+	hfi1_cdbg(AIOWRITE, ".");
 	return &w->wait[IOWAIT_TID_SE];
 }
 
+#endif /* __HFI1_ORIG__ */
 /**
  * iowait_get_ib_work - return iowait_work for ib SE
  * @w: the iowait struct
  */
 static inline struct iowait_work *iowait_get_ib_work(struct iowait *w)
 {
+	hfi1_cdbg(AIOWRITE, ".");
 	return &w->wait[IOWAIT_IB_SE];
 }
 
@@ -399,12 +435,15 @@ static inline struct iowait_work *iowait_get_ib_work(struct iowait *w)
  */
 static inline struct iowait *iowait_ioww_to_iow(struct iowait_work *w)
 {
+	hfi1_cdbg(AIOWRITE, ".");
 	if (likely(w))
 		return w->iow;
 	return NULL;
 }
+#ifdef __HFI1_ORIG__
 
 void iowait_cancel_work(struct iowait *w);
 int iowait_set_work_flag(struct iowait_work *w);
+#endif /* __HFI1_ORIG__ */
 
 #endif

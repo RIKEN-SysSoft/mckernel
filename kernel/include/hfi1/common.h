@@ -48,7 +48,11 @@
 #ifndef _COMMON_H
 #define _COMMON_H
 
+#ifdef __HFI1_ORIG__
 #include "update/hfi1_user.h"
+#else
+#include <hfi1/hfi1_user.h>
+#endif /* __HFI1_ORIG__ */
 
 /*
  * This file contains defines, structures, etc. that are used

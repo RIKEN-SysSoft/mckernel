@@ -24,6 +24,7 @@ void cpu_halt(void);
 void cpu_safe_halt(void);
 void cpu_restore_interrupt(unsigned long);
 void cpu_pause(void);
+void cpu_relax(void);
 
 #define barrier()   arch_barrier()
 
