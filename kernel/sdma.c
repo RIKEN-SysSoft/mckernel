@@ -45,15 +45,6 @@
  *
  */
 
-#include <hfi1/ihk_hfi1_common.h>
-#include <hfi1/user_sdma.h> 
-#include <hfi1/sdma.h> 
-#include <hfi1/common.h> 
-
-unsigned long hfi1_cap_mask = HFI1_CAP_MASK_DEFAULT;
-
-#ifdef __HFI1_ORIG__
-
 #include <linux/spinlock.h>
 #include <linux/seqlock.h>
 #include <linux/netdevice.h>
@@ -71,14 +62,10 @@ unsigned long hfi1_cap_mask = HFI1_CAP_MASK_DEFAULT;
 #include "iowait.h"
 #include "trace.h"
 
-#endif /* __HFI1_ORIG__ */
-
 /* must be a power of 2 >= 64 <= 32768 */
 #define SDMA_DESCQ_CNT 2048
 #define SDMA_DESC_INTR 64
 #define INVALID_TAIL 0xffff
-
-#ifdef __HFI1_ORIG__
 
 static uint sdma_descq_cnt = SDMA_DESCQ_CNT;
 module_param(sdma_descq_cnt, uint, S_IRUGO);
@@ -239,9 +226,7 @@ static const struct sdma_set_state_action sdma_action_table[] = {
 	},
 };
 
-#endif /* __HFI1_ORIG__ */
 #define SDMA_TAIL_UPDATE_THRESH 0x1F
-#ifdef __HFI1_ORIG__
 
 /* declare all statics here rather than keep sorting */
 static void sdma_complete(struct kref *);
@@ -383,7 +368,7 @@ static inline void complete_tx(struct sdma_engine *sde,
 	/* protect against complete modifying */
 	struct iowait *wait = tx->wait;
 	callback_t complete = tx->complete;
-	hfi1_cdbg(AIOWRITE, "+");	
+
 #ifdef CONFIG_HFI1_DEBUG_SDMA_ORDER
 	trace_hfi1_sdma_out_sn(sde, tx->sn);
 	if (WARN_ON_ONCE(sde->head_sn != tx->sn))
@@ -396,7 +381,6 @@ static inline void complete_tx(struct sdma_engine *sde,
 		(*complete)(tx, res);
 	if (iowait_sdma_dec(wait))
 		iowait_drain_wakeup(wait);
-	hfi1_cdbg(AIOWRITE, "-");	
 }
 
 /*
@@ -789,16 +773,11 @@ struct sdma_engine *sdma_select_engine_vl(
 	struct sdma_map_elem *e;
 	struct sdma_engine *rval;
 
-	hfi1_cdbg(AIOWRITE, "+");
 	/* NOTE This should only happen if SC->VL changed after the initial
 	 *      checks on the QP/AH
 	 *      Default will return engine 0 below
 	 */
-#ifdef __HFI1_ORIG__
 	if (vl >= num_vls) {
-#else
-	if (vl >= HFI1_MAX_VLS_SUPPORTED) {
-#endif /* __HFI1_ORIG__ */	
 		rval = NULL;
 		goto done;
 	}
@@ -816,7 +795,6 @@ struct sdma_engine *sdma_select_engine_vl(
 done:
 	rval =  !rval ? &dd->per_sdma[0] : rval;
 	trace_hfi1_sdma_engine_select(dd, selector, vl, rval->this_idx);
-	hfi1_cdbg(AIOWRITE, "-");
 	return rval;
 }
 
@@ -886,7 +864,6 @@ struct sdma_engine *sdma_select_user_engine(struct hfi1_devdata *dd,
 	const struct cpumask *current_mask = tsk_cpus_allowed(current);
 	unsigned long cpu_id;
 
-	hfi1_cdbg(AIOWRITE, "+");
 	/*
 	 * To ensure that always the same sdma engine(s) will be
 	 * selected make sure the process is pinned to this CPU only.
@@ -1681,7 +1658,6 @@ static inline void sdma_unmap_desc(
 		break;
 	}
 }
-#endif /* __HFI1_ORIG__ */
 
 /*
  * return the mode as indicated by the first
@@ -1713,15 +1689,13 @@ void __sdma_txclean(
 	if (tx->num_desc) {
 		u8 skip = 0, mode = ahg_mode(tx);
 
-		/* TODO: enable sdma_unmap_desc */
 		/* unmap first */
-		//sdma_unmap_desc(dd, &tx->descp[0]);
+		sdma_unmap_desc(dd, &tx->descp[0]);
 		/* determine number of AHG descriptors to skip */
 		if (mode > SDMA_AHG_APPLY_UPDATE1)
 			skip = mode >> 1;
-		/* TODO: enable sdma_unmap_desc */		
-		// for (i = 1 + skip; i < tx->num_desc; i++)
-		// 	sdma_unmap_desc(dd, &tx->descp[i]);
+		for (i = 1 + skip; i < tx->num_desc; i++)
+			sdma_unmap_desc(dd, &tx->descp[i]);
 		tx->num_desc = 0;
 	}
 	kfree(tx->coalesce_buf);
@@ -1732,7 +1706,6 @@ void __sdma_txclean(
 		kfree(tx->descp);
 	}
 }
-#ifdef __HFI1_ORIG__
 
 static inline u16 sdma_gethead(struct sdma_engine *sde)
 {
@@ -1851,7 +1824,6 @@ static void sdma_make_progress(struct sdma_engine *sde, u64 status)
 	u16 hwhead, swhead;
 	int idle_check_done = 0;
 
-	hfi1_cdbg(AIOWRITE, "+");	
 	hwhead = sdma_gethead(sde);
 
 	/* The reason for some of the complexity of this code is that
@@ -1903,7 +1875,6 @@ retry:
 	sde->last_status = status;
 	if (progress)
 		sdma_desc_avail(sde, sdma_descq_freecnt(sde));
-	hfi1_cdbg(AIOWRITE, "-");		
 }
 
 /*
@@ -1917,7 +1888,6 @@ retry:
  */
 void sdma_engine_interrupt(struct sdma_engine *sde, u64 status)
 {
-	hfi1_cdbg(AIOWRITE, "+");	
 	trace_hfi1_sdma_engine_interrupt(sde, status);
 	write_seqlock(&sde->head_lock);
 	sdma_set_desc_cnt(sde, sdma_desct_intr);
@@ -1929,7 +1899,6 @@ void sdma_engine_interrupt(struct sdma_engine *sde, u64 status)
 		sde->sdma_int_cnt++;
 	sdma_make_progress(sde, status);
 	write_sequnlock(&sde->head_lock);
-	hfi1_cdbg(AIOWRITE, "-");	
 }
 
 /**
@@ -2031,15 +2000,12 @@ static void sdma_setlengen(struct sdma_engine *sde)
 		      (4ULL << SD(LEN_GEN_GENERATION_SHIFT)));
 }
 
-#endif /* __HFI1_ORIG__ */
 static inline void sdma_update_tail(struct sdma_engine *sde, u16 tail)
 {
-	hfi1_cdbg(AIOWRITE, ".");
 	/* Commit writes to memory and advance the tail on the chip */
 	smp_wmb(); /* see get_txhead() */
 	writeq(tail, sde->tail_csr);
 }
-#ifdef __HFI1_ORIG__
 
 /*
  * This is called when changing to state s10_hw_start_up_halt_wait as
@@ -2304,7 +2270,6 @@ void sdma_seqfile_dump_sde(struct seq_file *s, struct sdma_engine *sde)
 	}
 }
 
-#endif /* __HFI1_ORIG__ */
 /*
  * add the generation number into
  * the qw1 and return
@@ -2341,12 +2306,12 @@ static inline u16 submit_tx(struct sdma_engine *sde, struct sdma_txreq *tx)
 	u16 tail;
 	struct sdma_desc *descp = tx->descp;
 	u8 skip = 0, mode = ahg_mode(tx);
-	hfi1_cdbg(AIOWRITE, "+");
+
 	tail = sde->descq_tail & sde->sdma_mask;
 	sde->descq[tail].qw[0] = cpu_to_le64(descp->qw[0]);
 	sde->descq[tail].qw[1] = cpu_to_le64(add_gen(sde, descp->qw[1]));
-	// trace_hfi1_sdma_descriptor(sde, descp->qw[0], descp->qw[1],
-	// 			   tail, &sde->descq[tail]);
+	trace_hfi1_sdma_descriptor(sde, descp->qw[0], descp->qw[1],
+				   tail, &sde->descq[tail]);
 	tail = ++sde->descq_tail & sde->sdma_mask;
 	descp++;
 	if (mode > SDMA_AHG_APPLY_UPDATE1)
@@ -2364,19 +2329,18 @@ static inline u16 submit_tx(struct sdma_engine *sde, struct sdma_txreq *tx)
 			qw1 = add_gen(sde, descp->qw[1]);
 		}
 		sde->descq[tail].qw[1] = cpu_to_le64(qw1);
-		// trace_hfi1_sdma_descriptor(sde, descp->qw[0], qw1,
-		// 			   tail, &sde->descq[tail]);
+		trace_hfi1_sdma_descriptor(sde, descp->qw[0], qw1,
+					   tail, &sde->descq[tail]);
 		tail = ++sde->descq_tail & sde->sdma_mask;
 	}
 	tx->next_descq_idx = tail;
 #ifdef CONFIG_HFI1_DEBUG_SDMA_ORDER
 	tx->sn = sde->tail_sn++;
-	// trace_hfi1_sdma_in_sn(sde, tx->sn);
+	trace_hfi1_sdma_in_sn(sde, tx->sn);
 	WARN_ON_ONCE(sde->tx_ring[sde->tx_tail & sde->sdma_mask]);
 #endif
 	sde->tx_ring[sde->tx_tail++ & sde->sdma_mask] = tx;
 	sde->desc_avail -= tx->num_desc;
-	hfi1_cdbg(AIOWRITE, "-");
 	return tail;
 }
 
@@ -2390,7 +2354,6 @@ static int sdma_check_progress(
 {
 	int ret;
 
-	hfi1_cdbg(AIOWRITE, "+");
 	sde->desc_avail = sdma_descq_freecnt(sde);
 	if (tx->num_desc <= sde->desc_avail)
 		return -EAGAIN;
@@ -2406,10 +2369,8 @@ static int sdma_check_progress(
 	} else {
 		ret = -EBUSY;
 	}
-	hfi1_cdbg(AIOWRITE, "-");
 	return ret;
 }
-#ifdef __HFI1_ORIG__
 
 /**
  * sdma_send_txreq() - submit a tx req to ring
@@ -2433,7 +2394,6 @@ int sdma_send_txreq(struct sdma_engine *sde,
 	u16 tail;
 	unsigned long flags;
 
-	hfi1_cdbg(AIOWRITE, "+");
 	/* user should have supplied entire packet */
 	if (unlikely(tx->tlen))
 		return -EINVAL;
@@ -2450,7 +2410,6 @@ retry:
 	sdma_update_tail(sde, tail);
 unlock:
 	spin_unlock_irqrestore(&sde->tail_lock, flags);
-	hfi1_cdbg(AIOWRITE, "-");
 	return ret;
 unlock_noconn:
 	if (wait)
@@ -2477,7 +2436,6 @@ nodesc:
 	goto unlock;
 }
 
-#endif /* __HFI1_ORIG__ */
 /**
  * sdma_send_txlist() - submit a list of tx req to ring
  * @sde: sdma engine to use
@@ -2515,13 +2473,8 @@ int sdma_send_txlist(struct sdma_engine *sde, struct iowait_work *wait,
 	u16 tail = INVALID_TAIL;
 	u32 submit_count = 0, flush_count = 0, total_count;
 
-	hfi1_cdbg(AIOWRITE, "+");
 	spin_lock_irqsave(&sde->tail_lock, flags);
 retry:
-	/*
-	 * XXX: do we really need to build tx_list??
-	 * We could just submit the requests straight to the HW..
-	 */
 	list_for_each_entry_safe(tx, tx_next, tx_list, list) {
 		tx->wait = iowait_ioww_to_iow(wait);
 		if (unlikely(!__sdma_running(sde)))
@@ -2549,7 +2502,6 @@ update_tail:
 		sdma_update_tail(sde, tail);
 	spin_unlock_irqrestore(&sde->tail_lock, flags);
 	*count_out = total_count;
-	hfi1_cdbg(AIOWRITE, "-");
 	return ret;
 unlock_noconn:
 	spin_lock(&sde->flushlist_lock);
@@ -2559,15 +2511,14 @@ unlock_noconn:
 		tx->next_descq_idx = 0;
 #ifdef CONFIG_HFI1_DEBUG_SDMA_ORDER
 		tx->sn = sde->tail_sn++;
-		// trace_hfi1_sdma_in_sn(sde, tx->sn);
+		trace_hfi1_sdma_in_sn(sde, tx->sn);
 #endif
 		list_add_tail(&tx->list, &sde->flushlist);
 		flush_count++;
 		iowait_inc_wait_count(wait, tx->num_desc);
 	}
 	spin_unlock(&sde->flushlist_lock);
-	// TODO: schedule_work
-	//schedule_work(&sde->flush_worker);
+	schedule_work(&sde->flush_worker);
 	ret = -ECOMM;
 	goto update_tail;
 nodesc:
@@ -2579,7 +2530,6 @@ nodesc:
 	sde->descq_full_count++;
 	goto update_tail;
 }
-#ifdef __HFI1_ORIG__
 
 static void sdma_process_event(struct sdma_engine *sde, enum sdma_events event)
 {
@@ -3133,7 +3083,6 @@ enomem:
 	return -ENOMEM;
 }
 
-#endif /* __HFI1_ORIG__ */
 /*
  * ext_coal_sdma_tx_descs() - extend or coalesce sdma tx descriptors
  *
@@ -3154,8 +3103,6 @@ int ext_coal_sdma_tx_descs(struct hfi1_devdata *dd, struct sdma_txreq *tx,
 			   int type, void *kvaddr, struct page *page,
 			   unsigned long offset, u16 len)
 {
-//TODO: ext_coal_sdma_tx_descs
-#ifdef __HFI1_ORIG__
 	int pad_len, rval;
 	dma_addr_t addr;
 
@@ -3215,10 +3162,9 @@ int ext_coal_sdma_tx_descs(struct hfi1_devdata *dd, struct sdma_txreq *tx,
 		return _sdma_txadd_daddr(dd, SDMA_MAP_SINGLE, tx,
 					 addr, tx->tlen);
 	}
-#endif /* __HFI1_ORIG__ */
+
 	return 1;
 }
-#ifdef __HFI1_ORIG__
 
 /* Update sdes when the lmc changes */
 void sdma_update_lmc(struct hfi1_devdata *dd, u64 mask, u32 lid)
@@ -3263,7 +3209,6 @@ int _pad_sdma_tx_descs(struct hfi1_devdata *dd, struct sdma_txreq *tx)
 	return rval;
 }
 
-#endif /* __HFI1_ORIG__ */
 /*
  * Add ahg to the sdma_txreq
  *
@@ -3371,7 +3316,6 @@ void sdma_ahg_free(struct sdma_engine *sde, int ahg_index)
 		return;
 	clear_bit(ahg_index, &sde->ahg_bits);
 }
-#ifdef __HFI1_ORIG__
 
 /*
  * SPC freeze handling for SDMA engines.  Called when the driver knows
@@ -3466,5 +3410,3 @@ void _sdma_engine_progress_schedule(
 		  CCE_INT_FORCE + (8 * (IS_SDMA_START / 64)),
 		  sde->progress_mask);
 }
-
-#endif /* __HFI1_ORIG__ */

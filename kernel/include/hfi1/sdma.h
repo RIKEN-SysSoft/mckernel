@@ -47,11 +47,6 @@
  *
  */
 
-#include <hfi1/ihk_hfi1_common.h>
-#include <hfi1/sdma_txreq.h>
-
-#ifdef __HFI1_ORIG__
-
 #include <linux/types.h>
 #include <linux/list.h>
 #include <asm/byteorder.h>
@@ -61,11 +56,6 @@
 #include "hfi.h"
 #include "verbs.h"
 #include "sdma_txreq.h"
-
-#define hfi1_cdbg(which, fmt, ...) \
-	__hfi1_trace_##which(__func__, fmt, ##__VA_ARGS__)
-extern void __hfi1_trace_AIOWRITE(const char *func, char *fmt, ...);
-#endif /* __HFI1_ORIG__ */
 
 /* Hardware limit */
 #define MAX_DESC 64
@@ -202,7 +192,6 @@ struct sdma_set_state_action {
 	unsigned go_s99_running_totrue:1;
 };
 
-#ifdef __HFI1_ORIG__
 struct sdma_state {
 	struct kref          kref;
 	struct completion    comp;
@@ -214,11 +203,6 @@ struct sdma_state {
 	unsigned             previous_op;
 	enum sdma_events last_event;
 };
-#else
-struct sdma_state {
-	enum sdma_states current_state;	
-};
-#endif /* __HFI1_ORIG__ */
 
 /**
  * DOC: sdma exported routines
@@ -410,7 +394,6 @@ struct sdma_engine {
 	/* private: */
 	struct list_head      dmawait;
 
-#ifdef __HFI1_ORIG__
 	/* CONFIG SDMA for now, just blindly duplicate */
 	/* private: */
 	struct tasklet_struct sdma_hw_clean_up_task
@@ -426,19 +409,13 @@ struct sdma_engine {
 	u32                   progress_check_head;
 	/* private: */
 	struct work_struct flush_worker;
-#endif /* __HFI1_ORIG__ */
 	/* protect flush list */
 	spinlock_t flushlist_lock;
 	/* private: */
 	struct list_head flushlist;
-#ifdef __HFI1_ORIG__
 	struct cpumask cpu_mask;
 	struct kobject kobj;
-#endif /* __HFI1_ORIG__ */
 };
-
-
-#ifdef __HFI1_ORIG__
 
 int sdma_init(struct hfi1_devdata *dd, u8 port);
 void sdma_start(struct hfi1_devdata *dd);
@@ -464,7 +441,6 @@ static inline int sdma_empty(struct sdma_engine *sde)
 	return sde->descq_tail == sde->descq_head;
 }
 
-#endif /* __HFI1_ORIG__ */
 static inline u16 sdma_descq_freecnt(struct sdma_engine *sde)
 {
 	return sde->descq_cnt -
@@ -502,11 +478,9 @@ static inline int sdma_running(struct sdma_engine *engine)
 	unsigned long flags;
 	int ret;
 
-	hfi1_cdbg(AIOWRITE, "+");
 	spin_lock_irqsave(&engine->tail_lock, flags);
 	ret = __sdma_running(engine);
 	spin_unlock_irqrestore(&engine->tail_lock, flags);
-	hfi1_cdbg(AIOWRITE, "-");
 	return ret;
 }
 
@@ -645,7 +619,6 @@ static inline int sdma_txinit(
 {
 	return sdma_txinit_ahg(tx, flags, tlen, 0, 0, NULL, 0, cb);
 }
-#ifdef __HFI1_ORIG__
 
 /* helpers - don't use */
 static inline int sdma_mapping_type(struct sdma_desc *d)
@@ -666,7 +639,6 @@ static inline dma_addr_t sdma_mapping_addr(struct sdma_desc *d)
 		>> SDMA_DESC0_PHY_ADDR_SHIFT;
 }
 
-#endif /* __HFI1_ORIG__ */
 static inline void make_tx_sdma_desc(
 	struct sdma_txreq *tx,
 	int type,
@@ -694,6 +666,7 @@ static inline void make_tx_sdma_desc(
 int ext_coal_sdma_tx_descs(struct hfi1_devdata *dd, struct sdma_txreq *tx,
 			   int type, void *kvaddr, struct page *page,
 			   unsigned long offset, u16 len);
+int _pad_sdma_tx_descs(struct hfi1_devdata *, struct sdma_txreq *);
 void __sdma_txclean(struct hfi1_devdata *, struct sdma_txreq *);
 
 static inline void sdma_txclean(struct hfi1_devdata *dd, struct sdma_txreq *tx)
@@ -701,8 +674,6 @@ static inline void sdma_txclean(struct hfi1_devdata *dd, struct sdma_txreq *tx)
 	if (tx->num_desc)
 		__sdma_txclean(dd, tx);
 }
-#ifdef __HFI1_ORIG__
-int _pad_sdma_tx_descs(struct hfi1_devdata *, struct sdma_txreq *);
 
 /* helpers used by public routines */
 static inline void _sdma_close_tx(struct hfi1_devdata *dd,
@@ -718,7 +689,6 @@ static inline void _sdma_close_tx(struct hfi1_devdata *dd,
 			 SDMA_DESC1_INT_REQ_FLAG);
 }
 
-#endif /* __HFI1_ORIG__ */
 static inline int _sdma_txadd_daddr(
 	struct hfi1_devdata *dd,
 	int type,
@@ -737,13 +707,11 @@ static inline int _sdma_txadd_daddr(
 	/* special cases for last */
 	if (!tx->tlen) {
 		if (tx->packet_len & (sizeof(u32) - 1)) {
-			//TODO: _pad_sdma_tx_descs
-			//rval = _pad_sdma_tx_descs(dd, tx);
+			rval = _pad_sdma_tx_descs(dd, tx);
 			if (rval)
 				return rval;
 		} else {
-			//TODO: _sdma_close_tx
-			//_sdma_close_tx(dd, tx);
+			_sdma_close_tx(dd, tx);
 		}
 	}
 	tx->num_desc++;
@@ -775,7 +743,7 @@ static inline int sdma_txadd_page(
 {
 	dma_addr_t addr;
 	int rval;
-	hfi1_cdbg(AIOWRITE, "+");
+
 	if ((unlikely(tx->num_desc == tx->desc_limit))) {
 		rval = ext_coal_sdma_tx_descs(dd, tx, SDMA_MAP_PAGE,
 					      NULL, page, offset, len);
@@ -783,7 +751,6 @@ static inline int sdma_txadd_page(
 			return rval;
 	}
 
-#ifdef __HFI1_ORIG__
 	addr = dma_map_page(
 		       &dd->pcidev->dev,
 		       page,
@@ -795,16 +762,7 @@ static inline int sdma_txadd_page(
 		__sdma_txclean(dd, tx);
 		return -ENOSPC;
 	}
-#else
-	//TODO: dma_map_page
-#endif /* __HFI1_ORIG__ */
 
-	hfi1_cdbg(AIOWRITE, "-");
-	/*
-	 * XXX: It seems that this is the place where the reference to
-	 * the payload is added, but addr is kernel virtual here.
-	 * TODO: verify this by printing it out in Linux.
-	 */
 	return _sdma_txadd_daddr(
 			dd, SDMA_MAP_PAGE, tx, addr, len);
 }
@@ -875,7 +833,6 @@ static inline int sdma_txadd_kvaddr(
 			return rval;
 	}
 
-#ifdef __HFI1_ORIG__
 	addr = dma_map_single(
 		       &dd->pcidev->dev,
 		       kvaddr,
@@ -886,9 +843,6 @@ static inline int sdma_txadd_kvaddr(
 		__sdma_txclean(dd, tx);
 		return -ENOSPC;
 	}
-#else
-//TODO: dma_map_single
-#endif /* __HFI1_ORIG__ */
 
 	return _sdma_txadd_daddr(
 			dd, SDMA_MAP_SINGLE, tx, addr, len);
@@ -931,7 +885,6 @@ static inline u32 sdma_build_ahg_descriptor(
 		((data & SDMA_AHG_VALUE_MASK) <<
 		SDMA_AHG_VALUE_SHIFT));
 }
-#ifdef __HFI1_ORIG__
 
 /**
  * sdma_progress - use seq number of detect head progress
@@ -1108,7 +1061,6 @@ struct sdma_engine *sdma_select_engine_sc(
 	u32 selector,
 	u8 sc5);
 
-#endif /* __HFI1_ORIG__ */
 struct sdma_engine *sdma_select_engine_vl(
 	struct hfi1_devdata *dd,
 	u32 selector,
@@ -1116,8 +1068,6 @@ struct sdma_engine *sdma_select_engine_vl(
 
 struct sdma_engine *sdma_select_user_engine(struct hfi1_devdata *dd,
 					    u32 selector, u8 vl);
-#ifdef __HFI1_ORIG__
-						
 ssize_t sdma_get_cpu_to_sde_map(struct sdma_engine *sde, char *buf);
 ssize_t sdma_set_cpu_to_sde_map(struct sdma_engine *sde, const char *buf,
 				size_t count);
@@ -1145,5 +1095,4 @@ extern uint mod_num_sdma;
 
 void sdma_update_lmc(struct hfi1_devdata *dd, u64 mask, u32 lid);
 
-#endif /* __HFI1_ORIG__ */
 #endif
