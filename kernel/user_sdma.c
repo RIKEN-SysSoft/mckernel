@@ -758,7 +758,7 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	dlid = be16_to_cpu(req->hdr.lrh[1]);
 	selector = dlid_to_selector(dlid);
 	selector += uctxt->ctxt + fd->subctxt;
-	/* TODO: check the rcu stuff */
+	/* TODO: sdma_select_user_engine check the rcu stuff */
 	//req->sde = sdma_select_user_engine(dd, selector, vl);
 
 	if (!req->sde || !sdma_running(req->sde)) {
@@ -947,7 +947,7 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 			set_bit(SDMA_REQ_DONE_ERROR, &req->flags);
 			return -EFAULT;
 		}
-
+//TODO: kmem_cache_alloc
 #ifdef __HFI1_ORIG__
 		tx = kmem_cache_alloc(pq->txreq_cache, GFP_KERNEL);
 #else
@@ -1600,7 +1600,7 @@ static inline void pq_update(struct hfi1_user_sdma_pkt_q *pq)
 {
 	if (atomic_dec_and_test(&pq->n_reqs)) {
 		xchg(&pq->state, SDMA_PKT_Q_INACTIVE);
-		//TODO: wake_up
+		//TODO: pq_update wake_up
 		//wake_up(&pq->wait);
 	}
 }
@@ -1630,7 +1630,7 @@ static void user_sdma_free_request(struct user_sdma_request *req, bool unpin)
 			if (!node)
 				continue;
 
-//TODO:
+//TODO: hfi1_mmu_rb_remove
 #ifdef __HFI1_ORIG__
 			if (unpin)
 				hfi1_mmu_rb_remove(req->pq->handler,
