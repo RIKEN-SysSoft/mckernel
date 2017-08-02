@@ -93,7 +93,7 @@ struct iowait_work {
 #ifdef __HFI1_ORIG__
 	struct work_struct iowork;
 #else
-//TODO:
+//TODO: iowait_work
 #endif /* __HFI1_ORIG__ */
 	struct list_head tx_head;
 	struct iowait *iow;
@@ -151,7 +151,7 @@ struct iowait {
 	wait_queue_head_t wait_dma;
 	wait_queue_head_t wait_pio;
 #else
-//TODO:
+//TODO: wait
 #endif /* __HFI1_ORIG__ */
 	atomic_t sdma_busy;
 	atomic_t pio_busy;

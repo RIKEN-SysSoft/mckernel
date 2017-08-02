@@ -124,20 +124,28 @@ struct hfi1_user_sdma_pkt_q {
 #ifdef __HFI1_ORIG__	
 	struct kmem_cache *txreq_cache;
 #else
-	void *txreq_cache; //unused
+	void *unused0;
 #endif /* __HFI1_ORIG__ */
 	struct user_sdma_request *reqs;
 	unsigned long *req_in_use;
 	struct iowait busy;
 	unsigned state;
-#ifdef __HFI1_ORIG__	
+#ifdef __HFI1_ORIG__
 	wait_queue_head_t wait;
+#else
+	//TODO: hfi1_user_sdma_pkt_q
+#endif /* __HFI1_ORIG__ */
 	unsigned long unpinned;
+#ifdef __HFI1_ORIG__
 	struct mmu_rb_handler *handler;
+#else
+	void *unused1;
+#endif /* __HFI1_ORIG__ */
 	atomic_t n_locked;
+#ifdef __HFI1_ORIG__
 	struct mm_struct *mm;
 #else
-	//TODO:
+	void *unused2;
 #endif /* __HFI1_ORIG__ */
 };
 
