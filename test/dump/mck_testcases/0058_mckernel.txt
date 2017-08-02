@@ -1,0 +1,4 @@
+MCRBT_OPT="-m 256M@0"
+USR_PROC="mcexec_test_proc/test_pt_1mb_10times mcexec_test_proc/memtest_used_destroy"
+OS_IDX=0
+DUMP_OPT="-d 24"

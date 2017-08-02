@@ -518,6 +518,8 @@ AC_CONFIG_FILES([
 	Makefile
 	executer/user/Makefile
 	executer/user/arch/$ARCH/Makefile
+	executer/user/arch/x86_64/Makefile
+	executer/user/vmcore2mckdump
 	executer/kernel/mcctrl/Makefile
 	executer/kernel/mcctrl/arch/$ARCH/Makefile
 	executer/kernel/mcoverlayfs/Makefile

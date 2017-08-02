@@ -1,0 +1,4 @@
+MCRBT_OPT="-m 2G@0"
+DUMP_OPT="-d 24"
+USR_PROC="mcexec_test_proc/test_pt_1gb_1time"
+BELOW_CASES="0005_linux 0006_linux"

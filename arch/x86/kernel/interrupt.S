@@ -198,6 +198,7 @@ nmi:
 		movw	%gs,%ax
 		movl	%eax,%gs:PANIC_REGS+0xA0
 		movq	$1,%gs:PANICED
+		call	ihk_mc_query_mem_areas
 1:
 		hlt
 		jmp	1b

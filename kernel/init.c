@@ -48,6 +48,8 @@
 #define ekprintf(...) do { kprintf(__VA_ARGS__); } while (0)
 #endif
 
+#define DUMP_LEVEL_USER_UNUSED_EXCLUDE 24
+
 int osnum = 0;
 
 extern struct ihk_kmsg_buf kmsg_buf;
@@ -426,12 +428,26 @@ int main(void)
 {
 	char *ptr;
 	int mode = 0;
+	char *key_dump_level = "dump_level=";
+	unsigned int dump_level = DUMP_LEVEL_USER_UNUSED_EXCLUDE;
 
 	ptr = find_command_line("ksyslogd=");
 	if (ptr) {
 	    mode = ptr[9] - 0x30;
 	    if (mode < 0 || mode > 2) mode = 0;
 	}
+
+	ptr = find_command_line(key_dump_level);
+	if (ptr) {
+		ptr += strlen(key_dump_level);
+		dump_level = 0;
+		while (('0' <= *ptr) && (*ptr <= '9')) {
+			dump_level *= 10;
+			dump_level += *ptr++ - '0';
+		}
+	}
+	ihk_mc_set_dump_level(dump_level);
+
 	kmsg_init(mode);
 
 	kputs("IHK/McKernel started.\n");

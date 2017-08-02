@@ -1,0 +1,43 @@
+#!/bin/sh
+export VMLINUX=/usr/lib/debug/lib/modules/`uname -r`/vmlinux
+export INSTALLDIR=@prefix@
+export INFILE=$1
+export OUTFILE=$2
+
+if [ "X$INFILE" = X -o "X$OUTFILE" = X -o "X$3" != X ]; then
+	echo "usage: vmcore2mckdump <vmcore> <mckdump>" >&2
+	exit 1
+fi
+
+if [ ! -f "$INFILE" ]; then
+	echo "$INFILE: not found" >&2
+	exit 1
+fi
+
+/usr/bin/expect -c "
+set timeout 60
+spawn /usr/bin/crash $VMLINUX $INFILE
+
+expect \"crash>\"
+send \"mod -s ihk_smp_x86 $INSTALLDIR/kmod/ihk-smp-x86.ko\n\"
+
+expect \"crash>\"
+send \"extend $INSTALLDIR/lib/ldump2mcdump.so\n\"
+
+expect \"crash>\"
+send \"ldump2mcdump 0 -o $OUTFILE\n\"
+
+expect \"crash>\"
+send \"extend -u $INSTALLDIR/lib/ldump2mcdump.so\n\"
+
+expect \"crash>\"
+send \"quit\n\"
+"
+if [ -f ${OUTFILE} ]; then
+	echo "mcdump: ${OUTFILE} is extracted."
+	exit 0
+else
+	echo "Error: failed to extract mcdump."
+	exit 1
+fi
+

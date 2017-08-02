@@ -1094,6 +1094,276 @@ int visit_pte_range(page_table_t pt, void *start0, void *end0, int pgshift,
 	return walk_pte_l4(pt, 0, start, end, &visit_pte_l4, &args);
 }
 
+static int walk_pte_l1_safe(struct page_table *pt, uint64_t base, uint64_t start,
+		uint64_t end, walk_pte_fn_t *funcp, void *args)
+{
+	int six;
+	int eix;
+	int ret;
+	int i;
+	int error;
+	uint64_t off;
+	unsigned long phys;
+
+	if (!pt)
+		return 0;
+
+	six = (start <= base)? 0: ((start - base) >> PTL1_SHIFT);
+	eix = ((end == 0) || ((base + PTL2_SIZE) <= end))? PT_ENTRIES
+		: (((end - base) + (PTL1_SIZE - 1)) >> PTL1_SHIFT);
+
+	ret = -ENOENT;
+	for (i = six; i < eix; ++i) {
+
+		phys = pte_get_phys(&pt->entry[i]);
+		if (-1 == ihk_mc_chk_page_address(phys))
+			continue;
+
+		off = i * PTL1_SIZE;
+		error = (*funcp)(args, &pt->entry[i], base+off, start, end);
+		if (!error) {
+			ret = 0;
+		}
+		else if (error != -ENOENT) {
+			ret = error;
+			break;
+		}
+	}
+
+	return ret;
+}
+
+static int walk_pte_l2_safe(struct page_table *pt, uint64_t base, uint64_t start,
+		uint64_t end, walk_pte_fn_t *funcp, void *args)
+{
+	int six;
+	int eix;
+	int ret;
+	int i;
+	int error;
+	uint64_t off;
+	unsigned long phys;
+
+	if (!pt)
+		return 0;
+
+	six = (start <= base)? 0: ((start - base) >> PTL2_SHIFT);
+	eix = ((end == 0) || ((base + PTL3_SIZE) <= end))? PT_ENTRIES
+		: (((end - base) + (PTL2_SIZE - 1)) >> PTL2_SHIFT);
+
+	ret = -ENOENT;
+	for (i = six; i < eix; ++i) {
+
+		phys = pte_get_phys(&pt->entry[i]);
+		if (-1 == ihk_mc_chk_page_address(phys))
+			continue;
+
+		off = i * PTL2_SIZE;
+		error = (*funcp)(args, &pt->entry[i], base+off, start, end);
+		if (!error) {
+			ret = 0;
+		}
+		else if (error != -ENOENT) {
+			ret = error;
+			break;
+		}
+	}
+
+	return ret;
+}
+
+static int walk_pte_l3_safe(struct page_table *pt, uint64_t base, uint64_t start,
+		uint64_t end, walk_pte_fn_t *funcp, void *args)
+{
+	int six;
+	int eix;
+	int ret;
+	int i;
+	int error;
+	uint64_t off;
+	unsigned long phys;
+
+	if (!pt)
+		return 0;
+
+	six = (start <= base)? 0: ((start - base) >> PTL3_SHIFT);
+	eix = ((end == 0) || ((base + PTL4_SIZE) <= end))? PT_ENTRIES
+		: (((end - base) + (PTL3_SIZE - 1)) >> PTL3_SHIFT);
+
+	ret = -ENOENT;
+	for (i = six; i < eix; ++i) {
+
+		phys = pte_get_phys(&pt->entry[i]);
+		if (-1 == ihk_mc_chk_page_address(phys))
+			continue;
+
+		off = i * PTL3_SIZE;
+		error = (*funcp)(args, &pt->entry[i], base+off, start, end);
+		if (!error) {
+			ret = 0;
+		}
+		else if (error != -ENOENT) {
+			ret = error;
+			break;
+		}
+	}
+
+	return ret;
+}
+
+static int walk_pte_l4_safe(struct page_table *pt, uint64_t base, uint64_t start,
+		uint64_t end, walk_pte_fn_t *funcp, void *args)
+{
+	int six;
+	int eix;
+	int ret;
+	int i;
+	int error;
+	uint64_t off;
+	unsigned long phys;
+
+	if (!pt)
+		return 0;
+
+	six = (start <= base)? 0: ((start - base) >> PTL4_SHIFT);
+	eix = (end == 0)? PT_ENTRIES
+		:(((end - base) + (PTL4_SIZE - 1)) >> PTL4_SHIFT);
+
+	ret = -ENOENT;
+	for (i = six; i < eix; ++i) {
+
+		phys = pte_get_phys(&pt->entry[i]);
+		if (-1 == ihk_mc_chk_page_address(phys))
+			continue;
+
+		off = i * PTL4_SIZE;
+		error = (*funcp)(args, &pt->entry[i], base+off, start, end);
+		if (!error) {
+			ret = 0;
+		}
+		else if (error != -ENOENT) {
+			ret = error;
+			break;
+		}
+	}
+
+	return ret;
+}
+
+static int visit_pte_l1_safe(void *arg0, pte_t *ptep, uintptr_t base,
+		uintptr_t start, uintptr_t end)
+{
+	struct visit_pte_args *args = arg0;
+
+	if (*ptep == PTE_NULL) {
+		return 0;
+	}
+
+	return (*args->funcp)(args->arg, args->pt, ptep, (void *)base,
+			PTL1_SHIFT);
+}
+
+static int visit_pte_l2_safe(void *arg0, pte_t *ptep, uintptr_t base,
+		uintptr_t start, uintptr_t end)
+{
+	int error;
+	struct visit_pte_args *args = arg0;
+	struct page_table *pt;
+
+	if (*ptep == PTE_NULL) {
+		return 0;
+	}
+
+	if ((*ptep & PFL2_SIZE)
+			&& (start <= base)
+			&& (((base + PTL2_SIZE) <= end)
+				|| (end == 0))
+			&& (!args->pgshift || (args->pgshift == PTL2_SHIFT))) {
+		error = (*args->funcp)(args->arg, args->pt, ptep,
+				(void *)base, PTL2_SHIFT);
+		if (error != -E2BIG) {
+			return error;
+		}
+	}
+
+	if (*ptep & PFL2_SIZE) {
+		ekprintf("visit_pte_l2:split large page\n");
+		return -ENOMEM;
+	}
+
+	pt = phys_to_virt(*ptep & PT_PHYSMASK);
+
+	error = walk_pte_l1_safe(pt, base, start, end, &visit_pte_l1_safe, arg0);
+	return error;
+}
+
+static int visit_pte_l3_safe(void *arg0, pte_t *ptep, uintptr_t base,
+		uintptr_t start, uintptr_t end)
+{
+	int error;
+	struct visit_pte_args *args = arg0;
+	struct page_table *pt;
+
+	if (*ptep == PTE_NULL) {
+		return 0;
+	}
+
+	if ((*ptep & PFL3_SIZE)
+			&& (start <= base)
+			&& (((base + PTL3_SIZE) <= end)
+				|| (end == 0))
+			&& (!args->pgshift || (args->pgshift == PTL3_SHIFT))
+			&& use_1gb_page) {
+		error = (*args->funcp)(args->arg, args->pt, ptep,
+				(void *)base, PTL3_SHIFT);
+		if (error != -E2BIG) {
+			return error;
+		}
+	}
+
+	if (*ptep & PFL3_SIZE) {
+		ekprintf("visit_pte_l3:split large page\n");
+		return -ENOMEM;
+	}
+
+	pt = phys_to_virt(*ptep & PT_PHYSMASK);
+
+	error = walk_pte_l2_safe(pt, base, start, end, &visit_pte_l2_safe, arg0);
+	return error;
+}
+
+static int visit_pte_l4_safe(void *arg0, pte_t *ptep, uintptr_t base,
+		uintptr_t start, uintptr_t end)
+{
+	int error;
+	struct page_table *pt;
+
+	if (*ptep == PTE_NULL) {
+		return 0;
+	}
+
+	pt = phys_to_virt(*ptep & PT_PHYSMASK);
+
+	error = walk_pte_l3_safe(pt, base, start, end, &visit_pte_l3_safe, arg0);
+	return error;
+}
+
+int visit_pte_range_safe(page_table_t pt, void *start0, void *end0, int pgshift,
+		enum visit_pte_flag flags, pte_visitor_t *funcp, void *arg)
+{
+	const uintptr_t start = (uintptr_t)start0;
+	const uintptr_t end = (uintptr_t)end0;
+	struct visit_pte_args args;
+
+	args.pt = pt;
+	args.flags = flags;
+	args.funcp = funcp;
+	args.arg = arg;
+	args.pgshift = pgshift;
+
+	return walk_pte_l4_safe(pt, 0, start, end, &visit_pte_l4_safe, &args);
+}
+
 struct clear_range_args {
 	int free_physical;
 	struct memobj *memobj;

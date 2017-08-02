@@ -189,6 +189,8 @@ typedef int pte_visitor_t(void *arg, page_table_t pt, pte_t *ptep,
 		void *pgaddr, int pgshift);
 int visit_pte_range(page_table_t pt, void *start, void *end, int pgshift,
 		enum visit_pte_flag flags, pte_visitor_t *funcp, void *arg);
+int visit_pte_range_safe(page_table_t pt, void *start, void *end, int pgshift,
+		enum visit_pte_flag flags, pte_visitor_t *funcp, void *arg);
 int move_pte_range(page_table_t pt, struct process_vm *vm, 
 				   void *src, void *dest, size_t size, struct vm_range *range);
 
@@ -238,5 +240,15 @@ struct tlb_flush_entry {
 } __attribute__((aligned(64)));
 
 extern struct tlb_flush_entry tlb_flush_vector[IHK_TLB_FLUSH_IRQ_VECTOR_SIZE];
+
+void ihk_mc_set_dump_level(unsigned int level);
+unsigned int ihk_mc_get_dump_level(void);
+struct ihk_dump_page_set *ihk_mc_get_dump_page_set(void);
+struct ihk_dump_page *ihk_mc_get_dump_page(void);
+void ihk_mc_query_mem_areas(void);
+void ihk_mc_query_mem_user_page(void *dump_page_set);
+void ihk_mc_query_mem_free_page(void *dump_page_set);
+int ihk_mc_chk_page_address(pte_t mem_addr);
+int ihk_mc_get_mem_user_page(void *arg0, page_table_t pt, pte_t *ptep, void *pgaddr, int pgshift);
 
 #endif

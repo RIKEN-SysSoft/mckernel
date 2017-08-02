@@ -1,0 +1,4 @@
+MCRBT_OPT="-m `./utils/gen_mem_chunks.sh "0 1" 1G 1`"
+DUMP_OPT="-d 24"
+USR_PROC="mcexec_test_proc/test_pt_1gb_1time"
+BELOW_CASES="0023_linux 0024_linux"

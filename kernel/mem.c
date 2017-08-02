@@ -41,6 +41,7 @@
 #include <rusage.h>
 #include <syscall.h>
 #include <profile.h>
+#include <process.h>
 #include <limits.h>
 #include <sysfs.h>
 
@@ -113,6 +114,38 @@ struct pagealloc_track_entry {
 	struct list_head addr_list;
 	ihk_spinlock_t addr_list_lock;
 };
+
+struct page_table {
+	pte_t entry[PT_ENTRIES];
+};
+
+struct ihk_dump_page {
+	unsigned long start;
+	unsigned long map_count;
+	unsigned long map[0];
+};
+
+struct ihk_dump_page_set {
+	volatile unsigned int completion_flag;
+	unsigned int count;
+	unsigned long page_size;
+	unsigned long phy_page;
+};
+
+struct dump_pase_info {
+	struct ihk_dump_page_set *dump_page_set;
+	struct ihk_dump_page *dump_pages;
+};
+
+#define IHK_DUMP_PAGE_SET_INCOMPLETE 0
+#define IHK_DUMP_PAGE_SET_COMPLETED  1
+#define DUMP_LEVEL_ALL 0
+#define DUMP_LEVEL_USER_UNUSED_EXCLUDE 24
+
+/** Get the index in the map array */
+#define MAP_INDEX(n)    ((n) >> 6)
+/** Get the bit number in a map element */
+#define MAP_BIT(n)      ((n) & 0x3f)
 
 void pagealloc_track_init(void)
 {
@@ -2241,3 +2274,211 @@ int is_mckernel_memory(unsigned long phys)
 }
 #endif /* IHK_RBTREE_ALLOCATOR */
 #endif /* POSTK_DEBUG_TEMP_FIX_52 */
+
+void ihk_mc_query_mem_areas(void){
+
+	int cpu_id;
+	struct ihk_dump_page_set *dump_page_set;
+	struct dump_pase_info dump_pase_info;
+
+	/* Performed only for CPU 0 */
+	cpu_id = ihk_mc_get_processor_id();
+
+	if (0 != cpu_id)
+		return;
+
+	dump_page_set = ihk_mc_get_dump_page_set();
+	
+	if (DUMP_LEVEL_USER_UNUSED_EXCLUDE == ihk_mc_get_dump_level()) {
+		if (dump_page_set->count) {
+
+			dump_pase_info.dump_page_set = dump_page_set;
+			dump_pase_info.dump_pages = ihk_mc_get_dump_page();
+
+			/* Get user page information */
+			ihk_mc_query_mem_user_page((void *)&dump_pase_info);
+			/* Get unused page information */
+			ihk_mc_query_mem_free_page((void *)&dump_pase_info);
+		}
+	}
+
+	dump_page_set->completion_flag = IHK_DUMP_PAGE_SET_COMPLETED;
+
+	return;
+}
+
+void ihk_mc_query_mem_user_page(void *dump_pase_info) {
+
+	struct resource_set *rset = cpu_local_var(resource_set);
+	struct process_hash *phash = rset->process_hash;
+	struct process *p; 
+	struct process_vm *vm;
+	int i;
+
+	for (i=0; i<HASH_SIZE; i++) {
+
+		list_for_each_entry(p, &phash->list[i], hash_list){
+			vm = p->vm;
+			if (vm) {
+				if(vm->address_space->page_table) {
+					visit_pte_range_safe(vm->address_space->page_table, 0,
+					(void *)USER_END, 0, 0,
+					&ihk_mc_get_mem_user_page, (void *)dump_pase_info);
+				}
+			}
+		}
+	}
+
+	return;
+}
+
+void ihk_mc_query_mem_free_page(void *dump_pase_info) {
+
+	struct free_chunk *chunk;
+	struct rb_node *node;
+	struct rb_root *free_chunks;
+	unsigned long phy_start, map_start, map_end, free_pages, free_page_cnt, map_size, set_size, k;
+	int i, j;
+	struct ihk_dump_page_set *dump_page_set;
+	struct ihk_dump_page *dump_page;
+	struct dump_pase_info *dump_pase_in;
+	unsigned long chunk_addr, chunk_size;
+
+	dump_pase_in = (struct dump_pase_info *)dump_pase_info;
+	dump_page_set = dump_pase_in->dump_page_set;
+
+	/* Search all NUMA nodes */
+	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); i++) {
+
+		free_chunks = &memory_nodes[i].free_chunks;
+		free_pages = memory_nodes[i].nr_free_pages;
+
+		/* rb-tree search */
+		for (free_page_cnt = 0, node = rb_first_safe(free_chunks); node; free_page_cnt++, node = rb_next_safe(node)) {
+
+			if (free_page_cnt >= free_pages)
+				break;
+
+			/* Get chunk information */
+			chunk = container_of(node, struct free_chunk, node);
+
+			dump_page = dump_pase_in->dump_pages;
+			chunk_addr = chunk->addr;
+			chunk_size = chunk->size;
+
+			for (j = 0; j < dump_page_set->count; j++) {
+
+				if (j) {
+					dump_page = (struct ihk_dump_page *)((char *)dump_page + ((dump_page->map_count * sizeof(unsigned long)) + sizeof(struct ihk_dump_page)));
+				}
+
+				phy_start = dump_page->start;
+				map_size = (dump_page->map_count << (PAGE_SHIFT+6));
+
+				if ((chunk_addr >= phy_start)
+					&& ((phy_start + map_size) >= chunk_addr)) {
+
+					/* Set free page to page map */
+					map_start = (chunk_addr - phy_start) >> PAGE_SHIFT;
+
+					if ((phy_start + map_size) < (chunk_addr + chunk_size)) {
+						set_size = map_size - (chunk_addr - phy_start);
+						map_end = (map_start + (set_size >> PAGE_SHIFT));
+						chunk_addr += set_size;
+						chunk_size -= set_size;
+					} else {
+						map_end = (map_start + (chunk_size >> PAGE_SHIFT));
+					}
+
+					for (k = map_start; k < map_end; k++) {
+
+						if (MAP_INDEX(k) >= dump_page->map_count) {
+							kprintf("%s:free page is out of range(max:%d): %ld (map_start:0x%lx, map_end:0x%lx) k(0x%lx)\n", __FUNCTION__, dump_page->map_count, MAP_INDEX(k), map_start, map_end, k);
+							break;
+						}
+
+						dump_page->map[MAP_INDEX(k)] &= ~(1UL << MAP_BIT(k));
+					}
+				}
+			}
+		}
+	}
+
+	return;
+}
+
+int ihk_mc_chk_page_address(pte_t mem_addr){
+
+	int i, numa_id;;
+	unsigned long start, end;
+
+	/* Search all NUMA nodes */
+	for (i = 0; i < ihk_mc_get_nr_memory_chunks(); i++) {
+		ihk_mc_get_memory_chunk(i, &start, &end, &numa_id);
+		if ((mem_addr >= start) && (end >= mem_addr))
+			return 0;
+	}
+
+	return -1;
+}
+
+int ihk_mc_get_mem_user_page(void *arg0, page_table_t pt, pte_t *ptep, void *pgaddr, int pgshift)
+{
+	struct ihk_dump_page_set *dump_page_set;
+	int i;
+	unsigned long j, phy_start, phys, map_start, map_end, map_size, set_size;
+	struct ihk_dump_page *dump_page;
+	struct dump_pase_info *dump_pase_in;
+	unsigned long chunk_addr, chunk_size;
+
+	if (((*ptep) & PTATTR_ACTIVE) && ((*ptep) & PTATTR_USER)) {
+		phys = pte_get_phys(ptep);
+		/* Confirm accessible address */
+		if (-1 != ihk_mc_chk_page_address(phys)) {
+
+			dump_pase_in = (struct dump_pase_info *)arg0;
+			dump_page_set = dump_pase_in->dump_page_set;
+			dump_page = dump_pase_in->dump_pages;
+
+			chunk_addr = phys;
+			chunk_size = (1UL << pgshift);
+
+			for (i = 0; i < dump_page_set->count; i++) {
+
+				if (i) {
+					dump_page = (struct ihk_dump_page *)((char *)dump_page + ((dump_page->map_count * sizeof(unsigned long)) + sizeof(struct ihk_dump_page)));
+				}
+
+				phy_start = dump_page->start;
+				map_size = (dump_page->map_count << (PAGE_SHIFT+6));
+
+				if ((chunk_addr >= phy_start)
+					&& ((phy_start + map_size) >= chunk_addr)) {
+
+					/* Set user page to page map */
+					map_start = (chunk_addr - phy_start) >> PAGE_SHIFT;
+
+					if ((phy_start + map_size) < (chunk_addr + chunk_size)) {
+						set_size = map_size - (chunk_addr - phy_start);
+						map_end = (map_start + (set_size >> PAGE_SHIFT));
+						chunk_addr += set_size;
+						chunk_size -= set_size;
+					} else {
+						map_end = (map_start + (chunk_size >> PAGE_SHIFT));
+					}
+
+					for (j = map_start; j < map_end; j++) {
+
+						if (MAP_INDEX(j) >= dump_page->map_count) {
+							kprintf("%s:user page is out of range(max:%d): %ld (map_start:0x%lx, map_end:0x%lx) j(0x%lx)\n", __FUNCTION__, dump_page->map_count, MAP_INDEX(j), map_start, map_end, j);
+							break;
+						}
+						dump_page->map[MAP_INDEX(j)] &= ~(1UL << MAP_BIT(j));
+					}
+				}
+			}
+		}
+	}
+
+	return 0;
+}

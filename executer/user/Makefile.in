@@ -13,7 +13,7 @@ CFLAGS=-Wall -O -I. -I$(VPATH)/arch/${ARCH}
 LDFLAGS=@LDFLAGS@
 RPATH=$(shell echo $(LDFLAGS)|awk '{for(i=1;i<=NF;i++){if($$i~/^-L/){w=$$i;sub(/^-L/,"-Wl,-rpath,",w);print w}}}')
 VPATH=@abs_srcdir@
-TARGET=mcexec libsched_yield
+TARGET=mcexec libsched_yield ldump2mcdump.so
 @uncomment_if_ENABLE_MEMDUMP@TARGET+=eclair
 LIBS=@LIBS@
 ARCH=@ARCH@
@@ -44,6 +44,9 @@ else
 eclair: eclair.c
 	$(CC) $(CFLAGS) -I${IHKDIR} -o $@ $^ $(LIBS)
 endif
+
+ldump2mcdump.so: ldump2mcdump.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -shared -fPIC -o $@ $<
 
 libsched_yield: libsched_yield.c
 	$(CC) -shared -fPIC -Wl,-soname,sched_yield.so.1 -o libsched_yield.so.1.0.0 $^ -lc -ldl
@@ -83,6 +86,7 @@ install::
 	mkdir -p -m 755 $(BINDIR)
 	install -m 755 mcexec $(BINDIR)
 	mkdir -p -m 755 $(MCKERNEL_LIBDIR)
+	install -m 755 ldump2mcdump.so $(MCKERNEL_LIBDIR)
 	install -m 755 libsched_yield.so.1.0.0 $(MCKERNEL_LIBDIR)
 ifeq ($(ENABLE_QLMPI),yes)
 	install -m 644 ../include/qlmpilib.h $(MCKERNEL_INCDIR)
@@ -94,3 +98,5 @@ ifeq ($(ENABLE_QLMPI),yes)
 	install -m 755 ql_talker $(SBINDIR)
 endif
 	@uncomment_if_ENABLE_MEMDUMP@install -m 755 eclair $(BINDIR)
+	@uncomment_if_ENABLE_MEMDUMP@install -m 755 vmcore2mckdump $(BINDIR)
+

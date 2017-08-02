@@ -29,6 +29,8 @@
 
 #define CPU_TID_BASE 1000000
 
+#define PHYSMEM_NAME_SIZE 32
+
 struct options {
 	uint8_t	cpu;
 	uint8_t	help;
@@ -123,6 +125,8 @@ static int read_physmem(uintptr_t pa, void *buf, size_t size) {
 	bfd_boolean ok;
 	int i;
 
+	char physmem_name[PHYSMEM_NAME_SIZE];
+
 	off = 0;
 	/* Check if pa is valid in any chunks and figure
 	 * out the global offset in dump section */
@@ -135,12 +139,19 @@ static int read_physmem(uintptr_t pa, void *buf, size_t size) {
 			off += (pa - mem_chunks->chunks[i].addr);
 			break;
 		}
-
-		off += mem_chunks->chunks[i].size;
 	}
 
 	if (i == mem_chunks->nr_chunks) {
 		printf("read_physmem: invalid addr 0x%lx\n", pa);
+		return 1;
+	}
+
+	memset(physmem_name,0,sizeof(physmem_name));
+	sprintf(physmem_name, "physmem%d",i);
+
+	dumpscn = bfd_get_section_by_name(dumpbfd, physmem_name);
+	if (!dumpscn) {
+		bfd_perror("read_physmem:bfd_get_section_by_name(physmem)");
 		return 1;
 	}
 
@@ -596,6 +607,11 @@ static int setup_symbols(char *fname) {
 
 static int setup_dump(char *fname) {
 	bfd_boolean ok;
+	long mem_size;
+	static dump_mem_chunks_t mem_info;
+
+	char physmem_name[PHYSMEM_NAME_SIZE];
+	int i;
 
 #ifdef POSTK_DEBUG_ARCH_DEP_34
 	dumpbfd = bfd_fopen(opt.dump_path, NULL, "r", -1);
@@ -613,31 +629,45 @@ static int setup_dump(char *fname) {
 		return 1;
 	}
 
-	mem_chunks = malloc(PHYS_CHUNKS_DESC_SIZE);
-	if (!mem_chunks) {
-		perror("allocating mem chunks descriptor: ");
-		return 1;
-	}
-
 	dumpscn = bfd_get_section_by_name(dumpbfd, "physchunks");
 	if (!dumpscn) {
 		bfd_perror("bfd_get_section_by_name");
 		return 1;
 	}
 
-	ok = bfd_get_section_contents(dumpbfd, dumpscn, mem_chunks,
-			0, PHYS_CHUNKS_DESC_SIZE);
+	ok = bfd_get_section_contents(dumpbfd, dumpscn, &mem_info,
+			0, sizeof(mem_info));
 	if (!ok) {
-		bfd_perror("read_physmem:bfd_get_section_contents");
+		bfd_perror("read_physmem:bfd_get_section_contents(mem_size)");
+		return 1;
+	}
+
+	mem_size = (sizeof(dump_mem_chunks_t) + (sizeof(struct dump_mem_chunk) * mem_info.nr_chunks));
+
+	mem_chunks = malloc(mem_size);
+	if (!mem_chunks) {
+		perror("allocating mem chunks descriptor: ");
+		return 1;
+	}
+
+	ok = bfd_get_section_contents(dumpbfd, dumpscn, mem_chunks,
+			0, mem_size);
+	if (!ok) {
+		bfd_perror("read_physmem:bfd_get_section_contents(mem_chunks)");
 		return 1;
 	}
 
 	kernel_base = mem_chunks->kernel_base;
 
-	dumpscn = bfd_get_section_by_name(dumpbfd, "physmem");
-	if (!dumpscn) {
-		bfd_perror("bfd_get_section_by_name");
-		return 1;
+	for (i = 0; i < mem_info.nr_chunks; ++i) {
+		memset(physmem_name,0,sizeof(physmem_name));
+		sprintf(physmem_name, "physmem%d",i);
+
+		dumpscn = bfd_get_section_by_name(dumpbfd, physmem_name);
+		if (!dumpscn) {
+			bfd_perror("read_physmem:bfd_get_section_by_name(physmem)");
+			return 1;
+		}
 	}
 
 	return 0;

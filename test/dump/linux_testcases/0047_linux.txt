@@ -1,0 +1,2 @@
+OUTFILE="${HOME}/testdump"
+ERROR_CASE="yes"

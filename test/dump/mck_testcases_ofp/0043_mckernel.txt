@@ -1,0 +1,5 @@
+MCRBT_OPT="-m 3G@0,3G@1,3G@2,3G@3"
+USR_PROC="mcexec_test_proc/test_pt_1gb_10times"
+OS_IDX=0
+DUMP_OPT="-d 0"
+DUMP_FILE=""

@@ -1,0 +1,5 @@
+MCRBT_OPT="-m 256M@0,256M@1,256M@2,256M@3,256M@4,256M@5,256M@6,256M@7"
+USR_PROC="mcexec_test_proc/test_pt_1gb_1time"
+OS_IDX=0
+DUMP_OPT="-d 0"
+DUMP_FILE="./dumps/dumpfile_0038.log"
