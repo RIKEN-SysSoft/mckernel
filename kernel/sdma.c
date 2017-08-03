@@ -798,20 +798,28 @@ struct sdma_engine *sdma_select_engine_vl(
 	if (vl >= num_vls) {
 #else
 	if (vl >= HFI1_MAX_VLS_SUPPORTED) {
-#endif /* __HFI1_ORIG__ */	
+#endif /* __HFI1_ORIG__ */
 		rval = NULL;
 		goto done;
 	}
 
+#ifdef __HFI1_ORIG__
 	rcu_read_lock();
 	m = rcu_dereference(dd->sdma_map);
+#else
+	m = (volatile struct sdma_vl_map *)dd->sdma_map;
+#endif
 	if (unlikely(!m)) {
+#ifdef __HFI1_ORIG__
 		rcu_read_unlock();
+#endif
 		return &dd->per_sdma[0];
 	}
 	e = m->map[vl & m->mask];
 	rval = e->sde[selector & e->mask];
+#ifdef __HFI1_ORIG__
 	rcu_read_unlock();
+#endif
 
 done:
 	rval =  !rval ? &dd->per_sdma[0] : rval;
@@ -881,6 +889,7 @@ static struct rhashtable_params sdma_rht_params = {
 struct sdma_engine *sdma_select_user_engine(struct hfi1_devdata *dd,
 					    u32 selector, u8 vl)
 {
+#ifdef __HFI1_ORIG__
 	struct sdma_rht_node *rht_node;
 	struct sdma_engine *sde = NULL;
 	const struct cpumask *current_mask = tsk_cpus_allowed(current);
@@ -909,6 +918,7 @@ struct sdma_engine *sdma_select_user_engine(struct hfi1_devdata *dd,
 		return sde;
 
 out:
+#endif
 	return sdma_select_engine_vl(dd, selector, vl);
 }
 
