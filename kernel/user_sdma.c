@@ -518,6 +518,19 @@ static u8 dlid_to_selector(u16 dlid)
 	return mapping[hash];
 }
 
+#ifndef __HFI1_ORIG__
+/* hfi1/chip_registers.h */
+#define CORE		0x000000000000
+#define TXE			(CORE + 0x000001800000)
+/* hfi1/chip.h */
+#define TXE_PIO_SEND (TXE + TXE_PIO_SEND_OFFSET)
+#define TXE_PIO_SEND_OFFSET 0x0800000
+#define TXE_PIO_SIZE (32 * 0x100000)	/* 32 MB */
+
+/* HFI1 device address in McKernel */
+uint64_t hfi1_kregbase = 0;
+#endif
+
 #ifdef __HFI1_ORIG__
 int hfi1_user_sdma_process_request(struct file *fp, struct iovec *iovec,
 				   unsigned long dim, unsigned long *count)
@@ -543,6 +556,38 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	int req_queued = 0;
 	u16 dlid;
 	u32 selector;
+
+#ifndef __HFI1_ORIG__
+	if (!hfi1_kregbase) {
+		enum ihk_mc_pt_attribute attr = PTATTR_UNCACHABLE | PTATTR_WRITABLE;
+		void *virt;
+#if 0
+		unsigned long phys = dd->physaddr;
+		hfi1_kregbase = dd->kregbase;
+#else
+		unsigned long phys = *(uint64_t *)(((void *)dd) + 0xbf8);
+		hfi1_kregbase = *(uint64_t *)(((void *)dd) + 0xbe8);
+#endif
+		/*
+		 * No race condition here as ihk_mc_pt_set_page() holds
+		 * the lock to kernel space mapping manipulation
+		 *
+		 * XXX: use large pages?
+		 * XXX: where are we going to unmap this?
+		 */
+		for (virt = hfi1_kregbase; virt < (hfi1_kregbase + TXE_PIO_SEND);
+				virt += PAGE_SIZE, phys += PAGE_SIZE) {
+			if (ihk_mc_pt_set_page(NULL, virt, phys, attr) < 0) {
+				kprintf("%s: ERROR: mapping kregbase: 0x%lx -> 0x%lx\n",
+					__FUNCTION__, virt, phys);
+			}
+		}
+
+		dkprintf("%s: hfi1_kregbase: 0x%lx -> 0x%lx:%lu\n",
+				__FUNCTION__,
+				hfi1_kregbase, (phys - TXE_PIO_SEND), TXE_PIO_SEND);
+	}
+#endif // __HFI1_ORIG__
 
 	hfi1_cdbg(AIOWRITE, "+");
 	if (iovec[idx].iov_len < sizeof(info) + sizeof(req->hdr)) {
