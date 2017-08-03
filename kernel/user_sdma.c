@@ -758,8 +758,13 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	dlid = be16_to_cpu(req->hdr.lrh[1]);
 	selector = dlid_to_selector(dlid);
 	selector += uctxt->ctxt + fd->subctxt;
-	/* TODO: sdma_select_user_engine check the rcu stuff */
-	//req->sde = sdma_select_user_engine(dd, selector, vl);
+	/* TODO: check the rcu stuff */
+	/*
+	 * XXX: didn't we conclude that we don't need to worry about RCU here?
+	 * the mapping is created at driver initialization, the rest of the
+	 * accesses are read-only
+	 */
+	req->sde = sdma_select_user_engine(dd, selector, vl);
 
 	if (!req->sde || !sdma_running(req->sde)) {
 		ret = -ECOMM;
