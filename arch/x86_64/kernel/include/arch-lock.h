@@ -37,24 +37,11 @@ __kprintf("[%d] ret ihk_mc_spinlock_lock_noirq\n", ihk_mc_get_processor_id()); \
 #define ihk_mc_spinlock_lock_noirq __ihk_mc_spinlock_lock_noirq
 #endif
 
+
 static void __ihk_mc_spinlock_lock_noirq(ihk_spinlock_t *lock)
 {
-	int inc = 0x00010000;
+	int inc = 0x00020000;
 	int tmp;
-
-#if 0
-	asm volatile("lock ; xaddl %0, %1\n"
-	             "movzwl %w0, %2\n\t"
-	             "shrl $16, %0\n\t"
-	             "1:\t"
-	             "cmpl %0, %2\n\t"
-	             "je 2f\n\t"
-	             "rep ; nop\n\t"
-	             "movzwl %1, %2\n\t"
-	             "jmp 1b\n"
-	             "2:"
-	             : "+Q" (inc), "+m" (*lock), "=r" (tmp) : : "memory", "cc");
-#endif
 
 	preempt_disable();
 
@@ -106,8 +93,11 @@ __kprintf("[%d] ret ihk_mc_spinlock_unlock_noirq\n", ihk_mc_get_processor_id());
 #endif
 static void __ihk_mc_spinlock_unlock_noirq(ihk_spinlock_t *lock)
 {
-	asm volatile ("lock incw %0" : "+m"(*lock) : : "memory", "cc");
-	
+	int inc = 0x0002;
+
+	asm volatile ("lock addw %1, %0\n"
+			: "+m" (*(lock)) : "ri" (inc) : "memory", "cc");
+
 	preempt_enable();
 }
 
