@@ -882,7 +882,7 @@ static inline int sdma_txadd_kvaddr(
 		return -ENOSPC;
 	}
 #else
-//TODO: dma_map_single
+	addr = virt_to_phys(kvaddr);
 #endif /* __HFI1_ORIG__ */
 
 	return _sdma_txadd_daddr(
@@ -1038,6 +1038,7 @@ void sdma_engine_interrupt(struct sdma_engine *sde, u64 status);
  *
  */
 
+#endif /* __HFI1_ORIG__ */
 /**
  * struct sdma_map_elem - mapping for a vl
  * @mask - selector mask
@@ -1067,12 +1068,17 @@ struct sdma_map_elem {
  */
 struct sdma_vl_map {
 	s8 engine_to_vl[TXE_NUM_SDMA_ENGINES];
+#ifdef __HFI1_ORIG__
 	struct rcu_head list;
+#else
+	//TODO: struct rcu_head list;
+#endif /* __HFI1_ORIG__ */
 	u32 mask;
 	u8 actual_vls;
 	u8 vls;
 	struct sdma_map_elem *map[0];
 };
+#ifdef __HFI1_ORIG__
 
 int sdma_map_init(
 	struct hfi1_devdata *dd,

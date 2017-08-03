@@ -770,6 +770,7 @@ int sdma_engine_get_vl(struct sdma_engine *sde)
 	return vl;
 }
 
+#endif /* __HFI1_ORIG__ */
 /**
  * sdma_select_engine_vl() - select sdma engine
  * @dd: devdata
@@ -808,25 +809,26 @@ struct sdma_engine *sdma_select_engine_vl(
 	m = rcu_dereference(dd->sdma_map);
 #else
 	m = (volatile struct sdma_vl_map *)dd->sdma_map;
-#endif
+#endif /* __HFI1_ORIG__ */
 	if (unlikely(!m)) {
 #ifdef __HFI1_ORIG__
 		rcu_read_unlock();
-#endif
+#endif /* __HFI1_ORIG__ */
 		return &dd->per_sdma[0];
 	}
 	e = m->map[vl & m->mask];
 	rval = e->sde[selector & e->mask];
 #ifdef __HFI1_ORIG__
 	rcu_read_unlock();
-#endif
+#endif /* __HFI1_ORIG__ */
 
 done:
 	rval =  !rval ? &dd->per_sdma[0] : rval;
-	trace_hfi1_sdma_engine_select(dd, selector, vl, rval->this_idx);
+	// trace_hfi1_sdma_engine_select(dd, selector, vl, rval->this_idx);
 	hfi1_cdbg(AIOWRITE, "-");
 	return rval;
 }
+#ifdef __HFI1_ORIG__
 
 /**
  * sdma_select_engine_sc() - select sdma engine
@@ -875,6 +877,7 @@ static struct rhashtable_params sdma_rht_params = {
 	.mutex_is_held = info_mutex_is_held,
 };
 
+#endif /* __HFI1_ORIG__ */
 /*
  * sdma_select_user_engine() - select sdma engine based on user setup
  * @dd: devdata
@@ -918,9 +921,10 @@ struct sdma_engine *sdma_select_user_engine(struct hfi1_devdata *dd,
 		return sde;
 
 out:
-#endif
+#endif /* __HFI1_ORIG__ */
 	return sdma_select_engine_vl(dd, selector, vl);
 }
+#ifdef __HFI1_ORIG__
 
 static void sdma_populate_sde_map(struct sdma_rht_map_elem *map)
 {
