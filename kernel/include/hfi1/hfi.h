@@ -1251,12 +1251,17 @@ struct hfi1_devdata {
 };
 #endif /* __HFI1_ORIG__ */
 
+//TODO: double check the order
 #ifndef __HFI1_ORIG__
 struct hfi1_devdata {
 	struct list_head list;
 	/* pointers to related structs for this device */
 	/* pci access data structure */
 	struct pci_dev *pcidev;
+	/* lock for sdma_map */
+	spinlock_t sde_map_lock;
+	/* array of vl maps */
+	struct sdma_vl_map __rcu *sdma_map;
 	dma_addr_t sdma_pad_phys;
 		/* array of engines sized by num_sdma */
 	struct sdma_engine                 *per_sdma;

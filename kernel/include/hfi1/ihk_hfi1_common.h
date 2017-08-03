@@ -7,6 +7,7 @@
 #include <lwk/compiler.h>
 #include <arch-lock.h>
 #include <page.h>
+#include <string.h>
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
@@ -65,22 +66,20 @@
 #define atomic_read ihk_atomic_read
 #define atomic_add ihk_atomic_add
 #define atomic_t ihk_atomic_t
+typedef ihk_spinlock_t spinlock_t;
 
 /* TODO***********************************/
 #define spin_lock_irqsave(lock, flags) do {} while(0)
 #define spin_unlock_irqsave(lock, flags) do {} while(0)
 #define spin_unlock_irqrestore(lock, flags) do {} while(0)
-typedef ihk_spinlock_t spinlock_t;
-#define ____cacheline_aligned_in_smp
+#define ____cacheline_aligned_in_smp __attribute__((aligned(64)))
 #define __iomem
 #define spin_lock(...) do {} while(0)
 #define spin_unlock(...) do {} while(0)
 #define smp_wmb() barrier()
 #define smp_rmb() barrier()
 /***********************************************/
-
-/* TODO: Figure the corresponding flag for McKernel-kmalloc()*/
-#define __GFP_ZERO 0
+# define __rcu
 #define GFP_KERNEL 0
 
 /* kernel-xppsl_1.5.2/include/linux/seqlock.h */
@@ -113,6 +112,7 @@ static inline unsigned raw_seqcount_begin(const seqcount_t *s)
 #define MAX_TID_PAIR_ENTRIES 1024	/* max receive expected pairs */
 #define PIO_BLOCK_SIZE 64			/* bytes */
 /* From: chip.c/h */
+#define TXE_NUM_SDMA_ENGINES 16
 //num_vls = HFI1_MAX_VLS_SUPPORTED;
 //num_vls = dd->chip_sdma_engines;
 #define HFI1_MAX_VLS_SUPPORTED 8
@@ -207,12 +207,15 @@ static inline void *kmalloc_array(size_t n, size_t size, gfp_t flags)
 {
 	if (size != 0 && n > SIZE_MAX / size)
 		return NULL;
-	return __kmalloc(n * size, flags);
+	return kmalloc(n * size, flags);
 }
 
 static inline void *kcalloc(size_t n, size_t size, gfp_t flags)
 {
-	return kmalloc(n * size, flags | __GFP_ZERO);
+	void *mem = kmalloc(n * size, flags);
+	if (mem)
+		memset(mem, 0, n * size);
+	return mem;
 }
 
 #endif

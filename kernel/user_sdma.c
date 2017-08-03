@@ -583,7 +583,7 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 			}
 		}
 
-		dkprintf("%s: hfi1_kregbase: 0x%lx -> 0x%lx:%lu\n",
+		kprintf("%s: hfi1_kregbase: 0x%lx -> 0x%lx:%lu\n",
 				__FUNCTION__,
 				hfi1_kregbase, (phys - TXE_PIO_SEND), TXE_PIO_SEND);
 	}
@@ -997,11 +997,10 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 			set_bit(SDMA_REQ_DONE_ERROR, &req->flags);
 			return -EFAULT;
 		}
-//TODO: kmem_cache_alloc
 #ifdef __HFI1_ORIG__
 		tx = kmem_cache_alloc(pq->txreq_cache, GFP_KERNEL);
 #else
-		tx = kmalloc(sizeof(struct user_sdma_txreq), GFP_KERNEL | __GFP_ZERO);
+		tx = kmalloc(sizeof(struct user_sdma_txreq), GFP_KERNEL);
 #endif /* __HFI1_ORIG__ */
 		if (!tx)
 			return -ENOMEM;
