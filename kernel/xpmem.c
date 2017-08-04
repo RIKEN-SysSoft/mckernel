@@ -1098,6 +1098,8 @@ static int xpmem_attach(
 	XPMEM_DEBUG("do_mmap(): vaddr=0x%lx, size=0x%lx, prot_flags=0x%lx, " 
 		"flags=0x%lx, fd=%d, offset=0x%lx", 
 		vaddr, size, prot_flags, flags, mckfd->fd, offset);
+	/* The new range uses on-demand paging and is associated with shmobj because of 
+	   MAP_ANONYMOUS && !MAP_PRIVATE && MAP_SHARED */
 	at_vaddr = do_mmap(vaddr, size, prot_flags, flags, mckfd->fd, offset);
 	if (IS_ERR((void *)(uintptr_t)at_vaddr)) {
 		ret = at_vaddr;
@@ -1110,13 +1112,21 @@ static int xpmem_attach(
 
 	vmr = lookup_process_memory_range(vm, at_vaddr, at_vaddr + 1);
 
+	/* To identify pages of XPMEM attachment for rusage accounting */
+	if(vmr->memobj) {
+		vmr->memobj->flags |= MF_XPMEM;
+	} else {
+		ekprintf("%s: vmr->memobj equals to NULL\n", __FUNCTION__);
+	}
+
 	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 
 	if (!vmr) {
 		ret = -ENOENT;
 		goto out_2;
 	}
-        vmr->private_data = att;
+	vmr->private_data = att;
+
 
 	att->at_vmr = vmr;
 
@@ -1199,6 +1209,8 @@ static int xpmem_detach(
 	xpmem_unpin_pages(ap->seg, vm, att->at_vaddr, att->at_size);
 
 	range->private_data = NULL;
+    /* range->memobj is released in xpmem_vm_munmap() --> xpmem_remove_process_range() -->
+	   xpmem_free_process_memory_range() */
 
 	mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
 
@@ -1416,6 +1428,8 @@ static void xpmem_detach_att(
 	xpmem_unpin_pages(ap->seg, vm, att->at_vaddr, att->at_size);
 
 	range->private_data = NULL;
+	/* range->memobj is released in xpmem_vm_munmap() --> xpmem_remove_process_range() -->
+	   xpmem_free_process_memory_range() */
 
 	att->flags &= ~XPMEM_FLAG_VALIDPTEs;
 
@@ -1677,7 +1691,8 @@ int xpmem_remove_process_memory_range(
 		}
 
 		remaining_vmr->private_data = NULL;
-
+		/* This function is always followed by xpmem_free_process_memory_range() 
+		   which in turn calls memobj_release() */
 		remaining_vaddr = att->at_vaddr;
 	}
 
@@ -1699,6 +1714,8 @@ int xpmem_remove_process_memory_range(
 	att->at_size = remaining_vmr->end - remaining_vmr->start;
 
 	vmr->private_data = NULL;
+	/* This function is always followed by [xpmem_]free_process_memory_range()
+	   which in turn calls memobj_release() */
 
 out:
 	mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
@@ -1910,17 +1927,19 @@ static int xpmem_remap_pte(
 				__FUNCTION__, ret);
 			goto out;
 		}
+		// memory_stat_rss_add() is called by the process hosting the memory area
 	}
 	else {
 		ret = ihk_mc_pt_set_range(vm->address_space->page_table, vm, 
 			att_pgaddr, att_pgaddr + att_pgsize, seg_phys, att_attr,
-			vmr->pgshift);
+								  vmr->pgshift, vmr);
 		if (ret) {
 			ret = -EFAULT;
 			ekprintf("%s: ERROR: ihk_mc_pt_set_range() failed %d\n",
 				 __FUNCTION__, ret);
 			goto out;
 		}
+		// memory_stat_rss_add() is called by the process hosting the memory area
 	}
 
 out:

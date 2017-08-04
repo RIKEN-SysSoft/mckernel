@@ -102,6 +102,7 @@ static int alloc_zeroobj(void)
 
 	memset(obj, 0, sizeof(*obj));
 	obj->memobj.ops = &zeroobj_ops;
+	obj->memobj.flags = MF_ZEROOBJ;
 	obj->memobj.size = 0;
 	page_list_init(obj);
 	ihk_mc_spinlock_init(&obj->memobj.lock);
@@ -127,6 +128,7 @@ static int alloc_zeroobj(void)
 	page->mode = PM_MAPPED;
 	page->offset = 0;
 	ihk_atomic_set(&page->count, 1);
+	ihk_atomic64_set(&page->mapped, 0);
 	page_list_insert(obj, page);
 	virt = NULL;
 

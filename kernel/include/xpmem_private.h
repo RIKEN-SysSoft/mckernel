@@ -318,6 +318,8 @@ static inline struct xpmem_thread_group *__xpmem_tg_ref_by_tgid(
 		tgid, return_destroying);
 
 	index = xpmem_tg_hashtable_index(tgid);
+	XPMEM_DEBUG("xpmem_my_part=%p\n", xpmem_my_part);
+	XPMEM_DEBUG("xpmem_my_part->tg_hashtable=%p\n", xpmem_my_part->tg_hashtable);
 	mcs_rwlock_reader_lock(&xpmem_my_part->tg_hashtable[index].lock, &lock);
 	tg = __xpmem_tg_ref_by_tgid_nolock_internal(tgid, index, 
 		return_destroying);

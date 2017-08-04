@@ -289,6 +289,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 
 			dkprintf("STATUS_PAGE_FAULT in syscall, pid: %d\n", 
 					cpu_local_var(current)->proc->pid);
+			dkprintf("remote page fault,va=%lx,reason=%x\n", res.fault_address, res.fault_reason|PF_POPULATE);
 			error = page_fault_process_vm(thread->vm,
 					(void *)res.fault_address,
 					res.fault_reason|PF_POPULATE);
@@ -966,6 +967,14 @@ void terminate(int rc, int sig)
 
 	dkprintf("terminate,pid=%d\n", proc->pid);
 
+	/* rusage debug */
+	for(i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
+		dkprintf("memory_stat_rss[%d]=%ld\n", i, monitor->rusage_memory_stat_rss[i]);
+	}
+	for(i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
+		dkprintf("memory_stat_mapped_file[%d]=%ld\n", i, monitor->rusage_memory_stat_mapped_file[i]);
+	}
+
 #ifdef DCFA_KMOD
 	do_mod_exit(rc);
 #endif
@@ -1413,6 +1422,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		}
 	}
 	else if (flags & MAP_SHARED) {
+		dkprintf("%s: MAP_SHARED,flags=%x,len=%ld\n", __FUNCTION__, flags, len);
 		memset(&ads, 0, sizeof(ads));
 		ads.shm_segsz = len;
 		ads.shm_perm.mode = SHM_DEST;
@@ -1424,6 +1434,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		}
 	}
 	else {
+		dkprintf("%s: anon&demand-paging\n", __FUNCTION__);
 		error = zeroobj_create(&memobj);
 		if (error) {
 			ekprintf("do_mmap:zeroobj_create failed. %d\n", error);
@@ -1473,19 +1484,21 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 
 			for (i = 0; i < memobj->nr_pages; ++i) {
 				error = ihk_mc_pt_set_range(proc->vm->address_space->page_table,
-						proc->vm,
-						(void *)range->start + (i * PAGE_SIZE),
-						(void *)range->start + (i * PAGE_SIZE) +
-						PAGE_SIZE,
-						virt_to_phys(memobj->pages[i]),
-						ptattr,
-						PAGE_SHIFT);
+											proc->vm,
+											(void *)range->start + (i * PAGE_SIZE),
+											(void *)range->start + (i * PAGE_SIZE) +
+											PAGE_SIZE,
+											virt_to_phys(memobj->pages[i]),
+											ptattr,
+											PAGE_SHIFT,
+											range);
 				if (error) {
 					kprintf("%s: ERROR: mapping %d page of pre-mapped file\n",
 							__FUNCTION__, i);
 				}
 			}
 			dkprintf("%s: memobj 0x%lx pre-mapped\n", __FUNCTION__, memobj);
+			// 	fileobj && MF_PREMAP && MPOL_SHM_PREMAP case: memory_stat_rss_add() is called in fileobj_create()
 		}
 /*
 		else if (memobj->flags & MF_REG_FILE) {
@@ -1765,8 +1778,6 @@ SYSCALL_DECLARE(brk)
 		extend_process_region(cpu_local_var(current)->vm,
 				region->brk_end_allocated, address, vrflag);
 	ihk_mc_spinlock_unlock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
-	dkprintf("SC(%d)[sys_brk] brk_end set to %lx\n",
-			ihk_mc_get_processor_id(), region->brk_end);
 
 	if (old_brk_end_allocated == region->brk_end_allocated) {
 		r = old_brk_end_allocated;
@@ -1775,6 +1786,8 @@ SYSCALL_DECLARE(brk)
 
 	region->brk_end = address;
 	r = region->brk_end;
+	dkprintf("SC(%d)[sys_brk] brk_end set to %lx\n",
+			ihk_mc_get_processor_id(), region->brk_end);
 
 out:
 	return r;
@@ -2856,7 +2869,7 @@ SYSCALL_DECLARE(ioctl)
 	ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
 
 	if(fdp && fdp->ioctl_cb){
-//kprintf("ioctl: found system fd %d\n", fd);
+		//kprintf("ioctl: found system fd %d\n", fd);
 		rc = fdp->ioctl_cb(fdp, ctx);
 	}
 	else{
@@ -7334,8 +7347,8 @@ SYSCALL_DECLARE(mremap)
 			size = (oldsize < newsize)? oldsize: newsize;
 			ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 			error = move_pte_range(vm->address_space->page_table, vm,
-					(void *)oldstart, (void *)newstart,
-					size);
+								   (void *)oldstart, (void *)newstart,
+								   size, range);
 			ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 			if (error) {
 				ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"

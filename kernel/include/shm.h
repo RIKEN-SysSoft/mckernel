@@ -32,7 +32,7 @@ enum {
 	SHM_EXEC	= 0100000,
 
 	/* for shm_mode */
-	SHM_DEST	= 01000,
+	SHM_DEST	= 01000, /* Marked for destruction */
 	SHM_LOCKED	= 02000,
 
 	/* for cmd of shmctl() */

@@ -22,6 +22,7 @@
 
 struct memobj;
 struct process_vm;
+struct vm_range;
 
 enum ihk_mc_gma_type {
 	IHK_MC_GMA_MAP_START,
@@ -178,7 +179,7 @@ int ihk_mc_pt_change_attr_range(page_table_t pt, void *start, void *end,
 pte_t *ihk_mc_pt_lookup_pte(page_table_t pt, void *virt, int pgshift, void **pgbasep, size_t *pgsizep, int *p2alignp);
 int ihk_mc_pt_set_range(page_table_t pt, struct process_vm *vm, void *start, 
 		void *end, uintptr_t phys, enum ihk_mc_pt_attribute attr,
-		int pgshift);
+						int pgshift, struct vm_range *range);
 int ihk_mc_pt_set_pte(page_table_t pt, pte_t *ptep, size_t pgsize, uintptr_t phys, enum ihk_mc_pt_attribute attr);
 int ihk_mc_pt_prepare_map(page_table_t pt, void *virt, unsigned long size,
                           enum ihk_mc_pt_prepare_flag);
@@ -189,7 +190,7 @@ typedef int pte_visitor_t(void *arg, page_table_t pt, pte_t *ptep,
 int visit_pte_range(page_table_t pt, void *start, void *end, int pgshift,
 		enum visit_pte_flag flags, pte_visitor_t *funcp, void *arg);
 int move_pte_range(page_table_t pt, struct process_vm *vm, 
-		void *src, void *dest, size_t size);
+				   void *src, void *dest, size_t size, struct vm_range *range);
 
 struct page_table *ihk_mc_pt_create(ihk_mc_ap_flag ap_flag);
 /* XXX: proper use of struct page_table and page_table_t is unknown */

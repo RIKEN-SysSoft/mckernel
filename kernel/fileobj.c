@@ -25,9 +25,17 @@
 #include <pager.h>
 #include <string.h>
 #include <syscall.h>
+#include <rusage.h>
 
+//#define DEBUG_PRINT_FILEOBJ
+
+#ifdef DEBUG_PRINT_FILEOBJ
+#define	dkprintf(...)	do { if (1) kprintf(__VA_ARGS__); } while (0)
+#define	ekprintf(...)	kprintf(__VA_ARGS__)
+#else
 #define	dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
 #define	ekprintf(...)	kprintf(__VA_ARGS__)
+#endif
 
 mcs_rwlock_lock_t fileobj_list_lock;
 static LIST_HEAD(fileobj_list);
@@ -262,6 +270,9 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp)
 								__FUNCTION__, j);
 						goto error_cleanup;
 					}
+					// Track change in memobj->pages[] for MF_PREMAP pages (MPOL_SHM_PREMAP case)
+					dkprintf("%lx+,%s: MF_PREMAP&&MPOL_SHM_PREMAP,memory_stat_rss_add,phys=%lx,size=%ld,pgsize=%ld\n", virt_to_phys(mo->pages[j]), __FUNCTION__, virt_to_phys(mo->pages[j]), PAGE_SIZE, PAGE_SIZE);
+					rusage_memory_stat_mapped_file_add(PAGE_SIZE, PAGE_SIZE);
 
 					memset(mo->pages[j], 0, PAGE_SIZE);
 
@@ -357,23 +368,31 @@ static void fileobj_release(struct memobj *memobj)
 		for (;;) {
 			struct page *page;
 			void *page_va;
+			uintptr_t phys;
 
 			page = fileobj_page_hash_first(obj);
 			if (!page) {
 				break;
 			}
 			__fileobj_page_hash_remove(page);
-			page_va = phys_to_virt(page_to_phys(page));
+			phys = page_to_phys(page);
+			page_va = phys_to_virt(phys);
 
+			/* Count must be one because set to one on the first get_page() invoking fileobj_do_pageio and
+			   incremented by the second get_page() reaping the pageio and decremented by clear_range().
+			 */
 			if (ihk_atomic_read(&page->count) != 1) {
-				kprintf("%s: WARNING: page count %d for phys 0x%lx is invalid, flags: 0x%lx\n",
-					__FUNCTION__,
+				kprintf("%s: WARNING: page count is %d for phys 0x%lx is invalid, flags: 0x%lx\n",
+						__FUNCTION__,
 					ihk_atomic_read(&page->count),
 					page->phys,
 					to_memobj(free_obj)->flags);
 			}
 			else if (page_unmap(page)) {
 				ihk_mc_free_pages_user(page_va, 1);
+				/* Track change in page->count for !MF_PREMAP pages. It is decremented here or in clear_range() */
+				dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, phys, PAGE_SIZE, PAGE_SIZE);
+				rusage_memory_stat_mapped_file_sub(PAGE_SIZE, PAGE_SIZE); 
 			}
 #if 0
 			count = ihk_atomic_sub_return(1, &page->count);
@@ -398,10 +417,17 @@ static void fileobj_release(struct memobj *memobj)
 		/* Pre-mapped? */
 		if (to_memobj(free_obj)->flags & MF_PREMAP) {
 			int i;
-
 			for (i = 0; i < to_memobj(free_obj)->nr_pages; ++i) {
-				if (to_memobj(free_obj)->pages[i])
+				if (to_memobj(free_obj)->pages[i]) {
+					dkprintf("%s: pages[i]=%p\n", __FUNCTION__, i, to_memobj(free_obj)->pages[i]);
+					// Track change in fileobj->pages[] for MF_PREMAP pages
+					// Note that page_unmap() isn't called for MF_PREMAP in 
+					// free_process_memory_range() --> ihk_mc_pt_free_range()
+					dkprintf("%lx-,%s: memory_stat_rss_sub,phys=%lx,size=%ld,pgsize=%ld\n",
+							virt_to_phys(to_memobj(free_obj)->pages[i]), __FUNCTION__, virt_to_phys(to_memobj(free_obj)->pages[i]), PAGE_SIZE, PAGE_SIZE);
+					rusage_memory_stat_mapped_file_sub(PAGE_SIZE, PAGE_SIZE);
 					ihk_mc_free_pages_user(to_memobj(free_obj)->pages[i], 1);
+				}
 			}
 
 			kfree(to_memobj(free_obj)->pages);
@@ -531,7 +557,7 @@ out:
 }
 
 static int fileobj_get_page(struct memobj *memobj, off_t off,
-		int p2align, uintptr_t *physp, unsigned long *pflag)
+               int p2align, uintptr_t *physp, unsigned long *pflag)
 {
 	struct thread *proc = cpu_local_var(current);
 	struct fileobj *obj = to_fileobj(memobj);
@@ -577,6 +603,9 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 			else {
 				dkprintf("%s: MF_ZEROFILL: off: %lu -> 0x%lx allocated\n",
 						__FUNCTION__, off, virt_to_phys(virt));
+				// Track change in memobj->pages[] for MF_PREMAP pages (!MPOL_SHM_PREMAP case)
+				dkprintf("%lx+,%s: MF_PREMAP&&!MPOL_SHM_PREMAP,memory_stat_rss_add,phys=%lx,size=%ld,pgsize=%ld\n", virt_to_phys(virt), __FUNCTION__, virt_to_phys(virt), PAGE_SIZE, PAGE_SIZE);
+				rusage_memory_stat_mapped_file_add(PAGE_SIZE, PAGE_SIZE);
 			}
 		}
 
@@ -608,7 +637,6 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 
 			virt = ihk_mc_alloc_pages_user(npages, IHK_MC_AP_NOWAIT |
 					(to_memobj(obj)->flags & MF_ZEROFILL) ? IHK_MC_AP_USER : 0);
-
 			if (!virt) {
 				error = -ENOMEM;
 				kprintf("fileobj_get_page(%p,%lx,%x,%p):"
@@ -619,11 +647,16 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 			}
 			phys = virt_to_phys(virt);
 			page = phys_to_page_insert_hash(phys);
+			// Track change in page->count for !MF_PREMAP pages. 
+			// Add when setting the PTE for a page with count of one in ihk_mc_pt_set_range().
+			dkprintf("%s: phys_to_page_insert_hash(),phys=%lx,virt=%lx,size=%lx,pgsize=%lx\n", __FUNCTION__, phys, virt, npages * PAGE_SIZE, PAGE_SIZE);
+
 			if (page->mode != PM_NONE) {
 				panic("fileobj_get_page:invalid new page");
 			}
 			page->offset = off;
 			ihk_atomic_set(&page->count, 1);
+			ihk_atomic64_set(&page->mapped, 0);
 			__fileobj_page_hash_insert(obj, page, hash);
 			page->mode = PM_WILL_PAGEIO;
 		}
@@ -646,6 +679,7 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 	}
 	else if (page->mode == PM_DONE_PAGEIO) {
 		page->mode = PM_MAPPED;
+		dkprintf("%s: PM_DONE_PAGEIO-->PM_MAPPED,obj=%lx,off=%lx,phys=%lx\n", __FUNCTION__, obj, off, page_to_phys(page));
 	}
 	else if (page->mode == PM_PAGEIO_EOF) {
 		error = -ERANGE;
@@ -657,6 +691,7 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 	}
 
 	ihk_atomic_inc(&page->count);
+	dkprintf("%s: mode=%d,count=%d,obj=%lx,off=%lx,phys=%lx\n", __FUNCTION__, page->mode, page->count, obj, off, page_to_phys(page));
 
 	error = 0;
 	*physp = page_to_phys(page);
@@ -684,6 +719,7 @@ static int fileobj_flush_page(struct memobj *memobj, uintptr_t phys,
 	ihk_mc_user_context_t ctx;
 	ssize_t ss;
 
+	dkprintf("%s: phys=%lx,to_memobj(obj)->flags=%x,memobj->flags=%x,page=%p\n", __FUNCTION__, phys, to_memobj(obj)->flags, memobj->flags, phys_to_page(phys));
 	if (to_memobj(obj)->flags & MF_ZEROFILL) {
 		return 0;
 	}
@@ -698,6 +734,7 @@ static int fileobj_flush_page(struct memobj *memobj, uintptr_t phys,
 			__FUNCTION__, phys);
 		return 0;
 	}
+
 	memobj_unlock(&obj->memobj);
 
 	ihk_mc_syscall_arg0(&ctx) = PAGER_REQ_WRITE;
@@ -706,6 +743,7 @@ static int fileobj_flush_page(struct memobj *memobj, uintptr_t phys,
 	ihk_mc_syscall_arg3(&ctx) = pgsize;
 	ihk_mc_syscall_arg4(&ctx) = phys;
 
+	dkprintf("%s: syscall_generic_forwarding\n", __FUNCTION__);
 	ss = syscall_generic_forwarding(__NR_mmap, &ctx);
 	if (ss != pgsize) {
 		dkprintf("fileobj_flush_page(%p,%lx,%lx): %ld (%lx)\n",

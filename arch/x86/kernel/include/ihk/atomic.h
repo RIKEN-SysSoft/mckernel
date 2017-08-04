@@ -114,6 +114,11 @@ static inline long ihk_atomic64_read(const ihk_atomic64_t *v)
 	return *(volatile long *)&(v)->counter64;
 }
 
+static inline void ihk_atomic64_set(ihk_atomic64_t *v, int i)
+{
+	v->counter64 = i;
+}
+
 static inline void ihk_atomic64_inc(ihk_atomic64_t *v)
 {
 	asm volatile ("lock incq %0" : "+m"(v->counter64));

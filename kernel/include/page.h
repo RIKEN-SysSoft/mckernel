@@ -21,6 +21,7 @@ struct page {
 	uint8_t			mode;
 	uint64_t		phys;
 	ihk_atomic_t		count;
+	ihk_atomic64_t	mapped;
 	off_t			offset;
 };
 

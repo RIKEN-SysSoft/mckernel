@@ -34,6 +34,7 @@
 #include <string.h>
 #include <syscall.h>
 #include <process.h>
+#include <rusage.h>
 
 //#define DEBUG_PRINT_DEVOBJ
 
@@ -199,6 +200,7 @@ static void devobj_release(struct memobj *memobj)
 		}
 
 		if (obj->pfn_table) {
+			// Don't call memory_stat_rss_sub() because devobj related pages don't reside in main memory
 			ihk_mc_free_pages(obj->pfn_table, pfn_npages);
 		}
 		kfree(free_obj);
@@ -268,6 +270,7 @@ static int devobj_get_page(struct memobj *memobj, off_t off, int p2align, uintpt
 
 		memobj_lock(&obj->memobj);
 		obj->pfn_table[ix] = pfn;
+		// Don't call memory_stat_rss_add() because devobj related pages don't reside in main memory
 	}
 	memobj_unlock(&obj->memobj);
 

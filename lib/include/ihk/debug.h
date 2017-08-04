@@ -15,6 +15,7 @@
 
 #include <arch-lock.h>
 #include <ihk/memconst.h>
+#include <ihk/kmsg.h>
 
 struct ihk_kmsg_buf {
 	int tail;
