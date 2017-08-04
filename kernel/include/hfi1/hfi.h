@@ -1254,18 +1254,18 @@ struct hfi1_devdata {
 //TODO: double check the order
 #ifndef __HFI1_ORIG__
 struct hfi1_devdata {
-	struct list_head list;
+	struct list_head list; //used
 	/* pointers to related structs for this device */
 	/* pci access data structure */
-	struct pci_dev *pcidev;
+	struct pci_dev *pcidev; //used
 	/* lock for sdma_map */
-	spinlock_t sde_map_lock;
+	spinlock_t sde_map_lock; //used
 	/* array of vl maps */
-	struct sdma_vl_map __rcu *sdma_map;
-	dma_addr_t sdma_pad_phys;
+	struct sdma_vl_map __rcu *sdma_map; //used
+	dma_addr_t sdma_pad_phys; //used
 		/* array of engines sized by num_sdma */
-	struct sdma_engine                 *per_sdma;
-	struct hfi1_pportdata *pport;	
+	struct sdma_engine *per_sdma; //used
+	struct hfi1_pportdata *pport; //used
 };
 #endif /* __HFI1_ORIG__ */
 
@@ -1306,13 +1306,26 @@ struct hfi1_filedata {
 #endif /* __HFI1_ORIG__ */
 
 #ifndef __HFI1_ORIG__
+/* Original size on linux is 96 bytes */
 /* Private data for file operations */
 struct hfi1_filedata {
 	struct hfi1_ctxtdata *uctxt;
 	unsigned subctxt;
 	struct hfi1_user_sdma_comp_q *cq;
 	struct hfi1_user_sdma_pkt_q *pq;
+	int rec_cpu_num;
+	u32 tid_n_pinned;
+	void *handler; //struct mmu_rb_handler *handler;
+	void **entry_to_rb; //struct tid_rb_node **entry_to_rb;
+	spinlock_t tid_lock;
+	u32 tid_limit;
+	u32 tid_used;
+	u32 *invalid_tids;
+	u32 invalid_tid_idx;
+	spinlock_t invalid_lock;
+	void *mm; //struct mm_struct *mm;
 };
+
 #endif /* __HFI1_ORIG__ */
 
 #ifdef __HFI1_ORIG__
