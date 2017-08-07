@@ -79,8 +79,14 @@ typedef ihk_spinlock_t spinlock_t;
 #define smp_wmb() barrier()
 #define smp_rmb() barrier()
 /***********************************************/
-# define __rcu
+
+#define __rcu
+#define __percpu
 #define GFP_KERNEL 0
+#define send_routine void *
+
+/* hfi1 pio.h */
+#define SC_MAX    4     /* count of send context types */
 
 /* kernel-xppsl_1.5.2/include/linux/seqlock.h */
 /***********************************************/
@@ -113,6 +119,7 @@ static inline unsigned raw_seqcount_begin(const seqcount_t *s)
 #define PIO_BLOCK_SIZE 64			/* bytes */
 /* From: chip.c/h */
 #define TXE_NUM_SDMA_ENGINES 16
+#define CCE_NUM_INT_CSRS 12
 //num_vls = HFI1_MAX_VLS_SUPPORTED;
 //num_vls = dd->chip_sdma_engines;
 #define HFI1_MAX_VLS_SUPPORTED 8
@@ -162,6 +169,13 @@ typedef u64 dma_addr_t;
 
 /* From: kernel-xppsl_1.5.2/include/linux/types.h */
 typedef unsigned gfp_t;
+#define CONFIG_PHYS_ADDR_T_64BIT
+#ifdef CONFIG_PHYS_ADDR_T_64BIT
+typedef u64 phys_addr_t;
+#else
+typedef u32 phys_addr_t;
+#endif
+typedef phys_addr_t resource_size_t;
 
 /* kernel-xppsl_1.5.2/include/asm-generic/io.h */
 #ifndef __raw_writeq
