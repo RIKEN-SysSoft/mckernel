@@ -113,6 +113,7 @@ extern uint extended_psn;
 #define KDETH_OM_LARGE     64
 #define KDETH_OM_MAX_SIZE  (1 << ((KDETH_OM_LARGE / KDETH_OM_SMALL) + 1))
 
+/* Original size on Linux is 376 Bytes */
 struct hfi1_user_sdma_pkt_q {
 	struct list_head list;
 	unsigned ctxt;
@@ -121,32 +122,16 @@ struct hfi1_user_sdma_pkt_q {
 	atomic_t n_reqs;
 	u16 reqidx;
 	struct hfi1_devdata *dd;
-#ifdef __HFI1_ORIG__	
-	struct kmem_cache *txreq_cache;
-#else
-	void *unused0;
-#endif /* __HFI1_ORIG__ */
+	void *txreq_cache; // struct kmem_cache *txreq_cache;
 	struct user_sdma_request *reqs;
 	unsigned long *req_in_use;
 	struct iowait busy;
 	unsigned state;
-#ifdef __HFI1_ORIG__
-	wait_queue_head_t wait;
-#else
-	//TODO: hfi1_user_sdma_pkt_q
-#endif /* __HFI1_ORIG__ */
+	char wait[24]; //wait_queue_head_t wait;
 	unsigned long unpinned;
-#ifdef __HFI1_ORIG__
-	struct mmu_rb_handler *handler;
-#else
-	void *unused1;
-#endif /* __HFI1_ORIG__ */
+	void *handler; // struct mmu_rb_handler *handler;
 	atomic_t n_locked;
-#ifdef __HFI1_ORIG__
-	struct mm_struct *mm;
-#else
-	void *unused2;
-#endif /* __HFI1_ORIG__ */
+	void *mm; // struct mm_struct *mm;
 };
 
 struct hfi1_user_sdma_comp_q {
