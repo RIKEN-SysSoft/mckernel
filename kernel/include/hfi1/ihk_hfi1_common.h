@@ -108,6 +108,31 @@ static inline unsigned raw_seqcount_begin(const seqcount_t *s)
 }
 /***********************************************/
 
+/* kernel-xppsl_1.5.2/include/linux/kref.h */
+struct kref {
+	atomic_t refcount;
+};
+
+typedef struct {
+	spinlock_t lock;
+	struct list_head task_list;
+} wait_queue_head_t ;
+
+struct completion {
+	unsigned int done;
+	wait_queue_head_t wait;
+};
+
+/* kernel-xppsl_1.5.2/include/linux/interrupt.h */
+struct tasklet_struct
+{
+	struct tasklet_struct *next;
+	unsigned long state;
+	atomic_t count;
+	void (*func)(unsigned long);
+	unsigned long data;
+};
+
 /* Misc */
 /* From: kernel-xppsl_1.5.2/include/linux/kernel.h */
 #define min_t(type, x, y) ({			\
