@@ -522,6 +522,8 @@ static u8 dlid_to_selector(u16 dlid)
 /* hfi1/chip_registers.h */
 #define CORE		0x000000000000
 #define TXE			(CORE + 0x000001800000)
+#define RXE			(CORE + 0x000001000000)
+#define RCV_ARRAY (RXE + 0x000000200000)
 /* hfi1/chip.h */
 #define TXE_PIO_SEND (TXE + TXE_PIO_SEND_OFFSET)
 #define TXE_PIO_SEND_OFFSET 0x0800000
@@ -529,6 +531,8 @@ static u8 dlid_to_selector(u16 dlid)
 
 /* HFI1 device address in McKernel */
 uint64_t hfi1_kregbase = 0;
+uint64_t hfi1_piobase = 0;
+uint64_t hfi1_rcvarray_wc = 0;
 #endif
 
 #ifdef __HFI1_ORIG__
@@ -561,9 +565,11 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	if (!hfi1_kregbase) {
 		enum ihk_mc_pt_attribute attr = PTATTR_UNCACHABLE | PTATTR_WRITABLE;
 		void *virt;
-#if 0
+#if 1
 		unsigned long phys = dd->physaddr;
 		hfi1_kregbase = dd->kregbase;
+		hfi1_piobase = dd->piobase;
+		hfi1_rcvarray_wc = dd->rcvarray_wc;
 #else
 		unsigned long phys = *(uint64_t *)(((void *)dd) + 0xbf8);
 		hfi1_kregbase = *(uint64_t *)(((void *)dd) + 0xbe8);
@@ -583,9 +589,45 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 			}
 		}
 
-		kprintf("%s: hfi1_kregbase: 0x%lx -> 0x%lx:%lu\n",
+		kprintf("%s: hfi1_kregbase: 0x%lx - 0x%lx -> 0x%lx:%lu\n",
 				__FUNCTION__,
-				hfi1_kregbase, (phys - TXE_PIO_SEND), TXE_PIO_SEND);
+				hfi1_kregbase,
+				hfi1_kregbase + TXE_PIO_SEND,
+				(phys - TXE_PIO_SEND), TXE_PIO_SEND);
+		
+		phys = dd->physaddr + TXE_PIO_SEND;
+		attr = PTATTR_WRITE_COMBINED | PTATTR_WRITABLE;
+		for (virt = hfi1_piobase; virt < (hfi1_piobase + TXE_PIO_SIZE);
+				virt += PAGE_SIZE, phys += PAGE_SIZE) {
+			if (ihk_mc_pt_set_page(NULL, virt, phys, attr) < 0) {
+				kprintf("%s: ERROR: mapping piobase: 0x%lx -> 0x%lx\n",
+					__FUNCTION__, virt, phys);
+			}
+		}
+
+		kprintf("%s: hfi1_piobase: 0x%lx - 0x%lx -> 0x%lx:%lu\n",
+				__FUNCTION__,
+				hfi1_piobase,
+				hfi1_piobase + TXE_PIO_SIZE,
+				(phys - TXE_PIO_SIZE), TXE_PIO_SIZE);	
+
+		phys = dd->physaddr + RCV_ARRAY;
+		attr = PTATTR_WRITE_COMBINED | PTATTR_WRITABLE;
+		for (virt = hfi1_rcvarray_wc; 
+				virt < (hfi1_rcvarray_wc + dd->chip_rcv_array_count * 8);
+				virt += PAGE_SIZE, phys += PAGE_SIZE) {
+			if (ihk_mc_pt_set_page(NULL, virt, phys, attr) < 0) {
+				kprintf("%s: ERROR: mapping rcvarray_wc: 0x%lx -> 0x%lx\n",
+						__FUNCTION__, virt, phys);
+			}
+		}
+
+		kprintf("%s: hfi1_rcvarray_wc: 0x%lx - 0x%lx -> 0x%lx:%lu\n",
+				__FUNCTION__,
+				hfi1_rcvarray_wc,
+				hfi1_rcvarray_wc + dd->chip_rcv_array_count * 8,
+				(phys - dd->chip_rcv_array_count * 8),
+				dd->chip_rcv_array_count * 8);
 	}
 #endif // __HFI1_ORIG__
 
