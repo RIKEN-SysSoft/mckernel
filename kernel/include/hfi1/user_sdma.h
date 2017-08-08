@@ -113,7 +113,7 @@ extern uint extended_psn;
 #define KDETH_OM_LARGE     64
 #define KDETH_OM_MAX_SIZE  (1 << ((KDETH_OM_LARGE / KDETH_OM_SMALL) + 1))
 
-/* Original size on Linux is 376 Bytes */
+/* The original size on Linux is 376 B */
 struct hfi1_user_sdma_pkt_q {
 	struct list_head list;
 	unsigned ctxt;

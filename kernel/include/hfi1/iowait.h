@@ -90,11 +90,7 @@ struct sdma_engine;
  */
 struct iowait;
 struct iowait_work {
-#ifdef __HFI1_ORIG__
-	struct work_struct iowork;
-#else
-//TODO: iowait_work
-#endif /* __HFI1_ORIG__ */
+	char iowork[32]; // struct work_struct iowork;
 	struct list_head tx_head;
 	struct iowait *iow;
 };
@@ -137,6 +133,7 @@ struct iowait_work {
  * Waiters explicity know that, but the destroy
  * code that unwaits QPs does not.
  */
+/* The original size on Linux is 240 */ 
 struct iowait {
 	struct list_head list;
 	int (*sleep)(
@@ -146,13 +143,9 @@ struct iowait {
 		unsigned seq);
 	void (*wakeup)(struct iowait *wait, int reason);
 	void (*sdma_drained)(struct iowait *wait);
-#ifdef __HFI1_ORIG__
 	seqlock_t *lock;
-	wait_queue_head_t wait_dma;
-	wait_queue_head_t wait_pio;
-#else
-//TODO: wait
-#endif /* __HFI1_ORIG__ */
+	char wait_dma[24]; // wait_queue_head_t wait_dma;
+	char wait_pio[24]; // wait_queue_head_t wait_pio;
 	atomic_t sdma_busy;
 	atomic_t pio_busy;
 	u32 count;

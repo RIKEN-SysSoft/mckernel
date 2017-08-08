@@ -74,11 +74,12 @@ typedef ihk_spinlock_t spinlock_t;
 #define spin_unlock_irqrestore(lock, flags) do {} while(0)
 #define ____cacheline_aligned_in_smp __attribute__((aligned(64)))
 #define __iomem
-#define spin_lock(...) do {} while(0)
-#define spin_unlock(...) do {} while(0)
+/* double check */
+#define spin_lock ihk_mc_spinlock_lock_noirq
+#define spin_unlock ihk_mc_spinlock_unlock_noirq
+/***********************************************/
 #define smp_wmb() barrier()
 #define smp_rmb() barrier()
-/***********************************************/
 
 #define __rcu
 #define __percpu
