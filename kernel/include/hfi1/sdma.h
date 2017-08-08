@@ -202,7 +202,6 @@ struct sdma_set_state_action {
 	unsigned go_s99_running_totrue:1;
 };
 
-#ifdef __HFI1_ORIG__
 struct sdma_state {
 	struct kref          kref;
 	struct completion    comp;
@@ -214,11 +213,6 @@ struct sdma_state {
 	unsigned             previous_op;
 	enum sdma_events last_event;
 };
-#else
-struct sdma_state {
-	enum sdma_states current_state;	
-};
-#endif /* __HFI1_ORIG__ */
 
 /**
  * DOC: sdma exported routines
@@ -334,6 +328,7 @@ struct hw_sdma_desc {
  * Accessing to non public fields are not supported
  * since the private members are subject to change.
  */
+ /* The original size on Linux is 1472 B */
 struct sdma_engine {
 	/* read mostly */
 	struct hfi1_devdata *dd;
@@ -410,33 +405,28 @@ struct sdma_engine {
 	/* private: */
 	struct list_head      dmawait;
 
-#ifdef __HFI1_ORIG__
 	/* CONFIG SDMA for now, just blindly duplicate */
 	/* private: */
-	struct tasklet_struct sdma_hw_clean_up_task
+	struct tasklet_struct sdma_hw_clean_up_task // size 40
 		____cacheline_aligned_in_smp;
 
 	/* private: */
 	struct tasklet_struct sdma_sw_clean_up_task
 		____cacheline_aligned_in_smp;
 	/* private: */
-	struct work_struct err_halt_worker;
+	char err_halt_worker[32]; // struct work_struct err_halt_worker;
 	/* private */
-	struct timer_list     err_progress_check_timer;
+	char err_progress_check_timer[80]; // struct timer_list     err_progress_check_timer;
 	u32                   progress_check_head;
 	/* private: */
-	struct work_struct flush_worker;
-#endif /* __HFI1_ORIG__ */
+	char flush_worker[32]; // struct work_struct flush_worker;
 	/* protect flush list */
 	spinlock_t flushlist_lock;
 	/* private: */
 	struct list_head flushlist;
-#ifdef __HFI1_ORIG__
-	struct cpumask cpu_mask;
-	struct kobject kobj;
-#endif /* __HFI1_ORIG__ */
+	char cpu_mask[640]; // struct cpusmask cpu_mask;
+	char kobj[64]; // struct kobject kobj
 };
-
 
 #ifdef __HFI1_ORIG__
 

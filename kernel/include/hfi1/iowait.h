@@ -133,7 +133,7 @@ struct iowait_work {
  * Waiters explicity know that, but the destroy
  * code that unwaits QPs does not.
  */
-/* The original size on Linux is 240 */ 
+/* The original size on Linux is 240 B */ 
 struct iowait {
 	struct list_head list;
 	int (*sleep)(
