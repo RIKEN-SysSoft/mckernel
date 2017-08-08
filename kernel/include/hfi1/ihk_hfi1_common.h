@@ -113,10 +113,11 @@ struct kref {
 	atomic_t refcount;
 };
 
-typedef struct {
+struct wait_queue_head_t {
 	spinlock_t lock;
 	struct list_head task_list;
-} wait_queue_head_t ;
+};
+typedef struct wait_queue_head_t wait_queue_head_t;
 
 struct completion {
 	unsigned int done;
