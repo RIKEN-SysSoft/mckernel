@@ -3,6 +3,7 @@
 
 #include <ihk/atomic.h>
 #include <ihk/types.h>
+#include <ihk/cpu.h>
 #include <kmalloc.h>
 #include <lwk/compiler.h>
 #include <arch-lock.h>
@@ -44,7 +45,6 @@
 #define __le64_to_cpu(x) x
 #define __le32_to_cpu(x) x
 #define __le16_to_cpu(x) x
-//TODO: double-check
 #define cpu_to_be16(x) __builtin_bswap16(x)
 #define cpu_to_be32(x) __builtin_bswap32(x)
 
@@ -68,19 +68,26 @@
 #define atomic_t ihk_atomic_t
 typedef ihk_spinlock_t spinlock_t;
 
-/* TODO***********************************/
-#define spin_lock_irqsave(lock, flags) do {} while(0)
-#define spin_unlock_irqsave(lock, flags) do {} while(0)
-#define spin_unlock_irqrestore(lock, flags) do {} while(0)
-#define ____cacheline_aligned_in_smp __attribute__((aligned(64)))
-#define __iomem
-/* double check */
+/* From: kernel-xppsl_1.5.2/include/linux/irqsave.h */
+#define spin_lock_irqsave(lock, flags)				\
+	do {						\
+		flags = ihk_mc_spinlock_lock(lock);	\
+	} while (0)
+
+#define spin_unlock_irqrestore(lock, flags)		\
+	do {							\
+		ihk_mc_spinlock_unlock_noirq(lock); \
+		cpu_restore_interrupt(flags); \
+	} while (0)
+
 #define spin_lock ihk_mc_spinlock_lock_noirq
 #define spin_unlock ihk_mc_spinlock_unlock_noirq
-/***********************************************/
+/*****************************************************/
+
+#define ____cacheline_aligned_in_smp __attribute__((aligned(64)))
 #define smp_wmb() barrier()
 #define smp_rmb() barrier()
-
+#define __iomem
 #define __rcu
 #define __percpu
 #define GFP_KERNEL 0
