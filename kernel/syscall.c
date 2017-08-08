@@ -784,8 +784,7 @@ SYSCALL_DECLARE(waitid)
 	return 0;
 }
 
-void
-terminate(int rc, int sig)
+void terminate(int rc, int sig)
 {
 	struct resource_set *resource_set = cpu_local_var(resource_set);
 	struct thread *mythread = cpu_local_var(current);
@@ -806,12 +805,13 @@ terminate(int rc, int sig)
 	int exit_status;
 
 	// sync perf info
-	if(proc->monitoring_event)
+	if (proc->monitoring_event)
 		sync_child_event(proc->monitoring_event);
+
 	// clean up threads
 	mcs_rwlock_reader_lock(&proc->threads_lock, &lock); // conflict clone
 	mcs_rwlock_writer_lock_noirq(&proc->update_lock, &updatelock);
-	if(proc->status == PS_EXITED){
+	if (proc->status == PS_EXITED) {
 		mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
 		mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 		preempt_disable();
@@ -822,6 +822,7 @@ terminate(int rc, int sig)
 		// no return
 		return;
 	}
+
 	exit_status = mythread->exit_status = ((rc & 0x00ff) << 8) | (sig & 0xff);
 	proc->status = PS_EXITED;
 	mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
@@ -836,12 +837,13 @@ terminate(int rc, int sig)
 	list_for_each_entry(thread, &proc->threads_list, siblings_list) {
 		n++;
 	}
-	if(n){
+
+	if (n) {
 		ids = kmalloc(sizeof(int) * n, IHK_MC_AP_NOWAIT);
 		i = 0;
-		if(ids){
+		if (ids) {
 			list_for_each_entry(thread, &proc->threads_list, siblings_list) {
-				if(thread != mythread){
+				if (thread != mythread) {
 					ids[i] = thread->tid;
 					i++;
 				}
@@ -849,17 +851,18 @@ terminate(int rc, int sig)
 		}
 	}
 	mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
-	if(ids){
-		for(i = 0; i < n; i++){
+
+	if (ids) {
+		for (i = 0; i < n; i++) {
 			do_kill(mythread, proc->pid, ids[i], SIGKILL, NULL, 0);
 		}
 		kfree(ids);
 		ids = NULL;
 	}
 
-	for(;;){
+	for (;;) {
 		__mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
-		if(list_empty(&proc->threads_list)){
+		if (list_empty(&proc->threads_list)) {
 			mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 			break;
 		}
@@ -882,15 +885,17 @@ terminate(int rc, int sig)
 	n = 0;
 	mcs_rwlock_reader_lock(&proc->children_lock, &lock);
 	list_for_each_entry(child, &proc->children_list, siblings_list) {
-		if(child->ptrace & PT_TRACED)
+		if (child->ptrace & PT_TRACED)
 			n++;
 	}
-	if(n){
+
+	if (n) {
 		ids = kmalloc(sizeof(int) * n, IHK_MC_AP_NOWAIT);
 		i = 0;
-		if(ids){
+
+		if (ids) {
 			list_for_each_entry(child, &proc->children_list, siblings_list) {
-				if(child->ptrace & PT_TRACED){
+				if (child->ptrace & PT_TRACED) {
 					ids[i] = child->pid;
 					i++;
 				}
@@ -898,37 +903,40 @@ terminate(int rc, int sig)
 		}
 	}
 	mcs_rwlock_reader_unlock(&proc->children_lock, &lock);
-	if(ids){
-		for(i = 0; i < n; i++){
+
+	if (ids) {
+		for (i = 0; i < n; i++) {
 			ptrace_detach(ids[i], 0);
 		}
 		kfree(ids);
+		ids = NULL;
 	}
 
 	if (!list_empty(&proc->children_list)) {
 		// clean up children
-		for(i = 0; i < HASH_SIZE; i++){
+		for (i = 0; i < HASH_SIZE; i++) {
 			mcs_rwlock_writer_lock(&resource_set->process_hash->lock[i],
 					&lock);
 			list_for_each_entry_safe(child, next,
 					&resource_set->process_hash->list[i],
-					hash_list){
+					hash_list) {
 				int free_child = 0;
 				mcs_rwlock_writer_lock_noirq(&child->update_lock,
 						&updatelock);
-				if(child->ppid_parent == proc &&
-						child->status == PS_ZOMBIE){
+
+				if (child->ppid_parent == proc &&
+						child->status == PS_ZOMBIE) {
 					list_del(&child->hash_list);
 					list_del(&child->siblings_list);
 					free_child = 1;
 				}
-				else if(child->ppid_parent == proc){
+				else if (child->ppid_parent == proc) {
 					mcs_rwlock_writer_lock_noirq(&proc->children_lock,
 							&childlock);
 					mcs_rwlock_writer_lock_noirq(&pid1->children_lock,
 							&childlock1);
 					child->ppid_parent = pid1;
-					if(child->parent == proc){
+					if (child->parent == proc) {
 						child->parent = pid1;
 						list_del(&child->siblings_list);
 						list_add_tail(&child->siblings_list,
@@ -944,8 +952,10 @@ terminate(int rc, int sig)
 					mcs_rwlock_writer_unlock_noirq(&proc->children_lock,
 							&childlock);
 				}
+
 				mcs_rwlock_writer_unlock_noirq(&child->update_lock,
 						&updatelock);
+
 				if (free_child)
 					kfree(child);
 			}
@@ -961,7 +971,7 @@ terminate(int rc, int sig)
 #endif
 
 	// clean up memory
-	if(!proc->nohost){
+	if (!proc->nohost) {
 		request.number = __NR_exit_group;
 		request.args[0] = exit_status;
 		do_syscall(&request, ihk_mc_get_processor_id(), proc->pid);
