@@ -430,6 +430,7 @@ ssize_t hfi1_aio_write(void *private_data, const struct iovec *iovec, unsigned l
 	int done = 0, reqs = 0;
 	kprintf("sizeof(struct hfi1_filedata) = %lu\n", sizeof(struct hfi1_filedata));
 	kprintf("sizeof(struct hfi1_devdata) = %lu\n", sizeof(struct hfi1_devdata));
+	kprintf("sizeof(struct iowait) = %lu\n", sizeof(struct iowait));
 	kprintf("sizeof(struct hfi1_user_sdma_pkt_q) = %lu\n", sizeof(struct hfi1_user_sdma_pkt_q));
 	return 0;
 	hfi1_cdbg(AIOWRITE, "+");
