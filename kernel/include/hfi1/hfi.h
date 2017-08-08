@@ -1261,7 +1261,6 @@ struct hfi1_devdata {
 };
 #endif /* __HFI1_ORIG__ */
 
-//TODO: double check the order
 #ifndef __HFI1_ORIG__
 
 /* Size on Linux side is 7360 Bytes */
@@ -1319,7 +1318,7 @@ struct hfi1_devdata {
 	/* array of vl maps */
 	struct sdma_vl_map __rcu           *sdma_map; //struct sdma_vl_map __rc *sdma_map
 
-	char sdma_unfreeze_wq[24]; //wait_queue_head_t sdma_unfreeze_wq;
+	wait_queue_head_t sdma_unfreeze_wq;
 	atomic_t sdma_unfreeze_count;
 
 	u32 lcb_access_count;
@@ -1538,7 +1537,7 @@ struct hfi1_devdata {
 
 	char rcverr_timer[80]; //struct timer_list rcverr_timer
 
-	char event_queue[24]; //wait_queue_head_t event_queue;
+	wait_queue_head_t event_queue;
 
 
 	__le64 *rcvhdrtail_dummy_kvaddr;
@@ -1552,7 +1551,7 @@ struct hfi1_devdata {
 
 	atomic_t user_refcount;
 
-	char user_comp[32]; //struct completion user_comp
+	struct completion user_comp;
 	bool eprom_available;
 	bool aspm_supported;
 	bool aspm_enabled;
@@ -1592,31 +1591,11 @@ struct tid_rb_node;
 struct mmu_rb_node;
 struct mmu_rb_handler;
 
-/* Private data for file operations */
-struct hfi1_filedata {
-	struct hfi1_ctxtdata *uctxt;
-	unsigned subctxt;
-	struct hfi1_user_sdma_comp_q *cq;
-	struct hfi1_user_sdma_pkt_q *pq;
-	/* for cpu affinity; -1 if none */
-	int rec_cpu_num;
-	u32 tid_n_pinned;
-	struct mmu_rb_handler *handler;
-	struct tid_rb_node **entry_to_rb;
-	spinlock_t tid_lock; /* protect tid_[limit,used] counters */
-	u32 tid_limit;
-	u32 tid_used;
-	u32 *invalid_tids;
-	u32 invalid_tid_idx;
-	/* protect invalid_tids array and invalid_tid_idx */
-	spinlock_t invalid_lock;
-	struct mm_struct *mm;
-};
 #endif /* __HFI1_ORIG__ */
 
-#ifndef __HFI1_ORIG__
 /* Original size on linux is 96 bytes */
 /* Private data for file operations */
+
 struct hfi1_filedata {
 	struct hfi1_ctxtdata *uctxt;
 	unsigned subctxt;
@@ -1634,8 +1613,6 @@ struct hfi1_filedata {
 	spinlock_t invalid_lock;
 	void *mm; //struct mm_struct *mm;
 };
-
-#endif /* __HFI1_ORIG__ */
 
 #ifdef __HFI1_ORIG__
 

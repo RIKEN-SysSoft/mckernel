@@ -144,8 +144,8 @@ struct iowait {
 	void (*wakeup)(struct iowait *wait, int reason);
 	void (*sdma_drained)(struct iowait *wait);
 	seqlock_t *lock;
-	char wait_dma[24]; // wait_queue_head_t wait_dma;
-	char wait_pio[24]; // wait_queue_head_t wait_pio;
+	wait_queue_head_t wait_dma;
+	wait_queue_head_t wait_pio;
 	atomic_t sdma_busy;
 	atomic_t pio_busy;
 	u32 count;

@@ -421,6 +421,11 @@ static ssize_t hfi1_aio_write(struct kiocb *kiocb, const struct iovec *iovec,
 {
 	struct hfi1_filedata *fd = kiocb->ki_filp->private_data;
 #else
+
+
+#define WARN_IF_SIZE_DIFFERENT(type, size)\
+ if (sizeof(type) != size) kprintf("WARNING: sizeof( %s ) = %lu != %lu (on Linux)\n", #type, sizeof(type), size)
+
 ssize_t hfi1_aio_write(void *private_data, const struct iovec *iovec, unsigned long dim)
 {
 	struct hfi1_filedata *fd = private_data;
@@ -428,10 +433,15 @@ ssize_t hfi1_aio_write(void *private_data, const struct iovec *iovec, unsigned l
 	struct hfi1_user_sdma_pkt_q *pq = fd->pq;
 	struct hfi1_user_sdma_comp_q *cq = fd->cq;
 	int done = 0, reqs = 0;
-	kprintf("sizeof(struct hfi1_filedata) = %lu\n", sizeof(struct hfi1_filedata));
-	kprintf("sizeof(struct hfi1_devdata) = %lu\n", sizeof(struct hfi1_devdata));
-	kprintf("sizeof(struct iowait) = %lu\n", sizeof(struct iowait));
-	kprintf("sizeof(struct hfi1_user_sdma_pkt_q) = %lu\n", sizeof(struct hfi1_user_sdma_pkt_q));
+
+	/* Double check the sizes */
+	WARN_IF_SIZE_DIFFERENT(struct hfi1_filedata, 96);
+	WARN_IF_SIZE_DIFFERENT(struct hfi1_devdata, 7360);
+	WARN_IF_SIZE_DIFFERENT(struct iowait, 240);
+	WARN_IF_SIZE_DIFFERENT(struct hfi1_user_sdma_pkt_q, 376);
+	WARN_IF_SIZE_DIFFERENT(struct sdma_engine, 1472);
+	WARN_IF_SIZE_DIFFERENT(struct sdma_state, 64);
+
 	return 0;
 	hfi1_cdbg(AIOWRITE, "+");
 	if (!cq || !pq)

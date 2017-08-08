@@ -127,7 +127,7 @@ struct hfi1_user_sdma_pkt_q {
 	unsigned long *req_in_use;
 	struct iowait busy;
 	unsigned state;
-	char wait[24]; //wait_queue_head_t wait;
+	wait_queue_head_t wait;
 	unsigned long unpinned;
 	void *handler; // struct mmu_rb_handler *handler;
 	atomic_t n_locked;
