@@ -45,6 +45,8 @@
  *
  */
 
+#include <hfi1/hfi.h>
+#include <hfi1/sdma.h>
 #include <hfi1/user_sdma.h>
 #include <hfi1/user_exp_rcv.h>
 #include <hfi1/common.h> 
@@ -1166,8 +1168,10 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 		 */
 		while (queued < datalen &&
 		       (req->sent + data_sent) < req->data_len) {
-			unsigned long base, offset;
 			unsigned pageidx, len;
+//TODO: sdma_txadd_page			
+#ifdef __HFI1_ORIG__
+			unsigned long base, offset;
 
 			base = (unsigned long)iovec->iov.iov_base;
 			offset = offset_in_page(base + iovec->offset +
@@ -1185,6 +1189,7 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 					 ret);
 				goto free_txreq;
 			}
+			//TODO: len may not be initialized
 			iov_offset += len;
 			queued += len;
 			data_sent += len;
@@ -1549,7 +1554,7 @@ static int set_txreq_header_ahg(struct user_sdma_request *req,
 				struct user_sdma_txreq *tx, u32 len)
 {
 	int diff = 0;
-	struct hfi1_user_sdma_pkt_q *pq = req->pq;
+	// struct hfi1_user_sdma_pkt_q *pq = req->pq;
 	struct hfi1_pkt_header *hdr = &req->hdr;
 	u16 pbclen = le16_to_cpu(hdr->pbc[0]);
 	u32 val32, tidval = 0, lrhlen = get_lrh_len(*hdr, pad_len(len));

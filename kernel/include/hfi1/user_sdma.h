@@ -51,9 +51,7 @@
 
 #include <hfi1/ihk_hfi1_common.h>
 #include <hfi1/iowait.h>
-#include <hfi1/sdma.h>
 #include <string.h>
-#include <hfi1/hfi.h>
 #include <hfi1/hfi1_user.h>
 #include <uio.h>
 

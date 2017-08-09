@@ -369,6 +369,7 @@ struct hfi1_ctxtdata {
 
 #endif /* __HFI1_ORIG__ */
     
+//TODO: Fix hfi1_ctxtdata and pport
 #ifndef __HFI1_ORIG__
 struct hfi1_ctxtdata {
 	unsigned ctxt;
@@ -1267,7 +1268,8 @@ struct hfi1_devdata {
 struct hfi1_devdata {
 	char verbs_dev[2688]; //struct hfi1_ibdev verbs_dev
 	struct list_head list;
-	struct pci_dev *pcidev;
+	//TODO: pcidev
+	void *pcidev; // struct pci_dev *pcidev;
 	char user_cdev[104]; //struct cdev user_cdev
 	char diag_cdev[104]; //struct cdev diag_cdev
 	char ui_cdev[104]; //struct cdev ui_cdev

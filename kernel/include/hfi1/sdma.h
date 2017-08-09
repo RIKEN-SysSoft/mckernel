@@ -46,7 +46,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-
+#include <hfi1/hfi.h>
 #include <hfi1/ihk_hfi1_common.h>
 #include <hfi1/sdma_txreq.h>
 
@@ -691,7 +691,6 @@ static inline void sdma_txclean(struct hfi1_devdata *dd, struct sdma_txreq *tx)
 	if (tx->num_desc)
 		__sdma_txclean(dd, tx);
 }
-#ifdef __HFI1_ORIG__
 int _pad_sdma_tx_descs(struct hfi1_devdata *, struct sdma_txreq *);
 
 /* helpers used by public routines */
@@ -708,7 +707,6 @@ static inline void _sdma_close_tx(struct hfi1_devdata *dd,
 			 SDMA_DESC1_INT_REQ_FLAG);
 }
 
-#endif /* __HFI1_ORIG__ */
 static inline int _sdma_txadd_daddr(
 	struct hfi1_devdata *dd,
 	int type,
@@ -727,13 +725,11 @@ static inline int _sdma_txadd_daddr(
 	/* special cases for last */
 	if (!tx->tlen) {
 		if (tx->packet_len & (sizeof(u32) - 1)) {
-			//TODO: _pad_sdma_tx_descs
-			//rval = _pad_sdma_tx_descs(dd, tx);
+			rval = _pad_sdma_tx_descs(dd, tx);
 			if (rval)
 				return rval;
 		} else {
-			//TODO: _sdma_close_tx
-			//_sdma_close_tx(dd, tx);
+			_sdma_close_tx(dd, tx);
 		}
 	}
 	tx->num_desc++;
