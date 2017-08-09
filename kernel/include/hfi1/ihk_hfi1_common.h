@@ -90,8 +90,11 @@ typedef ihk_spinlock_t spinlock_t;
 #define __iomem
 #define __rcu
 #define __percpu
-#define GFP_KERNEL 0
 #define send_routine void *
+
+#define GFP_KERNEL 0
+// TODO: double check GFP_ATOMIC
+#define GFP_ATOMIC 0
 
 /* hfi1 pio.h */
 #define SC_MAX    4     /* count of send context types */

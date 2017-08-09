@@ -48,6 +48,7 @@
 #include <hfi1/file_ops.h>
 #include <hfi1/hfi.h>
 #include <hfi1/user_sdma.h>
+#include <hfi1/sdma.h>
 #include <hfi1/ihk_hfi1_common.h>
 #include <errno.h>
 
@@ -433,7 +434,7 @@ ssize_t hfi1_aio_write(void *private_data, const struct iovec *iovec, unsigned l
 	struct hfi1_user_sdma_pkt_q *pq = fd->pq;
 	struct hfi1_user_sdma_comp_q *cq = fd->cq;
 	int done = 0, reqs = 0;
-
+ 
 	/* Double check the sizes */
 	WARN_IF_SIZE_DIFFERENT(struct hfi1_filedata, 96);
 	WARN_IF_SIZE_DIFFERENT(struct hfi1_devdata, 7360);

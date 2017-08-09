@@ -3089,6 +3089,8 @@ static void __sdma_process_event(struct sdma_engine *sde,
 		sdma_make_progress(sde, 0);
 }
 
+#endif /* __HFI1_ORIG__ */
+
 /*
  * _extend_sdma_tx_descs() - helper to extend txreq
  *
@@ -3143,7 +3145,6 @@ enomem:
 	return -ENOMEM;
 }
 
-#endif /* __HFI1_ORIG__ */
 /*
  * ext_coal_sdma_tx_descs() - extend or coalesce sdma tx descriptors
  *
@@ -3249,6 +3250,7 @@ void sdma_update_lmc(struct hfi1_devdata *dd, u64 mask, u32 lid)
 		write_sde_csr(sde, SD(CHECK_SLID), sreg);
 	}
 }
+#endif /* __HFI1_ORIG__ */
 
 /* tx not dword sized - pad */
 int _pad_sdma_tx_descs(struct hfi1_devdata *dd, struct sdma_txreq *tx)
@@ -3273,7 +3275,6 @@ int _pad_sdma_tx_descs(struct hfi1_devdata *dd, struct sdma_txreq *tx)
 	return rval;
 }
 
-#endif /* __HFI1_ORIG__ */
 /*
  * Add ahg to the sdma_txreq
  *
