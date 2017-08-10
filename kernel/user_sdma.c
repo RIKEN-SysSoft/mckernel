@@ -78,6 +78,7 @@
 #include "trace.h"
 #include "mmu_rb.h"
 
+#include <ihk/mm.h>
 
 module_param_named(sdma_comp_size, hfi1_sdma_comp_ring_size, uint, S_IRUGO);
 MODULE_PARM_DESC(sdma_comp_size, "Size of User SDMA completion ring. Default: 128");
@@ -647,19 +648,18 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 		enum ihk_mc_pt_attribute attr = PTATTR_WRITABLE;
 
 		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
-
+		
 		/* Check if mapping exists already and map if not */
-		for (virt = (void *)cq->comps; virt < (void *)cq->comps + len;
+		for (virt = (void *)cq->comps; virt < (((void *)cq->comps) + len);
 				virt += PAGE_SIZE) {
 			ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
-					virt, 0, &phys, &pgsize, 0);
-			if (ptep && pte_is_present(*ptep)) {
+					virt, 0, 0, &pgsize, 0);
+			if (ptep && pte_is_present(ptep)) {
 				goto cq_map_unlock;
 			}
 
-			ptep = ihk_mc_pt_lookup_pte(ihk_mc_get_linux_kernel_pgt(),
-					virt, 0, &phys, &pgsize, 0);
-			if (!ptep || !pte_is_present(*ptep)) {
+			if (ihk_mc_pt_virt_to_phys(ihk_mc_get_linux_kernel_pgt(),
+						virt, &phys) < 0) {
 				/* TODO: shall we make this function fail? */
 				kprintf("%s: ERROR: mapping cq, Linux mapping doesn't exist\n",
 						__FUNCTION__);
