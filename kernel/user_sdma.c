@@ -631,6 +631,59 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 				(phys - dd->chip_rcv_array_count * 8),
 				dd->chip_rcv_array_count * 8);
 	}
+
+	/*
+	 * Map in cq->comps, allocated dynamically by
+	 * vmalloc_user() in Linux.
+	 */
+	{
+		void *virt;
+		pte_t *ptep;
+		unsigned long phys;
+		size_t pgsize;
+		unsigned long len = ((sizeof(*cq->comps) * cq->nentries)
+				+ PAGE_SIZE - 1) & PAGE_MASK;
+		struct process_vm *vm = cpu_local_var(current)->vm;
+		enum ihk_mc_pt_attribute attr = PTATTR_WRITABLE;
+
+		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
+
+		/* Check if mapping exists already and map if not */
+		for (virt = (void *)cq->comps; virt < (void *)cq->comps + len;
+				virt += PAGE_SIZE) {
+			ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+					virt, 0, &phys, &pgsize, 0);
+			if (ptep && pte_is_present(*ptep)) {
+				goto cq_map_unlock;
+			}
+
+			ptep = ihk_mc_pt_lookup_pte(ihk_mc_get_linux_kernel_pgt(),
+					virt, 0, &phys, &pgsize, 0);
+			if (!ptep || !pte_is_present(*ptep)) {
+				/* TODO: shall we make this function fail? */
+				kprintf("%s: ERROR: mapping cq, Linux mapping doesn't exist\n",
+						__FUNCTION__);
+				goto cq_map_unlock;
+			}
+
+			if (ihk_mc_pt_set_page(vm->address_space->page_table,
+						virt, phys, attr) < 0) {
+				/* TODO: shall we make this function fail? */
+				kprintf("%s: ERROR: mapping cq: 0x%lx -> 0x%lx\n",
+						__FUNCTION__, virt, phys);
+				goto cq_map_unlock;
+			}
+
+			kprintf("%s: cq: 0x%lx -> 0x%lx mapped\n",
+					__FUNCTION__,
+					virt, phys);
+		}
+
+cq_map_unlock:
+		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
+
+		/* TODO: unmap these at close() time */
+	}
 #endif // __HFI1_ORIG__
 
 	hfi1_cdbg(AIOWRITE, "+");
