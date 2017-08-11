@@ -533,9 +533,9 @@ static u8 dlid_to_selector(u16 dlid)
 #define TXE_PIO_SIZE (32 * 0x100000)	/* 32 MB */
 
 /* HFI1 device address in McKernel */
-uint64_t hfi1_kregbase = 0;
-uint64_t hfi1_piobase = 0;
-uint64_t hfi1_rcvarray_wc = 0;
+void *hfi1_kregbase = 0;
+void *hfi1_piobase = 0;
+void *hfi1_rcvarray_wc = 0;
 #endif
 
 #ifdef __HFI1_ORIG__
