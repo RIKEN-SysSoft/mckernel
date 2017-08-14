@@ -564,6 +564,7 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	u16 dlid;
 	u32 selector;
 
+
 #ifndef __HFI1_ORIG__
 	if (!hfi1_kregbase) {
 		enum ihk_mc_pt_attribute attr = PTATTR_UNCACHABLE | PTATTR_WRITABLE;
@@ -731,6 +732,7 @@ cq_map_unlock:
 		return -EINVAL;
 	}
 
+#if 0
 	/* Try to claim the request. */
 	if (test_and_set_bit(info.comp_idx, pq->req_in_use)) {
 		hfi1_cdbg(SDMA, "[%u:%u:%u] Entry %u is in use",
@@ -738,6 +740,7 @@ cq_map_unlock:
 			  info.comp_idx);
 		return -EBADSLT;
 	}
+#endif
 	/*
 	 * All safety checks have been done and this request has been claimed.
 	 */
@@ -839,6 +842,7 @@ cq_map_unlock:
 	SDMA_DBG(req, "Initial TID offset %u", req->tidoffset);
 	idx++;
 
+	kprintf("%s: before - save all io_vecs\n", __FUNCTION__);
 	/* Save all the IO vector structures */
 	for (i = 0; i < req->data_iovs; i++) {
 		INIT_LIST_HEAD(&req->iovs[i].list);
@@ -900,12 +904,6 @@ cq_map_unlock:
 	dlid = be16_to_cpu(req->hdr.lrh[1]);
 	selector = dlid_to_selector(dlid);
 	selector += uctxt->ctxt + fd->subctxt;
-	/* TODO: check the rcu stuff */
-	/*
-	 * XXX: didn't we conclude that we don't need to worry about RCU here?
-	 * the mapping is created at driver initialization, the rest of the
-	 * accesses are read-only
-	 */
 	req->sde = sdma_select_user_engine(dd, selector, vl);
 
 	if (!req->sde || !sdma_running(req->sde)) {
@@ -923,8 +921,8 @@ cq_map_unlock:
 		}
 	}
 
-	set_comp_state(pq, cq, info.comp_idx, QUEUED, 0);
-	atomic_inc(&pq->n_reqs);
+	// set_comp_state(pq, cq, info.comp_idx, QUEUED, 0);
+	// atomic_inc(&pq->n_reqs);
 	req_queued = 1;
 	/* Send the first N packets in the request to buy us some time */
 	ret = user_sdma_send_pkts(req, pcount);
@@ -932,7 +930,7 @@ cq_map_unlock:
 		req->status = ret;
 		goto free_req;
 	}
-
+	return 0;
 	/*
 	 * It is possible that the SDMA engine would have processed all the
 	 * submitted packets by the time we get here. Therefore, only set
@@ -1085,6 +1083,8 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 		u32 datalen = 0, queued = 0, data_sent = 0;
 		u64 iov_offset = 0;
 
+//TODO: enable test_bit
+#ifdef __HFI1_ORIG__
 		/*
 		 * Check whether any of the completions have come back
 		 * with errors. If so, we are not going to process any
@@ -1094,7 +1094,6 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 			set_bit(SDMA_REQ_DONE_ERROR, &req->flags);
 			return -EFAULT;
 		}
-#ifdef __HFI1_ORIG__
 		tx = kmem_cache_alloc(pq->txreq_cache, GFP_KERNEL);
 #else
 		tx = kmalloc(sizeof(struct user_sdma_txreq), GFP_KERNEL);
@@ -1221,9 +1220,8 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 		 */
 		while (queued < datalen &&
 		       (req->sent + data_sent) < req->data_len) {
-			unsigned pageidx, len;
-//TODO: sdma_txadd_page			
 #ifdef __HFI1_ORIG__
+			unsigned pageidx, len;
 			unsigned long base, offset;
 
 			base = (unsigned long)iovec->iov.iov_base;
@@ -1237,15 +1235,45 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 			ret = sdma_txadd_page(pq->dd, &tx->txreq,
 					      iovec->pages[pageidx],
 					      offset, len);
+#else
+			struct sdma_txreq *txreq = &tx->txreq;
+			if ((unlikely(txreq->num_desc == txreq->desc_limit))) {
+				kprintf("%s: ERROR: ext_coal_sdma_tx_descs() should have been called here\n",
+						__FUNCTION__);
+			}
+			unsigned long base;
+			const void *virt = (unsigned long)iovec->iov.iov_base + iov_offset;
+			unsigned len = (unsigned)iovec->iov.iov_len - iov_offset;
+			if (len > PAGE_SIZE)
+				len = PAGE_SIZE;
+			len = min((datalen - queued), len);
+			if (len) {
+				if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->address_space->page_table, virt, &base) < 0) { 
+					/* TODO: shall we make this function fail? * 
+					* Handle this error. */
+					kprintf("%s: ERROR: virt_to_phys failed - 0x%lx\n",
+							__FUNCTION__, virt);
+					//TODO: handle this error
+					return 0;
+				} 			
+				ret = _sdma_txadd_daddr(pq->dd, SDMA_MAP_PAGE, txreq, base, len);
+				if (ret) {
+					kprintf("%s: ERROR _sdma_txadd_daddr()", __FUNCTION__);
+					return 0;
+				} else {
+					kprintf("%s: txadd: base = 0x%lx, len = %d\n", __FUNCTION__, base, len);
+				}
+			}
+#endif /* sdma_txadd_page */
 			if (ret) {
 				SDMA_DBG(req, "SDMA txreq add page failed %d\n",
 					 ret);
 				goto free_txreq;
 			}
-			//TODO: len may not be initialized
 			iov_offset += len;
 			queued += len;
 			data_sent += len;
+#ifdef __HFI1_ORIG__
 			if (unlikely(queued < datalen &&
 				     pageidx == iovec->npages &&
 				     req->iov_idx < req->data_iovs - 1)) {
@@ -1253,7 +1281,18 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 				iovec = &req->iovs[++req->iov_idx];
 				iov_offset = 0;
 			}
+#else
+			if (unlikely(queued < datalen &&
+				     len == 0 &&
+				     req->iov_idx < req->data_iovs - 1)) {
+				iovec->offset += iov_offset;
+				iovec = &req->iovs[++req->iov_idx];
+				iov_offset = 0;
+			}
+#endif
 		}
+		/* REACHES THIS POINT */
+		return 0;
 		/*
 		 * The txreq was submitted successfully so we can update
 		 * the counters.
@@ -1274,6 +1313,7 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 		npkts++;
 	}
 dosend:
+
 	ret = sdma_send_txlist(req->sde,
 			       iowait_get_ib_work(&pq->busy),
 			       &req->txps, &count);

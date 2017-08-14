@@ -736,6 +736,7 @@ static inline int _sdma_txadd_daddr(
 	return rval;
 }
 
+#ifdef __HFI1_ORIG__
 /**
  * sdma_txadd_page() - add a page to the sdma_txreq
  * @dd: the device to use for mapping
@@ -769,7 +770,6 @@ static inline int sdma_txadd_page(
 			return rval;
 	}
 
-#ifdef __HFI1_ORIG__
 	addr = dma_map_page(
 		       &dd->pcidev->dev,
 		       page,
@@ -781,14 +781,12 @@ static inline int sdma_txadd_page(
 		__sdma_txclean(dd, tx);
 		return -ENOSPC;
 	}
-#else
-	//TODO: dma_map_page
-#endif /* __HFI1_ORIG__ */
 
 	hfi1_cdbg(AIOWRITE, "-");
 	return _sdma_txadd_daddr(
 			dd, SDMA_MAP_PAGE, tx, addr, len);
 }
+#endif /* __HFI1_ORIG__ */
 
 /**
  * sdma_txadd_daddr() - add a dma address to the sdma_txreq

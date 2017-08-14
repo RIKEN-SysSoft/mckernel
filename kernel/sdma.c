@@ -921,8 +921,10 @@ struct sdma_engine *sdma_select_user_engine(struct hfi1_devdata *dd,
 		return sde;
 
 out:
-#endif /* __HFI1_ORIG__ */
 	return sdma_select_engine_vl(dd, selector, vl);
+#else
+	return &dd->per_sdma[0];
+#endif /* __HFI1_ORIG__ */
 }
 #ifdef __HFI1_ORIG__
 
