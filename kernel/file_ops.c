@@ -434,6 +434,8 @@ ssize_t hfi1_aio_write(void *private_data, const struct iovec *iovec, unsigned l
 	struct hfi1_user_sdma_pkt_q *pq = fd->pq;
 	struct hfi1_user_sdma_comp_q *cq = fd->cq;
 	int done = 0, reqs = 0;
+
+	TP("+");
  
 	/* Double check the sizes */
 	WARN_IF_SIZE_DIFFERENT(struct hfi1_filedata, 96);
@@ -443,7 +445,6 @@ ssize_t hfi1_aio_write(void *private_data, const struct iovec *iovec, unsigned l
 	WARN_IF_SIZE_DIFFERENT(struct sdma_engine, 1472);
 	WARN_IF_SIZE_DIFFERENT(struct sdma_state, 64);
 
-	return 0;
 	hfi1_cdbg(AIOWRITE, "+");
 	if (!cq || !pq)
 		return -EIO;
@@ -474,6 +475,8 @@ ssize_t hfi1_aio_write(void *private_data, const struct iovec *iovec, unsigned l
 			reqs = ret;
 			break;
 		}
+		TP("-");
+		return 0;
 		dim -= count;
 		done += count;
 		reqs++;

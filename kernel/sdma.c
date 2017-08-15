@@ -2357,6 +2357,7 @@ static inline u16 submit_tx(struct sdma_engine *sde, struct sdma_txreq *tx)
 	u16 tail;
 	struct sdma_desc *descp = tx->descp;
 	u8 skip = 0, mode = ahg_mode(tx);
+	TP("+");
 	hfi1_cdbg(AIOWRITE, "+");
 	tail = sde->descq_tail & sde->sdma_mask;
 	sde->descq[tail].qw[0] = cpu_to_le64(descp->qw[0]);
@@ -2369,7 +2370,9 @@ static inline u16 submit_tx(struct sdma_engine *sde, struct sdma_txreq *tx)
 		skip = mode >> 1;
 	for (i = 1; i < tx->num_desc; i++, descp++) {
 		u64 qw1;
-
+		TP("submitting descs qw[0] = %lu, qw[1] = %lu \n", descp->qw[0], descp->qw[1]);
+	}
+#ifdef __HFI1_ORIG__ 
 		sde->descq[tail].qw[0] = cpu_to_le64(descp->qw[0]);
 		if (skip) {
 			/* edits don't have generation */
@@ -2384,6 +2387,7 @@ static inline u16 submit_tx(struct sdma_engine *sde, struct sdma_txreq *tx)
 		// 			   tail, &sde->descq[tail]);
 		tail = ++sde->descq_tail & sde->sdma_mask;
 	}
+
 	tx->next_descq_idx = tail;
 #ifdef CONFIG_HFI1_DEBUG_SDMA_ORDER
 	tx->sn = sde->tail_sn++;
@@ -2394,6 +2398,9 @@ static inline u16 submit_tx(struct sdma_engine *sde, struct sdma_txreq *tx)
 	sde->desc_avail -= tx->num_desc;
 	hfi1_cdbg(AIOWRITE, "-");
 	return tail;
+#endif /* __HFI1_ORIG__ */
+	TP("-");
+	return 0;
 }
 
 /*
@@ -2530,11 +2537,12 @@ int sdma_send_txlist(struct sdma_engine *sde, struct iowait_work *wait,
 	unsigned long flags;
 	u16 tail = INVALID_TAIL;
 	u32 submit_count = 0, flush_count = 0, total_count;
-
+	TP("+");
 	hfi1_cdbg(AIOWRITE, "+");
 	spin_lock_irqsave(&sde->tail_lock, flags);
 retry:
 	list_for_each_entry_safe(tx, tx_next, tx_list, list) {
+#ifdef __HFI1_ORIG__ 		
 		tx->wait = iowait_ioww_to_iow(wait);
 		if (unlikely(!__sdma_running(sde)))
 			goto unlock_noconn;
@@ -2544,24 +2552,30 @@ retry:
 			ret = -EINVAL;
 			goto update_tail;
 		}
+#endif /* __HFI1_ORIG__ */		
 		list_del_init(&tx->list);
 		tail = submit_tx(sde, tx);
 		submit_count++;
+#ifdef __HFI1_ORIG__ 		
 		if (tail != INVALID_TAIL &&
 		    (submit_count & SDMA_TAIL_UPDATE_THRESH) == 0) {
 			sdma_update_tail(sde, tail);
 			tail = INVALID_TAIL;
 		}
+#endif /* __HFI1_ORIG__ */		
 	}
 update_tail:
 	total_count = submit_count + flush_count;
+#ifdef __HFI1_ORIG__ 		
 	if (wait)
 		iowait_sdma_add(iowait_ioww_to_iow(wait), total_count);
 	if (tail != INVALID_TAIL)
 		sdma_update_tail(sde, tail);
+#endif /* __HFI1_ORIG__ */		
 	spin_unlock_irqrestore(&sde->tail_lock, flags);
 	*count_out = total_count;
 	hfi1_cdbg(AIOWRITE, "-");
+	TP("-");	
 	return ret;
 unlock_noconn:
 	spin_lock(&sde->flushlist_lock);

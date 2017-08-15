@@ -3097,7 +3097,8 @@ SYSCALL_DECLARE(writev)
 	int iovcnt = ihk_mc_syscall_arg2(ctx);
 	void *private_data = proc->fd_priv_table[fd];
 	if (private_data) hfi1_aio_write(private_data, iovec, iovcnt);
-	return syscall_generic_forwarding(__NR_writev, ctx);
+	return 1;
+	// return syscall_generic_forwarding(__NR_writev, ctx);
 }
 
 SYSCALL_DECLARE(read)

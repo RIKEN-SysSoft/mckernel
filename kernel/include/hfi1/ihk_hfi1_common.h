@@ -10,6 +10,31 @@
 #include <page.h>
 #include <string.h>
 
+//#define VERBOSE_DEBUG
+
+#define IF_VA_ARGS(...) , ##__VA_ARGS__
+#define TP(msg, ...) kprintf("%s(%d):" msg "\n", __FUNCTION__, __LINE__ IF_VA_ARGS(__VA_ARGS__))
+
+#ifdef VERBOSE_DEBUG
+#define SDMA_DBG(req, fmt, ...)	kprintf("%s(%d): DBG:" fmt "\n", __FUNCTION__, __LINE__ IF_VA_ARGS(__VA_ARGS__));
+#define SDMA_Q_DBG(req, fmt, ...)	kprintf("%s(%d): Q_DBG:" fmt "\n", __FUNCTION__, __LINE__ IF_VA_ARGS(__VA_ARGS__));
+#define hfi1_cdbg(...) kprintf("%s(%d): hfi1_cdbg: %s \n", __FUNCTION__, __LINE__, #__VA_ARGS__);
+#else
+#define SDMA_DBG(req, fmt, ...) do {} while(0)
+#define SDMA_Q_DBG(req, fmt, ...) do {} while(0)
+#define hfi1_cdbg(...) do {} while(0)
+#endif
+
+/* From: kernel-xppsl_1.5.2/include/linux/compiler.h */
+#define WARN_ON(condition) ({						\
+	int __ret_warn_on = !!(condition);				\
+	if (unlikely(__ret_warn_on))					\
+		kprintf("%s(%d): WARN: %s\n", __FUNCTION__, __LINE__, #condition);  \
+	unlikely(__ret_warn_on);					\
+})
+
+#define WARN_ON_ONCE WARN_ON // use the local definition
+
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #endif
@@ -26,10 +51,6 @@
 #define BIT_ULL(nr) (1ULL << (nr))
 
 /* Disable debug macros */
-#define hfi1_cdbg(...) do {} while(0)
-#define SDMA_DBG(...) do {} while(0)
-#define WARN_ON(...) do {} while(0)
-#define WARN_ON_ONCE WARN_ON // use the local definition
 #define trace_hfi1_ahg_allocate(...) do {} while(0)
 #define trace_hfi1_ahg_deallocate(...) do {} while(0)
 
