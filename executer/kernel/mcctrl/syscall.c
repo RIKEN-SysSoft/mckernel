@@ -439,8 +439,8 @@ out:
 	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
 
 out_put_ppd:
-	dprintk("%s: tid: %d, syscall: %d, reason: %lu, syscall_ret: %d\n",
-		__FUNCTION__, task_pid_vnr(current), num, reason, syscall_ret);
+	dprintk("%s: tid: %d, syscall: %d, syscall_ret: %lx\n",
+		__FUNCTION__, task_pid_vnr(current), num, syscall_ret);
 
 	mcctrl_put_per_proc_data(ppd);
 	return syscall_ret;
@@ -458,8 +458,8 @@ static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, u
 	struct mcctrl_per_proc_data *ppd;
 	unsigned long phys;
 	
-	dprintk("%s: tid: %d, fault_addr: %lu, reason: %lu\n",
-		__FUNCTION__, task_pid_vnr(current), fault_addr, reason);
+	dprintk("%s: tid: %d, fault_addr: %p, reason: %lu\n",
+			__FUNCTION__, task_pid_vnr(current), fault_addr, (unsigned long)reason);
 	
 	/* Look up per-process structure */
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
@@ -620,8 +620,8 @@ out:
 	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
 
 out_put_ppd:
-	dprintk("%s: tid: %d, fault_addr: %lu, reason: %lu, error: %d\n",
-		__FUNCTION__, task_pid_vnr(current), fault_addr, reason, error);
+	dprintk("%s: tid: %d, fault_addr: %p, reason: %lu, error: %d\n",
+			__FUNCTION__, task_pid_vnr(current), fault_addr, (unsigned long)reason, error);
 
 	mcctrl_put_per_proc_data(ppd);
 	return error;
@@ -1000,7 +1000,7 @@ void pager_remove_process(struct mcctrl_per_proc_data *ppd)
 	list_for_each_entry_safe(pager, pager_next,
 			&ppd->devobj_pager_list, list) {
 
-		dprintk("%s: devobj pager 0x%lx removed\n", __FUNCTION__, pager);
+		dprintk("%s: devobj pager 0x%p removed\n", __FUNCTION__, pager);
 		list_del(&pager->list);
 		kfree(pager);
 	}
@@ -1029,7 +1029,7 @@ void pager_remove_process(struct mcctrl_per_proc_data *ppd)
 			fput(pager->rwfile);
 		}
 
-		dprintk("%s: pager 0x%lx removed\n", __FUNCTION__, pager);
+		dprintk("%s: pager 0x%p removed\n", __FUNCTION__, pager);
 		kfree(pager);
 	}
 
@@ -1988,7 +1988,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 	long ret = -1;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 
-	dprintk("%s: system call: %d\n", __FUNCTION__, sc->args[0]);
+	dprintk("%s: system call: %lx\n", __FUNCTION__, sc->args[0]);
 	switch (sc->number) {
 	case __NR_mmap:
 		ret = pager_call(os, sc);
@@ -2107,7 +2107,7 @@ sched_setparam_out:
 
 	error = 0;
 out:
-	dprintk("%s: system call: %d, error: %d, ret: %ld\n", 
+	dprintk("%s: system call: %ld, args[0]: %lx, error: %d, ret: %ld\n", 
 		__FUNCTION__, sc->number, sc->args[0], error, ret);
 	return error;
 }
