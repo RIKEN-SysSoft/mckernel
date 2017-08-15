@@ -688,7 +688,7 @@ static int fileobj_flush_page(struct memobj *memobj, uintptr_t phys,
 		return 0;
 	}
 
-	if (memobj->flags |= MF_HOST_RELEASED) {
+	if (memobj->flags & MF_HOST_RELEASED) {
 		return 0;
 	}
 
