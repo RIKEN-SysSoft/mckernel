@@ -475,13 +475,12 @@ ssize_t hfi1_aio_write(void *private_data, const struct iovec *iovec, unsigned l
 			reqs = ret;
 			break;
 		}
-		TP("-");
-		return 0;
 		dim -= count;
 		done += count;
 		reqs++;
 	}
 	hfi1_cdbg(AIOWRITE, "-");
+	TP("-");
 	return reqs;
 }
 #ifdef __HFI1_ORIG__
