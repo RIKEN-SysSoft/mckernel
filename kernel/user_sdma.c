@@ -915,7 +915,6 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	dlid = be16_to_cpu(req->hdr.lrh[1]);
 	selector = dlid_to_selector(dlid);
 	selector += uctxt->ctxt + fd->subctxt;
-	TP("+ sdma_select_user_engine");
 	req->sde = sdma_select_user_engine(dd, selector, vl);
 	TP("- 	sdma_select_user_engine");
 	
@@ -1092,13 +1091,12 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 	TP("- !req->pq");
 	pq = req->pq;
 
-#ifdef __HFI1_ORIG__
 	/* If tx completion has reported an error, we are done. */
 	if (test_bit(SDMA_REQ_HAS_ERROR, &req->flags)) {
 		set_bit(SDMA_REQ_DONE_ERROR, &req->flags);
+		TP("test_bit(SDMA_REQ_HAS_ERROR, &req->flags)");
 		return -EFAULT;
 	}
-#endif /* __HFI1_ORIG__ */
 	/*
 	 * Check if we might have sent the entire request already
 	 */
@@ -1282,7 +1280,6 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 						__FUNCTION__);
 			}
 			unsigned long base;
-			TP("DBG: iovec->offset = %ld, iovec->iov.iov_len = %ld\n", iovec->offset, iovec->iov.iov_len);
 			const void *virt = (unsigned long)iovec->iov.iov_base + iovec->offset;
 			WARN_ON(iovec->iov.iov_len < iovec->offset);
 			unsigned len = (unsigned)iovec->iov.iov_len - iovec->offset;
@@ -1315,8 +1312,9 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 			}
 #ifdef __HFI1_ORIG__
 			iov_offset += len;
-#endif /* __HFI1_ORIG__ */
+#else
 			iovec->offset += len;
+#endif /* __HFI1_ORIG__ */
 			queued += len;
 			data_sent += len;
 #ifdef __HFI1_ORIG__
