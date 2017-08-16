@@ -567,6 +567,7 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 
 #ifndef __HFI1_ORIG__
 	if (!hfi1_kregbase) {
+		struct process_vm *vm = cpu_local_var(current)->vm;
 		enum ihk_mc_pt_attribute attr = PTATTR_UNCACHABLE | PTATTR_WRITABLE;
 		void *virt;
 #if 1
@@ -587,9 +588,22 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 		 */
 		for (virt = hfi1_kregbase; virt < (hfi1_kregbase + TXE_PIO_SEND);
 				virt += PAGE_SIZE, phys += PAGE_SIZE) {
-			if (ihk_mc_pt_set_page(NULL, virt, phys, attr) < 0) {
+			if (ihk_mc_pt_set_page(vm->address_space->page_table,
+						virt, phys, attr) < 0) {
 				kprintf("%s: ERROR: mapping kregbase: 0x%lx -> 0x%lx\n",
-					__FUNCTION__, virt, phys);
+						__FUNCTION__, virt, phys);
+			}
+
+			{
+				pte_t *ptep;
+				struct process_vm *vm = cpu_local_var(current)->vm;
+
+				ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+						virt, 0, 0, 0, 0);
+				if (ptep && pte_is_present(ptep)) {
+					kprintf("%s: 0x%lx, PTE: 0x%lx\n",
+						__FUNCTION__, virt, *ptep);
+				}
 			}
 		}
 
@@ -603,7 +617,8 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 		attr = PTATTR_WRITE_COMBINED | PTATTR_WRITABLE;
 		for (virt = hfi1_piobase; virt < (hfi1_piobase + TXE_PIO_SIZE);
 				virt += PAGE_SIZE, phys += PAGE_SIZE) {
-			if (ihk_mc_pt_set_page(NULL, virt, phys, attr) < 0) {
+			if (ihk_mc_pt_set_page(vm->address_space->page_table,
+						virt, phys, attr) < 0) {
 				kprintf("%s: ERROR: mapping piobase: 0x%lx -> 0x%lx\n",
 					__FUNCTION__, virt, phys);
 			}
@@ -620,7 +635,8 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 		for (virt = hfi1_rcvarray_wc; 
 				virt < (hfi1_rcvarray_wc + dd->chip_rcv_array_count * 8);
 				virt += PAGE_SIZE, phys += PAGE_SIZE) {
-			if (ihk_mc_pt_set_page(NULL, virt, phys, attr) < 0) {
+			if (ihk_mc_pt_set_page(vm->address_space->page_table,
+						virt, phys, attr) < 0) {
 				kprintf("%s: ERROR: mapping rcvarray_wc: 0x%lx -> 0x%lx\n",
 						__FUNCTION__, virt, phys);
 			}
@@ -687,6 +703,8 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	}
 
 #endif // __HFI1_ORIG__
+
+
 	TP("- kregbase and cq->comps");
 	hfi1_cdbg(AIOWRITE, "+");
 	if (iovec[idx].iov_len < sizeof(info) + sizeof(req->hdr)) {
@@ -1002,7 +1020,6 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	return 0;
 free_req:
 	TP("free_req");
-	return 0;
 	user_sdma_free_request(req, true);
 	if (req_queued)
 		pq_update(pq);
@@ -1283,7 +1300,8 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 			const void *virt = (unsigned long)iovec->iov.iov_base + iovec->offset;
 			WARN_ON(iovec->iov.iov_len < iovec->offset);
 			unsigned len = (unsigned)iovec->iov.iov_len - iovec->offset;
-			len = min(PAGE_SIZE, len);
+			len = min(((unsigned long)virt & PAGE_MASK)
+					+ PAGE_SIZE - (unsigned long)virt, PAGE_SIZE);
 			len = min(req->info.fragsize, len);
 			len = min(txreq->tlen, len);
 			len = min((datalen - queued), len);
@@ -1299,8 +1317,9 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 				if (ret) {
 					kprintf("%s: ERROR _sdma_txadd_daddr()", __FUNCTION__);
 					return 0;
-				} else {
-					kprintf("%s: txadd: base = 0x%lx, len = %d\n", __FUNCTION__, base, len);
+				} 
+				else {
+					//kprintf("%s: txadd: base = 0x%lx, len = %d\n", __FUNCTION__, base, len);
 				}
 			}
 			TP("- custom sdma_txadd_page");
@@ -1370,15 +1389,12 @@ dosend:
 	}
 	hfi1_cdbg(AIOWRITE, "-");
 	TP("-");
-	return 0;
 	return ret;
 free_txreq:
 	TP("free_txreq");
-	return 0;
 	sdma_txclean(pq->dd, &tx->txreq);
 free_tx:
 	TP("free_tx");
-	return 0;
 #ifdef __HFI1_ORIG__
 	kmem_cache_free(pq->txreq_cache, tx);
 	hfi1_cdbg(AIOWRITE, "-");
@@ -1804,8 +1820,11 @@ static void user_sdma_txreq_cb(struct sdma_txreq *txreq, int status)
 	}
 
 	req->seqcomp = tx->seqnum;
-	//TODO: kmem_cache_free
-	//kmem_cache_free(pq->txreq_cache, tx);
+#ifdef __HFI1_ORIG__			
+	kmem_cache_free(pq->txreq_cache, tx);
+#else
+	kfree(tx);
+#endif /* __HFI1_ORIG__ */
 	tx = NULL;
 
 	idx = req->info.comp_idx;
@@ -1851,6 +1870,8 @@ static void user_sdma_free_request(struct user_sdma_request *req, bool unpin)
 			sdma_txclean(req->pq->dd, t);
 #ifdef __HFI1_ORIG__			
 			kmem_cache_free(req->pq->txreq_cache, tx);
+#else
+			kfree(tx);
 #endif /* __HFI1_ORIG__ */
 		}
 	}

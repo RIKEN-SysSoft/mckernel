@@ -2535,7 +2535,7 @@ int sdma_send_txlist(struct sdma_engine *sde, struct iowait_work *wait,
 	u32 submit_count = 0, flush_count = 0, total_count;
 	TP("+");
 	hfi1_cdbg(AIOWRITE, "+");
-	// spin_lock_irqsave(&sde->tail_lock, flags);
+	spin_lock_irqsave(&sde->tail_lock, flags);
 retry:
 	list_for_each_entry_safe(tx, tx_next, tx_list, list) {
 		tx->wait = iowait_ioww_to_iow(wait);
@@ -2559,13 +2559,11 @@ retry:
 update_tail:
 	TP("+ update_tail:");
 	total_count = submit_count + flush_count;
-#ifdef __HFI1_ORIG__ 		
 	if (wait)
 		iowait_sdma_add(iowait_ioww_to_iow(wait), total_count);
-#endif /* __HFI1_ORIG__ */		
 	if (tail != INVALID_TAIL)
 		sdma_update_tail(sde, tail);
-	// spin_unlock_irqrestore(&sde->tail_lock, flags);
+	spin_unlock_irqrestore(&sde->tail_lock, flags);
 	*count_out = total_count;
 	hfi1_cdbg(AIOWRITE, "-");
 	TP("-");	
