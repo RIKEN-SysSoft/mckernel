@@ -13,7 +13,8 @@
 //#define VERBOSE_DEBUG
 
 #define IF_VA_ARGS(...) , ##__VA_ARGS__
-#define TP(msg, ...) kprintf("%s(%d):" msg "\n", __FUNCTION__, __LINE__ IF_VA_ARGS(__VA_ARGS__))
+//#define TP(msg, ...) kprintf("%s(%d):" msg "\n", __FUNCTION__, __LINE__ IF_VA_ARGS(__VA_ARGS__))
+#define TP(msg, ...) do {} while(0)
 
 #ifdef VERBOSE_DEBUG
 #define SDMA_DBG(req, fmt, ...)	kprintf("%s(%d): DBG:" fmt "\n", __FUNCTION__, __LINE__ IF_VA_ARGS(__VA_ARGS__));
