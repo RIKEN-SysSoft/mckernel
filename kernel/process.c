@@ -36,8 +36,8 @@
 #include <timer.h>
 #include <mman.h>
 #include <xpmem.h>
-#include <rusage.h>
-#include <xpmem.h>
+#include <rusage_private.h>
+#include <ihk/monitor.h>
 
 //#define DEBUG_PRINT_PROCESS
 
@@ -1866,6 +1866,7 @@ retry:
 
 	/*****/
 	if (ptep) {
+		//if(rusage_memory_stat_add_with_page(range, phys, pgsize, pgsize, page)) {
 		if(rusage_memory_stat_add(range, phys, pgsize, pgsize)) {
 			/* on-demand paging, phys pages are obtained by ihk_mc_alloc_aligned_pages_user() or get_page() */
 			dkprintf("%lx+,%s: (on-demand paging && first map) || cow,calling memory_stat_rss_add(),phys=%lx,pgsize=%ld\n",

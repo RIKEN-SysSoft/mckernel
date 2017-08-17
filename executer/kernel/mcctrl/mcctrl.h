@@ -490,4 +490,9 @@ struct ihk_perf_event_attr{
 	unsigned exclude_idle:1;
 };
 
+struct getrusage_desc {
+	void* rusage;
+	size_t size_rusage;
+};
+
 #endif

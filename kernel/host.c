@@ -33,7 +33,7 @@
 #include <kmalloc.h>
 #include <sysfs.h>
 #include <ihk/perfctr.h>
-#include <rusage.h>
+#include <rusage_private.h>
 
 //#define DEBUG_PRINT_HOST
 

@@ -56,7 +56,8 @@
 #include <bitops.h>
 #include <bitmap.h>
 #include <xpmem.h>
-#include <rusage.h>
+#include <rusage_private.h>
+#include <ihk/monitor.h>
 #include <profile.h>
 #ifdef POSTK_DEBUG_ARCH_DEP_27
 #include <memory.h>
@@ -1064,10 +1065,10 @@ void terminate(int rc, int sig)
 
 	/* rusage debug */
 	for(i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
-		dkprintf("memory_stat_rss[%d]=%ld\n", i, monitor->rusage_memory_stat_rss[i]);
+		dkprintf("memory_stat_rss[%d]=%ld\n", i, rusage->memory_stat_rss[i]);
 	}
 	for(i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
-		dkprintf("memory_stat_mapped_file[%d]=%ld\n", i, monitor->rusage_memory_stat_mapped_file[i]);
+		dkprintf("memory_stat_mapped_file[%d]=%ld\n", i, rusage->memory_stat_mapped_file[i]);
 	}
 
 #ifdef DCFA_KMOD
@@ -9811,13 +9812,13 @@ set_cputime(int mode)
 		tsc_to_ts(dtsc, &dts);
 		if(mode == 1){
 			thread->user_tsc += dtsc;
-			monitor->user_tsc += dtsc;
+			v->rusage->user_tsc += dtsc;
 			ts_add(&thread->itimer_virtual_value, &dts);
 			ts_add(&thread->itimer_prof_value, &dts);
 		}
 		else{
 			thread->system_tsc += dtsc;
-			monitor->system_tsc += dtsc;
+			v->rusage->system_tsc += dtsc;
 			ts_add(&thread->itimer_prof_value, &dts);
 		}
 	}

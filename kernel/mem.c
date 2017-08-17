@@ -38,7 +38,7 @@
 #include <cpulocal.h>
 #include <init.h>
 #include <cas.h>
-#include <rusage.h>
+#include <rusage_private.h>
 #include <syscall.h>
 #include <profile.h>
 #include <process.h>

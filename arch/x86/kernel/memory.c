@@ -24,7 +24,7 @@
 #include <page.h>
 #include <cls.h>
 #include <kmalloc.h>
-#include <rusage.h>
+#include <rusage_private.h>
 
 //#define DEBUG
 
@@ -2050,7 +2050,7 @@ retry:
 			dkprintf("set_range_l2(%lx,%lx,%lx):"
 					"2MiB page. %d %lx\n",
 					base, start, end, error, *ptep);
-			// call memory_stat_rss_add() here because pgshift is resolved here
+			// Call memory_stat_rss_add() here because pgshift is resolved here
 			if (rusage_memory_stat_add(args->range, phys, PTL2_SIZE, PTL2_SIZE)) {
 				dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, base, phys, PTL2_SIZE, PTL2_SIZE);
 			} else {

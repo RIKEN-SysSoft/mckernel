@@ -16,7 +16,7 @@
 
 #include <arch-lock.h>
 #include <ihk/memconst.h>
-#include <ihk/kmsg.h>
+#include <ihk/ihk_debug.h>
 
 #ifdef POSTK_DEBUG_ARCH_DEP_9 /* want to add a static assertion */
 

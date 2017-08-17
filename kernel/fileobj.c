@@ -26,7 +26,7 @@
 #include <pager.h>
 #include <string.h>
 #include <syscall.h>
-#include <rusage.h>
+#include <rusage_private.h>
 
 //#define DEBUG_PRINT_FILEOBJ
 

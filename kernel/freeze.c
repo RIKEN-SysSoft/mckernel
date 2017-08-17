@@ -3,7 +3,7 @@
 #include <ihk/cpu.h>
 #include <ihk/debug.h>
 #include <cls.h>
-#include <rusage.h>
+#include <ihk/monitor.h>
 
 extern int nmi_mode;
 extern void mod_nmi_ctx(void *, void(*)());

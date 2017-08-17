@@ -93,6 +93,7 @@ struct cpu_local_var {
 	int timer_enabled;
 	int kmalloc_initialized;
 	struct ihk_os_cpu_monitor *monitor;
+	struct rusage_percpu *rusage;
 
 	ihk_spinlock_t smp_func_req_lock;
 	struct list_head smp_func_req_list;

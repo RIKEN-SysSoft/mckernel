@@ -22,7 +22,7 @@
 #include <page.h>
 #include <shm.h>
 #include <string.h>
-#include <rusage.h>
+#include <rusage_private.h>
 
 #define	dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
 #define	ekprintf(...)	kprintf(__VA_ARGS__)

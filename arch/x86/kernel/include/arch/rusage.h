@@ -7,7 +7,7 @@
 #define IHK_OS_PGSIZE_2MB 1
 #define IHK_OS_PGSIZE_1GB 2
 
-extern struct ihk_os_monitor *monitor;
+extern struct rusage_global *rusage;
 
 extern int sprintf(char * buf, const char *fmt, ...);
 

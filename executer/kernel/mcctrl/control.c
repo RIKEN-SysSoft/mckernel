@@ -45,6 +45,8 @@
 #include "../../../config.h"
 #include "mcctrl.h"
 #include <ihk/ihk_host_user.h>
+#include <rusage.h>
+#include <ihklib_rusage.h>
 
 //#define DEBUG
 
@@ -2194,6 +2196,77 @@ void mcctrl_perf_ack(ihk_os_t os, struct ikc_scd_packet *packet)
 
 }
 
+/* Compose LWK-specific rusage structure */
+long mcctrl_getrusage(ihk_os_t ihk_os, struct getrusage_desc *__user _desc)
+{
+	struct getrusage_desc desc;
+	struct rusage_global *rusage_global = ihk_os_get_rusage(ihk_os);
+	struct mckernel_rusage *rusage = NULL;
+	int ret = 0;
+	int i;
+	unsigned long ut;
+	unsigned long st;
+
+	ret = copy_from_user(&desc, _desc, sizeof(struct getrusage_desc));
+	if (ret != 0) {
+		printk("%s: copy_from_user failed\n", __FUNCTION__);
+		goto out;
+	}
+
+	rusage = kmalloc(sizeof(struct mckernel_rusage), GFP_KERNEL);
+	if (!rusage) {
+		printk("%s: kmalloc failed\n", __FUNCTION__);
+		ret = -ENOMEM;
+		goto out;
+	}
+	memset(rusage, 0, sizeof(struct mckernel_rusage));
+
+	/* Compile statistics */
+	for (i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
+		rusage->memory_stat_rss[i] = rusage_global->memory_stat_rss[i];
+		rusage->memory_stat_mapped_file[i] = rusage_global->memory_stat_mapped_file[i];
+	}
+	rusage->memory_max_usage = rusage_global->memory_max_usage;
+	rusage->memory_kmem_usage = rusage_global->memory_kmem_usage;
+	rusage->memory_kmem_max_usage = rusage_global->memory_kmem_max_usage;
+	for (i = 0; i < rusage_global->num_numa_nodes; i++) {
+		rusage->memory_numa_stat[i] = rusage_global->memory_numa_stat[i];
+	}
+	for (ut = 0, st = 0, i = 0; i < rusage_global->num_processors; i++) {
+		unsigned long wt;
+
+		wt = rusage_global->cpu[i].user_tsc * rusage_global->ns_per_tsc / 1000;
+		ut += wt;
+		st += rusage_global->cpu[i].system_tsc * rusage_global->ns_per_tsc / 1000;
+		rusage->cpuacct_usage_percpu[i] = wt;
+	}
+	rusage->cpuacct_stat_system = st / 10000000;
+	rusage->cpuacct_stat_user = ut / 10000000;
+	rusage->cpuacct_usage = ut;
+
+	rusage->num_threads = rusage_global->num_threads;
+	rusage->max_num_threads = rusage_global->max_num_threads;
+
+	if (desc.size_rusage > sizeof(struct mckernel_rusage)) {
+		printk("%s: desc.size_rusage=%ld > sizeof(struct mckernel_rusage)=%ld\n", __FUNCTION__, desc.size_rusage, sizeof(struct mckernel_rusage));
+		ret = -EINVAL;
+		goto out;
+	}
+
+	ret = copy_to_user(desc.rusage, rusage, desc.size_rusage);
+	if (ret != 0) {
+		printk("%s: copy_to_user failed\n", __FUNCTION__);
+		goto out;
+	}
+
+ out:
+	if (rusage) {
+		kfree(rusage);
+	}
+
+	return ret;
+}
+
 extern void *get_user_sp(void);
 extern void set_user_sp(unsigned long);
 extern void restore_fs(unsigned long fs);
@@ -2797,6 +2870,9 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 
 	case IHK_OS_AUX_PERF_DESTROY:
 		return mcctrl_perf_destroy(os);
+
+	case IHK_OS_GETRUSAGE:
+		return mcctrl_getrusage(os, (struct getrusage_desc *)arg);
 	}
 	return -EINVAL;
 }

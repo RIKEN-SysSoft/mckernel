@@ -284,6 +284,9 @@ case $WITH_TARGET in
 	if test "X$ETCDIR" = X; then
 		ETCDIR="$prefix/etc"
 	fi
+	if test "X$INCLUDEDIR" = X; then
+		INCLUDEDIR="$prefix/include"
+	fi
 	if test "X$KMODDIR" = X; then
 		KMODDIR="$prefix/kmod"
 	fi
@@ -495,6 +498,7 @@ AC_SUBST(MCKERNEL_INCDIR)
 AC_SUBST(MCKERNEL_LIBDIR)
 AC_SUBST(INCDIR)
 AC_SUBST(ETCDIR)
+AC_SUBST(INCLUDEDIR)
 AC_SUBST(KMODDIR)
 AC_SUBST(KERNDIR)
 AC_SUBST(MANDIR)

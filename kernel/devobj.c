@@ -35,7 +35,7 @@
 #include <string.h>
 #include <syscall.h>
 #include <process.h>
-#include <rusage.h>
+#include <rusage_private.h>
 
 //#define DEBUG_PRINT_DEVOBJ
 

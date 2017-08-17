@@ -19,7 +19,8 @@
 #include <ihk/page_alloc.h>
 #include <cls.h>
 #include <page.h>
-#include <rusage.h>
+#include <rusage_private.h>
+#include <ihk/monitor.h>
 
 extern int num_processors;
 
@@ -39,6 +40,7 @@ void cpu_local_var_init(void)
 
 	for (i = 0; i < num_processors; i++) {
 		clv[i].monitor = monitor->cpu + i;
+		clv[i].rusage = rusage->cpu + i;
 		INIT_LIST_HEAD(&clv[i].smp_func_req_list);
 	}
 

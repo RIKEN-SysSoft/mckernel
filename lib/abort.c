@@ -1,7 +1,7 @@
 #include <ihk/debug.h>
 #include <ihk/cpu.h>
 #include <cls.h>
-#include <ihk/rusage.h>
+#include <ihk/monitor.h>
 
 extern struct cpu_local_var *clv;
 

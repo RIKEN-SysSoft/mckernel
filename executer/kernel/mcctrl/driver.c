@@ -97,6 +97,7 @@ static struct ihk_os_user_call_handler mcctrl_uchs[] = {
 	{ .request = IHK_OS_AUX_PERF_ENABLE, .func = mcctrl_ioctl },
 	{ .request = IHK_OS_AUX_PERF_DISABLE, .func = mcctrl_ioctl },
 	{ .request = IHK_OS_AUX_PERF_DESTROY, .func = mcctrl_ioctl },
+	{ .request = IHK_OS_GETRUSAGE, .func = mcctrl_ioctl },
 };
 
 static struct ihk_os_kernel_call_handler mcctrl_kernel_handlers = {
