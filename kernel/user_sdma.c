@@ -1130,7 +1130,8 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 
 	while (npkts < maxpkts) {
 		u32 datalen = 0, queued = 0, data_sent = 0;
-		//u64 iov_offset = 0;
+		unsigned long base_phys;
+		u64 iov_offset = 0;
 
 //TODO: enable test_bit
 #ifdef __HFI1_ORIG__
@@ -1275,76 +1276,47 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 		 TP("+ If the request contains any data vectors, add up to fragsize bytes to the descriptor.");
 		 while (queued < datalen &&
 		       (req->sent + data_sent) < req->data_len) {
-#ifdef __HFI1_ORIG__
 			unsigned pageidx, len;
 			unsigned long base, offset;
+			const void *virt;
 
 			base = (unsigned long)iovec->iov.iov_base;
 			offset = offset_in_page(base + iovec->offset +
 						iov_offset);
+			virt = base + iovec->offset + iov_offset;
 			pageidx = (((iovec->offset + iov_offset +
 				     base) - (base & PAGE_MASK)) >> PAGE_SHIFT);
 			len = offset + req->info.fragsize > PAGE_SIZE ?
 				PAGE_SIZE - offset : req->info.fragsize;
 			len = min((datalen - queued), len);
+			SDMA_DBG("%s: dl: %d, qd: %d, len: %d\n",
+					__FUNCTION__, datalen, queued, len);
 			ret = sdma_txadd_page(pq->dd, &tx->txreq,
-					      iovec->pages[pageidx],
-					      offset, len);
+#ifdef __HFI1_ORIG__
+					iovec->pages[pageidx], offset,
 #else
-			struct sdma_txreq *txreq = &tx->txreq;
-			if ((unlikely(txreq->num_desc == txreq->desc_limit))) {
-				kprintf("%s: ERROR: ext_coal_sdma_tx_descs() should have been called here\n",
-						__FUNCTION__);
-			}
-			unsigned long base;
-			const void *virt = (unsigned long)iovec->iov.iov_base + iovec->offset;
-			WARN_ON(iovec->iov.iov_len < iovec->offset);
-			unsigned len = (unsigned)iovec->iov.iov_len - iovec->offset;
-			len = min(((unsigned long)virt & PAGE_MASK)
-					+ PAGE_SIZE - (unsigned long)virt, len);
-			len = min(req->info.fragsize, len);
-			len = min(txreq->tlen, len);
-			len = min((datalen - queued), len);
-			if (len) {
-				if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->address_space->page_table, virt, &base) < 0) { 
-					/* TODO: shall we make this function fail? * 
-					* Handle this error. */
-					kprintf("%s: ERROR: virt_to_phys failed - virt = 0x%lx, iovec->iov.iov_base = 0x%lx\n",
-							__FUNCTION__, virt, iovec->iov.iov_base);
-					return 0;
-				} 			
-				ret = _sdma_txadd_daddr(pq->dd, SDMA_MAP_PAGE, txreq, base, len);
-				if (ret) {
-					kprintf("%s: ERROR _sdma_txadd_daddr()", __FUNCTION__);
-					return 0;
-				} 
-				else {
-					//kprintf("%s: txadd: base = 0x%lx, len = %d\n", __FUNCTION__, base, len);
-				}
-			}
-			TP("- custom sdma_txadd_page");
-#endif /* __HFI1_ORIG__ */
+					virt,
+#endif
+					len);
 			if (ret) {
 				SDMA_DBG(req, "SDMA txreq add page failed %d\n",
 					 ret);
 				goto free_txreq;
 			}
-#ifdef __HFI1_ORIG__
 			iov_offset += len;
-#else
-			iovec->offset += len;
-#endif /* __HFI1_ORIG__ */
 			queued += len;
 			data_sent += len;
-#ifdef __HFI1_ORIG__
 			if (unlikely(queued < datalen &&
+#ifdef __HFI1_ORIG__
 				     pageidx == iovec->npages &&
+#else
+					iov_offset == iovec->iov.iov_len &&
+#endif /* __HFI1_ORIG__ */
 				     req->iov_idx < req->data_iovs - 1)) {
 				iovec->offset += iov_offset;
 				iovec = &req->iovs[++req->iov_idx];
 				iov_offset = 0;
 			}
-#endif /* __HFI1_ORIG__ */
 		}
 		TP("- If the request contains any data vectors, add up to fragsize bytes to the descriptor.");
 		/*
@@ -1355,10 +1327,8 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 		if (req_opcode(req->info.ctrl) == EXPECTED)
 			req->tidoffset += datalen;
 		req->sent += data_sent;
-#ifdef __HFI1_ORIG__
 		if (req->data_len)
 			iovec->offset += iov_offset;
-#endif /* __HFI1_ORIG__ */
 		list_add_tail(&tx->txreq.list, &req->txps);
 		/*
 		 * It is important to increment this here as it is used to

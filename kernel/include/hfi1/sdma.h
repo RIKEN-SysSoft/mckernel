@@ -736,7 +736,6 @@ static inline int _sdma_txadd_daddr(
 	return rval;
 }
 
-#ifdef __HFI1_ORIG__
 /**
  * sdma_txadd_page() - add a page to the sdma_txreq
  * @dd: the device to use for mapping
@@ -756,12 +755,18 @@ static inline int _sdma_txadd_daddr(
 static inline int sdma_txadd_page(
 	struct hfi1_devdata *dd,
 	struct sdma_txreq *tx,
+#ifdef __HFI1_ORIG__
 	struct page *page,
 	unsigned long offset,
+#else
+	void *virt,
+#endif
 	u16 len)
 {
 	dma_addr_t addr;
 	int rval;
+#ifdef __HFI1_ORIG__
+	/* TODO: check this coealesce thing */
 	hfi1_cdbg(AIOWRITE, "+");
 	if ((unlikely(tx->num_desc == tx->desc_limit))) {
 		rval = ext_coal_sdma_tx_descs(dd, tx, SDMA_MAP_PAGE,
@@ -783,10 +788,25 @@ static inline int sdma_txadd_page(
 	}
 
 	hfi1_cdbg(AIOWRITE, "-");
+#else
+	if (ihk_mc_pt_virt_to_phys(
+				cpu_local_var(current)->vm->address_space->page_table,
+				virt, &addr) < 0) { 
+		/* TODO: shall we make this function fail? * 
+		 * Handle this error. */
+		kprintf("%s: ERROR: virt_to_phys failed - virt = 0x%lx\n",
+				__FUNCTION__, virt);
+		return -EFAULT;
+	}
+#endif
+	/*
+	 * XXX: It seems that this is the place where the reference to
+	 * the payload is added, but addr is kernel virtual here.
+	 * TODO: verify this by printing it out in Linux.
+	 */
 	return _sdma_txadd_daddr(
 			dd, SDMA_MAP_PAGE, tx, addr, len);
 }
-#endif /* __HFI1_ORIG__ */
 
 /**
  * sdma_txadd_daddr() - add a dma address to the sdma_txreq
