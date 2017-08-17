@@ -1064,11 +1064,7 @@ struct sdma_map_elem {
  */
 struct sdma_vl_map {
 	s8 engine_to_vl[TXE_NUM_SDMA_ENGINES];
-#ifdef __HFI1_ORIG__
-	struct rcu_head list;
-#else
-	//TODO: struct rcu_head list;
-#endif /* __HFI1_ORIG__ */
+	char list[16]; // struct rcu_head list;
 	u32 mask;
 	u8 actual_vls;
 	u8 vls;
