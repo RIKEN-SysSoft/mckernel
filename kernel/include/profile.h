@@ -28,7 +28,7 @@ struct profile_event {
  * [PROFILE_SYSCALL_MAX,PROFILE_OFFLOAD_MAX) - syscall offloads
  * [PROFILE_OFFLOAD_MAX,PROFILE_EVENT_MAX) - general events
  *
- * XXX: Make sure to fill in prof_event_names in profile.c
+ * XXX: Make sure to fill in profile_event_names in profile.c
  * for each added profiled event.
  */
 enum profile_event_type {
@@ -44,6 +44,11 @@ enum profile_event_type {
 	PROFILE_mmap_anon_no_contig_phys,
 	PROFILE_mmap_regular_file,
 	PROFILE_mmap_device_file,
+	PROFILE_sdma_1,
+	PROFILE_sdma_2,
+	PROFILE_sdma_3,
+	PROFILE_sdma_4,
+	PROFILE_sdma_5,
 	PROFILE_EVENT_MAX	/* Should be the last event type */
 };
 
