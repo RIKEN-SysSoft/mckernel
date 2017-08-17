@@ -79,6 +79,7 @@
 #include "mmu_rb.h"
 
 #include <ihk/mm.h>
+#include <profile.h>
 
 module_param_named(sdma_comp_size, hfi1_sdma_comp_ring_size, uint, S_IRUGO);
 MODULE_PARM_DESC(sdma_comp_size, "Size of User SDMA completion ring. Default: 128");
@@ -564,7 +565,6 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	u16 dlid;
 	u32 selector;
 
-
 #ifndef __HFI1_ORIG__
 	if (!hfi1_kregbase) {
 		struct process_vm *vm = cpu_local_var(current)->vm;
@@ -959,8 +959,9 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 		}
 	}
 
-	// set_comp_state(pq, cq, info.comp_idx, QUEUED, 0);
-	// atomic_inc(&pq->n_reqs);
+	/* TODO: set these! */
+	set_comp_state(pq, cq, info.comp_idx, QUEUED, 0);
+	atomic_inc(&pq->n_reqs);
 	req_queued = 1;
 	/* Send the first N packets in the request to buy us some time */
 	ret = user_sdma_send_pkts(req, pcount);
@@ -1009,7 +1010,12 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 			hfi1_cdbg(AIOWRITE, "-wait_event_interruptible_timeout");
 #else
 			TP("+ polling while(pq->state != SDMA_PKT_Q_ACTIVE)");
-			while (pq->state != SDMA_PKT_Q_ACTIVE) cpu_pause();
+			{
+				unsigned long ts = rdtsc();
+				while (pq->state != SDMA_PKT_Q_ACTIVE) cpu_pause();
+				kprintf("%s: waited %lu cycles for SDMA_PKT_Q_ACTIVE\n",
+						__FUNCTION__, rdtsc() - ts);
+			}
 			TP("- polling while(pq->state != SDMA_PKT_Q_ACTIVE)");
 #endif /* __HFI1_ORIG__ */
 		}
@@ -1093,6 +1099,49 @@ static inline u32 get_lrh_len(struct hfi1_pkt_header hdr, u32 len)
 	return ((sizeof(hdr) - sizeof(hdr.pbc)) + 4 + len);
 }
 
+static ihk_spinlock_t txreq_cache_lock = 0;
+static LIST_HEAD(txreq_cache_list);
+
+struct user_sdma_txreq *txreq_cache_alloc(void)
+{
+	struct user_sdma_txreq *req = NULL;
+
+	ihk_mc_spinlock_lock_noirq(&txreq_cache_lock);
+retry:
+	if (!list_empty(&txreq_cache_list)) {
+		req = list_first_entry(&txreq_cache_list,
+				struct user_sdma_txreq, list);
+		list_del(&req->list);
+	}
+	else {
+		int i;
+kprintf("%s: cache empty, allocating ...\n", __FUNCTION__);		
+		for (i = 0; i < 100; ++i) {
+			req = kmalloc(sizeof(struct user_sdma_txreq), GFP_KERNEL);
+			if (!req) {
+				kprintf("%s: ERROR: allocating txreq\n", __FUNCTION__);
+				continue;
+			}
+
+			list_add_tail(&req->list, &txreq_cache_list);
+		}
+
+		goto retry;
+	}
+	ihk_mc_spinlock_unlock_noirq(&txreq_cache_lock);
+
+	return req;
+}
+
+void txreq_cache_free(struct user_sdma_txreq *req)
+{
+	ihk_mc_spinlock_lock_noirq(&txreq_cache_lock);
+	list_add_tail(&req->list, &txreq_cache_list);
+	ihk_mc_spinlock_unlock_noirq(&txreq_cache_lock);
+}
+
+//#undef PROFILE_ENABLE
+
 static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 {
 	int ret = 0, count;
@@ -1133,6 +1182,10 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 		unsigned long base_phys;
 		u64 iov_offset = 0;
 
+#ifdef PROFILE_ENABLE
+	unsigned long prof_ts = rdtsc();
+#endif
+
 //TODO: enable test_bit
 #ifdef __HFI1_ORIG__
 		/*
@@ -1146,8 +1199,14 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 		}
 		tx = kmem_cache_alloc(pq->txreq_cache, GFP_KERNEL);
 #else
-		tx = kmalloc(sizeof(struct user_sdma_txreq), GFP_KERNEL);
+		//tx = kmalloc(sizeof(struct user_sdma_txreq), GFP_KERNEL);
+		tx = txreq_cache_alloc();
 #endif /* __HFI1_ORIG__ */
+#ifdef PROFILE_ENABLE
+	profile_event_add(PROFILE_sdma_1,
+			(rdtsc() - prof_ts));
+	prof_ts = rdtsc();
+#endif // PROFILE_ENABLE
 		if (!tx)
 			return -ENOMEM;
 		TP("- kmalloc");
@@ -1155,6 +1214,7 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 		tx->req = req;
 		tx->busycount = 0;
 		INIT_LIST_HEAD(&tx->list);
+
 
 		/*
 		 * For the last packet set the ACK request
@@ -1273,12 +1333,18 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 		 * If the request contains any data vectors, add up to
 		 * fragsize bytes to the descriptor.
 		 */
+#ifdef PROFILE_ENABLE
+	profile_event_add(PROFILE_sdma_2,
+			(rdtsc() - prof_ts));
+	prof_ts = rdtsc();
+#endif // PROFILE_ENABLE
 		 TP("+ If the request contains any data vectors, add up to fragsize bytes to the descriptor.");
 		 while (queued < datalen &&
 		       (req->sent + data_sent) < req->data_len) {
 			unsigned pageidx, len;
 			unsigned long base, offset;
 			const void *virt;
+			unsigned long paddr_base;
 
 			base = (unsigned long)iovec->iov.iov_base;
 			offset = offset_in_page(base + iovec->offset +
@@ -1291,11 +1357,24 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 			len = min((datalen - queued), len);
 			SDMA_DBG("%s: dl: %d, qd: %d, len: %d\n",
 					__FUNCTION__, datalen, queued, len);
+			
+			//if (iov_offset == 0 || iovec->offset == 0) {
+				if (ihk_mc_pt_virt_to_phys(
+							cpu_local_var(current)->vm->address_space->page_table,
+							virt, &paddr_base) < 0) { 
+					/* TODO: shall we make this function fail? * 
+					 * Handle this error. */
+					kprintf("%s: ERROR: virt_to_phys failed - virt = 0x%lx\n",
+							__FUNCTION__, virt);
+					return -EFAULT;
+				}
+			//}
+
 			ret = sdma_txadd_page(pq->dd, &tx->txreq,
 #ifdef __HFI1_ORIG__
 					iovec->pages[pageidx], offset,
 #else
-					virt,
+					paddr_base + iov_offset + iovec->offset,
 #endif
 					len);
 			if (ret) {
@@ -1318,6 +1397,12 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 				iov_offset = 0;
 			}
 		}
+
+#ifdef PROFILE_ENABLE
+	profile_event_add(PROFILE_sdma_3,
+			(rdtsc() - prof_ts));
+	prof_ts = rdtsc();
+#endif // PROFILE_ENABLE
 		TP("- If the request contains any data vectors, add up to fragsize bytes to the descriptor.");
 		/*
 		 * The txreq was submitted successfully so we can update
@@ -1337,6 +1422,11 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 		 */
 		tx->seqnum = req->seqnum++;
 		npkts++;
+#ifdef PROFILE_ENABLE
+	profile_event_add(PROFILE_sdma_4,
+			(rdtsc() - prof_ts));
+	prof_ts = rdtsc();
+#endif // PROFILE_ENABLE
 	}
 dosend:
 
@@ -1793,7 +1883,8 @@ static void user_sdma_txreq_cb(struct sdma_txreq *txreq, int status)
 #ifdef __HFI1_ORIG__			
 	kmem_cache_free(pq->txreq_cache, tx);
 #else
-	kfree(tx);
+	//kfree(tx);
+	txreq_cache_free(tx);
 #endif /* __HFI1_ORIG__ */
 	tx = NULL;
 

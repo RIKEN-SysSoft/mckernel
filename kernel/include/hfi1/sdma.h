@@ -759,7 +759,7 @@ static inline int sdma_txadd_page(
 	struct page *page,
 	unsigned long offset,
 #else
-	void *virt,
+	dma_addr_t paddr,
 #endif
 	u16 len)
 {
@@ -789,15 +789,7 @@ static inline int sdma_txadd_page(
 
 	hfi1_cdbg(AIOWRITE, "-");
 #else
-	if (ihk_mc_pt_virt_to_phys(
-				cpu_local_var(current)->vm->address_space->page_table,
-				virt, &addr) < 0) { 
-		/* TODO: shall we make this function fail? * 
-		 * Handle this error. */
-		kprintf("%s: ERROR: virt_to_phys failed - virt = 0x%lx\n",
-				__FUNCTION__, virt);
-		return -EFAULT;
-	}
+	addr = paddr;
 #endif
 	/*
 	 * XXX: It seems that this is the place where the reference to
