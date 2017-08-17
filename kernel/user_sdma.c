@@ -1115,8 +1115,8 @@ retry:
 	}
 	else {
 		int i;
-kprintf("%s: cache empty, allocating ...\n", __FUNCTION__);		
-		for (i = 0; i < 100; ++i) {
+		kprintf("%s: cache empty, allocating ...\n", __FUNCTION__);
+		for (i = 0; i < 50; ++i) {
 			req = kmalloc(sizeof(struct user_sdma_txreq), GFP_KERNEL);
 			if (!req) {
 				kprintf("%s: ERROR: allocating txreq\n", __FUNCTION__);
@@ -1140,7 +1140,7 @@ void txreq_cache_free(struct user_sdma_txreq *req)
 	ihk_mc_spinlock_unlock_noirq(&txreq_cache_lock);
 }
 
-//#undef PROFILE_ENABLE
+#undef PROFILE_ENABLE
 
 static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 {
@@ -1149,6 +1149,9 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 	struct user_sdma_txreq *tx = NULL;
 	struct hfi1_user_sdma_pkt_q *pq = NULL;
 	struct user_sdma_iovec *iovec = NULL;
+	unsigned long base_phys = 0;
+	unsigned long base_pgsize = 0;
+	void *base_virt = NULL;
 
 	TP("+");
 	hfi1_cdbg(AIOWRITE, "+");
@@ -1179,7 +1182,6 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 
 	while (npkts < maxpkts) {
 		u32 datalen = 0, queued = 0, data_sent = 0;
-		unsigned long base_phys;
 		u64 iov_offset = 0;
 
 #ifdef PROFILE_ENABLE
@@ -1343,38 +1345,65 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 		       (req->sent + data_sent) < req->data_len) {
 			unsigned pageidx, len;
 			unsigned long base, offset;
-			const void *virt;
-			unsigned long paddr_base;
+			void *virt;
+			pte_t *ptep;
 
 			base = (unsigned long)iovec->iov.iov_base;
-			offset = offset_in_page(base + iovec->offset +
-						iov_offset);
 			virt = base + iovec->offset + iov_offset;
-			pageidx = (((iovec->offset + iov_offset +
-				     base) - (base & PAGE_MASK)) >> PAGE_SHIFT);
-			len = offset + req->info.fragsize > PAGE_SIZE ?
-				PAGE_SIZE - offset : req->info.fragsize;
-			len = min((datalen - queued), len);
-			SDMA_DBG("%s: dl: %d, qd: %d, len: %d\n",
-					__FUNCTION__, datalen, queued, len);
-			
-			//if (iov_offset == 0 || iovec->offset == 0) {
-				if (ihk_mc_pt_virt_to_phys(
-							cpu_local_var(current)->vm->address_space->page_table,
-							virt, &paddr_base) < 0) { 
-					/* TODO: shall we make this function fail? * 
-					 * Handle this error. */
-					kprintf("%s: ERROR: virt_to_phys failed - virt = 0x%lx\n",
+
+			/*
+			 * Resolve base_phys if vaddr is out of previous page.
+			 */
+			if (virt < base_virt ||
+					virt > (base_virt + base_pgsize)) {
+				ptep = ihk_mc_pt_lookup_pte(
+						cpu_local_var(current)->vm->address_space->page_table,
+						virt, 0, 0, &base_pgsize, 0);
+				if (!ptep || !pte_is_present(ptep)) {
+					kprintf("%s: ERROR: no valid PTE for 0x%lx\n",
 							__FUNCTION__, virt);
 					return -EFAULT;
 				}
-			//}
+
+				base_phys = pte_get_phys(ptep);
+				base_virt = (void *)((unsigned long)virt & ~(base_pgsize - 1));
+				SDMA_DBG("%s: base_virt: 0x%lx, base_phys: 0x%lx, "
+						"base_pgsize: %lu\n",
+						__FUNCTION__,
+						base_virt, base_phys, base_pgsize);
+			}
+
+#ifdef __HFI1_ORIG__
+			pageidx = (((iovec->offset + iov_offset +
+				     base) - (base & PAGE_MASK)) >> PAGE_SHIFT);
+			offset = offset_in_page(base + iovec->offset +
+						iov_offset);
+			len = offset + req->info.fragsize > PAGE_SIZE ?
+				PAGE_SIZE - offset : req->info.fragsize;
+#else
+			/*
+			 * This doesn't appear to work. Perhaps the card
+			 * doesn't like it if the physical range in an SDMA
+			 * descriptor crosses page boundaries??
+			 */
+			len = virt + req->info.fragsize >
+				base_virt + base_pgsize ?
+				base_virt + base_pgsize - virt : req->info.fragsize;
+
+			offset = offset_in_page(base + iovec->offset +
+						iov_offset);
+			len = offset + req->info.fragsize > PAGE_SIZE ?
+				PAGE_SIZE - offset : req->info.fragsize;
+#endif
+			len = min((datalen - queued), len);
+			SDMA_DBG("%s: dl: %d, qd: %d, len: %d\n",
+					__FUNCTION__, datalen, queued, len);
 
 			ret = sdma_txadd_page(pq->dd, &tx->txreq,
 #ifdef __HFI1_ORIG__
 					iovec->pages[pageidx], offset,
 #else
-					paddr_base + iov_offset + iovec->offset,
+					base_phys + (virt - base_virt),
 #endif
 					len);
 			if (ret) {
