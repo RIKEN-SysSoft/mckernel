@@ -923,7 +923,7 @@ struct sdma_engine *sdma_select_user_engine(struct hfi1_devdata *dd,
 out:
 	return sdma_select_engine_vl(dd, selector, vl);
 #else
-	return &dd->per_sdma[0];
+	return &dd->per_sdma[ihk_mc_get_processor_id() % 16];
 #endif /* __HFI1_ORIG__ */
 }
 #ifdef __HFI1_ORIG__
