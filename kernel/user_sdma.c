@@ -1301,7 +1301,7 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 			WARN_ON(iovec->iov.iov_len < iovec->offset);
 			unsigned len = (unsigned)iovec->iov.iov_len - iovec->offset;
 			len = min(((unsigned long)virt & PAGE_MASK)
-					+ PAGE_SIZE - (unsigned long)virt, PAGE_SIZE);
+					+ PAGE_SIZE - (unsigned long)virt, len);
 			len = min(req->info.fragsize, len);
 			len = min(txreq->tlen, len);
 			len = min((datalen - queued), len);
