@@ -2192,6 +2192,7 @@ static void *___kmalloc(int size, ihk_mc_ap_flag flag)
 	int npages;
 	unsigned long kmalloc_irq_flags = cpu_disable_interrupt_save();
 
+retry_malloc:
 	/* KMALLOC_MIN_SIZE bytes aligned size. */
 	if (size & KMALLOC_MIN_MASK) {
 		size = ((size + KMALLOC_MIN_SIZE - 1) & ~(KMALLOC_MIN_MASK));
@@ -2226,7 +2227,32 @@ split_and_return:
 		cpu_restore_interrupt(kmalloc_irq_flags);
 		return ((void *)chunk + sizeof(struct kmalloc_header));
 	}
+	/* See remote list before falling back to page_alloc */
+	else {
+		int retry = 0;
+		struct kmalloc_header *chunk, *tmp;
+		unsigned long irqflags =
+			ihk_mc_spinlock_lock(
+					&cpu_local_var(remote_free_list_lock));
 
+		/* Clean up remotely deallocated chunks */
+		list_for_each_entry_safe(chunk, tmp,
+				&cpu_local_var(remote_free_list), list) {
+
+			list_del(&chunk->list);
+			___kmalloc_insert_chunk(&cpu_local_var(free_list), chunk);
+			if (chunk->size >= size) {
+				retry = 1;
+			}
+		}
+
+		ihk_mc_spinlock_unlock(&cpu_local_var(remote_free_list_lock),
+				irqflags);
+		/* Found anything? */
+		if (retry) {
+			goto retry_malloc;
+		}
+	}
 
 	/* Allocate new memory and add it to free list */
 	npages = (size + sizeof(struct kmalloc_header) + (PAGE_SIZE - 1))
