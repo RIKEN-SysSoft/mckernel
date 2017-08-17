@@ -1343,7 +1343,10 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 		 TP("+ If the request contains any data vectors, add up to fragsize bytes to the descriptor.");
 		 while (queued < datalen &&
 		       (req->sent + data_sent) < req->data_len) {
-			unsigned pageidx, len;
+#ifdef __HFI1_ORIG__
+			unsigned pageidx;
+#endif
+			unsigned len;
 			unsigned long base, offset;
 			void *virt;
 			pte_t *ptep;
@@ -1354,12 +1357,12 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 			/*
 			 * Resolve base_phys if vaddr is out of previous page.
 			 */
-			if (virt < base_virt ||
-					virt > (base_virt + base_pgsize)) {
+			if (unlikely(virt < base_virt ||
+					virt > (base_virt + base_pgsize))) {
 				ptep = ihk_mc_pt_lookup_pte(
 						cpu_local_var(current)->vm->address_space->page_table,
 						virt, 0, 0, &base_pgsize, 0);
-				if (!ptep || !pte_is_present(ptep)) {
+				if (unlikely(!ptep || !pte_is_present(ptep))) {
 					kprintf("%s: ERROR: no valid PTE for 0x%lx\n",
 							__FUNCTION__, virt);
 					return -EFAULT;
@@ -1386,10 +1389,11 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 			 * doesn't like it if the physical range in an SDMA
 			 * descriptor crosses page boundaries??
 			 */
+			/*
 			len = virt + req->info.fragsize >
 				base_virt + base_pgsize ?
 				base_virt + base_pgsize - virt : req->info.fragsize;
-
+			*/
 			offset = offset_in_page(base + iovec->offset +
 						iov_offset);
 			len = offset + req->info.fragsize > PAGE_SIZE ?
@@ -1460,8 +1464,12 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 dosend:
 
 	ret = sdma_send_txlist(req->sde,
-			       iowait_get_ib_work(&pq->busy),
-				   &req->txps, &count);
+#ifdef __HFI1_ORIG__
+			iowait_get_ib_work(&pq->busy),
+#else
+			NULL,
+#endif
+			&req->txps, &count);
 	req->seqsubmitted += count;
 	if (req->seqsubmitted == req->info.npkts) {
 		set_bit(SDMA_REQ_SEND_DONE, &req->flags);
@@ -1471,10 +1479,8 @@ dosend:
 		 * happen due to the sequential manner in which
 		 * descriptors are processed.
 		 */
-#ifdef __HFI1_ORIG__
 		 if (test_bit(SDMA_REQ_HAVE_AHG, &req->flags))
 			sdma_ahg_free(req->sde, req->ahg_idx);
-#endif /* __HFI1_ORIG__ */
 	}
 	hfi1_cdbg(AIOWRITE, "-");
 	TP("-");
