@@ -1180,7 +1180,7 @@ retry:
 	else {
 		int i;
 		kprintf("%s: cache empty, allocating ...\n", __FUNCTION__);
-		for (i = 0; i < 50; ++i) {
+		for (i = 0; i < 100; ++i) {
 			req = kmalloc(sizeof(struct user_sdma_txreq), GFP_KERNEL);
 			if (!req) {
 				kprintf("%s: ERROR: allocating txreq\n", __FUNCTION__);
@@ -2031,7 +2031,8 @@ static void user_sdma_free_request(struct user_sdma_request *req, bool unpin)
 #ifdef __HFI1_ORIG__			
 			kmem_cache_free(req->pq->txreq_cache, tx);
 #else
-			kfree(tx);
+			//kfree(tx);
+			txreq_cache_free(tx);
 #endif /* __HFI1_ORIG__ */
 		}
 	}
