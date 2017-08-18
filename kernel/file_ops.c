@@ -416,6 +416,8 @@ static long hfi1_file_ioctl(struct file *fp, unsigned int cmd,
 }
 #endif /* __HFI1_ORIG__ */
 
+int hfi1_map_device_addresses(struct hfi1_filedata *fd);
+
 #ifdef __HFI1_ORIG__
 static ssize_t hfi1_aio_write(struct kiocb *kiocb, const struct iovec *iovec,
 			      unsigned long dim, loff_t offset)
@@ -451,6 +453,10 @@ ssize_t hfi1_aio_write(void *private_data, const struct iovec *iovec, unsigned l
 
 	if (!dim)
 		return -EINVAL;
+
+	if (hfi1_map_device_addresses(fd) < 0) {
+		return -EINVAL;
+	}
 
 	hfi1_cdbg(SDMA, "SDMA request from %u:%u (%lu)",
 		  fd->uctxt->ctxt, fd->subctxt, dim);

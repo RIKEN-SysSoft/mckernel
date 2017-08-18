@@ -532,12 +532,216 @@ static u8 dlid_to_selector(u16 dlid)
 #define TXE_PIO_SEND (TXE + TXE_PIO_SEND_OFFSET)
 #define TXE_PIO_SEND_OFFSET 0x0800000
 #define TXE_PIO_SIZE (32 * 0x100000)	/* 32 MB */
-
-/* HFI1 device address in McKernel */
-void *hfi1_kregbase = 0;
-void *hfi1_piobase = 0;
-void *hfi1_rcvarray_wc = 0;
 #endif
+
+int hfi1_map_device_addresses(struct hfi1_filedata *fd)
+{
+	pte_t *lptep;
+	pte_t *ptep;
+	enum ihk_mc_pt_attribute attr;
+	void *virt;
+	size_t pgsize;
+	unsigned long phys;
+	unsigned long len;
+
+	struct process *proc = cpu_local_var(current)->proc;
+	struct process_vm *vm = cpu_local_var(current)->vm;
+	struct hfi1_user_sdma_comp_q *cq = fd->cq;
+	struct hfi1_user_sdma_pkt_q *pq = fd->pq;
+	struct hfi1_devdata *dd = pq->dd;
+
+	/*
+	 * Map device addresses if not mapped or mapping changed.
+	 */
+	if (proc->hfi1_kregbase != dd->kregbase) {
+		void *hfi1_kregbase = dd->kregbase;
+
+		phys = dd->physaddr;
+		attr = PTATTR_UNCACHABLE | PTATTR_WRITABLE;
+		/*
+		 * No race condition here as ihk_mc_pt_set_page() holds
+		 * the lock to kernel space mapping manipulation
+		 *
+		 * XXX: use large pages?
+		 * XXX: where are we going to unmap this?
+		 */
+
+		for (virt = hfi1_kregbase; virt < (hfi1_kregbase + TXE_PIO_SEND);
+				virt += PAGE_SIZE, phys += PAGE_SIZE) {
+			if (ihk_mc_pt_set_page(vm->address_space->page_table,
+						virt, phys, attr) < 0) {
+				kprintf("%s: WARNING: failed to map kregbase: 0x%lx -> 0x%lx\n",
+						__FUNCTION__, virt, phys);
+			}
+
+			ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+					virt, 0, 0, 0, 0);
+			if (!ptep && !pte_is_present(ptep)) {
+				kprintf("%s: ERROR: no mapping in McKernel for kregbase: 0x%lx?\n",
+						__FUNCTION__, virt);
+				return -1;
+			}
+
+			lptep = ihk_mc_pt_lookup_pte(ihk_mc_get_linux_kernel_pgt(),
+					virt, 0, 0, 0, 0);
+			if (!lptep && !pte_is_present(lptep)) {
+				kprintf("%s: ERROR: no mapping in Linux for kregbase: 0x%lx?\n",
+						__FUNCTION__, virt);
+				return -1;
+			}
+
+			*ptep = *lptep;
+		}
+
+		kprintf("%s: hfi1_kregbase: 0x%lx - 0x%lx -> 0x%lx:%lu\n",
+				__FUNCTION__,
+				hfi1_kregbase,
+				hfi1_kregbase + TXE_PIO_SEND,
+				(phys - TXE_PIO_SEND), TXE_PIO_SEND);
+
+		proc->hfi1_kregbase = hfi1_kregbase;
+	}
+
+	if (proc->hfi1_piobase != dd->piobase) {
+		void *hfi1_piobase = dd->piobase;
+
+		phys = dd->physaddr + TXE_PIO_SEND;
+		attr = PTATTR_WRITE_COMBINED | PTATTR_WRITABLE;
+
+		for (virt = hfi1_piobase; virt < (hfi1_piobase + TXE_PIO_SIZE);
+				virt += PAGE_SIZE, phys += PAGE_SIZE) {
+			if (ihk_mc_pt_set_page(vm->address_space->page_table,
+						virt, phys, attr) < 0) {
+				kprintf("%s: WARNING: failed to map piobase: 0x%lx -> 0x%lx\n",
+					__FUNCTION__, virt, phys);
+			}
+
+			ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+					virt, 0, 0, 0, 0);
+			if (!ptep && !pte_is_present(ptep)) {
+				kprintf("%s: ERROR: no mapping in McKernel for piobase: 0x%lx?\n",
+						__FUNCTION__, virt);
+				return -1;
+			}
+
+			lptep = ihk_mc_pt_lookup_pte(ihk_mc_get_linux_kernel_pgt(),
+					virt, 0, 0, 0, 0);
+			if (!lptep && !pte_is_present(lptep)) {
+				kprintf("%s: ERROR: no mapping in Linux for piobase: 0x%lx?\n",
+						__FUNCTION__, virt);
+				return -1;
+			}
+
+			*ptep = *lptep;
+		}
+
+		kprintf("%s: hfi1_piobase: 0x%lx - 0x%lx -> 0x%lx:%lu\n",
+				__FUNCTION__,
+				hfi1_piobase,
+				hfi1_piobase + TXE_PIO_SIZE,
+				(phys - TXE_PIO_SIZE), TXE_PIO_SIZE);
+
+		proc->hfi1_piobase = hfi1_piobase;
+	}
+
+	if (proc->hfi1_rcvarray_wc != dd->rcvarray_wc) {
+		void *hfi1_rcvarray_wc = dd->rcvarray_wc;
+
+		phys = dd->physaddr + RCV_ARRAY;
+		attr = PTATTR_WRITE_COMBINED | PTATTR_WRITABLE;
+
+		for (virt = hfi1_rcvarray_wc;
+				virt < (hfi1_rcvarray_wc + dd->chip_rcv_array_count * 8);
+				virt += PAGE_SIZE, phys += PAGE_SIZE) {
+			if (ihk_mc_pt_set_page(vm->address_space->page_table,
+						virt, phys, attr) < 0) {
+				kprintf("%s: WARNING: failed to map rcvarray_wc: 0x%lx -> 0x%lx\n",
+						__FUNCTION__, virt, phys);
+			}
+
+			ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+					virt, 0, 0, 0, 0);
+			if (!ptep && !pte_is_present(ptep)) {
+				kprintf("%s: ERROR: no mapping in McKernel for rcvarray: 0x%lx?\n",
+						__FUNCTION__, virt);
+				return -1;
+			}
+
+			lptep = ihk_mc_pt_lookup_pte(ihk_mc_get_linux_kernel_pgt(),
+					virt, 0, 0, 0, 0);
+			if (!lptep && !pte_is_present(lptep)) {
+				kprintf("%s: ERROR: no mapping in Linux for rcvarray: 0x%lx?\n",
+						__FUNCTION__, virt);
+				return -1;
+			}
+
+			*ptep = *lptep;
+		}
+
+		kprintf("%s: hfi1_rcvarray_wc: 0x%lx - 0x%lx -> 0x%lx:%lu\n",
+				__FUNCTION__,
+				hfi1_rcvarray_wc,
+				hfi1_rcvarray_wc + dd->chip_rcv_array_count * 8,
+				(phys - dd->chip_rcv_array_count * 8),
+				dd->chip_rcv_array_count * 8);
+
+		proc->hfi1_rcvarray_wc = hfi1_rcvarray_wc;
+	}
+
+	/*
+	 * Map in cq->comps, allocated by vmalloc_user() in Linux.
+	 */
+	if (proc->hfi1_cq_comps != cq->comps) {
+		len = ((sizeof(*cq->comps) * cq->nentries)
+				+ PAGE_SIZE - 1) & PAGE_MASK;
+		attr = PTATTR_WRITABLE;
+
+		for (virt = (void *)cq->comps; virt < (((void *)cq->comps) + len);
+				virt += PAGE_SIZE) {
+
+			lptep = ihk_mc_pt_lookup_pte(ihk_mc_get_linux_kernel_pgt(),
+					virt, 0, 0, 0, 0);
+			if (!lptep && !pte_is_present(lptep)) {
+				kprintf("%s: ERROR: no mapping in Linux for cq: 0x%lx?\n",
+						__FUNCTION__, virt);
+				return -1;
+			}
+
+			phys = pte_get_phys(lptep);
+
+			ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+					virt, 0, 0, 0, 0);
+			if (ptep && pte_is_present(ptep) && pte_get_phys(ptep) == phys) {
+				continue;
+			}
+
+			if (ihk_mc_pt_set_page(vm->address_space->page_table,
+						virt, phys, attr) < 0) {
+				/* Not necessarily an error.. */
+				kprintf("%s: WARNING: mapping cq: 0x%lx -> 0x%lx\n",
+						__FUNCTION__, virt, phys);
+			}
+
+			ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+					virt, 0, 0, 0, 0);
+			if (!ptep) {
+				kprintf("%s: ERROR: no PTE in McKernel for cq: 0x%lx?\n",
+						__FUNCTION__, virt);
+				return -1;
+			}
+
+			*ptep = *lptep;
+			kprintf("%s: cq: 0x%lx -> 0x%lx mapped\n",
+					__FUNCTION__,
+					virt, phys);
+		}
+
+		proc->hfi1_cq_comps = cq->comps;
+	}
+
+	/* TODO: unmap these at close() time */
+	return 0;
+}
 
 #ifdef __HFI1_ORIG__
 int hfi1_user_sdma_process_request(struct file *fp, struct iovec *iovec,
@@ -564,146 +768,6 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	int req_queued = 0;
 	u16 dlid;
 	u32 selector;
-
-#ifndef __HFI1_ORIG__
-	if (!hfi1_kregbase) {
-		struct process_vm *vm = cpu_local_var(current)->vm;
-		enum ihk_mc_pt_attribute attr = PTATTR_UNCACHABLE | PTATTR_WRITABLE;
-		void *virt;
-#if 1
-		unsigned long phys = dd->physaddr;
-		hfi1_kregbase = dd->kregbase;
-		hfi1_piobase = dd->piobase;
-		hfi1_rcvarray_wc = dd->rcvarray_wc;
-#else
-		unsigned long phys = *(uint64_t *)(((void *)dd) + 0xbf8);
-		hfi1_kregbase = *(uint64_t *)(((void *)dd) + 0xbe8);
-#endif
-		/*
-		 * No race condition here as ihk_mc_pt_set_page() holds
-		 * the lock to kernel space mapping manipulation
-		 *
-		 * XXX: use large pages?
-		 * XXX: where are we going to unmap this?
-		 */
-		for (virt = hfi1_kregbase; virt < (hfi1_kregbase + TXE_PIO_SEND);
-				virt += PAGE_SIZE, phys += PAGE_SIZE) {
-			if (ihk_mc_pt_set_page(vm->address_space->page_table,
-						virt, phys, attr) < 0) {
-				kprintf("%s: ERROR: mapping kregbase: 0x%lx -> 0x%lx\n",
-						__FUNCTION__, virt, phys);
-			}
-
-			{
-				pte_t *ptep;
-				struct process_vm *vm = cpu_local_var(current)->vm;
-
-				ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
-						virt, 0, 0, 0, 0);
-				if (ptep && pte_is_present(ptep)) {
-					kprintf("%s: 0x%lx, PTE: 0x%lx\n",
-						__FUNCTION__, virt, *ptep);
-				}
-			}
-		}
-
-		kprintf("%s: hfi1_kregbase: 0x%lx - 0x%lx -> 0x%lx:%lu\n",
-				__FUNCTION__,
-				hfi1_kregbase,
-				hfi1_kregbase + TXE_PIO_SEND,
-				(phys - TXE_PIO_SEND), TXE_PIO_SEND);
-		
-		phys = dd->physaddr + TXE_PIO_SEND;
-		attr = PTATTR_WRITE_COMBINED | PTATTR_WRITABLE;
-		for (virt = hfi1_piobase; virt < (hfi1_piobase + TXE_PIO_SIZE);
-				virt += PAGE_SIZE, phys += PAGE_SIZE) {
-			if (ihk_mc_pt_set_page(vm->address_space->page_table,
-						virt, phys, attr) < 0) {
-				kprintf("%s: ERROR: mapping piobase: 0x%lx -> 0x%lx\n",
-					__FUNCTION__, virt, phys);
-			}
-		}
-
-		kprintf("%s: hfi1_piobase: 0x%lx - 0x%lx -> 0x%lx:%lu\n",
-				__FUNCTION__,
-				hfi1_piobase,
-				hfi1_piobase + TXE_PIO_SIZE,
-				(phys - TXE_PIO_SIZE), TXE_PIO_SIZE);	
-
-		phys = dd->physaddr + RCV_ARRAY;
-		attr = PTATTR_WRITE_COMBINED | PTATTR_WRITABLE;
-		for (virt = hfi1_rcvarray_wc; 
-				virt < (hfi1_rcvarray_wc + dd->chip_rcv_array_count * 8);
-				virt += PAGE_SIZE, phys += PAGE_SIZE) {
-			if (ihk_mc_pt_set_page(vm->address_space->page_table,
-						virt, phys, attr) < 0) {
-				kprintf("%s: ERROR: mapping rcvarray_wc: 0x%lx -> 0x%lx\n",
-						__FUNCTION__, virt, phys);
-			}
-		}
-
-		kprintf("%s: hfi1_rcvarray_wc: 0x%lx - 0x%lx -> 0x%lx:%lu\n",
-				__FUNCTION__,
-				hfi1_rcvarray_wc,
-				hfi1_rcvarray_wc + dd->chip_rcv_array_count * 8,
-				(phys - dd->chip_rcv_array_count * 8),
-				dd->chip_rcv_array_count * 8);
-	
-
-		/*
-		* Map in cq->comps, allocated dynamically by
-		* vmalloc_user() in Linux.
-		*/
-		{
-			void *virt;
-			pte_t *ptep;
-			unsigned long phys;
-			size_t pgsize;
-			unsigned long len = ((sizeof(*cq->comps) * cq->nentries)
-					+ PAGE_SIZE - 1) & PAGE_MASK;
-			struct process_vm *vm = cpu_local_var(current)->vm;
-			enum ihk_mc_pt_attribute attr = PTATTR_WRITABLE;
-
-			ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
-			
-			/* Check if mapping exists already and map if not */
-			for (virt = (void *)cq->comps; virt < (((void *)cq->comps) + len);
-					virt += PAGE_SIZE) {
-				ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
-						virt, 0, 0, &pgsize, 0);
-				if (ptep && pte_is_present(ptep)) {
-					goto cq_map_unlock;
-				}
-
-				if (ihk_mc_pt_virt_to_phys(ihk_mc_get_linux_kernel_pgt(),
-							virt, &phys) < 0) {
-					/* TODO: shall we make this function fail? */
-					kprintf("%s: ERROR: mapping cq, Linux mapping doesn't exist\n",
-							__FUNCTION__);
-					goto cq_map_unlock;
-				}
-
-				if (ihk_mc_pt_set_page(vm->address_space->page_table,
-							virt, phys, attr) < 0) {
-					/* TODO: shall we make this function fail? */
-					kprintf("%s: ERROR: mapping cq: 0x%lx -> 0x%lx\n",
-							__FUNCTION__, virt, phys);
-					goto cq_map_unlock;
-				}
-
-				kprintf("%s: cq: 0x%lx -> 0x%lx mapped\n",
-						__FUNCTION__,
-						virt, phys);
-			}
-		cq_map_unlock:
-			ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
-
-			/* TODO: unmap these at close() time */
-		}
-	}
-
-#endif // __HFI1_ORIG__
-
 
 	TP("- kregbase and cq->comps");
 	hfi1_cdbg(AIOWRITE, "+");

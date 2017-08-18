@@ -575,6 +575,11 @@ struct process {
 	int process_rank; /* Rank in partition */
 
 	void *fd_priv_table[265];
+	/* HFI1 specific */
+	void *hfi1_kregbase;
+	void *hfi1_piobase;
+	void *hfi1_rcvarray_wc;
+	void *hfi1_cq_comps;
 };
 
 /*
