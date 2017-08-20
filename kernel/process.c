@@ -138,7 +138,6 @@ init_process(struct process *proc, struct process *parent)
 	INIT_LIST_HEAD(&proc->ptraced_siblings_list);
 	mcs_rwlock_init(&proc->update_lock);
 #endif /* POSTK_DEBUG_ARCH_DEP_63 */
-	}
 
 	// Double check the inheritance from parent
 	memset(proc->fd_priv_table, 0, 256 * sizeof(void *));
