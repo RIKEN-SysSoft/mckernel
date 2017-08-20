@@ -6,6 +6,7 @@ SBINDIR=@SBINDIR@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 LIBDIR=@libdir@
+MANDIR=@MANDIR@
 MCKERNEL_INCDIR=@MCKERNEL_INCDIR@
 MCKERNEL_LIBDIR=@MCKERNEL_LIBDIR@
 KDIR ?= @KDIR@
@@ -88,6 +89,7 @@ install::
 	mkdir -p -m 755 $(MCKERNEL_LIBDIR)
 	install -m 755 ldump2mcdump.so $(MCKERNEL_LIBDIR)
 	install -m 755 libsched_yield.so.1.0.0 $(MCKERNEL_LIBDIR)
+	install -m 644 mcexec.1 $(MANDIR)/man1/mcexec.1
 ifeq ($(ENABLE_QLMPI),yes)
 	install -m 644 ../include/qlmpilib.h $(MCKERNEL_INCDIR)
 	install -m 755 libqlmpi.so $(MCKERNEL_LIBDIR)

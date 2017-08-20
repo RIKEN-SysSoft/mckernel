@@ -521,9 +521,10 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
 	Makefile
 	executer/user/Makefile
+	executer/user/mcexec.1:executer/user/mcexec.1in
+	executer/user/vmcore2mckdump
 	executer/user/arch/$ARCH/Makefile
 	executer/user/arch/x86_64/Makefile
-	executer/user/vmcore2mckdump
 	executer/kernel/mcctrl/Makefile
 	executer/kernel/mcctrl/arch/$ARCH/Makefile
 	executer/kernel/mcoverlayfs/Makefile
