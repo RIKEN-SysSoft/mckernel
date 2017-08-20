@@ -157,7 +157,16 @@ struct user_sdma_iovec {
 	/* number of pages in this vector */
 	unsigned npages;
 	/* array of pinned pages for this vector */
+#ifdef __HFI1_ORIG__
 	struct page **pages;
+#else
+	/*
+	 * Physical address corresponding to iov.iov_base if the
+	 * vector if physically contiguous, which in McKernel most
+	 * likely is.
+	 */
+	unsigned long phys;
+#endif
 	/*
 	 * offset into the virtual address space of the vector at
 	 * which we last left off.
@@ -822,7 +831,6 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	}
 	TP("- !info.fragsize");
 
-#if 0
 	/* Try to claim the request. */
 	if (test_and_set_bit(info.comp_idx, pq->req_in_use)) {
 		hfi1_cdbg(SDMA, "[%u:%u:%u] Entry %u is in use",
@@ -830,7 +838,7 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 			  info.comp_idx);
 		return -EBADSLT;
 	}
-#endif
+
 	/*
 	 * All safety checks have been done and this request has been claimed.
 	 */
@@ -942,8 +950,6 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	for (i = 0; i < req->data_iovs; i++) {
 		INIT_LIST_HEAD(&req->iovs[i].list);
 		/*
-		 * XXX: iovec is still user-space in McKernel here!!
-		 *
 		 * req->iovs[] contain only the data.
 		 */
 		fast_memcpy(&req->iovs[i].iov, iovec + idx++, sizeof(struct iovec));
@@ -955,6 +961,43 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 		if (ret) {
 			req->status = ret;
 			goto free_req;
+		}
+#else
+		{
+			unsigned long phys;
+			req->iovs[i].phys = 0;
+			/*
+			 * Look up the start and end addresses of this iovec.
+			 * If it's contiguous in physical memory, store the physical
+			 * address in iovs[i].phys
+			 */
+			if (unlikely(ihk_mc_pt_virt_to_phys(
+					cpu_local_var(current)->vm->address_space->page_table,
+					req->iovs[i].iov.iov_base, &phys) < 0)) {
+				kprintf("%s: ERROR: no valid mapping for 0x%lx\n",
+						__FUNCTION__, req->iovs[i].iov.iov_base);
+				return -EFAULT;
+			}
+
+			req->iovs[i].phys = phys;
+
+			if (unlikely(ihk_mc_pt_virt_to_phys(
+					cpu_local_var(current)->vm->address_space->page_table,
+					req->iovs[i].iov.iov_base + req->iovs[i].iov.iov_len - 1,
+					&phys) < 0)) {
+				kprintf("%s: ERROR: no valid mapping for 0x%lx\n",
+						__FUNCTION__,
+						req->iovs[i].iov.iov_base +
+						req->iovs[i].iov.iov_len - 1);
+				return -EFAULT;
+			}
+
+			if ((phys - req->iovs[i].phys) !=
+				(req->iovs[i].iov.iov_len - 1)) {
+				kprintf("%s: iovec %d is not physically contiguous\n",
+						__FUNCTION__, i);
+				req->iovs[i].phys = 0;
+			}
 		}
 #endif /* __HFI1_ORIG__ */
 		req->data_len += req->iovs[i].iov.iov_len;
@@ -1050,10 +1093,8 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	 * packet queue state to ACTIVE if there are still uncompleted
 	 * requests.
 	 */
-#ifdef __HFI1_ORIG__
 	if (atomic_read(&pq->n_reqs))
 		xchg(&pq->state, SDMA_PKT_Q_ACTIVE);
-#endif /* __HFI1_ORIG__ */
 
 	/*
 	 * This is a somewhat blocking send implementation.
@@ -1387,10 +1428,9 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 			virt = base + iovec->offset + iov_offset;
 
 			/*
-			 * Resolve base_phys if vaddr is out of previous page.
+			 * Resolve base_phys if iovec is not physically contiguous.
 			 */
-			if (unlikely(virt < base_virt ||
-					virt > (base_virt + base_pgsize))) {
+			if (unlikely(!iovec->phys)) {
 				ptep = ihk_mc_pt_lookup_pte(
 						cpu_local_var(current)->vm->address_space->page_table,
 						virt, 0, 0, &base_pgsize, 0);
@@ -1406,6 +1446,10 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 						"base_pgsize: %lu\n",
 						__FUNCTION__,
 						base_virt, base_phys, base_pgsize);
+			}
+			else {
+				base_phys = iovec->phys;
+				base_virt = base;
 			}
 
 #ifdef __HFI1_ORIG__
