@@ -19,6 +19,15 @@
 void panic(const char *);
 int kprintf(const char *format, ...);
 
+struct kmalloc_cache_header {
+	struct kmalloc_cache_header *next;
+};
+
+void *kmalloc_cache_alloc(struct kmalloc_cache_header *cache,
+		size_t size);
+void kmalloc_cache_free(struct kmalloc_cache_header *cache,
+		void *elem);
+
 #define kmalloc(size, flag) ({\
 void *r = _kmalloc(size, flag, __FILE__, __LINE__);\
 if(r == NULL){\
