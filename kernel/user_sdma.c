@@ -743,6 +743,10 @@ int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 	return 0;
 }
 
+struct kmalloc_cache_header tids_cache = {NULL};
+
+#undef PROFILE_ENABLE
+
 #ifdef __HFI1_ORIG__
 int hfi1_user_sdma_process_request(struct file *fp, struct iovec *iovec,
 				   unsigned long dim, unsigned long *count)
@@ -970,7 +974,8 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 			ret = -EINVAL;
 			goto free_req;
 		}
-		req->tids = kcalloc(ntids, sizeof(*req->tids), GFP_KERNEL);
+		req->tids = kmalloc_cache_alloc(&tids_cache,
+				sizeof(*req->tids) * MAX_TID_PAIR_ENTRIES);
 		if (!req->tids) {
 			ret = -ENOMEM;
 			goto free_req;
@@ -1163,48 +1168,7 @@ static inline u32 get_lrh_len(struct hfi1_pkt_header hdr, u32 len)
 	return ((sizeof(hdr) - sizeof(hdr.pbc)) + 4 + len);
 }
 
-static ihk_spinlock_t txreq_cache_lock = 0;
-static LIST_HEAD(txreq_cache_list);
-
-struct user_sdma_txreq *txreq_cache_alloc(void)
-{
-	struct user_sdma_txreq *req = NULL;
-
-	ihk_mc_spinlock_lock_noirq(&txreq_cache_lock);
-retry:
-	if (!list_empty(&txreq_cache_list)) {
-		req = list_first_entry(&txreq_cache_list,
-				struct user_sdma_txreq, list);
-		list_del(&req->list);
-	}
-	else {
-		int i;
-		kprintf("%s: cache empty, allocating ...\n", __FUNCTION__);
-		for (i = 0; i < 100; ++i) {
-			req = kmalloc(sizeof(struct user_sdma_txreq), GFP_KERNEL);
-			if (!req) {
-				kprintf("%s: ERROR: allocating txreq\n", __FUNCTION__);
-				continue;
-			}
-
-			list_add_tail(&req->list, &txreq_cache_list);
-		}
-
-		goto retry;
-	}
-	ihk_mc_spinlock_unlock_noirq(&txreq_cache_lock);
-
-	return req;
-}
-
-void txreq_cache_free(struct user_sdma_txreq *req)
-{
-	ihk_mc_spinlock_lock_noirq(&txreq_cache_lock);
-	list_add_tail(&req->list, &txreq_cache_list);
-	ihk_mc_spinlock_unlock_noirq(&txreq_cache_lock);
-}
-
-#undef PROFILE_ENABLE
+struct kmalloc_cache_header txreq_cache = {NULL};
 
 static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 {
@@ -1265,8 +1229,7 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 		}
 		tx = kmem_cache_alloc(pq->txreq_cache, GFP_KERNEL);
 #else
-		//tx = kmalloc(sizeof(struct user_sdma_txreq), GFP_KERNEL);
-		tx = txreq_cache_alloc();
+		tx = kmalloc_cache_alloc(&txreq_cache, sizeof(*tx));
 #endif /* __HFI1_ORIG__ */
 #ifdef PROFILE_ENABLE
 	profile_event_add(PROFILE_sdma_1,
@@ -1558,7 +1521,7 @@ free_tx:
 	kmem_cache_free(pq->txreq_cache, tx);
 	hfi1_cdbg(AIOWRITE, "-");
 #else
-	kfree(tx);
+	kmalloc_cache_free(&txreq_cache, tx);
 #endif /* __HFI1_ORIG__ */
 	return ret;
 }
@@ -1982,8 +1945,7 @@ static void user_sdma_txreq_cb(struct sdma_txreq *txreq, int status)
 #ifdef __HFI1_ORIG__			
 	kmem_cache_free(pq->txreq_cache, tx);
 #else
-	//kfree(tx);
-	txreq_cache_free(tx);
+	kmalloc_cache_free(&txreq_cache, tx);
 #endif /* __HFI1_ORIG__ */
 	tx = NULL;
 
@@ -2031,8 +1993,7 @@ static void user_sdma_free_request(struct user_sdma_request *req, bool unpin)
 #ifdef __HFI1_ORIG__			
 			kmem_cache_free(req->pq->txreq_cache, tx);
 #else
-			//kfree(tx);
-			txreq_cache_free(tx);
+			kmalloc_cache_free(&txreq_cache, tx);
 #endif /* __HFI1_ORIG__ */
 		}
 	}
@@ -2055,7 +2016,7 @@ static void user_sdma_free_request(struct user_sdma_request *req, bool unpin)
 #endif /* __HFI1_ORIG__ */
 		}
 	}
-	kfree(req->tids);
+	kmalloc_cache_free(&tids_cache, req->tids);
 	clear_bit(req->info.comp_idx, req->pq->req_in_use);
 	hfi1_cdbg(AIOWRITE, "-");
 }
