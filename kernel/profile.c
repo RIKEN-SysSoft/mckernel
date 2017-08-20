@@ -69,6 +69,7 @@ char *profile_event_names[] =
 	"mmap_anon_no_contig_phys",
 	"mmap_regular_file",
 	"mmap_device_file",
+	"sdma_0",
 	"sdma_1",
 	"sdma_2",
 	"sdma_3",
