@@ -844,7 +844,7 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	req->status = -1;
 	INIT_LIST_HEAD(&req->txps);
 
-	memcpy(&req->info, &info, sizeof(info));
+	fast_memcpy(&req->info, &info, sizeof(info));
 
 	if (req_opcode(info.ctrl) == EXPECTED) {
 		/* expected must have a TID info and at least one data vector */
@@ -941,7 +941,12 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	/* Save all the IO vector structures */
 	for (i = 0; i < req->data_iovs; i++) {
 		INIT_LIST_HEAD(&req->iovs[i].list);
-		memcpy(&req->iovs[i].iov, iovec + idx++, sizeof(struct iovec));
+		/*
+		 * XXX: iovec is still user-space in McKernel here!!
+		 *
+		 * req->iovs[] contain only the data.
+		 */
+		fast_memcpy(&req->iovs[i].iov, iovec + idx++, sizeof(struct iovec));
 #ifdef __HFI1_ORIG__
 		hfi1_cdbg(AIOWRITE, "+pin_vector_pages");
 		// TODO: pin_vector_pages
@@ -1304,7 +1309,7 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 				 * member of user_sdma_request were also
 				 * cacheline aligned.
 				 */
-				memcpy(&tx->hdr, &req->hdr, sizeof(tx->hdr));
+				fast_memcpy(&tx->hdr, &req->hdr, sizeof(tx->hdr));
 				if (PBC2LRH(pbclen) != lrhlen) {
 					pbclen = (pbclen & 0xf000) |
 						LRH2PBC(lrhlen);
@@ -1724,7 +1729,7 @@ static int set_txreq_header(struct user_sdma_request *req,
 	u32 tidval = 0, lrhlen = get_lrh_len(*hdr, pad_len(datalen));
 
 	/* Copy the header template to the request before modification */
-	memcpy(hdr, &req->hdr, sizeof(*hdr));
+	fast_memcpy(hdr, &req->hdr, sizeof(*hdr));
 
 	/*
 	 * Check if the PBC and LRH length are mismatched. If so
