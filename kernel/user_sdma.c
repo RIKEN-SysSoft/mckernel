@@ -1460,20 +1460,10 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 			len = offset + req->info.fragsize > PAGE_SIZE ?
 				PAGE_SIZE - offset : req->info.fragsize;
 #else
-			/*
-			 * This doesn't appear to work. Perhaps the card
-			 * doesn't like it if the physical range in an SDMA
-			 * descriptor crosses page boundaries??
-			 */
-			/*
-			len = virt + req->info.fragsize >
-				base_virt + base_pgsize ?
-				base_virt + base_pgsize - virt : req->info.fragsize;
-			*/
-			offset = offset_in_page(base + iovec->offset +
-						iov_offset);
-			len = offset + req->info.fragsize > PAGE_SIZE ?
-				PAGE_SIZE - offset : req->info.fragsize;
+			len = iovec->phys ? req->info.fragsize :
+				((base_virt + base_pgsize - virt) >
+				 req->info.fragsize) ? req->info.fragsize :
+				(base_virt + base_pgsize - virt);
 #endif
 			len = min((datalen - queued), len);
 			SDMA_DBG("%s: dl: %d, qd: %d, len: %d\n",
