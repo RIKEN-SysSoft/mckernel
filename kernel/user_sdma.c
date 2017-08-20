@@ -1277,11 +1277,6 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 #else
 		tx = kmalloc_cache_alloc(&txreq_cache, sizeof(*tx));
 #endif /* __HFI1_ORIG__ */
-#ifdef PROFILE_ENABLE
-	profile_event_add(PROFILE_sdma_1,
-			(rdtsc() - prof_ts));
-	prof_ts = rdtsc();
-#endif // PROFILE_ENABLE
 		if (!tx)
 			return -ENOMEM;
 		TP("- kmalloc");
@@ -1299,6 +1294,11 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 			tx->flags |= (TXREQ_FLAGS_REQ_ACK |
 				      TXREQ_FLAGS_REQ_DISABLE_SH);
 
+#ifdef PROFILE_ENABLE
+	profile_event_add(PROFILE_sdma_0,
+			(rdtsc() - prof_ts));
+	prof_ts = rdtsc();
+#endif // PROFILE_ENABLE
 		/*
 		 * Calculate the payload size - this is min of the fragment
 		 * (MTU) size or the remaining bytes in the request but only
@@ -1335,6 +1335,11 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 			}
 		}
 
+#ifdef PROFILE_ENABLE
+	profile_event_add(PROFILE_sdma_1,
+			(rdtsc() - prof_ts));
+	prof_ts = rdtsc();
+#endif // PROFILE_ENABLE
 		if (test_bit(SDMA_REQ_HAVE_AHG, &req->flags)) {
 			TP("+ if test_bit(SDMA_REQ_HAVE_AHG, &req->flags)");
 			if (!req->seqnum) {
@@ -1404,15 +1409,15 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 		}
 		TP("- test_bit(SDMA_REQ_HAVE_AHG, &req->flags)");
 		
-		/*
-		 * If the request contains any data vectors, add up to
-		 * fragsize bytes to the descriptor.
-		 */
 #ifdef PROFILE_ENABLE
 	profile_event_add(PROFILE_sdma_2,
 			(rdtsc() - prof_ts));
 	prof_ts = rdtsc();
 #endif // PROFILE_ENABLE
+		/*
+		 * If the request contains any data vectors, add up to
+		 * fragsize bytes to the descriptor.
+		 */
 		 TP("+ If the request contains any data vectors, add up to fragsize bytes to the descriptor.");
 		 while (queued < datalen &&
 		       (req->sent + data_sent) < req->data_len) {

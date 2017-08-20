@@ -44,6 +44,7 @@ enum profile_event_type {
 	PROFILE_mmap_anon_no_contig_phys,
 	PROFILE_mmap_regular_file,
 	PROFILE_mmap_device_file,
+	PROFILE_sdma_0,
 	PROFILE_sdma_1,
 	PROFILE_sdma_2,
 	PROFILE_sdma_3,
