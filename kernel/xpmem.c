@@ -4,8 +4,11 @@
  *  License details are found in the file LICENSE.
  * \brief
  *  Cross Partition Memory (XPMEM) support.
- */
-/*
+ * \author Yoichi Umezawa  <yoichi.umezawa.qh@hitachi.com> \par
+ * 	Copyright (C) 2016 Yoichi Umezawa
+ *
+ * Original Copyright follows:
+ *
  * This file is subject to the terms and conditions of the GNU General Public
  * License.  See the file "COPYING" in the main directory of this archive
  * for more details.
