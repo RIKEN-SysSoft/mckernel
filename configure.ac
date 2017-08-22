@@ -539,6 +539,8 @@ AC_CONFIG_FILES([
 	arch/x86/tools/mcreboot-builtin-x86.sh
 	arch/x86/tools/mcreboot-smp-x86.sh
 	arch/x86/tools/mcstop+release-smp-x86.sh
+	arch/x86/tools/mcoverlay-destroy-smp-x86.sh
+	arch/x86/tools/mcoverlay-create-smp-x86.sh
 	arch/x86/tools/eclair-dump-backtrace.exp
 	arch/x86/tools/mcshutdown-builtin-x86.sh
 	arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in
