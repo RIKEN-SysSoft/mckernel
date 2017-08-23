@@ -2615,6 +2615,27 @@ int ihk_mc_get_mem_user_page(void *arg0, page_table_t pt, pte_t *ptep, void *pga
 /*
  * Generic lockless kmalloc cache.
  */
+void kmalloc_cache_prealloc(struct kmalloc_cache_header *cache,
+		size_t size)
+{
+	struct kmalloc_cache_header *first;
+	int i;
+	kprintf("%s: pre-allocating for 0x%lx...\n",
+			__FUNCTION__, cache);
+
+	for (i = 0; i < 128; ++i) {
+		first = (struct kmalloc_cache_header *)
+			kmalloc(size, IHK_MC_AP_NOWAIT);
+
+		if (!first) {
+			kprintf("%s: ERROR: allocating cache element\n", __FUNCTION__);
+			continue;
+		}
+
+		kmalloc_cache_free(cache, first);
+	}
+}
+
 void *kmalloc_cache_alloc(struct kmalloc_cache_header *cache,
 		size_t size)
 {
@@ -2633,20 +2654,7 @@ retry:
 		}
 	}
 	else {
-		int i;
-		kprintf("%s: cache empty, allocating ...\n", __FUNCTION__);
-		for (i = 0; i < 100; ++i) {
-			first = (struct kmalloc_cache_header *)
-				kmalloc(size, IHK_MC_AP_NOWAIT);
-
-			if (!first) {
-				kprintf("%s: ERROR: allocating cache element\n", __FUNCTION__);
-				continue;
-			}
-
-			kmalloc_cache_free(cache, first);
-		}
-
+		kmalloc_cache_prealloc(cache, size);
 		goto retry;
 	}
 

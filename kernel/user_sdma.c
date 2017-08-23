@@ -1216,6 +1216,12 @@ static inline u32 get_lrh_len(struct hfi1_pkt_header hdr, u32 len)
 
 struct kmalloc_cache_header txreq_cache = {NULL};
 
+
+void hfi1_txreq_prealloc(void)
+{
+	kmalloc_cache_prealloc(&txreq_cache, sizeof(struct user_sdma_txreq));
+}
+
 static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 {
 	int ret = 0, count;

@@ -483,11 +483,14 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	if (req->number == __NR_open && rc > 0) {
 		if (res.private_data &&
 				!strncmp((const char *)req->args[0], "/dev/hfi", 8)) {
+			extern void hfi1_txreq_prealloc(void);
+
 			thread->proc->fd_priv_table[rc] = res.private_data;
 			kprintf("%s: PID: %d, open fd: %d, filename: "
 					"%s, private_data: 0x%lx\n",
 					__FUNCTION__, thread->proc->pid,
 					rc, req->args[0], res.private_data);
+			hfi1_txreq_prealloc();
 		}
 	}
 
