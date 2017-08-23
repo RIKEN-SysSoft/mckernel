@@ -1022,8 +1022,9 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 			ret = -EINVAL;
 			goto free_req;
 		}
-		req->tids = kmalloc_cache_alloc(&tids_cache,
-				sizeof(*req->tids) * MAX_TID_PAIR_ENTRIES);
+		//req->tids = kmalloc_cache_alloc(&tids_cache,
+		//		sizeof(*req->tids) * MAX_TID_PAIR_ENTRIES);
+		req->tids = kcalloc(ntids, sizeof(*req->tids), GFP_KERNEL);
 		if (!req->tids) {
 			ret = -ENOMEM;
 			goto free_req;
@@ -1128,7 +1129,7 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 			{
 				unsigned long ts = rdtsc();
 				while (pq->state != SDMA_PKT_Q_ACTIVE) cpu_pause();
-				kprintf("%s: waited %lu cycles for SDMA_PKT_Q_ACTIVE\n",
+				SDMA_DBG("%s: waited %lu cycles for SDMA_PKT_Q_ACTIVE\n",
 						__FUNCTION__, rdtsc() - ts);
 			}
 			TP("- polling while(pq->state != SDMA_PKT_Q_ACTIVE)");
@@ -2066,7 +2067,8 @@ static void user_sdma_free_request(struct user_sdma_request *req, bool unpin)
 #endif /* __HFI1_ORIG__ */
 		}
 	}
-	kmalloc_cache_free(&tids_cache, req->tids);
+	//kmalloc_cache_free(&tids_cache, req->tids);
+	kfree(req->tids);
 	clear_bit(req->info.comp_idx, req->pq->req_in_use);
 	hfi1_cdbg(AIOWRITE, "-");
 }
