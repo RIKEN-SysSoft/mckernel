@@ -315,6 +315,7 @@ struct mcctrl_part_exec {
 	struct mutex lock;	
 	int nr_processes;
 	int nr_processes_left;
+	int process_rank;
 	cpumask_t cpus_used;
 	struct list_head pli_list;
 };
