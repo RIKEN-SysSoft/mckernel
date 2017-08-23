@@ -692,6 +692,7 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 		wake_up_interruptible(&pli_next->pli_wq);
 		/* Reset process counter */
 		pe->nr_processes_left = pe->nr_processes;
+		pe->process_rank = 0;
 	}
 
 	/* Wait for the rest if not the last or if the last but
@@ -923,6 +924,15 @@ next_cpu:
 		goto put_and_unlock_out;
 	}
 
+	/* Copy rank */
+	if (copy_to_user(req.process_rank, &pe->process_rank,
+				sizeof(int))) {
+		printk("%s: error copying process rank to user\n",
+				__FUNCTION__);
+		ret = -EINVAL;
+		goto put_and_unlock_out;
+	}
+
 	/* mcexec NUMA to bind to */
 	mcexec_linux_numa = cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu));
 	if (copy_to_user(req.mcexec_linux_numa, &mcexec_linux_numa,
@@ -970,6 +980,7 @@ next_cpu:
 	}
 	/* Otherwise wake up next process in list */
 	else {
+		++pe->process_rank;
 		pli_next = list_first_entry(&pe->pli_list,
 			struct process_list_item, list);
 		list_del(&pli_next->list);
