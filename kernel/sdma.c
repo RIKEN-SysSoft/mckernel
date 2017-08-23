@@ -923,7 +923,13 @@ struct sdma_engine *sdma_select_user_engine(struct hfi1_devdata *dd,
 out:
 	return sdma_select_engine_vl(dd, selector, vl);
 #else
-	return &dd->per_sdma[ihk_mc_get_processor_id() % 16];
+	/* Hash on rank for MPI jobs */
+	if (cpu_local_var(current)->proc->nr_processes > 1) {
+		return &dd->per_sdma[cpu_local_var(current)->proc->process_rank % 16];
+	}
+	else {
+		return &dd->per_sdma[ihk_mc_get_processor_id() % 16];
+	}
 #endif /* __HFI1_ORIG__ */
 }
 #ifdef __HFI1_ORIG__
