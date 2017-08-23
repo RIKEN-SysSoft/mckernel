@@ -91,6 +91,7 @@ struct program_image_section {
 
 struct get_cpu_set_arg {
 	int nr_processes;
+	int *process_rank;
 	void *cpu_set;
 	size_t cpu_set_size;	// Size in bytes
 	int *target_core;
@@ -141,6 +142,7 @@ struct program_load_desc {
 	long stack_premap;
 	unsigned long mpol_bind_mask;
 	int nr_processes;
+	int process_rank;
 	char shell_path[SHELL_PATH_MAX_LEN];
 	__cpu_set_unit cpu_set[PLD_CPU_SET_SIZE];
 	int profile;
