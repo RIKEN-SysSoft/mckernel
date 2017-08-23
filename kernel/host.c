@@ -479,6 +479,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	proc->mpol_flags = pn->mpol_flags;
 	proc->mpol_threshold = pn->mpol_threshold;
 	proc->nr_processes = pn->nr_processes;
+	proc->process_rank = pn->process_rank;
 	proc->heap_extension = pn->heap_extension;
 
 	/* Update NUMA binding policy if requested */
