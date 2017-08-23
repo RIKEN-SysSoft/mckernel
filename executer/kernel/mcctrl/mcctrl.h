@@ -157,6 +157,11 @@ struct ikc_scd_packet {
 			enum mcctrl_os_cpu_operation op;
 			void *resp;
 		};
+
+		/* SCD_MSG_EVENTFD */
+		struct {
+			int eventfd_type;
+		};
 	};
 	char padding[12];
 };
@@ -490,7 +495,7 @@ struct ihk_perf_event_attr{
 	unsigned exclude_idle:1;
 };
 
-struct getrusage_desc {
+struct mcctrl_ioctl_getrusage_desc {
 	void* rusage;
 	size_t size_rusage;
 };

@@ -792,7 +792,7 @@ void init_cpu(void)
 	init_pat();
 }
 
-void setup_x86(void)
+void setup_x86_phase1(void)
 {
 	cpu_disable_interrupt();
 
@@ -801,7 +801,10 @@ void setup_x86(void)
 	init_gdt();
 
 	init_page_table();
+}
 
+void setup_x86_phase2(void)
+{
 	check_no_execute();
 
 	init_lapic_bsp();

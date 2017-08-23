@@ -268,6 +268,11 @@ struct ikc_scd_packet {
 			enum mcctrl_os_cpu_operation op;
 			void *resp;
 		};
+
+		/* SCD_MSG_EVENTFD */
+		struct {
+			int eventfd_type;
+		};
 	};
 	char padding[12];
 };

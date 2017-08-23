@@ -1063,14 +1063,6 @@ void terminate(int rc, int sig)
 
 	dkprintf("terminate,pid=%d\n", proc->pid);
 
-	/* rusage debug */
-	for(i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
-		dkprintf("memory_stat_rss[%d]=%ld\n", i, rusage->memory_stat_rss[i]);
-	}
-	for(i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
-		dkprintf("memory_stat_mapped_file[%d]=%ld\n", i, rusage->memory_stat_mapped_file[i]);
-	}
-
 #ifdef DCFA_KMOD
 	do_mod_exit(rc);
 #endif
@@ -1147,8 +1139,7 @@ terminate_host(int pid)
 	do_kill(cpu_local_var(current), pid, -1, SIGKILL, NULL, 0);
 }
 
-void 
-eventfd()
+void eventfd(int type)
 {
 	struct ihk_ikc_channel_desc *syscall_channel;
 	struct ikc_scd_packet pckt;
@@ -1156,6 +1147,7 @@ eventfd()
 	syscall_channel = get_cpu_local_var(0)->ikc2linux;
 	memset(&pckt, '\0', sizeof pckt);
 	pckt.msg = SCD_MSG_EVENTFD;
+	pckt.eventfd_type = type;
 	ihk_ikc_send(syscall_channel, &pckt, 0);
 }
 

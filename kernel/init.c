@@ -31,7 +31,6 @@
 #include <cls.h>
 #include <syscall.h>
 #include <sysfs.h>
-#include <rusage_private.h>
 #include <ihk/monitor.h>
 
 //#define IOCTL_FUNC_EXTENSION
@@ -287,21 +286,6 @@ static void monitor_init()
 #endif /* POSTK_DEBUG_TEMP_FIX_73 */
 }
 
-static void rusage_init()
-{
-	int npages;
-	unsigned long phys;
-
-	npages = (sizeof(struct rusage_global) + PAGE_SIZE -1) >> PAGE_SHIFT;
-	rusage = ihk_mc_alloc_pages(npages, IHK_MC_AP_CRITICAL);
-	memset(rusage, 0, npages * PAGE_SIZE);
-	rusage->num_processors = num_processors;
-	rusage->num_numa_nodes = ihk_mc_get_nr_numa_nodes();
-	rusage->ns_per_tsc = ihk_mc_get_ns_per_tsc();
-	phys = virt_to_phys(rusage);
-	ihk_set_rusage(phys, sizeof(struct rusage_global));
-}
-
 int nmi_mode;
 
 static void nmi_init()
@@ -326,7 +310,6 @@ static void rest_init(void)
 #ifndef POSTK_DEBUG_TEMP_FIX_73 /* NULL access for *monitor fix */
 	monitor_init();
 #endif /* !POSTK_DEBUG_TEMP_FIX_73 */
-	rusage_init();
 	cpu_local_var_init();
 	nmi_init();
 	time_init();

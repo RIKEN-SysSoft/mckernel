@@ -628,6 +628,7 @@ IHK_RELEASE_DATE
 DCFA_VERSION
 MCKERNEL_VERSION
 IHK_VERSION
+ENABLE_QLMPI
 ENABLE_RUSAGE
 ENABLE_MCOVERLAYFS
 MANDIR
@@ -635,7 +636,9 @@ KERNDIR
 KMODDIR
 INCLUDEDIR
 ETCDIR
+INCDIR
 MCKERNEL_LIBDIR
+MCKERNEL_INCDIR
 SBINDIR
 BINDIR
 TARGET
@@ -643,6 +646,7 @@ UNAME_R
 KDIR
 ARCH
 XCC
+FGREP
 EGREP
 GREP
 CPP
@@ -694,6 +698,9 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+with_mpi
+with_mpi_include
+with_mpi_lib
 with_kernelsrc
 with_target
 with_system_map
@@ -701,6 +708,7 @@ enable_dcfa
 enable_memdump
 enable_mcoverlayfs
 enable_rusage
+enable_qlmpi
 with_uname_r
 '
       ac_precious_vars='build_alias
@@ -1325,10 +1333,16 @@ Optional Features:
   --enable-memdump        enable dumping memory and analyzing a dump
   --enable-mcoverlayfs    enable mcoverlayfs implementation
   --enable-rusage         enable rusage implementation
+  --enable-qlmpi          enable qlmpi implementation
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-mpi=PATH         specify path where mpi include directory and lib
+                          directory can be found
+  --with-mpi-include=PATH specify path where mpi include directory can be
+                          found
+  --with-mpi-lib=PATH     specify path where mpi lib directory can be found
   --with-kernelsrc=path   Path to 'kernel src', default is
                           /lib/modules/uname_r/build
   --with-target={attached-mic | builtin-mic | builtin-x86 | smp-x86}
@@ -2058,6 +2072,10 @@ ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
+
+
 
 
 
@@ -3310,6 +3328,187 @@ if test "x$numa_lib_found" != "xyes"; then :
   as_fn_error $? "Unable to find NUMA library, missing numactl-devel?" "$LINENO" 5
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for fgrep" >&5
+$as_echo_n "checking for fgrep... " >&6; }
+if ${ac_cv_path_FGREP+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if echo 'ab*c' | $GREP -F 'ab*c' >/dev/null 2>&1
+   then ac_cv_path_FGREP="$GREP -F"
+   else
+     if test -z "$FGREP"; then
+  ac_path_FGREP_found=false
+  # Loop through the user's path and test for each of PROGNAME-LIST
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH$PATH_SEPARATOR/usr/xpg4/bin
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_prog in fgrep; do
+    for ac_exec_ext in '' $ac_executable_extensions; do
+      ac_path_FGREP="$as_dir/$ac_prog$ac_exec_ext"
+      as_fn_executable_p "$ac_path_FGREP" || continue
+# Check for GNU ac_path_FGREP and select it if it is found.
+  # Check for GNU $ac_path_FGREP
+case `"$ac_path_FGREP" --version 2>&1` in
+*GNU*)
+  ac_cv_path_FGREP="$ac_path_FGREP" ac_path_FGREP_found=:;;
+*)
+  ac_count=0
+  $as_echo_n 0123456789 >"conftest.in"
+  while :
+  do
+    cat "conftest.in" "conftest.in" >"conftest.tmp"
+    mv "conftest.tmp" "conftest.in"
+    cp "conftest.in" "conftest.nl"
+    $as_echo 'FGREP' >> "conftest.nl"
+    "$ac_path_FGREP" FGREP < "conftest.nl" >"conftest.out" 2>/dev/null || break
+    diff "conftest.out" "conftest.nl" >/dev/null 2>&1 || break
+    as_fn_arith $ac_count + 1 && ac_count=$as_val
+    if test $ac_count -gt ${ac_path_FGREP_max-0}; then
+      # Best one so far, save it but keep looking for a better one
+      ac_cv_path_FGREP="$ac_path_FGREP"
+      ac_path_FGREP_max=$ac_count
+    fi
+    # 10*(2^10) chars as input seems more than enough
+    test $ac_count -gt 10 && break
+  done
+  rm -f conftest.in conftest.tmp conftest.nl conftest.out;;
+esac
+
+      $ac_path_FGREP_found && break 3
+    done
+  done
+  done
+IFS=$as_save_IFS
+  if test -z "$ac_cv_path_FGREP"; then
+    as_fn_error $? "no acceptable fgrep could be found in $PATH$PATH_SEPARATOR/usr/xpg4/bin" "$LINENO" 5
+  fi
+else
+  ac_cv_path_FGREP=$FGREP
+fi
+
+   fi
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_path_FGREP" >&5
+$as_echo "$ac_cv_path_FGREP" >&6; }
+ FGREP="$ac_cv_path_FGREP"
+
+
+
+
+# Check whether --with-mpi was given.
+if test "${with_mpi+set}" = set; then :
+  withval=$with_mpi; case "$withval" in #(
+  yes|no|'') :
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --without-mpi=PATH expects a valid PATH" >&5
+$as_echo "$as_me: WARNING: --without-mpi=PATH expects a valid PATH" >&2;}
+                          with_mpi="" ;; #(
+  *) :
+     ;;
+esac
+else
+  with_mpi=
+fi
+
+
+# Check whether --with-mpi-include was given.
+if test "${with_mpi_include+set}" = set; then :
+  withval=$with_mpi_include; case "$withval" in #(
+  yes|no|'') :
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --without-mpi-include=PATH expects a valid PATH" >&5
+$as_echo "$as_me: WARNING: --without-mpi-include=PATH expects a valid PATH" >&2;}
+                          with_mpi_include="" ;; #(
+  *) :
+     ;;
+esac
+fi
+
+
+# Check whether --with-mpi-lib was given.
+if test "${with_mpi_lib+set}" = set; then :
+  withval=$with_mpi_lib; case "$withval" in #(
+  yes|no|'') :
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --without-mpi-lib=PATH expects a valid PATH" >&5
+$as_echo "$as_me: WARNING: --without-mpi-lib=PATH expects a valid PATH" >&2;}
+                          with_mpi_lib="" ;; #(
+  *) :
+     ;;
+esac
+fi
+
+
+    # The args have been sanitized into empty/non-empty values above.
+    # Now append -I/-L args to CPPFLAGS/LDFLAGS, with more specific options
+    # taking priority
+
+    if test -n "${with_mpi_include}"; then :
+
+
+	if echo "$CPPFLAGS" | $FGREP -e "\<-I${with_mpi_include}\>" >/dev/null 2>&1; then :
+  echo "CPPFLAGS(='$CPPFLAGS') contains '-I${with_mpi_include}', not appending" >&5
+else
+  echo "CPPFLAGS(='$CPPFLAGS') does not contain '-I${with_mpi_include}', appending" >&5
+		CPPFLAGS="$CPPFLAGS -I${with_mpi_include}"
+
+fi
+
+else
+  if test -n "${with_mpi}"; then :
+
+
+	if echo "$CPPFLAGS" | $FGREP -e "\<-I${with_mpi}/include\>" >/dev/null 2>&1; then :
+  echo "CPPFLAGS(='$CPPFLAGS') contains '-I${with_mpi}/include', not appending" >&5
+else
+  echo "CPPFLAGS(='$CPPFLAGS') does not contain '-I${with_mpi}/include', appending" >&5
+		CPPFLAGS="$CPPFLAGS -I${with_mpi}/include"
+
+fi
+
+fi
+fi
+
+    if test -n "${with_mpi_lib}"; then :
+
+
+	if echo "$LDFLAGS" | $FGREP -e "\<-L${with_mpi_lib}\>" >/dev/null 2>&1; then :
+  echo "LDFLAGS(='$LDFLAGS') contains '-L${with_mpi_lib}', not appending" >&5
+else
+  echo "LDFLAGS(='$LDFLAGS') does not contain '-L${with_mpi_lib}', appending" >&5
+		LDFLAGS="$LDFLAGS -L${with_mpi_lib}"
+
+fi
+
+else
+  if test -n "${with_mpi}"; then :
+
+
+	if echo "$LDFLAGS" | $FGREP -e "\<-L${with_mpi}/lib\>" >/dev/null 2>&1; then :
+  echo "LDFLAGS(='$LDFLAGS') contains '-L${with_mpi}/lib', not appending" >&5
+else
+  echo "LDFLAGS(='$LDFLAGS') does not contain '-L${with_mpi}/lib', appending" >&5
+		LDFLAGS="$LDFLAGS -L${with_mpi}/lib"
+
+fi
+
+                  if test -d "${with_mpi}/lib64"; then :
+
+
+	if echo "$LDFLAGS" | $FGREP -e "\<-L${with_mpi}/lib64\>" >/dev/null 2>&1; then :
+  echo "LDFLAGS(='$LDFLAGS') contains '-L${with_mpi}/lib64', not appending" >&5
+else
+  echo "LDFLAGS(='$LDFLAGS') does not contain '-L${with_mpi}/lib64', appending" >&5
+		LDFLAGS="$LDFLAGS -L${with_mpi}/lib64"
+
+fi
+
+fi
+
+fi
+
+fi
+
+
 
 # Check whether --with-kernelsrc was given.
 if test "${with_kernelsrc+set}" = set; then :
@@ -3369,6 +3568,14 @@ else
 fi
 
 
+# Check whether --enable-qlmpi was given.
+if test "${enable_qlmpi+set}" = set; then :
+  enableval=$enable_qlmpi; ENABLE_QLMPI=$enableval
+else
+  ENABLE_QLMPI=no
+fi
+
+
 
 # Check whether --with-uname_r was given.
 if test "${with_uname_r+set}" = set; then :
@@ -3386,7 +3593,7 @@ esac
 
 case "X$WITH_KERNELSRC" in
     Xyes | Xno | X)
-	WITH_KERNELSRC='/lib/modules/`uname -r`/build'
+	WITH_KERNELSRC="/lib/modules/`uname -r`/build"
 	;;
     X/*)
 	;;
@@ -3407,8 +3614,21 @@ _ACEOF
 
 
 case $WITH_TARGET in
-    attached-mic|builtin-x86|smp-x86)
-	ARCH=`uname -m`
+# POSTK_DEBUG_ARCH_DEP_30, Expansion of the branch.
+#    attached-mic|builtin-x86|smp-x86)
+#	ARCH=`uname -m`
+#	AC_PROG_CC
+#	XCC=$CC
+#	;;
+    attached-mic|builtin-x86|smp-*)
+	case $WITH_TARGET in
+	    attached-mic|builtin-x86|smp-x86)
+		ARCH=`uname -m`
+		;;
+	    smp-arm64)
+		ARCH=arm64
+		;;
+	esac
 	ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -3993,6 +4213,48 @@ fi
 
 	CC=$XCC
 	;;
+    smp-arm64)
+	ARCH=arm64
+	# Extract the first word of "${CROSS_COMPILE}gcc", so it can be a program name with args.
+set dummy ${CROSS_COMPILE}gcc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_XCC+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$XCC"; then
+  ac_cv_prog_XCC="$XCC" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_XCC="${CROSS_COMPILE}gcc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_prog_XCC" && ac_cv_prog_XCC="no"
+fi
+fi
+XCC=$ac_cv_prog_XCC
+if test -n "$XCC"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $XCC" >&5
+$as_echo "$XCC" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+	CC=$XCC
+	;;
     *)
 	as_fn_error $? "target $WITH_TARGET is unknwon" "$LINENO" 5
 	;;
@@ -4060,9 +4322,15 @@ case $WITH_TARGET in
 	if test "X$SBINDIR" = X; then
 		SBINDIR="$prefix/sbin"
 	fi
+	if test "X$MCKERNEL_INCDIR" = X; then
+		MCKERNEL_INCDIR="$prefix/include"
+	fi
         if test "X$MCKERNEL_LIBDIR" = X; then
                 MCKERNEL_LIBDIR="$prefix/lib"
         fi
+	if test "X$INCDIR" = X; then
+		INCDIR="$prefix/include"
+	fi
 	if test "X$ETCDIR" = X; then
 		ETCDIR="$prefix/etc"
 	fi
@@ -4074,6 +4342,35 @@ case $WITH_TARGET in
 	fi
 	if test "X$MANDIR" = X; then
 		MANDIR="$prefix/smp-x86/man"
+	fi
+	;;
+    smp-arm64)
+	if test "X$KERNDIR" = X; then
+		KERNDIR="$prefix/smp-arm64/kernel"
+	fi
+	if test "X$BINDIR" = X; then
+		BINDIR="$prefix/bin"
+	fi
+	if test "X$SBINDIR" = X; then
+		SBINDIR="$prefix/sbin"
+	fi
+	if test "X$MCKERNEL_INCDIR" = X; then
+		MCKERNEL_INCDIR="$prefix/include"
+	fi
+        if test "X$MCKERNEL_LIBDIR" = X; then
+                MCKERNEL_LIBDIR="$prefix/lib"
+        fi
+	if test "X$INCDIR" = X; then
+		INCDIR="$prefix/include"
+	fi
+	if test "X$ETCDIR" = X; then
+		ETCDIR="$prefix/etc"
+	fi
+	if test "X$KMODDIR" = X; then
+		KMODDIR="$prefix/kmod"
+	fi
+	if test "X$MANDIR" = X; then
+		MANDIR="$prefix/smp-arm64/man"
 	fi
 	;;
     *)
@@ -4097,11 +4394,11 @@ esac
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for System.map" >&5
 $as_echo_n "checking for System.map... " >&6; }
-if test -f "$MCCTRL_LINUX_SYMTAB"; then
+if test -r "$MCCTRL_LINUX_SYMTAB"; then
 	MCCTRL_LINUX_SYMTAB="$MCCTRL_LINUX_SYMTAB"
-elif test -f "/boot/System.map-`uname -r`"; then
+elif test -r "/boot/System.map-`uname -r`"; then
 	MCCTRL_LINUX_SYMTAB="/boot/System.map-`uname -r`"
-elif test -f "$KDIR/System.map"; then
+elif test -r "$KDIR/System.map"; then
 	MCCTRL_LINUX_SYMTAB="$KDIR/System.map"
 fi
 
@@ -4376,6 +4673,32 @@ _ACEOF
 
   fi
 
+# POSTK_DEBUG_ARCH_DEP_50, add:find kernel symbol.
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol vdso_spec" >&5
+$as_echo_n "checking System.map for symbol vdso_spec... " >&6; }
+  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " vdso_spec\$" | cut -d\  -f1`
+  if test -z $mcctrl_addr; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+  else
+    mcctrl_result=$mcctrl_addr
+    mcctrl_addr="0x$mcctrl_addr"
+
+      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_vdso_spec\$" >/dev/null`; then
+        mcctrl_result="exported"
+        mcctrl_addr="0"
+      fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
+$as_echo "$mcctrl_result" >&6; }
+
+cat >>confdefs.h <<_ACEOF
+#define MCCTRL_KSYM_vdso_spec $mcctrl_addr
+_ACEOF
+
+  fi
+
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol hv_clock" >&5
 $as_echo_n "checking System.map for symbol hv_clock... " >&6; }
@@ -4427,11 +4750,38 @@ _ACEOF
   fi
 
 
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol walk_page_range" >&5
+$as_echo_n "checking System.map for symbol walk_page_range... " >&6; }
+  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " walk_page_range\$" | cut -d\  -f1`
+  if test -z $mcctrl_addr; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+  else
+    mcctrl_result=$mcctrl_addr
+    mcctrl_addr="0x$mcctrl_addr"
+
+      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_walk_page_range\$" >/dev/null`; then
+        mcctrl_result="exported"
+        mcctrl_addr="0"
+      fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
+$as_echo "$mcctrl_result" >&6; }
+
+cat >>confdefs.h <<_ACEOF
+#define MCCTRL_KSYM_walk_page_range $mcctrl_addr
+_ACEOF
+
+  fi
+
+
 case $ENABLE_MEMDUMP in
 	yes|no|auto)
 		;;
 	default)
-		if test "x$WITH_TARGET" = "xsmp-x86" ; then
+# POSTK_DEBUG_ARCH_DEP_30, Expansion of the branch.
+#		if test "x$WITH_TARGET" = "xsmp-x86" ; then
+		if test "x$WITH_TARGET" = "xsmp-x86" -o "x$WITH_TARGET" = "xsmp-arm64" ; then
 			ENABLE_MEMDUMP=auto
 		else
 			ENABLE_MEMDUMP=no
@@ -4444,6 +4794,54 @@ esac
 
 if test "x$ENABLE_MEMDUMP" != "xno" ; then
 	enableval=yes
+# POSTK_DEBUG_ARCH_DEP_32, AC_CHECK_LIB for libiberty
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for hex_init in -liberty" >&5
+$as_echo_n "checking for hex_init in -liberty... " >&6; }
+if ${ac_cv_lib_iberty_hex_init+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-liberty  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char hex_init ();
+int
+main ()
+{
+return hex_init ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_iberty_hex_init=yes
+else
+  ac_cv_lib_iberty_hex_init=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_iberty_hex_init" >&5
+$as_echo "$ac_cv_lib_iberty_hex_init" >&6; }
+if test "x$ac_cv_lib_iberty_hex_init" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBIBERTY 1
+_ACEOF
+
+  LIBS="-liberty $LIBS"
+
+else
+  enableval=no
+fi
+
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_init in -lbfd" >&5
 $as_echo_n "checking for bfd_init in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_init+:} false; then :
@@ -4530,6 +4928,17 @@ else
 $as_echo "$as_me: mcoverlayfs is disabled" >&6;}
 fi
 
+if test "x$ENABLE_QLMPI" = "xyes" ; then
+
+$as_echo "#define ENABLE_QLMPI 1" >>confdefs.h
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: qlmpi is enabled" >&5
+$as_echo "$as_me: qlmpi is enabled" >&6;}
+else
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: qlmpi is disabled" >&5
+$as_echo "$as_me: qlmpi is disabled" >&6;}
+fi
+
 case $ENABLE_RUSAGE in
 	yes|no)
 		;;
@@ -4552,6 +4961,14 @@ else
 $as_echo "$as_me: rusage is disabled" >&6;}
 fi
 
+if test "x$MCKERNEL_INCDIR" != "x" ; then
+
+cat >>confdefs.h <<_ACEOF
+#define MCKERNEL_INCDIR "$MCKERNEL_INCDIR"
+_ACEOF
+
+fi
+
 if test "x$MCKERNEL_LIBDIR" != "x" ; then
 
 cat >>confdefs.h <<_ACEOF
@@ -4559,6 +4976,20 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 fi
+
+
+cat >>confdefs.h <<_ACEOF
+#define BINDIR "$BINDIR"
+_ACEOF
+
+
+cat >>confdefs.h <<_ACEOF
+#define SBINDIR "$SBINDIR"
+_ACEOF
+
+
+
+
 
 
 
@@ -4588,8 +5019,15 @@ fi
 
 ac_config_headers="$ac_config_headers config.h"
 
-ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/user/arch/x86_64/Makefile executer/kernel/mcctrl/Makefile executer/kernel/mcctrl/arch/x86_64/Makefile executer/kernel/mcoverlayfs/Makefile executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile executer/kernel/mcoverlayfs/linux-4.0.9/Makefile executer/kernel/mcoverlayfs/linux-4.6.7/Makefile kernel/Makefile kernel/Makefile.build arch/x86/tools/mcreboot-attached-mic.sh arch/x86/tools/mcshutdown-attached-mic.sh arch/x86/tools/mcreboot-builtin-x86.sh arch/x86/tools/mcreboot-smp-x86.sh arch/x86/tools/mcstop+release-smp-x86.sh arch/x86/tools/mcoverlay-destroy-smp-x86.sh arch/x86/tools/mcoverlay-create-smp-x86.sh arch/x86/tools/eclair-dump-backtrace.exp arch/x86/tools/mcshutdown-builtin-x86.sh arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in arch/x86/tools/irqbalance_mck.service arch/x86/tools/irqbalance_mck.in"
+# POSTK_DEBUG_ARCH_DEP_37
+# AC_CONFIG_FILES arch dependfiles separate
+ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/user/arch/$ARCH/Makefile executer/user/arch/x86_64/Makefile executer/user/vmcore2mckdump executer/kernel/mcctrl/Makefile executer/kernel/mcctrl/arch/$ARCH/Makefile executer/kernel/mcoverlayfs/Makefile executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile executer/kernel/mcoverlayfs/linux-4.0.9/Makefile executer/kernel/mcoverlayfs/linux-4.6.7/Makefile executer/include/qlmpilib.h kernel/Makefile kernel/Makefile.build kernel/include/swapfmt.h arch/x86/tools/mcreboot-attached-mic.sh arch/x86/tools/mcshutdown-attached-mic.sh arch/x86/tools/mcreboot-builtin-x86.sh arch/x86/tools/mcreboot-smp-x86.sh arch/x86/tools/mcstop+release-smp-x86.sh arch/x86/tools/mcoverlay-destroy-smp-x86.sh arch/x86/tools/mcoverlay-create-smp-x86.sh arch/x86/tools/eclair-dump-backtrace.exp arch/x86/tools/mcshutdown-builtin-x86.sh arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in arch/x86/tools/irqbalance_mck.service arch/x86/tools/irqbalance_mck.in"
 
+
+if test "$TARGET" = "smp-arm64"; then
+ac_config_files="$ac_config_files kernel/config/config.smp-arm64 arch/arm64/kernel/vdso/Makefile arch/arm64/kernel/Makefile.arch"
+
+fi
 
 if test "x$enable_dcfa" = xyes; then :
 
@@ -5289,15 +5727,19 @@ do
     "config.h") CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "executer/user/Makefile") CONFIG_FILES="$CONFIG_FILES executer/user/Makefile" ;;
+    "executer/user/arch/$ARCH/Makefile") CONFIG_FILES="$CONFIG_FILES executer/user/arch/$ARCH/Makefile" ;;
     "executer/user/arch/x86_64/Makefile") CONFIG_FILES="$CONFIG_FILES executer/user/arch/x86_64/Makefile" ;;
+    "executer/user/vmcore2mckdump") CONFIG_FILES="$CONFIG_FILES executer/user/vmcore2mckdump" ;;
     "executer/kernel/mcctrl/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcctrl/Makefile" ;;
-    "executer/kernel/mcctrl/arch/x86_64/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcctrl/arch/x86_64/Makefile" ;;
+    "executer/kernel/mcctrl/arch/$ARCH/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcctrl/arch/$ARCH/Makefile" ;;
     "executer/kernel/mcoverlayfs/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcoverlayfs/Makefile" ;;
     "executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile" ;;
     "executer/kernel/mcoverlayfs/linux-4.0.9/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcoverlayfs/linux-4.0.9/Makefile" ;;
     "executer/kernel/mcoverlayfs/linux-4.6.7/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcoverlayfs/linux-4.6.7/Makefile" ;;
+    "executer/include/qlmpilib.h") CONFIG_FILES="$CONFIG_FILES executer/include/qlmpilib.h" ;;
     "kernel/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/Makefile" ;;
     "kernel/Makefile.build") CONFIG_FILES="$CONFIG_FILES kernel/Makefile.build" ;;
+    "kernel/include/swapfmt.h") CONFIG_FILES="$CONFIG_FILES kernel/include/swapfmt.h" ;;
     "arch/x86/tools/mcreboot-attached-mic.sh") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/mcreboot-attached-mic.sh" ;;
     "arch/x86/tools/mcshutdown-attached-mic.sh") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/mcshutdown-attached-mic.sh" ;;
     "arch/x86/tools/mcreboot-builtin-x86.sh") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/mcreboot-builtin-x86.sh" ;;
@@ -5310,6 +5752,9 @@ do
     "arch/x86/tools/mcreboot.1") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in" ;;
     "arch/x86/tools/irqbalance_mck.service") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/irqbalance_mck.service" ;;
     "arch/x86/tools/irqbalance_mck.in") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/irqbalance_mck.in" ;;
+    "kernel/config/config.smp-arm64") CONFIG_FILES="$CONFIG_FILES kernel/config/config.smp-arm64" ;;
+    "arch/arm64/kernel/vdso/Makefile") CONFIG_FILES="$CONFIG_FILES arch/arm64/kernel/vdso/Makefile" ;;
+    "arch/arm64/kernel/Makefile.arch") CONFIG_FILES="$CONFIG_FILES arch/arm64/kernel/Makefile.arch" ;;
     "kernel/Makefile.dcfa") CONFIG_FILES="$CONFIG_FILES kernel/Makefile.dcfa" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;

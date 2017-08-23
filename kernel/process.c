@@ -2638,6 +2638,19 @@ void release_thread(struct thread *thread)
 
 	release_process_vm(vm);
 	rusage_num_threads_dec();
+
+#ifdef RUSAGE_DEBUG
+	if (rusage->num_threads == 0) {
+		int i;
+		kprintf("total_memory_usage=%ld\n", rusage->total_memory_usage);
+		for(i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
+			kprintf("memory_stat_rss[%d]=%ld\n", i, rusage->memory_stat_rss[i]);
+		}
+		for(i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
+			kprintf("memory_stat_mapped_file[%d]=%ld\n", i, rusage->memory_stat_mapped_file[i]);
+		}
+	}
+#endif
 }
 
 void cpu_set(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock)
@@ -3397,6 +3410,18 @@ void runq_add_thread(struct thread *thread, int cpu_id)
 	procfs_create_thread(thread);
 
 	rusage_num_threads_inc();
+#ifdef RUSAGE_DEBUG
+	if (rusage->num_threads == 1) {
+		int i;
+		kprintf("total_memory_usage=%ld\n", rusage->total_memory_usage);
+		for(i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
+			kprintf("memory_stat_rss[%d]=%ld\n", i, rusage->memory_stat_rss[i]);
+		}
+		for(i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
+			kprintf("memory_stat_mapped_file[%d]=%ld\n", i, rusage->memory_stat_mapped_file[i]);
+		}
+	}
+#endif
 
 	/* Kick scheduler */
 #ifdef POSTK_DEBUG_ARCH_DEP_8 /* arch depend hide */

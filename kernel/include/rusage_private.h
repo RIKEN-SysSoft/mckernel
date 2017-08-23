@@ -8,18 +8,25 @@
 #include <ihk/atomic.h>
 #include <memobj.h>
 #include <rusage.h>
-#include <arch/rusage.h>
+#include <ihk/ihk_monitor.h>
+#include <arch_rusage.h>
 
 #ifdef ENABLE_RUSAGE
 
-#define RUSAGE_MEM_LIMIT (2 * 1024 * 1024) // 2MB
+#define RUSAGE_OOM_MARGIN (2 * 1024 * 1024) // 2MB
 
-extern void eventfd();
+extern void eventfd(int type);
 
 static inline void
 rusage_total_memory_add(unsigned long size)
 {
+#ifdef RUSAGE_DEBUG
+	kprintf("%s: total_memory=%ld,size=%ld\n", __FUNCTION__, rusage->total_memory, size);
+#endif
 	rusage->total_memory += size;
+#ifdef RUSAGE_DEBUG
+	kprintf("%s: total_memory=%ld\n", __FUNCTION__, rusage->total_memory);
+#endif
 }
 
 static inline void
@@ -220,6 +227,22 @@ rusage_numa_sub(int numa_id, unsigned long size)
 	__sync_sub_and_fetch(rusage->memory_numa_stat + numa_id, size);
 }
 
+static inline int
+rusage_check_oom(int numa_id, unsigned long pages, int is_user)
+{
+	unsigned long size = pages * PAGE_SIZE;
+
+	if (rusage->total_memory_usage + size > rusage->total_memory - RUSAGE_OOM_MARGIN) {
+		kprintf("%s: memory used:%ld available:%ld\n", __FUNCTION__, rusage->total_memory_usage, rusage->total_memory);
+		eventfd(IHK_OS_EVENTFD_TYPE_OOM);
+		if (is_user) {
+			return -ENOMEM;
+		}
+	}
+
+	return 0;
+}
+
 static inline void
 rusage_page_add(int numa_id, unsigned long pages, int is_user)
 {
@@ -228,6 +251,12 @@ rusage_page_add(int numa_id, unsigned long pages, int is_user)
 	unsigned long oldval;
 	unsigned long retval;
 
+#ifdef RUSAGE_DEBUG
+	if (numa_id < 0 || numa_id >= rusage->num_numa_nodes) {
+		kprintf("%s: Error: invalid numa_id=%d\n", __FUNCTION__, numa_id);
+		return;
+	}
+#endif	
 	if (is_user)
 		rusage_numa_add(numa_id, size);
 	else
@@ -239,10 +268,12 @@ rusage_page_add(int numa_id, unsigned long pages, int is_user)
 		retval = __sync_val_compare_and_swap(&rusage->total_memory_max_usage,
 		                                     oldval, newval);
 		if (retval == oldval) {
-			if (rusage->total_memory - newval <
-			    RUSAGE_MEM_LIMIT) {
-				eventfd();
+#ifdef RUSAGE_DEBUG
+			if (rusage->total_memory_max_usage > rusage->total_memory_max_usage_old + (1 * (1ULL << 30))) {
+				kprintf("%s: max(%ld) > old + 1GB,numa_id=%d\n", __FUNCTION__, rusage->total_memory_max_usage, numa_id);
+				rusage->total_memory_max_usage_old = rusage->total_memory_max_usage;
 			}
+#endif
 			break;
 		}
 		oldval = retval;
@@ -253,7 +284,15 @@ static inline void
 rusage_page_sub(int numa_id, unsigned long pages, int is_user)
 {
 	unsigned long size = pages * PAGE_SIZE;
-
+#ifdef RUSAGE_DEBUG
+	if (numa_id < 0 || numa_id >= rusage->num_numa_nodes) {
+		kprintf("%s: Error: invalid numa_id=%d\n", __FUNCTION__, numa_id);
+		return;
+	}
+	if (rusage->total_memory_usage < size) {
+		kprintf("%s: Error, total_memory_usage=%ld,size=%ld\n", __FUNCTION__, rusage->total_memory_max_usage, size);
+	}
+#endif
 	__sync_sub_and_fetch(&rusage->total_memory_usage, size);
 
 	if (is_user)
@@ -343,9 +382,15 @@ rusage_numa_sub(int numa_id, unsigned long size)
 {
 }
 
+static inline int
+rusage_check_oom(int numa_id, unsigned long pages, int is_user)
+{
+	return 0;
+}
 static inline void
 rusage_page_add(int numa_id, unsigned long size, int is_user)
 {
+	return;
 }
 
 static inline void

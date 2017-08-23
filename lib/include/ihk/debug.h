@@ -33,15 +33,6 @@
 
 #endif /* POSTK_DEBUG_ARCH_DEP_9 */
 
-struct ihk_kmsg_buf {
-	int tail;
-	int len;
-	int head;
-	int mode;
-	ihk_spinlock_t lock;
-	char str[IHK_KMSG_SIZE - sizeof(int) * 4 - sizeof(ihk_spinlock_t)];
-};
-
 extern int kprintf(const char *format, ...);
 extern unsigned long kprintf_lock(void);
 extern void kprintf_unlock(unsigned long irqflags);

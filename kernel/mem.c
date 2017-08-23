@@ -80,6 +80,8 @@ static void *___ihk_mc_alloc_aligned_pages_node(int npages,
 static void *___ihk_mc_alloc_pages(int npages, ihk_mc_ap_flag flag, int is_user);
 static void ___ihk_mc_free_pages(void *p, int npages, int is_user);
 
+extern unsigned long ihk_mc_get_ns_per_tsc(void);
+
 /*
  * Page allocator tracking routines
  */
@@ -571,22 +573,28 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 	if (pref_node > -1 && pref_node < ihk_mc_get_nr_numa_nodes()) {
 #ifdef IHK_RBTREE_ALLOCATOR
 		{
-			pa = ihk_numa_alloc_pages(&memory_nodes[pref_node], npages, p2align);
+			if (rusage_check_oom(pref_node, npages, is_user) == -ENOMEM) {
+				pa = 0;
+			} else {
+				pa = ihk_numa_alloc_pages(&memory_nodes[pref_node], npages, p2align);
+			}
 #else
 		list_for_each_entry(pa_allocator,
 				&memory_nodes[pref_node].allocators, list) {
-			pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+			if (rusage_check_oom(pref_node, npages, is_user) == -ENOMEM) {
+				pa = 0;
+			} else {
+				pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+			}
 #endif
-
 			if (pa) {
+				rusage_page_add(pref_node, npages, is_user);
 				dkprintf("%s: explicit (node: %d) CPU @ node %d allocated "
 						"%d pages from node %d\n",
 						__FUNCTION__,
 						pref_node,
 						ihk_mc_get_numa_id(),
 						npages, node);
-
-				rusage_page_add(pref_node, npages, is_user);
 
 				return phys_to_virt(pa);
 			}
@@ -617,23 +625,30 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 				numa_id = memory_nodes[node].nodes_by_distance[i].id;
 #ifdef IHK_RBTREE_ALLOCATOR
 				{
-					pa = ihk_numa_alloc_pages(&memory_nodes[memory_nodes[node].
-							nodes_by_distance[i].id], npages, p2align);
+					if (rusage_check_oom(numa_id, npages, is_user) == -ENOMEM) {
+						pa = 0;
+					} else {
+						pa = ihk_numa_alloc_pages(&memory_nodes[memory_nodes[node].
+																nodes_by_distance[i].id], npages, p2align);
+					}
 #else
 				list_for_each_entry(pa_allocator,
 						&memory_nodes[numa_id].allocators, list) {
-					pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+					if (rusage_check_oom(numa_id, npages, is_user) == -ENOMEM) {
+						pa = 0;
+					} else {
+						pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+					}
 #endif
 
 					if (pa) {
+						rusage_page_add(numa_id, npages, is_user);
 						dkprintf("%s: policy: CPU @ node %d allocated "
 								"%d pages from node %d\n",
 								__FUNCTION__,
 								ihk_mc_get_numa_id(),
 								npages, node);
 
-						rusage_page_add(numa_id, npages,
-						               is_user);
 
 						break;
 					}
@@ -674,22 +689,31 @@ distance_based:
 
 #ifdef IHK_RBTREE_ALLOCATOR
 		{
-			pa = ihk_numa_alloc_pages(&memory_nodes[memory_nodes[node].
-					nodes_by_distance[i].id], npages, p2align);
+			if (rusage_check_oom(numa_id, npages, is_user) == -ENOMEM) {
+				pa = 0;
+			} else {
+				pa = ihk_numa_alloc_pages(&memory_nodes[memory_nodes[node].
+														nodes_by_distance[i].id], npages, p2align);
+			}
 #else
 		list_for_each_entry(pa_allocator,
 		                    &memory_nodes[numa_id].allocators, list) {
-			pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+			if (rusage_check_oom(numa_id, npages, is_user) == -ENOMEM) {
+				pa = 0;
+			} else {
+				pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+			}
 #endif
 
+
 			if (pa) {
+				rusage_page_add(numa_id, npages, is_user);
 				dkprintf("%s: distance: CPU @ node %d allocated "
 						"%d pages from node %d\n",
 						__FUNCTION__,
 						ihk_mc_get_numa_id(),
 						npages,
 						memory_nodes[node].nodes_by_distance[i].id);
-				rusage_page_add(numa_id, npages, is_user);
 				break;
 			}
 		}
@@ -708,13 +732,22 @@ order_based:
 		numa_id = (node + i) % ihk_mc_get_nr_numa_nodes();
 #ifdef IHK_RBTREE_ALLOCATOR
 		{
-			pa = ihk_numa_alloc_pages(&memory_nodes[(node + i) %
-					ihk_mc_get_nr_numa_nodes()], npages, p2align);
+			if (rusage_check_oom(numa_id, npages, is_user) == -ENOMEM) {
+				pa = 0;
+			} else {
+				pa = ihk_numa_alloc_pages(&memory_nodes[(node + i) %
+														ihk_mc_get_nr_numa_nodes()], npages, p2align);
+			}
 #else
 		list_for_each_entry(pa_allocator,
 		                    &memory_nodes[numa_id].allocators, list) {
-			pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+			if (rusage_check_oom(numa_id, npages, is_user) == -ENOMEM) {
+				pa = 0;
+			} else {
+				pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+			}
 #endif
+
 			if (pa) {
 				rusage_page_add(numa_id, npages, is_user);
 				break;
@@ -730,6 +763,7 @@ order_based:
 	if(flag != IHK_MC_AP_NOWAIT)
 		panic("Not enough space\n");
 	*/
+	dkprintf("OOM\n", __FUNCTION__);
 	return NULL;
 }
 
@@ -1256,13 +1290,13 @@ static void numa_init(void)
 #endif
 
 #ifdef IHK_RBTREE_ALLOCATOR
-		dkprintf("Physical memory: 0x%lx - 0x%lx, %lu bytes, %d pages available @ NUMA: %d\n",
+		kprintf("Physical memory: 0x%lx - 0x%lx, %lu bytes, %d pages available @ NUMA: %d\n",
 				start, end,
 				end - start,
 				(end - start) >> PAGE_SHIFT,
 				numa_id);
 #else
-		dkprintf("Physical memory: 0x%lx - 0x%lx, %lu bytes, %d pages available @ NUMA: %d\n",
+		kprintf("Physical memory: 0x%lx - 0x%lx, %lu bytes, %d pages available @ NUMA: %d\n",
 				start, end,
 				ihk_pagealloc_count(allocator) * PAGE_SIZE,
 				ihk_pagealloc_count(allocator),
@@ -1659,6 +1693,22 @@ void ihk_mc_clean_micpa(void){
 }
 #endif
 
+static void rusage_init()
+{
+	int npages;
+	unsigned long phys;
+
+	npages = (sizeof(struct rusage_global) + PAGE_SIZE -1) >> PAGE_SHIFT;
+	rusage = ihk_mc_alloc_pages(npages, IHK_MC_AP_CRITICAL);
+	memset(rusage, 0, npages * PAGE_SIZE);
+	rusage->num_processors = num_processors;
+	rusage->num_numa_nodes = ihk_mc_get_nr_numa_nodes();
+	rusage->ns_per_tsc = ihk_mc_get_ns_per_tsc();
+	phys = virt_to_phys(rusage);
+	ihk_set_rusage(phys, sizeof(struct rusage_global));
+	dkprintf("%s: rusage->total_memory=%ld\n", __FUNCTION__, rusage->total_memory);
+}
+
 #ifdef POSTK_DEBUG_TEMP_FIX_73 /* NULL access for *monitor fix */
 extern void monitor_init(void);
 #endif /* POSTK_DEBUG_TEMP_FIX_73 */
@@ -1667,6 +1717,10 @@ void mem_init(void)
 #ifdef POSTK_DEBUG_TEMP_FIX_73 /* NULL access for *monitor fix */
 	monitor_init();
 #endif /* !POSTK_DEBUG_TEMP_FIX_73 */
+
+	/* It must precedes numa_init() because rusage->total_memory is initialized in numa_init() */
+	rusage_init();
+
 	/* Initialize NUMA information and memory allocator bitmaps */
 	numa_init();
 

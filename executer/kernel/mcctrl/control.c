@@ -42,11 +42,11 @@
 #include <linux/kallsyms.h>
 #include <linux/syscalls.h>
 #include <trace/events/sched.h>
-#include "../../../config.h"
+#include <config.h>
 #include "mcctrl.h"
 #include <ihk/ihk_host_user.h>
-#include <rusage.h>
 #include <ihklib_rusage.h>
+#include <rusage.h>
 
 //#define DEBUG
 
@@ -2197,9 +2197,9 @@ void mcctrl_perf_ack(ihk_os_t os, struct ikc_scd_packet *packet)
 }
 
 /* Compose LWK-specific rusage structure */
-long mcctrl_getrusage(ihk_os_t ihk_os, struct getrusage_desc *__user _desc)
+long mcctrl_getrusage(ihk_os_t ihk_os, struct mcctrl_ioctl_getrusage_desc *__user _desc)
 {
-	struct getrusage_desc desc;
+	struct mcctrl_ioctl_getrusage_desc desc;
 	struct rusage_global *rusage_global = ihk_os_get_rusage(ihk_os);
 	struct mckernel_rusage *rusage = NULL;
 	int ret = 0;
@@ -2207,7 +2207,7 @@ long mcctrl_getrusage(ihk_os_t ihk_os, struct getrusage_desc *__user _desc)
 	unsigned long ut;
 	unsigned long st;
 
-	ret = copy_from_user(&desc, _desc, sizeof(struct getrusage_desc));
+	ret = copy_from_user(&desc, _desc, sizeof(struct mcctrl_ioctl_getrusage_desc));
 	if (ret != 0) {
 		printk("%s: copy_from_user failed\n", __FUNCTION__);
 		goto out;
@@ -2872,7 +2872,7 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 		return mcctrl_perf_destroy(os);
 
 	case IHK_OS_GETRUSAGE:
-		return mcctrl_getrusage(os, (struct getrusage_desc *)arg);
+		return mcctrl_getrusage(os, (struct mcctrl_ioctl_getrusage_desc *)arg);
 	}
 	return -EINVAL;
 }

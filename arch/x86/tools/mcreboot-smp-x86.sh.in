@@ -372,7 +372,7 @@ fi
 
 if [ "$ikc_map" != "" ]; then
 	# Specify IKC map
-	if ! ${SBINDIR}/ihkosctl 0 ikc_map ${ikc_map}; then
+	if ! ${SBINDIR}/ihkosctl 0 set ikc_map ${ikc_map}; then
 		echo "error: assign CPUs" >&2
 		error_exit "os_created"
 	fi
