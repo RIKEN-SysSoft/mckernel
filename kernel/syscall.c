@@ -481,7 +481,8 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 #endif // PROFILE_ENABLE
 
 	if (req->number == __NR_open && rc > 0) {
-		if (res.private_data &&
+		if ((cpu_local_var(current)->proc->mcexec_flags & MCEXEC_HFI1) &&
+				res.private_data &&
 				!strncmp((const char *)req->args[0], "/dev/hfi", 8)) {
 			extern void hfi1_txreq_prealloc(void);
 

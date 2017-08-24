@@ -479,6 +479,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	proc->sgid = pn->cred[6];
 	proc->fsgid = pn->cred[7];
 	proc->termsig = SIGCHLD;
+	proc->mcexec_flags = pn->mcexec_flags;
 	proc->mpol_flags = pn->mpol_flags;
 	proc->mpol_threshold = pn->mpol_threshold;
 	proc->nr_processes = pn->nr_processes;

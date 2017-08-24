@@ -166,6 +166,8 @@ typedef unsigned long __cpu_set_unit;
 #define MPOL_NO_BSS               0x04
 #define MPOL_SHM_PREMAP           0x08
 
+#define MCEXEC_HFI1               0x01
+
 struct program_load_desc {
 	int num_sections;
 	int status;
@@ -194,6 +196,7 @@ struct program_load_desc {
 	unsigned long envs_len;
 	struct rlimit rlimit[MCK_RLIM_MAX];
 	unsigned long interp_align;
+	unsigned long mcexec_flags;
 	unsigned long mpol_flags;
 	unsigned long mpol_threshold;
 	unsigned long heap_extension;

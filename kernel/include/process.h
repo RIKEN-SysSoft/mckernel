@@ -552,6 +552,7 @@ struct process {
 
 	long maxrss;
 	long maxrss_children;
+	unsigned long mcexec_flags;
 	/* Memory policy flags and memory specific options */
 	unsigned long mpol_flags;
 	size_t mpol_threshold;
