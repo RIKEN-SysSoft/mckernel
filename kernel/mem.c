@@ -2224,6 +2224,7 @@ split_and_return:
 		}
 
 		list_del(&chunk->list);
+		ZERO_LIST_HEAD(&chunk->list);
 		cpu_restore_interrupt(kmalloc_irq_flags);
 		return ((void *)chunk + sizeof(struct kmalloc_header));
 	}
