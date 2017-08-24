@@ -106,6 +106,7 @@ struct cpu_local_var {
 	struct list_head smp_func_req_list;
 
 	struct process_vm *on_fork_vm;
+	struct kmalloc_cache_header txreq_cache;
 } __attribute__((aligned(64)));
 
 

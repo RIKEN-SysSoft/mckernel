@@ -1215,12 +1215,10 @@ static inline u32 get_lrh_len(struct hfi1_pkt_header hdr, u32 len)
 	return ((sizeof(hdr) - sizeof(hdr.pbc)) + 4 + len);
 }
 
-struct kmalloc_cache_header txreq_cache = {NULL};
-
-
 void hfi1_txreq_prealloc(void)
 {
-	kmalloc_cache_prealloc(&txreq_cache, sizeof(struct user_sdma_txreq));
+	kmalloc_cache_prealloc(&cpu_local_var(txreq_cache),
+			sizeof(struct user_sdma_txreq));
 }
 
 static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
@@ -1230,9 +1228,12 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 	struct user_sdma_txreq *tx = NULL;
 	struct hfi1_user_sdma_pkt_q *pq = NULL;
 	struct user_sdma_iovec *iovec = NULL;
+#ifndef __HFI1_ORIG__
 	unsigned long base_phys = 0;
 	unsigned long base_pgsize = 0;
 	void *base_virt = NULL;
+	struct kmalloc_cache_header *txreq_cache = &cpu_local_var(txreq_cache);
+#endif
 
 	TP("+");
 	hfi1_cdbg(AIOWRITE, "+");
@@ -1282,7 +1283,7 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 		}
 		tx = kmem_cache_alloc(pq->txreq_cache, GFP_KERNEL);
 #else
-		tx = kmalloc_cache_alloc(&txreq_cache, sizeof(*tx));
+		tx = kmalloc_cache_alloc(txreq_cache, sizeof(*tx));
 #endif /* __HFI1_ORIG__ */
 		if (!tx)
 			return -ENOMEM;
@@ -1572,7 +1573,7 @@ free_tx:
 	kmem_cache_free(pq->txreq_cache, tx);
 	hfi1_cdbg(AIOWRITE, "-");
 #else
-	kmalloc_cache_free(&txreq_cache, tx);
+	kmalloc_cache_free(tx);
 #endif /* __HFI1_ORIG__ */
 	return ret;
 }
@@ -1996,7 +1997,7 @@ static void user_sdma_txreq_cb(struct sdma_txreq *txreq, int status)
 #ifdef __HFI1_ORIG__			
 	kmem_cache_free(pq->txreq_cache, tx);
 #else
-	kmalloc_cache_free(&txreq_cache, tx);
+	kmalloc_cache_free(tx);
 #endif /* __HFI1_ORIG__ */
 	tx = NULL;
 
@@ -2044,7 +2045,7 @@ static void user_sdma_free_request(struct user_sdma_request *req, bool unpin)
 #ifdef __HFI1_ORIG__			
 			kmem_cache_free(req->pq->txreq_cache, tx);
 #else
-			kmalloc_cache_free(&txreq_cache, tx);
+			kmalloc_cache_free(tx);
 #endif /* __HFI1_ORIG__ */
 		}
 	}
