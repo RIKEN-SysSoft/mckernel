@@ -1022,9 +1022,8 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 			ret = -EINVAL;
 			goto free_req;
 		}
-		//req->tids = kmalloc_cache_alloc(&tids_cache,
-		//		sizeof(*req->tids) * MAX_TID_PAIR_ENTRIES);
-		req->tids = kcalloc(ntids, sizeof(*req->tids), GFP_KERNEL);
+		req->tids = kmalloc_cache_alloc(&tids_cache,
+				sizeof(*req->tids) * MAX_TID_PAIR_ENTRIES);
 		if (!req->tids) {
 			ret = -ENOMEM;
 			goto free_req;
@@ -2068,8 +2067,7 @@ static void user_sdma_free_request(struct user_sdma_request *req, bool unpin)
 #endif /* __HFI1_ORIG__ */
 		}
 	}
-	//kmalloc_cache_free(&tids_cache, req->tids);
-	kfree(req->tids);
+	kmalloc_cache_free(req->tids);
 	clear_bit(req->info.comp_idx, req->pq->req_in_use);
 	hfi1_cdbg(AIOWRITE, "-");
 }
