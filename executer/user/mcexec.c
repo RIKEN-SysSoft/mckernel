@@ -221,6 +221,7 @@ static int mpol_no_stack = 0;
 static int mpol_no_bss = 0;
 static int mpol_shm_premap = 0;
 static int no_bind_ikc_map = 0;
+static int hfi1_enabled = 0;
 static unsigned long mpol_threshold = 0;
 static unsigned long heap_extension = (4*1024);
 static int profile = 0;
@@ -1741,6 +1742,12 @@ static struct option mcexec_options[] = {
 		.val =		1,
 	},
 	{
+		.name =		"enable-hfi1",
+		.has_arg =	no_argument,
+		.flag =		&hfi1_enabled,
+		.val =		1,
+	},
+	{
 		.name =		"extend-heap-by",
 		.has_arg =	required_argument,
 		.flag =		NULL,
@@ -2520,6 +2527,11 @@ int main(int argc, char **argv)
 				}
 			}
 		}
+	}
+
+	desc->mcexec_flags = 0;
+	if (hfi1_enabled) {
+		desc->mcexec_flags |= MCEXEC_HFI1;
 	}
 
 	if (ioctl(fd, MCEXEC_UP_PREPARE_IMAGE, (unsigned long)desc) != 0) {
