@@ -154,25 +154,33 @@ struct sdma_mmu_node;
 struct user_sdma_iovec {
 	struct list_head list;
 	struct iovec iov;
+#ifdef __HFI1_ORIG__
 	/* number of pages in this vector */
 	unsigned npages;
 	/* array of pinned pages for this vector */
-#ifdef __HFI1_ORIG__
 	struct page **pages;
 #else
 	/*
-	 * Physical address corresponding to iov.iov_base if the
-	 * vector if physically contiguous, which in McKernel most
-	 * likely is.
+	 * Physical address corresponding to the page that contains
+	 * iov.iov_base and the corresponding page size.
 	 */
-	unsigned long phys;
+	unsigned base_pgsize;
+	unsigned long base_phys;
 #endif
 	/*
 	 * offset into the virtual address space of the vector at
 	 * which we last left off.
 	 */
 	u64 offset;
+#ifdef __HFI1_ORIG__
 	struct sdma_mmu_node *node;
+#else
+	/*
+	 * Virtual address corresponding to base_phys
+	 * (i.e., the beginning of the underlying page).
+	 */
+	void *base_virt;
+#endif
 };
 #ifdef __HFI1_ORIG__
 
@@ -968,40 +976,39 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 		}
 #else
 		{
-			unsigned long phys;
-			req->iovs[i].phys = 0;
+			pte_t *ptep;
+			size_t base_pgsize;
+			struct user_sdma_iovec *usi = &req->iovs[i];
+			void *virt = usi->iov.iov_base;
 			/*
-			 * Look up the start and end addresses of this iovec.
-			 * If it's contiguous in physical memory, store the physical
-			 * address in iovs[i].phys
+			 * Look up the PTE for the start of this iovec.
+			 * Store the physical address of the first page and
+			 * the page size in iovec.
 			 */
-			if (unlikely(ihk_mc_pt_virt_to_phys(
+			ptep = ihk_mc_pt_lookup_pte(
 					cpu_local_var(current)->vm->address_space->page_table,
-					req->iovs[i].iov.iov_base, &phys) < 0)) {
-				kprintf("%s: ERROR: no valid mapping for 0x%lx\n",
-						__FUNCTION__, req->iovs[i].iov.iov_base);
+					virt,
+					0,
+					0,
+					&base_pgsize,
+					0);
+			if (unlikely(!ptep || !pte_is_present(ptep))) {
+				kprintf("%s: ERROR: no valid PTE for 0x%lx\n",
+						__FUNCTION__, virt);
 				return -EFAULT;
 			}
 
-			req->iovs[i].phys = phys;
-
-			if (unlikely(ihk_mc_pt_virt_to_phys(
-					cpu_local_var(current)->vm->address_space->page_table,
-					req->iovs[i].iov.iov_base + req->iovs[i].iov.iov_len - 1,
-					&phys) < 0)) {
-				kprintf("%s: ERROR: no valid mapping for 0x%lx\n",
-						__FUNCTION__,
-						req->iovs[i].iov.iov_base +
-						req->iovs[i].iov.iov_len - 1);
-				return -EFAULT;
-			}
-
-			if ((phys - req->iovs[i].phys) !=
-				(req->iovs[i].iov.iov_len - 1)) {
-				kprintf("%s: iovec %d is not physically contiguous\n",
-						__FUNCTION__, i);
-				req->iovs[i].phys = 0;
-			}
+			usi->base_pgsize = (unsigned)base_pgsize;
+			usi->base_phys = pte_get_phys(ptep);
+			usi->base_virt = (void *)((unsigned long)virt &
+					~((unsigned long)usi->base_pgsize - 1));
+			SDMA_DBG("%s: iovec: %d, base_virt: 0x%lx, base_phys: 0x%lx, "
+					"base_pgsize: %lu\n",
+					__FUNCTION__,
+					i,
+					usi->base_virt,
+					usi->base_phys,
+					usi->base_pgsize);
 		}
 #endif /* __HFI1_ORIG__ */
 		req->data_len += req->iovs[i].iov.iov_len;
@@ -1232,11 +1239,6 @@ static int user_sdma_send_pkts(struct user_sdma_request *req,
 	struct user_sdma_txreq *tx = NULL;
 	struct hfi1_user_sdma_pkt_q *pq = NULL;
 	struct user_sdma_iovec *iovec = NULL;
-#ifndef __HFI1_ORIG__
-	unsigned long base_phys = 0;
-	unsigned long base_pgsize = 0;
-	void *base_virt = NULL;
-#endif
 
 	TP("+");
 	hfi1_cdbg(AIOWRITE, "+");
@@ -1439,14 +1441,15 @@ static int user_sdma_send_pkts(struct user_sdma_request *req,
 			unsigned long base, offset;
 			void *virt;
 			pte_t *ptep;
+			size_t base_pgsize;
 
 			base = (unsigned long)iovec->iov.iov_base;
 			virt = base + iovec->offset + iov_offset;
 
 			/*
-			 * Resolve base_phys if iovec is not physically contiguous.
+			 * Resolve iovec->base_phys if virt is out of last page.
 			 */
-			if (unlikely(!iovec->phys)) {
+			if (unlikely(virt >= (iovec->base_virt + iovec->base_pgsize))) {
 				ptep = ihk_mc_pt_lookup_pte(
 						cpu_local_var(current)->vm->address_space->page_table,
 						virt, 0, 0, &base_pgsize, 0);
@@ -1456,16 +1459,16 @@ static int user_sdma_send_pkts(struct user_sdma_request *req,
 					return -EFAULT;
 				}
 
-				base_phys = pte_get_phys(ptep);
-				base_virt = (void *)((unsigned long)virt & ~(base_pgsize - 1));
+				iovec->base_pgsize = (unsigned)base_pgsize;
+				iovec->base_phys = pte_get_phys(ptep);
+				iovec->base_virt = (void *)((unsigned long)virt &
+						~((unsigned long)iovec->base_pgsize - 1));
 				SDMA_DBG("%s: base_virt: 0x%lx, base_phys: 0x%lx, "
 						"base_pgsize: %lu\n",
 						__FUNCTION__,
-						base_virt, base_phys, base_pgsize);
-			}
-			else {
-				base_phys = iovec->phys;
-				base_virt = base;
+						iovec->base_virt,
+						iovec->base_phys,
+						iovec->base_pgsize);
 			}
 
 #ifdef __HFI1_ORIG__
@@ -1476,10 +1479,9 @@ static int user_sdma_send_pkts(struct user_sdma_request *req,
 			len = offset + req->info.fragsize > PAGE_SIZE ?
 				PAGE_SIZE - offset : req->info.fragsize;
 #else
-			len = iovec->phys ? req->info.fragsize :
-				((base_virt + base_pgsize - virt) >
-				 req->info.fragsize) ? req->info.fragsize :
-				(base_virt + base_pgsize - virt);
+			len = (iovec->base_virt + iovec->base_pgsize - virt) >
+				 req->info.fragsize ? req->info.fragsize :
+				(iovec->base_virt + iovec->base_pgsize - virt);
 #endif
 			len = min((datalen - queued), len);
 			SDMA_DBG("%s: dl: %d, qd: %d, len: %d\n",
@@ -1489,7 +1491,7 @@ static int user_sdma_send_pkts(struct user_sdma_request *req,
 #ifdef __HFI1_ORIG__
 					iovec->pages[pageidx], offset,
 #else
-					base_phys + (virt - base_virt),
+					iovec->base_phys + (virt - iovec->base_virt),
 #endif
 					len);
 			if (ret) {
@@ -2052,6 +2054,7 @@ static void user_sdma_free_request(struct user_sdma_request *req, bool unpin)
 #endif /* __HFI1_ORIG__ */
 		}
 	}
+#ifdef __HFI1_ORIG__
 	if (req->data_iovs) {
 		struct sdma_mmu_node *node;
 		int i;
@@ -2061,16 +2064,14 @@ static void user_sdma_free_request(struct user_sdma_request *req, bool unpin)
 			if (!node)
 				continue;
 
-//TODO: hfi1_mmu_rb_remove
-#ifdef __HFI1_ORIG__
 			if (unpin)
 				hfi1_mmu_rb_remove(req->pq->handler,
 						   &node->rb);
 			else
 				atomic_dec(&node->refcount);
-#endif /* __HFI1_ORIG__ */
 		}
 	}
+#endif /* __HFI1_ORIG__ */
 	kmalloc_cache_free(req->tids);
 	clear_bit(req->info.comp_idx, req->pq->req_in_use);
 	hfi1_cdbg(AIOWRITE, "-");
