@@ -276,7 +276,9 @@ struct user_sdma_txreq {
 
 #endif /* __HFI1_ORIG__ */
 
-static int user_sdma_send_pkts(struct user_sdma_request *, unsigned);
+static int user_sdma_send_pkts(struct user_sdma_request *req,
+		unsigned maxpkts,
+		struct kmalloc_cache_header *txreq_cache);
 static inline void pq_update(struct hfi1_user_sdma_pkt_q *);
 static int check_header_template(struct user_sdma_request *,
 				 struct hfi1_pkt_header *, u32, u32);
@@ -781,6 +783,8 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	int req_queued = 0;
 	u16 dlid;
 	u32 selector;
+	struct kmalloc_cache_header *txreq_cache =
+		&cpu_local_var(txreq_cache);
 
 	TP("- kregbase and cq->comps");
 	hfi1_cdbg(AIOWRITE, "+");
@@ -1076,12 +1080,11 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 		}
 	}
 
-	/* TODO: set these! */
 	set_comp_state(pq, cq, info.comp_idx, QUEUED, 0);
 	atomic_inc(&pq->n_reqs);
 	req_queued = 1;
 	/* Send the first N packets in the request to buy us some time */
-	ret = user_sdma_send_pkts(req, pcount);
+	ret = user_sdma_send_pkts(req, pcount, txreq_cache);
 	if (unlikely(ret < 0 && ret != -EBUSY)) {
 		req->status = ret;
 		goto free_req;
@@ -1104,7 +1107,7 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	 */
 	 TP("+ while user_sdma_send_pkts()");
 	 while (!test_bit(SDMA_REQ_SEND_DONE, &req->flags)) {
-		ret = user_sdma_send_pkts(req, pcount);
+		ret = user_sdma_send_pkts(req, pcount, txreq_cache);
 		if (ret < 0) {
 			TP("user_sdma_send_pkts() early return");
 			if (ret != -EBUSY) {
@@ -1220,7 +1223,9 @@ void hfi1_txreq_prealloc(void)
 			sizeof(struct user_sdma_txreq));
 }
 
-static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
+static int user_sdma_send_pkts(struct user_sdma_request *req,
+		unsigned maxpkts,
+		struct kmalloc_cache_header *txreq_cache)
 {
 	int ret = 0, count;
 	unsigned npkts = 0;
@@ -1231,7 +1236,6 @@ static int user_sdma_send_pkts(struct user_sdma_request *req, unsigned maxpkts)
 	unsigned long base_phys = 0;
 	unsigned long base_pgsize = 0;
 	void *base_virt = NULL;
-	struct kmalloc_cache_header *txreq_cache = &cpu_local_var(txreq_cache);
 #endif
 
 	TP("+");
