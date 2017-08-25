@@ -1440,8 +1440,6 @@ static int user_sdma_send_pkts(struct user_sdma_request *req,
 			unsigned len;
 			unsigned long base, offset;
 			void *virt;
-			pte_t *ptep;
-			size_t base_pgsize;
 
 			base = (unsigned long)iovec->iov.iov_base;
 			virt = base + iovec->offset + iov_offset;
@@ -1450,6 +1448,9 @@ static int user_sdma_send_pkts(struct user_sdma_request *req,
 			 * Resolve iovec->base_phys if virt is out of last page.
 			 */
 			if (unlikely(virt >= (iovec->base_virt + iovec->base_pgsize))) {
+				pte_t *ptep;
+				size_t base_pgsize;
+
 				ptep = ihk_mc_pt_lookup_pte(
 						cpu_local_var(current)->vm->address_space->page_table,
 						virt, 0, 0, &base_pgsize, 0);
