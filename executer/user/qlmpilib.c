@@ -92,7 +92,7 @@ static int ql_get_option() {
 	
 }
 
-int ql_init() {
+static int ql_init() {
 	char tmp_path[1024];
 	char *env_str;
 
