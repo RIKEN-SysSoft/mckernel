@@ -88,7 +88,7 @@ static inline void kmalloc_cache_prealloc(struct kmalloc_cache_header *cache,
 	kprintf("%s: pre-allocating for 0x%lx...\n",
 			__FUNCTION__, cache);
 
-	for (i = 0; i < 256; ++i) {
+	for (i = 0; i < 512; ++i) {
 		struct kmalloc_header *header;
 
 		elem = (struct kmalloc_cache_header *)

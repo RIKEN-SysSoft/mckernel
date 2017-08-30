@@ -211,7 +211,7 @@ static int hfi1_file_open(struct inode *inode, struct file *fp)
 }
 
 static long hfi1_file_ioctl(struct file *fp, unsigned int cmd,
-			    unsigned long arg)
+			    unsigned long arg, unsigned long t_s)
 {
 	struct hfi1_filedata *fd = fp->private_data;
 	struct hfi1_ctxtdata *uctxt = fd->uctxt;
@@ -415,6 +415,252 @@ static long hfi1_file_ioctl(struct file *fp, unsigned int cmd,
 	return ret;
 }
 #endif /* __HFI1_ORIG__ */
+
+long hfi1_file_ioctl(void *private_data, unsigned int cmd,
+			    unsigned long arg, unsigned long t_s)
+{
+	struct hfi1_filedata *fd = private_data;
+	struct hfi1_ctxtdata *uctxt = fd->uctxt;
+	struct hfi1_user_info uinfo;
+	struct hfi1_tid_info tinfo;
+	int ret = 0;
+	unsigned long addr;
+	int uval = 0;
+	unsigned long ul_uval = 0;
+	u16 uval16 = 0;
+
+	hfi1_cdbg(IOCTL, "IOCTL recv: 0x%x", cmd);
+	if (cmd != HFI1_IOCTL_ASSIGN_CTXT &&
+	    cmd != HFI1_IOCTL_GET_VERS &&
+	    !uctxt)
+		return -EINVAL;
+
+	if (rdtsc() - t_s < 400000000)
+		return;
+
+	switch (cmd) {
+	case HFI1_IOCTL_ASSIGN_CTXT:
+#if 0	
+		if (uctxt)
+			return -EINVAL;
+
+		if (copy_from_user(&uinfo,
+				   (struct hfi1_user_info __user *)arg,
+				   sizeof(uinfo)))
+			return -EFAULT;
+
+		ret = assign_ctxt(fp, &uinfo);
+		if (ret < 0)
+			return ret;
+		ret = setup_ctxt(fp);
+		if (ret)
+			return ret;
+		ret = user_init(fp);
+#endif
+		kprintf("%s: HFI1_IOCTL_ASSIGN_CTXT \n", __FUNCTION__);
+		break;
+	case HFI1_IOCTL_CTXT_INFO:
+#if 0
+		ret = get_ctxt_info(fp, (void __user *)(unsigned long)arg,
+				    sizeof(struct hfi1_ctxt_info));
+#endif
+		kprintf("%s: HFI1_IOCTL_CTXT_INFO \n", __FUNCTION__);
+		break;
+	case HFI1_IOCTL_USER_INFO:
+#if 0
+		ret = get_base_info(fp, (void __user *)(unsigned long)arg,
+				    sizeof(struct hfi1_base_info));
+#endif
+		kprintf("%s: HFI1_IOCTL_USER_INFO \n", __FUNCTION__);
+		break;
+	case HFI1_IOCTL_CREDIT_UPD:
+#if 0	
+		if (uctxt)
+			sc_return_credits(uctxt->sc);
+#endif
+		kprintf("%s: HFI1_IOCTL_CREDIT_UPD \n", __FUNCTION__);
+		break;
+
+	case HFI1_IOCTL_TID_UPDATE:
+#if 0
+		if (copy_from_user(&tinfo,
+				   (struct hfi11_tid_info __user *)arg,
+				   sizeof(tinfo)))
+			return -EFAULT;
+
+		ret = hfi1_user_exp_rcv_setup(fp, &tinfo);
+		if (!ret) {
+			/*
+			 * Copy the number of tidlist entries we used
+			 * and the length of the buffer we registered.
+			 * These fields are adjacent in the structure so
+			 * we can copy them at the same time.
+			 */
+			addr = arg + offsetof(struct hfi1_tid_info, tidcnt);
+			if (copy_to_user((void __user *)addr, &tinfo.tidcnt,
+					 sizeof(tinfo.tidcnt) +
+					 sizeof(tinfo.length)))
+				ret = -EFAULT;
+		}
+#endif
+		kprintf("%s: HFI1_IOCTL_TID_UPDATE \n", __FUNCTION__);
+		break;
+
+	case HFI1_IOCTL_TID_FREE:
+#if 0
+		if (copy_from_user(&tinfo,
+				   (struct hfi11_tid_info __user *)arg,
+				   sizeof(tinfo)))
+			return -EFAULT;
+
+		ret = hfi1_user_exp_rcv_clear(fp, &tinfo);
+		if (ret)
+			break;
+		addr = arg + offsetof(struct hfi1_tid_info, tidcnt);
+		if (copy_to_user((void __user *)addr, &tinfo.tidcnt,
+				 sizeof(tinfo.tidcnt)))
+			ret = -EFAULT;
+#endif
+		kprintf("%s: HFI1_IOCTL_TID_FREE \n", __FUNCTION__);
+		break;
+
+	case HFI1_IOCTL_TID_INVAL_READ:
+#if 0
+		if (copy_from_user(&tinfo,
+				   (struct hfi11_tid_info __user *)arg,
+				   sizeof(tinfo)))
+			return -EFAULT;
+
+		ret = hfi1_user_exp_rcv_invalid(fp, &tinfo);
+		if (ret)
+			break;
+		addr = arg + offsetof(struct hfi1_tid_info, tidcnt);
+		if (copy_to_user((void __user *)addr, &tinfo.tidcnt,
+				 sizeof(tinfo.tidcnt)))
+			ret = -EFAULT;
+#endif
+		kprintf("%s: HFI1_IOCTL_TID_INVAL_READ \n", __FUNCTION__);
+		break;
+
+	case HFI1_IOCTL_RECV_CTRL:
+#if 0
+		ret = get_user(uval, (int __user *)arg);
+		if (ret != 0)
+			return -EFAULT;
+		ret = manage_rcvq(uctxt, fd->subctxt, uval);
+#endif
+		kprintf("%s: HFI1_IOCTL_RECV_CTRL \n", __FUNCTION__);
+		break;
+
+	case HFI1_IOCTL_POLL_TYPE:
+#if 0
+		ret = get_user(uval, (int __user *)arg);
+		if (ret != 0)
+			return -EFAULT;
+		uctxt->poll_type = (typeof(uctxt->poll_type))uval;
+#endif
+		kprintf("%s: HFI1_IOCTL_POLL_TYPE \n", __FUNCTION__);
+		break;
+
+	case HFI1_IOCTL_ACK_EVENT:
+#if 0
+		ret = get_user(ul_uval, (unsigned long __user *)arg);
+		if (ret != 0)
+			return -EFAULT;
+		ret = user_event_ack(uctxt, fd->subctxt, ul_uval);
+#endif
+		kprintf("%s: HFI1_IOCTL_ACK_EVENT \n", __FUNCTION__);
+		break;
+
+	case HFI1_IOCTL_SET_PKEY:
+#if 0
+		ret = get_user(uval16, (u16 __user *)arg);
+		if (ret != 0)
+			return -EFAULT;
+		if (HFI1_CAP_IS_USET(PKEY_CHECK))
+			ret = set_ctxt_pkey(uctxt, fd->subctxt, uval16);
+		else
+			return -EPERM;
+#endif
+		kprintf("%s: HFI1_IOCTL_SET_PKEY \n", __FUNCTION__);
+		break;
+
+	case HFI1_IOCTL_CTXT_RESET: {
+#if 0
+		struct send_context *sc;
+		struct hfi1_devdata *dd;
+
+		if (!uctxt || !uctxt->dd || !uctxt->sc)
+			return -EINVAL;
+
+		/*
+		 * There is no protection here. User level has to
+		 * guarantee that no one will be writing to the send
+		 * context while it is being re-initialized.
+		 * If user level breaks that guarantee, it will break
+		 * it's own context and no one else's.
+		 */
+		dd = uctxt->dd;
+		sc = uctxt->sc;
+		/*
+		 * Wait until the interrupt handler has marked the
+		 * context as halted or frozen. Report error if we time
+		 * out.
+		 */
+		wait_event_interruptible_timeout(
+			sc->halt_wait, (sc->flags & SCF_HALTED),
+			msecs_to_jiffies(SEND_CTXT_HALT_TIMEOUT));
+		if (!(sc->flags & SCF_HALTED))
+			return -ENOLCK;
+
+		/*
+		 * If the send context was halted due to a Freeze,
+		 * wait until the device has been "unfrozen" before
+		 * resetting the context.
+		 */
+		if (sc->flags & SCF_FROZEN) {
+			wait_event_interruptible_timeout(
+				dd->event_queue,
+				!(ACCESS_ONCE(dd->flags) & HFI1_FROZEN),
+				msecs_to_jiffies(SEND_CTXT_HALT_TIMEOUT));
+			if (dd->flags & HFI1_FROZEN)
+				return -ENOLCK;
+
+			if (dd->flags & HFI1_FORCED_FREEZE)
+				/*
+				 * Don't allow context reset if we are into
+				 * forced freeze
+				 */
+				return -ENODEV;
+
+			sc_disable(sc);
+			ret = sc_enable(sc);
+			hfi1_rcvctrl(dd, HFI1_RCVCTRL_CTXT_ENB,
+				     uctxt->ctxt);
+		} else {
+			ret = sc_restart(sc);
+		}
+		if (!ret)
+			sc_return_credits(sc);
+		break;
+#endif
+		kprintf("%s: HFI1_IOCTL_CTXT_RESET \n", __FUNCTION__);
+	}
+
+	case HFI1_IOCTL_GET_VERS:
+#if 0
+		uval = HFI1_USER_SWVERSION;
+		if (put_user(uval, (int __user *)arg))
+			return -EFAULT;
+#endif
+		kprintf("%s: HFI1_IOCTL_GET_VERS \n", __FUNCTION__);
+		break;
+
+	default:
+		return -EINVAL;
+	}
+	return ret;
+}
 
 int hfi1_map_device_addresses(struct hfi1_filedata *fd);
 

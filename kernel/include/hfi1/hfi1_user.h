@@ -57,9 +57,9 @@
 #define _LINUX__HFI1_USER_H
 
 #ifdef __HFI1_ORIG__
-
 #include <linux/types.h>
-
+#else
+#include <mc_perf_event.h>
 #endif /* __HFI1_ORIG__ */
 
 /*
@@ -215,8 +215,6 @@ struct hfi1_cmd;
 #define HFI1_POLL_TYPE_ANYRCV     0x0
 #define HFI1_POLL_TYPE_URGENT     0x1
 
-#ifdef __HFI1_ORIG__
-
 /*
  * This structure is passed to the driver to tell it where
  * user code buffers are, sizes, etc.   The offsets and sizes of the
@@ -270,7 +268,6 @@ struct hfi1_tid_info {
 	/* length of transfer buffer programmed by this request */
 	__u32 length;
 };
-#endif /* __HFI1_ORIG__ */
 
 enum hfi1_sdma_comp_state {
 	FREE = 0,
@@ -286,8 +283,6 @@ struct hfi1_sdma_comp_entry {
 	__u32 status;
 	__u32 errcode;
 };
-
-#ifdef __HFI1_ORIG__
 
 /*
  * Device status and notifications from driver to user-space.
@@ -362,7 +357,6 @@ struct hfi1_base_info {
 	__u64 subctxt_rcvegrbuf;
 	__u64 subctxt_rcvhdrbuf;
 };
-#endif /* __HFI1_ORIG__ */
 
 enum sdma_req_opcode {
 	EXPECTED = 0,
