@@ -866,8 +866,19 @@ void rus_page_hash_put_pages(void)
 
 #define	USE_VM_INSERT_PFN	1
 
+#ifdef POSTK_DEBUG_ARCH_DEP_81 /* build support for linux-v4.11.x or later */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0)
+static int rus_vm_fault(struct vm_fault *vmf)
+{
+	struct vm_area_struct *vma = vmf->vma;
+#else
 static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
+#endif
+#else /* POSTK_DEBUG_ARCH_DEP_81 */
+static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+{
+#endif /* POSTK_DEBUG_ARCH_DEP_81 */
 	struct mcctrl_usrdata *	usrdata	= vma->vm_file->private_data;
 	ihk_device_t		dev = ihk_os_to_dev(usrdata->os);
 	unsigned long		rpa;
