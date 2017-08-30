@@ -434,11 +434,19 @@ static int process_msg_prepare_process(unsigned long rphys)
 #endif /* POSTK_DEBUG_TEMP_FIX_76 */
 
 	n = p->num_sections;
+#ifdef POSTK_DEBUG_TEMP_FIX_77 /* make 0 or less an error. */
+	if (n > 16 || 0 >= n) {
+		kprintf("%s: ERROR: ELF section other than 1 to 16?? (sections:%d)\n",
+			__FUNCTION__, n);
+		return -ENOMEM;
+	}
+#else /* POSTK_DEBUG_TEMP_FIX_77 */
 	if (n > 16) {
 		kprintf("%s: ERROR: more ELF sections than 16??\n",
 			__FUNCTION__);
 		return -ENOMEM;
 	}
+#endif /* POSTK_DEBUG_TEMP_FIX_77 */
 	dkprintf("# of sections: %d\n", n);
 
 	if((pn = kmalloc(sizeof(struct program_load_desc) 
