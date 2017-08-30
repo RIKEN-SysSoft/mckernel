@@ -4854,7 +4854,7 @@ _ACEOF
 
 ac_config_headers="$ac_config_headers config.h"
 
-ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/user/arch/x86_64/Makefile executer/kernel/mcctrl/Makefile executer/kernel/mcctrl/arch/x86_64/Makefile executer/kernel/mcoverlayfs/Makefile executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile executer/kernel/mcoverlayfs/linux-4.0.9/Makefile executer/kernel/mcoverlayfs/linux-4.6.7/Makefile kernel/Makefile kernel/Makefile.build kernel/include/swapfmt.h arch/x86/tools/mcreboot-attached-mic.sh arch/x86/tools/mcshutdown-attached-mic.sh arch/x86/tools/mcreboot-builtin-x86.sh arch/x86/tools/mcreboot-smp-x86.sh arch/x86/tools/mcstop+release-smp-x86.sh arch/x86/tools/eclair-dump-backtrace.exp arch/x86/tools/mcshutdown-builtin-x86.sh arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in arch/x86/tools/irqbalance_mck.service arch/x86/tools/irqbalance_mck.in"
+ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/user/arch/x86_64/Makefile executer/kernel/mcctrl/Makefile executer/kernel/mcctrl/arch/x86_64/Makefile executer/kernel/mcoverlayfs/Makefile executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile executer/kernel/mcoverlayfs/linux-4.0.9/Makefile executer/kernel/mcoverlayfs/linux-4.6.7/Makefile executer/include/qlmpilib.h kernel/Makefile kernel/Makefile.build kernel/include/swapfmt.h arch/x86/tools/mcreboot-attached-mic.sh arch/x86/tools/mcshutdown-attached-mic.sh arch/x86/tools/mcreboot-builtin-x86.sh arch/x86/tools/mcreboot-smp-x86.sh arch/x86/tools/mcstop+release-smp-x86.sh arch/x86/tools/eclair-dump-backtrace.exp arch/x86/tools/mcshutdown-builtin-x86.sh arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in arch/x86/tools/irqbalance_mck.service arch/x86/tools/irqbalance_mck.in"
 
 
 if test "x$enable_dcfa" = xyes; then :
@@ -5562,6 +5562,7 @@ do
     "executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile" ;;
     "executer/kernel/mcoverlayfs/linux-4.0.9/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcoverlayfs/linux-4.0.9/Makefile" ;;
     "executer/kernel/mcoverlayfs/linux-4.6.7/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcoverlayfs/linux-4.6.7/Makefile" ;;
+    "executer/include/qlmpilib.h") CONFIG_FILES="$CONFIG_FILES executer/include/qlmpilib.h" ;;
     "kernel/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/Makefile" ;;
     "kernel/Makefile.build") CONFIG_FILES="$CONFIG_FILES kernel/Makefile.build" ;;
     "kernel/include/swapfmt.h") CONFIG_FILES="$CONFIG_FILES kernel/include/swapfmt.h" ;;
