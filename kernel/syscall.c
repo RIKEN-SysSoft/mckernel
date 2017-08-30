@@ -1407,6 +1407,10 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 
 	flush_nfo_tlb();
 
+	if (flags & MAP_ANONYMOUS) {
+		len = (len + LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
+	}
+
 	if (flags & MAP_HUGETLB) {
 		pgshift = (flags >> MAP_HUGE_SHIFT) & 0x3F;
 		p2align = pgshift - PAGE_SHIFT;
@@ -3144,6 +3148,8 @@ SYSCALL_DECLARE(ioctl)
 	struct process *proc = thread->proc;
 	struct mckfd *fdp;
 	long irqstate;
+	void *private_data = proc->fd_priv_table[fd];
+	unsigned long t_s = rdtsc();
 
 	irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
 	for(fdp = proc->mckfd; fdp; fdp = fdp->next)
@@ -3158,6 +3164,19 @@ SYSCALL_DECLARE(ioctl)
 	else{
 		rc = syscall_generic_forwarding(__NR_ioctl, ctx);
 	}
+
+	if (private_data) {
+		extern long hfi1_file_ioctl(void *private_data,
+				unsigned int cmd,
+			    unsigned long arg,
+				unsigned long t_s);
+
+		hfi1_file_ioctl(private_data,
+				ihk_mc_syscall_arg1(ctx),
+				ihk_mc_syscall_arg2(ctx),
+				t_s);
+	}
+
 	return rc;
 }
 

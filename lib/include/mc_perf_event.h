@@ -46,9 +46,7 @@ struct perf_event_attr;
          ((nr)   << _IOC_NRSHIFT) | \
          ((size) << _IOC_SIZESHIFT))
 
-#ifndef __KERNEL__
 #define _IOC_TYPECHECK(t) (sizeof(t))
-#endif
 
 /* used to create numbers */
 #define _IO(type,nr)            _IOC(_IOC_NONE,(type),(nr),0)
