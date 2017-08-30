@@ -10,6 +10,7 @@ MCKERNEL_LIBDIR=@MCKERNEL_LIBDIR@
 KDIR ?= @KDIR@
 CFLAGS=-Wall -O -I. -I$(VPATH)/arch/${ARCH}
 LDFLAGS=@LDFLAGS@
+RPATH=$(shell echo $(LDFLAGS)|awk '{for(i=1;i<=NF;i++){if($$i~/^-L/){w=$$i;sub(/^-L/,"-Wl,-rpath,",w);print w}}}')
 VPATH=@abs_srcdir@
 TARGET=mcexec libsched_yield
 @uncomment_if_ENABLE_MEMDUMP@TARGET+=eclair
@@ -27,7 +28,7 @@ endif
 all: $(TARGET)
 
 mcexec: mcexec.c libmcexec.a
-	$(CC) -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) $(LDFLAGS) -DLIBDIR=\"$(LIBDIR)\" -fPIE -pie -L. $(MCEXEC_LIBS) -o $@ $^ $(EXTRA_OBJS)
+	$(CC) -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) $(LDFLAGS) -DLIBDIR=\"$(LIBDIR)\" -fPIE -pie -L. $(MCEXEC_LIBS) -o $@ $^ $(EXTRA_OBJS) $(RPATH)
 
 eclair: eclair.c
 	$(CC) $(CFLAGS) -I${IHKDIR} -o $@ $^ $(LIBS)
