@@ -310,6 +310,9 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	              + sizeof(struct program_image_section) * nhdrs);
 	memset(desc, '\0', sizeof(struct program_load_desc)
 	                   + sizeof(struct program_image_section) * nhdrs);
+#ifdef POSTK_DEBUG_TEMP_FIX_76 /* add program_load_desc magic */
+	desc->magic = PLD_MAGIC;
+#endif /* POSTK_DEBUG_TEMP_FIX_76 */
 	desc->shell_path[0] = '\0';
 	fseek(fp, hdr.e_phoff, SEEK_SET);
 	j = 0;

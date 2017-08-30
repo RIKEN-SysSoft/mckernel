@@ -424,6 +424,15 @@ static int process_msg_prepare_process(unsigned long rphys)
 		return -ENOMEM;
 	}
 
+#ifdef POSTK_DEBUG_TEMP_FIX_76 /* add program_load_desc magic */
+	if (p->magic != PLD_MAGIC) {
+		kprintf("%s: broken mcexec program_load_desc\n", __FUNCTION__);
+		ihk_mc_unmap_virtual(p, npages, 0);
+		ihk_mc_unmap_memory(NULL, phys, sz);
+		return -EFAULT;
+	}
+#endif /* POSTK_DEBUG_TEMP_FIX_76 */
+
 	n = p->num_sections;
 	if (n > 16) {
 		kprintf("%s: ERROR: more ELF sections than 16??\n",
