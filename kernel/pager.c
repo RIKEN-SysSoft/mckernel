@@ -782,7 +782,7 @@ do_pageout(char *fname, void *buf, size_t size, int flag)
 			goto err;
 		}
 	}
-	if (flag && 0x04) {
+	if (flag & 0x04) {
 		kprintf("skipping physical memory removal\n");
 		goto free_exit;
 	}
@@ -815,7 +815,6 @@ do_pageout(char *fname, void *buf, size_t size, int flag)
 		}
 	}
 	cc = 0;
-	vm->swapinfo = si;
 	goto free_exit;
 err:
 	ekprintf("do_pageout: write error: %d\n", cc);
@@ -832,6 +831,9 @@ free_exit:
 		pager_unlink(si, si->swapfname);
 		kfree(si->swapfname);
 		kfree(si);
+	}
+	else {
+		vm->swapinfo = si;
 	}
 	return cc;
 }
