@@ -198,11 +198,21 @@ static struct ihk_mc_interrupt_handler virt_timer_handler = {
 	.priv = NULL,
 };
 
-static void memdump_interrupt_handler(void *priv)
+extern long freeze_thaw(void *nmi_ctx);
+static void multi_nm_interrupt_handler(void *priv)
 {
+	extern int nmi_mode;
 	struct pt_regs *regs;
 	union arm64_cpu_local_variables *clv;
 
+	/* mode == 1or2, for FREEZER NMI */
+	if (nmi_mode == 1 || nmi_mode == 2) {
+		dkprintf("%s: freeze mode NMI catch. (nmi_mode=%d)\n", __FUNCTION__, nmi_mode);
+		freeze_thaw(NULL);
+		return;
+	}
+
+	/* mode == 0,    for MEMDUMP NMI */
 	regs = cpu_local_var(current)->uctx;
 	clv = get_arm64_this_cpu_local();
 
@@ -250,8 +260,8 @@ static void memdump_interrupt_handler(void *priv)
 	}
 }
 
-static struct ihk_mc_interrupt_handler memdump_handler = {
-	.func = memdump_interrupt_handler,
+static struct ihk_mc_interrupt_handler multi_nmi_handler = {
+	.func = multi_nm_interrupt_handler,
 	.priv = NULL,
 };
 
@@ -363,7 +373,7 @@ void ihk_mc_init_ap(void)
 	assign_processor_id();
 
 	ihk_mc_register_interrupt_handler(INTRID_CPU_STOP, &cpu_stop_handler);
-	ihk_mc_register_interrupt_handler(INTRID_MEMDUMP, &memdump_handler);
+	ihk_mc_register_interrupt_handler(INTRID_MULTI_NMI, &multi_nmi_handler);
 	ihk_mc_register_interrupt_handler(
 		ihk_mc_get_vector(IHK_TLB_FLUSH_IRQ_VECTOR_START), &remote_tlb_flush_handler);
 
@@ -1519,7 +1529,13 @@ void arch_start_pvclock(void)
 void
 mod_nmi_ctx(void *nmi_ctx, void (*func)())
 {
-	/* TODO: skeleton for rusage */
+	func();
+}
+
+extern void freeze();
+void __freeze(void)
+{
+	freeze();
 }
 
 int arch_cpu_read_write_register(

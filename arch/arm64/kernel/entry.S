@@ -536,6 +536,3 @@ ENTRY(ret_from_fork)
 	b	ret_to_user
 ENDPROC(ret_from_fork)
 
-/* TODO: skeleton for rusage */
-ENTRY(__freeze)
-ENDPROC(__freeze)
