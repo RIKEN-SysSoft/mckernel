@@ -1,0 +1,21 @@
+===========
+Test matrix
+===========
+
+rusage010:
+  app->mmap() 2M,anon,pre-page ->set_range()->munmap()->free_process_memory_range()->clear_range()[OK]
+
+rusage005: device file (ib ping-pong)
+  devobj()->get_page()->pf->munmap()->clear_range() [OK]
+  remote page fault->cow->clear_range() [OK]
+  ld-linux.so->mmap private->cow->clear_range() [OK]
+
+rusage008: sharing file-map page
+fork()->filemap->pf->clear_range() [OK]
+
+rusage009: sharing shmget() page
+fork()->shmat()->pf->clear_range() [OK]
+
+rusage011: sharing xpmem page
+fork()->xpmem_attach()->pf->clear_range() [OK]
+
