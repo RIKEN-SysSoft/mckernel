@@ -29,8 +29,8 @@ if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
 	exit 1
 fi
 
-INTERVAL=1
-LOGMODE=0
+redirect_kmsg=0
+mon_interval="-1"
 DUMP_LEVEL=24
 facility="LOG_LOCAL6"
 chown_option=`logname 2> /dev/null`
@@ -44,38 +44,14 @@ fi
 turbo=""
 ihk_irq=""
 
-while getopts :ti:k:c:m:o:f:r:q:d: OPT
+while getopts :tk:c:m:o:f:r:q:i:d: OPT
 do
 	case ${OPT} in
 	f)	facility=${OPTARG}
 		;;
 	o)	chown_option=${OPTARG}
 		;;
-	i)	INTERVAL=${OPTARG}
-		expr "${INTERVAL}" + 1 > /dev/null 2>&1
-		if [ $? -ge 2 ]
-		then
-			echo "invalid -i value" >&2
-			exit 1
-		fi
-		if [ ${INTERVAL} -le 0 ]
-		then
-			echo "invalid -i value" >&2
-			exit 1
-		fi
-		;;
-	k)	LOGMODE=${OPTARG}
-		expr "${LOGMODE}" + 1 > /dev/null 2>&1
-		if [ $? -ge 2 ]
-		then
-			echo "invalid -k value" >&2
-			exit 1
-		fi
-		if [ ${LOGMODE} -lt 0 -o ${LOGMODE} -gt 2 ]
-		then
-			echo "invalid -k value" >&2
-			exit 1
-		fi
+	k)	redirect_kmsg=${OPTARG}
 		;;
 	c) cpus=${OPTARG}
 		;;
@@ -89,11 +65,21 @@ do
 		;;
 	d) DUMP_LEVEL=${OPTARG}
 		;;
+	i) mon_interval=${OPTARG}
+		;;
 	*)  echo "invalid option -${OPT}" >&2
 		exit 1
 	esac
 done
 
+# Start ihkmond
+pid=`pidof ihkmond`
+if [ "${pid}" != "" ]; then
+    sudo kill -9 ${pid} > /dev/null 2> /dev/null
+fi
+if [ "${redirect_kmsg}" != "0" -o "${mon_interval}" != "-1" ]; then
+    ${SBINDIR}/ihkmond -f ${facility} -k ${redirect_kmsg} -i ${mon_interval}
+fi
 #
 # Revert any state that has been initialized before the error occured.
 #
@@ -248,7 +234,7 @@ if [ "${irqbalance_used}" == "yes" ]; then
     if ! systemctl stop irqbalance.service 2>/dev/null ; then
 		echo "error: stopping irqbalance" >&2
 		exit 1
-	fi;
+    fi;
 
     if ! etcdir=@ETCDIR@ perl -e 'use File::Copy qw(copy); $etcdir=$ENV{'etcdir'}; @files = grep { -f } glob "/proc/irq/*/smp_affinity"; foreach $file (@files) { $rel = substr($file, 1); $dir=substr($rel, 0, length($rel)-length("/smp_affinity")); if(0) { print "cp $file $etcdir/$rel\n";} if(system("mkdir -p $etcdir/$dir")){ exit 1;} if(!copy($file,"$etcdir/$rel")){ exit 1;} }'; then
 		echo "error: saving /proc/irq/*/smp_affinity" >&2
@@ -351,9 +337,15 @@ fi
 if ls /dev/mcos* 1>/dev/null 2>&1; then
 	for i in /dev/mcos*; do
 		ind=`echo $i|cut -c10-`;
-		if ! ${SBINDIR}/ihkconfig 0 destroy $ind; then
-			echo "error: destroying LWK instance $ind failed" >&2
-			error_exit "mcctrl_loaded"
+		# Retry when conflicting with ihkmond
+		nretry=0
+		until ${SBINDIR}/ihkconfig 0 destroy $ind || [ $nretry -lt 4 ]; do
+		    sleep 0.25
+		    nretry=$[ $nretry + 1 ]
+		done
+		if [ $nretry -eq 4 ]; then
+		    echo "error: destroying LWK instance $ind failed" >&2
+		    error_exit "mcctrl_loaded"
 		fi
 	done
 fi
@@ -391,7 +383,7 @@ if ! ${SBINDIR}/ihkosctl 0 load ${KERNDIR}/mckernel.img; then
 fi
 
 # Set kernel arguments
-if ! ${SBINDIR}/ihkosctl 0 kargs "hidos ksyslogd=${LOGMODE} $turbo dump_level=${DUMP_LEVEL}"; then
+if ! ${SBINDIR}/ihkosctl 0 kargs "hidos $turbo dump_level=${DUMP_LEVEL}"; then
 	echo "error: setting kernel arguments" >&2
 	error_exit "os_created"
 fi
@@ -429,14 +421,3 @@ if [ "${irqbalance_used}" == "yes" ]; then
 	fi
 #    echo cpus=$cpus ncpus=$ncpus banirq=$banirq
 fi
-
-# Start mcklogd. Note that McKernel blocks when kmsg buffer is full
-# with '-k 1' until mcklogd unblocks it so starting mcklogd must preceed
-# booting McKernel
-if [ ${LOGMODE} -ne 0 ]; then
-	# Stop mcklogd which has survived McKernel shutdown because
-	# mcstop+release.sh is not used
-	pkill mcklogd
-	SBINDIR=${SBINDIR} ${SBINDIR}/mcklogd -i ${INTERVAL} -f ${facility}
-fi
-

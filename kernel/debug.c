@@ -13,77 +13,22 @@
 #include <stdarg.h>
 #include <string.h>
 #include <kmsg.h>
+#include <ihk/cpu.h>
 #include <ihk/debug.h>
 #include <ihk/lock.h>
+#include <ihk/monitor.h>
+#include <errno.h>
 
-struct ihk_kmsg_buf kmsg_buf IHK_KMSG_ALIGN;
+struct ihk_kmsg_buf *kmsg_buf;
 
 extern int vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
 extern int sprintf(char * buf, const char *fmt, ...);
+extern void eventfd(int type);
 static ihk_spinlock_t kmsg_lock;
+extern char *find_command_line(char *name);
 
-static unsigned long kprintf_lock_head(void);
-static void kprintf_unlock_head(unsigned long irqflags);
-
-static void kprintf_wait(int len, unsigned long *flags_head, int *slide) {
-	int head, tail, buf_len, mode, adj;
-
-	mode = kmsg_buf.mode;
-	while (1) {
-		adj = 0;
-		tail = kmsg_buf.tail;
-		buf_len = kmsg_buf.len;
-		head = kmsg_buf.head;
-		if (head < tail) head += buf_len;
-		if (tail + len > buf_len) adj = buf_len - tail;
-		if (head > tail && head <= tail + len + adj) {
-			/* When proceeding tail (producer pointer) by len would
-			   cross head (consumer pointer) in ring-buffer */
-			if (mode != 1) {
-				*slide = 1;
-				break;
-			} else {
-				kprintf_unlock_head(*flags_head);
-				*flags_head = kprintf_lock_head();
-			}
-		} else {
-			break;
-		}
-	}
-}
-
-/* TODO: lock */
-void kputs(char *buf)
-{
-	int len = strlen(buf);
-	int slide = 0;
-	unsigned long flags_tail, flags_head;
-
-	flags_tail = kprintf_lock();
-	flags_head = kprintf_lock_head();
-	kprintf_wait(len, &flags_head, &slide);
-
-	if (len + kmsg_buf.tail > kmsg_buf.len) {
-		kmsg_buf.tail = 0;
-		if(len > kmsg_buf.len) {
-			len = kmsg_buf.len;
-		}
-	}
-	
-	memcpy(kmsg_buf.str + kmsg_buf.tail, buf, len);
-	kmsg_buf.tail += len;
-	/* When proceeding tail (producer pointer) by len would
-	   cross head (consumer pointer) in ring-buffer, give up
-	   [head, tail] because the range is overwritten */
-	if (slide == 1) {
-		kmsg_buf.head = kmsg_buf.tail + 1;
-		if (kmsg_buf.head >= kmsg_buf.len) kmsg_buf.head = 0;
-	}
-	kprintf_unlock_head(flags_head);
-	kprintf_unlock(flags_tail);
-}
-
-#define KPRINTF_LOCAL_BUF_LEN 1024
+#define DEBUG_KMSG_USED (((unsigned int)kmsg_buf->tail - (unsigned int)kmsg_buf->head) % (unsigned int)kmsg_buf->len)
+#define DEBUG_KMSG_MARGIN (kmsg_buf->head == kmsg_buf->tail ? kmsg_buf->len : (((unsigned int)kmsg_buf->head - (unsigned int)kmsg_buf->tail) % (unsigned int)kmsg_buf->len))
 
 unsigned long kprintf_lock(void)
 {
@@ -95,104 +40,140 @@ void kprintf_unlock(unsigned long irqflags)
 	__ihk_mc_spinlock_unlock(&kmsg_lock, irqflags);
 }
 
-static unsigned long kprintf_lock_head(void)
-{
-	return __ihk_mc_spinlock_lock(&kmsg_buf.lock);
+#define debug_spin_lock_irqsave(lock, flags) do {						\
+		flags = cpu_disable_interrupt_save();							\
+		while (__sync_val_compare_and_swap(lock, 0, 1) != 0) {			\
+			cpu_pause();												\
+		}																\
+	} while (0)
+
+#define debug_spin_unlock_irqrestore(lock, flags) do {					\
+		*(lock) = 0;													\
+		cpu_restore_interrupt(flags);									\
+	} while (0)
+
+static void memcpy_ringbuf(char* buf, int len) {
+	int i;
+	for(i = 0; i < len; i++) {
+		*(kmsg_buf->str + kmsg_buf->tail) = *(buf + i);
+		kmsg_buf->tail = (kmsg_buf->tail + 1) % kmsg_buf->len;
+	}
 }
 
-static void kprintf_unlock_head(unsigned long irqflags)
+void kputs(char *buf)
 {
-	__ihk_mc_spinlock_unlock(&kmsg_buf.lock, irqflags);
+	int len = strlen(buf);
+	unsigned long flags_outer, flags_inner;
+	int overflow;
+
+	if (kmsg_buf == NULL) {
+		return;
+	}
+
+	flags_outer = kprintf_lock(); /* Guard from destruction */
+	debug_spin_lock_irqsave(&kmsg_buf->lock, flags_inner); /* For consistency */
+
+	overflow = DEBUG_KMSG_MARGIN <= len;
+
+	memcpy_ringbuf(buf, len);
+	
+	if (overflow) {
+		kmsg_buf->head = (kmsg_buf->tail + 1) % kmsg_buf->len;
+	}
+
+	debug_spin_unlock_irqrestore(&kmsg_buf->lock, flags_inner);
+	kprintf_unlock(flags_outer);
+
+	if (DEBUG_KMSG_USED > IHK_KMSG_HIGH_WATER_MARK) {
+		eventfd(IHK_OS_EVENTFD_TYPE_KMSG);
+		ihk_mc_delay_us(IHK_KMSG_NOTIFY_DELAY);
+	}
 }
+
+#define KPRINTF_LOCAL_BUF_LEN 1024
 
 /* Caller must hold kmsg_lock! */
 int __kprintf(const char *format, ...)
 {
 	int len = 0;
-	int slide = 0;
 	va_list va;
-	unsigned long flags_head;
 	char buf[KPRINTF_LOCAL_BUF_LEN];
+	int overflow;
+	unsigned long flags_inner;
+
+	if (kmsg_buf == NULL) {
+		return -EINVAL;
+	}
 
 	/* Copy into the local buf */
 	len = sprintf(buf, "[%3d]: ", ihk_mc_get_processor_id());
+
 	va_start(va, format);
 	len += vsnprintf(buf + len, KPRINTF_LOCAL_BUF_LEN - len - 2, format, va);
 	va_end(va);
 
-	flags_head = kprintf_lock_head();
-	kprintf_wait(len, &flags_head, &slide);
+	debug_spin_lock_irqsave(&kmsg_buf->lock, flags_inner);
 
-	/* Append to kmsg buffer */
-	if (kmsg_buf.tail + len > kmsg_buf.len) {
-		kmsg_buf.tail = 0;
+	overflow = DEBUG_KMSG_MARGIN <= len;
+
+	memcpy_ringbuf(buf, len);
+
+	if (overflow) {
+		kmsg_buf->head = (kmsg_buf->tail + 1) % kmsg_buf->len;
 	}
 
-	memcpy(kmsg_buf.str + kmsg_buf.tail, buf, len);
-	kmsg_buf.tail += len;
-	if (slide == 1) {
-		kmsg_buf.head = kmsg_buf.tail + 1;
-		if (kmsg_buf.head >= kmsg_buf.len) kmsg_buf.head = 0;
+	debug_spin_unlock_irqrestore(&kmsg_buf->lock, flags_inner);
+
+	if (DEBUG_KMSG_USED > IHK_KMSG_HIGH_WATER_MARK) {
+		eventfd(IHK_OS_EVENTFD_TYPE_KMSG);
+		ihk_mc_delay_us(IHK_KMSG_NOTIFY_DELAY);
 	}
 
-	kprintf_unlock_head(flags_head);
 	return len;
 }
 
 int kprintf(const char *format, ...)
 {
 	int len = 0;
-	int slide = 0;
 	va_list va;
-	unsigned long flags_tail, flags_head;
+	unsigned long flags_outer, flags_inner;
 	char buf[KPRINTF_LOCAL_BUF_LEN];
+	int overflow;
+
+	if (kmsg_buf == NULL) {
+		return -EINVAL;
+	}
 
 	/* Copy into the local buf */
 	len = sprintf(buf, "[%3d]: ", ihk_mc_get_processor_id());
+
 	va_start(va, format);
 	len += vsnprintf(buf + len, KPRINTF_LOCAL_BUF_LEN - len - 2, format, va);
 	va_end(va);
 
-	flags_tail = kprintf_lock();
-	flags_head = kprintf_lock_head();
-	kprintf_wait(len, &flags_head, &slide);
+	flags_outer = kprintf_lock();
+	debug_spin_lock_irqsave(&kmsg_buf->lock, flags_inner);
 
-	/* Append to kmsg buffer */
-	if (kmsg_buf.tail + len > kmsg_buf.len) {
-		kmsg_buf.tail = 0;
+	overflow = DEBUG_KMSG_MARGIN <= len;
+	
+	memcpy_ringbuf(buf, len);
+
+	if (overflow) {
+		kmsg_buf->head = (kmsg_buf->tail + 1) % kmsg_buf->len;
 	}
 
-	memcpy(kmsg_buf.str + kmsg_buf.tail, buf, len);
-	kmsg_buf.tail += len;
-	if (slide == 1) {
-		kmsg_buf.head = kmsg_buf.tail + 1;
-		if (kmsg_buf.head >= kmsg_buf.len) kmsg_buf.head = 0;
-	}
+	debug_spin_unlock_irqrestore(&kmsg_buf->lock, flags_inner);
+	kprintf_unlock(flags_outer);
 
-	kprintf_unlock_head(flags_head);
-	kprintf_unlock(flags_tail);
+	if (DEBUG_KMSG_USED > IHK_KMSG_HIGH_WATER_MARK) {
+		eventfd(IHK_OS_EVENTFD_TYPE_KMSG);
+		ihk_mc_delay_us(IHK_KMSG_NOTIFY_DELAY);
+	}
 
 	return len;
 }
 
-/* mode:
-    0: mcklogd is not running.
-       When kmsg buffer is full, writer doesn't block
-       and overwrites the buffer.
-    1: mcklogd periodically retrieves kmsg.
-       When kmsg buffer is full, writer blocks until 
-       someone retrieves kmsg.
-    2: mcklogd periodically retrieves kmsg.
-       When kmsg buffer is full, writer doesn't block
-       and overwrites the buffer.
-*/
-void kmsg_init(int mode)
+void kmsg_init()
 {
 	ihk_mc_spinlock_init(&kmsg_lock);
-	kmsg_buf.tail = 0;
-	kmsg_buf.len = sizeof(kmsg_buf.str);
-	kmsg_buf.head = 0;
-	kmsg_buf.mode = mode;
-	ihk_mc_spinlock_init(&kmsg_buf.lock);
-	memset(kmsg_buf.str, 0, kmsg_buf.len);
 }

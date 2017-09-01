@@ -122,7 +122,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		break;
 
 	case SCD_MSG_EVENTFD:
-		dkprintf(KERN_EMERG "%s: SCD_MSG_EVENTFD,pisp->eventfd_type=%d\n", __FUNCTION__, pisp->eventfd_type);
+		dkprintf("%s: SCD_MSG_EVENTFD,pisp->eventfd_type=%d\n", __FUNCTION__, pisp->eventfd_type);
 		mcctrl_eventfd(__os, pisp);
 		break;
 

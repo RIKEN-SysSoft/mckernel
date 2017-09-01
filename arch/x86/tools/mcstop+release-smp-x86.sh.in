@@ -21,12 +21,6 @@ irqbalance_used=""
 # No SMP module? Exit.
 if ! grep ihk_smp_x86 /proc/modules &>/dev/null; then exit 0; fi
 
-# Stop mcklogd
-while pgrep "mcklogd" > /dev/null 2>&1;
-do
-	pkill -9 mcklogd
-done
-
 if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
 	irqbalance_used="yes"
 	if ! systemctl stop irqbalance_mck.service 2>/dev/null; then
@@ -41,9 +35,15 @@ fi
 if ls /dev/mcos* 1>/dev/null 2>&1; then
 	for i in /dev/mcos*; do
 		ind=`echo $i|cut -c10-`;
-		if ! ${SBINDIR}/ihkconfig 0 destroy $ind; then
-			echo "error: destroying LWK instance $ind failed" >&2
-			exit 1
+		# Retry when conflicting with ihkmond
+		nretry=0
+		until ${SBINDIR}/ihkconfig 0 destroy $ind || [ $nretry -lt 4 ]; do
+		    sleep 0.25
+		    nretry=$[ $nretry + 1 ]
+		done
+		if [ $nretry -eq 4 ]; then
+		    echo "error: destroying LWK instance $ind failed" >&2
+		    exit 1
 		fi
 	done
 fi
@@ -100,6 +100,12 @@ if grep -E 'ihk\s' /proc/modules &>/dev/null; then
 		echo "error: removing ihk" >&2
 		exit 1
 	fi
+fi
+
+# Stop ihkmond
+pid=`pidof ihkmond`
+if [ "${pid}" != "" ]; then
+    sudo kill -9 ${pid} > /dev/null 2> /dev/null
 fi
 
 # Start irqbalance with the original settings

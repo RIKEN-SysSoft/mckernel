@@ -50,7 +50,6 @@
 
 #define DUMP_LEVEL_USER_UNUSED_EXCLUDE 24
 
-extern struct ihk_kmsg_buf kmsg_buf;
 extern unsigned long ihk_mc_get_ns_per_tsc(void);
 extern long syscall(int, ihk_mc_user_context_t *);
 
@@ -424,19 +423,6 @@ extern void ibmic_cmd_init(void);
 
 int main(void)
 {
-	char *ptr;
-	int mode = 0;
-
-	ptr = find_command_line("ksyslogd=");
-	if (ptr) {
-	    mode = ptr[9] - 0x30;
-	    if (mode < 0 || mode > 2) mode = 0;
-	}
-
-	kmsg_init(mode);
-
-	kputs("IHK/McKernel started.\n");
-	ihk_set_kmsg(virt_to_phys(&kmsg_buf), IHK_KMSG_SIZE);
 	arch_init();
 
 	/*
