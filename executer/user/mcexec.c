@@ -1576,7 +1576,9 @@ opendev()
 static void ld_preload_init()
 {
 	char envbuf[PATH_MAX];
+#ifdef ENABLE_QLMPI
 	char *old_ld_preload;
+#endif
 
 	if (disable_sched_yield) {
 		sprintf(envbuf, "%s/libsched_yield.so.1.0.0", MCKERNEL_LIBDIR);

@@ -1715,6 +1715,7 @@ out:
 	return error;
 }
 
+#ifdef SC_DEBUG
 #ifdef MCCTRL_KSYM_walk_page_range
 static void
 (*mcctrl_walk_page_range)(unsigned long addr, unsigned long end, struct mm_walk *walk)
@@ -1748,6 +1749,7 @@ static int mywalk(pte_t *pte, unsigned long addr, unsigned long next, struct mm_
 	}
 	return 0;
 }
+#endif
 
 static long pager_req_mlock_list(ihk_os_t os, unsigned long start,
 				 unsigned long end, void *addr, int nent)
