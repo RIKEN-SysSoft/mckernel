@@ -1299,7 +1299,7 @@ static int clear_range_l3(void *args0, pte_t *ptep, uint64_t base,
 			memobj_flush_page(args->memobj, phys, PTL3_SIZE);
 		}
 
-		kprintf("%s: phys=%ld, pte_get_phys(&old),PTL3_SIZE\n", __FUNCTION__, pte_get_phys(&old));
+		dkprintf("%s: phys=%ld, pte_get_phys(&old),PTL3_SIZE\n", __FUNCTION__, pte_get_phys(&old));
 
 		if (!(old & PFL3_FILEOFF)) {
 			if(args->free_physical) {
