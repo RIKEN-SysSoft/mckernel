@@ -1,3 +1,4 @@
+/* syscall.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
 /**
  * \file syscall.c
  *  License details are found in the file LICENSE.
@@ -57,6 +58,9 @@
 #include <xpmem.h>
 #include <rusage.h>
 #include <profile.h>
+#ifdef POSTK_DEBUG_ARCH_DEP_27
+#include <memory.h>
+#endif	/* POSTK_DEBUG_ARCH_DEP_27 */
 
 /* Headers taken from kitten LWK */
 #include <lwk/stddef.h>
@@ -140,12 +144,14 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid, struct s
 
 	if(req->number == __NR_exit_group ||
 	   req->number == __NR_kill){ // interrupt syscall
+#ifndef POSTK_DEBUG_TEMP_FIX_26 /* do_syscall arg pid is not targetpid */
 		if (req->number == __NR_kill) {
 			req->rtid = -1; // no response
 			pid = req->args[0];
 		}
 		if (req->number == __NR_gettid)
 			pid = req->args[1];
+#endif /* !POSTK_DEBUG_TEMP_FIX_26 */
 	}
 
 	res->status = 0;
@@ -159,7 +165,11 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid, struct s
 #ifdef SYSCALL_BY_IKC
 	packet.msg = SCD_MSG_SYSCALL_ONESIDE;
 	packet.ref = cpu;
+#ifdef POSTK_DEBUG_TEMP_FIX_26 /* do_syscall arg pid is not targetpid */
+	packet.pid = pid;
+#else /* POSTK_DEBUG_TEMP_FIX_26 */
 	packet.pid = pid ? pid : cpu_local_var(current)->proc->pid;
+#endif /* POSTK_DEBUG_TEMP_FIX_26 */
 	packet.resp_pa = virt_to_phys(res);
 	dkprintf("send syscall, nr: %d, pid: %d\n", req->number, packet.pid);
 
@@ -189,6 +199,9 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		t_s = rdtsc();
 	}
 #endif // PROFILE_ENABLE
+#ifdef POSTK_DEBUG_TEMP_FIX_26 /* do_syscall arg pid is not targetpid */
+	int target_pid = pid;
+#endif /* POSTK_DEBUG_TEMP_FIX_26 */
 
 	dkprintf("SC(%d)[%3d] sending syscall\n",
 		ihk_mc_get_processor_id(),
@@ -199,11 +212,52 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	
 	barrier();
 
+#ifdef POSTK_DEBUG_TEMP_FIX_26 /* do_syscall arg pid is not targetpid */
+	switch (req->number) {
+	case __NR_kill:
+		req->rtid = -1; // no response
+		target_pid = req->args[0];
+		break;
+	case __NR_gettid:
+		target_pid = req->args[1];
+		break;
+	default:
+		break;
+	}
+	target_pid = target_pid ? target_pid : proc->pid;
+#endif /* POSTK_DEBUG_TEMP_FIX_26 */
+
 	if(req->number != __NR_exit_group){
+#ifdef POSTK_DEBUG_TEMP_FIX_26 /* do_syscall arg pid is not targetpid */
+#ifdef POSTK_DEBUG_TEMP_FIX_48 /* nohost flag missed fix */
+		struct process *target_proc = NULL;
+		struct mcs_rwlock_node_irqsave lock;
+
+		if (target_pid != proc->pid) {
+			target_proc = find_process(target_pid, &lock);
+			if (!target_proc) {
+				return -EPIPE;
+			}
+			process_unlock(target_proc, &lock);
+		} else {
+			target_proc = proc;
+		}
+
+		if (target_proc->nohost) { // host is down
+			return -EPIPE;
+		}
+#else /* POSTK_DEBUG_TEMP_FIX_48 */
+		if (proc->nohost && // host is down
+		    target_pid == proc->pid) {
+			return -EPIPE;
+		}
+#endif /* POSTK_DEBUG_TEMP_FIX_48 */
+#else /* POSTK_DEBUG_TEMP_FIX_26 */
 		if(proc->nohost && // host is down
 		   pid == proc->pid) {
 			return -EPIPE;
 		}
+#endif /* POSTK_DEBUG_TEMP_FIX_26 */
 		++thread->in_syscall_offload;
 	}
 
@@ -212,7 +266,11 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	req->rtid = cpu_local_var(current)->tid;
 	req->ttid = 0;
 	res.req_thread_status = IHK_SCD_REQ_THREAD_SPINNING;
+#ifdef POSTK_DEBUG_TEMP_FIX_26 /* do_syscall arg pid is not targetpid */
+	send_syscall(req, cpu, target_pid, &res);
+#else /* POSTK_DEBUG_TEMP_FIX_26 */
 	send_syscall(req, cpu, pid, &res);
+#endif /* POSTK_DEBUG_TEMP_FIX_26 */
 
 	if (req->rtid == -1) {
 		preempt_disable();
@@ -305,7 +363,11 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 			req2.ttid = res.stid;
 
 			res.req_thread_status = IHK_SCD_REQ_THREAD_SPINNING;
+#ifdef POSTK_DEBUG_TEMP_FIX_26 /* do_syscall arg pid is not targetpid */
+			send_syscall(&req2, cpu, target_pid, &res);
+#else /* POSTK_DEBUG_TEMP_FIX_26 */
 			send_syscall(&req2, cpu, pid, &res);
+#endif /* POSTK_DEBUG_TEMP_FIX_26 */
 #ifdef PROFILE_ENABLE
 			profile_event_add(PROFILE_remote_page_fault,
 					(rdtsc() - t_s));
@@ -396,7 +458,12 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 
 	/* -ERESTARTSYS indicates that the proxy process is gone
 	 * and the application should be terminated */
+#ifdef POSTK_DEBUG_TEMP_FIX_70 /* interrupt_syscall returned -ERESTARTSYS fix */
+	if (rc == -ERESTARTSYS && req->number != __NR_exit_group
+		&& req->number != __NR_kill) {
+#else /* POSTK_DEBUG_TEMP_FIX_70 */
 	if (rc == -ERESTARTSYS && req->number != __NR_exit_group) {
+#endif /* POSTK_DEBUG_TEMP_FIX_70 */
 		kprintf("%s: proxy PID %d is dead, terminate()\n",
 			__FUNCTION__, thread->proc->pid);
 		thread->proc->nohost = 1;
@@ -556,15 +623,29 @@ do_wait(int pid, int *status, int options, void *rusage)
 	dkprintf("wait4(): current->proc->pid: %d, pid: %d\n", thread->proc->pid, pid);
 
  rescan:
+#ifdef POSTK_DEBUG_TEMP_FIX_65 /* wait4() lose infomation fix. */
+	waitq_init_entry(&waitpid_wqe, thread);
+	waitq_prepare_to_wait(&thread->proc->waitpid_q, &waitpid_wqe, PS_INTERRUPTIBLE);
+#endif /* POSTK_DEBUG_TEMP_FIX_65 */
 	pid = orgpid;
 
 	mcs_rwlock_writer_lock_noirq(&thread->proc->children_lock, &lock);
 	list_for_each_entry_safe(child, next, &proc->children_list, siblings_list) {	
+#ifdef POSTK_DEBUG_ARCH_DEP_44 /* wait() add support __WALL */
+		/*
+		if (!(options & __WALL)) {
+			if (!(!!(options & __WCLONE) ^ (child->termsig == SIGCHLD))) {
+				continue;
+			}
+		}
+		*/
+#else /* POSTK_DEBUG_ARCH_DEP_44 */
 		/*
 		if (!(!!(options & __WCLONE) ^ (child->termsig == SIGCHLD))) {
 			continue;
 		}
 		*/
+#endif /* POSTK_DEBUG_ARCH_DEP_44 */
 
 		/* Find thread with pid == tid, this will be either the main thread
 		 * or the one we are looking for specifically when __WCLONE is passed */
@@ -681,8 +762,10 @@ do_wait(int pid, int *status, int options, void *rusage)
 
 	/* Sleep */
 	dkprintf("wait4,sleeping\n");
+#ifndef POSTK_DEBUG_TEMP_FIX_65 /* wait4() lose infomation fix. */
 	waitq_init_entry(&waitpid_wqe, thread);
 	waitq_prepare_to_wait(&thread->proc->waitpid_q, &waitpid_wqe, PS_INTERRUPTIBLE);
+#endif /* !POSTK_DEBUG_TEMP_FIX_65 */
 
 	mcs_rwlock_writer_unlock_noirq(&thread->proc->children_lock, &lock);	
 	if(hassigpending(thread)){
@@ -698,6 +781,9 @@ do_wait(int pid, int *status, int options, void *rusage)
 	goto rescan;
 
  exit:
+#ifdef POSTK_DEBUG_TEMP_FIX_65 /* wait4() lose infomation fix. */
+	waitq_finish_wait(&thread->proc->waitpid_q, &waitpid_wqe);
+#endif /* POSTK_DEBUG_TEMP_FIX_65 */
 	return ret;
  out_found:
 	dkprintf("wait4,out_found\n");
@@ -718,7 +804,11 @@ SYSCALL_DECLARE(wait4)
 	int rc;
 	struct rusage usage;
 
+#ifdef POSTK_DEBUG_ARCH_DEP_44 /* wait() add support __WALL */
+	if(options & ~(WNOHANG | WUNTRACED | WCONTINUED | __WCLONE | __WALL)){
+#else /* POSTK_DEBUG_ARCH_DEP_44 */
 	if(options & ~(WNOHANG | WUNTRACED | WCONTINUED | __WCLONE)){
+#endif /* POSTK_DEBUG_ARCH_DEP_44 */
 		dkprintf("wait4: unexpected options(%x).\n", options);
 		return -EINVAL;
 	}
@@ -750,7 +840,12 @@ SYSCALL_DECLARE(waitid)
 		pid = -1;
 	else
 		return -EINVAL;
+#ifdef POSTK_DEBUG_ARCH_DEP_44 /* wait() add support __WALL */
+	if(options & ~(WEXITED | WSTOPPED | WCONTINUED | WNOHANG | WNOWAIT | __WCLONE | __WALL)){
+#else /* POSTK_DEBUG_ARCH_DEP_44 */
 	if(options & ~(WEXITED | WSTOPPED | WCONTINUED | WNOHANG | WNOWAIT | __WCLONE)){
+#endif /* POSTK_DEBUG_ARCH_DEP_44 */
+		dkprintf("wait4: unexpected options(%x).\n", options);
 		dkprintf("waitid: unexpected options(%x).\n", options);
 		return -EINVAL;
 	}
@@ -983,8 +1078,13 @@ void terminate(int rc, int sig)
 	if (!proc->nohost) {
 		request.number = __NR_exit_group;
 		request.args[0] = exit_status;
+#ifdef POSTK_DEBUG_TEMP_FIX_48 /* nohost flag missed fix */
+		proc->nohost = 1;
+		do_syscall(&request, ihk_mc_get_processor_id(), proc->pid);
+#else /* POSTK_DEBUG_TEMP_FIX_48 */
 		do_syscall(&request, ihk_mc_get_processor_id(), proc->pid);
 		proc->nohost = 1;
+#endif /* POSTK_DEBUG_TEMP_FIX_48 */
 	}
 
 	// Send signal to parent
@@ -1147,6 +1247,8 @@ int do_munmap(void *addr, size_t len)
 	return error;
 }
 
+#ifdef POSTK_DEBUG_ARCH_DEP_27
+#else
 static int search_free_space(size_t len, intptr_t hint, int pgshift, intptr_t *addrp)
 {
 	struct thread *thread = cpu_local_var(current);
@@ -1186,6 +1288,7 @@ out:
 			len, hint, pgshift, addrp, error, addr);
 	return error;
 }
+#endif
 
 intptr_t
 do_mmap(const intptr_t addr0, const size_t len0, const int prot,
@@ -1278,8 +1381,13 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	}
 	else {
 		/* choose mapping address */
+#ifdef POSTK_DEBUG_ARCH_DEP_27
+		error = search_free_space(cpu_local_var(current), len,
+				region->map_end, PAGE_SHIFT + p2align, &addr);
+#else
 		error = search_free_space(len, region->map_end,
 				PAGE_SHIFT + p2align, &addr);
+#endif	/* POSTK_DEBUG_ARCH_DEP_27 */
 		if (error) {
 			ekprintf("do_mmap:search_free_space(%lx,%lx,%d) failed. %d\n",
 					len, region->map_end, p2align, error);
@@ -1770,7 +1878,11 @@ SYSCALL_DECLARE(brk)
 	}
 
 	/* Try to extend memory region */
+#ifdef POSTK_DEBUG_ARCH_DEP_60 /* brk() use demand-paging */
+	vrflag = VR_PROT_READ | VR_PROT_WRITE | VR_DEMAND_PAGING;
+#else /* POSTK_DEBUG_ARCH_DEP_60 */
 	vrflag = VR_PROT_READ | VR_PROT_WRITE;
+#endif /* POSTK_DEBUG_ARCH_DEP_60 */
 	vrflag |= VRFLAG_PROT_TO_MAXPROT(vrflag);
 	old_brk_end_allocated = region->brk_end_allocated;
 	ihk_mc_spinlock_lock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
@@ -1809,6 +1921,10 @@ static void settid(struct thread *thread, int nr_tids, int *tids)
 {
 	int ret;
 	struct syscall_request request IHK_DMA_ALIGN;
+
+#ifdef POSTK_DEBUG_ARCH_DEP_58 /* settid() arguments area 0 clear add. */
+	memset(&request, 0, sizeof(request));
+#endif /* POSTK_DEBUG_ARCH_DEP_58 */
 
 	request.number = __NR_gettid;
 	/*
@@ -1998,6 +2114,10 @@ static void munmap_all(void)
 	return;
 } /* munmap_all() */
 
+#ifdef POSTK_DEBUG_TEMP_FIX_19
+extern void clear_fp_regs(struct thread *thread);
+#endif /* POSTK_DEBUG_TEMP_FIX_19 */
+
 SYSCALL_DECLARE(execve)
 {
 	int error;
@@ -2052,8 +2172,13 @@ SYSCALL_DECLARE(execve)
 	if (ret != 0) {
 		dkprintf("execve(): ERROR: host failed to load elf header, errno: %d\n", 
 				ret);
+#ifdef POSTK_DEBUG_TEMP_FIX_10 /* sys_execve() memleak fix. */
+		ret = -ret;
+		goto desc_free;
+#else /* POSTK_DEBUG_TEMP_FIX_10 */
 		ihk_mc_free_pages(desc, 4);
 		return -ret;
+#endif /* POSTK_DEBUG_TEMP_FIX_10 */
 	}
 
 	dkprintf("execve(): ELF desc received, num sections: %d\n",
@@ -2076,8 +2201,13 @@ SYSCALL_DECLARE(execve)
 		kprintf("ERROR: no argv for executable: %s?\n", kfilename? kfilename: "");
 		if(kfilename)
 			kfree(kfilename);
+#ifdef POSTK_DEBUG_TEMP_FIX_10 /* sys_execve() memleak fix. */
+		ret = -EINVAL;
+		goto desc_free;
+#else /* POSTK_DEBUG_TEMP_FIX_10 */
 		ihk_mc_free_pages(desc, 4);
 		return -EINVAL;
+#endif /* POSTK_DEBUG_TEMP_FIX_10 */
 	}
 
 	envp_flat_len = flatten_strings_from_user(-1, NULL, envp, &envp_flat);
@@ -2091,7 +2221,12 @@ SYSCALL_DECLARE(execve)
 		kprintf("ERROR: no envp for executable: %s?\n", kfilename? kfilename: "");
 		if(kfilename)
 			kfree(kfilename);
+#ifdef POSTK_DEBUG_TEMP_FIX_10 /* sys_execve() memleak fix. */
+		ret = -EINVAL;
+		goto argv_free;
+#else /* POSTK_DEBUG_TEMP_FIX_10 */
 		return -EINVAL;
+#endif /* POSTK_DEBUG_TEMP_FIX_10 */
 	}
 
 	/* Unmap all memory areas of the process, userspace will be gone */
@@ -2136,6 +2271,11 @@ SYSCALL_DECLARE(execve)
 			thread->sigcommon->action[i].sa.sa_handler = SIG_DFL;
 	}
 
+#ifdef POSTK_DEBUG_TEMP_FIX_19
+	/* The floating-point environment is reset to the default. */
+	clear_fp_regs(thread);
+#endif /* POSTK_DEBUG_TEMP_FIX_19 */
+
 	error = ptrace_report_exec(cpu_local_var(current));
 	if(error) {
 		kprintf("execve(): ERROR: ptrace_report_exec()\n");
@@ -2145,6 +2285,30 @@ SYSCALL_DECLARE(execve)
 	dkprintf("execve(): switching to new process\n");
 	proc->execed = 1;
 	
+#ifdef POSTK_DEBUG_TEMP_FIX_10 /* sys_execve() memleak fix. */
+	ret = 0;
+	if (envp_flat) {
+		kfree(envp_flat);
+	}
+
+argv_free:
+	if (argv_flat) {
+		kfree(argv_flat);
+	}
+
+desc_free:
+	ihk_mc_free_pages(desc, 4);
+
+	if (!ret) {
+		/* Lock run queue because enter_user_mode expects to release it */
+		cpu_local_var(runq_irqstate) = 
+			ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
+
+		ihk_mc_switch_context(NULL, &cpu_local_var(current)->ctx, 
+			cpu_local_var(current));
+	}
+	return ret;
+#else /* POSTK_DEBUG_TEMP_FIX_10 */
 	ihk_mc_free_pages(desc, 4);
 	kfree(argv_flat);
 	kfree(envp_flat);
@@ -2158,6 +2322,7 @@ SYSCALL_DECLARE(execve)
 
 	/* Never reach here */
 	return 0;
+#endif /* POSTK_DEBUG_TEMP_FIX_10 */
 }
 
 unsigned long do_fork(int clone_flags, unsigned long newsp,
@@ -2299,7 +2464,11 @@ retry_tid:
 				request1.args[0] = clone_flags;
 		}
 		newproc->pid = do_syscall(&request1, ihk_mc_get_processor_id(), 0);
+#ifdef POSTK_DEBUG_TEMP_FIX_12 /* __NR_fork retval check fix. */
+		if (newproc->pid < 0) {
+#else /* POSTK_DEBUG_TEMP_FIX_12 */
 		if (newproc->pid == -1) {
+#endif /* POSTK_DEBUG_TEMP_FIX_12 */
 			kprintf("ERROR: forking host process\n");
 			
 			/* TODO: clean-up new */
@@ -2312,6 +2481,7 @@ retry_tid:
 		new->vm->address_space->pids[0] = new->proc->pid;
 
 		dkprintf("fork(): new pid: %d\n", new->proc->pid);
+#ifndef POSTK_DEBUG_TEMP_FIX_48 /* nohost flag missed fix */
 		/* clear user space PTEs and set new rpgtable so that consequent 
 		 * page faults will look up the right mappings */
 		request1.number = __NR_munmap;
@@ -2328,6 +2498,7 @@ retry_tid:
 		if (do_syscall(&request1, ihk_mc_get_processor_id(), new->proc->pid)) {
 			kprintf("ERROR: clearing PTEs in host process\n");
 		}		
+#endif /* !POSTK_DEBUG_TEMP_FIX_48 */
 		if(oldproc->monitoring_event &&
 		   oldproc->monitoring_event->attr.inherit){
 			newproc->monitoring_event = oldproc->monitoring_event;
@@ -2415,6 +2586,24 @@ retry_tid:
 			chain_process(newproc);
 	}
 
+#ifdef POSTK_DEBUG_TEMP_FIX_48 /* nohost flag missed fix */
+	/* clear user space PTEs and set new rpgtable so that consequent 
+	 * page faults will look up the right mappings */
+	request1.number = __NR_munmap;
+	request1.args[0] = new->vm->region.user_start;
+	request1.args[1] = new->vm->region.user_end - 
+		new->vm->region.user_start;
+	/* 3rd parameter denotes new rpgtable of host process */
+	request1.args[2] = virt_to_phys(new->vm->address_space->page_table);
+	request1.args[3] = newproc->pid;
+
+	dkprintf("fork(): requesting PTE clear and rpgtable (0x%lx) update\n",
+			request1.args[2]);
+
+	if (do_syscall(&request1, ihk_mc_get_processor_id(), new->proc->pid)) {
+		kprintf("ERROR: clearing PTEs in host process\n");
+	}		
+#endif /* !POSTK_DEBUG_TEMP_FIX_48 */
 	if (oldproc->ptrace) {
 		ptrace_event = ptrace_check_clone_event(old, clone_flags);
 		if (ptrace_event) {
@@ -2548,7 +2737,11 @@ SYSCALL_DECLARE(tkill)
 }
 
 int *
+#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
+getcred(int *_buf, int tid)
+#else /* POSTK_DEBUG_TEMP_FIX_45 */
 getcred(int *_buf)
+#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 {
 	int	*buf;
 	struct syscall_request request IHK_DMA_ALIGN;
@@ -2558,6 +2751,9 @@ getcred(int *_buf)
 		buf = _buf + 8;
 	else
 		buf = _buf;
+#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
+	buf[0] = tid;
+#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 	phys = virt_to_phys(buf);
 	request.number = __NR_setfsuid;
 	request.args[0] = phys;
@@ -2568,14 +2764,22 @@ getcred(int *_buf)
 }
 
 void
+#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
+do_setresuid(int tid)
+#else /* POSTK_DEBUG_TEMP_FIX_45 */
 do_setresuid()
+#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 {
 	int	_buf[16];
 	int	*buf;
 	struct thread *thread = cpu_local_var(current);
 	struct process *proc = thread->proc;
 
+#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
+	buf = getcred(_buf, tid);
+#else /* POSTK_DEBUG_TEMP_FIX_45 */
 	buf = getcred(_buf);
+#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 
 	proc->ruid = buf[0];
 	proc->euid = buf[1];
@@ -2584,14 +2788,22 @@ do_setresuid()
 }
 
 void
+#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
+do_setresgid(int tid)
+#else /* POSTK_DEBUG_TEMP_FIX_45 */
 do_setresgid()
+#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 {
 	int	_buf[16];
 	int	*buf;
 	struct thread *thread = cpu_local_var(current);
 	struct process *proc = thread->proc;
 
+#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
+	buf = getcred(_buf, tid);
+#else /* POSTK_DEBUG_TEMP_FIX_45 */
 	buf = getcred(_buf);
+#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 
 	proc->rgid = buf[4];
 	proc->egid = buf[5];
@@ -2605,7 +2817,11 @@ SYSCALL_DECLARE(setresuid)
 
 	rc = syscall_generic_forwarding(__NR_setresuid, ctx);
 	if(rc == 0){
+#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
+		do_setresuid(0);
+#else /* POSTK_DEBUG_TEMP_FIX_45 */
 		do_setresuid();
+#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 	}
 	return rc;
 }
@@ -2616,7 +2832,11 @@ SYSCALL_DECLARE(setreuid)
 
 	rc = syscall_generic_forwarding(__NR_setreuid, ctx);
 	if(rc == 0){
+#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
+		do_setresuid(0);
+#else /* POSTK_DEBUG_TEMP_FIX_45 */
 		do_setresuid();
+#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 	}
 	return rc;
 }
@@ -2627,7 +2847,11 @@ SYSCALL_DECLARE(setuid)
 
 	rc = syscall_generic_forwarding(__NR_setuid, ctx);
 	if(rc == 0){
+#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
+		do_setresuid(0);
+#else /* POSTK_DEBUG_TEMP_FIX_45 */
 		do_setresuid();
+#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 	}
 	return rc;
 }
@@ -2642,7 +2866,12 @@ SYSCALL_DECLARE(setfsuid)
 	request.args[0] = fsuid;
 	request.args[1] = 0;
 	newfsuid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
+	do_setresuid((int)(newfsuid >> 32));
+	newfsuid &= (1UL << 32) - 1;
+#else /* POSTK_DEBUG_TEMP_FIX_45 */
 	do_setresuid();
+#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 	return newfsuid;
 }
 
@@ -2652,7 +2881,11 @@ SYSCALL_DECLARE(setresgid)
 
 	rc = syscall_generic_forwarding(__NR_setresgid, ctx);
 	if(rc == 0){
+#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
+		do_setresgid(0);
+#else /* POSTK_DEBUG_TEMP_FIX_45 */
 		do_setresgid();
+#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 	}
 	return rc;
 }
@@ -2663,7 +2896,11 @@ SYSCALL_DECLARE(setregid)
 
 	rc = syscall_generic_forwarding(__NR_setregid, ctx);
 	if(rc == 0){
+#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
+		do_setresgid(0);
+#else /* POSTK_DEBUG_TEMP_FIX_45 */
 		do_setresgid();
+#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 	}
 	return rc;
 }
@@ -2674,7 +2911,11 @@ SYSCALL_DECLARE(setgid)
 
 	rc = syscall_generic_forwarding(__NR_setgid, ctx);
 	if(rc == 0){
+#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
+		do_setresgid(0);
+#else /* POSTK_DEBUG_TEMP_FIX_45 */
 		do_setresgid();
+#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 	}
 	return rc;
 }
@@ -2688,7 +2929,12 @@ SYSCALL_DECLARE(setfsgid)
 	request.number = __NR_setfsgid;
 	request.args[0] = fsgid;
 	newfsgid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
+	do_setresgid((int)(newfsgid >> 32));
+	newfsgid &= (1UL << 32) - 1;
+#else /* POSTK_DEBUG_TEMP_FIX_45 */
 	do_setresgid();
+#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 	return newfsgid;
 }
 
@@ -2800,7 +3046,12 @@ SYSCALL_DECLARE(setpgid)
 
 SYSCALL_DECLARE(set_robust_list)
 {
+#ifdef POSTK_DEBUG_TEMP_FIX_2
+	// Palliative fix. wait for impl.
+	return 0;
+#else
 	return -ENOSYS;
+#endif
 }
 
 int
@@ -2896,6 +3147,15 @@ SYSCALL_DECLARE(open)
 	}
 	dkprintf("open(): pathname=%s\n", xpmem_wk);
 	rc = strcmp(xpmem_wk, XPMEM_DEV_PATH);
+#ifdef POSTK_DEBUG_ARCH_DEP_62 /* Absorb the difference between open and openat args. */
+	if (!rc) {
+		rc = xpmem_open(__NR_open, xpmem_wk, (int)ihk_mc_syscall_arg1(ctx), ctx);
+	}
+	else {
+		rc = syscall_generic_forwarding(__NR_open, ctx);
+	}
+	kfree(xpmem_wk);
+#else /* POSTK_DEBUG_ARCH_DEP_62 */
 	kfree(xpmem_wk);
 	if (!rc) {
 		rc = xpmem_open(ctx);
@@ -2903,9 +3163,43 @@ SYSCALL_DECLARE(open)
 	else {
 		rc = syscall_generic_forwarding(__NR_open, ctx);
 	}
+#endif /* POSTK_DEBUG_ARCH_DEP_62 */
 
 	return rc;
 }
+
+#ifdef POSTK_DEBUG_ARCH_DEP_62 /* Absorb the difference between open and openat args. */
+SYSCALL_DECLARE(openat)
+{
+	const char *pathname_user = (const char *)ihk_mc_syscall_arg1(ctx);
+	int flags = (int)ihk_mc_syscall_arg2(ctx);
+	char *pathname;
+	int len = strlen_user(pathname_user) + 1;
+	long rc;
+
+	pathname = kmalloc(len, IHK_MC_AP_NOWAIT);
+	if (!pathname) {
+		dkprintf("%s: error allocating pathname\n", __FUNCTION__);
+		return -ENOMEM;
+	}
+	if (copy_from_user(pathname, pathname_user, len)) {
+		dkprintf("%s: error: copy_from_user pathname\n", __FUNCTION__);
+		rc = -EFAULT;
+		goto out;
+	}
+
+	dkprintf("openat(): pathname=%s\n", pathname);
+	if (!strcmp(pathname, XPMEM_DEV_PATH)) {
+		rc = xpmem_open(__NR_openat, pathname, flags, ctx);
+	} else {
+		rc = syscall_generic_forwarding(__NR_openat, ctx);
+	}
+
+out:
+	kfree(pathname);
+	return rc;
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_62 */
 
 SYSCALL_DECLARE(close)
 {
@@ -3324,19 +3618,35 @@ perf_stop(struct mc_perf_event *event)
 	int counter_id;
 	struct mc_perf_event *leader = event->group_leader, *sub;
 
+#ifdef POSTK_DEBUG_TEMP_FIX_30
 	counter_id = leader->counter_id;
 	if((1UL << counter_id & X86_IA32_PERF_COUNTERS_MASK) | 
 	(1UL << counter_id & X86_IA32_FIXED_PERF_COUNTERS_MASK)) {
-		ihk_mc_perfctr_stop(1UL << counter_id);
+		ihk_mc_perfctr_stop(counter_id);
 	}
 
 	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
 		counter_id = sub->counter_id;
 		if((1UL << counter_id & X86_IA32_PERF_COUNTERS_MASK) | 
 		(1UL << counter_id & X86_IA32_FIXED_PERF_COUNTERS_MASK)) {
+			ihk_mc_perfctr_stop(counter_id);
+		}
+	}
+#else
+	counter_id = leader->counter_id;
+	if((1UL << counter_id & X86_IA32_PERF_COUNTERS_MASK) |
+	(1UL << counter_id & X86_IA32_FIXED_PERF_COUNTERS_MASK)) {
+		ihk_mc_perfctr_stop(1UL << counter_id);
+	}
+
+	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
+		counter_id = sub->counter_id;
+		if((1UL << counter_id & X86_IA32_PERF_COUNTERS_MASK) |
+		(1UL << counter_id & X86_IA32_FIXED_PERF_COUNTERS_MASK)) {
 			ihk_mc_perfctr_stop(1UL << counter_id);
 		}
 	}
+#endif /*POSTK_DEBUG_TEMP_FIX_30*/
 }
 
 static int
@@ -3648,6 +3958,9 @@ SYSCALL_DECLARE(rt_sigtimedwait)
 
 			cpu_pause();
 		}
+#ifdef POSTK_DEBUG_TEMP_FIX_33 /* sigevent missed fix */
+		thread->sigevent = 0;
+#endif /* POSTK_DEBUG_TEMP_FIX_33 */
 
 		lock = &thread->sigcommon->lock;
 		head = &thread->sigcommon->sigpending;
@@ -3705,7 +4018,9 @@ SYSCALL_DECLARE(rt_sigtimedwait)
 			return -EINTR;
 		}
 		mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
+#ifndef POSTK_DEBUG_TEMP_FIX_33 /* sigevent missed fix */
 		thread->sigevent = 0;
+#endif /* !POSTK_DEBUG_TEMP_FIX_33 */
 	}
 
 	if(info){
@@ -3778,6 +4093,9 @@ do_sigsuspend(struct thread *thread, const sigset_t *set)
 				cpu_pause();
 			}
 		}
+#ifdef POSTK_DEBUG_TEMP_FIX_33 /* sigevent missed fix */
+		thread->sigevent = 0;
+#endif /* POSTK_DEBUG_TEMP_FIX_33 */
 
 		lock = &thread->sigcommon->lock;
 		head = &thread->sigcommon->sigpending;
@@ -3800,7 +4118,9 @@ do_sigsuspend(struct thread *thread, const sigset_t *set)
 		}
 		if(&pending->list == head){
 			mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
+#ifndef POSTK_DEBUG_TEMP_FIX_33 /* sigevent missed fix */
 			thread->sigevent = 0;
+#endif /* POSTK_DEBUG_TEMP_FIX_33 */
 			continue;
 		}
 
@@ -3986,12 +4306,21 @@ change_attr_process_memory_range(struct process_vm *vm,
 			}
 		}
 
+#ifdef POSTK_DEBUG_TEMP_FIX_37
+		if((error = change_proc(range, arg)) != 0){
+#else
 		if(!(error = change_proc(range, arg))){
+#endif /*POSTK_DEBUG_TEMP_FIX_37*/
 			break;
 		}
 		range = next_process_memory_range(vm, range);
 	}
+
+#ifdef POSTK_DEBUG_TEMP_FIX_37
+	if(error == 0){
+#else
 	if(error){
+#endif /*POSTK_DEBUG_TEMP_FIX_37*/
 		next = next_process_memory_range(vm, range);
 		if(!next)
 			next = range;
@@ -4224,12 +4553,27 @@ struct shminfo the_shminfo = {
 struct shm_info the_shm_info = { 0, };
 
 time_t time(void) {
+#ifndef POSTK_DEBUG_ARCH_DEP_13 /* arch depend tmp hide */
 	struct syscall_request sreq IHK_DMA_ALIGN;
 	struct thread *thread = cpu_local_var(current);
+#endif /* POSTK_DEBUG_ARCH_DEP_13 */
 
+#ifdef POSTK_DEBUG_ARCH_DEP_49 /* time() local calculate added. */
+	struct timespec ats;
+
+	if (gettime_local_support) {
+		calculate_time_from_tsc(&ats);
+		return ats.tv_sec;
+	}
+#endif /* POSTK_DEBUG_ARCH_DEP_49 */
+
+#ifdef POSTK_DEBUG_ARCH_DEP_13 /* arch depend tmp hide */
+	return (time_t)0;
+#else /* POSTK_DEBUG_ARCH_DEP_13 */
 	sreq.number = __NR_time;
 	sreq.args[0] = (uintptr_t)NULL;
 	return (time_t)do_syscall(&sreq, ihk_mc_get_processor_id(), thread->proc->pid);
+#endif /* POSTK_DEBUG_ARCH_DEP_13 */
 }
 
 static int make_shmid(struct shmobj *obj)
@@ -4502,7 +4846,12 @@ SYSCALL_DECLARE(shmat)
 		}
 	}
 	else {
+#ifdef POSTK_DEBUG_ARCH_DEP_27
+		error = search_free_space(cpu_local_var(current), len,
+					  region->map_end, obj->pgshift, &addr);
+#else
 		error = search_free_space(len, region->map_end, obj->pgshift, &addr);
+#endif	/* POSTK_DEBUG_ARCH_DEP_27 */
 		if (error) {
 			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 			shmobj_list_unlock();
@@ -5078,6 +5427,14 @@ SYSCALL_DECLARE(setrlimit)
 	struct rlimit *rlm = (struct rlimit *)ihk_mc_syscall_arg1(ctx);
 	struct thread *thread = cpu_local_var(current);
 	int	i;
+#ifdef POSTK_DEBUG_TEMP_FIX_3 /* If rlim_cur is greater than rlim_max, return -EINVAL (S64FX_19) */
+	struct rlimit new_rlim;
+
+	if (copy_from_user(&new_rlim, rlm, sizeof(*rlm)))
+		return -EFAULT;
+	if (new_rlim.rlim_cur > new_rlim.rlim_max)
+		return -EINVAL;
+#endif /* POSTK_DEBUG_TEMP_FIX_3 */
 	int	mcresource;
 
 	switch(resource){
@@ -5100,8 +5457,12 @@ SYSCALL_DECLARE(setrlimit)
 		return syscall_generic_forwarding(__NR_setrlimit, ctx);
 	}
 
+#ifdef POSTK_DEBUG_TEMP_FIX_3 /* If rlim_cur is greater than rlim_max, return -EINVAL (S64FX_19) */
+	memcpy(thread->proc->rlimit + mcresource, &new_rlim, sizeof(new_rlim));
+#else /* POSTK_DEBUG_TEMP_FIX_3 */
 	if(copy_from_user(thread->proc->rlimit + mcresource, rlm, sizeof(struct rlimit)))
 		return -EFAULT;
+#endif /* POSTK_DEBUG_TEMP_FIX_3 */
 
 	return 0;
 }
@@ -5160,7 +5521,11 @@ SYSCALL_DECLARE(getrusage)
 			   child->status == PS_RUNNING &&
 			   !child->in_kernel){
 				child->times_update = 0;
+#ifdef POSTK_DEBUG_ARCH_DEP_8 /* arch depend hide */
+				ihk_mc_interrupt_cpu(child->cpu_id, ihk_mc_get_vector(IHK_GV_IKC));
+#else /* POSTK_DEBUG_ARCH_DEP_8 */
 				ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(child->cpu_id)->apic_id, 0xd1);
+#endif /* POSTK_DEBUG_ARCH_DEP_8 */
 			}
 			else
 				child->times_update = 1;
@@ -5184,10 +5549,15 @@ SYSCALL_DECLARE(getrusage)
 		kusage.ru_maxrss = proc->maxrss / 1024;
 	}
 	else if(who == RUSAGE_CHILDREN){
+#ifdef POSTK_DEBUG_TEMP_FIX_72 /* fix RUSAGE_CHILDREN time */
+		ts_to_tv(&kusage.ru_utime, &proc->utime_children);
+		ts_to_tv(&kusage.ru_stime, &proc->stime_children);
+#else /* POSTK_DEBUG_TEMP_FIX_72 */
 		tsc_to_ts(thread->user_tsc, &ats);
 		ts_to_tv(&kusage.ru_utime, &ats);
 		tsc_to_ts(thread->system_tsc, &ats);
 		ts_to_tv(&kusage.ru_stime, &ats);
+#endif /* POSTK_DEBUG_TEMP_FIX_72 */
 
 		kusage.ru_maxrss = proc->maxrss_children / 1024;
 	}
@@ -5610,6 +5980,19 @@ static int ptrace_attach(int pid)
 	}
 
 	parent = child->parent;
+#ifdef POSTK_DEBUG_TEMP_FIX_53 /* attach for child-process fix. */
+	dkprintf("ptrace_attach() parent->pid=%d\n", parent->pid);
+
+	mcs_rwlock_writer_lock_noirq(&parent->children_lock, &childlock);
+	list_del(&child->siblings_list);
+	list_add_tail(&child->ptraced_siblings_list, &parent->ptraced_children_list);
+	mcs_rwlock_writer_unlock_noirq(&parent->children_lock, &childlock);
+
+	mcs_rwlock_writer_lock_noirq(&proc->children_lock, &childlock);
+	list_add_tail(&child->siblings_list, &proc->children_list);
+	child->parent = proc;
+	mcs_rwlock_writer_unlock_noirq(&proc->children_lock, &childlock);
+#else /* POSTK_DEBUG_TEMP_FIX_53 */
 	/* XXX: tmp */
 	if (parent != proc) {
 
@@ -5625,6 +6008,7 @@ static int ptrace_attach(int pid)
 		child->parent = proc;
 		mcs_rwlock_writer_unlock_noirq(&proc->children_lock, &childlock);
 	}
+#endif /* POSTK_DEBUG_TEMP_FIX_53 */
 
 	child->ptrace = PT_TRACED | PT_TRACE_EXEC;
 
@@ -6293,11 +6677,22 @@ SYSCALL_DECLARE(sched_getaffinity)
 	int ret;
 
 	dkprintf("%s() len: %d, mask: %p\n", __FUNCTION__, len, u_cpu_set);
+#ifdef POSTK_DEBUG_TEMP_FIX_5 /* sched_getaffinity arguments check add (S64FX_10) */
+	if (len * 8 < num_processors) {
+		kprintf("%s:%d Too small buffer.\n", __FILE__, __LINE__);
+		return -EINVAL;
+	}
+	if (len & (sizeof(unsigned long)-1)) {
+		kprintf("%s:%d Size not align to unsigned long.\n", __FILE__, __LINE__);
+		return -EINVAL;
+	}
+#else /* POSTK_DEBUG_TEMP_FIX_5 */
 	if (!len || u_cpu_set == (cpu_set_t *)-1)
 		return -EINVAL;
 
 	if ((len * BITS_PER_BYTE) < __CPU_SETSIZE)
 		return -EINVAL;
+#endif /* POSTK_DEBUG_TEMP_FIX_5 */
 
 	len = MIN2(len, sizeof(k_cpu_set));
 
@@ -6332,7 +6727,11 @@ SYSCALL_DECLARE(sched_getaffinity)
 	}
 
 	dkprintf("%s() len: %d, ret: %d\n", __FUNCTION__, len, ret);
+#ifdef POSTK_DEBUG_TEMP_FIX_58 /* sched_getafifnity return value fix */
+	return ret;
+#else /* POSTK_DEBUG_TEMP_FIX_58 */
 	return len;
+#endif /* POSTK_DEBUG_TEMP_FIX_58 */
 }
 
 SYSCALL_DECLARE(get_cpu_id)
@@ -6417,7 +6816,12 @@ SYSCALL_DECLARE(setitimer)
 		if(!new){
 			return 0;
 		}
+#ifdef POSTK_DEBUG_TEMP_FIX_40 /* setitimer copy_from_user() error return fix. */
 		if(copy_from_user(&thread->itimer_virtual, new, sizeof(struct itimerval)))
+			return -EFAULT;
+#else /* POSTK_DEBUG_TEMP_FIX_40 */
+		if(copy_from_user(&thread->itimer_virtual, new, sizeof(struct itimerval)))
+#endif /* POSTK_DEBUG_TEMP_FIX_40 */
 		thread->itimer_virtual_value.tv_sec = 0;
 		thread->itimer_virtual_value.tv_nsec = 0;
 		if(thread->itimer_virtual.it_value.tv_sec == 0 &&
@@ -6438,7 +6842,12 @@ SYSCALL_DECLARE(setitimer)
 		if(!new){
 			return 0;
 		}
+#ifdef POSTK_DEBUG_TEMP_FIX_40 /* setitimer copy_from_user() error return fix. */
 		if(copy_from_user(&thread->itimer_prof, new, sizeof(struct itimerval)))
+			return -EFAULT;
+#else /* POSTK_DEBUG_TEMP_FIX_40 */
+		if(copy_from_user(&thread->itimer_prof, new, sizeof(struct itimerval)))
+#endif /* POSTK_DEBUG_TEMP_FIX_40 */
 		thread->itimer_prof_value.tv_sec = 0;
 		thread->itimer_prof_value.tv_nsec = 0;
 		if(thread->itimer_prof.it_value.tv_sec == 0 &&
@@ -6533,7 +6942,11 @@ SYSCALL_DECLARE(clock_gettime)
 			   child->status == PS_RUNNING &&
 			   !child->in_kernel){
 				child->times_update = 0;
+#ifdef POSTK_DEBUG_ARCH_DEP_8 /* arch depend hide */
+				ihk_mc_interrupt_cpu(child->cpu_id, ihk_mc_get_vector(IHK_GV_IKC));
+#else	/* POSTK_DEBUG_ARCH_DEP_8 */
 				ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(child->cpu_id)->apic_id, 0xd1);
+#endif	/* POSTK_DEBUG_ARCH_DEP_8 */
 			}
 		}
 		ats.tv_sec = proc->utime.tv_sec;
@@ -6688,6 +7101,9 @@ SYSCALL_DECLARE(nanosleep)
 				ret = -EINTR;
 				break;
 			}
+#ifdef POSTK_DEBUG_ARCH_DEP_43
+			cpu_pause();
+#endif
 		}
 
 		if ((ret == -EINTR) && rem) {
@@ -7292,8 +7708,14 @@ SYSCALL_DECLARE(mremap)
 			goto out;
 		}
 		need_relocate = 1;
+#ifdef POSTK_DEBUG_ARCH_DEP_27
+		error = search_free_space(cpu_local_var(current), newsize,
+					  vm->region.map_end,
+					  range->pgshift, (intptr_t *)&newstart);
+#else
 		error = search_free_space(newsize, vm->region.map_end,
 				range->pgshift, (intptr_t *)&newstart);
+#endif	/* POSTK_DEBUG_ARCH_DEP_27 */
 		if (error) {
 			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
 					"search failed. %d\n",
@@ -9086,17 +9508,33 @@ SYSCALL_DECLARE(pmc_init)
     return ihk_mc_perfctr_init(counter, type, mode);
 }
 
+#ifdef POSTK_DEBUG_TEMP_FIX_30
+SYSCALL_DECLARE(pmc_start)
+{
+    unsigned long counter = ihk_mc_syscall_arg0(ctx);
+    return ihk_mc_perfctr_start((int)counter);
+}
+#else
 SYSCALL_DECLARE(pmc_start)
 {
     unsigned long counter = ihk_mc_syscall_arg0(ctx);
     return ihk_mc_perfctr_start(1 << counter);
 }
+#endif /*POSTK_DEBUG_TEMP_FIX_30*/
 
+#ifdef POSTK_DEBUG_TEMP_FIX_30
+SYSCALL_DECLARE(pmc_stop)
+{
+    unsigned long counter = ihk_mc_syscall_arg0(ctx);
+    return ihk_mc_perfctr_stop((int)counter);
+}
+#else
 SYSCALL_DECLARE(pmc_stop)
 {
     unsigned long counter = ihk_mc_syscall_arg0(ctx);
     return ihk_mc_perfctr_stop(1 << counter);
 }
+#endif /*POSTK_DEBUG_TEMP_FIX_30*/
 
 SYSCALL_DECLARE(pmc_reset)
 {
@@ -9450,7 +9888,13 @@ set_cputime(int mode)
 long syscall(int num, ihk_mc_user_context_t *ctx)
 {
 	long l;
+#if !defined(POSTK_DEBUG_TEMP_FIX_60) && !defined(POSTK_DEBUG_TEMP_FIX_56)
+#ifdef PROFILE_ENABLE
 	struct thread *thread = cpu_local_var(current);
+#endif // PROFILE_ENABLE
+#else /* !defined(POSTK_DEBUG_TEMP_FIX_60) && !defined(POSTK_DEBUG_TEMP_FIX_56) */
+	struct thread *thread = cpu_local_var(current);
+#endif /* !defined(POSTK_DEBUG_TEMP_FIX_60) && !defined(POSTK_DEBUG_TEMP_FIX_56) */
 
 #ifdef DISABLE_SCHED_YIELD
 	if (num != __NR_sched_yield)
@@ -9519,10 +9963,22 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		l = syscall_generic_forwarding(num, ctx);
 	}
 
+#if defined(POSTK_DEBUG_TEMP_FIX_60) && defined(POSTK_DEBUG_TEMP_FIX_56)
+	check_signal(l, NULL, num);
+#elif defined(POSTK_DEBUG_TEMP_FIX_60) /* sched_yield called check_signal fix. */
+	if (num != __NR_futex) {
+		check_signal(l, NULL, num);
+	}
+#elif defined(POSTK_DEBUG_TEMP_FIX_56) /* in futex_wait() signal handring fix. */
+	if (num != __NR_sched_yield) {
+		check_signal(l, NULL, num);
+	}
+#else /* POSTK_DEBUG_TEMP_FIX_60 && POSTK_DEBUG_TEMP_FIX_56 */
 	if (!list_empty(&thread->sigpending) ||
 	    !list_empty(&thread->sigcommon->sigpending)) {
 		check_signal(l, NULL, num);
 	}
+#endif /* POSTK_DEBUG_TEMP_FIX_60 && POSTK_DEBUG_TEMP_FIX_56 */
 
 #ifdef PROFILE_ENABLE
 	{
@@ -9545,10 +10001,22 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	}
 #endif // PROFILE_ENABLE
 
+#if defined(POSTK_DEBUG_TEMP_FIX_60) && defined(POSTK_DEBUG_TEMP_FIX_56)
+	check_need_resched();
+#elif defined(POSTK_DEBUG_TEMP_FIX_60) /* sched_yield called check_signal fix. */
+	if (num != __NR_futex) {
+		check_need_resched();
+	}
+#elif defined(POSTK_DEBUG_TEMP_FIX_56) /* in futex_wait() signal handring fix. */
+	if (num != __NR_sched_yield) {
+		check_need_resched();
+	}
+#else /* POSTK_DEBUG_TEMP_FIX_60 && POSTK_DEBUG_TEMP_FIX_56 */
 	if (num != __NR_sched_yield &&
 			num != __NR_futex) {
 		check_need_resched();
 	}
+#endif /* POSTK_DEBUG_TEMP_FIX_60 && POSTK_DEBUG_TEMP_FIX_56 */
 
 	if (cpu_local_var(current)->proc->ptrace) {
 		ptrace_syscall_exit(cpu_local_var(current));

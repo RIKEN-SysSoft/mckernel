@@ -1,3 +1,4 @@
+/* xpmem.c COPYRIGHT FUJITSU LIMITED 2017 */
 /**
  * \file xpmem.c
  *  License details are found in the file LICENSE.
@@ -34,6 +35,19 @@
 struct xpmem_partition *xpmem_my_part = NULL;  /* pointer to this partition */
 
 
+#if defined(POSTK_DEBUG_ARCH_DEP_46) || defined(POSTK_DEBUG_ARCH_DEP_62)
+int xpmem_open(int num, const char *pathname,
+		int flags, ihk_mc_user_context_t *ctx)
+{
+	int ret;
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
+	int fd;
+	struct mckfd *mckfd;
+	long irqstate;
+
+	XPMEM_DEBUG("call: syscall_num=%d, pathname=%s, flags=%d", num, pathname, flags);
+#else /* POSTK_DEBUG_ARCH_DEP_46 || POSTK_DEBUG_ARCH_DEP_62 */
 int xpmem_open(
 	ihk_mc_user_context_t *ctx)
 {
@@ -48,6 +62,7 @@ int xpmem_open(
 	long irqstate;
 
 	XPMEM_DEBUG("call: pathname=%s, flags=%d", pathname, flags);
+#endif /* POSTK_DEBUG_ARCH_DEP_46 || POSTK_DEBUG_ARCH_DEP_62 */
 
 	if (!xpmem_my_part) {
 		ret = xpmem_init();
@@ -56,6 +71,13 @@ int xpmem_open(
 		}
 	}
 
+#ifdef POSTK_DEBUG_ARCH_DEP_62 /* Absorb the difference between open and openat args. */
+	fd = syscall_generic_forwarding(num, ctx);
+	if(fd < 0){
+		XPMEM_DEBUG("syscall_num=%d error: fd=%d", num, fd);
+		return fd;
+	}
+#else /* POSTK_DEBUG_ARCH_DEP_62 */
 	request.number = __NR_open;
 	request.args[0] = (unsigned long)pathname;
 	request.args[1] = flags;
@@ -64,6 +86,7 @@ int xpmem_open(
 		XPMEM_DEBUG("__NR_open error: fd=%d", fd);
 		return fd;
 	}
+#endif /* POSTK_DEBUG_ARCH_DEP_62 */
 
 	ret = __xpmem_open();
 	if (ret) {

@@ -1,3 +1,4 @@
+// sysfs_files.c COPYRIGHT FUJITSU LIMITED 2016
 /**
  * \file sysfs_files.c
  *  License details are found in the file LICENSE.
@@ -151,8 +152,13 @@ static void free_node_topology(struct mcctrl_usrdata *udp)
 	return;
 } /* free_node_topology() */
 
+#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
+static void free_cpu_topology_one(struct mcctrl_usrdata *udp,
+		struct mcctrl_cpu_topology *cpu)
+#else /* POSTK_DEBUG_ARCH_DEP_40 */
 static void free_cpu_topology_one(struct mcctrl_usrdata *udp,
 		struct cpu_topology *cpu)
+#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 {
 	struct cache_topology *cache;
 	struct cache_topology *next;
@@ -168,8 +174,13 @@ static void free_cpu_topology_one(struct mcctrl_usrdata *udp,
 
 static void free_cpu_topology(struct mcctrl_usrdata *udp)
 {
+#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
+	struct mcctrl_cpu_topology *cpu;
+	struct mcctrl_cpu_topology *next;
+#else /* POSTK_DEBUG_ARCH_DEP_40 */
 	struct cpu_topology *cpu;
 	struct cpu_topology *next;
+#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 
 	list_for_each_entry_safe(cpu, next, &udp->cpu_topology_list, chain) {
 		list_del(&cpu->chain);
@@ -299,8 +310,13 @@ static int translate_cpumap(struct mcctrl_usrdata *udp,
 	return error;
 } /* translate_cpumap() */
 
+#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
+static struct cache_topology *get_cache_topology(struct mcctrl_usrdata *udp,
+		struct mcctrl_cpu_topology *cpu_topo, struct ihk_cache_topology *saved)
+#else /* POSTK_DEBUG_ARCH_DEP_40 */
 static struct cache_topology *get_cache_topology(struct mcctrl_usrdata *udp,
 		struct cpu_topology *cpu_topo, struct ihk_cache_topology *saved)
+#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 {
 	int error;
 	struct cache_topology *topo = NULL;
@@ -334,12 +350,21 @@ out:
 	return (error)? ERR_PTR(error): topo;
 } /* get_cache_topology() */
 
+#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
+static struct mcctrl_cpu_topology *get_one_cpu_topology(struct mcctrl_usrdata *udp,
+		int index)
+#else /* POSTK_DEBUG_ARCH_DEP_40 */
 static struct cpu_topology *get_one_cpu_topology(struct mcctrl_usrdata *udp,
 		int index)
+#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 {
 	int error;
 	ihk_device_t dev = ihk_os_to_dev(udp->os);
+#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
+	struct mcctrl_cpu_topology *topology = NULL;
+#else /* POSTK_DEBUG_ARCH_DEP_40 */
 	struct cpu_topology *topology = NULL;
+#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 	struct cache_topology *cache;
 	struct ihk_cache_topology *saved_cache;
 
@@ -357,7 +382,11 @@ static struct cpu_topology *get_one_cpu_topology(struct mcctrl_usrdata *udp,
 	topology->saved = ihk_device_get_cpu_topology(dev, 
 			mckernel_cpu_2_hw_id(udp, index));
 
+#ifdef POSTK_DEBUG_TEMP_FIX_21 /* IS_ERR() through return NULL */
+	if (!topology->saved) {
+#else /* POSTK_DEBUG_TEMP_FIX_21 */
 	if (IS_ERR(topology->saved)) {
+#endif /* POSTK_DEBUG_TEMP_FIX_21 */
 		error = PTR_ERR(topology->saved);
 		eprintk("mcctrl:get_one_cpu_topology:"
 				"ihk_device_get_cpu_topology failed. %d\n",
@@ -413,7 +442,11 @@ static int get_cpu_topology(struct mcctrl_usrdata *udp)
 {
 	int error;
 	int index;
+#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
+	struct mcctrl_cpu_topology *topology;
+#else /* POSTK_DEBUG_ARCH_DEP_40 */
 	struct cpu_topology *topology;
+#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 
 	dprintk("get_cpu_topology(%p)\n", udp);
 	for (index = 0; index < udp->cpu_info->n_cpus; ++index) {
@@ -435,8 +468,13 @@ out:
 	return error;
 } /* get_cpu_topology() */
 
+#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
+static void setup_cpu_sysfs_cache_files(struct mcctrl_usrdata *udp,
+		struct mcctrl_cpu_topology *cpu, struct cache_topology *cache)
+#else /* POSTK_DEBUG_ARCH_DEP_40 */
 static void setup_cpu_sysfs_cache_files(struct mcctrl_usrdata *udp,
 		struct cpu_topology *cpu, struct cache_topology *cache)
+#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 {
 	char *prefix = "/sys/devices/system/cpu";
 	int cpu_number = cpu->mckernel_cpu_id;
@@ -488,8 +526,13 @@ static void setup_cpu_sysfs_cache_files(struct mcctrl_usrdata *udp,
 	return;
 } /* setup_cpu_sysfs_cache_files() */
 
+#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
+static void setup_cpu_sysfs_files(struct mcctrl_usrdata *udp,
+		struct mcctrl_cpu_topology *cpu)
+#else /* POSTK_DEBUG_ARCH_DEP_40 */
 static void setup_cpu_sysfs_files(struct mcctrl_usrdata *udp,
 		struct cpu_topology *cpu)
+#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 {
 	char *prefix = "/sys/devices/system/cpu";
 	int cpu_number = cpu->mckernel_cpu_id;
@@ -566,7 +609,11 @@ static void setup_cpus_sysfs_files_node_link(struct mcctrl_usrdata *udp)
 static void setup_cpus_sysfs_files(struct mcctrl_usrdata *udp)
 {
 	int error;
+#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
+	struct mcctrl_cpu_topology *cpu;
+#else /* POSTK_DEBUG_ARCH_DEP_40 */
 	struct cpu_topology *cpu;
+#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 
 	error = get_cpu_topology(udp);
 	if (error) {
@@ -904,21 +951,30 @@ out:
 	return error;
 } /* read_link() */
 
+#ifdef POSTK_DEBUG_TEMP_FIX_22 /* iterate_dir() deadlock */
+static int setup_one_pci(struct mcctrl_usrdata *udp, const char *name)
+{
+#else /* POSTK_DEBUG_TEMP_FIX_22 */
 static int setup_one_pci(void *arg0, const char *name, int namlen,
 		loff_t offset, u64 ino, unsigned d_type)
 {
 	struct mcctrl_usrdata *udp = arg0;
+#endif /* POSTK_DEBUG_TEMP_FIX_22 */
 	int error;
 	char *buf = NULL;
 	long node;
 	struct sysfsm_bitmap_param param;
 
+#ifdef POSTK_DEBUG_TEMP_FIX_22 /* iterate_dir() deadlock */
+	dprintk("setup_one_pci(%p,%s)\n", udp, name);
+#else /* POSTK_DEBUG_TEMP_FIX_22 */
 	dprintk("setup_one_pci(%p,%s,%d,%#lx,%#lx,%d)\n",
 			arg0, name, namlen, (long)offset, (long)ino, d_type);
 	if (namlen != 12) {
 		error = 0;
 		goto out;
 	}
+#endif /* POSTK_DEBUG_TEMP_FIX_22 */
 
 	buf = (void *)__get_free_pages(GFP_KERNEL, 0);
 	if (!buf) {
@@ -970,11 +1026,64 @@ static int setup_one_pci(void *arg0, const char *name, int namlen,
 	error = 0;
 out:
 	free_pages((long)buf, 0);
+#ifdef POSTK_DEBUG_TEMP_FIX_22 /* iterate_dir() deadlock */
+	dprintk("setup_one_pci(%p,%s): %d\n", udp, name, error);
+#else /* POSTK_DEBUG_TEMP_FIX_22 */
 	dprintk("setup_one_pci(%p,%s,%d,%#lx,%#lx,%d): %d\n",
 			arg0, name, namlen, (long)offset, (long)ino, d_type,
 			error);
+#endif /* POSTK_DEBUG_TEMP_FIX_22 */
 	return error;
 } /* setup_one_pci() */
+
+#ifdef POSTK_DEBUG_TEMP_FIX_22 /* iterate_dir() deadlock */
+LIST_HEAD(pci_file_name_list);
+struct pci_file_name {
+	char *name;
+	struct list_head chain;
+};
+
+static int pci_file_name_gen(void *buf, const char *name, int namlen,
+		loff_t offset, u64 ino, unsigned d_type)
+{
+	struct pci_file_name *p;
+	int error = -1;
+
+	dprintk("pci_file_name_gen(%p,%s,%d,%#lx,%#lx,%d)\n",
+			buf, name, namlen, (long)offset, (long)ino, d_type);
+
+	/* check namlen, name exmple, "0000:00:00.0" 12 chars */
+	/* otherstring, return function */
+	if (namlen != 12) {
+		error = 0;
+		goto out;
+	}
+
+	p = kmalloc(sizeof(*p), GFP_KERNEL);
+	if (!p) {
+		error = -ENOMEM;
+		eprintk("mcctrl:pci_file_name_gen:kmalloc failed. %d\n", error);
+		goto out;
+	}
+
+	p->name = kmalloc(sizeof(namlen + 1), GFP_KERNEL);
+	if (!p->name) {
+		error = -ENOMEM;
+		eprintk("mcctrl:pci_file_name_gen:kmalloc failed. %d\n", error);
+		kfree(p);
+		goto out;
+	}
+	memset(p->name, '\0', namlen + 1);
+	memcpy(p->name, name, namlen);
+	list_add(&p->chain, &pci_file_name_list);
+
+	error = 0;
+out:
+	dprintk("pci_file_name_gen(%p,%s,%d,%#lx,%#lx,%d): %d\n",
+			buf, name, namlen, (long)offset, (long)ino, d_type, error);
+	return error;
+}
+#endif /* POSTK_DEBUG_TEMP_FIX_22 */
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,11,0)
 typedef int (*mcctrl_filldir_t)(void *buf, const char *name, int namlen,
@@ -1019,6 +1128,11 @@ static int setup_pci_files(struct mcctrl_usrdata *udp)
 	int error;
 	int er;
 	struct file *fp = NULL;
+#ifdef POSTK_DEBUG_TEMP_FIX_22 /* iterate_dir() deadlock */
+	int ret = 0;
+	struct pci_file_name *cur;
+	struct pci_file_name *next;
+#endif /* POSTK_DEBUG_TEMP_FIX_22 */
 
 	dprintk("setup_pci_files(%p)\n", udp);
 	fp = filp_open("/sys/bus/pci/devices", O_DIRECTORY, 0);
@@ -1028,12 +1142,27 @@ static int setup_pci_files(struct mcctrl_usrdata *udp)
 		goto out;
 	}
 
+#ifdef POSTK_DEBUG_TEMP_FIX_22 /* iterate_dir() deadlock */
+	error = mcctrl_vfs_readdir(fp, &pci_file_name_gen, udp);
+#else /* POSTK_DEBUG_TEMP_FIX_22 */
 	error = mcctrl_vfs_readdir(fp, &setup_one_pci, udp);
+#endif /* POSTK_DEBUG_TEMP_FIX_22 */
 	if (error) {
 		eprintk("mcctrl:setup_pci_files:"
 				"mcctrl_vfs_readdir failed. %d\n", error);
 		goto out;
 	}
+
+#ifdef POSTK_DEBUG_TEMP_FIX_22 /* iterate_dir() deadlock */
+	list_for_each_entry_safe(cur, next, &pci_file_name_list, chain) {
+		if (!ret) {
+			ret = setup_one_pci(udp, cur->name);
+		}
+		list_del(&cur->chain);
+		kfree(cur->name);
+		kfree(cur);
+	}
+#endif /* POSTK_DEBUG_TEMP_FIX_22 */
 
 	error = 0;
 out:

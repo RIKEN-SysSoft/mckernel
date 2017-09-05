@@ -9,6 +9,7 @@
 /*
  * HISTORY
  */
+/* memory.h COPYRIGHT FUJITSU LIMITED 2015-2016 */
 
 #ifndef __HEADER_GENERIC_MEMORY_H
 #define __HEADER_GENERIC_MEMORY_H
@@ -45,6 +46,15 @@ int setlong_user(long *dst, long data);
 int setint_user(int *dst, int data);
 int write_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t siz);
 int patch_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t siz);
+#ifdef POSTK_DEBUG_ARCH_DEP_27
+struct thread;
+int search_free_space(struct thread *thread, size_t len, intptr_t hint,
+		      int pgshift, intptr_t *addrp);
+#endif	/* POSTK_DEBUG_ARCH_DEP_27 */
+
+#ifdef POSTK_DEBUG_TEMP_FIX_52 /* supports NUMA for memory area determination */
+int is_mckernel_memory(unsigned long phys);
+#endif /* POSTK_DEBUG_TEMP_FIX_52 */
 
 #endif
 

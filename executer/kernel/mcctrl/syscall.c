@@ -1,3 +1,4 @@
+/* syscall.c COPYRIGHT FUJITSU LIMITED 2016-2017 */
 /**
  * \file executer/kernel/syscall.c
  *  License details are found in the file LICENSE.
@@ -48,6 +49,9 @@
 #include "../../../config.h"
 #include "mcctrl.h"
 #include <linux/version.h>
+#ifdef POSTK_DEBUG_ARCH_DEP_83 /* arch depend translate_rva_to_rpa() move */
+#include <archdeps.h>
+#endif /* POSTK_DEBUG_ARCH_DEP_83 */
 
 #define ALIGN_WAIT_BUF(z)   (((z + 63) >> 6) << 6)
 
@@ -157,6 +161,7 @@ out:
 	return ret;
 }
 
+#ifndef POSTK_DEBUG_ARCH_DEP_56 /* Strange how to use inline declaration fix. */
 struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc_data *ppd, struct task_struct *task)
 {
 	struct mcctrl_per_thread_data *ptd_iter, *ptd = NULL;
@@ -176,7 +181,9 @@ struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc
 	read_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
 	return ptd ? ptd->data : NULL;
 }
+#endif /* !POSTK_DEBUG_ARCH_DEP_56 */
 
+#ifndef POSTK_DEBUG_ARCH_DEP_83 /* arch depend translate_rva_to_rpa() move */
 #if 1	/* x86 depend, host OS side */
 int translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva,
 		unsigned long *rpap, unsigned long *pgsizep)
@@ -240,6 +247,7 @@ out:
 	return error;
 }
 #endif
+#endif /* !POSTK_DEBUG_ARCH_DEP_83 */
 
 static int __notify_syscall_requester(ihk_os_t os, struct ikc_scd_packet *packet,
 		struct syscall_response *res)
@@ -764,8 +772,18 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	struct ikc_scd_packet *packet;
 	int ret = 0;
 
+#ifdef POSTK_DEBUG_ARCH_DEP_41 /* HOST-Linux version switch add */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
+	dprintk("mcctrl:page fault:flags %#x pgoff %#lx va %#lx page %p\n",
+			vmf->flags, vmf->pgoff, vmf->address, vmf->page);
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 	dprintk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
 			vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_41 */
+	dprintk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
+			vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
+#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 
 	/* Look up per-process structure */
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
@@ -788,16 +806,41 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	}
 
 	for (try = 1; ; ++try) {
+#ifdef POSTK_DEBUG_ARCH_DEP_41 /* HOST-Linux version switch add */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
+		error = translate_rva_to_rpa(usrdata->os, ppd->rpgtable,
+				vmf->address, &rpa, &pgsize);
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 		error = translate_rva_to_rpa(usrdata->os, ppd->rpgtable,
 				(unsigned long)vmf->virtual_address,
 				&rpa, &pgsize);
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_41 */
+		error = translate_rva_to_rpa(usrdata->os, ppd->rpgtable,
+				(unsigned long)vmf->virtual_address,
+				&rpa, &pgsize);
+#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 #define	NTRIES 2
 		if (!error || (try >= NTRIES)) {
 			if (error) {
+#ifdef POSTK_DEBUG_ARCH_DEP_41 /* HOST-Linux version switch add */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
+				printk("%s: error translating 0x%#lx "
+						"(req: TID: %u, syscall: %lu)\n",
+						__FUNCTION__, vmf->address,
+						packet->req.rtid, packet->req.number);
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 				printk("%s: error translating 0x%p "
 						"(req: TID: %u, syscall: %lu)\n",
 						__FUNCTION__, vmf->virtual_address,
 						packet->req.rtid, packet->req.number);
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_41 */
+				printk("%s: error translating 0x%p "
+						"(req: TID: %u, syscall: %lu)\n",
+						__FUNCTION__, vmf->virtual_address,
+						packet->req.rtid, packet->req.number);
+#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 			}
 
 			break;
@@ -808,12 +851,34 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 #define	PF_WRITE	0x02
 			reason |= PF_WRITE;
 		}
+#ifdef POSTK_DEBUG_ARCH_DEP_41 /* HOST-Linux version switch add */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
+		error = remote_page_fault(usrdata, (void *)vmf->address, reason);
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 		error = remote_page_fault(usrdata, vmf->virtual_address, reason);
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_41 */
+		error = remote_page_fault(usrdata, vmf->virtual_address, reason);
+#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 		if (error) {
+#ifdef POSTK_DEBUG_ARCH_DEP_41 /* HOST-Linux version switch add */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
+				printk("%s: error forwarding PF for 0x%#lx "
+						"(req: TID: %d, syscall: %lu)\n",
+						__FUNCTION__, vmf->address,
+						packet->req.rtid, packet->req.number);
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 				printk("%s: error forwarding PF for 0x%p "
 						"(req: TID: %d, syscall: %lu)\n",
 						__FUNCTION__, vmf->virtual_address,
 						packet->req.rtid, packet->req.number);
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_41 */
+				printk("%s: error forwarding PF for 0x%p "
+						"(req: TID: %d, syscall: %lu)\n",
+						__FUNCTION__, vmf->virtual_address,
+						packet->req.rtid, packet->req.number);
+#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 			break;
 		}
 	}
@@ -822,7 +887,15 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 		goto put_and_out;
 	}
 
+#ifdef POSTK_DEBUG_ARCH_DEP_41 /* HOST-Linux version switch add */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
+	rva = vmf->address & ~(pgsize - 1);
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 	rva = (unsigned long)vmf->virtual_address & ~(pgsize - 1);
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_41 */
+	rva = (unsigned long)vmf->virtual_address & ~(pgsize - 1);
+#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 	rpa = rpa & ~(pgsize - 1);
 
 	phys = ihk_device_map_memory(dev, rpa, pgsize);
@@ -841,26 +914,66 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 			page = pfn_to_page(pfn+pix);
 
 			if ((error = rus_page_hash_insert(page)) < 0) {
+#ifdef POSTK_DEBUG_ARCH_DEP_41 /* HOST-Linux version switch add */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
+				printk("%s: error adding page to RUS hash for 0x%#lx "
+						"(req: TID: %d, syscall: %lu)\n",
+						__FUNCTION__, vmf->address,
+						packet->req.rtid, packet->req.number);
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 				printk("%s: error adding page to RUS hash for 0x%p "
 						"(req: TID: %d, syscall: %lu)\n",
 						__FUNCTION__, vmf->virtual_address,
 						packet->req.rtid, packet->req.number);
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_41 */
+				printk("%s: error adding page to RUS hash for 0x%p "
+						"(req: TID: %d, syscall: %lu)\n",
+						__FUNCTION__, vmf->virtual_address,
+						packet->req.rtid, packet->req.number);
+#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 			}
 
 			error = vm_insert_page(vma, rva+(pix*PAGE_SIZE), page);
 			if (error) {
+#ifdef POSTK_DEBUG_ARCH_DEP_41 /* HOST-Linux version switch add */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
+				printk("%s: error inserting mapping for 0x%#lx "
+						"(req: TID: %d, syscall: %lu) error: %d, " 
+						"vm_start: 0x%lx, vm_end: 0x%lx\n",
+						__FUNCTION__, vmf->address,
+						packet->req.rtid, packet->req.number, error,
+						vma->vm_start, vma->vm_end);
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 				printk("%s: error inserting mapping for 0x%p "
 						"(req: TID: %d, syscall: %lu) error: %d, " 
 						"vm_start: 0x%lx, vm_end: 0x%lx\n",
 						__FUNCTION__, vmf->virtual_address,
 						packet->req.rtid, packet->req.number, error,
 						vma->vm_start, vma->vm_end);
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_41 */
+				printk("%s: error inserting mapping for 0x%p "
+						"(req: TID: %d, syscall: %lu) error: %d, " 
+						"vm_start: 0x%lx, vm_end: 0x%lx\n",
+						__FUNCTION__, vmf->virtual_address,
+						packet->req.rtid, packet->req.number, error,
+						vma->vm_start, vma->vm_end);
+#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 			}
 		}
 		else
 		error = vm_insert_pfn(vma, rva+(pix*PAGE_SIZE), pfn+pix);
 		if (error) {
+#ifdef POSTK_DEBUG_TEMP_FIX_11 /* rus_vm_fault() multi-thread fix */
+			if (error == -EBUSY) {
+				error = 0;
+			} else {
+				break;
+			}
+#else /* POSTK_DEBUG_TEMP_FIX_11 */
 			break;
+#endif /* POSTK_DEBUG_TEMP_FIX_11 */
 		}
 	}
 #else
@@ -868,10 +981,24 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 #endif
 	ihk_device_unmap_memory(dev, phys, pgsize);
 	if (error) {
+#ifdef POSTK_DEBUG_ARCH_DEP_41 /* HOST-Linux version switch add */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
+		printk("%s: remote PF failed for 0x%#lx, pgoff: %lu "
+				"(req: TID: %d, syscall: %lu)\n",
+				__FUNCTION__, vmf->address, vmf->pgoff,
+				packet->req.rtid, packet->req.number);
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 		printk("%s: remote PF failed for 0x%p, pgoff: %lu "
 				"(req: TID: %d, syscall: %lu)\n",
 				__FUNCTION__, vmf->virtual_address, vmf->pgoff,
 				packet->req.rtid, packet->req.number);
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_41 */
+		printk("%s: remote PF failed for 0x%p, pgoff: %lu "
+				"(req: TID: %d, syscall: %lu)\n",
+				__FUNCTION__, vmf->virtual_address, vmf->pgoff,
+				packet->req.rtid, packet->req.number);
+#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 		ret = VM_FAULT_SIGBUS;
 		goto put_and_out;
 	}
@@ -1322,12 +1449,17 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 	pos = off;
 	ss = vfs_read(file, buf, size, &pos);
 	if ((ss != size) && (ss > 0)) {
+#ifdef POSTK_DEBUG_TEMP_FIX_12 /* clear_user() used by kernel area, fix */
+		memset(buf + ss, 0, size - ss);
+		ss = size;
+#else /* POSTK_DEBUG_TEMP_FIX_12 */
 		if (clear_user(buf+ss, size-ss) == 0) {
 			ss = size;
 		}
 		else {
 			ss = -EFAULT;
 		}
+#endif /* POSTK_DEBUG_TEMP_FIX_12 */
 	}
 	set_fs(fs);
 	if (ss < 0) {
@@ -1604,10 +1736,16 @@ retry:
 					pfn |= PFN_VALID | PFN_PRESENT;
 					
 					/* Check if mapping is write-combined */
+#ifdef POSTK_DEBUG_ARCH_DEP_12
+					if (pte_is_write_combined(*pte)) {
+						pfn |= PFN_WRITE_COMBINED;
+					}
+#else /* POSTK_DEBUG_ARCH_DEP_12 */
 					if ((pte_flags(*pte) & _PAGE_PWT) && 
 						!(pte_flags(*pte) & _PAGE_PCD)) {
 						pfn |= _PAGE_PWT;
 					}
+#endif /* POSTK_DEBUG_ARCH_DEP_12 */
 				}
 				pte_unmap(pte);
 			}
@@ -1631,7 +1769,11 @@ retry:
 			goto out_release;
 		}
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,8,0)
+		fault = handle_mm_fault(vma, va, flags);
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,8,0) */
 		fault = handle_mm_fault(current->mm, vma, va, flags);
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,8,0) */
 		if (fault != 0) {
 			printk("%s: error: faulting %lx at off: %lu\n", 
 					__FUNCTION__, va, off);
@@ -1972,7 +2114,13 @@ static int clear_pte_range(uintptr_t start, uintptr_t len)
 static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 	struct file *file;
 	struct coretable *coretable;
+#ifdef POSTK_DEBUG_TEMP_FIX_61 /* Core table size and lseek return value to loff_t */
+	int i, tablesize, error = 0;
+	loff_t size;
+	ssize_t ret;
+#else /* POSTK_DEBUG_TEMP_FIX_61 */
 	int ret, i, tablesize, size, error = 0;
+#endif /* POSTK_DEBUG_TEMP_FIX_61 */
 	mm_segment_t oldfs = get_fs(); 
 	unsigned long phys, tablephys, rphys;
 	ihk_device_t dev = ihk_os_to_dev(os);
@@ -1994,8 +2142,20 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 	 * dump routine of the Linux kernel in linux/fs/exec.c. 
 	 * So we have a legitimate reason to do this.
 	 */
+#ifdef POSTK_DEBUG_TEMP_FIX_59 /* corefile open flag add O_TRUNC */
+	file = filp_open("core", O_CREAT | O_RDWR | O_LARGEFILE | O_TRUNC, 0600);
+#else /* POSTK_DEBUG_TEMP_FIX_59 */
 	file = filp_open("core", O_CREAT | O_RDWR | O_LARGEFILE, 0600);
+#endif /* POSTK_DEBUG_TEMP_FIX_59 */
+#ifdef POSTK_DEBUG_ARCH_DEP_41 /* use writehandler version switch add */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0)
+	if (IS_ERR(file) || !file->f_op) {
+#else
 	if (IS_ERR(file) || !file->f_op || !file->f_op->write) {
+#endif
+#else /* POSTK_DEBUG_ARCH_DEP_41 */
+	if (IS_ERR(file) || !file->f_op || !file->f_op->write) {
+#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 		dprintk("cannot open core file\n");
 		error = PTR_ERR(file);
 		goto fail;
@@ -2014,9 +2174,22 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 			phys = ihk_device_map_memory(dev, rphys, size);
 			dprintk("physical %lx, ", phys);
 			pt = ihk_device_map_virtual(dev, phys, size, NULL, 0);
+#ifdef POSTK_DEBUG_TEMP_FIX_38
+			if (pt == NULL) {
+				pt = phys_to_virt(phys);
+			}
+#endif /*POSTK_DEBUG_TEMP_FIX_38*/
 			dprintk("virtual %p\n", pt);
 			if (pt != NULL) {
+#ifdef POSTK_DEBUG_ARCH_DEP_41 /* use writehandler version switch add */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0)
+				ret = __kernel_write(file, pt, size, &file->f_pos);
+#else
 				ret = file->f_op->write(file, pt, size, &file->f_pos);
+#endif
+#else /* POSTK_DEBUG_ARCH_DEP_41 */
+				ret = file->f_op->write(file, pt, size, &file->f_pos);
+#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 			} else {
 				dprintk("cannot map physical memory(%lx) to virtual memory.\n", 
 					phys);
@@ -2027,7 +2200,11 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 			ihk_device_unmap_virtual(dev, pt, size);
 			ihk_device_unmap_memory(dev, phys, size);
 			if (ret != size) {
+#ifdef POSTK_DEBUG_TEMP_FIX_61 /* Core table size and lseek return value to loff_t */
+				dprintk("core file write failed(%ld).\n", ret);
+#else /* POSTK_DEBUG_TEMP_FIX_61 */
 				dprintk("core file write failed(%d).\n", ret);
+#endif /* POSTK_DEBUG_TEMP_FIX_61 */
 				error = PTR_ERR(file);
 				break;
 			}
@@ -2040,7 +2217,11 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 			}
 			ret = file->f_op->llseek(file, size, SEEK_CUR);
 			if (ret < 0) {
+#ifdef POSTK_DEBUG_TEMP_FIX_61 /* Core table size and lseek return value to loff_t */
+				dprintk("core file seek failed(%ld).\n", ret);
+#else /* POSTK_DEBUG_TEMP_FIX_61 */
 				dprintk("core file seek failed(%d).\n", ret);
+#endif /* POSTK_DEBUG_TEMP_FIX_61 */
 				error = PTR_ERR(file);
 				break;
 			}
@@ -2110,7 +2291,11 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 
 	case __NR_coredump:
 		error = writecore(os, sc->args[1], sc->args[0]);
+#ifdef POSTK_DEBUG_TEMP_FIX_62 /* Fix to notify McKernel that core file generation failed */
+		ret = error;
+#else /* POSTK_DEBUG_TEMP_FIX_62 */
 		ret = 0;
+#endif /* POSTK_DEBUG_TEMP_FIX_62 */
 		break;
 	
 	case __NR_sched_setparam: {

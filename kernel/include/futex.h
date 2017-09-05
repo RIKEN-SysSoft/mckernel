@@ -1,3 +1,4 @@
+/* futex.h COPYRIGHT FUJITSU LIMITED 2015-2016 */
 /**
  * \file futex.h
  * Licence details are found in the file LICENSE.
@@ -116,6 +117,8 @@
 #include <arch/system.h>
 #endif
 
+#ifdef POSTK_DEBUG_ARCH_DEP_8 /* arch depend hide */
+#else
 static inline int futex_atomic_op_inuser(int encoded_op, int __user *uaddr)
 {
 	int op = (encoded_op >> 28) & 7;
@@ -180,6 +183,7 @@ static inline int futex_atomic_op_inuser(int encoded_op, int __user *uaddr)
 	return ret;
 }
 
+#endif	/* arch depend hide */
 #endif // __KERNEL__
 #endif // _ASM_X86_FUTEX_H
 

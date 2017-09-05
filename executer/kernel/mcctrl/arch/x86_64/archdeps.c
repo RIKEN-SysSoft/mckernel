@@ -1,6 +1,17 @@
+/* archdeps.c COPYRIGHT FUJITSU LIMITED 2016 */
 #include <linux/version.h>
 #include "../../../config.h"
 #include "../../mcctrl.h"
+
+#ifdef POSTK_DEBUG_ARCH_DEP_83 /* arch depend translate_rva_to_rpa() move */
+//#define SC_DEBUG
+
+#ifdef SC_DEBUG
+#define	dprintk(...)	printk(__VA_ARGS__)
+#else
+#define	dprintk(...)
+#endif
+#endif /* POSTK_DEBUG_ARCH_DEP_83 */
 
 #ifdef MCCTRL_KSYM_vdso_image_64
 #if MCCTRL_KSYM_vdso_image_64
@@ -53,6 +64,25 @@ void **hv_clockp
 #else
 	= NULL;
 #endif
+
+#ifdef POSTK_DEBUG_ARCH_DEP_52
+#define VDSO_MAXPAGES 2
+struct vdso {
+	long busy;
+	int vdso_npages;
+	char vvar_is_global;
+	char hpet_is_global;
+	char pvti_is_global;
+	char padding;
+	long vdso_physlist[VDSO_MAXPAGES];
+	void *vvar_virt;
+	long vvar_phys;
+	void *hpet_virt;
+	long hpet_phys;
+	void *pvti_virt;
+	long pvti_phys;
+};
+#endif /*POSTK_DEBUG_ARCH_DEP_52*/
 
 unsigned long
 reserve_user_space_common(struct mcctrl_usrdata *usrdata, unsigned long start, unsigned long end);
@@ -258,3 +288,76 @@ get_fs_ctx(void *ctx)
 
 	return tctx->fs;
 }
+
+#ifdef POSTK_DEBUG_ARCH_DEP_83 /* arch depend translate_rva_to_rpa() move */
+int translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva,
+		unsigned long *rpap, unsigned long *pgsizep)
+{
+	unsigned long rpa;
+	int offsh;
+	int i;
+	int ix;
+	unsigned long phys;
+	unsigned long *pt;
+	int error;
+	unsigned long pgsize;
+
+	rpa = rpt;
+	offsh = 39;
+	pgsize = 0;
+	/* i = 0: PML4, 1: PDPT, 2: PDT, 3: PT */
+	for (i = 0; i < 4; ++i) {
+		ix = (rva >> offsh) & 0x1FF;
+		phys = ihk_device_map_memory(ihk_os_to_dev(os), rpa, PAGE_SIZE);
+		pt = ihk_device_map_virtual(ihk_os_to_dev(os), phys, PAGE_SIZE, NULL, 0);
+		dprintk("rpa %#lx offsh %d ix %#x phys %#lx pt %p pt[ix] %#lx\n",
+				rpa, offsh, ix, phys, pt, pt[ix]);
+
+#define	PTE_P	0x001
+		if (!(pt[ix] & PTE_P)) {
+			ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
+			ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
+			error = -EFAULT;
+			dprintk("Remote PTE is not present for 0x%lx (rpt: %lx) ?\n", rva, rpt);
+			goto out;
+		}
+
+#define	PTE_PS	0x080
+		if (pt[ix] & PTE_PS) {
+			pgsize = 1UL << offsh;
+			rpa = pt[ix] & ((1UL << 52) - 1) & ~(pgsize - 1);
+			rpa |= rva & (pgsize - 1);
+			ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
+			ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
+			error = 0;
+			goto found;
+		}
+
+		rpa = pt[ix] & ((1UL << 52) - 1) & ~((1UL << 12) - 1);
+		offsh -= 9;
+		ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
+		ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
+	}
+	pgsize = 1UL << 12;
+	rpa |= rva & (pgsize - 1);
+
+found:
+	error = 0;
+	*rpap = rpa;
+	*pgsizep = pgsize;
+
+out:
+	dprintk("translate_rva_to_rpa: %d rva %#lx --> rpa %#lx (%lx)\n",
+			error, rva, rpa, pgsize);
+	return error;
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_83 */
+
+#ifdef POSTK_DEBUG_ARCH_DEP_12
+#define PFN_WRITE_COMBINED _PAGE_PWT
+static inline bool pte_is_write_combined(pte_t pte)
+{
+	return ((pte_flags(pte) & _PAGE_PWT) && !(pte_flags(pte) & _PAGE_PCD));
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_12 */
+

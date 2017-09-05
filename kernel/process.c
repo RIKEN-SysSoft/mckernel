@@ -1,3 +1,4 @@
+/* process.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
 /**
  * \file process.c
  *  License details are found in the file LICENSE.
@@ -29,6 +30,9 @@
 #include <page.h>
 #include <cpulocal.h>
 #include <auxvec.h>
+#ifdef POSTK_DEBUG_ARCH_DEP_65
+#include <hwcap.h>
+#endif /* POSTK_DEBUG_ARCH_DEP_65 */
 #include <timer.h>
 #include <mman.h>
 #include <xpmem.h>
@@ -45,6 +49,9 @@
 #define ekprintf(...) kprintf(__VA_ARGS__)
 #endif
 
+#ifdef POSTK_DEBUG_ARCH_DEP_22
+extern struct thread *arch_switch_context(struct thread *prev, struct thread *next);
+#endif /* POSTK_DEBUG_ARCH_DEP_22 */
 extern long alloc_debugreg(struct thread *proc);
 extern void save_debugreg(unsigned long *debugreg);
 extern void restore_debugreg(unsigned long *debugreg);
@@ -66,8 +73,10 @@ int ptrace_detach(int pid, int data);
 extern unsigned long do_kill(struct thread *, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
 extern void procfs_create_thread(struct thread *);
 extern void procfs_delete_thread(struct thread *);
+#ifndef POSTK_DEBUG_ARCH_DEP_22
 extern void perf_start(struct mc_perf_event *event);
 extern void perf_reset(struct mc_perf_event *event);
+#endif /* !POSTK_DEBUG_ARCH_DEP_22 */
 
 struct list_head resource_set_list;
 mcs_rwlock_lock_t    resource_set_lock;
@@ -95,8 +104,18 @@ init_process(struct process *proc, struct process *parent)
 		proc->mpol_threshold = parent->mpol_threshold;
 		memcpy(proc->rlimit, parent->rlimit,
 		       sizeof(struct rlimit) * MCK_RLIM_MAX);
+#ifdef POSTK_DEBUG_TEMP_FIX_69 /* Fix problem not to inherit parent cpu_set. */
+		memcpy(&proc->cpu_set, &parent->cpu_set,
+		       sizeof(proc->cpu_set));
+#endif /* POSTK_DEBUG_TEMP_FIX_69 */
 	}
 
+#ifdef POSTK_DEBUG_ARCH_DEP_63 /* struct process member initialize add */
+	INIT_LIST_HEAD(&proc->hash_list);
+	INIT_LIST_HEAD(&proc->siblings_list);
+	INIT_LIST_HEAD(&proc->ptraced_siblings_list);
+	mcs_rwlock_init(&proc->update_lock);
+#endif /* POSTK_DEBUG_ARCH_DEP_63 */
 	INIT_LIST_HEAD(&proc->threads_list);
 	INIT_LIST_HEAD(&proc->children_list);
 	INIT_LIST_HEAD(&proc->ptraced_children_list);
@@ -370,6 +389,9 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 	/* NOTE: sp is the user mode stack! */
 	ihk_mc_init_user_process(&thread->ctx, &thread->uctx, ((char *)thread) +
 				 KERNEL_STACK_NR_PAGES * PAGE_SIZE, pc, sp);
+#ifdef POSTK_DEBUG_ARCH_DEP_23 /* add arch dep. clone_process() function */
+	arch_clone_thread(org, pc, sp, thread);
+#endif /* POSTK_DEBUG_ARCH_DEP_23 */
 
 	memcpy(thread->uctx, org->uctx, sizeof(*org->uctx));
 	ihk_mc_modify_user_context(thread->uctx, IHK_UCR_STACK_POINTER, sp);
@@ -1793,8 +1815,30 @@ retry:
 			}
 			dkprintf("%s: cow,copying virt:%lx<-%lx,phys:%lx<-%lx,pgsize=%lu\n",
 					 __FUNCTION__, virt, phys_to_virt(phys), virt_to_phys(virt), phys, pgsize);
+#ifdef POSTK_DEBUG_TEMP_FIX_14
+			if (page) {
+				// McKernel memory space
+				memcpy(virt, phys_to_virt(phys), pgsize);
+			} else {
+				// Host Kernel memory space
+				const enum ihk_mc_pt_attribute attr = 0;
+				const int remove_vmap_allocator_entry = 1;
+				void* vmap;
+
+				vmap = ihk_mc_map_virtual(phys, npages, attr);
+				if (!vmap) {
+					error = -ENOMEM;
+					kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):cannot virtual mapping. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
+					ihk_mc_free_pages(virt, npages);
+					goto out;
+				}
+				memcpy(virt, vmap, pgsize);
+				ihk_mc_unmap_virtual(vmap, npages, remove_vmap_allocator_entry);
+			}
+#else /*POSTK_DEBUG_TEMP_FIX_14*/
 			memcpy(virt, phys_to_virt(phys), pgsize);
 
+#endif /*POSTK_DEBUG_TEMP_FIX_14*/
 			/* Call rusage_memory_stat_add() because remote page fault may create a page not pointed-to by PTE */
 			if(rusage_memory_stat_add(range, phys, pgsize, pgsize)) {
 				dkprintf("%lx+,%s: remote page fault + cow, calling memory_stat_rss_add(),pgsize=%ld\n",
@@ -1810,6 +1854,16 @@ retry:
 			page = phys_to_page(phys);
 		}
 	}
+#ifdef POSTK_DEBUG_ARCH_DEP_21
+	else if (!(range->flag & VR_PRIVATE)) { /*VR_SHARED*/
+		if (!(attr & PTATTR_DIRTY)) {
+			if (!(range->flag & VR_STACK)) {
+				attr &= ~PTATTR_WRITABLE;
+			}
+		}
+	}
+#endif /*POSTK_DEBUG_ARCH_DEP_21*/
+
 	/*****/
 	if (ptep) {
 		if(rusage_memory_stat_add(range, phys, pgsize, pgsize)) {
@@ -2031,8 +2085,12 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 
 	/* Create stack range */
 	end = STACK_TOP(&thread->vm->region) & LARGE_PAGE_MASK;
+#ifdef POSTK_DEBUG_ARCH_DEP_80 /* user stack prepage size fix */
+	minsz = LARGE_PAGE_SIZE;
+#else /* POSTK_DEBUG_ARCH_DEP_80 */
 	minsz = (proc->rlimit[MCK_RLIMIT_STACK].rlim_cur
 			+ LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
+#endif /* POSTK_DEBUG_ARCH_DEP_80 */
 	size = (proc->rlimit[MCK_RLIMIT_STACK].rlim_max
 			+ LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
 	dkprintf("%s: rlim_max: %lu, rlim_cur: %lu\n",
@@ -2099,6 +2157,12 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	p = (unsigned long *)(stack + minsz);
 	s_ind = -1;
 
+#ifdef POSTK_DEBUG_ARCH_DEP_15 /* userstack 16byte align */
+	if(!((envc + argc) % 2)){
+		p[s_ind--] = 0;
+	}
+#endif /* POSTK_DEBUG_ARCH_DEP_15 */
+
 	/* "random" 16 bytes on the very top */
 	p[s_ind--] = 0x010101011;
 	p[s_ind--] = 0x010101011;
@@ -2109,6 +2173,10 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	   AUXV_LEN in include/process.h. */
 	p[s_ind--] = 0;     /* AT_NULL */
 	p[s_ind--] = 0;
+#ifdef POSTK_DEBUG_ARCH_DEP_65
+	p[s_ind--] = arch_get_hwcap(); /* AT_HWCAP */
+	p[s_ind--] = AT_HWCAP;
+#endif /* POSTK_DEBUG_ARCH_DEP_65 */
 	p[s_ind--] = pn->at_entry; /* AT_ENTRY */
 	p[s_ind--] = AT_ENTRY;
 	p[s_ind--] = pn->at_phnum; /* AT_PHNUM */
@@ -2117,7 +2185,11 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	p[s_ind--] = AT_PHENT;
 	p[s_ind--] = pn->at_phdr;  /* AT_PHDR */
 	p[s_ind--] = AT_PHDR;
+#ifdef POSTK_DEBUG_ARCH_DEP_50
+	p[s_ind--] = PAGE_SIZE; /* AT_PAGESZ */
+#else
 	p[s_ind--] = 4096; /* AT_PAGESZ */
+#endif /* POSTK_DEBUG_ARCH_DEP_50 */
 	p[s_ind--] = AT_PAGESZ;
 	p[s_ind--] = pn->at_clktck; /* AT_CLKTCK */
 	p[s_ind--] = AT_CLKTCK;
@@ -2163,12 +2235,31 @@ unsigned long extend_process_region(struct process_vm *vm,
 	void *p;
 	int rc;
 
+#ifdef POSTK_DEBUG_TEMP_FIX_68 /* fix heap_extension p2align/shift */
+	size_t align_size;
+	unsigned long align_mask;
+	int align_p2align;
+	int align_shift;
+
+	if (vm->proc->heap_extension > PAGE_SIZE) {
+		align_size = LARGE_PAGE_SIZE;
+		align_mask = LARGE_PAGE_MASK;
+		align_p2align = LARGE_PAGE_P2ALIGN;
+		align_shift = LARGE_PAGE_SHIFT;
+	} else {
+		align_size = PAGE_SIZE;
+		align_mask = PAGE_MASK;
+		align_p2align = PAGE_P2ALIGN;
+		align_shift = PAGE_SHIFT;
+	}
+#else /* POSTK_DEBUG_TEMP_FIX_68 */
 	size_t align_size = vm->proc->heap_extension > PAGE_SIZE ?
 		LARGE_PAGE_SIZE : PAGE_SIZE;
 	unsigned long align_mask = vm->proc->heap_extension > PAGE_SIZE ?
 		LARGE_PAGE_MASK : PAGE_MASK;
 	unsigned long align_p2align = vm->proc->heap_extension > PAGE_SHIFT ?
 		LARGE_PAGE_P2ALIGN : PAGE_P2ALIGN;
+#endif /* POSTK_DEBUG_TEMP_FIX_68 */
 
 	new_end_allocated = (address + (PAGE_SIZE - 1)) & PAGE_MASK;
 	if ((new_end_allocated - end_allocated) < vm->proc->heap_extension) {
@@ -2190,12 +2281,21 @@ unsigned long extend_process_region(struct process_vm *vm,
 		}
 	}
 
+#ifdef POSTK_DEBUG_TEMP_FIX_68 /* fix heap_extension p2align/shift */
+	if ((rc = add_process_memory_range(vm, end_allocated, new_end_allocated,
+					(p == 0 ? 0 : virt_to_phys(p)), flag, NULL, 0,
+					align_shift, NULL)) != 0) {
+		ihk_mc_free_pages_user(p, (new_end_allocated - end_allocated) >> PAGE_SHIFT);
+		return end_allocated;
+	}
+#else /* POSTK_DEBUG_TEMP_FIX_68 */
 	if ((rc = add_process_memory_range(vm, end_allocated, new_end_allocated,
 					(p == 0 ? 0 : virt_to_phys(p)), flag, NULL, 0,
 					align_p2align, NULL)) != 0) {
 		ihk_mc_free_pages_user(p, (new_end_allocated - end_allocated) >> PAGE_SHIFT);
 		return end_allocated;
 	}
+#endif /* POSTK_DEBUG_TEMP_FIX_68 */
 	// memory_stat_rss_add() is called in add_process_memory_range()
 
 	dkprintf("%s: new_end_allocated: 0x%lx, align_size: %lu, align_mask: %lx\n",
@@ -2857,6 +2957,9 @@ static void do_migrate(void)
 			__FUNCTION__, req->thread->tid, old_cpu_id, cpu_id);
 		
 		v->flags |= CPU_FLAG_NEED_RESCHED;
+#ifdef POSTK_DEBUG_TEMP_FIX_57 /* migration wakeup IPI target fix. */
+		ihk_mc_interrupt_cpu(cpu_id, ihk_mc_get_vector(IHK_GV_IKC));
+#endif /* POSTK_DEBUG_TEMP_FIX_57 */
 		waitq_wakeup(&req->wq);
 		double_rq_unlock(cur_v, v, irqstate);
 		continue;
@@ -2930,6 +3033,12 @@ void spin_sleep_or_schedule(void)
 			thread->spin_sleep = 0;
 		}
 		ihk_mc_spinlock_unlock(&thread->spin_sleep_lock, irqstate);
+
+#ifdef POSTK_DEBUG_TEMP_FIX_56 /* in futex_wait() signal handring fix. */
+		if (hassigpending(cpu_local_var(current))) {
+			woken = 1;
+		}
+#endif /* POSTK_DEBUG_TEMP_FIX_56 */
 
 		if (woken) {
 			return;
@@ -3027,9 +3136,15 @@ redo:
 		}
 
 		/* Take care of floating point registers except for idle process */
+#ifdef POSTK_DEBUG_ARCH_DEP_66 /* Fixed not to save fp_regs when the process ends */
+		if (prev && (prev != &cpu_local_var(idle) && prev->status != PS_EXITED)) {
+			save_fp_regs(prev);
+		}
+#else  /* POSTK_DEBUG_ARCH_DEP_66 */
 		if (prev && prev != &cpu_local_var(idle)) {
 			save_fp_regs(prev);
 		}
+#endif  /* POSTK_DEBUG_ARCH_DEP_66 */
 
 		if (next != &cpu_local_var(idle)) {
 			restore_fp_regs(next);
@@ -3039,6 +3154,9 @@ redo:
 				next->vm->address_space->page_table)
 			ihk_mc_load_page_table(next->vm->address_space->page_table);
 
+#ifdef POSTK_DEBUG_ARCH_DEP_22
+		last = arch_switch_context(prev, next);
+#else
 		dkprintf("[%d] schedule: tlsblock_base: 0x%lX\n",
 		         ihk_mc_get_processor_id(), next->tlsblock_base);
 
@@ -3073,6 +3191,7 @@ redo:
 		else {
 			last = ihk_mc_switch_context(NULL, &next->ctx, prev);
 		}
+#endif /* POSTK_DEBUG_ARCH_DEP_22 */
 
 		/*
 		 * We must hold the lock throughout the context switch, otherwise
@@ -3166,16 +3285,25 @@ int __sched_wakeup_thread(struct thread *thread,
 		status = -EINVAL;
 	}
 
+#ifdef POSTK_DEBUG_TEMP_FIX_55 /* runq_locked flag apply for unlock */
 	if (!runq_locked) {
 		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 	}
+#else /* POSTK_DEBUG_TEMP_FIX_55 */
+	ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+#endif /* POSTK_DEBUG_TEMP_FIX_55 */
 
 	if (!status && (thread->cpu_id != ihk_mc_get_processor_id())) {
 		dkprintf("%s: issuing IPI, thread->cpu_id=%d\n",
 				__FUNCTION__, thread->cpu_id);
+#ifdef POSTK_DEBUG_ARCH_DEP_8 /* arch depend hide */
+		ihk_mc_interrupt_cpu(thread->cpu_id,
+		                     ihk_mc_get_vector(IHK_GV_IKC));
+#else /* POSTK_DEBUG_ARCH_DEP_8 */
 		ihk_mc_interrupt_cpu(
 				get_x86_cpu_local_variable(thread->cpu_id)->apic_id,
 				0xd1);
+#endif /* POSTK_DEBUG_ARCH_DEP_8 */
 	}
 
 	return status;
@@ -3229,9 +3357,15 @@ void sched_request_migrate(int cpu_id, struct thread *thread)
 	v->status = CPU_STATUS_RUNNING;
 	ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
 
+#ifdef POSTK_DEBUG_ARCH_DEP_8 /* arch depend hide */
+	if (cpu_id != ihk_mc_get_processor_id())
+		ihk_mc_interrupt_cpu(/* Kick scheduler */
+			thread->cpu_id, ihk_mc_get_vector(IHK_GV_IKC));
+#else /* POSTK_DEBUG_ARCH_DEP_8 */
 	if (cpu_id != ihk_mc_get_processor_id())
 		ihk_mc_interrupt_cpu(/* Kick scheduler */
 				get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
+#endif /* POSTK_DEBUG_ARCH_DEP_8 */
 	dkprintf("%s: tid: %d -> cpu: %d\n",
 			__FUNCTION__, thread->tid, cpu_id);
 
@@ -3268,9 +3402,15 @@ void runq_add_thread(struct thread *thread, int cpu_id)
 	rusage_num_threads_inc();
 
 	/* Kick scheduler */
+#ifdef POSTK_DEBUG_ARCH_DEP_8 /* arch depend hide */
+	if (cpu_id != ihk_mc_get_processor_id())
+		ihk_mc_interrupt_cpu(
+			thread->cpu_id, ihk_mc_get_vector(IHK_GV_IKC));
+#else /* POSTK_DEBUG_ARCH_DEP_8 */
 	if (cpu_id != ihk_mc_get_processor_id())
 		ihk_mc_interrupt_cpu(
 		         get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
+#endif /* POSTK_DEBUG_ARCH_DEP_8 */
 }
 
 /* NOTE: shouldn't remove a running process! */

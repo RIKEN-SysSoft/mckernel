@@ -1,3 +1,4 @@
+# Makefile.in COPYRIGHT FUJITSU LIMITED 2016
 KDIR ?= @KDIR@
 ARCH ?= @ARCH@
 src = @abs_srcdir@
@@ -7,12 +8,18 @@ IHK_BASE=$(src)/../../../../ihk
 
 obj-m += mcctrl.o
 
-ccflags-y := -I$(IHK_BASE)/linux/include -I$(IHK_BASE)/linux/include/ihk/arch/$(ARCH) -I$(IHK_BASE)/ikc/include -I$(IHK_BASE)/ikc/include/ikc/arch/$(ARCH) -I$(IHK_BASE)/include -I$(IHK_BASE)/include/arch/$(ARCH) -I$(src)/../../include -mcmodel=kernel -mno-red-zone -DMCEXEC_PATH=\"$(BINDIR)/mcexec\" -I@abs_builddir@
+# POSTK_DEBUG_ARCH_DEP_1, arch depend "-mcmodel"
+# POSTK_DEBUG_ARCH_DEP_83, arch depend translate_rva_to_rpa() move
+#ccflags-y := -I$(IHK_BASE)/linux/include -I$(IHK_BASE)/linux/include/ihk/arch/$(ARCH) -I$(IHK_BASE)/ikc/include -I$(IHK_BASE)/ikc/include/ikc/arch/$(ARCH) -I$(IHK_BASE)/include -I$(IHK_BASE)/include/arch/$(ARCH) -I$(src)/../../include -mcmodel=kernel -mno-red-zone -DMCEXEC_PATH=\"$(BINDIR)/mcexec\" -I@abs_builddir@
+ccflags-y := -I$(IHK_BASE)/linux/include -I$(IHK_BASE)/linux/include/ihk/arch/$(ARCH) -I$(IHK_BASE)/ikc/include -I$(IHK_BASE)/ikc/include/ikc/arch/$(ARCH) -I$(IHK_BASE)/include -I$(IHK_BASE)/include/arch/$(ARCH) -I$(src)/../../include -I$(src)/arch/$(ARCH)/include -DMCEXEC_PATH=\"$(BINDIR)/mcexec\" -I@abs_builddir@
+
 
 mcctrl-y := driver.o control.o ikc.o syscall.o procfs.o binfmt_mcexec.o
 mcctrl-y += sysfs.o sysfs_files.o arch/$(ARCH)/archdeps.o
 
 KBUILD_EXTRA_SYMBOLS = @abs_builddir@/../../../../ihk/linux/core/Module.symvers
+EXTRA_CFLAGS += $(foreach i, $(shell seq 1 100), $(addprefix -DPOSTK_DEBUG_ARCH_DEP_, $(i)))
+EXTRA_CFLAGS += $(foreach i, $(shell seq 1 100), $(addprefix -DPOSTK_DEBUG_TEMP_FIX_, $(i)))
 
 .PHONY: clean install modules
 

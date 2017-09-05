@@ -9,6 +9,7 @@
 /*
  * HISTORY:
  */
+/* procfs.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
 
 #include <types.h>
 #include <kmsg.h>
@@ -231,6 +232,12 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 		eof = 1;
 		goto end;
 	}
+#ifdef POSTK_DEBUG_ARCH_DEP_42 /* /proc/cpuinfo support added. */
+	else if (!strcmp(p, "cpuinfo")) { /* "/proc/cpuinfo" */
+		ans = ihk_mc_show_cpuinfo(buf, count, offset, &eof);
+		goto end;
+	}
+#endif /* POSTK_DEBUG_ARCH_DEP_42 */
 	else {
 		kprintf("unsupported procfs entry: %s\n", p);
 		goto end;
@@ -285,8 +292,12 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 				goto end;
 			}
 
+#ifdef POSTK_DEBUG_TEMP_FIX_52 /* NUMA support(memory area determination) */
+			if (!is_mckernel_memory(pa)) {
+#else
 			if (pa < ihk_mc_get_memory_address(IHK_MC_GMA_MAP_START, 0) ||
 					pa >= ihk_mc_get_memory_address(IHK_MC_GMA_MAP_END, 0)) {
+#endif /* POSTK_DEBUG_TEMP_FIX_52 */
 				ans = -EIO;
 				goto end;
 			}
@@ -308,16 +319,34 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 	 */
 	if (strcmp(p, "maps") == 0) {
 		struct vm_range *range;
+#ifdef POSTK_DEBUG_TEMP_FIX_47 /* /proc/<pid>/maps 1024 byte over read fix. */
+		int left = PAGE_SIZE * 2;
+#else /* POSTK_DEBUG_TEMP_FIX_47 */
 		int left = r->count - 1; /* extra 1 for terminating NULL */
+#endif /* POSTK_DEBUG_TEMP_FIX_47 */
 		int written = 0;
 		char *_buf = buf;
+#ifdef POSTK_DEBUG_TEMP_FIX_47 /* /proc/<pid>/maps 1024 byte over read fix. */
+		int len = 0;
+		char *tmp = NULL;
+
+		_buf = tmp = kmalloc(left, IHK_MC_AP_CRITICAL);
+		if (!tmp) {
+			kprintf("%s: error allocating /proc/self/maps buffer\n",
+				__FUNCTION__);
+			ans = 0;
+			goto end;
+		}
+#endif /* POSTK_DEBUG_TEMP_FIX_47 */
 		
+#ifndef POSTK_DEBUG_TEMP_FIX_47 /* /proc/<pid>/maps 1024 byte over read fix. */
 		/* Starting from the middle of a proc file is not supported for maps */
 		if (offset > 0) {
 			ans = 0;
 			eof = 1;
 			goto end;
 		}
+#endif /* POSTK_DEBUG_TEMP_FIX_47 */
 
 		ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 
@@ -347,17 +376,42 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 			_buf += written_now;
 			written += written_now;
 
+#ifdef POSTK_DEBUG_TEMP_FIX_47 /* /proc/<pid>/maps 1024 byte over read fix. */
 			if (left == 0) {
 				kprintf("%s(): WARNING: buffer too small to fill proc/maps\n", 
 						__FUNCTION__);
 				break;
 			}
+#else /* POSTK_DEBUG_TEMP_FIX_47 */
+			if (left == 1) {
+				kprintf("%s(): WARNING: buffer too small to fill proc/maps\n", 
+						__FUNCTION__);
+				break;
+			}
+#endif /* POSTK_DEBUG_TEMP_FIX_47 */
 		}
 		
 		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 		
+#ifdef POSTK_DEBUG_TEMP_FIX_47 /* /proc/<pid>/maps 1024 byte over read fix. */
+		len = strlen(tmp);
+		if (r->offset < len) {
+			if (r->offset + r->count < len) {
+				ans = r->count;
+			} else {
+				eof = 1;
+				ans = len;
+			}
+			strncpy(buf, tmp + r->offset, ans);
+		} else if (r->offset == len) {
+			ans = 0;
+			eof = 1;
+		}
+		kfree(tmp);
+#else /* POSTK_DEBUG_TEMP_FIX_47 */
 		ans = written + 1;
 		eof = 1;
+#endif /* POSTK_DEBUG_TEMP_FIX_47 */
 		goto end;
 	}
 	

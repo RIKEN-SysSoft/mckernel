@@ -81,6 +81,9 @@
 /* Define to address of kernel symbol zap_page_range, or 0 if exported */
 #undef MCCTRL_KSYM_zap_page_range
 
+/* Define to address of kernel symbol vdso_spec, or 0 if exported. POSTK_DEBUG_ARCH_DEP_50 */
+#undef MCCTRL_KSYM_vdso_spec
+
 /* McKernel specific headers */
 #undef MCKERNEL_INCDIR
 

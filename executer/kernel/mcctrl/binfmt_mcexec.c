@@ -122,6 +122,23 @@ static int load_elf(struct linux_binprm *bprm
 		for(i = 0, st = 0; mode != 2;){
 			if(st == 0){
 				off = p & ~PAGE_MASK;
+#ifdef POSTK_DEBUG_ARCH_DEP_41 /* HOST-Linux version switch add */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
+				rc = get_user_pages_remote(current, bprm->mm,
+				                        bprm->p, 1, FOLL_FORCE, &page, NULL, NULL);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4,9,0)
+				rc = get_user_pages_remote(current, bprm->mm,
+				                        bprm->p, 1, FOLL_FORCE, &page, NULL);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
+				rc = get_user_pages_remote(current, bprm->mm,
+				                        bprm->p, 1, 0, 1,
+				                        &page, NULL);
+#else
+				rc = get_user_pages(current, bprm->mm,
+				                        bprm->p, 1, 0, 1,
+				                        &page, NULL);
+#endif
+#else /* POSTK_DEBUG_ARCH_DEP_41 */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
 				rc = get_user_pages_remote(current, bprm->mm,
 				                        bprm->p, 1, 0, 1,
@@ -131,6 +148,7 @@ static int load_elf(struct linux_binprm *bprm
 				                        bprm->p, 1, 0, 1,
 				                        &page, NULL);
 #endif
+#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 				if(rc <= 0) {
 					kfree(pbuf);
 					return -EFAULT;

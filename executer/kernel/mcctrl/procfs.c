@@ -9,6 +9,7 @@
 /*
  * HISTORY:
  */
+/* procfs.c COPYRIGHT FUJITSU LIMITED 2016-2017 */
 
 #include <linux/slab.h>
 #include <linux/string.h>
@@ -508,6 +509,215 @@ procfs_exit(int osnum)
  * This function conforms to the 2) way of fs/proc/generic.c
  * from linux-2.6.39.4.
  */
+#ifdef POSTK_DEBUG_TEMP_FIX_43 /* Fixed an issue that failed pread / pwrite of size larger than 4MB */
+static ssize_t __mckernel_procfs_read_write(
+		struct file *file,
+		char __user *buf, size_t nbytes,
+		loff_t *ppos, int read_write)
+{
+	struct inode * inode = file->f_inode;
+	char *kern_buffer = NULL;
+	int order = 0;
+	volatile struct procfs_read *r = NULL;
+	struct ikc_scd_packet isp;
+	int ret, osnum, pid, retw;
+	unsigned long pbuf;
+	size_t count = nbytes;
+	size_t copy_size = 0;
+	size_t copied = 0;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
+	struct proc_dir_entry *dp = PDE(inode);
+	struct procfs_list_entry *e = dp->data;
+#else
+	struct procfs_list_entry *e = PDE_DATA(inode);
+#endif
+	loff_t offset = *ppos;
+	char pathbuf[PROCFS_NAME_MAX];
+	char *path, *p;
+	ihk_os_t os = NULL;
+	struct mcctrl_usrdata *udp = NULL;
+	struct mcctrl_per_proc_data *ppd = NULL;
+
+	if (count <= 0 || offset < 0) {
+		return 0;
+	}
+
+	path = getpath(e, pathbuf, PROCFS_NAME_MAX);
+	dprintk("%s: invoked for %s, offset: %lu, count: %lu\n",
+			__FUNCTION__, path,
+			(unsigned long)offset, count);
+
+	/* Verify OS number */
+	ret = sscanf(path, "mcos%d/", &osnum);
+	if (ret != 1) {
+		printk("%s: error: couldn't determine OS number\n", __FUNCTION__);
+		return -EINVAL;
+	}
+
+	if (osnum != e->osnum) {
+		printk("%s: error: OS numbers don't match\n", __FUNCTION__);
+		return -EINVAL;
+	}
+
+	/* Is this request for a specific process? */
+	p = strchr(path, '/') + 1;
+	ret = sscanf(p, "%d/", &pid);
+	if (ret != 1) {
+		pid = -1;
+	}
+
+	os = osnum_to_os(osnum);
+	if (!os) {
+		printk("%s: error: no IHK OS data found for OS %d\n",
+				__FUNCTION__, osnum);
+		return -EINVAL;
+	}
+
+	udp = ihk_host_os_get_usrdata(os);
+	if (!udp) {
+		printk("%s: error: no MCCTRL data found for OS %d\n",
+				__FUNCTION__, osnum);
+		return -EINVAL;
+	}
+
+	if (pid > 0) {
+		ppd = mcctrl_get_per_proc_data(udp, pid);
+
+		if (unlikely(!ppd)) {
+			printk("%s: error: no per-process structure for PID %d",
+					__FUNCTION__, pid);
+			return -EINVAL;
+		}
+	}
+
+	/* NOTE: we need physically contigous memory to pass through IKC */
+	for (order = get_order(count); order >= 0; order--) {
+		kern_buffer = (char *)__get_free_pages(GFP_KERNEL, order);
+		if (kern_buffer) {
+			break;
+		}
+	}
+
+	if (!kern_buffer) {
+		printk("%s: ERROR: allocating kernel buffer\n", __FUNCTION__);
+		ret = -ENOMEM;
+		goto out;
+	}
+	copy_size = PAGE_SIZE * (1 << order);
+
+	pbuf = virt_to_phys(kern_buffer);
+
+	r = kmalloc(sizeof(struct procfs_read), GFP_KERNEL);
+	if (r == NULL) {
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	while (count > 0) {
+		int this_len = min_t(ssize_t, count, copy_size);
+
+		r->pbuf = pbuf;
+		r->eof = 0;
+		r->ret = -EIO; /* default */
+		r->status = 0;
+		r->offset = offset;
+		r->count = this_len;
+		r->readwrite = read_write;
+		strncpy((char *)r->fname, path, PROCFS_NAME_MAX);
+		isp.msg = SCD_MSG_PROCFS_REQUEST;
+		isp.ref = 0;
+		isp.arg = virt_to_phys(r);
+		isp.pid = pid;
+
+		ret = mcctrl_ikc_send(osnum_to_os(e->osnum),
+				(pid > 0) ? ppd->ikc_target_cpu : 0, &isp);
+
+		if (ret < 0) {
+			goto out; /* error */
+		}
+
+		/* Wait for a reply. */
+		ret = -EIO; /* default exit code */
+		dprintk("%s: waiting for reply\n", __FUNCTION__);
+
+retry_wait:
+		/* Wait for the status field of the procfs_read structure,
+		 * wait on per-process or OS specific data depending on
+		 * who the request is for.
+		 */
+		if (pid > 0) {
+			retw = wait_event_interruptible_timeout(ppd->wq_procfs,
+					r->status != 0, HZ);
+		}
+		else {
+			retw = wait_event_interruptible_timeout(udp->wq_procfs,
+					r->status != 0, HZ);
+		}
+
+		/* Timeout? */
+		if (retw == 0 && r->status == 0) {
+			printk("%s: error: timeout (1 sec)\n", __FUNCTION__);
+			goto out;
+		}
+		/* Interrupted? */
+		else if (retw == -ERESTARTSYS) {
+			ret = -ERESTART;
+			goto out;
+		}
+		/* Were we woken up by a reply to another procfs request? */
+		else if (r->status == 0) {
+			/* TODO: r->status is not set atomically, we could be woken
+			 * up with status == 0 and it could change to 1 while in this
+			 * code, we could potentially miss the wake_up()... 
+			 */
+			printk("%s: stale wake-up, retrying\n", __FUNCTION__);
+			goto retry_wait;
+		}
+
+		/* Wake up and check the result. */
+		dprintk("%s: woke up. ret: %d, eof: %d\n",
+				__FUNCTION__, r->ret, r->eof);
+
+		if (r->ret > 0) {
+			if (read_write == 0) {
+				if (copy_to_user(buf, kern_buffer, r->ret)) {
+					printk("%s: ERROR: copy_to_user failed.\n", __FUNCTION__);
+					ret = -EFAULT;
+					goto out;
+				}
+			}
+
+			buf += r->ret;
+			offset += r->ret;
+			copied += r->ret;
+			count -= r->ret;
+		}
+		else {
+			if (!copied) {
+				/* Transmit error from McKernel */
+				copied = r->ret;
+			}
+			break;
+		}
+
+		if (r->eof != 0) {
+			break;
+		}
+	}
+	*ppos = offset;
+	ret = copied;
+
+out:
+	if (ppd)
+		mcctrl_put_per_proc_data(ppd);
+	if (kern_buffer)
+		free_pages((uintptr_t)kern_buffer, order);
+	if (r)
+		kfree((void *)r);
+
+	return ret;
+}
+#else /* POSTK_DEBUG_TEMP_FIX_43 */
 static ssize_t __mckernel_procfs_read_write(
 		struct file *file,
 		char __user *buf, size_t nbytes,
@@ -693,6 +903,7 @@ out:
 
 	return ret;
 }
+#endif /* POSTK_DEBUG_TEMP_FIX_43 */
 
 static ssize_t mckernel_procfs_read(struct file *file,
 		char __user *buf, size_t nbytes, loff_t *ppos)
@@ -832,7 +1043,11 @@ static const struct procfs_entry pid_entry_stuff[] = {
 
 static const struct procfs_entry base_entry_stuff[] = {
 //	PROC_REG("cmdline",    S_IRUGO, NULL),
+#ifdef POSTK_DEBUG_ARCH_DEP_42 /* /proc/cpuinfo support added. */
+	PROC_REG("cpuinfo",    S_IRUGO, NULL),
+#else /* POSTK_DEBUG_ARCH_DEP_42 */
 //	PROC_REG("cpuinfo",    S_IRUGO, NULL),
+#endif /* POSTK_DEBUG_ARCH_DEP_42 */
 //	PROC_REG("meminfo",    S_IRUGO, NULL),
 //	PROC_REG("pagetypeinfo",S_IRUGO, NULL),
 //	PROC_REG("softirq",    S_IRUGO, NULL),

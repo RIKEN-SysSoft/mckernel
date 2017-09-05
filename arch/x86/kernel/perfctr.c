@@ -16,6 +16,9 @@
 
 extern unsigned int *x86_march_perfmap;
 extern int running_on_kvm(void);
+#ifdef POSTK_DEBUG_TEMP_FIX_31
+int ihk_mc_perfctr_fixed_init(int counter, int mode);
+#endif/*POSTK_DEBUG_TEMP_FIX_31*/
 
 //#define PERFCTR_DEBUG
 #ifdef PERFCTR_DEBUG
@@ -192,16 +195,52 @@ static int set_fixed_counter(int counter, int mode)
 	return 0;
 }
 
+#ifdef POSTK_DEBUG_TEMP_FIX_29
+int ihk_mc_perfctr_init_raw(int counter, uint64_t config, int mode)
+#else
 int ihk_mc_perfctr_init_raw(int counter, unsigned int code, int mode)
+#endif /*POSTK_DEBUG_TEMP_FIX_29*/
 {
+#ifdef POSTK_DEBUG_TEMP_FIX_31
+	// PAPI_REF_CYC counted by fixed counter
+	if (counter >= X86_IA32_BASE_FIXED_PERF_COUNTERS) {
+		return ihk_mc_perfctr_fixed_init(counter, mode);
+	}
+#endif /*POSTK_DEBUG_TEMP_FIX_31*/
+
 	if (counter < 0 || counter >= X86_IA32_NUM_PERF_COUNTERS) {
 		return -EINVAL;
 	}
 
+#ifdef POSTK_DEBUG_TEMP_FIX_29
+	return set_perfctr_x86_direct(counter, mode, config);
+#else
 	return set_perfctr_x86_direct(counter, mode, code);
+#endif /*POSTK_DEBUG_TEMP_FIX_29*/
 }
+
+#ifdef POSTK_DEBUG_TEMP_FIX_29
+int ihk_mc_perfctr_init(int counter, uint64_t config, int mode)
+#else
 int ihk_mc_perfctr_init(int counter, enum ihk_perfctr_type type, int mode)
+#endif /*POSTK_DEBUG_TEMP_FIX_29*/
 {
+#ifdef POSTK_DEBUG_TEMP_FIX_29
+	enum ihk_perfctr_type type;
+
+	switch (config) {
+	case PERF_COUNT_HW_CPU_CYCLES :
+		type = APT_TYPE_CYCLE;
+		break;
+	case PERF_COUNT_HW_INSTRUCTIONS :
+		type = APT_TYPE_INSTRUCTIONS;
+		break;
+	default :
+		// Not supported config.
+		type = PERFCTR_MAX_TYPE;
+	}
+#endif /*POSTK_DEBUG_TEMP_FIX_29*/
+
 	if (counter < 0 || counter >= X86_IA32_NUM_PERF_COUNTERS) {
 		return -EINVAL;
 	}
@@ -219,11 +258,18 @@ int ihk_mc_perfctr_init(int counter, enum ihk_perfctr_type type, int mode)
 extern void x86_march_perfctr_start(unsigned long counter_mask);
 #endif
 
+#ifdef POSTK_DEBUG_TEMP_FIX_30
+int ihk_mc_perfctr_start(int counter)
+#else
 int ihk_mc_perfctr_start(unsigned long counter_mask)
+#endif /*POSTK_DEBUG_TEMP_FIX_30*/
 {
 	int ret = 0;
 	unsigned long value = 0;
 	unsigned long mask = X86_IA32_PERF_COUNTERS_MASK | X86_IA32_FIXED_PERF_COUNTERS_MASK;
+#ifdef POSTK_DEBUG_TEMP_FIX_30
+	unsigned long counter_mask = 1UL << counter;
+#endif /*POSTK_DEBUG_TEMP_FIX_30*/
 
 	PERFCTR_CHKANDJUMP(counter_mask & ~mask, "counter_mask out of range", -EINVAL);
 
@@ -240,11 +286,18 @@ int ihk_mc_perfctr_start(unsigned long counter_mask)
 	goto fn_exit;
 }
 
+#ifdef POSTK_DEBUG_TEMP_FIX_30
+int ihk_mc_perfctr_stop(int counter)
+#else
 int ihk_mc_perfctr_stop(unsigned long counter_mask)
+#endif/*POSTK_DEBUG_TEMP_FIX_30*/
 {
 	int ret = 0;
 	unsigned long value;
 	unsigned long mask = X86_IA32_PERF_COUNTERS_MASK | X86_IA32_FIXED_PERF_COUNTERS_MASK;
+#ifdef POSTK_DEBUG_TEMP_FIX_30
+	unsigned long counter_mask = 1UL << counter;
+#endif/*POSTK_DEBUG_TEMP_FIX_30*/
 
 	PERFCTR_CHKANDJUMP(counter_mask & ~mask, "counter_mask out of range", -EINVAL);
 

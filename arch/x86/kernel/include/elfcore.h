@@ -1,3 +1,4 @@
+#ifndef POSTK_DEBUG_ARCH_DEP_18 /* coredump arch separation. */
 /*
  * Structures and definitions for ELF core file.
  * Extracted from 
@@ -90,3 +91,4 @@ struct note {
 
 #include "elfcoregpl.h"
 
+#endif /* !POSTK_DEBUG_ARCH_DEP_18 */

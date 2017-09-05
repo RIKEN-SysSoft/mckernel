@@ -1,3 +1,4 @@
+/* driver.c COPYRIGHT FUJITSU LIMITED 2016 */
 /**
  * \file executer/kernel/driver.c
  *  License details are found in the file LICENSE.
@@ -174,6 +175,9 @@ int mcctrl_os_shutdown_notifier(int os_index)
 		destroy_ikc_channels(os[os_index]);
 		procfs_exit(os_index);
 	}
+#ifdef POSTK_DEBUG_TEMP_FIX_35 /* in shutdown phase, rus_page_hash_put_pages() call added. */
+	rus_page_hash_put_pages();
+#endif /* POSTK_DEBUG_TEMP_FIX_35 */
 
 	os[os_index] = NULL;
 

@@ -1,3 +1,4 @@
+/* mcexec.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
 /**
  * \file executer/user/mcexec.c
  *  License details are found in the file LICENSE.
@@ -63,9 +64,17 @@
 #include <sys/signalfd.h>
 #include <sys/mount.h>
 #include <include/generated/uapi/linux/version.h>
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+#ifndef __aarch64__
 #include <sys/user.h>
+#endif /* !__aarch64__ */
+#else /* POSTK_DEBUG_ARCH_DEP_35 */
+#include <sys/user.h>
+#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 #include <sys/prctl.h>
+#ifndef POSTK_DEBUG_ARCH_DEP_77 /* arch depend hide */
 #include <asm/prctl.h>
+#endif /* !POSTK_DEBUG_ARCH_DEP_77 */
 #include "../include/uprotocol.h"
 #include <getopt.h>
 #include "archdep.h"
@@ -81,6 +90,7 @@
 #include "../include/qlmpi.h"
 
 //#define DEBUG
+#define ADD_ENVS_OPTION
 
 #ifndef DEBUG
 #define __dprint(msg, ...)
@@ -222,6 +232,11 @@ struct fork_sync_container {
 
 struct fork_sync_container *fork_sync_top;
 pthread_mutex_t fork_sync_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+unsigned long page_size;
+unsigned long page_mask;
+#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 
 pid_t gettid(void)
 {
@@ -573,6 +588,9 @@ retry:
 			fprintf(stderr, "lookup_exec_path(): error allocating\n");
 			return ENOMEM;
 		}
+#ifdef POSTK_DEBUG_TEMP_FIX_6 /* dynamic allocate area initialize clear */
+		memset(link_path, '\0', max_len);
+#endif /* POSTK_DEBUG_TEMP_FIX_6 */
 		
 		error = readlink(path, link_path, max_len);
 		if (error == -1 || error == max_len) {
@@ -743,9 +761,15 @@ int transfer_image(int fd, struct program_load_desc *desc)
 
 	for (i = 0; i < desc->num_sections; i++) {
 		fp = desc->sections[i].fp;
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+		s = (desc->sections[i].vaddr) & page_mask;
+		e = (desc->sections[i].vaddr + desc->sections[i].len
+		     + page_size - 1) & page_mask;
+#else	/* POSTK_DEBUG_ARCH_DEP_35 */
 		s = (desc->sections[i].vaddr) & PAGE_MASK;
 		e = (desc->sections[i].vaddr + desc->sections[i].len
 		     + PAGE_SIZE - 1) & PAGE_MASK;
+#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 		rpa = desc->sections[i].remote_pa;
 
 		if (fseek(fp, desc->sections[i].offset, SEEK_SET) != 0) {
@@ -761,15 +785,29 @@ int transfer_image(int fd, struct program_load_desc *desc)
 			memset(&pt, '\0', sizeof pt);
 			pt.rphys = rpa;
 			pt.userp = dma_buf;
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+			pt.size = page_size;
+#else	/* POSTK_DEBUG_ARCH_DEP_35 */
 			pt.size = PAGE_SIZE;
+#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 			pt.direction = MCEXEC_UP_TRANSFER_TO_REMOTE;
 			lr = 0;
 			
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+			memset(dma_buf, 0, page_size);
+#else	/* POSTK_DEBUG_ARCH_DEP_35 */
 			memset(dma_buf, 0, PAGE_SIZE);
+#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 			if (s < desc->sections[i].vaddr) {
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+				l = desc->sections[i].vaddr 
+					& (page_size - 1);
+				lr = page_size - l;
+#else	/* POSTK_DEBUG_ARCH_DEP_35 */
 				l = desc->sections[i].vaddr 
 					& (PAGE_SIZE - 1);
 				lr = PAGE_SIZE - l;
+#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 				if (lr > flen) {
 					lr = flen;
 				}
@@ -790,8 +828,13 @@ int transfer_image(int fd, struct program_load_desc *desc)
 				flen -= lr;
 			} 
 			else if (flen > 0) {
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+				if (flen > page_size) {
+					lr = page_size;
+#else	/* POSTK_DEBUG_ARCH_DEP_35 */
 				if (flen > PAGE_SIZE) {
 					lr = PAGE_SIZE;
+#endif	/*POSTK_DEBUG_ARCH_DEP_35 */
 				} else {
 					lr = flen;
 				}
@@ -811,8 +854,13 @@ int transfer_image(int fd, struct program_load_desc *desc)
 				}
 				flen -= lr;
 			} 
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+			s += page_size;
+			rpa += page_size;
+#else	/* POSTK_DEBUG_ARCH_DEP_35 */
 			s += PAGE_SIZE;
 			rpa += PAGE_SIZE;
+#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 			
 			/* No more left to upload.. */
 			if (lr == 0 && flen == 0) break;
@@ -1198,7 +1246,11 @@ static int reduce_stack(struct rlimit *orig_rlim, char *argv[])
 
 void print_usage(char **argv)
 {
+#ifdef ADD_ENVS_OPTION
+	fprintf(stderr, "usage: %s [-c target_core] [-n nr_partitions] [<-e ENV_NAME=value>...] [--mpol-threshold=N] [--enable-straight-map] [--extend-heap-by=N] [--mpol-no-heap] [--mpol-no-bss] [--mpol-no-stack] [<mcos-id>] (program) [args...]\n", argv[0]);
+#else /* ADD_ENVS_OPTION */
 	fprintf(stderr, "usage: %s [-c target_core] [-n nr_partitions] [--mpol-threshold=N] [--enable-straight-map] [--extend-heap-by=N] [--mpol-no-heap] [--mpol-no-bss] [--mpol-no-stack] [<mcos-id>] (program) [args...]\n", argv[0]);
+#endif /* ADD_ENVS_OPTION */
 }
 
 void init_sigaction(void)
@@ -1375,6 +1427,130 @@ static int rlimits[] = {
 
 char dev[64];
 
+#ifdef ADD_ENVS_OPTION
+struct env_list_entry {
+	char* str;
+	char* name;
+	char* value;
+	struct env_list_entry *next;
+};
+
+static int get_env_list_entry_count(struct env_list_entry *head)
+{
+	int list_count = 0;
+	struct env_list_entry *current = head;
+
+	while (current) {
+		list_count++;
+		current = current->next;
+	}
+	return list_count;
+}
+
+static struct env_list_entry *search_env_list(struct env_list_entry *head, char *name)
+{
+	struct env_list_entry *current = head;
+
+	while (current) {
+		if (!(strcmp(name, current->name))) {
+			return current;
+		}
+		current = current->next;
+	}
+	return NULL;
+}
+
+static void add_env_list(struct env_list_entry **head, char *add_string)
+{
+	struct env_list_entry *current = NULL;
+	char *value = NULL;
+	char *name = NULL;
+	struct env_list_entry *exist = NULL;
+
+	name = (char *)malloc(strlen(add_string) + 1);
+	strcpy(name, add_string);
+
+	/* include '=' ? */
+	if (!(value = strchr(name, '='))) {
+		printf("\"%s\" is not env value.\n", add_string);
+		free(name);
+		return;
+	}
+	*value = '\0';
+	value++;
+
+	/* name overlap serch */
+	if (*head) {
+		exist = search_env_list(*head, name);
+		if (exist) {
+			free(name);
+			return;
+		}
+	}
+
+	/* ADD env_list */
+	current = (struct env_list_entry *)malloc(sizeof(struct env_list_entry));
+	current->str = add_string;
+	current->name = name;
+	current->value = value;
+	if (*head) {
+		current->next = *head;
+	} else {
+		current->next = NULL;
+	}
+	*head = current;
+	return;
+}
+
+static void destroy_env_list(struct env_list_entry *head)
+{
+	struct env_list_entry *current = head;
+	struct env_list_entry *next = NULL;
+
+	while (current) {
+		next = current->next;
+		free(current->name);
+		free(current);
+		current = next;
+	}
+}
+
+static char **create_local_environ(struct env_list_entry *inc_list)
+{
+	int list_count = 0;
+	int i = 0;
+	struct env_list_entry *current = inc_list;
+	char **local_env = NULL;
+
+	list_count = get_env_list_entry_count(inc_list);
+	local_env = (char **)malloc(sizeof(char **) * (list_count + 1));
+	local_env[list_count] = NULL;
+
+	while (current) {
+		local_env[i] = (char *)malloc(strlen(current->str) + 1);
+		strcpy(local_env[i], current->str);
+		current = current->next;
+		i++;
+	}
+	return local_env;
+}
+
+static void destroy_local_environ(char **local_env)
+{
+	int i = 0;
+
+	if (!local_env) {
+		return;
+	}
+
+	for (i = 0; local_env[i]; i++) {
+		free(local_env[i]);
+		local_env[i] = NULL;
+	}
+	free(local_env);
+}
+#endif /* ADD_ENVS_OPTION */
+
 unsigned long atobytes(char *string)
 {
 	unsigned long mult = 1;
@@ -1405,6 +1581,8 @@ unsigned long atobytes(char *string)
 }
 
 static struct option mcexec_options[] = {
+#ifdef POSTK_DEBUG_ARCH_DEP_53
+#ifndef __aarch64__
 	{
 		.name =		"disable-vdso",
 		.has_arg =	no_argument,
@@ -1417,6 +1595,8 @@ static struct option mcexec_options[] = {
 		.flag =		&enable_vdso,
 		.val =		1,
 	},
+#endif /*__aarch64__*/
+#endif /*POSTK_DEBUG_ARCH_DEP_53*/
 	{
 		.name =		"profile",
 		.has_arg =	no_argument,
@@ -1626,11 +1806,20 @@ int main(int argc, char **argv)
 	char shell_path[1024];
 	int num = 0;
 	int persona;
+#ifdef ADD_ENVS_OPTION
+	char **local_env = NULL;
+	struct env_list_entry *extra_env = NULL;
+#endif /* ADD_ENVS_OPTION */
 
 #ifdef USE_SYSCALL_MOD_CALL
 	__glob_argc = argc;
 	__glob_argv = argv;
 #endif
+
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+	page_size = sysconf(_SC_PAGESIZE);
+	page_mask = ~(page_size - 1);
+#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 
 	altroot = getenv("MCEXEC_ALT_ROOT");
 	if (!altroot) {
@@ -1669,7 +1858,11 @@ int main(int argc, char **argv)
 	}
 
 	/* Parse options ("+" denotes stop at the first non-option) */
+#ifdef ADD_ENVS_OPTION
+	while ((opt = getopt_long(argc, argv, "+c:n:t:m:h:e:", mcexec_options, NULL)) != -1) {
+#else /* ADD_ENVS_OPTION */
 	while ((opt = getopt_long(argc, argv, "+c:n:t:m:h:", mcexec_options, NULL)) != -1) {
+#endif /* ADD_ENVS_OPTION */
 		switch (opt) {
 			case 'c':
 				target_core = atoi(optarg);
@@ -1691,6 +1884,11 @@ int main(int argc, char **argv)
 				heap_extension = atobytes(optarg);
 				break;
 
+#ifdef ADD_ENVS_OPTION
+			case 'e':
+				add_env_list(&extra_env, optarg);
+				break;
+#endif /* ADD_ENVS_OPTION */
 			case 0:	/* long opt */
 				break;
 
@@ -1723,8 +1921,11 @@ int main(int argc, char **argv)
 
 	ld_preload_init();
 
+#ifdef ADD_ENVS_OPTION
+#else /* ADD_ENVS_OPTION */
 	/* Collect environment variables */
 	envs_len = flatten_strings(-1, NULL, environ, &envs);
+#endif /* ADD_ENVS_OPTION */
 
 #ifdef ENABLE_MCOVERLAYFS
 	__dprint("mcoverlay enable\n");
@@ -1869,6 +2070,19 @@ int main(int argc, char **argv)
 	if (shell) {
 		argv[optind] = path;
 	}
+
+#ifdef ADD_ENVS_OPTION
+	/* Collect environment variables */
+	for (i = 0; environ[i]; i++) {
+		add_env_list(&extra_env, environ[i]);
+	}
+	local_env = create_local_environ(extra_env);
+	envs_len = flatten_strings(-1, NULL, local_env, &envs);
+	destroy_local_environ(local_env);
+	local_env = NULL;
+	destroy_env_list(extra_env);
+	extra_env = NULL;
+#endif /* ADD_ENVS_OPTION */
 
 	for(i = 0; i < sizeof(rlimits) / sizeof(int); i += 2)
 		getrlimit(rlimits[i], &desc->rlimit[rlimits[i + 1]]);
@@ -2202,12 +2416,20 @@ do_generic_syscall(
 
 	__dprintf("do_generic_syscall(%ld)\n", w->sr.number);
 
+#ifdef POSTK_DEBUG_TEMP_FIX_75 /* syscall return value check add. */
+	ret = syscall(w->sr.number, w->sr.args[0], w->sr.args[1], w->sr.args[2],
+		 w->sr.args[3], w->sr.args[4], w->sr.args[5]);
+	if (ret == -1) {
+		ret = -errno;
+	}
+#else /* POSTK_DEBUG_TEMP_FIX_75 */
 	errno = 0;
 	ret = syscall(w->sr.number, w->sr.args[0], w->sr.args[1], w->sr.args[2],
 		 w->sr.args[3], w->sr.args[4], w->sr.args[5]);
 	if (errno != 0) {
 		ret = -errno;
 	}
+#endif /* POSTK_DEBUG_TEMP_FIX_75 */
 
 	/* Overlayfs /sys/X directory lseek() problem work around */
 	if (w->sr.number == __NR_lseek && ret == -EINVAL) {
@@ -2244,7 +2466,16 @@ do_generic_syscall(
 	}
 	/* Fake that nodeX in /sys/devices/system/node do not exist,
 	 * where X >= number of LWK NUMA nodes */
+#ifdef POSTK_DEBUG_ARCH_DEP_55
+# ifdef __aarch64__
+#  define __nr_getdents __NR_getdents64
+# else
+#  define __nr_getdents __NR_getdents
+# endif
+	else if (w->sr.number == __nr_getdents && ret > 0) {
+#else  /*POSTK_DEBUG_ARCH_DEP_55*/
 	else if (w->sr.number == __NR_getdents && ret > 0) {
+#endif /*POSTK_DEBUG_ARCH_DEP_55*/
 		struct linux_dirent {
 			long           d_ino;
 			off_t          d_off;
@@ -2327,7 +2558,11 @@ samepage(void *a, void *b)
 	unsigned long aa = (unsigned long)a;
 	unsigned long bb = (unsigned long)b;
 
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+	return (aa & page_mask) == (bb & page_mask);
+#else	/* POSTK_DEBUG_ARCH_DEP_35 */
 	return (aa & PAGE_MASK) == (bb & PAGE_MASK);
+#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 }
 
 #ifdef DEBUG_UTI
@@ -2508,8 +2743,17 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 				exited++;
 				continue;
 			    case __NR_clone:
+#ifdef POSTK_DEBUG_ARCH_DEP_78 /* arch dep syscallno hide */
+#ifdef __NR_fork
+			    case __NR_fork:
+#endif
+#ifdef __NR_vfork
+			    case __NR_vfork:
+#endif
+#else /* POSTK_DEBUG_ARCH_DEP_78 */
 			    case __NR_fork:
 			    case __NR_vfork:
+#endif /* POSTK_DEBUG_ARCH_DEP_78 */
 			    case __NR_execve:
 				set_syscall_number(&args, -1);
 				set_syscall_args(tid, &args);
@@ -2582,20 +2826,34 @@ util_thread(unsigned long uctx_pa, int remote_tid, unsigned long pattr)
 	void *param[6];
 	int rc = 0;
 
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+	wp = mmap(NULL, page_size * 3, PROT_READ | PROT_WRITE,
+	          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+#else	/* POSTK_DEBUG_ARCH_DEP_35 */
 	wp = mmap(NULL, PAGE_SIZE * 3, PROT_READ | PROT_WRITE,
 	          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 	if (wp == (void *)-1) {
 		rc = -errno;
 		goto out;
 	}
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+	lctx = (char *)wp + page_size;
+	rctx = (char *)lctx + page_size;
+#else	/* POSTK_DEBUG_ARCH_DEP_35 */
 	lctx = (char *)wp + PAGE_SIZE;
 	rctx = (char *)lctx + PAGE_SIZE;
+#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 
 	param[0] = (void *)uctx_pa;
 	param[1] = rctx;
 	param[2] = lctx;
 	param[4] = wp;
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+	param[5] = (void *)(page_size * 3);
+#else	/* POSTK_DEBUG_ARCH_DEP_35 */
 	param[5] = (void *)(PAGE_SIZE * 3);
+#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 	if ((rc = ioctl(fd, MCEXEC_UP_UTIL_THREAD1, param)) == -1) {
 		fprintf(stderr, "util_thread1: %d errno=%d\n", rc, errno);
 		rc = -errno;
@@ -2625,7 +2883,11 @@ util_thread(unsigned long uctx_pa, int remote_tid, unsigned long pattr)
 
 out:
 	if (wp)
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+		munmap(wp, page_size * 3);
+#else	/* POSTK_DEBUG_ARCH_DEP_35 */
 		munmap(wp, PAGE_SIZE * 3);
+#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 	return rc;
 }
 
@@ -2763,6 +3025,54 @@ chgpath(char *in, char *buf)
 	return fn;
 }
 
+#ifdef POSTK_DEBUG_ARCH_DEP_72 /* add __NR_newfstat */
+static int
+syscall_pathname(int dirfd, char *pathname, size_t size)
+{
+	int ret = 0;
+	char *tempbuf = NULL;
+	size_t tempbuf_size;
+
+	if (pathname[0] == '/') {
+		goto out;
+	}
+
+	if (dirfd != AT_FDCWD) {
+		int len;
+		char dfdpath[64];
+		snprintf(dfdpath, sizeof(dfdpath), "/proc/self/fd/%d", dirfd);
+
+		tempbuf_size = size;
+		tempbuf = malloc(tempbuf_size);
+		if (tempbuf == NULL) {
+			ret = -ENOMEM;
+			goto out;
+		}
+
+		ret = readlink(dfdpath, tempbuf, tempbuf_size);
+		if (ret == -1) {
+			ret = -errno;
+			goto out;
+		}
+
+		len = strlen(pathname);
+		if (tempbuf_size <= ret + 1 + len + 1) {
+			ret = -ENAMETOOLONG;
+			goto out;
+		}
+		tempbuf[ret] = '/';
+		strncpy(&tempbuf[ret+1], pathname, len+1);
+
+		strcpy(pathname, tempbuf);
+	}
+out:
+	if (tempbuf) {
+		free(tempbuf);
+	}
+	return ret;
+}
+#endif /*POSTK_DEBUG_ARCH_DEP_72*/
+
 int main_loop(struct thread_data_s *my_thread)
 {
 	struct syscall_wait_desc w;
@@ -2795,6 +3105,55 @@ int main_loop(struct thread_data_s *my_thread)
 		my_thread->remote_cpu = w.cpu;
 
 		switch (w.sr.number) {
+#ifdef POSTK_DEBUG_ARCH_DEP_13 /* arch depend hide */
+#ifdef __aarch64__
+		case __NR_openat:
+			/* initialize buffer */
+			memset(tmpbuf, '\0', sizeof(tmpbuf));
+			memset(pathbuf, '\0', sizeof(pathbuf));
+
+			/* check argument 1 dirfd */
+			if ((int)w.sr.args[0] != AT_FDCWD) {
+				/* dirfd != AT_FDCWD */
+				__dprintf("openat(dirfd != AT_FDCWD)\n");
+				snprintf(tmpbuf, sizeof(tmpbuf), "/proc/self/fd/%d", (int)w.sr.args[0]);
+				ret = readlink(tmpbuf, pathbuf, sizeof(pathbuf) - 1);
+				if (ret < 0) {
+					do_syscall_return(fd, cpu, -errno, 0, 0, 0, 0);
+					break;
+				}
+				__dprintf("  %s -> %s\n", tmpbuf, pathbuf);
+				ret = do_strncpy_from_user(fd, tmpbuf, (void *)w.sr.args[1], PATH_MAX);
+				if (ret >= PATH_MAX) {
+					ret = -ENAMETOOLONG;
+				}
+				if (ret < 0) {
+					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+					break;
+				}
+				strncat(pathbuf, "/", 1);
+				strncat(pathbuf, tmpbuf, strlen(tmpbuf) + 1);
+			} else {
+				/* dirfd == AT_FDCWD */
+				__dprintf("openat(dirfd == AT_FDCWD)\n");
+				ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[1], PATH_MAX);
+				if (ret >= PATH_MAX) {
+					ret = -ENAMETOOLONG;
+				}
+				if (ret < 0) {
+					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+					break;
+				}
+			}
+			__dprintf("openat: %s\n", pathbuf);
+
+			fn = chgpath(pathbuf, tmpbuf);
+
+			ret = open(fn, w.sr.args[2], w.sr.args[3]);
+			SET_ERR(ret);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+#else /* __aarch64__ */
 		case __NR_open:
 			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[0], PATH_MAX);
 			if (ret >= PATH_MAX) {
@@ -2812,6 +3171,26 @@ int main_loop(struct thread_data_s *my_thread)
 			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
+#endif /* __aarch64__ */
+#else /* POSTK_DEBUG_ARCH_DEP_13 */
+		case __NR_open:
+			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[0], PATH_MAX);
+			if (ret >= PATH_MAX) {
+				ret = -ENAMETOOLONG;
+			}
+			if (ret < 0) {
+				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+				break;
+			}
+			__dprintf("open: %s\n", pathbuf);
+
+			fn = chgpath(pathbuf, tmpbuf);
+
+			ret = open(fn, w.sr.args[1], w.sr.args[2]);
+			SET_ERR(ret);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+#endif /* POSTK_DEBUG_ARCH_DEP_13 */
 
 		case __NR_futex:
 			ret = clock_gettime(w.sr.args[1], &tv);
@@ -2932,7 +3311,11 @@ gettid_out:
 			break;
 		}
 
+#ifdef POSTK_DEBUG_ARCH_DEP_13 /* arch depend hide */
+		case 1079: {
+#else /* POSTK_DEBUG_ARCH_DEP_13 */
 		case __NR_fork: {
+#endif /* POSTK_DEBUG_ARCH_DEP_13 */
 			struct fork_sync *fs;
 			struct fork_sync_container *fsc;
 			struct fork_sync_container *fp;
@@ -3192,14 +3575,22 @@ fork_err:
 							goto return_execve1;
 						}
 
+#ifdef POSTK_DEBUG_TEMP_FIX_9 /* shell-script run via execve arg[0] fix */
+						if (strlen(shell) >= SHELL_PATH_MAX_LEN) {
+#else /* POSTK_DEBUG_TEMP_FIX_9 */
 						if (strlen(shell_path) >= SHELL_PATH_MAX_LEN) {
+#endif /* POSTK_DEBUG_TEMP_FIX_9 */
 							fprintf(stderr, "execve(): error: shell path too long: %s\n", shell_path);
 							ret = ENAMETOOLONG;
 							goto return_execve1;
 						}
 
 						/* Let the LWK know the shell interpreter */
+#ifdef POSTK_DEBUG_TEMP_FIX_9 /* shell-script run via execve arg[0] fix */
+						strcpy(desc->shell_path, shell);
+#else /* POSTK_DEBUG_TEMP_FIX_9 */
 						strcpy(desc->shell_path, shell_path);
+#endif /* POSTK_DEBUG_TEMP_FIX_9 */
 					}
 
 					desc->enable_vdso = enable_vdso;
@@ -3328,6 +3719,9 @@ return_execve2:
 			}
 			else{
 				ret = setfsuid(w.sr.args[0]);
+#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
+				ret |= (long)gettid() << 32;
+#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 			}
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
@@ -3376,6 +3770,9 @@ return_execve2:
 
 		case __NR_setfsgid:
 			ret = setfsgid(w.sr.args[0]);
+#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
+			ret |= (long)gettid() << 32;
+#endif /*POSTK_DEBUG_TEMP_FIX_45 */
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 
@@ -3386,7 +3783,57 @@ return_execve2:
 				ret = do_generic_syscall(&w);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
+#ifdef POSTK_DEBUG_ARCH_DEP_36
+#ifdef __aarch64__
+		case __NR_readlinkat:
+			/* initialize buffer */
+			memset(tmpbuf, '\0', sizeof(tmpbuf));
+			memset(pathbuf, '\0', sizeof(pathbuf));
 
+			/* check argument 1 dirfd */
+			if ((int)w.sr.args[0] != AT_FDCWD) {
+				/* dirfd != AT_FDCWD */
+				__dprintf("readlinkat(dirfd != AT_FDCWD)\n");
+				snprintf(tmpbuf, sizeof(tmpbuf), "/proc/self/fd/%d", (int)w.sr.args[0]);
+				ret = readlink(tmpbuf, pathbuf, sizeof(pathbuf) - 1);
+				if (ret < 0) {
+					do_syscall_return(fd, cpu, -errno, 0, 0, 0, 0);
+					break;
+				}
+				__dprintf("  %s -> %s\n", tmpbuf, pathbuf);
+				ret = do_strncpy_from_user(fd, tmpbuf, (void *)w.sr.args[1], PATH_MAX);
+				if (ret >= PATH_MAX) {
+					ret = -ENAMETOOLONG;
+				}
+				if (ret < 0) {
+					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+					break;
+				}
+				strncat(pathbuf, "/", 1);
+				strncat(pathbuf, tmpbuf, strlen(tmpbuf) + 1);
+			} else {
+				/* dirfd == AT_FDCWD */
+				__dprintf("readlinkat(dirfd == AT_FDCWD)\n");
+				ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[1], PATH_MAX);
+				if (ret >= PATH_MAX) {
+					ret = -ENAMETOOLONG;
+				}
+				if (ret < 0) {
+					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+					break;
+				}
+			}
+			__dprintf("readlinkat: %s\n", pathbuf);
+
+			fn = chgpath(pathbuf, tmpbuf);
+
+			ret = readlink(fn, (char *)w.sr.args[2], w.sr.args[3]);
+			__dprintf("readlinkat: dirfd=%d, path=%s, buf=%s, ret=%ld\n", 
+				(int)w.sr.args[0], fn, (char *)w.sr.args[2], ret);
+			SET_ERR(ret);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+#else	/* __aarch64__ */
 		case __NR_readlink:
 			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[0], PATH_MAX);
 			if (ret >= PATH_MAX) {
@@ -3405,7 +3852,92 @@ return_execve2:
 			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
+#endif	/* __aarch64__ */
+#else	/* POSTK_DEBUG_ARCH_DEP_36 */
+		case __NR_readlink:
+			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[0], PATH_MAX);
+			if (ret >= PATH_MAX) {
+				ret = -ENAMETOOLONG;
+			}
+			if (ret < 0) {
+				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+				break;
+			}
 
+			fn = chgpath(pathbuf, tmpbuf);
+
+			ret = readlink(fn, (char *)w.sr.args[1], w.sr.args[2]);
+			__dprintf("readlink: path=%s, buf=%s, ret=%ld\n", 
+				fn, (char *)w.sr.args[1], ret);
+			SET_ERR(ret);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+#endif	/* POSTK_DEBUG_ARCH_DEP_36 */
+
+#ifdef POSTK_DEBUG_ARCH_DEP_72 /* add __NR_newfstat */
+		case __NR_newfstatat:
+			/* initialize buffer */
+			memset(tmpbuf, '\0', sizeof(tmpbuf));
+			memset(pathbuf, '\0', sizeof(pathbuf));
+
+			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[1], PATH_MAX);
+			if (ret >= PATH_MAX) {
+				ret = -ENAMETOOLONG;
+			}
+			if (ret < 0) {
+				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+				break;
+			}
+
+			if (pathbuf[0] == '\0') {
+				// empty string
+				if ((int)w.sr.args[3] & AT_EMPTY_PATH) {
+					if ((int)w.sr.args[0] == AT_FDCWD) {
+						if (NULL == getcwd(pathbuf, PATH_MAX)) {
+							do_syscall_return(fd, cpu, -errno, 0, 0, 0, 0);
+							break;
+						}
+					} else {
+						char dfdpath[64];
+						snprintf(dfdpath, sizeof(dfdpath), "/proc/self/fd/%d", (int)w.sr.args[0]);
+						ret = readlink(dfdpath, pathbuf, PATH_MAX);
+						if (ret == -1) {
+							do_syscall_return(fd, cpu, -errno, 0, 0, 0, 0);
+							break;
+						}
+						pathbuf[ret] = '\0';
+					}
+				}
+			} else if (pathbuf[0] != '/') {
+				// relative path
+				ret = syscall_pathname((int)w.sr.args[0], pathbuf, PATH_MAX);
+				if (ret < 0) {
+					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+					break;
+				}
+			}
+
+			fn = chgpath(pathbuf, tmpbuf);
+			if (fn[0] == '/') {
+				ret = fstatat((int)w.sr.args[0],
+					      fn,
+					      (struct stat*)w.sr.args[2],
+					      (int)w.sr.args[3]);
+				__dprintf("fstatat: dirfd=%d, pathname=%s, buf=%p, flags=%x, ret=%ld\n",
+					  (int)w.sr.args[0], fn, (void*)w.sr.args[2], (int)w.sr.args[3], ret);
+			} else {
+				ret = fstatat((int)w.sr.args[0],
+					      (const char*)w.sr.args[1],
+					      (struct stat*)w.sr.args[2],
+					      (int)w.sr.args[3]);
+				__dprintf("fstatat: dirfd=%d, pathname=%s, buf=%p, flags=%x, ret=%ld\n",
+					  (int)w.sr.args[0], (char*)w.sr.args[1], (void*)w.sr.args[2], (int)w.sr.args[3], ret);
+			}
+
+			SET_ERR(ret);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+#ifdef __NR_stat
 		case __NR_stat:
 			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[0], PATH_MAX);
 			if (ret >= PATH_MAX) {
@@ -3423,6 +3955,26 @@ return_execve2:
 			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
+#endif /* __NR_stat */
+#else /* POSTK_DEBUG_ARCH_DEP_72 */
+		case __NR_stat:
+			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[0], PATH_MAX);
+			if (ret >= PATH_MAX) {
+				ret = -ENAMETOOLONG;
+			}
+			if (ret < 0) {
+				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+				break;
+			}
+
+			fn = chgpath(pathbuf, tmpbuf);
+
+			ret = stat(fn, (struct stat *)w.sr.args[1]);
+			__dprintf("stat: path=%s, ret=%ld\n", fn, ret);
+			SET_ERR(ret);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+#endif /* POSTK_DEBUG_ARCH_DEP_72 */
 
 		case __NR_sched_setaffinity:
 			if (w.sr.args[0] == 0) {

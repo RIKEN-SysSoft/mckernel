@@ -1,3 +1,4 @@
+/* fileobj.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
 /**
  * \file fileobj.c
  *  License details are found in the file LICENSE.

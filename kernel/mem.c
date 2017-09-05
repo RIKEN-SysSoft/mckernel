@@ -1,3 +1,4 @@
+/* mem.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
 /**
  * \file mem.c
  *  License details are found in the file LICENSE.
@@ -867,6 +868,12 @@ void coredump(struct thread *thread, void *regs)
 	struct coretable *coretable;
 	int chunks;
 
+#ifdef POSTK_DEBUG_ARCH_DEP_67 /* use limit corefile size. (temporarily fix.) */
+	if (thread->proc->rlimit[MCK_RLIMIT_CORE].rlim_cur == 0) {
+		return;
+	}
+#endif /* POSTK_DEBUG_ARCH_DEP_67 */
+
 	ret = gencore(thread, regs, &coretable, &chunks);
 	if (ret != 0) {
 		dkprintf("could not generate a core file image\n");
@@ -885,6 +892,7 @@ void coredump(struct thread *thread, void *regs)
 	freecore(&coretable);
 }
 
+#ifndef POSTK_DEBUG_ARCH_DEP_8
 void remote_flush_tlb_cpumask(struct process_vm *vm,
 		unsigned long addr, int cpu_id)
 {
@@ -941,8 +949,14 @@ void remote_flush_tlb_array_cpumask(struct process_vm *vm,
 		dkprintf("remote_flush_tlb_cpumask: flush_ind: %d, addr: 0x%lX, interrupting cpu: %d\n",
 		        flush_ind, addr, cpu);
 
+#ifdef POSTK_DEBUG_ARCH_DEP_8 /* arch depend hide */
+		/* TODO(pka_idke) Interim support */
+		ihk_mc_interrupt_cpu(cpu, 
+				     ihk_mc_get_vector(flush_ind + IHK_TLB_FLUSH_IRQ_VECTOR_START));
+#else /* POSTK_DEBUG_ARCH_DEP_8 */
 		ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpu)->apic_id,
 		                     flush_ind + IHK_TLB_FLUSH_IRQ_VECTOR_START);
+#endif /* POSTK_DEBUG_ARCH_DEP_8 */
 	}
 
 #ifdef DEBUG_IC_TLB
@@ -979,6 +993,7 @@ void remote_flush_tlb_array_cpumask(struct process_vm *vm,
 
 	ihk_mc_spinlock_unlock_noirq(&flush_entry->lock);
 }
+#endif /* POSTK_DEBUG_ARCH_DEP_8 */
 
 void tlb_flush_handler(int vector)
 {
@@ -1545,11 +1560,18 @@ void ihk_mc_unmap_virtual(void *va, int npages, int free_physical)
 	for (i = 0; i < npages; i++) {
 		ihk_mc_pt_clear_page(NULL, (char *)va + (i << PAGE_SHIFT));
 	}
+#ifdef POSTK_DEBUG_TEMP_FIX_42 /* add unmap virtual tlb flush. */
+	flush_tlb();
+#endif /* POSTK_DEBUG_TEMP_FIX_42 */
 	
+#ifdef POSTK_DEBUG_TEMP_FIX_51 /* ihk_mc_unmap_virtual() free_physical disabled */
+	ihk_pagealloc_free(vmap_allocator, (unsigned long)va, npages);
+#else /* POSTK_DEBUG_TEMP_FIX_51 */
 	if (free_physical) {
 		ihk_pagealloc_free(vmap_allocator, (unsigned long)va, npages);
 		flush_tlb_single((unsigned long)va);
 	}
+#endif /* POSTK_DEBUG_TEMP_FIX_51 */
 }
 
 #ifdef ATTACHED_MIC
@@ -1604,8 +1626,14 @@ void ihk_mc_clean_micpa(void){
 }
 #endif
 
+#ifdef POSTK_DEBUG_TEMP_FIX_73 /* NULL access for *monitor fix */
+extern void monitor_init(void);
+#endif /* POSTK_DEBUG_TEMP_FIX_73 */
 void mem_init(void)
 {
+#ifdef POSTK_DEBUG_TEMP_FIX_73 /* NULL access for *monitor fix */
+	monitor_init();
+#endif /* !POSTK_DEBUG_TEMP_FIX_73 */
 	/* Initialize NUMA information and memory allocator bitmaps */
 	numa_init();
 
@@ -1944,10 +1972,17 @@ static void ___kmalloc_insert_chunk(struct list_head *free_list,
 	if (next_chunk) {
 		list_add_tail(&chunk->list, &next_chunk->list);
 	}
+#ifdef POSTK_DEBUG_TEMP_FIX_46 /* kmalloc free_list consolidate bug fix. */
+	/* Add tail */
+	else {
+		list_add_tail(&chunk->list, free_list);
+	}
+#else /* POSTK_DEBUG_TEMP_FIX_46 */
 	/* Add after the head */
 	else {
 		list_add(&chunk->list, free_list);
 	}
+#endif /* POSTK_DEBUG_TEMP_FIX_46 */
 
 	return;
 }
@@ -2128,3 +2163,81 @@ void ___kmalloc_print_free_list(struct list_head *list)
 	kprintf_unlock(irqflags);
 }
 
+#ifdef POSTK_DEBUG_ARCH_DEP_27
+int search_free_space(struct thread *thread, size_t len, intptr_t hint,
+		      int pgshift, intptr_t *addrp)
+{
+	struct vm_regions *region = &thread->vm->region;
+	intptr_t addr;
+	int error;
+	struct vm_range *range;
+	size_t pgsize = (size_t)1 << pgshift;
+
+	dkprintf("search_free_space(%lx,%lx,%d,%p)\n", len, hint, pgshift, addrp);
+
+	addr = hint;
+	for (;;) {
+		addr = (addr + pgsize - 1) & ~(pgsize - 1);
+		if ((region->user_end <= addr)
+				|| ((region->user_end - len) < addr)) {
+			ekprintf("search_free_space(%lx,%lx,%p):"
+					"no space. %lx %lx\n",
+					len, hint, addrp, addr,
+					region->user_end);
+			error = -ENOMEM;
+			goto out;
+		}
+
+		range = lookup_process_memory_range(thread->vm, addr, addr+len);
+		if (range == NULL) {
+			break;
+		}
+		addr = range->end;
+	}
+
+	error = 0;
+	*addrp = addr;
+
+out:
+	dkprintf("search_free_space(%lx,%lx,%d,%p): %d %lx\n",
+			len, hint, pgshift, addrp, error, addr);
+	return error;
+}
+#endif	/* POSTK_DEBUG_ARCH_DEP_27 */
+
+#ifdef POSTK_DEBUG_TEMP_FIX_52 /* supports NUMA for memory area determination */
+#ifdef IHK_RBTREE_ALLOCATOR
+int is_mckernel_memory(unsigned long phys)
+{
+	int i;
+
+	for (i = 0; i < ihk_mc_get_nr_memory_chunks(); ++i) {
+		unsigned long start, end;
+		int numa_id;
+
+		ihk_mc_get_memory_chunk(i, &start, &end, &numa_id);
+		if (start <= phys && phys < end) {
+			return 1;
+		}
+	}
+	return 0;
+}
+#else /* IHK_RBTREE_ALLOCATOR */
+int is_mckernel_memory(unsigned long phys)
+{
+	int i;
+
+	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
+		struct ihk_page_allocator_desc *pa_allocator;
+
+		list_for_each_entry(pa_allocator,
+				    &memory_nodes[i].allocators, list) {
+			if (pa_allocator->start <= phys && phys < pa_allocator->end) {
+				return 1;
+			}
+		}
+	}
+	return 0;
+}
+#endif /* IHK_RBTREE_ALLOCATOR */
+#endif /* POSTK_DEBUG_TEMP_FIX_52 */

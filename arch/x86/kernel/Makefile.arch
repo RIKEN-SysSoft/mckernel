@@ -1,2 +1,5 @@
 IHK_OBJS += cpu.o interrupt.o memory.o trampoline.o local.o context.o
 IHK_OBJS += perfctr.o syscall.o vsyscall.o
+# POSTK_DEBUG_ARCH_DEP_18 coredump arch separation.
+# IHK_OBJS added coredump.o
+IHK_OBJS += coredump.o

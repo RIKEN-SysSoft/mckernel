@@ -9,6 +9,7 @@
 /*
  * HISTORY
  */
+/* cpu.h COPYRIGHT FUJITSU LIMITED 2015-2016 */
 
 #ifndef IHK_CPU_H
 #define IHK_CPU_H
@@ -88,10 +89,20 @@ void ihk_mc_init_user_process(ihk_mc_kernel_context_t *ctx,
 void ihk_mc_init_user_tlsbase(ihk_mc_user_context_t *ctx,
                               unsigned long tls_base_addr);
 
+#ifdef POSTK_DEBUG_ARCH_DEP_42 /* /proc/cpuinfo support added. */
+long ihk_mc_show_cpuinfo(char *buf, size_t buf_size, unsigned long read_off, int *eofp);
+#endif /* POSTK_DEBUG_ARCH_DEP_42 */
+
 enum ihk_mc_user_context_regtype {
 	IHK_UCR_STACK_POINTER = 1,
 	IHK_UCR_PROGRAM_COUNTER = 2,
 };
+
+#ifdef POSTK_DEBUG_ARCH_DEP_23 /* add arch dep. clone_process() function */
+struct thread;
+void arch_clone_thread(struct thread *othread, unsigned long pc,
+			unsigned long sp, struct thread *nthread);
+#endif /* POSTK_DEBUG_ARCH_DEP_23 */
 
 void ihk_mc_modify_user_context(ihk_mc_user_context_t *uctx,
                                 enum ihk_mc_user_context_regtype reg,
@@ -104,15 +115,19 @@ enum ihk_asr_type {
 	IHK_ASR_X86_GS,
 };
 
+#ifndef POSTK_DEBUG_ARCH_DEP_75 /* x86 depend hide */
 /* Local IRQ vectors */
 #define LOCAL_TIMER_VECTOR  0xef
 #define LOCAL_PERF_VECTOR   0xf0
+#endif /* !POSTK_DEBUG_ARCH_DEP_75 */
 
 #define IHK_TLB_FLUSH_IRQ_VECTOR_START		68
 #define IHK_TLB_FLUSH_IRQ_VECTOR_SIZE		64
 #define IHK_TLB_FLUSH_IRQ_VECTOR_END		(IHK_TLB_FLUSH_IRQ_VECTOR_START + IHK_TLB_FLUSH_IRQ_VECTOR_SIZE)
 
+#ifndef POSTK_DEBUG_ARCH_DEP_75 /* x86 depend hide */
 #define LOCAL_SMP_FUNC_CALL_VECTOR   0xf1
+#endif /* !POSTK_DEBUG_ARCH_DEP_75 */
 
 int ihk_mc_arch_set_special_register(enum ihk_asr_type, unsigned long value);
 int ihk_mc_arch_get_special_register(enum ihk_asr_type, unsigned long *value);

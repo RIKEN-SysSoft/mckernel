@@ -1,3 +1,4 @@
+/* ap.c COPYRIGHT FUJITSU LIMITED 2015 */
 /**
  * \file ap.c
  * Licence details are found in the file LICENSE.

@@ -1,3 +1,4 @@
+/* perfctr.h COPYRIGHT FUJITSU LIMITED 2015-2016 */
 /**
  * \file perfctr.h
  *  License details are found in the file LICENSE.
@@ -12,6 +13,10 @@
 
 #ifndef HEADER_GENERIC_IHK_PERFCTR_H
 #define HEADER_GENERIC_IHK_PERFCTR_H
+
+#ifdef POSTK_DEBUG_TEMP_FIX_29
+#include <types.h>
+#endif /*POSTK_DEBUG_TEMP_FIX_29*/
 
 #define PERFCTR_USER_MODE   0x01
 #define PERFCTR_KERNEL_MODE 0x02
@@ -48,10 +53,20 @@ enum ihk_perfctr_type {
 	PERFCTR_MAX_TYPE,
 };
 
+#ifdef POSTK_DEBUG_TEMP_FIX_29
+int ihk_mc_perfctr_init(int counter, uint64_t config, int mode);
+int ihk_mc_perfctr_init_raw(int counter, uint64_t config, int mode);
+#else
 int ihk_mc_perfctr_init(int counter, enum ihk_perfctr_type type, int mode);
 int ihk_mc_perfctr_init_raw(int counter, unsigned int code, int mode);
+#endif/*POSTK_DEBUG_TEMP_FIX_29*/
+#ifdef POSTK_DEBUG_TEMP_FIX_30
+int ihk_mc_perfctr_start(int counter);
+int ihk_mc_perfctr_stop(int counter);
+#else
 int ihk_mc_perfctr_start(unsigned long counter_mask);
 int ihk_mc_perfctr_stop(unsigned long counter_mask);
+#endif/*POSTK_DEBUG_TEMP_FIX_30*/
 int ihk_mc_perfctr_fixed_init(int counter, int mode);
 int ihk_mc_perfctr_reset(int counter);
 int ihk_mc_perfctr_set(int counter, long value);

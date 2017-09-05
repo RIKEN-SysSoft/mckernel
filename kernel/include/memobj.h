@@ -1,3 +1,4 @@
+/* memobj.h COPYRIGHT FUJITSU LIMITED 2015-2016 */
 /**
  * \file memobj.h
  *  License details are found in the file LICENSE.
@@ -19,6 +20,8 @@
 #include <errno.h>
 #include <list.h>
 
+#ifdef POSTK_DEBUG_ARCH_DEP_18 /* coredump arch separation. */
+#else /* POSTK_DEBUG_ARCH_DEP_18 */
 /* begin types.h */
 typedef int32_t key_t;
 typedef uint32_t uid_t;
@@ -26,6 +29,7 @@ typedef uint32_t gid_t;
 typedef int64_t time_t;
 typedef int32_t pid_t;
 /* end types.h */
+#endif /* POSTK_DEBUG_ARCH_DEP_18 */
 
 enum {
 	/* for memobj.flags */

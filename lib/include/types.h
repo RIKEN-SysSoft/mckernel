@@ -9,6 +9,7 @@
 /*
  * HISTORY
  */
+/* types.h COPYRIGHT FUJITSU LIMITED 2015-2016 */
 
 #ifndef TYPES_H
 #define TYPES_H

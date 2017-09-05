@@ -38,6 +38,17 @@ extern void __chk_io_ptr(void __iomem *);
 
 #ifdef __KERNEL__
 
+#ifdef POSTK_DEBUG_ARCH_DEP_72
+#if __GNUC__ > 5
+#error no compiler-gcc.h file for this gcc version
+#elif __GNUC__ == 5
+# include <lwk/compiler-gcc4.h>
+#elif __GNUC__ == 4
+# include <lwk/compiler-gcc4.h>
+#else
+# error Sorry, your compiler is too old/not recognized.
+#endif
+#else /* POSTK_DEBUG_ARCH_DEP_72 */
 #if __GNUC__ > 4
 #error no compiler-gcc.h file for this gcc version
 #elif __GNUC__ == 4
@@ -45,6 +56,7 @@ extern void __chk_io_ptr(void __iomem *);
 #else
 # error Sorry, your compiler is too old/not recognized.
 #endif
+#endif /* POSTK_DEBUG_ARCH_DEP_72 */
 
 /*
  * Generic compiler-dependent macros required for kernel

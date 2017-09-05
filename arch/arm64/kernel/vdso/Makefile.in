@@ -1,0 +1,123 @@
+# Makefile.in COPYRIGHT FUJITSU LIMITED 2016
+# @ref.impl arch/arm64/kernel/vdso/Makefile
+# Building a vDSO image for AArch64.
+
+HOST_DIR=@KDIR@
+HOST_CONFIG=$(HOST_DIR)/.config
+HOST_KERNEL_CONFIG_ARM64_4K_PAGES=$(shell grep -E "^CONFIG_ARM64_4K_PAGES=y" $(HOST_CONFIG) | sed 's|CONFIG_ARM64_4K_PAGES=||g')
+HOST_KERNEL_CONFIG_ARM64_16K_PAGES=$(shell grep -E "^CONFIG_ARM64_16K_PAGES=y" $(HOST_CONFIG) | sed 's|CONFIG_ARM64_16K_PAGES=||g')
+HOST_KERNEL_CONFIG_ARM64_64K_PAGES=$(shell grep -E "^CONFIG_ARM64_64K_PAGES=y" $(HOST_CONFIG) | sed 's|CONFIG_ARM64_64K_PAGES=||g')
+
+VDSOBASE = $(CURDIR)
+INCDIR = $(VDSOBASE)/../include
+ECHO_SUFFIX = [VDSO]
+
+VDSO_OBJS := gettimeofday.o note.o sigreturn.o
+DESTOBJS = $(addprefix $(VDSOBASE)/, $(VDSO_OBJS))
+
+$(if $(VDSOBASE),,$(error IHK output directory is not specified))
+$(if $(TARGET),,$(error Target is not specified))
+
+#CFLAGS := -nostdinc -mlittle-endian -Wall -mabi=lp64 -Wa,-gdwarf-2
+CFLAGS := -nostdinc -mlittle-endian -Wall -Wa,-gdwarf-2
+CFLAGS += -D__KERNEL__ -I$(SRC)/include
+CFLAGS += -I$(SRC)/../lib/include -I$(INCDIR) -I$(IHKBASE)/smp/arm64/include
+CFLAGS += $(foreach i, $(shell seq 1 100), $(addprefix -DPOSTK_DEBUG_ARCH_DEP_, $(i)))
+CFLAGS += $(foreach i, $(shell seq 1 100), $(addprefix -DPOSTK_DEBUG_TEMP_FIX_, $(i)))
+
+LDFLAGS := -nostdinc -mlittle-endian -Wall -Wundef -Wstrict-prototypes
+LDFLAGS += -Wno-trigraphs -fno-strict-aliasing -fno-common
+LDFLAGS += -Werror-implicit-function-declaration -Wno-format-security
+#LDFLAGS += -std=gnu89 -mgeneral-regs-only -mabi=lp64 -O2
+LDFLAGS += -std=gnu89 -mgeneral-regs-only -O2
+LDFLAGS += -Wframe-larger-than=2048 -fno-stack-protector
+LDFLAGS += -fno-delete-null-pointer-checks -Wno-unused-but-set-variable
+LDFLAGS += -fno-omit-frame-pointer -fno-optimize-sibling-calls
+LDFLAGS += -fno-var-tracking-assignments -g -Wdeclaration-after-statement
+LDFLAGS += -Wno-pointer-sign -fno-strict-overflow -fconserve-stack
+LDFLAGS += -Werror=implicit-int -Werror=strict-prototypes -Werror=date-time
+LDFLAGS += -shared -fno-common -fno-builtin -nostdlib
+LDFLAGS += -Wl,-soname=linux-vdso.so.1 -Wl,--hash-style=sysv -Wl,-n -Wl,-T
+LDFLAGS += --param=allow-store-data-races=0 -DCC_HAVE_ASM_GOTO
+LDFLAGS += -D"KBUILD_STR(s)=\#s" -D"KBUILD_BASENAME=KBUILD_STR(vdso.so)"
+LDFLAGS += -D"KBUILD_MODNAME=KBUILD_STR(vdso.so)" -D__KERNEL__
+
+DEPSRCS = $(wildcard $(VDSOBASE)/*.c $(VDSOBASE)/*.S)
+
+CFLAGS_lds := -E -P -C -U$(ARCH)
+CFLAGS_lds += -nostdinc
+CFLAGS_lds += -mlittle-endian
+CFLAGS_lds += -D__KERNEL__
+CFLAGS_lds += -D__ASSEMBLY__
+CFLAGS_lds += -DLINKER_SCRIPT
+CFLAGS_lds += -DVDSO_LBASE=0
+ifeq ($(HOST_KERNEL_CONFIG_ARM64_4K_PAGES), y)
+CFLAGS_lds += -DPAGE_SIZE=0x1000
+endif
+ifeq ($(HOST_KERNEL_CONFIG_ARM64_16K_PAGES), y)
+CFLAGS_lds += -DPAGE_SIZE=0x4000
+endif
+ifeq ($(HOST_KERNEL_CONFIG_ARM64_64K_PAGES), y)
+CFLAGS_lds += -DPAGE_SIZE=0x10000
+endif
+
+#load mckernel config (append CPPFLAGS)
+include $(IHKBASE)/$(TARGETDIR)/Makefile.predefines
+
+default: all
+
+.PHONY: all clean depend prepare
+
+all: depend $(VDSOBASE)/vdso.so $(INCDIR)/vdso-offsets.h
+
+# Strip rule for the .so file
+$(VDSOBASE)/vdso.so: OBJCOPYFLAGS := -S
+$(VDSOBASE)/vdso.so: $(VDSOBASE)/vdso.so.dbg
+	$(objcopy_cmd)
+
+# Generate VDSO offsets using helper script
+$(INCDIR)/vdso-offsets.h: $(VDSOBASE)/vdso.so.dbg
+	$(call echo_cmd,VDSOSYM,$<)
+	@nm $< | sh gen_vdso_offsets.sh | LC_ALL=C sort > $@
+
+# Link rule for the .so file, .lds has to be first
+$(VDSOBASE)/vdso.so.dbg: $(VDSOBASE)/vdso.lds $(DESTOBJS)
+	$(ld_cmd)
+
+$(VDSOBASE)/vdso.lds: vdso.lds.S
+	$(lds_cmd)
+
+clean:
+	$(rm_cmd) $(DESTOBJS) $(VDSOBASE)/Makefile.dep
+
+depend: $(VDSOBASE)/Makefile.dep
+
+$(VDSOBASE)/Makefile.dep:
+	$(call dep_cmd,$(DEPSRCS))
+
+prepare:
+	@$(RM) $(VDSOBASE)/Makefile.dep
+
+-include $(VDSOBASE)/Makefile.dep
+
+# Actual build commands
+ifeq ($(V),1)
+echo_cmd =
+submake = make
+else
+echo_cmd = @echo ' ($(TARGET))' $1 $(ECHO_SUFFIX) $2;
+submake = make --no-print-directory
+endif
+
+cc_cmd = $(call echo_cmd,CC,$<)$(CC) $(CFLAGS) -c -o $@ $<
+ld_cmd = $(call echo_cmd,LD,$@)$(CC) $(LDFLAGS) $^ -o $@
+dep_cmd = $(call echo_cmd,DEPEND,)$(CC) $(CFLAGS) -MM $1 > $@
+rm_cmd = $(call echo_cmd,CLEAN,)$(RM)
+objcopy_cmd = $(call echo_cmd,OBJCOPY,$<)$(OBJCOPY) $(OBJCOPYFLAGS) $< $@
+lds_cmd = $(call echo_cmd,LDS,$<)$(CC) $(CFLAGS_lds) -c -o $@ $<
+
+.c.o:
+	$(cc_cmd)
+.S.o:
+	$(cc_cmd) -D__ASSEMBLY__
+

@@ -1,3 +1,4 @@
+/* host.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
 /**
  * \file host.c
  *  License details are found in the file LICENSE.

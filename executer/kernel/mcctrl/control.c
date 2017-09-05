@@ -1,3 +1,4 @@
+/* control.c COPYRIGHT FUJITSU LIMITED 2016-2017 */
 /**
  * \file executer/kernel/control.c
  *  License details are found in the file LICENSE.
@@ -337,6 +338,11 @@ struct mcos_handler_info *new_mcos_handler_info(ihk_os_t os, struct file *file)
 	struct mcos_handler_info *info;
 
 	info = kmalloc(sizeof(struct mcos_handler_info), GFP_KERNEL);
+#ifdef POSTK_DEBUG_TEMP_FIX_64 /* host process is SIGKILLed fix. */
+	if (info == NULL) {
+		return NULL;
+	}
+#endif /* POSTK_DEBUG_TEMP_FIX_64 */
 	memset(info, '\0', sizeof(struct mcos_handler_info));
 	info->ud = ihk_host_os_get_usrdata(os);
 	info->file = file;
@@ -403,6 +409,11 @@ static long mcexec_newprocess(ihk_os_t os,
 		return -EFAULT;
 	}
 	info = new_mcos_handler_info(os, file);
+#ifdef POSTK_DEBUG_TEMP_FIX_64 /* host process is SIGKILLed fix. */
+	if (info == NULL) {
+		return -ENOMEM;
+	}
+#endif /* POSTK_DEBUG_TEMP_FIX_64 */
 	info->pid = desc.pid;
 	ihk_os_register_release_handler(file, release_handler, info);
 	ihk_os_set_mcos_private_data(file, info);
@@ -433,6 +444,12 @@ static long mcexec_start_image(ihk_os_t os,
 	}
 
 	info = new_mcos_handler_info(os, file);
+#ifdef POSTK_DEBUG_TEMP_FIX_64 /* host process is SIGKILLed fix. */
+	if (info == NULL) {
+		kfree(desc);
+		return -ENOMEM;
+	}
+#endif /* POSTK_DEBUG_TEMP_FIX_64 */
 	info->pid = desc->pid;
 	info->cpu = desc->cpu;
 	ihk_os_register_release_handler(file, release_handler, info);
@@ -540,7 +557,11 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
 	struct mcctrl_part_exec *pe;
 	struct get_cpu_set_arg req;
+#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
+	struct mcctrl_cpu_topology *cpu_top, *cpu_top_i;
+#else /* POSTK_DEBUG_ARCH_DEP_40 */
 	struct cpu_topology *cpu_top, *cpu_top_i;
+#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 	struct cache_topology *cache_top;
 	int cpu, cpus_assigned, cpus_to_assign, cpu_prev;
 	int ret = 0;
@@ -610,6 +631,13 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 	pli_next = NULL;
 	/* Add ourself to the list in order of start time */
 	list_for_each_entry(pli_iter, &pe->pli_list, list) {
+#ifdef POSTK_DEBUG_ARCH_DEP_74 /* Fix HOST-Linux version dependent code (task_struct.start_time) */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)
+		if (pli_iter->task->start_time > current->start_time) {
+			pli_next = pli_iter;
+			break;
+		}
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0) */
 		if ((pli_iter->task->start_time.tv_sec >
 					current->start_time.tv_sec) ||
 				((pli_iter->task->start_time.tv_sec ==
@@ -619,6 +647,18 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 			pli_next = pli_iter;
 			break;
 		}
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_74 */
+		if ((pli_iter->task->start_time.tv_sec >
+					current->start_time.tv_sec) ||
+				((pli_iter->task->start_time.tv_sec ==
+				  current->start_time.tv_sec) &&
+				 ((pli_iter->task->start_time.tv_nsec >
+				   current->start_time.tv_nsec)))) {
+			pli_next = pli_iter;
+			break;
+		}
+#endif /* POSTK_DEBUG_ARCH_DEP_74 */
 	}
 
 	/* Add in front of next */
@@ -1297,7 +1337,18 @@ retry_alloc:
 			ret = -EINVAL;;
 			goto put_ppd_out;
 		}
+
+#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
+		if (copy_to_user(&req->cpu, &packet->ref, sizeof(req->cpu))) {
+			if (mcctrl_delete_per_thread_data(ppd, current) < 0) {
+				kprintf("%s: error deleting per-thread data\n", __FUNCTION__);
+			}
+			ret = -EINVAL;
+			goto put_ppd_out;
+		}
+#else /* POSTK_DEBUG_ARCH_DEP_46 */
 		req->cpu = packet->ref;
+#endif /* POSTK_DEBUG_ARCH_DEP_46 */
 
 		ret = 0;
 		goto put_ppd_out;
@@ -1497,6 +1548,42 @@ mcexec_getcred(unsigned long phys)
 {
 	int	*virt = phys_to_virt(phys);
 
+#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
+	int ret = -EINVAL;
+
+	if (virt[0] == 0 || virt[0] == task_pid_vnr(current)) {
+		virt[0] = GUIDVAL(current_uid());
+		virt[1] = GUIDVAL(current_euid());
+		virt[2] = GUIDVAL(current_suid());
+		virt[3] = GUIDVAL(current_fsuid());
+		virt[4] = GUIDVAL(current_gid());
+		virt[5] = GUIDVAL(current_egid());
+		virt[6] = GUIDVAL(current_sgid());
+		virt[7] = GUIDVAL(current_fsgid());
+
+		ret = 0;
+	} else {
+		const struct task_struct *task_p =
+			pid_task(find_get_pid(virt[0]), PIDTYPE_PID);
+		if (task_p) {
+			const struct cred *t_cred = __task_cred(task_p);
+
+			rcu_read_lock();
+			virt[0] = GUIDVAL(t_cred->uid);
+			virt[1] = GUIDVAL(t_cred->euid);
+			virt[2] = GUIDVAL(t_cred->suid);
+			virt[3] = GUIDVAL(t_cred->fsuid);
+			virt[4] = GUIDVAL(t_cred->gid);
+			virt[5] = GUIDVAL(t_cred->egid);
+			virt[6] = GUIDVAL(t_cred->sgid);
+			virt[7] = GUIDVAL(t_cred->fsgid);
+			rcu_read_unlock();
+
+			ret = 0;
+		}
+	}
+	return ret;
+#else /* POSTK_DEBUG_TEMP_FIX_45 */
 	virt[0] = GUIDVAL(current_uid());
 	virt[1] = GUIDVAL(current_euid());
 	virt[2] = GUIDVAL(current_suid());
@@ -1506,6 +1593,7 @@ mcexec_getcred(unsigned long phys)
 	virt[6] = GUIDVAL(current_sgid());
 	virt[7] = GUIDVAL(current_fsgid());
 	return 0;
+#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 }
 
 int
@@ -2416,8 +2504,13 @@ mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *arg)
 	cpumask_t *cpuset;
 	struct mcctrl_usrdata *ud = ihk_host_os_get_usrdata(os);
 	ihk_device_t dev = ihk_os_to_dev(os);
+#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
+	struct mcctrl_cpu_topology *cpu_topo;
+	struct mcctrl_cpu_topology *target_cpu = NULL;
+#else /* POSTK_DEBUG_ARCH_DEP_40 */
 	struct cpu_topology *cpu_topo;
 	struct cpu_topology *target_cpu = NULL;
+#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 	struct node_topology *node_topo;
 	struct ihk_cache_topology *lcache_topo;
 	struct ihk_node_topology *lnode_topo;
@@ -2486,8 +2579,18 @@ mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *arg)
 				continue;
 			if(IS_ERR(lnode_topo))
 				continue;
+#ifdef POSTK_DEBUG_ARCH_DEP_54 /* cpu_isset() linux version depend fix. */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
+			if (cpumask_test_cpu(target_cpu->saved->cpu_number,
+			              &lnode_topo->cpumap)) {
+#else
 			if (cpu_isset(target_cpu->saved->cpu_number,
 			              lnode_topo->cpumap)) {
+#endif
+#else /* POSTK_DEBUG_ARCH_DEP_54 */
+			if (cpu_isset(target_cpu->saved->cpu_number,
+			              lnode_topo->cpumap)) {
+#endif /* POSTK_DEBUG_ARCH_DEP_54 */
 				if (kattr->attr.flags &
 				    UTI_FLAG_SAME_NUMA_DOMAIN) {
 					cpumask_or(wkmask, wkmask,
