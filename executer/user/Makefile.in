@@ -38,7 +38,7 @@ mcexec: mcexec.c libmcexec.a
 #eclair: eclair.c
 #	$(CC) $(CFLAGS) -I${IHKDIR} -o $@ $^ $(LIBS)
 eclair: eclair.c arch/$(ARCH)/arch-eclair.c
-	$(CC) -I.. -I. -I./arch/$(ARCH)/include -I${IHKDIR} $(CFLAGS) -o $@ $^ $(LIBS)
+	$(CC) -I.. -I. -I./arch/$(ARCH)/include -I$(VPATH)/.. -I$(VPATH) -I$(VPATH)/arch/$(ARCH)/include -I${IHKDIR} $(CFLAGS) -o $@ $^ $(LIBS)
 
 libsched_yield: libsched_yield.c
 	$(CC) -shared -fPIC -Wl,-soname,sched_yield.so.1 -o libsched_yield.so.1.0.0 $^ -lc -ldl

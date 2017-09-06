@@ -255,9 +255,6 @@ case $WITH_TARGET in
 	if test "X$SBINDIR" = X; then
 		SBINDIR="$prefix/sbin"
 	fi
-	if test "X$ETCDIR" = X; then
-		ETCDIR="$prefix/etc"
-	fi
 	if test "X$KMODDIR" = X; then
 		KMODDIR="$prefix/kmod"
 	fi
@@ -284,6 +281,9 @@ case $WITH_TARGET in
 	if test "X$INCDIR" = X; then
 		INCDIR="$prefix/include"
 	fi
+	if test "X$ETCDIR" = X; then
+		ETCDIR="$prefix/etc"
+	fi
 	if test "X$KMODDIR" = X; then
 		KMODDIR="$prefix/kmod"
 	fi
@@ -309,6 +309,9 @@ case $WITH_TARGET in
         fi
 	if test "X$INCDIR" = X; then
 		INCDIR="$prefix/include"
+	fi
+	if test "X$ETCDIR" = X; then
+		ETCDIR="$prefix/etc"
 	fi
 	if test "X$KMODDIR" = X; then
 		KMODDIR="$prefix/kmod"
@@ -404,7 +407,7 @@ case $ENABLE_MEMDUMP in
 	default)
 # POSTK_DEBUG_ARCH_DEP_30, Expansion of the branch.
 #		if test "x$WITH_TARGET" = "xsmp-x86" ; then
-		if test "x$WITH_TARGET" = "xsmp-*" ; then
+		if test "x$WITH_TARGET" = "xsmp-x86" -o "x$WITH_TARGET" = "xsmp-arm64" ; then
 			ENABLE_MEMDUMP=auto
 		else
 			ENABLE_MEMDUMP=no
