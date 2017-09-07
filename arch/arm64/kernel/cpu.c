@@ -351,6 +351,149 @@ unsigned long is_use_virt_timer(void)
 	return ihk_param_use_virt_timer;
 }
 
+static inline uint64_t pwr_arm64hpc_read_imp_fj_core_uarch_restrection_el1(void)
+{
+	uint64_t reg;
+	asm volatile("mrs_s %0, " __stringify(IMP_FJ_CORE_UARCH_RESTRECTION_EL1)
+		     : "=r" (reg) : : "memory");
+	return reg;
+}
+
+static ihk_spinlock_t imp_fj_core_uarch_restrection_el1_lock = SPIN_LOCK_UNLOCKED;
+static inline void pwr_arm64hpc_write_imp_fj_core_uarch_restrection_el1(uint64_t set_bit, uint64_t clear_bit)
+{
+	uint64_t reg;
+	unsigned long flags;
+
+	flags = ihk_mc_spinlock_lock(&imp_fj_core_uarch_restrection_el1_lock);
+	reg = pwr_arm64hpc_read_imp_fj_core_uarch_restrection_el1();
+	reg = (reg & ~clear_bit) | set_bit;
+	asm volatile("msr_s " __stringify(IMP_FJ_CORE_UARCH_RESTRECTION_EL1) ", %0"
+		     : : "r" (reg) : "memory");
+	ihk_mc_spinlock_unlock(&imp_fj_core_uarch_restrection_el1_lock, flags);
+}
+
+static inline uint64_t pwr_arm64hpc_read_imp_soc_standby_ctrl_el1(void)
+{
+	uint64_t reg;
+	asm volatile("mrs_s %0, " __stringify(IMP_SOC_STANDBY_CTRL_EL1)
+		     : "=r" (reg) : : "memory");
+	return reg;
+}
+
+static ihk_spinlock_t imp_soc_standby_ctrl_el1_lock = SPIN_LOCK_UNLOCKED;
+static inline void pwr_arm64hpc_write_imp_soc_standby_ctrl_el1(uint64_t set_bit, uint64_t clear_bit)
+{
+	unsigned long flags;
+	uint64_t reg;
+
+	flags = ihk_mc_spinlock_lock(&imp_soc_standby_ctrl_el1_lock);
+	reg = pwr_arm64hpc_read_imp_soc_standby_ctrl_el1();
+	reg = (reg & ~clear_bit) | set_bit;
+	asm volatile("msr_s " __stringify(IMP_SOC_STANDBY_CTRL_EL1) ", %0"
+		     : : "r" (reg) : "memory");
+	ihk_mc_spinlock_unlock(&imp_soc_standby_ctrl_el1_lock, flags);
+}
+
+#ifdef ENABLE_HPCPWR
+static unsigned long* retention_state_flag;
+static inline void pwr_arm64hpc_map_retention_state_flag(void)
+{
+	extern unsigned long* ihk_param_retention_state_flag_pa;
+	unsigned long size = BITS_TO_LONGS(NR_CPUS) * sizeof(unsigned long);
+	retention_state_flag = map_fixed_area(*ihk_param_retention_state_flag_pa, size, 0);
+}
+
+static inline int pwr_arm64hpc_retention_state_get(uint64_t *val)
+{
+	unsigned long linux_core_id;
+	int cpu = ihk_mc_get_processor_id();
+	int ret;
+
+	ret = ihk_mc_get_core(cpu, &linux_core_id, NULL, NULL);
+	if (ret) {
+		return ret;
+	}
+	*val = test_bit(linux_core_id, retention_state_flag);
+	return ret;
+}
+
+static inline int pwr_arm64hpc_retention_state_set(uint64_t val){
+	unsigned long linux_core_id;
+	int cpu = ihk_mc_get_processor_id();
+	int ret;
+
+	ret = ihk_mc_get_core(cpu, &linux_core_id, NULL, NULL);
+	if (ret) {
+		return ret;
+	}
+
+	if (val) {
+		set_bit(cpu, retention_state_flag);
+	} else {
+		clear_bit(cpu, retention_state_flag);
+	}
+	return 0;
+}
+
+static inline int pwr_arm64hpc_enable_retention_state(void)
+{
+	pwr_arm64hpc_write_imp_soc_standby_ctrl_el1(IMP_SOC_STANDBY_CTRL_EL1_RETENTION, 0);
+	return 0;
+}
+
+static inline void init_power_management(void)
+{
+	int state;
+	uint64_t imp_fj_clear_bit = 0;
+	uint64_t imp_soc_clear_bit = 0;
+
+        /* retention state */
+	state = pwr_arm64hpc_retention_state_set(0);
+	if (state) {
+		panic("error: initialize power management\n");
+	}
+
+        /* issue state */
+	imp_fj_clear_bit |= IMP_FJ_CORE_UARCH_RESTRECTION_EL1_ISSUE_RESTRICTION;
+
+	/* eco_state  */
+	imp_fj_clear_bit |= IMP_FJ_CORE_UARCH_RESTRECTION_EL1_FL_RESTRICT_TRANS;
+	imp_soc_clear_bit |= IMP_SOC_STANDBY_CTRL_EL1_ECO_MODE;
+
+        /* ex_pipe_state */
+	imp_fj_clear_bit |= IMP_FJ_CORE_UARCH_RESTRECTION_EL1_EX_RESTRICTION;
+
+	/* write */
+	pwr_arm64hpc_write_imp_fj_core_uarch_restrection_el1(0, imp_fj_clear_bit);
+	pwr_arm64hpc_write_imp_soc_standby_ctrl_el1(0, imp_soc_clear_bit);
+}
+#else /*ENABLE_HPCPWR*/
+static inline void pwr_arm64hpc_map_retention_state_flag(void)
+{
+}
+
+static inline int pwr_arm64hpc_retention_state_get(uint64_t *val)
+{
+	*val = 0;
+	return 0;
+}
+
+static inline int pwr_arm64hpc_retention_state_set(uint64_t val)
+{
+	return 0;
+}
+
+static inline int pwr_arm64hpc_enable_retention_state(void)
+{
+	return 0;
+}
+
+static inline void init_power_management(void)
+{
+}
+#endif /*ENABLE_HPCPWR*/
+
 /*@
   @ assigns torampoline_va;
   @ assigns first_page_va;
@@ -383,6 +526,7 @@ void ihk_mc_init_ap(void)
 		ihk_mc_register_interrupt_handler(get_phys_timer_intrid(), &phys_timer_handler);
 	}
 	init_smp_processor();
+	init_power_management();
 }
 
 extern void vdso_init(void);
@@ -531,6 +675,8 @@ void setup_arm64(void)
 
 	gic_init();
 
+	pwr_arm64hpc_map_retention_state_flag();
+
 	init_cpu();
 
 	init_gettime_support();
@@ -573,6 +719,7 @@ void setup_arm64_ap(void (*next_func)(void))
 	debug_monitors_init();
 	arch_timer_configure_evtstream();
 	init_cpu();
+	init_power_management();
 	call_ap_func(next_func);
 
 	/* BUG */
@@ -649,7 +796,18 @@ static void __arm64_wakeup(int hw_cpuid, unsigned long entry)
 /** IHK Functions **/
 
 /* send WFI(Wait For Interrupt) instruction */
-extern void cpu_do_idle(void);
+static inline void cpu_do_idle(void)
+{
+	extern void __cpu_do_idle(void);
+	uint64_t retention;
+	int state;
+
+	state = pwr_arm64hpc_retention_state_get(&retention);
+	if ((state == 0) && (retention != 0)) {
+		pwr_arm64hpc_enable_retention_state();
+	}
+	__cpu_do_idle();
+}
 
 /* halt by WFI(Wait For Interrupt) */
 void cpu_halt(void)
@@ -1538,16 +1696,75 @@ void __freeze(void)
 	freeze();
 }
 
+
+#define SYSREG_READ_S(sys_reg)  case (sys_reg): asm volatile("mrs_s %0, " __stringify(sys_reg) : "=r" (*val)); break
+static inline int arch_cpu_mrs(uint32_t sys_reg, uint64_t *val)
+{
+	int ret = 0;
+	switch (sys_reg) {
+		SYSREG_READ_S(IMP_FJ_CORE_UARCH_RESTRECTION_EL1);
+		SYSREG_READ_S(IMP_SOC_STANDBY_CTRL_EL1);
+	default:
+		return -EINVAL;
+	}
+	return ret;
+}
+
+static inline int arch_cpu_read_register(struct ihk_os_cpu_register *desc)
+{
+	int ret = 0;
+	uint64_t value;
+
+	if (desc->addr) {
+		panic("memory mapped register is not supported.\n");
+	} else if (desc->addr_ext) {
+		ret = arch_cpu_mrs(desc->addr_ext, &value);
+		if (ret == 0) {
+			desc->val = value;
+		}
+	} else {
+		ret = -EINVAL;
+	}
+	return ret;
+}
+
+#define SYSREG_WRITE_S(sys_reg) case (sys_reg): asm volatile("msr_s " __stringify(sys_reg) ", %0" :: "r" (val)); break
+
+static inline int arch_cpu_msr(uint32_t sys_reg, uint64_t val)
+{
+	int ret = 0;
+	switch (sys_reg) {
+		SYSREG_WRITE_S(IMP_FJ_CORE_UARCH_RESTRECTION_EL1);
+		SYSREG_WRITE_S(IMP_SOC_STANDBY_CTRL_EL1);
+	default:
+		return -EINVAL;
+	}
+	return ret;
+}
+
+static inline int arch_cpu_write_register(struct ihk_os_cpu_register *desc)
+{
+	int ret = 0;
+
+	if (desc->addr) {
+		panic("memory mapped register is not supported.\n");
+	} else if (desc->addr_ext) {
+		ret = arch_cpu_msr(desc->addr_ext, desc->val);
+	} else {
+		ret = -EINVAL;
+	}
+	return ret;
+}
+
 int arch_cpu_read_write_register(
 		struct ihk_os_cpu_register *desc,
 		enum mcctrl_os_cpu_operation op)
 {
-	/* TODO: skeleton for patch:0676 */
 	if (op == MCCTRL_OS_CPU_READ_REGISTER) {
-//		desc->val = rdmsr(desc->addr);
+		arch_cpu_read_register(desc);
 	}
 	else if (op == MCCTRL_OS_CPU_WRITE_REGISTER) {
-//		wrmsr(desc->addr, desc->val);
+		arch_cpu_write_register(desc);
 	}
 	else {
 		return -1;

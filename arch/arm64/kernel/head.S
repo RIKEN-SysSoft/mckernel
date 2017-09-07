@@ -88,6 +88,7 @@
 #define TRAMPOLINE_DATA_DATA_RDISTS_PA_SIZE    (NR_CPUS * 8)
 #define TRAMPOLINE_DATA_NR_PMU_AFFI_SIZE       0x04
 #define TRAMPOLINE_DATA_PMU_AFF_SIZE           (CONFIG_SMP_MAX_CORES * 4)
+#define TRAMPOLINE_DATA_RETENTION_STATE_FLAG_PA_SIZE 0x08
 
 #define STARTUP_DATA_RESERVED		0x00
 #define STARTUP_DATA_BASE		0x08
@@ -106,6 +107,7 @@
 	.globl	ihk_param_cpu_logical_map, ihk_param_gic_rdist_base_pa
 	.globl	ihk_param_pmu_irq_affiniry, ihk_param_nr_pmu_irq_affiniry
 	.globl	ihk_param_use_virt_timer, ihk_param_evtstrm_timer_rate
+	.globl	ihk_param_retention_state_flag_pa
 ihk_param_head:
 ihk_param_param_addr:
 	.quad	0
@@ -141,6 +143,8 @@ ihk_param_cpu_logical_map:
 	.skip	NR_CPUS * 8	/* array of the MPIDR and the core number */
 ihk_param_gic_rdist_base_pa:
 	.skip	NR_CPUS * 8	/* per-cpu re-distributer PA */
+ihk_param_retention_state_flag_pa:
+	.quad	0
 ihk_param_pmu_irq_affiniry:
 	.skip	CONFIG_SMP_MAX_CORES * 4	/* array of the pmu affinity list */
 ihk_param_nr_pmu_irq_affiniry:
@@ -270,10 +274,14 @@ ENTRY(arch_start)
 	sub	w16, w16, #1
 2:	cmp	w16, #0
 	b.ne	1b
-
 	mov x16, #CONFIG_SMP_MAX_CORES  /* calc next data */
 	lsl x16, x16, 2
 	add x0, x0, x16
+	/* retention_state_flag_pa */
+	ldr	x16, [x0], #TRAMPOLINE_DATA_RETENTION_STATE_FLAG_PA_SIZE
+	adr	x15, ihk_param_retention_state_flag_pa
+	str	x16, [x15]
+
 	/* */
 	bl	__calc_phys_offset	// x24=PHYS_OFFSET, x28=PHYS_OFFSET-KERNEL_START
 	bl	__create_page_tables	// x25=TTBR0, x26=TTBR1
