@@ -116,4 +116,10 @@ struct thread;
 extern void arch_fill_prstatus(struct elf_prstatus64 *prstatus, struct thread *thread, void *regs0);
 
 #endif /* __HEADER_ELFCORE_H */
+#else /* POSTK_DEBUG_ARCH_DEP_18 */
+#ifdef __x86_64
+#include "../../arch/x86/kernel/include/elfcore.h"
+#elif __aarch64__
+#include "../../arch/arm64/kernel/include/elfcore.h"
+#endif
 #endif /* POSTK_DEBUG_ARCH_DEP_18 */

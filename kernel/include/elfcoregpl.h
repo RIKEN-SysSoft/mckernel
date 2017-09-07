@@ -64,4 +64,10 @@ struct elf_prpsinfo64
 };
 
 #endif /* __HEADER_ELFCOREGPL_H */
+#else /* POSTK_DEBUG_ARCH_DEP_18 */
+#ifdef __x86_64
+#include "../../arch/x86/kernel/include/elfcoregpl.h"
+#elif __aarch64__
+#include "../../arch/arm64/kernel/include/elfcoregpl.h"
+#endif
 #endif /* POSTK_DEBUG_ARCH_DEP_18 */

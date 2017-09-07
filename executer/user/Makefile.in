@@ -26,8 +26,10 @@ ifeq ($(ENABLE_QLMPI),yes)
 	TARGET+= libqlmpi.so ql_server ql_mpiexec_start ql_mpiexec_finalize ql_talker libqlfort.so
 endif
 
+ifeq ($(ARCH), arm64)
 CFLAGS += $(foreach i, $(shell seq 1 100), $(addprefix -DPOSTK_DEBUG_ARCH_DEP_, $(i)))
 CFLAGS += $(foreach i, $(shell seq 1 100), $(addprefix -DPOSTK_DEBUG_TEMP_FIX_, $(i)))
+endif
 
 all: $(TARGET)
 
@@ -35,10 +37,13 @@ mcexec: mcexec.c libmcexec.a
 	$(CC) -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) $(LDFLAGS) -DLIBDIR=\"$(LIBDIR)\" -fPIE -pie -L. $(MCEXEC_LIBS) -o $@ $^ $(EXTRA_OBJS) $(RPATH)
 
 # POSTK_DEBUG_ARCH_DEP_34, eclair arch depend separate.
-#eclair: eclair.c
-#	$(CC) $(CFLAGS) -I${IHKDIR} -o $@ $^ $(LIBS)
+ifeq ($(ARCH), arm64)
 eclair: eclair.c arch/$(ARCH)/arch-eclair.c
 	$(CC) -I.. -I. -I./arch/$(ARCH)/include -I$(VPATH)/.. -I$(VPATH) -I$(VPATH)/arch/$(ARCH)/include -I${IHKDIR} $(CFLAGS) -o $@ $^ $(LIBS)
+else
+eclair: eclair.c
+	$(CC) $(CFLAGS) -I${IHKDIR} -o $@ $^ $(LIBS)
+endif
 
 libsched_yield: libsched_yield.c
 	$(CC) -shared -fPIC -Wl,-soname,sched_yield.so.1 -o libsched_yield.so.1.0.0 $^ -lc -ldl
