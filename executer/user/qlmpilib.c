@@ -158,7 +158,7 @@ int ql_client(int *argc,char ***argv)
 	syscall(803);
 	rc = PMI_Barrier();
 	
-	rc = swapout(swap_file, buffer, BUF_SIZE, 0);
+	rc = swapout(swap_file, buffer, BUF_SIZE, 1);
 
 #ifdef QL_DEBUG
 	printf(" swapout rc=%d\n",rc);
