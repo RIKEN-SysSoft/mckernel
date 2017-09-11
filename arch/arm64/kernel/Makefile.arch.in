@@ -1,5 +1,6 @@
 # Makefile.arch COPYRIGHT FUJITSU LIMITED 2015-2017
 VDSO_SRCDIR = $(SRC)/../arch/$(IHKARCH)/kernel/vdso
+VDSO_BUILDDIR = @abs_builddir@/vdso
 VDSO_SO_O = $(O)/vdso.so.o
 
 IHK_OBJS += assert.o cache.o cpu.o cputable.o context.o entry.o entry-fpsimd.o
@@ -16,12 +17,12 @@ IHK_OBJS += cpufeature.o
 # IHK_OBJS added coredump.o
 IHK_OBJS += coredump.o
 
-$(VDSO_SO_O): $(VDSO_SRCDIR)/vdso.so
+$(VDSO_SO_O): $(VDSO_BUILDDIR)/vdso.so
 
-$(VDSO_SRCDIR)/vdso.so: FORCE
+$(VDSO_BUILDDIR)/vdso.so: FORCE
 	$(call echo_cmd,BUILD VDSO,$(TARGET))
 	@mkdir -p $(O)/vdso
-	@TARGETDIR="$(TARGETDIR)" $(submake) -C $(VDSO_SRCDIR) $(SUBOPTS) prepare
-	@TARGETDIR="$(TARGETDIR)" $(submake) -C $(VDSO_SRCDIR) $(SUBOPTS)
+	@TARGETDIR="$(TARGETDIR)" $(submake) -C $(VDSO_BUILDDIR) $(SUBOPTS) prepare
+	@TARGETDIR="$(TARGETDIR)" $(submake) -C $(VDSO_BUILDDIR) $(SUBOPTS)
 
 FORCE:

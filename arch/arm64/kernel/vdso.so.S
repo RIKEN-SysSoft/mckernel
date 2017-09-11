@@ -19,13 +19,14 @@
  */
 
 #include <arch-memory.h>
+#include <vdso-so-path.h>
 
 	.section ".vdso.txet", "aw"
 
 	.globl vdso_start, vdso_end
 	.balign PAGE_SIZE
 vdso_start:
-	.incbin "../../mckernel/arch/arm64/kernel/vdso/vdso.so"
+	.incbin VDSO_SO_PATH
 	.balign PAGE_SIZE
 vdso_end:
 

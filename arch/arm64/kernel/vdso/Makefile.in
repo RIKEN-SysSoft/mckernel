@@ -8,14 +8,18 @@ HOST_KERNEL_CONFIG_ARM64_4K_PAGES=$(shell grep -E "^CONFIG_ARM64_4K_PAGES=y" $(H
 HOST_KERNEL_CONFIG_ARM64_16K_PAGES=$(shell grep -E "^CONFIG_ARM64_16K_PAGES=y" $(HOST_CONFIG) | sed 's|CONFIG_ARM64_16K_PAGES=||g')
 HOST_KERNEL_CONFIG_ARM64_64K_PAGES=$(shell grep -E "^CONFIG_ARM64_64K_PAGES=y" $(HOST_CONFIG) | sed 's|CONFIG_ARM64_64K_PAGES=||g')
 
-VDSOBASE = $(CURDIR)
-INCDIR = $(VDSOBASE)/../include
+VDSOSRC = @abs_srcdir@
+VDSOBUILD = @abs_builddir@
+INCDIR = $(VDSOSRC)/../include
 ECHO_SUFFIX = [VDSO]
 
-VDSO_OBJS := gettimeofday.o note.o sigreturn.o
-DESTOBJS = $(addprefix $(VDSOBASE)/, $(VDSO_OBJS))
+VDSOOBJS := gettimeofday.o
+DESTOBJS = $(addprefix $(VDSOBUILD)/, $(VDSOOBJS))
 
-$(if $(VDSOBASE),,$(error IHK output directory is not specified))
+VDSOASMOBJS := note.o sigreturn.o
+DESTASMOBJS = $(addprefix $(VDSOBUILD)/, $(VDSOASMOBJS))
+
+$(if $(VDSOSRC),,$(error IHK output directory is not specified))
 $(if $(TARGET),,$(error Target is not specified))
 
 #CFLAGS := -nostdinc -mlittle-endian -Wall -mabi=lp64 -Wa,-gdwarf-2
@@ -42,7 +46,7 @@ LDFLAGS += --param=allow-store-data-races=0 -DCC_HAVE_ASM_GOTO
 LDFLAGS += -D"KBUILD_STR(s)=\#s" -D"KBUILD_BASENAME=KBUILD_STR(vdso.so)"
 LDFLAGS += -D"KBUILD_MODNAME=KBUILD_STR(vdso.so)" -D__KERNEL__
 
-DEPSRCS = $(wildcard $(VDSOBASE)/*.c $(VDSOBASE)/*.S)
+DEPSRCS = $(wildcard $(VDSOSRC)/*.c $(VDSOSRC)/*.S)
 
 CFLAGS_lds := -E -P -C -U$(ARCH)
 CFLAGS_lds += -nostdinc
@@ -62,43 +66,47 @@ CFLAGS_lds += -DPAGE_SIZE=0x10000
 endif
 
 #load mckernel config (append CPPFLAGS)
-include $(IHKBASE)/$(TARGETDIR)/Makefile.predefines
+include @abs_top_builddir@/../ihk/cokernel/$(TARGETDIR)/Makefile.predefines
 
 default: all
 
 .PHONY: all clean depend prepare
 
-all: depend $(VDSOBASE)/vdso.so $(INCDIR)/vdso-offsets.h
+all: depend $(VDSOBUILD)/vdso.so $(VDSOBUILD)/../include/vdso-offsets.h $(VDSOBUILD)/../include/vdso-so-path.h
 
 # Strip rule for the .so file
-$(VDSOBASE)/vdso.so: OBJCOPYFLAGS := -S
-$(VDSOBASE)/vdso.so: $(VDSOBASE)/vdso.so.dbg
+$(VDSOBUILD)/vdso.so: OBJCOPYFLAGS := -S
+$(VDSOBUILD)/vdso.so: $(VDSOBUILD)/vdso.so.dbg
 	$(objcopy_cmd)
 
 # Generate VDSO offsets using helper script
-$(INCDIR)/vdso-offsets.h: $(VDSOBASE)/vdso.so.dbg
+$(VDSOBUILD)/../include/vdso-offsets.h: $(VDSOBUILD)/vdso.so.dbg
 	$(call echo_cmd,VDSOSYM,$<)
-	@nm $< | sh gen_vdso_offsets.sh | LC_ALL=C sort > $@
+	@mkdir -p $(VDSOBUILD)/../include
+	@nm $< | sh $(VDSOSRC)/gen_vdso_offsets.sh | LC_ALL=C sort > $@
+
+$(VDSOBUILD)/../include/vdso-so-path.h:
+	@echo "#define VDSO_SO_PATH \"@abs_builddir@/vdso.so\"" > $@
 
 # Link rule for the .so file, .lds has to be first
-$(VDSOBASE)/vdso.so.dbg: $(VDSOBASE)/vdso.lds $(DESTOBJS)
+$(VDSOBUILD)/vdso.so.dbg: $(VDSOBUILD)/vdso.lds $(DESTOBJS) $(DESTASMOBJS)
 	$(ld_cmd)
 
-$(VDSOBASE)/vdso.lds: vdso.lds.S
+$(VDSOBUILD)/vdso.lds: $(VDSOSRC)/vdso.lds.S
 	$(lds_cmd)
 
 clean:
-	$(rm_cmd) $(DESTOBJS) $(VDSOBASE)/Makefile.dep
+	$(rm_cmd) $(DESTOBJS) $(DESTASMOBJS) $(VDSOBUILD)/Makefile.dep $(VDSOBUILD)/vdso.* -r $(VDSOBUILD)/../include
 
-depend: $(VDSOBASE)/Makefile.dep
+depend: $(VDSOBUILD)/Makefile.dep
 
-$(VDSOBASE)/Makefile.dep:
+$(VDSOBUILD)/Makefile.dep:
 	$(call dep_cmd,$(DEPSRCS))
 
 prepare:
-	@$(RM) $(VDSOBASE)/Makefile.dep
+	@$(RM) $(VDSOBUILD)/Makefile.dep
 
--include $(VDSOBASE)/Makefile.dep
+-include $(VDSOBUILD)/Makefile.dep
 
 # Actual build commands
 ifeq ($(V),1)
@@ -109,15 +117,15 @@ echo_cmd = @echo ' ($(TARGET))' $1 $(ECHO_SUFFIX) $2;
 submake = make --no-print-directory
 endif
 
-cc_cmd = $(call echo_cmd,CC,$<)$(CC) $(CFLAGS) -c -o $@ $<
+cc_cmd = $(call echo_cmd,CC,$<)$(CC) $(CFLAGS) -c -o $@
 ld_cmd = $(call echo_cmd,LD,$@)$(CC) $(LDFLAGS) $^ -o $@
 dep_cmd = $(call echo_cmd,DEPEND,)$(CC) $(CFLAGS) -MM $1 > $@
 rm_cmd = $(call echo_cmd,CLEAN,)$(RM)
 objcopy_cmd = $(call echo_cmd,OBJCOPY,$<)$(OBJCOPY) $(OBJCOPYFLAGS) $< $@
 lds_cmd = $(call echo_cmd,LDS,$<)$(CC) $(CFLAGS_lds) -c -o $@ $<
 
-.c.o:
-	$(cc_cmd)
-.S.o:
-	$(cc_cmd) -D__ASSEMBLY__
+$(DESTOBJS):
+	$(cc_cmd) $(addprefix $(VDSOSRC)/, $(notdir $(@:.o=.c)))
+$(DESTASMOBJS):
+	$(cc_cmd) $(addprefix $(VDSOSRC)/, $(notdir $(@:.o=.S))) -D__ASSEMBLY__
 

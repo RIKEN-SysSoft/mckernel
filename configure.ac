@@ -513,22 +513,7 @@ AC_SUBST(uncomment_if_ENABLE_MEMDUMP)
 
 AC_CONFIG_HEADERS([config.h])
 # POSTK_DEBUG_ARCH_DEP_37
-#AC_CONFIG_FILES([
-#	Makefile
-#	executer/user/Makefile
-#	executer/kernel/mcctrl/Makefile
-#	executer/kernel/mcctrl/arch/x86_64/Makefile
-#	executer/kernel/mcoverlayfs/Makefile
-#	kernel/Makefile
-#	kernel/Makefile.build
-#	arch/x86/tools/mcreboot-attached-mic.sh
-#	arch/x86/tools/mcshutdown-attached-mic.sh
-#	arch/x86/tools/mcreboot-builtin-x86.sh
-#	arch/x86/tools/mcreboot-smp-x86.sh
-#	arch/x86/tools/mcstop+release-smp-x86.sh
-#	arch/x86/tools/mcshutdown-builtin-x86.sh
-#	arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in
-#])
+# AC_CONFIG_FILES arch dependfiles separate
 AC_CONFIG_FILES([
 	Makefile
 	executer/user/Makefile
@@ -553,9 +538,15 @@ AC_CONFIG_FILES([
 	arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in
 	arch/x86/tools/irqbalance_mck.service
 	arch/x86/tools/irqbalance_mck.in
+])
+
+if test "$TARGET" = "smp-arm64"; then
+AC_CONFIG_FILES([
 	kernel/config/config.smp-arm64
 	arch/arm64/kernel/vdso/Makefile
+	arch/arm64/kernel/Makefile.arch
 ])
+fi
 
 AS_IF([test "x$enable_dcfa" = xyes], [
         AC_CONFIG_FILES([kernel/Makefile.dcfa])])
