@@ -225,12 +225,6 @@ void init_fpu(void)
 	dkprintf("init_fpu(): SSE init: CR4 = 0x%016lX\n", reg);
 
 	/* Set xcr0[2:1] to enable avx ops */
-	if(cpuid01_ecx & (1 << 28)) {
-		reg = xgetbv(0);
-		reg |= 0x6;
-		xsetbv(0, reg);
-		dkprintf("init_fpu(): AVX init: XCR0 = 0x%016lX\n", reg);
-	}
 	if(xsave_available){
 		unsigned long eax;
 		unsigned long ebx;
@@ -246,11 +240,16 @@ void init_fpu(void)
 			reg |= 0xe6;
 			xsetbv(0, reg);
 			dkprintf("init_fpu(): AVX-512 init: XCR0 = 0x%016lX\n", reg);
+		} else {
+			reg = xgetbv(0);
+			reg |= 0x6;
+			xsetbv(0, reg);
+			dkprintf("init_fpu(): AVX init: XCR0 = 0x%016lX\n", reg);
 		}
-	}
 
-	xsave_mask = xgetbv(0);
-	dkprintf("init_fpu(): xsave_mask = 0x%016lX\n", xsave_mask);
+		xsave_mask = xgetbv(0);
+		dkprintf("init_fpu(): xsave_mask = 0x%016lX\n", xsave_mask);
+	}
 
 	/* TODO: set MSR_IA32_XSS to enable xsaves/xrstors */
 
