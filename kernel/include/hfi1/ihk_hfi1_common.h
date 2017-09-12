@@ -80,9 +80,6 @@
 # define unlikely(x) __builtin_expect(!!(x), 0)
 #endif
 
-/* From: kernel-xppsl_1.5.2/include/linux/compiler.h */
-#define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
-
 /* Atomic ops */
 #define atomic_inc ihk_atomic_inc
 #define atomic_dec ihk_atomic_dec
