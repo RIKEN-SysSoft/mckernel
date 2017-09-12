@@ -1154,12 +1154,9 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 
 			info.si_signo = SIGSEGV;
 			info.si_code = SEGV_MAPERR;
-			list_for_each_entry(range, &vm->vm_range_list, list) {
-				if (range->start <= (unsigned long)fault_addr && range->end > (unsigned long)fault_addr) {
-					info.si_code = SEGV_ACCERR;
-					break;
-				}
-			}
+			range = lookup_process_memory_range(vm, (uintptr_t)fault_addr, ((uintptr_t)fault_addr) + 1);
+			if (range)
+				info.si_code = SEGV_ACCERR;
 			info._sifields._sigfault.si_addr = fault_addr;
 			set_signal(SIGSEGV, regs, &info);
 		}

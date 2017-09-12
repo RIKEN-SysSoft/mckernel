@@ -349,7 +349,8 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 
 		ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 
-		list_for_each_entry(range, &vm->vm_range_list, list) {
+		range = lookup_process_memory_range(vm, 0, -1);
+		while (range) {
 			int written_now;
 
 			/* format is (from man proc):
@@ -388,6 +389,7 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 				break;
 			}
 #endif /* POSTK_DEBUG_TEMP_FIX_47 */
+			range = next_process_memory_range(vm, range);
 		}
 		
 		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
@@ -490,9 +492,11 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 		}
 
 		ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
-		list_for_each_entry(range, &proc->vm->vm_range_list, list) {
+		range = lookup_process_memory_range(vm, 0, -1);
+		while (range) {
 			if(range->flag & VR_LOCKED)
 				lockedsize += range->end - range->start;
+			range = next_process_memory_range(vm, range);
 		}
 		ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
 

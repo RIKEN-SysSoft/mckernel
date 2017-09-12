@@ -1499,7 +1499,6 @@ unhandled_page_fault(struct thread *thread, void *fault_addr, void *regs)
 	const uintptr_t address = (uintptr_t)fault_addr;
 	struct process_vm *vm = thread->vm;
 	struct vm_range *range;
-	char found;
 	unsigned long irqflags;
 	unsigned long error = 0;
 
@@ -1513,17 +1512,12 @@ unhandled_page_fault(struct thread *thread, void *fault_addr, void *regs)
 			(error & PF_RSVD ? "was" : "wasn't"),
 			(error & PF_INSTR ? "was" : "wasn't"));
 
-	found = 0;
-	list_for_each_entry(range, &vm->vm_range_list, list) {
-		if (range->start <= address && range->end > address) {
-			found = 1;
-			__kprintf("address is in range, flag: 0x%lx\n",
-					range->flag);
-			ihk_mc_pt_print_pte(vm->address_space->page_table, (void*)address);
-			break;
-		}
-	}
-	if (!found) {
+	range = lookup_process_memory_range(vm, address, address+1);
+	if (range) {
+		__kprintf("address is in range, flag: 0x%lx\n",
+				range->flag);
+		ihk_mc_pt_print_pte(vm->address_space->page_table, (void*)address);
+	} else {
 		__kprintf("address is out of range! \n");
 	}
 
