@@ -5537,10 +5537,10 @@ SYSCALL_DECLARE(getrusage)
 		list_for_each_entry(child, &proc->threads_list, siblings_list){
 			while(!child->times_update)
 				cpu_pause();
-				tsc_to_ts(child->user_tsc, &ats);
-				ts_add(&utime, &ats);
-				tsc_to_ts(child->system_tsc, &ats);
-				ts_add(&stime, &ats);
+			tsc_to_ts(child->user_tsc, &ats);
+			ts_add(&utime, &ats);
+			tsc_to_ts(child->system_tsc, &ats);
+			ts_add(&stime, &ats);
 		}
 		mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &lock);
 		ts_to_tv(&kusage.ru_utime, &utime);
@@ -6956,8 +6956,8 @@ SYSCALL_DECLARE(clock_gettime)
 			struct timespec wts;
 			while(!child->times_update)
 				cpu_pause();
-				tsc_to_ts(child->user_tsc + child->system_tsc, &wts);
-				ts_add(&ats, &wts);	
+			tsc_to_ts(child->user_tsc + child->system_tsc, &wts);
+			ts_add(&ats, &wts);
 		}
 		mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &lock);
 		return copy_to_user(ts, &ats, sizeof ats);
