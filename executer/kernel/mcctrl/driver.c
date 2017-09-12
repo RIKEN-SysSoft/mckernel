@@ -185,6 +185,16 @@ int mcctrl_os_shutdown_notifier(int os_index)
 	return 0;
 }
 
+int mcctrl_os_alive()
+{
+	int i;
+
+	for (i = 0; i < OS_MAX_MINOR; i++)
+		if (os[i])
+			return i;
+	return -1;
+}
+
 static struct ihk_os_notifier_ops mcctrl_os_notifier_ops = {
 	.boot = mcctrl_os_boot_notifier,
 	.shutdown = mcctrl_os_shutdown_notifier,

@@ -408,6 +408,8 @@ inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(
 void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet, 
 		long ret, int stid);
 
+int mcctrl_os_alive(void);
+
 #define PROCFS_NAME_MAX 768
 
 struct procfs_read {
