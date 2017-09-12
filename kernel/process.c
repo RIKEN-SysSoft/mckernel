@@ -3285,13 +3285,9 @@ int __sched_wakeup_thread(struct thread *thread,
 		status = -EINVAL;
 	}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_55 /* runq_locked flag apply for unlock */
 	if (!runq_locked) {
 		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 	}
-#else /* POSTK_DEBUG_TEMP_FIX_55 */
-	ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
-#endif /* POSTK_DEBUG_TEMP_FIX_55 */
 
 	if (!status && (thread->cpu_id != ihk_mc_get_processor_id())) {
 		dkprintf("%s: issuing IPI, thread->cpu_id=%d\n",
