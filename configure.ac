@@ -153,7 +153,7 @@ esac
 
 case "X$WITH_KERNELSRC" in
     Xyes | Xno | X)
-	WITH_KERNELSRC='/lib/modules/`uname -r`/build'
+	WITH_KERNELSRC="/lib/modules/`uname -r`/build"
 	;;
     X/*)
 	;;
