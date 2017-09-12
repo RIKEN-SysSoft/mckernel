@@ -40,8 +40,6 @@ extern int sprintf(char * buf, const char *fmt, ...);
 extern int sscanf(const char * buf, const char * fmt, ...);
 extern int scnprintf(char * buf, size_t size, const char *fmt, ...);
 
-extern int osnum;
-
 static void
 procfs_thread_ctl(struct thread *thread, int msg)
 {
@@ -52,7 +50,7 @@ procfs_thread_ctl(struct thread *thread, int msg)
 	memset(&packet, '\0', sizeof packet);
 	packet.arg = thread->tid;
 	packet.msg = msg;
-	packet.osnum = osnum;
+	packet.osnum = ihk_mc_get_osnum();
 	packet.ref = thread->cpu_id;
 	packet.pid = thread->proc->pid;
 	packet.err = 0;
@@ -86,6 +84,7 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 	struct process_vm *vm = NULL;
 	struct procfs_read *r;
 	struct ikc_scd_packet packet;
+	int osnum = ihk_mc_get_osnum();
 	int rosnum, ret, pid, tid, ans = -EIO, eof = 0;
 	char *buf, *p;
 	struct ihk_ikc_channel_desc *syscall_channel;

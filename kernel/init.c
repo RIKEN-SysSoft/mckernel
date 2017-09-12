@@ -50,8 +50,6 @@
 
 #define DUMP_LEVEL_USER_UNUSED_EXCLUDE 24
 
-int osnum = 0;
-
 extern struct ihk_kmsg_buf kmsg_buf;
 extern unsigned long ihk_mc_get_ns_per_tsc(void);
 extern long syscall(int, ihk_mc_user_context_t *);
@@ -129,23 +127,23 @@ char *find_command_line(char *name)
 
 static void parse_kargs(void)
 {
+	char *ptr;
+	char *key_dump_level = "dump_level=";
+	unsigned int dump_level = DUMP_LEVEL_USER_UNUSED_EXCLUDE;
+
 	kprintf("KCommand Line: %s\n", ihk_get_kargs());
 
-	if (1) {
-		char *key = "osnum=";
-		char *p;
-
-		p = find_command_line(key);
-		if (p != NULL) {
-			p += strlen(key);
-			osnum = 0;
-			while (('0' <= *p) && (*p <= '9')) {
-				osnum *= 10;
-				osnum += *p++ - '0';
-			}
-			kprintf("osnum: %d\n", osnum);
+	/* parse dump_level option */
+	ptr = find_command_line(key_dump_level);
+	if (ptr) {
+		ptr += strlen(key_dump_level);
+		dump_level = 0;
+		while (('0' <= *ptr) && (*ptr <= '9')) {
+			dump_level *= 10;
+			dump_level += *ptr++ - '0';
 		}
 	}
+	ihk_mc_set_dump_level(dump_level);
 }
 
 void pc_init(void)
@@ -428,25 +426,12 @@ int main(void)
 {
 	char *ptr;
 	int mode = 0;
-	char *key_dump_level = "dump_level=";
-	unsigned int dump_level = DUMP_LEVEL_USER_UNUSED_EXCLUDE;
 
 	ptr = find_command_line("ksyslogd=");
 	if (ptr) {
 	    mode = ptr[9] - 0x30;
 	    if (mode < 0 || mode > 2) mode = 0;
 	}
-
-	ptr = find_command_line(key_dump_level);
-	if (ptr) {
-		ptr += strlen(key_dump_level);
-		dump_level = 0;
-		while (('0' <= *ptr) && (*ptr <= '9')) {
-			dump_level *= 10;
-			dump_level += *ptr++ - '0';
-		}
-	}
-	ihk_mc_set_dump_level(dump_level);
 
 	kmsg_init(mode);
 
