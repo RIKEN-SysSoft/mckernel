@@ -263,6 +263,8 @@ static const unsigned int  PTL1_ENTRIES = __PTL1_ENTRIES;
 
 #define PTE_FILEOFF		PTE_SPECIAL
 
+#define PT_ENTRIES		(PAGE_SIZE >> 3)
+
 #ifndef __ASSEMBLY__
 
 #include <ihk/types.h>
