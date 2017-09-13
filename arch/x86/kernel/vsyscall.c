@@ -102,7 +102,7 @@ int vsyscall_gettimeofday(struct timeval *tv, void *tz)
 			: "%rcx", "%r11", "memory");
 
 	if (error) {
-		*(int *)0 = 0;	/* i.e. raise(SIGSEGV) */
+		*(volatile int *)0 = 0;	/* i.e. raise(SIGSEGV) */
 	}
 	return error;
 } /* vsyscall_gettimeofday() */
