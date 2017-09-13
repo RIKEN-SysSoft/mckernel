@@ -1760,6 +1760,12 @@ int visit_pte_range(page_table_t pt, void *start0, void *end0, int pgshift,
 	return initial_lookup.walk(tt, 0, start, end, initial_lookup.callback, &args);
 }
 
+int visit_pte_range_safe(page_table_t pt, void *start0, void *end0, int pgshift,
+                        enum visit_pte_flag flags, pte_visitor_t *funcp, void *arg)
+{
+	return 0;
+}
+
 struct clear_range_args {
 	int free_physical;
 	struct memobj *memobj;
