@@ -10,6 +10,7 @@ MANDIR=@MANDIR@
 MCKERNEL_INCDIR=@MCKERNEL_INCDIR@
 MCKERNEL_LIBDIR=@MCKERNEL_LIBDIR@
 KDIR ?= @KDIR@
+ARCH=@ARCH@
 CFLAGS=-Wall -O -I. -I$(VPATH)/arch/${ARCH}
 LDFLAGS=@LDFLAGS@
 RPATH=$(shell echo $(LDFLAGS)|awk '{for(i=1;i<=NF;i++){if($$i~/^-L/){w=$$i;sub(/^-L/,"-Wl,-rpath,",w);print w}}}')
@@ -17,7 +18,6 @@ VPATH=@abs_srcdir@
 TARGET=mcexec libsched_yield ldump2mcdump.so
 @uncomment_if_ENABLE_MEMDUMP@TARGET+=eclair
 LIBS=@LIBS@
-ARCH=@ARCH@
 IHKDIR ?= $(VPATH)/../../../ihk/linux/include/
 MCEXEC_LIBS=-lmcexec -lrt -lnuma -pthread
 ENABLE_QLMPI=@ENABLE_QLMPI@
