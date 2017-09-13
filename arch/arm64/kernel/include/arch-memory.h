@@ -215,7 +215,7 @@ static const unsigned int  PTL1_ENTRIES = __PTL1_ENTRIES;
 #define PAGE_P2ALIGN        0
 #define page_offset(addr)   __page_offset(addr, PAGE_SIZE)
 #define page_align(addr)    __page_align(addr, PAGE_SIZE)
-#define page_align_up(addr) __page_align_up((addr, PAGE_SIZE)
+#define page_align_up(addr) __page_align_up(addr, PAGE_SIZE)
 
 /*
  * large page
