@@ -1207,7 +1207,7 @@ sysfsm_unlink(struct sysfsm_data *sdp, const char *path0, int flags)
 		goto out;
 	}
 
-	if (!flags & SYSFS_UNLINK_KEEP_ANCESTOR) {
+	if (!(flags & SYSFS_UNLINK_KEEP_ANCESTOR)) {
 		cleanup_ancestor(dirp);
 	}
 
