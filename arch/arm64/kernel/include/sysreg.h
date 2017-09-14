@@ -305,4 +305,6 @@ asm(
 			__val;						\
 		})
 
+#include "imp-sysreg.h"
+
 #endif	/* __ASM_SYSREG_H */
