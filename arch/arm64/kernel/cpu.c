@@ -433,7 +433,7 @@ static inline int pwr_arm64hpc_retention_state_set(uint64_t val){
 	} else {
 		clear_bit(cpu, retention_state_flag);
 	}
-	return 0;
+	return ret;
 }
 
 static inline int pwr_arm64hpc_enable_retention_state(void)
@@ -1760,17 +1760,18 @@ int arch_cpu_read_write_register(
 		struct ihk_os_cpu_register *desc,
 		enum mcctrl_os_cpu_operation op)
 {
+	int ret;
 	if (op == MCCTRL_OS_CPU_READ_REGISTER) {
-		arch_cpu_read_register(desc);
+		ret = arch_cpu_read_register(desc);
 	}
 	else if (op == MCCTRL_OS_CPU_WRITE_REGISTER) {
-		arch_cpu_write_register(desc);
+		ret = arch_cpu_write_register(desc);
 	}
 	else {
-		return -1;
+		ret = -1;
 	}
 
-	return 0;
+	return ret;
 }
 
 int smp_call_func(cpu_set_t *__cpu_set, smp_func_t __func, void *__arg)

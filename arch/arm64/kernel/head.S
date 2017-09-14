@@ -86,9 +86,9 @@
 #define TRAMPOLINE_DATA_CPU_MAP_SIZE_SIZE      0x08
 #define TRAMPOLINE_DATA_CPU_MAP_SIZE           (NR_CPUS * 8)
 #define TRAMPOLINE_DATA_DATA_RDISTS_PA_SIZE    (NR_CPUS * 8)
+#define TRAMPOLINE_DATA_RETENTION_STATE_FLAG_PA_SIZE 0x08
 #define TRAMPOLINE_DATA_NR_PMU_AFFI_SIZE       0x04
 #define TRAMPOLINE_DATA_PMU_AFF_SIZE           (CONFIG_SMP_MAX_CORES * 4)
-#define TRAMPOLINE_DATA_RETENTION_STATE_FLAG_PA_SIZE 0x08
 
 #define STARTUP_DATA_RESERVED		0x00
 #define STARTUP_DATA_BASE		0x08
@@ -261,6 +261,10 @@ ENTRY(arch_start)
 	mov x16, #NR_CPUS /* calc next data */
 	lsl x16, x16, 3
 	add x0, x0, x16
+	/* retention_state_flag_pa */
+	ldr	x16, [x0], #TRAMPOLINE_DATA_RETENTION_STATE_FLAG_PA_SIZE
+	adr	x15, ihk_param_retention_state_flag_pa
+	str	x16, [x15]
 	/* nr_pmu_irq_affiniry */
 	ldr	w16, [x0], #TRAMPOLINE_DATA_NR_PMU_AFFI_SIZE
 	adr	x15, ihk_param_nr_pmu_irq_affiniry
@@ -277,10 +281,6 @@ ENTRY(arch_start)
 	mov x16, #CONFIG_SMP_MAX_CORES  /* calc next data */
 	lsl x16, x16, 2
 	add x0, x0, x16
-	/* retention_state_flag_pa */
-	ldr	x16, [x0], #TRAMPOLINE_DATA_RETENTION_STATE_FLAG_PA_SIZE
-	adr	x15, ihk_param_retention_state_flag_pa
-	str	x16, [x15]
 
 	/* */
 	bl	__calc_phys_offset	// x24=PHYS_OFFSET, x28=PHYS_OFFSET-KERNEL_START
