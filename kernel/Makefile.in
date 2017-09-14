@@ -26,9 +26,9 @@ all: $(O) $(KERNELS)
 $(O):
 	mkdir -p $(O)
 
-%/kernel.img: %/Makefile
+%/kernel.img: %/Makefile $(KERNELS)
 	@echo 'Building for' $(dir $@)
-	@make --no-print-directory -C $(dir $@) $(SUBCMD_OPTS)
+	+@make --no-print-directory -C $(dir $@) $(SUBCMD_OPTS)
 
 %/Makefile: Makefile.build FORCE
 	@mkdir -p $(dir $@)
