@@ -1293,7 +1293,7 @@ struct vm_range *lookup_process_memory_range(
 	int i;
 	struct vm_range *range = NULL, *match = NULL;
 	struct rb_root *root = &vm->vm_range_tree;
-	struct rb_node *node = root->rb_node;
+	struct rb_node *node = root->rb_node, *prev = NULL;
 
 	dkprintf("lookup_process_memory_range(%p,%lx,%lx)\n", vm, start, end);
 
@@ -1312,6 +1312,7 @@ struct vm_range *lookup_process_memory_range(
 	}
 
 	while (node) {
+		prev = node;
 		range = rb_entry(node, struct vm_range, vm_rb_node);
 		if (end <= range->start) {
 			node = node->rb_left;
@@ -1327,6 +1328,10 @@ struct vm_range *lookup_process_memory_range(
 			break;
 		}
 	}
+
+	/* We optimistically try to go left, go back if we went too far */
+	if (!node && range && start < range->end)
+		node = prev;
 
 	if (match && end > match->start) {
 		vm->range_cache_ind = (vm->range_cache_ind - 1 + VM_RANGE_CACHE_SIZE)
