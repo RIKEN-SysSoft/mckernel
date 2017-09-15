@@ -909,8 +909,6 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	}
 	TP("- (opcode & USER_OPCODE_CHECK_MASK) !=");
 	
-// TODO: Enable this validation and checking
-#ifdef __HFI1_ORIG__
 	/*
 	 * Validate the vl. Do not trust packets from user space blindly.
 	 * VL comes from PBC, SC comes from LRH, and the VL needs to
@@ -925,7 +923,8 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 		ret = -EINVAL;
 		goto free_req;
 	}
-
+// TODO: Enable this validation and checking
+#ifdef __HFI1_ORIG__
 	/* Checking P_KEY for requests from user-space */
 	if (egress_pkey_check(dd->pport, req->hdr.lrh, req->hdr.bth, sc,
 			      PKEY_CHECK_INVALID)) {
