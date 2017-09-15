@@ -559,7 +559,9 @@ int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 	pte_t *ptep;
 	enum ihk_mc_pt_attribute attr;
 	void *virt;
+#ifdef __HFI1_ORIG__
 	size_t pgsize;
+#endif
 	unsigned long phys;
 	unsigned long len;
 
@@ -1134,12 +1136,14 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 			hfi1_cdbg(AIOWRITE, "-wait_event_interruptible_timeout");
 #else
 			TP("+ polling while(pq->state != SDMA_PKT_Q_ACTIVE)");
+#ifdef VERBOSE_DEBUG
 			{
 				unsigned long ts = rdtsc();
 				while (pq->state != SDMA_PKT_Q_ACTIVE) cpu_pause();
 				SDMA_DBG("%s: waited %lu cycles for SDMA_PKT_Q_ACTIVE\n",
 						__FUNCTION__, rdtsc() - ts);
 			}
+#endif /* VERBOSE_DEBUG */
 			TP("- polling while(pq->state != SDMA_PKT_Q_ACTIVE)");
 #endif /* __HFI1_ORIG__ */
 		}
@@ -1233,7 +1237,8 @@ static int user_sdma_send_pkts(struct user_sdma_request *req,
 		unsigned maxpkts,
 		struct kmalloc_cache_header *txreq_cache)
 {
-	int ret = 0, count;
+	int ret = 0;
+	u32 count;
 	unsigned npkts = 0;
 	struct user_sdma_txreq *tx = NULL;
 	struct hfi1_user_sdma_pkt_q *pq = NULL;
@@ -1437,11 +1442,11 @@ static int user_sdma_send_pkts(struct user_sdma_request *req,
 			unsigned pageidx;
 #endif
 			unsigned len;
-			unsigned long base, offset;
+			uintptr_t base;
 			void *virt;
 
-			base = (unsigned long)iovec->iov.iov_base;
-			virt = base + iovec->offset + iov_offset;
+			base = (uintptr_t)iovec->iov.iov_base;
+			virt = (void*)(base + iovec->offset + iov_offset);
 
 			/*
 			 * Resolve iovec->base_phys if virt is out of last page.

@@ -133,7 +133,7 @@ static inline void ihk_atomic64_inc(ihk_atomic64_t *v)
  * Note 2: xchg has side effect, so that attribute volatile is necessary,
  *	  but generally the primitive is invalid, *ptr is output argument. --ANK
  */
-#define __xg(x) ((volatile long *)(x))
+#define __xg(x) ((volatile typeof(x))(x))
 
 #define xchg4(ptr, x)						\
 ({									\
