@@ -421,22 +421,16 @@ long hfi1_file_ioctl(void *private_data, unsigned int cmd,
 {
 	struct hfi1_filedata *fd = private_data;
 	struct hfi1_ctxtdata *uctxt = fd->uctxt;
-	struct hfi1_user_info uinfo;
+#if 0
 	struct hfi1_tid_info tinfo;
+#endif
 	int ret = 0;
-	unsigned long addr;
-	int uval = 0;
-	unsigned long ul_uval = 0;
-	u16 uval16 = 0;
 
 	hfi1_cdbg(IOCTL, "IOCTL recv: 0x%x", cmd);
 	if (cmd != HFI1_IOCTL_ASSIGN_CTXT &&
 	    cmd != HFI1_IOCTL_GET_VERS &&
 	    !uctxt)
 		return -EINVAL;
-
-	if (rdtsc() - t_s < 400000000)
-		return;
 
 	switch (cmd) {
 	case HFI1_IOCTL_ASSIGN_CTXT:

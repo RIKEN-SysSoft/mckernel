@@ -764,8 +764,8 @@ static inline int sdma_txadd_page(
 	u16 len)
 {
 	dma_addr_t addr;
-	int rval;
 #ifdef __HFI1_ORIG__
+	int rval;
 	/* TODO: check this coealesce thing */
 	hfi1_cdbg(AIOWRITE, "+");
 	if ((unlikely(tx->num_desc == tx->desc_limit))) {

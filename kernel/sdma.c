@@ -808,7 +808,7 @@ struct sdma_engine *sdma_select_engine_vl(
 	rcu_read_lock();
 	m = rcu_dereference(dd->sdma_map);
 #else
-	m = (volatile struct sdma_vl_map *)dd->sdma_map;
+	m = ACCESS_ONCE(dd->sdma_map);
 #endif /* __HFI1_ORIG__ */
 	if (unlikely(!m)) {
 #ifdef __HFI1_ORIG__
@@ -1730,20 +1730,20 @@ void __sdma_txclean(
 	struct hfi1_devdata *dd,
 	struct sdma_txreq *tx)
 {
-	u16 i;
-
 	if (tx->num_desc) {
+		/* TODO: enable sdma_unmap_desc */
+#if 0
+		u16 i;
 		u8 skip = 0, mode = ahg_mode(tx);
 
-		/* TODO: enable sdma_unmap_desc */
 		/* unmap first */
 		//sdma_unmap_desc(dd, &tx->descp[0]);
 		/* determine number of AHG descriptors to skip */
 		if (mode > SDMA_AHG_APPLY_UPDATE1)
 			skip = mode >> 1;
-		/* TODO: enable sdma_unmap_desc */		
 		// for (i = 1 + skip; i < tx->num_desc; i++)
 		// 	sdma_unmap_desc(dd, &tx->descp[i]);
+#endif
 		tx->num_desc = 0;
 	}
 	kfree(tx->coalesce_buf);
