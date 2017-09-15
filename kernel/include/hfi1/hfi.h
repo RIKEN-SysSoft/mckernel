@@ -816,7 +816,19 @@ struct hfi1_pportdata {
 
 #ifndef __HFI1_ORIG__
 struct hfi1_pportdata {
-
+	char _padding[1899]; // TODO: compute this offset automatically from kernel we're basing off
+/*
+$ objdump --dwarf $(modinfo -n hfi1) | \
+awk '/DW_AT_name.*: vls_operational/ {
+	while (getline) {
+		if (/DW_AT_data_member_location/) {
+			print $NF; exit;
+		}
+	}
+}'
+-> 1899
+ */
+	u8 vls_operational;
 };
 #endif /* __HFI1_ORIG__ */
 
@@ -1509,7 +1521,7 @@ struct hfi1_devdata {
 	send_routine process_pio_send ____cacheline_aligned_in_smp;
 	send_routine process_dma_send;
 	void *pio_inline_send; //void (*pio_inline_send)(struct hfi1_devdata *dd, struct pio_buf *pbuf,u64 pbc, const void *from, size_t count);
-	void *pport; //struct hfi1_pportdata *pport;
+	struct hfi1_pportdata *pport;
 
 	void **rcd; //struct hfi1_ctxtdata **rcd;
 	u64 __percpu *int_counter;
@@ -1790,6 +1802,10 @@ static inline void pause_for_credit_return(struct hfi1_devdata *dd)
 	udelay(usec ? usec : 1);
 }
 
+#endif /* __HFI1_ORIG__ */
+
+#define OPA_MAX_SCS                             32 // from opa_smi.h
+
 /**
  * sc_to_vlt() reverse lookup sc to vl
  * @dd - devdata
@@ -1797,20 +1813,12 @@ static inline void pause_for_credit_return(struct hfi1_devdata *dd)
  */
 static inline u8 sc_to_vlt(struct hfi1_devdata *dd, u8 sc5)
 {
-	unsigned seq;
-	u8 rval;
-
 	if (sc5 >= OPA_MAX_SCS)
 		return (u8)(0xff);
 
-	do {
-		seq = read_seqbegin(&dd->sc2vl_lock);
-		rval = *(((u8 *)dd->sc2vl) + sc5);
-	} while (read_seqretry(&dd->sc2vl_lock, seq));
-
-	return rval;
+	return *(((u8 *)dd->sc2vl) + sc5);
 }
-
+#ifdef __HFI1_ORIG__
 #define PKEY_MEMBER_MASK 0x8000
 #define PKEY_LOW_15_MASK 0x7fff
 
