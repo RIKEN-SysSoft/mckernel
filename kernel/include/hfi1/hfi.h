@@ -192,11 +192,13 @@ struct ctxt_eager_bufs {
 	} *rcvtids;
 };
 
+#endif /* __HFI1_ORIG__ */
 struct exp_tid_set {
 	struct list_head list;
 	u32 count;
 };
 
+#ifdef __HFI1_ORIG__
 struct tid_queue {
 	struct list_head queue_head;
 			/* queue head for QP TID resource waiters */
@@ -372,9 +374,26 @@ struct hfi1_ctxtdata {
 //TODO: Fix hfi1_ctxtdata and pport
 #ifndef __HFI1_ORIG__
 struct hfi1_ctxtdata {
+	char __padding0[152];
 	unsigned ctxt;
+	char __padding1[180-156];
+        /* number of RcvArray groups for this context. */
+        u32 rcv_array_groups;
+        /* index of first eager TID entry. */
+        u32 eager_base;
+        /* number of expected TID entries */
+        u32 expected_count;
+        /* index of first expected TID entry. */
+        u32 expected_base;
+
+        struct exp_tid_set tid_group_list;
+        struct exp_tid_set tid_used_list;
+        struct exp_tid_set tid_full_list;
+
+	char __padding2[440-272];
+	struct hfi1_devdata *dd;
 };
-#endif /* __HFI1_ORIG__ */
+#endif /* !__HFI1_ORIG__ */
 
 #ifdef __HFI1_ORIG__
 /*
@@ -842,12 +861,15 @@ typedef void (*opcode_handler)(struct hfi1_packet *packet);
 #define RHF_RCV_DONE	  1	/* stop, this packet processed */
 #define RHF_RCV_REPROCESS 2	/* stop. retain this packet */
 
+#endif /* __HFI1_ORIG__ */
+
 struct rcv_array_data {
 	u8 group_size;
 	u16 ngroups;
 	u16 nctxt_extra;
 };
 
+#ifdef __HFI1_ORIG__
 struct per_vl_data {
 	u16 mtu;
 	struct send_context *sc;
@@ -1471,7 +1493,7 @@ struct hfi1_devdata {
 
 	u64 gi_mask[CCE_NUM_INT_CSRS];
 
-	char rcv_entries[6]; //struct rcv_array_data rcv_entries
+	struct rcv_array_data rcv_entries;
 
 
 	u16 psxmitwait_check_rate;
@@ -2086,6 +2108,8 @@ struct cc_state *get_cc_state_protected(struct hfi1_pportdata *ppd)
 					 lockdep_is_held(&ppd->cc_state_lock));
 }
 
+#endif /* __HFI1_ORIG__ */
+
 /*
  * values for dd->flags (_device_ related flags)
  */
@@ -2096,6 +2120,7 @@ struct cc_state *get_cc_state_protected(struct hfi1_pportdata *ppd)
 #define HFI1_HAS_SEND_DMA      0x10   /* Supports Send DMA */
 #define HFI1_FORCED_FREEZE     0x80   /* driver forced freeze mode */
 
+#ifdef __HFI1_ORIG__
 /* IB dword length mask in PBC (lower 11 bits); same for all chips */
 #define HFI1_PBC_LENGTH_MASK                     ((1 << 11) - 1)
 
@@ -2217,6 +2242,7 @@ const char *get_unit_name(int unit);
 const char *get_card_name(struct rvt_dev_info *rdi);
 struct pci_dev *get_pci_dev(struct rvt_dev_info *rdi);
 
+#endif /* __HFI1_ORIG__ */
 /*
  * Flush write combining store buffers (if present) and perform a write
  * barrier.
@@ -2226,6 +2252,7 @@ static inline void flush_wc(void)
 	asm volatile("sfence" : : : "memory");
 }
 
+#ifdef __HFI1_ORIG__
 void handle_eflags(struct hfi1_packet *packet);
 int process_receive_ib(struct hfi1_packet *packet);
 int process_receive_bypass(struct hfi1_packet *packet);

@@ -50,6 +50,7 @@
 #include <hfi1/user_sdma.h>
 #include <hfi1/sdma.h>
 #include <hfi1/ihk_hfi1_common.h>
+#include <hfi1/user_exp_rcv.h>
 #include <errno.h>
 
 #ifdef __HFI1_ORIG__
@@ -421,9 +422,8 @@ long hfi1_file_ioctl(void *private_data, unsigned int cmd,
 {
 	struct hfi1_filedata *fd = private_data;
 	struct hfi1_ctxtdata *uctxt = fd->uctxt;
-#if 0
 	struct hfi1_tid_info tinfo;
-#endif
+	unsigned long addr;
 	int ret = 0;
 
 	hfi1_cdbg(IOCTL, "IOCTL recv: 0x%x", cmd);
@@ -476,13 +476,13 @@ long hfi1_file_ioctl(void *private_data, unsigned int cmd,
 		break;
 
 	case HFI1_IOCTL_TID_UPDATE:
-#if 0
+		kprintf("%s: HFI1_IOCTL_TID_UPDATE \n", __FUNCTION__);
 		if (copy_from_user(&tinfo,
 				   (struct hfi11_tid_info __user *)arg,
 				   sizeof(tinfo)))
 			return -EFAULT;
 
-		ret = hfi1_user_exp_rcv_setup(fp, &tinfo);
+		ret = hfi1_user_exp_rcv_setup(fd, &tinfo);
 		if (!ret) {
 			/*
 			 * Copy the number of tidlist entries we used
@@ -496,8 +496,6 @@ long hfi1_file_ioctl(void *private_data, unsigned int cmd,
 					 sizeof(tinfo.length)))
 				ret = -EFAULT;
 		}
-#endif
-		kprintf("%s: HFI1_IOCTL_TID_UPDATE \n", __FUNCTION__);
 		break;
 
 	case HFI1_IOCTL_TID_FREE:
