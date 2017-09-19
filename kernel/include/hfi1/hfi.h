@@ -1623,11 +1623,12 @@ struct hfi1_devdata {
 
 #ifdef __HFI1_ORIG__
 
-struct tid_rb_node;
 struct mmu_rb_node;
 struct mmu_rb_handler;
 
 #endif /* __HFI1_ORIG__ */
+
+struct tid_rb_node;
 
 /* Original size on linux is 96 bytes */
 /* Private data for file operations */
@@ -1640,7 +1641,7 @@ struct hfi1_filedata {
 	int rec_cpu_num;
 	u32 tid_n_pinned;
 	void *handler; //struct mmu_rb_handler *handler;
-	void **entry_to_rb; //struct tid_rb_node **entry_to_rb;
+	struct tid_rb_node **entry_to_rb;
 	spinlock_t tid_lock;
 	u32 tid_limit;
 	u32 tid_used;
