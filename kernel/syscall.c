@@ -3157,24 +3157,28 @@ SYSCALL_DECLARE(ioctl)
 			break;
 	ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
 
-	if(fdp && fdp->ioctl_cb){
-		//kprintf("ioctl: found system fd %d\n", fd);
-		rc = fdp->ioctl_cb(fdp, ctx);
-	}
-	else{
-		rc = syscall_generic_forwarding(__NR_ioctl, ctx);
-	}
-
 	if (private_data) {
 		extern long hfi1_file_ioctl(void *private_data,
 				unsigned int cmd,
 			    unsigned long arg,
 				unsigned long t_s);
 
-		hfi1_file_ioctl(private_data,
+		rc = hfi1_file_ioctl(private_data,
 				ihk_mc_syscall_arg1(ctx),
 				ihk_mc_syscall_arg2(ctx),
 				t_s);
+		/* continue forwarding iff hfi1 didn't handle it */
+		// TODO: improve heuristics?
+		if (rc != -ENOTSUPP)
+			return rc;
+	}
+
+	if (fdp && fdp->ioctl_cb) {
+		//kprintf("ioctl: found system fd %d\n", fd);
+		rc = fdp->ioctl_cb(fdp, ctx);
+	}
+	else {
+		rc = syscall_generic_forwarding(__NR_ioctl, ctx);
 	}
 
 	return rc;
