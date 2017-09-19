@@ -1203,7 +1203,7 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 		return -1;
 	}
 
-	dprintk("%s: (packet_handler) rtid: %d, ttid: %d, sys nr: %d\n",
+	dprintk("%s: (packet_handler) rtid: %d, ttid: %d, sys nr: %lu\n",
 			__FUNCTION__,
 			packet->req.rtid,
 			packet->req.ttid,
@@ -1373,7 +1373,7 @@ retry_alloc:
 	}
 
 	packet->req.valid = 0; /* ack */
-	dprintk("%s: system call: %d, args[0]: %lu, args[1]: %lu, args[2]: %lu, "
+	dprintk("%s: system call: %lu, args[0]: %lu, args[1]: %lu, args[2]: %lu, "
 			"args[3]: %lu, args[4]: %lu, args[5]: %lu\n",
 			__FUNCTION__,
 			packet->req.number,
@@ -1498,7 +1498,7 @@ long mcexec_load_syscall(ihk_os_t os, struct syscall_load_desc *__user arg)
 	rpm = ihk_device_map_virtual(ihk_os_to_dev(os), phys, desc.size, NULL, 0);
 #endif
 
-	dprintk("mcexec_load_syscall: %s (desc.size: %d)\n", rpm, desc.size);
+	dprintk("mcexec_load_syscall: %p (desc.size: %lu)\n", rpm, desc.size);
 
 	if (copy_to_user((void *__user)desc.dest, rpm, desc.size)) {
 		return -EFAULT;
