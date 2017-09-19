@@ -424,7 +424,7 @@ long hfi1_file_ioctl(void *private_data, unsigned int cmd,
 	struct hfi1_ctxtdata *uctxt = fd->uctxt;
 	struct hfi1_tid_info tinfo;
 	unsigned long addr;
-	int ret = 0;
+	int ret = -ENOTSUPP;
 
 	hfi1_cdbg(IOCTL, "IOCTL recv: 0x%x", cmd);
 	if (cmd != HFI1_IOCTL_ASSIGN_CTXT &&
@@ -649,7 +649,7 @@ long hfi1_file_ioctl(void *private_data, unsigned int cmd,
 		break;
 
 	default:
-		return -EINVAL;
+		return -ENOTSUPP;
 	}
 	return ret;
 }
