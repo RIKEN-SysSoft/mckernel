@@ -115,8 +115,6 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 	unsigned tididx = 0;
 	uintptr_t vaddr = tinfo->vaddr;
 	u32 tid;
-	struct process_vm *vm = cpu_local_var(current)->vm;
-	size_t base_pgsize;
 
 	if (!tinfo->length)
 		return -EINVAL;
@@ -130,15 +128,6 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 	// TODO: iterate over vm memory ranges for write access
 	// return -EFAULT;
 
-
-	pte_t *ptep;
-	ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
-				    (void*)vaddr, 0, 0, &base_pgsize, 0);
-	if (unlikely(!ptep || !pte_is_present(ptep))) {
-		kprintf("%s: ERRROR: no valid  PTE for 0x%lx\n",
-			__FUNCTION__, vaddr);
-		return -EFAULT;
-	}
 
 	// TODO: lock between setup/clear
 
@@ -409,6 +398,19 @@ static int set_rcvarray_entry(struct hfi1_filedata *fd, unsigned long vaddr,
 		return -EFAULT;
 	}
 #endif
+	size_t base_pgsize;
+	pte_t *ptep;
+	struct process_vm *vm = cpu_local_var(current)->vm;
+
+	ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+				    (void*)vaddr, 0, 0, &base_pgsize, 0);
+	if (unlikely(!ptep || !pte_is_present(ptep))) {
+		kprintf("%s: ERRROR: no valid  PTE for 0x%lx\n",
+			__FUNCTION__, vaddr);
+		return -EFAULT;
+	}
+	u64 phys = pte_get_phys(ptep);
+
 	while (len > 0) {
 		order++;
 		len >>= 1;
@@ -417,7 +419,7 @@ static int set_rcvarray_entry(struct hfi1_filedata *fd, unsigned long vaddr,
 	// TODO: we probably pretty much need the real phys here,
 	// so we need to make that mapping.
 
-	hfi1_put_tid(dd, rcventry, PT_EXPECTED, /* phys */ 0, order);
+	hfi1_put_tid(dd, rcventry, PT_EXPECTED, phys, order);
 #if 0
 	trace_hfi1_exp_tid_reg(uctxt->ctxt, fd->subctxt, rcventry, npages,
 			       node->mmu.addr, node->phys, phys);
