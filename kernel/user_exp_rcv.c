@@ -52,7 +52,7 @@
 #include <hfi1/user_exp_rcv.h>
 
 static int program_rcvarray(struct hfi1_filedata *, unsigned long, struct tid_group *,
-			    u32, u32 *, unsigned *);
+			    u32, u32 *);
 static int set_rcvarray_entry(struct hfi1_filedata *, unsigned long,
 			      u32, struct tid_group *,
 			      u32);
@@ -110,9 +110,8 @@ static int unprogram_rcvarray(struct hfi1_filedata *, u32, struct tid_group **);
  */
 int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinfo)
 {
-	int ret = 0;
+	int ret = -EFAULT;
 	struct hfi1_ctxtdata *uctxt = fd->uctxt;
-	unsigned tididx = 0;
 	uintptr_t vaddr = tinfo->vaddr;
 	u32 tid;
 
@@ -128,34 +127,28 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 	// TODO: iterate over vm memory ranges for write access
 	// return -EFAULT;
 
-
-	// TODO: lock between setup/clear
-
 	/* Simplified design: vaddr to vaddr + tinfo->length is contiguous for us
 	 * -> only have one request, always
 	 */
 
 	{
 		struct tid_group *grp;
-		/*
-		 * If we don't have any partially used tid groups, check
-		 * if we have empty groups. If so, take one from there and
-		 * put in the partially used list.
-		 */
+
+		spin_lock(&fd->tid_lock);
 		if (!uctxt->tid_used_list.count) {
 			if (!uctxt->tid_group_list.count)
 				goto unlock;
 
 			grp = tid_group_pop(&uctxt->tid_group_list);
-			tid_group_add_tail(grp, &uctxt->tid_used_list);
+		} else {
+			grp = tid_group_pop(&uctxt->tid_used_list);
 		}
 
 
 		grp = list_first_entry(&uctxt->tid_used_list.list,
 				       struct tid_group, list);
 
-		ret = program_rcvarray(fd, vaddr, grp, tinfo->length, &tid,
-				       &tididx);
+		ret = program_rcvarray(fd, vaddr, grp, tinfo->length, &tid);
 		if (ret < 0) {
 			hfi1_cdbg(TID,
 				  "Failed to program RcvArray entries %d",
@@ -164,15 +157,22 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 		} else if (WARN_ON(ret == 0)) {
 			ret = -EFAULT;
 		}
-	}
+
+		spin_lock(&fd->tid_lock);
+		if (grp->used == grp->size)
+			tid_group_add_tail(grp, &uctxt->tid_full_list);
+		else
+			tid_group_add_tail(grp, &uctxt->tid_used_list);
 unlock:
-	// TODO: check if group is full + move it to full list
-	if (tididx) {
+                spin_unlock(&fd->tid_lock);
+
+	}
+	if (ret > 0) {
 		// TODO: can we use spin_lock with kernel locks?
 		spin_lock(&fd->tid_lock);
-		fd->tid_used += tididx;
+		fd->tid_used += ret;
 		spin_unlock(&fd->tid_lock);
-		tinfo->tidcnt = tididx;
+		tinfo->tidcnt = ret;
 
 		if (copy_to_user((void __user *)(unsigned long)tinfo->tidlist,
 				 &tid, sizeof(tid))) {
@@ -309,7 +309,7 @@ int hfi1_user_exp_rcv_invalid(struct hfi1_filedata *fd, struct hfi1_tid_info *ti
 static int program_rcvarray(struct hfi1_filedata *fd, unsigned long vaddr,
 			    struct tid_group *grp,
 			    u32 len,
-			    u32 *ptid, unsigned *tididx)
+			    u32 *ptid)
 {
 	struct hfi1_ctxtdata *uctxt = fd->uctxt;
 	struct hfi1_devdata *dd = uctxt->dd;
