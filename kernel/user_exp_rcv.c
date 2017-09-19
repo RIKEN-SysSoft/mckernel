@@ -57,6 +57,14 @@ static int set_rcvarray_entry(struct hfi1_filedata *, unsigned long,
 			      u32, struct tid_group *,
 			      u32);
 static int unprogram_rcvarray(struct hfi1_filedata *, u32, struct tid_group **);
+static void clear_tid_node(struct hfi1_filedata *, struct tid_rb_node *);
+
+struct tid_rb_node {
+	uintptr_t phys;
+	u32 len;
+	u32 rcventry;
+	struct tid_group *grp;
+};
 
 
 /*
@@ -144,10 +152,6 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 			grp = tid_group_pop(&uctxt->tid_used_list);
 		}
 
-
-		grp = list_first_entry(&uctxt->tid_used_list.list,
-				       struct tid_group, list);
-
 		ret = program_rcvarray(fd, vaddr, grp, tinfo->length, &tid);
 		if (ret < 0) {
 			hfi1_cdbg(TID,
@@ -158,7 +162,6 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 			ret = -EFAULT;
 		}
 
-		spin_lock(&fd->tid_lock);
 		if (grp->used == grp->size)
 			tid_group_add_tail(grp, &uctxt->tid_full_list);
 		else
@@ -192,9 +195,7 @@ unlock:
 
 int hfi1_user_exp_rcv_clear(struct hfi1_filedata *fd, struct hfi1_tid_info *tinfo)
 {
-#if 0
 	int ret = 0;
-	struct hfi1_ctxtdata *uctxt = fd->uctxt;
 	u32 *tidinfo;
 	unsigned tididx;
 
@@ -209,7 +210,7 @@ int hfi1_user_exp_rcv_clear(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 		goto done;
 	}
 
-	mutex_lock(&uctxt->exp_mutex);
+	spin_lock(&fd->tid_lock);
 	for (tididx = 0; tididx < tinfo->tidcnt; tididx++) {
 		ret = unprogram_rcvarray(fd, tidinfo[tididx], NULL);
 		if (ret) {
@@ -218,16 +219,12 @@ int hfi1_user_exp_rcv_clear(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 			break;
 		}
 	}
-	spin_lock(&fd->tid_lock);
 	fd->tid_used -= tididx;
 	spin_unlock(&fd->tid_lock);
 	tinfo->tidcnt = tididx;
-	mutex_unlock(&uctxt->exp_mutex);
 done:
 	kfree(tidinfo);
 	return ret;
-#endif
-	return 0;
 }
 
 int hfi1_user_exp_rcv_invalid(struct hfi1_filedata *fd, struct hfi1_tid_info *tinfo)
@@ -353,54 +350,19 @@ static int set_rcvarray_entry(struct hfi1_filedata *fd, unsigned long vaddr,
 	struct hfi1_ctxtdata *uctxt = fd->uctxt;
 	struct hfi1_devdata *dd = uctxt->dd;
 	u16 order = 1;
-#if 0
-	int ret;
 	struct tid_rb_node *node;
-	dma_addr_t phys;
+	struct process_vm *vm = cpu_local_var(current)->vm;
+	size_t base_pgsize;
+	pte_t *ptep;
+	u64 phys;
 
 	/*
 	 * Allocate the node first so we can handle a potential
 	 * failure before we've programmed anything.
 	 */
-	node = kzalloc(sizeof(*node) + (sizeof(struct page *) * npages),
-		       GFP_KERNEL);
+	node = kcalloc(1, sizeof(*node), GFP_KERNEL);
 	if (!node)
 		return -ENOMEM;
-	phys = pci_map_single(dd->pcidev,
-			      __va(page_to_phys(pages[0])),
-			      npages * PAGE_SIZE, PCI_DMA_FROMDEVICE);
-	if (dma_mapping_error(&dd->pcidev->dev, phys)) {
-		kprintf("Failed to DMA map Exp Rcv pages 0x%llx\n",
-			   phys);
-		kfree(node);
-		return -EFAULT;
-	}
-	node->mmu.addr = vaddr;
-	node->mmu.len = npages * PAGE_SIZE;
-	node->phys = page_to_phys(pages[0]);
-	node->npages = npages;
-	node->rcventry = rcventry;
-	node->dma_addr = phys;
-	node->grp = grp;
-	node->freed = false;
-	memcpy(node->pages, pages, sizeof(struct page *) * npages);
-	if (!fd->handler)
-		ret = tid_rb_insert(fd, &node->mmu);
-	else
-		ret = hfi1_mmu_rb_insert(fd->handler, &node->mmu);
-
-	if (ret) {
-		hfi1_cdbg(TID, "Failed to insert RB node %u 0x%lx, 0x%lx %d",
-			  node->rcventry, node->mmu.addr, node->phys, ret);
-		pci_unmap_single(dd->pcidev, phys, npages * PAGE_SIZE,
-				 PCI_DMA_FROMDEVICE);
-		kfree(node);
-		return -EFAULT;
-	}
-#endif
-	size_t base_pgsize;
-	pte_t *ptep;
-	struct process_vm *vm = cpu_local_var(current)->vm;
 
 	ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
 				    (void*)vaddr, 0, 0, &base_pgsize, 0);
@@ -409,7 +371,17 @@ static int set_rcvarray_entry(struct hfi1_filedata *fd, unsigned long vaddr,
 			__FUNCTION__, vaddr);
 		return -EFAULT;
 	}
-	u64 phys = pte_get_phys(ptep);
+	phys = pte_get_phys(ptep);
+
+	kprintf("Registering rcventry %d, phys 0x%p, len %u\n", rcventry, phys, len);
+
+	node->phys = phys;
+	node->len = len;
+	node->rcventry = rcventry;
+	node->grp = grp;
+	// TODO: check node->rcventry - uctxt->expected_base is within
+	// [0; uctxt->expected_count[ ?
+	fd->entry_to_rb[node->rcventry - uctxt->expected_base] = node;
 
 	while (len > 0) {
 		order++;
@@ -420,6 +392,7 @@ static int set_rcvarray_entry(struct hfi1_filedata *fd, unsigned long vaddr,
 	// so we need to make that mapping.
 
 	hfi1_put_tid(dd, rcventry, PT_EXPECTED, phys, order);
+
 #if 0
 	trace_hfi1_exp_tid_reg(uctxt->ctxt, fd->subctxt, rcventry, npages,
 			       node->mmu.addr, node->phys, phys);
@@ -430,9 +403,7 @@ static int set_rcvarray_entry(struct hfi1_filedata *fd, unsigned long vaddr,
 static int unprogram_rcvarray(struct hfi1_filedata *fd, u32 tidinfo,
 			      struct tid_group **grp)
 {
-#if 0
 	struct hfi1_ctxtdata *uctxt = fd->uctxt;
-	struct hfi1_devdata *dd = uctxt->dd;
 	struct tid_rb_node *node;
 	u8 tidctrl = EXP_TID_GET(tidinfo, CTRL);
 	u32 tididx = EXP_TID_GET(tidinfo, IDX) << 1, rcventry;
@@ -455,11 +426,49 @@ static int unprogram_rcvarray(struct hfi1_filedata *fd, u32 tidinfo,
 	if (grp)
 		*grp = node->grp;
 
-	if (!fd->handler)
-		cacheless_tid_rb_remove(fd, node);
-	else
-		hfi1_mmu_rb_remove(fd->handler, &node->mmu);
-#endif
+	kprintf("Clearing rcventry %d, phys 0x%p, len %u\n", node->rcventry,
+		node->phys, node->len);
+
+	fd->entry_to_rb[rcventry] = NULL;
+	clear_tid_node(fd, node);
+
 	return 0;
 }
 
+static void clear_tid_node(struct hfi1_filedata *fd, struct tid_rb_node *node)
+{
+	struct hfi1_ctxtdata *uctxt = fd->uctxt;
+	struct hfi1_devdata *dd = uctxt->dd;
+
+#if 0
+	trace_hfi1_exp_tid_unreg(uctxt->ctxt, fd->subctxt, node->rcventry,
+				 node->npages, node->mmu.addr, node->phys,
+				 node->dma_addr);
+#endif
+
+	hfi1_put_tid(dd, node->rcventry, PT_INVALID, 0, 0);
+	/*
+	 * Make sure device has seen the write before we unpin the
+	 * pages.
+	 */
+	flush_wc();
+
+#if 0
+	pci_unmap_single(dd->pcidev, node->dma_addr, node->mmu.len,
+			 PCI_DMA_FROMDEVICE);
+	hfi1_release_user_pages(fd->mm, node->pages, node->npages, true);
+	fd->tid_n_pinned -= node->npages;
+#endif
+
+
+	node->grp->used--;
+	node->grp->map &= ~(1 << (node->rcventry - node->grp->base));
+
+	if (node->grp->used == node->grp->size - 1)
+		tid_group_move(node->grp, &uctxt->tid_full_list,
+			       &uctxt->tid_used_list);
+	else if (!node->grp->used)
+		tid_group_move(node->grp, &uctxt->tid_used_list,
+			       &uctxt->tid_group_list);
+	kfree(node);
+}

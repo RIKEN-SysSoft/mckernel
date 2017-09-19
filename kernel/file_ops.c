@@ -499,39 +499,35 @@ long hfi1_file_ioctl(void *private_data, unsigned int cmd,
 		break;
 
 	case HFI1_IOCTL_TID_FREE:
-#if 0
+		kprintf("%s: HFI1_IOCTL_TID_FREE \n", __FUNCTION__);
 		if (copy_from_user(&tinfo,
 				   (struct hfi11_tid_info __user *)arg,
 				   sizeof(tinfo)))
 			return -EFAULT;
 
-		ret = hfi1_user_exp_rcv_clear(fp, &tinfo);
+		ret = hfi1_user_exp_rcv_clear(fd, &tinfo);
 		if (ret)
 			break;
 		addr = arg + offsetof(struct hfi1_tid_info, tidcnt);
 		if (copy_to_user((void __user *)addr, &tinfo.tidcnt,
 				 sizeof(tinfo.tidcnt)))
 			ret = -EFAULT;
-#endif
-		kprintf("%s: HFI1_IOCTL_TID_FREE \n", __FUNCTION__);
 		break;
 
 	case HFI1_IOCTL_TID_INVAL_READ:
-#if 0
+		kprintf("%s: HFI1_IOCTL_TID_INVAL_READ \n", __FUNCTION__);
 		if (copy_from_user(&tinfo,
 				   (struct hfi11_tid_info __user *)arg,
 				   sizeof(tinfo)))
 			return -EFAULT;
 
-		ret = hfi1_user_exp_rcv_invalid(fp, &tinfo);
+		ret = hfi1_user_exp_rcv_invalid(fd, &tinfo);
 		if (ret)
 			break;
 		addr = arg + offsetof(struct hfi1_tid_info, tidcnt);
 		if (copy_to_user((void __user *)addr, &tinfo.tidcnt,
 				 sizeof(tinfo.tidcnt)))
 			ret = -EFAULT;
-#endif
-		kprintf("%s: HFI1_IOCTL_TID_INVAL_READ \n", __FUNCTION__);
 		break;
 
 	case HFI1_IOCTL_RECV_CTRL:
