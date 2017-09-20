@@ -8,7 +8,9 @@ OBJS += zeroobj.o procfs.o devobj.o sysfs.o xpmem.o profile.o freeze.o
 OBJS += rbtree.o
 # POSTK_DEBUG_ARCH_DEP_18 coredump arch separation.
 # OBJS added gencore.o
+ifeq ($(ARCH), arm64)
 OBJS += gencore.o
+endif
 DEPSRCS=$(wildcard $(SRC)/*.c)
 
 CFLAGS += -I$(SRC)/include -I@abs_builddir@/../ -I@abs_builddir@/include -D__KERNEL__  -g -fno-omit-frame-pointer -fno-inline -fno-inline-small-functions
@@ -16,7 +18,9 @@ LDFLAGS += -e arch_start
 IHKOBJ = ihk/ihk.o
 
 # POSTK_DEBUG_ARCH_DEP_24
+ifeq ($(ARCH), arm64)
 default: all
+endif
 
 include $(SRC)/config/config.$(TARGET)
 include @abs_builddir@/../../ihk/cokernel/Makefile.common
@@ -27,8 +31,11 @@ OBJDUMP ?= objdump
 OBJCOPY ?= objcopy
 
 # POSTK_DEBUG_ARCH_DEP_26
-#SUBCMD_OPTS = TARGET=$(TARGET) O=$(CURDIR)/ihk CC=$(CC) LD=$(LD) SRC=$(SRC)
+ifeq ($(ARCH), arm64)
 SUBCMD_OPTS = TARGET=$(TARGET) O=$(CURDIR)/ihk CC=$(CC) LD=$(LD) OBJCOPY=$(OBJCOPY) SRC=$(SRC)
+else
+SUBCMD_OPTS = TARGET=$(TARGET) O=$(CURDIR)/ihk CC=$(CC) LD=$(LD) SRC=$(SRC)
+endif
 
 ld_kern_cmd_base = $(LD) $(LDFLAGS) -o $@.elf $^
 mkimage_cmd_base = [ -f $(SRC)/script/mkimage.$(TARGET) ] && CC=$(CC) LD=$(LD) LDFLAGS="$(LDFLAGS_MKIMAGE)" OBJDUMP=$(OBJDUMP) OBJCOPY=$(OBJCOPY) sh $(SRC)/script/mkimage.$(TARGET) '$@.elf' '$@' '$(SRC)' || cp $@.elf $@
