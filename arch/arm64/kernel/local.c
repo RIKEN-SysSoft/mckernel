@@ -20,10 +20,11 @@ size_t arm64_cpu_local_variables_span = LOCALS_SPAN;	/* for debugger */
 void init_processors_local(int max_id)
 {
 	int i = 0;
+	const int sz = (max_id + 1) * KERNEL_STACK_SIZE;
 	union arm64_cpu_local_variables *tmp;
 
 	/* allocate one more for alignment */
-	locals = ihk_mc_alloc_pages((max_id + 1) * (KERNEL_STACK_SIZE / PAGE_SIZE), IHK_MC_AP_CRITICAL);
+	locals = ihk_mc_alloc_pages(((sz + PAGE_SIZE - 1) / PAGE_SIZE), IHK_MC_AP_CRITICAL);
 	locals = (union arm64_cpu_local_variables *)ALIGN_UP((unsigned long)locals, KERNEL_STACK_SIZE);
 
 	/* clear struct process, struct process_vm, struct thread_info area */
