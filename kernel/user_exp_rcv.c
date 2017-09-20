@@ -51,11 +51,11 @@
 #include <hfi1/chip.h>
 #include <hfi1/user_exp_rcv.h>
 
-static int program_rcvarray(struct hfi1_filedata *, unsigned long, struct tid_group *,
-			    u32, u32 *);
-static int set_rcvarray_entry(struct hfi1_filedata *, unsigned long,
+static int program_rcvarray(struct hfi1_filedata *, uintptr_t, u16, struct tid_group *,
+			    u32 *);
+static int set_rcvarray_entry(struct hfi1_filedata *, uintptr_t,
 			      u32, struct tid_group *,
-			      u32);
+			      u16);
 static int unprogram_rcvarray(struct hfi1_filedata *, u32, struct tid_group **);
 static void clear_tid_node(struct hfi1_filedata *, struct tid_rb_node *);
 
@@ -121,7 +121,14 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 	int ret = -EFAULT;
 	struct hfi1_ctxtdata *uctxt = fd->uctxt;
 	uintptr_t vaddr = tinfo->vaddr;
-	u32 tid;
+	u32 tid[20]; /* at most 20 requests with this algorithm */
+	u16 tididx = 0;
+	u16 order;
+	u32 npages;
+	struct process_vm *vm = cpu_local_var(current)->vm;
+	size_t base_pgsize;
+	pte_t *ptep;
+	u64 phys;
 
 	if (!tinfo->length)
 		return -EINVAL;
@@ -135,24 +142,43 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 	// TODO: iterate over vm memory ranges for write access
 	// return -EFAULT;
 
-	/* Simplified design: vaddr to vaddr + tinfo->length is contiguous for us
-	 * -> only have one request, always
+	/* Simplified design: vaddr to vaddr + tinfo->length is contiguous
+	 * for us, but program_rcvarray only deals with powers of two
+	 * -> we need as many requests as there are bits set in length
+	 *
+	 * Note that we only work with multiples of 4k, so round up and shift
 	 */
+	npages = (tinfo->length + 4095) >> 12;
 
+	ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+				    (void*)vaddr, 0, 0, &base_pgsize, 0);
+	if (unlikely(!ptep || !pte_is_present(ptep))) {
+		kprintf("%s: ERRROR: no valid  PTE for 0x%lx\n",
+			__FUNCTION__, vaddr);
+		return -EFAULT;
+	}
+	phys = pte_get_phys(ptep);
+
+
+	for (order = 0; order < 20; order++)
 	{
 		struct tid_group *grp;
 
+		if (!(npages & (1 << order)))
+			continue;
+
 		spin_lock(&fd->tid_lock);
 		if (!uctxt->tid_used_list.count) {
-			if (!uctxt->tid_group_list.count)
+			if (!uctxt->tid_group_list.count) {
 				goto unlock;
+			}
 
 			grp = tid_group_pop(&uctxt->tid_group_list);
 		} else {
 			grp = tid_group_pop(&uctxt->tid_used_list);
 		}
 
-		ret = program_rcvarray(fd, vaddr, grp, tinfo->length, &tid);
+		ret = program_rcvarray(fd, phys, order, grp, tid + (tididx++));
 		if (ret < 0) {
 			hfi1_cdbg(TID,
 				  "Failed to program RcvArray entries %d",
@@ -169,16 +195,18 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 unlock:
                 spin_unlock(&fd->tid_lock);
 
+		if (ret < 0)
+			break;
 	}
 	if (ret > 0) {
 		// TODO: can we use spin_lock with kernel locks?
 		spin_lock(&fd->tid_lock);
-		fd->tid_used += ret;
+		fd->tid_used += tididx;
 		spin_unlock(&fd->tid_lock);
-		tinfo->tidcnt = ret;
+		tinfo->tidcnt = tididx;
 
 		if (copy_to_user((void __user *)(unsigned long)tinfo->tidlist,
-				 &tid, sizeof(tid))) {
+				 tid, sizeof(tid)*tididx)) {
 			/*
 			 * On failure to copy to the user level, we need to undo
 			 * everything done so far so we don't leak resources.
@@ -303,9 +331,9 @@ int hfi1_user_exp_rcv_invalid(struct hfi1_filedata *fd, struct hfi1_tid_info *ti
  * -ENOMEM or -EFAULT on error from set_rcvarray_entry(), or
  * number of RcvArray entries programmed.
  */
-static int program_rcvarray(struct hfi1_filedata *fd, unsigned long vaddr,
+static int program_rcvarray(struct hfi1_filedata *fd, uintptr_t phys,
+			    u16 order,
 			    struct tid_group *grp,
-			    u32 len,
 			    u32 *ptid)
 {
 	struct hfi1_ctxtdata *uctxt = fd->uctxt;
@@ -330,8 +358,8 @@ static int program_rcvarray(struct hfi1_filedata *fd, unsigned long vaddr,
 
 	rcventry = grp->base + idx;
 
-	ret = set_rcvarray_entry(fd, vaddr, rcventry, grp,
-				 len);
+	ret = set_rcvarray_entry(fd, phys, rcventry, grp,
+				 order);
 	if (ret)
 		return ret;
 
@@ -343,18 +371,13 @@ static int program_rcvarray(struct hfi1_filedata *fd, unsigned long vaddr,
 	return 1;
 }
 
-static int set_rcvarray_entry(struct hfi1_filedata *fd, unsigned long vaddr,
+static int set_rcvarray_entry(struct hfi1_filedata *fd, uintptr_t phys,
 			      u32 rcventry, struct tid_group *grp,
-			      u32 len)
+			      u16 order)
 {
 	struct hfi1_ctxtdata *uctxt = fd->uctxt;
 	struct hfi1_devdata *dd = uctxt->dd;
-	u16 order = 1;
 	struct tid_rb_node *node;
-	struct process_vm *vm = cpu_local_var(current)->vm;
-	size_t base_pgsize;
-	pte_t *ptep;
-	u64 phys;
 
 	/*
 	 * Allocate the node first so we can handle a potential
@@ -364,35 +387,18 @@ static int set_rcvarray_entry(struct hfi1_filedata *fd, unsigned long vaddr,
 	if (!node)
 		return -ENOMEM;
 
-	ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
-				    (void*)vaddr, 0, 0, &base_pgsize, 0);
-	if (unlikely(!ptep || !pte_is_present(ptep))) {
-		kprintf("%s: ERRROR: no valid  PTE for 0x%lx\n",
-			__FUNCTION__, vaddr);
-		return -EFAULT;
-	}
-	phys = pte_get_phys(ptep);
-
-	kprintf("Registering rcventry %d, phys 0x%p, len %u\n", rcventry, phys, len);
+	kprintf("Registering rcventry %d, phys 0x%p, len %u\n", rcventry, phys, 1 << (order+12));
 
 	node->phys = phys;
-	node->len = len;
+	node->len = 1 << (order+12);
 	node->rcventry = rcventry;
 	node->grp = grp;
 	// TODO: check node->rcventry - uctxt->expected_base is within
 	// [0; uctxt->expected_count[ ?
 	fd->entry_to_rb[node->rcventry - uctxt->expected_base] = node;
 
-	while (len > 0) {
-		order++;
-		len >>= 1;
-	}
 
-	// TODO: we probably pretty much need the real phys here,
-	// so we need to make that mapping.
-
-	hfi1_put_tid(dd, rcventry, PT_EXPECTED, phys, order);
-
+	hfi1_put_tid(dd, rcventry, PT_EXPECTED, phys, order+1);
 #if 0
 	trace_hfi1_exp_tid_reg(uctxt->ctxt, fd->subctxt, rcventry, npages,
 			       node->mmu.addr, node->phys, phys);
