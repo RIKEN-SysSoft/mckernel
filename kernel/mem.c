@@ -553,6 +553,9 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 #endif
 	int numa_id;
 
+	if(npages <= 0)
+		return NULL;
+
 	/* Not yet initialized or idle process */
 	if (!cpu_local_var_initialized ||
 			!cpu_local_var(current) ||
