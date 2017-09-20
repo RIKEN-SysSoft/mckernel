@@ -16,11 +16,11 @@
  */
 
 #include <psci.h>
-#include <compiler.h>
-#include <lwk/compiler.h>
 #include <errno.h>
 #include <ihk/types.h>
 #include <ihk/debug.h>
+#include <compiler.h>
+#include <lwk/compiler.h>
 
 //#define DEBUG_PRINT_PSCI
 

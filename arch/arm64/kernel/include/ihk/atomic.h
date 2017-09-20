@@ -148,7 +148,7 @@ static inline void ihk_atomic64_add(long i, ihk_atomic64_t *v)
 /* @ref.impl arch/arm64/include/asm/cmpxchg.h::__xchg */
 static inline unsigned long __xchg(unsigned long x, volatile void *ptr, int size)
 {
-	unsigned long ret, tmp;
+	unsigned long ret = 0, tmp;
 
 	switch (size) {
 	case 1:
