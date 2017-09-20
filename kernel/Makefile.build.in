@@ -22,7 +22,11 @@ ifeq ($(ARCH), arm64)
 default: all
 endif
 
+ifeq ($(ARCH), arm64)
+include @abs_builddir@/config/config.$(TARGET)
+else
 include $(SRC)/config/config.$(TARGET)
+endif
 include @abs_builddir@/../../ihk/cokernel/Makefile.common
 
 # CFLAGS += -I$(SRC)/../arch/$(IHKARCH)/kernel/include -I$(SRC)/../lib/include

@@ -4739,24 +4739,14 @@ fi
 ac_config_headers="$ac_config_headers config.h"
 
 # POSTK_DEBUG_ARCH_DEP_37
-#AC_CONFIG_FILES([
-#	Makefile
-#	executer/user/Makefile
-#	executer/kernel/mcctrl/Makefile
-#	executer/kernel/mcctrl/arch/x86_64/Makefile
-#	executer/kernel/mcoverlayfs/Makefile
-#	kernel/Makefile
-#	kernel/Makefile.build
-#	arch/x86/tools/mcreboot-attached-mic.sh
-#	arch/x86/tools/mcshutdown-attached-mic.sh
-#	arch/x86/tools/mcreboot-builtin-x86.sh
-#	arch/x86/tools/mcreboot-smp-x86.sh
-#	arch/x86/tools/mcstop+release-smp-x86.sh
-#	arch/x86/tools/mcshutdown-builtin-x86.sh
-#	arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in
-#])
-ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/user/arch/$ARCH/Makefile executer/kernel/mcctrl/Makefile executer/kernel/mcctrl/arch/$ARCH/Makefile executer/kernel/mcoverlayfs/Makefile executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile executer/kernel/mcoverlayfs/linux-4.0.9/Makefile executer/kernel/mcoverlayfs/linux-4.6.7/Makefile kernel/Makefile kernel/Makefile.build arch/x86/tools/mcreboot-attached-mic.sh arch/x86/tools/mcshutdown-attached-mic.sh arch/x86/tools/mcreboot-builtin-x86.sh arch/x86/tools/mcreboot-smp-x86.sh arch/x86/tools/mcstop+release-smp-x86.sh arch/x86/tools/eclair-dump-backtrace.exp arch/x86/tools/mcshutdown-builtin-x86.sh arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in arch/x86/tools/irqbalance_mck.service arch/x86/tools/irqbalance_mck.in kernel/config/config.smp-arm64 arch/arm64/kernel/vdso/Makefile"
+# AC_CONFIG_FILES arch dependfiles separate
+ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/user/arch/$ARCH/Makefile executer/kernel/mcctrl/Makefile executer/kernel/mcctrl/arch/$ARCH/Makefile executer/kernel/mcoverlayfs/Makefile executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile executer/kernel/mcoverlayfs/linux-4.0.9/Makefile executer/kernel/mcoverlayfs/linux-4.6.7/Makefile kernel/Makefile kernel/Makefile.build arch/x86/tools/mcreboot-attached-mic.sh arch/x86/tools/mcshutdown-attached-mic.sh arch/x86/tools/mcreboot-builtin-x86.sh arch/x86/tools/mcreboot-smp-x86.sh arch/x86/tools/mcstop+release-smp-x86.sh arch/x86/tools/eclair-dump-backtrace.exp arch/x86/tools/mcshutdown-builtin-x86.sh arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in arch/x86/tools/irqbalance_mck.service arch/x86/tools/irqbalance_mck.in"
 
+
+if test "$TARGET" = "smp-arm64"; then
+ac_config_files="$ac_config_files kernel/config/config.smp-arm64 arch/arm64/kernel/vdso/Makefile arch/arm64/kernel/Makefile.arch"
+
+fi
 
 if test "x$enable_dcfa" = xyes; then :
 
@@ -5477,6 +5467,7 @@ do
     "arch/x86/tools/irqbalance_mck.in") CONFIG_FILES="$CONFIG_FILES arch/x86/tools/irqbalance_mck.in" ;;
     "kernel/config/config.smp-arm64") CONFIG_FILES="$CONFIG_FILES kernel/config/config.smp-arm64" ;;
     "arch/arm64/kernel/vdso/Makefile") CONFIG_FILES="$CONFIG_FILES arch/arm64/kernel/vdso/Makefile" ;;
+    "arch/arm64/kernel/Makefile.arch") CONFIG_FILES="$CONFIG_FILES arch/arm64/kernel/Makefile.arch" ;;
     "kernel/Makefile.dcfa") CONFIG_FILES="$CONFIG_FILES kernel/Makefile.dcfa" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;

@@ -2,6 +2,10 @@ BUILD_TARGET ?= @TARGET@
 KERNDIR=@KERNDIR@
 VPATH=@abs_srcdir@
 
+ifeq ($(ARCH), arm64)
+vdsodir=@abs_builddir@/../arch/$(ARCH)/kernel/vdso
+endif
+
 IHKBASE ?= $(VPATH)/../../ihk/cokernel
 O ?= $(CURDIR)/build
 V ?= $(VERBOSE)
@@ -37,6 +41,9 @@ $(O):
 
 clean:
 	rm -rf $(O)
+ifeq ($(ARCH), arm64)
+	@rm -f $(vdsodir)/*.o $(vdsodir)/vdso.* $(vdsodir)/Makefile.dep -r $(vdsodir)/../include
+endif
 
 install:
 	mkdir -p -m 755 $(KERNDIR)
