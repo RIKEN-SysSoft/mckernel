@@ -190,7 +190,11 @@ static long mcexec_prepare_image(ihk_os_t os,
 	
 	pdesc->status = 0;
 	mb();
-	mcctrl_ikc_send(os, pdesc->cpu, &isp);
+	ret = mcctrl_ikc_send(os, pdesc->cpu, &isp);
+	if(ret < 0) {
+		printk("%s: ERROR mcctrl_ikc_send: %d\n", __FUNCTION__, ret);
+		goto put_and_free_out;
+	}
 
 	ret = wait_event_interruptible(ppd->wq_prepare, pdesc->status);
 	if (ret < 0) {
