@@ -57,6 +57,7 @@
 #include <bitmap.h>
 #include <xpmem.h>
 #include <rusage.h>
+#include <profile.h>
 #ifdef POSTK_DEBUG_ARCH_DEP_27
 #include <memory.h>
 #endif	/* POSTK_DEBUG_ARCH_DEP_27 */
@@ -3388,9 +3389,6 @@ perf_counter_alloc(struct mc_perf_event *event)
 int 
 perf_counter_start(struct mc_perf_event *event)
 {
-	/* 0416_patchtemp */
-	/* TEMP_FIX_29-31 deleted in perf_counter_start() for build */
-
 	int ret = 0;
 	struct perf_event_attr *attr = &event->attr;
 	int mode = 0x00;
@@ -4272,6 +4270,7 @@ change_attr_process_memory_range(struct process_vm *vm,
 				break;
 			}
 		}
+
 #ifdef POSTK_DEBUG_TEMP_FIX_37
 		if((error = change_proc(range, arg)) != 0){
 #else
@@ -7188,7 +7187,6 @@ SYSCALL_DECLARE(mlock)
 			goto out;
 		}
 
-
 		if (range->flag & (VR_REMOTE | VR_RESERVED | VR_IO_NOCACHE)) {
 			ekprintf("[%d]sys_mlock(%lx,%lx):cannot change."
 				       " [%lx-%lx) %lx\n",
@@ -7518,8 +7516,7 @@ SYSCALL_DECLARE(remap_file_pages)
 	range = lookup_process_memory_range(thread->vm, start, end);
 	if (!range || (start < range->start) || (range->end < end)
 			|| (range->flag & VR_PRIVATE)
-			|| (range->flag & (VR_REMOTE | VR_IO_NOCACHE
-					   | VR_RESERVED))
+			|| (range->flag & (VR_REMOTE|VR_IO_NOCACHE|VR_RESERVED))
 			|| !range->memobj) {
 		ekprintf("sys_remap_file_pages(%#lx,%#lx,%#x,%#lx,%#x):"
 				"invalid VMR:[%#lx-%#lx) %#lx %p\n",
@@ -7609,8 +7606,7 @@ SYSCALL_DECLARE(mremap)
 	range = lookup_process_memory_range(vm, oldstart, oldstart+PAGE_SIZE);
 	if (!range || (oldstart < range->start) || (range->end < oldend)
 			|| (range->flag & (VR_FILEOFF))
-			|| (range->flag & (VR_REMOTE | VR_IO_NOCACHE
-					   | VR_RESERVED))) {
+			|| (range->flag & (VR_REMOTE|VR_IO_NOCACHE|VR_RESERVED))) {
 		error = -EFAULT;
 		ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
 				"lookup failed. %d %p %#lx-%#lx %#lx\n",
@@ -7683,7 +7679,7 @@ SYSCALL_DECLARE(mremap)
 					  range->pgshift, (intptr_t *)&newstart);
 #else
 		error = search_free_space(newsize, vm->region.map_end,
-					  range->pgshift, (intptr_t *)&newstart);
+				range->pgshift, (intptr_t *)&newstart);
 #endif	/* POSTK_DEBUG_ARCH_DEP_27 */
 		if (error) {
 			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
@@ -9835,6 +9831,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		        ihk_mc_syscall_sp(ctx));
 		l = syscall_generic_forwarding(num, ctx);
 	}
+
 #if defined(POSTK_DEBUG_TEMP_FIX_60) && defined(POSTK_DEBUG_TEMP_FIX_56)
 	check_signal(l, NULL, num);
 #elif defined(POSTK_DEBUG_TEMP_FIX_60) /* sched_yield called check_signal fix. */

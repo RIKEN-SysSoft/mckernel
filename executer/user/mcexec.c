@@ -65,7 +65,10 @@
 #include <sys/mount.h>
 #include <include/generated/uapi/linux/version.h>
 #ifdef POSTK_DEBUG_ARCH_DEP_35
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
+#ifndef __aarch64__
+#include <sys/user.h>
+#endif /* !__aarch64__ */
+#else /* POSTK_DEBUG_ARCH_DEP_35 */
 #include <sys/user.h>
 #endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 #include <sys/prctl.h>
@@ -797,7 +800,7 @@ int transfer_image(int fd, struct program_load_desc *desc)
 #else	/* POSTK_DEBUG_ARCH_DEP_35 */
 		s = (desc->sections[i].vaddr) & PAGE_MASK;
 		e = (desc->sections[i].vaddr + desc->sections[i].len
-		     + page_size - 1) & PAGE_MASK;
+		     + PAGE_SIZE - 1) & PAGE_MASK;
 #endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 		rpa = desc->sections[i].remote_pa;
 
@@ -1885,7 +1888,7 @@ int main(int argc, char **argv)
 				add_env_list(&extra_env, optarg);
 				break;
 #endif /* ADD_ENVS_OPTION */
-			case 0: /* long opt */
+			case 0:	/* long opt */
 				break;
 
 			default: /* '?' */
@@ -2543,6 +2546,7 @@ do_generic_syscall(
 			bpos += d->d_reclen;
 		}
 	}
+
 out:
 	__dprintf("do_generic_syscall(%ld):%ld (%#lx)\n", w->sr.number, ret, ret);
 	return ret;
@@ -3619,6 +3623,7 @@ fork_err:
 						strcpy(desc->shell_path, shell_path);
 #endif /* POSTK_DEBUG_TEMP_FIX_9 */
 					}
+
 					desc->enable_vdso = enable_vdso;
 					__dprintf("execve(): load_elf_desc() for %s OK, num sections: %d\n",
 						path, desc->num_sections);

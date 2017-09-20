@@ -73,8 +73,10 @@ int ptrace_detach(int pid, int data);
 extern unsigned long do_kill(struct thread *, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
 extern void procfs_create_thread(struct thread *);
 extern void procfs_delete_thread(struct thread *);
+#ifndef POSTK_DEBUG_ARCH_DEP_22
 extern void perf_start(struct mc_perf_event *event);
 extern void perf_reset(struct mc_perf_event *event);
+#endif /* !POSTK_DEBUG_ARCH_DEP_22 */
 
 struct list_head resource_set_list;
 mcs_rwlock_lock_t    resource_set_lock;

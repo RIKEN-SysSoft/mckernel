@@ -182,6 +182,7 @@ static inline int futex_atomic_op_inuser(int encoded_op, int __user *uaddr)
 	}
 	return ret;
 }
+
 #endif	/* arch depend hide */
 #endif // __KERNEL__
 #endif // _ASM_X86_FUTEX_H

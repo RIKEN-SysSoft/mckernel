@@ -1429,6 +1429,22 @@ void ihk_mc_modify_user_context(ihk_mc_user_context_t *uctx,
 	}
 }
 
+#ifdef POSTK_DEBUG_ARCH_DEP_42 /* /proc/cpuinfo support added. */
+long ihk_mc_show_cpuinfo(char *buf, size_t buf_size, unsigned long read_off, int *eofp)
+{
+	*eofp = 1;
+	return -ENOMEM;
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_42 */
+
+#ifdef POSTK_DEBUG_ARCH_DEP_23 /* add arch dep. clone_thread() function */
+void arch_clone_thread(struct thread *othread, unsigned long pc,
+			unsigned long sp, struct thread *nthread)
+{
+	return;
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_23 */
+
 void ihk_mc_print_user_context(ihk_mc_user_context_t *uctx)
 {
 	kprintf("CS:RIP = %04lx:%16lx\n", uctx->gpr.cs, uctx->gpr.rip);
@@ -1571,14 +1587,17 @@ int ihk_mc_interrupt_cpu(int cpu, int vector)
 }
 
 #ifdef POSTK_DEBUG_ARCH_DEP_22
+extern void perf_start(struct mc_perf_event *event);
+extern void perf_reset(struct mc_perf_event *event);
 struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 {
 	struct thread *last;
 
+	dkprintf("[%d] schedule: tlsblock_base: 0x%lX\n",
+	         ihk_mc_get_processor_id(), next->tlsblock_base);
+
 	/* Set up new TLS.. */
-	dkprintf("[%d] arch_switch_context: tlsblock_base: 0x%lX\n", 
-		 ihk_mc_get_processor_id(), next->thread.tlsblock_base);
-	ihk_mc_arch_set_special_register(IHK_ASR_X86_FS, next->thread.tlsblock_base);
+	ihk_mc_init_user_tlsbase(next->uctx, next->tlsblock_base);
 
 	/* Performance monitoring inherit */
 	if(next->proc->monitoring_event) {
@@ -1589,13 +1608,25 @@ struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 			perf_start(next->proc->monitoring_event);
 		}
 	}
+
+#ifdef PROFILE_ENABLE
+	if (prev->profile && prev->profile_start_ts != 0) {
+		prev->profile_elapsed_ts +=
+			(rdtsc() - prev->profile_start_ts);
+		prev->profile_start_ts = 0;
+	}
+
+	if (next->profile && next->profile_start_ts == 0) {
+		next->profile_start_ts = rdtsc();
+	}
+#endif
+
 	if (prev) {
 		last = ihk_mc_switch_context(&prev->ctx, &next->ctx, prev);
 	}
 	else {
 		last = ihk_mc_switch_context(NULL, &next->ctx, prev);
 	}
-
 	return last;
 }
 #endif
@@ -1653,6 +1684,14 @@ save_fp_regs(struct thread *thread)
 		dkprintf("fp_regs for TID %d saved\n", thread->tid);
 	}
 }
+
+#ifdef POSTK_DEBUG_TEMP_FIX_19
+void
+clear_fp_regs(struct thread *thread)
+{
+	return;
+}
+#endif /* POSTK_DEBUG_TEMP_FIX_19 */
 
 /*@
   @ requires \valid(thread);

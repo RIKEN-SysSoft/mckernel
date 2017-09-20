@@ -380,7 +380,7 @@ static struct cpu_topology *get_one_cpu_topology(struct mcctrl_usrdata *udp,
 	INIT_LIST_HEAD(&topology->cache_list);
 	topology->mckernel_cpu_id = index;
 	topology->saved = ihk_device_get_cpu_topology(dev, 
-			 mckernel_cpu_2_hw_id(udp, index));
+			mckernel_cpu_2_hw_id(udp, index));
 
 #ifdef POSTK_DEBUG_TEMP_FIX_21 /* IS_ERR() through return NULL */
 	if (!topology->saved) {

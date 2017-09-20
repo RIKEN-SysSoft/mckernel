@@ -17,7 +17,7 @@
 extern unsigned int *x86_march_perfmap;
 extern int running_on_kvm(void);
 #ifdef POSTK_DEBUG_TEMP_FIX_31
-static int ihk_mc_perfctr_fixed_init(int counter, int mode);
+int ihk_mc_perfctr_fixed_init(int counter, int mode);
 #endif/*POSTK_DEBUG_TEMP_FIX_31*/
 
 //#define PERFCTR_DEBUG
@@ -206,13 +206,17 @@ int ihk_mc_perfctr_init_raw(int counter, unsigned int code, int mode)
 	if (counter >= X86_IA32_BASE_FIXED_PERF_COUNTERS) {
 		return ihk_mc_perfctr_fixed_init(counter, mode);
 	}
-#enfif /*POSTK_DEBUG_TEMP_FIX_31*/
+#endif /*POSTK_DEBUG_TEMP_FIX_31*/
 
 	if (counter < 0 || counter >= X86_IA32_NUM_PERF_COUNTERS) {
 		return -EINVAL;
 	}
 
+#ifdef POSTK_DEBUG_TEMP_FIX_29
+	return set_perfctr_x86_direct(counter, mode, config);
+#else
 	return set_perfctr_x86_direct(counter, mode, code);
+#endif /*POSTK_DEBUG_TEMP_FIX_29*/
 }
 
 #ifdef POSTK_DEBUG_TEMP_FIX_29
@@ -326,11 +330,7 @@ int ihk_mc_perfctr_stop(unsigned long counter_mask)
 }
 
 // init for fixed counter
-#ifdef POSTK_DEBUG_TEMP_FIX_31
-static int ihk_mc_perfctr_fixed_init(int counter, int mode)
-#else
 int ihk_mc_perfctr_fixed_init(int counter, int mode)
-#endif /*POSTK_DEBUG_TEMP_FIX_31*/
 {
 	unsigned long value = 0;
 	unsigned int  ctr_mask = 0xf;

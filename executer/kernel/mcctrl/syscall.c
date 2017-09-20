@@ -49,6 +49,9 @@
 #include "../../../config.h"
 #include "mcctrl.h"
 #include <linux/version.h>
+#ifdef POSTK_DEBUG_ARCH_DEP_83 /* arch depend translate_rva_to_rpa() move */
+#include <archdeps.h>
+#endif /* POSTK_DEBUG_ARCH_DEP_83 */
 
 #define ALIGN_WAIT_BUF(z)   (((z + 63) >> 6) << 6)
 
@@ -179,120 +182,9 @@ struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc
 	return ptd ? ptd->data : NULL;
 }
 #endif /* !POSTK_DEBUG_ARCH_DEP_56 */
-#ifdef __aarch64__
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,2,0)
-# define IHK_MC_PGTABLE_LEVELS CONFIG_ARM64_PGTABLE_LEVELS
-#else
-# define IHK_MC_PGTABLE_LEVELS CONFIG_PGTABLE_LEVELS
-#endif
-typedef unsigned long translation_table_t;
-struct page_table {
-	translation_table_t* tt;
-	translation_table_t* tt_pa;
-	int asid;
-};
 
-int translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva,
-		unsigned long *rpap, unsigned long *pgsizep)
-{
-	unsigned long rpa;
-	int i;
-	int ix;
-	unsigned long phys;
-	unsigned long *pt;
-	int error;
-	unsigned long pgsize;
-	struct page_table* tbl;
-
-	struct property {
-		int idx_bits;
-		int block;    /*block support flag*/
-		int pgshift;
-	} properties[3][4] = {
-		{	/* 4KB */
-			{.idx_bits = 47 - 39 + 1, .block = 0, .pgshift = 39},  /*zero*/
-			{.idx_bits = 38 - 30 + 1, .block = 1, .pgshift = 30},  /*first*/
-			{.idx_bits = 29 - 21 + 1, .block = 1, .pgshift = 21},  /*second*/
-			{.idx_bits = 20 - 12 + 1, .block = 0, .pgshift = 12},  /*third*/
-		},
-		{	/* 16KB */
-			{.idx_bits = 47 - 47 + 1, .block = 0, .pgshift = 47},  /*zero*/
-			{.idx_bits = 46 - 36 + 1, .block = 0, .pgshift = 36},  /*first*/
-			{.idx_bits = 35 - 25 + 1, .block = 1, .pgshift = 25},  /*second*/
-			{.idx_bits = 24 - 14 + 1, .block = 0, .pgshift = 14},  /*third*/
-		},
-		{	/* 64KB */
-			{0},  /*zero*/
-			{.idx_bits = 47 - 42 + 1, .block = 0, .pgshift = 42},  /*first*/
-			{.idx_bits = 41 - 29 + 1, .block = 1, .pgshift = 29},  /*second*/
-			{.idx_bits = 28 - 16 + 1, .block = 0, .pgshift = 16},  /*third*/
-		},
-	};
-	const struct property* prop =
-		(PAGE_SIZE == (1UL << 12)) ? &(properties[0][0]) :
-		(PAGE_SIZE == (1UL << 14)) ? &(properties[1][0]) :
-		(PAGE_SIZE == (1UL << 16)) ? &(properties[2][0]) : NULL;
-
-	// page table to translation_table.
-	phys = ihk_device_map_memory(ihk_os_to_dev(os), rpt, PAGE_SIZE);
-	tbl = ihk_device_map_virtual(ihk_os_to_dev(os), phys, PAGE_SIZE, NULL, 0);
-	rpa = (unsigned long)tbl->tt_pa;
-
-	/* i = 0:zero, 1:first, 2:second, 3:third */
-	for (i = 4 - IHK_MC_PGTABLE_LEVELS; i < 4; ++i) {
-		ix = (rva >> prop[i].pgshift) & ((1 << prop[i].idx_bits) - 1);
-		phys = ihk_device_map_memory(ihk_os_to_dev(os), rpa, PAGE_SIZE);
-		pt = ihk_device_map_virtual(ihk_os_to_dev(os), phys, PAGE_SIZE, NULL, 0);
-		dprintk("rpa %#lx offsh %d ix %#x phys %#lx pt %p pt[ix] %#lx\n",
-				rpa, prop[i].pgshift, ix, phys, pt, pt[ix]);
-
-#define	PG_DESC_VALID	0x1
-		if (!(pt[ix] & PG_DESC_VALID)) {
-			ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
-			ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
-			error = -EFAULT;
-			dprintk("Remote PTE is not present for 0x%lx (rpt: %lx) ?\n", rva, rpt);
-			goto out;
-		}
-
-#define	PG_DESC_TYEP_MASK	0x3
-#define	PG_DESC_BLOCK		0x1
-		if (prop[i].block && (pt[ix]&PG_DESC_TYEP_MASK) == PG_DESC_BLOCK) {
-			/* D_Block */
-			pgsize = 1UL << prop[i].pgshift;
-			rpa = (pt[ix] & ((1UL << 47) - 1)) & ~(pgsize - 1);
-			rpa |= rva & (pgsize - 1);
-			ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
-			ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
-			error = 0;
-			goto found;
-		}
-		/* D_Table */
-		rpa = (pt[ix] & ((1UL << 47) - 1)) & ~(PAGE_SIZE - 1);
-		ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
-		ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
-	}
-	/* D_Page */
-	pgsize = PAGE_SIZE;
-	rpa |= rva & (pgsize - 1);
-
-found:
-	error = 0;
-	*rpap = rpa;
-	*pgsizep = pgsize;
-
-out:
-	dprintk("translate_rva_to_rpa: %d rva %#lx --> rpa %#lx (%lx)\n",
-			error, rva, rpa, pgsize);
-	return error;
-}
-
-#define PFN_WRITE_COMBINED PTE_ATTRINDX(MT_NORMAL_NC)
-static inline bool pte_is_write_combined(pte_t pte)
-{
-	return ((pte_val(pte) & PTE_ATTRINDX_MASK) == PFN_WRITE_COMBINED);
-}
-#else	/* x86 depend, host OS side */
+#ifndef POSTK_DEBUG_ARCH_DEP_83 /* arch depend translate_rva_to_rpa() move */
+#if 1	/* x86 depend, host OS side */
 int translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva,
 		unsigned long *rpap, unsigned long *pgsizep)
 {
@@ -354,13 +246,8 @@ out:
 			error, rva, rpa, pgsize);
 	return error;
 }
-
-#define PFN_WRITE_COMBINED _PAGE_PWT
-static inline bool pte_is_write_combined(pte_t pte)
-{
-	return ((pte_flags(pte) & _PAGE_PWT) && !(pte_flags(pte) & _PAGE_PCD));
-}
 #endif
+#endif /* !POSTK_DEBUG_ARCH_DEP_83 */
 
 static int __notify_syscall_requester(ihk_os_t os, struct ikc_scd_packet *packet,
 		struct syscall_response *res)
