@@ -834,4 +834,8 @@ void copy_fp_regs(struct thread *from, struct thread *to);
 void restore_fp_regs(struct thread *proc);
 void clear_fp_regs(void);
 
+#define VERIFY_READ 0
+#define VERIFY_WRITE 1
+int access_ok(struct process_vm *vm, int type, uintptr_t addr, size_t len);
+
 #endif
