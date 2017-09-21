@@ -193,8 +193,9 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 		else
 			tid_group_add_tail(grp, &uctxt->tid_used_list);
 unlock:
-                spin_unlock(&fd->tid_lock);
+		spin_unlock(&fd->tid_lock);
 
+		phys += 1 << (order+12);
 		if (ret < 0)
 			break;
 	}
