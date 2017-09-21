@@ -54,6 +54,15 @@
 #include <hfi1/chip_registers.h>
 #include <hfi1/chip.h>
 
+//#define DEBUG_PRINT_CHIP
+
+#ifdef DEBUG_PRINT_CHIP
+#define dkprintf(...) kprintf(__VA_ARGS__)
+#else
+#define dkprintf(...) do { if(0) kprintf(__VA_ARGS__); } while (0)
+#endif
+
+
 /*
  * index is the index into the receive array
  */
@@ -85,6 +94,8 @@ void hfi1_put_tid(struct hfi1_devdata *dd, u32 index,
 		| (u64)order << RCV_ARRAY_RT_BUF_SIZE_SHIFT
 		| ((pa >> RT_ADDR_SHIFT) & RCV_ARRAY_RT_ADDR_MASK)
 					<< RCV_ARRAY_RT_ADDR_SHIFT;
+	dkprintf("type %d, index 0x%x, pa 0x%lx, bsize 0x%lx, reg 0x%llx\n",
+		type, index, pa, (unsigned long)order, reg);
 	writeq(reg, base + (index * 8));
 
 	if (type == PT_EAGER)

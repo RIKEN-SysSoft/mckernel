@@ -51,6 +51,8 @@
  * This file contains all of the defines that is specific to the HFI chip
  */
 
+#define MAX_EXPECTED_BUFFER    (2048 * 1024)
+
 void hfi1_put_tid(struct hfi1_devdata *dd, u32 index,
                   u32 type, unsigned long pa, u16 order);
 void hfi1_clear_tids(struct hfi1_ctxtdata *rcd);
