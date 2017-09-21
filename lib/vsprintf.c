@@ -905,19 +905,12 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 	char *str, *end, c;
 	int read;
 	struct printf_spec spec = {0};
-#ifdef POSTK_DEBUG_TEMP_FIX_28 /* vsnprintf size excess return value fix. */
-	int ret = 0;
-#endif /* POSTK_DEBUG_TEMP_FIX_28 */
 
 	/* Reject out-of-range values early.  Large positive sizes are
 	   used for unknown buffer sizes. */
 	if (unlikely((int) size < 0)) {
 		/* There can be only one.. */
-#ifdef POSTK_DEBUG_TEMP_FIX_28 /* vsnprintf size excess return value fix. */
-		return ret;
-#else /* POSTK_DEBUG_TEMP_FIX_28 */
 		return 0;
-#endif /* POSTK_DEBUG_TEMP_FIX_28 */
 	}
 
 	str = buf;
@@ -1065,29 +1058,14 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 	}
 
 	if (size > 0) {
-#ifdef POSTK_DEBUG_TEMP_FIX_28 /* vsnprintf size excess return value fix. */
-		if (str < end) {
-			*str = '\0';
-			ret = str - buf;
-		}
-		else {
-			end[-1] = '\0';
-			ret = end - buf - 1;
-		}
-#else /* POSTK_DEBUG_TEMP_FIX_28 */
 		if (str < end)
 			*str = '\0';
 		else
 			end[-1] = '\0';
-#endif /* POSTK_DEBUG_TEMP_FIX_28 */
 	}
 
 	/* the trailing null byte doesn't count towards the total */
-#ifdef POSTK_DEBUG_TEMP_FIX_28 /* vsnprintf size excess return value fix. */
-	return ret;
-#else /* POSTK_DEBUG_TEMP_FIX_28 */
 	return str-buf;
-#endif /* POSTK_DEBUG_TEMP_FIX_28 */
 
 }
 EXPORT_SYMBOL(vsnprintf);

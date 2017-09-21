@@ -1250,20 +1250,20 @@ long ihk_mc_show_cpuinfo(char *buf, size_t buf_size, unsigned long read_off, int
 		int j = 0;
 
 		/* generate strings */
-		loff += snprintf(lbuf + loff, lbuf_size - loff, "processor\t: %d\n", cpuinfo->hwid);
-		loff += snprintf(lbuf + loff, lbuf_size - loff, "Features\t:");
+		loff += scnprintf(lbuf + loff, lbuf_size - loff, "processor\t: %d\n", cpuinfo->hwid);
+		loff += scnprintf(lbuf + loff, lbuf_size - loff, "Features\t:");
 
 		for (j = 0; hwcap_str[j]; j++) {
 			if (elf_hwcap & (1 << j)) {
-				loff += snprintf(lbuf + loff, lbuf_size - loff, " %s", hwcap_str[j]);
+				loff += scnprintf(lbuf + loff, lbuf_size - loff, " %s", hwcap_str[j]);
 			}
 		}
-		loff += snprintf(lbuf + loff, lbuf_size - loff, "\n");
-		loff += snprintf(lbuf + loff, lbuf_size - loff, "CPU implementer\t: 0x%02x\n", MIDR_IMPLEMENTOR(midr));
-		loff += snprintf(lbuf + loff, lbuf_size - loff, "CPU architecture: 8\n");
-		loff += snprintf(lbuf + loff, lbuf_size - loff, "CPU variant\t: 0x%x\n", MIDR_VARIANT(midr));
-		loff += snprintf(lbuf + loff, lbuf_size - loff, "CPU part\t: 0x%03x\n", MIDR_PARTNUM(midr));
-		loff += snprintf(lbuf + loff, lbuf_size - loff, "CPU revision\t: %d\n\n", MIDR_REVISION(midr));
+		loff += scnprintf(lbuf + loff, lbuf_size - loff, "\n");
+		loff += scnprintf(lbuf + loff, lbuf_size - loff, "CPU implementer\t: 0x%02x\n", MIDR_IMPLEMENTOR(midr));
+		loff += scnprintf(lbuf + loff, lbuf_size - loff, "CPU architecture: 8\n");
+		loff += scnprintf(lbuf + loff, lbuf_size - loff, "CPU variant\t: 0x%x\n", MIDR_VARIANT(midr));
+		loff += scnprintf(lbuf + loff, lbuf_size - loff, "CPU part\t: 0x%03x\n", MIDR_PARTNUM(midr));
+		loff += scnprintf(lbuf + loff, lbuf_size - loff, "CPU revision\t: %d\n\n", MIDR_REVISION(midr));
 
 		/* check buffer depletion */
 		if ((i < num_processors - 1) && ((lbuf_size - loff) == 1)) {

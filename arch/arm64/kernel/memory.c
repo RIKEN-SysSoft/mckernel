@@ -1627,9 +1627,6 @@ static int split_large_page(pte_t *ptep, size_t pgsize)
 			page = phys_to_page(phys_base);
 			if (pgsize != PTL2_SIZE && page && page_unmap(page)) {
 				kprintf("split_large_page:page_unmap:%p\n", page);
-#ifndef POSTK_DEBUG_TEMP_FIX_15
-				panic("split_large_page:page_unmap\n");
-#endif /* POSTK_DEBUG_TEMP_FIX_15 */
 			}
 		}
 	}
