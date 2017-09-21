@@ -2158,7 +2158,20 @@ int main(int argc, char **argv)
 		n_threads = atoi(getenv("OMP_NUM_THREADS")) + 4;
 	}
 	else {
-		n_threads = ncpu;
+		/*
+		 * When running with partitioned execution, do not allow
+		 * more threads then the corresponding number of CPUs.
+		 */
+		if (nr_processes > 0) {
+			n_threads = (ncpu / nr_processes) + 4;
+
+			if (n_threads == 0) {
+				n_threads = 2;
+			}
+		}
+		else {
+			n_threads = ncpu;
+		}
 	}
 
 	/* 
