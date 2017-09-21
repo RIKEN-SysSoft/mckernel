@@ -83,11 +83,11 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 {
 	int ret = -EFAULT;
 	struct hfi1_ctxtdata *uctxt = fd->uctxt;
-	uintptr_t vaddr_prev, vaddr, vaddr_end;
+	uintptr_t vaddr_prev, vaddr, vaddr_end, base_vaddr;
 	u32 *tidlist;
 	u16 tididx = 0;
 	struct process_vm *vm = cpu_local_var(current)->vm;
-	size_t base_pgsize, len = 0;
+	size_t base_pgsize, pgsize, len = 0;
 	pte_t *ptep;
 	u64 phys_start = 0, phys_prev = 0, phys;
 
@@ -111,10 +111,11 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 	vaddr_end = tinfo->vaddr + tinfo->length;
 	dkprintf("setup start: 0x%llx, length: %zu\n", tinfo->vaddr,
 		 tinfo->length);
-	for (vaddr = tinfo->vaddr; vaddr < vaddr_end; vaddr += base_pgsize) {
+	for (vaddr = tinfo->vaddr; vaddr < vaddr_end; vaddr += pgsize) {
 		ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
-					    (void*)vaddr, 0, 0, &base_pgsize,
-					    0);
+					    (void*)vaddr, 0,
+					    (void**)&base_vaddr,
+					    &base_pgsize, 0);
 		if (unlikely(!ptep || !pte_is_present(ptep))) {
 			kprintf("%s: ERRROR: no valid  PTE for 0x%lx\n",
 				__FUNCTION__, vaddr);
@@ -148,26 +149,39 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 			len = 0;
 		}
 
-		/* Corner case #1: base_pgsize is too big (requested length) */
-		if (vaddr + base_pgsize > vaddr_end) {
-			base_pgsize = vaddr_end - vaddr;
+		pgsize = base_pgsize;
+		/* Corner case #1: pgsize is too big wrt. requested length */
+		if (vaddr + pgsize > vaddr_end) {
+			pgsize = vaddr_end - vaddr;
 		}
 
-		/* Corner case #2: base_pgsize is too big (max request size).
+		/* Corner case #2: pgsize is too big wrt. max request size.
 		 * This will result in an extra virt to phys lookup,
 		 * but should be rare in practice
 		 */
-		if (len + base_pgsize > MAX_EXPECTED_BUFFER) {
-			size_t extra = len + base_pgsize - MAX_EXPECTED_BUFFER;
+		if (len + pgsize > MAX_EXPECTED_BUFFER) {
+			size_t extra = len + pgsize - MAX_EXPECTED_BUFFER;
 			phys -= extra;
 			vaddr -= extra;
-			base_pgsize -= extra;
+			pgsize -= extra;
+		}
+
+		/* Corner case #3: don't let us go further than start of
+		 * next page.
+		 * If we're already towards the end of a big page, and the
+		 * next ones are smaller, we could fly over some pages without
+		 * noticing. No skipping!
+		 */
+		if (vaddr + pgsize > base_vaddr + base_pgsize) {
+			dkprintf("truncating down %zu to %zu, vaddr 0x%llx, base 0x%llx\n",
+				pgsize, base_vaddr - vaddr + base_pgsize, vaddr, base_vaddr);
+			pgsize = base_vaddr - vaddr + base_pgsize;
 		}
 		phys_prev = phys;
 		vaddr_prev = vaddr;
-		len += base_pgsize;
-		dkprintf("phys 0x%llx, vaddr 0x%llx, len %zu, base_pgsize %zu\n",
-			 phys, vaddr, len, base_pgsize);
+		len += pgsize;
+		dkprintf("phys 0x%llx, vaddr 0x%llx, len %zu, pgsize %zu\n",
+			 phys, vaddr, len, pgsize);
 	}
 
 	/* Register whatever is left */
