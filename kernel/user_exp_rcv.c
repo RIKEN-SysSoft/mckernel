@@ -105,8 +105,8 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 		return -ENOMEM;
 
 	/* Verify that access is OK for the user buffer */
-	// TODO: iterate over vm memory ranges for write access
-	// return -EFAULT;
+	if (access_ok(vm, VERIFY_WRITE, tinfo->vaddr, tinfo->length))
+		return -EFAULT;
 
 	vaddr_end = tinfo->vaddr + tinfo->length;
 	dkprintf("setup start: 0x%llx, length: %zu\n", tinfo->vaddr,
