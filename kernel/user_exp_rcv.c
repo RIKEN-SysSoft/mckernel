@@ -123,7 +123,7 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 	uintptr_t vaddr = tinfo->vaddr;
 	u32 tid[20]; /* at most 20 requests with this algorithm */
 	u16 tididx = 0;
-	u16 order;
+	s16 order;
 	u32 npages;
 	struct process_vm *vm = cpu_local_var(current)->vm;
 	size_t base_pgsize;
@@ -160,7 +160,7 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 	phys = pte_get_phys(ptep);
 
 
-	for (order = 0; order < 20; order++)
+	for (order = 19; order >= 0; order--)
 	{
 		struct tid_group *grp;
 
@@ -364,7 +364,8 @@ static int program_rcvarray(struct hfi1_filedata *fd, uintptr_t phys,
 	if (ret)
 		return ret;
 
-	tidinfo = rcventry2tidinfo(rcventry - uctxt->expected_base);
+	tidinfo = rcventry2tidinfo(rcventry - uctxt->expected_base) |
+		EXP_TID_SET(LEN, 1 << order);
 	*ptid = tidinfo;
 	grp->used++;
 	grp->map |= 1 << idx++;
