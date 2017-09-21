@@ -516,18 +516,9 @@ long hfi1_file_ioctl(void *private_data, unsigned int cmd,
 
 	case HFI1_IOCTL_TID_INVAL_READ:
 		kprintf("%s: HFI1_IOCTL_TID_INVAL_READ \n", __FUNCTION__);
-		if (copy_from_user(&tinfo,
-				   (struct hfi11_tid_info __user *)arg,
-				   sizeof(tinfo)))
-			return -EFAULT;
-
-		ret = hfi1_user_exp_rcv_invalid(fd, &tinfo);
-		if (ret)
-			break;
-		addr = arg + offsetof(struct hfi1_tid_info, tidcnt);
-		if (copy_to_user((void __user *)addr, &tinfo.tidcnt,
-				 sizeof(tinfo.tidcnt)))
-			ret = -EFAULT;
+		/* This function is only invovled with the tid mmu caching.
+		 * It is a no-op for us. */
+		ret = 0;
 		break;
 
 	case HFI1_IOCTL_RECV_CTRL:

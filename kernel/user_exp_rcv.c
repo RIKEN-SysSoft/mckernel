@@ -256,58 +256,6 @@ done:
 	return ret;
 }
 
-int hfi1_user_exp_rcv_invalid(struct hfi1_filedata *fd, struct hfi1_tid_info *tinfo)
-{
-#if 0
-	struct hfi1_ctxtdata *uctxt = fd->uctxt;
-	unsigned long *ev = uctxt->dd->events +
-		(((uctxt->ctxt - uctxt->dd->first_user_ctxt) *
-		  HFI1_MAX_SHARED_CTXTS) + fd->subctxt);
-	u32 *array;
-	int ret = 0;
-
-	if (!fd->invalid_tids)
-		return -EINVAL;
-
-	/*
-	 * copy_to_user() can sleep, which will leave the invalid_lock
-	 * locked and cause the MMU notifier to be blocked on the lock
-	 * for a long time.
-	 * Copy the data to a local buffer so we can release the lock.
-	 */
-	array = kcalloc(uctxt->expected_count, sizeof(*array), GFP_KERNEL);
-	if (!array)
-		return -EFAULT;
-
-	spin_lock(&fd->invalid_lock);
-	if (fd->invalid_tid_idx) {
-		memcpy(array, fd->invalid_tids, sizeof(*array) *
-		       fd->invalid_tid_idx);
-		memset(fd->invalid_tids, 0, sizeof(*fd->invalid_tids) *
-		       fd->invalid_tid_idx);
-		tinfo->tidcnt = fd->invalid_tid_idx;
-		fd->invalid_tid_idx = 0;
-		/*
-		 * Reset the user flag while still holding the lock.
-		 * Otherwise, PSM can miss events.
-		 */
-		clear_bit(_HFI1_EVENT_TID_MMU_NOTIFY_BIT, ev);
-	} else {
-		tinfo->tidcnt = 0;
-	}
-	spin_unlock(&fd->invalid_lock);
-
-	if (tinfo->tidcnt) {
-		if (copy_to_user((void __user *)tinfo->tidlist,
-				 array, sizeof(*array) * tinfo->tidcnt))
-			ret = -EFAULT;
-	}
-	kfree(array);
-
-	return ret;
-#endif
-	return 0;
-}
 /**
  * program_rcvarray() - program an RcvArray group with receive buffers
  * @fd: file data
