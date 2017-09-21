@@ -830,4 +830,8 @@ void proc_init();
 void set_timer();
 struct sig_pending *hassigpending(struct thread *thread);
 
+#define VERIFY_READ 0
+#define VERIFY_WRITE 1
+int access_ok(struct process_vm *vm, int type, uintptr_t addr, size_t len);
+
 #endif
