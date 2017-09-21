@@ -51,8 +51,15 @@
 #include <hfi1/chip.h>
 #include <hfi1/user_exp_rcv.h>
 
-static int program_rcvarray(struct hfi1_filedata *, uintptr_t, u16, struct tid_group *,
-			    u32 *);
+//#define DEBUG_PRINT_USER_EXP_RCV
+
+#ifdef DEBUG_PRINT_USER_EXP_RCV
+#define dkprintf(...) kprintf(__VA_ARGS__)
+#else
+#define dkprintf(...) do { if(0) kprintf(__VA_ARGS__); } while (0)
+#endif
+
+static int program_rcvarray(struct hfi1_filedata *, uintptr_t, size_t, u32 *);
 static int set_rcvarray_entry(struct hfi1_filedata *, uintptr_t,
 			      u32, struct tid_group *,
 			      u16);
@@ -70,65 +77,18 @@ struct tid_rb_node {
 /*
  * RcvArray entry allocation for Expected Receives is done by the
  * following algorithm:
- *
- * The context keeps 3 lists of groups of RcvArray entries:
- *   1. List of empty groups - tid_group_list
- *      This list is created during user context creation and
- *      contains elements which describe sets (of 8) of empty
- *      RcvArray entries.
- *   2. List of partially used groups - tid_used_list
- *      This list contains sets of RcvArray entries which are
- *      not completely used up. Another mapping request could
- *      use some of all of the remaining entries.
- *   3. List of full groups - tid_full_list
- *      This is the list where sets that are completely used
- *      up go.
- *
- * An attempt to optimize the usage of RcvArray entries is
- * made by finding all sets of physically contiguous pages in a
- * user's buffer.
- * These physically contiguous sets are further split into
- * sizes supported by the receive engine of the HFI. The
- * resulting sets of pages are stored in struct tid_pageset,
- * which describes the sets as:
- *    * .count - number of pages in this set
- *    * .idx - starting index into struct page ** array
- *                    of this set
- *
- * From this point on, the algorithm deals with the page sets
- * described above. The number of pagesets is divided by the
- * RcvArray group size to produce the number of full groups
- * needed.
- *
- * Groups from the 3 lists are manipulated using the following
- * rules:
- *   1. For each set of 8 pagesets, a complete group from
- *      tid_group_list is taken, programmed, and moved to
- *      the tid_full_list list.
- *   2. For all remaining pagesets:
- *      2.1 If the tid_used_list is empty and the tid_group_list
- *          is empty, stop processing pageset and return only
- *          what has been programmed up to this point.
- *      2.2 If the tid_used_list is empty and the tid_group_list
- *          is not empty, move a group from tid_group_list to
- *          tid_used_list.
- *      2.3 For each group is tid_used_group, program as much as
- *          can fit into the group. If the group becomes fully
- *          used, move it to tid_full_list.
  */
 int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinfo)
 {
 	int ret = -EFAULT;
 	struct hfi1_ctxtdata *uctxt = fd->uctxt;
-	uintptr_t vaddr = tinfo->vaddr;
-	u32 tid[20]; /* at most 20 requests with this algorithm */
+	uintptr_t vaddr_prev, vaddr, vaddr_end;
+	u32 *tidlist;
 	u16 tididx = 0;
-	s16 order;
-	u32 npages;
 	struct process_vm *vm = cpu_local_var(current)->vm;
-	size_t base_pgsize;
+	size_t base_pgsize, len = 0;
 	pte_t *ptep;
-	u64 phys;
+	u64 phys_start = 0, phys_prev = 0, phys;
 
 	if (!tinfo->length)
 		return -EINVAL;
@@ -138,87 +98,107 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 		return -EINVAL;
 	}
 
+	tidlist = kmalloc(sizeof(*tidlist)*uctxt->expected_count,
+			  IHK_MC_AP_NOWAIT);
+	if (!tidlist)
+		return -ENOMEM;
+
 	/* Verify that access is OK for the user buffer */
 	// TODO: iterate over vm memory ranges for write access
 	// return -EFAULT;
 
-	/* Simplified design: vaddr to vaddr + tinfo->length is contiguous
-	 * for us, but program_rcvarray only deals with powers of two
-	 * -> we need as many requests as there are bits set in length
-	 *
-	 * Note that we only work with multiples of 4k, so round up and shift
-	 */
-	npages = (tinfo->length + 4095) >> 12;
+	vaddr_end = tinfo->vaddr + tinfo->length;
+	dkprintf("setup start: 0x%llx, length: %zu\n", tinfo->vaddr,
+		 tinfo->length);
+	for (vaddr = tinfo->vaddr; vaddr < vaddr_end; vaddr += base_pgsize) {
+		ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+					    (void*)vaddr, 0, 0, &base_pgsize,
+					    0);
+		if (unlikely(!ptep || !pte_is_present(ptep))) {
+			kprintf("%s: ERRROR: no valid  PTE for 0x%lx\n",
+				__FUNCTION__, vaddr);
+			ret = -EFAULT;
+			break;
+		}
+		phys = pte_get_phys(ptep);
 
-	ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
-				    (void*)vaddr, 0, 0, &base_pgsize, 0);
-	if (unlikely(!ptep || !pte_is_present(ptep))) {
-		kprintf("%s: ERRROR: no valid  PTE for 0x%lx\n",
-			__FUNCTION__, vaddr);
-		return -EFAULT;
-	}
-	phys = pte_get_phys(ptep);
-
-
-	for (order = 19; order >= 0; order--)
-	{
-		struct tid_group *grp;
-
-		if (!(npages & (1 << order)))
-			continue;
-
-		spin_lock(&fd->tid_lock);
-		if (!uctxt->tid_used_list.count) {
-			if (!uctxt->tid_group_list.count) {
-				goto unlock;
+		if (!phys_prev) {
+			/* first pass */
+			phys_start = phys;
+		} else if (len == MAX_EXPECTED_BUFFER ||
+				phys - phys_prev != vaddr - vaddr_prev) {
+			/*
+			 *  Two ways to get here:
+			 *  - Segment has reached max size;
+			 *  - Found a new segment;
+			 *
+			 * Register what we have.
+			 */
+			ret = program_rcvarray(fd, phys_start, len,
+					       tidlist + tididx);
+			if (ret <= 0) {
+				kprintf("Failed to program RcvArray entries: %d\n",
+					ret);
+				ret = -EFAULT;
 			}
 
-			grp = tid_group_pop(&uctxt->tid_group_list);
-		} else {
-			grp = tid_group_pop(&uctxt->tid_used_list);
+			tididx += ret;
+			phys_start = phys;
+			len = 0;
 		}
 
-		ret = program_rcvarray(fd, phys, order, grp, tid + (tididx++));
-		if (ret < 0) {
-			hfi1_cdbg(TID,
-				  "Failed to program RcvArray entries %d",
-				  ret);
-			ret = -EFAULT;
-		} else if (WARN_ON(ret == 0)) {
-			ret = -EFAULT;
+		/* Corner case #1: base_pgsize is too big (requested length) */
+		if (vaddr + base_pgsize > vaddr_end) {
+			base_pgsize = vaddr_end - vaddr;
 		}
 
-		if (grp->used == grp->size)
-			tid_group_add_tail(grp, &uctxt->tid_full_list);
-		else
-			tid_group_add_tail(grp, &uctxt->tid_used_list);
-unlock:
-		spin_unlock(&fd->tid_lock);
-
-		phys += 1 << (order+12);
-		if (ret < 0)
-			break;
+		/* Corner case #2: base_pgsize is too big (max request size).
+		 * This will result in an extra virt to phys lookup,
+		 * but should be rare in practice
+		 */
+		if (len + base_pgsize > MAX_EXPECTED_BUFFER) {
+			size_t extra = len + base_pgsize - MAX_EXPECTED_BUFFER;
+			phys -= extra;
+			vaddr -= extra;
+			base_pgsize -= extra;
+		}
+		phys_prev = phys;
+		vaddr_prev = vaddr;
+		len += base_pgsize;
+		dkprintf("phys 0x%llx, vaddr 0x%llx, len %zu, base_pgsize %zu\n",
+			 phys, vaddr, len, base_pgsize);
 	}
+
+	/* Register whatever is left */
+	ret = program_rcvarray(fd, phys_start, len,
+			       tidlist + tididx);
+	if (ret <= 0) {
+		kprintf("Failed to program RcvArray entries: %d\n",
+			ret);
+		ret = -EFAULT;
+	}
+	tididx += ret;
+
 	if (ret > 0) {
-		// TODO: can we use spin_lock with kernel locks?
 		spin_lock(&fd->tid_lock);
 		fd->tid_used += tididx;
 		spin_unlock(&fd->tid_lock);
 		tinfo->tidcnt = tididx;
 
 		if (copy_to_user((void __user *)(unsigned long)tinfo->tidlist,
-				 tid, sizeof(tid)*tididx)) {
+				 tidlist, sizeof(*tidlist)*tididx)) {
 			/*
 			 * On failure to copy to the user level, we need to undo
 			 * everything done so far so we don't leak resources.
 			 */
-			tinfo->tidlist = (unsigned long)&tid;
+			tinfo->tidlist = (unsigned long)&tidlist;
 			hfi1_user_exp_rcv_clear(fd, tinfo);
 			tinfo->tidlist = 0;
 			ret = -EFAULT;
 		}
 	}
 
+	kfree(tidlist);
 	return ret > 0 ? 0 : ret;
 }
 
@@ -239,17 +219,16 @@ int hfi1_user_exp_rcv_clear(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 		goto done;
 	}
 
-	spin_lock(&fd->tid_lock);
+	dkprintf("Clear called, cnt %d\n", tinfo->tidcnt);
 	for (tididx = 0; tididx < tinfo->tidcnt; tididx++) {
 		ret = unprogram_rcvarray(fd, tidinfo[tididx], NULL);
 		if (ret) {
-			hfi1_cdbg(TID, "Failed to unprogram rcv array %d",
+			kprintf("Failed to unprogram rcv array %d\n",
 				  ret);
 			break;
 		}
 	}
 	fd->tid_used -= tididx;
-	spin_unlock(&fd->tid_lock);
 	tinfo->tidcnt = tididx;
 done:
 	kfree(tidinfo);
@@ -258,67 +237,82 @@ done:
 
 /**
  * program_rcvarray() - program an RcvArray group with receive buffers
- * @fd: file data
- * @vaddr: starting user virtual address
- * @grp: RcvArray group
- * @sets: array of struct tid_pageset holding information on physically
- *        contiguous chunks from the user buffer
- * @start: starting index into sets array
- * @count: number of struct tid_pageset's to program
- * @pages: an array of struct page * for the user buffer
- * @ptid: information about the programmed RcvArray entries is to be encoded.
- * @tididx: starting offset into tidlist
- *
- * This function will program up to 'count' number of RcvArray entries from the
- * group 'grp'. To make best use of write-combining writes, the function will
- * perform writes to the unused RcvArray entries which will be ignored by the
- * HW. Each RcvArray entry will be programmed with a physically contiguous
- * buffer chunk from the user's virtual buffer.
- *
- * Return:
- * -EINVAL if the requested count is larger than the size of the group,
- * -ENOMEM or -EFAULT on error from set_rcvarray_entry(), or
- * number of RcvArray entries programmed.
  */
 static int program_rcvarray(struct hfi1_filedata *fd, uintptr_t phys,
-			    u16 order,
-			    struct tid_group *grp,
-			    u32 *ptid)
+			    size_t len, u32 *ptid)
 {
 	struct hfi1_ctxtdata *uctxt = fd->uctxt;
 	struct hfi1_devdata *dd = uctxt->dd;
-	u16 idx;
+	u16 idx = 0;
+	s16 order;
 	u32 tidinfo = 0, rcventry;
+	int ret = -ENOMEM, count = 0;
+	struct tid_group *grp = NULL;
 
-	/* Find the first unused entry in the group */
-	for (idx = 0; idx < grp->size; idx++) {
-		if (!(grp->map & (1 << idx))) {
-			break;
+	/* lock is taken at loop edges */
+	spin_lock(&fd->tid_lock);
+	while (len > 0) {
+		if (!grp) {
+			if (!uctxt->tid_used_list.count) {
+				if (!uctxt->tid_group_list.count) {
+					spin_unlock(&fd->tid_lock);
+					/* return what we have so far */
+					return count ? count : -ENOMEM;
+				}
+
+				grp = tid_group_pop(&uctxt->tid_group_list);
+			} else {
+				grp = tid_group_pop(&uctxt->tid_used_list);
+			}
 		}
+
+		/* Find the first unused entry in the group */
+		for (; idx < grp->size; idx++) {
+			if (!(grp->map & (1 << idx))) {
+				break;
+			}
+		}
+		spin_unlock(&fd->tid_lock);
+
+
+		/* order is power of two of 4k (2^12) pages */
+		order = fls(len) - 13;
+		if (order < 0)
+			order = 0;
+		dkprintf("len %u, order %u\n", len, order);
+
+		rcv_array_wc_fill(dd, grp->base + idx);
+		rcventry = grp->base + idx;
+		ret = set_rcvarray_entry(fd, phys, rcventry, grp,
+					 order);
+		if (ret)
+			return ret;
+
+		tidinfo = rcventry2tidinfo(rcventry - uctxt->expected_base) |
+			EXP_TID_SET(LEN, 1 << order);
+		ptid[count++] = tidinfo;
+		len -= 1 << (order + 12);
+		phys += 1 << (order + 12);
+
+
+		spin_lock(&fd->tid_lock);
+		grp->used++;
+		grp->map |= 1 << idx++;
+
+		/* optimization: keep same group if possible. */
+		if (grp->used < grp->size && len > 0)
+			continue;
+
+		if (grp->used == grp->size)
+			tid_group_add_tail(grp, &uctxt->tid_full_list);
+		else
+			tid_group_add_tail(grp, &uctxt->tid_used_list);
+		idx = 0;
+		grp = NULL;
 	}
+	spin_unlock(&fd->tid_lock);
 
-	int ret = 0;
-
-	/*
-	 * If this entry in the group is used, move to the next one.
-	 * If we go past the end of the group, exit the loop.
-	 */
-	rcv_array_wc_fill(dd, grp->base + idx);
-
-	rcventry = grp->base + idx;
-
-	ret = set_rcvarray_entry(fd, phys, rcventry, grp,
-				 order);
-	if (ret)
-		return ret;
-
-	tidinfo = rcventry2tidinfo(rcventry - uctxt->expected_base) |
-		EXP_TID_SET(LEN, 1 << order);
-	*ptid = tidinfo;
-	grp->used++;
-	grp->map |= 1 << idx++;
-
-	return 1;
+	return count;
 }
 
 static int set_rcvarray_entry(struct hfi1_filedata *fd, uintptr_t phys,
@@ -337,7 +331,8 @@ static int set_rcvarray_entry(struct hfi1_filedata *fd, uintptr_t phys,
 	if (!node)
 		return -ENOMEM;
 
-	kprintf("Registering rcventry %d, phys 0x%p, len %u\n", rcventry, phys, 1 << (order+12));
+	dkprintf("Registering rcventry %d, phys 0x%p, len %u\n", rcventry,
+		 phys, 1 << (order+12));
 
 	node->phys = phys;
 	node->len = 1 << (order+12);
@@ -370,19 +365,24 @@ static int unprogram_rcvarray(struct hfi1_filedata *fd, u32 tidinfo,
 		return -EINVAL;
 	}
 
-	if (tidctrl == 0x3)
+	if (tidctrl == 0x3) {
+		kprintf("tidctrl = 3 for rcventry %d\n",
+			tididx + 2 + uctxt->expected_base);
 		return -EINVAL;
+	}
 
 	rcventry = tididx + (tidctrl - 1);
 
 	node = fd->entry_to_rb[rcventry];
-	if (!node || node->rcventry != (uctxt->expected_base + rcventry))
+	if (!node || node->rcventry != (uctxt->expected_base + rcventry)) {
+		kprintf("bad entry %d\n", rcventry);
 		return -EBADF;
+	}
 
 	if (grp)
 		*grp = node->grp;
 
-	kprintf("Clearing rcventry %d, phys 0x%p, len %u\n", node->rcventry,
+	dkprintf("Clearing rcventry %d, phys 0x%p, len %u\n", node->rcventry,
 		node->phys, node->len);
 
 	fd->entry_to_rb[rcventry] = NULL;
@@ -396,11 +396,6 @@ static void clear_tid_node(struct hfi1_filedata *fd, struct tid_rb_node *node)
 	struct hfi1_ctxtdata *uctxt = fd->uctxt;
 	struct hfi1_devdata *dd = uctxt->dd;
 
-#if 0
-	trace_hfi1_exp_tid_unreg(uctxt->ctxt, fd->subctxt, node->rcventry,
-				 node->npages, node->mmu.addr, node->phys,
-				 node->dma_addr);
-#endif
 
 	hfi1_put_tid(dd, node->rcventry, PT_INVALID, 0, 0);
 	/*
@@ -409,14 +404,7 @@ static void clear_tid_node(struct hfi1_filedata *fd, struct tid_rb_node *node)
 	 */
 	flush_wc();
 
-#if 0
-	pci_unmap_single(dd->pcidev, node->dma_addr, node->mmu.len,
-			 PCI_DMA_FROMDEVICE);
-	hfi1_release_user_pages(fd->mm, node->pages, node->npages, true);
-	fd->tid_n_pinned -= node->npages;
-#endif
-
-
+	spin_lock(&fd->tid_lock);
 	node->grp->used--;
 	node->grp->map &= ~(1 << (node->rcventry - node->grp->base));
 
@@ -426,5 +414,6 @@ static void clear_tid_node(struct hfi1_filedata *fd, struct tid_rb_node *node)
 	else if (!node->grp->used)
 		tid_group_move(node->grp, &uctxt->tid_used_list,
 			       &uctxt->tid_group_list);
+	spin_unlock(&fd->tid_lock);
 	kfree(node);
 }
