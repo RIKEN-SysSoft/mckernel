@@ -2150,6 +2150,11 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+	if (nr_processes > ncpu) {
+		fprintf(stderr, "error: nr_processes can't exceed nr. of CPUs\n");
+		return EINVAL;
+	}
+
 	if (nr_threads > 0) {
 		n_threads = nr_threads;
 	}
@@ -2162,12 +2167,15 @@ int main(int argc, char **argv)
 		 * When running with partitioned execution, do not allow
 		 * more threads then the corresponding number of CPUs.
 		 */
-		if (nr_processes > 0) {
+		if (nr_processes > 0 && nr_processes < ncpu) {
 			n_threads = (ncpu / nr_processes) + 4;
 
 			if (n_threads == 0) {
 				n_threads = 2;
 			}
+		}
+		else if (nr_processes == ncpu) {
+			n_threads = 1;
 		}
 		else {
 			n_threads = ncpu;
