@@ -73,6 +73,7 @@ struct tid_rb_node {
 	struct tid_group *grp;
 };
 
+struct kmalloc_cache_header tidlist_cache = { NULL };
 
 /*
  * RcvArray entry allocation for Expected Receives is done by the
@@ -98,8 +99,8 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 		return -EINVAL;
 	}
 
-	tidlist = kmalloc(sizeof(*tidlist)*uctxt->expected_count,
-			  IHK_MC_AP_NOWAIT);
+	tidlist = kmalloc_cache_alloc(&tidlist_cache,
+			sizeof(*tidlist) * uctxt->expected_count);
 	if (!tidlist)
 		return -ENOMEM;
 
@@ -198,7 +199,7 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 		}
 	}
 
-	kfree(tidlist);
+	kmalloc_cache_free(tidlist);
 	return ret > 0 ? 0 : ret;
 }
 
