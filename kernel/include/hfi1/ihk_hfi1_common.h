@@ -9,6 +9,7 @@
 #include <arch-lock.h>
 #include <page.h>
 #include <string.h>
+#include <lwk/stddef.h>
 
 //#define VERBOSE_DEBUG
 
@@ -220,8 +221,6 @@ typedef unsigned int uint;
 
 /* TODO: There should be a header file that I can include */
 typedef _Bool bool;
-#define false 0
-#define true !false
 
 /* TODO: double check this typedef */
 typedef u64 dma_addr_t;
