@@ -1407,10 +1407,6 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 
 	flush_nfo_tlb();
 
-	if (flags & MAP_ANONYMOUS) {
-		len = (len + LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
-	}
-
 	if (flags & MAP_HUGETLB) {
 		pgshift = (flags >> MAP_HUGE_SHIFT) & 0x3F;
 		p2align = pgshift - PAGE_SHIFT;
