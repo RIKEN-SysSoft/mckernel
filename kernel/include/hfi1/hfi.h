@@ -1651,6 +1651,8 @@ struct hfi1_filedata {
 	void *mm; //struct mm_struct *mm;
 };
 
+int hfi1_map_device_addresses(struct hfi1_filedata *fd);
+
 #ifdef __HFI1_ORIG__
 
 extern struct list_head hfi1_dev_list;
