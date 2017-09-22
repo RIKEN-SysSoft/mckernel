@@ -50,6 +50,7 @@
 #include <hfi1/hfi.h>
 #include <hfi1/chip.h>
 #include <hfi1/user_exp_rcv.h>
+#include <hfi1/user_sdma.h> // for hfi1_map_device_addresses
 
 //#define DEBUG_PRINT_USER_EXP_RCV
 
@@ -96,6 +97,12 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 
 	if (tinfo->length / PAGE_SIZE > uctxt->expected_count) {
 		kprintf("Expected buffer too big\n");
+		return -EINVAL;
+	}
+
+	if (hfi1_map_device_addresses(fd) < 0) {
+		kprintf("%s: Could not map hfi1 device addresses\n",
+			__FUNCTION__);
 		return -EINVAL;
 	}
 
@@ -234,6 +241,17 @@ int hfi1_user_exp_rcv_clear(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 		goto done;
 	}
 
+	/* Technically should never be needed (because mapped previously
+	 * on update), but this call is no-op if addresses have been set
+	 * previously
+	 */
+	if (hfi1_map_device_addresses(fd) < 0) {
+		kprintf("%s: Could not map hfi1 device addresses\n",
+			__FUNCTION__);
+		return -EINVAL;
+	}
+
+
 	dkprintf("Clear called, cnt %d\n", tinfo->tidcnt);
 	for (tididx = 0; tididx < tinfo->tidcnt; tididx++) {
 		ret = unprogram_rcvarray(fd, tidinfo[tididx], NULL);
@@ -296,8 +314,8 @@ static int program_rcvarray(struct hfi1_filedata *fd, uintptr_t phys,
 			order = 0;
 		dkprintf("len %u, order %u\n", len, order);
 
-		rcv_array_wc_fill(dd, grp->base + idx);
 		rcventry = grp->base + idx;
+		rcv_array_wc_fill(dd, rcventry);
 		ret = set_rcvarray_entry(fd, phys, rcventry, grp,
 					 order);
 		if (ret)

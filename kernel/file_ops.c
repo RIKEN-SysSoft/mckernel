@@ -641,8 +641,6 @@ long hfi1_file_ioctl(void *private_data, unsigned int cmd,
 	return ret;
 }
 
-int hfi1_map_device_addresses(struct hfi1_filedata *fd);
-
 #ifdef __HFI1_ORIG__
 static ssize_t hfi1_aio_write(struct kiocb *kiocb, const struct iovec *iovec,
 			      unsigned long dim, loff_t offset)
