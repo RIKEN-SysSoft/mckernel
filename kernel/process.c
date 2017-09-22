@@ -3677,10 +3677,35 @@ debug_log(unsigned long arg)
 
 int access_ok(struct process_vm *vm, int type, uintptr_t addr, size_t len) {
 	struct vm_range *range, *next;
+	int first = true;
 
 	range = lookup_process_memory_range(vm, addr, addr + len);
 
-	while (range) {
+	if (!range || range->start > addr) {
+		kprintf("%s: No VM range at 0x%llx, refusing access\n",
+			__FUNCTION__, addr);
+		return -EFAULT;
+	}
+	do {
+		if (first) {
+			first = false;
+		} else {
+			next = next_process_memory_range(vm, range);
+			if (!next) {
+				kprintf("%s: No VM range after 0x%llx, but checking until 0x%llx. Refusing access\n",
+					__FUNCTION__, range->end, addr + len);
+				return -EFAULT;
+			}
+			if (range->end != next->start) {
+				kprintf("%s: 0x%llx - 0x%llx and 0x%llx - 0x%llx are not adjacent (request was %0x%llx-0x%llx %zu)\n",
+					__FUNCTION__, range->start, range->end,
+					next->start, next->end,
+					addr, addr+len, len);
+				return -EFAULT;
+			}
+			range = next;
+		}
+
 		if ((type == VERIFY_WRITE && !(range->flag & VR_PROT_WRITE)) ||
 		    (type == VERIFY_READ && !(range->flag & VR_PROT_READ))) {
 			kprintf("%s: 0x%llx - 0x%llx does not have prot %s (request was %0x%llx-0x%llx %zu)\n",
@@ -3689,20 +3714,7 @@ int access_ok(struct process_vm *vm, int type, uintptr_t addr, size_t len) {
 				addr, addr+len, len);
 			return -EACCES;
 		}
-
-		if (addr + len < range->end)
-			break;
-
-		next = next_process_memory_range(vm, range);
-		if (range->end != next->start) {
-			kprintf("%s: 0x%llx - 0x%llx and 0x%llx - 0x%llx are not adjacent (request was %0x%llx-0x%llx %zu)\n",
-				__FUNCTION__, range->start, range->end,
-				next->start, next->end,
-				addr, addr+len, len);
-			return -EFAULT;
-		}
-		range = next;
-	}
+	} while (addr + len > range->end);
 
 	return 0;
 }
