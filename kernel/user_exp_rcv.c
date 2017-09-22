@@ -129,7 +129,7 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 			ret = -EFAULT;
 			break;
 		}
-		phys = pte_get_phys(ptep);
+		phys = pte_get_phys(ptep) + (vaddr - base_vaddr);
 
 		if (!phys_prev) {
 			/* first pass */
