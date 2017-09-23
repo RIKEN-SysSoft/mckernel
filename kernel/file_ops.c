@@ -53,6 +53,16 @@
 #include <hfi1/user_exp_rcv.h>
 #include <errno.h>
 
+//#define DEBUG_PRINT_FOPS
+
+#ifdef DEBUG_PRINT_FOPS
+#define	dkprintf(...) kprintf(__VA_ARGS__)
+#define	ekprintf(...) kprintf(__VA_ARGS__)
+#else
+#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
+#define	ekprintf(...) kprintf(__VA_ARGS__)
+#endif
+
 #ifdef __HFI1_ORIG__
 
 #include <linux/poll.h>
@@ -451,32 +461,32 @@ long hfi1_file_ioctl(void *private_data, unsigned int cmd,
 			return ret;
 		ret = user_init(fp);
 #endif
-		kprintf("%s: HFI1_IOCTL_ASSIGN_CTXT \n", __FUNCTION__);
+		dkprintf("%s: HFI1_IOCTL_ASSIGN_CTXT \n", __FUNCTION__);
 		break;
 	case HFI1_IOCTL_CTXT_INFO:
 #if 0
 		ret = get_ctxt_info(fp, (void __user *)(unsigned long)arg,
 				    sizeof(struct hfi1_ctxt_info));
 #endif
-		kprintf("%s: HFI1_IOCTL_CTXT_INFO \n", __FUNCTION__);
+		dkprintf("%s: HFI1_IOCTL_CTXT_INFO \n", __FUNCTION__);
 		break;
 	case HFI1_IOCTL_USER_INFO:
 #if 0
 		ret = get_base_info(fp, (void __user *)(unsigned long)arg,
 				    sizeof(struct hfi1_base_info));
 #endif
-		kprintf("%s: HFI1_IOCTL_USER_INFO \n", __FUNCTION__);
+		dkprintf("%s: HFI1_IOCTL_USER_INFO \n", __FUNCTION__);
 		break;
 	case HFI1_IOCTL_CREDIT_UPD:
 #if 0	
 		if (uctxt)
 			sc_return_credits(uctxt->sc);
 #endif
-		kprintf("%s: HFI1_IOCTL_CREDIT_UPD \n", __FUNCTION__);
+		dkprintf("%s: HFI1_IOCTL_CREDIT_UPD \n", __FUNCTION__);
 		break;
 
 	case HFI1_IOCTL_TID_UPDATE:
-		kprintf("%s: HFI1_IOCTL_TID_UPDATE \n", __FUNCTION__);
+		dkprintf("%s: HFI1_IOCTL_TID_UPDATE \n", __FUNCTION__);
 		if (copy_from_user(&tinfo,
 				   (struct hfi11_tid_info __user *)arg,
 				   sizeof(tinfo)))
@@ -499,7 +509,7 @@ long hfi1_file_ioctl(void *private_data, unsigned int cmd,
 		break;
 
 	case HFI1_IOCTL_TID_FREE:
-		kprintf("%s: HFI1_IOCTL_TID_FREE \n", __FUNCTION__);
+		dkprintf("%s: HFI1_IOCTL_TID_FREE \n", __FUNCTION__);
 		if (copy_from_user(&tinfo,
 				   (struct hfi11_tid_info __user *)arg,
 				   sizeof(tinfo)))
@@ -515,7 +525,7 @@ long hfi1_file_ioctl(void *private_data, unsigned int cmd,
 		break;
 
 	case HFI1_IOCTL_TID_INVAL_READ:
-		kprintf("%s: HFI1_IOCTL_TID_INVAL_READ \n", __FUNCTION__);
+		dkprintf("%s: HFI1_IOCTL_TID_INVAL_READ \n", __FUNCTION__);
 		/* This function is only invovled with the tid mmu caching.
 		 * It is a no-op for us. */
 		ret = 0;
@@ -528,7 +538,7 @@ long hfi1_file_ioctl(void *private_data, unsigned int cmd,
 			return -EFAULT;
 		ret = manage_rcvq(uctxt, fd->subctxt, uval);
 #endif
-		kprintf("%s: HFI1_IOCTL_RECV_CTRL \n", __FUNCTION__);
+		dkprintf("%s: HFI1_IOCTL_RECV_CTRL \n", __FUNCTION__);
 		break;
 
 	case HFI1_IOCTL_POLL_TYPE:
@@ -538,7 +548,7 @@ long hfi1_file_ioctl(void *private_data, unsigned int cmd,
 			return -EFAULT;
 		uctxt->poll_type = (typeof(uctxt->poll_type))uval;
 #endif
-		kprintf("%s: HFI1_IOCTL_POLL_TYPE \n", __FUNCTION__);
+		dkprintf("%s: HFI1_IOCTL_POLL_TYPE \n", __FUNCTION__);
 		break;
 
 	case HFI1_IOCTL_ACK_EVENT:
@@ -548,7 +558,7 @@ long hfi1_file_ioctl(void *private_data, unsigned int cmd,
 			return -EFAULT;
 		ret = user_event_ack(uctxt, fd->subctxt, ul_uval);
 #endif
-		kprintf("%s: HFI1_IOCTL_ACK_EVENT \n", __FUNCTION__);
+		dkprintf("%s: HFI1_IOCTL_ACK_EVENT \n", __FUNCTION__);
 		break;
 
 	case HFI1_IOCTL_SET_PKEY:
@@ -561,7 +571,7 @@ long hfi1_file_ioctl(void *private_data, unsigned int cmd,
 		else
 			return -EPERM;
 #endif
-		kprintf("%s: HFI1_IOCTL_SET_PKEY \n", __FUNCTION__);
+		dkprintf("%s: HFI1_IOCTL_SET_PKEY \n", __FUNCTION__);
 		break;
 
 	case HFI1_IOCTL_CTXT_RESET: {
@@ -623,7 +633,7 @@ long hfi1_file_ioctl(void *private_data, unsigned int cmd,
 			sc_return_credits(sc);
 		break;
 #endif
-		kprintf("%s: HFI1_IOCTL_CTXT_RESET \n", __FUNCTION__);
+		dkprintf("%s: HFI1_IOCTL_CTXT_RESET \n", __FUNCTION__);
 	}
 
 	case HFI1_IOCTL_GET_VERS:
@@ -632,7 +642,7 @@ long hfi1_file_ioctl(void *private_data, unsigned int cmd,
 		if (put_user(uval, (int __user *)arg))
 			return -EFAULT;
 #endif
-		kprintf("%s: HFI1_IOCTL_GET_VERS \n", __FUNCTION__);
+		dkprintf("%s: HFI1_IOCTL_GET_VERS \n", __FUNCTION__);
 		break;
 
 	default:
