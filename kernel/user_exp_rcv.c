@@ -84,13 +84,13 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 {
 	int ret = -EFAULT;
 	struct hfi1_ctxtdata *uctxt = fd->uctxt;
-	uintptr_t vaddr_prev, vaddr, vaddr_end, base_vaddr;
+	uintptr_t vaddr, vaddr_end, base_vaddr = 0;
 	u32 *tidlist;
 	u16 tididx = 0;
 	struct process_vm *vm = cpu_local_var(current)->vm;
-	size_t base_pgsize, pgsize, len = 0;
+	size_t base_pgsize, len = 0;
 	pte_t *ptep;
-	u64 phys_start = 0, phys_prev = 0, phys;
+	u64 phys;
 
 	if (!tinfo->length)
 		return -EINVAL;
@@ -107,99 +107,93 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 	}
 
 	tidlist = kmalloc_cache_alloc(&tidlist_cache,
-			sizeof(*tidlist) * uctxt->expected_count);
+			//sizeof(*tidlist) * uctxt->expected_count);
+			sizeof(*tidlist) * 1024);
 	if (!tidlist)
 		return -ENOMEM;
 
+#if 0
 	/* Verify that access is OK for the user buffer */
 	if (access_ok(vm, VERIFY_WRITE, tinfo->vaddr, tinfo->length))
 		return -EFAULT;
+#endif
 
 	vaddr_end = tinfo->vaddr + tinfo->length;
 	dkprintf("setup start: 0x%llx, length: %zu\n", tinfo->vaddr,
 		 tinfo->length);
-	for (vaddr = tinfo->vaddr; vaddr < vaddr_end; vaddr += pgsize) {
-		ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
-					    (void*)vaddr, 0,
-					    (void**)&base_vaddr,
-					    &base_pgsize, 0);
-		if (unlikely(!ptep || !pte_is_present(ptep))) {
-			kprintf("%s: ERRROR: no valid  PTE for 0x%lx\n",
-				__FUNCTION__, vaddr);
-			ret = -EFAULT;
-			break;
-		}
-		phys = pte_get_phys(ptep) + (vaddr - base_vaddr);
 
-		if (!phys_prev) {
-			/* first pass */
-			phys_start = phys;
-		} else if (len == MAX_EXPECTED_BUFFER ||
-				phys - phys_prev != vaddr - vaddr_prev) {
-			/*
-			 *  Two ways to get here:
-			 *  - Segment has reached max size;
-			 *  - Found a new segment;
-			 *
-			 * Register what we have.
-			 */
-			ret = program_rcvarray(fd, phys_start, len,
-					       tidlist + tididx);
-			if (ret <= 0) {
-				kprintf("Failed to program RcvArray entries: %d\n",
-					ret);
+	vaddr = tinfo->vaddr;
+
+	ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+			(void*)vaddr, 0,
+			(void**)&base_vaddr,
+			&base_pgsize, 0);
+	if (unlikely(!ptep || !pte_is_present(ptep))) {
+		kprintf("%s: ERRROR: no valid  PTE for 0x%lx\n",
+				__FUNCTION__, vaddr);
+		return -EFAULT;
+	}
+
+	while (vaddr < vaddr_end) {
+		phys = pte_get_phys(ptep) + (vaddr - base_vaddr);
+		len = (base_vaddr + base_pgsize - vaddr);
+		ret = 0;
+
+		/* Collect max physically contiguous chunk */
+		while (len < MAX_EXPECTED_BUFFER &&
+				vaddr + len < vaddr_end) {
+			uintptr_t __base_vaddr;
+			size_t __base_pgsize;
+			pte_t *__ptep;
+			int contiguous = 0;
+
+			/* Look up next page */
+			__ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+					(void*)vaddr + len, 0,
+					(void**)&__base_vaddr,
+					&__base_pgsize, 0);
+			if (unlikely(!__ptep || !pte_is_present(__ptep))) {
+				kprintf("%s: ERRROR: no valid  PTE for 0x%lx\n",
+						__FUNCTION__, vaddr + len);
 				ret = -EFAULT;
+				break;
 			}
 
-			tididx += ret;
-			phys_start = phys;
-			len = 0;
+			/* Contiguous? */
+			if (pte_get_phys(__ptep) == pte_get_phys(ptep) + base_pgsize) {
+				len += __base_pgsize;
+				contiguous = 1;
+			}
+			
+			base_pgsize = __base_pgsize;
+			base_vaddr = __base_vaddr;
+			ptep = __ptep;
+
+			if (!contiguous)
+				break;
 		}
 
-		pgsize = base_pgsize;
-		/* Corner case #1: pgsize is too big wrt. requested length */
-		if (vaddr + pgsize > vaddr_end) {
-			pgsize = vaddr_end - vaddr;
+		if (ret == -EFAULT)
+			break;
+		
+		if (len > vaddr_end - vaddr) {
+			len = vaddr_end - vaddr;
 		}
 
-		/* Corner case #2: pgsize is too big wrt. max request size.
-		 * This will result in an extra virt to phys lookup,
-		 * but should be rare in practice
-		 */
-		if (len + pgsize > MAX_EXPECTED_BUFFER) {
-			size_t extra = len + pgsize - MAX_EXPECTED_BUFFER;
-			phys -= extra;
-			vaddr -= extra;
-			pgsize -= extra;
+		if (len > MAX_EXPECTED_BUFFER) {
+			len = MAX_EXPECTED_BUFFER;
 		}
 
-		/* Corner case #3: don't let us go further than start of
-		 * next page.
-		 * If we're already towards the end of a big page, and the
-		 * next ones are smaller, we could fly over some pages without
-		 * noticing. No skipping!
-		 */
-		if (vaddr + pgsize > base_vaddr + base_pgsize) {
-			dkprintf("truncating down %zu to %zu, vaddr 0x%llx, base 0x%llx\n",
-				pgsize, base_vaddr - vaddr + base_pgsize, vaddr, base_vaddr);
-			pgsize = base_vaddr - vaddr + base_pgsize;
+		ret = program_rcvarray(fd, phys, len, tidlist + tididx);
+		if (ret <= 0) {
+			kprintf("Failed to program RcvArray entries: %d\n",
+					ret);
+			ret = -EFAULT;
 		}
-		phys_prev = phys;
-		vaddr_prev = vaddr;
-		len += pgsize;
-		dkprintf("phys 0x%llx, vaddr 0x%llx, len %zu, pgsize %zu\n",
-			 phys, vaddr, len, pgsize);
+
+		tididx += ret;
+		vaddr += len;
 	}
-
-	/* Register whatever is left */
-	ret = program_rcvarray(fd, phys_start, len,
-			       tidlist + tididx);
-	if (ret <= 0) {
-		kprintf("Failed to program RcvArray entries: %d\n",
-			ret);
-		ret = -EFAULT;
-	}
-	tididx += ret;
 
 	if (ret > 0) {
 		spin_lock(&fd->tid_lock);
