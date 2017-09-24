@@ -342,6 +342,8 @@ static int program_rcvarray(struct hfi1_filedata *fd, uintptr_t phys,
 	return count;
 }
 
+struct kmalloc_cache_header tid_node_cache = { NULL };
+
 static int set_rcvarray_entry(struct hfi1_filedata *fd, uintptr_t phys,
 			      u32 rcventry, struct tid_group *grp,
 			      u16 order)
@@ -354,7 +356,7 @@ static int set_rcvarray_entry(struct hfi1_filedata *fd, uintptr_t phys,
 	 * Allocate the node first so we can handle a potential
 	 * failure before we've programmed anything.
 	 */
-	node = kcalloc(1, sizeof(*node), GFP_KERNEL);
+	node = kmalloc_cache_alloc(&tid_node_cache, sizeof(*node));
 	if (!node)
 		return -ENOMEM;
 
