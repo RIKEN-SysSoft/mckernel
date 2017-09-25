@@ -1543,6 +1543,7 @@ void *ihk_mc_map_virtual(unsigned long phys, int npages,
 			return NULL;
 		}
 	}
+	barrier();	/* Temporary fix for Thunder-X */
 	return (char *)p + offset;
 }
 

@@ -13,16 +13,16 @@
 #ifndef ARCH_CPU_H
 #define ARCH_CPU_H
 
-#include <ihk/cpu.h>
+#define arch_barrier()	asm volatile("" : : : "memory")
 
 static inline void rmb(void)
 {
-	barrier();
+	arch_barrier();
 }
 
 static inline void wmb(void)
 {
-	barrier();
+	arch_barrier();
 }
 
 static unsigned long read_tsc(void)

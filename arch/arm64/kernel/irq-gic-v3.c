@@ -10,12 +10,18 @@
 
 //#define DEBUG_GICV3
 
+#define USE_CAVIUM_THUNDER_X
+
 #ifdef DEBUG_GICV3
 #define	dkprintf(...)	kprintf(__VA_ARGS__)
 #define	ekprintf(...)	kprintf(__VA_ARGS__)
 #else
 #define dkprintf(...)
 #define	ekprintf(...)	kprintf(__VA_ARGS__)
+#endif
+
+#ifdef USE_CAVIUM_THUNDER_X
+static char is_cavium_thunderx = 0;
 #endif
 
 void *dist_base;
@@ -108,8 +114,8 @@ static uint64_t gic_read_iar_cavium_thunderx(void)
 	asm volatile("nop;nop;nop;nop;");
 	asm volatile("mrs_s %0, " __stringify(ICC_IAR1_EL1) : "=r" (irqstat));
 	asm volatile("nop;nop;nop;nop;");
-	mb();
 #endif /* CONFIG_HAS_NMI */
+	mb();
 
 	return irqstat;
 }
@@ -118,7 +124,7 @@ static uint64_t gic_read_iar_cavium_thunderx(void)
 static uint64_t gic_read_iar(void)
 {
 #ifdef USE_CAVIUM_THUNDER_X
-	if (static_key_false(&is_cavium_thunderx))
+	if (is_cavium_thunderx)
 		return gic_read_iar_cavium_thunderx();
 	else
 #endif
@@ -266,6 +272,7 @@ void arm64_issue_ipi_gicv3(uint32_t cpuid, uint32_t vector)
 {
 	dkprintf("Send irq#%d to cpuid=%d\n", vector, cpuid);
 
+	barrier();
 	if(vector < 16){
 		// send SGI
 		arm64_raise_sgi_gicv3(cpuid, vector);
@@ -304,7 +311,9 @@ void gic_dist_init_gicv3(unsigned long dist_base_pa, unsigned long size)
 
 #ifdef USE_CAVIUM_THUNDER_X
 	/* Cavium ThunderX erratum 23154 */
-	gicv3_check_capabilities();
+	if (MIDR_IMPLEMENTOR(read_cpuid_id()) == ARM_CPU_IMP_CAVIUM) {
+		is_cavium_thunderx = 1;
+	}
 #endif
 }
 

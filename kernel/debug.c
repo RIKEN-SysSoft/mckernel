@@ -172,6 +172,7 @@ int kprintf(const char *format, ...)
 	kprintf_unlock_head(flags_head);
 	kprintf_unlock(flags_tail);
 
+	barrier();	/* Temporary fix for Thunder-X */
 	return len;
 }
 
