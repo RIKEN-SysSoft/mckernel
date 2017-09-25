@@ -742,6 +742,8 @@ static void show_context_stack(struct pt_regs *regs)
 		return;
 	}
 
+	ihk_mc_debug_show_interrupt_context(regs);
+
 	sp = (uintptr_t)regs + sizeof(*regs);
 	stack_top = ALIGN_UP(sp, (uintptr_t)KERNEL_STACK_SIZE);
 	max_loop = (stack_top - sp) / min_stack_frame_size;
