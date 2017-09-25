@@ -25,6 +25,8 @@
 #define smp_rmb()	dmb(ishld)
 #define smp_wmb()	dmb(ishst)
 
+#define arch_barrier()	smp_mb()
+
 #define smp_store_release(p, v)						\
 do {									\
 	compiletime_assert_atomic_type(*p);				\

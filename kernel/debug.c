@@ -170,6 +170,7 @@ int kprintf(const char *format, ...)
 		ihk_mc_delay_us(IHK_KMSG_NOTIFY_DELAY);
 	}
 
+	barrier();
 	return len;
 }
 

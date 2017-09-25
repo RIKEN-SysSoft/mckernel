@@ -1617,6 +1617,7 @@ void *ihk_mc_map_virtual(unsigned long phys, int npages,
 			return NULL;
 		}
 	}
+	barrier();
 	return (char *)p + offset;
 }
 

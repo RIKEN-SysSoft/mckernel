@@ -6,6 +6,8 @@
 
 #if defined(CONFIG_HAS_NMI)
 #include <arm-gic-v3.h>
+#else /* defined(CONFIG_HAS_NMI) */
+#include <sysreg.h>
 #endif /* defined(CONFIG_HAS_NMI) */
 
 #if defined(CONFIG_HAS_NMI)

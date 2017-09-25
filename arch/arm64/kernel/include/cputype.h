@@ -35,6 +35,8 @@
 #define MIDR_IMPLEMENTOR(midr)	\
 	(((midr) & MIDR_IMPLEMENTOR_MASK) >> MIDR_IMPLEMENTOR_SHIFT)
 
+#define ARM_CPU_IMP_CAVIUM	0x43
+
 #ifndef __ASSEMBLY__
 
 static unsigned int read_cpuid_id(void)
