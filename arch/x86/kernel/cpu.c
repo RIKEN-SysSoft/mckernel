@@ -1490,6 +1490,69 @@ void arch_show_extended_context(void)
 	}
 }
 
+struct stack {
+	struct stack *rbp;
+	unsigned long eip;
+};
+
+/* KPRINTF_LOCAL_BUF_LEN is 1024, useless to go further */
+#define STACK_BUF_LEN (1024-sizeof("[  0]: "))
+static void __print_stack(struct stack *rbp, unsigned long first) {
+	char buf[STACK_BUF_LEN];
+	size_t len;
+
+	/* Build string in buffer to output a single line */
+	len = snprintf(buf, STACK_BUF_LEN,
+		       "addr2line -e smp-x86/kernel/mckernel.img -fpia");
+
+	if (first)
+		len += snprintf(buf + len, STACK_BUF_LEN - len,
+				" %#16lx", first);
+
+	while ((unsigned long)rbp > 0xffff880000000000 &&
+			STACK_BUF_LEN - len > sizeof(" 0x0123456789abcdef")) {
+		len += snprintf(buf + len, STACK_BUF_LEN - len,
+				" %#16lx", rbp->eip);
+		rbp = rbp->rbp;
+	}
+	__kprintf("%s\n", buf);
+}
+
+void arch_print_pre_interrupt_stack(const struct x86_basic_regs *regs) {
+	struct stack *rbp;
+
+	/* only for kernel stack */
+	if (regs->error & PF_USER)
+		return;
+
+	__kprintf("Pre-interrupt stack trace:\n");
+
+	/* interrupt stack heuristics:
+	 * - the first entry looks like it is always garbage, so skip.
+	 * (that is done by taking regs->rsp instead of &regs->rsp)
+	 * - that still looks sometimes wrong. For now, if it is not
+	 * within 64k of itself, look for the next entry that matches.
+	 */
+
+	rbp = (struct stack*)regs->rsp;
+
+	while ((uintptr_t)rbp > (uintptr_t)rbp->rbp
+			|| (uintptr_t)rbp + 0x10000 < (uintptr_t)rbp->rbp)
+		rbp = (struct stack *)(((uintptr_t *)rbp) + 1);
+
+	__print_stack(rbp, regs->rip);
+}
+
+void arch_print_stack() {
+	struct stack *rbp;
+
+	__kprintf("Approximative stack trace:\n");
+
+	asm("mov %%rbp, %0" : "=r"(rbp) );
+
+	__print_stack(rbp, 0);
+}
+
 /*@
   @ requires \valid(reg);
   @ assigns \nothing;
@@ -1520,6 +1583,8 @@ void arch_show_interrupt_context(const void *reg)
 	        regs->cs, regs->ss, regs->rflags, regs->error);
 
 	arch_show_extended_context();
+
+	arch_print_pre_interrupt_stack(regs);
 
 	kprintf_unlock(irqflags);
 }

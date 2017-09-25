@@ -1205,6 +1205,10 @@ void ihk_mc_delay_us(int us)
 	arch_delay(us);
 }
 
+void arch_print_stack()
+{
+}
+
 void arch_show_interrupt_context(const void *reg)
 {
 	const struct pt_regs *regs = (struct pt_regs *)reg;

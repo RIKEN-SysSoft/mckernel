@@ -5,6 +5,7 @@
 
 extern struct cpu_local_var *clv;
 extern void eventfd(int type);
+extern void arch_print_stack();
 
 void panic(const char *msg)
 {
@@ -16,7 +17,9 @@ void panic(const char *msg)
 	}
 	cpu_disable_interrupt();
 
-	kprintf(msg);
+	kprintf("%s\n", msg);
+
+	arch_print_stack();
 
 	while (1) {
 		cpu_halt();
