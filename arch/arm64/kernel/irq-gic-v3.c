@@ -408,6 +408,7 @@ void gic_enable_gicv3(void)
 	/* Set specific IPI to NMI */
 	writeb_relaxed(GICD_INT_NMI_PRI, rd_sgi_base + GIC_DIST_PRI + INTRID_CPU_STOP);
 	writeb_relaxed(GICD_INT_NMI_PRI, rd_sgi_base + GIC_DIST_PRI + INTRID_MEMDUMP);
+	writeb_relaxed(GICD_INT_NMI_PRI, rd_sgi_base + GIC_DIST_PRI + INTRID_STACK_TRACE);
 
 	/* sync wait */
 	gic_do_wait_for_rwp(rbase);
