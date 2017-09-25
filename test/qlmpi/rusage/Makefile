@@ -29,7 +29,6 @@ rusage010: rusage010.o
 rusage010.o: rusage010.c
 	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
 
-
 rusage008: rusage008.o
 	$(CC) -o $@ $^ $(LDFLAGSMCK)
 
@@ -48,6 +47,17 @@ rusage011: rusage011.o
 rusage011.o: rusage011.c
 	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
 
+rusage002: rusage002.o
+	$(CC) -o $@ $^ $(LDFLAGSMCK) -lrt
+
+rusage002.o: rusage002.c
+	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
+
+rusage003: rusage003.o
+	$(CC) -o $@ $^ $(LDFLAGSMCK) -lrt
+
+rusage003.o: rusage003.c
+	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
 
 clean:
 	rm -f core $(EXES) $(OBJS) $(EXESMCK) $(OBJSMCK)

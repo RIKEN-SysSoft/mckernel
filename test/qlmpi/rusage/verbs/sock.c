@@ -109,6 +109,7 @@ int sock_connect(char *server_name, int port, int *listenfd){
 
 		// client mode
 		}else{
+			sleep(1);
             inet_ntop(rp->ai_family, rp->ai_addr->sa_data, addrstr, 100);
             void *ptr;
             switch(rp->ai_family) {

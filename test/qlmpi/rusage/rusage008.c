@@ -54,6 +54,7 @@ int main(int argc, char** argv) {
 	int status;
 	int fd;
 // for swap_test
+#define TEST_VAL 0x1234
 	int swap_rc = 0;
 	char buffer[BUF_SIZE];
 	
@@ -65,14 +66,16 @@ int main(int argc, char** argv) {
 		
 		mem = mmap(0, sz_mem[SZ_INDEX], PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
 		CHKANDJUMP(mem == MAP_FAILED, 255, "mmap failed\n");
-		
-		unsigned long val = *((unsigned long*)mem);
+		memset(mem, 0, sz_mem[SZ_INDEX]);
 
 // for swap_test
 		swap_rc = do_swap("/tmp/rusage008_c.swp", buffer);
 		if (swap_rc < 0) {
 			printf("[NG] swap in child is failed\n");
 		}
+
+		*((unsigned long*)mem) = TEST_VAL;
+
 		_exit(123);
 	} else {
 		fd = open("./file", O_RDWR);
@@ -81,16 +84,33 @@ int main(int argc, char** argv) {
 		mem = mmap(0, sz_mem[SZ_INDEX], PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
 		CHKANDJUMP(mem == MAP_FAILED, 255, "mmap failed\n");
 		
-		unsigned long val = *((unsigned long*)mem);
 
 		ret = waitpid(pid, &status, 0);
 		CHKANDJUMP(ret == -1, 255, "waitpid failed\n");
+		printf("child exit status=%d\n", WEXITSTATUS(status));
+
 // for swap_test
+		// before swap
+		unsigned long val = *((unsigned long*)mem);
+		if (val == TEST_VAL) {
+			printf("[OK] before swap, val:0x%lx\n", val);
+		} else {
+			printf("[NG] before swap, val is not 0x%lx, val is 0x%lx\n", TEST_VAL, val);
+		}
+
 		swap_rc = do_swap("/tmp/rusage008_p.swp", buffer);
 		if (swap_rc < 0) {
 			printf("[NG] swap in parent is failed\n");
 		}
-		printf("exit status=%d\n", WEXITSTATUS(status));
+
+		// after swap
+		val = *((unsigned long*)mem);
+		if (val == TEST_VAL) {
+			printf("[OK] after swap,  val:0x%lx\n", val);
+		} else {
+			printf("[NG] after swap,  val is not 0x%lx, val is 0x%lx\n", TEST_VAL, val);
+		}
+
 	}
 	
  fn_exit:

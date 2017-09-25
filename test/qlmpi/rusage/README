@@ -2,13 +2,14 @@
 Test matrix
 ===========
 
+rusage002:
+  do_mmap(),/dev/shm with --mpol_shm_premap,pre-page->get_page(),st->set_pte()->munmap()->clear_range() [OK]
+
+rusage003:
+  do_mmap(),/dev/shm without --mpol_shm_premap,pre-page->get_page(),st->set_pte()->munmap()->clear_range() [OK]
+
 rusage010:
   app->mmap() 2M,anon,pre-page ->set_range()->munmap()->free_process_memory_range()->clear_range()[OK]
-
-rusage005: device file (ib ping-pong)
-  devobj()->get_page()->pf->munmap()->clear_range() [OK]
-  remote page fault->cow->clear_range() [OK]
-  ld-linux.so->mmap private->cow->clear_range() [OK]
 
 rusage008: sharing file-map page
 fork()->filemap->pf->clear_range() [OK]
@@ -18,4 +19,9 @@ fork()->shmat()->pf->clear_range() [OK]
 
 rusage011: sharing xpmem page
 fork()->xpmem_attach()->pf->clear_range() [OK]
+
+device file (ib ping-pong) in verbs directory
+  devobj()->get_page()->pf->munmap()->clear_range() [OK]
+  remote page fault->cow->clear_range() [OK]
+  ld-linux.so->mmap private->cow->clear_range() [OK]
 

@@ -8,7 +8,7 @@
 #include "sock.h"
 #include "debug.h"
 
-#define DEBUG_QP
+//#define DEBUG_QP
 #ifdef DEBUG_QP
 #define dprintf printf
 #else

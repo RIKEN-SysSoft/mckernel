@@ -1,8 +1,11 @@
 #include <unistd.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <sys/mman.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
 #include "qltest.h"
 
 #define DEBUG
@@ -34,37 +37,34 @@
 		}                                                               \
     } while(0)
 
-int sz_anon[] = {
+int sz_mem[] = {
 	4 * (1ULL<<10),
 	2 * (1ULL<<20),
 	1 * (1ULL<<30),
 	134217728};
 
 #define SZ_INDEX 0
-#define NUM_AREAS 1
 
 int main(int argc, char** argv) {
-	int i;
-	int sz_index;
-	void* anon[NUM_AREAS];
-	int ret = 0;
-// for qlmpi test
-#define TEST_VAL 0x1234
 	void* mem;
+	int ret = 0;
+	int fd;
+	char fn[256] = "/dev/shm/Intel_MPI";
+#define TEST_VAL 0x1234
 	int swap_rc = 0;
 	char buffer[BUF_SIZE];
+	
+	fd = open(fn, O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR);
+	CHKANDJUMP(fd == -1, 255, "shm_open failed,str=%s\n", strerror(errno));
 
-	CHKANDJUMP(argc != 2, 255, "%s <sz_index>\n", argv[0]);
-	sz_index = atoi(argv[1]);
+	ret = ftruncate(fd, sz_mem[SZ_INDEX]);
+	CHKANDJUMP(ret != 0, 255, "ftruncate failed\n");
 
-	for(i = 0; i < NUM_AREAS; i++) {
-		anon[i] = mmap(0, sz_anon[sz_index], PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
-		CHKANDJUMP(anon[i] == MAP_FAILED, 255, "mmap failed\n");
-		memset(anon[i], 0, sz_anon[sz_index]);
-	}
-// for qlmpi test
+	mem = mmap(0, sz_mem[SZ_INDEX], PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+	CHKANDJUMP(mem == MAP_FAILED, 255, "mmap failed\n");
+	memset(mem, 0, sz_mem[SZ_INDEX]);
+
 	// before swap
-	mem = anon[0];
 	*((unsigned long*)mem) = TEST_VAL;
 	unsigned long val = *((unsigned long*)mem);
 	if (val == TEST_VAL) {
@@ -73,9 +73,9 @@ int main(int argc, char** argv) {
 		printf("[NG] before swap, val is not correct, val:0x%lx\n", val);
 	}
 
-	swap_rc = do_swap("/tmp/rusage010.swp", buffer);
+	swap_rc = do_swap("/tmp/rusage002.swp", buffer);
 	if (swap_rc < 0) {
-		printf("[NG] swap in parent is failed\n");
+		printf("[NG] swap is failed\n");
 	}
 
 	// after swap
@@ -86,9 +86,11 @@ int main(int argc, char** argv) {
 		printf("[NG] after swap,  val is not correct, val:0x%lx\n", val);
 	}
 
-	for(i = 0; i < NUM_AREAS; i++) {
-		munmap(anon[i], sz_anon[sz_index]);
-	}
+	munmap(mem, sz_mem[SZ_INDEX]);
+	ret = close(fd);
+	CHKANDJUMP(ret != 0, 255, "close failed\n");
+	ret = unlink(fn);
+	CHKANDJUMP(ret != 0, 255, "shm_unlink failed\n");
 	
  fn_exit:
 	return ret;

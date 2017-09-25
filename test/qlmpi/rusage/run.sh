@@ -31,6 +31,11 @@ if [ "${pid}" != "" ]; then
 fi
 
 case ${testname} in
+	rusage002)
+	mcexecopt="--mpol-shm-premap"
+	;;
+	rusage003)
+	;;
     rusage010)
 	testopt="1"
 	;;

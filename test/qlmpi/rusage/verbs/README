@@ -1,0 +1,33 @@
+=============
+Test program for swap in ib_pingpong
+=============
+Rank 0 process is sender, another is reciever.
+Sender send "MagicNumber + LoopCount" to reciever.
+Reciever check the number, and print OK or NG.
+Then, they swapout and wait for resume.
+
+When they are resumed, increment LoopCount and send/recieve again.
+
+=============
+How to run
+=============
+compile mpi_rdma_wr
+ $ make
+
+run by ql_mpiexec_start
+ $ ql_mpiexec_start -machinefile ./mfile ./mpi_rdma_wr -s `hostname` -p 9999
+will be printed
+ [OK] recv_val: 0x55aa55aa
+
+rerun by ql_mpiexec_start
+ $ ql_mpiexec_start -machinefile ./mfile ./mpi_rdma_wr -s `hostname` -p 9999
+
+if swap is disable, it will be printed
+ [OK] recv_val: 0x55aa55ab
+else (swap is enable)
+ [NG] recv_val is not correct, expected:0x55aa55ab  recv:0x55aa55aa
+   or 
+ occur abort
+
+finalize by ql_mpiexec_finalize
+ $ ql_mpiexec_finalize -machinefile ./mfile ./mpi_rdma_wr -s `hostname` -p 9999

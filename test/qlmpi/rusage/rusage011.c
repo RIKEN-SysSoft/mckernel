@@ -58,6 +58,7 @@ int main(int argc, char** argv) {
 	int shmid;
 	xpmem_segid_t segid;
 // for swap_test
+#define TEST_VAL 0x1234
 	int swap_rc = 0;
 	char buffer[BUF_SIZE];
 
@@ -88,13 +89,14 @@ int main(int argc, char** argv) {
 		struct xpmem_addr addr = { .apid = apid, .offset = 0 };
 		void* attach = xpmem_attach(addr, sz_mem[SZ_INDEX], NULL);
 		CHKANDJUMP(attach == (void*)-1, 255, "xpmem_attach failed: %s\n", strerror(errno));
-		
-		*((unsigned long*)attach) = 0x1234;
+		memset(attach, 0, sz_mem[SZ_INDEX]);
+
 // for swap_test
 		swap_rc = do_swap("/tmp/rusage011_c.swp", buffer);
 		if (swap_rc < 0) {
 			printf("[NG] swap in child is failed\n");
 		}
+		*((unsigned long*)attach) = TEST_VAL;
 
 		ret = xpmem_detach(attach);
 		CHKANDJUMP(ret == -1, 255, "xpmem_detach failed\n");
@@ -116,12 +118,26 @@ int main(int argc, char** argv) {
 		CHKANDJUMP(ret == -1, 255, "waitpid failed\n");
 
 // for swap_test
+		// before swap
+		unsigned long val = *((unsigned long*)mem);
+		if (val == TEST_VAL) {
+			printf("[OK] before swap, val:0x%lx\n", val);
+		} else {
+			printf("[NG] before swap, val is not correct, val:0x%lx\n", val);
+		}
+
 		swap_rc = do_swap("/tmp/rusage011_p.swp", buffer);
 		if (swap_rc < 0) {
 			printf("[NG] swap in parent is failed\n");
 		}
 
-		printf("%lx\n", *((unsigned long*)mem));
+		// after swap
+		val = *((unsigned long*)mem);
+		if (val == TEST_VAL) {
+			printf("[OK] after swap,  val:0x%lx\n", val);
+		} else {
+			printf("[NG] after swap,  val is not 0x%lx, val is 0x%lx\n", TEST_VAL, val);
+		}
 
 		struct shmid_ds buf;
 		ret = shmctl(shmid, IPC_RMID, &buf);
