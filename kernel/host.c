@@ -432,8 +432,8 @@ static int process_msg_prepare_process(unsigned long rphys)
 	}
 
 	n = p->num_sections;
-	if (n > 16) {
-		kprintf("%s: ERROR: more ELF sections than 16??\n",
+	if (n > 16 || 0 >= n) {
+		kprintf("%s: ERROR: ELF sections other than 1 to 16 ??\n",
 			__FUNCTION__);
 		return -ENOMEM;
 	}
