@@ -10029,8 +10029,10 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	}
 #endif /* POSTK_DEBUG_TEMP_FIX_60 && POSTK_DEBUG_TEMP_FIX_56 */
 
-	if (cpu_local_var(current)->proc->ptrace) {
+	if (cpu_local_var(current)->proc->ptrace && l != -ENOSYS) {
+		ihk_mc_syscall_ret(ctx) = l;
 		ptrace_syscall_exit(cpu_local_var(current));
+		l = ihk_mc_syscall_ret(ctx);
 	}
 
 #ifdef DISABLE_SCHED_YIELD
