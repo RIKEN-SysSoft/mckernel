@@ -4386,8 +4386,6 @@ SYSCALL_DECLARE(madvise)
 	case MADV_UNMERGEABLE:
 	case MADV_HUGEPAGE:
 	case MADV_NOHUGEPAGE:
-	case MADV_DONTDUMP:
-	case MADV_DODUMP:
 		error = -EINVAL;
 		break;
 
@@ -4399,6 +4397,8 @@ SYSCALL_DECLARE(madvise)
 	case MADV_DONTFORK:
 	case MADV_DOFORK:
 	case MADV_REMOVE:
+	case MADV_DONTDUMP:
+	case MADV_DODUMP:
 		break;
 
 	case MADV_HWPOISON:
@@ -4507,6 +4507,22 @@ SYSCALL_DECLARE(madvise)
 		error = change_attr_process_memory_range(thread->vm, start, end,
 		                                         clear_memory_range_flag,
 		                                         VR_DONTFORK);
+		if(error){
+			goto out;
+		}
+	}
+	if(advice == MADV_DONTDUMP){
+		error = change_attr_process_memory_range(thread->vm, start, end,
+		                                         set_memory_range_flag,
+		                                         VR_DONTDUMP);
+		if(error){
+			goto out;
+		}
+	}
+	if(advice == MADV_DODUMP){
+		error = change_attr_process_memory_range(thread->vm, start, end,
+		                                         clear_memory_range_flag,
+		                                         VR_DONTDUMP);
 		if(error){
 			goto out;
 		}
