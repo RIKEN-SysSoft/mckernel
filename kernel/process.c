@@ -2089,15 +2089,16 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 #ifdef POSTK_DEBUG_ARCH_DEP_80 /* user stack prepage size fix */
 	minsz = LARGE_PAGE_SIZE;
 #else /* POSTK_DEBUG_ARCH_DEP_80 */
-	minsz = (proc->rlimit[MCK_RLIMIT_STACK].rlim_cur
+	minsz = (pn->stack_premap
 			+ LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
 #endif /* POSTK_DEBUG_ARCH_DEP_80 */
-	size = (proc->rlimit[MCK_RLIMIT_STACK].rlim_max
+	size = (proc->rlimit[MCK_RLIMIT_STACK].rlim_cur
 			+ LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
-	dkprintf("%s: rlim_max: %lu, rlim_cur: %lu\n",
+	dkprintf("%s: stack_premap: %lu, rlim_cur: %lu, minsz: %lu, size: %lu\n",
 			__FUNCTION__,
-			proc->rlimit[MCK_RLIMIT_STACK].rlim_max,
-			proc->rlimit[MCK_RLIMIT_STACK].rlim_cur);
+			pn->stack_premap,
+			proc->rlimit[MCK_RLIMIT_STACK].rlim_cur,
+			minsz, size);
 	if (size > (USER_END / 2)) {
 		size = USER_END / 2;
 	}

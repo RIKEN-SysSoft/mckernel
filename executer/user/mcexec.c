@@ -214,6 +214,9 @@ static unsigned long mpol_threshold = 0;
 static unsigned long heap_extension = (4*1024);
 static int profile = 0;
 static int disable_sched_yield = 0;
+static long stack_premap = (2ULL << 20);
+static long stack_max = -1;
+static struct rlimit rlim_stack;
 
 /* Partitioned execution (e.g., for MPI) */
 static int nr_processes = 0;
@@ -1211,7 +1214,7 @@ static int reduce_stack(struct rlimit *orig_rlim, char *argv[])
 	struct rlimit new_rlim;
 
 	/* save original value to environment variable */
-	n = snprintf(newval, sizeof(newval), "%#lx,%#lx",
+	n = snprintf(newval, sizeof(newval), "%ld,%ld",
 			(unsigned long)orig_rlim->rlim_cur,
 			(unsigned long)orig_rlim->rlim_max);
 	if (n >= sizeof(newval)) {
@@ -1651,12 +1654,15 @@ static struct option mcexec_options[] = {
 		.flag =		NULL,
 		.val =		'h',
 	},
+	{
+		.name =		"stack-premap",
+		.has_arg =	required_argument,
+		.flag =		NULL,
+		.val =		's',
+	},
 	/* end */
 	{ NULL, 0, NULL, 0, },
 };
-
-#define	MCEXEC_DEF_CUR_STACK_SIZE	(2 * 1024 * 1024)	/* 2 MiB */
-#define	MCEXEC_DEF_MAX_STACK_SIZE	(64 * 1024 * 1024)	/* 64 MiB */
 
 #ifdef ENABLE_MCOVERLAYFS
 void bind_mount_recursive(const char *root, char *prefix)
@@ -1762,7 +1768,7 @@ static void ld_preload_init()
 
 	if (disable_sched_yield) {
 		sprintf(envbuf, "%s/libsched_yield.so.1.0.0", MCKERNEL_LIBDIR);
-		__dprintf("%s: %s\n", __FUNCTION__, sched_yield_lib_path);
+		__dprintf("%s: preload library: %s\n", __FUNCTION__, envbuf);
 		if (setenv("LD_PRELOAD", envbuf, 1) < 0) {
 			printf("%s: warning: failed to set LD_PRELOAD for sched_yield\n",
 					__FUNCTION__);
@@ -1796,7 +1802,6 @@ int main(int argc, char **argv)
 	char *p;
 	int i;
 	int error;
-	struct rlimit rlim_stack;
 	unsigned long lcur;
 	unsigned long lmax;
 	int target_core = 0;
@@ -1846,10 +1851,15 @@ int main(int argc, char **argv)
 		CHKANDJUMP(error == -1, 1, "unsetenv failed");
 	}
 
-	rlim_stack.rlim_cur = MCEXEC_DEF_CUR_STACK_SIZE;
-	rlim_stack.rlim_max = MCEXEC_DEF_MAX_STACK_SIZE;
+	/* Inherit ulimit settings to McKernel process */
+	if (getrlimit(RLIMIT_STACK, &rlim_stack)) {
+		fprintf(stderr, "getrlimit failed\n");
+		return 1;
+	}
+    __dprintf("rlim_stack=%ld,%ld\n", rlim_stack.rlim_cur, rlim_stack.rlim_max);
 
-#define	MCEXEC_MAX_STACK_SIZE	(1024 * 1024 * 1024)	/* 1 GiB */
+	/* Shrink mcexec stack if it leaves too small room for McKernel process */
+#define	MCEXEC_MAX_STACK_SIZE	(16 * 1024 * 1024)	/* 1 GiB */
 	if (rlim_stack.rlim_cur > MCEXEC_MAX_STACK_SIZE) {
 		/* need to call reduce_stack() before modifying the argv[] */
 		(void)reduce_stack(&rlim_stack, argv);	/* no return, unless failure */
@@ -1859,9 +1869,9 @@ int main(int argc, char **argv)
 
 	/* Parse options ("+" denotes stop at the first non-option) */
 #ifdef ADD_ENVS_OPTION
-	while ((opt = getopt_long(argc, argv, "+c:n:t:m:h:e:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:t:m:h:e:s:", mcexec_options, NULL)) != -1) {
 #else /* ADD_ENVS_OPTION */
-	while ((opt = getopt_long(argc, argv, "+c:n:t:m:h:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:t:m:h:s:", mcexec_options, NULL)) != -1) {
 #endif /* ADD_ENVS_OPTION */
 		switch (opt) {
 			char *tmp;
@@ -1903,6 +1913,23 @@ int main(int argc, char **argv)
 				add_env_list(&extra_env, optarg);
 				break;
 #endif /* ADD_ENVS_OPTION */
+			
+		case 's': {
+			char *token, *dup, *line;
+			dup = strdup(optarg);
+			line = dup;
+			token = strsep(&line, ",");
+			if (token != NULL && *token != 0) {
+				stack_premap = atobytes(token);
+			}
+			token = strsep(&line, ",");
+			if (token != NULL && *token != 0) {
+				stack_max = atobytes(token);
+			}
+			free(dup);
+			__dprintf("stack_premap=%ld,stack_max=%ld\n", stack_premap, stack_max);
+			break; }
+
 			case 0:	/* long opt */
 				break;
 
@@ -2111,6 +2138,7 @@ int main(int argc, char **argv)
 	desc->cpu = target_core;
 	desc->enable_vdso = enable_vdso;
 
+	/* Restore the stack size when mcexec stack was shrinked */
 	p = getenv(rlimit_stack_envname);
 	if (p) {
 		char *saveptr;
@@ -2155,8 +2183,19 @@ int main(int argc, char **argv)
 			rlim_stack.rlim_cur = lcur;
 		}
 	}
+
+	/* Overwrite the max with <max> of "--stack-premap <premap>,<max>" */
+	if (stack_max != -1) {
+		rlim_stack.rlim_cur = stack_max;
+		if (rlim_stack.rlim_max != -1 && rlim_stack.rlim_max < rlim_stack.rlim_cur) {
+			rlim_stack.rlim_max = rlim_stack.rlim_cur;
+		}
+	}
+
 	desc->rlimit[MCK_RLIMIT_STACK].rlim_cur = rlim_stack.rlim_cur;
 	desc->rlimit[MCK_RLIMIT_STACK].rlim_max = rlim_stack.rlim_max;
+	desc->stack_premap = stack_premap;
+	__dprintf("desc->rlimit[MCK_RLIMIT_STACK]=%ld,%ld\n", desc->rlimit[MCK_RLIMIT_STACK].rlim_cur, desc->rlimit[MCK_RLIMIT_STACK].rlim_max);
 
 	ncpu = ioctl(fd, MCEXEC_UP_GET_CPU, 0);
 	if(ncpu == -1){
@@ -3631,6 +3670,10 @@ fork_err:
 					desc->enable_vdso = enable_vdso;
 					__dprintf("execve(): load_elf_desc() for %s OK, num sections: %d\n",
 						path, desc->num_sections);
+
+					desc->rlimit[MCK_RLIMIT_STACK].rlim_cur = rlim_stack.rlim_cur;
+					desc->rlimit[MCK_RLIMIT_STACK].rlim_max = rlim_stack.rlim_max;
+					desc->stack_premap = stack_premap;
 
 					/* Copy descriptor to co-kernel side */
 					trans.userp = (void*)desc;
