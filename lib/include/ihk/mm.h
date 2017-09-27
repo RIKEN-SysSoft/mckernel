@@ -223,7 +223,7 @@ void remote_flush_tlb_array_cpumask(struct process_vm *vm,
 		int nr_addr,
 		int cpu_id);
 
-int ihk_set_kmsg(unsigned long addr, unsigned long size);
+int ihk_get_kmsg_buf(unsigned long *addr, unsigned long *size);
 char *ihk_get_kargs();
 
 int ihk_set_monitor(unsigned long addr, unsigned long size);
