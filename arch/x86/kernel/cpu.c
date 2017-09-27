@@ -1648,13 +1648,11 @@ release_fp_regs(struct thread *thread)
 	thread->fp_regs = NULL;
 }
 
-/*@
-  @ requires \valid(thread);
-  @*/
-void
-save_fp_regs(struct thread *thread)
+static int
+check_and_allocate_fp_regs(struct thread *thread)
 {
-	int	pages;
+	int pages;
+	int result = 0;
 
 	if (!thread->fp_regs) {
 		pages = (xsave_size + (PAGE_SIZE - 1)) >> PAGE_SHIFT;
@@ -1663,11 +1661,25 @@ save_fp_regs(struct thread *thread)
 
 		if (!thread->fp_regs) {
 			kprintf("error: allocating fp_regs pages\n");
-			return;
+			result = 1;
+			goto out;
 		}
 
-		memset(thread->fp_regs, 0, sizeof(fp_regs_struct));
 		memset(thread->fp_regs, 0, pages * PAGE_SIZE);
+	}
+out:
+	return result;
+}
+
+/*@
+  @ requires \valid(thread);
+  @*/
+void
+save_fp_regs(struct thread *thread)
+{
+	if (check_and_allocate_fp_regs(thread) != 0) {
+		// alloc error
+		return;
 	}
 
 	if (xsave_available) {
@@ -1681,6 +1693,13 @@ save_fp_regs(struct thread *thread)
 			: "memory");
 
 		dkprintf("fp_regs for TID %d saved\n", thread->tid);
+	}
+}
+
+void copy_fp_regs(struct thread *from, struct thread *to)
+{
+	if ((from->fp_regs != NULL) && (check_and_allocate_fp_regs(to) == 0)) {
+		memcpy(to->fp_regs, from->fp_regs, sizeof(fp_regs_struct));
 	}
 }
 
