@@ -604,6 +604,48 @@ set_process_rusage(struct process *proc, struct rusage *usage)
 	usage->ru_maxrss = proc->maxrss / 1024;
 }
 
+static void
+finalize_process(struct process *proc)
+{
+	struct resource_set *resource_set = cpu_local_var(resource_set);
+	struct process *pid1 = resource_set->pid1;
+	int exit_status = proc->exit_status;
+
+	// Send signal to parent
+	if (proc->parent == pid1) {
+		proc->status = PS_ZOMBIE;
+		release_process(proc);
+	}
+	else {
+		proc->status = PS_ZOMBIE;
+
+		dkprintf("terminate,wakeup\n");
+
+		/* Signal parent if still attached */
+		if (proc->termsig != 0) {
+			struct siginfo info;
+			int error;
+
+			memset(&info, '\0', sizeof info);
+			info.si_signo = SIGCHLD;
+			info.si_code = (exit_status & 0x7f)?
+			               ((exit_status & 0x80)?
+			                CLD_DUMPED: CLD_KILLED): CLD_EXITED;
+			info._sifields._sigchld.si_pid = proc->pid;
+			info._sifields._sigchld.si_status = exit_status;
+			info._sifields._sigchld.si_utime =
+			                        timespec_to_jiffy(&proc->utime);
+			info._sifields._sigchld.si_stime =
+			                        timespec_to_jiffy(&proc->stime);
+			error = do_kill(NULL, proc->parent->pid, -1, SIGCHLD, &info, 0);
+			dkprintf("terminate,klll %d,error=%d\n",
+					proc->termsig, error);
+		}
+		/* Wake parent (if sleeping in wait4()) */
+		waitq_wakeup(&proc->parent->waitpid_q);
+	}
+}
+
 /* 
  * From glibc: INLINE_SYSCALL (wait4, 4, pid, stat_loc, options, NULL);
  */
@@ -662,6 +704,13 @@ do_wait(int pid, int *status, int options, void *rusage)
 
 			if((options & WEXITED) &&
 			   child->status == PS_ZOMBIE) {
+				int org_options = options;
+
+				if ((child->ptrace & PT_TRACED) &&
+				    child->parent != child->ppid_parent) {
+					options |= WNOWAIT;
+				}
+
 				ret = wait_zombie(thread, child, status, options);
 				if(!(options & WNOWAIT)){
 					struct mcs_rwlock_node updatelock;
@@ -699,6 +748,25 @@ do_wait(int pid, int *status, int options, void *rusage)
 				}
 				else
 					mcs_rwlock_writer_unlock_noirq(&proc->children_lock, &lock);
+
+				if (!(org_options & WNOWAIT) &&
+				    (options & WNOWAIT)) {
+					struct process *parent;
+
+					child->ptrace = 0;
+					parent = child->ppid_parent;
+					mcs_rwlock_writer_lock_noirq(&proc->children_lock, &lock);
+					list_del(&child->siblings_list);
+					mcs_rwlock_writer_unlock_noirq(&proc->children_lock, &lock);
+					mcs_rwlock_writer_lock_noirq(&parent->children_lock, &lock);
+					list_del(&child->ptraced_siblings_list);
+					list_add_tail(&child->siblings_list, &parent->children_list);
+					child->parent = parent;
+					mcs_rwlock_writer_unlock_noirq(&parent->children_lock, &lock);
+
+					finalize_process(child);
+				}
+
 				goto out_found;
 			}
 
@@ -750,8 +818,22 @@ do_wait(int pid, int *status, int options, void *rusage)
 	}
 
 	if (empty) {
-		ret = -ECHILD;
-		goto out_notfound;
+		list_for_each_entry_safe(child, next,
+		                         &proc->ptraced_children_list,
+		                         ptraced_siblings_list) {
+			if ((pid < 0 && -pid == child->pgid) ||
+			    pid == -1 ||
+			    (pid == 0 && pgid == child->pgid) ||
+			    (pid > 0 && pid == child->pid) ||
+			    c_thread != NULL) {
+				empty = 0;
+				break;
+			}
+		}
+		if (empty) {
+			ret = -ECHILD;
+			goto out_notfound;
+		}
 	}
 
 	/* Don't sleep if WNOHANG requested */
@@ -1009,7 +1091,8 @@ void terminate(int rc, int sig)
 		ids = NULL;
 	}
 
-	if (!list_empty(&proc->children_list)) {
+	if (!list_empty(&proc->children_list) ||
+	    !list_empty(&proc->ptraced_children_list)) {
 		// clean up children
 		for (i = 0; i < HASH_SIZE; i++) {
 			mcs_rwlock_writer_lock(&resource_set->process_hash->lock[i],
@@ -1080,40 +1163,8 @@ void terminate(int rc, int sig)
 #endif /* POSTK_DEBUG_TEMP_FIX_48 */
 	}
 
-	// Send signal to parent
-	if (proc->parent == pid1) {
-		proc->status = PS_ZOMBIE;
-		release_process(proc);
-	}
-	else {
-		proc->status = PS_ZOMBIE;
-		proc->exit_status = exit_status;
-
-		dkprintf("terminate,wakeup\n");
-
-		/* Signal parent if still attached */
-		if (proc->termsig != 0) {
-			struct siginfo info;
-			int error;
-
-			memset(&info, '\0', sizeof info);
-			info.si_signo = SIGCHLD;
-			info.si_code = (exit_status & 0x7f)?
-			               ((exit_status & 0x80)?
-			                CLD_DUMPED: CLD_KILLED): CLD_EXITED;
-			info._sifields._sigchld.si_pid = proc->pid;
-			info._sifields._sigchld.si_status = exit_status;
-			info._sifields._sigchld.si_utime =
-			                        timespec_to_jiffy(&proc->utime);
-			info._sifields._sigchld.si_stime =
-			                        timespec_to_jiffy(&proc->stime);
-			error = do_kill(NULL, proc->parent->pid, -1, SIGCHLD, &info, 0);
-			dkprintf("terminate,klll %d,error=%d\n",
-					proc->termsig, error);
-		}
-		/* Wake parent (if sleeping in wait4()) */
-		waitq_wakeup(&proc->parent->waitpid_q);
-	}
+	proc->exit_status = exit_status;
+	finalize_process(proc);
 
 	preempt_disable();
 	mythread->status = PS_EXITED;
