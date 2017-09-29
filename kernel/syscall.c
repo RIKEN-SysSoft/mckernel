@@ -3400,6 +3400,12 @@ perf_counter_start(struct mc_perf_event *event)
 		mode |= PERFCTR_USER_MODE;
 	}
 
+#ifdef POSTK_DEBUG_TEMP_FIX_87 /* move X86_IA32_xxx architecture-dependent */
+	ret = ihk_mc_perfctr_init_raw(event->counter_id, attr->config, mode);
+	if (ret != -1) {
+		ihk_mc_perfctr_start(1UL << event->counter_id);
+	}
+#else /* POSTK_DEBUG_TEMP_FIX_87 */
 	if(event->counter_id >= 0 && event->counter_id < X86_IA32_NUM_PERF_COUNTERS) {
 		ret = ihk_mc_perfctr_init_raw(event->counter_id, attr->config, mode);
 		ihk_mc_perfctr_start(1UL << event->counter_id);
@@ -3412,6 +3418,7 @@ perf_counter_start(struct mc_perf_event *event)
 	else {
 		ret = -1;
 	}
+#endif /* POSTK_DEBUG_TEMP_FIX_87 */
 		
 	return ret;
 }
@@ -3537,6 +3544,18 @@ perf_read(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 void 
 perf_start(struct mc_perf_event *event)
 {
+#ifdef POSTK_DEBUG_TEMP_FIX_87 /* move X86_IA32_xxx architecture-dependent */
+	struct mc_perf_event *leader = event->group_leader, *sub;
+
+	if (ihk_mc_counter_mask_check(1UL << leader->counter_id)) {
+		perf_counter_start(leader);
+	}
+	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
+		if (ihk_mc_counter_mask_check(1UL << sub->counter_id)) {
+			perf_counter_start(sub);
+		}
+	}
+#else /* POSTK_DEBUG_TEMP_FIX_87 */
 	int counter_id;
 	struct mc_perf_event *leader = event->group_leader, *sub;
 
@@ -3553,12 +3572,25 @@ perf_start(struct mc_perf_event *event)
 			perf_counter_start(sub);
 		}
 	}
+#endif /* POSTK_DEBUG_TEMP_FIX_87 */
 	cpu_local_var(current)->proc->perf_status = PP_COUNT;
 }
 
 void 
 perf_reset(struct mc_perf_event *event)
 {
+#ifdef POSTK_DEBUG_TEMP_FIX_87 /* move X86_IA32_xxx architecture-dependent */
+	struct mc_perf_event *leader = event->group_leader, *sub;
+
+	if (ihk_mc_counter_mask_check(1UL << leader->counter_id)) {
+		ihk_mc_perfctr_reset(leader->counter_id);
+	}
+	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
+		if (ihk_mc_counter_mask_check(1UL << sub->counter_id)) {
+			ihk_mc_perfctr_reset(sub->counter_id);
+		}
+	}
+#else /* POSTK_DEBUG_TEMP_FIX_87 */
 	int counter_id;
 	struct mc_perf_event *leader = event->group_leader, *sub;
 
@@ -3575,29 +3607,27 @@ perf_reset(struct mc_perf_event *event)
 			ihk_mc_perfctr_reset(counter_id);
 		}
 	}
+#endif /* POSTK_DEBUG_TEMP_FIX_87 */
 }
 
 static void
 perf_stop(struct mc_perf_event *event)
 {
+#ifdef POSTK_DEBUG_TEMP_FIX_87 /* move X86_IA32_xxx architecture-dependent */
+	struct mc_perf_event *leader = event->group_leader, *sub;
+
+	if (ihk_mc_counter_mask_check(1UL << leader->counter_id)) {
+		ihk_mc_perfctr_stop(1UL << leader->counter_id);
+	}
+	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
+		if (ihk_mc_counter_mask_check(1UL << sub->counter_id)) {
+			ihk_mc_perfctr_stop(1UL << sub->counter_id);
+		}
+	}
+#else /* POSTK_DEBUG_TEMP_FIX_87 */
 	int counter_id;
 	struct mc_perf_event *leader = event->group_leader, *sub;
 
-#ifdef POSTK_DEBUG_TEMP_FIX_30
-	counter_id = leader->counter_id;
-	if((1UL << counter_id & X86_IA32_PERF_COUNTERS_MASK) | 
-	(1UL << counter_id & X86_IA32_FIXED_PERF_COUNTERS_MASK)) {
-		ihk_mc_perfctr_stop(counter_id);
-	}
-
-	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
-		counter_id = sub->counter_id;
-		if((1UL << counter_id & X86_IA32_PERF_COUNTERS_MASK) | 
-		(1UL << counter_id & X86_IA32_FIXED_PERF_COUNTERS_MASK)) {
-			ihk_mc_perfctr_stop(counter_id);
-		}
-	}
-#else
 	counter_id = leader->counter_id;
 	if((1UL << counter_id & X86_IA32_PERF_COUNTERS_MASK) |
 	(1UL << counter_id & X86_IA32_FIXED_PERF_COUNTERS_MASK)) {
@@ -3611,7 +3641,7 @@ perf_stop(struct mc_perf_event *event)
 			ihk_mc_perfctr_stop(1UL << counter_id);
 		}
 	}
-#endif /*POSTK_DEBUG_TEMP_FIX_30*/
+#endif /* POSTK_DEBUG_TEMP_FIX_87 */
 }
 
 static int
@@ -3747,7 +3777,12 @@ SYSCALL_DECLARE(perf_event_open)
 	struct mckfd *sfd, *cfd;
 	int fd;
 	long irqstate;
+#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
+	struct perf_event_attr *uattr = (void *)ihk_mc_syscall_arg0(ctx);
+	struct perf_event_attr attr;
+#else /* POSTK_DEBUG_ARCH_DEP_46 */
 	struct perf_event_attr *attr = (void *)ihk_mc_syscall_arg0(ctx);
+#endif /* POSTK_DEBUG_ARCH_DEP_46 */
 	int pid = ihk_mc_syscall_arg1(ctx);
 	int cpu = ihk_mc_syscall_arg2(ctx);
 	int group_fd = ihk_mc_syscall_arg3(ctx);
@@ -3756,6 +3791,13 @@ SYSCALL_DECLARE(perf_event_open)
 
 	int not_supported_flag = 0;
 
+#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
+	memset(&attr, 0, sizeof(attr));
+	if (copy_from_user(&attr, uattr, sizeof(attr))) {
+		return -EFAULT;
+	}
+#endif /* POSTK_DEBUG_ARCH_DEP_46 */
+
 	// check Not supported 
 	if(cpu > 0) {
 		not_supported_flag = 1;	
@@ -3763,6 +3805,17 @@ SYSCALL_DECLARE(perf_event_open)
 	if(flags > 0) {
 		not_supported_flag = 1;	
 	}
+#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
+	if(attr.read_format & PERF_FORMAT_TOTAL_TIME_ENABLED) {
+		not_supported_flag = 1;
+	}
+	if(attr.read_format & PERF_FORMAT_TOTAL_TIME_RUNNING) {
+		not_supported_flag = 1;
+	}
+	if(attr.read_format & PERF_FORMAT_ID) {
+		not_supported_flag = 1;
+	}
+#else /* POSTK_DEBUG_ARCH_DEP_46 */
 	if(attr->read_format & PERF_FORMAT_TOTAL_TIME_ENABLED) {
 		not_supported_flag = 1;
 	}
@@ -3772,6 +3825,7 @@ SYSCALL_DECLARE(perf_event_open)
 	if(attr->read_format & PERF_FORMAT_ID) {
 		not_supported_flag = 1;
 	}
+#endif /* POSTK_DEBUG_ARCH_DEP_46 */
 
 	if(not_supported_flag) {
 		return -1;
@@ -3781,9 +3835,15 @@ SYSCALL_DECLARE(perf_event_open)
 	event = kmalloc(sizeof(struct mc_perf_event), IHK_MC_AP_NOWAIT);
 	if(!event)
 		return -ENOMEM;
+#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
+	event->attr = attr;
+
+	event->sample_freq = attr.sample_freq;
+#else /* POSTK_DEBUG_ARCH_DEP_46 */
 	event->attr = (struct perf_event_attr)*attr;
 
 	event->sample_freq = attr->sample_freq;
+#endif /* POSTK_DEBUG_ARCH_DEP_46 */
 	event->nr_siblings = 0;
 	event->count = 0L;
 	event->child_count_total = 0;
@@ -9460,6 +9520,7 @@ static void do_mod_exit(int status){
 }
 #endif
 
+#ifndef POSTK_DEBUG_ARCH_DEP_85 /* delete unnecessary pmc_xxx system call */
 /* select counter type */
 SYSCALL_DECLARE(pmc_init)
 {
@@ -9473,39 +9534,24 @@ SYSCALL_DECLARE(pmc_init)
     return ihk_mc_perfctr_init(counter, type, mode);
 }
 
-#ifdef POSTK_DEBUG_TEMP_FIX_30
-SYSCALL_DECLARE(pmc_start)
-{
-    unsigned long counter = ihk_mc_syscall_arg0(ctx);
-    return ihk_mc_perfctr_start((int)counter);
-}
-#else
 SYSCALL_DECLARE(pmc_start)
 {
     unsigned long counter = ihk_mc_syscall_arg0(ctx);
     return ihk_mc_perfctr_start(1 << counter);
 }
-#endif /*POSTK_DEBUG_TEMP_FIX_30*/
 
-#ifdef POSTK_DEBUG_TEMP_FIX_30
-SYSCALL_DECLARE(pmc_stop)
-{
-    unsigned long counter = ihk_mc_syscall_arg0(ctx);
-    return ihk_mc_perfctr_stop((int)counter);
-}
-#else
 SYSCALL_DECLARE(pmc_stop)
 {
     unsigned long counter = ihk_mc_syscall_arg0(ctx);
     return ihk_mc_perfctr_stop(1 << counter);
 }
-#endif /*POSTK_DEBUG_TEMP_FIX_30*/
 
 SYSCALL_DECLARE(pmc_reset)
 {
     int counter = ihk_mc_syscall_arg0(ctx);
     return ihk_mc_perfctr_reset(counter);
 }
+#endif /* !POSTK_DEBUG_ARCH_DEP_85 */
 
 extern void save_uctx(void *, void *);
 

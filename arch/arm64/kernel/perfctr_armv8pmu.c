@@ -521,7 +521,7 @@ static inline int armv8pmu_enable_counter(int idx)
 
 	counter = ARMV8_IDX_TO_COUNTER(idx);
 	asm volatile("msr pmcntenset_el0, %0" :: "r" (BIT(counter)));
-	return idx;
+	return 0;
 }
 
 /* @ref.impl arch/arm64/kernel/perf_event.c */
@@ -537,7 +537,7 @@ static inline int armv8pmu_disable_counter(int idx)
 
 	counter = ARMV8_IDX_TO_COUNTER(idx);
 	asm volatile("msr pmcntenclr_el0, %0" :: "r" (BIT(counter)));
-	return idx;
+	return 0;
 }
 
 /* @ref.impl arch/arm64/kernel/perf_event.c */

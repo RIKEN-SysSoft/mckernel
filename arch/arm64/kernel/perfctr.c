@@ -107,20 +107,35 @@ int ihk_mc_perfctr_init(int counter, uint64_t config, int mode)
 	return ret;
 }
 
-int ihk_mc_perfctr_start(int counter)
+int ihk_mc_perfctr_start(unsigned long counter_mask)
 {
-	int ret;
-	ret = cpu_pmu.enable_counter(counter);
+	int ret = 0, i;
+
+	for (i = 0; i < sizeof(counter_mask) * BITS_PER_BYTE; i++) {
+		if (counter_mask & (1UL << i)) {
+			ret = cpu_pmu.enable_counter(i);
+			if (ret) {
+				kprintf("%s: enable failed(idx=%d)\n", i);
+				break;
+			}
+		}
+	}
 	return ret;
 }
 
-int ihk_mc_perfctr_stop(int counter)
+int ihk_mc_perfctr_stop(unsigned long counter_mask)
 {
-	cpu_pmu.disable_counter(counter);
+	int i = 0;
 
-	// ihk_mc_perfctr_startが呼ばれるときには、
-	// init系関数が呼ばれるのでdisableにする。
-	cpu_pmu.disable_intens(counter);
+	for (i = 0; i < sizeof(counter_mask) * BITS_PER_BYTE; i++) {
+		if (counter_mask & (1UL << i)) {
+			cpu_pmu.disable_counter(i);
+
+			// ihk_mc_perfctr_startが呼ばれるときには、
+			// init系関数が呼ばれるのでdisableにする。
+			cpu_pmu.disable_intens(i);
+		}
+	}
 	return 0;
 }
 
@@ -131,8 +146,7 @@ int ihk_mc_perfctr_reset(int counter)
 	return 0;
 }
 
-//int ihk_mc_perfctr_set(int counter, unsigned long val)
-int ihk_mc_perfctr_set(int counter, long val) /* 0416_patchtemp */
+int ihk_mc_perfctr_set(int counter, long val)
 {
 	// TODO[PMU]: 共通部でサンプリングレートの計算をして、設定するカウンタ値をvalに渡してくるようになると想定。サンプリングレートの扱いを見てから本実装。
 	uint32_t v = val;
@@ -154,17 +168,31 @@ unsigned long ihk_mc_perfctr_read(int counter)
 	return count;
 }
 
-//int ihk_mc_perfctr_alloc_counter(unsigned long pmc_status)
-int ihk_mc_perfctr_alloc_counter(unsigned int *type, unsigned long *config, unsigned long pmc_status) /* 0416_patchtemp */
+int ihk_mc_perfctr_alloc_counter(unsigned int *type, unsigned long *config, unsigned long pmc_status)
 {
 	int ret;
+
+	if(*type == PERF_TYPE_HARDWARE) {
+		switch(*config){
+		case PERF_COUNT_HW_INSTRUCTIONS :
+			*config = cpu_pmu.map_event(*type, *config);
+			*type = PERF_TYPE_RAW;
+			break;
+		default :
+			// Unexpected config
+			return -1;
+		}
+	}
+	else if(*type != PERF_TYPE_RAW) {
+		return -1;
+	}
 	ret = cpu_pmu.get_event_idx(cpu_pmu.num_events, pmc_status);
         return ret;
 }
 
-/* 0416_patchtemp */
-/* ihk_mc_perfctr_fixed_init() stub added. */
-int ihk_mc_perfctr_fixed_init(int counter, int mode)
+#ifdef POSTK_DEBUG_ARCH_DEP_87 /* move X86_IA32_xxx architecture-dependent */
+int ihk_mc_counter_mask_check(unsigned long counter_mask)
 {
-	return -1;
+	return 1;
 }
+#endif /* POSTK_DEBUG_ARCH_DEP_87 */

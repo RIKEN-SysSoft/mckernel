@@ -60,20 +60,20 @@ int ihk_mc_perfctr_init_raw(int counter, uint64_t config, int mode);
 int ihk_mc_perfctr_init(int counter, enum ihk_perfctr_type type, int mode);
 int ihk_mc_perfctr_init_raw(int counter, unsigned int code, int mode);
 #endif/*POSTK_DEBUG_TEMP_FIX_29*/
-#ifdef POSTK_DEBUG_TEMP_FIX_30
-int ihk_mc_perfctr_start(int counter);
-int ihk_mc_perfctr_stop(int counter);
-#else
 int ihk_mc_perfctr_start(unsigned long counter_mask);
 int ihk_mc_perfctr_stop(unsigned long counter_mask);
-#endif/*POSTK_DEBUG_TEMP_FIX_30*/
+#ifndef POSTK_DEBUG_TEMP_FIX_31
 int ihk_mc_perfctr_fixed_init(int counter, int mode);
+#endif /* POSTK_DEBUG_TEMP_FIX_31 */
 int ihk_mc_perfctr_reset(int counter);
 int ihk_mc_perfctr_set(int counter, long value);
 int ihk_mc_perfctr_read_mask(unsigned long counter_mask, unsigned long *value);
 unsigned long ihk_mc_perfctr_read(int counter);
 unsigned long ihk_mc_perfctr_read_msr(int counter);
 int ihk_mc_perfctr_alloc_counter(unsigned int *type, unsigned long *config, unsigned long pmc_status);
+#ifdef POSTK_DEBUG_ARCH_DEP_87 /* move X86_IA32_xxx architecture-dependent */
+int ihk_mc_counter_mask_check(unsigned long counter_mask);
+#endif /* POSTK_DEBUG_ARCH_DEP_87 */
 
 #endif
 

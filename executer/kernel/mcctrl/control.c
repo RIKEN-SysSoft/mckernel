@@ -45,6 +45,7 @@
 #include "../../../config.h"
 #include "mcctrl.h"
 #include <ihk/ihk_host_user.h>
+#include <archdeps.h>
 
 //#define DEBUG
 
@@ -1999,7 +2000,11 @@ long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 
 			perf_desc->ctrl_type = PERF_CTRL_SET;
 			perf_desc->status = 0;
+#ifdef POSTK_DEBUG_ARCH_DEP_86 /* make perf counter start id architecture dependent */
+			perf_desc->target_cntr = i + ARCH_PERF_CONTER_START;
+#else /* POSTK_DEBUG_ARCH_DEP_86 */
 			perf_desc->target_cntr = i;
+#endif /* POSTK_DEBUG_ARCH_DEP_86 */
 			perf_desc->config = attr.config;
 			perf_desc->exclude_kernel = attr.exclude_kernel;
 			perf_desc->exclude_user = attr.exclude_user;
@@ -2050,7 +2055,11 @@ long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
 
 			perf_desc->ctrl_type = PERF_CTRL_GET;
 			perf_desc->status = 0;
+#ifdef POSTK_DEBUG_ARCH_DEP_86 /* make perf counter start id architecture dependent */
+			perf_desc->target_cntr = i + ARCH_PERF_CONTER_START;
+#else /* POSTK_DEBUG_ARCH_DEP_86 */
 			perf_desc->target_cntr = i;
+#endif /* POSTK_DEBUG_ARCH_DEP_86 */
 
 			memset(&isp, '\0', sizeof(struct ikc_scd_packet));
 			isp.msg = SCD_MSG_PERF_CTRL;
@@ -2093,7 +2102,11 @@ long mcctrl_perf_enable(ihk_os_t os)
 	int i = 0, j = 0;
 
 	for (i = 0; i < usrdata->perf_event_num; i++) {
+#ifdef POSTK_DEBUG_ARCH_DEP_86 /* make perf counter start id architecture dependent */
+		cntr_mask |= 1 << (i + ARCH_PERF_CONTER_START);
+#else /* POSTK_DEBUG_ARCH_DEP_86 */
 		cntr_mask |= 1 << i;
+#endif /* POSTK_DEBUG_ARCH_DEP_86 */
 	}
 	for (j = 0; j < info->n_cpus; j++) {
 		perf_desc = kmalloc(sizeof(struct perf_ctrl_desc), GFP_KERNEL);
@@ -2141,7 +2154,11 @@ long mcctrl_perf_disable(ihk_os_t os)
 	int i = 0, j = 0;
 
 	for (i = 0; i < usrdata->perf_event_num; i++) {
+#ifdef POSTK_DEBUG_ARCH_DEP_86 /* make perf counter start id architecture dependent */
+		cntr_mask |= 1 << (i + ARCH_PERF_CONTER_START);
+#else /* POSTK_DEBUG_ARCH_DEP_86 */
 		cntr_mask |= 1 << i;
+#endif /* POSTK_DEBUG_ARCH_DEP_86 */
 	}
 	for (j = 0; j < info->n_cpus; j++) {
 		perf_desc = kmalloc(sizeof(struct perf_ctrl_desc), GFP_KERNEL);

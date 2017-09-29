@@ -117,10 +117,12 @@ SYSCALL_HANDLED(241, perf_event_open)
 SYSCALL_HANDLED(260, wait4)
 SYSCALL_HANDLED(270, process_vm_readv)
 SYSCALL_HANDLED(271, process_vm_writev)
+#ifndef POSTK_DEBUG_ARCH_DEP_85 /* delete unnecessary pmc_xxx system call */
 SYSCALL_HANDLED(601, pmc_init)
 SYSCALL_HANDLED(602, pmc_start)
 SYSCALL_HANDLED(603, pmc_stop)
 SYSCALL_HANDLED(604, pmc_reset)
+#endif /* !POSTK_DEBUG_ARCH_DEP_85 */
 SYSCALL_HANDLED(700, get_cpu_id)
 #ifdef PROFILE_ENABLE
 SYSCALL_HANDLED(__NR_profile, profile)

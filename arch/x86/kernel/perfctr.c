@@ -201,12 +201,16 @@ int ihk_mc_perfctr_init_raw(int counter, uint64_t config, int mode)
 int ihk_mc_perfctr_init_raw(int counter, unsigned int code, int mode)
 #endif /*POSTK_DEBUG_TEMP_FIX_29*/
 {
-#ifdef POSTK_DEBUG_TEMP_FIX_31
-	// PAPI_REF_CYC counted by fixed counter
-	if (counter >= X86_IA32_BASE_FIXED_PERF_COUNTERS) {
+#ifdef POSTK_DEBUG_TEMP_FIX_87 /* move X86_IA32_xxx architecture-dependent */
+	if (!((counter >= 0) && (counter < X86_IA32_NUM_PERF_COUNTERS)) &&
+	    counter >= X86_IA32_BASE_FIXED_PERF_COUNTERS &&
+	    counter < X86_IA32_BASE_FIXED_PERF_COUNTERS + X86_IA32_NUM_FIXED_PERF_COUNTERS) {
 		return ihk_mc_perfctr_fixed_init(counter, mode);
 	}
-#endif /*POSTK_DEBUG_TEMP_FIX_31*/
+	else {
+		return -1;
+	}
+#endif /* POSTK_DEBUG_TEMP_FIX_87 */
 
 	if (counter < 0 || counter >= X86_IA32_NUM_PERF_COUNTERS) {
 		return -EINVAL;
@@ -258,18 +262,11 @@ int ihk_mc_perfctr_init(int counter, enum ihk_perfctr_type type, int mode)
 extern void x86_march_perfctr_start(unsigned long counter_mask);
 #endif
 
-#ifdef POSTK_DEBUG_TEMP_FIX_30
-int ihk_mc_perfctr_start(int counter)
-#else
 int ihk_mc_perfctr_start(unsigned long counter_mask)
-#endif /*POSTK_DEBUG_TEMP_FIX_30*/
 {
 	int ret = 0;
 	unsigned long value = 0;
 	unsigned long mask = X86_IA32_PERF_COUNTERS_MASK | X86_IA32_FIXED_PERF_COUNTERS_MASK;
-#ifdef POSTK_DEBUG_TEMP_FIX_30
-	unsigned long counter_mask = 1UL << counter;
-#endif /*POSTK_DEBUG_TEMP_FIX_30*/
 
 	PERFCTR_CHKANDJUMP(counter_mask & ~mask, "counter_mask out of range", -EINVAL);
 
@@ -286,18 +283,11 @@ int ihk_mc_perfctr_start(unsigned long counter_mask)
 	goto fn_exit;
 }
 
-#ifdef POSTK_DEBUG_TEMP_FIX_30
-int ihk_mc_perfctr_stop(int counter)
-#else
 int ihk_mc_perfctr_stop(unsigned long counter_mask)
-#endif/*POSTK_DEBUG_TEMP_FIX_30*/
 {
 	int ret = 0;
 	unsigned long value;
 	unsigned long mask = X86_IA32_PERF_COUNTERS_MASK | X86_IA32_FIXED_PERF_COUNTERS_MASK;
-#ifdef POSTK_DEBUG_TEMP_FIX_30
-	unsigned long counter_mask = 1UL << counter;
-#endif/*POSTK_DEBUG_TEMP_FIX_30*/
 
 	PERFCTR_CHKANDJUMP(counter_mask & ~mask, "counter_mask out of range", -EINVAL);
 
@@ -473,3 +463,16 @@ int ihk_mc_perfctr_alloc_counter(unsigned int *type, unsigned long *config, unsi
 
 	return ret;
 }
+
+#ifdef POSTK_DEBUG_ARCH_DEP_87 /* move X86_IA32_xxx architecture-dependent */
+int ihk_mc_counter_mask_check(unsigned long counter_mask)
+{
+	int ret = 0;
+
+	if ((counter_mask & X86_IA32_PERF_COUNTERS_MASK) |
+	    (counter_mask & X86_IA32_FIXED_PERF_COUNTERS_MASK)) {
+		ret = 1;
+	}
+	return ret;
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_87 */
