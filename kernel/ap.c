@@ -70,8 +70,6 @@ static void ap_wait(void)
 		mcs_lock_unlock_noirq(&ap_syscall_semaphore, &mcs_node);
 	}
 	
-	pc_ap_init();
-
 	/* one of them listens */
 	mc_ikc_test_init();
 
