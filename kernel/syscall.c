@@ -9979,6 +9979,12 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		l = syscall_generic_forwarding(num, ctx);
 	}
 
+	if (cpu_local_var(current)->proc->ptrace && l != -ENOSYS) {
+		ihk_mc_syscall_ret(ctx) = l;
+		ptrace_syscall_exit(cpu_local_var(current));
+		l = ihk_mc_syscall_ret(ctx);
+	}
+
 #if defined(POSTK_DEBUG_TEMP_FIX_60) && defined(POSTK_DEBUG_TEMP_FIX_56)
 	check_signal(l, NULL, num);
 #elif defined(POSTK_DEBUG_TEMP_FIX_60) /* sched_yield called check_signal fix. */
@@ -10033,12 +10039,6 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		check_need_resched();
 	}
 #endif /* POSTK_DEBUG_TEMP_FIX_60 && POSTK_DEBUG_TEMP_FIX_56 */
-
-	if (cpu_local_var(current)->proc->ptrace && l != -ENOSYS) {
-		ihk_mc_syscall_ret(ctx) = l;
-		ptrace_syscall_exit(cpu_local_var(current));
-		l = ihk_mc_syscall_ret(ctx);
-	}
 
 #ifdef DISABLE_SCHED_YIELD
 	if (num != __NR_sched_yield)
