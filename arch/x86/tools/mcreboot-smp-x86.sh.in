@@ -43,6 +43,7 @@ fi
 
 turbo=""
 ihk_irq=""
+umask_old=`umask`
 
 while getopts :tk:c:m:o:f:r:q:i:d: OPT
 do
@@ -114,6 +115,7 @@ error_exit() {
 		;&
 	tmp_mcos_created)
 		if [ "$enable_mcoverlay" == "yes" ]; then
+		    umask $umask_old
 			rm -rf /tmp/mcos
 		fi
 		;&
@@ -421,3 +423,8 @@ if [ "${irqbalance_used}" == "yes" ]; then
 	fi
 #    echo cpus=$cpus ncpus=$ncpus banirq=$banirq
 fi
+
+# Restore umask
+umask ${umask_old}
+
+exit 0
