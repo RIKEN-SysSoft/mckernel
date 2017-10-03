@@ -568,8 +568,7 @@ int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 	struct process *proc = cpu_local_var(current)->proc;
 	struct process_vm *vm = cpu_local_var(current)->vm;
 	struct hfi1_user_sdma_comp_q *cq = fd->cq;
-	struct hfi1_user_sdma_pkt_q *pq = fd->pq;
-	struct hfi1_devdata *dd = pq->dd;
+	struct hfi1_devdata *dd = fd->dd;
 
 	/*
 	 * Map device addresses if not mapped or mapping changed.
@@ -591,8 +590,9 @@ int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 				virt += PAGE_SIZE, phys += PAGE_SIZE) {
 			if (ihk_mc_pt_set_page(vm->address_space->page_table,
 						virt, phys, attr) < 0) {
-				kprintf("%s: WARNING: failed to map kregbase: 0x%lx -> 0x%lx\n",
+				kprintf("%s: ERROR: failed to map kregbase: 0x%lx -> 0x%lx\n",
 						__FUNCTION__, virt, phys);
+				return -1;
 			}
 
 			ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
@@ -633,8 +633,9 @@ int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 				virt += PAGE_SIZE, phys += PAGE_SIZE) {
 			if (ihk_mc_pt_set_page(vm->address_space->page_table,
 						virt, phys, attr) < 0) {
-				kprintf("%s: WARNING: failed to map piobase: 0x%lx -> 0x%lx\n",
+				kprintf("%s: ERROR: failed to map piobase: 0x%lx -> 0x%lx\n",
 					__FUNCTION__, virt, phys);
+				return -1;
 			}
 
 			ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
@@ -676,8 +677,9 @@ int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 				virt += PAGE_SIZE, phys += PAGE_SIZE) {
 			if (ihk_mc_pt_set_page(vm->address_space->page_table,
 						virt, phys, attr) < 0) {
-				kprintf("%s: WARNING: failed to map rcvarray_wc: 0x%lx -> 0x%lx\n",
+				kprintf("%s: ERROR: failed to map rcvarray_wc: 0x%lx -> 0x%lx\n",
 						__FUNCTION__, virt, phys);
+				return -1;
 			}
 
 			ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,

@@ -2411,7 +2411,8 @@ static inline u16 submit_tx(struct sdma_engine *sde, struct sdma_txreq *tx)
 static int sdma_check_progress(
 	struct sdma_engine *sde,
 	struct iowait_work *wait,
-	struct sdma_txreq *tx)
+	struct sdma_txreq *tx,
+	bool pkts_sent)
 {
 	int ret;
 
@@ -2425,7 +2426,7 @@ static int sdma_check_progress(
 
 		seq = raw_seqcount_begin(
 			(const seqcount_t *)&sde->head_lock.seqcount);
-		ret = wait->iow->sleep(sde, wait, tx, seq);
+		ret = wait->iow->sleep(sde, wait, tx, seq, pkts_sent);
 		if (ret == -EAGAIN)
 			sde->desc_avail = sdma_descq_freecnt(sde);
 	} else {
@@ -2441,6 +2442,7 @@ static int sdma_check_progress(
  * @sde: sdma engine to use
  * @wait: SE wait structure to use when full (may be NULL)
  * @tx: sdma_txreq to submit
+ * @pkts_sent: has any packet been sent yet?
  *
  * The call submits the tx into the ring.  If a iowait structure is non-NULL
  * the packet will be queued to the list in wait.
@@ -2452,7 +2454,8 @@ static int sdma_check_progress(
  */
 int sdma_send_txreq(struct sdma_engine *sde,
 		    struct iowait_work *wait,
-		    struct sdma_txreq *tx)
+		    struct sdma_txreq *tx,
+		    bool pkts_sent)
 {
 	int ret = 0;
 	u16 tail;
@@ -2493,7 +2496,7 @@ unlock_noconn:
 	ret = -ECOMM;
 	goto unlock;
 nodesc:
-	ret = sdma_check_progress(sde, wait, tx);
+	ret = sdma_check_progress(sde, wait, tx, pkts_sent);
 	if (ret == -EAGAIN) {
 		ret = 0;
 		goto retry;
@@ -2596,7 +2599,7 @@ unlock_noconn:
 	goto update_tail;
 nodesc:
 	TP("+ nodesc:");
-	ret = sdma_check_progress(sde, wait, tx);
+	ret = sdma_check_progress(sde, wait, tx, submit_count > 0);
 	if (ret == -EAGAIN) {
 		ret = 0;
 		goto retry;

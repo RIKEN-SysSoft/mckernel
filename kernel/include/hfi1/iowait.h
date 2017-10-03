@@ -140,7 +140,9 @@ struct iowait {
 		struct sdma_engine *sde,
 		struct iowait_work *wait,
 		struct sdma_txreq *tx,
-		unsigned seq);
+		uint seq,
+		bool pkts_sent
+		);
 	void (*wakeup)(struct iowait *wait, int reason);
 	void (*sdma_drained)(struct iowait *wait);
 	seqlock_t *lock;
@@ -153,6 +155,7 @@ struct iowait {
 	u32 tx_count;
 	unsigned long flags;
 	struct iowait_work wait[IOWAIT_SES];
+	u8 starved_cnt;
 };
 
 #define SDMA_AVAIL_REASON 0
@@ -172,7 +175,8 @@ void iowait_init(
 		struct sdma_engine *sde,
 		struct iowait_work *wait,
 		struct sdma_txreq *tx,
-		unsigned seq),
+		uint seq,
+		bool pkts_sent),
 	void (*wakeup)(struct iowait *wait, int reason),
 	void (*sdma_drained)(struct iowait *wait));
 

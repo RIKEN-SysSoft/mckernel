@@ -673,9 +673,9 @@ ssize_t hfi1_aio_write(void *private_data, const struct iovec *iovec, unsigned l
 	TP("+");
  
 	/* Double check the sizes */
-	WARN_IF_SIZE_DIFFERENT(struct hfi1_filedata, 96);
-	WARN_IF_SIZE_DIFFERENT(struct hfi1_devdata, 7360);
-	WARN_IF_SIZE_DIFFERENT(struct iowait, 240);
+	WARN_IF_SIZE_DIFFERENT(struct hfi1_filedata, 104);
+	WARN_IF_SIZE_DIFFERENT(struct hfi1_devdata, 7232);
+	WARN_IF_SIZE_DIFFERENT(struct iowait, 248);
 	WARN_IF_SIZE_DIFFERENT(struct hfi1_user_sdma_pkt_q, 376);
 	WARN_IF_SIZE_DIFFERENT(struct sdma_engine, 1472);
 	WARN_IF_SIZE_DIFFERENT(struct sdma_state, 64);

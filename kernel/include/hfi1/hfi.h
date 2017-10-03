@@ -132,128 +132,17 @@ extern unsigned long hfi1_cap_mask;
 #define NUM_SEND_CTXT_ERR_STATUS_COUNTERS 5
 #define NUM_SEND_DMA_ENG_ERR_STATUS_COUNTERS 24
 
-#ifdef __HFI1_ORIG__
-
-/*
- * per driver stats, either not device nor port-specific, or
- * summed over all of the devices and ports.
- * They are described by name via ipathfs filesystem, so layout
- * and number of elements can change without breaking compatibility.
- * If members are added or deleted hfi1_statnames[] in debugfs.c must
- * change to match.
- */
-struct hfi1_ib_stats {
-	__u64 sps_ints; /* number of interrupts handled */
-	__u64 sps_errints; /* number of error interrupts */
-	__u64 sps_txerrs; /* tx-related packet errors */
-	__u64 sps_rcverrs; /* non-crc rcv packet errors */
-	__u64 sps_hwerrs; /* hardware errors reported (parity, etc.) */
-	__u64 sps_nopiobufs; /* no pio bufs avail from kernel */
-	__u64 sps_ctxts; /* number of contexts currently open */
-	__u64 sps_lenerrs; /* number of kernel packets where RHF != LRH len */
-	__u64 sps_buffull;
-	__u64 sps_hdrfull;
-};
-
-extern struct hfi1_ib_stats hfi1_stats;
-extern const struct pci_error_handlers hfi1_pci_err_handler;
-
-/*
- * First-cut criterion for "device is active" is
- * two thousand dwords combined Tx, Rx traffic per
- * 5-second interval. SMA packets are 64 dwords,
- * and occur "a few per second", presumably each way.
- */
-#define HFI1_TRAFFIC_ACTIVE_THRESHOLD (2000)
-
-/*
- * Below contains all data related to a single context (formerly called port).
- */
-
-#ifdef CONFIG_DEBUG_FS
-struct hfi1_opcode_stats_perctx;
-#endif
-
-struct ctxt_eager_bufs {
-	ssize_t size;            /* total size of eager buffers */
-	u32 count;               /* size of buffers array */
-	u32 numbufs;             /* number of buffers allocated */
-	u32 alloced;             /* number of rcvarray entries used */
-	u32 rcvtid_size;         /* size of each eager rcv tid */
-	u32 threshold;           /* head update threshold */
-	struct eager_buffer {
-		void *addr;
-		dma_addr_t dma;
-		ssize_t len;
-	} *buffers;
-	struct {
-		void *addr;
-		dma_addr_t dma;
-	} *rcvtids;
-};
-
-#endif /* __HFI1_ORIG__ */
 struct exp_tid_set {
 	struct list_head list;
 	u32 count;
 };
 
-#ifdef __HFI1_ORIG__
-struct tid_queue {
-	struct list_head queue_head;
-			/* queue head for QP TID resource waiters */
-	u32 enqueue;	/* count of tid enqueues */
-	u32 dequeue;	/* count of tid dequeues */
-};
-    
+//TODO: Fix hfi1_ctxtdata and pport
+#ifndef __HFI1_ORIG__
 struct hfi1_ctxtdata {
-	/* shadow the ctxt's RcvCtrl register */
-	u64 rcvctrl;
-	/* rcvhdrq base, needs mmap before useful */
-	void *rcvhdrq;
-	/* kernel virtual address where hdrqtail is updated */
-	volatile __le64 *rcvhdrtail_kvaddr;
-	/*
-	 * Shared page for kernel to signal user processes that send buffers
-	 * need disarming.  The process should call HFI1_CMD_DISARM_BUFS
-	 * or HFI1_CMD_ACK_EVENT with IPATH_EVENT_DISARM_BUFS set.
-	 */
-	unsigned long *user_event_mask;
-	/* when waiting for rcv or pioavail */
-	wait_queue_head_t wait;
-	/* rcvhdrq size (for freeing) */
-	size_t rcvhdrq_size;
-	/* number of rcvhdrq entries */
-	u16 rcvhdrq_cnt;
-	/* size of each of the rcvhdrq entries */
-	u16 rcvhdrqentsize;
-	/* mmap of hdrq, must fit in 44 bits */
-	dma_addr_t rcvhdrq_dma;
-	dma_addr_t rcvhdrqtailaddr_dma;
-	struct ctxt_eager_bufs egrbufs;
-	/* this receive context's assigned PIO ACK send context */
-	struct send_context *sc;
-
-	/* dynamic receive available interrupt timeout */
-	u32 rcvavail_timeout;
-	/*
-	 * number of opens (including slave sub-contexts) on this instance
-	 * (ignoring forks, dup, etc. for now)
-	 */
-	int cnt;
-	/*
-	 * how much space to leave at start of eager TID entries for
-	 * protocol use, on each TID
-	 */
-	/* instead of calculating it */
+	char __padding0[144];
 	unsigned ctxt;
-	/* non-zero if ctxt is being shared. */
-	u16 subctxt_cnt;
-	/* non-zero if ctxt is being shared. */
-	u16 subctxt_id;
-	u8 uuid[16];
-	/* job key */
-	u16 jkey;
+	char __padding1[172-148];
 	/* number of RcvArray groups for this context. */
 	u32 rcv_array_groups;
 	/* index of first eager TID entry. */
@@ -267,185 +156,11 @@ struct hfi1_ctxtdata {
 	struct exp_tid_set tid_used_list;
 	struct exp_tid_set tid_full_list;
 
-	/* lock protecting all Expected TID data of user contexts */
-	struct mutex exp_mutex;
-	/* lock protecting all Expected TID data of kernel contexts */
-	spinlock_t exp_lock;
-	/* Queue for QP's waiting for HW TID flows */
-	struct tid_queue flow_queue;
-	/* Queue for QP's waiting for HW receive array entries */
-	struct tid_queue rarr_queue;
-
-	/* number of pio bufs for this ctxt (all procs, if shared) */
-	u32 piocnt;
-	/* first pio buffer for this ctxt */
-	u32 pio_base;
-	/* chip offset of PIO buffers for this ctxt */
-	u32 piobufs;
-	/* per-context configuration flags */
-	unsigned long flags;
-	/* per-context event flags for fileops/intr communication */
-	unsigned long event_flags;
-	/* WAIT_RCV that timed out, no interrupt */
-	u32 rcvwait_to;
-	/* WAIT_PIO that timed out, no interrupt */
-	u32 piowait_to;
-	/* WAIT_RCV already happened, no wait */
-	u32 rcvnowait;
-	/* WAIT_PIO already happened, no wait */
-	u32 pionowait;
-	/* total number of polled urgent packets */
-	u32 urgent;
-	/* saved total number of polled urgent packets for poll edge trigger */
-	u32 urgent_poll;
-	/* same size as task_struct .comm[], command that opened context */
-	char comm[TASK_COMM_LEN];
-	/* so file ops can get at unit */
-	struct hfi1_devdata *dd;
-	/* so functions that need physical port can get it easily */
-	struct hfi1_pportdata *ppd;
-	/* A page of memory for rcvhdrhead, rcvegrhead, rcvegrtail * N */
-	void *subctxt_uregbase;
-	/* An array of pages for the eager receive buffers * N */
-	void *subctxt_rcvegrbuf;
-	/* An array of pages for the eager header queue entries * N */
-	void *subctxt_rcvhdr_base;
-	/* The version of the library which opened this ctxt */
-	u32 userversion;
-	/* Bitmask of active slaves */
-	u32 active_slaves;
-	/* Type of packets or conditions we want to poll for */
-	u16 poll_type;
-	/* receive packet sequence counter */
-	u8 seq_cnt;
-	u8 redirect_seq_cnt;
-	/* ctxt rcvhdrq head offset */
-	u32 head;
-	u32 pkt_count;
-	/* QPs waiting for context processing */
-	struct list_head qp_wait_list;
-	/* interrupt handling */
-	u64 imask;	/* clear interrupt mask */
-	int ireg;	/* clear interrupt register */
-	unsigned numa_id; /* numa node of this context */
-	/* verbs stats per CTX */
-	struct hfi1_opcode_stats_perctx *opstats;
-	/*
-	 * This is the kernel thread that will keep making
-	 * progress on the user sdma requests behind the scenes.
-	 * There is one per context (shared contexts use the master's).
-	 */
-	struct task_struct *progress;
-	struct list_head sdma_queues;
-	/* protect sdma queues */
-	spinlock_t sdma_qlock;
-
-	/* Is ASPM interrupt supported for this context */
-	bool aspm_intr_supported;
-	/* ASPM state (enabled/disabled) for this context */
-	bool aspm_enabled;
-	/* Timer for re-enabling ASPM if interrupt activity quietens down */
-	struct timer_list aspm_timer;
-	/* Lock to serialize between intr, timer intr and user threads */
-	spinlock_t aspm_lock;
-	/* Is ASPM processing enabled for this context (in intr context) */
-	bool aspm_intr_enable;
-	/* Last interrupt timestamp */
-	ktime_t aspm_ts_last_intr;
-	/* Last timestamp at which we scheduled a timer for this context */
-	ktime_t aspm_ts_timer_sched;
-
-	/* Bit mask to track free TID RDMA HW flows */
-	unsigned long flow_mask;
-	struct tid_flow_state flows[RXE_NUM_TID_FLOWS];
-
-	/*
-	 * The interrupt handler for a particular receive context can vary
-	 * throughout it's lifetime. This is not a lock protected data member so
-	 * it must be updated atomically and the prev and new value must always
-	 * be valid. Worst case is we process an extra interrupt and up to 64
-	 * packets with the wrong interrupt handler.
-	 */
-	int (*do_interrupt)(struct hfi1_ctxtdata *rcd, int threaded);
-};
-
-#endif /* __HFI1_ORIG__ */
-    
-//TODO: Fix hfi1_ctxtdata and pport
-#ifndef __HFI1_ORIG__
-struct hfi1_ctxtdata {
-	char __padding0[152];
-	unsigned ctxt;
-	char __padding1[180-156];
-        /* number of RcvArray groups for this context. */
-        u32 rcv_array_groups;
-        /* index of first eager TID entry. */
-        u32 eager_base;
-        /* number of expected TID entries */
-        u32 expected_count;
-        /* index of first expected TID entry. */
-        u32 expected_base;
-
-        struct exp_tid_set tid_group_list;
-        struct exp_tid_set tid_used_list;
-        struct exp_tid_set tid_full_list;
-
-	char __padding2[440-272];
+	char __padding2[432-264];
 	struct hfi1_devdata *dd;
 };
 #endif /* !__HFI1_ORIG__ */
 
-#ifdef __HFI1_ORIG__
-/*
- * Represents a single packet at a high level. Put commonly computed things in
- * here so we do not have to keep doing them over and over. The rule of thumb is
- * if something is used one time to derive some value, store that something in
- * here. If it is used multiple times, then store the result of that derivation
- * in here.
- */
-struct hfi1_packet {
-	void *ebuf;
-	void *hdr;
-	struct hfi1_ctxtdata *rcd;
-	__le32 *rhf_addr;
-	struct rvt_qp *qp;
-	struct ib_other_headers *ohdr;
-	u64 rhf;
-	u32 maxcnt;
-	u32 rhqoff;
-	u16 tlen;
-	s16 etail;
-	u8 hlen;
-	u8 numpkt;
-	u8 rsize;
-	u8 updegr;
-	u8 rcv_flags;
-	u8 etype;
-};
-
-/*
- * Private data for snoop/capture support.
- */
-struct hfi1_snoop_data {
-	int mode_flag;
-	struct cdev cdev;
-	struct device *class_dev;
-	/* protect snoop data */
-	spinlock_t snoop_lock;
-	struct list_head queue;
-	wait_queue_head_t waitq;
-	void *filter_value;
-	int (*filter_callback)(void *hdr, void *data, void *value);
-	u64 dcc_cfg; /* saved value of DCC Cfg register */
-};
-
-/* snoop mode_flag values */
-#define HFI1_PORT_SNOOP_MODE     1U
-#define HFI1_PORT_CAPTURE_MODE   2U
-
-struct rvt_sge_state;
-
-#endif /* __HFI1_ORIG__ */
 /*
  * Get/Set IB link-level config parameters for f_get/set_ib_cfg()
  * Mostly for MADs that set or query link parameters, also ipath
@@ -586,256 +301,9 @@ static inline void incr_cntr32(u32 *cntr)
 
 #define MAX_NAME_SIZE 64
 
-#ifdef __HFI1_ORIG__
-
-struct hfi1_msix_entry {
-	enum irq_type type;
-	struct msix_entry msix;
-	void *arg;
-	char name[MAX_NAME_SIZE];
-	cpumask_t mask;
-	struct irq_affinity_notify notify;
-};
-
-/* per-SL CCA information */
-struct cca_timer {
-	struct hrtimer hrtimer;
-	struct hfi1_pportdata *ppd; /* read-only */
-	int sl; /* read-only */
-	u16 ccti; /* read/write - current value of CCTI */
-};
-
-struct link_down_reason {
-	/*
-	 * SMA-facing value.  Should be set from .latest when
-	 * HLS_UP_* -> HLS_DN_* transition actually occurs.
-	 */
-	u8 sma;
-	u8 latest;
-};
-
-enum {
-	LO_PRIO_TABLE,
-	HI_PRIO_TABLE,
-	MAX_PRIO_TABLE
-};
-
-struct vl_arb_cache {
-	/* protect vl arb cache */
-	spinlock_t lock;
-	struct ib_vl_weight_elem table[VL_ARB_TABLE_SIZE];
-};
-
-
-/*
- * The structure below encapsulates data relevant to a physical IB Port.
- * Current chips support only one such port, but the separation
- * clarifies things a bit. Note that to conform to IB conventions,
- * port-numbers are one-based. The first or only port is port1.
- */
-struct hfi1_pportdata {
-	struct hfi1_ibport ibport_data;
-
-	struct hfi1_devdata *dd;
-	struct kobject pport_cc_kobj;
-	struct kobject sc2vl_kobj;
-	struct kobject sl2sc_kobj;
-	struct kobject vl2mtu_kobj;
-
-	/* PHY support */
-	struct qsfp_data qsfp_info;
-	/* Values for SI tuning of SerDes */
-	u32 port_type;
-	u32 tx_preset_eq;
-	u32 tx_preset_noeq;
-	u32 rx_preset;
-	u8  local_atten;
-	u8  remote_atten;
-	u8  default_atten;
-	u8  max_power_class;
-
-	/* GUIDs for this interface, in host order, guids[0] is a port guid */
-	u64 guids[HFI1_GUIDS_PER_PORT];
-
-	/* GUID for peer interface, in host order */
-	u64 neighbor_guid;
-
-	/* up or down physical link state */
-	u32 linkup;
-
-	/*
-	 * this address is mapped read-only into user processes so they can
-	 * get status cheaply, whenever they want.  One qword of status per port
-	 */
-	u64 *statusp;
-
-	/* SendDMA related entries */
-
-	struct workqueue_struct *hfi1_wq;
-
-	/* move out of interrupt context */
-	struct work_struct link_vc_work;
-	struct work_struct link_up_work;
-	struct work_struct link_down_work;
-	struct work_struct sma_message_work;
-	struct work_struct freeze_work;
-	struct work_struct link_downgrade_work;
-	struct work_struct link_bounce_work;
-	struct delayed_work start_link_work;
-	/* host link state variables */
-	struct mutex hls_lock;
-	u32 host_link_state;
-
-	u32 lstate;	/* logical link state */
-
-	/* these are the "32 bit" regs */
-
-	u32 ibmtu; /* The MTU programmed for this unit */
-	/*
-	 * Current max size IB packet (in bytes) including IB headers, that
-	 * we can send. Changes when ibmtu changes.
-	 */
-	u32 ibmaxlen;
-	u32 current_egress_rate; /* units [10^6 bits/sec] */
-	/* LID programmed for this instance */
-	u16 lid;
-	/* list of pkeys programmed; 0 if not set */
-	u16 pkeys[MAX_PKEY_VALUES];
-	u16 link_width_supported;
-	u16 link_width_downgrade_supported;
-	u16 link_speed_supported;
-	u16 link_width_enabled;
-	u16 link_width_downgrade_enabled;
-	u16 link_speed_enabled;
-	u16 link_width_active;
-	u16 link_width_downgrade_tx_active;
-	u16 link_width_downgrade_rx_active;
-	u16 link_speed_active;
-	u8 vls_supported;
-	u8 vls_operational;
-	u8 actual_vls_operational;
-	/* LID mask control */
-	u8 lmc;
-	/* Rx Polarity inversion (compensate for ~tx on partner) */
-	u8 rx_pol_inv;
-
-	u8 hw_pidx;     /* physical port index */
-	u8 port;        /* IB port number and index into dd->pports - 1 */
-	/* type of neighbor node */
-	u8 neighbor_type;
-	u8 neighbor_normal;
-	u8 neighbor_fm_security; /* 1 if firmware checking is disabled */
-	u8 neighbor_port_number;
-	u8 is_sm_config_started;
-	u8 offline_disabled_reason;
-	u8 is_active_optimize_enabled;
-	u8 driver_link_ready;	/* driver ready for active link */
-	u8 link_enabled;	/* link enabled? */
-	u8 linkinit_reason;
-	u8 local_tx_rate;	/* rate given to 8051 firmware */
-	u8 last_pstate;		/* info only */
-	u8 qsfp_retry_count;
-
-	/* placeholders for IB MAD packet settings */
-	u8 overrun_threshold;
-	u8 phy_error_threshold;
-
-	/* Used to override LED behavior for things like maintenance beaconing*/
-	/*
-	 * Alternates per phase of blink
-	 * [0] holds LED off duration, [1] holds LED on duration
-	 */
-	unsigned long led_override_vals[2];
-	u8 led_override_phase; /* LSB picks from vals[] */
-	atomic_t led_override_timer_active;
-	/* Used to flash LEDs in override mode */
-	struct timer_list led_override_timer;
-
-	u32 sm_trap_qp;
-	u32 sa_qp;
-
-	/*
-	 * cca_timer_lock protects access to the per-SL cca_timer
-	 * structures (specifically the ccti member).
-	 */
-	spinlock_t cca_timer_lock ____cacheline_aligned_in_smp;
-	struct cca_timer cca_timer[OPA_MAX_SLS];
-
-	/* List of congestion control table entries */
-	struct ib_cc_table_entry_shadow ccti_entries[CC_TABLE_SHADOW_MAX];
-
-	/* congestion entries, each entry corresponding to a SL */
-	struct opa_congestion_setting_entry_shadow
-		congestion_entries[OPA_MAX_SLS];
-
-	/*
-	 * cc_state_lock protects (write) access to the per-port
-	 * struct cc_state.
-	 */
-	spinlock_t cc_state_lock ____cacheline_aligned_in_smp;
-
-	struct cc_state __rcu *cc_state;
-
-	/* Total number of congestion control table entries */
-	u16 total_cct_entry;
-
-	/* Bit map identifying service level */
-	u32 cc_sl_control_map;
-
-	/* CA's max number of 64 entry units in the congestion control table */
-	u8 cc_max_table_entries;
-
-	/*
-	 * begin congestion log related entries
-	 * cc_log_lock protects all congestion log related data
-	 */
-	spinlock_t cc_log_lock ____cacheline_aligned_in_smp;
-	u8 threshold_cong_event_map[OPA_MAX_SLS / 8];
-	u16 threshold_event_counter;
-	struct opa_hfi1_cong_log_event_internal cc_events[OPA_CONG_LOG_ELEMS];
-	int cc_log_idx; /* index for logging events */
-	int cc_mad_idx; /* index for reporting events */
-	/* end congestion log related entries */
-
-	struct vl_arb_cache vl_arb_cache[MAX_PRIO_TABLE];
-
-	/* port relative counter buffer */
-	u64 *cntrs;
-	/* port relative synthetic counter buffer */
-	u64 *scntrs;
-	/* port_xmit_discards are synthesized from different egress errors */
-	u64 port_xmit_discards;
-	u64 port_xmit_discards_vl[C_VL_COUNT];
-	u64 port_xmit_constraint_errors;
-	u64 port_rcv_constraint_errors;
-	/* count of 'link_err' interrupts from DC */
-	u64 link_downed;
-	/* number of times link retrained successfully */
-	u64 link_up;
-	/* number of times a link unknown frame was reported */
-	u64 unknown_frame_count;
-	/* port_ltp_crc_mode is returned in 'portinfo' MADs */
-	u16 port_ltp_crc_mode;
-	/* port_crc_mode_enabled is the crc we support */
-	u8 port_crc_mode_enabled;
-	/* mgmt_allowed is also returned in 'portinfo' MADs */
-	u8 mgmt_allowed;
-	u8 part_enforce; /* partition enforcement flags */
-	struct link_down_reason local_link_down_reason;
-	struct link_down_reason neigh_link_down_reason;
-	/* Value to be sent to link peer on LinkDown .*/
-	u8 remote_link_down_reason;
-	/* Error events that will cause a port bounce. */
-	u32 port_error_action;
-	struct work_struct linkstate_active_work;
-	/* Does this port need to prescan for FECNs */
-	bool cc_prescan;
-};
-#endif /* __HFI1_ORIG__ */
-
 #ifndef __HFI1_ORIG__
 struct hfi1_pportdata {
-	char _padding[1899]; // TODO: compute this offset automatically from kernel we're basing off
+	char _padding[1907]; // TODO: compute this offset automatically from kernel we're basing off
 /*
 $ objdump --dwarf $(modinfo -n hfi1) | \
 awk '/DW_AT_name.*: vls_operational/ {
@@ -851,108 +319,47 @@ awk '/DW_AT_name.*: vls_operational/ {
 };
 #endif /* __HFI1_ORIG__ */
 
-#ifdef __HFI1_ORIG__
-typedef int (*rhf_rcv_function_ptr)(struct hfi1_packet *packet);
-
-typedef void (*opcode_handler)(struct hfi1_packet *packet);
-
-/* return values for the RHF receive functions */
-#define RHF_RCV_CONTINUE  0	/* keep going */
-#define RHF_RCV_DONE	  1	/* stop, this packet processed */
-#define RHF_RCV_REPROCESS 2	/* stop. retain this packet */
-
-#endif /* __HFI1_ORIG__ */
-
 struct rcv_array_data {
 	u8 group_size;
 	u16 ngroups;
 	u16 nctxt_extra;
 };
 
-#ifdef __HFI1_ORIG__
-struct per_vl_data {
-	u16 mtu;
-	struct send_context *sc;
-};
-
-#endif /* __HFI1_ORIG__ */
-
 /* 16 to directly index */
 #define PER_VL_SEND_CONTEXTS 16
 
-#ifdef __HFI1_ORIG__
+#ifndef __HFI1_ORIG__
 
-struct err_info_rcvport {
-	u8 status_and_code;
-	u64 packet_flit1;
-	u64 packet_flit2;
-};
-
-struct err_info_constraint {
-	u8 status;
-	u16 pkey;
-	u32 slid;
-};
-
-struct hfi1_temp {
-	unsigned int curr;       /* current temperature */
-	unsigned int lo_lim;     /* low temperature limit */
-	unsigned int hi_lim;     /* high temperature limit */
-	unsigned int crit_lim;   /* critical temperature limit */
-	u8 triggers;      /* temperature triggers */
-};
-
-struct hfi1_i2c_bus {
-	struct hfi1_devdata *controlling_dd; /* current controlling device */
-	struct i2c_adapter adapter;	/* bus details */
-	struct i2c_algo_bit_data algo;	/* bus algorithm details */
-	int num;			/* bus number, 0 or 1 */
-};
-
-/* common data between shared ASIC HFIs */
-struct hfi1_asic_data {
-	struct hfi1_devdata *dds[2];	/* back pointers */
-	struct mutex asic_resource_mutex;
-	struct hfi1_i2c_bus *i2c_bus0;
-	struct hfi1_i2c_bus *i2c_bus1;
-};
-
-/* device data struct now contains only "general per-device" info.
- * fields related to a physical IB port are in a hfi1_pportdata struct.
- */
-struct sdma_engine;
-struct sdma_vl_map;
-
-#endif /* __HFI1_ORIG__ */
 #define BOARD_VERS_MAX 96 /* how long the version string can be */
 #define SERIAL_MAX 16 /* length of the serial number */
-#ifdef __HFI1_ORIG__
 
-typedef int (*send_routine)(struct rvt_qp *, struct hfi1_pkt_state *, u64);
-
+/* Size on Linux side is 7360 Bytes */
 struct hfi1_devdata {
-	struct hfi1_ibdev verbs_dev;     /* must be first */
+	char verbs_dev[2624]; //struct hfi1_ibdev verbs_dev
 	struct list_head list;
 	/* pointers to related structs for this device */
 	/* pci access data structure */
-	struct pci_dev *pcidev;
-	struct cdev user_cdev;
-	struct cdev diag_cdev;
-	struct cdev ui_cdev;
-	struct device *user_device;
-	struct device *diag_device;
-	struct device *ui_device;
+	void *pcidev; // struct pci_dev *pcidev;
+	char user_cdev[104]; //struct cdev user_cdev
+	char diag_cdev[104]; //struct cdev diag_cdev
+	char ui_cdev[104]; //struct cdev ui_cdev
+	void *user_device; //struct device *user_device;
+	void *diag_device; //struct device *diag_device;
+	void *ui_device; //struct device *ui_device;
 
-	/* mem-mapped pointer to base of chip regs */
+
 	u8 __iomem *kregbase;
-	/* end of mem-mapped chip space excluding sendbuf and user regs */
-	u8 __iomem *kregend;
-	/* physical address of chip for io_remap, etc. */
 	resource_size_t physaddr;
+
+	/* second uncached mapping from RcvArray to pio send buffers */
+	u8 __iomem *kregend;
+	/* for detecting offset above kregbase2 address */
+	u32 base2_start;
 	/* Per VL data. Enough for all VLs but not all elements are set/used. */
-	struct per_vl_data vld[PER_VL_SEND_CONTEXTS];
+	char vld[16 * PER_VL_SEND_CONTEXTS]; //struct per_vl_data vld[PER_VL_SEND_CONTEXTS]
 	/* send context data */
-	struct send_context_info *send_contexts;
+	void *send_contexts; //struct send_context_info *send_contexts;
+
 	/* map hardware send contexts to software index */
 	u8 *hw_to_sw;
 	/* spinlock for allocating and releasing send context resources */
@@ -964,9 +371,9 @@ struct hfi1_devdata {
 	/* lock for sdma_map */
 	spinlock_t                          sde_map_lock;
 	/* array of kernel send contexts */
-	struct send_context **kernel_send_context;
-	/* array of vl maps */
-	struct pio_vl_map __rcu *pio_map;
+	void **kernel_send_context; //struct send_context **kernel_send_context;
+
+	void __rcu *pio_map; //struct pio_vl_map __rcu *pio_map
 	/* default flags to last descriptor */
 	u64 default_desc1;
 
@@ -985,15 +392,16 @@ struct hfi1_devdata {
 	/* array of engines sized by num_sdma */
 	struct sdma_engine                 *per_sdma;
 	/* array of vl maps */
-	struct sdma_vl_map __rcu           *sdma_map;
+	struct sdma_vl_map __rcu           *sdma_map; //struct sdma_vl_map __rc *sdma_map
 	/* SPC freeze waitqueue and variable */
-	wait_queue_head_t		  sdma_unfreeze_wq;
-	atomic_t			  sdma_unfreeze_count;
+	wait_queue_head_t sdma_unfreeze_wq;
+	atomic_t sdma_unfreeze_count;
 
-	u32 lcb_access_count;		/* count of LCB users */
+	u32 lcb_access_count;
 
-	/* common data between shared ASIC HFIs in this OS */
-	struct hfi1_asic_data *asic_data;
+
+	void *asic_data; //struct hfi1_asic_data *asic_data;
+
 
 	/* mem-mapped pointer to base of PIO buffers */
 	void __iomem *piobase;
@@ -1006,365 +414,6 @@ struct hfi1_devdata {
 	 * credit return base - a per-NUMA range of DMA address that
 	 * the chip will use to update the per-context free counter
 	 */
-	struct credit_return_base *cr_base;
-
-	/* send context numbers and sizes for each type */
-	struct sc_config_sizes sc_sizes[SC_MAX];
-
-	char *boardname; /* human readable board info */
-
-	/* reset value */
-	u64 z_int_counter;
-	u64 z_rcv_limit;
-	u64 z_send_schedule;
-
-	u64 __percpu *send_schedule;
-	/* number of receive contexts in use by the driver */
-	u32 num_rcv_contexts;
-	/* number of pio send contexts in use by the driver */
-	u32 num_send_contexts;
-	/*
-	 * number of ctxts available for PSM open
-	 */
-	u32 freectxts;
-	/* total number of available user/PSM contexts */
-	u32 num_user_contexts;
-	/* base receive interrupt timeout, in CSR units */
-	u32 rcv_intr_timeout_csr;
-
-	u32 freezelen; /* max length of freezemsg */
-	u64 __iomem *egrtidbase;
-	spinlock_t sendctrl_lock; /* protect changes to SendCtrl */
-	spinlock_t rcvctrl_lock; /* protect changes to RcvCtrl */
-	/* around rcd and (user ctxts) ctxt_cnt use (intr vs free) */
-	spinlock_t uctxt_lock; /* rcd and user context changes */
-	/* exclusive access to 8051 */
-	spinlock_t dc8051_lock;
-	/* exclusive access to 8051 memory */
-	spinlock_t dc8051_memlock;
-	int dc8051_timed_out;	/* remember if the 8051 timed out */
-	/*
-	 * A page that will hold event notification bitmaps for all
-	 * contexts. This page will be mapped into all processes.
-	 */
-	unsigned long *events;
-	/*
-	 * per unit status, see also portdata statusp
-	 * mapped read-only into user processes so they can get unit and
-	 * IB link status cheaply
-	 */
-	struct hfi1_status *status;
-
-	/* revision register shadow */
-	u64 revision;
-	/* Base GUID for device (network order) */
-	u64 base_guid;
-
-	/* these are the "32 bit" regs */
-
-	/* value we put in kr_rcvhdrsize */
-	u32 rcvhdrsize;
-	/* number of receive contexts the chip supports */
-	u32 chip_rcv_contexts;
-	/* number of receive array entries */
-	u32 chip_rcv_array_count;
-	/* number of PIO send contexts the chip supports */
-	u32 chip_send_contexts;
-	/* number of bytes in the PIO memory buffer */
-	u32 chip_pio_mem_size;
-	/* number of bytes in the SDMA memory buffer */
-	u32 chip_sdma_mem_size;
-
-	/* size of each rcvegrbuffer */
-	u32 rcvegrbufsize;
-	/* log2 of above */
-	u16 rcvegrbufsize_shift;
-	/* both sides of the PCIe link are gen3 capable */
-	u8 link_gen3_capable;
-	/* default link down value (poll/sleep) */
-	u8 link_default;
-	/* localbus width (1, 2,4,8,16,32) from config space  */
-	u32 lbus_width;
-	/* localbus speed in MHz */
-	u32 lbus_speed;
-	int unit; /* unit # of this chip */
-	int node; /* home node of this chip */
-
-	/* save these PCI fields to restore after a reset */
-	u32 pcibar0;
-	u32 pcibar1;
-	u32 pci_rom;
-	u16 pci_command;
-	u16 pcie_devctl;
-	u16 pcie_lnkctl;
-	u16 pcie_devctl2;
-	u32 pci_msix0;
-	u32 pci_lnkctl3;
-	u32 pci_tph2;
-
-	/*
-	 * ASCII serial number, from flash, large enough for original
-	 * all digit strings, and longer serial number format
-	 */
-	u8 serial[SERIAL_MAX];
-	/* human readable board version */
-	u8 boardversion[BOARD_VERS_MAX];
-	u8 lbus_info[32]; /* human readable localbus info */
-	/* chip major rev, from CceRevision */
-	u8 majrev;
-	/* chip minor rev, from CceRevision */
-	u8 minrev;
-	/* hardware ID */
-	u8 hfi1_id;
-	/* implementation code */
-	u8 icode;
-	/* vAU of this device */
-	u8 vau;
-	/* vCU of this device */
-	u8 vcu;
-	/* link credits of this device */
-	u16 link_credits;
-	/* initial vl15 credits to use */
-	u16 vl15_init;
-
-	/*
-	 * Cached values for vau and vl15buf, read during verify cap
-	 * interrupt. VL15 credits are to be kept at 0 and set when handing
-	 * link-up interrupt. This addresses an issue where VL15 MAD packets
-	 * could be received by one side of the link before the other is
-	 * really ready to receive them.
-	 */
-	u8 vau_cached;
-	u16 vl15buf_cached;
-
-	/* Misc small ints */
-	u8 n_krcv_queues;
-	u8 qos_shift;
-
-	u16 irev;	/* implementation revision */
-	u16 dc8051_ver; /* 8051 firmware version */
-
-	spinlock_t hfi1_diag_trans_lock; /* protect diag observer ops */
-	struct platform_config platform_config;
-	struct platform_config_cache pcfg_cache;
-
-	struct diag_client *diag_client;
-
-	/* MSI-X information */
-	struct hfi1_msix_entry *msix_entries;
-	u32 num_msix_entries;
-
-	/* INTx information */
-	u32 requested_intx_irq;		/* did we request one? */
-	char intx_name[MAX_NAME_SIZE];	/* INTx name */
-
-	/* general interrupt: mask of handled interrupts */
-	u64 gi_mask[CCE_NUM_INT_CSRS];
-
-	struct rcv_array_data rcv_entries;
-
-	/* cycle length of PS* counters in HW (in picoseconds) */
-	u16 psxmitwait_check_rate;
-
-	/*
-	 * 64 bit synthetic counters
-	 */
-	struct timer_list synth_stats_timer;
-
-	/*
-	 * device counters
-	 */
-	char *cntrnames;
-	size_t cntrnameslen;
-	size_t ndevcntrs;
-	u64 *cntrs;
-	u64 *scntrs;
-
-	/*
-	 * remembered values for synthetic counters
-	 */
-	u64 last_tx;
-	u64 last_rx;
-
-	/*
-	 * per-port counters
-	 */
-	size_t nportcntrs;
-	char *portcntrnames;
-	size_t portcntrnameslen;
-
-	struct hfi1_snoop_data hfi1_snoop;
-
-	struct err_info_rcvport err_info_rcvport;
-	struct err_info_constraint err_info_rcv_constraint;
-	struct err_info_constraint err_info_xmit_constraint;
-
-	atomic_t drop_packet;
-	u8 do_drop;
-	u8 err_info_uncorrectable;
-	u8 err_info_fmconfig;
-
-	/*
-	 * Software counters for the status bits defined by the
-	 * associated error status registers
-	 */
-	u64 cce_err_status_cnt[NUM_CCE_ERR_STATUS_COUNTERS];
-	u64 rcv_err_status_cnt[NUM_RCV_ERR_STATUS_COUNTERS];
-	u64 misc_err_status_cnt[NUM_MISC_ERR_STATUS_COUNTERS];
-	u64 send_pio_err_status_cnt[NUM_SEND_PIO_ERR_STATUS_COUNTERS];
-	u64 send_dma_err_status_cnt[NUM_SEND_DMA_ERR_STATUS_COUNTERS];
-	u64 send_egress_err_status_cnt[NUM_SEND_EGRESS_ERR_STATUS_COUNTERS];
-	u64 send_err_status_cnt[NUM_SEND_ERR_STATUS_COUNTERS];
-
-	/* Software counter that spans all contexts */
-	u64 sw_ctxt_err_status_cnt[NUM_SEND_CTXT_ERR_STATUS_COUNTERS];
-	/* Software counter that spans all DMA engines */
-	u64 sw_send_dma_eng_err_status_cnt[
-		NUM_SEND_DMA_ENG_ERR_STATUS_COUNTERS];
-	/* Software counter that aggregates all cce_err_status errors */
-	u64 sw_cce_err_status_aggregate;
-	/* Software counter that aggregates all bypass packet rcv errors */
-	u64 sw_rcv_bypass_packet_errors;
-	/* receive interrupt function */
-	rhf_rcv_function_ptr normal_rhf_rcv_functions[8];
-
-	/* Save the enabled LCB error bits */
-	u64 lcb_err_en;
-
-	/*
-	 * Handlers for outgoing data so that snoop/capture does not
-	 * have to have its hooks in the send path
-	 */
-	send_routine process_pio_send ____cacheline_aligned_in_smp;
-	send_routine process_dma_send;
-	void (*pio_inline_send)(struct hfi1_devdata *dd, struct pio_buf *pbuf,
-				u64 pbc, const void *from, size_t count);
-	/* hfi1_pportdata, points to array of (physical) port-specific
-	 * data structs, indexed by pidx (0..n-1)
-	 */
-	struct hfi1_pportdata *pport; //used
-	/* receive context data */
-	struct hfi1_ctxtdata **rcd;
-	u64 __percpu *int_counter;
-	/* device (not port) flags, basically device capabilities */
-	u16 flags;
-	/* Number of physical ports available */
-	u8 num_pports;
-	/* Lowest context number which can be used by user processes */
-	u8 first_user_ctxt;
-	/* adding a new field here would make it part of this cacheline */
-
-	/* seqlock for sc2vl */
-	seqlock_t sc2vl_lock ____cacheline_aligned_in_smp;
-	u64 sc2vl[4];
-	/* receive interrupt functions */
-	rhf_rcv_function_ptr *rhf_rcv_function_map;
-	u64 __percpu *rcv_limit;
-	u16 rhf_offset; /* offset of RHF within receive header entry */
-	/* adding a new field here would make it part of this cacheline */
-
-	/* OUI comes from the HW. Used everywhere as 3 separate bytes. */
-	u8 oui1;
-	u8 oui2;
-	u8 oui3;
-	u8 dc_shutdown;
-
-	/* Timer and counter used to detect RcvBufOvflCnt changes */
-	struct timer_list rcverr_timer;
-
-	wait_queue_head_t event_queue;
-
-	/* receive context tail dummy address */
-	__le64 *rcvhdrtail_dummy_kvaddr;
-	dma_addr_t rcvhdrtail_dummy_dma;
-
-	u32 rcv_ovfl_cnt;
-	/* Serialize ASPM enable/disable between multiple verbs contexts */
-	spinlock_t aspm_lock;
-	/* Number of verbs contexts which have disabled ASPM */
-	atomic_t aspm_disabled_cnt;
-	/* Keeps track of user space clients */
-	atomic_t user_refcount;
-	/* Used to wait for outstanding user space clients before dev removal */
-	struct completion user_comp;
-	bool eprom_available;	/* true if EPROM is available for this device */
-	bool aspm_supported;	/* Does HW support ASPM */
-	bool aspm_enabled;	/* ASPM state: enabled/disabled */
-	struct rhashtable sdma_rht;
-
-	struct kobject kobj;
-};
-#endif /* __HFI1_ORIG__ */
-
-#ifndef __HFI1_ORIG__
-
-/* Size on Linux side is 7360 Bytes */
-struct hfi1_devdata {
-	char verbs_dev[2688]; //struct hfi1_ibdev verbs_dev
-	struct list_head list;
-	//TODO: pcidev
-	void *pcidev; // struct pci_dev *pcidev;
-	char user_cdev[104]; //struct cdev user_cdev
-	char diag_cdev[104]; //struct cdev diag_cdev
-	char ui_cdev[104]; //struct cdev ui_cdev
-	void *user_device; //struct device *user_device;
-	void *diag_device; //struct device *diag_device;
-	void *ui_device; //struct device *ui_device;
-
-	u8 __iomem *kregbase;
-
-	u8 __iomem *kregend;
-
-	resource_size_t physaddr;
-
-	char vld[16 * PER_VL_SEND_CONTEXTS]; //struct per_vl_data vld[PER_VL_SEND_CONTEXTS]
-
-	void *send_contexts; //struct send_context_info *send_contexts;
-
-	u8 *hw_to_sw;
-
-	spinlock_t sc_lock;
-
-	spinlock_t pio_map_lock;
-
-	spinlock_t sc_init_lock;
-
-	spinlock_t sde_map_lock;
-
-	void **kernel_send_context; //struct send_context **kernel_send_context;
-
-	void __rcu *pio_map; //struct pio_vl_map __rcu *pio_map
-
-	u64 default_desc1;
-
-
-
-	volatile __le64 *sdma_heads_dma;
-	dma_addr_t sdma_heads_phys;
-	void *sdma_pad_dma;
-	dma_addr_t sdma_pad_phys;
-
-	size_t sdma_heads_size;
-
-	u32 chip_sdma_engines;
-
-	u32 num_sdma;
-
-	struct sdma_engine *per_sdma; //struct sdma_engine *per_sdma;
-	/* array of vl maps */
-	struct sdma_vl_map __rcu           *sdma_map; //struct sdma_vl_map __rc *sdma_map
-
-	wait_queue_head_t sdma_unfreeze_wq;
-	atomic_t sdma_unfreeze_count;
-
-	u32 lcb_access_count;
-
-
-	void *asic_data; //struct hfi1_asic_data *asic_data;
-
-
-	void __iomem *piobase;
-	void __iomem *rcvarray_wc;
 	void *cr_base; //struct credit_return_base *cr_base;
 
 	char sc_sizes[4 * SC_MAX]; //struct sc_config_sizes sc_sizes[SC_MAX]
@@ -1377,23 +426,31 @@ struct hfi1_devdata {
 	u64 z_send_schedule;
 
 	u64 __percpu *send_schedule;
+	/* number of receive contexts in use by the driver */
 
 	u32 num_rcv_contexts;
+	/* number of pio send contexts in use by the driver */
 
 	u32 num_send_contexts;
+	/*
+	 * number of ctxts available for PSM open
+	 */
 	u32 freectxts;
-
+	/* total number of available user/PSM contexts */
 	u32 num_user_contexts;
-
+	/* base receive interrupt timeout, in CSR units */
 	u32 rcv_intr_timeout_csr;
-	u32 freezelen;
+
+	u32 freezelen; /* max length of freezemsg */
 	u64 __iomem *egrtidbase;
 	spinlock_t sendctrl_lock;
 	spinlock_t rcvctrl_lock;
 
 	spinlock_t uctxt_lock;
 
-	spinlock_t dc8051_lock;
+	char dc8051_lock[40]; // struct mutex dc8051_lock; /* exclusive access to 8051 */
+	struct workqueue_struct *update_cntr_wq;
+	char update_cntr_work[32]; // struct work_struct update_cntr_work;
 
 	spinlock_t dc8051_memlock;
 	int dc8051_timed_out;
@@ -1464,9 +521,14 @@ struct hfi1_devdata {
 	u8 vcu;
 
 	u16 link_credits;
-
+	/* initial vl15 credits to use */
 	u16 vl15_init;
-	u8 vau_cached;
+	/*
+	 * Cached value for vl15buf, read during verify cap interrupt. VL15
+	 * credits are to be kept at 0 and set when handling the link-up
+	 * interrupt. This removes the possibility of receiving VL15 MAD
+	 * packets before this HFI is ready.
+	 */
 	u16 vl15buf_cached;
 
 
@@ -1474,7 +536,7 @@ struct hfi1_devdata {
 	u8 qos_shift;
 
 	u16 irev;
-	u16 dc8051_ver;
+	u32 dc8051_ver; /* 8051 firmware version */
 
 	spinlock_t hfi1_diag_trans_lock;
 	char platform_config[16]; //struct platform_config platform_config
@@ -1486,11 +548,11 @@ struct hfi1_devdata {
 	void *msix_entries; //struct hfi1_msix_entry *msix_entries;
 	u32 num_msix_entries;
 
-
+	/* INTx information */
 	u32 requested_intx_irq;
 	char intx_name[MAX_NAME_SIZE];
 
-
+	/* general interrupt: mask of handled interrupts */
 	u64 gi_mask[CCE_NUM_INT_CSRS];
 
 	struct rcv_array_data rcv_entries;
@@ -1591,7 +653,7 @@ struct hfi1_devdata {
 	bool eprom_available;
 	bool aspm_supported;
 	bool aspm_enabled;
-	char sdma_rht[120]; //struct rhashtable sdma_rht
+	void *sdma_rht; //struct rhashtable sdma_rht
 
 	char kobj[64]; //struct kobject kobj
 };
@@ -1634,19 +696,22 @@ struct tid_rb_node;
 /* Private data for file operations */
 
 struct hfi1_filedata {
+	struct hfi1_devdata *dd;
 	struct hfi1_ctxtdata *uctxt;
-	unsigned subctxt;
 	struct hfi1_user_sdma_comp_q *cq;
 	struct hfi1_user_sdma_pkt_q *pq;
+	u16 subctxt;
+	/* for cpu affinity; -1 if none */
 	int rec_cpu_num;
 	u32 tid_n_pinned;
 	void *handler; //struct mmu_rb_handler *handler;
 	struct tid_rb_node **entry_to_rb;
-	spinlock_t tid_lock;
+	spinlock_t tid_lock; /* protect tid_[limit,used] counters */
 	u32 tid_limit;
 	u32 tid_used;
 	u32 *invalid_tids;
 	u32 invalid_tid_idx;
+	/* protect invalid_tids array and invalid_tid_idx */
 	spinlock_t invalid_lock;
 	void *mm; //struct mm_struct *mm;
 };
@@ -2061,7 +1126,7 @@ static inline bool process_ecn(struct rvt_qp *qp, struct hfi1_packet *pkt,
 	bth1 = be32_to_cpu(ohdr->bth[1]);
 	if (unlikely(bth1 & (HFI1_BECN_SMASK | HFI1_FECN_SMASK))) {
 		hfi1_process_ecn_slowpath(qp, pkt, do_cnp);
-		return bth1 & HFI1_FECN_SMASK;
+		return !!(bth1 & HFI1_FECN_SMASK);
 	}
 	return false;
 }
