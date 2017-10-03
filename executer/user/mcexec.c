@@ -1250,9 +1250,9 @@ static int reduce_stack(struct rlimit *orig_rlim, char *argv[])
 void print_usage(char **argv)
 {
 #ifdef ADD_ENVS_OPTION
-	fprintf(stderr, "usage: %s [-c target_core] [-n nr_partitions] [<-e ENV_NAME=value>...] [--mpol-threshold=N] [--enable-straight-map] [--extend-heap-by=N] [--mpol-no-heap] [--mpol-no-bss] [--mpol-no-stack] [<mcos-id>] (program) [args...]\n", argv[0]);
+	fprintf(stderr, "usage: %s [-c target_core] [-n nr_partitions] [<-e ENV_NAME=value>...] [--mpol-threshold=N] [--enable-straight-map] [--extend-heap-by=N] [-s (--stack-premap=)[premap_size][,max]] [--mpol-no-heap] [--mpol-no-bss] [--mpol-no-stack] [--mpol-shm-premap] [--disable-sched-yield] [<mcos-id>] (program) [args...]\n", argv[0]);
 #else /* ADD_ENVS_OPTION */
-	fprintf(stderr, "usage: %s [-c target_core] [-n nr_partitions] [--mpol-threshold=N] [--enable-straight-map] [--extend-heap-by=N] [--mpol-no-heap] [--mpol-no-bss] [--mpol-no-stack] [<mcos-id>] (program) [args...]\n", argv[0]);
+	fprintf(stderr, "usage: %s [-c target_core] [-n nr_partitions] [--mpol-threshold=N] [--enable-straight-map] [--extend-heap-by=N] [-s (--stack-premap=)[premap_size][,max]] [--mpol-no-heap] [--mpol-no-bss] [--mpol-no-stack] [--mpol-shm-premap] [--disable-sched-yield] [<mcos-id>] (program) [args...]\n", argv[0]);
 #endif /* ADD_ENVS_OPTION */
 }
 
