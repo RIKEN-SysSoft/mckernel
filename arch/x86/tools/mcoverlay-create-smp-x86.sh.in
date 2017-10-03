@@ -149,3 +149,7 @@ for cpuid in `find /sys/bus/cpu/devices/* -maxdepth 0 -name "cpu[0123456789]*" -
 	rm -rf /tmp/mcos/mcos0_sys/bus/cpu/devices/$cpuid
     fi
 done
+
+# Restore umask
+umask ${umask_old}
+
