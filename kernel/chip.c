@@ -71,7 +71,7 @@ void hfi1_put_tid(struct hfi1_devdata *dd, u32 index,
 {
 	u64 reg;
 	void __iomem *base = (dd->rcvarray_wc ? dd->rcvarray_wc :
-			      (dd->kregbase + RCV_ARRAY));
+			      (dd->kregbase1 + RCV_ARRAY));
 
 	if (!(dd->flags & HFI1_PRESENT))
 		goto done;

@@ -137,30 +137,6 @@ struct exp_tid_set {
 	u32 count;
 };
 
-//TODO: Fix hfi1_ctxtdata and pport
-#ifndef __HFI1_ORIG__
-struct hfi1_ctxtdata {
-	char __padding0[144];
-	unsigned ctxt;
-	char __padding1[172-148];
-	/* number of RcvArray groups for this context. */
-	u32 rcv_array_groups;
-	/* index of first eager TID entry. */
-	u32 eager_base;
-	/* number of expected TID entries */
-	u32 expected_count;
-	/* index of first expected TID entry. */
-	u32 expected_base;
-
-	struct exp_tid_set tid_group_list;
-	struct exp_tid_set tid_used_list;
-	struct exp_tid_set tid_full_list;
-
-	char __padding2[432-264];
-	struct hfi1_devdata *dd;
-};
-#endif /* !__HFI1_ORIG__ */
-
 /*
  * Get/Set IB link-level config parameters for f_get/set_ib_cfg()
  * Mostly for MADs that set or query link parameters, also ipath
@@ -301,24 +277,6 @@ static inline void incr_cntr32(u32 *cntr)
 
 #define MAX_NAME_SIZE 64
 
-#ifndef __HFI1_ORIG__
-struct hfi1_pportdata {
-	char _padding[1907]; // TODO: compute this offset automatically from kernel we're basing off
-/*
-$ objdump --dwarf $(modinfo -n hfi1) | \
-awk '/DW_AT_name.*: vls_operational/ {
-	while (getline) {
-		if (/DW_AT_data_member_location/) {
-			print $NF; exit;
-		}
-	}
-}'
--> 1899
- */
-	u8 vls_operational;
-};
-#endif /* __HFI1_ORIG__ */
-
 struct rcv_array_data {
 	u8 group_size;
 	u16 ngroups;
@@ -333,347 +291,7 @@ struct rcv_array_data {
 #define BOARD_VERS_MAX 96 /* how long the version string can be */
 #define SERIAL_MAX 16 /* length of the serial number */
 
-/* Size on Linux side is 7360 Bytes */
-struct hfi1_devdata {
-	char verbs_dev[2624]; //struct hfi1_ibdev verbs_dev
-	struct list_head list;
-	/* pointers to related structs for this device */
-	/* pci access data structure */
-	void *pcidev; // struct pci_dev *pcidev;
-	char user_cdev[104]; //struct cdev user_cdev
-	char diag_cdev[104]; //struct cdev diag_cdev
-	char ui_cdev[104]; //struct cdev ui_cdev
-	void *user_device; //struct device *user_device;
-	void *diag_device; //struct device *diag_device;
-	void *ui_device; //struct device *ui_device;
-
-
-	u8 __iomem *kregbase;
-	resource_size_t physaddr;
-
-	/* second uncached mapping from RcvArray to pio send buffers */
-	u8 __iomem *kregend;
-	/* for detecting offset above kregbase2 address */
-	u32 base2_start;
-	/* Per VL data. Enough for all VLs but not all elements are set/used. */
-	char vld[16 * PER_VL_SEND_CONTEXTS]; //struct per_vl_data vld[PER_VL_SEND_CONTEXTS]
-	/* send context data */
-	void *send_contexts; //struct send_context_info *send_contexts;
-
-	/* map hardware send contexts to software index */
-	u8 *hw_to_sw;
-	/* spinlock for allocating and releasing send context resources */
-	spinlock_t sc_lock;
-	/* lock for pio_map */
-	spinlock_t pio_map_lock;
-	/* Send Context initialization lock. */
-	spinlock_t sc_init_lock;
-	/* lock for sdma_map */
-	spinlock_t                          sde_map_lock;
-	/* array of kernel send contexts */
-	void **kernel_send_context; //struct send_context **kernel_send_context;
-
-	void __rcu *pio_map; //struct pio_vl_map __rcu *pio_map
-	/* default flags to last descriptor */
-	u64 default_desc1;
-
-	/* fields common to all SDMA engines */
-
-	volatile __le64                    *sdma_heads_dma; /* DMA'ed by chip */
-	dma_addr_t                          sdma_heads_phys;
-	void                               *sdma_pad_dma; /* DMA'ed by chip */
-	dma_addr_t                          sdma_pad_phys;
-	/* for deallocation */
-	size_t                              sdma_heads_size;
-	/* number from the chip */
-	u32                                 chip_sdma_engines;
-	/* num used */
-	u32                                 num_sdma;
-	/* array of engines sized by num_sdma */
-	struct sdma_engine                 *per_sdma;
-	/* array of vl maps */
-	struct sdma_vl_map __rcu           *sdma_map; //struct sdma_vl_map __rc *sdma_map
-	/* SPC freeze waitqueue and variable */
-	wait_queue_head_t sdma_unfreeze_wq;
-	atomic_t sdma_unfreeze_count;
-
-	u32 lcb_access_count;
-
-
-	void *asic_data; //struct hfi1_asic_data *asic_data;
-
-
-	/* mem-mapped pointer to base of PIO buffers */
-	void __iomem *piobase;
-	/*
-	 * write-combining mem-mapped pointer to base of RcvArray
-	 * memory.
-	 */
-	void __iomem *rcvarray_wc;
-	/*
-	 * credit return base - a per-NUMA range of DMA address that
-	 * the chip will use to update the per-context free counter
-	 */
-	void *cr_base; //struct credit_return_base *cr_base;
-
-	char sc_sizes[4 * SC_MAX]; //struct sc_config_sizes sc_sizes[SC_MAX]
-
-	char *boardname;
-
-
-	u64 z_int_counter;
-	u64 z_rcv_limit;
-	u64 z_send_schedule;
-
-	u64 __percpu *send_schedule;
-	/* number of receive contexts in use by the driver */
-
-	u32 num_rcv_contexts;
-	/* number of pio send contexts in use by the driver */
-
-	u32 num_send_contexts;
-	/*
-	 * number of ctxts available for PSM open
-	 */
-	u32 freectxts;
-	/* total number of available user/PSM contexts */
-	u32 num_user_contexts;
-	/* base receive interrupt timeout, in CSR units */
-	u32 rcv_intr_timeout_csr;
-
-	u32 freezelen; /* max length of freezemsg */
-	u64 __iomem *egrtidbase;
-	spinlock_t sendctrl_lock;
-	spinlock_t rcvctrl_lock;
-
-	spinlock_t uctxt_lock;
-
-	char dc8051_lock[40]; // struct mutex dc8051_lock; /* exclusive access to 8051 */
-	struct workqueue_struct *update_cntr_wq;
-	char update_cntr_work[32]; // struct work_struct update_cntr_work;
-
-	spinlock_t dc8051_memlock;
-	int dc8051_timed_out;
-	unsigned long *events;
-	void *status; //struct hfi1_status *status;
-
-
-	u64 revision;
-
-	u64 base_guid;
-
-
-
-
-	u32 rcvhdrsize;
-
-	u32 chip_rcv_contexts;
-
-	u32 chip_rcv_array_count;
-
-	u32 chip_send_contexts;
-
-	u32 chip_pio_mem_size;
-
-	u32 chip_sdma_mem_size;
-
-
-	u32 rcvegrbufsize;
-
-	u16 rcvegrbufsize_shift;
-
-	u8 link_gen3_capable;
-
-	u8 link_default;
-
-	u32 lbus_width;
-
-	u32 lbus_speed;
-	int unit;
-	int node;
-
-
-	u32 pcibar0;
-	u32 pcibar1;
-	u32 pci_rom;
-	u16 pci_command;
-	u16 pcie_devctl;
-	u16 pcie_lnkctl;
-	u16 pcie_devctl2;
-	u32 pci_msix0;
-	u32 pci_lnkctl3;
-	u32 pci_tph2;
-	u8 serial[SERIAL_MAX];
-
-	u8 boardversion[BOARD_VERS_MAX];
-	u8 lbus_info[32];
-
-	u8 majrev;
-
-	u8 minrev;
-
-	u8 hfi1_id;
-
-	u8 icode;
-
-	u8 vau;
-
-	u8 vcu;
-
-	u16 link_credits;
-	/* initial vl15 credits to use */
-	u16 vl15_init;
-	/*
-	 * Cached value for vl15buf, read during verify cap interrupt. VL15
-	 * credits are to be kept at 0 and set when handling the link-up
-	 * interrupt. This removes the possibility of receiving VL15 MAD
-	 * packets before this HFI is ready.
-	 */
-	u16 vl15buf_cached;
-
-
-	u8 n_krcv_queues;
-	u8 qos_shift;
-
-	u16 irev;
-	u32 dc8051_ver; /* 8051 firmware version */
-
-	spinlock_t hfi1_diag_trans_lock;
-	char platform_config[16]; //struct platform_config platform_config
-	char pcfg_cache[176]; //struct platform_config_cache pcfg_cache
-
-	void *diag_client; //struct diag_client *diag_client;
-
-
-	void *msix_entries; //struct hfi1_msix_entry *msix_entries;
-	u32 num_msix_entries;
-
-	/* INTx information */
-	u32 requested_intx_irq;
-	char intx_name[MAX_NAME_SIZE];
-
-	/* general interrupt: mask of handled interrupts */
-	u64 gi_mask[CCE_NUM_INT_CSRS];
-
-	struct rcv_array_data rcv_entries;
-
-
-	u16 psxmitwait_check_rate;
-	char synth_stats_timer[80]; //struct timer_list synth_stats_timer
-	char *cntrnames;
-	size_t cntrnameslen;
-	size_t ndevcntrs;
-	u64 *cntrs;
-	u64 *scntrs;
-	u64 last_tx;
-	u64 last_rx;
-	size_t nportcntrs;
-	char *portcntrnames;
-	size_t portcntrnameslen;
-
-	char hfi1_snoop[192]; //struct hfi1_snoop_data hfi1_snoop
-
-	char err_info_rcvport[24]; //struct err_info_rcvport err_info_rcvport
-	char err_info_rcv_constraint[8]; //struct err_info_constraint err_info_rcv_constraint
-	char err_info_xmit_constraint[8]; //struct err_info_constraint err_info_xmit_constraint
-
-	atomic_t drop_packet;
-	u8 do_drop;
-	u8 err_info_uncorrectable;
-	u8 err_info_fmconfig;
-	u64 cce_err_status_cnt[NUM_CCE_ERR_STATUS_COUNTERS];
-	u64 rcv_err_status_cnt[NUM_RCV_ERR_STATUS_COUNTERS];
-	u64 misc_err_status_cnt[NUM_MISC_ERR_STATUS_COUNTERS];
-	u64 send_pio_err_status_cnt[NUM_SEND_PIO_ERR_STATUS_COUNTERS];
-	u64 send_dma_err_status_cnt[NUM_SEND_DMA_ERR_STATUS_COUNTERS];
-	u64 send_egress_err_status_cnt[NUM_SEND_EGRESS_ERR_STATUS_COUNTERS];
-	u64 send_err_status_cnt[NUM_SEND_ERR_STATUS_COUNTERS];
-
-
-	u64 sw_ctxt_err_status_cnt[NUM_SEND_CTXT_ERR_STATUS_COUNTERS];
-
-	u64 sw_send_dma_eng_err_status_cnt[
-	NUM_SEND_DMA_ENG_ERR_STATUS_COUNTERS];
-
-	u64 sw_cce_err_status_aggregate;
-
-	u64 sw_rcv_bypass_packet_errors;
-
-	void *rnormal_rhf_rcv_functions[8]; //hf_rcv_function_ptr normal_rhf_rcv_functions[8]
-
-	u64 lcb_err_en;
-	send_routine process_pio_send ____cacheline_aligned_in_smp;
-	send_routine process_dma_send;
-	void *pio_inline_send; //void (*pio_inline_send)(struct hfi1_devdata *dd, struct pio_buf *pbuf,u64 pbc, const void *from, size_t count);
-	struct hfi1_pportdata *pport;
-
-	void **rcd; //struct hfi1_ctxtdata **rcd;
-	u64 __percpu *int_counter;
-
-	u16 flags;
-
-	u8 num_pports;
-
-	u8 first_user_ctxt;
-
-
-
-	seqlock_t sc2vl_lock ____cacheline_aligned_in_smp;
-	u64 sc2vl[4];
-
-	void *rhf_rcv_function_map; //rhf_rcv_function_ptr *rhf_rcv_function_map
-	u64 __percpu *rcv_limit;
-	u16 rhf_offset;
-
-
-
-	u8 oui1;
-	u8 oui2;
-	u8 oui3;
-	u8 dc_shutdown;
-
-
-	char rcverr_timer[80]; //struct timer_list rcverr_timer
-
-	wait_queue_head_t event_queue;
-
-
-	__le64 *rcvhdrtail_dummy_kvaddr;
-	dma_addr_t rcvhdrtail_dummy_dma;
-
-	u32 rcv_ovfl_cnt;
-
-	spinlock_t aspm_lock;
-
-	atomic_t aspm_disabled_cnt;
-
-	atomic_t user_refcount;
-
-	struct completion user_comp;
-	bool eprom_available;
-	bool aspm_supported;
-	bool aspm_enabled;
-	void *sdma_rht; //struct rhashtable sdma_rht
-
-	char kobj[64]; //struct kobject kobj
-};
-
-/* USED FILEDS */
-// struct hfi1_devdata {
-// 	struct list_head list; //used
-// 	/* pointers to related structs for this device */
-// 	/* pci access data structure */
-// 	struct pci_dev *pcidev; //used
-// 	/* lock for sdma_map */
-// 	spinlock_t sde_map_lock; //used
-// 	/* array of vl maps */
-// 	struct sdma_vl_map __rcu *sdma_map; //used
-// 	dma_addr_t sdma_pad_phys; //used
-// 		/* array of engines sized by num_sdma */
-// 	struct sdma_engine *per_sdma; //used
-// 	struct hfi1_pportdata *pport; //used
-// };
-#endif /* __HFI1_ORIG__ */
+#endif /* !__HFI1_ORIG__ */
 
 /* 8051 firmware version helper */
 #define dc8051_ver(a, b) ((a) << 8 | (b))
@@ -892,23 +510,6 @@ static inline void pause_for_credit_return(struct hfi1_devdata *dd)
 	udelay(usec ? usec : 1);
 }
 
-#endif /* __HFI1_ORIG__ */
-
-#define OPA_MAX_SCS                             32 // from opa_smi.h
-
-/**
- * sc_to_vlt() reverse lookup sc to vl
- * @dd - devdata
- * @sc5 - 5 bit sc
- */
-static inline u8 sc_to_vlt(struct hfi1_devdata *dd, u8 sc5)
-{
-	if (sc5 >= OPA_MAX_SCS)
-		return (u8)(0xff);
-
-	return *(((u8 *)dd->sc2vl) + sc5);
-}
-#ifdef __HFI1_ORIG__
 #define PKEY_MEMBER_MASK 0x8000
 #define PKEY_LOW_15_MASK 0x7fff
 
@@ -1619,4 +1220,26 @@ __print_symbolic(opcode,                                   \
 	ib_opcode_name(CNP))
 
 #endif /* __HFI1_ORIG__ */
+
+/* This include is at the end of this file on purpose,
+ * because it needs other structs defined here.
+ * Except for static inlines that need these types.
+ */
+#include <hfi1/hfi1_generated_structs.h>
+
+#define OPA_MAX_SCS                             32 // from opa_smi.h
+
+/**
+ * sc_to_vlt() reverse lookup sc to vl
+ * @dd - devdata
+ * @sc5 - 5 bit sc
+ */
+static inline u8 sc_to_vlt(struct hfi1_devdata *dd, u8 sc5)
+{
+	if (sc5 >= OPA_MAX_SCS)
+		return (u8)(0xff);
+
+	return *(((u8 *)dd->sc2vl) + sc5);
+}
+
 #endif                          /* _HFI1_KERNEL_H */

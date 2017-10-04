@@ -573,8 +573,8 @@ int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 	/*
 	 * Map device addresses if not mapped or mapping changed.
 	 */
-	if (proc->hfi1_kregbase != dd->kregbase) {
-		void *hfi1_kregbase = dd->kregbase;
+	if (proc->hfi1_kregbase != dd->kregbase1) {
+		void *hfi1_kregbase = dd->kregbase1;
 
 		phys = dd->physaddr;
 		attr = PTATTR_UNCACHABLE | PTATTR_WRITABLE;

@@ -1187,7 +1187,7 @@ static int find_shared_ctxt(struct file *fp,
 	for (ndev = 0; ndev < devmax; ndev++) {
 		struct hfi1_devdata *dd = hfi1_lookup(ndev);
 
-		if (!(dd && (dd->flags & HFI1_PRESENT) && dd->kregbase))
+		if (!(dd && (dd->flags & HFI1_PRESENT) && dd->kregbase1))
 			continue;
 		for (i = dd->first_user_ctxt; i < dd->num_rcv_contexts; i++) {
 			struct hfi1_ctxtdata *uctxt = dd->rcd[i];
