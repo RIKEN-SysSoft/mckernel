@@ -23,15 +23,16 @@ static void parse_dwarf(Dwarf_Debug dbg, const char *struct_name,
 		const char *field_names[], int field_count);
 static void find_struct(Dwarf_Debug dbg, Dwarf_Die die, const char *struct_name,
 		const char *field_names[], int field_count, int level);
-static void find_fields(Dwarf_Debug dbg, Dwarf_Die die, const char *struct_name,
-		const char *field_names[], int field_count, int level);
+static void find_fields(Dwarf_Debug dbg, Dwarf_Die struct_die, Dwarf_Die die,
+		const char *struct_name, const char *field_names[],
+		int field_count, int level);
 static void print_field(Dwarf_Debug dbg, Dwarf_Die die, const char *field_name,
 		int pad_num);
 
 int debug = 0;
 
 void usage(const char *argv[]) {
-	fprintf(stderr, "%s debug_file struct_name field [field...]\n",
+	fprintf(stderr, "%s debug_file struct_name [field [field...]]\n",
 		argv[0]);
 }
 
@@ -45,7 +46,7 @@ int main(int argc, const char *argv[]) {
 	Dwarf_Handler errhand = 0;
 	Dwarf_Ptr errarg = 0;
 
-	if(argc < 4) {
+	if(argc < 3) {
 		usage(argv);
 		exit(1);
 	}
@@ -171,8 +172,9 @@ static void find_struct(Dwarf_Debug dbg, Dwarf_Die die, const char *struct_name,
 		if (rc == DW_DLV_OK) {
 			if (tag == DW_TAG_structure_type
 				&& name && strcasecmp(name, struct_name) == 0) {
-				find_fields(dbg, next, struct_name, field_names,
-					field_count, level + 1);
+				find_fields(dbg, die, next, struct_name,
+					    field_names, field_count,
+					    level + 1);
 				fprintf(stderr,
 					"Found struct %s but it did not have all members given!\nMissing:\n",
 					struct_name);
@@ -200,79 +202,6 @@ static void find_struct(Dwarf_Debug dbg, Dwarf_Die die, const char *struct_name,
 		die = next;
 	} while (die);
 }
-
-static void find_fields(Dwarf_Debug dbg, Dwarf_Die die, const char *struct_name,
-		const char *field_names[], int field_count, int level) {
-	Dwarf_Die next;
-	Dwarf_Error err;
-	int rc, i, printed_count = 0;
-
-	printf("struct %s {\n\tunion {\n",
-		struct_name);
-
-	do {
-		char *name;
-		const char *tag_name;
-		Dwarf_Half tag;
-
-		rc = dwarf_diename(die, &name, &err);
-		if (rc == DW_DLV_NO_ENTRY) {
-			name = NULL;
-		} else if (rc != DW_DLV_OK) {
-			fprintf(stderr, "dwarf_diename error: %d %s\n",
-				rc, dwarf_errmsg(err));
-			exit(1);
-		}
-
-		rc = dwarf_tag(die, &tag, &err);
-		if (rc != DW_DLV_OK) {
-			fprintf(stderr, "dwarf_tag error: %d %s\n",
-				rc, dwarf_errmsg(err));
-			exit(1);
-		}
-
-		if (debug) {
-			rc = dwarf_get_TAG_name(tag, &tag_name);
-			if (rc != DW_DLV_OK) {
-				fprintf(stderr,
-					"dwarf_get_TAG_name error: %d\n", rc);
-				exit(1);
-			}
-
-			printf("<%d> %p <%d> %s: %s\n", level, die, tag,
-			       tag_name, name ? name : "<no name>");
-		}
-
-		if (tag == DW_TAG_member && name) {
-			for (i = 0; i < field_count; i++) {
-				if (!field_names[i])
-					continue;
-				if (strcasecmp(name, field_names[i]) == 0) {
-					print_field(dbg, die, field_names[i],
-						printed_count);
-					field_names[i] = NULL;
-					printed_count++;
-					break;
-				}
-			}
-			if (printed_count == field_count) {
-				printf("\t};\n};\n");
-				exit(0);
-			}
-		}
-
-		rc = dwarf_siblingof(dbg, die, &next, &err);
-		dwarf_dealloc(dbg, die, DW_DLA_DIE);
-		if (name)
-			dwarf_dealloc(dbg, name, DW_DLA_STRING);
-
-		if (rc != DW_DLV_OK)
-			break;
-
-		die = next;
-	} while (die);
-}
-
 
 static int dwarf_get_offset(Dwarf_Debug dbg, Dwarf_Die die,
 		int *poffset, Dwarf_Error *perr) {
@@ -412,6 +341,88 @@ static int deref_type(Dwarf_Debug dbg, Dwarf_Die type_die,
 	return rc;
 }
 
+static void find_fields(Dwarf_Debug dbg, Dwarf_Die struct_die, Dwarf_Die die,
+		const char *struct_name, const char *field_names[],
+		int field_count, int level) {
+	Dwarf_Die next;
+	Dwarf_Error err;
+	int rc, i, printed_count = 0;
+	int size;
+
+	printf("struct %s {\n\tunion {\n",
+		struct_name);
+
+	rc =  dwarf_get_size(dbg, struct_die, &size, &err);
+	if (rc != DW_DLV_OK) {
+		fprintf(stderr, "could not get size for struct %s: %s\n",
+			struct_name, dwarf_errmsg(err));
+		exit(1);
+	}
+	printf("\t\tchar whole_struct[%d];\n", size);
+
+	do {
+		char *name;
+		const char *tag_name;
+		Dwarf_Half tag;
+
+		rc = dwarf_diename(die, &name, &err);
+		if (rc == DW_DLV_NO_ENTRY) {
+			name = NULL;
+		} else if (rc != DW_DLV_OK) {
+			fprintf(stderr, "dwarf_diename error: %d %s\n",
+				rc, dwarf_errmsg(err));
+			exit(1);
+		}
+
+		rc = dwarf_tag(die, &tag, &err);
+		if (rc != DW_DLV_OK) {
+			fprintf(stderr, "dwarf_tag error: %d %s\n",
+				rc, dwarf_errmsg(err));
+			exit(1);
+		}
+
+		if (debug) {
+			rc = dwarf_get_TAG_name(tag, &tag_name);
+			if (rc != DW_DLV_OK) {
+				fprintf(stderr,
+					"dwarf_get_TAG_name error: %d\n", rc);
+				exit(1);
+			}
+
+			printf("<%d> %p <%d> %s: %s\n", level, die, tag,
+			       tag_name, name ? name : "<no name>");
+		}
+
+		if (tag == DW_TAG_member && name) {
+			for (i = 0; i < field_count; i++) {
+				if (!field_names[i])
+					continue;
+				if (strcasecmp(name, field_names[i]) == 0) {
+					print_field(dbg, die, field_names[i],
+						printed_count);
+					field_names[i] = NULL;
+					printed_count++;
+					break;
+				}
+			}
+			if (printed_count == field_count) {
+				printf("\t};\n};\n");
+				exit(0);
+			}
+		}
+
+		rc = dwarf_siblingof(dbg, die, &next, &err);
+		dwarf_dealloc(dbg, die, DW_DLA_DIE);
+		if (name)
+			dwarf_dealloc(dbg, name, DW_DLA_STRING);
+
+		if (rc != DW_DLV_OK)
+			break;
+
+		die = next;
+	} while (die);
+}
+
 static void print_field(Dwarf_Debug dbg, Dwarf_Die die, const char *field_name,
 		int padnum) {
 	Dwarf_Attribute attr;
@@ -419,6 +430,7 @@ static void print_field(Dwarf_Debug dbg, Dwarf_Die die, const char *field_name,
 	int offset = 0;
 	char type_buf[1024];
 	char array_buf[128] = "";
+	char pointer_buf[128] = "";
 	int rc;
 
 	rc = dwarf_get_offset(dbg, die, &offset, &err);
@@ -471,24 +483,26 @@ static void print_field(Dwarf_Debug dbg, Dwarf_Die die, const char *field_name,
 			exit(7);
 		}
 
-		if (type_tag == DW_TAG_pointer_type) {
+		while (type_tag == DW_TAG_pointer_type) {
+			pointer_buf[pointer++] = '*';
+
 			rc = deref_type(dbg, type_die, &next,
 					&type_tag, &err);
 			/* No entry here means void* */
-			if (rc != DW_DLV_NO_ENTRY) {
-				if (rc != DW_DLV_OK) {
-					fprintf(stderr,
-						"Could not deref type for %s: %s\n",
-						field_name, dwarf_errmsg(err));
-					exit(7);
-				}
+			if (rc == DW_DLV_NO_ENTRY)
+				break;
 
-				dwarf_dealloc(dbg, type_die, DW_DLA_DIE);
-				type_die = next;
+			if (rc != DW_DLV_OK) {
+				fprintf(stderr,
+					"Could not deref type for %s: %s\n",
+					field_name, dwarf_errmsg(err));
+				exit(7);
 			}
 
-			pointer++;
+			dwarf_dealloc(dbg, type_die, DW_DLA_DIE);
+			type_die = next;
 		}
+
 		if (type_tag == DW_TAG_array_type) {
 			int next_offset, size;
 
@@ -581,13 +595,13 @@ static void print_field(Dwarf_Debug dbg, Dwarf_Die die, const char *field_name,
 
 		if (type_tag == DW_TAG_structure_type) {
 			snprintf(type_buf, 1024, "struct %s %s",
-				 type_name, pointer ? "*" : "");
+				 type_name, pointer_buf);
 		} else if (type_tag == DW_TAG_base_type
 				|| type_tag == DW_TAG_typedef) {
 			snprintf(type_buf, 1024, "%s %s", type_name,
-				pointer ? "*" : "");
+				pointer_buf);
 		} else if (type_tag == DW_TAG_pointer_type) {
-			snprintf(type_buf, 1024, "void *");
+			snprintf(type_buf, 1024, "void %s", pointer_buf);
 		} else {
 			const char *tag_name;
 
