@@ -137,6 +137,12 @@ struct exp_tid_set {
 	u32 count;
 };
 
+#ifndef __HFI1_ORIG__
+
+#include <hfi1/hfi1_generated_ctxtdata.h>
+
+#endif /* !__HFI1_ORIG__ */
+
 /*
  * Get/Set IB link-level config parameters for f_get/set_ib_cfg()
  * Mostly for MADs that set or query link parameters, also ipath
@@ -277,6 +283,12 @@ static inline void incr_cntr32(u32 *cntr)
 
 #define MAX_NAME_SIZE 64
 
+#ifndef __HFI1_ORIG__
+
+#include <hfi1/hfi1_generated_pportdata.h>
+
+#endif /* __HFI1_ORIG__ */
+
 struct rcv_array_data {
 	u8 group_size;
 	u16 ngroups;
@@ -290,6 +302,8 @@ struct rcv_array_data {
 
 #define BOARD_VERS_MAX 96 /* how long the version string can be */
 #define SERIAL_MAX 16 /* length of the serial number */
+
+#include <hfi1/hfi1_generated_devdata.h>
 
 #endif /* !__HFI1_ORIG__ */
 
@@ -310,29 +324,7 @@ struct mmu_rb_handler;
 
 struct tid_rb_node;
 
-/* Original size on linux is 96 bytes */
-/* Private data for file operations */
-
-struct hfi1_filedata {
-	struct hfi1_devdata *dd;
-	struct hfi1_ctxtdata *uctxt;
-	struct hfi1_user_sdma_comp_q *cq;
-	struct hfi1_user_sdma_pkt_q *pq;
-	u16 subctxt;
-	/* for cpu affinity; -1 if none */
-	int rec_cpu_num;
-	u32 tid_n_pinned;
-	void *handler; //struct mmu_rb_handler *handler;
-	struct tid_rb_node **entry_to_rb;
-	spinlock_t tid_lock; /* protect tid_[limit,used] counters */
-	u32 tid_limit;
-	u32 tid_used;
-	u32 *invalid_tids;
-	u32 invalid_tid_idx;
-	/* protect invalid_tids array and invalid_tid_idx */
-	spinlock_t invalid_lock;
-	void *mm; //struct mm_struct *mm;
-};
+#include <hfi1/hfi1_generated_filedata.h>
 
 int hfi1_map_device_addresses(struct hfi1_filedata *fd);
 
@@ -510,6 +502,23 @@ static inline void pause_for_credit_return(struct hfi1_devdata *dd)
 	udelay(usec ? usec : 1);
 }
 
+#endif /* __HFI1_ORIG__ */
+
+#define OPA_MAX_SCS                             32 // from opa_smi.h
+
+/**
+ * sc_to_vlt() reverse lookup sc to vl
+ * @dd - devdata
+ * @sc5 - 5 bit sc
+ */
+static inline u8 sc_to_vlt(struct hfi1_devdata *dd, u8 sc5)
+{
+	if (sc5 >= OPA_MAX_SCS)
+		return (u8)(0xff);
+
+	return *(((u8 *)dd->sc2vl) + sc5);
+}
+#ifdef __HFI1_ORIG__
 #define PKEY_MEMBER_MASK 0x8000
 #define PKEY_LOW_15_MASK 0x7fff
 
@@ -1220,26 +1229,4 @@ __print_symbolic(opcode,                                   \
 	ib_opcode_name(CNP))
 
 #endif /* __HFI1_ORIG__ */
-
-/* This include is at the end of this file on purpose,
- * because it needs other structs defined here.
- * Except for static inlines that need these types.
- */
-#include <hfi1/hfi1_generated_structs.h>
-
-#define OPA_MAX_SCS                             32 // from opa_smi.h
-
-/**
- * sc_to_vlt() reverse lookup sc to vl
- * @dd - devdata
- * @sc5 - 5 bit sc
- */
-static inline u8 sc_to_vlt(struct hfi1_devdata *dd, u8 sc5)
-{
-	if (sc5 >= OPA_MAX_SCS)
-		return (u8)(0xff);
-
-	return *(((u8 *)dd->sc2vl) + sc5);
-}
-
 #endif                          /* _HFI1_KERNEL_H */
