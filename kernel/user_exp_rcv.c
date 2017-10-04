@@ -100,12 +100,6 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 		return -EINVAL;
 	}
 
-	if (hfi1_map_device_addresses(fd) < 0) {
-		kprintf("%s: Could not map hfi1 device addresses\n",
-			__FUNCTION__);
-		return -EINVAL;
-	}
-
 	tidlist = kmalloc_cache_alloc(&tidlist_cache,
 			//sizeof(*tidlist) * uctxt->expected_count);
 			sizeof(*tidlist) * 1024);

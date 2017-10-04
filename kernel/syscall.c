@@ -3146,6 +3146,7 @@ SYSCALL_DECLARE(ioctl)
 	long irqstate;
 	void *private_data = proc->fd_priv_table[fd];
 	unsigned long t_s = rdtsc();
+	int sub_rc = 0;
 
 	irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
 	for(fdp = proc->mckfd; fdp; fdp = fdp->next)
@@ -3163,18 +3164,32 @@ SYSCALL_DECLARE(ioctl)
 				ihk_mc_syscall_arg1(ctx),
 				ihk_mc_syscall_arg2(ctx),
 				t_s);
-		/* continue forwarding iff hfi1 didn't handle it */
+
+		/* Continue forwarding iff hfi1 didn't handle it */
 		// TODO: improve heuristics?
-		if (rc != -ENOTSUPP)
+		if (rc != -ENOTSUPP && rc != -ENODEV)
 			return rc;
+
+		if (rc == -ENODEV) {
+			sub_rc = rc;
+		}
 	}
 
 	if (fdp && fdp->ioctl_cb) {
-		//kprintf("ioctl: found system fd %d\n", fd);
 		rc = fdp->ioctl_cb(fdp, ctx);
 	}
 	else {
 		rc = syscall_generic_forwarding(__NR_ioctl, ctx);
+	}
+
+	if (private_data && sub_rc == -ENODEV) {
+		extern int hfi1_map_device_addresses(void *fd);
+
+		if (hfi1_map_device_addresses(private_data) < 0) {
+			kprintf("%s: Could not map hfi1 device addresses\n",
+					__FUNCTION__);
+			return -EINVAL;
+		}
 	}
 
 	return rc;

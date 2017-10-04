@@ -571,6 +571,7 @@ long hfi1_file_ioctl(void *private_data, unsigned int cmd,
 		else
 			return -EPERM;
 #endif
+		ret = -ENODEV;
 		dkprintf("%s: HFI1_IOCTL_SET_PKEY \n", __FUNCTION__);
 		break;
 
@@ -686,10 +687,6 @@ ssize_t hfi1_aio_write(void *private_data, const struct iovec *iovec, unsigned l
 
 	if (!dim)
 		return -EINVAL;
-
-	if (hfi1_map_device_addresses(fd) < 0) {
-		return -EINVAL;
-	}
 
 	hfi1_cdbg(SDMA, "SDMA request from %u:%u (%lu)",
 		  fd->uctxt->ctxt, fd->subctxt, dim);
