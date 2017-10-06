@@ -2,6 +2,9 @@
 #ifndef __HEADER_ARM64_COMMON_SIGNAL_H
 #define __HEADER_ARM64_COMMON_SIGNAL_H
 
+#include <fpsimd.h>
+#include <ihk/types.h>
+
 #define _NSIG		64
 #define _NSIG_BPW	64
 #define _NSIG_WORDS (_NSIG / _NSIG_BPW)
@@ -51,7 +54,7 @@ typedef struct sigaltstack {
 	size_t	ss_size;
 } stack_t;
 
-#define MINSIGSTKSZ 2048
+#define MINSIGSTKSZ 5120
 #define SS_ONSTACK 1
 #define SS_DISABLE 2
 
@@ -284,6 +287,106 @@ struct esr_context {
 	unsigned long esr;
 };
 
+#define EXTRA_MAGIC	0x45585401
+
+struct extra_context {
+	struct _aarch64_ctx head;
+	void *data;	/* 16-byte aligned pointer to the extra space */
+	uint32_t size;	/* size in bytes of the extra space */
+};
+
+#define SVE_MAGIC	0x53564501
+
+#define fpsimd_sve_state(vq) {			\
+	__uint128_t zregs[32][vq];		\
+	uint16_t pregs[16][vq];			\
+	uint16_t ffr[vq];			\
+}
+
+struct sve_context {
+	struct _aarch64_ctx head;
+	uint16_t vl;
+	uint16_t __reserved[3];
+};
+
+/*
+ * The SVE architecture leaves space for future expansion of the
+ * vector length beyond its initial architectural limit of 2048 bits
+ * (16 quadwords).
+ */
+#define SVE_VQ_MIN	1
+#define SVE_VQ_MAX	0x200
+
+#define SVE_VL_MIN	(SVE_VQ_MIN * 0x10)
+#define SVE_VL_MAX	(SVE_VQ_MAX * 0x10)
+
+#define SVE_NUM_ZREGS	32
+#define SVE_NUM_PREGS	16
+
+#define sve_vl_valid(vl) \
+	((vl) % 0x10 == 0 && (vl) >= SVE_VL_MIN && (vl) <= SVE_VL_MAX)
+#define sve_vq_from_vl(vl)	((vl) / 0x10)
+
+/*
+ * The total size of meaningful data in the SVE context in bytes,
+ * including the header, is given by SVE_SIG_CONTEXT_SIZE(vq).
+ *
+ * Note: for all these macros, the "vq" argument denotes the SVE
+ * vector length in quadwords (i.e., units of 128 bits).
+ *
+ * The correct way to obtain vq is to use sve_vq_from_vl(vl).  The
+ * result is valid if and only if sve_vl_valid(vl) is true.  This is
+ * guaranteed for a struct sve_context written by the kernel.
+ *
+ *
+ * Additional macros describe the contents and layout of the payload.
+ * For each, SVE_SIG_x_OFFSET(args) is the start offset relative to
+ * the start of struct sve_context, and SVE_SIG_x_SIZE(args) is the
+ * size in bytes:
+ *
+ *
+ *	x	type				description
+ *	-	----				-----------
+ *	REGS					the entire SVE context
+ *
+ *	ZREGS	__uint128_t[SVE_NUM_ZREGS][vq]	all Z-registers
+ *	ZREG	__uint128_t[vq]			individual Z-register Zn
+ *
+ *	PREGS	uint16_t[SVE_NUM_PREGS][vq]	all P-registers
+ *	PREG	uint16_t[vq]			individual P-register Pn
+ *
+ *	FFR	uint16_t[vq]			first-fault status register
+ *
+ * Additional data might be appended in the future.
+ */
+
+#define SVE_SIG_ZREG_SIZE(vq)	((uint32_t)(vq) * 16)
+#define SVE_SIG_PREG_SIZE(vq)	((uint32_t)(vq) * 2)
+#define SVE_SIG_FFR_SIZE(vq)	SVE_SIG_PREG_SIZE(vq)
+
+#define SVE_SIG_REGS_OFFSET	((sizeof(struct sve_context) + 15) / 16 * 16)
+
+#define SVE_SIG_ZREGS_OFFSET	SVE_SIG_REGS_OFFSET
+#define SVE_SIG_ZREG_OFFSET(vq, n) \
+	(SVE_SIG_ZREGS_OFFSET + SVE_SIG_ZREG_SIZE(vq) * (n))
+#define SVE_SIG_ZREGS_SIZE(vq) \
+	(SVE_SIG_ZREG_OFFSET(vq, SVE_NUM_ZREGS) - SVE_SIG_ZREGS_OFFSET)
+
+#define SVE_SIG_PREGS_OFFSET(vq) \
+	(SVE_SIG_ZREGS_OFFSET + SVE_SIG_ZREGS_SIZE(vq))
+#define SVE_SIG_PREG_OFFSET(vq, n) \
+	(SVE_SIG_PREGS_OFFSET(vq) + SVE_SIG_PREG_SIZE(vq) * (n))
+#define SVE_SIG_PREGS_SIZE(vq) \
+	(SVE_SIG_PREG_OFFSET(vq, SVE_NUM_PREGS) - SVE_SIG_PREGS_OFFSET(vq))
+
+#define SVE_SIG_FFR_OFFSET(vq) \
+	(SVE_SIG_PREGS_OFFSET(vq) + SVE_SIG_PREGS_SIZE(vq))
+
+#define SVE_SIG_REGS_SIZE(vq) \
+	(SVE_SIG_FFR_OFFSET(vq) + SVE_SIG_FFR_SIZE(vq) - SVE_SIG_REGS_OFFSET)
+
+#define SVE_SIG_CONTEXT_SIZE(vq) (SVE_SIG_REGS_OFFSET + SVE_SIG_REGS_SIZE(vq))
+
 /*
  * @ref.impl linux-linaro/arch/arm64/include/asm/ucontext.h
  */
@@ -298,54 +401,9 @@ struct ucontext {
 	struct sigcontext uc_mcontext;
 };
 
-/*
- * @ref.impl linux-linaro/arch/arm64/include/asm/ptrace.h
- */
-struct user_fpsimd_state {
-	__uint128_t	vregs[32];
-	uint32_t	fpsr;
-	uint32_t	fpcr;
-	uint32_t	__reserved[2];
-};
-
-/*
- * @ref.impl linux-linaro/arch/arm64/include/asm/fpsimd.h
- */
-/*
- * FP/SIMD storage area has:
- *  - FPSR and FPCR
- *  - 32 128-bit data registers
- *
- */
-
-struct fpsimd_state {
-	union {
-		struct user_fpsimd_state user_fpsimd;
-		struct {
-			__uint128_t vregs[32];
-			unsigned int fpsr;
-			unsigned int fpcr;
-		};
-	};
-	/* the id of the last cpu to have restored this state */
-	unsigned int cpu;
-};
-
-extern void fpsimd_save_state(struct fpsimd_state *state);
-extern void fpsimd_load_state(struct fpsimd_state *state);
-
-/* need for struct process */
-typedef struct fpsimd_state fp_regs_struct;
-
 void arm64_notify_die(const char *str, struct pt_regs *regs, struct siginfo *info, int err);
 void set_signal(int sig, void *regs, struct siginfo *info);
 void check_signal(unsigned long rc, void *regs, int num);
 void check_signal_irq_disabled(unsigned long rc, void *regs, int num);
-
-extern void fpsimd_save_state(struct fpsimd_state *state);
-extern void fpsimd_load_state(struct fpsimd_state *state);
-
-/* need for struct process */
-typedef struct fpsimd_state fp_regs_struct;
 
 #endif /* __HEADER_ARM64_COMMON_SIGNAL_H */

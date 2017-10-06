@@ -2,7 +2,6 @@
 #include <cpulocal.h>
 #include <string.h>
 #include <kmalloc.h>
-#include <ptrace.h>
 #include <vdso.h>
 #include <mman.h>
 #include <shm.h>
@@ -10,6 +9,9 @@
 #include <hw_breakpoint.h>
 #include <debug-monitors.h>
 #include <irq.h>
+#include <lwk/compiler.h>
+#include <hwcap.h>
+#include <prctl.h>
 
 extern void ptrace_report_signal(struct thread *thread, int sig);
 extern void clear_single_step(struct thread *thread);
@@ -31,6 +33,9 @@ static void __check_signal(unsigned long rc, void *regs, int num, int irq_disabl
 #endif
 
 #define NOT_IMPLEMENTED()  do { kprintf("%s is not implemented\n", __func__); while(1);} while(0)
+
+#define BUG_ON(condition) do { if (condition) { kprintf("PANIC: %s: %s(line:%d)\n",\
+				__FILE__, __FUNCTION__, __LINE__); panic(""); } } while(0)
 
 uintptr_t debug_constants[] = {
 	sizeof(struct cpu_local_var),
@@ -156,41 +161,98 @@ fault:
 	return -EFAULT;
 }
 
+SYSCALL_DECLARE(prctl)
+{
+	int option = (int)ihk_mc_syscall_arg0(ctx);
+	long error;
+
+	switch (option) {
+	case PR_SVE_SET_VL:
+		error = SVE_SET_VL(cpu_local_var(current),
+				ihk_mc_syscall_arg1(ctx), ihk_mc_syscall_arg2(ctx));
+		break;
+	case PR_SVE_GET_VL:
+		error = SVE_GET_VL(cpu_local_var(current));
+		break;
+	default:
+		error = syscall_generic_forwarding(__NR_prctl, ctx);
+		break;
+	}
+	return error;
+}
+
 /*
  * @ref.impl linux-linaro/src/linux-linaro/arch/arm64/kernel/signal.c::struct rt_sigframe
  * @ref.impl mckernel/arch/x86/kernel/syscall.c::struct sigsp
  */
 struct sigsp {
-	siginfo_t info;
-	struct ucontext uc;
-	unsigned long fp;
-	unsigned long lr;
 	unsigned long sigrc;
 	int syscallno;
 	int restart;
+	siginfo_t info;
+	struct ucontext uc;
+	uint64_t fp;
+	uint64_t lr;
 };
 
-static int preserve_fpsimd_context(struct fpsimd_context __user *ctx)
+struct rt_sigframe_user_layout {
+	struct sigsp __user *usigframe;
+	struct sigsp *ksigframe;
+
+	unsigned long size;	/* size of allocated sigframe data */
+	unsigned long limit;	/* largest allowed size */
+
+	unsigned long fpsimd_offset;
+	unsigned long esr_offset;
+	unsigned long sve_offset;
+	unsigned long extra_offset;
+	unsigned long end_offset;
+};
+
+static void preserve_fpsimd_context(struct fpsimd_context *ctx)
 {
 	struct fpsimd_state fpsimd;
-	int err;
 
 	/* dump the hardware registers to the fpsimd_state structure */
 	fpsimd_save_state(&fpsimd);
 
 	/* copy the FP and status/control registers */
-	err = copy_to_user(ctx->vregs, fpsimd.vregs, sizeof(fpsimd.vregs));
+	memcpy(ctx->vregs, fpsimd.vregs, sizeof(fpsimd.vregs));
 	ctx->fpsr = fpsimd.fpsr;
 	ctx->fpcr = fpsimd.fpcr;
 
 	/* copy the magic/size information */
 	ctx->head.magic = FPSIMD_MAGIC;
 	ctx->head.size = sizeof(struct fpsimd_context);
-
-	return err ? -EFAULT : 0;
 }
 
-static int restore_fpsimd_context(struct fpsimd_context /*__user*/ *ctx)
+/* @ref.impl arch/arm64/kernel/signal.c::preserve_sve_context */
+static void preserve_sve_context(void *ctx)
+{
+	struct sve_context *sve_ctx = ctx;
+	unsigned int vl = current_thread_info()->sve_vl;
+	unsigned int vq;
+	unsigned int fpscr[2] = { 0, 0 };
+
+	BUG_ON(!sve_vl_valid(vl));
+	vq = sve_vq_from_vl(vl);
+
+	/* sve_context header set */
+	sve_ctx->head.magic = SVE_MAGIC;
+	sve_ctx->head.size = ALIGN_UP(SVE_SIG_CONTEXT_SIZE(vq), 16);
+
+	/* sve_context vl set */
+	sve_ctx->vl = vl;
+
+	/* sve_context reserved area 0 clear */
+	memset(sve_ctx->__reserved, 0, sizeof(sve_ctx->__reserved));
+
+	/* sve register save */
+	/* fpsr & fpcr discards, because already saved by preserve_fpsimd_context() */
+	sve_save_state(ctx + SVE_SIG_FFR_OFFSET(vq), fpscr);
+}
+
+static int restore_fpsimd_context(struct fpsimd_context *ctx)
 {
 	struct fpsimd_state fpsimd;
 	unsigned int magic, size;
@@ -202,7 +264,7 @@ static int restore_fpsimd_context(struct fpsimd_context /*__user*/ *ctx)
 		return -EINVAL;
 
 	//  copy the FP and status/control registers 
-	copy_from_user(fpsimd.vregs, ctx->vregs, sizeof(fpsimd.vregs));
+	memcpy(fpsimd.vregs, ctx->vregs, sizeof(fpsimd.vregs));
 	fpsimd.fpsr = ctx->fpsr;
 	fpsimd.fpcr = ctx->fpcr;
 
@@ -212,13 +274,212 @@ static int restore_fpsimd_context(struct fpsimd_context /*__user*/ *ctx)
 	return 0;
 }
 
+/* @ref.impl arch/arm64/kernel/signal.c::__restore_sve_fpsimd_context */
+static int __restore_sve_fpsimd_context(void *ctx, unsigned int vq, struct fpsimd_context *fpsimd)
+{
+	struct fpsimd_sve_state(vq) *sst =
+			ctx + SVE_SIG_ZREGS_OFFSET;
+	int i = 0;
+
+	/* vq check */
+	if (vq != sve_vq_from_vl(current_thread_info()->sve_vl)) {
+		return -EINVAL;
+	}
+
+	/* copy from fpsimd_context vregs */
+	for (i = 0; i < 32; i++) {
+		sst->zregs[i][0] = fpsimd->vregs[i];
+	}
+
+	/* restore sve register */
+	sve_load_state(sst->ffr, &fpsimd->fpsr, vq - 1);
+
+	return 0;
+}
+
+/* @ref.impl arch/arm64/kernel/signal.c::restore_sve_fpsimd_context */
+static int restore_sve_fpsimd_context(void *ctx, struct fpsimd_context *fpsimd)
+{
+	struct sve_context const *sve_ctx = ctx;
+	uint16_t vl = sve_ctx->vl;
+	uint16_t vq;
+
+	/* vl check */
+	if (!sve_vl_valid(vl)) {
+		return -EINVAL;
+	}
+
+	vq = sve_vq_from_vl(vl);
+
+	return __restore_sve_fpsimd_context(ctx, vq, fpsimd);
+}
+
+/* @ref.impl arch/arm64/kernel/signal.c::SIGFRAME_MAXSZ */
+/* Sanity limit on the maximum size of signal frame we'll try to generate. */
+/* This is NOT ABI. */
+#define SIGFRAME_MAXSZ _SZ64KB
+
+/* @ref.impl arch/arm64/kernel/signal.c::BUILD_BUG_ON in the __sigframe_alloc */
+STATIC_ASSERT(SIGFRAME_MAXSZ == ALIGN_DOWN(SIGFRAME_MAXSZ, 16));
+STATIC_ASSERT(SIGFRAME_MAXSZ > ALIGN_UP(sizeof(struct _aarch64_ctx), 16));
+STATIC_ASSERT(ALIGN_UP(sizeof(struct sigsp), 16) < SIGFRAME_MAXSZ - ALIGN_UP(sizeof(struct _aarch64_ctx), 16));
+
+/* @ref.impl arch/arm64/kernel/signal.c::parse_user_sigframe */
+static int parse_user_sigframe(struct sigsp *sf)
+{
+	struct sigcontext *sc = &sf->uc.uc_mcontext;
+	struct _aarch64_ctx *head;
+	char *base = (char *)&sc->__reserved;
+	size_t offset = 0;
+	size_t limit = sizeof(sc->__reserved);
+	int have_extra_context = 0, err = -EINVAL;
+	void *kextra_data = NULL;
+	struct fpsimd_context *fpsimd_ctx = NULL;
+	struct sve_context *sve_ctx = NULL;
+
+	if (ALIGN_UP((unsigned long)base, 16) != (unsigned long)base)
+		goto invalid;
+
+	while (1) {
+		unsigned int magic, size;
+
+		BUG_ON(limit < offset);
+
+		if (limit - offset < sizeof(*head))
+			goto invalid;
+
+		if (ALIGN_DOWN(offset, 16) != offset)
+			goto invalid;
+
+		BUG_ON(ALIGN_UP((unsigned long)base + offset, 16) != (unsigned long)base + offset);
+
+		head = (struct _aarch64_ctx *)(base + offset);
+		magic = head->magic;
+		size = head->size;
+
+		if (limit - offset < size)
+			goto invalid;
+
+		switch (magic) {
+		case 0:
+			if (size)
+				goto invalid;
+
+			goto done;
+
+		case FPSIMD_MAGIC:
+			if (fpsimd_ctx)
+				goto invalid;
+
+			if (size < sizeof(struct fpsimd_context))
+				goto invalid;
+
+			fpsimd_ctx = container_of(head, struct fpsimd_context, head);
+			break;
+
+		case ESR_MAGIC:
+			/* ignore */
+			break;
+
+		case SVE_MAGIC: {
+			struct sve_context *sve_head =
+				container_of(head, struct sve_context, head);
+
+			if (!(elf_hwcap & HWCAP_SVE))
+				goto invalid;
+
+			if (sve_ctx)
+				goto invalid;
+
+			if (size < sizeof(*sve_ctx))
+				goto invalid;
+
+			sve_ctx = sve_head;
+			break;
+			} /* SVE_MAGIC */
+
+		case EXTRA_MAGIC: {
+			struct extra_context const *extra;
+			void __user *extra_data;
+			unsigned int extra_size;
+
+			if (have_extra_context)
+				goto invalid;
+
+			if (size < sizeof(*extra))
+				goto invalid;
+
+			extra = (struct extra_context const *)head;
+			extra_data = extra->data;
+			extra_size = extra->size;
+
+			/* Prevent looping/repeated parsing of extra_conext */
+			have_extra_context = 1;
+
+			kextra_data = kmalloc(extra_size + 15, IHK_MC_AP_NOWAIT);
+			if (copy_from_user((char *)ALIGN_UP((unsigned long)kextra_data, 16), extra_data, extra_size)) {
+				goto invalid;
+			}
+
+			/*
+			 * Rely on the __user accessors to reject bogus
+			 * pointers.
+			 */
+			base = (char *)ALIGN_UP((unsigned long)kextra_data, 16);
+			if (ALIGN_UP((unsigned long)base, 16) != (unsigned long)base)
+				goto invalid;
+
+			/* Reject "unreasonably large" frames: */
+			limit = extra_size;
+			if (limit > SIGFRAME_MAXSZ - sizeof(sc->__reserved))
+				goto invalid;
+
+			/*
+			 * Ignore trailing terminator in __reserved[]
+			 * and start parsing extra_data:
+			 */
+			offset = 0;
+			continue;
+			} /* EXTRA_MAGIC */
+
+		default:
+			goto invalid;
+		}
+
+		if (size < sizeof(*head))
+			goto invalid;
+
+		if (limit - offset < size)
+			goto invalid;
+
+		offset += size;
+	}
+
+done:
+	if (!fpsimd_ctx)
+		goto invalid;
+
+	if (sve_ctx) {
+		err = restore_sve_fpsimd_context(sve_ctx, fpsimd_ctx);
+	} else {
+		err = restore_fpsimd_context(fpsimd_ctx);
+	}
+
+invalid:
+	if (kextra_data) {
+		kfree(kextra_data);
+		kextra_data = NULL;
+	}
+	return err;
+}
+
 SYSCALL_DECLARE(rt_sigreturn)
 {
 	int i, err = 0;
 	struct thread *thread = cpu_local_var(current);
 	ihk_mc_user_context_t *regs = ctx;
-	struct sigsp *sigsp;
-	void *aux;
+	struct sigsp ksigsp;
+	struct sigsp __user *usigsp;
 	siginfo_t info;
 
 	/*
@@ -228,42 +489,41 @@ SYSCALL_DECLARE(rt_sigreturn)
 	if (regs->sp & 15)
 		goto bad_frame;
 
-	sigsp = (struct sigsp *)regs->sp;
+	usigsp = (struct sigsp __user *)regs->sp;
+	if (copy_from_user(&ksigsp, usigsp, sizeof(ksigsp))) {
+		goto bad_frame;
+	}
 
 	for (i = 0; i < 31; i++) {
-		regs->regs[i] = sigsp->uc.uc_mcontext.regs[i];
+		regs->regs[i] = ksigsp.uc.uc_mcontext.regs[i];
 	}
-	regs->sp = sigsp->uc.uc_mcontext.sp;
-	regs->pc = sigsp->uc.uc_mcontext.pc;
-	regs->pstate = sigsp->uc.uc_mcontext.pstate;
+	regs->sp = ksigsp.uc.uc_mcontext.sp;
+	regs->pc = ksigsp.uc.uc_mcontext.pc;
+	regs->pstate = ksigsp.uc.uc_mcontext.pstate;
 
 	// Avoid sys_rt_sigreturn() restarting. 
 	regs->syscallno = ~0UL;
 
-	aux = sigsp->uc.uc_mcontext.__reserved;
-	struct fpsimd_context *fpsimd_ctx =
-		container_of(aux, struct fpsimd_context, head);
-	err |= restore_fpsimd_context(fpsimd_ctx);
-
+	err = parse_user_sigframe(&ksigsp);
 	if (err)
 		goto bad_frame;
 
-	thread->sigmask.__val[0] = sigsp->uc.uc_sigmask.__val[0];
-	thread->sigstack.ss_flags = sigsp->uc.uc_stack.ss_flags;
-	if(sigsp->restart){
-		return syscall(sigsp->syscallno, regs);
+	thread->sigmask.__val[0] = ksigsp.uc.uc_sigmask.__val[0];
+	thread->sigstack.ss_flags = ksigsp.uc.uc_stack.ss_flags;
+	if(ksigsp.restart){
+		return syscall(ksigsp.syscallno, regs);
 	}
 
 	if (thread->ctx.thread->flags & (1 << TIF_SINGLESTEP)) {
 		memset(&info, 0, sizeof(info));
 		info.si_code = TRAP_HWBKPT;
-		regs->regs[0] = sigsp->sigrc;
+		regs->regs[0] = ksigsp.sigrc;
 		clear_single_step(thread);
 		set_signal(SIGTRAP, regs, &info);
 		check_signal(0, regs, 0);
 		check_need_resched();
 	}
-	return sigsp->sigrc;
+	return ksigsp.sigrc;
 
 bad_frame:
 	ekprintf("[pid:%d]: bad frame in %s: pc=%08llx sp=%08llx\n",
@@ -423,6 +683,378 @@ isrestart(int syscallno, unsigned long rc, int sig, int restart)
 	return 0;
 }
 
+/* @ref.impl arch/arm64/kernel/signal.c::init_user_layout */
+static void init_user_layout(struct rt_sigframe_user_layout *user)
+{
+	const size_t __reserved_size =
+		sizeof(user->usigframe->uc.uc_mcontext.__reserved);
+	const size_t terminator_size =
+		ALIGN_UP(sizeof(struct _aarch64_ctx), 16);
+
+	memset(user, 0, sizeof *user);
+	user->size = offsetof(struct sigsp, uc.uc_mcontext.__reserved);
+	user->limit = user->size + (__reserved_size - terminator_size -
+				    sizeof(struct extra_context));
+	/* Reserve space for extension and terminator ^ */
+
+	BUG_ON(user->limit <= user->size);
+}
+
+/* @ref.impl arch/arm64/kernel/signal.c::sigframe_size */
+static size_t sigframe_size(struct rt_sigframe_user_layout const *user)
+{
+	size_t size;
+
+	/* FIXME: take user->limit into account? */
+	if (user->size > sizeof(struct sigsp)) {
+		size = user->size;
+	} else {
+		size = sizeof(struct sigsp);
+	}
+	return ALIGN_UP(size, 16);
+}
+
+/* @ref.impl arch/arm64/kernel/signal.c::__sigframe_alloc */
+static int __sigframe_alloc(struct rt_sigframe_user_layout *user,
+			    unsigned long *offset, size_t size, unsigned char extend)
+{
+	unsigned long padded_size = ALIGN_UP(size, 16);
+
+	/* Sanity-check invariants */
+	BUG_ON(user->limit < user->size);
+	BUG_ON(user->size != ALIGN_DOWN(user->size, 16));
+	BUG_ON(size < sizeof(struct _aarch64_ctx));
+
+	if (padded_size > user->limit - user->size &&
+	    !user->extra_offset &&
+	    extend) {
+		int ret;
+
+		ret = __sigframe_alloc(user, &user->extra_offset,
+				       sizeof(struct extra_context), 0);
+		if (ret) {
+			return ret;
+		}
+
+		/*
+		 * Further allocations must go after the fixed-size
+		 * part of the signal frame:
+		 */
+		user->size = ALIGN_UP(sizeof(struct sigsp), 16);
+
+		/*
+		 * Allow expansion up to SIGFRAME_MAXSZ, ensuring space for
+		 * the terminator:
+		 */
+		user->limit = SIGFRAME_MAXSZ -
+			ALIGN_UP(sizeof(struct _aarch64_ctx), 16);
+	}
+
+	/* Still not enough space?  Bad luck! */
+	if (padded_size > user->limit - user->size) {
+		return -ENOMEM;
+	}
+
+	/* Anti-leakage check: don't double-allocate the same block: */
+	BUG_ON(*offset);
+
+	*offset = user->size;
+	user->size += padded_size;
+
+	/* Check invariants again */
+	BUG_ON(user->limit < user->size);
+	BUG_ON(user->size != ALIGN_DOWN(user->size, 16));
+	return 0;
+}
+
+/* @ref.impl arch/arm64/kernel/signal.c::sigframe_alloc */
+/* Allocate space for an optional record of <size> bytes in the user
+ * signal frame.  The offset from the signal frame base address to the
+ * allocated block is assigned to *offset.
+ */
+static int sigframe_alloc(struct rt_sigframe_user_layout *user,
+			  unsigned long *offset, size_t size)
+{
+	return __sigframe_alloc(user, offset, size, 1);
+}
+
+/* @ref.impl arch/arm64/kernel/signal.c::sigframe_alloc_end */
+/* Allocate the null terminator record and prevent further allocations */
+static int sigframe_alloc_end(struct rt_sigframe_user_layout *user)
+{
+	int ret;
+	const size_t __reserved_size =
+		sizeof(user->ksigframe->uc.uc_mcontext.__reserved);
+	const size_t __reserved_offset =
+		offsetof(struct sigsp, uc.uc_mcontext.__reserved);
+	const size_t terminator_size =
+		ALIGN_UP(sizeof(struct _aarch64_ctx), 16);
+
+	if (user->extra_offset) {
+		BUG_ON(user->limit != SIGFRAME_MAXSZ - terminator_size);
+	} else {
+		BUG_ON(user->limit != __reserved_offset +
+		    (__reserved_size - terminator_size -
+		     sizeof(struct extra_context)));
+	}
+
+	/* Un-reserve the space reserved for the terminator: */
+	user->limit += terminator_size;
+
+	ret = sigframe_alloc(user, &user->end_offset,
+			     sizeof(struct _aarch64_ctx));
+
+	if (ret) {
+		return ret;
+	}
+
+	/* Prevent further allocation: */
+	user->limit = user->size;
+	return 0;
+}
+
+/* @ref.impl arch/arm64/kernel/signal.c::apply_user_offset */
+/* changed McKernel, void *p and return value is kernel area address, function name */
+static void *get_sigframe_context_kaddr(
+	struct rt_sigframe_user_layout const *user, unsigned long offset)
+{
+	char *base = (char *)user->ksigframe;
+
+	BUG_ON(!base);
+	BUG_ON(!offset);
+
+	/*
+	 * TODO: sanity-check that the result is within appropriate bounds
+	 * (should be ensured by the use of set_user_offset() to compute
+	 * all offsets.
+	 */
+	return base + offset;
+}
+
+/* @ref.impl arch/arm64/kernel/signal.c::apply_user_offset */
+/* changed McKernel, function name */
+static void __user *get_sigframe_context_uaddr(
+	struct rt_sigframe_user_layout const *user, unsigned long offset)
+{
+	char __user *base = (char __user *)user->usigframe;
+
+	BUG_ON(!base);
+	BUG_ON(!offset);
+
+	/*
+	 * TODO: sanity-check that the result is within appropriate bounds
+	 * (should be ensured by the use of set_user_offset() to compute
+	 * all offsets.
+	 */
+	return base + offset;
+}
+
+/* @ref.impl arch/arm64/kernel/signal.c::setup_sigframe_layout */
+/* Determine the layout of optional records in the signal frame */
+static int setup_sigframe_layout(struct rt_sigframe_user_layout *user)
+{
+	int err;
+
+	err = sigframe_alloc(user, &user->fpsimd_offset,
+			     sizeof(struct fpsimd_context));
+	if (err)
+		return err;
+
+	/* fault information, if valid */
+	if (current_thread_info()->fault_code) {
+		err = sigframe_alloc(user, &user->esr_offset,
+				     sizeof(struct esr_context));
+		if (err)
+			return err;
+	}
+
+	if (likely(elf_hwcap & (HWCAP_FP | HWCAP_ASIMD))) {
+		if (likely(elf_hwcap & HWCAP_SVE)) {
+			unsigned int vq = sve_vq_from_vl(current_thread_info()->sve_vl);
+
+			err = sigframe_alloc(user, &user->sve_offset,
+					     SVE_SIG_CONTEXT_SIZE(vq));
+			if (err)
+				return err;
+		}
+	}
+	return sigframe_alloc_end(user);
+}
+
+/* @ref.impl arch/arm64/kernel/signal.c::get_sigframe */
+static int get_sigframe(struct thread *thread,
+			struct rt_sigframe_user_layout *user,
+			struct pt_regs *regs, unsigned long sa_flags)
+{
+	unsigned long sp, sp_top, frame_size;
+	int err;
+
+	init_user_layout(user);
+
+	// get signal frame
+	if ((sa_flags & SA_ONSTACK) &&
+	   !(thread->sigstack.ss_flags & SS_DISABLE) &&
+	   !(thread->sigstack.ss_flags & SS_ONSTACK)) {
+		unsigned long lsp;
+		lsp = ((unsigned long)(((char *)thread->sigstack.ss_sp) + thread->sigstack.ss_size)) & ~15UL;
+		sp = sp_top = lsp;
+		thread->sigstack.ss_flags |= SS_ONSTACK;
+	}
+	else {
+		sp = sp_top = regs->sp;
+	}
+	sp = ALIGN_DOWN(sp, 16);
+
+	/* calc sigframe layout */
+	err = setup_sigframe_layout(user);
+	if (err)
+		return err;
+
+	/* calc new user stack pointer */
+	frame_size = sigframe_size(user);
+	sp -= frame_size;
+	BUG_ON(ALIGN_DOWN(sp, 16) != sp);
+
+	/* set user sp address and kernel sigframe address */
+	user->usigframe = (struct sigsp __user *)sp;
+	return 0;
+}
+
+/* @ref.impl arch/arm64/kernel/signal.c::setup_rt_frame */
+static int setup_rt_frame(int usig, unsigned long rc, int to_restart,
+			  int syscallno, struct k_sigaction *k, struct sig_pending *pending,
+			  struct pt_regs *regs, struct thread *thread)
+{
+	struct rt_sigframe_user_layout user;
+	struct sigsp *kframe;
+	struct sigsp __user *uframe;
+	int i = 0, err = 0, kpages = 0;
+	struct _aarch64_ctx *end;
+
+	/* get signal frame info */
+	memset(&user, 0, sizeof(user));
+	if (get_sigframe(thread, &user, regs, k->sa.sa_flags)) {
+		return 1;
+	}
+
+	/* allocate kernel sigframe buffer */
+	kpages = (sigframe_size(&user) + PAGE_SIZE - 1) >> PAGE_SHIFT;
+	user.ksigframe = ihk_mc_alloc_pages(kpages, IHK_MC_AP_NOWAIT);
+
+	/* set kernel sigframe lowest addr */
+	kframe = user.ksigframe;
+
+	/* set user sigframe lowest addr */
+	uframe = user.usigframe;
+
+	// init non use data.
+	kframe->uc.uc_flags = 0;
+	kframe->uc.uc_link = NULL;
+
+	// save alternate stack infomation.
+	kframe->uc.uc_stack.ss_sp = uframe;
+	kframe->uc.uc_stack.ss_flags = thread->sigstack.ss_size;
+	kframe->uc.uc_stack.ss_size = thread->sigstack.ss_flags;
+
+	// save signal frame.
+	kframe->fp = regs->regs[29];
+	kframe->lr = regs->regs[30];
+	kframe->sigrc = rc;
+
+	for (i = 0; i < 31; i++) {
+		kframe->uc.uc_mcontext.regs[i] = regs->regs[i];
+	}
+	kframe->uc.uc_mcontext.sp = regs->sp;
+	kframe->uc.uc_mcontext.pc = regs->pc;
+	kframe->uc.uc_mcontext.pstate = regs->pstate;
+
+	kframe->uc.uc_mcontext.fault_address = current_thread_info()->fault_address;
+
+	kframe->uc.uc_sigmask = thread->sigmask;
+
+	// save fp simd context.
+	preserve_fpsimd_context(get_sigframe_context_kaddr(&user, user.fpsimd_offset));
+
+	if (user.esr_offset) {
+		// save esr context.
+		struct esr_context *esr_ctx =
+			get_sigframe_context_kaddr(&user, user.esr_offset);
+
+		esr_ctx->head.magic = ESR_MAGIC;
+		esr_ctx->head.size = sizeof(*esr_ctx);
+		esr_ctx->esr = current_thread_info()->fault_code;
+	}
+
+	if (user.sve_offset) {
+		// save sve context.
+		struct sve_context *sve_ctx =
+			get_sigframe_context_kaddr(&user, user.sve_offset);
+		preserve_sve_context(sve_ctx);
+	}
+
+	if (user.extra_offset) {
+		// save extra context.
+		struct extra_context *extra =
+			get_sigframe_context_kaddr(&user, user.extra_offset);
+		struct _aarch64_ctx *end = 
+			(struct _aarch64_ctx *)((char *)extra +
+				ALIGN_UP(sizeof(*extra), 16));
+		void __user *extra_data = get_sigframe_context_uaddr(&user,
+			ALIGN_UP(sizeof(struct sigsp), 16));
+		unsigned int extra_size = ALIGN_UP(user.size, 16) -
+			ALIGN_UP(sizeof(struct sigsp), 16);
+
+		/*
+		 * ^ FIXME: bounds sanity-checks: both of these should fit
+		 * within __reserved!
+		 */
+		extra->head.magic = EXTRA_MAGIC;
+		extra->head.size = sizeof(*extra);
+		extra->data = extra_data;
+		extra->size = extra_size;
+
+		/* Add the terminator */
+		end->magic = 0;
+		end->size = 0;
+	}
+
+	// set the "end" magic
+	end = get_sigframe_context_kaddr(&user, user.end_offset);
+	end->magic = 0;
+	end->size = 0;
+
+	// save syscall infomation to restart.
+	kframe->syscallno = syscallno;
+	kframe->restart = to_restart;
+
+	/* set sig handler context */
+	// set restart context
+	regs->regs[0] = usig;
+	regs->sp = (unsigned long)uframe;
+	regs->regs[29] = (unsigned long)&uframe->fp;
+	regs->pc = (unsigned long)k->sa.sa_handler;
+
+	if (k->sa.sa_flags & SA_RESTORER){
+		regs->regs[30] = (unsigned long)k->sa.sa_restorer;
+	} else {
+		regs->regs[30] = (unsigned long)VDSO_SYMBOL(thread->vm->vdso_addr, sigtramp);
+	}
+
+	if(k->sa.sa_flags & SA_SIGINFO){
+		kframe->info = pending->info;
+		regs->regs[1] = (unsigned long)&uframe->info;
+		regs->regs[2] = (unsigned long)&uframe->uc;
+	}
+
+	/* copy to user sigframe */
+	err = copy_to_user(user.usigframe, user.ksigframe, sigframe_size(&user));
+
+	/* free kernel sigframe buffer */
+	ihk_mc_free_pages(user.ksigframe, kpages);
+
+	return err;
+}
+
 void
 do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pending *pending, int syscallno)
 {
@@ -464,10 +1096,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 	}
 	else if(k->sa.sa_handler){
 		/* save signal frame */
-		int i, err = 0, to_restart = 0;
-		struct sigsp *sigsp;
-		unsigned long *usp; /* user stack */
-		uintptr_t addr;
+		int to_restart = 0;
 
 		// check syscall to have restart ?
 		to_restart = isrestart(syscallno, rc, sig, k->sa.sa_flags & SA_RESTART);
@@ -479,108 +1108,12 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 			regs->regs[0] = regs->orig_x0;
 		}
 
-		// get signal frame
-		if((k->sa.sa_flags & SA_ONSTACK) &&
-		   !(thread->sigstack.ss_flags & SS_DISABLE) &&
-		   !(thread->sigstack.ss_flags & SS_ONSTACK)){
-			unsigned long lsp;
-			lsp = ((unsigned long)(((char *)thread->sigstack.ss_sp) + thread->sigstack.ss_size)) & ~15UL;
-			usp = (unsigned long *)lsp;
-			thread->sigstack.ss_flags |= SS_ONSTACK;
-		}
-		else{
-			usp = (unsigned long *)regs->sp;
-		}
-
-		sigsp = ((struct sigsp *)usp) - 1;
-		sigsp = (struct sigsp *)((unsigned long)sigsp & ~15);
-		sigsp = (struct sigsp *)page_align(sigsp);
-
-		// To ensure the assignment of the physical page, call page_fault_thread_vm()
-		for (addr = (uintptr_t)sigsp; addr < (uintptr_t)(sigsp) + sizeof(struct sigsp); addr += PAGE_SIZE) {
-			err = page_fault_process_vm(thread->vm, (void *)addr, PF_POPULATE | PF_WRITE | PF_USER);
-			if (err) {
-				kfree(pending);
-				mcs_rwlock_writer_unlock(&thread->sigcommon->lock, &mcs_rw_node);
-				kprintf("do_signal,page_fault_thread_vm failed\n");
-				terminate(0, sig);
-				return;
-			}
-		}
-
-		// init non use data.
-		sigsp->uc.uc_flags = 0;
-		sigsp->uc.uc_link = NULL;
-
-		// save alternate stack infomation.
-		sigsp->uc.uc_stack.ss_sp = usp;
-		sigsp->uc.uc_stack.ss_flags = thread->sigstack.ss_size;
-		sigsp->uc.uc_stack.ss_size = thread->sigstack.ss_flags;
-
-		// save signal frame.
-		sigsp->fp = regs->regs[29];
-		sigsp->lr = regs->regs[30];
-		sigsp->sigrc = rc;
-
-		for (i = 0; i < 31; i++)
-		{
-			sigsp->uc.uc_mcontext.regs[i] = regs->regs[i];
-		}
-		sigsp->uc.uc_mcontext.sp = regs->sp;
-		sigsp->uc.uc_mcontext.pc = regs->pc;
-		sigsp->uc.uc_mcontext.pstate = regs->pstate;
-
-		sigsp->uc.uc_mcontext.fault_address = current_thread_info()->fault_address;
-
-		err |= copy_to_user(&sigsp->uc.uc_sigmask, &thread->sigmask, sizeof(sigset_t));
-
-		if(err == 0) {
-			struct _aarch64_ctx *end;
-			void *aux = sigsp->uc.uc_mcontext.__reserved;
-
-	 		// save fp simd context.
-			struct fpsimd_context *fpsimd_ctx =
-				container_of(aux, struct fpsimd_context, head);
-			err |= preserve_fpsimd_context(fpsimd_ctx);
-			aux += sizeof(*fpsimd_ctx);
-
-			// save esr context.
-			if (current_thread_info()->fault_code) {
-				struct esr_context *esr_ctx =
-					container_of(aux, struct esr_context, head);
-				esr_ctx->head.magic = ESR_MAGIC;
-				esr_ctx->head.size = sizeof(*esr_ctx);
-				esr_ctx->esr = current_thread_info()->fault_code;
-				aux += sizeof(*esr_ctx);
-			}
-
-			// set the "end" magic
-			end = aux;
-			end->magic = 0;
-			end->size = 0;
- 		}
-
-		// save syscall infomation to restart.
-		sigsp->syscallno = syscallno;
-		sigsp->restart = to_restart;
-
-		/* set sig handler context */
-		// set restart context
-		regs->regs[0] = sig;
-		regs->sp = (unsigned long)sigsp;
-		regs->regs[29] = regs->sp + offsetof(struct sigsp, fp);
-		regs->pc = (unsigned long)k->sa.sa_handler;
-
-		if (k->sa.sa_flags & SA_RESTORER){
-			regs->regs[30] = (unsigned long)k->sa.sa_restorer;
-		} else {
-			regs->regs[30] = (unsigned long)VDSO_SYMBOL(thread->vm->vdso_addr, sigtramp);
-		}
-
-		if(k->sa.sa_flags & SA_SIGINFO){
-			err |= copy_to_user(&sigsp->info, &pending->info, sizeof(siginfo_t));
-			regs->regs[1] = (unsigned long)&sigsp->info;
-			regs->regs[2] = (unsigned long)&sigsp->uc;
+		if (setup_rt_frame(sig, rc, to_restart, syscallno, k, pending, regs, thread)) {
+			kfree(pending);
+			mcs_rwlock_writer_unlock(&thread->sigcommon->lock, &mcs_rw_node);
+			kprintf("do_signal,page_fault_thread_vm failed\n");
+			terminate(0, sig);
+			return;
 		}
 
 		// check signal handler is ONESHOT
@@ -1202,7 +1735,7 @@ SYSCALL_DECLARE(mmap)
 	struct thread *thread = cpu_local_var(current);
 	struct vm_regions *region = &thread->vm->region;
 	int error;
-	intptr_t addr;
+	intptr_t addr = 0;
 	size_t len;
 	int flags = flags0;
 	size_t pgsize;
@@ -1297,7 +1830,7 @@ SYSCALL_DECLARE(shmget)
 	const key_t key = ihk_mc_syscall_arg0(ctx);
 	const size_t size = ihk_mc_syscall_arg1(ctx);
 	const int shmflg0 = ihk_mc_syscall_arg2(ctx);
-	int shmid;
+	int shmid = -EINVAL;
 	int error;
 	int shmflg = shmflg0;
 
@@ -1332,5 +1865,32 @@ save_uctx(void *uctx, struct pt_regs *regs)
 {
 	/* TODO: skeleton for UTI */
 }
+
+#ifdef POSTK_DEBUG_ARCH_DEP_78 /* arch dep syscallno hide */
+int
+arch_linux_open(char *fname, int flag, int mode)
+{
+	ihk_mc_user_context_t ctx0;
+	int fd;
+
+	ihk_mc_syscall_arg0(&ctx0) = -100;		/* dirfd = AT_FDCWD */
+	ihk_mc_syscall_arg1(&ctx0) = (uintptr_t)fname;	/* pathname = fname */
+	ihk_mc_syscall_arg2(&ctx0) = flag;		/* flags = flag */
+	ihk_mc_syscall_arg3(&ctx0) = mode;		/* mode = mode */
+	fd = syscall_generic_forwarding(__NR_openat, &ctx0);
+	return fd;
+}
+
+int
+arch_linux_unlink(char *fname)
+{
+	ihk_mc_user_context_t ctx0;
+
+	ihk_mc_syscall_arg0(&ctx0) = -100;		/* dirfd = AT_FDCWD */
+	ihk_mc_syscall_arg1(&ctx0) = (uintptr_t)fname;	/* pathname = fname */
+	ihk_mc_syscall_arg2(&ctx0) = 0;			/* flags = 0 */
+	return syscall_generic_forwarding(__NR_unlinkat, &ctx0);
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_78 */
 
 /*** End of File ***/

@@ -272,6 +272,11 @@ struct ikc_scd_packet {
 			enum mcctrl_os_cpu_operation op;
 			void *resp;
 		};
+
+		/* SCD_MSG_EVENTFD */
+		struct {
+			int eventfd_type;
+		};
 	};
 	char padding[12];
 };
@@ -560,5 +565,10 @@ typedef struct uti_attr {
 	                   (sizeof(uint64_t) * 8)];
 	uint64_t flags; /* Representing location and behavior hints by bitmap */
 } uti_attr_t;
+
+#ifdef POSTK_DEBUG_ARCH_DEP_78 /* arch dep syscallno hide */
+int arch_linux_open(char *fname, int flag, int mode);
+int arch_linux_unlink(char *fname);
+#endif /* POSTK_DEBUG_ARCH_DEP_78 */
 
 #endif

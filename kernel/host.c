@@ -33,6 +33,7 @@
 #include <kmalloc.h>
 #include <sysfs.h>
 #include <ihk/perfctr.h>
+#include <rusage_private.h>
 
 //#define DEBUG_PRINT_HOST
 
@@ -156,10 +157,10 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 
 		ptattr = arch_vrflag_to_ptattr(range->flag, PF_POPULATE, NULL);
 		error = ihk_mc_pt_set_range(vm->address_space->page_table, vm,
-				(void *)range->start,
-				(void *)range->start + (range_npages * PAGE_SIZE),
-				up, ptattr,
-				range->pgshift);
+									(void *)range->start,
+									(void *)range->start + (range_npages * PAGE_SIZE),
+									up, ptattr,
+									range->pgshift, range);
 
 		if (error) {
 			kprintf("%s: ihk_mc_pt_set_range failed. %d\n",
@@ -167,6 +168,8 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 			ihk_mc_free_pages_user(up_v, range_npages);
 			goto err;
 		}
+
+		// memory_stat_rss_add() is called in ihk_mc_pt_set_range()
 
 		p->sections[i].remote_pa = up;
 
@@ -238,6 +241,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 			kprintf("%s: error: adding memory range for heap\n", __FUNCTION__);
 			goto err;
 		}
+		// heap: Add when memory_stat_rss_add() is called in downstream, i.e. add_process_memory_range()
 
 		vm->region.brk_end_allocated = vm->region.brk_end +
 			proc->heap_extension;
@@ -261,12 +265,15 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	}
 	args_envs_p = virt_to_phys(args_envs);
 
+	dkprintf("%s: args_envs: %d pages\n",
+			 __FUNCTION__, ARGENV_PAGE_COUNT);
 	if(add_process_memory_range(vm, addr, e, args_envs_p,
 				flags, NULL, 0, PAGE_SHIFT, NULL) != 0){
 		ihk_mc_free_pages_user(args_envs, ARGENV_PAGE_COUNT);
 		kprintf("ERROR: adding memory range for args/envs\n");
 		goto err;
 	}
+	// memory_stat_rss_add() is called in downstream, i.e. add_process_memory_range()
 
 	dkprintf("args_envs mapping\n");
 

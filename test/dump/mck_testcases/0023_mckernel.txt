@@ -1,0 +1,5 @@
+MCRBT_OPT="-m `./utils/gen_mem_chunks.sh "0" 32M 512`"
+USR_PROC="mcexec_test_proc/test_pt_1gb_10times"
+OS_IDX=0
+DUMP_OPT="-d 0"
+DUMP_FILE="./dumps/dumpfile_0023.log"

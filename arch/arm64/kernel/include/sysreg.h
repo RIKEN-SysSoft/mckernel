@@ -88,6 +88,7 @@
 
 #define SYS_ID_AA64PFR0_EL1		sys_reg(3, 0, 0, 4, 0)
 #define SYS_ID_AA64PFR1_EL1		sys_reg(3, 0, 0, 4, 1)
+#define SYS_ID_AA64ZFR0_EL1		sys_reg(3, 0, 0, 4, 4)
 
 #define SYS_ID_AA64DFR0_EL1		sys_reg(3, 0, 0, 5, 0)
 #define SYS_ID_AA64DFR1_EL1		sys_reg(3, 0, 0, 5, 1)
@@ -98,6 +99,9 @@
 #define SYS_ID_AA64MMFR0_EL1		sys_reg(3, 0, 0, 7, 0)
 #define SYS_ID_AA64MMFR1_EL1		sys_reg(3, 0, 0, 7, 1)
 #define SYS_ID_AA64MMFR2_EL1		sys_reg(3, 0, 0, 7, 2)
+
+#define SYS_ZCR_EL1			sys_reg(3, 0, 1, 2, 0)
+#define SYS_ZCR_EL2			sys_reg(3, 4, 1, 2, 0)
 
 #define SYS_CNTFRQ_EL0			sys_reg(3, 3, 14, 0, 0)
 #define SYS_CTR_EL0			sys_reg(3, 3, 0, 0, 1)
@@ -140,6 +144,7 @@
 #define ID_AA64ISAR0_AES_SHIFT		4
 
 /* id_aa64pfr0 */
+#define ID_AA64PFR0_SVE_SHIFT		32
 #define ID_AA64PFR0_GIC_SHIFT		24
 #define ID_AA64PFR0_ASIMD_SHIFT		20
 #define ID_AA64PFR0_FP_SHIFT		16
@@ -148,6 +153,7 @@
 #define ID_AA64PFR0_EL1_SHIFT		4
 #define ID_AA64PFR0_EL0_SHIFT		0
 
+#define ID_AA64PFR0_SVE			0x1
 #define ID_AA64PFR0_FP_NI		0xf
 #define ID_AA64PFR0_FP_SUPPORTED	0x0
 #define ID_AA64PFR0_ASIMD_NI		0xf
@@ -225,7 +231,6 @@
 #define MVFR1_FPDNAN_SHIFT		4
 #define MVFR1_FPFTZ_SHIFT		0
 
-
 #define ID_AA64MMFR0_TGRAN4_SHIFT	28
 #define ID_AA64MMFR0_TGRAN64_SHIFT	24
 #define ID_AA64MMFR0_TGRAN16_SHIFT	20
@@ -247,6 +252,14 @@
 #define ID_AA64MMFR0_TGRAN_SHIFT	ID_AA64MMFR0_TGRAN64_SHIFT
 #define ID_AA64MMFR0_TGRAN_SUPPORTED	ID_AA64MMFR0_TGRAN64_SUPPORTED
 #endif
+
+#define ZCR_EL1_LEN_SHIFT	0
+#define ZCR_EL1_LEN_SIZE	9
+#define ZCR_EL1_LEN_MASK	0x1ff
+
+#define CPACR_EL1_ZEN_EL1EN	(1 << 16)
+#define CPACR_EL1_ZEN_EL0EN	(1 << 17)
+#define CPACR_EL1_ZEN		(CPACR_EL1_ZEN_EL1EN | CPACR_EL1_ZEN_EL0EN)
 
 /* Safe value for MPIDR_EL1: Bit31:RES1, Bit30:U:0, Bit24:MT:0 */
 #define SYS_MPIDR_SAFE_VAL		(1UL << 31)
@@ -296,6 +309,16 @@ asm(
 		})
 
 /*
+ * The "Z" constraint normally means a zero immediate, but when combined with
+ * the "%x0" template means XZR.
+ */
+#define write_sysreg(v, r) do {				\
+	uint64_t __val = (uint64_t)v;			\
+	asm volatile("msr " __stringify(r) ", %x0"	\
+		     : : "rZ" (__val));			\
+} while (0)
+
+/*
  * For registers without architectural names, or simply unsupported by
  * GAS.
  */
@@ -304,6 +327,14 @@ asm(
 			asm volatile("mrs_s %0, " __stringify(r) : "=r" (__val)); \
 			__val;						\
 		})
+
+#define write_sysreg_s(v, r) do {					\
+	uint64_t __val = (uint64_t)v;					\
+	asm volatile("msr_s " __stringify(r) ", %x0" : : "rZ" (__val));	\
+} while (0)
+
+/* @ref.impl arch/arm64/include/asm/kvm_arm.h */
+#define CPTR_EL2_TZ		(1 << 8)
 
 #include "imp-sysreg.h"
 

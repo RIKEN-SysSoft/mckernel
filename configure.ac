@@ -9,6 +9,76 @@ m4_define([DCFA_RELEASE_DATE_m4],[2013-11-18])dnl
 
 AC_INIT([mckernel], MCKERNEL_VERSION_m4)
 
+dnl *** PAC_APPEND_FLAG is copied from aclocal_util.m4 of mpich-3.3a2 ***
+dnl Usage: PAC_APPEND_FLAG([-02], [CFLAGS])
+dnl appends the given argument to the specified shell variable unless the
+dnl argument is already present in the variable
+AC_DEFUN([PAC_APPEND_FLAG],[
+	AC_REQUIRE([AC_PROG_FGREP])
+	AS_IF(
+		[echo "$$2" | $FGREP -e "\<$1\>" >/dev/null 2>&1],
+		[echo "$2(='$$2') contains '$1', not appending" >&AS_MESSAGE_LOG_FD],
+		[echo "$2(='$$2') does not contain '$1', appending" >&AS_MESSAGE_LOG_FD
+		$2="$$2 $1"]
+	)
+])
+
+dnl *** PAC_SET_HEADER_LIB_PATH is copied from aclocal_libs.m4 of mpich-3.3a2 ***
+dnl PAC_SET_HEADER_LIB_PATH(with_option,[default_path])
+dnl This macro looks for the --with-xxx=, --with-xxx-include and --with-xxx-lib=
+dnl options and sets the library and include paths.
+dnl
+dnl TODO as written, this macro cannot handle a "with_option" arg that has "-"
+dnl characters in it.  Use AS_TR_SH (and possibly AS_VAR_* macros) to handle
+dnl this case if it ever arises.
+AC_DEFUN([PAC_SET_HEADER_LIB_PATH],[
+    AC_ARG_WITH([$1],
+                [AC_HELP_STRING([--with-$1=PATH],
+                                [specify path where $1 include directory and lib directory can be found])],
+
+                [AS_CASE(["$withval"],
+                         [yes|no|''],
+                         [AC_MSG_WARN([--with[out]-$1=PATH expects a valid PATH])
+                          with_$1=""])],
+                [with_$1=$2])
+    AC_ARG_WITH([$1-include],
+                [AC_HELP_STRING([--with-$1-include=PATH],
+                                [specify path where $1 include directory can be found])],
+                [AS_CASE(["$withval"],
+                         [yes|no|''],
+                         [AC_MSG_WARN([--with[out]-$1-include=PATH expects a valid PATH])
+                          with_$1_include=""])],
+                [])
+    AC_ARG_WITH([$1-lib],
+                [AC_HELP_STRING([--with-$1-lib=PATH],
+                                [specify path where $1 lib directory can be found])],
+                [AS_CASE(["$withval"],
+                         [yes|no|''],
+                         [AC_MSG_WARN([--with[out]-$1-lib=PATH expects a valid PATH])
+                          with_$1_lib=""])],
+                [])
+
+    # The args have been sanitized into empty/non-empty values above.
+    # Now append -I/-L args to CPPFLAGS/LDFLAGS, with more specific options
+    # taking priority
+
+    AS_IF([test -n "${with_$1_include}"],
+          [PAC_APPEND_FLAG([-I${with_$1_include}],[CPPFLAGS])],
+          [AS_IF([test -n "${with_$1}"],
+                 [PAC_APPEND_FLAG([-I${with_$1}/include],[CPPFLAGS])])])
+
+    AS_IF([test -n "${with_$1_lib}"],
+          [PAC_APPEND_FLAG([-L${with_$1_lib}],[LDFLAGS])],
+          [AS_IF([test -n "${with_$1}"],
+                 dnl is adding lib64 by default really the right thing to do?  What if
+                 dnl we are on a 32-bit host that happens to have both lib dirs available?
+                 [PAC_APPEND_FLAG([-L${with_$1}/lib],[LDFLAGS])
+                  AS_IF([test -d "${with_$1}/lib64"],
+		        [PAC_APPEND_FLAG([-L${with_$1}/lib64],[LDFLAGS])])
+                 ])
+          ])
+])
+
 IHK_VERSION=IHK_VERSION_m4
 MCKERNEL_VERSION=MCKERNEL_VERSION_m4
 DCFA_VERSION=DCFA_VERSION_m4
@@ -24,6 +94,8 @@ AS_IF([test "x$numa_header_found" != "xyes"],
 AC_CHECK_LIB([numa],[numa_run_on_node],[numa_lib_found=yes])
 AS_IF([test "x$numa_lib_found" != "xyes"],
 	[AC_MSG_ERROR([Unable to find NUMA library, missing numactl-devel?])])
+
+PAC_SET_HEADER_LIB_PATH([mpi])
 
 AC_ARG_WITH([kernelsrc],
   AC_HELP_STRING(
@@ -62,6 +134,12 @@ AC_ARG_ENABLE([rusage],
 	      [ENABLE_RUSAGE=$enableval],
 	      [ENABLE_RUSAGE=yes])
 
+AC_ARG_ENABLE([qlmpi],
+	      AC_HELP_STRING([--enable-qlmpi],
+			     [enable qlmpi implementation]),
+	      [ENABLE_QLMPI=$enableval],
+	      [ENABLE_QLMPI=no])
+
 AC_ARG_WITH([uname_r],
   AC_HELP_STRING(
     [--with-uname_r=uname_r],[Value of '`uname -r`' on the target platform, default is local value]),
@@ -75,7 +153,7 @@ esac
 
 case "X$WITH_KERNELSRC" in
     Xyes | Xno | X)
-	WITH_KERNELSRC='/lib/modules/`uname -r`/build'
+	WITH_KERNELSRC="/lib/modules/`uname -r`/build"
 	;;
     X/*)
 	;;
@@ -194,11 +272,20 @@ case $WITH_TARGET in
 	if test "X$SBINDIR" = X; then
 		SBINDIR="$prefix/sbin"
 	fi
+	if test "X$MCKERNEL_INCDIR" = X; then
+		MCKERNEL_INCDIR="$prefix/include"
+	fi
         if test "X$MCKERNEL_LIBDIR" = X; then
                 MCKERNEL_LIBDIR="$prefix/lib"
         fi
+	if test "X$INCDIR" = X; then
+		INCDIR="$prefix/include"
+	fi
 	if test "X$ETCDIR" = X; then
 		ETCDIR="$prefix/etc"
+	fi
+	if test "X$INCLUDEDIR" = X; then
+		INCLUDEDIR="$prefix/include"
 	fi
 	if test "X$KMODDIR" = X; then
 		KMODDIR="$prefix/kmod"
@@ -217,11 +304,20 @@ case $WITH_TARGET in
 	if test "X$SBINDIR" = X; then
 		SBINDIR="$prefix/sbin"
 	fi
+	if test "X$MCKERNEL_INCDIR" = X; then
+		MCKERNEL_INCDIR="$prefix/include"
+	fi
         if test "X$MCKERNEL_LIBDIR" = X; then
                 MCKERNEL_LIBDIR="$prefix/lib"
         fi
+	if test "X$INCDIR" = X; then
+		INCDIR="$prefix/include"
+	fi
 	if test "X$ETCDIR" = X; then
 		ETCDIR="$prefix/etc"
+	fi
+	if test "X$INCLUDEDIR" = X; then
+		INCLUDEDIR="$prefix/include"
 	fi
 	if test "X$KMODDIR" = X; then
 		KMODDIR="$prefix/kmod"
@@ -250,11 +346,11 @@ case "X$WITH_SYSTEM_MAP" in
 esac
 
 AC_MSG_CHECKING([[for System.map]])
-if test -f "$MCCTRL_LINUX_SYMTAB"; then
+if test -r "$MCCTRL_LINUX_SYMTAB"; then
 	MCCTRL_LINUX_SYMTAB="$MCCTRL_LINUX_SYMTAB"
-elif test -f "/boot/System.map-`uname -r`"; then
+elif test -r "/boot/System.map-`uname -r`"; then
 	MCCTRL_LINUX_SYMTAB="/boot/System.map-`uname -r`"
-elif test -f "$KDIR/System.map"; then
+elif test -r "$KDIR/System.map"; then
 	MCCTRL_LINUX_SYMTAB="$KDIR/System.map"
 fi
 
@@ -309,6 +405,7 @@ MCCTRL_FIND_KSYM([hpet_address])
 MCCTRL_FIND_KSYM([vdso_spec])
 MCCTRL_FIND_KSYM([hv_clock])
 MCCTRL_FIND_KSYM([sys_readlink])
+MCCTRL_FIND_KSYM([walk_page_range])
 
 case $ENABLE_MEMDUMP in
 	yes|no|auto)
@@ -356,6 +453,13 @@ else
 	AC_MSG_NOTICE([mcoverlayfs is disabled])
 fi
 
+if test "x$ENABLE_QLMPI" = "xyes" ; then
+	AC_DEFINE([ENABLE_QLMPI],[1],[whether mcoverlayfs is enabled])
+	AC_MSG_NOTICE([qlmpi is enabled])
+else
+	AC_MSG_NOTICE([qlmpi is disabled])
+fi
+
 case $ENABLE_RUSAGE in
 	yes|no)
 		;;
@@ -374,9 +478,16 @@ else
 	AC_MSG_NOTICE([rusage is disabled])
 fi
 
+if test "x$MCKERNEL_INCDIR" != "x" ; then
+   AC_DEFINE_UNQUOTED(MCKERNEL_INCDIR,"$MCKERNEL_INCDIR",[McKernel specific headers])
+fi
+
 if test "x$MCKERNEL_LIBDIR" != "x" ; then
    AC_DEFINE_UNQUOTED(MCKERNEL_LIBDIR,"$MCKERNEL_LIBDIR",[McKernel specific libraries])
 fi
+
+AC_DEFINE_UNQUOTED(BINDIR,"$BINDIR",[Path of install directory for binary])
+AC_DEFINE_UNQUOTED(SBINDIR,"$SBINDIR",[Path of install directory for system binary])
 
 AC_SUBST(CC)
 AC_SUBST(XCC)
@@ -386,14 +497,18 @@ AC_SUBST(UNAME_R)
 AC_SUBST(TARGET)
 AC_SUBST(BINDIR)
 AC_SUBST(SBINDIR)
+AC_SUBST(MCKERNEL_INCDIR)
 AC_SUBST(MCKERNEL_LIBDIR)
+AC_SUBST(INCDIR)
 AC_SUBST(ETCDIR)
+AC_SUBST(INCLUDEDIR)
 AC_SUBST(KMODDIR)
 AC_SUBST(KERNDIR)
 AC_SUBST(MANDIR)
 AC_SUBST(CFLAGS)
 AC_SUBST(ENABLE_MCOVERLAYFS)
 AC_SUBST(ENABLE_RUSAGE)
+AC_SUBST(ENABLE_QLMPI)
 
 AC_SUBST(IHK_VERSION)
 AC_SUBST(MCKERNEL_VERSION)
@@ -409,6 +524,8 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
 	Makefile
 	executer/user/Makefile
+	executer/user/mcexec.1:executer/user/mcexec.1in
+	executer/user/vmcore2mckdump
 	executer/user/arch/$ARCH/Makefile
 	executer/kernel/mcctrl/Makefile
 	executer/kernel/mcctrl/arch/$ARCH/Makefile
@@ -416,13 +533,17 @@ AC_CONFIG_FILES([
 	executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile
 	executer/kernel/mcoverlayfs/linux-4.0.9/Makefile
 	executer/kernel/mcoverlayfs/linux-4.6.7/Makefile
+	executer/include/qlmpilib.h
 	kernel/Makefile
 	kernel/Makefile.build
+	kernel/include/swapfmt.h
 	arch/x86/tools/mcreboot-attached-mic.sh
 	arch/x86/tools/mcshutdown-attached-mic.sh
 	arch/x86/tools/mcreboot-builtin-x86.sh
 	arch/x86/tools/mcreboot-smp-x86.sh
 	arch/x86/tools/mcstop+release-smp-x86.sh
+	arch/x86/tools/mcoverlay-destroy-smp-x86.sh
+	arch/x86/tools/mcoverlay-create-smp-x86.sh
 	arch/x86/tools/eclair-dump-backtrace.exp
 	arch/x86/tools/mcshutdown-builtin-x86.sh
 	arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in

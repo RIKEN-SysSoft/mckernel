@@ -29,8 +29,9 @@ if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
 	exit 1
 fi
 
-INTERVAL=1
-LOGMODE=0
+redirect_kmsg=0
+mon_interval="-1"
+DUMP_LEVEL=24
 facility="LOG_LOCAL6"
 chown_option=`logname 2> /dev/null`
 
@@ -43,38 +44,14 @@ fi
 turbo=""
 ihk_irq=""
 
-while getopts :ti:k:c:m:o:f:r:q: OPT
+while getopts :tk:c:m:o:f:r:q:i:d: OPT
 do
 	case ${OPT} in
 	f)	facility=${OPTARG}
 		;;
 	o)	chown_option=${OPTARG}
 		;;
-	i)	INTERVAL=${OPTARG}
-		expr "${INTERVAL}" + 1 > /dev/null 2>&1
-		if [ $? -ge 2 ]
-		then
-			echo "invalid -i value" >&2
-			exit 1
-		fi
-		if [ ${INTERVAL} -le 0 ]
-		then
-			echo "invalid -i value" >&2
-			exit 1
-		fi
-		;;
-	k)	LOGMODE=${OPTARG}
-		expr "${LOGMODE}" + 1 > /dev/null 2>&1
-		if [ $? -ge 2 ]
-		then
-			echo "invalid -k value" >&2
-			exit 1
-		fi
-		if [ ${LOGMODE} -lt 0 -o ${LOGMODE} -gt 2 ]
-		then
-			echo "invalid -k value" >&2
-			exit 1
-		fi
+	k)	redirect_kmsg=${OPTARG}
 		;;
 	c) cpus=${OPTARG}
 		;;
@@ -86,11 +63,23 @@ do
 		;;
 	t) turbo="turbo"
 		;;
+	d) DUMP_LEVEL=${OPTARG}
+		;;
+	i) mon_interval=${OPTARG}
+		;;
 	*)  echo "invalid option -${OPT}" >&2
 		exit 1
 	esac
 done
 
+# Start ihkmond
+pid=`pidof ihkmond`
+if [ "${pid}" != "" ]; then
+    sudo kill -9 ${pid} > /dev/null 2> /dev/null
+fi
+if [ "${redirect_kmsg}" != "0" -o "${mon_interval}" != "-1" ]; then
+    ${SBINDIR}/ihkmond -f ${facility} -k ${redirect_kmsg} -i ${mon_interval}
+fi
 #
 # Revert any state that has been initialized before the error occured.
 #
@@ -214,6 +203,9 @@ if [ "${ENABLE_MCOVERLAYFS}" == "yes" ]; then
 		if [ ${linux_version_code} -eq 199168 -a ${rhel_release} -ge 327 ]; then
 			enable_mcoverlay="yes"
 		fi
+		if [ ${linux_version_code} -ge 262144 -a ${linux_version_code} -lt 262400 ]; then
+			enable_mcoverlay="yes"
+		fi
 	fi
 fi
 
@@ -233,17 +225,7 @@ fi
 
 # Remove mcoverlay if loaded
 if [ "$enable_mcoverlay" == "yes" ]; then
-	if grep mcoverlay /proc/modules &>/dev/null; then
-		if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_sys`" != "" ]; then umount -l /tmp/mcos/mcos0_sys; fi
-		if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_proc`" != "" ]; then umount -l /tmp/mcos/mcos0_proc; fi
-		if [ "`cat /proc/mounts | grep /tmp/mcos/linux_proc`" != "" ]; then umount -l /tmp/mcos/linux_proc; fi
-		if [ "`cat /proc/mounts | grep /tmp/mcos`" != "" ]; then umount -l /tmp/mcos; fi
-		if [ -e /tmp/mcos ]; then rm -rf /tmp/mcos; fi
-		if ! rmmod mcoverlay 2>/dev/null; then
-			echo "error: removing mcoverlay" >&2
-			exit 1
-		fi
-	fi
+    . ${SBINDIR}/mcoverlay-destroy.sh
 fi
 
 # Stop irqbalance
@@ -252,7 +234,7 @@ if [ "${irqbalance_used}" == "yes" ]; then
     if ! systemctl stop irqbalance.service 2>/dev/null ; then
 		echo "error: stopping irqbalance" >&2
 		exit 1
-	fi;
+    fi;
 
     if ! etcdir=@ETCDIR@ perl -e 'use File::Copy qw(copy); $etcdir=$ENV{'etcdir'}; @files = grep { -f } glob "/proc/irq/*/smp_affinity"; foreach $file (@files) { $rel = substr($file, 1); $dir=substr($rel, 0, length($rel)-length("/smp_affinity")); if(0) { print "cp $file $etcdir/$rel\n";} if(system("mkdir -p $etcdir/$dir")){ exit 1;} if(!copy($file,"$etcdir/$rel")){ exit 1;} }'; then
 		echo "error: saving /proc/irq/*/smp_affinity" >&2
@@ -355,9 +337,15 @@ fi
 if ls /dev/mcos* 1>/dev/null 2>&1; then
 	for i in /dev/mcos*; do
 		ind=`echo $i|cut -c10-`;
-		if ! ${SBINDIR}/ihkconfig 0 destroy $ind; then
-			echo "error: destroying LWK instance $ind failed" >&2
-			error_exit "mcctrl_loaded"
+		# Retry when conflicting with ihkmond
+		nretry=0
+		until ${SBINDIR}/ihkconfig 0 destroy $ind || [ $nretry -lt 4 ]; do
+		    sleep 0.25
+		    nretry=$[ $nretry + 1 ]
+		done
+		if [ $nretry -eq 4 ]; then
+		    echo "error: destroying LWK instance $ind failed" >&2
+		    error_exit "mcctrl_loaded"
 		fi
 	done
 fi
@@ -376,7 +364,7 @@ fi
 
 if [ "$ikc_map" != "" ]; then
 	# Specify IKC map
-	if ! ${SBINDIR}/ihkosctl 0 ikc_map ${ikc_map}; then
+	if ! ${SBINDIR}/ihkosctl 0 set ikc_map ${ikc_map}; then
 		echo "error: assign CPUs" >&2
 		error_exit "os_created"
 	fi
@@ -395,7 +383,7 @@ if ! ${SBINDIR}/ihkosctl 0 load ${KERNDIR}/mckernel.img; then
 fi
 
 # Set kernel arguments
-if ! ${SBINDIR}/ihkosctl 0 kargs "hidos ksyslogd=${LOGMODE} $turbo"; then
+if ! ${SBINDIR}/ihkosctl 0 kargs "hidos $turbo dump_level=${DUMP_LEVEL}"; then
 	echo "error: setting kernel arguments" >&2
 	error_exit "os_created"
 fi
@@ -413,103 +401,7 @@ fi
 
 # Overlay /proc, /sys with McKernel specific contents
 if [ "$enable_mcoverlay" == "yes" ]; then
-	if [ ! -e /tmp/mcos ]; then 
-		mkdir -p /tmp/mcos; 
-	fi
-	if ! mount -t tmpfs tmpfs /tmp/mcos; then
-		echo "error: mount /tmp/mcos" >&2
-		error_exit "tmp_mcos_created"
-	fi
-	if [ ! -e /tmp/mcos/linux_proc ]; then 
-		mkdir -p /tmp/mcos/linux_proc; 
-	fi
-	if ! mount --bind /proc /tmp/mcos/linux_proc; then
-		echo "error: mount /tmp/mcos/linux_proc" >&2
-		error_exit "tmp_mcos_mounted"
-	fi
-	if ! taskset -c 0 insmod ${KMODDIR}/mcoverlay.ko 2>/dev/null; then
-		echo "error: inserting mcoverlay.ko" >&2
-		error_exit "linux_proc_bind_mounted"
-	fi
-	while [ ! -e /proc/mcos0 ]
-	do
-		sleep 0.1
-	done
-	if [ ! -e /tmp/mcos/mcos0_proc ]; then 
-		mkdir -p /tmp/mcos/mcos0_proc; 
-	fi
-	if [ ! -e /tmp/mcos/mcos0_proc_upper ]; then 
-		mkdir -p /tmp/mcos/mcos0_proc_upper; 
-	fi
-	if [ ! -e /tmp/mcos/mcos0_proc_work ]; then 
-		mkdir -p /tmp/mcos/mcos0_proc_work; 
-	fi
-	if ! mount -t mcoverlay mcoverlay -o lowerdir=/proc/mcos0:/proc,upperdir=/tmp/mcos/mcos0_proc_upper,workdir=/tmp/mcos/mcos0_proc_work,nocopyupw,nofscheck /tmp/mcos/mcos0_proc; then
-		echo "error: mounting /tmp/mcos/mcos0_proc" >&2
-		error_exit "mcoverlayfs_loaded"
-	fi
-	# TODO: How de we revert this in case of failure??
-	mount --make-rprivate /proc
-
-	while [ ! -e /sys/devices/virtual/mcos/mcos0/sys/setup_complete ]
-	do
-		sleep 0.1
-	done
-	if [ ! -e /tmp/mcos/mcos0_sys ]; then 
-		mkdir -p /tmp/mcos/mcos0_sys; 
-	fi
-	if [ ! -e /tmp/mcos/mcos0_sys_upper ]; then 
-		mkdir -p /tmp/mcos/mcos0_sys_upper; 
-	fi
-	if [ ! -e /tmp/mcos/mcos0_sys_work ]; then 
-		mkdir -p /tmp/mcos/mcos0_sys_work; 
-	fi
-	if ! mount -t mcoverlay mcoverlay -o lowerdir=/sys/devices/virtual/mcos/mcos0/sys:/sys,upperdir=/tmp/mcos/mcos0_sys_upper,workdir=/tmp/mcos/mcos0_sys_work,nocopyupw,nofscheck /tmp/mcos/mcos0_sys; then
-		echo "error: mount /tmp/mcos/mcos0_sys" >&2
-		error_exit "mcos_proc_mounted"
-	fi
-	# TODO: How de we revert this in case of failure??
-	mount --make-rprivate /sys
-
-	touch /tmp/mcos/mcos0_proc/mckernel
-
-	rm -rf /tmp/mcos/mcos0_sys/setup_complete
-
-	# Hide NUMA related files which are outside the LWK partition
-	for cpuid in `find /sys/devices/system/cpu/* -maxdepth 0 -name "cpu[0123456789]*" -printf "%f "`; do
-		if [ ! -e "/sys/devices/virtual/mcos/mcos0/sys/devices/system/cpu/$cpuid" ]; then
-			rm -rf /tmp/mcos/mcos0_sys/devices/system/cpu/$cpuid
-			rm -rf /tmp/mcos/mcos0_sys/bus/cpu/devices/$cpuid
-			rm -rf /tmp/mcos/mcos0_sys/bus/cpu/drivers/processor/$cpuid
-		else
-			for nodeid in `find /sys/devices/system/cpu/$cpuid/* -maxdepth 0 -name "node[0123456789]*" -printf "%f "`; do
-				if [ ! -e "/sys/devices/virtual/mcos/mcos0/sys/devices/system/cpu/$cpuid/$nodeid" ]; then
-					rm -f /tmp/mcos/mcos0_sys/devices/system/cpu/$cpuid/$nodeid
-				fi
-			done
-		fi
-	done
-	for nodeid in `find /sys/devices/system/node/* -maxdepth 0 -name "node[0123456789]*" -printf "%f "`; do
-		if [ ! -e "/sys/devices/virtual/mcos/mcos0/sys/devices/system/node/$nodeid" ]; then
-			rm -rf /tmp/mcos/mcos0_sys/devices/system/node/$nodeid/*
-			rm -rf /tmp/mcos/mcos0_sys/bus/node/devices/$nodeid
-		else
-			# Delete non-existent symlinks
-			for cpuid in `find /sys/devices/system/node/$nodeid/* -maxdepth 0 -name "cpu[0123456789]*" -printf "%f "`; do
-				if [ ! -e "/sys/devices/virtual/mcos/mcos0/sys/devices/system/node/$nodeid/$cpuid" ]; then
-					rm -f /tmp/mcos/mcos0_sys/devices/system/node/$nodeid/$cpuid
-				fi
-			done
-
-			rm -f /tmp/mcos/mcos0_sys/devices/system/node/$nodeid/memory*
-		fi
-	done
-	rm -f /tmp/mcos/mcos0_sys/devices/system/node/has_*
-	for cpuid in `find /sys/bus/cpu/devices/* -maxdepth 0 -name "cpu[0123456789]*" -printf "%f "`; do
-		if [ ! -e "/sys/devices/virtual/mcos/mcos0/sys/bus/cpu/devices/$cpuid" ]; then
-			rm -rf /tmp/mcos/mcos0_sys/bus/cpu/devices/$cpuid
-		fi
-	done
+    . ${SBINDIR}/mcoverlay-create.sh
 fi
 
 # Start irqbalance with CPUs and IRQ for McKernel banned
@@ -529,14 +421,3 @@ if [ "${irqbalance_used}" == "yes" ]; then
 	fi
 #    echo cpus=$cpus ncpus=$ncpus banirq=$banirq
 fi
-
-# Start mcklogd. Note that McKernel blocks when kmsg buffer is full
-# with '-k 1' until mcklogd unblocks it so starting mcklogd must preceed
-# booting McKernel
-if [ ${LOGMODE} -ne 0 ]; then
-	# Stop mcklogd which has survived McKernel shutdown because
-	# mcstop+release.sh is not used
-	pkill mcklogd
-	SBINDIR=${SBINDIR} ${SBINDIR}/mcklogd -i ${INTERVAL} -f ${facility}
-fi
-

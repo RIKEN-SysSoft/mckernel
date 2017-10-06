@@ -3,7 +3,7 @@
 #include <debug-monitors.h>
 #include <hw_breakpoint.h>
 #include <elfcore.h>
-#include <ptrace.h>
+#include <fpsimd.h>
 #include <kmalloc.h>
 #include <memory.h>
 #include <uio.h>
@@ -24,6 +24,9 @@
 
 #define NOT_IMPLEMENTED()  do { kprintf("%s is not implemented\n", __func__); while(1);} while(0)
 
+#define BUG_ON(condition) do { if (condition) { kprintf("PANIC: %s: %s(line:%d)\n",\
+				__FILE__, __FUNCTION__, __LINE__); panic(""); } } while(0)
+
 extern void save_debugreg(unsigned long *debugreg);
 extern unsigned long do_kill(struct thread *thread, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
 extern int interrupt_from_user(void *);
@@ -35,6 +38,9 @@ enum aarch64_regset {
 	REGSET_HW_BREAK,
 	REGSET_HW_WATCH,
 	REGSET_SYSTEM_CALL,
+#ifdef CONFIG_ARM64_SVE
+	REGSET_SVE,
+#endif /* CONFIG_ARM64_SVE */
 };
 
 struct user_regset;
@@ -110,10 +116,7 @@ static inline long user_regset_copyout(unsigned int *pos, unsigned int *count,
 		return 0;
 	}
 
-	if (*pos < start_pos) {
-		panic("PANIC: user_regset_copyout() large start_pos.\n");
-	}
-
+	BUG_ON(*pos < start_pos);
 	if (end_pos < 0 || *pos < end_pos) {
 		unsigned int copy = 0;
 
@@ -148,10 +151,7 @@ static inline long user_regset_copyin(unsigned int *pos, unsigned int *count,
 		return 0;
 	}
 
-	if (*pos < start_pos) {
-		panic("PANIC: user_regset_copyin() large start_pos.\n");
-	}
-
+	BUG_ON(*pos < start_pos);
 	if (end_pos < 0 || *pos < end_pos) {
 		unsigned int copy = 0;
 
@@ -187,10 +187,7 @@ static inline long user_regset_copyout_zero(unsigned int *pos,
 		return 0;
 	}
 
-	if (*pos < start_pos) {
-		panic("PANIC: user_regset_copyout_zero() large start_pos.\n");
-	}
-
+	BUG_ON(*pos < start_pos);
 	if (end_pos < 0 || *pos < end_pos) {
 		unsigned int copy = 0;
 		char *tmp = NULL;
@@ -237,10 +234,7 @@ static inline int user_regset_copyin_ignore(unsigned int *pos,
 		return 0;
 	}
 
-	if (*pos < start_pos) {
-		panic("PANIC: user_regset_copyin_ignore() large start_pos.\n");
-	}
-
+	BUG_ON(*pos < start_pos);
 	if (end_pos < 0 || *pos < end_pos) {
 		unsigned int copy = 0;
 
@@ -365,6 +359,11 @@ static long fpr_get(struct thread *target,
 	if (likely(elf_hwcap & (HWCAP_FP | HWCAP_ASIMD))) {
 		struct user_fpsimd_state *uregs;
 
+		if (likely(elf_hwcap & HWCAP_SVE)) {
+			/* sync to sve --> fpsimd */
+			thread_sve_to_fpsimd(target, target->fp_regs);
+		}
+
 		uregs = &target->fp_regs->user_fpsimd;
 		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, uregs, 0, -1);
 	}
@@ -373,10 +372,11 @@ out:
 }
 
 /* write NT_PRFPREG */
-static long fpr_set(struct thread *target,
-		    const struct user_regset *regset,
-		    unsigned int pos, unsigned int count,
-		    const void *kbuf, const void __user *ubuf)
+static long __fpr_set(struct thread *target,
+		      const struct user_regset *regset,
+		      unsigned int pos, unsigned int count,
+		      const void *kbuf, const void __user *ubuf,
+		      unsigned int start_pos)
 {
 	long ret = -EINVAL;
 
@@ -388,16 +388,35 @@ static long fpr_set(struct thread *target,
 	if (likely(elf_hwcap & (HWCAP_FP | HWCAP_ASIMD))) {
 		struct user_fpsimd_state newstate;
 
+		if (likely(elf_hwcap & HWCAP_SVE)) {
+			/* sync to sve --> fpsimd */
+			thread_sve_to_fpsimd(target, target->fp_regs);
+		}
+
 		newstate = target->fp_regs->user_fpsimd;
-		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, &newstate, 0, -1);
+		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, &newstate,
+					 start_pos, start_pos + sizeof(newstate));
 		if (ret) {
 			goto out;
 		}
 
 		target->fp_regs->user_fpsimd = newstate;
+
+		if (likely(elf_hwcap & HWCAP_SVE)) {
+			/* sync to fpsimd --> sve */
+			thread_fpsimd_to_sve(target, target->fp_regs);
+		}
 	}
 out:
 	return ret;
+}
+
+/* write NT_PRFPREG */
+static long fpr_set(struct thread *target, const struct user_regset *regset,
+		    unsigned int pos, unsigned int count,
+		    const void *kbuf, const void __user *ubuf)
+{
+	return __fpr_set(target, regset, pos, count, kbuf, ubuf, 0);
 }
 
 /* read NT_ARM_TLS */
@@ -609,6 +628,204 @@ out:
 	return ret;
 }
 
+#ifdef CONFIG_ARM64_SVE
+
+/* read NT_ARM_SVE */
+static long sve_get(struct thread *target,
+		    const struct user_regset *regset,
+		    unsigned int pos, unsigned int count,
+		    void *kbuf, void __user *ubuf)
+{
+	long ret = -EINVAL;
+	struct user_sve_header header;
+	unsigned int vq;
+	unsigned long start, end;
+
+	if (target->fp_regs == NULL) {
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	/* Instead of system_supports_sve() */
+	if (unlikely(!(elf_hwcap & HWCAP_SVE))) {
+		goto out;
+	}
+
+	/* Header */
+	memset(&header, 0, sizeof(header));
+
+	header.vl = target->ctx.thread->sve_vl;
+
+	BUG_ON(!sve_vl_valid(header.vl));
+	vq = sve_vq_from_vl(header.vl);
+
+	BUG_ON(!sve_vl_valid(sve_max_vl));
+	header.max_vl = sve_max_vl;
+
+	/* McKernel processes always enable SVE. */
+	header.flags = SVE_PT_REGS_SVE;
+
+	header.size = SVE_PT_SIZE(vq, header.flags);
+	header.max_size = SVE_PT_SIZE(sve_vq_from_vl(header.max_vl),
+				      SVE_PT_REGS_SVE);
+
+	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, &header,
+				  0, sizeof(header));
+	if (ret) {
+		goto out;
+	}
+
+	/* Registers: FPSIMD-only case */
+	/*
+	 * If McKernel, Nothing to do.
+	 * Because McKernel processes always enable SVE.
+	 */
+
+	/* Otherwise: full SVE case */
+	start = SVE_PT_SVE_OFFSET;
+	end = SVE_PT_SVE_FFR_OFFSET(vq) + SVE_PT_SVE_FFR_SIZE(vq);
+
+	BUG_ON(end < start);
+	BUG_ON(end - start > sve_state_size(target));
+	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+				  target->ctx.thread->sve_state,
+				  start, end);
+	if (ret) {
+		goto out;
+	}
+
+	start = end;
+	end = SVE_PT_SVE_FPSR_OFFSET(vq);
+
+	BUG_ON(end < start);
+	ret = user_regset_copyout_zero(&pos, &count, &kbuf, &ubuf,
+				       start, end);
+	if (ret) {
+		goto out;
+	}
+
+	start = end;
+	end = SVE_PT_SVE_FPCR_OFFSET(vq) + SVE_PT_SVE_FPCR_SIZE;
+
+	BUG_ON((char *)(&target->fp_regs->fpcr + 1) <
+	       (char *)&target->fp_regs->fpsr);
+	BUG_ON(end < start);
+	BUG_ON((char *)(&target->fp_regs->fpcr + 1) -
+	       (char *)&target->fp_regs->fpsr !=
+	        end - start);
+
+	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+				  &target->fp_regs->fpsr,
+				  start, end);
+	if (ret) {
+		goto out;
+	}
+
+	start = end;
+	end = (SVE_PT_SIZE(SVE_VQ_MAX, SVE_PT_REGS_SVE) + 15) / 16 * 16;
+
+	BUG_ON(end < start);
+	ret = user_regset_copyout_zero(&pos, &count, &kbuf, &ubuf,
+				       start, end);
+out:
+	return ret;
+}
+
+/* write NT_ARM_SVE case */
+static long sve_set(struct thread *target,
+		    const struct user_regset *regset,
+		    unsigned int pos, unsigned int count,
+		    const void *kbuf, const void __user *ubuf)
+{
+	long ret = -EINVAL;
+	struct user_sve_header header;
+	unsigned int vq;
+	unsigned long start, end;
+
+	if (target->fp_regs == NULL) {
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	/* Instead of system_supports_sve() */
+	if (unlikely(!(elf_hwcap & HWCAP_SVE))) {
+		goto out;
+	}
+
+	/* Header */
+	if (count < sizeof(header)) {
+		goto out;
+	}
+
+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, &header,
+				 0, sizeof(header));
+	if (ret) {
+		goto out;
+	}
+
+	/*
+	 * Apart from PT_SVE_REGS_MASK, all PT_SVE_* flags are consumed by
+	 * sve_set_vector_length(), which will also validate them for us:
+	 */
+	ret = sve_set_vector_length(target, header.vl,
+				    header.flags & ~SVE_PT_REGS_MASK);
+	if (ret) {
+		goto out;
+	}
+
+	/* Actual VL set may be less than the user asked for: */
+	BUG_ON(!sve_vl_valid(target->ctx.thread->sve_vl));
+	vq = sve_vq_from_vl(target->ctx.thread->sve_vl);
+
+	/* Registers: FPSIMD-only case */
+	if ((header.flags & SVE_PT_REGS_MASK) == SVE_PT_REGS_FPSIMD) {
+		ret = __fpr_set(target, regset, pos, count, kbuf, ubuf,
+				SVE_PT_FPSIMD_OFFSET);
+		goto out;
+	}
+
+	/* Otherwise: full SVE case */
+	start = SVE_PT_SVE_OFFSET;
+	end = SVE_PT_SVE_FFR_OFFSET(vq) + SVE_PT_SVE_FFR_SIZE(vq);
+
+	BUG_ON(end < start);
+	BUG_ON(end - start > sve_state_size(target));
+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+				 target->ctx.thread->sve_state,
+				 start, end);
+	if (ret) {
+		goto out;
+	}
+
+	start = end;
+	end = SVE_PT_SVE_FPSR_OFFSET(vq);
+
+	BUG_ON(end < start);
+	ret = user_regset_copyin_ignore(&pos, &count, &kbuf, &ubuf,
+					start, end);
+	if (ret) {
+		goto out;
+	}
+
+	start = end;
+	end = SVE_PT_SVE_FPCR_OFFSET(vq) + SVE_PT_SVE_FPCR_SIZE;
+
+	BUG_ON((char *)(&target->fp_regs->fpcr + 1) <
+		(char *)&target->fp_regs->fpsr);
+	BUG_ON(end < start);
+	BUG_ON((char *)(&target->fp_regs->fpcr + 1) -
+		(char *)&target->fp_regs->fpsr !=
+		 end - start);
+
+	user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+			   &target->fp_regs->fpsr,
+			   start, end);
+out:
+	return ret;
+}
+
+#endif /* CONFIG_ARM64_SVE */
+
 static const struct user_regset aarch64_regsets[] = {
 	[REGSET_GPR] = {
 		.core_note_type = NT_PRSTATUS,
@@ -656,6 +873,15 @@ static const struct user_regset aarch64_regsets[] = {
 		.get = system_call_get,
 		.set = system_call_set
 	},
+#ifdef CONFIG_ARM64_SVE
+	[REGSET_SVE] = { /* Scalable Vector Extension */
+		.core_note_type = NT_ARM_SVE,
+		.n = (SVE_PT_SIZE(SVE_VQ_MAX, SVE_PT_REGS_SVE) + 15) / 16,
+		.size = 16,
+		.get = sve_get,
+		.set = sve_set
+	},
+#endif /* CONFIG_ARM64_SVE */
 };
 
 static const struct user_regset *

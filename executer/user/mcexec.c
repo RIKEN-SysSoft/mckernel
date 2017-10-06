@@ -82,7 +82,12 @@
 #include "../../config.h"
 #include <numa.h>
 #include <numaif.h>
+#include <spawn.h>
 #include <sys/personality.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include "../include/pmi.h"
+#include "../include/qlmpi.h"
 
 //#define DEBUG
 #define ADD_ENVS_OPTION
@@ -187,40 +192,6 @@ struct kernel_termios {
 	tcflag_t c_lflag;               /* local mode flags */
 	cc_t c_line;                    /* line discipline */
 	cc_t c_cc[NCCS];                /* control characters */
-};
-
-#define UTI_FLAG_NUMA_SET (1ULL<<1) /* Indicates NUMA_SET is specified */
-
-#define UTI_FLAG_SAME_NUMA_DOMAIN (1ULL<<2)
-#define UTI_FLAG_DIFFERENT_NUMA_DOMAIN (1ULL<<3)
-
-#define UTI_FLAG_SAME_L1 (1ULL<<4)
-#define UTI_FLAG_SAME_L2 (1ULL<<5)
-#define UTI_FLAG_SAME_L3 (1ULL<<6)
-
-#define UTI_FLAG_DIFFERENT_L1 (1ULL<<7)
-#define UTI_FLAG_DIFFERENT_L2 (1ULL<<8)
-#define UTI_FLAG_DIFFERENT_L3 (1ULL<<9)
-
-#define UTI_FLAG_EXCLUSIVE_CPU (1ULL<<10)
-#define UTI_FLAG_CPU_INTENSIVE (1ULL<<11)
-#define UTI_FLAG_HIGH_PRIORITY (1ULL<<12)
-#define UTI_FLAG_NON_COOPERATIVE (1ULL<<13)
-
-/* Linux default value is used */
-#define UTI_MAX_NUMA_DOMAINS (1024)
-
-typedef struct uti_attr {
-	/* UTI_CPU_SET environmental variable is used to denote the preferred
-	   location of utility thread */
-	uint64_t numa_set[(UTI_MAX_NUMA_DOMAINS + sizeof(uint64_t) * 8 - 1) /
-	                  (sizeof(uint64_t) * 8)];
-	uint64_t flags; /* Representing location and behavior hints by bitmap */
-} uti_attr_t;
-
-struct kuti_attr {
-	long parent_cpuid;
-	struct uti_attr attr;
 };
 
 struct thread_data_s;
@@ -1785,6 +1756,39 @@ opendev()
 	return fd;
 }
 
+static void ld_preload_init()
+{
+	char envbuf[PATH_MAX];
+#ifdef ENABLE_QLMPI
+	char *old_ld_preload;
+#endif
+
+	if (disable_sched_yield) {
+		sprintf(envbuf, "%s/libsched_yield.so.1.0.0", MCKERNEL_LIBDIR);
+		__dprintf("%s: %s\n", __FUNCTION__, sched_yield_lib_path);
+		if (setenv("LD_PRELOAD", envbuf, 1) < 0) {
+			printf("%s: warning: failed to set LD_PRELOAD for sched_yield\n",
+					__FUNCTION__);
+		}
+	}
+	/* Set LD_PRELOAD to McKernel specific value */
+	else if (getenv(ld_preload_envname)) {
+		if (setenv("LD_PRELOAD", getenv(ld_preload_envname), 1) < 0) {
+			printf("%s: warning: failed to set LD_PRELOAD environment variable\n",
+					__FUNCTION__);
+		}
+		unsetenv(ld_preload_envname);
+	}
+
+#ifdef ENABLE_QLMPI
+	sprintf(envbuf, "%s/libqlfort.so", MCKERNEL_LIBDIR);
+	if ((old_ld_preload = getenv("LD_PRELOAD"))) {
+		sprintf(strchr(envbuf, '\0'), " %s", old_ld_preload);
+	}
+	setenv("LD_PRELOAD", envbuf, 1);
+#endif
+}
+
 int main(int argc, char **argv)
 {
 	int ret = 0;
@@ -1918,24 +1922,7 @@ int main(int argc, char **argv)
 	if (opendev() == -1)
 		exit(EXIT_FAILURE);
 
-	if (disable_sched_yield) {
-		char sched_yield_lib_path[PATH_MAX];
-		sprintf(sched_yield_lib_path, "%s/libsched_yield.so.1.0.0",
-			MCKERNEL_LIBDIR);
-		__dprintf("%s: %s\n", __FUNCTION__, sched_yield_lib_path);
-		if (setenv("LD_PRELOAD", sched_yield_lib_path, 1) < 0) {
-			printf("%s: warning: failed to set LD_PRELOAD for sched_yield\n",
-					__FUNCTION__);
-		}
-	}
-	/* Set LD_PRELOAD to McKernel specific value */
-	else if (getenv(ld_preload_envname)) {
-		if (setenv("LD_PRELOAD", getenv(ld_preload_envname), 1) < 0) {
-			printf("%s: warning: failed to set LD_PRELOAD environment variable\n",
-					__FUNCTION__);
-		}
-		unsetenv(ld_preload_envname);
-	}
+	ld_preload_init();
 
 #ifdef ADD_ENVS_OPTION
 #else /* ADD_ENVS_OPTION */
@@ -2166,6 +2153,11 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+	if (nr_processes > ncpu) {
+		fprintf(stderr, "error: nr_processes can't exceed nr. of CPUs\n");
+		return EINVAL;
+	}
+
 	if (nr_threads > 0) {
 		n_threads = nr_threads;
 	}
@@ -2174,7 +2166,23 @@ int main(int argc, char **argv)
 		n_threads = atoi(getenv("OMP_NUM_THREADS")) + 4;
 	}
 	else {
-		n_threads = ncpu;
+		/*
+		 * When running with partitioned execution, do not allow
+		 * more threads then the corresponding number of CPUs.
+		 */
+		if (nr_processes > 0 && nr_processes < ncpu) {
+			n_threads = (ncpu / nr_processes) + 4;
+
+			if (n_threads == 0) {
+				n_threads = 2;
+			}
+		}
+		else if (nr_processes == ncpu) {
+			n_threads = 1;
+		}
+		else {
+			n_threads = ncpu;
+		}
 	}
 
 	/* 
@@ -2833,24 +2841,6 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 	exit(0);
 }
 
-static void
-util_thread_setaffinity(unsigned long pattr)
-{
-	struct kuti_attr kattr;
-	unsigned long args[3];
-
-	args[0] = (unsigned long)&kattr;
-	args[1] = pattr;
-	args[2] = sizeof kattr;
-	if (ioctl(fd, MCEXEC_UP_COPY_FROM_MCK, args) == -1) {
-		return;
-	}
-
-
-
-
-}
-
 static long
 util_thread(unsigned long uctx_pa, int remote_tid, unsigned long pattr)
 {
@@ -2902,7 +2892,10 @@ util_thread(unsigned long uctx_pa, int remote_tid, unsigned long pattr)
 	}
 
 	if (pattr) {
-		util_thread_setaffinity(pattr);
+		struct uti_attr_desc desc;
+
+		desc.phys_attr = pattr;
+		ioctl(fd, MCEXEC_UP_UTI_ATTR, &desc);
 	}
 
 	if ((rc = switch_ctx(fd, MCEXEC_UP_UTIL_THREAD2, param, lctx, rctx))
@@ -4015,12 +4008,199 @@ return_execve2:
 			else {
 				ret = munmap((void *)w.sr.args[1],
 				             w.sr.args[2]);
-if(ret == -1)fprintf(stderr, "munmap rc=%ld errno=%d addr=%p size=%d\n", ret, errno, (void *)w.sr.args[1], (int)w.sr.args[2]);
 				if (ret == -1)
 					ret = -errno;
 			}
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
+		case 801: {// swapout
+#ifdef ENABLE_QLMPI
+			int rc;
+			int spawned;
+			int rank;
+			int ql_fd = -1;
+			int len;
+			struct sockaddr_un unix_addr;
+			char msg_buf[QL_BUF_MAX];
+			char *ql_name;
+
+			rc = PMI_Init(&spawned);
+			if (rc != 0) {
+				fprintf(stderr, "swapout(): ERROR: failed to init PMI\n");
+				ret = -1;
+				goto return_swapout;
+			}
+			rc = PMI_Get_rank(&rank);
+			if (rc != 0) {
+				fprintf(stderr, "swapout(): ERROR: failed to get Rank\n");
+				ret = -1;
+				goto return_swapout;
+			}
+
+			// swap synchronization 
+			rc = PMI_Barrier();
+
+			if (rank == 0) {
+				// tell ql_server what calculation is done.
+				ql_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+				if (ql_fd < 0) {
+					fprintf(stderr, "swapout(): ERROR: failed to open socket\n");
+					ret = -1;
+					goto return_swapout;
+				}
+
+				unix_addr.sun_family = AF_UNIX;
+				strcpy(unix_addr.sun_path, getenv("QL_SOCKET_FILE"));
+				len = sizeof(unix_addr.sun_family) + strlen(unix_addr.sun_path) + 1;
+				rc = connect(ql_fd, (struct sockaddr*)&unix_addr, len);
+				if (rc < 0) {
+					fprintf(stderr, "swapout(): ERROR: failed to connect ql_server\n");
+					ret = -1;
+					goto return_swapout;
+				}
+
+				ql_name = getenv(QL_NAME);
+				sprintf(msg_buf, "%c %04x %s",
+				        QL_EXEC_END, (unsigned int)strlen(ql_name), ql_name);
+				rc = send(ql_fd, msg_buf, strlen(msg_buf) + 1, 0);
+				if (rc < 0) {
+					fprintf(stderr, "swapout(): ERROR: failed to send QL_EXEC_END\n");
+					ret = -1;
+					goto return_swapout;
+				}
+				
+				// wait resume-req from ql_server.
+#ifdef QL_DEBUG
+				fprintf(stdout, "INFO: waiting resume-req ...\n");
+#endif
+				rc = recv(ql_fd, msg_buf, strlen(msg_buf) + 1, 0);
+
+				if (rc < 0) {
+					fprintf(stderr, "swapout(): ERROR: failed to recieve\n");
+					ret = -1;
+					goto return_swapout;
+				}
+
+				// parse message
+				if (msg_buf[0] == QL_RET_RESUME) {
+#ifdef QL_DEBUG
+					fprintf(stdout, "INFO: recieved resume-req\n");
+#endif
+				}
+				else {
+					fprintf(stderr, "swapout(): ERROR: recieved unexpected requsest from ql_server\n");
+					ret = -1;
+					goto return_swapout;
+				}
+
+				// resume-req synchronization
+				rc = PMI_Barrier();
+			}
+			else {
+				// resume-req synchronization 
+				rc = PMI_Barrier();
+			}
+			
+			ret = 0;
+
+return_swapout:
+			if (ql_fd >= 0) {
+				close(ql_fd);
+			}
+
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+#else
+			printf("mcexec has not been compiled with ENABLE_QLMPI\n");
+			ret = -1;
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+#endif // ENABLE_QLMPI
+			break;
+		}
+		case 802: /* debugging purpose */
+			printf("linux mlock(%p, %ld)\n",
+			       (void *)w.sr.args[0], w.sr.args[1]);
+			printf("str(%p)=%s", (void*)w.sr.args[0], (char*)w.sr.args[0]);
+			ret = mlock((void *)w.sr.args[0], w.sr.args[1]);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+
+#ifndef ARG_MAX
+#define ARG_MAX 256
+#endif
+		case 811: { // linux_spawn
+			int rc, i;
+			pid_t pid;
+			size_t slen;
+			char *exec_path = NULL;
+			char* argv[ARG_MAX];
+			char** spawn_args = (char**)w.sr.args[1];
+
+			if (!w.sr.args[0] || ! spawn_args) {
+				fprintf(stderr, "linux_spawn(): ERROR: invalid argument \n");
+				ret = -1;
+				goto return_linux_spawn;
+			}
+
+			// copy exec_path
+			slen = strlen((char*)w.sr.args[0]) + 1;
+			if (slen <= 0 || slen >= PATH_MAX) {
+				fprintf(stderr, "linux_spawn(): ERROR: invalid exec_path \n");
+				ret = -1;
+				goto return_linux_spawn;
+			}
+			exec_path = malloc(slen);
+			if (!exec_path) {
+				fprintf(stderr, "linux_spawn(): ERROR: failed to allocating exec_path\n");
+				ret = -1;
+				goto return_linux_spawn;
+			}
+			memset(exec_path, '\0', slen);
+
+			rc = do_strncpy_from_user(fd, exec_path, (void *)w.sr.args[0], slen);
+			if (rc < 0) {
+				fprintf(stderr, "linux_spawn(): ERROR: failed to strncpy from user\n");
+				ret = -1;
+				goto return_linux_spawn;
+			}
+
+			// copy args to argv[]
+			for (i = 0; spawn_args[i] != NULL; i++) {
+				slen = strlen(spawn_args[i]) + 1;
+				argv[i] = malloc(slen);
+				if (!argv[i]) {
+					fprintf(stderr, "linux_spawn(): ERROR: failed to allocating argv[%d]\n", i);
+					ret = -1;
+					goto return_linux_spawn;
+				}
+				memset(argv[i], '\0', slen);
+				rc = do_strncpy_from_user(fd, argv[i], spawn_args[i], slen);
+				if (rc < 0) {
+					fprintf(stderr, "linux_spawn(): ERROR: failed to strncpy from user\n");
+					ret = -1;
+					goto return_linux_spawn;
+				}
+			}
+
+			rc = posix_spawn(&pid, exec_path, NULL, NULL, argv, NULL);
+			if (rc != 0) {
+				fprintf(stderr, "linux_spawn(): ERROR: posix_spawn returned %d\n", rc);
+				ret = -1;
+				goto return_linux_spawn;
+			}
+
+			ret = 0;
+return_linux_spawn:
+			// free allocated memory
+			if (exec_path) {
+				free(exec_path);
+			}
+			for (i = 0; argv[i] != NULL; i++) {
+				free(argv[i]);
+			}
+
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+		}
 
 		default:
 			ret = do_generic_syscall(&w);

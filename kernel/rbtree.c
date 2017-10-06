@@ -25,6 +25,9 @@
 
 #define EXPORT_SYMBOL(x)
 
+extern int ihk_mc_chk_page_address(unsigned long mem_addr);
+extern unsigned long virt_to_phys(void *v);
+
 /*
  * red-black trees properties:  http://en.wikipedia.org/wiki/Rbtree
  *
@@ -429,6 +432,32 @@ struct rb_node *rb_first(const struct rb_root *root)
 }
 EXPORT_SYMBOL(rb_first);
 
+struct rb_node *rb_first_safe(const struct rb_root *root)
+{
+	struct rb_node	*n;
+	unsigned long phys;
+
+	n = root->rb_node;
+	if (!n)
+		return NULL;
+
+	phys = virt_to_phys(n);
+	if (-1 == ihk_mc_chk_page_address(phys))
+		return NULL;
+
+	while (n->rb_left) {
+		n = n->rb_left;
+		if (!n)
+			return NULL;
+
+		phys = virt_to_phys(n);
+		if (-1 == ihk_mc_chk_page_address(phys))
+			return NULL;
+	}
+	return n;
+}
+EXPORT_SYMBOL(rb_first_safe);
+
 struct rb_node *rb_last(const struct rb_root *root)
 {
 	struct rb_node	*n;
@@ -473,6 +502,58 @@ struct rb_node *rb_next(const struct rb_node *node)
 	return parent;
 }
 EXPORT_SYMBOL(rb_next);
+
+struct rb_node *rb_next_safe(const struct rb_node *node)
+{
+	struct rb_node *parent;
+	struct rb_node *chk_node;
+	unsigned long phys;
+
+	if (RB_EMPTY_NODE(node))
+		return NULL;
+
+	/*
+	 * If we have a right-hand child, go down and then left as far
+	 * as we can.
+	 */
+	if (node->rb_right) {
+		node = node->rb_right; 
+		
+		if(!node)
+			return NULL;
+
+		chk_node = (struct rb_node *)node;
+		phys = virt_to_phys(chk_node);
+		if (-1 == ihk_mc_chk_page_address(phys))
+			return NULL;
+
+		while (node->rb_left) {
+			node=node->rb_left;
+			if(!node)
+				return NULL;
+
+			chk_node = (struct rb_node *)node;
+			phys = virt_to_phys(chk_node);
+			if (-1 == ihk_mc_chk_page_address(phys))
+				return NULL;
+		}
+
+		return (struct rb_node *)node;
+	}
+
+	/*
+	 * No right-hand children. Everything down and left is smaller than us,
+	 * so any 'next' node must be in the general direction of our parent.
+	 * Go up the tree; any time the ancestor is a right-hand child of its
+	 * parent, keep going up. First time it's a left-hand child of its
+	 * parent, said parent is our 'next' node.
+	 */
+	while ((parent = rb_parent(node)) && node == parent->rb_right)
+		node = parent;
+
+	return parent;
+}
+EXPORT_SYMBOL(rb_next_safe);
 
 struct rb_node *rb_prev(const struct rb_node *node)
 {

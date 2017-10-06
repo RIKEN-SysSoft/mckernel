@@ -2,6 +2,8 @@
 
 #include <linkage.h>
 #include <arch-memory.h>
+#include <sysreg.h>
+#include <assembler.h>
 #include "proc-macros.S"
 
 #ifdef CONFIG_ARM64_64K_PAGES
@@ -72,13 +74,24 @@ ENDPROC(cpu_do_switch_mm)
  *	value of the SCTLR_EL1 register.
  */
 ENTRY(__cpu_setup)
-	ic	iallu				// I+BTB cache invalidate
-	tlbi	vmalle1is			// invalidate I + D TLBs
-	dsb	ish
+	tlbi	vmalle1				// Invalidate local TLB
+	dsb	nsh
 
 	mov	x0, #3 << 20
-	msr	cpacr_el1, x0			// Enable FP/ASIMD
-	msr	mdscr_el1, xzr			// Reset mdscr_el1
+
+	/* SVE */
+	mrs	x5, id_aa64pfr0_el1
+	ubfx	x5, x5, #ID_AA64PFR0_SVE_SHIFT, #4
+	cbz	x5, 1f
+
+	orr	x0, x0, #CPACR_EL1_ZEN		// SVE: trap disabled EL1 and EL0
+1:	msr	cpacr_el1, x0			// Enable FP/ASIMD
+
+	mov	x0, #1 << 12			// Reset mdscr_el1 and disable
+	msr	mdscr_el1, x0			// access to the DCC from EL0
+	isb					// Unmask debug exceptions now,
+	enable_dbg				// since this is per-cpu
+
 	/*
 	 * Memory region attributes for LPAE:
 	 *

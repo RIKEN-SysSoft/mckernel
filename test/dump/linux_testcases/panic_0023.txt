@@ -1,0 +1,4 @@
+MCRBT_OPT="-m 32M@0"
+DUMP_OPT="-d 24"
+USR_PROC="mcexec_test_proc/test_pt_1mb_10times mcexec_test_proc/memtest_free_destroy"
+BELOW_CASES="0044_linux 0045_linux 0046_linux 0047_linux"

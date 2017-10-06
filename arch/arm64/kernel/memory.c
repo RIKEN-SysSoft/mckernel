@@ -14,9 +14,17 @@
 #include <context.h>
 #include <kmalloc.h>
 #include <vdso.h>
+#include <rusage_private.h>
 
-#define	dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
+//#define DEBUG
+
+#ifdef DEBUG
+#define	dkprintf(...)	do { kprintf(__VA_ARGS__); } while (0)
+#define	ekprintf(...)	do { kprintf(__VA_ARGS__); } while (0)
+#else
+#define dkprintf(...) do { } while (0)
+#define ekprintf(...) do { kprintf(__VA_ARGS__); } while (0)
+#endif
 
 #define NOT_IMPLEMENTED()  do { kprintf("%s is not implemented\n", __func__); while(1);} while(0)
 
@@ -1606,6 +1614,14 @@ static int split_large_page(pte_t *ptep, size_t pgsize)
 			}
 		}
 		tt[i] = pte;
+		if (pgsize == PTL3_SIZE) {
+			dkprintf("%lx+,%s: calling memory_stat_rss_add(),size=%ld,pgsize=%ld\n", pte_is_fileoff(ptep, pgsize) ? pte_get_off(&pte, pgsize) : pte_get_phys(&pte), __FUNCTION__, PTL2_SIZE, PTL2_SIZE);
+			memory_stat_rss_add(PTL2_SIZE, PTL2_SIZE);
+		}
+		else if (pgsize == PTL2_SIZE) {
+			dkprintf("%lx+,%s: calling memory_stat_rss_add(),size=%ld,pgsize=%ld\n", pte_is_fileoff(ptep, pgsize) ? pte_get_off(&pte, pgsize) : pte_get_phys(&pte), __FUNCTION__, PTL1_SIZE, PTL1_SIZE);
+			memory_stat_rss_add(PTL1_SIZE, PTL1_SIZE);
+		}
 		pte += under_pgsize;
 	}
 
@@ -1617,6 +1633,9 @@ static int split_large_page(pte_t *ptep, size_t pgsize)
 	// always page_unmap.
 	pgsize = PTL1_SIZE;
 #endif
+
+	dkprintf("%lx-,%s: calling memory_stat_rss_sub(),size=%ld,pgsize=%ld\n", phys_base, __FUNCTION__, pgsize, pgsize);
+	memory_stat_rss_sub(pgsize, pgsize);
 
 	/* Do not do this check for large pages as they don't come from the zeroobj
 	 * and are not actually mapped.
@@ -1757,6 +1776,257 @@ int visit_pte_range(page_table_t pt, void *start0, void *end0, int pgshift,
 	return initial_lookup.walk(tt, 0, start, end, initial_lookup.callback, &args);
 }
 
+static int walk_pte_l1_safe(translation_table_t *tt, uint64_t base, uint64_t start,
+			    uint64_t end, walk_pte_fn_t *funcp, void *args)
+{
+	int six;
+	int eix;
+	int ret;
+	int i;
+	int error;
+	uint64_t off;
+	unsigned long phys;
+
+	if (!tt)
+		return 0;
+
+	six = (start <= base)? 0: ((start - base) >> PTL1_SHIFT);
+	eix = ((end == 0) || ((base + PTL2_SIZE) <= end))? PTL1_ENTRIES
+		: (((end - base) + (PTL1_SIZE - 1)) >> PTL1_SHIFT);
+
+	ret = -ENOENT;
+	for (i = six; i < eix; ++i) {
+		phys = ptl_phys(&tt[i], 1);
+		if (-1 == ihk_mc_chk_page_address(phys))
+			continue;
+		off = i * PTL1_SIZE;
+		error = (*funcp)(args, &tt[i], base+off, start, end);
+		if (!error) {
+			ret = 0;
+		}
+		else if (error != -ENOENT) {
+			ret = error;
+			break;
+		}
+	}
+
+	return ret;
+}
+
+static int walk_pte_l2_safe(translation_table_t *tt, uint64_t base, uint64_t start,
+			    uint64_t end, walk_pte_fn_t *funcp, void *args)
+{
+	int six;
+	int eix;
+	int ret;
+	int i;
+	int error;
+	uint64_t off;
+	unsigned long phys;
+
+	if (!tt)
+		return 0;
+
+	six = (start <= base)? 0: ((start - base) >> PTL2_SHIFT);
+	eix = ((end == 0) || ((base + PTL3_SIZE) <= end))? PTL2_ENTRIES
+		: (((end - base) + (PTL2_SIZE - 1)) >> PTL2_SHIFT);
+
+	ret = -ENOENT;
+	for (i = six; i < eix; ++i) {
+		phys = ptl_phys(&tt[i], 2);
+		if (-1 == ihk_mc_chk_page_address(phys))
+			continue;
+		off = i * PTL2_SIZE;
+		error = (*funcp)(args, &tt[i], base+off, start, end);
+		if (!error) {
+			ret = 0;
+		}
+		else if (error != -ENOENT) {
+			ret = error;
+			break;
+		}
+	}
+
+	return ret;
+}
+
+static int walk_pte_l3_safe(translation_table_t *tt, uint64_t base, uint64_t start,
+			    uint64_t end, walk_pte_fn_t *funcp, void *args)
+{
+	int six;
+	int eix;
+	int ret;
+	int i;
+	int error;
+	uint64_t off;
+	unsigned long phys;
+
+	if (!tt)
+		return 0;
+
+	six = (start <= base)? 0: ((start - base) >> PTL3_SHIFT);
+	eix = ((end == 0) || ((base + PTL4_SIZE) <= end))? PTL3_ENTRIES
+		: (((end - base) + (PTL3_SIZE - 1)) >> PTL3_SHIFT);
+
+	ret = -ENOENT;
+	for (i = six; i < eix; ++i) {
+		phys = ptl_phys(&tt[i], 3);
+		if (-1 == ihk_mc_chk_page_address(phys))
+			continue;
+		off = i * PTL3_SIZE;
+		error = (*funcp)(args, &tt[i], base+off, start, end);
+		if (!error) {
+			ret = 0;
+		}
+		else if (error != -ENOENT) {
+			ret = error;
+			break;
+		}
+	}
+
+	return ret;
+}
+
+static int walk_pte_l4_safe(translation_table_t *tt, uint64_t base, uint64_t start,
+			    uint64_t end, walk_pte_fn_t *funcp, void *args)
+{
+	int six;
+	int eix;
+	int ret;
+	int i;
+	int error;
+	uint64_t off;
+	unsigned long phys;
+
+	if (!tt)
+		return 0;
+
+	six = (start <= base)? 0: ((start - base) >> PTL4_SHIFT);
+	eix = (end == 0)? PTL4_ENTRIES
+		:(((end - base) + (PTL4_SIZE - 1)) >> PTL4_SHIFT);
+
+	ret = -ENOENT;
+	for (i = six; i < eix; ++i) {
+		phys = ptl_phys(&tt[i], 4);
+		if (-1 == ihk_mc_chk_page_address(phys))
+			continue;
+		off = i * PTL4_SIZE;
+		error = (*funcp)(args, &tt[i], base+off, start, end);
+		if (!error) {
+			ret = 0;
+		}
+		else if (error != -ENOENT) {
+			ret = error;
+			break;
+		}
+	}
+
+	return ret;
+}
+
+static int visit_pte_range_middle_safe(void *arg0, pte_t *ptep, uint64_t base,
+				       uint64_t start, uint64_t end, int level);
+
+static int visit_pte_l1_safe(void *arg0, pte_t *ptep, uintptr_t base,
+			     uintptr_t start, uintptr_t end)
+{
+	struct visit_pte_args *args = arg0;
+
+	if (ptl1_null(ptep))
+		return 0;
+
+	return (*args->funcp)(args->arg, args->pt, ptep, (void *)base, PTL1_SHIFT);
+}
+
+static int visit_pte_l2_safe(void *arg0, pte_t *ptep, uintptr_t base,
+			     uintptr_t start, uintptr_t end)
+{
+	return visit_pte_range_middle_safe(arg0, ptep, base, start, end, 2);
+}
+
+static int visit_pte_l3_safe(void *arg0, pte_t *ptep, uintptr_t base,
+			     uintptr_t start, uintptr_t end)
+{
+	return visit_pte_range_middle_safe(arg0, ptep, base, start, end, 3);
+}
+
+static int visit_pte_l4_safe(void *arg0, pte_t *ptep, uintptr_t base,
+			     uintptr_t start, uintptr_t end)
+{
+	return visit_pte_range_middle_safe(arg0, ptep, base, start, end, 4);
+}
+
+static int visit_pte_range_middle_safe(void *arg0, pte_t *ptep, uint64_t base,
+				       uint64_t start, uint64_t end, int level)
+{
+	const struct table {
+		walk_pte_t* walk;
+		walk_pte_fn_t* callback;
+		unsigned long pgsize; /* curent level page size */
+		unsigned long pgshift; /* curent level page shift */
+	} table[] = {
+		{ walk_pte_l1_safe, visit_pte_l1_safe, PTL2_SIZE, PTL2_SHIFT }, /*PTL2*/
+		{ walk_pte_l2_safe, visit_pte_l2_safe, PTL3_SIZE, PTL3_SHIFT }, /*PTL3*/
+		{ walk_pte_l3_safe, visit_pte_l3_safe, PTL4_SIZE, PTL4_SHIFT }, /*PTL4*/
+	};
+	const struct table tbl = table[level-2];
+
+	int error;
+	struct visit_pte_args *args = arg0;
+	translation_table_t* tt;
+
+	if (ptl_null(ptep, level))
+		return 0;
+
+	if (ptl_type_page(ptep, level)
+			&& (start <= base)
+			&& (((base + tbl.pgsize) <= end)
+				|| (end == 0))
+			&& (!args->pgshift || (args->pgshift == tbl.pgshift))) {
+		error = (*args->funcp)(args->arg, args->pt, ptep,
+				(void *)base, tbl.pgshift);
+		if (error != -E2BIG) {
+			return error;
+		}
+	}
+
+	if (ptl_type_page(ptep, level)) {
+		ekprintf("%s(level=%d):split large page\n", __FUNCTION__, level);
+		return -ENOMEM;
+	}
+
+	tt = (translation_table_t*)phys_to_virt(ptl_phys(ptep, level));
+
+	return tbl.walk(tt, base, start, end, tbl.callback, arg0);
+}
+
+int visit_pte_range_safe(page_table_t pt, void *start0, void *end0, int pgshift,
+			 enum visit_pte_flag flags, pte_visitor_t *funcp, void *arg)
+{
+	const struct table {
+		walk_pte_t* walk;
+		walk_pte_fn_t* callback;
+	} tables[] = {
+		{ walk_pte_l2_safe, visit_pte_l2_safe }, /*second*/
+		{ walk_pte_l3_safe, visit_pte_l3_safe }, /*first*/
+		{ walk_pte_l4_safe, visit_pte_l4_safe }, /*zero*/
+	};
+	const struct table initial_lookup = tables[CONFIG_ARM64_PGTABLE_LEVELS - 2];
+
+	const uintptr_t start = (uintptr_t)start0;
+	const uintptr_t end = (uintptr_t)end0;
+	struct visit_pte_args args;
+	translation_table_t* tt;
+
+	args.pt = pt;
+	args.flags = flags;
+	args.funcp = funcp;
+	args.arg = arg;
+	args.pgshift = pgshift;
+
+	tt = get_translation_table(pt);
+	return initial_lookup.walk(tt, 0, start, end, initial_lookup.callback, &args);
+}
 struct clear_range_args {
 	int free_physical;
 	struct memobj *memobj;
@@ -1774,6 +2044,8 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 	struct page *page;
 	pte_t old;
 
+	//dkprintf("%s: %lx,%lx,%lx\n", __FUNCTION__, base, start, end);
+
 	if (ptl1_null(ptep)) {
 		return -ENOENT;
 	}
@@ -1787,18 +2059,37 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 		page = phys_to_page(phys);
 	}
 
+	if (page) {
+		dkprintf("%s: page=%p,is_in_memobj=%d,(old & PFL1_DIRTY)=%lx,memobj=%p,args->memobj->flags=%x\n", __FUNCTION__, page, page_is_in_memobj(page), (old & PFL1_DIRTY), args->memobj, args->memobj ? args->memobj->flags : -1);
+	}
 	if (page && page_is_in_memobj(page) && ptl1_dirty(&old) && (args->memobj) &&
 			!(args->memobj->flags & MF_ZEROFILL)) {
 		memobj_flush_page(args->memobj, phys, PTL1_SIZE);
 	}
 
-	if (!ptl1_fileoff(&old) && args->free_physical) {
-		if (!page || (page && page_unmap(page))) {
-			int npages = PTL1_SIZE / PAGE_SIZE;
-			ihk_mc_free_pages_user(phys_to_virt(phys), npages);
-			dkprintf("%s: freeing regular page at 0x%lx\n", __FUNCTION__, base);
+	if (!ptl1_fileoff(&old)) {
+		if (args->free_physical) {
+			if (!page) {
+				/* Anonymous || !XPMEM attach */
+				if (!args->memobj || !(args->memobj->flags & MF_XPMEM)) {
+					ihk_mc_free_pages_user(phys_to_virt(phys), 1);
+					dkprintf("%s: freeing regular page at 0x%lx\n", __FUNCTION__, base);
+					dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", pte_get_phys(&old), __FUNCTION__, pte_get_phys(&old), PTL1_SIZE, PTL1_SIZE);
+					memory_stat_rss_sub(PTL1_SIZE, PTL1_SIZE);
+				} else {
+					dkprintf("%s: XPMEM attach,phys=%lx\n", __FUNCTION__, phys);
+				}
+			} else if (page_unmap(page)) {
+				ihk_mc_free_pages_user(phys_to_virt(phys), 1);
+				dkprintf("%s: freeing file-backed page at 0x%lx\n", __FUNCTION__, base);
+				/* Track page->count for !MF_PREMAP pages */
+				dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", pte_get_phys(&old), __FUNCTION__, pte_get_phys(&old), PTL1_SIZE, PTL1_SIZE);
+				rusage_memory_stat_sub(args->memobj, PTL1_SIZE, PTL1_SIZE);
+			}
+			args->vm->currss -= PTL1_SIZE;
+		} else {
+			dkprintf("%s: !calling memory_stat_rss_sub(),virt=%lx,phys=%lx\n", __FUNCTION__, base, pte_get_phys(&old));
 		}
-		args->vm->currss -= PTL1_SIZE;
 	}
 	
 	return 0;
@@ -1843,6 +2134,8 @@ static int clear_range_middle(void *args0, pte_t *ptep, uint64_t base,
 	struct page *page;
 	pte_t old;
 
+	//dkprintf("%s: %lx,%lx,%lx\n", __FUNCTION__, base, start, end);
+
 	if (ptl_null(ptep, level)) {
 		return -ENOENT;
 	}
@@ -1871,14 +2164,27 @@ static int clear_range_middle(void *args0, pte_t *ptep, uint64_t base,
 			memobj_flush_page(args->memobj, phys, tbl.pgsize);
 		}
 
-
-		if (!ptl_fileoff(&old, level) && args->free_physical) {
-			if (!page || (page && page_unmap(page))) {
-				int npages = tbl.pgsize / PAGE_SIZE;
-				ihk_mc_free_pages_user(phys_to_virt(phys), npages);
-				dkprintf("%s(level=%d): freeing large page at 0x%lx\n", __FUNCTION__, level, base);
+		if (!ptl_fileoff(&old, level)) {
+			if (args->free_physical) {
+				if (!page) {
+					/* Anonymous || !XPMEM attach */
+					if (!args->memobj || !(args->memobj->flags & MF_XPMEM)) {
+						ihk_mc_free_pages_user(phys_to_virt(phys), tbl.pgsize / PAGE_SIZE);
+						dkprintf("%s: freeing large page at 0x%lx\n", __FUNCTION__, base);
+						dkprintf("%lx-,%s: memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", pte_get_phys(&old),__FUNCTION__, pte_get_phys(&old), tbl.pgsize, tbl.pgsize);
+						memory_stat_rss_sub(tbl.pgsize, tbl.pgsize);
+					} else {
+						dkprintf("%s: XPMEM attach,phys=%lx\n", __FUNCTION__, phys);
+					}
+				} else if (page_unmap(page)) {
+					ihk_mc_free_pages_user(phys_to_virt(phys), tbl.pgsize / PAGE_SIZE);
+					dkprintf("%s: having unmapped page-struct, freeing large page at 0x%lx\n", __FUNCTION__, base);
+					/* Track page->count for !MF_PREMAP pages */
+					dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", pte_get_phys(&old), __FUNCTION__, pte_get_phys(&old), tbl.pgsize, tbl.pgsize);
+					rusage_memory_stat_sub(args->memobj, tbl.pgsize, tbl.pgsize);
+				}
+				args->vm->currss -= tbl.pgsize;
 			}
-			args->vm->currss -= tbl.pgsize;
 		}
 
 		return 0;
@@ -1916,6 +2222,9 @@ static int clear_range(struct page_table *pt, struct process_vm *vm,
 	int error;
 	struct clear_range_args args;
 	translation_table_t* tt;
+
+	dkprintf("%s: %p,%lx,%lx,%d,%p\n",
+			 __FUNCTION__, pt, start, end, free_physical, memobj);
 
 	if ((start < vm->region.user_start)
 			|| (vm->region.user_end < end)
@@ -2163,6 +2472,7 @@ struct set_range_args {
 	int pgshift;
 	uintptr_t diff;
 	struct process_vm *vm;
+	struct vm_range *range; /* To find pages we don't need to call memory_stat_rss_add() */
 };
 
 int set_range_middle(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
@@ -2191,6 +2501,13 @@ int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 	ptl1_set(ptep, pte);
 
 	error = 0;
+	// call memory_stat_rss_add() here because pgshift is resolved here
+	if (rusage_memory_stat_add(args->range, phys, PTL1_SIZE, PTL1_SIZE)) {
+		dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, base, phys, PTL1_SIZE, PTL1_SIZE);
+	} else {
+		dkprintf("%s: !calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", __FUNCTION__, base, phys, PTL1_SIZE, PTL1_SIZE);
+	}
+
 out:
 	dkprintf("set_range_l1(%lx,%lx,%lx): %d %lx\n",
 			base, start, end, error, *ptep);
@@ -2252,6 +2569,12 @@ retry:
 				dkprintf("set_range_middle(%lx,%lx,%lx,%d):"
 					 "large page. %d %lx\n",
 					 base, start, end, level, error, *ptep);
+				// Call memory_stat_rss_add() here because pgshift is resolved here
+				if (rusage_memory_stat_add(args->range, phys, tbl.pgsize, tbl.pgsize)) {
+					dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, base, phys, tbl.pgsize, tbl.pgsize);
+				} else {
+					dkprintf("%s: !calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", __FUNCTION__, base, phys, tbl.pgsize, tbl.pgsize);
+				}
 				goto out;
 			}
 		}
@@ -2311,7 +2634,7 @@ out:
 
 int ihk_mc_pt_set_range(page_table_t pt, struct process_vm *vm, void *start, 
 		void *end, uintptr_t phys, enum ihk_mc_pt_attribute attr,
-		int pgshift)
+		int pgshift, struct vm_range *range)
 {
 	const struct table {
 		walk_pte_t* walk;
@@ -2326,14 +2649,15 @@ int ihk_mc_pt_set_range(page_table_t pt, struct process_vm *vm, void *start,
 	struct set_range_args args;
 	translation_table_t* tt;
 
-	dkprintf("ihk_mc_pt_set_range(%p,%p,%p,%p,%lx,%x)\n",
-		 pt, vm, start, end, phys, attr);
+	dkprintf("ihk_mc_pt_set_range(%p,%p,%p,%lx,%x,%d,%lx-%lx)\n",
+			 pt, start, end, phys, attr, pgshift, range->start, range->end);
 
 	args.pt = pt;
 	args.phys = phys;
 	args.diff = (uintptr_t)start ^ phys;
 	args.vm = vm;
 	args.pgshift = pgshift;
+	args.range = range;
 
 	// conversion
 	switch (CONFIG_ARM64_PGTABLE_LEVELS)
@@ -2503,8 +2827,8 @@ int arch_get_smaller_page_size(void *args, size_t cursize, size_t *newsizep,
 	if (p2alignp) *p2alignp = p2align;
 
 out:
-	dkprintf("arch_get_smaller_page_size(%p,%lx): %d %lx %d\n",
-			args, cursize, error, newsize, p2align);
+	/*dkprintf("arch_get_smaller_page_size(%p,%lx): %d %lx %d\n",
+	  args, cursize, error, newsize, p2align);*/
 	return error;
 }
 
@@ -2526,6 +2850,7 @@ struct move_args {
 	uintptr_t src;
 	uintptr_t dest;
 	struct process_vm *vm;
+	struct vm_range *range;
 };
 
 static int move_one_page(void *arg0, page_table_t pt, pte_t *ptep, 
@@ -2557,7 +2882,7 @@ static int move_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 	attr = apte & ~PT_PHYSMASK;
 
 	error = ihk_mc_pt_set_range(pt, args->vm, (void *)dest,
-			(void *)(dest + pgsize), phys, attr, pgshift);
+				    (void *)(dest + pgsize), phys, attr, pgshift, args->range);
 	if (error) {
 		kprintf("move_one_page(%p,%p,%p %#lx,%p,%d):"
 				"set failed. %d\n",
@@ -2573,7 +2898,7 @@ out:
 }
 
 int move_pte_range(page_table_t pt, struct process_vm *vm, 
-		void *src, void *dest, size_t size)
+		   void *src, void *dest, size_t size, struct vm_range *range)
 {
 	int error;
 	struct move_args args;
@@ -2582,6 +2907,7 @@ int move_pte_range(page_table_t pt, struct process_vm *vm,
 	args.src = (uintptr_t)src;
 	args.dest = (uintptr_t)dest;
 	args.vm = vm;
+	args.range = range;
 
 	error = visit_pte_range(pt, src, src+size, 0, VPTEF_SKIP_NULL,
 			&move_one_page, &args);

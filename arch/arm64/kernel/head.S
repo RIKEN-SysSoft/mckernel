@@ -1,4 +1,4 @@
-/* head.S COPYRIGHT FUJITSU LIMITED 2015-2016 */
+/* head.S COPYRIGHT FUJITSU LIMITED 2015-2017 */
 
 #include <linkage.h>
 #include <ptrace.h>
@@ -83,6 +83,7 @@
 #define TRAMPOLINE_DATA_PSCI_METHOD_SIZE       0x08
 #define TRAMPOLINE_DATA_USE_VIRT_TIMER_SIZE    0x08
 #define TRAMPOLINE_DATA_EVTSTRM_TIMER_RATE_SIZE	0x08
+#define TRAMPOLINE_DATA_DEFAULT_VL_SIZE        0x08
 #define TRAMPOLINE_DATA_CPU_MAP_SIZE_SIZE      0x08
 #define TRAMPOLINE_DATA_CPU_MAP_SIZE           (NR_CPUS * 8)
 #define TRAMPOLINE_DATA_DATA_RDISTS_PA_SIZE    (NR_CPUS * 8)
@@ -107,7 +108,7 @@
 	.globl	ihk_param_cpu_logical_map, ihk_param_gic_rdist_base_pa
 	.globl	ihk_param_pmu_irq_affiniry, ihk_param_nr_pmu_irq_affiniry
 	.globl	ihk_param_use_virt_timer, ihk_param_evtstrm_timer_rate
-	.globl	ihk_param_retention_state_flag_pa
+	.globl	ihk_param_retention_state_flag_pa, ihk_param_default_vl
 ihk_param_head:
 ihk_param_param_addr:
 	.quad	0
@@ -139,6 +140,8 @@ ihk_param_use_virt_timer:
 	.quad	0		/* virt timer or phys timer ? */
 ihk_param_evtstrm_timer_rate:
 	.quad	0		/* event stream timer rate */
+ihk_param_default_vl:
+	.quad	0		/* SVE default VL */
 ihk_param_cpu_logical_map:
 	.skip	NR_CPUS * 8	/* array of the MPIDR and the core number */
 ihk_param_gic_rdist_base_pa:
@@ -233,6 +236,10 @@ ENTRY(arch_start)
 	ldr	x16, [x0], #TRAMPOLINE_DATA_EVTSTRM_TIMER_RATE_SIZE
 	adr	x15, ihk_param_evtstrm_timer_rate
 	str	x16, [x15]
+	/* SVE default VL */
+	ldr	x16, [x0], #TRAMPOLINE_DATA_DEFAULT_VL_SIZE
+	adr	x15, ihk_param_default_vl
+	str	x16, [x15]
 	/* cpu_logical_map_size */
 	ldr	x16, [x0], #TRAMPOLINE_DATA_CPU_MAP_SIZE_SIZE
 	mov	x1, x16
@@ -278,10 +285,10 @@ ENTRY(arch_start)
 	sub	w16, w16, #1
 2:	cmp	w16, #0
 	b.ne	1b
+
 	mov x16, #CONFIG_SMP_MAX_CORES  /* calc next data */
 	lsl x16, x16, 2
 	add x0, x0, x16
-
 	/* */
 	bl	__calc_phys_offset	// x24=PHYS_OFFSET, x28=PHYS_OFFSET-KERNEL_START
 	bl	__create_page_tables	// x25=TTBR0, x26=TTBR1
@@ -556,9 +563,22 @@ CPU_LE(	movk	x0, #0x30d0, lsl #16	)	// Clear EE and E0E on LE systems
 
 	/* Coprocessor traps. */
 	mov	x0, #0x33ff
-	msr	cptr_el2, x0			// Disable copro. traps to EL2
-1:
 
+	/* SVE register access */
+	mrs	x1, id_aa64pfr0_el1
+	ubfx	x1, x1, #ID_AA64PFR0_SVE_SHIFT, #4
+	cbz	x1, 4f
+
+	bic	x0, x0, #CPTR_EL2_TZ		// Disable SVE traps to EL2
+	msr	cptr_el2, x0			// Disable copro. traps to EL2
+	isb
+ 
+	mov	x1, #ZCR_EL1_LEN_MASK		// SVE: Enable full vector
+	msr_s	SYS_ZCR_EL1, x1			// length for EL1.
+	b	1f
+
+4:	msr	cptr_el2, x0			// Disable copro. traps to EL2
+1:
 #ifdef CONFIG_COMPAT
 	msr	hstr_el2, xzr			// Disable CP15 traps to EL2
 #endif

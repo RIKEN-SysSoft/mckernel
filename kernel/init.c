@@ -31,7 +31,7 @@
 #include <cls.h>
 #include <syscall.h>
 #include <sysfs.h>
-#include <rusage.h>
+#include <ihk/monitor.h>
 
 //#define IOCTL_FUNC_EXTENSION
 #ifdef IOCTL_FUNC_EXTENSION
@@ -48,13 +48,13 @@
 #define ekprintf(...) do { kprintf(__VA_ARGS__); } while (0)
 #endif
 
-int osnum = 0;
+#define DUMP_LEVEL_USER_UNUSED_EXCLUDE 24
 
-extern struct ihk_kmsg_buf kmsg_buf;
 extern unsigned long ihk_mc_get_ns_per_tsc(void);
 extern long syscall(int, ihk_mc_user_context_t *);
 
 struct ihk_os_monitor *monitor;
+struct rusage_global *rusage;
 
 static void handler_init(void)
 {
@@ -127,23 +127,23 @@ char *find_command_line(char *name)
 
 static void parse_kargs(void)
 {
+	char *ptr;
+	char *key_dump_level = "dump_level=";
+	unsigned int dump_level = DUMP_LEVEL_USER_UNUSED_EXCLUDE;
+
 	kprintf("KCommand Line: %s\n", ihk_get_kargs());
 
-	if (1) {
-		char *key = "osnum=";
-		char *p;
-
-		p = find_command_line(key);
-		if (p != NULL) {
-			p += strlen(key);
-			osnum = 0;
-			while (('0' <= *p) && (*p <= '9')) {
-				osnum *= 10;
-				osnum += *p++ - '0';
-			}
-			kprintf("osnum: %d\n", osnum);
+	/* parse dump_level option */
+	ptr = find_command_line(key_dump_level);
+	if (ptr) {
+		ptr += strlen(key_dump_level);
+		dump_level = 0;
+		while (('0' <= *ptr) && (*ptr <= '9')) {
+			dump_level *= 10;
+			dump_level += *ptr++ - '0';
 		}
 	}
+	ihk_mc_set_dump_level(dump_level);
 }
 
 void pc_init(void)
@@ -266,8 +266,6 @@ static void monitor_init()
 	monitor = ihk_mc_alloc_pages(z, IHK_MC_AP_CRITICAL);
 	memset(monitor, 0, z * PAGE_SIZE);
 	monitor->num_processors = (cpu_info->ncpus - 1);
-	monitor->num_numa_nodes = ihk_mc_get_nr_numa_nodes();
-	monitor->ns_per_tsc = ihk_mc_get_ns_per_tsc();
 	phys = virt_to_phys(monitor);
 	ihk_set_monitor(phys, sizeof(struct ihk_os_monitor) +
 	                    sizeof(struct ihk_os_cpu_monitor) * (cpu_info->ncpus - 1));
@@ -280,8 +278,6 @@ static void monitor_init()
 	monitor = ihk_mc_alloc_pages(z, IHK_MC_AP_CRITICAL);
 	memset(monitor, 0, z * PAGE_SIZE);
 	monitor->num_processors = num_processors;
-	monitor->num_numa_nodes = ihk_mc_get_nr_numa_nodes();
-	monitor->ns_per_tsc = ihk_mc_get_ns_per_tsc();
 	phys = virt_to_phys(monitor);
 	ihk_set_monitor(phys, sizeof(struct ihk_os_monitor) +
 	                    sizeof(struct ihk_os_cpu_monitor) * num_processors);
@@ -426,18 +422,6 @@ extern void ibmic_cmd_init(void);
 
 int main(void)
 {
-	char *ptr;
-	int mode = 0;
-
-	ptr = find_command_line("ksyslogd=");
-	if (ptr) {
-	    mode = ptr[9] - 0x30;
-	    if (mode < 0 || mode > 2) mode = 0;
-	}
-	kmsg_init(mode);
-
-	kputs("IHK/McKernel started.\n");
-	ihk_set_kmsg(virt_to_phys(&kmsg_buf), IHK_KMSG_SIZE);
 	arch_init();
 
 	/*

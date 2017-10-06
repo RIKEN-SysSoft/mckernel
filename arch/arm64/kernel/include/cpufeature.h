@@ -163,6 +163,14 @@ static inline int id_aa64pfr0_32bit_el0(uint64_t pfr0)
 	return val == ID_AA64PFR0_EL0_32BIT_64BIT;
 }
 
+/* @ref.impl arch/arm64/include/asm/cpufeature.h */
+static inline int id_aa64pfr0_sve(uint64_t pfr0)
+{
+	uint32_t val = cpuid_feature_extract_unsigned_field(pfr0, ID_AA64PFR0_SVE_SHIFT);
+
+	return val > 0;
+}
+
 void setup_cpu_features(void);
 void update_cpu_features(int cpu,
 			 struct cpuinfo_arm64 *info,

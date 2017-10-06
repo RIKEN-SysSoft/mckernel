@@ -1,0 +1,6 @@
+MCRBT_OPT="-m 32M@0"
+USR_PROC="mcexec_test_proc/test_pt_1kb_10times"
+OS_IDX=1
+DUMP_OPT="-d 0"
+DUMP_FILE="./dumps/dumpfile_0050.log"
+ERROR_CASE="yes"

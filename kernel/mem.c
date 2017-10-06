@@ -38,9 +38,10 @@
 #include <cpulocal.h>
 #include <init.h>
 #include <cas.h>
-#include <rusage.h>
+#include <rusage_private.h>
 #include <syscall.h>
 #include <profile.h>
+#include <process.h>
 #include <limits.h>
 #include <sysfs.h>
 
@@ -79,6 +80,8 @@ static void *___ihk_mc_alloc_aligned_pages_node(int npages,
 static void *___ihk_mc_alloc_pages(int npages, ihk_mc_ap_flag flag, int is_user);
 static void ___ihk_mc_free_pages(void *p, int npages, int is_user);
 
+extern unsigned long ihk_mc_get_ns_per_tsc(void);
+
 /*
  * Page allocator tracking routines
  */
@@ -113,6 +116,40 @@ struct pagealloc_track_entry {
 	struct list_head addr_list;
 	ihk_spinlock_t addr_list_lock;
 };
+
+#ifndef POSTK_DEBUG_ARCH_DEP_89 /* unused struct page_table delete */
+struct page_table {
+	pte_t entry[PT_ENTRIES];
+};
+#endif /* !POSTK_DEBUG_ARCH_DEP_89 */
+
+struct ihk_dump_page {
+	unsigned long start;
+	unsigned long map_count;
+	unsigned long map[0];
+};
+
+struct ihk_dump_page_set {
+	volatile unsigned int completion_flag;
+	unsigned int count;
+	unsigned long page_size;
+	unsigned long phy_page;
+};
+
+struct dump_pase_info {
+	struct ihk_dump_page_set *dump_page_set;
+	struct ihk_dump_page *dump_pages;
+};
+
+#define IHK_DUMP_PAGE_SET_INCOMPLETE 0
+#define IHK_DUMP_PAGE_SET_COMPLETED  1
+#define DUMP_LEVEL_ALL 0
+#define DUMP_LEVEL_USER_UNUSED_EXCLUDE 24
+
+/** Get the index in the map array */
+#define MAP_INDEX(n)    ((n) >> 6)
+/** Get the bit number in a map element */
+#define MAP_BIT(n)      ((n) & 0x3f)
 
 void pagealloc_track_init(void)
 {
@@ -538,14 +575,22 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 	if (pref_node > -1 && pref_node < ihk_mc_get_nr_numa_nodes()) {
 #ifdef IHK_RBTREE_ALLOCATOR
 		{
-			pa = ihk_numa_alloc_pages(&memory_nodes[pref_node], npages, p2align);
+			if (rusage_check_oom(pref_node, npages, is_user) == -ENOMEM) {
+				pa = 0;
+			} else {
+				pa = ihk_numa_alloc_pages(&memory_nodes[pref_node], npages, p2align);
+			}
 #else
 		list_for_each_entry(pa_allocator,
 				&memory_nodes[pref_node].allocators, list) {
-			pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+			if (rusage_check_oom(pref_node, npages, is_user) == -ENOMEM) {
+				pa = 0;
+			} else {
+				pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+			}
 #endif
-
 			if (pa) {
+				rusage_page_add(pref_node, npages, is_user);
 				dkprintf("%s: explicit (node: %d) CPU @ node %d allocated "
 						"%d pages from node %d\n",
 						__FUNCTION__,
@@ -553,13 +598,11 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 						ihk_mc_get_numa_id(),
 						npages, node);
 
-				rusage_page_add(pref_node, npages, is_user);
-
 				return phys_to_virt(pa);
 			}
 			else {
 #ifdef PROFILE_ENABLE
-				//profile_event_add(PROFILE_numa_alloc_missed, npages * 4096);
+				profile_event_add(PROFILE_mpol_alloc_missed, npages * 4096);
 #endif
 				dkprintf("%s: couldn't fulfill explicit NUMA request for %d pages\n",
 						__FUNCTION__, npages);
@@ -584,23 +627,30 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 				numa_id = memory_nodes[node].nodes_by_distance[i].id;
 #ifdef IHK_RBTREE_ALLOCATOR
 				{
-					pa = ihk_numa_alloc_pages(&memory_nodes[memory_nodes[node].
-							nodes_by_distance[i].id], npages, p2align);
+					if (rusage_check_oom(numa_id, npages, is_user) == -ENOMEM) {
+						pa = 0;
+					} else {
+						pa = ihk_numa_alloc_pages(&memory_nodes[memory_nodes[node].
+																nodes_by_distance[i].id], npages, p2align);
+					}
 #else
 				list_for_each_entry(pa_allocator,
 						&memory_nodes[numa_id].allocators, list) {
-					pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+					if (rusage_check_oom(numa_id, npages, is_user) == -ENOMEM) {
+						pa = 0;
+					} else {
+						pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+					}
 #endif
 
 					if (pa) {
+						rusage_page_add(numa_id, npages, is_user);
 						dkprintf("%s: policy: CPU @ node %d allocated "
 								"%d pages from node %d\n",
 								__FUNCTION__,
 								ihk_mc_get_numa_id(),
 								npages, node);
 
-						rusage_page_add(numa_id, npages,
-						               is_user);
 
 						break;
 					}
@@ -641,22 +691,31 @@ distance_based:
 
 #ifdef IHK_RBTREE_ALLOCATOR
 		{
-			pa = ihk_numa_alloc_pages(&memory_nodes[memory_nodes[node].
-					nodes_by_distance[i].id], npages, p2align);
+			if (rusage_check_oom(numa_id, npages, is_user) == -ENOMEM) {
+				pa = 0;
+			} else {
+				pa = ihk_numa_alloc_pages(&memory_nodes[memory_nodes[node].
+														nodes_by_distance[i].id], npages, p2align);
+			}
 #else
 		list_for_each_entry(pa_allocator,
 		                    &memory_nodes[numa_id].allocators, list) {
-			pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+			if (rusage_check_oom(numa_id, npages, is_user) == -ENOMEM) {
+				pa = 0;
+			} else {
+				pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+			}
 #endif
 
+
 			if (pa) {
+				rusage_page_add(numa_id, npages, is_user);
 				dkprintf("%s: distance: CPU @ node %d allocated "
 						"%d pages from node %d\n",
 						__FUNCTION__,
 						ihk_mc_get_numa_id(),
 						npages,
 						memory_nodes[node].nodes_by_distance[i].id);
-				rusage_page_add(numa_id, npages, is_user);
 				break;
 			}
 		}
@@ -675,13 +734,22 @@ order_based:
 		numa_id = (node + i) % ihk_mc_get_nr_numa_nodes();
 #ifdef IHK_RBTREE_ALLOCATOR
 		{
-			pa = ihk_numa_alloc_pages(&memory_nodes[(node + i) %
-					ihk_mc_get_nr_numa_nodes()], npages, p2align);
+			if (rusage_check_oom(numa_id, npages, is_user) == -ENOMEM) {
+				pa = 0;
+			} else {
+				pa = ihk_numa_alloc_pages(&memory_nodes[(node + i) %
+														ihk_mc_get_nr_numa_nodes()], npages, p2align);
+			}
 #else
 		list_for_each_entry(pa_allocator,
 		                    &memory_nodes[numa_id].allocators, list) {
-			pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+			if (rusage_check_oom(numa_id, npages, is_user) == -ENOMEM) {
+				pa = 0;
+			} else {
+				pa = ihk_pagealloc_alloc(pa_allocator, npages, p2align);
+			}
 #endif
+
 			if (pa) {
 				rusage_page_add(numa_id, npages, is_user);
 				break;
@@ -697,6 +765,7 @@ order_based:
 	if(flag != IHK_MC_AP_NOWAIT)
 		panic("Not enough space\n");
 	*/
+	dkprintf("OOM\n", __FUNCTION__);
 	return NULL;
 }
 
@@ -998,7 +1067,10 @@ void remote_flush_tlb_array_cpumask(struct process_vm *vm,
 void tlb_flush_handler(int vector)
 {
 #ifdef PROFILE_ENABLE
-	unsigned long t_s = rdtsc();
+	unsigned long t_s = 0;
+	if (cpu_local_var(current)->profile) {
+		t_s = rdtsc();
+	}
 #endif // PROFILE_ENABLE
 	int flags = cpu_disable_interrupt_save();
 
@@ -1026,11 +1098,12 @@ void tlb_flush_handler(int vector)
 	cpu_restore_interrupt(flags);
 #ifdef PROFILE_ENABLE
 	{
-		unsigned long t_e = rdtsc();
-		profile_event_add(PROFILE_tlb_invalidate, (t_e - t_s));
-		if (cpu_local_var(current)->profile)
+		if (cpu_local_var(current)->profile) {
+			unsigned long t_e = rdtsc();
+			profile_event_add(PROFILE_tlb_invalidate, (t_e - t_s));
 			cpu_local_var(current)->profile_elapsed_ts +=
 				(t_e - t_s);
+		}
 	}
 #endif // PROFILE_ENABLE
 }
@@ -1040,8 +1113,9 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 	struct thread *thread = cpu_local_var(current);
 	int error;
 #ifdef PROFILE_ENABLE
-	uint64_t t_s;
-	t_s = rdtsc();
+	uint64_t t_s = 0;
+	if (thread->profile)
+		t_s = rdtsc();
 #endif // PROFILE_ENABLE
 
 	set_cputime(interrupt_from_user(regs)? 1: 2);
@@ -1106,7 +1180,8 @@ out:
 	check_need_resched();
 	set_cputime(0);
 #ifdef PROFILE_ENABLE
-	profile_event_add(PROFILE_page_fault, (rdtsc() - t_s));
+	if (thread->profile)
+		profile_event_add(PROFILE_page_fault, (rdtsc() - t_s));
 #endif // PROFILE_ENABLE
 	return;
 }
@@ -1217,13 +1292,13 @@ static void numa_init(void)
 #endif
 
 #ifdef IHK_RBTREE_ALLOCATOR
-		dkprintf("Physical memory: 0x%lx - 0x%lx, %lu bytes, %d pages available @ NUMA: %d\n",
+		kprintf("Physical memory: 0x%lx - 0x%lx, %lu bytes, %d pages available @ NUMA: %d\n",
 				start, end,
 				end - start,
 				(end - start) >> PAGE_SHIFT,
 				numa_id);
 #else
-		dkprintf("Physical memory: 0x%lx - 0x%lx, %lu bytes, %d pages available @ NUMA: %d\n",
+		kprintf("Physical memory: 0x%lx - 0x%lx, %lu bytes, %d pages available @ NUMA: %d\n",
 				start, end,
 				ihk_pagealloc_count(allocator) * PAGE_SIZE,
 				ihk_pagealloc_count(allocator),
@@ -1621,6 +1696,22 @@ void ihk_mc_clean_micpa(void){
 }
 #endif
 
+static void rusage_init()
+{
+	int npages;
+	unsigned long phys;
+
+	npages = (sizeof(struct rusage_global) + PAGE_SIZE -1) >> PAGE_SHIFT;
+	rusage = ihk_mc_alloc_pages(npages, IHK_MC_AP_CRITICAL);
+	memset(rusage, 0, npages * PAGE_SIZE);
+	rusage->num_processors = num_processors;
+	rusage->num_numa_nodes = ihk_mc_get_nr_numa_nodes();
+	rusage->ns_per_tsc = ihk_mc_get_ns_per_tsc();
+	phys = virt_to_phys(rusage);
+	ihk_set_rusage(phys, sizeof(struct rusage_global));
+	dkprintf("%s: rusage->total_memory=%ld\n", __FUNCTION__, rusage->total_memory);
+}
+
 #ifdef POSTK_DEBUG_TEMP_FIX_73 /* NULL access for *monitor fix */
 extern void monitor_init(void);
 #endif /* POSTK_DEBUG_TEMP_FIX_73 */
@@ -1629,6 +1720,10 @@ void mem_init(void)
 #ifdef POSTK_DEBUG_TEMP_FIX_73 /* NULL access for *monitor fix */
 	monitor_init();
 #endif /* !POSTK_DEBUG_TEMP_FIX_73 */
+
+	/* It must precedes numa_init() because rusage->total_memory is initialized in numa_init() */
+	rusage_init();
+
 	/* Initialize NUMA information and memory allocator bitmaps */
 	numa_init();
 
@@ -2236,3 +2331,211 @@ int is_mckernel_memory(unsigned long phys)
 }
 #endif /* IHK_RBTREE_ALLOCATOR */
 #endif /* POSTK_DEBUG_TEMP_FIX_52 */
+
+void ihk_mc_query_mem_areas(void){
+
+	int cpu_id;
+	struct ihk_dump_page_set *dump_page_set;
+	struct dump_pase_info dump_pase_info;
+
+	/* Performed only for CPU 0 */
+	cpu_id = ihk_mc_get_processor_id();
+
+	if (0 != cpu_id)
+		return;
+
+	dump_page_set = ihk_mc_get_dump_page_set();
+	
+	if (DUMP_LEVEL_USER_UNUSED_EXCLUDE == ihk_mc_get_dump_level()) {
+		if (dump_page_set->count) {
+
+			dump_pase_info.dump_page_set = dump_page_set;
+			dump_pase_info.dump_pages = ihk_mc_get_dump_page();
+
+			/* Get user page information */
+			ihk_mc_query_mem_user_page((void *)&dump_pase_info);
+			/* Get unused page information */
+			ihk_mc_query_mem_free_page((void *)&dump_pase_info);
+		}
+	}
+
+	dump_page_set->completion_flag = IHK_DUMP_PAGE_SET_COMPLETED;
+
+	return;
+}
+
+void ihk_mc_query_mem_user_page(void *dump_pase_info) {
+
+	struct resource_set *rset = cpu_local_var(resource_set);
+	struct process_hash *phash = rset->process_hash;
+	struct process *p; 
+	struct process_vm *vm;
+	int i;
+
+	for (i=0; i<HASH_SIZE; i++) {
+
+		list_for_each_entry(p, &phash->list[i], hash_list){
+			vm = p->vm;
+			if (vm) {
+				if(vm->address_space->page_table) {
+					visit_pte_range_safe(vm->address_space->page_table, 0,
+					(void *)USER_END, 0, 0,
+					&ihk_mc_get_mem_user_page, (void *)dump_pase_info);
+				}
+			}
+		}
+	}
+
+	return;
+}
+
+void ihk_mc_query_mem_free_page(void *dump_pase_info) {
+
+	struct free_chunk *chunk;
+	struct rb_node *node;
+	struct rb_root *free_chunks;
+	unsigned long phy_start, map_start, map_end, free_pages, free_page_cnt, map_size, set_size, k;
+	int i, j;
+	struct ihk_dump_page_set *dump_page_set;
+	struct ihk_dump_page *dump_page;
+	struct dump_pase_info *dump_pase_in;
+	unsigned long chunk_addr, chunk_size;
+
+	dump_pase_in = (struct dump_pase_info *)dump_pase_info;
+	dump_page_set = dump_pase_in->dump_page_set;
+
+	/* Search all NUMA nodes */
+	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); i++) {
+
+		free_chunks = &memory_nodes[i].free_chunks;
+		free_pages = memory_nodes[i].nr_free_pages;
+
+		/* rb-tree search */
+		for (free_page_cnt = 0, node = rb_first_safe(free_chunks); node; free_page_cnt++, node = rb_next_safe(node)) {
+
+			if (free_page_cnt >= free_pages)
+				break;
+
+			/* Get chunk information */
+			chunk = container_of(node, struct free_chunk, node);
+
+			dump_page = dump_pase_in->dump_pages;
+			chunk_addr = chunk->addr;
+			chunk_size = chunk->size;
+
+			for (j = 0; j < dump_page_set->count; j++) {
+
+				if (j) {
+					dump_page = (struct ihk_dump_page *)((char *)dump_page + ((dump_page->map_count * sizeof(unsigned long)) + sizeof(struct ihk_dump_page)));
+				}
+
+				phy_start = dump_page->start;
+				map_size = (dump_page->map_count << (PAGE_SHIFT+6));
+
+				if ((chunk_addr >= phy_start)
+					&& ((phy_start + map_size) >= chunk_addr)) {
+
+					/* Set free page to page map */
+					map_start = (chunk_addr - phy_start) >> PAGE_SHIFT;
+
+					if ((phy_start + map_size) < (chunk_addr + chunk_size)) {
+						set_size = map_size - (chunk_addr - phy_start);
+						map_end = (map_start + (set_size >> PAGE_SHIFT));
+						chunk_addr += set_size;
+						chunk_size -= set_size;
+					} else {
+						map_end = (map_start + (chunk_size >> PAGE_SHIFT));
+					}
+
+					for (k = map_start; k < map_end; k++) {
+
+						if (MAP_INDEX(k) >= dump_page->map_count) {
+							kprintf("%s:free page is out of range(max:%d): %ld (map_start:0x%lx, map_end:0x%lx) k(0x%lx)\n", __FUNCTION__, dump_page->map_count, MAP_INDEX(k), map_start, map_end, k);
+							break;
+						}
+
+						dump_page->map[MAP_INDEX(k)] &= ~(1UL << MAP_BIT(k));
+					}
+				}
+			}
+		}
+	}
+
+	return;
+}
+
+int ihk_mc_chk_page_address(pte_t mem_addr){
+
+	int i, numa_id;;
+	unsigned long start, end;
+
+	/* Search all NUMA nodes */
+	for (i = 0; i < ihk_mc_get_nr_memory_chunks(); i++) {
+		ihk_mc_get_memory_chunk(i, &start, &end, &numa_id);
+		if ((mem_addr >= start) && (end >= mem_addr))
+			return 0;
+	}
+
+	return -1;
+}
+
+int ihk_mc_get_mem_user_page(void *arg0, page_table_t pt, pte_t *ptep, void *pgaddr, int pgshift)
+{
+	struct ihk_dump_page_set *dump_page_set;
+	int i;
+	unsigned long j, phy_start, phys, map_start, map_end, map_size, set_size;
+	struct ihk_dump_page *dump_page;
+	struct dump_pase_info *dump_pase_in;
+	unsigned long chunk_addr, chunk_size;
+
+	if (((*ptep) & PTATTR_ACTIVE) && ((*ptep) & PTATTR_USER)) {
+		phys = pte_get_phys(ptep);
+		/* Confirm accessible address */
+		if (-1 != ihk_mc_chk_page_address(phys)) {
+
+			dump_pase_in = (struct dump_pase_info *)arg0;
+			dump_page_set = dump_pase_in->dump_page_set;
+			dump_page = dump_pase_in->dump_pages;
+
+			chunk_addr = phys;
+			chunk_size = (1UL << pgshift);
+
+			for (i = 0; i < dump_page_set->count; i++) {
+
+				if (i) {
+					dump_page = (struct ihk_dump_page *)((char *)dump_page + ((dump_page->map_count * sizeof(unsigned long)) + sizeof(struct ihk_dump_page)));
+				}
+
+				phy_start = dump_page->start;
+				map_size = (dump_page->map_count << (PAGE_SHIFT+6));
+
+				if ((chunk_addr >= phy_start)
+					&& ((phy_start + map_size) >= chunk_addr)) {
+
+					/* Set user page to page map */
+					map_start = (chunk_addr - phy_start) >> PAGE_SHIFT;
+
+					if ((phy_start + map_size) < (chunk_addr + chunk_size)) {
+						set_size = map_size - (chunk_addr - phy_start);
+						map_end = (map_start + (set_size >> PAGE_SHIFT));
+						chunk_addr += set_size;
+						chunk_size -= set_size;
+					} else {
+						map_end = (map_start + (chunk_size >> PAGE_SHIFT));
+					}
+
+					for (j = map_start; j < map_end; j++) {
+
+						if (MAP_INDEX(j) >= dump_page->map_count) {
+							kprintf("%s:user page is out of range(max:%d): %ld (map_start:0x%lx, map_end:0x%lx) j(0x%lx)\n", __FUNCTION__, dump_page->map_count, MAP_INDEX(j), map_start, map_end, j);
+							break;
+						}
+						dump_page->map[MAP_INDEX(j)] &= ~(1UL << MAP_BIT(j));
+					}
+				}
+			}
+		}
+	}
+
+	return 0;
+}

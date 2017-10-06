@@ -56,6 +56,7 @@ static const struct arm64_ftr_bits ftr_id_aa64isar0[] = {
 
 /* @ref.impl arch/arm64/kernel/cpufeature.c */
 static const struct arm64_ftr_bits ftr_id_aa64pfr0[] = {
+	ARM64_FTR_BITS(FTR_VISIBLE, FTR_STRICT, FTR_LOWER_SAFE, ID_AA64PFR0_SVE_SHIFT, 4, 0),
 	ARM64_FTR_BITS(FTR_HIDDEN, FTR_STRICT, FTR_EXACT, ID_AA64PFR0_GIC_SHIFT, 4, 0),
 	S_ARM64_FTR_BITS(FTR_VISIBLE, FTR_STRICT, FTR_LOWER_SAFE, ID_AA64PFR0_ASIMD_SHIFT, 4, ID_AA64PFR0_ASIMD_NI),
 	S_ARM64_FTR_BITS(FTR_VISIBLE, FTR_STRICT, FTR_LOWER_SAFE, ID_AA64PFR0_FP_SHIFT, 4, ID_AA64PFR0_FP_NI),
@@ -218,6 +219,13 @@ static const struct arm64_ftr_bits ftr_id_dfr0[] = {
 };
 
 /* @ref.impl arch/arm64/kernel/cpufeature.c */
+static const struct arm64_ftr_bits ftr_zcr[] = {
+	ARM64_FTR_BITS(FTR_HIDDEN, FTR_NONSTRICT, FTR_LOWER_SAFE,
+		ZCR_EL1_LEN_SHIFT, ZCR_EL1_LEN_SIZE, 0),	/* LEN */
+	ARM64_FTR_END,
+};
+
+/* @ref.impl arch/arm64/kernel/cpufeature.c */
 /*
  * Common ftr bits for a 32bit register with all hidden, strict
  * attributes, with 4bit feature fields and a default safe value of
@@ -288,6 +296,7 @@ static const struct __ftr_reg_entry {
 	/* Op1 = 0, CRn = 0, CRm = 4 */
 	ARM64_FTR_REG(SYS_ID_AA64PFR0_EL1, ftr_id_aa64pfr0),
 	ARM64_FTR_REG(SYS_ID_AA64PFR1_EL1, ftr_raz),
+	ARM64_FTR_REG(SYS_ID_AA64ZFR0_EL1, ftr_raz),
 
 	/* Op1 = 0, CRn = 0, CRm = 5 */
 	ARM64_FTR_REG(SYS_ID_AA64DFR0_EL1, ftr_id_aa64dfr0),
@@ -301,6 +310,9 @@ static const struct __ftr_reg_entry {
 	ARM64_FTR_REG(SYS_ID_AA64MMFR0_EL1, ftr_id_aa64mmfr0),
 	ARM64_FTR_REG(SYS_ID_AA64MMFR1_EL1, ftr_id_aa64mmfr1),
 	ARM64_FTR_REG(SYS_ID_AA64MMFR2_EL1, ftr_id_aa64mmfr2),
+
+	/* Op1 = 0, CRn = 1, CRm = 2 */
+	ARM64_FTR_REG(SYS_ZCR_EL1, ftr_zcr),
 
 	/* Op1 = 3, CRn = 0, CRm = 0 */
 	{ SYS_CTR_EL0, &arm64_ftr_reg_ctrel0 },
@@ -488,10 +500,15 @@ void init_cpu_features(struct cpuinfo_arm64 *info)
 	init_cpu_ftr_reg(SYS_ID_AA64MMFR2_EL1, info->reg_id_aa64mmfr2);
 	init_cpu_ftr_reg(SYS_ID_AA64PFR0_EL1, info->reg_id_aa64pfr0);
 	init_cpu_ftr_reg(SYS_ID_AA64PFR1_EL1, info->reg_id_aa64pfr1);
+	init_cpu_ftr_reg(SYS_ID_AA64ZFR0_EL1, info->reg_id_aa64zfr0);
 
 	//if (id_aa64pfr0_32bit_el0(info->reg_id_aa64pfr0)) {
 	//	panic("AArch32 is not supported.");
 	//}
+
+	if (id_aa64pfr0_sve(info->reg_id_aa64pfr0)) {
+		init_cpu_ftr_reg(SYS_ZCR_EL1, info->reg_zcr);
+	}
 }
 
 /* @ref.impl arch/arm64/kernel/cpufeature.c */
@@ -601,6 +618,8 @@ void update_cpu_features(int cpu,
 				      info->reg_id_aa64pfr0, boot->reg_id_aa64pfr0);
 	taint |= check_update_ftr_reg(SYS_ID_AA64PFR1_EL1, cpu,
 				      info->reg_id_aa64pfr1, boot->reg_id_aa64pfr1);
+	taint |= check_update_ftr_reg(SYS_ID_AA64ZFR0_EL1, cpu,
+				      info->reg_id_aa64zfr0, boot->reg_id_aa64zfr0);
 
 	/*
 	 * If we have AArch32, we care about 32-bit features for compat.
@@ -610,6 +629,11 @@ void update_cpu_features(int cpu,
 	//    id_aa64pfr0_32bit_el0(info->reg_id_aa64pfr0)) {
 	//	panic("AArch32 is not supported.");
 	//}
+
+	if (id_aa64pfr0_sve(info->reg_id_aa64pfr0)) {
+		taint |= check_update_ftr_reg(SYS_ZCR_EL1, cpu,
+					info->reg_zcr, boot->reg_zcr);
+	}
 
 	/*
 	 * Mismatched CPU features are a recipe for disaster. Don't even
@@ -932,6 +956,9 @@ static const struct arm64_cpu_capabilities arm64_elf_hwcaps[] = {
 	HWCAP_CAP(SYS_ID_AA64PFR0_EL1, ID_AA64PFR0_FP_SHIFT, FTR_SIGNED, 1, CAP_HWCAP, HWCAP_FPHP),
 	HWCAP_CAP(SYS_ID_AA64PFR0_EL1, ID_AA64PFR0_ASIMD_SHIFT, FTR_SIGNED, 0, CAP_HWCAP, HWCAP_ASIMD),
 	HWCAP_CAP(SYS_ID_AA64PFR0_EL1, ID_AA64PFR0_ASIMD_SHIFT, FTR_SIGNED, 1, CAP_HWCAP, HWCAP_ASIMDHP),
+#ifdef CONFIG_ARM64_SVE
+	HWCAP_CAP(SYS_ID_AA64PFR0_EL1, ID_AA64PFR0_SVE_SHIFT, FTR_UNSIGNED, 1, CAP_HWCAP, HWCAP_SVE),
+#endif
 	{},
 };
 

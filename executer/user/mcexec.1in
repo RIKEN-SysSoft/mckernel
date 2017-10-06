@@ -1,0 +1,131 @@
+.\" Man page for mcexec
+.\"
+
+.TH MCEXEC 1 "@MCKERNEL_RELEASE_DATE@" "Version @MCKERNEL_VERSION@" MCKERNEL @MCKERNEL_VERSION@"
+.SH NAME
+mcexec \- run an application on McKernel
+.\"
+
+.\" ----------------------------  SYNOPSIS ----------------------------
+.SH SYNOPSIS
+.B mcexec \fR [\fIoptions\fR] \fR [\fI<mcos-id>\fR] \fI<command>\fR
+
+.\" ----------------------------  DESCRIPTION ----------------------------
+.SH DESCRIPTION
+mcexec executes \fI<command>\fR on McKernel.  If <mcos-id> is
+specified, the command is executed on the McKernel instance associated
+with \fI<mcos-id>\fR.  Usually, this number is omitted. The options
+are described below.
+
+.\" ----------------------------  DESCRIPTION ----------------------------
+.SH OPTIONS
+
+.TP
+.B	-n N
+Specify the number of MPI ranks run on the node.
+e.g.,
+   $ mpirun -n 32 -ppn 4 mcexec -n 4 ./a.out
+In the above example, the ./a.out program runs on eight nodes each of
+which has four processes.
+
+.TP
+.B	-t N
+Specify the number of syscall threads in the proxy process. If this
+option is omitted and the OMP_NUM_THREADS environment is specified,
+the OMP_NUM_THREADS value is used. Otherwise, the number of syscall
+threads equals to the number of CPU cores assigned to McKernel.
+
+.\".TP
+.\".B	-c N
+.\"Specify the target CPU core on which the application to be run.  Do
+.\"not specify this option with -n or with -t.
+
+.TP
+.B	-h N, --extend-heap-by=N
+Specify the size of heap extension by the brk() system call.
+The default size is 4K Byte. You may specify the value in the
+following format:
+     <digit>{k|K|m|M|g|G}
+e.g.:
+     10k for 10Kibyte, 100M for 100Mibyte, 1G for 1Gibyte
+
+In certain applications, such as miniFE, specifying "-h 12M" improves
+performance.
+
+.TP
+.B	--profile
+Enable system call profiling. After the execution, profiling
+information may be obtained by the ihkosctl tool.
+
+.TP
+.B	--mpol-no-heap, --mpol-no-stack, --mpol-no-bss, 
+Disregard NUMA memory policy in the heap/stack/BSS areas.
+In case of Flat Memory and Quadrant clustering modes on the Xeon Phi
+(KNL), two NUMA nodes, i.e., DDR and MCDRAM, are available.
+The following example in Linux enforces that all memory is allocated
+from NUMA #1, i.e., MCDRAM.
+      $ numactl -m 1 ./a.out
+In the following example, memory is allocated in MCDRAM except for the
+stack area. That is, the stack area is allocated in the nearest memory
+of thread/process, i.e., DDR.
+     $ mcexec --mpol-no-stack numactl -m 1 ./a.out
+
+.TP
+.B	--mpol-shm-premap
+Prepopulate shared memory region of the Intel MPI library.
+This option eliminates potential kernel resource contention by
+avoiding page faults in the shared memory region.
+
+.TP
+.B	-m N, --mpol-threshold=N
+Specify the threshold of memory size for respecting the memory
+allocation policy in NUMA machines. If the size of memory allocation
+is smaller than the one specified in this option, the memory area is
+allocated from the nearest memory of the thread/process disregarding
+the user specified NUMA policy.
+
+.TP
+.B	--disable-sched-yield
+Disable the sched yield system call. It is useful if the number of
+processes and threads are no more than the number of cores and thus
+explicit scheduling is not required.  This option changes the
+LD_PRELOAD environment variable on McKernel, and thus the LD_PRELOAD
+value is not taken over.
+
+.TP
+.B	--no-bind-ikc-map
+Do not affinitize proxy processes to the IKC target CPUs.
+
+The following options will be deprecated.
+.TP
+.B	--disable-vdso
+disable the vdso feature. You should not specify this option.
+
+.B	--enable-vdso
+enable the vdso feature. The default is enable.
+
+.PP
+.\" ----------------------------  ENVIRONMENT ----------------------------
+.SH ENVIRONMENT
+.TP
+.B	MCKERNEL_RLIMIT_STACK
+If this variable exists, its value is set to the RLIMIT_STACK
+environment variable on Mckernel.
+.TP
+.B	MCKERNEL_LD_PRELOAD
+The LD_PRELOAD envirnoment variable in Linux is not taken over by McKernel.
+Instead, if this variable exists, its value is set to the LD_PRELOAD
+environment variable on McKernel. If the --disable-sched-yield option
+is specified in mcexec, LD_PRELOAD defined by the user is not
+effective in this release.
+
+.PP
+.\" ----------------------------  SEE ALSO ----------------------------
+.SH SEE ALSO
+\fBihkconfig\fR (1), \fBihkosctl\fR (1)
+
+.\" ----------------------------  AUTHORS ----------------------------
+.SH AUTHORS
+Copyright (C) 2017 McKernel Development Team, RIKEN AICS, Japan
+
+

@@ -124,6 +124,11 @@ static inline long ihk_atomic64_read(const ihk_atomic64_t *v)
 	return *(volatile long *)&(v)->counter64;
 }
 
+static inline void ihk_atomic64_set(ihk_atomic64_t *v, int i)
+{
+	v->counter64 = i;
+}
+
 /* @ref.impl arch/arm64/include/asm/atomic.h::atomic64_add (atomic64_##op) */
 static inline void ihk_atomic64_add(long i, ihk_atomic64_t *v)
 {

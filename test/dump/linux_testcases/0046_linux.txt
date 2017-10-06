@@ -1,0 +1,2 @@
+OUTFILE="./not_exist_dir/file"
+ERROR_CASE="yes"

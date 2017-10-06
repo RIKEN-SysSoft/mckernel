@@ -41,6 +41,9 @@ enum {
 	MF_REG_FILE = 0x1000,
 	MF_DEV_FILE = 0x2000,
 	MF_PREMAP   = 0x8000,
+	MF_XPMEM   = 0x10000, /* To identify XPMEM attachment pages for rusage accounting */
+	MF_ZEROOBJ = 0x20000, /* To identify pages of anonymous, on-demand paging ranges for rusage accounting */
+	MF_SHM =     0x40000,
 	MF_HOST_RELEASED = 0x80000000,
 	MF_END
 };

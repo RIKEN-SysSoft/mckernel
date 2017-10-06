@@ -157,6 +157,11 @@ struct ikc_scd_packet {
 			enum mcctrl_os_cpu_operation op;
 			void *resp;
 		};
+
+		/* SCD_MSG_EVENTFD */
+		struct {
+			int eventfd_type;
+		};
 	};
 	char padding[12];
 };
@@ -408,6 +413,8 @@ inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(
 void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet, 
 		long ret, int stid);
 
+int mcctrl_os_alive(void);
+
 #define PROCFS_NAME_MAX 768
 
 struct procfs_read {
@@ -486,6 +493,11 @@ struct ihk_perf_event_attr{
 	unsigned exclude_kernel:1;
 	unsigned exclude_hv:1;
 	unsigned exclude_idle:1;
+};
+
+struct mcctrl_ioctl_getrusage_desc {
+	void* rusage;
+	size_t size_rusage;
 };
 
 #endif

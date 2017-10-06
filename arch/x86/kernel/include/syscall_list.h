@@ -69,6 +69,7 @@ SYSCALL_DELEGATED(69, msgsnd)
 SYSCALL_DELEGATED(70, msgrcv)
 SYSCALL_HANDLED(72, fcntl)
 SYSCALL_DELEGATED(79, getcwd)
+SYSCALL_DELEGATED(87, unlink)
 SYSCALL_DELEGATED(89, readlink)
 SYSCALL_HANDLED(96, gettimeofday)
 SYSCALL_HANDLED(97, getrlimit)
@@ -163,4 +164,10 @@ SYSCALL_HANDLED(730, util_migrate_inter_kernel)
 SYSCALL_HANDLED(731, util_indicate_clone)
 SYSCALL_HANDLED(732, get_system)
 
+/* McKernel Specific */
+SYSCALL_HANDLED(801, swapout)
+SYSCALL_HANDLED(802, linux_mlock)
+SYSCALL_HANDLED(803, suspend_threads)
+SYSCALL_HANDLED(804, resume_threads)
+SYSCALL_HANDLED(811, linux_spawn)
 /**** End of File ****/

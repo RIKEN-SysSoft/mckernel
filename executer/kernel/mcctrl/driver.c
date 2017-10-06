@@ -44,6 +44,7 @@ extern void procfs_exit(int);
 
 extern void rus_page_hash_init(void);
 extern void rus_page_hash_put_pages(void);
+extern void uti_attr_finalize(void);
 extern void binfmt_mcexec_init(void);
 extern void binfmt_mcexec_exit(void);
 
@@ -88,15 +89,15 @@ static struct ihk_os_user_call_handler mcctrl_uchs[] = {
 	{ .request = MCEXEC_UP_SYSCALL_THREAD, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_TERMINATE_THREAD, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_GET_NUM_POOL_THREADS, .func = mcctrl_ioctl },
+	{ .request = MCEXEC_UP_UTI_ATTR, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_DEBUG_LOG, .func = mcctrl_ioctl },
-	{ .request = MCEXEC_UP_COPY_FROM_MCK, .func = mcctrl_ioctl },
-	{ .request = MCEXEC_UP_COPY_TO_MCK, .func = mcctrl_ioctl },
 	{ .request = IHK_OS_AUX_PERF_NUM, .func = mcctrl_ioctl },
 	{ .request = IHK_OS_AUX_PERF_SET, .func = mcctrl_ioctl },
 	{ .request = IHK_OS_AUX_PERF_GET, .func = mcctrl_ioctl },
 	{ .request = IHK_OS_AUX_PERF_ENABLE, .func = mcctrl_ioctl },
 	{ .request = IHK_OS_AUX_PERF_DISABLE, .func = mcctrl_ioctl },
 	{ .request = IHK_OS_AUX_PERF_DESTROY, .func = mcctrl_ioctl },
+	{ .request = IHK_OS_GETRUSAGE, .func = mcctrl_ioctl },
 };
 
 static struct ihk_os_kernel_call_handler mcctrl_kernel_handlers = {
@@ -185,6 +186,16 @@ int mcctrl_os_shutdown_notifier(int os_index)
 	return 0;
 }
 
+int mcctrl_os_alive()
+{
+	int i;
+
+	for (i = 0; i < OS_MAX_MINOR; i++)
+		if (os[i])
+			return i;
+	return -1;
+}
+
 static struct ihk_os_notifier_ops mcctrl_os_notifier_ops = {
 	.boot = mcctrl_os_boot_notifier,
 	.shutdown = mcctrl_os_shutdown_notifier,
@@ -234,6 +245,7 @@ static void __exit mcctrl_exit(void)
 
 	binfmt_mcexec_exit();
 	rus_page_hash_put_pages();
+	uti_attr_finalize();
 
 	printk("mcctrl: unregistered.\n");
 }

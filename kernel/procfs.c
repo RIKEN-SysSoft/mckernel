@@ -40,8 +40,6 @@ extern int sprintf(char * buf, const char *fmt, ...);
 extern int sscanf(const char * buf, const char * fmt, ...);
 extern int scnprintf(char * buf, size_t size, const char *fmt, ...);
 
-extern int osnum;
-
 static void
 procfs_thread_ctl(struct thread *thread, int msg)
 {
@@ -52,7 +50,7 @@ procfs_thread_ctl(struct thread *thread, int msg)
 	memset(&packet, '\0', sizeof packet);
 	packet.arg = thread->tid;
 	packet.msg = msg;
-	packet.osnum = osnum;
+	packet.osnum = ihk_mc_get_osnum();
 	packet.ref = thread->cpu_id;
 	packet.pid = thread->proc->pid;
 	packet.err = 0;
@@ -86,6 +84,7 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 	struct process_vm *vm = NULL;
 	struct procfs_read *r;
 	struct ikc_scd_packet packet;
+	int osnum = ihk_mc_get_osnum();
 	int rosnum, ret, pid, tid, ans = -EIO, eof = 0;
 	char *buf, *p;
 	struct ihk_ikc_channel_desc *syscall_channel;
@@ -471,6 +470,7 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 		int bitmasks_offset = 0;
 		char *cpu_bitmask, *cpu_list, *numa_bitmask, *numa_list;
 		int len;
+		char *state;
 
 		tmp = kmalloc(8192, IHK_MC_AP_CRITICAL);
 		if (!tmp) {
@@ -520,9 +520,17 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 				proc->vm->numa_mask, PROCESS_NUMA_MASK_BITS);
 		bitmasks_offset++;
 
+		state = "R (running)";
+		if (proc->status == PS_STOPPED)
+			state = "T (stopped)";
+		else if (proc->status == PS_TRACED)
+			state = "T (tracing stop)";
+		else if (proc->status == PS_EXITED)
+			state = "Z (zombie)";
 		sprintf(tmp,
 		        "Uid:\t%d\t%d\t%d\t%d\n"
 		        "Gid:\t%d\t%d\t%d\t%d\n"
+			"State:\t%s\n"
 		        "VmLck:\t%9lu kB\n"
 				"Cpus_allowed:\t%s\n"
 				"Cpus_allowed_list:\t%s\n"
@@ -530,6 +538,7 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 				"Mems_allowed_list:\t%s\n",
 		        proc->ruid, proc->euid, proc->suid, proc->fsuid,
 		        proc->rgid, proc->egid, proc->sgid, proc->fsgid,
+			state,
 		        (lockedsize + 1023) >> 10,
 				cpu_bitmask, cpu_list, numa_bitmask, numa_list);
 		len = strlen(tmp);

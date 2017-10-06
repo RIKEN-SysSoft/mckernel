@@ -28,6 +28,7 @@
 #include <arch-perfctr.h>
 #include <bitops-fls.h>
 #include <debug-monitors.h>
+#include <sysreg.h>
 #include <xos_sys_common.h>
 #include <xos_hpcdrv.h>
 #include <xos_hwbdrv.h>
@@ -48,6 +49,9 @@
 #define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
 #define ekprintf kprintf
 #endif
+
+#define BUG_ON(condition) do { if (condition) { kprintf("PANIC: %s: %s(line:%d)\n",\
+				__FILE__, __FUNCTION__, __LINE__); panic(""); } } while(0)
 
 struct cpuinfo_arm64 cpuinfo_data[NR_CPUS];	/* index is logical cpuid */
 static unsigned int per_cpu_timer_val[NR_CPUS] = { 0 };
@@ -253,6 +257,7 @@ static void multi_nm_interrupt_handler(void *priv)
 	}
 
 	clv->arm64_cpu_local_thread.paniced = 1;
+	ihk_mc_query_mem_areas();
 
 	while(1)
 	{
@@ -302,11 +307,23 @@ static void __cpuinfo_store_cpu(struct cpuinfo_arm64 *info)
 	info->reg_id_aa64mmfr2 = read_cpuid(ID_AA64MMFR2_EL1);
 	info->reg_id_aa64pfr0 = read_cpuid(ID_AA64PFR0_EL1);
 	info->reg_id_aa64pfr1 = read_cpuid(ID_AA64PFR1_EL1);
+	info->reg_id_aa64zfr0 = read_cpuid(ID_AA64ZFR0_EL1);
 
 	/* Update the 32bit ID registers only if AArch32 is implemented */
 //	if (id_aa64pfr0_32bit_el0(info->reg_id_aa64pfr0)) {
 //		panic("AArch32 is not supported.");
 //	}
+
+	if (id_aa64pfr0_sve(info->reg_id_aa64pfr0)) {
+		uint64_t zcr;
+
+		write_sysreg_s(ZCR_EL1_LEN_MASK, SYS_ZCR_EL1);
+		zcr = read_sysreg_s(SYS_ZCR_EL1);
+		zcr &= ~(uint64_t)ZCR_EL1_LEN_MASK;
+		zcr |= sve_get_vl() / 16 - 1;
+
+		info->reg_zcr = zcr;
+	}
 }
 
 /* @ref.impl arch/arm64/kernel/cpuinfo.c */
@@ -1051,6 +1068,8 @@ void ihk_mc_boot_cpu(int cpuid, unsigned long pc)
 	if (ncpus - 1 <= num_processors) {
 		setup_cpu_features();
 	}
+
+	init_sve_vl();
 }
 
 /* for ihk_mc_init_context() */
@@ -1097,7 +1116,13 @@ void ihk_mc_init_context(ihk_mc_kernel_context_t *new_ctx,
 	} else {
 		/* for user thread, kernel stack */
 		/* save logical cpuid (for execve) */
-		int lcpuid = ihk_mc_get_processor_id();
+		const int lcpuid = ihk_mc_get_processor_id();
+		const unsigned long syscallno = current_pt_regs()->syscallno;
+#ifdef CONFIG_ARM64_SVE
+		const uint16_t orig_sve_vl = current_thread_info()->sve_vl;
+		const uint16_t orig_sve_vl_onexec = current_thread_info()->sve_vl_onexec;
+		const uint16_t orig_sve_flags = current_thread_info()->sve_flags;
+#endif /* CONFIG_ARM64_SVE */
 
 		/* get kernel stack address */
 		sp = (unsigned long)stack_pointer;
@@ -1127,6 +1152,28 @@ void ihk_mc_init_context(ihk_mc_kernel_context_t *new_ctx,
 		new_uctx->regs[0] = 0;
 		new_uctx->pc = (unsigned long)next_function;
 		new_uctx->pstate = (new_uctx->pstate & ~PSR_MODE_MASK) | PSR_MODE_EL0t;
+
+#ifdef CONFIG_ARM64_SVE
+		/* SVE-VL inherit */
+		if (likely(elf_hwcap & HWCAP_SVE)) {
+			new_ctx->thread->sve_vl_onexec = orig_sve_vl_onexec;
+			new_ctx->thread->sve_flags = orig_sve_flags;
+
+			if (syscallno == __NR_execve) {
+				new_ctx->thread->sve_vl = orig_sve_vl_onexec ?
+					orig_sve_vl_onexec : sve_default_vl;
+
+				BUG_ON(!sve_vl_valid(new_ctx->thread->sve_vl));
+
+				if (!(new_ctx->thread->sve_flags & THREAD_VL_INHERIT)) {
+					new_ctx->thread->sve_vl_onexec = 0;
+				}
+			} else {
+				new_ctx->thread->sve_vl = orig_sve_vl ?
+					orig_sve_vl : sve_default_vl;
+			}
+		}
+#endif /* CONFIG_ARM64_SVE */
 	}
 }
 
@@ -1213,6 +1260,7 @@ static const char *const hwcap_str[] = {
 	"asimdhp",
 	"cpuid",
 	"asimdrdm",
+	"sve",
 	NULL
 };
 
@@ -1308,6 +1356,15 @@ void arch_clone_thread(struct thread *othread, unsigned long pc,
 	save_fp_regs(othread);
 	if ((othread->fp_regs != NULL) && (check_and_allocate_fp_regs(nthread) == 0)) {
 		memcpy(nthread->fp_regs, othread->fp_regs, sizeof(fp_regs_struct));
+	}
+
+	/* if SVE enable, takeover lower 128 bit register */
+	if (likely(elf_hwcap & HWCAP_SVE)) {
+		fp_regs_struct fp_regs;
+
+		memset(&fp_regs, 0, sizeof(fp_regs_struct));
+		fpsimd_save_state(&fp_regs);
+		thread_fpsimd_to_sve(nthread, &fp_regs);
 	}
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_23 */
@@ -1487,15 +1544,26 @@ struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 void
 release_fp_regs(struct thread *thread)
 {
-	int	pages;
-
-	if (thread && !thread->fp_regs)
+	if (!thread) {
 		return;
+	}
 
-	// calcurate number of pages for fp regs area
-	pages = (sizeof(fp_regs_struct) + PAGE_SIZE -1) >> PAGE_SHIFT;
-	ihk_mc_free_pages(thread->fp_regs, pages);
-	thread->fp_regs = NULL;
+	if (likely(elf_hwcap & (HWCAP_FP | HWCAP_ASIMD))) {
+		int pages;
+
+		if (thread->fp_regs) {
+			// calcurate number of pages for fp regs area
+			pages = (sizeof(fp_regs_struct) + PAGE_SIZE -1) >> PAGE_SHIFT;
+			ihk_mc_free_pages(thread->fp_regs, pages);
+			thread->fp_regs = NULL;
+		}
+
+#ifdef CONFIG_ARM64_SVE
+		if (likely(elf_hwcap & HWCAP_SVE)) {
+			sve_free(thread);
+		}
+#endif /* CONFIG_ARM64_SVE */
+	}
 }
 
 static int
@@ -1518,6 +1586,11 @@ check_and_allocate_fp_regs(struct thread *thread)
 		memset(thread->fp_regs, 0, sizeof(fp_regs_struct));
 	}
 
+#ifdef CONFIG_ARM64_SVE
+	if (likely(elf_hwcap & HWCAP_SVE)) {
+		sve_alloc(thread);
+	}
+#endif /* CONFIG_ARM64_SVE */
 out:
 	return result;
 }
@@ -1528,15 +1601,40 @@ out:
 void
 save_fp_regs(struct thread *thread)
 {
-	if(check_and_allocate_fp_regs(thread) != 0) {
-		// alloc error.
-		return;
-	}
-
 	if (likely(elf_hwcap & (HWCAP_FP | HWCAP_ASIMD))) {
-		// Save the current FPSIMD state to memory.
-		fpsimd_save_state(thread->fp_regs);
-		dkprintf("fp_regs for TID %d saved\n", thread->tid);
+		if (check_and_allocate_fp_regs(thread) != 0) {
+			// alloc error.
+			return;
+		}
+		thread_fpsimd_save(thread);
+	}
+}
+
+void
+clear_fp_regs(struct thread *thread)
+{
+	if (likely(elf_hwcap & (HWCAP_FP | HWCAP_ASIMD))) {
+#ifdef CONFIG_ARM64_SVE
+		if (likely(elf_hwcap & HWCAP_SVE)) {
+			unsigned int fpscr[2] = { 0, 0 };
+			unsigned int vl = current_thread_info()->sve_vl;
+			struct fpsimd_sve_state(sve_vq_from_vl(sve_max_vl)) clear_sve;
+
+			if (vl == 0) {
+				vl = sve_default_vl;
+			}
+			memset(&clear_sve, 0, sizeof(clear_sve));
+			sve_load_state(clear_sve.ffr, fpscr, sve_vq_from_vl(vl) - 1);
+		} else {
+			fp_regs_struct clear_fp;
+			memset(&clear_fp, 0, sizeof(fp_regs_struct));
+			fpsimd_load_state(&clear_fp);
+		}
+#else /* CONFIG_ARM64_SVE */
+		fp_regs_struct clear_fp;
+		memset(&clear_fp, 0, sizeof(fp_regs_struct));
+		fpsimd_load_state(&clear_fp);
+#endif /* CONFIG_ARM64_SVE */
 	}
 }
 
@@ -1547,19 +1645,13 @@ save_fp_regs(struct thread *thread)
 void
 restore_fp_regs(struct thread *thread)
 {
-	if (!thread->fp_regs) {
-		// only clear fpregs.
-		fp_regs_struct clear_fp;
-		memset(&clear_fp, 0, sizeof(fp_regs_struct));
-		fpsimd_load_state(&clear_fp);
-
-		return;
-	}
-
 	if (likely(elf_hwcap & (HWCAP_FP | HWCAP_ASIMD))) {
-		// Load the current FPSIMD state to memory.
-		fpsimd_load_state(thread->fp_regs);
-		dkprintf("fp_regs for TID %d restored\n", thread->tid);
+		if (!thread->fp_regs) {
+			// only clear fpregs.
+			clear_fp_regs(thread);
+			return;
+		}
+		thread_fpsimd_load(thread);
 	}
 }
 

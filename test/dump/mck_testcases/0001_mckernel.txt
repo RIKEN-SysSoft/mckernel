@@ -1,0 +1,5 @@
+MCRBT_OPT="-m 32M@0"
+USR_PROC="mcexec_test_proc/test_pt_1kb_1time"
+OS_IDX=0
+DUMP_OPT=""
+DUMP_FILE=""

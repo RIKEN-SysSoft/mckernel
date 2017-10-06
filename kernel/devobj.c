@@ -35,6 +35,7 @@
 #include <string.h>
 #include <syscall.h>
 #include <process.h>
+#include <rusage_private.h>
 
 //#define DEBUG_PRINT_DEVOBJ
 
@@ -207,6 +208,7 @@ static void devobj_release(struct memobj *memobj)
 		}
 
 		if (obj->pfn_table) {
+			// Don't call memory_stat_rss_sub() because devobj related pages don't reside in main memory
 #ifdef POSTK_DEBUG_TEMP_FIX_36
 			const size_t uintptr_per_page = (PAGE_SIZE / sizeof(uintptr_t));
 			const size_t pfn_npages = (obj->npages + uintptr_per_page - 1) / uintptr_per_page;
@@ -286,6 +288,7 @@ static int devobj_get_page(struct memobj *memobj, off_t off, int p2align, uintpt
 
 		memobj_lock(&obj->memobj);
 		obj->pfn_table[ix] = pfn;
+		// Don't call memory_stat_rss_add() because devobj related pages don't reside in main memory
 	}
 	memobj_unlock(&obj->memobj);
 

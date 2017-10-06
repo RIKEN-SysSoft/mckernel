@@ -56,7 +56,8 @@
 #include <bitops.h>
 #include <bitmap.h>
 #include <xpmem.h>
-#include <rusage.h>
+#include <rusage_private.h>
+#include <ihk/monitor.h>
 #include <profile.h>
 #ifdef POSTK_DEBUG_ARCH_DEP_27
 #include <memory.h>
@@ -192,8 +193,12 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	int mstatus = 0;
 
 #ifdef PROFILE_ENABLE
-	uint64_t t_s;
-	t_s = rdtsc();
+	/* We cannot use thread->profile_start_ts here because the
+	 * caller may be utilizing it already */
+	unsigned long t_s = 0;
+	if (thread->profile) {
+		t_s = rdtsc();
+	}
 #endif // PROFILE_ENABLE
 #ifdef POSTK_DEBUG_TEMP_FIX_26 /* do_syscall arg pid is not targetpid */
 	int target_pid = pid;
@@ -300,7 +305,8 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 				ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
 			v = get_this_cpu_local_var();
 
-			if (v->flags & CPU_FLAG_NEED_RESCHED) {
+			if (v->flags & CPU_FLAG_NEED_RESCHED ||
+			    req->number == __NR_sched_setaffinity) {
 				do_schedule = 1;
 			}
 
@@ -331,8 +337,18 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		}
 
 		if (res.status == STATUS_PAGE_FAULT) {
+#ifdef PROFILE_ENABLE
+			/* We cannot use thread->profile_start_ts here because the
+			 * caller may be utilizing it already */
+			unsigned long t_s = 0;
+			if (thread->profile) {
+				t_s = rdtsc();
+			}
+#endif // PROFILE_ENABLE
+
 			dkprintf("STATUS_PAGE_FAULT in syscall, pid: %d\n", 
 					cpu_local_var(current)->proc->pid);
+			dkprintf("remote page fault,va=%lx,reason=%x\n", res.fault_address, res.fault_reason|PF_POPULATE);
 			error = page_fault_process_vm(thread->vm,
 					(void *)res.fault_address,
 					res.fault_reason|PF_POPULATE);
@@ -353,6 +369,10 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 #else /* POSTK_DEBUG_TEMP_FIX_26 */
 			send_syscall(&req2, cpu, pid, &res);
 #endif /* POSTK_DEBUG_TEMP_FIX_26 */
+#ifdef PROFILE_ENABLE
+			profile_event_add(PROFILE_remote_page_fault,
+					(rdtsc() - t_s));
+#endif // PROFILE_ENABLE
 		}
 
 		if (res.status == STATUS_SYACALL) {
@@ -861,8 +881,7 @@ SYSCALL_DECLARE(waitid)
 	return 0;
 }
 
-void
-terminate(int rc, int sig)
+void terminate(int rc, int sig)
 {
 	struct resource_set *resource_set = cpu_local_var(resource_set);
 	struct thread *mythread = cpu_local_var(current);
@@ -883,12 +902,13 @@ terminate(int rc, int sig)
 	int exit_status;
 
 	// sync perf info
-	if(proc->monitoring_event)
+	if (proc->monitoring_event)
 		sync_child_event(proc->monitoring_event);
+
 	// clean up threads
 	mcs_rwlock_reader_lock(&proc->threads_lock, &lock); // conflict clone
 	mcs_rwlock_writer_lock_noirq(&proc->update_lock, &updatelock);
-	if(proc->status == PS_EXITED){
+	if (proc->status == PS_EXITED) {
 		mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
 		mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 		preempt_disable();
@@ -899,6 +919,7 @@ terminate(int rc, int sig)
 		// no return
 		return;
 	}
+
 	exit_status = mythread->exit_status = ((rc & 0x00ff) << 8) | (sig & 0xff);
 	proc->status = PS_EXITED;
 	mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
@@ -913,12 +934,13 @@ terminate(int rc, int sig)
 	list_for_each_entry(thread, &proc->threads_list, siblings_list) {
 		n++;
 	}
-	if(n){
+
+	if (n) {
 		ids = kmalloc(sizeof(int) * n, IHK_MC_AP_NOWAIT);
 		i = 0;
-		if(ids){
+		if (ids) {
 			list_for_each_entry(thread, &proc->threads_list, siblings_list) {
-				if(thread != mythread){
+				if (thread != mythread) {
 					ids[i] = thread->tid;
 					i++;
 				}
@@ -926,17 +948,18 @@ terminate(int rc, int sig)
 		}
 	}
 	mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
-	if(ids){
-		for(i = 0; i < n; i++){
+
+	if (ids) {
+		for (i = 0; i < n; i++) {
 			do_kill(mythread, proc->pid, ids[i], SIGKILL, NULL, 0);
 		}
 		kfree(ids);
 		ids = NULL;
 	}
 
-	for(;;){
+	for (;;) {
 		__mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
-		if(list_empty(&proc->threads_list)){
+		if (list_empty(&proc->threads_list)) {
 			mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 			break;
 		}
@@ -959,15 +982,17 @@ terminate(int rc, int sig)
 	n = 0;
 	mcs_rwlock_reader_lock(&proc->children_lock, &lock);
 	list_for_each_entry(child, &proc->children_list, siblings_list) {
-		if(child->ptrace & PT_TRACED)
+		if (child->ptrace & PT_TRACED)
 			n++;
 	}
-	if(n){
+
+	if (n) {
 		ids = kmalloc(sizeof(int) * n, IHK_MC_AP_NOWAIT);
 		i = 0;
-		if(ids){
+
+		if (ids) {
 			list_for_each_entry(child, &proc->children_list, siblings_list) {
-				if(child->ptrace & PT_TRACED){
+				if (child->ptrace & PT_TRACED) {
 					ids[i] = child->pid;
 					i++;
 				}
@@ -975,37 +1000,40 @@ terminate(int rc, int sig)
 		}
 	}
 	mcs_rwlock_reader_unlock(&proc->children_lock, &lock);
-	if(ids){
-		for(i = 0; i < n; i++){
+
+	if (ids) {
+		for (i = 0; i < n; i++) {
 			ptrace_detach(ids[i], 0);
 		}
 		kfree(ids);
+		ids = NULL;
 	}
 
 	if (!list_empty(&proc->children_list)) {
 		// clean up children
-		for(i = 0; i < HASH_SIZE; i++){
+		for (i = 0; i < HASH_SIZE; i++) {
 			mcs_rwlock_writer_lock(&resource_set->process_hash->lock[i],
 					&lock);
 			list_for_each_entry_safe(child, next,
 					&resource_set->process_hash->list[i],
-					hash_list){
+					hash_list) {
 				int free_child = 0;
 				mcs_rwlock_writer_lock_noirq(&child->update_lock,
 						&updatelock);
-				if(child->ppid_parent == proc &&
-						child->status == PS_ZOMBIE){
+
+				if (child->ppid_parent == proc &&
+						child->status == PS_ZOMBIE) {
 					list_del(&child->hash_list);
 					list_del(&child->siblings_list);
 					free_child = 1;
 				}
-				else if(child->ppid_parent == proc){
+				else if (child->ppid_parent == proc) {
 					mcs_rwlock_writer_lock_noirq(&proc->children_lock,
 							&childlock);
 					mcs_rwlock_writer_lock_noirq(&pid1->children_lock,
 							&childlock1);
 					child->ppid_parent = pid1;
-					if(child->parent == proc){
+					if (child->parent == proc) {
 						child->parent = pid1;
 						list_del(&child->siblings_list);
 						list_add_tail(&child->siblings_list,
@@ -1021,8 +1049,10 @@ terminate(int rc, int sig)
 					mcs_rwlock_writer_unlock_noirq(&proc->children_lock,
 							&childlock);
 				}
+
 				mcs_rwlock_writer_unlock_noirq(&child->update_lock,
 						&updatelock);
+
 				if (free_child)
 					kfree(child);
 			}
@@ -1038,7 +1068,7 @@ terminate(int rc, int sig)
 #endif
 
 	// clean up memory
-	if(!proc->nohost){
+	if (!proc->nohost) {
 		request.number = __NR_exit_group;
 		request.args[0] = exit_status;
 #ifdef POSTK_DEBUG_TEMP_FIX_48 /* nohost flag missed fix */
@@ -1109,8 +1139,7 @@ terminate_host(int pid)
 	do_kill(cpu_local_var(current), pid, -1, SIGKILL, NULL, 0);
 }
 
-void 
-eventfd()
+void eventfd(int type)
 {
 	struct ihk_ikc_channel_desc *syscall_channel;
 	struct ikc_scd_packet pckt;
@@ -1118,6 +1147,7 @@ eventfd()
 	syscall_channel = get_cpu_local_var(0)->ikc2linux;
 	memset(&pckt, '\0', sizeof pckt);
 	pckt.msg = SCD_MSG_EVENTFD;
+	pckt.eventfd_type = type;
 	ihk_ikc_send(syscall_channel, &pckt, 0);
 }
 
@@ -1345,19 +1375,11 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	else {
 		/* choose mapping address */
 #ifdef POSTK_DEBUG_ARCH_DEP_27
-#ifdef POSTK_DEBUG_ARCH_DEP_61
-		error = search_free_space(cpu_local_var(current), len,
-					  region->map_end + (fd > 0) ? ((USER_END-TASK_UNMAPPED_BASE)/2) : 0,
-					  PAGE_SHIFT+p2align, &addr);
+		error = search_free_space(cpu_local_var(current), len, region->map_end,
+					  PAGE_SHIFT + p2align, &addr);
 #else
-		error = search_free_space(cpu_local_var(current), len,
-					  region->map_end + (fd > 0) ? PTL4_SIZE : 0,
-					  PAGE_SHIFT+p2align, &addr);
-#endif  /* POSTK_DEBUG_ARCH_DEP_61 */
-#else
-		error = search_free_space(len, region->map_end +
-				(fd > 0) ? PTL4_SIZE : 0,
-				PAGE_SHIFT+p2align, &addr);
+		error = search_free_space(len, region->map_end,
+				PAGE_SHIFT + p2align, &addr);
 #endif	/* POSTK_DEBUG_ARCH_DEP_27 */
 		if (error) {
 			ekprintf("do_mmap:search_free_space(%lx,%lx,%d) failed. %d\n",
@@ -1501,6 +1523,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		}
 	}
 	else if (flags & MAP_SHARED) {
+		dkprintf("%s: MAP_SHARED,flags=%x,len=%ld\n", __FUNCTION__, flags, len);
 		memset(&ads, 0, sizeof(ads));
 		ads.shm_segsz = len;
 		ads.shm_perm.mode = SHM_DEST;
@@ -1512,6 +1535,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		}
 	}
 	else {
+		dkprintf("%s: anon&demand-paging\n", __FUNCTION__);
 		error = zeroobj_create(&memobj);
 		if (error) {
 			ekprintf("do_mmap:zeroobj_create failed. %d\n", error);
@@ -1561,19 +1585,21 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 
 			for (i = 0; i < memobj->nr_pages; ++i) {
 				error = ihk_mc_pt_set_range(proc->vm->address_space->page_table,
-						proc->vm,
-						(void *)range->start + (i * PAGE_SIZE),
-						(void *)range->start + (i * PAGE_SIZE) +
-						PAGE_SIZE,
-						virt_to_phys(memobj->pages[i]),
-						ptattr,
-						PAGE_SHIFT);
+											proc->vm,
+											(void *)range->start + (i * PAGE_SIZE),
+											(void *)range->start + (i * PAGE_SIZE) +
+											PAGE_SIZE,
+											virt_to_phys(memobj->pages[i]),
+											ptattr,
+											PAGE_SHIFT,
+											range);
 				if (error) {
 					kprintf("%s: ERROR: mapping %d page of pre-mapped file\n",
 							__FUNCTION__, i);
 				}
 			}
 			dkprintf("%s: memobj 0x%lx pre-mapped\n", __FUNCTION__, memobj);
+			// 	fileobj && MF_PREMAP && MPOL_SHM_PREMAP case: memory_stat_rss_add() is called in fileobj_create()
 		}
 /*
 		else if (memobj->flags & MF_REG_FILE) {
@@ -1857,8 +1883,6 @@ SYSCALL_DECLARE(brk)
 		extend_process_region(cpu_local_var(current)->vm,
 				region->brk_end_allocated, address, vrflag);
 	ihk_mc_spinlock_unlock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
-	dkprintf("SC(%d)[sys_brk] brk_end set to %lx\n",
-			ihk_mc_get_processor_id(), region->brk_end);
 
 	if (old_brk_end_allocated == region->brk_end_allocated) {
 		r = old_brk_end_allocated;
@@ -1867,6 +1891,8 @@ SYSCALL_DECLARE(brk)
 
 	region->brk_end = address;
 	r = region->brk_end;
+	dkprintf("SC(%d)[sys_brk] brk_end set to %lx\n",
+			ihk_mc_get_processor_id(), region->brk_end);
 
 out:
 	return r;
@@ -2082,8 +2108,7 @@ static void munmap_all(void)
 } /* munmap_all() */
 
 #ifdef POSTK_DEBUG_TEMP_FIX_19
-extern void save_fp_regs(struct thread *proc);
-extern void restore_fp_regs(struct thread *proc);
+extern void clear_fp_regs(struct thread *thread);
 #endif /* POSTK_DEBUG_TEMP_FIX_19 */
 
 SYSCALL_DECLARE(execve)
@@ -2241,11 +2266,7 @@ SYSCALL_DECLARE(execve)
 
 #ifdef POSTK_DEBUG_TEMP_FIX_19
 	/* The floating-point environment is reset to the default. */
-	save_fp_regs(thread);
-	if(thread->fp_regs) {
-		memset(thread->fp_regs, 0, sizeof(fp_regs_struct));
-		restore_fp_regs(thread);
-	}
+	clear_fp_regs(thread);
 #endif /* POSTK_DEBUG_TEMP_FIX_19 */
 
 	error = ptrace_report_exec(cpu_local_var(current));
@@ -2523,6 +2544,13 @@ retry_tid:
 	new->status = PS_RUNNING;
 	if (old->mod_clone == SPAWN_TO_REMOTE) {
 		new->mod_clone = SPAWNING_TO_REMOTE;
+		if (old->mod_clone_arg) {
+			new->mod_clone_arg = kmalloc(sizeof(struct uti_attr),
+			                             IHK_MC_AP_NOWAIT);
+			if (new->mod_clone_arg)
+				memcpy(new->mod_clone_arg, old->mod_clone_arg,
+				       sizeof(struct uti_attr));
+		}
 	}
 	chain_thread(new);
 	if (!(clone_flags & CLONE_VM)) {
@@ -3085,7 +3113,7 @@ SYSCALL_DECLARE(ioctl)
 	ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
 
 	if(fdp && fdp->ioctl_cb){
-//kprintf("ioctl: found system fd %d\n", fd);
+		//kprintf("ioctl: found system fd %d\n", fd);
 		rc = fdp->ioctl_cb(fdp, ctx);
 	}
 	else{
@@ -5562,10 +5590,10 @@ SYSCALL_DECLARE(getrusage)
 		list_for_each_entry(child, &proc->threads_list, siblings_list){
 			while(!child->times_update)
 				cpu_pause();
-				tsc_to_ts(child->user_tsc, &ats);
-				ts_add(&utime, &ats);
-				tsc_to_ts(child->system_tsc, &ats);
-				ts_add(&stime, &ats);
+			tsc_to_ts(child->user_tsc, &ats);
+			ts_add(&utime, &ats);
+			tsc_to_ts(child->system_tsc, &ats);
+			ts_add(&stime, &ats);
 		}
 		mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &lock);
 		ts_to_tv(&kusage.ru_utime, &utime);
@@ -6981,8 +7009,8 @@ SYSCALL_DECLARE(clock_gettime)
 			struct timespec wts;
 			while(!child->times_update)
 				cpu_pause();
-				tsc_to_ts(child->user_tsc + child->system_tsc, &wts);
-				ts_add(&ats, &wts);	
+			tsc_to_ts(child->user_tsc + child->system_tsc, &wts);
+			ts_add(&ats, &wts);
 		}
 		mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &lock);
 		return copy_to_user(ts, &ats, sizeof ats);
@@ -7794,8 +7822,8 @@ SYSCALL_DECLARE(mremap)
 			size = (oldsize < newsize)? oldsize: newsize;
 			ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 			error = move_pte_range(vm->address_space->page_table, vm,
-					(void *)oldstart, (void *)newstart,
-					size);
+								   (void *)oldstart, (void *)newstart,
+								   size, range);
 			ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 			if (error) {
 				ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
@@ -9669,6 +9697,102 @@ SYSCALL_DECLARE(get_system)
 	return 0;
 }
 
+/*
+ * swapoout(const char *filename, void *workarea, size_t size)
+ */
+SYSCALL_DECLARE(swapout)
+{
+	extern int do_pageout(const char*, void*, size_t, int);
+	extern int do_pagein(int);
+	char	*fname = (char *)ihk_mc_syscall_arg0(ctx);
+	char	*buf = (char *)ihk_mc_syscall_arg1(ctx);
+	size_t	size = (size_t)ihk_mc_syscall_arg2(ctx);
+	int	flag = (int)ihk_mc_syscall_arg3(ctx);
+	ihk_mc_user_context_t ctx0;
+	int	cc;
+
+	dkprintf("[%d]swapout(%lx,%lx,%lx,%ld)\n",
+		 ihk_mc_get_processor_id(), fname, buf, size, flag);
+
+	if (fname == NULL || flag == 0x01) { /* for development purupse */
+		kprintf("swapout: skipping real swap\n");
+		cc = syscall_generic_forwarding(__NR_swapout, &ctx0);
+		kprintf("swapout: return from Linux\n");
+		return cc;
+	}
+	/* pageout */
+	cc = do_pageout(fname, buf, size, flag);
+	if (cc < 0) return cc;
+	if (flag == 0x02) {
+		kprintf("swapout: skipping calling swapout in Linux\n");
+	} else {
+		kprintf("swapout: before calling swapout in Linux\n");
+		cc = syscall_generic_forwarding(__NR_swapout, &ctx0);
+		kprintf("swapout: after calling swapout in Linux cc(%d)\n", cc);
+	}
+	/* Though swapout in Linux side returns error, needs to call
+	 * pagein to recover the image */
+	cc = do_pagein(flag);
+	kprintf("swapout: after calling do_pagein cc(%d)\n", cc);
+	return cc;
+}
+
+SYSCALL_DECLARE(linux_mlock)
+{
+	ihk_mc_user_context_t ctx0;
+	const uintptr_t addr = ihk_mc_syscall_arg0(ctx);
+	const size_t len = ihk_mc_syscall_arg1(ctx);
+	int		cc;
+
+	kprintf("linux_mlock: %p %ld\n", (void*) addr, len);
+	ihk_mc_syscall_arg0(&ctx0) = addr;
+	ihk_mc_syscall_arg1(&ctx0) = len;
+	cc = syscall_generic_forwarding(802, &ctx0);
+	return cc;
+}
+
+SYSCALL_DECLARE(linux_spawn)
+{
+	int rc;
+
+	rc = syscall_generic_forwarding(__NR_linux_spawn, ctx);
+	return rc;
+}
+
+SYSCALL_DECLARE(suspend_threads)
+{
+	struct thread *mythread = cpu_local_var(current);
+	struct thread *thread;
+	struct process *proc = mythread->proc;
+
+	list_for_each_entry(thread, &proc->threads_list, siblings_list) {
+		if (thread == mythread)
+			continue;
+		do_kill(mythread, proc->pid, thread->tid, SIGSTOP, NULL, 0);
+	}
+	list_for_each_entry(thread, &proc->threads_list, siblings_list) {
+		if (thread == mythread)
+			continue;
+		while (thread->status != PS_STOPPED)
+			cpu_pause();
+	}
+	return 0;
+}
+
+SYSCALL_DECLARE(resume_threads)
+{
+	struct thread *mythread = cpu_local_var(current);
+	struct thread *thread;
+	struct process *proc = mythread->proc;
+
+	list_for_each_entry(thread, &proc->threads_list, siblings_list) {
+		if (thread == mythread)
+			continue;
+		do_kill(mythread, proc->pid, thread->tid, SIGCONT, NULL, 0);
+	}
+	return 0;
+}
+
 void
 reset_cputime()
 {
@@ -9726,13 +9850,13 @@ set_cputime(int mode)
 		tsc_to_ts(dtsc, &dts);
 		if(mode == 1){
 			thread->user_tsc += dtsc;
-			monitor->user_tsc += dtsc;
+			v->rusage->user_tsc += dtsc;
 			ts_add(&thread->itimer_virtual_value, &dts);
 			ts_add(&thread->itimer_prof_value, &dts);
 		}
 		else{
 			thread->system_tsc += dtsc;
-			monitor->system_tsc += dtsc;
+			v->rusage->system_tsc += dtsc;
 			ts_add(&thread->itimer_prof_value, &dts);
 		}
 	}
@@ -9896,7 +10020,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 #endif /* POSTK_DEBUG_TEMP_FIX_60 && POSTK_DEBUG_TEMP_FIX_56 */
 
 #ifdef PROFILE_ENABLE
-	if (thread->profile) {
+	{
 		unsigned long ts = rdtsc();
 
 		/*

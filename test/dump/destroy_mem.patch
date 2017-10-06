@@ -1,0 +1,321 @@
+diff --git a/arch/x86/kernel/include/syscall_list.h b/arch/x86/kernel/include/syscall_list.h
+index 7c6edcb..f7f709b 100644
+--- a/arch/x86/kernel/include/syscall_list.h
++++ b/arch/x86/kernel/include/syscall_list.h
+@@ -161,6 +161,9 @@ SYSCALL_HANDLED(__NR_profile, profile)
+ SYSCALL_HANDLED(730, util_migrate_inter_kernel)
+ SYSCALL_HANDLED(731, util_indicate_clone)
+ SYSCALL_HANDLED(732, get_system)
++/* McKernel Specific */
++SYSCALL_HANDLED(901, usedmem_destroy)
++SYSCALL_HANDLED(902, freemem_destroy)
+ 
+ /* McKernel Specific */
+ SYSCALL_HANDLED(801, swapout)
+diff --git a/arch/x86/kernel/memory.c b/arch/x86/kernel/memory.c
+index 293daff..d7f17b9 100644
+--- a/arch/x86/kernel/memory.c
++++ b/arch/x86/kernel/memory.c
+@@ -36,6 +36,8 @@
+ #define ekprintf(...) do { kprintf(__VA_ARGS__); } while (0)
+ #endif
+ 
++#define MEM_DESTROY_VAL 0xffffffffffffffff
++
+ static char *last_page;
+ extern char _head[], _end[];
+ 
+@@ -1364,6 +1366,119 @@ int visit_pte_range_safe(page_table_t pt, void *start0, void *end0, int pgshift,
+ 	return walk_pte_l4_safe(pt, 0, start, end, &visit_pte_l4_safe, &args);
+ }
+ 
++static int visit_pte_l1_dest(void *arg0, pte_t *ptep, uintptr_t base,
++		uintptr_t start, uintptr_t end)
++{
++	if (*ptep == PTE_NULL) {
++		return 0;
++	}
++
++	*ptep = MEM_DESTROY_VAL;
++	return 0;
++}
++
++static int visit_pte_l2_dest(void *arg0, pte_t *ptep, uintptr_t base,
++		uintptr_t start, uintptr_t end)
++{
++	int error = 0;
++	struct visit_pte_args *args = arg0;
++	struct page_table *pt;
++
++	if (*ptep == PTE_NULL) {
++		return 0;
++	}
++
++	if ((*ptep & PFL2_SIZE)
++			&& (start <= base)
++			&& (((base + PTL2_SIZE) <= end)
++				|| (end == 0))
++			&& (!args->pgshift || (args->pgshift == PTL2_SHIFT))) {
++
++		*ptep = MEM_DESTROY_VAL;
++		return error;
++	}
++
++
++	if (*ptep & PFL2_SIZE) {
++		ekprintf("visit_pte_l2:split large page\n");
++		return -ENOMEM;
++	}
++
++	pt = phys_to_virt(*ptep & PT_PHYSMASK);
++
++	error = walk_pte_l1_safe(pt, base, start, end, &visit_pte_l1_dest, arg0);
++	return error;
++}
++
++static int visit_pte_l3_dest(void *arg0, pte_t *ptep, uintptr_t base,
++		uintptr_t start, uintptr_t end)
++{
++	int error = 0;
++	struct visit_pte_args *args = arg0;
++	struct page_table *pt;
++
++	if (*ptep == PTE_NULL) {
++		return 0;
++	}
++
++	if ((*ptep & PFL3_SIZE)
++			&& (start <= base)
++			&& (((base + PTL3_SIZE) <= end)
++				|| (end == 0))
++			&& (!args->pgshift || (args->pgshift == PTL3_SHIFT))
++			&& use_1gb_page) {
++
++		*ptep =MEM_DESTROY_VAL;
++		return error;
++	}
++
++	if (*ptep & PFL3_SIZE) {
++		ekprintf("visit_pte_l3:split large page\n");
++		return -ENOMEM;
++	}
++
++	pt = phys_to_virt(*ptep & PT_PHYSMASK);
++
++	error = walk_pte_l2_safe(pt, base, start, end, &visit_pte_l2_dest, arg0);
++	return error;
++}
++
++static int visit_pte_l4_dest(void *arg0, pte_t *ptep, uintptr_t base,
++		uintptr_t start, uintptr_t end)
++{
++	int error;
++	struct page_table *pt;
++
++	kprintf("%s:Start.\n", __FUNCTION__);
++
++	if (*ptep == PTE_NULL) {
++		kprintf("%s:End.\n", __FUNCTION__);
++		return 0;
++	}
++
++	pt = phys_to_virt(*ptep & PT_PHYSMASK);
++
++	error = walk_pte_l3_safe(pt, base, start, end, &visit_pte_l3_dest, arg0);
++	kprintf("%s:End.\n", __FUNCTION__);
++	return error;
++}
++
++int visit_pte_range_dest(page_table_t pt, void *start0, void *end0, int pgshift,
++		enum visit_pte_flag flags, pte_visitor_t *funcp, void *arg)
++{
++	const uintptr_t start = (uintptr_t)start0;
++	const uintptr_t end = (uintptr_t)end0;
++	struct visit_pte_args args;
++
++	args.pt = pt;
++	args.flags = flags;
++	args.funcp = funcp;
++	args.arg = arg;
++	args.pgshift = pgshift;
++
++	return walk_pte_l4_safe(pt, 0, start, end, &visit_pte_l4_dest, &args);
++}
++
+ struct clear_range_args {
+ 	int free_physical;
+ 	struct memobj *memobj;
+diff --git a/kernel/include/rbtree.h b/kernel/include/rbtree.h
+index 990f0d7..24d71c2 100644
+--- a/kernel/include/rbtree.h
++++ b/kernel/include/rbtree.h
+@@ -66,6 +66,7 @@ extern void rb_erase(struct rb_node *, struct rb_root *);
+ /* Find logical next and previous nodes in a tree */
+ extern struct rb_node *rb_next(const struct rb_node *);
+ extern struct rb_node *rb_next_safe(const struct rb_node *);
++extern struct rb_node *rb_next_dest(const struct rb_node *);
+ extern struct rb_node *rb_prev(const struct rb_node *);
+ extern struct rb_node *rb_first(const struct rb_root *);
+ extern struct rb_node *rb_first_safe(const struct rb_root *);
+diff --git a/kernel/mem.c b/kernel/mem.c
+index 8fe450d..e8e05bd 100644
+--- a/kernel/mem.c
++++ b/kernel/mem.c
+@@ -2482,3 +2482,28 @@ int ihk_mc_get_mem_user_page(void *arg0, page_table_t pt, pte_t *ptep, void *pga
+ 
+ 	return 0;
+ }
++
++void ihk_mc_mem_free_page_dest(void) {
++	struct rb_node *node;
++	struct rb_root *free_chunks;
++	unsigned long free_pages, free_page_cnt;
++	int i;
++
++	/* Search all NUMA nodes */
++	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); i++) {
++
++		free_chunks = &memory_nodes[i].free_chunks;
++		free_pages = memory_nodes[i].nr_free_pages;
++
++		/* rb-tree search */
++		for (free_page_cnt = 0, node = rb_first(free_chunks); node; free_page_cnt++, node = rb_next_dest(node)) {
++
++			if (free_page_cnt >= free_pages)
++				break;
++
++		}
++	}
++
++	return;
++}
++
+diff --git a/kernel/rbtree.c b/kernel/rbtree.c
+index 5134a0d..2a0383f 100644
+--- a/kernel/rbtree.c
++++ b/kernel/rbtree.c
+@@ -25,6 +25,8 @@
+ 
+ #define EXPORT_SYMBOL(x)
+ 
++#define MEM_DESTROY_VAL 0xffffffffffffffff
++
+ extern int ihk_mc_chk_page_address(unsigned long mem_addr);
+ extern unsigned long virt_to_phys(void *v);
+ 
+@@ -555,6 +557,47 @@ struct rb_node *rb_next_safe(const struct rb_node *node)
+ }
+ EXPORT_SYMBOL(rb_next_safe);
+ 
++struct rb_node *rb_next_dest(const struct rb_node *node)
++{
++	struct rb_node *parent;
++	struct rb_node *node_tmp = NULL;
++
++	if (RB_EMPTY_NODE(node))
++		return NULL;
++
++	/*
++ * 	 * If we have a right-hand child, go down and then left as far
++ * 	 	 * as we can.
++ * 	 	 	 */
++	if (node->rb_right) {
++		node = node->rb_right; 
++
++		while (node->rb_left) {
++			node_tmp = (struct rb_node *)node;
++			node=node->rb_left;
++		}
++
++		if(node_tmp != NULL) {
++			node_tmp->rb_left = (struct rb_node *)MEM_DESTROY_VAL;
++		}
++
++		return (struct rb_node *)node;
++	}
++
++	/*
++ * 	 * No right-hand children. Everything down and left is smaller than us,
++ * 	 	 * so any 'next' node must be in the general direction of our parent.
++ * 	 	 	 * Go up the tree; any time the ancestor is a right-hand child of its
++ * 	 	 	 	 * parent, keep going up. First time it's a left-hand child of its
++ * 	 	 	 	 	 * parent, said parent is our 'next' node.
++ * 	 	 	 	 	 	 */
++	while ((parent = rb_parent(node)) && node == parent->rb_right)
++		node = parent;
++
++	return parent;
++}
++EXPORT_SYMBOL(rb_next_dest);
++
+ struct rb_node *rb_prev(const struct rb_node *node)
+ {
+ 	struct rb_node *parent;
+diff --git a/kernel/syscall.c b/kernel/syscall.c
+index 6d23702..5620bf4 100644
+--- a/kernel/syscall.c
++++ b/kernel/syscall.c
+@@ -9885,6 +9885,43 @@ set_cputime(int mode)
+ 	}
+ }
+ 
++SYSCALL_DECLARE(usedmem_destroy)
++{
++	kprintf("usedmem_destroy() call\n");
++	
++	struct resource_set *rset = cpu_local_var(resource_set);
++	struct process_hash *phash = rset->process_hash;
++	struct process *p; 
++	struct process_vm *vm;
++	int i;
++
++	for (i=0; i<HASH_SIZE; i++) {
++
++		list_for_each_entry(p, &phash->list[i], hash_list){
++			vm = p->vm;
++			if (vm) {
++				if(vm->address_space->page_table) {
++					visit_pte_range_dest(vm->address_space->page_table, 0,
++					(void *)USER_END, 0, 0,
++					(void *)NULL, (void *)NULL);
++				}
++			}
++		}
++	}
++
++	return 0;
++}
++
++SYSCALL_DECLARE(freemem_destroy)
++{
++	kprintf("freemem_destroy() call\n");
++
++	ihk_mc_mem_free_page_dest();
++
++	return 0;
++}
++
++
+ long syscall(int num, ihk_mc_user_context_t *ctx)
+ {
+ 	long l;
+diff --git a/lib/include/ihk/mm.h b/lib/include/ihk/mm.h
+index 5b2aa70..18a5408 100644
+--- a/lib/include/ihk/mm.h
++++ b/lib/include/ihk/mm.h
+@@ -191,6 +191,8 @@ int visit_pte_range(page_table_t pt, void *start, void *end, int pgshift,
+ 		enum visit_pte_flag flags, pte_visitor_t *funcp, void *arg);
+ int visit_pte_range_safe(page_table_t pt, void *start, void *end, int pgshift,
+ 		enum visit_pte_flag flags, pte_visitor_t *funcp, void *arg);
++int visit_pte_range_dest(page_table_t pt, void *start, void *end, int pgshift,
++                enum visit_pte_flag flags, pte_visitor_t *funcp, void *arg);
+ int move_pte_range(page_table_t pt, struct process_vm *vm, 
+ 				   void *src, void *dest, size_t size, struct vm_range *range);
+ 
+@@ -250,5 +252,5 @@ void ihk_mc_query_mem_user_page(void *dump_page_set);
+ void ihk_mc_query_mem_free_page(void *dump_page_set);
+ int ihk_mc_chk_page_address(pte_t mem_addr);
+ int ihk_mc_get_mem_user_page(void *arg0, page_table_t pt, pte_t *ptep, void *pgaddr, int pgshift);
+-
++void ihk_mc_mem_free_page_dest(void);
+ #endif

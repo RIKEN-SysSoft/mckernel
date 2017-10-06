@@ -1385,7 +1385,7 @@ SYSCALL_DECLARE(mmap)
 	struct thread *thread = cpu_local_var(current);
 	struct vm_regions *region = &thread->vm->region;
 	int error;
-	intptr_t addr;
+	intptr_t addr = 0;
 	size_t len;
 	int flags = flags0;
 	size_t pgsize;
@@ -1488,7 +1488,7 @@ SYSCALL_DECLARE(shmget)
 	const key_t key = ihk_mc_syscall_arg0(ctx);
 	const size_t size = ihk_mc_syscall_arg1(ctx);
 	const int shmflg0 = ihk_mc_syscall_arg2(ctx);
-	int shmid;
+	int shmid = -EINVAL;
 	int error;
 	int shmflg = shmflg0;
 
@@ -1751,6 +1751,7 @@ int arch_map_vdso(struct process_vm *vm)
 	enum ihk_mc_pt_attribute attr;
 	int error;
 	int i;
+	struct vm_range *range;
 
 	dkprintf("arch_map_vdso()\n");
 	if (container_size <= 0) {
@@ -1769,7 +1770,7 @@ int arch_map_vdso(struct process_vm *vm)
 	vrflags |= VR_PROT_READ | VR_PROT_EXEC;
 	vrflags |= VRFLAG_PROT_TO_MAXPROT(vrflags);
 	error = add_process_memory_range(vm, (intptr_t)s, (intptr_t)e,
-			NOPHYS, vrflags, NULL, 0, PAGE_SHIFT, NULL);
+			NOPHYS, vrflags, NULL, 0, PAGE_SHIFT, &range);
 	if (error) {
 		ekprintf("ERROR: adding memory range for vdso. %d\n", error);
 		goto out;
@@ -1781,7 +1782,7 @@ int arch_map_vdso(struct process_vm *vm)
 		s = vm->vdso_addr + (i * PAGE_SIZE);
 		e = s + PAGE_SIZE;
 		error = ihk_mc_pt_set_range(pt, vm, s, e,
-				vdso.vdso_physlist[i], attr, 0);
+									vdso.vdso_physlist[i], attr, 0, range);
 		if (error) {
 			ekprintf("ihk_mc_pt_set_range failed. %d\n", error);
 			goto out;
@@ -1801,7 +1802,7 @@ int arch_map_vdso(struct process_vm *vm)
 		vrflags |= VR_PROT_READ;
 		vrflags |= VRFLAG_PROT_TO_MAXPROT(vrflags);
 		error = add_process_memory_range(vm, (intptr_t)s, (intptr_t)e,
-				NOPHYS, vrflags, NULL, 0, PAGE_SHIFT, NULL);
+				NOPHYS, vrflags, NULL, 0, PAGE_SHIFT, &range);
 		if (error) {
 			ekprintf("ERROR: adding memory range for vvar. %d\n", error);
 			goto out;
@@ -1813,7 +1814,7 @@ int arch_map_vdso(struct process_vm *vm)
 			e = s + PAGE_SIZE;
 			attr = PTATTR_ACTIVE | PTATTR_USER | PTATTR_NO_EXECUTE;
 			error = ihk_mc_pt_set_range(pt, vm, s, e,
-					vdso.vvar_phys, attr, 0);
+										vdso.vvar_phys, attr, 0, range);
 			if (error) {
 				ekprintf("ihk_mc_pt_set_range failed. %d\n", error);
 				goto out;
@@ -1824,7 +1825,7 @@ int arch_map_vdso(struct process_vm *vm)
 			e = s + PAGE_SIZE;
 			attr = PTATTR_ACTIVE | PTATTR_USER | PTATTR_NO_EXECUTE | PTATTR_UNCACHABLE;
 			error = ihk_mc_pt_set_range(pt, vm, s, e,
-					vdso.hpet_phys, attr, 0);
+										vdso.hpet_phys, attr, 0, range);
 			if (error) {
 				ekprintf("ihk_mc_pt_set_range failed. %d\n", error);
 				goto out;
@@ -1835,7 +1836,7 @@ int arch_map_vdso(struct process_vm *vm)
 			e = s + PAGE_SIZE;
 			attr = PTATTR_ACTIVE | PTATTR_USER | PTATTR_NO_EXECUTE;
 			error = ihk_mc_pt_set_range(pt, vm, s, e,
-					vdso.pvti_phys, attr, 0);
+										vdso.pvti_phys, attr, 0, range);
 			if (error) {
 				ekprintf("ihk_mc_pt_set_range failed. %d\n", error);
 				goto out;
@@ -1905,5 +1906,29 @@ save_uctx(void *uctx, struct x86_user_context *regs)
 	ihk_mc_arch_get_special_register(IHK_ASR_X86_FS, &ctx->fs);
 	ctx->fregsize = 0;
 }
+
+#ifdef POSTK_DEBUG_ARCH_DEP_78 /* arch dep syscallno hide */
+int
+arch_linux_open(char *fname, int flag, int mode)
+{
+	ihk_mc_user_context_t ctx0;
+	int		fd;
+
+	ihk_mc_syscall_arg0(&ctx0) = (uintptr_t) fname;
+	ihk_mc_syscall_arg1(&ctx0) = flag;
+	ihk_mc_syscall_arg2(&ctx0) = mode;
+	fd = syscall_generic_forwarding(__NR_open, &ctx0);
+	return fd;
+}
+
+int
+arch_linux_unlink(char *fname)
+{
+	ihk_mc_user_context_t ctx0;
+
+	ihk_mc_syscall_arg0(&ctx0) = (uintptr_t) fname;
+	return syscall_generic_forwarding(__NR_unlink, &ctx0);
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_78 */
 
 /*** End of File ***/

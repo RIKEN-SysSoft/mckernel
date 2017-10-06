@@ -1,4 +1,4 @@
-/* assert.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
+/* assert.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
 
 #include <process.h>
 #include <list.h>
@@ -8,6 +8,7 @@
 #include <cputable.h>
 #include <thread_info.h>
 #include <smp.h>
+#include <ptrace.h>
 
 /* assert for struct pt_regs member offset & size define */
 STATIC_ASSERT(offsetof(struct pt_regs, regs[0]) == S_X0);
@@ -42,3 +43,10 @@ STATIC_ASSERT(offsetof(struct secondary_data, stack) == SECONDARY_DATA_STACK);
 STATIC_ASSERT(offsetof(struct secondary_data, next_pc) == SECONDARY_DATA_NEXT_PC);
 STATIC_ASSERT(offsetof(struct secondary_data, arg) == SECONDARY_DATA_ARG);
 
+/* assert for sve defines */
+/* @ref.impl arch/arm64/kernel/signal.c::BUILD_BUG_ON in the init_user_layout */
+STATIC_ASSERT(sizeof(struct sigcontext) - offsetof(struct sigcontext, __reserved) > ALIGN_UP(sizeof(struct _aarch64_ctx), 16));
+STATIC_ASSERT(sizeof(struct sigcontext) - offsetof(struct sigcontext, __reserved) -
+		ALIGN_UP(sizeof(struct _aarch64_ctx), 16) > sizeof(struct extra_context));
+STATIC_ASSERT(SVE_PT_FPSIMD_OFFSET == sizeof(struct user_sve_header));
+STATIC_ASSERT(SVE_PT_SVE_OFFSET == sizeof(struct user_sve_header));

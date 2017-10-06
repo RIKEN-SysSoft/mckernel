@@ -1,10 +1,16 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Path of install directory for binary */
+#undef BINDIR
+
 /* whether mcoverlayfs is enabled */
 #undef ENABLE_MCOVERLAYFS
 
 /* whether memdump feature is enabled */
 #undef ENABLE_MEMDUMP
+
+/* whether mcoverlayfs is enabled */
+#undef ENABLE_QLMPI
 
 /* whether rusage is enabled */
 #undef ENABLE_RUSAGE
@@ -14,6 +20,9 @@
 
 /* Define to 1 if you have the `bfd' library (-lbfd). */
 #undef HAVE_LIBBFD
+
+/* Define to 1 if you have the `iberty' library (-liberty). */
+#undef HAVE_LIBIBERTY
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
@@ -69,14 +78,20 @@
 /* Define to address of kernel symbol vdso_pages, or 0 if exported */
 #undef MCCTRL_KSYM_vdso_pages
 
+/* Define to address of kernel symbol vdso_spec, or 0 if exported */
+#undef MCCTRL_KSYM_vdso_spec
+
 /* Define to address of kernel symbol vdso_start, or 0 if exported */
 #undef MCCTRL_KSYM_vdso_start
+
+/* Define to address of kernel symbol walk_page_range, or 0 if exported */
+#undef MCCTRL_KSYM_walk_page_range
 
 /* Define to address of kernel symbol zap_page_range, or 0 if exported */
 #undef MCCTRL_KSYM_zap_page_range
 
-/* Define to address of kernel symbol vdso_spec, or 0 if exported. POSTK_DEBUG_ARCH_DEP_50 */
-#undef MCCTRL_KSYM_vdso_spec
+/* McKernel specific headers */
+#undef MCKERNEL_INCDIR
 
 /* McKernel specific libraries */
 #undef MCKERNEL_LIBDIR
@@ -101,6 +116,9 @@
 
 /* Path of bind-mount source directory */
 #undef ROOTFSDIR
+
+/* Path of install directory for system binary */
+#undef SBINDIR
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS

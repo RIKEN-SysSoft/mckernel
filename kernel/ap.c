@@ -28,7 +28,7 @@
 #include <cls.h>
 #include <time.h>
 #include <syscall.h>
-#include <rusage.h>
+#include <rusage_private.h>
 
 //#define DEBUG_PRINT_AP
 

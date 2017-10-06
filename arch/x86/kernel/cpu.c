@@ -225,12 +225,6 @@ void init_fpu(void)
 	dkprintf("init_fpu(): SSE init: CR4 = 0x%016lX\n", reg);
 
 	/* Set xcr0[2:1] to enable avx ops */
-	if(cpuid01_ecx & (1 << 28)) {
-		reg = xgetbv(0);
-		reg |= 0x6;
-		xsetbv(0, reg);
-		dkprintf("init_fpu(): AVX init: XCR0 = 0x%016lX\n", reg);
-	}
 	if(xsave_available){
 		unsigned long eax;
 		unsigned long ebx;
@@ -246,11 +240,16 @@ void init_fpu(void)
 			reg |= 0xe6;
 			xsetbv(0, reg);
 			dkprintf("init_fpu(): AVX-512 init: XCR0 = 0x%016lX\n", reg);
+		} else {
+			reg = xgetbv(0);
+			reg |= 0x6;
+			xsetbv(0, reg);
+			dkprintf("init_fpu(): AVX init: XCR0 = 0x%016lX\n", reg);
 		}
-	}
 
-	xsave_mask = xgetbv(0);
-	dkprintf("init_fpu(): xsave_mask = 0x%016lX\n", xsave_mask);
+		xsave_mask = xgetbv(0);
+		dkprintf("init_fpu(): xsave_mask = 0x%016lX\n", xsave_mask);
+	}
 
 	/* TODO: set MSR_IA32_XSS to enable xsaves/xrstors */
 
@@ -767,10 +766,10 @@ void init_gettime_support(void)
 	uint64_t edx;
 
 	/* Check if Invariant TSC supported.
-	 * Processor’s support for invariant TSC is indicated by
+	 * Processor's support for invariant TSC is indicated by
 	 * CPUID.80000007H:EDX[8].
 	 * See page 2498 of the Intel64 and IA-32 Architectures Software
-	 * Developer’s Manual - combined */
+	 * Developer's Manual - combined */
 
 	op = 0x80000007;
 	asm volatile("cpuid" : "=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx) : "a" (op));
@@ -793,7 +792,7 @@ void init_cpu(void)
 	init_pat();
 }
 
-void setup_x86(void)
+void setup_x86_phase1(void)
 {
 	cpu_disable_interrupt();
 
@@ -802,7 +801,10 @@ void setup_x86(void)
 	init_gdt();
 
 	init_page_table();
+}
 
+void setup_x86_phase2(void)
+{
 	check_no_execute();
 
 	init_lapic_bsp();

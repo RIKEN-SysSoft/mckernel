@@ -4,6 +4,8 @@
  *  License details are found in the file LICENSE.
  * \brief
  *  Structures and functions of xpmem
+ * \author Yoichi Umezawa  <yoichi.umezawa.qh@hitachi.com> \par
+ * 	Copyright (C) 2016 Yoichi Umezawa
  */
 /*
  * HISTORY

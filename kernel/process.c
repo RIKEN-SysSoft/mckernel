@@ -36,8 +36,8 @@
 #include <timer.h>
 #include <mman.h>
 #include <xpmem.h>
-#include <rusage.h>
-#include <xpmem.h>
+#include <rusage_private.h>
+#include <ihk/monitor.h>
 
 //#define DEBUG_PRINT_PROCESS
 
@@ -462,6 +462,31 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 			goto err_free_proc;
 		}
 
+		/* Copy mckfd list
+		   FIXME: Replace list manipulation with list_add() etc. */
+		long irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
+		struct mckfd *cur;
+		for (cur = org->proc->mckfd; cur; cur = cur->next) {
+			struct mckfd *mckfd = kmalloc(sizeof(struct mckfd), IHK_MC_AP_NOWAIT);
+			if(!mckfd) {
+				release_address_space(asp);
+				kfree(proc->vm);
+				kfree(proc);
+				goto err_free_proc;
+			}
+			memcpy(mckfd, cur, sizeof(struct mckfd));
+			
+			if (proc->mckfd == NULL) {
+				proc->mckfd = mckfd;
+				mckfd->next = NULL;
+			}
+			else {
+				mckfd->next = proc->mckfd;
+				proc->mckfd = mckfd;
+			}
+		}
+		ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
+
 		thread->vm->vdso_addr = org->vm->vdso_addr;
 		thread->vm->vvar_addr = org->vm->vvar_addr;
 		thread->proc->maxrss = org->proc->maxrss;
@@ -554,6 +579,7 @@ ptrace_traceme(void)
 struct copy_args {
 	struct process_vm *new_vm;
 	unsigned long new_vrflag;
+	struct vm_range *range;
 
 	/* out */
 	intptr_t fault_addr;
@@ -613,12 +639,13 @@ static int copy_user_pte(void *arg0, page_table_t src_pt, pte_t *src_ptep, void 
 	}
 
 	error = ihk_mc_pt_set_range(args->new_vm->address_space->page_table,
-			args->new_vm, pgaddr, pgaddr+pgsize, phys, attr,
-			pgshift);
+								args->new_vm, pgaddr, pgaddr + pgsize, phys, attr,
+								pgshift, args->range);
 	if (error) {
 		args->fault_addr = (intptr_t)pgaddr;
 		goto out;
 	}
+	// fork/clone case: memory_stat_rss_add() is called in ihk_mc_pt_set_range()
 
 	dkprintf("copy_user_pte(): new PTE set\n");
 	error = 0;
@@ -677,7 +704,8 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm)
 		args.new_vrflag = range->flag;
 		args.new_vm = vm;
 		args.fault_addr = -1;
-
+		args.range = range;
+		
 		error = visit_pte_range(orgvm->address_space->page_table,
 				(void *)range->start, (void *)range->end,
 				range->pgshift, VPTEF_SKIP_NULL,
@@ -692,6 +720,7 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm)
 			}
 			goto err_free_range_rollback;
 		}
+		// memory_stat_rss_add() is called in child-node, i.e. copy_user_pte()
 
 		insert_vm_range_list(vm, range);
 	}
@@ -724,13 +753,13 @@ int update_process_page_table(struct process_vm *vm,
 	attr = arch_vrflag_to_ptattr(range->flag, PF_POPULATE, NULL);
 	flags = ihk_mc_spinlock_lock(&vm->page_table_lock);
 	error = ihk_mc_pt_set_range(vm->address_space->page_table, vm,
-			(void *)range->start, (void *)range->end, phys, attr,
-			range->pgshift);
+								(void *)range->start, (void *)range->end, phys, attr,
+								range->pgshift, range);
 	if (error) {
 		kprintf("update_process_page_table:ihk_mc_pt_set_range failed. %d\n", error);
 		goto out;
 	}
-
+	// memory_stat_rss_add() is called in ihk_mc_pt_set_range()
 	error = 0;
 out:
 	ihk_mc_spinlock_unlock(&vm->page_table_lock, flags);
@@ -752,6 +781,7 @@ int split_process_memory_range(struct process_vm *vm, struct vm_range *range,
 				"ihk_mc_pt_split failed. %d\n", error);
 		goto out;
 	}
+	// memory_stat_rss_add() is called in child-node, i.e. ihk_mc_pt_split() to deal with L3->L2 case
 
 	newrange = kmalloc(sizeof(struct vm_range), IHK_MC_AP_NOWAIT);
 	if (!newrange) {
@@ -876,7 +906,6 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 				break;
 			}
 		}
-
 		neighbor = next_process_memory_range(vm, range);
 		pgsize = -1;
 		for (;;) {
@@ -895,6 +924,8 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 			}
 		}
 
+		dkprintf("%s: vm=%p,range=%p,%lx-%lx\n", __FUNCTION__, vm, range, range->start, range->end);
+		
 		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 		if (range->memobj) {
 			memobj_lock(range->memobj);
@@ -912,8 +943,11 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 					vm, start0, end0, start, end, range->memobj, error);
 			/* through */
 		}
+		// memory_stat_rss_sub() is called downstream, i.e. ihk_mc_pt_free_range() to deal with empty PTE
 	}
 	else {
+		// memory_stat_rss_sub() isn't called because free_physical is set to zero in clear_range()
+		dkprintf("%s,memory_stat_rss_sub() isn't called, VR_REMOTE | VR_IO_NOCACHE | VR_RESERVED case, %lx-%lx\n", __FUNCTION__, start, end);
 		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 		error = ihk_mc_pt_clear_range(vm->address_space->page_table, vm,
 				(void *)start, (void *)end);
@@ -1123,6 +1157,7 @@ int add_process_memory_range(struct process_vm *vm,
 		struct memobj *memobj, off_t offset,
 		int pgshift, struct vm_range **rp)
 {
+	dkprintf("%s: start=%lx,end=%lx,phys=%lx,flag=%lx\n", __FUNCTION__, start, end, phys, flag);
 	struct vm_range *range;
 	int rc;
 
@@ -1170,6 +1205,7 @@ int add_process_memory_range(struct process_vm *vm,
 	}
 	else {
 		rc = update_process_page_table(vm, range, phys, 0);
+		// memory_stat_rss_add() is called in ihk_mc_pt_set_range()
 	}
 
 	if (rc != 0) {
@@ -1417,6 +1453,8 @@ static int remap_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 	page = phys_to_page(phys);
 	if (page && page_unmap(page)) {
 		ihk_mc_free_pages_user(phys_to_virt(phys), pgsize/PAGE_SIZE);
+		dkprintf("%lx-,%s: calling memory_stat_rss_sub(),size=%ld,pgsize=%ld\n", phys, __FUNCTION__, pgsize, pgsize);
+		rusage_memory_stat_sub(args->memobj, pgsize, pgsize); 
 	}
 
 	error = 0;
@@ -1588,6 +1626,7 @@ static int invalidate_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 				arg0, pt, ptep, *ptep, pgaddr, pgshift, error);
 		goto out;
 	}
+	// memory_stat_rss_sub() is called in downstream, i.e. shmobj_invalidate_page()
 
 	error = 0;
 out:
@@ -1619,6 +1658,8 @@ int invalidate_process_memory_range(struct process_vm *vm,
 				vm, range, start, end, error);
 		goto out;
 	}
+	// memory_stat_rss_sub() is called downstream, i.e. invalidate_one_page() to deal with empty PTEs
+	
 out:
 	dkprintf("invalidate_process_memory_range(%p,%p,%#lx,%#lx):%d\n",
 			vm, range, start, end, error);
@@ -1659,6 +1700,7 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 		goto out;
 	}
 	/*****/
+	dkprintf("%s: pgaddr=%lx,range->start=%lx,range->end=%lx,pgaddr+pgsize=%lx\n", __FUNCTION__, pgaddr, range->start, range->end, pgaddr + pgsize);
 	while (((uintptr_t)pgaddr < range->start)
 			|| (range->end < ((uintptr_t)pgaddr + pgsize))) {
 		ptep = NULL;
@@ -1670,6 +1712,7 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 		pgaddr = (void *)(fault_addr & ~(pgsize - 1));
 	}
 	/*****/
+	dkprintf("%s: ptep=%lx,pte_is_null=%d,pte_is_fileoff=%d\n", __FUNCTION__, ptep, ptep ? pte_is_null(ptep) : -1, ptep ? pte_is_fileoff(ptep, pgsize) : -1);
 	if (!ptep || pte_is_null(ptep) || pte_is_fileoff(ptep, pgsize)) {
 		phys = NOPHYS;
 		if (range->memobj) {
@@ -1682,7 +1725,7 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 				off = pte_get_off(ptep, pgsize);
 			}
 			error = memobj_get_page(range->memobj, off, p2align,
-					&phys, &memobj_flag);
+                                       &phys, &memobj_flag);
 			if (error) {
 				struct memobj *obj;
 
@@ -1694,6 +1737,7 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 					goto out;
 				}
 			}
+			// memory_stat_rss_add() is called downstream, i.e. memobj_get_page() to check page->count
 		}
 		if (phys == NOPHYS) {
 			void *virt = NULL;
@@ -1727,6 +1771,10 @@ retry:
 			memset(virt, 0, pgsize);
 			phys = virt_to_phys(virt);
 			if (phys_to_page(phys)) {
+				dkprintf("%s: NOPHYS,phys=%lx,vmr(%lx-%lx),flag=%x,fa=%lx,reason=%x\n",
+						 __FUNCTION__, page_to_phys(page),
+						 range->start, range->end, range->flag, fault_addr, reason);
+				
 				page_map(phys_to_page(phys));
 			}
 		}
@@ -1753,6 +1801,10 @@ retry:
 			void *virt;
 			size_t npages;
 
+			if (!page) {
+				kprintf("%s: WARNING: cow on non-struct-page-managed page\n", __FUNCTION__);
+			}
+
 			npages = pgsize / PAGE_SIZE;
 			virt = ihk_mc_alloc_aligned_pages_user(npages, p2align,
 			                                      IHK_MC_AP_NOWAIT);
@@ -1761,8 +1813,8 @@ retry:
 				kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):cannot allocate copy page. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
 				goto out;
 			}
-			dkprintf("%s: copying 0x%lx:%lu\n",
-				__FUNCTION__, pgaddr, pgsize);
+			dkprintf("%s: cow,copying virt:%lx<-%lx,phys:%lx<-%lx,pgsize=%lu\n",
+					 __FUNCTION__, virt, phys_to_virt(phys), virt_to_phys(virt), phys, pgsize);
 #ifdef POSTK_DEBUG_TEMP_FIX_14
 			if (page) {
 				// McKernel memory space
@@ -1783,14 +1835,23 @@ retry:
 				memcpy(virt, vmap, pgsize);
 				ihk_mc_unmap_virtual(vmap, npages, remove_vmap_allocator_entry);
 			}
-			phys = virt_to_phys(virt);
-			if (page) {
-				page_unmap(page);
-			}
-			page = phys_to_page(phys);
 #else /*POSTK_DEBUG_TEMP_FIX_14*/
 			memcpy(virt, phys_to_virt(phys), pgsize);
+
 #endif /*POSTK_DEBUG_TEMP_FIX_14*/
+			/* Call rusage_memory_stat_add() because remote page fault may create a page not pointed-to by PTE */
+			if(rusage_memory_stat_add(range, phys, pgsize, pgsize)) {
+				dkprintf("%lx+,%s: remote page fault + cow, calling memory_stat_rss_add(),pgsize=%ld\n",
+						phys, __FUNCTION__, pgsize);
+			}
+			if (page) {
+				if (page_unmap(page)) {
+					dkprintf("%lx-,%s: cow,calling memory_stat_rss_sub(),size=%ld,pgsize=%ld\n", phys, __FUNCTION__, pgsize, pgsize);
+					rusage_memory_stat_sub(range->memobj, pgsize, pgsize); 
+				}
+			}
+			phys = virt_to_phys(virt);
+			page = phys_to_page(phys);
 		}
 	}
 #ifdef POSTK_DEBUG_ARCH_DEP_21
@@ -1805,21 +1866,34 @@ retry:
 
 	/*****/
 	if (ptep) {
+		//if(rusage_memory_stat_add_with_page(range, phys, pgsize, pgsize, page)) {
+		if(rusage_memory_stat_add(range, phys, pgsize, pgsize)) {
+			/* on-demand paging, phys pages are obtained by ihk_mc_alloc_aligned_pages_user() or get_page() */
+			dkprintf("%lx+,%s: (on-demand paging && first map) || cow,calling memory_stat_rss_add(),phys=%lx,pgsize=%ld\n",
+					 phys, __FUNCTION__, phys, pgsize);
+		} else {
+			dkprintf("%s: !calling memory_stat_rss_add(),phys=%lx,pgsize=%ld\n",
+					 __FUNCTION__, phys, pgsize);
+		}
+
+		dkprintf("%s: attr=%x\n", __FUNCTION__, attr);
 		error = ihk_mc_pt_set_pte(vm->address_space->page_table, ptep,
 		                          pgsize, phys, attr);
 		if (error) {
 			kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):set_pte failed. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
 			goto out;
 		}
+		dkprintf("%s: non-NULL pte,page=%lx,page_is_in_memobj=%d,page->count=%d\n", __FUNCTION__, page, page ? page_is_in_memobj(page) : 0, page ? ihk_atomic_read(&page->count) : 0);
 	}
 	else {
 		error = ihk_mc_pt_set_range(vm->address_space->page_table, vm,
 		                            pgaddr, pgaddr + pgsize, phys,
-		                            attr, range->pgshift);
+		                            attr, range->pgshift, range);
 		if (error) {
 			kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):set_range failed. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
 			goto out;
 		}
+		// memory_stat_rss_add() is called in downstream with !memobj check
 	}
 	flush_tlb_single(fault_addr);
 	vm->currss += pgsize;
@@ -1832,7 +1906,14 @@ retry:
 out:
 	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 	if (page) {
-		page_unmap(page);
+		/* Unmap stray struct page */
+		dkprintf("%s: out,phys=%lx,vmr(%lx-%lx),flag=%x,fa=%lx,reason=%x\n",
+				 __FUNCTION__, page_to_phys(page),
+				 range->start, range->end, range->flag, fault_addr, reason);
+		if (page_unmap(page)) {
+			dkprintf("%lx-,%s: out,calling memory_stat_rss_sub(),size=%ld,pgsize=%ld\n", page_to_phys(page), __FUNCTION__, pgsize, pgsize);
+			rusage_memory_stat_sub(range->memobj, pgsize, pgsize); 
+		}
 	}
 	dkprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx): %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
 	return error;
@@ -1873,7 +1954,7 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 				"access denied. %d\n",
 				ihk_mc_get_processor_id(), vm,
 				fault_addr0, reason, error);
-		kprintf("%s: reason: %s%s%s%s%s%s%s\n", __FUNCTION__, 
+		kprintf("%s: reason: %s%s%s%s%s%s%s\n", __FUNCTION__,
 			(reason & PF_PROT) ? "PF_PROT " : "",
 			(reason & PF_WRITE) ? "PF_WRITE " : "",
 			(reason & PF_USER) ? "PF_USER " : "",
@@ -2001,6 +2082,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	unsigned long at_rand;
 	struct process *proc = thread->proc;
 	unsigned long ap_flag;
+	struct vm_range *range;
 
 	/* Create stack range */
 	end = STACK_TOP(&thread->vm->region) & LARGE_PAGE_MASK;
@@ -2049,17 +2131,18 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	vrflag |= VR_MAXPROT_READ | VR_MAXPROT_WRITE | VR_MAXPROT_EXEC;
 #define	NOPHYS	((uintptr_t)-1)
 	if ((rc = add_process_memory_range(thread->vm, start, end, NOPHYS,
-					vrflag, NULL, 0, LARGE_PAGE_SHIFT, NULL)) != 0) {
+					vrflag, NULL, 0, LARGE_PAGE_SHIFT, &range)) != 0) {
 		ihk_mc_free_pages_user(stack, minsz >> PAGE_SHIFT);
 		return rc;
 	}
 
 	/* Map physical pages for initial stack frame */
 	error = ihk_mc_pt_set_range(thread->vm->address_space->page_table,
-			thread->vm, (void *)(end - minsz),
-			(void *)end, virt_to_phys(stack),
-			arch_vrflag_to_ptattr(vrflag, PF_POPULATE, NULL),
-			LARGE_PAGE_SHIFT);
+								thread->vm, (void *)(end - minsz),
+								(void *)end, virt_to_phys(stack),
+								arch_vrflag_to_ptattr(vrflag, PF_POPULATE, NULL),
+								LARGE_PAGE_SHIFT, range
+								);
 
 	if (error) {
 		kprintf("init_process_stack:"
@@ -2068,6 +2151,8 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 		ihk_mc_free_pages_user(stack, minsz >> PAGE_SHIFT);
 		return error;
 	}
+
+	// memory_stat_rss_add() is called in ihk_mc_pt_set_range();
 
 	/* set up initial stack frame */
 	p = (unsigned long *)(stack + minsz);
@@ -2212,8 +2297,9 @@ unsigned long extend_process_region(struct process_vm *vm,
 		return end_allocated;
 	}
 #endif /* POSTK_DEBUG_TEMP_FIX_68 */
+	// memory_stat_rss_add() is called in add_process_memory_range()
 
-	dkprintf("%s: new_end_allocated: 0x%lu, align_size: %lu, align_mask: %lx\n",
+	dkprintf("%s: new_end_allocated: 0x%lx, align_size: %lu, align_mask: %lx\n",
 		__FUNCTION__, new_end_allocated, align_size, align_mask);
 
 	return new_end_allocated;
@@ -2233,6 +2319,9 @@ int remove_process_region(struct process_vm *vm,
 	ihk_mc_pt_clear_range(vm->address_space->page_table, vm,
 			(void *)start, (void *)end);
 	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
+
+	// memory_stat_rss_sub() isn't called because this execution path is no loger reached
+	dkprintf("%s: memory_stat_rss_sub() isn't called,start=%lx,end=%lx\n", __FUNCTION__, start, end);
 
 	return 0;
 }
@@ -2549,6 +2638,19 @@ void release_thread(struct thread *thread)
 
 	release_process_vm(vm);
 	rusage_num_threads_dec();
+
+#ifdef RUSAGE_DEBUG
+	if (rusage->num_threads == 0) {
+		int i;
+		kprintf("total_memory_usage=%ld\n", rusage->total_memory_usage);
+		for(i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
+			kprintf("memory_stat_rss[%d]=%ld\n", i, rusage->memory_stat_rss[i]);
+		}
+		for(i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
+			kprintf("memory_stat_mapped_file[%d]=%ld\n", i, rusage->memory_stat_mapped_file[i]);
+		}
+	}
+#endif
 }
 
 void cpu_set(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock)
@@ -3109,7 +3211,7 @@ redo:
 		 * We must hold the lock throughout the context switch, otherwise
 		 * an IRQ could deschedule this process between page table loading and
 		 * context switching and leave the execution in an inconsistent state.
-		 * Since we may be migrated to another core meanwhile, we refer 
+		 * Since we may be migrated to another core meanwhile, we refer
 		 * directly to cpu_local_var.
 		 */
 		ihk_mc_spinlock_unlock(&(cpu_local_var(runq_lock)),
@@ -3128,91 +3230,6 @@ redo:
 		ihk_mc_spinlock_unlock(&(cpu_local_var(runq_lock)),
 			cpu_local_var(runq_irqstate));
 	}
-
-/* be gone later */
-//#if 1
-//	/* FIXME: temporary solution.
-//	 * move threads from the last CPU core to other available cores 
-//	 * if it's oversubscribed 
-//	 * Will be solved by proper timesharing in the future */
-//	if (ihk_mc_get_processor_id() == (num_processors - 1)) {
-//		int old_cpu_id;
-//		int cpu_id;
-//		struct cpu_local_var *v;
-//		struct cpu_local_var *cur_v;
-//		struct process *proc_to_move = NULL;
-//		int irqstate2;
-//
-//		irqstate = cpu_disable_interrupt_save();
-//
-//		ihk_mc_spinlock_lock_noirq(&(get_this_cpu_local_var()->runq_lock));
-//		v = get_this_cpu_local_var();
-//
-//		if (v->runq_len > 1) {
-//			/* Pick another process */
-//			list_for_each_entry_safe(proc, tmp, &(v->runq), sched_list) {
-//				if (proc != cpu_local_var(current)) {
-//					list_del(&proc->sched_list);
-//					--v->runq_len;
-//					proc_to_move = proc;
-//					break;
-//				}
-//			}
-//		}
-//		ihk_mc_spinlock_unlock_noirq(&(v->runq_lock));
-//
-//		if (proc_to_move) {
-//			ihk_mc_spinlock_lock_noirq(&cpuid_head_lock);
-//
-//			for (cpu_id = num_processors - 2; cpu_id > -1; --cpu_id) {
-//
-//				if (get_cpu_local_var(cpu_id)->status != 
-//						CPU_STATUS_IDLE) {
-//					continue;
-//				}
-//
-//				get_cpu_local_var(cpu_id)->status = CPU_STATUS_RESERVED;
-//				break;
-//			}
-//
-//			ihk_mc_spinlock_unlock_noirq(&cpuid_head_lock);
-//
-//			if (cpu_id == -1) {
-//				kprintf("error: no more CPUs left to balance oversubscribed tail core\n");
-//				terminate_host(proc_to_move->ftn->pid);
-//				cpu_restore_interrupt(irqstate);
-//				return;
-//			}
-//
-//			v = get_cpu_local_var(cpu_id);
-//			cur_v = get_this_cpu_local_var();
-//
-//			double_rq_lock(cur_v, v, &irqstate2);
-//
-//			old_cpu_id = proc_to_move->cpu_id;
-//			proc_to_move->cpu_id = cpu_id;
-//			CPU_CLR(old_cpu_id, &proc_to_move->cpu_set);
-//			CPU_SET(cpu_id, &proc_to_move->cpu_set);
-//			settid(proc_to_move, 2, cpu_id, old_cpu_id);
-//			__runq_add_proc(proc_to_move, cpu_id);
-//			cpu_clear_and_set(old_cpu_id, cpu_id, &proc_to_move->vm->cpu_set, 
-//					&proc_to_move->vm->cpu_set_lock);
-//
-//			double_rq_unlock(cur_v, v, irqstate2);
-//
-//			/* Kick scheduler */
-//			if (cpu_id != ihk_mc_get_processor_id())
-//				ihk_mc_interrupt_cpu(
-//
-//						get_x86_cpu_local_variable(cpu_id)->apic_id, 
-//						0xd1);
-//
-//			dkprintf("moved TID %d to CPU: %d\n", 
-//				proc_to_move->ftn->tid, cpu_id);
-//		}
-//		cpu_restore_interrupt(irqstate);
-//	}
-//#endif
 }
 
 void
@@ -3240,7 +3257,6 @@ void check_need_resched(void)
 		ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
 	}
 }
-
 
 int __sched_wakeup_thread(struct thread *thread,
 		int valid_states, int runq_locked)
@@ -3375,7 +3391,7 @@ void __runq_add_thread(struct thread *thread, int cpu_id)
 	++v->runq_len;
 	v->flags |= CPU_FLAG_NEED_RESCHED;
 	thread->cpu_id = cpu_id;
-	//thread->ftn->status = PS_RUNNING;	/* not set here */
+	//thread->proc->status = PS_RUNNING;	/* not set here */
 	get_cpu_local_var(cpu_id)->status = CPU_STATUS_RUNNING;
 
 	dkprintf("runq_add_proc(): tid %d added to CPU[%d]'s runq\n", 
@@ -3394,6 +3410,18 @@ void runq_add_thread(struct thread *thread, int cpu_id)
 	procfs_create_thread(thread);
 
 	rusage_num_threads_inc();
+#ifdef RUSAGE_DEBUG
+	if (rusage->num_threads == 1) {
+		int i;
+		kprintf("total_memory_usage=%ld\n", rusage->total_memory_usage);
+		for(i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
+			kprintf("memory_stat_rss[%d]=%ld\n", i, rusage->memory_stat_rss[i]);
+		}
+		for(i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
+			kprintf("memory_stat_mapped_file[%d]=%ld\n", i, rusage->memory_stat_mapped_file[i]);
+		}
+	}
+#endif
 
 	/* Kick scheduler */
 #ifdef POSTK_DEBUG_ARCH_DEP_8 /* arch depend hide */

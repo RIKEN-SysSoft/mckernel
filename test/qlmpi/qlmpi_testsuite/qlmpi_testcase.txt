@@ -1,0 +1,230 @@
+プロセス高速起動
+結合テスト仕様 (ql_mpiexec_start/finalize)
+
+下記の条件を組み合わせた構成で動作を検証する
+・MPIノード数 
+   1, 2
+・プロセス数/ノード
+   1, 2, MAX(mckernelのCPU割り当て数)
+・ql_mpiexecコマンドの実行ノード
+   master, not-master
+
+組み合わせ：
+            MPIノード数    proc/node   mpiexec実行ノード 
+パターン01:       1             1           master
+パターン02:       1             1           not-master
+パターン03:       1             2           master
+パターン04:       1             2           not-master
+パターン05:       1             MAX         master
+パターン06:       1             MAX         not-master
+パターン07:       2             1           master
+パターン08:       2             1           not-master
+パターン09:       2             2           master
+パターン10:       2             2           not-master
+パターン11:       2             MAX         master
+パターン12:       2             MAX         not-master
+
+
+CTxx 3つのMPIプログラム(A, B, C) をA, B, C, A, B の順に実行する
+□ CTxx001 ql_server and  usr_prgs are not running on each node
+   テスト開始時点でql_serverとテスト用MPIプログラムが各ノードで実行されていない
+□ CTxx002 ql_mpiexec_start usr_prg_A (first exec) returns 0
+   usr_prg_A を実行するql_mpiexec_start の返り値が0 (成功)
+□ CTxx003 ql_server is running on master node
+   初回実行後、マスターノード上でql_serverが動作している
+□ CTxx004 usr_prg_A's args are correct on each node
+   各ノードのusr_prg_A の引数が実行時に指定したものと一致している
+□ CTxx005 usr_prg_A's env (QL_TEST) is correct on each node
+   各ノードのusr_prg_A テスト用に指定した環境変数が実行時に指定したものと一致している
+□ CTxx006 usr_prg_A's calculation is done on each node
+   各ノードのusr_prg_A の計算処理が完了
+□ CTxx007 usr_prg_A is waiting for resume-req on each node
+   ql_mpiexec_start の完了後、usr_prg_A が再開指示待ちになっている
+□ CTxx008 ql_mpiexec_start usr_prg_B (first exec) returns 0
+   usr_prg_B を実行するql_mpiexec_start の返り値が0 (成功)
+□ CTxx009 usr_prg_B's calculation is done on each node
+   各ノードのusr_prg_B の計算処理が完了
+□ CTxx010 usr_prg_B is waiting for resume-req on each node
+   ql_mpiexec_start の完了後、usr_prg_B が再開指示待ちになっている
+□ CTxx011 ql_mpiexec_start usr_prg_C (first exec) returns 0
+   usr_prg_C を実行するql_mpiexec_start の返り値が0 (成功)
+□ CTxx012 usr_prg_C's calculation is done on each node
+   各ノードのusr_prg_C の計算処理が完了
+□ CTxx013 usr_prg_C is waiting for resume-req on each node
+   ql_mpiexec_start の完了後、usr_prg_C が再開指示待ちになっている
+
+□ CTxx014 (again) ql_mpiexec_start usr_prg_A returns 0
+   usr_prg_A を再実行するql_mpiexec_start の返り値が0 (成功)
+□ CTxx015 (again) usr_prg_A's args are correct on each node
+   各ノードのusr_prg_A の引数が再実行時に指定したものと一致している
+□ CTxx016 (again) usr_prg_A's env (QL_TEST) is correct on each node
+   各ノードのusr_prg_A テスト用に指定した環境変数が実行時に指定したものと一致している
+□ CTxx017 (again) usr_prg_A's calculation is done on each node
+   各ノードのusr_prg_A の計算処理が完了
+□ CTxx018 (again) usr_prg_A is waiting for resume-req on each node
+   ql_mpiexec_start の完了後、usr_prg_A が再開指示待ちになっている
+□ CTxx019 (again) ql_mpiexec_start usr_prg_B returns 0
+   usr_prg_B を再実行するql_mpiexec_start の返り値が0 (成功)
+□ CTxx020 (again) usr_prg_B's calculation is done on each node
+   各ノードのusr_prg_B の計算処理が完了
+□ CTxx021 (again) usr_prg_B is waiting for resume-req on each node
+   ql_mpiexec_start の完了後、usr_prg_B が再開指示待ちになっている
+
+□ CTxx022 ql_mpiexec_finalize usr_prg_A return 0
+   usr_prg_A を終了するql_mpiexec_finalize の返り値が0 (成功)
+□ CTxx023 ql_mpiexec_finalize usr_prg_B return 0
+   usr_prg_B を終了するql_mpiexec_finalize の返り値が0 (成功)
+□ CTxx024 ql_server is still running on master node
+   usr_prg_Bの終了後、ql_serverがマスターノード上で動作している
+□ CTxx025 ql_mpiexec_finalize usr_prg_C return 0
+   usr_prg_C を終了するql_mpiexec_finalize の返り値が0 (成功)
+□ CTxx026 ql_server is not running on master node
+   すべてのMPIプログラムが終了したので、ql_serverが終了した
+
+CT20 デバイスマッピング (IBのバッファ)
+IBを使用するMPIプログラムを2本作成する。
+send/recvのバッファはcommon領域に2GB使用する。
+送信バッファは送信毎に異なる内容(送信回数の値など)を設定し、
+受信側で検証できるようにする。
+デバイスマッピングに異常があると、検証で失敗する。
+尚、McKernelに割り当てるメモリ量は3GBとする。
+□ CT20001 device mapping program test START
+□ CT20002 program 1 START
+   qlmpi_start によってテストプログラム 1 起動 (1プロセス/ノード x 2ノード)
+□ CT20003 MPI_Send/Recv OK
+   2 プロセス間でMPI_Send/Recvを実行
+□ CT20004 program 1 suspend
+   テストプログラム 1 が停止
+□ CT20005 program 2 START
+   qlmpi_start によってテストプログラム 2 起動 (1プロセス/ノード x 2ノード)
+□ CT20006 MPI_Send/Recv OK
+   2 プロセス間でMPI_Send/Recvを実行
+□ CT20007 program 1 suspend
+   テストプログラム 2 が停止
+□ CT20008 program 1 resume
+   qlmpi_start によってテストプログラム 1 が再開
+□ CT20009 MPI_Send/Recv OK
+   2 プロセス間でMPI_Send/Recvを実行
+□ CT20010 program 1 suspend
+   テストプログラム 1 が停止
+□ CT20011 program 2 resume
+   qlmpi_start によってテストプログラム 2 が再開
+□ CT20012 MPI_Send/Recv OK
+   2 プロセス間でMPI_Send/Recvを実行
+□ CT20013 program 2 suspend
+   テストプログラム 2 が停止
+□ CT20014 program 1 resume
+   qlmpi_finalize によってテストプログラム 1 が再開
+□ CT20015 program 1 END
+   テストプログラム1が終了
+□ CT20016 program 2 resume
+   qlmpi_finalize によってテストプログラム 2 が再開
+□ CT20017 program 2 END
+   テストプログラム2が終了
+□ CT20018 device mapping program test END
+
+CT21 mcexecのページテーブル更新確認
+ファイルをreadするプログラムを作成する。
+ファイル名によって、ファイル内容が確定できるようにする。
+(例えば、ファイル名が"1"のファイルは"1"で埋め尽くされているなど)
+入力領域はcommon領域に2GB確保する。
+ファイルのサイズも2GBとする。
+qlmpi_start毎にファイルを切り替える(コマンドラインに渡すなど)。
+入力結果を検証する。
+もし、ページインで最初と異なる物理ページにバッファが割り当てられ、且つ、
+mcexecのページテーブルが更新されていない場合は、readによって関係無いページが
+破壊される。また、ファイルの読み込み結果も検証で失敗する。
+尚、McKernelに割り当てるメモリ量は3GBとする。
+□ CT21001 mcexec page table update test START
+□ CT21002 program 1 START
+   qlmpi_start によってテストプログラム 1 起動 (1プロセス)
+□ CT21003 data read OK
+   ファイルを読み込んで内容確認した結果、問題なし
+□ CT21004 program 1 suspend
+   テストプログラム 1 が停止
+□ CT21005 program 2 START
+   qlmpi_start によってテストプログラム 2 起動 (1プロセス)
+□ CT21006 data read OK
+   ファイルを読み込んで内容確認した結果、問題なし
+□ CT21007 program 1 suspend
+   テストプログラム 2 が停止
+□ CT21008 program 1 resume
+   qlmpi_start によってテストプログラム 1 が再開
+□ CT21009 data read OK
+   ファイルを読み込んで内容確認した結果、問題なし
+□ CT21010 program 1 suspend
+   テストプログラム 1 が停止
+□ CT21011 program 2 resume
+   qlmpi_start によってテストプログラム 2 が再開
+□ CT21012 data read OK
+   ファイルを読み込んで内容確認した結果、問題なし
+□ CT21013 program 2 suspend
+   テストプログラム 2 が停止
+□ CT21014 program 1 resume
+   qlmpi_finalize によってテストプログラム 1 が再開
+□ CT21015 program 1 END
+   テストプログラム1が終了
+□ CT21016 program 2 resume
+   qlmpi_finalize によってテストプログラム 2 が再開
+□ CT21017 program 2 END
+   テストプログラム2が終了
+□ CT21018 mcexec page table update test END
+
+CT22 OMP
+OMP で複数のスレッドを使用する状況のテスト。
+□ CT22001 device mapping program test START
+□ CT22002 program 1 START
+   qlmpi_start によってテストプログラム 1 起動 (1プロセス/ノード x 2ノード)
+□ CT22003 check rank info
+   MPIとOMPのプロセス情報が出力されていることを確認する。
+   以下のように出力されればOK(順不同)。
+ mpi= 0/ 2, omp= 1/ 4
+ mpi= 0/ 2, omp= 3/ 4
+ mpi= 0/ 2, omp= 0/ 4
+ mpi= 0/ 2, omp= 2/ 4
+ mpi= 1/ 2, omp= 1/ 4
+ mpi= 1/ 2, omp= 0/ 4
+ mpi= 1/ 2, omp= 3/ 4
+ mpi= 1/ 2, omp= 2/ 4
+□ CT22004 program 1 suspend
+   テストプログラム 1 が停止
+□ CT22005 program 2 START
+   qlmpi_start によってテストプログラム 2 起動 (1プロセス/ノード x 2ノード)
+□ CT22006 check rank info
+   MPIとOMPのプロセス情報が出力されていることを確認する。
+□ CT22007 program 1 suspend
+   テストプログラム 2 が停止
+□ CT22008 program 1 resume
+   qlmpi_start によってテストプログラム 1 が再開
+□ CT22009 check rank info
+   MPIとOMPのプロセス情報が出力されていることを確認する。
+□ CT22010 program 1 suspend
+   テストプログラム 1 が停止
+□ CT22011 program 2 resume
+   qlmpi_start によってテストプログラム 2 が再開
+□ CT22012 check rank info
+   MPIとOMPのプロセス情報が出力されていることを確認する。
+□ CT22013 program 2 suspend
+   テストプログラム 2 が停止
+□ CT22014 program 1 resume
+   qlmpi_finalize によってテストプログラム 1 が再開
+□ CT22015 program 1 END
+   テストプログラム1が終了
+□ CT22016 program 2 resume
+   qlmpi_finalize によってテストプログラム 2 が再開
+□ CT22017 program 2 END
+   テストプログラム2が終了
+□ CT22018 device mapping program test END
+
+CT91 異常系
+□ CT91001 machinefile is not specified, so ql_mpiexec_start returns not 0
+□ CT91002 MPI program is not specified, so ql_mpiexec_start returns not 0
+□ CT91003 specified machinefile does not exist, so ql_mpiexec_start returns not 0
+□ CT91004 specified MPI program does not exist, so ql_mpiexec_start returns not 0
+□ CT91005 mpiexec is not found, so ql_mpiexec_start returns not 0
+□ CT91006 mpiexec abort, so ql_mpiexec_start returns not 0
+□ CT91007 machinefile is not specified, so ql_mpiexec_finalize returns not 0
+□ CT91008 MPI program is not specified, so ql_mpiexec_finalize returns not 0
+□ CT91009 specified machinefile is wrong, so ql_mpiexec_finalize returns not 0
+□ CT91010 specified MPI program name is wrong, so ql_mpiexec_finalize returns not 0
+□ CT91011 one of MPI processes aborts, so ql_mpiexec_start returns not 0

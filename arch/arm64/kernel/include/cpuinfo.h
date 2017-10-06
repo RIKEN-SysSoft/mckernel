@@ -26,6 +26,9 @@ struct cpuinfo_arm64 {
 	uint64_t reg_id_aa64mmfr2;
 	uint64_t reg_id_aa64pfr0;
 	uint64_t reg_id_aa64pfr1;
+	uint64_t reg_id_aa64zfr0;
+
+	uint64_t reg_zcr;
 };
 
 #endif /* !__HEADER_ARM64_COMMON_CPUINFO_H */

@@ -78,6 +78,9 @@ static int load_elf(struct linux_binprm *bprm
 	char *pbuf;
 	const char *path;
 
+	if (mcctrl_os_alive() == -1)
+		return -ENOEXEC;
+
 	if(bprm->envc == 0)
 		return -ENOEXEC;
 	if(memcmp(elf_ex->e_ident, ELFMAG, SELFMAG) != 0)

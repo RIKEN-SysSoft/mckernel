@@ -1,18 +1,31 @@
 # Makefile.in COPYRIGHT FUJITSU LIMITED 2015-2016
 CC=@CC@
+MCC=mpicc
 BINDIR=@BINDIR@
+SBINDIR=@SBINDIR@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 LIBDIR=@libdir@
+MANDIR=@MANDIR@
+MCKERNEL_INCDIR=@MCKERNEL_INCDIR@
 MCKERNEL_LIBDIR=@MCKERNEL_LIBDIR@
 KDIR ?= @KDIR@
 CFLAGS=-Wall -O -I. -I$(VPATH)/arch/${ARCH}
+LDFLAGS=@LDFLAGS@
+RPATH=$(shell echo $(LDFLAGS)|awk '{for(i=1;i<=NF;i++){if($$i~/^-L/){w=$$i;sub(/^-L/,"-Wl,-rpath,",w);print w}}}')
 VPATH=@abs_srcdir@
-TARGET=mcexec libsched_yield
+TARGET=mcexec libsched_yield ldump2mcdump.so
 @uncomment_if_ENABLE_MEMDUMP@TARGET+=eclair
 LIBS=@LIBS@
 ARCH=@ARCH@
 IHKDIR ?= $(VPATH)/../../../ihk/linux/include/
+MCEXEC_LIBS=-lmcexec -lrt -lnuma -pthread
+ENABLE_QLMPI=@ENABLE_QLMPI@
+
+ifeq ($(ENABLE_QLMPI),yes)
+	MCEXEC_LIBS += -lmpi
+	TARGET+= libqlmpi.so ql_server ql_mpiexec_start ql_mpiexec_finalize ql_talker libqlfort.so
+endif
 
 ifeq ($(ARCH), arm64)
 CFLAGS += $(foreach i, $(shell seq 1 100), $(addprefix -DPOSTK_DEBUG_ARCH_DEP_, $(i)))
@@ -22,7 +35,7 @@ endif
 all: $(TARGET)
 
 mcexec: mcexec.c libmcexec.a
-	$(CC) -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) -DLIBDIR=\"$(LIBDIR)\" -fPIE -pie -L. -lmcexec -lrt -lnuma -pthread -o $@ $^ $(EXTRA_OBJS)
+	$(CC) -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) $(LDFLAGS) -DLIBDIR=\"$(LIBDIR)\" -fPIE -pie -L. $(MCEXEC_LIBS) -o $@ $^ $(EXTRA_OBJS) $(RPATH)
 
 # POSTK_DEBUG_ARCH_DEP_34, eclair arch depend separate.
 ifeq ($(ARCH), arm64)
@@ -33,11 +46,35 @@ eclair: eclair.c
 	$(CC) $(CFLAGS) -I${IHKDIR} -o $@ $^ $(LIBS)
 endif
 
+ldump2mcdump.so: ldump2mcdump.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -shared -fPIC -o $@ $<
+
 libsched_yield: libsched_yield.c
 	$(CC) -shared -fPIC -Wl,-soname,sched_yield.so.1 -o libsched_yield.so.1.0.0 $^ -lc -ldl
 
 libmcexec.a::
 	(cd arch/${ARCH}; make)
+
+libqlmpi.so: qlmpilib.c
+	$(MCC) $(CFLAGS) $(LDFLAGS) -shared -fPIC -o $@ $<
+
+libqlfort.so: libqlfort.c
+	$(MCC) $(CFLAGS) $(LDFLAGS) -shared -fPIC -o $@ $< -ldl
+
+ql_server: ql_server.c
+	$(CC) $(CFLAGS) -o $@ $^ 
+
+ql_mpiexec_start: ql_mpiexec_start.o md5.o
+	$(CC) $^ $(CFLAGS) -pthread -o $@
+
+ql_mpiexec_finalize.o: ql_mpiexec_start.c
+	$(CC) $(CFLAGS) -DQL_MPIEXEC_FINALIZE -c -o $@ $<
+
+ql_mpiexec_finalize: ql_mpiexec_finalize.o md5.o
+	$(CC) $^ $(CFLAGS) -pthread -o $@
+
+ql_talker: ql_talker.o
+	$(CC) $^ $(CFLAGS) -o $@
 
 clean::
 	(cd arch/${ARCH}; make clean)
@@ -50,6 +87,18 @@ install::
 	mkdir -p -m 755 $(BINDIR)
 	install -m 755 mcexec $(BINDIR)
 	mkdir -p -m 755 $(MCKERNEL_LIBDIR)
+	install -m 755 ldump2mcdump.so $(MCKERNEL_LIBDIR)
 	install -m 755 libsched_yield.so.1.0.0 $(MCKERNEL_LIBDIR)
+	install -m 644 mcexec.1 $(MANDIR)/man1/mcexec.1
+ifeq ($(ENABLE_QLMPI),yes)
+	install -m 644 ../include/qlmpilib.h $(MCKERNEL_INCDIR)
+	install -m 755 libqlmpi.so $(MCKERNEL_LIBDIR)
+	install -m 755 libqlfort.so $(MCKERNEL_LIBDIR)
+	install -m 755 ql_server $(SBINDIR)
+	install -m 755 ql_mpiexec_start $(BINDIR)
+	install -m 755 ql_mpiexec_finalize $(BINDIR)
+	install -m 755 ql_talker $(SBINDIR)
+endif
 	@uncomment_if_ENABLE_MEMDUMP@install -m 755 eclair $(BINDIR)
+	@uncomment_if_ENABLE_MEMDUMP@install -m 755 vmcore2mckdump $(BINDIR)
 

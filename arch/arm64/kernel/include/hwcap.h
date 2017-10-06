@@ -19,6 +19,7 @@
 #define HWCAP_ASIMDHP		(1 << 10)
 #define HWCAP_CPUID		(1 << 11)
 #define HWCAP_ASIMDRDM		(1 << 12)
+#define HWCAP_SVE		(1 << 13)
 
 unsigned long arch_get_hwcap(void);
 extern unsigned long elf_hwcap;

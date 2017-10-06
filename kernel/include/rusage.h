@@ -1,197 +1,45 @@
+/* Interface toward kernel and mcctrl */
+
 #ifndef __RUSAGE_H
 #define __RUSAGE_H
 
-#include <config.h>
-#include <ihk/rusage.h>
+//#define RUSAGE_DEBUG
 
-#ifdef ENABLE_RUSAGE
-#define RUSAGE_MEM_LIMIT (2 * 1024 * 1024) // 2MB
+#define IHK_MAX_NUM_PGSIZES 4
+#define IHK_MAX_NUM_NUMA_NODES 1024
+#define IHK_MAX_NUM_CPUS 1024
 
-extern void eventfd();
+struct rusage_percpu {
+	unsigned long user_tsc;
+	unsigned long system_tsc;
+};
 
-static inline void
-rusage_total_memory_add(unsigned long size)
-{
-	monitor->rusage_total_memory += size;
-}
+struct rusage_global {
+	/* Memory usage accounting */
+	long memory_stat_rss[IHK_MAX_NUM_PGSIZES];
+	long memory_stat_mapped_file[IHK_MAX_NUM_PGSIZES];
+	long rss_current; /* anon && user, used only for memory_max_usage */
+	unsigned long memory_max_usage;
+	unsigned long max_num_threads;
+	unsigned long num_threads;
+	unsigned long memory_kmem_usage;
+	unsigned long memory_kmem_max_usage;
+	unsigned long memory_numa_stat[IHK_MAX_NUM_NUMA_NODES];
 
-static inline void
-rusage_rss_add(unsigned long size)
-{
-	unsigned long newval;
-	unsigned long oldval;
-	unsigned long retval;
+	/* CPU usage accounting */
+	struct rusage_percpu cpu[IHK_MAX_NUM_CPUS]; /* clv[i].monitor = &cpu[i] */
 
-	newval = __sync_add_and_fetch(&monitor->rusage_rss_current, size);
-	oldval = monitor->rusage_rss_max;
-	while (newval > oldval) {
-		retval = __sync_val_compare_and_swap(&monitor->rusage_rss_max,
-		                                     oldval, newval);
-		if (retval == oldval) {
-			break;
-		}
-		oldval = retval;
-	}
-}
-
-static inline void
-rusage_rss_sub(unsigned long size)
-{
-	__sync_sub_and_fetch(&monitor->rusage_rss_current, size);
-}
-
-static inline void
-rusage_kmem_add(unsigned long size)
-{
-	unsigned long newval;
-	unsigned long oldval;
-	unsigned long retval;
-
-	newval = __sync_add_and_fetch(&monitor->rusage_kmem_usage, size);
-	oldval = monitor->rusage_kmem_max_usage;
-	while (newval > oldval) {
-		retval = __sync_val_compare_and_swap(
-		                                &monitor->rusage_kmem_max_usage,
-		                                oldval, newval);
-		if (retval == oldval) {
-			break;
-		}
-		oldval = retval;
-	}
-}
-
-static inline void
-rusage_kmem_sub(unsigned long size)
-{
-	__sync_sub_and_fetch(&monitor->rusage_kmem_usage, size);
-}
-
-static inline void
-rusage_numa_add(int numa_id, unsigned long size)
-{
-	__sync_add_and_fetch(monitor->rusage_numa_stat + numa_id, size);
-	rusage_rss_add(size);
-}
-
-static inline void
-rusage_numa_sub(int numa_id, unsigned long size)
-{
-	rusage_rss_sub(size);
-	__sync_sub_and_fetch(monitor->rusage_numa_stat + numa_id, size);
-}
-
-static inline void
-rusage_page_add(int numa_id, unsigned long pages, int is_user)
-{
-	unsigned long size = pages * PAGE_SIZE;
-	unsigned long newval;
-	unsigned long oldval;
-	unsigned long retval;
-
-	if (is_user)
-		rusage_numa_add(numa_id, size);
-	else
-		rusage_kmem_add(size);
-
-	newval = __sync_add_and_fetch(&monitor->rusage_total_memory_usage, size);
-	oldval = monitor->rusage_total_memory_max_usage;
-	while (newval > oldval) {
-		retval = __sync_val_compare_and_swap(&monitor->rusage_total_memory_max_usage,
-		                                     oldval, newval);
-		if (retval == oldval) {
-			if (monitor->rusage_total_memory - newval <
-			    RUSAGE_MEM_LIMIT) {
-				eventfd();
-			}
-			break;
-		}
-		oldval = retval;
-	}
-}
-
-static inline void
-rusage_page_sub(int numa_id, unsigned long pages, int is_user)
-{
-	unsigned long size = pages * PAGE_SIZE;
-
-	__sync_sub_and_fetch(&monitor->rusage_total_memory_usage, size);
-
-	if (is_user)
-		rusage_numa_sub(numa_id, size);
-	else
-		rusage_kmem_sub(size);
-}
-
-static inline void
-rusage_num_threads_inc()
-{
-	unsigned long newval;
-	unsigned long oldval;
-	unsigned long retval;
-
-	newval = __sync_add_and_fetch(&monitor->rusage_num_threads, 1);
-	oldval = monitor->rusage_max_num_threads;
-	while (newval > oldval) {
-		retval = __sync_val_compare_and_swap(&monitor->
-		                                     rusage_max_num_threads,
-		                                     oldval, newval);
-		if (retval == oldval) {
-			break;
-		}
-		oldval = retval;
-	}
-}
-
-static inline void
-rusage_num_threads_dec()
-{
-	__sync_sub_and_fetch(&monitor->rusage_num_threads, 1);
-}
-#else
-static inline void
-rusage_total_memory_add(unsigned long size)
-{
-}
-
-static inline void
-rusage_rss_add(unsigned long size)
-{
-}
-
-static inline void
-rusage_rss_sub(unsigned long size)
-{
-}
-
-static inline void
-rusage_numa_add(int numa_id, unsigned long size)
-{
-}
-
-static inline void
-rusage_numa_sub(int numa_id, unsigned long size)
-{
-}
-
-static inline void
-rusage_page_add(int numa_id, unsigned long size, int is_user)
-{
-}
-
-static inline void
-rusage_page_sub(int numa_id, unsigned long size, int is_user)
-{
-}
-
-static inline void
-rusage_num_threads_inc()
-{
-}
-
-static inline void
-rusage_num_threads_dec()
-{
-}
-#endif // ENABLE_RUSAGE
+	/* OOM monitoring */
+	unsigned long total_memory;
+	unsigned long total_memory_usage;
+	unsigned long total_memory_max_usage;
+#ifdef RUSAGE_DEBUG
+	unsigned long total_memory_max_usage_old; /* debug */
+#endif
+	/* Used for translating results into struct mckernel_rusage */
+	unsigned long num_numa_nodes;
+	unsigned long num_processors;
+	unsigned long ns_per_tsc;
+};
 
 #endif

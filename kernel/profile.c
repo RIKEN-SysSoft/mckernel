@@ -63,6 +63,7 @@ char *profile_event_names[] =
 	"page_fault_file",
 	"page_fault_dev_file",
 	"page_fault_file_clr_mem",
+	"remote_page_fault",
 	"mpol_alloc_missed",
 	"mmap_anon_contig_phys",
 	"mmap_anon_no_contig_phys",
@@ -227,14 +228,16 @@ void profile_print_proc_stats(struct process *proc)
 		if (!proc->profile_events[i].cnt)
 			continue;
 
-		__kprintf("PID: %4d (%24s): %6u %6luk \n",
+//		__kprintf("PID: %4d (%24s): %6u %6luk \n",
+		__kprintf("PID: %4d (%24s): %6u %6lu \n",
 				proc->pid,
 				profile_event_names[i - PROFILE_EVENT_MIN],
 				proc->profile_events[i].cnt,
 				(proc->profile_events[i].tsc /
 				 (proc->profile_events[i].cnt ?
 				  proc->profile_events[i].cnt : 1))
-				/ 1000,
+//				/ 1000
+				,
 				(proc->profile_events[i].tsc &&
 				 proc->profile_elapsed_ts ?
 				 proc->profile_events[i].tsc * 100
@@ -509,6 +512,8 @@ int do_profile(int flag)
 
 			if (flag & PROF_ON) {
 				_thread->profile = 1;
+				if (!_thread->profile_start_ts)
+					_thread->profile_start_ts = now_ts;
 			}
 			else if (flag & PROF_OFF) {
 				if (_thread->profile) {

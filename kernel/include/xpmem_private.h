@@ -3,8 +3,11 @@
  *  License details are found in the file LICENSE.
  * \brief
  *  Private Cross Partition Memory (XPMEM) structures and macros.
- */
-/*
+ * \author Yoichi Umezawa  <yoichi.umezawa.qh@hitachi.com> \par
+ * 	Copyright (C) 2016 Yoichi Umezawa
+ *
+ * Original Copyright follows:
+ *
  * This file is subject to the terms and conditions of the GNU General Public
  * License.  See the file "COPYING" in the main directory of this archive
  * for more details.
@@ -318,6 +321,8 @@ static inline struct xpmem_thread_group *__xpmem_tg_ref_by_tgid(
 		tgid, return_destroying);
 
 	index = xpmem_tg_hashtable_index(tgid);
+	XPMEM_DEBUG("xpmem_my_part=%p\n", xpmem_my_part);
+	XPMEM_DEBUG("xpmem_my_part->tg_hashtable=%p\n", xpmem_my_part->tg_hashtable);
 	mcs_rwlock_reader_lock(&xpmem_my_part->tg_hashtable[index].lock, &lock);
 	tg = __xpmem_tg_ref_by_tgid_nolock_internal(tgid, index, 
 		return_destroying);

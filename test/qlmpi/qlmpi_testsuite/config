@@ -1,0 +1,9 @@
+MCMOD_DIR=/home/satoken/ppos
+
+START=${MCMOD_DIR}/bin/ql_mpiexec_start
+FINALIZE=${MCMOD_DIR}/bin/ql_mpiexec_finalize
+
+USR_PRG_A=./usr_prg_A
+USR_PRG_B=./usr_prg_B
+USR_PRG_C=./usr_prg_C
+USR_PRG_IRREG=./usr_prg_irreg

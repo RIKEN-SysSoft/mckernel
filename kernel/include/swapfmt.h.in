@@ -1,0 +1,34 @@
+/*
+ * \file swapfmt.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *	swapped out file format
+ * \author Yutaka Ishikawa <ishikawa@riken.jp>
+ */
+
+#define MCKERNEL_SWAP	"McKernel swap"
+#define MCKERNEL_SWAP_VERSION "@MCKERNEL_VERSION@"
+#define SWAP_HLEN	16
+struct swap_header {
+	char		magic[SWAP_HLEN];	/* MCKernel swap */
+	char		version[SWAP_HLEN];	/* same as McKernel version */
+	unsigned int	count_sarea;	/* count of swaped area info */
+	unsigned int	count_marea;	/* count of mlocked area info */
+};
+
+struct swap_areainfo {
+	unsigned long	start;	/* virtual address */
+	unsigned long	end;	/* virtual address */
+	unsigned long	pos;	/* swap: file position in this file
+				 *  mlock: physical address */
+	unsigned long	flag;	/* flag in vm_range */
+};
+
+/*
+ *
+ *	+--------------------
+ *	|   swap_header
+ *	+--------------------
+ *	| swap_areainfo[...]
+ *	| swap_ainfo[...]
+ */

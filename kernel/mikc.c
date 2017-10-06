@@ -17,6 +17,8 @@
 #include <ikc/msg.h>
 #include <kmalloc.h>
 
+extern int ihk_mc_ikc_init_first(struct ihk_ikc_channel_desc *,
+                          ihk_ikc_ph_t handler);
 static struct ihk_ikc_channel_desc *mchannel;
 static int arch_master_channel_packet_handler(struct ihk_ikc_channel_desc *,
                                          void *__packet, void *arg);

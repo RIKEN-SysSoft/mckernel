@@ -447,8 +447,8 @@ out:
 	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
 
 out_put_ppd:
-	dprintk("%s: tid: %d, syscall: %d, reason: %lu, syscall_ret: %d\n",
-		__FUNCTION__, task_pid_vnr(current), num, reason, syscall_ret);
+	dprintk("%s: tid: %d, syscall: %d, syscall_ret: %lx\n",
+		__FUNCTION__, task_pid_vnr(current), num, syscall_ret);
 
 	mcctrl_put_per_proc_data(ppd);
 	return syscall_ret;
@@ -466,8 +466,8 @@ static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, u
 	struct mcctrl_per_proc_data *ppd;
 	unsigned long phys;
 	
-	dprintk("%s: tid: %d, fault_addr: %lu, reason: %lu\n",
-		__FUNCTION__, task_pid_vnr(current), fault_addr, reason);
+	dprintk("%s: tid: %d, fault_addr: %p, reason: %lu\n",
+			__FUNCTION__, task_pid_vnr(current), fault_addr, (unsigned long)reason);
 	
 	/* Look up per-process structure */
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
@@ -628,8 +628,8 @@ out:
 	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
 
 out_put_ppd:
-	dprintk("%s: tid: %d, fault_addr: %lu, reason: %lu, error: %d\n",
-		__FUNCTION__, task_pid_vnr(current), fault_addr, reason, error);
+	dprintk("%s: tid: %d, fault_addr: %p, reason: %lu, error: %d\n",
+			__FUNCTION__, task_pid_vnr(current), fault_addr, (unsigned long)reason, error);
 
 	mcctrl_put_per_proc_data(ppd);
 	return error;
@@ -805,18 +805,6 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	if (!ppd) {
 		kprintf("%s: ERROR: no per-process structure for PID %d??\n", 
 				__FUNCTION__, task_tgid_vnr(current));
-#ifdef POSTK_DEBUG_ARCH_DEP_41 /* HOST-Linux version switch add */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-printk("mcctrl:page fault:flags %#x pgoff %#lx va %#lx page %p\n",
-vmf->flags, vmf->pgoff, vmf->address, vmf->page);
-#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-printk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
-vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-#else /* POSTK_DEBUG_ARCH_DEP_41 */
-printk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
-vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
-#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 		return -EINVAL;
 	}
 
@@ -1040,9 +1028,11 @@ static struct vm_operations_struct rus_vmops = {
 static int rus_mmap(struct file *file, struct vm_area_struct *vma)
 {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,7,0)
-	vma->vm_flags |= VM_RESERVED | VM_DONTEXPAND | VM_MIXEDMAP;
+//	vma->vm_flags |= VM_RESERVED | VM_DONTEXPAND | VM_MIXEDMAP;
+	vma->vm_flags |= VM_RESERVED | VM_MIXEDMAP;
 #else
-	vma->vm_flags |= VM_DONTDUMP | VM_DONTEXPAND | VM_MIXEDMAP;
+//	vma->vm_flags |= VM_DONTDUMP | VM_DONTEXPAND | VM_MIXEDMAP;
+	vma->vm_flags |= VM_DONTDUMP | VM_MIXEDMAP;
 #endif
 	vma->vm_ops = &rus_vmops;
 	return 0;
@@ -1150,7 +1140,7 @@ void pager_remove_process(struct mcctrl_per_proc_data *ppd)
 	list_for_each_entry_safe(pager, pager_next,
 			&ppd->devobj_pager_list, list) {
 
-		dprintk("%s: devobj pager 0x%lx removed\n", __FUNCTION__, pager);
+		dprintk("%s: devobj pager 0x%p removed\n", __FUNCTION__, pager);
 		list_del(&pager->list);
 		kfree(pager);
 	}
@@ -1179,7 +1169,7 @@ void pager_remove_process(struct mcctrl_per_proc_data *ppd)
 			fput(pager->rwfile);
 		}
 
-		dprintk("%s: pager 0x%lx removed\n", __FUNCTION__, pager);
+		dprintk("%s: pager 0x%p removed\n", __FUNCTION__, pager);
 		kfree(pager);
 	}
 
@@ -1207,6 +1197,9 @@ enum {
 	MF_REG_FILE = 0x1000,
 	MF_DEV_FILE = 0x2000,
 	MF_PREMAP   = 0x8000,
+	MF_XPMEM   = 0x10000, /* To identify XPMEM attachment pages for rusage accounting */
+	MF_ZEROOBJ = 0x20000, /* To identify pages of anonymous, on-demand paging ranges for rusage accounting */
+	MF_SHM =     0x40000,
 	MF_END
 };
 
@@ -1538,8 +1531,8 @@ static int pager_req_write(ihk_os_t os, uintptr_t handle, off_t off, size_t size
 	}
 
 	/*
-	 * XXX: vfs_write 位の階層を使いつつ，
-	 * ファイルサイズ更新を回避する方法ないかな？
+	 * XXX: Find a way to avoid changing the file size
+	 * by using a function in the same abstraction level as vfs_write().
 	 */
 	fsize = i_size_read(file->f_mapping->host);
 	if (off >= fsize) {
@@ -1737,7 +1730,7 @@ static int pager_req_pfn(ihk_os_t os, uintptr_t handle, off_t off, uintptr_t ppf
 
 	va = pager->map_uaddr + (off - pager->map_off);
 #define	PFN_VALID	((uintptr_t)1 << 63)
-	pfn = PFN_VALID;	/* デフォルトは not present */
+	pfn = PFN_VALID;	/* Use "not present" as the default setting */
 
 	down_read(&current->mm->mmap_sem);
 retry:	
@@ -1875,6 +1868,77 @@ out:
 	return error;
 }
 
+#ifdef SC_DEBUG
+#ifdef MCCTRL_KSYM_walk_page_range
+static void
+(*mcctrl_walk_page_range)(unsigned long addr, unsigned long end, struct mm_walk *walk)
+#if MCCTRL_KSYM_walk_page_range
+	= (void *)MCCTRL_KSYM_walk_page_range;
+#else
+	= &walk_page_range;
+#endif
+#endif
+
+static int mywalk(pte_t *pte, unsigned long addr, unsigned long next, struct mm_walk *walk)
+{
+	unsigned long		pfn;
+	struct page		*page;
+
+	if (pte == NULL) {
+		kprintf("mywalk: ptr(%p)\n", pte);
+		return 0;
+	}
+	pfn = pte_pfn(*pte);
+	page = pfn_to_page(pfn);
+	if (page == NULL) {
+		kprintf("mywalk: pte(%p) page is null\n", pte);
+		return 0;
+	}
+	if (PageLocked(page)) {
+		kprintf("mywalk: MLOCK (%p)\n", (void*) addr);
+	}
+	if (addr > 0x700000 && addr < 0x705000) {
+		kprintf("mywalk: %p(%lx)\n", (void*) addr, page->flags);
+	}
+	return 0;
+}
+#endif
+
+static long pager_req_mlock_list(ihk_os_t os, unsigned long start,
+				 unsigned long end, void *addr, int nent)
+{
+	struct addrpair {
+		unsigned long	start;
+		unsigned long	end;
+		unsigned long	flag;
+	} *addrpair = (struct addrpair *) addr;
+	int			cnt = 0;
+	struct mm_struct	*mm = current->mm;
+	struct vm_area_struct	*vma;
+
+	kprintf("pager_req_mlock_list: addr(%p)\n", addr);
+	vma = find_vma(current->mm, 0x7010a0);
+	for (vma = mm->mmap; vma != NULL; vma = vma->vm_next) {
+		if (vma->vm_start < start || vma->vm_start > end) continue;
+		kprintf("\t%p: %p -- %p\t%lx\n", vma,
+			(void*)vma->vm_start, (void*)vma->vm_end,
+			vma->vm_flags & VM_LOCKED);
+		if (vma->vm_flags & VM_LOCKED) {
+			kprintf("\t locked\n");
+			if (++cnt >= nent) { /* last entry is a marker */
+				addrpair->start = (unsigned long) -1;
+				goto full;
+			}
+			addrpair->start = vma->vm_start;
+			addrpair->end = vma->vm_end;
+			addrpair->flag = vma->vm_flags;
+			addrpair++;
+		}
+	}
+full:
+	return cnt;
+}
+
 static long pager_call(ihk_os_t os, struct syscall_request *req)
 {
 	long ret;
@@ -1888,6 +1952,7 @@ static long pager_call(ihk_os_t os, struct syscall_request *req)
 #define	PAGER_REQ_MAP		0x0005
 #define	PAGER_REQ_PFN		0x0006
 #define	PAGER_REQ_UNMAP		0x0007
+#define PAGER_REQ_MLOCK_LIST	0x0008
 	case PAGER_REQ_CREATE:
 		ret = pager_req_create(os, req->args[1], req->args[2]);
 		break;
@@ -1916,7 +1981,11 @@ static long pager_call(ihk_os_t os, struct syscall_request *req)
 	case PAGER_REQ_UNMAP:
 		ret = pager_req_unmap(os, req->args[1]);
 		break;
-
+	case PAGER_REQ_MLOCK_LIST:
+		ret = pager_req_mlock_list(os, (unsigned long) req->args[1],
+					   (unsigned long) req->args[2],
+					   (void*) req->args[3], (int) req->args[4]);
+		break;
 	default:
 		ret = -ENOSYS;
 		printk("pager_call(%#lx):unknown req %ld\n", req->args[0], ret);
@@ -2192,7 +2261,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 	long ret = -1;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 
-	dprintk("%s: system call: %d\n", __FUNCTION__, sc->args[0]);
+	dprintk("%s: system call: %lx\n", __FUNCTION__, sc->args[0]);
 	switch (sc->number) {
 	case __NR_mmap:
 		ret = pager_call(os, sc);
@@ -2315,7 +2384,7 @@ sched_setparam_out:
 
 	error = 0;
 out:
-	dprintk("%s: system call: %d, error: %d, ret: %ld\n", 
+	dprintk("%s: system call: %ld, args[0]: %lx, error: %d, ret: %ld\n", 
 		__FUNCTION__, sc->number, sc->args[0], error, ret);
 	return error;
 }
