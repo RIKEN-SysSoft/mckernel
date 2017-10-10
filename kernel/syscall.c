@@ -3212,6 +3212,11 @@ SYSCALL_DECLARE(open)
 		return -EFAULT;
 	}
 	dkprintf("open(): pathname=%s\n", xpmem_wk);
+
+	if (!strcmp(xpmem_wk, "/proc/sys/vm/overcommit_memory")) {
+		return -ENOENT;
+	}
+
 	rc = strcmp(xpmem_wk, XPMEM_DEV_PATH);
 #ifdef POSTK_DEBUG_ARCH_DEP_62 /* Absorb the difference between open and openat args. */
 	if (!rc) {
