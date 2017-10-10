@@ -16,6 +16,7 @@ endif
 DEPSRCS=$(wildcard $(SRC)/*.c)
 
 CFLAGS += -I$(SRC)/include -I@abs_builddir@/../ -I@abs_builddir@/include -D__KERNEL__  -g -fno-omit-frame-pointer -fno-inline -fno-inline-small-functions
+CFLAGS += -mcmodel=large -mno-red-zone
 LDFLAGS += -e arch_start
 IHKOBJ = ihk/ihk.o
 

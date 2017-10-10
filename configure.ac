@@ -535,19 +535,25 @@ AC_CONFIG_FILES([
 	kernel/Makefile
 	kernel/Makefile.build
 	kernel/include/swapfmt.h
-	arch/x86/tools/mcreboot-attached-mic.sh
-	arch/x86/tools/mcshutdown-attached-mic.sh
-	arch/x86/tools/mcreboot-builtin-x86.sh
-	arch/x86/tools/mcreboot-smp-x86.sh
-	arch/x86/tools/mcstop+release-smp-x86.sh
-	arch/x86/tools/mcoverlay-destroy-smp-x86.sh
-	arch/x86/tools/mcoverlay-create-smp-x86.sh
-	arch/x86/tools/eclair-dump-backtrace.exp
-	arch/x86/tools/mcshutdown-builtin-x86.sh
-	arch/x86/tools/mcreboot.1:arch/x86/tools/mcreboot.1in
-	arch/x86/tools/irqbalance_mck.service
-	arch/x86/tools/irqbalance_mck.in
+	arch/x86_64/tools/mcreboot-attached-mic.sh
+	arch/x86_64/tools/mcshutdown-attached-mic.sh
+	arch/x86_64/tools/mcreboot-builtin-x86.sh
+	arch/x86_64/tools/mcreboot-smp-x86.sh
+	arch/x86_64/tools/mcstop+release-smp-x86.sh
+	arch/x86_64/tools/mcoverlay-destroy-smp-x86.sh
+	arch/x86_64/tools/mcoverlay-create-smp-x86.sh
+	arch/x86_64/tools/eclair-dump-backtrace.exp
+	arch/x86_64/tools/mcshutdown-builtin-x86.sh
+	arch/x86_64/tools/mcreboot.1:arch/x86_64/tools/mcreboot.1in
+	arch/x86_64/tools/irqbalance_mck.service
+	arch/x86_64/tools/irqbalance_mck.in
 ])
+
+if test "$TARGET" = "smp-x86"; then
+AC_CONFIG_FILES([
+	arch/x86_64/kernel/Makefile.arch
+])
+fi
 
 if test "$TARGET" = "smp-arm64"; then
 AC_CONFIG_FILES([
