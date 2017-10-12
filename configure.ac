@@ -316,6 +316,9 @@ case $WITH_TARGET in
 	if test "X$ETCDIR" = X; then
 		ETCDIR="$prefix/etc"
 	fi
+	if test "X$INCLUDEDIR" = X; then
+		INCLUDEDIR="$prefix/include"
+	fi
 	if test "X$KMODDIR" = X; then
 		KMODDIR="$prefix/kmod"
 	fi
