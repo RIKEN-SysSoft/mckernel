@@ -206,7 +206,6 @@ static void monitor_init()
 	monitor = ihk_mc_alloc_pages(z, IHK_MC_AP_CRITICAL);
 	memset(monitor, 0, z * PAGE_SIZE);
 	monitor->num_processors = (cpu_info->ncpus - 1);
-	monitor->ns_per_tsc = ihk_mc_get_ns_per_tsc();
 	phys = virt_to_phys(monitor);
 	ihk_set_monitor(phys, sizeof(struct ihk_os_monitor) +
 	                    sizeof(struct ihk_os_cpu_monitor) * (cpu_info->ncpus - 1));
