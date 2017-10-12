@@ -73,6 +73,7 @@ static inline void pt_regs_write_reg(struct pt_regs *regs, int r,
 #define ihk_mc_syscall_arg5(uc) (uc)->regs[5]
 
 #define ihk_mc_syscall_ret(uc)  (uc)->regs[0]
+#define ihk_mc_syscall_number(uc)  (uc)->regs[8]
 
 #define ihk_mc_syscall_pc(uc)   (uc)->pc
 #define ihk_mc_syscall_sp(uc)   (uc)->sp
