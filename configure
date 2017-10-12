@@ -708,6 +708,7 @@ enable_dcfa
 enable_memdump
 enable_mcoverlayfs
 enable_rusage
+enable_perf
 enable_qlmpi
 with_uname_r
 '
@@ -1333,6 +1334,7 @@ Optional Features:
   --enable-memdump        enable dumping memory and analyzing a dump
   --enable-mcoverlayfs    enable mcoverlayfs implementation
   --enable-rusage         enable rusage implementation
+  --enable-perf           enable perf_event implementation
   --enable-qlmpi          enable qlmpi implementation
 
 Optional Packages:
@@ -3568,6 +3570,14 @@ else
 fi
 
 
+# Check whether --enable-perf was given.
+if test "${enable_perf+set}" = set; then :
+  enableval=$enable_perf; ENABLE_PERF=$enableval
+else
+  ENABLE_PERF=yes
+fi
+
+
 # Check whether --enable-qlmpi was given.
 if test "${enable_qlmpi+set}" = set; then :
   enableval=$enable_qlmpi; ENABLE_QLMPI=$enableval
@@ -4962,6 +4972,17 @@ $as_echo "#define ENABLE_RUSAGE 1" >>confdefs.h
 else
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: rusage is disabled" >&5
 $as_echo "$as_me: rusage is disabled" >&6;}
+fi
+
+if test "x$ENABLE_PERF" = "xyes" ; then
+
+$as_echo "#define ENABLE_PERF 1" >>confdefs.h
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: perf is enabled" >&5
+$as_echo "$as_me: perf is enabled" >&6;}
+else
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: perf is disabled" >&5
+$as_echo "$as_me: perf is disabled" >&6;}
 fi
 
 if test "x$MCKERNEL_INCDIR" != "x" ; then

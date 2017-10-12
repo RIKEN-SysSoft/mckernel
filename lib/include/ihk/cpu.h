@@ -77,6 +77,15 @@ void ihk_mc_init_context(ihk_mc_kernel_context_t *new_ctx,
                          void *stack_pointer,
                          void (*next_function)(void));
 
+int ihk_mc_get_extra_reg_id(unsigned long hw_config, unsigned long hw_config_ext);
+unsigned int ihk_mc_get_nr_extra_regs();
+int ihk_mc_get_extra_reg_idx(int id);
+unsigned int ihk_mc_get_extra_reg_msr(int id);
+unsigned long ihk_mc_get_extra_reg_event(int id);
+unsigned long ihk_mc_hw_event_map(unsigned long hw_event);
+unsigned long ihk_mc_hw_cache_event_map(unsigned long hw_cache_event);
+unsigned long ihk_mc_hw_cache_extra_reg_map(unsigned long hw_cache_event);
+
 /* returns the 'prev' argument of the call that caused the switch to the context returned. */
 void *ihk_mc_switch_context(ihk_mc_kernel_context_t *old_ctx,
                            ihk_mc_kernel_context_t *new_ctx,

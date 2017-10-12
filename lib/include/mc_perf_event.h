@@ -2,9 +2,9 @@
 #ifndef MC_PERF_EVENT_H
 #define MC_PERF_EVENT_H
 
-#ifdef POSTK_DEBUG_TEMP_FIX_32
+//#ifdef POSTK_DEBUG_TEMP_FIX_32
 #include <list.h>
-#endif /*POSTK_DEBUG_TEMP_FIX_32*/
+//#endif /*POSTK_DEBUG_TEMP_FIX_32*/
 #include <march.h>
 
 struct perf_event_attr;
@@ -103,6 +103,40 @@ enum perf_hw_id {
         PERF_COUNT_HW_REF_CPU_CYCLES            = 9,
 
         PERF_COUNT_HW_MAX,                      /* non-ABI */
+};
+
+/*
+ * Generalized hardware cache events:
+ *
+ *       { L1-D, L1-I, LLC, ITLB, DTLB, BPU, NODE } x
+ *       { read, write, prefetch } x
+ *       { accesses, misses }
+ */
+enum perf_hw_cache_id {
+	PERF_COUNT_HW_CACHE_L1D         = 0,
+	PERF_COUNT_HW_CACHE_L1I         = 1,
+	PERF_COUNT_HW_CACHE_LL          = 2,
+	PERF_COUNT_HW_CACHE_DTLB        = 3,
+	PERF_COUNT_HW_CACHE_ITLB        = 4,
+	PERF_COUNT_HW_CACHE_BPU         = 5,
+	PERF_COUNT_HW_CACHE_NODE        = 6,
+
+	PERF_COUNT_HW_CACHE_MAX,        /* non-ABI */
+};
+
+enum perf_hw_cache_op_id {
+	PERF_COUNT_HW_CACHE_OP_READ     = 0,
+	PERF_COUNT_HW_CACHE_OP_WRITE        = 1,
+	PERF_COUNT_HW_CACHE_OP_PREFETCH     = 2,
+
+	PERF_COUNT_HW_CACHE_OP_MAX,     /* non-ABI */
+};
+
+enum perf_hw_cache_op_result_id {
+	PERF_COUNT_HW_CACHE_RESULT_ACCESS   = 0,
+	PERF_COUNT_HW_CACHE_RESULT_MISS     = 1,
+
+	PERF_COUNT_HW_CACHE_RESULT_MAX,     /* non-ABI */
 };
 
 /*
@@ -218,8 +252,18 @@ struct perf_event_attr {
 #endif
 };
 
+struct hw_perf_event_extra {
+	unsigned long config;
+	unsigned int reg;
+	int idx;
+};
+
+
 struct mc_perf_event {
 	struct perf_event_attr		attr;
+	struct hw_perf_event_extra extra_reg;
+	unsigned long		hw_config;
+	unsigned long		hw_config_ext;
 	int 				cpu_id;
 	int 				counter_id;	// counter_id
 	unsigned long			count;		// counter_value

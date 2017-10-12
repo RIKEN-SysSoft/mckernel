@@ -9,11 +9,14 @@
 /* whether memdump feature is enabled */
 #undef ENABLE_MEMDUMP
 
-/* whether mcoverlayfs is enabled */
+/* whether qlmpi is enabled */
 #undef ENABLE_QLMPI
 
 /* whether rusage is enabled */
 #undef ENABLE_RUSAGE
+
+/* whether perf is enabled */
+#undef ENABLE_PERF
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
