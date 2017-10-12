@@ -1434,6 +1434,13 @@ save_fp_regs(struct thread *thread)
 	}
 }
 
+void copy_fp_regs(struct thread *from, struct thread *to)
+{
+	if ((from->fp_regs != NULL) && (check_and_allocate_fp_regs(to) == 0)) {
+		memcpy(to->fp_regs, from->fp_regs, sizeof(fp_regs_struct));
+	}
+}
+
 void
 clear_fp_regs(struct thread *thread)
 {
