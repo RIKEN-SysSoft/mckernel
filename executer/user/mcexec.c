@@ -1640,6 +1640,8 @@ static void destroy_local_environ(char **local_env)
 unsigned long atobytes(char *string)
 {
 	unsigned long mult = 1;
+	unsigned long ret;
+	char orig_postfix = 0;
 	char *postfix;
 	errno = ERANGE;
 
@@ -1651,19 +1653,26 @@ unsigned long atobytes(char *string)
 
 	if (*postfix == 'k' || *postfix == 'K') {
 		mult = 1024;
+		orig_postfix = *postfix;
 		*postfix = 0;
 	}
 	else if (*postfix == 'm' || *postfix == 'M') {
 		mult = 1024 * 1024;
+		orig_postfix = *postfix;
 		*postfix = 0;
 	}
 	else if (*postfix == 'g' || *postfix == 'G') {
 		mult = 1024 * 1024 * 1024;
+		orig_postfix = *postfix;
 		*postfix = 0;
 	}
 
+	ret = atol(string) * mult;
+	if (orig_postfix)
+		*postfix = orig_postfix;
+
 	errno = 0;
-	return atol(string) * mult;
+	return ret;
 }
 
 static struct option mcexec_options[] = {
