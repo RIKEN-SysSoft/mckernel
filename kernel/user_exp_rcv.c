@@ -232,13 +232,12 @@ int hfi1_user_exp_rcv_clear(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 	/* Technically should never be needed (because mapped previously
 	 * on update), but this call is no-op if addresses have been set
 	 * previously
-	 */
 	if (hfi1_map_device_addresses(fd) < 0) {
 		kprintf("%s: Could not map hfi1 device addresses\n",
 			__FUNCTION__);
 		return -EINVAL;
 	}
-
+	*/
 
 	dkprintf("Clear called, cnt %d\n", tinfo->tidcnt);
 	for (tididx = 0; tididx < tinfo->tidcnt; tididx++) {

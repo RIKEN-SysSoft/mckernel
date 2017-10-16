@@ -731,6 +731,26 @@ static void destroy_page_table(int level, struct page_table *pt)
 	return;
 }
 
+void ihk_mc_pt_destroy_pgd_subtree(struct page_table *pt, void *virt)
+{
+	int l4idx, l3idx, l2idx, l1idx;
+	unsigned long v = (unsigned long)virt;
+	struct page_table *lower;
+
+	GET_VIRT_INDICES(v, l4idx, l3idx, l2idx, l1idx);
+
+	if (!(pt->entry[l4idx] & PF_PRESENT))
+		return;
+
+	lower = (struct page_table *)
+		phys_to_virt(pt->entry[l4idx] & PT_PHYSMASK);
+	destroy_page_table(3, lower);
+
+	pt->entry[l4idx] = 0;
+	dkprintf("%s: virt: 0x%lx, l4idx: %d subtree destroyed\n",
+		__FUNCTION__, virt, l4idx);
+}
+
 void ihk_mc_pt_destroy(struct page_table *pt)
 {
 	const int level = 4;	/* PML4 */
