@@ -148,6 +148,7 @@ init_process(struct process *proc, struct process *parent)
 	mcs_rwlock_init(&proc->threads_lock);
 	mcs_rwlock_init(&proc->children_lock);
 	ihk_mc_spinlock_init(&proc->mckfd_lock);
+	ihk_mc_spinlock_init(&proc->hfi1_lock);
 	waitq_init(&proc->waitpid_q);
 	ihk_atomic_set(&proc->refcount, 2);
 	proc->monitoring_event = NULL;

@@ -575,12 +575,15 @@ struct process {
 	int nr_processes; /* For partitioned execution */
 	int process_rank; /* Rank in partition */
 
-	void *fd_priv_table[265];
+	void *fd_priv_table[256];
 	/* HFI1 specific */
 	void *hfi1_kregbase;
 	void *hfi1_piobase;
 	void *hfi1_rcvarray_wc;
+	size_t hfi1_rcvarray_wc_len;
 	void *hfi1_cq_comps;
+	size_t hfi1_cq_comps_len;
+	ihk_spinlock_t hfi1_lock;
 };
 
 /*

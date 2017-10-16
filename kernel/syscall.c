@@ -1078,6 +1078,12 @@ void terminate(int rc, int sig)
 	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 
 	vm = proc->vm;
+
+	{
+		extern int hfi1_unmap_device_addresses(struct process *proc);
+		hfi1_unmap_device_addresses(proc);
+	}
+
 	free_all_process_memory_range(vm);
 
 	if (proc->saved_cmdline) {

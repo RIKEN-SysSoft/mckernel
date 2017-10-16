@@ -51,6 +51,14 @@
 #include <hfi1/user_exp_rcv.h>
 #include <hfi1/common.h> 
 
+//#define DEBUG_PRINT_HFI1_SDMA
+
+#ifdef DEBUG_PRINT_HFI1_SDMA
+#define dkprintf(...) kprintf(__VA_ARGS__)
+#else
+#define dkprintf(...) do { if(0) kprintf(__VA_ARGS__); } while (0)
+#endif
+
 #ifdef __HFI1_ORIG__
 
 #include <linux/mm.h>
@@ -564,11 +572,15 @@ int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 #endif
 	unsigned long phys;
 	unsigned long len;
+	unsigned long irqstate;
+	int ret = 0;
 
 	struct process *proc = cpu_local_var(current)->proc;
 	struct process_vm *vm = cpu_local_var(current)->vm;
 	struct hfi1_user_sdma_comp_q *cq = fd->cq;
 	struct hfi1_devdata *dd = fd->dd;
+
+	irqstate = ihk_mc_spinlock_lock(&proc->hfi1_lock);
 
 	/*
 	 * Map device addresses if not mapped or mapping changed.
@@ -592,7 +604,8 @@ int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 						virt, phys, attr) < 0) {
 				kprintf("%s: ERROR: failed to map kregbase: 0x%lx -> 0x%lx\n",
 						__FUNCTION__, virt, phys);
-				return -1;
+				ret = -1;
+				goto unlock_out;
 			}
 
 			ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
@@ -600,7 +613,8 @@ int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 			if (!ptep && !pte_is_present(ptep)) {
 				kprintf("%s: ERROR: no mapping in McKernel for kregbase: 0x%lx?\n",
 						__FUNCTION__, virt);
-				return -1;
+				ret = -1;
+				goto unlock_out;
 			}
 
 			lptep = ihk_mc_pt_lookup_pte(ihk_mc_get_linux_kernel_pgt(),
@@ -608,17 +622,19 @@ int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 			if (!lptep && !pte_is_present(lptep)) {
 				kprintf("%s: ERROR: no mapping in Linux for kregbase: 0x%lx?\n",
 						__FUNCTION__, virt);
-				return -1;
+				ret = -1;
+				goto unlock_out;
 			}
 
 			*ptep = *lptep;
 		}
 
-		kprintf("%s: hfi1_kregbase: 0x%lx - 0x%lx -> 0x%lx:%lu\n",
+		dkprintf("%s: hfi1_kregbase: 0x%lx - 0x%lx -> 0x%lx:%lu\n",
 				__FUNCTION__,
 				hfi1_kregbase,
 				hfi1_kregbase + TXE_PIO_SEND,
 				(phys - TXE_PIO_SEND), TXE_PIO_SEND);
+		//ihk_mc_pt_print_pte(vm->address_space->page_table, hfi1_kregbase);
 
 		proc->hfi1_kregbase = hfi1_kregbase;
 	}
@@ -635,7 +651,8 @@ int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 						virt, phys, attr) < 0) {
 				kprintf("%s: ERROR: failed to map piobase: 0x%lx -> 0x%lx\n",
 					__FUNCTION__, virt, phys);
-				return -1;
+				ret = -1;
+				goto unlock_out;
 			}
 
 			ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
@@ -643,7 +660,8 @@ int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 			if (!ptep && !pte_is_present(ptep)) {
 				kprintf("%s: ERROR: no mapping in McKernel for piobase: 0x%lx?\n",
 						__FUNCTION__, virt);
-				return -1;
+				ret = -1;
+				goto unlock_out;
 			}
 
 			lptep = ihk_mc_pt_lookup_pte(ihk_mc_get_linux_kernel_pgt(),
@@ -651,13 +669,14 @@ int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 			if (!lptep && !pte_is_present(lptep)) {
 				kprintf("%s: ERROR: no mapping in Linux for piobase: 0x%lx?\n",
 						__FUNCTION__, virt);
-				return -1;
+				ret = -1;
+				goto unlock_out;
 			}
 
 			*ptep = *lptep;
 		}
 
-		kprintf("%s: hfi1_piobase: 0x%lx - 0x%lx -> 0x%lx:%lu\n",
+		dkprintf("%s: hfi1_piobase: 0x%lx - 0x%lx -> 0x%lx:%lu\n",
 				__FUNCTION__,
 				hfi1_piobase,
 				hfi1_piobase + TXE_PIO_SIZE,
@@ -679,7 +698,8 @@ int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 						virt, phys, attr) < 0) {
 				kprintf("%s: ERROR: failed to map rcvarray_wc: 0x%lx -> 0x%lx\n",
 						__FUNCTION__, virt, phys);
-				return -1;
+				ret = -1;
+				goto unlock_out;
 			}
 
 			ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
@@ -687,7 +707,8 @@ int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 			if (!ptep && !pte_is_present(ptep)) {
 				kprintf("%s: ERROR: no mapping in McKernel for rcvarray: 0x%lx?\n",
 						__FUNCTION__, virt);
-				return -1;
+				ret = -1;
+				goto unlock_out;
 			}
 
 			lptep = ihk_mc_pt_lookup_pte(ihk_mc_get_linux_kernel_pgt(),
@@ -695,13 +716,14 @@ int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 			if (!lptep && !pte_is_present(lptep)) {
 				kprintf("%s: ERROR: no mapping in Linux for rcvarray: 0x%lx?\n",
 						__FUNCTION__, virt);
-				return -1;
+				ret = -1;
+				goto unlock_out;
 			}
 
 			*ptep = *lptep;
 		}
 
-		kprintf("%s: hfi1_rcvarray_wc: 0x%lx - 0x%lx -> 0x%lx:%lu\n",
+		dkprintf("%s: hfi1_rcvarray_wc: 0x%lx - 0x%lx -> 0x%lx:%lu\n",
 				__FUNCTION__,
 				hfi1_rcvarray_wc,
 				hfi1_rcvarray_wc + dd->chip_rcv_array_count * 8,
@@ -709,6 +731,7 @@ int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 				dd->chip_rcv_array_count * 8);
 
 		proc->hfi1_rcvarray_wc = hfi1_rcvarray_wc;
+		proc->hfi1_rcvarray_wc_len = dd->chip_rcv_array_count * 8;
 	}
 
 	/*
@@ -727,7 +750,8 @@ int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 			if (!lptep && !pte_is_present(lptep)) {
 				kprintf("%s: ERROR: no mapping in Linux for cq: 0x%lx?\n",
 						__FUNCTION__, virt);
-				return -1;
+				ret = -1;
+				goto unlock_out;
 			}
 
 			phys = pte_get_phys(lptep);
@@ -750,20 +774,103 @@ int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 			if (!ptep) {
 				kprintf("%s: ERROR: no PTE in McKernel for cq: 0x%lx?\n",
 						__FUNCTION__, virt);
-				return -1;
+				ret = -1;
+				goto unlock_out;
 			}
 
 			*ptep = *lptep;
-			kprintf("%s: cq: 0x%lx -> 0x%lx mapped\n",
-					__FUNCTION__,
-					virt, phys);
 		}
 
+		dkprintf("%s: hfi1_cq_comps: 0x%lx - 0x%lx mapped\n",
+				__FUNCTION__,
+				cq->comps, len);
+
 		proc->hfi1_cq_comps = cq->comps;
+		proc->hfi1_cq_comps_len = len;
 	}
 
-	/* TODO: unmap these at close() time */
-	return 0;
+unlock_out:
+	ihk_mc_spinlock_unlock(&proc->hfi1_lock, irqstate);
+
+	return ret;
+}
+
+
+int hfi1_unmap_device_addresses(struct process *proc)
+{
+	unsigned long irqstate;
+	int ret = 0;
+
+	struct process_vm *vm = proc->vm;
+	extern void ihk_mc_pt_destroy_pgd_subtree(struct page_table *pt,
+			void *virt);
+
+	irqstate = ihk_mc_spinlock_lock(&proc->hfi1_lock);
+
+	/*
+	 * Unmap device addresses if mapped.
+	 */
+	if (proc->hfi1_kregbase) {
+
+		ihk_mc_pt_destroy_pgd_subtree(vm->address_space->page_table,
+			proc->hfi1_kregbase);
+/*
+		ihk_mc_pt_clear_kernel_range(vm->address_space->page_table, vm,
+				proc->hfi1_kregbase, proc->hfi1_kregbase + TXE_PIO_SEND);
+
+		kprintf("%s: hfi1_kregbase unmapped\n",
+				__FUNCTION__);
+*/
+		proc->hfi1_kregbase = 0;
+	}
+
+	if (proc->hfi1_piobase) {
+
+		ihk_mc_pt_destroy_pgd_subtree(vm->address_space->page_table,
+			proc->hfi1_piobase);
+/*
+		ihk_mc_pt_clear_kernel_range(vm->address_space->page_table, vm,
+				proc->hfi1_piobase, proc->hfi1_piobase + TXE_PIO_SIZE);
+
+		kprintf("%s: hfi1_piobase unmapped\n",
+				__FUNCTION__);
+*/
+		proc->hfi1_piobase = 0;
+	}
+
+	if (proc->hfi1_rcvarray_wc) {
+
+		ihk_mc_pt_destroy_pgd_subtree(vm->address_space->page_table,
+			proc->hfi1_rcvarray_wc);
+/*
+		ihk_mc_pt_clear_kernel_range(vm->address_space->page_table, vm,
+				proc->hfi1_rcvarray_wc,
+				proc->hfi1_rcvarray_wc + proc->hfi1_rcvarray_wc_len);
+
+		kprintf("%s: hfi1_rcvarray_wc unmapped\n",
+				__FUNCTION__);
+*/
+		proc->hfi1_rcvarray_wc = 0;
+	}
+
+	if (proc->hfi1_cq_comps) {
+
+		ihk_mc_pt_destroy_pgd_subtree(vm->address_space->page_table,
+			proc->hfi1_cq_comps);
+/*
+		ihk_mc_pt_clear_kernel_range(vm->address_space->page_table, vm,
+				proc->hfi1_cq_comps,
+				proc->hfi1_cq_comps + proc->hfi1_cq_comps_len);
+
+		kprintf("%s: hfi1_cq_comps unmapped\n",
+				__FUNCTION__);
+*/
+		proc->hfi1_cq_comps = 0;
+	}
+
+	ihk_mc_spinlock_unlock(&proc->hfi1_lock, irqstate);
+
+	return ret;
 }
 
 struct kmalloc_cache_header tids_cache = {NULL};
