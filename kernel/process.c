@@ -2278,31 +2278,14 @@ unsigned long extend_process_region(struct process_vm *vm,
 	void *p;
 	int rc;
 
-#ifdef POSTK_DEBUG_TEMP_FIX_68 /* fix heap_extension p2align/shift */
-	size_t align_size;
-	unsigned long align_mask;
-	int align_p2align;
-	int align_shift;
-
-	if (vm->proc->heap_extension > PAGE_SIZE) {
-		align_size = LARGE_PAGE_SIZE;
-		align_mask = LARGE_PAGE_MASK;
-		align_p2align = LARGE_PAGE_P2ALIGN;
-		align_shift = LARGE_PAGE_SHIFT;
-	} else {
-		align_size = PAGE_SIZE;
-		align_mask = PAGE_MASK;
-		align_p2align = PAGE_P2ALIGN;
-		align_shift = PAGE_SHIFT;
-	}
-#else /* POSTK_DEBUG_TEMP_FIX_68 */
 	size_t align_size = vm->proc->heap_extension > PAGE_SIZE ?
 		LARGE_PAGE_SIZE : PAGE_SIZE;
 	unsigned long align_mask = vm->proc->heap_extension > PAGE_SIZE ?
 		LARGE_PAGE_MASK : PAGE_MASK;
-	unsigned long align_p2align = vm->proc->heap_extension > PAGE_SHIFT ?
+	unsigned long align_p2align = vm->proc->heap_extension > PAGE_SIZE ?
 		LARGE_PAGE_P2ALIGN : PAGE_P2ALIGN;
-#endif /* POSTK_DEBUG_TEMP_FIX_68 */
+	int align_shift = vm->proc->heap_extension > PAGE_SIZE ?
+		LARGE_PAGE_SHIFT : PAGE_SHIFT;
 
 	new_end_allocated = (address + (PAGE_SIZE - 1)) & PAGE_MASK;
 	if ((new_end_allocated - end_allocated) < vm->proc->heap_extension) {
@@ -2324,22 +2307,12 @@ unsigned long extend_process_region(struct process_vm *vm,
 		}
 	}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_68 /* fix heap_extension p2align/shift */
 	if ((rc = add_process_memory_range(vm, end_allocated, new_end_allocated,
 					(p == 0 ? 0 : virt_to_phys(p)), flag, NULL, 0,
 					align_shift, NULL)) != 0) {
 		ihk_mc_free_pages_user(p, (new_end_allocated - end_allocated) >> PAGE_SHIFT);
 		return end_allocated;
 	}
-#else /* POSTK_DEBUG_TEMP_FIX_68 */
-	if ((rc = add_process_memory_range(vm, end_allocated, new_end_allocated,
-					(p == 0 ? 0 : virt_to_phys(p)), flag, NULL, 0,
-					align_p2align, NULL)) != 0) {
-		ihk_mc_free_pages_user(p, (new_end_allocated - end_allocated) >> PAGE_SHIFT);
-		kprintf("%s: error addding process memory range: %d\n", rc);
-		return end_allocated;
-	}
-#endif /* POSTK_DEBUG_TEMP_FIX_68 */
 	// memory_stat_rss_add() is called in add_process_memory_range()
 
 	dkprintf("%s: new_end_allocated: 0x%lx, align_size: %lu, align_mask: %lx\n",
