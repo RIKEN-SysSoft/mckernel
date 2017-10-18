@@ -553,6 +553,7 @@ struct process {
 	unsigned long mpol_flags;
 	size_t mpol_threshold;
 	unsigned long heap_extension;
+	unsigned long mpol_bind_mask;
 
 	// perf_event
 	int perf_status;

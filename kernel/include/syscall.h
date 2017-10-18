@@ -198,6 +198,7 @@ struct program_load_desc {
 	unsigned long mpol_threshold;
 	unsigned long heap_extension;
 	long stack_premap;
+	unsigned long mpol_bind_mask;
 	int nr_processes;
 	char shell_path[SHELL_PATH_MAX_LEN];
 	__cpu_set_unit cpu_set[PLD_CPU_SET_SIZE];

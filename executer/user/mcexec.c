@@ -217,6 +217,7 @@ static int disable_sched_yield = 0;
 static long stack_premap = (2ULL << 20);
 static long stack_max = -1;
 static struct rlimit rlim_stack;
+static char *mpol_bind_nodes = NULL;
 
 /* Partitioned execution (e.g., for MPI) */
 static int nr_processes = 0;
@@ -1869,9 +1870,9 @@ int main(int argc, char **argv)
 
 	/* Parse options ("+" denotes stop at the first non-option) */
 #ifdef ADD_ENVS_OPTION
-	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:m:", mcexec_options, NULL)) != -1) {
 #else /* ADD_ENVS_OPTION */
-	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:m:", mcexec_options, NULL)) != -1) {
 #endif /* ADD_ENVS_OPTION */
 		switch (opt) {
 			char *tmp;
@@ -1902,6 +1903,10 @@ int main(int argc, char **argv)
 
 			case 'M':
 				mpol_threshold = atobytes(optarg);
+				break;
+
+			case 'm':
+				mpol_bind_nodes = optarg;
 				break;
 
 			case 'h':
@@ -2387,6 +2392,21 @@ int main(int argc, char **argv)
 
 	desc->mpol_threshold = mpol_threshold;
 	desc->heap_extension = heap_extension;
+
+	desc->mpol_bind_mask = 0;
+	if (mpol_bind_nodes) {
+		struct bitmask *bind_mask;
+		bind_mask = numa_parse_nodestring_all(mpol_bind_nodes);
+
+		if (bind_mask) {
+			int node;
+			for (node = 0; node <= numa_max_possible_node(); ++node) {
+				if (numa_bitmask_isbitset(bind_mask, node)) {
+					desc->mpol_bind_mask |= (1UL << node);
+				}
+			}
+		}
+	}
 
 	if (ioctl(fd, MCEXEC_UP_PREPARE_IMAGE, (unsigned long)desc) != 0) {
 		perror("prepare");

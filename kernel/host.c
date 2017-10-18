@@ -476,6 +476,27 @@ static int process_msg_prepare_process(unsigned long rphys)
 	proc->mpol_threshold = pn->mpol_threshold;
 	proc->nr_processes = pn->nr_processes;
 	proc->heap_extension = pn->heap_extension;
+
+	/* Update NUMA binding policy if requested */
+	if (pn->mpol_bind_mask) {
+		int bit;
+
+		memset(&vm->numa_mask, 0, sizeof(vm->numa_mask));
+
+		for_each_set_bit(bit, &pn->mpol_bind_mask,
+				sizeof(pn->mpol_bind_mask) * BITS_PER_BYTE) {
+
+			if (bit >= ihk_mc_get_nr_numa_nodes()) {
+				kprintf("%s: error: NUMA id %d is larger than mask size!\n",
+						__FUNCTION__, bit);
+				return -EINVAL;
+			}
+
+			set_bit(bit, &vm->numa_mask[0]);
+		}
+		vm->numa_mem_policy = MPOL_BIND;
+	}
+
 #ifdef PROFILE_ENABLE
 	proc->profile = pn->profile;
 	thread->profile = pn->profile;
