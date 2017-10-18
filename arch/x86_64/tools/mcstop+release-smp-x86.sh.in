@@ -37,7 +37,7 @@ if ls /dev/mcos* 1>/dev/null 2>&1; then
 		ind=`echo $i|cut -c10-`;
 		# Retry when conflicting with ihkmond
 		nretry=0
-		until ${SBINDIR}/ihkconfig 0 destroy $ind || [ $nretry -lt 4 ]; do
+		until ${SBINDIR}/ihkconfig 0 destroy $ind || [ $nretry -ge 4 ]; do
 		    sleep 0.25
 		    nretry=$[ $nretry + 1 ]
 		done
