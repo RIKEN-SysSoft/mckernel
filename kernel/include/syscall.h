@@ -569,4 +569,24 @@ typedef struct uti_attr {
 	uint64_t flags; /* Representing location and behavior hints by bitmap */
 } uti_attr_t;
 
+struct move_pages_smp_req {
+	unsigned long count;
+	const void **user_virt_addr;
+	int *user_status;
+	const int *user_nodes;
+	void **virt_addr;
+	int *status;
+	pte_t **ptep;
+	int *nodes;
+	int nodes_ready;
+	int *nr_pages;
+	unsigned long *dst_phys;
+	struct process *proc;
+	ihk_atomic_t phase_done;
+	int phase_ret;
+};
+
+#define PROCESS_VM_READ		0
+#define PROCESS_VM_WRITE	1
+
 #endif

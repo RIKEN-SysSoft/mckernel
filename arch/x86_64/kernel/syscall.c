@@ -29,6 +29,7 @@
 #include <prctl.h>
 #include <ihk/ikc.h>
 #include <page.h>
+#include <limits.h>
 
 void terminate(int, int);
 extern long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
@@ -1907,6 +1908,636 @@ save_uctx(void *uctx, struct x86_user_context *regs)
 	ctx->rip = regs->gpr.rip;
 	ihk_mc_arch_get_special_register(IHK_ASR_X86_FS, &ctx->fs);
 	ctx->fregsize = 0;
+}
+
+int do_process_vm_read_writev(int pid, 
+		const struct iovec *local_iov,
+		unsigned long liovcnt,
+		const struct iovec *remote_iov,
+		unsigned long riovcnt,
+		unsigned long flags,
+		int op)
+{
+	int ret = -EINVAL;	
+	int li, ri;
+	int pli, pri;
+	off_t loff, roff;
+	size_t llen = 0, rlen = 0;
+	size_t copied = 0;
+	size_t to_copy;
+	struct thread *lthread = cpu_local_var(current);
+	struct process *rproc;
+	struct process *lproc = lthread->proc;
+	struct process_vm *rvm = NULL;
+	unsigned long rphys;
+	unsigned long rpage_left;
+	unsigned long psize;
+	void *rva;
+	struct vm_range *range;
+	struct mcs_rwlock_node_irqsave lock;
+	struct mcs_rwlock_node update_lock;
+
+	/* Sanity checks */
+	if (flags) {
+		return -EINVAL;
+	}
+	
+	if (liovcnt > IOV_MAX || riovcnt > IOV_MAX) {
+		return -EINVAL;
+	}
+
+	/* Check if parameters are okay */
+	ihk_mc_spinlock_lock_noirq(&lthread->vm->memory_range_lock);
+
+	range = lookup_process_memory_range(lthread->vm, 
+			(uintptr_t)local_iov, 
+			(uintptr_t)(local_iov + liovcnt * sizeof(struct iovec)));
+
+	if (!range) {
+		ret = -EFAULT; 
+		goto arg_out;
+	}
+
+	range = lookup_process_memory_range(lthread->vm, 
+			(uintptr_t)remote_iov, 
+			(uintptr_t)(remote_iov + riovcnt * sizeof(struct iovec)));
+
+	if (!range) {
+		ret = -EFAULT; 
+		goto arg_out;
+	}
+
+	ret = 0;
+arg_out:
+	ihk_mc_spinlock_unlock_noirq(&lthread->vm->memory_range_lock);
+
+	if (ret != 0) {
+		goto out;
+	}
+
+	for (li = 0; li < liovcnt; ++li) {
+		llen += local_iov[li].iov_len;
+		dkprintf("local_iov[%d].iov_base: 0x%lx, len: %lu\n",
+			li, local_iov[li].iov_base, local_iov[li].iov_len);
+	}
+
+	for (ri = 0; ri < riovcnt; ++ri) {
+		rlen += remote_iov[ri].iov_len;
+		dkprintf("remote_iov[%d].iov_base: 0x%lx, len: %lu\n",
+			ri, remote_iov[ri].iov_base, remote_iov[ri].iov_len);
+	}
+
+	if (llen != rlen) {
+		return -EINVAL;
+	}
+	
+	/* Find remote process */
+	rproc = find_process(pid, &lock);
+	if (!rproc) {
+		ret = -ESRCH;
+		goto out;
+	}
+
+	mcs_rwlock_reader_lock_noirq(&rproc->update_lock, &update_lock);
+	if(rproc->status == PS_EXITED ||
+	   rproc->status == PS_ZOMBIE){
+		mcs_rwlock_reader_unlock_noirq(&rproc->update_lock, &update_lock);
+		process_unlock(rproc, &lock);
+		ret = -ESRCH;
+		goto out;
+	}
+	rvm = rproc->vm;
+	hold_process_vm(rvm);
+	mcs_rwlock_reader_unlock_noirq(&rproc->update_lock, &update_lock);
+	process_unlock(rproc, &lock);
+
+	if (lproc->euid != 0 &&
+	    (lproc->ruid != rproc->ruid ||
+	     lproc->ruid != rproc->euid ||
+	     lproc->ruid != rproc->suid ||
+	     lproc->rgid != rproc->rgid ||
+	     lproc->rgid != rproc->egid ||
+	     lproc->rgid != rproc->sgid)) {
+		ret = -EPERM;
+		goto out;
+	}
+
+	dkprintf("pid %d found, doing %s: liovcnt: %d, riovcnt: %d \n", pid,
+		(op == PROCESS_VM_READ) ? "PROCESS_VM_READ" : "PROCESS_VM_WRITE",
+		liovcnt, riovcnt);
+
+	pli = pri = -1; /* Previous indeces in iovecs */
+	li = ri = 0; /* Current indeces in iovecs */
+	loff = roff = 0; /* Offsets in current iovec */
+
+	/* Now iterate and do the copy */
+	while (copied < llen) {
+		int faulted = 0;
+
+		/* New local vector? */
+		if (pli != li) {
+			struct vm_range *range;
+
+			ihk_mc_spinlock_lock_noirq(&lthread->vm->memory_range_lock);
+
+			/* Is base valid? */
+			range = lookup_process_memory_range(lthread->vm,
+					(uintptr_t)local_iov[li].iov_base,
+					(uintptr_t)(local_iov[li].iov_base + 1));
+
+			if (!range) {
+				ret = -EFAULT;
+				goto pli_out;
+			}
+
+			/* Is range valid? */
+			range = lookup_process_memory_range(lthread->vm,
+					(uintptr_t)local_iov[li].iov_base,
+					(uintptr_t)(local_iov[li].iov_base + local_iov[li].iov_len));
+
+			if (range == NULL) {
+				ret = -EINVAL;
+				goto pli_out;
+			}
+
+			if (!(range->flag & ((op == PROCESS_VM_READ) ?
+				VR_PROT_WRITE : VR_PROT_READ))) {
+				ret = -EFAULT;
+				goto pli_out;
+			}
+
+			ret = 0;
+pli_out:
+			ihk_mc_spinlock_unlock_noirq(&lthread->vm->memory_range_lock);
+
+			if (ret != 0) {
+				goto out;
+			}
+
+			pli = li;
+		}
+
+		/* New remote vector? */
+		if (pri != ri) {
+			struct vm_range *range;
+
+			ihk_mc_spinlock_lock_noirq(&rvm->memory_range_lock);
+
+			/* Is base valid? */
+			range = lookup_process_memory_range(rvm,
+					(uintptr_t)remote_iov[li].iov_base,
+					(uintptr_t)(remote_iov[li].iov_base + 1));
+
+			if (range == NULL) {
+				ret = -EFAULT;
+				goto pri_out;
+			}
+
+			/* Is range valid? */
+			range = lookup_process_memory_range(rvm,
+					(uintptr_t)remote_iov[li].iov_base,
+					(uintptr_t)(remote_iov[li].iov_base + remote_iov[li].iov_len));
+
+			if (range == NULL) {
+				ret = -EINVAL;
+				goto pri_out;
+			}
+
+			if (!(range->flag & ((op == PROCESS_VM_READ) ?
+				VR_PROT_READ : VR_PROT_WRITE))) {
+				ret = -EFAULT;
+				goto pri_out;
+			}
+
+			ret = 0;
+pri_out:
+			ihk_mc_spinlock_unlock_noirq(&rvm->memory_range_lock);
+
+			if (ret != 0) {
+				goto out;
+			}
+
+			pri = ri;
+		}
+
+		/* Figure out how much we can copy at most in this iteration */
+		to_copy = (local_iov[li].iov_len - loff);	
+		if ((remote_iov[ri].iov_len - roff) < to_copy) {
+			to_copy = remote_iov[ri].iov_len - roff;
+		}
+
+retry_lookup:
+		/* TODO: remember page and do this only if necessary */
+		ret = ihk_mc_pt_virt_to_phys_size(rvm->address_space->page_table,
+				remote_iov[ri].iov_base + roff, &rphys, &psize);
+
+		if (ret) {
+			uint64_t reason = PF_POPULATE | PF_WRITE | PF_USER;
+			void *addr;
+
+			if (faulted) {
+				ret = -EFAULT;
+				goto out;
+			}
+
+			/* Fault in pages */
+			for (addr = (void *)
+					(((unsigned long)remote_iov[ri].iov_base + roff)
+					& PAGE_MASK);
+					addr < (remote_iov[ri].iov_base + roff + to_copy);
+					addr += PAGE_SIZE) {
+
+				ret = page_fault_process_vm(rvm, addr, reason);
+				if (ret) {
+					ret = -EFAULT;
+					goto out;
+				}
+			}
+
+			faulted = 1;
+			goto retry_lookup;
+		}
+
+		rpage_left = ((((unsigned long)remote_iov[ri].iov_base + roff +
+			psize) & ~(psize - 1)) -
+			((unsigned long)remote_iov[ri].iov_base + roff));
+		if (rpage_left < to_copy) {
+			to_copy = rpage_left;
+		}
+
+		rva = phys_to_virt(rphys);
+
+		fast_memcpy(
+				(op == PROCESS_VM_READ) ? local_iov[li].iov_base + loff : rva,
+				(op == PROCESS_VM_READ) ? rva : local_iov[li].iov_base + loff,
+				to_copy);
+
+		copied += to_copy;
+		dkprintf("local_iov[%d]: 0x%lx %s remote_iov[%d]: 0x%lx, %lu copied, psize: %lu, rpage_left: %lu\n",
+			li, local_iov[li].iov_base + loff, 
+			(op == PROCESS_VM_READ) ? "<-" : "->", 
+			ri, remote_iov[ri].iov_base + roff, to_copy,
+			psize, rpage_left);
+
+		loff += to_copy;
+		roff += to_copy;
+
+		if (loff == local_iov[li].iov_len) {
+			li++;
+			loff = 0;
+		}
+
+		if (roff == remote_iov[ri].iov_len) {
+			ri++;
+			roff = 0;
+		}
+	}
+
+	release_process_vm(rvm);
+
+	return copied;
+
+out:
+	if(rvm)
+		release_process_vm(rvm);
+	return ret;
+}
+
+int move_pages_smp_handler(int cpu_index, int nr_cpus, void *arg)
+{
+	int i, i_s, i_e, phase = 1;
+	struct move_pages_smp_req *mpsr =
+		(struct move_pages_smp_req *)arg;
+	struct process_vm *vm = mpsr->proc->vm;
+	int count = mpsr->count;
+	struct page_table *save_pt;
+	extern struct page_table *get_init_page_table(void);
+
+	i_s = (count / nr_cpus) * cpu_index;
+	i_e = i_s + (count / nr_cpus);
+	if (cpu_index == (nr_cpus - 1)) {
+		i_e = count;
+	}
+
+	/* Load target process' PT so that we can access user-space */
+	save_pt = cpu_local_var(current) == &cpu_local_var(idle) ?
+		get_init_page_table() :
+		cpu_local_var(current)->vm->address_space->page_table;
+
+	if (save_pt != vm->address_space->page_table) {
+		ihk_mc_load_page_table(vm->address_space->page_table);
+	}
+	else {
+		save_pt = NULL;
+	}
+
+	if (nr_cpus == 1) {
+		switch (cpu_index) {
+			case 0:
+				memcpy(mpsr->virt_addr, mpsr->user_virt_addr,
+						sizeof(void *) * count);
+				memcpy(mpsr->status, mpsr->user_status,
+						sizeof(int) * count);
+				memcpy(mpsr->nodes, mpsr->user_nodes,
+						sizeof(int) * count);
+				memset(mpsr->ptep, 0, sizeof(pte_t) * count);
+				memset(mpsr->status, 0, sizeof(int) * count);
+				memset(mpsr->nr_pages, 0, sizeof(int) * count);
+				memset(mpsr->dst_phys, 0,
+						sizeof(unsigned long) * count);
+				mpsr->nodes_ready = 1;
+				break;
+
+			default:
+				break;
+		}
+	}
+	else if (nr_cpus > 1 && nr_cpus < 4) {
+		switch (cpu_index) {
+			case 0:
+				memcpy(mpsr->virt_addr, mpsr->user_virt_addr,
+						sizeof(void *) * count);
+				memcpy(mpsr->status, mpsr->user_status,
+						sizeof(int) * count);
+			case 1:
+				memcpy(mpsr->nodes, mpsr->user_nodes,
+						sizeof(int) * count);
+				memset(mpsr->ptep, 0, sizeof(pte_t) * count);
+				memset(mpsr->status, 0, sizeof(int) * count);
+				memset(mpsr->nr_pages, 0, sizeof(int) * count);
+				memset(mpsr->dst_phys, 0,
+						sizeof(unsigned long) * count);
+				mpsr->nodes_ready = 1;
+				break;
+
+			default:
+				break;
+		}
+	}
+	else if (nr_cpus >= 4 && nr_cpus < 8) {
+		switch (cpu_index) {
+			case 0:
+				memcpy(mpsr->virt_addr, mpsr->user_virt_addr,
+						sizeof(void *) * count);
+				break;
+			case 1:
+				memcpy(mpsr->status, mpsr->user_status,
+						sizeof(int) * count);
+				break;
+			case 2:
+				memcpy(mpsr->nodes, mpsr->user_nodes,
+						sizeof(int) * count);
+				mpsr->nodes_ready = 1;
+				break;
+			case 3:
+				memset(mpsr->ptep, 0, sizeof(pte_t) * count);
+				memset(mpsr->status, 0, sizeof(int) * count);
+				memset(mpsr->nr_pages, 0, sizeof(int) * count);
+				memset(mpsr->dst_phys, 0,
+						sizeof(unsigned long) * count);
+				break;
+
+			default:
+				break;
+		}
+	}
+	else if (nr_cpus >= 8) {
+		switch (cpu_index) {
+			case 0:
+				memcpy(mpsr->virt_addr, mpsr->user_virt_addr,
+						sizeof(void *) * (count / 2));
+				break;
+			case 1:
+				memcpy(mpsr->virt_addr + (count / 2),
+						mpsr->user_virt_addr + (count / 2),
+						sizeof(void *) * (count / 2));
+				break;
+			case 2:
+				memcpy(mpsr->status, mpsr->user_status,
+						sizeof(int) * count);
+				break;
+			case 3:
+				memcpy(mpsr->nodes, mpsr->user_nodes,
+						sizeof(int) * count);
+				mpsr->nodes_ready = 1;
+				break;
+			case 4:
+				memset(mpsr->ptep, 0, sizeof(pte_t) * count);
+				break;
+			case 5:
+				memset(mpsr->status, 0, sizeof(int) * count);
+				break;
+			case 6:
+				memset(mpsr->nr_pages, 0, sizeof(int) * count);
+				break;
+			case 7:
+				memset(mpsr->dst_phys, 0,
+						sizeof(unsigned long) * count);
+				break;
+
+			default:
+				break;
+		}
+	}
+
+	while (!(volatile int)mpsr->nodes_ready) {
+		cpu_pause();
+	}
+
+	/* NUMA verification in parallel */
+	for (i = i_s; i < i_e; i++) {
+		if (mpsr->nodes[i] < 0 ||
+				mpsr->nodes[i] >= ihk_mc_get_nr_numa_nodes() ||
+				!test_bit(mpsr->nodes[i],
+					mpsr->proc->vm->numa_mask)) {
+			mpsr->phase_ret = -EINVAL;
+			break;
+		}
+	}
+
+	/* Barrier */
+	ihk_atomic_inc(&mpsr->phase_done);
+	while (ihk_atomic_read(&mpsr->phase_done) <
+			(phase * nr_cpus)) {
+		cpu_pause();
+	}
+
+	if (mpsr->phase_ret != 0) {
+		goto out;
+	}
+
+	dkprintf("%s: phase %d done\n", __FUNCTION__, phase);
+	++phase;
+
+	/* PTE lookup in parallel */
+	for (i = i_s; i < i_e; i++) {
+		void *phys;
+		size_t pgsize;
+		int p2align;
+		/*
+		 * XXX: No page structures for anonymous mappings.
+		 * Look up physical addresses by scanning page tables.
+		 */
+		mpsr->ptep[i] = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+				(void *)mpsr->virt_addr[i], 0, &phys, &pgsize, &p2align);
+
+		/* PTE valid? */
+		if (!mpsr->ptep[i] || !pte_is_present(mpsr->ptep[i])) {
+			mpsr->status[i] = -ENOENT;
+			mpsr->ptep[i] = NULL;
+			continue;
+		}
+
+		/* PTE is file? */
+		if (pte_is_fileoff(mpsr->ptep[i], PAGE_SIZE)) {
+			mpsr->status[i] = -EINVAL;
+			mpsr->ptep[i] = NULL;
+			continue;
+		}
+
+		dkprintf("%s: virt 0x%lx:%lu requested to be moved to node %d\n",
+			__FUNCTION__, mpsr->virt_addr[i], pgsize, mpsr->nodes[i]);
+
+		/* Large page? */
+		if (pgsize > PAGE_SIZE) {
+			int nr_sub_pages = (pgsize / PAGE_SIZE);
+			int j;
+
+			if (i + nr_sub_pages > count) {
+				kprintf("%s: ERROR: page at index %d exceeds the region\n",
+						__FUNCTION__, i);
+				mpsr->status[i] = -EINVAL;
+				break;
+			}
+
+			/* Is it contiguous across nr_sub_pages and all
+			 * requested to be moved to the same target node? */
+			for (j = 0; j < nr_sub_pages; ++j) {
+				if (mpsr->virt_addr[i + j] !=
+				(mpsr->virt_addr[i] + (j * PAGE_SIZE)) ||
+						mpsr->nodes[i] != mpsr->nodes[i + j]) {
+					kprintf("%s: ERROR: virt address or node at index %d"
+							" is inconsistent\n",
+							__FUNCTION__, i + j);
+					mpsr->phase_ret = -EINVAL;
+					goto pte_out;
+				}
+			}
+
+			mpsr->nr_pages[i] = nr_sub_pages;
+			i += (nr_sub_pages - 1);
+		}
+		else {
+			mpsr->nr_pages[i] = 1;
+		}
+	}
+
+pte_out:
+	/* Barrier */
+	ihk_atomic_inc(&mpsr->phase_done);
+	while (ihk_atomic_read(&mpsr->phase_done) <
+			(phase * nr_cpus)) {
+		cpu_pause();
+	}
+
+	if (mpsr->phase_ret != 0) {
+		goto out;
+	}
+
+	dkprintf("%s: phase %d done\n", __FUNCTION__, phase);
+	++phase;
+
+	if (cpu_index == 0) {
+		/* Allocate new pages on target NUMA nodes */
+		for (i = 0; i < count; i++) {
+			int pgalign = 0;
+			int j;
+			void *dst;
+
+			if (!mpsr->ptep[i] || mpsr->status[i] < 0 || !mpsr->nr_pages[i])
+				continue;
+
+			/* TODO: store pgalign info in an array as well? */
+			if (mpsr->nr_pages[i] > 1) {
+				if (mpsr->nr_pages[i] * PAGE_SIZE == PTL2_SIZE)
+					pgalign = PTL2_SHIFT - PTL1_SHIFT;
+			}
+
+			dst = ihk_mc_alloc_aligned_pages_node(mpsr->nr_pages[i],
+					pgalign, IHK_MC_AP_USER, mpsr->nodes[i]);
+
+			if (!dst) {
+				mpsr->status[i] = -ENOMEM;
+				continue;
+			}
+
+			for (j = i; j < (i + mpsr->nr_pages[i]); ++j) {
+				mpsr->status[j] = mpsr->nodes[i];
+			}
+
+			mpsr->dst_phys[i] = virt_to_phys(dst);
+
+			dkprintf("%s: virt 0x%lx:%lu to node %d, pgalign: %d,"
+					" allocated phys: 0x%lx\n",
+					__FUNCTION__, mpsr->virt_addr[i],
+					mpsr->nr_pages[i] * PAGE_SIZE,
+					mpsr->nodes[i], pgalign, mpsr->dst_phys[i]);
+		}
+	}
+
+	/* Barrier */
+	ihk_atomic_inc(&mpsr->phase_done);
+	while (ihk_atomic_read(&mpsr->phase_done) <
+			(phase * nr_cpus)) {
+		cpu_pause();
+	}
+
+	if (mpsr->phase_ret != 0) {
+		goto out;
+	}
+
+	dkprintf("%s: phase %d done\n", __FUNCTION__, phase);
+	++phase;
+
+	/* Copy, PTE update, memfree in parallel */
+	for (i = i_s; i < i_e; ++i) {
+		if (!mpsr->dst_phys[i])
+			continue;
+
+		fast_memcpy(phys_to_virt(mpsr->dst_phys[i]),
+				phys_to_virt(pte_get_phys(mpsr->ptep[i])),
+				mpsr->nr_pages[i] * PAGE_SIZE);
+
+		ihk_mc_free_pages(
+				phys_to_virt(pte_get_phys(mpsr->ptep[i])),
+				mpsr->nr_pages[i]);
+
+		pte_update_phys(mpsr->ptep[i], mpsr->dst_phys[i]);
+
+		dkprintf("%s: virt 0x%lx:%lu copied and remapped to phys: 0x%lu\n",
+				__FUNCTION__, mpsr->virt_addr[i],
+				mpsr->nr_pages[i] * PAGE_SIZE,
+				mpsr->dst_phys[i]);
+	}
+
+	/* XXX: do a separate SMP call with only CPUs running threads
+	 * of this process? */
+	if (cpu_local_var(current)->proc == mpsr->proc) {
+		/* Invalidate all TLBs */
+		for (i = 0; i < mpsr->count; i++) {
+			if (!mpsr->dst_phys[i])
+				continue;
+
+			flush_tlb_single((unsigned long)mpsr->virt_addr[i]);
+		}
+	}
+
+out:
+	if (save_pt) {
+		ihk_mc_load_page_table(save_pt);
+	}
+
+	return mpsr->phase_ret;
 }
 
 /*** End of File ***/
