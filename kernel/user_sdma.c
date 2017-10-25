@@ -873,8 +873,6 @@ int hfi1_unmap_device_addresses(struct process *proc)
 	return ret;
 }
 
-struct kmalloc_cache_header tids_cache = {NULL};
-
 #undef PROFILE_ENABLE
 
 #ifdef __HFI1_ORIG__
@@ -1143,7 +1141,8 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 			ret = -EINVAL;
 			goto free_req;
 		}
-		req->tids = kmalloc_cache_alloc(&tids_cache,
+		req->tids = kmalloc_cache_alloc(
+				&cpu_local_var(tids_cache),
 				sizeof(*req->tids) * MAX_TID_PAIR_ENTRIES);
 		if (!req->tids) {
 			ret = -ENOMEM;
@@ -1336,10 +1335,22 @@ static inline u32 get_lrh_len(struct hfi1_pkt_header hdr, u32 len)
 	return ((sizeof(hdr) - sizeof(hdr.pbc)) + 4 + len);
 }
 
-void hfi1_txreq_prealloc(void)
+void hfi1_kmalloc_cache_prealloc(void)
 {
+	/*
+	 * TODO: nr_elems have been determined based on profiling
+	 * HACC and UMT2013, would be interesting to do some clever
+	 * dynamic releasing/expanding.
+	 */
 	kmalloc_cache_prealloc(&cpu_local_var(txreq_cache),
-			sizeof(struct user_sdma_txreq));
+			sizeof(struct user_sdma_txreq), 2048);
+	kmalloc_cache_prealloc(&cpu_local_var(tids_cache),
+			sizeof(*(((struct user_sdma_request *)0)->tids)) *
+				MAX_TID_PAIR_ENTRIES, 256);
+	kmalloc_cache_prealloc(&cpu_local_var(tidlist_cache),
+			sizeof(u32) * 2048, 128);
+	kmalloc_cache_prealloc(&cpu_local_var(tid_node_cache),
+			sizeof(struct tid_rb_node), 512);
 }
 
 static int user_sdma_send_pkts(struct user_sdma_request *req,

@@ -68,6 +68,11 @@ static void ap_wait(void)
 		init_host_ikc2mckernel();
 		init_host_ikc2linux(ikc_cpu);
 		mcs_lock_unlock_noirq(&ap_syscall_semaphore, &mcs_node);
+
+		{
+			extern void hfi1_kmalloc_cache_prealloc(void);
+			hfi1_kmalloc_cache_prealloc();
+		}
 	}
 	
 	/* one of them listens */

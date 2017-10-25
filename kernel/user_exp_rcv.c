@@ -67,8 +67,6 @@ static int set_rcvarray_entry(struct hfi1_filedata *, uintptr_t,
 static int unprogram_rcvarray(struct hfi1_filedata *, u32, struct tid_group **);
 static void clear_tid_node(struct hfi1_filedata *, struct tid_rb_node *);
 
-struct kmalloc_cache_header tidlist_cache = { NULL };
-
 /*
  * RcvArray entry allocation for Expected Receives is done by the
  * following algorithm:
@@ -93,9 +91,10 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 		return -EINVAL;
 	}
 
-	tidlist = kmalloc_cache_alloc(&tidlist_cache,
-			//sizeof(*tidlist) * uctxt->expected_count);
-			sizeof(*tidlist) * 1024);
+	/* TODO: sizeof(*tidlist) * uctxt->expected_count); */
+	tidlist = kmalloc_cache_alloc(&cpu_local_var(tidlist_cache),
+			sizeof(*tidlist) * 2048);
+
 	if (!tidlist)
 		return -ENOMEM;
 
@@ -328,7 +327,6 @@ static int program_rcvarray(struct hfi1_filedata *fd, uintptr_t phys,
 	return count;
 }
 
-struct kmalloc_cache_header tid_node_cache = { NULL };
 
 static int set_rcvarray_entry(struct hfi1_filedata *fd, uintptr_t phys,
 			      u32 rcventry, struct tid_group *grp,
@@ -342,7 +340,8 @@ static int set_rcvarray_entry(struct hfi1_filedata *fd, uintptr_t phys,
 	 * Allocate the node first so we can handle a potential
 	 * failure before we've programmed anything.
 	 */
-	node = kmalloc_cache_alloc(&tid_node_cache, sizeof(*node));
+	node = kmalloc_cache_alloc(&cpu_local_var(tid_node_cache),
+			sizeof(*node));
 	if (!node)
 		return -ENOMEM;
 

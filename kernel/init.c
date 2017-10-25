@@ -360,6 +360,11 @@ static void post_init(void)
 		}
 		init_host_ikc2mckernel();
 		init_host_ikc2linux(ikc_cpu);
+
+		{
+			extern void hfi1_kmalloc_cache_prealloc(void);
+			hfi1_kmalloc_cache_prealloc();
+		}
 	}
 
 	arch_setup_vdso();
