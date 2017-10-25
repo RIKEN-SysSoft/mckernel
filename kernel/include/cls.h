@@ -106,7 +106,12 @@ struct cpu_local_var {
 	struct list_head smp_func_req_list;
 
 	struct process_vm *on_fork_vm;
+
+	/* HFI1 related per-core kmalloc caches */
 	struct kmalloc_cache_header txreq_cache;
+	struct kmalloc_cache_header tids_cache;
+	struct kmalloc_cache_header tidlist_cache;
+	struct kmalloc_cache_header tid_node_cache;
 } __attribute__((aligned(64)));
 
 
