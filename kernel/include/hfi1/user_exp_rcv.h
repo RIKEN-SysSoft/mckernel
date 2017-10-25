@@ -77,6 +77,13 @@ struct tid_group {
 	u8 map;
 };
 
+struct tid_rb_node {
+	uintptr_t phys;
+	u32 len;
+	u32 rcventry;
+	struct tid_group *grp;
+};
+
 struct tid_pageset {
 	u16 idx;
 	u16 count;

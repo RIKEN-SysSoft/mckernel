@@ -67,13 +67,6 @@ static int set_rcvarray_entry(struct hfi1_filedata *, uintptr_t,
 static int unprogram_rcvarray(struct hfi1_filedata *, u32, struct tid_group **);
 static void clear_tid_node(struct hfi1_filedata *, struct tid_rb_node *);
 
-struct tid_rb_node {
-	uintptr_t phys;
-	u32 len;
-	u32 rcventry;
-	struct tid_group *grp;
-};
-
 struct kmalloc_cache_header tidlist_cache = { NULL };
 
 /*
