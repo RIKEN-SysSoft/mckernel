@@ -1168,6 +1168,60 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 	dkprintf("%s: addr: %p, reason: %lx, regs: %p\n",
 			__FUNCTION__, fault_addr, reason, regs);
 
+#if 0
+	/* Linux ioremap address? */
+	if ((unsigned long)fault_addr >= 0xFFFFC90000000000 &&
+			(unsigned long)fault_addr < 0xFFFFFFFF80000000) {
+		pte_t *lptep;
+		pte_t *ptep;
+		enum ihk_mc_pt_attribute attr =
+			PTATTR_UNCACHABLE | PTATTR_WRITABLE;
+		unsigned long phys;
+		void *virt = fault_addr;
+		struct process_vm *vm = cpu_local_var(current)->vm;
+
+		if (!vm) {
+			goto regular_handler;
+		}
+
+		/* Is this a valid address in Linux? */
+		lptep = ihk_mc_pt_lookup_pte(ihk_mc_get_linux_kernel_pgt(),
+				virt, 0, 0, 0, 0);
+		if (!lptep || !pte_is_present(lptep)) {
+			kprintf("%s: ERROR: no mapping in Linux for: 0x%lx?\n",
+					__FUNCTION__, virt);
+			goto regular_handler;
+		}
+
+		phys = pte_get_phys(lptep);
+
+		if (ihk_mc_pt_set_page(vm->address_space->page_table,
+					virt, phys, attr) < 0) {
+			/* Not necessarily an error.. */
+			kprintf("%s: WARNING: mapping: 0x%lx -> 0x%lx\n",
+					__FUNCTION__, virt, phys);
+		}
+
+		ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+				virt, 0, 0, 0, 0);
+		if (!ptep) {
+			kprintf("%s: ERROR: no PTE in McKernel for: 0x%lx?\n",
+					__FUNCTION__, virt);
+			goto regular_handler;
+		}
+
+		*ptep = *lptep;
+		kprintf("%s: Linux ioremap address 0x%lx -> 0x%lx "
+				"mapped on demand\n",
+				__FUNCTION__, virt, phys);
+
+		flush_tlb_single(virt);
+		error = 0;
+		goto out;
+	}
+
+regular_handler:
+#endif
 	preempt_disable();
 
 	cpu_enable_interrupt();
