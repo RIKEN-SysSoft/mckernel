@@ -77,7 +77,7 @@ retry:
 }
 
 static inline void kmalloc_cache_prealloc(struct kmalloc_cache_header *cache,
-		size_t size)
+		size_t size, int nr_elem)
 {
 	struct kmalloc_cache_header *elem;
 	int i;
@@ -85,10 +85,7 @@ static inline void kmalloc_cache_prealloc(struct kmalloc_cache_header *cache,
 	if (unlikely(cache->next))
 		return;
 
-	kprintf("%s: pre-allocating for 0x%lx...\n",
-			__FUNCTION__, cache);
-
-	for (i = 0; i < 512; ++i) {
+	for (i = 0; i < nr_elem; ++i) {
 		struct kmalloc_header *header;
 
 		elem = (struct kmalloc_cache_header *)
@@ -126,7 +123,15 @@ retry:
 		}
 	}
 	else {
-		kmalloc_cache_prealloc(cache, size);
+		//kprintf("%s: calling pre-alloc for 0x%lx...\n",
+		//		__FUNCTION__, cache);
+		kprintf("%s: calling pre-alloc for 0x%lx (offs: %lu)...\n",
+				__FUNCTION__, cache,
+				((unsigned long)cache -
+				 (unsigned long)&cpu_local_var(txreq_cache)) /
+				sizeof(struct kmalloc_cache_header));
+
+		kmalloc_cache_prealloc(cache, size, 512);
 		goto retry;
 	}
 
