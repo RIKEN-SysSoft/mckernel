@@ -1,0 +1,1 @@
+futex_wait02    1  TPASS  :

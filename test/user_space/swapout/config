@@ -1,0 +1,9 @@
+MCMOD_DIR=/home/iizuka/mckernel
+
+START=${MCMOD_DIR}/bin/ql_mpiexec_start
+FINALIZE=${MCMOD_DIR}/bin/ql_mpiexec_finalize
+
+USR_PRG_A=../../qlmpi/qlmpi_testsuite/usr_prg_A
+USR_PRG_B=../../qlmpi/qlmpi_testsuite/usr_prg_B
+USR_PRG_C=../../qlmpi/qlmpi_testsuite/usr_prg_C
+USR_PRG_IRREG=../../qlmpi/qlmpi_testsuite/usr_prg_irreg

@@ -96,7 +96,7 @@ struct swapinfo {
 	struct arealist	swap_area;
 	struct arealist	mlock_area;
 	struct mlockcntnr mlock_container;
-#define UDATA_BUFSIZE	(8*1024)
+#define UDATA_BUFSIZE	PAGE_SIZE 
 	char	*swapfname;
 	char	*udata_buf;	/* To read-store data from Linux to user space */
 
@@ -295,7 +295,7 @@ static int
 pager_open(struct swapinfo *si, char *fname, int flag, int mode)
 {
 	int	fd;
-	strcpy(si->udata_buf, fname);
+	copy_to_user(si->udata_buf, fname, strlen(fname) + 1);
 	fd = linux_open(si->udata_buf, flag, mode);
 	return fd;
 }
@@ -303,22 +303,69 @@ pager_open(struct swapinfo *si, char *fname, int flag, int mode)
 static int
 pager_unlink(struct swapinfo *si, char *fname)
 {
-	strcpy(si->udata_buf, fname);
+	copy_to_user(si->udata_buf, fname, strlen(fname) + 1);
 	return linux_unlink(si->udata_buf);
 }
 
+static int 
+pager_copy_from_user(void * dst, void * from, size_t size, struct process_vm *vm)
+{
+	int ret;
+	void *virt;
+	unsigned long psize;
+	unsigned long rphys;
+	int faulted = 0;
+
+	if (size > PAGE_SIZE) {
+		ret = -EFAULT;
+		return ret;
+	}
+		
+retry_lookup:
+	/* remember page */
+	ret = ihk_mc_pt_virt_to_phys_size(vm->address_space->page_table,
+		dst, &rphys, &psize);
+
+	if (ret) {
+		uint64_t reason = PF_POPULATE | PF_WRITE | PF_USER;
+		void *addr= (void *)(((unsigned long)dst)& PAGE_MASK);
+
+		if (faulted) {
+			ret = -EFAULT;
+			return ret;
+		}
+
+		ret = page_fault_process_vm(vm, addr, reason);
+		if (ret) {
+			ret = -EFAULT;
+			return ret;
+		}
+
+		faulted = 1;
+		goto retry_lookup;
+	}
+
+	virt = phys_to_virt(rphys);
+
+	ret = copy_from_user(virt, from, size);
+
+	
+	return ret;
+}
+
 static ssize_t
-pager_read(struct swapinfo *si, int fd, void *start, size_t size)
+pager_read(struct swapinfo *si, int fd, void *start, size_t size,struct process_vm   *vm)
 {
 	ssize_t		off, sz, rs;
 
-	kprintf("pager_read: %lx (%lx)\n", start, size);
 	for (off = 0; off < size; off += sz) {
 		sz = size - off;
 		sz = (sz > UDATA_BUFSIZE) ? UDATA_BUFSIZE : sz;
 		rs = linux_read(fd, si->udata_buf, sz);
 		if (rs != sz) return rs;
-		copy_to_user(start + off, si->udata_buf, sz);
+		
+		rs = pager_copy_from_user(start + off, si->udata_buf, sz, vm); 
+		if (rs != 0) return rs;
 	}
 	return off;
 }
@@ -354,23 +401,26 @@ mlocklist_req(unsigned long start, unsigned long end, struct addrpair *addr, int
 static int
 mlocklist_morereq(struct swapinfo *si, unsigned long *start)
 {
-	struct areaent	*ent = si->mlock_area.tail;
+	struct areaent	went,*ent = si->mlock_area.tail;
+	copy_from_user(&went, ent, sizeof(struct areaent));
 
 	dkprintf("mlocklist_morereq: start = %ld and = %ld\n",
-		ent->pair[ent->count].start, ent->pair[ent->count].end);
-	if (ent->pair[ent->count].start != (unsigned long) -1) {
+		went.pair[went.count].start, went.pair[went.count].end);
+	if (went.pair[went.count].start != (unsigned long) -1) {
 		return 0;
 	}
-	*start = ent->pair[ent->count].end;
+	*start = went.pair[went.count].end;
 	return 1;
 }
 
 static int
 arealist_alloc(struct swapinfo *si, struct arealist *areap)
 {
+	struct areaent went;
 	areap->head = areap->tail = myalloc(si, sizeof(struct areaent));
 	if (areap->head == NULL) return -ENOMEM;
-	memset(areap->head, 0, sizeof(struct areaent));
+	memset(&went, 0, sizeof(struct areaent));
+	copy_to_user(areap->head, &went, sizeof(struct areaent));
 	return 0;
 }
 
@@ -402,7 +452,7 @@ arealist_free(struct arealist *area)
 static int
 arealist_get(struct swapinfo *si, struct addrpair **pair, struct arealist *area)
 {
-	struct areaent	*tmp;
+	struct areaent	*tmp,wtmp;
 	struct areaent	*tail = area->tail;
 	if (tail->count < MLOCKADDRS_SIZE - 1) { /* at least two entries are needed */
 		if (pair) *pair = &tail->pair[tail->count];
@@ -412,8 +462,10 @@ arealist_get(struct swapinfo *si, struct addrpair **pair, struct arealist *area)
 	if (tmp == NULL) {
 		return -1;
 	}
-	memset(tmp, 0, sizeof(struct areaent));
-	area->tail->next = tmp;
+	memset(&wtmp, 0, sizeof(struct areaent));
+	copy_to_user(tmp, &wtmp, sizeof(struct areaent));
+	copy_to_user(&(area->tail->next), &tmp, sizeof(struct areaent *));
+
 	area->tail = tmp;
 	if (pair) *pair = area->tail->pair;
 	return MLOCKADDRS_SIZE;
@@ -422,7 +474,10 @@ arealist_get(struct swapinfo *si, struct addrpair **pair, struct arealist *area)
 static void
 arealist_update(int cnt, struct arealist *area)
 {
-	area->tail->count += cnt;
+	int i;
+	copy_from_user(&i, &(area->tail->count), sizeof(int));
+	i += cnt;
+	copy_to_user(&(area->tail->count), &i, sizeof(int));
 	area->count += cnt;
 }
 
@@ -431,11 +486,13 @@ arealist_add(struct swapinfo *si, unsigned long start, unsigned long end,
              unsigned long flag, struct arealist *area)
 {
 	int	cc;
-	struct addrpair	*addr;
+	struct addrpair	*addr,waddr;
 
 	cc = arealist_get(si, &addr, area);
 	if (cc < 0) return -1;
-	addr->start = start; addr->end = end; addr->flag = flag;
+	waddr.start = start; waddr.end = end; waddr.flag = flag;
+	copy_to_user(addr, &waddr, sizeof(struct addrpair));
+	
 	arealist_update(1, area);
 	return 0;
 }
@@ -444,27 +501,31 @@ static int
 arealist_preparewrite(struct arealist *areap, struct swap_areainfo *info,
 		      ssize_t off, struct process_vm *vm, int flag)
 {
-	struct areaent		*ent;
+	struct areaent		*ent,went;
 	int			count = 0;
 	ssize_t			totsz = 0;
+	unsigned long pos;
 	struct page_table	*pt = vm->address_space->page_table;
 
 	for (ent = areap->head; ent != NULL; ent = ent->next) {
 		int i;
-		for (i = 0; i < ent->count; i++, count++) {
-			ssize_t sz = ent->pair[i].end - ent->pair[i].start; 
-			info[count].start = ent->pair[i].start;
-			info[count].end = ent->pair[i].end;
-			info[count].flag = ent->pair[i].flag;
+		copy_from_user(&went, ent, sizeof(struct areaent));
+		for (i = 0; i < went.count; i++, count++) {
+			ssize_t sz = went.pair[i].end - went.pair[i].start; 
+			copy_to_user(&(info[count].start), &(went.pair[i].start), sizeof(unsigned long));
+			copy_to_user(&(info[count].end), &(went.pair[i].end), sizeof(unsigned long));
+			copy_to_user(&(info[count].flag), &(went.pair[i].flag), sizeof(unsigned long));
 			if (flag) { /* position in file */
-				info[count].pos = off + totsz;
+				
+				pos = off + totsz;
 			} else { /* physical memory */
 				if (ihk_mc_pt_virt_to_phys(pt,
 						(void*) ent->pair[i].start,
-						 &info[count].pos)) {
+						 &pos)) {
 					kprintf("Cannot get phys\n");
 				}
 			}
+			copy_to_user(&(info[count].pos), &pos, sizeof(unsigned long));
 			totsz += sz;
 		}
 	}
@@ -489,6 +550,7 @@ arealist_print(char *msg, struct arealist *areap, int count)
 	for (ent = areap->head; ent != NULL; ent = ent->next) {
 		int i;
 		for (i = 0; i < ent->count; i++) {
+			
 			kprintf("\t%p -- %p\n",
 				(void*) ent->pair[i].start, (void*) ent->pair[i].end);
 		}
@@ -608,13 +670,13 @@ do_pagein(int flag)
 		extern int ihk_mc_pt_print_pte(struct page_table *pt, void *virt);
 		sz = si->swap_info[i].end - si->swap_info[i].start;
 		dkprintf("pagein: %016lx:%016lx sz(%lx)\n", si->swap_info[i].start, si->swap_info[i].end, sz);
-		rs = pager_read(si, fd, (void*) si->swap_info[i].start, sz);
+		rs = pager_read(si, fd, (void*) si->swap_info[i].start, sz, vm);
 		if (rs != sz) goto err;
 		// ihk_mc_pt_print_pte(vm->address_space->page_table, (void*) si->swap_info[i].start);
 	}
 	linux_close(fd);
 	print_region("after pagin", vm);
-	kprintf("do_pagein: done, currss(%lx)\n", vm->currss);
+	dkprintf("do_pagein: done, currss(%lx)\n", vm->currss);
 	vm->swapinfo = NULL;
 	kfree(si->swapfname);
 	kfree(si);
@@ -679,7 +741,8 @@ do_pageout(char *fname, void *buf, size_t size, int flag)
 		goto err;
 	}
 
-	fd = linux_open(fname, O_RDWR|O_CREAT|O_TRUNC, 0600);
+	copy_to_user(si->udata_buf, si->swapfname, strlen(si->swapfname) + 1);
+	fd = linux_open(si->udata_buf, O_RDWR|O_CREAT|O_TRUNC, 0600);
 	if (fd < 0) {
 		ekprintf("do_pageout: Cannot open/create file: %s\n", fname);
 		cc = fd;
@@ -752,10 +815,10 @@ do_pageout(char *fname, void *buf, size_t size, int flag)
 
 	/* preparing page store */
 	si->swphdr = myalloc(si, sizeof(struct swap_header));
-	strncpy(si->swphdr->magic, MCKERNEL_SWAP, SWAP_HLEN);
-	strncpy(si->swphdr->version, MCKERNEL_SWAP_VERSION, SWAP_HLEN);
-	si->swphdr->count_sarea = si->swap_area.count;
-	si->swphdr->count_marea = si->mlock_area.count;
+	copy_to_user(&(si->swphdr->magic), MCKERNEL_SWAP, SWAP_HLEN);
+	copy_to_user(&(si->swphdr->version), MCKERNEL_SWAP_VERSION, SWAP_HLEN);
+	copy_to_user(&(si->swphdr->count_sarea), &(si->swap_area.count), sizeof(unsigned int));
+	copy_to_user(&(si->swphdr->count_marea), &(si->mlock_area.count), sizeof(unsigned int));
 	if ((cc = pager_write(fd, si->swphdr, sizeof(struct swap_header)))
 	    != sizeof(struct swap_header)) {
 		if (cc >= 0)
@@ -779,8 +842,10 @@ do_pageout(char *fname, void *buf, size_t size, int flag)
 	if ((cc = arealist_write(fd, si->mlock_info, si->mlock_area.count)) < 0) goto err;
 	/* now pages are stored */
 	for (i = 0; i < si->swap_area.count; i++) {
-		sz = si->swap_info[i].end - si->swap_info[i].start;
-		if ((cc = pager_write(fd, (void*) si->swap_info[i].start, sz)) != sz) {
+		struct swap_areainfo sw_info;
+		copy_from_user(&sw_info, &(si->swap_info[i]), sizeof(struct swap_areainfo));
+		sz = sw_info.end - sw_info.start;
+		if ((cc = pager_write(fd, (void*) sw_info.start, sz)) != sz) {
 			if (cc >= 0)
 				cc = -EIO;
 			goto err;
@@ -792,10 +857,12 @@ do_pageout(char *fname, void *buf, size_t size, int flag)
 	}
 	kprintf("removing physical memory\n");
 	for (i = 0; i < si->swap_area.count; i++) {
+		struct swap_areainfo sw_info;
+		copy_from_user(&sw_info, &(si->swap_info[i]), sizeof(struct swap_areainfo));
 		cc = ihk_mc_pt_free_range(vm->address_space->page_table,
 					  vm,
-					  (void*) si->swap_info[i].start,
-					  (void*) si->swap_info[i].end, NULL);
+					  (void*) sw_info.start,
+					  (void*) sw_info.end, NULL);
 		if (cc < 0) {
 			kprintf("ihk_mc_pt_clear_range returns: %d\n", cc);
 		}
@@ -811,8 +878,10 @@ do_pageout(char *fname, void *buf, size_t size, int flag)
 	 * except TEXT, STACK, readonly pages, are not invalid.
 	 */
 	for (i = 0; i < si->swap_area.count; i++) {
-		sz = si->swap_info[i].end - si->swap_info[i].start;
-		cc = linux_munmap((void*) si->swap_info[i].start, sz, 0);
+		struct swap_areainfo sw_info;
+		copy_from_user(&sw_info, &(si->swap_info[i]), sizeof(struct swap_areainfo));
+		sz = sw_info.end - sw_info.start;
+		cc = linux_munmap((void*) sw_info.start, sz, 0);
 		if (cc < 0) {
 			kprintf("do_pageout: Cannot munmap: %lx len(%lx)\n",
 				si->swap_info[i].start, sz);
