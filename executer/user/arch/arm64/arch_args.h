@@ -55,7 +55,7 @@ get_syscall_args(int pid, syscall_args *args)
 	args->target_pid = pid;
 	memset(&iov, 0, sizeof(iov));
 	iov.iov_base = &args->regs;
-	iov.iov_len = sizeof(&args->regs);
+	iov.iov_len = sizeof(args->regs);
 	ret = ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &iov);
 	if (!ret) {
 		if (syscall_enter(args)) {
@@ -81,7 +81,7 @@ set_syscall_args(int pid, syscall_args *args)
 	}
 	memset(&iov, 0, sizeof(iov));
 	iov.iov_base = &args->regs;
-	iov.iov_len = sizeof(&args->regs);
+	iov.iov_len = sizeof(args->regs);
 	return ptrace(PTRACE_SETREGSET, pid, NT_PRSTATUS, &iov);
 }
 

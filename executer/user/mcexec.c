@@ -2619,9 +2619,9 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 	unsigned long code = 0;
 	int exited = 0;
 	int mode = 0;
-#ifdef POSTK_DEBUG_ARCH_DEP_91 /* syscall_args prev value hold. */
+#ifdef POSTK_DEBUG_ARCH_DEP_92 /* syscall_args prev value hold. */
 	syscall_args args;
-#endif /* !POSTK_DEBUG_ARCH_DEP_91 */
+#endif /* !POSTK_DEBUG_ARCH_DEP_92 */
 
 	if (pipe(pfd) == -1)
 		return -1;
@@ -2704,9 +2704,9 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 	fprintf(stderr, "tracer PID=%d\n", getpid());
 	signal(SIGINT, debug_sig);
 #endif
-#ifdef POSTK_DEBUG_ARCH_DEP_91 /* syscall_args prev value hold. */
+#ifdef POSTK_DEBUG_ARCH_DEP_92 /* syscall_args prev value hold. */
 	memset(&args, 0, sizeof(args));
-#endif /* POSTK_DEBUG_ARCH_DEP_91 */
+#endif /* POSTK_DEBUG_ARCH_DEP_92 */
 	for (;;) {
 		ptrace(PTRACE_SYSCALL, tid, 0, sig);
 		sig = 0;
@@ -2730,10 +2730,10 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 			continue;
 		}
 		if (WSTOPSIG(st) & 0x80) { // syscall
-#ifndef POSTK_DEBUG_ARCH_DEP_91 /* syscall_args prev value hold. */
+#ifndef POSTK_DEBUG_ARCH_DEP_92 /* syscall_args prev value hold. */
 			syscall_args args;
 
-#endif /* !POSTK_DEBUG_ARCH_DEP_91 */
+#endif /* !POSTK_DEBUG_ARCH_DEP_92 */
 			get_syscall_args(tid, &args);
 
 #ifdef DEBUG_UTI

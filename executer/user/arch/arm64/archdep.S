@@ -104,21 +104,21 @@ switch_ctx:
 	mov	x0, #0xffffffffffffffff
 2:
 	/* restore global registers from *rctx */
-	ldp	x28, x29, [x4, #8 + 16 * 14]
-	ldp	x26, x27, [x4, #8 + 16 * 13]
-	ldp	x24, x25, [x4, #8 + 16 * 12]
-	ldp	x22, x23, [x4, #8 + 16 * 11]
-	ldp	x20, x21, [x4, #8 + 16 * 10]
-	ldp	x18, x19, [x4, #8 + 16 * 9]
-	ldp	x16, x17, [x4, #8 + 16 * 8]
-	ldp	x14, x15, [x4, #8 + 16 * 7]
-	ldp	x12, x13, [x4, #8 + 16 * 6]
-	ldp	x10, x11, [x4, #8 + 16 * 5]
-	ldp	x8, x9, [x4, #8 + 16 * 4]
-	ldp	x6, x7, [x4, #8 + 16 * 3]
-	ldp	x4, x5, [x4, #8 + 16 * 2]
-	ldp	x2, x3, [x4, #8 + 16 * 1]
-	ldr	x1, [x4, #8 + 16 * 0 + 8]
+	ldp	x28, x29, [x3, #8 + 16 * 14]
+	ldp	x26, x27, [x3, #8 + 16 * 13]
+	ldp	x24, x25, [x3, #8 + 16 * 12]
+	ldp	x22, x23, [x3, #8 + 16 * 11]
+	ldp	x20, x21, [x3, #8 + 16 * 10]
+	ldp	x18, x19, [x3, #8 + 16 * 9]
+	ldp	x16, x17, [x3, #8 + 16 * 8]
+	ldp	x14, x15, [x3, #8 + 16 * 7]
+	ldp	x12, x13, [x3, #8 + 16 * 6]
+	ldp	x10, x11, [x3, #8 + 16 * 5]
+	ldp	x8, x9, [x3, #8 + 16 * 4]
+	ldp	x6, x7, [x3, #8 + 16 * 3]
+	ldp	x4, x5, [x3, #8 + 16 * 2]
+	ldp	x2, x3, [x3, #8 + 16 * 1]
+	ldr	x1, [x3, #8 + 16 * 0 + 8]
 
 	ret
 
