@@ -2619,6 +2619,9 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 	unsigned long code = 0;
 	int exited = 0;
 	int mode = 0;
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* syscall_args prev value hold. */
+	syscall_args args;
+#endif /* !POSTK_DEBUG_ARCH_DEP_91 */
 
 	if (pipe(pfd) == -1)
 		return -1;
@@ -2701,6 +2704,9 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 	fprintf(stderr, "tracer PID=%d\n", getpid());
 	signal(SIGINT, debug_sig);
 #endif
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* syscall_args prev value hold. */
+	memset(&args, 0, sizeof(args));
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
 	for (;;) {
 		ptrace(PTRACE_SYSCALL, tid, 0, sig);
 		sig = 0;
@@ -2724,12 +2730,18 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 			continue;
 		}
 		if (WSTOPSIG(st) & 0x80) { // syscall
+#ifndef POSTK_DEBUG_ARCH_DEP_91 /* syscall_args prev value hold. */
 			syscall_args args;
 
+#endif /* !POSTK_DEBUG_ARCH_DEP_91 */
 			get_syscall_args(tid, &args);
 
 #ifdef DEBUG_UTI
+#ifdef POSTK_DEBUG_ARCH_DEP_90 /* syscall_enter check is arch depend. */
+			if (syscall_enter(&args)) {
+#else /* POSTK_DEBUG_ARCH_DEP_90 */
 			if (get_syscall_return(&args) == -ENOSYS) {
+#endif /* POSTK_DEBUG_ARCH_DEP_90 */
 				if (get_syscall_number(&args) >= 0 &&
 				    get_syscall_number(&args) < 512) {
 					syscalls[get_syscall_number(&args)]++;
@@ -2737,10 +2749,17 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 			}
 #endif
 
+#ifdef POSTK_DEBUG_ARCH_DEP_90 /* syscall_enter check is arch depend. */
+			if (get_syscall_number(&args) == __NR_ioctl &&
+			    syscall_enter(&args) &&
+			    get_syscall_arg1(&args) == fd &&
+			    get_syscall_arg2(&args) == MCEXEC_UP_SIG_THREAD) {
+#else /* POSTK_DEBUG_ARCH_DEP_90 */
 			if (get_syscall_number(&args) == __NR_ioctl &&
 			    get_syscall_return(&args) == -ENOSYS &&
 			    get_syscall_arg1(&args) == fd &&
 			    get_syscall_arg2(&args) == MCEXEC_UP_SIG_THREAD) {
+#endif /* POSTK_DEBUG_ARCH_DEP_90 */
 				mode = get_syscall_arg3(&args);
 			}
 
@@ -2785,11 +2804,19 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 			    case __NR_ioctl:
 				param = (struct syscall_struct *)
 					                get_syscall_arg3(&args);
+#ifdef POSTK_DEBUG_ARCH_DEP_90 /* syscall_enter check is arch depend. */
+				if (!syscall_enter(&args) &&
+				    get_syscall_arg1(&args) == fd &&
+				    get_syscall_arg2(&args) ==
+				                     MCEXEC_UP_SYSCALL_THREAD &&
+				    samepage(wp, param)) {
+#else /* POSTK_DEBUG_ARCH_DEP_90 */
 				if (get_syscall_return(&args) != -ENOSYS &&
 				    get_syscall_arg1(&args) == fd &&
 				    get_syscall_arg2(&args) ==
 				                     MCEXEC_UP_SYSCALL_THREAD &&
 				    samepage(wp, param)) {
+#endif /* POSTK_DEBUG_ARCH_DEP_90 */
 					set_syscall_arg1(&args, param->args[0]);
 					set_syscall_arg2(&args, param->args[1]);
 					set_syscall_arg3(&args, param->args[2]);

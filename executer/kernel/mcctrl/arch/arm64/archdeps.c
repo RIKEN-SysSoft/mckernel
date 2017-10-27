@@ -1,6 +1,7 @@
 /* archdeps.c COPYRIGHT FUJITSU LIMITED 2016 */
 #include <linux/version.h>
 #include <linux/mm_types.h>
+#include <linux/ptrace.h>
 #include <asm/vdso.h>
 #include "../../../config.h"
 #include "../../mcctrl.h"
@@ -141,59 +142,48 @@ out:
 void *
 get_user_sp(void)
 {
-	/* TODO; skeleton for UTI */
-	return NULL;
+	return (void *)current_pt_regs()->sp;
 }
 
 void
 set_user_sp(void *usp)
 {
-	/* TODO; skeleton for UTI */
+	current_pt_regs()->sp = (unsigned long)usp;
 }
 
-/* TODO; skeleton for UTI */
 struct trans_uctx {
 	volatile int cond;
 	int fregsize;
-
-	unsigned long rax;
-	unsigned long rbx;
-	unsigned long rcx;
-	unsigned long rdx;
-	unsigned long rsi;
-	unsigned long rdi;
-	unsigned long rbp;
-	unsigned long r8;
-	unsigned long r9;
-	unsigned long r10;
-	unsigned long r11;
-	unsigned long r12;
-	unsigned long r13;
-	unsigned long r14;
-	unsigned long r15;
-	unsigned long rflags;
-	unsigned long rip;
-	unsigned long rsp;
-	unsigned long fs;
+	struct user_pt_regs regs;
+	unsigned long tls_baseaddr;
 };
 
 void
-restore_fs(unsigned long fs)
+restore_tls(unsigned long addr)
 {
-	/* TODO; skeleton for UTI */
+	const unsigned long tpidrro = 0;
+
+	asm volatile(
+	"	msr	tpidr_el0, %0\n"
+	"	msr	tpidrro_el0, %1"
+	: : "r" (addr), "r" (tpidrro));
 }
 
 void
-save_fs_ctx(void *ctx)
+save_tls_ctx(void *ctx)
 {
-	/* TODO; skeleton for UTI */
+	struct trans_uctx *tctx = ctx;
+
+	asm volatile(
+	"	mrs	%0, tpidr_el0"
+	: "=r" (tctx->tls_baseaddr));
 }
 
 unsigned long
-get_fs_ctx(void *ctx)
+get_tls_ctx(void *ctx)
 {
-	/* TODO; skeleton for UTI */
-	return 0;
+	struct trans_uctx *tctx = ctx;
+	return tctx->tls_baseaddr;
 }
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,2,0)

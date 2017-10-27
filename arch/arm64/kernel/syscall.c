@@ -1863,7 +1863,23 @@ out:
 void
 save_uctx(void *uctx, struct pt_regs *regs)
 {
-	/* TODO: skeleton for UTI */
+	struct trans_uctx {
+		volatile int cond;
+		int fregsize;
+		struct user_pt_regs regs;
+		unsigned long tls_baseaddr;
+	} *ctx = uctx;
+
+	if (!regs) {
+		regs = current_pt_regs();
+	}
+
+	ctx->cond = 0;
+	ctx->fregsize = 0;
+	ctx->regs = regs->user_regs;
+	asm volatile(
+	"	mrs	%0, tpidr_el0"
+	: "=r" (ctx->tls_baseaddr));
 }
 
 #ifdef POSTK_DEBUG_ARCH_DEP_78 /* arch dep syscallno hide */

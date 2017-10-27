@@ -267,6 +267,29 @@ struct trans_uctx {
 	unsigned long fs;
 };
 
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
+void
+restore_tls(unsigned long addr)
+{
+	wrmsrl(MSR_FS_BASE, addr);
+}
+
+void
+save_tls_ctx(void *ctx)
+{
+	struct trans_uctx *tctx = ctx;
+
+	rdmsrl(MSR_FS_BASE, tctx->fs);
+}
+
+unsigned long
+get_tls_ctx(void *ctx)
+{
+	struct trans_uctx *tctx = ctx;
+
+	return tctx->fs;
+}
+#else /* POSTK_DEBUG_ARCH_DEP_91 */
 void
 restore_fs(unsigned long fs)
 {
@@ -288,6 +311,7 @@ get_fs_ctx(void *ctx)
 
 	return tctx->fs;
 }
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
 
 #ifdef POSTK_DEBUG_ARCH_DEP_83 /* arch depend translate_rva_to_rpa() move */
 int translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva,

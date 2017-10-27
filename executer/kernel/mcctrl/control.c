@@ -334,8 +334,13 @@ struct host_thread {
 	int     pid;
 	int     tid;
 	unsigned long usp;
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
+	unsigned long ltls;
+	unsigned long rtls;
+#else /* POSTK_DEBUG_ARCH_DEP_91 */
 	unsigned long lfs;
 	unsigned long rfs;
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
 };
 
 struct mcos_handler_info *new_mcos_handler_info(ihk_os_t os, struct file *file)
@@ -2288,9 +2293,15 @@ long mcctrl_getrusage(ihk_os_t ihk_os, struct mcctrl_ioctl_getrusage_desc *__use
 
 extern void *get_user_sp(void);
 extern void set_user_sp(unsigned long);
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
+extern void restore_tls(unsigned long addr);
+extern void save_tls_ctx(void *);
+extern unsigned long get_tls_ctx(void *);
+#else /* POSTK_DEBUG_ARCH_DEP_91 */
 extern void restore_fs(unsigned long fs);
 extern void save_fs_ctx(void *);
 extern unsigned long get_fs_ctx(void *);
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
 
 long
 mcexec_util_thread1(ihk_os_t os, unsigned long arg, struct file *file)
@@ -2365,15 +2376,24 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	void *__user rctx = (void *__user)param[1];
 	void *__user lctx = (void *__user)param[2];
 
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
+	save_tls_ctx(lctx);
+#else /* POSTK_DEBUG_ARCH_DEP_91 */
 	save_fs_ctx(lctx);
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
 	info = ihk_os_get_mcos_private_data(file);
 	thread = kmalloc(sizeof(struct host_thread), GFP_KERNEL);
 	memset(thread, '\0', sizeof(struct host_thread));
 	thread->pid = task_tgid_vnr(current);
 	thread->tid = task_pid_vnr(current);
 	thread->usp = (unsigned long)usp;
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
+	thread->ltls = get_tls_ctx(lctx);
+	thread->rtls = get_tls_ctx(rctx);
+#else /* POSTK_DEBUG_ARCH_DEP_91 */
 	thread->lfs = get_fs_ctx(lctx);
 	thread->rfs = get_fs_ctx(rctx);
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
 	thread->handler = info;
 
 	write_lock_irqsave(&host_thread_lock, flags);
@@ -2398,11 +2418,19 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 			break;
 	read_unlock_irqrestore(&host_thread_lock, flags);
 	if (thread) {
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
+		if (arg)
+			restore_tls(thread->ltls);
+		else
+			restore_tls(thread->rtls);
+		return 0;
+#else /* POSTK_DEBUG_ARCH_DEP_91 */
 		if (arg)
 			restore_fs(thread->lfs);
 		else
 			restore_fs(thread->rfs);
 		return 0;
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
 	}
 	return -EINVAL;
 }
