@@ -894,8 +894,8 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 
 	set_cputime(interrupt_from_user(regs)? 1: 2);
 
-	dkprintf("CPU[%d] got interrupt, vector: %d, RIP: 0x%lX\n", 
-	         ihk_mc_get_processor_id(), vector, regs->gpr.rip);
+	dkprintf("CPU[%d] got interrupt, vector: %d, RIP: 0x%lX, RSP: 0x%lX\n", 
+			ihk_mc_get_processor_id(), vector, regs->gpr.rip, regs->gpr.rsp);
 
 	if (vector < 0 || vector > 255) {
 		panic("Invalid interrupt vector.");
@@ -1645,7 +1645,7 @@ int ihk_mc_arch_get_special_register(enum ihk_asr_type type,
   @*/
 int ihk_mc_interrupt_cpu(int cpu, int vector)
 {
-	dkprintf("[%d] ihk_mc_interrupt_cpu: %d\n", ihk_mc_get_processor_id(), cpu);
+	//kprintf("[%d] ihk_mc_interrupt_cpu: %d, x86_issue_ipi=%p\n", ihk_mc_get_processor_id(), cpu, x86_issue_ipi);
 
 	x86_issue_ipi(cpu, vector);
 	return 0;

@@ -54,6 +54,7 @@ static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ih
 int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet);
 void sig_done(unsigned long arg, int err);
 void mcctrl_perf_ack(ihk_os_t os, struct ikc_scd_packet *packet);
+void mcctrl_futex_wake(struct ikc_scd_packet *pisp);
 void mcctrl_os_read_write_cpu_response(ihk_os_t os,
 		struct ikc_scd_packet *pisp);
 void mcctrl_eventfd(ihk_os_t os, struct ikc_scd_packet *pisp);
@@ -65,6 +66,13 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	struct ikc_scd_packet *pisp = __packet;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(__os);
 	int msg = pisp->msg;
+	switch (msg) {
+	case SCD_MSG_SYSCALL_ONESIDE:
+		//printk("%s: msg=%x,cpu=%d,pid=%d,req.number=%ld,req.rtid=%d,req.ttid=%d\n", __FUNCTION__, pisp->msg, pisp->ref, pisp->pid, pisp->req.number, pisp->req.rtid, pisp->req.ttid);
+		break;
+	default:
+		break;
+	}
 
 	switch (msg) {
 	case SCD_MSG_INIT_CHANNEL:
@@ -124,6 +132,10 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	case SCD_MSG_EVENTFD:
 		dkprintf("%s: SCD_MSG_EVENTFD,pisp->eventfd_type=%d\n", __FUNCTION__, pisp->eventfd_type);
 		mcctrl_eventfd(__os, pisp);
+		break;
+
+	case SCD_MSG_FUTEX_WAKE:
+		mcctrl_futex_wake(pisp);
 		break;
 
 	default:

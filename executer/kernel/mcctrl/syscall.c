@@ -462,7 +462,7 @@ out_put_ppd:
 	return syscall_ret;
 }
 
-static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t reason)
+int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t reason)
 {
 	struct ikc_scd_packet *packet;
 	struct ikc_scd_packet *free_packet = NULL;
@@ -562,7 +562,7 @@ retry_alloc:
 
 		if (error) {
 			kfree(wqhln);
-			printk("remote_page_fault:interrupted. %d\n", error);
+			printk("%s: interrupted. %d\n", __FUNCTION__, error);
 			goto out;
 		}
 		else {
@@ -805,6 +805,7 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 		return -EINVAL;
 	}
 
+	//kprintf("%s: ptd->task=%p, tid=%d\n", __FUNCTION__, current, task_pid_vnr(current));
 	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
 	if (!packet) {
 		ret = VM_FAULT_SIGBUS;
@@ -969,6 +970,7 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 						vma->vm_start, vma->vm_end);
 #endif /* POSTK_DEBUG_ARCH_DEP_41 */
 			}
+			//printk("%s: _count=%d,_mapcount=%d\n", __FUNCTION__, page->_count, page->_mapcount);
 		}
 		else
 		error = vm_insert_pfn(vma, rva+(pix*PAGE_SIZE), pfn+pix);
@@ -2128,7 +2130,7 @@ out:
 	return (IS_ERR_VALUE(map))? (int)map: 0;
 }
 
-static int clear_pte_range(uintptr_t start, uintptr_t len)
+int clear_pte_range(uintptr_t start, uintptr_t len)
 {
 	struct mm_struct *mm = current->mm;
 	struct vm_area_struct *vma;

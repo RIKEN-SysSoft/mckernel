@@ -302,6 +302,12 @@ if ! grep -E 'ihk\s' /proc/modules &>/dev/null; then
 	fi
 fi
 
+# Increase timeout value of RCU CPU Stall Detector 
+echo 600 > /sys/module/rcupdate/parameters/rcu_cpu_stall_timeout
+
+# Stop kernel task hung detection
+echo 0 > /proc/sys/kernel/hung_task_timeout_secs
+
 # Increase swappiness so that we have better chance to allocate memory for IHK
 echo 100 > /proc/sys/vm/swappiness
 

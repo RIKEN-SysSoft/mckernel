@@ -2830,6 +2830,7 @@ static void idle(void)
 			monitor->status = IHK_OS_MONITOR_IDLE;
 			cpu_local_var(current)->status = PS_INTERRUPTIBLE;
 			cpu_safe_halt();
+			//kprintf("%s: out of halt insn\n", __FUNCTION__);
 			monitor->status = IHK_OS_MONITOR_KERNEL;
 			monitor->counter++;
 			cpu_local_var(current)->status = PS_RUNNING;
@@ -3209,8 +3210,10 @@ redo:
 			}
 			if (thread->status == PS_RUNNING ||
 				(thread->status == PS_INTERRUPTIBLE && hassigpending(thread))) {
-				if(!next)
+				if(!next) {
 					next = thread;
+					//kprintf("%s: switch to tid %d\n", __FUNCTION__, thread->tid);
+				}
 			}
 		}
 
@@ -3496,7 +3499,7 @@ void runq_add_thread(struct thread *thread, int cpu_id)
 {
 	struct cpu_local_var *v = get_cpu_local_var(cpu_id);
 	unsigned long irqstate;
-	
+	//kprintf("%s: tid#%d will run on cpu#%d\n", __FUNCTION__, thread->tid, cpu_id);
 	irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
 	__runq_add_thread(thread, cpu_id);
 	ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
