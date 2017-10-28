@@ -1,0 +1,72 @@
+スクリプトは Wed Jun 14 13:00:33 2017
+ に開始しました[?1034hbash-4.2$ ./mcexec ./CT01
+CT01001 mmap/munmap/futex/exit START
+CT01002 pthread_create OK
+CT01003 get_system OK
+CT01004 mmap OK
+CT01005 mmap OK
+CT01006 munmap OK
+CT01007 munmap OK (SIGSEGV)
+CT01008 exit(pthread_join) OK
+CT01009 futex (pthread_mutex/pthread_cond) OK
+CT01010 END
+bash-4.2$ ./mcexec ./CT02
+CT02001 mmap/munmap/futex START
+CT02002 pthread_create OK
+CT02003 get_system OK
+CT02004 mmap OK
+CT02005 mmap OK
+CT02006 mremap OK
+CT02007 mremap OK
+CT02008 munmap OK
+CT02009 pthread_join OK
+CT02010 END
+bash-4.2$ ./mcexec ./CT03
+CT03001 mprotect START
+CT03002 pthread_create OK
+CT03003 get_system OK
+CT03004 mmap OK
+CT03005 mmap OK
+CT03006 mprotect OK
+CT03007 mprotect OK
+CT03008 munmap OK
+CT03009 pthread_join OK
+CT03010 END
+bash-4.2$ ./mcexec ./CT04
+CT04001 brk START
+CT04002 pthread_create OK
+CT04003 get_system OK
+CT04004 sbrk OK
+CT04005 sbrk OK
+CT04006 sbrk OK
+CT04007 pthread_join OK
+CT04008 END
+bash-4.2$ ./mcexec ./CT05
+CT05001 gettid START
+CT05002 pthread_create OK
+CT05003 get_system OK
+CT05004 gettid OK 1028
+CT05005 util_migrate_inter_kernel OK
+CT05006 get_system OK
+CT05007 gettid OK 1028
+CT05008 pthread_join OK
+CT05009 END
+bash-4.2$ ./mcexec ./CT06
+CT06001 syscall error START
+CT06002 pthread_create OK
+CT06003 get_system OK
+CT06004 exit_group OK
+bash-4.2$ ./mcexec ./CT07
+CT07001 syscall error START
+CT07002 pthread_create OK
+CT07003 get_system OK
+CT07004 clone OK
+CT07005 fork OK
+CT07006 vfork OK
+CT07007 execve OK
+CT07008 pthread_join OK
+CT07010 END
+bash-4.2$ exit
+
+スクリプトは Wed Jun 14 13:00:54 2017
+ に終了しました

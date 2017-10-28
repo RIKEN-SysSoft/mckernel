@@ -25,6 +25,8 @@
 #define CLOCK_PROCESS_CPUTIME_ID	2
 #define CLOCK_THREAD_CPUTIME_ID		3
 
+typedef int clockid_t;
+
 typedef long int __time_t;
 
 /* POSIX.1b structure for a time value.  This is like a `struct timeval' but
