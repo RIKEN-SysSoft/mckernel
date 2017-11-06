@@ -76,7 +76,7 @@ static void *___kmalloc(int size, ihk_mc_ap_flag flag);
 static void ___kfree(void *ptr);
 
 static void *___ihk_mc_alloc_aligned_pages_node(int npages,
-		int p2align, ihk_mc_ap_flag flag, int node, int is_user);
+		int p2align, ihk_mc_ap_flag flag, int node, int is_user, uintptr_t virt_addr);
 static void *___ihk_mc_alloc_pages(int npages, ihk_mc_ap_flag flag, int is_user);
 static void ___ihk_mc_free_pages(void *p, int npages, int is_user);
 
@@ -193,7 +193,7 @@ struct pagealloc_track_entry *__pagealloc_track_find_entry(
 
 /* Top level routines called from macros */
 void *_ihk_mc_alloc_aligned_pages_node(int npages, int p2align,
-	ihk_mc_ap_flag flag, int node, int is_user,
+	ihk_mc_ap_flag flag, int node, int is_user, uintptr_t virt_addr,
 	char *file, int line)
 {
 	unsigned long irqflags;
@@ -201,7 +201,7 @@ void *_ihk_mc_alloc_aligned_pages_node(int npages, int p2align,
 	struct pagealloc_track_addr_entry *addr_entry;
 	int hash, addr_hash;
 	void *r = ___ihk_mc_alloc_aligned_pages_node(npages,
-					p2align, flag, node, is_user);
+					p2align, flag, node, is_user, virt_addr);
 
 	if (!memdebug || !pagealloc_track_initialized)
 		return r;
@@ -497,10 +497,10 @@ void pagealloc_memcheck(void)
 
 /* Actual allocation routines */
 static void *___ihk_mc_alloc_aligned_pages_node(int npages, int p2align,
-	ihk_mc_ap_flag flag, int node, int is_user)
+	ihk_mc_ap_flag flag, int node, int is_user, uintptr_t virt_addr)
 {
 	if (pa_ops)
-		return pa_ops->alloc_page(npages, p2align, flag, node, is_user);
+		return pa_ops->alloc_page(npages, p2align, flag, node, is_user, virt_addr);
 	else
 		return early_alloc_pages(npages);
 }
@@ -508,7 +508,7 @@ static void *___ihk_mc_alloc_aligned_pages_node(int npages, int p2align,
 static void *___ihk_mc_alloc_pages(int npages, ihk_mc_ap_flag flag,
 	int is_user)
 {
-	return ___ihk_mc_alloc_aligned_pages_node(npages, PAGE_P2ALIGN, flag, -1, is_user);
+	return ___ihk_mc_alloc_aligned_pages_node(npages, PAGE_P2ALIGN, flag, -1, is_user, -1);
 }
 
 static void ___ihk_mc_free_pages(void *p, int npages, int is_user)
@@ -544,7 +544,7 @@ static void reserve_pages(struct ihk_page_allocator_desc *pa_allocator,
 
 extern int cpu_local_var_initialized;
 static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
-		ihk_mc_ap_flag flag, int pref_node, int is_user)
+		ihk_mc_ap_flag flag, int pref_node, int is_user, uintptr_t virt_addr)
 {
 	unsigned long pa = 0;
 	int i, node;
@@ -552,6 +552,12 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 	struct ihk_page_allocator_desc *pa_allocator;
 #endif
 	int numa_id;
+
+	struct vm_range_numa_policy *range_policy_iter = NULL;
+	int numa_mem_policy = -1;
+	struct process_vm *vm;
+	struct vm_range *range = NULL;
+	int chk_shm = 0;
 
 	if(npages <= 0)
 		return NULL;
@@ -565,7 +571,23 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 	/* No explicitly requested NUMA or user policy? */
 	if ((pref_node == -1) && (!(flag & IHK_MC_AP_USER) ||
 				cpu_local_var(current)->vm->numa_mem_policy == MPOL_DEFAULT)) {
-		goto distance_based;
+
+		if (virt_addr != -1) {
+			vm = cpu_local_var(current)->vm;
+			range_policy_iter = vm_range_policy_search(vm, virt_addr);
+			if (range_policy_iter) {
+				range = lookup_process_memory_range(vm, (uintptr_t)virt_addr, ((uintptr_t)virt_addr) + 1);
+				if (range) {
+					if( (range->memobj) && (range->memobj->flags == MF_SHM)) {
+						chk_shm = 1;
+					}
+				}
+			}
+		}
+
+
+		if ((!((range_policy_iter) && (range_policy_iter->numa_mem_policy != MPOL_DEFAULT))) && (chk_shm == 0))
+			goto distance_based;
 	}
 
 	node = ihk_mc_get_numa_id();
@@ -611,7 +633,28 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 		}
 	}
 
-	switch (cpu_local_var(current)->vm->numa_mem_policy) {
+	if ((virt_addr != -1) && (chk_shm == 0)) {
+
+		vm = cpu_local_var(current)->vm;
+
+		if (!(range_policy_iter)) {
+			range_policy_iter = vm_range_policy_search(vm, virt_addr);
+		}
+
+		if (range_policy_iter) {
+			range = lookup_process_memory_range(vm, (uintptr_t)virt_addr, ((uintptr_t)virt_addr) + 1);
+			if ((range && (range->memobj->flags == MF_SHM))) {
+				chk_shm = 1;
+			} else {
+				numa_mem_policy = range_policy_iter->numa_mem_policy;
+			}
+		}
+	}
+
+	if (numa_mem_policy == -1)
+		numa_mem_policy = cpu_local_var(current)->vm->numa_mem_policy;
+
+	switch (numa_mem_policy) {
 		case MPOL_BIND:
 		case MPOL_PREFERRED:
 

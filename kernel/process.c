@@ -256,7 +256,7 @@ init_process_vm(struct process *owner, struct address_space *asp, struct process
 
 	ihk_atomic_set(&vm->refcount, 1);
 	vm->vm_range_tree = RB_ROOT;
-	INIT_LIST_HEAD(&vm->vm_range_numa_policy_list);
+	vm->vm_range_numa_policy_tree = RB_ROOT;
 	vm->address_space = asp;
 	vm->proc = owner;
 	vm->exiting = 0;
@@ -646,7 +646,7 @@ static int copy_user_pte(void *arg0, page_table_t src_pt, pte_t *src_ptep, void 
 
 		npages = pgsize / PAGE_SIZE;
 		virt = ihk_mc_alloc_aligned_pages_user(npages, pgalign,
-		                                       IHK_MC_AP_NOWAIT);
+		                                       IHK_MC_AP_NOWAIT, (uintptr_t)pgaddr);
 		if (!virt) {
 			kprintf("ERROR: copy_user_pte() allocating new page\n");
 			error = -ENOMEM;
@@ -1765,7 +1765,7 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 				off = pte_get_off(ptep, pgsize);
 			}
 			error = memobj_get_page(range->memobj, off, p2align,
-                                       &phys, &memobj_flag);
+                                       &phys, &memobj_flag, fault_addr);
 			if (error) {
 				struct memobj *obj;
 
@@ -1787,7 +1787,7 @@ retry:
 			npages = pgsize / PAGE_SIZE;
 			virt = ihk_mc_alloc_aligned_pages_user(npages, p2align,
 					IHK_MC_AP_NOWAIT |
-					(range->flag & VR_AP_USER) ? IHK_MC_AP_USER : 0);
+					((range->flag & VR_AP_USER) ? IHK_MC_AP_USER : 0), fault_addr);
 			if (!virt && !range->pgshift && (pgsize != PAGE_SIZE)) {
 				error = arch_get_smaller_page_size(NULL, pgsize, &pgsize, &p2align);
 				if (error) {
@@ -1847,7 +1847,7 @@ retry:
 
 			npages = pgsize / PAGE_SIZE;
 			virt = ihk_mc_alloc_aligned_pages_user(npages, p2align,
-			                                      IHK_MC_AP_NOWAIT);
+			                                      IHK_MC_AP_NOWAIT, fault_addr);
 			if (!virt) {
 				error = -ENOMEM;
 				kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):cannot allocate copy page. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
@@ -2156,7 +2156,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 			ap_flag ? "(IHK_MC_AP_USER)" : "");
 
 	stack = ihk_mc_alloc_aligned_pages_user(minsz >> PAGE_SHIFT,
-				LARGE_PAGE_P2ALIGN, IHK_MC_AP_NOWAIT | ap_flag);
+				LARGE_PAGE_P2ALIGN, IHK_MC_AP_NOWAIT | ap_flag, start);
 
 	if (!stack) {
 		kprintf("%s: error: couldn't allocate initial stack\n",
@@ -2300,7 +2300,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 		p = ihk_mc_alloc_aligned_pages_user(
 				(new_end_allocated - end_allocated) >> PAGE_SHIFT,
 				align_p2align, IHK_MC_AP_NOWAIT |
-				(!(vm->proc->mpol_flags & MPOL_NO_HEAP) ? IHK_MC_AP_USER : 0));
+				(!(vm->proc->mpol_flags & MPOL_NO_HEAP) ? IHK_MC_AP_USER : 0), end_allocated);
 
 		if (!p) {
 			return end_allocated;
@@ -2891,7 +2891,7 @@ void sched_init(void)
 	ihk_mc_init_context(&idle_thread->ctx, NULL, idle);
 	ihk_mc_spinlock_init(&idle_thread->vm->memory_range_lock);
 	idle_thread->vm->vm_range_tree = RB_ROOT;
-	INIT_LIST_HEAD(&idle_thread->vm->vm_range_numa_policy_list);
+	idle_thread->vm->vm_range_numa_policy_tree = RB_ROOT;
 	idle_thread->proc->pid = 0;
 	idle_thread->tid = ihk_mc_get_processor_id();
 

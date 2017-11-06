@@ -225,7 +225,7 @@ static void devobj_release(struct memobj *memobj)
 	return;
 }
 
-static int devobj_get_page(struct memobj *memobj, off_t off, int p2align, uintptr_t *physp, unsigned long *flag)
+static int devobj_get_page(struct memobj *memobj, off_t off, int p2align, uintptr_t *physp, unsigned long *flag, uintptr_t virt_addr)
 {
 	const off_t pgoff = off / PAGE_SIZE;
 	struct devobj *obj = to_devobj(memobj);

@@ -374,7 +374,7 @@ static void shmobj_ref(struct memobj *memobj)
 }
 
 static int shmobj_get_page(struct memobj *memobj, off_t off, int p2align,
-               uintptr_t *physp, unsigned long *pflag)
+               uintptr_t *physp, unsigned long *pflag, uintptr_t virt_addr)
 {
 	struct shmobj *obj = to_shmobj(memobj);
 	int error;
@@ -415,7 +415,7 @@ static int shmobj_get_page(struct memobj *memobj, off_t off, int p2align,
 	if (!page) {
 		npages = 1 << p2align;
 		virt = ihk_mc_alloc_aligned_pages_user(npages, p2align,
-				IHK_MC_AP_NOWAIT);
+				IHK_MC_AP_NOWAIT, virt_addr);
 		if (!virt) {
 			error = -ENOMEM;
 			ekprintf("shmobj_get_page(%p,%#lx,%d,%p):"

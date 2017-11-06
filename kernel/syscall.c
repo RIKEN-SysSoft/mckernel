@@ -1473,7 +1473,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	maxprot = PROT_READ | PROT_WRITE | PROT_EXEC;
 	if (!(flags & MAP_ANONYMOUS)) {
 		off = off0;
-		error = fileobj_create(fd, &memobj, &maxprot);
+		error = fileobj_create(fd, &memobj, &maxprot, addr0);
 #ifdef ATTACHED_MIC
 		/*
 		 * XXX: refuse device mapping in attached-mic now:
@@ -1536,7 +1536,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		}
 
 		p = ihk_mc_alloc_aligned_pages_user(npages, p2align,
-				IHK_MC_AP_NOWAIT | ap_flag);
+				IHK_MC_AP_NOWAIT | ap_flag, addr0);
 		if (p == NULL) {
 			dkprintf("%s: warning: failed to allocate %d contiguous pages "
 					" (bytes: %lu, pgshift: %d), enabling demand paging\n",
@@ -3770,6 +3770,57 @@ perf_mmap(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 
 	return rc;
 }
+
+struct vm_range_numa_policy *vm_range_policy_search(struct process_vm *vm, uintptr_t addr)
+{
+	struct rb_root *root = &vm->vm_range_numa_policy_tree;
+	struct rb_node *node = root->rb_node;
+	struct vm_range_numa_policy *numa_policy = NULL;
+
+	while (node) {
+		numa_policy = rb_entry(node, struct vm_range_numa_policy, policy_rb_node);
+		if (addr < numa_policy->start) {
+			node = node->rb_left;
+		} else if (addr >= numa_policy->end) {
+			node = node->rb_right;
+		} else {
+			return numa_policy;
+		}
+	}
+
+	return NULL;
+}
+
+static int vm_policy_insert(struct process_vm *vm, struct vm_range_numa_policy *newrange)
+{
+	struct rb_root *root = &vm->vm_range_numa_policy_tree;
+	struct rb_node **new = &(root->rb_node), *parent = NULL;
+	struct vm_range_numa_policy *range;
+
+	while (*new) {
+		range = rb_entry(*new, struct vm_range_numa_policy, policy_rb_node);
+		parent = *new;
+		if (newrange->end <= range->start) {
+			new = &((*new)->rb_left);
+		} else if (newrange->start >= range->end) {
+			new = &((*new)->rb_right);
+		} else {
+			ekprintf("vm_range_insert(%p,%lx-%lx (nodemask)%lx (policy)%d): overlap %lx-%lx (nodemask)%lx (policy)%d\n",
+					vm, newrange->start, newrange->end, newrange->numa_mask, newrange->numa_mem_policy,
+					range->start, range->end, range->numa_mask, range->numa_mem_policy);
+			return -EFAULT;
+		}
+	}
+
+	dkprintf("vm_range_insert: %p,%p: %lx-%lx (nodemask)%lx (policy)%d\n", 
+				vm, newrange, newrange->start, newrange->end, newrange->numa_mask, newrange->numa_mem_policy);
+
+	rb_link_node(&newrange->policy_rb_node, parent, new);
+	rb_insert_color(&newrange->policy_rb_node, root);
+
+	return 0;
+}
+
 
 struct mc_perf_event*
 mc_perf_event_alloc(struct perf_event_attr *attr)
@@ -8063,8 +8114,7 @@ SYSCALL_DECLARE(mbind)
 	int error = 0;
 	int bit;
 	struct vm_range *range;
-	struct vm_range_numa_policy *range_policy, *range_policy_iter;
-	struct vm_range_numa_policy *range_policy_next = NULL;
+	struct vm_range_numa_policy *range_policy, *range_policy_iter = NULL;
 	DECLARE_BITMAP(numa_mask, PROCESS_NUMA_MASK_BITS);
 
 	dkprintf("%s: addr: 0x%lx, len: %lu, mode: 0x%x, "
@@ -8275,17 +8325,12 @@ SYSCALL_DECLARE(mbind)
 		case MPOL_INTERLEAVE:
 		case MPOL_PREFERRED:
 			/* Adjust any overlapping range settings and add new one */
-			range_policy_next = NULL;
-			list_for_each_entry(range_policy_iter,
-					&vm->vm_range_numa_policy_list, list) {
+			range_policy_iter = vm_range_policy_search(vm, addr);
+			if (range_policy_iter) {
 				int adjusted = 0;
 				unsigned long orig_end = range_policy_iter->end;
 
-				if (range_policy_iter->end < addr)
-					continue;
-
-				/* Special case of entirely overlapping */
-				if (range_policy_iter->start == addr &&
+				if (range_policy_iter->start == addr &&	
 						range_policy_iter->end == addr + len) {
 					range_policy = range_policy_iter;
 					goto mbind_update_only;
@@ -8302,7 +8347,7 @@ SYSCALL_DECLARE(mbind)
 				if (orig_end > addr + len) {
 					if (adjusted) {
 						/* Add a new entry after */
-						range_policy = kmalloc(sizeof(*range_policy),
+						range_policy = kmalloc(sizeof(struct vm_range_numa_policy),
 								IHK_MC_AP_NOWAIT);
 						if (!range_policy) {
 							dkprintf("%s: error allocating range_policy\n",
@@ -8311,31 +8356,24 @@ SYSCALL_DECLARE(mbind)
 							goto unlock_out;
 						}
 
-						memcpy(range_policy, range_policy_iter,
-								sizeof(*range_policy));
+						RB_CLEAR_NODE(&range_policy->policy_rb_node);
 						range_policy->start = addr + len;
 						range_policy->end = orig_end;
-						list_add(&range_policy->list,
-								&range_policy_iter->list);
-						range_policy_next = range_policy;
-						break;
+
+						error = vm_policy_insert(vm, range_policy);
+						if (error) {
+							kprintf("%s: ERROR: could not insert range: %d\n",__FUNCTION__, error);
+							return error;
+						}
 					}
 					else {
 						range_policy_iter->start = addr + len;
-						range_policy_next = range_policy_iter;
-						break;
 					}
-				}
-
-				/* Next one in ascending address order? */
-				if (range_policy_iter->start >= addr + len) {
-					range_policy_next = range_policy_iter;
-					break;
 				}
 			}
 
 			/* Add a new entry */
-			range_policy = kmalloc(sizeof(*range_policy),
+			range_policy = kmalloc(sizeof(struct vm_range_numa_policy),
 					IHK_MC_AP_NOWAIT);
 			if (!range_policy) {
 				dkprintf("%s: error allocating range_policy\n",
@@ -8344,17 +8382,14 @@ SYSCALL_DECLARE(mbind)
 				goto unlock_out;
 			}
 
-			memset(range_policy, 0, sizeof(*range_policy));
+			RB_CLEAR_NODE(&range_policy->policy_rb_node);
 			range_policy->start = addr;
 			range_policy->end = addr + len;
 
-			if (range_policy_next) {
-				list_add_tail(&range_policy->list,
-						&range_policy_next->list);
-			}
-			else {
-				list_add_tail(&range_policy->list,
-						&vm->vm_range_numa_policy_list);
+			error = vm_policy_insert(vm, range_policy);
+			if (error) {
+				kprintf("%s: ERROR: could not insert range: %d\n",__FUNCTION__, error);
+				return error;
 			}
 
 mbind_update_only:
@@ -8395,8 +8430,6 @@ SYSCALL_DECLARE(set_mempolicy)
 	struct process_vm *vm = cpu_local_var(current)->vm;
 	int error = 0;
 	int bit, valid_mask;
-	struct vm_range_numa_policy *range_policy_iter;
-	struct vm_range_numa_policy *range_policy_next = NULL;
 	DECLARE_BITMAP(numa_mask, PROCESS_NUMA_MASK_BITS);
 
 	memset(numa_mask, 0, sizeof(numa_mask));
@@ -8416,6 +8449,8 @@ SYSCALL_DECLARE(set_mempolicy)
 			nodemask_bits = PROCESS_NUMA_MASK_BITS;
 		}
 	}
+
+	mode &= ~MPOL_MODE_FLAGS;
 
 	switch (mode) {
 		case MPOL_DEFAULT:
@@ -8440,6 +8475,13 @@ SYSCALL_DECLARE(set_mempolicy)
 				set_bit(bit, vm->numa_mask);
 			}
 
+#if 0
+			/* In man, "MPOL_DEFAULT mode deletes a process memory policy 
+			   other than the default and interprets that the memory policy" 
+			   falls back to the system default policy ", but not to delete 
+			   the NUMA memory policy.
+			   There was no processing of Linux's same name command. */
+
 			/* Delete all range settings */
 			ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 			list_for_each_entry_safe(range_policy_iter, range_policy_next,
@@ -8448,6 +8490,7 @@ SYSCALL_DECLARE(set_mempolicy)
 				kfree(range_policy_iter);
 			}
 			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+#endif
 
 			vm->numa_mem_policy = mode;
 			error = 0;
@@ -8595,7 +8638,6 @@ SYSCALL_DECLARE(get_mempolicy)
 
 	/* Address range specific? */
 	if (flags & MPOL_F_ADDR) {
-		struct vm_range_numa_policy *range_policy_iter;
 		struct vm_range *range;
 
 		ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
@@ -8607,16 +8649,8 @@ SYSCALL_DECLARE(get_mempolicy)
 			goto out;
 		}
 
-		list_for_each_entry(range_policy_iter,
-					&vm->vm_range_numa_policy_list, list) {
-			if (range_policy_iter->start > addr ||
-				range_policy_iter->end <= addr) {
-				continue;
-			}
+		range_policy = vm_range_policy_search(vm, addr);
 
-			range_policy = range_policy_iter;
-			break;
-		}
 		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 	}
 

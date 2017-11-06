@@ -1,0 +1,75 @@
+diff --git kernel/mem.c kernel/mem.c
+index 62cb206..5bfb6d6 100644
+--- kernel/mem.c
++++ kernel/mem.c
+@@ -542,6 +542,15 @@ static void reserve_pages(struct ihk_page_allocator_desc *pa_allocator,
+ 	ihk_pagealloc_reserve(pa_allocator, start, end);
+ }
+ 
++#if 1   /* Trace for DEBUG */
++char *mempolicy [] = {
++	"MPOL_DEFAULT",
++	"MPOL_PREFERRED",
++	"MPOL_BIND",
++	"MPOL_INTERLEAVE"
++};
++#endif
++
+ extern int cpu_local_var_initialized;
+ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
+ 		ihk_mc_ap_flag flag, int pref_node, int is_user, uintptr_t virt_addr)
+@@ -585,6 +594,23 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
+ 			}
+ 		}
+ 
++#if 1	/* Trace for DEBUG */
++		if (!((range_policy_iter) && (range_policy_iter->numa_mem_policy != MPOL_DEFAULT))) {
++			if ((range_policy_iter) && (range_policy_iter->numa_mem_policy == MPOL_DEFAULT)) {
++				if (chk_shm == 0) {
++					kprintf("%s[%d]: addr(0x%016lx) policy(%s) <NUMA node policy>\n"
++						,__FUNCTION__ ,__LINE__ ,virt_addr ,mempolicy[(range_policy_iter->numa_mem_policy & 0x3)]);
++				}
++			} else {
++				if ((cpu_local_var(current)->vm->numa_mem_policy == MPOL_DEFAULT) && (virt_addr != -1)) {
++					if (virt_addr) {
++						kprintf("%s[%d]: addr(0x%016lx) policy(%s) <default policy>\n"
++							,__FUNCTION__ ,__LINE__ ,virt_addr ,mempolicy[(cpu_local_var(current)->vm->numa_mem_policy & 0x3)]);
++					}
++				}
++			}
++		}
++#endif
+ 
+ 		if ((!((range_policy_iter) && (range_policy_iter->numa_mem_policy != MPOL_DEFAULT))) && (chk_shm == 0))
+ 			goto distance_based;
+@@ -647,10 +673,30 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
+ 				chk_shm = 1;
+ 			} else {
+ 				numa_mem_policy = range_policy_iter->numa_mem_policy;
++
++#if 1	/* Trace for DEBUG */
++				kprintf("%s[%d]: addr(0x%016lx) policy(%s) <NUMA node policy>\n"
++					,__FUNCTION__ ,__LINE__ ,virt_addr ,mempolicy[(numa_mem_policy & 0x3)]);
++#endif
++
+ 			}
+ 		}
+ 	}
+ 
++#if 1	/* Trace for DEBUG */
++	if (numa_mem_policy == -1) {
++		if (chk_shm == 1) {
++			kprintf("%s[%d]: addr(0x%016lx) policy(%s) <default policy:Mapping of MAP_SHARED>\n"
++				,__FUNCTION__ ,__LINE__ ,virt_addr ,mempolicy[(cpu_local_var(current)->vm->numa_mem_policy & 0x3)]);
++		} else {
++			if (virt_addr) {
++				kprintf("%s[%d]: addr(0x%016lx) policy(%s) <default policy>\n"
++					,__FUNCTION__ ,__LINE__ ,virt_addr ,mempolicy[(cpu_local_var(current)->vm->numa_mem_policy & 0x3)]);
++			}
++		}
++	}
++#endif
++
+ 	if (numa_mem_policy == -1)
+ 		numa_mem_policy = cpu_local_var(current)->vm->numa_mem_policy;
+ 

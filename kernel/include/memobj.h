@@ -65,7 +65,7 @@ struct memobj {
 
 typedef void memobj_release_func_t(struct memobj *obj);
 typedef void memobj_ref_func_t(struct memobj *obj);
-typedef int memobj_get_page_func_t(struct memobj *obj, off_t off, int p2align, uintptr_t *physp, unsigned long *flag);
+typedef int memobj_get_page_func_t(struct memobj *obj, off_t off, int p2align, uintptr_t *physp, unsigned long *flag, uintptr_t virt_addr);
 typedef uintptr_t memobj_copy_page_func_t(struct memobj *obj, uintptr_t orgphys, int p2align);
 typedef int memobj_flush_page_func_t(struct memobj *obj, uintptr_t phys, size_t pgsize);
 typedef int memobj_invalidate_page_func_t(struct memobj *obj, uintptr_t phys, size_t pgsize);
@@ -96,10 +96,10 @@ static inline void memobj_ref(struct memobj *obj)
 }
 
 static inline int memobj_get_page(struct memobj *obj, off_t off,
-		int p2align, uintptr_t *physp, unsigned long *pflag)
+		int p2align, uintptr_t *physp, unsigned long *pflag, uintptr_t virt_addr)
 {
 	if (obj->ops->get_page) {
-		return (*obj->ops->get_page)(obj, off, p2align, physp, pflag);
+		return (*obj->ops->get_page)(obj, off, p2align, physp, pflag, virt_addr);
 	}
 	return -ENXIO;
 }
@@ -159,7 +159,7 @@ static inline int memobj_is_removable(struct memobj *obj)
 	return !!(obj->flags & MF_IS_REMOVABLE);
 }
 
-int fileobj_create(int fd, struct memobj **objp, int *maxprotp);
+int fileobj_create(int fd, struct memobj **objp, int *maxprotp, uintptr_t virt_addr);
 struct shmid_ds;
 int shmobj_create(struct shmid_ds *ds, struct memobj **objp);
 int zeroobj_create(struct memobj **objp);

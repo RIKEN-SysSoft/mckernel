@@ -90,7 +90,7 @@ void ihk_mc_reserve_arch_pages(struct ihk_page_allocator_desc *pa_allocator,
 			unsigned long, unsigned long, int));
 
 struct ihk_mc_pa_ops {
-	void *(*alloc_page)(int, int, ihk_mc_ap_flag, int node, int is_user);
+	void *(*alloc_page)(int, int, ihk_mc_ap_flag, int node, int is_user, uintptr_t virt_addr);
 	void (*free_page)(void *, int, int is_user);
 
 	void *(*alloc)(int, ihk_mc_ap_flag);
@@ -115,33 +115,33 @@ int ihk_mc_free_micpa(unsigned long mic_pa);
 void ihk_mc_clean_micpa(void);
 
 void *_ihk_mc_alloc_aligned_pages_node(int npages, int p2align,
-	ihk_mc_ap_flag flag, int node, int is_user, char *file, int line);
+	ihk_mc_ap_flag flag, int node, int is_user, uintptr_t virt_addr, char *file, int line);
 #define ihk_mc_alloc_aligned_pages_node(npages, p2align, flag, node) ({\
-void *r = _ihk_mc_alloc_aligned_pages_node(npages, p2align, flag, node, IHK_MC_PG_KERNEL, __FILE__, __LINE__);\
+void *r = _ihk_mc_alloc_aligned_pages_node(npages, p2align, flag, node, IHK_MC_PG_KERNEL, -1, __FILE__, __LINE__);\
 r;\
 })
-#define ihk_mc_alloc_aligned_pages_node_user(npages, p2align, flag, node) ({\
-void *r = _ihk_mc_alloc_aligned_pages_node(npages, p2align, flag, node, IHK_MC_PG_USER, __FILE__, __LINE__);\
+#define ihk_mc_alloc_aligned_pages_node_user(npages, p2align, flag, node, virt_addr) ({\
+void *r = _ihk_mc_alloc_aligned_pages_node(npages, p2align, flag, node, IHK_MC_PG_USER, virt_addr, __FILE__, __LINE__);\
 r;\
 })
 
 #define ihk_mc_alloc_aligned_pages(npages, p2align, flag) ({\
-void *r = _ihk_mc_alloc_aligned_pages_node(npages, p2align, flag, -1, IHK_MC_PG_KERNEL, __FILE__, __LINE__);\
+void *r = _ihk_mc_alloc_aligned_pages_node(npages, p2align, flag, -1, IHK_MC_PG_KERNEL, -1, __FILE__, __LINE__);\
 r;\
 })
 
-#define ihk_mc_alloc_aligned_pages_user(npages, p2align, flag) ({\
-void *r = _ihk_mc_alloc_aligned_pages_node(npages, p2align, flag, -1, IHK_MC_PG_USER, __FILE__, __LINE__);\
+#define ihk_mc_alloc_aligned_pages_user(npages, p2align, flag, virt_addr) ({\
+void *r = _ihk_mc_alloc_aligned_pages_node(npages, p2align, flag, -1, IHK_MC_PG_USER, virt_addr, __FILE__, __LINE__);\
 r;\
 })
 
 #define ihk_mc_alloc_pages(npages, flag) ({\
-void *r = _ihk_mc_alloc_aligned_pages_node(npages, PAGE_P2ALIGN, flag, -1, IHK_MC_PG_KERNEL, __FILE__, __LINE__);\
+void *r = _ihk_mc_alloc_aligned_pages_node(npages, PAGE_P2ALIGN, flag, -1, IHK_MC_PG_KERNEL, -1, __FILE__, __LINE__);\
 r;\
 })
 
-#define ihk_mc_alloc_pages_user(npages, flag) ({\
-void *r = _ihk_mc_alloc_aligned_pages_node(npages, PAGE_P2ALIGN, flag, -1, IHK_MC_PG_USER, __FILE__, __LINE__);\
+#define ihk_mc_alloc_pages_user(npages, flag, virt_addr) ({\
+void *r = _ihk_mc_alloc_aligned_pages_node(npages, PAGE_P2ALIGN, flag, -1, IHK_MC_PG_USER, virt_addr, __FILE__, __LINE__);\
 r;\
 })
 

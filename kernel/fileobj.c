@@ -191,7 +191,7 @@ static struct fileobj *obj_list_lookup(uintptr_t handle)
 /***********************************************************************
  * fileobj
  */
-int fileobj_create(int fd, struct memobj **objp, int *maxprotp)
+int fileobj_create(int fd, struct memobj **objp, int *maxprotp, uintptr_t virt_addr)
 {
 	ihk_mc_user_context_t ctx;
 	struct pager_create_result result __attribute__((aligned(64)));	
@@ -265,7 +265,7 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp)
 				/* Get the actual pages NUMA interleaved */
 				for (j = 0; j < nr_pages; ++j) {
 					mo->pages[j] = ihk_mc_alloc_aligned_pages_node_user(1,
-							PAGE_P2ALIGN, IHK_MC_AP_NOWAIT, node);
+							PAGE_P2ALIGN, IHK_MC_AP_NOWAIT, node, virt_addr);
 					if (!mo->pages[j]) {
 						kprintf("%s: ERROR: allocating pages[%d]\n",
 								__FUNCTION__, j);
@@ -558,7 +558,7 @@ out:
 }
 
 static int fileobj_get_page(struct memobj *memobj, off_t off,
-               int p2align, uintptr_t *physp, unsigned long *pflag)
+               int p2align, uintptr_t *physp, unsigned long *pflag, uintptr_t virt_addr)
 {
 	struct thread *proc = cpu_local_var(current);
 	struct fileobj *obj = to_fileobj(memobj);
@@ -571,7 +571,7 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 	struct mcs_rwlock_node mcs_node;
 	int hash = (off >> PAGE_SHIFT) & FILEOBJ_PAGE_HASH_MASK;	
 
-	dkprintf("fileobj_get_page(%p,%lx,%x,%p)\n", obj, off, p2align, physp);
+	dkprintf("fileobj_get_page(%p,%lx,%x,%x,%p)\n", obj, off, p2align, virt_addr, physp);
 	if (p2align != PAGE_P2ALIGN) {
 		return -ENOMEM;
 	}
@@ -584,13 +584,13 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 		int page_ind = off >> PAGE_SHIFT;
 
 		if (!memobj->pages[page_ind]) {
-			virt = ihk_mc_alloc_pages_user(1, IHK_MC_AP_NOWAIT | IHK_MC_AP_USER);
+			virt = ihk_mc_alloc_pages_user(1, IHK_MC_AP_NOWAIT | IHK_MC_AP_USER, virt_addr);
 
 			if (!virt) {
 				error = -ENOMEM;
-				kprintf("fileobj_get_page(%p,%lx,%x,%p):"
+				kprintf("fileobj_get_page(%p,%lx,%x,%x,%x,%p):"
 						"alloc failed. %d\n",
-						obj, off, p2align, physp,
+						obj, off, p2align, virt_addr, physp,
 						error);
 				goto out_nolock;
 			}
@@ -627,22 +627,22 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 		args = kmalloc(sizeof(*args), IHK_MC_AP_NOWAIT);
 		if (!args) {
 			error = -ENOMEM;
-			kprintf("fileobj_get_page(%p,%lx,%x,%p):"
+			kprintf("fileobj_get_page(%p,%lx,%x,%x,%p):"
 					"kmalloc failed. %d\n",
-					obj, off, p2align, physp, error);
+					obj, off, p2align, virt_addr, physp, error);
 			goto out;
 		}
 
 		if (!page) {
 			npages = 1 << p2align;
 
-			virt = ihk_mc_alloc_pages_user(npages, IHK_MC_AP_NOWAIT |
-					(to_memobj(obj)->flags & MF_ZEROFILL) ? IHK_MC_AP_USER : 0);
+			virt = ihk_mc_alloc_pages_user(npages, (IHK_MC_AP_NOWAIT |
+					(to_memobj(obj)->flags & MF_ZEROFILL) ? IHK_MC_AP_USER : 0), virt_addr);
 			if (!virt) {
 				error = -ENOMEM;
-				kprintf("fileobj_get_page(%p,%lx,%x,%p):"
+				kprintf("fileobj_get_page(%p,%lx,%x,%x,%p):"
 						"alloc failed. %d\n",
-						obj, off, p2align, physp,
+						obj, off, p2align, virt_addr, physp,
 						error);
 				goto out;
 			}
@@ -707,8 +707,8 @@ out_nolock:
 	if (args) {
 		kfree(args);
 	}
-	dkprintf("fileobj_get_page(%p,%lx,%x,%p): %d %lx\n",
-			obj, off, p2align, physp, error, phys);
+	dkprintf("fileobj_get_page(%p,%lx,%x,%x,%p): %d %lx\n",
+			obj, off, p2align, virt_addr, physp, error, phys);
 	return error;
 }
 
