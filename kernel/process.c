@@ -1466,14 +1466,6 @@ static int remap_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 	dkprintf("remap_one_page(%p,%p,%p %#lx,%p,%d)\n",
 			arg0, pt, ptep, *ptep, pgaddr, pgshift);
 
-	/* XXX: NYI: large pages */
-	if (pgsize != PAGE_SIZE) {
-		error = -E2BIG;
-		ekprintf("remap_one_page(%p,%p,%p %#lx,%p,%d):%d\n",
-				arg0, pt, ptep, *ptep, pgaddr, pgshift, error);
-		goto out;
-	}
-
 	off = args->off + ((uintptr_t)pgaddr - args->start);
 	pte_make_fileoff(off, 0, pgsize, &apte);
 
@@ -1509,6 +1501,7 @@ int remap_process_memory_range(struct process_vm *vm, struct vm_range *range,
 {
 	struct rfp_args args;
 	int error;
+	unsigned int retval;
 
 	dkprintf("remap_process_memory_range(%p,%p,%#lx,%#lx,%#lx)\n",
 			vm, range, start, end, off);
@@ -1519,6 +1512,13 @@ int remap_process_memory_range(struct process_vm *vm, struct vm_range *range,
 	args.off = off;
 	args.memobj = range->memobj;
 
+	retval = __sync_val_compare_and_swap(&range->pgshift, 0, PAGE_SHIFT);
+	if (retval != 0 && retval != PAGE_SHIFT) {
+		error = -E2BIG;
+		ekprintf("%s: pgshift is too big (%d)  failed:%d\n", __func__, retval, error);
+		goto out;
+	}
+		
 	error = visit_pte_range(vm->address_space->page_table, (void *)start,
 			(void *)end, range->pgshift, VPTEF_DEFAULT,
 			&remap_one_page, &args);
