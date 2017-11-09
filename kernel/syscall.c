@@ -459,16 +459,10 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 
 	/* -ERESTARTSYS indicates that the proxy process is gone
 	 * and the application should be terminated */
-#ifdef POSTK_DEBUG_TEMP_FIX_70 /* interrupt_syscall returned -ERESTARTSYS fix */
-	if (rc == -ERESTARTSYS && req->number != __NR_exit_group
-		&& req->number != __NR_kill) {
-#else /* POSTK_DEBUG_TEMP_FIX_70 */
-	if (rc == -ERESTARTSYS && req->number != __NR_exit_group) {
-#endif /* POSTK_DEBUG_TEMP_FIX_70 */
+	if (rc == -ERESTARTSYS) {
 		kprintf("%s: proxy PID %d is dead, terminate()\n",
 			__FUNCTION__, thread->proc->pid);
 		thread->proc->nohost = 1;
-		terminate(0, SIGKILL);
 	}
 
 #ifdef PROFILE_ENABLE
@@ -2202,13 +2196,8 @@ SYSCALL_DECLARE(execve)
 	if (ret != 0) {
 		dkprintf("execve(): ERROR: host failed to load elf header, errno: %d\n", 
 				ret);
-#ifdef POSTK_DEBUG_TEMP_FIX_10 /* sys_execve() memleak fix. */
 		ret = -ret;
-		goto desc_free;
-#else /* POSTK_DEBUG_TEMP_FIX_10 */
-		ihk_mc_free_pages(desc, 4);
-		return -ret;
-#endif /* POSTK_DEBUG_TEMP_FIX_10 */
+		goto end;
 	}
 
 	dkprintf("execve(): ELF desc received, num sections: %d\n",
@@ -2231,13 +2220,8 @@ SYSCALL_DECLARE(execve)
 		kprintf("ERROR: no argv for executable: %s?\n", kfilename? kfilename: "");
 		if(kfilename)
 			kfree(kfilename);
-#ifdef POSTK_DEBUG_TEMP_FIX_10 /* sys_execve() memleak fix. */
 		ret = -EINVAL;
-		goto desc_free;
-#else /* POSTK_DEBUG_TEMP_FIX_10 */
-		ihk_mc_free_pages(desc, 4);
-		return -EINVAL;
-#endif /* POSTK_DEBUG_TEMP_FIX_10 */
+		goto end;
 	}
 
 	envp_flat_len = flatten_strings_from_user(-1, NULL, envp, &envp_flat);
@@ -2251,12 +2235,8 @@ SYSCALL_DECLARE(execve)
 		kprintf("ERROR: no envp for executable: %s?\n", kfilename? kfilename: "");
 		if(kfilename)
 			kfree(kfilename);
-#ifdef POSTK_DEBUG_TEMP_FIX_10 /* sys_execve() memleak fix. */
 		ret = -EINVAL;
-		goto argv_free;
-#else /* POSTK_DEBUG_TEMP_FIX_10 */
-		return -EINVAL;
-#endif /* POSTK_DEBUG_TEMP_FIX_10 */
+		goto end;
 	}
 
 	if (cpu_local_var(current)->proc->ptrace) {
@@ -2293,11 +2273,8 @@ SYSCALL_DECLARE(execve)
 	request.args[2] = sizeof(struct program_load_desc) + 
 		sizeof(struct program_image_section) * desc->num_sections;
 
-	ret = do_syscall(&request, ihk_mc_get_processor_id(), 0);
-
-	if (ret != 0) {
-		kprintf("execve(): PANIC: host failed to load elf image\n");
-		panic("");
+	if ((ret = do_syscall(&request, ihk_mc_get_processor_id(), 0)) != 0) {
+		goto end;
 	}
 
 	for(i = 0; i < _NSIG; i++){
@@ -2320,18 +2297,14 @@ SYSCALL_DECLARE(execve)
 	dkprintf("execve(): switching to new process\n");
 	proc->execed = 1;
 	
-#ifdef POSTK_DEBUG_TEMP_FIX_10 /* sys_execve() memleak fix. */
 	ret = 0;
+end:
 	if (envp_flat) {
 		kfree(envp_flat);
 	}
-
-argv_free:
 	if (argv_flat) {
 		kfree(argv_flat);
 	}
-
-desc_free:
 	ihk_mc_free_pages(desc, 4);
 
 	if (!ret) {
@@ -2343,21 +2316,6 @@ desc_free:
 			cpu_local_var(current));
 	}
 	return ret;
-#else /* POSTK_DEBUG_TEMP_FIX_10 */
-	ihk_mc_free_pages(desc, 4);
-	kfree(argv_flat);
-	kfree(envp_flat);
-	
-	/* Lock run queue because enter_user_mode expects to release it */
-	cpu_local_var(runq_irqstate) = 
-		ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
-
-	ihk_mc_switch_context(NULL, &cpu_local_var(current)->ctx, 
-		cpu_local_var(current));
-
-	/* Never reach here */
-	return 0;
-#endif /* POSTK_DEBUG_TEMP_FIX_10 */
 }
 
 unsigned long do_fork(int clone_flags, unsigned long newsp,
@@ -9515,6 +9473,10 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	if (num != __NR_sched_yield)
 #endif // DISABLE_SCHED_YIELD
 		set_cputime(0);
+
+	if (thread->proc->nohost) { // mcexec termination was detected
+		terminate(0, SIGKILL);
+	}
 
 	return l;
 }
