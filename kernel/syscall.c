@@ -2457,11 +2457,7 @@ retry_tid:
 				request1.args[0] = clone_flags;
 		}
 		newproc->pid = do_syscall(&request1, ihk_mc_get_processor_id(), 0);
-#ifdef POSTK_DEBUG_TEMP_FIX_12 /* __NR_fork retval check fix. */
 		if (newproc->pid < 0) {
-#else /* POSTK_DEBUG_TEMP_FIX_12 */
-		if (newproc->pid == -1) {
-#endif /* POSTK_DEBUG_TEMP_FIX_12 */
 			kprintf("ERROR: forking host process\n");
 			
 			/* TODO: clean-up new */
