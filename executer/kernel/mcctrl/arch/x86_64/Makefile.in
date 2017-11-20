@@ -1,1 +1,1 @@
-# dummy file
+ccflags-y += -mno-red-zone -mcmodel=kernel
