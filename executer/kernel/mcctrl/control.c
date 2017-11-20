@@ -632,6 +632,7 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 
 	pli->task = current;
 	pli->ready = 0;
+	pli->timeout = 0;
 	init_waitqueue_head(&pli->pli_wq);
 
 	pli_next = NULL;
@@ -693,11 +694,50 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 		dprintk("%s: pid: %d, waiting in list\n",
 				__FUNCTION__, task_tgid_vnr(current));
 		mutex_unlock(&pe->lock);
-		ret = wait_event_interruptible(pli->pli_wq, pli->ready);
+		/* Timeout period: 10 secs + (#procs * 0.1sec) */
+		ret = wait_event_interruptible_timeout(pli->pli_wq,
+				pli->ready,
+				msecs_to_jiffies(10000 + req.nr_processes * 100));
 		mutex_lock(&pe->lock);
-		if (ret != 0) {
+
+		/* First timeout task? Wake up everyone else,
+		 * but tell them we timed out */
+		if (ret == 0) {
+			printk("%s: error: pid: %d, timed out, waking everyone\n",
+					__FUNCTION__, task_tgid_vnr(current));
+			while (!list_empty(&pe->pli_list)) {
+				pli_next = list_first_entry(&pe->pli_list,
+						struct process_list_item, list);
+				list_del(&pli_next->list);
+				pli_next->ready = 1;
+				pli_next->timeout = 1;
+				wake_up_interruptible(&pli_next->pli_wq);
+			}
+
+			/* Reset process counter to start state */
+			pe->nr_processes = -1;
+			ret = -ETIMEDOUT;
 			goto put_and_unlock_out;
 		}
+
+		/* Interrupted or woken up by someone else due to time out? */
+		if (ret < 0 || pli->timeout) {
+			if (ret > 0) {
+				printk("%s: error: pid: %d, job startup timed out\n",
+						__FUNCTION__, task_tgid_vnr(current));
+				ret = -ETIMEDOUT;
+			}
+			goto put_and_unlock_out;
+		}
+
+		/* Incorrect wakeup state? */
+		if (!pli->ready) {
+			printk("%s: error: pid: %d, not ready but woken?\n",
+					__FUNCTION__, task_tgid_vnr(current));
+			ret = -EINVAL;
+			goto put_and_unlock_out;
+		}
+
 		dprintk("%s: pid: %d, woken up\n",
 				__FUNCTION__, task_tgid_vnr(current));
 	}

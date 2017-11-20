@@ -304,6 +304,7 @@ struct node_topology {
 
 struct process_list_item {
 	int ready;
+	int timeout;
 	struct task_struct *task;
 	struct list_head list;
 	wait_queue_head_t pli_wq;
