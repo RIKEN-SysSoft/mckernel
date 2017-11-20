@@ -64,7 +64,6 @@ static inline int futex_atomic_cmpxchg_inatomic(int __user *uaddr, int oldval,
 	return oldval;
 }
 
-#ifdef POSTK_DEBUG_ARCH_DEP_8 /* arch depend hide */
 static inline int futex_atomic_op_inuser(int encoded_op, int __user *uaddr)
 {
 	int op = (encoded_op >> 28) & 7;
@@ -128,7 +127,6 @@ static inline int futex_atomic_op_inuser(int encoded_op, int __user *uaddr)
 	}
 	return ret;
 }
-#endif	/* !POSTK_DEBUG_ARCH_DEP_8 */
 
 static inline int get_futex_value_locked(uint32_t *dest, uint32_t *from)
 {
