@@ -1,0 +1,12 @@
+/proc/stat
+1
+^cpu\s((\s)([\d]+)){10}
+^intr((\s)([\d]+))+
+^ctxt\s[\d]+
+^btime\s[\d]+
+^processes\s[\d]+
+^procs_running\s[\d]+
+^procs_blocked\s[\d]+
+^softirq((\s)([\d]+)){11}
+
+^cpu[\d]+((\s)([\d]+)){10}

@@ -1,0 +1,3 @@
+/sys/devices/system/cpu/cpu0/cache/index[0-1]/shared_cpu_map
+1
+^[\da-f,]+

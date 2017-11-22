@@ -1,0 +1,3 @@
+/sys/devices/system/cpu/offline
+2
+^[\d,\-]*

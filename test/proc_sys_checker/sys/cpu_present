@@ -1,0 +1,3 @@
+/sys/devices/system/cpu/present
+1
+^[\d,\-]+
