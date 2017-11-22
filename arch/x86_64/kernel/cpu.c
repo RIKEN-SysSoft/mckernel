@@ -1018,7 +1018,7 @@ void gpe_handler(struct x86_user_context *regs)
 		check_need_resched();
 	}
 	set_cputime(0);
-	// panic("GPF");
+	panic("GPF");
 }
 
 void debug_handler(struct x86_user_context *regs)
@@ -1582,6 +1582,8 @@ void arch_show_interrupt_context(const void *reg)
 	__kprintf("%16lx %16lx %16lx %16lx\n",
 	        regs->cs, regs->ss, regs->rflags, regs->error);
 
+kprintf_unlock(irqflags);
+return;
 	arch_show_extended_context();
 
 	arch_print_pre_interrupt_stack(regs);
