@@ -48,6 +48,9 @@ if ls /dev/mcos* 1>/dev/null 2>&1; then
 	done
 fi
 
+# Allow ihkmond to flush kmsg buffer
+sleep 2.0
+
 # Query IHK-SMP resources and release them
 if ! ${SBINDIR}/ihkconfig 0 query cpu > /dev/null; then
 	echo "error: querying cpus" >&2
@@ -62,17 +65,23 @@ if [ "${cpus}" != "" ]; then
 	fi
 fi
 
-if ! ${SBINDIR}/ihkconfig 0 query mem > /dev/null; then
-	echo "error: querying memory" >&2
-	exit 1
-fi
+#if ! ${SBINDIR}/ihkconfig 0 query mem > /dev/null; then
+#	echo "error: querying memory" >&2
+#	exit 1
+#fi
+#
+#mem=`${SBINDIR}/ihkconfig 0 query mem`
+#if [ "${mem}" != "" ]; then
+#	if ! ${SBINDIR}/ihkconfig 0 release mem $mem > /dev/null; then
+#		echo "error: releasing memory" >&2
+#		exit 1
+#	fi
+#fi
 
-mem=`${SBINDIR}/ihkconfig 0 query mem`
-if [ "${mem}" != "" ]; then
-	if ! ${SBINDIR}/ihkconfig 0 release mem $mem > /dev/null; then
-		echo "error: releasing memory" >&2
-		exit 1
-	fi
+# Release all memory
+if ! ${SBINDIR}/ihkconfig 0 release mem "all" > /dev/null; then
+	echo "error: releasing memory" >&2
+	exit 1
 fi
 
 # Remove delegator if loaded

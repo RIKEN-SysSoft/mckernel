@@ -1,0 +1,3 @@
+/sys/devices/system/cpu/cpu0/cache/index[0-1]/ways_of_associativity
+1
+^[\d]+

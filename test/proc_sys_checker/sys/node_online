@@ -1,0 +1,3 @@
+/sys/devices/system/node/online
+1
+^[\d,\-]+

@@ -1,0 +1,3 @@
+/sys/devices/system/cpu/possible
+1
+^[\d,\-]+

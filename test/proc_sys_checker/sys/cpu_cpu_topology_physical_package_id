@@ -1,0 +1,3 @@
+/sys/devices/system/cpu/cpu0/topology/physical_package_id
+1
+^[\d]+

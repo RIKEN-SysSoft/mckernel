@@ -1,0 +1,3 @@
+/proc/#pid#/maps
+2
+^[\da-f]+[\-][\da-f]+\s[rwxsp\-]{4}\s[\da-f]+\s[\d]{2}[:][\d]{2}\s[\d]+([\s]+\[heap\]|[\s]+\[vdso\]|[\s]+\[stack\]|[\s]+\[stack:[\d]+\]|[\s]+\[vsyscall\]|[\s]+/[\w/\-.]+|\s)
