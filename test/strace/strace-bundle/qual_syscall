@@ -12,16 +12,20 @@ check_prog grep
 $TIMEOUT $MCEXEC $STRACE -e execve ls > /dev/null 2> check.log &&
 grep '^execve(' check.log > /dev/null ||
 	{ cat check.log; fail_ 'strace -e execve does not work'; }
+echo qual_syscall-1 OK
 
 grep -v '^execve(' check.log |
 LC_ALL=C grep '^[[:alnum:]_]*(' > /dev/null &&
 	{ cat check.log; fail_ 'strace -e execve does not work properly'; }
+echo qual_syscall-2 OK
 
 $TIMEOUT $MCEXEC $STRACE -e trace=process ls > /dev/null 2> check.log &&
 grep '^execve(' check.log > /dev/null ||
 	{ cat check.log; fail_ 'strace -e trace=process does not work'; }
+echo qual_syscall-3 OK
 
 grep '^open' check.log > /dev/null &&
 	{ cat check.log; fail_ 'strace -e trace=process does not work properly'; }
+echo qual_syscall-4 OK
 
 exit 0
