@@ -1,0 +1,3 @@
+waitpid04    1  TPASS  :  condition 1 test passed
+waitpid04    2  TPASS  :  condition 2 test passed
+waitpid04    3  TPASS  :  condition 3 test passed

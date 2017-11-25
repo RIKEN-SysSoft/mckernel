@@ -1,0 +1,41 @@
+clone01: OK
+clone03: OK
+clone04: OK
+clone06: OK
+clone07: OK
+fork01: OK
+fork02: OK
+fork03: OK
+fork04: OK
+fork07: OK
+fork08: OK
+fork09: OK
+fork10: OK
+fork11: OK
+execve01: OK
+Error: Failed to open execve_child
+execve(): error loading ELF for file execve_child
+execve02: OK
+Error: /tmp/exezNhGkC/fake.17900 is not an executable?, errno: 13
+execve(): error loading ELF for file /tmp/exezNhGkC/fake.17900
+Error: file /tmp/exezNhGkC/execve03.17900 is zero length
+execve(): error loading ELF for file /tmp/exezNhGkC/execve03.17900
+execve03: OK
+wait02: OK
+wait401: OK
+wait402: OK
+waitid01: OK
+waitid02: OK
+waitpid01: OK
+waitpid02: OK
+waitpid03: OK
+waitpid04: OK
+waitpid05: OK
+waitpid07: OK
+waitpid08: OK
+waitpid09: OK
+waitpid12: OK
+waitpid13: OK
+ptrace01: OK
+ptrace02: OK
+ptrace05: OK

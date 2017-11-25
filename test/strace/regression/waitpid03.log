@@ -1,0 +1,2 @@
+waitpid03    1  TPASS  :  Got correct child PID
+waitpid03    2  TPASS  :  Condition 2 test passed

@@ -1,0 +1,4 @@
+fork02      0  TINFO  :  Inside parent
+fork02      0  TINFO  :  Inside child
+fork02      0  TINFO  :  exit status of wait 0
+fork02      1  TPASS  :  test 1 PASSED

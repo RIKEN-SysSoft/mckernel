@@ -1,0 +1,2 @@
+execl01_child    1  TPASS  :  execve01_child executed
+execve01    0  TINFO  :  Child process returned TPASS

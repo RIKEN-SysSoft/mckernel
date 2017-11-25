@@ -1,0 +1,2 @@
+execve02    1  TPASS  :  execve() failed expectedly: TEST_ERRNO=EACCES(13): Permission denied
+execve02    0  TINFO  :  Child process returned TPASS

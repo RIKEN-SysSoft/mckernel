@@ -1,0 +1,2 @@
+waitpid01    1  TPASS  :  recieved expected pid
+waitpid01    2  TPASS  :  recieved expected signal
