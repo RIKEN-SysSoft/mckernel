@@ -668,7 +668,11 @@ do_pageout(char *fname, void *buf, size_t size, int flag)
 		return cc;
 	}
 	si->udata_buf = myalloc(si, UDATA_BUFSIZE);
+#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
+	si->swapfname = kmalloc(strlen_user(fname) + 1, IHK_MC_AP_NOWAIT);
+#else /* POSTK_DEBUG_ARCH_DEP_46 */
 	si->swapfname = kmalloc(strlen(fname) + 1, IHK_MC_AP_NOWAIT);
+#endif /* POSTK_DEBUG_ARCH_DEP_46 */
 	if (si->swapfname == NULL) {
 		kfree(si);
 		ekprintf("do_pageout: Cannot allocate working memory in kmalloc\n");
