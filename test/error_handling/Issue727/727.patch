@@ -1,0 +1,27 @@
+diff --git a/executer/user/mcexec.c b/executer/user/mcexec.c
+index 2d0d50e..70856e7 100644
+--- a/executer/user/mcexec.c
++++ b/executer/user/mcexec.c
+@@ -71,9 +71,9 @@
+ #else /* POSTK_DEBUG_ARCH_DEP_35 */
+ #include <sys/user.h>
+ #endif	/* POSTK_DEBUG_ARCH_DEP_35 */
+-#include <sys/prctl.h>
++//#include <sys/prctl.h>
+ #ifndef POSTK_DEBUG_ARCH_DEP_77 /* arch depend hide */
+-#include <asm/prctl.h>
++//#include <asm/prctl.h>
+ #endif /* !POSTK_DEBUG_ARCH_DEP_77 */
+ #include "../include/uprotocol.h"
+ #include <getopt.h>
+@@ -3732,7 +3732,9 @@ return_execve1:
+ 
+ 				/* Copy program image phase */
+ 				case 2:
+-					
++					fprintf(stderr, "execve killed\n");
++					fflush(stderr);
++					kill(getpid(), SIGKILL);
+ 					ret = -1;
+ 					/* Alloc descriptor */
+ 					desc = malloc(w.sr.args[2]);
