@@ -585,6 +585,8 @@ struct process {
 	void *hfi1_events;
 	size_t hfi1_cq_comps_len;
 	ihk_spinlock_t hfi1_lock;
+	struct rb_root hfi1_reg_tree;
+	struct rb_root hfi1_inv_tree;
 };
 
 /*

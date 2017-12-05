@@ -637,6 +637,10 @@ int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 		//ihk_mc_pt_print_pte(vm->address_space->page_table, hfi1_kregbase);
 
 		proc->hfi1_kregbase = hfi1_kregbase;
+
+		/* Initialize registration tree */
+		proc->hfi1_reg_tree = RB_ROOT;
+		proc->hfi1_inv_tree = RB_ROOT;
 	}
 
 	if (proc->hfi1_piobase != dd->piobase) {
