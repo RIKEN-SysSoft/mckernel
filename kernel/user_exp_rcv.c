@@ -60,10 +60,10 @@
 #define dkprintf(...) do { if(0) kprintf(__VA_ARGS__); } while (0)
 #endif
 
-static int program_rcvarray(struct hfi1_filedata *, uintptr_t, size_t, u32 *);
-static int set_rcvarray_entry(struct hfi1_filedata *, uintptr_t,
-			      u32, struct tid_group *,
-			      u16);
+static int program_rcvarray(struct hfi1_filedata *, unsigned long, uintptr_t,
+		size_t, u32 *);
+static int set_rcvarray_entry(struct hfi1_filedata *, unsigned long, uintptr_t,
+		u32, struct tid_group *, int, u32);
 static int unprogram_rcvarray(struct hfi1_filedata *, u32, struct tid_group **);
 static void clear_tid_node(struct hfi1_filedata *, struct tid_rb_node *);
 
@@ -170,7 +170,7 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 			len = MAX_EXPECTED_BUFFER;
 		}
 
-		ret = program_rcvarray(fd, phys, len, tidlist + tididx);
+		ret = program_rcvarray(fd, vaddr, phys, len, tidlist + tididx);
 		if (ret <= 0) {
 			kprintf("Failed to program RcvArray entries: %d\n",
 					ret);
@@ -240,23 +240,32 @@ int hfi1_user_exp_rcv_clear(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 			break;
 		}
 	}
+
+	kprintf("%s: 0x%llx:%lu -> %d TIDs unprogrammed\n",
+			__FUNCTION__, tinfo->vaddr, tinfo->length, tinfo->tidcnt);
+
+	spin_lock(&fd->tid_lock);
 	fd->tid_used -= tididx;
+	spin_unlock(&fd->tid_lock);
+
 	tinfo->tidcnt = tididx;
 done:
 	kfree(tidinfo);
 	return ret;
 }
 
+
 /**
  * program_rcvarray() - program an RcvArray group with receive buffers
  */
-static int program_rcvarray(struct hfi1_filedata *fd, uintptr_t phys,
+static int program_rcvarray(struct hfi1_filedata *fd,
+				unsigned long vaddr,
+				uintptr_t phys,
 			    size_t len, u32 *ptid)
 {
 	struct hfi1_ctxtdata *uctxt = fd->uctxt;
 	struct hfi1_devdata *dd = uctxt->dd;
 	u16 idx = 0;
-	s16 order;
 	u32 tidinfo = 0, rcventry;
 	int ret = -ENOMEM, count = 0;
 	struct tid_group *grp = NULL;
@@ -264,6 +273,9 @@ static int program_rcvarray(struct hfi1_filedata *fd, uintptr_t phys,
 	/* lock is taken at loop edges */
 	spin_lock(&fd->tid_lock);
 	while (len > 0) {
+		size_t tid_len;
+		size_t tid_npages;
+
 		if (!grp) {
 			if (!uctxt->tid_used_list.count) {
 				if (!uctxt->tid_group_list.count) {
@@ -286,26 +298,23 @@ static int program_rcvarray(struct hfi1_filedata *fd, uintptr_t phys,
 		}
 		spin_unlock(&fd->tid_lock);
 
-
-		/* order is power of two of 4k (2^12) pages */
-		order = fls(len) - 13;
-		if (order < 0)
-			order = 0;
-		dkprintf("len %u, order %u\n", len, order);
+		tid_len = (len > MAX_EXPECTED_BUFFER) ? MAX_EXPECTED_BUFFER :
+			(1 << (fls(len) - 1));
+		tid_npages = (tid_len > PAGE_SIZE) ? tid_len >> PAGE_SHIFT : 1;
 
 		rcventry = grp->base + idx;
 		rcv_array_wc_fill(dd, rcventry);
-		ret = set_rcvarray_entry(fd, phys, rcventry, grp,
-					 order);
+		tidinfo = rcventry2tidinfo(rcventry - uctxt->expected_base) |
+			EXP_TID_SET(LEN, tid_npages);
+		ret = set_rcvarray_entry(fd, vaddr, phys, rcventry,
+				grp, tid_npages, tidinfo);
 		if (ret)
 			return ret;
 
-		tidinfo = rcventry2tidinfo(rcventry - uctxt->expected_base) |
-			EXP_TID_SET(LEN, 1 << order);
 		ptid[count++] = tidinfo;
-		len -= 1 << (order + 12);
-		phys += 1 << (order + 12);
-
+		len -= tid_len;
+		vaddr += tid_len;
+		phys += tid_len;
 
 		spin_lock(&fd->tid_lock);
 		grp->used++;
@@ -327,10 +336,10 @@ static int program_rcvarray(struct hfi1_filedata *fd, uintptr_t phys,
 	return count;
 }
 
-
-static int set_rcvarray_entry(struct hfi1_filedata *fd, uintptr_t phys,
-			      u32 rcventry, struct tid_group *grp,
-			      u16 order)
+static int set_rcvarray_entry(struct hfi1_filedata *fd,
+		unsigned long vaddr, uintptr_t phys,
+		u32 rcventry, struct tid_group *grp,
+		int npages, u32 tidinfo)
 {
 	struct hfi1_ctxtdata *uctxt = fd->uctxt;
 	struct hfi1_devdata *dd = uctxt->dd;
@@ -346,18 +355,17 @@ static int set_rcvarray_entry(struct hfi1_filedata *fd, uintptr_t phys,
 		return -ENOMEM;
 
 	dkprintf("Registering rcventry %d, phys 0x%p, len %u\n", rcventry,
-		 phys, 1 << (order+12));
+		 phys, npages << PAGE_SHIFT);
 
 	node->phys = phys;
-	node->len = 1 << (order+12);
+	node->len = npages << PAGE_SHIFT;
 	node->rcventry = rcventry;
 	node->grp = grp;
 	// TODO: check node->rcventry - uctxt->expected_base is within
 	// [0; uctxt->expected_count[ ?
 	fd->entry_to_rb[node->rcventry - uctxt->expected_base] = node;
 
-
-	hfi1_put_tid(dd, rcventry, PT_EXPECTED, phys, order+1);
+	hfi1_put_tid(dd, rcventry, PT_EXPECTED, phys, fls(npages));
 #if 0
 	trace_hfi1_exp_tid_reg(uctxt->ctxt, fd->subctxt, rcventry, npages,
 			       node->mmu.addr, node->phys, phys);
