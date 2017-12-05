@@ -1282,6 +1282,7 @@ int do_munmap(void *addr, size_t len)
 		}
 	}
 	finish_free_pages_pending();
+
 	dkprintf("%s: 0x%lx:%lu, error: %ld\n",
 		__FUNCTION__, addr, len, error);
 	return error;
@@ -1289,7 +1290,7 @@ int do_munmap(void *addr, size_t len)
 
 #ifdef POSTK_DEBUG_ARCH_DEP_27
 #else
-static int search_free_space(size_t len, intptr_t hint, int pgshift, intptr_t *addrp)
+static int search_free_space(size_t len, int pgshift, intptr_t *addrp)
 {
 	struct thread *thread = cpu_local_var(current);
 	struct vm_regions *region = &thread->vm->region;
@@ -1298,17 +1299,17 @@ static int search_free_space(size_t len, intptr_t hint, int pgshift, intptr_t *a
 	struct vm_range *range;
 	size_t pgsize = (size_t)1 << pgshift;
 
-	dkprintf("search_free_space(%lx,%lx,%d,%p)\n", len, hint, pgshift, addrp);
+	dkprintf("%s: len: %lu, pgshift: %d\n",
+		__FUNCTION__, len, pgshift);
 
-	addr = hint;
+	addr = region->map_end;
 	for (;;) {
 		addr = (addr + pgsize - 1) & ~(pgsize - 1);
 		if ((region->user_end <= addr)
 				|| ((region->user_end - len) < addr)) {
-			ekprintf("search_free_space(%lx,%lx,%p):"
-					"no space. %lx %lx\n",
-					len, hint, addrp, addr,
-					region->user_end);
+			ekprintf("%s: error: addr 0x%lx is outside the user region\n",
+				__FUNCTION__, addr);
+
 			error = -ENOMEM;
 			goto out;
 		}
@@ -1320,12 +1321,13 @@ static int search_free_space(size_t len, intptr_t hint, int pgshift, intptr_t *a
 		addr = range->end;
 	}
 
+	region->map_end = addr + len;
 	error = 0;
 	*addrp = addr;
 
 out:
-	dkprintf("search_free_space(%lx,%lx,%d,%p): %d %lx\n",
-			len, hint, pgshift, addrp, error, addr);
+	dkprintf("%s: len: %lu, pgshift: %d, addr: 0x%lx\n",
+		__FUNCTION__, len, pgshift, addr);
 	return error;
 }
 #endif
@@ -1420,20 +1422,18 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		}
 	}
 	else {
-		/* choose mapping address */
+		/* Obtain mapping address */
 #ifdef POSTK_DEBUG_ARCH_DEP_27
 		error = search_free_space(cpu_local_var(current), len,
 				region->map_end, PAGE_SHIFT + p2align, &addr);
 #else
-		error = search_free_space(len, region->map_end,
-				PAGE_SHIFT + p2align, &addr);
+		error = search_free_space(len, PAGE_SHIFT + p2align, &addr);
 #endif	/* POSTK_DEBUG_ARCH_DEP_27 */
 		if (error) {
 			ekprintf("do_mmap:search_free_space(%lx,%lx,%d) failed. %d\n",
 					len, region->map_end, p2align, error);
 			goto out;
 		}
-		region->map_end = addr + len;
 	}
 
 	/* do the map */
@@ -4908,7 +4908,6 @@ SYSCALL_DECLARE(shmat)
 	struct process_vm *vm = thread->vm;
 	size_t len;
 	int error;
-	struct vm_regions *region = &vm->region;
 	intptr_t addr;
 	int prot;
 	int vrflags;
@@ -4977,7 +4976,7 @@ SYSCALL_DECLARE(shmat)
 		error = search_free_space(cpu_local_var(current), len,
 					  region->map_end, obj->pgshift, &addr);
 #else
-		error = search_free_space(len, region->map_end, obj->pgshift, &addr);
+		error = search_free_space(len, obj->pgshift, &addr);
 #endif	/* POSTK_DEBUG_ARCH_DEP_27 */
 		if (error) {
 			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
@@ -4985,7 +4984,6 @@ SYSCALL_DECLARE(shmat)
 			dkprintf("shmat(%#x,%p,%#x):search_free_space failed. %d\n", shmid, shmaddr, shmflg, error);
 			return error;
 		}
-		region->map_end = addr + len;
 	}
 
 	vrflags = VR_NONE;
@@ -7816,8 +7814,8 @@ SYSCALL_DECLARE(mremap)
 					  vm->region.map_end,
 					  range->pgshift, (intptr_t *)&newstart);
 #else
-		error = search_free_space(newsize, vm->region.map_end,
-				range->pgshift, (intptr_t *)&newstart);
+		error = search_free_space(newsize, range->pgshift,
+				(intptr_t *)&newstart);
 #endif	/* POSTK_DEBUG_ARCH_DEP_27 */
 		if (error) {
 			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
