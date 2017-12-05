@@ -82,6 +82,14 @@ struct tid_rb_node {
 	u32 len;
 	u32 rcventry;
 	struct tid_group *grp;
+	bool freed;
+
+	struct rb_root *rb_root;
+	struct hfi1_filedata *fd;
+	unsigned long start;
+	unsigned long end;
+	struct rb_node rb_node;
+	struct deferred_unmap_range *range;
 };
 
 struct tid_pageset {

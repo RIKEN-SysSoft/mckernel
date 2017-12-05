@@ -66,6 +66,16 @@ static int set_rcvarray_entry(struct hfi1_filedata *, unsigned long, uintptr_t,
 		u32, struct tid_group *, int, u32);
 static int unprogram_rcvarray(struct hfi1_filedata *, u32, struct tid_group **);
 static void clear_tid_node(struct hfi1_filedata *, struct tid_rb_node *);
+static int tid_rb_invalidate(struct hfi1_filedata *fdata,
+		struct tid_rb_node *node);
+
+static int hfi1_rb_tree_insert(struct rb_root *root,
+		struct tid_rb_node *new_node);
+static void __hfi1_rb_tree_remove(struct tid_rb_node *tid_node);
+static struct tid_rb_node *__hfi1_search_rb_overlapping_node(
+		struct rb_root *root,
+		unsigned long start,
+		unsigned long end);
 
 /*
  * RcvArray entry allocation for Expected Receives is done by the
@@ -105,8 +115,9 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 #endif
 
 	vaddr_end = tinfo->vaddr + tinfo->length;
-	dkprintf("setup start: 0x%llx, length: %zu\n", tinfo->vaddr,
-		 tinfo->length);
+	dkprintf("%s: vaddr: 0x%llx, length: %zu (end: 0x%lx)\n",
+			__FUNCTION__, tinfo->vaddr, tinfo->length,
+			tinfo->vaddr + tinfo->length);
 
 	vaddr = tinfo->vaddr;
 
@@ -115,7 +126,7 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 			(void**)&base_vaddr,
 			&base_pgsize, 0);
 	if (unlikely(!ptep || !pte_is_present(ptep))) {
-		kprintf("%s: ERRROR: no valid  PTE for 0x%lx\n",
+		kprintf("%s: ERROR: no valid  PTE for 0x%lx\n",
 				__FUNCTION__, vaddr);
 		return -EFAULT;
 	}
@@ -150,7 +161,7 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 				len += __base_pgsize;
 				contiguous = 1;
 			}
-			
+
 			base_pgsize = __base_pgsize;
 			base_vaddr = __base_vaddr;
 			ptep = __ptep;
@@ -161,7 +172,7 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 
 		if (ret == -EFAULT)
 			break;
-		
+
 		if (len > vaddr_end - vaddr) {
 			len = vaddr_end - vaddr;
 		}
@@ -176,6 +187,9 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 					ret);
 			ret = -EFAULT;
 		}
+
+		dkprintf("%s: vaddr: 0x%lx -> phys: 0x%llx:%lu programmed\n",
+			__FUNCTION__, vaddr, phys, len);
 
 		tididx += ret;
 		vaddr += len;
@@ -198,6 +212,9 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 			tinfo->tidlist = 0;
 			ret = -EFAULT;
 		}
+
+		dkprintf("%s: range: 0x%llx:%lu -> %d TIDs programmed\n",
+			__FUNCTION__, tinfo->vaddr, tinfo->length, tinfo->tidcnt);
 	}
 
 	kmalloc_cache_free(tidlist);
@@ -231,7 +248,6 @@ int hfi1_user_exp_rcv_clear(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 	}
 	*/
 
-	dkprintf("Clear called, cnt %d\n", tinfo->tidcnt);
 	for (tididx = 0; tididx < tinfo->tidcnt; tididx++) {
 		ret = unprogram_rcvarray(fd, tidinfo[tididx], NULL);
 		if (ret) {
@@ -241,7 +257,7 @@ int hfi1_user_exp_rcv_clear(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 		}
 	}
 
-	kprintf("%s: 0x%llx:%lu -> %d TIDs unprogrammed\n",
+	dkprintf("%s: 0x%llx:%lu -> %d TIDs unprogrammed\n",
 			__FUNCTION__, tinfo->vaddr, tinfo->length, tinfo->tidcnt);
 
 	spin_lock(&fd->tid_lock);
@@ -361,9 +377,20 @@ static int set_rcvarray_entry(struct hfi1_filedata *fd,
 	node->len = npages << PAGE_SHIFT;
 	node->rcventry = rcventry;
 	node->grp = grp;
+	node->freed = false;
+	node->fd = fd;
+	node->start = vaddr;
+	node->end = vaddr + node->len;
+	node->range = NULL;
+
 	// TODO: check node->rcventry - uctxt->expected_base is within
 	// [0; uctxt->expected_count[ ?
 	fd->entry_to_rb[node->rcventry - uctxt->expected_base] = node;
+	hfi1_rb_tree_insert(
+			&cpu_local_var(current)->proc->hfi1_reg_tree,
+			node);
+	dkprintf("%s: node (0x%lx:%lu) programmed, tidinfo: %d\n",
+		__FUNCTION__, vaddr, node->len, tidinfo);
 
 	hfi1_put_tid(dd, rcventry, PT_EXPECTED, phys, fls(npages));
 #if 0
@@ -371,6 +398,60 @@ static int set_rcvarray_entry(struct hfi1_filedata *fd,
 			       node->mmu.addr, node->phys, phys);
 #endif
 	return 0;
+}
+
+
+int hfi1_user_exp_rcv_invalid(struct hfi1_filedata *fd, struct hfi1_tid_info *tinfo)
+{
+	struct hfi1_ctxtdata *uctxt = fd->uctxt;
+	unsigned long *ev = uctxt->dd->events +
+		(((uctxt->ctxt - uctxt->dd->first_user_ctxt) *
+		  HFI1_MAX_SHARED_CTXTS) + fd->subctxt);
+	int ret = 0;
+
+	if (!fd->invalid_tids)
+		return -EINVAL;
+
+	/*
+	 * copy_to_user() can sleep, which will leave the invalid_lock
+	 * locked and cause the MMU notifier to be blocked on the lock
+	 * for a long time.
+	 * Copy the data to a local buffer so we can release the lock.
+	 *
+	 * McKernel: copy to userspace directly.
+	 */
+
+	spin_lock(&fd->invalid_lock);
+	if (fd->invalid_tid_idx) {
+		dkprintf("%s: fd->invalid_tid_idx: %d to be notified\n",
+				__FUNCTION__, fd->invalid_tid_idx);
+
+		if (copy_to_user((void __user *)tinfo->tidlist,
+					fd->invalid_tids,
+					sizeof(*(fd->invalid_tids)) *
+					fd->invalid_tid_idx)) {
+			ret = -EFAULT;
+		}
+		else {
+			tinfo->tidcnt = fd->invalid_tid_idx;
+			memset(fd->invalid_tids, 0, sizeof(*fd->invalid_tids) *
+					fd->invalid_tid_idx);
+			/*
+			 * Reset the user flag while still holding the lock.
+			 * Otherwise, PSM can miss events.
+			 */
+			clear_bit(_HFI1_EVENT_TID_MMU_NOTIFY_BIT, ev);
+			dkprintf("%s: fd->invalid_tid_idx: %d notified\n",
+					__FUNCTION__, fd->invalid_tid_idx);
+			fd->invalid_tid_idx = 0;
+		}
+	}
+	else {
+		tinfo->tidcnt = 0;
+	}
+	spin_unlock(&fd->invalid_lock);
+
+	return ret;
 }
 
 static int unprogram_rcvarray(struct hfi1_filedata *fd, u32 tidinfo,
@@ -396,9 +477,39 @@ static int unprogram_rcvarray(struct hfi1_filedata *fd, u32 tidinfo,
 	rcventry = tididx + (tidctrl - 1);
 
 	node = fd->entry_to_rb[rcventry];
+	dkprintf("%s: node (0x%lx:%lu), tidinfo: %d\n",
+			__FUNCTION__, node->start, node->end - node->start, tidinfo);
+
 	if (!node || node->rcventry != (uctxt->expected_base + rcventry)) {
 		kprintf("bad entry %d\n", rcventry);
 		return -EBADF;
+	}
+
+	if (node->range) {
+		struct process_vm *vm = cpu_local_var(current)->vm;
+		struct deferred_unmap_range *range = node->range;
+
+		//ihk_mc_spinlock_lock_noirq(&vm->vm_deferred_unmap_lock);
+
+		if (--range->refcnt == 0) {
+			list_del(&range->list);
+		}
+		else {
+			range = NULL;
+		}
+		//ihk_mc_spinlock_unlock_noirq(&vm->vm_deferred_unmap_lock);
+
+		if (range) {
+			dkprintf("%s: executing deferred unmap: 0x%lx:%lu-0x%lx\n",
+					__FUNCTION__, range->addr, range->len,
+					range->addr + range->len);
+
+			ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+			do_munmap(range->addr, range->len);
+			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+
+			kfree(range);
+		}
 	}
 
 	if (grp)
@@ -425,6 +536,9 @@ static void clear_tid_node(struct hfi1_filedata *fd, struct tid_rb_node *node)
 	 * pages.
 	 */
 	flush_wc();
+	barrier();
+
+	__hfi1_rb_tree_remove(node);
 
 	spin_lock(&fd->tid_lock);
 	node->grp->used--;
@@ -438,4 +552,193 @@ static void clear_tid_node(struct hfi1_filedata *fd, struct tid_rb_node *node)
 			       &uctxt->tid_group_list);
 	spin_unlock(&fd->tid_lock);
 	kfree(node);
+}
+
+
+int hfi1_user_exp_rcv_overlapping(unsigned long start, unsigned long end)
+{
+	int ret = 0;
+	struct process_vm *vm = cpu_local_var(current)->vm;
+	struct tid_rb_node *node;
+	struct deferred_unmap_range *range;
+
+	dkprintf("%s: 0x%lx:%lu\n", __FUNCTION__, start, end - start);
+
+	//ihk_mc_spinlock_lock_noirq(&vm->vm_deferred_unmap_lock);
+
+	node = __hfi1_search_rb_overlapping_node(
+			&cpu_local_var(current)->proc->hfi1_reg_tree,
+			start, end);
+	if (!node || node->freed) {
+		return 0;
+	}
+
+	range = kmalloc(sizeof(*range), IHK_MC_AP_NOWAIT);
+	if (!range) {
+		kprintf("%s: ERROR: allocating memory\n", __FUNCTION__);
+		return -ENOMEM;
+	}
+
+	init_deferred_unmap_range(range, vm, (void *)start, end - start);
+
+	while (node) {
+		struct hfi1_filedata *fd = node->fd;
+		struct hfi1_ctxtdata *uctxt = fd ? fd->uctxt : NULL;
+
+		/* Sanity check */
+		if (!uctxt ||
+				fd->entry_to_rb[node->rcventry - uctxt->expected_base] != node) {
+			kprintf("%s: ERROR: inconsistent TID node\n", __FUNCTION__);
+			ret = -EINVAL;
+			break;
+		}
+
+		dkprintf("%s: node (0x%lx:%lu) deferred and invalidated"
+				" in munmap for 0x%lx:%lu-0x%lx\n",
+				__FUNCTION__, node->start, node->len, start, end - start, end);
+		tid_rb_invalidate(fd, node);
+		node->range = range;
+		++range->refcnt;
+
+		node = __hfi1_search_rb_overlapping_node(
+				&cpu_local_var(current)->proc->hfi1_reg_tree,
+				start, end);
+	}
+
+	if (ret != 0) {
+		kfree(range);
+	}
+	else {
+		list_add_tail(&range->list, &vm->vm_deferred_unmap_range_list);
+	}
+
+	//ihk_mc_spinlock_unlock_noirq(&vm->vm_deferred_unmap_lock);
+
+	return ret;
+}
+
+static int hfi1_rb_tree_insert(struct rb_root *root,
+		struct tid_rb_node *new_node)
+{
+	struct rb_node **new = &(root->rb_node), *parent = NULL;
+	struct tid_rb_node *tid_node;
+
+	while (*new) {
+		tid_node = rb_entry(*new, struct tid_rb_node, rb_node);
+		parent = *new;
+
+		if (new_node->end <= tid_node->start) {
+			new = &((*new)->rb_left);
+		}
+		else if (new_node->start >= tid_node->end) {
+			new = &((*new)->rb_right);
+		}
+		else {
+			kprintf("%s: ERROR: overlapping TID nodes, "
+					"node (0x%lx:%lu) <=> new (0x%lx:%lu)\n",
+					__FUNCTION__,
+					tid_node->start, tid_node->len,
+					new_node->start, new_node->len);
+			return -EINVAL;
+		}
+	}
+
+	rb_link_node(&new_node->rb_node, parent, new);
+	rb_insert_color(&new_node->rb_node, root);
+	new_node->rb_root = root;
+
+	return 0;
+}
+
+static void __hfi1_rb_tree_remove(struct tid_rb_node *tid_node)
+{
+	if (!tid_node->rb_root) {
+		kprintf("%s: ERROR: node without rb_root??\n",
+			__FUNCTION__);
+		return;
+	}
+	rb_erase(&tid_node->rb_node, tid_node->rb_root);
+	tid_node->rb_root = NULL;
+}
+
+static struct tid_rb_node *__hfi1_search_rb_overlapping_node(
+	struct rb_root *root,
+	unsigned long start,
+	unsigned long end)
+{
+	struct rb_node *node = root->rb_node;
+	struct tid_rb_node *tid_node = NULL;
+
+	while (node) {
+		tid_node = rb_entry(node, struct tid_rb_node, rb_node);
+
+		if (end <= tid_node->start) {
+			node = node->rb_left;
+		}
+		else if (start >= tid_node->end) {
+			node = node->rb_right;
+		}
+		else if (tid_node->freed) {
+			node = rb_next(node);
+		}
+		else {
+			break;
+		}
+	}
+
+	return node ? tid_node : NULL;
+}
+
+/*
+ * Always return 0 from this function.  A non-zero return indicates that the
+ * remove operation will be called and that memory should be unpinned.
+ * However, the driver cannot unpin out from under PSM.  Instead, retain the
+ * memory (by returning 0) and inform PSM that the memory is going away.  PSM
+ * will call back later when it has removed the memory from its list.
+ *
+ * XXX: in McKernel we attach tid nodes to memory ranges that are
+ * about to be unmapped. Once we got all of them cleared, the actual
+ * unmap is performed.
+ */
+static int tid_rb_invalidate(struct hfi1_filedata *fdata,
+		struct tid_rb_node *node)
+{
+	struct hfi1_ctxtdata *uctxt = fdata->uctxt;
+
+	if (node->freed)
+		return 0;
+
+	node->freed = true;
+	__hfi1_rb_tree_remove(node);
+	hfi1_rb_tree_insert(
+			&cpu_local_var(current)->proc->hfi1_inv_tree,
+			node);
+
+	spin_lock(&fdata->invalid_lock);
+	if (fdata->invalid_tid_idx < uctxt->expected_count) {
+		fdata->invalid_tids[fdata->invalid_tid_idx] =
+			rcventry2tidinfo(node->rcventry - uctxt->expected_base);
+		fdata->invalid_tids[fdata->invalid_tid_idx] |=
+			EXP_TID_SET(LEN, node->len >> PAGE_SHIFT);
+		if (!fdata->invalid_tid_idx) {
+			unsigned long *ev;
+
+			/*
+			 * hfi1_set_uevent_bits() sets a user event flag
+			 * for all processes. Because calling into the
+			 * driver to process TID cache invalidations is
+			 * expensive and TID cache invalidations are
+			 * handled on a per-process basis, we can
+			 * optimize this to set the flag only for the
+			 * process in question.
+			 */
+			ev = uctxt->dd->events +
+				(((uctxt->ctxt - uctxt->dd->first_user_ctxt) *
+				  HFI1_MAX_SHARED_CTXTS) + fdata->subctxt);
+			set_bit(_HFI1_EVENT_TID_MMU_NOTIFY_BIT, ev);
+		}
+		fdata->invalid_tid_idx++;
+	}
+	spin_unlock(&fdata->invalid_lock);
+	return 0;
 }
