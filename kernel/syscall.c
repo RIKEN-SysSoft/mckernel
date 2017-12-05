@@ -1723,10 +1723,10 @@ out:
 	if (memobj) {
 		memobj_release(memobj);
 	}
-	dkprintf("%s: 0x%lx:%8lu, (req: 0x%lx:%lu), prot: %x, flags: %x, "
+	dkprintf("%s: 0x%lx:%8lu-0x%lx, (req: 0x%lx:%lu), prot: %x, flags: %x, "
 			"fd: %d, off: %lu, error: %ld, addr: 0x%lx\n",
 			__FUNCTION__,
-			addr, len, addr0, len0, prot, flags,
+			addr, len, addr+len, addr0, len0, prot, flags,
 			fd, off0, error, addr);
 
 	return (!error)? addr: error;
