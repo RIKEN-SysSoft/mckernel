@@ -37,8 +37,10 @@ HFI1_KO="${1-$(modinfo -n hfi1)}" || \
 "$DES_BIN" "$HFI1_KO" hfi1_devdata					\
 	per_sdma sdma_pad_phys sdma_map pport chip_rcv_array_count	\
 	kregbase1 piobase physaddr rcvarray_wc default_desc1 flags	\
-	sc2vl > "${HDR_PREFIX}devdata.h"
+	sc2vl events first_user_ctxt chip_rcv_contexts \
+	> "${HDR_PREFIX}devdata.h"
 
 "$DES_BIN" "$HFI1_KO" hfi1_filedata					\
-	uctxt pq cq dd subctxt entry_to_rb tid_lock tid_used		\
+	uctxt pq cq dd subctxt entry_to_rb tid_lock tid_used \
+	invalid_tids invalid_tid_idx invalid_lock \
 		> "${HDR_PREFIX}filedata.h"

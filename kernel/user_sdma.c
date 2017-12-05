@@ -789,6 +789,60 @@ int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 		proc->hfi1_cq_comps_len = len;
 	}
 
+	if (proc->hfi1_events != dd->events) {
+		void *hfi1_events = dd->events;
+		len = (dd->chip_rcv_contexts * HFI1_MAX_SHARED_CTXTS *
+				sizeof(*dd->events) + PAGE_SIZE - 1) & PAGE_MASK;
+
+		/*
+		 * Events are in Linux vmalloc area, we need to
+		 * resolve physical addresses by looking at Linux
+		 * page tables.
+		 */
+		for (virt = hfi1_events; virt < hfi1_events + len;
+				virt += PAGE_SIZE) {
+
+			lptep = ihk_mc_pt_lookup_pte(ihk_mc_get_linux_kernel_pgt(),
+					virt, 0, 0, 0, 0);
+			if (!lptep && !pte_is_present(lptep)) {
+				kprintf("%s: ERROR: no mapping in Linux for events: 0x%lx?\n",
+						__FUNCTION__, virt);
+				ret = -1;
+				goto unlock_out;
+			}
+
+			phys = pte_get_phys(lptep);
+			if (ihk_mc_pt_set_page(vm->address_space->page_table,
+						virt, phys, attr) < 0) {
+				kprintf("%s: ERROR: failed to map events: 0x%lx -> 0x%lx\n",
+						__FUNCTION__, virt, phys);
+				ret = -1;
+				goto unlock_out;
+			}
+
+			ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+					virt, 0, 0, 0, 0);
+			if (!ptep && !pte_is_present(ptep)) {
+				kprintf("%s: ERROR: no mapping in McKernel for events: 0x%lx?\n",
+						__FUNCTION__, virt);
+				ret = -1;
+				goto unlock_out;
+			}
+
+			*ptep = *lptep;
+		}
+
+		dkprintf("%s: hfi1_events: 0x%lx - 0x%lx\n",
+				__FUNCTION__,
+				hfi1_events,
+				hfi1_events + len);
+		//ihk_mc_pt_print_pte(vm->address_space->page_table, hfi1_events);
+
+		proc->hfi1_events = hfi1_events;
+	}
+
+	flush_tlb();
+
 unlock_out:
 	ihk_mc_spinlock_unlock(&proc->hfi1_lock, irqstate);
 
