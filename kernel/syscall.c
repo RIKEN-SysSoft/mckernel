@@ -1290,6 +1290,19 @@ int do_munmap(void *addr, size_t len)
 	int error;
 	int ro_freed;
 
+	/*
+	 * TODO: do call back registration for address space changes..
+	 */
+	{
+		extern int hfi1_user_exp_rcv_overlapping(
+				unsigned long start, unsigned long end);
+		unsigned long start = (unsigned long)addr;
+
+		if (hfi1_user_exp_rcv_overlapping(start, start + len)) {
+			return 0;
+		}
+	}
+
 	begin_free_pages_pending();
 	error = remove_process_memory_range(cpu_local_var(current)->vm,
 			(intptr_t)addr, (intptr_t)addr+len, &ro_freed);
