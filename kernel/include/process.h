@@ -582,6 +582,7 @@ struct process {
 	void *hfi1_rcvarray_wc;
 	size_t hfi1_rcvarray_wc_len;
 	void *hfi1_cq_comps;
+	void *hfi1_events;
 	size_t hfi1_cq_comps_len;
 	ihk_spinlock_t hfi1_lock;
 };

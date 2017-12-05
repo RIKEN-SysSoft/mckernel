@@ -34,19 +34,31 @@ struct hfi1_devdata {
 			void *rcvarray_wc;
 		};
 		struct {
-			char padding8[3688];
+			char padding8[3648];
+			long unsigned int *events;
+		};
+		struct {
+			char padding9[3684];
+			u32 chip_rcv_contexts;
+		};
+		struct {
+			char padding10[3688];
 			u32 chip_rcv_array_count;
 		};
 		struct {
-			char padding9[6872];
+			char padding11[6872];
 			struct hfi1_pportdata *pport;
 		};
 		struct {
-			char padding10[6896];
+			char padding12[6896];
 			u16 flags;
 		};
 		struct {
-			char padding11[6920];
+			char padding13[6899];
+			u8 first_user_ctxt;
+		};
+		struct {
+			char padding14[6920];
 			u64 sc2vl[4];
 		};
 	};

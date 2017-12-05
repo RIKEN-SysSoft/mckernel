@@ -33,5 +33,17 @@ struct hfi1_filedata {
 			char padding7[72];
 			u32 tid_used;
 		};
+		struct {
+			char padding8[80];
+			u32 *invalid_tids;
+		};
+		struct {
+			char padding9[88];
+			u32 invalid_tid_idx;
+		};
+		struct {
+			char padding10[92];
+			spinlock_t invalid_lock;
+		};
 	};
 };
