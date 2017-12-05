@@ -712,9 +712,35 @@ struct thread {
 
 #define VM_RANGE_CACHE_SIZE	4
 
+struct deferred_unmap_range {
+	struct process_vm *vm;
+	void *addr;
+	size_t len;
+	struct list_head list;
+
+	/*
+	 * List operations as well as the refcnt are protected
+	 * by vm->vm_deferred_unmap_lock.
+	 */
+	int refcnt;
+};
+
+static void init_deferred_unmap_range(
+	struct deferred_unmap_range *range,
+	struct process_vm *vm,
+	void *addr, size_t len)
+{
+	range->vm = vm;
+	range->addr = addr;
+	range->len = len;
+	INIT_LIST_HEAD(&range->list);
+	range->refcnt = 0;
+}
+
 struct process_vm {
 	struct address_space *address_space;
 	struct rb_root vm_range_tree;
+	struct list_head vm_deferred_unmap_range_list;
 	struct vm_regions region;
 	struct process *proc;		/* process that reside on the same page */
 	void *opt;
@@ -724,6 +750,7 @@ struct process_vm {
  	
 	ihk_spinlock_t page_table_lock;
 	ihk_spinlock_t memory_range_lock;
+	ihk_spinlock_t vm_deferred_unmap_lock;
     // to protect the followings:
     // 1. addition of process "memory range" (extend_process_region, add_process_memory_range)
     // 2. addition of process page table (allocate_pages, update_process_page_table)
