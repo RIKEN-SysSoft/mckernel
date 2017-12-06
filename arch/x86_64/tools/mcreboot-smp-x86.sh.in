@@ -304,7 +304,7 @@ if ! grep ihk_smp_@ARCH@ /proc/modules &>/dev/null; then
 		error_exit "ihk_loaded"
 	fi
 
-	# Offline-reonline RAM (special case for OFP SNC-4 mode)
+	# Offline-reonline RAM (special case for OFP SNC-4 flat mode)
 	if [ "`hostname | grep "c[0-9][0-9][0-9][0-9].ofp"`" != "" ] && [ "`cat /sys/devices/system/node/online`" == "0-7" ]; then
 		for i in  0 1 2 3; do
 			find /sys/devices/system/node/node$i/memory*/ -name "online" | while read f; do
@@ -318,6 +318,22 @@ if ! grep ihk_smp_@ARCH@ /proc/modules &>/dev/null; then
 			find /sys/devices/system/node/node$i/memory*/ -name "online" | while read f; do
 				echo 0 > $f 2>&1 > /dev/null;
 			done
+		done
+		for i in 4 5 6 7; do
+			find /sys/devices/system/node/node$i/memory*/ -name "online" | while read f; do
+				echo 1 > $f 2>&1 > /dev/null;
+			done
+		done
+	fi
+
+	# Offline-reonline RAM (special case for OFP Quadrant flat mode)
+	if [ "`hostname | grep "c[0-9][0-9][0-9][0-9].ofp"`" != "" ] && [ "`cat /sys/devices/system/node/online`" == "0-1" ]; then
+		for i in 1; do
+			find /sys/devices/system/node/node$i/memory*/ -name "online" | while read f; do
+				echo 0 > $f 2>&1 > /dev/null;
+			done
+		done
+		for i in 1; do
 			find /sys/devices/system/node/node$i/memory*/ -name "online" | while read f; do
 				echo 1 > $f 2>&1 > /dev/null;
 			done
