@@ -4,6 +4,60 @@
 
 #ifndef __ASSEMBLY__
 
+/* register sys_reg list */
+#define IMP_FJ_TAG_ADDRESS_CTRL_EL1		sys_reg(3, 0, 11, 2, 0)
+#define IMP_FJ_TAG_ADDRESS_CTRL_EL2		sys_reg(3, 4, 11, 2, 0)
+#define IMP_FJ_TAG_ADDRESS_CTRL_EL3		sys_reg(3, 6, 11, 2, 0)
+#define IMP_FJ_TAG_ADDRESS_CTRL_EL12		sys_reg(3, 5, 11, 2, 0)
+#define IMP_SCCR_CTRL_EL1			sys_reg(3, 0, 11, 8, 0)
+#define IMP_SCCR_ASSIGN_EL1			sys_reg(3, 0, 11, 8, 1)
+#define IMP_SCCR_SET0_L2_EL1			sys_reg(3, 0, 15, 8, 2)
+#define IMP_SCCR_SET1_L2_EL1			sys_reg(3, 0, 15, 8, 3)
+#define IMP_SCCR_L1_EL0				sys_reg(3, 3, 11, 8, 2)
+#define IMP_SCCR_VSCCR_L2_EL0			sys_reg(3, 3, 15, 8, 2)
+#define IMP_PF_CTRL_EL1				sys_reg(3, 0, 11, 4, 0)
+#define IMP_PF_STREAM_DETECT_CTRL_EL0		sys_reg(3, 3, 11, 4, 0)
+#define IMP_PF_INJECTION_CTRL0_EL0		sys_reg(3, 3, 11, 6, 0)
+#define IMP_PF_INJECTION_CTRL1_EL0		sys_reg(3, 3, 11, 6, 1)
+#define IMP_PF_INJECTION_CTRL2_EL0		sys_reg(3, 3, 11, 6, 2)
+#define IMP_PF_INJECTION_CTRL3_EL0		sys_reg(3, 3, 11, 6, 3)
+#define IMP_PF_INJECTION_CTRL4_EL0		sys_reg(3, 3, 11, 6, 4)
+#define IMP_PF_INJECTION_CTRL5_EL0		sys_reg(3, 3, 11, 6, 5)
+#define IMP_PF_INJECTION_CTRL6_EL0		sys_reg(3, 3, 11, 6, 6)
+#define IMP_PF_INJECTION_CTRL7_EL0		sys_reg(3, 3, 11, 6, 7)
+#define IMP_PF_INJECTION_DISTANCE0_EL0		sys_reg(3, 3, 11, 7, 0)
+#define IMP_PF_INJECTION_DISTANCE1_EL0		sys_reg(3, 3, 11, 7, 1)
+#define IMP_PF_INJECTION_DISTANCE2_EL0		sys_reg(3, 3, 11, 7, 2)
+#define IMP_PF_INJECTION_DISTANCE3_EL0		sys_reg(3, 3, 11, 7, 3)
+#define IMP_PF_INJECTION_DISTANCE4_EL0		sys_reg(3, 3, 11, 7, 4)
+#define IMP_PF_INJECTION_DISTANCE5_EL0		sys_reg(3, 3, 11, 7, 5)
+#define IMP_PF_INJECTION_DISTANCE6_EL0		sys_reg(3, 3, 11, 7, 6)
+#define IMP_PF_INJECTION_DISTANCE7_EL0		sys_reg(3, 3, 11, 7, 7)
+#define IMP_BARRIER_CTRL_EL1			sys_reg(3, 0, 11, 12, 0)
+#define IMP_BARRIER_BST_BIT_EL1			sys_reg(3, 0, 11, 12, 4)
+#define IMP_BARRIER_INIT_SYNC_BB0_EL1		sys_reg(3, 0, 15, 13, 0)
+#define IMP_BARRIER_INIT_SYNC_BB1_EL1		sys_reg(3, 0, 15, 13, 1)
+#define IMP_BARRIER_INIT_SYNC_BB2_EL1		sys_reg(3, 0, 15, 13, 2)
+#define IMP_BARRIER_INIT_SYNC_BB3_EL1		sys_reg(3, 0, 15, 13, 3)
+#define IMP_BARRIER_INIT_SYNC_BB4_EL1		sys_reg(3, 0, 15, 13, 4)
+#define IMP_BARRIER_INIT_SYNC_BB5_EL1		sys_reg(3, 0, 15, 13, 5)
+#define IMP_BARRIER_ASSIGN_SYNC_W0_EL1		sys_reg(3, 0, 15, 15, 0)
+#define IMP_BARRIER_ASSIGN_SYNC_W1_EL1		sys_reg(3, 0, 15, 15, 1)
+#define IMP_BARRIER_ASSIGN_SYNC_W2_EL1		sys_reg(3, 0, 15, 15, 2)
+#define IMP_BARRIER_ASSIGN_SYNC_W3_EL1		sys_reg(3, 0, 15, 15, 3)
+#define IMP_BARRIER_BST_SYNC_W0_EL0		sys_reg(3, 3, 15, 15, 0)
+#define IMP_BARRIER_LBSY_SYNC_W0_EL0		sys_reg(3, 3, 15, 15, 0)
+#define IMP_BARRIER_BST_SYNC_W1_EL0		sys_reg(3, 3, 15, 15, 1)
+#define IMP_BARRIER_LBSY_SYNC_W1_EL0		sys_reg(3, 3, 15, 15, 1)
+#define IMP_BARRIER_BST_SYNC_W2_EL0		sys_reg(3, 3, 15, 15, 2)
+#define IMP_BARRIER_LBSY_SYNC_W2_EL0		sys_reg(3, 3, 15, 15, 2)
+#define IMP_BARRIER_BST_SYNC_W3_EL0		sys_reg(3, 3, 15, 15, 3)
+#define IMP_BARRIER_LBSY_SYNC_W3_EL0		sys_reg(3, 3, 15, 15, 3)
+#define IMP_SOC_STANDBY_CTRL_EL1		sys_reg(3, 0, 11, 0, 0)
+#define IMP_FJ_MCR_EL3				sys_reg(3, 6, 11, 2, 2)
+#define IMP_FJ_CORE_UARCH_CTRL_EL2		sys_reg(3, 4, 11, 0, 4)
+#define IMP_FJ_CORE_UARCH_RESTRECTION_EL1	sys_reg(3, 0, 11, 0, 5)
+
 /* macros */
 #define PWR_REG_MASK(reg, feild)  (((UL(1) << ((reg##_##feild##_MSB) - (reg##_##feild##_LSB) + 1)) - 1) << (reg##_##feild##_LSB))
 #define PWR_REG_SHIFT(reg, feild) (reg##_##feild##_LSB)
@@ -20,9 +74,6 @@
 #define MIDR_EL1_IMPLEMENTER_FJ (0x46)
 #define MIDR_EL1_PPNUM_TCHIP    (0x1)
 
-/* Standby Control Register */
-#define IMP_SOC_STANDBY_CTRL_EL1  sys_reg(3, 0, 11, 0, 0)
-
 //bits
 #define IMP_SOC_STANDBY_CTRL_EL1_ECO_MODE_MSB     2
 #define IMP_SOC_STANDBY_CTRL_EL1_ECO_MODE_LSB     2
@@ -38,9 +89,6 @@
 #define IMP_SOC_STANDBY_CTRL_EL1_ECO_MODE_SHIFT    PWR_REG_SHIFT(IMP_SOC_STANDBY_CTRL_EL1, ECO_MODE)
 #define IMP_SOC_STANDBY_CTRL_EL1_MODE_CHANGE_SHIFT PWR_REG_SHIFT(IMP_SOC_STANDBY_CTRL_EL1, MODE_CHANGE)
 #define IMP_SOC_STANDBY_CTRL_EL1_RETENTION_SHIFT   PWR_REG_SHIFT(IMP_SOC_STANDBY_CTRL_EL1, RETENTION)
-
-/* IMP FJ CORE UARCH RESTRECTION EL1 */
-#define IMP_FJ_CORE_UARCH_RESTRECTION_EL1  sys_reg(3, 0, 11, 0, 5)
 
 //bits
 #define IMP_FJ_CORE_UARCH_RESTRECTION_EL1_ISSUE_RESTRICT_TRANS_MSB 40
