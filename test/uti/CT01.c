@@ -41,9 +41,9 @@ util_thread(void *arg)
 
 	rc = syscall(732);
 	if (rc == -1)
-		fprintf(stderr, "CT01003 get_system OK\n");
+		fprintf(stderr, "CT01003 running on Linux OK\n");
 	else {
-		fprintf(stderr, "CT01003 get_system NG get_system=%d\n", rc);
+		fprintf(stderr, "CT01003 running on McKernel NG\n", rc);
 		exit(1);
 	}
 	errno = 0;

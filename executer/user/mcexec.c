@@ -3106,7 +3106,6 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 				set_syscall_args(uti_desc->tid, &args);
 				continue;
 			    case __NR_futex:
-					//fprintf(stderr, "futex call: PMI_RANK=%d,rip=%lx\n", getenv("PMI_RANK") ? atoi(getenv("PMI_RANK")) : -1, get_syscall_rip(&args));
 			    case __NR_brk:
 			    case __NR_mmap:
 			    case __NR_munmap:

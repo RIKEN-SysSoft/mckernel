@@ -1125,10 +1125,13 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 #endif /* POSTK_DEBUG_ARCH_DEP_41 */
 			}
 		}
-		else
-		error = vm_insert_pfn(vma, rva+(pix*PAGE_SIZE), pfn+pix);
+		else {
+			if (pix == 0) { printk("%s: INFO vm_insert_pfn,phys=%p\n", __FUNCTION__, (void*)phys); }
+			error = vm_insert_pfn(vma, rva+(pix*PAGE_SIZE), pfn+pix);
+		}
 		if (error) {
-#ifdef POSTK_DEBUG_TEMP_FIX_11 /* rus_vm_fault() multi-thread fix */
+#if 1 /* POSTK_DEBUG_TEMP_FIX_11 */ /* rus_vm_fault() multi-thread fix */
+			printk("%s: vm_insert_pfn returned %d\n", __FUNCTION__, error);
 			if (error == -EBUSY) {
 				error = 0;
 			} else {
