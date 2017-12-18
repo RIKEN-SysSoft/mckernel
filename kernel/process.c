@@ -100,6 +100,8 @@ extern void perf_reset(struct mc_perf_event *event);
 struct list_head resource_set_list;
 mcs_rwlock_lock_t    resource_set_lock;
 
+int idle_halt = 0;
+
 void
 init_process(struct process *proc, struct process *parent)
 {
@@ -3044,6 +3046,12 @@ void spin_sleep_or_schedule(void)
 	int woken = 0;
 	long irqstate;
 
+	/* Spinning disabled explicitly */
+	if (idle_halt) {
+		dkprintf("%s: idle_halt -> schedule()\n", __FUNCTION__);
+		goto out_schedule;
+	}
+
 	/* Try to spin sleep */
 	irqstate = ihk_mc_spinlock_lock(&thread->spin_sleep_lock);
 	if (thread->spin_sleep == 0) {
@@ -3092,6 +3100,7 @@ void spin_sleep_or_schedule(void)
 		cpu_pause();
 	}
 
+out_schedule:
 	schedule();
 }
 

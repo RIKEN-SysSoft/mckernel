@@ -673,9 +673,11 @@ static uint64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q
 	xchg4(&(cpu_local_var(current)->status), PS_INTERRUPTIBLE);
 
 	/* Indicate spin sleep */
-	irqstate = ihk_mc_spinlock_lock(&thread->spin_sleep_lock);
-	thread->spin_sleep = 1;
-	ihk_mc_spinlock_unlock(&thread->spin_sleep_lock, irqstate);
+	if (!idle_halt) {
+		irqstate = ihk_mc_spinlock_lock(&thread->spin_sleep_lock);
+		thread->spin_sleep = 1;
+		ihk_mc_spinlock_unlock(&thread->spin_sleep_lock, irqstate);
+	}
 
 	queue_me(q, hb);
 	
