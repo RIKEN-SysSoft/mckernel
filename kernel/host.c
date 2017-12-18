@@ -693,17 +693,41 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 			if (!pcd->exclude_user) {
 				mode |= PERFCTR_USER_MODE;
 			}
+#ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
+
+			ret  = ihk_mc_perfctr_init_raw(pcd->target_cntr, pcd->config, mode);
+			if (ret != 0) {
+				break;
+			}
+
+			ret = ihk_mc_perfctr_stop(1 << pcd->target_cntr);
+			if (ret != 0) {
+				break;
+			}
+
+			ret = ihk_mc_perfctr_reset(pcd->target_cntr);
+#else /* POSTK_DEBUG_TEMP_FIX_80 */
 			ihk_mc_perfctr_init_raw(pcd->target_cntr, pcd->config, mode);
 			ihk_mc_perfctr_stop(1 << pcd->target_cntr);
 			ihk_mc_perfctr_reset(pcd->target_cntr);
+
+#endif /* POSTK_DEBUG_TEMP_FIX_80 */
 			break;
 
 		case PERF_CTRL_ENABLE:
+#ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
+			ret = ihk_mc_perfctr_start(pcd->target_cntr_mask);
+#else /* POSTK_DEBUG_TEMP_FIX_80 */
 			ihk_mc_perfctr_start(pcd->target_cntr_mask);
+#endif /* POSTK_DEBUG_TEMP_FIX_80 */
 			break;
 			
 		case PERF_CTRL_DISABLE:
+#ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
+			ret = ihk_mc_perfctr_stop(pcd->target_cntr_mask);
+#else /* POSTK_DEBUG_TEMP_FIX_80 */
 			ihk_mc_perfctr_stop(pcd->target_cntr_mask);
+#endif /* POSTK_DEBUG_TEMP_FIX_80 */
 			break;
 
 		case PERF_CTRL_GET:
@@ -718,11 +742,17 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		ihk_mc_unmap_memory(NULL, pp, sizeof(struct perf_ctrl_desc));
 
 		pckt.msg = SCD_MSG_PERF_ACK;
+#ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
+		pckt.err = ret;
+#else /* POSTK_DEBUG_TEMP_FIX_80 */
 		pckt.err = 0;
+#endif /* POSTK_DEBUG_TEMP_FIX_80 */
 		pckt.arg = packet->arg;
 		ihk_ikc_send(resp_channel, &pckt, 0);
 
+#ifndef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
 		ret = 0;
+#endif /* !POSTK_DEBUG_TEMP_FIX_80 */
 		break;
 
 	case SCD_MSG_CPU_RW_REG:
