@@ -37,6 +37,7 @@
 #ifdef POSTK_DEBUG_ARCH_DEP_65
 #include <hwcap.h>
 #endif /* POSTK_DEBUG_ARCH_DEP_65 */
+#include <virt.h>
 
 //#define DEBUG_PRINT_CPU
 
@@ -626,6 +627,8 @@ void init_cpu(void)
 {
 	if(gic_enable) 
 		gic_enable();
+
+	arm64_init_per_cpu_perfctr();
 	arm64_enable_pmu();
 
 	if (xos_is_tchip_arch()) {
@@ -637,15 +640,6 @@ void init_cpu(void)
 }
 
 #ifdef CONFIG_ARM64_VHE
-/* @ref.impl arch/arm64/include/asm/virt.h */
-static inline int is_kernel_in_hyp_mode(void)
-{
-	unsigned long el;
-
-	asm("mrs %0, CurrentEL" : "=r" (el));
-	return el == CurrentEL_EL2;
-}
-
 /* @ref.impl arch/arm64/kernel/smp.c */
 /* Whether the boot CPU is running in HYP mode or not */
 static int boot_cpu_hyp_mode;

@@ -6,6 +6,7 @@
 #include <ihk/debug.h>
 #include <registers.h>
 #include <string.h>
+#include <ihk/mm.h>
 
 /*
  * @ref.impl arch/arm64/kernel/perf_event.c
@@ -15,21 +16,41 @@ struct arm_pmu cpu_pmu;
 extern int ihk_param_pmu_irq_affiniry[CONFIG_SMP_MAX_CORES];
 extern int ihk_param_nr_pmu_irq_affiniry;
 
-
 int arm64_init_perfctr(void)
 {
 	int ret;
 	int i;
+	int pages;
+	const struct ihk_mc_cpu_info *cpu_info;
 
 	memset(&cpu_pmu, 0, sizeof(cpu_pmu));
 	ret = armv8pmu_init(&cpu_pmu);
-	if (!ret) {
+	if (ret) {
 		return ret;
 	}
+
+
+	cpu_info = ihk_mc_get_cpu_info();
+	pages = (sizeof(struct per_cpu_arm_pmu) * cpu_info->ncpus + PAGE_SIZE -1) >> PAGE_SHIFT;
+	cpu_pmu.per_cpu = ihk_mc_alloc_pages(pages, IHK_MC_AP_NOWAIT);
+	if (cpu_pmu.per_cpu == NULL) {
+		return -ENOMEM;
+	}
+	memset(cpu_pmu.per_cpu, 0, pages * PAGE_SIZE);
+
 	for (i = 0; i < ihk_param_nr_pmu_irq_affiniry; i++) {
-		ret = ihk_mc_register_interrupt_handler(ihk_param_pmu_irq_affiniry[i], cpu_pmu.handler);
+		ret = ihk_mc_register_interrupt_handler(ihk_param_pmu_irq_affiniry[i],
+							cpu_pmu.handler);
+		if (ret) {
+			break;
+		}
 	}
 	return ret;
+}
+
+void arm64_init_per_cpu_perfctr(void)
+{
+	armv8pmu_per_cpu_init(&cpu_pmu.per_cpu[ihk_mc_get_processor_id()]);
 }
 
 int arm64_enable_pmu(void)
@@ -47,25 +68,21 @@ void arm64_disable_pmu(void)
 	cpu_pmu.disable_pmu();
 }
 
-int arm64_enable_user_access_pmu_regs(void)
+void arm64_enable_user_access_pmu_regs(void)
 {
-	int ret;
-	ret = cpu_pmu.enable_user_access_pmu_regs();
-	return ret;
+	cpu_pmu.enable_user_access_pmu_regs();
 }
 
-int arm64_disable_user_access_pmu_regs(void)
+void arm64_disable_user_access_pmu_regs(void)
 {
-	int ret;
-	ret = cpu_pmu.disable_user_access_pmu_regs();
-	return ret;
+	cpu_pmu.disable_user_access_pmu_regs();
 }
 
 extern unsigned int *arm64_march_perfmap;
 
 static int __ihk_mc_perfctr_init(int counter, uint32_t type, uint64_t config, int mode)
 {
-	int ret;
+	int ret = -1;
 	unsigned long config_base = 0;
 	int mapping;
 
@@ -75,17 +92,17 @@ static int __ihk_mc_perfctr_init(int counter, uint32_t type, uint64_t config, in
 	}
 
 	ret = cpu_pmu.disable_counter(counter);
-	if (!ret) {
+	if (ret < 0) {
 		return ret;
 	}
 
 	ret = cpu_pmu.enable_intens(counter);
-	if (!ret) {
+	if (ret < 0) {
 		return ret;
 	}
 
 	ret = cpu_pmu.set_event_filter(&config_base, mode);
-	if (!ret) {
+	if (ret) {
 		return ret;
 	}
 	config_base |= (unsigned long)mapping;
@@ -114,8 +131,8 @@ int ihk_mc_perfctr_start(unsigned long counter_mask)
 	for (i = 0; i < sizeof(counter_mask) * BITS_PER_BYTE; i++) {
 		if (counter_mask & (1UL << i)) {
 			ret = cpu_pmu.enable_counter(i);
-			if (ret) {
-				kprintf("%s: enable failed(idx=%d)\n", i);
+			if (ret < 0) {
+				kprintf("%s: enable failed(idx=%d)\n", __FUNCTION__, i);
 				break;
 			}
 		}
@@ -129,11 +146,19 @@ int ihk_mc_perfctr_stop(unsigned long counter_mask)
 
 	for (i = 0; i < sizeof(counter_mask) * BITS_PER_BYTE; i++) {
 		if (counter_mask & (1UL << i)) {
-			cpu_pmu.disable_counter(i);
+			int ret = 0;
+
+			ret = cpu_pmu.disable_counter(i);
+			if (ret < 0) {
+				continue;
+			}
 
 			// ihk_mc_perfctr_startが呼ばれるときには、
 			// init系関数が呼ばれるのでdisableにする。
-			cpu_pmu.disable_intens(i);
+			ret = cpu_pmu.disable_intens(i);
+			if (ret < 0) {
+				continue;
+			}
 		}
 	}
 	return 0;
@@ -175,7 +200,10 @@ int ihk_mc_perfctr_alloc_counter(unsigned int *type, unsigned long *config, unsi
 	if(*type == PERF_TYPE_HARDWARE) {
 		switch(*config){
 		case PERF_COUNT_HW_INSTRUCTIONS :
-			*config = cpu_pmu.map_event(*type, *config);
+			ret = cpu_pmu.map_event(*type, *config);
+			if (ret < 0) {
+				return -1;
+			}
 			*type = PERF_TYPE_RAW;
 			break;
 		default :
@@ -186,7 +214,7 @@ int ihk_mc_perfctr_alloc_counter(unsigned int *type, unsigned long *config, unsi
 	else if(*type != PERF_TYPE_RAW) {
 		return -1;
 	}
-	ret = cpu_pmu.get_event_idx(cpu_pmu.num_events, pmc_status);
+	ret = cpu_pmu.get_event_idx(get_per_cpu_pmu()->num_events, pmc_status, *config);
         return ret;
 }
 
