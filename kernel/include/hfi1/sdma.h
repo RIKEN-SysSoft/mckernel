@@ -202,17 +202,7 @@ struct sdma_set_state_action {
 	unsigned go_s99_running_totrue:1;
 };
 
-struct sdma_state {
-	struct kref          kref;
-	struct completion    comp;
-	enum sdma_states current_state;
-	unsigned             current_op;
-	unsigned             go_s99_running;
-	/* debugging/development */
-	enum sdma_states previous_state;
-	unsigned             previous_op;
-	enum sdma_events last_event;
-};
+#include <hfi1/hfi1_generated_sdma_state.h>
 
 /**
  * DOC: sdma exported routines
@@ -329,104 +319,8 @@ struct hw_sdma_desc {
  * since the private members are subject to change.
  */
  /* The original size on Linux is 1472 B */
-struct sdma_engine {
-	/* read mostly */
-	struct hfi1_devdata *dd;
-	struct hfi1_pportdata *ppd;
-	/* private: */
-	void __iomem *tail_csr;
-	u64 imask;			/* clear interrupt mask */
-	u64 idle_mask;
-	u64 progress_mask;
-	u64 int_mask;
-	/* private: */
-	volatile __le64      *head_dma; /* DMA'ed by chip */
-	/* private: */
-	dma_addr_t            head_phys;
-	/* private: */
-	struct hw_sdma_desc *descq;
-	/* private: */
-	unsigned descq_full_count;
-	struct sdma_txreq **tx_ring;
-	/* private: */
-	dma_addr_t            descq_phys;
-	/* private */
-	u32 sdma_mask;
-	/* private */
-	struct sdma_state state;
-	/* private */
-	int cpu;
-	/* private: */
-	u8 sdma_shift;
-	/* private: */
-	u8 this_idx; /* zero relative engine */
-	/* protect changes to senddmactrl shadow */
-	spinlock_t senddmactrl_lock;
-	/* private: */
-	u64 p_senddmactrl;		/* shadow per-engine SendDmaCtrl */
 
-	/* read/write using tail_lock */
-	spinlock_t            tail_lock ____cacheline_aligned_in_smp;
-#ifdef CONFIG_HFI1_DEBUG_SDMA_ORDER
-	/* private: */
-	u64                   tail_sn;
-#endif
-	/* private: */
-	u32                   descq_tail;
-	/* private: */
-	unsigned long         ahg_bits;
-	/* private: */
-	u16                   desc_avail;
-	/* private: */
-	u16                   tx_tail;
-	/* private: */
-	u16 descq_cnt;
-
-	/* read/write using head_lock */
-	/* private: */
-	seqlock_t            head_lock ____cacheline_aligned_in_smp;
-#ifdef CONFIG_HFI1_DEBUG_SDMA_ORDER
-	/* private: */
-	u64                   head_sn;
-#endif
-	/* private: */
-	u32                   descq_head;
-	/* private: */
-	u16                   tx_head;
-	/* private: */
-	u64                   last_status;
-	/* private */
-	u64                     err_cnt;
-	/* private */
-	u64                     sdma_int_cnt;
-	u64                     idle_int_cnt;
-	u64                     progress_int_cnt;
-
-	/* private: */
-	struct list_head      dmawait;
-
-	/* CONFIG SDMA for now, just blindly duplicate */
-	/* private: */
-	struct tasklet_struct sdma_hw_clean_up_task // size 40
-		____cacheline_aligned_in_smp;
-
-	/* private: */
-	struct tasklet_struct sdma_sw_clean_up_task
-		____cacheline_aligned_in_smp;
-	/* private: */
-	char err_halt_worker[32]; // struct work_struct err_halt_worker;
-	/* private */
-	char err_progress_check_timer[80]; // struct timer_list     err_progress_check_timer;
-	u32                   progress_check_head;
-	/* private: */
-	char flush_worker[32]; // struct work_struct flush_worker;
-	/* protect flush list */
-	spinlock_t flushlist_lock;
-	/* private: */
-	struct list_head flushlist;
-	char cpu_mask[640]; // struct cpusmask cpu_mask;
-	char kobj[64]; // struct kobject kobj
-};
+#include <hfi1/hfi1_generated_sdma_engine.h>
 
 #ifdef __HFI1_ORIG__
 

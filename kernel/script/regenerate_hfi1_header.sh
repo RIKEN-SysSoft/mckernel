@@ -44,3 +44,13 @@ HFI1_KO="${1-$(modinfo -n hfi1)}" || \
 	uctxt pq cq dd subctxt entry_to_rb tid_lock tid_used \
 	invalid_tids invalid_tid_idx invalid_lock \
 		> "${HDR_PREFIX}filedata.h"
+
+"$DES_BIN" "$HFI1_KO" sdma_state					\
+	current_state go_s99_running previous_state\
+		> "${HDR_PREFIX}sdma_state.h"
+
+"$DES_BIN" "$HFI1_KO" sdma_engine					\
+	tail_lock desc_avail tail_csr flushlist flushlist_lock \
+	descq_head descq_tail descq_cnt state sdma_shift sdma_mask\
+	descq tx_ring tx_tail head_lock descq_full_count ahg_bits\
+		> "${HDR_PREFIX}sdma_engine.h"
