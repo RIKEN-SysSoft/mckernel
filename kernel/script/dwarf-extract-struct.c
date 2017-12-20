@@ -596,6 +596,9 @@ static void print_field(Dwarf_Debug dbg, Dwarf_Die die, const char *field_name,
 		if (type_tag == DW_TAG_structure_type) {
 			snprintf(type_buf, 1024, "struct %s %s",
 				 type_name, pointer_buf);
+		} else if (type_tag == DW_TAG_enumeration_type) {
+			snprintf(type_buf, 1024, "enum %s %s",
+				 type_name, pointer_buf);
 		} else if (type_tag == DW_TAG_base_type
 				|| type_tag == DW_TAG_typedef) {
 			snprintf(type_buf, 1024, "%s %s", type_name,
@@ -617,7 +620,8 @@ static void print_field(Dwarf_Debug dbg, Dwarf_Die die, const char *field_name,
 			exit(7);
 		}
 
-		dwarf_dealloc(dbg, type_name, DW_DLA_STRING);
+		if (type_tag != DW_TAG_pointer_type)
+			dwarf_dealloc(dbg, type_name, DW_DLA_STRING);
 		dwarf_dealloc(dbg, attr, DW_DLA_ATTR);
 		dwarf_dealloc(dbg, type_die, DW_DLA_DIE);
 	}
