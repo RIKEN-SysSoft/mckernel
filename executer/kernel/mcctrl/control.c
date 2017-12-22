@@ -1250,6 +1250,12 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 			if (!wqhln) {
 				printk("%s: WARNING: no target thread (tid=%d) found for exact request??\n",
 					   __FUNCTION__, packet->req.ttid);
+				printk("%s: (packet_handler) rtid: %d, ttid: %d, sys nr: %lu, arg0: %lx\n",
+					   __FUNCTION__,
+					   packet->req.rtid,
+					   packet->req.ttid,
+					   packet->req.number,
+					   packet->req.args[0]);
 			}
 		}
 	}
