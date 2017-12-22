@@ -1208,11 +1208,12 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 		return -1;
 	}
 
-	dprintk("%s: (packet_handler) rtid: %d, ttid: %d, sys nr: %lu\n",
+	dprintk("%s: (packet_handler) rtid: %d, ttid: %d, sys nr: %lu, arg0: %lx\n",
 			__FUNCTION__,
 			packet->req.rtid,
 			packet->req.ttid,
-			packet->req.number);
+			packet->req.number,
+			packet->req.args[0]);
 	/*
 	 * Three scenarios are possible:
 	 * - Find the designated thread if req->ttid is specified.
@@ -1239,7 +1240,13 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 						printk("%s: ERROR: wqhln_iter->task=%p,rtid=%d,&ppd->wq_list_lock=%p\n", __FUNCTION__, wqhln_iter->task, wqhln_iter->rtid, &ppd->wq_list_lock);
 					} else if(wqhln_iter->req) {
 						/* list_del() is called after woken-up */
-						printk("%s: INFO: target thread is busy, wqhln_iter->req=%d,rtid=%d,&ppd->wq_list_lock=%p\n", __FUNCTION__, wqhln_iter->req, wqhln_iter->rtid, &ppd->wq_list_lock);
+						printk("%s: INFO: target thread (tid=%d) is busy, wqhln_iter->req=%d,rtid=%d,&ppd->wq_list_lock=%p\n", __FUNCTION__, packet->req.ttid, wqhln_iter->req, wqhln_iter->rtid, &ppd->wq_list_lock);
+						printk("%s: (packet_handler) rtid: %d, ttid: %d, sys nr: %lu, arg0: %lx\n",
+							   __FUNCTION__,
+							   packet->req.rtid,
+							   packet->req.ttid,
+							   packet->req.number,
+							   packet->req.args[0]);
 					} else {
 						wqhln = wqhln_iter;
 						//printk("%s: uti, worker with tid of %d found in wq_list\n", __FUNCTION__, packet->req.ttid);
@@ -1251,6 +1258,12 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 			if (!wqhln) {
 				printk("%s: WARNING: no target thread (tid=%d) found for exact request??\n",
 					   __FUNCTION__, packet->req.ttid);
+				printk("%s: (packet_handler) rtid: %d, ttid: %d, sys nr: %lu, arg0: %lx\n",
+					   __FUNCTION__,
+					   packet->req.rtid,
+					   packet->req.ttid,
+					   packet->req.number,
+					   packet->req.args[0]);
 			}
 		}
 	}
