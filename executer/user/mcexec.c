@@ -2878,26 +2878,6 @@ create_tracer()
 			fprintf(stderr, "waitpid rc=%d st=%08x\n", rc, st);
 			return -ENOMEM;
 		}
-#if 0
-		struct timeval tv;
-		fd_set rfd;
-		FD_ZERO(&rfd);
-		FD_SET(uti_pfd[0], &rfd);
-		tv.tv_sec = 1;
-		tv.tv_usec = 0;
-		while ((rc = select(uti_pfd[0] + 1, &rfd, NULL, NULL, &tv)) == -1 &&
-		       errno == EINTR);
-		if (rc == 0) {
-			fprintf(stderr, "%s: select timed out\n", __FUNCTION__);
-			close(uti_pfd[0]);
-			return -ETIMEDOUT;
-		}
-		if (rc == -1) {
-			fprintf(stderr, "%s: select errno=%d\n", __FUNCTION__, errno);
-			close(uti_pfd[0]);
-			return -errno;
-		}
-#endif
 		return 0;
 	}
 	close(uti_pfd[0]);
@@ -2923,19 +2903,6 @@ create_tracer()
 		exit(1);
 	}
 
-#if 0
-	{
-		ssize_t nread;
-		char *cur;
-		struct uti_desc desc;
-		for(cur = (char*)&desc; (nread = read(uti_pfd[0], cur, sizeof(struct uti_desc))) > 0; cur += nread) { }
-		if (cur - (char*)&desc != sizeof(desc)) {
-			fprintf(stderr, "only %d bytes read\n", (int)(cur - (char*)&desc));
-			exit(1);
-		}
-		fprintf(stderr, "%s: auto-var,wp=%p,mck_tid=%d,key=%lx,pid=%d,tid=%d,uti_clv=%lx\n", __FUNCTION__, desc.wp, desc.mck_tid, desc.key, desc.pid, desc.tid, desc.uti_clv);
-	}
-#endif
 	sem_wait(&uti_desc->arg);
 	if (uti_desc->exit) { /* When uti is not used */
 		fprintf(stderr, "%s: exiting tid=%d\n", __FUNCTION__, gettid());
@@ -2944,7 +2911,7 @@ create_tracer()
 
 	//close(uti_pfd[0]);
 #ifdef DEBUG_UTI
-    fprintf(stderr, "%s: wp=%p,mck_tid=%d,key=%lx,pid=%d,tid=%d,uti_clv=%lx\n", __FUNCTION__, uti_desc->wp, uti_desc->mck_tid, uti_desc->key, uti_desc->pid, uti_desc->tid, uti_desc->uti_clv);
+    //fprintf(stderr, "%s: wp=%p,mck_tid=%d,key=%lx,pid=%d,tid=%d,uti_clv=%lx\n", __FUNCTION__, uti_desc->wp, uti_desc->mck_tid, uti_desc->key, uti_desc->pid, uti_desc->tid, uti_desc->uti_clv);
 #endif
 
 	fprintf(stderr, "%s: tracer tid=%d,tracee tid=%d\n", __FUNCTION__, gettid(), uti_desc->tid);
@@ -3199,19 +3166,7 @@ util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, int remote_t
 	uti_desc->uti_clv = uti_clv;
 	
 #ifdef DEBUG_UTI
-    fprintf(stderr, "%s: wp=%p,mck_tid=%d,key=%lx,pid=%d,tid=%d,uti_clv=%lx\n", __FUNCTION__, uti_desc->wp, uti_desc->mck_tid, uti_desc->key, uti_desc->pid, uti_desc->tid, uti_desc->uti_clv);
-#endif
-#if 0
-	//usleep(100000);
-	ssize_t nwritten;
-	char *cur;
-	for(cur = (char*)&uti_desc; (nwritten = write(uti_pfd[1], cur, sizeof(struct uti_desc) - (cur - (char*)&uti_desc))) > 0; cur += nwritten) { }
-	if (nwritten < 0) {
-		fprintf(stderr, "write returned %ld errno=%d\n", nwritten, errno);
-		rc = -errno;
-		goto out;
-	}
-	close(uti_pfd[1]);
+    //fprintf(stderr, "%s: wp=%p,mck_tid=%d,key=%lx,pid=%d,tid=%d,uti_clv=%lx\n", __FUNCTION__, uti_desc->wp, uti_desc->mck_tid, uti_desc->key, uti_desc->pid, uti_desc->tid, uti_desc->uti_clv);
 #endif
 	sem_post(&uti_desc->arg);
 
