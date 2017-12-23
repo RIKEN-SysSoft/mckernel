@@ -13,6 +13,7 @@
 #include <hwcap.h>
 #include <prctl.h>
 #include <limits.h>
+#include <syscall.h>
 
 extern void ptrace_report_signal(struct thread *thread, int sig);
 extern void clear_single_step(struct thread *thread);
@@ -2495,6 +2496,17 @@ out:
 	}
 
 	return mpsr->phase_ret;
+}
+
+time_t time(void) {
+	struct timespec ats;
+
+	if (gettime_local_support) {
+		calculate_time_from_tsc(&ats);
+		return ats.tv_sec;
+	}
+
+	return (time_t)0;
 }
 
 /*** End of File ***/

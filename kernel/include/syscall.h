@@ -472,6 +472,7 @@ int arch_setup_vdso(void);
 int arch_cpu_read_write_register(struct ihk_os_cpu_register *desc,
 		enum mcctrl_os_cpu_operation op);
 struct vm_range_numa_policy *vm_range_policy_search(struct process_vm *vm, uintptr_t addr);
+time_t time(void);
 
 #ifndef POSTK_DEBUG_ARCH_DEP_52
 #define VDSO_MAXPAGES 2

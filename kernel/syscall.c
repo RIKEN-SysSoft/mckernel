@@ -4689,30 +4689,6 @@ struct shminfo the_shminfo = {
 };
 struct shm_info the_shm_info = { 0, };
 
-time_t time(void) {
-#ifndef POSTK_DEBUG_ARCH_DEP_13 /* arch depend tmp hide */
-	struct syscall_request sreq IHK_DMA_ALIGN;
-	struct thread *thread = cpu_local_var(current);
-#endif /* POSTK_DEBUG_ARCH_DEP_13 */
-
-#ifdef POSTK_DEBUG_ARCH_DEP_49 /* time() local calculate added. */
-	struct timespec ats;
-
-	if (gettime_local_support) {
-		calculate_time_from_tsc(&ats);
-		return ats.tv_sec;
-	}
-#endif /* POSTK_DEBUG_ARCH_DEP_49 */
-
-#ifdef POSTK_DEBUG_ARCH_DEP_13 /* arch depend tmp hide */
-	return (time_t)0;
-#else /* POSTK_DEBUG_ARCH_DEP_13 */
-	sreq.number = __NR_time;
-	sreq.args[0] = (uintptr_t)NULL;
-	return (time_t)do_syscall(&sreq, ihk_mc_get_processor_id(), thread->proc->pid);
-#endif /* POSTK_DEBUG_ARCH_DEP_13 */
-}
-
 static int make_shmid(struct shmobj *obj)
 {
 	return ((int)obj->index << 16) | obj->ds.shm_perm.seq;
