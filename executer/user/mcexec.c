@@ -1914,6 +1914,7 @@ struct uti_desc {
 	int pid, tid; /* Used as the id of tracee when issuing MCEXEC_UP_TERMINATE_THREAD */
 	unsigned long uti_clv;
 	sem_t arg, attach;
+	int exit; /* Used to tell the tracer to exit */
 };
 
 static int create_tracer();
@@ -2110,6 +2111,7 @@ int main(int argc, char **argv)
 	if (uti_desc == (void *)-1) {
 		exit(1);
 	}
+	memset(uti_desc, 0, sizeof(struct uti_desc));
 	sem_init(&uti_desc->arg, 1, 0);
 	sem_init(&uti_desc->attach, 1, 0);
 #if 1
@@ -2649,7 +2651,6 @@ int main(int argc, char **argv)
 	}
 
 	join_all_threads();
-
  fn_fail:
 	return ret;
 }
@@ -2935,9 +2936,12 @@ create_tracer()
 		fprintf(stderr, "%s: auto-var,wp=%p,mck_tid=%d,key=%lx,pid=%d,tid=%d,uti_clv=%lx\n", __FUNCTION__, desc.wp, desc.mck_tid, desc.key, desc.pid, desc.tid, desc.uti_clv);
 	}
 #endif
-	fprintf(stderr, "%s: before sem_wait\n", __FUNCTION__);
 	sem_wait(&uti_desc->arg);
-	fprintf(stderr, "%s: after sem_wait\n", __FUNCTION__);
+	if (uti_desc->exit) { /* When uti is not used */
+		fprintf(stderr, "%s: exiting tid=%d\n", __FUNCTION__, gettid());
+		exit(0);
+	}
+
 	//close(uti_pfd[0]);
 #ifdef DEBUG_UTI
     fprintf(stderr, "%s: wp=%p,mck_tid=%d,key=%lx,pid=%d,tid=%d,uti_clv=%lx\n", __FUNCTION__, uti_desc->wp, uti_desc->mck_tid, uti_desc->key, uti_desc->pid, uti_desc->tid, uti_desc->uti_clv);
@@ -3210,7 +3214,6 @@ util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, int remote_t
 	close(uti_pfd[1]);
 #endif
 	sem_post(&uti_desc->arg);
-	fprintf(stderr, "%s: before sem_wait\n", __FUNCTION__);
 
     /* Wait until tracer attaches me. We can't use
        futex because it would be captured and redirected by tracer */
@@ -3220,7 +3223,6 @@ util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, int remote_t
         exit(1);
     }
 	close(uti_pfd[0]);
-	fprintf(stderr, "%s: after sem_wait\n", __FUNCTION__);
 
 	if (pattr) {
 		struct uti_attr_desc desc;
@@ -3445,6 +3447,7 @@ int main_loop(struct thread_data_s *my_thread)
 	char pathbuf[PATH_MAX];
 	char tmpbuf[PATH_MAX];
 	int cpu = my_thread->cpu;
+	int sem_val;
 
 	memset(&w, '\0', sizeof w);
 	w.cpu = cpu;
@@ -3586,6 +3589,16 @@ int main_loop(struct thread_data_s *my_thread)
 				kill(getpid(), sig);
 				pause();
 			}
+
+			/* Make tracer exit when it is not used */
+			if (sem_getvalue(&uti_desc->arg, &sem_val)) {
+				fprintf(stderr, "%s: ERROR: sem_getvalue returned %d\n", __FUNCTION__, errno);
+			}
+			if (sem_val == 0) {
+				uti_desc->exit = 1;
+				sem_post(&uti_desc->arg);
+			}
+			
 			exit(term);
 
 			//pthread_mutex_unlock(lock);
