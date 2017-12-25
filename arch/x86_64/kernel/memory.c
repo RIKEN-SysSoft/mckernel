@@ -493,7 +493,7 @@ uint64_t ihk_mc_pt_virt_to_pagemap(struct page_table *pt, unsigned long virt)
 
 	error = ihk_mc_pt_virt_to_phys(pt, (void *)virt, &phys);
 	if (error) {
-		return 0;
+		return PM_PSHIFT(PAGE_SHIFT);
 	}
 
 	pagemap = PM_PFRAME(phys >> PAGE_SHIFT);

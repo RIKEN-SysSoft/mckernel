@@ -422,12 +422,6 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 	if (strcmp(p, "pagemap") == 0) {
 		uint64_t *_buf = (uint64_t *)buf;
 		uint64_t start, end;
-		
-		if (offset < PAGE_SIZE) {
-			kprintf("WARNING: /proc/pagemap queried for NULL page\n");
-			ans = 0;
-			goto end;
-		}
 
 		/* Check alignment */
 		if ((offset % sizeof(uint64_t) != 0) || 
