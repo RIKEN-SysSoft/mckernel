@@ -1628,12 +1628,6 @@ static int split_large_page(pte_t *ptep, size_t pgsize)
 	d_table = (pte_t)((unsigned long)tt_pa & PT_PHYSMASK) | PFL_PDIR_TBL_ATTR;
 	ptl_set(ptep, d_table, table_level);
 
-#if 1
-	// revert git:4c8f583c0c0bb6f6fb2b103a006caee67e6668be
-	// always page_unmap.
-	pgsize = PTL1_SIZE;
-#endif
-
 	dkprintf("%lx-,%s: calling memory_stat_rss_sub(),size=%ld,pgsize=%ld\n", phys_base, __FUNCTION__, pgsize, pgsize);
 	memory_stat_rss_sub(pgsize, pgsize);
 
@@ -1641,12 +1635,10 @@ static int split_large_page(pte_t *ptep, size_t pgsize)
 	 * and are not actually mapped.
 	 * TODO: clean up zeroobj as we don't really need it, anonymous mappings
 	 * should be allocated for real */
-	if (pgsize != PTL2_SIZE) {
-		if (phys_base != NOPHYS) {
-			page = phys_to_page(phys_base);
-			if (pgsize != PTL2_SIZE && page && page_unmap(page)) {
-				kprintf("split_large_page:page_unmap:%p\n", page);
-			}
+	if (phys_base != NOPHYS) {
+		page = phys_to_page(phys_base);
+		if (page && page_unmap(page)) {
+			kprintf("split_large_page:page_unmap:%p\n", page);
 		}
 	}
 	return 0;
