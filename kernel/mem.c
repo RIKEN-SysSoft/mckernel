@@ -1704,7 +1704,9 @@ static void rusage_init()
 	npages = (sizeof(struct rusage_global) + PAGE_SIZE -1) >> PAGE_SHIFT;
 	rusage = ihk_mc_alloc_pages(npages, IHK_MC_AP_CRITICAL);
 	memset(rusage, 0, npages * PAGE_SIZE);
+#ifndef POSTK_DEBUG_TEMP_FIX_81 /* rusage->num_processors always 1 fix. */
 	rusage->num_processors = num_processors;
+#endif /* POSTK_DEBUG_TEMP_FIX_81 */
 	rusage->num_numa_nodes = ihk_mc_get_nr_numa_nodes();
 	rusage->ns_per_tsc = ihk_mc_get_ns_per_tsc();
 	phys = virt_to_phys(rusage);

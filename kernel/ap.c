@@ -125,6 +125,9 @@ void ap_init(void)
 		num_processors++;
 	}
 	kprintf("BSP: booted %d AP CPUs\n", cpu_info->ncpus - 1);
+#ifdef POSTK_DEBUG_TEMP_FIX_81 /* rusage->num_processors always 1 fix. */
+	rusage->num_processors = num_processors;
+#endif /* POSTK_DEBUG_TEMP_FIX_81 */
 }
 
 #include <sysfs.h>
