@@ -1172,6 +1172,7 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 		struct syscall_struct param;
 		int rc;
 
+		printf("%s: MCEXEC_UP_SYSCALL_THREAD,sig=%d\n", __FUNCTION__, sig);
 		param.number = SYS_rt_sigaction;
 		param.args[0] = sig;
 		rc = ioctl(fd, MCEXEC_UP_SYSCALL_THREAD, &param);
@@ -2857,6 +2858,7 @@ static long util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, 
 		fprintf(stderr, "%s: ERROR: uti_desc isn't set. Use mcexec.sh instead of mcexec\n", __FUNCTION__);
 		exit(1);
 	}
+	printf("%s: uti_desc=%p\n", __FUNCTION__, uti_desc);
 
 	/* Initialize uti related variables for syscall_intercept */
 	

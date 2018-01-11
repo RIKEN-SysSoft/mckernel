@@ -337,6 +337,8 @@ static int __notify_syscall_requester(ihk_os_t os, struct ikc_scd_packet *packet
 		return -EINVAL;
 	}
 
+	dprintk("%s: sending IKC message for PID %d (rtid=%d)\n",
+		   __FUNCTION__, packet->pid, packet->req.rtid);
 	r_packet.msg = SCD_MSG_WAKE_UP_SYSCALL_THREAD;
 	r_packet.ttid = packet->req.rtid;
 	ret = ihk_ikc_send(c, &r_packet, 0);
@@ -1051,6 +1053,8 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 		error = remote_page_fault(usrdata, vmf->virtual_address, reason);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 #else /* POSTK_DEBUG_ARCH_DEP_41 */
+		dprintk("%s: calling remote_page_fault,flags %#x pgoff %#lx va %p page %p, tid %d\n",
+		   __FUNCTION__, vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page, task_pid_vnr(current));
 		error = remote_page_fault(usrdata, vmf->virtual_address, reason);
 #endif /* POSTK_DEBUG_ARCH_DEP_41 */
 		if (error) {

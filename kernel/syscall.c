@@ -2532,7 +2532,7 @@ retry_tid:
 					goto retry_tid;
 				}
 				new->tid = newproc->tids[i].tid;
-				dkprintf("%s: tid %d assigned to %p\n", __FUNCTION__, new->tid, new);
+				kprintf("%s: tid %d assigned to %p\n", __FUNCTION__, new->tid, new);
 				break;
 			}
 		}
@@ -5651,7 +5651,7 @@ do_exit(int code)
 	int exit_status = (code >> 8) & 255;
 	int sig = code & 255;
 
-	dkprintf("sys_exit,pid=%d\n", proc->pid);
+	kprintf("%s: pid=%d,tid=%d\n", __FUNCTION__, proc->pid, thread->tid);
 
 	mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
 	nproc = 0;

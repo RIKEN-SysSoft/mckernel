@@ -653,7 +653,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		}
 		thread_unlock(thread, &lock);
 
-		dkprintf("%s: SCD_MSG_WAKE_UP_SYSCALL_THREAD: waking up tid %d\n",
+		kprintf("%s: SCD_MSG_WAKE_UP_SYSCALL_THREAD: waking up tid %d\n",
 			__FUNCTION__, packet->ttid);
 		waitq_wakeup(&thread->scd_wq);
 		ret = 0;
