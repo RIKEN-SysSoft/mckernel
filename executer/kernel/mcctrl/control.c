@@ -2524,7 +2524,7 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
 
-	printk("%s: pid=%d,tid=%d,task=%p\n", __FUNCTION__, pid, tid, tsk);
+	//printk("%s: pid=%d,tid=%d,task=%p\n", __FUNCTION__, pid, tid, tsk);
 
 	write_lock_irqsave(&host_thread_lock, flags);
 	for (prev = NULL, thread = host_threads; thread;
