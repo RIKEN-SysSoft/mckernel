@@ -286,7 +286,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		   rus_vm_fault() without registering it into per thread data
 		   by mcctrl_add_per_thread_data()). */
 		req->ttid = cpu_local_var(current)->tid/*0*/;
-		kprintf("%s: uti, ttid=%d\n", __FUNCTION__, req->ttid);
+		dkprintf("%s: uti, ttid=%d\n", __FUNCTION__, req->ttid);
 	} else {
 		/* Any thread from the pool may serve the request */
 		req->ttid = 0;
@@ -9214,12 +9214,12 @@ util_thread(struct uti_attr *arg)
 
 	if (rc >= 0) {
 		if (rc & 0x10000007f) { // exit_group || signal
-			kprintf("%s: exit_group || signal\n", __FUNCTION__);
+			dkprintf("%s: exit_group || signal\n", __FUNCTION__);
 			thread->proc->nohost = 1;
 			terminate((rc >> 8) & 255, rc & 255);
 		}
 		else {
-			kprintf("%s: !exit_group && !signal\n", __FUNCTION__);
+			dkprintf("%s: !exit_group && !signal\n", __FUNCTION__);
 			request.number = __NR_sched_setaffinity;
 			request.args[0] = 1;
 			request.args[1] = free_address;

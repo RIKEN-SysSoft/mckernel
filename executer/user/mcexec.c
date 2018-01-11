@@ -2914,7 +2914,7 @@ create_tracer()
     //fprintf(stderr, "%s: wp=%p,mck_tid=%d,key=%lx,pid=%d,tid=%d,uti_clv=%lx\n", __FUNCTION__, uti_desc->wp, uti_desc->mck_tid, uti_desc->key, uti_desc->pid, uti_desc->tid, uti_desc->uti_clv);
 #endif
 
-	fprintf(stderr, "%s: tracer tid=%d,tracee tid=%d\n", __FUNCTION__, gettid(), uti_desc->tid);
+	//fprintf(stderr, "%s: tracer tid=%d,tracee tid=%d\n", __FUNCTION__, gettid(), uti_desc->tid);
 	if (ptrace(PTRACE_ATTACH, uti_desc->tid, 0, 0) == -1) {
 		fprintf(stderr, "PTRACE_ATTACH errno=%d\n", errno);
 		exit(1);
@@ -2954,7 +2954,7 @@ create_tracer()
 	memset(uti_desc->wp, '\0', sizeof(long));
 
 #ifdef DEBUG_UTI
-	fprintf(stderr, "tracer PID=%d\n", getpid());
+	//fprintf(stderr, "tracer PID=%d\n", getpid());
 	signal(SIGINT, debug_sig);
 #endif
 	for (;;) {
@@ -2976,7 +2976,7 @@ create_tracer()
 			if (ioctl(fd, MCEXEC_UP_TERMINATE_THREAD, term_param) != 0) {
 				fprintf(stderr, "%s: ERROR: MCEXEC_UP_TERMINATE_THREAD returned %d\n", __FUNCTION__, errno);
 			}
-			fprintf(stderr, "%s:  WIFEXITED=%d,WIFSIGNALED=%d,WTERMSIG=%d,exited=%d\n", __FUNCTION__, WIFEXITED(st), WIFSIGNALED(st), WTERMSIG(st), exited);
+			//fprintf(stderr, "%s:  WIFEXITED=%d,WIFSIGNALED=%d,WTERMSIG=%d,exited=%d\n", __FUNCTION__, WIFEXITED(st), WIFSIGNALED(st), WTERMSIG(st), exited);
 #if 0
 			if (ptrace(PTRACE_DETACH, uti_desc->tid, 0, WIFSIGNALED(st) ? WTERMSIG(st) : 0) && errno != ESRCH) {
 				fprintf(stderr, "PTRACE_DETACH errno=%d\n", errno);
@@ -4287,7 +4287,7 @@ return_execve2:
 
 		case __NR_sched_setaffinity:
 			if (w.sr.args[0] == 0) {
-				printf("%s: uti, __NR_sched_setaffinity: rtid=%d\n", __FUNCTION__, w.sr.rtid);fflush(stdout);
+				__dprintf("%s: uti, __NR_sched_setaffinity: rtid=%d\n", __FUNCTION__, w.sr.rtid);fflush(stdout);
 				ret = util_thread(my_thread, w.sr.args[1], w.sr.rtid,
 				                  w.sr.args[2], w.sr.args[3]);
 			}
