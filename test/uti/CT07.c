@@ -8,6 +8,7 @@
 #include <sys/syscall.h>
 #include <sys/mman.h>
 #include <signal.h>
+#include <sys/types.h>
 
 void *
 util_thread(void *arg)
@@ -38,14 +39,15 @@ util_thread(void *arg)
 		fprintf(stderr, "CT07005 fork NG rc=%ld errno=%d\n", rc, errno);
 	}
 
-	rc = syscall(SYS_vfork);
+#if 0
+	syscall(SYS_vfork);
 	if (rc == -1 && errno == ENOSYS) {
 		fprintf(stderr, "CT07006 vfork OK\n");
 	}
 	else {
 		fprintf(stderr, "CT07006 vfork NG rc=%ld errno=%d\n", rc, errno);
 	}
-
+#endif
 	rc = syscall(SYS_execve);
 	if (rc == -1 && errno == ENOSYS) {
 		fprintf(stderr, "CT07007 execve OK\n");

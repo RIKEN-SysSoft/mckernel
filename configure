@@ -631,6 +631,8 @@ IHK_VERSION
 ENABLE_QLMPI
 ENABLE_RUSAGE
 ENABLE_MCOVERLAYFS
+LDFLAGS_SYSCALL_INTERCEPT
+CPPFLAGS_SYSCALL_INTERCEPT
 MANDIR
 KERNDIR
 KMODDIR
@@ -702,6 +704,9 @@ enable_option_checking
 with_mpi
 with_mpi_include
 with_mpi_lib
+with_syscall_intercept
+with_syscall_intercept_include
+with_syscall_intercept_lib
 with_kernelsrc
 with_target
 with_system_map
@@ -1346,6 +1351,15 @@ Optional Packages:
   --with-mpi-include=PATH specify path where mpi include directory can be
                           found
   --with-mpi-lib=PATH     specify path where mpi lib directory can be found
+  --with-syscall_intercept=PATH
+                          specify path where syscall_intercept include
+                          directory and lib directory can be found
+  --with-syscall_intercept-include=PATH
+                          specify path where syscall_intercept include
+                          directory can be found
+  --with-syscall_intercept-lib=PATH
+                          specify path where syscall_intercept lib directory
+                          can be found
   --with-kernelsrc=path   Path to 'kernel src', default is
                           /lib/modules/uname_r/build
   --with-target={attached-mic | builtin-mic | builtin-x86 | smp-x86}
@@ -2075,6 +2089,8 @@ ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
 
 
 
@@ -3502,6 +3518,119 @@ fi
 else
   echo "LDFLAGS(='$LDFLAGS') does not contain '-L${with_mpi}/lib64', appending" >&5
 		LDFLAGS="$LDFLAGS -L${with_mpi}/lib64"
+
+fi
+
+fi
+
+fi
+
+fi
+
+
+
+# Check whether --with-syscall_intercept was given.
+if test "${with_syscall_intercept+set}" = set; then :
+  withval=$with_syscall_intercept; case "$withval" in #(
+  yes|no|'') :
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --without-syscall_intercept=PATH expects a valid PATH" >&5
+$as_echo "$as_me: WARNING: --without-syscall_intercept=PATH expects a valid PATH" >&2;}
+                          with_syscall_intercept="" ;; #(
+  *) :
+     ;;
+esac
+else
+  with_syscall_intercept=
+fi
+
+
+# Check whether --with-syscall_intercept-include was given.
+if test "${with_syscall_intercept_include+set}" = set; then :
+  withval=$with_syscall_intercept_include; case "$withval" in #(
+  yes|no|'') :
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --without-syscall_intercept-include=PATH expects a valid PATH" >&5
+$as_echo "$as_me: WARNING: --without-syscall_intercept-include=PATH expects a valid PATH" >&2;}
+                          with_syscall_intercept_include="" ;; #(
+  *) :
+     ;;
+esac
+fi
+
+
+# Check whether --with-syscall_intercept-lib was given.
+if test "${with_syscall_intercept_lib+set}" = set; then :
+  withval=$with_syscall_intercept_lib; case "$withval" in #(
+  yes|no|'') :
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --without-syscall_intercept-lib=PATH expects a valid PATH" >&5
+$as_echo "$as_me: WARNING: --without-syscall_intercept-lib=PATH expects a valid PATH" >&2;}
+                          with_syscall_intercept_lib="" ;; #(
+  *) :
+     ;;
+esac
+fi
+
+
+    # The args have been sanitized into empty/non-empty values above.
+    # Now append -I/-L args to CPPFLAGS/LDFLAGS, with more specific options
+    # taking priority
+
+    if test -n "${with_syscall_intercept_include}"; then :
+
+
+	if echo "$CPPFLAGS_SYSCALL_INTERCEPT" | $FGREP -e "\<-I${with_syscall_intercept_include}\>" >/dev/null 2>&1; then :
+  echo "CPPFLAGS_SYSCALL_INTERCEPT(='$CPPFLAGS_SYSCALL_INTERCEPT') contains '-I${with_syscall_intercept_include}', not appending" >&5
+else
+  echo "CPPFLAGS_SYSCALL_INTERCEPT(='$CPPFLAGS_SYSCALL_INTERCEPT') does not contain '-I${with_syscall_intercept_include}', appending" >&5
+		CPPFLAGS_SYSCALL_INTERCEPT="$CPPFLAGS_SYSCALL_INTERCEPT -I${with_syscall_intercept_include}"
+
+fi
+
+else
+  if test -n "${with_syscall_intercept}"; then :
+
+
+	if echo "$CPPFLAGS_SYSCALL_INTERCEPT" | $FGREP -e "\<-I${with_syscall_intercept}/include\>" >/dev/null 2>&1; then :
+  echo "CPPFLAGS_SYSCALL_INTERCEPT(='$CPPFLAGS_SYSCALL_INTERCEPT') contains '-I${with_syscall_intercept}/include', not appending" >&5
+else
+  echo "CPPFLAGS_SYSCALL_INTERCEPT(='$CPPFLAGS_SYSCALL_INTERCEPT') does not contain '-I${with_syscall_intercept}/include', appending" >&5
+		CPPFLAGS_SYSCALL_INTERCEPT="$CPPFLAGS_SYSCALL_INTERCEPT -I${with_syscall_intercept}/include"
+
+fi
+
+fi
+fi
+
+    if test -n "${with_syscall_intercept_lib}"; then :
+
+
+	if echo "$LDFLAGS_SYSCALL_INTERCEPT" | $FGREP -e "\<-L${with_syscall_intercept_lib} -Wl,-rpath,${with_syscall_intercept_lib}\>" >/dev/null 2>&1; then :
+  echo "LDFLAGS_SYSCALL_INTERCEPT(='$LDFLAGS_SYSCALL_INTERCEPT') contains '-L${with_syscall_intercept_lib} -Wl,-rpath,${with_syscall_intercept_lib}', not appending" >&5
+else
+  echo "LDFLAGS_SYSCALL_INTERCEPT(='$LDFLAGS_SYSCALL_INTERCEPT') does not contain '-L${with_syscall_intercept_lib} -Wl,-rpath,${with_syscall_intercept_lib}', appending" >&5
+		LDFLAGS_SYSCALL_INTERCEPT="$LDFLAGS_SYSCALL_INTERCEPT -L${with_syscall_intercept_lib} -Wl,-rpath,${with_syscall_intercept_lib}"
+
+fi
+
+else
+  if test -n "${with_syscall_intercept}"; then :
+
+
+	if echo "$LDFLAGS_SYSCALL_INTERCEPT" | $FGREP -e "\<-L${with_syscall_intercept}/lib -Wl,-rpath,${with_syscall_intercept}/lib\>" >/dev/null 2>&1; then :
+  echo "LDFLAGS_SYSCALL_INTERCEPT(='$LDFLAGS_SYSCALL_INTERCEPT') contains '-L${with_syscall_intercept}/lib -Wl,-rpath,${with_syscall_intercept}/lib', not appending" >&5
+else
+  echo "LDFLAGS_SYSCALL_INTERCEPT(='$LDFLAGS_SYSCALL_INTERCEPT') does not contain '-L${with_syscall_intercept}/lib -Wl,-rpath,${with_syscall_intercept}/lib', appending" >&5
+		LDFLAGS_SYSCALL_INTERCEPT="$LDFLAGS_SYSCALL_INTERCEPT -L${with_syscall_intercept}/lib -Wl,-rpath,${with_syscall_intercept}/lib"
+
+fi
+
+                  if test -d "${with_syscall_intercept}/lib64"; then :
+
+
+	if echo "$LDFLAGS_SYSCALL_INTERCEPT" | $FGREP -e "\<-L${with_syscall_intercept}/lib64 -Wl,-rpath,${with_syscall_intercept}/lib64\>" >/dev/null 2>&1; then :
+  echo "LDFLAGS_SYSCALL_INTERCEPT(='$LDFLAGS_SYSCALL_INTERCEPT') contains '-L${with_syscall_intercept}/lib64 -Wl,-rpath,${with_syscall_intercept}/lib64', not appending" >&5
+else
+  echo "LDFLAGS_SYSCALL_INTERCEPT(='$LDFLAGS_SYSCALL_INTERCEPT') does not contain '-L${with_syscall_intercept}/lib64 -Wl,-rpath,${with_syscall_intercept}/lib64', appending" >&5
+		LDFLAGS_SYSCALL_INTERCEPT="$LDFLAGS_SYSCALL_INTERCEPT -L${with_syscall_intercept}/lib64 -Wl,-rpath,${with_syscall_intercept}/lib64"
 
 fi
 
@@ -5056,11 +5185,13 @@ fi
 
 
 
+
+
 ac_config_headers="$ac_config_headers config.h"
 
 # POSTK_DEBUG_ARCH_DEP_37
 # AC_CONFIG_FILES arch dependfiles separate
-ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/user/mcexec.1:executer/user/mcexec.1in executer/user/vmcore2mckdump executer/user/arch/$ARCH/Makefile executer/user/arch/x86_64/Makefile executer/kernel/mcctrl/Makefile executer/kernel/mcctrl/arch/$ARCH/Makefile executer/kernel/mcoverlayfs/Makefile executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile executer/kernel/mcoverlayfs/linux-4.0.9/Makefile executer/kernel/mcoverlayfs/linux-4.6.7/Makefile executer/include/qlmpilib.h kernel/Makefile kernel/Makefile.build kernel/include/swapfmt.h arch/x86_64/tools/mcreboot-attached-mic.sh arch/x86_64/tools/mcshutdown-attached-mic.sh arch/x86_64/tools/mcreboot-builtin-x86.sh arch/x86_64/tools/mcreboot-smp-x86.sh arch/x86_64/tools/mcstop+release-smp-x86.sh arch/x86_64/tools/mcoverlay-destroy-smp-x86.sh arch/x86_64/tools/mcoverlay-create-smp-x86.sh arch/x86_64/tools/eclair-dump-backtrace.exp arch/x86_64/tools/mcshutdown-builtin-x86.sh arch/x86_64/tools/mcreboot.1:arch/x86_64/tools/mcreboot.1in arch/x86_64/tools/irqbalance_mck.service arch/x86_64/tools/irqbalance_mck.in tools/mcstat/Makefile"
+ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/user/mcexec.1:executer/user/mcexec.1in executer/user/vmcore2mckdump executer/user/arch/$ARCH/Makefile executer/user/mcexec.sh executer/user/arch/x86_64/Makefile executer/kernel/mcctrl/Makefile executer/kernel/mcctrl/arch/$ARCH/Makefile executer/kernel/mcoverlayfs/Makefile executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile executer/kernel/mcoverlayfs/linux-4.0.9/Makefile executer/kernel/mcoverlayfs/linux-4.6.7/Makefile executer/include/qlmpilib.h kernel/Makefile kernel/Makefile.build kernel/include/swapfmt.h arch/x86_64/tools/mcreboot-attached-mic.sh arch/x86_64/tools/mcshutdown-attached-mic.sh arch/x86_64/tools/mcreboot-builtin-x86.sh arch/x86_64/tools/mcreboot-smp-x86.sh arch/x86_64/tools/mcstop+release-smp-x86.sh arch/x86_64/tools/mcoverlay-destroy-smp-x86.sh arch/x86_64/tools/mcoverlay-create-smp-x86.sh arch/x86_64/tools/eclair-dump-backtrace.exp arch/x86_64/tools/mcshutdown-builtin-x86.sh arch/x86_64/tools/mcreboot.1:arch/x86_64/tools/mcreboot.1in arch/x86_64/tools/irqbalance_mck.service arch/x86_64/tools/irqbalance_mck.in tools/mcstat/Makefile"
 
 
 if test "$TARGET" = "smp-x86"; then
@@ -5774,6 +5905,7 @@ do
     "executer/user/mcexec.1") CONFIG_FILES="$CONFIG_FILES executer/user/mcexec.1:executer/user/mcexec.1in" ;;
     "executer/user/vmcore2mckdump") CONFIG_FILES="$CONFIG_FILES executer/user/vmcore2mckdump" ;;
     "executer/user/arch/$ARCH/Makefile") CONFIG_FILES="$CONFIG_FILES executer/user/arch/$ARCH/Makefile" ;;
+    "executer/user/mcexec.sh") CONFIG_FILES="$CONFIG_FILES executer/user/mcexec.sh" ;;
     "executer/user/arch/x86_64/Makefile") CONFIG_FILES="$CONFIG_FILES executer/user/arch/x86_64/Makefile" ;;
     "executer/kernel/mcctrl/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcctrl/Makefile" ;;
     "executer/kernel/mcctrl/arch/$ARCH/Makefile") CONFIG_FILES="$CONFIG_FILES executer/kernel/mcctrl/arch/$ARCH/Makefile" ;;

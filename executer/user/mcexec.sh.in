@@ -1,0 +1,7 @@
+#!/bin/bash
+
+MCKERNEL_LIBDIR="@MCKERNEL_LIBDIR@"
+BINDIR="@BINDIR@"
+
+MCKERNEL_LD_PRELOAD=${MCKERNEL_LIBDIR}/syscall_intercept.so:${MCKERNEL_LD_PRELOAD} ${BINDIR}/mcexec "$@"
+
