@@ -8,6 +8,7 @@
 #include <sys/syscall.h>
 #include <sys/mman.h>
 #include <signal.h>
+#include <sys/types.h>
 
 void *
 util_thread(void *arg)

@@ -345,6 +345,7 @@ struct mcos_handler_info;
 static LIST_HEAD(host_threads); /* Used for FS switch */
 DEFINE_RWLOCK(host_thread_lock);
 
+/* Info of Linux counterpart of migrated-to-Linux thread */
 struct host_thread {
 	struct list_head list;
 	struct mcos_handler_info *handler;
@@ -2558,6 +2559,7 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	thread->handler = info;
 	thread->task = current;
 
+	printk("%s: Adding a thread (pid=%d,tid=%d) to host_threads\n", __FUNCTION__, task_tgid_vnr(current), task_pid_vnr(current));
 	write_lock_irqsave(&host_thread_lock, flags);
 	list_add_tail(&thread->list, &host_threads);
 	write_unlock_irqrestore(&host_thread_lock, flags);
@@ -2573,6 +2575,7 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
            refcount remains 1 when tracer failed to call mcexec_terminate_thread()
 	*/
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+	pr_ppd("get", task_pid_vnr(current), ppd);
 	return 0;
 }
 
@@ -2610,8 +2613,7 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 	return ret;
 }
 
-static long
-mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct task_struct *tsk)
+static long mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct task_struct *tsk)
 {
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
@@ -2670,7 +2672,7 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 		printk("%s: WARNING: ptd->refcount != 1 but %d\n", __FUNCTION__, atomic_read(&ptd->refcount));
 	}
 	mcctrl_put_per_thread_data(ptd);
-	dprintk("%s: ptd-put,refc=%d\n", __FUNCTION__, atomic_read(&ptd->refcount));
+	pr_ptd("put", tid, ptd);
  no_ptd:
 	mcctrl_put_per_proc_data(ppd);
 	pr_ppd("put", task_pid_vnr(current), ppd);
@@ -2808,6 +2810,7 @@ long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 	struct syscall_struct __user *uparam =
 	                              (struct syscall_struct __user *)arg;
 	long rc;
+
 
 	if (copy_from_user(&param, uparam, sizeof param)) {
 		return -EFAULT;

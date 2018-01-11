@@ -963,7 +963,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 		case SIGWINCH:
 			break;
 		default:
-			dkprintf("do_signal,default,terminate,sig=%d\n", sig);
+			kprintf("do_signal,default,terminate,sig=%d\n", sig);
 			terminate(0, sig);
 			break;
 		}
@@ -1397,6 +1397,7 @@ done:
 		return 0;
 	}
 
+	/* Forward signal to Linux by interrupt_syscall mechanism */
 	if (tthread->thread_offloaded) {
 		kprintf("%s: calling interrupt_syscall,sig=%d\n", __FUNCTION__, sig);
 		if (!tthread->proc->nohost) {
@@ -1455,7 +1456,7 @@ done:
 		int status = tthread->status;
 
 		if (thread != tthread) {
-			dkprintf("do_kill,ipi,pid=%d,cpu_id=%d\n",
+			kprintf("do_kill,ipi,pid=%d,cpu_id=%d\n",
 				 tproc->pid, tthread->cpu_id);
 			ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(tthread->cpu_id)->apic_id, 0xd0);
 		}
@@ -2070,6 +2071,8 @@ save_uctx(void *uctx, struct x86_user_context *regs)
 	ctx->rip = regs->gpr.rip;
 	ihk_mc_arch_get_special_register(IHK_ASR_X86_FS, &ctx->fs);
 	ctx->fregsize = 0;
+
+	kprintf("%s: rcx=%lx,rip=%lx\n", __FUNCTION__, ctx->rcx, ctx->rip);
 }
 
 int do_process_vm_read_writev(int pid, 
