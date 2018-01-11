@@ -57,6 +57,7 @@ do
 	o)	chown_option=${OPTARG}
 		;;
 	k)	redirect_kmsg=${OPTARG}
+		redirect_kmsg=0
 		;;
 	c) cpus=${OPTARG}
 		;;
