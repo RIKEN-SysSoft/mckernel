@@ -1391,6 +1391,7 @@ done:
 	}
 
 	if (tthread->thread_offloaded) {
+		kprintf("%s: calling interrupt_syscall,sig=%d\n", __FUNCTION__, sig);
 		if (!tthread->proc->nohost) {
 			interrupt_syscall(tthread, sig);
 		}

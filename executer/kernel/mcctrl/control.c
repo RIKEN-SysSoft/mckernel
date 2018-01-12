@@ -702,7 +702,7 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 	/* Wait for the rest if not the last or if the last but
 	 * the woken process is different than the last */
 	if (pe->nr_processes_left || (pli_next && pli_next != pli)) {
-		dprintk("%s: pid: %d, waiting in list\n",
+		printk("%s: pid: %d, waiting in list\n",
 				__FUNCTION__, task_tgid_vnr(current));
 		mutex_unlock(&pe->lock);
 		/* Timeout period: 10 secs + (#procs * 0.1sec) */
@@ -755,6 +755,9 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 
 	--pe->nr_processes_left;
 	kfree(pli);
+
+	printk("%s: pid: %d, rank=%d\n",
+		   __FUNCTION__, task_tgid_vnr(current), pe->process_rank);
 
 	cpus_to_assign = udp->cpu_info->n_cpus / req.nr_processes;
 	cpus_used = kmalloc(sizeof(cpumask_t), GFP_KERNEL);
@@ -1069,7 +1072,7 @@ int mcctrl_add_per_proc_data(struct mcctrl_usrdata *ud, int pid,
 			goto out;
 		}
 	}
-
+	kprintf("%s: list_add_tail,pid=%d\n", __FUNCTION__, pid);
 	list_add_tail(&ppd->hash, &ud->per_proc_data_hash[hash]);
 
 out:
@@ -1131,7 +1134,7 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	list_del(&ppd->hash);
 	write_unlock_irqrestore(&ppd->ud->per_proc_data_hash_lock[hash], flags);
 
-	dprintk("%s: deallocating PPD for pid %d\n", __FUNCTION__, ppd->pid);
+	printk("%s: deallocating PPD for pid %d\n", __FUNCTION__, ppd->pid);
 	for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; i++) {
 		struct mcctrl_per_thread_data *ptd;
 		struct mcctrl_per_thread_data *next;
@@ -1191,9 +1194,7 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 	ppd = mcctrl_get_per_proc_data(ud, pid);
 
 	if (unlikely(!ppd)) {
-		kprintf("%s: ERROR: no per-process structure for PID %d, "
-				"syscall nr: %lu\n",
-				__FUNCTION__, pid, packet->req.number);
+		kprintf("%s: INFO: no per-process structure for PID %d,syscall nr=%lu,rtid=%d\n", __FUNCTION__, pid, packet->req.number, packet->req.rtid);
 
 		/* We use ERESTARTSYS to tell the LWK that the proxy
 		 * process is gone and the application should be terminated */
@@ -1283,6 +1284,9 @@ retry_alloc:
 		}
 		init_waitqueue_head(&wqhln->wq_syscall);
 		list_add_tail(&wqhln->list, &ppd->wq_req_list);
+		printk("%s: wqhln not found,list_add ppd->wq_req_list %p\n", __FUNCTION__, wqhln);
+	} else {
+		//printk("%s: wqhln found,%p\n", __FUNCTION__, wqhln);
 	}
 
 	wqhln->packet = packet;
@@ -2558,11 +2562,14 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
 	/* Destroy per_proc_data with the following two puts. Note that
 	   it survived the signal-kill of tracee thanks to the additional put
 	   done in mcexec_util_thread2 */
+	printk("%s: ppd->refcount=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
 	mcctrl_put_per_proc_data(ppd); 
 
 err:
-	if(ppd)
+	if(ppd) {
+		printk("%s: ppd->refcount=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
 		mcctrl_put_per_proc_data(ppd);
+	}
 
 	if (prev)
 		prev->next = thread->next;
