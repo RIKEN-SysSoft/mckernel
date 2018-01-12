@@ -77,7 +77,7 @@ void *util_thread(void *arg) {
 
 	/* Cause remote page fault */
 	for (i = 0; i < nentry; i++) {
-		memset(recvv[i], 0, szentry);
+		//memset(recvv[i], 0, szentry);
 	}
 
 	sem_post(&sem_report);
@@ -101,7 +101,9 @@ main(int argc, char **argv)
     if(argc == 3) {
         szentry = (1ULL << atoi(argv[1]));
         nentry = atoi(argv[2]);
-    } else {
+    }
+
+	if (argc != 3 || szentry == 0) {
 		fprintf(stderr, "usage: CT25 <log-size of one buffer entry> <# of entries>\n");
 		ret = 1;
 		goto fn_fail;

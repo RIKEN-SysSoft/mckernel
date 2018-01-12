@@ -29,21 +29,31 @@
 #define eprintf(...) do {  } while (0)
 #endif
 
-#define NTHR 1
 #define TS2NS(sec, nsec) ((unsigned long)(sec) * 1000000000ULL + (unsigned long)(nsec))
-#define CALC_DELAY (93000) /* 93   usec */
-#define INIT_DELAY  (2000) /*  2   usec, CPU sends CTS packet */
-#define NIC_DELAY   (3000) /*  3   usec, NIC reads by RDMA-read  */
-#define POLL_DELAY  (200) /*    .2 usec, CPU fetces event queue entry from DRAM */
-#define RESP_DELAY  (2000) /*  2   usec, CPU sends DONE packet and updates MPI_Request */
+#define CALC_DELAY (98600)  /* 98.6 usec */
+#define RTS_DELAY   (1000)  /*  1   usec, CPU time for sending Request-to-Send packet */
+#define NIC_DELAY   (3000)  /*  5   usec, RTS packet propagation time + RDMA-read on the responder side + CPU time for sending DONE packet + DONE packet network propagation time */
+#define POLL_DELAY  ( 200) /*  0.2 usec, CPU time for checking DRAM event queue */
+#define COMPL_DELAY ( 200) /*  0.2 usec, CPU time for updates MPI_Request */
 #define NSPIN 1
 static inline void FIXED_SIZE_WORK(unsigned long *ptr) {
+#if 0
 	asm volatile("movq %0, %%rax\n\t" 
-				 "addq $1, %%rax\n\t"			\
-				 "movq %%rax, %0\n\t"			\
-				 : "+rm" (*ptr)						\
-				 :									\
-				 : "rax", "cc", "memory");			\
+				 "addq $1, %%rax\n\t"
+				 "movq %%rax, %0\n\t"
+				 : "+rm" (*ptr)
+				 :
+				 : "rax", "cc", "memory");
+#endif
+	asm volatile(
+	    "movq $0, %%rcx\n\t"
+		"1:\t"
+		"addq $1, %%rcx\n\t"
+		"cmpq $99, %%rcx\n\t"
+		"jle 1b\n\t"
+		:
+		: 
+		: "rcx", "cc");
 }
 
 static inline void BULK_FSW(unsigned long n, unsigned long *ptr) {
@@ -52,7 +62,6 @@ static inline void BULK_FSW(unsigned long n, unsigned long *ptr) {
 		FIXED_SIZE_WORK(ptr); 
 	} 
 }
-
 
 pthread_mutex_t ep_lock; /* Ownership of channel instance */
 
@@ -64,7 +73,7 @@ struct thr_arg {
 	unsigned long mem; /* Per-thread storage */
 };
 
-struct thr_arg thr_args[NTHR];
+struct thr_arg thr_args;
 
 unsigned long mem; /* Per-thread storage */
 volatile int nevents;
@@ -86,7 +95,10 @@ void fwq_init(unsigned long *mem) {
 	printf("nsec=%ld, nspw=%f\n", nsec, nspw);
 }
 
-void fwq(unsigned long delay_nsec, unsigned long* mem) {
+void fwq(long delay_nsec, unsigned long* mem) {
+	if (delay_nsec < 0) {
+		printf("%s: delay_nsec<0\n", __FUNCTION__);
+	}
 	//printf("delay_nsec=%ld,count=%f\n", delay_nsec, delay_nsec / nspw);
 	BULK_FSW(delay_nsec / nspw, mem);
 }
@@ -115,14 +127,25 @@ void *progress_fn(void *_arg) {
 		fprintf(stdout, "CT09100 progress_fn running on Linux OK\n");
 	else {
 		fprintf(stdout, "CT09100 progress_fn running on McKernel NG\n", rc);
-		return NULL;
 	}
 
+	printf("tid=%d,bar_count=%d\n", syscall(__NR_gettid), arg->bar_count);
+
 	pthread_mutex_lock(&arg->bar_lock);
-	while(arg->bar_count == 0) {
-		pthread_cond_wait(&arg->bar_cond, &arg->bar_lock);
+	arg->bar_count++;
+	if (arg->bar_count == 2) {
+		if ((rc = pthread_cond_broadcast(&arg->bar_cond))) {
+			printf("pthread_cond_broadcast failed,rc=%d\n", rc);
+		}
+	}
+	while (arg->bar_count != 2) {
+		if ((rc = pthread_cond_wait(&arg->bar_cond, &arg->bar_lock))) {
+			printf("pthread_cond_wait failed,rc=%d\n", rc);
+		}
 	}
 	pthread_mutex_unlock(&arg->bar_lock);
+	
+	printf("after barrier\n");
 
 	/* Start progress */
 	pthread_mutex_lock(&ep_lock);
@@ -135,7 +158,7 @@ void *progress_fn(void *_arg) {
 		
 		/* Event found */
 		if (nevents > 0) {
-			fwq(RESP_DELAY, &arg->mem); /* Simulate MPI protocol response */
+			fwq(COMPL_DELAY, &arg->mem); /* Simulate MPI protocol response */
 			nevents = 0;
 		}
 
@@ -153,6 +176,8 @@ void *progress_fn(void *_arg) {
 int main(int argc, char **argv) {
 	int rc;
 	int i;
+	char *uti_str;
+	int uti_val;
 	struct timespec start, end;
 	int disable_progress;
 
@@ -168,11 +193,9 @@ int main(int argc, char **argv) {
 	fwq_init(&mem);
 	pthread_mutex_init(&ep_lock, NULL);
 
-	for(i = 0; i < NTHR; i++) {
-		thr_args[i].bar_count = 0;
-		pthread_cond_init(&thr_args[i].bar_cond, NULL);
-		pthread_mutex_init(&thr_args[i].bar_lock, NULL);
-	}
+	thr_args.bar_count = 0;
+	pthread_cond_init(&thr_args.bar_cond, NULL);
+	pthread_mutex_init(&thr_args.bar_lock, NULL);
 
 	disable_progress = (argc > 1 && strcmp(argv[1], "-d") == 0) ? 1 : 0;
 
@@ -180,41 +203,64 @@ int main(int argc, char **argv) {
 		goto skip1;
 	}
 
-	rc = syscall(731, 1, NULL);
-	if (rc) {
-		fprintf(stdout, "util_indicate_clone rc=%d, errno=%d\n", rc, errno);
-		fflush(stdout);
-	}
-	for (i = 0; i < NTHR; i++) {
-		rc = pthread_create(&thr_args[i].pthread, NULL, progress_fn, &thr_args[i]);
-		if (rc){
-			fprintf(stdout, "pthread_create: %d\n", rc);
-			exit(1);
+	uti_str = getenv("DISABLE_UTI");
+	uti_val = uti_str ? atoi(uti_str) : 0;
+	if (!uti_val) {
+		rc = syscall(731, 1, NULL);
+		if (rc) {
+			fprintf(stdout, "CT09003 INFO: uti not available (rc=%d)\n", rc);
+		} else {
+			fprintf(stdout, "CT09003 INFO: uti available\n");
 		}
-	}
-	for (i = 0; i < NTHR; i++) {
-		pthread_mutex_lock(&thr_args[i].bar_lock);
-		thr_args[i].bar_count++;
-		pthread_cond_signal(&thr_args[i].bar_cond);
-		pthread_mutex_unlock(&thr_args[i].bar_lock);
+	} else {
+		fprintf(stdout, "CT09003 INFO: uti disabled\n", rc);
 	}
 
+	rc = pthread_create(&thr_args.pthread, NULL, progress_fn, &thr_args);
+	if (rc){
+		fprintf(stdout, "pthread_create: %d\n", rc);
+		exit(1);
+	}
+	pthread_mutex_lock(&thr_args.bar_lock);
+	thr_args.bar_count++;
+	if (thr_args.bar_count == 2) {
+		if ((rc = pthread_cond_broadcast(&thr_args.bar_cond))) {
+			printf("pthread_cond_broadcast failed,rc=%d\n", rc);
+		}
+	}
+	while (thr_args.bar_count != 2) {
+		if ((rc = pthread_cond_wait(&thr_args.bar_cond, &thr_args.bar_lock))) {
+			printf("pthread_cond_wait failed,rc=%d\n", rc);
+		}
+	}
+	pthread_mutex_unlock(&thr_args.bar_lock);
+	
 	fprintf(stdout, "CT09004 pthread_create OK\n");
  skip1:
 	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
-	for (i = 0; i < 10000; i++) {
+	for (i = 0; i < 10000; i++) { /* It takes 1 sec */
 		if(!disable_progress) {
-			fwq(CALC_DELAY, &mem); /* Simulate calculation */
+
+			/* Acquire endpoint and send request-to-send packet */
 			pthread_mutex_lock(&ep_lock);
-			fwq(INIT_DELAY, &mem); /* Simulate MPI protocol initiation */
+			fwq(RTS_DELAY, &mem); 
 			pthread_mutex_unlock(&ep_lock);
-			fwq(NIC_DELAY, &mem); /* Simulate NIC processing */
+
+			/* Start calculation */
+
+			/* Generate event on behaf of responder */
+			fwq(NIC_DELAY, &mem); 
 			nevents++;
+
+			fwq(CALC_DELAY - NIC_DELAY, &mem); /* Overlap remainder */
+
+			/* Wait until async thread consumes the event */
 			while (nevents > 0) {
 				FIXED_SIZE_WORK(&mem);
 			}
 		} else {
-			fwq(CALC_DELAY + INIT_DELAY + NIC_DELAY + POLL_DELAY + RESP_DELAY, &mem);
+			/* No overlap case */
+			fwq(RTS_DELAY + CALC_DELAY + POLL_DELAY + COMPL_DELAY, &mem);
 		}
 	}
 	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
@@ -222,11 +268,9 @@ int main(int argc, char **argv) {
 	if(!disable_progress) {
 		terminate = 1;
 		
-		for (i = 0; i < NTHR; i++) {
-			pthread_join(thr_args[i].pthread, NULL);
-		}
+		pthread_join(thr_args.pthread, NULL);
 	}
-	fprintf(stdout, "CT09005 takes %ld nsec INFO\n", TS2NS(end.tv_sec, end.tv_nsec) - TS2NS(start.tv_sec, start.tv_nsec));
+	fprintf(stderr, "total %ld nsec\n", TS2NS(end.tv_sec, end.tv_nsec) - TS2NS(start.tv_sec, start.tv_nsec));
 	fprintf(stdout, "CT09006 END\n");
 
 

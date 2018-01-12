@@ -1,0 +1,5 @@
+001 isend 送受信に使用するバッファは毎回異なる
+002 barrier
+003 isend 送受信に使用するバッファは一つ、waitの前にsleepしない
+004 isend-calc-wait, all ranks put to all the other ranks on different node
+005 lockall-accumulate-calc-unlockall, all ranks put to all the other ranks on different node

@@ -1,7 +1,9 @@
 .SUFFIXES:	# Clear suffixes
 
-#CC = mpiicc
-CC = ${HOME}/project/src/mvapich/install/bin/mpicc
+MYHOME=/work/gg10/e29005
+MPILIB=${MYHOME}/project/mpich/install
+
+CC=${MPILIB}/bin/mpicc 
 
 LD=$(CC)
 
