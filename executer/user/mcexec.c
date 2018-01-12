@@ -2990,10 +2990,11 @@ create_tracer()
 				code |= 0x0000000100000000;
 			}
 			term_param[2] = code;
+
+			fprintf(stderr, "%s:  calling MCEXEC_UP_TERMINATE_THREAD,exited=%d,code=%lx\n", __FUNCTION__, exited, code);
 			if (ioctl(fd, MCEXEC_UP_TERMINATE_THREAD, term_param) != 0) {
-				fprintf(stderr, "%s: ERROR: MCEXEC_UP_TERMINATE_THREAD returned %d\n", __FUNCTION__, errno);
+				fprintf(stderr, "%s: INFO: MCEXEC_UP_TERMINATE_THREAD returned %d\n", __FUNCTION__, errno);
 			}
-			fprintf(stderr, "%s:  WIFEXITED=%d,WIFSIGNALED=%d,WTERMSIG=%d,exited=%d\n", __FUNCTION__, WIFEXITED(st), WIFSIGNALED(st), WTERMSIG(st), exited);
 #if 0
 			if (ptrace(PTRACE_DETACH, uti_desc->tid, 0, WIFSIGNALED(st) ? WTERMSIG(st) : 0) && errno != ESRCH) {
 				fprintf(stderr, "PTRACE_DETACH errno=%d\n", errno);
@@ -3093,6 +3094,7 @@ create_tracer()
 				set_syscall_return(&args, -ENOMEM);
 			}
 			else {
+				//fprintf(stderr, "%s: MCEXEC_UP_SYSCALL_THREAD,nr=%ld\n", __FUNCTION__, get_syscall_number(&args));
 				param_top = *(void **)param;
 				param->number = get_syscall_number(&args);
 				param->args[0] = get_syscall_arg1(&args);
@@ -3132,7 +3134,8 @@ util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, int remote_t
 	void *param[6];
 	int rc = 0;
 	unsigned long buf;
-
+	
+	printf("%s: remote_tid=%d\n", __FUNCTION__, remote_tid);
 #if 0
 	{
 		int error;
