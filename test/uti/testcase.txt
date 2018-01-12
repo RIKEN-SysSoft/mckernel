@@ -244,7 +244,7 @@ sched には同じく sched_getscheduler の結果を表示する。
    LinuxのCPUの内、1つが表示されること(CT08018のCPU集合のメンバ)。
    sched=0 であること。
 
-CT09 futexオーバーヘッド測定
+CT09 プログレス処理オーバーヘッド測定
 
 MPI通信処理とMPIプログレス処理とのロック競合を模すことで、MPIプログレス処理の
 オーバーヘッドを測定する。
@@ -259,7 +259,7 @@ MPIプログレス処理のステップは以下の通り。
 
 CT10 pthread_cond_{wait,signal}() [OK]
 
-CT12 measure time for child to futex-wait []
+CT11 measure time of system calls [OK]
 
 CT12 child (helper thread) futex() wait [OK]
 
@@ -291,3 +291,13 @@ CT24 compute-threadのcond_waitタイミングを変化させたテスト
 
 CT25 1MB x 250のMPI_Isend()でのプロセス終了時メモリ破壊不具合のスケルトン
 * signalによってremote_page_fault()が中断される
+
+CT26 終了時レースコンディションのテスト
+* thread->statusがPS_EXITEDの場合もhold_thread()を呼んでデッドロックする不具合のテスト
+
+CT27 プログレス処理オーバーヘッド測定
+* CT09の複数プロセス版。async progressによってオーバーサブスクライブになった場合のオーバーヘッドを測定する。
+
+CT28 taskset -c 0-7 lock-inc-lock x 10000
+
+

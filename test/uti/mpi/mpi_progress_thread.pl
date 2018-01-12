@@ -51,17 +51,14 @@ if ($mpi eq 'intel') {
     $cc = 'mpiicc';
     $mpiexec = 'mpiexec';
     $genv = '';
+    $progress = '-genv I_MPI_ASYNC_PROGRESS 1'; # -genv I_MPI_ASYNC_PROGRESS_PIN 1
 } else {
     $mpi_lib = '/work/gg10/e29005/project/mpich/install';
     $cc = $mpi_lib.'/bin/mpicc';
     $mpiexec = $mpi_lib.'/bin/mpiexec';
     $genv = '-genv LD_LIBRARY_PATH '.$mpi_lib.'/lib:$LD_LIBRARY_PATH';
+    $progress = '-genv MPIR_CVAR_ASYNC_PROGRESS 1';
 }
-
-%progress = (
-    'mpich', '-genv MPIR_CVAR_ASYNC_PROGRESS 1',
-    'intel', '-genv I_MPI_ASYNC_PROGRESS 1', # -genv I_MPI_ASYNC_PROGRESS_PIN 1
-);
 
 system("make clean; make CC=$cc");
 
@@ -81,7 +78,7 @@ while(<IN>) {
     s/\@elapse@/$elapse{$nnodes}/g;
     s/\@use_mck@/$use_mck/g;
     s/\@mck_mem@/$mck_mem/g;
-    s/\@progress@/$progress{$mpi}/g;
+    s/\@progress@/$progress/g;
     s/\@genv@/$genv/g;
     s/\@mpiexec@/$mpiexec/g;
     s/\@mcexec@/$mcexec/g;
