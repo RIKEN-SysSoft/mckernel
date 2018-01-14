@@ -132,7 +132,7 @@ index cdd4ab3..a3e6c8a 100644
 +	// switch to idle
 +	if (!cases[case_num]) {
 +		if (next == &cpu_local_var(idle)) {
-+			kprintf("[OK] CT_%03d  switch to idle %d => %d\n", case_num, 
++			kprintf("[OK] CT_%03d %d => %d\n", case_num, 
 +		        prev ? prev->tid : 0, next ? next->tid : 0);
 +		} else {
 +			kprintf("[NG] CT_%03d %d => %d\n", case_num, prev->tid, next->tid);
@@ -163,11 +163,3 @@ index cdd4ab3..a3e6c8a 100644
  	if (switch_ctx) {
  		dkprintf("schedule: %d => %d \n",
  		        prev ? prev->tid : 0, next ? next->tid : 0);
-@@ -3260,6 +3373,7 @@ redo:
- 
- 		/* Have we migrated to another core meanwhile? */
- 		if (v != get_this_cpu_local_var()) {
-+			switch_ctx = 0;
- 			goto redo;
- 		}
- 	}

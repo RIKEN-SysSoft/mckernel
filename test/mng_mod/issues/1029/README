@@ -35,33 +35,33 @@ schedule()が想定どおりの動作をすることを確認する。
 ◆prevがidleのケース
 CT_001: runqが空 
         ⇒ コンテキストスイッチを行わない
-CT_002: runqに実行開始前のthreadが存在する
+CT_002: runqに実行待ちのthreadが存在し、且つ、そのthreadが1度も実行状態になっていない
         ⇒ 非idleのthreadにスイッチする
-CT_003: runqに実行開始前のthreadが存在しない
+CT_003: runqに実行待ちのthreadが存在し、且つ、そのthreadが実行状態になったことがある
         ⇒ 非idleのthreadにスイッチする
 
 ◆schedule時点で当該CPUのCPU_FLAGS_NEED_MIGRATEが活性化しているケース
 CT_004: runqが空 
         ⇒ idleにスイッチする
-CT_005: runqに実行開始前のthreadが存在する
+CT_005: runqに実行待ちのthreadが存在し、且つ、そのthreadが1度も実行状態になっていない
         ⇒ idleにスイッチする
-CT_006: runqに実行開始前のthreadが存在しない
+CT_006: runqに実行待ちのthreadが存在し、且つ、そのthreadが実行状態になったことがある
         ⇒ idleにスイッチする
 
 ◆prevがidle以外で、statusがPS_EXITED以外：
 CT_007: runqが空 
         ⇒ idleにスイッチする
-CT_008: runqに実行開始前のthreadが存在する
+CT_008: runqに実行待ちのthreadが存在し、且つ、そのthreadが1度も実行状態になっていない
         ⇒ 非idleのthreadにスイッチする
-CT_009: runqに実行開始前のthreadが存在しない
+CT_009: runqに実行待ちのthreadが存在し、且つ、そのthreadが実行状態になったことがある
         ⇒ 非idleのthreadにスイッチする
 
 ◆prevがidle以外で、statusがPS_EXITED：
 CT_010: runqが空 
         ⇒ idleにスイッチする
-CT_011: runqに実行開始前のthreadが存在する
+CT_011: runqに実行待ちのthreadが存在し、且つ、そのthreadが1度も実行状態になっていない
         ⇒ idleにスイッチする
-CT_012: runqに実行開始前のthreadが存在しない
+CT_012: runqに実行待ちのthreadが存在し、且つ、そのthreadが実行状態になったことがある
         ⇒ idleにスイッチする
 
 4. 結果
