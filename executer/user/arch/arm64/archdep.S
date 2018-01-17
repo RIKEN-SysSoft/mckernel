@@ -40,12 +40,6 @@ switch_ctx:
 	/* save pstate to *lctx */
 	mrs	x20, nzcv
 	orr	x21, x21, x20
-	mrs	x20, daif
-	orr	x21, x21, x20
-	mrs	x20, currentel
-	orr	x21, x21, x20
-	mrs	x20, spsel
-	orr	x21, x21, x20
 	str	x21, [x3, #8 + 16 * 16]
 
 	/* send ioctl(fd, cmd, param) */
@@ -63,15 +57,11 @@ switch_ctx:
 	/* set tls base address from *rctx */
 	ldr	x20, [x4, #8 + 16 * 16 + 8]
 	msr	tpidr_el0, x20
-	mov	x20, #0x0
-	msr	tpidrro_el0, x20
 
 	/* restore pstate from *rctx */
 	/* currentel is read only */
 	ldr	x20, [x4, #8 + 16 * 16]
 	msr	nzcv, x20
-	msr	daif, x20
-	msr	spsel, x20
 
 	/* restore stackpointer and return address from *rctx */
 	ldp	x20, x30, [x4, #8 + 16 * 15]
