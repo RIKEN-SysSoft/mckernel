@@ -33,9 +33,13 @@ switch_ctx:
 	stp	x26, x27, [x3, #8 + 16 * 13]
 	stp	x28, x29, [x3, #8 + 16 * 14]
 
+	/* save stack frame lr */
+	ldr	x21, [sp, #8]
+	str	x21, [x3, #8 + 16 * 15]
+
 	/* save stackpointer and return address to *lctx */
 	mov	x20, sp
-	stp	x20, x30, [x3, #8 + 16 * 15]
+	stp	x20, x30, [x3, #8 + 16 * 15 + 8]
 
 	/* save pstate to *lctx */
 	mrs	x20, nzcv
@@ -64,8 +68,12 @@ switch_ctx:
 	msr	nzcv, x20
 
 	/* restore stackpointer and return address from *rctx */
-	ldp	x20, x30, [x4, #8 + 16 * 15]
+	ldp	x20, x30, [x4, #8 + 16 * 15 + 8]
 	mov	sp, x20
+
+	/* restore stack frame lr */
+	ldr	x20, [x4, #8 + 16 * 15]
+	str	x20, [sp, #8]
 
 	/* restore global registers from *rctx */
 	ldp	x28, x29, [x4, #8 + 16 * 14]
