@@ -9807,6 +9807,10 @@ reset_cputime()
 	thread->base_tsc = 0;
 }
 
+#ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
+void
+set_cputime(enum set_cputime_mode mode)
+#else /* POSTK_DEBUG_TEMP_FIX_84 */
 /**
  * mode == 0: kernel -> user
  * mode == 1: user -> kernel
@@ -9814,6 +9818,7 @@ reset_cputime()
  */
 void
 set_cputime(int mode)
+#endif /* POSTK_DEBUG_TEMP_FIX_84 */
 {
 	struct thread *thread;
 	unsigned long tsc;	
@@ -9829,6 +9834,15 @@ set_cputime(int mode)
 	if(thread == &v->idle)
 		return;
 	monitor = v->monitor;
+#ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
+	if(mode == CPUTIME_MODE_K2U){
+		monitor->status = IHK_OS_MONITOR_USER;
+	}
+	else if(mode == CPUTIME_MODE_U2K){
+		monitor->counter++;
+		monitor->status = IHK_OS_MONITOR_KERNEL;
+	}
+#else /* POSTK_DEBUG_TEMP_FIX_84 */
 	if(mode == 0){
 		monitor->status = IHK_OS_MONITOR_USER;
 	}
@@ -9836,6 +9850,7 @@ set_cputime(int mode)
 		monitor->counter++;
 		monitor->status = IHK_OS_MONITOR_KERNEL;
 	}
+#endif /* POSTK_DEBUG_TEMP_FIX_84 */
 
 	if(!gettime_local_support){
 		thread->times_update = 1;
@@ -9848,7 +9863,11 @@ set_cputime(int mode)
 		struct timespec dts;
 
 		tsc_to_ts(dtsc, &dts);
+#ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
+		if(mode == CPUTIME_MODE_U2K){
+#else /* POSTK_DEBUG_TEMP_FIX_84 */
 		if(mode == 1){
+#endif /* POSTK_DEBUG_TEMP_FIX_84 */
 			thread->user_tsc += dtsc;
 			v->rusage->user_tsc += dtsc;
 			ts_add(&thread->itimer_virtual_value, &dts);
@@ -9861,7 +9880,11 @@ set_cputime(int mode)
 		}
 	}
 
+#ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
+	if(mode == CPUTIME_MODE_K2K_IN){
+#else /* POSTK_DEBUG_TEMP_FIX_84 */
 	if(mode == 2){
+#endif /* POSTK_DEBUG_TEMP_FIX_84 */
 		thread->base_tsc = 0;	
 	}
 	else{
@@ -9869,7 +9892,11 @@ set_cputime(int mode)
 	}
 
 	thread->times_update = 1;
+#ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
+	thread->in_kernel = (int)mode;
+#else /* POSTK_DEBUG_TEMP_FIX_84 */
 	thread->in_kernel = mode;
+#endif /* POSTK_DEBUG_TEMP_FIX_84 */
 
 	if(thread->itimer_enabled){
 		struct timeval tv;
@@ -9938,7 +9965,11 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 #ifdef DISABLE_SCHED_YIELD
 	if (num != __NR_sched_yield)
 #endif // DISABLE_SCHED_YIELD
+#ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
+		set_cputime(CPUTIME_MODE_U2K);
+#else /* POSTK_DEBUG_TEMP_FIX_84 */
 		set_cputime(1);
+#endif /* POSTK_DEBUG_TEMP_FIX_84 */
 
 #ifdef PROFILE_ENABLE
 	if (thread->profile && thread->profile_start_ts) {
@@ -9951,7 +9982,11 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	if(cpu_local_var(current)->proc->status == PS_EXITED &&
 	   (num != __NR_exit && num != __NR_exit_group)){
 		check_signal(-EINVAL, NULL, 0);
+#ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
+		set_cputime(CPUTIME_MODE_K2U);
+#else /* POSTK_DEBUG_TEMP_FIX_84 */
 		set_cputime(0);
+#endif /* POSTK_DEBUG_TEMP_FIX_84 */
 		return -EINVAL;
 	}
 
@@ -10064,7 +10099,11 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 #ifdef DISABLE_SCHED_YIELD
 	if (num != __NR_sched_yield)
 #endif // DISABLE_SCHED_YIELD
+#ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
+		set_cputime(CPUTIME_MODE_K2U);
+#else /* POSTK_DEBUG_TEMP_FIX_84 */
 		set_cputime(0);
+#endif /* POSTK_DEBUG_TEMP_FIX_84 */
 
 	return l;
 }

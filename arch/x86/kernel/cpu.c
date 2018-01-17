@@ -878,7 +878,11 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 	lapic_ack();
 	++v->in_interrupt;
 
+#ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
+	set_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
+#else /* POSTK_DEBUG_TEMP_FIX_84 */
 	set_cputime(interrupt_from_user(regs)? 1: 2);
+#endif /* POSTK_DEBUG_TEMP_FIX_84 */
 
 	dkprintf("CPU[%d] got interrupt, vector: %d, RIP: 0x%lX\n", 
 	         ihk_mc_get_processor_id(), vector, regs->gpr.rip);
@@ -997,14 +1001,22 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 		check_signal(0, regs, 0);
 		check_need_resched();
 	}
+#ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
+	set_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
+#else /* POSTK_DEBUG_TEMP_FIX_84 */
 	set_cputime(0);
+#endif /* POSTK_DEBUG_TEMP_FIX_84 */
 
 	--v->in_interrupt;
 }
 
 void gpe_handler(struct x86_user_context *regs)
 {
+#ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
+	set_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
+#else /* POSTK_DEBUG_TEMP_FIX_84 */
 	set_cputime(interrupt_from_user(regs)? 1: 2);
+#endif /* POSTK_DEBUG_TEMP_FIX_84 */
 	kprintf("General protection fault (err: %lx, %lx:%lx)\n",
 	        regs->gpr.error, regs->gpr.cs, regs->gpr.rip);
 	arch_show_interrupt_context(regs);
@@ -1017,7 +1029,11 @@ void gpe_handler(struct x86_user_context *regs)
 		check_signal(0, regs, 0);
 		check_need_resched();
 	}
+#ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
+	set_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
+#else /* POSTK_DEBUG_TEMP_FIX_84 */
 	set_cputime(0);
+#endif /* POSTK_DEBUG_TEMP_FIX_84 */
 	// panic("GPF");
 }
 
@@ -1027,7 +1043,11 @@ void debug_handler(struct x86_user_context *regs)
 	int si_code = 0;
 	struct siginfo info;
 
+#ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
+	set_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
+#else /* POSTK_DEBUG_TEMP_FIX_84 */
 	set_cputime(interrupt_from_user(regs)? 1: 2);
+#endif /* POSTK_DEBUG_TEMP_FIX_84 */
 #ifdef DEBUG_PRINT_CPU
 	kprintf("debug exception (err: %lx, %lx:%lx)\n",
 	        regs->gpr.error, regs->gpr.cs, regs->gpr.rip);
@@ -1050,14 +1070,22 @@ void debug_handler(struct x86_user_context *regs)
 		check_signal(0, regs, 0);
 		check_need_resched();
 	}
+#ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
+	set_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
+#else /* POSTK_DEBUG_TEMP_FIX_84 */
 	set_cputime(0);
+#endif /* POSTK_DEBUG_TEMP_FIX_84 */
 }
 
 void int3_handler(struct x86_user_context *regs)
 {
 	struct siginfo info;
 
+#ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
+	set_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
+#else /* POSTK_DEBUG_TEMP_FIX_84 */
 	set_cputime(interrupt_from_user(regs)? 1: 2);
+#endif /* POSTK_DEBUG_TEMP_FIX_84 */
 #ifdef DEBUG_PRINT_CPU
 	kprintf("int3 exception (err: %lx, %lx:%lx)\n",
 	        regs->gpr.error, regs->gpr.cs, regs->gpr.rip);
@@ -1072,7 +1100,11 @@ void int3_handler(struct x86_user_context *regs)
 		check_signal(0, regs, 0);
 		check_need_resched();
 	}
+#ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
+	set_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
+#else /* POSTK_DEBUG_TEMP_FIX_84 */
 	set_cputime(0);
+#endif /* POSTK_DEBUG_TEMP_FIX_84 */
 }
 
 void

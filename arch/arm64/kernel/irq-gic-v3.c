@@ -291,10 +291,11 @@ extern int interrupt_from_user(void *);
 void handle_interrupt_gicv3(struct pt_regs *regs)
 {
 	uint64_t irqnr;
+	const int from_user = interrupt_from_user(regs);
 
 	irqnr = gic_read_iar();
 	cpu_enable_nmi();
-	set_cputime(interrupt_from_user(regs)? 1: 2);
+	set_cputime(from_user ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
 	while (irqnr != ICC_IAR1_EL1_SPURIOUS) {
 		if ((irqnr < 1020) || (irqnr >= 8192)) {
 			gic_write_eoir(irqnr);
@@ -302,7 +303,7 @@ void handle_interrupt_gicv3(struct pt_regs *regs)
 		}
 		irqnr = gic_read_iar();
 	}
-	set_cputime(0);
+	set_cputime(from_user ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 }
 
 void gic_dist_init_gicv3(unsigned long dist_base_pa, unsigned long size)

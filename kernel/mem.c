@@ -1118,7 +1118,11 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 		t_s = rdtsc();
 #endif // PROFILE_ENABLE
 
+#ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
+	set_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
+#else /* POSTK_DEBUG_TEMP_FIX_84 */
 	set_cputime(interrupt_from_user(regs)? 1: 2);
+#endif /* POSTK_DEBUG_TEMP_FIX_84 */
 	dkprintf("%s: addr: %p, reason: %lx, regs: %p\n",
 			__FUNCTION__, fault_addr, reason, regs);
 
@@ -1178,7 +1182,11 @@ out:
 	dkprintf("%s: addr: %p, reason: %lx, regs: %p -> error: %d\n",
 			__FUNCTION__, fault_addr, reason, regs, error);
 	check_need_resched();
+#ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
+	set_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
+#else /* POSTK_DEBUG_TEMP_FIX_84 */
 	set_cputime(0);
+#endif /* POSTK_DEBUG_TEMP_FIX_84 */
 #ifdef PROFILE_ENABLE
 	if (thread->profile)
 		profile_event_add(PROFILE_page_fault, (rdtsc() - t_s));

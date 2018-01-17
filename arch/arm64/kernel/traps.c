@@ -29,12 +29,14 @@ void arm64_notify_die(const char *str, struct pt_regs *regs, struct siginfo *inf
  */
 void do_fpsimd_acc(unsigned int esr, struct pt_regs *regs)
 {
+	const int from_user = interrupt_from_user(regs);
+
 	// /* TODO: implement lazy context saving/restoring */
-	set_cputime(1);
+	set_cputime(from_user ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
 	// WARN_ON(1);
 	kprintf("WARNING: CPU: %d PID: %d Trapped FP/ASIMD access.\n",
 		ihk_mc_get_processor_id(), cpu_local_var(current)->proc->pid);
-	set_cputime(0);
+	set_cputime(from_user ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 }
 
 /*
@@ -51,7 +53,9 @@ void do_fpsimd_exc(unsigned int esr, struct pt_regs *regs)
 {
 	siginfo_t info;
 	unsigned int si_code = 0;
-	set_cputime(1);
+	const int from_user = interrupt_from_user(regs);
+
+	set_cputime(from_user ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
 
 	if (esr & FPEXC_IOF)
 		si_code = FPE_FLTINV;
@@ -70,7 +74,7 @@ void do_fpsimd_exc(unsigned int esr, struct pt_regs *regs)
 	info._sifields._sigfault.si_addr  = (void*)regs->pc;
 
 	set_signal(SIGFPE, regs, &info);
-	set_cputime(0);
+	set_cputime(from_user ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 }
 
 /* @ref.impl arch/arm64/kernel/traps.c */
@@ -133,8 +137,9 @@ exit:
 void do_undefinstr(struct pt_regs *regs)
 {
 	siginfo_t info;
+	const int from_user = interrupt_from_user(regs);
 
-	set_cputime(interrupt_from_user(regs)? 1: 2);
+	set_cputime(from_user ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
 
 	if (call_undef_hook(regs) == 0) {
 		goto out;
@@ -147,7 +152,7 @@ void do_undefinstr(struct pt_regs *regs)
 
 	arm64_notify_die("Oops - undefined instruction", regs, &info, 0);
 out:
-	set_cputime(0);
+	set_cputime(from_user ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 }
 
 /*
@@ -157,7 +162,9 @@ out:
 void bad_mode(struct pt_regs *regs, int reason, unsigned int esr)
 {
 	siginfo_t info;
-	set_cputime(interrupt_from_user(regs)? 1: 2);
+	const int from_user = interrupt_from_user(regs);
+
+	set_cputime(from_user ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
 	kprintf("entering bad_mode !! (regs:0x%p, reason:%d, esr:0x%x)\n", regs, reason, esr);
 
 	kprintf("esr Analyse:\n");
@@ -173,5 +180,5 @@ void bad_mode(struct pt_regs *regs, int reason, unsigned int esr)
 	info._sifields._sigfault.si_addr  = (void*)regs->pc;
 
 	arm64_notify_die("Oops - bad mode", regs, &info, 0);
-	set_cputime(0);
+	set_cputime(from_user ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 }

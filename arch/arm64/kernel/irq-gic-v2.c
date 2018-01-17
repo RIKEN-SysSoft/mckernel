@@ -111,8 +111,9 @@ extern int interrupt_from_user(void *);
 void handle_interrupt_gicv2(struct pt_regs *regs)
 {
 	unsigned int irqstat, irqnr;
+	const int from_user = interrupt_from_user(regs);
 
-	set_cputime(interrupt_from_user(regs)? 1: 2);
+	set_cputime(from_user ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
 	do {
 		// get GICC_IAR.InterruptID
 		irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
@@ -132,7 +133,7 @@ void handle_interrupt_gicv2(struct pt_regs *regs)
 		 */
 		break;
 	} while (1);
-	set_cputime(0);
+	set_cputime(from_user ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 }
 
 void gic_dist_init_gicv2(unsigned long dist_base_pa, unsigned long size)
