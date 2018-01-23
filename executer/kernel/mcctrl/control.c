@@ -339,6 +339,7 @@ struct host_thread {
 	unsigned long usp;
 	unsigned long lfs;
 	unsigned long rfs;
+    struct task_struct *task;
 };
 
 struct mcos_handler_info *new_mcos_handler_info(ihk_os_t os, struct file *file)
@@ -373,19 +374,44 @@ int mcexec_destroy_per_process_data(ihk_os_t os, int pid);
 
 static void release_handler(ihk_os_t os, void *param)
 {
+    long rc;
 	struct mcos_handler_info *info = param;
 	struct ikc_scd_packet isp;
 	int os_ind = ihk_host_os_get_index(os);
 	unsigned long flags;
 	struct host_thread *thread;
 
-	write_lock_irqsave(&host_thread_lock, flags);
-	for (thread = host_threads; thread; thread = thread->next) {
-		if (thread->handler == info) {
-			thread->handler = NULL;
+	/* Kill migrated-to-Linux threads on the McKernel side 
+	   when the corresponding mcexec threads failed to call MCEXEC_UP_TERMINATE_THREAD 
+	   for some reason. */
+	while (1) {
+		unsigned long term_param[4];
+
+		write_lock_irqsave(&host_thread_lock, flags);
+		for (thread = host_threads; thread; thread = thread->next) {
+			if (thread->handler == info) {
+				break;
+			}
+		}
+		if (!thread) {
+			write_unlock_irqrestore(&host_thread_lock, flags);
+			break;
+		}
+		term_param[0] = thread->pid;
+		term_param[1] = thread->tid;
+		term_param[2] = 0;
+		/* We don't make the McKernel thread call terminate() because we don't know it is the last thread alive.
+		   Instead, we make it call do_exit() */
+		term_param[3] = (unsigned long)thread->task;
+		thread->handler = NULL;
+		write_unlock_irqrestore(&host_thread_lock, flags);
+		
+		printk("%s: killing stray migrated-to-Linux thread, pid=%d,tid=%d\n", __FUNCTION__, thread->pid, thread->tid);
+		rc = mcexec_terminate_thread(os, term_param);
+		if (rc) {
+			printk("%s: ERROR: mcexec_terminate_thread returned %ld\n", __FUNCTION__, rc);
 		}
 	}
-	write_unlock_irqrestore(&host_thread_lock, flags);
 
 	mcexec_close_exec(os);
 
@@ -2474,6 +2500,9 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	thread->lfs = get_fs_ctx(lctx);
 	thread->rfs = get_fs_ctx(rctx);
 	thread->handler = info;
+    thread->task = current;
+
+    printk("%s: pid=%d, tid=%d, task=%p\n", __FUNCTION__, thread->pid, thread->tid, thread->task);
 
 	write_lock_irqsave(&host_thread_lock, flags);
 	thread->next = host_threads;
@@ -2512,10 +2541,11 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 }
 
 long
-mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
+mcexec_terminate_thread(ihk_os_t os, unsigned long *param)
 {
 	int pid = param[0];
 	int tid = param[1];
+	long sig = param[2];
 	struct task_struct *tsk = (struct task_struct *)param[3];
 	unsigned long flags;
 	struct host_thread *thread;
@@ -2534,7 +2564,8 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
 	}
 	if (!thread) {
 		write_unlock_irqrestore(&host_thread_lock, flags);
-		return -EINVAL;
+		printk("%s: thread not found in host_threads list\n", __FUNCTION__);
+		return -ESRCH;
 	}
 
 	ppd = mcctrl_get_per_proc_data(usrdata, pid);
@@ -2550,7 +2581,8 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
 		goto err;
 	}
 	mcctrl_delete_per_thread_data(ppd, tsk);
-	__return_syscall(usrdata->os, packet, param[2], tid);
+	printk("%s: calling __return_syscall, tid=%d, sig=%lx, ppd->refcount=%d\n", __FUNCTION__, tid, sig, atomic_read(&ppd->refcount));
+	__return_syscall(usrdata->os, packet, sig, tid);
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 						   (usrdata->ikc2linux[smp_processor_id()] ?
 							usrdata->ikc2linux[smp_processor_id()] :
@@ -3090,7 +3122,7 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 		return mcexec_syscall_thread(os, arg, file);
 
 	case MCEXEC_UP_TERMINATE_THREAD:
-		return mcexec_terminate_thread(os, (unsigned long *)arg, file);
+		return mcexec_terminate_thread(os, (unsigned long *)arg);
 
 	case MCEXEC_UP_UNMAP_PSEUDO_FILEMAP:
 		return mcexec_unmap_pseudo_filemap(os, file);

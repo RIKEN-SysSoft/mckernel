@@ -1058,7 +1058,9 @@ void terminate(int rc, int sig)
 	mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
 	n = 0;
 	list_for_each_entry(thread, &proc->threads_list, siblings_list) {
-		n++;
+		if (thread != mythread) {
+			n++;
+		}
 	}
 
 	if (n) {
@@ -1077,6 +1079,7 @@ void terminate(int rc, int sig)
 
 	if (ids) {
 		for (i = 0; i < n; i++) {
+			kprintf("%s: calling do_kill, target tid=%d\n", __FUNCTION__, ids[i]);
 			do_kill(mythread, proc->pid, ids[i], SIGKILL, NULL, 0);
 		}
 		kfree(ids);
@@ -5620,6 +5623,7 @@ do_exit(int code)
 	mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 
 	if(nproc == 1){ // process has only one thread
+		kprintf("%s: nproc=1\n", __FUNCTION__);
 		terminate(exit_status, sig);
 		return;
 	}
@@ -9213,13 +9217,14 @@ util_thread(struct uti_attr *arg)
 	kfree(uti_clv);
 
 	if (rc >= 0) {
-		if (rc & 0x10000007f) { // exit_group || signal
-			dkprintf("%s: exit_group || signal\n", __FUNCTION__);
+		if (rc & 0x100000000) { /* exit_group */
+			kprintf("%s: exit_group, tid=%d\n", __FUNCTION__, thread->tid);
 			thread->proc->nohost = 1;
 			terminate((rc >> 8) & 255, rc & 255);
-		}
-		else {
-			dkprintf("%s: !exit_group && !signal\n", __FUNCTION__);
+			/* uti_wp in mcexec.c is munmap()-ed by __NR_exit_group offload */
+		} else {
+			/* Don't call terminate() when killed by signal because we're not sure it is the last thread. */
+			kprintf("%s: exit | signal, tid=%d\n", __FUNCTION__, thread->tid);
 			request.number = __NR_sched_setaffinity;
 			request.args[0] = 1;
 			request.args[1] = free_address;

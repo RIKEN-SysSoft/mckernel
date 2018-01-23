@@ -2812,17 +2812,56 @@ out:
 static void
 kill_thread(unsigned long tid, int sig)
 {
+    int rc;
 	struct thread_data_s *tp;
+    printf("%s: tid=%ld,sig=%d\n", __FUNCTION__, tid, sig);
 
 	if (sig == 0)
 		sig = LOCALSIG;
 
 	for (tp = thread_data; tp; tp = tp->next) {
 		if (tp->remote_tid == tid) {
-			pthread_kill(tp->thread_id, sig);
-			break;
-		}
-	}
+			/* (1) SIGKILL here kills the entire process, so delay it until __NR_exit_group offload
+			   (2) Kill migrated-to-Linux threads on the McKernel side 
+			       when the corresponding mcexec threads failed to call MCEXEC_UP_TERMINATE_THREAD 
+			       for some reason. */
+			if(uti_desc->mck_tid == tid) {
+				int exit_remote = 0;
+
+				if (sig == SIGKILL) {
+					printf("%s: making remote thread exit (SIGKILL),tid=%ld,sig=%d\n", __FUNCTION__, tid, sig);
+					exit_remote = 1;
+					/* We don't perform pthread_kill(tp->thread_id, SIGKILL) because it kills other threads as well.
+					   Instead, we expect one of McKernel threads calls / have called terminate()
+					   and offloads __NR_exit_group to kill me. */
+				} else if (pthread_kill(tp->thread_id, 0) == ESRCH) {
+					printf("%s: making remote thread exit (nohost),tid=%ld,sig=%d\n", __FUNCTION__, tid, sig);
+					exit_remote = 1;
+					sig = 0;
+					/* We don't make the McKernel thread call terminate() because we don't know it is the last thread alive.
+					   Instead, we make it call do_exit() */
+				} else {
+					printf("%s: sending to signal to local thread,tid=%ld,sig=%d\n", __FUNCTION__, tid, sig);
+					pthread_kill(tp->thread_id, sig);
+				}
+
+				if (exit_remote) {
+					printf("%s: making remote thread exit,tid=%ld,sig=%d\n", __FUNCTION__, tid, sig);
+					unsigned long term_param[4];
+					term_param[0] = uti_desc->pid;
+					term_param[1] = uti_desc->tid; /* tid of mcexec */
+					term_param[2] = sig;
+					term_param[3] = uti_desc->key;
+					if ((rc = ioctl(fd, MCEXEC_UP_TERMINATE_THREAD, term_param)) < 0) {
+						printf("%s: MCEXEC_UP_TERMINATE_THREAD returned %d\n", __FUNCTION__, errno);
+					}
+
+ 				}
+			} else if (pthread_kill(tp->thread_id, sig) == ESRCH) {
+				printf("%s: ERROR: Thread not found (tid=%ld,sig=%d)\n", __FUNCTION__, tid, sig);
+ 			}
+ 		}
+ 	}
 }
 
 static int
@@ -2946,6 +2985,11 @@ create_tracer()
 	open("/dev/null", O_WRONLY);
 #endif
 
+	/* Initialize list of syscall arguments for syscall_intercept */
+	if (sizeof(struct syscall_struct) * 11 > PAGE_SIZE) {
+		fprintf(stderr, "%s: ERROR: param is too large\n", __FUNCTION__);
+		exit(1);
+	}
 	for (i = 1; i <= 10; i++) {
 		param = (struct syscall_struct *)uti_desc->wp + i;
 		*(void **)param = param_top;
@@ -3186,11 +3230,14 @@ util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, int remote_t
 		ioctl(fd, MCEXEC_UP_UTI_ATTR, &desc);
 	}
 
-	/* Synchronize detached state with the McKernel counterpart */
-	if ((rc = pthread_detach(my_thread->thread_id)) != 0) {
-		fprintf(stderr, "%s: pthread_detach returned %d\n", __FUNCTION__, rc);
+#if 1 /* debug */
+	/* McKernel would create the thread detached, so detach myself */
+	if ((rc = pthread_detach(my_thread->thread_id)) < 0) {
+		fprintf(stderr, "%s: ERROR pthread_detach returned %d\n", __FUNCTION__, rc);
+		goto out;
 	}
-	my_thread->detached = 1; /* Skip join in join_all_threads() */
+	my_thread->detached = 1;
+#endif
 
 	if ((rc = switch_ctx(fd, MCEXEC_UP_UTIL_THREAD2, param, lctx, rctx))
 	    < 0) {
@@ -3506,22 +3553,23 @@ int main_loop(struct thread_data_s *my_thread)
 			sig = 0;
 			term = 0;
 			
-			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
+			/* Make terminate() wait until release_handler() is called. */
+			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0); 
 
 			/* Drop executable file */
 			if ((ret = ioctl(fd, MCEXEC_UP_CLOSE_EXEC)) != 0) {
 				fprintf(stderr, "WARNING: close_exec() couldn't find exec file?\n");
 			}
 
-			__dprintf("__NR_exit/__NR_exit_group: %ld (cpu_id: %d)\n",
-					w.sr.args[0], cpu);
+			printf("%s: arg0=%lx,cpu_id=%d,rtid=%d\n",
+				   w.sr.number == __NR_exit_group ? "__NR_exit_group" : "__NR_exit", w.sr.args[0], cpu, my_thread->remote_tid);
 			if(w.sr.number == __NR_exit_group){
 				sig = w.sr.args[0] & 0x7f;
 				term = (w.sr.args[0] & 0xff00) >> 8;
 				if(isatty(2)){
 					if(sig){
 						if(!ischild)
-							fprintf(stderr, "Terminate by signal %d\n", sig);
+							fprintf(stderr, "%s: Terminated by signal %d, tid=%d\n", __FUNCTION__, sig, my_thread->tid);
 					}
 					else if(term)
 						__dprintf("Exit status: %d\n", term);
