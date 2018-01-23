@@ -384,6 +384,9 @@ int mcctrl_ikc_is_valid_thread(ihk_os_t os, int cpu);
 
 ihk_os_t osnum_to_os(int n);
 
+/* control.c */
+long mcexec_terminate_thread(ihk_os_t os, unsigned long *param);
+
 /* syscall.c */
 void pager_add_process(void);
 void pager_remove_process(struct mcctrl_per_proc_data *ppd);
