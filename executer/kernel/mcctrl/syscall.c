@@ -860,6 +860,10 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 		ret = VM_FAULT_SIGBUS;
 		printk("%s: no packet registered for TID %d\n",
 				__FUNCTION__, task_pid_vnr(current));
+		/* uti: This case happens when remote-page fault is requested after 
+		   per-thread data had been destroyed by mcctrl_delete_per_thread_data()
+		   in mcexec_terminate_thread(), invoked by terminate() in McKernel */
+		ret = VM_FAULT_SIGBUS;
 		goto put_and_out;
 	}
 

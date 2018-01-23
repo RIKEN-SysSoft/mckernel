@@ -9,8 +9,11 @@
 #include <sys/mman.h>
 #include <signal.h>
 
+int flag1;
 pthread_mutex_t mutex1;
 pthread_cond_t cond1;
+
+int flag2;
 pthread_mutex_t mutex2;
 pthread_cond_t cond2;
 char *m;
@@ -24,6 +27,7 @@ sigsegv(int s)
 	if (sigst == 1) {
 		fprintf(stderr, "CT02007 mremap OK (SIGSEGV)\n");
 		pthread_mutex_lock(&mutex2);
+		flag2 = 1;
 		pthread_cond_signal(&cond2);
 		pthread_mutex_unlock(&mutex2);
 		pthread_join(thr, NULL);
@@ -59,10 +63,14 @@ util_thread(void *arg)
 	}
 	strcpy(m + 4096, "mmap OK");
 	pthread_mutex_lock(&mutex1);
+	flag1 = 1;
 	pthread_cond_signal(&cond1);
 	pthread_mutex_unlock(&mutex1);
 	pthread_mutex_lock(&mutex2);
-	pthread_cond_wait(&cond2, &mutex2);
+	while (!flag2) {
+		pthread_cond_wait(&cond2, &mutex2);
+	}
+	flag2 = 0;
 	pthread_mutex_unlock(&mutex2);
 	n = mremap(m, 8192, 4096, 0);
 	if (n == m) {
@@ -77,10 +85,15 @@ util_thread(void *arg)
 		exit(1);
 	}
 	pthread_mutex_lock(&mutex1);
+	flag1 = 1;
 	pthread_cond_signal(&cond1);
 	pthread_mutex_unlock(&mutex1);
+
 	pthread_mutex_lock(&mutex2);
-	pthread_cond_wait(&cond2, &mutex2);
+	while (!flag2) {
+		pthread_cond_wait(&cond2, &mutex2);
+	}
+	flag2 = 0;
 	pthread_mutex_unlock(&mutex2);
 	rc = munmap(m, 4096);
 	if (rc == 0) {
@@ -117,19 +130,29 @@ main(int argc, char **argv)
 	}
 	fprintf(stderr, "CT02002 pthread_create OK\n");
 	pthread_mutex_lock(&mutex1);
-	pthread_cond_wait(&cond1, &mutex1);
+	while (!flag1) {
+		pthread_cond_wait(&cond1, &mutex1);
+	}
+	flag1 = 0;
 	pthread_mutex_unlock(&mutex1);
 	fprintf(stderr, "CT02005 %s\n", m + 4096);
+
 	pthread_mutex_lock(&mutex2);
+	flag2 = 1;
 	pthread_cond_signal(&cond2);
 	pthread_mutex_unlock(&mutex2);
+
 	pthread_mutex_lock(&mutex1);
-	pthread_cond_wait(&cond1, &mutex1);
+	while (!flag1) {
+		pthread_cond_wait(&cond1, &mutex1);
+	}
+	flag1 = 0;
 	pthread_mutex_unlock(&mutex1);
 	sigst = 1;
 	fprintf(stderr, "%s\n", m + 4096);
 	fprintf(stderr, "CT02007 mremap NG\n");
 	pthread_mutex_lock(&mutex2);
+	flag2 = 1;
 	pthread_cond_signal(&cond2);
 	pthread_mutex_unlock(&mutex2);
 	pthread_join(thr, NULL);

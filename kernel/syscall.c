@@ -1056,7 +1056,9 @@ void terminate(int rc, int sig)
 	mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
 	n = 0;
 	list_for_each_entry(thread, &proc->threads_list, siblings_list) {
-		n++;
+		if (thread != mythread) {
+			n++;
+		}
 	}
 
 	if (n) {
@@ -1075,6 +1077,7 @@ void terminate(int rc, int sig)
 
 	if (ids) {
 		for (i = 0; i < n; i++) {
+			kprintf("%s: calling do_kill, target tid=%d\n", __FUNCTION__, ids[i]);
 			do_kill(mythread, proc->pid, ids[i], SIGKILL, NULL, 0);
 		}
 		kfree(ids);
@@ -5617,6 +5620,7 @@ do_exit(int code)
 	mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 
 	if(nproc == 1){ // process has only one thread
+		kprintf("%s: nproc=1\n", __FUNCTION__);
 		terminate(exit_status, sig);
 		return;
 	}
@@ -9214,6 +9218,7 @@ util_thread(struct uti_attr *arg)
 			kprintf("%s: exit_group, tid=%d,rc=%lx\n", __FUNCTION__, thread->tid, rc);
 			thread->proc->nohost = 1;
 			terminate((rc >> 8) & 255, rc & 255);
+			/* uti_wp in mcexec.c is munmap()-ed by __NR_exit_group offload */
 		} else {
 			/* mcexec is alive, so we can call do_syscall() */
 			kprintf("%s: exit | signal, tid=%d,rc=%lx\n", __FUNCTION__, thread->tid, rc);
