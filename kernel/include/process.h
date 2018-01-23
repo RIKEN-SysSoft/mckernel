@@ -437,6 +437,7 @@ struct sig_pending {
 	sigset_t sigmask;
 	siginfo_t info;
 	int ptracecont;
+	int interrupted;
 };
 
 typedef void pgio_func_t(void *arg);

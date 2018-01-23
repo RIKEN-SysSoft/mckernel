@@ -32,7 +32,6 @@
 #include <limits.h>
 #include <syscall.h>
 
-void terminate(int, int);
 extern long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
 long syscall(int num, ihk_mc_user_context_t *ctx);
 void set_signal(int sig, void *regs0, siginfo_t *info);
@@ -280,6 +279,7 @@ SYSCALL_DECLARE(rt_sigreturn)
 extern struct cpu_local_var *clv;
 extern unsigned long do_kill(struct thread *thread, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
 extern void interrupt_syscall(struct thread *, int sig);
+extern void terminate(int, int);
 extern int num_processors;
 
 #define RFLAGS_MASK (RFLAGS_CF | RFLAGS_PF | RFLAGS_AF | RFLAGS_ZF | \
@@ -1054,6 +1054,72 @@ out:
 	return;
 }
 
+void
+check_sig_pending()
+{
+	struct thread *thread;
+	int found = 0;
+	struct list_head *head;
+	mcs_rwlock_lock_t *lock;
+	struct mcs_rwlock_node_irqsave mcs_rw_node;
+	struct sig_pending *next;
+	struct sig_pending *pending;
+	__sigset_t w;
+	__sigset_t x;
+	int sig;
+	struct k_sigaction *k;
+
+
+	if(clv == NULL)
+		return;
+	thread = cpu_local_var(current);
+
+	if (thread == NULL || thread == &cpu_local_var(idle)) {
+		return;
+	}
+
+	if (thread->in_syscall_offload == 0) {
+		return;
+	}
+
+	w = thread->sigmask.__val[0];
+
+	lock = &thread->sigcommon->lock;
+	head = &thread->sigcommon->sigpending;
+	for (;;) {
+		mcs_rwlock_reader_lock(lock, &mcs_rw_node);
+
+		list_for_each_entry_safe(pending, next, head, list){
+			for (x = pending->sigmask.__val[0], sig = 0; x;
+			     sig++, x >>= 1);
+			k = thread->sigcommon->action + sig - 1;
+			if ((sig != SIGCHLD && sig != SIGURG) ||
+			    (k->sa.sa_handler != (void *)1 &&
+			     k->sa.sa_handler != NULL)) {
+				if (!(pending->sigmask.__val[0] & w)) {
+					if (pending->interrupted == 0) {
+						pending->interrupted = 1;
+						found = 1;
+					}
+				}
+			}
+		}
+
+		mcs_rwlock_reader_unlock(lock, &mcs_rw_node);
+
+		if (lock == &thread->sigpendinglock) {
+			break;
+		}
+
+		lock = &thread->sigpendinglock;
+		head = &thread->sigpending;
+	}
+
+	if (found) {
+		interrupt_syscall(thread, 0);
+	}
+}
+
 unsigned long
 do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
         int ptracecont)
@@ -1307,9 +1373,6 @@ done:
 				 tproc->pid, tthread->cpu_id);
 			ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(tthread->cpu_id)->apic_id, 0xd0);
 		}
-
-		if(!tthread->proc->nohost)
-			interrupt_syscall(tthread, 0);
 
 		if (status != PS_RUNNING) {
 			if(sig == SIGKILL){
