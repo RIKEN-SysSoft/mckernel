@@ -3572,7 +3572,11 @@ int main_loop(struct thread_data_s *my_thread)
 			sig = 0;
 			term = 0;
 			
-			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
+			/* Enforce the order in which mcexec is destroyed and then 
+			   McKernel process is destroyed to prevent
+			   migrated-to-Linux thread from accessing stale memory values.
+			   It is done by not calling do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
+			   here and making McKernel side wait until release_handler() is called. */
 
 			/* Drop executable file */
 			if ((ret = ioctl(fd, MCEXEC_UP_CLOSE_EXEC)) != 0) {
