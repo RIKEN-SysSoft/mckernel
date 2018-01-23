@@ -9,10 +9,14 @@
 #include <sys/mman.h>
 #include <signal.h>
 
+int flag1;
 pthread_mutex_t mutex1;
 pthread_cond_t cond1;
+
+int flag2;
 pthread_mutex_t mutex2;
 pthread_cond_t cond2;
+
 char *a;
 char *b;
 char *c;
@@ -35,12 +39,19 @@ util_thread(void *arg)
 	fprintf(stderr, "CT04004 sbrk OK\n");
 	b = sbrk(4096);
 	strcpy(a, "sbrk OK");
+
 	pthread_mutex_lock(&mutex1);
+	flag1 = 1;
 	pthread_cond_signal(&cond1);
 	pthread_mutex_unlock(&mutex1);
+
 	pthread_mutex_lock(&mutex2);
-	pthread_cond_wait(&cond2, &mutex2);
+	while(!flag2) {
+		pthread_cond_wait(&cond2, &mutex2);
+	}
+	flag2 = 0;
 	pthread_mutex_unlock(&mutex2);
+
 	b = sbrk(0);
 	if (c == b) {
 		fprintf(stderr, "CT04006 sbrk OK\n");
@@ -74,12 +85,18 @@ main(int argc, char **argv)
 		exit(1);
 	}
 	fprintf(stderr, "CT04002 pthread_create OK\n");
+
 	pthread_mutex_lock(&mutex1);
-	pthread_cond_wait(&cond1, &mutex1);
+	while(!flag1) {
+		pthread_cond_wait(&cond1, &mutex1);
+	}
+	flag1 = 0;
 	pthread_mutex_unlock(&mutex1);
 	fprintf(stderr, "CT04005 %s\n", a);
+
 	c = sbrk(0);
 	pthread_mutex_lock(&mutex2);
+	flag2 = 1;
 	pthread_cond_signal(&cond2);
 	pthread_mutex_unlock(&mutex2);
 	pthread_join(thr, NULL);

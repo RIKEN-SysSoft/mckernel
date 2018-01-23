@@ -339,6 +339,7 @@ struct host_thread {
 	unsigned long usp;
 	unsigned long lfs;
 	unsigned long rfs;
+    struct task_struct *task;
 };
 
 struct mcos_handler_info *new_mcos_handler_info(ihk_os_t os, struct file *file)
@@ -373,19 +374,44 @@ int mcexec_destroy_per_process_data(ihk_os_t os, int pid);
 
 static void release_handler(ihk_os_t os, void *param)
 {
+    long rc;
 	struct mcos_handler_info *info = param;
 	struct ikc_scd_packet isp;
 	int os_ind = ihk_host_os_get_index(os);
 	unsigned long flags;
 	struct host_thread *thread;
 
-	write_lock_irqsave(&host_thread_lock, flags);
-	for (thread = host_threads; thread; thread = thread->next) {
-		if (thread->handler == info) {
-			thread->handler = NULL;
+	/* Kill migrated-to-Linux threads on the McKernel side 
+	   when the corresponding mcexec threads failed to call MCEXEC_UP_TERMINATE_THREAD 
+	   for some reason. */
+	while (1) {
+		unsigned long term_param[4];
+
+		write_lock_irqsave(&host_thread_lock, flags);
+		for (thread = host_threads; thread; thread = thread->next) {
+			if (thread->handler == info) {
+				break;
+			}
+		}
+		if (!thread) {
+			write_unlock_irqrestore(&host_thread_lock, flags);
+			break;
+		}
+		term_param[0] = thread->pid;
+		term_param[1] = thread->tid;
+		term_param[2] = 0;
+		/* We don't make the McKernel thread call terminate() because we don't know it is the last thread alive.
+		   Instead, we make it call do_exit() */
+		term_param[3] = (unsigned long)thread->task;
+		thread->handler = NULL;
+		write_unlock_irqrestore(&host_thread_lock, flags);
+		
+		printk("%s: killing stray migrated-to-Linux thread, pid=%d,tid=%d\n", __FUNCTION__, thread->pid, thread->tid);
+		rc = mcexec_terminate_thread(os, term_param);
+		if (rc) {
+			printk("%s: ERROR: mcexec_terminate_thread returned %ld\n", __FUNCTION__, rc);
 		}
 	}
-	write_unlock_irqrestore(&host_thread_lock, flags);
 
 	mcexec_close_exec(os);
 
