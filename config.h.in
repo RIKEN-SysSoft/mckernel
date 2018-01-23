@@ -3,20 +3,24 @@
 /* Path of install directory for binary */
 #undef BINDIR
 
+/* Id of IHK.ko maching of which is checked at run-time by reboot script and
+   mcexec */
+#undef BUILDID
+
 /* whether mcoverlayfs is enabled */
 #undef ENABLE_MCOVERLAYFS
 
 /* whether memdump feature is enabled */
 #undef ENABLE_MEMDUMP
 
+/* whether perf is enabled */
+#undef ENABLE_PERF
+
 /* whether qlmpi is enabled */
 #undef ENABLE_QLMPI
 
 /* whether rusage is enabled */
 #undef ENABLE_RUSAGE
-
-/* whether perf is enabled */
-#undef ENABLE_PERF
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H

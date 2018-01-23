@@ -11,7 +11,7 @@ MCKERNEL_INCDIR=@MCKERNEL_INCDIR@
 MCKERNEL_LIBDIR=@MCKERNEL_LIBDIR@
 KDIR ?= @KDIR@
 ARCH=@ARCH@
-CFLAGS=-Wall -O -I. -I$(VPATH)/arch/${ARCH}
+CFLAGS=-Wall -O -I. -I$(VPATH)/arch/${ARCH} -I${IHKDIR}
 LDFLAGS=@LDFLAGS@
 RPATH=$(shell echo $(LDFLAGS)|awk '{for(i=1;i<=NF;i++){if($$i~/^-L/){w=$$i;sub(/^-L/,"-Wl,-rpath,",w);print w}}}')
 VPATH=@abs_srcdir@
@@ -40,7 +40,7 @@ mcexec: mcexec.c libmcexec.a
 # POSTK_DEBUG_ARCH_DEP_34, eclair arch depend separate.
 ifeq ($(ARCH), arm64)
 eclair: eclair.c arch/$(ARCH)/arch-eclair.c
-	$(CC) -I.. -I. -I./arch/$(ARCH)/include -I$(VPATH)/.. -I$(VPATH) -I$(VPATH)/arch/$(ARCH)/include -I${IHKDIR} $(CFLAGS) -o $@ $^ $(LIBS)
+	$(CC) -I.. -I. -I./arch/$(ARCH)/include -I$(VPATH)/.. -I$(VPATH) -I$(VPATH)/arch/$(ARCH)/include $(CFLAGS) -o $@ $^ $(LIBS)
 else
 eclair: eclair.c
 	$(CC) $(CFLAGS) -I${IHKDIR} -o $@ $^ $(LIBS)

@@ -19,6 +19,7 @@ ETCDIR=@ETCDIR@
 KMODDIR="${prefix}/kmod"
 KERNDIR="${prefix}/@TARGET@/kernel"
 ENABLE_MCOVERLAYFS="@ENABLE_MCOVERLAYFS@"
+MCK_BUILDID=@BUILDID@
 
 mem="512M@0"
 cpus=""
@@ -359,6 +360,13 @@ if ! grep mcctrl /proc/modules &>/dev/null; then
 		echo "error: inserting mcctrl.ko" >&2
 		error_exit "cpus_reserved"
 	fi
+fi
+
+# Check that different versions of binaries/scripts are not mixed
+IHK_BUILDID=`${SBINDIR}/ihkconfig 0 get buildid`
+if [  "${IHK_BUILDID}" != "${MCK_BUILDID}" ]; then
+	echo "IHK build-id (${IHK_BUILDID}) didn't match McKernel build-id (${MCK_BUILDID})." >&2
+	exit 1
 fi
 
 # Destroy all LWK instances
