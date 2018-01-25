@@ -1,5 +1,8 @@
 /* archdeps.c COPYRIGHT FUJITSU LIMITED 2016 */
 #include <linux/version.h>
+#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
+#include <linux/uaccess.h>
+#endif /* POSTK_DEBUG_ARCH_DEP_46 */
 #include "../../../config.h"
 #include "../../mcctrl.h"
 
@@ -275,19 +278,29 @@ restore_tls(unsigned long addr)
 }
 
 void
-save_tls_ctx(void *ctx)
+save_tls_ctx(void __user *ctx)
 {
-	struct trans_uctx *tctx = ctx;
+	struct trans_uctx __user *tctx = ctx;
+	struct trans_uctx kctx;
 
-	rdmsrl(MSR_FS_BASE, tctx->fs);
+	if (copy_from_user(&kctx, tctx, sizeof(struct trans_uctx))) {
+		printk("%s: copy_from_user failed.\n", __FUNCTION__);
+		return;
+	}
+	rdmsrl(MSR_FS_BASE, kctx.fs);
 }
 
 unsigned long
-get_tls_ctx(void *ctx)
+get_tls_ctx(void __user *ctx)
 {
-	struct trans_uctx *tctx = ctx;
+	struct trans_uctx __user *tctx = ctx;
+	struct trans_uctx kctx;
 
-	return tctx->fs;
+	if (copy_from_user(&kctx, tctx, sizeof(struct trans_uctx))) {
+		printk("%s: copy_from_user failed.\n", __FUNCTION__);
+		return 0;
+	}
+	return kctx.fs;
 }
 #else /* POSTK_DEBUG_ARCH_DEP_91 */
 void

@@ -2,6 +2,7 @@
 #include <linux/version.h>
 #include <linux/mm_types.h>
 #include <linux/ptrace.h>
+#include <linux/uaccess.h>
 #include <asm/vdso.h>
 #include "../../../config.h"
 #include "../../mcctrl.h"
@@ -170,20 +171,31 @@ restore_tls(unsigned long addr)
 }
 
 void
-save_tls_ctx(void *ctx)
+save_tls_ctx(void __user *ctx)
 {
-	struct trans_uctx *tctx = ctx;
+	struct trans_uctx __user *tctx = ctx;
+	struct trans_uctx kctx;
 
+	if (copy_from_user(&kctx, tctx, sizeof(struct trans_uctx))) {
+		printk("%s: copy_from_user failed.\n", __FUNCTION__);
+		return;
+	}
 	asm volatile(
 	"	mrs	%0, tpidr_el0"
-	: "=r" (tctx->tls_baseaddr));
+	: "=r" (kctx.tls_baseaddr));
 }
 
 unsigned long
-get_tls_ctx(void *ctx)
+get_tls_ctx(void __user *ctx)
 {
-	struct trans_uctx *tctx = ctx;
-	return tctx->tls_baseaddr;
+	struct trans_uctx __user *tctx = ctx;
+	struct trans_uctx kctx;
+
+	if (copy_from_user(&kctx, tctx, sizeof(struct trans_uctx))) {
+		printk("%s: copy_from_user failed.\n", __FUNCTION__);
+		return 0;
+	}
+	return kctx.tls_baseaddr;
 }
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,2,0)

@@ -2442,9 +2442,22 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	struct host_thread *thread;
 	unsigned long flags;
 	void **__user param = (void **__user )arg;
+#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
+	void *__user rctx = NULL;
+	void *__user lctx = NULL;
+	void *kparam[3];
+#else /* POSTK_DEBUG_ARCH_DEP_46 */
 	void *__user rctx = (void *__user)param[1];
 	void *__user lctx = (void *__user)param[2];
+#endif /* POSTK_DEBUG_ARCH_DEP_46 */
 
+#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
+	if (copy_from_user(kparam, param, sizeof(kparam))) {
+		return -EFAULT;
+	}
+	rctx = (void *__user)kparam[1];
+	lctx = (void *__user)kparam[2];
+#endif /* POSTK_DEBUG_ARCH_DEP_46 */
 #ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
 	save_tls_ctx(lctx);
 #else /* POSTK_DEBUG_ARCH_DEP_91 */
@@ -2507,9 +2520,16 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 long
 mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
 {
+#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
+	int pid;
+	int tid;
+	struct task_struct *tsk;
+	unsigned long kparam[4];
+#else /* POSTK_DEBUG_ARCH_DEP_46 */
 	int pid = param[0];
 	int tid = param[1];
 	struct task_struct *tsk = (struct task_struct *)param[3];
+#endif /* POSTK_DEBUG_ARCH_DEP_46 */
 	unsigned long flags;
 	struct host_thread *thread;
 	struct host_thread *prev;
@@ -2517,6 +2537,14 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
 
+#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
+	if (copy_from_user(kparam, param, sizeof(kparam))) {
+		return -EFAULT;
+	}
+	pid = kparam[0];
+	tid = kparam[1];
+	tsk = (struct task_struct *)kparam[3];
+#endif /* POSTK_DEBUG_ARCH_DEP_46 */
 	write_lock_irqsave(&host_thread_lock, flags);
 	for (prev = NULL, thread = host_threads; thread;
 	     prev = thread, thread = thread->next) {
@@ -2541,7 +2569,11 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
 		goto err;
 	}
 	mcctrl_delete_per_thread_data(ppd, tsk);
+#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
+	__return_syscall(usrdata->os, packet, kparam[2], tid);
+#else /* POSTK_DEBUG_ARCH_DEP_46 */
 	__return_syscall(usrdata->os, packet, param[2], tid);
+#endif /* POSTK_DEBUG_ARCH_DEP_46 */
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 	                       (usrdata->channels + packet->ref)->c);
 err:
