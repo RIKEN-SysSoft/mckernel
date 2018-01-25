@@ -2442,7 +2442,11 @@ retry_tid:
 
 		/* TODO: spawn more mcexec threads */
 		if (!new->tid) {
+#ifdef POSTK_DEBUG_TEMP_FIX_85 /* kprintf argument invalid fix. */
+			kprintf("%s: no more TIDs available\n", __FUNCTION__);
+#else /* POSTK_DEBUG_TEMP_FIX_85 */
 			kprintf("%s: no more TIDs available\n");
+#endif /* POSTK_DEBUG_TEMP_FIX_85 */
 			panic("");
 		}
 
