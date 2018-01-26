@@ -1915,6 +1915,7 @@ struct uti_desc {
 	unsigned long uti_clv;
 	sem_t arg, attach;
 	int exit; /* Used to tell the tracer to exit */
+	int tracer_tid; /* Used to kill tracer when calling terminate() */
 };
 
 static int create_tracer();
@@ -2953,7 +2954,8 @@ create_tracer()
     //fprintf(stderr, "%s: wp=%p,mck_tid=%d,key=%lx,pid=%d,tid=%d,uti_clv=%lx\n", __FUNCTION__, uti_desc->wp, uti_desc->mck_tid, uti_desc->key, uti_desc->pid, uti_desc->tid, uti_desc->uti_clv);
 #endif
 
-	//fprintf(stderr, "%s: tracer tid=%d,tracee tid=%d\n", __FUNCTION__, gettid(), uti_desc->tid);
+	uti_desc->tracer_tid = gettid();
+	fprintf(stderr, "%s: tracer tid=%d,tracee tid=%d\n", __FUNCTION__, gettid(), uti_desc->tid);
 	if (ptrace(PTRACE_ATTACH, uti_desc->tid, 0, 0) == -1) {
 		fprintf(stderr, "PTRACE_ATTACH errno=%d\n", errno);
 		exit(1);
@@ -3607,7 +3609,12 @@ int main_loop(struct thread_data_s *my_thread)
 				sem_post(&uti_desc->arg);
 			}
 			
-			exit(term);
+			/* Kill tracer to release /dev/mcosX */
+			if (uti_desc->tracer_tid) {
+				printf("%s: killing tracer tid=%d,term=%x,sig=%x\n", __FUNCTION__, uti_desc->tracer_tid, term, sig);
+				kill(uti_desc->tracer_tid, SIGKILL);
+			}
+			exit(term); /* Call release_handler() and wake up terminate() */
 
 			//pthread_mutex_unlock(lock);
 			return w.sr.args[0];
