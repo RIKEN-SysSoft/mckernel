@@ -568,7 +568,7 @@ retry_alloc:
 
 		if (error) {
 			kfree(wqhln);
-			printk("%s: interrupted. %d\n", __FUNCTION__, error);
+			printk("%s: ERROR: wait_event_interruptible returned %d\n", __FUNCTION__, error);
 			goto out;
 		}
 		else {
