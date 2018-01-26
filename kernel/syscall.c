@@ -218,10 +218,8 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	int target_pid = pid;
 #endif /* POSTK_DEBUG_TEMP_FIX_26 */
 
-	dkprintf("SC(%d)[%3d] sending syscall\n",
-		ihk_mc_get_processor_id(),
-		req->number);
-	
+	//kprintf("SC(%d)[%3d] sending syscall\n", ihk_mc_get_processor_id(),	req->number);
+
 	mstatus = monitor->status;
 	monitor->status = IHK_OS_MONITOR_KERNEL_OFFLOAD;
 	
@@ -303,8 +301,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		preempt_disable();
 	}
 
-	dkprintf("%s: syscall num: %d waiting for Linux.. \n",
-		__FUNCTION__, req->number);
+	//kprintf("%s: syscall num: %d waiting for Linux.. \n", __FUNCTION__, req->number);
 
 #define	STATUS_IN_PROGRESS	0
 #define	STATUS_COMPLETED	1
@@ -997,7 +994,9 @@ void terminate_mcexec(int rc, int sig)
 		request.number = __NR_exit_group;
 		request.args[0] = proc->exit_status;
 		proc->nohost = 1;
+		kprintf("%s: before do_syscall\n", __FUNCTION__);
 		do_syscall(&request, ihk_mc_get_processor_id(), proc->pid);
+		kprintf("%s: after do_syscall\n", __FUNCTION__);
 	}
 }
 
@@ -1224,7 +1223,8 @@ terminate_host(int pid)
 {
 	struct process *proc;
 	struct mcs_rwlock_node_irqsave lock;
-
+	
+	kprintf("%s: pid=%d\n", __FUNCTION__, pid);
 	proc = find_process(pid, &lock);
 	if(!proc)
 		return;
@@ -1251,8 +1251,7 @@ interrupt_syscall(struct thread *thread, int sig)
 	ihk_mc_user_context_t ctx;
 	long lerror;
 
-	dkprintf("interrupt_syscall pid=%d tid=%d sig=%d\n", thread->proc->pid,
-	         thread->tid, sig);
+	kprintf("interrupt_syscall pid=%d tid=%d sig=%d\n", thread->proc->pid, thread->tid, sig);
 	ihk_mc_syscall_arg0(&ctx) = thread->proc->pid;
 	ihk_mc_syscall_arg1(&ctx) = thread->tid;
 	ihk_mc_syscall_arg2(&ctx) = sig;
@@ -2567,7 +2566,7 @@ retry_tid:
 	}
 	
 	if (clone_flags & CLONE_CHILD_CLEARTID) {
-		dkprintf("clone_flags & CLONE_CHILD_CLEARTID: 0x%lX\n", 
+		kprintf("clone_flags & CLONE_CHILD_CLEARTID: 0x%lX\n", 
 			     child_tidptr);
 
 		new->clear_child_tid = (int*)child_tidptr;
@@ -9218,13 +9217,12 @@ util_thread(struct uti_attr *arg)
 
 	if (rc >= 0) {
 		if (rc & 0x100000000) { /* exit_group */
-			kprintf("%s: exit_group, tid=%d\n", __FUNCTION__, thread->tid);
+			kprintf("%s: exit_group, tid=%d,rc=%lx\n", __FUNCTION__, thread->tid, rc);
 			thread->proc->nohost = 1;
 			terminate((rc >> 8) & 255, rc & 255);
-			/* uti_wp in mcexec.c is munmap()-ed by __NR_exit_group offload */
 		} else {
-			/* Don't call terminate() when killed by signal because we're not sure it is the last thread. */
-			kprintf("%s: exit | signal, tid=%d\n", __FUNCTION__, thread->tid);
+			/* mcexec is alive, so we can call do_syscall() */
+			kprintf("%s: exit | signal, tid=%d,rc=%lx\n", __FUNCTION__, thread->tid, rc);
 			request.number = __NR_sched_setaffinity;
 			request.args[0] = 1;
 			request.args[1] = free_address;

@@ -381,6 +381,8 @@ static void release_handler(ihk_os_t os, void *param)
 	unsigned long flags;
 	struct host_thread *thread;
 
+	printk("%s: enter\n", __FUNCTION__);
+
 	/* Kill migrated-to-Linux threads on the McKernel side 
 	   when the corresponding mcexec threads failed to call MCEXEC_UP_TERMINATE_THREAD 
 	   for some reason. */
@@ -406,7 +408,7 @@ static void release_handler(ihk_os_t os, void *param)
 		thread->handler = NULL;
 		write_unlock_irqrestore(&host_thread_lock, flags);
 		
-		printk("%s: killing stray migrated-to-Linux thread, pid=%d,tid=%d\n", __FUNCTION__, thread->pid, thread->tid);
+		printk("%s: killing migrated-to-Linux thread, pid=%d,tid=%d\n", __FUNCTION__, thread->pid, thread->tid);
 		rc = mcexec_terminate_thread(os, term_param);
 		if (rc) {
 			printk("%s: ERROR: mcexec_terminate_thread returned %ld\n", __FUNCTION__, rc);
@@ -1217,9 +1219,7 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 	ppd = mcctrl_get_per_proc_data(ud, pid);
 
 	if (unlikely(!ppd)) {
-		kprintf("%s: ERROR: no per-process structure for PID %d, "
-				"syscall nr: %lu\n",
-				__FUNCTION__, pid, packet->req.number);
+		kprintf("%s: INFO: no per-process structure for PID %d,syscall nr=%lu,rtid=%d\n", __FUNCTION__, pid, packet->req.number, packet->req.rtid);
 
 		/* We use ERESTARTSYS to tell the LWK that the proxy
 		 * process is gone and the application should be terminated */
@@ -1233,12 +1233,7 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 		return -1;
 	}
 
-	dprintk("%s: (packet_handler) rtid: %d, ttid: %d, sys nr: %lu, arg0: %lx\n",
-			__FUNCTION__,
-			packet->req.rtid,
-			packet->req.ttid,
-			packet->req.number,
-			packet->req.args[0]);
+	//printk("%s: (packet_handler) rtid: %d, ttid: %d, sys nr: %lu, arg0: %lx\n", __FUNCTION__, packet->req.rtid, packet->req.ttid, packet->req.number, packet->req.args[0]);
 	/*
 	 * Three scenarios are possible:
 	 * - Find the designated thread if req->ttid is specified.
@@ -1323,6 +1318,9 @@ retry_alloc:
 		}
 		init_waitqueue_head(&wqhln->wq_syscall);
 		list_add_tail(&wqhln->list, &ppd->wq_req_list);
+		printk("%s: wqhln not found,list_add ppd->wq_req_list %p\n", __FUNCTION__, wqhln);
+	} else {
+		//printk("%s: wqhln found,%p\n", __FUNCTION__, wqhln);
 	}
 
 	wqhln->packet = packet;
@@ -2554,7 +2552,7 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long *param)
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
 
-	//printk("%s: pid=%d,tid=%d,task=%p\n", __FUNCTION__, pid, tid, tsk);
+	//printk("%s: pid=%d,tid=%d,sig=%lx,task=%p\n", __FUNCTION__, pid, tid, sig, tsk);
 
 	write_lock_irqsave(&host_thread_lock, flags);
 	for (prev = NULL, thread = host_threads; thread;
@@ -2591,10 +2589,13 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long *param)
 	/* Destroy per_proc_data with the following two puts. Note that
 	   it survived the signal-kill of tracee thanks to the additional put
 	   done in mcexec_util_thread2 */
+	printk("%s: ppd->refcount=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
 	mcctrl_put_per_proc_data(ppd); 
 err:
-	if(ppd)
+	if(ppd) {
+		printk("%s: ppd->refcount=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
 		mcctrl_put_per_proc_data(ppd);
+	}
 
 	if (prev)
 		prev->next = thread->next;
@@ -2709,7 +2710,7 @@ long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 							  param.args[3], param.args[4], param.args[5], param.uti_clv, (void *)&resp, (void *)uti_wait_event, (void *)uti_printk, (void *)uti_clock_gettime);
 		param.ret = rc;
 	} else {
-			dprintk("%s: syscall_backward, SC %d, tid %d\n", __FUNCTION__, param.number, task_tgid_vnr(current));
+			printk("%s: syscall_backward, SC %d, tid %d\n", __FUNCTION__, param.number, task_tgid_vnr(current));
 			rc = syscall_backward(ihk_host_os_get_usrdata(os), param.number,
 								  param.args[0], param.args[1], param.args[2],
 								  param.args[3], param.args[4], param.args[5],

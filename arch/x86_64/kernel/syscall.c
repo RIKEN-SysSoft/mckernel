@@ -1172,7 +1172,7 @@ unsigned long
 do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
         int ptracecont)
 {
-	dkprintf("do_kill,pid=%d,tid=%d,sig=%d\n", pid, tid, sig);
+	kprintf("do_kill,pid=%d,tid=%d,sig=%d\n", pid, tid, sig);
 	struct thread *t;
 	struct process *tproc;
 	struct process *proc = thread? thread->proc: NULL;
@@ -1368,6 +1368,7 @@ done:
 	}
 
 	if (tthread->thread_offloaded) {
+		kprintf("%s: calling interrupt_syscall,sig=%d\n", __FUNCTION__, sig);
 		if (!tthread->proc->nohost) {
 			interrupt_syscall(tthread, sig);
 		}
