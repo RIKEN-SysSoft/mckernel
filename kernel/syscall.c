@@ -2450,13 +2450,14 @@ retry_tid:
 			}
 		}
 
+		mcs_rwlock_writer_unlock(&newproc->threads_lock, &lock);
+
 		/* TODO: spawn more mcexec threads */
 		if (!new->tid) {
+			release_cpuid(cpuid);
 			kprintf("%s: no more TIDs available\n");
-			panic("");
+			return -ENOMEM;
 		}
-
-		mcs_rwlock_writer_unlock(&newproc->threads_lock, &lock);
 	}
 	/* fork() a new process on the host */
 	else {
