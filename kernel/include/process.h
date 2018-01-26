@@ -575,9 +575,6 @@ struct process {
 	int nr_processes; /* For partitioned execution */
 };
 
-void hold_thread(struct thread *ftn);
-void release_thread(struct thread *ftn);
-
 /*
  * Scheduling policies
  */
@@ -753,7 +750,7 @@ struct thread *create_thread(unsigned long user_pc,
 struct thread *clone_thread(struct thread *org, unsigned long pc,
                               unsigned long sp, int clone_flags);
 void destroy_thread(struct thread *thread);
-void hold_thread(struct thread *thread);
+int hold_thread(struct thread *thread);
 void release_thread(struct thread *thread);
 void flush_process_memory(struct process_vm *vm);
 void hold_process_vm(struct process_vm *vm);
