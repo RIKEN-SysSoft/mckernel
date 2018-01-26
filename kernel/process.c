@@ -2125,6 +2125,8 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	struct process *proc = thread->proc;
 	unsigned long ap_flag;
 	struct vm_range *range;
+	int stack_populated_size = 0;
+	int stack_align_padding = 0;
 
 	/* Create stack range */
 	end = STACK_TOP(&thread->vm->region) & LARGE_PAGE_MASK;
@@ -2196,22 +2198,29 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 		return error;
 	}
 
-	// memory_stat_rss_add() is called in ihk_mc_pt_set_range();
+	/* Pre-compute populated size so that we can align stack
+	 * and verify the size at the end */
+	stack_align_padding = 0;
+	stack_populated_size = 16 /* Random */ +
+		AUXV_LEN * sizeof(unsigned long) /* AUXV */ +
+		(argc + 2) * sizeof(unsigned long) /* args + term NULL + argc */ +
+		(envc + 1) * sizeof(unsigned long); /* envs + term NULL */
 
 	/* set up initial stack frame */
 	p = (unsigned long *)(stack + minsz);
 	s_ind = -1;
 
-#ifdef POSTK_DEBUG_ARCH_DEP_15 /* userstack 16byte align */
-	if(!((envc + argc) % 2)){
-		p[s_ind--] = 0;
+	/* Align stack to 64 bytes */
+	while ((unsigned long)(stack + minsz -
+				stack_populated_size - stack_align_padding) & (0x40L - 1)) {
+		s_ind--;
+		stack_align_padding += sizeof(unsigned long);
 	}
-#endif /* POSTK_DEBUG_ARCH_DEP_15 */
 
 	/* "random" 16 bytes on the very top */
 	p[s_ind--] = 0x010101011;
 	p[s_ind--] = 0x010101011;
-	at_rand = end + sizeof(unsigned long) * s_ind;
+	at_rand = end + (s_ind + 1) * sizeof(unsigned long);
 
 	/* auxiliary vector */
 	/* If you add/delete entires, please increase/decrease
@@ -2262,6 +2271,20 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	}
 	/* argc */
 	p[s_ind] = argc;
+
+	if (((void *)&p[s_ind] != (void *)stack + minsz -
+				stack_populated_size - stack_align_padding)) {
+		kprintf("%s: WARNING: stack_populated_size mismatch (is AUXV_LEN up-to-date?): "
+				"&p[s_ind]: %lu, computed: %lu\n",
+				__FUNCTION__,
+				(unsigned long)&p[s_ind],
+				(unsigned long)stack + minsz -
+					stack_populated_size - stack_align_padding);
+	}
+
+	if ((unsigned long)&p[s_ind] & (0x40L - 1)) {
+		kprintf("%s: WARNING: stack alignment mismatch\n", __FUNCTION__);
+	}
 
 	ihk_mc_modify_user_context(thread->uctx, IHK_UCR_STACK_POINTER,
 	                           end + sizeof(unsigned long) * s_ind);
