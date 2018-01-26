@@ -1172,8 +1172,6 @@ void arch_clone_thread(struct thread *othread, unsigned long pc,
 	asm("mrs %0, tpidr_el0" : "=r" (tls));
 	othread->tlsblock_base = nthread->tlsblock_base = tls;
 
-	/* copy fp_regs values from parent. */
-	save_fp_regs(othread);
 	if ((othread->fp_regs != NULL) && (check_and_allocate_fp_regs(nthread) == 0)) {
 		memcpy(nthread->fp_regs, othread->fp_regs, sizeof(fp_regs_struct));
 	}
