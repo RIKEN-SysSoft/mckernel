@@ -113,6 +113,7 @@ static ihk_spinlock_t tod_data_lock = SPIN_LOCK_UNLOCKED;
 static void calculate_time_from_tsc(struct timespec *ts);
 
 void check_signal(unsigned long, void *, int);
+void save_syscall_return_value(int num, unsigned long rc);
 void do_signal(long rc, void *regs, struct thread *thread, struct sig_pending *pending, int num);
 extern unsigned long do_kill(struct thread *thread, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
 extern long alloc_debugreg(struct thread *thread);
@@ -9365,6 +9366,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 
 	if(cpu_local_var(current)->proc->status == PS_EXITED &&
 	   (num != __NR_exit && num != __NR_exit_group)){
+		save_syscall_return_value(num, -EINVAL);
 		check_signal(-EINVAL, NULL, 0);
 		set_cputime(0);
 		return -EINVAL;
@@ -9425,22 +9427,12 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		l = ihk_mc_syscall_ret(ctx);
 	}
 
-#if defined(POSTK_DEBUG_TEMP_FIX_60) && defined(POSTK_DEBUG_TEMP_FIX_56)
-	check_signal(l, NULL, num);
-#elif defined(POSTK_DEBUG_TEMP_FIX_60) /* sched_yield called check_signal fix. */
-	if (num != __NR_futex) {
-		check_signal(l, NULL, num);
-	}
-#elif defined(POSTK_DEBUG_TEMP_FIX_56) /* in futex_wait() signal handring fix. */
-	if (num != __NR_sched_yield) {
-		check_signal(l, NULL, num);
-	}
-#else /* POSTK_DEBUG_TEMP_FIX_60 && POSTK_DEBUG_TEMP_FIX_56 */
+	save_syscall_return_value(num, l);
+
 	if (!list_empty(&thread->sigpending) ||
 	    !list_empty(&thread->sigcommon->sigpending)) {
 		check_signal(l, NULL, num);
 	}
-#endif /* POSTK_DEBUG_TEMP_FIX_60 && POSTK_DEBUG_TEMP_FIX_56 */
 
 #ifdef PROFILE_ENABLE
 	{

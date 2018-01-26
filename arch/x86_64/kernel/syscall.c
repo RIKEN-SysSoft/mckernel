@@ -1008,6 +1008,12 @@ interrupt_from_user(void *regs0)
 	return !(regs->gpr.rsp & 0x8000000000000000);
 }
 
+void save_syscall_return_value(int num, unsigned long rc)
+{
+	/* Empty on x86 */
+	return;
+}
+
 void
 check_signal(unsigned long rc, void *regs0, int num)
 {
