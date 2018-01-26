@@ -3003,8 +3003,9 @@ create_tracer()
 			term_param[1] = uti_desc->tid;
 			term_param[3] = uti_desc->key;
 			code = st;
-			if (exited == 2 || // exit_group
-			    WIFSIGNALED(st)) {
+			/* exit_group case. Note that killing-signal kills mcexec and tracer in terminate(),
+			   so this won't be reached. */
+			if (exited == 2) { 
 				code |= 0x0000000100000000;
 			}
 			term_param[2] = code;
