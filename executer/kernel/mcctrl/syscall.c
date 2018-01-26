@@ -463,6 +463,7 @@ int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t
 	unsigned long irqflags;
 	struct mcctrl_per_proc_data *ppd;
 	unsigned long phys;
+	int retry;
 	
 	dprintk("%s: tid: %d, fault_addr: %p, reason: %lu\n",
 			__FUNCTION__, task_pid_vnr(current), fault_addr, (unsigned long)reason);
@@ -536,6 +537,7 @@ retry_alloc:
 	mb();
 	resp->status = STATUS_PAGE_FAULT;
 
+	retry = 0;
 	for (;;) {
 		dprintk("%s: tid: %d, fault_addr: %p SLEEPING\n", 
 				__FUNCTION__, task_pid_vnr(current), fault_addr);
@@ -545,7 +547,12 @@ retry_alloc:
 		/* Delay signal handling */
 		if (error == -ERESTARTSYS) {
 			printk("%s: INFO: interrupted by signal\n", __FUNCTION__);
-			continue;
+			ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+			retry++;
+			if (ppd && retry < 5) { /* mcexec is alive */
+				printk("%s: INFO: retry=%d\n", __FUNCTION__, retry);
+				continue;
+			}
 		}
 
 		/* Remove per-thread wait queue head */
@@ -555,6 +562,13 @@ retry_alloc:
 
 		dprintk("%s: tid: %d, fault_addr: %p WOKEN UP\n", 
 				__FUNCTION__, task_pid_vnr(current), fault_addr);
+
+		if (!ppd || retry >= 5) {
+			kfree(wqhln);
+			kprintf("%s: INFO: mcexec is gone or retry count exceeded,pid=%d,retry=%d\n", __FUNCTION__, task_tgid_vnr(current), retry);
+			error = -EINVAL;
+			goto out;
+		}
 
 		if (error) {
 			kfree(wqhln);
