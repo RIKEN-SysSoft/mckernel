@@ -115,13 +115,20 @@ done:
 struct sdma_engine *sdma_select_user_engine(struct hfi1_devdata *dd,
 					    u32 selector, u8 vl)
 {
+	int idx = 0;
+	int idx_start = 0;
+	int idx_modulo = 16;
+
 	/* Hash on rank for MPI jobs */
 	if (cpu_local_var(current)->proc->nr_processes > 1) {
-		return &dd->per_sdma[cpu_local_var(current)->proc->process_rank % 16];
+		idx = idx_start +
+			(cpu_local_var(current)->proc->process_rank % idx_modulo);
 	}
 	else {
-		return &dd->per_sdma[ihk_mc_get_processor_id() % 16];
+		idx = ihk_mc_get_processor_id() % idx_modulo;
 	}
+
+	return &dd->per_sdma[idx];
 }
 
 /*
