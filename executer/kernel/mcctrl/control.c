@@ -730,7 +730,7 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 	/* Wait for the rest if not the last or if the last but
 	 * the woken process is different than the last */
 	if (pe->nr_processes_left || (pli_next && pli_next != pli)) {
-		dprintk("%s: pid: %d, waiting in list\n",
+		printk("%s: pid: %d, waiting in list\n",
 				__FUNCTION__, task_tgid_vnr(current));
 		mutex_unlock(&pe->lock);
 		/* Timeout period: 10 secs + (#procs * 0.1sec) */
@@ -783,6 +783,9 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 
 	--pe->nr_processes_left;
 	kfree(pli);
+
+	printk("%s: pid: %d, rank=%d\n",
+		   __FUNCTION__, task_tgid_vnr(current), pe->process_rank);
 
 	cpus_to_assign = udp->cpu_info->n_cpus / req.nr_processes;
 	cpus_used = kmalloc(sizeof(cpumask_t), GFP_KERNEL);
@@ -1097,7 +1100,7 @@ int mcctrl_add_per_proc_data(struct mcctrl_usrdata *ud, int pid,
 			goto out;
 		}
 	}
-
+	kprintf("%s: list_add_tail,pid=%d\n", __FUNCTION__, pid);
 	list_add_tail(&ppd->hash, &ud->per_proc_data_hash[hash]);
 
 out:
@@ -1159,7 +1162,7 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	list_del(&ppd->hash);
 	write_unlock_irqrestore(&ppd->ud->per_proc_data_hash_lock[hash], flags);
 
-	dprintk("%s: deallocating PPD for pid %d\n", __FUNCTION__, ppd->pid);
+	printk("%s: deallocating PPD for pid %d\n", __FUNCTION__, ppd->pid);
 	for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; i++) {
 		struct mcctrl_per_thread_data *ptd;
 		struct mcctrl_per_thread_data *next;
@@ -2710,7 +2713,7 @@ long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 							  param.args[3], param.args[4], param.args[5], param.uti_clv, (void *)&resp, (void *)uti_wait_event, (void *)uti_printk, (void *)uti_clock_gettime);
 		param.ret = rc;
 	} else {
-			printk("%s: syscall_backward, SC %d, tid %d\n", __FUNCTION__, param.number, task_tgid_vnr(current));
+			//printk("%s: syscall_backward, SC %d, tid %d\n", __FUNCTION__, param.number, task_tgid_vnr(current));
 			rc = syscall_backward(ihk_host_os_get_usrdata(os), param.number,
 								  param.args[0], param.args[1], param.args[2],
 								  param.args[3], param.args[4], param.args[5],

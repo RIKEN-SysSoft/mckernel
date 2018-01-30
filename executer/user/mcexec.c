@@ -3167,7 +3167,8 @@ util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, int remote_t
 	int rc = 0;
 	//struct tracer_desc desc;
 	unsigned long buf;
-
+	
+	printf("%s: remote_tid=%d\n", __FUNCTION__, remote_tid);
 #if 0
 	{
 		int error;
