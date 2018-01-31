@@ -529,7 +529,7 @@ static int unprogram_rcvarray(struct hfi1_filedata *fd, u32 tidinfo,
 					range->addr + range->len);
 
 			ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
-			do_munmap(range->addr, range->len);
+			do_munmap(range->addr, range->len, 1/* holding memory_range_lock */);
 			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 
 			kfree(range);
