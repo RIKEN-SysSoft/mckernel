@@ -1998,11 +1998,29 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 	int error;
 	const uintptr_t fault_addr = (uintptr_t)fault_addr0;
 	struct vm_range *range;
+	struct thread *thread = cpu_local_var(current);
+	int locked = 0;
 
-	dkprintf("[%d]do_page_fault_process_vm(%p,%lx,%lx)\n",
-			ihk_mc_get_processor_id(), vm, fault_addr0, reason);
-
-	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	dkprintf("[%d]do_page_fault_process_vm(%p,%lx,%lx),pid=%d,tid=%d,writer_count=%ld\n",
+			ihk_mc_get_processor_id(), vm, fault_addr0, reason, thread->proc->pid, thread->tid, thread->vm->memory_range_lock_writer_count);
+	
+	if (!thread->vm->memory_range_lock_writer_count) {
+#if 1
+		ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+#else
+		while (!ihk_mc_spinlock_trylock_noirq(&vm->memory_range_lock)) {
+			retry++;
+			if (retry > (1ULL<<30)) {
+				kprintf("%s: WARNING: dead-lock, see #986,pid=%d,tid=%d\n", __FUNCTION__, thread->proc->pid, thread->tid);
+				goto skip;
+			}
+		}
+#endif
+		locked = 1;
+	} else {
+	skip:
+		kprintf("%s: INFO: skip locking of memory_range_lock,pid=%d,tid=%d\n", __FUNCTION__, thread->proc->pid, thread->tid);
+	}	
 
 	if (vm->exiting) {
 		error = -ECANCELED;
@@ -2111,10 +2129,12 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 
 	error = 0;
 out:
-	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
-	dkprintf("[%d]do_page_fault_process_vm(%p,%lx,%lx): %d\n",
+	if (locked) {
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	}
+	dkprintf("[%d]do_page_fault_process_vm(%p,%lx,%lx): %d (pid=%d,tid=%d)\n",
 			ihk_mc_get_processor_id(), vm, fault_addr0,
-			reason, error);
+			reason, error, thread->proc->pid, thread->tid);
 	return error;
 }
 
