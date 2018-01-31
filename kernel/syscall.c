@@ -1285,7 +1285,7 @@ void clear_host_pte(uintptr_t addr, size_t len)
 	return;
 }
 
-static int set_host_vma(uintptr_t addr, size_t len, int prot)
+static int set_host_vma(uintptr_t addr, size_t len, int prot, int holding_memory_range_lock)
 {
 	ihk_mc_user_context_t ctx;
 	long lerror;
@@ -1302,10 +1302,8 @@ static int set_host_vma(uintptr_t addr, size_t len, int prot)
 	   read-locking memory_range_lock. It's safe because other writers are warded off 
 	   until the remote PF handling code calls up_write(&current->mm->mmap_sem) and
 	   vm_range is consistent when calling this function. */
-	if (!holding_memory_range_lock) {
-		kprintf("%s: WARNING: memory_range_lock isn't held\n", __FUNCTION__);
-	} else {
-		__sync_fetch_and_add(&thread->vm->memory_range_lock_writer_count, 1);
+	if (holding_memory_range_lock) {
+		thread->vm->is_memory_range_lock_taken = 1;
 	}
 	lerror = syscall_generic_forwarding(__NR_mprotect, &ctx);
 	if (lerror) {
@@ -1316,10 +1314,13 @@ static int set_host_vma(uintptr_t addr, size_t len, int prot)
 
 	lerror = 0;
 out:
+	if (holding_memory_range_lock) {
+		thread->vm->is_memory_range_lock_taken = 0;
+	}
 	return (int)lerror;
 }
 
-int do_munmap(void *addr, size_t len)
+int do_munmap(void *addr, size_t len, int holding_memory_range_lock)
 {
 	int error;
 	int ro_freed;
@@ -1344,7 +1345,7 @@ int do_munmap(void *addr, size_t len)
 		clear_host_pte((uintptr_t)addr, len);
 	}
 	else {
-		error = set_host_vma((uintptr_t)addr, len, PROT_READ|PROT_WRITE);
+		error = set_host_vma((uintptr_t)addr, len, PROT_READ|PROT_WRITE, holding_memory_range_lock);
 		if (error) {
 			kprintf("sys_munmap:set_host_vma failed. %d\n", error);
 			/* through */
@@ -1483,7 +1484,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 
 	if (flags & MAP_FIXED) {
 		/* clear specified address range */
-		error = do_munmap((void *)addr, len);
+		error = do_munmap((void *)addr, len, 1/* holding memory_range_lock */);
 		if (error) {
 			ekprintf("do_mmap:do_munmap(%lx,%lx) failed. %d\n",
 					addr, len, error);
@@ -1530,7 +1531,8 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	}
 
 	if (!(prot & PROT_WRITE)) {
-		error = set_host_vma(addr, len, PROT_READ);
+		//kprintf("%s: 1st call site of set_host_vma\n", __FUNCTION__);
+		error = set_host_vma(addr, len, PROT_READ, 1/* holding memory_range_lock */);
 		if (error) {
 			kprintf("do_mmap:set_host_vma failed. %d\n", error);
 			goto out;
@@ -1732,7 +1734,8 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 
 out:
 	if (ro_vma_mapped) {
-		(void)set_host_vma(addr, len, PROT_READ|PROT_WRITE);
+		kprintf("%s: 2nd call site of set_host_vma\n", __FUNCTION__);
+		(void)set_host_vma(addr, len, PROT_READ|PROT_WRITE, 1/* holding memory_range_lock */);
 	}
 	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
 
@@ -1802,7 +1805,7 @@ SYSCALL_DECLARE(munmap)
 	}
 
 	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
-	error = do_munmap((void *)addr, len);
+	error = do_munmap((void *)addr, len, 1/* holding memory_range_lock */);
 	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
 
 out:
@@ -1941,7 +1944,7 @@ out:
 	// XXX: TLB flush
 	flush_tlb();
 	if (ro_changed && !error) {
-		error = set_host_vma(start, len, prot & (PROT_READ|PROT_WRITE));
+		error = set_host_vma(start, len, prot & (PROT_READ|PROT_WRITE), 1/* holding memory_range_lock */);
 		if (error) {
 			kprintf("sys_mprotect:set_host_vma failed. %d\n", error);
 			/* through */
@@ -2191,7 +2194,7 @@ static void munmap_all(void)
 
 		addr = (void *)range->start;
 		size = range->end - range->start;
-		error = do_munmap(addr, size);
+		error = do_munmap(addr, size, 1/* holding memory_range_lock */);
 		if (error) {
 			kprintf("munmap_all():do_munmap(%p,%lx) failed. %d\n",
 					addr, size, error);
@@ -5120,7 +5123,7 @@ SYSCALL_DECLARE(shmat)
 	vrflags |= VRFLAG_PROT_TO_MAXPROT(vrflags);
 
 	if (!(prot & PROT_WRITE)) {
-		error = set_host_vma(addr, len, PROT_READ);
+		error = set_host_vma(addr, len, PROT_READ, 1/* holding memory_range_lock */);
 		if (error) {
 			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 			shmobj_list_unlock();
@@ -5135,7 +5138,7 @@ SYSCALL_DECLARE(shmat)
 			vrflags, &obj->memobj, 0, obj->pgshift, NULL);
 	if (error) {
 		if (!(prot & PROT_WRITE)) {
-			(void)set_host_vma(addr, len, PROT_READ|PROT_WRITE);
+			(void)set_host_vma(addr, len, PROT_READ|PROT_WRITE, 1/* holding memory_range_lock */);
 		}
 		memobj_release(&obj->memobj);
 		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
@@ -5430,7 +5433,7 @@ SYSCALL_DECLARE(shmdt)
 		return -EINVAL;
 	}
 
-	error = do_munmap((void *)range->start, (range->end - range->start));
+	error = do_munmap((void *)range->start, (range->end - range->start), 1/* holding memory_range_lock */);
 	if (error) {
 		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 		dkprintf("shmdt(%p): %d\n", shmaddr, error);
@@ -8019,7 +8022,7 @@ SYSCALL_DECLARE(mremap)
 	/* do the remap */
 	if (need_relocate) {
 		if (flags & MREMAP_FIXED) {
-			error = do_munmap((void *)newstart, newsize);
+			error = do_munmap((void *)newstart, newsize, 1/* holding memory_range_lock */);
 			if (error) {
 				ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
 						"fixed:munmap failed. %d\n",
@@ -8066,7 +8069,7 @@ SYSCALL_DECLARE(mremap)
 				goto out;
 			}
 
-			error = do_munmap((void *)oldstart, oldsize);
+			error = do_munmap((void *)oldstart, oldsize, 1/* holding memory_range_lock */);
 			if (error) {
 				ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
 						"relocate:munmap failed. %d\n",
@@ -8077,7 +8080,7 @@ SYSCALL_DECLARE(mremap)
 		}
 	}
 	else if (newsize < oldsize) {
-		error = do_munmap((void *)newend, (oldend - newend));
+		error = do_munmap((void *)newend, (oldend - newend), 1/* holding memory_range_lock */);
 		if (error) {
 			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
 					"shrink:munmap failed. %d\n",
