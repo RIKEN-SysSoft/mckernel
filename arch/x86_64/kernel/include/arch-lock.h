@@ -27,6 +27,58 @@ static void ihk_mc_spinlock_init(ihk_spinlock_t *lock)
 }
 #define SPIN_LOCK_UNLOCKED 0
 
+
+#ifdef DEBUG_SPINLOCK
+#define ihk_mc_spinlock_trylock_noirq(l) { int rc;						\
+__kprintf("[%d] call ihk_mc_spinlock_trylock_noirq %p %s:%d\n", ihk_mc_get_processor_id(), (l), __FILE__, __LINE__); \
+rc = __ihk_mc_spinlock_trylock_noirq(l); \
+ __kprintf("[%d] ret ihk_mc_spinlock_trylock_noirq\n", ihk_mc_get_processor_id()); rc; \
+}
+#else
+#define ihk_mc_spinlock_trylock_noirq __ihk_mc_spinlock_trylock_noirq
+#endif
+
+static int __ihk_mc_spinlock_trylock_noirq(ihk_spinlock_t *lock)
+{
+	ihk_spinlock_t cur = { .head_tail = lock->head_tail };
+	ihk_spinlock_t next = { .tickets.head = cur.tickets.head, .tickets.tail = cur.tickets.tail + 2 };
+	int success;
+
+	if (cur.tickets.head != cur.tickets.tail) {
+		return 0;
+	}
+
+	preempt_disable();
+
+	/* Use the same increment amount as other functions! */
+	success = __sync_bool_compare_and_swap((__ticketpair_t*)lock, cur.head_tail, next.head_tail);
+
+	if (!success) {
+		preempt_enable();
+	}
+	return success;
+}
+
+#ifdef DEBUG_SPINLOCK
+#define ihk_mc_spinlock_trylock(l, result) ({ unsigned long rc;		\
+__kprintf("[%d] call ihk_mc_spinlock_trylock %p %s:%d\n", ihk_mc_get_processor_id(), (l), __FILE__, __LINE__); \
+ rc = __ihk_mc_spinlock_trylock(l, result);									\
+__kprintf("[%d] ret ihk_mc_spinlock_trylock\n", ihk_mc_get_processor_id()); rc;\
+})
+#else
+#define ihk_mc_spinlock_trylock __ihk_mc_spinlock_trylock
+#endif
+static unsigned long __ihk_mc_spinlock_trylock(ihk_spinlock_t *lock, int *result)
+{
+	unsigned long flags;
+	
+	flags = cpu_disable_interrupt_save();
+
+	*result = __ihk_mc_spinlock_trylock_noirq(lock);
+
+	return flags;
+}
+
 #ifdef DEBUG_SPINLOCK
 #define ihk_mc_spinlock_lock_noirq(l) { \
 __kprintf("[%d] call ihk_mc_spinlock_lock_noirq %p %s:%d\n", ihk_mc_get_processor_id(), (l), __FILE__, __LINE__); \
