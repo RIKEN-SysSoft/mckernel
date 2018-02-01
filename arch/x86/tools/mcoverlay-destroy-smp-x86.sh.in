@@ -1,5 +1,12 @@
 # Remove mcoverlay if loaded
 
+# POSTK_DEBUG_ARCH_DEP_95 if disable mcoverlayfs script nothing to do
+ENABLE_MCOVERLAYFS="@ENABLE_MCOVERLAYFS@"
+if [ "${ENABLE_MCOVERLAYFS}" != "yes" ]; then
+	exit 0
+fi
+# POSTK_DEBUG_ARCH_DEP_95 end
+
 if grep mcoverlay /proc/modules &>/dev/null; then
     if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_sys`" != "" ]; then umount -l /tmp/mcos/mcos0_sys; fi
     if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_proc`" != "" ]; then umount -l /tmp/mcos/mcos0_proc; fi

@@ -1,5 +1,12 @@
 # Overlay /proc, /sys with McKernel specific contents
 
+# POSTK_DEBUG_ARCH_DEP_95 if disable mcoverlayfs script nothing to do
+ENABLE_MCOVERLAYFS="@ENABLE_MCOVERLAYFS@"
+if [ "${ENABLE_MCOVERLAYFS}" != "yes" ]; then
+	exit 0
+fi
+# POSTK_DEBUG_ARCH_DEP_95 end
+
 #
 # Revert any state that has been initialized before the error occured.
 #
