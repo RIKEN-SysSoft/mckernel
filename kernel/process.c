@@ -930,9 +930,14 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 		if (range->memobj) {
 			memobj_lock(range->memobj);
 		}
+#ifdef POSTK_DEBUG_TEMP_FIX_87 /* from device-map rusage count fix. */
+		error = ihk_mc_pt_free_range(vm->address_space->page_table, vm,
+				(void *)start, (void *)end, range->memobj);
+#else /* POSTK_DEBUG_TEMP_FIX_87 */
 		error = ihk_mc_pt_free_range(vm->address_space->page_table, vm,
 				(void *)start, (void *)end,
 				(range->flag & VR_PRIVATE)? NULL: range->memobj);
+#endif /* POSTK_DEBUG_TEMP_FIX_87 */
 		if (range->memobj) {
 			memobj_unlock(range->memobj);
 		}
