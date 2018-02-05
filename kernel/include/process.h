@@ -277,6 +277,7 @@ extern struct list_head	resource_set_list;
 extern mcs_rwlock_lock_t	resource_set_lock;
 extern int idle_halt;
 extern int allow_oversubscribe;
+extern ihk_spinlock_t runq_reservation_lock; /* To serialize runq reservations for competeing fork()s */
 
 struct process_hash {
 	struct list_head	list[HASH_SIZE];

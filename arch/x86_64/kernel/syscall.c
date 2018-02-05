@@ -95,21 +95,23 @@ extern int num_processors;
 int obtain_clone_cpuid(cpu_set_t *cpu_set) {
 	int min_queue_len = -1;
 	int cpu, min_cpu = -1;
+	unsigned long irqstate;
 
+	irqstate = ihk_mc_spinlock_lock(&runq_reservation_lock);
 	/* Find the first allowed core with the shortest run queue */
 	for (cpu = 0; cpu < num_processors; ++cpu) {
 		struct cpu_local_var *v;
-		unsigned long irqstate;
 
 		if (!CPU_ISSET(cpu, cpu_set)) continue;
 
 		v = get_cpu_local_var(cpu);
-		irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
-		if (min_queue_len == -1 || v->runq_len < min_queue_len) {
-			min_queue_len = v->runq_len;
+		ihk_mc_spinlock_lock_noirq(&v->runq_lock);
+		kprintf("%s: cpu=%d,runq_len=%d,runq_reserved=%d\n", __FUNCTION__, cpu, v->runq_len, v->runq_reserved);
+		if (min_queue_len == -1 || v->runq_len + v->runq_reserved < min_queue_len) {
+			min_queue_len = v->runq_len + v->runq_reserved;
 			min_cpu = cpu;
 		}
-		ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
+		ihk_mc_spinlock_unlock_noirq(&v->runq_lock);
 
 		if (min_queue_len == 0)
 			break;
@@ -118,7 +120,9 @@ int obtain_clone_cpuid(cpu_set_t *cpu_set) {
 	if (min_cpu != -1) {
 		if (get_cpu_local_var(min_cpu)->status != CPU_STATUS_RESERVED)
 			get_cpu_local_var(min_cpu)->status = CPU_STATUS_RESERVED;
+		__sync_fetch_and_add(&get_cpu_local_var(min_cpu)->runq_reserved, 1);
 	}
+	ihk_mc_spinlock_unlock(&runq_reservation_lock, irqstate);
 
     return min_cpu;
 }
