@@ -397,7 +397,7 @@ int mcctrl_add_per_proc_data(struct mcctrl_usrdata *ud, int pid,
 int mcctrl_delete_per_proc_data(struct mcctrl_usrdata *ud, int pid);
 struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(
 		struct mcctrl_usrdata *ud, int pid);
-void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd);
+int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd);
 
 int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data* ppd,
 	struct task_struct *task, void *data);
