@@ -1,0 +1,40 @@
+スクリプトは Mon Feb  5 16:00:07 2018
+ に開始しました[?1034hbash-4.2$ make test
+./CT300x.sh
+signal hanlder is called
+CT3001 OK
+2048+0 レコード入力
+2048+0 レコード出力
+2147483648 バイト (2.1 GB) コピーされました、 19.5651 秒、 110 MB/秒
+vm.drop_caches = 3
+signal hanlder is called
+CT3002 OK
+CT3003 OK
+2048+0 レコード入力
+2048+0 レコード出力
+2147483648 バイト (2.1 GB) コピーされました、 19.5383 秒、 110 MB/秒
+vm.drop_caches = 3
+CT3004 OK
+kill SIGURG
+kill SIGINT
+CT3005 OK
+2048+0 レコード入力
+2048+0 レコード出力
+2147483648 バイト (2.1 GB) コピーされました、 19.5148 秒、 110 MB/秒
+vm.drop_caches = 3
+kill SIGURG
+CT3006 OK
+kill SIGTERM (ignored)
+kill SIGINT
+CT3007 OK
+2048+0 レコード入力
+2048+0 レコード出力
+2147483648 バイト (2.1 GB) コピーされました、 19.5614 秒、 110 MB/秒
+vm.drop_caches = 3
+kill SIGTERM (ignored)
+CT3008 OK
+bash-4.2$ exit
+exit
+
+スクリプトは Mon Feb  5 16:03:02 2018
+ に終了しました
