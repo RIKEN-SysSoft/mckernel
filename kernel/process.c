@@ -3052,7 +3052,7 @@ set_timer()
 	/* Toggle timesharing if CPU core is oversubscribed */
 	if (v->runq_len > 1 || v->current->itimer_enabled) {
 		if (!cpu_local_var(timer_enabled)) {
-			lapic_timer_enable(10000000);
+			lapic_timer_enable(/*10000000*/1000000);
 			cpu_local_var(timer_enabled) = 1;
 		}
 	}
