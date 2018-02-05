@@ -99,6 +99,7 @@ extern void perf_reset(struct mc_perf_event *event);
 
 struct list_head resource_set_list;
 mcs_rwlock_lock_t    resource_set_lock;
+ihk_spinlock_t runq_reservation_lock;
 
 int idle_halt = 0;
 int allow_oversubscribe = 0;
@@ -3322,8 +3323,15 @@ redo:
 void
 release_cpuid(int cpuid)
 {
-	if (!get_cpu_local_var(cpuid)->runq_len)
-		get_cpu_local_var(cpuid)->status = CPU_STATUS_IDLE;
+	unsigned long irqstate;
+    struct cpu_local_var *v = get_cpu_local_var(cpuid);
+    irqstate = ihk_mc_spinlock_lock(&runq_reservation_lock);
+    ihk_mc_spinlock_lock_noirq(&(v->runq_lock));
+	if (!v->runq_len)
+		v->status = CPU_STATUS_IDLE;
+	__sync_fetch_and_sub(&v->runq_reserved, 1);
+    ihk_mc_spinlock_unlock_noirq(&(v->runq_lock));
+    ihk_mc_spinlock_unlock(&runq_reservation_lock, irqstate);
 }
 
 void check_need_resched(void)
@@ -3489,10 +3497,12 @@ void runq_add_thread(struct thread *thread, int cpu_id)
 {
 	struct cpu_local_var *v = get_cpu_local_var(cpu_id);
 	unsigned long irqstate;
-	
-	irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
+	irqstate = ihk_mc_spinlock_lock(&runq_reservation_lock);
+	ihk_mc_spinlock_lock_noirq(&(v->runq_lock));
 	__runq_add_thread(thread, cpu_id);
-	ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+	__sync_fetch_and_sub(&v->runq_reserved, 1);
+	ihk_mc_spinlock_unlock_noirq(&(v->runq_lock));
+	ihk_mc_spinlock_unlock(&runq_reservation_lock, irqstate);
 
 	procfs_create_thread(thread);
 
