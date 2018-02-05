@@ -2970,16 +2970,30 @@ create_tracer()
 			term_param[1] = uti_desc->tid;
 			term_param[3] = uti_desc->key;
 			code = st;
-			/* exit_group case. Note that killing-signal kills mcexec and tracer in terminate(),
-			   so this won't be reached. */
-			if (exited == 2) { 
+			
+			if (exited == 2) { /* exit_group */
 				code |= 0x0000000100000000;
 			}
 			term_param[2] = code;
 
-			fprintf(stderr, "%s:  calling MCEXEC_UP_TERMINATE_THREAD,exited=%d,code=%lx\n", __FUNCTION__, exited, code);
-			if (ioctl(fd, MCEXEC_UP_TERMINATE_THREAD, term_param) != 0) {
-				fprintf(stderr, "%s: INFO: MCEXEC_UP_TERMINATE_THREAD returned %d\n", __FUNCTION__, errno);
+			/* How return_syscall() is called depends on how utility thread exits:
+			   exit:
+			     create_tracer()
+				   MCEXEC_UP_TERMINATE_THREAD
+				     return_syscall()
+			   exit_group:
+			     create_tracer()
+				   MCEXEC_UP_TERMINATE_THREAD
+				     return_syscall()
+			   killed by signal:
+			     release_handler()
+				   return_syscall()
+			*/
+			if (exited == 1 || exited == 2) {
+				fprintf(stderr, "%s:  calling MCEXEC_UP_TERMINATE_THREAD,exited=%d,code=%lx\n", __FUNCTION__, exited, code);
+				if (ioctl(fd, MCEXEC_UP_TERMINATE_THREAD, term_param) != 0) {
+					fprintf(stderr, "%s: INFO: MCEXEC_UP_TERMINATE_THREAD returned %d\n", __FUNCTION__, errno);
+				}
 			}
 #if 0
 			if (ptrace(PTRACE_DETACH, uti_desc->tid, 0, WIFSIGNALED(st) ? WTERMSIG(st) : 0) && errno != ESRCH) {
@@ -3557,12 +3571,14 @@ int main_loop(struct thread_data_s *my_thread)
 				sem_post(&uti_desc->arg);
 			}
 			
-			/* Kill tracer to release /dev/mcosX */
+#if 0
+			/* Don't kill tracer because it needs to call MCEXEC_UP_TERMINATE_THREAD in exit and exit_group case and then release /dev/mcosX */
 			if (uti_desc->tracer_tid) {
 				printf("%s: killing tracer tid=%d,term=%x,sig=%x\n", __FUNCTION__, uti_desc->tracer_tid, term, sig);
 				kill(uti_desc->tracer_tid, SIGKILL);
 			}
-			exit(term); /* Call release_handler() and wake up terminate() */
+#endif
+			exit(term); /* Call release_handler() and proceed terminate() */
 
 			//pthread_mutex_unlock(lock);
 			return w.sr.args[0];

@@ -1109,7 +1109,7 @@ struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(
 }
 
 /* Drop reference. If zero, remove and deallocate */
-void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
+int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 {
 	int hash;
 	unsigned long flags;
@@ -1119,7 +1119,7 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	struct ikc_scd_packet *packet;
 
 	if (!ppd)
-		return;
+		return -EINVAL;
 
 	hash = (ppd->pid & MCCTRL_PER_PROC_DATA_HASH_MASK);
 
@@ -1128,7 +1128,7 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	write_lock_irqsave(&ppd->ud->per_proc_data_hash_lock[hash], flags);
 	if (!atomic_dec_and_test(&ppd->refcount)) {
 		write_unlock_irqrestore(&ppd->ud->per_proc_data_hash_lock[hash], flags);
-		return;
+		return atomic_read(&ppd->refcount);
 	}
 
 	list_del(&ppd->hash);
@@ -1175,6 +1175,7 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 
 	pager_remove_process(ppd);
 	kfree(ppd);
+	return 0;
 }
 
 
@@ -1784,7 +1785,7 @@ int mcexec_create_per_process_data(ihk_os_t os)
 
 	pager_add_process();
 
-	dprintk("%s: PID: %d, counter: %d\n",
+	dprintk("%s: PID: %d, ppd->refcount=%d\n",
 		__FUNCTION__, ppd->pid, atomic_read(&ppd->refcount));
 
 	return 0;
@@ -1792,6 +1793,7 @@ int mcexec_create_per_process_data(ihk_os_t os)
 
 int mcexec_destroy_per_process_data(ihk_os_t os, int pid)
 {
+	int rc;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd = NULL;
 
@@ -1800,8 +1802,22 @@ int mcexec_destroy_per_process_data(ihk_os_t os, int pid)
 	if (ppd) {
 		/* One for the reference and one for deallocation.
 		 * XXX: actual deallocation may not happen here */
-		mcctrl_put_per_proc_data(ppd);
-		mcctrl_put_per_proc_data(ppd);
+		rc = mcctrl_put_per_proc_data(ppd);
+		if (rc < 0) {
+			printk("%s: ERROR: first mcctrl_put_per_proc_data failed,rc=%d\n", __FUNCTION__, rc);
+			return rc;
+		} else if (rc == 0) {
+			printk("%s: ERROR: first mcctrl_put_per_proc_data failed,bad value of ppd->refcount(%d)\n", __FUNCTION__, rc);
+			return -EINVAL;
+		}
+		rc = mcctrl_put_per_proc_data(ppd);
+		if (rc < 0) {
+			printk("%s: ERROR: second mcctrl_put_per_proc_data failed,rc=%d\n", __FUNCTION__, rc);
+			return rc;
+		} else if (rc > 0) {
+			printk("%s: ERROR: second mcctrl_put_per_proc_data failed,bad value of ppd->refcount(%d)\n", __FUNCTION__, rc);
+			return -EINVAL;
+		}
 	}
 	else {
 		printk("%s: WARNING: no per process data for PID %d ?\n",
@@ -2479,9 +2495,28 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	host_threads = thread;
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
-	/* Make per-proc-data survive over the signal-kill of tracee. Note
-	   that the singal-kill calls close() and then release_hanlde()
-	   destroys it. */
+	/* How ppd refcount reaches zero depends on how utility-thread exits:
+  	     exit:
+	       MCEXEC_UP_CREATE_PPD: set to 1
+		   mcexec_util_thread2: get
+		   create_tracer()
+		     mcexec_terminate_thread: put
+	       release_handler(): put
+
+  	     exit_group:
+	       MCEXEC_UP_CREATE_PPD: set to 1
+		   mcexec_util_thread2: get
+		   create_trace()
+	         mcexec_terminate_thread: put
+	       release_handler(): put
+	   
+	     killed by signal:
+	       MCEXEC_UP_CREATE_PPD: set to 1
+	       mcexec_util_thread2: get
+	       release_handler()
+	         mcexec_terminate_thread(): put
+			 put
+	*/
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 
 	return 0;
@@ -2511,7 +2546,7 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 }
 
 long
-mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
+mcexec_terminate_thread(ihk_os_t os, unsigned long __user *arg, struct file *file)
 {
 	unsigned long param[4];
 	int rc;
@@ -2567,15 +2602,17 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
 							usrdata->ikc2linux[smp_processor_id()] :
 							usrdata->ikc2linux[0]));
 
-	/* Destroy per_proc_data with the following two puts. Note that
-	   it survived the signal-kill of tracee thanks to the additional put
-	   done in mcexec_util_thread2 */
+	/* See the comment in mcexec_util_thread2 on how ppd->refcount reaches zero */
 	printk("%s: ppd->refcount=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
-	mcctrl_put_per_proc_data(ppd); 
+	if ((rc = mcctrl_put_per_proc_data(ppd)) <= 0) {
+		printk("%s: mcctrl_put_per_proc_data failed,rc=%d\n", __FUNCTION__, rc);
+	}
 err:
 	if(ppd) {
 		printk("%s: ppd->refcount=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
-		mcctrl_put_per_proc_data(ppd);
+		if ((rc = mcctrl_put_per_proc_data(ppd)) < 0) {
+			printk("%s: mcctrl_put_per_proc_data failed,rc=%d\n", __FUNCTION__, rc);
+		}
 	}
 
 	if (prev)
@@ -3104,7 +3141,7 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 		return mcexec_syscall_thread(os, arg, file);
 
 	case MCEXEC_UP_TERMINATE_THREAD:
-		return mcexec_terminate_thread(os, (unsigned long *)arg, file);
+		return mcexec_terminate_thread(os, (unsigned long __user *)arg, file);
 
 	case MCEXEC_UP_UNMAP_PSEUDO_FILEMAP:
 		return mcexec_unmap_pseudo_filemap(os, file);
