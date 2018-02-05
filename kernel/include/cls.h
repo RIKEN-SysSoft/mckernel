@@ -81,6 +81,7 @@ struct cpu_local_var {
 	struct thread *current;
 	struct list_head runq;
 	size_t runq_len;
+	size_t runq_reserved; /* Number of threads which are about to be added to runq */
 
 	struct ihk_ikc_channel_desc *ikc2linux;
 
