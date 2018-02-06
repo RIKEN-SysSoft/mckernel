@@ -145,6 +145,8 @@ nmi:
 		movq	%rsp,%gs:PANIC_REGS+0x08
 
 		movl	nmi_mode(%rip),%eax
+		cmp $3,%rax
+		je  4f
 		cmp	$1,%rax
 		je	1f
 		cmp	$2,%rax
@@ -199,9 +201,9 @@ nmi:
 		movl	%eax,%gs:PANIC_REGS+0xA0
 		movq	$1,%gs:PANICED
 		call	ihk_mc_query_mem_areas
-1:
+4:
 		hlt
-		jmp	1b
+		jmp	4b
 
 .globl x86_syscall
 x86_syscall:
