@@ -14,7 +14,17 @@
 int __kprintf(const char *format, ...);
 #endif
 
-typedef int ihk_spinlock_t;
+typedef unsigned short __ticket_t;
+typedef unsigned int __ticketpair_t;
+
+typedef struct ihk_spinlock {
+	union {
+		__ticketpair_t head_tail;
+		struct __raw_tickets {
+			__ticket_t head, tail;
+		} tickets;
+	};
+} ihk_spinlock_t;
 
 extern void preempt_enable(void);
 extern void preempt_disable(void);
@@ -23,9 +33,9 @@ extern void preempt_disable(void);
 
 static void ihk_mc_spinlock_init(ihk_spinlock_t *lock)
 {
-	*lock = 0;
+	lock->head_tail = 0;
 }
-#define SPIN_LOCK_UNLOCKED 0
+#define SPIN_LOCK_UNLOCKED { .head_tail = 0 }
 
 #ifdef DEBUG_SPINLOCK
 #define ihk_mc_spinlock_lock_noirq(l) { \
@@ -37,29 +47,26 @@ __kprintf("[%d] ret ihk_mc_spinlock_lock_noirq\n", ihk_mc_get_processor_id()); \
 #define ihk_mc_spinlock_lock_noirq __ihk_mc_spinlock_lock_noirq
 #endif
 
-
 static void __ihk_mc_spinlock_lock_noirq(ihk_spinlock_t *lock)
 {
-	int inc = 0x00020000;
-	int tmp;
+	register struct __raw_tickets inc = { .tail = 0x0002 };
 
 	preempt_disable();
 
-	asm volatile("lock; xaddl %0, %1\n"
-			"movzwl %w0, %2\n\t"
-			"shrl $16, %0\n\t"
-			"1:\t"
-			"cmpl %0, %2\n\t"
-			"je 2f\n\t"
-			"rep ; nop\n\t"
-			"movzwl %1, %2\n\t"
-			/* don't need lfence here, because loads are in-order */
-			"jmp 1b\n"
-			"2:"
-			: "+r" (inc), "+m" (*lock), "=&r" (tmp)
-			:
-			: "memory", "cc");
+	asm volatile ("lock xaddl %0, %1\n"
+			: "+r" (inc), "+m" (*(lock)) : : "memory", "cc");
 
+	if (inc.head == inc.tail)
+		goto out;
+
+	for (;;) {
+		if (*((volatile __ticket_t *)&lock->tickets.head) == inc.tail)
+			goto out;
+		cpu_pause();
+	}
+
+out:
+	barrier();	/* make sure nothing creeps before the lock is taken */
 }
 
 #ifdef DEBUG_SPINLOCK
@@ -93,10 +100,10 @@ __kprintf("[%d] ret ihk_mc_spinlock_unlock_noirq\n", ihk_mc_get_processor_id());
 #endif
 static void __ihk_mc_spinlock_unlock_noirq(ihk_spinlock_t *lock)
 {
-	int inc = 0x0002;
+	__ticket_t inc = 0x0002;
 
 	asm volatile ("lock addw %1, %0\n"
-			: "+m" (*(lock)) : "ri" (inc) : "memory", "cc");
+			: "+m" (lock->tickets.head) : "ri" (inc) : "memory", "cc");
 
 	preempt_enable();
 }
