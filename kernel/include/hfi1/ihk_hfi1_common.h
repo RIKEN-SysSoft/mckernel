@@ -96,8 +96,7 @@ typedef ihk_spinlock_t spinlock_t;
 
 #define spin_unlock_irqrestore(lock, flags)		\
 	do {							\
-		ihk_mc_spinlock_unlock_noirq(lock); \
-		cpu_restore_interrupt(flags); \
+		ihk_mc_spinlock_unlock(lock, flags); \
 	} while (0)
 
 #define spin_lock ihk_mc_spinlock_lock_noirq
