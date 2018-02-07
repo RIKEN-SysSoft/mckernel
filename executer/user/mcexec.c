@@ -1916,6 +1916,7 @@ struct uti_desc {
 	sem_t arg, attach;
 	int exit; /* Used to tell the tracer to exit */
 	int tracer_tid; /* Used to kill tracer when calling terminate() */
+	int hfi_fd;
 };
 
 static int create_tracer();
@@ -2895,6 +2896,7 @@ create_tracer()
 		return -1;
 	}
 	memset(uti_desc, 0, sizeof(struct uti_desc));
+	uti_desc->hfi_fd = -1;
 	sem_init(&uti_desc->arg, 1, 0);
 	sem_init(&uti_desc->attach, 1, 0);
 	uti_desc->wp = mmap(NULL, PAGE_SIZE * 3, PROT_READ | PROT_WRITE,
@@ -3030,10 +3032,11 @@ create_tracer()
 				   MCEXEC_UP_TERMINATE_THREAD
 				     return_syscall()
 			   killed by signal:
-			     release_handler()
-				   return_syscall()
+				 release_handler()
+				     return_syscall()
 			*/
 			if (exited == 1 || exited == 2) {
+				
 				fprintf(stderr, "%s:  calling MCEXEC_UP_TERMINATE_THREAD,exited=%d,code=%lx\n", __FUNCTION__, exited, code);
 				if (ioctl(fd, MCEXEC_UP_TERMINATE_THREAD, term_param) != 0) {
 					fprintf(stderr, "%s: INFO: MCEXEC_UP_TERMINATE_THREAD returned %d\n", __FUNCTION__, errno);
@@ -3077,6 +3080,28 @@ create_tracer()
 			}
 
 			switch (get_syscall_number(&args)) {
+#if 0
+			case __NR_open: {
+				int rc = get_syscall_return(&args);
+				if (rc > 0 && !strncmp((const char *)get_syscall_arg1(&args), "/dev/hfi", 8)) {
+					uti_desc->hfi_fd = rc;
+					fprintf(stderr, "open: path=%s,fd=%d\n", (const char *)get_syscall_arg1(&args), rc);
+				}
+				break; }
+			case __NR_writev: {
+				int rc = get_syscall_return(&args);
+				if (rc != -ENOSYS && get_syscall_arg1(&args) == uti_desc->hfi_fd) {
+					fprintf(stderr, "writev: fd=%ld,%lx,%lx\n", get_syscall_arg1(&args), get_syscall_arg2(&args), get_syscall_arg3(&args));
+				}
+				break; }
+			case __NR_close: {
+				int rc = get_syscall_return(&args);
+				if (rc != -ENOSYS && get_syscall_arg1(&args) == uti_desc->hfi_fd) {
+					fprintf(stderr, "close: fd=%ld\n", get_syscall_arg1(&args));
+					uti_desc->hfi_fd = -1;
+				}
+				break; }
+#endif 
 			    case __NR_gettid:
 				set_syscall_number(&args, -1);
 				set_syscall_return(&args, uti_desc->mck_tid);
@@ -3112,6 +3137,11 @@ create_tracer()
 				set_syscall_args(uti_desc->tid, &args);
 				continue;
 			    case __NR_ioctl:
+#if 0					
+					if (get_syscall_return(&args) != -ENOSYS && get_syscall_arg1(&args) == uti_desc->hfi_fd) {
+						fprintf(stderr, "ioctl: fd=%ld,%lx,%lx\n", get_syscall_arg1(&args), get_syscall_arg2(&args), get_syscall_arg3(&args));
+					}
+#endif
 				param = (struct syscall_struct *)
 					                get_syscall_arg3(&args);
 				if (get_syscall_return(&args) != -ENOSYS &&
@@ -3169,6 +3199,7 @@ create_tracer()
 	//debug_sig(0);
 #endif
 
+	fprintf(stderr, "%s: exiting\n", __FUNCTION__);
 	exit(0);
 }
 
@@ -3771,6 +3802,7 @@ gettid_out:
 					goto fork_child_sync_pipe;
 				}
 				
+				fprintf(stderr, "%s: calling MCEXEC_UP_CREATE_PPD\n", __FUNCTION__);
 				if (ioctl(fd, MCEXEC_UP_CREATE_PPD) != 0) {
 					fs->status = -errno;
 					fprintf(stderr, "ERROR: creating PPD %s\n", dev);

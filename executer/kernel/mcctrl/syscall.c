@@ -57,6 +57,8 @@
 
 //#define SC_DEBUG
 
+#define	mtprintk(va, ...) do { if ((unsigned long)va > 0x00007f0000000000) printk(__VA_ARGS__); } while(0)
+
 #ifdef SC_DEBUG
 #define	dprintk(...)	printk(__VA_ARGS__)
 #else
@@ -196,10 +198,16 @@ int translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva,
 	unsigned long *pt;
 	int error;
 	unsigned long pgsize;
-
+	
+	if (rva >= 0x00007f0000000000) printk("%s: rpt=%lx,rva=%lx\n", __FUNCTION__, rpt, rva);
 	rpa = rpt;
 	offsh = 39;
 	pgsize = 0;
+	if (!rpt) {
+		printk("%s: rpt is NULL\n", __FUNCTION__);
+		error = -EINVAL;
+		goto out;
+	}
 	/* i = 0: PML4, 1: PDPT, 2: PDT, 3: PT */
 	for (i = 0; i < 4; ++i) {
 		ix = (rva >> offsh) & 0x1FF;
@@ -226,8 +234,7 @@ int translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva,
 			/* For GB pages, just report regular 2MB page */
 			if (offsh == 30) {
 				pgsize = 1UL << 21;
-				dprintk("%s: GB page translated 0x%lx -> 0x%lx, pgsize: %lu\n",
-						__FUNCTION__, rva, rpa, pgsize);
+				printk("%s: GB page translated 0x%lx -> 0x%lx, pgsize: %lx\n", __FUNCTION__, rva, rpa, pgsize);
 			}
 
 			ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
@@ -250,8 +257,7 @@ found:
 	*pgsizep = pgsize;
 
 out:
-	dprintk("translate_rva_to_rpa: %d rva %#lx --> rpa %#lx (%lx)\n",
-			error, rva, rpa, pgsize);
+	if (rva >= 0x00007f0000000000) printk("translate_rva_to_rpa: %d rva %#lx --> rpa %#lx (%lx)\n", error, rva, rpa, pgsize);
 	return error;
 }
 #endif
@@ -931,9 +937,17 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 #endif /* POSTK_DEBUG_ARCH_DEP_41 */
 	rpa = rpa & ~(pgsize - 1);
 
+
 	phys = ihk_device_map_memory(dev, rpa, pgsize);
 	pfn = phys >> PAGE_SHIFT;
 #if USE_VM_INSERT_PFN
+
+	if(pfn_valid(pfn)) {
+		printk("%s: remote va=%lx,pgsize=%lx,pfn_valid\n", __FUNCTION__, rva, pgsize);
+	} else {
+		//printk("%s: remote va=%lx,pgsize=%lx,!pfn_valid\n", __FUNCTION__, rva, pgsize);
+	}
+
 	for (pix = 0; pix < (pgsize / PAGE_SIZE); ++pix) {
 		struct page *page;
 
@@ -2362,11 +2376,11 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 
 			ppd->rpgtable = sc->args[2];
 
-			dprintk("%s: pid: %d, rpgtable: 0x%lx updated\n",
-				__FUNCTION__, ppd->pid, ppd->rpgtable);
+			printk("%s: user_start=%lx,len=%lx,rpgtable=%lx,pid=%d\n", __FUNCTION__, sc->args[0], sc->args[1], ppd->rpgtable, ppd->pid);
 			mcctrl_put_per_proc_data(ppd);
 		}
 
+		if (sc->args[0] > 0x2aaab0000000) printk("%s: calling clear_pte_range,addr=%lx,len=%lx\n", __FUNCTION__, sc->args[0], sc->args[1]);
 		ret = clear_pte_range(sc->args[0], sc->args[1]);
 		break;
 

@@ -614,6 +614,7 @@ struct sched_param {
 };
 
 struct thread {
+	int hfi_fd;
 	struct list_head hash_list;
 	// thread info
 	int cpu_id;

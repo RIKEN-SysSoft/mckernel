@@ -398,6 +398,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 
 	p->rprocess = (unsigned long)thread;
 	p->rpgtable = virt_to_phys(as->page_table);
+	kprintf("%s: desc->rpgtable=%lx\n", __FUNCTION__, p->rpgtable);
 
 	if (init_process_stack(thread, pn, argc, argv, envc, env) != 0) {
 		goto err;
@@ -536,8 +537,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 		goto err;
 	}
 
-	dkprintf("new process : %p [%d] / table : %p\n", proc, proc->pid,
-	        vm->address_space->page_table);
+	kprintf("new process : %p pid=%d,tid=%d,pgtable=%p\n", proc, proc->pid, thread->tid, vm->address_space->page_table);
 
 	kfree(pn);
 

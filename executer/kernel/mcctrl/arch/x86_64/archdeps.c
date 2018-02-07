@@ -122,6 +122,7 @@ reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp, unsign
 	}
 	*startp = start;
 	*endp = end;
+	printk("%s: start=%lx,end=%lx\n", __FUNCTION__, start, end);
 	return 0;
 }
 

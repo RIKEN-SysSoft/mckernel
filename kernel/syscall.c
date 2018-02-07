@@ -471,8 +471,8 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		preempt_enable();
 	}
 
-	dkprintf("%s: syscall num: %d got host reply: %d \n",
-		__FUNCTION__, req->number, res.ret);
+	kprintf("%s: syscall num: %d got host reply: %d,pid=%d,tid=%d\n",
+			__FUNCTION__, req->number, res.ret, thread->proc->pid, thread->tid);
 
 	rc = res.ret;
 
@@ -498,7 +498,14 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 				__FUNCTION__, PROFILE_SYSCALL_MAX, req->number);
 	}
 #endif // PROFILE_ENABLE
-
+#if 0
+	if (req->number == __NR_open && rc > 0) {
+		if (!strncmp((const char *)req->args[0], "/dev/hfi", 8)) {
+			cpu_local_var(current)->hfi_fd = rc;
+			kprintf("%s: path=%s,fd=%d\n", __FUNCTION__, (const char *)req->args[0], rc);
+		}
+	}
+#endif
 	if (req->number == __NR_open && rc > 0) {
 		if ((cpu_local_var(current)->proc->mcexec_flags & MCEXEC_HFI1) &&
 				res.private_data &&
@@ -1276,6 +1283,8 @@ void clear_host_pte(uintptr_t addr, size_t len)
 	ihk_mc_user_context_t ctx;
 	long lerror;
 
+	dkprintf("%s: addr=%lx,len=%lx\n", __FUNCTION__, addr, len);
+
 	ihk_mc_syscall_arg0(&ctx) = addr;
 	ihk_mc_syscall_arg1(&ctx) = len;
 	/* NOTE: 3rd parameter denotes new rpgtable of host process (if not zero) */
@@ -1292,6 +1301,8 @@ static int set_host_vma(uintptr_t addr, size_t len, int prot)
 {
 	ihk_mc_user_context_t ctx;
 	long lerror;
+	
+	dkprintf("%s: addr=%lx,len=%lx\n", __FUNCTION__, addr, len);
 
 	ihk_mc_syscall_arg0(&ctx) = addr;
 	ihk_mc_syscall_arg1(&ctx) = len;
@@ -1313,6 +1324,7 @@ int do_munmap(void *addr, size_t len)
 {
 	int error;
 	int ro_freed;
+	struct process *proc = cpu_local_var(current)->proc;
 
 	/*
 	 * TODO: do call back registration for address space changes..
@@ -1330,6 +1342,7 @@ int do_munmap(void *addr, size_t len)
 	begin_free_pages_pending();
 	error = remove_process_memory_range(cpu_local_var(current)->vm,
 			(intptr_t)addr, (intptr_t)addr+len, &ro_freed);
+	//if (!proc->nohost) { /* debug */
 	if (error || !ro_freed) {
 		clear_host_pte((uintptr_t)addr, len);
 	}
@@ -1340,6 +1353,7 @@ int do_munmap(void *addr, size_t len)
 			/* through */
 		}
 	}
+	//}
 	finish_free_pages_pending();
 
 	dkprintf("%s: 0x%lx:%lu, error: %ld\n",
@@ -1418,8 +1432,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	int pgshift;
 	struct vm_range *range = NULL;
 	
-	dkprintf("do_mmap(%lx,%lx,%x,%x,%d,%lx)\n",
-			addr0, len0, prot, flags, fd, off0);
+	//if (fd == cpu_local_var(current)->hfi_fd) kprintf("do_mmap(%lx,%lx,%x,%x,%d,%lx)\n", addr0, len0, prot, flags, fd, off0);
 
 	if (!(flags & MAP_ANONYMOUS)) {
 		ihk_mc_spinlock_lock_noirq(&proc->mckfd_lock);
@@ -2221,6 +2234,7 @@ SYSCALL_DECLARE(execve)
 	struct vm_range *range;
 	struct process *proc = thread->proc;
 	int i;
+	int cpu;
 
 	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 
@@ -2248,7 +2262,9 @@ SYSCALL_DECLARE(execve)
 	request.args[0] = 1;  /* 1st phase - get ELF desc */
 	request.args[1] = (unsigned long)filename;	
 	request.args[2] = virt_to_phys(desc);
-	ret = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+	cpu = ihk_mc_get_processor_id(); /* Use the same cpuid for 1st and 2nd __NR_execve */
+	kprintf("%s: 1st __NR_execve,cpu=%d\n", __FUNCTION__, cpu);
+	ret = do_syscall(&request, cpu, 0);
 
 	if (ret != 0) {
 		dkprintf("execve(): ERROR: host failed to load elf header, errno: %d\n", 
@@ -2390,6 +2406,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	int ptrace_event = 0;
 	int termsig = clone_flags & 0x000000ff;
 	const struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
+
 
     dkprintf("do_fork,flags=%08x,newsp=%lx,ptidptr=%lx,ctidptr=%lx,tls=%lx,curpc=%lx,cursp=%lx",
             clone_flags, newsp, parent_tidptr, child_tidptr, tlsblock_base, curpc, cursp);
@@ -2545,7 +2562,7 @@ retry_tid:
 		request1.args[2] = virt_to_phys(new->vm->address_space->page_table);
 		request1.args[3] = newproc->pid;
 
-		dkprintf("fork(): requesting PTE clear and rpgtable (0x%lx) update\n",
+		kprintf("fork(): requesting PTE clear and rpgtable (0x%lx) update\n",
 				request1.args[2]);
 
 		if (do_syscall(&request1, ihk_mc_get_processor_id(), new->proc->pid)) {
@@ -2566,8 +2583,8 @@ retry_tid:
 	}
 	
 	if (clone_flags & CLONE_CHILD_CLEARTID) {
-		kprintf("clone_flags & CLONE_CHILD_CLEARTID: 0x%lX\n", 
-			     child_tidptr);
+		kprintf("clone_flags & CLONE_CHILD_CLEARTID: 0x%lX,old->tid=%d,new->tid=%d\n", 
+				child_tidptr, old->tid, new->tid);
 
 		new->clear_child_tid = (int*)child_tidptr;
 	}
@@ -2663,6 +2680,8 @@ retry_tid:
 			ptrace_report_clone(old, new, ptrace_event);
 		}
 	}
+
+	kprintf("%s: old->pid=%d,tid=%d,new->pid=%d,tid=%d\n", __FUNCTION__, oldproc->pid, old->tid, newproc->pid, new->tid);
 
 	dkprintf("clone: kicking scheduler!,cpuid=%d pid=%d tid %d -> tid=%d\n",
 		cpuid, newproc->pid,
@@ -3144,6 +3163,11 @@ SYSCALL_DECLARE(writev)
 	struct iovec *iovec = (struct iovec *)ihk_mc_syscall_arg1(ctx);
 	int iovcnt = ihk_mc_syscall_arg2(ctx);
 	void *private_data = proc->fd_priv_table[fd];
+#if 0
+	if (fd == cpu_local_var(current)->hfi_fd) {
+		kprintf("%s: hfi_fd,%p,%d\n", __FUNCTION__, iovec, iovcnt);
+	}
+#endif
 	if (private_data) {
 		return hfi1_aio_write(private_data, iovec, iovcnt);
 	}
@@ -3188,7 +3212,11 @@ SYSCALL_DECLARE(ioctl)
 	void *private_data = proc->fd_priv_table[fd];
 	unsigned long t_s = rdtsc();
 	int sub_rc = 0;
-
+#if 0
+	if (fd == cpu_local_var(current)->hfi_fd) {
+		kprintf("%s: hfi_fd,%lx,%lx\n", __FUNCTION__, ihk_mc_syscall_arg1(ctx), ihk_mc_syscall_arg2(ctx));
+	}
+#endif
 	irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
 	for(fdp = proc->mckfd; fdp; fdp = fdp->next)
 		if(fdp->fd == fd)
@@ -3252,7 +3280,7 @@ SYSCALL_DECLARE(open)
 		kfree(xpmem_wk);
 		return -EFAULT;
 	}
-	dkprintf("open(): pathname=%s\n", xpmem_wk);
+	kprintf("open(): pathname=%s\n", xpmem_wk);
 
 	if (!strcmp(xpmem_wk, "/proc/sys/vm/overcommit_memory")) {
 		return -ENOENT;
@@ -9217,12 +9245,12 @@ util_thread(struct uti_attr *arg)
 
 	if (rc >= 0) {
 		if (rc & 0x100000000) { /* exit_group */
-			kprintf("%s: exit_group, tid=%d,rc=%lx\n", __FUNCTION__, thread->tid, rc);
+			kprintf("%s: exit_group, pid=%d,tid=%d,rc=%lx\n", __FUNCTION__, thread->proc->pid, thread->tid, rc);
 			thread->proc->nohost = 1;
 			terminate((rc >> 8) & 255, rc & 255);
 		} else {
 			/* mcexec is alive, so we can call do_syscall() */
-			kprintf("%s: exit | signal, tid=%d,rc=%lx\n", __FUNCTION__, thread->tid, rc);
+			kprintf("%s: exit | signal, pid=%d,tid=%d,rc=%lx\n", __FUNCTION__, thread->proc->pid, thread->tid, rc);
 			request.number = __NR_sched_setaffinity;
 			request.args[0] = 1;
 			request.args[1] = free_address;

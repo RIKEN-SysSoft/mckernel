@@ -41,6 +41,8 @@
 
 //#define DEBUG_PRINT_PROCESS
 
+#define	mtprintk(va, ...) do { if ((unsigned long)va > 0x00007f0000000000) kprintf(__VA_ARGS__); } while(0)
+
 #ifdef DEBUG_PRINT_PROCESS
 #define dkprintf(...) kprintf(__VA_ARGS__)
 #define ekprintf(...) kprintf(__VA_ARGS__)
@@ -1798,6 +1800,7 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 			else {
 				off = pte_get_off(ptep, pgsize);
 			}
+			mtprintk(fault_addr, "%s: calling memobje_get_page\n", __FUNCTION__);
 			error = memobj_get_page(range->memobj, off, p2align,
                                        &phys, &memobj_flag, fault_addr);
 			if (error) {
@@ -3234,7 +3237,7 @@ redo:
 	set_timer();
 
 	if (switch_ctx) {
-		dkprintf("schedule: %d => %d \n",
+		kprintf("schedule: %d => %d \n",
 		        prev ? prev->tid : 0, next ? next->tid : 0);
 
 		if (prev && prev->ptrace_debugreg) {

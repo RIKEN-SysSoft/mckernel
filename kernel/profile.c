@@ -94,6 +94,15 @@ enum profile_event_type profile_syscall2offload(enum profile_event_type sc)
 void profile_event_add(enum profile_event_type type, uint64_t tsc)
 {
 	struct profile_event *event = NULL;
+	struct thread *thread = cpu_local_var(current);
+
+	//kprintf("%s: enter,current=%p\n", __FUNCTION__, thread);
+
+	if ((unsigned long)thread < (unsigned long)0x200) {
+		kprintf("%s: ERROR: current=%p\n", __FUNCTION__, thread);
+		panic("oops");
+	}
+
 	if (!cpu_local_var(current)->profile)
 		return;
 

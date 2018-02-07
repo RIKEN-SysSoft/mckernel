@@ -209,6 +209,7 @@ static long mcexec_prepare_image(ihk_os_t os,
 
 	/* Update rpgtable */
 	ppd->rpgtable = pdesc->rpgtable;
+	printk("%s: rpgtable set to %lx\n", __FUNCTION__, ppd->rpgtable);
 	
 	if (copy_to_user(udesc, pdesc, sizeof(struct program_load_desc) + 
 	             sizeof(struct program_image_section) * num_sections)) {
@@ -384,9 +385,9 @@ static void release_handler(ihk_os_t os, void *param)
 
 	printk("%s: enter\n", __FUNCTION__);
 
-	/* Kill migrated-to-Linux threads on the McKernel side 
-	   when the corresponding mcexec threads failed to call MCEXEC_UP_TERMINATE_THREAD 
-	   for some reason. */
+	/* Call return_syscall() for migrated-to-Linux threads on the McKernel side
+	   when tracer/syscall_intercept didn't call MCEXEC_UP_TERMINATE_THREAD
+	   (when migrated-to-Linux thread is killed). */
 	while (1) {
 		unsigned long term_param[4];
 
@@ -400,6 +401,7 @@ static void release_handler(ihk_os_t os, void *param)
 			write_unlock_irqrestore(&host_thread_lock, flags);
 			break;
 		}
+
 		term_param[0] = thread->pid;
 		term_param[1] = thread->tid;
 		term_param[2] = 0;
@@ -408,14 +410,15 @@ static void release_handler(ihk_os_t os, void *param)
 		term_param[3] = (unsigned long)thread->task;
 		thread->handler = NULL;
 		write_unlock_irqrestore(&host_thread_lock, flags);
-		
-		printk("%s: killing migrated-to-Linux thread, pid=%d,tid=%d\n", __FUNCTION__, thread->pid, thread->tid);
+
+		printk("%s: calling mcexec_terminate_thread,pid=%d,tid=%d\n", __FUNCTION__, thread->pid, thread->tid);
 		rc = mcexec_terminate_thread(os, term_param);
 		if (rc) {
 			printk("%s: ERROR: mcexec_terminate_thread returned %ld\n", __FUNCTION__, rc);
 		}
 	}
 
+	printk("%s: calling mcexec_close_exec\n", __FUNCTION__);
 	mcexec_close_exec(os);
 
 	mcexec_destroy_per_process_data(os, info->pid);
@@ -424,14 +427,16 @@ static void release_handler(ihk_os_t os, void *param)
 	isp.msg = SCD_MSG_CLEANUP_PROCESS;
 	isp.pid = info->pid;
 
-	dprintk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p, cpu: %d\n",
+	printk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p, cpu: %d\n",
 			__FUNCTION__, info, info->cpu);
 	mcctrl_ikc_send(os, info->cpu, &isp);
 	if (os_ind >= 0) {
+		printk("%s: calling delete_pid_entry\n", __FUNCTION__);
 		delete_pid_entry(os_ind, info->pid);
 	}
+	printk("%s: calling kfree,param=%p\n", __FUNCTION__, param);
 	kfree(param);
-	dprintk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p OK\n",
+	printk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p OK\n",
 			__FUNCTION__, info);
 }
 
@@ -502,6 +507,16 @@ static long mcexec_start_image(ihk_os_t os,
 
 	usrdata->last_thread_exec = desc->cpu;
 	
+	{
+		unsigned long addr = 0x00007fe880064000;
+		struct mm_struct *mm = current->mm;
+		pgd_t *pgd = pgd_offset(mm, addr);
+		pud_t *pud = pud_offset(pgd, addr);
+		pmd_t *pmd = pmd_offset(pud, addr);
+		pte_t *pte = pte_offset_map(pmd, addr);
+		printk("%s: pid=%d, tid=%d, pte for %lx=%p,\n", __FUNCTION__, task_tgid_vnr(current), task_pid_vnr(current), addr, pte);
+	}
+
 	isp.msg = SCD_MSG_SCHEDULE_PROCESS;
 	isp.ref = desc->cpu;
 	isp.arg = desc->rprocess;
@@ -785,7 +800,7 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 	--pe->nr_processes_left;
 	kfree(pli);
 
-	printk("%s: pid: %d, rank=%d\n",
+	dprintk("%s: pid: %d, rank=%d\n",
 		   __FUNCTION__, task_tgid_vnr(current), pe->process_rank);
 
 	cpus_to_assign = udp->cpu_info->n_cpus / req.nr_processes;
@@ -1203,7 +1218,8 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, flags);
 
 	pager_remove_process(ppd);
-	kfree(ppd);
+	//ppd->rpgtable = 0; /* debug */
+	kfree(ppd); /* debug */
 	return 0;
 }
 
@@ -1323,7 +1339,7 @@ retry_alloc:
 		}
 		init_waitqueue_head(&wqhln->wq_syscall);
 		list_add_tail(&wqhln->list, &ppd->wq_req_list);
-		printk("%s: wqhln not found,list_add ppd->wq_req_list %p\n", __FUNCTION__, wqhln);
+		//printk("%s: wqhln not found,list_add ppd->wq_req_list %p\n", __FUNCTION__, wqhln);
 	} else {
 		//printk("%s: wqhln found,%p\n", __FUNCTION__, wqhln);
 	}
@@ -1779,6 +1795,7 @@ int mcexec_create_per_process_data(ihk_os_t os)
 		printk("%s: ERROR: allocating per-process data\n", __FUNCTION__);
 		return -ENOMEM;
 	}
+	memset(ppd, 0, sizeof(struct mcctrl_per_proc_data)); /* debug */
 
 	ppd->ud = usrdata;
 	ppd->pid = task_tgid_vnr(current);
@@ -1839,6 +1856,7 @@ int mcexec_destroy_per_process_data(ihk_os_t os, int pid)
 			printk("%s: ERROR: first mcctrl_put_per_proc_data failed,bad value of ppd->refcount(%d)\n", __FUNCTION__, rc);
 			return -EINVAL;
 		}
+		/* Note that it will call return_syscall() */
 		rc = mcctrl_put_per_proc_data(ppd);
 		if (rc < 0) {
 			printk("%s: ERROR: second mcctrl_put_per_proc_data failed,rc=%d\n", __FUNCTION__, rc);
@@ -1853,6 +1871,7 @@ int mcexec_destroy_per_process_data(ihk_os_t os, int pid)
 			   __FUNCTION__, task_tgid_vnr(current));
 	}
 
+	printk("%s: exit,pid=%d,tid=%d\n", __FUNCTION__, task_tgid_vnr(current), task_pid_vnr(current));
 	return 0;
 }
 
@@ -2520,7 +2539,15 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	thread->handler = info;
     thread->task = current;
 
-    printk("%s: pid=%d, tid=%d, task=%p\n", __FUNCTION__, thread->pid, thread->tid, thread->task);
+	{
+		unsigned long addr = 0x00007fe880064000;
+		struct mm_struct *mm = current->mm;
+		pgd_t *pgd = pgd_offset(mm, addr);
+		pud_t *pud = pud_offset(pgd, addr);
+		pmd_t *pmd = pmd_offset(pud, addr);
+		pte_t *pte = pte_offset_map(pmd, addr);
+		printk("%s: pid=%d, tid=%d, pte for %lx=%p,\n", __FUNCTION__, task_tgid_vnr(current), task_pid_vnr(current), addr, pte);
+	}
 
 	write_lock_irqsave(&host_thread_lock, flags);
 	thread->next = host_threads;
@@ -2752,7 +2779,9 @@ long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 							  param.args[3], param.args[4], param.args[5], param.uti_clv, (void *)&resp, (void *)uti_wait_event, (void *)uti_printk, (void *)uti_clock_gettime);
 		param.ret = rc;
 	} else {
-			//printk("%s: syscall_backward, SC %d, tid %d\n", __FUNCTION__, param.number, task_tgid_vnr(current));
+			if (param.number == __NR_munmap) {
+				printk("%s: syscall_backward, munmap,addr=%lx,len=%lx,tid=%d\n", __FUNCTION__, param.args[0], param.args[1], task_tgid_vnr(current));
+			}
 			rc = syscall_backward(ihk_host_os_get_usrdata(os), param.number,
 								  param.args[0], param.args[1], param.args[2],
 								  param.args[3], param.args[4], param.args[5],

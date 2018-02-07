@@ -39,6 +39,8 @@
 
 //#define DEBUG_PRINT_DEVOBJ
 
+#define	mtprintk(va, ...) do { if ((unsigned long)va > 0x00007f0000000000) printk(__VA_ARGS__); } while(0)
+
 #ifdef DEBUG_PRINT_DEVOBJ
 #define	dkprintf(...) kprintf(__VA_ARGS__)
 #define	ekprintf(...) kprintf(__VA_ARGS__)

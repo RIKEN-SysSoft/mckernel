@@ -106,7 +106,7 @@ int obtain_clone_cpuid(cpu_set_t *cpu_set) {
 
 		v = get_cpu_local_var(cpu);
 		ihk_mc_spinlock_lock_noirq(&v->runq_lock);
-		kprintf("%s: cpu=%d,runq_len=%d,runq_reserved=%d\n", __FUNCTION__, cpu, v->runq_len, v->runq_reserved);
+		//kprintf("%s: cpu=%d,runq_len=%d,runq_reserved=%d\n", __FUNCTION__, cpu, v->runq_len, v->runq_reserved);
 		if (min_queue_len == -1 || v->runq_len + v->runq_reserved < min_queue_len) {
 			min_queue_len = v->runq_len + v->runq_reserved;
 			min_cpu = cpu;
@@ -123,6 +123,7 @@ int obtain_clone_cpuid(cpu_set_t *cpu_set) {
 		__sync_fetch_and_add(&get_cpu_local_var(min_cpu)->runq_reserved, 1);
 	}
 	ihk_mc_spinlock_unlock(&runq_reservation_lock, irqstate);
+	kprintf("%s: min_cpu=%d,pid=%d,tid=%d\n", __FUNCTION__, min_cpu, cpu_local_var(current)->proc->pid, cpu_local_var(current)->tid);
 
     return min_cpu;
 }
@@ -1604,6 +1605,7 @@ out:
 
 SYSCALL_DECLARE(clone)
 {
+	kprintf("%s: caller rip=%lx\n", __FUNCTION__, ihk_mc_syscall_pc(ctx));
     return do_fork((int)ihk_mc_syscall_arg0(ctx), ihk_mc_syscall_arg1(ctx),
                    ihk_mc_syscall_arg2(ctx), ihk_mc_syscall_arg3(ctx),
                    ihk_mc_syscall_arg4(ctx), ihk_mc_syscall_pc(ctx),
