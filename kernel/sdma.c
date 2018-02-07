@@ -50,6 +50,16 @@
 #include <hfi1/sdma.h> 
 #include <hfi1/common.h> 
 
+//#define DEBUG_PRINT_SDMA
+
+#ifdef DEBUG_PRINT_SC
+#define	dkprintf(...) kprintf(__VA_ARGS__)
+#define	ekprintf(...) kprintf(__VA_ARGS__)
+#else
+#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
+#define	ekprintf(...) kprintf(__VA_ARGS__)
+#endif
+
 unsigned long hfi1_cap_mask = HFI1_CAP_MASK_DEFAULT;
 
 /* must be a power of 2 >= 64 <= 32768 */
@@ -101,6 +111,25 @@ done:
 	return rval;
 }
 
+int sdma_select_user_engine_idx(void)
+{
+	int idx = 0;
+	int idx_start = 0;
+	int idx_modulo = 16;
+
+	/* Hash on rank if MPI job */
+	if (cpu_local_var(current)->proc->nr_processes > 1) {
+		idx = idx_start +
+			(cpu_local_var(current)->proc->process_rank % idx_modulo);
+	}
+	/* Otherwise, CPU id */
+	else {
+		idx = ihk_mc_get_processor_id() % idx_modulo;
+	}
+
+	return idx;
+}
+
 /*
  * sdma_select_user_engine() - select sdma engine based on user setup
  * @dd: devdata
@@ -115,20 +144,7 @@ done:
 struct sdma_engine *sdma_select_user_engine(struct hfi1_devdata *dd,
 					    u32 selector, u8 vl)
 {
-	int idx = 0;
-	int idx_start = 0;
-	int idx_modulo = 16;
-
-	/* Hash on rank for MPI jobs */
-	if (cpu_local_var(current)->proc->nr_processes > 1) {
-		idx = idx_start +
-			(cpu_local_var(current)->proc->process_rank % idx_modulo);
-	}
-	else {
-		idx = ihk_mc_get_processor_id() % idx_modulo;
-	}
-
-	return &dd->per_sdma[idx];
+	return &dd->per_sdma[sdma_select_user_engine_idx()];
 }
 
 /*
