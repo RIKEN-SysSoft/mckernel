@@ -350,16 +350,19 @@ int sdma_send_txlist(struct sdma_engine *sde, struct iowait_work *wait,
 	unsigned long flags;
 	u16 tail = INVALID_TAIL;
 	u32 submit_count = 0, flush_count = 0, total_count;
-	TP("+");
-	hfi1_cdbg(AIOWRITE, "+");
+
+retry_lock:
 	spin_lock_irqsave(&sde->tail_lock, flags);
 retry:
 	list_for_each_entry_safe(tx, tx_next, tx_list, list) {
 		tx->wait = iowait_ioww_to_iow(wait);
-		if (unlikely(!__sdma_running(sde)))
+		if (unlikely(!__sdma_running(sde))) {
+			kprintf("%s: !__sdma_running \n", __FUNCTION__);
 			goto unlock_noconn;
-		if (unlikely(tx->num_desc > sde->desc_avail))
+		}
+		if (unlikely(tx->num_desc > sde->desc_avail)) {
 			goto nodesc;
+		}
 		if (unlikely(tx->tlen)) {
 			ret = -EINVAL;
 			goto update_tail;
@@ -373,6 +376,7 @@ retry:
 			tail = INVALID_TAIL;
 		}
 	}
+
 update_tail:
 	TP("+ update_tail:");
 	total_count = submit_count + flush_count;
@@ -385,35 +389,34 @@ update_tail:
 	hfi1_cdbg(AIOWRITE, "-");
 	TP("-");	
 	return ret;
+
 unlock_noconn:
-	TP("+ unlock_noconn:");
-	spin_lock(&sde->flushlist_lock);
-	list_for_each_entry_safe(tx, tx_next, tx_list, list) {
-		tx->wait = iowait_ioww_to_iow(wait);
-		list_del_init(&tx->list);
-		tx->next_descq_idx = 0;
-#ifdef CONFIG_HFI1_DEBUG_SDMA_ORDER
-		tx->sn = sde->tail_sn++;
-		// trace_hfi1_sdma_in_sn(sde, tx->sn);
-#endif
-		list_add_tail(&tx->list, &sde->flushlist);
-		flush_count++;
-		iowait_inc_wait_count(wait, tx->num_desc);
-	}
-	spin_unlock(&sde->flushlist_lock);
-	// TODO: schedule_work
-	//schedule_work(&sde->flush_worker);
-	ret = -ECOMM;
-	goto update_tail;
 nodesc:
-	TP("+ nodesc:");
-	ret = sdma_check_progress(sde, wait, tx, submit_count > 0);
-	if (ret == -EAGAIN) {
+	{
+		/*
+		 * Either way, we spin.
+		 * We never sleep in McKernel so release the lock occasionally
+		 * to give a chance to Linux.
+		 */
+		unsigned long ts = rdtsc();
+
+		while ((tx->num_desc > sde->desc_avail) &&
+				(rdtsc() - ts) < 500000) {
+			sde->desc_avail = sdma_descq_freecnt(sde);
+			cpu_pause();
+		}
+
+		if (tx->num_desc <= sde->desc_avail) {
+			ret = 0;
+			goto retry;
+		}
+
+		dkprintf("%s: releasing lock and reiterating.. \n", __FUNCTION__);
+		spin_unlock_irqrestore(&sde->tail_lock, flags);
+		cpu_pause();
 		ret = 0;
-		goto retry;
+		goto retry_lock;
 	}
-	sde->descq_full_count++;
-	goto update_tail;
 }
 
 /*
