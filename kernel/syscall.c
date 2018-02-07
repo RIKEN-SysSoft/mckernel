@@ -301,7 +301,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		preempt_disable();
 	}
 
-	//kprintf("%s: syscall num: %d waiting for Linux.. \n", __FUNCTION__, req->number);
+	dkprintf("%s: syscall num: %d waiting for Linux.. \n", __FUNCTION__, req->number);
 
 #define	STATUS_IN_PROGRESS	0
 #define	STATUS_COMPLETED	1
@@ -471,8 +471,8 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		preempt_enable();
 	}
 
-	dkprintf("%s: syscall num: %d got host reply: %d \n",
-		__FUNCTION__, req->number, res.ret);
+	dkprintf("%s: syscall num: %d got host reply: %d,pid=%d,tid=%d\n",
+			__FUNCTION__, req->number, res.ret, thread->proc->pid, thread->tid);
 
 	rc = res.ret;
 

@@ -2382,6 +2382,7 @@ int main(int argc, char **argv)
 			n_threads = ncpu;
 		}
 	}
+	__dprintf("%s: n_threads=%d,ncpu=%d\n", __FUNCTION__, n_threads, ncpu);
 
 	/* 
 	 * XXX: keep thread_data ncpu sized despite that there are only
@@ -2906,7 +2907,7 @@ create_tracer()
 #endif
 	sem_wait(&uti_desc->arg);
 	if (uti_desc->exit) { /* When uti is not used */
-		fprintf(stderr, "%s: exiting tid=%d\n", __FUNCTION__, gettid());
+		//fprintf(stderr, "%s: exiting tid=%d\n", __FUNCTION__, gettid());
 		exit(0);
 	}
 
@@ -3530,8 +3531,7 @@ int main_loop(struct thread_data_s *my_thread)
 				fprintf(stderr, "WARNING: close_exec() couldn't find exec file?\n");
 			}
 
-			__dprintf("__NR_exit/__NR_exit_group: %ld (cpu_id: %d)\n",
-					w.sr.args[0], cpu);
+			__dprintf("%s: arg0=%lx,cpu_id=%d,rtid=%d\n", w.sr.number == __NR_exit_group ? "__NR_exit_group" : "__NR_exit", w.sr.args[0], cpu, my_thread->remote_tid);
 			if(w.sr.number == __NR_exit_group){
 				sig = w.sr.args[0] & 0x7f;
 				term = (w.sr.args[0] & 0xff00) >> 8;
