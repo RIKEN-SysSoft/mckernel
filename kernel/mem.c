@@ -1168,7 +1168,6 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 	dkprintf("%s: addr: %p, reason: %lx, regs: %p\n",
 			__FUNCTION__, fault_addr, reason, regs);
 
-#if 0
 	/* Linux ioremap address? */
 	if ((unsigned long)fault_addr >= 0xFFFFC90000000000 &&
 			(unsigned long)fault_addr < 0xFFFFFFFF80000000) {
@@ -1221,7 +1220,6 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 	}
 
 regular_handler:
-#endif
 	preempt_disable();
 
 	cpu_enable_interrupt();
