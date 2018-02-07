@@ -34,18 +34,11 @@
 #define eprintf(...) do {  } while (0)
 #endif
 
-#define NPROC 1
-#define MAX_NOPS 10
-int NOPS=1;/* RDMA:1, accumulate:10 */
+#undef NPROC
+#define NINC 10000
 #define TS2NS(sec, nsec) ((unsigned long)(sec) * 1000000000ULL + (unsigned long)(nsec))
-#define CALC_CPU  (100000)  /* 100,000 nsec, CPU time for calculation */
-#define I2R_OCC     ( 200)  /*  200 nsec, occupation time for for sending AM packet */
-#define I2R_NET     (1000)  /*  1,000   nsec, Network time for packet to arrive at responder  */
-int R2I_OCC=    (10200/*400*/);  /*  RDMA:10,200 nsec, accumulate:400ns, occupation time for perforing accumulate or RDMA-RD and sending ACK packet . Note that 10GB/s means 100KB/10,000 ns */
-#define R2I_NET     (1000)  /*  1000   nsec, Network time for packet to arrive at initiator */
-#define POLL_CPU       ( 200) /*  200 nsec, CPU time for checking DRAM event queue */
-#define REQ_UPDATE_CPU ( 200) /*  200 nsec, CPU time for updates MPI_Request */
 #define NSPIN 1
+
 static inline void fixed_size_work() {
 	asm volatile(
 	    "movq $0, %%rcx\n\t"
@@ -73,18 +66,14 @@ struct thr_arg {
 	pthread_t pthread;
 
 	pthread_mutex_t ep_lock; /* mutex for endpoint manipulation */
-	volatile long ini_ev[MAX_NOPS]; /* events on the responder */
-	volatile long res_ev[MAX_NOPS]; /* events on the initiator */
+	volatile long count; /* events on the responder */
 	volatile int terminate;
-	long ini_busy; /* Initiator is busy sending AM packet or RTS packet etc. */
-	long res_busy; /* Responder is busy doing accumulate or RDMA-RD etc. */
 };
 
 struct per_proc {
 	int rank;
 	struct thr_arg thr_arg;
 	long nsec;
-
 };
 
 struct proc_glb {
@@ -102,6 +91,67 @@ double nspw; /* nsec per work */
 
 #define N_INIT 10000000
 
+static int print_cpu_last_executed_on() {
+	char fn[256];
+	char* result;
+	pid_t tid = syscall(SYS_gettid);
+	int fd;
+	int offset;
+    int mpi_errno = 0;
+
+	sprintf(fn, "/proc/%d/task/%d/stat", getpid(), (int)tid);
+	//printf("fn=%s\n", fn);
+	fd = open(fn, O_RDONLY);
+	if(fd == -1) {
+		printf("open() failed\n");
+		goto fn_fail;
+	}
+
+	result = malloc(65536);
+	if(result == NULL) {
+		printf("malloc() failed");
+		goto fn_fail;
+	}
+
+	int amount = 0;
+	offset = 0;
+	while(1) {
+		amount = read(fd, result + offset, 65536);
+		//		printf("amount=%d\n", amount);
+		if(amount == -1) {
+			printf("read() failed");
+			goto fn_fail;
+		}
+		if(amount == 0) {
+			goto eof;
+		}
+		offset += amount;
+	}
+ eof:;
+    //printf("result:%s\n", result);
+
+	char* next_delim = result;
+	char* field;
+	int i;
+	for(i = 0; i < 39; i++) {
+		field = strsep(&next_delim, " ");
+	}
+
+	int cpu = sched_getcpu();
+	if(cpu == -1) {
+		printf("getpu() failed\n");
+		goto fn_fail;
+	}
+
+	printf("stat-cpu=%02d,sched_getcpu=%02d,tid=%d\n", atoi(field), cpu, tid); fflush(stdout);
+ fn_exit:
+    free(result);
+    return mpi_errno;
+ fn_fail:
+	mpi_errno = -1;
+    goto fn_exit;
+}
+
 void fwq_init() {
 	struct timespec start, end;
 	unsigned long nsec;
@@ -118,53 +168,30 @@ void fwq(long delay_nsec) {
 	if (delay_nsec < 0) {
 		printf("%s: delay_nsec<0\n", __FUNCTION__);
 	}
-	//printf("delay_nsec=%ld,count=%f\n", delay_nsec, delay_nsec / nspw);
 	bulk_fsw(delay_nsec / nspw);
 }
-int progress_responder(struct thr_arg *thr_arg) {
-	int ret = 0;
-	int j;
-	struct timespec now_ts;
-	long now_long;
-	clock_gettime(CLOCK_REALTIME, &now_ts);
-	now_long = TS2NS(now_ts.tv_sec, now_ts.tv_nsec);
 
-	pthread_mutex_lock(&thr_arg->ep_lock); /* This lock is for consistency */
-	for (j = 0; j < NOPS; j++) {
-		if (thr_arg->res_busy <= now_long && thr_arg->res_ev[j] && thr_arg->res_ev[j] <= now_long) {
-			//if(thr_arg->rank == 0) { printf("res_ev=%ld,busy=%ld,now=%ld\n", thr_arg->res_ev[j] % 1000000000UL, thr_arg->res_busy % 1000000000UL, now_long  % 1000000000UL); }
-			thr_arg->ini_ev[j] = now_long + R2I_OCC + R2I_NET;
-			thr_arg->res_ev[j] = 0;
-			thr_arg->res_busy = now_long + R2I_OCC; /* responder is busy for AM or RDMA-RD etc. */
-			ret = 1;
-		}
-	}
-	pthread_mutex_unlock(&thr_arg->ep_lock);
-	return ret;
+void init_bar(struct thr_arg* thr_arg) {
+	pthread_mutex_lock(&thr_arg->bar_lock);
+	thr_arg->bar_count= 0;
+	pthread_mutex_unlock(&thr_arg->bar_lock);
 }
 
-int progress_initiator(struct thr_arg* thr_arg) {
-	int ret = 0;
-	int j;
-	struct timespec now_ts;
-	long now_long;
-	clock_gettime(CLOCK_REALTIME, &now_ts);
-	now_long = TS2NS(now_ts.tv_sec, now_ts.tv_nsec);
-
-	pthread_mutex_lock(&thr_arg->ep_lock);
-	for (j = 0; j < NOPS; j++) {
-		//if(thr_arg->rank == 0) { printf("ini_ev=%ld,now=%ld\n", thr_arg->ini_ev[j], now_long); }
-		if (thr_arg->ini_busy <= now_long && thr_arg->ini_ev[j] && thr_arg->ini_ev[j] <= now_long) {
-			fwq(POLL_CPU); /* Account for cache miss */
-			fwq(REQ_UPDATE_CPU);
-			now_long += POLL_CPU + REQ_UPDATE_CPU;
-			thr_arg->ini_ev[j] = 0; /* Event is consumed */
-			thr_arg->ini_busy = now_long;
-			ret = 1;
+void bar(struct thr_arg* thr_arg) {
+	int rc;
+	pthread_mutex_lock(&thr_arg->bar_lock);
+	thr_arg->bar_count++;
+	if (thr_arg->bar_count == 2) {
+		if ((rc = pthread_cond_broadcast(&thr_arg->bar_cond))) {
+			printf("[%d] pthread_cond_broadcast failed,rc=%d\n", thr_arg->rank, rc);
 		}
 	}
-	pthread_mutex_unlock(&thr_arg->ep_lock);
-	return ret;
+	while (thr_arg->bar_count != 2) {
+		if ((rc = pthread_cond_wait(&thr_arg->bar_cond, &thr_arg->bar_lock))) {
+			printf("[%d] pthread_cond_wait failed,rc=%d\n", thr_arg->rank, rc);
+		}
+	}
+	pthread_mutex_unlock(&thr_arg->bar_lock);
 }
 
 void *progress_fn(void *arg) {
@@ -182,50 +209,28 @@ void *progress_fn(void *arg) {
 		fprintf(stdout, "CT09100 progress_fn running on McKernel NG\n", rc);
 	}
 
-	printf("progress,enter,rank=%d\n", thr_arg->rank);
+	printf("[%d] progress,enter,", thr_arg->rank);
+	print_cpu_last_executed_on();
 
-	pthread_mutex_lock(&thr_arg->bar_lock);
-	thr_arg->bar_count++;
-	if (thr_arg->bar_count == 2) {
-		if ((rc = pthread_cond_broadcast(&thr_arg->bar_cond))) {
-			printf("[%d] pthread_cond_broadcast failed,rc=%d\n", thr_arg->rank, rc);
-		}
-	}
-	while (thr_arg->bar_count != 2) {
-		if ((rc = pthread_cond_wait(&thr_arg->bar_cond, &thr_arg->bar_lock))) {
-			printf("[%d] pthread_cond_wait failed,rc=%d\n", thr_arg->rank, rc);
-		}
-    }
-	pthread_mutex_unlock(&thr_arg->bar_lock);
+	bar(thr_arg);
 
 	printf("[%d] progress,after barrier\n", thr_arg->rank);
-	//#define NO_ASYNC
-#ifdef NO_ASYNC
-	return NULL;
-#endif
-	/* Start progress */
-	while(1) {
-		if (thr_arg->terminate) {
-			break;
-		}
 
-		if (progress_responder(thr_arg)) {
-			//if (thr_arg->rank == 0) { printf("progress_fn, responder progressed\n"); }
-		}
-
-		if (progress_initiator(thr_arg)) {
-			//if (thr_arg->rank == 0) { printf("progress_fn, initiator progressed\n"); }
-		}
-
-		spin_count++;
-		if (spin_count >= NSPIN) {
-			spin_count = 0;
-			sched_yield();
-		}
+	for (i = 0; i < NINC; i++) {
+		pthread_mutex_lock(&thr_arg->ep_lock);
+		thr_arg->count++;
+		pthread_mutex_unlock(&thr_arg->ep_lock);
+		sched_yield();
 	}
+
+	bar(thr_arg);
 	printf("progress,exit,rank=%d\n", thr_arg->rank);
+
 	return NULL;
 }
+
+#define TIMER_KIND CLOCK_THREAD_CPUTIME_ID
+//#define TIMER_KIND CLOCK_REALTIME
 
 void parent_fn(struct per_proc *per_proc) {
 	int i, j;
@@ -238,7 +243,8 @@ void parent_fn(struct per_proc *per_proc) {
 	struct timespec now_ts;
 	long now_long;
 
-	printf("[%d] parent_fn,enter,proc_glb=%p,bar_count=%d\n", per_proc->rank, proc_glb, proc_glb->bar_count);
+	printf("[%d] parent_fn,enter,", per_proc->rank);
+	print_cpu_last_executed_on();
 
 	pthread_mutex_lock(&proc_glb->bar_lock);
 	proc_glb->bar_count++;
@@ -254,20 +260,16 @@ void parent_fn(struct per_proc *per_proc) {
     }
 	pthread_mutex_unlock(&proc_glb->bar_lock);
 
-	//printf("[%d] parent,after barrier\n", per_proc->rank);
 
 	pthread_mutexattr_init(&mutexattr);
-	//pthread_mutexattr_setpshared(&mutexattr, PTHREAD_PROCESS_SHARED);
 	pthread_mutex_init(&per_proc->thr_arg.ep_lock, &mutexattr);
 
 	per_proc->thr_arg.bar_count = 0;
 
 	pthread_condattr_init(&condattr);
-	//pthread_condattr_setpshared(&condattr, PTHREAD_PROCESS_SHARED);
 	pthread_cond_init(&per_proc->thr_arg.bar_cond, &condattr);
 
 	pthread_mutexattr_init(&mutexattr);
-	//pthread_mutexattr_setpshared(&mutexattr, PTHREAD_PROCESS_SHARED);
 	pthread_mutex_init(&per_proc->thr_arg.bar_lock, &mutexattr);
 
 	uti_str = getenv("DISABLE_UTI");
@@ -290,71 +292,21 @@ void parent_fn(struct per_proc *per_proc) {
 		exit(1);
 	}
 	
-	pthread_mutex_lock(&per_proc->thr_arg.bar_lock);
-	per_proc->thr_arg.bar_count++;
-	if (per_proc->thr_arg.bar_count == 2) {
-		if ((rc = pthread_cond_broadcast(&per_proc->thr_arg.bar_cond))) {
-			printf("[%d] pthread_cond_broadcast failed,rc=%d\n", per_proc->rank, rc);
-		}
-	}
-	while (per_proc->thr_arg.bar_count != 2) {
-		if ((rc = pthread_cond_wait(&per_proc->thr_arg.bar_cond, &per_proc->thr_arg.bar_lock))) {
-			printf("[%d] pthread_cond_wait failed,rc=%d\n", per_proc->rank, rc);
-		}
-    }
-	pthread_mutex_unlock(&per_proc->thr_arg.bar_lock);
+	init_bar(&per_proc->thr_arg);
+	bar(&per_proc->thr_arg);
 
 	printf("[%d] parent,after barrier\n", per_proc->rank);
-	//fprintf(stdout, "CT09004 pthread_create OK\n");
 
-	//#define TIMER_KIND CLOCK_THREAD_CPUTIME_ID
-#define TIMER_KIND CLOCK_REALTIME
 	clock_gettime(TIMER_KIND, &start);
-	for (i = 0; i < 10000; i++) { /* It takes 1 sec */
-
-		/* Send request-to-send packet */
-		clock_gettime(CLOCK_REALTIME, &now_ts);
-		now_long = TS2NS(now_ts.tv_sec, now_ts.tv_nsec);
-	
-		for (j = 0; j < NOPS; j++) {
-			pthread_mutex_lock(&per_proc->thr_arg.ep_lock); /* Lock is taken per MPI_Accumulate() */
-			fwq(I2R_OCC);
-			now_long += I2R_OCC;
-			per_proc->thr_arg.res_ev[j] = now_long + I2R_NET;
-			per_proc->thr_arg.ini_busy = now_long;
-			//printf("res_ev=%ld,ini_busy=%ld,now=%ld\n", per_proc->thr_arg.res_ev[j] % 1000000000UL, per_proc->thr_arg.ini_busy % 1000000000UL, now_long  % 1000000000UL);
-			pthread_mutex_unlock(&per_proc->thr_arg.ep_lock);
-		}
-
-		/* Start calculation */
-		fwq(CALC_CPU);
-
-		/* Progress responder and initiator */
-		int more_reap_needed;
-		while (1) {
-			if (progress_responder(&per_proc->thr_arg)) {
-				//printf("parent_fn, responder progressed\n");
-			}
-
-			if (progress_initiator(&per_proc->thr_arg)) {
-				//printf("parent_fn, initiator progressed\n");
-			}
-
-			more_reap_needed = 0;
-			for (j = 0; j < NOPS; j++) {
-				if (per_proc->thr_arg.res_ev[j] || per_proc->thr_arg.ini_ev[j]) {
-					more_reap_needed = 1;
-					break;
-				}
-			}
-			if (!more_reap_needed) {
-				break;
-			}
-		}
+	for (i = 0; i < NINC; i++) {
+		pthread_mutex_lock(&per_proc->thr_arg.ep_lock); /* Lock is taken per MPI_Accumulate() */
+		per_proc->thr_arg.count++;
+		pthread_mutex_unlock(&per_proc->thr_arg.ep_lock);
 	}
+	init_bar(&per_proc->thr_arg);
+	bar(&per_proc->thr_arg);
 	clock_gettime(TIMER_KIND, &end);
 	
-	per_proc->thr_arg.terminate = 1;
 	pthread_join(per_proc->thr_arg.pthread, NULL);
 
 	per_proc->nsec = TS2NS(end.tv_sec, end.tv_nsec) - TS2NS(start.tv_sec, start.tv_nsec);
@@ -386,18 +338,10 @@ int main(int argc, char **argv) {
 	int shmid;
 	int opt;
 
-	while ((opt = getopt_long(argc, argv, "+ar", options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+", options, NULL)) != -1) {
 		switch (opt) {
-		case 'a': /* accumulate */
-			NOPS = 10; /* ten accumulates */
-			R2I_OCC = 400; /* 200 ns to accumulate, 200 ns to send ACK */
-			break;
-		case 'r':
-			NOPS = 6; /* 3D stencil, RDMA */
-			R2I_OCC = 10200; /* 10000 ns to RDMA-RD, 200 ns to send DONE */
-				break;
 		default: /* '?' */
-			printf("usage: [-a] [-r]");
+			printf("unknown option: %c\n", optopt);
 			exit(1);
 		}
 	}
