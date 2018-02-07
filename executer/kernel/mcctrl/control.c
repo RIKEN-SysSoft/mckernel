@@ -391,7 +391,7 @@ static void release_handler(ihk_os_t os, void *param)
 
 	mcexec_destroy_per_process_data(os, info->pid);
 
-	memset(&isp, '\0', sizeof isp);
+	memset(&isp, '\0', sizeof(isp));
 	isp.msg = SCD_MSG_CLEANUP_PROCESS;
 	isp.pid = info->pid;
 
