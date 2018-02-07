@@ -2,7 +2,7 @@
 #define __PROCESS_PROFILE_H_
 
 /* Uncomment this to enable profiling */
-#define PROFILE_ENABLE
+//#define PROFILE_ENABLE
 
 #ifdef PROFILE_ENABLE
 #define PROFILE_SYSCALL_MAX                          300

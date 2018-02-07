@@ -943,7 +943,7 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 #if USE_VM_INSERT_PFN
 
 	if(pfn_valid(pfn)) {
-		printk("%s: remote va=%lx,pgsize=%lx,pfn_valid\n", __FUNCTION__, rva, pgsize);
+		//printk("%s: remote va=%lx,pgsize=%lx,pfn_valid\n", __FUNCTION__, rva, pgsize);
 	} else {
 		//printk("%s: remote va=%lx,pgsize=%lx,!pfn_valid\n", __FUNCTION__, rva, pgsize);
 	}
