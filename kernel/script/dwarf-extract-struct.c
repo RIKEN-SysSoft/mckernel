@@ -311,6 +311,126 @@ static int dwarf_get_size(Dwarf_Debug dbg, Dwarf_Die die,
 	return DW_DLV_OK;
 }
 
+static int dwarf_get_arraysize(Dwarf_Debug dbg, Dwarf_Die die,
+		int *psize, Dwarf_Error *perr) {
+	Dwarf_Attribute attr;
+	Dwarf_Unsigned lower_bound, upper_bound;
+	int rc;
+	Dwarf_Die child;
+	Dwarf_Half form;
+
+	rc = dwarf_child(die, &child, perr);
+	if (rc == DW_DLV_NO_ENTRY) {
+		fprintf(stderr,
+				"Could not deref child of array: no entry\n");
+		return rc;
+	}
+	if (rc != DW_DLV_OK) {
+		fprintf(stderr,
+				"Could not get child entry of array: %s\n",
+				dwarf_errmsg(*perr));
+		return rc;
+	}
+
+	rc = dwarf_attr(child, DW_AT_lower_bound, &attr, perr);
+	/* Not present? Assume zero */
+	if (rc != DW_DLV_OK) {
+		lower_bound = 0;
+		goto upper;
+	}
+
+	rc = dwarf_whatform(attr, &form, perr);
+	if (rc != DW_DLV_OK) {
+		fprintf(stderr, "Error getting whatform: %s\n",
+				dwarf_errmsg(*perr));
+		exit(5);
+	}
+
+	if (form == DW_FORM_data1 || form == DW_FORM_data2
+		|| form == DW_FORM_data2 || form == DW_FORM_data4
+		|| form == DW_FORM_data8 || form == DW_FORM_udata) {
+		dwarf_formudata(attr, &lower_bound, 0);
+	} else if (form == DW_FORM_sdata) {
+		Dwarf_Signed ssize;
+		dwarf_formsdata(attr, &ssize, 0);
+		if (ssize < 0) {
+			fprintf(stderr,
+				"unsupported negative size\n");
+			exit(5);
+		}
+		lower_bound = (Dwarf_Unsigned) ssize;
+	} else {
+		Dwarf_Locdesc **locdescs;
+		Dwarf_Signed len;
+		if (dwarf_loclist_n(attr, &locdescs, &len,  perr)
+				== DW_DLV_ERROR) {
+			 fprintf(stderr, "unsupported member size\n");
+			 exit(5);
+		}
+		if (len != 1
+		    || locdescs[0]->ld_cents != 1
+		    || (locdescs[0]->ld_s[0]).lr_atom
+				!= DW_OP_plus_uconst) {
+			 fprintf(stderr,
+				"unsupported location expression\n");
+			 exit(5);
+		}
+		lower_bound = (locdescs[0]->ld_s[0]).lr_number;
+	}
+	dwarf_dealloc(dbg, attr, DW_DLA_ATTR);
+
+upper:
+	rc = dwarf_attr(child, DW_AT_upper_bound, &attr, perr);
+	if (rc != DW_DLV_OK) {
+		return rc;
+	}
+
+	rc = dwarf_whatform(attr, &form, perr);
+	if (rc != DW_DLV_OK) {
+		fprintf(stderr, "Error getting whatform: %s\n",
+			dwarf_errmsg(*perr));
+		exit(5);
+	}
+
+	if (form == DW_FORM_data1 || form == DW_FORM_data2
+		|| form == DW_FORM_data2 || form == DW_FORM_data4
+		|| form == DW_FORM_data8 || form == DW_FORM_udata) {
+		dwarf_formudata(attr, &upper_bound, 0);
+	} else if (form == DW_FORM_sdata) {
+		Dwarf_Signed ssize;
+		dwarf_formsdata(attr, &ssize, 0);
+		if (ssize < 0) {
+			fprintf(stderr,
+				"unsupported negative size\n");
+			exit(5);
+		}
+		upper_bound = (Dwarf_Unsigned) ssize;
+	} else {
+		Dwarf_Locdesc **locdescs;
+		Dwarf_Signed len;
+		if (dwarf_loclist_n(attr, &locdescs, &len,  perr)
+				== DW_DLV_ERROR) {
+			 fprintf(stderr, "unsupported member size\n");
+			 exit(5);
+		}
+		if (len != 1
+		    || locdescs[0]->ld_cents != 1
+		    || (locdescs[0]->ld_s[0]).lr_atom
+				!= DW_OP_plus_uconst) {
+			 fprintf(stderr,
+				"unsupported location expression\n");
+			 exit(5);
+		}
+		upper_bound = (locdescs[0]->ld_s[0]).lr_number;
+	}
+	dwarf_dealloc(dbg, attr, DW_DLA_ATTR);
+
+	*psize = ((int)upper_bound - (int)lower_bound + 1);
+	return DW_DLV_OK;
+}
+
+
+
 static int deref_type(Dwarf_Debug dbg, Dwarf_Die type_die,
 		Dwarf_Die *new_type_die, Dwarf_Half *ptype_tag,
 		Dwarf_Error *perr) {
@@ -521,54 +641,16 @@ static void print_field(Dwarf_Debug dbg, Dwarf_Die die, const char *field_name,
 				exit(7);
 			}
 
-			dwarf_dealloc(dbg, type_die, DW_DLA_DIE);
+			rc = dwarf_get_arraysize(dbg, type_die, &size, &err);
+			if (rc != DW_DLV_OK) {
+				fprintf(stderr,
+					"Could not get array size for %s: %s\n",
+					field_name, dwarf_errmsg(err));
+				exit(7);
+			}
 			type_die = next;
 
-			/* get next pos */
-			rc = dwarf_siblingof(dbg, die, &next, &err);
-			if (rc == DW_DLV_NO_ENTRY) {
-				fprintf(stderr,
-					"Need to get sibling for array size but none left, please implement through whole struct size instead. field %s\n",
-					field_name);
-				exit(7);
-			}
-			if (rc != DW_DLV_OK) {
-				fprintf(stderr,
-					"Could not get sibling of field %s: %s\n",
-					field_name, dwarf_errmsg(err));
-				exit(7);
-			}
-			rc = dwarf_get_offset(dbg, next, &next_offset, &err);
-			if (rc != DW_DLV_OK) {
-				fprintf(stderr,
-					"Could not get neighbor's offset for field %s: %s\n",
-					field_name, dwarf_errmsg(err));
-				exit(7);
-			}
-			dwarf_dealloc(dbg, next, DW_DLA_DIE);
-
-			/* get type size */
-			next = type_die;
-			if (type_tag == DW_TAG_typedef) {
-				rc = deref_type(dbg, type_die, &next, NULL, &err);
-				if (rc != DW_DLV_OK) {
-					fprintf(stderr,
-						"Could not deref array typedef type for %s: %s\n",
-						field_name, dwarf_errmsg(err));
-					exit(7);
-				}
-			}
-			rc = dwarf_get_size(dbg, next, &size, &err);
-			if (rc != DW_DLV_OK) {
-				fprintf(stderr,
-					"Could not get size for type for %s: %s\n",
-					field_name, dwarf_errmsg(err));
-				exit(7);
-			}
-			if (next != type_die)
-				dwarf_dealloc(dbg, next, DW_DLA_DIE);
-
-			snprintf(array_buf, 128, "[%d]", (next_offset - offset) / size);
+			snprintf(array_buf, 128, "[%d]", size);
 		}
 
 		/* If it's still pointer at this point, it's void * */
