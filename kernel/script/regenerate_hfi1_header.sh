@@ -53,4 +53,15 @@ HFI1_KO="${1-$(modinfo -n hfi1)}" || \
 	dd tail_lock desc_avail tail_csr flushlist flushlist_lock \
 	descq_head descq_tail descq_cnt state sdma_shift sdma_mask\
 	descq tx_ring tx_tail head_lock descq_full_count ahg_bits\
+	this_idx \
 		> "${HDR_PREFIX}sdma_engine.h"
+
+"$DES_BIN" "$HFI1_KO" user_sdma_request	\
+	data_iovs pq cq status txps info hdr tidoffset data_len \
+	iov_idx sent seqnum done has_error koffset tididx \
+	tids n_tids sde ahg_idx iovs seqcomp seqsubmitted \
+		> "${HDR_PREFIX}user_sdma_request.h"
+
+"$DES_BIN" "$HFI1_KO" user_sdma_txreq	\
+	hdr txreq list req flags busycount seqnum \
+		> "${HDR_PREFIX}user_sdma_txreq.h"

@@ -1214,7 +1214,7 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 				"mapped on demand\n",
 				__FUNCTION__, virt, phys);
 
-		flush_tlb_single(virt);
+		flush_tlb_single((unsigned long)virt);
 		error = 0;
 		goto out;
 	}

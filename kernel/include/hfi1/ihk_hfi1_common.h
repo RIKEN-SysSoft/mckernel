@@ -191,8 +191,8 @@ typedef unsigned short __u16;
 typedef __signed__ int __s32;
 typedef unsigned int __u32;
 
-typedef __signed__ long __s64;
-typedef unsigned long __u64;
+typedef __signed__ long long __s64;
+typedef unsigned long long __u64;
 
 typedef __u64 u64;
 typedef __s64 s64;

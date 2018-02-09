@@ -34,43 +34,47 @@ struct sdma_engine {
 			u8 sdma_shift;
 		};
 		struct {
-			char padding8[256];
+			char padding8[181];
+			u8 this_idx;
+		};
+		struct {
+			char padding9[256];
 			spinlock_t tail_lock;
 		};
 		struct {
-			char padding9[260];
+			char padding10[260];
 			u32 descq_tail;
 		};
 		struct {
-			char padding10[264];
+			char padding11[264];
 			long unsigned int ahg_bits;
 		};
 		struct {
-			char padding11[272];
+			char padding12[272];
 			u16 desc_avail;
 		};
 		struct {
-			char padding12[274];
+			char padding13[274];
 			u16 tx_tail;
 		};
 		struct {
-			char padding13[276];
+			char padding14[276];
 			u16 descq_cnt;
 		};
 		struct {
-			char padding14[320];
+			char padding15[320];
 			seqlock_t head_lock;
 		};
 		struct {
-			char padding15[328];
+			char padding16[328];
 			u32 descq_head;
 		};
 		struct {
-			char padding16[704];
+			char padding17[704];
 			spinlock_t flushlist_lock;
 		};
 		struct {
-			char padding17[712];
+			char padding18[712];
 			struct list_head flushlist;
 		};
 	};
