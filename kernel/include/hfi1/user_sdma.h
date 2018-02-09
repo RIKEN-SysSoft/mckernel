@@ -94,6 +94,7 @@ extern uint extended_psn;
 
 #define AHG_KDETH_INTR_SHIFT 12
 #define AHG_KDETH_SH_SHIFT   13
+#define AHG_KDETH_ARRAY_SIZE  9
 
 #define KDETH_GET(val, field)						\
 	(((le32_to_cpu((val))) >> KDETH_##field##_SHIFT) & KDETH_##field##_MASK)
@@ -108,7 +109,9 @@ extern uint extended_psn;
 
 /* KDETH OM multipliers and switch over point */
 #define KDETH_OM_SMALL     4
+#define KDETH_OM_SMALL_SHIFT     2
 #define KDETH_OM_LARGE     64
+#define KDETH_OM_LARGE_SHIFT     6
 #define KDETH_OM_MAX_SIZE  (1 << ((KDETH_OM_LARGE / KDETH_OM_SMALL) + 1))
 
 /* The original size on Linux is 376 B */
