@@ -1283,7 +1283,7 @@ void clear_host_pte(uintptr_t addr, size_t len)
 	ihk_mc_user_context_t ctx;
 	long lerror;
 
-	dkprintf("%s: addr=%lx,len=%lx\n", __FUNCTION__, addr, len);
+	//kprintf("%s: addr=%lx,len=%lx\n", __FUNCTION__, addr, len);
 
 	ihk_mc_syscall_arg0(&ctx) = addr;
 	ihk_mc_syscall_arg1(&ctx) = len;
@@ -1342,18 +1342,18 @@ int do_munmap(void *addr, size_t len)
 	begin_free_pages_pending();
 	error = remove_process_memory_range(cpu_local_var(current)->vm,
 			(intptr_t)addr, (intptr_t)addr+len, &ro_freed);
-	//if (!proc->nohost) { /* debug */
 	if (error || !ro_freed) {
+		//kprintf("%s: calling clear_host_pte,addr=%p,len=%lx,error=%d,ro_freed=%d\n", __FUNCTION__, addr, len, error, ro_freed);
 		clear_host_pte((uintptr_t)addr, len);
 	}
 	else {
+		//kprintf("%s: calling set_host_vma,addr=%p,len=%lx,error=%d,ro_freed=%d\n", __FUNCTION__, addr, len, error, ro_freed);
 		error = set_host_vma((uintptr_t)addr, len, PROT_READ|PROT_WRITE);
 		if (error) {
 			kprintf("sys_munmap:set_host_vma failed. %d\n", error);
 			/* through */
 		}
 	}
-	//}
 	finish_free_pages_pending();
 
 	dkprintf("%s: 0x%lx:%lu, error: %ld\n",
@@ -1432,8 +1432,6 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	int pgshift;
 	struct vm_range *range = NULL;
 	
-	//if (fd == cpu_local_var(current)->hfi_fd) kprintf("do_mmap(%lx,%lx,%x,%x,%d,%lx)\n", addr0, len0, prot, flags, fd, off0);
-
 	if (!(flags & MAP_ANONYMOUS)) {
 		ihk_mc_spinlock_lock_noirq(&proc->mckfd_lock);
 		for(fdp = proc->mckfd; fdp; fdp = fdp->next)
@@ -1579,7 +1577,9 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 			}
 			error = devobj_create(fd, len, off, &memobj, &maxprot, 
 					prot, (flags & (MAP_POPULATE | MAP_LOCKED)));
-
+			
+			dkprintf("%s: device fd: %d off: %lu mapping at %p - %p\n", 
+						__FUNCTION__, fd, off, addr, addr + len); 
 			if (!error) {
 #ifdef PROFILE_ENABLE
 				profile_event_add(PROFILE_mmap_device_file, len);
@@ -1773,6 +1773,8 @@ out:
 	if (memobj) {
 		memobj_release(memobj);
 	}
+	//if (fd == cpu_local_var(current)->hfi_fd) kprintf("%s: hfi_fd,addr=%lx,len=%lx,(reqested %lx,%lx),prot=%x,flags=%x,fd=%d,offset=%lx,error=%d\n", __FUNCTION__, addr, len, addr0, len0, prot, flags, fd, off0, error);
+
 	dkprintf("%s: 0x%lx:%8lu-0x%lx, (req: 0x%lx:%lu), prot: %x, flags: %x, "
 			"fd: %d, off: %lu, error: %ld, addr: 0x%lx\n",
 			__FUNCTION__,
@@ -2681,7 +2683,7 @@ retry_tid:
 		}
 	}
 
-	kprintf("%s: old->pid=%d,tid=%d,new->pid=%d,tid=%d\n", __FUNCTION__, oldproc->pid, old->tid, newproc->pid, new->tid);
+	dkprintf("%s: old->pid=%d,tid=%d,new->pid=%d,tid=%d\n", __FUNCTION__, oldproc->pid, old->tid, newproc->pid, new->tid);
 
 	dkprintf("clone: kicking scheduler!,cpuid=%d pid=%d tid %d -> tid=%d\n",
 		cpuid, newproc->pid,
@@ -3163,11 +3165,9 @@ SYSCALL_DECLARE(writev)
 	struct iovec *iovec = (struct iovec *)ihk_mc_syscall_arg1(ctx);
 	int iovcnt = ihk_mc_syscall_arg2(ctx);
 	void *private_data = proc->fd_priv_table[fd];
-#if 0
-	if (fd == cpu_local_var(current)->hfi_fd) {
-		kprintf("%s: hfi_fd,%p,%d\n", __FUNCTION__, iovec, iovcnt);
-	}
-#endif
+
+	//if (fd == cpu_local_var(current)->hfi_fd) kprintf("%s: hfi_fd,%p,%d\n", __FUNCTION__, iovec, iovcnt);
+
 	if (private_data) {
 		return hfi1_aio_write(private_data, iovec, iovcnt);
 	}
@@ -3280,7 +3280,7 @@ SYSCALL_DECLARE(open)
 		kfree(xpmem_wk);
 		return -EFAULT;
 	}
-	kprintf("open(): pathname=%s\n", xpmem_wk);
+	//kprintf("open(): pathname=%s\n", xpmem_wk);
 
 	if (!strcmp(xpmem_wk, "/proc/sys/vm/overcommit_memory")) {
 		return -ENOENT;
@@ -3372,6 +3372,8 @@ SYSCALL_DECLARE(close)
 		ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
 		rc = syscall_generic_forwarding(__NR_close, ctx);
 	}
+
+    //if (fd == cpu_local_var(current)->hfi_fd) kprintf("%s: hfi_fd\n", __FUNCTION__);
 
 	if (fd < 256) {
 		thread->proc->fd_priv_table[fd] = NULL;

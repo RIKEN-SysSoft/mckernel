@@ -123,7 +123,7 @@ int obtain_clone_cpuid(cpu_set_t *cpu_set) {
 		__sync_fetch_and_add(&get_cpu_local_var(min_cpu)->runq_reserved, 1);
 	}
 	ihk_mc_spinlock_unlock(&runq_reservation_lock, irqstate);
-	kprintf("%s: min_cpu=%d,pid=%d,tid=%d\n", __FUNCTION__, min_cpu, cpu_local_var(current)->proc->pid, cpu_local_var(current)->tid);
+	dkprintf("%s: min_cpu=%d,pid=%d,tid=%d\n", __FUNCTION__, min_cpu, cpu_local_var(current)->proc->pid, cpu_local_var(current)->tid);
 
     return min_cpu;
 }

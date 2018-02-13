@@ -2786,7 +2786,7 @@ long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 		param.ret = rc;
 	} else {
 			if (param.number == __NR_munmap) {
-				printk("%s: syscall_backward, munmap,addr=%lx,len=%lx,tid=%d\n", __FUNCTION__, param.args[0], param.args[1], task_tgid_vnr(current));
+				//printk("%s: syscall_backward, munmap,addr=%lx,len=%lx,tid=%d\n", __FUNCTION__, param.args[0], param.args[1], task_tgid_vnr(current));
 			}
 			rc = syscall_backward(ihk_host_os_get_usrdata(os), param.number,
 								  param.args[0], param.args[1], param.args[2],

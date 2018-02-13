@@ -1895,6 +1895,7 @@ out_release:
 
 	error = 0;
 out:
+	//printk("%s: va=%lx,pfn=%lx\n", __FUNCTION__, va, pfn);
 	dprintk("pager_req_pfn(%p,%lx,%lx): %d %lx\n", os, handle, off, error, pfn);
 	return error;
 }
@@ -1908,6 +1909,7 @@ static int __pager_unmap(struct pager *pager)
 	error = do_munmap(current->mm, pager->map_uaddr, pager->map_len);
 	up_write(&current->mm->mmap_sem);
 #else
+	printk("%s: calling vm_munmap,addr=%lx,map_len=%lx\n", __FUNCTION__, pager->map_uaddr, pager->map_len);
 	error = vm_munmap(pager->map_uaddr, pager->map_len);
 #endif
 
@@ -2177,6 +2179,8 @@ int clear_pte_range(uintptr_t start, uintptr_t len)
 	int error;
 	int ret;
 
+	//printk("%s: %lx-%lx\n", __FUNCTION__, start, start + len);
+
 	ret = 0;
 	down_read(&mm->mmap_sem);
 	addr = start;
@@ -2421,7 +2425,6 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 			mcctrl_put_per_proc_data(ppd);
 		}
 
-		if (sc->args[0] > 0x2aaab0000000) printk("%s: calling clear_pte_range,addr=%lx,len=%lx\n", __FUNCTION__, sc->args[0], sc->args[1]);
 		ret = clear_pte_range(sc->args[0], sc->args[1]);
 		break;
 
