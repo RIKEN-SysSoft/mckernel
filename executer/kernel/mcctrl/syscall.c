@@ -1092,7 +1092,15 @@ reserve_user_space_common(struct mcctrl_usrdata *usrdata, unsigned long start, u
 	start = vm_mmap(file, start, end, PROT_READ|PROT_WRITE|PROT_EXEC,
 	                MAP_FIXED|MAP_SHARED, 0);
 #endif
-
+#if 0
+	{ /* debug */
+        struct vm_area_struct *vma;
+		down_write(&current->mm->mmap_sem);
+		vma = find_vma(current->mm, start);
+		vma->vm_flags |= VM_DONTCOPY;
+		up_write(&current->mm->mmap_sem);
+	}
+#endif
 	revert_creds(original);
 	put_cred(promoted);
 	fput(file);
