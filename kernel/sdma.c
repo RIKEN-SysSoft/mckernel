@@ -401,7 +401,7 @@ nodesc:
 		unsigned long ts = rdtsc();
 
 		while ((tx->num_desc > sde->desc_avail) &&
-				(rdtsc() - ts) < 500000) {
+				(rdtsc() - ts) < 50000000) {
 			sde->desc_avail = sdma_descq_freecnt(sde);
 			cpu_pause();
 		}
