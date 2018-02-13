@@ -2208,10 +2208,10 @@ int release_user_space(uintptr_t start, uintptr_t len)
 	int error;
 	int ret;
 
-	printk("%s: %lx-%lx\n", __FUNCTION__, start, start + len);
+	//printk("%s: %lx-%lx\n", __FUNCTION__, start, start + len);
 
 	ret = 0;
-	down_read(&mm->mmap_sem);
+	//down_read(&mm->mmap_sem);
 	addr = start;
 	while (addr < (start + len)) {
 		vma = find_vma(mm, addr);
@@ -2235,8 +2235,8 @@ int release_user_space(uintptr_t start, uintptr_t len)
 		}
 		addr = vma->vm_end;
 	}
-	up_read(&mm->mmap_sem);
-	printk("%s: exit\n", __FUNCTION__);
+	//up_read(&mm->mmap_sem);
+	//printk("%s: exit\n", __FUNCTION__);
 	return ret;
 }
 

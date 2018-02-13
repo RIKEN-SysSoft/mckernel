@@ -2635,7 +2635,7 @@ static long mcexec_release_user_space(struct release_user_space_desc *__user arg
 	}
 
 #if 1
-	printk("%s: calling clear_pte_range,%lx-%lx\n", __FUNCTION__, desc.user_start, desc.user_end);
+	//printk("%s: calling clear_pte_range,%lx-%lx\n", __FUNCTION__, desc.user_start, desc.user_end);
 	return clear_pte_range(desc.user_start, desc.user_end - desc.user_start);
 #else
 	return release_user_space(desc.user_start, desc.user_end - desc.user_start);
