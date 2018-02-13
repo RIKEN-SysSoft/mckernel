@@ -3,3 +3,7 @@
 003 isend 送受信に使用するバッファは一つ、waitの前にsleepしない
 004 isend-calc-wait, all ranks put to all the other ranks on different node
 005 lockall-accumulate-calc-unlockall, all ranks put to all the other ranks on different node
+006 parent isend-calc-wait, child does nothing --> crash
+007 parent isend-calc-wait, child psm2 send/recv --> one ep per process
+008 parent psm2-init and psm2-connect, child psm2-send/recv --> receiver side crash
+009 parent does nothing, child psm2-init, psm2-connect, psm2-send/recv --> receiver side crash
