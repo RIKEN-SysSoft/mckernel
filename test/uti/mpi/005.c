@@ -22,6 +22,17 @@
 
 #define DIFFNSEC(end, start) ((end.tv_sec - start.tv_sec) * 1000000000UL + (end.tv_nsec - start.tv_nsec))
 
+#if 1
+#define BEGIN_EPOCH(win) do { MPI_Win_fence(0, win); } while(0)
+#define END_EPOCH(win) do { MPI_Win_fence(0, win); } while(0)
+#define BAR_EPOCH do { } while(0)
+#else
+#define BEGIN_EPOCH(win) do { MPI_Win_lock_all(0, win); } while(0)
+#define END_EPOCH(win) do { MPI_Win_unlock_all(win); } while(0)
+#define BAR_EPOCH do { MPI_Barrier(MPI_COMM_WORLD); } while(0)
+#endif
+
+
 static inline void fixed_size_work() {
 	asm volatile(
 	    "movq $0, %%rcx\n\t"
@@ -66,6 +77,8 @@ void fwq(long delay_nsec) {
 #else /* For machines with large core-to-core performance variation (e.g. OFP) */
 void fwq(long delay_nsec) {
 	struct timespec start, end;
+	
+	if (delay_nsec < 0) { return; }
 	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
 
 	while (1) {
@@ -131,7 +144,7 @@ static int print_cpu_last_executed_on() {
 		goto fn_fail;
 	}
 
-	printf("compute thread,pmi_rank=%02d,stat-cpu=%02d,sched_getcpu=%02d,pid=%d,tid=%d\n", atoi(getenv("PMI_RANK")), atoi(field), cpu, getpid(), tid); fflush(stdout);
+	printf("compute thread,pmi_rank=%02d,stat-cpu=%02d,sched_getcpu=%02d,tid=%d\n", atoi(getenv("PMI_RANK")), atoi(field), cpu, tid); fflush(stdout);
  fn_exit:
     free(result);
     return mpi_errno;
@@ -144,23 +157,22 @@ static inline int on_same_node(int ppn, int me, int you) {
 	return (me / ppn == you / ppn);
 }
 
-/* isend-calc-wait */
-void my_send(int nproc, int ppn, int rank, double *sbuf, double *rbuf, int ndoubles, MPI_Request* reqs, long calc_nsec) {
-	int i;
+/* fence-accumulate-calc-fence */
+void accumulate(int nproc, int ppn, int rank, double *wbuf, double *rbuf, int ndoubles, MPI_Win win, long calc_nsec) {
+	int i, j;
 	int r = 0, s = 0;
 	int req = 0;
+	BEGIN_EPOCH(win);
 	for (i = 0; i < nproc; i++) {
 		if (!on_same_node(ppn, rank, i)) {
-			MPI_Irecv(rbuf + r * ndoubles, ndoubles, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &reqs[req]);
-			r++;
-			req++;
-			MPI_Isend(sbuf + s * ndoubles, ndoubles, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &reqs[req]);
-			s++;
-			req++;
+			for (j = 0; j < ndoubles; j++) {
+				//printf("i=%d,j=%d,rbuf=%f,wbuf=%f\n", i, j, rbuf[i * ndoubles + j], wbuf[i * ndoubles + j]);
+				MPI_Accumulate(rbuf + i * ndoubles + j, 1, MPI_DOUBLE, i, i * ndoubles + j, 1, MPI_DOUBLE, MPI_SUM, win);
+			}
 		}
 	}
 	fwq(calc_nsec);
-	MPI_Waitall(req, reqs, MPI_STATUSES_IGNORE);
+	END_EPOCH(win);
 }
 
 static struct option options[] = {
@@ -175,17 +187,18 @@ static struct option options[] = {
 };
 
 int main(int argc, char **argv) {
+	int rc;
     int actual;
 	int ppn = -1;
 	int nproc;
     int ndoubles = -1;
 	int my_rank = -1, size = -1;
 	int i, j;
-	double *sbuf, *rbuf;
-	MPI_Request* reqs;
+	double *wbuf, *rbuf;
+	MPI_Win win;
     struct timespec start, end;
-	long t_pure_l, t_overall_l;
-	long t_pure, t_overall;
+	long t_fence_l, t_pure_l, t_overall_l;
+	long t_fence, t_pure, t_overall;
 	int opt;
  
 	fwq_init();
@@ -211,7 +224,7 @@ int main(int argc, char **argv) {
 
     MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &actual);
 	if (actual != 3) {
-		printf("ERROR: Thread support level is %d (it should be 3)\n", actual);
+		printf("ERROR: MPI_THREAD_MULTIPLE not available (level was set to %d)\n", actual);
 		exit(1);
 	}
 
@@ -219,59 +232,103 @@ int main(int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &nproc);
 
 	if (my_rank == 0) {
-		printf("tid=%d,pid=%d,ndoubles=%d,nproc=%d\n", syscall(__NR_gettid), getpid(), ndoubles, nproc); 
+		printf("ndoubles=%d,nproc=%d\n", ndoubles, nproc); 
 		printf("nsec=%ld, nspw=%f\n", nsec, nspw);
 	}
 
-    reqs = (MPI_Request*)malloc(sizeof(MPI_Request) * nproc * 2);
-	if(!reqs) { printf("malloc failed"); goto fn_fail; }
+	/* write-to buffer */
+	wbuf = malloc(sizeof(double) * ndoubles * nproc);
+	if(!wbuf) { printf("malloc failed"); goto fn_fail; }
+	memset(wbuf, 0, sizeof(double) * ndoubles * nproc);
 
-	sbuf = malloc(sizeof(double) * ndoubles * nproc);
-	if(!sbuf) { printf("malloc failed"); goto fn_fail; }
-	memset(sbuf, 0, sizeof(double) * ndoubles);
-	printf("tid=%d,pid=%d,sbuf=%p\n", syscall(__NR_gettid), getpid(), sbuf);
-
+	/* read-from buffer */
 	rbuf = malloc(sizeof(double) * ndoubles * nproc);
 	if(!rbuf) { printf("malloc failed"); goto fn_fail; }
-	memset(rbuf, 0, sizeof(double) * ndoubles);
-	printf("tid=%d,pid=%d,rbuf=%p\n", syscall(__NR_gettid), getpid(), rbuf);
+	memset(rbuf, 0, sizeof(double) * ndoubles * nproc);
+
+	if (rc = MPI_Win_create(wbuf, sizeof(double) * ndoubles * nproc, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win)) {
+		printf("MPI_Win_create failed,rc=%d\n", rc);
+	}
 
 	print_cpu_last_executed_on();
 
-	/* Measure isend-wait time */
+	for (i = 0; i < nproc; i++) {
+		for (j = 0; j < ndoubles; j++) {
+			wbuf[i * ndoubles + j] = i + 1 + j;
+			rbuf[i * ndoubles + j] = (i + 1) * 2 + j;
+		}
+	}
+	
+#if 0
+	for (i = 0; i < nproc; i++) {
+		for (j = 0; j < ndoubles; j++) {
+			printf("wbuf,proc=%d,j=%d,val=%f\n", i, j, wbuf[i * ndoubles + j]);
+			printf("rbuf,proc=%d,j=%d,val=%f\n", i, j, rbuf[i * ndoubles + j]);
+		}
+    }
+#endif	
+	/* Measure fence-fence time */
 	MPI_Barrier(MPI_COMM_WORLD);
 #define NSKIP 5
+#define NFENCE 30
+	for (i = 0; i < NFENCE + NSKIP; i++) {
+	    if (i == NSKIP) {
+	        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
+        }
+        BEGIN_EPOCH(win);
+        END_EPOCH(win);
+	}
+	BAR_EPOCH;
+	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
+	t_fence_l = DIFFNSEC(end, start) / NFENCE;
+	//printf("t_fence (local): %ld usec\n", t_fence_l / 1000UL);
+	MPI_Allreduce(&t_fence_l, &t_fence, 1, MPI_LONG, MPI_MAX, MPI_COMM_WORLD);
+	if (my_rank == 0) printf("t_fence (max): %ld usec\n", t_fence / 1000UL);
+
+	/* Measure fence-acc-fence time */
+	MPI_Barrier(MPI_COMM_WORLD);
 #define NPURE 30
 	for (i = 0; i < NPURE + NSKIP; i++) {
-		if (i == NSKIP) {
-			clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
-		}
-		my_send(nproc, ppn, my_rank, sbuf, rbuf, ndoubles, reqs, 0);
+	if (i == NSKIP) {
+	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
+}
+		accumulate(nproc, ppn, my_rank, wbuf, rbuf, ndoubles, win, 0);
 	}
+	BAR_EPOCH;
 	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
 	t_pure_l = DIFFNSEC(end, start) / NPURE;
 	//printf("t_pure (local): %ld usec\n", t_pure_l / 1000UL);
 	MPI_Allreduce(&t_pure_l, &t_pure, 1, MPI_LONG, MPI_MAX, MPI_COMM_WORLD);
 	if (my_rank == 0) printf("t_pure (max): %ld usec\n", t_pure / 1000UL);
 
-	/* Measure isend-calc-wait time */
+#if 0
+	for (i = 0; i < nproc; i++) {
+		for (j = 0; j < ndoubles; j++) {
+			printf("wbuf,proc=%d,j=%d,val=%f\n", i, j, wbuf[i * ndoubles + j]);
+			printf("rbuf,proc=%d,j=%d,val=%f\n", i, j, rbuf[i * ndoubles + j]);
+		}
+	}
+#endif
+
+	/* Measure fenc-acc-calc-fence time */
 	MPI_Barrier(MPI_COMM_WORLD);
 #define NOVERALL 30
 	for (i = 0; i < NOVERALL + NSKIP; i++) {
-		if (i == NSKIP) {
-			clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
-		}
-		my_send(nproc, ppn, my_rank, sbuf, rbuf, ndoubles, reqs, t_pure);
+	if (i == NSKIP) {
+	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
+}
+		accumulate(nproc, ppn, my_rank, wbuf, rbuf, ndoubles, win, t_pure - t_fence);
 	}
+	BAR_EPOCH;
 	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
 	t_overall_l = DIFFNSEC(end, start) / NOVERALL;
 	//printf("t_overall (local): %ld usec\n", t_overall_l / 1000UL);
 	MPI_Allreduce(&t_overall_l, &t_overall, 1, MPI_LONG, MPI_MAX, MPI_COMM_WORLD);
 	if (my_rank == 0) printf("t_overall (max): %ld usec\n", t_overall / 1000UL);
 	if (my_rank == 0) {
-		long t_abs = (t_pure * 2) - t_overall;
-		printf("overlap: %.2f %%\n", (t_abs * 100) / (double)t_pure);
-	}
+	long t_abs = (t_pure * 2) - t_overall;
+	printf("overlap: %.2f %%\n", (t_abs * 100) / (double)t_pure);
+}
 
  fn_exit:
     MPI_Finalize();

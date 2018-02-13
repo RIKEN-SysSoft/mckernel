@@ -298,6 +298,6 @@ CT26 終了時レースコンディションのテスト
 CT27 プログレス処理オーバーヘッド測定
 * CT09の複数プロセス版。async progressによってオーバーサブスクライブになった場合のオーバーヘッドを測定する。
 
-CT28 taskset -c 0-7 lock-inc-lock x 1000
+CT28 taskset -c 0-7 lock-inc-lock x 10000
 
 
