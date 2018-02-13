@@ -1324,7 +1324,6 @@ int do_munmap(void *addr, size_t len)
 {
 	int error;
 	int ro_freed;
-	struct process *proc = cpu_local_var(current)->proc;
 
 	/*
 	 * TODO: do call back registration for address space changes..
