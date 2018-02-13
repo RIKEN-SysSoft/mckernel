@@ -3106,7 +3106,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 			}
 
 			switch (get_syscall_number(&args)) {
-#if 0
+#if 1
 			case __NR_open: {
 				int rc = get_syscall_return(&args);
 				if (rc > 0 && !strncmp((const char *)get_syscall_arg1(&args), "/dev/hfi", 8)) {
@@ -3163,7 +3163,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 				set_syscall_args(uti_desc->tid, &args);
 				continue;
 			    case __NR_ioctl:
-#if 0					
+#if 1					
 					if (get_syscall_return(&args) != -ENOSYS && get_syscall_arg1(&args) == uti_desc->hfi_fd) {
 						fprintf(stderr, "ioctl: fd=%ld,%lx,%lx\n", get_syscall_arg1(&args), get_syscall_arg2(&args), get_syscall_arg3(&args));
 					}

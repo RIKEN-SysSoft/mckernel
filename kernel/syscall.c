@@ -498,7 +498,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 				__FUNCTION__, PROFILE_SYSCALL_MAX, req->number);
 	}
 #endif // PROFILE_ENABLE
-#if 0
+#if 1
 	if (req->number == __NR_open && rc > 0) {
 		if (!strncmp((const char *)req->args[0], "/dev/hfi", 8)) {
 			cpu_local_var(current)->hfi_fd = rc;
@@ -3201,6 +3201,30 @@ SYSCALL_DECLARE(read)
 	return rc;
 }
 
+#include <asm-generic/ioctl.h>
+struct hfi1_tid_info {
+    /* virtual address of first page in transfer */
+    unsigned long vaddr;
+    /* pointer to tid array. this array is big enough */
+    unsigned long tidlist;
+    /* number of tids programmed by this request */
+    unsigned int tidcnt;
+    /* length of transfer buffer programmed by this request */
+    unsigned int length;
+};
+#define HFI1_CMD_TID_UPDATE      4  /* update expected TID entries */
+#define HFI1_CMD_TID_FREE        5  /* free expected TID entries */
+#define HFI1_CMD_TID_INVAL_READ  13     /* read TID cache invalidations */
+
+#define IB_IOCTL_MAGIC 0x1b /* See Documentation/ioctl/ioctl-number.txt */
+#define __NUM(cmd) (HFI1_CMD_##cmd + 0xe0)
+#define HFI1_IOCTL_TID_UPDATE	\
+    _IOWR(IB_IOCTL_MAGIC, __NUM(TID_UPDATE), struct hfi1_tid_info)
+#define HFI1_IOCTL_TID_FREE \
+    _IOWR(IB_IOCTL_MAGIC, __NUM(TID_FREE), struct hfi1_tid_info)
+#define HFI1_IOCTL_TID_INVAL_READ \
+    _IOWR(IB_IOCTL_MAGIC, __NUM(TID_INVAL_READ), struct hfi1_tid_info)
+
 SYSCALL_DECLARE(ioctl)
 {
 	int fd = ihk_mc_syscall_arg0(ctx);
@@ -3214,7 +3238,23 @@ SYSCALL_DECLARE(ioctl)
 	int sub_rc = 0;
 #if 0
 	if (fd == cpu_local_var(current)->hfi_fd) {
-		kprintf("%s: hfi_fd,%lx,%lx\n", __FUNCTION__, ihk_mc_syscall_arg1(ctx), ihk_mc_syscall_arg2(ctx));
+		kprintf("%s: hfi_fd,%lx,%lx,", __FUNCTION__, ihk_mc_syscall_arg1(ctx), ihk_mc_syscall_arg2(ctx));
+		int cmd = ihk_mc_syscall_arg1(ctx);
+		struct hfi1_tid_info *tinfo = (struct hfi1_tid_info *)ihk_mc_syscall_arg2(ctx);
+		switch (cmd) {
+		case HFI1_IOCTL_TID_UPDATE:
+			kprintf("HFI1_IOCTL_TID_UPDATE,vaddr=%lx,length=%x\n", (unsigned long)tinfo->vaddr, (int)tinfo->length);
+			break;
+		case HFI1_IOCTL_TID_FREE:
+			kprintf("HFI1_IOCTL_TID_FREE,tidlist=%p,tidcnt=%d\n", (unsigned int*)tinfo->tidlist, (int)tinfo->tidcnt);
+			break;
+		case HFI1_IOCTL_TID_INVAL_READ:
+			kprintf("HFI1_IOCTL_TID_INVAL_READ\n");
+			break;
+		default:
+			kprintf("\n");
+			break;
+		}
 	}
 #endif
 	irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
