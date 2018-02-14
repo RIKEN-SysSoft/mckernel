@@ -2615,6 +2615,13 @@ retry_tid:
 		old->tid,
 		new->tid);
 
+	if (!(clone_flags & CLONE_VM)) {
+		request1.number = __NR_clone;
+		request1.args[0] = 1;
+		request1.args[1] = new->tid;
+		do_syscall(&request1, ihk_mc_get_processor_id(), 0);
+	}
+
 	runq_add_thread(new, cpuid);
 
 	if (ptrace_event) {
