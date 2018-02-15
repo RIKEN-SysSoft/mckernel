@@ -1134,12 +1134,10 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 
 	list_del(&ppd->hash);
 	write_unlock_irqrestore(&ppd->ud->per_proc_data_hash_lock[hash], flags);
-
 	printk("%s: deallocating PPD for pid %d\n", __FUNCTION__, ppd->pid);
 	for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; i++) {
 		struct mcctrl_per_thread_data *ptd;
 		struct mcctrl_per_thread_data *next;
-
 		list_for_each_entry_safe(ptd, next,
 		                         ppd->per_thread_data_hash + i, hash) {
 			packet = ptd->data;
@@ -2499,21 +2497,15 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
 	/* How ppd refcount reaches zero depends on how utility-thread exits:
-  	     exit:
+  	     tracer alive:
 	       MCEXEC_UP_CREATE_PPD: set to 1
 		   mcexec_util_thread2: get
 		   create_tracer()
-		     mcexec_terminate_thread: put
+		     tracer detects exit/exit_group/killed by signal
+               mcexec_terminate_thread: put
 	       release_handler(): put
 
-  	     exit_group:
-	       MCEXEC_UP_CREATE_PPD: set to 1
-		   mcexec_util_thread2: get
-		   create_trace()
-	         mcexec_terminate_thread: put
-	       release_handler(): put
-	   
-	     killed by signal:
+	     tracer dead:
 	       MCEXEC_UP_CREATE_PPD: set to 1
 	       mcexec_util_thread2: get
 	       release_handler()
@@ -2737,11 +2729,20 @@ long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 							  param.args[3], param.args[4], param.args[5], param.uti_clv, (void *)&resp, (void *)uti_wait_event, (void *)uti_printk, (void *)uti_clock_gettime);
 		param.ret = rc;
 	} else {
-			//printk("%s: syscall_backward, SC %d, tid %d\n", __FUNCTION__, param.number, task_tgid_vnr(current));
 			rc = syscall_backward(ihk_host_os_get_usrdata(os), param.number,
 								  param.args[0], param.args[1], param.args[2],
 								  param.args[3], param.args[4], param.args[5],
 								  &param.ret);
+			switch (param.number) {
+			case __NR_munmap:
+				//printk("%s: syscall_backward, munmap,addr=%lx,len=%lx,tid=%d\n", __FUNCTION__, param.args[0], param.args[1], task_tgid_vnr(current));
+				break;
+			case __NR_mmap:
+				//printk("%s: syscall_backward, mmap,ret=%lx,tid=%d\n", __FUNCTION__, param.ret, task_tgid_vnr(current));
+				break;
+			default:
+				break;
+			}
 		}
 	if (copy_to_user(&uparam->ret, &param.ret, sizeof(unsigned long))) {
 		return -EFAULT;

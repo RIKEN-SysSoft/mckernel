@@ -990,7 +990,6 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 						vma->vm_start, vma->vm_end);
 #endif /* POSTK_DEBUG_ARCH_DEP_41 */
 			}
-			//printk("%s: _count=%d,_mapcount=%d\n", __FUNCTION__, page->_count, page->_mapcount);
 		}
 		else
 		error = vm_insert_pfn(vma, rva+(pix*PAGE_SIZE), pfn+pix);
