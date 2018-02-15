@@ -2952,7 +2952,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 		exit(0);
 	}
 
-#if 0
+#if 1
 	/* Reopen device to register the new process */
 	close(fd);
 	fd = opendev();
