@@ -1097,7 +1097,6 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; i++) {
 		struct mcctrl_per_thread_data *ptd;
 		struct mcctrl_per_thread_data *next;
-
 		list_for_each_entry_safe(ptd, next,
 		                         ppd->per_thread_data_hash + i, hash) {
 			packet = ptd->data;
@@ -2634,6 +2633,16 @@ long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 								  param.args[0], param.args[1], param.args[2],
 								  param.args[3], param.args[4], param.args[5],
 								  &param.ret);
+			switch (param.number) {
+			case __NR_munmap:
+				//printk("%s: syscall_backward, munmap,addr=%lx,len=%lx,tid=%d\n", __FUNCTION__, param.args[0], param.args[1], task_tgid_vnr(current));
+				break;
+			case __NR_mmap:
+				//printk("%s: syscall_backward, mmap,ret=%lx,tid=%d\n", __FUNCTION__, param.ret, task_tgid_vnr(current));
+				break;
+			default:
+				break;
+			}
 		}
 	if (copy_to_user(&uparam->ret, &param.ret, sizeof(unsigned long))) {
 		return -EFAULT;

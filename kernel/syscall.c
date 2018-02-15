@@ -67,7 +67,7 @@
 
 #define SYSCALL_BY_IKC
 
-//#define DEBUG_PRINT_SC
+#define DEBUG_PRINT_SC
 
 #ifdef DEBUG_PRINT_SC
 #undef DDEBUG_DEFAULT
@@ -347,8 +347,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 				__sync_bool_compare_and_swap(&res.req_thread_status,
 											 IHK_SCD_REQ_THREAD_SPINNING,
 											 IHK_SCD_REQ_THREAD_DESCHEDULED)) {
-				dkprintf("%s: tid %d waiting for syscall reply...\n",
-						__FUNCTION__, thread->tid);
+				//dkprintf("%s: tid %d waiting for syscall reply...\n",				__FUNCTION__, thread->tid);
 				waitq_init(&thread->scd_wq);
 				waitq_prepare_to_wait(&thread->scd_wq, &scd_wq_entry,
 					PS_INTERRUPTIBLE);
@@ -508,7 +507,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx)
 {
 	SYSCALL_HEADER;
-	dkprintf("syscall_generic_forwarding(%d)\n", n);
+	//dkprintf("syscall_generic_forwarding(%d)\n", n);
 	SYSCALL_ARGS_6(D,D,D,D,D,D);
 	SYSCALL_FOOTER;
 }
@@ -1781,8 +1780,7 @@ SYSCALL_DECLARE(munmap)
 	size_t len;
 	int error;
 
-	dkprintf("[%d]sys_munmap(%lx,%lx)\n",
-			ihk_mc_get_processor_id(), addr, len0);
+	//dkprintf("[%d]sys_munmap(%lx,%lx)\n", ihk_mc_get_processor_id(), addr, len0);
 
 	len = (len0 + PAGE_SIZE - 1) & PAGE_MASK;
 	if ((addr & (PAGE_SIZE - 1))
@@ -9470,7 +9468,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 #if 0
 	if(num != 24)  // if not sched_yield
 #endif
-	dkprintf("SC(%d:%d)[%3d=%s](%lx, %lx,%lx, %lx, %lx, %lx)@%lx,sp:%lx",
+		dkprintf("SC(%d:%d)[%3d=%s](%lx, %lx,%lx, %lx, %lx, %lx)@%lx,sp:%lx",
              ihk_mc_get_processor_id(),
              ihk_mc_get_hardware_processor_id(),
              num, syscall_name[num],
