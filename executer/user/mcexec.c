@@ -2945,6 +2945,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 			exit(1);
 		}
 #if 0 /* debug */
+		fprintf(stderr, "%s: parent of tracer,entering infinite loop\n", __FUNCTION__);
 		close(fd);
 		while(1) { } 
 #endif
@@ -3089,6 +3090,25 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 				}
 			}
 #endif
+			if (get_syscall_return(&args) == -ENOSYS) {
+			} else {
+				if (get_syscall_return(&args) != -ENOSYS &&
+				    get_syscall_arg1(&args) == fd &&
+				    get_syscall_arg2(&args) == MCEXEC_UP_SYSCALL_THREAD) {
+				} else {
+					fprintf(stderr, "SC,pid=%d,tid=%d,[%3ld](%lx, %lx, %lx, %lx, %lx, %lx): %lx\n",
+							getpid(),
+							gettid(),
+							get_syscall_number(&args),
+							get_syscall_arg1(&args),
+							get_syscall_arg2(&args),
+							get_syscall_arg3(&args),
+							get_syscall_arg4(&args),
+							get_syscall_arg5(&args),
+							get_syscall_arg6(&args),
+							get_syscall_return(&args));
+				}
+			}
 
 			if (get_syscall_number(&args) == __NR_ioctl &&
 			    get_syscall_return(&args) == -ENOSYS &&
@@ -3138,8 +3158,16 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 			    case __NR_mremap:
 				break;
 			    case __NR_exit_group:
+#if 0 /* debug */
+				set_syscall_number(&args, -1);
+				set_syscall_args(uti_desc->tid, &args);
+#endif
 				exited++;
 			    case __NR_exit:
+#if 0 /* debug */
+				set_syscall_number(&args, -1);
+				set_syscall_args(uti_desc->tid, &args);
+#endif
 				exited++;
 				continue;
 			    case __NR_clone:
@@ -3171,6 +3199,17 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 				    get_syscall_arg2(&args) ==
 				                     MCEXEC_UP_SYSCALL_THREAD &&
 				    samepage(uti_desc->wp, param)) {
+					fprintf(stderr, "SC,pid=%d,tid=%d,[%3d](%lx, %lx, %lx, %lx, %lx, %lx): %lx\n",
+							getpid(),
+							gettid(),
+							param->number,
+							param->args[0],
+							param->args[1],
+							param->args[2],
+							param->args[3],
+							param->args[4],
+							param->args[5],
+							param->ret);
 					set_syscall_arg1(&args, param->args[0]);
 					set_syscall_arg2(&args, param->args[1]);
 					set_syscall_arg3(&args, param->args[2]);
@@ -3181,7 +3220,9 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 					*(void **)param = param_top;
 					param_top = param;
 					set_syscall_args(uti_desc->tid, &args);
+
 				}
+
 				continue;
 			    default:
 				continue;
@@ -3221,11 +3262,12 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 	//debug_sig(0);
 #endif
 
-	//fprintf(stderr, "%s: exiting\n", __FUNCTION__);
 #if 0 /* debug */
+	fprintf(stderr, "%s: tracer, entering infinite loop\n", __FUNCTION__);
 	close(fd);
 	while(1) { }
 #endif
+	fprintf(stderr, "%s: exiting\n", __FUNCTION__);
 	exit(0);
 }
 

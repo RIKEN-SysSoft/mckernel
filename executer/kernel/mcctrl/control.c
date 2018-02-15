@@ -418,7 +418,7 @@ static void release_handler(ihk_os_t os, void *param)
 		}
 	}
 
-	printk("%s: calling mcexec_close_exec\n", __FUNCTION__);
+	//printk("%s: calling mcexec_close_exec\n", __FUNCTION__);
 	mcexec_close_exec(os);
 
 	mcexec_destroy_per_process_data(os, info->pid);
@@ -431,13 +431,12 @@ static void release_handler(ihk_os_t os, void *param)
 			__FUNCTION__, info, info->cpu);
 	mcctrl_ikc_send(os, info->cpu, &isp);
 	if (os_ind >= 0) {
-		printk("%s: calling delete_pid_entry\n", __FUNCTION__);
+		//printk("%s: calling delete_pid_entry\n", __FUNCTION__);
 		delete_pid_entry(os_ind, info->pid);
 	}
 	printk("%s: calling kfree,param=%p\n", __FUNCTION__, param);
 	kfree(param);
-	printk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p OK\n",
-			__FUNCTION__, info);
+	//printk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p OK\n", __FUNCTION__, info);
 }
 
 static long mcexec_newprocess(ihk_os_t os,
@@ -2785,13 +2784,20 @@ long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 							  param.args[3], param.args[4], param.args[5], param.uti_clv, (void *)&resp, (void *)uti_wait_event, (void *)uti_printk, (void *)uti_clock_gettime);
 		param.ret = rc;
 	} else {
-			if (param.number == __NR_munmap) {
-				//printk("%s: syscall_backward, munmap,addr=%lx,len=%lx,tid=%d\n", __FUNCTION__, param.args[0], param.args[1], task_tgid_vnr(current));
-			}
 			rc = syscall_backward(ihk_host_os_get_usrdata(os), param.number,
 								  param.args[0], param.args[1], param.args[2],
 								  param.args[3], param.args[4], param.args[5],
 								  &param.ret);
+			switch (param.number) {
+			case __NR_munmap:
+				//printk("%s: syscall_backward, munmap,addr=%lx,len=%lx,tid=%d\n", __FUNCTION__, param.args[0], param.args[1], task_tgid_vnr(current));
+				break;
+			case __NR_mmap:
+				//printk("%s: syscall_backward, mmap,ret=%lx,tid=%d\n", __FUNCTION__, param.ret, task_tgid_vnr(current));
+				break;
+			default:
+				break;
+			}
 		}
 	if (copy_to_user(&uparam->ret, &param.ret, sizeof(unsigned long))) {
 		return -EFAULT;
