@@ -3639,12 +3639,14 @@ int main_loop(struct thread_data_s *my_thread)
 			}
 
 			/* Make tracer exit when it is not used */
-			if (sem_getvalue(&uti_desc->arg, &sem_val)) {
-				fprintf(stderr, "%s: ERROR: sem_getvalue returned %d\n", __FUNCTION__, errno);
-			}
-			if (sem_val == 0) {
-				uti_desc->exit = 1;
-				sem_post(&uti_desc->arg);
+			if (uti_desc != (void*)-1) {
+				if (sem_getvalue(&uti_desc->arg, &sem_val)) {
+					fprintf(stderr, "%s: ERROR: sem_getvalue returned %d\n", __FUNCTION__, errno);
+				}
+				if (sem_val == 0) {
+					uti_desc->exit = 1;
+					sem_post(&uti_desc->arg);
+				}
 			}
 			
 			exit(term);
