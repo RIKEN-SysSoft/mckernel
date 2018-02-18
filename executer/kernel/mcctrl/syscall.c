@@ -316,6 +316,7 @@ long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
 	unsigned long phys;
 	struct syscall_request _request[2];
 	struct syscall_request *request;
+	int retry;
 
 	if (((unsigned long)_request ^ (unsigned long)(_request + 1)) &
 	    ~(PAGE_SIZE -1))
@@ -362,6 +363,7 @@ retry_alloc:
 		printk("WARNING: coudln't alloc wait queue head, retrying..\n");
 		goto retry_alloc;
 	}
+	memset(wqhln, 0, sizeof(struct wait_queue_head_list_node)); /* debug */
 
 	/* Prepare per-thread wait queue head */
 	wqhln->task = current;
@@ -391,21 +393,41 @@ retry_alloc:
 	mb();
 	resp->status = STATUS_SYSCALL;
 
+	retry = 0;
+ retry_offload:
 	dprintk("%s: tid: %d, syscall: %d SLEEPING\n", 
 			__FUNCTION__, task_pid_vnr(current), num);
 	/* wait for response */
 	syscall_ret = wait_event_interruptible(wqhln->wq_syscall, wqhln->req);
 	
+	/* debug */
+	if (syscall_ret == -ERESTARTSYS) {
+		printk("%s: INFO: interrupted by signal\n", __FUNCTION__);
+		ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+		retry++;
+		if (ppd && retry < 5) { /* mcexec is alive */
+			printk("%s: INFO: retry=%d\n", __FUNCTION__, retry);
+			goto retry_offload;
+		}
+	}
+
 	/* Remove per-thread wait queue head */
 	irqflags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
 	list_del(&wqhln->list);
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, irqflags);
 
-	dprintk("%s: tid: %d, syscall: %d WOKEN UP\n", 
-			__FUNCTION__, task_pid_vnr(current), num);
+	printk("%s: tid: %d, syscall: %d WOKEN UP\n", __FUNCTION__, task_pid_vnr(current), num);
+
+	if (!ppd || retry >= 5) {
+		kfree(wqhln);
+		kprintf("%s: INFO: mcexec is gone or retry count exceeded,pid=%d,ppd=%p,retry=%d\n", __FUNCTION__, task_tgid_vnr(current), ppd, retry);
+		syscall_ret = -EINVAL;
+		goto out;
+	}
 
 	if (syscall_ret) {
 		kfree(wqhln);
+		printk("%s: ERROR: wait_event_interruptible returned %ld\n", __FUNCTION__, syscall_ret);
 		goto out;
 	}
 	else {
@@ -441,6 +463,9 @@ retry_alloc:
 	}
 #define	PAGER_REQ_RESUME	0x0101
 	else if (req->args[0] != PAGER_REQ_RESUME) {
+		printk("%s:unexpected response. %lx %lx\n",
+		       __FUNCTION__, req->number, req->args[0]);
+#if 0
 		resp->ret = pager_call(usrdata->os, (void *)req);
 
 		if (__notify_syscall_requester(usrdata->os, packet, resp) < 0) {
@@ -449,6 +474,9 @@ retry_alloc:
 		}
 
 		mb();
+#endif
+		syscall_ret = -EIO;
+		goto out;
 	}
 	else {
 		*ret = req->args[1];
@@ -521,6 +549,7 @@ retry_alloc:
 		printk("WARNING: coudln't alloc wait queue head, retrying..\n");
 		goto retry_alloc;
 	}
+	memset(wqhln, 0, sizeof(struct wait_queue_head_list_node)); /* debug */
 
 	/* Prepare per-thread wait queue head */
 	wqhln->task = current;
