@@ -418,7 +418,8 @@ static void release_handler(ihk_os_t os, void *param)
 		}
 	}
 
-	//printk("%s: calling mcexec_close_exec\n", __FUNCTION__);
+#if 0 /* debug */
+	printk("%s: calling mcexec_close_exec\n", __FUNCTION__);
 	mcexec_close_exec(os);
 
 	mcexec_destroy_per_process_data(os, info->pid);
@@ -437,6 +438,8 @@ static void release_handler(ihk_os_t os, void *param)
 	printk("%s: calling kfree,param=%p\n", __FUNCTION__, param);
 	kfree(param);
 	//printk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p OK\n", __FUNCTION__, info);
+#endif
+	printk("%s: exiting\n", __FUNCTION__);
 }
 
 static long mcexec_newprocess(ihk_os_t os,
@@ -2657,11 +2660,12 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long * __user arg)
 	mcctrl_delete_per_thread_data(ppd, tsk);
 	printk("%s: calling __return_syscall, tid=%d, sig=%lx, ppd->refcount=%d\n", __FUNCTION__, tid, sig, atomic_read(&ppd->refcount));
 	__return_syscall(usrdata->os, packet, sig, tid);
+#if 0 /* debug */
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 						   (usrdata->ikc2linux[smp_processor_id()] ?
 							usrdata->ikc2linux[smp_processor_id()] :
 							usrdata->ikc2linux[0]));
-
+#endif
 	/* See the comment in mcexec_util_thread2 on how ppd->refcount reaches zero */
 	printk("%s: ppd->refcount=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
 	if ((rc = mcctrl_put_per_proc_data(ppd)) <= 0) {
@@ -2680,7 +2684,9 @@ err:
 	else
 		host_threads = thread->next;
 	write_unlock_irqrestore(&host_thread_lock, flags);
+#if 0 /* debug */
 	kfree(thread);
+#endif
 	return 0;
 }
  
