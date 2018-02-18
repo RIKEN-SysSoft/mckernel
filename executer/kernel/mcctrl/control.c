@@ -2660,6 +2660,7 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long * __user arg)
 	mcctrl_delete_per_thread_data(ppd, tsk);
 	printk("%s: calling __return_syscall, tid=%d, sig=%lx, ppd->refcount=%d\n", __FUNCTION__, tid, sig, atomic_read(&ppd->refcount));
 	__return_syscall(usrdata->os, packet, sig, tid);
+	printk("%s: packet=%p,channels=%p,ref=%d,desc=%p\n", __FUNCTION__, packet, usrdata->channels, packet->ref, (usrdata->channels + packet->ref)->c);
 #if 0 /* debug */
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 						   (usrdata->ikc2linux[smp_processor_id()] ?
@@ -2684,6 +2685,7 @@ err:
 	else
 		host_threads = thread->next;
 	write_unlock_irqrestore(&host_thread_lock, flags);
+	printk("%s: thread=%p\n", __FUNCTION__, thread);
 #if 0 /* debug */
 	kfree(thread);
 #endif
