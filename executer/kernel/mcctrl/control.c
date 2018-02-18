@@ -2471,7 +2471,9 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
 	mcctrl_delete_per_thread_data(ppd, tsk);
 	__return_syscall(usrdata->os, packet, param[2], tid);
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-	                       (usrdata->channels + packet->ref)->c);
+						   (usrdata->ikc2linux[smp_processor_id()] ?
+							usrdata->ikc2linux[smp_processor_id()] :
+							usrdata->ikc2linux[0]));
 err:
 	if(ppd)
 		mcctrl_put_per_proc_data(ppd);
