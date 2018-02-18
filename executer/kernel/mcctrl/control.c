@@ -2496,7 +2496,10 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long __user *arg, struct file *fil
 		goto err;
 	}
 	mcctrl_delete_per_thread_data(ppd, tsk);
-	__return_syscall(usrdata->os, packet, param[2], tid);
+	printk("%s: calling __return_syscall, tid=%d, sig=%lx, ppd->refcount=%d\n", __FUNCTION__, tid, sig, atomic_read(&ppd->refcount));
+	__return_syscall(usrdata->os, packet, sig, tid);
+	printk("%s: packet=%p,channels=%p,ref=%d,desc=%p\n", __FUNCTION__, packet, usrdata->channels, packet->ref, (usrdata->channels + packet->ref)->c);
+
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 						   (usrdata->ikc2linux[smp_processor_id()] ?
 							usrdata->ikc2linux[smp_processor_id()] :
