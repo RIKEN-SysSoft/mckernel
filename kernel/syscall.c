@@ -405,6 +405,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 			int ns;
 			unsigned long syscall_ret;
 			unsigned long phys;
+			struct syscall_request req2 IHK_DMA_ALIGN; /* debug */
 
 			phys = ihk_mc_map_memory(NULL, res.fault_address,
 			                        sizeof(struct syscall_request));
