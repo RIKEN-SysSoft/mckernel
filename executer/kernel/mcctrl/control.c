@@ -412,7 +412,7 @@ static void release_handler(ihk_os_t os, void *param)
 		write_unlock_irqrestore(&host_thread_lock, flags);
 
 		printk("%s: calling mcexec_terminate_thread,pid=%d,tid=%d\n", __FUNCTION__, thread->pid, thread->tid);
-		rc = mcexec_terminate_thread(os, term_param);
+		rc = do_mcexec_terminate_thread(os, term_param);
 		if (rc) {
 			printk("%s: ERROR: mcexec_terminate_thread returned %ld\n", __FUNCTION__, rc);
 		}
@@ -422,6 +422,7 @@ static void release_handler(ihk_os_t os, void *param)
 	printk("%s: calling mcexec_close_exec\n", __FUNCTION__);
 	mcexec_close_exec(os);
 
+	/* Note that it will call return_syscall() */
 	mcexec_destroy_per_process_data(os, info->pid);
 
 	memset(&isp, '\0', sizeof(isp));
@@ -2601,9 +2602,8 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 }
 
 long
-mcexec_terminate_thread(ihk_os_t os, unsigned long * __user arg)
+do_mcexec_terminate_thread(ihk_os_t os, unsigned long *param)
 {
-	unsigned long param[4];
 	int rc;
 	int pid;
 	int tid;
@@ -2615,10 +2615,6 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long * __user arg)
 	struct ikc_scd_packet *packet;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
-
-    if (copy_from_user(param, arg, sizeof(unsigned long) * 4)) {
-        return -EFAULT;
-    }
 
 	pid = param[0];
 	tid = param[1];
@@ -2686,6 +2682,18 @@ err:
 	return 0;
 }
  
+long
+mcexec_terminate_thread(ihk_os_t os, unsigned long * __user arg)
+{
+	unsigned long param[4];
+
+    if (copy_from_user(param, arg, sizeof(unsigned long) * 4)) {
+        return -EFAULT;
+    }
+
+	return do_mcexec_terminate_thread(os, param);
+}
+
 static long mcexec_release_user_space(struct release_user_space_desc *__user arg)
 {
 	struct release_user_space_desc desc;
