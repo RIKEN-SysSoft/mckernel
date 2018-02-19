@@ -64,8 +64,6 @@
 
 #define MAP_VMAP_SIZE      0x0000000100000000UL
 
-#define KERNEL_PHYS_OFFSET MAP_ST_START
-
 #define PTL4_SHIFT         39
 #define PTL4_SIZE          (1UL << PTL4_SHIFT)
 #define PTL3_SHIFT         30
