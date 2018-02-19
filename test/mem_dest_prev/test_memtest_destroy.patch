@@ -1,0 +1,50 @@
+diff --git arch/x86/kernel/include/syscall_list.h arch/x86/kernel/include/syscall_list.h
+index 42d1e2e..f5769b8 100644
+--- arch/x86/kernel/include/syscall_list.h
++++ arch/x86/kernel/include/syscall_list.h
+@@ -156,5 +156,7 @@ SYSCALL_HANDLED(__NR_profile, profile)
+ SYSCALL_HANDLED(730, util_migrate_inter_kernel)
+ SYSCALL_HANDLED(731, util_indicate_clone)
+ SYSCALL_HANDLED(732, get_system)
++/* McKernel Specific */
++SYSCALL_HANDLED(950, mem_destroy)
+ 
+ /**** End of File ****/
+diff --git arch/x86/kernel/syscall.c arch/x86/kernel/syscall.c
+index 2260b66..e96776a 100644
+--- arch/x86/kernel/syscall.c
++++ arch/x86/kernel/syscall.c
+@@ -1887,4 +1887,33 @@ save_uctx(void *uctx, struct x86_user_context *regs)
+ 	ctx->fregsize = 0;
+ }
+ 
++
++#define ADD_ADDR_VAL 0x400
++SYSCALL_DECLARE(mem_destroy)
++{
++	int rst = 0;
++	int mem_chunks_num, chunk_id, get_numa_id;
++	unsigned long get_start, get_end;
++	unsigned long *addr;
++
++	mem_chunks_num = ihk_mc_get_nr_memory_chunks();
++	kprintf("%s: memory chunk %d.\n", __FUNCTION__, mem_chunks_num);
++
++	for (chunk_id = 0; chunk_id < mem_chunks_num; chunk_id++) {
++		rst = ihk_mc_get_memory_chunk(chunk_id, &get_start, &get_end, &get_numa_id);
++		kprintf("%s: mem chunk[%d] numa ID(%d)\n"
++			,__FUNCTION__ ,chunk_id ,get_numa_id);
++		kprintf("    phys(0x%lx - 0x%lx) virt(0x%lx - 0x%lx)\n"
++			,get_start ,get_end ,phys_to_virt(get_start) ,phys_to_virt(get_end));
++	}
++
++	addr  = phys_to_virt(get_end + ADD_ADDR_VAL);
++#if 1 
++	*addr = 0x1;
++#endif     
++	kprintf("%s: Address out of range  0x%lx(val:%d)\n",__FUNCTION__ ,addr ,*addr);
++
++	return rst;
++}
++
+ /*** End of File ***/
