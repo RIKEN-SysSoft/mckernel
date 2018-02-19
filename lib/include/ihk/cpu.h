@@ -76,6 +76,7 @@ void ihk_mc_init_ap(void);
 void ihk_mc_init_context(ihk_mc_kernel_context_t *new_ctx,
                          void *stack_pointer,
                          void (*next_function)(void));
+void *ihk_mc_get_linux_kernel_pgt(void);
 
 int ihk_mc_get_extra_reg_id(unsigned long hw_config, unsigned long hw_config_ext);
 unsigned int ihk_mc_get_nr_extra_regs(void);
