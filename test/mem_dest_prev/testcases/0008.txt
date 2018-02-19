@@ -1,0 +1,2 @@
+MCRBT_OPT_BEFORE="-m `./utils/gen_mem_chunks.sh "0 1" 32M 64`"
+MCRBT_OPT_AFTER="-m `./utils/gen_mem_chunks.sh "0 1" 32M 64` -s"
