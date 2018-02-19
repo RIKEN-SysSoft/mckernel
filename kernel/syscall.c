@@ -3198,7 +3198,7 @@ SYSCALL_DECLARE(read)
 	return rc;
 }
 
-#include <asm-generic/ioctl.h>
+#include </usr/include/asm-generic/ioctl.h>
 struct hfi1_tid_info {
     /* virtual address of first page in transfer */
     unsigned long vaddr;
