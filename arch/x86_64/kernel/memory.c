@@ -191,28 +191,6 @@ static void init_normal_area(struct page_table *pt)
 	}
 }
 
-static void init_linux_kernel_mapping(struct page_table *pt)
-{
-	unsigned long map_start, map_end, phys, pt_phys;
-	int virt_index;
-	
-	map_start = 0;
-	/* Map 2 TB for now */
-	map_end = 0x20000000000;
-
-	kprintf("Linux kernel virtual: 0x%lx - 0x%lx -> 0x%lx - 0x%lx\n",
-			LINUX_PAGE_OFFSET, LINUX_PAGE_OFFSET + map_end, 0, map_end);
-	virt_index = (MAP_ST_START >> PTL4_SHIFT) & (PT_ENTRIES - 1);
-	
-	for (phys = (map_start & ~(PTL4_SIZE - 1)); phys < map_end;
-		 phys += PTL4_SIZE) {
-		pt_phys = setup_l3(ihk_mc_alloc_pages(1, IHK_MC_AP_CRITICAL), phys,
-						   map_start, map_end);
-
-		pt->entry[virt_index++] = pt_phys | PFL4_PDIR_ATTR;
-	}
-}
-
 static struct page_table *__alloc_new_pt(ihk_mc_ap_flag ap_flag)
 {
 	struct page_table *newpt = ihk_mc_alloc_pages(1, ap_flag);
@@ -2623,6 +2601,28 @@ void *map_fixed_area(unsigned long phys, unsigned long size, int uncachable)
 void init_low_area(struct page_table *pt)
 {
 	set_pt_large_page(pt, 0, 0, PTATTR_NO_EXECUTE|PTATTR_WRITABLE);
+}
+
+static void init_linux_kernel_mapping(struct page_table *pt)
+{
+	unsigned long map_start, map_end, phys;
+	void *virt;
+	
+	/* Map 2 TB for now */
+	map_start = 0;
+	map_end = 0x20000000000;
+	
+	virt = (void *)LINUX_PAGE_OFFSET;
+	
+	kprintf("Linux kernel virtual: 0x%lx - 0x%lx -> 0x%lx - 0x%lx\n",
+			LINUX_PAGE_OFFSET, LINUX_PAGE_OFFSET + map_end, 0, map_end);
+	
+	for (phys = map_start; phys < map_end; phys += LARGE_PAGE_SIZE) {
+		if (set_pt_large_page(pt, virt, phys, PTATTR_WRITABLE) != 0) {
+			kprintf("%s: error setting mapping for 0x%lx\n", __FUNCTION__, virt);
+		}
+		virt += LARGE_PAGE_SIZE;
+	}
 }
 
 static void init_vsyscall_area(struct page_table *pt)
