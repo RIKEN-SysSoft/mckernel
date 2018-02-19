@@ -107,9 +107,17 @@ void init_boot_processor_local(void)
   @ ensures \result == %gs;
   @ assigns \nothing;
   */
+extern int num_processors;
 int ihk_mc_get_processor_id(void)
 {
 	int id;
+	void *gs;
+
+	gs = (void *)rdmsr(MSR_GS_BASE);
+	if (gs < (void *)locals ||
+			gs > ((void *)locals + LOCALS_SPAN * num_processors)) {
+		return -1;
+	}
 
 	asm volatile("movl %%gs:0, %0" : "=r"(id));
 
