@@ -3096,7 +3096,8 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 				    get_syscall_arg1(&args) == fd &&
 				    get_syscall_arg2(&args) == MCEXEC_UP_SYSCALL_THREAD) {
 				} else {
-					fprintf(stderr, "SC,pid=%d,tid=%d,[%3ld](%lx, %lx, %lx, %lx, %lx, %lx): %lx\n",
+					if (get_syscall_number(&args) != __NR_sched_yield)
+						fprintf(stderr, "SC,pid=%d,tid=%d,[%3ld](%lx, %lx, %lx, %lx, %lx, %lx): %lx\n",
 							getpid(),
 							gettid(),
 							get_syscall_number(&args),
