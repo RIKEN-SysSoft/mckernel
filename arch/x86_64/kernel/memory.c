@@ -39,6 +39,8 @@ extern char _head[], _end[];
 
 extern unsigned long x86_kernel_phys_base;
 
+int safe_kernel_map = 0;
+
 /* Arch specific early allocation routine */
 void *early_alloc_pages(int nr_pages)
 {
@@ -2545,22 +2547,54 @@ static void init_linux_kernel_mapping(struct page_table *pt)
 {
 	unsigned long map_start, map_end, phys;
 	void *virt;
+	int nr_memory_chunks, chunk_id, numa_id;
 
-	/* Map 2 TB for now */
-	map_start = 0;
-	map_end = 0x20000000000;
+	/* In case of safe_kernel_map option (safe_kernel_map == 1),
+	 * processing to prevent destruction of the memory area on Linux side
+	 * is executed */
+	if (safe_kernel_map == 0) {
+		kprintf("Straight-map entire physical memory\n");
 
-	virt = (void *)LINUX_PAGE_OFFSET;
+		/* Map 2 TB for now */
+		map_start = 0;
+		map_end = 0x20000000000;
 
-	kprintf("Linux kernel virtual: 0x%lx - 0x%lx -> 0x%lx - 0x%lx\n",
-		LINUX_PAGE_OFFSET, LINUX_PAGE_OFFSET + map_end, 0, map_end);
+		virt = (void *)LINUX_PAGE_OFFSET;
 
-	for (phys = map_start; phys < map_end; phs += LARGE_PAGE_SIZE) {
-		if (set_pt_large_page(pt, virt, phys, PTATTR_WRITABLE) != 0) {
-			kprintf("%s: error setting mapping for 0x%lx\n",
-				__func__, virt);
+		kprintf("Linux kernel virtual: 0x%lx - 0x%lx -> 0x%lx - 0x%lx\n",
+			LINUX_PAGE_OFFSET, LINUX_PAGE_OFFSET + map_end, 0, map_end);
+
+		for (phys = map_start; phys < map_end; phys += LARGE_PAGE_SIZE) {
+			if (set_pt_large_page(pt, virt, phys, PTATTR_WRITABLE) != 0) {
+				kprintf("%s: error setting mapping for 0x%lx\n", __FUNCTION__, virt);
+			}
+			virt += LARGE_PAGE_SIZE;
 		}
-		virt += LARGE_PAGE_SIZE;
+	} else {
+		kprintf("Straight-map physical memory areas allocated to McKernel\n");
+
+		nr_memory_chunks = ihk_mc_get_nr_memory_chunks();
+		if (nr_memory_chunks == 0) {
+			kprintf("%s: ERROR: No memory chunk available.\n", __FUNCTION__);
+			return;
+		}
+
+		for (chunk_id = 0; chunk_id < nr_memory_chunks; chunk_id++) {
+			if (ihk_mc_get_memory_chunk(chunk_id, &map_start, &map_end, &numa_id)) {
+				kprintf("%s: ERROR: Memory chunk id (%d) out of range.\n", __FUNCTION__, chunk_id);
+				continue;
+			}
+
+			dkprintf("Linux kernel virtual: 0x%lx - 0x%lx -> 0x%lx - 0x%lx\n",
+					 LINUX_PAGE_OFFSET + map_start, LINUX_PAGE_OFFSET + map_end, map_start, map_end);
+
+			virt = (void *)(LINUX_PAGE_OFFSET + map_start);
+			for (phys = map_start; phys < map_end; phys += LARGE_PAGE_SIZE, virt += LARGE_PAGE_SIZE) {
+				if (set_pt_large_page(pt, virt, phys, PTATTR_WRITABLE) != 0) {
+					kprintf("%s: set_pt_large_page() failed for 0x%lx\n", __FUNCTION__, virt);
+				}
+			}
+		}
 	}
 }
 
