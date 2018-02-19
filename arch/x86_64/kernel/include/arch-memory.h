@@ -58,8 +58,14 @@
 #define MAP_ST_START       0xffff800000000000UL
 #define MAP_VMAP_START     0xffff850000000000UL
 #define MAP_FIXED_START    0xffff860000000000UL
-#define MAP_KERNEL_START   0xffff870000000000UL
 #define LINUX_PAGE_OFFSET  0xffff880000000000UL
+/*
+ * MAP_KERNEL_START is 8MB below MODULES_END in Linux.
+ * Placing the LWK image in the virtual address space at the end of
+ * the Linux modules section enables us to map the LWK TEXT in Linux
+ * as well, so that Linux can also call into LWK text.
+ */
+#define MAP_KERNEL_START   0xFFFFFFFFFE800000UL
 #define STACK_TOP(region)  ((region)->user_end)
 
 #define MAP_VMAP_SIZE      0x0000000100000000UL

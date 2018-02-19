@@ -2692,13 +2692,13 @@ unsigned long virt_to_phys(void *v)
 {
 	unsigned long va = (unsigned long)v;
 
-	if (va >= LINUX_PAGE_OFFSET) {
-		return va - LINUX_PAGE_OFFSET;
-	}
-	else if (va >= MAP_KERNEL_START) {
+	if (va >= MAP_KERNEL_START) {
 		dkprintf("%s: MAP_KERNEL_START <= 0x%lx <= LINUX_PAGE_OFFSET\n",
 				__FUNCTION__, va);
 		return va - MAP_KERNEL_START + x86_kernel_phys_base;
+	}
+	else if (va >= LINUX_PAGE_OFFSET) {
+		return va - LINUX_PAGE_OFFSET;
 	}
 	else if (va >= MAP_FIXED_START) {
 		return va - MAP_FIXED_START;
