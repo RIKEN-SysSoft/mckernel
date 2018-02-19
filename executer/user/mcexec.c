@@ -2986,17 +2986,17 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 		sig = 0;
 		waitpid(-1, &st, __WALL);
 		if (WIFEXITED(st) || WIFSIGNALED(st)) {
-			unsigned long term_param[4];
+			struct terminate_thread_desc term_desc;
 
-			term_param[0] = uti_desc->pid;
-			term_param[1] = uti_desc->tid;
-			term_param[3] = uti_desc->key;
+			term_desc.pid = uti_desc->pid;
+			term_desc.tid = uti_desc->tid;
+			term_desc.tsk = uti_desc->key;
 			code = st;
 			
 			if (exited == 2) { /* exit_group */
 				code |= 0x0000000100000000;
 			}
-			term_param[2] = code;
+			term_desc.sig = code;
 
 			/* How return_syscall() is called depends on how utility thread exits:
 			   exit:
@@ -3012,8 +3012,9 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 				   return_syscall()
 			*/
 			if (exited == 1 || exited == 2) {
-				fprintf(stderr, "%s:  calling MCEXEC_UP_TERMINATE_THREAD,exited=%d,code=%lx\n", __FUNCTION__, exited, code);
-				if (ioctl(fd, MCEXEC_UP_TERMINATE_THREAD, term_param) != 0) {
+				
+				fprintf(stderr, "%s:  calling MCEXEC_UP_TERMINATE_THREAD,pid=%d,tid=%d,exited=%d,code=%lx\n", __FUNCTION__, uti_desc->pid, uti_desc->tid, exited, code);
+				if (ioctl(fd, MCEXEC_UP_TERMINATE_THREAD, &term_desc) != 0) {
 					fprintf(stderr, "%s: INFO: MCEXEC_UP_TERMINATE_THREAD returned %d\n", __FUNCTION__, errno);
 				}
 			}

@@ -2500,30 +2500,16 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 	return -EINVAL;
 }
 
-long
-mcexec_terminate_thread(ihk_os_t os, unsigned long __user *arg, struct file *file)
+static long
+mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct task_struct *tsk)
 {
-	unsigned long param[4];
 	int rc;
-	int pid;
-	int tid;
-	long sig;
-	struct task_struct *tsk;
 	struct host_thread *thread;
 	struct ikc_scd_packet *packet;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
 
-    if (copy_from_user(param, arg, sizeof(unsigned long) * 4)) {
-        return -EFAULT;
-    }
-
-	pid = param[0];
-	tid = param[1];
-	sig = param[2];
-	tsk = (struct task_struct *)param[3];
-
-	//printk("%s: pid=%d,tid=%d,sig=%lx,task=%p\n", __FUNCTION__, pid, tid, sig, tsk);
+	printk("%s: target pid=%d,tid=%d,sig=%lx,task=%p\n", __FUNCTION__, pid, tid, sig, tsk);
 
 	list_for_each_entry(thread, &host_threads, list) {
 		if(thread->pid == pid && thread->tid == tid) {
@@ -2587,7 +2573,25 @@ err:
 
 	return 0;
 }
- 
+
+static long
+mcexec_terminate_thread(ihk_os_t os, struct terminate_thread_desc * __user arg)
+{
+	long rc;
+	unsigned long flags;
+	struct terminate_thread_desc desc;
+
+    if (copy_from_user(&desc, arg, sizeof(struct terminate_thread_desc))) {
+        return -EFAULT;
+    }
+
+	write_lock_irqsave(&host_thread_lock, flags);
+	rc = mcexec_terminate_thread_unsafe(os, desc.pid, desc.tid, desc.sig, (struct task_struct *)desc.tsk);
+	write_unlock_irqrestore(&host_thread_lock, flags);
+
+	return rc;
+}
+
 static long mcexec_release_user_space(struct release_user_space_desc *__user arg)
 {
 	struct release_user_space_desc desc;
@@ -3119,7 +3123,7 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 		return mcexec_syscall_thread(os, arg, file);
 
 	case MCEXEC_UP_TERMINATE_THREAD:
-		return mcexec_terminate_thread(os, (unsigned long __user *)arg, file);
+		return mcexec_terminate_thread(os, (struct terminate_thread_desc *)arg);
 
 	case MCEXEC_UP_RELEASE_USER_SPACE:
 		return mcexec_release_user_space((struct release_user_space_desc *)arg);
