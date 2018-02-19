@@ -8,9 +8,7 @@
  * 	Copyright (C) 2015  RIKEN AICS
  */
 
-#ifdef POSTK_DEBUG_ARCH_DEP_33
 #include "../config.h"
-#endif	/* POSTK_DEBUG_ARCH_DEP_33 */
 #include <bfd.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -22,10 +20,8 @@
 #include <arpa/inet.h>
 #include <sys/ioctl.h>
 #include <ihk/ihk_host_user.h>
-#ifdef POSTK_DEBUG_ARCH_DEP_34
 #include <eclair.h>
 #include <arch-eclair.h>
-#endif	/* POSTK_DEBUG_ARCH_DEP_34 */
 
 #define CPU_TID_BASE 1000000
 
@@ -85,11 +81,7 @@ static struct thread_info *curr_thread = NULL;
 static uintptr_t ihk_mc_switch_context = -1;
 #endif	/* POSTK_DEBUG_ARCH_DEP_34 */
 
-#ifdef POSTK_DEBUG_ARCH_DEP_34
 uintptr_t lookup_symbol(char *name) {
-#else	/* POSTK_DEBUG_ARCH_DEP_34 */
-static uintptr_t lookup_symbol(char *name) {
-#endif	/* POSTK_DEBUG_ARCH_DEP_34 */
 	int i;
 
 	for (i = 0; i < nsyms; ++i) {
@@ -101,22 +93,22 @@ static uintptr_t lookup_symbol(char *name) {
 	return NOSYMBOL;
 } /* lookup_symbol() */
 
+#define NOPHYS ((uintptr_t)-1)
 
 static uintptr_t virt_to_phys(uintptr_t va) {
-#ifndef POSTK_DEBUG_ARCH_DEP_34
-#define MAP_KERNEL 0xFFFFFFFF80000000
-#endif	/* POSTK_DEBUG_ARCH_DEP_34 */
-	if (va >= MAP_KERNEL) {
-		return (va - MAP_KERNEL + kernel_base);
+	if (va >= MAP_KERNEL_START) {
+		return va - MAP_KERNEL_START + kernel_base;
 	}
-#ifndef POSTK_DEBUG_ARCH_DEP_34
-#define MAP_ST 0xFFFF800000000000
-#endif	/* POSTK_DEBUG_ARCH_DEP_34 */
-	if (va >= MAP_ST) {
-		return (va - MAP_ST);
+	else if (va >= LINUX_PAGE_OFFSET) {
+		return va - LINUX_PAGE_OFFSET;
 	}
-	if (0) printf("virt_to_phys(%lx): -1\n", va);
-#define NOPHYS ((uintptr_t)-1)
+	else if (va >= MAP_FIXED_START) {
+		return va - MAP_FIXED_START;
+	}
+	else if (va >= MAP_ST_START) {
+		return va - MAP_ST_START;
+	}
+
 	return NOPHYS;
 } /* virt_to_phys() */
 
@@ -673,11 +665,7 @@ static int setup_dump(char *fname) {
 	return 0;
 } /* setup_dump() */
 
-#ifdef POSTK_DEBUG_ARCH_DEP_38
 static ssize_t print_hex(char *buf, size_t buf_size, char *str) {
-#else	/* POSTK_DEBUG_ARCH_DEP_38 */
-static ssize_t print_hex(char *buf, char *str) {
-#endif	/* POSTK_DEBUG_ARCH_DEP_38 */
 
 	char *p;
 	char *q;
@@ -702,11 +690,7 @@ static ssize_t print_hex(char *buf, char *str) {
 	return (q - buf);
 } /* print_hex() */
 
-#if defined(POSTK_DEBUG_ARCH_DEP_34) && defined(POSTK_DEBUG_ARCH_DEP_38)
 ssize_t print_bin(char *buf, size_t buf_size, void *data, size_t size) {
-#else	/* POSTK_DEBUG_ARCH_DEP_34 && POSTK_DEBUG_ARCH_DEP_38*/
-static ssize_t print_bin(char *buf, void *data, size_t size) {
-#endif	/* POSTK_DEBUG_ARCH_DEP_34 && POSTK_DEBUG_ARCH_DEP_38*/
 	uint8_t *p;
 	char *q;
 	int i;
@@ -733,13 +717,8 @@ static ssize_t print_bin(char *buf, void *data, size_t size) {
 	return (q - buf);
 } /* print_bin() */
 
-#ifdef POSTK_DEBUG_ARCH_DEP_38
 static void command(const char *cmd, char *res, size_t res_size) {
 	const char *p;
-#else	/* POSTK_DEBUG_ARCH_DEP_38 */
-static void command(char *cmd, char *res) {
-	char *p;
-#endif	/* POSTK_DEBUG_ARCH_DEP_38 */
 	char *rbp;
 
 	p = cmd;
@@ -801,11 +780,7 @@ static void command(char *cmd, char *res) {
 #endif	/* POSTK_DEBUG_ARCH_DEP_34 */
 			rbp += sprintf(rbp, "l");
 			if (0)
-#ifdef POSTK_DEBUG_ARCH_DEP_38
 			rbp += print_hex(rbp, res_size, str);
-#else	/* POSTK_DEBUG_ARCH_DEP_38 */
-			rbp += print_hex(rbp, str);
-#endif	/* POSTK_DEBUG_ARCH_DEP_38 */
 			rbp += sprintf(rbp, "%s", str);
 		}
 		else if (!strcmp(p, "D")) {
@@ -814,20 +789,9 @@ static void command(char *cmd, char *res) {
 		}
 		else if (!strcmp(p, "g")) {
 			if (curr_thread->cpu < 0) {
-#ifndef POSTK_DEBUG_ARCH_DEP_34
-				struct x86_kregs {
-					uintptr_t rsp, rbp, rbx, rsi;
-					uintptr_t rdi, r12, r13, r14;
-					uintptr_t r15, rflags, rsp0;
-				};
-#endif	/* POSTK_DEBUG_ARCH_DEP_34 */
 
 				int error;
-#ifdef POSTK_DEBUG_ARCH_DEP_34
 				struct arch_kregs kregs;
-#else	/* POSTK_DEBUG_ARCH_DEP_34 */
-				struct x86_kregs kregs;
-#endif	/* POSTK_DEBUG_ARCH_DEP_34 */
 
 				error = read_mem(curr_thread->process+K(CTX_OFFSET),
 						&kregs, sizeof(kregs));
@@ -836,36 +800,7 @@ static void command(char *cmd, char *res) {
 					break;
 				}
 
-#ifdef POSTK_DEBUG_ARCH_DEP_34
 				print_kregs(rbp, res_size, &kregs);
-#else	/* POSTK_DEBUG_ARCH_DEP_34 */
-				rbp += sprintf(rbp, "xxxxxxxxxxxxxxxx");	/* rax */
-				rbp += print_bin(rbp, &kregs.rbx, sizeof(uint64_t));
-				rbp += sprintf(rbp, "xxxxxxxxxxxxxxxx");	/* rcx */
-				rbp += sprintf(rbp, "xxxxxxxxxxxxxxxx");	/* rdx */
-				rbp += print_bin(rbp, &kregs.rsi, sizeof(uint64_t));
-				rbp += print_bin(rbp, &kregs.rdi, sizeof(uint64_t));
-				rbp += print_bin(rbp, &kregs.rbp, sizeof(uint64_t));
-				rbp += print_bin(rbp, &kregs.rsp, sizeof(uint64_t));
-				rbp += sprintf(rbp, "xxxxxxxxxxxxxxxx");	/* r8 */
-				rbp += sprintf(rbp, "xxxxxxxxxxxxxxxx");	/* r9 */
-
-				rbp += sprintf(rbp, "xxxxxxxxxxxxxxxx");	/* r10 */
-				rbp += sprintf(rbp, "xxxxxxxxxxxxxxxx");	/* r11 */
-				rbp += print_bin(rbp, &kregs.r12, sizeof(uint64_t));
-				rbp += print_bin(rbp, &kregs.r13, sizeof(uint64_t));
-				rbp += print_bin(rbp, &kregs.r14, sizeof(uint64_t));
-				rbp += print_bin(rbp, &kregs.r15, sizeof(uint64_t));
-				rbp += print_bin(rbp, &ihk_mc_switch_context,
-						sizeof(uint64_t));		/* rip */
-				rbp += print_bin(rbp, &kregs.rflags, sizeof(uint32_t));
-				rbp += sprintf(rbp, "xxxxxxxx");		/* cs */
-				rbp += sprintf(rbp, "xxxxxxxx");		/* ss */
-				rbp += sprintf(rbp, "xxxxxxxx");		/* ds */
-				rbp += sprintf(rbp, "xxxxxxxx");		/* es */
-				rbp += sprintf(rbp, "xxxxxxxx");		/* fs */
-				rbp += sprintf(rbp, "xxxxxxxx");		/* gs */
-#endif	/* POSTK_DEBUG_ARCH_DEP_34 */
 			}
 			else {
 				int error;
@@ -943,11 +878,7 @@ static void command(char *cmd, char *res) {
 #endif	/* POSTK_DEBUG_ARCH_DEP_34 */
 			rbp += sprintf(rbp, "l");
 			if (0)
-#ifdef POSTK_DEBUG_ARCH_DEP_38
 			rbp += print_hex(rbp, res_size, str);
-#else	/* POSTK_DEBUG_ARCH_DEP_38 */
-			rbp += print_hex(rbp, str);
-#endif	/* POSTK_DEBUG_ARCH_DEP_38 */
 			rbp += sprintf(rbp, "%s", str);
 		}
 		else if (!strncmp(p, "T", 1)) {
@@ -1039,11 +970,7 @@ static void command(char *cmd, char *res) {
 			else {
 				q += sprintf(q, "status=%#x", ti->status);
 			}
-#ifdef POSTK_DEBUG_ARCH_DEP_38
 			rbp += print_hex(rbp, res_size, buf);
-#else	/* POSTK_DEBUG_ARCH_DEP_38 */
-			rbp += print_hex(rbp, buf);
-#endif	/* POSTK_DEBUG_ARCH_DEP_38 */
 		}
 	} while (0);
 
@@ -1272,11 +1199,7 @@ int main(int argc, char *argv[]) {
 			}
 			mode = 0;
 			fputc('+', ofp);
-#ifdef POSTK_DEBUG_ARCH_DEP_38
 			command(lbuf, rbuf, sizeof(rbuf));
-#else	/* POSTK_DEBUG_ARCH_DEP_38 */
-			command(lbuf, rbuf);
-#endif	/* POSTK_DEBUG_ARCH_DEP_38 */
 			sum = 0;
 			for (p = rbuf; *p != '\0'; ++p) {
 				sum += *p;

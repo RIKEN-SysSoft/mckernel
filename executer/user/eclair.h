@@ -3,11 +3,7 @@
 #ifndef HEADER_USER_COMMON_ECLAIR_H
 #define HEADER_USER_COMMON_ECLAIR_H
 
-#ifdef POSTK_DEBUG_ARCH_DEP_76 /* header path fix */
 #include "../config.h"
-#else /* POSTK_DEBUG_ARCH_DEP_76 */
-#include <config.h>
-#endif /* POSTK_DEBUG_ARCH_DEP_76 */
 #include <stdio.h>
 #include <inttypes.h>
 #include <arch-eclair.h>
