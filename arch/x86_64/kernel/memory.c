@@ -173,19 +173,23 @@ static void init_normal_area(struct page_table *pt)
 	unsigned long map_start, map_end, phys, pt_phys;
 	int ident_index, virt_index;
 
-	map_start = ihk_mc_get_memory_address(IHK_MC_GMA_MAP_START, 0);
+	/*
+	 * This has to start from 0x00, see load_file() in IHK-SMP.
+	 * For security reasons, we could skip holes in the LWK
+	 * assigned physical memory, but Linux mappings already map
+	 * those anyway.
+	 */
+	map_start = 0;
 	map_end = ihk_mc_get_memory_address(IHK_MC_GMA_MAP_END, 0);
 
-	kprintf("map_start = %lx, map_end = %lx\n", map_start, map_end);
 	ident_index = map_start >> PTL4_SHIFT;
 	virt_index = (MAP_ST_START >> PTL4_SHIFT) & (PT_ENTRIES - 1);
 
 	memset(pt, 0, sizeof(struct page_table));
 
-	for (phys = (map_start & ~(PTL4_SIZE - 1)); phys < map_end;
-	     phys += PTL4_SIZE) {
-		pt_phys = setup_l3(ihk_mc_alloc_pages(1, IHK_MC_AP_CRITICAL), phys,
-		                   map_start, map_end);
+	for (phys = map_start; phys < map_end; phys += PTL4_SIZE) {
+		pt_phys = setup_l3(ihk_mc_alloc_pages(1, IHK_MC_AP_CRITICAL),
+				phys, map_start, map_end);
 
 		pt->entry[ident_index++] = pt_phys | PFL4_PDIR_ATTR;
 		pt->entry[virt_index++] = pt_phys | PFL4_PDIR_ATTR;
