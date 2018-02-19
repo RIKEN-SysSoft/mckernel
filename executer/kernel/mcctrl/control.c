@@ -418,13 +418,15 @@ static void release_handler(ihk_os_t os, void *param)
 		}
 	}
 
-#if 0 /* debug */
+#if 1 /* debug */
 	printk("%s: calling mcexec_close_exec\n", __FUNCTION__);
 	mcexec_close_exec(os);
 
 	/* Note that it will call return_syscall() */
 	mcexec_destroy_per_process_data(os, info->pid);
 
+#endif
+#if 0 /* debug */
 	memset(&isp, '\0', sizeof(isp));
 	isp.msg = SCD_MSG_CLEANUP_PROCESS;
 	isp.pid = info->pid;
@@ -436,6 +438,8 @@ static void release_handler(ihk_os_t os, void *param)
 		//printk("%s: calling delete_pid_entry\n", __FUNCTION__);
 		delete_pid_entry(os_ind, info->pid);
 	}
+#endif
+#if 0 /* debug */
 	printk("%s: calling kfree,param=%p\n", __FUNCTION__, param);
 	kfree(param);
 	//printk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p OK\n", __FUNCTION__, info);
