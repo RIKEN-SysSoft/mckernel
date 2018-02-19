@@ -164,7 +164,7 @@ psm2_epid_t find_server(int rank) {
   sprintf(fn, "psm2-demo-server-epid-%d", rank);
   printf("PSM2 client waiting for epid mapping file to appear...\n"); fflush(stdout);
   while (!fp) {
-    usleep(250*1000);
+    sleep(1);
     fp = fopen(fn, "r");
   }
   fscanf(fp, "%lx", &server_epid);
@@ -204,6 +204,8 @@ int my_psm2_init(int my_rank, int server_rank) {
   int rc;
   int ver_major = PSM2_VERNO_MAJOR;
   int ver_minor = PSM2_VERNO_MINOR;
+
+  printf("%s: my_rank=%d,server_rank=%d\n", __FUNCTION__, my_rank, server_rank); fflush(stdout);
   memset(uuid, 0, sizeof(psm2_uuid_t)); /* Use a UUID of zero */
 /* Try to initialize PSM2 with the requested library version.
  *  * In this example, given the use of the PSM2_VERNO_MAJOR and MINOR
@@ -227,13 +229,10 @@ int my_psm2_init(int my_rank, int server_rank) {
 
   return 0;
 }
-
-psm2_mq_t q;
-
 int my_psm2_connect(int my_rank, int server_rank) {
 	int rc;
   int is_server = (my_rank == server_rank) ? 1 : 0;
-  printf("%s: enter\n", __FUNCTION__); fflush(stdout);
+  printf("%s: my_rank=%d,server_rank=%d\n", __FUNCTION__, my_rank, server_rank); fflush(stdout);
   if (is_server) {
 	  write_epid_to_file(my_rank, myepid);
   } else {
@@ -258,46 +257,25 @@ int my_psm2_connect(int my_rank, int server_rank) {
  *           * the connect call will still return OK.
  *                * The errors array will contain the state of individual
  *                     * connection requests. */
-	printf("calling ep_connect\n");
-	int count = 0;
-    while ((rc = psm2_ep_connect(myep,
+    if ((rc = psm2_ep_connect(myep,
                               CONNECT_ARRAY_SIZE,
                               epid_array,
                               epid_array_mask,
                               epid_connect_errors,
                               epaddr_array,
-                              1 /* 0.5 sec timeout */
+                              0 /* no timeout */
     )) != PSM2_OK) {
-		struct timespec ts = { .tv_sec = 0, .tv_nsec = 500*1000*1000 };
-		nanosleep(&ts, NULL);
-		printf("."); fflush(stdout);
-		count++;
-		if (count > 30) {
-			break;
-		}
-    }
-
-	if (rc != PSM2_OK) {
-		printf("psm2_ep_connect timed-out\n");
+		die("couldn't ep_connect", rc);
 		return -1;
-	}
-
+    }
     printf("PSM2 connect request processed.\n");
     /* Now check if our connection to the server is ready */
     if (epid_connect_errors[0] != PSM2_OK) {
-		die("couldn't connect to server", epid_connect_errors[0]);
+      die("couldn't connect to server", epid_connect_errors[0]);
 		return -1;
     }
     printf("PSM2 client-server connection established.\n");
   }
-
-  /* Setup our PSM2 message queue */
-  if ((rc = psm2_mq_init(myep, PSM2_MQ_ORDERMASK_NONE, NULL, 0, &q))
-      != PSM2_OK) {
-    die("couldn't initialize PSM2 MQ", rc);
-  }
-  printf("PSM2 MQ init done.\n");
-
 	return 0;
 }
 char msgbuf[BUFFER_LENGTH];
@@ -305,6 +283,7 @@ char msgbuf[BUFFER_LENGTH];
 int my_psm2_sendrecv(int rank, int sender, int receiver) {
   int is_server = (rank == receiver) ? 1 : 0;
   int rc;
+  psm2_mq_t q;
   psm2_mq_req_t req_mq;
   //char msgbuf[BUFFER_LENGTH];
 
@@ -313,6 +292,12 @@ int my_psm2_sendrecv(int rank, int sender, int receiver) {
 
   memset(msgbuf, 0, BUFFER_LENGTH);
 
+  /* Setup our PSM2 message queue */
+  if ((rc = psm2_mq_init(myep, PSM2_MQ_ORDERMASK_NONE, NULL, 0, &q))
+      != PSM2_OK) {
+    die("couldn't initialize PSM2 MQ", rc);
+  }
+  printf("PSM2 MQ init done.\n");
   if (is_server) {
     psm2_mq_tag_t t = {0xABCD};
     psm2_mq_tag_t tm = {-1};
@@ -328,8 +313,6 @@ int my_psm2_sendrecv(int rank, int sender, int receiver) {
       die("couldn't post psm2_mq_irecv()", rc);
     }
     printf("PSM2 MQ irecv() posted\n");
-
-#if 0
     /* Wait until the message arrives */
     if ((rc = psm2_mq_wait(&req_mq, NULL)) != PSM2_OK) {
       die("couldn't wait for the irecv", rc);
@@ -343,39 +326,12 @@ int my_psm2_sendrecv(int rank, int sender, int receiver) {
 		sprintf(fn, "psm2-demo-server-epid-%d", rank);
 		unlink(fn);
 	}
-#else
-	int count = 0;
-    while ((rc = psm2_mq_ipeek(q, &req_mq, NULL)) != PSM2_OK) {
-		struct timespec ts = { .tv_sec = 0, .tv_nsec = 500*1000*1000 };
-		nanosleep(&ts, NULL);
-		printf("."); fflush(stdout);
-		count++;
-		if (count > 30) {
-			break;
-		}
-	}
-	if (rc == PSM2_OK) {
-		if ((rc = psm2_mq_test(&req_mq, NULL)) != PSM2_OK) {
-			printf("psm2_mq_test failed\n");
-		} else  {
-			printf("PSM2 MQ test() done.\n");
-			printf("Message from client:\n");
-			printf("%s", msgbuf);
-		}
-		char fn[256];
-		sprintf(fn, "psm2-demo-server-epid-%d", rank);
-		unlink(fn);
-	} else {
-		printf("PSM2 MQ test() timed-out.\n");
-	}
-#endif
   } else {
     /* Say hello */
     snprintf(msgbuf, BUFFER_LENGTH,
              "Hello world from epid=0x%lx, pid=%d.\n",
              myepid, getpid());
     psm2_mq_tag_t t = {0xABCD};
-#if 0
     if ((rc = psm2_mq_send2(q,
                            epaddr_array[0], /* destination epaddr */
                            PSM2_MQ_FLAG_SENDSYNC, /* no flags */
@@ -385,39 +341,6 @@ int my_psm2_sendrecv(int rank, int sender, int receiver) {
       die("couldn't post psm2_mq_isend", rc);
     }
     printf("PSM2 MQ send() done.\n");
-#else
-    if ((rc = psm2_mq_isend2(q,
-                           epaddr_array[0], /* destination epaddr */
-                           PSM2_MQ_FLAG_SENDSYNC, /* no flags */
-                           &t, /* tag */
-							 msgbuf, BUFFER_LENGTH,
-							 NULL, /* no context to add */
-							 &req_mq /* track irecv status */
-    )) != PSM2_OK) {
-      die("couldn't post psm2_mq_isend", rc);
-    }
-    printf("PSM2 MQ isend() posted\n");
-
-	int count = 0;
-    while ((rc = psm2_mq_ipeek2(q, &req_mq, NULL)) != PSM2_OK) {
-		struct timespec ts = { .tv_sec = 0, .tv_nsec = 500*1000*1000 };
-		nanosleep(&ts, NULL);
-		printf("."); fflush(stdout);
-		count++;
-		if (count > 30) {
-			break;
-		}
-	}
-	if (rc == PSM2_OK) {
-		if ((rc = psm2_mq_test2(&req_mq, NULL)) != PSM2_OK) {
-			printf("PSM2 MQ test() failed.\n");
-		} else {
-			printf("PSM2 MQ test() done.\n");
-		}
-	} else {
-		printf("PSM2 MQ test() timeout.\n");
-	}
-#endif
   }
 /* Close down the MQ */
   if ((rc = psm2_mq_finalize(q)) != PSM2_OK) {
@@ -456,6 +379,7 @@ struct thr_arg {
 	int rank;
 	int ppn;
 	int nproc;
+	int server_rank;
 };
 
 struct thr_arg thr_arg;
@@ -476,26 +400,10 @@ void *progress_fn(void *arg) {
 
 	pthread_barrier_wait(&thr_arg->bar);
 
-#if 1
-	for (i = 0; i < thr_arg->nproc; i++) {
-		if (!on_same_node(thr_arg->ppn, thr_arg->rank, i)) {
-			if (thr_arg->rank < i) {
-				my_psm2_sendrecv(thr_arg->rank, thr_arg->rank, i);
-			} else {
-				my_psm2_sendrecv(thr_arg->rank, i, thr_arg->rank);
-			}
-		}
-	}
-#endif
-
 	pthread_barrier_wait(&thr_arg->bar);
 
 
-#if 0
-	printf("progress,entering infinite loop\n");
-	while(1) { }
-#endif
-	printf("progress,returning\n");
+	printf("progress,exit\n");
 	return NULL;
 }
 
@@ -545,14 +453,12 @@ int main(int argc, char **argv) {
 		printf("nsec=%ld, nspw=%f\n", nsec, nspw);
 	}
 	
-	int server_rank = ppn + (my_rank % ppn);
-	my_psm2_init(my_rank, server_rank);
-	my_psm2_connect(my_rank, server_rank);
 
 	/* Spawn a thread */
 	thr_arg.rank = my_rank;
 	thr_arg.ppn = ppn;
 	thr_arg.nproc = nproc;
+	thr_arg.server_rank = ppn + (my_rank % ppn);
 
 	pthread_barrierattr_init(&barrierattr);
 	pthread_barrier_init(&thr_arg.bar, &barrierattr, nproc);
@@ -577,6 +483,19 @@ int main(int argc, char **argv) {
 	}
 	
 	pthread_barrier_wait(&thr_arg.bar);
+
+	my_psm2_init(thr_arg.rank, thr_arg.server_rank);
+	my_psm2_connect(thr_arg.rank, thr_arg.server_rank);
+
+	for (i = 0; i < thr_arg.nproc; i++) {
+		if (!on_same_node(thr_arg.ppn, thr_arg.rank, i)) {
+			if (thr_arg.rank < i) {
+				my_psm2_sendrecv(thr_arg.rank, thr_arg.rank, i);
+			} else {
+				my_psm2_sendrecv(thr_arg.rank, i, thr_arg.rank);
+			}
+		}
+	}
 
 	pthread_barrier_wait(&thr_arg.bar);
 
