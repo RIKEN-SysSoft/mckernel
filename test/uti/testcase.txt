@@ -289,7 +289,7 @@ CT23 progress-threadのcond_waitタイミングを変化させたテスト
 
 CT24 compute-threadのcond_waitタイミングを変化させたテスト
 
-CT25 1MB x 250のMPI_Isend()でのプロセス終了時メモリ破壊不具合のスケルトン
+CT25 1MB x 250 (./CT25 20 250) MPI_Isend()でのプロセス終了時メモリ破壊不具合のスケルトン
 * signalによってremote_page_fault()が中断される
 
 CT26 終了時レースコンディションのテスト
