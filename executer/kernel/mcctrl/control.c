@@ -402,6 +402,8 @@ static void release_handler(ihk_os_t os, void *param)
 			break;
 		}
 
+		printk("%s: stray uti thread found,pid=%d,tid=%d\n", __FUNCTION__, thread->pid, thread->tid);
+
 		term_param[0] = thread->pid;
 		term_param[1] = thread->tid;
 		term_param[2] = 0;
@@ -411,17 +413,22 @@ static void release_handler(ihk_os_t os, void *param)
 		thread->handler = NULL;
 		write_unlock_irqrestore(&host_thread_lock, flags);
 
+#if 0 /* debug */ /* Actually, it's not needed because tracer calls it instead. */
 		printk("%s: calling mcexec_terminate_thread,pid=%d,tid=%d\n", __FUNCTION__, thread->pid, thread->tid);
 		rc = do_mcexec_terminate_thread(os, term_param);
 		if (rc) {
 			printk("%s: ERROR: mcexec_terminate_thread returned %ld\n", __FUNCTION__, rc);
 		}
+#endif
 	}
 
 #if 1 /* debug */
 	printk("%s: calling mcexec_close_exec\n", __FUNCTION__);
-	mcexec_close_exec(os);
-
+	if ((rc_int = mcexec_close_exec(os))) {
+		printk("%s: ERROR: mcexec_close_exec (%d)\n", __FUNCTION__, rc_int);
+	}
+#endif
+#if 1 /* debug */
 	/* Note that it will call return_syscall() */
 	mcexec_destroy_per_process_data(os, info->pid);
 
@@ -1193,17 +1200,23 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 		list_for_each_entry_safe(ptd, next,
 		                         ppd->per_thread_data_hash + i, hash) {
 			packet = ptd->data;
+			printk("%s: ptd=%p,packet=%p,rtid=%d\n", __FUNCTION__, ptd, packet, packet->req.rtid);
 			list_del(&ptd->hash);
+#if 1 /* debug */
 			kfree(ptd);
+#endif
+			printk("%s: calling __return_syscall for per_thread_data_hash,os=%p,desc=%p\n", __FUNCTION__, ppd->ud->os, ppd->ud->ikc2linux[smp_processor_id()]);
 			/* We use ERESTARTSYS to tell the LWK that the proxy
 			 * process is gone and the application should be terminated */
 			__return_syscall(ppd->ud->os, packet, -ERESTARTSYS,
 					packet->req.rtid);
+#if 1 /* debug */
 			ihk_ikc_release_packet(
 					(struct ihk_ikc_free_packet *)packet,
 					(ppd->ud->ikc2linux[smp_processor_id()] ?
 					 ppd->ud->ikc2linux[smp_processor_id()] :
 					 ppd->ud->ikc2linux[0]));
+#endif
 		}
 	}
 
@@ -1211,22 +1224,28 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	list_for_each_entry_safe(wqhln, wqhln_next, &ppd->wq_req_list, list) {
 		list_del(&wqhln->list);
 		packet = wqhln->packet;
+		printk("%s: wqhln=%p,packet=%p\n", __FUNCTION__, wqhln, packet);
+#if 0 /* debug */
 		kfree(wqhln);
-
+#endif
+		printk("%s: calling __return_syscall for wq_req_list,os=%p\n", __FUNCTION__, ppd->ud->os);
 		/* We use ERESTARTSYS to tell the LWK that the proxy
 		 * process is gone and the application should be terminated */
 		__return_syscall(ppd->ud->os, packet, -ERESTARTSYS,
 				packet->req.rtid);
+#if 0 /* debug */
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 				(ppd->ud->ikc2linux[smp_processor_id()] ?
 				 ppd->ud->ikc2linux[smp_processor_id()] :
 				 ppd->ud->ikc2linux[0]));
+#endif
 	}
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, flags);
 
+#if 0 /* debug */
 	pager_remove_process(ppd);
-	//ppd->rpgtable = 0; /* debug */
-	kfree(ppd); /* debug */
+	kfree(ppd);
+#endif
 	return 0;
 }
 
@@ -1498,7 +1517,10 @@ retry_alloc:
 		ret = -EINVAL;;
 		goto put_ppd_out;
 	}
-	//kprintf("%s: ptd->task=%p, tid=%d\n", __FUNCTION__, current, task_pid_vnr(current));
+	if (packet->req.number == __NR_sched_setaffinity  && packet->req.args[0] == 0) {
+		struct ikc_scd_packet *packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
+		kprintf("%s: uti,packet=%p,tid=%d\n", __FUNCTION__, packet, task_pid_vnr(current));
+	}
 
 	if (__do_in_kernel_syscall(os, packet)) {
 		if (copy_to_user(&req->sr, &packet->req,
@@ -1940,10 +1962,13 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	/* Find previous file (if exists) and drop it */
 	list_for_each_entry(mcef_iter, &mckernel_exec_files, list) {
 		if (mcef_iter->os == os && mcef_iter->pid == task_tgid_vnr(current)) {
+			printk("%s: exec file found,%p,%p\n", __FUNCTION__, mcef_iter, mcef_iter->fp);
+#if 0 /* debug */
 			allow_write_access(mcef_iter->fp);
 			fput(mcef_iter->fp);
 			list_del(&mcef_iter->list);
 			kfree(mcef_iter);
+#endif
 			break;
 		}
 	}
@@ -1952,8 +1977,10 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	mcef->os = os;
 	mcef->pid = task_tgid_vnr(current);
 	mcef->fp = file;
+#if 1 /* debug */
+	printk("%s: adding exec file,%p,%p\n", __FUNCTION__, mcef, mcef->fp);
 	list_add_tail(&mcef->list, &mckernel_exec_files);
-
+#endif
 	/* Create /proc/self/exe entry */
 	add_pid_entry(os_ind, task_tgid_vnr(current));
 	proc_exe_link(os_ind, task_tgid_vnr(current), fullpath);
@@ -1989,10 +2016,13 @@ int mcexec_close_exec(ihk_os_t os)
 	down(&mckernel_exec_file_lock);
 	list_for_each_entry(mcef, &mckernel_exec_files, list) {
 		if (mcef->os == os && mcef->pid == task_tgid_vnr(current)) {
+			printk("%s: exec file found,%p,%p\n", __FUNCTION__, mcef, mcef->fp);
+#if 0 /* debug */
 			allow_write_access(mcef->fp);
 			fput(mcef->fp);
 			list_del(&mcef->list);
 			kfree(mcef);
+#endif
 			found = 1;
 			dprintk("%d close_exec dropped executable \n", (int)task_tgid_vnr(current));
 			break;

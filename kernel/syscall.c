@@ -186,7 +186,7 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid, struct s
 	packet.pid = pid ? pid : cpu_local_var(current)->proc->pid;
 #endif /* POSTK_DEBUG_TEMP_FIX_26 */
 	packet.resp_pa = virt_to_phys(res);
-	dkprintf("send syscall, nr: %d, pid: %d\n", req->number, packet.pid);
+	kprintf("send syscall, nr: %d, pid: %d, resp_pa=%lx\n", req->number, packet.pid, packet.resp_pa);
 
 	ret = ihk_ikc_send(syscall_channel, &packet, 0);
 	if (ret < 0) {

@@ -2129,6 +2129,8 @@ void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet,
 	res = ihk_device_map_virtual(ihk_os_to_dev(os),
 			phys, sizeof(*res), NULL, 0);
 
+	//printk("%s: resp_pa=%lx,res=%p\n", __FUNCTION__, packet->resp_pa, res);
+
 	if (!res) {
 		printk("%s: ERROR: invalid response structure address\n",
 			__FUNCTION__);
