@@ -2830,6 +2830,7 @@ kill_thread(unsigned long tid, int sig)
 					pthread_kill(tp->thread_id, sig);
 				}
 
+#if 0
 				if (exit_remote) {
 					printf("%s: making remote thread exit,tid=%ld,sig=%d\n", __FUNCTION__, tid, sig);
 					unsigned long term_param[4];
@@ -2840,8 +2841,8 @@ kill_thread(unsigned long tid, int sig)
 					if ((rc = ioctl(fd, MCEXEC_UP_TERMINATE_THREAD, term_param)) < 0) {
 						printf("%s: MCEXEC_UP_TERMINATE_THREAD returned %d\n", __FUNCTION__, errno);
 					}
-
  				}
+#endif
 			} else if (pthread_kill(tp->thread_id, sig) == ESRCH) {
 				printf("%s: ERROR: Thread not found (tid=%ld,sig=%d)\n", __FUNCTION__, tid, sig);
  			}
