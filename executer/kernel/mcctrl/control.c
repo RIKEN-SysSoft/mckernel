@@ -2668,7 +2668,7 @@ long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 	if (copy_from_user(&param, uparam, sizeof param)) {
 		return -EFAULT;
 	}
-#if 1 /* debug */
+#if 0 /* debug */
 	if (param.number == __NR_futex) {
 #else
 		if (0) {
