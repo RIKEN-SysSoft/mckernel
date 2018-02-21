@@ -496,9 +496,6 @@ void ihk_mc_init_ap(void)
 	kprintf("# of cpus : %d\n", cpu_info->ncpus);
 	init_processors_local(cpu_info->ncpus);
 	
-	kprintf("IKC IRQ vector: %d, IKC target CPU APIC: %d\n", 
-			ihk_ikc_irq, ihk_ikc_irq_apicid);
-
 	/* Do initialization for THIS cpu (BSP) */
 	assign_processor_id();
 

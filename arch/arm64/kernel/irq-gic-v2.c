@@ -54,16 +54,10 @@ static void arm64_raise_sgi_gicv2(unsigned int cpuid, unsigned int vector)
  * arm64_raise_spi_gicv2
  * @ref.impl nothing.
  */
-extern unsigned int ihk_ikc_irq_apicid;
 static void arm64_raise_spi_gicv2(unsigned int cpuid, unsigned int vector)
 {
 	uint64_t spi_reg_offset;
 	uint32_t spi_set_pending_bitpos;
-
-	if (cpuid != ihk_ikc_irq_apicid) {
-		ekprintf("SPI(irq#%d) cannot send other than the host.\n", vector);
-		return;
-	}
 
 	/**
 	 * calculates register offset and bit position corresponding to the numbers.

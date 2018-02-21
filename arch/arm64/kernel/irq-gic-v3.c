@@ -266,6 +266,7 @@ static void arm64_raise_spi_gicv3(uint32_t cpuid, uint32_t vector)
 static void arm64_raise_lpi_gicv3(uint32_t cpuid, uint32_t vector)
 {
 	// @todo.impl
+	ekprintf("%s called.\n", __FUNCTION__);
 }
  
 void arm64_issue_ipi_gicv3(uint32_t cpuid, uint32_t vector)
@@ -283,7 +284,7 @@ void arm64_issue_ipi_gicv3(uint32_t cpuid, uint32_t vector)
 		// send LPI (allow only to host)
 		arm64_raise_lpi_gicv3(cpuid, vector);
 	} else {
-		ekprintf("#%d is bad irq number.", vector);
+		ekprintf("#%d is bad irq number.\n", vector);
 	}
 }
 
@@ -306,8 +307,40 @@ void handle_interrupt_gicv3(struct pt_regs *regs)
 	set_cputime(from_user ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 }
 
+static uint64_t gic_mpidr_to_affinity(unsigned long mpidr)
+{
+	uint64_t aff;
+
+	aff = ((uint64_t)MPIDR_AFFINITY_LEVEL(mpidr, 3) << 32 |
+			 MPIDR_AFFINITY_LEVEL(mpidr, 2) << 16 |
+			 MPIDR_AFFINITY_LEVEL(mpidr, 1) << 8  |
+			 MPIDR_AFFINITY_LEVEL(mpidr, 0));
+	return aff;
+}
+
+static void init_spi_routing(uint32_t irq, uint32_t linux_cpu)
+{
+	uint64_t spi_route_reg_val, spi_route_reg_offset;
+
+	if (irq < 32 || 1020 <= irq) {
+		ekprintf("%s: irq is not spi number. (irq=%d)\n", __FUNCTION__, irq);
+		return;
+	}
+
+	/* write to GICD_IROUTER */
+	spi_route_reg_offset = irq * 8;
+	spi_route_reg_val = gic_mpidr_to_affinity(cpu_logical_map(linux_cpu));
+
+	writeq_relaxed(spi_route_reg_val,
+		       (void *)(dist_base + GICD_IROUTER + spi_route_reg_offset));
+}
+
 void gic_dist_init_gicv3(unsigned long dist_base_pa, unsigned long size)
 {
+	extern int spi_table[];
+	extern int nr_spi_table;
+	int i;
+
 	dist_base = map_fixed_area(dist_base_pa, size, 1 /*non chachable*/);
 
 #ifdef USE_CAVIUM_THUNDER_X
@@ -316,6 +349,14 @@ void gic_dist_init_gicv3(unsigned long dist_base_pa, unsigned long size)
 		is_cavium_thunderx = 1;
 	}
 #endif
+
+	/* initialize spi routing */
+	for (i = 0; i < nr_spi_table; i++) {
+		if (spi_table[i] == -1) {
+			continue;
+		}
+		init_spi_routing(spi_table[i], i);
+	}
 }
 
 void gic_cpu_init_gicv3(unsigned long cpu_base_pa, unsigned long size)
