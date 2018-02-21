@@ -164,7 +164,7 @@ psm2_epid_t find_server(int rank) {
   sprintf(fn, "psm2-demo-server-epid-%d", rank);
   printf("PSM2 client waiting for epid mapping file to appear...\n"); fflush(stdout);
   while (!fp) {
-    sleep(1);
+    usleep(250*1000);
     fp = fopen(fn, "r");
   }
   fscanf(fp, "%lx", &server_epid);
