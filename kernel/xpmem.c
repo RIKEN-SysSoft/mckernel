@@ -34,7 +34,6 @@
 #include <ihk/mm.h>
 #include <xpmem_private.h>
 
-
 struct xpmem_partition *xpmem_my_part = NULL;  /* pointer to this partition */
 
 
@@ -107,6 +106,7 @@ int xpmem_open(
 	mckfd->sig_no = -1;
 	mckfd->ioctl_cb = xpmem_ioctl;
 	mckfd->close_cb = xpmem_close;
+	mckfd->dup_cb = xpmem_dup;
 	mckfd->data = (long)proc;
 	irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
 
@@ -276,16 +276,11 @@ static int xpmem_ioctl(
 	return -EINVAL;
 }
 
-
 static int xpmem_close(
 	struct mckfd *mckfd,
 	ihk_mc_user_context_t *ctx)
 {
 	int n_opened;
-	struct process *proc = (struct process *)mckfd->data;
-	struct xpmem_thread_group *tg;
-	int index;
-	struct mcs_rwlock_node_irqsave lock;
 
 	XPMEM_DEBUG("call: fd=%d, pid=%d, rgid=%d", 
 		mckfd->fd, proc->pid, proc->rgid);
@@ -293,36 +288,10 @@ static int xpmem_close(
 	n_opened = ihk_atomic_dec_return(&xpmem_my_part->n_opened);
 	XPMEM_DEBUG("n_opened=%d", n_opened);
 
-	index = xpmem_tg_hashtable_index(proc->pid);
-
-	mcs_rwlock_writer_lock(&xpmem_my_part->tg_hashtable[index].lock, &lock);
-
-	tg = xpmem_tg_ref_by_tgid_all_nolock(proc->pid);
-	if (IS_ERR(tg)) {
-		mcs_rwlock_writer_unlock(
-			&xpmem_my_part->tg_hashtable[index].lock, &lock);
-		return 0;
+	if (mckfd->data) {
+		/* release my xpmem-objects */
+		xpmem_flush(mckfd);
 	}
-
-	list_del_init(&tg->tg_hashlist);
-
-	mcs_rwlock_writer_unlock(&xpmem_my_part->tg_hashtable[index].lock, 
-		&lock);
-
-	XPMEM_DEBUG("tg->vm=0x%p", tg->vm);
-
-	ihk_mc_spinlock_lock_noirq(&tg->lock);
-	tg->flags |= XPMEM_FLAG_DESTROYING;
-	ihk_mc_spinlock_unlock_noirq(&tg->lock);
-
-	xpmem_release_aps_of_tg(tg);
-	xpmem_remove_segs_of_tg(tg);
-
-	ihk_mc_spinlock_lock_noirq(&tg->lock);
-	tg->flags |= XPMEM_FLAG_DESTROYED;
-	ihk_mc_spinlock_unlock_noirq(&tg->lock);
-
-	xpmem_destroy_tg(tg);
 
 	if (!n_opened) {
 		xpmem_exit();
@@ -333,6 +302,15 @@ static int xpmem_close(
 	return 0;
 }
 
+static int xpmem_dup(
+	struct mckfd *mckfd,
+	ihk_mc_user_context_t *ctx)
+{
+	mckfd->data = 0;
+	ihk_atomic_inc_return(&xpmem_my_part->n_opened);
+
+	return 0;
+}
 
 static int xpmem_init(void)
 {
@@ -987,6 +965,44 @@ static void xpmem_release_aps_of_tg(
 	XPMEM_DEBUG("return: ");
 }
 
+static void xpmem_flush(struct mckfd *mckfd)
+{
+	struct process *proc = (struct process *)mckfd->data;
+	struct xpmem_thread_group *tg;
+	int index;
+	struct mcs_rwlock_node_irqsave lock;
+
+	index = xpmem_tg_hashtable_index(proc->pid);
+
+	mcs_rwlock_writer_lock(&xpmem_my_part->tg_hashtable[index].lock, &lock);
+
+	tg = xpmem_tg_ref_by_tgid_all_nolock(proc->pid);
+	if (IS_ERR(tg)) {
+		mcs_rwlock_writer_unlock(
+			&xpmem_my_part->tg_hashtable[index].lock, &lock);
+		return;
+	}
+
+	list_del_init(&tg->tg_hashlist);
+
+	mcs_rwlock_writer_unlock(&xpmem_my_part->tg_hashtable[index].lock, 
+		&lock);
+
+	XPMEM_DEBUG("tg->vm=0x%p", tg->vm);
+
+	ihk_mc_spinlock_lock_noirq(&tg->lock);
+	tg->flags |= XPMEM_FLAG_DESTROYING;
+	ihk_mc_spinlock_unlock_noirq(&tg->lock);
+
+	xpmem_release_aps_of_tg(tg);
+	xpmem_remove_segs_of_tg(tg);
+
+	ihk_mc_spinlock_lock_noirq(&tg->lock);
+	tg->flags |= XPMEM_FLAG_DESTROYED;
+	ihk_mc_spinlock_unlock_noirq(&tg->lock);
+
+	xpmem_destroy_tg(tg);
+}
 
 static int xpmem_attach(
 	struct mckfd *mckfd,
@@ -1431,11 +1447,12 @@ static void xpmem_detach_att(
 		att->at_vaddr, att->at_vaddr + 1);
 
 	if (!range || range->start > att->at_vaddr) {
-		DBUG_ON(1);
+		ihk_mc_spinlock_lock_noirq(&ap->lock);
+		list_del_init(&att->att_list);
+		ihk_mc_spinlock_unlock_noirq(&ap->lock);
 		mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
 		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
-		ekprintf("%s: ERROR: lookup_process_memory_range() failed\n", 
-			__FUNCTION__);
+		xpmem_att_destroyable(att);
 		XPMEM_DEBUG("return: range=%p");
 		return;
 	}
