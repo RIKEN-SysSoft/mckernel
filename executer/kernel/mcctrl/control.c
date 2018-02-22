@@ -1859,6 +1859,7 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 		retval = -ENOMEM;
 		goto out_put_file;
 	}
+	memset(mcef, 0, sizeof(struct mckernel_exec_file)); /* debug */
 
 	down(&mckernel_exec_file_lock);
 	/* Find previous file (if exists) and drop it */
