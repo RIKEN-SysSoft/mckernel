@@ -387,26 +387,17 @@ static void release_handler(ihk_os_t os, void *param)
 
 	/* Call return_syscall() for migrated-to-Linux threads on the McKernel side
 	   when tracer/syscall_intercept didn't call MCEXEC_UP_TERMINATE_THREAD */
-	while(1) {
+
+	/* Finalize FS switch for uti threads */ 
+	write_lock_irqsave(&host_thread_lock, flags);
+	list_for_each_entry(thread, &host_threads, list) {
 		unsigned long term_param[4];
 
-		/* Finalize FS switch for uti threads */ 
-		write_lock_irqsave(&host_thread_lock, flags);
-		list_for_each_entry(thread, &host_threads, list) {
-			if (thread->handler == info) { /* Created by the caller of close() */
-				break;
-			} else {
-				printk("%s: INFO: uti thread for other process,pid=%d,tid=%d\n", __FUNCTION__, thread->pid, thread->tid);
-			}
-		}
-
-		if (!thread) {
-			write_unlock_irqrestore(&host_thread_lock, flags);
-			break;
+		if (thread->handler != info) { /* Created by the caller of close() */
+			continue;
 		}
 
 		printk("%s: stray uti thread found,pid=%d,tid=%d\n", __FUNCTION__, thread->pid, thread->tid);
-		
 #if 0 /* debug */
 		/* We don't make the McKernel thread call terminate() 
 		   because we don't know it is the last thread alive.
@@ -424,8 +415,8 @@ static void release_handler(ihk_os_t os, void *param)
 		}
 #endif
 		thread->handler = NULL;
-		write_unlock_irqrestore(&host_thread_lock, flags);
 	}
+	write_unlock_irqrestore(&host_thread_lock, flags);
 			
 #if 1 /* debug */
 	printk("%s: calling mcexec_close_exec\n", __FUNCTION__);
@@ -2638,6 +2629,7 @@ do_mcexec_terminate_thread(ihk_os_t os, unsigned long *param)
 	int pid;
 	int tid;
 	long sig;
+	unsigned long flags;
 	struct task_struct *tsk;
 	struct host_thread *thread;
 	struct ikc_scd_packet *packet;
@@ -2651,36 +2643,35 @@ do_mcexec_terminate_thread(ihk_os_t os, unsigned long *param)
 
 	printk("%s: target pid=%d,tid=%d,sig=%lx,task=%p\n", __FUNCTION__, pid, tid, sig, tsk);
 
+    write_lock_irqsave(&host_thread_lock, flags);
 	list_for_each_entry(thread, &host_threads, list) {
-		if(thread->pid == pid && thread->tid == tid) {
+		if(thread->tid == tid) {
 			break;
 		}
 	}
-
 	if (!thread) {
 		printk("%s: thread not found in host_threads list\n", __FUNCTION__);
+		write_unlock_irqrestore(&host_thread_lock, flags);
 		return -ESRCH;
 	}
-
-	printk("%s: thread=%p\n", __FUNCTION__, thread);
 
 	ppd = mcctrl_get_per_proc_data(usrdata, pid);
 	if (!ppd) {
 		kprintf("%s: ERROR: no per-process structure for PID %d??\n",
-		        __FUNCTION__, pid);
-		goto err;
+				__FUNCTION__, pid);
+		goto no_ppd;
 	}
 	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, tsk);
 	if (!packet) {
 		kprintf("%s: ERROR: no packet registered for TID %d\n",
-		       __FUNCTION__, tid);
-		goto err;
+				__FUNCTION__, tid);
+		goto no_ptd;
 	}
 
 	printk("%s: calling mcctrl_delete_per_thread_data,ppd=%p,tsk=%p\n", __FUNCTION__, ppd, tsk);
 	if ((rc = mcctrl_delete_per_thread_data(ppd, tsk))) {
 		kprintf("%s: ERROR: mcctrl_delete_per_thread_data failed (%d)\n", __FUNCTION__, rc);
-		goto err;
+		goto no_ptd;
 	}
 
 	printk("%s: calling __return_syscall, target pid=%d,tid=%d,sig=%lx,ppd->refcount=%d\n", __FUNCTION__, pid, tid, sig, atomic_read(&ppd->refcount));
@@ -2694,23 +2685,24 @@ do_mcexec_terminate_thread(ihk_os_t os, unsigned long *param)
 							usrdata->ikc2linux[smp_processor_id()] :
 							usrdata->ikc2linux[0]));
 #endif
-	/* See the comment in mcexec_util_thread2 on how ppd->refcount reaches zero */
+ no_ptd:
 	printk("%s: ppd->refcount=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
 	if ((rc = mcctrl_put_per_proc_data(ppd)) <= 0) {
 		printk("%s: mcctrl_put_per_proc_data failed,rc=%d\n", __FUNCTION__, rc);
 	}
-err:
-	if(ppd) {
-		printk("%s: ppd->refcount=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
-		if ((rc = mcctrl_put_per_proc_data(ppd)) < 0) {
-			printk("%s: mcctrl_put_per_proc_data failed,rc=%d\n", __FUNCTION__, rc);
-		}
+
+	/* See the comment in mcexec_util_thread2 on how ppd->refcount reaches zero */
+	printk("%s: ppd->refcount=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
+	if ((rc = mcctrl_put_per_proc_data(ppd)) < 0) {
+		printk("%s: mcctrl_put_per_proc_data failed,rc=%d\n", __FUNCTION__, rc);
 	}
 
+ no_ppd:
 #if 0 /* debug */
 	list_del(&thread->list);
 	kfree(thread);
 #endif
+	write_unlock_irqrestore(&host_thread_lock, flags);
 
 	return 0;
 }
