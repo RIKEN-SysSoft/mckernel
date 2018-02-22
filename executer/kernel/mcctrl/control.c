@@ -383,7 +383,7 @@ static void release_handler(ihk_os_t os, void *param)
 	unsigned long flags;
 	struct host_thread *thread;
 
-	printk("%s: enter\n", __FUNCTION__);
+	printk("%s: param=%p,pid=%d,tid=%d\n", __FUNCTION__, param, task_tgid_vnr(current), task_pid_vnr(current));
 
 	/* Call return_syscall() for migrated-to-Linux threads on the McKernel side
 	   when tracer/syscall_intercept didn't call MCEXEC_UP_TERMINATE_THREAD
@@ -2557,21 +2557,15 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
 	/* How ppd refcount reaches zero depends on how utility-thread exits:
-  	     exit:
+  	     tracer alive:
 	       MCEXEC_UP_CREATE_PPD: set to 1
 		   mcexec_util_thread2: get
 		   create_tracer()
-		     mcexec_terminate_thread: put
+		     tracer detects exit/exit_group/killed by signal
+               mcexec_terminate_thread: put
 	       release_handler(): put
 
-  	     exit_group:
-	       MCEXEC_UP_CREATE_PPD: set to 1
-		   mcexec_util_thread2: get
-		   create_trace()
-	         mcexec_terminate_thread: put
-	       release_handler(): put
-	   
-	     killed by signal:
+	     tracer dead:
 	       MCEXEC_UP_CREATE_PPD: set to 1
 	       mcexec_util_thread2: get
 	       release_handler()
@@ -2631,7 +2625,7 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long * __user arg)
 	sig = param[2];
 	tsk = (struct task_struct *)param[3];
 
-	//printk("%s: pid=%d,tid=%d,sig=%lx,task=%p\n", __FUNCTION__, pid, tid, sig, tsk);
+	printk("%s: target pid=%d,tid=%d,sig=%lx,task=%p\n", __FUNCTION__, pid, tid, sig, tsk);
 
 	write_lock_irqsave(&host_thread_lock, flags);
 	for (prev = NULL, thread = host_threads; thread;
