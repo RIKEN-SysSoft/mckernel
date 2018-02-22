@@ -9224,6 +9224,7 @@ util_thread(struct uti_attr *arg)
 			do_exit(rc);
 		}
 	}
+	kprintf("%s: do_syscall failed (%ld)\n", __FUNCTION__, rc);
 	return rc;
 }
 
