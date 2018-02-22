@@ -329,11 +329,11 @@ struct mcos_handler_info {
 };
 
 struct mcos_handler_info;
-static struct host_thread *host_threads;
+static LIST_HEAD(host_threads); /* Used for FS switch */
 DEFINE_RWLOCK(host_thread_lock);
 
 struct host_thread {
-	struct host_thread *next;
+	struct list_head list;
 	struct mcos_handler_info *handler;
 	int     pid;
 	int     tid;
@@ -386,42 +386,47 @@ static void release_handler(ihk_os_t os, void *param)
 	printk("%s: param=%p,pid=%d,tid=%d\n", __FUNCTION__, param, task_tgid_vnr(current), task_pid_vnr(current));
 
 	/* Call return_syscall() for migrated-to-Linux threads on the McKernel side
-	   when tracer/syscall_intercept didn't call MCEXEC_UP_TERMINATE_THREAD
-	   (when migrated-to-Linux thread is killed). */
-	while (1) {
+	   when tracer/syscall_intercept didn't call MCEXEC_UP_TERMINATE_THREAD */
+	while(1) {
 		unsigned long term_param[4];
 
+		/* Finalize FS switch for uti threads */ 
 		write_lock_irqsave(&host_thread_lock, flags);
-		for (thread = host_threads; thread; thread = thread->next) {
-			if (thread->handler == info) {
+		list_for_each_entry(thread, &host_threads, list) {
+			if (thread->handler == info) { /* Created by the caller of close() */
 				break;
+			} else {
+				printk("%s: INFO: uti thread for other process,pid=%d,tid=%d\n", __FUNCTION__, thread->pid, thread->tid);
 			}
 		}
+
 		if (!thread) {
 			write_unlock_irqrestore(&host_thread_lock, flags);
 			break;
 		}
 
 		printk("%s: stray uti thread found,pid=%d,tid=%d\n", __FUNCTION__, thread->pid, thread->tid);
-
+		
+#if 0 /* debug */
+		/* We don't make the McKernel thread call terminate() 
+		   because we don't know it is the last thread alive.
+		   Instead, we make it call do_exit() */
 		term_param[0] = thread->pid;
 		term_param[1] = thread->tid;
 		term_param[2] = 0;
-		/* We don't make the McKernel thread call terminate() because we don't know it is the last thread alive.
-		   Instead, we make it call do_exit() */
 		term_param[3] = (unsigned long)thread->task;
-		thread->handler = NULL;
-		write_unlock_irqrestore(&host_thread_lock, flags);
-
-#if 0 /* debug */ /* Actually, it's not needed because tracer calls it instead. */
+		
 		printk("%s: calling mcexec_terminate_thread,pid=%d,tid=%d\n", __FUNCTION__, thread->pid, thread->tid);
+		/* note that list_del(&thread->list) is done in there */
 		rc = do_mcexec_terminate_thread(os, term_param);
 		if (rc) {
 			printk("%s: ERROR: mcexec_terminate_thread returned %ld\n", __FUNCTION__, rc);
 		}
 #endif
+		thread->handler = NULL;
+		write_unlock_irqrestore(&host_thread_lock, flags);
 	}
-
+			
 #if 1 /* debug */
 	printk("%s: calling mcexec_close_exec\n", __FUNCTION__);
 	if ((rc_int = mcexec_close_exec(os))) {
@@ -2537,22 +2542,6 @@ mcexec_util_thread1(ihk_os_t os, unsigned long arg, struct file *file)
 	return rc;
 }
 
-static inline struct host_thread *get_host_thread(void)
-{
-	int pid = task_tgid_vnr(current);
-	int tid = task_pid_vnr(current);
-	unsigned long flags;
-	struct host_thread *thread;
-	
-	read_lock_irqsave(&host_thread_lock, flags);
-	for (thread = host_threads; thread; thread = thread->next)
-		if(thread->pid == pid && thread->tid == tid)
-			break;
-	read_unlock_irqrestore(&host_thread_lock, flags);
-
-	return thread;
-}
-
 long
 mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 {
@@ -2589,8 +2578,7 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	}
 
 	write_lock_irqsave(&host_thread_lock, flags);
-	thread->next = host_threads;
-	host_threads = thread;
+	list_add_tail(&thread->list, &host_threads);
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
 	/* How ppd refcount reaches zero depends on how utility-thread exits:
@@ -2623,9 +2611,11 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 	struct host_thread *thread;
 
 	read_lock_irqsave(&host_thread_lock, flags);
-	for (thread = host_threads; thread; thread = thread->next)
-		if(thread->pid == pid && thread->tid == tid)
+	list_for_each_entry(thread, &host_threads, list) {
+		if(thread->pid == pid && thread->tid == tid) {
 			break;
+		}
+	}
 	read_unlock_irqrestore(&host_thread_lock, flags);
 	if (thread) {
 		if (arg)
@@ -2645,9 +2635,7 @@ do_mcexec_terminate_thread(ihk_os_t os, unsigned long *param)
 	int tid;
 	long sig;
 	struct task_struct *tsk;
-	unsigned long flags;
 	struct host_thread *thread;
-	struct host_thread *prev;
 	struct ikc_scd_packet *packet;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
@@ -2659,17 +2647,18 @@ do_mcexec_terminate_thread(ihk_os_t os, unsigned long *param)
 
 	printk("%s: target pid=%d,tid=%d,sig=%lx,task=%p\n", __FUNCTION__, pid, tid, sig, tsk);
 
-	write_lock_irqsave(&host_thread_lock, flags);
-	for (prev = NULL, thread = host_threads; thread;
-	     prev = thread, thread = thread->next) {
-		if(thread->tid == tid)
+	list_for_each_entry(thread, &host_threads, list) {
+		if(thread->pid == pid && thread->tid == tid) {
 			break;
+		}
 	}
+
 	if (!thread) {
-		write_unlock_irqrestore(&host_thread_lock, flags);
 		printk("%s: thread not found in host_threads list\n", __FUNCTION__);
 		return -ESRCH;
 	}
+
+	printk("%s: thread=%p\n", __FUNCTION__, thread);
 
 	ppd = mcctrl_get_per_proc_data(usrdata, pid);
 	if (!ppd) {
@@ -2683,11 +2672,19 @@ do_mcexec_terminate_thread(ihk_os_t os, unsigned long *param)
 		       __FUNCTION__, tid);
 		goto err;
 	}
-	mcctrl_delete_per_thread_data(ppd, tsk);
-	printk("%s: calling __return_syscall, tid=%d, sig=%lx, ppd->refcount=%d\n", __FUNCTION__, tid, sig, atomic_read(&ppd->refcount));
+
+	printk("%s: calling mcctrl_delete_per_thread_data,ppd=%p,tsk=%p\n", __FUNCTION__, ppd, tsk);
+	if ((rc = mcctrl_delete_per_thread_data(ppd, tsk))) {
+		kprintf("%s: ERROR: mcctrl_delete_per_thread_data failed (%d)\n", __FUNCTION__, rc);
+		goto err;
+	}
+
+	printk("%s: calling __return_syscall, target pid=%d,tid=%d,sig=%lx,ppd->refcount=%d\n", __FUNCTION__, pid, tid, sig, atomic_read(&ppd->refcount));
+#if 1 /* debug */
 	__return_syscall(usrdata->os, packet, sig, tid);
+#endif
 	printk("%s: packet=%p,channels=%p,ref=%d,desc=%p\n", __FUNCTION__, packet, usrdata->channels, packet->ref, (usrdata->channels + packet->ref)->c);
-#if 0 /* debug */
+#if 1 /* debug */
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 						   (usrdata->ikc2linux[smp_processor_id()] ?
 							usrdata->ikc2linux[smp_processor_id()] :
@@ -2706,28 +2703,30 @@ err:
 		}
 	}
 
-	if (prev)
-		prev->next = thread->next;
-	else
-		host_threads = thread->next;
-	write_unlock_irqrestore(&host_thread_lock, flags);
-	printk("%s: thread=%p\n", __FUNCTION__, thread);
 #if 0 /* debug */
+	list_del(&thread->list);
 	kfree(thread);
 #endif
+
 	return 0;
 }
- 
+
 long
 mcexec_terminate_thread(ihk_os_t os, unsigned long * __user arg)
 {
+	long rc;
+	unsigned long flags;
 	unsigned long param[4];
 
     if (copy_from_user(param, arg, sizeof(unsigned long) * 4)) {
         return -EFAULT;
     }
 
-	return do_mcexec_terminate_thread(os, param);
+	write_lock_irqsave(&host_thread_lock, flags);
+	rc = do_mcexec_terminate_thread(os, param);
+	write_unlock_irqrestore(&host_thread_lock, flags);
+
+	return rc;
 }
 
 static long mcexec_release_user_space(struct release_user_space_desc *__user arg)
