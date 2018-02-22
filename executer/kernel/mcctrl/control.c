@@ -438,7 +438,7 @@ static void release_handler(ihk_os_t os, void *param)
 	mcexec_destroy_per_process_data(os, info->pid);
 
 #endif
-#if 0 /* debug */
+#if 1 /* debug */
 	memset(&isp, '\0', sizeof(isp));
 	isp.msg = SCD_MSG_CLEANUP_PROCESS;
 	isp.pid = info->pid;
@@ -451,7 +451,7 @@ static void release_handler(ihk_os_t os, void *param)
 		delete_pid_entry(os_ind, info->pid);
 	}
 #endif
-#if 0 /* debug */
+#if 1 /* debug */
 	printk("%s: calling kfree,param=%p\n", __FUNCTION__, param);
 	kfree(param);
 	//printk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p OK\n", __FUNCTION__, info);
@@ -1232,7 +1232,7 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 		list_del(&wqhln->list);
 		packet = wqhln->packet;
 		printk("%s: wqhln=%p,packet=%p\n", __FUNCTION__, wqhln, packet);
-#if 0 /* debug */
+#if 1 /* debug */
 		kfree(wqhln);
 #endif
 		printk("%s: calling __return_syscall for wq_req_list,os=%p\n", __FUNCTION__, ppd->ud->os);
@@ -1240,7 +1240,7 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 		 * process is gone and the application should be terminated */
 		__return_syscall(ppd->ud->os, packet, -ERESTARTSYS,
 				packet->req.rtid);
-#if 0 /* debug */
+#if 1 /* debug */
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 				(ppd->ud->ikc2linux[smp_processor_id()] ?
 				 ppd->ud->ikc2linux[smp_processor_id()] :
@@ -1249,7 +1249,7 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	}
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, flags);
 
-#if 0 /* debug */
+#if 1 /* debug */
 	pager_remove_process(ppd);
 	kfree(ppd);
 #endif
