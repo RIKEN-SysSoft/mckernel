@@ -3161,16 +3161,8 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 			case __NR_set_robust_list:/* debug */
 				break;
 			    case __NR_exit_group:
-#if 0 /* debug */
-				set_syscall_number(&args, -1);
-				set_syscall_args(uti_desc->tid, &args);
-#endif
 				exited++;
 			    case __NR_exit:
-#if 0 /* debug */
-				set_syscall_number(&args, -1);
-				set_syscall_args(uti_desc->tid, &args);
-#endif
 				exited++;
 				continue;
 			    case __NR_clone:
