@@ -3128,7 +3128,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 				    get_syscall_arg2(&args) ==
 				                     MCEXEC_UP_SYSCALL_THREAD &&
 				    samepage(uti_desc->wp, param)) {
-					fprintf(stderr, "SC,pid=%d,tid=%d,[%3d](%lx, %lx, %lx, %lx, %lx, %lx): %lx\n",
+					fprintf(stderr, "SC,McK,pid=%d,tid=%d,[%3d](%lx, %lx, %lx, %lx, %lx, %lx): %lx\n",
 							getpid(),
 							gettid(),
 							param->number,
