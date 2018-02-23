@@ -9214,14 +9214,15 @@ util_thread(struct uti_attr *arg)
 	kfree(uti_clv);
 
 	if (rc >= 0) {
-		if (rc & 0x100000000) { /* exit_group */
-			kprintf("%s: exit_group, tid=%d,rc=%lx\n", __FUNCTION__, thread->tid, rc);
+		if (rc & 0x100000000) { 
+			/* tracer has detected exit_group */
+			kprintf("%s: exit_group, pid=%d,tid=%d,rc=%lx\n", __FUNCTION__, thread->proc->pid, thread->tid, rc);
 			thread->proc->nohost = 1;
 			terminate((rc >> 8) & 255, rc & 255);
 			/* uti_wp in mcexec.c is munmap()-ed by __NR_exit_group offload */
 		} else {
-			/* mcexec is alive, so we can call do_syscall() */
-			kprintf("%s: exit | signal, tid=%d,rc=%lx\n", __FUNCTION__, thread->tid, rc);
+			/* tracer has detected exit or killed by signal */
+			kprintf("%s: exit, pid=%d,tid=%d,rc=%lx\n", __FUNCTION__, thread->proc->pid, thread->tid, rc);
 			request.number = __NR_sched_setaffinity;
 			request.args[0] = 1;
 			request.args[1] = free_address;
