@@ -2946,7 +2946,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 	}
 
 #if 1
-	/* Reopen device to register the new process */
+	/* Prevent tracer's exit from calling release_handler() with passing McKernel process info */
 	close(fd);
 	fd = opendev();
 	if (fd < 0) {
@@ -3164,7 +3164,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 				    get_syscall_arg2(&args) ==
 				                     MCEXEC_UP_SYSCALL_THREAD &&
 				    samepage(uti_desc->wp, param)) {
-					fprintf(stderr, "SC,pid=%d,tid=%d,[%3d](%lx, %lx, %lx, %lx, %lx, %lx): %lx\n",
+					fprintf(stderr, "SC,McK,pid=%d,tid=%d,[%3d](%lx, %lx, %lx, %lx, %lx, %lx): %lx\n",
 							getpid(),
 							gettid(),
 							param->number,
@@ -3198,7 +3198,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 				set_syscall_return(&args, -ENOMEM);
 			}
 			else {
-				//fprintf(stderr, "%s: MCEXEC_UP_SYSCALL_THREAD,nr=%ld\n", __FUNCTION__, get_syscall_number(&args));
+				fprintf(stderr, "%s: MCEXEC_UP_SYSCALL_THREAD,nr=%ld\n", __FUNCTION__, get_syscall_number(&args));
 				param_top = *(void **)param;
 				param->number = get_syscall_number(&args);
 				param->args[0] = get_syscall_arg1(&args);
