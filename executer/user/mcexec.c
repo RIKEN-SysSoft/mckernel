@@ -3121,7 +3121,6 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 			    case __NR_munmap:
 			    case __NR_mprotect:
 			    case __NR_mremap:
-			case __NR_set_robust_list:/* debug */
 				break;
 			    case __NR_exit_group:
 				exited++;
@@ -3144,6 +3143,12 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 				set_syscall_number(&args, -1);
 				set_syscall_args(uti_desc->tid, &args);
 				continue;
+#if 1 /* debug */
+			case __NR_set_robust_list:
+				set_syscall_number(&args, -1);
+				set_syscall_args(uti_desc->tid, &args);
+				continue;
+#endif
 			    case __NR_ioctl:
 				param = (struct syscall_struct *)
 					                get_syscall_arg3(&args);
