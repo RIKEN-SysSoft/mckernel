@@ -292,6 +292,7 @@ long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
                       unsigned long *ret)
 {
 	struct ikc_scd_packet *packet;
+    struct ikc_scd_packet *free_packet = NULL;
 	struct syscall_request *req;
 	struct syscall_response *resp;
 	unsigned long syscall_ret;
@@ -419,9 +420,11 @@ retry_alloc:
 		unsigned long phys2;
 		struct syscall_response *resp2;
 
-		/* Update packet reference */
+		/* Note that wqhln->packet is a new packet */
 		packet = wqhln->packet;
+		free_packet = packet;
 		req = &packet->req;
+
 		phys2 = ihk_device_map_memory(ihk_os_to_dev(usrdata->os), 
 				packet->resp_pa, sizeof(*resp));
 		resp2 = ihk_device_map_virtual(ihk_os_to_dev(usrdata->os), 
@@ -452,6 +455,13 @@ retry_alloc:
 	kfree(wqhln);
 	syscall_ret = 0;
 out:
+	/* Release packet sent from McKernel */
+	if (free_packet) {
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)free_packet,
+							   (usrdata->ikc2linux[smp_processor_id()] ?
+								usrdata->ikc2linux[smp_processor_id()] :
+								usrdata->ikc2linux[0]));
+	}
 	ihk_device_unmap_virtual(ihk_os_to_dev(usrdata->os), resp, sizeof(*resp));
 	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
 
@@ -648,10 +658,12 @@ retry_alloc:
 	error = 0;
 out:
 	/* Release remote page-fault response packet */
-	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)free_packet,
-			(usrdata->ikc2linux[smp_processor_id()] ?
-			 usrdata->ikc2linux[smp_processor_id()] :
-			 usrdata->ikc2linux[0]));
+	if (free_packet) {
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)free_packet,
+							   (usrdata->ikc2linux[smp_processor_id()] ?
+								usrdata->ikc2linux[smp_processor_id()] :
+								usrdata->ikc2linux[0]));
+	}
 
 	ihk_device_unmap_virtual(ihk_os_to_dev(usrdata->os), resp, sizeof(*resp));
 	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
