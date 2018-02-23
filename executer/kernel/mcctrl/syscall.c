@@ -57,12 +57,17 @@
 
 //#define SC_DEBUG
 
-#define	mtprintk(va, ...) do { if ((unsigned long)va > 0x00007f0000000000) printk(__VA_ARGS__); } while(0)
-
 #ifdef SC_DEBUG
 #define	dprintk(...)	printk(__VA_ARGS__)
 #else
 #define	dprintk(...)
+#endif
+
+#define DEBUG_PTD
+#ifdef DEBUG_PTD
+#define pr_ptd(msg, tid, ptd) do { printk("%s: " msg ",tid=%d,refc=%d\n", __FUNCTION__, tid, atomic_read(&ptd->refcount)); } while(0)
+#else
+#define pr_ptd(msg, tid, ptd) do { } while(0)
 #endif
 
 #ifdef MCCTRL_KSYM_zap_page_range
@@ -91,76 +96,93 @@ static void print_dma_lastreq(void)
 }
 #endif
 
-int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data* ppd, 
-	struct task_struct *task, void *data)
+void mcctrl_put_per_thread_data_unsafe(struct mcctrl_per_thread_data *ptd)
 {
-	struct mcctrl_per_thread_data *ptd_iter, *ptd = NULL;
-	struct mcctrl_per_thread_data *ptd_alloc = NULL;
-	int hash = (((uint64_t)task >> 4) & MCCTRL_PER_THREAD_DATA_HASH_MASK);
-	int ret = 0;
-	unsigned long flags;
-
-	ptd_alloc = kmalloc(sizeof(*ptd), GFP_ATOMIC);
-	if (!ptd_alloc) {
-		kprintf("%s: error allocate per thread data\n", __FUNCTION__);
-		ret = -ENOMEM;
-		goto out_noalloc;
-	}
-
-	/* Check if data for this thread exists and add if not */
-	write_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
-	list_for_each_entry(ptd_iter, &ppd->per_thread_data_hash[hash], hash) {
-		if (ptd_iter->task == task) {
-			ptd = ptd_iter;
-			break;
+	if (!atomic_dec_and_test(&ptd->refcount)) {
+		int ret = atomic_read(&ptd->refcount);
+		if (ret < 0) {
+			printk("%s: ERROR: invalid refcount=%d\n", __FUNCTION__, ret);
 		}
+		return;
 	}
 
-	if (unlikely(ptd)) {
-		ret = -EBUSY;
-		kfree(ptd_alloc);
-		goto out;
-	}
-
-	ptd = ptd_alloc;
-	ptd->task = task;
-	ptd->data = data;
-	list_add_tail(&ptd->hash, &ppd->per_thread_data_hash[hash]); 
-
-out:
-	write_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
-out_noalloc:
-	return ret;
+	list_del(&ptd->hash);
+#if 0 /* debug */
+	kfree(ptd);
+#endif
 }
 
-int mcctrl_delete_per_thread_data(struct mcctrl_per_proc_data* ppd, 
-	struct task_struct *task)
+void mcctrl_put_per_thread_data(struct mcctrl_per_thread_data* _ptd)
 {
+	struct mcctrl_per_proc_data *ppd = _ptd->ppd;
 	struct mcctrl_per_thread_data *ptd_iter, *ptd = NULL;
-	int hash = (((uint64_t)task >> 4) & MCCTRL_PER_THREAD_DATA_HASH_MASK);
-	int ret = 0;
+	int hash = (((uint64_t)_ptd->task >> 4) & MCCTRL_PER_THREAD_DATA_HASH_MASK);
 	unsigned long flags;
-	
+
+	//kprintf("%s: tid=%d,hash=%x\n", __FUNCTION__, task_pid_vnr(_ptd->task), hash);
+
 	/* Check if data for this thread exists and delete it */
 	write_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
 	list_for_each_entry(ptd_iter, &ppd->per_thread_data_hash[hash], hash) {
-		if (ptd_iter->task == task) {
+		if (ptd_iter->task == _ptd->task) {
 			ptd = ptd_iter;
 			break;
 		}
 	}
 
 	if (!ptd) {
-		ret = -EINVAL;
+		printk("%s: ERROR: ptd not found\n", __FUNCTION__);
 		goto out;
 	}
 
-	list_del(&ptd->hash);
-#if 0
-	kfree(ptd);
-#endif
+	mcctrl_put_per_thread_data_unsafe(ptd);
+	
 out:
 	write_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
+}
+
+int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data *ppd, void *data)
+{
+	struct mcctrl_per_thread_data *ptd_iter, *ptd = NULL;
+	struct mcctrl_per_thread_data *ptd_alloc = NULL;
+	int hash = (((uint64_t)current >> 4) & MCCTRL_PER_THREAD_DATA_HASH_MASK);
+	int ret = 0;
+	unsigned long flags;
+	//kprintf("%s: tid=%d,hash=%x\n", __FUNCTION__, task_pid_vnr(current), hash);
+	ptd_alloc = kmalloc(sizeof(struct mcctrl_per_thread_data), GFP_ATOMIC);
+	if (!ptd_alloc) {
+		kprintf("%s: error allocate per thread data\n", __FUNCTION__);
+		ret = -ENOMEM;
+		goto out_noalloc;
+	}
+	memset(ptd_alloc, 0, sizeof(struct mcctrl_per_thread_data));
+	
+	/* Check if data for this thread exists and add if not */
+	write_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
+	list_for_each_entry(ptd_iter, &ppd->per_thread_data_hash[hash], hash) {
+		if (ptd_iter->task == current) {
+			ptd = ptd_iter;
+			break;
+		}
+	}
+
+	if (unlikely(ptd)) {
+		kprintf("%s: found tid=%d\n", __FUNCTION__, task_pid_vnr(current));
+		ret = -EBUSY;
+		kfree(ptd_alloc);
+		goto out;
+	}
+
+	ptd = ptd_alloc;
+	ptd->ppd = ppd;
+	ptd->task = current;
+	ptd->data = data;
+	atomic_set(&ptd->refcount, 1);
+	list_add_tail(&ptd->hash, &ppd->per_thread_data_hash[hash]); 
+
+ out:
+	write_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
+ out_noalloc:
 	return ret;
 }
 
@@ -171,8 +193,10 @@ struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc
 	int hash = (((uint64_t)task >> 4) & MCCTRL_PER_THREAD_DATA_HASH_MASK);
 	unsigned long flags;
 
-	/* Check if data for this thread exists and return it */
-	read_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
+	//kprintf("%s: tid=%d,hash=%x\n", __FUNCTION__, task_pid_vnr(task), hash);
+
+	/* Check if data for this thread exists */
+	write_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
 
 	list_for_each_entry(ptd_iter, &ppd->per_thread_data_hash[hash], hash) {
 		if (ptd_iter->task == task) {
@@ -181,8 +205,18 @@ struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc
 		}
 	}
 
-	read_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
-	return ptd ? ptd->data : NULL;
+	if (ptd) {
+		if (atomic_read(&ptd->refcount) <= 0) {
+			printk("%s: ERROR: use-after-free detected (%d)", __FUNCTION__, atomic_read(&ptd->refcount));
+			ptd = NULL;
+			goto out;
+		}
+		atomic_inc(&ptd->refcount);
+	}
+
+ out:
+	write_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
+	return ptd;
 }
 #endif /* !POSTK_DEBUG_ARCH_DEP_56 */
 
@@ -315,6 +349,7 @@ long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
 	struct wait_queue_head_list_node *wqhln;
 	unsigned long irqflags;
 	struct mcctrl_per_proc_data *ppd;
+	struct mcctrl_per_thread_data *ptd;
 	unsigned long phys;
 	struct syscall_request _request[2];
 	struct syscall_request *request;
@@ -343,7 +378,14 @@ long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
 		return -EINVAL;
 	}
 
-	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
+	ptd = mcctrl_get_per_thread_data(ppd, current);
+	if (!ptd) {
+		printk("%s: ERROR: mcctrl_get_per_thread_data failed\n", __FUNCTION__);
+		syscall_ret = -ENOENT;
+		goto no_ptd;
+	}
+	pr_ptd("get", task_pid_vnr(current), ptd);
+	packet = (struct ikc_scd_packet *)ptd->data;
 	if (!packet) {
 		syscall_ret = -ENOENT;
 		printk("%s: no packet registered for TID %d\n",
@@ -419,7 +461,7 @@ retry_alloc:
 
 	printk("%s: tid: %d, syscall: %d WOKEN UP\n", __FUNCTION__, task_pid_vnr(current), num);
 
-	if (!ppd || retry >= 5) {
+	if (retry >= 5) {
 		kfree(wqhln);
 		kprintf("%s: INFO: mcexec is gone or retry count exceeded,pid=%d,ppd=%p,retry=%d\n", __FUNCTION__, task_tgid_vnr(current), ppd, retry);
 		syscall_ret = -EINVAL;
@@ -501,6 +543,9 @@ out:
 	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
 
 out_put_ppd:
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put", task_pid_vnr(current), ptd);
+ no_ptd:
 	dprintk("%s: tid: %d, syscall: %d, syscall_ret: %lx\n",
 		__FUNCTION__, task_pid_vnr(current), num, syscall_ret);
 
@@ -518,6 +563,7 @@ int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t
 	struct wait_queue_head_list_node *wqhln;
 	unsigned long irqflags;
 	struct mcctrl_per_proc_data *ppd;
+	struct mcctrl_per_thread_data *ptd;
 	unsigned long phys;
 	int retry;
 	
@@ -533,11 +579,18 @@ int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t
 		return -EINVAL;
 	}
 
-	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
-	if (!packet) {
+	ptd = mcctrl_get_per_thread_data(ppd, current);
+	if (!ptd) {
+		printk("%s: ERROR: mcctrl_get_per_thread_data failed\n", __FUNCTION__);		
 		error = -ENOENT;
+		goto no_ptd;
+	}
+	pr_ptd("get", task_pid_vnr(current), ptd);
+	packet = (struct ikc_scd_packet *)ptd->data;
+	if (!packet) {
 		printk("%s: no packet registered for TID %d\n",
 				__FUNCTION__, task_pid_vnr(current));
+		error = -ENOENT;
 		goto out_put_ppd;
 	}
 
@@ -604,9 +657,8 @@ retry_alloc:
 		/* Delay signal handling */
 		if (error == -ERESTARTSYS) {
 			printk("%s: INFO: interrupted by signal\n", __FUNCTION__);
-			ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 			retry++;
-			if (ppd && retry < 5) { /* mcexec is alive */
+			if (retry < 5) { /* mcexec is alive */
 				printk("%s: INFO: retry=%d\n", __FUNCTION__, retry);
 				continue;
 			}
@@ -620,7 +672,7 @@ retry_alloc:
 		dprintk("%s: tid: %d, fault_addr: %p WOKEN UP\n", 
 				__FUNCTION__, task_pid_vnr(current), fault_addr);
 
-		if (!ppd || retry >= 5) {
+		if (retry >= 5) {
 			kfree(wqhln);
 			kprintf("%s: INFO: mcexec is gone or retry count exceeded,pid=%d,retry=%d\n", __FUNCTION__, task_tgid_vnr(current), retry);
 			error = -EINVAL;
@@ -633,7 +685,7 @@ retry_alloc:
 			goto out;
 		}
 		else {
-			/* Update packet reference */
+			/* Update packet reference to that of response */
 			packet = wqhln->packet;
 			free_packet = packet;
 			req = &packet->req;
@@ -706,6 +758,9 @@ out:
 	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
 
 out_put_ppd:
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put", task_pid_vnr(current), ptd);
+ no_ptd:
 	dprintk("%s: tid: %d, fault_addr: %p, reason: %lu, error: %d\n",
 			__FUNCTION__, task_pid_vnr(current), fault_addr, (unsigned long)reason, error);
 
@@ -831,6 +886,7 @@ void rus_page_hash_put_pages(void)
 
 #define	USE_VM_INSERT_PFN	1
 
+/* "rus" means remote user space */
 static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
 	struct mcctrl_usrdata *	usrdata	= vma->vm_file->private_data;
@@ -847,6 +903,7 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	size_t			pix;
 #endif
 	struct mcctrl_per_proc_data *ppd;
+	struct mcctrl_per_thread_data *ptd;
 	struct ikc_scd_packet *packet;
 	int ret = 0;
 
@@ -875,14 +932,20 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 		return -EINVAL;
 	}
 
-	//kprintf("%s: ptd->task=%p, tid=%d\n", __FUNCTION__, current, task_pid_vnr(current));
-	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
+	ptd = mcctrl_get_per_thread_data(ppd, current);
+	if (!ptd) {
+		printk("%s: ERROR: mcctrl_get_per_thread_data failed\n", __FUNCTION__);
+		ret = VM_FAULT_SIGBUS;
+		goto no_ptd;
+	}
+	pr_ptd("get", task_pid_vnr(current), ptd);
+	packet = (struct ikc_scd_packet *)ptd->data;
 	if (!packet) {
 		ret = VM_FAULT_SIGBUS;
 		printk("%s: no packet registered for TID %d\n",
 				__FUNCTION__, task_pid_vnr(current));
 		/* uti: This case happens when remote-page fault is requested after 
-		   per-thread data had been destroyed by mcctrl_delete_per_thread_data()
+		   per-thread data had been destroyed by mcctrl_put_per_thread_data()
 		   in mcexec_terminate_thread(), invoked by terminate() in McKernel */
 		ret = VM_FAULT_SIGBUS;
 		goto put_and_out;
@@ -1097,6 +1160,9 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	ret = VM_FAULT_NOPAGE;
 
 put_and_out:
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put", task_pid_vnr(current), ptd);
+ no_ptd:
 	mcctrl_put_per_proc_data(ppd);
 	return ret;
 }
@@ -2572,6 +2638,7 @@ sched_setparam_out:
 		break;
 	}
 
+	printk("%s: system call: number=%ld,ret=%lx\n", __FUNCTION__, sc->number, ret);
 	__return_syscall(os, packet, ret, 0);
 
 	error = 0;

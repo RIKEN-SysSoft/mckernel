@@ -3681,7 +3681,7 @@ int main_loop(struct thread_data_s *my_thread)
 				fprintf(stderr, "WARNING: close_exec() couldn't find exec file?\n");
 			}
 
-			__dprintf("%s: arg0=%lx,cpu_id=%d,rtid=%d\n", w.sr.number == __NR_exit_group ? "__NR_exit_group" : "__NR_exit", w.sr.args[0], cpu, my_thread->remote_tid);
+			printf("%s: arg0=%lx,cpu_id=%d,rtid=%d\n", w.sr.number == __NR_exit_group ? "__NR_exit_group" : "__NR_exit", w.sr.args[0], cpu, my_thread->remote_tid);
 			if(w.sr.number == __NR_exit_group){
 				sig = w.sr.args[0] & 0x7f;
 				term = (w.sr.args[0] & 0xff00) >> 8;
@@ -3706,6 +3706,7 @@ int main_loop(struct thread_data_s *my_thread)
 			mc_cmd_server_exit();
 			__dprint("mccmd server exited\n");
 #endif
+			printf("%s: exit/exit_group,sending signal %d\n", __FUNCTION__, sig);
 			if(sig){
 				signal(sig, SIG_DFL);
 				kill(getpid(), sig);
