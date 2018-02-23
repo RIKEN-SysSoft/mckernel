@@ -9231,8 +9231,14 @@ util_thread(struct uti_attr *arg)
 			do_syscall(&request, ihk_mc_get_processor_id(), 0);
 			do_exit(rc);
 		}
+	} else if (rc == -ERESTARTSYS) { 
+		/* tracer is not working and /dev/mcosX has detected exit of mcexec process */
+		kprintf("%s: release_handler,pid=%d,tid=%d,rc=%lx\n", __FUNCTION__, thread->proc->pid, thread->tid, rc);
+		thread->proc->nohost = 1;
+		do_exit(rc);
+	} else {
+		kprintf("%s: unknown error (%ld)\n", __FUNCTION__, rc);
 	}
-	kprintf("%s: do_syscall failed (%ld)\n", __FUNCTION__, rc);
 	return rc;
 }
 
