@@ -9,10 +9,14 @@
 #include <sys/mman.h>
 #include <signal.h>
 
+int flag1;
 pthread_mutex_t mutex1;
 pthread_cond_t cond1;
+
+int flag2;
 pthread_mutex_t mutex2;
 pthread_cond_t cond2;
+
 char *m;
 
 int sigst;
@@ -23,9 +27,12 @@ sigsegv(int s)
 {
 	if (sigst == 1) {
 		fprintf(stderr, "CT03007 mprotect OK (SIGSEGV)\n");
+
 		pthread_mutex_lock(&mutex2);
+		flag2 = 1;
 		pthread_cond_signal(&cond2);
 		pthread_mutex_unlock(&mutex2);
+
 		pthread_join(thr, NULL);
 		fprintf(stderr, "CT03009 pthread_join OK\n");
 		fprintf(stderr, "CT03010 END\n");
@@ -57,12 +64,19 @@ util_thread(void *arg)
 		exit(1);
 	}
 	strcpy(m, "mmap OK");
+
 	pthread_mutex_lock(&mutex1);
+	flag1 = 1;
 	pthread_cond_signal(&cond1);
 	pthread_mutex_unlock(&mutex1);
+
 	pthread_mutex_lock(&mutex2);
-	pthread_cond_wait(&cond2, &mutex2);
+	while (!flag2) {
+		pthread_cond_wait(&cond2, &mutex2);
+	}
+	flag2 = 0;
 	pthread_mutex_unlock(&mutex2);
+
 	rc = mprotect(m, 4096, PROT_READ);
 	if (rc == 0) {
 		fprintf(stderr, "CT03006 mprotect OK\n");
@@ -72,11 +86,17 @@ util_thread(void *arg)
 		exit(1);
 	}
 	pthread_mutex_lock(&mutex1);
+	flag1 = 1;
 	pthread_cond_signal(&cond1);
 	pthread_mutex_unlock(&mutex1);
+
 	pthread_mutex_lock(&mutex2);
-	pthread_cond_wait(&cond2, &mutex2);
+	while (!flag2) {
+		pthread_cond_wait(&cond2, &mutex2);
+	}
+	flag2 = 0;
 	pthread_mutex_unlock(&mutex2);
+
 	rc = munmap(m, 4096);
 	if (rc == 0) {
 		fprintf(stderr, "CT03008 munmap OK\n");
@@ -111,23 +131,39 @@ main(int argc, char **argv)
 		exit(1);
 	}
 	fprintf(stderr, "CT03002 pthread_create OK\n");
+
 	pthread_mutex_lock(&mutex1);
-	pthread_cond_wait(&cond1, &mutex1);
+	while (!flag1) {
+		pthread_cond_wait(&cond1, &mutex1);
+	}
+	flag1 = 0;
 	pthread_mutex_unlock(&mutex1);
+
 	fprintf(stderr, "CT03005 %s\n", m);
+
 	pthread_mutex_lock(&mutex2);
+	flag2 = 1;
 	pthread_cond_signal(&cond2);
 	pthread_mutex_unlock(&mutex2);
+	
+
 	pthread_mutex_lock(&mutex1);
-	pthread_cond_wait(&cond1, &mutex1);
+	while (!flag1) {
+		pthread_cond_wait(&cond1, &mutex1);
+	}
+	flag1 = 0;
 	pthread_mutex_unlock(&mutex1);
+
 	sigst = 1;
 	strcpy(m, "mprotect NG");
 	fprintf(stderr, "%s\n", m);
 	fprintf(stderr, "CT03007 mprotect NG\n");
+
 	pthread_mutex_lock(&mutex2);
+	flag2 = 1;
 	pthread_cond_signal(&cond2);
 	pthread_mutex_unlock(&mutex2);
+
 	pthread_join(thr, NULL);
 	fprintf(stderr, "CT03009 pthread_join OK\n");
 	fprintf(stderr, "CT03010 END\n");

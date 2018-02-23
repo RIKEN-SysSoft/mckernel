@@ -24,9 +24,9 @@ void *util_thread(void *arg) {
 
 	rc = syscall(732);
 	if (rc == -1)
-		fprintf(stderr, "CT18100 running on Linux CPU OK\n");
+		fprintf(stderr, "CT18101 running on Linux CPU OK\n");
 	else {
-		fprintf(stderr, "CT18100 running on Linux CPU NG (%d)\n", rc);
+		fprintf(stderr, "CT18101 running on Linux CPU NG (%d)\n", rc);
 	}
 
 	passed = 1;
@@ -55,16 +55,16 @@ void *util_thread(void *arg) {
 	fprintf(stderr, "end=%ld.%09ld\n", end.tv_sec, end.tv_nsec);
 
 	if (rc != 0) {
-		fprintf(stderr, "CT18101 FUTEX_WAIT NG (%s)\n", strerror(errno));
+		fprintf(stderr, "CT18102 FUTEX_WAIT NG (%s)\n", strerror(errno));
 	} else {
-		fprintf(stderr, "CT18101 FUTEX_WAIT OK\n");
+		fprintf(stderr, "CT18102 FUTEX_WAIT OK\n");
 	}
 
 	elapsed = TS2NS(end.tv_sec, end.tv_nsec) - TS2NS(start.tv_sec, start.tv_nsec);
 	if (flag == 0 || elapsed < 800UL * 1000 * 1000 + 80UL * 1000 * 1000) {
-		fprintf(stderr, "CT18102 timeout OK\n");
+		fprintf(stderr, "CT18103 timeout OK\n");
 	} else {
-		fprintf(stderr, "CT18101 timeout NG\n");
+		fprintf(stderr, "CT18103 timeout NG (%lx)\n", elapsed);
 	}
 
 	return NULL;
@@ -93,7 +93,7 @@ main(int argc, char **argv)
 	while (!passed) {
 		asm volatile("pause" ::: "memory"); 
 	}
-	usleep(2000 * 1000UL);
+	usleep(800 * 1000UL * 10);
 
 	flag = 1;
 	rc = syscall(__NR_futex, &sem, FUTEX_WAKE_BITSET, 1, NULL, NULL, 0x12345678);
