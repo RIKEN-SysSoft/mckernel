@@ -209,7 +209,7 @@ static long mcexec_prepare_image(ihk_os_t os,
 
 	/* Update rpgtable */
 	ppd->rpgtable = pdesc->rpgtable;
-	printk("%s: rpgtable set to %lx\n", __FUNCTION__, ppd->rpgtable);
+	dprintk("%s: rpgtable set to %lx\n", __FUNCTION__, ppd->rpgtable);
 	
 	if (copy_to_user(udesc, pdesc, sizeof(struct program_load_desc) + 
 	             sizeof(struct program_image_section) * num_sections)) {
@@ -1953,7 +1953,7 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	/* Find previous file (if exists) and drop it */
 	list_for_each_entry(mcef_iter, &mckernel_exec_files, list) {
 		if (mcef_iter->os == os && mcef_iter->pid == task_tgid_vnr(current)) {
-			printk("%s: exec file found,%p,%p\n", __FUNCTION__, mcef_iter, mcef_iter->fp);
+			dprintk("%s: exec file found,%p,%p\n", __FUNCTION__, mcef_iter, mcef_iter->fp);
 #if 1 /* debug */
 			allow_write_access(mcef_iter->fp);
 			fput(mcef_iter->fp);
@@ -1969,7 +1969,7 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	mcef->pid = task_tgid_vnr(current);
 	mcef->fp = file;
 #if 1 /* debug */
-	printk("%s: adding exec file,%p,%p\n", __FUNCTION__, mcef, mcef->fp);
+	dprintk("%s: adding exec file,%p,%p\n", __FUNCTION__, mcef, mcef->fp);
 	list_add_tail(&mcef->list, &mckernel_exec_files);
 #endif
 	/* Create /proc/self/exe entry */
