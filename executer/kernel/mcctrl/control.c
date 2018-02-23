@@ -375,8 +375,7 @@ int mcexec_destroy_per_process_data(ihk_os_t os, int pid);
 
 static void release_handler(ihk_os_t os, void *param)
 {
-	int rc_int;
-    long rc;
+	int rc;
 	struct mcos_handler_info *info = param;
 	struct ikc_scd_packet isp;
 	int os_ind = ihk_host_os_get_index(os);
@@ -397,8 +396,8 @@ static void release_handler(ihk_os_t os, void *param)
 			
 #if 1 /* debug */
 	printk("%s: calling mcexec_close_exec\n", __FUNCTION__);
-	if ((rc_int = mcexec_close_exec(os))) {
-		printk("%s: ERROR: mcexec_close_exec (%d)\n", __FUNCTION__, rc_int);
+	if ((rc = mcexec_close_exec(os))) {
+		printk("%s: ERROR: mcexec_close_exec (%d)\n", __FUNCTION__, rc);
 	}
 #endif
 #if 1 /* debug */
