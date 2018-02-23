@@ -405,9 +405,8 @@ retry_alloc:
 	/* debug */
 	if (syscall_ret == -ERESTARTSYS) {
 		printk("%s: INFO: interrupted by signal\n", __FUNCTION__);
-		ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 		retry++;
-		if (ppd && retry < 5) { /* mcexec is alive */
+		if (retry < 5) {
 			printk("%s: INFO: retry=%d\n", __FUNCTION__, retry);
 			goto retry_offload;
 		}
