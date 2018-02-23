@@ -156,8 +156,9 @@ int mcctrl_delete_per_thread_data(struct mcctrl_per_proc_data* ppd,
 	}
 
 	list_del(&ptd->hash);
+#if 1
 	kfree(ptd);
-
+#endif
 out:
 	write_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
 	return ret;
@@ -488,7 +489,7 @@ retry_alloc:
 	kfree(wqhln);
 	syscall_ret = 0;
 out:
-#if 0 /* debug */
+#if 1 /* debug */
 	/* Release remote page-fault response packet */
 	if (free_packet) {
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)free_packet,
@@ -693,7 +694,7 @@ retry_alloc:
 	kfree(wqhln);
 	error = 0;
 out:
-#if 0 /* debug */
+#if 1 /* debug */
 	/* Release remote page-fault response packet */
 	if (free_packet) {
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)free_packet,

@@ -1250,11 +1250,12 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 		 * process is gone and the application should be terminated */
 		__return_syscall(ud->os, packet, -ERESTARTSYS,
 				packet->req.rtid);
+#if 1
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 				(ud->ikc2linux[smp_processor_id()] ?
 				 ud->ikc2linux[smp_processor_id()] :
 				 ud->ikc2linux[0]));
-
+#endif
 		return -1;
 	}
 
@@ -1444,13 +1445,17 @@ retry_alloc:
 		/* Is the request valid? */
 		if (wqhln->req) {
 			packet = wqhln->packet;
+#if 1 /* debug */
 			kfree(wqhln);
+#endif
 			wqhln = NULL;
 			ret = -EINTR;
 			goto put_ppd_out;
 		}
 		else {
+#if 1 /* debug */
 			kfree(wqhln);
+#endif
 			wqhln = NULL;
 			ret = -EINTR;
 			goto put_ppd_out;
@@ -1458,7 +1463,9 @@ retry_alloc:
 	}
 
 	packet = wqhln->packet;
+#if 1 /* debug */
 	kfree(wqhln);
+#endif
 	wqhln = NULL;
 
 	dprintk("%s: tid: %d took request from CPU %d, SC %lu\n",
@@ -1471,10 +1478,12 @@ retry_alloc:
 				task_tgid_vnr(current),
 				task_pid_vnr(current),
 				packet->req.number);
+#if 1
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 				(usrdata->ikc2linux[smp_processor_id()] ?
 				 usrdata->ikc2linux[smp_processor_id()] :
 				 usrdata->ikc2linux[0]));
+#endif
 		goto retry;
 	}
 
@@ -1522,12 +1531,12 @@ retry_alloc:
 		ret = 0;
 		goto put_ppd_out;
 	}
-
+#if 1 /* debug */
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 			(usrdata->ikc2linux[smp_processor_id()] ?
 			 usrdata->ikc2linux[smp_processor_id()] :
 			 usrdata->ikc2linux[0]));
-
+#endif
 	if (mcctrl_delete_per_thread_data(ppd, current) < 0) {
 		kprintf("%s: error deleting per-thread data\n", __FUNCTION__);
 		ret = -EINVAL;;
@@ -1685,11 +1694,12 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 	error = 0;
 out:
 	/* Free packet */
+#if 1 /* debug */
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 			(usrdata->ikc2linux[smp_processor_id()] ?
 			 usrdata->ikc2linux[smp_processor_id()] :
 			 usrdata->ikc2linux[0]));
-
+#endif
 	mcctrl_put_per_proc_data(ppd);
 	return error;
 }
@@ -1832,7 +1842,9 @@ int mcexec_create_per_process_data(ihk_os_t os)
 
 	if (mcctrl_add_per_proc_data(usrdata, ppd->pid, ppd) < 0) {
 		printk("%s: error adding per process data\n", __FUNCTION__);
+#if 1 /* debug */
 		kfree(ppd);
+#endif
 		return -EINVAL;
 	}
 
@@ -1942,7 +1954,7 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	list_for_each_entry(mcef_iter, &mckernel_exec_files, list) {
 		if (mcef_iter->os == os && mcef_iter->pid == task_tgid_vnr(current)) {
 			printk("%s: exec file found,%p,%p\n", __FUNCTION__, mcef_iter, mcef_iter->fp);
-#if 0 /* debug */
+#if 1 /* debug */
 			allow_write_access(mcef_iter->fp);
 			fput(mcef_iter->fp);
 			list_del(&mcef_iter->list);
@@ -1996,7 +2008,7 @@ int mcexec_close_exec(ihk_os_t os)
 	list_for_each_entry(mcef, &mckernel_exec_files, list) {
 		if (mcef->os == os && mcef->pid == task_tgid_vnr(current)) {
 			printk("%s: exec file found,%p,%p\n", __FUNCTION__, mcef, mcef->fp);
-#if 0 /* debug */
+#if 1 /* debug */
 			allow_write_access(mcef->fp);
 			fput(mcef->fp);
 			list_del(&mcef->list);
@@ -2661,7 +2673,7 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 	}
 #endif
  no_ppd:
-#if 0 /* debug */
+#if 1 /* debug */
 	list_del(&thread->list);
 	kfree(thread);
 #endif
