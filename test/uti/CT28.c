@@ -34,7 +34,7 @@
 #define eprintf(...) do {  } while (0)
 #endif
 
-#undef NPROC
+#define NPROC 8
 #define NINC 10000
 #define TS2NS(sec, nsec) ((unsigned long)(sec) * 1000000000ULL + (unsigned long)(nsec))
 #define NSPIN 1
