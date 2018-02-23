@@ -3,12 +3,12 @@
 #!/usr/bin/bash -x
 
 MYHOME=$HOME
-UTI_MPI_TOP=${MYHOME}/project/os/mckernel/test/uti/mpi
+UTI_TOP=${MYHOME}/project/os/mckernel/test/uti
 
 MCK=${MYHOME}/project/os/install
 unset DISABLE_UTI
 
-cmdline="./008"
+cmdline="./CT01"
 
 stop=0
 reboot=0
@@ -71,12 +71,12 @@ if [ ${reboot} -eq 1 ]; then
 fi
 
 if [ ${go} -eq 1 ]; then
-    cd ${UTI_MPI_TOP}
-    make CC=gcc 008
+    cd ${UTI_TOP}
+    make $cmdline
     for i in `seq 1 ${nloops}`; do
 	rm -f psm2-demo-server-epid-*
-	PSM2_RCVTHREAD=0 PMI_RANK=0 DISABLE_UTI=1 ${MCK}/bin/mcexec taskset -c 2 ./008 --ppn 1 &
-	PSM2_RCVTHREAD=0 PMI_RANK=1 DISABLE_UTI=0 ${MCK}/bin/mcexec taskset -c 3 ./008 --ppn 1
+	PSM2_RCVTHREAD=0 PMI_RANK=0 DISABLE_UTI=1 ${MCK}/bin/mcexec taskset -c 2 $cmdline --ppn 1 &
+	PSM2_RCVTHREAD=0 PMI_RANK=1 DISABLE_UTI=0 ${MCK}/bin/mcexec taskset -c 3 $cmdline --ppn 1
 	wait
 	echo =====;
 	echo $i;

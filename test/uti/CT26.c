@@ -81,7 +81,6 @@ void *util_thread(void *arg) {
 		fprintf(stderr, "CT12103 syscall(888) NG (%x)\n", rc);
 	}
 
-	while (1) { } /* debug */
 	return NULL;
 }
 
