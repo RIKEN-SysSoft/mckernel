@@ -1175,7 +1175,7 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 			packet = ptd->data;
 			printk("%s: ptd=%p,packet=%p,rtid=%d\n", __FUNCTION__, ptd, packet, packet->req.rtid);
 			list_del(&ptd->hash);
-#if 1 /* debug */
+#if 0 /* debug */
 			kfree(ptd);
 #endif
 			printk("%s: calling __return_syscall for per_thread_data_hash,os=%p,desc=%p\n", __FUNCTION__, ppd->ud->os, ppd->ud->ikc2linux[smp_processor_id()]);

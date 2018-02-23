@@ -156,7 +156,7 @@ int mcctrl_delete_per_thread_data(struct mcctrl_per_proc_data* ppd,
 	}
 
 	list_del(&ptd->hash);
-#if 1
+#if 0
 	kfree(ptd);
 #endif
 out:
