@@ -77,7 +77,7 @@ void *util_thread(void *arg) {
 
 	/* Cause remote page fault */
 	for (i = 0; i < nentry; i++) {
-		//memset(recvv[i], 0, szentry);
+		memset(recvv[i], 0, szentry);
 	}
 
 	sem_post(&sem_report);
@@ -139,7 +139,7 @@ main(int argc, char **argv)
 	}
 
 	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	//pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	rc = pthread_create(&thr, &attr, util_thread, NULL);
 	if (rc){
 		fprintf(stderr, "pthread_create: %d\n", rc);
@@ -150,7 +150,7 @@ main(int argc, char **argv)
 	sem_post(&sem_kick);
 	sem_wait(&sem_report);
 
-	//pthread_join(thr, NULL);
+	pthread_join(thr, NULL);
 
 	fprintf(stderr, "CT25003 END\n");
 	ret = 0;
