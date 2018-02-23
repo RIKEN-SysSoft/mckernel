@@ -3061,7 +3061,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 			*/
 			if (exited == 1 || exited == 2) {
 				
-				fprintf(stderr, "%s:  calling MCEXEC_UP_TERMINATE_THREAD,exited=%d,code=%lx\n", __FUNCTION__, exited, code);
+				fprintf(stderr, "%s:  calling MCEXEC_UP_TERMINATE_THREAD,pid=%d,tid=%d,exited=%d,code=%lx\n", __FUNCTION__, uti_desc->pid, uti_desc->tid, exited, code);
 				if (ioctl(fd, MCEXEC_UP_TERMINATE_THREAD, term_param) != 0) {
 					fprintf(stderr, "%s: INFO: MCEXEC_UP_TERMINATE_THREAD returned %d\n", __FUNCTION__, errno);
 				}
