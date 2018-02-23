@@ -3123,8 +3123,8 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 				continue;
 			}
 
+#if 0 /* debug */
 			switch (get_syscall_number(&args)) {
-#if 1
 			case __NR_open: {
 				int rc = get_syscall_return(&args);
 				if (rc > 0 && !strncmp((const char *)get_syscall_arg1(&args), "/dev/hfi", 8)) {
@@ -3145,7 +3145,11 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 					uti_desc->hfi_fd = -1;
 				}
 				break; }
+			default:
+				break;
+			}
 #endif 
+			switch (get_syscall_number(&args)) {
 			    case __NR_gettid:
 				set_syscall_number(&args, -1);
 				set_syscall_return(&args, uti_desc->mck_tid);
