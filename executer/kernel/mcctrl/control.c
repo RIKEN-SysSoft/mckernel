@@ -2597,8 +2597,8 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 	return -EINVAL;
 }
 
-long
-do_mcexec_terminate_thread(ihk_os_t os, unsigned long *param)
+static long
+mcexec_terminate_thread_unsafe(ihk_os_t os, unsigned long *param)
 {
 	int rc;
 	int pid;
@@ -2617,8 +2617,6 @@ do_mcexec_terminate_thread(ihk_os_t os, unsigned long *param)
 	tsk = (struct task_struct *)param[3];
 
 	printk("%s: target pid=%d,tid=%d,sig=%lx,task=%p\n", __FUNCTION__, pid, tid, sig, tsk);
-
-    write_lock_irqsave(&host_thread_lock, flags);
 	list_for_each_entry(thread, &host_threads, list) {
 		if(thread->tid == tid) {
 			break;
@@ -2626,7 +2624,6 @@ do_mcexec_terminate_thread(ihk_os_t os, unsigned long *param)
 	}
 	if (!thread) {
 		printk("%s: thread not found in host_threads list\n", __FUNCTION__);
-		write_unlock_irqrestore(&host_thread_lock, flags);
 		return -ESRCH;
 	}
 
@@ -2666,19 +2663,18 @@ do_mcexec_terminate_thread(ihk_os_t os, unsigned long *param)
 		printk("%s: mcctrl_put_per_proc_data failed,rc=%d\n", __FUNCTION__, rc);
 	}
 
+#if 1
 	/* See the comment in mcexec_util_thread2 on how ppd->refcount reaches zero */
 	printk("%s: ppd->refcount=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
 	if ((rc = mcctrl_put_per_proc_data(ppd)) < 0) {
 		printk("%s: mcctrl_put_per_proc_data failed,rc=%d\n", __FUNCTION__, rc);
 	}
-
+#endif
  no_ppd:
 #if 0 /* debug */
 	list_del(&thread->list);
 	kfree(thread);
 #endif
-	write_unlock_irqrestore(&host_thread_lock, flags);
-
 	return 0;
 }
 
@@ -2694,7 +2690,7 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long * __user arg)
     }
 
 	write_lock_irqsave(&host_thread_lock, flags);
-	rc = do_mcexec_terminate_thread(os, param);
+	rc = mcexec_terminate_thread_unsafe(os, param);
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
 	return rc;
