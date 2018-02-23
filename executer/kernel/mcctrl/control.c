@@ -381,36 +381,18 @@ static void release_handler(ihk_os_t os, void *param)
 	unsigned long flags;
 	struct host_thread *thread;
 
-	/* Kill migrated-to-Linux threads on the McKernel side 
-	   when the corresponding mcexec threads failed to call MCEXEC_UP_TERMINATE_THREAD 
-	   for some reason. */
-	while (1) {
-		unsigned long term_param[4];
+	printk("%s: param=%p,pid=%d,tid=%d\n", __FUNCTION__, param, task_tgid_vnr(current), task_pid_vnr(current));
 
-		write_lock_irqsave(&host_thread_lock, flags);
-		for (thread = host_threads; thread; thread = thread->next) {
-			if (thread->handler == info) {
-				break;
-			}
+	/* Call return_syscall() for migrated-to-Linux threads on the McKernel side
+	   when tracer/syscall_intercept didn't call MCEXEC_UP_TERMINATE_THREAD */
+
+	/* Finalize FS switch for uti threads */ 
+	write_lock_irqsave(&host_thread_lock, flags);
+	list_for_each_entry(thread, &host_threads, list) {
+		if (thread->handler != info) { /* Created by the caller of close() */
+			continue;
 		}
-		if (!thread) {
-			write_unlock_irqrestore(&host_thread_lock, flags);
-			break;
-		}
-		term_param[0] = thread->pid;
-		term_param[1] = thread->tid;
-		term_param[2] = 0;
-		/* We don't make the McKernel thread call terminate() because we don't know it is the last thread alive.
-		   Instead, we make it call do_exit() */
-		term_param[3] = (unsigned long)thread->task;
 		thread->handler = NULL;
-		write_unlock_irqrestore(&host_thread_lock, flags);
-		
-		printk("%s: killing stray migrated-to-Linux thread, pid=%d,tid=%d\n", __FUNCTION__, thread->pid, thread->tid);
-		rc = mcexec_terminate_thread(os, term_param);
-		if (rc) {
-			printk("%s: ERROR: mcexec_terminate_thread returned %ld\n", __FUNCTION__, rc);
-		}
 	}
 
 	mcexec_close_exec(os);
@@ -2482,25 +2464,23 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	write_lock_irqsave(&host_thread_lock, flags);
 	list_add_tail(&thread->list, &host_threads);
 	write_unlock_irqrestore(&host_thread_lock, flags);
-
+#if 1
 	/* How ppd refcount reaches zero depends on how utility-thread exits:
+         MCEXEC_UP_CREATE_PPD: set to 1
+         mcexec_util_thread2: inc to 2
+
   	     tracer alive:
-	       MCEXEC_UP_CREATE_PPD: set to 1
-		   mcexec_util_thread2: get
 		   create_tracer()
 		     tracer detects exit/exit_group/killed by signal
-               mcexec_terminate_thread: put
-	       release_handler(): put
+               mcexec_terminate_thread: dec to 1
+	       release_handler(): dec to 0
 
-	     tracer dead:
-	       MCEXEC_UP_CREATE_PPD: set to 1
-	       mcexec_util_thread2: get
-	       release_handler()
-	         mcexec_terminate_thread(): put
-			 put
+	     KNOWN ISSUE: 
+           mcexec_terminate_thread() isn't called when tracer is dead
+	       so the refcount is 1 when exiting release_handler()
 	*/
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
-
+#endif
 	return 0;
 }
 
