@@ -252,6 +252,7 @@ extern struct xpmem_partition *xpmem_my_part;
 
 static int xpmem_ioctl(struct mckfd *mckfd, ihk_mc_user_context_t *ctx);
 static int xpmem_close(struct mckfd *mckfd, ihk_mc_user_context_t *ctx);
+static int xpmem_dup(struct mckfd *mckfd, ihk_mc_user_context_t *ctx);
 
 static int xpmem_init(void);
 static void xpmem_exit(void);
@@ -275,6 +276,7 @@ static int xpmem_release(xpmem_apid_t);
 static void xpmem_release_ap(struct xpmem_thread_group *,
 	struct xpmem_access_permit *);
 static void xpmem_release_aps_of_tg(struct xpmem_thread_group *ap_tg);
+static void xpmem_flush(struct mckfd *);
 
 static int xpmem_attach(struct mckfd *, xpmem_apid_t, off_t, size_t, 
 	unsigned long, int, int, unsigned long *);

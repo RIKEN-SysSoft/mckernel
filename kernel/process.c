@@ -509,6 +509,10 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 				mckfd->next = proc->mckfd;
 				proc->mckfd = mckfd;
 			}
+
+			if (mckfd->dup_cb) {
+				mckfd->dup_cb(mckfd, NULL);
+			}
 		}
 		ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
 

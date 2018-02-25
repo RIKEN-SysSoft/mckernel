@@ -233,12 +233,13 @@ static int nr_processes = 0;
 static int nr_threads = -1;
 
 struct fork_sync {
-	pid_t pid;
 	int status;
+	volatile int success;
 	sem_t sem;
 };
 
 struct fork_sync_container {
+	pid_t pid;
 	struct fork_sync_container *next;
 	struct fork_sync *fs;
 };
@@ -2533,20 +2534,11 @@ do_generic_syscall(
 
 	__dprintf("do_generic_syscall(%ld)\n", w->sr.number);
 
-#ifdef POSTK_DEBUG_TEMP_FIX_75 /* syscall return value check add. */
 	ret = syscall(w->sr.number, w->sr.args[0], w->sr.args[1], w->sr.args[2],
 		 w->sr.args[3], w->sr.args[4], w->sr.args[5]);
 	if (ret == -1) {
 		ret = -errno;
 	}
-#else /* POSTK_DEBUG_TEMP_FIX_75 */
-	errno = 0;
-	ret = syscall(w->sr.number, w->sr.args[0], w->sr.args[1], w->sr.args[2],
-		 w->sr.args[3], w->sr.args[4], w->sr.args[5]);
-	if (errno != 0) {
-		ret = -errno;
-	}
-#endif /* POSTK_DEBUG_TEMP_FIX_75 */
 
 	/* Overlayfs /sys/X directory lseek() problem work around */
 	if (w->sr.number == __NR_lseek && ret == -EINVAL) {
@@ -3407,68 +3399,56 @@ gettid_out:
 
 		case __NR_clone: {
 			struct fork_sync *fs;
-			struct fork_sync_container *fsc;
+			struct fork_sync_container *fsc = NULL;
 			struct fork_sync_container *fp;
 			struct fork_sync_container *fb;
 			int flag = w.sr.args[0];
 			int rc = -1;
 			pid_t pid;
 
+			if (flag == 1) {
+				pid = w.sr.args[1];
+				rc = 0;
+				pthread_mutex_lock(&fork_sync_mutex);
+				for (fp = fork_sync_top, fb = NULL; fp; fb = fp, fp = fp->next)
+					if (fp->pid == pid)
+						break;
+				if (fp) {
+					fs = fp->fs;
+					if (fb)
+						fb->next = fp->next;
+					else
+						fork_sync_top = fp->next;
+					fs->success = 1;
+					munmap(fs, sizeof(struct fork_sync));
+					free(fp);
+				}
+				pthread_mutex_unlock(&fork_sync_mutex);
+				do_syscall_return(fd, cpu, rc, 0, 0, 0, 0);
+				break;
+			}
+
+			fs = mmap(NULL, sizeof(struct fork_sync),
+			          PROT_READ | PROT_WRITE,
+			          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+			if (fs == (void *)-1) {
+				goto fork_err;
+			}
+			memset(fs, '\0', sizeof(struct fork_sync));
+			sem_init(&fs->sem, 1, 0);
+
 			fsc = malloc(sizeof(struct fork_sync_container));
+			if (!fsc) {
+				goto fork_err;
+			}
 			memset(fsc, '\0', sizeof(struct fork_sync_container));
 			pthread_mutex_lock(&fork_sync_mutex);
 			fsc->next = fork_sync_top;
 			fork_sync_top = fsc;
 			pthread_mutex_unlock(&fork_sync_mutex);
-			fsc->fs = fs = mmap(NULL, sizeof(struct fork_sync),
-			          PROT_READ | PROT_WRITE,
-			          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-			if(fs == (void *)-1){
-				goto fork_err;
-			}
+			fsc->fs = fs;
 
-			memset(fs, '\0', sizeof(struct fork_sync));
-			sem_init(&fs->sem, 1, 0);
-
-			if(flag){
-				int pipefds[2];
-
-				if(pipe(pipefds) == -1){
-					rc = -errno;
-					sem_destroy(&fs->sem);
-					goto fork_err;
-				}
-				pid = fork();
-				if(pid == 0){
-					close(pipefds[0]);
-					pid = fork();
-					if(pid != 0){
-						if (write(pipefds[1], &pid, sizeof pid) != sizeof(pid)) {
-							fprintf(stderr, "error: writing pipefds\n");
-						}
-						exit(0);
-					}
-				}
-				else if(pid != -1){
-					int npid;
-					int st;
-
-					close(pipefds[1]);
-					if (read(pipefds[0], &npid, sizeof npid) != sizeof(npid)) {
-						fprintf(stderr, "error: reading pipefds\n");
-					}
-					close(pipefds[0]);
-					waitpid(pid, &st, 0);
-					pid = npid;
-				}
-				else{
-					rc = -errno;
-					sem_destroy(&fs->sem);
-					goto fork_err;
-				}
-			}
-			else
-				pid = fork();
+			fsc->pid = pid = fork();
 
 			switch (pid) {
 			    /* Error */
@@ -3534,12 +3514,13 @@ gettid_out:
 
 fork_child_sync_pipe:
 				sem_post(&fs->sem);
+				sem_destroy(&fs->sem);
 				if (fs->status)
 					exit(1);
 
 				for (fp = fork_sync_top; fp;) {
 					fb = fp->next;
-					if (fp->fs)
+					if (fp->fs && fp->fs != fs)
 						munmap(fp->fs, sizeof(struct fork_sync));
 					free(fp);
 					fp = fb;
@@ -3551,6 +3532,16 @@ fork_child_sync_pipe:
 				ioctl(fd, MCEXEC_UP_NEW_PROCESS, &npdesc);
 
 				/* TODO: does the forked thread run in a pthread context? */
+				while (getppid() != 1 &&
+				       fs->success == 0) {
+					sched_yield();
+				}
+
+				if (fs->success == 0) {
+					exit(1);
+				}
+
+				munmap(fs, sizeof(struct fork_sync));
 				join_all_threads();
 
 				return ret;
@@ -3558,7 +3549,6 @@ fork_child_sync_pipe:
 				
 			    /* Parent */
 			    default:
-				fs->pid = pid;
 				while ((rc = sem_trywait(&fs->sem)) == -1 && (errno == EAGAIN || errno == EINTR)) {
 					int st;
 					int wrc;
@@ -3581,20 +3571,25 @@ fork_child_sync_pipe:
 				break;
 			}
 
-			sem_destroy(&fs->sem);
-			munmap(fs, sizeof(struct fork_sync));
 fork_err:
-			pthread_mutex_lock(&fork_sync_mutex);
-			for (fp = fork_sync_top, fb = NULL; fp; fb = fp, fp = fp->next)
-				if (fp == fsc)
-					break;
-			if (fp) {
-				if (fb)
-					fb->next = fsc->next;
-				else
-					fork_sync_top = fsc->next;
+			if (fs) {
+				sem_destroy(&fs->sem);
+				if (rc < 0) {
+					munmap(fs, sizeof(struct fork_sync));
+					pthread_mutex_lock(&fork_sync_mutex);
+					for (fp = fork_sync_top, fb = NULL; fp; fb = fp, fp = fp->next)
+						if (fp == fsc)
+							break;
+					if (fp) {
+						if (fb)
+							fb->next = fsc->next;
+						else
+							fork_sync_top = fsc->next;
+						free(fp);
+					}
+					pthread_mutex_unlock(&fork_sync_mutex);
+				}
 			}
-			pthread_mutex_unlock(&fork_sync_mutex);
 			do_syscall_return(fd, cpu, rc, 0, 0, 0, 0);
 			break;
 		}

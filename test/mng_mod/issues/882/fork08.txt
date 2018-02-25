@@ -1,0 +1,231 @@
+Thu Feb 22 11:35:23 JST 2018
+/work/mcktest/ltp/output /work/mcktest/ltp
+/work/mcktest/ltp
+/work/mcktest/ltp/results /work/mcktest/ltp
+/work/mcktest/ltp
+INFO: creating /work/mcktest/ltp/results directory
+Checking for required user/group ids
+
+'nobody' user id and group found.
+'bin' user id and group found.
+'daemon' user id and group found.
+Users group found.
+Sys group found.
+Required users/groups exist.
+If some fields are empty or look unusual you may have an old version.
+Compare to the current minimal requirements in Documentation/Changes.
+ 
+CentOS Linux release 7.3.1611 (Core) 
+NAME="CentOS Linux"
+VERSION="7 (Core)"
+ID="centos"
+ID_LIKE="rhel fedora"
+VERSION_ID="7"
+PRETTY_NAME="CentOS Linux 7 (Core)"
+ANSI_COLOR="0;31"
+CPE_NAME="cpe:/o:centos:centos:7"
+HOME_URL="https://www.centos.org/"
+BUG_REPORT_URL="https://bugs.centos.org/"
+
+CENTOS_MANTISBT_PROJECT="CentOS-7"
+CENTOS_MANTISBT_PROJECT_VERSION="7"
+REDHAT_SUPPORT_PRODUCT="centos"
+REDHAT_SUPPORT_PRODUCT_VERSION="7"
+
+CentOS Linux release 7.3.1611 (Core) 
+CentOS Linux release 7.3.1611 (Core) 
+Linux wallaby11.aics-sys.riken.jp 3.10.0-693.1.1.el7.x86_64 #1 SMP Tue Aug 29 22:28:02 JST 2017 x86_64 x86_64 x86_64 GNU/Linux
+ 
+Gnu C                  gcc (GCC) 4.8.5 20150623 (Red Hat 4.8.5-11)
+Gnu make               3.82
+util-linux             linux 2.23.2
+mount                  linux 2.23.2 (libmount 2.23.0: selinux, debug, assert)
+modutils               20
+e2fsprogs              1.42.9
+PPP                    2.4.5
+Linux C Library        > libc.2.17
+Dynamic linker (ldd)   2.17
+Procps                 3.3.10
+Net-tools              2.10-alpha
+iproute2              iproute2-ss130716
+Kbd                    1.15.5
+Sh-utils               8.22
+Modules Loaded         loop mcoverlay mcctrl ihk_smp_x86_64 ihk xt_CHECKSUM ipt_MASQUERADE nf_nat_masquerade_ipv4 tun rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache ip6t_rpfilter ipt_REJECT nf_reject_ipv4 ip6t_REJECT nf_reject_ipv6 xt_conntrack ip_set nfnetlink ebtable_nat ebtable_broute bridge stp llc ip6table_nat nf_conntrack_ipv6 nf_defrag_ipv6 nf_nat_ipv6 ip6table_mangle ip6table_security ip6table_raw iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack libcrc32c iptable_mangle iptable_security iptable_raw ebtable_filter ebtables ip6table_filter ip6_tables iptable_filter rpcrdma ib_isert iscsi_target_mod ib_iser libiscsi scsi_transport_iscsi ib_srpt target_core_mod ib_srp scsi_transport_srp scsi_tgt ib_ipoib rdma_ucm ib_ucm ib_uverbs ib_umad rdma_cm ib_cm iw_cm mlx4_ib ib_core dm_mirror dm_region_hash dm_log dm_mod sb_edac edac_core intel_powerclamp coretemp intel_rapl iosf_mbi kvm_intel kvm irqbypass crc32_pclmul iTCO_wdt ghash_clmulni_intel joydev iTCO_vendor_support aesni_intel lrw gf128mul glue_helper ablk_helper pcspkr ioatdma cryptd ipmi_si ipmi_devintf ipmi_msghandler i2c_i801 wmi lpc_ich mei_me mei sg shpchp nfsd auth_rpcgss nfs_acl lockd grace sunrpc ip_tables ext4 mbcache jbd2 mlx4_en sd_mod crc_t10dif crct10dif_generic mgag200 drm_kms_helper syscopyarea sysfillrect isci sysimgblt fb_sys_fops ttm libsas drm mlx4_core igb ahci scsi_transport_sas libahci libata crct10dif_pclmul crct10dif_common crc32c_intel ptp pps_core dca i2c_algo_bit i2c_core devlink
+
+free reports:
+              total        used        free      shared  buff/cache   available
+Mem:       65772228     2849960    57621644        9480     5300624    62404812
+Swap:      33554428           0    33554428
+
+/proc/cpuinfo
+processor	: 0
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 62
+model name	: Intel(R) Xeon(R) CPU E5-2650 v2 @ 2.60GHz
+stepping	: 4
+microcode	: 0x428
+cpu MHz		: 2599.898
+cache size	: 20480 KB
+physical id	: 0
+siblings	: 2
+core id		: 0
+cpu cores	: 1
+apicid		: 0
+initial apicid	: 0
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 13
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm epb tpr_shadow vnmi flexpriority ept vpid fsgsbase smep erms xsaveopt dtherm ida arat pln pts
+bogomips	: 5200.02
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 46 bits physical, 48 bits virtual
+power management:
+
+processor	: 8
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 62
+model name	: Intel(R) Xeon(R) CPU E5-2650 v2 @ 2.60GHz
+stepping	: 4
+microcode	: 0x428
+cpu MHz		: 2599.898
+cache size	: 20480 KB
+physical id	: 1
+siblings	: 2
+core id		: 0
+cpu cores	: 1
+apicid		: 32
+initial apicid	: 32
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 13
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm epb tpr_shadow vnmi flexpriority ept vpid fsgsbase smep erms xsaveopt dtherm ida arat pln pts
+bogomips	: 5205.57
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 46 bits physical, 48 bits virtual
+power management:
+
+processor	: 16
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 62
+model name	: Intel(R) Xeon(R) CPU E5-2650 v2 @ 2.60GHz
+stepping	: 4
+microcode	: 0x428
+cpu MHz		: 2599.898
+cache size	: 20480 KB
+physical id	: 0
+siblings	: 2
+core id		: 0
+cpu cores	: 1
+apicid		: 1
+initial apicid	: 1
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 13
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm epb tpr_shadow vnmi flexpriority ept vpid fsgsbase smep erms xsaveopt dtherm ida arat pln pts
+bogomips	: 5200.02
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 46 bits physical, 48 bits virtual
+power management:
+
+processor	: 24
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 62
+model name	: Intel(R) Xeon(R) CPU E5-2650 v2 @ 2.60GHz
+stepping	: 4
+microcode	: 0x428
+cpu MHz		: 2600.000
+cache size	: 20480 KB
+physical id	: 1
+siblings	: 2
+core id		: 0
+cpu cores	: 1
+apicid		: 33
+initial apicid	: 33
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 13
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm epb tpr_shadow vnmi flexpriority ept vpid fsgsbase smep erms xsaveopt dtherm ida arat pln pts
+bogomips	: 5205.57
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 46 bits physical, 48 bits virtual
+power management:
+
+no big block device was specified on commandline.
+Tests which require a big block device are disabled.
+You can specify it with option -z
+COMMAND:    /work/mcktest/ltp/bin/ltp-pan  -e -S   -a 10167     -n 10167  -p  -f /tmp/ltp-68xTwDrmY3/alltests -l /work/mcktest/ltp/results/LTP_RUN_ON-2018_02_22-11h_35m_24s.log  -C /work/mcktest/ltp/output/LTP_RUN_ON-2018_02_22-11h_35m_24s.failed -T /work/mcktest/ltp/output/LTP_RUN_ON-2018_02_22-11h_35m_24s.tconf
+LOG File: /work/mcktest/ltp/results/LTP_RUN_ON-2018_02_22-11h_35m_24s.log
+FAILED COMMAND File: /work/mcktest/ltp/output/LTP_RUN_ON-2018_02_22-11h_35m_24s.failed
+TCONF COMMAND File: /work/mcktest/ltp/output/LTP_RUN_ON-2018_02_22-11h_35m_24s.tconf
+Running tests.......
+<<<test_start>>>
+tag=fork08 stime=1519266924
+cmdline="fork08"
+contacts=""
+analysis=exit
+<<<test_output>>>
+fork08      0  TINFO  :  parent forksval: 1
+fork08      0  TINFO  :  parent forksval: 2
+fork08      0  TINFO  :  exit status of wait  expected 0 got 0
+fork08      0  TINFO  :  second child got char: b
+fork08      1  TPASS  :  parent test PASSED
+fork08      1  TPASS  :  Test passed in childnumber 2
+fork08      0  TINFO  :  exit status of wait  expected 0 got 0
+fork08      2  TPASS  :  parent test PASSED
+fork08      0  TINFO  :  exit status of wait  expected 0 got 0
+fork08      3  TPASS  :  parent test PASSED
+fork08      0  TINFO  :  Number of processes forked is 2
+incrementing stop
+<<<execution_status>>>
+initiation_status="ok"
+duration=1 termination_type=exited termination_id=0 corefile=no
+cutime=1 cstime=2
+<<<test_end>>>
+Terminated
+INFO: ltp-pan reported all tests PASS
+LTP Version: 20150420
+
+       ###############################################################
+
+            Done executing testcases.
+            LTP Version:  20150420
+       ###############################################################
+
+Thu Feb 22 11:35:30 JST 2018
+IHK/McKernel started.
+[ -1]: no_execute_available: 1
+[ -1]: X86_IA32_NUM_PERF_COUNTERS: 4, X86_IA32_NUM_FIXED_PERF_COUNTERS: 3
+[ -1]: Invariant TSC supported.
+[ -1]: setup_x86 done.
+[ -1]: ns_per_tsc: 384
+[ -1]: KCommand Line: hidos   dump_level=24 
+[ -1]: Physical memory: 0x1002c8000 - 0x140000000, 1070825472 bytes, 261432 pages available @ NUMA: 0
+[ -1]: Physical memory: 0x880000000 - 0x8c0000000, 1073741824 bytes, 262144 pages available @ NUMA: 1
+[ -1]: NUMA: 0, Linux NUMA: 0, type: 1, available bytes: 1070825472, pages: 261432
+[ -1]: NUMA: 1, Linux NUMA: 1, type: 1, available bytes: 1073741824, pages: 262144
+[ -1]: NUMA 0 distances: 0 (10), 1 (21), 
+[ -1]: NUMA 1 distances: 1 (10), 0 (21), 
+[ -1]: map_fixed: phys: 0x8a000 => 0xffffffff70015000 (2 pages)
+[ -1]: Trampoline area: 0x8a000 
+[ -1]: map_fixed: phys: 0x0 => 0xffffffff70017000 (1 pages)
+[ -1]: # of cpus : 28
+[ -1]: locals = ffff800880024000
+[  0]: BSP: 0 (HW ID: 2 @ NUMA 0)
+[  0]: BSP: booted 27 AP CPUs
+[  0]: Master channel init acked.
+[  0]: vdso is enabled
+IHK/McKernel booted.
+
+PASS

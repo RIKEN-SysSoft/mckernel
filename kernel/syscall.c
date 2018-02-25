@@ -2615,6 +2615,13 @@ retry_tid:
 		old->tid,
 		new->tid);
 
+	if (!(clone_flags & CLONE_VM)) {
+		request1.number = __NR_clone;
+		request1.args[0] = 1;
+		request1.args[1] = new->tid;
+		do_syscall(&request1, ihk_mc_get_processor_id(), 0);
+	}
+
 	runq_add_thread(new, cpuid);
 
 	if (ptrace_event) {
@@ -6098,7 +6105,6 @@ static int ptrace_attach(int pid)
 	}
 
 	parent = child->parent;
-#ifdef POSTK_DEBUG_TEMP_FIX_53 /* attach for child-process fix. */
 	dkprintf("ptrace_attach() parent->pid=%d\n", parent->pid);
 
 	mcs_rwlock_writer_lock_noirq(&parent->children_lock, &childlock);
@@ -6110,23 +6116,6 @@ static int ptrace_attach(int pid)
 	list_add_tail(&child->siblings_list, &proc->children_list);
 	child->parent = proc;
 	mcs_rwlock_writer_unlock_noirq(&proc->children_lock, &childlock);
-#else /* POSTK_DEBUG_TEMP_FIX_53 */
-	/* XXX: tmp */
-	if (parent != proc) {
-
-		dkprintf("ptrace_attach() parent->pid=%d\n", parent->pid);
-
-		mcs_rwlock_writer_lock_noirq(&parent->children_lock, &childlock);
-		list_del(&child->siblings_list);
-		list_add_tail(&child->ptraced_siblings_list, &parent->ptraced_children_list);
-		mcs_rwlock_writer_unlock_noirq(&parent->children_lock, &childlock);
-
-		mcs_rwlock_writer_lock_noirq(&proc->children_lock, &childlock);
-		list_add_tail(&child->siblings_list, &proc->children_list);
-		child->parent = proc;
-		mcs_rwlock_writer_unlock_noirq(&proc->children_lock, &childlock);
-	}
-#endif /* POSTK_DEBUG_TEMP_FIX_53 */
 
 	child->ptrace = PT_TRACED | PT_TRACE_EXEC;
 

@@ -1,0 +1,21 @@
+スクリプトは Wed Jan 24 20:56:37 2018
+ に開始しました[?1034hbash-4.2$ pwd
+/home/shirasawa/dangertest/bin
+bash-4.2$ ./mck-mcexec.sh ./killit -t 4000 - ./signalonread -nt 4 -nosignal
+SUCCESS kmsg
+SUCCESS clear_kmsg
+SUCCESS mcexec
+SUCCESS ./killit -t 4000 mcexec ./signalonread -nt 4 -nosignal
+SUCCESS kmsg
+SUCCESS kmsg 1 lines
+SUCCESS ioctl 40000000 1
+SUCCESS kmsg
+SUCCESS 0 processes found
+SUCCESS ioctl 40000000 2
+SUCCESS kmsg
+SUCCESS 0 threads found
+bash-4.2$ シェルから脱出するには "exit" を使用してください。
+bash-4.2$ exit
+
+スクリプトは Wed Jan 24 20:57:07 2018
+ に終了しました
