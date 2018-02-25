@@ -15,16 +15,15 @@ LDFLAGS=@LDFLAGS@
 VPATH=@abs_srcdir@
 TARGET=mcstat
 
+.PHONY: all clean install
+
 all: $(TARGET)
 
-mcexec: mcstat.c libmcexec.a
+mcstat: mcstat.c
 	$(CC) -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) $(LDFLAGS) -o $@ $^
 
 clean::
 	$(RM) $(TARGET) *.o
 
-.PHONY: all clean install
-
 install::
 	install -m 755 mcstat $(BINDIR)
-
