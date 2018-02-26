@@ -1162,14 +1162,11 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 
 	list_del(&ppd->hash);
 	write_unlock_irqrestore(&ppd->ud->per_proc_data_hash_lock[hash], flags);
-#define LOCKFIX
 	printk("%s: deallocating PPD for pid %d\n", __FUNCTION__, ppd->pid);
 	for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; i++) {
 		struct mcctrl_per_thread_data *ptd;
 		struct mcctrl_per_thread_data *next;
-#ifdef LOCKFIX
 		write_lock_irqsave(&ppd->per_thread_data_hash_lock[i], flags);
-#endif
 		list_for_each_entry_safe(ptd, next,
 		                         ppd->per_thread_data_hash + i, hash) {
 			packet = ptd->data;
@@ -1192,9 +1189,7 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 					 ppd->ud->ikc2linux[0]));
 #endif
 		}
-#ifdef LOCKFIX
 		write_unlock_irqrestore(&ppd->per_thread_data_hash_lock[i], flags);
-#endif
 	}
 
 	flags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
