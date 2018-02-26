@@ -27,8 +27,12 @@ fi
 # POSTK_DEBUG_ARCH_DEP_93 vmcore2mckdump fix x86 depend [END]
 
 # POSTK_DEBUG_ARCH_DEP_93 vmcore2mckdump fix x86 depend [BEGIN]
+# POSTK_DEBUG_ARCH_DEP_102 fix timeout of expect command [BEGIN]
+#/usr/bin/expect -c "
+#set timeout 60
+# POSTK_DEBUG_ARCH_DEP_102 fix timeout of expect command [END]
 /usr/bin/expect -c "
-set timeout 60
+set timeout 300
 spawn /usr/bin/crash $VMLINUX $INFILE
 
 expect \"crash>\"
