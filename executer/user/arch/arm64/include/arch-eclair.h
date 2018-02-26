@@ -13,7 +13,7 @@
 
 #define ARCH_REGS	34
 
-#define PANIC_REGS_OFFSET	144
+#define PANIC_REGS_OFFSET	160
 
 struct arch_kregs {
 	unsigned long x19, x20, x21, x22, x23;

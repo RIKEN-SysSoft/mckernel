@@ -53,8 +53,8 @@ struct thread_info {
 
 struct arm64_cpu_local_thread {
 	struct thread_info thread_info;
-	unsigned long paniced;		/* 136 */
-	uint64_t panic_regs[34];	/* 144 */
+	unsigned long paniced;
+	uint64_t panic_regs[34];
 };
 
 union arm64_cpu_local_variables {
