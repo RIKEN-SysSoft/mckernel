@@ -23,7 +23,7 @@ mcctrl-y += sysfs.o sysfs_files.o arch/$(ARCH)/archdeps.o
 KBUILD_EXTRA_SYMBOLS = @abs_builddir@/../../../../ihk/linux/core/Module.symvers
 
 ifeq ($(ARCH), arm64)
-EXTRA_CFLAGS += $(foreach i, $(shell seq 1 100), $(addprefix -DPOSTK_DEBUG_ARCH_DEP_, $(i)))
+EXTRA_CFLAGS += $(foreach i, $(shell seq 6 106), $(addprefix -DPOSTK_DEBUG_ARCH_DEP_, $(i)))
 EXTRA_CFLAGS += $(foreach i, $(shell seq 1 100), $(addprefix -DPOSTK_DEBUG_TEMP_FIX_, $(i)))
 endif
 
