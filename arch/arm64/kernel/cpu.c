@@ -207,7 +207,7 @@ extern long freeze_thaw(void *nmi_ctx);
 static void multi_nm_interrupt_handler(void *priv)
 {
 	extern int nmi_mode;
-	struct pt_regs *regs;
+	struct pt_regs *regs = (struct pt_regs *)priv;
 	union arm64_cpu_local_variables *clv;
 
 	/* mode == 1or2, for FREEZER NMI */
@@ -218,45 +218,14 @@ static void multi_nm_interrupt_handler(void *priv)
 	}
 
 	/* mode == 0,    for MEMDUMP NMI */
-	regs = cpu_local_var(current)->uctx;
 	clv = get_arm64_this_cpu_local();
 
-	if (regs && interrupt_from_user(regs)) {
+	if (regs) {
 		memcpy(clv->arm64_cpu_local_thread.panic_regs, regs->regs, sizeof(regs->regs));
 		clv->arm64_cpu_local_thread.panic_regs[31] = regs->sp;
 		clv->arm64_cpu_local_thread.panic_regs[32] = regs->pc;
 		clv->arm64_cpu_local_thread.panic_regs[33] = regs->pstate;
 	}
-	else {
-		asm volatile (
-		"stp	x0,   x1,  [%3, #16 *  0]\n"
-		"stp	x2,   x3,  [%3, #16 *  1]\n"
-		"stp	x4,   x5,  [%3, #16 *  2]\n"
-		"stp	x6,   x7,  [%3, #16 *  3]\n"
-		"stp	x8,   x9,  [%3, #16 *  4]\n"
-		"stp	x10,  x11, [%3, #16 *  5]\n"
-		"stp	x12,  x13, [%3, #16 *  6]\n"
-		"stp	x14,  x15, [%3, #16 *  7]\n"
-		"stp	x16,  x17, [%3, #16 *  8]\n"
-		"stp	x18,  x19, [%3, #16 *  9]\n"
-		"stp	x20,  x21, [%3, #16 * 10]\n"
-		"stp	x22,  x23, [%3, #16 * 11]\n"
-		"stp	x24,  x25, [%3, #16 * 12]\n"
-		"stp	x26,  x27, [%3, #16 * 13]\n"
-		"stp	x28,  x29, [%3, #16 * 14]\n"
-		"str	x30,	   [%3, #16 * 15]\n"
-		"mov	%0, sp\n"
-		"adr	%1, 1f\n"
-		"mrs	%2, spsr_el1\n"
-	"1:"
-		: "=r" (clv->arm64_cpu_local_thread.panic_regs[31]),	/* sp */
-		  "=r" (clv->arm64_cpu_local_thread.panic_regs[32]),	/* pc */
-		  "=r" (clv->arm64_cpu_local_thread.panic_regs[33])	/* spsr_el1 */
-		: "r"  (&clv->arm64_cpu_local_thread.panic_regs)
-		: "memory"
-		);
-	}
-
 	clv->arm64_cpu_local_thread.paniced = 1;
 	ihk_mc_query_mem_areas();
 
@@ -793,7 +762,7 @@ void handle_IPI(unsigned int vector, struct pt_regs *regs)
 	else {
 		list_for_each_entry(h, &handlers[vector], list) {
 			if (h->func) {
-				h->func(h->priv);
+				h->func(h->priv == NULL ? regs : h->priv);
 			}
 		}
 	}
