@@ -1989,12 +1989,10 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	list_for_each_entry(mcef_iter, &mckernel_exec_files, list) {
 		if (mcef_iter->os == os && mcef_iter->pid == task_tgid_vnr(current)) {
 			dprintk("%s: exec file found,%p,%p\n", __FUNCTION__, mcef_iter, mcef_iter->fp);
-#if 1 /* debug */
 			allow_write_access(mcef_iter->fp);
 			fput(mcef_iter->fp);
 			list_del(&mcef_iter->list);
 			kfree(mcef_iter);
-#endif
 			break;
 		}
 	}
@@ -2003,10 +2001,9 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	mcef->os = os;
 	mcef->pid = task_tgid_vnr(current);
 	mcef->fp = file;
-#if 1 /* debug */
 	dprintk("%s: os=%p,pid=%d\n", __FUNCTION__, os, task_tgid_vnr(current));
 	list_add_tail(&mcef->list, &mckernel_exec_files);
-#endif
+
 	/* Create /proc/self/exe entry */
 	add_pid_entry(os_ind, task_tgid_vnr(current));
 	proc_exe_link(os_ind, task_tgid_vnr(current), fullpath);
@@ -2045,12 +2042,10 @@ int mcexec_close_exec(ihk_os_t os)
 	list_for_each_entry(mcef, &mckernel_exec_files, list) {
 		if (mcef->os == os && mcef->pid == task_tgid_vnr(current)) {
 			dprintk("%s: exec file found,%p,%p\n", __FUNCTION__, mcef, mcef->fp);
-#if 1 /* debug */
 			allow_write_access(mcef->fp);
 			fput(mcef->fp);
 			list_del(&mcef->list);
 			kfree(mcef);
-#endif
 			found = 1;
 			dprintk("%d close_exec dropped executable \n", (int)task_tgid_vnr(current));
 			break;
@@ -2058,7 +2053,7 @@ int mcexec_close_exec(ihk_os_t os)
 	}
 
 	if (!found) {
-		printk("%s: exec file not found\n", __FUNCTION__);
+		dprintk("%s: exec file not found\n", __FUNCTION__);
 	}
 	up(&mckernel_exec_file_lock);
 
@@ -2695,8 +2690,8 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 	printk("%s: ptd-put 3 times,target pid=%d,tid=%d,ptd->refcount=%d\n", __FUNCTION__, pid, tid, atomic_read(&ptd->refcount));
 
 	/* Drop reference for this function */
-	pr_ptd("put", tid, ptd);
 	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put", tid, ptd);
 
 	/* Final drop of reference for uti ptd */
 #if 0 /* debug */

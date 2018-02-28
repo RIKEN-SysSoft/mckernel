@@ -176,6 +176,7 @@ int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data *ppd, void *data)
 	ptd = ptd_alloc;
 	ptd->ppd = ppd;
 	ptd->task = current;
+	ptd->tid = task_pid_vnr(current);
 	ptd->data = data;
 	atomic_set(&ptd->refcount, 1);
 	list_add_tail(&ptd->hash, &ppd->per_thread_data_hash[hash]); 
