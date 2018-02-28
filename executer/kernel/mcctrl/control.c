@@ -56,7 +56,7 @@
 #define dprintk(...)
 #endif
 
-#define DEBUG_PTD
+//#define DEBUG_PTD
 #ifdef DEBUG_PTD
 #define pr_ptd(msg, tid, ptd) do { printk("%s: " msg ",tid=%d,refc=%d\n", __FUNCTION__, tid, atomic_read(&ptd->refcount)); } while(0)
 #else
@@ -401,9 +401,8 @@ static void release_handler(ihk_os_t os, void *param)
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
 	if ((rc = mcexec_close_exec(os))) {
-		printk("%s: INFO: mcexec_close_exec (%d)\n", __FUNCTION__, rc);
+		dprintk("%s: INFO: mcexec_close_exec (%d)\n", __FUNCTION__, rc);
 	}
-
 	/* Note that it will call return_syscall() */
 	mcexec_destroy_per_process_data(os, info->pid);
 
@@ -414,10 +413,9 @@ static void release_handler(ihk_os_t os, void *param)
 	dprintk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p, cpu: %d\n", __FUNCTION__, info, info->cpu);
 	mcctrl_ikc_send(os, info->cpu, &isp);
 	if (os_ind >= 0) {
-		printk("%s: calling delete_pid_entry,os_ind=%d,pid=%d\n", __FUNCTION__, os_ind, info->pid);
+		dprintk("%s: calling delete_pid_entry,os_ind=%d,pid=%d\n", __FUNCTION__, os_ind, info->pid);
 		delete_pid_entry(os_ind, info->pid);
 	}
-
 	kfree(param);
 	dprintk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p OK\n",
 			__FUNCTION__, info);
@@ -515,10 +513,11 @@ static long mcexec_send_signal(ihk_os_t os, struct signal_desc *sigparam)
 	struct mcctrl_signal msig[2];
 	struct mcctrl_signal *msigp;
 	int rc;
-
+	printk("%s: enter\n", __FUNCTION__);
 	if (copy_from_user(&sig, sigparam, sizeof(struct signal_desc))) {
 		return -EFAULT;
 	}
+	printk("%s: pid=%d,tid=%d,sig=%d\n", __FUNCTION__, sig.pid, sig.tid, sig.sig);
 
 	msigp = msig;
 	if(((unsigned long)msig & 0xfffffffffffff000L) !=
@@ -1478,7 +1477,7 @@ retry_alloc:
 			packet->req.args[5]);
 	
 	/* Create ptd */
-	dkprintf("%s: add,tid=%d\n", __FUNCTION__, task_pid_vnr(current));
+	dprintk("%s: add,tid=%d\n", __FUNCTION__, task_pid_vnr(current));
 	if ((ret = mcctrl_add_per_thread_data(ppd, packet))) {
 		kprintf("%s: error adding per-thread data (%d)\n", __FUNCTION__, ret);
 		ret = -EINVAL;
