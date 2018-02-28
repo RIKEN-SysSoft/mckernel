@@ -40,6 +40,50 @@ extern int sprintf(char * buf, const char *fmt, ...);
 extern int sscanf(const char * buf, const char * fmt, ...);
 extern int scnprintf(char * buf, size_t size, const char *fmt, ...);
 
+unsigned long get_boottime(){
+	struct resource_set *rset = cpu_local_var(resource_set);
+	struct process *pid1 = rset->pid1;
+	unsigned long uptime = 1;
+
+	kprintf("pid=%d ppid=%d nr_tids=%d, user=%lu, system=%lu\n",
+			pid1->pid, pid1->ppid_parent, pid1->nr_tids,
+			pid1->utime.tv_sec, pid1->stime.tv_sec, pid1->nr_processes);
+	// FIXME: return the correct uptime
+	return uptime;
+
+}
+
+unsigned long process_satus(unsigned long *running, unsigned long *blocked, unsigned long *total){
+	struct process *p;
+	struct thread *t;
+	int i;
+	struct mcs_rwlock_node_irqsave lock;
+	struct resource_set *rset = cpu_local_var(resource_set);
+	struct process_hash *phash = rset->process_hash;
+	struct process *pid1 = rset->pid1;
+
+	*total = 0;
+	*running = 0;
+	*blocked = 0;
+
+	for(i = 0; i < HASH_SIZE; i++){
+		__mcs_rwlock_reader_lock(&phash->lock[i], &lock);
+		list_for_each_entry(p, &phash->list[i], hash_list){
+			if (p == pid1)
+				continue;
+			(*total)++;
+			if (p->status == PS_RUNNING)
+				(*running)++;
+			// FIXME: Not sure about this state for blocked processes
+			if (p->status == PS_UNINTERRUPTIBLE)
+				(*blocked)++;
+		}
+		__mcs_rwlock_reader_unlock(&phash->lock[i], &lock);
+	}
+
+	return *total;
+}
+
 static void
 procfs_thread_ctl(struct thread *thread, int msg)
 {
@@ -206,8 +250,9 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 	else if (!strcmp(p, "stat")) {	/* "/proc/stat" */
 		extern int num_processors;	/* kernel/ap.c */
 		char *p;
-		size_t remain;
+		size_t remain, n;
 		int cpu;
+		unsigned long running, blocked, total;
 
 		if (offset > 0) {
 			ans = 0;
@@ -217,9 +262,9 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 		p = buf;
 		remain = count;
 		for (cpu = 0; cpu < num_processors; ++cpu) {
-			size_t  n;
 
-			n = snprintf(p, remain, "cpu%d\n", cpu);
+			// FIXME: get cpu statistics
+			n = snprintf(p, remain, "cpu%d 0 0 0 0 0 0 0 0 0 0\n", cpu);
 			if (n >= remain) {
 				ans = -ENOSPC;
 				eof = 1;
@@ -227,6 +272,30 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 			}
 			p += n;
 		}
+		/* FIXME: Fix interrupts and context switches statistics
+		n = snprintf(p, remain, "intr 0 0 0 0 0 0\n");
+		if (n >= remain) { ans = -ENOSPC; eof = 1; goto end; }
+		p += n;
+		n = snprintf(p, remain, "ctxt 0\n");
+		if (n >= remain) { ans = -ENOSPC; eof = 1; goto end; }
+		p += n;
+		*/
+		n = snprintf(p, remain, "btime %lu\n", get_boottime());
+		if (n >= remain) { ans = -ENOSPC; eof = 1; goto end; }
+		p += n;
+
+		process_satus(&running, &blocked, &total);
+		n = snprintf(p, remain, "processes %lu\n" \
+							"procs_running %lu\n" \
+							"procs_blocked %lu\n", \
+							total, running, blocked);
+		if (n >= remain) { ans = -ENOSPC; eof = 1; goto end; }
+		p += n;
+		/* FIXME: Add softirq statistics
+		n = snprintf(p, remain, "softirq 0 0 0\n");
+		if (n >= remain) { ans = -ENOSPC; eof = 1; goto end; }
+		p += n;
+		*/
 		ans = p - buf;
 		eof = 1;
 		goto end;
