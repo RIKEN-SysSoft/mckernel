@@ -63,7 +63,7 @@
 #define	dprintk(...)
 #endif
 
-#define DEBUG_PTD
+//#define DEBUG_PTD
 #ifdef DEBUG_PTD
 #define pr_ptd(msg, tid, ptd) do { printk("%s: " msg ",tid=%d,refc=%d\n", __FUNCTION__, tid, atomic_read(&ptd->refcount)); } while(0)
 #else
@@ -460,7 +460,7 @@ retry_alloc:
 	list_del(&wqhln->list);
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, irqflags);
 
-	printk("%s: tid: %d, syscall: %d WOKEN UP\n", __FUNCTION__, task_pid_vnr(current), num);
+	dprintk("%s: tid: %d, syscall: %d WOKEN UP\n", __FUNCTION__, task_pid_vnr(current), num);
 
 	if (retry >= 5) {
 		kfree(wqhln);
@@ -582,7 +582,7 @@ int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t
 
 	ptd = mcctrl_get_per_thread_data(ppd, current);
 	if (!ptd) {
-		printk("%s: ERROR: mcctrl_get_per_thread_data failed\n", __FUNCTION__);		
+		printk("%s: ERROR: mcctrl_get_per_thread_data failed,tid=%d,va=%p\n", __FUNCTION__, task_pid_vnr(current), fault_addr);
 		error = -ENOENT;
 		goto no_ptd;
 	}
@@ -935,7 +935,7 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 
 	ptd = mcctrl_get_per_thread_data(ppd, current);
 	if (!ptd) {
-		printk("%s: ERROR: mcctrl_get_per_thread_data failed\n", __FUNCTION__);
+		printk("%s: ERROR: mcctrl_get_per_thread_data failed,tid=%d,va=%p\n", __FUNCTION__, task_pid_vnr(current), vmf->virtual_address);
 		ret = VM_FAULT_SIGBUS;
 		goto no_ptd;
 	}
@@ -2639,7 +2639,7 @@ sched_setparam_out:
 		break;
 	}
 
-	printk("%s: system call: number=%ld,ret=%lx\n", __FUNCTION__, sc->number, ret);
+	dprintk("%s: system call: number=%ld,ret=%lx\n", __FUNCTION__, sc->number, ret);
 	__return_syscall(os, packet, ret, 0);
 
 	error = 0;
