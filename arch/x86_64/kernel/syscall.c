@@ -1364,7 +1364,9 @@ done:
 	}
 
 	if (tthread->thread_offloaded) {
-		interrupt_syscall(tthread, sig);
+		if (!tthread->proc->nohost) {
+			interrupt_syscall(tthread, sig);
+		}
 		release_thread(tthread);
 		return 0;
 	}
