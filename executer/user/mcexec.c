@@ -2796,7 +2796,6 @@ out:
 static void
 kill_thread(unsigned long tid, int sig)
 {
-    int rc;
 	struct thread_data_s *tp;
     printf("%s: tid=%ld,sig=%d\n", __FUNCTION__, tid, sig);
 
@@ -2805,43 +2804,7 @@ kill_thread(unsigned long tid, int sig)
 
 	for (tp = thread_data; tp; tp = tp->next) {
 		if (tp->remote_tid == tid) {
-			/* (1) SIGKILL here kills the entire process, so delay it until __NR_exit_group offload
-			   (2) Kill migrated-to-Linux threads on the McKernel side 
-			       when the corresponding mcexec threads failed to call MCEXEC_UP_TERMINATE_THREAD 
-			       for some reason. */
-			if(uti_desc->mck_tid == tid) {
-				int exit_remote = 0;
-
-				if (sig == SIGKILL) {
-					printf("%s: making remote thread exit (SIGKILL),tid=%ld,sig=%d\n", __FUNCTION__, tid, sig);
-					exit_remote = 1;
-					/* We don't perform pthread_kill(tp->thread_id, SIGKILL) because it kills other threads as well.
-					   Instead, we expect one of McKernel threads calls / have called terminate()
-					   and offloads __NR_exit_group to kill me. */
-				} else if (pthread_kill(tp->thread_id, 0) == ESRCH) {
-					printf("%s: making remote thread exit (nohost),tid=%ld,sig=%d\n", __FUNCTION__, tid, sig);
-					exit_remote = 1;
-					sig = 0;
-					/* We don't make the McKernel thread call terminate() because we don't know it is the last thread alive.
-					   Instead, we make it call do_exit() */
-				} else {
-					printf("%s: sending to signal to local thread,tid=%ld,sig=%d\n", __FUNCTION__, tid, sig);
-					pthread_kill(tp->thread_id, sig);
-				}
-
-				if (exit_remote) {
-					printf("%s: making remote thread exit,tid=%ld,sig=%d\n", __FUNCTION__, tid, sig);
-					unsigned long term_param[4];
-					term_param[0] = uti_desc->pid;
-					term_param[1] = uti_desc->tid; /* tid of mcexec */
-					term_param[2] = sig;
-					term_param[3] = uti_desc->key;
-					if ((rc = ioctl(fd, MCEXEC_UP_TERMINATE_THREAD, term_param)) < 0) {
-						printf("%s: MCEXEC_UP_TERMINATE_THREAD returned %d\n", __FUNCTION__, errno);
-					}
-
- 				}
-			} else if (pthread_kill(tp->thread_id, sig) == ESRCH) {
+			if (pthread_kill(tp->thread_id, sig) == ESRCH) {
 				printf("%s: ERROR: Thread not found (tid=%ld,sig=%d)\n", __FUNCTION__, tid, sig);
  			}
  		}
