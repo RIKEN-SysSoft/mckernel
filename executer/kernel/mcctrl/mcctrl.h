@@ -229,6 +229,7 @@ struct mcctrl_per_thread_data {
 	struct list_head hash;
 	struct task_struct *task;
 	void *data;
+	int tid; /* debug */
 	atomic_t refcount;
 };
 
