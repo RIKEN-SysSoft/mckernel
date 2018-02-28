@@ -70,7 +70,7 @@
 #define pr_ptd(msg, tid, ptd) do { } while(0)
 #endif
 
-#define DEBUG_UTI
+//#define DEBUG_UTI
 
 #ifdef MCCTRL_KSYM_zap_page_range
 static void
