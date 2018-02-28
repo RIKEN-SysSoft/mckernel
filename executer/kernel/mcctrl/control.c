@@ -2624,8 +2624,8 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 							usrdata->ikc2linux[0]));
 
 	/* Drop reference for this function */
-	pr_ptd("put", tid, ptd);
 	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put", tid, ptd);
 
 	/* Final drop of reference for uti ptd */
 	mcctrl_put_per_thread_data(ptd);
