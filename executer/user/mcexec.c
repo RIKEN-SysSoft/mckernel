@@ -2909,7 +2909,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 		exit(0);
 	}
 
-#if 1
+#if 0
 	/* Prevent tracer's exit from calling release_handler() with passing McKernel process info */
 	close(fd);
 	fd = opendev();
