@@ -108,8 +108,8 @@ void mcctrl_put_per_thread_data_unsafe(struct mcctrl_per_thread_data *ptd)
 		return;
 	}
 
-	list_del(&ptd->hash);
 #ifndef DEBUG_UTI /* debug */
+	list_del(&ptd->hash);
 	kfree(ptd);
 #endif
 }
@@ -126,7 +126,11 @@ void mcctrl_put_per_thread_data(struct mcctrl_per_thread_data* _ptd)
 	/* Check if data for this thread exists and delete it */
 	write_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
 	list_for_each_entry(ptd_iter, &ppd->per_thread_data_hash[hash], hash) {
+#ifdef DEBUG_UTI /* debug */
+        if (ptd_iter->task == _ptd->task && atomic_read(&ptd_iter->refcount) > 0) {
+#else
 		if (ptd_iter->task == _ptd->task) {
+#endif
 			ptd = ptd_iter;
 			break;
 		}
@@ -162,7 +166,11 @@ int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data *ppd, void *data)
 	/* Check if data for this thread exists and add if not */
 	write_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
 	list_for_each_entry(ptd_iter, &ppd->per_thread_data_hash[hash], hash) {
+#ifdef DEBUG_UTI /* debug */
+        if (ptd_iter->task == current && atomic_read(&ptd_iter->refcount) > 0) {
+#else
 		if (ptd_iter->task == current) {
+#endif
 			ptd = ptd_iter;
 			break;
 		}
@@ -202,7 +210,11 @@ struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc
 	read_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
 
 	list_for_each_entry(ptd_iter, &ppd->per_thread_data_hash[hash], hash) {
+#ifdef DEBUG_UTI /* debug */
+		if (ptd_iter->task == task && atomic_read(&ptd_iter->refcount) > 0) {
+#else
 		if (ptd_iter->task == task) {
+#endif
 			ptd = ptd_iter;
 			break;
 		}
@@ -533,7 +545,7 @@ retry_alloc:
 	kfree(wqhln);
 	syscall_ret = 0;
 out:
-#if 1 /* debug */
+#ifndef DEBUG_UTI /* debug */
 	/* Release remote page-fault response packet */
 	if (free_packet) {
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)free_packet,
@@ -748,7 +760,7 @@ retry_alloc:
 	kfree(wqhln);
 	error = 0;
 out:
-#if 1 /* debug */
+#ifndef DEBUG_UTI /* debug */
 	/* Release remote page-fault response packet */
 	if (free_packet) {
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)free_packet,

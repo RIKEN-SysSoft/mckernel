@@ -1221,7 +1221,7 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 		 * process is gone and the application should be terminated */
 		__return_syscall(ppd->ud->os, packet, -ERESTARTSYS,
 				packet->req.rtid);
-#if 1 /* debug */
+#ifndef DEBUG_UTI /* debug */
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 				(ppd->ud->ikc2linux[smp_processor_id()] ?
 				 ppd->ud->ikc2linux[smp_processor_id()] :
@@ -1230,8 +1230,8 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	}
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, flags);
 
-#if 1 /* debug */
 	pager_remove_process(ppd);
+#ifndef DEBUG_UTI /* debug */
 	kfree(ppd);
 #endif
 	return 0;
@@ -1260,7 +1260,7 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 		 * process is gone and the application should be terminated */
 		__return_syscall(ud->os, packet, -ERESTARTSYS,
 				packet->req.rtid);
-#if 1
+#ifndef DEBUG_UTI /* debug */
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 				(ud->ikc2linux[smp_processor_id()] ?
 				 ud->ikc2linux[smp_processor_id()] :
@@ -1491,7 +1491,7 @@ retry_alloc:
 				task_tgid_vnr(current),
 				task_pid_vnr(current),
 				packet->req.number);
-#if 1
+#ifndef DEBUG_UTI /* debug */
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 				(usrdata->ikc2linux[smp_processor_id()] ?
 				 usrdata->ikc2linux[smp_processor_id()] :
@@ -1531,7 +1531,7 @@ retry_alloc:
 
 	if (packet->req.number == __NR_sched_setaffinity  && packet->req.args[0] == 0) {
 		kprintf("%s: uti,packet=%p,tid=%d\n", __FUNCTION__, packet, task_pid_vnr(current));
-#ifndef DEBUG_UTI /* debug */
+
 		/* Get a reference valid until thread-offload is done */
 		ptd = mcctrl_get_per_thread_data(ppd, current);
 		if (!ptd) {
@@ -1540,7 +1540,6 @@ retry_alloc:
 			goto no_ptd;
 		}
 		pr_ptd("get", task_pid_vnr(current), ptd);
-#endif
 	}
 
 	if (__do_in_kernel_syscall(os, packet)) {
@@ -1558,7 +1557,7 @@ retry_alloc:
 		ret = 0;
 		goto put_ppd_out;
 	}
-#if 1 /* debug */
+#ifndef DEBUG_UTI /* debug */
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 			(usrdata->ikc2linux[smp_processor_id()] ?
 			 usrdata->ikc2linux[smp_processor_id()] :
@@ -1732,7 +1731,7 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 	error = 0;
 out:
 	/* Free packet */
-#if 1 /* debug */
+#ifndef DEBUG_UTI /* debug */
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 			(usrdata->ikc2linux[smp_processor_id()] ?
 			 usrdata->ikc2linux[smp_processor_id()] :
@@ -1889,7 +1888,7 @@ int mcexec_create_per_process_data(ihk_os_t os)
 
 	if (mcctrl_add_per_proc_data(usrdata, ppd->pid, ppd) < 0) {
 		printk("%s: error adding per process data\n", __FUNCTION__);
-#if 1 /* debug */
+#ifndef DEBUG_UTI /* debug */
 		kfree(ppd);
 #endif
 		return -EINVAL;
@@ -2680,7 +2679,7 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 	__return_syscall(usrdata->os, packet, sig, tid);
 #endif
 	//printk("%s: packet=%p,channels=%p,ref=%d,desc=%p\n", __FUNCTION__, packet, usrdata->channels, packet->ref, (usrdata->channels + packet->ref)->c);
-#if 1 /* debug */
+#ifndef DEBUG_UTI /* debug */
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 						   (usrdata->ikc2linux[smp_processor_id()] ?
 							usrdata->ikc2linux[smp_processor_id()] :
@@ -2694,10 +2693,9 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 	pr_ptd("put", tid, ptd);
 
 	/* Final drop of reference for uti ptd */
-#ifndef DEBUG_UTI /* debug */
 	mcctrl_put_per_thread_data(ptd);
 	pr_ptd("put", tid, ptd);
-#endif
+
 	if (atomic_read(&ptd->refcount) != 1) {
 		printk("%s: ERROR: ptd->refcount != 1 but %d\n", __FUNCTION__, atomic_read(&ptd->refcount));
 	}
