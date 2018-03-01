@@ -188,6 +188,7 @@ int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data *ppd, void *data)
 	ptd->task = current;
 	ptd->tid = task_pid_vnr(current);
 	ptd->data = data;
+	ptd->responded = 0;
 	atomic_set(&ptd->refcount, 1);
 	list_add_tail(&ptd->hash, &ppd->per_thread_data_hash[hash]); 
 
@@ -2654,7 +2655,14 @@ sched_setparam_out:
 	}
 
 	dprintk("%s: system call: number=%ld,ret=%lx\n", __FUNCTION__, sc->number, ret);
+
 	__return_syscall(os, packet, ret, 0);
+#ifndef DEBUG_UTI /* debug */
+	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
+						   (usrdata->ikc2linux[smp_processor_id()] ?
+							usrdata->ikc2linux[smp_processor_id()] :
+							usrdata->ikc2linux[0]));
+#endif
 
 	error = 0;
 out:
