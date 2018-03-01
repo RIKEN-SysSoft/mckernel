@@ -70,6 +70,8 @@
 #define pr_ptd(msg, tid, ptd) do { } while(0)
 #endif
 
+#define DEBUG_UTI
+
 #ifdef MCCTRL_KSYM_zap_page_range
 static void
 (*mcctrl_zap_page_range)(struct vm_area_struct *vma, unsigned long start,
@@ -107,7 +109,7 @@ void mcctrl_put_per_thread_data_unsafe(struct mcctrl_per_thread_data *ptd)
 	}
 
 	list_del(&ptd->hash);
-#if 0 /* debug */
+#ifndef DEBUG_UTI /* debug */
 	kfree(ptd);
 #endif
 }
@@ -167,7 +169,7 @@ int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data *ppd, void *data)
 	}
 
 	if (unlikely(ptd)) {
-		kprintf("%s: found tid=%d\n", __FUNCTION__, task_pid_vnr(current));
+		kprintf("%s: ERROR: ptd found,tid=%d\n", __FUNCTION__, task_pid_vnr(current));
 		ret = -EBUSY;
 		kfree(ptd_alloc);
 		goto out;

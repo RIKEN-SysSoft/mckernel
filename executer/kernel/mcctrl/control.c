@@ -63,6 +63,8 @@
 #define pr_ptd(msg, tid, ptd) do { } while(0)
 #endif
 
+#define DEBUG_UTI
+
 #ifdef MCCTRL_KSYM_sys_unshare
 #if MCCTRL_KSYM_sys_unshare
 typedef int (*int_star_fn_ulong_t)(unsigned long);
@@ -1529,11 +1531,11 @@ retry_alloc:
 
 	if (packet->req.number == __NR_sched_setaffinity  && packet->req.args[0] == 0) {
 		kprintf("%s: uti,packet=%p,tid=%d\n", __FUNCTION__, packet, task_pid_vnr(current));
-#if 0 /* debug */
+#ifndef DEBUG_UTI /* debug */
 		/* Get a reference valid until thread-offload is done */
 		ptd = mcctrl_get_per_thread_data(ppd, current);
 		if (!ptd) {
-			kprintf("%s: ptd not found\n", __FUNCTION__);
+			kprintf("%s: ERROR: ptd not found\n", __FUNCTION__);
 			ret = -EINVAL;
 			goto no_ptd;
 		}
@@ -1923,7 +1925,7 @@ int mcexec_destroy_per_process_data(ihk_os_t os, int pid)
 			   __FUNCTION__, task_tgid_vnr(current));
 	}
 
-	printk("%s: exit,pid=%d,tid=%d\n", __FUNCTION__, task_tgid_vnr(current), task_pid_vnr(current));
+	dprintk("%s: exit,pid=%d,tid=%d\n", __FUNCTION__, task_tgid_vnr(current), task_pid_vnr(current));
 	return 0;
 }
 
@@ -2692,12 +2694,12 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 	pr_ptd("put", tid, ptd);
 
 	/* Final drop of reference for uti ptd */
-#if 0 /* debug */
+#ifndef DEBUG_UTI /* debug */
 	mcctrl_put_per_thread_data(ptd);
 	pr_ptd("put", tid, ptd);
 #endif
 	if (atomic_read(&ptd->refcount) != 1) {
-		printk("%s: WARNING: ptd->refcount != 1 but %d\n", __FUNCTION__, atomic_read(&ptd->refcount));
+		printk("%s: ERROR: ptd->refcount != 1 but %d\n", __FUNCTION__, atomic_read(&ptd->refcount));
 	}
 	mcctrl_put_per_thread_data(ptd);
 	pr_ptd("put", tid, ptd);
