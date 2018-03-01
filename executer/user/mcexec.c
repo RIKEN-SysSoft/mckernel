@@ -2799,6 +2799,9 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 #endif /* POSTK_DEBUG_ARCH_DEP_78 */
 			    case __NR_execve:
 				set_syscall_number(&args, -1);
+#ifdef POSTK_DEBUG_ARCH_DEP_103 /* UTI:ignore syscall setting return -ENOSYS */
+				set_syscall_return(&args, -ENOSYS);
+#endif /* POSTK_DEBUG_ARCH_DEP_103 */
 				set_syscall_args(tid, &args);
 				continue;
 			    case __NR_ioctl:
