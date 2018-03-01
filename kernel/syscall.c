@@ -3059,6 +3059,13 @@ do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
 	struct mcs_rwlock_node_irqsave mcs_rw_node;
 	ihk_mc_user_context_t ctx0;
 
+	if (!valid_signal(sig) || sig < 1) {
+		return -EINVAL;
+	}
+	if (act && (sig == SIGKILL || sig == SIGSTOP)) {
+		return -EINVAL;
+	}
+
 	mcs_rwlock_writer_lock(&thread->sigcommon->lock, &mcs_rw_node);
 	k = thread->sigcommon->action + sig - 1;
 	if(oact)
