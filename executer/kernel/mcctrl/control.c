@@ -396,10 +396,9 @@ static void release_handler(ihk_os_t os, void *param)
 	/* Stop switching FS registers for uti thread */ 
 	write_lock_irqsave(&host_thread_lock, flags);
 	list_for_each_entry(thread, &host_threads, list) {
-		if (thread->handler != info) { /* Created by the caller of close() */
-			continue;
+		if (thread->handler == info) {
+			thread->handler = NULL;
 		}
-		thread->handler = NULL;
 	}
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
@@ -412,7 +411,7 @@ static void release_handler(ihk_os_t os, void *param)
 	mcexec_destroy_per_process_data(os, info->pid);
 
 #endif
-#if 1 /* debug */
+#ifndef DEBUG_UTI /* debug */
 	memset(&isp, '\0', sizeof(isp));
 	isp.msg = SCD_MSG_CLEANUP_PROCESS;
 	isp.pid = info->pid;
@@ -424,7 +423,7 @@ static void release_handler(ihk_os_t os, void *param)
 		delete_pid_entry(os_ind, info->pid);
 	}
 #endif
-#if 1 /* debug */
+#ifndef DEBUG_UTI /* debug */
 	printk("%s: calling kfree,param=%p,info->pid=%d\n", __FUNCTION__, param, info->pid);
 	kfree(param);
 	//printk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p OK\n", __FUNCTION__, info);
@@ -1186,8 +1185,8 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 			/* We use ERESTARTSYS to tell the LWK that the proxy
 			   process is gone and the application should be terminated. */
 			packet = (struct ikc_scd_packet *)ptd->data;
-			printk("%s: calling __return_syscall (hash),target pid=%d,tid=%d\n", __FUNCTION__, ppd->pid, packet->req.rtid);
 			if (__sync_bool_compare_and_swap(&ptd->responded, 0 /* old */, 1 /* new */)) {
+				printk("%s: calling __return_syscall (hash),target pid=%d,tid=%d\n", __FUNCTION__, ppd->pid, packet->req.rtid);
 				__return_syscall(ppd->ud->os, packet, -ERESTARTSYS, packet->req.rtid);
 #ifndef DEBUG_UTI /* debug */
 				ihk_ikc_release_packet(
@@ -1205,7 +1204,7 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 				printk("%s: WARNING: ptd->refcount != 1 but %d\n", __FUNCTION__, atomic_read(&ptd->refcount));
 			}
 			mcctrl_put_per_thread_data_unsafe(ptd);
-			pr_ptd("put", ptd->tid, ptd);
+			printk("%s: ptd-put,refc=%d\n", __FUNCTION__, atomic_read(&ptd->refcount));
 		}
 		write_unlock_irqrestore(&ppd->per_thread_data_hash_lock[i], flags);
 	}
@@ -2024,13 +2023,13 @@ out:
 	return retval;
 }
 
-int mcexec_close_exec(ihk_os_t os)
+int mcexec_close_exec(ihk_os_t os, int pid)
 {
 	struct mckernel_exec_file *mcef = NULL;
 	int found = 0;
 	int os_ind = ihk_host_os_get_index(os);	
 
-	printk("%s: os=%p,pid=%d\n", __FUNCTION__, os, task_tgid_vnr(current));
+	printk("%s: os=%p,pid=%d\n", __FUNCTION__, os, pid);
 
 	if (os_ind < 0) {
 		return EINVAL;
@@ -2675,6 +2674,7 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 	}
 
 	if (__sync_bool_compare_and_swap(&ptd->responded, 0 /* old */, 1 /* new */)) {
+		printk("%s: calling __return_syscall (uti),target pid=%d,tid=%d\n", __FUNCTION__, ppd->pid, packet->req.rtid);
 		__return_syscall(usrdata->os, packet, sig, tid);
 #ifndef DEBUG_UTI /* debug */
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
@@ -2688,29 +2688,25 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 
 	/* Drop reference for this function */
 	mcctrl_put_per_thread_data(ptd);
-	pr_ptd("put", tid, ptd);
+	printk("%s: ptd-put,refc=%d\n", __FUNCTION__, atomic_read(&ptd->refcount));
 
 	/* Final drop of reference for uti ptd */
 	mcctrl_put_per_thread_data(ptd);
-	pr_ptd("put", tid, ptd);
+	printk("%s: ptd-put,refc=%d\n", __FUNCTION__, atomic_read(&ptd->refcount));
 
 	if (atomic_read(&ptd->refcount) != 1) {
 		printk("%s: ERROR: ptd->refcount != 1 but %d\n", __FUNCTION__, atomic_read(&ptd->refcount));
 	}
 	mcctrl_put_per_thread_data(ptd);
-	pr_ptd("put", tid, ptd);
+	printk("%s: ptd-put,refc=%d\n", __FUNCTION__, atomic_read(&ptd->refcount));
  no_ptd:
-	printk("%s: target pid=%d,tid=%d,ppd->refcount=%d\n", __FUNCTION__, pid, tid, atomic_read(&ppd->refcount));
-	if ((rc = mcctrl_put_per_proc_data(ppd)) <= 0) {
-		printk("%s: mcctrl_put_per_proc_data failed,rc=%d\n", __FUNCTION__, rc);
-	}
+	mcctrl_put_per_proc_data(ppd);
+	printk("%s: ppd-put,refc=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
 
 #if 1
 	/* This is the final drop of uti-ppd */
-	printk("%s: target pid=%d,tid=%d,ppd->refcount=%d\n", __FUNCTION__, pid, tid, atomic_read(&ppd->refcount));
-	if ((rc = mcctrl_put_per_proc_data(ppd)) < 0) {
-		printk("%s: mcctrl_put_per_proc_data failed,rc=%d\n", __FUNCTION__, rc);
-	}
+	mcctrl_put_per_proc_data(ppd);
+	printk("%s: ppd-put,refc=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
 #endif
  no_ppd:
 	return 0;
@@ -2741,7 +2737,7 @@ mcexec_terminate_thread(ihk_os_t os, struct terminate_thread_desc * __user arg)
 		printk("%s: thread not found in host_threads list\n", __FUNCTION__);
 		return -ESRCH;
 	}
-#if 1 /* debug */
+#ifndef DEBUG_UTI /* debug */
 	list_del(&thread->list);
 	kfree(thread);
 #endif

@@ -2916,7 +2916,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 		exit(0);
 	}
 
-#if 1
+#if 0
 	/* Prevent tracer's exit from calling release_handler() with passing McKernel process info */
 	close(fd);
 	fd = opendev();
@@ -3639,11 +3639,12 @@ int main_loop(struct thread_data_s *my_thread)
 			   It is done by not calling do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
 			   here and making McKernel side wait until release_handler() is called. */
 
+#ifndef DEBUG_UTI
 			/* Drop executable file */
 			if ((ret = ioctl(fd, MCEXEC_UP_CLOSE_EXEC)) != 0) {
 				fprintf(stderr, "WARNING: close_exec() couldn't find exec file?\n");
 			}
-
+#endif
 			printf("%s: arg0=%lx,cpu_id=%d,rtid=%d\n", w.sr.number == __NR_exit_group ? "__NR_exit_group" : "__NR_exit", w.sr.args[0], cpu, my_thread->remote_tid);
 			if(w.sr.number == __NR_exit_group){
 				sig = w.sr.args[0] & 0x7f;
