@@ -69,6 +69,12 @@ int main(int argc, char** argv)
 		/* detach child */
 		rc = ptrace(PTRACE_DETACH, pid, NULL, NULL);
 		OKNG(rc != 0, "ptrace_detach");
+
+		/* wait child's exit */
+		rc = waitpid(pid, &status, 0);
+		CHKANDJUMP(rc == -1, "waitpid");
+
+		CHKANDJUMP(!WIFEXITED(status), "child is not exited");
 	}
 
 	printf("*** %s PASSED\n\n", TEST_NAME);

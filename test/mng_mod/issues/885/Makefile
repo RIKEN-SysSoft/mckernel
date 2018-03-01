@@ -2,7 +2,7 @@ CC = gcc
 MCK_DIR=/home/satoken/ppos
 
 MCEXEC=$(MCK_DIR)/bin/mcexec
-TARGET=CT_001 CT_002 CT_003 CT_004 CT_005 CT_006 CT_007 CT_008 CT_009
+TARGET=CT_001 CT_002 CT_003 CT_004 CT_005 CT_006 CT_007 CT_008 CT_009 CT_010 CT_011
 
 CPPFLAGS = 
 LDFLAGS = -pthread
@@ -36,6 +36,12 @@ CT_008: CT_008.c
 CT_009: CT_009.c
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+CT_010: CT_010.c
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+CT_011: CT_011.c
+	$(CC) -o $@ $^ $(LDFLAGS)
+
 test: all
 	$(MCEXEC) ./CT_001
 	$(MCEXEC) ./CT_002
@@ -47,6 +53,8 @@ test: all
 	$(MCEXEC) ./CT_007
 	$(MCEXEC) ./CT_008
 	$(MCEXEC) ./CT_009
+	$(MCEXEC) ./CT_010
+	$(MCEXEC) ./CT_011
 
 clean:
 	rm -f $(TARGET) *.o 

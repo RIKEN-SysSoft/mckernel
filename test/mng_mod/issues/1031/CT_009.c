@@ -24,7 +24,7 @@ int main(int argc, char** argv)
 	}
 	OKNG(tmp_flag != 1, "check SIGKILL act");
 
-	rc = sigaction(SIGKILL, NULL, &old_act);
+	rc = sigaction(SIGSTOP, NULL, &old_act);
 	OKNG(rc != 0, "sigaction to get SIGSTOP action");
 
 	tmp_flag = 0;

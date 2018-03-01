@@ -63,29 +63,29 @@ CT_005: 複数回(非上書き)のSIG_RESETHAND 指定時の動作
 
 CT_006: 設定中のハンドラ情報の取得 (上書き時)
 	1. SIG_RESETHANDを指定したsigaction()でSIG_USR1にハンドラを設定
-	2. sigaction(SIGUSR1, NULL, &act) で設定情報を取得
+	2. sigaction(SIGUSR1, NULL, &act) で設定情報を取得できる
 	3. SIG_RESETHANDを指定しないsigaction()でSIG_USR1にデフォルトハンドラを設定
-	4. sigaction(SIGUSR1, NULL, &act) で設定情報を取得
+	4. sigaction(SIGUSR1, NULL, &act) で3.で指定した設定情報を取得できる
 
 CT_007: 設定中のハンドラ情報の取得 (デフォルトに戻った時)
 	1. SIG_RESETHANDを指定したsigaction()でSIG_USR1にハンドラを設定
 	2. 自身にSIGUSR1を送る
 	3. 1.で登録したハンドラが呼び出される
-	4. sigaction(SIGUSR1, NULL, &act) で設定情報を取得
+	4. sigaction(SIGUSR1, NULL, &act) で設定情報を取得できる
 
 CT_008: 不正なsig_numへのハンドラ登録
-	1. 範囲外(上限、下限)のsignumへのハンドラ登録
-	2. SIGKILL, SIGSTOPへのハンドラ登録
+	1. 範囲外(上限、下限)のsignumへのハンドラ登録が失敗する
+	2. SIGKILL, SIGSTOPへのハンドラ登録が失敗する
 
 CT_009: SIGKILL, SIGSTOPのハンドラ情報の取得
-	1. sigaction(SIGKILL, NULL, &act) で設定情報を取得
-	2. sigaction(SIGSTOP, NULL, &act) で設定情報を取得
+	1. sigaction(SIGKILL, NULL, &act) で設定情報を取得できる
+	2. sigaction(SIGSTOP, NULL, &act) で設定情報を取得できる
 
 CT_010: sig_numの有効確認
-	1. sigaction(SIGUSR1, NULL, NULL) で有効かどうかを確認
-	2. sigaction(SIGKILL, NULL, NULL) で有効かどうかを確認
-	3. sigaction(SIGSTOP, NULL, NULL) で有効かどうかを確認
-	4. sigaction(_NSIG, NULL, NULL) で有効かどうかを確認
+	1. sigaction(SIGUSR1, NULL, NULL) が成功する（有効）
+	2. sigaction(SIGKILL, NULL, NULL) が成功する（有効）
+	3. sigaction(SIGSTOP, NULL, NULL) が成功する（有効）
+	4. sigaction(_NSIG, NULL, NULL) が失敗する（無効）
 
 3. 結果
 テストプログラムの実行結果をresult.log に示す。

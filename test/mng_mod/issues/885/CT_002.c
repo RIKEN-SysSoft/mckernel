@@ -65,6 +65,12 @@ int main(int argc, char** argv)
 		/* continue child */
 		rc = ptrace(PTRACE_CONT, pid, NULL, NULL);
 		OKNG(rc != 0, "ptrace_cont");
+
+		/* wait child's exit */
+		rc = waitpid(pid, &status, 0);
+		CHKANDJUMP(rc == -1, "waitpid");
+
+		CHKANDJUMP(!WIFEXITED(status), "child is not exited");
 	}
 
 	printf("*** %s PASSED\n\n", TEST_NAME);
