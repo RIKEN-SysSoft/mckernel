@@ -3,6 +3,10 @@
 #ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
 #include <linux/uaccess.h>
 #endif /* POSTK_DEBUG_ARCH_DEP_46 */
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_util_thread2() move to arch depend. */
+#include <linux/slab.h>
+#include <linux/rwlock_types.h>
+#endif /* POSTK_DEBUG_ARCH_DEP_99 */
 #include "../../../config.h"
 #include "../../mcctrl.h"
 
@@ -398,3 +402,58 @@ static inline bool pte_is_write_combined(pte_t pte)
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_12 */
 
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_util_thread2() move to arch depend. */
+long
+mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
+{
+	extern struct host_thread *host_threads;
+	extern rwlock_t host_thread_lock;
+	void *usp = get_user_sp();
+	struct mcos_handler_info *info;
+	struct host_thread *thread;
+	unsigned long flags;
+	void **__user param = (void **__user )arg;
+#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
+	void *__user rctx = NULL;
+	void *__user lctx = NULL;
+	void *kparam[3];
+#else /* POSTK_DEBUG_ARCH_DEP_46 */
+	void *__user rctx = (void *__user)param[1];
+	void *__user lctx = (void *__user)param[2];
+#endif /* POSTK_DEBUG_ARCH_DEP_46 */
+
+#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
+	if (copy_from_user(kparam, param, sizeof(kparam))) {
+		return -EFAULT;
+	}
+	rctx = (void *__user)kparam[1];
+	lctx = (void *__user)kparam[2];
+#endif /* POSTK_DEBUG_ARCH_DEP_46 */
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
+	save_tls_ctx(lctx);
+#else /* POSTK_DEBUG_ARCH_DEP_91 */
+	save_fs_ctx(lctx);
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
+	info = ihk_os_get_mcos_private_data(file);
+	thread = kmalloc(sizeof(struct host_thread), GFP_KERNEL);
+	memset(thread, '\0', sizeof(struct host_thread));
+	thread->pid = task_tgid_vnr(current);
+	thread->tid = task_pid_vnr(current);
+	thread->usp = (unsigned long)usp;
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
+	thread->ltls = get_tls_ctx(lctx);
+	thread->rtls = get_tls_ctx(rctx);
+#else /* POSTK_DEBUG_ARCH_DEP_91 */
+	thread->lfs = get_fs_ctx(lctx);
+	thread->rfs = get_fs_ctx(rctx);
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
+	thread->handler = info;
+
+	write_lock_irqsave(&host_thread_lock, flags);
+	thread->next = host_threads;
+	host_threads = thread;
+	write_unlock_irqrestore(&host_thread_lock, flags);
+
+	return 0;
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_99 */

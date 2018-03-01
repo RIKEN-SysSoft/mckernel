@@ -3,6 +3,10 @@
 #include <linux/mm_types.h>
 #include <linux/ptrace.h>
 #include <linux/uaccess.h>
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_util_thread2() move to arch depend. */
+#include <linux/slab.h>
+#include <linux/rwlock_types.h>
+#endif /* POSTK_DEBUG_ARCH_DEP_99 */
 #include <asm/vdso.h>
 #include "../../../config.h"
 #include "../../mcctrl.h"
@@ -316,3 +320,69 @@ static inline bool pte_is_write_combined(pte_t pte)
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_12 */
 
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_util_thread2() move to arch depend. */
+long
+mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
+{
+	extern struct host_thread *host_threads;
+	extern rwlock_t host_thread_lock;
+	int ret = 0;
+	void *usp = get_user_sp();
+	struct mcos_handler_info *info;
+	struct host_thread *thread;
+	unsigned long flags;
+	void **__user param = (void **__user)arg;
+	struct trans_uctx *__user rctx = NULL;
+	struct trans_uctx *__user lctx = NULL;
+	struct trans_uctx klctx;
+	void *kparam[3];
+
+	if (copy_from_user(kparam, param, sizeof(kparam))) {
+		ret = -EFAULT;
+		goto out;
+	}
+	rctx = (void *__user)kparam[1];
+	lctx = (void *__user)kparam[2];
+
+	klctx.cond = 0;
+	klctx.fregsize = 0;
+	klctx.regs = current_pt_regs()->user_regs;
+
+	if (copy_to_user(lctx, &klctx, sizeof(klctx))) {
+		ret = -EFAULT;
+		goto out;
+	}
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
+	save_tls_ctx(lctx);
+#else /* POSTK_DEBUG_ARCH_DEP_91 */
+	save_fs_ctx(lctx);
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
+	info = ihk_os_get_mcos_private_data(file);
+	thread = kmalloc(sizeof(struct host_thread), GFP_KERNEL);
+	memset(thread, '\0', sizeof(struct host_thread));
+	thread->pid = task_tgid_vnr(current);
+	thread->tid = task_pid_vnr(current);
+	thread->usp = (unsigned long)usp;
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
+	thread->ltls = get_tls_ctx(lctx);
+	thread->rtls = get_tls_ctx(rctx);
+#else /* POSTK_DEBUG_ARCH_DEP_91 */
+	thread->lfs = get_fs_ctx(lctx);
+	thread->rfs = get_fs_ctx(rctx);
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
+	thread->handler = info;
+
+	write_lock_irqsave(&host_thread_lock, flags);
+	thread->next = host_threads;
+	host_threads = thread;
+	write_unlock_irqrestore(&host_thread_lock, flags);
+
+	if (copy_from_user(&current_pt_regs()->user_regs,
+			   &rctx->regs, sizeof(rctx->regs))) {
+		ret = -EFAULT;
+		goto out;
+	}
+out:
+	return ret;
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_99 */

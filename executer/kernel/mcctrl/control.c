@@ -97,6 +97,9 @@ int mcctrl_ikc_set_recv_cpu(ihk_os_t os, int cpu);
 int syscall_backward(struct mcctrl_usrdata *, int, unsigned long, unsigned long,
                      unsigned long, unsigned long, unsigned long,
                      unsigned long, unsigned long *);
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_util_thread2() move to arch depend. */
+long mcexec_util_thread2(ihk_os_t, unsigned long, struct file *);
+#endif /* POSTK_DEBUG_ARCH_DEP_99 */
 
 static long mcexec_prepare_image(ihk_os_t os,
                                  struct program_load_desc * __user udesc)
@@ -325,6 +328,10 @@ struct mcos_handler_info {
 };
 
 struct mcos_handler_info;
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_util_thread2() move to arch depend. */
+struct host_thread *host_threads;
+DEFINE_RWLOCK(host_thread_lock);
+#else /* POSTK_DEBUG_ARCH_DEP_99 */
 static struct host_thread *host_threads;
 DEFINE_RWLOCK(host_thread_lock);
 
@@ -342,6 +349,7 @@ struct host_thread {
 	unsigned long rfs;
 #endif /* POSTK_DEBUG_ARCH_DEP_91 */
 };
+#endif /* POSTK_DEBUG_ARCH_DEP_99 */
 
 struct mcos_handler_info *new_mcos_handler_info(ihk_os_t os, struct file *file)
 {
@@ -2434,6 +2442,7 @@ static inline struct host_thread *get_host_thread(void)
 	return thread;
 }
 
+#ifndef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_util_thread2() move to arch depend. */
 long
 mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 {
@@ -2485,6 +2494,7 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 
 	return 0;
 }
+#endif /* !POSTK_DEBUG_ARCH_DEP_99 */
 
 long
 mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)

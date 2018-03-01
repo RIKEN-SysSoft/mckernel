@@ -500,4 +500,20 @@ struct mcctrl_ioctl_getrusage_desc {
 	size_t size_rusage;
 };
 
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_util_thread2() move to arch depend. */
+struct host_thread {
+	struct host_thread *next;
+	struct mcos_handler_info *handler;
+	int     pid;
+	int     tid;
+	unsigned long usp;
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
+	unsigned long ltls;
+	unsigned long rtls;
+#else /* POSTK_DEBUG_ARCH_DEP_91 */
+	unsigned long lfs;
+	unsigned long rfs;
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
+};
+#endif /* POSTK_DEBUG_ARCH_DEP_99 */
 #endif
