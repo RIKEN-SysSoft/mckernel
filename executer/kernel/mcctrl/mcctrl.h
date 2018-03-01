@@ -231,6 +231,7 @@ struct mcctrl_per_thread_data {
 	void *data;
 	int tid; /* debug */
 	atomic_t refcount;
+	int responded; /* To make sure return_syscall()-release_packet() pair is performed only once */
 };
 
 #define MCCTRL_PER_THREAD_DATA_HASH_SHIFT 8
