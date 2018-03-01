@@ -214,6 +214,8 @@ set_syscall_ret_or_arg1(syscall_args *args, unsigned long value, int ret_flag)
 			/* no effect */
 			goto out;
 		}
+		/* set original arg1 */
+		args->orig_x0 = value;
 	}
 	/* illigal ret_flag */
 	else {
