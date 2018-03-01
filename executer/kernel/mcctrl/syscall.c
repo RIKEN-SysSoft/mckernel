@@ -196,7 +196,7 @@ struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc
 	//kprintf("%s: tid=%d,hash=%x\n", __FUNCTION__, task_pid_vnr(task), hash);
 
 	/* Check if data for this thread exists */
-	write_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
+	read_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
 
 	list_for_each_entry(ptd_iter, &ppd->per_thread_data_hash[hash], hash) {
 		if (ptd_iter->task == task) {
@@ -215,7 +215,7 @@ struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc
 	}
 
  out:
-	write_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
+	read_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
 	return ptd;
 }
 #endif /* !POSTK_DEBUG_ARCH_DEP_56 */

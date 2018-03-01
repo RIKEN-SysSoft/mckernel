@@ -391,7 +391,7 @@ static void release_handler(ihk_os_t os, void *param)
 
 	printk("%s: param=%p,pid=%d,tid=%d\n", __FUNCTION__, param, task_tgid_vnr(current), task_pid_vnr(current));
 
-	/* Stop FS switch for uti threads */ 
+	/* Stop switching FS registers for uti thread */ 
 	write_lock_irqsave(&host_thread_lock, flags);
 	list_for_each_entry(thread, &host_threads, list) {
 		if (thread->handler != info) { /* Created by the caller of close() */
@@ -1153,6 +1153,8 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	struct wait_queue_head_list_node *wqhln;
 	struct wait_queue_head_list_node *wqhln_next;
 	struct ikc_scd_packet *packet;
+	struct mcctrl_per_thread_data *ptd;
+	struct mcctrl_per_thread_data *next;
 
 	if (!ppd)
 		return -EINVAL;
@@ -1172,12 +1174,27 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	printk("%s: deallocating PPD for pid %d\n", __FUNCTION__, ppd->pid);
 
 	for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; i++) {
-		struct mcctrl_per_thread_data *ptd;
-		struct mcctrl_per_thread_data *next;
 		write_lock_irqsave(&ppd->per_thread_data_hash_lock[i], flags);
 		list_for_each_entry_safe(ptd, next,
 		                         ppd->per_thread_data_hash + i, hash) {
+
+#ifdef DEBUG_UTI
+			if (atomic_read(&ptd->refcount) <= 0) {
+				continue;
+			}
+#endif
+			/* We use ERESTARTSYS to tell the LWK that the proxy
+			   process is gone and the application should be terminated. */
 			packet = (struct ikc_scd_packet *)ptd->data;
+			printk("%s: calling __return_syscall (hash),target pid=%d,tid=%d\n", __FUNCTION__, ppd->pid, packet->req.rtid);
+			__return_syscall(ppd->ud->os, packet, -ERESTARTSYS, packet->req.rtid);
+#ifndef DEBUG_UTI /* debug */
+			ihk_ikc_release_packet(
+					(struct ihk_ikc_free_packet *)packet,
+					(ppd->ud->ikc2linux[smp_processor_id()] ?
+					 ppd->ud->ikc2linux[smp_processor_id()] :
+					 ppd->ud->ikc2linux[0]));
+#endif
 
 			/* Note that uti ptd needs another put by mcexec_terminate_thread()
 			   (see mcexec_syscall_wait()).
@@ -1186,21 +1203,7 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 				printk("%s: WARNING: ptd->refcount != 1 but %d\n", __FUNCTION__, atomic_read(&ptd->refcount));
 			}
 			mcctrl_put_per_thread_data_unsafe(ptd);
-			pr_ptd("put", task_pid_vnr(current), ptd);
-
-			printk("%s: calling __return_syscall (hash),target pid=%d,tid=%d\n", __FUNCTION__, ppd->pid, packet->req.rtid);
-			/* We use ERESTARTSYS to tell the LWK that the proxy
-			   process is gone and the application should be terminated. 
-			   Note that this includes notifying uti thread when tracer isn't working. */
-			__return_syscall(ppd->ud->os, packet, -ERESTARTSYS,
-					packet->req.rtid);
-#if 1 /* debug */
-			ihk_ikc_release_packet(
-					(struct ihk_ikc_free_packet *)packet,
-					(ppd->ud->ikc2linux[smp_processor_id()] ?
-					 ppd->ud->ikc2linux[smp_processor_id()] :
-					 ppd->ud->ikc2linux[0]));
-#endif
+			pr_ptd("put", ptd->tid, ptd);
 		}
 		write_unlock_irqrestore(&ppd->per_thread_data_hash_lock[i], flags);
 	}
@@ -1902,7 +1905,6 @@ int mcexec_create_per_process_data(ihk_os_t os)
 
 int mcexec_destroy_per_process_data(ihk_os_t os, int pid)
 {
-	int rc;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd = NULL;
 
@@ -2651,22 +2653,12 @@ static long
 mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct task_struct *tsk)
 {
 	int rc;
-	struct host_thread *thread;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
 	struct mcctrl_per_thread_data *ptd;
 	struct ikc_scd_packet *packet;
 
 	printk("%s: target pid=%d,tid=%d,sig=%lx,task=%p\n", __FUNCTION__, pid, tid, sig, tsk);
-	list_for_each_entry(thread, &host_threads, list) {
-		if(thread->tid == tid) {
-			break;
-		}
-	}
-	if (!thread) {
-		printk("%s: thread not found in host_threads list\n", __FUNCTION__);
-		return -ESRCH;
-	}
 
 	ppd = mcctrl_get_per_proc_data(usrdata, pid);
 	if (!ppd) {
@@ -2674,13 +2666,14 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 				__FUNCTION__, pid);
 		goto no_ppd;
 	}
-	
+
 	ptd = mcctrl_get_per_thread_data(ppd, tsk);
 	if (!ptd) {
 		printk("%s: ERROR: mcctrl_get_per_thread_data failed\n", __FUNCTION__);
 		goto no_ptd;
 	}
 	pr_ptd("get", tid, ptd);
+
 	packet = (struct ikc_scd_packet *)ptd->data;
 	if (!packet) {
 		kprintf("%s: ERROR: no packet registered for TID %d\n",
@@ -2698,7 +2691,8 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 							usrdata->ikc2linux[smp_processor_id()] :
 							usrdata->ikc2linux[0]));
 #endif
-	printk("%s: calling mcctrl_put_per_thread_data,target pid=%d,tid=%d,ptd->refcount=%d\n", __FUNCTION__, pid, tid, atomic_read(&ptd->refcount));
+
+	printk("%s: ptd-put 3 times,target pid=%d,tid=%d,ptd->refcount=%d\n", __FUNCTION__, pid, tid, atomic_read(&ptd->refcount));
 
 	/* Drop reference for this function */
 	pr_ptd("put", tid, ptd);
@@ -2728,10 +2722,6 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 	}
 #endif
  no_ppd:
-#if 1 /* debug */
-	list_del(&thread->list);
-	kfree(thread);
-#endif
 	return 0;
 }
 
@@ -2741,6 +2731,7 @@ mcexec_terminate_thread(ihk_os_t os, struct terminate_thread_desc * __user arg)
 	long rc;
 	unsigned long flags;
 	struct terminate_thread_desc desc;
+	struct host_thread *thread;
 
     if (copy_from_user(&desc, arg, sizeof(struct terminate_thread_desc))) {
         return -EFAULT;
@@ -2748,9 +2739,24 @@ mcexec_terminate_thread(ihk_os_t os, struct terminate_thread_desc * __user arg)
 
 	printk("%s: target pid=%d,tid=%d\n", __FUNCTION__, desc.pid, desc.tid);
 
+	/* Stop switching FS registers for uti thread */
 	write_lock_irqsave(&host_thread_lock, flags);
-	rc = mcexec_terminate_thread_unsafe(os, desc.pid, desc.tid, desc.sig, (struct task_struct *)desc.tsk);
+	list_for_each_entry(thread, &host_threads, list) {
+		if(thread->tid == desc.tid) {
+			break;
+		}
+	}
+	if (!thread) {
+		printk("%s: thread not found in host_threads list\n", __FUNCTION__);
+		return -ESRCH;
+	}
+#if 1 /* debug */
+	list_del(&thread->list);
+	kfree(thread);
+#endif
 	write_unlock_irqrestore(&host_thread_lock, flags);
+
+	rc = mcexec_terminate_thread_unsafe(os, desc.pid, desc.tid, desc.sig, (struct task_struct *)desc.tsk);
 
 	return rc;
 }
