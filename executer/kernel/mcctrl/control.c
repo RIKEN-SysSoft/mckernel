@@ -1168,14 +1168,16 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 			   process is gone and the application should be terminated. */
 			packet = (struct ikc_scd_packet *)ptd->data;
 			printk("%s: calling __return_syscall (hash),target pid=%d,tid=%d\n", __FUNCTION__, ppd->pid, packet->req.rtid);
-			__return_syscall(ppd->ud->os, packet, -ERESTARTSYS, packet->req.rtid);
+			if (__sync_bool_compare_and_swap(&ptd->responded, 0 /* old */, 1 /* new */)) {
+				__return_syscall(ppd->ud->os, packet, -ERESTARTSYS, packet->req.rtid);
 #ifndef DEBUG_UTI /* debug */
-			ihk_ikc_release_packet(
-					(struct ihk_ikc_free_packet *)packet,
-					(ppd->ud->ikc2linux[smp_processor_id()] ?
-					 ppd->ud->ikc2linux[smp_processor_id()] :
-					 ppd->ud->ikc2linux[0]));
+				ihk_ikc_release_packet(
+									   (struct ihk_ikc_free_packet *)packet,
+									   (ppd->ud->ikc2linux[smp_processor_id()] ?
+										ppd->ud->ikc2linux[smp_processor_id()] :
+										ppd->ud->ikc2linux[0]));
 #endif
+			}
 
 			/* Note that uti ptd needs another put by mcexec_terminate_thread()
 			   (see mcexec_syscall_wait()).
@@ -1522,11 +1524,6 @@ retry_alloc:
 		goto put_ppd_out;
 	}
 
-	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-			(usrdata->ikc2linux[smp_processor_id()] ?
-			 usrdata->ikc2linux[smp_processor_id()] :
-			 usrdata->ikc2linux[0]));
-
 	/* Drop reference to zero and restart from add */
 	mcctrl_put_per_thread_data(ptd);
 	pr_ptd("put,in_kernel", task_pid_vnr(current), ptd);
@@ -1661,7 +1658,7 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 		kprintf("%s: ERROR: no packet registered for TID %d\n", 
 			__FUNCTION__, task_pid_vnr(current));
 		error = -EINVAL;
-		goto put_ppd_out;
+		goto no_packet;
 	}
 
 	if (ret.size > 0) {
@@ -1678,7 +1675,13 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 #endif
 		if (copy_from_user(rpm, (void *__user)ret.src, ret.size)) {
 			error = -EFAULT;
-			goto out;
+#ifndef DEBUG_UTI /* debug */
+			ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
+								   (usrdata->ikc2linux[smp_processor_id()] ?
+									usrdata->ikc2linux[smp_processor_id()] :
+									usrdata->ikc2linux[0]));
+#endif
+			goto no_packet;
 		}
 
 #ifdef CONFIG_MIC
@@ -1689,16 +1692,16 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 		ihk_device_unmap_memory(ihk_os_to_dev(os), phys, ret.size);
 	} 
 
-	__return_syscall(os, packet, ret.ret, task_pid_vnr(current));
-
-	error = 0;
-out:
-	/* Free packet */
-	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-			(usrdata->ikc2linux[smp_processor_id()] ?
-			 usrdata->ikc2linux[smp_processor_id()] :
-			 usrdata->ikc2linux[0]));
- put_ppd_out:
+	if (__sync_bool_compare_and_swap(&ptd->responded, 0 /* old */, 1 /* new */)) {
+		__return_syscall(os, packet, ret.ret, task_pid_vnr(current));
+#ifndef DEBUG_UTI /* debug */
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
+							   (usrdata->ikc2linux[smp_processor_id()] ?
+								usrdata->ikc2linux[smp_processor_id()] :
+								usrdata->ikc2linux[0]));
+#endif
+	}
+ no_packet:
 	/* Drop a reference for this function */
 	mcctrl_put_per_thread_data(ptd);
 	pr_ptd("put", task_pid_vnr(current), ptd);
@@ -2622,11 +2625,18 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 				__FUNCTION__, tid);
 		goto no_ptd;
 	}
-	__return_syscall(usrdata->os, packet, sig, tid);
-	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-						   (usrdata->ikc2linux[smp_processor_id()] ?
-							usrdata->ikc2linux[smp_processor_id()] :
-							usrdata->ikc2linux[0]));
+
+	if (__sync_bool_compare_and_swap(&ptd->responded, 0 /* old */, 1 /* new */)) {
+		__return_syscall(usrdata->os, packet, sig, tid);
+#ifndef DEBUG_UTI /* debug */
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
+							   (usrdata->ikc2linux[smp_processor_id()] ?
+								usrdata->ikc2linux[smp_processor_id()] :
+								usrdata->ikc2linux[0]));
+#endif
+	}
+
+	dprintk("%s: ptd-put 3 times,target pid=%d,tid=%d,ptd->refcount=%d\n", __FUNCTION__, pid, tid, atomic_read(&ptd->refcount));
 
 	/* Drop reference for this function */
 	mcctrl_put_per_thread_data(ptd);
