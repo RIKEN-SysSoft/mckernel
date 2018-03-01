@@ -13,6 +13,7 @@ typedef struct {
 	unsigned long orig_x0;
 	unsigned long ret_value;
 	pid_t target_pid;
+	int bypass;
 } syscall_args;
 
 enum ptrace_syscall_dir {
@@ -53,6 +54,7 @@ get_syscall_args(int pid, syscall_args *args)
 		return -1;
 	}
 	args->target_pid = pid;
+	args->bypass = 0;
 	memset(&iov, 0, sizeof(iov));
 	iov.iov_base = &args->regs;
 	iov.iov_len = sizeof(args->regs);
@@ -184,17 +186,45 @@ set_syscall_number(syscall_args *args, unsigned long value)
 	if (ret) {
 		printf("%s: ptrace(PTRACE_GETREGSET) failed. (%d)", __FUNCTION__, errno);
 	}
+	else {
+		if (value == (unsigned long)-1) {
+			args->bypass = 1;
+		}
+	}
 }
 
 static inline void
 set_syscall_ret_or_arg1(syscall_args *args, unsigned long value, int ret_flag)
 {
-	if ((ret_flag && syscall_enter(args)) ||
-	    (!ret_flag && !syscall_enter(args))) {
-		/* no effect */
-		return;
+	/* called by set_syscall_return() */
+	if (ret_flag == 1) {
+		/* stopped syscall-enter */
+		if (syscall_enter(args) == 1) {
+			/*  syscall no bypass */
+			if (args->bypass != 1) {
+				/* no effect */
+				goto out;
+			}
+		}
 	}
+	/* called by set_syscall_arg1() */
+	else if (ret_flag == 0) {
+		/* stopped syscall-return */
+		if (syscall_enter(args) == 0) {
+			/* no effect */
+			goto out;
+		}
+	}
+	/* illigal ret_flag */
+	else {
+		/* no effect */
+		goto out;
+	}
+
+	/* set value */
 	args->regs.regs[0] = value;
+out:
+	return;
 }
 
 static inline void
