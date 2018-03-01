@@ -441,7 +441,11 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 			req2.ttid = res.stid;
 
 			res.req_thread_status = IHK_SCD_REQ_THREAD_SPINNING;
+#ifdef POSTK_DEBUG_TEMP_FIX_26 /* do_syscall arg pid is not targetpid */
+			send_syscall(&req2, cpu, target_pid, &res);
+#else /* POSTK_DEBUG_TEMP_FIX_26 */
 			send_syscall(&req2, cpu, pid, &res);
+#endif /* POSTK_DEBUG_TEMP_FIX_26 */
 		}
 	}
 	if (req->rtid == -1) {
