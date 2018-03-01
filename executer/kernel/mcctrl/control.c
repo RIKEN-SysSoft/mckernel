@@ -379,7 +379,7 @@ static long mcexec_debug_log(ihk_os_t os, unsigned long arg)
 	return 0;
 }
 
-int mcexec_close_exec(ihk_os_t os);
+int mcexec_close_exec(ihk_os_t os, int pid);
 int mcexec_destroy_per_process_data(ihk_os_t os, int pid);
 
 static void release_handler(ihk_os_t os, void *param)
@@ -391,7 +391,7 @@ static void release_handler(ihk_os_t os, void *param)
 	unsigned long flags;
 	struct host_thread *thread;
 
-	printk("%s: param=%p,pid=%d,tid=%d\n", __FUNCTION__, param, task_tgid_vnr(current), task_pid_vnr(current));
+	printk("%s: param=%p,pid=%d,tid=%d for pid=%d\n", __FUNCTION__, param, task_tgid_vnr(current), task_pid_vnr(current), info->pid);
 
 	/* Stop switching FS registers for uti thread */ 
 	write_lock_irqsave(&host_thread_lock, flags);
@@ -403,13 +403,15 @@ static void release_handler(ihk_os_t os, void *param)
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
 	dprintk("%s: calling mcexec_close_exec\n", __FUNCTION__);
-	if ((rc = mcexec_close_exec(os))) {
+	if ((rc = mcexec_close_exec(os, info->pid))) {
 		dprintk("%s: INFO: mcexec_close_exec (%d)\n", __FUNCTION__, rc);
 	}
 #if 1 /* debug */
 	/* Note that it will call return_syscall() */
-	mcexec_destroy_per_process_data(os, info->pid);
 
+	if ((rc = mcexec_destroy_per_process_data(os, info->pid))) {
+		printk("%s: ERROR: mcexec_destroy_per_process_data failed,rc=%d\n", __FUNCTION__, rc);
+	}
 #endif
 #ifndef DEBUG_UTI /* debug */
 	memset(&isp, '\0', sizeof(isp));
@@ -1906,6 +1908,7 @@ int mcexec_destroy_per_process_data(ihk_os_t os, int pid)
 	struct mcctrl_per_proc_data *ppd = NULL;
 
 	ppd = mcctrl_get_per_proc_data(usrdata, pid);
+    dprintk("%s: pid=%d,tid=%d\n", __FUNCTION__, pid, task_pid_vnr(current));
 
 	if (ppd) {
 		/* One for the reference and one for deallocation.
@@ -1919,10 +1922,10 @@ int mcexec_destroy_per_process_data(ihk_os_t os, int pid)
 	}
 	else {
 		printk("%s: WARNING: no per process data for PID %d ?\n",
-			   __FUNCTION__, task_tgid_vnr(current));
+			   __FUNCTION__, pid);
 	}
 
-	dprintk("%s: exit,pid=%d,tid=%d\n", __FUNCTION__, task_tgid_vnr(current), task_pid_vnr(current));
+	dprintk("%s: exit,pid=%d,tid=%d\n", __FUNCTION__, pid, task_pid_vnr(current));
 	return 0;
 }
 
@@ -2037,7 +2040,7 @@ int mcexec_close_exec(ihk_os_t os, int pid)
 		
 	down(&mckernel_exec_file_lock);
 	list_for_each_entry(mcef, &mckernel_exec_files, list) {
-		if (mcef->os == os && mcef->pid == task_tgid_vnr(current)) {
+		if (mcef->os == os && mcef->pid == pid) {
 			dprintk("%s: exec file found,%p,%p\n", __FUNCTION__, mcef, mcef->fp);
 			allow_write_access(mcef->fp);
 			fput(mcef->fp);
@@ -3244,7 +3247,7 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 		return mcexec_open_exec(os, (char *)arg);
 
 	case MCEXEC_UP_CLOSE_EXEC:
-		return mcexec_close_exec(os);
+		return mcexec_close_exec(os, task_tgid_vnr(current));
 
 	case MCEXEC_UP_PREPARE_DMA:
 		return mcexec_pin_region(os, (unsigned long *)arg);
