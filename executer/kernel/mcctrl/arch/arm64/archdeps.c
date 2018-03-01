@@ -382,6 +382,7 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 		ret = -EFAULT;
 		goto out;
 	}
+	restore_tls(get_tls_ctx(rctx));
 out:
 	return ret;
 }
