@@ -1027,6 +1027,9 @@ static struct vm_operations_struct rus_vmops = {
 
 static int rus_mmap(struct file *file, struct vm_area_struct *vma)
 {
+#ifdef POSTK_DEBUG_ARCH_DEP_100 /* rus_mmap() setting vm_flags arch depend defined */
+	vma->vm_flags |= arch_vm_flags;
+#else /* POSTK_DEBUG_ARCH_DEP_100 */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,7,0)
 //	vma->vm_flags |= VM_RESERVED | VM_DONTEXPAND | VM_MIXEDMAP;
 	vma->vm_flags |= VM_RESERVED | VM_MIXEDMAP;
@@ -1034,6 +1037,7 @@ static int rus_mmap(struct file *file, struct vm_area_struct *vma)
 //	vma->vm_flags |= VM_DONTDUMP | VM_DONTEXPAND | VM_MIXEDMAP;
 	vma->vm_flags |= VM_DONTDUMP | VM_MIXEDMAP;
 #endif
+#endif /* POSTK_DEBUG_ARCH_DEP_100 */
 	vma->vm_ops = &rus_vmops;
 	return 0;
 }
