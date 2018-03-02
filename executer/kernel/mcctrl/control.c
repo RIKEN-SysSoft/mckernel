@@ -1165,14 +1165,15 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 			/* We use ERESTARTSYS to tell the LWK that the proxy
 			   process is gone and the application should be terminated. */
 			packet = (struct ikc_scd_packet *)ptd->data;
-			if (__sync_bool_compare_and_swap(&ptd->responded, 0 /* old */, 1 /* new */)) {
+			if (__sync_sub_and_fetch(&packet->refcount, 1) == 0) {
 				printk("%s: calling __return_syscall (hash),target pid=%d,tid=%d\n", __FUNCTION__, ppd->pid, packet->req.rtid);
 				__return_syscall(ppd->ud->os, packet, -ERESTARTSYS, packet->req.rtid);
-				ihk_ikc_release_packet(
-									   (struct ihk_ikc_free_packet *)packet,
+				ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 									   (ppd->ud->ikc2linux[smp_processor_id()] ?
 										ppd->ud->ikc2linux[smp_processor_id()] :
 										ppd->ud->ikc2linux[0]));
+			} else {
+				printk("%s: ERROR: invalid refcount: %d\n", __FUNCTION__, packet->refcount);
 			}
 
 			/* Note that uti ptd needs another put by mcexec_terminate_thread()
@@ -1196,12 +1197,15 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 		dprintk("%s: calling __return_syscall (wq_req_list),target pid=%d,tid=%d\n", __FUNCTION__, ppd->pid, packet->req.rtid);
 		/* We use ERESTARTSYS to tell the LWK that the proxy
 		 * process is gone and the application should be terminated */
-		__return_syscall(ppd->ud->os, packet, -ERESTARTSYS,
-				packet->req.rtid);
-		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-				(ppd->ud->ikc2linux[smp_processor_id()] ?
-				 ppd->ud->ikc2linux[smp_processor_id()] :
-				 ppd->ud->ikc2linux[0]));
+		if (__sync_sub_and_fetch(&packet->refcount, 1) == 0) {
+			__return_syscall(ppd->ud->os, packet, -ERESTARTSYS, packet->req.rtid);
+			ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
+								   (ppd->ud->ikc2linux[smp_processor_id()] ?
+									ppd->ud->ikc2linux[smp_processor_id()] :
+									ppd->ud->ikc2linux[0]));
+		} else {
+			printk("%s: ERROR: invalid refcount: %d\n", __FUNCTION__, packet->refcount);
+		}
 	}
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, flags);
 
@@ -1231,12 +1235,15 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 
 		/* We use ERESTARTSYS to tell the LWK that the proxy
 		 * process is gone and the application should be terminated */
-		__return_syscall(ud->os, packet, -ERESTARTSYS,
-				packet->req.rtid);
-		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-				(ud->ikc2linux[smp_processor_id()] ?
-				 ud->ikc2linux[smp_processor_id()] :
-				 ud->ikc2linux[0]));
+		if (__sync_sub_and_fetch(&packet->refcount, 1) == 0) {
+			__return_syscall(ud->os, packet, -ERESTARTSYS, packet->req.rtid);
+			ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
+								   (ud->ikc2linux[smp_processor_id()] ?
+									ud->ikc2linux[smp_processor_id()] :
+									ud->ikc2linux[0]));
+		} else {
+			printk("%s: ERROR: invalid refcount: %d\n", __FUNCTION__, packet->refcount);
+		}
 		return -1;
 	}
 
@@ -1688,7 +1695,7 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 		ihk_device_unmap_memory(ihk_os_to_dev(os), phys, ret.size);
 	} 
 
-	if (__sync_bool_compare_and_swap(&ptd->responded, 0 /* old */, 1 /* new */)) {
+	if (__sync_sub_and_fetch(&packet->refcount, 1) == 0) {
 		__return_syscall(os, packet, ret.ret, task_pid_vnr(current));
 #ifndef DEBUG_UTI /* debug */
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
@@ -1696,6 +1703,8 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 								usrdata->ikc2linux[smp_processor_id()] :
 								usrdata->ikc2linux[0]));
 #endif
+	} else {
+		printk("%s: ERROR: invalid refcount: %d\n", __FUNCTION__, packet->refcount);
 	}
  no_packet:
 	/* Drop a reference for this function */
@@ -2624,7 +2633,7 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 		goto no_ptd;
 	}
 
-	if (__sync_bool_compare_and_swap(&ptd->responded, 0 /* old */, 1 /* new */)) {
+	if (__sync_sub_and_fetch(&packet->refcount, 1) == 0) {
 		printk("%s: calling __return_syscall (uti),target pid=%d,tid=%d\n", __FUNCTION__, ppd->pid, packet->req.rtid);
 		__return_syscall(usrdata->os, packet, sig, tid);
 #ifndef DEBUG_UTI /* debug */
@@ -2633,6 +2642,8 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 								usrdata->ikc2linux[smp_processor_id()] :
 								usrdata->ikc2linux[0]));
 #endif
+	} else {
+		printk("%s: ERROR: invalid refcount: %d\n", __FUNCTION__, packet->refcount);
 	}
 
 	dprintk("%s: ptd-put 3 times,target pid=%d,tid=%d,ptd->refcount=%d\n", __FUNCTION__, pid, tid, atomic_read(&ptd->refcount));
