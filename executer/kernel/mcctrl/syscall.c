@@ -454,7 +454,7 @@ retry_alloc:
 
 	if (retry >= 5) {
 		kfree(wqhln);
-		kprintf("%s: INFO: mcexec is gone or retry count exceeded,pid=%d,ppd=%p,retry=%d\n", __FUNCTION__, task_tgid_vnr(current), ppd, retry);
+		kprintf("%s: INFO: retry count exceeded,pid=%d,tid=%d,retry=%d\n", __FUNCTION__, task_tgid_vnr(current), task_pid_vnr(current), retry);
 		syscall_ret = -EINVAL;
 		goto out;
 	}
@@ -468,7 +468,7 @@ retry_alloc:
 		unsigned long phys2;
 		struct syscall_response *resp2;
 
-		/* Note that wqhln->packet is a new packet */
+		/* Use the incoming packet */
 		packet = wqhln->packet;
 		free_packet = packet;
 		req = &packet->req;
@@ -481,7 +481,7 @@ retry_alloc:
 		if (resp != resp2) {
 			resp = resp2;
 			phys = phys2;
-			printk("%s: updated new remote PA for resp\n", __FUNCTION__);
+			printk("%s: INFO: updated new remote PA for resp\n", __FUNCTION__);
 		}
 	}
 
