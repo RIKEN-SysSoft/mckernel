@@ -4436,8 +4436,8 @@ return_execve2:
 				                  w.sr.args[2], w.sr.args[3]);
 			}
 			else {
-				ret = munmap((void *)w.sr.args[1],
-				             w.sr.args[2]);
+				printf("%s: uti, __NR_sched_setaffinity,munmap addr=%lx,size=%lx\n", __FUNCTION__, w.sr.args[1], w.sr.args[2]); fflush(stdout);
+				ret = munmap((void *)w.sr.args[1], w.sr.args[2]);
 				if (ret == -1)
 					ret = -errno;
 			}
