@@ -247,6 +247,7 @@ enum mcctrl_os_cpu_operation {
 struct ikc_scd_packet {
 	int msg;
 	int err;
+	int refcount;
 	union {
 		/* for traditional SCD_MSG_* */
 		struct {
