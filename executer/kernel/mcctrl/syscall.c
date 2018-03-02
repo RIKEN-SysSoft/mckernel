@@ -1572,7 +1572,7 @@ static int pager_req_release(ihk_os_t os, uintptr_t handle, int unref)
 	struct pager *p;
 	struct pager *free_pager = NULL;
 
-	dprintk("pager_req_relase(%p,%lx,%d)\n", os, handle, unref);
+	printk("pager_req_relase(%p,%lx,%d)\n", os, handle, unref);
 
 	error = down_interruptible(&pager_sem);
 	if (error) {
