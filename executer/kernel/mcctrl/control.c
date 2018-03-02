@@ -2642,7 +2642,6 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 static long
 mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct task_struct *tsk)
 {
-	int rc;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
 	struct mcctrl_per_thread_data *ptd;
