@@ -13,7 +13,7 @@
 #include <sys/stat.h>
 #include <linux/futex.h>
 
-#define NLOOP 1000
+#define NLOOP 10
 #define TS2NS(sec, nsec) ((unsigned long)(sec) * 1000000000ULL + (unsigned long)(nsec))
 #define SZCHUNK 4096
 #define IHK_DEVICE_CREATE_OS          0x112900
