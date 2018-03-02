@@ -350,7 +350,7 @@ int my_psm2_sendrecv(int rank, int sender, int receiver) {
 		nanosleep(&ts, NULL);
 		printf("."); fflush(stdout);
 		count++;
-		if (count > 30) {
+		if (count > 2) {
 			break;
 		}
 	}
