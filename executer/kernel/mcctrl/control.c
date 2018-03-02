@@ -1190,12 +1190,10 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 			if (__sync_sub_and_fetch(&packet->refcount, 1) == 0) {
 				printk("%s: calling __return_syscall (hash),target pid=%d,tid=%d\n", __FUNCTION__, ppd->pid, packet->req.rtid);
 				__return_syscall(ppd->ud->os, packet, -ERESTARTSYS, packet->req.rtid);
-#ifndef DEBUG_UTI /* debug */
 				ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 									   (ppd->ud->ikc2linux[smp_processor_id()] ?
 										ppd->ud->ikc2linux[smp_processor_id()] :
 										ppd->ud->ikc2linux[0]));
-#endif
 			} else {
 				printk("%s: ERROR: invalid refcount: %d\n", __FUNCTION__, packet->refcount);
 			}
@@ -1225,12 +1223,10 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 		 * process is gone and the application should be terminated */
 		if (__sync_sub_and_fetch(&packet->refcount, 1) == 0) {
 			__return_syscall(ppd->ud->os, packet, -ERESTARTSYS, packet->req.rtid);
-#ifndef DEBUG_UTI /* debug */
 			ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 								   (ppd->ud->ikc2linux[smp_processor_id()] ?
 									ppd->ud->ikc2linux[smp_processor_id()] :
 									ppd->ud->ikc2linux[0]));
-#endif
 		} else {
 			printk("%s: ERROR: invalid refcount: %d\n", __FUNCTION__, packet->refcount);
 		}
@@ -1267,12 +1263,10 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 		 * process is gone and the application should be terminated */
 		if (__sync_sub_and_fetch(&packet->refcount, 1) == 0) {
 			__return_syscall(ud->os, packet, -ERESTARTSYS, packet->req.rtid);
-#ifndef DEBUG_UTI /* debug */
 			ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 								   (ud->ikc2linux[smp_processor_id()] ?
 									ud->ikc2linux[smp_processor_id()] :
 									ud->ikc2linux[0]));
-#endif
 		} else {
 			printk("%s: ERROR: invalid refcount: %d\n", __FUNCTION__, packet->refcount);
 		}
@@ -1501,12 +1495,10 @@ retry_alloc:
 				task_tgid_vnr(current),
 				task_pid_vnr(current),
 				packet->req.number);
-#ifndef DEBUG_UTI /* debug */
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 				(usrdata->ikc2linux[smp_processor_id()] ?
 				 usrdata->ikc2linux[smp_processor_id()] :
 				 usrdata->ikc2linux[0]));
-#endif
 		goto retry;
 	}
 
@@ -1719,12 +1711,10 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 #endif
 		if (copy_from_user(rpm, (void *__user)ret.src, ret.size)) {
 			error = -EFAULT;
-#ifndef DEBUG_UTI /* debug */
 			ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 								   (usrdata->ikc2linux[smp_processor_id()] ?
 									usrdata->ikc2linux[smp_processor_id()] :
 									usrdata->ikc2linux[0]));
-#endif
 			goto no_packet;
 		}
 
@@ -1738,12 +1728,10 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 
 	if (__sync_sub_and_fetch(&packet->refcount, 1) == 0) {
 		__return_syscall(os, packet, ret.ret, task_pid_vnr(current));
-#ifndef DEBUG_UTI /* debug */
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 							   (usrdata->ikc2linux[smp_processor_id()] ?
 								usrdata->ikc2linux[smp_processor_id()] :
 								usrdata->ikc2linux[0]));
-#endif
 	} else {
 		printk("%s: ERROR: invalid refcount: %d\n", __FUNCTION__, packet->refcount);
 	}
@@ -2689,12 +2677,10 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 	if (__sync_sub_and_fetch(&packet->refcount, 1) == 0) {
 		printk("%s: calling __return_syscall (uti),target pid=%d,tid=%d\n", __FUNCTION__, ppd->pid, packet->req.rtid);
 		__return_syscall(usrdata->os, packet, sig, tid);
-#ifndef DEBUG_UTI /* debug */
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 							   (usrdata->ikc2linux[smp_processor_id()] ?
 								usrdata->ikc2linux[smp_processor_id()] :
 								usrdata->ikc2linux[0]));
-#endif
 	} else {
 		printk("%s: ERROR: invalid refcount: %d\n", __FUNCTION__, packet->refcount);
 	}

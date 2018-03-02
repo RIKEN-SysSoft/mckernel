@@ -545,15 +545,13 @@ retry_alloc:
 	kfree(wqhln);
 	syscall_ret = 0;
 out:
-#ifndef DEBUG_UTI /* debug */
-	/* Release remote page-fault response packet */
+	/* Release packet sent from McKernel */
 	if (free_packet) {
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)free_packet,
 							   (usrdata->ikc2linux[smp_processor_id()] ?
 								usrdata->ikc2linux[smp_processor_id()] :
 								usrdata->ikc2linux[0]));
 	}
-#endif
 	ihk_device_unmap_virtual(ihk_os_to_dev(usrdata->os), resp, sizeof(*resp));
 	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
 
@@ -760,7 +758,6 @@ retry_alloc:
 	kfree(wqhln);
 	error = 0;
 out:
-#ifndef DEBUG_UTI /* debug */
 	/* Release remote page-fault response packet */
 	if (free_packet) {
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)free_packet,
@@ -768,7 +765,7 @@ out:
 								usrdata->ikc2linux[smp_processor_id()] :
 								usrdata->ikc2linux[0]));
 	}
-#endif
+
 	ihk_device_unmap_virtual(ihk_os_to_dev(usrdata->os), resp, sizeof(*resp));
 	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
 
@@ -2657,12 +2654,10 @@ sched_setparam_out:
 
 	if (__sync_sub_and_fetch(&packet->refcount, 1) == 0) {
 		__return_syscall(os, packet, ret, 0);
-#ifndef DEBUG_UTI /* debug */
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 							   (usrdata->ikc2linux[smp_processor_id()] ?
 								usrdata->ikc2linux[smp_processor_id()] :
 								usrdata->ikc2linux[0]));
-#endif
 	} else {
 		printk("%s: ERROR: invalid refcount: %d\n", __FUNCTION__, packet->refcount);
 	}
