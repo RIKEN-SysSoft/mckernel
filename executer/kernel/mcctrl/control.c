@@ -1236,7 +1236,7 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 #if 0 /* debug */
 	pager_remove_process(ppd);
 #endif
-#if 0 /* debug */
+#if 1 /* debug */
 	kfree(ppd);
 #endif
 	return 0;
