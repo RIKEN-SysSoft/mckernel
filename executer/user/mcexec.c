@@ -2983,7 +2983,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 
 #ifdef DEBUG_UTI
 	//fprintf(stderr, "tracer PID=%d\n", getpid());
-	signal(SIGINT, debug_sig);
+	//signal(SIGINT, debug_sig);
 #endif
 	for (;;) {
 		ptrace(PTRACE_SYSCALL, uti_desc->tid, 0, sig);
@@ -4398,8 +4398,8 @@ return_execve2:
 				                  w.sr.args[2], w.sr.args[3]);
 			}
 			else {
-				ret = munmap((void *)w.sr.args[1],
-				             w.sr.args[2]);
+				printf("%s: uti, __NR_sched_setaffinity,munmap addr=%lx,size=%lx\n", __FUNCTION__, w.sr.args[1], w.sr.args[2]); fflush(stdout);
+				ret = munmap((void *)w.sr.args[1], w.sr.args[2]);
 				if (ret == -1)
 					ret = -errno;
 			}
