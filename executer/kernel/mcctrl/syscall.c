@@ -188,6 +188,7 @@ int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data *ppd, void *data)
 	ptd->task = current;
 	ptd->tid = task_pid_vnr(current);
 	ptd->data = data;
+	rwlock_init(&ptd->data_lock);
 	atomic_set(&ptd->refcount, 1);
 	list_add_tail(&ptd->hash, &ppd->per_thread_data_hash[hash]); 
 
@@ -363,6 +364,7 @@ long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
 	unsigned long syscall_ret;
 	struct wait_queue_head_list_node *wqhln;
 	unsigned long irqflags;
+	unsigned long flags;
 	struct mcctrl_per_proc_data *ppd;
 	struct mcctrl_per_thread_data *ptd;
 	unsigned long phys;
@@ -400,6 +402,10 @@ long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
 		goto no_ptd;
 	}
 	pr_ptd("get", task_pid_vnr(current), ptd);
+
+	/* Mutual exclusion with remote_page_fault() */
+	write_lock_irqsave(&ptd->data_lock, flags);
+
 	packet = (struct ikc_scd_packet *)ptd->data;
 	if (!packet) {
 		syscall_ret = -ENOENT;
@@ -542,6 +548,7 @@ out:
 	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
 
 out_put_ppd:
+	write_unlock_irqrestore(&ptd->data_lock, flags);
 	mcctrl_put_per_thread_data(ptd);
 	pr_ptd("put", task_pid_vnr(current), ptd);
  no_ptd:
@@ -561,6 +568,7 @@ int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t
 	int error;
 	struct wait_queue_head_list_node *wqhln;
 	unsigned long irqflags;
+	unsigned long flags;
 	struct mcctrl_per_proc_data *ppd;
 	struct mcctrl_per_thread_data *ptd;
 	unsigned long phys;
@@ -585,6 +593,10 @@ int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t
 		goto no_ptd;
 	}
 	pr_ptd("get", task_pid_vnr(current), ptd);
+
+	/* Mutual exclusion with syscall_backward() */
+	write_lock_irqsave(&ptd->data_lock, flags);
+
 	packet = (struct ikc_scd_packet *)ptd->data;
 	if (!packet) {
 		printk("%s: no packet registered for TID %d\n",
@@ -756,6 +768,7 @@ out:
 	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
 
 out_put_ppd:
+    write_unlock_irqrestore(&ptd->data_lock, flags);
 	mcctrl_put_per_thread_data(ptd);
 	pr_ptd("put", task_pid_vnr(current), ptd);
  no_ptd:
