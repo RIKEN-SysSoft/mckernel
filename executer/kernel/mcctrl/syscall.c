@@ -395,7 +395,7 @@ long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
 
 	ptd = mcctrl_get_per_thread_data(ppd, current);
 	if (!ptd) {
-		printk("%s: ERROR: mcctrl_get_per_thread_data failed\n", __FUNCTION__);
+		printk("%s: ERROR: no ptd found,tid=%d\n", __FUNCTION__, task_pid_vnr(current));
 		syscall_ret = -ENOENT;
 		goto no_ptd;
 	}
@@ -403,8 +403,12 @@ long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
 	packet = (struct ikc_scd_packet *)ptd->data;
 	if (!packet) {
 		syscall_ret = -ENOENT;
-		printk("%s: no packet registered for TID %d\n",
-				__FUNCTION__, task_pid_vnr(current));
+		printk("%s: ERROR: no packet found,tid=%d\n", __FUNCTION__, task_pid_vnr(current));
+		goto out_put_ppd;
+	}
+	if (packet->refcount <= 0) {
+		syscall_ret = -ENOENT;
+		printk("%s: ERROR: invalid packet refcount (%d),tid=%d\n", __FUNCTION__, packet->refcount, task_pid_vnr(current));
 		goto out_put_ppd;
 	}
 
