@@ -1241,8 +1241,8 @@ retry_alloc:
 
 	wqhln->packet = packet;
 	wqhln->req = 1;
-	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, flags);
 	wake_up(&wqhln->wq_syscall);
+	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, flags);
 
 	mcctrl_put_per_proc_data(ppd);
 
