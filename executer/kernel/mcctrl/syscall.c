@@ -110,6 +110,8 @@ void mcctrl_put_per_thread_data_unsafe(struct mcctrl_per_thread_data *ptd)
 
 #ifndef DEBUG_UTI /* debug */
 	list_del(&ptd->hash);
+#endif
+#if 0
 	kfree(ptd);
 #endif
 }
