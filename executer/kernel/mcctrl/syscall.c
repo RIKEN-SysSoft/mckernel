@@ -1803,7 +1803,7 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd = NULL;
 
-	dprintk("pager_req_map(%p,%d,%lx,%lx,%lx)\n", os, fd, len, off, result_rpa);
+	printk("pager_req_map(%p,%d,%lx,%lx,%lx)\n", os, fd, len, off, result_rpa);
 
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 	if (unlikely(!ppd)) {
@@ -1932,7 +1932,7 @@ static int pager_req_pfn(ihk_os_t os, uintptr_t handle, off_t off, uintptr_t ppf
 	uintptr_t *ppfn;
 	int page_fault_attempted = 0;
 
-	dprintk("pager_req_pfn(%p,%lx,%lx)\n", os, handle, off);
+	dprintk("pager_req_pfn(%lx,%lx,%lx)\n", handle, off, ppfn_rpa);
 
 	if ((off < pager->map_off) || ((pager->map_off+pager->map_len) < (off + PAGE_SIZE))) {
 		error = -ERANGE;
@@ -2058,7 +2058,7 @@ static int pager_req_unmap(ihk_os_t os, uintptr_t handle)
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd = NULL;
 
-	dprintk("pager_req_unmap(%p,%lx)\n", os, handle);
+	printk("pager_req_unmap(%p,%lx)\n", os, handle);
 
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 	if (unlikely(!ppd)) {

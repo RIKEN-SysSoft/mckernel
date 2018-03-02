@@ -2599,23 +2599,18 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	write_lock_irqsave(&host_thread_lock, flags);
 	list_add_tail(&thread->list, &host_threads);
 	write_unlock_irqrestore(&host_thread_lock, flags);
-#if 1
-	/* How ppd refcount reaches zero depends on how utility-thread exits:
-         MCEXEC_UP_CREATE_PPD: set to 1
-         mcexec_util_thread2: inc to 2
 
-  	     tracer alive:
-		   create_tracer()
-		     tracer detects exit/exit_group/killed by signal
-               mcexec_terminate_thread: dec to 1
-	       release_handler(): dec to 0
+	/* How ppd refcount reaches zero depends on how utility-thread exits:
+         (1) MCEXEC_UP_CREATE_PPD: set to 1
+         (2) mcexec_util_thread2: inc to 2
+		 (3) tracer detects exit/exit_group/killed by signal
+             and calls mcexec_terminate_thread() to dec to 1
+	     (4) release_handler(): dec to 0
 
 	     KNOWN ISSUE: 
-           mcexec_terminate_thread() isn't called when tracer is dead
-	       so the refcount is 1 when exiting release_handler()
+           refcount remains 1 when tracer failed to call mcexec_terminate_thread()
 	*/
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
-#endif
 	return 0;
 }
 
@@ -2706,11 +2701,9 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 	mcctrl_put_per_proc_data(ppd);
 	printk("%s: ppd-put,refc=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
 
-#if 1
 	/* This is the final drop of uti-ppd */
 	mcctrl_put_per_proc_data(ppd);
 	printk("%s: ppd-put,refc=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
-#endif
  no_ppd:
 	return 0;
 }
