@@ -2661,6 +2661,10 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 		printk("%s: ERROR: mcctrl_get_per_thread_data failed\n", __FUNCTION__);
 		goto no_ptd;
 	}
+	if (ptd->tid != tid) {
+		printk("%s: ERROR: ptd->tid(%d) != tid(%d)\n", __FUNCTION__, ptd->tid, tid);
+		goto no_ptd;
+	}
 	pr_ptd("get", tid, ptd);
 
 	packet = (struct ikc_scd_packet *)ptd->data;
