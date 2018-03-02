@@ -525,26 +525,8 @@ retry_alloc:
 		syscall_ret = -EIO;
 		goto out;
 	}
-#define	PAGER_REQ_RESUME	0x0101
-	else if (req->args[0] != PAGER_REQ_RESUME) {
-		printk("%s:unexpected response. %lx %lx\n",
-		       __FUNCTION__, req->number, req->args[0]);
-#if 0
-		resp->ret = pager_call(usrdata->os, (void *)req);
 
-		if (__notify_syscall_requester(usrdata->os, packet, resp) < 0) {
-			printk("%s: WARNING: failed to notify PID %d\n",
-					__FUNCTION__, packet->pid);
-		}
-
-		mb();
-#endif
-		syscall_ret = -EIO;
-		goto out;
-	}
-	else {
-		*ret = req->args[1];
-	}
+	*ret = req->args[1];
 
 	kfree(wqhln);
 	syscall_ret = 0;
