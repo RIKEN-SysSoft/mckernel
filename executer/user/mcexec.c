@@ -3639,7 +3639,7 @@ int main_loop(struct thread_data_s *my_thread)
 			   It is done by not calling do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
 			   here and making McKernel side wait until release_handler() is called. */
 
-#ifndef DEBUG_UTI
+#if 0
 			/* Drop executable file */
 			if ((ret = ioctl(fd, MCEXEC_UP_CLOSE_EXEC)) != 0) {
 				fprintf(stderr, "WARNING: close_exec() couldn't find exec file?\n");
