@@ -1233,9 +1233,7 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	}
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, flags);
 
-#if 0 /* debug */
 	pager_remove_process(ppd);
-#endif
 #if 1 /* debug */
 	kfree(ppd);
 #endif

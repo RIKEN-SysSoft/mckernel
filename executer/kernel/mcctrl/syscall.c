@@ -876,8 +876,10 @@ void rus_page_hash_put_pages(void)
 		list_for_each_entry_safe(rp_iter, rp_iter_next,
 				&rus_page_hash[i], hash) {
 			list_del(&rp_iter->hash);
-
+			//printk("%s: putting page,pfn=%lx,refcount=%d\n", __FUNCTION__, page_to_pfn(rp_iter->page), rp_iter->refcount);
+#if 0 /* debug */
 			put_page(rp_iter->page);
+#endif
 			kfree(rp_iter);
 		}
 	}
@@ -1572,7 +1574,7 @@ static int pager_req_release(ihk_os_t os, uintptr_t handle, int unref)
 	struct pager *p;
 	struct pager *free_pager = NULL;
 
-	printk("pager_req_release(%p,%lx,%d)\n", os, handle, unref);
+	dprintk("pager_req_release(%p,%lx,%d)\n", os, handle, unref);
 
 	error = down_interruptible(&pager_sem);
 	if (error) {
@@ -1803,7 +1805,7 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd = NULL;
 
-	printk("pager_req_map(%p,%d,%lx,%lx,%lx)\n", os, fd, len, off, result_rpa);
+	dprintk("pager_req_map(%p,%d,%lx,%lx,%lx)\n", os, fd, len, off, result_rpa);
 
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 	if (unlikely(!ppd)) {
