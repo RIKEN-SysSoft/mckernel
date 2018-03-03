@@ -808,6 +808,20 @@ static int rus_page_hash_insert(struct page *page)
 		rp->put_page = 0;
 
 		get_page(page);
+		{
+			int _count = 0;
+			struct page* page_head = NULL;
+			int compound = PageCompound(page);
+			if (compound) {
+				page_head = compound_head_by_tail(page);
+				_count = atomic_read(&page_head->_count);
+			} else {
+				_count = atomic_read(&page->_count);
+			}
+			if (!compound || page == page_head) {
+				printk("%s: get page,pfn=%lx,compoun=%d,_count=%d\n", __FUNCTION__, page_to_pfn(page), compound, _count);
+			}
+		}
 
 		rp->refcount = 0; /* Will be increased below */
 
@@ -836,10 +850,32 @@ void rus_page_hash_put_pages(void)
 
 		list_for_each_entry_safe(rp_iter, rp_iter_next,
 				&rus_page_hash[i], hash) {
+			int _count = 0;
+			struct page *page = rp_iter->page;
+			struct page *page_head = NULL;
+			int compound = PageCompound(page);
+			if (compound) {
+				page_head = compound_head_by_tail(page);
+				_count = atomic_read(&page_head->_count);
+			} else {
+				_count = atomic_read(&page->_count);
+			}
+			if (!compound || page == page_head) {
+				printk("%s: put page,pfn=%lx,compound=%d,_count=%d\n", __FUNCTION__, page_to_pfn(page), compound, _count);
+			}
 			list_del(&rp_iter->hash);
 
-			put_page(rp_iter->page);
-			kfree(rp_iter);
+			if (_count == 1) {
+				dprintk("%s: INFO: put_page,pa=%lx000,compound=%d,_count=%d\n", __FUNCTION__, page_to_pfn(page), compound, _count);
+			}
+#if 1 /* debug */ /* It looks like a live page (page backed by /dev/shm/<name>?) is dropped when using uti */
+			if (_count != 1) {
+#endif
+				put_page(rp_iter->page);
+				kfree(rp_iter);
+#if 1
+			}
+#endif
 		}
 	}
 
@@ -1292,9 +1328,10 @@ void pager_remove_process(struct mcctrl_per_proc_data *ppd)
 		kfree(pager);
 	}
 
+#if 0 /* It looks like it drops a live page when using uti */
 	/* Flush page hash as well */
 	rus_page_hash_put_pages();
-
+#endif
 out:
 	up(&pager_sem);
 }
@@ -1372,7 +1409,28 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 		goto out;
 	}
 	if (S_ISCHR(st.mode) && (MAJOR(st.rdev) == 1)) {
-		/* treat memory devices as regular files */
+		/* Treat memory devices such as /dev/mem as regular files
+		   except /dev/hfi1_0 */
+		char *pathbuf, *fullpath;
+
+		file = fget(fd);
+		if (!file) {
+			error = -EBADF;
+			printk("pager_req_create(%d,%lx):file not found. %d\n", fd, (long)result_pa, error);
+			goto out;
+		}
+
+		pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+		if (pathbuf) {
+			fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
+			if (!IS_ERR(fullpath)) {
+				printk("%s: INFO: path=%s\n", __FUNCTION__, fullpath);
+			}
+			kfree(pathbuf);
+		}
+
+		fput(file);
+		file = NULL;
 	}
 	else if (!S_ISREG(st.mode)) {
 		error = -ESRCH;
@@ -1524,7 +1582,7 @@ static int pager_req_release(ihk_os_t os, uintptr_t handle, int unref)
 	struct pager *p;
 	struct pager *free_pager = NULL;
 
-	printk("pager_req_release(%p,%lx,%d)\n", os, handle, unref);
+	dprintk("pager_req_release(%p,%lx,%d)\n", os, handle, unref);
 
 	error = down_interruptible(&pager_sem);
 	if (error) {
@@ -1755,7 +1813,7 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd = NULL;
 
-	printk("pager_req_map(%p,%d,%lx,%lx,%lx)\n", os, fd, len, off, result_rpa);
+	dprintk("pager_req_map(%p,%d,%lx,%lx,%lx)\n", os, fd, len, off, result_rpa);
 
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 	if (unlikely(!ppd)) {
