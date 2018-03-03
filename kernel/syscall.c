@@ -1565,7 +1565,9 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 			}
 			error = devobj_create(fd, len, off, &memobj, &maxprot, 
 					prot, (flags & (MAP_POPULATE | MAP_LOCKED)));
-
+			
+			dkprintf("%s: device fd: %d off: %lx mapping at %p - %p\n", 
+						__FUNCTION__, fd, off, addr, addr + len); 
 			if (!error) {
 #ifdef PROFILE_ENABLE
 				profile_event_add(PROFILE_mmap_device_file, len);
@@ -1573,6 +1575,9 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 				dkprintf("%s: device fd: %d off: %lu mapping at %p - %p\n", 
 						__FUNCTION__, fd, off, addr, addr + len); 
 			}
+		} else {
+			dkprintf("%s: regular file fd: %d off: %lx mapping at %p - %p\n", 
+						__FUNCTION__, fd, off, addr, addr + len); 
 		}
 		if (error) {
 			kprintf("%s: error: file mapping failed, fd: %d, error: %d\n",
