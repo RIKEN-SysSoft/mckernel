@@ -1520,7 +1520,7 @@ static int pager_req_release(ihk_os_t os, uintptr_t handle, int unref)
 
 	error = down_interruptible(&pager_sem);
 	if (error) {
-		printk("pager_req_relase(%p,%lx,%d):signaled. %d\n", os, handle, unref, error);
+		printk("pager_req_release(%p,%lx,%d):signaled. %d\n", os, handle, unref, error);
 		goto out;
 	}
 
@@ -1540,7 +1540,7 @@ static int pager_req_release(ihk_os_t os, uintptr_t handle, int unref)
 	up(&pager_sem);
 
 	if (error) {
-		printk("pager_req_relase(%p,%lx,%d):pager not found. %d\n", os, handle, unref, error);
+		printk("pager_req_release(%p,%lx,%d):pager not found. %d\n", os, handle, unref, error);
 		goto out;
 	}
 
@@ -1556,7 +1556,7 @@ static int pager_req_release(ihk_os_t os, uintptr_t handle, int unref)
 
 	error = 0;
 out:
-	dprintk("pager_req_relase(%p,%lx,%d): %d\n", os, handle, unref, error);
+	dprintk("pager_req_release(%p,%lx,%d): %d\n", os, handle, unref, error);
 	return error;
 }
 
