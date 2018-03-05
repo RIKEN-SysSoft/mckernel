@@ -1470,7 +1470,7 @@ retry_alloc:
 	pr_ptd("get", task_pid_vnr(current), ptd);
 
 	if (packet->req.number == __NR_sched_setaffinity  && packet->req.args[0] == 0) {
-		dkprintf("%s: uti,packet=%p,tid=%d\n", __FUNCTION__, packet, task_pid_vnr(current));
+		dprintk("%s: uti,packet=%p,tid=%d\n", __FUNCTION__, packet, task_pid_vnr(current));
 
 		/* Get a reference valid until thread-offload is done */
 		ptd = mcctrl_get_per_thread_data(ppd, current);
