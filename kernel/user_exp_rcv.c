@@ -136,6 +136,22 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 		len = (base_vaddr + base_pgsize - vaddr);
 		ret = 0;
 
+		/* Are we right at a page border? */
+		if (len == 0) {
+			ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+					(void*)vaddr, 0,
+					(void**)&base_vaddr,
+					&base_pgsize, 0);
+			if (unlikely(!ptep || !pte_is_present(ptep))) {
+				kprintf("%s: ERROR: no valid  PTE for 0x%lx\n",
+						__FUNCTION__, vaddr);
+				return -EFAULT;
+			}
+
+			phys = pte_get_phys(ptep) + (vaddr - base_vaddr);
+			len = (base_vaddr + base_pgsize - vaddr);
+		}
+
 		/* Collect max physically contiguous chunk */
 		while (len < MAX_EXPECTED_BUFFER &&
 				vaddr + len < vaddr_end) {
@@ -183,8 +199,10 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 
 		ret = program_rcvarray(fd, vaddr, phys, len, tidlist + tididx);
 		if (ret <= 0) {
-			kprintf("Failed to program RcvArray entries: %d\n",
-					ret);
+			kprintf("%s: failed to program RcvArray entries for len: %lu"
+					", vaddr: 0x%lx, vaddr_end: 0x%lx, ret: %d\n",
+					__FUNCTION__, len, vaddr, vaddr_end, ret);
+			panic("program_rcvarray() failed");
 			ret = -EFAULT;
 		}
 
@@ -297,6 +315,7 @@ static int program_rcvarray(struct hfi1_filedata *fd,
 				if (!uctxt->tid_group_list.count) {
 					spin_unlock(&fd->tid_lock);
 					/* return what we have so far */
+					kprintf("%s: ERROR: no grp?\n", __FUNCTION__);
 					return count ? count : -ENOMEM;
 				}
 
@@ -324,8 +343,11 @@ static int program_rcvarray(struct hfi1_filedata *fd,
 			EXP_TID_SET(LEN, tid_npages);
 		ret = set_rcvarray_entry(fd, vaddr, phys, rcventry,
 				grp, tid_npages, tidinfo);
-		if (ret)
+		if (ret) {
+			kprintf("%s: set_rcvarray_entry() failed: %d\n",
+				__FUNCTION__, ret);
 			return ret;
+		}
 
 		ptid[count++] = tidinfo;
 		len -= tid_len;
@@ -367,8 +389,10 @@ static int set_rcvarray_entry(struct hfi1_filedata *fd,
 	 */
 	node = kmalloc_cache_alloc(&cpu_local_var(tid_node_cache),
 			sizeof(*node));
-	if (!node)
+	if (!node) {
+		kprintf("%s: ERROR: allocating node\n", __FUNCTION__);
 		return -ENOMEM;
+	}
 
 	dkprintf("Registering rcventry %d, phys 0x%p, len %u\n", rcventry,
 		 phys, npages << PAGE_SHIFT);
