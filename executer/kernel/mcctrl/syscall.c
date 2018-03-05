@@ -858,7 +858,7 @@ static int rus_page_hash_insert(struct page *page)
 				_count = atomic_read(&page->_count);
 			}
 			if (!compound || page == page_head) {
-				printk("%s: get page,pfn=%lx,compoun=%d,_count=%d\n", __FUNCTION__, page_to_pfn(page), compound, _count);
+				dprintk("%s: get page,pfn=%lx,compound=%d,_count=%d\n", __FUNCTION__, page_to_pfn(page), compound, _count);
 			}
 		}
 
@@ -900,7 +900,7 @@ void rus_page_hash_put_pages(void)
 				_count = atomic_read(&page->_count);
 			}
 			if (!compound || page == page_head) {
-				printk("%s: put page,pfn=%lx,compound=%d,_count=%d\n", __FUNCTION__, page_to_pfn(page), compound, _count);
+				dprintk("%s: put page,pfn=%lx,compound=%d,_count=%d\n", __FUNCTION__, page_to_pfn(page), compound, _count);
 			}
 			list_del(&rp_iter->hash);
 
