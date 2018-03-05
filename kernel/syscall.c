@@ -496,10 +496,12 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 				__FUNCTION__, PROFILE_SYSCALL_MAX, req->number);
 	}
 #endif // PROFILE_ENABLE
-#if 1
+#if 0
 	if (req->number == __NR_open && rc > 0) {
 		if (!strncmp((const char *)req->args[0], "/dev/hfi", 8)) {
 			cpu_local_var(current)->hfi_fd = rc;
+			kprintf("%s: path=%s,fd=%d\n", __FUNCTION__, (const char *)req->args[0], rc);
+		} else {
 			kprintf("%s: path=%s,fd=%d\n", __FUNCTION__, (const char *)req->args[0], rc);
 		}
 	}
@@ -1575,7 +1577,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 			error = devobj_create(fd, len, off, &memobj, &maxprot, 
 					prot, (flags & (MAP_POPULATE | MAP_LOCKED)));
 			
-			dkprintf("%s: device fd: %d off: %lu mapping at %p - %p\n", 
+			dkprintf("%s: device fd: %d off: %lx mapping at %p - %p\n", 
 						__FUNCTION__, fd, off, addr, addr + len); 
 			if (!error) {
 #ifdef PROFILE_ENABLE
@@ -1584,6 +1586,9 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 				dkprintf("%s: device fd: %d off: %lu mapping at %p - %p\n", 
 						__FUNCTION__, fd, off, addr, addr + len); 
 			}
+		} else {
+			dkprintf("%s: regular file fd: %d off: %lx mapping at %p - %p\n", 
+						__FUNCTION__, fd, off, addr, addr + len); 
 		}
 		if (error) {
 			kprintf("%s: error: file mapping failed, fd: %d, error: %d\n",

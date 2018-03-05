@@ -3154,7 +3154,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 				continue;
 #endif
 			    case __NR_ioctl:
-#if 1					
+#if 0					
 					if (get_syscall_return(&args) != -ENOSYS && get_syscall_arg1(&args) == uti_desc->hfi_fd) {
 						fprintf(stderr, "ioctl: fd=%ld,%lx,%lx\n", get_syscall_arg1(&args), get_syscall_arg2(&args), get_syscall_arg3(&args));
 					}
