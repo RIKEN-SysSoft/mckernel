@@ -3054,13 +3054,22 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 				}
 			}
 #endif
-			if (get_syscall_return(&args) == -ENOSYS) {
+			if (get_syscall_return(&args) == -ENOSYS) { /* Before performing syscall */
 			} else {
 				if (get_syscall_return(&args) != -ENOSYS &&
 				    get_syscall_arg1(&args) == fd &&
 				    get_syscall_arg2(&args) == MCEXEC_UP_SYSCALL_THREAD) {
 				} else {
-					if (get_syscall_number(&args) != __NR_sched_yield)
+					switch (get_syscall_number(&args)) {
+					case __NR_open:
+					case __NR_read:
+					case __NR_write:
+					case __NR_sched_yield:
+					case __NR_mmap:
+					case __NR_munmap:
+					case __NR_mprotect:
+						break;
+					default:
 						__dprintf("SC,pid=%d,tid=%d,[%3ld](%lx, %lx, %lx, %lx, %lx, %lx): %lx\n",
 							getpid(),
 							gettid(),
@@ -3072,6 +3081,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 							get_syscall_arg5(&args),
 							get_syscall_arg6(&args),
 							get_syscall_return(&args));
+					}
 				}
 			}
 

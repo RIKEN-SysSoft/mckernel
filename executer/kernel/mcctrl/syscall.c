@@ -1944,7 +1944,7 @@ out:
 		kfree(pager);
 	}
 	mcctrl_put_per_proc_data(ppd);
-	dprintk("pager_req_map(%p,%d,%lx,%lx,%lx): %d\n", os, fd, len, off, result_rpa, error);
+	printk("pager_req_map(%p,%d,%lx,%lx,%lx): %d\n", os, fd, len, off, result_rpa, error);
 	return error;
 }
 

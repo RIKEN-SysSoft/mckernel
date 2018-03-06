@@ -2574,16 +2574,6 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	thread->handler = info;
     thread->task = current;
 
-	{
-		unsigned long addr = 0x00007fe880064000;
-		struct mm_struct *mm = current->mm;
-		pgd_t *pgd = pgd_offset(mm, addr);
-		pud_t *pud = pud_offset(pgd, addr);
-		pmd_t *pmd = pmd_offset(pud, addr);
-		pte_t *pte = pte_offset_map(pmd, addr);
-		printk("%s: pid=%d, tid=%d, pte for %lx=%p,\n", __FUNCTION__, task_tgid_vnr(current), task_pid_vnr(current), addr, pte);
-	}
-
 	write_lock_irqsave(&host_thread_lock, flags);
 	list_add_tail(&thread->list, &host_threads);
 	write_unlock_irqrestore(&host_thread_lock, flags);
