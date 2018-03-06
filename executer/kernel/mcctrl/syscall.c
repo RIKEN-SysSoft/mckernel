@@ -1408,25 +1408,6 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 	}
 	if (S_ISCHR(st.mode) && (MAJOR(st.rdev) == 1)) {
 		/* Treat memory devices such as /dev/mem as regular files */
-		char *pathbuf, *fullpath;
-
-		file = fget(fd);
-		if (!file) {
-			error = -EBADF;
-			printk("pager_req_create(%d,%lx):file not found. %d\n", fd, (long)result_pa, error);
-			goto out;
-		}
-
-		pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
-		if (pathbuf) {
-			fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
-			if (!IS_ERR(fullpath)) {
-				printk("%s: INFO: path=%s\n", __FUNCTION__, fullpath);
-			}
-			kfree(pathbuf);
-		}
-		fput(file);
-		file = NULL;
 	}
 	else if (!S_ISREG(st.mode)) {
 		error = -ESRCH;
