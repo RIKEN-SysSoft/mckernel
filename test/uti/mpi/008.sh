@@ -81,7 +81,7 @@ if [ ${go} -eq 1 ]; then
 	echo =====;
 	echo $i;
 	echo =====; i=$((i+1));
-	sleep 2
+	#sleep 2
     done
 fi
 
