@@ -1409,8 +1409,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 		goto out;
 	}
 	if (S_ISCHR(st.mode) && (MAJOR(st.rdev) == 1)) {
-		/* Treat memory devices such as /dev/mem as regular files
-		   except /dev/hfi1_0 */
+		/* Treat memory devices such as /dev/mem as regular files */
 		char *pathbuf, *fullpath;
 
 		file = fget(fd);
@@ -1428,7 +1427,6 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 			}
 			kfree(pathbuf);
 		}
-
 		fput(file);
 		file = NULL;
 	}
