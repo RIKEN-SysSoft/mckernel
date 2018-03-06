@@ -3147,6 +3147,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 			    case __NR_munmap:
 			    case __NR_mprotect:
 			    case __NR_mremap:
+			    case __NR_msync:
 				break;
 			    case __NR_exit_group:
 				exited++;
