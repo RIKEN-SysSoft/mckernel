@@ -1225,7 +1225,7 @@ out:
 		check_need_resched();
 		check_signal(0, regs, 0);
 	}
-	set_cputime(0);
+	set_cputime(interrupt_from_user(regs)? 0: 1);
 #ifdef PROFILE_ENABLE
 	if (thread->profile)
 		profile_event_add(PROFILE_page_fault, (rdtsc() - t_s));

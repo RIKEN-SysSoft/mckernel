@@ -1007,7 +1007,7 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 	}
 
 	interrupt_exit(regs);
-	set_cputime(0);
+	set_cputime(interrupt_from_user(regs)? 0: 1);
 
 	--v->in_interrupt;
 }
@@ -1023,7 +1023,7 @@ void gpe_handler(struct x86_user_context *regs)
 	}
 	set_signal(SIGSEGV, regs, NULL);
 	interrupt_exit(regs);
-	set_cputime(0);
+	set_cputime(interrupt_from_user(regs)? 0: 1);
 	panic("GPF");
 }
 
@@ -1052,7 +1052,7 @@ void debug_handler(struct x86_user_context *regs)
 	info.si_code = si_code;
 	set_signal(SIGTRAP, regs, &info);
 	interrupt_exit(regs);
-	set_cputime(0);
+	set_cputime(interrupt_from_user(regs)? 0: 1);
 }
 
 void int3_handler(struct x86_user_context *regs)
@@ -1070,7 +1070,7 @@ void int3_handler(struct x86_user_context *regs)
 	info.si_code = TRAP_BRKPT;
 	set_signal(SIGTRAP, regs, &info);
 	interrupt_exit(regs);
-	set_cputime(0);
+	set_cputime(interrupt_from_user(regs)? 0: 1);
 }
 
 void
