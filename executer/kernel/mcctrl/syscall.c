@@ -1328,10 +1328,8 @@ void pager_remove_process(struct mcctrl_per_proc_data *ppd)
 		kfree(pager);
 	}
 
-#if 0 /* It looks like it drops a live page when using uti */
 	/* Flush page hash as well */
 	rus_page_hash_put_pages();
-#endif
 out:
 	up(&pager_sem);
 }
