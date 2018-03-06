@@ -904,8 +904,11 @@ void rus_page_hash_put_pages(void)
 			}
 			list_del(&rp_iter->hash);
 
-#if 0 /* debug */
-			if (_count != 1)
+			if (_count == 1) {
+				printk("%s: INFO: put_page,pa=%lx000,compound=%d,_count=%d\n", __FUNCTION__, page_to_pfn(page), compound, _count);
+			}
+#if 1 /* debug */ /* It looks like a live page (page backed by /dev/shm/<name>?) is dropped when using uti */
+			if (_count != 1) 
 #endif
 			put_page(rp_iter->page);
 			kfree(rp_iter);
@@ -1370,10 +1373,8 @@ void pager_remove_process(struct mcctrl_per_proc_data *ppd)
 		kfree(pager);
 	}
 
-#if 0 /* It looks like it drops a live page when using uti */
 	/* Flush page hash as well */
 	rus_page_hash_put_pages();
-#endif
 out:
 	up(&pager_sem);
 }
