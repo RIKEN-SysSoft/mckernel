@@ -35,6 +35,7 @@ rusage_rss_add(unsigned long size)
 	unsigned long newval;
 	unsigned long oldval;
 	unsigned long retval;
+	struct process_vm *vm = cpu_local_var(current)->vm;
 
 	newval = __sync_add_and_fetch(&rusage->rss_current, size);
 	oldval = rusage->memory_max_usage;
@@ -46,12 +47,23 @@ rusage_rss_add(unsigned long size)
 		}
 		oldval = retval;
 	}
+
+	/* process rss */
+	vm->currss += size;
+	if (vm->currss > vm->proc->maxrss) {
+		vm->proc->maxrss = vm->currss;
+	}
 }
 
 static inline void
 rusage_rss_sub(unsigned long size)
 {
+	struct process_vm *vm = cpu_local_var(current)->vm;
+
 	__sync_sub_and_fetch(&rusage->rss_current, size);
+
+	/* process rss */
+	vm->currss -= size;
 }
 
 static inline void memory_stat_rss_add(unsigned long size, int pgsize)

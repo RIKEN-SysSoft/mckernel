@@ -1807,7 +1807,6 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 			ihk_mc_free_pages_user(phys_to_virt(phys), npages);
 			dkprintf("%s: freeing regular page at 0x%lx\n", __FUNCTION__, base);
 		}
-		args->vm->currss -= PTL1_SIZE;
 	}
 	
 	return 0;
@@ -1887,7 +1886,6 @@ static int clear_range_middle(void *args0, pte_t *ptep, uint64_t base,
 				ihk_mc_free_pages_user(phys_to_virt(phys), npages);
 				dkprintf("%s(level=%d): freeing large page at 0x%lx\n", __FUNCTION__, level, base);
 			}
-			args->vm->currss -= tbl.pgsize;
 		}
 
 		return 0;

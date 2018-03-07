@@ -1942,9 +1942,6 @@ retry:
 		// memory_stat_rss_add() is called in downstream with !memobj check
 	}
 	flush_tlb_single(fault_addr);
-	vm->currss += pgsize;
-	if(vm->currss > vm->proc->maxrss)
-		vm->proc->maxrss = vm->currss;
 
 	error = 0;
 	page = NULL;
