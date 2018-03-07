@@ -367,7 +367,7 @@ static long mcexec_debug_log(ihk_os_t os, unsigned long arg)
 }
 
 int mcexec_close_exec(ihk_os_t os);
-int mcexec_destroy_per_process_data(ihk_os_t os, int pid);
+int mcexec_destroy_per_process_data(ihk_os_t os);
 
 static void release_handler(ihk_os_t os, void *param)
 {
@@ -387,7 +387,7 @@ static void release_handler(ihk_os_t os, void *param)
 
 	mcexec_close_exec(os);
 
-	mcexec_destroy_per_process_data(os, info->pid);
+	mcexec_destroy_per_process_data(os);
 
 	memset(&isp, '\0', sizeof isp);
 	isp.msg = SCD_MSG_CLEANUP_PROCESS;
@@ -1720,12 +1720,12 @@ int mcexec_create_per_process_data(ihk_os_t os)
 	return 0;
 }
 
-int mcexec_destroy_per_process_data(ihk_os_t os, int pid)
+int mcexec_destroy_per_process_data(ihk_os_t os)
 {
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd = NULL;
 
-	ppd = mcctrl_get_per_proc_data(usrdata, pid);
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 
 	if (ppd) {
 		/* One for the reference and one for deallocation.
