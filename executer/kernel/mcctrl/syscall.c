@@ -1944,7 +1944,7 @@ out:
 		kfree(pager);
 	}
 	mcctrl_put_per_proc_data(ppd);
-	printk("pager_req_map(%p,%d,%lx,%lx,%lx): %d\n", os, fd, len, off, result_rpa, error);
+	dprintk("pager_req_map(%p,%d,%lx,%lx,%lx): %d\n", os, fd, len, off, result_rpa, error);
 	return error;
 }
 
@@ -2250,12 +2250,12 @@ void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet,
 	unsigned long phys;
 	struct syscall_response *res;
 
+	dprintk("%s: number=%ld,rtid=%d,ttid=%d\n", __FUNCTION__, packet->req.number, packet->req.rtid, packet->req.ttid);
+
 	phys = ihk_device_map_memory(ihk_os_to_dev(os),
 			packet->resp_pa, sizeof(*res));
 	res = ihk_device_map_virtual(ihk_os_to_dev(os),
 			phys, sizeof(*res), NULL, 0);
-
-	//printk("%s: resp_pa=%lx,res=%p\n", __FUNCTION__, packet->resp_pa, res);
 
 	if (!res) {
 		printk("%s: ERROR: invalid response structure address\n",

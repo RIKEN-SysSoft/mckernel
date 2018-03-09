@@ -2682,7 +2682,7 @@ do_generic_syscall(
 {
 	long	ret;
 
-	__dprintf("do_generic_syscall(%ld)\n", w->sr.number);
+	__dprintf("do_generic_syscall(%ld,%lx,%lx,%lx,%lx,%lx,%lx)\n", w->sr.number, w->sr.args[0], w->sr.args[1], w->sr.args[2], w->sr.args[3], w->sr.args[4], w->sr.args[5]);
 
 	ret = syscall(w->sr.number, w->sr.args[0], w->sr.args[1], w->sr.args[2],
 		 w->sr.args[3], w->sr.args[4], w->sr.args[5]);
@@ -2791,7 +2791,7 @@ do_generic_syscall(
 	}
 
 out:
-	__dprintf("do_generic_syscall(%ld):%ld (%#lx)\n", w->sr.number, ret, ret);
+	__dprintf("do_generic_syscall num=%ld,args=%lx,%lx,%lx,%lx,%lx,%lx,ret=%ld (%#lx)\n", w->sr.number, w->sr.args[0], w->sr.args[1], w->sr.args[2], w->sr.args[3], w->sr.args[4], w->sr.args[5], ret, ret);
 	return ret;
 }
 
@@ -3054,34 +3054,17 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 				}
 			}
 #endif
-			if (get_syscall_return(&args) == -ENOSYS) { /* Before performing syscall */
-			} else {
-				if (get_syscall_return(&args) != -ENOSYS &&
-				    get_syscall_arg1(&args) == fd &&
-				    get_syscall_arg2(&args) == MCEXEC_UP_SYSCALL_THREAD) {
-				} else {
-					switch (get_syscall_number(&args)) {
-					case __NR_open:
-					case __NR_read:
-					case __NR_write:
-					case __NR_sched_yield:
-					case __NR_mmap:
-					case __NR_munmap:
-					case __NR_mprotect:
+			/* Show result of syscall, after called, not offloaded to McKernel */
+			if (get_syscall_return(&args) != -ENOSYS) {
+				switch (get_syscall_number(&args)) {
+				case __NR_ioctl:
+					if (get_syscall_arg1(&args) == fd &&
+						get_syscall_arg2(&args) == MCEXEC_UP_SYSCALL_THREAD) {
 						break;
-					default:
-						__dprintf("SC,pid=%d,tid=%d,[%3ld](%lx, %lx, %lx, %lx, %lx, %lx): %lx\n",
-							getpid(),
-							gettid(),
-							get_syscall_number(&args),
-							get_syscall_arg1(&args),
-							get_syscall_arg2(&args),
-							get_syscall_arg3(&args),
-							get_syscall_arg4(&args),
-							get_syscall_arg5(&args),
-							get_syscall_arg6(&args),
-							get_syscall_return(&args));
 					}
+				default:
+					//fprintf(stderr, "SC hooked,pid=%d,tid=%d,[%3ld](%lx, %lx, %lx, %lx, %lx, %lx): %lx\n", getpid(), gettid(), get_syscall_number(&args), get_syscall_arg1(&args), get_syscall_arg2(&args), get_syscall_arg3(&args), get_syscall_arg4(&args), get_syscall_arg5(&args), get_syscall_arg6(&args), get_syscall_return(&args));
+					break;
 				}
 			}
 
@@ -3174,20 +3157,20 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 					                get_syscall_arg3(&args);
 				if (get_syscall_return(&args) != -ENOSYS &&
 				    get_syscall_arg1(&args) == fd &&
-				    get_syscall_arg2(&args) ==
-				                     MCEXEC_UP_SYSCALL_THREAD &&
+				    get_syscall_arg2(&args) == MCEXEC_UP_SYSCALL_THREAD &&
 				    samepage(uti_desc->wp, param)) {
-					__dprintf("SC,2mck,pid=%d,tid=%d,[%3d](%lx, %lx, %lx, %lx, %lx, %lx): %lx\n",
-							getpid(),
-							gettid(),
-							param->number,
-							param->args[0],
-							param->args[1],
-							param->args[2],
-							param->args[3],
-							param->args[4],
-							param->args[5],
-							param->ret);
+					/* Show result of syscall, after called, offloaded to McKernel */
+					switch (param->number) {
+					case __NR_futex:
+#if 0
+						if (param->args[1] & 1) {
+							fprintf(stderr, "SC offloaded to McKernel,pid=%d,tid=%d,[%3d](%lx, %lx, %lx, %lx, %lx, %lx): %lx\n", getpid(), gettid(), param->number, param->args[0], param->args[1], param->args[2], param->args[3], param->args[4], param->args[5], param->ret);
+						}
+#endif
+						break;
+					default:
+						break;
+					}
 					set_syscall_arg1(&args, param->args[0]);
 					set_syscall_arg2(&args, param->args[1]);
 					set_syscall_arg3(&args, param->args[2]);

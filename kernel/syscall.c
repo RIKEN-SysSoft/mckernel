@@ -219,7 +219,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	int target_pid = pid;
 #endif /* POSTK_DEBUG_TEMP_FIX_26 */
 
-	//kprintf("SC(%d)[%3d] sending syscall\n", ihk_mc_get_processor_id(),	req->number);
+	dkprintf("SC(%d)[%3d] sending syscall\n", ihk_mc_get_processor_id(), req->number);
 
 	mstatus = monitor->status;
 	monitor->status = IHK_OS_MONITOR_KERNEL_OFFLOAD;
@@ -302,7 +302,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		preempt_disable();
 	}
 
-	//dkprintf("%s: syscall num: %d waiting for Linux.. \n", __FUNCTION__, req->number);
+	dkprintf("SC(%d)[%3d] waiting for Linux..\n", ihk_mc_get_processor_id(),	req->number);
 
 #define	STATUS_IN_PROGRESS	0
 #define	STATUS_COMPLETED	1
@@ -347,7 +347,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 				__sync_bool_compare_and_swap(&res.req_thread_status,
 											 IHK_SCD_REQ_THREAD_SPINNING,
 											 IHK_SCD_REQ_THREAD_DESCHEDULED)) {
-				//dkprintf("%s: tid %d waiting for syscall reply...\n",				__FUNCTION__, thread->tid);
+				dkprintf("SC(%d)[%3d] sleeping,tid=%d\n", ihk_mc_get_processor_id(), req->number, thread->tid);
 				waitq_init(&thread->scd_wq);
 				waitq_prepare_to_wait(&thread->scd_wq, &scd_wq_entry,
 					PS_INTERRUPTIBLE);
@@ -470,7 +470,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		preempt_enable();
 	}
 
-	//dkprintf("%s: syscall num: %d got host reply: %d,pid=%d,tid=%d\n",			__FUNCTION__, req->number, res.ret, thread->proc->pid, thread->tid);
+	dkprintf("%s: syscall num: %d got host reply: %d,pid=%d,tid=%d\n",			__FUNCTION__, req->number, res.ret, thread->proc->pid, thread->tid);
 
 	rc = res.ret;
 
@@ -496,13 +496,18 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 				__FUNCTION__, PROFILE_SYSCALL_MAX, req->number);
 	}
 #endif // PROFILE_ENABLE
-#if 0
+#if 1
 	if (req->number == __NR_open && rc > 0) {
 		if (!strncmp((const char *)req->args[0], "/dev/hfi", 8)) {
 			cpu_local_var(current)->hfi_fd = rc;
 			kprintf("%s: path=%s,fd=%d\n", __FUNCTION__, (const char *)req->args[0], rc);
-		} else {
-			kprintf("%s: path=%s,fd=%d\n", __FUNCTION__, (const char *)req->args[0], rc);
+		}
+
+		switch (rc) {
+		case 6: 
+		default:
+			dkprintf("%s: path=%s,fd=%d\n", __FUNCTION__, (const char *)req->args[0], rc);
+			break;
 		}
 	}
 #endif
@@ -1302,14 +1307,14 @@ static int set_host_vma(uintptr_t addr, size_t len, int prot, int holding_memory
 	ihk_mc_user_context_t ctx;
 	long lerror;
 	
-	//dkprintf("%s: addr=%lx,len=%lx\n", __FUNCTION__, addr, len);
+	dkprintf("%s: addr=%lx,len=%lx\n", __FUNCTION__, addr, len);
 	struct thread *thread = cpu_local_var(current);
 
 	ihk_mc_syscall_arg0(&ctx) = addr;
 	ihk_mc_syscall_arg1(&ctx) = len;
 	ihk_mc_syscall_arg2(&ctx) = prot;
 
-	kprintf("%s: offloading __NR_mprotect\n", __FUNCTION__);
+	dkprintf("%s: offloading __NR_mprotect\n", __FUNCTION__);
 	/* #986: Let remote page fault code skip
 	   read-locking memory_range_lock. It's safe because other writers are warded off 
 	   until the remote PF handling code calls up_write(&current->mm->mmap_sem) and
@@ -2600,8 +2605,9 @@ retry_tid:
 		setint_user((int*)parent_tidptr, new->tid);
 	}
 	
+	kprintf("%s: old->tid=%d,new->tid=%d\n", __FUNCTION__, old->tid, new->tid);
 	if (clone_flags & CLONE_CHILD_CLEARTID) {
-		kprintf("clone_flags & CLONE_CHILD_CLEARTID: 0x%lX,old->tid=%d,new->tid=%d\n", 
+		dkprintf("clone_flags & CLONE_CHILD_CLEARTID: 0x%lX,old->tid=%d,new->tid=%d\n", 
 				child_tidptr, old->tid, new->tid);
 
 		new->clear_child_tid = (int*)child_tidptr;
@@ -9656,9 +9662,12 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		num = ihk_mc_syscall_number(ctx);
 	}
 
-#if 0
-	if(num != 24)  // if not sched_yield
-#endif
+	switch (num) {
+	case 24: // if not sched_yield
+	case 202: // if not futex
+	case 204: // if not sched_getaffinity
+		break;
+	default:
 		dkprintf("SC(%d:%d)[%3d=%s](%lx, %lx,%lx, %lx, %lx, %lx)@%lx,sp:%lx",
              ihk_mc_get_processor_id(),
              ihk_mc_get_hardware_processor_id(),
@@ -9667,6 +9676,27 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
              ihk_mc_syscall_arg2(ctx), ihk_mc_syscall_arg3(ctx),
              ihk_mc_syscall_arg4(ctx), ihk_mc_syscall_arg5(ctx),
              ihk_mc_syscall_pc(ctx), ihk_mc_syscall_sp(ctx));
+		break;
+	}
+
+	switch(num) {
+	case __NR_poll: {
+		int i;
+		struct pollfd {
+			int   fd;         /* file descriptor */
+			short events;     /* requested events */
+			short revents;    /* returned events */
+		};
+		struct pollfd *fds = (struct pollfd *)ihk_mc_syscall_arg0(ctx);
+		long nfds = ihk_mc_syscall_arg1(ctx);
+		for (i = 0; i < nfds; i++) {
+			if (i != 0) { kprintf(","); }
+			kprintf("(fds[%d].fd=%d,events=%d)", i, fds[i].fd, (int)fds[i].events);
+		}
+		break; }
+	default:
+		break;
+	}
 #if 1
 #if 0
 	if(num != 24)  // if not sched_yield
@@ -9677,10 +9707,14 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
              *((unsigned long*)(ihk_mc_syscall_sp(ctx)+16)),
              *((unsigned long*)(ihk_mc_syscall_sp(ctx)+24)));
 #endif
-#if 0
-	if(num != 24)  // if not sched_yield
-#endif
-    dkprintf("\n");
+	switch (num) {
+	case 24: // if not sched_yield
+	case 202: // if not futex
+	case 204: // if not sched_getaffinity
+		break;
+	default:
+		dkprintf("\n");
+	}
 
 	if ((0 <= num) && (num < (sizeof(syscall_table) / sizeof(syscall_table[0])))
 			&& (syscall_table[num] != NULL)) {
