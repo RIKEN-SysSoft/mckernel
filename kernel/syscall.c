@@ -2343,6 +2343,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	struct syscall_request request1 IHK_DMA_ALIGN;
 	int ptrace_event = 0;
 	int termsig = clone_flags & 0x000000ff;
+	const struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
 
     dkprintf("do_fork,flags=%08x,newsp=%lx,ptidptr=%lx,ctidptr=%lx,tls=%lx,curpc=%lx,cursp=%lx",
             clone_flags, newsp, parent_tidptr, child_tidptr, tlsblock_base, curpc, cursp);
@@ -2380,6 +2381,11 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	if((clone_flags & CLONE_NEWPID) &&
 	   (clone_flags & CLONE_THREAD)){
 		return -EINVAL;
+	}
+
+	if (!allow_oversubscribe && rusage->num_threads >= cpu_info->ncpus) {
+		kprintf("%s: ERROR: CPU oversubscription is not allowed. Specify -O option in mcreboot.sh to allow it.\n", __FUNCTION__);
+        return -EINVAL;
 	}
 
 	cpuid = obtain_clone_cpuid(&old->cpu_set);

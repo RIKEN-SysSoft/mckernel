@@ -101,6 +101,7 @@ struct list_head resource_set_list;
 mcs_rwlock_lock_t    resource_set_lock;
 
 int idle_halt = 0;
+int allow_oversubscribe = 0;
 
 void
 init_process(struct process *proc, struct process *parent)

@@ -150,6 +150,12 @@ static void parse_kargs(void)
 	if (ptr) {
 		idle_halt = 1;
 	}
+
+	/* allow_oversubscribe option */
+	ptr = find_command_line("allow_oversubscribe");
+	if (ptr) {
+		allow_oversubscribe = 1;
+	}
 }
 
 extern void ihk_mc_get_boot_time(unsigned long *tv_sec, unsigned long *tv_nsec);
