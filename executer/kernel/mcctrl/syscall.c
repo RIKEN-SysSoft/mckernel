@@ -2451,15 +2451,11 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 #endif /*POSTK_DEBUG_TEMP_FIX_38*/
 			dprintk("virtual %p\n", pt);
 			if (pt != NULL) {
-#ifdef POSTK_DEBUG_ARCH_DEP_41 /* use writehandler version switch add */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0)
-				ret = __kernel_write(file, pt, size, &file->f_pos);
+                ret = __kernel_write(file, pt, size, &file->f_pos);
 #else
 				ret = file->f_op->write(file, pt, size, &file->f_pos);
 #endif
-#else /* POSTK_DEBUG_ARCH_DEP_41 */
-				ret = file->f_op->write(file, pt, size, &file->f_pos);
-#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 			} else {
 				dprintk("cannot map physical memory(%lx) to virtual memory.\n", 
 					phys);
