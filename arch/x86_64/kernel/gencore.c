@@ -309,9 +309,8 @@ int gencore(struct thread *thread, void *regs,
 
 		dkprintf("start:%lx end:%lx flag:%lx objoff:%lx\n", 
 			 range->start, range->end, range->flag, range->objoff);
-		/* We omit reserved areas because they are only for
-		   mckernel's internal use. */		   
-		if (range->flag & VR_RESERVED)
+		/* Exclude remote (i.e. vdso), reserved (mckernel's internal use), device file */
+		if (range->flag & (VR_REMOTE | VR_RESERVED | VR_MEMTYPE_UC))
 			continue;
 		if (range->flag & VR_DONTDUMP)
 			continue;
@@ -403,7 +402,8 @@ int gencore(struct thread *thread, void *regs,
 		unsigned long flag = range->flag;
 		unsigned long size = range->end - range->start;
 
-		if (range->flag & VR_RESERVED)
+		/* Exclude remote (i.e. vdso), reserved (mckernel's internal use), device file */
+		if (range->flag & (VR_REMOTE | VR_RESERVED | VR_MEMTYPE_UC))
 			continue;
 
 		ph[i].p_type = PT_LOAD;
@@ -446,7 +446,8 @@ int gencore(struct thread *thread, void *regs,
 
 		unsigned long phys;
 
-		if (range->flag & VR_RESERVED)
+		/* Exclude remote (i.e. vdso), reserved (mckernel's internal use), device file */
+		if (range->flag & (VR_REMOTE | VR_RESERVED | VR_MEMTYPE_UC))
 			continue;
 		if (range->flag & VR_DEMAND_PAGING) {
 			/* Just an ad hoc kluge. */
