@@ -324,7 +324,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 				__sync_bool_compare_and_swap(&res.req_thread_status,
 											 IHK_SCD_REQ_THREAD_SPINNING,
 											 IHK_SCD_REQ_THREAD_DESCHEDULED)) {
-				kprintf("%s: tid %d waiting for syscall reply...\n",
+				dkprintf("%s: tid %d waiting for syscall reply...\n",
 						__FUNCTION__, thread->tid);
 				waitq_init(&thread->scd_wq);
 				waitq_prepare_to_wait(&thread->scd_wq, &scd_wq_entry,
