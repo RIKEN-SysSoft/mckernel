@@ -992,9 +992,9 @@ void terminate_mcexec(int rc, int sig)
 		request.number = __NR_exit_group;
 		request.args[0] = proc->exit_status;
 		proc->nohost = 1;
-		kprintf("%s: before do_syscall\n", __FUNCTION__);
+		//kprintf("%s: before do_syscall\n", __FUNCTION__);
 		do_syscall(&request, ihk_mc_get_processor_id(), proc->pid);
-		kprintf("%s: after do_syscall\n", __FUNCTION__);
+		//kprintf("%s: after do_syscall\n", __FUNCTION__);
 	}
 }
 
@@ -1221,7 +1221,7 @@ terminate_host(int pid)
 	struct process *proc;
 	struct mcs_rwlock_node_irqsave lock;
 	
-	kprintf("%s: pid=%d\n", __FUNCTION__, pid);
+	dkprintf("%s: pid=%d\n", __FUNCTION__, pid);
 	proc = find_process(pid, &lock);
 	if(!proc)
 		return;
@@ -1531,7 +1531,6 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	}
 
 	if (!(prot & PROT_WRITE)) {
-		//kprintf("%s: 1st call site of set_host_vma\n", __FUNCTION__);
 		error = set_host_vma(addr, len, PROT_READ, 1/* holding memory_range_lock */);
 		if (error) {
 			kprintf("do_mmap:set_host_vma failed. %d\n", error);
