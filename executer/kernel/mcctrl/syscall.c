@@ -1391,6 +1391,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 	uintptr_t phys;
 	struct kstat st;
 	int mf_flags = 0;
+	char *pathbuf = NULL, *fullpath = NULL;
 
 	dprintk("pager_req_create(%d,%lx)\n", fd, (long)result_pa);
 
@@ -1461,8 +1462,6 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 
 			/* Intel MPI library and shared memory "prefetch" */
 			{
-				char *pathbuf, *fullpath;
-
 				pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
 				if (pathbuf) {
 					fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
@@ -1477,9 +1476,9 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 							dprintk("%s: filename: %s, prefetch\n",
 									__FUNCTION__, fullpath);
 						}
+					} else {
+						fullpath = NULL;
 					}
-
-					kfree(pathbuf);
 				}
 			}
 
@@ -1540,6 +1539,9 @@ out:
 	}
 	if (file) {
 		fput(file);
+	}
+	if (pathbuf) {
+		kfree(pathbuf);
 	}
 	dprintk("pager_req_create(%d,%lx): %d %p %x\n",
 			fd, (long)result_pa, error, pager, maxprot);
