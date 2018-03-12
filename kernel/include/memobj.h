@@ -19,6 +19,7 @@
 #include <ihk/lock.h>
 #include <errno.h>
 #include <list.h>
+#include <limits.h>
 
 #ifdef POSTK_DEBUG_ARCH_DEP_18 /* coredump arch separation. */
 #else /* POSTK_DEBUG_ARCH_DEP_18 */

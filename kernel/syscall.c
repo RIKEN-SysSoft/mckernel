@@ -9632,6 +9632,15 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	struct thread *thread = cpu_local_var(current);
 #endif /* !defined(POSTK_DEBUG_TEMP_FIX_60) && !defined(POSTK_DEBUG_TEMP_FIX_56) */
 
+	{
+		unsigned long call_site = ihk_mc_syscall_pc(ctx);
+		struct vm_range *vmr = NULL;
+		vmr = lookup_process_memory_range(thread->vm, call_site, call_site + 1);
+		if (vmr && vmr->memobj) {
+			kprintf("%s: syscall %d from %lx %s\n", __FUNCTION__, num, call_site, vmr->memobj->path);
+		}
+	}
+
 #ifdef DISABLE_SCHED_YIELD
 	if (num != __NR_sched_yield)
 #endif // DISABLE_SCHED_YIELD
