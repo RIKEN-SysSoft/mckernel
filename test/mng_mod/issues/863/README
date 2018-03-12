@@ -2,8 +2,8 @@
 1. Issue#863で指摘されたテストプログラムを用いて現象が解消されていることを
    確認した。(2件)
 
-Issue#863の実行方法は、stress_test のディレクトリで以下のコマンドを実行する。
-   /path/to/mcexec/mcexec ./signalonread-multi
+Issue#863の再現方法は以下を参照。
+https://postpeta.pccluster.org/redmine/issues/863#テスト手順
 
 確認項目は、以下の通り。
 (1) プログラムがSIGTERMで終了すること。
@@ -18,7 +18,17 @@ CT1001.txt Issue#863の指摘で使用されたテストプログラムの実行
 
 2. Issue#863の変更が、McKernelプロセス間のシグナルに対する既存処理に
    影響しないことを確認した。
-   確認内容は以下の通り。
+
+テストの実行方法は以下の通り。
+  (1) CT200x.shのMCKERNEL_DIR=の行を以下のように書き換える
+      MCKERNEL_DIR=<mckernel-install>
+  (2) 以下のコマンドを実行
+      make
+      chmod u+x CT200?.sh
+      sudo <mckernel-install>/sbin/mcreboot.sh -c 2,3,4,5,6,7
+      ./CT200x.sh
+
+確認内容は以下の通り。
 
 CT2001 遅いI/Oシステムコール実行中にシグナルを受け、即座にシグナル
        ハンドラが呼び出され、システムコールがEINTRを返却することを
@@ -39,5 +49,4 @@ CT2007 遅いI/Oシステムコール実行中に無視(SIG_IGN)するシグナ�
 CT2008 遅くないI/Oシステムコール実行中に無視(SIG_IGN)するシグナルを
        受けとっても、プログラムの実行に影響しないことを確認する。
 
-CT200x の実行は、make test で行う。
 エビデンスは CT200x.txt に示す。(OK 8件、NG 0件)
