@@ -2642,24 +2642,24 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 
 	/* Drop reference for this function */
 	mcctrl_put_per_thread_data(ptd);
-	printk("%s: ptd-put,refc=%d\n", __FUNCTION__, atomic_read(&ptd->refcount));
+	dprintk("%s: ptd-put,refc=%d\n", __FUNCTION__, atomic_read(&ptd->refcount));
 
 	/* Final drop of reference for uti ptd */
 	mcctrl_put_per_thread_data(ptd);
-	printk("%s: ptd-put,refc=%d\n", __FUNCTION__, atomic_read(&ptd->refcount));
+	dprintk("%s: ptd-put,refc=%d\n", __FUNCTION__, atomic_read(&ptd->refcount));
 
 	if (atomic_read(&ptd->refcount) != 1) {
 		printk("%s: WARNING: ptd->refcount != 1 but %d\n", __FUNCTION__, atomic_read(&ptd->refcount));
 	}
 	mcctrl_put_per_thread_data(ptd);
-	printk("%s: ptd-put,refc=%d\n", __FUNCTION__, atomic_read(&ptd->refcount));
+	dprintk("%s: ptd-put,refc=%d\n", __FUNCTION__, atomic_read(&ptd->refcount));
  no_ptd:
 	mcctrl_put_per_proc_data(ppd);
-	printk("%s: ppd-put,refc=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
+	dprintk("%s: ppd-put,refc=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
 
 	/* This is the final drop of uti-ppd */
 	mcctrl_put_per_proc_data(ppd);
-	printk("%s: ppd-put,refc=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
+	dprintk("%s: ppd-put,refc=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
  no_ppd:
 	return 0;
 }
