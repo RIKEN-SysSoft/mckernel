@@ -2595,12 +2595,12 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 	mcctrl_put_per_thread_data(ptd);
 	pr_ptd("put", tid, ptd);
  no_ptd:
-	dprintk("%s: target pid=%d,tid=%d,ppd->refcount=%d\n", __FUNCTION__, pid, tid, atomic_read(&ppd->refcount));
 	mcctrl_put_per_proc_data(ppd);
+	dprintk("%s: ppd-put,refc=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
 
 	/* This is the final drop of uti-ppd */
-	dprintk("%s: target pid=%d,tid=%d,ppd->refcount=%d\n", __FUNCTION__, pid, tid, atomic_read(&ppd->refcount));
 	mcctrl_put_per_proc_data(ppd);
+	dprintk("%s: ppd-put,refc=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
  no_ppd:
 	return 0;
 }
