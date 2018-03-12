@@ -8,7 +8,8 @@ Issue#863の実行方法は、stress_test のディレクトリで以下のコ�
 確認項目は、以下の通り。
 (1) プログラムがSIGTERMで終了すること。
     → The TEST process is terminated by the signal 15 の表示があれば OK
-(2) プログラムがLinuxから送付されたシグナルによって中断すること。
+(2) プログラムがシステムコールオフロード完了前にLinuxから送付されたシグナルに
+　　応答すること。
     → TEST FAIL OVERRUN の表示が無ければOK
 
 実行結果(エビデンス)は以下の通り。
