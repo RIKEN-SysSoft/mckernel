@@ -1122,12 +1122,13 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 	int	cpu;
 	struct signal_desc sigdesc;
 	struct thread_data_s *tp;
-	int localthread;
+	int not_uti;
 
-	localthread = ioctl(fd, MCEXEC_UP_SIG_THREAD, 1);
+	fprintf(stderr, "%s: pid=%d,tid=%d,sig=%d\n", __FUNCTION__, getpid(), gettid(), sig);
+
+	not_uti = ioctl(fd, MCEXEC_UP_SIG_THREAD, 1);
 	pid = getpid();
 	tid = gettid();
-	printf("%s: pid=%d,tid=%d,sig=%d\n", __FUNCTION__, pid, tid, sig);
 	if (siginfo->si_pid == pid &&
 	    siginfo->si_signo == LOCALSIG)
 		goto out;
@@ -1158,7 +1159,9 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 		remote_tid = -1;
 	}
 
-	if (localthread) {
+	fprintf(stderr, "%s: not_uti=%d\n", __FUNCTION__, not_uti);
+
+	if (not_uti) { /* target isn't uti thread, ask McKernel to call the handler */
 		memset(&sigdesc, '\0', sizeof sigdesc);
 		sigdesc.cpu = cpu;
 		sigdesc.pid = (int)pid;
@@ -1170,7 +1173,7 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 			exit(1);
 		}
 	}
-	else {
+	else { /* target is uti thread, mcexec calls the handler */
 		struct syscall_struct param;
 		int rc;
 
@@ -1195,7 +1198,7 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 		}
 	}
 out:
-	if (!localthread)
+	if (!not_uti)
 		ioctl(fd, MCEXEC_UP_SIG_THREAD, 0);
 }
 
