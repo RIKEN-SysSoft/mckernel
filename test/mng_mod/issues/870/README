@@ -18,7 +18,16 @@ CT1001.txt Issue#870の指摘で使用されたテストプログラムの実行
 
 2. Issue#863の変更が、Linuxからmcexec経由でMcKernelプロセスに届くシグナルの
    既存処理に影響しないことを確認した。
-   確認内容は以下の通り。
+
+テストの実行方法は以下の通り。
+  (1) CT200x.shのMCKERNEL_DIR=の行を以下のように書き換える
+      MCKERNEL_DIR=<mckernel-install>
+  (2) 以下のコマンドを実行
+      make
+      sudo <mckernel-install>/sbin/mcreboot.sh -c 2-7
+      ./CT200x.sh
+
+確認内容は以下の通り。
 
 CT2001 遅いI/Oシステムコール実行中にシグナルを受け、即座にシグナル
        ハンドラが呼び出され、システムコールがEINTRを返却することを
