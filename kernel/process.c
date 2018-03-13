@@ -267,7 +267,6 @@ init_process_vm(struct process *owner, struct address_space *asp, struct process
 	vm->vm_range_tree = RB_ROOT;
 	vm->vm_range_numa_policy_tree = RB_ROOT;
 	INIT_LIST_HEAD(&vm->vm_deferred_unmap_range_list);
-	INIT_LIST_HEAD(&vm->vm_range_numa_policy_list);
 	vm->address_space = asp;
 	vm->proc = owner;
 	vm->exiting = 0;
