@@ -398,6 +398,7 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 	int termsig = clone_flags & 0xff;
 	struct process *proc = NULL;
 	struct address_space *asp = NULL;
+	struct cpu_local_var *v = get_this_cpu_local_var();
 
 	if ((thread = ihk_mc_alloc_pages(KERNEL_STACK_NR_PAGES,
 					IHK_MC_AP_NOWAIT)) == NULL) {
@@ -484,12 +485,15 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 		dkprintf("fork(): copy_user_ranges()\n");
 		/* Copy user-space mappings.
 		 * TODO: do this with COW later? */
+		v->on_fork_vm = proc->vm;
 		if (copy_user_ranges(proc->vm, org->vm) != 0) {
 			release_address_space(asp);
+			v->on_fork_vm = NULL;
 			kfree(proc->vm);
 			kfree(proc);
 			goto err_free_proc;
 		}
+		v->on_fork_vm = NULL;
 
 		/* Copy mckfd list
 		   FIXME: Replace list manipulation with list_add() etc. */
@@ -522,8 +526,6 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 
 		thread->vm->vdso_addr = org->vm->vdso_addr;
 		thread->vm->vvar_addr = org->vm->vvar_addr;
-		thread->proc->maxrss = org->proc->maxrss;
-		thread->vm->currss = org->vm->currss;
 
 		thread->sigstack.ss_sp = org->sigstack.ss_sp;
 		thread->sigstack.ss_flags = org->sigstack.ss_flags;

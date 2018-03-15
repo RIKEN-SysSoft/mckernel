@@ -97,6 +97,8 @@ struct cpu_local_var {
 
 	ihk_spinlock_t smp_func_req_lock;
 	struct list_head smp_func_req_list;
+
+	struct process_vm *on_fork_vm;
 } __attribute__((aligned(64)));
 
 
