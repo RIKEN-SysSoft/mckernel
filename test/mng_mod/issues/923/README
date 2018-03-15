@@ -1,0 +1,31 @@
+【Issue#923 動作確認】
+1. Issue#923 に報告されている手順で現象が解消したことを確認した。(1件)
+   実行結果(エビデンス)は以下の通り。
+
+CT01001.txt Issue#923 に報告されている手順の実行結果(OK 1件、NG 0件)
+
+2. LinuxからMcKernelのユーザ空間を参照するテストプログラムを新規に作成し、
+   LinuxからMcKernelのユーザ空間にアクセスしても異常が起きないことを確認
+   した。確認内容は以下の通り。
+
+CT02001 McKernelでmmapした領域を即座にLinuxからprocess_vm_readvで参照した
+        とき、process_vm_readvがEFAULTでエラーとなること。
+CT02002 CT02001の結果、Linuxの領域に変化が無いこと。
+CT02003 CT02001でmmapした領域をシステムコール移譲でアクセスした後、 Linux
+        からprocess_vm_readvで参照したとき、process_vm_readvが成功すること。
+CT02004 CT02003の結果、Linuxの領域にMcKernelのデータがコピーされていること。
+CT02005 CT02001でmmapした領域をmunmapした後、Linuxからprocess_vm_readvで参照
+        したとき、process_vm_readvがEFAULTでエラーとなること。
+CT02006 McKernelでmmapした領域を即座にLinuxからprocess_vm_writevで参照した
+        とき、process_vm_writevがEFAULTでエラーとなること。
+CT02007 CT02001の結果、McKernelの領域に変化が無いこと。
+CT02008 CT02001でmmapした領域をシステムコール移譲でアクセスした後、 Linux
+        からprocess_vm_writevで参照したとき、process_vm_writevが成功すること。
+CT02009 CT02003の結果、McKernelの領域にLinuxのデータがコピーされていること。
+CT02010 CT02001でmmapした領域をmunmapした後、Linuxからprocess_vm_writevで参照
+        したとき、process_vm_writevがEFAULTでエラーとなること。
+
+CT02xxx の実行は make test で行う。このとき、mcexec を PATH に含めるか、
+カレントディレクトリにリンクを作成しておくこと。
+エビデンスは CT02XXX.txt に示す。(OK 10件、NG 0件)
+
