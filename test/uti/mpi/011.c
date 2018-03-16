@@ -182,6 +182,11 @@ int main(int argc, char **argv) {
 
 	print_cpu_last_executed_on();
 
+#pragma omp parallel for
+	for (i = 0; i < omp_get_num_threads(); i++) {
+		printf("thread_num=%d,tid=%d\n", i, syscall(SYS_gettid));
+	}
+
 	for (i = 0; i < 1; i++) {
 		MPI_Barrier(MPI_COMM_WORLD);
 		if(my_rank == 0) {
