@@ -49,7 +49,7 @@ show_rusage():
 ------------------------------
 RESULT: you need check rusage value
 
-$ mcexec ./test_mck -s getrusage -n 1
+$ mcexec ./test_mck -s getrusage -n 2
 TEST_SUITE: getrusage
 TEST_NUMBER: 2
 ARGS:
@@ -91,72 +91,77 @@ RESULT: you need check rusage value
 /home/satoken/ppos/bin/mcexec ./CT_001
 ----  just started ----
 [ RUSAGE_SELF ]
- [OK]   utime: 0.000526 s (+ 0.000526 s)
- [OK]   stime: 0.010256 s (+ 0.010256 s)
+ [OK]   utime: 0.000528 s (+ 0.000528 s)
+ [OK]   stime: 0.010448 s (+ 0.010448 s)
 ----  add utime 2sec ----
 [ RUSAGE_SELF ]
- [OK]   utime: 1.997451 s (+ 1.996925 s)
- [OK]   stime: 0.010382 s (+ 0.000126 s)
+ [OK]   utime: 1.997452 s (+ 1.996924 s)
+ [OK]   stime: 0.010633 s (+ 0.000185 s)
 ----  add stime 1sec ----
 [ RUSAGE_SELF ]
- [OK]   utime: 1.997458 s (+ 0.000007 s)
- [OK]   stime: 1.008919 s (+ 0.998537 s)
+ [OK]   utime: 1.997459 s (+ 0.000007 s)
+ [OK]   stime: 1.009232 s (+ 0.998599 s)
 *** CT_001 PASS
 
 /home/satoken/ppos/bin/mcexec ./CT_002
 ----  just started ----
 [ RUSAGE_SELF ]
- [OK]   maxrss: 6016 KB (+ 6016 KB)
+ [OK]   maxrss: 6012 KB (+ 6012 KB)
 ----  mmap and access 12MB (12288 KB)  ----
 [ RUSAGE_SELF ]
- [OK]   maxrss: 18356 KB (+ 12340 KB)
+ [OK]   maxrss: 18352 KB (+ 12340 KB)
 ----  munmap 12MB (12288 KB)  ----
 [ RUSAGE_SELF ]
- [OK]   maxrss: 18356 KB (+ 0 KB)
+ [OK]   maxrss: 18352 KB (+ 0 KB)
 ----  mmap and access 16MB (16384 KB)  ----
 [ RUSAGE_SELF ]
- [OK]   maxrss: 22452 KB (+ 4096 KB)
+ [OK]   maxrss: 22448 KB (+ 4096 KB)
 *** CT_002 PASS
 
 /home/satoken/ppos/bin/mcexec ./CT_003
 ----  just started ----
 [ RUSAGE_SELF ]
- [OK]   utime: 0.000528 s (+ 0.000528 s)
- [OK]   stime: 0.010259 s (+ 0.010259 s)
+ [OK]   utime: 0.000530 s (+ 0.000530 s)
+ [OK]   stime: 0.010266 s (+ 0.010266 s)
 ----  create thread and join  ----
     ----  add utime 2sec in sub thread  ----
     ----  add stime 1sec in sub thread  ----
     ----  sub thread exit ----
 [ RUSAGE_SELF ]
- [OK]   utime: 1.997488 s (+ 1.996960 s)
- [OK]   stime: 4.005689 s (+ 3.995430 s)
+ [OK]   utime: 1.997492 s (+ 1.996962 s)  <- サブスレッド増分2秒
+ [OK]   stime: 4.005857 s (+ 3.995591 s)  <- サブスレッド増分1秒 + メインスレッドjoin待ち3秒
 *** CT_003 PASS
 
 /home/satoken/ppos/bin/mcexec ./CT_004
 ----  just started ----
 [ RUSAGE_SELF ]
- [OK]   maxrss: 6012 KB (+ 6012 KB)
+ [OK]   maxrss: 6008 KB (+ 6008 KB)
 ----  create thread and join  ----
     ----  mmap and access 16MB (16384 KB) in sub thread  ----
     ----  munmap 16MB (16384 KB) in sub thread ----
     ----  sub thread exit  ----
 [ RUSAGE_SELF ]
- [OK]   maxrss: 30652 KB (+ 24640 KB)
+ [OK]   maxrss: 30652 KB (+ 24644 KB)
 *** CT_004 PASS
 
 /home/satoken/ppos/bin/mcexec ./CT_005
 ----  just started ----
 [ RUSAGE_SELF ]
- [OK]   utime: 0.000520 s (+ 0.000520 s)
- [OK]   stime: 0.010293 s (+ 0.010293 s)
- [OK]   maxrss: 6016 KB (+ 6016 KB)
+ [OK]   utime: 0.000522 s (+ 0.000522 s)
+ [OK]   stime: 0.010163 s (+ 0.010163 s)
+ [OK]   maxrss: 6012 KB (+ 6012 KB)
 ----  fork child process  ----
 ----  add utime 3sec in parent  ----
+    ----  add utime 1sec in child  ----
+    ----  add stime 1sec in child  ----
+    ----  mmap and access 16MB (16384 KB) in child  ----
+    ----  munmap 16MB (16384 KB) in child  ----
+    ----  child process exit  ----
 ----  wait child's exit  ----
 [ RUSAGE_SELF ]
- [OK]   utime: 2.995897 s (+ 2.995377 s)
- [OK]   stime: 0.015820 s (+ 0.005527 s)
- [OK]   maxrss: 6088 KB (+ 72 KB)
+ [OK]   utime: 2.995901 s (+ 2.995379 s)
+ [OK]   stime: 0.016541 s (+ 0.006378 s)
+ [OK]   maxrss: 6084 KB (+ 72 KB)
 *** CT_005 PASS
 
 /home/satoken/ppos/bin/mcexec ./CT_006
@@ -166,13 +171,16 @@ RESULT: you need check rusage value
  [OK]   stime: 0.000000 s (+ 0.000000 s)
 ----  fork child process  ----
 ----  add utime 1sec in parent  ----
+    ----  add utime 2sec in child  ----
 [ RUSAGE_CHILDREN ]
- [OK]   utime: 0.000000 s (+ 0.000000 s)
- [OK]   stime: 0.000000 s (+ 0.000000 s)
+ [OK]   utime: 0.000000 s (+ 0.000000 s)  <- 子プロセスが未終了のため、0
+ [OK]   stime: 0.000000 s (+ 0.000000 s)  <- 子プロセスが未終了のため、0
 ----  wait child's exit  ----
+    ----  add stime 1sec in child  ----
+    ----  child process exit  ----
 [ RUSAGE_CHILDREN ]
- [OK]   utime: 1.996942 s (+ 1.996942 s)
- [OK]   stime: 0.998600 s (+ 0.998600 s)
+ [OK]   utime: 1.996946 s (+ 1.996946 s)
+ [OK]   stime: 0.998663 s (+ 0.998663 s)
 *** CT_006 PASS
 
 /home/satoken/ppos/bin/mcexec ./CT_007
@@ -181,10 +189,14 @@ RESULT: you need check rusage value
  [OK]   maxrss: 0 KB (+ 0 KB)
 ----  fork child process  ----
 ----  mmap and access 32MB (32768 KB) in parent  ----
+    ----  add utime 1sec in child  ----
 ----  munmap 32MB (32768 KB) in parent  ----
 ----  wait child's exit  ----
+    ----  mmap and access 16MB (16384 KB) in child  ----
+    ----  munmap 16MB (16384 KB) in child  ----
+    ----  child process exit ----
 [ RUSAGE_CHILDREN ]
- [OK]   maxrss: 21520 KB (+ 21520 KB)
+ [OK]   maxrss: 21516 KB (+ 21516 KB)  <- 子プロセス終了後に更新される
 *** CT_007 PASS
 
 /home/satoken/ppos/bin/mcexec ./CT_008
@@ -195,45 +207,56 @@ RESULT: you need check rusage value
  [OK]   maxrss: 0 KB (+ 0 KB)
 ----  fork child process  ----
 ----  wait child's exit  ----
+    ----  fork mago process  ----
+    ----  add utime 2sec in child  ----
+        ----  add utime 1sec in mago  ----
+        ----  add stime 1sec in mago  ----
+    ----  add stime 1sec in child  ----
+        ----  mmap and access 32MB (32768 KB) in mago  ----
+        ----  munmap 32MB (32768 KB) in mago  ----
+        ----  mago process exit  ----
+    ----  mmap and access 8MB (8192 KB) in child  ----
+    ----  munmap 8MB (8192 KB) in child  ----
+    ----  wait mago's exit  ----
+    ----  child process exit  ----
 [ RUSAGE_CHILDREN ]
- [OK]   utime: 2.999739 s (+ 2.999739 s)
- [OK]   stime: 2.009159 s (+ 2.009159 s)
- [OK]   maxrss: 37900 KB (+ 37900 KB)
+ [OK]   utime: 2.999763 s (+ 2.999763 s)  <- 子プロセス2秒、孫プロセス1秒の和
+ [OK]   stime: 2.009389 s (+ 2.009389 s)  <- 子プロセス1秒、孫プロセス1秒の和
+ [OK]   maxrss: 37896 KB (+ 37896 KB)  <- 子、孫のmaxrssの最大値
 *** CT_008 PASS
 
 /home/satoken/ppos/bin/mcexec ./CT_009
 ----  just started ----
- [OK]   utime: 0.000533 s (+ 0.000533 s)
- [OK]   stime: 0.010117 s (+ 0.010117 s)
+ [OK]   utime: 0.000535 s (+ 0.000535 s)
+ [OK]   stime: 0.009965 s (+ 0.009965 s)
 ----  add utime 1sec in main thread  ----
 ----  create thread and join  ----
     [ RUSAGE_THREAD ]
  [OK]       utime: 0.000005 s (+ 0.000005 s)
- [OK]       stime: 0.000015 s (+ 0.000015 s)
+ [OK]       stime: 0.000014 s (+ 0.000014 s)
     ----  add utime 2sec in sub thread  ----
     ----  add stime 1sec in sub thread  ----
     [ RUSAGE_THREAD ]
- [OK]       utime: 1.996923 s (+ 1.996923 s)
- [OK]       stime: 0.998568 s (+ 0.998568 s)
+ [OK]       utime: 1.996925 s (+ 1.996925 s)
+ [OK]       stime: 0.998649 s (+ 0.998649 s)
     ----  sub thread exit  ----
 [ RUSAGE_THREAD ]
- [OK]   utime: 0.999024 s (+ 0.998491 s)
- [OK]   stime: 3.007089 s (+ 2.996972 s)
+ [OK]   utime: 0.999027 s (+ 0.998492 s)
+ [OK]   stime: 3.006955 s (+ 2.996990 s)  <- join待ち3秒
 *** CT_009 PASS
 
 /home/satoken/ppos/bin/mcexec ./CT_010
 ----  just started ----
 [ RUSAGE_THREAD ]
- [OK]   maxrss: 6012 KB (+ 6012 KB)
+ [OK]   maxrss: 6008 KB (+ 6008 KB)
 ----  mmap and access 8MB (8192 KB) in main thread  ----
 ----  munmap 8MB (8192 KB) in main thread ----
 ----  create and join thread  ----
     [ RUSAGE_THREAD ]
- [OK]       maxrss: 14268 KB
+ [OK]       maxrss: 14264 KB
     ----  mmap and access 16MB (16384 KB) in sub thread  ----
     ----  munmap 16MB (16384 KB) in sub thread ----
     ----  sub thread exit  ----
 [ RUSAGE_THREAD ]
- [OK]   maxrss: 30652 KB (+ 24640 KB)
+ [OK]   maxrss: 30652 KB (+ 24644 KB)
 *** CT_010 PASS
-
