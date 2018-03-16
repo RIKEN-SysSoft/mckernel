@@ -1302,22 +1302,21 @@ static int set_host_vma(uintptr_t addr, size_t len, int prot, int holding_memory
 	   read-locking memory_range_lock. It's safe because other writers are warded off 
 	   until the remote PF handling code calls up_write(&current->mm->mmap_sem) and
 	   vm_range is consistent when calling this function. */
-	if (!holding_memory_range_lock) {
-		kprintf("%s: WARNING: memory_range_lock isn't held\n", __FUNCTION__);
-	} else {
+	if (holding_memory_range_lock) {
 		__sync_fetch_and_add(&thread->vm->memory_range_lock_writer_count, 1);
 	}
 	lerror = syscall_generic_forwarding(__NR_mprotect, &ctx);
 	if (lerror) {
 		kprintf("set_host_vma(%lx,%lx,%x) failed. %ld\n",
 				addr, len, prot, lerror);
-		__sync_fetch_and_sub(&thread->vm->memory_range_lock_writer_count, 1);
 		goto out;
 	}
-	__sync_fetch_and_sub(&thread->vm->memory_range_lock_writer_count, 1);
 
 	lerror = 0;
 out:
+	if (holding_memory_range_lock) {
+		__sync_fetch_and_sub(&thread->vm->memory_range_lock_writer_count, 1);
+	}
 	return (int)lerror;
 }
 
