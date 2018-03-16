@@ -558,6 +558,8 @@ struct process {
 	size_t mpol_threshold;
 	unsigned long heap_extension;
 	unsigned long mpol_bind_mask;
+	int uti_thread_rank; /* Spawn on Linux CPU when clone_count reaches this */
+	int clone_count;
 
 	// perf_event
 	int perf_status;

@@ -201,6 +201,7 @@ struct program_load_desc {
 	unsigned long heap_extension;
 	long stack_premap;
 	unsigned long mpol_bind_mask;
+	int uti_thread_rank; /* N-th clone() spawns a thread on Linux CPU */
 	int nr_processes;
 	int process_rank;
 	char shell_path[SHELL_PATH_MAX_LEN];
