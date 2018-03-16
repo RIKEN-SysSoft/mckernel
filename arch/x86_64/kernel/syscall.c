@@ -1177,7 +1177,7 @@ unsigned long
 do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
         int ptracecont)
 {
-	kprintf("do_kill,pid=%d,tid=%d,sig=%d\n", pid, tid, sig);
+	dkprintf("do_kill,pid=%d,tid=%d,sig=%d\n", pid, tid, sig);
 	struct thread *t;
 	struct process *tproc;
 	struct process *proc = thread? thread->proc: NULL;

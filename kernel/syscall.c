@@ -1005,9 +1005,9 @@ void terminate_mcexec(int rc, int sig)
 		request.number = __NR_exit_group;
 		request.args[0] = proc->exit_status;
 		proc->nohost = 1;
-		kprintf("%s: before do_syscall\n", __FUNCTION__);
+		//kprintf("%s: before do_syscall\n", __FUNCTION__);
 		do_syscall(&request, ihk_mc_get_processor_id(), proc->pid);
-		kprintf("%s: after do_syscall\n", __FUNCTION__);
+		//kprintf("%s: after do_syscall\n", __FUNCTION__);
 	}
 }
 
@@ -1235,7 +1235,7 @@ terminate_host(int pid)
 	struct process *proc;
 	struct mcs_rwlock_node_irqsave lock;
 	
-	kprintf("%s: pid=%d\n", __FUNCTION__, pid);
+	dkprintf("%s: pid=%d\n", __FUNCTION__, pid);
 	proc = find_process(pid, &lock);
 	if(!proc)
 		return;
@@ -1546,7 +1546,6 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	}
 
 	if (!(prot & PROT_WRITE)) {
-		//kprintf("%s: 1st call site of set_host_vma\n", __FUNCTION__);
 		error = set_host_vma(addr, len, PROT_READ, 1/* holding memory_range_lock */);
 		if (error) {
 			kprintf("do_mmap:set_host_vma failed. %d\n", error);
@@ -9641,15 +9640,6 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 #else /* !defined(POSTK_DEBUG_TEMP_FIX_60) && !defined(POSTK_DEBUG_TEMP_FIX_56) */
 	struct thread *thread = cpu_local_var(current);
 #endif /* !defined(POSTK_DEBUG_TEMP_FIX_60) && !defined(POSTK_DEBUG_TEMP_FIX_56) */
-
-	{
-		unsigned long call_site = ihk_mc_syscall_pc(ctx);
-		struct vm_range *vmr = NULL;
-		vmr = lookup_process_memory_range(thread->vm, call_site, call_site + 1);
-		if (vmr && vmr->memobj) {
-			kprintf("%s: syscall %d from %lx %s\n", __FUNCTION__, num, call_site, vmr->memobj->path);
-		}
-	}
 
 #ifdef DISABLE_SCHED_YIELD
 	if (num != __NR_sched_yield)

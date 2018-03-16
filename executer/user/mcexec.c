@@ -3241,7 +3241,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 	close(fd);
 	while(1) { }
 #endif
-	fprintf(stderr, "%s: exiting\n", __FUNCTION__);
+	//fprintf(stderr, "%s: exiting\n", __FUNCTION__);
 	exit(0);
 }
 
@@ -3255,7 +3255,7 @@ util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, int remote_t
 	//struct tracer_desc desc;
 	unsigned long buf;
 	
-	printf("%s: calling create_tracer,remote_tid=%d\n", __FUNCTION__, remote_tid);
+	//fprintf(stderr, "%s: calling create_tracer,remote_tid=%d\n", __FUNCTION__, remote_tid);
 #if 1
 	/* Create tracer */
 	if ((rc = create_tracer(desc->user_start, desc->user_end))) {
