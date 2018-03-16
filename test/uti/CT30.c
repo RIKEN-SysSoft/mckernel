@@ -91,6 +91,13 @@ void fwq(unsigned long delay_nsec, unsigned long* mem) {
 	BULK_FSW(delay_nsec / nspw, mem);
 }
 
+void fwq_omp(unsigned long delay_nsec, unsigned long* mem) {
+#pragma omp parallel
+	{
+		BULK_FSW(delay_nsec / nspw, mem);
+	}
+}
+
 void mydelay(long delay_nsec, long *mem) {
 	struct timespec start, end;
 	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
@@ -111,9 +118,9 @@ void *progress_fn(void *_arg) {
 
 	rc = syscall(732);
 	if (rc == -1)
-		fprintf(stdout, "CT09100 progress_fn running on Linux OK\n");
+		fprintf(stdout, "CT09100 progress_fn running on Linux OK,tid=%d\n", syscall(SYS_gettid));
 	else {
-		fprintf(stdout, "CT09100 progress_fn running on McKernel NG\n", rc);
+		fprintf(stdout, "CT09100 progress_fn running on McKernel NG\n");
 		return NULL;
 	}
 
@@ -124,20 +131,18 @@ void *progress_fn(void *_arg) {
 	pthread_mutex_unlock(&arg->bar_lock);
 
 	/* Start progress */
-	pthread_mutex_lock(&ep_lock);
 	while(1) {
+		pthread_mutex_lock(&ep_lock);
 		if (terminate) {
+			pthread_mutex_unlock(&ep_lock);
 			break;
 		}
 
-		/* Event found */
 		if (nevents > 0) {
-			nevents = 0;
+			nevents--;
+			fwq(random() % 100000000, &mem); /* 0 - 0.1 sec */
 		}
-
 		pthread_mutex_unlock(&ep_lock);
-		fwq(random() % 1000000000, &mem); /* 0 - 1 sec */
-		pthread_mutex_lock(&ep_lock);
 	}
 	return NULL;
 }
@@ -184,12 +189,17 @@ int main(int argc, char **argv) {
 		pthread_mutex_unlock(&thr_args[i].bar_lock);
 	}
 
+#pragma omp parallel for
+	for (i = 0; i < omp_get_num_threads(); i++) {
+		printf("thread_num=%d,tid=%d\n", i, syscall(SYS_gettid));
+	}
+
 	fprintf(stdout, "CT09004 pthread_create OK\n");
 	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
 	for (i = 0; i < 10; i++) {
 		pthread_mutex_lock(&ep_lock);
 		nevents++;
-		fwq(random() % 1000000000, &mem); /* 0 - 1 sec */
+		fwq_omp(random() % 100000000, &mem); /* 0 - 0.1 sec */
 		pthread_mutex_unlock(&ep_lock);
 		while (nevents > 0) {
 			FIXED_SIZE_WORK(&mem);

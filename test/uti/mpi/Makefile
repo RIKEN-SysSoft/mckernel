@@ -20,6 +20,12 @@ file: $(TMPFILES)
 	rm -f $(TMPFILES)
 	dd if=/dev/zero of=./file  bs=1M  count=1
 
+011: 011.o
+	$(LD) -o $@ $^ $(LDFLAGS) -qopenmp
+
+011.o::011.c
+	$(CC) $(CFLAGS) -qopenmp -c $<
+
 %: %.o
 	$(LD) -o $@ $^ $(LDFLAGS)
 

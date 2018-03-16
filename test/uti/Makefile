@@ -14,6 +14,13 @@ all: $(EXES) file
 file::
 	dd bs=4096 count=1000 if=/dev/zero of=./file
 
+CT30.o:: CT30.c
+	icc $(CCFLAGS) -qopenmp $(CPPFLAGS) -c $<
+
+CT30: CT30.o
+	icc -o $@ $^ $(LDFLAGS) -qopenmp
+
+
 %.o:: %.c
 	$(CC) $(CCFLAGS) $(CPPFLAGS) -c $<
 
