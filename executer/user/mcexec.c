@@ -231,6 +231,7 @@ static long stack_premap = (2ULL << 20);
 static long stack_max = -1;
 static struct rlimit rlim_stack;
 static char *mpol_bind_nodes = NULL;
+static int uti_thread_rank = 0;
 
 /* Partitioned execution (e.g., for MPI) */
 static int nr_processes = 0;
@@ -1762,6 +1763,12 @@ static struct option mcexec_options[] = {
 		.flag =		NULL,
 		.val =		's',
 	},
+	{
+		.name =		"uti-thread-rank",
+		.has_arg =	required_argument,
+		.flag =		NULL,
+		.val =		'u',
+	},
 	/* end */
 	{ NULL, 0, NULL, 0, },
 };
@@ -2006,9 +2013,9 @@ int main(int argc, char **argv)
 
 	/* Parse options ("+" denotes stop at the first non-option) */
 #ifdef ADD_ENVS_OPTION
-	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:m:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:m:u:", mcexec_options, NULL)) != -1) {
 #else /* ADD_ENVS_OPTION */
-	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:m:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:m:u:", mcexec_options, NULL)) != -1) {
 #endif /* ADD_ENVS_OPTION */
 		switch (opt) {
 			char *tmp;
@@ -2070,6 +2077,10 @@ int main(int argc, char **argv)
 			free(dup);
 			__dprintf("stack_premap=%ld,stack_max=%ld\n", stack_premap, stack_max);
 			break; }
+
+			case 'u':
+				uti_thread_rank = atoi(optarg);
+				break;
 
 			case 0:	/* long opt */
 				break;
@@ -2560,6 +2571,8 @@ int main(int argc, char **argv)
 	if (hfi1_enabled) {
 		desc->mcexec_flags |= MCEXEC_HFI1;
 	}
+
+	desc->uti_thread_rank = uti_thread_rank;
 
 	/* user_start and user_end are set by this call */
 	if (ioctl(fd, MCEXEC_UP_PREPARE_IMAGE, (unsigned long)desc) != 0) {
