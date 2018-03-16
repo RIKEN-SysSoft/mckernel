@@ -884,6 +884,8 @@ void interrupt_exit(struct x86_user_context *regs)
 	}
 }
 
+extern void ihk_ikc_interrupt_handler(void *priv);
+
 void handle_interrupt(int vector, struct x86_user_context *regs)
 {
 	struct ihk_mc_interrupt_handler *h;
@@ -1001,7 +1003,11 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 	else {
 		list_for_each_entry(h, &handlers[vector - 32], list) {
 			if (h->func) {
+				if (h->func == ihk_ikc_interrupt_handler) {
+					h->func(&v->in_interrupt);
+				} else {
 				h->func(h->priv);
+				}
 			}
 		}
 	}
