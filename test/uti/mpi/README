@@ -8,3 +8,4 @@
 008 parent psm2-init and psm2-connect, child psm2-send/recv --> receiver side crash
 009 parent does nothing, child psm2-init, psm2-connect, psm2-send/recv --> receiver side crash
 010 parent psm2-init, psm2-connect, psm2-send/recv, child does nothing
+011 001にopenmpスレッドを追加
