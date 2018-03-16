@@ -266,7 +266,7 @@ struct ikc_scd_packet {
 			long sysfs_arg3;
 		};
 
-		/* SCD_MSG_SCHEDULE_THREAD */
+		/* SCD_MSG_WAKE_UP_SYSCALL_THREAD */
 		struct {
 			int ttid;
 		};
