@@ -368,9 +368,8 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 			}
 #endif // PROFILE_ENABLE
 
-			dkprintf("STATUS_PAGE_FAULT in syscall, pid: %d\n", 
-					cpu_local_var(current)->proc->pid);
 			dkprintf("remote page fault,va=%lx,reason=%x\n", res.fault_address, res.fault_reason|PF_POPULATE);
+			dkprintf("STATUS_PAGE_FAULT in syscall, pid=%d,tid=%d\n", cpu_local_var(current)->proc->pid, cpu_local_var(current)->tid);
 			error = page_fault_process_vm(thread->vm,
 					(void *)res.fault_address,
 					res.fault_reason|PF_POPULATE);
