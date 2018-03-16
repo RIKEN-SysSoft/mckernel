@@ -504,6 +504,8 @@ static int process_msg_prepare_process(unsigned long rphys)
 		vm->numa_mem_policy = MPOL_BIND;
 	}
 
+	proc->uti_thread_rank = pn->uti_thread_rank;
+
 #ifdef PROFILE_ENABLE
 	proc->profile = pn->profile;
 	thread->profile = pn->profile;
@@ -537,7 +539,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 		goto err;
 	}
 
-	kprintf("new process : %p pid=%d,tid=%d,pgtable=%p\n", proc, proc->pid, thread->tid, vm->address_space->page_table);
+	kprintf("new process : %p pid=%d,tid=%d,uti_thread_rank=%d\n", proc, proc->pid, thread->tid, proc->uti_thread_rank);
 
 	kfree(pn);
 

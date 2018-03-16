@@ -1605,21 +1605,6 @@ out:
 
 SYSCALL_DECLARE(clone)
 {
-	struct thread *thread = cpu_local_var(current);
-	unsigned long start_routine = ihk_mc_syscall_arg0(ctx);
-	struct vm_range *vmr = NULL;
-
-	vmr = lookup_process_memory_range(thread->vm, start_routine, start_routine + 1);
-	if (vmr && vmr->memobj) {
-		kprintf("%s: start_routine=%lx %s\n", __FUNCTION__, start_routine, vmr->memobj->path);
-		if (strstr(vmr->memobj->path, "libmpich")) {
-#if 0
-			thread->mod_clone = SPAWN_TO_REMOTE;
-			kprintf("%s: mod_clone is set to %d\n", __FUNCTION__, thread->mod_clone);
-#endif			
-		}
-	}
-
     return do_fork((int)ihk_mc_syscall_arg0(ctx), ihk_mc_syscall_arg1(ctx),
                    ihk_mc_syscall_arg2(ctx), ihk_mc_syscall_arg3(ctx),
                    ihk_mc_syscall_arg4(ctx), ihk_mc_syscall_pc(ctx),
