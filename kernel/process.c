@@ -2001,23 +2001,25 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 	dkprintf("[%d]do_page_fault_process_vm(%p,%lx,%lx),pid=%d,tid=%d,writer_count=%ld\n",
 			ihk_mc_get_processor_id(), vm, fault_addr0, reason, thread->proc->pid, thread->tid, thread->vm->memory_range_lock_writer_count);
 	
-	if (!thread->vm->memory_range_lock_writer_count) {
 #if 1
+	if (thread->vm->memory_range_lock_writer_count == 0) {
 		ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
-#else
-		while (!ihk_mc_spinlock_trylock_noirq(&vm->memory_range_lock)) {
-			retry++;
-			if (retry > (1ULL<<30)) {
-				kprintf("%s: WARNING: dead-lock, see #986,pid=%d,tid=%d\n", __FUNCTION__, thread->proc->pid, thread->tid);
-				goto skip;
-			}
-		}
-#endif
 		locked = 1;
 	} else {
-	skip:
 		kprintf("%s: INFO: skip locking of memory_range_lock,pid=%d,tid=%d\n", __FUNCTION__, thread->proc->pid, thread->tid);
 	}	
+#else
+	{
+	int retry;
+	for (retry = 0; !ihk_mc_spinlock_trylock_noirq(&vm->memory_range_lock) && retry < (1ULL << 30); retry++) { }
+	if (retry == (1ULL << 30)) {
+	kprintf("%s: ERROR: deadlock, see #986,pid=%d,tid=%d\n", __FUNCTION__, thread->proc->pid, thread->tid);
+	panic("Deadlock");
+}
+	locked = 1;
+}
+#endif
+
 
 	if (vm->exiting) {
 		error = -ECANCELED;
