@@ -435,6 +435,7 @@ static long mcexec_start_image(ihk_os_t os,
 	struct mcctrl_channel *c;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcos_handler_info *info;
+	int ret = 0;
 
 	desc = kmalloc(sizeof(*desc), GFP_KERNEL);
 	if (!desc) {
@@ -445,17 +446,18 @@ static long mcexec_start_image(ihk_os_t os,
 
 	if (copy_from_user(desc, udesc,
 	                   sizeof(struct program_load_desc))) {
-		kfree(desc);
-		return -EFAULT;
+		ret = -EFAULT;
+		goto out;
 	}
 
 	info = new_mcos_handler_info(os, file);
 #ifdef POSTK_DEBUG_TEMP_FIX_64 /* host process is SIGKILLed fix. */
 	if (info == NULL) {
-		kfree(desc);
-		return -ENOMEM;
+		ret = -ENOMEM;
+		goto out;
 	}
 #endif /* POSTK_DEBUG_TEMP_FIX_64 */
+
 	info->pid = desc->pid;
 	info->cpu = desc->cpu;
 	ihk_os_register_release_handler(file, release_handler, info);
@@ -471,10 +473,14 @@ static long mcexec_start_image(ihk_os_t os,
 	isp.ref = desc->cpu;
 	isp.arg = desc->rprocess;
 
-	mcctrl_ikc_send(os, desc->cpu, &isp);
+	ret = mcctrl_ikc_send(os, desc->cpu, &isp);
+	if (ret < 0) {
+		printk("%s: error: sending IKC msg\n", __FUNCTION__);
+	}
 
+out:
 	kfree(desc);
-	return 0;
+	return ret;
 }
 
 static DECLARE_WAIT_QUEUE_HEAD(signalq);
