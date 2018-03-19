@@ -1333,7 +1333,6 @@ done:
 		if (tthread->status != PS_EXITED &&
 			(sig == SIGKILL ||
 			 (tproc->status != PS_EXITED && tproc->status != PS_ZOMBIE))) {
-			hold_thread(tthread);
 			if ((rc = hold_thread(tthread))) {
 				kprintf("%s: ERROR hold_thread returned %d,tid=%d\n", __FUNCTION__, rc, tthread->tid);
 				tthread = NULL;
