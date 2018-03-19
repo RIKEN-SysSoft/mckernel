@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
 
 	printf("[ RUSAGE_CHILDREN ]\n");
 	OKNG(cur_maxrss < 16 * 1024 || cur_maxrss > 32 * 1024,
-			"  maxrss: %d KB (+ %d KB)  <- 子プロセス終了後に更新される", 
+			"  maxrss: %d KB (+ %d KB)  <- 子プロセス終了後に更新 (プロセス生成時の5～6M + mmapでの16M)", 
 	        cur_maxrss, delta_maxrss);
 
 	prev_maxrss = cur_maxrss;
