@@ -1024,7 +1024,8 @@ static const struct procfs_entry tid_entry_stuff[] = {
 
 static const struct procfs_entry pid_entry_stuff[] = {
 	PROC_REG("auxv",       S_IRUSR, NULL),
-	PROC_REG("cgroup",     S_IXUSR, NULL),
+	/* Support the case where McKernel process retrieves its job-id under the Fujitsu TCS suite. */
+//	PROC_REG("cgroup",     S_IXUSR, NULL),
 //	PROC_REG("clear_refs", S_IWUSR, NULL),
 	PROC_REG("cmdline",    S_IRUGO, NULL),
 //	PROC_REG("comm",       S_IRUGO|S_IWUSR, NULL),
