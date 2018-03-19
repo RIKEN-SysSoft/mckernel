@@ -81,6 +81,8 @@ extern void perf_reset(struct mc_perf_event *event);
 struct list_head resource_set_list;
 mcs_rwlock_lock_t    resource_set_lock;
 
+int allow_oversubscribe = 0;
+
 void
 init_process(struct process *proc, struct process *parent)
 {

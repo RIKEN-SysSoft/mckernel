@@ -144,6 +144,12 @@ static void parse_kargs(void)
 		}
 	}
 	ihk_mc_set_dump_level(dump_level);
+
+	/* allow_oversubscribe option */
+	ptr = find_command_line("allow_oversubscribe");
+	if (ptr) {
+		allow_oversubscribe = 1;
+	}
 }
 
 void pc_init(void)
