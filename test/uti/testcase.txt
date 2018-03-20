@@ -302,3 +302,5 @@ CT27 プログレス処理オーバーヘッド測定
 CT28 taskset -c 0-7 lock-inc-lock x 10000
 
 CT29 no reverse offload
+
+CT30 CT21にopenmpスレッドを追加したテスト
