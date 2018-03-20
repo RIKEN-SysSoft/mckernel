@@ -2632,7 +2632,9 @@ retry_tid:
 	ihk_mc_syscall_ret(new->uctx) = 0;
 
 	new->status = PS_RUNNING;
-	if (old->mod_clone == SPAWN_TO_REMOTE) {
+	
+	/* Only the first do_fork() call creates a thread on a Linux CPU */
+	if (__sync_bool_compare_and_swap(&old->mod_clone, SPAWN_TO_REMOTE, SPAWN_TO_LOCAL)) {
 		new->mod_clone = SPAWNING_TO_REMOTE;
 		if (old->mod_clone_arg) {
 			new->mod_clone_arg = kmalloc(sizeof(struct uti_attr),
@@ -9278,6 +9280,7 @@ utilthr_migrate()
 {
 	struct thread *thread = cpu_local_var(current);
 
+	/* Don't inherit mod_clone */
 	if (thread->mod_clone == SPAWNING_TO_REMOTE) {
 		thread->mod_clone = SPAWN_TO_LOCAL;
 		util_thread(thread->mod_clone_arg);
