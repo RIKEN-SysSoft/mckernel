@@ -3075,8 +3075,7 @@ static void do_migrate(void)
 
 		}
 
-		dkprintf("%s: migrated TID %d from CPU %d to CPU %d\n",
-			__FUNCTION__, req->thread->tid, old_cpu_id, cpu_id);
+		kprintf("%s: pid=%d,tid=%d,from-CPU=%d,runq_len=%d,to-CPU=%d,runq_len=%d\n",__FUNCTION__, req->thread->proc->pid, req->thread->tid, old_cpu_id, cur_v->runq_len, cpu_id, v->runq_len);
 		
 		v->flags |= CPU_FLAG_NEED_RESCHED;
 #ifdef POSTK_DEBUG_TEMP_FIX_57 /* migration wakeup IPI target fix. */
@@ -3099,12 +3098,14 @@ set_timer()
 	/* Toggle timesharing if CPU core is oversubscribed */
 	if (v->runq_len > 1 || v->current->itimer_enabled) {
 		if (!cpu_local_var(timer_enabled)) {
+			kprintf("%s: INFO interval timer activated,pid=%d,tid=%d,runq_len=%d,itimer_enabled=%d\n", __FUNCTION__, v->current->proc->pid, v->current->tid, v->runq_len, v->current->itimer_enabled);
 			lapic_timer_enable(/*10000000*/1000000);
 			cpu_local_var(timer_enabled) = 1;
 		}
 	}
 	else {
 		if (cpu_local_var(timer_enabled)) {
+			kprintf("%s: INFO interval timer deactivated,pid=%d,tid=%d,runq_len=%d,itimer_enabled=%d\n", __FUNCTION__, v->current->proc->pid, v->current->tid, v->runq_len, v->current->itimer_enabled);
 			lapic_timer_disable();
 			cpu_local_var(timer_enabled) = 0;
 		}
@@ -3524,8 +3525,7 @@ void __runq_add_thread(struct thread *thread, int cpu_id)
 	//thread->proc->status = PS_RUNNING;	/* not set here */
 	get_cpu_local_var(cpu_id)->status = CPU_STATUS_RUNNING;
 
-	dkprintf("runq_add_proc(): tid %d added to CPU[%d]'s runq\n", 
-             thread->tid, cpu_id);
+	kprintf("%s: pid=%d,tid=%d,cpu_id=%d,runq_len=%d\n", __FUNCTION__, thread->proc->pid, thread->tid, cpu_id, v->runq_len);
 }
 
 void runq_add_thread(struct thread *thread, int cpu_id)
@@ -3584,6 +3584,7 @@ void runq_del_thread(struct thread *thread, int cpu_id)
 		get_cpu_local_var(cpu_id)->status = CPU_STATUS_IDLE;
 
 	ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+	kprintf("runq_del_thread(): pid=%d,tid=%d,cpu_id=%d,runq_len=%d\n", thread->proc->pid, thread->tid, cpu_id, v->runq_len);
 }
 
 struct thread *

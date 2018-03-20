@@ -2614,7 +2614,7 @@ retry_tid:
 		setint_user((int*)parent_tidptr, new->tid);
 	}
 	
-	kprintf("%s: old->tid=%d,new->tid=%d\n", __FUNCTION__, old->tid, new->tid);
+	kprintf("%s: old->tid=%d,new->tid=%d,cpuid=%d,mod_clone=%d\n", __FUNCTION__, old->tid, new->tid, cpuid, old->mod_clone);
 	if (clone_flags & CLONE_CHILD_CLEARTID) {
 		dkprintf("clone_flags & CLONE_CHILD_CLEARTID: 0x%lX,old->tid=%d,new->tid=%d\n", 
 				child_tidptr, old->tid, new->tid);
@@ -7235,6 +7235,7 @@ SYSCALL_DECLARE(setitimer)
 			timer_start = 0;
 	}
 	thread->itimer_enabled = timer_start;
+	kprintf("%s: pid=%d,tid=%d,itimer_enabled=%d\n", __FUNCTION__, thread->proc->pid, thread->tid, thread->itimer_enabled);
 	set_timer();
 	return 0;
 }

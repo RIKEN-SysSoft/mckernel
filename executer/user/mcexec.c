@@ -3036,8 +3036,9 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 				     return_syscall()
 			*/
 			if (exited == 1 || exited == 2) {
-				
-				fprintf(stderr, "%s:  calling MCEXEC_UP_TERMINATE_THREAD,pid=%d,tid=%d,exited=%d,code=%lx\n", __FUNCTION__, uti_desc->pid, uti_desc->tid, exited, code);
+				char *pmi_str = getenv("PMI_RANK");
+				int pmi_rank = pmi_str ? atoi(pmi_str) : -1;
+				if (pmi_rank == 0 || pmi_rank == -1) fprintf(stderr, "%s:  calling MCEXEC_UP_TERMINATE_THREAD,pid=%d,tid=%d,exited=%d,code=%lx\n", __FUNCTION__, uti_desc->pid, uti_desc->tid, exited, code);
 				if (ioctl(fd, MCEXEC_UP_TERMINATE_THREAD, &term_desc) != 0) {
 					fprintf(stderr, "%s: INFO: MCEXEC_UP_TERMINATE_THREAD returned %d\n", __FUNCTION__, errno);
 				}
@@ -3067,7 +3068,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 				}
 			}
 #endif
-			/* Show result of syscall, after called, not offloaded to McKernel */
+			/* Report after call, not offloaded to McKernel */
 			if (get_syscall_return(&args) != -ENOSYS) {
 				switch (get_syscall_number(&args)) {
 				case __NR_ioctl:
@@ -3172,14 +3173,12 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 				    get_syscall_arg1(&args) == fd &&
 				    get_syscall_arg2(&args) == MCEXEC_UP_SYSCALL_THREAD &&
 				    samepage(uti_desc->wp, param)) {
-					/* Show result of syscall, after called, offloaded to McKernel */
+					/* Report after call, offloaded to McKernel */
 					switch (param->number) {
 					case __NR_futex:
-#if 0
 						if (param->args[1] & 1) {
-							fprintf(stderr, "SC offloaded to McKernel,pid=%d,tid=%d,[%3d](%lx, %lx, %lx, %lx, %lx, %lx): %lx\n", getpid(), gettid(), param->number, param->args[0], param->args[1], param->args[2], param->args[3], param->args[4], param->args[5], param->ret);
+							//fprintf(stderr, "SC offloaded to McKernel,pid=%d,tid=%d,[%3d](%lx, %lx, %lx, %lx, %lx, %lx): %lx\n", getpid(), gettid(), param->number, param->args[0], param->args[1], param->args[2], param->args[3], param->args[4], param->args[5], param->ret);
 						}
-#endif
 						break;
 					default:
 						break;
@@ -3205,8 +3204,10 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 			if (!param) {
 				set_syscall_number(&args, -1);
 				set_syscall_return(&args, -ENOMEM);
+				fprintf(stderr, "%s: ERROR: syscall nest count exceeded\n", __FUNCTION__);
 			}
 			else {
+				/* Report before call, offloaded to McKernel */
 				__dprintf("%s: MCEXEC_UP_SYSCALL_THREAD,nr=%ld\n", __FUNCTION__, get_syscall_number(&args));
 				param_top = *(void **)param;
 				param->number = get_syscall_number(&args);
@@ -3223,6 +3224,16 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 				set_syscall_arg2(&args,
 				                      MCEXEC_UP_SYSCALL_THREAD);
 				set_syscall_arg3(&args, (unsigned long)param);
+
+				switch (param->number) {
+				case __NR_futex:
+					if (param->args[1] & 1) {
+						//fprintf(stderr, "SC,offloaded to McKernel,pid=%d,tid=%d,[%3d](%lx, %lx, %lx, %lx, %lx, %lx)\n", getpid(), gettid(), param->number, param->args[0], param->args[1], param->args[2], param->args[3], param->args[4], param->args[5]);
+					}
+					break;
+				default:
+					break;
+				}
 			}
 			set_syscall_args(uti_desc->tid, &args);
 		}
@@ -4447,12 +4458,12 @@ return_execve2:
 
 		case __NR_sched_setaffinity:
 			if (w.sr.args[0] == 0) {
-				__dprintf("%s: uti, __NR_sched_setaffinity: rtid=%d\n", __FUNCTION__, w.sr.rtid);fflush(stdout);
+				printf("%s: uti, __NR_sched_setaffinity: rtid=%d\n", __FUNCTION__, w.sr.rtid);fflush(stdout);
 				ret = util_thread(my_thread, w.sr.args[1], w.sr.rtid,
 				                  w.sr.args[2], w.sr.args[3]);
 			}
 			else {
-				printf("%s: uti, __NR_sched_setaffinity,munmap addr=%lx,size=%lx\n", __FUNCTION__, w.sr.args[1], w.sr.args[2]); fflush(stdout);
+				__dprintf("%s: uti, __NR_sched_setaffinity,munmap addr=%lx,size=%lx\n", __FUNCTION__, w.sr.args[1], w.sr.args[2]); fflush(stdout);
 				ret = munmap((void *)w.sr.args[1], w.sr.args[2]);
 				if (ret == -1)
 					ret = -errno;
