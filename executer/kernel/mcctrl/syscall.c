@@ -700,7 +700,8 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	if (!ppd) {
 		kprintf("%s: ERROR: no per-process structure for PID %d??\n", 
 				__FUNCTION__, task_tgid_vnr(current));
-		return -EINVAL;
+		ret = VM_FAULT_SIGBUS;
+		goto no_ppd;
 	}
 
 	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
@@ -892,6 +893,7 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 
 put_and_out:
 	mcctrl_put_per_proc_data(ppd);
+ no_ppd:
 	return ret;
 }
 
