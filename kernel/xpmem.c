@@ -1386,7 +1386,7 @@ static int xpmem_free_process_memory_range(
 	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 
 	error = ihk_mc_pt_clear_range(vm->address_space->page_table, vm,
-		(void *)range->start, (void *)range->end);
+		(void *)range->start, (void *)range->end, 1);
 
 	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 

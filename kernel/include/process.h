@@ -386,6 +386,7 @@ struct vm_range {
 	struct rb_node vm_rb_node;
 	unsigned long start, end;
 	unsigned long flag;
+	unsigned long straight_start;
 	struct memobj *memobj;
 	off_t objoff;
 	int pgshift;	/* page size. 0 means THP */
@@ -556,6 +557,9 @@ struct process {
 	int uti_use_last_cpu; /* Work-around not to share CPU with OpenMP thread */
 	int clone_count;
 
+	int straight_map;
+	size_t straight_map_threshold;
+
 	// perf_event
 	int perf_status;
 #define PP_NONE 0
@@ -571,6 +575,10 @@ struct process {
 #endif // PROFILE_ENABLE
 	int nr_processes; /* For partitioned execution */
 	int process_rank; /* Rank in partition */
+
+	void *straight_va;
+	size_t straight_len;
+	unsigned long straight_pa;
 };
 
 /*

@@ -1348,6 +1348,7 @@ int visit_pte_range_safe(page_table_t pt, void *start0, void *end0, int pgshift,
 
 struct clear_range_args {
 	int free_physical;
+	int flush_tlb;
 	struct memobj *memobj;
 	struct process_vm *vm;
 	unsigned long *addr;
@@ -1489,7 +1490,10 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 	}
 
 	old = xchg(ptep, PTE_NULL);
-	remote_flush_tlb_add_addr(args, base);
+
+	if (args->flush_tlb) {
+		remote_flush_tlb_add_addr(args, base);
+	}
 
 	page = NULL;
 	if (!pte_is_fileoff(&old, PTL1_SIZE)) {
@@ -1559,7 +1563,10 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
 
 	if (*ptep & PFL2_SIZE) {
 		old = xchg(ptep, PTE_NULL);
-		remote_flush_tlb_add_addr(args, base);
+
+		if (args->flush_tlb) {
+			remote_flush_tlb_add_addr(args, base);
+		}
 
 		page = NULL;
 		if (!pte_is_fileoff(&old, PTL2_SIZE)) {
@@ -1606,7 +1613,10 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
 
 	if ((start <= base) && ((base + PTL2_SIZE) <= end)) {
 		*ptep = PTE_NULL;
-		remote_flush_tlb_add_addr(args, base);
+
+		if (args->flush_tlb) {
+			remote_flush_tlb_add_addr(args, base);
+		}
 		ihk_mc_free_pages(pt, 1);
 	}
 
@@ -1640,7 +1650,10 @@ static int clear_range_l3(void *args0, pte_t *ptep, uint64_t base,
 
 	if (*ptep & PFL3_SIZE) {
 		old = xchg(ptep, PTE_NULL);
-		remote_flush_tlb_add_addr(args, base);
+
+		if (args->flush_tlb) {
+			remote_flush_tlb_add_addr(args, base);
+		}
 
 		page = NULL;
 		if (!pte_is_fileoff(&old, PTL3_SIZE)) {
@@ -1687,7 +1700,10 @@ static int clear_range_l3(void *args0, pte_t *ptep, uint64_t base,
 
 	if (use_1gb_page && (start <= base) && ((base + PTL3_SIZE) <= end)) {
 		*ptep = PTE_NULL;
-		remote_flush_tlb_add_addr(args, base);
+
+		if (args->flush_tlb) {
+			remote_flush_tlb_add_addr(args, base);
+		}
 		ihk_mc_free_pages(pt, 1);
 	}
 
@@ -1713,7 +1729,7 @@ static int clear_range_l4(void *args0, pte_t *ptep, uint64_t base,
 
 static int clear_range(struct page_table *pt, struct process_vm *vm,
 		uintptr_t start, uintptr_t end, int free_physical,
-		struct memobj *memobj)
+		struct memobj *memobj, int flush_tlb)
 {
 	int error;
 	struct clear_range_args args;
@@ -1742,12 +1758,17 @@ static int clear_range(struct page_table *pt, struct process_vm *vm,
 			sizeof(uint64_t));
 
 	args.free_physical = free_physical;
-	if (memobj && (memobj->flags & MF_DEV_FILE)) {
+	if ((memobj && (memobj->flags & MF_DEV_FILE)) ||
+			(vm->proc->straight_va &&
+			 (void *)start == vm->proc->straight_va &&
+			 (void *)end == (vm->proc->straight_va +
+				 vm->proc->straight_len))) {
 		args.free_physical = 0;
 	}
 	if (memobj && ((memobj->flags & MF_PREMAP))) {
 		args.free_physical = 0;
 	}
+	args.flush_tlb = flush_tlb;
 	args.memobj = memobj;
 	args.vm = vm;
 
@@ -1763,19 +1784,19 @@ static int clear_range(struct page_table *pt, struct process_vm *vm,
 }
 
 int ihk_mc_pt_clear_range(page_table_t pt, struct process_vm *vm, 
-		void *start, void *end)
+		void *start, void *end, int flush_tlb)
 {
 #define	KEEP_PHYSICAL	0
 	return clear_range(pt, vm, (uintptr_t)start, (uintptr_t)end,
-			KEEP_PHYSICAL, NULL);
+			KEEP_PHYSICAL, NULL, flush_tlb);
 }
 
 int ihk_mc_pt_free_range(page_table_t pt, struct process_vm *vm, 
-		void *start, void *end, struct memobj *memobj)
+		void *start, void *end, struct memobj *memobj, int flush_tlb)
 {
 #define	FREE_PHYSICAL	1
 	return clear_range(pt, vm, (uintptr_t)start, (uintptr_t)end,
-			FREE_PHYSICAL, memobj);
+			FREE_PHYSICAL, memobj, flush_tlb);
 }
 
 struct change_attr_args {
@@ -1983,7 +2004,7 @@ int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 		error = -EBUSY;
 		ekprintf("set_range_l1(%lx,%lx,%lx):page exists. %d %lx\n",
 				base, start, end, error, *ptep);
-		(void)clear_range(args->pt, args->vm, start, base, KEEP_PHYSICAL, NULL);
+		(void)clear_range(args->pt, args->vm, start, base, KEEP_PHYSICAL, NULL, 1);
 		goto out;
 	}
 
@@ -2046,7 +2067,7 @@ retry:
 						"__alloc_new_pt failed. %d %lx\n",
 						base, start, end, error, *ptep);
 				(void)clear_range(args->pt, args->vm, start, base,
-						KEEP_PHYSICAL, NULL);
+						KEEP_PHYSICAL, NULL, 1);
 				goto out;
 			}
 		}
@@ -2066,7 +2087,8 @@ retry:
 		ekprintf("set_range_l2(%lx,%lx,%lx):"
 				"page exists. %d %lx\n",
 				base, start, end, error, *ptep);
-		(void)clear_range(args->pt, args->vm, start, base, KEEP_PHYSICAL, NULL);
+		(void)clear_range(args->pt, args->vm, start, base,
+			KEEP_PHYSICAL, NULL, 1);
 		goto out;
 	}
 	else {
@@ -2135,7 +2157,7 @@ retry:
 						"__alloc_new_pt failed. %d %lx\n",
 						base, start, end, error, *ptep);
 				(void)clear_range(args->pt, args->vm, start,
-						base, KEEP_PHYSICAL, NULL);
+						base, KEEP_PHYSICAL, NULL, 1);
 				goto out;
 			}
 		}
@@ -2156,7 +2178,7 @@ retry:
 				"page exists. %d %lx\n",
 				base, start, end, error, *ptep);
 		(void)clear_range(args->pt, args->vm, start, base,
-				KEEP_PHYSICAL, NULL);
+				KEEP_PHYSICAL, NULL, 1);
 		goto out;
 	}
 	else {
@@ -2202,7 +2224,7 @@ retry:
 						"__alloc_new_pt failed. %d %lx\n",
 						base, start, end, error, *ptep);
 				(void)clear_range(args->pt, args->vm, start,
-						base, KEEP_PHYSICAL, NULL);
+						base, KEEP_PHYSICAL, NULL, 1);
 				goto out;
 			}
 		}

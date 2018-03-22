@@ -202,6 +202,8 @@ struct program_load_desc {
 	unsigned long mpol_bind_mask;
 	int uti_thread_rank; /* N-th clone() spawns a thread on Linux CPU */
 	int uti_use_last_cpu; /* Work-around not to share CPU with OpenMP thread */
+	int straight_map;
+	size_t straight_map_threshold;
 	int nr_processes;
 	int process_rank;
 	char shell_path[SHELL_PATH_MAX_LEN];

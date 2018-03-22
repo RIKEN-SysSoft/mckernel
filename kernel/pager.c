@@ -858,9 +858,11 @@ do_pageout(char *fname, void *buf, size_t size, int flag)
 		struct swap_areainfo sw_info;
 		copy_from_user(&sw_info, &(si->swap_info[i]), sizeof(struct swap_areainfo));
 		cc = ihk_mc_pt_free_range(vm->address_space->page_table,
-					  vm,
-					  (void*) sw_info.start,
-					  (void*) sw_info.end, NULL);
+				vm,
+				(void*) sw_info.start,
+				(void*) sw_info.end,
+				NULL,
+				IHK_MC_FLUSH_TLB);
 		if (cc < 0) {
 			kprintf("ihk_mc_pt_clear_range returns: %d\n", cc);
 		}

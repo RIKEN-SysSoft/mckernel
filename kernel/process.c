@@ -836,6 +836,11 @@ int split_process_memory_range(struct process_vm *vm, struct vm_range *range,
 	}
 
 	newrange->start = addr;
+	newrange->straight_start = 0;
+	if (range->straight_start) {
+		newrange->straight_start =
+			range->straight_start + (addr - range->start);
+	}
 	newrange->end = range->end;
 	newrange->flag = range->flag;
 	newrange->pgshift = range->pgshift;
@@ -935,6 +940,11 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 
 	start = range->start;
 	end = range->end;
+
+	/* No regular page table manipulation for straight mappings */
+	if (range->straight_start || ((void *)start == vm->proc->straight_va))
+		goto straight_out;
+
 	if (!(range->flag & (VR_REMOTE | VR_IO_NOCACHE | VR_RESERVED))) {
 		neighbor = previous_process_memory_range(vm, range);
 		pgsize = -1;
@@ -977,9 +987,12 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 		if (range->memobj) {
 			memobj_ref(range->memobj);
 		}
+
 		error = ihk_mc_pt_free_range(vm->address_space->page_table, vm,
 				(void *)start, (void *)end,
-				(range->flag & VR_PRIVATE)? NULL: range->memobj);
+				(range->flag & VR_PRIVATE)? NULL: range->memobj, 
+				range->straight_start ?
+				IHK_MC_DONT_FLUSH_TLB : IHK_MC_FLUSH_TLB);
 		if (range->memobj) {
 			memobj_unref(range->memobj);
 		}
@@ -997,7 +1010,7 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 		dkprintf("%s,memory_stat_rss_sub() isn't called, VR_REMOTE | VR_IO_NOCACHE | VR_RESERVED case, %lx-%lx\n", __FUNCTION__, start, end);
 		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 		error = ihk_mc_pt_clear_range(vm->address_space->page_table, vm,
-				(void *)start, (void *)end);
+				(void *)start, (void *)end, 1);
 		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 		if (error && (error != -ENOENT)) {
 			ekprintf("free_process_memory_range(%p,%lx-%lx):"
@@ -1011,10 +1024,37 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 		memobj_unref(range->memobj);
 	}
 
+straight_out:
+
 	rb_erase(&range->vm_rb_node, &vm->vm_range_tree);
+
 	for (i = 0; i < VM_RANGE_CACHE_SIZE; ++i) {
 		if (vm->range_cache[i] == range)
 			vm->range_cache[i] = NULL;
+	}
+
+	/* For straight ranges just free physical memory */
+	if (range->straight_start) {
+		ihk_mc_free_pages(phys_to_virt(vm->proc->straight_pa +
+			(range->straight_start - (unsigned long)vm->proc->straight_va)),
+			(range->end - range->start) >> PAGE_SHIFT);
+
+		kprintf("%s: straight range 0x%lx @ straight 0x%lx physical memory freed\n",
+				__FUNCTION__, range->start, range->straight_start);
+	}
+	/* For the main straight mapping, free page tables */
+	else if (range->start == (unsigned long)vm->proc->straight_va &&
+			range->end == ((unsigned long)vm->proc->straight_va +
+				vm->proc->straight_len)) {
+		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
+		error = ihk_mc_pt_clear_range(vm->address_space->page_table, vm,
+				(void *)start, (void *)end, 0);
+		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
+
+		dkprintf("%s: straight mapping 0x%lx unmapped\n",
+				__FUNCTION__, vm->proc->straight_va);
+		vm->proc->straight_va = 0;
+		vm->proc->straight_len = 0;
 	}
 	kfree(range);
 
@@ -1032,6 +1072,46 @@ int remove_process_memory_range(struct process_vm *vm,
 
 	dkprintf("remove_process_memory_range(%p,%lx,%lx)\n",
 			vm, start, end);
+	/* Convert to real virtual address for straight mapping */
+	if (vm->proc->straight_va &&
+			start >= (unsigned long)vm->proc->straight_va &&
+			end <= ((unsigned long)vm->proc->straight_va +
+				vm->proc->straight_len) &&
+			!(start == (unsigned long)vm->proc->straight_va &&
+			end == ((unsigned long)vm->proc->straight_va +
+				vm->proc->straight_len))) {
+		struct vm_range *range_iter;
+		struct vm_range *range = NULL;
+		unsigned long len = end - start;
+
+		range_iter = lookup_process_memory_range(vm, 0, -1);
+
+		while (range_iter) {
+			if (range_iter->straight_start &&
+					start >= range_iter->straight_start &&
+					start < (range_iter->straight_start +
+						(range_iter->end - range_iter->start))) {
+				range = range_iter;
+				break;
+			}
+
+			range_iter = next_process_memory_range(vm, range_iter);
+		}
+
+		if (!range) {
+			kprintf("%s: WARNING: no straight mapping range found for 0x%lx\n",
+				__FUNCTION__, start);
+			return 0;
+		}
+
+		kprintf("%s: straight range converted from 0x%lx:%lu -> 0x%lx:%lu\n",
+				__FUNCTION__,
+				start, len,
+				range->start + (start - range->straight_start), len);
+
+		start = range->start + (start - range->straight_start);
+		end = start + len;
+	}
 
 	next = lookup_process_memory_range(vm, start, end);
 	while ((range = next) && range->start < end) {
@@ -1230,6 +1310,7 @@ int add_process_memory_range(struct process_vm *vm,
 	range->objoff = offset;
 	range->pgshift = pgshift;
 	range->private_data = NULL;
+	range->straight_start = 0;
 
 	rc = 0;
 	if (phys == NOPHYS) {
@@ -2386,7 +2467,7 @@ int remove_process_region(struct process_vm *vm,
 	/* We defer freeing to the time of exit */
 	// XXX: check error
 	ihk_mc_pt_clear_range(vm->address_space->page_table, vm,
-			(void *)start, (void *)end);
+			(void *)start, (void *)end, 1);
 	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 
 	// memory_stat_rss_sub() isn't called because this execution path is no loger reached

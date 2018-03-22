@@ -154,6 +154,9 @@ _ihk_mc_free_pages(p, npages, IHK_MC_PG_KERNEL, __FILE__, __LINE__);\
 _ihk_mc_free_pages(p, npages, IHK_MC_PG_USER, __FILE__, __LINE__);\
 })
 
+#define IHK_MC_FLUSH_TLB                 1
+#define IHK_MC_DONT_FLUSH_TLB            0
+
 void *ihk_mc_allocate(int size, int flag);
 void ihk_mc_free(void *p);
 
@@ -170,9 +173,9 @@ int ihk_mc_pt_change_page(page_table_t pt, void *virt,
 int ihk_mc_pt_clear_page(page_table_t pt, void *virt);
 int ihk_mc_pt_clear_large_page(page_table_t pt, void *virt);
 int ihk_mc_pt_clear_range(page_table_t pt, struct process_vm *vm, 
-		void *start, void *end);
+		void *start, void *end, int flush_tlb);
 int ihk_mc_pt_free_range(page_table_t pt, struct process_vm *vm, 
-		void *start, void *end, struct memobj *memobj);
+		void *start, void *end, struct memobj *memobj, int flush_tlb);
 int ihk_mc_pt_change_attr_range(page_table_t pt, void *start, void *end,
 		enum ihk_mc_pt_attribute clrattr,
 		enum ihk_mc_pt_attribute setattr);

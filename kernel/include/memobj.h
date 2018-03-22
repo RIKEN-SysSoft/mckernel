@@ -94,7 +94,7 @@ static inline void memobj_unref(struct memobj *obj)
 static inline int memobj_get_page(struct memobj *obj, off_t off,
 		int p2align, uintptr_t *physp, unsigned long *pflag, uintptr_t virt_addr)
 {
-	if (obj->ops->get_page) {
+	if (obj && obj->ops && obj->ops->get_page) {
 		return (*obj->ops->get_page)(obj, off, p2align, physp, pflag, virt_addr);
 	}
 	return -ENXIO;
@@ -103,7 +103,7 @@ static inline int memobj_get_page(struct memobj *obj, off_t off,
 static inline uintptr_t memobj_copy_page(struct memobj *obj,
 		uintptr_t orgphys, int p2align)
 {
-	if (obj->ops->copy_page) {
+	if (obj && obj->ops && obj->ops->copy_page) {
 		return (*obj->ops->copy_page)(obj, orgphys, p2align);
 	}
 	return -ENXIO;
@@ -111,7 +111,7 @@ static inline uintptr_t memobj_copy_page(struct memobj *obj,
 
 static inline int memobj_flush_page(struct memobj *obj, uintptr_t phys, size_t pgsize)
 {
-	if (obj->ops->flush_page) {
+	if (obj && obj->ops && obj->ops->flush_page) {
 		return (*obj->ops->flush_page)(obj, phys, pgsize);
 	}
 	return 0;
@@ -120,7 +120,7 @@ static inline int memobj_flush_page(struct memobj *obj, uintptr_t phys, size_t p
 static inline int memobj_invalidate_page(struct memobj *obj, uintptr_t phys,
 		size_t pgsize)
 {
-	if (obj->ops->invalidate_page) {
+	if (obj && obj->ops && obj->ops->invalidate_page) {
 		return (*obj->ops->invalidate_page)(obj, phys, pgsize);
 	}
 	return 0;
@@ -129,7 +129,7 @@ static inline int memobj_invalidate_page(struct memobj *obj, uintptr_t phys,
 static inline int memobj_lookup_page(struct memobj *obj, off_t off,
 		int p2align, uintptr_t *physp, unsigned long *pflag)
 {
-	if (obj->ops->lookup_page) {
+	if (obj && obj->ops && obj->ops->lookup_page) {
 		return (*obj->ops->lookup_page)(obj, off, p2align, physp, pflag);
 	}
 	return -ENXIO;
