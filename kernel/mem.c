@@ -1664,6 +1664,8 @@ void *ihk_mc_map_virtual(unsigned long phys, int npages,
 			ihk_pagealloc_free(vmap_allocator, virt_to_phys(p), npages);
 			return NULL;
 		}
+
+		flush_tlb_single((unsigned long)(p + (i << PAGE_SHIFT)));
 	}
 	barrier();
 	return (char *)p + offset;
@@ -1676,17 +1678,14 @@ void ihk_mc_unmap_virtual(void *va, int npages, int free_physical)
 	va = (void *)((unsigned long)va & PAGE_MASK);
 	for (i = 0; i < npages; i++) {
 		ihk_mc_pt_clear_page(NULL, (char *)va + (i << PAGE_SHIFT));
+		flush_tlb_single((unsigned long)(va + (i << PAGE_SHIFT)));
 	}
-#ifdef POSTK_DEBUG_TEMP_FIX_42 /* add unmap virtual tlb flush. */
-	flush_tlb();
-#endif /* POSTK_DEBUG_TEMP_FIX_42 */
-	
+
 #ifdef POSTK_DEBUG_TEMP_FIX_51 /* ihk_mc_unmap_virtual() free_physical disabled */
 	ihk_pagealloc_free(vmap_allocator, (unsigned long)va, npages);
 #else /* POSTK_DEBUG_TEMP_FIX_51 */
 	if (free_physical) {
 		ihk_pagealloc_free(vmap_allocator, (unsigned long)va, npages);
-		flush_tlb_single((unsigned long)va);
 	}
 #endif /* POSTK_DEBUG_TEMP_FIX_51 */
 }
