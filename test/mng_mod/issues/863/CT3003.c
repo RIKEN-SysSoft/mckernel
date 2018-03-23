@@ -8,6 +8,31 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 
+char *
+gettime(char *buf, struct timeval *tv)
+{
+	struct tm *tm;
+
+	gettimeofday(tv, NULL);
+	tm = localtime(&tv->tv_sec);
+	sprintf(buf, "%02d:%02d:%02d.%06d", tm->tm_hour, tm->tm_min, tm->tm_sec, tv->tv_usec);
+	return buf;
+}
+
+void
+tv_sub(struct timeval *tv1, const struct timeval *tv2)
+{
+	tv1->tv_sec -= tv2->tv_sec;
+	tv1->tv_usec -= tv2->tv_usec;
+	if (tv1->tv_usec < 0) {
+		tv1->tv_sec--;
+		tv1->tv_usec += 1000000;
+	}
+}
+
+struct timeval tv1;
+struct timeval tv2;
+
 void
 child()
 {
@@ -27,13 +52,16 @@ main(int argc, char **argv)
 	pid_t pid;
 	int st;
 	int rc;
+	char buf[16];
 
+	fprintf(stderr, "%s test start, kill after 3 seconds\n", gettime(buf, &tv1));
 	pid = fork();
 	if (pid == 0) {
 		child();
 		exit(1);
 	}
 	while ((rc = waitpid(pid, &st, 0)) == -1 && errno == EINTR);
+	fprintf(stderr, "%s child process terminated\n", gettime(buf, &tv2));
 	if (rc != pid) {
 		fprintf(stderr, "CT3003 NG BAD wait rc=%d errno=%d\n", rc, errno);
 		exit(1);
@@ -46,6 +74,10 @@ main(int argc, char **argv)
 		fprintf(stderr, "CT3003 NG BAD signal sig=%d\n", WTERMSIG(st));
 		exit(1);
 	}
-	fprintf(stderr, "CT3003 OK\n");
+	tv_sub(&tv2, &tv1);
+	if (tv2.tv_sec != 3)
+		fprintf(stderr, "CT3003 NG signal delayed (%d.%06d)\n", tv2.tv_sec, tv2.tv_usec);
+	else
+		fprintf(stderr, "CT3003 OK\n");
 	exit(0);
 }
