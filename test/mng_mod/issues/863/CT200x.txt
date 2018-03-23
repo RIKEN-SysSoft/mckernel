@@ -1,0 +1,45 @@
+スクリプトは Fri Mar 23 14:44:56 2018
+ に開始しました[?1034hbash-4.2$ make test
+./CT200x.sh
+14:44:59.479215 test start, kill after 3 seconds
+14:45:02.479661 signal hanlder is called
+CT2001 OK
+2048+0 レコード入力
+2048+0 レコード出力
+2147483648 バイト (2.1 GB) コピーされました、 19.5222 秒、 110 MB/秒
+vm.drop_caches = 3
+signal hanlder is called
+CT2002 OK
+14:45:46.852481 test start, kill after 3 seconds
+14:45:49.866473 child process terminated
+CT2003 OK
+2048+0 レコード入力
+2048+0 レコード出力
+2147483648 バイト (2.1 GB) コピーされました、 19.513 秒、 110 MB/秒
+vm.drop_caches = 3
+14:46:09.750053 test start, kill after 1 seconds
+14:46:11.100485 child process terminated
+CT2004 OK
+kill SIGURG
+kill SIGINT
+CT2005 OK
+2048+0 レコード入力
+2048+0 レコード出力
+2147483648 バイト (2.1 GB) コピーされました、 19.5075 秒、 110 MB/秒
+vm.drop_caches = 3
+kill SIGURG
+CT2006 OK
+kill SIGTERM (ignored)
+kill SIGINT
+CT2007 OK
+2048+0 レコード入力
+2048+0 レコード出力
+2147483648 バイト (2.1 GB) コピーされました、 19.5217 秒、 110 MB/秒
+vm.drop_caches = 3
+kill SIGTERM (ignored)
+CT2008 OK
+bash-4.2$ exit
+exit
+
+スクリプトは Fri Mar 23 14:48:02 2018
+ に終了しました
