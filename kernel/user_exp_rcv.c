@@ -621,7 +621,13 @@ int hfi1_user_exp_rcv_overlapping(unsigned long start, unsigned long end)
 				" in munmap for 0x%lx:%lu-0x%lx\n",
 				__FUNCTION__, node->start, node->len, start, end - start, end);
 		tid_rb_invalidate(fd, node);
-		node->range = range;
+		if (node->range) {
+			kprintf("%s: WARNING: node->range is already set for 0x%lx:%lu\n",
+				__FUNCTION__, start, end);
+		}
+		else {
+			node->range = range;
+		}
 		++range->refcnt;
 
 		node = __hfi1_search_rb_overlapping_node(
@@ -629,11 +635,12 @@ int hfi1_user_exp_rcv_overlapping(unsigned long start, unsigned long end)
 				start, end);
 	}
 
-	if (ret != 0) {
+	if (range->refcnt == 0) {
 		kfree(range);
 	}
 	else {
 		list_add_tail(&range->list, &vm->vm_deferred_unmap_range_list);
+		ret = range->refcnt;
 	}
 
 	//ihk_mc_spinlock_unlock_noirq(&vm->vm_deferred_unmap_lock);
