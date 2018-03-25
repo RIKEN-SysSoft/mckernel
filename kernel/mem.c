@@ -964,8 +964,34 @@ static struct ihk_mc_interrupt_handler query_free_mem_handler = {
 
 void set_signal(int sig, void *regs, struct siginfo *info);
 void check_signal(unsigned long, void *, int);
-int gencore(struct thread *, void *, struct coretable **, int *);
+int gencore(struct process *, struct coretable **, int *, char *);
 void freecore(struct coretable **);
+struct siginfo;
+extern unsigned long do_kill(struct thread *, int, int, int, struct siginfo *, int ptracecont);
+
+void coredump_wait(struct thread *thread) {
+	unsigned long flags;
+	DECLARE_WAITQ_ENTRY(coredump_wq_entry, cpu_local_var(current));
+
+	if (__sync_bool_compare_and_swap(&thread->coredump_status, COREDUMP_RUNNING, COREDUMP_DESCHEDULED)) {
+		flags = cpu_disable_interrupt_save();
+		kprintf("%s: sleeping,tid=%d\n", __FUNCTION__, thread->tid);
+		waitq_init(&thread->coredump_wq);
+		waitq_prepare_to_wait(&thread->coredump_wq, &coredump_wq_entry, PS_INTERRUPTIBLE);
+		cpu_restore_interrupt(flags);
+		schedule();
+		waitq_finish_wait(&thread->coredump_wq, &coredump_wq_entry);
+		thread->coredump_status = COREDUMP_RUNNING;
+		kprintf("%s: woken up,tid=%d\n", __FUNCTION__, thread->tid);
+	}
+}
+
+void coredump_wakeup(struct thread *thread) {
+	if (__sync_bool_compare_and_swap(&thread->coredump_status, COREDUMP_DESCHEDULED, COREDUMP_TO_BE_WOKEN)) {
+		kprintf("%s: waking up tid %d\n", __FUNCTION__, thread->tid);
+		waitq_wakeup(&thread->coredump_wq);
+	}
+}
 
 /**
  * \brief Generate a core file and tell the host to write it out.
@@ -974,34 +1000,122 @@ void freecore(struct coretable **);
  * \param regs A pointer to a x86_regs structure.
  */
 
-void coredump(struct thread *thread, void *regs)
+int coredump(struct thread *thread, void *regs, int sig)
 {
+	struct process *proc = thread->proc;
 	struct syscall_request request IHK_DMA_ALIGN;
 	int ret;
 	struct coretable *coretable;
 	int chunks;
+	struct mcs_rwlock_node_irqsave lock;
+	int n;
+	struct thread *thread_iter;
 
-    if (thread->proc->rlimit[MCK_RLIMIT_CORE].rlim_cur == 0) {
-        return;
+	kprintf("%s: pid=%d,tid=%d,coredump_barrier_count=%d\n", __FUNCTION__, proc->pid, thread->tid, proc->coredump_barrier_count);
+    if (proc->rlimit[MCK_RLIMIT_CORE].rlim_cur == 0) {
+        ret = -EBUSY;
+		goto out;
     }
 
+
 #ifndef POSTK_DEBUG_ARCH_DEP_18
-	ret = gencore(thread, regs, &coretable, &chunks);
-	if (ret != 0) {
-		dkprintf("could not generate a core file image\n");
-		return;
+	/* Wait until all threads save its register.
+	   TODO: Freeze thread creation */
+	ret = __sync_fetch_and_add(&proc->coredump_barrier_count, 1);
+	if (ret == 0) {
+		int i;
+		n = 0;
+		int *ids = NULL;
+
+		mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
+		list_for_each_entry(thread_iter, &proc->threads_list, siblings_list) {
+			if (thread_iter != thread) {
+				n++;
+			}
+		}
+		if (n) {
+			ids = kmalloc(sizeof(int) * n, IHK_MC_AP_NOWAIT);
+			if (!ids) {
+				mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
+				kprintf("%s: Out of memory\n", __FUNCTION__);
+				ret = -ENOMEM;
+				goto out;
+			}
+			i = 0;
+			list_for_each_entry(thread_iter, &proc->threads_list, siblings_list) {
+				if(thread_iter != thread){
+					ids[i] = thread_iter->tid;
+					i++;
+				}
+			}
+		}
+		mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
+		/* Note that target on the same CPU responds to the signal when switched 
+		   via the following coredump_wait() and returning to user mode */
+		for (i = 0; i < n; i++) {
+			kprintf("%s: calling do_kill, target tid=%d\n", __FUNCTION__, ids[i]);
+			do_kill(thread, proc->pid, ids[i], sig, NULL, 0);
+		}
+		if (n) {
+			kfree(ids);
+		}
 	}
+
+	while (1) {
+		n = 0;
+		mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
+		list_for_each_entry(thread_iter, &proc->threads_list, siblings_list) {
+			n++;
+		}
+		mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
+		if (n == proc->coredump_barrier_count) {
+			list_for_each_entry(thread_iter, &proc->threads_list, siblings_list) {
+				coredump_wakeup(thread_iter);
+			}
+			break;
+		}
+		coredump_wait(thread);
+	}
+
+	if (ret != 0) { /* All but one wait until dump is done while keeping struct thread alive */
+		ret = 0;
+		goto skip;
+	}
+
+	if ((ret = gencore(proc, &coretable, &chunks, proc->saved_cmdline))) {
+		kprintf("%s: ERROR gencore returned %d\n", __FUNCTION__, ret);
+		goto out;
+	}
+
 	request.number = __NR_coredump;
 	request.args[0] = chunks;
 	request.args[1] = virt_to_phys(coretable);
+	request.args[2] = virt_to_phys(thread->proc->saved_cmdline);
+	request.args[3] = (unsigned long)thread->proc->saved_cmdline_len;
+
 	/* no data for now */
 	ret = do_syscall(&request, thread->cpu_id, thread->proc->pid);
 	if (ret == 0) {
-		kprintf("dumped core.\n");
+		kprintf("%s: INFO: coredump done\n", __FUNCTION__);
 	} else {
-		kprintf("core dump failed.\n");
+		kprintf("%s: ERROR: do_syscall failed (%d)\n", __FUNCTION__, ret);
 	}
 	freecore(&coretable);
+
+ skip:
+	__sync_fetch_and_add(&proc->coredump_barrier_count2, 1);
+	while (1) {
+		if (n == proc->coredump_barrier_count2) {
+			list_for_each_entry(thread_iter, &proc->threads_list, siblings_list) {
+				coredump_wakeup(thread_iter);
+			}
+			break;
+		}
+		coredump_wait(thread);
+	}
+
+ out:
+	return ret;
 #endif /* POSTK_DEBUG_ARCH_DEP_18 */
 }
 
