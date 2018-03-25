@@ -231,6 +231,7 @@ static long stack_max = -1;
 static struct rlimit rlim_stack;
 static char *mpol_bind_nodes = NULL;
 static int uti_thread_rank = 0;
+static int uti_use_last_cpu = 0;
 
 /* Partitioned execution (e.g., for MPI) */
 static int nr_processes = 0;
@@ -1760,6 +1761,12 @@ static struct option mcexec_options[] = {
 		.flag =		NULL,
 		.val =		'u',
 	},
+	{
+		.name =		"uti-use-last-cpu",
+		.has_arg =	no_argument,
+		.flag =		&uti_use_last_cpu,
+		.val =		1,
+	},
 	/* end */
 	{ NULL, 0, NULL, 0, },
 };
@@ -2557,6 +2564,7 @@ int main(int argc, char **argv)
 	}
 
 	desc->uti_thread_rank = uti_thread_rank;
+	desc->uti_use_last_cpu = uti_use_last_cpu;
 
 	/* user_start and user_end are set by this call */
 	if (ioctl(fd, MCEXEC_UP_PREPARE_IMAGE, (unsigned long)desc) != 0) {
