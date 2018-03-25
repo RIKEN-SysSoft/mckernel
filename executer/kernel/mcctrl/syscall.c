@@ -2363,7 +2363,8 @@ int release_user_space(uintptr_t start, uintptr_t len)
  * \param chunks The number of chunks which make a core file image in the whole.
  */
 
-static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
+ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks, unsigned long cmdline_rphys, unsigned long cmdline_len) {
+	char *fn = NULL;
 	struct file *file;
 	struct coretable *coretable;
 #ifdef POSTK_DEBUG_TEMP_FIX_61 /* Core table size and lseek return value to loff_t */
@@ -2377,8 +2378,17 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 	unsigned long phys, tablephys, rphys;
 	ihk_device_t dev = ihk_os_to_dev(os);
 	char *pt;
+	unsigned long cmdline_phys;
+	char* cmdline;
 
-	dprintk("coredump called as a pseudo syscall\n");
+	printk("coredump called as a pseudo syscall\n");
+
+	fn = kmalloc(PATH_MAX, GFP_TEMPORARY);
+	if (!fn) {
+		dprintk("%s: Out of memory\n", __FUNCTION__);
+		error = -ENOMEM;
+		goto fail;
+	}
 
 	if (chunks <= 0) {
 		dprintk("no core data found!(%d)\n", chunks);
@@ -2388,6 +2398,13 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 
 	set_fs(KERNEL_DS);
 
+	cmdline_phys = ihk_device_map_memory(dev, cmdline_rphys, cmdline_len);
+	cmdline = ihk_device_map_virtual(dev, cmdline_phys, cmdline_len, NULL, 0);
+	sprintf(fn, "mccore-%s.%d", strrchr(cmdline, '/') ? strrchr(cmdline, '/') + 1 : cmdline, task_tgid_vnr(current));
+	printk("%s: fn=%s\n", __FUNCTION__, fn);
+	ihk_device_unmap_virtual(dev, cmdline, cmdline_len);
+	ihk_device_unmap_memory(dev, cmdline_phys, cmdline_len);
+
 	/* Every Linux documentation insists we should not 
 	 * open a file in the kernel module, but our karma 
 	 * leads us here. Precisely, Here we emulate the core 
@@ -2395,19 +2412,16 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 	 * So we have a legitimate reason to do this.
 	 */
 #ifdef POSTK_DEBUG_TEMP_FIX_59 /* corefile open flag add O_TRUNC */
-	file = filp_open("core", O_CREAT | O_RDWR | O_LARGEFILE | O_TRUNC, 0600);
+	file = filp_open(fn, O_CREAT | O_RDWR | O_LARGEFILE | O_TRUNC, 0600);
 #else /* POSTK_DEBUG_TEMP_FIX_59 */
-	file = filp_open("core", O_CREAT | O_RDWR | O_LARGEFILE, 0600);
+	file = filp_open(fn, O_CREAT | O_RDWR | O_LARGEFILE, 0600);
 #endif /* POSTK_DEBUG_TEMP_FIX_59 */
-#ifdef POSTK_DEBUG_ARCH_DEP_41 /* use writehandler version switch add */
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0)
 	if (IS_ERR(file) || !file->f_op) {
 #else
 	if (IS_ERR(file) || !file->f_op || !file->f_op->write) {
 #endif
-#else /* POSTK_DEBUG_ARCH_DEP_41 */
-	if (IS_ERR(file) || !file->f_op || !file->f_op->write) {
-#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 		dprintk("cannot open core file\n");
 		error = PTR_ERR(file);
 		goto fail;
@@ -2485,6 +2499,9 @@ fail:
 		/* make sure we do not travel to user land */
 		error = -EINVAL;
 	}
+	if (fn) {
+		kfree(fn);
+	}
 	return error;
 }
 
@@ -2538,7 +2555,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 		}
 
 	case __NR_coredump:
-		error = writecore(os, sc->args[1], sc->args[0]);
+		error = writecore(os, sc->args[1], sc->args[0], sc->args[2], sc->args[3]);
 #ifdef POSTK_DEBUG_TEMP_FIX_62 /* Fix to notify McKernel that core file generation failed */
 		ret = error;
 #else /* POSTK_DEBUG_TEMP_FIX_62 */
