@@ -1207,6 +1207,8 @@ int add_process_memory_range(struct process_vm *vm,
 	struct vm_range *range;
 	int rc;
 
+	kprintf("%s: %lx - %lx,flag=%x\n", __FUNCTION__, start, end, flag);
+
 	if ((start < vm->region.user_start)
 			|| (vm->region.user_end < end)) {
 		kprintf("%s: error: range %lx - %lx is not in user available area\n",
@@ -1288,6 +1290,7 @@ int add_process_memory_range(struct process_vm *vm,
 		*rp = range;
 	}
 
+	kprintf("%s: exit,%lx - %lx,flag=%x\n", __FUNCTION__, start, end, flag);
 	return 0;
 }
 
@@ -2222,6 +2225,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	vrflag |= PROT_TO_VR_FLAG(pn->stack_prot);
 	vrflag |= VR_MAXPROT_READ | VR_MAXPROT_WRITE | VR_MAXPROT_EXEC;
 #define	NOPHYS	((uintptr_t)-1)
+	kprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)start, (unsigned long)end);
 	if ((rc = add_process_memory_range(thread->vm, start, end, NOPHYS,
 					vrflag, NULL, 0, LARGE_PAGE_SHIFT, &range)) != 0) {
 		ihk_mc_free_pages_user(stack, minsz >> PAGE_SHIFT);
@@ -2379,6 +2383,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 		}
 	}
 
+	kprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)end_allocated, (unsigned long)new_end_allocated);
 	if ((rc = add_process_memory_range(vm, end_allocated, new_end_allocated,
 					(p == 0 ? 0 : virt_to_phys(p)), flag, NULL, 0,
 					align_shift, NULL)) != 0) {
@@ -2711,6 +2716,9 @@ void destroy_thread(struct thread *thread)
 	}
 	if (thread->fp_regs) {
 		release_fp_regs(thread);
+	}
+	if (thread->coredump_regs) {
+		kfree(thread->coredump_regs);
 	}
 
 	release_sigcommon(thread->sigcommon);
