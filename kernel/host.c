@@ -506,6 +506,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	}
 
 	proc->uti_thread_rank = pn->uti_thread_rank;
+	proc->uti_use_last_cpu = pn->uti_use_last_cpu;
 
 #ifdef PROFILE_ENABLE
 	proc->profile = pn->profile;
@@ -618,7 +619,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	case SCD_MSG_SCHEDULE_PROCESS:
 		thread = (struct thread *)packet->arg;
 
-		cpuid = obtain_clone_cpuid(&thread->cpu_set);
+		cpuid = obtain_clone_cpuid(&thread->cpu_set, 0);
 		if (cpuid == -1) {
 			kprintf("No CPU available\n");
 			ret = -1;
