@@ -578,6 +578,7 @@ struct process {
 #endif // PROFILE_ENABLE
 	int nr_processes; /* For partitioned execution */
 	int process_rank; /* Rank in partition */
+	int coredump_barrier_count, coredump_barrier_count2;
 
 	void *fd_priv_table[256];
 	/* HFI1 specific */
@@ -706,6 +707,11 @@ struct thread {
 
 	/* Syscall offload wait queue head */
 	struct waitq scd_wq;
+
+	/* coredump */
+	void *coredump_regs;
+	struct waitq coredump_wq;
+	int coredump_status;
 
 	int thread_offloaded;
 	int mod_clone;

@@ -530,7 +530,7 @@ long ptrace_write_regset(struct thread *thread, long type, struct iovec *iov)
 	return rc;
 }
 
-extern void coredump(struct thread *thread, void *regs);
+extern int coredump(struct thread *thread, void *regs, int sig);
 
 void ptrace_report_signal(struct thread *thread, int sig)
 {
@@ -934,12 +934,31 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 		case SIGSYS:
 		case SIGXCPU:
 		case SIGXFSZ:
-		core:
-			dkprintf("do_signal,default,core,sig=%d\n", sig);
-			coredump(thread, regs);
-			coredumped = 0x80;
+		core: {
+			int ret;
+			kprintf("do_signal,default,core,sig=%d\n", sig);
+			thread->coredump_regs = kmalloc(sizeof(struct x86_user_context), IHK_MC_AP_NOWAIT);
+			if (!thread->coredump_regs) {
+				kprintf("%s: Out of memory\n", __FUNCTION__);
+				goto skip;
+			}
+			memcpy(thread->coredump_regs, regs, sizeof(struct x86_user_context));
+
+			ret = coredump(thread, regs, sig);
+			switch (ret) {
+			case -EBUSY:
+				kprintf("%s: INFO: coredump not performed, try ulimit -c <non-zero>\n", __FUNCTION__);
+				break;
+			case 0:
+				coredumped = 0x80;
+				break;
+			default:
+				kprintf("%s: ERROR: coredump failed (%d)\n", __FUNCTION__, ret);
+				break;
+			}
+		skip:
 			terminate(0, sig | coredumped);
-			break;
+			break; }
 		case SIGCHLD:
 		case SIGURG:
 		case SIGWINCH:
@@ -1184,7 +1203,7 @@ unsigned long
 do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
         int ptracecont)
 {
-	dkprintf("do_kill,pid=%d,tid=%d,sig=%d\n", pid, tid, sig);
+	kprintf("do_kill,pid=%d,tid=%d,sig=%d\n", pid, tid, sig);
 	struct thread *t;
 	struct process *tproc;
 	struct process *proc = thread? thread->proc: NULL;
@@ -1476,7 +1495,7 @@ set_signal(int sig, void *regs0, siginfo_t *info)
         }
 
 	if ((__sigmask(sig) & thread->sigmask.__val[0])) {
-		coredump(thread, regs0);
+		coredump(thread, regs0, sig);
 		terminate(0, sig | 0x80);
 	}
 	do_kill(thread, thread->proc->pid, thread->tid, sig, info, 0);
@@ -1914,6 +1933,7 @@ int arch_map_vdso(struct process_vm *vm)
 	vrflags = VR_REMOTE;
 	vrflags |= VR_PROT_READ | VR_PROT_EXEC;
 	vrflags |= VRFLAG_PROT_TO_MAXPROT(vrflags);
+	kprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)s, (unsigned long)e);
 	error = add_process_memory_range(vm, (intptr_t)s, (intptr_t)e,
 			NOPHYS, vrflags, NULL, 0, PAGE_SHIFT, &range);
 	if (error) {
@@ -1946,6 +1966,7 @@ int arch_map_vdso(struct process_vm *vm)
 		vrflags = VR_REMOTE;
 		vrflags |= VR_PROT_READ;
 		vrflags |= VRFLAG_PROT_TO_MAXPROT(vrflags);
+		kprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)s, (unsigned long)e);
 		error = add_process_memory_range(vm, (intptr_t)s, (intptr_t)e,
 				NOPHYS, vrflags, NULL, 0, PAGE_SHIFT, &range);
 		if (error) {
