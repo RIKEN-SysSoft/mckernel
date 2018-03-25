@@ -139,6 +139,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 			flags |= VR_AP_USER;
 		}
 
+		kprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)s, (unsigned long)e);
 		if (add_process_memory_range(vm, s, e, NOPHYS, flags, NULL, 0,
 					pn->sections[i].len > LARGE_PAGE_SIZE ?
 					LARGE_PAGE_SHIFT : PAGE_SHIFT,
@@ -233,6 +234,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 
 		flags = VR_PROT_READ | VR_PROT_WRITE;
 		flags |= VRFLAG_PROT_TO_MAXPROT(flags);
+		kprintf("%s: %lx - %lx\n", __FUNCTION__, vm->region.brk_start, vm->region.brk_start + proc->heap_extension);
 		if (add_process_memory_range(vm, vm->region.brk_start,
 					vm->region.brk_start + proc->heap_extension,
 					virt_to_phys(heap),
@@ -267,6 +269,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 
 	dkprintf("%s: args_envs: %d pages\n",
 			 __FUNCTION__, ARGENV_PAGE_COUNT);
+	dkprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)addr, (unsigned long)e);
 	if(add_process_memory_range(vm, addr, e, args_envs_p,
 				flags, NULL, 0, PAGE_SHIFT, NULL) != 0){
 		ihk_mc_free_pages_user(args_envs, ARGENV_PAGE_COUNT);
@@ -665,7 +668,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		syscall_channel_send(resp_channel, &pckt);
 
 		rc = do_kill(NULL, info.pid, info.tid, info.sig, &info.info, 0);
-		dkprintf("SCD_MSG_SEND_SIGNAL: do_kill(pid=%d, tid=%d, sig=%d)=%d\n", info.pid, info.tid, info.sig, rc);
+		kprintf("SCD_MSG_SEND_SIGNAL: do_kill(pid=%d, tid=%d, sig=%d)=%d\n", info.pid, info.tid, info.sig, rc);
 		ret = 0;
 		break;
 

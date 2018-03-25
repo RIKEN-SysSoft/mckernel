@@ -592,4 +592,9 @@ struct move_pages_smp_req {
 #define PROCESS_VM_READ		0
 #define PROCESS_VM_WRITE	1
 
+/* coredump */
+#define COREDUMP_RUNNING          0
+#define COREDUMP_DESCHEDULED      1
+#define COREDUMP_TO_BE_WOKEN      2
+
 #endif
