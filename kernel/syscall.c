@@ -1575,6 +1575,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 				vrflags &= ~VR_MEMTYPE_MASK;
 				vrflags |= VR_MEMTYPE_UC;
 			}
+			kprintf("%s: devobj\n", __FUNCTION__);
 			error = devobj_create(fd, len, off, &memobj, &maxprot, 
 					prot, (flags & (MAP_POPULATE | MAP_LOCKED)));
 
@@ -1622,6 +1623,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 #ifdef PROFILE_ENABLE
 			profile_event_add(PROFILE_mmap_anon_no_contig_phys, len);
 #endif // PROFILE_ENABLE
+			kprintf("%s: zeroobj\n", __FUNCTION__);
 			error = zeroobj_create(&memobj);
 			if (error) {
 				ekprintf("%s: zeroobj_create failed, error: %d\n",
@@ -1645,6 +1647,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		ads.shm_segsz = len;
 		ads.shm_perm.mode = SHM_DEST;
 		ads.init_pgshift = PAGE_SHIFT;
+		kprintf("%s: shmobj\n", __FUNCTION__);
 		error = shmobj_create(&ads, &memobj);
 		if (error) {
 			ekprintf("do_mmap:shmobj_create failed. %d\n", error);
@@ -1671,6 +1674,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	}
 	vrflags |= VRFLAG_PROT_TO_MAXPROT(PROT_TO_VR_FLAG(maxprot));
 
+	kprintf("%s: %lx - %lx, vrflags=%x,memobj=%p\n", __FUNCTION__, (unsigned long)addr, (unsigned long)addr + len, vrflags, memobj);
 	error = add_process_memory_range(thread->vm, addr, addr+len, phys,
 			vrflags, memobj, off, pgshift, &range);
 	if (error) {
@@ -1831,8 +1835,8 @@ SYSCALL_DECLARE(mprotect)
 	unsigned long denied;
 	int ro_changed = 0;
 
-	dkprintf("[%d]sys_mprotect(%lx,%lx,%x)\n",
-			ihk_mc_get_processor_id(), start, len0, prot);
+	kprintf("[%d]sys_mprotect(%lx,%lx,%x,%x)\n",
+			ihk_mc_get_processor_id(), start, len0, prot, protflags);
 
 	len = (len0 + PAGE_SIZE - 1) & PAGE_MASK;
 	end = start + len;
@@ -5147,6 +5151,7 @@ SYSCALL_DECLARE(shmat)
 
 	memobj_ref(&obj->memobj);
 
+	kprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)addr, (unsigned long)addr + len);
 	error = add_process_memory_range(vm, addr, addr+len, -1,
 			vrflags, &obj->memobj, 0, obj->pgshift, NULL);
 	if (error) {
@@ -8047,6 +8052,7 @@ SYSCALL_DECLARE(mremap)
 		if (range->memobj) {
 			memobj_ref(range->memobj);
 		}
+		kprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)newstart, (unsigned long)newend);
 		error = add_process_memory_range(thread->vm, newstart, newend, -1,
 				range->flag, range->memobj,
 				range->objoff + (oldstart - range->start),
