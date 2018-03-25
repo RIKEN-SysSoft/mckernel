@@ -1116,6 +1116,7 @@ static void *main_loop_thread_func(void *arg)
 void
 sendsig(int sig, siginfo_t *siginfo, void *context)
 {
+	int rc;
 	pid_t	pid;
 	pid_t	tid;
 	int	remote_tid;
@@ -1168,7 +1169,8 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 		sigdesc.tid = remote_tid;
 		sigdesc.sig = sig;
 		memcpy(&sigdesc.info, siginfo, 128);
-		if (ioctl(fd, MCEXEC_UP_SEND_SIGNAL, &sigdesc) != 0) {
+		if ((rc = ioctl(fd, MCEXEC_UP_SEND_SIGNAL, &sigdesc))) {
+			fprintf(stderr, "%s: ERROR: MCEXEC_UP_SEND_SIGNAL returned %d\n", __FUNCTION__, rc);
 			close(fd);
 			exit(1);
 		}
