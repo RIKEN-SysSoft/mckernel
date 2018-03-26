@@ -2,17 +2,17 @@
 Issue#1029が解決され、既存機能にも影響がないことをストレステスト用いた確認（1項目）と、
 schedule()の基本動作確認（12項目）の計13項目のテストによって確認した。
 
-①ストレステストを用いた確認
- 以下のコマンドを実行し、Issue#1029で報告された事象が発生せず、テストがパスすることを確認した。
- # ./mck-mcexec.sh ./killit -np 16 -nosignal - ./signalonfutex
+1. ストレステストを用いた確認
+・Issue#1029 (https://postpeta.pccluster.org/redmine/issues/1029)
+報告で使用されたテストプログラムを用いて、現象が再現しないことを確認した。
  
-②schedule()の基本動作確認
+2. schedule()の基本動作確認
 schedule()実行時のコンテキストスイッチ前thread(prev)と、
 runqに積まれている実行待ちthreadの状態の組み合わせで、12項目のテストを実施した。
 
 基本動作確認の詳細を以下に示す。
 
-1. ファイルの説明
+(1) ファイルの説明
   1029.patch	動作確認用デバッグプリントを追加するパッチファイル
   sched_test.c	修正対象のschedule()の動作を確認するプログラム
 				複数の子プロセスをfork()し、それぞれの子プロセスでsched_setaffinity()を行う
@@ -20,19 +20,19 @@ runqに積まれている実行待ちthreadの状態の組み合わせで、12�
 				sched_testプログラムを並列実行する
   result.log	go_testプログラムの実行結果
 
-2. テストの実行方法
- 以下の手順でテストを実行する
+(2) テストの実行方法
+以下の手順でテストを実行する
 	1. 1029.patch をMcKernelのソースコードに適用し、ビルドとインストールを行う
 	2. MakefileのMCK_DIR変数の内容を、McKernelがインストールされているディレクトリに変更する
-    3. McKernelを起動する
+	3. <mckernel-install>/bin/mcreboot.sh -c 2-7 -m 2G -O
 	4. sh make test を実行する
 
-3. テスト項目
+(3) テスト項目
 schedule()実行時のコンテキストスイッチ前thread(prev)と、
 runqに積まれている実行待ちthreadの状態の以下の組み合わせで、
 schedule()が想定どおりの動作をすることを確認する。
 
-◆prevがidleのケース
+・prevがidleのケース
 CT_001: runqが空 
         ⇒ コンテキストスイッチを行わない
 CT_002: runqに実行待ちのthreadが存在し、且つ、そのthreadが1度も実行状態になっていない
@@ -40,7 +40,7 @@ CT_002: runqに実行待ちのthreadが存在し、且つ、そのthreadが1度�
 CT_003: runqに実行待ちのthreadが存在し、且つ、そのthreadが実行状態になったことがある
         ⇒ 非idleのthreadにスイッチする
 
-◆schedule時点で当該CPUのCPU_FLAGS_NEED_MIGRATEが活性化しているケース
+・schedule時点で当該CPUのCPU_FLAGS_NEED_MIGRATEが活性化しているケース
 CT_004: runqが空 
         ⇒ idleにスイッチする
 CT_005: runqに実行待ちのthreadが存在し、且つ、そのthreadが1度も実行状態になっていない
@@ -48,7 +48,7 @@ CT_005: runqに実行待ちのthreadが存在し、且つ、そのthreadが1度�
 CT_006: runqに実行待ちのthreadが存在し、且つ、そのthreadが実行状態になったことがある
         ⇒ idleにスイッチする
 
-◆prevがidle以外で、statusがPS_EXITED以外：
+・prevがidle以外で、statusがPS_EXITED以外：
 CT_007: runqが空 
         ⇒ idleにスイッチする
 CT_008: runqに実行待ちのthreadが存在し、且つ、そのthreadが1度も実行状態になっていない
@@ -56,7 +56,7 @@ CT_008: runqに実行待ちのthreadが存在し、且つ、そのthreadが1度�
 CT_009: runqに実行待ちのthreadが存在し、且つ、そのthreadが実行状態になったことがある
         ⇒ 非idleのthreadにスイッチする
 
-◆prevがidle以外で、statusがPS_EXITED：
+・prevがidle以外で、statusがPS_EXITED：
 CT_010: runqが空 
         ⇒ idleにスイッチする
 CT_011: runqに実行待ちのthreadが存在し、且つ、そのthreadが1度も実行状態になっていない
@@ -64,6 +64,6 @@ CT_011: runqに実行待ちのthreadが存在し、且つ、そのthreadが1度�
 CT_012: runqに実行待ちのthreadが存在し、且つ、そのthreadが実行状態になったことがある
         ⇒ idleにスイッチする
 
-4. 結果
+(4) 結果
 テストプログラムの実行結果はresult.log に出力される。
 上記12項目で[OK]が出力されていることを確認した。

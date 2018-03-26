@@ -3,23 +3,23 @@ Issue#925が解決され、既存機能に影響がないことをIssueで報告
 McKernelでのXPMEM操作の基本動作確認（11項目）の計12項目のテストによって確認した。
 なお、各テストの実行結果は./result.log として格納している。
 
-①Issueで報告されたテストプログラムによる確認
- ・Issue#925
- 報告で使用されたテストプログラムを用いて、現象が再現しないことを確認した。
- 実行時の出力を./result.log に記載している
+1. Issueで報告されたテストプログラムによる確認
+・Issue#925 (https://postpeta.pccluster.org/redmine/issues/925)
+報告で使用されたテストプログラムを用いて、現象が再現しないことを確認した。
+実行時の出力を./result.log に記載している
  
-②McKernelでのXPMEM操作の基本動作確認
+2. McKernelでのXPMEM操作の基本動作確認
 以下の内容で、Issue#925による変更が既存機能(XPMEM)に影響しないことを確認した。
 
 基本動作確認の詳細を以下に示す。
 
-1. テストの実行方法
+(1) テストの実行方法
  以下の手順でテストを実行する
 	1. Makefileの変数MCK_DIRの内容を、McKernelがインストールされているディレクトリに変更する
 	2. Makefileの変数XPMEM_DIRの内容を、XPMEMライブラリがインストールされているディレクトリに変更する
 	3. sh make test を実行する
 
-2. テスト項目
+(2) テスト項目
 CT_001: 単一プロセスでのXPMEM操作
 	1. 実行したプロセスがxpmem_make -> xpmem_get -> xpmem_attach -> xpmem_detach -> xpmem_remove
 
@@ -78,6 +78,6 @@ CT_011: xpmem_remove 呼び出しの異常系
 	1. xpmem_remove の第1引数に不正なsegidを指定する (失敗)
 	2. 1度xpmem_remove を実施したsegidで、再度xpmem_remove を行う (失敗)
 
-3. 結果
+(3) 結果
 テストプログラムの実行結果をresult.log に示す。
 上記の11項目がPASSしていることを確認した。

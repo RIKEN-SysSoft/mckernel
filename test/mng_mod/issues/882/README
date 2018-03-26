@@ -1,9 +1,7 @@
 【Issue#882 動作確認】
-1. Issue#882で指摘されたテストプログラムを用いて現象が解消されていることを
+1. Issue#882 (https://postpeta.pccluster.org/redmine/issues/882)
+   に記載のテストプログラムを用いて現象が解消されていることを
    確認した。(テストプログラム1本、確認項目3件)
-
-Issue#882の再現方法は以下を参照。
-https://postpeta.pccluster.org/redmine/issues/882#再現方法
 
 実行結果(エビデンス)は以下の通り。
 
@@ -32,7 +30,7 @@ fork08 fork08
 (2) 以下のコマンドを実行
 
   cd <ltp-top>
-  sudo <mckernel-install>/sbin/mcreboot.sh -c 2,3,4,5,6,7
+  sudo <mckernel-install>/sbin/mcreboot.sh -c 2-7 -m 2G -O
   sudo sh -c 'LTPMCEXEC=<mckernel-install>/bin/mcexec install/runltp -f mylist'
 
 実行結果(エビデンス)は以下の通り。

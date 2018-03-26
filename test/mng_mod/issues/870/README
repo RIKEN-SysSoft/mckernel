@@ -1,9 +1,7 @@
 【Issue#870 動作確認】
-1. Issue#870で指摘されたテストプログラムを用いて現象が解消されていることを
+1. Issue#870 (https://postpeta.pccluster.org/redmine/issues/870)
+   で指摘されたテストプログラムを用いて現象が解消されていることを
    確認した。(2件)
-
-Issue#870の再現方法は以下を参照。
-https://postpeta.pccluster.org/redmine/issues/870#再現方法
 
 確認項目は、以下の通り。
 (1) プログラムがシステムコールオフロード完了前にLinuxから送付されたシグナルに
@@ -24,7 +22,7 @@ CT1001.txt Issue#870の指摘で使用されたテストプログラムの実行
       MCKERNEL_DIR=<mckernel-install>
   (2) 以下のコマンドを実行
       make
-      sudo <mckernel-install>/sbin/mcreboot.sh -c 2-7
+      sudo <mckernel-install>/sbin/mcreboot.sh -c 2-7 -m 4G
       ./CT200x.sh
 
 確認内容は以下の通り。
