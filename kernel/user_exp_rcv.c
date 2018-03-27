@@ -575,7 +575,7 @@ static void clear_tid_node(struct hfi1_filedata *fd, struct tid_rb_node *node)
 		tid_group_move(node->grp, &uctxt->tid_used_list,
 			       &uctxt->tid_group_list);
 	spin_unlock(&fd->tid_lock);
-	kfree(node);
+	kmalloc_cache_free(node);
 }
 
 
