@@ -1303,7 +1303,7 @@ static int set_host_vma(uintptr_t addr, size_t len, int prot, int holding_memory
 	   until the remote PF handling code calls up_write(&current->mm->mmap_sem) and
 	   vm_range is consistent when calling this function. */
 	if (holding_memory_range_lock) {
-		__sync_fetch_and_add(&thread->vm->memory_range_lock_writer_count, 1);
+		thread->vm->is_memory_range_lock_taken = 1;
 	}
 	lerror = syscall_generic_forwarding(__NR_mprotect, &ctx);
 	if (lerror) {
@@ -1315,7 +1315,7 @@ static int set_host_vma(uintptr_t addr, size_t len, int prot, int holding_memory
 	lerror = 0;
 out:
 	if (holding_memory_range_lock) {
-		__sync_fetch_and_sub(&thread->vm->memory_range_lock_writer_count, 1);
+		thread->vm->is_memory_range_lock_taken = 0;
 	}
 	return (int)lerror;
 }
