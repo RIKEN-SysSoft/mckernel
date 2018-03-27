@@ -50,18 +50,18 @@ rc = __ihk_mc_spinlock_trylock_noirq(l); \
 
 static int __ihk_mc_spinlock_trylock_noirq(ihk_spinlock_t *lock)
 {
-	int lo = *lock & 0xffff;
-	int hi = (*lock >> 16) & 0xffff;
+	ihk_spinlock_t cur = { .head_tail = lock->head_tail };
+	ihk_spinlock_t next = { .tickets.head = cur.tickets.head, .tickets.tail = cur.tickets.tail + 2 };
 	int success;
 
-	if (lo != hi) {
+	if (cur.tickets.head != cur.tickets.tail) {
 		return 0;
 	}
 
 	preempt_disable();
 
 	/* Use the same increment amount as other functions! */
-	success = __sync_bool_compare_and_swap(lock, (lo << 16) | lo, ((lo + 2) << 16) | lo);
+	success = __sync_bool_compare_and_swap((__ticketpair_t*)lock, cur.head_tail, next.head_tail);
 
 	if (!success) {
 		preempt_enable();
