@@ -221,14 +221,14 @@ static void devobj_release(struct memobj *memobj)
 			}
 		}
 
-		if (obj->pfn_table) {
+		if (free_obj->pfn_table) {
 			// Don't call memory_stat_rss_sub() because devobj related pages don't reside in main memory
 #ifdef POSTK_DEBUG_TEMP_FIX_36
 			const size_t uintptr_per_page = (PAGE_SIZE / sizeof(uintptr_t));
-			const size_t pfn_npages = (obj->npages + uintptr_per_page - 1) / uintptr_per_page;
-			ihk_mc_free_pages(obj->pfn_table, pfn_npages);
+			const size_t pfn_npages = (free_obj->npages + uintptr_per_page - 1) / uintptr_per_page;
+			ihk_mc_free_pages(free_obj->pfn_table, pfn_npages);
 #else
-			ihk_mc_free_pages(obj->pfn_table, pfn_npages);
+			ihk_mc_free_pages(free_obj->pfn_table, pfn_npages);
 #endif /*POSTK_DEBUG_TEMP_FIX_36*/
 		}
 
