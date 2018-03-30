@@ -376,7 +376,7 @@ struct coretable {		/* table entry for a core chunk */
 };
 #else /* POSTK_DEBUG_TEMP_FIX_61 */
 struct coretable {		/* table entry for a core chunk */
-	int len;		/* length of the chunk */
+	off_t len;		/* length of the chunk */
 	unsigned long addr;	/* physical addr of the chunk */
 };
 #endif /* POSTK_DEBUG_TEMP_FIX_61 */

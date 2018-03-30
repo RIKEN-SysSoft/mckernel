@@ -87,6 +87,7 @@ struct note {
 #define	NT_PRFRPREG	2
 #define	NT_PRPSINFO	3
 #define	NT_AUXV		6
+#define NT_FILE 0x46494c45
 #define	NT_X86_STATE	0x202
 
 #include "elfcoregpl.h"
