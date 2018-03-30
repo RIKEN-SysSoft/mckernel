@@ -116,7 +116,7 @@ struct coretable {
 };
 #else /* POSTK_DEBUG_TEMP_FIX_61 */
 struct coretable {
-	int len;
+	loff_t len;
 	unsigned long addr;
 };
 #endif /* POSTK_DEBUG_TEMP_FIX_61 */
