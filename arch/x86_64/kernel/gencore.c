@@ -9,6 +9,7 @@
 
 #define	align32(x) ((((x) + 3) / 4) * 4)
 #define	alignpage(x) ((((x) + (PAGE_SIZE) - 1) / (PAGE_SIZE)) * (PAGE_SIZE))
+#define align32ptr(x) do { *x = (void*)(((unsigned long)*x + 3UL) & ~3UL); } while(0) /* void **x */
 
 //#define DEBUG_PRINT_GENCORE
 
@@ -20,6 +21,12 @@
 #define	ekprintf(...)	kprintf(__VA_ARGS__)
 #endif
 
+/* Exclude remote (i.e. vdso), reserved (mckernel's internal use), device file, hole created by mprotect */
+#define GENCORE_RANGE_IS_INACCESSIBLE(range) \
+	((range->flag & (VR_REMOTE | VR_RESERVED | VR_MEMTYPE_UC | VR_DONTDUMP)))
+
+#define GENCORE_RANGE_IS_FILE(range) \
+	((range->memobj && (range->memobj->flags & (MF_REG_FILE | MF_DEV_FILE))))
 /*
  * Generate a core file image, which consists of many chunks.
  * Returns an allocated table, an etnry of which is a pair of the address 
@@ -231,6 +238,131 @@ void fill_auxv(struct note *head, struct process *proc)
 	memcpy(auxv, proc->saved_auxv, sizeof(unsigned long) * AUXV_LEN);
 } 
 
+static int get_file_size(struct process *proc) {
+	struct vm_range *range, *next;
+	struct process_vm *vm = proc->vm;
+	int size =
+		sizeof(struct note) +
+		align32(sizeof("CORE")) +
+		2 * sizeof(long);
+	
+	int count = 0;
+	int szfilenames = 0;
+
+	kprintf("%s: %d,%d,%d,size=%d\n", __FUNCTION__,	sizeof(struct note), align32(sizeof("CORE")), sizeof(long), size);
+
+	next = lookup_process_memory_range(vm, 0, -1);
+	while ((range = next)) {
+		next = next_process_memory_range(vm, range);
+		if (GENCORE_RANGE_IS_INACCESSIBLE(range) || !GENCORE_RANGE_IS_FILE(range)) {
+			continue;
+		}
+		count++;
+		szfilenames += strnlen(range->memobj->path, PATH_MAX) + 1;
+		//break; /* debug */
+	}
+
+	/* End mark */
+	count++; 
+	szfilenames++; 
+
+	size += count * 3 * sizeof(long) + szfilenames;
+	kprintf("%s: count=%d,szfilenames=%d,size=%d\n", __FUNCTION__, count, szfilenames, size);
+	return align32(size);
+}
+
+/*
+ * Format of NT_FILE note:
+ *
+ * long count     -- how many files are mapped
+ * long page_size -- units for file_ofs
+ * array of [COUNT] elements of
+ *   long start
+ *   long end
+ *   long file_ofs
+ * followed by COUNT filenames in ASCII: "FILE1" NUL "FILE2" NUL...
+ */
+static void fill_file(struct note *head, struct process* proc) {
+	void *name;
+	long *data, *nt_file;
+	char *filenames;
+	struct vm_range *range, *next;
+	struct process_vm *vm = proc->vm;
+	int size = get_file_size(proc);
+	long count = 0;
+
+	head->namesz = sizeof("CORE");
+	head->descsz = size - (sizeof(struct note) + align32(sizeof("CORE")));
+	head->type = NT_FILE;
+
+	name =  (void *) (head + 1);
+	kprintf("%s: %p\n", __FUNCTION__, name);
+	memcpy(name, "CORE", sizeof("CORE"));
+	name += sizeof("CORE");
+	kprintf("%s: %p\n", __FUNCTION__, name);
+	align32ptr(&name);
+	kprintf("%s: %p\n", __FUNCTION__, name);
+	data = (long *)name;
+	nt_file = data + 2; /* count and page_size are filled later */
+
+	next = lookup_process_memory_range(vm, 0, -1);
+	while ((range = next)) {
+		next = next_process_memory_range(vm, range);
+		if (GENCORE_RANGE_IS_INACCESSIBLE(range) || !GENCORE_RANGE_IS_FILE(range)) {
+			continue;
+		}
+		kprintf("%s: %p\n", __FUNCTION__, nt_file);
+		*nt_file++ = range->start;
+		kprintf("%s: %p\n", __FUNCTION__, nt_file);
+		*nt_file++ = range->end;
+		kprintf("%s: %p\n", __FUNCTION__, nt_file);
+		*nt_file++ = range->objoff / PAGE_SIZE;
+		kprintf("%s: %p\n", __FUNCTION__, nt_file);
+		count++;
+		kprintf("%s: %lx-%lx,%lx\n", __FUNCTION__, range->start, range->end, range->objoff);
+		//break; /* debug */
+	}
+
+	/* End mark */
+	*nt_file++ = 0;
+	*nt_file++ = 0;
+	*nt_file++ = 0;
+	count++;
+
+	kprintf("%s: count=%d\n", __FUNCTION__, count);
+
+	data[0] = count;
+	data[1] = PAGE_SIZE;
+
+	filenames = (char*)nt_file;
+	next = lookup_process_memory_range(vm, 0, -1);
+	while ((range = next)) {
+		size_t len;
+		next = next_process_memory_range(vm, range);
+		if (GENCORE_RANGE_IS_INACCESSIBLE(range) || !GENCORE_RANGE_IS_FILE(range)) {
+			continue;
+		}
+		len = strnlen(range->memobj->path, PATH_MAX); 
+#if 1 /* debug */
+		memcpy(filenames, range->memobj->path, len == PATH_MAX ? PATH_MAX : len + 1);
+#endif
+		kprintf("%s: path=%s,len=%ld\n", __FUNCTION__, range->memobj->path, len);
+		if (len == PATH_MAX) {
+			filenames[PATH_MAX] = 0;
+		}
+		filenames += len + 1;
+		//break; /* debug */
+	}
+	
+	/* End mark */
+	memset(filenames, 0, 1);
+	filenames++;
+
+	align32ptr(&filenames);
+	
+	kprintf("%s: size=%ld\n", __FUNCTION__, (unsigned long)filenames - (unsigned long)head);
+}
+
 /**
  * \brief Return the size of the whole NOTE segment.
  *
@@ -244,14 +376,18 @@ int get_note_size(struct process *proc)
 
 	mcs_rwlock_reader_lock_noirq(&proc->threads_lock, &lock);
 	list_for_each_entry(thread_iter, &proc->threads_list, siblings_list){
+#if 1 /* debug */
 		note += get_prstatus_size();
+#endif
 		if (thread_iter->tid == proc->pid) {
+#if 1 /* debug */
 			note += get_prpsinfo_size();
 			note += get_auxv_size();
+#endif
+			note += get_file_size(proc);
 		}
 	}
 	mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &lock);
-
 
 	return note;
 }
@@ -271,24 +407,29 @@ void fill_note(void *note, struct process *proc, char *cmdline)
 
 	mcs_rwlock_reader_lock_noirq(&proc->threads_lock, &lock);
 	list_for_each_entry(thread_iter, &proc->threads_list, siblings_list){
+#if 1 /* debug */
 		fill_prstatus(note, thread_iter);
 		note += get_prstatus_size();
-
+#endif
 		if (thread_iter->tid == proc->pid) {
+#if 1 /* debug */
 			fill_prpsinfo(note, proc, cmdline);
 			note += get_prpsinfo_size();
+#endif
 
 #if 0
 			fill_siginfo(note, proc);
 			note += get_siginfo_size();
 #endif
 
+#if 1 /* debug */
 			fill_auxv(note, proc);
 			note += get_auxv_size();
+#endif
 
-#if 0
+#if 1
 			fill_file(note, proc);
-			note += get_file_size();
+			note += get_file_size(proc);
 #endif
 		}
 
@@ -318,12 +459,6 @@ void fill_note(void *note, struct process *proc, char *cmdline)
  * (an unallocated demand-paging page, e.g.), the address
  * should be zero.
  */
-
-/* Exclude remote (i.e. vdso), reserved (mckernel's internal use), device file, hole created by mprotect */
-#define GENCORE_RANGE_TO_SKIP(range) \
-	((range->flag & (VR_REMOTE | VR_RESERVED | VR_MEMTYPE_UC | VR_DONTDUMP)))
-
-/* 	 ((range->flag & VR_PROT_MASK) == VR_PROT_NONE)) */
 
 /*@
   @ requires \valid(thread);
@@ -367,7 +502,7 @@ int gencore(struct process *proc,
 		dkprintf("start:%lx end:%lx flag:%lx objoff:%lx\n", 
 			 range->start, range->end, range->flag, range->objoff);
 
-		if (GENCORE_RANGE_TO_SKIP(range)) {
+		if (GENCORE_RANGE_IS_INACCESSIBLE(range)) {
 			continue;
 		}
 		/* We need a chunk for each page for a demand paging area.
@@ -429,7 +564,6 @@ int gencore(struct process *proc,
 		goto fail;
 	}
 	memset(ph, 0, phsize);
-
 	offset += phsize;
 
 	/* NOTE segment
@@ -438,6 +572,7 @@ int gencore(struct process *proc,
 	 */
 	notesize = get_note_size(proc);
 	alignednotesize = alignpage(notesize + offset) - offset;
+	kprintf("%s: notesize=%d,alignednotesize=%d\n", __FUNCTION__, notesize, alignednotesize);
 	note = kmalloc(alignednotesize, IHK_MC_AP_NOWAIT);
 	if (note == NULL) {
 		kprintf("%s: ERROR: Out of memory\n", __FUNCTION__);
@@ -454,7 +589,7 @@ int gencore(struct process *proc,
 	ph[0].p_vaddr = 0;
 	ph[0].p_paddr = 0;
 	ph[0].p_filesz = notesize;
-	ph[0].p_memsz = notesize;
+	ph[0].p_memsz = 0;
 	ph[0].p_align = 0;
 
 	offset += alignednotesize;
@@ -468,7 +603,7 @@ int gencore(struct process *proc,
 		unsigned long flag = range->flag;
 		unsigned long size = range->end - range->start;
 
-		if (GENCORE_RANGE_TO_SKIP(range)) {
+		if (GENCORE_RANGE_IS_INACCESSIBLE(range)) {
 			continue;
 		}
 
@@ -514,7 +649,7 @@ int gencore(struct process *proc,
 
 		unsigned long phys;
 
-		if (GENCORE_RANGE_TO_SKIP(range)) {
+		if (GENCORE_RANGE_IS_INACCESSIBLE(range)) {
 			continue;
 		}
 		if (range->flag & VR_DEMAND_PAGING) {
