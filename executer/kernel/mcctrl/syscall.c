@@ -1393,9 +1393,8 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 	uintptr_t phys;
 	struct kstat st;
 	int mf_flags = 0;
-	char *pathbuf = NULL, *fullpath = NULL;
 
-	dprintk("pager_req_create(%d,%lx)\n", fd, (long)result_pa);
+	printk("pager_req_create(%d,%lx)\n", fd, (long)result_pa);
 
 	error = vfs_fstat(fd, &st);
 	if (error) {
@@ -1464,6 +1463,8 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 
 			/* Intel MPI library and shared memory "prefetch" */
 			{
+				char *pathbuf, *fullpath;
+
 				pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
 				if (pathbuf) {
 					fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
@@ -1478,9 +1479,9 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 							dprintk("%s: filename: %s, prefetch\n",
 									__FUNCTION__, fullpath);
 						}
-					} else {
-						fullpath = NULL;
 					}
+
+					kfree(pathbuf);
 				}
 			}
 
@@ -1541,9 +1542,6 @@ out:
 	}
 	if (file) {
 		fput(file);
-	}
-	if (pathbuf) {
-		kfree(pathbuf);
 	}
 	dprintk("pager_req_create(%d,%lx): %d %p %x\n",
 			fd, (long)result_pa, error, pager, maxprot);
@@ -2367,13 +2365,9 @@ int release_user_space(uintptr_t start, uintptr_t len)
 	char *fn = NULL;
 	struct file *file;
 	struct coretable *coretable;
-#ifdef POSTK_DEBUG_TEMP_FIX_61 /* Core table size and lseek return value to loff_t */
-	int i, tablesize, error = 0;
-	loff_t size;
-	ssize_t ret;
-#else /* POSTK_DEBUG_TEMP_FIX_61 */
-	int ret, i, tablesize, size, error = 0;
-#endif /* POSTK_DEBUG_TEMP_FIX_61 */
+    int i, tablesize, error = 0;
+    loff_t size;
+    ssize_t ret;
 	mm_segment_t oldfs = get_fs(); 
 	unsigned long phys, tablephys, rphys;
 	ihk_device_t dev = ihk_os_to_dev(os);
@@ -2411,12 +2405,7 @@ int release_user_space(uintptr_t start, uintptr_t len)
 	 * dump routine of the Linux kernel in linux/fs/exec.c. 
 	 * So we have a legitimate reason to do this.
 	 */
-#ifdef POSTK_DEBUG_TEMP_FIX_59 /* corefile open flag add O_TRUNC */
 	file = filp_open(fn, O_CREAT | O_RDWR | O_LARGEFILE | O_TRUNC, 0600);
-#else /* POSTK_DEBUG_TEMP_FIX_59 */
-	file = filp_open(fn, O_CREAT | O_RDWR | O_LARGEFILE, 0600);
-#endif /* POSTK_DEBUG_TEMP_FIX_59 */
-
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0)
 	if (IS_ERR(file) || !file->f_op) {
 #else
@@ -2462,11 +2451,7 @@ int release_user_space(uintptr_t start, uintptr_t len)
 			ihk_device_unmap_virtual(dev, pt, size);
 			ihk_device_unmap_memory(dev, phys, size);
 			if (ret != size) {
-#ifdef POSTK_DEBUG_TEMP_FIX_61 /* Core table size and lseek return value to loff_t */
 				dprintk("core file write failed(%ld).\n", ret);
-#else /* POSTK_DEBUG_TEMP_FIX_61 */
-				dprintk("core file write failed(%d).\n", ret);
-#endif /* POSTK_DEBUG_TEMP_FIX_61 */
 				error = PTR_ERR(file);
 				break;
 			}
@@ -2479,11 +2464,7 @@ int release_user_space(uintptr_t start, uintptr_t len)
 			}
 			ret = file->f_op->llseek(file, size, SEEK_CUR);
 			if (ret < 0) {
-#ifdef POSTK_DEBUG_TEMP_FIX_61 /* Core table size and lseek return value to loff_t */
 				dprintk("core file seek failed(%ld).\n", ret);
-#else /* POSTK_DEBUG_TEMP_FIX_61 */
-				dprintk("core file seek failed(%d).\n", ret);
-#endif /* POSTK_DEBUG_TEMP_FIX_61 */
 				error = PTR_ERR(file);
 				break;
 			}
@@ -2555,12 +2536,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 		}
 
 	case __NR_coredump:
-		error = writecore(os, sc->args[1], sc->args[0], sc->args[2], sc->args[3]);
-#ifdef POSTK_DEBUG_TEMP_FIX_62 /* Fix to notify McKernel that core file generation failed */
-		ret = error;
-#else /* POSTK_DEBUG_TEMP_FIX_62 */
-		ret = 0;
-#endif /* POSTK_DEBUG_TEMP_FIX_62 */
+		ret = writecore(os, sc->args[1], sc->args[0], sc->args[2], sc->args[3]);
 		break;
 	
 	case __NR_sched_setparam: {
