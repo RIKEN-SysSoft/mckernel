@@ -1856,8 +1856,14 @@ int main(int argc, char **argv)
 		altroot = "/usr/linux-k1om-4.7/linux-k1om";
 	}
 
-	/* Disable address space layout randomization */
+	/* Disable READ_IMPLIES_EXEC */
 	persona = personality(0xffffffff);
+	if (persona & READ_IMPLIES_EXEC) {
+		persona &= ~READ_IMPLIES_EXEC;
+		persona = personality(persona);
+	}
+
+	/* Disable address space layout randomization */
 	__dprintf("persona=%08x\n", persona);
 	if ((persona & (PER_LINUX | ADDR_NO_RANDOMIZE)) == 0) {
 		CHKANDJUMP(getenv("MCEXEC_ADDR_NO_RANDOMIZE"), 1, "personality() and then execv() failed\n");
