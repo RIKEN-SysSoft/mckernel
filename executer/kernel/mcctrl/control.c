@@ -2423,6 +2423,8 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
 
+	dprintk("%s: pid=%d,tid=%d\n", __FUNCTION__, task_tgid_vnr(current), task_pid_vnr(current));
+
 	save_fs_ctx(lctx);
 	info = ihk_os_get_mcos_private_data(file);
 	thread = kmalloc(sizeof(struct host_thread), GFP_KERNEL);

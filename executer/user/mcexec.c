@@ -2920,7 +2920,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 		.user_end = desc->user_end
 	};
 
-	fprintf(stderr, "%s: enter pid=%d,tid=%d\n", __FUNCTION__, getpid(), gettid());
+	//fprintf(stderr, "%s: enter pid=%d,tid=%d\n", __FUNCTION__, getpid(), gettid());
 
 	/* Perform mmap() before fork() in create_tracer() */
 	uti_desc = mmap(NULL, sizeof(struct uti_desc), PROT_READ | PROT_WRITE,
@@ -2975,7 +2975,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 		return 0;
 	}
 	close(uti_pfd[0]);
-	fprintf(stderr, "%s: calling MCEXEC_UP_RELEASE_USER_SPACE,pid=%d,tid=%d\n", __FUNCTION__, getpid(), gettid());
+	//fprintf(stderr, "%s: calling MCEXEC_UP_RELEASE_USER_SPACE,pid=%d,tid=%d\n", __FUNCTION__, getpid(), gettid());
 #if 1 /* debug */
 		if (ioctl(fd, MCEXEC_UP_RELEASE_USER_SPACE, &release_desc) != 0) {
 			fprintf(stderr, "%s: ERROR: MCEXEC_UP_RELEASE_USER_SPACE returned %d\n", __FUNCTION__, errno);
