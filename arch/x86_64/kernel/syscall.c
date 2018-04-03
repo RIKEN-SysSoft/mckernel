@@ -115,7 +115,7 @@ int obtain_clone_cpuid(cpu_set_t *cpu_set, int use_last) {
 		if (min_cpu != cpu && v->runq_len + v->runq_reserved == min_queue_len) {
 			uti_cpu = cpu;
 		}
-		kprintf("%s: cpu=%d,runq_len=%d,runq_reserved=%d,min_cpu=%d,uti_cpu=%d\n", __FUNCTION__, cpu, v->runq_len, v->runq_reserved, min_cpu, uti_cpu);
+		dkprintf("%s: cpu=%d,runq_len=%d,runq_reserved=%d,min_cpu=%d,uti_cpu=%d,use_last=%d\n", __FUNCTION__, cpu, v->runq_len, v->runq_reserved, min_cpu, uti_cpu, use_last);
 		ihk_mc_spinlock_unlock_noirq(&v->runq_lock);
 #if 0
 		if (min_queue_len == 0)
@@ -1202,7 +1202,7 @@ unsigned long
 do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
         int ptracecont)
 {
-	kprintf("do_kill,pid=%d,tid=%d,sig=%d\n", pid, tid, sig);
+	dkprintf("%s: pid=%d,tid=%d,sig=%d\n", __FUNCTION__, pid, tid, sig);
 	struct thread *t;
 	struct process *tproc;
 	struct process *proc = thread? thread->proc: NULL;
@@ -1932,7 +1932,7 @@ int arch_map_vdso(struct process_vm *vm)
 	vrflags = VR_REMOTE;
 	vrflags |= VR_PROT_READ | VR_PROT_EXEC;
 	vrflags |= VRFLAG_PROT_TO_MAXPROT(vrflags);
-	kprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)s, (unsigned long)e);
+	dkprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)s, (unsigned long)e);
 	error = add_process_memory_range(vm, (intptr_t)s, (intptr_t)e,
 			NOPHYS, vrflags, NULL, 0, PAGE_SHIFT, &range);
 	if (error) {
