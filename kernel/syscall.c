@@ -481,7 +481,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	/* -ERESTARTSYS indicates that the proxy process is gone
 	 * and the application should be terminated */
 	if (rc == -ERESTARTSYS) {
-		kprintf("%s: proxy PID %d is dead, terminate()\n",
+		dkprintf("%s: proxy PID %d is dead, terminate()\n",
 			__FUNCTION__, thread->proc->pid);
 		thread->proc->nohost = 1;
 	}
@@ -1575,7 +1575,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 				vrflags &= ~VR_MEMTYPE_MASK;
 				vrflags |= VR_MEMTYPE_UC;
 			}
-			kprintf("%s: devobj\n", __FUNCTION__);
+			dkprintf("%s: devobj\n", __FUNCTION__);
 			error = devobj_create(fd, len, off, &memobj, &maxprot, 
 					prot, (flags & (MAP_POPULATE | MAP_LOCKED)));
 
@@ -1623,7 +1623,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 #ifdef PROFILE_ENABLE
 			profile_event_add(PROFILE_mmap_anon_no_contig_phys, len);
 #endif // PROFILE_ENABLE
-			kprintf("%s: zeroobj\n", __FUNCTION__);
+			dkprintf("%s: zeroobj\n", __FUNCTION__);
 			error = zeroobj_create(&memobj);
 			if (error) {
 				ekprintf("%s: zeroobj_create failed, error: %d\n",
@@ -1674,7 +1674,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	}
 	vrflags |= VRFLAG_PROT_TO_MAXPROT(PROT_TO_VR_FLAG(maxprot));
 
-	kprintf("%s: %lx - %lx, vrflags=%x,memobj=%p\n", __FUNCTION__, (unsigned long)addr, (unsigned long)addr + len, vrflags, memobj);
+	dkprintf("%s: %lx - %lx, vrflags=%x,memobj=%p\n", __FUNCTION__, (unsigned long)addr, (unsigned long)addr + len, vrflags, memobj);
 	error = add_process_memory_range(thread->vm, addr, addr+len, phys,
 			vrflags, memobj, off, pgshift, &range);
 	if (error) {
@@ -1835,7 +1835,7 @@ SYSCALL_DECLARE(mprotect)
 	unsigned long denied;
 	int ro_changed = 0;
 
-	kprintf("[%d]sys_mprotect(%lx,%lx,%x,%x)\n",
+	dkprintf("[%d]sys_mprotect(%lx,%lx,%x,%x)\n",
 			ihk_mc_get_processor_id(), start, len0, prot, protflags);
 
 	len = (len0 + PAGE_SIZE - 1) & PAGE_MASK;
@@ -2592,7 +2592,6 @@ retry_tid:
 		setint_user((int*)parent_tidptr, new->tid);
 	}
 	
-	kprintf("%s: old->tid=%d,new->tid=%d\n", __FUNCTION__, old->tid, new->tid);
 	if (clone_flags & CLONE_CHILD_CLEARTID) {
 		dkprintf("clone_flags & CLONE_CHILD_CLEARTID: 0x%lX,old->tid=%d,new->tid=%d\n", 
 				child_tidptr, old->tid, new->tid);

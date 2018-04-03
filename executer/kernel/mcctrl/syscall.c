@@ -1394,7 +1394,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 	struct kstat st;
 	int mf_flags = 0;
 
-	printk("pager_req_create(%d,%lx)\n", fd, (long)result_pa);
+	dprintk("pager_req_create(%d,%lx)\n", fd, (long)result_pa);
 
 	error = vfs_fstat(fd, &st);
 	if (error) {
