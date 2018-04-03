@@ -3166,6 +3166,7 @@ void spin_sleep_or_schedule(void)
 	}
 
 out_schedule:
+	dkprintf("%s: calling schedule()\n", __FUNCTION__);
 	schedule();
 }
 
@@ -3526,7 +3527,7 @@ void runq_add_thread(struct thread *thread, int cpu_id)
 	procfs_create_thread(thread);
 
 	__sync_add_and_fetch(&thread->proc->clone_count, 1);
-	kprintf("%s: clone_count is %d\n", __FUNCTION__, thread->proc->clone_count);
+	dkprintf("%s: clone_count is %d\n", __FUNCTION__, thread->proc->clone_count);
 	rusage_num_threads_inc();
 #ifdef RUSAGE_DEBUG
 	if (rusage->num_threads == 1) {
