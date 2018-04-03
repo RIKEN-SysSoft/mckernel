@@ -712,7 +712,7 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 	/* Wait for the rest if not the last or if the last but
 	 * the woken process is different than the last */
 	if (pe->nr_processes_left || (pli_next && pli_next != pli)) {
-		printk("%s: pid: %d, waiting in list\n",
+		dprintk("%s: pid: %d, waiting in list\n",
 				__FUNCTION__, task_tgid_vnr(current));
 		mutex_unlock(&pe->lock);
 		/* Timeout period: 10 secs + (#procs * 0.1sec) */
@@ -1082,7 +1082,7 @@ int mcctrl_add_per_proc_data(struct mcctrl_usrdata *ud, int pid,
 			goto out;
 		}
 	}
-	kprintf("%s: list_add_tail,pid=%d\n", __FUNCTION__, pid);
+	dprintk("%s: list_add_tail,pid=%d\n", __FUNCTION__, pid);
 	list_add_tail(&ppd->hash, &ud->per_proc_data_hash[hash]);
 
 out:
@@ -2492,6 +2492,8 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	void *__user lctx = (void *__user)param[2];
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
+
+	dprintk("%s: pid=%d,tid=%d\n", __FUNCTION__, task_tgid_vnr(current), task_pid_vnr(current));
 
 	save_fs_ctx(lctx);
 	info = ihk_os_get_mcos_private_data(file);
