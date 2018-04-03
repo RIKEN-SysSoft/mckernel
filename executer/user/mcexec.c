@@ -3283,8 +3283,10 @@ util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, int remote_t
 	void *param[6];
 	int rc = 0;
 	unsigned long buf;
-	
-	printf("%s: calling create_tracer,remote_tid=%d\n", __FUNCTION__, remote_tid);
+#if 0
+	int persona;
+#endif
+
 #if 1
 	/* Create tracer */
 	if ((rc = create_tracer(desc->user_start, desc->user_end))) {
@@ -3292,6 +3294,17 @@ util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, int remote_t
 		goto out;
 	}
 #endif
+
+#if 0
+	/* McKernel doesn't set PROT_EXEC bit to host executable VMA */
+	persona = personality(0xffffffff);
+	rc = personality(persona | READ_IMPLIES_EXEC);
+	if (rc == -1) {
+        fprintf(stderr, "%s: ERROR: personality failed,persona=%x,strerror=%s\n", __FUNCTION__, persona, strerror(errno));
+        goto out;
+	}
+#endif
+
 #ifdef POSTK_DEBUG_ARCH_DEP_35
 	lctx = (char *)uti_desc->wp + page_size;
 	rctx = (char *)lctx + page_size;
