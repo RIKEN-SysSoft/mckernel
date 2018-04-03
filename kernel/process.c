@@ -1200,7 +1200,7 @@ int add_process_memory_range(struct process_vm *vm,
 	struct vm_range *range;
 	int rc;
 
-	kprintf("%s: %lx - %lx,flag=%x\n", __FUNCTION__, start, end, flag);
+	dkprintf("%s: %lx - %lx,flag=%x\n", __FUNCTION__, start, end, flag);
 
 	if ((start < vm->region.user_start)
 			|| (vm->region.user_end < end)) {
@@ -1283,7 +1283,7 @@ int add_process_memory_range(struct process_vm *vm,
 		*rp = range;
 	}
 
-	kprintf("%s: exit,%lx - %lx,flag=%x\n", __FUNCTION__, start, end, flag);
+	dkprintf("%s: exit,%lx - %lx,flag=%x\n", __FUNCTION__, start, end, flag);
 	return 0;
 }
 
@@ -2219,7 +2219,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	vrflag |= PROT_TO_VR_FLAG(pn->stack_prot);
 	vrflag |= VR_MAXPROT_READ | VR_MAXPROT_WRITE | VR_MAXPROT_EXEC;
 #define	NOPHYS	((uintptr_t)-1)
-	kprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)start, (unsigned long)end);
+	dkprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)start, (unsigned long)end);
 	if ((rc = add_process_memory_range(thread->vm, start, end, NOPHYS,
 					vrflag, NULL, 0, LARGE_PAGE_SHIFT, &range)) != 0) {
 		ihk_mc_free_pages_user(stack, minsz >> PAGE_SHIFT);
@@ -2377,7 +2377,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 		}
 	}
 
-	kprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)end_allocated, (unsigned long)new_end_allocated);
+	dkprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)end_allocated, (unsigned long)new_end_allocated);
 	if ((rc = add_process_memory_range(vm, end_allocated, new_end_allocated,
 					(p == 0 ? 0 : virt_to_phys(p)), flag, NULL, 0,
 					align_shift, NULL)) != 0) {
@@ -3174,6 +3174,7 @@ void spin_sleep_or_schedule(void)
 	}
 
 out_schedule:
+	dkprintf("%s: calling schedule()\n", __FUNCTION__);
 	schedule();
 }
 
@@ -3534,7 +3535,7 @@ void runq_add_thread(struct thread *thread, int cpu_id)
 	procfs_create_thread(thread);
 
 	__sync_add_and_fetch(&thread->proc->clone_count, 1);
-	kprintf("%s: clone_count is %d\n", __FUNCTION__, thread->proc->clone_count);
+	dkprintf("%s: clone_count is %d\n", __FUNCTION__, thread->proc->clone_count);
 	rusage_num_threads_inc();
 #ifdef RUSAGE_DEBUG
 	if (rusage->num_threads == 1) {

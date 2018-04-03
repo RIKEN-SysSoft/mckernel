@@ -296,12 +296,10 @@ static void fill_file(struct note *head, struct process* proc) {
 	head->type = NT_FILE;
 
 	name =  (void *) (head + 1);
-	kprintf("%s: %p\n", __FUNCTION__, name);
 	memcpy(name, "CORE", sizeof("CORE"));
 	name += sizeof("CORE");
-	kprintf("%s: %p\n", __FUNCTION__, name);
 	align32ptr(&name);
-	kprintf("%s: %p\n", __FUNCTION__, name);
+
 	data = (long *)name;
 	nt_file = data + 2; /* count and page_size are filled later */
 
