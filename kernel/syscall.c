@@ -480,7 +480,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	/* -ERESTARTSYS indicates that the proxy process is gone
 	 * and the application should be terminated */
 	if (rc == -ERESTARTSYS) {
-		kprintf("%s: proxy PID %d is dead, terminate()\n",
+		dkprintf("%s: proxy PID %d is dead, terminate()\n",
 			__FUNCTION__, thread->proc->pid);
 		thread->proc->nohost = 1;
 	}
@@ -1075,7 +1075,7 @@ void terminate(int rc, int sig)
 
 	if (ids) {
 		for (i = 0; i < n; i++) {
-			kprintf("%s: calling do_kill, target tid=%d\n", __FUNCTION__, ids[i]);
+			dkprintf("%s: calling do_kill, target tid=%d\n", __FUNCTION__, ids[i]);
 			do_kill(mythread, proc->pid, ids[i], SIGKILL, NULL, 0);
 		}
 		kfree(ids);
@@ -1575,7 +1575,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 				vrflags &= ~VR_MEMTYPE_MASK;
 				vrflags |= VR_MEMTYPE_UC;
 			}
-			kprintf("%s: devobj\n", __FUNCTION__);
+			dkprintf("%s: devobj\n", __FUNCTION__);
 			error = devobj_create(fd, len, off, &memobj, &maxprot, 
 					prot, (flags & (MAP_POPULATE | MAP_LOCKED)));
 			
@@ -1628,7 +1628,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 #ifdef PROFILE_ENABLE
 			profile_event_add(PROFILE_mmap_anon_no_contig_phys, len);
 #endif // PROFILE_ENABLE
-			kprintf("%s: zeroobj\n", __FUNCTION__);
+			dkprintf("%s: zeroobj\n", __FUNCTION__);
 			error = zeroobj_create(&memobj);
 			if (error) {
 				ekprintf("%s: zeroobj_create failed, error: %d\n",
@@ -1679,7 +1679,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	}
 	vrflags |= VRFLAG_PROT_TO_MAXPROT(PROT_TO_VR_FLAG(maxprot));
 
-	kprintf("%s: %lx - %lx, vrflags=%x,memobj=%p\n", __FUNCTION__, (unsigned long)addr, (unsigned long)addr + len, vrflags, memobj);
+	dkprintf("%s: %lx - %lx, vrflags=%x,memobj=%p\n", __FUNCTION__, (unsigned long)addr, (unsigned long)addr + len, vrflags, memobj);
 	error = add_process_memory_range(thread->vm, addr, addr+len, phys,
 			vrflags, memobj, off, pgshift, &range);
 	if (error) {
@@ -1840,7 +1840,7 @@ SYSCALL_DECLARE(mprotect)
 	unsigned long denied;
 	int ro_changed = 0;
 
-	kprintf("[%d]sys_mprotect(%lx,%lx,%x,%x)\n",
+	dkprintf("[%d]sys_mprotect(%lx,%lx,%x,%x)\n",
 			ihk_mc_get_processor_id(), start, len0, prot, protflags);
 
 	len = (len0 + PAGE_SIZE - 1) & PAGE_MASK;
@@ -2597,7 +2597,7 @@ retry_tid:
 		setint_user((int*)parent_tidptr, new->tid);
 	}
 	
-	kprintf("%s: old->tid=%d,new->tid=%d,cpuid=%d,mod_clone=%d\n", __FUNCTION__, old->tid, new->tid, cpuid, old->mod_clone);
+	dkprintf("%s: old->tid=%d,new->tid=%d,cpuid=%d,mod_clone=%d\n", __FUNCTION__, old->tid, new->tid, cpuid, old->mod_clone);
 	if (clone_flags & CLONE_CHILD_CLEARTID) {
 		dkprintf("clone_flags & CLONE_CHILD_CLEARTID: 0x%lX,old->tid=%d,new->tid=%d\n", 
 				child_tidptr, old->tid, new->tid);
@@ -9256,13 +9256,13 @@ util_thread(struct uti_attr *arg)
 	if (rc >= 0) {
 		if (rc & 0x100000000) { 
 			/* tracer has detected exit_group */
-			kprintf("%s: exit_group, pid=%d,tid=%d,rc=%lx\n", __FUNCTION__, thread->proc->pid, thread->tid, rc);
+			dkprintf("%s: exit_group, pid=%d,tid=%d,rc=%lx\n", __FUNCTION__, thread->proc->pid, thread->tid, rc);
 			thread->proc->nohost = 1;
 			terminate((rc >> 8) & 255, rc & 255);
 			/* uti_wp in mcexec.c is munmap()-ed by __NR_exit_group offload */
 		} else {
 			/* tracer has detected exit or killed by signal */
-			kprintf("%s: exit, pid=%d,tid=%d,rc=%lx\n", __FUNCTION__, thread->proc->pid, thread->tid, rc);
+			dkprintf("%s: exit, pid=%d,tid=%d,rc=%lx\n", __FUNCTION__, thread->proc->pid, thread->tid, rc);
 			request.number = __NR_sched_setaffinity;
 			request.args[0] = 1;
 			request.args[1] = free_address;

@@ -1207,7 +1207,7 @@ int add_process_memory_range(struct process_vm *vm,
 	struct vm_range *range;
 	int rc;
 
-	kprintf("%s: %lx - %lx,flag=%x\n", __FUNCTION__, start, end, flag);
+	dkprintf("%s: %lx - %lx,flag=%x\n", __FUNCTION__, start, end, flag);
 
 	if ((start < vm->region.user_start)
 			|| (vm->region.user_end < end)) {
@@ -1290,7 +1290,7 @@ int add_process_memory_range(struct process_vm *vm,
 		*rp = range;
 	}
 
-	kprintf("%s: exit,%lx - %lx,flag=%x\n", __FUNCTION__, start, end, flag);
+	dkprintf("%s: exit,%lx - %lx,flag=%x\n", __FUNCTION__, start, end, flag);
 	return 0;
 }
 
@@ -2017,7 +2017,7 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 		}
 	} else {
 		skip:
-		kprintf("%s: INFO: skip locking of memory_range_lock,pid=%d,tid=%d\n", __FUNCTION__, thread->proc->pid, thread->tid);
+		dkprintf("%s: INFO: skip locking of memory_range_lock,pid=%d,tid=%d\n", __FUNCTION__, thread->proc->pid, thread->tid);
 	}	
 
 	if (vm->exiting) {
@@ -2225,7 +2225,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	vrflag |= PROT_TO_VR_FLAG(pn->stack_prot);
 	vrflag |= VR_MAXPROT_READ | VR_MAXPROT_WRITE | VR_MAXPROT_EXEC;
 #define	NOPHYS	((uintptr_t)-1)
-	kprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)start, (unsigned long)end);
+	dkprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)start, (unsigned long)end);
 	if ((rc = add_process_memory_range(thread->vm, start, end, NOPHYS,
 					vrflag, NULL, 0, LARGE_PAGE_SHIFT, &range)) != 0) {
 		ihk_mc_free_pages_user(stack, minsz >> PAGE_SHIFT);
@@ -2383,7 +2383,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 		}
 	}
 
-	kprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)end_allocated, (unsigned long)new_end_allocated);
+	dkprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)end_allocated, (unsigned long)new_end_allocated);
 	if ((rc = add_process_memory_range(vm, end_allocated, new_end_allocated,
 					(p == 0 ? 0 : virt_to_phys(p)), flag, NULL, 0,
 					align_shift, NULL)) != 0) {
@@ -3076,7 +3076,7 @@ static void do_migrate(void)
 
 		}
 
-		kprintf("%s: pid=%d,tid=%d,from-CPU=%d,runq_len=%d,to-CPU=%d,runq_len=%d\n",__FUNCTION__, req->thread->proc->pid, req->thread->tid, old_cpu_id, cur_v->runq_len, cpu_id, v->runq_len);
+		dkprintf("%s: pid=%d,tid=%d,CPU: %d->%d,runq_len: %d->$d\n",__FUNCTION__, req->thread->proc->pid, req->thread->tid, old_cpu_id, cpu_id, cur_v->runq_len, v->runq_len);
 		
 		v->flags |= CPU_FLAG_NEED_RESCHED;
 #ifdef POSTK_DEBUG_TEMP_FIX_57 /* migration wakeup IPI target fix. */
@@ -3099,14 +3099,14 @@ set_timer()
 	/* Toggle timesharing if CPU core is oversubscribed */
 	if (v->runq_len > 1 || v->current->itimer_enabled) {
 		if (!cpu_local_var(timer_enabled)) {
-			kprintf("%s: INFO interval timer activated,pid=%d,tid=%d,runq_len=%d,itimer_enabled=%d\n", __FUNCTION__, v->current->proc->pid, v->current->tid, v->runq_len, v->current->itimer_enabled);
+			dkprintf("%s: INFO interval timer activated,pid=%d,tid=%d,runq_len=%d,itimer_enabled=%d\n", __FUNCTION__, v->current->proc->pid, v->current->tid, v->runq_len, v->current->itimer_enabled);
 			lapic_timer_enable(/*10000000*/1000000);
 			cpu_local_var(timer_enabled) = 1;
 		}
 	}
 	else {
 		if (cpu_local_var(timer_enabled)) {
-			kprintf("%s: INFO interval timer deactivated,pid=%d,tid=%d,runq_len=%d,itimer_enabled=%d\n", __FUNCTION__, v->current->proc->pid, v->current->tid, v->runq_len, v->current->itimer_enabled);
+			dkprintf("%s: INFO interval timer deactivated,pid=%d,tid=%d,runq_len=%d,itimer_enabled=%d\n", __FUNCTION__, v->current->proc->pid, v->current->tid, v->runq_len, v->current->itimer_enabled);
 			lapic_timer_disable();
 			cpu_local_var(timer_enabled) = 0;
 		}
@@ -3182,6 +3182,7 @@ void spin_sleep_or_schedule(void)
 	}
 
 out_schedule:
+	dkprintf("%s: calling schedule()\n", __FUNCTION__);
 	schedule();
 }
 
@@ -3526,7 +3527,7 @@ void __runq_add_thread(struct thread *thread, int cpu_id)
 	//thread->proc->status = PS_RUNNING;	/* not set here */
 	get_cpu_local_var(cpu_id)->status = CPU_STATUS_RUNNING;
 
-	kprintf("%s: pid=%d,tid=%d,cpu_id=%d,runq_len=%d\n", __FUNCTION__, thread->proc->pid, thread->tid, cpu_id, v->runq_len);
+	dkprintf("%s: pid=%d,tid=%d,cpu_id=%d,runq_len=%d\n", __FUNCTION__, thread->proc->pid, thread->tid, cpu_id, v->runq_len);
 }
 
 void runq_add_thread(struct thread *thread, int cpu_id)
@@ -3544,7 +3545,7 @@ void runq_add_thread(struct thread *thread, int cpu_id)
 	procfs_create_thread(thread);
 
 	__sync_add_and_fetch(&thread->proc->clone_count, 1);
-	kprintf("%s: clone_count is %d\n", __FUNCTION__, thread->proc->clone_count);
+	dkprintf("%s: clone_count is %d\n", __FUNCTION__, thread->proc->clone_count);
 	rusage_num_threads_inc();
 #ifdef RUSAGE_DEBUG
 	if (rusage->num_threads == 1) {

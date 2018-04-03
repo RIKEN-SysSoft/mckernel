@@ -2884,7 +2884,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 		.user_end = desc->user_end
 	};
 
-	fprintf(stderr, "%s: enter pid=%d,tid=%d\n", __FUNCTION__, getpid(), gettid());
+	//fprintf(stderr, "%s: enter pid=%d,tid=%d\n", __FUNCTION__, getpid(), gettid());
 
 	/* Perform mmap() before fork() in create_tracer() */
 	uti_desc = mmap(NULL, sizeof(struct uti_desc), PROT_READ | PROT_WRITE,
@@ -2919,7 +2919,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 		return 0;
 	}
 	close(uti_pfd[0]);
-	fprintf(stderr, "%s: calling MCEXEC_UP_RELEASE_USER_SPACE,pid=%d,tid=%d\n", __FUNCTION__, getpid(), gettid());
+	//fprintf(stderr, "%s: calling MCEXEC_UP_RELEASE_USER_SPACE,pid=%d,tid=%d\n", __FUNCTION__, getpid(), gettid());
 #if 1 /* debug */
 		if (ioctl(fd, MCEXEC_UP_RELEASE_USER_SPACE, &release_desc) != 0) {
 			fprintf(stderr, "%s: ERROR: MCEXEC_UP_RELEASE_USER_SPACE returned %d\n", __FUNCTION__, errno);
@@ -2963,7 +2963,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 #endif
 
 	uti_desc->tracer_tid = gettid();
-	fprintf(stderr, "%s: tracer tid=%d,tracee tid=%d,user_start=%lx,user_end=%lx\n", __FUNCTION__, gettid(), uti_desc->tid, user_start, user_end);
+	//fprintf(stderr, "%s: tracer tid=%d,tracee tid=%d,user_start=%lx,user_end=%lx\n", __FUNCTION__, gettid(), uti_desc->tid, user_start, user_end);
 	if (ptrace(PTRACE_ATTACH, uti_desc->tid, 0, 0) == -1) {
 		fprintf(stderr, "PTRACE_ATTACH errno=%d\n", errno);
 		exit(1);
@@ -4424,7 +4424,7 @@ return_execve2:
 
 		case __NR_sched_setaffinity:
 			if (w.sr.args[0] == 0) {
-				printf("%s: uti, __NR_sched_setaffinity: rtid=%d\n", __FUNCTION__, w.sr.rtid);fflush(stdout);
+				__dprintf("%s: uti, __NR_sched_setaffinity: rtid=%d\n", __FUNCTION__, w.sr.rtid);fflush(stdout);
 				ret = util_thread(my_thread, w.sr.args[1], w.sr.rtid,
 				                  w.sr.args[2], w.sr.args[3]);
 			}

@@ -388,7 +388,7 @@ static void release_handler(ihk_os_t os, void *param)
 	unsigned long flags;
 	struct host_thread *thread;
 
-	dprintk("%s: param=%p,pid=%d,tid=%d\n", __FUNCTION__, param, task_tgid_vnr(current), task_pid_vnr(current));
+	dprintk("%s: param=%p,pid=%d,tid=%d for pid=%d\n", __FUNCTION__, param, task_tgid_vnr(current), task_pid_vnr(current), info->pid);
 
 	/* Stop switching FS registers for uti thread */ 
 	write_lock_irqsave(&host_thread_lock, flags);
@@ -720,7 +720,7 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 	/* Wait for the rest if not the last or if the last but
 	 * the woken process is different than the last */
 	if (pe->nr_processes_left || (pli_next && pli_next != pli)) {
-		printk("%s: pid: %d, waiting in list\n",
+		dprintk("%s: pid: %d, waiting in list\n",
 				__FUNCTION__, task_tgid_vnr(current));
 		mutex_unlock(&pe->lock);
 		/* Timeout period: 10 secs + (#procs * 0.1sec) */
@@ -1090,7 +1090,7 @@ int mcctrl_add_per_proc_data(struct mcctrl_usrdata *ud, int pid,
 			goto out;
 		}
 	}
-	kprintf("%s: list_add_tail,pid=%d\n", __FUNCTION__, pid);
+	dprintk("%s: list_add_tail,pid=%d\n", __FUNCTION__, pid);
 	list_add_tail(&ppd->hash, &ud->per_proc_data_hash[hash]);
 
 out:
@@ -1170,7 +1170,7 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 			   process is gone and the application should be terminated. */
 			packet = (struct ikc_scd_packet *)ptd->data;
 			if (__sync_sub_and_fetch(&packet->refcount, 1) == 0) {
-				printk("%s: calling __return_syscall (hash),target pid=%d,tid=%d\n", __FUNCTION__, ppd->pid, packet->req.rtid);
+				dprintk("%s: calling __return_syscall (hash),target pid=%d,tid=%d\n", __FUNCTION__, ppd->pid, packet->req.rtid);
 				__return_syscall(ppd->ud->os, packet, -ERESTARTSYS, packet->req.rtid);
 				ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 									   (ppd->ud->ikc2linux[smp_processor_id()] ?
@@ -1187,7 +1187,7 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 				printk("%s: WARNING: ptd->refcount != 1 but %d\n", __FUNCTION__, atomic_read(&ptd->refcount));
 			}
 			mcctrl_put_per_thread_data_unsafe(ptd);
-			printk("%s: ptd-put,refc=%d\n", __FUNCTION__, atomic_read(&ptd->refcount));
+			dprintk("%s: ptd-put,refc=%d\n", __FUNCTION__, atomic_read(&ptd->refcount));
 		}
 		write_unlock_irqrestore(&ppd->per_thread_data_hash_lock[i], flags);
 	}
@@ -2491,7 +2491,6 @@ mcexec_util_thread1(ihk_os_t os, unsigned long arg, struct file *file)
 	unsigned long free_size;
 	unsigned long icurrent = (unsigned long)current;
 
-	kprintf("%s: tid=%d\n", __FUNCTION__, task_pid_vnr(current));
 	if(copy_from_user(param, uparam, sizeof(void *) * 6)) {
 		return -EFAULT;
 	}
@@ -2536,6 +2535,8 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	void *__user lctx = (void *__user)param[2];
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
+
+	dprintk("%s: pid=%d,tid=%d\n", __FUNCTION__, task_tgid_vnr(current), task_pid_vnr(current));
 
 	save_fs_ctx(lctx);
 	info = ihk_os_get_mcos_private_data(file);
@@ -2637,7 +2638,7 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 	}
 
 	if (__sync_sub_and_fetch(&packet->refcount, 1) == 0) {
-		printk("%s: calling __return_syscall (uti),target pid=%d,tid=%d\n", __FUNCTION__, ppd->pid, packet->req.rtid);
+		dprintk("%s: calling __return_syscall (uti),target pid=%d,tid=%d\n", __FUNCTION__, ppd->pid, packet->req.rtid);
 		__return_syscall(usrdata->os, packet, sig, tid);
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 							   (usrdata->ikc2linux[smp_processor_id()] ?
