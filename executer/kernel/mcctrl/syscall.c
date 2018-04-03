@@ -1446,7 +1446,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 	struct kstat st;
 	int mf_flags = 0;
 
-	printk("pager_req_create(%d,%lx)\n", fd, (long)result_pa);
+	dprintk("pager_req_create(%d,%lx)\n", fd, (long)result_pa);
 
 	error = vfs_fstat(fd, &st);
 	if (error) {
@@ -2073,7 +2073,7 @@ static int __pager_unmap(struct pager *pager)
 	error = do_munmap(current->mm, pager->map_uaddr, pager->map_len);
 	up_write(&current->mm->mmap_sem);
 #else
-	printk("%s: calling vm_munmap,addr=%lx,map_len=%lx\n", __FUNCTION__, pager->map_uaddr, pager->map_len);
+	dprintk("%s: calling vm_munmap,addr=%lx,map_len=%lx\n", __FUNCTION__, pager->map_uaddr, pager->map_len);
 	error = vm_munmap(pager->map_uaddr, pager->map_len);
 #endif
 
@@ -2092,7 +2092,7 @@ static int pager_req_unmap(ihk_os_t os, uintptr_t handle)
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd = NULL;
 
-	printk("pager_req_unmap(%p,%lx)\n", os, handle);
+	dprintk("pager_req_unmap(%p,%lx)\n", os, handle);
 
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 	if (unlikely(!ppd)) {

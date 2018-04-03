@@ -1209,7 +1209,7 @@ int add_process_memory_range(struct process_vm *vm,
 	struct vm_range *range;
 	int rc;
 
-	kprintf("%s: %lx - %lx,flag=%x\n", __FUNCTION__, start, end, flag);
+	dkprintf("%s: %lx - %lx,flag=%x\n", __FUNCTION__, start, end, flag);
 
 	if ((start < vm->region.user_start)
 			|| (vm->region.user_end < end)) {
@@ -1292,7 +1292,7 @@ int add_process_memory_range(struct process_vm *vm,
 		*rp = range;
 	}
 
-	kprintf("%s: exit,%lx - %lx,flag=%x\n", __FUNCTION__, start, end, flag);
+	dkprintf("%s: exit,%lx - %lx,flag=%x\n", __FUNCTION__, start, end, flag);
 	return 0;
 }
 
@@ -2386,7 +2386,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 		}
 	}
 
-	kprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)end_allocated, (unsigned long)new_end_allocated);
+	dkprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)end_allocated, (unsigned long)new_end_allocated);
 	if ((rc = add_process_memory_range(vm, end_allocated, new_end_allocated,
 					(p == 0 ? 0 : virt_to_phys(p)), flag, NULL, 0,
 					align_shift, NULL)) != 0) {
