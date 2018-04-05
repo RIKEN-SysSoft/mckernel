@@ -262,7 +262,10 @@ static int get_file_size(struct process *proc) {
 		//break; /* debug */
 	}
 
-	/* End mark */
+	/* Add a NULL entry because 
+	   readelf-2.25.1-32.base.el7_4.2 and 
+	   gdb-7.6.1-100.el7_4.1
+	   doesn't show the last entry. */
 	count++; 
 	szfilenames++; 
 
@@ -321,7 +324,10 @@ static void fill_file(struct note *head, struct process* proc) {
 		//break; /* debug */
 	}
 
-	/* End mark */
+	/* Add a NULL entry because 
+	   readelf-2.25.1-32.base.el7_4.2 and 
+	   gdb-7.6.1-100.el7_4.1
+	   doesn't show the last entry. */
 	*nt_file++ = 0;
 	*nt_file++ = 0;
 	*nt_file++ = 0;
