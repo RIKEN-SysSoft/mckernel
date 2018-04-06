@@ -1308,7 +1308,7 @@ int do_munmap(void *addr, size_t len, int holding_memory_range_lock)
 		clear_host_pte((uintptr_t)addr, len);
 	}
 	else {
-		error = set_host_vma((uintptr_t)addr, len, PROT_READ|PROT_WRITE, holding_memory_range_lock);
+		error = set_host_vma((uintptr_t)addr, len, PROT_READ | PROT_WRITE | PROT_EXEC, holding_memory_range_lock);
 		if (error) {
 			kprintf("sys_munmap:set_host_vma failed. %d\n", error);
 			/* through */
@@ -1494,7 +1494,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	}
 
 	if (!(prot & PROT_WRITE)) {
-		error = set_host_vma(addr, len, PROT_READ, 1/* holding memory_range_lock */);
+		error = set_host_vma(addr, len, PROT_READ | PROT_EXEC, 1/* holding memory_range_lock */);
 		if (error) {
 			kprintf("do_mmap:set_host_vma failed. %d\n", error);
 			goto out;
@@ -1700,7 +1700,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 
 out:
 	if (ro_vma_mapped) {
-		(void)set_host_vma(addr, len, PROT_READ|PROT_WRITE, 1/* holding memory_range_lock */);
+		(void)set_host_vma(addr, len, PROT_READ | PROT_WRITE | PROT_EXEC, 1/* holding memory_range_lock */);
 	}
 	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
 
@@ -1909,7 +1909,7 @@ out:
 	// XXX: TLB flush
 	flush_tlb();
 	if (ro_changed && !error) {
-		error = set_host_vma(start, len, prot & (PROT_READ|PROT_WRITE), 1/* holding memory_range_lock */);
+		error = set_host_vma(start, len, prot & (PROT_READ | PROT_WRITE | PROT_EXEC), 1/* holding memory_range_lock */);
 		if (error) {
 			kprintf("sys_mprotect:set_host_vma failed. %d\n", error);
 			/* through */
@@ -5044,7 +5044,7 @@ SYSCALL_DECLARE(shmat)
 	vrflags |= VRFLAG_PROT_TO_MAXPROT(vrflags);
 
 	if (!(prot & PROT_WRITE)) {
-		error = set_host_vma(addr, len, PROT_READ, 1/* holding memory_range_lock */);
+		error = set_host_vma(addr, len, PROT_READ | PROT_EXEC, 1/* holding memory_range_lock */);
 		if (error) {
 			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 			shmobj_list_unlock();
@@ -5060,7 +5060,7 @@ SYSCALL_DECLARE(shmat)
 			vrflags, &obj->memobj, 0, obj->pgshift, NULL);
 	if (error) {
 		if (!(prot & PROT_WRITE)) {
-			(void)set_host_vma(addr, len, PROT_READ|PROT_WRITE, 1/* holding memory_range_lock */);
+			(void)set_host_vma(addr, len, PROT_READ | PROT_WRITE | PROT_EXEC, 1/* holding memory_range_lock */);
 		}
 		memobj_release(&obj->memobj);
 		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
