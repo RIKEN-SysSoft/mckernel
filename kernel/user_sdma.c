@@ -1,50 +1,3 @@
-/*
- * Copyright(c) 2015, 2016 Intel Corporation.
- *
- * This file is provided under a dual BSD/GPLv2 license.  When using or
- * redistributing this file, you may do so under either license.
- *
- * GPL LICENSE SUMMARY
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of version 2 of the GNU General Public License as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * BSD LICENSE
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Intel Corporation nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- */
-
 #include <hfi1/hfi.h>
 #include <hfi1/sdma.h>
 #include <hfi1/user_sdma.h>
@@ -203,7 +156,6 @@ static u8 dlid_to_selector(u16 dlid)
 	return mapping[hash];
 }
 
-#ifndef __HFI1_ORIG__
 /* hfi1/chip_registers.h */
 #define CORE		0x000000000000
 #define TXE			(CORE + 0x000001800000)
@@ -213,7 +165,6 @@ static u8 dlid_to_selector(u16 dlid)
 #define TXE_PIO_SEND (TXE + TXE_PIO_SEND_OFFSET)
 #define TXE_PIO_SEND_OFFSET 0x0800000
 #define TXE_PIO_SIZE (32 * 0x100000)	/* 32 MB */
-#endif // !__HFI1_ORIG__
 
 int hfi1_map_device_addresses(struct hfi1_filedata *fd)
 {
@@ -604,7 +555,6 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	struct kmalloc_cache_header *txreq_cache =
 		&cpu_local_var(txreq_cache);
 
-	TP("- kregbase and cq->comps");
 	hfi1_cdbg(AIOWRITE, "+");
 	if (iovec[idx].iov_len < sizeof(info) + sizeof(req->hdr)) {
 		hfi1_cdbg(
@@ -630,7 +580,6 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 			  dd->unit, uctxt->ctxt, fd->subctxt, info.comp_idx);
 		return -EINVAL;
 	}
-	TP("- info.comp_idx >= hfi1_sdma_comp_ring_size");
 
 	/*
 	 * Sanity check the header io vector count.  Need at least 1 vector
@@ -643,7 +592,6 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 			  req_iovcnt(info.ctrl), dim);
 		return -EINVAL;
 	}
-	TP("- req_iovcnt(info.ctrl) < 1 || req_iovcnt(info.ctrl) > dim");
 
 	if (!info.fragsize) {
 		hfi1_cdbg(SDMA,
@@ -651,7 +599,6 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 			  dd->unit, uctxt->ctxt, fd->subctxt, info.comp_idx);
 		return -EINVAL;
 	}
-	TP("- !info.fragsize");
 
 	/* Try to claim the request. */
 	if (test_and_set_bit(info.comp_idx, pq->req_in_use)) {
@@ -696,7 +643,6 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 		}
 		req->data_iovs--;
 	}
-	TP("- req_opcode(info.ctrl) == EXPECTED");
 
 	if (!info.npkts || req->data_iovs > MAX_VECTORS_PER_REQ) {
 		SDMA_DBG(req, "Too many vectors (%u/%u)", req->data_iovs,
@@ -704,8 +650,6 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 		ret = -EINVAL;
 		goto free_req;
 	}
-	TP("- !info.npkts || req->data_iovs > MAX_VECTORS_PER_REQ");
-
 	/* Copy the header from the user buffer */
 	ret = copy_from_user(&req->hdr, iovec[idx].iov_base + sizeof(info),
 			     sizeof(req->hdr));
@@ -727,8 +671,6 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 		ret = -EINVAL;
 		goto free_req;
 	}
-	TP("- (opcode & USER_OPCODE_CHECK_MASK) !=");
-	
 	/*
 	 * Validate the vl. Do not trust packets from user space blindly.
 	 * VL comes from PBC, SC comes from LRH, and the VL needs to
@@ -763,7 +705,6 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 		ret = -EINVAL;
 		goto free_req;
 	}
-	TP("- (be16_to_cpu(req->hdr.lrh[0]) & 0x3) == HFI1_LRH_GRH");
 
 	req->koffset = le32_to_cpu(req->hdr.kdeth.swdata[6]);
 	/*
@@ -773,69 +714,61 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	req->tidoffset = KDETH_GET(req->hdr.kdeth.ver_tid_offset, OFFSET) *
 		(KDETH_GET(req->hdr.kdeth.ver_tid_offset, OM) ?
 		 KDETH_OM_LARGE : KDETH_OM_SMALL);
-	SDMA_DBG(req, "Initial TID offset %u", req->tidoffset);
+	//trace_hfi1_sdma_user_initial_tidoffset(dd, uctxt->ctxt, fd->subctxt,
+	//				       info.comp_idx, req->tidoffset);
 	idx++;
 
-	TP("+ Save all the IO vector structures");
 	/* Save all the IO vector structures */
 	for (i = 0; i < req->data_iovs; i++) {
+		pte_t *ptep;
+		size_t base_pgsize;
+		struct user_sdma_iovec *usi;
+		void *virt;
+
 		req->iovs[i].offset = 0;
 		INIT_LIST_HEAD(&req->iovs[i].list);
+
 		/*
 		 * req->iovs[] contain only the data.
 		 */
 		fast_memcpy(&req->iovs[i].iov, iovec + idx++, sizeof(struct iovec));
-#ifdef __HFI1_ORIG__
-		hfi1_cdbg(AIOWRITE, "+pin_vector_pages");
-		// TODO: pin_vector_pages
-		ret = pin_vector_pages(req, &req->iovs[i]);
-		hfi1_cdbg(AIOWRITE, "-pin_vector_pages");
-		if (ret) {
-			req->status = ret;
-			goto free_req;
-		}
-#else
-		{
-			pte_t *ptep;
-			size_t base_pgsize;
-			struct user_sdma_iovec *usi = &req->iovs[i];
-			void *virt = usi->iov.iov_base;
-			/*
-			 * Look up the PTE for the start of this iovec.
-			 * Store the physical address of the first page and
-			 * the page size in iovec.
-			 */
-			ptep = ihk_mc_pt_lookup_pte(
-					cpu_local_var(current)->vm->address_space->page_table,
-					virt,
-					0,
-					0,
-					&base_pgsize,
-					0);
-			if (unlikely(!ptep || !pte_is_present(ptep))) {
-				kprintf("%s: ERROR: no valid PTE for 0x%lx\n",
-						__FUNCTION__, virt);
-				return -EFAULT;
-			}
 
-			usi->base_pgsize = (unsigned)base_pgsize;
-			usi->base_phys = pte_get_phys(ptep);
-			usi->base_virt = (void *)((unsigned long)virt &
-					~((unsigned long)usi->base_pgsize - 1));
-			SDMA_DBG("%s: iovec: %d, base_virt: 0x%lx, base_phys: 0x%lx, "
-					"base_pgsize: %lu\n",
-					__FUNCTION__,
-					i,
-					usi->base_virt,
-					usi->base_phys,
-					usi->base_pgsize);
+		usi = &req->iovs[i];
+		virt = usi->iov.iov_base;
+
+		/*
+		 * Look up the PTE for the start of this iovec.
+		 * Store the physical address of the first page and
+		 * the page size in iovec.
+		 */
+		ptep = ihk_mc_pt_lookup_pte(
+				cpu_local_var(current)->vm->address_space->page_table,
+				virt,
+				0,
+				0,
+				&base_pgsize,
+				0);
+		if (unlikely(!ptep || !pte_is_present(ptep))) {
+			kprintf("%s: ERROR: no valid PTE for 0x%lx\n",
+					__FUNCTION__, virt);
+			return -EFAULT;
 		}
-#endif /* __HFI1_ORIG__ */
+
+		usi->base_pgsize = (unsigned)base_pgsize;
+		usi->base_phys = pte_get_phys(ptep);
+		usi->base_virt = (void *)((unsigned long)virt &
+				~((unsigned long)usi->base_pgsize - 1));
+		SDMA_DBG("%s: iovec: %d, base_virt: 0x%lx, base_phys: 0x%lx, "
+				"base_pgsize: %lu\n",
+				__FUNCTION__,
+				i,
+				usi->base_virt,
+				usi->base_phys,
+				usi->base_pgsize);
 		req->data_len += req->iovs[i].iov.iov_len;
 	}
-	TP("- Save all the IO vector structures");
-	SDMA_DBG(req, "total data length %u", req->data_len);
-
+	//trace_hfi1_sdma_user_data_length(dd, uctxt->ctxt, fd->subctxt,
+	//				 info.comp_idx, req->data_len);
 	if (pcount > req->info.npkts)
 		pcount = req->info.npkts;
 	/*
@@ -878,27 +811,24 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 		req->tididx = 0;
 		idx++;
 	}
-	TP("- Copy any TID info");
-	
+
 	dlid = be16_to_cpu(req->hdr.lrh[1]);
 	selector = dlid_to_selector(dlid);
 	selector += uctxt->ctxt + fd->subctxt;
 	req->sde = sdma_select_user_engine(dd, selector, vl);
-	TP("- 	sdma_select_user_engine");
-	
-#ifdef __HFI1_ORIG__
-	if (!req->sde || !sdma_running(req->sde)) {
+
+	if (!req->sde) {
+		kprintf("%s: !req->sde", __FUNCTION__);
 		ret = -ECOMM;
 		goto free_req;
 	}
-#else
-	if (!req->sde || !sdma_running(req->sde)) {
-		kprintf("%s: EARLY RETURN: !req->sde || !sdma_running(req->sde) is true", __FUNCTION__);
-		return 0;
-	}
-#endif /* __HFI1_ORIG__ */
 
-	TP("+ !req->sde || !sdma_running(req->sde)");
+	if (!sdma_running(req->sde)) {
+		kprintf("%s: !sdma_running(req->sde)", __FUNCTION__);
+		ret = -ECOMM;
+		goto free_req;
+	}
+
 	/* We don't need an AHG entry if the request contains only one packet */
 	if (req->info.npkts > 1 && HFI1_CAP_IS_USET(SDMA_AHG)) {
 		int ahg = sdma_ahg_alloc(req->sde);
@@ -933,11 +863,9 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	 * request have been submitted to the SDMA engine. However, it
 	 * will not wait for send completions.
 	 */
-	 TP("+ while user_sdma_send_pkts()");
 	while (req->seqsubmitted != req->info.npkts) {
 		ret = user_sdma_send_pkts(req, pcount, txreq_cache);
 		if (ret < 0) {
-			TP("user_sdma_send_pkts() early return");
 			if (ret != -EBUSY) {
 				req->status = ret;
 				WRITE_ONCE(req->has_error, 1);
@@ -946,16 +874,6 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 					goto free_req;
 				return ret;
 			}
-#ifdef __HFI1_ORIG__
-			hfi1_cdbg(AIOWRITE, "+wait_event_interruptible_timeout");
-			wait_event_interruptible_timeout(
-				pq->busy.wait_dma,
-				(pq->state == SDMA_PKT_Q_ACTIVE),
-				msecs_to_jiffies(
-					SDMA_IOWAIT_TIMEOUT));
-			hfi1_cdbg(AIOWRITE, "-wait_event_interruptible_timeout");
-#else
-			TP("+ polling while(pq->state != SDMA_PKT_Q_ACTIVE)");
 			{
 				unsigned long ts = rdtsc();
 				while (pq->state != SDMA_PKT_Q_ACTIVE) {
@@ -964,21 +882,15 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 				kprintf("%s: waited %lu cycles for SDMA_PKT_Q_ACTIVE\n",
 						__FUNCTION__, rdtsc() - ts);
 			}
-			TP("- polling while(pq->state != SDMA_PKT_Q_ACTIVE)");
-#endif /* __HFI1_ORIG__ */
 		}
 	}
 	*count += idx;
-	hfi1_cdbg(AIOWRITE, "-");
-	TP("-");
 	return 0;
 free_req:
-	TP("free_req");
 	user_sdma_free_request(req, true);
 	if (req_queued)
 		pq_update(pq);
 	set_comp_state(pq, cq, info.comp_idx, ERROR, req->status);
-	hfi1_cdbg(AIOWRITE, "-");
 	return ret;
 }
 
@@ -1030,7 +942,6 @@ static inline u32 compute_data_length(struct user_sdma_request *req,
 	} else {
 		len = min(req->data_len - req->sent, (u32)req->info.fragsize);
 	}
-	SDMA_DBG(req, "Data Length = %u", len);
 	return len;
 }
 
@@ -1091,10 +1002,8 @@ static int user_sdma_send_pkts(struct user_sdma_request *req,
 	if (unlikely(req->seqnum == req->info.npkts)) {
 		if (!list_empty(&req->txps))
 			goto dosend;
-		TP("!list_empty(&req->txps) is false");
 		return ret;
 	}
-	TP("- Check if we might have sent the entire request already");
 
 	if (!maxpkts || maxpkts > req->info.npkts - req->seqnum)
 		maxpkts = req->info.npkts - req->seqnum;
@@ -1116,19 +1025,15 @@ static int user_sdma_send_pkts(struct user_sdma_request *req,
 		 */
 		if (READ_ONCE(req->has_error))
 			return -EFAULT;
-
-		tx = kmem_cache_alloc(pq->txreq_cache, GFP_KERNEL);
-#else
-		tx = kmalloc_cache_alloc(txreq_cache, sizeof(*tx));
 #endif /* __HFI1_ORIG__ */
+
+		tx = kmalloc_cache_alloc(txreq_cache, sizeof(*tx));
 		if (!tx)
 			return -ENOMEM;
-		TP("- kmalloc");
 		tx->flags = 0;
 		tx->req = req;
 		tx->busycount = 0;
 		INIT_LIST_HEAD(&tx->list);
-
 
 		/*
 		 * For the last packet set the ACK request
@@ -1160,7 +1065,7 @@ static int user_sdma_send_pkts(struct user_sdma_request *req,
 			}
 
 			datalen = compute_data_length(req, tx);
-			TP("- Calculate the payload size");
+
 			/*
 			 * Disable header suppression for the payload <= 8DWS.
 			 * If there is an uncorrectable error in the receive
@@ -1256,9 +1161,6 @@ static int user_sdma_send_pkts(struct user_sdma_request *req,
 		 TP("+ If the request contains any data vectors, add up to fragsize bytes to the descriptor.");
 		 while (queued < datalen &&
 		       (req->sent + data_sent) < req->data_len) {
-#ifdef __HFI1_ORIG__
-			unsigned pageidx;
-#endif
 			unsigned len;
 			uintptr_t base;
 			void *virt;
@@ -1294,28 +1196,15 @@ static int user_sdma_send_pkts(struct user_sdma_request *req,
 						iovec->base_pgsize);
 			}
 
-#ifdef __HFI1_ORIG__
-			pageidx = (((iovec->offset + iov_offset +
-				     base) - (base & PAGE_MASK)) >> PAGE_SHIFT);
-			offset = offset_in_page(base + iovec->offset +
-						iov_offset);
-			len = offset + req->info.fragsize > PAGE_SIZE ?
-				PAGE_SIZE - offset : req->info.fragsize;
-#else
 			len = (iovec->base_virt + iovec->base_pgsize - virt) >
 				 req->info.fragsize ? req->info.fragsize :
 				(iovec->base_virt + iovec->base_pgsize - virt);
-#endif
 			len = min((datalen - queued), len);
 			SDMA_DBG("%s: dl: %d, qd: %d, len: %d\n",
 					__FUNCTION__, datalen, queued, len);
 
 			ret = sdma_txadd_page(pq->dd, &tx->txreq,
-#ifdef __HFI1_ORIG__
-					iovec->pages[pageidx], offset,
-#else
 					iovec->base_phys + (virt - iovec->base_virt),
-#endif
 					len);
 			if (ret) {
 				SDMA_DBG(req, "SDMA txreq add page failed %d\n",
@@ -1326,11 +1215,7 @@ static int user_sdma_send_pkts(struct user_sdma_request *req,
 			queued += len;
 			data_sent += len;
 			if (unlikely(queued < datalen &&
-#ifdef __HFI1_ORIG__
-				     pageidx == iovec->npages &&
-#else
 					iov_offset == iovec->iov.iov_len &&
-#endif /* __HFI1_ORIG__ */
 				     req->iov_idx < req->data_iovs - 1)) {
 				iovec->offset += iov_offset;
 				iovec = &req->iovs[++req->iov_idx];
@@ -1371,11 +1256,7 @@ static int user_sdma_send_pkts(struct user_sdma_request *req,
 dosend:
 
 	ret = sdma_send_txlist(req->sde,
-#ifdef __HFI1_ORIG__
-			iowait_get_ib_work(&pq->busy),
-#else
 			NULL,
-#endif
 			&req->txps, &count);
 	req->seqsubmitted += count;
 	if (req->seqsubmitted == req->info.npkts) {
@@ -1389,17 +1270,12 @@ dosend:
 		if (req->ahg_idx >= 0)
 			sdma_ahg_free(req->sde, req->ahg_idx);
 	}
-	hfi1_cdbg(AIOWRITE, "-");
 	return ret;
+
 free_txreq:
 	sdma_txclean(pq->dd, &tx->txreq);
 free_tx:
-#ifdef __HFI1_ORIG__
-	kmem_cache_free(pq->txreq_cache, tx);
-	hfi1_cdbg(AIOWRITE, "-");
-#else
 	kmalloc_cache_free(tx);
-#endif /* __HFI1_ORIG__ */
 	return ret;
 }
 
@@ -1572,9 +1448,10 @@ static int set_txreq_header(struct user_sdma_request *req,
 		 * Set the KDETH.OFFSET and KDETH.OM based on size of
 		 * transfer.
 		 */
-		SDMA_DBG(req, "TID offset %ubytes %uunits om%u",
-			 req->tidoffset, req->tidoffset >> omfactor,
-			 omfactor != KDETH_OM_SMALL_SHIFT);
+		//trace_hfi1_sdma_user_tid_info(
+		//	pq->dd, pq->ctxt, pq->subctxt, req->info.comp_idx,
+		//	req->tidoffset, req->tidoffset >> omfactor,
+		//	omfactor != KDETH_OM_SMALL_SHIFT);
 		KDETH_SET(hdr->kdeth.ver_tid_offset, OFFSET,
 			  req->tidoffset >> omfactor);
 		KDETH_SET(hdr->kdeth.ver_tid_offset, OM,
@@ -1592,7 +1469,6 @@ static int set_txreq_header_ahg(struct user_sdma_request *req,
 	u32 ahg[AHG_KDETH_ARRAY_SIZE];
 	int diff = 0;
 	u8 omfactor; /* KDETH.OM */
-	struct hfi1_user_sdma_pkt_q *pq = req->pq;
 	struct hfi1_pkt_header *hdr = &req->hdr;
 	u16 pbclen = le16_to_cpu(hdr->pbc[0]);
 	u32 val32, tidval = 0, lrhlen = get_lrh_len(*hdr, pad_len(datalen));
@@ -1709,11 +1585,7 @@ static void user_sdma_txreq_cb(struct sdma_txreq *txreq, int status)
 	}
 
 	req->seqcomp = tx->seqnum;
-#ifdef __HFI1_ORIG__			
-	kmem_cache_free(pq->txreq_cache, tx);
-#else
 	kmalloc_cache_free(tx);
-#endif /* __HFI1_ORIG__ */
 	tx = NULL;
 
 	idx = req->info.comp_idx;
@@ -1748,7 +1620,6 @@ static inline void pq_update(struct hfi1_user_sdma_pkt_q *pq)
 
 static void user_sdma_free_request(struct user_sdma_request *req, bool unpin)
 {
-	hfi1_cdbg(AIOWRITE, "+");
 	if (!list_empty(&req->txps)) {
 		struct sdma_txreq *t, *p;
 
@@ -1757,34 +1628,12 @@ static void user_sdma_free_request(struct user_sdma_request *req, bool unpin)
 				container_of(t, struct user_sdma_txreq, txreq);
 			list_del_init(&t->list);
 			sdma_txclean(req->pq->dd, t);
-#ifdef __HFI1_ORIG__			
-			kmem_cache_free(req->pq->txreq_cache, tx);
-#else
 			kmalloc_cache_free(tx);
-#endif /* __HFI1_ORIG__ */
 		}
 	}
-#ifdef __HFI1_ORIG__
-	if (req->data_iovs) {
-		struct sdma_mmu_node *node;
-		int i;
 
-		for (i = 0; i < req->data_iovs; i++) {
-			node = req->iovs[i].node;
-			if (!node)
-				continue;
-
-			if (unpin)
-				hfi1_mmu_rb_remove(req->pq->handler,
-						   &node->rb);
-			else
-				atomic_dec(&node->refcount);
-		}
-	}
-#endif /* __HFI1_ORIG__ */
 	kmalloc_cache_free(req->tids);
 	clear_bit(req->info.comp_idx, req->pq->req_in_use);
-	hfi1_cdbg(AIOWRITE, "-");
 }
 static inline void set_comp_state(struct hfi1_user_sdma_pkt_q *pq,
 				  struct hfi1_user_sdma_comp_q *cq,

@@ -199,7 +199,6 @@ void __sdma_txclean(
 
 static inline void sdma_update_tail(struct sdma_engine *sde, u16 tail)
 {
-	hfi1_cdbg(AIOWRITE, ".");
 	/* Commit writes to memory and advance the tail on the chip */
 	smp_wmb(); /* see get_txhead() */
 	writeq(tail, sde->tail_csr);
@@ -241,8 +240,6 @@ static inline u16 submit_tx(struct sdma_engine *sde, struct sdma_txreq *tx)
 	u16 tail;
 	struct sdma_desc *descp = tx->descp;
 	u8 skip = 0, mode = ahg_mode(tx);
-	TP("+");
-	hfi1_cdbg(AIOWRITE, "+");
 	tail = sde->descq_tail & sde->sdma_mask;
 	sde->descq[tail].qw[0] = cpu_to_le64(descp->qw[0]);
 	sde->descq[tail].qw[1] = cpu_to_le64(add_gen(sde, descp->qw[1]));
@@ -254,7 +251,7 @@ static inline u16 submit_tx(struct sdma_engine *sde, struct sdma_txreq *tx)
 		skip = mode >> 1;
 	for (i = 1; i < tx->num_desc; i++, descp++) {
 		u64 qw1;
-		TP("submitting descs qw[0] = %lu, qw[1] = %lu \n", descp->qw[0], descp->qw[1]);
+
 		sde->descq[tail].qw[0] = cpu_to_le64(descp->qw[0]);
 		if (skip) {
 			/* edits don't have generation */
@@ -278,8 +275,6 @@ static inline u16 submit_tx(struct sdma_engine *sde, struct sdma_txreq *tx)
 #endif
 	sde->tx_ring[sde->tx_tail++ & sde->sdma_mask] = tx;
 	sde->desc_avail -= tx->num_desc;
-	TP("-");
-	hfi1_cdbg(AIOWRITE, "-");
 	return tail;
 }
 
@@ -378,7 +373,6 @@ retry:
 	}
 
 update_tail:
-	TP("+ update_tail:");
 	total_count = submit_count + flush_count;
 	if (wait)
 		iowait_sdma_add(iowait_ioww_to_iow(wait), total_count);
@@ -386,8 +380,6 @@ update_tail:
 		sdma_update_tail(sde, tail);
 	spin_unlock_irqrestore(&sde->tail_lock, flags);
 	*count_out = total_count;
-	hfi1_cdbg(AIOWRITE, "-");
-	TP("-");	
 	return ret;
 
 unlock_noconn:

@@ -649,49 +649,11 @@ static inline int _sdma_txadd_daddr(
 static inline int sdma_txadd_page(
 	struct hfi1_devdata *dd,
 	struct sdma_txreq *tx,
-#ifdef __HFI1_ORIG__
-	struct page *page,
-	unsigned long offset,
-#else
 	dma_addr_t paddr,
-#endif
 	u16 len)
 {
-	dma_addr_t addr;
-#ifdef __HFI1_ORIG__
-	int rval;
-	/* TODO: check this coealesce thing */
-	hfi1_cdbg(AIOWRITE, "+");
-	if ((unlikely(tx->num_desc == tx->desc_limit))) {
-		rval = ext_coal_sdma_tx_descs(dd, tx, SDMA_MAP_PAGE,
-					      NULL, page, offset, len);
-		if (rval <= 0)
-			return rval;
-	}
-
-	addr = dma_map_page(
-		       &dd->pcidev->dev,
-		       page,
-		       offset,
-		       len,
-		       DMA_TO_DEVICE);
-
-	if (unlikely(dma_mapping_error(&dd->pcidev->dev, addr))) {
-		__sdma_txclean(dd, tx);
-		return -ENOSPC;
-	}
-
-	hfi1_cdbg(AIOWRITE, "-");
-#else
-	addr = paddr;
-#endif
-	/*
-	 * XXX: It seems that this is the place where the reference to
-	 * the payload is added, but addr is kernel virtual here.
-	 * TODO: verify this by printing it out in Linux.
-	 */
 	return _sdma_txadd_daddr(
-			dd, SDMA_MAP_PAGE, tx, addr, len);
+			dd, SDMA_MAP_PAGE, tx, paddr, len);
 }
 
 /**
@@ -760,20 +722,7 @@ static inline int sdma_txadd_kvaddr(
 			return rval;
 	}
 
-#ifdef __HFI1_ORIG__
-	addr = dma_map_single(
-		       &dd->pcidev->dev,
-		       kvaddr,
-		       len,
-		       DMA_TO_DEVICE);
-
-	if (unlikely(dma_mapping_error(&dd->pcidev->dev, addr))) {
-		__sdma_txclean(dd, tx);
-		return -ENOSPC;
-	}
-#else
 	addr = virt_to_phys(kvaddr);
-#endif /* __HFI1_ORIG__ */
 
 	return _sdma_txadd_daddr(
 			dd, SDMA_MAP_SINGLE, tx, addr, len);

@@ -257,7 +257,6 @@ ssize_t hfi1_aio_write(void *private_data, const struct iovec *iovec, unsigned l
 	struct hfi1_user_sdma_comp_q *cq = fd->cq;
 	int done = 0, reqs = 0;
 
-	hfi1_cdbg(AIOWRITE, "+");
 	if (!cq || !pq)
 		return -EIO;
 
@@ -265,7 +264,7 @@ ssize_t hfi1_aio_write(void *private_data, const struct iovec *iovec, unsigned l
 		return -EINVAL;
 
 	hfi1_cdbg(SDMA, "SDMA request from %u:%u (%lu)",
-		  fd->uctxt->ctxt, fd->subctxt, dim);
+		fd->uctxt->ctxt, fd->subctxt, dim);
 
 	if (atomic_read(&pq->n_reqs) == pq->n_max_reqs)
 		return -ENOSPC;
@@ -285,8 +284,7 @@ ssize_t hfi1_aio_write(void *private_data, const struct iovec *iovec, unsigned l
 		done += count;
 		reqs++;
 	}
-	hfi1_cdbg(AIOWRITE, "-");
-	TP("-");
+
 	return reqs;
 }
 
