@@ -9571,9 +9571,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 {
 	long l;
 #if !defined(POSTK_DEBUG_TEMP_FIX_60) && !defined(POSTK_DEBUG_TEMP_FIX_56)
-#ifdef PROFILE_ENABLE
 	struct thread *thread = cpu_local_var(current);
-#endif // PROFILE_ENABLE
 #else /* !defined(POSTK_DEBUG_TEMP_FIX_60) && !defined(POSTK_DEBUG_TEMP_FIX_56) */
 	struct thread *thread = cpu_local_var(current);
 #endif /* !defined(POSTK_DEBUG_TEMP_FIX_60) && !defined(POSTK_DEBUG_TEMP_FIX_56) */
