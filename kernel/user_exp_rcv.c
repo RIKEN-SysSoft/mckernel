@@ -429,7 +429,7 @@ int hfi1_user_exp_rcv_invalid(struct hfi1_filedata *fd, struct hfi1_tid_info *ti
 {
 	struct hfi1_ctxtdata *uctxt = fd->uctxt;
 	unsigned long *ev = uctxt->dd->events +
-		(((uctxt->ctxt - uctxt->dd->first_user_ctxt) *
+		(((uctxt->ctxt - uctxt->dd->first_dyn_alloc_ctxt) *
 		  HFI1_MAX_SHARED_CTXTS) + fd->subctxt);
 	int ret = 0;
 
@@ -764,7 +764,7 @@ static int tid_rb_invalidate(struct hfi1_filedata *fdata,
 			 * process in question.
 			 */
 			ev = uctxt->dd->events +
-				(((uctxt->ctxt - uctxt->dd->first_user_ctxt) *
+				(((uctxt->ctxt - uctxt->dd->first_dyn_alloc_ctxt) *
 				  HFI1_MAX_SHARED_CTXTS) + fdata->subctxt);
 			set_bit(_HFI1_EVENT_TID_MMU_NOTIFY_BIT, ev);
 		}

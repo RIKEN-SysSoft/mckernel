@@ -87,7 +87,7 @@ struct user_sdma_iovec {
 	 * Physical address corresponding to the page that contains
 	 * iov.iov_base and the corresponding page size.
 	 */
-	unsigned base_pgsize;
+	unsigned int base_pgsize;
 	unsigned long base_phys;
 #endif
 	/*
@@ -552,6 +552,7 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	int req_queued = 0;
 	u16 dlid;
 	u32 selector;
+	unsigned long size_info = sizeof(info);
 	struct kmalloc_cache_header *txreq_cache =
 		&cpu_local_var(txreq_cache);
 
@@ -561,10 +562,10 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 		   SDMA,
 		   "[%u:%u:%u] First vector not big enough for header %lu/%lu",
 		   dd->unit, uctxt->ctxt, fd->subctxt,
-		   iovec[idx].iov_len, sizeof(info) + sizeof(req->hdr));
+		   iovec[idx].iov_len, size_info + sizeof(req->hdr));
 		return -EINVAL;
 	}
-	ret = copy_from_user(&info, iovec[idx].iov_base, sizeof(info));
+	ret = copy_from_user(&info, iovec[idx].iov_base, size_info);
 	if (ret) {
 		hfi1_cdbg(SDMA, "[%u:%u:%u] Failed to copy info QW (%d)",
 			  dd->unit, uctxt->ctxt, fd->subctxt, ret);
@@ -600,6 +601,7 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 		return -EINVAL;
 	}
 
+
 	/* Try to claim the request. */
 	if (test_and_set_bit(info.comp_idx, pq->req_in_use)) {
 		hfi1_cdbg(SDMA, "[%u:%u:%u] Entry %u is in use",
@@ -611,8 +613,8 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	/*
 	 * All safety checks have been done and this request has been claimed.
 	 */
-	hfi1_cdbg(SDMA, "[%u:%u:%u] Using req/comp entry %u\n", dd->unit,
-		  uctxt->ctxt, fd->subctxt, info.comp_idx);
+	//trace_hfi1_sdma_user_process_request(dd, uctxt->ctxt, fd->subctxt,
+	//				     info.comp_idx);
 	req = pq->reqs + info.comp_idx;
 	req->data_iovs = req_iovcnt(info.ctrl) - 1; /* subtract header vector */
 	req->data_len  = 0;
@@ -631,7 +633,7 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	INIT_LIST_HEAD(&req->txps);
 
 
-	fast_memcpy(&req->info, &info, sizeof(info));
+	fast_memcpy(&req->info, &info, size_info);
 
 	if (req_opcode(info.ctrl) == EXPECTED) {
 		/* expected must have a TID info and at least one data vector */
@@ -651,7 +653,7 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 		goto free_req;
 	}
 	/* Copy the header from the user buffer */
-	ret = copy_from_user(&req->hdr, iovec[idx].iov_base + sizeof(info),
+	ret = copy_from_user(&req->hdr, iovec[idx].iov_base + size_info,
 			     sizeof(req->hdr));
 	if (ret) {
 		SDMA_DBG(req, "Failed to copy header template (%d)", ret);
@@ -841,6 +843,7 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 	set_comp_state(pq, cq, info.comp_idx, QUEUED, 0);
 	atomic_inc(&pq->n_reqs);
 	req_queued = 1;
+
 	/* Send the first N packets in the request to buy us some time */
 	ret = user_sdma_send_pkts(req, pcount, txreq_cache);
 	if (unlikely(ret < 0 && ret != -EBUSY)) {

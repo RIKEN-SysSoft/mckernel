@@ -1,64 +1,64 @@
 struct hfi1_devdata {
 	union {
-		char whole_struct[7232];
+		char whole_struct[7872];
 		struct {
-			char padding0[2984];
+			char padding0[3368];
 			u8 *kregbase1;
 		};
 		struct {
-			char padding1[2992];
+			char padding1[3376];
 			resource_size_t physaddr;
 		};
 		struct {
-			char padding2[3320];
+			char padding2[3704];
 			u64 default_desc1;
 		};
 		struct {
-			char padding3[3352];
+			char padding3[3736];
 			dma_addr_t sdma_pad_phys;
 		};
 		struct {
-			char padding4[3376];
+			char padding4[3760];
 			struct sdma_engine *per_sdma;
 		};
 		struct {
-			char padding5[3384];
+			char padding5[3768];
 			struct sdma_vl_map *sdma_map;
 		};
 		struct {
-			char padding6[3432];
+			char padding6[3816];
 			void *piobase;
 		};
 		struct {
-			char padding7[3440];
+			char padding7[3824];
 			void *rcvarray_wc;
 		};
 		struct {
-			char padding8[3648];
+			char padding8[4040];
 			long unsigned int *events;
 		};
 		struct {
-			char padding9[3684];
+			char padding9[4076];
 			u32 chip_rcv_contexts;
 		};
 		struct {
-			char padding10[3688];
+			char padding10[4080];
 			u32 chip_rcv_array_count;
 		};
 		struct {
-			char padding11[6872];
+			char padding11[7392];
 			struct hfi1_pportdata *pport;
 		};
 		struct {
-			char padding12[6896];
+			char padding12[7416];
 			u16 flags;
 		};
 		struct {
-			char padding13[6899];
-			u8 first_user_ctxt;
+			char padding13[7419];
+			u8 first_dyn_alloc_ctxt;
 		};
 		struct {
-			char padding14[6920];
+			char padding14[7432];
 			u64 sc2vl[4];
 		};
 	};

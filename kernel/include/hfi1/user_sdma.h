@@ -114,26 +114,7 @@ extern uint extended_psn;
 #define KDETH_OM_LARGE_SHIFT     6
 #define KDETH_OM_MAX_SIZE  (1 << ((KDETH_OM_LARGE / KDETH_OM_SMALL) + 1))
 
-/* The original size on Linux is 376 B */
-struct hfi1_user_sdma_pkt_q {
-	struct list_head list;
-	unsigned ctxt;
-	u16 subctxt;
-	u16 n_max_reqs;
-	atomic_t n_reqs;
-	u16 reqidx;
-	struct hfi1_devdata *dd;
-	void *txreq_cache; // struct kmem_cache *txreq_cache;
-	struct user_sdma_request *reqs;
-	unsigned long *req_in_use;
-	struct iowait busy;
-	unsigned state;
-	wait_queue_head_t wait;
-	unsigned long unpinned;
-	void *handler; // struct mmu_rb_handler *handler;
-	atomic_t n_locked;
-	void *mm; // struct mm_struct *mm;
-};
+#include <hfi1/hfi1_generated_hfi1_user_sdma_pkt_q.h>
 
 struct hfi1_user_sdma_comp_q {
 	u16 nentries;
