@@ -88,19 +88,39 @@
 #define atomic_t ihk_atomic_t
 typedef ihk_spinlock_t spinlock_t;
 
-/* From: kernel-xppsl_1.5.2/include/linux/irqsave.h */
-#define spin_lock_irqsave(lock, flags)				\
-	do {						\
-		flags = ihk_mc_spinlock_lock(lock);	\
+
+/*
+ * Linux queued_spin_lock compatible spin_lock, without the queue.
+ * We use _Q_PENDING_VAL as locked value to make sure no Linux cores
+ * enter the queue phase in queued_spin_lock_slowpath().
+ */
+#define _Q_LOCKED_OFFSET	0
+#define _Q_LOCKED_BITS		8
+#define _Q_PENDING_OFFSET	(_Q_LOCKED_OFFSET + _Q_LOCKED_BITS)
+#define _Q_PENDING_VAL		(1U << _Q_PENDING_OFFSET)
+
+#define linux_spin_lock_irqsave(lock, flags)     \
+	do {                                         \
+		uint32_t val;                            \
+		flags = cpu_disable_interrupt_save();    \
+		do {                                     \
+			val = atomic_cmpxchg4(               \
+				(unsigned int *)lock, 0,         \
+				_Q_PENDING_VAL);                 \
+			if (val == 0)                        \
+				break;                           \
+			cpu_pause();                         \
+		}                                        \
+		while (1);                               \
 	} while (0)
 
-#define spin_unlock_irqrestore(lock, flags)		\
-	do {							\
-		ihk_mc_spinlock_unlock(lock, flags); \
+#define linux_spin_unlock_irqrestore(lock, flags) \
+	do {                                          \
+		ihk_atomic_set((ihk_atomic_t *)lock, 0);  \
+		cpu_restore_interrupt(flags);             \
 	} while (0)
 
-#define spin_lock ihk_mc_spinlock_lock_noirq
-#define spin_unlock ihk_mc_spinlock_unlock_noirq
+
 /*****************************************************/
 
 #define ____cacheline_aligned_in_smp __attribute__((aligned(64)))

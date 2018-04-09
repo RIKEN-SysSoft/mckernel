@@ -347,7 +347,7 @@ int sdma_send_txlist(struct sdma_engine *sde, struct iowait_work *wait,
 	u32 submit_count = 0, flush_count = 0, total_count;
 
 retry_lock:
-	spin_lock_irqsave(&sde->tail_lock, flags);
+	linux_spin_lock_irqsave(&sde->tail_lock, flags);
 retry:
 	list_for_each_entry_safe(tx, tx_next, tx_list, list) {
 		tx->wait = iowait_ioww_to_iow(wait);
@@ -378,7 +378,7 @@ update_tail:
 		iowait_sdma_add(iowait_ioww_to_iow(wait), total_count);
 	if (tail != INVALID_TAIL)
 		sdma_update_tail(sde, tail);
-	spin_unlock_irqrestore(&sde->tail_lock, flags);
+	linux_spin_unlock_irqrestore(&sde->tail_lock, flags);
 	*count_out = total_count;
 	return ret;
 
@@ -404,7 +404,7 @@ nodesc:
 		}
 
 		dkprintf("%s: releasing lock and reiterating.. \n", __FUNCTION__);
-		spin_unlock_irqrestore(&sde->tail_lock, flags);
+		linux_spin_unlock_irqrestore(&sde->tail_lock, flags);
 		cpu_pause();
 		ret = 0;
 		goto retry_lock;

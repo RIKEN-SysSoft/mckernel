@@ -37,7 +37,7 @@ HFI1_KO="${1-$(modinfo -n hfi1)}" || \
 "$DES_BIN" "$HFI1_KO" hfi1_devdata					\
 	per_sdma sdma_pad_phys sdma_map pport chip_rcv_array_count	\
 	kregbase1 piobase physaddr rcvarray_wc default_desc1 flags	\
-	sc2vl events first_user_ctxt chip_rcv_contexts \
+	sc2vl events first_dyn_alloc_ctxt chip_rcv_contexts \
 	> "${HDR_PREFIX}devdata.h"
 
 "$DES_BIN" "$HFI1_KO" hfi1_filedata					\
@@ -65,3 +65,7 @@ HFI1_KO="${1-$(modinfo -n hfi1)}" || \
 "$DES_BIN" "$HFI1_KO" user_sdma_txreq	\
 	hdr txreq list req flags busycount seqnum \
 		> "${HDR_PREFIX}user_sdma_txreq.h"
+
+"$DES_BIN" "$HFI1_KO" hfi1_user_sdma_pkt_q	\
+	dd req_in_use reqs n_reqs state n_max_reqs \
+		> "${HDR_PREFIX}hfi1_user_sdma_pkt_q.h"

@@ -386,11 +386,9 @@ static inline int sdma_running(struct sdma_engine *engine)
 	unsigned long flags;
 	int ret;
 
-	hfi1_cdbg(AIOWRITE, "+");
-	spin_lock_irqsave(&engine->tail_lock, flags);
+	linux_spin_lock_irqsave(&engine->tail_lock, flags);
 	ret = __sdma_running(engine);
-	spin_unlock_irqrestore(&engine->tail_lock, flags);
-	hfi1_cdbg(AIOWRITE, "-");
+	linux_spin_unlock_irqrestore(&engine->tail_lock, flags);
 	return ret;
 }
 
