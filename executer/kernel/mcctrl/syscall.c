@@ -404,7 +404,7 @@ long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
 	pr_ptd("get", task_pid_vnr(current), ptd);
 
 	/* Mutual exclusion with remote_page_fault() */
-	write_lock_irqsave(&ptd->data_lock, flags);
+	//write_lock_irqsave(&ptd->data_lock, flags);
 
 	packet = (struct ikc_scd_packet *)ptd->data;
 	if (!packet) {
@@ -548,7 +548,7 @@ out:
 	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
 
 out_put_ppd:
-	write_unlock_irqrestore(&ptd->data_lock, flags);
+	//write_unlock_irqrestore(&ptd->data_lock, flags);
 	mcctrl_put_per_thread_data(ptd);
 	pr_ptd("put", task_pid_vnr(current), ptd);
  no_ptd:
@@ -595,7 +595,7 @@ int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t
 	pr_ptd("get", task_pid_vnr(current), ptd);
 
 	/* Mutual exclusion with syscall_backward() */
-	write_lock_irqsave(&ptd->data_lock, flags);
+	//write_lock_irqsave(&ptd->data_lock, flags);
 
 	packet = (struct ikc_scd_packet *)ptd->data;
 	if (!packet) {
@@ -768,7 +768,7 @@ out:
 	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
 
 out_put_ppd:
-    write_unlock_irqrestore(&ptd->data_lock, flags);
+    //write_unlock_irqrestore(&ptd->data_lock, flags);
 	mcctrl_put_per_thread_data(ptd);
 	pr_ptd("put", task_pid_vnr(current), ptd);
  no_ptd:
