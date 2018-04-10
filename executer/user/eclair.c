@@ -1075,6 +1075,7 @@ static int start_gdb(void) {
 
 		sprintf(buf, "target remote :%d", ntohs(sin.sin_port));
 		execlp("gdb", "eclair", "-q", "-ex", "set prompt (eclair) ",
+			   /*"-ex", "set debug remote 1",*/
 				"-ex", buf, opt.kernel_path, NULL);
 		perror("execlp");
 		return 3;
