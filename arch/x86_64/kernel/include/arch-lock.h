@@ -134,6 +134,8 @@ typedef struct mcs_lock_node {
 	unsigned long irqsave;
 } __attribute__((aligned(64))) mcs_lock_node_t;
 
+typedef mcs_lock_node_t mcs_lock_t;
+
 static void mcs_lock_init(struct mcs_lock_node *node)
 {
 	node->locked = 0;
