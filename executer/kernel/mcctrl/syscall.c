@@ -1862,6 +1862,7 @@ static int pager_req_unmap(ihk_os_t os, uintptr_t handle)
 	kfree(pager);
 
 out:
+	mcctrl_put_per_proc_data(ppd);
 	return error;
 }
 
