@@ -99,10 +99,9 @@ typedef ihk_spinlock_t spinlock_t;
 #define _Q_PENDING_OFFSET	(_Q_LOCKED_OFFSET + _Q_LOCKED_BITS)
 #define _Q_PENDING_VAL		(1U << _Q_PENDING_OFFSET)
 
-#define linux_spin_lock_irqsave(lock, flags)     \
+#define linux_spin_lock(lock)                    \
 	do {                                         \
 		uint32_t val;                            \
-		flags = cpu_disable_interrupt_save();    \
 		do {                                     \
 			val = atomic_cmpxchg4(               \
 				(unsigned int *)lock, 0,         \
@@ -114,9 +113,20 @@ typedef ihk_spinlock_t spinlock_t;
 		while (1);                               \
 	} while (0)
 
-#define linux_spin_unlock_irqrestore(lock, flags) \
+#define linux_spin_unlock(lock)                   \
 	do {                                          \
 		ihk_atomic_set((ihk_atomic_t *)lock, 0);  \
+	} while (0)
+
+#define linux_spin_lock_irqsave(lock, flags)     \
+	do {                                         \
+		flags = cpu_disable_interrupt_save();    \
+		linux_spin_lock(lock);                   \
+	} while (0)
+
+#define linux_spin_unlock_irqrestore(lock, flags) \
+	do {                                          \
+		linux_spin_unlock(lock);                  \
 		cpu_restore_interrupt(flags);             \
 	} while (0)
 

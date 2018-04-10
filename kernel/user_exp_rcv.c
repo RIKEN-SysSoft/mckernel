@@ -214,9 +214,9 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 	}
 
 	if (ret > 0) {
-		spin_lock(&fd->tid_lock);
+		linux_spin_lock(&fd->tid_lock);
 		fd->tid_used += tididx;
-		spin_unlock(&fd->tid_lock);
+		linux_spin_unlock(&fd->tid_lock);
 		tinfo->tidcnt = tididx;
 
 		if (copy_to_user((void __user *)(unsigned long)tinfo->tidlist,
@@ -278,9 +278,9 @@ int hfi1_user_exp_rcv_clear(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 	dkprintf("%s: 0x%llx:%lu -> %d TIDs unprogrammed\n",
 			__FUNCTION__, tinfo->vaddr, tinfo->length, tinfo->tidcnt);
 
-	spin_lock(&fd->tid_lock);
+	linux_spin_lock(&fd->tid_lock);
 	fd->tid_used -= tididx;
-	spin_unlock(&fd->tid_lock);
+	linux_spin_unlock(&fd->tid_lock);
 
 	tinfo->tidcnt = tididx;
 done:
@@ -305,7 +305,7 @@ static int program_rcvarray(struct hfi1_filedata *fd,
 	struct tid_group *grp = NULL;
 
 	/* lock is taken at loop edges */
-	spin_lock(&fd->tid_lock);
+	linux_spin_lock(&fd->tid_lock);
 	while (len > 0) {
 		size_t tid_len;
 		size_t tid_npages;
@@ -313,7 +313,7 @@ static int program_rcvarray(struct hfi1_filedata *fd,
 		if (!grp) {
 			if (!uctxt->tid_used_list.count) {
 				if (!uctxt->tid_group_list.count) {
-					spin_unlock(&fd->tid_lock);
+					linux_spin_unlock(&fd->tid_lock);
 					/* return what we have so far */
 					kprintf("%s: ERROR: no grp?\n", __FUNCTION__);
 					return count ? count : -ENOMEM;
@@ -331,7 +331,7 @@ static int program_rcvarray(struct hfi1_filedata *fd,
 				break;
 			}
 		}
-		spin_unlock(&fd->tid_lock);
+		linux_spin_unlock(&fd->tid_lock);
 
 		tid_len = (len > MAX_EXPECTED_BUFFER) ? MAX_EXPECTED_BUFFER :
 			(1 << (fls(len) - 1));
@@ -354,7 +354,7 @@ static int program_rcvarray(struct hfi1_filedata *fd,
 		vaddr += tid_len;
 		phys += tid_len;
 
-		spin_lock(&fd->tid_lock);
+		linux_spin_lock(&fd->tid_lock);
 		grp->used++;
 		grp->map |= 1 << idx++;
 
@@ -369,7 +369,7 @@ static int program_rcvarray(struct hfi1_filedata *fd,
 		idx = 0;
 		grp = NULL;
 	}
-	spin_unlock(&fd->tid_lock);
+	linux_spin_unlock(&fd->tid_lock);
 
 	return count;
 }
@@ -445,7 +445,7 @@ int hfi1_user_exp_rcv_invalid(struct hfi1_filedata *fd, struct hfi1_tid_info *ti
 	 * McKernel: copy to userspace directly.
 	 */
 
-	spin_lock(&fd->invalid_lock);
+	linux_spin_lock(&fd->invalid_lock);
 	if (fd->invalid_tid_idx) {
 		dkprintf("%s: fd->invalid_tid_idx: %d to be notified\n",
 				__FUNCTION__, fd->invalid_tid_idx);
@@ -473,7 +473,7 @@ int hfi1_user_exp_rcv_invalid(struct hfi1_filedata *fd, struct hfi1_tid_info *ti
 	else {
 		tinfo->tidcnt = 0;
 	}
-	spin_unlock(&fd->invalid_lock);
+	linux_spin_unlock(&fd->invalid_lock);
 
 	return ret;
 }
@@ -564,7 +564,7 @@ static void clear_tid_node(struct hfi1_filedata *fd, struct tid_rb_node *node)
 
 	__hfi1_rb_tree_remove(node);
 
-	spin_lock(&fd->tid_lock);
+	linux_spin_lock(&fd->tid_lock);
 	node->grp->used--;
 	node->grp->map &= ~(1 << (node->rcventry - node->grp->base));
 
@@ -574,7 +574,7 @@ static void clear_tid_node(struct hfi1_filedata *fd, struct tid_rb_node *node)
 	else if (!node->grp->used)
 		tid_group_move(node->grp, &uctxt->tid_used_list,
 			       &uctxt->tid_group_list);
-	spin_unlock(&fd->tid_lock);
+	linux_spin_unlock(&fd->tid_lock);
 	kmalloc_cache_free(node);
 }
 
@@ -745,7 +745,7 @@ static int tid_rb_invalidate(struct hfi1_filedata *fdata,
 			&cpu_local_var(current)->proc->hfi1_inv_tree,
 			node);
 
-	spin_lock(&fdata->invalid_lock);
+	linux_spin_lock(&fdata->invalid_lock);
 	if (fdata->invalid_tid_idx < uctxt->expected_count) {
 		fdata->invalid_tids[fdata->invalid_tid_idx] =
 			rcventry2tidinfo(node->rcventry - uctxt->expected_base);
@@ -770,6 +770,6 @@ static int tid_rb_invalidate(struct hfi1_filedata *fdata,
 		}
 		fdata->invalid_tid_idx++;
 	}
-	spin_unlock(&fdata->invalid_lock);
+	linux_spin_unlock(&fdata->invalid_lock);
 	return 0;
 }
