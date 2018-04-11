@@ -65,6 +65,13 @@
 #define pr_ptd(msg, tid, ptd) do { } while(0)
 #endif
 
+//#define DEBUG_PPD
+#ifdef DEBUG_PPD
+#define pr_ppd(msg, tid, ppd) do { printk("%s: " msg ",tid=%d,refc=%d\n", __FUNCTION__, tid, atomic_read(&ppd->refcount)); } while(0)
+#else
+#define pr_ppd(msg, tid, ppd) do { } while(0)
+#endif
+
 //extern struct mcctrl_channel *channels;
 int mcctrl_ikc_set_recv_cpu(ihk_os_t os, int cpu);
 int syscall_backward(struct mcctrl_usrdata *, int, unsigned long, unsigned long,
@@ -1796,7 +1803,11 @@ int mcexec_destroy_per_process_data(ihk_os_t os, int pid)
 		/* One for the reference and one for deallocation.
 		 * XXX: actual deallocation may not happen here */
 		mcctrl_put_per_proc_data(ppd);
+		pr_ppd("put", task_pid_vnr(current), ppd);
+
+		/* Note that it will call return_syscall() */
 		mcctrl_put_per_proc_data(ppd);
+		pr_ppd("put", task_pid_vnr(current), ppd);
 	}
 	else {
 		printk("WARNING: no per process data for PID %d ?\n",
@@ -2541,9 +2552,11 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 	pr_ptd("put", tid, ptd);
  no_ptd:
 	mcctrl_put_per_proc_data(ppd);
+	pr_ppd("put", task_pid_vnr(current), ppd);
 
 	/* This is the final drop of uti-ppd */
 	mcctrl_put_per_proc_data(ppd);
+	pr_ppd("put", task_pid_vnr(current), ppd);
  no_ppd:
 	return 0;
 }
