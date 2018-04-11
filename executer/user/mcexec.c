@@ -3217,8 +3217,14 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 	}
 
 #ifdef DEBUG_UTI
-	//fprintf(stderr, "offloaded thread called these syscalls\n");
-	//debug_sig(0);
+	{
+		char *pmi_str = getenv("PMI_RANK");
+		int pmi_rank = pmi_str ? atoi(pmi_str) : -1;
+		if (pmi_rank == 0 || pmi_rank == -1) {
+			fprintf(stderr, "offloaded thread called these syscalls\n");
+			debug_sig(0);
+		}
+	}
 #endif
 
 	exit(0);
