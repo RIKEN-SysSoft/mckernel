@@ -433,9 +433,8 @@ static void release_handler(ihk_os_t os, void *param)
 	}
 #endif
 #ifndef DEBUG_UTI /* debug */
-	printk("%s: calling kfree,param=%p,info->pid=%d\n", __FUNCTION__, param, info->pid);
+	dprintk("%s: calling kfree,param=%p,info->pid=%d\n", __FUNCTION__, param, info->pid);
 	kfree(param);
-	//printk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p OK\n", __FUNCTION__, info);
 #endif
 }
 
@@ -2027,7 +2026,7 @@ int mcexec_close_exec(ihk_os_t os, int pid)
 	int found = 0;
 	int os_ind = ihk_host_os_get_index(os);	
 
-	printk("%s: os=%p,pid=%d\n", __FUNCTION__, os, pid);
+	dprintk("%s: os=%p,pid=%d\n", __FUNCTION__, os, pid);
 
 	if (os_ind < 0) {
 		return EINVAL;
@@ -2523,7 +2522,6 @@ mcexec_util_thread1(ihk_os_t os, unsigned long arg, struct file *file)
 	unsigned long free_size;
 	unsigned long icurrent = (unsigned long)current;
 
-	kprintf("%s: tid=%d\n", __FUNCTION__, task_pid_vnr(current));
 	if(copy_from_user(param, uparam, sizeof(void *) * 6)) {
 		return -EFAULT;
 	}
@@ -2568,6 +2566,8 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	void *__user lctx = (void *__user)param[2];
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
+
+	printk("%s: pid=%d,tid=%d\n", __FUNCTION__, task_tgid_vnr(current), task_pid_vnr(current));
 
 	save_fs_ctx(lctx);
 	info = ihk_os_get_mcos_private_data(file);
