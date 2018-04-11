@@ -70,6 +70,13 @@
 #define pr_ptd(msg, tid, ptd) do { } while(0)
 #endif
 
+//#define DEBUG_PPD
+#ifdef DEBUG_PPD
+#define pr_ppd(msg, tid, ppd) do { printk("%s: " msg ",tid=%d,refc=%d\n", __FUNCTION__, tid, atomic_read(&ppd->refcount)); } while(0)
+#else
+#define pr_ppd(msg, tid, ppd) do { } while(0)
+#endif
+
 #ifdef MCCTRL_KSYM_zap_page_range
 static void
 (*mcctrl_zap_page_range)(struct vm_area_struct *vma, unsigned long start,
