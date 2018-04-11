@@ -142,9 +142,7 @@
 #define WCONTINUED	0x00000008
 #define WNOWAIT		0x01000000	/* Don't reap, just poll status.  */
 
-#ifdef POSTK_DEBUG_ARCH_DEP_44 /* wait() add support __WALL */
 #define __WALL		0x40000000	/* Wait on all children, regardless of type */
-#endif /* POSTK_DEBUG_ARCH_DEP_44 */
 #define	__WCLONE	0x80000000
 
 /* idtype */
