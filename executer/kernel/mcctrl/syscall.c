@@ -70,6 +70,12 @@
 #define pr_ptd(msg, tid, ptd) do { } while(0)
 #endif
 
+//#define DEBUG_PPD
+#ifdef DEBUG_PPD
+#define pr_ppd(msg, tid, ppd) do { printk("%s: " msg ",tid=%d,refc=%d\n", __FUNCTION__, tid, atomic_read(&ppd->refcount)); } while(0)
+#else
+#define pr_ppd(msg, tid, ppd) do { } while(0)
+#endif
 
 static long pager_call_irq(ihk_os_t os, struct syscall_request *req);
 static long pager_call(ihk_os_t os, struct syscall_request *req);
