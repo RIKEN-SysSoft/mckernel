@@ -223,17 +223,6 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp, uintptr_t virt_a
 	newobj->memobj.ops = &fileobj_ops;
 	newobj->memobj.flags = MF_HAS_PAGER | MF_REG_FILE;
 	newobj->handle = result.handle;
-	dkprintf("%s: path=%s\n", __FUNCTION__, result.path);
-
-	if (result.path[0]) {
-		newobj->memobj.path = kmalloc(PATH_MAX, IHK_MC_AP_NOWAIT);
-		if (!newobj->memobj.path) {
-			error = -ENOMEM;
-			kprintf("%s: error: allocating path\n", __FUNCTION__);
-			goto out;
-		}
-		strncpy(newobj->memobj.path, result.path, PATH_MAX);
-	}
 
 	newobj->sref = 1;
 	newobj->cref = 1;
@@ -251,6 +240,19 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp, uintptr_t virt_a
 		if (to_memobj(obj)->flags & MF_PREFETCH) {
 			to_memobj(obj)->status = MEMOBJ_TO_BE_PREFETCHED;
 		}
+
+		if (result.path[0]) {
+			newobj->memobj.path = kmalloc(PATH_MAX, IHK_MC_AP_NOWAIT);
+			if (!newobj->memobj.path) {
+				error = -ENOMEM;
+				kprintf("%s: error: allocating path\n", __FUNCTION__);
+				mcs_lock_unlock_noirq(&fileobj_list_lock, &node);
+				goto out;
+			}
+			strncpy(newobj->memobj.path, result.path, PATH_MAX);
+		}
+
+		dkprintf("%s: %s\n", __FUNCTION__, obj->memobj.path);
 
 		/* XXX: KNL specific optimization for OFP runs */
 		if ((to_memobj(obj)->flags & MF_PREMAP) &&
@@ -447,6 +449,7 @@ static void fileobj_release(struct memobj *memobj)
 		}
 
 		if (to_memobj(free_obj)->path) {
+			dkprintf("%s: %s\n", __FUNCTION__, to_memobj(free_obj)->path);
 			kfree(to_memobj(free_obj)->path);
 		}
 
