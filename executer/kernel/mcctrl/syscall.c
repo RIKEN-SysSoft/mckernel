@@ -1182,6 +1182,7 @@ struct pager_create_result {
 	int		maxprot;
 	uint32_t flags;
 	size_t size;
+	char path[PATH_MAX];
 };
 
 enum {
@@ -1199,6 +1200,33 @@ enum {
 	MF_SHM =     0x40000,
 	MF_END
 };
+
+static int pager_get_path(struct file *file, char *path) {
+	int error = 0;
+	char *pathbuf, *fullpath;
+
+	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+	if (!pathbuf) {
+		printk("%s: ERROR: allocating path\n", __FUNCTION__);
+		error = -ENOMEM;
+		goto out;
+	}
+
+	fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
+	if (!IS_ERR(fullpath)) {
+		memcpy(path, fullpath, strlen(fullpath));
+	}
+	else {
+		path[0] = 0;
+	}
+
+out:
+	if (pathbuf) {
+		kfree(pathbuf);
+	}
+	return error;
+}
+
 
 static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 {
@@ -1333,6 +1361,7 @@ found:
 	phys = ihk_device_map_memory(dev, result_pa, sizeof(*resp));
 	resp = ihk_device_map_virtual(dev, phys, sizeof(*resp), NULL, 0);
 	if (!resp) {
+		ihk_device_unmap_memory(dev, phys, sizeof(*resp));
 		printk("%s: ERROR: invalid response structure address\n",
 			__FUNCTION__);
 		error = -EINVAL;
@@ -1343,10 +1372,18 @@ found:
 	resp->maxprot = maxprot;
 	resp->flags = mf_flags;
 	resp->size = st.size;
+
+	error = pager_get_path(file, resp->path);
+	if (error) {
+		goto out_unmap;
+	}
+
+	error = 0;
+
+out_unmap:
 	ihk_device_unmap_virtual(dev, resp, sizeof(*resp));
 	ihk_device_unmap_memory(dev, phys, sizeof(*resp));
 
-	error = 0;
 out:
 	if (newpager) {
 		kfree(newpager);
@@ -1578,6 +1615,7 @@ struct pager_map_result {
 	uintptr_t	handle;
 	int		maxprot;
 	int8_t		padding[4];
+    char path[PATH_MAX];
 };
 
 static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
@@ -1665,6 +1703,7 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
 	phys = ihk_device_map_memory(dev, result_rpa, sizeof(*resp));
 	resp = ihk_device_map_virtual(dev, phys, sizeof(*resp), NULL, 0);
 	if (!resp) {
+		ihk_device_unmap_memory(dev, phys, sizeof(*resp));
 		printk("%s: ERROR: invalid response structure address\n",
 			__FUNCTION__);
 		error = -EINVAL;
@@ -1673,13 +1712,16 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
 
 	resp->handle = (uintptr_t)pager;
 	resp->maxprot = maxprot;
-	ihk_device_unmap_virtual(dev, resp, sizeof(*resp));
-	ihk_device_unmap_memory(dev, phys, sizeof(*resp));
+
+	error = pager_get_path(file, resp->path);
+	if (error) {
+		goto out_unmap;
+	}
 
 	error = down_interruptible(&ppd->devobj_pager_lock);
 	if (error) {
 		error = -EINTR;
-		goto out;
+		goto out_unmap;
 	}
 
 	list_add_tail(&pager->list, &ppd->devobj_pager_list);
@@ -1687,6 +1729,10 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
 
 	pager = 0;
 	error = 0;
+
+out_unmap:
+	ihk_device_unmap_virtual(dev, resp, sizeof(*resp));
+	ihk_device_unmap_memory(dev, phys, sizeof(*resp));
 
 out:
 	if (file) {

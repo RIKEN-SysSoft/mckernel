@@ -223,6 +223,18 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp, uintptr_t virt_a
 	newobj->memobj.ops = &fileobj_ops;
 	newobj->memobj.flags = MF_HAS_PAGER | MF_REG_FILE;
 	newobj->handle = result.handle;
+	dkprintf("%s: path=%s\n", __FUNCTION__, result.path);
+
+	if (result.path[0]) {
+		newobj->memobj.path = kmalloc(PATH_MAX, IHK_MC_AP_NOWAIT);
+		if (!newobj->memobj.path) {
+			error = -ENOMEM;
+			kprintf("%s: error: allocating path\n", __FUNCTION__);
+			goto out;
+		}
+		strncpy(newobj->memobj.path, result.path, PATH_MAX);
+	}
+
 	newobj->sref = 1;
 	newobj->cref = 1;
 	fileobj_page_hash_init(newobj);
@@ -432,6 +444,10 @@ static void fileobj_release(struct memobj *memobj)
 			}
 
 			kfree(to_memobj(free_obj)->pages);
+		}
+
+		if (to_memobj(free_obj)->path) {
+			kfree(to_memobj(free_obj)->path);
 		}
 
 		obj_list_remove(free_obj);
