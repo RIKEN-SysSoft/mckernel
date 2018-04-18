@@ -91,31 +91,22 @@ typedef ihk_spinlock_t spinlock_t;
 
 /*
  * Linux queued_spin_lock compatible spin_lock, without the queue.
- * We use _Q_PENDING_VAL as locked value to make sure no Linux cores
- * enter the queue phase in queued_spin_lock_slowpath().
  */
 #define _Q_LOCKED_OFFSET	0
-#define _Q_LOCKED_BITS		8
-#define _Q_PENDING_OFFSET	(_Q_LOCKED_OFFSET + _Q_LOCKED_BITS)
-#define _Q_PENDING_VAL		(1U << _Q_PENDING_OFFSET)
+#define _Q_LOCKED_VAL		(1U << _Q_LOCKED_OFFSET)
 
 #define linux_spin_lock(lock)                    \
 	do {                                         \
-		uint32_t val;                            \
-		do {                                     \
-			val = atomic_cmpxchg4(               \
-				(unsigned int *)lock, 0,         \
-				_Q_PENDING_VAL);                 \
-			if (val == 0)                        \
-				break;                           \
+		while (!__sync_bool_compare_and_swap(    \
+					(unsigned int *)lock, 0,     \
+					_Q_LOCKED_VAL)) {            \
 			cpu_pause();                         \
 		}                                        \
-		while (1);                               \
 	} while (0)
 
-#define linux_spin_unlock(lock)                   \
-	do {                                          \
-		ihk_atomic_set((ihk_atomic_t *)lock, 0);  \
+#define linux_spin_unlock(lock)                               \
+	do {                                                      \
+		ihk_atomic_sub(_Q_LOCKED_VAL, (ihk_atomic_t *)lock);  \
 	} while (0)
 
 #define linux_spin_lock_irqsave(lock, flags)     \
