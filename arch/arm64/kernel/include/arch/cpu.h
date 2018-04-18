@@ -1,4 +1,4 @@
-/* cpu.h COPYRIGHT FUJITSU LIMITED 2016-2017 */
+/* cpu.h COPYRIGHT FUJITSU LIMITED 2016-2018 */
 #ifndef __HEADER_ARM64_ARCH_CPU_H
 #define __HEADER_ARM64_ARCH_CPU_H
 
@@ -11,6 +11,8 @@
 #define isb()		asm volatile("isb" : : : "memory")
 #define dmb(opt)	asm volatile("dmb " #opt : : : "memory")
 #define dsb(opt)	asm volatile("dsb " #opt : : : "memory")
+
+#include <registers.h>
 
 #define mb()		dsb(sy)
 #define rmb()		dsb(ld)
@@ -69,12 +71,10 @@ do {									\
 #define smp_mb__before_atomic()	smp_mb()
 #define smp_mb__after_atomic()	smp_mb()
 
-/* @ref.impl linux-linaro/arch/arm64/include/asm/arch_timer.h::arch_counter_get_cntvct */
 #define read_tsc()						\
 ({								\
 	unsigned long cval;					\
-	isb();							\
-	asm volatile("mrs %0, cntvct_el0" : "=r" (cval));	\
+	cval = rdtsc();						\
 	cval;							\
 })
 

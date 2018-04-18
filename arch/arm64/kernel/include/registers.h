@@ -1,9 +1,10 @@
-/* registers.h COPYRIGHT FUJITSU LIMITED 2015-2016 */
+/* registers.h COPYRIGHT FUJITSU LIMITED 2015-2018 */
 #ifndef __HEADER_ARM64_COMMON_REGISTERS_H
 #define __HEADER_ARM64_COMMON_REGISTERS_H
 
 #include <types.h>
 #include <arch/cpu.h>
+#include <sysreg.h>
 
 #define RFLAGS_CF      (1 << 0)
 #define RFLAGS_PF      (1 << 2)
@@ -76,15 +77,12 @@ static unsigned long rdmsr(unsigned int index)
 	return 0;
 }
 
-/* @ref.impl linux-linaro/arch/arm64/include/asm/arch_timer.h::arch_counter_get_cntvct */
-static unsigned long rdtsc(void)
+/* @ref.impl linux4.10.16 */
+/* arch/arm64/include/asm/arch_timer.h:arch_counter_get_cntvct() */
+static inline unsigned long rdtsc(void)
 {
-	unsigned long cval;
-
 	isb();
-	asm volatile("mrs %0, cntvct_el0" : "=r" (cval));
-
-	return cval;
+	return read_sysreg(cntvct_el0);
 }
 
 static void set_perfctl(int counter, int event, int mask)

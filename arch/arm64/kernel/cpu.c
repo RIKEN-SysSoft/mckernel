@@ -55,7 +55,6 @@
 				__FILE__, __FUNCTION__, __LINE__); panic(""); } } while(0)
 
 struct cpuinfo_arm64 cpuinfo_data[NR_CPUS];	/* index is logical cpuid */
-static unsigned int per_cpu_timer_val[NR_CPUS] = { 0 };
 
 static struct list_head handlers[1024];
 static void cpu_init_interrupt_handler(void);
@@ -123,83 +122,6 @@ static void cpu_stop_interrupt_handler(void *priv)
 
 static struct ihk_mc_interrupt_handler cpu_stop_handler = {
 	.func = cpu_stop_interrupt_handler,
-	.priv = NULL,
-};
-
-/* @ref.impl include/clocksource/arm_arch_timer.h */
-#define ARCH_TIMER_CTRL_ENABLE		(1 << 0)
-#define ARCH_TIMER_CTRL_IT_MASK		(1 << 1)
-#define ARCH_TIMER_CTRL_IT_STAT		(1 << 2)
-
-static void physical_timer_handler(void *priv)
-{
-	unsigned int ctrl = 0;
-	int cpu = ihk_mc_get_processor_id();
-
-	dkprintf("CPU%d: catch physical timer\n", cpu);
-
-	asm volatile("mrs %0, cntp_ctl_el0" : "=r" (ctrl));
-	if (ctrl & ARCH_TIMER_CTRL_IT_STAT) {
-		unsigned int zero = 0;
-		unsigned int val = ctrl;
-		unsigned int clocks = per_cpu_timer_val[cpu];
-		unsigned long irqstate;
-		struct cpu_local_var *v = get_this_cpu_local_var();
-
-		/* set resched flag */
-		irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
-		v->flags |= CPU_FLAG_NEED_RESCHED;
-		ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
-
-		/* gen control register value */
-		val &= ~(ARCH_TIMER_CTRL_IT_STAT | ARCH_TIMER_CTRL_IT_MASK);
-		val |= ARCH_TIMER_CTRL_ENABLE;
-
-		/* set timer re-enable for periodic */
-		asm volatile("msr cntp_ctl_el0,  %0" : : "r" (zero));
-		asm volatile("msr cntp_tval_el0, %0" : : "r" (clocks));
-		asm volatile("msr cntp_ctl_el0,  %0" : : "r" (val));
-	}
-}
-
-static struct ihk_mc_interrupt_handler phys_timer_handler = {
-	.func = physical_timer_handler,
-	.priv = NULL,
-};
-
-static void virtual_timer_handler(void *priv)
-{
-	unsigned int ctrl = 0;
-	int cpu = ihk_mc_get_processor_id();
-
-	dkprintf("CPU%d: catch virtual timer\n", cpu);
-
-	asm volatile("mrs %0, cntv_ctl_el0" : "=r" (ctrl));
-	if (ctrl & ARCH_TIMER_CTRL_IT_STAT) {
-		unsigned int zero = 0;
-		unsigned int val = ctrl;
-		unsigned int clocks = per_cpu_timer_val[cpu];
-		unsigned long irqstate;
-		struct cpu_local_var *v = get_this_cpu_local_var();
-
-		/* set resched flag */
-		irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
-		v->flags |= CPU_FLAG_NEED_RESCHED;
-		ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
-
-		/* gen control register value */
-		val &= ~(ARCH_TIMER_CTRL_IT_STAT | ARCH_TIMER_CTRL_IT_MASK);
-		val |= ARCH_TIMER_CTRL_ENABLE;
-
-		/* set timer re-enable for periodic */
-		asm volatile("msr cntv_ctl_el0,  %0" : : "r" (zero));
-		asm volatile("msr cntv_tval_el0, %0" : : "r" (clocks));
-		asm volatile("msr cntv_ctl_el0,  %0" : : "r" (val));
-	}
-}
-
-static struct ihk_mc_interrupt_handler virt_timer_handler = {
-	.func = virtual_timer_handler,
 	.priv = NULL,
 };
 
@@ -322,21 +244,6 @@ static void setup_processor(void)
 }
 
 static char *trampoline_va, *first_page_va;
-
-unsigned long is_use_virt_timer(void)
-{
-	extern unsigned long ihk_param_use_virt_timer;
-
-	switch (ihk_param_use_virt_timer) {
-	case 0: /* physical */
-	case 1: /* virtual */
-		break;
-	default: /* invalid */
-		panic("PANIC: is_use_virt_timer(): timer select neither phys-timer nor virt-timer.\n");
-		break;
-	}
-	return ihk_param_use_virt_timer;
-}
 
 static inline uint64_t pwr_arm64hpc_read_imp_fj_core_uarch_restrection_el1(void)
 {
@@ -503,12 +410,8 @@ void ihk_mc_init_ap(void)
 	ihk_mc_register_interrupt_handler(INTRID_MULTI_NMI, &multi_nmi_handler);
 	ihk_mc_register_interrupt_handler(
 		ihk_mc_get_vector(IHK_TLB_FLUSH_IRQ_VECTOR_START), &remote_tlb_flush_handler);
+	ihk_mc_register_interrupt_handler(get_timer_intrid(), get_timer_handler());
 
-	if (is_use_virt_timer()) {
-		ihk_mc_register_interrupt_handler(get_virt_timer_intrid(), &virt_timer_handler);
-	} else {
-		ihk_mc_register_interrupt_handler(get_phys_timer_intrid(), &phys_timer_handler);
-	}
 	init_smp_processor();
 	init_power_management();
 }
@@ -519,15 +422,13 @@ long (*__arm64_syscall_handler)(int, ihk_mc_user_context_t *);
 /* @ref.impl arch/arm64/include/asm/arch_timer.h::arch_timer_get_cntkctl */
 static inline unsigned int arch_timer_get_cntkctl(void)
 {
-	unsigned int cntkctl;
-	asm volatile("mrs	%0, cntkctl_el1" : "=r" (cntkctl));
-	return cntkctl;
+	return read_sysreg(cntkctl_el1);
 }
 
 /* @ref.impl arch/arm64/include/asm/arch_timer.h::arch_timer_set_cntkctl */
 static inline void arch_timer_set_cntkctl(unsigned int cntkctl)
 {
-	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
+	write_sysreg(cntkctl, cntkctl_el1);
 }
 
 #ifdef CONFIG_ARM_ARCH_TIMER_EVTSTREAM
@@ -649,6 +550,8 @@ void setup_arm64(void)
 	cpu_init_interrupt_handler();
 
 	arm64_init_perfctr();
+
+	arch_timer_init();
 
 	gic_init();
 
@@ -1616,31 +1519,6 @@ restore_fp_regs(struct thread *thread)
 }
 
 void
-lapic_timer_enable(unsigned int clocks)
-{
-	unsigned int val = 0;
-
-	if (is_use_virt_timer()) {
-		/* gen control register value */
-		asm volatile("mrs %0, cntv_ctl_el0" : "=r" (val));
-		val &= ~(ARCH_TIMER_CTRL_IT_STAT | ARCH_TIMER_CTRL_IT_MASK);
-		val |= ARCH_TIMER_CTRL_ENABLE;
-
-		asm volatile("msr cntv_tval_el0, %0" : : "r" (clocks));
-		asm volatile("msr cntv_ctl_el0,  %0" : : "r" (val));
-	} else {
-		/* gen control register value */
-		asm volatile("mrs %0, cntp_ctl_el0" : "=r" (val));
-		val &= ~(ARCH_TIMER_CTRL_IT_STAT | ARCH_TIMER_CTRL_IT_MASK);
-		val |= ARCH_TIMER_CTRL_ENABLE;
-
-		asm volatile("msr cntp_tval_el0, %0" : : "r" (clocks));
-		asm volatile("msr cntp_ctl_el0,  %0" : : "r" (val));
-	}
-	per_cpu_timer_val[ihk_mc_get_processor_id()] = clocks;
-}
-
-void
 unhandled_page_fault(struct thread *thread, void *fault_addr, void *regs)
 {
 	const uintptr_t address = (uintptr_t)fault_addr;
@@ -1696,30 +1574,6 @@ unhandled_page_fault(struct thread *thread, void *fault_addr, void *regs)
 	#endif
 
 	return;
-}
-
-void
-lapic_timer_disable()
-{
-	unsigned int zero = 0;
-	unsigned int val = 0;
-
-	if (is_use_virt_timer()) {
-		/* gen control register value */
-		asm volatile("mrs %0, cntv_ctl_el0" : "=r" (val));
-		val &= ~(ARCH_TIMER_CTRL_IT_STAT | ARCH_TIMER_CTRL_IT_MASK | ARCH_TIMER_CTRL_ENABLE);
-
-		asm volatile("msr cntv_ctl_el0,  %0" : : "r" (val));
-		asm volatile("msr cntv_tval_el0, %0" : : "r" (zero));
-	} else {
-		/* gen control register value */
-		asm volatile("mrs %0, cntp_ctl_el0" : "=r" (val));
-		val &= ~(ARCH_TIMER_CTRL_IT_STAT | ARCH_TIMER_CTRL_IT_MASK | ARCH_TIMER_CTRL_ENABLE);
-
-		asm volatile("msr cntp_ctl_el0,  %0" : : "r" (val));
-		asm volatile("msr cntp_tval_el0, %0" : : "r" (zero));
-	}
-	per_cpu_timer_val[ihk_mc_get_processor_id()] = 0;
 }
 
 void init_tick(void)

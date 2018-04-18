@@ -1,5 +1,4 @@
-/* irq-gic-v3.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
-
+/* irq-gic-v3.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
 #include <irq.h>
 #include <arm-gic-v2.h>
 #include <arm-gic-v3.h>
@@ -7,6 +6,7 @@
 #include <cputype.h>
 #include <process.h>
 #include <syscall.h>
+#include <arch-timer.h>
 
 //#define DEBUG_GICV3
 
@@ -394,11 +394,7 @@ void gic_enable_gicv3(void)
 	int i;
 	unsigned int enable_ppi_sgi = GICD_INT_EN_SET_SGI;
 
-	if (is_use_virt_timer()) {
-		enable_ppi_sgi |= GICD_ENABLE << get_virt_timer_intrid();
-	} else {
-		enable_ppi_sgi |= GICD_ENABLE << get_phys_timer_intrid();
-	}
+	enable_ppi_sgi |= GICD_ENABLE << get_timer_intrid();
 
 	/*
 	 * Deal with the banked PPI and SGI interrupts - disable all
@@ -410,9 +406,9 @@ void gic_enable_gicv3(void)
 	/*
 	 * Set priority on PPI and SGI interrupts
 	 */
-	for (i = 0; i < 32; i += 4)
-		writel_relaxed(GICD_INT_DEF_PRI_X4,
-					rd_sgi_base + GIC_DIST_PRI + i * 4 / 4);
+	for (i = 0; i < 32; i += 4) {
+		writel_relaxed(GICD_INT_DEF_PRI_X4, rd_sgi_base + GIC_DIST_PRI + i);
+	}
 
 	/* sync wait */
 	gic_do_wait_for_rwp(rbase);

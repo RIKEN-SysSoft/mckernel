@@ -1,5 +1,4 @@
-/* irq-gic-v2.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
-
+/* irq-gic-v2.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
 #include <ihk/cpu.h>
 #include <irq.h>
 #include <arm-gic-v2.h>
@@ -7,6 +6,7 @@
 #include <arch/cpu.h>
 #include <memory.h>
 #include <syscall.h>
+#include <arch-timer.h>
 
 // #define DEBUG_GICV2
 
@@ -144,10 +144,6 @@ void gic_enable_gicv2(void)
 {
 	unsigned int enable_ppi_sgi = 0;
 
-	if (is_use_virt_timer()) {
-		enable_ppi_sgi |= GICD_ENABLE << get_virt_timer_intrid();
-	} else {
-		enable_ppi_sgi |= GICD_ENABLE << get_phys_timer_intrid();
-	}
+	enable_ppi_sgi |= GICD_ENABLE << get_timer_intrid();
 	writel_relaxed(enable_ppi_sgi, dist_base + GIC_DIST_ENABLE_SET);
 }
