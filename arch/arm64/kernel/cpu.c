@@ -1,4 +1,4 @@
-/* cpu.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
+/* cpu.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
 #include <ihk/cpu.h>
 #include <ihk/debug.h>
 #include <ihk/mm.h>
@@ -1620,15 +1620,20 @@ lapic_timer_enable(unsigned int clocks)
 {
 	unsigned int val = 0;
 
-	/* gen control register value */
-	asm volatile("mrs %0, cntp_ctl_el0" : "=r" (val));
-	val &= ~(ARCH_TIMER_CTRL_IT_STAT | ARCH_TIMER_CTRL_IT_MASK);
-	val |= ARCH_TIMER_CTRL_ENABLE;
-
 	if (is_use_virt_timer()) {
+		/* gen control register value */
+		asm volatile("mrs %0, cntv_ctl_el0" : "=r" (val));
+		val &= ~(ARCH_TIMER_CTRL_IT_STAT | ARCH_TIMER_CTRL_IT_MASK);
+		val |= ARCH_TIMER_CTRL_ENABLE;
+
 		asm volatile("msr cntv_tval_el0, %0" : : "r" (clocks));
 		asm volatile("msr cntv_ctl_el0,  %0" : : "r" (val));
 	} else {
+		/* gen control register value */
+		asm volatile("mrs %0, cntp_ctl_el0" : "=r" (val));
+		val &= ~(ARCH_TIMER_CTRL_IT_STAT | ARCH_TIMER_CTRL_IT_MASK);
+		val |= ARCH_TIMER_CTRL_ENABLE;
+
 		asm volatile("msr cntp_tval_el0, %0" : : "r" (clocks));
 		asm volatile("msr cntp_ctl_el0,  %0" : : "r" (val));
 	}
@@ -1699,14 +1704,18 @@ lapic_timer_disable()
 	unsigned int zero = 0;
 	unsigned int val = 0;
 
-	/* gen control register value */
-	asm volatile("mrs %0, cntp_ctl_el0" : "=r" (val));
-	val &= ~(ARCH_TIMER_CTRL_IT_STAT | ARCH_TIMER_CTRL_IT_MASK | ARCH_TIMER_CTRL_ENABLE);
-
 	if (is_use_virt_timer()) {
+		/* gen control register value */
+		asm volatile("mrs %0, cntv_ctl_el0" : "=r" (val));
+		val &= ~(ARCH_TIMER_CTRL_IT_STAT | ARCH_TIMER_CTRL_IT_MASK | ARCH_TIMER_CTRL_ENABLE);
+
 		asm volatile("msr cntv_ctl_el0,  %0" : : "r" (val));
 		asm volatile("msr cntv_tval_el0, %0" : : "r" (zero));
 	} else {
+		/* gen control register value */
+		asm volatile("mrs %0, cntp_ctl_el0" : "=r" (val));
+		val &= ~(ARCH_TIMER_CTRL_IT_STAT | ARCH_TIMER_CTRL_IT_MASK | ARCH_TIMER_CTRL_ENABLE);
+
 		asm volatile("msr cntp_ctl_el0,  %0" : : "r" (val));
 		asm volatile("msr cntp_tval_el0, %0" : : "r" (zero));
 	}
