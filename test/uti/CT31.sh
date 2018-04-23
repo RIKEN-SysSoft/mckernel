@@ -3,15 +3,17 @@
 bn=`basename $0`
 fn=`echo $bn | sed 's/.sh//'`
 
+nloop=800
 stop=0
 reboot=0
 go=0
 mck=0
 NNODES=1
-NPROC=$((16 * NNODES))
+NPROC=$((1 * NNODES))
 LASTNODE=8200
+use_hfi=0
 
-while getopts srgmN:P:L: OPT
+while getopts srgmh:N:P:L: OPT
 do
         case ${OPT} in
 	    s) stop=1
@@ -22,6 +24,8 @@ do
                 ;;
             m) mck=1
                 ;;
+	    h) use_hfi=1
+		;;
 	    N) NNODES=$OPTARG
 		;;
 	    P) NPROC=$OPTARG
@@ -44,6 +48,9 @@ echo NPROC=$NPROC NNODES=$NNODES PPN=$PPN NODES=$NODES
 if [ ${mck} -eq 1 ]; then
     MCEXEC="${MCK}/bin/mcexec"
     mcexecopt="--enable-uti"
+    if [ ${use_hfi} -eq 1 ]; then
+	mcexecopt="--enable-hfi1 $mcexecopt"
+    fi
 else
     MCEXEC=
     mcexecopt=
@@ -77,16 +84,19 @@ fi
 
 if [ ${go} -eq 1 ]; then
     cd $ABS_SRCDIR
+    make $fn
+
     PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $NODES \
 	ulimit -u 16384; 
     PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $NODES \
 	ulimit -s unlimited
-    PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $NODES \
-	ulimit -c unlimited
 
-    export KMP_STACKSIZE=64M
-    export OMP_NUM_THREADS=4
+    for((count=0;count<nloop;count++)); do
+	sudo $MCEXEC $mcexecopt ./$fn
+	echo =====
+	echo $count
+	echo =====
+    done
 
-    $MCEXEC $mcexecopt ./$fn
 fi
 
