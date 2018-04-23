@@ -112,7 +112,7 @@ main(int argc, char **argv)
     sem_init(&sem_kick, 0, 0);
     sem_init(&sem_report, 0, 0);
 
-	fprintf(stderr, "CT25001 futex START\n");
+	fprintf(stderr, "CT25001 START\n");
 	fprintf(stderr, "CT25001 INFO (pid=%d,tid=%d)\n", getpid(), gettid());
 
 	sendv = malloc(sizeof(char *) * nentry);
