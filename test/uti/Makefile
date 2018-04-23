@@ -2,9 +2,9 @@
 
 CC = gcc
 
-CPPFLAGS =
+CPPFLAGS = -I/work/gg10/e29005/project/uti/install/include
 CCFLAGS = -g -O2
-LDFLAGS = -lpthread -lrt
+LDFLAGS = -L/work/gg10/e29005/project/uti/install/lib -Wl,-rpath,/work/gg10/e29005/project/uti/install/lib -luti -lpthread -lrt 
 SRCS = $(shell ls CT*.c)
 EXES = $(SRCS:.c=)
 OBJS = $(SRCS:.c=.o)

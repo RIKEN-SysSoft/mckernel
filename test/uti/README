@@ -304,3 +304,9 @@ CT28 taskset -c 0-7 lock-inc-lock x 10000
 CT29 no reverse offload
 
 CT30 CT21にopenmpスレッドを追加したテスト
+
+CT31 pthread_cond_waitオーバーヘッド測定
+
+CT32 futex waitオーバーヘッド測定
+
+CT33 futex wakeオーバーヘッド測定

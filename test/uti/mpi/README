@@ -1,11 +1,15 @@
 001 isend 送受信に使用するバッファは毎回異なる
 002 barrier
 003 isend 送受信に使用するバッファは一つ、waitの前にsleepしない
-004 isend-calc-wait, all ranks put to all the other ranks on different node
-005 lockall-accumulate-calc-unlockall, all ranks put to all the other ranks on different node
+004 isend-calc-wait, all-to-all
+005 lockall-accumulate-calc-unlockall, all-to-all
 006 parent isend-calc-wait, child does nothing --> crash
 007 parent isend-calc-wait, child psm2 send/recv --> one ep per process
 008 parent psm2-init and psm2-connect, child psm2-send/recv --> receiver side crash
 009 parent does nothing, child psm2-init, psm2-connect, psm2-send/recv --> receiver side crash
 010 parent psm2-init, psm2-connect, psm2-send/recv, child does nothing
 011 001にopenmpスレッドを追加
+012 get_acc-calc-flush_local_all, all-to-all. Execute ./012.sh
+013 acc-flush_local-calc, all-to-all, acc:flush_local=1:1
+014 012 + async progress thread. 
+015 013 + async progress thread
