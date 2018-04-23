@@ -2,16 +2,14 @@
 MYHOME="/work/gg10/e29005"
 MCK="${MYHOME}/project/os/install"
 MCEXEC=
-MCEXECOPT="--enable-uti"
 export DISABLE_UTI=0
 
 stop=0
 reset=0
 go=0
-acc=0
-nodes="c[8195]"
+nodes="c[8194]"
 
-while getopts srgamd OPT
+while getopts srgmd OPT
 do
         case ${OPT} in
 	    s) stop=1
@@ -20,10 +18,7 @@ do
                 ;;
             g) go=1
                 ;;
-	    a) acc=1 # accumulate, otherwise RDMA
-		;;
-            m) 
-		MCEXEC="${MCK}/bin/mcexec"
+            m) MCEXEC="${MCK}/bin/mcexec"
                 ;;
             d) export DISABLE_UTI=1
                 ;;
@@ -31,12 +26,6 @@ do
                 exit 1
         esac
 done
-
-if [ ${acc} -eq 1 ]; then
-    exeopt="-a"
-else
-    exeopt="-r"
-fi
 
 if [ ${stop} -eq 1 ]; then
     PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w ${nodes} \
@@ -55,10 +44,8 @@ if [ ${reset} -eq 1 ]; then
 fi
 
 if [ ${go} -eq 1 ]; then
-    make
-
     > ./log
-    for i in {1..10}; do (${MCEXEC} ${MCEXECOPT} taskset -c 0-7 ./CT27 $exeopt 1>/dev/null 2>> ./log); done
+    for i in {1..10}; do (${MCEXEC} --enable-uti ./CT09 1>/dev/null 2>> ./log); done
+    #${MCEXEC} ./CT09
     perl CT11.pl < ./log
-    #${MCEXEC} ${MCEXECOPT} taskset -c 0-7 ./CT27 $exeopt
 fi

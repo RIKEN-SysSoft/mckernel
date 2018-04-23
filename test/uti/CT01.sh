@@ -74,7 +74,7 @@ if [ ${go} -eq 1 ]; then
     cd ${UTI_TOP}
     make $cmdline
     for i in `seq 1 ${nloops}`; do
-	${MCK}/bin/mcexec $cmdline
+	${MCK}/bin/mcexec --enable-uti $cmdline
 	wait
 	echo =====;
 	echo $i;

@@ -92,12 +92,13 @@ main(int argc, char **argv)
 	struct sigaction act;
 
 	fprintf(stderr, "CT12001 futex START (tid=%d)\n", syscall(__NR_gettid));
+#if 0
 	rc = syscall(731, 1, NULL);
 	if (rc) {
 		fprintf(stderr, "util_indicate_clone rc=%d, errno=%d\n", rc, errno);
 		fflush(stderr);
 	}
-
+#endif
 	sigaction(SIGINT, NULL, &act);
 	act.sa_handler = halt;
 	act.sa_flags &= ~(SA_RESTART);
@@ -108,7 +109,7 @@ main(int argc, char **argv)
 		fprintf(stderr, "pthread_attr_init: %d\n", rc);
 		exit(1);
 	}
-#if 1
+#if 0
 	rc = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	if (rc){
 		fprintf(stderr, "pthread_attr_setdetachstate: %d\n", rc);
@@ -129,7 +130,7 @@ main(int argc, char **argv)
 #endif
 	usleep(200000);
 
-#if 0
+#if 1
 	pthread_join(thr, NULL);
 	fprintf(stderr, "CT12004 pthread_join OK\n");
 #endif
