@@ -4,14 +4,11 @@
 #include <string.h>
 #include <pthread.h>
 #include <errno.h>
-#include <unistd.h>
-#include <sys/syscall.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <sys/syscall.h>   /* For SYS_xxx definitions */
 #include <linux/futex.h>
 #include <sys/time.h>
-#include <string.h>
 
 int passed = 0, sem = 0;
 pthread_t thr;

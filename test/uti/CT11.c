@@ -25,34 +25,24 @@ int sem;
 int futex_flag;
 pthread_t thr;
 
-int syscall_numbers[] = {
-	__NR_gettid,
-	__NR_futex,
-	__NR_brk,
-	__NR_mmap,
-	__NR_munmap,
-	__NR_mprotect,
-	__NR_mremap,
-	__NR_getuid,
-	__NR_open,
-	__NR_ioctl,
-	__NR_read,
-	__NR_write
+struct syscall {
+	int number;
+	const char *name;
 };
 
-char *syscall_names[] = {
-	"gettid",
-	"futex",
-	"brk",
-	"mmap",
-	"munmap",
-	"mprotect",
-	"mremap",
-	"getuid",
-	"open",
-	"ioctl",
-	"read",
-	"write"
+struct syscall syscalls[] = {
+	{ .number = __NR_getuid, .name = "getuid" },
+	{ .number = __NR_ioctl, .name = "ioctl" },
+	{ .number = __NR_futex, .name = "futex" },
+	{ .number = __NR_mmap, .name = "mmap" },
+	{ .number = __NR_munmap, .name = "munmap" },
+	{ .number = __NR_brk, .name = "brk" },
+	{ .number = __NR_gettid, .name = "gettid" },
+	{ .number = __NR_mprotect, .name = "mprotect" },
+	{ .number = __NR_mremap, .name = "mremap" },
+	{ .number = __NR_open, .name = "open" },
+	{ .number = __NR_read, .name = "read" },
+	{ .number = __NR_write, .name = "write" }
 };
 
 void *util_thread(void *arg) {
@@ -70,16 +60,16 @@ void *util_thread(void *arg) {
 
 	rc = syscall(732);
 	if (rc == -1)
-		fprintf(stdout, "CT11001 running on Liux OK\n");
+		fprintf(stdout, "[INFO] Child is running on Liux\n");
 	else {
-		fprintf(stdout, "CT11001 running on Linux NG (%d)\n", rc);
+		fprintf(stdout, "[INFO] Child is running on McKernel\n");
 	}
 	errno = 0;
 
-	for (i = 0; i < sizeof(syscall_numbers) / sizeof(int); i++) { 
+	for (i = 0; i < sizeof(syscalls) / sizeof(syscalls[0]); i++) { 
 		clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
 
-		switch (syscall_numbers[i]) {
+		switch (syscalls[i].number) {
 		case __NR_brk:
 			brk_cur = sbrk(0);
 			break;
@@ -97,14 +87,14 @@ void *util_thread(void *arg) {
 			break;
 		case __NR_ioctl:
 			if((fds[0] = open("/dev/hello", O_RDWR)) < 0) {
-				fprintf(stderr, "oepn failed: %s\n", strerror(errno));
+				fprintf(stderr, "ioctl, open failed: %s\n", strerror(errno));
 				exit(1);
 			}
 			break;
 		case __NR_read:
 		case __NR_write:
 			if((fds[0] = open("./file", O_RDWR)) < 0) {
-				fprintf(stderr, "oepn failed: %s\n", strerror(errno));
+				fprintf(stderr, "write, open failed: %s\n", strerror(errno));
 				exit(1);
 			}
 			break;
@@ -113,75 +103,75 @@ void *util_thread(void *arg) {
 		}
 
 		for (j = 0; j < NLOOP; j++) {
-			switch (syscall_numbers[i]) {
+			switch (syscalls[i].number) {
 			case __NR_gettid:
-				if((rc = syscall(syscall_numbers[i])) < 0) {
-					fprintf(stderr, "%s failed: %s\n", syscall_names[i], strerror(errno));
+				if((rc = syscall(syscalls[i].number)) < 0) {
+					fprintf(stderr, "%s failed: %s\n", syscalls[i].name, strerror(errno));
 				}
 				break;
 			case __NR_futex: 
 				futex_flag = 1;
 				if((rc = syscall(__NR_futex, &futex_flag, FUTEX_WAKE, 1, NULL, NULL, 0)) < 0) {
-					fprintf(stderr, "%s failed: %s\n", syscall_names[i], strerror(errno));
+					fprintf(stderr, "%s failed: %s\n", syscalls[i].name, strerror(errno));
 				}
 				break;
 			case __NR_brk:
 				if((rc = brk(brk_cur)) < 0) {
-					fprintf(stderr, "%s failed: %s\n", syscall_names[i], strerror(errno));
+					fprintf(stderr, "%s failed: %s\n", syscalls[i].name, strerror(errno));
 				}
 				break;
 			case __NR_mmap:
 				if((mems[j] = mmap(0, SZCHUNK, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)) == (void*)-1) {
-					fprintf(stderr, "%s failed: %s\n", syscall_names[i], strerror(errno));
+					fprintf(stderr, "%s failed: %s\n", syscalls[i].name, strerror(errno));
 				}
 				break;
 			case __NR_munmap:
 				if((rc = munmap(mems[j], SZCHUNK)) < 0) {
-					fprintf(stderr, "%s failed: %s\n", syscall_names[i], strerror(errno));
+					fprintf(stderr, "%s failed: %s\n", syscalls[i].name, strerror(errno));
 				}
 				break;
 			case __NR_mprotect:
 				if((rc = mprotect(mems[0], SZCHUNK, PROT_READ)) < 0) {
-					fprintf(stderr, "%s failed: %s\n", syscall_names[i], strerror(errno));
+					fprintf(stderr, "%s failed: %s\n", syscalls[i].name, strerror(errno));
 				}
 				break;
 			case __NR_mremap:
 				if((memremaps[j] = mremap(mems[j], SZCHUNK, 8192, MREMAP_MAYMOVE)) == (void*)-1) {
-					fprintf(stderr, "%s failed: %s\n", syscall_names[i], strerror(errno));
+					fprintf(stderr, "%s failed: %s\n", syscalls[i].name, strerror(errno));
 				}
 				break;
 			case __NR_getuid:
-				if((uid = getuid()) < 0) {
-					fprintf(stderr, "%s failed: uid=%d,%s\n", syscall_names[i], uid, strerror(errno));
+				if((uid = syscall(syscalls[i].number)) < 0) {
+					fprintf(stderr, "%s failed: uid=%d,%s\n", syscalls[i].name, uid, strerror(errno));
 				}
 				break;
 			case __NR_open:
 				if((fds[j] = open("./file", O_RDONLY)) < 0) {
-					fprintf(stderr, "%s failed: %s\n", syscall_names[i], strerror(errno));
+					fprintf(stderr, "%s ./file failed: %s\n", syscalls[i].name, strerror(errno));
 				}
 				break;
 			case __NR_ioctl:
-				if((rc = ioctl(fds[0], 0, 0)) < 0) {
-					fprintf(stderr, "%s failed: %s\n", syscall_names[i], strerror(errno));
+				if((rc = syscall(syscalls[i].number, fds[0], 0, 0)) < 0) {
+					fprintf(stderr, "%s failed: %s\n", syscalls[i].name, strerror(errno));
 				}
 				break;
 			case __NR_read:
 				if((rc = read(fds[0], buf + j * SZCHUNK, SZCHUNK)) < 0) {
-					fprintf(stderr, "%s failed: %s\n", syscall_names[i], strerror(errno));
+					fprintf(stderr, "%s failed: %s\n", syscalls[i].name, strerror(errno));
 				}
 				break;
 			case __NR_write:
 				if((rc = write(fds[0], buf + j * SZCHUNK, SZCHUNK)) < 0) {
-					fprintf(stderr, "%s failed: rc=%d,%s\n", syscall_names[i], rc, strerror(errno));
+					fprintf(stderr, "%s failed: rc=%d,%s\n", syscalls[i].name, rc, strerror(errno));
 				}
 				break;
 			}
 		}
 		clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
 		nsec = (TS2NS(end.tv_sec, end.tv_nsec) - TS2NS(start.tv_sec, start.tv_nsec));
-		fprintf(stderr, "%s %ld nsec\n", syscall_names[i], nsec / NLOOP);
+		fprintf(stderr, "%s %ld nsec\n", syscalls[i].name, nsec / NLOOP);
 
-		switch (syscall_numbers[i]) {
+		switch (syscalls[i].number) {
 		case __NR_mmap:
 			for (j = 0; j < NLOOP; j++) {
 				if((rc = munmap(mems[j], SZCHUNK)) < 0) {
@@ -221,7 +211,7 @@ void *util_thread(void *arg) {
 	}
 
 	pthread_mutex_lock(&mutex);
-	while(!sem) {
+	while (!sem) {
 		pthread_cond_wait(&cond, &mutex);
 	}
 	sem = 0;
@@ -235,12 +225,21 @@ main(int argc, char **argv)
 {
 	int rc;
 	char *uti_str;
-	int uti_val;
+	int disable_syscall_intercept = 0;
+	int opt;
 
-	fprintf(stdout, "CT11001 syscall START\n");
-	uti_str = getenv("DISABLE_UTI");
-	uti_val = uti_str ? atoi(uti_str) : 0;
-	if (!uti_val) {
+	while ((opt = getopt(argc, argv, "+I:")) != -1) {
+		switch (opt) {
+		case 'I':
+			disable_syscall_intercept = atoi(optarg);
+			break;
+		default: /* '?' */
+			printf("unknown option %c\n", optopt);
+			exit(1);
+		}
+	}
+
+	if (disable_syscall_intercept == 0) {
 		rc = syscall(731, 1, NULL);
 		if (rc) {
 			fprintf(stdout, "CT11002 INFO: uti not available (rc=%d)\n", rc);
@@ -252,7 +251,7 @@ main(int argc, char **argv)
 	}
 
 	rc = pthread_create(&thr, NULL, util_thread, NULL);
-	if(rc){
+	if (rc) {
 		fprintf(stderr, "pthread_create: %d\n", rc);
 		exit(1);
 	}
