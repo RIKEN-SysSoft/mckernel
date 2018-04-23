@@ -8,26 +8,7 @@
 #include <sys/syscall.h>
 #include <sys/mman.h>
 #include <signal.h>
-
-#define DEBUG
-
-#ifdef DEBUG
-#define	dprintf(...)											\
-	do {														\
-		char msg[1024];											\
-		sprintf(msg, __VA_ARGS__);								\
-		fprintf(stdout, "%s,%s", __FUNCTION__, msg);			\
-	} while (0);
-#define	eprintf(...)											\
-	do {														\
-		char msg[1024];											\
-		sprintf(msg, __VA_ARGS__);								\
-		fprintf(stdout, "%s,%s", __FUNCTION__, msg);			\
-	} while (0);
-#else
-#define dprintf(...) do {  } while (0)
-#define eprintf(...) do {  } while (0)
-#endif
+#include "util.h"
 
 #define NTHR 1
 #define TS2NS(sec, nsec) ((unsigned long)(sec) * 1000000000ULL + (unsigned long)(nsec))
@@ -55,11 +36,9 @@ static inline void BULK_FSW(unsigned long n, unsigned long *ptr) {
 
 
 pthread_mutex_t ep_lock; /* Ownership of channel instance */
+pthread_barrier_t bar;
 
 struct thr_arg {
-	int bar_count; /* Barrier before entering loop */
-	pthread_mutex_t bar_lock;
-	pthread_cond_t bar_cond;
 	pthread_t pthread;
 	unsigned long mem; /* Per-thread storage */
 };
@@ -83,7 +62,7 @@ void fwq_init(unsigned long *mem) {
 	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
 	nsec = (TS2NS(end.tv_sec, end.tv_nsec) - TS2NS(start.tv_sec, start.tv_nsec));
 	nspw = nsec / (double)N_INIT;
-	printf("nsec=%ld, nspw=%f\n", nsec, nspw);
+	printf("[INFO] nsec=%ld, nspw=%f\n", nsec, nspw);
 }
 
 void fwq(unsigned long delay_nsec, unsigned long* mem) {
@@ -111,27 +90,18 @@ void mydelay(long delay_nsec, long *mem) {
 	}
 }
 
-void *progress_fn(void *_arg) {
+void *util_fn(void *_arg) {
 	struct thr_arg *arg = (struct thr_arg *)_arg;
-	int rc;
+	int ret;
 	int i;
 
-	rc = syscall(732);
-	if (rc == -1)
-		fprintf(stdout, "CT09100 progress_fn running on Linux OK,tid=%d\n", syscall(SYS_gettid));
-	else {
-		fprintf(stdout, "CT09100 progress_fn running on McKernel NG\n");
-		return NULL;
-	}
+	ret = syscall(732);
+	OKNGNOJUMP(ret == -1, "util_fn running on Linux, tid=%d\n", syscall(SYS_gettid));
 
-	pthread_mutex_lock(&arg->bar_lock);
-	while(arg->bar_count == 0) {
-		pthread_cond_wait(&arg->bar_cond, &arg->bar_lock);
-	}
-	pthread_mutex_unlock(&arg->bar_lock);
+	pthread_barrier_wait(&bar);
 
 	/* Start progress */
-	while(1) {
+	while (1) {
 		pthread_mutex_lock(&ep_lock);
 		if (terminate) {
 			pthread_mutex_unlock(&ep_lock);
@@ -144,63 +114,49 @@ void *progress_fn(void *_arg) {
 		}
 		pthread_mutex_unlock(&ep_lock);
 	}
+
+ fn_fail:
 	return NULL;
 }
 
 int main(int argc, char **argv) {
-	int rc;
+	int ret;
 	int i;
 	struct timespec start, end;
 
-	fprintf(stdout, "CT09001 MPI progress thread skelton START\n");
-
-	rc = syscall(732);
-	if (rc == -1)
-		fprintf(stdout, "CT09002 main running on Linux INFO\n");
-	else {
-		fprintf(stdout, "CT09002 main running on McKernel INFO\n");
-	}
+	ret = syscall(732);
+	OKNGNOJUMP(ret != -1, "Master is running on McKernel\n");
 
 	fwq_init(&mem);
 	pthread_mutex_init(&ep_lock, NULL);
 
-	for(i = 0; i < NTHR; i++) {
-		thr_args[i].bar_count = 0;
-		pthread_cond_init(&thr_args[i].bar_cond, NULL);
-		pthread_mutex_init(&thr_args[i].bar_lock, NULL);
+	pthread_barrier_init(&bar, NULL, NTHR + 1);
+
+	if ((ret = syscall(731, 1, NULL))) {
+		fprintf(stdout, "Error: util_indicate_clone: %s\n", strerror(errno));
 	}
 
-	rc = syscall(731, 1, NULL);
-	if (rc) {
-		fprintf(stdout, "util_indicate_clone rc=%d, errno=%d\n", rc, errno);
-		fflush(stdout);
-	}
 	for (i = 0; i < NTHR; i++) {
-		rc = pthread_create(&thr_args[i].pthread, NULL, progress_fn, &thr_args[i]);
-		if (rc){
-			fprintf(stdout, "pthread_create: %d\n", rc);
+		if ((ret = pthread_create(&thr_args[i].pthread, NULL, util_fn, &thr_args[i]))) {
+			fprintf(stdout, "Error: pthread_create: %s\n", strerror(errno));
 			exit(1);
 		}
 	}
-	for (i = 0; i < NTHR; i++) {
-		pthread_mutex_lock(&thr_args[i].bar_lock);
-		thr_args[i].bar_count++;
-		pthread_cond_signal(&thr_args[i].bar_cond);
-		pthread_mutex_unlock(&thr_args[i].bar_lock);
-	}
+
+	pthread_barrier_wait(&bar);
 
 #pragma omp parallel for
 	for (i = 0; i < omp_get_num_threads(); i++) {
-		printf("thread_num=%d,tid=%d\n", i, syscall(SYS_gettid));
+		printf("[INFO] thread_num=%d,tid=%d\n", i, syscall(SYS_gettid));
 	}
 
-	fprintf(stdout, "CT09004 pthread_create OK\n");
 	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
 	for (i = 0; i < 10; i++) {
 		pthread_mutex_lock(&ep_lock);
 		nevents++;
 		fwq_omp(random() % 100000000, &mem); /* 0 - 0.1 sec */
 		pthread_mutex_unlock(&ep_lock);
+
 		while (nevents > 0) {
 			FIXED_SIZE_WORK(&mem);
 		}
@@ -212,9 +168,10 @@ int main(int argc, char **argv) {
 	for (i = 0; i < NTHR; i++) {
 		pthread_join(thr_args[i].pthread, NULL);
 	}
-	fprintf(stdout, "CT09005 takes %ld nsec INFO\n", TS2NS(end.tv_sec, end.tv_nsec) - TS2NS(start.tv_sec, start.tv_nsec));
-	fprintf(stdout, "CT09006 END\n");
 
+	printf("[INFO] Time: %ld usec\n", (TS2NS(end.tv_sec, end.tv_nsec) - TS2NS(start.tv_sec, start.tv_nsec)) / 1000);
 
-	exit(0);
+	ret = 0;
+ fn_fail:
+	return ret;
 }

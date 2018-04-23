@@ -8,7 +8,7 @@ UTI_MPI_TOP=${MYHOME}/project/os/mckernel/test/uti/mpi
 MCK=${MYHOME}/project/os/install
 unset DISABLE_UTI
 
-cmdline="./008"
+cmdline="./005"
 
 stop=0
 reboot=0
@@ -16,8 +16,9 @@ go=0
 
 mck=0
 nloops=1
+ppn=1
 
-while getopts srgac:n:mdl: OPT
+while getopts srgac:n:mdl:P:o: OPT
 do
         case ${OPT} in
             s) stop=1
@@ -32,12 +33,13 @@ do
 		;;
 	    n) ndoubles=$OPTARG
 		;;
-            m) 
-		mck=1
+            m) mck=1
                 ;;
             d) export DISABLE_UTI=1
                 ;;
-	    l) nloops=$OPTARG
+	    P) ppn=$OPTARG
+		;;
+	    o) omp_num_threads=$OPTARG
 		;;
             *) echo "invalid option -${OPT}" >&2
                 exit 1
@@ -45,9 +47,33 @@ do
 done
 
 if [ ${mck} -eq 1 ]; then
-    MCEXEC="${MCK}/bin/mcexec"
+    mcexec="${mck_dir}/bin/mcexec"
+    mcexecopt="--enable-uti --uti-thread-rank=$uti_thread_rank"
+    if [ ${use_hfi} -eq 1 ]; then
+	mcexecopt="--enable-hfi1 $mcexecopt"
+    fi
+    mcexecopt="-n $ppn -t $((256 / ppn + 4)) -m 1 $mcexecopt"
 else
-    MCEXEC=
+    mcexec=
+    mcexecopt=
+fi
+
+if [ ${mck} -eq 1 ]; then
+    i_mpi_pin=off
+else
+    i_mpi_pin=on
+fi
+
+if [ "$i_mpi_pin" == on ] ; then
+    i_mpi_pin_domain="export I_MPI_PIN_DOMAIN=$((omp_num_threads + 1)):scatter"
+else
+    i_mpi_pin_domain=
+fi
+
+if [ $async -eq 0 ] || [ "$async_progress_pin" == "" ] ; then
+    i_mpi_async_progress_pin=
+else
+    i_mpi_async_progress_pin="export I_MPI_ASYNC_PROGRESS_PIN=$async_progress_pin"
 fi
 
 if [ ${stop} -eq 1 ]; then
@@ -70,19 +96,31 @@ if [ ${reboot} -eq 1 ]; then
     fi
 fi
 
+cd ${UTI_MPI_TOP}
+(
+cat <<EOF
+#!/bin/sh
+
+export I_MPI_DEBUG=4
+export I_MPI_HYDRA_DEBUG=on
+export PSM2_RCVTHREAD=0
+
+export I_MPI_PIN=$i_mpi_pin
+$i_mpi_pin_domain
+export KMP_AFFINITY=granularity=thread,scatter
+
+export I_MPI_ASYNC_PROGRESS=$async
+$i_mpi_async_progress_pin
+
+
+${MCK}/bin/mcexec taskset -c 3 ./005 --ppn 16
+EOF
+) > ./job.sh
+
 if [ ${go} -eq 1 ]; then
     cd ${UTI_MPI_TOP}
     make CC=gcc 008
-    for i in `seq 1 ${nloops}`; do
-	rm -f psm2-demo-server-epid-*
-	#PSM2_RCVTHREAD=0 PMI_RANK=0 DISABLE_UTI=1 ${MCK}/bin/mcexec --enable-uti taskset -c 2 ./008 --ppn 1 &
-	PSM2_RCVTHREAD=0 PMI_RANK=1 DISABLE_UTI=0 ${MCK}/bin/mcexec --enable-uti taskset -c 3 ./008 --ppn 1
-	#wait
-	echo =====;
-	echo $i;
-	echo =====; i=$((i+1));
-	#sleep 2
-    done
+    ./job.sh
 fi
 
 
