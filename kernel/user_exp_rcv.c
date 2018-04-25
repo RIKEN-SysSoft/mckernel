@@ -121,7 +121,7 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 
 	vaddr = tinfo->vaddr;
 
-	ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+	ptep = ihk_mc_pt_lookup_fault_pte(vm,
 			(void*)vaddr, 0,
 			(void**)&base_vaddr,
 			&base_pgsize, 0);
@@ -138,7 +138,7 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 
 		/* Are we right at a page border? */
 		if (len == 0) {
-			ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+			ptep = ihk_mc_pt_lookup_fault_pte(vm,
 					(void*)vaddr, 0,
 					(void**)&base_vaddr,
 					&base_pgsize, 0);
@@ -161,7 +161,7 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 			int contiguous = 0;
 
 			/* Look up next page */
-			__ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+			__ptep = ihk_mc_pt_lookup_fault_pte(vm,
 					(void*)vaddr + len, 0,
 					(void**)&__base_vaddr,
 					&__base_pgsize, 0);

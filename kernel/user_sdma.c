@@ -743,8 +743,8 @@ int hfi1_user_sdma_process_request(void *private_data, struct iovec *iovec,
 		 * Store the physical address of the first page and
 		 * the page size in iovec.
 		 */
-		ptep = ihk_mc_pt_lookup_pte(
-				cpu_local_var(current)->vm->address_space->page_table,
+		ptep = ihk_mc_pt_lookup_fault_pte(
+				cpu_local_var(current)->vm,
 				virt,
 				0,
 				0,
@@ -1178,8 +1178,8 @@ static int user_sdma_send_pkts(struct user_sdma_request *req,
 				pte_t *ptep;
 				size_t base_pgsize;
 
-				ptep = ihk_mc_pt_lookup_pte(
-						cpu_local_var(current)->vm->address_space->page_table,
+				ptep = ihk_mc_pt_lookup_fault_pte(
+						cpu_local_var(current)->vm,
 						virt, 0, 0, &base_pgsize, 0);
 				if (unlikely(!ptep || !pte_is_present(ptep))) {
 					kprintf("%s: ERROR: no valid PTE for 0x%lx\n",
