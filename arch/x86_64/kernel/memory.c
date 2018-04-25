@@ -1987,6 +1987,28 @@ out:
 	return ptep;
 }
 
+pte_t *ihk_mc_pt_lookup_fault_pte(struct process_vm *vm, void *virt,
+		int pgshift, void **basep, size_t *sizep, int *p2alignp)
+{
+	int faulted = 0;
+	pte_t *ptep;
+
+retry:
+	ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+			virt, pgshift, basep, sizep, p2alignp);
+	if (!faulted && (!ptep || !pte_is_present(ptep))) {
+		page_fault_process_vm(vm, virt, PF_POPULATE | PF_USER);
+		faulted = 1;
+		goto retry;
+	}
+
+	if (faulted && ptep && pte_is_present(ptep)) {
+		kprintf("%s: successfully faulted 0x%lx\n", __FUNCTION__, virt);
+	}
+
+	return ptep;
+}
+
 pte_t *ihk_mc_pt_lookup_pte(page_table_t pt, void *virt, int pgshift,
 		void **basep, size_t *sizep, int *p2alignp)
 {
@@ -2286,7 +2308,7 @@ out:
 
 int ihk_mc_pt_set_range(page_table_t pt, struct process_vm *vm, void *start, 
 		void *end, uintptr_t phys, enum ihk_mc_pt_attribute attr,
-						int pgshift, struct vm_range *range)
+		int pgshift, struct vm_range *range)
 {
 	int error;
 	struct set_range_args args;
