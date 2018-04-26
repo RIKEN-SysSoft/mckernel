@@ -90,6 +90,16 @@ fi
 if [ "${redirect_kmsg}" != "0" -o "${mon_interval}" != "-1" ]; then
     ${SBINDIR}/ihkmond -f ${facility} -k ${redirect_kmsg} -i ${mon_interval}
 fi
+
+disable_irqbalance_mck() {
+	if [ -f /etc/systemd/system/irqbalance_mck.service ]; then
+		systemctl disable irqbalance_mck.service >/dev/null 2>/dev/null
+
+		# Invalid .service file persists so remove it
+		rm -f /etc/systemd/system/irqbalance_mck.service
+	fi
+}
+
 #
 # Revert any state that has been initialized before the error occured.
 #
@@ -103,9 +113,7 @@ error_exit() {
 			if ! systemctl stop irqbalance_mck.service 2>/dev/null; then
 			    echo "warning: failed to stop irqbalance_mck" >&2
 			fi
-			if ! systemctl disable irqbalance_mck.service >/dev/null 2>/dev/null; then
-			    echo "warning: failed to disable irqbalance_mck" >&2
-			fi
+			disable_irqbalance_mck
 		    fi
 		fi
 		;&
@@ -458,7 +466,9 @@ if [ "${irqbalance_used}" == "yes" ]; then
     banirq=`cat /proc/interrupts| perl -e 'while(<>) { if(/^\s*(\d+).*IHK\-SMP\s*$/) {print $1;}}'`
 
     sed "s/%mask%/$smp_affinity_mask/g" $ETCDIR/irqbalance_mck.in | sed "s/%banirq%/$banirq/g" > /tmp/irqbalance_mck
-	systemctl disable irqbalance_mck.service >/dev/null 2>/dev/null
+
+	disable_irqbalance_mck
+
 	if ! systemctl link $ETCDIR/irqbalance_mck.service >/dev/null 2>/dev/null; then
 		echo "error: linking irqbalance_mck" >&2
 		error_exit "mcos_sys_mounted"
