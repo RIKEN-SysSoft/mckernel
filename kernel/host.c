@@ -139,7 +139,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 			flags |= VR_AP_USER;
 		}
 
-		kprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)s, (unsigned long)e);
+		dkprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)s, (unsigned long)e);
 		if (add_process_memory_range(vm, s, e, NOPHYS, flags, NULL, 0,
 					pn->sections[i].len > LARGE_PAGE_SIZE ?
 					LARGE_PAGE_SHIFT : PAGE_SHIFT,
@@ -234,7 +234,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 
 		flags = VR_PROT_READ | VR_PROT_WRITE;
 		flags |= VRFLAG_PROT_TO_MAXPROT(flags);
-		kprintf("%s: %lx - %lx\n", __FUNCTION__, vm->region.brk_start, vm->region.brk_start + proc->heap_extension);
+		dkprintf("%s: %lx - %lx\n", __FUNCTION__, vm->region.brk_start, vm->region.brk_start + proc->heap_extension);
 		if (add_process_memory_range(vm, vm->region.brk_start,
 					vm->region.brk_start + proc->heap_extension,
 					virt_to_phys(heap),
@@ -401,7 +401,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 
 	p->rprocess = (unsigned long)thread;
 	p->rpgtable = virt_to_phys(as->page_table);
-	kprintf("%s: desc->rpgtable=%lx\n", __FUNCTION__, p->rpgtable);
+	dkprintf("%s: desc->rpgtable=%lx\n", __FUNCTION__, p->rpgtable);
 
 	if (init_process_stack(thread, pn, argc, argv, envc, env) != 0) {
 		goto err;
@@ -543,7 +543,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 		goto err;
 	}
 
-	kprintf("new process : %p pid=%d,tid=%d,uti_thread_rank=%d\n", proc, proc->pid, thread->tid, proc->uti_thread_rank);
+	dkprintf("new process : %p pid=%d,tid=%d,uti_thread_rank=%d\n", proc, proc->pid, thread->tid, proc->uti_thread_rank);
 
 	kfree(pn);
 

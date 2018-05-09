@@ -480,7 +480,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	/* -ERESTARTSYS indicates that the proxy process is gone
 	 * and the application should be terminated */
 	if (rc == -ERESTARTSYS) {
-		kprintf("%s: proxy PID %d is dead, terminate()\n",
+		dkprintf("%s: proxy PID %d is dead, terminate()\n",
 			__FUNCTION__, thread->proc->pid);
 		thread->proc->nohost = 1;
 	}
@@ -499,7 +499,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	if (req->number == __NR_open && rc > 0) {
 		if (!strncmp((const char *)req->args[0], "/dev/hfi", 8)) {
 			cpu_local_var(current)->hfi_fd = rc;
-			kprintf("%s: path=%s,fd=%d\n", __FUNCTION__, (const char *)req->args[0], rc);
+			dkprintf("%s: path=%s,fd=%d\n", __FUNCTION__, (const char *)req->args[0], rc);
 		}
 
 		switch (rc) {
@@ -1089,7 +1089,7 @@ void terminate(int rc, int sig)
 
 	if (ids) {
 		for (i = 0; i < n; i++) {
-			kprintf("%s: calling do_kill, target tid=%d\n", __FUNCTION__, ids[i]);
+			dkprintf("%s: calling do_kill, target tid=%d\n", __FUNCTION__, ids[i]);
 			do_kill(mythread, proc->pid, ids[i], SIGKILL, NULL, 0);
 		}
 		kfree(ids);
@@ -2618,7 +2618,7 @@ retry_tid:
 		setint_user((int*)parent_tidptr, new->tid);
 	}
 	
-	kprintf("%s: old->tid=%d,new->tid=%d,cpuid=%d,mod_clone=%d\n", __FUNCTION__, old->tid, new->tid, cpuid, old->mod_clone);
+	dkprintf("%s: old->tid=%d,new->tid=%d,cpuid=%d,mod_clone=%d\n", __FUNCTION__, old->tid, new->tid, cpuid, old->mod_clone);
 	if (clone_flags & CLONE_CHILD_CLEARTID) {
 		dkprintf("clone_flags & CLONE_CHILD_CLEARTID: 0x%lX,old->tid=%d,new->tid=%d\n", 
 				child_tidptr, old->tid, new->tid);
@@ -2722,7 +2722,7 @@ retry_tid:
 
 	dkprintf("%s: old->pid=%d,tid=%d,new->pid=%d,tid=%d\n", __FUNCTION__, oldproc->pid, old->tid, newproc->pid, new->tid);
 
-	kprintf("clone: kicking scheduler!,cpuid=%d pid=%d tid %d -> tid=%d\n",
+	dkprintf("clone: kicking scheduler!,cpuid=%d pid=%d tid %d -> tid=%d\n",
 		cpuid, newproc->pid,
 		old->tid,
 		new->tid);
@@ -9328,12 +9328,12 @@ util_thread(struct uti_attr *arg)
 	if (rc >= 0) {
 		if (rc & 0x100000000) { 
 			/* tracer has detected exit_group */
-			kprintf("%s: exit_group, pid=%d,tid=%d,rc=%lx\n", __FUNCTION__, thread->proc->pid, thread->tid, rc);
+			dkprintf("%s: exit_group, pid=%d,tid=%d,rc=%lx\n", __FUNCTION__, thread->proc->pid, thread->tid, rc);
 			thread->proc->nohost = 1;
 			terminate((rc >> 8) & 255, rc & 255);
 		} else {
 			/* tracer has detected exit or killed by signal */
-			kprintf("%s: exit, pid=%d,tid=%d,rc=%lx\n", __FUNCTION__, thread->proc->pid, thread->tid, rc);
+			dkprintf("%s: exit, pid=%d,tid=%d,rc=%lx\n", __FUNCTION__, thread->proc->pid, thread->tid, rc);
 			request.number = __NR_sched_setaffinity;
 			request.args[0] = 1;
 			request.args[1] = free_address;
