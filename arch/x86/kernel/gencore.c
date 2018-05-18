@@ -310,6 +310,8 @@ int gencore(struct thread *thread, void *regs,
 		   mckernel's internal use. */		   
 		if (range->flag & VR_RESERVED)
 			continue;
+		if (range->flag & VR_DONTDUMP)
+			continue;
 		/* We need a chunk for each page for a demand paging area.
 		   This can be optimized for spacial complexity but we would
 		   lose simplicity instead. */
