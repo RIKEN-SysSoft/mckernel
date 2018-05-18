@@ -43,14 +43,30 @@ threads equals to the number of CPU cores assigned to McKernel.
 .TP
 .B	-h N, --extend-heap-by=N
 Specify the size of heap extension by the brk() system call.
-The default size is 4K Byte. You may specify the value in the
-following format:
-     <digit>{k|K|m|M|g|G}
-e.g.:
-     10k for 10Kibyte, 100M for 100Mibyte, 1G for 1Gibyte
+The default size is 4K Byte. \fIN\fR accepts the following format:
+.br
+.RS 10
+<digits>{k|K|m|M|g|G}
+.br
+e.g.: 10k means 10Kibyte, 100M 100Mibyte, 1G 1Gibyte
+.RE
+.RS 7
 
 In certain applications, such as miniFE, specifying "-h 12M" improves
 performance.
+.RE
+
+.TP
+.B	-s P,[M], --stack-premap=P,[M]
+Pre-map \fIP\fR bytes of stack when creating a process. 2Mibyte is
+used when not specified. And set the max size of stack to \fIM\fR
+bytes. Both of them accept the following format:
+.br
+.RS 10
+<digits>{k|K|m|M|g|G}
+.br
+e.g.: 10k means 10Kibyte, 100M 100Mibyte, 1G 1Gibyte
+.RE
 
 .TP
 .B	--profile
