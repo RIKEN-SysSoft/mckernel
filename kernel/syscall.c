@@ -10023,7 +10023,9 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	cpu_enable_interrupt();
 
 	if (cpu_local_var(current)->proc->ptrace) {
+		ihk_mc_syscall_ret(ctx) = -ENOSYS;
 		ptrace_syscall_enter(cpu_local_var(current));
+		num = ihk_mc_syscall_number(ctx);
 	}
 
 #if 0

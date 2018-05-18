@@ -49,6 +49,7 @@ typedef struct x86_user_context ihk_mc_user_context_t;
 #define ihk_mc_syscall_arg5(uc) (uc)->gpr.r9
 
 #define ihk_mc_syscall_ret(uc)  (uc)->gpr.rax
+#define ihk_mc_syscall_number(uc)  (uc)->gpr.orig_rax
 
 #define ihk_mc_syscall_pc(uc)   (uc)->gpr.rip
 #define ihk_mc_syscall_sp(uc)   (uc)->gpr.rsp
