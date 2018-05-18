@@ -1219,12 +1219,6 @@ void arch_clone_thread(struct thread *othread, unsigned long pc,
 	asm("mrs %0, tpidr_el0" : "=r" (tls));
 	othread->tlsblock_base = nthread->tlsblock_base = tls;
 
-	/* copy fp_regs values from parent. */
-	save_fp_regs(othread);
-	if ((othread->fp_regs != NULL) && (check_and_allocate_fp_regs(nthread) == 0)) {
-		memcpy(nthread->fp_regs, othread->fp_regs, sizeof(fp_regs_struct));
-	}
-
 	/* if SVE enable, takeover lower 128 bit register */
 	if (likely(elf_hwcap & HWCAP_SVE)) {
 		fp_regs_struct fp_regs;
@@ -1474,6 +1468,13 @@ save_fp_regs(struct thread *thread)
 			return;
 		}
 		thread_fpsimd_save(thread);
+	}
+}
+
+void copy_fp_regs(struct thread *from, struct thread *to)
+{
+	if ((from->fp_regs != NULL) && (check_and_allocate_fp_regs(to) == 0)) {
+		memcpy(to->fp_regs, from->fp_regs, sizeof(fp_regs_struct));
 	}
 }
 

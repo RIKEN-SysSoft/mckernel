@@ -62,6 +62,7 @@ static void insert_vm_range_list(struct process_vm *vm,
 static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm);
 extern void release_fp_regs(struct thread *proc);
 extern void save_fp_regs(struct thread *proc);
+extern void copy_fp_regs(struct thread *from, struct thread *to);
 extern void restore_fp_regs(struct thread *proc);
 extern void __runq_add_proc(struct thread *proc, int cpu_id);
 extern void terminate_host(int pid);
@@ -391,6 +392,10 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 	/* NOTE: sp is the user mode stack! */
 	ihk_mc_init_user_process(&thread->ctx, &thread->uctx, ((char *)thread) +
 				 KERNEL_STACK_NR_PAGES * PAGE_SIZE, pc, sp);
+
+	/* copy fp_regs from parent */
+	save_fp_regs(org);
+	copy_fp_regs(org, thread);
 #ifdef POSTK_DEBUG_ARCH_DEP_23 /* add arch dep. clone_process() function */
 	arch_clone_thread(org, pc, sp, thread);
 #endif /* POSTK_DEBUG_ARCH_DEP_23 */

@@ -33,7 +33,6 @@
 void terminate(int, int);
 extern long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
 long syscall(int num, ihk_mc_user_context_t *ctx);
-extern void save_fp_regs(struct thread *proc);
 void set_signal(int sig, void *regs0, siginfo_t *info);
 void check_signal(unsigned long rc, void *regs0, int num);
 extern unsigned long do_fork(int, unsigned long, unsigned long, unsigned long,
@@ -460,7 +459,6 @@ void set_single_step(struct thread *thread)
 
 long ptrace_read_fpregs(struct thread *thread, void *fpregs)
 {
-	save_fp_regs(thread);
 	if (thread->fp_regs == NULL) {
 		return -ENOMEM;
 	}
@@ -470,7 +468,6 @@ long ptrace_read_fpregs(struct thread *thread, void *fpregs)
 
 long ptrace_write_fpregs(struct thread *thread, void *fpregs)
 {
-	save_fp_regs(thread);
 	if (thread->fp_regs == NULL) {
 		return -ENOMEM;
 	}
