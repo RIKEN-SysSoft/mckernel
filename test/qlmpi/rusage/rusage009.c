@@ -56,6 +56,7 @@ int main(int argc, char** argv) {
 	key_t key = ftok(argv[0], 0);
 	int shmid;
 // for swap_test
+#define TEST_VAL 0x1234
 	int swap_rc = 0;
 	char buffer[BUF_SIZE];
 	
@@ -67,13 +68,14 @@ int main(int argc, char** argv) {
 	if(pid == 0) {
 		mem = shmat(shmid, NULL, 0);
 		CHKANDJUMP(mem == (void*)-1, 255, "shmat failed: %s\n", strerror(errno));
+		memset(mem, 0, sz_mem[SZ_INDEX]);
 		
 // for swap_test
 		swap_rc = do_swap("/tmp/rusage009_c.swp", buffer);
 		if (swap_rc < 0) {
 			printf("[NG] swap in child is failed\n");
 		}
-		*((unsigned long*)mem) = 0x1234;
+		*((unsigned long*)mem) = TEST_VAL;
 
 		ret = shmdt(mem);
 		CHKANDJUMP(ret == -1, 255, "shmdt failed\n");
@@ -87,12 +89,26 @@ int main(int argc, char** argv) {
 		CHKANDJUMP(ret == -1, 255, "waitpid failed\n");
 
 // for swap_test
+		// before swap
+		unsigned long val = *((unsigned long*)mem);
+		if (val == TEST_VAL) {
+			printf("[OK] before swap, val:0x%lx\n", val);
+		} else {
+			printf("[NG] before swap, val is not 0x%lx, val is 0x%lx\n", TEST_VAL, val);
+		}
+
 		swap_rc = do_swap("/tmp/rusage009_p.swp", buffer);
 		if (swap_rc < 0) {
 			printf("[NG] swap in parent is failed\n");
 		}
 
-		printf("%lx\n", *((unsigned long*)mem));
+		// after swap
+		val = *((unsigned long*)mem);
+		if (val == TEST_VAL) {
+			printf("[OK] after swap,  val:0x%lx\n", val);
+		} else {
+			printf("[NG] after swap,  val is not 0x%lx, val is 0x%lx\n", TEST_VAL, val);
+		}
 
 #if 0
 		struct shmid_ds buf;

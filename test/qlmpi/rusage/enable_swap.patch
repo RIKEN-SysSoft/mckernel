@@ -1,0 +1,14 @@
+diff --git a/executer/user/qlmpilib.c b/executer/user/qlmpilib.c
+index 7fcbcb5..9058ec8 100644
+--- a/executer/user/qlmpilib.c
++++ b/executer/user/qlmpilib.c
+@@ -158,7 +158,8 @@ int ql_client(int *argc,char ***argv)
+ 	syscall(803);
+ 	rc = PMI_Barrier();
+ 	
+-	rc = swapout(swap_file, buffer, BUF_SIZE, 1);
++	//rc = swapout(swap_file, buffer, BUF_SIZE, 1);
++	rc = swapout(swap_file, buffer, BUF_SIZE, 0);
+ 
+ #ifdef QL_DEBUG
+ 	printf(" swapout rc=%d\n",rc);
