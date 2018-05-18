@@ -1867,16 +1867,30 @@ int main(int argc, char **argv)
 	while ((opt = getopt_long(argc, argv, "+c:n:t:m:h:", mcexec_options, NULL)) != -1) {
 #endif /* ADD_ENVS_OPTION */
 		switch (opt) {
+			char *tmp;
+
 			case 'c':
-				target_core = atoi(optarg);
+				target_core = strtol(optarg, &tmp, 0);
+				if (*tmp != '\0') {
+					fprintf(stderr, "error: -c: invalid target CPU\n");
+					exit(EXIT_FAILURE);
+				}
 				break;
 
 			case 'n':
-				nr_processes = atoi(optarg);
+				nr_processes = strtol(optarg, &tmp, 0);
+				if (*tmp != '\0' || nr_processes <= 0) {
+					fprintf(stderr, "error: -n: invalid number of processes\n");
+					exit(EXIT_FAILURE);
+				}
 				break;
 
 			case 't':
-				nr_threads = atoi(optarg);
+				nr_threads = strtol(optarg, &tmp, 0);
+				if (*tmp != '\0' || nr_threads <= 0) {
+					fprintf(stderr, "error: -t: invalid number of threads\n");
+					exit(EXIT_FAILURE);
+				}
 				break;
 
 			case 'm':
