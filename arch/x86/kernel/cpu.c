@@ -1505,29 +1505,28 @@ void ihk_mc_delay_us(int us)
 	arch_delay(us);
 }
 
-#define EXTENDED_ARCH_SHOW_CONTEXT
-#ifdef EXTENDED_ARCH_SHOW_CONTEXT
 void arch_show_extended_context(void)
 {
-	unsigned long cr0, cr4, msr, xcr0;
+	unsigned long cr0, cr4, msr, xcr0 = 0;
 
 	/*  Read and print CRs, MSR_EFER, XCR0  */
 	asm volatile("movq %%cr0, %0" : "=r"(cr0));
 	asm volatile("movq %%cr4, %0" : "=r"(cr4));
 	msr = rdmsr(MSR_EFER);
-	xcr0 = xgetbv(0);
-
+	if (xsave_available) {
+		xcr0 = xgetbv(0);
+	}
 	__kprintf("\n             CR0              CR4\n");
 	__kprintf("%016lX %016lX\n", cr0, cr4);
 
 	__kprintf("             MSR_EFER\n");
 	__kprintf("%016lX\n", msr);
 
-	__kprintf("             XCR0\n");
-	__kprintf("%016lX\n", xcr0);
-
+	if (xsave_available) {
+		__kprintf("             XCR0\n");
+		__kprintf("%016lX\n", xcr0);
+	}
 }
-#endif
 
 /*@
   @ requires \valid(reg);
@@ -1558,9 +1557,7 @@ void arch_show_interrupt_context(const void *reg)
 	__kprintf("%16lx %16lx %16lx %16lx\n",
 	        regs->cs, regs->ss, regs->rflags, regs->error);
 
-#ifdef EXTENDED_ARCH_SHOW_CONTEXT
-        arch_show_extended_context();
-#endif	
+	arch_show_extended_context();
 
 	kprintf_unlock(irqflags);
 }
