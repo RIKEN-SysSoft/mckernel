@@ -2226,6 +2226,11 @@ SYSCALL_DECLARE(execve)
 #endif /* POSTK_DEBUG_TEMP_FIX_10 */
 	}
 
+	if (cpu_local_var(current)->proc->ptrace) {
+		ihk_mc_syscall_ret(ctx) = 0;
+		ptrace_syscall_exit(cpu_local_var(current));
+	}
+
 	/* Unmap all memory areas of the process, userspace will be gone */
 	munmap_all();
 
