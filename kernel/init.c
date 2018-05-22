@@ -152,66 +152,6 @@ static void parse_kargs(void)
 	}
 }
 
-void pc_init(void)
-{
-	int i;
-	int kmode = PERFCTR_KERNEL_MODE;
-	int imode = 1;
-	char *p;
-
-	int x[2][4] = { { APT_TYPE_INSTRUCTIONS_EXECUTED,
-	                  APT_TYPE_DATA_READ_MISS,
-	                  APT_TYPE_L2_CODE_READ_MISS_MEM_FILL,
-                      APT_TYPE_CODE_CACHE_MISS, },
-	                { APT_TYPE_CODE_CACHE_MISS,
-                      APT_TYPE_LLC_MISS, // not updated for KNC
-	                  APT_TYPE_STALL, APT_TYPE_CYCLE }, // not updated for KNC
-	};
-
-
-	if (!(p = find_command_line("perfctr"))) {
-		dkprintf("perfctr not initialized.\n");
-		return;
-	}
-	if (p[7] == '=' && p[8] >= '0' && p[8] <= '5') {
-		i = p[8] - '0';
-		kmode = (i >> 1) + 1;
-		imode = (i & 1);
-	} else {
-		dkprintf("perfctr not initialized.\n");
-		return;
-	}
-	dkprintf("perfctr mode : priv = %d, set = %d\n", kmode, imode);
-
-	for (i = 0; i < 4; i++) {
-		ihk_mc_perfctr_init(i, x[imode][i], kmode);
-	}
-	ihk_mc_perfctr_start(0xf);
-}
-
-void pc_ap_init(void)
-{
-	pc_init();
-}
-
-static void pc_test(void)
-{
-	int i;
-	unsigned long st[4], ed[4];
-
-	pc_init();
-
-	ihk_mc_perfctr_read_mask(0xf, st);
-	for (i = 0; i < sizeof(data) / sizeof(data[0]); i++) {
-		data[i] += i;
-		asm volatile ("" : : : "memory");
-	}
-	ihk_mc_perfctr_read_mask(0xf, ed);
-
-	kprintf("perfctr:(%ld) %ld, %ld, %ld, %ld\n", st[0], ed[0] - st[0],
-	        ed[1] - st[1], ed[2] - st[2], ed[3] - st[3]);
-}
-
 extern void ihk_mc_get_boot_time(unsigned long *tv_sec, unsigned long *tv_nsec);
 extern unsigned long ihk_mc_get_ns_per_tsc(void);
 
@@ -308,7 +248,6 @@ static void rest_init(void)
 	ihk_mc_dma_init();
 	dma_test();
 #endif
-	//pc_test();
 
 	ap_init();
 #ifndef POSTK_DEBUG_TEMP_FIX_73 /* NULL access for *monitor fix */
