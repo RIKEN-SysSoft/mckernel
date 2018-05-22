@@ -1692,15 +1692,18 @@ set_signal(int sig, void *regs0, siginfo_t *info)
 	ihk_mc_user_context_t *regs = regs0;
 	struct thread *thread = cpu_local_var(current);
 
-	if(thread == NULL || thread->proc->pid == 0)
+	if (thread == NULL || thread->proc->pid == 0)
 		return;
 
-	if((__sigmask(sig) & thread->sigmask.__val[0]) ||
-	   !interrupt_from_user(regs)){
+        if (!interrupt_from_user(regs)) {
+		ihk_mc_debug_show_interrupt_context(regs);
+                panic("panic: kernel mode signal");
+        }
+
+	if ((__sigmask(sig) & thread->sigmask.__val[0])) {
 		coredump(thread, regs0);
 		terminate(0, sig | 0x80);
 	}
-
 	do_kill(thread, thread->proc->pid, thread->tid, sig, info, 0);
 }
 

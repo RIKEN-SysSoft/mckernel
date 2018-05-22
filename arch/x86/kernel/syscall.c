@@ -1334,15 +1334,19 @@ set_signal(int sig, void *regs0, siginfo_t *info)
 	struct x86_user_context *regs = regs0;
 	struct thread *thread = cpu_local_var(current);
 
-	if(thread == NULL || thread->proc->pid == 0)
+	if (thread == NULL || thread->proc->pid == 0)
 		return;
 
-	if((__sigmask(sig) & thread->sigmask.__val[0]) ||
-	   (regs->gpr.rsp & 0x8000000000000000)){
+        if (!interrupt_from_user(regs)) {
+		ihk_mc_debug_show_interrupt_context(regs);
+                panic("panic: kernel mode signal");
+        }
+
+	if ((__sigmask(sig) & thread->sigmask.__val[0])) {
 		coredump(thread, regs0);
 		terminate(0, sig | 0x80);
 	}
-		do_kill(thread, thread->proc->pid, thread->tid, sig, info, 0);
+	do_kill(thread, thread->proc->pid, thread->tid, sig, info, 0);
 }
 
 SYSCALL_DECLARE(mmap)
