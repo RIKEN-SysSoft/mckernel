@@ -161,7 +161,7 @@ myalloc(struct swapinfo *si, size_t sz)
 }
 
 void
-myfree()
+myfree(void *p)
 {
 	/* nothing so far */
 }

@@ -7663,7 +7663,7 @@ SYSCALL_DECLARE(remap_file_pages)
 	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
 #define	PGOFF_LIMIT	((off_t)1 << ((8*sizeof(off_t) - 1) - PAGE_SHIFT))
 	if ((size <= 0) || (size & (PAGE_SIZE - 1)) || (prot != 0)
-			|| (pgoff < 0) || (PGOFF_LIMIT <= pgoff)
+			|| (PGOFF_LIMIT <= pgoff)
 			|| ((PGOFF_LIMIT - pgoff) < (size / PAGE_SIZE))
 			|| !((start < end) || (end == 0))) {
 		ekprintf("sys_remap_file_pages(%#lx,%#lx,%#x,%#lx,%#x):"
