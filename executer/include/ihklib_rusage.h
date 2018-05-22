@@ -5,6 +5,10 @@
 #define IHK_MAX_NUM_NUMA_NODES 1024
 #define IHK_MAX_NUM_CPUS 1024
 
+#define IHK_OS_PGSIZE_4KB 0
+#define IHK_OS_PGSIZE_2MB 1
+#define IHK_OS_PGSIZE_1GB 2
+
 struct mckernel_rusage {
 	unsigned long memory_stat_rss[IHK_MAX_NUM_PGSIZES];
 	unsigned long memory_stat_mapped_file[IHK_MAX_NUM_PGSIZES];
