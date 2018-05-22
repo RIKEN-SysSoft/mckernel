@@ -965,7 +965,7 @@ void ptrace_report_signal(struct thread *thread, int sig)
 	proc->status = PS_TRACED;
 #endif /* POSTK_DEBUG_TEMP_FIX_41 */
 	thread->status = PS_TRACED;
-	proc->ptrace &= ~PT_TRACE_SYSCALL_MASK;
+	proc->ptrace &= ~PT_TRACE_SYSCALL;
 	if (sig == SIGSTOP || sig == SIGTSTP ||
 			sig == SIGTTIN || sig == SIGTTOU) {
 		proc->signal_flags |= SIGNAL_STOP_STOPPED;

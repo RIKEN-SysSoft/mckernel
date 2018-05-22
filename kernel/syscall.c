@@ -2009,28 +2009,11 @@ static int ptrace_report_exec(struct thread *thread)
 	return 0;
 }
 
-
-static void ptrace_syscall_enter(struct thread *thread)
-{
-	int ptrace = thread->proc->ptrace;
-	struct mcs_rwlock_node_irqsave lock;
-
-	if (ptrace & PT_TRACE_SYSCALL_ENTER) {
-		int sig = (SIGTRAP | ((ptrace & PTRACE_O_TRACESYSGOOD) ? 0x80 : 0));
-		ptrace_report_signal(thread, sig);
-		mcs_rwlock_writer_lock(&thread->proc->update_lock, &lock);
-		if (thread->proc->ptrace & PT_TRACE_SYSCALL_ENTER) {
-			thread->proc->ptrace |= PT_TRACE_SYSCALL_EXIT;
-		}
-		mcs_rwlock_writer_unlock(&thread->proc->update_lock, &lock);
-	}
-}
-
-static void ptrace_syscall_exit(struct thread *thread)
+static void ptrace_syscall_event(struct thread *thread)
 {
 	int ptrace = thread->proc->ptrace;
 
-	if (ptrace & PT_TRACE_SYSCALL_EXIT) {
+	if (ptrace & PT_TRACE_SYSCALL) {
 		int sig = (SIGTRAP | ((ptrace & PTRACE_O_TRACESYSGOOD) ? 0x80 : 0));
 		ptrace_report_signal(thread, sig);
 	}
@@ -2080,7 +2063,7 @@ static int ptrace_report_clone(struct thread *thread, struct thread *new, int ev
 	thread->proc->status = PS_TRACED;
 	thread->status = PS_TRACED;
 	thread->proc->ptrace_eventmsg = new->tid;
-	thread->proc->ptrace &= ~PT_TRACE_SYSCALL_MASK;
+	thread->proc->ptrace &= ~PT_TRACE_SYSCALL; /** ??? **/
 	parent_pid = thread->proc->parent->pid;
 	mcs_rwlock_writer_unlock_noirq(&thread->proc->update_lock, &lock);
 
@@ -2279,7 +2262,7 @@ SYSCALL_DECLARE(execve)
 
 	if (cpu_local_var(current)->proc->ptrace) {
 		ihk_mc_syscall_ret(ctx) = 0;
-		ptrace_syscall_exit(cpu_local_var(current));
+		ptrace_syscall_event(cpu_local_var(current));
 	}
 
 	/* Unmap all memory areas of the process, userspace will be gone */
@@ -5756,9 +5739,9 @@ static int ptrace_wakeup_sig(int pid, long request, long data) {
 			set_single_step(child);
 		}
 		mcs_rwlock_writer_lock(&child->proc->update_lock, &lock);
-		child->proc->ptrace &= ~PT_TRACE_SYSCALL_MASK;
+		child->proc->ptrace &= ~PT_TRACE_SYSCALL;
 		if (request == PTRACE_SYSCALL) {
-			child->proc->ptrace |= PT_TRACE_SYSCALL_ENTER;
+			child->proc->ptrace |= PT_TRACE_SYSCALL;
 		}
 		mcs_rwlock_writer_unlock(&child->proc->update_lock, &lock);
 		if(data != 0 && data != SIGSTOP) {
@@ -10080,7 +10063,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 
 	if (cpu_local_var(current)->proc->ptrace) {
 		ihk_mc_syscall_ret(ctx) = -ENOSYS;
-		ptrace_syscall_enter(cpu_local_var(current));
+		ptrace_syscall_event(cpu_local_var(current));
 		num = ihk_mc_syscall_number(ctx);
 	}
 
@@ -10127,7 +10110,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 
 	if (cpu_local_var(current)->proc->ptrace && l != -ENOSYS) {
 		ihk_mc_syscall_ret(ctx) = l;
-		ptrace_syscall_exit(cpu_local_var(current));
+		ptrace_syscall_event(cpu_local_var(current));
 		l = ihk_mc_syscall_ret(ctx);
 	}
 

@@ -78,9 +78,7 @@
 // struct process.ptrace
 #define PT_TRACED 0x80     /* The process is ptraced */
 #define PT_TRACE_EXEC 0x100 /* Trace execve(2) */
-#define PT_TRACE_SYSCALL_ENTER 0x200 /* Trace syscall enter */
-#define PT_TRACE_SYSCALL_EXIT  0x400 /* Trace syscall exit */
-#define PT_TRACE_SYSCALL_MASK  (PT_TRACE_SYSCALL_ENTER | PT_TRACE_SYSCALL_EXIT)
+#define PT_TRACE_SYSCALL 0x200 /* Trace syscall enter */
 
 // ptrace(2) request
 #define	PTRACE_TRACEME 0
