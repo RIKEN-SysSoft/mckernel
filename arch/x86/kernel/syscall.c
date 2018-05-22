@@ -924,6 +924,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 			break;
 		case SIGCHLD:
 		case SIGURG:
+		case SIGWINCH:
 			break;
 		default:
 			dkprintf("do_signal,default,terminate,sig=%d\n", sig);
