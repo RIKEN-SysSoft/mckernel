@@ -42,6 +42,7 @@ error_exit() {
 		;&
 	tmp_mcos_created)
 		if [ "$enable_mcoverlay" == "yes" ]; then
+		    umask $umask_old
 			rm -rf /tmp/mcos
 		fi
 		;&
@@ -52,8 +53,11 @@ error_exit() {
 
 	exit 1
 }
-
 fi
+
+# Change umask for /proc and /sys files 
+umask_dec=$(( 8#${umask_old} & 8#0002 ))
+umask 0`printf "%o" ${umask_dec}`
 
 if [ ! -e /tmp/mcos ]; then 
     mkdir -p /tmp/mcos; 
