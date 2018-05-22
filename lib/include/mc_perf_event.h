@@ -1,5 +1,5 @@
 /* mc_perf_event.h COPYRIGHT FUJITSU LIMITED 2016 */
-#ifndef MC_PERF_EVNET_H
+#ifndef MC_PERF_EVENT_H
 #define MC_PERF_EVENT_H
 
 #ifdef POSTK_DEBUG_TEMP_FIX_32
