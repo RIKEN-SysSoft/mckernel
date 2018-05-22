@@ -438,7 +438,4 @@ if [ "${irqbalance_used}" == "yes" ]; then
 #    echo cpus=$cpus ncpus=$ncpus banirq=$banirq
 fi
 
-# Restore umask
-umask ${umask_old}
-
 exit 0
