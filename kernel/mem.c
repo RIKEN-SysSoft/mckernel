@@ -1130,7 +1130,11 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 
 	cpu_enable_interrupt();
 
-	error = page_fault_process_vm(thread->vm, fault_addr, reason);
+	if ((uintptr_t)fault_addr < 4096) {
+		error = -EINVAL;
+	} else {
+		error = page_fault_process_vm(thread->vm, fault_addr, reason);
+	}
 	if (error) {
 		struct siginfo info;
 
