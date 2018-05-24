@@ -19,15 +19,13 @@
 #include <ihk/ikc.h>
 #include <ikc/master.h>
 #include <arch/cpu.h>
+#include <debug.h>
 
 //#define DEBUG_LISTENERS
 
 #ifdef DEBUG_LISTENERS
-#define	dkprintf(...)	kprintf(__VA_ARGS__)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
-#else
-#define dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 void testmem(void *v, unsigned long size)

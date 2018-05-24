@@ -31,6 +31,7 @@
 #include <prctl.h>
 #include <page.h>
 #include <kmalloc.h>
+#include <debug.h>
 
 #define LAPIC_ID            0x020
 #define LAPIC_TIMER         0x320
@@ -69,11 +70,8 @@
 //#define DEBUG_PRINT_CPU
 
 #ifdef DEBUG_PRINT_CPU
-#define dkprintf kprintf
-#define ekprintf kprintf
-#else
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define ekprintf kprintf
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 static void *lapic_vp;

@@ -34,13 +34,13 @@
 #include <sysfs.h>
 #include <ihk/perfctr.h>
 #include <rusage_private.h>
+#include <debug.h>
 
 //#define DEBUG_PRINT_HOST
 
 #ifdef DEBUG_PRINT_HOST
-#define dkprintf kprintf
-#else
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 /* Linux channel table, indexec by Linux CPU id */

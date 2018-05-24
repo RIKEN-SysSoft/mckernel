@@ -16,6 +16,7 @@
 #include <registers.h>
 #include <mc_perf_event.h>
 #include <config.h>
+#include <debug.h>
 
 extern unsigned int *x86_march_perfmap;
 extern int running_on_kvm(void);
@@ -25,11 +26,8 @@ int ihk_mc_perfctr_fixed_init(int counter, int mode);
 
 //#define PERFCTR_DEBUG
 #ifdef PERFCTR_DEBUG
-#define	dkprintf(...)	do { kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	do { kprintf(__VA_ARGS__); } while (0)
-#else
-#define	dkprintf(...)	do { } while (0)
-#define	ekprintf(...)	do { kprintf(__VA_ARGS__); } while (0)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 #define X86_CR4_PCE     0x00000100

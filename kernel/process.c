@@ -38,12 +38,13 @@
 #include <xpmem.h>
 #include <rusage_private.h>
 #include <ihk/monitor.h>
+#include <debug.h>
 
 //#define DEBUG_PRINT_PROCESS
 
 #ifdef DEBUG_PRINT_PROCESS
-#define dkprintf(...) kprintf(__VA_ARGS__)
-#define ekprintf(...) kprintf(__VA_ARGS__)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 static void dtree(struct rb_node *node, int l) {
 	struct vm_range *range;
 	if (!node)
@@ -60,8 +61,6 @@ static void dump_tree(struct process_vm *vm) {
 	dtree(vm->vm_range_tree.rb_node, 1);
 }
 #else
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define ekprintf(...) kprintf(__VA_ARGS__)
 static void dump_tree(struct process_vm *vm) {}
 #endif
 

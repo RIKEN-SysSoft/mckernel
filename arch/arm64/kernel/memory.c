@@ -14,9 +14,7 @@
 #include <context.h>
 #include <kmalloc.h>
 #include <vdso.h>
-
-#define	dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
+#include <debug.h>
 
 #define NOT_IMPLEMENTED()  do { kprintf("%s is not implemented\n", __func__); while(1);} while(0)
 

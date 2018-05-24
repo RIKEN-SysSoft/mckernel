@@ -30,6 +30,7 @@
 #include <debug-monitors.h>
 #include <sysreg.h>
 #include <cpufeature.h>
+#include <debug.h>
 #ifdef POSTK_DEBUG_ARCH_DEP_65
 #include <hwcap.h>
 #endif /* POSTK_DEBUG_ARCH_DEP_65 */
@@ -39,11 +40,8 @@
 #include "postk_print_sysreg.c"
 
 #ifdef DEBUG_PRINT_CPU
-#define dkprintf kprintf
-#define ekprintf kprintf
-#else
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define ekprintf kprintf
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 #define BUG_ON(condition) do { if (condition) { kprintf("PANIC: %s: %s(line:%d)\n",\

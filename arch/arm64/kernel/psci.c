@@ -21,15 +21,13 @@
 #include <ihk/debug.h>
 #include <compiler.h>
 #include <lwk/compiler.h>
+#include <debug.h>
 
 //#define DEBUG_PRINT_PSCI
 
 #ifdef DEBUG_PRINT_PSCI
-#define dkprintf(...) kprintf(__VA_ARGS__)
-#define ekprintf(...) kprintf(__VA_ARGS__)
-#else
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define ekprintf(...) kprintf(__VA_ARGS__)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 #define PSCI_POWER_STATE_TYPE_POWER_DOWN	1

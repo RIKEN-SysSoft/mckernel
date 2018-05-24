@@ -9,29 +9,29 @@ PHDRS
 SECTIONS
 {
 	. = SIZEOF_HEADERS;
-    . = ALIGN(4096);
+	. = ALIGN(4096);
 	.text :	{
-	      *(.text)
+		*(.text)
 	} :text
 	.data : {
-	      *(.data)
-	      *(.data.*)
+		*(.data)
+		*(.data.*)
 	} :data
 	.rodata : {
-	      *(.rodata .rodata.*)
+		*(.rodata .rodata.*)
 	} :data
 
 	. = ALIGN(8);
 	.bss : {
-	     _bss_start = .;
-	     *(.bss .bss.*)
-	     _bss_end = .;
-         . = ALIGN(4096);
-         _stack_end = .;
-    } :data
+		_bss_start = .;
+		*(.bss .bss.*)
+		_bss_end = .;
+		. = ALIGN(4096);
+		_stack_end = .;
+	} :data
 
 	/DISCARD/ : {
-	     *(.eh_frame)
-         *(.note.gnu.build-id)
+		*(.eh_frame)
+		*(.note.gnu.build-id)
 	}
 }

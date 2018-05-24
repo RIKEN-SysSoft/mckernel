@@ -112,6 +112,19 @@ strrchr(const char *s, int c)
 	return (char *)last;
 } /* strrchr() */
 
+char *strpbrk(const char *s, const char *accept)
+{
+	const char *a;
+
+	do {
+		for (a = accept; *a; a++)
+			if (*s == *a)
+				return (char *)s;
+	} while (*(s++));
+
+	return NULL;
+}
+
 char *strstr(const char *haystack, const char *needle)
 {
 	int len = strlen(needle);
