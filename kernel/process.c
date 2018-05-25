@@ -3262,7 +3262,7 @@ redo:
 	set_timer();
 
 	if (switch_ctx) {
-		kprintf("schedule: %d => %d \n",
+		dkprintf("schedule: %d => %d \n",
 		        prev ? prev->tid : 0, next ? next->tid : 0);
 
 		if (prev && prev->ptrace_debugreg) {

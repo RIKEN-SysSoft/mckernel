@@ -72,7 +72,7 @@
 
 #define SYSCALL_BY_IKC
 
-#define DEBUG_PRINT_SC
+//#define DEBUG_PRINT_SC
 
 #ifdef DEBUG_PRINT_SC
 #define	dkprintf(...) kprintf(__VA_ARGS__)
@@ -82,7 +82,7 @@
 #define	ekprintf(...) kprintf(__VA_ARGS__)
 #endif
 
-#define DEBUG_UTI
+//#define DEBUG_UTI
 #ifdef DEBUG_UTI
 #define uti_dkprintf(...) do { ((uti_clv && linux_printk) ? (*linux_printk) : kprintf)(__VA_ARGS__); } while (0)
 #else
@@ -471,7 +471,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		preempt_enable();
 	}
 
-	dkprintf("%s: syscall num: %d got host reply: %d,pid=%d,tid=%d\n",			__FUNCTION__, req->number, res.ret, thread->proc->pid, thread->tid);
+	dkprintf("%s: syscall num: %d got host reply: %lx,pid=%d,tid=%d\n",			__FUNCTION__, req->number, res.ret, thread->proc->pid, thread->tid);
 
 	rc = res.ret;
 
@@ -2532,7 +2532,7 @@ retry_tid:
 					goto retry_tid;
 				}
 				new->tid = newproc->tids[i].tid;
-				kprintf("%s: tid %d assigned to %p\n", __FUNCTION__, new->tid, new);
+				dkprintf("%s: tid %d assigned to %p\n", __FUNCTION__, new->tid, new);
 				break;
 			}
 		}
@@ -5652,7 +5652,7 @@ do_exit(int code)
 	int exit_status = (code >> 8) & 255;
 	int sig = code & 255;
 
-	kprintf("%s: pid=%d,tid=%d\n", __FUNCTION__, proc->pid, thread->tid);
+	dkprintf("%s: pid=%d,tid=%d\n", __FUNCTION__, proc->pid, thread->tid);
 
 	mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
 	nproc = 0;
@@ -8065,7 +8065,7 @@ SYSCALL_DECLARE(mremap)
 		if (range->memobj) {
 			memobj_ref(range->memobj);
 		}
-		kprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)newstart, (unsigned long)newend);
+		dkprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)newstart, (unsigned long)newend);
 		error = add_process_memory_range(thread->vm, newstart, newend, -1,
 				range->flag, range->memobj,
 				range->objoff + (oldstart - range->start),
@@ -9275,7 +9275,7 @@ util_thread(struct uti_attr *arg)
 	request.args[4] = uti_desc;
 	thread->thread_offloaded = 1;
 	rc = do_syscall(&request, ihk_mc_get_processor_id(), 0);
-	kprintf("%s: returned from do_syscall,tid=%d,rc=%lx\n", __FUNCTION__, thread->tid, rc);
+	dkprintf("%s: returned from do_syscall,tid=%d,rc=%lx\n", __FUNCTION__, thread->tid, rc);
 
 	util_show_syscall_profile();
 
@@ -9472,7 +9472,7 @@ SYSCALL_DECLARE(util_register_desc)
 {
 	struct thread *thread = cpu_local_var(current);
 	uti_desc = ihk_mc_syscall_arg0(ctx);
-	kprintf("%s: tid=%d,uti_desc=%lx\n", __FUNCTION__, thread->tid, uti_desc);
+	dkprintf("%s: tid=%d,uti_desc=%lx\n", __FUNCTION__, thread->tid, uti_desc);
 	return 0;
 }
 
