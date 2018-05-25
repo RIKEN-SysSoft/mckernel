@@ -9228,8 +9228,7 @@ int util_show_syscall_profile()
 	return 0;
 }
 
-int
-util_thread(struct uti_attr *arg)
+int util_thread(struct uti_attr *arg)
 {
 	volatile unsigned long *context;
 	unsigned long pcontext;
