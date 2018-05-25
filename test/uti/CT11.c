@@ -97,14 +97,14 @@ void *util_thread(void *arg) {
 			break;
 		case __NR_ioctl:
 			if((fds[0] = open("/dev/hello", O_RDWR)) < 0) {
-				fprintf(stderr, "oepn failed: %s\n", strerror(errno));
+				fprintf(stderr, "ioctl, open failed: %s\n", strerror(errno));
 				exit(1);
 			}
 			break;
 		case __NR_read:
 		case __NR_write:
 			if((fds[0] = open("./file", O_RDWR)) < 0) {
-				fprintf(stderr, "oepn failed: %s\n", strerror(errno));
+				fprintf(stderr, "write, open failed: %s\n", strerror(errno));
 				exit(1);
 			}
 			break;
@@ -157,7 +157,7 @@ void *util_thread(void *arg) {
 				break;
 			case __NR_open:
 				if((fds[j] = open("./file", O_RDONLY)) < 0) {
-					fprintf(stderr, "%s failed: %s\n", syscall_names[i], strerror(errno));
+					fprintf(stderr, "%s ./file failed: %s\n", syscall_names[i], strerror(errno));
 				}
 				break;
 			case __NR_ioctl:

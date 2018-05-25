@@ -39,8 +39,9 @@ util_thread(void *arg)
 		fprintf(stderr, "CT07005 fork NG rc=%ld errno=%d\n", rc, errno);
 	}
 
-#if 0
-	syscall(SYS_vfork);
+#if 0 /* It looks like syscall_intercept can't hook vfork */
+	rc = syscall(SYS_vfork);
+	//rc = vfork();
 	if (rc == -1 && errno == ENOSYS) {
 		fprintf(stderr, "CT07006 vfork OK\n");
 	}
