@@ -905,10 +905,13 @@ void rus_page_hash_put_pages(void)
 				dprintk("%s: INFO: put_page,pa=%lx000,compound=%d,_count=%d\n", __FUNCTION__, page_to_pfn(page), compound, _count);
 			}
 #if 1 /* debug */ /* It looks like a live page (page backed by /dev/shm/<name>?) is dropped when using uti */
-			if (_count != 1) 
+			if (_count != 1) {
 #endif
-			put_page(rp_iter->page);
-			kfree(rp_iter);
+				put_page(rp_iter->page);
+				kfree(rp_iter);
+#if 1
+			}
+#endif
 		}
 	}
 
