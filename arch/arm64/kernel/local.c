@@ -1,4 +1,4 @@
-/* local.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
+/* local.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
 #include <cpulocal.h>
 #include <ihk/atomic.h>
 #include <ihk/mm.h>
@@ -21,9 +21,17 @@ void init_processors_local(int max_id)
 {
 	int i = 0;
 	union arm64_cpu_local_variables *tmp;
+	int npages = ((max_id + 1) * (KERNEL_STACK_SIZE / PAGE_SIZE));
+
+	if (npages < 1) {
+		panic("idle kernel stack allocation failed.");
+	}
 
 	/* allocate one more for alignment */
-	locals = ihk_mc_alloc_pages((max_id + 1) * (KERNEL_STACK_SIZE / PAGE_SIZE), IHK_MC_AP_CRITICAL);
+	locals = ihk_mc_alloc_pages(npages, IHK_MC_AP_CRITICAL);
+	if (locals == NULL) {
+		panic("idle kernel stack allocation failed.");
+	}
 	locals = (union arm64_cpu_local_variables *)ALIGN_UP((unsigned long)locals, KERNEL_STACK_SIZE);
 
 	/* clear struct process, struct process_vm, struct thread_info area */
