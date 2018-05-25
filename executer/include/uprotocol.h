@@ -261,7 +261,11 @@ struct release_user_space_desc {
 struct terminate_thread_desc {
 	int pid;
 	int tid;
-	long sig;
+
+	long code; 
+	/* 32------32  31--16  15--------8  7----0
+       exit_group          exit-status  signal */
+
 	unsigned long tsk; /* struct task_struct * */
 };
 
