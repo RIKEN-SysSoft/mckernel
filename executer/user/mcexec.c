@@ -1852,7 +1852,7 @@ join_all_threads()
 	do {
 		live_thread = 0;
 		for (tp = thread_data; tp; tp = tp->next) {
-			if (tp->joined && tp->detached)
+			if (tp->joined || tp->detached)
 				continue;
 			live_thread = 1;
 			pthread_join(tp->thread_id, NULL);
