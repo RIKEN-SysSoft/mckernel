@@ -2736,10 +2736,8 @@ mcexec_terminate_thread(ihk_os_t os, struct terminate_thread_desc * __user arg)
 		rc = -ESRCH;
 		goto unlock_out;
 	}
-#ifndef DEBUG_UTI /* debug */
 	list_del(&thread->list);
 	kfree(thread);
-#endif
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
 	rc = mcexec_terminate_thread_unsafe(os, desc.pid, desc.tid, desc.sig, (struct task_struct *)desc.tsk);
