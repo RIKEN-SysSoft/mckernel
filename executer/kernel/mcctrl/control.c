@@ -2571,7 +2571,8 @@ mcexec_terminate_thread(ihk_os_t os, struct terminate_thread_desc * __user arg)
 	struct host_thread *thread_iter, *thread = NULL;
 
     if (copy_from_user(&desc, arg, sizeof(struct terminate_thread_desc))) {
-        return -EFAULT;
+		rc = -EFAULT;
+		goto out;
     }
 
 	dprintk("%s: target pid=%d,tid=%d\n", __FUNCTION__, desc.pid, desc.tid);
@@ -2585,8 +2586,9 @@ mcexec_terminate_thread(ihk_os_t os, struct terminate_thread_desc * __user arg)
 		}
 	}
 	if (!thread) {
-		printk("%s: thread not found in host_threads list\n", __FUNCTION__);
-		return -ESRCH;
+		printk("%s: ERROR: thread (pid=%d,tid=%d) not found in host_threads\n", __FUNCTION__, desc.pid, desc.tid);
+		rc = -ESRCH;
+		goto unlock_out;
 	}
 #if 1 /* debug */
 	list_del(&thread->list);
@@ -2596,7 +2598,12 @@ mcexec_terminate_thread(ihk_os_t os, struct terminate_thread_desc * __user arg)
 
 	rc = mcexec_terminate_thread_unsafe(os, desc.pid, desc.tid, desc.sig, (struct task_struct *)desc.tsk);
 
+ out:
 	return rc;
+
+ unlock_out:
+	write_unlock_irqrestore(&host_thread_lock, flags);
+	goto out;
 }
 
 static long mcexec_release_user_space(struct release_user_space_desc *__user arg)
