@@ -3128,11 +3128,9 @@ void spin_sleep_or_schedule(void)
 		}
 		ihk_mc_spinlock_unlock(&thread->spin_sleep_lock, irqstate);
 
-#ifdef POSTK_DEBUG_TEMP_FIX_56 /* in futex_wait() signal handring fix. */
 		if (hassigpending(cpu_local_var(current))) {
 			woken = 1;
 		}
-#endif /* POSTK_DEBUG_TEMP_FIX_56 */
 
 		if (woken) {
 			return;
