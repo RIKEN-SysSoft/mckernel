@@ -2247,7 +2247,7 @@ void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet,
 	unsigned long phys;
 	struct syscall_response *res;
 
-	dprintk("%s: number=%ld,rtid=%d,ttid=%d\n", __FUNCTION__, packet->req.number, packet->req.rtid, packet->req.ttid);
+	dprintk("%s: number=%ld,rtid=%d,ttid=%d,ret=%lx\n", __FUNCTION__, packet->req.number, packet->req.rtid, packet->req.ttid, ret);
 
 	phys = ihk_device_map_memory(ihk_os_to_dev(os),
 			packet->resp_pa, sizeof(*res));

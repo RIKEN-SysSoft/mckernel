@@ -72,7 +72,7 @@
 
 #define SYSCALL_BY_IKC
 
-#define DEBUG_PRINT_SC
+//#define DEBUG_PRINT_SC
 
 #ifdef DEBUG_PRINT_SC
 #define	dkprintf(...) kprintf(__VA_ARGS__)
@@ -82,7 +82,7 @@
 #define	ekprintf(...) kprintf(__VA_ARGS__)
 #endif
 
-#define DEBUG_UTI
+//#define DEBUG_UTI
 #ifdef DEBUG_UTI
 #define uti_dkprintf(...) do { ((uti_clv && linux_printk) ? (*linux_printk) : kprintf)(__VA_ARGS__); } while (0)
 #else
@@ -2532,7 +2532,7 @@ retry_tid:
 					goto retry_tid;
 				}
 				new->tid = newproc->tids[i].tid;
-				kprintf("%s: tid %d assigned to %p\n", __FUNCTION__, new->tid, new);
+				dkprintf("%s: tid %d assigned to %p\n", __FUNCTION__, new->tid, new);
 				break;
 			}
 		}
@@ -5651,7 +5651,7 @@ do_exit(int code)
 	int exit_status = (code >> 8) & 255;
 	int sig = code & 255;
 
-	kprintf("%s: pid=%d,tid=%d\n", __FUNCTION__, proc->pid, thread->tid);
+	dkprintf("%s: pid=%d,tid=%d\n", __FUNCTION__, proc->pid, thread->tid);
 
 	mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
 	nproc = 0;
@@ -8063,7 +8063,7 @@ SYSCALL_DECLARE(mremap)
 		if (range->memobj) {
 			memobj_ref(range->memobj);
 		}
-		kprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)newstart, (unsigned long)newend);
+		dkprintf("%s: %lx - %lx\n", __FUNCTION__, (unsigned long)newstart, (unsigned long)newend);
 		error = add_process_memory_range(thread->vm, newstart, newend, -1,
 				range->flag, range->memobj,
 				range->objoff + (oldstart - range->start),
