@@ -1177,6 +1177,7 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 
 #ifdef DEBUG_UTI
 			if (atomic_read(&ptd->refcount) <= 0) {
+				printk("%s: WARNING: refcount is %d,tid=%d\n", __FUNCTION__, atomic_read(&ptd->refcount), ptd->tid);
 				continue;
 			}
 #endif
