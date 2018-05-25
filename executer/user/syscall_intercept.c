@@ -23,7 +23,7 @@ hook(long syscall_number,
 	//return 1; /* debug */
 	int tid = uti_syscall0(__NR_gettid);
 	struct terminate_thread_desc term_desc;
-	unsigned long sig;
+	unsigned long code;
 		
 	if (!uti_desc.start_syscall_intercept) {
 		return 1; /* System call isn't taken over */
@@ -79,15 +79,15 @@ hook(long syscall_number,
 		}
 		break;
 	case __NR_exit_group:
-		sig = 0x100000000;
+		code = 0x100000000;
 		goto make_remote_thread_exit;
 	case __NR_exit:
-		sig = 0;
+		code = 0;
 	make_remote_thread_exit:
 		/* Make migrated-to-Linux thread on the McKernel side call do_exit() or terminate() */
 		term_desc.pid = uti_desc.pid;
 		term_desc.tid = uti_desc.tid; /* tid of mcexec */
-		term_desc.sig = sig | (arg0 << 8);
+		term_desc.code = code | ((arg0 & 255) << 8);
 		term_desc.tsk = uti_desc.key;
 
 		uti_syscall3(__NR_ioctl, uti_desc.fd, MCEXEC_UP_TERMINATE_THREAD, (long)&term_desc);

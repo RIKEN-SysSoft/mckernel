@@ -1282,8 +1282,8 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 						printk("%s: ERROR: wqhln_iter->task=%p,rtid=%d,&ppd->wq_list_lock=%p\n", __FUNCTION__, wqhln_iter->task, wqhln_iter->rtid, &ppd->wq_list_lock);
 					} else if(wqhln_iter->req) {
 						/* list_del() is called after woken-up */
-						printk("%s: INFO: target thread (tid=%d) is busy, wqhln_iter->req=%d,rtid=%d,&ppd->wq_list_lock=%p\n", __FUNCTION__, packet->req.ttid, wqhln_iter->req, wqhln_iter->rtid, &ppd->wq_list_lock);
-						printk("%s: (packet_handler) rtid: %d, ttid: %d, sys nr: %lu, arg0: %lx\n",
+						dprintk("%s: INFO: target thread (tid=%d) is busy, wqhln_iter->req=%d,rtid=%d,&ppd->wq_list_lock=%p\n", __FUNCTION__, packet->req.ttid, wqhln_iter->req, wqhln_iter->rtid, &ppd->wq_list_lock);
+						dprintk("%s: (packet_handler) rtid: %d, ttid: %d, sys nr: %lu, arg0: %lx\n",
 							   __FUNCTION__,
 							   packet->req.rtid,
 							   packet->req.ttid,
@@ -2554,7 +2554,7 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	thread->handler = info;
 	thread->task = current;
 
-	printk("%s: Adding a thread (pid=%d,tid=%d) to host_threads\n", __FUNCTION__, task_tgid_vnr(current), task_pid_vnr(current));
+	dprintk("%s: Adding a thread (pid=%d,tid=%d) to host_threads\n", __FUNCTION__, task_tgid_vnr(current), task_pid_vnr(current));
 	write_lock_irqsave(&host_thread_lock, flags);
 	list_add_tail(&thread->list, &host_threads);
 	write_unlock_irqrestore(&host_thread_lock, flags);
@@ -2608,14 +2608,14 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 	return ret;
 }
 
-static long mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct task_struct *tsk)
+static long mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long code, struct task_struct *tsk)
 {
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
 	struct mcctrl_per_thread_data *ptd;
 	struct ikc_scd_packet *packet;
 
-	dprintk("%s: target pid=%d,tid=%d,sig=%lx,task=%p\n", __FUNCTION__, pid, tid, sig, tsk);
+	dprintk("%s: target pid=%d,tid=%d,code=%lx,task=%p\n", __FUNCTION__, pid, tid, code, tsk);
 
 	ppd = mcctrl_get_per_proc_data(usrdata, pid);
 	if (!ppd) {
@@ -2644,7 +2644,7 @@ static long mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long s
 
 	if (__sync_sub_and_fetch(&packet->refcount, 1) == 0) {
 		dprintk("%s: calling __return_syscall (uti),target pid=%d,tid=%d\n", __FUNCTION__, ppd->pid, packet->req.rtid);
-		__return_syscall(usrdata->os, packet, sig, tid);
+		__return_syscall(usrdata->os, packet, code, tid);
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 							   (usrdata->ikc2linux[smp_processor_id()] ?
 								usrdata->ikc2linux[smp_processor_id()] :
@@ -2713,7 +2713,7 @@ mcexec_terminate_thread(ihk_os_t os, struct terminate_thread_desc * __user arg)
 #endif
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
-	rc = mcexec_terminate_thread_unsafe(os, desc.pid, desc.tid, desc.sig, (struct task_struct *)desc.tsk);
+	rc = mcexec_terminate_thread_unsafe(os, desc.pid, desc.tid, desc.code, (struct task_struct *)desc.tsk);
 
  out:
 	return rc;
