@@ -1,4 +1,4 @@
-/* arch-memory.h COPYRIGHT FUJITSU LIMITED 2015-2017 */
+/* arch-memory.h COPYRIGHT FUJITSU LIMITED 2015-2018 */
 #ifndef __HEADER_ARM64_COMMON_ARCH_MEMORY_H
 #define __HEADER_ARM64_COMMON_ARCH_MEMORY_H
 
@@ -215,7 +215,7 @@ static const unsigned int  PTL1_ENTRIES = __PTL1_ENTRIES;
 #define PAGE_P2ALIGN        0
 #define page_offset(addr)   __page_offset(addr, PAGE_SIZE)
 #define page_align(addr)    __page_align(addr, PAGE_SIZE)
-#define page_align_up(addr) __page_align_up((addr, PAGE_SIZE)
+#define page_align_up(addr) __page_align_up(addr, PAGE_SIZE)
 
 /*
  * large page
