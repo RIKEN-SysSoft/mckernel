@@ -2861,7 +2861,7 @@ long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 							  param.args[3], param.args[4], param.args[5], param.uti_clv, (void *)&resp, (void *)uti_wait_event, (void *)uti_printk, (void *)uti_clock_gettime);
 		param.ret = rc;
 	} else {
-			printk("%s: syscall_backward, SC %d, tid %d\n", __FUNCTION__, param.number, task_tgid_vnr(current));
+			dprintk("%s: syscall_backward, SC %d, tid %d\n", __FUNCTION__, param.number, task_tgid_vnr(current));
 			rc = syscall_backward(ihk_host_os_get_usrdata(os), param.number,
 								  param.args[0], param.args[1], param.args[2],
 								  param.args[3], param.args[4], param.args[5],

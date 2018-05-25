@@ -2073,7 +2073,7 @@ save_uctx(void *uctx, struct x86_user_context *regs)
 	ihk_mc_arch_get_special_register(IHK_ASR_X86_FS, &ctx->fs);
 	ctx->fregsize = 0;
 
-	kprintf("%s: rcx=%lx,rip=%lx\n", __FUNCTION__, ctx->rcx, ctx->rip);
+	dkprintf("%s: rcx=%lx,rip=%lx\n", __FUNCTION__, ctx->rcx, ctx->rip);
 }
 
 int do_process_vm_read_writev(int pid, 
