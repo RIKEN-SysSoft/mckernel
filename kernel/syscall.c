@@ -68,14 +68,14 @@
 
 #define SYSCALL_BY_IKC
 
-#define DEBUG_PRINT_SC
+//#define DEBUG_PRINT_SC
 
 #ifdef DEBUG_PRINT_SC
 #undef DDEBUG_DEFAULT
 #define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
-#define DEBUG_UTI
+//#define DEBUG_UTI
 #ifdef DEBUG_UTI
 #define uti_dkprintf(...) do { ((uti_clv && linux_printk) ? (*linux_printk) : kprintf)(__VA_ARGS__); } while (0)
 #else
