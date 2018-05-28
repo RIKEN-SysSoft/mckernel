@@ -661,14 +661,14 @@ static void armv8pmu_enable_user_access_pmu_regs(void)
 {
 	uint32_t value = 0;
 	value = read_sysreg(pmuserenr_el0);
-	write_sysreg(value | ARMV8_PMU_USERENR_EN, pmuserenr_el0);
+	write_sysreg(value | (ARMV8_PMU_USERENR_ER | ARMV8_PMU_USERENR_CR), pmuserenr_el0);
 }
 
 static void armv8pmu_disable_user_access_pmu_regs(void)
 {
 	uint32_t value = 0;
 	value = read_sysreg(pmuserenr_el0);
-	write_sysreg(value & ~ARMV8_PMU_USERENR_EN, pmuserenr_el0);
+	write_sysreg(value & ~(ARMV8_PMU_USERENR_ER | ARMV8_PMU_USERENR_CR), pmuserenr_el0);
 }
 
 static void armv8pmu_create_pmceid_bitmap(unsigned long *bitmap, uint32_t nbits)
