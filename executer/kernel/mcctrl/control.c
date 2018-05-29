@@ -2440,7 +2440,7 @@ long
 mcexec_util_thread1(ihk_os_t os, unsigned long arg, struct file *file)
 {
 	void **__user uparam = (void ** __user)arg;
-	void *param[6];
+	void *param[7];
 	unsigned long p_rctx;
 	unsigned long phys;
 	void *__user u_rctx;
@@ -2450,7 +2450,7 @@ mcexec_util_thread1(ihk_os_t os, unsigned long arg, struct file *file)
 	unsigned long free_size;
 	unsigned long icurrent = (unsigned long)current;
 
-	if(copy_from_user(param, uparam, sizeof(void *) * 6)) {
+	if(copy_from_user(param, uparam, sizeof(void *) * 7)) {
 		return -EFAULT;
 	}
 	p_rctx = (unsigned long)param[0];
@@ -2471,6 +2471,7 @@ mcexec_util_thread1(ihk_os_t os, unsigned long arg, struct file *file)
 
 	((unsigned long *)rctx)[0] = free_address;
 	((unsigned long *)rctx)[1] = free_size;
+	((unsigned long *)rctx)[2] = (unsigned long)param[6];
 
 #ifdef CONFIG_MIC
 	iounmap(rctx);
