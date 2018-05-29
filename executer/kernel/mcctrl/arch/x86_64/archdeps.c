@@ -290,6 +290,14 @@ get_fs_ctx(void *ctx)
 	return tctx->fs;
 }
 
+unsigned long
+get_rsp_ctx(void *ctx)
+{
+	struct trans_uctx *tctx = ctx;
+
+	return tctx->rsp;
+}
+
 #ifdef POSTK_DEBUG_ARCH_DEP_83 /* arch depend translate_rva_to_rpa() move */
 int translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva,
 		unsigned long *rpap, unsigned long *pgsizep)

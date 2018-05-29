@@ -1307,10 +1307,13 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 							   packet->req.args[0]);
 					} else {
 						wqhln = wqhln_iter;
-						//printk("%s: uti, worker with tid of %d found in wq_list\n", __FUNCTION__, packet->req.ttid);
+						dprintk("%s: uti: INFO: target worker (tid=%d) found in wq_list\n", __FUNCTION__, packet->req.ttid);
 					}
 					break;
 				}
+			}
+			if (!wqhln) {
+				dprintk("%s: uti: INFO: target worker (tid=%d) not found in wq_list\n", __FUNCTION__, packet->req.ttid);
 			}
 		} else {
 			if (!wqhln) {
@@ -1349,7 +1352,7 @@ retry_alloc:
 		wqhln->task = NULL;
 		/* Let the mcexec thread to handle migrate-to-Linux request in mcexec_wait_syscall() after finishing the current task */
 		if (packet->req.number == __NR_sched_setaffinity && packet->req.args[0] == 0) {
-			//printk("%s: uti, request worker with tid of %d\n", __FUNCTION__, packet->req.ttid);
+			dprintk("%s: uti: INFO: target worker (tid=%d) is busy, so add a new wqhln to wq_req_list\n", __FUNCTION__, packet->req.ttid);
 			wqhln->rtid = packet->req.ttid;
 		} else {
 			wqhln->rtid = 0;
@@ -2509,89 +2512,90 @@ extern void set_user_sp(unsigned long);
 extern void restore_fs(unsigned long fs);
 extern void save_fs_ctx(void *);
 extern unsigned long get_fs_ctx(void *);
+extern unsigned long get_rsp_ctx(void *);
 
-long
-mcexec_util_thread1(ihk_os_t os, unsigned long arg, struct file *file)
+long mcexec_uti_get_ctx(ihk_os_t os, struct uti_get_ctx_desc __user *udesc)
 {
-	void **__user uparam = (void ** __user)arg;
-	void *param[7];
-	unsigned long p_rctx;
+	struct uti_get_ctx_desc desc;
 	unsigned long phys;
-	void *__user u_rctx;
-	void *rctx;
+	struct uti_ctx *rctx;
 	int rc = 0;
-	unsigned long free_address;
-	unsigned long free_size;
 	unsigned long icurrent = (unsigned long)current;
 
-	if(copy_from_user(param, uparam, sizeof(void *) * 7)) {
-		return -EFAULT;
-	}
-	p_rctx = (unsigned long)param[0];
-	u_rctx = (void *__user)param[1];
-	free_address = (unsigned long)param[4];
-	free_size = (unsigned long)param[5];
-
-	phys = ihk_device_map_memory(ihk_os_to_dev(os), p_rctx, PAGE_SIZE);
-#ifdef CONFIG_MIC
-	rctx = ioremap_wc(phys, PAGE_SIZE);
-#else
-	rctx = ihk_device_map_virtual(ihk_os_to_dev(os), phys, PAGE_SIZE, NULL, 0);
-#endif
-	if(copy_to_user(u_rctx, rctx, PAGE_SIZE) ||
-	   copy_to_user((unsigned long *)(uparam + 3), &icurrent,
-	                sizeof(unsigned long)))
+	if(copy_from_user(&desc, udesc, sizeof(struct uti_get_ctx_desc))) {
 		rc = -EFAULT;
+		goto out;
+	}
 
-	((unsigned long *)rctx)[0] = free_address;
-	((unsigned long *)rctx)[1] = free_size;
-	((unsigned long *)rctx)[2] = (unsigned long)param[6];
+	phys = ihk_device_map_memory(ihk_os_to_dev(os), desc.rp_rctx, sizeof(struct uti_ctx));
+#ifdef CONFIG_MIC
+	rctx = ioremap_wc(phys, sizeof(struct uti_ctx));
+#else
+	rctx = ihk_device_map_virtual(ihk_os_to_dev(os), phys, sizeof(struct uti_ctx), NULL, 0);
+#endif
+	if (copy_to_user(desc.rctx, rctx->ctx, sizeof(struct uti_ctx))) {
+		rc = -EFAULT;
+		goto unmap_and_out;
+	}
 
+	if (copy_to_user(&udesc->key, &icurrent, sizeof(unsigned long))) {
+		rc = -EFAULT;
+		goto unmap_and_out;
+	}
+	
+	rctx->uti_refill_tid = desc.uti_refill_tid;
+
+ unmap_and_out:
 #ifdef CONFIG_MIC
 	iounmap(rctx);
 #else
-	ihk_device_unmap_virtual(ihk_os_to_dev(os), rctx, PAGE_SIZE);
+	ihk_device_unmap_virtual(ihk_os_to_dev(os), rctx, sizeof(struct uti_ctx));
 #endif
-	ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
-
+	ihk_device_unmap_memory(ihk_os_to_dev(os), phys, sizeof(struct uti_ctx));
+ out:
 	return rc;
 }
 
-long
-mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
+long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc, struct file *file)
 {
+	int rc = 0;
 	void *usp = get_user_sp();
 	struct mcos_handler_info *info;
 	struct host_thread *thread;
 	unsigned long flags;
-	void **__user param = (void **__user )arg;
-	void *__user rctx = (void *__user)param[1];
-	void *__user lctx = (void *__user)param[2];
+	struct uti_save_fs_desc desc;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
 
+	if(copy_from_user(&desc, udesc, sizeof(struct uti_save_fs_desc))) {
+		printk("%s: Error: copy_from_user failed\n", __FUNCTION__);
+		rc = -EFAULT;
+		goto out;
+	}
+
 	dprintk("%s: pid=%d,tid=%d\n", __FUNCTION__, task_tgid_vnr(current), task_pid_vnr(current));
 
-	save_fs_ctx(lctx);
+	save_fs_ctx(desc.lctx);
 	info = ihk_os_get_mcos_private_data(file);
 	thread = kmalloc(sizeof(struct host_thread), GFP_KERNEL);
 	memset(thread, '\0', sizeof(struct host_thread));
 	thread->pid = task_tgid_vnr(current);
 	thread->tid = task_pid_vnr(current);
 	thread->usp = (unsigned long)usp;
-	thread->lfs = get_fs_ctx(lctx);
-	thread->rfs = get_fs_ctx(rctx);
+	thread->lfs = get_fs_ctx(desc.lctx);
+	thread->rfs = get_fs_ctx(desc.rctx);
 	thread->handler = info;
 	thread->task = current;
 
-	dprintk("%s: Adding a thread (pid=%d,tid=%d) to host_threads\n", __FUNCTION__, task_tgid_vnr(current), task_pid_vnr(current));
+	dprintk("%s: lfs=%lx,rfs=%lx,lsp=%lx,rsp=%lx\n", __FUNCTION__, get_fs_ctx(desc.lctx), get_fs_ctx(desc.rctx), get_rsp_ctx(desc.lctx), get_rsp_ctx(desc.rctx));
+
 	write_lock_irqsave(&host_thread_lock, flags);
 	list_add_tail(&thread->list, &host_threads);
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
 	/* How ppd refcount reaches zero depends on how utility-thread exits:
          (1) MCEXEC_UP_CREATE_PPD: set to 1
-         (2) mcexec_util_thread2: inc to 2
+         (2) mcexec_uti_save_fs: inc to 2
 		 (3) tracer detects exit/exit_group/killed by signal
              and calls mcexec_terminate_thread() to dec to 1
 	     (4) release_handler(): dec to 0
@@ -2601,7 +2605,8 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	*/
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 	pr_ppd("get", task_pid_vnr(current), ppd);
-	return 0;
+ out:
+	return rc;
 }
 
 /* Return value: 0 if target is uti thread, -EINVAL if not */
@@ -3272,11 +3277,11 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 	case MCEXEC_UP_SYS_UNSHARE:
 		return mcexec_sys_unshare((struct sys_unshare_desc *)arg);
 
-	case MCEXEC_UP_UTIL_THREAD1:
-		return mcexec_util_thread1(os, arg, file);
+	case MCEXEC_UP_UTI_GET_CTX:
+		return mcexec_uti_get_ctx(os, (struct uti_get_ctx_desc *)arg);
 
-	case MCEXEC_UP_UTIL_THREAD2:
-		return mcexec_util_thread2(os, arg, file);
+	case MCEXEC_UP_UTI_SAVE_FS:
+		return mcexec_uti_save_fs(os, (struct uti_save_fs_desc *)arg, file);
 
 	case MCEXEC_UP_SIG_THREAD:
 		return mcexec_sig_thread(os, arg, file);
