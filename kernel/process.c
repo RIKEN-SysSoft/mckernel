@@ -2670,6 +2670,21 @@ void __release_tid(struct process *proc, struct thread *thread) {
 	}
 }
 
+/* Replace tid specified by thread with tid specified by new_tid */
+void __find_and_replace_tid(struct process *proc, struct thread *thread, int new_tid) {
+	int i;
+
+	for (i = 0; i < proc->nr_tids; ++i) {
+		if (proc->tids[i].thread != thread) continue;
+
+		proc->tids[i].thread = NULL;
+		proc->tids[i].tid = new_tid;
+		kprintf("%s: tid %d (thread %p) has been relaced with tid %d\n",
+				__FUNCTION__, thread->tid, thread, new_tid);
+		break;
+	}
+}
+
 void destroy_thread(struct thread *thread)
 {
 	struct sig_pending *pending;
@@ -2693,7 +2708,11 @@ void destroy_thread(struct thread *thread)
 
 	mcs_rwlock_writer_lock(&proc->threads_lock, &lock);
 	list_del(&thread->siblings_list);
-	__release_tid(proc, thread);
+	if (thread->uti_state == UTI_STATE_EPILOGUE) {
+		__find_and_replace_tid(proc, thread, thread->uti_refill_tid);
+	} else {
+		__release_tid(proc, thread);
+	}
 	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 
 	mcs_rwlock_writer_unlock(&proc->update_lock, &updatelock);

@@ -1020,6 +1020,7 @@ pid_t master_tid;
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_barrier_t init_ready;
+pthread_barrier_t uti_init_ready;
 
 pthread_attr_t watchdog_thread_attr;
 pthread_t watchdog_thread;
@@ -1096,7 +1097,6 @@ static void *main_loop_thread_func(void *arg)
 	struct thread_data_s *td = (struct thread_data_s *)arg;
 
 	td->tid = gettid();
-	//printf("%s: uti, tid %d added to thread_data\n", __FUNCTION__, td->tid); fflush(stdout);
 	td->remote_tid = -1;
 	if (td->init_ready)
 		pthread_barrier_wait(td->init_ready);
@@ -1365,8 +1365,7 @@ void init_sigaction(void)
 
 static int max_cpuid;
 
-static int
-create_worker_thread(pthread_barrier_t *init_ready)
+static int create_worker_thread(struct thread_data_s **tp_out, pthread_barrier_t *init_ready)
 {
 	struct thread_data_s *tp;
 
@@ -1384,6 +1383,10 @@ create_worker_thread(pthread_barrier_t *init_ready)
 	tp->next = thread_data;
 	thread_data = tp;
 
+	if (tp_out) {
+		*tp_out = tp;
+	}
+
 	return pthread_create(&tp->thread_id, NULL, 
 	                      &main_loop_thread_func, tp);
 }
@@ -1397,7 +1400,7 @@ int init_worker_threads(int fd)
 
 	max_cpuid = 0;
 	for (i = 0; i <= n_threads; ++i) {
-		int ret = create_worker_thread(&init_ready);
+		int ret = create_worker_thread(NULL, &init_ready);
 
 		if (ret) {
 			printf("ERROR: creating syscall threads (%d), check ulimit?\n", ret);
@@ -2850,10 +2853,19 @@ static long util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, 
 	int i;
 	void *lctx;
 	void *rctx;
-	void *param[6];
+	void *param[7];
 	int rc = 0;
 
+	struct thread_data_s *tp;
 	void *uti_wp = (void*)-1;
+
+	pthread_barrier_init(&uti_init_ready, NULL, 2);
+	if ((rc = create_worker_thread(&tp, &uti_init_ready))) {
+		printf("%s: Error: create_worker_thread failed (%d)\n", __FUNCTION__, rc);
+		goto out;
+	}
+	pthread_barrier_wait(&uti_init_ready);
+	__dprintf("%s: worker tid: %d\n", __FUNCTION__, tp->tid);
 
 	uti_desc = (struct uti_desc *)_uti_desc;
 	if (!uti_desc) {
@@ -2886,8 +2898,8 @@ static long util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, 
 	rctx = (char *)lctx + PAGE_SIZE;
 #endif  /* POSTK_DEBUG_ARCH_DEP_35 */
 
-	param[0] = (void *)uctx_pa;
-	param[1] = rctx;
+	param[0] = (void *)uctx_pa; /* Source address, kernel space */
+	param[1] = rctx; /* Destination address, user space */
 	param[2] = lctx;
 	param[4] = uti_desc->wp;
 #ifdef POSTK_DEBUG_ARCH_DEP_35
@@ -2895,12 +2907,19 @@ static long util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, 
 #else	/* POSTK_DEBUG_ARCH_DEP_35 */
 	param[5] = (void *)(PAGE_SIZE * 3);
 #endif	/* POSTK_DEBUG_ARCH_DEP_35 */
+	param[6] = (void *)tp->tid;
+	printf("%s: param[6]=%ld,tid=%ld\n", __FUNCTION__, (long)param[6], (long)((void *)tp->tid));
+
+	__dprintf("%s: before MCEXEC_UP_UTIL_THREAD1\n", __FUNCTION__);
+
+	/* 1. Copy context from kernel space to user space 
+	   2. Write uti_wp addr, its size for McKernel to uctx_pa 
+	      Note that this overwrites context */
 	if ((rc = ioctl(fd, MCEXEC_UP_UTIL_THREAD1, param)) == -1) {
 		fprintf(stderr, "util_thread1: %d errno=%d\n", rc, errno);
 		rc = -errno;
 		goto out;
 	}
-	create_worker_thread(NULL);
 
 	/* Record the info of the thread migrating to Linux */
 	uti_desc->wp = uti_wp;
@@ -3344,7 +3363,7 @@ int main_loop(struct thread_data_s *my_thread)
 					//printf("%s: uti, __NR_gettid(): tid %d\n", __FUNCTION__, tp->tid);fflush(stdout);
 				}
 
-				for (; i < ncpu; ++i) {
+				for (; i < w.sr.args[4]; ++i) {
 					tids[i] = 0;
 				}
 
