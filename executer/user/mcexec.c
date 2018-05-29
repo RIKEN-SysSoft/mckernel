@@ -2845,20 +2845,18 @@ static void kill_thread(unsigned long tid, int sig)
 	}
 }
 
-static long util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, int remote_tid, unsigned long pattr, unsigned long uti_clv, unsigned long _uti_desc)
+static long util_thread(struct thread_data_s *my_thread, unsigned long rp_rctx, int remote_tid, unsigned long pattr, unsigned long uti_clv, unsigned long _uti_desc)
 {
-	int i;
-	void *lctx;
-	void *rctx;
-	void *param[7];
+	struct uti_get_ctx_desc get_ctx_desc;
+	struct uti_save_fs_desc save_fs_desc;
 	int rc = 0;
 
 	struct thread_data_s *tp;
-	void *uti_wp = (void*)-1;
 
 	pthread_barrier_init(&uti_init_ready, NULL, 2);
 	if ((rc = create_worker_thread(&tp, &uti_init_ready))) {
 		printf("%s: Error: create_worker_thread failed (%d)\n", __FUNCTION__, rc);
+		rc = -EINVAL;
 		goto out;
 	}
 	pthread_barrier_wait(&uti_init_ready);
@@ -2866,18 +2864,12 @@ static long util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, 
 
 	uti_desc = (struct uti_desc *)_uti_desc;
 	if (!uti_desc) {
-		fprintf(stderr, "%s: ERROR: uti_desc isn't set. Use mcexec.sh instead of mcexec\n", __FUNCTION__);
-		exit(1);
+		printf("%s: ERROR: uti_desc isn't set. Use mcexec.sh instead of mcexec\n", __FUNCTION__);
+		rc = -EINVAL;
+		goto out;
 	}
 
 	/* Initialize uti related variables for syscall_intercept */
-	
-	uti_wp = mmap(NULL, PAGE_SIZE * 3, PROT_READ | PROT_WRITE,
-	          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-	if (uti_wp == (void *)-1) {
-		exit(1);
-	}
-
 	uti_desc->fd = fd;
 
     rc = syscall(888);
@@ -2885,42 +2877,21 @@ static long util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, 
 		fprintf(stderr, "%s: WARNING: syscall_intercept returned %x\n", __FUNCTION__, rc);
 	}
 
-	/* Get the context of the thread migrating to Linux */
-#ifdef POSTK_DEBUG_ARCH_DEP_35
-	lctx = (char *)uti_wp + page_size;
-	rctx = (char *)lctx + page_size;
-#else
-	lctx = (char *)uti_wp + PAGE_SIZE;
-	rctx = (char *)lctx + PAGE_SIZE;
-#endif  /* POSTK_DEBUG_ARCH_DEP_35 */
+	/* Get the remote context, record refill tid */
+	get_ctx_desc.rp_rctx = rp_rctx;
+	get_ctx_desc.rctx = uti_desc->rctx;
+	get_ctx_desc.lctx = uti_desc->lctx;
+	get_ctx_desc.uti_refill_tid = tp->tid;
 
-	param[0] = (void *)uctx_pa; /* Source address, kernel space */
-	param[1] = rctx; /* Destination address, user space */
-	param[2] = lctx;
-	param[4] = uti_desc->wp;
-#ifdef POSTK_DEBUG_ARCH_DEP_35
-	param[5] = (void *)(page_size * 3);
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
-	param[5] = (void *)(PAGE_SIZE * 3);
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
-	param[6] = (void *)tp->tid;
-	printf("%s: param[6]=%ld,tid=%ld\n", __FUNCTION__, (long)param[6], (long)((void *)tp->tid));
-
-	__dprintf("%s: before MCEXEC_UP_UTIL_THREAD1\n", __FUNCTION__);
-
-	/* 1. Copy context from kernel space to user space 
-	   2. Write uti_wp addr, its size for McKernel to uctx_pa 
-	      Note that this overwrites context */
-	if ((rc = ioctl(fd, MCEXEC_UP_UTIL_THREAD1, param)) == -1) {
-		fprintf(stderr, "util_thread1: %d errno=%d\n", rc, errno);
+	if ((rc = ioctl(fd, MCEXEC_UP_UTI_GET_CTX, &get_ctx_desc))) {
+		fprintf(stderr, "%s: Error: MCEXEC_UP_UTI_GET_CTX failed (%d)\n", __FUNCTION__, errno);
 		rc = -errno;
 		goto out;
 	}
 
-	/* Record the info of the thread migrating to Linux */
-	uti_desc->wp = uti_wp;
+	/* Initialize uti thread info */
 	uti_desc->mck_tid = remote_tid;
-	uti_desc->key = (unsigned long)param[3]; /* key to find thread, i.e. struct task_struct * */
+	uti_desc->key = get_ctx_desc.key;
 	uti_desc->pid = getpid();
 	uti_desc->tid = gettid();
 	uti_desc->uti_clv = uti_clv;
@@ -2931,12 +2902,6 @@ static long util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, 
 		rc = -ENOMEM;
 		goto out;
 	}
-	for (i = 1; i <= 10; i++) {
-		uti_desc->syscall_param = (struct syscall_struct *)uti_desc->wp + i;
-		*(void **)uti_desc->syscall_param = uti_desc->syscall_param_top;
-		uti_desc->syscall_param_top = uti_desc->syscall_param;
-	}
-	memset(uti_desc->wp, '\0', sizeof(long));
 
 	if (pattr) {
 		struct uti_attr_desc desc;
@@ -2945,30 +2910,22 @@ static long util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, 
 		ioctl(fd, MCEXEC_UP_UTI_ATTR, &desc);
 	}
 
-	/* McKernel would create the thread detached, so detach myself */
-	if ((rc = pthread_detach(my_thread->thread_id)) < 0) {
-		fprintf(stderr, "%s: ERROR pthread_detach returned %d\n", __FUNCTION__, rc);
-		goto out;
-	}
-	my_thread->detached = 1;
-
 	/* Start intercepting syscalls. Note that it dereferences pointers in uti_desc. */
 	uti_desc->start_syscall_intercept = 1;
 
-	if ((rc = switch_ctx(fd, MCEXEC_UP_UTIL_THREAD2, param, lctx, rctx))
+	/* Save remote and local FS and then contex-switch */
+	save_fs_desc.rctx = uti_desc->rctx;
+	save_fs_desc.lctx = uti_desc->lctx;
+
+	if ((rc = switch_ctx(fd, MCEXEC_UP_UTI_SAVE_FS, &save_fs_desc, uti_desc->lctx, uti_desc->rctx))
 	    < 0) {
-		fprintf(stderr, "%s: ERROR switch_ctx returned %d\n", __FUNCTION__, rc);
+		fprintf(stderr, "%s: ERROR switch_ctx failed (%d)\n", __FUNCTION__, rc);
+		goto out;
 	}
-	fprintf(stderr, "return from util_thread2 rc=%d\n", rc);
-	pthread_exit(NULL);
+	fprintf(stderr, "%s: ERROR: Returned from switch_ctx (%d)\n", __FUNCTION__, rc);
+	rc = -EINVAL;
 
 out:
-	if (uti_desc != (void*)-1 && uti_desc->wp != (void*)-1)
-#ifdef POSTK_DEBUG_ARCH_DEP_35
-		munmap(uti_desc->wp, page_size * 3);
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
-		munmap(uti_desc->wp, PAGE_SIZE * 3);
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 	return rc;
 }
 
@@ -4049,10 +4006,8 @@ return_execve2:
 				                  w.sr.args[2], w.sr.args[3], w.sr.args[4]);
 			}
 			else {
-				ret = munmap((void *)w.sr.args[1],
-				             w.sr.args[2]);
-				if (ret == -1)
-					ret = -errno;
+				__eprintf("__NR_sched_setaffinity: invalid argument (%lx)\n", __FUNCTION__, w.sr.args[0]);
+				ret = -EINVAL;
 			}
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
