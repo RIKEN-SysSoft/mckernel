@@ -2672,7 +2672,7 @@ void __find_and_replace_tid(struct process *proc, struct thread *thread, int new
 
 		proc->tids[i].thread = NULL;
 		proc->tids[i].tid = new_tid;
-		kprintf("%s: tid %d (thread %p) has been relaced with tid %d\n",
+		dkprintf("%s: tid %d (thread %p) has been relaced with tid %d\n",
 				__FUNCTION__, thread->tid, thread, new_tid);
 		break;
 	}
