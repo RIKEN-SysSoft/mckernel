@@ -244,6 +244,11 @@ enum mpol_rebind_step {
 #define SPAWN_TO_REMOTE 1
 #define SPAWNING_TO_REMOTE 1001
 
+#define UTI_STATE_DEAD 0
+#define UTI_STATE_PROLOGUE 1
+#define UTI_STATE_RUNNING_IN_LINUX 2
+#define UTI_STATE_EPILOGUE 3
+
 #include <waitq.h>
 #include <futex.h>
 
@@ -713,10 +718,11 @@ struct thread {
 	struct waitq coredump_wq;
 	int coredump_status;
 
-	int thread_offloaded;
+	int uti_state;
 	int mod_clone;
 	struct uti_attr *mod_clone_arg;
 	int parent_cpuid;
+	int uti_refill_tid;
 
 	// for performance counter
 	unsigned long pmc_alloc_map;

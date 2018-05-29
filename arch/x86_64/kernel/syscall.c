@@ -1399,7 +1399,7 @@ done:
 	}
 
 	/* Forward signal to Linux by interrupt_syscall mechanism */
-	if (tthread->thread_offloaded) {
+	if (tthread->uti_state == UTI_STATE_RUNNING_IN_LINUX) {
 		kprintf("%s: calling interrupt_syscall,sig=%d\n", __FUNCTION__, sig);
 		if (!tthread->proc->nohost) {
 			interrupt_syscall(tthread, sig);
