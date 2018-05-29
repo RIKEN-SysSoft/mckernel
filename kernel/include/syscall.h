@@ -594,6 +594,15 @@ typedef struct uti_attr {
 	uint64_t flags; /* Representing location and behavior hints by bitmap */
 } uti_attr_t;
 
+struct uti_ctx {
+	union {
+		char ctx[4096];
+		struct {
+			int uti_refill_tid;
+		};
+	};
+}; 
+
 struct move_pages_smp_req {
 	unsigned long count;
 	const void **user_virt_addr;
