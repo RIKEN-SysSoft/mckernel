@@ -2357,6 +2357,8 @@ end:
 	return ret;
 }
 
+#define NR_TIDS (num_processors + 1) /* Plus one for utility thread */
+
 unsigned long do_fork(int clone_flags, unsigned long newsp,
                       unsigned long parent_tidptr, unsigned long child_tidptr,
                       unsigned long tlsblock_base, unsigned long curpc,
@@ -2455,14 +2457,14 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		mcs_rwlock_writer_lock(&newproc->threads_lock, &lock);
 		/* Obtain mcexec TIDs if not known yet */
 		if (!newproc->nr_tids) {
-			tids = kmalloc(sizeof(int) * num_processors, IHK_MC_AP_NOWAIT);
+			tids = kmalloc(sizeof(int) * NR_TIDS, IHK_MC_AP_NOWAIT);
 			if (!tids) {
 				mcs_rwlock_writer_unlock(&newproc->threads_lock, &lock);
 				release_cpuid(cpuid);
 				return -ENOMEM;
 			}
 
-			newproc->tids = kmalloc(sizeof(struct mcexec_tid) * num_processors, IHK_MC_AP_NOWAIT);
+			newproc->tids = kmalloc(sizeof(struct mcexec_tid) * NR_TIDS, IHK_MC_AP_NOWAIT);
 			if (!newproc->tids) {
 				mcs_rwlock_writer_unlock(&newproc->threads_lock, &lock);
 				kfree(tids);
@@ -2470,10 +2472,10 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 				return -ENOMEM;
 			}
 
-			settid(new, num_processors, tids);
+			settid(new, NR_TIDS, tids);
 
-			for (i = 0; (i < num_processors) && tids[i]; ++i) {
-				dkprintf("%s: tid[%d]: %d\n", __FUNCTION__, i, tids[i]);
+			for (i = 0; (i < NR_TIDS) && tids[i]; ++i) {
+				dkprintf("%s: tids[%d]: %d\n", __FUNCTION__, i, tids[i]);
 				newproc->tids[i].tid = tids[i];
 				newproc->tids[i].thread = NULL;
 				++newproc->nr_tids;
@@ -2502,7 +2504,10 @@ retry_tid:
 		/* TODO: spawn more mcexec threads */
 		if (!new->tid) {
 			release_cpuid(cpuid);
-			kprintf("%s: no more TIDs available\n");
+			kprintf("%s: no more TIDs available\n", __FUNCTION__);
+			for (i = 0; i < newproc->nr_tids; ++i) {
+				kprintf("%s: i=%d,tid=%d,thread=%p\n", __FUNCTION__, i, newproc->tids[i].tid, newproc->tids[i].thread);
+			}
 			return -ENOMEM;
 		}
 	}
@@ -9143,6 +9148,8 @@ int util_thread(struct uti_attr *arg)
 		struct uti_attr attr;
 	} kattr;
 
+	thread->uti_state = UTI_STATE_PROLOGUE;
+
 	context = (volatile unsigned long *)ihk_mc_alloc_pages(1,
 	                                                      IHK_MC_AP_NOWAIT);
 	if (!context) {
@@ -9170,15 +9177,20 @@ int util_thread(struct uti_attr *arg)
 	}
 	request.args[3] = (unsigned long)uti_clv;
 	request.args[4] = uti_desc;
-	thread->thread_offloaded = 1;
+	thread->uti_state = UTI_STATE_RUNNING_IN_LINUX;
 	rc = do_syscall(&request, ihk_mc_get_processor_id(), 0);
 	dkprintf("%s: returned from do_syscall,tid=%d,rc=%lx\n", __FUNCTION__, thread->tid, rc);
 
+	thread->uti_state = UTI_STATE_EPILOGUE;
+
 	util_show_syscall_profile();
 
-	thread->thread_offloaded = 0;
+	/* These are written by mcexec_util_thread1() */
 	free_address = context[0];
 	free_size = context[1];
+	thread->uti_refill_tid = context[2];
+	dkprintf("%s: mcexec worker tid=%d\n", __FUNCTION__, context[2]);
+	
 	ihk_mc_free_pages((void *)context, 1);
 	kfree(uti_clv);
 
