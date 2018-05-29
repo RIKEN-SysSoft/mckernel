@@ -24,6 +24,7 @@ hook(long syscall_number,
 	int tid = uti_syscall0(__NR_gettid);
 	struct terminate_thread_desc term_desc;
 	unsigned long code;
+	int stack_top;
 		
 	if (!uti_desc.start_syscall_intercept) {
 		return 1; /* System call isn't taken over */
@@ -50,34 +51,40 @@ hook(long syscall_number,
 	case __NR_munmap:
 	case __NR_mprotect:
 	case __NR_mremap:
-		if (!uti_desc.syscall_param_top) {
+		/* Overflow check */
+		if (uti_desc.syscall_stack_top == -1) {
 			*result = -ENOMEM;
 			return 0;
 		}
-		else {
-			/* Pop syscall_struct list for reentrant safety */
-			uti_desc.syscall_param = uti_desc.syscall_param_top;
-			uti_desc.syscall_param_top = *(void **)uti_desc.syscall_param;
-
-			uti_desc.syscall_param->number = syscall_number;
-			uti_desc.syscall_param->args[0] = arg0;
-			uti_desc.syscall_param->args[1] = arg1;
-			uti_desc.syscall_param->args[2] = arg2;
-			uti_desc.syscall_param->args[3] = arg3;
-			uti_desc.syscall_param->args[4] = arg4;
-			uti_desc.syscall_param->args[5] = arg5;
-			uti_desc.syscall_param->uti_clv = uti_desc.uti_clv;
-			uti_desc.syscall_param->ret = -EINVAL;
-			uti_syscall3(__NR_ioctl, uti_desc.fd, MCEXEC_UP_SYSCALL_THREAD, (long)uti_desc.syscall_param);
-			*result = uti_desc.syscall_param->ret;
-
-			/* push syscall_struct list */
-			*(void **)uti_desc.syscall_param = uti_desc.syscall_param_top;
-			uti_desc.syscall_param_top = uti_desc.syscall_param;
-
-			return 0; /* System call is taken over */
+	
+		/* Sanity check */
+		if (uti_desc.syscall_stack_top < 0 || uti_desc.syscall_stack_top >= UTI_SZ_SYSCALL_STACK) {
+			*result = -EINVAL;
+			return 0;
 		}
-		break;
+
+		/* Store the return value in the stack to prevent it from getting corrupted 
+		   when an interrupt happens just after ioctl() and before copying the return
+		   value to *result */
+		stack_top = __sync_fetch_and_sub(&uti_desc.syscall_stack_top, 1);
+		
+		uti_desc.syscall_stack[stack_top].number = syscall_number;
+		uti_desc.syscall_stack[stack_top].args[0] = arg0;
+		uti_desc.syscall_stack[stack_top].args[1] = arg1;
+		uti_desc.syscall_stack[stack_top].args[2] = arg2;
+		uti_desc.syscall_stack[stack_top].args[3] = arg3;
+		uti_desc.syscall_stack[stack_top].args[4] = arg4;
+		uti_desc.syscall_stack[stack_top].args[5] = arg5;
+		uti_desc.syscall_stack[stack_top].uti_clv = uti_desc.uti_clv;
+		uti_desc.syscall_stack[stack_top].ret = -EINVAL;
+
+		uti_syscall3(__NR_ioctl, uti_desc.fd, MCEXEC_UP_SYSCALL_THREAD, (long)(uti_desc.syscall_stack + stack_top));
+		*result = uti_desc.syscall_stack[stack_top].ret;
+		
+		/* push syscall_struct list */
+		__sync_fetch_and_add(&uti_desc.syscall_stack_top, 1);
+
+		return 0; /* System call is taken over */
 	case __NR_exit_group:
 		code = 0x100000000;
 		goto make_remote_thread_exit;
@@ -116,9 +123,13 @@ hook(long syscall_number,
 static __attribute__((constructor)) void
 init(void)
 {
-	// Set up the callback function
+	/* Set up the callback function */
 	intercept_hook_point = hook;
-	
+
+	/* Initialize uti_desc */
+	uti_desc.syscall_stack_top = UTI_SZ_SYSCALL_STACK - 1;
+
+	/* Pass address of uti_desc to McKernel */
 	uti_syscall1(733, (unsigned long)&uti_desc);
 }
 
