@@ -418,7 +418,7 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 		}
 		kfree(tmp);
 #else /* POSTK_DEBUG_TEMP_FIX_47 */
-		ans = written + 1;
+		ans = written;
 		eof = 1;
 #endif /* POSTK_DEBUG_TEMP_FIX_47 */
 		goto end;
