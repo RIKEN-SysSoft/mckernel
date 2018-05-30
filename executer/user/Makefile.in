@@ -11,7 +11,7 @@ MCKERNEL_INCDIR=@MCKERNEL_INCDIR@
 MCKERNEL_LIBDIR=@MCKERNEL_LIBDIR@
 KDIR ?= @KDIR@
 ARCH=@ARCH@
-CFLAGS=-Wall -O -I. -I$(VPATH)/arch/${ARCH} -I${IHKDIR}
+CFLAGS=-Wall -O -I. -I$(VPATH)/arch/${ARCH} -I${IHKDIR} -I@abs_builddir@/../../../ihk/linux/include
 LDFLAGS=@LDFLAGS@
 RPATH=$(shell echo $(LDFLAGS)|awk '{for(i=1;i<=NF;i++){if($$i~/^-L/){w=$$i;sub(/^-L/,"-Wl,-rpath,",w);print w}}}')
 VPATH=@abs_srcdir@
@@ -19,7 +19,7 @@ TARGET=mcexec libsched_yield ldump2mcdump.so
 @uncomment_if_ENABLE_MEMDUMP@TARGET+=eclair
 LIBS=@LIBS@
 IHKDIR ?= $(VPATH)/../../../ihk/linux/include/
-MCEXEC_LIBS=-lmcexec -lrt -lnuma -pthread
+MCEXEC_LIBS=-lmcexec -lrt -lnuma -pthread -L@abs_builddir@/../../../ihk/linux/user -lihk -Wl,-rpath,$(MCKERNEL_LIBDIR)
 ENABLE_QLMPI=@ENABLE_QLMPI@
 
 ifeq ($(ENABLE_QLMPI),yes)
