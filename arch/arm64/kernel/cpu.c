@@ -289,12 +289,23 @@ static inline void pwr_arm64hpc_write_imp_soc_standby_ctrl_el1(uint64_t set_bit,
 	ihk_mc_spinlock_unlock(&imp_soc_standby_ctrl_el1_lock, flags);
 }
 
-#ifdef ENABLE_HPCPWR
 static unsigned long* retention_state_flag;
+
+static inline int is_hpcpwr_available(void)
+{
+	if (retention_state_flag)
+		return 1;
+	else
+		return 0;
+}
+
 static inline void pwr_arm64hpc_map_retention_state_flag(void)
 {
 	extern unsigned long* ihk_param_retention_state_flag_pa;
 	unsigned long size = BITS_TO_LONGS(NR_CPUS) * sizeof(unsigned long);
+	if (!ihk_param_retention_state_flag_pa) {
+		return;
+	}
 	retention_state_flag = map_fixed_area(ihk_param_retention_state_flag_pa, size, 0);
 }
 
@@ -303,6 +314,11 @@ static inline int pwr_arm64hpc_retention_state_get(uint64_t *val)
 	unsigned long linux_core_id;
 	int cpu = ihk_mc_get_processor_id();
 	int ret;
+
+	if (!is_hpcpwr_available()) {
+		*val = 0;
+		return 0;
+	}
 
 	ret = ihk_mc_get_core(cpu, &linux_core_id, NULL, NULL);
 	if (ret) {
@@ -316,6 +332,10 @@ static inline int pwr_arm64hpc_retention_state_set(uint64_t val){
 	unsigned long linux_core_id;
 	int cpu = ihk_mc_get_processor_id();
 	int ret;
+
+	if (!is_hpcpwr_available()) {
+		return 0;
+	}
 
 	ret = ihk_mc_get_core(cpu, &linux_core_id, NULL, NULL);
 	if (ret) {
@@ -332,6 +352,10 @@ static inline int pwr_arm64hpc_retention_state_set(uint64_t val){
 
 static inline int pwr_arm64hpc_enable_retention_state(void)
 {
+	if (!is_hpcpwr_available()) {
+		return 0;
+	}
+
 	pwr_arm64hpc_write_imp_soc_standby_ctrl_el1(IMP_SOC_STANDBY_CTRL_EL1_RETENTION, 0);
 	return 0;
 }
@@ -341,6 +365,10 @@ static inline void init_power_management(void)
 	int state;
 	uint64_t imp_fj_clear_bit = 0;
 	uint64_t imp_soc_clear_bit = 0;
+
+	if (!is_hpcpwr_available()) {
+		return;
+	}
 
         /* retention state */
 	state = pwr_arm64hpc_retention_state_set(0);
@@ -362,31 +390,6 @@ static inline void init_power_management(void)
 	pwr_arm64hpc_write_imp_fj_core_uarch_restrection_el1(0, imp_fj_clear_bit);
 	pwr_arm64hpc_write_imp_soc_standby_ctrl_el1(0, imp_soc_clear_bit);
 }
-#else /*ENABLE_HPCPWR*/
-static inline void pwr_arm64hpc_map_retention_state_flag(void)
-{
-}
-
-static inline int pwr_arm64hpc_retention_state_get(uint64_t *val)
-{
-	*val = 0;
-	return 0;
-}
-
-static inline int pwr_arm64hpc_retention_state_set(uint64_t val)
-{
-	return 0;
-}
-
-static inline int pwr_arm64hpc_enable_retention_state(void)
-{
-	return 0;
-}
-
-static inline void init_power_management(void)
-{
-}
-#endif /*ENABLE_HPCPWR*/
 
 /*@
   @ assigns torampoline_va;
@@ -1740,10 +1743,16 @@ static inline int arch_cpu_msr(uint32_t sys_reg, uint64_t val)
 		SYSREG_WRITE_S(IMP_BARRIER_BST_SYNC_W1_EL0);
 		SYSREG_WRITE_S(IMP_BARRIER_BST_SYNC_W2_EL0);
 		SYSREG_WRITE_S(IMP_BARRIER_BST_SYNC_W3_EL0);
-		SYSREG_WRITE_S(IMP_SOC_STANDBY_CTRL_EL1);
 		SYSREG_WRITE_S(IMP_FJ_MCR_EL3);
 		SYSREG_WRITE_S(IMP_FJ_CORE_UARCH_CTRL_EL2);
 		SYSREG_WRITE_S(IMP_FJ_CORE_UARCH_RESTRECTION_EL1);
+		case IMP_SOC_STANDBY_CTRL_EL1:
+			asm volatile("msr_s " __stringify(IMP_SOC_STANDBY_CTRL_EL1) ", %0"
+				: : "r" (val) : "memory");
+			if (val & IMP_SOC_STANDBY_CTRL_EL1_MODE_CHANGE) {
+				wfe();
+			}
+			break;
 	default:
 		return -EINVAL;
 	}

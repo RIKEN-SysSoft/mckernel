@@ -3061,6 +3061,9 @@ void mcexec_prepare_ack(ihk_os_t os, unsigned long arg, int err)
 struct mcctrl_os_cpu_response {
 	int done;
 	unsigned long val;
+#ifdef POSTK_DEBUG_TEMP_FIX_94 /* arch_cpu_read_write_register() error return fix */
+	int err;
+#endif /* POSTK_DEBUG_TEMP_FIX_94 */
 	wait_queue_head_t wq;
 };
 
@@ -3128,6 +3131,9 @@ void mcctrl_os_read_write_cpu_response(ihk_os_t os,
 
 	resp->val = pisp->desc.val;
 	resp->done = 1;
+#ifdef POSTK_DEBUG_TEMP_FIX_94 /* arch_cpu_read_write_register() error return fix */
+	resp->err = pisp->err;
+#endif /* POSTK_DEBUG_TEMP_FIX_94 */
 	wake_up_interruptible(&resp->wq);
 }
 
@@ -3146,6 +3152,9 @@ int __mcctrl_os_read_write_cpu_register(ihk_os_t os, int cpu,
 	isp.resp = &resp;
 
 	resp.done = 0;
+#ifdef POSTK_DEBUG_TEMP_FIX_94 /* arch_cpu_read_write_register() error return fix */
+	resp.err = 0;
+#endif /* POSTK_DEBUG_TEMP_FIX_94 */
 	init_waitqueue_head(&resp.wq);
 
 	mb();
@@ -3161,6 +3170,14 @@ int __mcctrl_os_read_write_cpu_register(ihk_os_t os, int cpu,
 		printk("%s: ERROR after wait: %d\n", __FUNCTION__, ret);
 		goto out;
 	}
+
+#ifdef POSTK_DEBUG_TEMP_FIX_94 /* arch_cpu_read_write_register() error return fix */
+	ret = resp.err;
+	if (ret != 0) {
+		printk("%s: ERROR receive: %d\n", __FUNCTION__, resp.err);
+		goto out;
+	}
+#endif /* POSTK_DEBUG_TEMP_FIX_94 */
 
 	/* Update if read */
 	if (ret == 0 && op == MCCTRL_OS_CPU_READ_REGISTER) {
