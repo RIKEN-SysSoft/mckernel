@@ -1743,10 +1743,16 @@ static inline int arch_cpu_msr(uint32_t sys_reg, uint64_t val)
 		SYSREG_WRITE_S(IMP_BARRIER_BST_SYNC_W1_EL0);
 		SYSREG_WRITE_S(IMP_BARRIER_BST_SYNC_W2_EL0);
 		SYSREG_WRITE_S(IMP_BARRIER_BST_SYNC_W3_EL0);
-		SYSREG_WRITE_S(IMP_SOC_STANDBY_CTRL_EL1);
 		SYSREG_WRITE_S(IMP_FJ_MCR_EL3);
 		SYSREG_WRITE_S(IMP_FJ_CORE_UARCH_CTRL_EL2);
 		SYSREG_WRITE_S(IMP_FJ_CORE_UARCH_RESTRECTION_EL1);
+		case IMP_SOC_STANDBY_CTRL_EL1:
+			asm volatile("msr_s " __stringify(IMP_SOC_STANDBY_CTRL_EL1) ", %0"
+				: : "r" (val) : "memory");
+			if (val & IMP_SOC_STANDBY_CTRL_EL1_MODE_CHANGE) {
+				wfe();
+			}
+			break;
 	default:
 		return -EINVAL;
 	}
