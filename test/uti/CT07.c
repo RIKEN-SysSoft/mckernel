@@ -14,7 +14,6 @@ void *
 util_thread(void *arg)
 {
 	long rc;
-
 	rc = syscall(732);
 	if (rc == -1)
 		fprintf(stderr, "CT07003 get_system OK\n");
@@ -42,6 +41,7 @@ util_thread(void *arg)
 #if 0 /* It looks like syscall_intercept can't hook vfork */
 	rc = syscall(SYS_vfork);
 	//rc = vfork();
+	fprintf(stderr, "CT07006 vfork rc=%d,errno=%d\n", rc, errno);
 	if (rc == -1 && errno == ENOSYS) {
 		fprintf(stderr, "CT07006 vfork OK\n");
 	}
@@ -49,6 +49,7 @@ util_thread(void *arg)
 		fprintf(stderr, "CT07006 vfork NG rc=%ld errno=%d\n", rc, errno);
 	}
 #endif
+
 	rc = syscall(SYS_execve);
 	if (rc == -1 && errno == ENOSYS) {
 		fprintf(stderr, "CT07007 execve OK\n");
@@ -56,7 +57,6 @@ util_thread(void *arg)
 	else {
 		fprintf(stderr, "CT07007 execve NG rc=%ld errno=%d\n", rc, errno);
 	}
-
 	return NULL;
 }
 

@@ -313,3 +313,7 @@ CT31 pthread_cond_waitオーバーヘッド測定
 CT32 futex waitオーバーヘッド測定
 
 CT33 futex wakeオーバーヘッド測定
+
+CT34 繰り返しpthread_create
+
+CT35 LD_PRELOADでsyscall_interceptを用いたsoをつけた場合のテスト
