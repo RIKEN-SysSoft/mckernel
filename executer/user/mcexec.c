@@ -1031,8 +1031,8 @@ static void *watchdog_thread_func(void *arg) {
     int ret = 0;
 	int evfd = -1;
     int epfd = -1;
-    struct epoll_event event;
-    struct epoll_event events[1];
+    struct epoll_event event_in;
+    struct epoll_event event_out;
 
 	if ((evfd = ihk_os_get_eventfd(0, IHK_OS_EVENTFD_TYPE_STATUS)) < 0) {
 		fprintf(stderr, "%s: Error: geteventfd failed (%d)\n", __FUNCTION__, evfd);
@@ -1044,28 +1044,30 @@ static void *watchdog_thread_func(void *arg) {
 		goto out;
 	}
 
-	memset(&event, 0, sizeof(struct epoll_event));
-	event.events = EPOLLIN;
-	event.data.fd = evfd;
-	if ((ret = epoll_ctl(epfd, EPOLL_CTL_ADD, evfd, &event)) != 0) {
+	memset(&event_in, 0, sizeof(struct epoll_event));
+	event_in.events = EPOLLIN;
+	event_in.data.fd = evfd;
+	if ((ret = epoll_ctl(epfd, EPOLL_CTL_ADD, evfd, &event_in)) != 0) {
 		fprintf(stderr, "%s: Error: epoll_ctl failed (%d)\n", __FUNCTION__, ret);
 		goto out;
 	}
 
     do {
-        int nfd = epoll_wait(epfd, events, 1, -1);
-		if (nfd < 0) {
+        int nfd = epoll_wait(epfd, &event_out, 1, -1);
+		if (nfd == -1) {
 			if (errno == EINTR) {
 				continue;
-			} else {
-				fprintf(stderr, "%s: Error: epoll_wait failed (%s)\n", __FUNCTION__, strerror(errno));
-				goto out;
 			}
-		} else if (nfd > 1 || nfd == 0) {
-			fprintf(stderr, "%s: Error: Invalid number (%d) of events\n", __FUNCTION__, nfd);
+			fprintf(stderr, "%s: Error: epoll_wait failed (%s)\n", __FUNCTION__, strerror(errno));
+			goto out;
+		} else if (nfd == 0) {
+			fprintf(stderr, "%s: Error: epoll_wait timed out unexpectedly\n", __FUNCTION__);
+			goto out;
+		} else if (nfd > 1) {
+			fprintf(stderr, "%s: Error: Too many (%d) events\n", __FUNCTION__, nfd);
 			goto out;
 		} else {
-			if (events[0].data.fd == evfd) {
+			if (event_out.data.fd == evfd) {
 				uint64_t counter;
 				ssize_t nread = read(evfd, &counter, sizeof(counter));
 				if (nread == 0) {
@@ -1076,9 +1078,11 @@ static void *watchdog_thread_func(void *arg) {
 					goto out;
 				} else {
 					fprintf(stderr, "mcexec detected hang of McKernel\n");
-					//syscall(SYS_exit_group, 99);
-					goto out;
+					exit(EXIT_FAILURE);
 				}
+			} else {
+				fprintf(stderr, "%s: Error: Unknown event (fd:%d)\n", __FUNCTION__, event_out.data.fd);
+				goto out;
 			}
         }
     } while (1);
