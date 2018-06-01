@@ -303,7 +303,7 @@ static inline void pwr_arm64hpc_map_retention_state_flag(void)
 {
 	extern unsigned long* ihk_param_retention_state_flag_pa;
 	unsigned long size = BITS_TO_LONGS(NR_CPUS) * sizeof(unsigned long);
-	if (!is_hpcpwr_available()) {
+	if (!ihk_param_retention_state_flag_pa) {
 		return;
 	}
 	retention_state_flag = map_fixed_area(ihk_param_retention_state_flag_pa, size, 0);
