@@ -1053,38 +1053,47 @@ static void *watchdog_thread_func(void *arg) {
 	}
 
     do {
-        int nfd = epoll_wait(epfd, &event_out, 1, -1);
+        int nfd;
+		uint64_t counter;
+		ssize_t nread;
+
+		nfd = epoll_wait(epfd, &event_out, 1, -1);
 		if (nfd == -1) {
 			if (errno == EINTR) {
 				continue;
 			}
 			fprintf(stderr, "%s: Error: epoll_wait failed (%s)\n", __FUNCTION__, strerror(errno));
 			goto out;
-		} else if (nfd == 0) {
+		}
+
+		if (nfd == 0) {
 			fprintf(stderr, "%s: Error: epoll_wait timed out unexpectedly\n", __FUNCTION__);
 			goto out;
-		} else if (nfd > 1) {
+		}
+		
+		if (nfd > 1) {
 			fprintf(stderr, "%s: Error: Too many (%d) events\n", __FUNCTION__, nfd);
 			goto out;
-		} else {
-			if (event_out.data.fd == evfd) {
-				uint64_t counter;
-				ssize_t nread = read(evfd, &counter, sizeof(counter));
-				if (nread == 0) {
-					fprintf(stderr, "%s: Error: read got EOF\n", __FUNCTION__);
-					goto out;
-				} else if (nread == -1) {
-					fprintf(stderr, "%s: Error: read failed (%s)\n", __FUNCTION__, strerror(errno));
-					goto out;
-				} else {
-					fprintf(stderr, "mcexec detected hang of McKernel\n");
-					exit(EXIT_FAILURE);
-				}
-			} else {
-				fprintf(stderr, "%s: Error: Unknown event (fd:%d)\n", __FUNCTION__, event_out.data.fd);
-				goto out;
-			}
-        }
+		}
+		
+		if (event_out.data.fd != evfd) {
+			fprintf(stderr, "%s: Error: Unknown event (fd:%d)\n", __FUNCTION__, event_out.data.fd);
+			goto out;
+		}
+
+		nread = read(evfd, &counter, sizeof(counter));
+		if (nread == 0) {
+			fprintf(stderr, "%s: Error: read got EOF\n", __FUNCTION__);
+			goto out;
+		}
+		
+		if (nread == -1) {
+			fprintf(stderr, "%s: Error: read failed (%s)\n", __FUNCTION__, strerror(errno));
+			goto out;
+		}
+		
+		fprintf(stderr, "mcexec detected hang of McKernel\n");
+		exit(EXIT_FAILURE);
     } while (1);
 
  out:
