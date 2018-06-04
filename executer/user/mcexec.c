@@ -2001,7 +2001,7 @@ static void ld_preload_init()
 	memset(envbuf, 0, PATH_MAX);
 
 	if (enable_uti) {
-		LD_PRELOAD_PREPARE("syscall_intercept.so");
+		LD_PRELOAD_PREPARE("libmck_syscall_intercept.so");
 		LD_PRELOAD_APPEND;
 	}
 
@@ -2249,7 +2249,7 @@ int main(int argc, char **argv)
 	if (opendev() == -1)
 		exit(EXIT_FAILURE);
 
-#ifndef WITH_SYSCALL_INTERCEPT
+#ifndef ENABLE_UTI
 	if (enable_uti) {
 		__eprintf("ERROR: uti is not available when not configured with --with-syscall_intercept=<path>\n");
 		exit(EXIT_FAILURE);
