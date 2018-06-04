@@ -102,21 +102,14 @@ Clone the source code and set up ihk symlink (this is currently required):
 mkdir -p ~/src/ihk+mckernel/
 cd ~/src/ihk+mckernel/
 git clone -r git@github.com:RIKEN-SysSoft/mckernel.git
-ln -s mckernel/ihk ihk
 ~~~~
 
-Configure and compile (for x86 architecture):
+Configure and compile:
 
 ~~~~
-export TOP=${HOME}/ihk+mckernel/
-cd ~/src/ihk+mckernel/ihk/
-./configure --with-target=smp-x86 --prefix=${TOP}
-cd ~/src/ihk+mckernel/mckernel/
-./configure --with-target=smp-x86 --prefix=${TOP}
-cd ~/src/ihk+mckernel/ihk/
-make && make install
-cd ~/src/ihk+mckernel/mckernel/
-make && make install
+mkdir -p build && cd build
+cmake -DCMAKE_INSTALL_PREFIX=${HOME}/ihk+mckernel $HOME/src/mckernel
+make -j install
 ~~~~
 
 The IHK kernel modules and McKernel kernel image should be installed under the **ihk+mckernel** folder in your home directory.

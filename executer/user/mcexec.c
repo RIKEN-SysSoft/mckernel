@@ -2001,7 +2001,7 @@ static void ld_preload_init()
 	memset(envbuf, 0, PATH_MAX);
 
 	if (enable_uti) {
-		LD_PRELOAD_PREPARE("syscall_intercept.so");
+		LD_PRELOAD_PREPARE("libmck_syscall_intercept.so");
 		LD_PRELOAD_APPEND;
 	}
 

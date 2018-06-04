@@ -3,7 +3,7 @@
 #include <linux/mm_types.h>
 #include <linux/kallsyms.h>
 #include <asm/vdso.h>
-#include "../../../config.h"
+#include "config.h"
 #include "../../mcctrl.h"
 
 //#define SC_DEBUG

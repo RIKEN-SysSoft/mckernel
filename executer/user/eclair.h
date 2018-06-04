@@ -3,7 +3,7 @@
 #ifndef HEADER_USER_COMMON_ECLAIR_H
 #define HEADER_USER_COMMON_ECLAIR_H
 
-#include "../config.h"
+#include "config.h"
 #include <stdio.h>
 #include <inttypes.h>
 #include <arch-eclair.h>
