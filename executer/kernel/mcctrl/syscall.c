@@ -46,7 +46,7 @@
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/io.h>
-#include "../../../config.h"
+#include "config.h"
 #include "mcctrl.h"
 #include <linux/version.h>
 #ifdef POSTK_DEBUG_ARCH_DEP_83 /* arch depend translate_rva_to_rpa() move */

@@ -1,7 +1,7 @@
 /* archdeps.c COPYRIGHT FUJITSU LIMITED 2016 */
 #include <linux/version.h>
 #include <linux/kallsyms.h>
-#include "../../../config.h"
+#include "config.h"
 #include "../../mcctrl.h"
 
 #ifdef POSTK_DEBUG_ARCH_DEP_83 /* arch depend translate_rva_to_rpa() move */
