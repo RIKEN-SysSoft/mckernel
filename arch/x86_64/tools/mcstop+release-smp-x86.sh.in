@@ -100,15 +100,6 @@ if grep mcctrl /proc/modules &>/dev/null; then
 	fi
 fi
 
-# Remove mcoverlay if loaded
-${SBINDIR}/mcoverlay-destroy.sh
-ret=$?
-if [ $ret -ne 0 ]; then
-    echo "error: mcoverlay-destroy.sh" >&2
-    exit $ret
-fi
-
-
 # Remove SMP module
 if grep ihk_smp_@ARCH@ /proc/modules &>/dev/null; then
 	if ! rmmod ihk_smp_@ARCH@ 2>/dev/null; then
