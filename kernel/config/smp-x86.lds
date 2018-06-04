@@ -25,6 +25,10 @@ SECTIONS
 		*(.rodata .rodata.*)
 	} :data
 
+	/* force build-id position somewhere not at start... */
+	.note.gnu.build-id : {
+	}
+
 	.vsyscall : ALIGN(0x1000) {
 		vsyscall_page = .;
 

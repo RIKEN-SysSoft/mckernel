@@ -15,7 +15,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <pthread.h>
-#include "../../config.h"
+#include "config.h"
 
 #include "../include/qlmpi.h"
 #include "../include/md5.h"
