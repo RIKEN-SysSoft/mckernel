@@ -1,0 +1,107 @@
+# mckernel spec file usage:
+# cmake /path/to/mckernel && make dist
+# rpmbuild -ta mckernel-@MCKERNEL_VERSION@.tar.gz
+#
+# for cross compilation also pass the following to rpmbuild:
+# --target aarch64 -D 'kernel_version <target kernel>'
+# you will need to install the target's kernel-devel package (rpm -i --ignorearch)
+# and have your environment setup as per cmake/README.cross_compilation
+
+
+%{!?kernel_version: %define kernel_version @UNAME_R@}
+%define krequires %(echo %{kernel_version} | sed "s/.%{_target_cpu}$//")
+%define ktag %(echo %{krequires} | tr '-' '_' | sed -e 's/\.el[0-9]*$//' | sed -e 's/\.\([a-zA-Z]\)/_\1/')
+
+Name: mckernel
+Version: @MCKERNEL_VERSION@
+Release: 0_%{ktag}%{?dist}
+Summary: IHK/McKernel
+License: GPLv2
+Source0: mckernel-%{version}.tar.gz
+
+BuildRequires: systemd-devel numactl-devel binutils-devel kernel-devel
+BuildRequires: %kernel_module_package_buildreqs = %{krequires}
+
+# kernel_module_package macro does not handle cross build...
+%if "%{?_host_cpu}" == "x86_64" && "%{?_target_cpu}" == "aarch64"
+%define cross_compile 1
+Requires: kernel = %{krequires}
+%else
+%kernel_module_package %{?kmod_flavors}
+%endif
+
+%description
+Interface for Heterogeneous Kernels and McKernel.
+
+%prep
+%setup -q
+
+%build
+%if 0%{?cross_compile}
+%{!?toolchain_file: %define toolchain_file cmake/cross-aarch64.cmake}
+%{!?build_target: %define build_target smp-arm64}
+%{!?cmake_libdir: %define cmake_libdir /usr/lib64}
+%endif
+
+# We need to remove ld flags like relro for the final mckernel.img link, as well as remove cflags for mckernel
+# ideally mckernel should use different environment variables for the user tools and the kernel tools altogether...
+%define __global_ldflags ""
+%define optflags -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic
+
+%cmake -DCMAKE_BUILD_TYPE=Release \
+        %{?kernel_version:-DUNAME_R=%{kernel_version}} \
+	%{?kernel_version:-DKERNEL_DIR=/usr/src/kernels/%{kernel_version}} \
+	%{?cmake_libdir:-DCMAKE_INSTALL_LIBDIR=%{cmake_libdir}} \
+        %{?build_target:-DBUILD_TARGET=%{build_target}} \
+	%{?toolchain_file:-DCMAKE_TOOLCHAIN_FILE=%{toolchain_file}} \
+	.
+%make_build
+
+%install
+%make_install
+
+%files
+%ifarch x86_64
+%{_datadir}/mckernel/smp-x86/mckernel.img
+%endif
+%ifarch aarch64
+%{_datadir}/mckernel/smp-arm64/mckernel.img
+%endif
+%{_sbindir}/mcreboot.sh
+%{_sbindir}/mcstop+release.sh
+%{_sbindir}/ihkconfig
+%{_sbindir}/ihkosctl
+%{_sbindir}/ihkmond
+%{_bindir}/mcexec
+%{_bindir}/eclair
+%{_bindir}/vmcore2mckdump
+%{_bindir}/mcstat
+%{_libdir}/libihk.so
+%{_libdir}/libsched_yield.so.1.0.0
+%{_libdir}/libsched_yield.so
+%{_libdir}/libldump2mcdump.so
+%{_includedir}/ihklib.h
+%{_includedir}/ihk/affinity.h
+%{_includedir}/mckernel/ihklib_rusage.h
+%{_sysconfdir}/irqbalance_mck.in
+%{_sysconfdir}/irqbalance_mck.service
+%{_mandir}/man1/mcreboot.1.gz
+%{_mandir}/man1/ihkconfig.1.gz
+%{_mandir}/man1/ihkosctl.1.gz
+%{_mandir}/man1/mcexec.1.gz
+
+%if 0%{?cross_compile}
+/lib/modules/%{kernel_version}/extra/mckernel/ihk.ko
+/lib/modules/%{kernel_version}/extra/mckernel/mcctrl.ko
+%ifarch x86_64
+/lib/modules/%{kernel_version}/extra/mckernel/ihk-smp-x86_64.ko
+%endif
+%ifarch aarch64
+/lib/modules/%{kernel_version}/extra/mckernel/ihk-smp-arm64.ko
+%endif
+%endif
+
+
+%changelog
+* Tue Feb 12 2019 Dominique Martinet <dominique.martinet@cea.fr> - 1.6.0-0
+- Initial package
