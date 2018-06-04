@@ -88,26 +88,8 @@ int arch_setup_vdso(void)
 		kprintf("Enable Host mapping vDSO.\n");
 		return 0;
 	}
-	kprintf("Enable McK mapping vDSO.\n");
 
-	if (memcmp(&vdso_start, "\177ELF", 4)) {
-		panic("vDSO is not a valid ELF object!\n");
-	}
-
-	vdso.vdso_npages = (&vdso_end - &vdso_start) >> PAGE_SHIFT;
-	dkprintf("vdso: %ld pages (%ld code @ %p, %ld data @ %p)\n",
-		vdso.vdso_npages + 1, vdso.vdso_npages, &vdso_start, 1L, &tod_data);
-	if (vdso.vdso_npages != 1) {
-		panic("vDSO is not a valid number of pages!\n");
-	}
-
-	vdso.vvar_phys = virt_to_phys((void *)&tod_data);
-	vdso.vdso_physlist[0] = virt_to_phys((void *)&vdso_start);
-
-	vdso.lbase = VDSO_LBASE;
-	vdso.offset_sigtramp = vdso_offset_sigtramp;
-
-	return 0;
+	panic("Only support host mapping vDSO");
 }
 
 static int get_free_area(struct process_vm *vm, size_t len, intptr_t hint,
