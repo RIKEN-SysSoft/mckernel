@@ -8,7 +8,7 @@
  * 	Copyright (C) 2015  RIKEN AICS
  */
 
-#include "../config.h"
+#include "config.h"
 #include <bfd.h>
 #include <fcntl.h>
 #include <inttypes.h>

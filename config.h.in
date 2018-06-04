@@ -1,97 +1,34 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
-/* Path of install directory for binary */
-#undef BINDIR
-
 /* IHK build-id to confirm IHK and McKernel built at the same time are used */
-#undef BUILDID
+#define BUILDID "${BUILDID}"
+
+/* version number */
+#define MCKERNEL_VERSION "${MCKERNEL_VERSION}"
 
 /* whether mcoverlayfs is enabled */
-#undef ENABLE_MCOVERLAYFS
+#cmakedefine ENABLE_MCOVERLAYFS 1
 
 /* whether memdump feature is enabled */
-#undef ENABLE_MEMDUMP
+#cmakedefine ENABLE_MEMDUMP 1
 
 /* whether perf is enabled */
-#undef ENABLE_PERF
+#cmakedefine ENABLE_PERF 1
 
 /* whether qlmpi is enabled */
-#undef ENABLE_QLMPI
+#cmakedefine ENABLE_QLMPI 1
 
 /* whether rusage is enabled */
-#undef ENABLE_RUSAGE
-
-/* Define to 1 if you have the <inttypes.h> header file. */
-#undef HAVE_INTTYPES_H
-
-/* Define to 1 if you have the `bfd' library (-lbfd). */
-#undef HAVE_LIBBFD
-
-/* Define to 1 if you have the `iberty' library (-liberty). */
-#undef HAVE_LIBIBERTY
-
-/* Define to 1 if you have the <memory.h> header file. */
-#undef HAVE_MEMORY_H
-
-/* Define to 1 if you have the <stdint.h> header file. */
-#undef HAVE_STDINT_H
-
-/* Define to 1 if you have the <stdlib.h> header file. */
-#undef HAVE_STDLIB_H
-
-/* Define to 1 if you have the <strings.h> header file. */
-#undef HAVE_STRINGS_H
-
-/* Define to 1 if you have the <string.h> header file. */
-#undef HAVE_STRING_H
-
-/* Define to 1 if you have the <sys/stat.h> header file. */
-#undef HAVE_SYS_STAT_H
-
-/* Define to 1 if you have the <sys/types.h> header file. */
-#undef HAVE_SYS_TYPES_H
-
-/* Define to 1 if you have the <unistd.h> header file. */
-#undef HAVE_UNISTD_H
-
-/* IHK version string */
-#undef IHK_VERSION
-
-/* McKernel specific headers */
-#undef MCKERNEL_INCDIR
-
-/* McKernel specific libraries */
-#undef MCKERNEL_LIBDIR
-
-/* McKernel version string */
-#undef MCKERNEL_VERSION
-
-/* Define to the address where bug reports for this package should be sent. */
-#undef PACKAGE_BUGREPORT
-
-/* Define to the full name of this package. */
-#undef PACKAGE_NAME
-
-/* Define to the full name and version of this package. */
-#undef PACKAGE_STRING
-
-/* Define to the one symbol short name of this package. */
-#undef PACKAGE_TARNAME
-
-/* Define to the home page for this package. */
-#undef PACKAGE_URL
-
-/* Define to the version of this package. */
-#undef PACKAGE_VERSION
+#cmakedefine ENABLE_RUSAGE 1
 
 /* Path of bind-mount source directory */
-#undef ROOTFSDIR
+#cmakedefine ROOTFSDIR "${ROOTFSDIR}"
+
+/* Path of install directory for libraries */
+#cmakedefine MCKERNEL_LIBDIR "${MCKERNEL_LIBDIR}"
+
+/* Path of install directory for binary */
+#cmakedefine BINDIR "${BINDIR}"
 
 /* Path of install directory for system binary */
-#undef SBINDIR
-
-/* Define to 1 if you have the ANSI C header files. */
-#undef STDC_HEADERS
-
-/* whether or not syscall_intercept library is linked */
-#undef WITH_SYSCALL_INTERCEPT
+#cmakedefine SBINDIR "${SBINDIR}"
