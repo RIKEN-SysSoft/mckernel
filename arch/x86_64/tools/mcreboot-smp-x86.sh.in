@@ -18,7 +18,7 @@ BINDIR="${prefix}/bin"
 SBINDIR="${prefix}/sbin"
 ETCDIR=@ETCDIR@
 KMODDIR="${prefix}/kmod"
-KERNDIR="${prefix}/@TARGET@/kernel"
+KERNDIR="${prefix}/@BUILD_TARGET@/kernel"
 ENABLE_MCOVERLAYFS="@ENABLE_MCOVERLAYFS@"
 MCK_BUILDID=@BUILDID@
 
@@ -223,7 +223,7 @@ fi
 
 enable_mcoverlay="no"
 
-if [ "${ENABLE_MCOVERLAYFS}" == "yes" ]; then
+if [ "${ENABLE_MCOVERLAYFS}" == "ON" ]; then
 	if [ "${rhel_release}" == "" ]; then
 		if [ ${linux_version_code} -ge 262144 -a ${linux_version_code} -lt 262400 ]; then
 			enable_mcoverlay="yes"

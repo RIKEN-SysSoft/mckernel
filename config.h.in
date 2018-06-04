@@ -1,130 +1,76 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
-/* Path of install directory for binary */
-#undef BINDIR
-
 /* IHK build-id to confirm IHK and McKernel built at the same time are used */
-#undef BUILDID
+#define BUILDID "${BUILDID}"
 
 /* whether mcoverlayfs is enabled */
-#undef ENABLE_MCOVERLAYFS
+#cmakedefine ENABLE_MCOVERLAYFS 1
 
 /* whether memdump feature is enabled */
-#undef ENABLE_MEMDUMP
+#cmakedefine ENABLE_MEMDUMP 1
 
 /* whether perf is enabled */
-#undef ENABLE_PERF
+#cmakedefine ENABLE_PERF 1
 
 /* whether qlmpi is enabled */
-#undef ENABLE_QLMPI
+#cmakedefine ENABLE_QLMPI 1
 
 /* whether rusage is enabled */
-#undef ENABLE_RUSAGE
+#cmakedefine ENABLE_RUSAGE 1
 
-/* Define to 1 if you have the <inttypes.h> header file. */
-#undef HAVE_INTTYPES_H
-
-/* Define to 1 if you have the `bfd' library (-lbfd). */
-#undef HAVE_LIBBFD
-
-/* Define to 1 if you have the `iberty' library (-liberty). */
-#undef HAVE_LIBIBERTY
-
-/* Define to 1 if you have the <memory.h> header file. */
-#undef HAVE_MEMORY_H
-
-/* Define to 1 if you have the <stdint.h> header file. */
-#undef HAVE_STDINT_H
-
-/* Define to 1 if you have the <stdlib.h> header file. */
-#undef HAVE_STDLIB_H
-
-/* Define to 1 if you have the <strings.h> header file. */
-#undef HAVE_STRINGS_H
-
-/* Define to 1 if you have the <string.h> header file. */
-#undef HAVE_STRING_H
-
-/* Define to 1 if you have the <sys/stat.h> header file. */
-#undef HAVE_SYS_STAT_H
-
-/* Define to 1 if you have the <sys/types.h> header file. */
-#undef HAVE_SYS_TYPES_H
-
-/* Define to 1 if you have the <unistd.h> header file. */
-#undef HAVE_UNISTD_H
+/* whether mckernel kasan is enabled */
+#cmakedefine ENABLE_MCKASAN 1
 
 /* Define to address of kernel symbol __vvar_page, or 0 if exported */
-#undef MCCTRL_KSYM___vvar_page
+#cmakedefine MCCTRL_KSYM___vvar_page ${MCCTRL_KSYM___vvar_page}
 
 /* Define to address of kernel symbol hpet_address, or 0 if exported */
-#undef MCCTRL_KSYM_hpet_address
+#cmakedefine MCCTRL_KSYM_hpet_address ${MCCTRL_KSYM_hpet_address}
 
 /* Define to address of kernel symbol hv_clock, or 0 if exported */
-#undef MCCTRL_KSYM_hv_clock
+#cmakedefine MCCTRL_KSYM_hv_clock ${MCCTRL_KSYM_hv_clock}
 
 /* Define to address of kernel symbol sys_mount, or 0 if exported */
-#undef MCCTRL_KSYM_sys_mount
+#cmakedefine MCCTRL_KSYM_sys_mount ${MCCTRL_KSYM_sys_mount}
 
 /* Define to address of kernel symbol sys_readlink, or 0 if exported */
-#undef MCCTRL_KSYM_sys_readlink
+#cmakedefine MCCTRL_KSYM_sys_readlink ${MCCTRL_KSYM_sys_readlink}
 
 /* Define to address of kernel symbol sys_umount, or 0 if exported */
-#undef MCCTRL_KSYM_sys_umount
+#cmakedefine MCCTRL_KSYM_sys_umount ${MCCTRL_KSYM_sys_umount}
 
 /* Define to address of kernel symbol sys_unshare, or 0 if exported */
-#undef MCCTRL_KSYM_sys_unshare
+#cmakedefine MCCTRL_KSYM_sys_unshare ${MCCTRL_KSYM_sys_unshare}
 
 /* Define to address of kernel symbol vdso_end, or 0 if exported */
-#undef MCCTRL_KSYM_vdso_end
+#cmakedefine MCCTRL_KSYM_vdso_end ${MCCTRL_KSYM_vdso_end}
 
 /* Define to address of kernel symbol vdso_image_64, or 0 if exported */
-#undef MCCTRL_KSYM_vdso_image_64
+#cmakedefine MCCTRL_KSYM_vdso_image_64 ${MCCTRL_KSYM_vdso_image_64}
 
 /* Define to address of kernel symbol vdso_pages, or 0 if exported */
-#undef MCCTRL_KSYM_vdso_pages
+#cmakedefine MCCTRL_KSYM_vdso_pages ${MCCTRL_KSYM_vdso_pages}
 
 /* Define to address of kernel symbol vdso_spec, or 0 if exported */
-#undef MCCTRL_KSYM_vdso_spec
+#cmakedefine MCCTRL_KSYM_vdso_spec ${MCCTRL_KSYM_vdso_spec}
 
 /* Define to address of kernel symbol vdso_start, or 0 if exported */
-#undef MCCTRL_KSYM_vdso_start
+#cmakedefine MCCTRL_KSYM_vdso_start ${MCCTRL_KSYM_vdso_start}
 
 /* Define to address of kernel symbol walk_page_range, or 0 if exported */
-#undef MCCTRL_KSYM_walk_page_range
+#cmakedefine MCCTRL_KSYM_walk_page_range ${MCCTRL_KSYM_walk_page_range}
 
 /* Define to address of kernel symbol zap_page_range, or 0 if exported */
-#undef MCCTRL_KSYM_zap_page_range
-
-/* McKernel specific headers */
-#undef MCKERNEL_INCDIR
-
-/* McKernel specific libraries */
-#undef MCKERNEL_LIBDIR
-
-/* Define to the address where bug reports for this package should be sent. */
-#undef PACKAGE_BUGREPORT
-
-/* Define to the full name of this package. */
-#undef PACKAGE_NAME
-
-/* Define to the full name and version of this package. */
-#undef PACKAGE_STRING
-
-/* Define to the one symbol short name of this package. */
-#undef PACKAGE_TARNAME
-
-/* Define to the home page for this package. */
-#undef PACKAGE_URL
-
-/* Define to the version of this package. */
-#undef PACKAGE_VERSION
+#cmakedefine MCCTRL_KSYM_zap_page_range ${MCCTRL_KSYM_zap_page_range}
 
 /* Path of bind-mount source directory */
-#undef ROOTFSDIR
+#cmakedefine ROOTFSDIR "${ROOTFSDIR}"
+
+/* Path of install directory for libraries */
+#cmakedefine MCKERNEL_LIBDIR "${MCKERNEL_LIBDIR}"
+
+/* Path of install directory for binary */
+#cmakedefine BINDIR "${BINDIR}"
 
 /* Path of install directory for system binary */
-#undef SBINDIR
-
-/* Define to 1 if you have the ANSI C header files. */
-#undef STDC_HEADERS
+#cmakedefine SBINDIR "${SBINDIR}"

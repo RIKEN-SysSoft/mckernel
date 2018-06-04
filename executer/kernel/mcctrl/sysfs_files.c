@@ -15,7 +15,7 @@
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <linux/version.h>
-#include "../../../config.h"
+#include "config.h"
 #include "mcctrl.h"
 #include "sysfs_msg.h"
 
