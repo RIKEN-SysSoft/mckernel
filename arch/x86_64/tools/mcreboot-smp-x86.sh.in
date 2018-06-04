@@ -19,7 +19,7 @@ BINDIR="${prefix}/bin"
 SBINDIR="${prefix}/sbin"
 ETCDIR=@ETCDIR@
 KMODDIR="${prefix}/kmod"
-KERNDIR="${prefix}/@TARGET@/kernel"
+KERNDIR="${prefix}/@BUILD_TARGET@/kernel"
 ENABLE_MCOVERLAYFS="@ENABLE_MCOVERLAYFS@"
 MCK_BUILDID=@BUILDID@
 
@@ -138,32 +138,32 @@ error_exit() {
 		fi
 		;&
 	mcos_sys_mounted)
-		if [ "$ENABLE_MCOVERLAYFS" == "yes" ]; then
+		if [ "$ENABLE_MCOVERLAYFS" == "ON" ]; then
 			umount /tmp/mcos/mcos0_sys
 		fi
 		;&
 	mcos_proc_mounted)
-		if [ "$ENABLE_MCOVERLAYFS" == "yes" ]; then
+		if [ "$ENABLE_MCOVERLAYFS" == "ON" ]; then
 			umount /tmp/mcos/mcos0_proc
 		fi
 		;&
 	mcoverlayfs_loaded)
-		if [ "$ENABLE_MCOVERLAYFS" == "yes" ]; then
+		if [ "$ENABLE_MCOVERLAYFS" == "ON" ]; then
 			rmmod mcoverlay 2>/dev/null
 		fi
 		;&
 	linux_proc_bind_mounted)
-		if [ "$ENABLE_MCOVERLAYFS" == "yes" ]; then
+		if [ "$ENABLE_MCOVERLAYFS" == "ON" ]; then
 			umount /tmp/mcos/linux_proc
 		fi
 		;&
 	tmp_mcos_mounted)
-		if [ "$ENABLE_MCOVERLAYFS" == "yes" ]; then
+		if [ "$ENABLE_MCOVERLAYFS" == "ON" ]; then
 			umount /tmp/mcos
 		fi
 		;&
 	tmp_mcos_created)
-		if [ "$ENABLE_MCOVERLAYFS" == "yes" ]; then
+		if [ "$ENABLE_MCOVERLAYFS" == "ON" ]; then
 			rm -rf /tmp/mcos
 		fi
 		;&
@@ -255,7 +255,7 @@ if [ "$cpus" == "" ]; then
 fi
 
 # Remove mcoverlay if loaded
-if [ "$ENABLE_MCOVERLAYFS" == "yes" ]; then
+if [ "$ENABLE_MCOVERLAYFS" == "ON" ]; then
     ${SBINDIR}/mcoverlay-destroy.sh
     ret=$?
     if [ $ret -ne 0 ]; then
@@ -462,7 +462,7 @@ if ! chown ${chown_option} /dev/mcd* /dev/mcos*; then
 fi
 
 # Overlay /proc, /sys with McKernel specific contents
-if [ "$ENABLE_MCOVERLAYFS" == "yes" ]; then
+if [ "$ENABLE_MCOVERLAYFS" == "ON" ]; then
     ${SBINDIR}/mcoverlay-create.sh
     ret=$?
     if [ $ret -ne 0 ]; then

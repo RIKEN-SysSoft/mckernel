@@ -1,0 +1,61 @@
+Building:
+---------
+
+Building with cmake should be as simple as 'cmake mckerneldir && make -j',
+but there are various things to be aware of:
+ - prefix is set through cmake -DCMAKE_INSTALL_PREFIX=/path
+ - we support build in and out of tree, out of tree build should be preferred
+ - build for local machine are autodetected, but variables in the option
+summary at the end can be tweaked freely
+
+Example:
+    mkdir build && cd build
+    cmake -DCMAKE_INSTALL_PREFIX=/tmp/install -DENABLE_WERROR=ON /path/to/mckernel
+    make -j install
+
+Cross compilation:
+------------------
+
+The standard way of cross compiling with cmake is to give cmake a "toolchain
+file" that describes the compiler prefix and where it can find libraries for
+the target system, we provide an example in cmake/cross-aarch64.cmake.
+
+This obviously requires installing a toolchain and a rootfs with target
+libraries to link against.
+
+In addition, mckernel borrows the Kbuild system from linux kernel, which also
+makes the assumption that you can run generated executables (Kbuild uses various
+scripts around module building and does not make the distinction between build
+target and host target); you can get this working by setting up qemu-user on your
+machine which the kernel will transparently use through binfmt magic when trying
+to execute other arch binaries.
+
+# yum install gcc-aarch64-linux-gnu qemu-user
+(dnf brings in --forcearch, we use this to setup the sysroot ; there are other
+ways of building one. It is available on el7 in extras.)
+# yum install dnf dnf-plugins-core
+(install these separately because most scripts cannot be run, and dependency hell means we need them first)
+# dnf download --releasever=7 --forcearch=aarch64 filesystem centos-release
+# rpm --root /usr/aarch64-linux-gnu/sys-root --ignorearch --nodeps -ivh filesystem-*.rpm
+# rpm --root /usr/aarch64-linux-gnu/sys-root --ignorearch --nodeps -ivh centos-release-*.rpm
+# rpm --root /usr/aarch64-linux-gnu/sys-root --import /usr/aarch64-linux-gnu/sys-root/etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+# rpm --root /usr/aarch64-linux-gnu/sys-root --import /usr/aarch64-linux-gnu/sys-root/etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7-aarch64
+# dnf install --releasever=7  --forcearch=aarch64 --installroot=/usr/aarch64-linux-gnu/sys-root/ --setopt=tsflags=noscripts glibc-devel kernel-devel numactl-devel systemd-devel binutils-devel
+
+(el7 lacks a binfmt for aarch64... fix this)
+# echo ':qemu-aarch64:M::\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/qemu-aarch64:' > /etc/binfmt.d/qemu-aarch64-dynamic.conf
+# systemctl restart systemd-binfmt
+
+(optional) test your setup
+# gcc -xc - <<<'#include <stdio.h>'$'\n''int main() { printf("ok\n"); return 0; }'
+# export QEMU_LD_PREFIX=/usr/aarch64-linux-gnu/sys-root
+# file a.out
+a.out: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), dynamically linked (uses shared libs), for GNU/Linux 3.7.0, BuildID[sha1]=5ff445d3353cad2dae0a22550fe4cc572287dd90, not stripped
+# ./a.out
+ok
+
+finally, build mckernel!
+# mkdir build; cd build
+# export QEMU_LD_PREFIX=/usr/aarch64-linux-gnu/sys-root
+# cmake -DCMAKE_INSTALL_PREFIX=/tmp/install-aarch64 -DCMAKE_TOOLCHAIN_FILE=../cmake/cross-aarch64.cmake -DUNAME_R=4.14.0-115.2.2.el7a.aarch64 -DKERNEL_DIR=/usr/aarch64-linux-gnu/sys-root/usr/src/kernels/4.14.0-115.2.2.el7a.aarch64/ -DBUILD_TARGET=smp-arm64 ..
+# make -j
