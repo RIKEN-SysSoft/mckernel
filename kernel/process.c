@@ -1445,7 +1445,7 @@ int change_prot_process_memory_range(struct process_vm *vm,
 	 */
 	if (range->memobj && (range->flag & VR_PRIVATE)) {
 		setattr &= ~PTATTR_WRITABLE;
-		if (clrattr == setattr == 0) {
+		if (!clrattr && !setattr) {
 			range->flag = newflag;
 			error = 0;
 			goto out;
