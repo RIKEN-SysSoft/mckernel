@@ -1,4 +1,4 @@
-/* memory.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
+/* memory.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
 #include <ihk/cpu.h>
 #include <ihk/debug.h>
 #include <ihk/mm.h>
@@ -28,7 +28,7 @@
 
 #define NOT_IMPLEMENTED()  do { kprintf("%s is not implemented\n", __func__); while(1);} while(0)
 
-static char *last_page = (void*)MAP_EARLY_ALLOC;
+static char *last_page = NULL;
 extern char _head[], _end[];
 
 char empty_zero_page[PAGE_SIZE] = { 0 };
@@ -42,9 +42,13 @@ void *early_alloc_pages(int nr_pages)
 {
 	void *p;
 
-	if (last_page == (void *)-1) {
+	if (last_page == NULL) {
+		last_page = (void *)MAP_EARLY_ALLOC;
+	}
+	else if (last_page == (void *)-1) {
 		panic("Early allocator is already finalized. Do not use it.\n");
-	} else if (MAP_EARLY_ALLOC_END <= (unsigned long)last_page) {
+	}
+	else if (MAP_EARLY_ALLOC_END <= (unsigned long)last_page) {
 		panic("Early allocator is out of memory.\n");
 	}
 	p = last_page;
@@ -3041,7 +3045,7 @@ void ihk_mc_reserve_arch_pages(struct ihk_page_allocator_desc *pa_allocator,
 unsigned long virt_to_phys(void *v)
 {
 	unsigned long va = (unsigned long)v;
-	
+
 	if (MAP_KERNEL_START <= va) {
 		return va - MAP_KERNEL_START + arm64_kernel_phys_base;
 	}

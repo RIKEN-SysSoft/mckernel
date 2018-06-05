@@ -1,4 +1,4 @@
-/* head.S COPYRIGHT FUJITSU LIMITED 2015-2017 */
+/* head.S COPYRIGHT FUJITSU LIMITED 2015-2018 */
 
 #include <linkage.h>
 #include <ptrace.h>
@@ -11,8 +11,6 @@
 #include <arm-gic-v3.h>
 
 #define KERNEL_RAM_VADDR	MAP_KERNEL_START
-#define EARLY_ALLOC_VADDR	MAP_EARLY_ALLOC
-#define BOOT_PARAM_VADDR	MAP_BOOT_PARAM
 
 //#ifndef CONFIG_SMP
 //# define PTE_FLAGS	PTE_TYPE_PAGE | PTE_AF
@@ -49,16 +47,6 @@
 	add	\ttb1, \ttb1, \virt_to_phys
 	add	\ttb0, \ttb0, \virt_to_phys
 	.endm
-
-#ifdef CONFIG_ARM64_64K_PAGES
-# define BLOCK_SHIFT	PAGE_SHIFT
-# define BLOCK_SIZE		PAGE_SIZE
-# define TABLE_SHIFT	PMD_SHIFT
-#else
-# define BLOCK_SHIFT	SECTION_SHIFT
-# define BLOCK_SIZE		SECTION_SIZE
-# define TABLE_SHIFT	PUD_SHIFT
-#endif
 
 #define KERNEL_START	KERNEL_RAM_VADDR
 #define KERNEL_END	_end
@@ -417,14 +405,17 @@ __create_page_tables:
 	 * Map the early_alloc_pages area, kernel_img next block
 	 */
 	ldr	x3, =KERNEL_END
-	add	x3, x3, x28				// __pa(KERNEL_END)
+	add	x3, x3, x28			// __pa(KERNEL_END)
 	add	x3, x3, #BLOCK_SIZE
-	sub x3, x3, #1
-	bic x3, x3, #(BLOCK_SIZE - 1)		// start PA calc.
-	ldr	x5, =EARLY_ALLOC_VADDR			// get start VA
-	mov x6, #1
-	lsl x6, x6, #(PAGE_SHIFT + MAP_EARLY_ALLOC_SHIFT)
+	sub	x3, x3, #1
+	bic	x3, x3, #(BLOCK_SIZE - 1)	// start PA calc.
+	ldr	x5, =KERNEL_END			// get start VA
+	add     x5, x5, #BLOCK_SIZE
+	sub	x5, x5, #1
+	bic	x5, x5, #(BLOCK_SIZE - 1)	// start VA calc.
+	mov	x6, #MAP_EARLY_ALLOC_SIZE
 	add	x6, x5, x6			// end VA calc
+	mov	x23, x6				// save end VA
 	sub	x6, x6, #1			// inclusive range
 	create_block_map x0, x7, x3, x5, x6
 
@@ -432,11 +423,13 @@ __create_page_tables:
 	 * Map the boot_param area
 	 */
 	adr	x3, ihk_param_param_addr
-	ldr	x3, [x3]				// get boot_param PA
-	ldr	x5, =BOOT_PARAM_VADDR			// get boot_param VA
-	mov x6, #1
-	lsl x6, x6, #MAP_BOOT_PARAM_SHIFT
-	add	x6, x5, x6			// end VA calc
+	ldr	x3, [x3]			// get boot_param PA
+	mov	x5, x23				// get start VA
+	add     x5, x5, #BLOCK_SIZE
+	sub	x5, x5, #1
+	bic	x5, x5, #(BLOCK_SIZE - 1)	// start VA calc
+	mov	x6, #MAP_BOOT_PARAM_SIZE
+	add	x6, x5, x6			// end VA calc.
 	sub	x6, x6, #1			// inclusive range
 	create_block_map x0, x7, x3, x5, x6
 

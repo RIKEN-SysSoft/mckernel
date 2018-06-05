@@ -9,21 +9,44 @@
 #define _SZ64KB (1UL<<16)
 
 #ifdef CONFIG_ARM64_64K_PAGES
-# define GRANULE_SIZE _SZ64KB
+# define GRANULE_SIZE	_SZ64KB
+# define BLOCK_SHIFT	PAGE_SHIFT
+# define BLOCK_SIZE	PAGE_SIZE
+# define TABLE_SHIFT	PMD_SHIFT
 #else
-# define GRANULE_SIZE _SZ4KB
+# define GRANULE_SIZE	_SZ4KB
+# define BLOCK_SHIFT	SECTION_SHIFT
+# define BLOCK_SIZE	SECTION_SIZE
+# define TABLE_SHIFT	PUD_SHIFT
 #endif
+
 #define VA_BITS		CONFIG_ARM64_VA_BITS
 
 /*
  * Address define
  */
-#define MAP_KERNEL_SHIFT	21
-#define MAP_KERNEL_SIZE		(UL(1) << MAP_KERNEL_SHIFT)
+/* early alloc area address */
+/* START:_end, SIZE:512 pages */
 #define MAP_EARLY_ALLOC_SHIFT	9
 #define MAP_EARLY_ALLOC_SIZE	(UL(1) << (PAGE_SHIFT + MAP_EARLY_ALLOC_SHIFT))
+
+#ifndef __ASSEMBLY__
+# define ALIGN_UP(x, align)     ALIGN_DOWN((x) + (align) - 1, align)
+# define ALIGN_DOWN(x, align)   ((x) & ~((align) - 1))
+extern char _end[];
+# define MAP_EARLY_ALLOC	(ALIGN_UP((unsigned long)_end, BLOCK_SIZE))
+# define MAP_EARLY_ALLOC_END	(MAP_EARLY_ALLOC + MAP_EARLY_ALLOC_SIZE)
+#endif /* !__ASSEMBLY__ */
+
+/* bootparam area address */
+/* START:early alloc area end, SIZE:2MiB */
 #define MAP_BOOT_PARAM_SHIFT	21
 #define MAP_BOOT_PARAM_SIZE	(UL(1) << MAP_BOOT_PARAM_SHIFT)
+
+#ifndef __ASSEMBLY__
+# define MAP_BOOT_PARAM		(ALIGN_UP(MAP_EARLY_ALLOC_END, BLOCK_SIZE))
+# define MAP_BOOT_PARAM_END	(MAP_BOOT_PARAM + MAP_BOOT_PARAM_SIZE)
+#endif /* !__ASSEMBLY__ */
 
 #if (VA_BITS == 39 && GRANULE_SIZE == _SZ4KB)
 #
@@ -33,12 +56,7 @@
 # define MAP_VMAP_SIZE		UL(0x0000000100000000)
 # define MAP_FIXED_START	UL(0xffffffbffbdfd000)
 # define MAP_ST_START		UL(0xffffffc000000000)
-# define MAP_KERNEL_START	UL(0xffffffffff800000)                   // 0xffff_ffff_ff80_0000
-# define MAP_ST_SIZE		(MAP_KERNEL_START - MAP_ST_START)        // 0x0000_003f_ff80_0000
-# define MAP_EARLY_ALLOC	(MAP_KERNEL_START + MAP_KERNEL_SIZE)     // 0xffff_ffff_ffa0_0000
-# define MAP_EARLY_ALLOC_END	(MAP_EARLY_ALLOC + MAP_EARLY_ALLOC_SIZE)
-# define MAP_BOOT_PARAM		(MAP_EARLY_ALLOC_END)                    // 0xffff_ffff_ffc0_0000
-# define MAP_BOOT_PARAM_END	(MAP_BOOT_PARAM + MAP_BOOT_PARAM_SIZE)   // 0xffff_ffff_ffe0_0000
+# define MAP_KERNEL_START	UL(0xffffffffff800000)
 #
 #elif (VA_BITS == 42 && GRANULE_SIZE == _SZ64KB)
 #
@@ -48,12 +66,7 @@
 # define MAP_VMAP_SIZE		UL(0x0000000100000000)
 # define MAP_FIXED_START	UL(0xfffffdfffbdd0000)
 # define MAP_ST_START		UL(0xfffffe0000000000)
-# define MAP_KERNEL_START	UL(0xffffffffe0000000)                   // 0xffff_ffff_e000_0000
-# define MAP_ST_SIZE		(MAP_KERNEL_START - MAP_ST_START)        // 0x0000_01ff_e000_0000
-# define MAP_EARLY_ALLOC	(MAP_KERNEL_START + MAP_KERNEL_SIZE)     // 0xffff_ffff_e020_0000
-# define MAP_EARLY_ALLOC_END	(MAP_EARLY_ALLOC + MAP_EARLY_ALLOC_SIZE)
-# define MAP_BOOT_PARAM		(MAP_EARLY_ALLOC_END)                    // 0xffff_ffff_e220_0000
-# define MAP_BOOT_PARAM_END	(MAP_BOOT_PARAM + MAP_BOOT_PARAM_SIZE)   // 0xffff_ffff_e240_0000
+# define MAP_KERNEL_START	UL(0xffffffffe0000000)
 #
 #elif (VA_BITS == 48 && GRANULE_SIZE == _SZ4KB)
 #
@@ -63,13 +76,7 @@
 # define MAP_VMAP_SIZE		UL(0x0000000100000000)
 # define MAP_FIXED_START	UL(0xffff7ffffbdfd000)
 # define MAP_ST_START		UL(0xffff800000000000)
-# define MAP_KERNEL_START	UL(0xffffffffff800000)                   // 0xffff_ffff_ff80_0000
-# define MAP_ST_SIZE		(MAP_KERNEL_START - MAP_ST_START)        // 0x0000_7fff_ff80_0000
-# define MAP_EARLY_ALLOC	(MAP_KERNEL_START + MAP_KERNEL_SIZE)     // 0xffff_ffff_ffa0_0000
-# define MAP_EARLY_ALLOC_END	(MAP_EARLY_ALLOC + MAP_EARLY_ALLOC_SIZE)
-# define MAP_BOOT_PARAM		(MAP_EARLY_ALLOC_END)                    // 0xffff_ffff_ffc0_0000
-# define MAP_BOOT_PARAM_END	(MAP_BOOT_PARAM + MAP_BOOT_PARAM_SIZE)   // 0xffff_ffff_ffe0_0000
-#
+# define MAP_KERNEL_START	UL(0xffffffffff800000)
 #
 #elif (VA_BITS == 48 && GRANULE_SIZE == _SZ64KB)
 #
@@ -79,18 +86,14 @@
 # define MAP_VMAP_SIZE		UL(0x0000000100000000)
 # define MAP_FIXED_START	UL(0xffff7ffffbdd0000)
 # define MAP_ST_START		UL(0xffff800000000000)
-# define MAP_KERNEL_START	UL(0xffffffffe0000000)                   // 0xffff_ffff_e000_0000
-# define MAP_ST_SIZE		(MAP_KERNEL_START - MAP_ST_START)        // 0x0000_7fff_e000_0000
-# define MAP_EARLY_ALLOC	(MAP_KERNEL_START + MAP_KERNEL_SIZE)     // 0xffff_ffff_e020_0000
-# define MAP_EARLY_ALLOC_END	(MAP_EARLY_ALLOC + MAP_EARLY_ALLOC_SIZE)
-# define MAP_BOOT_PARAM		(MAP_EARLY_ALLOC_END)                    // 0xffff_ffff_e220_0000
-# define MAP_BOOT_PARAM_END	(MAP_BOOT_PARAM + MAP_BOOT_PARAM_SIZE)   // 0xffff_ffff_e240_0000
+# define MAP_KERNEL_START	UL(0xffffffffe0000000)
 #
 #else
 # error address space is not defined.
 #endif
 
-#define STACK_TOP(region)  ((region)->user_end)
+#define MAP_ST_SIZE		(MAP_KERNEL_START - MAP_ST_START)
+#define STACK_TOP(region)	((region)->user_end)
 
 /*
  * pagetable define

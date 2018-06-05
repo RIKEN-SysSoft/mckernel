@@ -632,6 +632,7 @@ static void show_context_stack(struct pt_regs *regs)
 	max_loop = (stack_top - sp) / min_stack_frame_size;
 
 	for (i = 0; i < max_loop; i++) {
+		extern char _head[], _end[];
 		uintptr_t *fp, *lr;
 		fp = (uintptr_t *)sp;
 		lr = (uintptr_t *)(sp + 8);
@@ -640,7 +641,7 @@ static void show_context_stack(struct pt_regs *regs)
 			break;
 		}
 
-		if ((*lr < MAP_KERNEL_START) || (*lr > MAP_KERNEL_START + MAP_KERNEL_SIZE)) {
+		if ((*lr < (unsigned long)_head) || (*lr > (unsigned long)_end)) {
 			break;
 		}
 

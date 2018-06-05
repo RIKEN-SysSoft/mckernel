@@ -17,9 +17,6 @@
 
 #ifndef __ASSEMBLY__
 
-#define ALIGN_UP(x, align)     ALIGN_DOWN((x) + (align) - 1, align)
-#define ALIGN_DOWN(x, align)   ((x) & ~((align) - 1))
-
 #include <process.h>
 #include <prctl.h>
 
