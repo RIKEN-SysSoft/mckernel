@@ -119,7 +119,7 @@ extern char _end[];
 # define PTL1_INDEX_MASK PTL2_INDEX_MASK
 # define FIRST_LEVEL_BLOCK_SUPPORT  0
 #elif GRANULE_SIZE == _SZ64KB
-# define __PTL4_SHIFT  0
+# define __PTL4_SHIFT  55
 # define __PTL3_SHIFT  42
 # define __PTL2_SHIFT  29
 # define __PTL1_SHIFT  16
