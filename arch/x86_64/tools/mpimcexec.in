@@ -21,6 +21,10 @@ COMMAND=""
 NUMA=""
 HOSTFILE=""
 
+if [ ! -z "${MPI_LOCALNRANKS}" ]; then
+	PPN=${MPI_LOCALNRANKS}
+fi
+
 help_exit() {
 	echo ""
 	echo "Spawn an McKernel MPI job on Oakforest-PACS."
