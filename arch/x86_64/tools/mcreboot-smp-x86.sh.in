@@ -85,6 +85,9 @@ do
 	esac
 done
 
+redirect_kmsg=0
+turbo="turbo"
+
 # Start ihkmond
 pid=`pidof ihkmond`
 if [ "${pid}" != "" ]; then
@@ -302,16 +305,19 @@ if ! grep -E 'ihk\s' /proc/modules &>/dev/null; then
 	fi
 fi
 
-# Increase swappiness so that we have better chance to allocate memory for IHK
-echo 100 > /proc/sys/vm/swappiness
+# Fujitsu drops caches for us in between jobs so don't do it on OFP
+if [ "`hostname | grep "c[0-9][0-9][0-9][0-9].ofp"`" == "" ]; then
+	# Increase swappiness so that we have better chance to allocate memory for IHK
+	echo 100 > /proc/sys/vm/swappiness
 
-# Drop Linux caches to free memory
-sync && echo 3 > /proc/sys/vm/drop_caches
+	# Drop Linux caches to free memory
+	sync && echo 3 > /proc/sys/vm/drop_caches
 
-# Merge free memory areas into large, physically contigous ones
-echo 1 > /proc/sys/vm/compact_memory 2>/dev/null
+	# Merge free memory areas into large, physically contigous ones
+	echo 1 > /proc/sys/vm/compact_memory 2>/dev/null
 
-sync
+	sync
+fi
 
 # Load IHK-SMP if not loaded and reserve CPUs and memory
 if ! grep ihk_smp_@ARCH@ /proc/modules &>/dev/null; then
