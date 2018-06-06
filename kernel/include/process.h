@@ -32,6 +32,7 @@
 #define VR_STACK           0x1
 #define VR_RESERVED        0x2
 #define VR_AP_USER         0x4
+#define VR_PREALLOC        0x8
 #define VR_IO_NOCACHE      0x100
 #define VR_REMOTE          0x200
 #define VR_WRITE_COMBINED  0x400
@@ -387,6 +388,8 @@ struct vm_range {
 	int pgshift;	/* page size. 0 means THP */
 	int padding;
 	void *private_data;
+	unsigned long lowest_accesed;
+	unsigned long faulted_size;
 };
 
 struct vm_range_numa_policy {

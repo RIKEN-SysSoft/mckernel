@@ -1242,6 +1242,8 @@ interrupt_syscall(struct thread *thread, int sig)
 SYSCALL_DECLARE(exit_group)
 {
 	dkprintf("sys_exit_group,pid=%d\n", cpu_local_var(current)->proc->pid);
+dkprintf("%s: PID: %d, TID: %d\n", __FUNCTION__,
+	cpu_local_var(current)->proc->pid, cpu_local_var(current)->tid);
 	terminate((int)ihk_mc_syscall_arg0(ctx), 0);
 
 	return 0;
@@ -1572,6 +1574,24 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 			vrflags |= VR_AP_USER;
 		}
 
+#if 1
+		if (len < (unsigned long)4*1024*1024*1024) {
+			phys = NOPHYS;
+			vrflags |= VR_PREALLOC;
+		}
+		else {
+		kprintf("%s: big ANON mapping!!: %lu\n", __FUNCTION__, len);
+			/* Give demand paging a chance */
+			vrflags |= VR_DEMAND_PAGING;
+			populated_mapping = 0;
+			error = zeroobj_create(&memobj);
+			if (error) {
+				ekprintf("%s: zeroobj_create failed, error: %d\n",
+						__FUNCTION__, error);
+				goto out;
+			}
+		}
+#else
 		p = ihk_mc_alloc_aligned_pages_user(npages, p2align,
 				IHK_MC_AP_NOWAIT | ap_flag, addr0);
 		if (p == NULL) {
@@ -1603,6 +1623,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 					__FUNCTION__, addr, len, npages, p2align);
 			phys = virt_to_phys(p);
 		}
+#endif
 	}
 	else if (flags & MAP_SHARED) {
 		dkprintf("%s: MAP_SHARED,flags=%x,len=%ld\n", __FUNCTION__, flags, len);
@@ -5530,6 +5551,7 @@ do_exit(int code)
 	int sig = code & 255;
 
 	dkprintf("sys_exit,pid=%d\n", proc->pid);
+dkprintf("%s: PID: %d, TID: %d\n", __FUNCTION__, proc->pid, thread->tid);
 
 	mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
 	nproc = 0;
@@ -7813,6 +7835,10 @@ SYSCALL_DECLARE(mremap)
 	uintptr_t lckstart = -1;
 	uintptr_t lckend = -1;
 
+/* Not for lammps for now.. */
+if (!strcmp("./lammps", thread->proc->saved_cmdline))
+	return -ENOSYS;
+
 	dkprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx)\n",
 			oldaddr, oldsize0, newsize0, flags, newaddr);
 	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
@@ -9535,6 +9561,10 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	}
 #endif // PROFILE_ENABLE
 
+	if (thread->proc->nohost) { // mcexec termination was detected
+		terminate(0, SIGKILL);
+	}
+
 #if defined(POSTK_DEBUG_TEMP_FIX_60) && defined(POSTK_DEBUG_TEMP_FIX_56)
 	check_need_resched();
 #elif defined(POSTK_DEBUG_TEMP_FIX_60) /* sched_yield called check_signal fix. */
@@ -9562,9 +9592,6 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 #endif // DISABLE_SCHED_YIELD
 		set_cputime(0);
 
-	if (thread->proc->nohost) { // mcexec termination was detected
-		terminate(0, SIGKILL);
-	}
 //kprintf("syscall=%d returns %lx(%ld)\n", num, l, l);
 
 	return l;

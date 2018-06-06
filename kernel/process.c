@@ -1015,6 +1015,10 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 		if (vm->range_cache[i] == range)
 			vm->range_cache[i] = NULL;
 	}
+
+if (range->flag & VR_STACK) {
+	kprintf("%s: VR_STACK faulted_size: %lu\n", __FUNCTION__, range->faulted_size);
+}
 	kfree(range);
 
 	dkprintf("free_process_memory_range(%p,%lx-%lx): 0\n",
@@ -1230,6 +1234,9 @@ int add_process_memory_range(struct process_vm *vm,
 	range->pgshift = pgshift;
 	range->private_data = NULL;
 
+	range->lowest_accesed = end;
+	range->faulted_size = 0;
+
 	rc = 0;
 	if (phys == NOPHYS) {
 		/* Nothing to map */
@@ -1265,6 +1272,138 @@ int add_process_memory_range(struct process_vm *vm,
 			__FUNCTION__, rc);
 		return rc;
 	}
+
+	/*
+	 * Allocate and map physical memory,
+	 * interpret NUMA policy.
+	 * TODO: move out to a function.. 
+	 */
+if (flag & VR_PREALLOC && phys == NOPHYS) {
+
+#if 0
+	unsigned long addr = start;
+	enum ihk_mc_pt_attribute ptattr;
+	ptattr = arch_vrflag_to_ptattr(range->flag, PF_POPULATE, NULL);
+	unsigned long irqflags;
+	unsigned long len = 0;
+	void *frame = NULL;
+	int npages;
+	int p2align;
+
+	len = end - addr;
+
+	/* Figure out size */
+	if (len >= LARGE_PAGE_SIZE) {
+		p2align = LARGE_PAGE_P2ALIGN;
+	}
+	else {
+		p2align = PAGE_P2ALIGN;
+	}
+	npages = len >> PAGE_SHIFT;
+
+	frame = ihk_mc_alloc_aligned_pages_user(npages,
+			p2align,
+			IHK_MC_AP_NOWAIT | (range->flag & VR_AP_USER ? IHK_MC_AP_USER : 0),
+			-1);
+	if (!frame) {
+		kprintf("%s: error: out of memory\n", __FUNCTION__);
+		panic("panic");
+		return -ENOMEM;
+	}
+
+	irqflags = ihk_mc_spinlock_lock(&vm->page_table_lock);
+
+	rc = ihk_mc_pt_set_range(vm->address_space->page_table,
+			vm,
+			(void *)addr,
+			(void *)addr + len,
+			virt_to_phys(frame),
+			ptattr,
+			PAGE_SHIFT + p2align,
+			range);
+
+	if (rc) {
+		kprintf("%s: ERROR: mapping\n", __FUNCTION__);
+		ihk_mc_spinlock_unlock(&vm->page_table_lock, irqflags);
+		return -ENOMEM;
+	}
+
+	ihk_mc_spinlock_unlock(&vm->page_table_lock, irqflags);
+
+	memset(frame, 0, len);
+	addr += len;
+
+
+#else
+	unsigned long addr = start;
+	enum ihk_mc_pt_attribute ptattr;
+	ptattr = arch_vrflag_to_ptattr(range->flag, PF_POPULATE, NULL);
+
+	while (addr < end) {
+		unsigned long irqflags;
+		unsigned long len = 0;
+		void *frame = NULL;
+		int npages;
+		int p2align;
+
+		len = end - addr;
+
+		/* Figure out size */
+		if (len >= LARGE_PAGE_SIZE) {
+			len = LARGE_PAGE_SIZE;
+			p2align = LARGE_PAGE_P2ALIGN;
+		}
+		else {
+			len = PAGE_SIZE;
+			p2align = PAGE_P2ALIGN;
+		}
+
+		npages = len >> PAGE_SHIFT;
+#if 0
+		frame = ihk_mc_alloc_aligned_pages_node_user(npages,
+				p2align,
+				IHK_MC_AP_NOWAIT | (range->flag & VR_AP_USER ? IHK_MC_AP_USER : 0),
+				node, -1);
+		node = 1 - node;
+#else
+		frame = ihk_mc_alloc_aligned_pages_user(npages,
+				p2align,
+				IHK_MC_AP_NOWAIT | (range->flag & VR_AP_USER ? IHK_MC_AP_USER : 0),
+				-1);
+#endif
+		if (!frame) {
+			kprintf("%s: error: out of memory\n", __FUNCTION__);
+			return -ENOMEM;
+		}
+
+		irqflags = ihk_mc_spinlock_lock(&vm->page_table_lock);
+
+		rc = ihk_mc_pt_set_range(vm->address_space->page_table,
+				vm,
+				(void *)addr,
+				(void *)addr + len,
+				virt_to_phys(frame),
+				ptattr,
+				PAGE_SHIFT + p2align,
+				range);
+
+		if (rc) {
+			kprintf("%s: ERROR: mapping\n", __FUNCTION__);
+			ihk_mc_spinlock_unlock(&vm->page_table_lock, irqflags);
+			return -ENOMEM;
+		}
+
+		ihk_mc_spinlock_unlock(&vm->page_table_lock, irqflags);
+
+		memset(frame, 0, len);
+		addr += len;
+	}
+#endif
+	dkprintf("%s: 0x%lx:%lu mapped\n",
+		__FUNCTION__,
+		start,
+		end - start);
+}
 
 	/* Clear content! */
 	if (phys != NOPHYS && !(flag & (VR_REMOTE | VR_DEMAND_PAGING))
@@ -1784,6 +1923,22 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 		}
 		pgaddr = (void *)(fault_addr & ~(pgsize - 1));
 	}
+
+	if (pgsize > LARGE_PAGE_SIZE) {
+		dkprintf("%s: 0x%lx, pgsize: %lu\n",
+				__FUNCTION__, pgaddr, pgsize);
+	}
+
+	if (range->flag & VR_STACK) {
+		range->faulted_size += pgsize;
+
+		if (range->lowest_accesed > (unsigned long)pgaddr) {
+			dkprintf("%s: VR_STACK @ 0x%lx, pgsize: %lu, distance: %lu\n",
+				__FUNCTION__, pgaddr, pgsize, range->end - (unsigned long)pgaddr);
+			range->lowest_accesed = (unsigned long)pgaddr;
+		}
+	}
+
 	/*****/
 	dkprintf("%s: ptep=%lx,pte_is_null=%d,pte_is_fileoff=%d\n", __FUNCTION__, ptep, ptep ? pte_is_null(ptep) : -1, ptep ? pte_is_fileoff(ptep, pgsize) : -1);
 	if (!ptep || pte_is_null(ptep) || pte_is_fileoff(ptep, pgsize)) {
@@ -2155,6 +2310,8 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	struct vm_range *range;
 	int stack_populated_size = 0;
 	int stack_align_padding = 0;
+	int p2align = LARGE_PAGE_P2ALIGN;
+	int pgshift = LARGE_PAGE_SHIFT;
 
 	/* Create stack range */
 	end = STACK_TOP(&thread->vm->region) & LARGE_PAGE_MASK;
@@ -2177,18 +2334,27 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	else if (size < minsz) {
 		size = minsz;
 	}
+
+#if 0
+	if (minsz >= GB_PAGE_SIZE) {
+		end = end & GB_PAGE_MASK;
+		p2align = GB_PAGE_P2ALIGN;
+		pgshift = GB_PAGE_SHIFT;
+	}
+#endif
+
 	start = (end - size) & LARGE_PAGE_MASK;
 
 	/* Apply user allocation policy to stacks */
 	/* TODO: make threshold kernel or mcexec argument */
 	ap_flag = (size >= proc->mpol_threshold &&
 		!(proc->mpol_flags & MPOL_NO_STACK)) ? IHK_MC_AP_USER : 0;
-	dkprintf("%s: max size: %lu, mapped size: %lu %s\n",
-			__FUNCTION__, size, minsz,
+	kprintf("%s: stack: 0x%lx-0x%lx:%lu, mapped: %lu %s\n",
+			__FUNCTION__, start, end, size, minsz,
 			ap_flag ? "(IHK_MC_AP_USER)" : "");
 
 	stack = ihk_mc_alloc_aligned_pages_user(minsz >> PAGE_SHIFT,
-				LARGE_PAGE_P2ALIGN, IHK_MC_AP_NOWAIT | ap_flag, start);
+				p2align, IHK_MC_AP_NOWAIT | ap_flag, start);
 
 	if (!stack) {
 		kprintf("%s: error: couldn't allocate initial stack\n",
@@ -2215,8 +2381,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 								thread->vm, (void *)(end - minsz),
 								(void *)end, virt_to_phys(stack),
 								arch_vrflag_to_ptattr(vrflag, PF_POPULATE, NULL),
-								LARGE_PAGE_SHIFT, range
-								);
+								pgshift, range);
 
 	if (error) {
 		kprintf("init_process_stack:"

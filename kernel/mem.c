@@ -698,6 +698,22 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 
 						break;
 					}
+					else {
+						dkprintf("%s: couldn't fulfill user policy for"
+								" %d contiguous pages from node %d "
+#ifdef IHK_RBTREE_ALLOCATOR
+								"(free pages left: %d)"
+#endif
+								"\n",
+								__FUNCTION__,
+								npages,
+								numa_id
+#ifdef IHK_RBTREE_ALLOCATOR
+								, memory_nodes[numa_id].nr_free_pages
+#endif
+								);
+						//return NULL;
+					}
 				}
 
 				if (pa) break;
@@ -719,8 +735,8 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 #ifdef PROFILE_ENABLE
 		profile_event_add(PROFILE_mpol_alloc_missed, npages * 4096);
 #endif
-		dkprintf("%s: couldn't fulfill user policy for %d pages\n",
-			__FUNCTION__, npages);
+		dkprintf("%s: couldn't fulfill user policy for %d pages from node %d\n",
+			__FUNCTION__, npages, i);
 	}
 
 distance_based:
@@ -926,6 +942,8 @@ static void query_free_mem_interrupt_handler(void *priv)
 	/* Iterate memory allocators */
 	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
 #ifdef IHK_RBTREE_ALLOCATOR
+		kprintf("McKernel free pages in NUMA node %d: %d\n",
+			i, memory_nodes[i].nr_free_pages);
 		pages += memory_nodes[i].nr_free_pages;
 #else
 		struct ihk_page_allocator_desc *pa_allocator;
@@ -980,6 +998,8 @@ void coredump(struct thread *thread, void *regs)
 	int ret;
 	struct coretable *coretable;
 	int chunks;
+
+	return;
 
 #ifdef POSTK_DEBUG_ARCH_DEP_67 /* use limit corefile size. (temporarily fix.) */
 	if (thread->proc->rlimit[MCK_RLIMIT_CORE].rlim_cur == 0) {
@@ -1189,6 +1209,7 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 		if (!lptep || !pte_is_present(lptep)) {
 			kprintf("%s: ERROR: no mapping in Linux for: 0x%lx?\n",
 					__FUNCTION__, virt);
+			terminate(0, SIGKILL);
 			goto regular_handler;
 		}
 
@@ -1210,7 +1231,7 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 		}
 
 		*ptep = *lptep;
-		kprintf("%s: Linux ioremap address 0x%lx -> 0x%lx "
+		dkprintf("%s: Linux ioremap address 0x%lx -> 0x%lx "
 				"mapped on demand\n",
 				__FUNCTION__, virt, phys);
 

@@ -19,7 +19,7 @@ void panic(const char *msg)
 
 	kprintf("%s\n", msg);
 
-	arch_print_stack();
+	//arch_print_stack();
 
 	while (1) {
 		cpu_halt();

@@ -3522,6 +3522,7 @@ int main_loop(struct thread_data_s *my_thread)
 
 				if (ioctl(fd, MCEXEC_UP_TRANSFER, &trans) != 0) {
 					fprintf(stderr, "__NR_gettid(): error transfering TIDs\n");
+					exit(1);
 				}
 
 				free(tids);

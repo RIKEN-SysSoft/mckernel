@@ -1073,7 +1073,6 @@ out:
 	return ret;
 }
 
-
 /* NOTE: per-process data is refcounted.
  * For every get call the user should call put. */
 struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(

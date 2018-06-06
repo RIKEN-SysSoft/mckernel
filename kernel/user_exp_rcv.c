@@ -110,8 +110,11 @@ int hfi1_user_exp_rcv_setup(struct hfi1_filedata *fd, struct hfi1_tid_info *tinf
 
 #if 0
 	/* Verify that access is OK for the user buffer */
-	if (access_ok(vm, VERIFY_WRITE, tinfo->vaddr, tinfo->length))
+	if (access_ok(vm, VERIFY_WRITE, tinfo->vaddr, tinfo->length)) {
+		kprintf("%s: access_ok() failed for 0x%lx:%lu\n",
+			__FUNCTION__, tinfo->vaddr, tinfo->length);
 		return -EFAULT;
+	}
 #endif
 
 	vaddr_end = tinfo->vaddr + tinfo->length;
