@@ -1322,7 +1322,10 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 							dprintk("%s: filename: %s, premap & zerofill\n",
 									__FUNCTION__, fullpath);
 						}
-						else if (strstr(fullpath, "libmpi") != NULL) {
+						else if (strstr(fullpath, "libmpi") ||
+								strstr(fullpath, "libiomp") ||
+								strstr(fullpath, "libpthread") ||
+								strstr(fullpath, "libc.so")) {
 							mf_flags = MF_PREFETCH;
 							dprintk("%s: filename: %s, prefetch\n",
 									__FUNCTION__, fullpath);
