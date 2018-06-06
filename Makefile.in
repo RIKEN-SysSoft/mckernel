@@ -1,5 +1,6 @@
 TARGET = @TARGET@
 SBINDIR = @SBINDIR@
+BINDIR = @BINDIR@
 INCDIR =  @INCDIR@
 ETCDIR = @ETCDIR@
 MANDIR = @MANDIR@
@@ -47,6 +48,7 @@ install:
 		mkdir -p -m 755 $(SBINDIR); \
 		install -m 755 arch/x86_64/tools/mcreboot-smp-x86.sh $(SBINDIR)/mcreboot.sh; \
 		install -m 755 arch/x86_64/tools/mcstop+release-smp-x86.sh $(SBINDIR)/mcstop+release.sh; \
+		install -m 755 arch/x86_64/tools/mpimcexec $(BINDIR)/mpimcexec; \
 		install -m 755 arch/x86_64/tools/mcoverlay-destroy-smp-x86.sh $(SBINDIR)/mcoverlay-destroy.sh; \
 		install -m 755 arch/x86_64/tools/mcoverlay-create-smp-x86.sh $(SBINDIR)/mcoverlay-create.sh; \
 		install -m 755 arch/x86_64/tools/eclair-dump-backtrace.exp $(SBINDIR)/eclair-dump-backtrace.exp;\
