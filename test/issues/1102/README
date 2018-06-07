@@ -1,0 +1,26 @@
+
+CT_001:
+  ltp-syscall_mkdir09 を繰り返し実行する
+    -> いずれの実行結果もFAILとならない
+
+CT_002:
+  ostest のsiginfo_00 を実行する
+    -> 実行結果がRESULT: ok となる
+
+CT_003:
+  ostest のsiginfo_01 を実行する
+  動作の確認には、SIGHUP を用いる
+    -> 1度目のSIGHUPはハンドルされ、プロセスが残存する
+       2度目のSIGHUPにより、プロセスが終了する
+
+CT_004:
+  ostest のsiginfo_01 を実行する
+  動作の確認には、SIGINT を用いる
+    -> 1度目のSIGINTはハンドルされ、プロセスが残存する
+       2度目のSIGINTにより、プロセスが終了する
+
+CT_005:
+  ostest のsiginfo_01 を実行する
+  動作の確認には、SIGTERM を用いる
+    -> 1度目のSIGTERMはハンドルされ、プロセスが残存する
+       2度目のSIGTERMにより、プロセスが終了する
