@@ -7966,8 +7966,10 @@ if (!strcmp("./lammps", thread->proc->saved_cmdline))
 		if (range->memobj) {
 			memobj_ref(range->memobj);
 		}
+
+		/* Drop VR_PREALLOC to create vm_range without physical pages */
 		error = add_process_memory_range(thread->vm, newstart, newend, -1,
-				range->flag, range->memobj,
+				range->flag & ~VR_PREALLOC, range->memobj,
 				range->objoff + (oldstart - range->start),
 				range->pgshift, NULL);
 		if (error) {
