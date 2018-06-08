@@ -825,8 +825,8 @@ struct process *find_process(int pid, struct mcs_rwlock_node_irqsave *lock);
 void process_unlock(struct process *proc, struct mcs_rwlock_node_irqsave *lock);
 void chain_process(struct process *);
 void chain_thread(struct thread *);
-void proc_init();
-void set_timer();
+void proc_init(void);
+void set_timer(void);
 struct sig_pending *hassigpending(struct thread *thread);
 
 #endif

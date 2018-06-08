@@ -60,9 +60,9 @@ void ihk_mc_boot_cpu(int cpuid, unsigned long pc);
 int ihk_mc_get_processor_id(void);
 int ihk_mc_get_hardware_processor_id(void);
 int ihk_mc_get_numa_id(void);
-int ihk_mc_get_nr_cores();
-int ihk_mc_get_nr_linux_cores();
-int ihk_mc_get_osnum();
+int ihk_mc_get_nr_cores(void);
+int ihk_mc_get_nr_linux_cores(void);
+int ihk_mc_get_osnum(void);
 int ihk_mc_get_core(int id, unsigned long *linux_core_id, unsigned long *apic_id,
                     int *numa_id);
 int ihk_mc_get_ikc_cpu(int id);
@@ -78,7 +78,7 @@ void ihk_mc_init_context(ihk_mc_kernel_context_t *new_ctx,
                          void (*next_function)(void));
 
 int ihk_mc_get_extra_reg_id(unsigned long hw_config, unsigned long hw_config_ext);
-unsigned int ihk_mc_get_nr_extra_regs();
+unsigned int ihk_mc_get_nr_extra_regs(void);
 int ihk_mc_get_extra_reg_idx(int id);
 unsigned int ihk_mc_get_extra_reg_msr(int id);
 unsigned long ihk_mc_get_extra_reg_event(int id);

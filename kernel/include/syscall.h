@@ -340,7 +340,7 @@ struct syscall_post {
 #define SYSCALL_FOOTER return do_syscall(&request, ihk_mc_get_processor_id(), 0)
 
 extern long do_syscall(struct syscall_request *req, int cpu, int pid);
-extern int obtain_clone_cpuid();
+int obtain_clone_cpuid(cpu_set_t *cpu_set);
 extern long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx);
 
 #define DECLARATOR(number,name)		__NR_##name = number,
@@ -458,7 +458,7 @@ static inline unsigned long timespec_to_jiffy(const struct timespec *ats)
 	return ats->tv_sec * 100 + ats->tv_nsec / 10000000;
 }
 
-void reset_cputime();
+void reset_cputime(void);
 void set_cputime(int mode);
 int do_munmap(void *addr, size_t len);
 intptr_t do_mmap(intptr_t addr0, size_t len0, int prot, int flags, int fd,
