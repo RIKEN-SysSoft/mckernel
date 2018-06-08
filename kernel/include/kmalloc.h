@@ -34,7 +34,7 @@ void *__kmalloc(int size, ihk_mc_ap_flag flag);
 void __kfree(void *ptr);
 
 int _memcheck(void *ptr, char *msg, char *file, int line, int free);
-int memcheckall();
+int memcheckall(void);
 int freecheck(int runcount);
 void kmalloc_consolidate_free_list(void);
 
