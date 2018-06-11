@@ -578,7 +578,8 @@ struct process {
 	int nr_processes; /* For partitioned execution */
 	int process_rank; /* Rank in partition */
 
-	void *fd_priv_table[256];
+#define MAX_FD_PRIV 256
+	void *fd_priv_table[MAX_FD_PRIV];
 	/* HFI1 specific */
 	void *hfi1_kregbase;
 	void *hfi1_piobase;

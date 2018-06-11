@@ -485,7 +485,9 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 				res.private_data &&
 				!strncmp((const char *)req->args[0], "/dev/hfi", 8)) {
 
-			thread->proc->fd_priv_table[rc] = res.private_data;
+			if (rc >= 0 && rc < MAX_FD_PRIV) {
+				thread->proc->fd_priv_table[rc] = res.private_data;
+			}
 			dkprintf("%s: PID: %d, open fd: %d, filename: "
 					"%s, private_data: 0x%lx\n",
 					__FUNCTION__, thread->proc->pid,
@@ -3140,7 +3142,8 @@ SYSCALL_DECLARE(writev)
 	int fd = ihk_mc_syscall_arg0(ctx);
 	struct iovec *iovec = (struct iovec *)ihk_mc_syscall_arg1(ctx);
 	int iovcnt = ihk_mc_syscall_arg2(ctx);
-	void *private_data = proc->fd_priv_table[fd];
+	void *private_data = (fd < 0 || fd >= MAX_FD_PRIV) ? NULL : proc->fd_priv_table[fd];
+
 	if (private_data) {
 		return hfi1_aio_write(private_data, iovec, iovcnt);
 	}
@@ -3182,7 +3185,7 @@ SYSCALL_DECLARE(ioctl)
 	struct process *proc = thread->proc;
 	struct mckfd *fdp;
 	long irqstate;
-	void *private_data = proc->fd_priv_table[fd];
+	void *private_data = (fd < 0 || fd >= MAX_FD_PRIV) ? NULL : proc->fd_priv_table[fd];
 	unsigned long t_s = rdtsc();
 	int sub_rc = 0;
 
@@ -3342,7 +3345,7 @@ SYSCALL_DECLARE(close)
 		rc = syscall_generic_forwarding(__NR_close, ctx);
 	}
 
-	if (fd < 256) {
+	if (fd >= 0 && fd < MAX_FD_PRIV) {
 		thread->proc->fd_priv_table[fd] = NULL;
 	}
 

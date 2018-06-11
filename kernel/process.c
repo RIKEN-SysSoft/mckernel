@@ -140,7 +140,7 @@ init_process(struct process *proc, struct process *parent)
 #endif /* POSTK_DEBUG_ARCH_DEP_63 */
 
 	// Double check the inheritance from parent
-	memset(proc->fd_priv_table, 0, 256 * sizeof(void *));
+	memset(proc->fd_priv_table, 0, MAX_FD_PRIV * sizeof(void *));
 
 	INIT_LIST_HEAD(&proc->threads_list);
 	INIT_LIST_HEAD(&proc->children_list);
