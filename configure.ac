@@ -229,7 +229,7 @@ case $WITH_TARGET in
 		KMODDIR="$prefix/kmod"
 	fi
 	if test "X$MANDIR" = X; then
-		MANDIR="$prefix/man"
+		MANDIR="$prefix/share/man"
 	fi
 	;;
     builtin-mic)
@@ -246,7 +246,7 @@ case $WITH_TARGET in
 		KMODDIR="$prefix/attached/kmod"
 	fi
 	if test "X$MANDIR" = X; then
-		MANDIR="$prefix/attached/man"
+		MANDIR="$prefix/share/man"
 	fi
 	;;
     builtin-x86)
@@ -263,7 +263,7 @@ case $WITH_TARGET in
 		KMODDIR="$prefix/kmod"
 	fi
 	if test "X$MANDIR" = X; then
-		MANDIR="$prefix/attached/man"
+		MANDIR="$prefix/share/man"
 	fi
 	;;
     smp-x86)
@@ -295,7 +295,7 @@ case $WITH_TARGET in
 		KMODDIR="$prefix/kmod"
 	fi
 	if test "X$MANDIR" = X; then
-		MANDIR="$prefix/smp-x86/man"
+		MANDIR="$prefix/share/man"
 	fi
 	;;
     smp-arm64)
@@ -327,7 +327,7 @@ case $WITH_TARGET in
 		KMODDIR="$prefix/kmod"
 	fi
 	if test "X$MANDIR" = X; then
-		MANDIR="$prefix/smp-arm64/man"
+		MANDIR="$prefix/share/man"
 	fi
 	;;
     *)
