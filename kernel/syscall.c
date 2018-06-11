@@ -4758,7 +4758,8 @@ int shmobj_list_lookup_by_key(key_t key, struct shmobj **objp)
 	struct shmobj *obj;
 
 	list_for_each_entry(obj, &kds_list, chain) {
-		if (obj->ds.shm_perm.key == key) {
+		if (obj->ds.shm_perm.key == key &&
+		    !(obj->ds.shm_perm.mode & SHM_DEST)) {
 			break;
 		}
 	}
