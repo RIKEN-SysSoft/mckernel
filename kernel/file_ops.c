@@ -233,6 +233,7 @@ long hfi1_file_ioctl(void *private_data, unsigned int cmd,
 		break;
 #endif
 		dkprintf("%s: HFI1_IOCTL_CTXT_RESET \n", __FUNCTION__);
+		break;
 	}
 
 	case HFI1_IOCTL_GET_VERS:
