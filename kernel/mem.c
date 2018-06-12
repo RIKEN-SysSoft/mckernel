@@ -547,7 +547,7 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 		ihk_mc_ap_flag flag, int pref_node, int is_user, uintptr_t virt_addr)
 {
 	unsigned long pa = 0;
-	int i, node;
+	int i = 0, node;
 #ifndef IHK_RBTREE_ALLOCATOR
 	struct ihk_page_allocator_desc *pa_allocator;
 #endif

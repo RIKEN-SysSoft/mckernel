@@ -11,7 +11,9 @@
 
 typedef int (*int_void_fn)(void);
 
+#if 0
 static int_void_fn orig_sched_yield = 0;
+#endif
 
 int sched_yield(void)
 {
