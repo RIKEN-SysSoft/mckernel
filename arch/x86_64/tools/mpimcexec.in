@@ -44,28 +44,52 @@ help_exit() {
 while true; do
 	case $1 in
 		-ppn | --ppn | --ranks-per-node )
+			if [ $# -lt 2 ]; then
+			    echo "error: needs an interger value for -ppn, --ppn, or --ranks-per-node option"
+			    help_exit
+			fi
 			PPN=$2
 			shift 2
 			;;
 		-n | --n | --ranks )
+			if [ $# -lt 2 ]; then
+			    echo "error: needs an interger value for -n, --n, or --ranks option"
+			    help_exit
+			fi
 			RANKS=$2
 			shift 2
 			;;
 		-m | --numa )
+			if [ $# -lt 2 ]; then
+			    echo "error: needs an interger value for -m or --numa option"
+			    help_exit
+			fi
 			NUMA="-m $2"
 			shift 2
 			;;
 		--nodes )
+			if [ $# -lt 2 ]; then
+			    echo "error: needs an interger value for --nodes option"
+			    help_exit
+			fi
 			NODES=$2
 			shift 2
 			;;
 		--env | -env )
+			if [ $# -lt 2 ]; then
+			    echo "error: needs an environment variable name for -env or --env option"
+			    help_exit
+			fi
 			if [ -z "`echo $2 | grep I_MPI_PIN`" ]; then
 				MPI_ENV=`echo "${MPI_ENV} -env $2" | xargs`
 			fi
 			shift 2
 			;;
 		-h | --hostfile )
+			if [ $# -lt 2 ]; then
+			    echo "error: needs a file name for -h or --hostfile option"
+			    help_exit
+			fi
 			HOSTFILE="-hostfile $2"
 			shift 2
 			;;
@@ -91,6 +115,11 @@ fi
 
 if [ -z ${RANKS} ] && [ -z ${NODES} ]; then
 	echo "error: please specify the total number of ranks or the number of nodes"
+	help_exit
+fi
+
+if [ x${COMMAND} = x ]; then
+	echo "error: please specify command"
 	help_exit
 fi
 
