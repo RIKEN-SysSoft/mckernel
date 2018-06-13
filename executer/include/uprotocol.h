@@ -143,6 +143,8 @@ struct program_load_desc {
 	long stack_premap;
 	unsigned long mpol_bind_mask;
 	int nr_processes;
+	unsigned long exec_path_va;
+	unsigned long interp_path_va;
 	char shell_path[SHELL_PATH_MAX_LEN];
 	__cpu_set_unit cpu_set[PLD_CPU_SET_SIZE];
 	int profile;

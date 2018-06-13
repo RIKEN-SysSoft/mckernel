@@ -300,6 +300,8 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	              + sizeof(struct program_image_section) * nhdrs);
 	memset(desc, '\0', sizeof(struct program_load_desc)
 	                   + sizeof(struct program_image_section) * nhdrs);
+	desc->exec_path_va = 0;
+	desc->interp_path_va = 0;
 	desc->shell_path[0] = '\0';
 	fseek(fp, hdr.e_phoff, SEEK_SET);
 	j = 0;
@@ -647,6 +649,7 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 	FILE *interp = NULL;
 	char *interp_path;
 	char *shell = NULL;
+	char *real_exec_path = NULL;
 	size_t shell_len = 0;
 	struct program_load_desc *desc;
 	int ret = 0;
@@ -740,8 +743,17 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 		return 1;
 	}
 
+	/* realpath() allocate a buffer of up to PATH_MAX bytes */
+	if (!(real_exec_path = realpath(exec_path, NULL))) {
+		fprintf(stderr, "Error: Failed to get realpath of %s\n", exec_path);
+		return 1;
+	}
+
+	desc->exec_path_va = (unsigned long)real_exec_path;
+
 	if (interp_path) {
 		char *path;
+		char *real_interp_path;
 
 		path = search_file(interp_path, X_OK);
 		if (!path) {
@@ -755,6 +767,14 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 			return 1;
 		}
 
+		/* realpath() allocate a buffer of up to PATH_MAX bytes */
+		if (!(real_interp_path = realpath(path, NULL))) {
+			fprintf(stderr, "Error: Failed to get realpath of %s\n", path);
+			return 1;
+		}
+
+		desc->interp_path_va = (unsigned long)real_interp_path;
+
 		desc = load_interp(desc, interp);
 		if (!desc) {
 			fprintf(stderr, "Error: Failed to parse interp!\n");
@@ -765,130 +785,6 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 	__dprintf("# of sections: %d\n", desc->num_sections);
 	
 	*desc_p = desc;
-	return 0;
-}
-
-int transfer_image(int fd, struct program_load_desc *desc)
-{
-	struct remote_transfer pt;
-	unsigned long s, e, flen, rpa;
-	int i, l, lr;
-	FILE *fp;
-
-	for (i = 0; i < desc->num_sections; i++) {
-		fp = desc->sections[i].fp;
-#ifdef POSTK_DEBUG_ARCH_DEP_35
-		s = (desc->sections[i].vaddr) & page_mask;
-		e = (desc->sections[i].vaddr + desc->sections[i].len
-		     + page_size - 1) & page_mask;
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
-		s = (desc->sections[i].vaddr) & PAGE_MASK;
-		e = (desc->sections[i].vaddr + desc->sections[i].len
-		     + PAGE_SIZE - 1) & PAGE_MASK;
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
-		rpa = desc->sections[i].remote_pa;
-
-		if (fseek(fp, desc->sections[i].offset, SEEK_SET) != 0) {
-			fprintf(stderr, "transfer_image(): error: seeking file position\n");
-			return -1;
-		}
-		flen = desc->sections[i].filesz;
-
-		__dprintf("seeked to %lx | size %ld\n",
-		          desc->sections[i].offset, flen);
-
-		while (s < e) {
-			memset(&pt, '\0', sizeof pt);
-			pt.rphys = rpa;
-			pt.userp = dma_buf;
-#ifdef POSTK_DEBUG_ARCH_DEP_35
-			pt.size = page_size;
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
-			pt.size = PAGE_SIZE;
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
-			pt.direction = MCEXEC_UP_TRANSFER_TO_REMOTE;
-			lr = 0;
-			
-#ifdef POSTK_DEBUG_ARCH_DEP_35
-			memset(dma_buf, 0, page_size);
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
-			memset(dma_buf, 0, PAGE_SIZE);
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
-			if (s < desc->sections[i].vaddr) {
-#ifdef POSTK_DEBUG_ARCH_DEP_35
-				l = desc->sections[i].vaddr 
-					& (page_size - 1);
-				lr = page_size - l;
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
-				l = desc->sections[i].vaddr 
-					& (PAGE_SIZE - 1);
-				lr = PAGE_SIZE - l;
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
-				if (lr > flen) {
-					lr = flen;
-				}
-				if (fread(dma_buf + l, 1, lr, fp) != lr) {
-					if (ferror(fp) > 0) {
-						fprintf(stderr, "transfer_image(): error: accessing file\n");
-						return -EINVAL;
-					}
-					else if (feof(fp) > 0) {
-						fprintf(stderr, "transfer_image(): file too short?\n");
-						return -EINVAL;
-					}
-					else {
-						/* TODO: handle smaller reads.. */
-						return -EINVAL;
-					}
-				}
-				flen -= lr;
-			} 
-			else if (flen > 0) {
-#ifdef POSTK_DEBUG_ARCH_DEP_35
-				if (flen > page_size) {
-					lr = page_size;
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
-				if (flen > PAGE_SIZE) {
-					lr = PAGE_SIZE;
-#endif	/*POSTK_DEBUG_ARCH_DEP_35 */
-				} else {
-					lr = flen;
-				}
-				if (fread(dma_buf, 1, lr, fp) != lr) {
-					if (ferror(fp) > 0) {
-						fprintf(stderr, "transfer_image(): error: accessing file\n");
-						return -EINVAL;
-					}
-					else if (feof(fp) > 0) {
-						fprintf(stderr, "transfer_image(): file too short?\n");
-						return -EINVAL;
-					}
-					else {
-						/* TODO: handle smaller reads.. */
-						return -EINVAL;
-					}
-				}
-				flen -= lr;
-			} 
-#ifdef POSTK_DEBUG_ARCH_DEP_35
-			s += page_size;
-			rpa += page_size;
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
-			s += PAGE_SIZE;
-			rpa += PAGE_SIZE;
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
-			
-			/* No more left to upload.. */
-			if (lr == 0 && flen == 0) break;
-
-			if (ioctl(fd, MCEXEC_UP_TRANSFER,
-						(unsigned long)&pt)) {
-				perror("dma");
-				break;
-			}
-		}
-	}
-
 	return 0;
 }
 
@@ -2523,6 +2419,12 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if (init_worker_threads(fd) < 0) {
+		perror("worker threads: ");
+		close(fd);
+		return 1;
+	}
+
 	if (ioctl(fd, MCEXEC_UP_PREPARE_IMAGE, (unsigned long)desc) != 0) {
 		perror("prepare");
 		close(fd);
@@ -2530,10 +2432,7 @@ int main(int argc, char **argv)
 	}
 
 	print_desc(desc);
-	if (transfer_image(fd, desc) < 0) {
-		fprintf(stderr, "error: transferring image\n");
-		return -1;
-	}
+
 	fflush(stdout);
 	fflush(stderr);
 	
@@ -2580,12 +2479,6 @@ int main(int argc, char **argv)
 
 	if ((error = pthread_create(&watchdog_thread, &watchdog_thread_attr, watchdog_thread_func, NULL))) {
 		fprintf(stderr, "Error: pthread_create failed (%d)\n", error);
-		close(fd);
-		return 1;
-	}
-
-	if (init_worker_threads(fd) < 0) {
-		perror("worker threads: ");
 		close(fd);
 		return 1;
 	}
@@ -3729,166 +3622,113 @@ fork_err:
 		}
 
 		case __NR_execve: {
+			struct program_load_desc *desc;
+			struct remote_transfer trans;
+			char path[1024];
+			char *filename;
+			int ret;
+			char *shell;
+			char shell_path[1024];
 
-			/* Execve phase */
-			switch (w.sr.args[0]) {
-				struct program_load_desc *desc;
-				struct remote_transfer trans;
-				char path[1024];
-				char *filename;
-				int ret;
-				char *shell;
-				char shell_path[1024];
+			/* Load descriptor */
+			shell = NULL;
+			filename = (char *)w.sr.args[1];
 
-				/* Load descriptor phase */
-				case 1:
-					
-					shell = NULL;
-					filename = (char *)w.sr.args[1];
-					
-					if ((ret = lookup_exec_path(filename, path, sizeof(path), 0)) 
-						!= 0) {
-						goto return_execve1;
-					}
-
-					if ((ret = load_elf_desc(path, &desc, &shell)) != 0) {
-						fprintf(stderr, 
-							"execve(): error loading ELF for file %s\n", path);
-						goto return_execve1;
-					}
-					
-					/* Check whether shell script */
-					if (shell) {
-						if ((ret = lookup_exec_path(shell, shell_path, 
-									sizeof(shell_path), 0)) != 0) {
-							fprintf(stderr, "execve(): error: finding file: %s\n", shell);
-							goto return_execve1;
-						}
-
-						if ((ret = load_elf_desc(shell_path, &desc, &shell)) 
-								!= 0) {
-							fprintf(stderr, "execve(): error: loading file: %s\n", shell);
-							goto return_execve1;
-						}
-
-#ifdef POSTK_DEBUG_TEMP_FIX_9 /* shell-script run via execve arg[0] fix */
-						if (strlen(shell) >= SHELL_PATH_MAX_LEN) {
-#else /* POSTK_DEBUG_TEMP_FIX_9 */
-						if (strlen(shell_path) >= SHELL_PATH_MAX_LEN) {
-#endif /* POSTK_DEBUG_TEMP_FIX_9 */
-							fprintf(stderr, "execve(): error: shell path too long: %s\n", shell_path);
-							ret = ENAMETOOLONG;
-							goto return_execve1;
-						}
-
-						/* Let the LWK know the shell interpreter */
-#ifdef POSTK_DEBUG_TEMP_FIX_9 /* shell-script run via execve arg[0] fix */
-						strcpy(desc->shell_path, shell);
-#else /* POSTK_DEBUG_TEMP_FIX_9 */
-						strcpy(desc->shell_path, shell_path);
-#endif /* POSTK_DEBUG_TEMP_FIX_9 */
-					}
-
-					desc->enable_vdso = enable_vdso;
-					__dprintf("execve(): load_elf_desc() for %s OK, num sections: %d\n",
-						path, desc->num_sections);
-
-					desc->rlimit[MCK_RLIMIT_STACK].rlim_cur = rlim_stack.rlim_cur;
-					desc->rlimit[MCK_RLIMIT_STACK].rlim_max = rlim_stack.rlim_max;
-					desc->stack_premap = stack_premap;
-
-					/* Copy descriptor to co-kernel side */
-					trans.userp = (void*)desc;
-					trans.rphys = w.sr.args[2];
-					trans.size = sizeof(struct program_load_desc) + 
-						sizeof(struct program_image_section) * 
-						desc->num_sections;
-					trans.direction = MCEXEC_UP_TRANSFER_TO_REMOTE;
-					
-					if (ioctl(fd, MCEXEC_UP_TRANSFER, &trans) != 0) {
-						fprintf(stderr, 
-							"execve(): error transfering ELF for file %s\n", 
-							(char *)w.sr.args[1]);
-						goto return_execve1;
-					}
-					
-					__dprintf("execve(): load_elf_desc() for %s OK\n",
-						path);
-
-					/* We can't be sure next phase will succeed */
-					/* TODO: what shall we do with fp in desc?? */
-					free(desc);
-					
-					ret = 0;
-return_execve1:
-					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
-					break;
-
-				/* Copy program image phase */
-				case 2:
-					
-					ret = -1;
-					/* Alloc descriptor */
-					desc = malloc(w.sr.args[2]);
-					if (!desc) {
-						fprintf(stderr, "execve(): error allocating desc\n");
-						goto return_execve2;
-					}
-					memset(desc, '\0', w.sr.args[2]);
-
-					/* Copy descriptor from co-kernel side */
-					trans.userp = (void*)desc;
-					trans.rphys = w.sr.args[1];
-					trans.size = w.sr.args[2];
-					trans.direction = MCEXEC_UP_TRANSFER_FROM_REMOTE;
-					
-					if (ioctl(fd, MCEXEC_UP_TRANSFER, &trans) != 0) {
-						fprintf(stderr, 
-							"execve(): error obtaining ELF descriptor\n");
-						ret = EINVAL;
-						goto return_execve2;
-					}
-					
-					__dprintf("%s", "execve(): transfer ELF desc OK\n");
-
-					if (transfer_image(fd, desc) != 0) {
-						fprintf(stderr, "error: transferring image\n");
-						return -1;
-					}
-					__dprintf("%s", "execve(): image transferred\n");
-
-					if (close_cloexec_fds(fd) < 0) {
-						ret = EINVAL;
-						goto return_execve2;
-					}
-
-					ret = 0;
-return_execve2:					
-#ifdef ENABLE_MCOVERLAYFS
-				{
-					struct sys_mount_desc mount_desc;
-
-					mount_desc.dev_name = NULL;
-					mount_desc.dir_name = "/proc";
-					mount_desc.type = NULL;
-					mount_desc.flags = MS_REMOUNT;
-					mount_desc.data = NULL;
-					if (ioctl(fd, MCEXEC_UP_SYS_MOUNT,
-								(unsigned long)&mount_desc) != 0) {
-						fprintf(stderr,
-								"WARNING: failed to remount /proc (%s)\n",
-								strerror(errno));
-					}
-				}
-#endif
-					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
-					break;
-
-				default:
-					fprintf(stderr, "execve(): ERROR: invalid execve phase\n");
-					break;
+			if ((ret = lookup_exec_path(filename, path, sizeof(path), 0)) 
+				!= 0) {
+				goto return_execve1;
 			}
 
+			if ((ret = load_elf_desc(path, &desc, &shell)) != 0) {
+				fprintf(stderr, 
+					"execve(): error loading ELF for file %s\n", path);
+				goto return_execve1;
+			}
+
+			/* Check whether shell script */
+			if (shell) {
+				if ((ret = lookup_exec_path(shell, shell_path, 
+							sizeof(shell_path), 0)) != 0) {
+					fprintf(stderr, "execve(): error: finding file: %s\n", shell);
+					goto return_execve1;
+				}
+
+				if ((ret = load_elf_desc(shell_path, &desc, &shell)) 
+						!= 0) {
+					fprintf(stderr, "execve(): error: loading file: %s\n", shell);
+					goto return_execve1;
+				}
+
+#ifdef POSTK_DEBUG_TEMP_FIX_9 /* shell-script run via execve arg[0] fix */
+				if (strlen(shell) >= SHELL_PATH_MAX_LEN) {
+#else /* POSTK_DEBUG_TEMP_FIX_9 */
+				if (strlen(shell_path) >= SHELL_PATH_MAX_LEN) {
+#endif /* POSTK_DEBUG_TEMP_FIX_9 */
+					fprintf(stderr, "execve(): error: shell path too long: %s\n", shell_path);
+					ret = ENAMETOOLONG;
+					goto return_execve1;
+				}
+
+				/* Let the LWK know the shell interpreter */
+#ifdef POSTK_DEBUG_TEMP_FIX_9 /* shell-script run via execve arg[0] fix */
+				strcpy(desc->shell_path, shell);
+#else /* POSTK_DEBUG_TEMP_FIX_9 */
+				strcpy(desc->shell_path, shell_path);
+#endif /* POSTK_DEBUG_TEMP_FIX_9 */
+			}
+
+			desc->enable_vdso = enable_vdso;
+			__dprintf("execve(): load_elf_desc() for %s OK, num sections: %d\n",
+				path, desc->num_sections);
+
+			desc->rlimit[MCK_RLIMIT_STACK].rlim_cur = rlim_stack.rlim_cur;
+			desc->rlimit[MCK_RLIMIT_STACK].rlim_max = rlim_stack.rlim_max;
+			desc->stack_premap = stack_premap;
+
+			/* Copy descriptor to co-kernel side */
+			trans.userp = (void*)desc;
+			trans.rphys = w.sr.args[2];
+			trans.size = sizeof(struct program_load_desc) + 
+				sizeof(struct program_image_section) * 
+				desc->num_sections;
+			trans.direction = MCEXEC_UP_TRANSFER_TO_REMOTE;
+
+			if (ioctl(fd, MCEXEC_UP_TRANSFER, &trans) != 0) {
+				fprintf(stderr, 
+					"execve(): error transfering ELF for file %s\n", 
+					(char *)w.sr.args[1]);
+				goto return_execve1;
+			}
+
+			__dprintf("execve(): load_elf_desc() for %s OK\n",
+				path);
+
+#ifdef ENABLE_MCOVERLAYFS
+			{
+				struct sys_mount_desc mount_desc;
+				mount_desc.dev_name = NULL;
+				mount_desc.dir_name = "/proc";
+				mount_desc.type = NULL;
+				mount_desc.flags = MS_REMOUNT;
+				mount_desc.data = NULL;
+
+				if (ioctl(fd, MCEXEC_UP_SYS_MOUNT,
+							(unsigned long)&mount_desc) != 0) {
+					fprintf(stderr,
+							"WARNING: failed to remount /proc (%s)\n",
+							strerror(errno));
+				}
+			}
+#endif
+			if (close_cloexec_fds(fd) < 0) {
+				ret = EINVAL;
+				goto return_execve1;
+			}
+			free(desc);
+			
+			ret = 0;
+return_execve1:
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 		}
 

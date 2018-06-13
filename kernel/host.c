@@ -58,6 +58,55 @@ void check_mapping_for_proc(struct thread *thread, unsigned long addr)
 	}
 }
 
+static int fill_zero_to_user(unsigned long dest, unsigned long length)
+{
+	void *zero_buf;
+	unsigned long len, offset, remain;
+	int rc;
+
+	remain = length;
+	offset = 0;
+
+	zero_buf = kmalloc(PAGE_SIZE, IHK_MC_AP_NOWAIT);
+	if (!zero_buf) {
+		kprintf("ERROR: allocating ZERO buffer\n");
+		goto err;
+	}
+	memset(zero_buf, 0, PAGE_SIZE);
+
+	len = length;
+
+	while (remain > 0) {
+		if (remain > PAGE_SIZE) {
+			len = PAGE_SIZE;
+		}
+		else {
+			len = remain;
+		}
+
+		rc = copy_to_user((void*)dest + offset, zero_buf, len);
+		if (rc) {
+			kprintf("ERROR: filling zero to user space\n");
+			goto err;
+		}
+
+		remain -= len;
+		offset += len;
+	}
+
+	if (zero_buf) {
+		kfree(zero_buf);
+	}
+
+	return 0;
+
+err:
+	if (zero_buf) {
+		kfree(zero_buf);
+	}
+	return -1;
+}
+
 /* 
  * Prepares the process ranges based on the ELF header described 
  * in program_load_desc and updates physical address in "p" so that
@@ -76,13 +125,11 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 {
 	char *args_envs, *args_envs_r;
 	unsigned long args_envs_p, args_envs_rp;
-	unsigned long s, e, up;
+	unsigned long e, fmap_start, fmap_end, anon_start, anon_end;
 	char **argv;
 	char **a;
 	int i, n, argc, envc, args_envs_npages;
 	char **env;
-	int range_npages;
-	void *up_v;
 	unsigned long addr;
 	unsigned long flags;
 	uintptr_t interp_obase = -1;
@@ -94,14 +141,16 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	long aout_base;
 	int error;
 	struct vm_range *range;
-	unsigned long ap_flags;
-	enum ihk_mc_pt_attribute ptattr;
-	
+	struct thread *prev;
+	ihk_mc_user_context_t ctx1, ctx2;
+	int fd;
+	intptr_t map_addr;
+	unsigned long section_start, section_file_end;
+
 	n = p->num_sections;
 
 	aout_base = (pn->reloc)? vm->region.map_end: 0;
 	for (i = 0; i < n; i++) {
-		ap_flags = 0;
 		if (pn->sections[i].interp && (interp_nbase == (uintptr_t)-1)) {
 			interp_obase = pn->sections[i].vaddr;
 			interp_obase -= (interp_obase % pn->interp_align);
@@ -119,83 +168,119 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 			pn->sections[i].vaddr += aout_base;
 			p->sections[i].vaddr = pn->sections[i].vaddr;
 		}
-		s = (pn->sections[i].vaddr) & PAGE_MASK;
-		e = (pn->sections[i].vaddr + pn->sections[i].len
+		fmap_start = (pn->sections[i].vaddr) & PAGE_MASK;
+		fmap_end = (pn->sections[i].vaddr + pn->sections[i].filesz
 				+ PAGE_SIZE - 1) & PAGE_MASK;
-		range_npages = ((pn->sections[i].vaddr - s) +
-			pn->sections[i].filesz + PAGE_SIZE - 1) >> PAGE_SHIFT;
+		anon_start = fmap_end;
+		anon_end = (pn->sections[i].vaddr + pn->sections[i].len
+				+ PAGE_SIZE - 1) & PAGE_MASK;
+
+		/* switch current temporary to use syscall */
+		prev = cpu_local_var(current);
+		cpu_local_var(current) = thread;
+
+		/* open ELF file (exec/interp) */
+		memset(&ctx1, '0', sizeof(ihk_mc_user_context_t));
+		memset(&ctx2, '0', sizeof(ihk_mc_user_context_t));
+
+		if (pn->sections[i].interp) {
+			ihk_mc_syscall_arg0(&ctx1) = pn->interp_path_va;
+		}
+		else {
+			ihk_mc_syscall_arg0(&ctx1) = pn->exec_path_va;
+		}
+		ihk_mc_syscall_arg1(&ctx1) = 0x0; //O_RDONLY
+
+		fd = (int)syscall_generic_forwarding(__NR_open, &ctx1);
+		if (fd < 0) {
+			kprintf("ERROR: opening exec/interp\n");
+			goto err;
+		}
+
+		/* load section by file_map */
+		map_addr = do_mmap(fmap_start, fmap_end - fmap_start, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE,
+		                   fd, pn->sections[i].offset & PAGE_MASK);
+		if (map_addr != fmap_start) {
+			kprintf("ERROR: file map FIXED\n");
+			goto err;
+		}
+
+		/* close ELF file */
+		ihk_mc_syscall_arg0(&ctx2) = fd;
+		syscall_generic_forwarding(__NR_close, &ctx2);
+		fd = -1;
+
+		/* zero clear unintented part from vm_range */
+		section_start = pn->sections[i].vaddr;
+		section_file_end = pn->sections[i].vaddr + pn->sections[i].filesz;
+
+		if (fmap_start < section_start) {
+			fill_zero_to_user(fmap_start, section_start - fmap_start);
+		}
+		if (fmap_end > section_file_end) {
+			fill_zero_to_user(section_file_end, fmap_end - section_file_end);
+		}
+
+
+		range = lookup_process_memory_range(vm, fmap_start, fmap_start + 1);
+		if (!range) {
+			kprintf("ERROR: vm_range is not found\n");
+			goto err;
+		}
+
 		flags = VR_NONE;
 		flags |= PROT_TO_VR_FLAG(pn->sections[i].prot);
 		flags |= VRFLAG_PROT_TO_MAXPROT(flags);
-		flags |= VR_DEMAND_PAGING;
+		flags |= VR_DEMAND_PAGING | VR_PRIVATE;
 
 		/* Non-TEXT sections that are large respect user allocation policy
 		 * unless user explicitly requests otherwise */
 		if (i >= 1 && pn->sections[i].len >= pn->mpol_threshold &&
 				!(pn->mpol_flags & MPOL_NO_BSS)) {
 			dkprintf("%s: section: %d size: %d pages -> IHK_MC_AP_USER\n",
-					__FUNCTION__, i, range_npages);
-			ap_flags = IHK_MC_AP_USER;
+					__FUNCTION__, i, (fmap_end - fmap_start) / PAGE_SIZE);
 			flags |= VR_AP_USER;
 		}
 
-		if (add_process_memory_range(vm, s, e, NOPHYS, flags, NULL, 0,
-					pn->sections[i].len > LARGE_PAGE_SIZE ?
-					LARGE_PAGE_SHIFT : PAGE_SHIFT,
-					&range) != 0) {
-			kprintf("ERROR: adding memory range for ELF section %i\n", i);
-			goto err;
+		range->flag = flags;
+
+		/* allocating space by anon_map */
+		if (anon_start != anon_end) {
+			map_addr = do_mmap(anon_start, anon_end - anon_start, PROT_READ | PROT_WRITE,
+                               MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+			if (map_addr != anon_start) {
+				kprintf("ERROR: anonymous map FIXED\n");
+				goto err;
+			}
+			fill_zero_to_user(anon_start, anon_end - anon_start);
 		}
 
-		if ((up_v = ihk_mc_alloc_pages_user(range_npages,
-						IHK_MC_AP_NOWAIT | ap_flags, s)) == NULL) {
-			kprintf("ERROR: alloc pages for ELF section %i\n", i);
-			goto err;
-		}
-
-		up = virt_to_phys(up_v);
-
-		ptattr = arch_vrflag_to_ptattr(range->flag, PF_POPULATE, NULL);
-		error = ihk_mc_pt_set_range(vm->address_space->page_table, vm,
-									(void *)range->start,
-									(void *)range->start + (range_npages * PAGE_SIZE),
-									up, ptattr,
-									range->pgshift, range);
-
-		if (error) {
-			kprintf("%s: ihk_mc_pt_set_range failed. %d\n",
-					__FUNCTION__, error);
-			ihk_mc_free_pages_user(up_v, range_npages);
-			goto err;
-		}
-
-		// memory_stat_rss_add() is called in ihk_mc_pt_set_range()
-
-		p->sections[i].remote_pa = up;
+		/* restore to original thread */
+		cpu_local_var(current) = prev;
 
 		/* TODO: Maybe we need flag */
 		if (pn->sections[i].interp) {
-			vm->region.map_end = e;
+			vm->region.map_end = anon_end;
 		}
 		else if (i == 0) {
-			vm->region.text_start = s;
-			vm->region.text_end = e;
+			vm->region.text_start = fmap_start;
+			vm->region.text_end = fmap_end;
 		} 
 		else if (i == 1) {
-			vm->region.data_start = s;
-			vm->region.data_end = e;
+			vm->region.data_start = fmap_start;
+			vm->region.data_end = anon_end;
 		} 
 		else {
 			vm->region.data_start =
-				(s < vm->region.data_start ? 
-				 s : vm->region.data_start);
+				(fmap_start < vm->region.data_start ? 
+				 fmap_start : vm->region.data_start);
 			vm->region.data_end = 
-				(e > vm->region.data_end ? 
-				 e : vm->region.data_end);
+				(anon_end > vm->region.data_end ? 
+				 anon_end : vm->region.data_end);
 		}
 
 		if (aout_base) {
-			vm->region.map_end = e;
+			vm->region.map_end = anon_end;
 		}
 	}
 

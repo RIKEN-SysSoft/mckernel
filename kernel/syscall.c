@@ -2187,9 +2187,9 @@ SYSCALL_DECLARE(execve)
 
 	memset((void*)desc, 0, 4 * PAGE_SIZE);
 
-	/* Request host to open executable and load ELF section descriptions */
+	/* Request host to get ELF section descriptions */
 	request.number = __NR_execve;  
-	request.args[0] = 1;  /* 1st phase - get ELF desc */
+	request.args[0] = 1;  /* get ELF desc */
 	request.args[1] = (unsigned long)filename;	
 	request.args[2] = virt_to_phys(desc);
 	ret = do_syscall(&request, ihk_mc_get_processor_id(), 0);
@@ -2253,7 +2253,7 @@ SYSCALL_DECLARE(execve)
 			((char *)cpu_local_var(current)) + 
 			KERNEL_STACK_NR_PAGES * PAGE_SIZE, desc->entry, 0);
 
-	/* Create virtual memory ranges and update args/envs */
+	/* Load executables and update args/envs */
 	if (prepare_process_ranges_args_envs(cpu_local_var(current), desc, desc, 
 				PTATTR_NO_EXECUTE | PTATTR_WRITABLE | PTATTR_FOR_USER,
 				argv_flat, argv_flat_len, envp_flat, envp_flat_len) != 0) {
@@ -2266,17 +2266,6 @@ SYSCALL_DECLARE(execve)
 		kprintf("execve(): ERROR: clearing PTEs in host process\n");
 		panic("");
 	}		
-
-	/* Request host to transfer ELF image */
-	request.number = __NR_execve;  
-	request.args[0] = 2;  /* 2nd phase - transfer ELF image */
-	request.args[1] = virt_to_phys(desc);
-	request.args[2] = sizeof(struct program_load_desc) + 
-		sizeof(struct program_image_section) * desc->num_sections;
-
-	if ((ret = do_syscall(&request, ihk_mc_get_processor_id(), 0)) != 0) {
-		goto end;
-	}
 
 	for(i = 0; i < _NSIG; i++){
 		if(thread->sigcommon->action[i].sa.sa_handler != SIG_IGN &&
