@@ -74,6 +74,13 @@ Enable system call profiling. After the execution, profiling
 information may be obtained by the ihkosctl tool.
 
 .TP
+.B	-m N
+Specify the NUMA memory policy. In the case of Quadrant&Flat mode, NUMA node
+0 is CPU cores and NUMA node 1 is MCDRAM. Thus, option "-m 1"
+means that user's memory areas are assigned in MCDRAM.
+
+
+.TP
 .B	--mpol-no-heap, --mpol-no-stack, --mpol-no-bss, 
 Disregard NUMA memory policy in the heap/stack/BSS areas.
 In case of Flat Memory and Quadrant clustering modes on the Xeon Phi
@@ -93,7 +100,7 @@ This option eliminates potential kernel resource contention by
 avoiding page faults in the shared memory region.
 
 .TP
-.B	-m N, --mpol-threshold=N
+.B	-M N, --mpol-threshold=N
 Specify the threshold of memory size for respecting the memory
 allocation policy in NUMA machines. If the size of memory allocation
 is smaller than the one specified in this option, the memory area is
