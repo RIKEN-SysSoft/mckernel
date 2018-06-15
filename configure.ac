@@ -569,6 +569,7 @@ AC_CONFIG_FILES([
 	arch/x86_64/tools/mcshutdown-builtin-x86.sh
 	arch/x86_64/tools/mcreboot.1:arch/x86_64/tools/mcreboot.1in
 	arch/x86_64/tools/mpimcexec
+	arch/x86_64/tools/mpimcexec.1:arch/x86_64/tools/mpimcexec.1in
 	arch/x86_64/tools/irqbalance_mck.service
 	arch/x86_64/tools/irqbalance_mck.in
 	tools/mcstat/Makefile

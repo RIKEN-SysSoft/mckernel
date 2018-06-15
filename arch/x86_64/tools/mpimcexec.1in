@@ -1,0 +1,59 @@
+.\" Man page for mpimcexec
+.\"
+
+.TH MPIMCEXEC 1 "@MCKERNEL_RELEASE_DATE@" "Version @MCKERNEL_VERSION@" MCKERNEL @MCKERNEL_VERSION@"
+.SH NAME
+mpimcexec \- run an MPI application on McKernel
+.\"
+
+.\" ----------------------------  SYNOPSIS ----------------------------
+.SH SYNOPSIS
+.B mpimcexec \fR [\fIoptions\fR] \fI<command>\fR
+
+.\" ----------------------------  DESCRIPTION ----------------------------
+.SH DESCRIPTION
+mpimcexec is a wrapper script to run an MPI application on McKernels.
+It executes the mpiexec command to spawn the mcexec command on Mckernel
+on compute nodes, and each mcexec turns to run \fI<command>\fR.
+
+.\" ----------------------------  OPTIONS ----------------------------
+.SH OPTIONS
+
+.TP
+.B	-ppn N, --ppn N, --ranks-per-node N
+Specify the number of MPI ranks per node. It is always required.
+.TP
+.B	-n N, --n N, --ranks N
+Specify the number of total MPI ranks.
+e.g.,
+   $ mpimcexec -n 32 -ppn 4 ./a.out
+.br
+In the above example, 32 MPI processes are invoked
+on eight compute nodes each of which has four processes.
+.TP
+.B	--nodes N
+Specify the number of compute nodes.
+By default, all nodes, specified by "PJM --mpi proc" option, are used.
+.TP
+.B	--env, -env 
+Pass an additional environment variable
+.TP
+.B	-m N, --numa N
+Specify preferred NUMA node.
+.TP
+.B	-h <file name>, ---hostfile <file name>
+Specify a host file for MPI
+.TP
+.B	--help
+Show help message
+
+.PP
+.\" ----------------------------  SEE ALSO ----------------------------
+.SH SEE ALSO
+\fBmcexec\fR (1), \fBmpiexec\fR (1)
+
+.\" ----------------------------  AUTHORS ----------------------------
+.SH AUTHORS
+Copyright (C) 2018 McKernel Development Team, RIKEN AICS, Japan
+
+

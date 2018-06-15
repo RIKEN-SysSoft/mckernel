@@ -59,6 +59,7 @@ install:
 		install -m 644 kernel/include/swapfmt.h $(INCDIR); \
 		mkdir -p -m 755 $(MANDIR)/man1; \
 		install -m 644 arch/x86_64/tools/mcreboot.1 $(MANDIR)/man1/mcreboot.1; \
+		install -m 644 arch/x86_64/tools/mpimcexec.1 $(MANDIR)/man1/mpimcexec.1; \
 		;; \
 	    *) \
 		echo "unknown target $(TARGET)" >&2 \
