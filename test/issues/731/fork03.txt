@@ -1,0 +1,2 @@
+fork03      0  TINFO  :  process id in parent of child from fork : 14669
+fork03      1  TPASS  :  test 1 PASSED

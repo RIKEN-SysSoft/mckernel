@@ -1,0 +1,5 @@
+Error: Failed to open /dev/mcos0.
+ERROR: opening /dev/mcos0
+fork(): error with child process after fork
+fork: Permission denied
+waitpid: No child processes
