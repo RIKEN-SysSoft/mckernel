@@ -12,16 +12,17 @@ mpimcexec \- run an MPI application on McKernel
 
 .\" ----------------------------  DESCRIPTION ----------------------------
 .SH DESCRIPTION
-mpimcexec is a wrapper script to run an MPI application on McKernels.
-It executes the mpiexec command to spawn the mcexec command on Mckernel
-on compute nodes, and each mcexec turns to run \fI<command>\fR.
+mpimcexec is a wrapper script for running MPI applications on McKernel.
+It internally calls mpiexec to spawn mcexec on compute nodes, which in
+turn runs \fI<command>\fR on McKernel. mpimcexec specifies a number of
+mcexec arguments that enable high performance execution.
 
 .\" ----------------------------  OPTIONS ----------------------------
 .SH OPTIONS
 
 .TP
 .B	-ppn N, --ppn N, --ranks-per-node N
-Specify the number of MPI ranks per node. It is always required.
+Specify the number of MPI ranks per node. This argument is required.
 .TP
 .B	-n N, --n N, --ranks N
 Specify the number of total MPI ranks.
@@ -42,10 +43,10 @@ Pass an additional environment variable
 Specify preferred NUMA node.
 .TP
 .B	-h <file name>, ---hostfile <file name>
-Specify a host file for MPI
+Specify a host file for MPI.
 .TP
 .B	--help
-Show help message
+Show help message.
 
 .PP
 .\" ----------------------------  SEE ALSO ----------------------------
@@ -54,6 +55,6 @@ Show help message
 
 .\" ----------------------------  AUTHORS ----------------------------
 .SH AUTHORS
-Copyright (C) 2018 McKernel Development Team, RIKEN AICS, Japan
+Copyright (C) 2018 McKernel Development Team, RIKEN, Japan
 
 
