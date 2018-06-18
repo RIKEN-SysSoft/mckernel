@@ -604,4 +604,11 @@ __mcs_rwlock_reader_unlock(struct mcs_rwlock_lock *lock, struct mcs_rwlock_node_
 #endif
 }
 
+static inline int irqflags_can_interrupt(unsigned long flags)
+{
+#warning "arm64 irqflags_can_interrupt not implemented"
+	return true;
+}
+
+
 #endif /* !__HEADER_ARM64_COMMON_ARCH_LOCK_H */
