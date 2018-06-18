@@ -2138,6 +2138,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	char *stack;
 	int error;
 	unsigned long *p;
+	unsigned long maxsz;
 	unsigned long minsz;
 	unsigned long at_rand;
 	struct process *proc = thread->proc;
@@ -2154,19 +2155,20 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	minsz = (pn->stack_premap
 			+ LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
 #endif /* POSTK_DEBUG_ARCH_DEP_80 */
-	size = (proc->rlimit[MCK_RLIMIT_STACK].rlim_cur
-			+ LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
+	maxsz = (end - thread->vm->region.map_start) / 2;
+	size = proc->rlimit[MCK_RLIMIT_STACK].rlim_cur;
+	if (size > maxsz) {
+		size = maxsz;
+	}
+	else if (size < minsz) {
+		size = minsz;
+	}
+	size = (size + LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
 	dkprintf("%s: stack_premap: %lu, rlim_cur: %lu, minsz: %lu, size: %lu\n",
 			__FUNCTION__,
 			pn->stack_premap,
 			proc->rlimit[MCK_RLIMIT_STACK].rlim_cur,
 			minsz, size);
-	if (size > (USER_END / 2)) {
-		size = USER_END / 2;
-	}
-	else if (size < minsz) {
-		size = minsz;
-	}
 	start = (end - size) & LARGE_PAGE_MASK;
 
 	/* Apply user allocation policy to stacks */
