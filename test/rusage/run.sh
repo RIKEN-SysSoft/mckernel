@@ -17,13 +17,18 @@ case ${testname} in
 	printf "*** Enable debug messages in rusage.h, memory.c, fileobj.c, shmobj.c, process.c by defining DEBUG macro, e.g. #define RUSAGE_DEBUG and then recompile IHK/McKernel.\n"
 	printf "*** Install xpmem by git-clone https://github.com/hjelmn/xpmem.\n"
 	;;
-    rusage10?)
+    rusage100 | rusage101 | rusage102 | rusage103)
 	printf "*** Refer to rusage100.patch to add syscall #900 by editing syscall_list.h and syscall.c and recompile IHK/McKernel.\n"
+	;;
+    rusage104)
+	printf "*** Apply rusage104.patch to enable syscall #900"
+	printf "which reports rusage values.\n"
 	;;
     *)
 	printf "*** Enable debug messages in rusage.h, memory.c, fileobj.c, shmobj.c, process.c by defining DEBUG macro, e.g. #define RUSAGE_DEBUG and then recompile IHK/McKernel.\n"
 	;;
 esac
+
 read -p "*** Hit return when ready!" key
 
 case ${testname} in
@@ -44,6 +49,11 @@ case ${testname} in
 	ssh wallaby bash -c '(cd ${home}/project/src/rusage/npb/NPB3.3.1-MZ/NPB3.3-MZ-MPI; make bt-mz CLASS=S NPROCS=4)'
 	bn=npb/NPB3.3.1-MZ/NPB3.3-MZ-MPI/bin/bt-mz.S.4
 	perl -e 'print "polaris:2\nkochab:2\n"' > ./hostfile
+	;;
+    rusage104)
+	bn=${testname}
+	make clean > /dev/null 2> /dev/null
+	make ${bn}_mck ${bn}_lin
 	;;
     *)
 	bn=${testname}
@@ -141,8 +151,11 @@ case ${testname} in
     rusage103)
 	bootopt="-m 256M@1"
 	;;
+    rusage104)
+	bootopt="-c 1,2,3 -m 256M"
+	;;
     *)
-	echo Unknown test case 
+	echo Unknown test case
 	exit 255
 esac
 
@@ -199,6 +212,12 @@ else
 	    echo "================================================" >> ./${testname}.log
 	    sudo ${install}/sbin/ihkosctl 0 kmsg >> ./${testname}.log
 	    ;;
+	rusage104)
+	    ${install}/bin/mcexec ${mcexecopt} ./${bn}_mck
+	    ${install}/bin/mcexec ${mcexecopt} ./${bn}_lin
+	    sudo ${install}/sbin/ihkosctl 0 kmsg > ./${testname}.log
+	    grep user ./${testname}.log
+	    ;;
 	*)
 	    ${install}/bin/mcexec ${mcexecopt} ./${bn} ${testopt}
 	    sudo ${install}/sbin/ihkosctl 0 kmsg > ./${testname}.log
@@ -206,10 +225,13 @@ else
 fi
 
 case ${testname} in
-    rusage10?)
+    rusage100 | rusage101 | rusage102 | rusage103)
 	printf "*** Check the ihk_os_getrusage() result (the first part of ${testname}.log) matches with the syscall #900 result (the second part) \n"
 	;;
-
+    rusage104)
+	printf "*** It behaves as expected when there's no [NG] and "
+	printf "\"All tests finished\" is shown\n"
+	;;
     *)
 	printf "*** cat ${testname}.log (kmsg) > ./match.pl to confirm there's no stray add/sub.\n"
 	printf "*** Look ${testname}.log (kmsg) to confirm memory_stat_*[*] returned to zero when the last thread exits.\n"
