@@ -21,7 +21,9 @@ COMMAND=""
 NUMA=""
 HOSTFILE=""
 
-if [ ! -z "${MPI_LOCALNRANKS}" ]; then
+if [ ! -z "${PJM_PROC_BY_NODE}" ]; then
+	PPN=${PJM_PROC_BY_NODE}
+elif [ ! -z "${MPI_LOCALNRANKS}" ]; then
 	PPN=${MPI_LOCALNRANKS}
 fi
 
