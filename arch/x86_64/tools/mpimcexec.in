@@ -120,7 +120,7 @@ if [ -z ${RANKS} ] && [ -z ${NODES} ]; then
 	help_exit
 fi
 
-if [ x${COMMAND} = x ]; then
+if [ "x${COMMAND}" = "x" ]; then
 	echo "error: please specify command"
 	help_exit
 fi
