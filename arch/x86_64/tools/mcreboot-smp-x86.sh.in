@@ -305,6 +305,12 @@ if ! grep -E 'ihk\s' /proc/modules &>/dev/null; then
 	fi
 fi
 
+# Copy modules under /tmp to avoid loading from shared FS
+if mkdir -p /tmp/mcos-kmod; then
+	cp ${KMODDIR}/* /tmp/mcos-kmod/
+	KMODDIR="/tmp/mcos-kmod/"
+fi
+
 # Fujitsu drops caches for us in between jobs so don't do it on OFP
 if [ "`hostname | grep "c[0-9][0-9][0-9][0-9].ofp"`" == "" ]; then
 	# Increase swappiness so that we have better chance to allocate memory for IHK
