@@ -48,7 +48,6 @@
 
 #define SCD_MSG_PREPARE_PROCESS         0x1
 #define SCD_MSG_PREPARE_PROCESS_ACKED   0x2
-#define SCD_MSG_PREPARE_PROCESS_NACKED  0x7
 #define SCD_MSG_SCHEDULE_PROCESS        0x3
 #define SCD_MSG_WAKE_UP_SYSCALL_THREAD  0x14
 
@@ -128,6 +127,7 @@ enum mcctrl_os_cpu_operation {
 struct ikc_scd_packet {
 	int msg;
 	int err;
+	void *reply;
 	union {
 		/* for traditional SCD_MSG_* */
 		struct {
@@ -163,8 +163,9 @@ struct ikc_scd_packet {
 			int eventfd_type;
 		};
 	};
-	char padding[12];
+	char padding[8];
 };
+
 
 struct mcctrl_priv { 
 	ihk_os_t os;
@@ -231,7 +232,6 @@ struct mcctrl_per_proc_data {
 	struct list_head wq_list_exact;  /* These requests come from IKC IRQ handler targeting a particular thread */
 
 	ihk_spinlock_t wq_list_lock;
-	wait_queue_head_t wq_prepare;
 	wait_queue_head_t wq_procfs;
 
 	struct list_head per_thread_data_hash[MCCTRL_PER_THREAD_DATA_HASH_SIZE];
@@ -342,6 +342,8 @@ struct mcctrl_usrdata {
 	wait_queue_head_t wq_procfs;
 	struct list_head per_proc_data_hash[MCCTRL_PER_PROC_DATA_HASH_SIZE];
 	rwlock_t per_proc_data_hash_lock[MCCTRL_PER_PROC_DATA_HASH_SIZE];
+	struct list_head wakeup_descs_list;
+	spinlock_t wakeup_descs_lock;
 
 	void **keys;
 	struct sysfsm_data sysfsm_data;
@@ -366,6 +368,10 @@ struct mcctrl_signal {
 int mcctrl_ikc_send(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp);
 int mcctrl_ikc_send_msg(ihk_os_t os, int cpu, int msg, int ref, unsigned long arg);
 int mcctrl_ikc_is_valid_thread(ihk_os_t os, int cpu);
+
+/* ikc query-and-wait helper */
+int mcctrl_ikc_send_wait(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp,
+	long int timeout, int *do_frees, int free_addrs_count, ...);
 
 ihk_os_t osnum_to_os(int n);
 

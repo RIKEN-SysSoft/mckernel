@@ -30,7 +30,6 @@
 
 #define SCD_MSG_PREPARE_PROCESS         0x1
 #define SCD_MSG_PREPARE_PROCESS_ACKED   0x2
-#define SCD_MSG_PREPARE_PROCESS_NACKED  0x7
 #define SCD_MSG_SCHEDULE_PROCESS        0x3
 #define SCD_MSG_WAKE_UP_SYSCALL_THREAD  0x14
 
@@ -168,10 +167,8 @@ typedef unsigned long __cpu_set_unit;
 
 struct program_load_desc {
 	int num_sections;
-	int status;
 	int cpu;
 	int pid;
-	int err;
 	int stack_prot;
 	int pgid;
 	int cred[8];
@@ -241,6 +238,7 @@ enum mcctrl_os_cpu_operation {
 struct ikc_scd_packet {
 	int msg;
 	int err;
+	void *reply;
 	union {
 		/* for traditional SCD_MSG_* */
 		struct {
@@ -276,7 +274,7 @@ struct ikc_scd_packet {
 			int eventfd_type;
 		};
 	};
-	char padding[12];
+	char padding[8];
 };
 
 #define IHK_SCD_REQ_THREAD_SPINNING         0

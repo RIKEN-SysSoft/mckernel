@@ -107,6 +107,7 @@ static long mcexec_prepare_image(ihk_os_t os,
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd = NULL;
 	int num_sections;
+	int free_ikc_pointers = 1;
 
 	desc = kmalloc(sizeof(*desc), GFP_KERNEL);
 	if (!desc) {
@@ -140,9 +141,9 @@ static long mcexec_prepare_image(ihk_os_t os,
 		goto put_and_free_out;
 	}
 
-	pdesc = kmalloc(sizeof(struct program_load_desc) + 
-	                sizeof(struct program_image_section)
-	                * num_sections, GFP_KERNEL);
+	pdesc = kmalloc(sizeof(struct program_load_desc) +
+			sizeof(struct program_image_section) * num_sections,
+			GFP_KERNEL);
 	memcpy(pdesc, desc, sizeof(struct program_load_desc));
 
 	if (copy_from_user(pdesc->sections, udesc->sections,
@@ -167,10 +168,10 @@ static long mcexec_prepare_image(ihk_os_t os,
 		ret = -EFAULT;
 		goto put_and_free_out;
 	}
-	
+
 	envs = kmalloc(pdesc->envs_len, GFP_KERNEL);
 	if (copy_from_user(envs, pdesc->envs, pdesc->envs_len)) {
-		ret = -EFAULT;	
+		ret = -EFAULT;
 		goto put_and_free_out;
 	}
 
@@ -187,36 +188,24 @@ static long mcexec_prepare_image(ihk_os_t os,
 
 	dprintk("# of sections: %d\n", pdesc->num_sections);
 	dprintk("%p (%lx)\n", pdesc, isp.arg);
-	
-	pdesc->status = 0;
-	mb();
-	ret = mcctrl_ikc_send(os, pdesc->cpu, &isp);
-	if(ret < 0) {
-		printk("%s: ERROR mcctrl_ikc_send: %d\n", __FUNCTION__, ret);
-		goto put_and_free_out;
-	}
 
-	ret = wait_event_interruptible(ppd->wq_prepare, pdesc->status);
+	ret = mcctrl_ikc_send_wait(os, pdesc->cpu, &isp, 0, &free_ikc_pointers,
+				   3, pdesc, args, envs);
 	if (ret < 0) {
-		printk("%s: ERROR after wait: %d\n", __FUNCTION__, ret);
-		goto put_and_free_out;
-	}
-
-	if (pdesc->err < 0) {
-		ret = pdesc->err;	
+		/* either send or remote prepare_process failed */
 		goto put_and_free_out;
 	}
 
 	/* Update rpgtable */
 	ppd->rpgtable = pdesc->rpgtable;
-	
-	if (copy_to_user(udesc, pdesc, sizeof(struct program_load_desc) + 
+
+	if (copy_to_user(udesc, pdesc, sizeof(struct program_load_desc) +
 	             sizeof(struct program_image_section) * num_sections)) {
-		ret = -EFAULT;	
+		ret = -EFAULT;
 		goto put_and_free_out;
 	}
 
-	dprintk("%s: pid %d, rpgtable: 0x%lx added\n", 
+	dprintk("%s: pid %d, rpgtable: 0x%lx added\n",
 		__FUNCTION__, ppd->pid, ppd->rpgtable);
 
 	ret = 0;
@@ -224,10 +213,12 @@ static long mcexec_prepare_image(ihk_os_t os,
 put_and_free_out:
 	mcctrl_put_per_proc_data(ppd);
 free_out:
-	kfree(args);
-	kfree(pdesc);
-	kfree(envs);
-	kfree(desc);
+	if (free_ikc_pointers) {
+		kfree(args);
+		kfree(pdesc);
+		kfree(envs);
+		kfree(desc);
+	}
 
 	return ret;
 }
@@ -1691,7 +1682,6 @@ int mcexec_create_per_process_data(ihk_os_t os)
 	INIT_LIST_HEAD(&ppd->wq_list);
 	INIT_LIST_HEAD(&ppd->wq_req_list);
 	INIT_LIST_HEAD(&ppd->wq_list_exact);
-	init_waitqueue_head(&ppd->wq_prepare);
 	init_waitqueue_head(&ppd->wq_procfs);
 	spin_lock_init(&ppd->wq_list_lock);
 	memset(&ppd->cpu_set, 0, sizeof(cpumask_t));
@@ -2924,28 +2914,6 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 	}
 	return -EINVAL;
 }
-
-void mcexec_prepare_ack(ihk_os_t os, unsigned long arg, int err)
-{
-	struct program_load_desc *desc = phys_to_virt(arg);
-	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
-	struct mcctrl_per_proc_data *ppd = NULL;
-
-	ppd = mcctrl_get_per_proc_data(usrdata, desc->pid);
-	if (!ppd) {
-		printk("%s: ERROR: no per process data for PID %d\n",
-			__FUNCTION__, desc->pid);
-		return;
-	}
-
-	desc->err = err;
-	desc->status = 1;
-	mb();
-	
-	wake_up_all(&ppd->wq_prepare);
-	mcctrl_put_per_proc_data(ppd);
-}
-
 
 /* Per-CPU register manipulation functions */
 struct mcctrl_os_cpu_response {

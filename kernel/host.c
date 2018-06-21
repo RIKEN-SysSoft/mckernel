@@ -597,14 +597,9 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 
 	case SCD_MSG_PREPARE_PROCESS:
 
-		if((rc = process_msg_prepare_process(packet->arg)) == 0){
-			pckt.msg = SCD_MSG_PREPARE_PROCESS_ACKED;
-			pckt.err = 0;
-		}
-		else{
-			pckt.msg = SCD_MSG_PREPARE_PROCESS_NACKED;
-			pckt.err = rc;
-		}
+		pckt.err = process_msg_prepare_process(packet->arg);
+		pckt.msg = SCD_MSG_PREPARE_PROCESS_ACKED;
+		pckt.reply = packet->reply;
 		pckt.ref = packet->ref;
 		pckt.arg = packet->arg;
 		syscall_channel_send(resp_channel, &pckt);

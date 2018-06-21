@@ -111,10 +111,8 @@ typedef unsigned long __cpu_set_unit;
 
 struct program_load_desc {
 	int num_sections;
-	int status;
 	int cpu;
 	int pid;
-	int err;
 	int stack_prot;
 	int pgid;
 	int cred[8];
