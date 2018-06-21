@@ -1,0 +1,36 @@
+【Issue#1121 動作確認】
+□ テスト内容
+1. Issueで報告された再現プログラムでの確認
+RT_001: ostest-sched_setaffinity.000
+	自プロセスのaffinityの設定と取得が行えることを確認
+
+RT_002: ostest-sched_setaffinity.001
+	自プロセスのaffinityを設定し、CPUのmigrateができることを確認
+
+RT_003: ostest-sched_getaffinity.003
+	存在しないプロセスIDを指定したsched_getaffinity()を実行し、
+	-1 が返り、errnoにESRCH が設定されることを確認
+
+RT_004: ostest-sched_getaffinity.005
+	子プロセスを生成し、以下を確認
+	 - 子プロセスが親プロセスのaffinityを取得
+	 - 子プロセスが自プロセスのaffinityを取得
+	 - 親プロセス、自プロセスから取得したaffinityが等しいことを確認
+
+2. 既存のsched_setaffinity機能に影響がないことをLTPを用いて確認
+LT_001: ltp-sched_setaffinity01
+	異常な引数を指定した際に返される値と
+	設定されるerrnoが正しいことを確認 (OK 4件)
+
+□ 実行手順
+$ make test
+
+実行できない場合は、C1121.shの以下の行を適切に書き換えた後に実行。
+BIN=          mcexec が存在するパス
+SBIN=         mcreboot.sh が存在するパス
+OSTEST=       OSTESTが存在するパス
+LTP=          LTPが存在するパス
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。

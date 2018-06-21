@@ -6793,22 +6793,14 @@ SYSCALL_DECLARE(sched_getaffinity)
 	int ret;
 
 	dkprintf("%s() len: %d, mask: %p\n", __FUNCTION__, len, u_cpu_set);
-#ifdef POSTK_DEBUG_TEMP_FIX_5 /* sched_getaffinity arguments check add (S64FX_10) */
 	if (len * 8 < num_processors) {
-		kprintf("%s:%d Too small buffer.\n", __FILE__, __LINE__);
+		dkprintf("%s: Too small buffer.\n", __func__);
 		return -EINVAL;
 	}
 	if (len & (sizeof(unsigned long)-1)) {
-		kprintf("%s:%d Size not align to unsigned long.\n", __FILE__, __LINE__);
+		dkprintf("%s: Size not align to unsigned long.\n", __func__);
 		return -EINVAL;
 	}
-#else /* POSTK_DEBUG_TEMP_FIX_5 */
-	if (!len || u_cpu_set == (cpu_set_t *)-1)
-		return -EINVAL;
-
-	if ((len * BITS_PER_BYTE) < __CPU_SETSIZE)
-		return -EINVAL;
-#endif /* POSTK_DEBUG_TEMP_FIX_5 */
 
 	len = MIN2(len, sizeof(k_cpu_set));
 

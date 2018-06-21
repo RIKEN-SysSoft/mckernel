@@ -1,0 +1,35 @@
+*** RT_001 start *******************************
+TEST_SUITE: sched_setaffinity
+TEST_NUMBER: 0
+ARGS: -p 20
+RESULT: ok
+*** RT_001: PASSED
+
+*** RT_002 start *******************************
+TEST_SUITE: sched_setaffinity
+TEST_NUMBER: 1
+ARGS: -p 20
+RESULT: ok
+*** RT_002: PASSED
+
+*** RT_003 start *******************************
+TEST_SUITE: sched_getaffinity
+TEST_NUMBER: 3
+ARGS: -p 20
+sched_getaffinity result:-1, errno:3 (expect error is "ESRCH"=3)
+RESULT: ok
+*** RT_003: PASSED
+
+*** RT_004 start *******************************
+TEST_SUITE: sched_getaffinity
+TEST_NUMBER: 5
+ARGS: -p 20
+RESULT: ok
+*** RT_004: PASSED
+
+*** LT_001 start *******************************
+sched_setaffinity01    1  TPASS  :  expected failure with 'Bad address'
+sched_setaffinity01    2  TPASS  :  expected failure with 'Invalid argument'
+sched_setaffinity01    3  TPASS  :  expected failure with 'No such process'
+sched_setaffinity01    4  TPASS  :  expected failure with 'Operation not permitted'
+*** LT_001: PASSED (ok:4)
