@@ -2298,48 +2298,6 @@ void ___kmalloc_print_free_list(struct list_head *list)
 	kprintf_unlock(irqflags);
 }
 
-#ifdef POSTK_DEBUG_ARCH_DEP_27
-int search_free_space(struct thread *thread, size_t len, intptr_t hint,
-		      int pgshift, intptr_t *addrp)
-{
-	struct vm_regions *region = &thread->vm->region;
-	intptr_t addr;
-	int error;
-	struct vm_range *range;
-	size_t pgsize = (size_t)1 << pgshift;
-
-	dkprintf("search_free_space(%lx,%lx,%d,%p)\n", len, hint, pgshift, addrp);
-
-	addr = hint;
-	for (;;) {
-		addr = (addr + pgsize - 1) & ~(pgsize - 1);
-		if ((region->user_end <= addr)
-				|| ((region->user_end - len) < addr)) {
-			ekprintf("search_free_space(%lx,%lx,%p):"
-					"no space. %lx %lx\n",
-					len, hint, addrp, addr,
-					region->user_end);
-			error = -ENOMEM;
-			goto out;
-		}
-
-		range = lookup_process_memory_range(thread->vm, addr, addr+len);
-		if (range == NULL) {
-			break;
-		}
-		addr = range->end;
-	}
-
-	error = 0;
-	*addrp = addr;
-
-out:
-	dkprintf("search_free_space(%lx,%lx,%d,%p): %d %lx\n",
-			len, hint, pgshift, addrp, error, addr);
-	return error;
-}
-#endif	/* POSTK_DEBUG_ARCH_DEP_27 */
-
 #ifdef POSTK_DEBUG_TEMP_FIX_52 /* supports NUMA for memory area determination */
 #ifdef IHK_RBTREE_ALLOCATOR
 int is_mckernel_memory(unsigned long phys)
