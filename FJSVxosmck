@@ -1,0 +1,180 @@
+#!/bin/sh
+# FJSVxosmck COPYRIGHT FUJITSU LIMITED 2018
+# IHK/McKernel service script
+
+# Source function library
+. /etc/init.d/functions
+
+XOS_MCK_DIR="/opt/ppos"
+XOS_MCK_SBINDIR="${XOS_MCK_DIR}/sbin"
+XOS_MCK_MODDIR="${XOS_MCK_DIR}/kmod"
+XOS_MCK_DAEMON_NAME="ihkmond"
+XOS_IHK_MODULE_NAME="ihk"
+XOS_IHK_SMP_MODULE_NAME="ihk-smp-arm64"
+XOS_MCCTRL_MODULE_NAME="mcctrl"
+XOS_IHK_SMP_START_IRQ="60"
+XOS_IHK_SMP_NR_IRQ="4"
+RETVAL=0
+IHK_LOCK_FILE="/var/lock/subsys/${XOS_IHK_MODULE_NAME}"
+SMP_LOCK_FILE="/var/lock/subsys/${XOS_IHK_SMP_MODULE_NAME}"
+MCCTRL_LOCK_FILE="/var/lock/subsys/${XOS_MCCTRL_MODULE_NAME}"
+
+start()
+{
+	local FAIL=0
+
+	# ihkmond daemon boot
+	if [ "`pidof ${XOS_MCK_DAEMON_NAME}`" == "" ]; then
+		echo -n "Starting ihkmond daemon..."
+		${XOS_MCK_SBINDIR}/${XOS_MCK_DAEMON_NAME}
+	fi
+
+	# ihk.ko load
+	if [ ! -e ${IHK_LOCK_FILE} ]; then
+		echo -n "Loading ihk driver..."
+		insmod "${XOS_MCK_MODDIR}/${XOS_IHK_MODULE_NAME}.ko"
+
+		FAIL=`expr ${FAIL} \| $?`
+		if [ ${FAIL} -eq 0 ]; then
+			touch ${IHK_LOCK_FILE}
+		else
+			echo_failure
+			RETVAL=${FAIL}
+			return ${RETVAL}
+		fi
+	fi
+
+	# ihk-smp-arm64.ko load
+	if [ ! -e ${SMP_LOCK_FILE} ]; then
+		echo -n "Loading ihk-smp driver..."
+		insmod "${XOS_MCK_MODDIR}/${XOS_IHK_SMP_MODULE_NAME}.ko" \
+			ihk_start_irq=${XOS_IHK_SMP_START_IRQ} \
+			ihk_nr_irq=${XOS_IHK_SMP_NR_IRQ}
+
+		FAIL=`expr ${FAIL} \| $?`
+		if [ ${FAIL} -eq 0 ]; then
+			touch ${SMP_LOCK_FILE}
+		else
+			echo_failure
+			RETVAL=${FAIL}
+			return ${RETVAL}
+		fi
+	fi
+
+	# mcctrl.ko load
+	if [ ! -e ${MCCTRL_LOCK_FILE} ]; then
+		echo -n "Loading mcctrl driver..."
+		insmod "${XOS_MCK_MODDIR}/${XOS_MCCTRL_MODULE_NAME}.ko"
+
+		FAIL=`expr ${FAIL} \| $?`
+		if [ ${FAIL} -eq 0 ]; then
+			touch ${MCCTRL_LOCK_FILE}
+		else
+			echo_failure
+			RETVAL=${FAIL}
+			return ${RETVAL}
+		fi
+	fi
+
+	echo_success
+
+	RETVAL=${FAIL}
+	return ${RETVAL}
+}
+
+stop()
+{
+	local FAIL=0
+	local PID=""
+
+	# mcctrl.ko unload
+	if [ -e ${MCCTRL_LOCK_FILE} ]; then
+		echo -n "Removing mcctrl driver..."
+		rmmod "${XOS_MCCTRL_MODULE_NAME}"
+
+		FAIL=`expr ${FAIL} \| $?`
+		if [ ${FAIL} -eq 0 ]; then
+			rm -f ${MCCTRL_LOCK_FILE}
+		else
+			echo_failure
+			RETVAL=${FAIL}
+			return ${RETVAL}
+		fi
+	fi
+
+	# ihk-smp-arm64.ko unload
+	if [ -e ${SMP_LOCK_FILE} ]; then
+		echo -n "Removing ihk-smp driver..."
+		rmmod "${XOS_IHK_SMP_MODULE_NAME}"
+
+		FAIL=`expr ${FAIL} \| $?`
+		if [ ${FAIL} -eq 0 ]; then
+			rm -f ${SMP_LOCK_FILE}
+		else
+			echo_failure
+			RETVAL=${FAIL}
+			return ${RETVAL}
+		fi
+	fi
+
+	# ihk.ko unload
+	if [ -e ${IHK_LOCK_FILE} ]; then
+		echo -n "Removing ihk driver..."
+		rmmod "${XOS_IHK_MODULE_NAME}"
+
+		FAIL=`expr ${FAIL} \| $?`
+		if [ ${FAIL} -eq 0 ]; then
+			rm -f ${IHK_LOCK_FILE}
+		else
+			echo_failure
+			RETVAL=${FAIL}
+			return ${RETVAL}
+		fi
+	fi
+
+	# ihkmond daemon stop
+	PID=`pidof ihkmond`
+	if [ ${PID} != "" ]; then
+		echo -n "Stopping ihkmond daemon..."
+		kill -KILL ${PID}
+
+		if [ "`pidof ${XOS_MCK_DAEMON_NAME}`" != "" ]; then
+			echo_failure
+			RETVAL=1
+			return ${RETVAL}
+		fi
+	fi
+
+	if [ ${FAIL} -eq 0 ]; then
+		echo_success
+	else
+		echo_failure
+	fi
+
+	RETVAL=${FAIL}
+	return ${RETVAL}
+}
+
+restart()
+{
+	stop
+	start
+}
+
+case "$1" in
+	start)
+		start
+		;;
+	stop)
+		stop
+		;;
+	restart)
+		restart
+		;;
+	*)
+		echo $"Usage: $0 {start|stop|restart}"
+		exit 1
+		;;
+esac
+
+exit ${RETVAL}
