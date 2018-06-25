@@ -69,7 +69,9 @@ if ! mount --bind /proc /tmp/mcos/linux_proc; then
     echo "error: mount /tmp/mcos/linux_proc" >&2
     error_exit "tmp_mcos_mounted"
 fi
-if ! taskset -c 0 insmod @KMODDIR@/mcoverlay.ko 2>/dev/null; then
+# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
+# if ! taskset -c 0 insmod @KMODDIR@/mcoverlay.ko 2>/dev/null; then
+if ! taskset -c 0 insmod @DESTDIR@/@KMODDIR@/mcoverlay.ko 2>/dev/null; then
     echo "error: inserting mcoverlay.ko" >&2
     error_exit "linux_proc_bind_mounted"
 fi

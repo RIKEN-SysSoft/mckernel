@@ -7,12 +7,19 @@
 # This is an example script for destroying McKernel and releasing IHK resources
 # Note that the script does no output anything unless an error occurs.
 
-prefix="@prefix@"
-BINDIR="@BINDIR@"
-SBINDIR="@SBINDIR@"
-ETCDIR=@ETCDIR@
-KMODDIR="@KMODDIR@"
-KERNDIR="@KERNDIR@"
+# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
+# prefix="@prefix@"
+# BINDIR="@BINDIR@"
+# SBINDIR="@SBINDIR@"
+# ETCDIR=@ETCDIR@
+# KMODDIR="@KMODDIR@"
+# KERNDIR="@KERNDIR@"
+DESTDIR="@DESTDIR@"
+BINDIR="${DESTDIR}/@BINDIR@"
+SBINDIR="${DESTDIR}/@SBINDIR@"
+ETCDIR=@DESTDIR@/@ETCDIR@
+KMODDIR="${DESTDIR}/@KMODDIR@"
+KERNDIR="${DESTDIR}/@KERNDIR@"
 
 mem=""
 cpus=""
@@ -110,7 +117,9 @@ fi
 
 # Start irqbalance with the original settings
 if [ "${irqbalance_used}" != "" ]; then
-	if ! etcdir=@ETCDIR@ perl -e '$etcdir=$ENV{'etcdir'}; @files = grep { -f } glob "$etcdir/proc/irq/*/smp_affinity"; foreach $file (@files) { $dest = substr($file, length($etcdir)); if(0) {print "cp $file $dest\n";} system("cp $file $dest 2>/dev/null"); }'; then
+# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
+#	if ! etcdir=@ETCDIR@ perl -e '$etcdir=$ENV{'etcdir'}; @files = grep { -f } glob "$etcdir/proc/irq/*/smp_affinity"; foreach $file (@files) { $dest = substr($file, length($etcdir)); if(0) {print "cp $file $dest\n";} system("cp $file $dest 2>/dev/null"); }'; then
+	if ! etcdir=@DESTDIR@/@ETCDIR@ perl -e '$etcdir=$ENV{'etcdir'}; @files = grep { -f } glob "$etcdir/proc/irq/*/smp_affinity"; foreach $file (@files) { $dest = substr($file, length($etcdir)); if(0) {print "cp $file $dest\n";} system("cp $file $dest 2>/dev/null"); }'; then
 		echo "warning: failed to restore /proc/irq/*/smp_affinity" >&2
 	fi
 	if ! systemctl start irqbalance.service; then

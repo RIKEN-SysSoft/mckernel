@@ -1,14 +1,22 @@
-# Makefile.in COPYRIGHT FUJITSU LIMITED 2015-2016
+# Makefile.in COPYRIGHT FUJITSU LIMITED 2015-2018
 CC=@CC@
 MCC=mpicc
-BINDIR=@BINDIR@
-SBINDIR=@SBINDIR@
+# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
+# BINDIR=@BINDIR@
+# SBINDIR=@SBINDIR@
+DESTDIR ?= @DESTDIR@
+BINDIR=$(DESTDIR)/@BINDIR@
+SBINDIR=$(DESTDIR)/@SBINDIR@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 LIBDIR=@libdir@
-MANDIR=@MANDIR@
-MCKERNEL_INCDIR=@MCKERNEL_INCDIR@
-MCKERNEL_LIBDIR=@MCKERNEL_LIBDIR@
+# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
+# MANDIR=@MANDIR@
+# MCKERNEL_INCDIR=@MCKERNEL_INCDIR@
+# MCKERNEL_LIBDIR=@MCKERNEL_LIBDIR@
+MANDIR=$(DESTDIR)/@MANDIR@
+MCKERNEL_INCDIR=$(DESTDIR)/@MCKERNEL_INCDIR@
+MCKERNEL_LIBDIR=$(DESTDIR)/@MCKERNEL_LIBDIR@
 KDIR ?= @KDIR@
 # POSTK_DEBUG_ARCH_DEP_94 arch depends move [BEGIN]
 CFLAGS=-Wall -O -I. -I$(VPATH)/arch/${ARCH} -I$(VPATH)/arch/${ARCH}/include
@@ -97,11 +105,14 @@ install::
 	mkdir -p -m 755 $(MCKERNEL_LIBDIR)
 	install -m 755 ldump2mcdump.so $(MCKERNEL_LIBDIR)
 	install -m 755 libsched_yield.so.1.0.0 $(MCKERNEL_LIBDIR)
+	mkdir -p -m 755 $(MANDIR)/man1	# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
 	install -m 644 mcexec.1 $(MANDIR)/man1/mcexec.1
 ifeq ($(ENABLE_QLMPI),yes)
+	mkdir -p -m 755 $(MCKERNEL_INCDIR)	# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
 	install -m 644 ../include/qlmpilib.h $(MCKERNEL_INCDIR)
 	install -m 755 libqlmpi.so $(MCKERNEL_LIBDIR)
 	install -m 755 libqlfort.so $(MCKERNEL_LIBDIR)
+	mkdir -p -m 755 $(SBINDIR)	# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
 	install -m 755 ql_server $(SBINDIR)
 	install -m 755 ql_mpiexec_start $(BINDIR)
 	install -m 755 ql_mpiexec_finalize $(BINDIR)

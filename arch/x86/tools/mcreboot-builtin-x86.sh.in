@@ -10,11 +10,17 @@
 # HISTORY:
 #
 
-prefix="@prefix@"
-BINDIR="@BINDIR@"
-SBINDIR="@SBINDIR@"
-KMODDIR="@KMODDIR@"
-KERNDIR="@KERNDIR@"
+# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
+# prefix="@prefix@"
+# BINDIR="@BINDIR@"
+# SBINDIR="@SBINDIR@"
+# KMODDIR="@KMODDIR@"
+# KERNDIR="@KERNDIR@"
+DESTDIR="@DESTDIR@"
+BINDIR="${DESTDIR}/@BINDIR@"
+SBINDIR="${DESTDIR}/@SBINDIR@"
+KMODDIR="${DESTDIR}/@KMODDIR@"
+KERNDIR="${DESTDIR}/@KERNDIR@"
 
 kill -9 `pidof mcexec`
 if lsmod | grep mcctrl > /dev/null 2>&1; then
