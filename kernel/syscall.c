@@ -7729,6 +7729,7 @@ SYSCALL_DECLARE(mremap)
 			oldaddr, oldsize0, newsize0, flags, newaddr);
 	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 
+	/* check arguments */
 	if ((oldaddr & ~PAGE_MASK)
 			|| (oldsize < 0)
 			|| (newsize <= 0)
@@ -7744,6 +7745,24 @@ SYSCALL_DECLARE(mremap)
 		goto out;
 	}
 
+	if (oldend < oldstart) {
+		error = -EINVAL;
+		ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+				"old range overflow. %d\n",
+				oldaddr, oldsize0, newsize0,
+				flags, newaddr, error);
+		goto out;
+	}
+
+	if (newsize > (vm->region.user_end - vm->region.user_start)) {
+		error = -ENOMEM;
+		ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+				"cannot allocate. %d\n",
+				oldaddr, oldsize0, newsize0,
+				flags, newaddr, error);
+		goto out;
+	}
+
 	/* check original mapping */
 	range = lookup_process_memory_range(vm, oldstart, oldstart+PAGE_SIZE);
 	if (!range || (oldstart < range->start) || (range->end < oldend)
@@ -7755,15 +7774,6 @@ SYSCALL_DECLARE(mremap)
 				oldaddr, oldsize0, newsize0, flags, newaddr,
 				error, range, range?range->start:0,
 				range?range->end:0, range?range->flag:0);
-		goto out;
-	}
-
-	if (oldend < oldstart) {
-		error = -EINVAL;
-		ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
-				"old range overflow. %d\n",
-				oldaddr, oldsize0, newsize0, flags, newaddr,
-				error);
 		goto out;
 	}
 
