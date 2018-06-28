@@ -7,14 +7,12 @@
 #include <registers.h>
 #include <string.h>
 
-#define LOCALS_SPAN (8 * PAGE_SIZE)
-
 /* BSP initialized stack area */
 union arm64_cpu_local_variables init_thread_info __attribute__((aligned(KERNEL_STACK_SIZE)));
 
 /* BSP/AP idle stack pointer head */
 static union arm64_cpu_local_variables *locals;
-size_t arm64_cpu_local_variables_span = LOCALS_SPAN;	/* for debugger */
+size_t arm64_cpu_local_variables_span = KERNEL_STACK_SIZE;	/* for debugger */
 
 /* allocate & initialize BSP/AP idle stack */
 void init_processors_local(int max_id)
