@@ -1,9 +1,23 @@
-/* gettimeofday.c COPYRIGHT FUJITSU LIMITED 2016 */
-
+/* gettimeofday.c COPYRIGHT FUJITSU LIMITED 2016-2018 */
 #include <time.h>
 #include <syscall.h>
 #include <registers.h>
 #include <ihk/atomic.h>
+
+#define UNUSED(x) ((void)(x))
+void vdso_gettimeofday_unused_funcs(void)
+{
+	UNUSED(xgetbv);
+	UNUSED(xsetbv);
+	UNUSED(rdpmc);
+	UNUSED(rdmsr);
+	UNUSED(set_perfctl);
+	UNUSED(start_perfctr);
+	UNUSED(stop_perfctr);
+	UNUSED(clear_perfctl);
+	UNUSED(set_perfctr);
+	UNUSED(read_perfctr);
+}
 
 extern int __kernel_gettimeofday(struct timeval *tv, void *tz);
 
