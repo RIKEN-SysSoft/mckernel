@@ -518,7 +518,6 @@ enum perf_ctrl_type {
 
 struct perf_ctrl_desc {
 	enum perf_ctrl_type ctrl_type;
-	int status;
 	union {
 		/* for SET, GET */
 		struct {

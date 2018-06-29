@@ -731,6 +731,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		pckt.msg = SCD_MSG_PERF_ACK;
 		pckt.err = 0;
 		pckt.arg = packet->arg;
+		pckt.reply = packet->reply;
 		ihk_ikc_send(resp_channel, &pckt, 0);
 
 		ret = 0;

@@ -2009,58 +2009,65 @@ long mcctrl_perf_num(ihk_os_t os, unsigned long arg)
 	return 0;
 }
 
+struct mcctrl_perf_ctrl_desc {
+	struct perf_ctrl_desc desc;
+	struct mcctrl_wakeup_desc wakeup;
+	void *addrs[1];
+};
+#define wakeup_desc_of_perf_desc(_desc) \
+	(&container_of((_desc), struct mcctrl_perf_ctrl_desc, desc)->wakeup)
+
 long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 {
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct ikc_scd_packet isp;
-	struct perf_ctrl_desc *perf_desc = NULL;
+	struct perf_ctrl_desc *perf_desc;
 	struct ihk_perf_event_attr attr;
 	struct ihk_cpu_info *info = ihk_os_get_cpu_info(os);
 	int ret = 0;
 	int i = 0, j = 0;
+	int need_free;
 
 	for (i = 0; i < usrdata->perf_event_num; i++) {
-		if (copy_from_user(&attr, &arg[i], sizeof(struct ihk_perf_event_attr))) {
-			printk("%s: error: copying ihk_perf_event_attr from user\n",
-			       __FUNCTION__);
+		ret = copy_from_user(&attr, &arg[i],
+				     sizeof(struct ihk_perf_event_attr));
+		if (ret) {
+			pr_err("%s: error: copying ihk_perf_event_attr from user\n",
+			       __func__);
 			return -EINVAL;
 		}
 
-		for (j = 0; j < info->n_cpus; j++) {
-			perf_desc = kmalloc(sizeof(struct perf_ctrl_desc), GFP_KERNEL);
-			if (!perf_desc) {
-				printk("%s: error: allocating perf_ctrl_desc\n",
-				       __FUNCTION__);
-				return -ENOMEM;
-			}
-			memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
-
-			perf_desc->ctrl_type = PERF_CTRL_SET;
-			perf_desc->status = 0;
-			perf_desc->target_cntr = i;
-			perf_desc->config = attr.config;
-			perf_desc->exclude_kernel = attr.exclude_kernel;
-			perf_desc->exclude_user = attr.exclude_user;
-
-			memset(&isp, '\0', sizeof(struct ikc_scd_packet));
-			isp.msg = SCD_MSG_PERF_CTRL;
-			isp.arg = virt_to_phys(perf_desc);
-
-			if ((ret = mcctrl_ikc_send(os, j, &isp)) < 0) {
-				printk("%s: mcctrl_ikc_send ret=%d\n", __FUNCTION__, ret);
-				kfree(perf_desc);
-				return -EINVAL;
-			}
-
-			ret = wait_event_interruptible(perfctrlq, perf_desc->status);
-			if (ret < 0) {
-				printk("%s: ERROR after wait: %d\n", __FUNCTION__, ret);
-				kfree(perf_desc);
-				return -EINVAL;
-			}
-				
-			kfree(perf_desc);
+		perf_desc = kmalloc(sizeof(struct mcctrl_perf_ctrl_desc),
+				    GFP_KERNEL);
+		if (!perf_desc) {
+			return -ENOMEM;
 		}
+		memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
+
+		perf_desc->ctrl_type = PERF_CTRL_SET;
+		perf_desc->target_cntr = i;
+		perf_desc->config = attr.config;
+		perf_desc->exclude_kernel = attr.exclude_kernel;
+		perf_desc->exclude_user = attr.exclude_user;
+
+		memset(&isp, '\0', sizeof(struct ikc_scd_packet));
+		isp.msg = SCD_MSG_PERF_CTRL;
+		isp.arg = virt_to_phys(perf_desc);
+
+		for (j = 0; j < info->n_cpus; j++) {
+			ret = mcctrl_ikc_send_wait(os, j, &isp, 0,
+					wakeup_desc_of_perf_desc(perf_desc),
+					&need_free, 1, perf_desc);
+			if (ret < 0) {
+				pr_warn("%s: mcctrl_ikc_send_wait ret=%d\n",
+					__func__, ret);
+				if (need_free)
+					kfree(perf_desc);
+				return -EINVAL;
+			}
+		}
+
+		kfree(perf_desc);
 	}
 
 	return usrdata->perf_event_num;
@@ -2070,48 +2077,46 @@ long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
 {
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct ikc_scd_packet isp;
-	struct perf_ctrl_desc *perf_desc = NULL;
+	struct perf_ctrl_desc *perf_desc;
 	struct ihk_cpu_info *info = ihk_os_get_cpu_info(os);
 	unsigned long value_sum = 0;
 	int ret = 0;
 	int i = 0, j = 0;
+	int need_free;
 
 	for (i = 0; i < usrdata->perf_event_num; i++) {
-		for (j = 0; j < info->n_cpus; j++) {
-			perf_desc = kmalloc(sizeof(struct perf_ctrl_desc), GFP_KERNEL);
-			if (!perf_desc) {
-				printk("%s: error: allocating perf_ctrl_desc\n",
-				       __FUNCTION__);
-				return -ENOMEM;
-			}
-			memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
-
-			perf_desc->ctrl_type = PERF_CTRL_GET;
-			perf_desc->status = 0;
-			perf_desc->target_cntr = i;
-
-			memset(&isp, '\0', sizeof(struct ikc_scd_packet));
-			isp.msg = SCD_MSG_PERF_CTRL;
-			isp.arg = virt_to_phys(perf_desc);
-
-			if ((ret = mcctrl_ikc_send(os, j, &isp)) < 0) {
-				printk("%s: mcctrl_ikc_send ret=%d\n", __FUNCTION__, ret);
-				kfree(perf_desc);
-				return -EINVAL;
-			}
-
-			ret = wait_event_interruptible(perfctrlq, perf_desc->status);
-			if (ret < 0) {
-				printk("%s: ERROR after wait: %d\n", __FUNCTION__, ret);
-				kfree(perf_desc);
-				return -EINVAL;
-			}
-			value_sum += perf_desc->read_value;
-			kfree(perf_desc);
+		perf_desc = kmalloc(sizeof(struct mcctrl_perf_ctrl_desc),
+				    GFP_KERNEL);
+		if (!perf_desc) {
+			return -ENOMEM;
 		}
+		memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
+
+		perf_desc->ctrl_type = PERF_CTRL_GET;
+		perf_desc->target_cntr = i;
+
+		memset(&isp, '\0', sizeof(struct ikc_scd_packet));
+		isp.msg = SCD_MSG_PERF_CTRL;
+		isp.arg = virt_to_phys(perf_desc);
+
+		for (j = 0; j < info->n_cpus; j++) {
+			ret = mcctrl_ikc_send_wait(os, j, &isp, 0,
+					wakeup_desc_of_perf_desc(perf_desc),
+					&need_free, 1, perf_desc);
+			if (ret < 0) {
+				pr_warn("%s: mcctrl_ikc_send_wait ret=%d\n",
+					__func__, ret);
+				if (need_free)
+					kfree(perf_desc);
+				return -EINVAL;
+			}
+
+			value_sum += perf_desc->read_value;
+		}
+		kfree(perf_desc);
 		if (copy_to_user(&arg[i], &value_sum, sizeof(unsigned long))) {
 			printk("%s: error: copying read_value to user\n",
-			       __FUNCTION__);
+			       __func__);
 			return -EINVAL;
 		}
 		value_sum = 0;
@@ -2124,46 +2129,44 @@ long mcctrl_perf_enable(ihk_os_t os)
 {
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct ikc_scd_packet isp;
-	struct perf_ctrl_desc *perf_desc = NULL;
+	struct perf_ctrl_desc *perf_desc;
 	struct ihk_cpu_info *info = ihk_os_get_cpu_info(os);
 	unsigned int cntr_mask = 0;
 	int ret = 0;
 	int i = 0, j = 0;
+	int need_free;
 
 	for (i = 0; i < usrdata->perf_event_num; i++) {
 		cntr_mask |= 1 << i;
 	}
-	for (j = 0; j < info->n_cpus; j++) {
-		perf_desc = kmalloc(sizeof(struct perf_ctrl_desc), GFP_KERNEL);
-		if (!perf_desc) {
-			printk("%s: error: allocating perf_ctrl_desc\n",
-			       __FUNCTION__);
-			return -ENOMEM;
-		}
-		memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
-
-		perf_desc->ctrl_type = PERF_CTRL_ENABLE;
-		perf_desc->status = 0;
-		perf_desc->target_cntr_mask = cntr_mask;
-
-		memset(&isp, '\0', sizeof(struct ikc_scd_packet));
-		isp.msg = SCD_MSG_PERF_CTRL;
-		isp.arg = virt_to_phys(perf_desc);
-
-		if ((ret = mcctrl_ikc_send(os, j, &isp)) < 0) {
-			printk("%s: mcctrl_ikc_send ret=%d\n", __FUNCTION__, ret);
-			kfree(perf_desc);
-			return -EINVAL;
-		}
-
-		ret = wait_event_interruptible(perfctrlq, perf_desc->status);
-		if (ret < 0) {
-			printk("%s: ERROR after wait: %d\n", __FUNCTION__, ret);
-			kfree(perf_desc);
-			return -EINVAL;
-		}
-		kfree(perf_desc);
+	perf_desc = kmalloc(sizeof(struct mcctrl_perf_ctrl_desc), GFP_KERNEL);
+	if (!perf_desc) {
+		return -ENOMEM;
 	}
+	memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
+
+	perf_desc->ctrl_type = PERF_CTRL_ENABLE;
+	perf_desc->target_cntr_mask = cntr_mask;
+
+	memset(&isp, '\0', sizeof(struct ikc_scd_packet));
+	isp.msg = SCD_MSG_PERF_CTRL;
+	isp.arg = virt_to_phys(perf_desc);
+
+	for (j = 0; j < info->n_cpus; j++) {
+		ret = mcctrl_ikc_send_wait(os, j, &isp, 0,
+					   wakeup_desc_of_perf_desc(perf_desc),
+					   &need_free, 1, perf_desc);
+
+		if (ret < 0) {
+			pr_warn("%s: mcctrl_ikc_send_wait ret=%d\n",
+				__func__, ret);
+			if (need_free)
+				kfree(perf_desc);
+			return -EINVAL;
+		}
+
+	}
+	kfree(perf_desc);
 
 	return 0;
 }
@@ -2172,46 +2175,43 @@ long mcctrl_perf_disable(ihk_os_t os)
 {
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct ikc_scd_packet isp;
-	struct perf_ctrl_desc *perf_desc = NULL;
+	struct perf_ctrl_desc *perf_desc;
 	struct ihk_cpu_info *info = ihk_os_get_cpu_info(os);
 	unsigned int cntr_mask = 0;
 	int ret = 0;
 	int i = 0, j = 0;
+	int need_free;
 
 	for (i = 0; i < usrdata->perf_event_num; i++) {
 		cntr_mask |= 1 << i;
 	}
-	for (j = 0; j < info->n_cpus; j++) {
-		perf_desc = kmalloc(sizeof(struct perf_ctrl_desc), GFP_KERNEL);
-		if (!perf_desc) {
-			printk("%s: error: allocating perf_ctrl_desc\n",
-			       __FUNCTION__);
-			return -ENOMEM;
-		}
-		memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
-
-		perf_desc->ctrl_type = PERF_CTRL_DISABLE;
-		perf_desc->status = 0;
-		perf_desc->target_cntr_mask = cntr_mask;
-
-		memset(&isp, '\0', sizeof(struct ikc_scd_packet));
-		isp.msg = SCD_MSG_PERF_CTRL;
-		isp.arg = virt_to_phys(perf_desc);
-
-		if ((ret = mcctrl_ikc_send(os, j, &isp)) < 0) {
-			printk("%s: mcctrl_ikc_send ret=%d\n", __FUNCTION__, ret);
-			kfree(perf_desc);
-			return -EINVAL;
-		}
-
-		ret = wait_event_interruptible(perfctrlq, perf_desc->status);
-		if (ret < 0) {
-			printk("%s: ERROR after wait: %d\n", __FUNCTION__, ret);
-			kfree(perf_desc);
-			return -EINVAL;
-		}
-		kfree(perf_desc);
+	perf_desc = kmalloc(sizeof(struct mcctrl_perf_ctrl_desc), GFP_KERNEL);
+	if (!perf_desc) {
+		return -ENOMEM;
 	}
+	memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
+
+	perf_desc->ctrl_type = PERF_CTRL_DISABLE;
+	perf_desc->target_cntr_mask = cntr_mask;
+
+	memset(&isp, '\0', sizeof(struct ikc_scd_packet));
+	isp.msg = SCD_MSG_PERF_CTRL;
+	isp.arg = virt_to_phys(perf_desc);
+
+	for (j = 0; j < info->n_cpus; j++) {
+		ret = mcctrl_ikc_send_wait(os, j, &isp, 0,
+				wakeup_desc_of_perf_desc(perf_desc),
+				&need_free, 1, perf_desc);
+		if (ret < 0) {
+			pr_warn("%s: mcctrl_ikc_send_wait ret=%d\n",
+				__func__, ret);
+			if (need_free)
+				kfree(perf_desc);
+			return -EINVAL;
+		}
+
+	}
+	kfree(perf_desc);
 
 	return 0;
 }
@@ -2221,15 +2221,6 @@ long mcctrl_perf_destroy(ihk_os_t os)
 	mcctrl_perf_disable(os);
 	mcctrl_perf_num(os, 0);
 	return 0;
-}
-
-void mcctrl_perf_ack(ihk_os_t os, struct ikc_scd_packet *packet)
-{
-	struct perf_ctrl_desc *perf_desc = phys_to_virt(packet->arg);
-
-	perf_desc->status = 1;
-	wake_up_interruptible(&perfctrlq);
-
 }
 
 /* Compose LWK-specific rusage structure */

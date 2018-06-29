@@ -52,7 +52,6 @@
 static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ihk_ikc_channel_desc *c);
 int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet);
 void sig_done(unsigned long arg, int err);
-void mcctrl_perf_ack(ihk_os_t os, struct ikc_scd_packet *packet);
 void mcctrl_os_read_write_cpu_response(ihk_os_t os,
 		struct ikc_scd_packet *pisp);
 void mcctrl_eventfd(ihk_os_t os, struct ikc_scd_packet *pisp);
@@ -179,6 +178,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		break;
 
 	case SCD_MSG_PREPARE_PROCESS_ACKED:
+	case SCD_MSG_PERF_ACK:
 		mcctrl_wakeup_cb(__os, pisp);
 		break;
 
@@ -214,10 +214,6 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 
 	case SCD_MSG_GET_VDSO_INFO:
 		get_vdso_info(__os, pisp->arg);
-		break;
-
-	case SCD_MSG_PERF_ACK:
-		mcctrl_perf_ack(__os, pisp);
 		break;
 
 	case SCD_MSG_CPU_RW_REG_RESP:
