@@ -189,8 +189,8 @@ static long mcexec_prepare_image(ihk_os_t os,
 	dprintk("# of sections: %d\n", pdesc->num_sections);
 	dprintk("%p (%lx)\n", pdesc, isp.arg);
 
-	ret = mcctrl_ikc_send_wait(os, pdesc->cpu, &isp, 0, &free_ikc_pointers,
-				   3, pdesc, args, envs);
+	ret = mcctrl_ikc_send_wait(os, pdesc->cpu, &isp, 0, NULL,
+				   &free_ikc_pointers, 3, pdesc, args, envs);
 	if (ret < 0) {
 		/* either send or remote prepare_process failed */
 		goto put_and_free_out;

@@ -57,15 +57,6 @@ void mcctrl_os_read_write_cpu_response(ihk_os_t os,
 		struct ikc_scd_packet *pisp);
 void mcctrl_eventfd(ihk_os_t os, struct ikc_scd_packet *pisp);
 
-struct mcctrl_wakeup_desc {
-	int status;
-	int err;
-	wait_queue_head_t wq;
-	struct list_head chain;
-	int free_addrs_count;
-	void *free_addrs[];
-};
-
 /* Assumes usrdata->wakeup_descs_lock taken */
 static void mcctrl_wakeup_desc_cleanup(ihk_os_t os,
 		struct mcctrl_wakeup_desc *desc)
@@ -109,16 +100,18 @@ static void mcctrl_wakeup_cb(ihk_os_t os, struct ikc_scd_packet *packet)
 }
 
 int mcctrl_ikc_send_wait(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp,
-		long int timeout, int *do_frees, int free_addrs_count, ...)
+		long int timeout, struct mcctrl_wakeup_desc *desc,
+		int *do_frees, int free_addrs_count, ...)
 {
 	int ret, i;
+	int alloc_desc = (desc == NULL);
 	va_list ap;
-	struct mcctrl_wakeup_desc *desc;
 
 	*do_frees = 1;
-	desc = kmalloc(sizeof(struct mcctrl_wakeup_desc) +
-		       (free_addrs_count + 1) * sizeof(void *),
-		       GFP_KERNEL);
+	if (alloc_desc)
+		desc = kmalloc(sizeof(struct mcctrl_wakeup_desc) +
+			       (free_addrs_count + 1) * sizeof(void *),
+			       GFP_KERNEL);
 	if (!desc) {
 		pr_warn("%s: Could not allocate wakeup descriptor", __func__);
 		return -ENOMEM;
@@ -128,9 +121,10 @@ int mcctrl_ikc_send_wait(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp,
 	for (i = 0; i < free_addrs_count; i++) {
 		desc->free_addrs[i] = va_arg(ap, void*);
 	}
-	desc->free_addrs[free_addrs_count] = desc;
 	va_end(ap);
-	desc->free_addrs_count = free_addrs_count + 1;
+	if (alloc_desc)
+		desc->free_addrs[free_addrs_count++] = desc;
+	desc->free_addrs_count = free_addrs_count;
 	init_waitqueue_head(&desc->wq);
 	WRITE_ONCE(desc->err, 0);
 	WRITE_ONCE(desc->status, 0);
@@ -165,7 +159,8 @@ int mcctrl_ikc_send_wait(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp,
 	}
 
 	ret = READ_ONCE(desc->err);
-	kfree(desc);
+	if (alloc_desc)
+		kfree(desc);
 	return ret;
 }
 
