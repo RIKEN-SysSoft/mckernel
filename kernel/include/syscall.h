@@ -37,8 +37,9 @@
 #define SCD_MSG_INIT_CHANNEL_ACKED      0x6
 
 #define SCD_MSG_SYSCALL_ONESIDE         0x4
-#define SCD_MSG_SEND_SIGNAL		0x8
-#define	SCD_MSG_CLEANUP_PROCESS		0x9
+#define SCD_MSG_SEND_SIGNAL             0x7
+#define SCD_MSG_SEND_SIGNAL_ACK         0x8
+#define SCD_MSG_CLEANUP_PROCESS         0x9
 #define SCD_MSG_GET_VDSO_INFO           0xa
 
 #define SCD_MSG_GET_CPU_MAPPING         0xc

@@ -655,10 +655,11 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		memcpy(&info, sp, sizeof(struct mcctrl_signal));
 		ihk_mc_unmap_virtual(sp, 1, 0);
 		ihk_mc_unmap_memory(NULL, pp, sizeof(struct mcctrl_signal));
-		pckt.msg = SCD_MSG_SEND_SIGNAL;
+		pckt.msg = SCD_MSG_SEND_SIGNAL_ACK;
 		pckt.err = 0;
 		pckt.ref = packet->ref;
 		pckt.arg = packet->arg;
+		pckt.reply = packet->reply;
 		syscall_channel_send(resp_channel, &pckt);
 
 		rc = do_kill(NULL, info.pid, info.tid, info.sig, &info.info, 0);

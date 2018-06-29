@@ -106,7 +106,8 @@ int mcctrl_ikc_send_wait(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp,
 	int alloc_desc = (desc == NULL);
 	va_list ap;
 
-	*do_frees = 1;
+	if (free_addrs_count)
+		*do_frees = 1;
 	if (alloc_desc)
 		desc = kmalloc(sizeof(struct mcctrl_wakeup_desc) +
 			       (free_addrs_count + 1) * sizeof(void *),
@@ -153,7 +154,8 @@ int mcctrl_ikc_send_wait(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp,
 		spin_lock_irqsave(&usrdata->wakeup_descs_lock, flags);
 		list_add(&desc->chain, &usrdata->wakeup_descs_list);
 		spin_unlock_irqrestore(&usrdata->wakeup_descs_lock, flags);
-		*do_frees = 0;
+		if (free_addrs_count)
+			*do_frees = 0;
 		return ret < 0 ? ret : -ETIME;
 	}
 
@@ -179,6 +181,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 
 	case SCD_MSG_PREPARE_PROCESS_ACKED:
 	case SCD_MSG_PERF_ACK:
+	case SCD_MSG_SEND_SIGNAL_ACK:
 		mcctrl_wakeup_cb(__os, pisp);
 		break;
 
@@ -190,9 +193,6 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		procfs_answer(usrdata, pisp->pid);
 		break;
 
-	case SCD_MSG_SEND_SIGNAL:
-		sig_done(pisp->arg, pisp->err);
-		break;
 
 	case SCD_MSG_SYSFS_REQ_CREATE:
 	case SCD_MSG_SYSFS_REQ_MKDIR:

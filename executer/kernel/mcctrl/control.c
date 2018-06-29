@@ -476,25 +476,33 @@ out:
 
 static DECLARE_WAIT_QUEUE_HEAD(signalq);
 
+struct mcctrl_signal_desc {
+	struct mcctrl_signal msig;
+	struct mcctrl_wakeup_desc wakeup;
+	void *addrs[1];
+};
+
 static long mcexec_send_signal(ihk_os_t os, struct signal_desc *sigparam)
 {
 	struct ikc_scd_packet isp;
 	struct mcctrl_channel *c;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct signal_desc sig;
-	struct mcctrl_signal msig[2];
+	struct mcctrl_signal_desc *desc;
 	struct mcctrl_signal *msigp;
-	int rc;
+	int rc, do_free;
 
 	if (copy_from_user(&sig, sigparam, sizeof(struct signal_desc))) {
 		return -EFAULT;
 	}
 
-	msigp = msig;
-	if(((unsigned long)msig & 0xfffffffffffff000L) !=
-	   ((unsigned long)(msig + 1) & 0xfffffffffffff000L))
-		msigp++;
-	memset(msigp, '\0', sizeof msig);
+	desc = kmalloc(sizeof(*desc), GFP_KERNEL);
+	if (!desc) {
+		return -ENOMEM;
+	}
+
+	msigp = &desc->msig;
+	memset(msigp, '\0', sizeof(*msigp));
 	msigp->sig = sig.sig;
 	msigp->pid = sig.pid;
 	msigp->tid = sig.tid;
@@ -506,23 +514,17 @@ static long mcexec_send_signal(ihk_os_t os, struct signal_desc *sigparam)
 	isp.pid = sig.pid;
 	isp.arg = virt_to_phys(msigp);
 
-	if ((rc = mcctrl_ikc_send(os, sig.cpu, &isp)) < 0) {
+	rc = mcctrl_ikc_send_wait(os, sig.cpu, &isp, 0, &desc->wakeup,
+				  &do_free, 1, desc);
+	if (rc < 0) {
 		printk("mcexec_send_signal: mcctrl_ikc_send ret=%d\n", rc);
+		if (do_free)
+			kfree(desc);
 		return rc;
 	}
-	wait_event_interruptible(signalq, msigp->cond != 0);
 
+	kfree(desc);
 	return 0;
-}
-
-void
-sig_done(unsigned long arg, int err)
-{
-	struct mcctrl_signal *msigp;
-
-	msigp = phys_to_virt(arg);
-	msigp->cond = 1;
-	wake_up_interruptible(&signalq);
 }
 
 static long mcexec_get_cpu(ihk_os_t os)
