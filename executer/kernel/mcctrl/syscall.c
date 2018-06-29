@@ -1292,7 +1292,15 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 			{
 				char *pathbuf, *fullpath;
 
+#ifdef POSTK_DEBUG_ARCH_DEP_96 /* build for linux4.16 */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
+				pathbuf = kmalloc(PATH_MAX, GFP_KERNEL);
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
 				pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_96 */
+				pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+#endif /* POSTK_DEBUG_ARCH_DEP_96 */
 				if (pathbuf) {
 					fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
 					if (!IS_ERR(fullpath)) {
@@ -1424,7 +1432,14 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 	uintptr_t phys = -1;
 	ihk_device_t dev = ihk_os_to_dev(os);
 	void *buf = NULL;
+#ifdef POSTK_DEBUG_ARCH_DEP_96 /* build for linux4.16 */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
 	mm_segment_t fs;
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_96 */
+	mm_segment_t fs;
+#endif /* POSTK_DEBUG_ARCH_DEP_96 */
 	loff_t pos;
 
 	dprintk("pager_req_read(%lx,%lx,%lx,%lx)\n", handle, off, size, rpa);
@@ -1459,10 +1474,21 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 		goto out;
 	}
 
+#ifdef POSTK_DEBUG_ARCH_DEP_96 /* build for linux4.16 */
+	pos = off;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
+	ss = kernel_read(file, buf, size, &pos);
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
+	fs = get_fs();
+	set_fs(KERNEL_DS);
+	ss = vfs_read(file, buf, size, &pos);
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_96 */
 	fs = get_fs();
 	set_fs(KERNEL_DS);
 	pos = off;
 	ss = vfs_read(file, buf, size, &pos);
+#endif /* POSTK_DEBUG_ARCH_DEP_96 */
 	if ((ss != size) && (ss > 0)) {
 #ifdef POSTK_DEBUG_TEMP_FIX_12 /* clear_user() used by kernel area, fix */
 		memset(buf + ss, 0, size - ss);
@@ -1476,7 +1502,14 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 		}
 #endif /* POSTK_DEBUG_TEMP_FIX_12 */
 	}
+#ifdef POSTK_DEBUG_ARCH_DEP_96 /* build for linux4.16 */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
 	set_fs(fs);
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_96 */
+	set_fs(fs);
+#endif /* POSTK_DEBUG_ARCH_DEP_96 */
 	if (ss < 0) {
 		printk("pager_req_read(%lx,%lx,%lx,%lx):pread failed. %ld\n", handle, off, size, rpa, ss);
 		goto out;
@@ -1504,7 +1537,14 @@ static int pager_req_write(ihk_os_t os, uintptr_t handle, off_t off, size_t size
 	uintptr_t phys = -1;
 	ihk_device_t dev = ihk_os_to_dev(os);
 	void *buf = NULL;
+#ifdef POSTK_DEBUG_ARCH_DEP_96 /* build for linux4.16 */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
 	mm_segment_t fs;
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_96 */
+	mm_segment_t fs;
+#endif /* POSTK_DEBUG_ARCH_DEP_96 */
 	loff_t pos;
 	loff_t fsize;
 	size_t len;
@@ -1553,6 +1593,21 @@ static int pager_req_write(ihk_os_t os, uintptr_t handle, off_t off, size_t size
 		goto out;
 	}
 
+#ifdef POSTK_DEBUG_ARCH_DEP_96 /* build for linux4.16 */
+	pos = off;
+	len = size;
+	if ((off + size) > fsize) {
+		len = fsize - off;
+	}
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
+	ss = kernel_write(file, buf, len, &pos);
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
+	fs = get_fs();
+	set_fs(KERNEL_DS);
+	ss = vfs_write(file, buf, len, &pos);
+	set_fs(fs);
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_96 */
 	fs = get_fs();
 	set_fs(KERNEL_DS);
 	pos = off;
@@ -1562,6 +1617,7 @@ static int pager_req_write(ihk_os_t os, uintptr_t handle, off_t off, size_t size
 	}
 	ss = vfs_write(file, buf, len, &pos);
 	set_fs(fs);
+#endif /* POSTK_DEBUG_ARCH_DEP_96 */
 	if (ss < 0) {
 		printk("pager_req_write(%lx,%lx,%lx,%lx):pwrite failed. %ld\n", handle, off, size, rpa, ss);
 		goto out;

@@ -1,4 +1,4 @@
-/* control.c COPYRIGHT FUJITSU LIMITED 2016-2017 */
+/* control.c COPYRIGHT FUJITSU LIMITED 2016-2018 */
 /**
  * \file executer/kernel/control.c
  *  License details are found in the file LICENSE.
@@ -24,7 +24,16 @@
  *  2013/07/02 shirasawa add error handling for prepare_process
  *  2013/04/17 nakamura add generic system call forwarding
  */
+#ifdef POSTK_DEBUG_ARCH_DEP_96 /* build for linux4.16 */
+#include <linux/version.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0)
+#include <linux/sched/types.h>
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0) */
 #include <linux/sched.h>
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_96 */
+#include <linux/sched.h>
+#endif /* POSTK_DEBUG_ARCH_DEP_96 */
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/wait.h>
@@ -32,7 +41,9 @@
 #include <linux/gfp.h>
 #include <linux/fs.h>
 #include <linux/file.h>
+#ifndef POSTK_DEBUG_ARCH_DEP_96 /* build for linux4.16 */
 #include <linux/version.h>
+#endif /* !POSTK_DEBUG_ARCH_DEP_96 */
 #include <linux/semaphore.h>
 #include <linux/interrupt.h>
 #include <linux/cpumask.h>
@@ -1730,13 +1741,29 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 		return -EINVAL;
 	}
 
+#ifdef POSTK_DEBUG_ARCH_DEP_96 /* build for linux4.16 */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
+	pathbuf = kmalloc(PATH_MAX, GFP_KERNEL);
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
 	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_96 */
+	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+#endif /* POSTK_DEBUG_ARCH_DEP_96 */
 	if (!pathbuf) {
 		retval = -ENOMEM;
 		goto out;
 	}
 
+#ifdef POSTK_DEBUG_ARCH_DEP_96 /* build for linux4.16 */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
+	kfilename = kmalloc(PATH_MAX, GFP_KERNEL);
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
 	kfilename = kmalloc(PATH_MAX, GFP_TEMPORARY);
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_96 */
+	kfilename = kmalloc(PATH_MAX, GFP_TEMPORARY);
+#endif /* POSTK_DEBUG_ARCH_DEP_96 */
 	if (!kfilename) {
 		retval = -ENOMEM;
 		kfree(pathbuf);
