@@ -95,36 +95,39 @@
 //#define DEBUG
 #define ADD_ENVS_OPTION
 
-#ifndef DEBUG
-#define __dprint(msg)
-#define __dprintf(arg, ...)
-#define __eprint(msg)
-#define __eprintf(format, ...)
+#ifdef DEBUG
+static int debug = 1;
 #else
-#define __dprint(msg)  {printf("%s: " msg, __FUNCTION__);fflush(stdout);}
-#define __dprintf(format, args...)  {printf("%s: " format, __FUNCTION__, \
-                                       ##args);fflush(stdout);}
-#define __eprint(msg)  {fprintf(stderr, "%s: " msg, __FUNCTION__);fflush(stderr);}
-#define __eprintf(format, args...)  {fprintf(stderr, "%s: " format, __FUNCTION__, \
-                                        ##args);fflush(stderr);}
+static int debug;
 #endif
-	
-#define CHKANDJUMPF(cond, err, format, ...)								\
-	do {																\
-		if(cond) {														\
-			__eprintf(format, __VA_ARGS__);								\
-			ret = err;													\
-			goto fn_fail;												\
-		}																\
+
+#define __dprintf(format, args...) do {                  \
+	if (debug) {                                     \
+		printf("%s: " format, __func__, ##args); \
+		fflush(stdout);                          \
+	}                                                \
+} while (0)
+#define __eprintf(format, args...) do {                   \
+	fprintf(stderr, "%s: " format, __func__, ##args); \
+	fflush(stderr);                                   \
+} while (0)
+
+#define CHKANDJUMPF(cond, err, format, ...)             \
+	do {                                            \
+		if (cond) {                             \
+			__eprintf(format, __VA_ARGS__); \
+			ret = err;                      \
+			goto fn_fail;                   \
+		}                                       \
 	} while(0)
 
-#define CHKANDJUMP(cond, err, msg)										\
-	do {																\
-		if(cond) {														\
-			__eprint(msg);												\
-			ret = err;													\
-			goto fn_fail;												\
-		}																\
+#define CHKANDJUMP(cond, err, msg)      \
+	do {                            \
+		if (cond) {             \
+			__eprintf(msg); \
+			ret = err;      \
+			goto fn_fail;   \
+		}                       \
 	} while(0)
 
 
@@ -278,11 +281,11 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	*interp_pathp = NULL;
 
 	if (fread(&hdr, sizeof(hdr), 1, fp) < 1) {
-		__eprint("Cannot read Ehdr.\n");
+		__eprintf("Cannot read Ehdr.\n");
 		return NULL;
 	}
 	if (memcmp(hdr.e_ident, ELFMAG, SELFMAG)) {
-		__eprint("ELFMAG mismatched.\n");
+		__eprintf("ELFMAG mismatched.\n");
 		return NULL;
 	}
 	fseek(fp, hdr.e_phoff, SEEK_SET);
@@ -312,13 +315,13 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 		}
 		if (phdr.p_type == PT_INTERP) {
 			if (phdr.p_filesz > sizeof(interp_path)) {
-				__eprint("too large PT_INTERP segment\n");
+				__eprintf("too large PT_INTERP segment\n");
 				return NULL;
 			}
 			ss = pread(fileno(fp), interp_path, phdr.p_filesz,
 					phdr.p_offset);
 			if (ss <= 0) {
-				__eprint("cannot read PT_INTERP segment\n");
+				__eprintf("cannot read PT_INTERP segment\n");
 				return NULL;
 			}
 			interp_path[ss] = '\0';
@@ -408,11 +411,11 @@ struct program_load_desc *load_interp(struct program_load_desc *desc0, FILE *fp)
 	unsigned long align;
 
 	if (fread(&hdr, sizeof(hdr), 1, fp) < 1) {
-		__eprint("Cannot read Ehdr.\n");
+		__eprintf("Cannot read Ehdr.\n");
 		return NULL;
 	}
 	if (memcmp(hdr.e_ident, ELFMAG, SELFMAG)) {
-		__eprint("ELFMAG mismatched.\n");
+		__eprintf("ELFMAG mismatched.\n");
 		return NULL;
 	}
 	fseek(fp, hdr.e_phoff, SEEK_SET);
@@ -445,7 +448,7 @@ struct program_load_desc *load_interp(struct program_load_desc *desc0, FILE *fp)
 			return NULL;
 		}
 		if (phdr.p_type == PT_INTERP) {
-			__eprint("PT_INTERP on interp\n");
+			__eprintf("PT_INTERP on interp\n");
 			free(desc);
 			return NULL;
 		}
@@ -603,7 +606,7 @@ retry:
 
 	/* Check whether the resolved path is a symlink */
 	if (lstat(path, &sb) == -1) {
-		__eprint("lookup_exec_path(): error stat\n");
+		__eprintf("lookup_exec_path(): error stat\n");
 		return errno;
 	}
 
@@ -916,9 +919,8 @@ void print_desc(struct program_load_desc *desc)
 	int i;
 
 	__dprintf("Desc (%p)\n", desc);
-	__dprintf("Status = %d, CPU = %d, pid = %d, entry = %lx, rp = %lx\n",
-	          desc->status, desc->cpu, desc->pid, desc->entry,
-	          desc->rprocess);
+	__dprintf("CPU = %d, pid = %d, entry = %lx, rp = %lx\n",
+		  desc->cpu, desc->pid, desc->entry, desc->rprocess);
 	for (i = 0; i < desc->num_sections; i++) {
 		__dprintf("vaddr: %lx, mem_len: %lx, remote_pa: %lx, files: %lx\n", 
 		          desc->sections[i].vaddr, desc->sections[i].len, 
@@ -1352,13 +1354,13 @@ static int reduce_stack(struct rlimit *orig_rlim, char *argv[])
 
 	error = setrlimit(RLIMIT_STACK, &new_rlim);
 	if (error) {
-		__eprint("failed to setrlimit(RLIMIT_STACK)\n");
+		__eprintf("failed to setrlimit(RLIMIT_STACK)\n");
 		return 1;
 	}
 
 	execv("/proc/self/exe", argv);
 
-	__eprint("failed to execv(myself)\n");
+	__eprintf("failed to execv(myself)\n");
 	return 1;
 }
 
@@ -2103,7 +2105,7 @@ int main(int argc, char **argv)
 #endif /* ADD_ENVS_OPTION */
 
 #ifdef ENABLE_MCOVERLAYFS
-	__dprint("mcoverlay enable\n");
+	__dprintf("mcoverlay enable\n");
 	char mcos_procdir[PATH_MAX];
 	char mcos_sysdir[PATH_MAX];
 
@@ -2408,13 +2410,13 @@ int main(int argc, char **argv)
 	dma_buf = mmap(0, PIN_SIZE, PROT_READ | PROT_WRITE, 
 	               (MAP_ANONYMOUS | MAP_PRIVATE), -1, 0);
 	if (dma_buf == (void *)-1) {
-		__dprint("error: allocating DMA area\n");
+		__dprintf("error: allocating DMA area\n");
 		exit(1);
 	}
 	
 	/* PIN buffer */
 	if (mlock(dma_buf, (size_t)PIN_SIZE)) {
-		__dprint("ERROR: locking dma_buf\n");
+		__dprintf("ERROR: locking dma_buf\n");
 		exit(1);
 	}
 
@@ -2456,7 +2458,7 @@ int main(int argc, char **argv)
 			/* This call may not succeed, but that is fine */
 			if (sched_setaffinity(0, sizeof(mcexec_cpu_set),
 						&mcexec_cpu_set) < 0) {
-				__dprint("WARNING: couldn't bind to mcexec_cpu_set\n");
+				__dprintf("WARNING: couldn't bind to mcexec_cpu_set\n");
 			}
 #ifdef DEBUG
 			else {
@@ -2573,7 +2575,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 #endif
-	__dprint("mccmd server initialized\n");
+	__dprintf("mccmd server initialized\n");
 #endif
 
 	init_sigaction();
@@ -3456,7 +3458,7 @@ int main_loop(struct thread_data_s *my_thread)
 			dcfampi_cmd_server_exit();
 #endif
 			mc_cmd_server_exit();
-			__dprint("mccmd server exited\n");
+			__dprintf("mccmd server exited\n");
 #endif
 			if(sig){
 				signal(sig, SIG_DFL);
@@ -4400,6 +4402,6 @@ return_linux_spawn:
 
 		//pthread_mutex_unlock(lock);
 	}
-	__dprint("timed out.\n");
+	__dprintf("timed out.\n");
 	return 1;
 }
