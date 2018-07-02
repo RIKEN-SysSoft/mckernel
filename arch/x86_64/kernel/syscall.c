@@ -2081,7 +2081,7 @@ int do_process_vm_read_writev(int pid,
 
 	range = lookup_process_memory_range(lthread->vm, 
 			(uintptr_t)local_iov, 
-			(uintptr_t)(local_iov + liovcnt * sizeof(struct iovec)));
+			(uintptr_t)(local_iov + liovcnt));
 
 	if (!range) {
 		ret = -EFAULT; 
@@ -2090,7 +2090,7 @@ int do_process_vm_read_writev(int pid,
 
 	range = lookup_process_memory_range(lthread->vm, 
 			(uintptr_t)remote_iov, 
-			(uintptr_t)(remote_iov + riovcnt * sizeof(struct iovec)));
+			(uintptr_t)(remote_iov + riovcnt));
 
 	if (!range) {
 		ret = -EFAULT; 

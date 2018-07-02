@@ -8018,9 +8018,8 @@ SYSCALL_DECLARE(msync)
 
 		if ((range->flag & VR_PRIVATE) || !range->memobj
 				|| !memobj_has_pager(range->memobj)) {
-			dkprintf("sys_msync(%#lx,%#lx,%#x):"
-					"unsyncable VMR %d %#lx-%#lx %#lx\n",
-					start0, len0, flags, error,
+			dkprintf("sys_msync(%#lx,%#lx,%#x):unsyncable VMR %#lx-%#lx %#lx\n",
+					start0, len0, flags,
 					range->start, range->end, range->flag);
 			/* nothing to do */
 			continue;
