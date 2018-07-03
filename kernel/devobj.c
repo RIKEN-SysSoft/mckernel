@@ -122,6 +122,8 @@ int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxp
 	ihk_mc_syscall_arg4(&ctx) = virt_to_phys(&result);
 	ihk_mc_syscall_arg5(&ctx) = prot | populate_flags;
 
+	memset(&result, 0, sizeof(result));
+
 	error = syscall_generic_forwarding(__NR_mmap, &ctx);
 	if (error) {
 		kprintf("%s: error: fd: %d, len: %lu, off: %lu map failed.\n", 
