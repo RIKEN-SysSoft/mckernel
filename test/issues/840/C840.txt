@@ -1,28 +1,40 @@
-スクリプトは Wed Jun  6 14:38:21 2018
- に開始しました[?1034hbash-4.2$ sh C840.sh
+Script started on Thu Jul  5 15:32:52 2018
+[?1034hbash-4.2$ make test
+gcc -o C840T01 C840T01.c -Wall -g
+gcc -o C840T02 C840T02.c -Wall -g
+gcc -o C840T03 C840T03.c -Wall -g
+gcc -o C840T04 C840T04.c -Wall -g
+gcc -o C840T05 C840T05.c -Wall -g
+gcc -o C840T06 C840T06.c -Wall -g
+sh ./C840.sh
+1024+0 records in
+1024+0 records out
+1073741824 bytes (1.1 GB) copied, 23.8845 s, 45.0 MB/s
 C840T01... 
 Terminate by signal 9
-C840.sh: 14 行: 22464 強制終了            ./mcexec ./C840T01
-C840T01: OK
+./C840.sh: line 67:  8889 Killed                  $BINDIR/mcexec ./C840T01
+*** C840T01: WARN (remote_page_fault)
+Terminate by signal 9
+./C840.sh: line 67:  9231 Killed                  $BINDIR/mcexec ./C840T01
+*** C840T01: OK
 C840T02... 
 Terminate by signal 9
-C840.sh: 38 行: 22500 強制終了            ./mcexec ./C840T02
-C840T02: OK
+./C840.sh: line 100:  9580 Killed                  $BINDIR/mcexec ./C840T02
+*** C840T02: OK
 C840T03... 
 Terminate by signal 9
-C840.sh: 62 行: 22535 強制終了            ./mcexec ./C840T03
-C840T03: OK
+./C840.sh: line 133:  9949 Killed                  $BINDIR/mcexec ./C840T03
+*** C840T03: OK
 C840T04... 
-C840.sh: 86 行: 22570 強制終了            timeout -s 9 2 ./mcexec ./C840T04
-C840T04: OK
+./C840.sh: line 166: 10301 Killed                  timeout -s 9 2 $BINDIR/mcexec ./C840T04
+*** C840T04: OK
 C840T05... 
-C840.sh: 111 行: 22598 強制終了            timeout -s 9 2 ./mcexec ./C840T05
-C840T05: OK
+./C840.sh: line 199: 10644 Killed                  timeout -s 9 2 $BINDIR/mcexec ./C840T05
+*** C840T05: OK
 C840T06... 
-C840.sh: 136 行: 22626 強制終了            timeout -s 9 2 ./mcexec ./C840T06
-C840T06: OK
+./C840.sh: line 232: 10975 Killed                  timeout -s 9 2 $BINDIR/mcexec ./C840T06
+*** C840T06: OK
 bash-4.2$ exit
 exit
 
-スクリプトは Wed Jun  6 14:38:51 2018
- に終了しました
+Script done on Thu Jul  5 15:46:17 2018
