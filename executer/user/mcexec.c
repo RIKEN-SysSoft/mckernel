@@ -3771,22 +3771,14 @@ fork_err:
 							goto return_execve1;
 						}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_9 /* shell-script run via execve arg[0] fix */
 						if (strlen(shell) >= SHELL_PATH_MAX_LEN) {
-#else /* POSTK_DEBUG_TEMP_FIX_9 */
-						if (strlen(shell_path) >= SHELL_PATH_MAX_LEN) {
-#endif /* POSTK_DEBUG_TEMP_FIX_9 */
 							fprintf(stderr, "execve(): error: shell path too long: %s\n", shell_path);
 							ret = ENAMETOOLONG;
 							goto return_execve1;
 						}
 
 						/* Let the LWK know the shell interpreter */
-#ifdef POSTK_DEBUG_TEMP_FIX_9 /* shell-script run via execve arg[0] fix */
 						strcpy(desc->shell_path, shell);
-#else /* POSTK_DEBUG_TEMP_FIX_9 */
-						strcpy(desc->shell_path, shell_path);
-#endif /* POSTK_DEBUG_TEMP_FIX_9 */
 					}
 
 					desc->enable_vdso = enable_vdso;
