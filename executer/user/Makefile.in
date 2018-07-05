@@ -94,7 +94,6 @@ install::
 	(cd arch/${ARCH}; $(MAKE) install)
 	mkdir -p -m 755 $(BINDIR)
 	install -m 755 mcexec $(BINDIR)
-	install -m 755 mcexec.sh $(BINDIR)
 	mkdir -p -m 755 $(MCKERNEL_LIBDIR)
 	install -m 755 ldump2mcdump.so $(MCKERNEL_LIBDIR)
 	install -m 755 libsched_yield.so.1.0.0 $(MCKERNEL_LIBDIR)

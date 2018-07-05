@@ -598,7 +598,6 @@ AC_CONFIG_FILES([
 	executer/user/mcexec.1:executer/user/mcexec.1in
 	executer/user/vmcore2mckdump
 	executer/user/arch/$ARCH/Makefile
-	executer/user/mcexec.sh
 	executer/user/arch/x86_64/Makefile
 	executer/kernel/mcctrl/Makefile
 	executer/kernel/mcctrl/arch/$ARCH/Makefile
