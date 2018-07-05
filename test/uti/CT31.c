@@ -223,7 +223,7 @@ int main(int argc, char **argv)
 
 	
  	CPU_ZERO(&cpuset);
-	CPU_SET(61, &cpuset);
+	CPU_SET(1/*61*/, &cpuset);
 	sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
 	print_cpu_last_executed_on();
 
@@ -257,7 +257,7 @@ int main(int argc, char **argv)
 	
 }
  	CPU_ZERO(&cpuset);
-	CPU_SET(63, &cpuset);
+	CPU_SET(2/*63*/, &cpuset);
 
 	if ((rc = pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpuset))) {
  		printf("%s: ERROR: pthread_attr_setaffinity_np failed (%d)\n", __FUNCTION__, rc);

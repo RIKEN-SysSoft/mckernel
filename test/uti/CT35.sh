@@ -16,6 +16,7 @@ for((count=0;count<nloop;count++)); do
     if [ $mck -eq 1 ]; then
 	export MCKERNEL_LD_PRELOAD=./preloadlib.so
 	#    $mcexec --enable-uti ./$exe
+#	$mcexec gdb -batch -ex "run" -ex "bt" ./$exe
 	$mcexec ./$exe
     else
 	export LD_PRELOAD=./preloadlib.so

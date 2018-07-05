@@ -309,6 +309,7 @@ CT29 no reverse offload
 CT30 CT21にopenmpスレッドを追加したテスト
 
 CT31 pthread_cond_waitオーバーヘッド測定
+* CPU_SET(63, &cpuset)の行を編集すること
 
 CT32 futex waitオーバーヘッド測定
 
