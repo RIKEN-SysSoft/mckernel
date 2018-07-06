@@ -18,6 +18,7 @@
 #define INTRID_MULTI_NMI	7
 
 /* use PPI interrupt number */
+#define INTRID_PERF_OVF		23
 #define INTRID_HYP_PHYS_TIMER	26 /* cnthp */
 #define INTRID_VIRT_TIMER	27 /* cntv */
 #define INTRID_HYP_VIRT_TIMER	28 /* cnthv */

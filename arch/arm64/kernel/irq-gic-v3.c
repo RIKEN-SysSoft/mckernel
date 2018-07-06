@@ -393,8 +393,22 @@ void gic_enable_gicv3(void)
 	void *rd_sgi_base = rbase + 0x10000 /* SZ_64K */;
 	int i;
 	unsigned int enable_ppi_sgi = GICD_INT_EN_SET_SGI;
+	extern int ihk_param_nr_pmu_irq_affi;
+	extern int ihk_param_pmu_irq_affi[CONFIG_SMP_MAX_CORES];
 
 	enable_ppi_sgi |= GICD_ENABLE << get_timer_intrid();
+
+	if (0 < ihk_param_nr_pmu_irq_affi) {
+		for (i = 0; i < ihk_param_nr_pmu_irq_affi; i++) {
+			if ((0 <= ihk_param_pmu_irq_affi[i]) &&
+			    (ihk_param_pmu_irq_affi[i] < sizeof(enable_ppi_sgi) * BITS_PER_BYTE)) {
+				enable_ppi_sgi |= GICD_ENABLE << ihk_param_pmu_irq_affi[i];
+			}
+		}
+	}
+	else {
+		enable_ppi_sgi |= GICD_ENABLE << INTRID_PERF_OVF;
+	}
 
 	/*
 	 * Deal with the banked PPI and SGI interrupts - disable all

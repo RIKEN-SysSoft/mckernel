@@ -7,14 +7,15 @@
 #include <registers.h>
 #include <string.h>
 #include <ihk/mm.h>
+#include <irq.h>
 
 /*
  * @ref.impl arch/arm64/kernel/perf_event.c
  * Set at runtime when we know what CPU type we are.
  */
 struct arm_pmu cpu_pmu;
-extern int ihk_param_pmu_irq_affiniry[CONFIG_SMP_MAX_CORES];
-extern int ihk_param_nr_pmu_irq_affiniry;
+extern int ihk_param_pmu_irq_affi[CONFIG_SMP_MAX_CORES];
+extern int ihk_param_nr_pmu_irq_affi;
 
 int arm64_init_perfctr(void)
 {
@@ -38,12 +39,17 @@ int arm64_init_perfctr(void)
 	}
 	memset(cpu_pmu.per_cpu, 0, pages * PAGE_SIZE);
 
-	for (i = 0; i < ihk_param_nr_pmu_irq_affiniry; i++) {
-		ret = ihk_mc_register_interrupt_handler(ihk_param_pmu_irq_affiniry[i],
-							cpu_pmu.handler);
-		if (ret) {
-			break;
+	if (0 < ihk_param_nr_pmu_irq_affi) {
+		for (i = 0; i < ihk_param_nr_pmu_irq_affi; i++) {
+			ret = ihk_mc_register_interrupt_handler(ihk_param_pmu_irq_affi[i],
+								cpu_pmu.handler);
+			if (ret) {
+				break;
+			}
 		}
+	}
+	else {
+		ret = ihk_mc_register_interrupt_handler(INTRID_PERF_OVF, cpu_pmu.handler);
 	}
 	return ret;
 }

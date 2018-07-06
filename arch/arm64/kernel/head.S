@@ -94,7 +94,7 @@
 	.globl	ihk_param_gic_percpu_offset, ihk_param_gic_version
 	.globl	ihk_param_lpj, ihk_param_hz, ihk_param_psci_method
 	.globl	ihk_param_cpu_logical_map, ihk_param_gic_rdist_base_pa
-	.globl	ihk_param_pmu_irq_affiniry, ihk_param_nr_pmu_irq_affiniry
+	.globl	ihk_param_pmu_irq_affi, ihk_param_nr_pmu_irq_affi
 	.globl	ihk_param_use_virt_timer, ihk_param_evtstrm_timer_rate
 	.globl	ihk_param_retention_state_flag_pa, ihk_param_default_vl
 ihk_param_head:
@@ -136,9 +136,9 @@ ihk_param_gic_rdist_base_pa:
 	.skip	NR_CPUS * 8	/* per-cpu re-distributer PA */
 ihk_param_retention_state_flag_pa:
 	.quad	0
-ihk_param_pmu_irq_affiniry:
+ihk_param_pmu_irq_affi:
 	.skip	CONFIG_SMP_MAX_CORES * 4	/* array of the pmu affinity list */
-ihk_param_nr_pmu_irq_affiniry:
+ihk_param_nr_pmu_irq_affi:
 	.word	0		/* number of pmu affinity list elements. */
 
 /* @ref.impl arch/arm64/include/asm/kvm_arm.h */
@@ -260,13 +260,13 @@ ENTRY(arch_start)
 	ldr	x16, [x0], #TRAMPOLINE_DATA_RETENTION_STATE_FLAG_PA_SIZE
 	adr	x15, ihk_param_retention_state_flag_pa
 	str	x16, [x15]
-	/* nr_pmu_irq_affiniry */
+	/* nr_pmu_irq_affi */
 	ldr	w16, [x0], #TRAMPOLINE_DATA_NR_PMU_AFFI_SIZE
-	adr	x15, ihk_param_nr_pmu_irq_affiniry
+	adr	x15, ihk_param_nr_pmu_irq_affi
 	str	w16, [x15]
-	/* pmu_irq_affiniry */
+	/* pmu_irq_affi */
 	mov x18, x0
-	adr	x15, ihk_param_pmu_irq_affiniry
+	adr	x15, ihk_param_pmu_irq_affi
 	b	2f
 1:	ldr	w17, [x18], #4
 	str	w17, [x15], #4

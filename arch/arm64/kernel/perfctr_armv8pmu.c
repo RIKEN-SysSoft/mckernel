@@ -8,6 +8,9 @@
 #include <virt.h>
 #include <bitops.h>
 #include <string.h>
+#include <signal.h>
+#include <cls.h>
+#include <process.h>
 
 #define BIT(nr) (1UL << (nr))
 
@@ -636,10 +639,15 @@ static uint32_t armv8pmu_read_num_pmnc_events(void)
 	return num_events;
 }
 
-/* @ref.impl arch/arm64/kernel/perf_event.c */
 static void armv8pmu_handle_irq(void *priv)
 {
+	struct siginfo info;
 	uint32_t pmovsr;
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
+	long irqstate;
+	struct mckfd *fdp;
+	struct pt_regs *regs = (struct pt_regs *)priv;
 
 	/*
 	 * Get and reset the IRQ flags
@@ -653,8 +661,27 @@ static void armv8pmu_handle_irq(void *priv)
 		return;
 
 	/*
-	 * TODO[PMU]: Handle the counter(s) overflow(s)
+	 * Handle the counter(s) overflow(s)
 	 */
+	/* same as x86_64 mckernel */
+	irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
+	for (fdp = proc->mckfd; fdp; fdp = fdp->next) {
+		if (fdp->sig_no > 0)
+			break;
+	}
+	ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
+
+	if (fdp) {
+		memset(&info, '\0', sizeof info);
+		info.si_signo = fdp->sig_no;
+		info._sifields._sigfault.si_addr = (void *)regs->pc;
+		info._sifields._sigpoll.si_fd = fdp->fd;
+		set_signal(fdp->sig_no, regs, &info);
+	}
+	else {
+		set_signal(SIGIO, regs, NULL);
+	}
+	return;
 }
 
 static void armv8pmu_enable_user_access_pmu_regs(void)
