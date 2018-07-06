@@ -140,6 +140,25 @@ int ihk_mc_perfctr_start(unsigned long counter_mask)
 	return ret;
 }
 
+#ifdef POSTK_DEBUG_ARCH_DEP_107 /* Add perfctr_first_stop I/F */
+int ihk_mc_perfctr_first_stop(unsigned long counter_mask)
+{
+	int i = 0;
+
+	for (i = 0; i < sizeof(counter_mask) * BITS_PER_BYTE; i++) {
+		if (counter_mask & (1UL << i)) {
+			int ret = 0;
+
+			ret = cpu_pmu.disable_counter(i);
+			if (ret < 0) {
+				continue;
+			}
+		}
+	}
+	return 0;
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_107 */
+
 int ihk_mc_perfctr_stop(unsigned long counter_mask)
 {
 	int i = 0;

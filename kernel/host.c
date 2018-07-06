@@ -700,7 +700,11 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 				break;
 			}
 
+#ifdef POSTK_DEBUG_ARCH_DEP_107 /* Add perfctr_first_stop I/F */
+			ret = ihk_mc_perfctr_first_stop(1 << pcd->target_cntr);
+#else /* POSTK_DEBUG_ARCH_DEP_107 */
 			ret = ihk_mc_perfctr_stop(1 << pcd->target_cntr);
+#endif /* POSTK_DEBUG_ARCH_DEP_107 */
 			if (ret != 0) {
 				break;
 			}
@@ -708,7 +712,11 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 			ret = ihk_mc_perfctr_reset(pcd->target_cntr);
 #else /* POSTK_DEBUG_TEMP_FIX_80 */
 			ihk_mc_perfctr_init_raw(pcd->target_cntr, pcd->config, mode);
+#ifdef POSTK_DEBUG_ARCH_DEP_107 /* Add perfctr_first_stop I/F */
+			ihk_mc_perfctr_first_stop(1 << pcd->target_cntr);
+#else /* POSTK_DEBUG_ARCH_DEP_107 */
 			ihk_mc_perfctr_stop(1 << pcd->target_cntr);
+#endif /* POSTK_DEBUG_ARCH_DEP_107 */
 			ihk_mc_perfctr_reset(pcd->target_cntr);
 
 #endif /* POSTK_DEBUG_TEMP_FIX_80 */

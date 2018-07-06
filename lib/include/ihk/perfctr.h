@@ -62,6 +62,9 @@ int ihk_mc_perfctr_init_raw(int counter, unsigned int code, int mode);
 #endif/*POSTK_DEBUG_TEMP_FIX_29*/
 int ihk_mc_perfctr_start(unsigned long counter_mask);
 int ihk_mc_perfctr_stop(unsigned long counter_mask);
+#ifdef POSTK_DEBUG_ARCH_DEP_107 /* Add perfctr_first_stop I/F */
+int ihk_mc_perfctr_first_stop(unsigned long counter_mask);
+#endif /* POSTK_DEBUG_ARCH_DEP_107 */
 #ifndef POSTK_DEBUG_TEMP_FIX_31
 int ihk_mc_perfctr_fixed_init(int counter, int mode);
 #endif /* POSTK_DEBUG_TEMP_FIX_31 */

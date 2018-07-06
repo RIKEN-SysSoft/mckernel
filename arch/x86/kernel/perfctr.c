@@ -319,6 +319,13 @@ int ihk_mc_perfctr_stop(unsigned long counter_mask)
 	goto fn_exit;
 }
 
+#ifdef POSTK_DEBUG_ARCH_DEP_107 /* Add perfctr_first_stop I/F */
+int ihk_mc_perfctr_first_stop(unsigned long counter_mask)
+{
+	return ihk_mc_perfctr_stop(counter_mask);
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_107 */
+
 // init for fixed counter
 int ihk_mc_perfctr_fixed_init(int counter, int mode)
 {
