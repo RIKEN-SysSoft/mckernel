@@ -300,6 +300,17 @@ long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
 	unsigned long irqflags;
 	struct mcctrl_per_proc_data *ppd;
 	unsigned long phys;
+#ifdef POSTK_DEBUG_ARCH_DEP_106 /* Fix virt_to_phys() area to get_free_page */
+	struct syscall_request *request = NULL;
+
+	request = (struct syscall_request *)__get_free_page(GFP_KERNEL);
+	if (!request) {
+		kprintf("%s: ERROR: struct syscall_request allocation failed.\n", __FUNCTION__);
+		syscall_ret = -ENOMEM;
+		goto err;
+	}
+	memset(request, '\0', sizeof(struct syscall_request));
+#else /* POSTK_DEBUG_ARCH_DEP_106 */
 	struct syscall_request _request[2];
 	struct syscall_request *request;
 
@@ -308,6 +319,7 @@ long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
 		request = _request + 1;
 	else
 		request = _request;
+#endif /* POSTK_DEBUG_ARCH_DEP_106 */
 	request->number = num;
 	request->args[0] = arg1;
 	request->args[1] = arg2;
@@ -323,7 +335,12 @@ long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
 	if (!ppd) {
 		kprintf("%s: ERROR: no per-process structure for PID %d??\n", 
 				__FUNCTION__, task_tgid_vnr(current));
+#ifdef POSTK_DEBUG_ARCH_DEP_106 /* Fix virt_to_phys() area to get_free_page */
+		syscall_ret = -EINVAL;
+		goto err;
+#else /* POSTK_DEBUG_ARCH_DEP_106 */
 		return -EINVAL;
+#endif /* POSTK_DEBUG_ARCH_DEP_106 */
 	}
 
 	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
@@ -451,6 +468,11 @@ out_put_ppd:
 		__FUNCTION__, task_pid_vnr(current), num, syscall_ret);
 
 	mcctrl_put_per_proc_data(ppd);
+#ifdef POSTK_DEBUG_ARCH_DEP_106 /* Fix virt_to_phys() area to get_free_page */
+
+err:
+	free_page((unsigned long)request);
+#endif /* POSTK_DEBUG_ARCH_DEP_106 */
 	return syscall_ret;
 }
 

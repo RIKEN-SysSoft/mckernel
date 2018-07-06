@@ -508,19 +508,34 @@ static long mcexec_send_signal(ihk_os_t os, struct signal_desc *sigparam)
 	struct mcctrl_channel *c;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct signal_desc sig;
+#ifdef POSTK_DEBUG_ARCH_DEP_106 /* Fix virt_to_phys() area to get_free_page */
+	struct mcctrl_signal *msigp = NULL;
+	long ret;
+#else /* POSTK_DEBUG_ARCH_DEP_106 */
 	struct mcctrl_signal msig[2];
 	struct mcctrl_signal *msigp;
+#endif /* POSTK_DEBUG_ARCH_DEP_106 */
 	int rc;
 
 	if (copy_from_user(&sig, sigparam, sizeof(struct signal_desc))) {
 		return -EFAULT;
 	}
 
+#ifdef POSTK_DEBUG_ARCH_DEP_106 /* Fix virt_to_phys() area to get_free_page */
+	msigp = (struct mcctrl_signal *)__get_free_page(GFP_KERNEL);
+	if (!msigp) {
+		printk("%s: struct mcctrl_signal allocation failed.\n", __FUNCTION__);
+		ret = -ENOMEM;
+		goto out;
+	}
+	memset(msigp, '\0', sizeof(struct mcctrl_signal));
+#else /* POSTK_DEBUG_ARCH_DEP_106 */
 	msigp = msig;
 	if(((unsigned long)msig & 0xfffffffffffff000L) !=
 	   ((unsigned long)(msig + 1) & 0xfffffffffffff000L))
 		msigp++;
 	memset(msigp, '\0', sizeof msig);
+#endif /* POSTK_DEBUG_ARCH_DEP_106 */
 	msigp->sig = sig.sig;
 	msigp->pid = sig.pid;
 	msigp->tid = sig.tid;
@@ -534,11 +549,23 @@ static long mcexec_send_signal(ihk_os_t os, struct signal_desc *sigparam)
 
 	if ((rc = mcctrl_ikc_send(os, sig.cpu, &isp)) < 0) {
 		printk("mcexec_send_signal: mcctrl_ikc_send ret=%d\n", rc);
+#ifdef POSTK_DEBUG_ARCH_DEP_106 /* Fix virt_to_phys() area to get_free_page */
+		ret = rc;
+		goto out;
+#else /* POSTK_DEBUG_ARCH_DEP_106 */
 		return rc;
+#endif /* POSTK_DEBUG_ARCH_DEP_106 */
 	}
 	wait_event_interruptible(signalq, msigp->cond != 0);
 
+#ifdef POSTK_DEBUG_ARCH_DEP_106 /* Fix virt_to_phys() area to get_free_page */
+	ret = 0;
+out:
+	free_page((unsigned long)msigp);
+	return ret;
+#else /* POSTK_DEBUG_ARCH_DEP_106 */
 	return 0;
+#endif /* POSTK_DEBUG_ARCH_DEP_106 */
 }
 
 void
