@@ -1,7 +1,7 @@
 .SUFFIXES:	# Disable implicit rules
 
-SI_DIR=/home/takagi/usr
-UTI_DIR=/home/takagi/project/uti/install
+SYSCALLL_INTERCEPT_DIR=/work/gg10/e29005/usr
+UTI_DIR=/work/gg10/e29005/project/uti/install
 
 CC = gcc
 
@@ -13,8 +13,8 @@ SRCS = $(shell ls CT*.c)
 EXES = $(SRCS:.c=)
 OBJS = $(SRCS:.c=.o)
 
-CFLAGS_SO = -g -O2 -I$(SI_DIR)/include
-LDFLAGS_SO = -L$(SI_DIR)/lib64 -Wl,-rpath,$(SI_DIR)/lib64 -lsyscall_intercept -fpic -shared
+CFLAGS_SO = -g -O2 -I$(SYSCALLL_INTERCEPT_DIR)/include
+LDFLAGS_SO = -L$(SYSCALLL_INTERCEPT_DIR)/lib64 -Wl,-rpath,$(SYSCALLL_INTERCEPT_DIR)/lib64 -lsyscall_intercept -fpic -shared
 SO_SRCS = preloadlib.c
 SOS = $(SO_SRCS:.c=.so)
 

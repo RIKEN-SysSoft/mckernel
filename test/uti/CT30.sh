@@ -33,8 +33,9 @@ do
         esac
 done
 
-ABS_SRCDIR=${HOME}/project/os/mckernel/test/uti
-MCK=${HOME}/project/os/install
+MYHOME=/work/gg10/e29005
+ABS_SRCDIR=${MYHOME}/project/os/mckernel/test/uti
+MCK=${MYHOME}/project/os/install
 
 NODES=`echo $(seq -s ",c" $(($LASTNODE + 1 - $NNODES)) $LASTNODE) | sed 's/^/c/'`
 PPN=$((NPROC / NNODES))
@@ -42,7 +43,7 @@ echo NPROC=$NPROC NNODES=$NNODES PPN=$PPN NODES=$NODES
 
 if [ ${mck} -eq 1 ]; then
     MCEXEC="${MCK}/bin/mcexec"
-    mcexecopt="-n $PPN $mcexecopt"
+    mcexecopt="--enable-uti"
 else
     MCEXEC=
     mcexecopt=
@@ -80,6 +81,11 @@ if [ ${go} -eq 1 ]; then
 	ulimit -u 16384; 
     PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $NODES \
 	ulimit -s unlimited
+    PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $NODES \
+	ulimit -c unlimited
+
+    export KMP_STACKSIZE=64M
+    export OMP_NUM_THREADS=4
 
     $MCEXEC $mcexecopt ./$fn
 fi
