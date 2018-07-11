@@ -103,33 +103,6 @@ getpath(struct procfs_list_entry *e, char *buf, int bufsize)
 	}
 }
 
-/**
- * \brief Process SCD_MSG_PROCFS_ANSWER message.
- *
- * \param ud mcctrl_usrdata pointer
- * \param pid PID of the requesting process
- */
-void procfs_answer(struct mcctrl_usrdata *ud, int pid)
-{
-	struct mcctrl_per_proc_data *ppd = NULL;
-
-	if (pid > 0) {
-		ppd = mcctrl_get_per_proc_data(ud, pid);
-
-		if (unlikely(!ppd)) {
-			kprintf("%s: ERROR: no per-process structure for PID %d\n",
-					__FUNCTION__, pid);
-			return;
-		}
-	}
-
-	wake_up_all(pid > 0 ? &ppd->wq_procfs : &ud->wq_procfs);
-
-	if (pid > 0) {
-		mcctrl_put_per_proc_data(ppd);
-	}
-}
-
 static struct procfs_list_entry *
 find_procfs_entry(struct procfs_list_entry *parent, const char *name)
 {
@@ -520,7 +493,7 @@ static ssize_t __mckernel_procfs_read_write(
 	int order = 0;
 	volatile struct procfs_read *r = NULL;
 	struct ikc_scd_packet isp;
-	int ret, osnum, pid, retw;
+	int ret, osnum, pid;
 	unsigned long pbuf;
 	size_t count = nbytes;
 	size_t copy_size = 0;
@@ -615,11 +588,11 @@ static ssize_t __mckernel_procfs_read_write(
 
 	while (count > 0) {
 		int this_len = min_t(ssize_t, count, copy_size);
+		int do_free;
 
 		r->pbuf = pbuf;
 		r->eof = 0;
 		r->ret = -EIO; /* default */
-		r->status = 0;
 		r->offset = offset;
 		r->count = this_len;
 		r->readwrite = read_write;
@@ -629,49 +602,25 @@ static ssize_t __mckernel_procfs_read_write(
 		isp.arg = virt_to_phys(r);
 		isp.pid = pid;
 
-		ret = mcctrl_ikc_send(osnum_to_os(e->osnum),
-				(pid > 0) ? ppd->ikc_target_cpu : 0, &isp);
+		ret = mcctrl_ikc_send_wait(osnum_to_os(e->osnum),
+					   (pid > 0) ? ppd->ikc_target_cpu : 0,
+					   &isp, HZ, NULL, &do_free, 1, r);
+
+		if (!do_free && ret >= 0) {
+			ret = -EIO;
+		}
 
 		if (ret < 0) {
-			goto out; /* error */
-		}
-
-		/* Wait for a reply. */
-		ret = -EIO; /* default exit code */
-		dprintk("%s: waiting for reply\n", __FUNCTION__);
-
-retry_wait:
-		/* Wait for the status field of the procfs_read structure,
-		 * wait on per-process or OS specific data depending on
-		 * who the request is for.
-		 */
-		if (pid > 0) {
-			retw = wait_event_interruptible_timeout(ppd->wq_procfs,
-					r->status != 0, HZ);
-		}
-		else {
-			retw = wait_event_interruptible_timeout(udp->wq_procfs,
-					r->status != 0, HZ);
-		}
-
-		/* Timeout? */
-		if (retw == 0 && r->status == 0) {
-			printk("%s: error: timeout (1 sec)\n", __FUNCTION__);
+			if (ret == -ETIME) {
+				pr_info("%s: error: timeout (1 sec)\n",
+				       __func__);
+			}
+			else if (ret == -ERESTARTSYS) {
+				ret = -ERESTART;
+			}
+			if (!do_free)
+				r = NULL;
 			goto out;
-		}
-		/* Interrupted? */
-		else if (retw == -ERESTARTSYS) {
-			ret = -ERESTART;
-			goto out;
-		}
-		/* Were we woken up by a reply to another procfs request? */
-		else if (r->status == 0) {
-			/* TODO: r->status is not set atomically, we could be woken
-			 * up with status == 0 and it could change to 1 while in this
-			 * code, we could potentially miss the wake_up()... 
-			 */
-			printk("%s: stale wake-up, retrying\n", __FUNCTION__);
-			goto retry_wait;
 		}
 
 		/* Wake up and check the result. */
@@ -728,7 +677,7 @@ static ssize_t __mckernel_procfs_read_write(
 	int order = 0;
 	volatile struct procfs_read *r = NULL;
 	struct ikc_scd_packet isp;
-	int ret, osnum, pid, retw;
+	int ret, osnum, pid;
 	unsigned long pbuf;
 	unsigned long count = nbytes;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
@@ -743,6 +692,7 @@ static ssize_t __mckernel_procfs_read_write(
 	ihk_os_t os = NULL;
 	struct mcctrl_usrdata *udp = NULL;
 	struct mcctrl_per_proc_data *ppd = NULL;
+	int do_free;
 
 	if (count <= 0 || offset < 0) {
 		return 0;
@@ -822,7 +772,6 @@ static ssize_t __mckernel_procfs_read_write(
 	r->pbuf = pbuf;
 	r->eof = 0;
 	r->ret = -EIO; /* default */
-	r->status = 0;
 	r->offset = offset;
 	r->count = count;
 	r->readwrite = read_write;
@@ -832,49 +781,25 @@ static ssize_t __mckernel_procfs_read_write(
 	isp.arg = virt_to_phys(r);
 	isp.pid = pid;
 
-	ret = mcctrl_ikc_send(osnum_to_os(e->osnum),
-			(pid > 0) ? ppd->ikc_target_cpu : 0, &isp);
+	ret = mcctrl_ikc_send_wait(osnum_to_os(e->osnum),
+				   (pid > 0) ? ppd->ikc_target_cpu : 0,
+				   &isp, 5 * HZ, NULL, &do_free, 1, r);
+
+	if (!do_free && ret >= 0) {
+		ret = -EIO;
+	}
 
 	if (ret < 0) {
-		goto out; /* error */
-	}
-
-	/* Wait for a reply. */
-	ret = -EIO; /* default exit code */
-	dprintk("%s: waiting for reply\n", __FUNCTION__);
-
-retry_wait:
-	/* Wait for the status field of the procfs_read structure,
-	 * wait on per-process or OS specific data depending on
-	 * who the request is for.
-	 */
-	if (pid > 0) {
-		retw = wait_event_interruptible_timeout(ppd->wq_procfs,
-				r->status != 0, 5 * HZ);
-	}
-	else {
-		retw = wait_event_interruptible_timeout(udp->wq_procfs,
-				r->status != 0, 5 * HZ);
-	}
-
-	/* Timeout? */
-	if (retw == 0 && r->status == 0) {
-		printk("%s: error: timeout (1 sec)\n", __FUNCTION__);
+		if (ret == -ETIME) {
+			pr_info("%s: error: timeout (1 sec)\n",
+			       __func__);
+		}
+		else if (ret == -ERESTARTSYS) {
+			ret = -ERESTART;
+		}
+		if (!do_free)
+			r = NULL;
 		goto out;
-	}
-	/* Interrupted? */
-	else if (retw == -ERESTARTSYS) {
-		ret = -ERESTART;
-		goto out;
-	}
-	/* Were we woken up by a reply to another procfs request? */
-	else if (r->status == 0) {
-		/* TODO: r->status is not set atomically, we could be woken
-		 * up with status == 0 and it could change to 1 while in this
-		 * code, we could potentially miss the wake_up()... 
-		 */
-		printk("%s: stale wake-up, retrying\n", __FUNCTION__);
-		goto retry_wait;
 	}
 
 	/* Wake up and check the result. */

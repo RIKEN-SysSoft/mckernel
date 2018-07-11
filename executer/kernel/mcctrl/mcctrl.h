@@ -455,7 +455,6 @@ struct procfs_read {
 	int count;		/* bytes to read (request) */
 	int eof;		/* if eof is detected, 1 otherwise 0. (answer)*/
 	int ret;		/* read bytes (answer) */
-	int status;		/* non-zero if done (answer) */
 	int newcpu;		/* migrated new cpu (answer) */
 	int readwrite;		/* 0:read, 1:write */
 	char fname[PROCFS_NAME_MAX];	/* procfs filename (request) */
