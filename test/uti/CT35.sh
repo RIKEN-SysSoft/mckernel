@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
-mck_dir=${HOME}/project/os/install
-nloop=400
+mck_dir=/work/gg10/e29005/project/os/install
+nloop=800
 exe=CT26
 mck=1
 

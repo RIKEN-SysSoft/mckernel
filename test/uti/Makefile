@@ -33,8 +33,11 @@ CT30: CT30.o
 %.o:: %.c
 	$(CC) $(CCFLAGS) $(CPPFLAGS) -c $<
 
-%: %.o
+%: %.o util.o
 	$(CC) -o $@ $^ $(LDFLAGS)
+
+util.o:: util.c
+	$(CC) $(CCFLAGS) $(CPPFLAGS) -c $<
 
 preloadlib.so: preloadlib.c
 	$(CC) $(CFLAGS_SO) $(LDFLAGS_SO) $^ -o $@ 

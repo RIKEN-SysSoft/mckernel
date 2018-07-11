@@ -3,6 +3,7 @@
 bn=`basename $0`
 fn=`echo $bn | sed 's/.sh//'`
 
+nloop=800
 stop=0
 reboot=0
 go=0
@@ -46,7 +47,7 @@ echo NPROC=$NPROC NNODES=$NNODES PPN=$PPN NODES=$NODES
 
 if [ ${mck} -eq 1 ]; then
     MCEXEC="${MCK}/bin/mcexec"
-    mcexecopt="-n $PPN $mcexecopt"
+    mcexecopt="--enable-uti"
     if [ ${use_hfi} -eq 1 ]; then
 	mcexecopt="--enable-hfi1 $mcexecopt"
     fi
@@ -90,6 +91,12 @@ if [ ${go} -eq 1 ]; then
     PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $NODES \
 	ulimit -s unlimited
 
-    sudo $MCEXEC $mcexecopt ./$fn
+    for((count=0;count<nloop;count++)); do
+	sudo $MCEXEC $mcexecopt ./$fn
+	echo =====
+	echo $count
+	echo =====
+    done
+
 fi
 
