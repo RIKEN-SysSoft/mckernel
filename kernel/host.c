@@ -306,7 +306,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 
 	/* Only unmap remote address if it wasn't specified as an argument */
 	if (!args) {
-		ihk_mc_unmap_virtual(args_envs_r, args_envs_npages, 0);
+		ihk_mc_unmap_virtual(args_envs_r, args_envs_npages);
 		ihk_mc_unmap_memory(NULL, args_envs_rp, p->args_len);
 	}
 	flush_tlb();
@@ -341,7 +341,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 
 	/* Only map remote address if it wasn't specified as an argument */
 	if (!envs) {
-		ihk_mc_unmap_virtual(args_envs_r, args_envs_npages, 0);
+		ihk_mc_unmap_virtual(args_envs_r, args_envs_npages);
 		ihk_mc_unmap_memory(NULL, args_envs_rp, p->envs_len);
 	}
 	flush_tlb();
@@ -449,7 +449,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	if((pn = kmalloc(sizeof(struct program_load_desc) 
 					+ sizeof(struct program_image_section) * n,
 					IHK_MC_AP_NOWAIT)) == NULL){
-		ihk_mc_unmap_virtual(p, npages, 0);
+		ihk_mc_unmap_virtual(p, npages);
 		ihk_mc_unmap_memory(NULL, phys, sz);
 		return -ENOMEM;
 	}
@@ -460,7 +460,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 					(unsigned long *)&p->cpu_set,
 					sizeof(p->cpu_set))) == NULL) {
 		kfree(pn);
-		ihk_mc_unmap_virtual(p, npages, 1);
+		ihk_mc_unmap_virtual(p, npages);
 		ihk_mc_unmap_memory(NULL, phys, sz);
 		return -ENOMEM;
 	}
@@ -542,14 +542,14 @@ static int process_msg_prepare_process(unsigned long rphys)
 
 	kfree(pn);
 
-	ihk_mc_unmap_virtual(p, npages, 1);
+	ihk_mc_unmap_virtual(p, npages);
 	ihk_mc_unmap_memory(NULL, phys, sz);
 	flush_tlb();
 
 	return 0;
 err:
 	kfree(pn);
-	ihk_mc_unmap_virtual(p, npages, 1);
+	ihk_mc_unmap_virtual(p, npages);
 	ihk_mc_unmap_memory(NULL, phys, sz);
 	destroy_thread(thread);
 	return -ENOMEM;
@@ -653,7 +653,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		pp = ihk_mc_map_memory(NULL, packet->arg, sizeof(struct mcctrl_signal));
 		sp = (struct mcctrl_signal *)ihk_mc_map_virtual(pp, 1, PTATTR_WRITABLE | PTATTR_ACTIVE);
 		memcpy(&info, sp, sizeof(struct mcctrl_signal));
-		ihk_mc_unmap_virtual(sp, 1, 0);
+		ihk_mc_unmap_virtual(sp, 1);
 		ihk_mc_unmap_memory(NULL, pp, sizeof(struct mcctrl_signal));
 		pckt.msg = SCD_MSG_SEND_SIGNAL_ACK;
 		pckt.err = 0;
@@ -726,7 +726,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 			kprintf("%s: SCD_MSG_PERF_CTRL unexpected ctrl_type\n", __FUNCTION__);
 		}
 
-		ihk_mc_unmap_virtual(pcd, 1, 0);
+		ihk_mc_unmap_virtual(pcd, 1);
 		ihk_mc_unmap_memory(NULL, pp, sizeof(struct perf_ctrl_desc));
 
 		pckt.msg = SCD_MSG_PERF_ACK;

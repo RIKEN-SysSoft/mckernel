@@ -390,7 +390,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 			requestp = ihk_mc_map_virtual(phys, 1,
 			                       PTATTR_WRITABLE | PTATTR_ACTIVE);
 			memcpy(&request, requestp, sizeof request);
-			ihk_mc_unmap_virtual(requestp, 1, 1);
+			ihk_mc_unmap_virtual(requestp, 1);
 			ihk_mc_unmap_memory(NULL, phys,
 			                    sizeof(struct syscall_request));
 			num = request.number;

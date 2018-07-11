@@ -106,7 +106,7 @@ void ihk_mc_unmap_memory(void *os, unsigned long phys, unsigned long size);
 
 void *ihk_mc_map_virtual(unsigned long phys, int npages,
                          enum ihk_mc_pt_attribute attr);
-void ihk_mc_unmap_virtual(void *va, int npages, int free_physical);
+void ihk_mc_unmap_virtual(void *va, int npages);
 
 extern void *sbox_base;
 extern unsigned int free_bitmap_micpa;
