@@ -183,15 +183,17 @@ void
 save_tls_ctx(void __user *ctx)
 {
 	struct trans_uctx __user *tctx = ctx;
-	struct trans_uctx kctx;
+	unsigned long baseaddr;
 
-	if (copy_from_user(&kctx, tctx, sizeof(struct trans_uctx))) {
-		printk("%s: copy_from_user failed.\n", __FUNCTION__);
-		return;
-	}
 	asm volatile(
 	"	mrs	%0, tpidr_el0"
-	: "=r" (kctx.tls_baseaddr));
+	: "=r" (baseaddr));
+
+	if (copy_to_user(&tctx->tls_baseaddr, &baseaddr,
+			 sizeof(tctx->tls_baseaddr))) {
+		printk("%s: copy_to_user failed.\n", __FUNCTION__);
+		return;
+	}
 }
 
 unsigned long
