@@ -1,0 +1,3 @@
+[submodule "ihk"]
+	path = ihk
+	url = postpeta@postpeta.pccluster.org:ihk
