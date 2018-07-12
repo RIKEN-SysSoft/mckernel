@@ -71,7 +71,9 @@ static void ap_wait(void)
 
 		{
 			extern void hfi1_kmalloc_cache_prealloc(void);
+#if 0 /* Workaround for #1154 */
 			hfi1_kmalloc_cache_prealloc();
+#endif
 		}
 	}
 	
