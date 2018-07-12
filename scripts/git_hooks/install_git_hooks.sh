@@ -1,12 +1,19 @@
 #!/bin/sh
 
-CURDIR=$(dirname "$(readlink -m "$0")")
-TOPDIR=$(git rev-parse --show-toplevel)
-HOOKDIR=$TOPDIR/.git/hooks
+set -eu
 
-cp -f "$CURDIR/pre-commit" "$HOOKDIR"
+CURDIR=$(dirname "$(readlink -m "$0")")
+GITDIR=$(git rev-parse --git-dir)
+HOOKDIR=$GITDIR/hooks
+
+if [[ ! -e "$HOOKDIR" ]]; then
+	echo "$HOOKDIR does not exist, install hook on main worktree?"
+	exit 1
+fi
+
+cp -vf "$CURDIR/pre-commit" "$HOOKDIR"
 chmod +x  "$HOOKDIR/pre-commit"
 
-cp -f "$CURDIR/commit-msg" "$HOOKDIR"
+cp -vf "$CURDIR/commit-msg" "$HOOKDIR"
 chmod +x "$HOOKDIR/commit-msg"
 
