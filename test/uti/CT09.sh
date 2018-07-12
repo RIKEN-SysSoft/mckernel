@@ -45,7 +45,7 @@ fi
 
 if [ ${go} -eq 1 ]; then
     > ./log
-    for i in {1..10}; do (${MCEXEC} ./CT09 1>/dev/null 2>> ./log); done
+    for i in {1..10}; do (${MCEXEC} --enable-uti ./CT09 1>/dev/null 2>> ./log); done
     #${MCEXEC} ./CT09
     perl CT11.pl < ./log
 fi

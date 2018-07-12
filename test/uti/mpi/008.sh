@@ -75,8 +75,8 @@ if [ ${go} -eq 1 ]; then
     make CC=gcc 008
     for i in `seq 1 ${nloops}`; do
 	rm -f psm2-demo-server-epid-*
-	#PSM2_RCVTHREAD=0 PMI_RANK=0 DISABLE_UTI=1 ${MCK}/bin/mcexec taskset -c 2 ./008 --ppn 1 &
-	PSM2_RCVTHREAD=0 PMI_RANK=1 DISABLE_UTI=0 ${MCK}/bin/mcexec taskset -c 3 ./008 --ppn 1
+	#PSM2_RCVTHREAD=0 PMI_RANK=0 DISABLE_UTI=1 ${MCK}/bin/mcexec --enable-uti taskset -c 2 ./008 --ppn 1 &
+	PSM2_RCVTHREAD=0 PMI_RANK=1 DISABLE_UTI=0 ${MCK}/bin/mcexec --enable-uti taskset -c 3 ./008 --ppn 1
 	#wait
 	echo =====;
 	echo $i;

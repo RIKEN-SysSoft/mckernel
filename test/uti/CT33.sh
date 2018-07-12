@@ -50,7 +50,7 @@ fi
 
 if [ ${mck} -eq 1 ]; then
     MCEXEC="${MCK}/bin/mcexec"
-    mcexecopt="-n $PPN $mcexecopt"
+    mcexecopt="--enable-uti"
     if [ ${use_hfi} -eq 1 ]; then
 	mcexecopt="--enable-hfi1 $mcexecopt"
     fi

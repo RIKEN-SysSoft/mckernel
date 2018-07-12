@@ -2,7 +2,7 @@
 MYHOME="/work/gg10/e29005"
 MCK="${MYHOME}/project/os/install"
 MCEXEC=
-MCEXECOPT=
+MCEXECOPT="--enable-uti"
 export DISABLE_UTI=0
 
 stop=0

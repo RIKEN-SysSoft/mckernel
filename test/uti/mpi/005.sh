@@ -48,7 +48,7 @@ done
 
 if [ ${mck} -eq 1 ]; then
     mcexec="${mck_dir}/bin/mcexec"
-    mcexecopt="--uti-thread-rank=$uti_thread_rank"
+    mcexecopt="--enable-uti --uti-thread-rank=$uti_thread_rank"
     if [ ${use_hfi} -eq 1 ]; then
 	mcexecopt="--enable-hfi1 $mcexecopt"
     fi
