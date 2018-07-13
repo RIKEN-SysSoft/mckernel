@@ -55,7 +55,7 @@ rusage_rss_add(unsigned long size)
 	}
 
 	vm->currss += size;
-	if (vm->currss > vm->proc->maxrss) {
+	if (vm->proc && vm->currss > vm->proc->maxrss) {
 		vm->proc->maxrss = vm->currss;
 	}
 }
