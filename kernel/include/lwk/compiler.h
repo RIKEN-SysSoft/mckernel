@@ -176,10 +176,6 @@ void ftrace_likely_update(struct ftrace_likely_data *f, int val,
 #endif
 
 /* Optimization barrier */
-#ifndef barrier
-# define barrier() __memory_barrier()
-#endif
-
 #ifndef barrier_data
 # define barrier_data(ptr) barrier()
 #endif

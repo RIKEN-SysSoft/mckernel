@@ -6,6 +6,8 @@
 
 #include <ihk/cpu.h>
 #include <ihk/atomic.h>
+#include <lwk/compiler.h>
+#include "config.h"
 
 //#define DEBUG_SPINLOCK
 //#define DEBUG_MCS_RWLOCK
@@ -150,7 +152,11 @@ typedef struct mcs_lock_node {
 	unsigned long locked;
 	struct mcs_lock_node *next;
 	unsigned long irqsave;
-} __attribute__((aligned(64))) mcs_lock_node_t;
+#ifdef ENABLED_UBSAN
+} __aligned(64) mcs_lock_node_t;
+#else
+} mcs_lock_node_t;
+#endif
 
 typedef mcs_lock_node_t mcs_lock_t;
 
@@ -240,14 +246,22 @@ typedef struct mcs_rwlock_node {
 	char dmy1;		// unused
 	char dmy2;		// unused
 	struct mcs_rwlock_node *next;
-} __attribute__((aligned(64))) mcs_rwlock_node_t;
+#ifdef ENABLED_UBSAN
+} __aligned(64) mcs_rwlock_node_t;
+#else
+} mcs_rwlock_node_t;
+#endif
 
 typedef struct mcs_rwlock_node_irqsave {
 #ifndef SPINLOCK_IN_MCS_RWLOCK
 	struct mcs_rwlock_node node;
 #endif
 	unsigned long irqsave;
-} __attribute__((aligned(64))) mcs_rwlock_node_irqsave_t;
+#ifdef ENABLED_UBSAN
+} __aligned(64) mcs_rwlock_node_irqsave_t;
+#else
+} mcs_rwlock_node_irqsave_t;
+#endif
 
 typedef struct mcs_rwlock_lock {
 #ifdef SPINLOCK_IN_MCS_RWLOCK
@@ -256,7 +270,11 @@ typedef struct mcs_rwlock_lock {
 	struct mcs_rwlock_node reader;		/* common reader lock */
 	struct mcs_rwlock_node *node;		/* base */
 #endif
-} __attribute__((aligned(64))) mcs_rwlock_lock_t;
+#ifdef ENABLED_UBSAN
+} __aligned(64) mcs_rwlock_lock_t;
+#else
+} mcs_rwlock_lock_t;
+#endif
 
 static void
 mcs_rwlock_init(struct mcs_rwlock_lock *lock)
