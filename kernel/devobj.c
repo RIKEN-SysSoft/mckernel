@@ -149,7 +149,7 @@ int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxp
 	}
 
 	obj->ref = 1;
-	obj->pfn_pgoff = off / PAGE_SIZE;
+	obj->pfn_pgoff = off >> PAGE_SHIFT;
 	obj->npages = npages;
 	ihk_mc_spinlock_init(&obj->memobj.lock);
 
@@ -244,7 +244,7 @@ static void devobj_release(struct memobj *memobj)
 
 static int devobj_get_page(struct memobj *memobj, off_t off, int p2align, uintptr_t *physp, unsigned long *flag, uintptr_t virt_addr)
 {
-	const off_t pgoff = off / PAGE_SIZE;
+	const off_t pgoff = off >> PAGE_SHIFT;
 	struct devobj *obj = to_devobj(memobj);
 	int error;
 	uintptr_t pfn;
@@ -272,7 +272,7 @@ static int devobj_get_page(struct memobj *memobj, off_t off, int p2align, uintpt
 
 		ihk_mc_syscall_arg0(&ctx) = PAGER_REQ_PFN;
 		ihk_mc_syscall_arg1(&ctx) = obj->handle;
-		ihk_mc_syscall_arg2(&ctx) = pgoff << PAGE_SHIFT;
+		ihk_mc_syscall_arg2(&ctx) = off & ~(PAGE_SIZE - 1);
 		ihk_mc_syscall_arg3(&ctx) = virt_to_phys(&pfn);
 
 		error = syscall_generic_forwarding(__NR_mmap, &ctx);
