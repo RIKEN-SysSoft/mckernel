@@ -1760,14 +1760,6 @@ void copy_fp_regs(struct thread *from, struct thread *to)
 	}
 }
 
-#ifdef POSTK_DEBUG_TEMP_FIX_19
-void
-clear_fp_regs(struct thread *thread)
-{
-	return;
-}
-#endif /* POSTK_DEBUG_TEMP_FIX_19 */
-
 /*@
   @ requires \valid(thread);
   @ assigns thread->fp_regs;
@@ -1775,8 +1767,11 @@ clear_fp_regs(struct thread *thread)
 void
 restore_fp_regs(struct thread *thread)
 {
-	if (!thread->fp_regs)
+	if (!thread->fp_regs) {
+		// only clear fpregs.
+		clear_fp_regs();
 		return;
+	}
 
 	if (xsave_available) {
 		unsigned int low, high;
@@ -1793,6 +1788,13 @@ restore_fp_regs(struct thread *thread)
 
 	// XXX: why release??
 	//release_fp_regs(thread);
+}
+
+void clear_fp_regs(void)
+{
+	struct cpu_local_var *v = get_this_cpu_local_var();
+
+	restore_fp_regs(&v->idle);
 }
 
 ihk_mc_user_context_t *lookup_user_context(struct thread *thread)

@@ -10,6 +10,7 @@
 #include <cpufeature.h>
 #include <kmalloc.h>
 #include <debug.h>
+#include <process.h>
 
 //#define DEBUG_PRINT_FPSIMD
 
@@ -71,9 +72,6 @@ static int get_nr_threads(struct process *proc)
 	return nr_threads;
 }
 
-extern void save_fp_regs(struct thread *thread);
-extern void clear_fp_regs(struct thread *thread);
-extern void restore_fp_regs(struct thread *thread);
 /* @ref.impl arch/arm64/kernel/fpsimd.c::sve_set_vector_length */
 int sve_set_vector_length(struct thread *thread,
 			unsigned long vl, unsigned long flags)
@@ -127,7 +125,7 @@ int sve_set_vector_length(struct thread *thread,
 			/* for self at prctl syscall */
 			if (thread == cpu_local_var(current)) {
 				save_fp_regs(thread);
-				clear_fp_regs(thread);
+				clear_fp_regs();
 				thread_sve_to_fpsimd(thread, &fp_regs);
 				sve_free(thread);
 

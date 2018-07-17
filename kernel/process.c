@@ -77,10 +77,6 @@ static int vm_range_insert(struct process_vm *vm,
 static struct vm_range *vm_range_find(struct process_vm *vm,
 		unsigned long addr);
 static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm);
-extern void release_fp_regs(struct thread *proc);
-extern void save_fp_regs(struct thread *proc);
-extern void copy_fp_regs(struct thread *from, struct thread *to);
-extern void restore_fp_regs(struct thread *proc);
 extern void __runq_add_proc(struct thread *proc, int cpu_id);
 extern void terminate_host(int pid);
 extern void lapic_timer_enable(unsigned int clocks);
@@ -2946,6 +2942,9 @@ void sched_init(void)
 
 	INIT_LIST_HEAD(&cpu_local_var(migq));
 	ihk_mc_spinlock_init(&cpu_local_var(migq_lock));
+
+	// to save default fpregs
+	save_fp_regs(idle_thread);
 
 #ifdef TIMER_CPU_ID
 	if (ihk_mc_get_processor_id() == TIMER_CPU_ID) {

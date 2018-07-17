@@ -2129,10 +2129,6 @@ static void munmap_all(void)
 	return;
 } /* munmap_all() */
 
-#ifdef POSTK_DEBUG_TEMP_FIX_19
-extern void clear_fp_regs(struct thread *thread);
-#endif /* POSTK_DEBUG_TEMP_FIX_19 */
-
 SYSCALL_DECLARE(execve)
 {
 	int error;
@@ -2273,10 +2269,13 @@ SYSCALL_DECLARE(execve)
 			thread->sigcommon->action[i].sa.sa_handler = SIG_DFL;
 	}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_19
-	/* The floating-point environment is reset to the default. */
-	clear_fp_regs(thread);
-#endif /* POSTK_DEBUG_TEMP_FIX_19 */
+	/* Reset floating-point environment to default. */
+	clear_fp_regs();
+
+	/* Reset sigaltstack to default */
+	thread->sigstack.ss_sp = NULL;
+	thread->sigstack.ss_flags = SS_DISABLE;
+	thread->sigstack.ss_size = 0;
 
 	error = ptrace_report_exec(thread);
 	if(error) {

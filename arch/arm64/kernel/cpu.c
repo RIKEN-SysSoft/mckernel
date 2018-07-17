@@ -1437,8 +1437,7 @@ void copy_fp_regs(struct thread *from, struct thread *to)
 	}
 }
 
-void
-clear_fp_regs(struct thread *thread)
+void clear_fp_regs(void)
 {
 	if (likely(elf_hwcap & (HWCAP_FP | HWCAP_ASIMD))) {
 #ifdef CONFIG_ARM64_SVE
@@ -1475,7 +1474,7 @@ restore_fp_regs(struct thread *thread)
 	if (likely(elf_hwcap & (HWCAP_FP | HWCAP_ASIMD))) {
 		if (!thread->fp_regs) {
 			// only clear fpregs.
-			clear_fp_regs(thread);
+			clear_fp_regs();
 			return;
 		}
 		thread_fpsimd_load(thread);
