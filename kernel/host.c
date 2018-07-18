@@ -514,6 +514,11 @@ static int process_msg_prepare_process(unsigned long rphys)
 	}
 	vm->region.map_end = vm->region.map_start;
 	memcpy(proc->rlimit, pn->rlimit, sizeof(struct rlimit) * MCK_RLIM_MAX);
+	dkprintf("%s: rlim_cur: %ld, rlim_max: %ld, stack_premap: %ld\n",
+			__FUNCTION__,
+			proc->rlimit[MCK_RLIMIT_STACK].rlim_cur,
+			proc->rlimit[MCK_RLIMIT_STACK].rlim_max,
+			pn->stack_premap);
 
 	if (prepare_process_ranges_args_envs(thread, pn, p, attr, 
 				NULL, 0, NULL, 0) != 0) {
