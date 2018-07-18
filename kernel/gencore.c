@@ -230,7 +230,7 @@ int gencore(struct thread *thread, void *regs,
 #endif /*POSTK_DEBUG_TEMP_FIX_39*/
 	Elf64_Phdr *ph = NULL;
 	void *note = NULL;
-	struct vm_range *range;
+	struct vm_range *range, *next;
 	struct process_vm *vm = thread->vm;
 	int segs = 1;	/* the first one is for NOTE */
 	int notesize, phsize, alignednotesize;
@@ -244,7 +244,10 @@ int gencore(struct thread *thread, void *regs,
 		return -1;
 	}
 
-	list_for_each_entry(range, &vm->vm_range_list, list) {
+	next = lookup_process_memory_range(vm, 0, -1);
+	while ((range = next)) {
+		next = next_process_memory_range(vm, range);
+
 		dkprintf("start:%lx end:%lx flag:%lx objoff:%lx\n", 
 			 range->start, range->end, range->flag, range->objoff);
 		/* We omit reserved areas because they are only for
@@ -348,7 +351,10 @@ int gencore(struct thread *thread, void *regs,
 
 	/* program header for each memory chunk */
 	i = 1;
-	list_for_each_entry(range, &vm->vm_range_list, list) {
+	next = lookup_process_memory_range(vm, 0, -1);
+	while ((range = next)) {
+		next = next_process_memory_range(vm, range);
+
 		unsigned long flag = range->flag;
 		unsigned long size = range->end - range->start;
 
@@ -398,7 +404,10 @@ int gencore(struct thread *thread, void *regs,
 	dkprintf("coretable[2]: %lx@%lx(%lx)\n", ct[2].len, ct[2].addr, note);
 
 	i = 3;	/* memory segments */
-	list_for_each_entry(range, &vm->vm_range_list, list) {
+	next = lookup_process_memory_range(vm, 0, -1);
+	while ((range = next)) {
+		next = next_process_memory_range(vm, range);
+
 		unsigned long phys;
 
 		if (range->flag & VR_RESERVED)

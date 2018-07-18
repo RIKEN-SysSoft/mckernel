@@ -1299,21 +1299,17 @@ static int xpmem_remove_process_range(
 	int error = 0;
 	struct vm_range *range;
 	struct vm_range *next;
-	struct vm_range *freerange;
 	int ro_freed = 0;
 
 	XPMEM_DEBUG("call: vm=0x%p, start=0x%lx, end=0x%lx", vm, start, end);
 
-	list_for_each_entry_safe(range, next, &vm->vm_range_list, list) {
-		if ((range->end <= start) || (end <= range->start)) {
-			/* no overlap */
-			continue;
-		}
-		freerange = range;
+	next = lookup_process_memory_range(vm, start, end);
+	while ((range = next) && range->start < end) {
+		next = next_process_memory_range(vm, range);
 
-		if (freerange->start < start) {
+		if (range->start < start) {
 			error = split_process_memory_range(vm,
-				freerange, start, &freerange);
+				range, start, &range);
 			if (error) {
 				ekprintf("%s(%p,%lx,%lx): ERROR: "
 					"split failed %d\n",
@@ -1322,8 +1318,8 @@ static int xpmem_remove_process_range(
 			}
 		}
 
-		if (end < freerange->end) {
-			error = split_process_memory_range(vm, freerange, end, 
+		if (end < range->end) {
+			error = split_process_memory_range(vm, range, end,
 				NULL);
 			if (error) {
 				ekprintf("%s(%p,%lx,%lx): ERROR: "
@@ -1333,15 +1329,15 @@ static int xpmem_remove_process_range(
 			}
 		}
 
-		if (!(freerange->flag & VR_PROT_WRITE)) {
+		if (!(range->flag & VR_PROT_WRITE)) {
 			ro_freed = 1;
 		}
 
-		if (freerange->private_data) {
-			xpmem_remove_process_memory_range(vm, freerange);
+		if (range->private_data) {
+			xpmem_remove_process_memory_range(vm, range);
 		}
 
-		error = xpmem_free_process_memory_range(vm, freerange);
+		error = xpmem_free_process_memory_range(vm, range);
 		if (error) {
 			ekprintf("%s(%p,%lx,%lx): ERROR: free failed %d\n",
 				__FUNCTION__, vm, start, end, error);
@@ -1389,7 +1385,7 @@ static int xpmem_free_process_memory_range(
 		memobj_release(range->memobj);
 	}
 
-	list_del(&range->list);
+	rb_erase(&range->vm_rb_node, &vm->vm_range_tree);
 	for (i = 0; i < VM_RANGE_CACHE_SIZE; ++i) {
 		if (vm->range_cache[i] == range)
 			vm->range_cache[i] = NULL;

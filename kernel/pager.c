@@ -569,7 +569,9 @@ print_region(char *msg, struct process_vm *vm)
 	struct vm_range		*range, *next;
 
 	kprintf("%s:\n", msg);
-	list_for_each_entry_safe(range, next, &vm->vm_range_list, list) {
+	next = lookup_process_memory_range(vm, 0, -1);
+	while ((range = next)) {
+		next = next_process_memory_range(vm, range);
 		if (range->memobj != NULL) continue;
 		kprintf("\t%016lx:%016lx (%lx)\n",
 			range->start, range->end, range->flag);
@@ -698,7 +700,9 @@ do_pageout(char *fname, void *buf, size_t size, int flag)
 	area_print(region);
 
 	/* looking at ranges except for non anoymous, text, and data */
-	list_for_each_entry_safe(range, next, &vm->vm_range_list, list) {
+	next = lookup_process_memory_range(vm, 0, -1);
+	while ((range = next)) {
+		next = next_process_memory_range(vm, range);
 		if (range->memobj != NULL) continue;
 		if (IS_TEXT(range->start, region)
 		    || IS_STACK(range->start, region)

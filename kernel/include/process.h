@@ -19,6 +19,7 @@
 #include <ihk/mm.h>
 #include <ihk/atomic.h>
 #include <list.h>
+#include <rbtree.h>
 #include <signal.h>
 #include <memobj.h>
 #include <affinity.h>
@@ -382,7 +383,7 @@ struct user
 #endif /* POSTK_DEBUG_ARCH_DEP_65 */
 
 struct vm_range {
-	struct list_head list;
+	struct rb_node vm_rb_node;
 	unsigned long start, end;
 	unsigned long flag;
 	struct memobj *memobj;
@@ -700,7 +701,7 @@ struct thread {
 
 struct process_vm {
 	struct address_space *address_space;
-	struct list_head vm_range_list;
+	struct rb_root vm_range_tree;
 	struct vm_regions region;
 	struct process *proc;		/* process that reside on the same page */
 	void *opt;

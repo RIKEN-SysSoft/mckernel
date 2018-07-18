@@ -44,9 +44,25 @@
 #ifdef DEBUG_PRINT_PROCESS
 #define dkprintf(...) kprintf(__VA_ARGS__)
 #define ekprintf(...) kprintf(__VA_ARGS__)
+static void dtree(struct rb_node *node, int l) {
+	struct vm_range *range;
+	if (!node)
+		return;
+
+	range = rb_entry(node, struct vm_range, vm_rb_node);
+
+	dtree(node->rb_left, l+1);
+	kprintf("dtree: %0*d, %p: %lx-%lx\n", l, 0, range, range->start, range->end);
+	dtree(node->rb_right, l+1);
+}
+static void dump_tree(struct process_vm *vm) {
+	kprintf("dump_tree %p\n", vm);
+	dtree(vm->vm_range_tree.rb_node, 1);
+}
 #else
 #define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
 #define ekprintf(...) kprintf(__VA_ARGS__)
+static void dump_tree(struct process_vm *vm) {}
 #endif
 
 #ifdef POSTK_DEBUG_ARCH_DEP_22
@@ -57,8 +73,10 @@ extern void save_debugreg(unsigned long *debugreg);
 extern void restore_debugreg(unsigned long *debugreg);
 extern void clear_debugreg(void);
 extern void clear_single_step(struct thread *proc);
-static void insert_vm_range_list(struct process_vm *vm,
+static int vm_range_insert(struct process_vm *vm,
 		struct vm_range *newrange);
+static struct vm_range *vm_range_find(struct process_vm *vm,
+		unsigned long addr);
 static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm);
 extern void release_fp_regs(struct thread *proc);
 extern void save_fp_regs(struct thread *proc);
@@ -239,7 +257,7 @@ init_process_vm(struct process *owner, struct address_space *asp, struct process
 	ihk_mc_spinlock_init(&vm->page_table_lock);
 
 	ihk_atomic_set(&vm->refcount, 1);
-	INIT_LIST_HEAD(&vm->vm_range_list);
+	vm->vm_range_tree = RB_ROOT;
 	INIT_LIST_HEAD(&vm->vm_range_numa_policy_list);
 	vm->address_space = asp;
 	vm->proc = owner;
@@ -695,7 +713,7 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm)
 			goto err_rollback;
 		}
 
-		INIT_LIST_HEAD(&range->list);
+		RB_CLEAR_NODE(&range->vm_rb_node);
 		range->start = src_range->start;
 		range->end = src_range->end;
 		range->flag = src_range->flag;
@@ -729,7 +747,7 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm)
 		}
 		// memory_stat_rss_add() is called in child-node, i.e. copy_user_pte()
 
-		insert_vm_range_list(vm, range);
+		vm_range_insert(vm, range);
 	}
 
 	ihk_mc_spinlock_unlock_noirq(&orgvm->memory_range_lock);
@@ -817,9 +835,13 @@ int split_process_memory_range(struct process_vm *vm, struct vm_range *range,
 
 	range->end = addr;
 
-	list_add(&newrange->list, &range->list);
+	error = vm_range_insert(vm, newrange);
+	if (error) {
+		kprintf("%s: ERROR: could not insert range: %d\n",
+			__FUNCTION__, error);
+		return error;
+	}
 
-	error = 0;
 	if (splitp != NULL) {
 		*splitp = newrange;
 	}
@@ -864,7 +886,7 @@ int join_process_memory_range(struct process_vm *vm,
 	if (merging->memobj) {
 		memobj_release(merging->memobj);
 	}
-	list_del(&merging->list);
+	rb_erase(&merging->vm_rb_node, &vm->vm_range_tree);
 	for (i = 0; i < VM_RANGE_CACHE_SIZE; ++i) {
 		if (vm->range_cache[i] == merging)
 			vm->range_cache[i] = surviving;
@@ -976,7 +998,7 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 		memobj_release(range->memobj);
 	}
 
-	list_del(&range->list);
+	rb_erase(&range->vm_rb_node, &vm->vm_range_tree);
 	for (i = 0; i < VM_RANGE_CACHE_SIZE; ++i) {
 		if (vm->range_cache[i] == range)
 			vm->range_cache[i] = NULL;
@@ -991,25 +1013,20 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 int remove_process_memory_range(struct process_vm *vm,
 		unsigned long start, unsigned long end, int *ro_freedp)
 {
-	struct vm_range *range;
-	struct vm_range *next;
+	struct vm_range *range, *next;
 	int error;
-	struct vm_range *freerange;
 	int ro_freed = 0;
 
 	dkprintf("remove_process_memory_range(%p,%lx,%lx)\n",
 			vm, start, end);
 
-	list_for_each_entry_safe(range, next, &vm->vm_range_list, list) {
-		if ((range->end <= start) || (end <= range->start)) {
-			/* no overlap */
-			continue;
-		}
-		freerange = range;
+	next = lookup_process_memory_range(vm, start, end);
+	while ((range = next) && range->start < end) {
+		next = next_process_memory_range(vm, range);
 
-		if (freerange->start < start) {
+		if (range->start < start) {
 			error = split_process_memory_range(vm,
-					freerange, start, &freerange);
+					range, start, &range);
 			if (error) {
 				ekprintf("remove_process_memory_range(%p,%lx,%lx):"
 						"split failed %d\n",
@@ -1018,9 +1035,9 @@ int remove_process_memory_range(struct process_vm *vm,
 			}
 		}
 
-		if (end < freerange->end) {
+		if (end < range->end) {
 			error = split_process_memory_range(vm,
-					freerange, end, NULL);
+					range, end, NULL);
 			if (error) {
 				ekprintf("remove_process_memory_range(%p,%lx,%lx):"
 						"split failed %d\n",
@@ -1029,22 +1046,21 @@ int remove_process_memory_range(struct process_vm *vm,
 			}
 		}
 
-		if (!(freerange->flag & VR_PROT_WRITE)) {
+		if (!(range->flag & VR_PROT_WRITE)) {
 			ro_freed = 1;
 		}
 
-		if (freerange->private_data) {
-			xpmem_remove_process_memory_range(vm, freerange);
+		if (range->private_data) {
+			xpmem_remove_process_memory_range(vm, range);
 		}
 
-		error = free_process_memory_range(vm, freerange);
+		error = free_process_memory_range(vm, range);
 		if (error) {
 			ekprintf("remove_process_memory_range(%p,%lx,%lx):"
 					"free failed %d\n",
 					vm, start, end, error);
 			return error;
 		}
-
 	}
 
 	if (ro_freedp) {
@@ -1055,28 +1071,33 @@ int remove_process_memory_range(struct process_vm *vm,
 	return 0;
 }
 
-static void insert_vm_range_list(struct process_vm *vm, struct vm_range *newrange)
+static int vm_range_insert(struct process_vm *vm, struct vm_range *newrange)
 {
-	struct list_head *next;
+	struct rb_root *root = &vm->vm_range_tree;
+	struct rb_node **new = &(root->rb_node), *parent = NULL;
 	struct vm_range *range;
 
-	next = &vm->vm_range_list;
-	list_for_each_entry(range, &vm->vm_range_list, list) {
-		if ((newrange->start < range->end) && (range->start < newrange->end)) {
-			ekprintf("insert_vm_range_list(%p,%lx-%lx %lx):overlap %lx-%lx %lx\n",
+	while (*new) {
+		range = rb_entry(*new, struct vm_range, vm_rb_node);
+		parent = *new;
+		if (newrange->end <= range->start) {
+			new = &((*new)->rb_left);
+		} else if (newrange->start >= range->end) {
+			new = &((*new)->rb_right);
+		} else {
+			ekprintf("vm_range_insert(%p,%lx-%lx %x): overlap %lx-%lx %lx\n",
 					vm, newrange->start, newrange->end, newrange->flag,
 					range->start, range->end, range->flag);
-			panic("insert_vm_range_list\n");
-		}
-
-		if (newrange->end <= range->start) {
-			next = &range->list;
-			break;
+			return -EFAULT;
 		}
 	}
 
-	list_add_tail(&newrange->list, next);
-	return;
+	dkprintf("vm_range_insert: %p,%p: %lx-%lx %x\n", vm, newrange, newrange->start, newrange->end, newrange->flag);
+	dump_tree(vm);
+	rb_link_node(&newrange->vm_rb_node, parent, new);
+	rb_insert_color(&newrange->vm_rb_node, root);
+
+	return 0;
 }
 
 enum ihk_mc_pt_attribute common_vrflag_to_ptattr(unsigned long flag, uint64_t fault, pte_t *ptep)
@@ -1188,7 +1209,7 @@ int add_process_memory_range(struct process_vm *vm,
 		return -ENOMEM;
 	}
 
-	INIT_LIST_HEAD(&range->list);
+	RB_CLEAR_NODE(&range->vm_rb_node);
 	range->start = start;
 	range->end = end;
 	range->flag = flag;
@@ -1226,7 +1247,12 @@ int add_process_memory_range(struct process_vm *vm,
 		return rc;
 	}
 
-	insert_vm_range_list(vm, range);
+	rc = vm_range_insert(vm, range);
+	if (rc) {
+		kprintf("%s: ERROR: could not insert range: %d\n",
+			__FUNCTION__, rc);
+		return rc;
+	}
 
 	/* Clear content! */
 	if (phys != NOPHYS && !(flag & (VR_REMOTE | VR_DEMAND_PAGING))
@@ -1256,7 +1282,9 @@ struct vm_range *lookup_process_memory_range(
 		struct process_vm *vm, uintptr_t start, uintptr_t end)
 {
 	int i;
-	struct vm_range *range = NULL;
+	struct vm_range *range = NULL, *match = NULL;
+	struct rb_root *root = &vm->vm_range_tree;
+	struct rb_node *node = root->rb_node;
 
 	dkprintf("lookup_process_memory_range(%p,%lx,%lx)\n", vm, start, end);
 
@@ -1274,43 +1302,50 @@ struct vm_range *lookup_process_memory_range(
 			return vm->range_cache[c_i];
 	}
 
-	list_for_each_entry(range, &vm->vm_range_list, list) {
+	while (node) {
+		range = rb_entry(node, struct vm_range, vm_rb_node);
 		if (end <= range->start) {
+			node = node->rb_left;
+		} else if (start >= range->end) {
+			node = node->rb_right;
+		} else if (start < range->start) {
+			/* We have a match, but we need to try left to
+			 * return the first possible match */
+			match = range;
+			node = node->rb_left;
+		} else {
+			match = range;
 			break;
 		}
-		if ((start < range->end) && (range->start < end)) {
-			goto out;
-		}
 	}
 
-	range = NULL;
-out:
-	if (range) {
+	if (match && end > match->start) {
 		vm->range_cache_ind = (vm->range_cache_ind - 1 + VM_RANGE_CACHE_SIZE)
 			% VM_RANGE_CACHE_SIZE;
-		vm->range_cache[vm->range_cache_ind] = range;
+		vm->range_cache[vm->range_cache_ind] = match;
 	}
 
+out:
 	dkprintf("lookup_process_memory_range(%p,%lx,%lx): %p %lx-%lx\n",
-			vm, start, end, range,
-			range? range->start: 0, range? range->end: 0);
-	return range;
+			vm, start, end, match,
+			match? match->start: 0, match? match->end: 0);
+	return match;
 }
 
 struct vm_range *next_process_memory_range(
 		struct process_vm *vm, struct vm_range *range)
 {
 	struct vm_range *next;
+	struct rb_node *node;
 
 	dkprintf("next_process_memory_range(%p,%lx-%lx)\n",
 			vm, range->start, range->end);
 
-	if (list_is_last(&range->list, &vm->vm_range_list)) {
+	node = rb_next(&range->vm_rb_node);
+	if (node)
+		next = rb_entry(node, struct vm_range, vm_rb_node);
+	else
 		next = NULL;
-	}
-	else {
-		next = list_entry(range->list.next, struct vm_range, list);
-	}
 
 	dkprintf("next_process_memory_range(%p,%lx-%lx): %p %lx-%lx\n",
 			vm, range->start, range->end, next,
@@ -1322,16 +1357,16 @@ struct vm_range *previous_process_memory_range(
 		struct process_vm *vm, struct vm_range *range)
 {
 	struct vm_range *prev;
+	struct rb_node *node;
 
 	dkprintf("previous_process_memory_range(%p,%lx-%lx)\n",
 			vm, range->start, range->end);
 
-	if (list_first_entry(&vm->vm_range_list, struct vm_range, list) == range) {
+	node = rb_prev(&range->vm_rb_node);
+	if (node)
+		prev = rb_entry(node, struct vm_range, vm_rb_node);
+	else
 		prev = NULL;
-	}
-	else {
-		prev = list_entry(range->list.prev, struct vm_range, list);
-	}
 
 	dkprintf("previous_process_memory_range(%p,%lx-%lx): %p %lx-%lx\n",
 			vm, range->start, range->end, prev,
@@ -2179,6 +2214,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	if ((rc = add_process_memory_range(thread->vm, start, end, NOPHYS,
 					vrflag, NULL, 0, LARGE_PAGE_SHIFT, &range)) != 0) {
 		ihk_mc_free_pages_user(stack, minsz >> PAGE_SHIFT);
+		kprintf("%s: error addding process memory range: %d\n", rc);
 		return rc;
 	}
 #endif /* POSTK_DEBUG_ARCH_DEP_104 */
@@ -2350,6 +2386,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 					(p == 0 ? 0 : virt_to_phys(p)), flag, NULL, 0,
 					align_p2align, NULL)) != 0) {
 		ihk_mc_free_pages_user(p, (new_end_allocated - end_allocated) >> PAGE_SHIFT);
+		kprintf("%s: error addding process memory range: %d\n", rc);
 		return end_allocated;
 	}
 #endif /* POSTK_DEBUG_TEMP_FIX_68 */
@@ -2385,14 +2422,17 @@ int remove_process_region(struct process_vm *vm,
 void flush_process_memory(struct process_vm *vm)
 {
 	struct vm_range *range;
-	struct vm_range *next;
+	struct rb_node *node, *next = rb_first(&vm->vm_range_tree);
 	int error;
 
 	dkprintf("flush_process_memory(%p)\n", vm);
 	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 	/* Let concurrent page faults know the VM will be gone */
 	vm->exiting = 1;
-	list_for_each_entry_safe(range, next, &vm->vm_range_list, list) {
+	while ((node = next)) {
+		range = rb_entry(node, struct vm_range, vm_rb_node);
+		next = rb_next(node);
+
 		if (range->memobj) {
 			// XXX: temporary of temporary
 			error = free_process_memory_range(vm, range);
@@ -2412,14 +2452,18 @@ void flush_process_memory(struct process_vm *vm)
 void free_process_memory_ranges(struct process_vm *vm)
 {
 	int error;
-	struct vm_range *range, *next;
+	struct vm_range *range;
+	struct rb_node *node, *next = rb_first(&vm->vm_range_tree);
 
 	if (vm == NULL) {
 		return;
 	}
 
 	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
-	list_for_each_entry_safe(range, next, &vm->vm_range_list, list) {
+	while ((node = next)) {
+		range = rb_entry(node, struct vm_range, vm_rb_node);
+		next = rb_next(node);
+
 		error = free_process_memory_range(vm, range);
 		if (error) {
 			ekprintf("free_process_memory(%p):"
@@ -2494,11 +2538,15 @@ hold_process_vm(struct process_vm *vm)
 void
 free_all_process_memory_range(struct process_vm *vm)
 {
-	struct vm_range *range, *next;
+	struct vm_range *range;
+	struct rb_node *node, *next = rb_first(&vm->vm_range_tree);
 	int error;
 
 	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
-	list_for_each_entry_safe(range, next, &vm->vm_range_list, list) {
+	while ((node = next)) {
+		range = rb_entry(node, struct vm_range, vm_rb_node);
+		next = rb_next(node);
+
 		if (range->memobj) {
 			range->memobj->flags |= MF_HOST_RELEASED;
 		}
@@ -2919,7 +2967,7 @@ void sched_init(void)
 
 	ihk_mc_init_context(&idle_thread->ctx, NULL, idle);
 	ihk_mc_spinlock_init(&idle_thread->vm->memory_range_lock);
-	INIT_LIST_HEAD(&idle_thread->vm->vm_range_list);
+	idle_thread->vm->vm_range_tree = RB_ROOT;
 	INIT_LIST_HEAD(&idle_thread->vm->vm_range_numa_policy_list);
 	idle_thread->proc->pid = 0;
 	idle_thread->tid = ihk_mc_get_processor_id();
