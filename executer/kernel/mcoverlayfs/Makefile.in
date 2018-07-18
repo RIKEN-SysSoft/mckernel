@@ -33,7 +33,7 @@ endif
 
 modules:
 ifneq ($(BUILD_MODULE),none)
-	@(cd $(BUILD_MODULE); make modules)
+	+@(cd $(BUILD_MODULE); make modules)
 endif
 
 clean:

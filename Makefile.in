@@ -10,13 +10,21 @@ INCDIR = $(DESTDIR)/@INCDIR@
 ETCDIR = $(DESTDIR)/@ETCDIR@
 MANDIR = $(DESTDIR)/@MANDIR@
 
-all::
-	@(cd executer/kernel/mcctrl; make modules)
-	@(cd executer/kernel/mcoverlayfs; make modules)
-	@(cd executer/user; make)
-	@case "$(TARGET)" in \
+all: executer-mcctrl executer-mcoverlayfs executer-user mckernel
+
+executer-mcctrl:
+	+@(cd executer/kernel/mcctrl; $(MAKE) modules)
+
+executer-mcoverlayfs:
+	+@(cd executer/kernel/mcoverlayfs; $(MAKE) modules)
+
+executer-user:
+	+@(cd executer/user; $(MAKE))
+
+mckernel:
+	+@case "$(TARGET)" in \
 	    attached-mic | builtin-x86 | builtin-mic | smp-x86 | smp-arm64) \
-		(cd kernel; make) \
+		(cd kernel; $(MAKE)) \
 		;; \
 	    *) \
 		echo "unknown target $(TARGET)" >&2 \
@@ -24,13 +32,13 @@ all::
 		;; \
 	esac
 
-install::
-	@(cd executer/kernel/mcctrl; make install)
-	@(cd executer/kernel/mcoverlayfs; make install)
-	@(cd executer/user; make install)
+install:
+	@(cd executer/kernel/mcctrl; $(MAKE) install)
+	@(cd executer/kernel/mcoverlayfs; $(MAKE) install)
+	@(cd executer/user; $(MAKE) install)
 	@case "$(TARGET)" in \
 	    attached-mic | builtin-x86 | builtin-mic | smp-x86 | smp-arm64) \
-		(cd kernel; make install) \
+		(cd kernel; $(MAKE) install) \
 		;; \
 	    *) \
 		echo "unknown target $(TARGET)" >&2 \
@@ -73,13 +81,13 @@ install::
 		;; \
 	esac
 
-clean::
-	@(cd executer/kernel/mcctrl; make clean)
-	@(cd executer/kernel/mcoverlayfs; make clean)
-	@(cd executer/user; make clean)
+clean:
+	@(cd executer/kernel/mcctrl; $(MAKE) clean)
+	@(cd executer/kernel/mcoverlayfs; $(MAKE) clean)
+	@(cd executer/user; $(MAKE) clean)
 	@case "$(TARGET)" in \
 	    attached-mic | builtin-x86 | builtin-mic | smp-x86 | smp-arm64) \
-		(cd kernel; make clean) \
+		(cd kernel; $(MAKE) clean) \
 		;; \
 	    *) \
 		echo "unknown target $(TARGET)" >&2 \

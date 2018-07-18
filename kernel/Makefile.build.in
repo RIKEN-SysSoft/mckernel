@@ -65,8 +65,8 @@ Makefile.dep:
 
 $(IHKOBJ): FORCE
 	@mkdir -p $(dir $(IHKOBJ))
-	$(call echo_cmd,BUILD IHK,$(TARGET))$(submake) -C $(IHKBASE) $(SUBCMD_OPTS) prepare
-	$(call echo_cmd,BUILD IHK,$(TARGET))$(submake) -C $(IHKBASE) $(SUBCMD_OPTS)
+	+$(call echo_cmd,BUILD IHK,$(TARGET))$(submake) -C $(IHKBASE) $(SUBCMD_OPTS) prepare
+	+$(call echo_cmd,BUILD IHK,$(TARGET))$(submake) -C $(IHKBASE) $(SUBCMD_OPTS)
 
 %.o: $(SRC)/%.c
 	$(cc_cmd)

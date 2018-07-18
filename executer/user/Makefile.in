@@ -81,7 +81,7 @@ libsched_yield: libsched_yield.c
 	$(CC) -shared -fPIC -Wl,-soname,sched_yield.so.1 -o libsched_yield.so.1.0.0 $^ -lc -ldl
 
 libmcexec.a::
-	(cd arch/${ARCH}; make)
+	+(cd arch/${ARCH}; $(MAKE))
 
 libqlmpi.so: qlmpilib.c
 	$(MCC) $(CFLAGS) $(LDFLAGS) -shared -fPIC -o $@ $<
@@ -105,13 +105,13 @@ ql_talker: ql_talker.o
 	$(CC) $^ $(CFLAGS) -o $@
 
 clean::
-	(cd arch/${ARCH}; make clean)
+	(cd arch/${ARCH}; $(MAKE) clean)
 	$(RM) $(TARGET) *.o
 
 .PHONY: all clean install
 
 install::
-	(cd arch/${ARCH}; make install)
+	(cd arch/${ARCH}; $(MAKE) install)
 	mkdir -p -m 755 $(BINDIR)
 	install -m 755 mcexec $(BINDIR)
 	mkdir -p -m 755 $(MCKERNEL_LIBDIR)
