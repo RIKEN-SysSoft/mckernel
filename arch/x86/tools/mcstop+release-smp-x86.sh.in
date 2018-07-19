@@ -26,7 +26,7 @@ cpus=""
 irqbalance_used=""
 
 # No SMP module? Exit.
-if ! grep ihk_smp_x86 /proc/modules &>/dev/null; then exit 0; fi
+if ! grep ihk_smp_@ARCH@ /proc/modules &>/dev/null; then exit 0; fi
 
 if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
 	irqbalance_used="yes"
@@ -94,9 +94,9 @@ fi
 . ${SBINDIR}/mcoverlay-destroy.sh
 
 # Remove SMP module
-if grep ihk_smp_x86 /proc/modules &>/dev/null; then
-	if ! rmmod ihk_smp_x86 2>/dev/null; then
-		echo "error: removing ihk_smp_x86" >&2
+if grep ihk_smp_@ARCH@ /proc/modules &>/dev/null; then
+	if ! rmmod ihk_smp_@ARCH@ 2>/dev/null; then
+		echo "error: removing ihk_smp_@ARCH@" >&2
 		exit 1
 	fi
 fi
