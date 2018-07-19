@@ -50,6 +50,7 @@ enum profile_event_type {
 	PROFILE_sdma_3,
 	PROFILE_sdma_4,
 	PROFILE_sdma_5,
+	PROFILE_pebs_irq,
 	PROFILE_EVENT_MAX	/* Should be the last event type */
 };
 

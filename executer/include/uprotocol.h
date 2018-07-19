@@ -145,6 +145,9 @@ struct program_load_desc {
 	struct rlimit rlimit[MCK_RLIM_MAX];
 	unsigned long interp_align;
 	unsigned long mcexec_flags;
+	unsigned long pebs_countdown;
+	unsigned int pebs_no_dump;
+	unsigned long pebs_buffer_size;
 	unsigned long mpol_flags;
 	unsigned long mpol_threshold;
 	unsigned long heap_extension;

@@ -75,6 +75,7 @@ char *profile_event_names[] =
 	"sdma_3",
 	"sdma_4",
 	"sdma_5",
+	"pebs_irq",
 	""
 };
 

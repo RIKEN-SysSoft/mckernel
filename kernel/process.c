@@ -38,6 +38,7 @@
 #include <xpmem.h>
 #include <rusage_private.h>
 #include <ihk/monitor.h>
+#include <ihk/perfctr.h>
 
 //#define DEBUG_PRINT_PROCESS
 
@@ -3483,6 +3484,24 @@ redo:
 			next->profile_start_ts = rdtsc();
 		}
 #endif
+		// TODO place a better PEBS activation condition here
+		if (next->proc->pebs_countdown) {
+			int err;
+			//err = ihk_mc_perfctr_init(0, APT_TYPE_L2_HIT_LOADS,
+			err = ihk_mc_perfctr_init(0, APT_TYPE_L2_MISS_LOADS,
+					PERFCTR_USER_MODE | PERFCTR_PEBS,
+					next->proc->pebs_countdown,
+					next->proc->pebs_buffer_size);
+			if (err) {
+				kprintf("ihk_mc_perfctr_init failed: %d\n", err);
+			} else {
+				if (ihk_mc_perfctr_start(1)) {
+					kprintf("ihk_mc_perfctr_init failed: %d\n", err);
+				}
+			}
+			kprintf("%s: pebs_countdown: %lu\n", __FUNCTION__,
+					next->proc->pebs_countdown);
+		}
 
 		if (prev) {
 			last = ihk_mc_switch_context(&prev->ctx, &next->ctx, prev);
@@ -3510,6 +3529,7 @@ redo:
 		if (v != get_this_cpu_local_var()) {
 			goto redo;
 		}
+
 	}
 	else {
 		ihk_mc_spinlock_unlock(&(cpu_local_var(runq_lock)),

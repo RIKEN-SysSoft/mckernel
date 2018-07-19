@@ -29,6 +29,7 @@
 #include <time.h>
 #include <syscall.h>
 #include <rusage_private.h>
+#include <ihk/perfctr.h>
 
 //#define DEBUG_PRINT_AP
 
@@ -57,6 +58,7 @@ static void ap_wait(void)
 	kmalloc_init();
 	sched_init();
 	arch_start_pvclock();
+	arch_init_perfctr_extra();
 
 	if (find_command_line("hidos")) {
 		mcs_lock_node_t mcs_node;

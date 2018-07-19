@@ -85,7 +85,7 @@ struct cpu_local_var {
 	struct ihk_ikc_channel_desc *ikc2linux;
 
 	struct resource_set *resource_set;
-	
+
 	int status;
 	int fs;
 
@@ -112,6 +112,8 @@ struct cpu_local_var {
 	struct kmalloc_cache_header tids_cache;
 	struct kmalloc_cache_header tidlist_cache;
 	struct kmalloc_cache_header tid_node_cache;
+
+	struct pebs_data pebs;
 } __attribute__((aligned(64)));
 
 

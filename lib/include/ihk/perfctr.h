@@ -18,16 +18,18 @@
 #include <types.h>
 #endif /*POSTK_DEBUG_TEMP_FIX_29*/
 
+#include <types.h>
 #include <mc_perf_event.h>
 
 #define PERFCTR_USER_MODE   0x01
 #define PERFCTR_KERNEL_MODE 0x02
+#define PERFCTR_PEBS        0x04
 
 enum ihk_perfctr_type {
 	APT_TYPE_DATA_PAGE_WALK,
 	APT_TYPE_DATA_READ_MISS,
 	APT_TYPE_DATA_WRITE_MISS,
-    APT_TYPE_BANK_CONFLICTS,
+	APT_TYPE_BANK_CONFLICTS,
 	APT_TYPE_CODE_CACHE_MISS,
 	APT_TYPE_INSTRUCTIONS_EXECUTED,
 	APT_TYPE_INSTRUCTIONS_EXECUTED_V_PIPE,
@@ -47,19 +49,23 @@ enum ihk_perfctr_type {
 	APT_TYPE_STALL,
 	APT_TYPE_CYCLE,
 
-        APT_TYPE_INSTRUCTIONS,
-        APT_TYPE_L1D_MISS,
-        APT_TYPE_L1I_MISS,
-        APT_TYPE_L2_MISS,
+	APT_TYPE_INSTRUCTIONS,
+	APT_TYPE_L1D_MISS,
+	APT_TYPE_L1I_MISS,
+	APT_TYPE_L2_MISS,
+	APT_TYPE_L2_HIT_LOADS,
+	APT_TYPE_L2_MISS_LOADS,
 
 	PERFCTR_MAX_TYPE,
 };
 
 #ifdef POSTK_DEBUG_TEMP_FIX_29
-int ihk_mc_perfctr_init(int counter, uint64_t config, int mode);
+int ihk_mc_perfctr_init(int counter, uint64_t config, int mode,
+			long int countdown, unsigned long buffer_size);
 int ihk_mc_perfctr_init_raw(int counter, uint64_t config, int mode);
 #else
-int ihk_mc_perfctr_init(int counter, enum ihk_perfctr_type type, int mode);
+int ihk_mc_perfctr_init(int counter, enum ihk_perfctr_type type, int mode,
+			long int countdown, unsigned long buffer_size);
 int ihk_mc_perfctr_init_raw(int counter, unsigned int code, int mode);
 #endif/*POSTK_DEBUG_TEMP_FIX_29*/
 int ihk_mc_perfctr_set_extra(struct mc_perf_event *event);
@@ -77,6 +83,8 @@ int ihk_mc_perfctr_read_mask(unsigned long counter_mask, unsigned long *value);
 unsigned long ihk_mc_perfctr_read(int counter);
 unsigned long ihk_mc_perfctr_read_msr(int counter);
 int ihk_mc_perfctr_alloc_counter(unsigned int *type, unsigned long *config, unsigned long pmc_status);
+size_t ihk_mc_perfctr_pebs_read(void *user_buf, size_t user_size);
+void arch_init_perfctr_extra(void);
 
 #endif
 

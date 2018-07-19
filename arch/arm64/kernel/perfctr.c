@@ -47,6 +47,11 @@ void arm64_disable_pmu(void)
 	cpu_pmu.disable_pmu();
 }
 
+void arch_init_perfctr_extra(void)
+{
+	return;
+}
+
 extern unsigned int *arm64_march_perfmap;
 
 static int __ihk_mc_perfctr_init(int counter, uint32_t type, uint64_t config, int mode)
@@ -86,7 +91,8 @@ int ihk_mc_perfctr_init_raw(int counter, uint64_t config, int mode)
 	return ret;
 }
 
-int ihk_mc_perfctr_init(int counter, uint64_t config, int mode)
+int ihk_mc_perfctr_init(int counter, uint64_t config, int mode,
+			long int countdown)
 {
 	int ret;
 	ret = __ihk_mc_perfctr_init(counter, PERF_TYPE_RAW, config, mode);

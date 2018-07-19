@@ -59,6 +59,7 @@
 #include <rusage_private.h>
 #include <ihk/monitor.h>
 #include <profile.h>
+#include <cbuf.h>
 #ifdef POSTK_DEBUG_ARCH_DEP_27
 #include <memory.h>
 #endif	/* POSTK_DEBUG_ARCH_DEP_27 */
@@ -113,6 +114,7 @@ char *syscall_name[] MCKERNEL_UNUSED = {
 
 static ihk_spinlock_t tod_data_lock = SPIN_LOCK_UNLOCKED;
 static void calculate_time_from_tsc(struct timespec *ts);
+static void dump_pebs_file(void);
 
 void check_signal(unsigned long, void *, int);
 void save_syscall_return_value(int num, unsigned long rc);
@@ -981,6 +983,176 @@ void terminate_mcexec(int rc, int sig)
 	}
 }
 
+void harvest_pebs_buffer(int cpuid, struct cbuf *cbuf);
+static void dump_pebs_file(void)
+{
+	struct thread *mythread = cpu_local_var(current);
+	struct process *proc = mythread->proc;
+	int status, pebs_out_fd = 0;
+	intptr_t tmp_usr_buf = 0;
+	size_t nelem;
+	ihk_mc_user_context_t ctx1, ctx2, ctx3;
+	unsigned long long watermark = 0xffffffffffffffff;
+	char *exec = "mcexec";
+
+	if (!proc->pebs_countdown || !mythread->pebs_buffer) {
+		return;
+	}
+
+	// Stop hardware counters
+	ihk_mc_perfctr_stop(X86_IA32_PERF_COUNTERS_MASK |
+			X86_IA32_FIXED_PERF_COUNTERS_MASK);
+
+	if (proc->pebs_no_dump) {
+		goto destroy_out;
+	}
+
+	tmp_usr_buf = do_mmap(0, PAGE_SIZE, PROT_READ | PROT_WRITE,
+			MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+	if (tmp_usr_buf == 0) {
+		kprintf("Cannot map memory for PEBS filename");
+		goto out;
+	}
+
+	if (proc->saved_cmdline) {
+		exec = strrchr(proc->saved_cmdline, '/');
+		if (exec) {
+			/* Point after '/' */
+			++exec;
+		}
+		else {
+			exec = proc->saved_cmdline;
+		}
+	}
+
+	snprintf((char *) tmp_usr_buf, PATH_MAX,
+			"%s-PEBS-countdown-%d-PEBS-buffer-%d-pid-%d-tid-%d.dat", exec, proc->pebs_countdown,
+			proc->pebs_buffer_size, proc->pid, mythread->tid);
+	dkprintf("trying to open the file: %s\n", tmp_usr_buf);
+
+	// TODO: move me to some more appropiate place
+#define O_RDWR		00000002
+#define O_CREAT		00000100
+#define S_IRUSR		00400
+#define S_IWUSR		00200
+
+	ihk_mc_syscall_arg0(&ctx1) = tmp_usr_buf;
+	ihk_mc_syscall_arg1(&ctx1) = O_RDWR | O_CREAT;
+	ihk_mc_syscall_arg2(&ctx1) = S_IRUSR | S_IWUSR;
+
+	pebs_out_fd = syscall_generic_forwarding(__NR_open, &ctx1);
+	if (pebs_out_fd < 0) {
+		kprintf("Can't open PEBS out file: %s, fd = %d", tmp_usr_buf, pebs_out_fd);
+		pebs_out_fd = 0;
+		goto destroy_out;
+	}
+	else {
+		dkprintf("yay, file opened with fd: %d\n", pebs_out_fd);
+	}
+
+	harvest_pebs_buffer(mythread->cpu_id, mythread->pebs_buffer);
+
+	// Write mmap addresses
+	dkprintf("writing vma_mmap buffer\n");
+	nelem = cbuf_read_into_file(mythread->pebs_vma_mmap_buffer, pebs_out_fd,
+				mythread->pebs_vma_mmap_buffer->nelem,
+				&status);
+	if (status) {
+		kprintf("Can't read per thread PEBS VMA mmap buffer, error code: %d", status);
+		goto destroy_out;
+	}
+
+	// write watermark 1
+	dkprintf("writing watermark after vma_mmap buffer\n");
+	if (copy_to_user((void *)tmp_usr_buf, &watermark, sizeof(watermark))) {
+		kprintf("Can't write watermark to user space buffer\n");
+		goto destroy_out;
+	}
+	ihk_mc_syscall_arg0(&ctx3) = pebs_out_fd;
+	ihk_mc_syscall_arg1(&ctx3) = tmp_usr_buf;
+	ihk_mc_syscall_arg2(&ctx3) = sizeof(unsigned long long);
+
+	nelem = syscall_generic_forwarding(__NR_write, &ctx3);
+	if (nelem != sizeof(unsigned long long)) {
+		kprintf("Can't write watermawk. Error: %d", nelem);
+		goto destroy_out;
+	}
+
+	// Write umap addresses
+	dkprintf("writing vma_umap buffer\n");
+	nelem = cbuf_read_into_file(mythread->pebs_vma_umap_buffer, pebs_out_fd,
+				mythread->pebs_vma_umap_buffer->nelem,
+				&status);
+	if (status) {
+		kprintf("Can't read per thread PEBS VMA unmap buffer, error code: %d", status);
+		goto destroy_out;
+	}
+
+	// write watermark 2
+	dkprintf("writing watermark after vma_umap buffer\n");
+	nelem = syscall_generic_forwarding(__NR_write, &ctx3);
+	if (nelem != sizeof(unsigned long long)) {
+		kprintf("Can't write watermawk. Error: %d", nelem);
+		goto destroy_out;
+	}
+
+	// Write PEBS addresses
+	dkprintf("writing pebs buffer\n");
+	nelem = cbuf_read_into_file(mythread->pebs_buffer, pebs_out_fd,
+				mythread->pebs_buffer->nelem,
+				&status);
+	if (status) {
+		kprintf("Can't read per thread PEBS buffer, error code: %d", status);
+		goto destroy_out;
+	}
+	else {
+		dkprintf("woh! we read %zu elements!\n", nelem);
+	}
+
+destroy_out:
+	if (cbuf_destroy(&mythread->pebs_buffer)) {
+		kprintf("Error freeing PEBS data user-space buffer");
+	}
+
+	if (cbuf_destroy(&mythread->pebs_vma_mmap_buffer)) {
+		kprintf("Error freeing PEBS data mmap user-space buffer");
+	}
+
+	if (cbuf_destroy(&mythread->pebs_vma_umap_buffer)) {
+		kprintf("Error freeing PEBS data umap user-space buffer");
+	}
+
+	if (mythread->pmc) {
+		kfree(mythread->pmc);
+		mythread->pmc = NULL;
+	}
+
+	if (mythread->fpmc) {
+		kfree(mythread->fpmc);
+		mythread->fpmc = NULL;
+	}
+
+	mythread->pebs_buffer = NULL;
+
+out:
+	if (pebs_out_fd > 0) {
+		dkprintf("closing the file!\n");
+		ihk_mc_syscall_arg0(&ctx2) = pebs_out_fd;
+		status = syscall_generic_forwarding(__NR_close, &ctx2);
+		if (status < 0) {
+			kprintf("Can't close PEBS out file. fd = %d", status);
+		}
+	}
+
+	if (tmp_usr_buf) {
+		if (do_munmap((void *)tmp_usr_buf, PAGE_SIZE)) {
+			kprintf("Error deallocating PEBS filename user-space buffer\n");
+		}
+	}
+
+	return;
+}
+
 void terminate(int rc, int sig)
 {
 	struct resource_set *resource_set = cpu_local_var(resource_set);
@@ -1000,9 +1172,13 @@ void terminate(int rc, int sig)
 	int *ids = NULL;
 	int exit_status;
 
+	dkprintf("%s: pid: %d, tid: %d\n", __func__, proc->pid, mythread->tid);
+
 	// sync perf info
 	if (proc->monitoring_event)
 		sync_child_event(proc->monitoring_event);
+
+	dump_pebs_file();
 
 	// clean up threads
 	mcs_rwlock_writer_lock_noirq(&proc->update_lock, &updatelock);
@@ -1028,8 +1204,6 @@ void terminate(int rc, int sig)
 	proc->status = PS_EXITED;
 	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 	mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
-
-	terminate_mcexec(rc, sig);
 
 	mcs_rwlock_writer_lock(&proc->threads_lock, &lock);
 	list_del(&mythread->siblings_list);
@@ -1076,6 +1250,9 @@ void terminate(int rc, int sig)
 	mcs_rwlock_writer_lock(&proc->threads_lock, &lock);
 	list_add_tail(&mythread->siblings_list, &proc->threads_list);
 	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
+
+	// Make sure mcexec exits after all local threads terminated
+	terminate_mcexec(rc, sig);
 
 	vm = proc->vm;
 
@@ -1339,6 +1516,20 @@ int do_munmap(void *addr, size_t len)
 	}
 	finish_free_pages_pending();
 
+	// log unmapped region for pebs accounting
+	if (!error) {
+		unsigned long ts;
+		struct cbuf *thr_pebs_vma_umap;
+
+		thr_pebs_vma_umap = cpu_local_var(current)->pebs_vma_umap_buffer;
+		if (thr_pebs_vma_umap) {
+			dkprintf("%s: writing unmap record to pebs buffer!\n", __func__);
+			ts = rdtsc();
+			cbuf_write_one(thr_pebs_vma_umap, ts);
+			cbuf_write_one(thr_pebs_vma_umap, (cbuf_t)addr);
+			cbuf_write_one(thr_pebs_vma_umap, len);
+		}
+	}
 	dkprintf("%s: 0x%lx:%lu, error: %ld\n",
 		__FUNCTION__, addr, len, error);
 	return error;
@@ -1387,6 +1578,51 @@ out:
 	return error;
 }
 #endif
+
+void *map_pages_to_user(void *pages, int nr_pages, unsigned long extra_flag)
+{
+	int err;
+	intptr_t addr;
+	unsigned long vr_flags;
+	struct process_vm *vm = cpu_local_var(current)->vm;
+	int pgshift = ((size_t)nr_pages << PAGE_SHIFT) > LARGE_PAGE_SIZE ?
+		LARGE_PAGE_SHIFT : PAGE_SHIFT;
+
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+
+	err = search_free_space((size_t)nr_pages << PAGE_SHIFT, pgshift, &addr);
+	if (err) {
+		kprintf("%s: error: no virtual space available\n", __func__);
+		err = -ENOMEM;
+		goto out;
+	}
+	vm->region.map_end = addr + ((size_t)nr_pages << PAGE_SHIFT);
+
+	vr_flags = VR_PROT_READ;
+	vr_flags |= VRFLAG_PROT_TO_MAXPROT(vr_flags);
+	vr_flags |= extra_flag;
+
+	err = add_process_memory_range(vm, addr,
+			addr + ((size_t)nr_pages << PAGE_SHIFT), virt_to_phys(pages),
+			vr_flags, NULL, 0, pgshift, NULL);
+	if (err) {
+		kprintf("%s: error: mapping user range\n", __func__);
+		err = -ENOMEM;
+		goto out;
+	}
+
+	dkprintf("%s: user_buf: %p:%lu\n", __func__,
+			addr, (size_t)nr_pages << PAGE_SHIFT);
+
+out:
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	if (!err) {
+		return (void *)addr;
+	}
+
+	return NULL;
+}
+
 
 intptr_t
 do_mmap(const intptr_t addr0, const size_t len0, const int prot,
@@ -1782,6 +2018,21 @@ out:
 			__FUNCTION__,
 			addr, len, addr+len, addr0, len0, prot, flags,
 			fd, off0, error, addr);
+
+	// Write vma addresse range into PEBS buffer
+	if (!error && len >= 4UL*1024*1024) {
+		unsigned long ts;
+		struct cbuf *thr_pebs_vma_mmap;
+
+		thr_pebs_vma_mmap = thread->pebs_vma_mmap_buffer;
+		if (thr_pebs_vma_mmap) {
+			dkprintf("%s: writing mmap record to pebs buffer!\n", __func__);
+			ts = rdtsc();
+			cbuf_write_one(thr_pebs_vma_mmap, ts);
+			cbuf_write_one(thr_pebs_vma_mmap, addr);
+			cbuf_write_one(thr_pebs_vma_mmap, len);
+		}
+	}
 
 	return (!error)? addr: error;
 }
@@ -5576,15 +5827,21 @@ dkprintf("%s: PID: %d, TID: %d\n", __FUNCTION__, proc->pid, thread->tid);
 
 	mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
 	nproc = 0;
+	//FIXME possible race condition in counting the number of threads at
+	//this point. The last two threds of a process could both count 2
+	//because none of them is removed from the list before the lock is
+	//released.
 	list_for_each_entry(child, &proc->threads_list, siblings_list){
 		nproc++;
 	}
 	mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 
-	if(nproc == 1){ // process has only one thread
+	if (nproc == 1) { // process has only one thread
 		terminate(exit_status, sig);
 		return;
 	}
+
+	dump_pebs_file();
 
 #ifdef DCFA_KMOD
 	do_mod_exit((int)ihk_mc_syscall_arg0(ctx));
@@ -9091,13 +9348,14 @@ static void do_mod_exit(int status){
 SYSCALL_DECLARE(pmc_init)
 {
     int counter = ihk_mc_syscall_arg0(ctx);
-
     enum ihk_perfctr_type type = (enum ihk_perfctr_type)ihk_mc_syscall_arg1(ctx);
-    /* see ihk/manycore/generic/include/ihk/perfctr.h */
+    int mode = ihk_mc_syscall_arg2(ctx);
+    long int countdown = ihk_mc_syscall_arg3(ctx);
+    unsigned long buffer_size = ihk_mc_syscall_arg4(ctx);
 
-    int mode = PERFCTR_USER_MODE;
+    /* see lib/include/ihk/perfctr.h for available modes */
 
-    return ihk_mc_perfctr_init(counter, type, mode);
+    return ihk_mc_perfctr_init(counter, type, mode, countdown, buffer_size);
 }
 
 #ifdef POSTK_DEBUG_TEMP_FIX_30
@@ -9132,6 +9390,29 @@ SYSCALL_DECLARE(pmc_reset)
 {
     int counter = ihk_mc_syscall_arg0(ctx);
     return ihk_mc_perfctr_reset(counter);
+}
+
+SYSCALL_DECLARE(pmc_read)
+{
+	unsigned long counter = ihk_mc_syscall_arg0(ctx);
+	unsigned long long *buf = (unsigned long long *) ihk_mc_syscall_arg1(ctx);
+	unsigned long long msr_val;
+
+	msr_val = ihk_mc_perfctr_read_msr(counter);
+
+	if (copy_to_user(buf, &msr_val, 8)) {
+		return -EIO;
+	}
+
+	return 0;
+}
+
+SYSCALL_DECLARE(pmc_pebs_read)
+{
+	unsigned long long *buf = (unsigned long long *) ihk_mc_syscall_arg0(ctx);
+	size_t size = (size_t) ihk_mc_syscall_arg1(ctx);
+
+	return ihk_mc_perfctr_pebs_read(buf, size);
 }
 
 extern void save_uctx(void *, void *);
