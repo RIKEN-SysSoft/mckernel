@@ -6937,12 +6937,9 @@ SYSCALL_DECLARE(setitimer)
 		if(!new){
 			return 0;
 		}
-#ifdef POSTK_DEBUG_TEMP_FIX_40 /* setitimer copy_from_user() error return fix. */
-		if(copy_from_user(&thread->itimer_virtual, new, sizeof(struct itimerval)))
+		if (copy_from_user(&thread->itimer_virtual, new, sizeof(struct itimerval))) {
 			return -EFAULT;
-#else /* POSTK_DEBUG_TEMP_FIX_40 */
-		if(copy_from_user(&thread->itimer_virtual, new, sizeof(struct itimerval)))
-#endif /* POSTK_DEBUG_TEMP_FIX_40 */
+		}
 		thread->itimer_virtual_value.tv_sec = 0;
 		thread->itimer_virtual_value.tv_nsec = 0;
 		if(thread->itimer_virtual.it_value.tv_sec == 0 &&
@@ -6963,12 +6960,9 @@ SYSCALL_DECLARE(setitimer)
 		if(!new){
 			return 0;
 		}
-#ifdef POSTK_DEBUG_TEMP_FIX_40 /* setitimer copy_from_user() error return fix. */
-		if(copy_from_user(&thread->itimer_prof, new, sizeof(struct itimerval)))
+		if (copy_from_user(&thread->itimer_prof, new, sizeof(struct itimerval))) {
 			return -EFAULT;
-#else /* POSTK_DEBUG_TEMP_FIX_40 */
-		if(copy_from_user(&thread->itimer_prof, new, sizeof(struct itimerval)))
-#endif /* POSTK_DEBUG_TEMP_FIX_40 */
+		}
 		thread->itimer_prof_value.tv_sec = 0;
 		thread->itimer_prof_value.tv_nsec = 0;
 		if(thread->itimer_prof.it_value.tv_sec == 0 &&
