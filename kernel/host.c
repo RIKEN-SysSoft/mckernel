@@ -483,6 +483,9 @@ static int process_msg_prepare_process(unsigned long rphys)
 	proc->mpol_threshold = pn->mpol_threshold;
 	proc->nr_processes = pn->nr_processes;
 	proc->heap_extension = pn->heap_extension;
+	proc->pebs_countdown = pn->pebs_countdown;
+	proc->pebs_no_dump = pn->pebs_no_dump;
+	proc->pebs_buffer_size = pn->pebs_buffer_size;
 
 	/* Update NUMA binding policy if requested */
 	if (pn->mpol_bind_mask) {

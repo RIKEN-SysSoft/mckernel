@@ -8,6 +8,7 @@ OBJS += process.o copy.o waitq.o futex.o timer.o plist.o fileobj.o shmobj.o
 OBJS += zeroobj.o procfs.o devobj.o sysfs.o xpmem.o profile.o freeze.o
 OBJS += rbtree.o
 OBJS += pager.o
+OBJS += cbuf.o
 # POSTK_DEBUG_ARCH_DEP_18 coredump arch separation.
 DEPSRCS=$(wildcard $(SRC)/*.c)
 

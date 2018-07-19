@@ -90,6 +90,26 @@ static void xsetbv(unsigned int index, unsigned long val)
 	asm volatile("xsetbv" : : "a" (low), "d" (high), "c" (index));
 }
 
+#define wrmsrl(msr, val)						\
+	native_write_msr((msr), (uint32_t)((uint64_t)(val)), (uint32_t)((uint64_t)(val) >> 32))
+
+static inline void native_write_msr(unsigned int msr,
+				    unsigned low, unsigned high)
+{
+	asm volatile("wrmsr" : : "c" (msr), "a"(low), "d" (high) : "memory");
+}
+
+#define rdmsrl(msr, val)			\
+	((val) = native_read_msr((msr)))
+
+static inline unsigned long long native_read_msr(unsigned int msr)
+{
+	unsigned low, high;
+
+	asm volatile("rdmsr" : "=a" (low), "=d" (high) : "c" (msr));
+	return ((low) | ((uint64_t)(high) << 32));
+}
+
 static void wrmsr(unsigned int idx, unsigned long value){
 	unsigned int high, low;
 

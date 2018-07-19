@@ -154,6 +154,8 @@ SYSCALL_HANDLED(601, pmc_init)
 SYSCALL_HANDLED(602, pmc_start)
 SYSCALL_HANDLED(603, pmc_stop)
 SYSCALL_HANDLED(604, pmc_reset)
+SYSCALL_HANDLED(605, pmc_read)
+SYSCALL_HANDLED(606, pmc_pebs_read)
 SYSCALL_HANDLED(700, get_cpu_id)
 #ifdef PROFILE_ENABLE
 SYSCALL_HANDLED(__NR_profile, profile)

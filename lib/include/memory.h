@@ -55,6 +55,7 @@ int search_free_space(struct thread *thread, size_t len, intptr_t hint,
 #ifdef POSTK_DEBUG_TEMP_FIX_52 /* supports NUMA for memory area determination */
 int is_mckernel_memory(unsigned long phys);
 #endif /* POSTK_DEBUG_TEMP_FIX_52 */
+void *map_pages_to_user(void *pages, int nr_pages, unsigned long extra_flag);
 
 #endif
 

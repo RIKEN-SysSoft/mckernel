@@ -78,7 +78,7 @@ struct cpu_local_var {
 	struct ihk_ikc_channel_desc *ikc2linux;
 
 	struct resource_set *resource_set;
-	
+
 	int status;
 	int fs;
 
@@ -99,6 +99,8 @@ struct cpu_local_var {
 	struct list_head smp_func_req_list;
 
 	struct process_vm *on_fork_vm;
+
+	struct pebs_data pebs;
 } __attribute__((aligned(64)));
 
 

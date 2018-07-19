@@ -9,6 +9,10 @@ Module.symvers
 *.order
 .tmp_versions
 
+*.swp
+cscope.out
+Session.vim
+
 elfboot/elfboot
 elfboot/elfboot_test
 linux/executer/mcexec

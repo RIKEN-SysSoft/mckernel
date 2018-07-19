@@ -229,6 +229,9 @@ static long stack_premap = (2ULL << 20);
 static long stack_max = -1;
 static struct rlimit rlim_stack;
 static char *mpol_bind_nodes = NULL;
+static long pebs_countdown = 0;
+static long pebs_buffer_size = 0;
+static int pebs_no_dump = 0;
 
 /* Partitioned execution (e.g., for MPI) */
 static int nr_processes = 0;
@@ -1733,6 +1736,24 @@ static struct option mcexec_options[] = {
 		.val =		1,
 	},
 	{
+		.name =		"pebs-countdown",
+		.has_arg =	required_argument,
+		.flag =		NULL,
+		.val =		'p',
+	},
+	{
+		.name =		"pebs-buffer-size",
+		.has_arg =	required_argument,
+		.flag =		NULL,
+		.val =		'b',
+	},
+	{
+		.name =		"pebs-no-dump",
+		.has_arg =	no_argument,
+		.flag =		&pebs_no_dump,
+		.val =		1,
+	},
+	{
 		.name =		"mpol-threshold",
 		.has_arg =	required_argument,
 		.flag =		NULL,
@@ -1972,7 +1993,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "getrlimit failed\n");
 		return 1;
 	}
-    __dprintf("rlim_stack=%ld,%ld\n", rlim_stack.rlim_cur, rlim_stack.rlim_max);
+	__dprintf("rlim_stack=%ld,%ld\n", rlim_stack.rlim_cur, rlim_stack.rlim_max);
 
 	/* Shrink mcexec stack if it leaves too small room for McKernel process */
 #define	MCEXEC_MAX_STACK_SIZE	(16 * 1024 * 1024)	/* 1 GiB */
@@ -1985,9 +2006,9 @@ int main(int argc, char **argv)
 
 	/* Parse options ("+" denotes stop at the first non-option) */
 #ifdef ADD_ENVS_OPTION
-	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:m:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:m:p:b:", mcexec_options, NULL)) != -1) {
 #else /* ADD_ENVS_OPTION */
-	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:m:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:m:p:b:", mcexec_options, NULL)) != -1) {
 #endif /* ADD_ENVS_OPTION */
 		switch (opt) {
 			char *tmp;
@@ -2014,6 +2035,20 @@ int main(int argc, char **argv)
 					fprintf(stderr, "error: -t: invalid number of threads\n");
 					exit(EXIT_FAILURE);
 				}
+				break;
+
+			case 'p':
+				pebs_countdown = strtol(optarg, &tmp, 0);
+				__dprintf("pebs_countdown = %lu\n", pebs_countdown);
+				if (*tmp != '\0' || pebs_countdown < 0) {
+					fprintf(stderr, "error: -p: invalid PEBS number\n");
+					exit(EXIT_FAILURE);
+				}
+				break;
+
+			case 'b':
+				pebs_buffer_size = atobytes(optarg);
+				printf("pebs_buffer_size = %lu\n", pebs_buffer_size);
 				break;
 
 			case 'M':
@@ -2507,6 +2542,9 @@ int main(int argc, char **argv)
 
 	desc->mpol_threshold = mpol_threshold;
 	desc->heap_extension = heap_extension;
+	desc->pebs_countdown = pebs_countdown;
+	desc->pebs_no_dump = pebs_no_dump;
+	desc->pebs_buffer_size = pebs_buffer_size;
 
 	desc->mpol_bind_mask = 0;
 	if (mpol_bind_nodes) {

@@ -44,6 +44,7 @@ enum profile_event_type {
 	PROFILE_mmap_anon_no_contig_phys,
 	PROFILE_mmap_regular_file,
 	PROFILE_mmap_device_file,
+	PROFILE_pebs_irq,
 	PROFILE_EVENT_MAX	/* Should be the last event type */
 };
 

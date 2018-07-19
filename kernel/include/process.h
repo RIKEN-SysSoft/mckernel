@@ -27,6 +27,7 @@
 #include <bitops.h>
 #include <profile.h>
 #include <config.h>
+#include <cbuf.h>
 
 #define VR_NONE            0x0
 #define VR_STACK           0x1
@@ -552,6 +553,10 @@ struct process {
 
 	long maxrss;
 	long maxrss_children;
+	/* PEBS */
+	unsigned long pebs_countdown;
+	unsigned int pebs_no_dump;
+	unsigned long pebs_buffer_size;
 	/* Memory policy flags and memory specific options */
 	unsigned long mpol_flags;
 	size_t mpol_threshold;
@@ -597,6 +602,10 @@ struct sched_param {
 	int sched_priority;
 };
 
+struct pmc {
+	long int countdown;
+};
+
 struct thread {
 	struct list_head hash_list;
 	// thread info
@@ -618,7 +627,7 @@ struct thread {
 	// context
 	ihk_mc_kernel_context_t ctx;
 	ihk_mc_user_context_t  *uctx;
-	
+
 	// sibling
 	struct process *proc;
 	struct list_head siblings_list; // lock process
@@ -627,7 +636,7 @@ struct thread {
 	struct list_head sched_list;	// lock cls
 	int sched_policy;
 	struct sched_param sched_param;
-	
+
 	ihk_spinlock_t spin_sleep_lock;
 	int spin_sleep;
 
@@ -695,6 +704,11 @@ struct thread {
 	// for performance counter
 	unsigned long pmc_alloc_map;
 	unsigned long extra_reg_alloc_map;
+	struct pmc *pmc;
+	struct pmc *fpmc;
+	struct cbuf *pebs_buffer;
+	struct cbuf *pebs_vma_mmap_buffer;
+	struct cbuf *pebs_vma_umap_buffer;
 };
 
 #define VM_RANGE_CACHE_SIZE	4
@@ -708,7 +722,7 @@ struct process_vm {
 	void (*free_cb)(struct process_vm *, void *);
 	void *vdso_addr;
 	void *vvar_addr;
- 	
+
 	ihk_spinlock_t page_table_lock;
 	ihk_spinlock_t memory_range_lock;
     // to protect the followings:

@@ -264,6 +264,8 @@ static void rest_init(void)
 	time_init();
 	kmalloc_init();
 
+	arch_init_perfctr_extra(); // requires kmalloc and cpu vars
+
 	ihk_ikc_master_init();
 
 	proc_init();

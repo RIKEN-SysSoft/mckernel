@@ -31,6 +31,7 @@
 #include <prctl.h>
 #include <page.h>
 #include <kmalloc.h>
+#include <cbuf.h>
 
 #define LAPIC_ID            0x020
 #define LAPIC_TIMER         0x320
@@ -96,6 +97,7 @@ int gettime_local_support = 0;
 extern int ihk_mc_pt_print_pte(struct page_table *pt, void *virt);
 extern int kprintf(const char *format, ...);
 extern int interrupt_from_user(void *);
+extern void harvest_pebs_buffer(int cpuid, struct cbuf *cbuf);
 
 static struct idt_entry{
 	uint32_t desc[4];
@@ -787,7 +789,7 @@ void init_cpu(void)
 	init_fpu();
 	init_lapic();
 	init_syscall();
-	x86_init_perfctr();
+	// perf init was here before
 	init_pstate_and_turbo();
 	init_pat();
 }
@@ -884,6 +886,7 @@ void interrupt_exit(struct x86_user_context *regs)
 	}
 }
 
+
 void handle_interrupt(int vector, struct x86_user_context *regs)
 {
 	struct ihk_mc_interrupt_handler *h;
@@ -899,7 +902,7 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 
 	if (vector < 0 || vector > 255) {
 		panic("Invalid interrupt vector.");
-	} 
+	}
 	else if (vector < 32) {
 		struct siginfo info;
 		switch(vector){
@@ -956,42 +959,86 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 		dkprintf("timer[%lu]: CPU_FLAG_NEED_RESCHED \n", rdtsc());
 	}
 	else if (vector == LOCAL_PERF_VECTOR) {
-		struct siginfo info;
-		unsigned long value;
+		int i;
+		//struct siginfo info;
+		unsigned long long value, pgc;
 		struct thread *thread = cpu_local_var(current);
-        	struct process *proc = thread->proc;
-		long irqstate;
-		struct mckfd *fdp;
+		//struct process *proc = thread->proc;
+		//long irqstate;
+		//struct mckfd *fdp;
+		struct pebs_data *cpu_pebs = &cpu_local_var(pebs);
+#ifdef PROFILE_ENABLE
+		unsigned long ts = rdtsc();
+#endif
+
+		dkprintf("PERF Interrupt!!\n");
 
 		lapic_write(LAPIC_LVTPC, LOCAL_PERF_VECTOR);
 
-		value = rdmsr(MSR_PERF_GLOBAL_STATUS);
+		//TODO is this really necessary?
+		rdmsrl(MSR_PERF_GLOBAL_STATUS, value);
 		wrmsr(MSR_PERF_GLOBAL_OVF_CTRL, value);
+
+		rdmsrl(MSR_PERF_GLOBAL_CTRL, pgc);
 		wrmsr(MSR_PERF_GLOBAL_OVF_CTRL, 0);
+		wrmsrl(MSR_PERF_GLOBAL_CTRL, 0);
 
-		irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
-	        for(fdp = proc->mckfd; fdp; fdp = fdp->next) {
-			if(fdp->sig_no > 0)
-                	        break;
-		}
-	        ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
+		/* Copy PEBS buffer data if enabled */
+		if (cpu_pebs->enabled &&
+		   (value & PERF_GLOBAL_STATUS_MSR_OVFDSBUFFER)) {
+			wrmsrl(MSR_IA32_PEBS_ENABLE, 0);
 
-		if(fdp) {
-			memset(&info, '\0', sizeof info);
-			info.si_signo = fdp->sig_no;
-			info._sifields._sigfault.si_addr = (void *)regs->gpr.rip;
-			info._sifields._sigpoll.si_fd = fdp->fd;
-			set_signal(fdp->sig_no, regs, &info); 
+			harvest_pebs_buffer(thread->cpu_id, thread->pebs_buffer);
 		}
-		else {
-			set_signal(SIGIO, regs, NULL);
+
+		/* send signal to process */
+		//irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
+	        //for(fdp = proc->mckfd; fdp; fdp = fdp->next) {
+		//	if(fdp->sig_no > 0)
+		//	        break;
+		//}
+	        //ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
+		//if(fdp) {
+		//	memset(&info, '\0', sizeof info);
+		//	info.si_signo = fdp->sig_no;
+		//	info._sifields._sigfault.si_addr = (void *)regs->gpr.rip;
+		//	info._sifields._sigpoll.si_fd = fdp->fd;
+		//	set_signal(fdp->sig_no, regs, &info);
+		//}
+		//else {
+		//	set_signal(SIGIO, regs, NULL);
+		//}
+
+		/* reset counters countdown */
+		if (thread->pmc) {
+			for (i = 0; i < X86_IA32_NUM_PERF_COUNTERS; i++) {
+				if (value & (PERF_GLOBAL_STATUS_MSR_PMC0_BIT<<i))
+					wrmsr(MSR_IA32_PMC0<<i,
+					      -(long long)thread->pmc[i].countdown);
+			}
 		}
+		//if (thread->fpmc) {
+		//	for (i = 0; i < X86_IA32_NUM_FIXED_PERF_COUNTERS; i++) {
+		//		if (value & (PERF_GLOBAL_STATUS_MSR_FIXED_CTR0_BIT<<i))
+		//			wrmsr(MSR_IA32_FIXED_CTR0<<i,
+		//			      -(long long)thread->fpmc[i].countdown);
+		//	}
+		//}
+
+		/* re-enable counters */
+		if (cpu_pebs->enabled) {
+			wrmsrl(MSR_IA32_PEBS_ENABLE, 1);
+		}
+		wrmsrl(MSR_PERF_GLOBAL_CTRL, pgc);
+#ifdef PROFILE_ENABLE
+		profile_event_add(PROFILE_pebs_irq, (rdtsc() - ts));
+#endif
 	}
-	else if (vector >= IHK_TLB_FLUSH_IRQ_VECTOR_START && 
+	else if (vector >= IHK_TLB_FLUSH_IRQ_VECTOR_START &&
 	         vector < IHK_TLB_FLUSH_IRQ_VECTOR_END) {
 
 			tlb_flush_handler(vector);
-	} 
+	}
 	else if (vector == LOCAL_SMP_FUNC_CALL_VECTOR) {
 		smp_func_call_handler();
 	}
@@ -2141,3 +2188,125 @@ free_out:
 }
 
 /*** end of file ***/
+
+
+
+
+//int cbuf_init(struct cbuf *cbuf, size_t nelem)
+//{
+//	/* round buffer size to multiple of cbuf_t */
+//	if (nelem%sizeof(cbuf_t) != 0) {
+//		nelem = (nelem/sizeof(cbuf_t) + 1)*sizeof(cbuf_t);
+//	}
+//	/* alloc and initialize buffer */
+//	cbuf->buf = kmalloc(nelem*sizeof(cbuf_t), IHK_MC_PG_KERNEL);
+//	if (!cbuf->buf)
+//		return -ENOMEM;
+//	cbuf->head = 0;
+//	cbuf->tail = 0;
+//	cbuf->size  = nelem;
+//}
+//
+//int cbuf_destroy(struct cbuf *cbuf)
+//{
+//	kfree(cbuf->buf);
+//	cbuf->size = 0;
+//	cbuf->head = 0;
+//	cbuf->tail = 0;
+//}
+//
+//
+//int cbuf_write(struct cbuf *cbuf, cbuf_t *buf, size_t len)
+//{
+//	if (len%cbuf->size > 1) {
+//		//TODO
+//	}
+//
+//	if (!cbuf || !cbuf->buf)
+//		return -1;
+//
+//	/* buffer overflow */
+//	if (cbuf->head + len >= cbuf->size) {
+//		size_t chunk1, chunk2;
+//		size_t data_lost;
+//
+//		chunk1 = cbuf->size - cbuf->head;
+//		chunk2 = len - chunk1;
+//
+//		/* first chunk */
+//		memcpy(cbuf->head, buf, chunk1*sizeof(cbuf_t));
+//
+//		/* second chunk */
+//		memcpy(cbuf->buf, buf+chunk1, chunk2*sizeof(cbuf_t));
+//
+//		/* update tail */
+//		if ((cbuf->tail > cbuf->head) {
+//			data_lost = cbuf->size - cbuf->tail + chunk2 + 1;
+//		} else if (cbuf->tail <= chunk2)) {
+//			data_lost = chunk2 - cbuf->tail + 1;
+//		}
+//
+//		if (data_lost) {
+//			cbuf->tail = (chunk2+1)%cbuf->size;
+//			kprintf("PEBS cbuf data lost: %lu records\n", data_lost);
+//		}
+//
+//		cbuf->head = chunk2;
+//	/* no buffer overflow but data override */
+//	} else if (cbuf->head + len >= cbuf->tail) {
+//		memcpy(cbuf->head, buf, len*sizeof(cbuf_t));
+//		cbuf->head += len;
+//		cbuf->tail = (cbuf->head+1)%cbuf->size;
+//	/* no buffer overflow and no data override */
+//	} else {
+//		memcpy(cbuf->head, buf, len*sizeof(cbuf_t));
+//		cbuf->head += len;
+//	}
+//
+//	return 0;
+//}
+//
+//size_t cbuf_read(struct cbuf *cbuf, cbuf_t *buf, size_t len)
+//{
+//	size_t ret;
+//
+//	if (!cbuf || !cbuf->buf) {
+//		kprintf("cbuf buffer not allocated before reading\n");
+//		return 0;
+//	}
+//
+//	/* buffer overflow */
+//	if ((cbuf->tail + len >= cbuf->size) && (cbuf->tail > cbuf->head)) {
+//		size_t chunk1, chunk2;
+//
+//		chunk1 = cbuf->size - cbuf->tail;
+//		chunk2 = (len-chunk1 <= cbuf->head)? len - chunk1 : cbuf->head;
+//
+//		/* first chunk */
+//		memcpy(buf, cbuf->tail, chunk1*sizeof(cbuf_t));
+//		/* second chunk */
+//		memcpy(buf+chunk1, cbuf->buf, chunk2*sizeof(cbuf_t));
+//
+//		cbuf->tail = chunk2;
+//		ret = chunk1+chunk2;
+//	/* no buffer overflow */
+//	} else {
+//		size_t chunk;
+//		chunk = (cbuf->tail + len >= cbuf->head)?
+//			cbuf->head - cbuf->tail : len;
+//		memcpy(buf, cbuf->tail, chunk*sizeof(cbuf_t));
+//		cbuf->tail += chunk;
+//		ret = chunk;
+//	}
+//
+//	/* if tail == head, buffer is empy */
+//	if (cbuf->tail == cbuf->head) {
+//		cbuf->tail = 0;
+//		cbuf->head = 0;
+//	}
+//
+//	return ret;
+//}
+
+
+
