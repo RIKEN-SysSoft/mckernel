@@ -280,6 +280,8 @@ static const unsigned int  PTL1_ENTRIES = __PTL1_ENTRIES;
 #endif
 #endif /* POSTK_DEBUG_ARCH_DEP_104 */
 
+#define PT_ENTRIES		(PAGE_SIZE >> 3)
+
 #ifndef __ASSEMBLY__
 
 #include <ihk/types.h>
