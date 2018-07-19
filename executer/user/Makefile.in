@@ -18,6 +18,7 @@ MANDIR=$(DESTDIR)/@MANDIR@
 MCKERNEL_INCDIR=$(DESTDIR)/@MCKERNEL_INCDIR@
 MCKERNEL_LIBDIR=$(DESTDIR)/@MCKERNEL_LIBDIR@
 KDIR ?= @KDIR@
+ARCH=@ARCH@
 # POSTK_DEBUG_ARCH_DEP_94 arch depends move [BEGIN]
 CFLAGS=-Wall -O -I. -I$(VPATH)/arch/${ARCH} -I$(VPATH)/arch/${ARCH}/include
 # POSTK_DEBUG_ARCH_DEP_94 [ELSE]
@@ -29,7 +30,6 @@ VPATH=@abs_srcdir@
 TARGET=mcexec libsched_yield ldump2mcdump.so
 @uncomment_if_ENABLE_MEMDUMP@TARGET+=eclair
 LIBS=@LIBS@
-ARCH=@ARCH@
 IHKDIR ?= $(VPATH)/../../../ihk/linux/include/
 MCEXEC_LIBS=-lmcexec -lrt -lnuma -pthread
 ENABLE_QLMPI=@ENABLE_QLMPI@

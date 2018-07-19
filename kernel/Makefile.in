@@ -4,6 +4,7 @@ BUILD_TARGET ?= @TARGET@
 DESTDIR ?= @DESTDIR@
 KERNDIR=$(DESTDIR)/@KERNDIR@
 VPATH=@abs_srcdir@
+ARCH ?= @ARCH@
 
 ifeq ($(ARCH), arm64)
 vdsodir=@abs_builddir@/../arch/$(ARCH)/kernel/vdso
