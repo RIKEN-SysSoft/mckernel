@@ -39,7 +39,7 @@ $(O):
 	@echo 'SRC = $(SRC)' > $@
 	@echo 'IHKBASE = $(IHKBASE)' >> $@
 	@echo 'TARGET = $(notdir $(patsubst %/,%,$(dir $@)))' >> $@
-	@echo 'TARGETDIR = $$(shell echo $$(TARGET) | sed "s/-/\//")' >> $@
+	@echo 'TARGETDIR = smp/$(ARCH)' >> $@
 	@cat Makefile.build >> $@
 	@rm -f $(dir $@)/Makefile.dep
 

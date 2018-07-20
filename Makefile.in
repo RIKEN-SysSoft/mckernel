@@ -46,34 +46,20 @@ install:
 		;; \
 	esac
 	@case "$(TARGET)" in \
-	    attached-mic) \
-		mkdir -p -m 755 $(SBINDIR); \
-		install -m 755 arch/x86/tools/mcreboot-attached-mic.sh $(SBINDIR)/mcreboot; \
-		install -m 755 arch/x86/tools/mcshutdown-attached-mic.sh $(SBINDIR)/mcshutdown; \
-		mkdir -p -m 755 $(MANDIR)/man1; \
-		install -m 644 arch/x86/tools/mcreboot.1 $(MANDIR)/man1/mcreboot.1; \
-		;; \
-	    builtin-x86) \
-		mkdir -p -m 755 $(SBINDIR); \
-		install -m 755 arch/x86/tools/mcreboot-builtin-x86.sh $(SBINDIR)/mcreboot; \
-		install -m 755 arch/x86/tools/mcshutdown-builtin-x86.sh $(SBINDIR)/mcshutdown; \
-		mkdir -p -m 755 $(MANDIR)/man1; \
-		install -m 644 arch/x86/tools/mcreboot.1 $(MANDIR)/man1/mcreboot.1; \
-		;; \
 		smp-x86 | smp-arm64) \
 		mkdir -p -m 755 $(SBINDIR); \
-		install -m 755 arch/x86/tools/mcreboot-smp-x86.sh $(SBINDIR)/mcreboot.sh; \
-		install -m 755 arch/x86/tools/mcstop+release-smp-x86.sh $(SBINDIR)/mcstop+release.sh; \
-		install -m 755 arch/x86/tools/mcoverlay-destroy-smp-x86.sh $(SBINDIR)/mcoverlay-destroy.sh; \
-		install -m 755 arch/x86/tools/mcoverlay-create-smp-x86.sh $(SBINDIR)/mcoverlay-create.sh; \
-		install -m 755 arch/x86/tools/eclair-dump-backtrace.exp $(SBINDIR)/eclair-dump-backtrace.exp;\
+		install -m 755 arch/x86_64/tools/mcreboot-smp-x86.sh $(SBINDIR)/mcreboot.sh; \
+		install -m 755 arch/x86_64/tools/mcstop+release-smp-x86.sh $(SBINDIR)/mcstop+release.sh; \
+		install -m 755 arch/x86_64/tools/mcoverlay-destroy-smp-x86.sh $(SBINDIR)/mcoverlay-destroy.sh; \
+		install -m 755 arch/x86_64/tools/mcoverlay-create-smp-x86.sh $(SBINDIR)/mcoverlay-create.sh; \
+		install -m 755 arch/x86_64/tools/eclair-dump-backtrace.exp $(SBINDIR)/eclair-dump-backtrace.exp;\
 		mkdir -p -m 755 $(ETCDIR); \
-		install -m 644 arch/x86/tools/irqbalance_mck.service $(ETCDIR)/irqbalance_mck.service; \
-		install -m 644 arch/x86/tools/irqbalance_mck.in $(ETCDIR)/irqbalance_mck.in; \
+		install -m 644 arch/x86_64/tools/irqbalance_mck.service $(ETCDIR)/irqbalance_mck.service; \
+		install -m 644 arch/x86_64/tools/irqbalance_mck.in $(ETCDIR)/irqbalance_mck.in; \
 		mkdir -p -m 755 $(INCDIR); \
 		install -m 644 kernel/include/swapfmt.h $(INCDIR); \
 		mkdir -p -m 755 $(MANDIR)/man1; \
-		install -m 644 arch/x86/tools/mcreboot.1 $(MANDIR)/man1/mcreboot.1; \
+		install -m 644 arch/x86_64/tools/mcreboot.1 $(MANDIR)/man1/mcreboot.1; \
 		;; \
 	    *) \
 		echo "unknown target $(TARGET)" >&2 \
