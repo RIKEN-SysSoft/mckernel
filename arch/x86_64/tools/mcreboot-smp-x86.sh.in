@@ -127,7 +127,6 @@ error_exit() {
 		;&
 	tmp_mcos_created)
 		if [ "$enable_mcoverlay" == "yes" ]; then
-		    umask $umask_old
 			rm -rf /tmp/mcos
 		fi
 		;&
@@ -168,6 +167,7 @@ error_exit() {
 		rmmod ihk 2>/dev/null || echo "warning: failed to remove ihk" >&2
 		;&
 	irqbalance_stopped)
+		umask $umask_old
 		if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
 			if ! systemctl stop irqbalance_mck.service 2>/dev/null; then
 				echo "warning: failed to stop irqbalance_mck" >&2
@@ -274,6 +274,11 @@ if [ "${irqbalance_used}" == "yes" ]; then
 	fi
 
 fi
+
+# Set umask so that proc/sys files/directories created by
+# mcctrl.ko and mcreboot.sh have appropriate permission bits
+umask_dec=$(( 8#${umask_old} & 8#0002 ))
+umask 0`printf "%o" ${umask_dec}`
 
 # Load IHK if not loaded
 if ! grep -E 'ihk\s' /proc/modules &>/dev/null; then
@@ -439,5 +444,8 @@ if [ "${irqbalance_used}" == "yes" ]; then
 	fi
 #    echo cpus=$cpus ncpus=$ncpus banirq=$banirq
 fi
+
+# Restore umask
+umask ${umask_old}
 
 exit 0
