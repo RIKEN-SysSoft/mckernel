@@ -16,10 +16,21 @@ obj-m += mcctrl.o
 
 # POSTK_DEBUG_ARCH_DEP_1, arch depend "-mcmodel"
 # POSTK_DEBUG_ARCH_DEP_83, arch depend translate_rva_to_rpa() move
-ifeq ($(ARCH), arm64)
-ccflags-y := -I$(IHK_BASE)/linux/include -I$(IHK_BASE)/linux/include/ihk/arch/$(ARCH) -I$(IHK_BASE)/ikc/include -I$(IHK_BASE)/ikc/include/ikc/arch/$(ARCH) -I$(IHK_BASE)/include -I$(IHK_BASE)/include/arch/$(ARCH) -I$(src)/../../../kernel/include -I$(src)/../../include -I$(src)/arch/$(ARCH)/include -DMCEXEC_PATH=\"$(BINDIR)/mcexec\" -I@abs_builddir@ -I@abs_builddir@/../../../
-else
-ccflags-y := -I$(IHK_BASE)/linux/include -I$(IHK_BASE)/linux/include/ihk/arch/$(ARCH) -I$(IHK_BASE)/ikc/include -I$(IHK_BASE)/ikc/include/ikc/arch/$(ARCH) -I$(IHK_BASE)/include -I$(IHK_BASE)/include/arch/$(ARCH) -I$(src)/../../../kernel/include -I$(src)/../../include -mcmodel=kernel -mno-red-zone -DMCEXEC_PATH=\"$(BINDIR)/mcexec\" -I@abs_builddir@ -I@abs_builddir@/../../../
+ccflags-y := -I$(IHK_BASE)/linux/include \
+             -I$(IHK_BASE)/linux/include/ihk/arch/$(ARCH) \
+             -I$(IHK_BASE)/ikc/include \
+             -I$(IHK_BASE)/ikc/include/ikc/arch/$(ARCH) \
+             -I$(IHK_BASE)/include \
+             -I$(IHK_BASE)/include/arch/$(ARCH) \
+             -I$(src)/../../include \
+             -I$(src)/arch/$(ARCH)/include \
+             -I@abs_builddir@ \
+             -I@abs_builddir@/../../../ \
+             -I$(src)/../../../kernel/include \
+             -DMCEXEC_PATH=\"$(BINDIR)/mcexec\"
+
+ifneq ($(ARCH), arm64)
+ccflags-y += -mno-red-zone -mcmodel=kernel
 endif
 
 mcctrl-y := driver.o control.o ikc.o syscall.o procfs.o binfmt_mcexec.o

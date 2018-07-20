@@ -9,14 +9,18 @@ OBJS += zeroobj.o procfs.o devobj.o sysfs.o xpmem.o profile.o freeze.o
 OBJS += rbtree.o
 OBJS += pager.o
 # POSTK_DEBUG_ARCH_DEP_18 coredump arch separation.
+DEPSRCS=$(wildcard $(SRC)/*.c)
+
 # OBJS added gencore.o
 ifeq ($(ARCH), arm64)
 OBJS += gencore.o
+DEPSRCS += $(SRC)/../arch/arm64/kernel/gencore.c
 endif
-DEPSRCS=$(wildcard $(SRC)/*.c)
 
 CFLAGS += -I$(SRC)/include -I@abs_builddir@/../ -I@abs_builddir@/include -D__KERNEL__  -g -fno-omit-frame-pointer -fno-inline -fno-inline-small-functions
+ifneq ($(ARCH), arm64)
 CFLAGS += -mcmodel=large -mno-red-zone
+endif
 LDFLAGS += -e arch_start
 IHKOBJ = ihk/ihk.o
 
@@ -71,6 +75,9 @@ $(IHKOBJ): FORCE
 	+$(call echo_cmd,BUILD IHK,$(TARGET))$(submake) -C $(IHKBASE) $(SUBCMD_OPTS)
 
 %.o: $(SRC)/%.c
+	$(cc_cmd)
+
+gencore.o: ../arch/arm64/kernel/gencore.c
 	$(cc_cmd)
 
 FORCE:
