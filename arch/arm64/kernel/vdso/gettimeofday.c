@@ -1,5 +1,6 @@
 /* gettimeofday.c COPYRIGHT FUJITSU LIMITED 2016-2018 */
 #include <time.h>
+#include <memory.h>
 #include <syscall.h>
 #include <registers.h>
 #include <ihk/atomic.h>

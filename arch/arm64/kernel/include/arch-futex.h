@@ -134,4 +134,12 @@ futex_atomic_cmpxchg_inatomic(int __user *uaddr, int oldval, int newval)
 	return ret;
 }
 
+static inline int get_futex_value_locked(uint32_t *dest, uint32_t *from)
+{
+
+	*dest = *(volatile uint32_t *)from;
+
+	return 0;
+}
+
 #endif /* !__HEADER_ARM64_COMMON_ARCH_FUTEX_H */
