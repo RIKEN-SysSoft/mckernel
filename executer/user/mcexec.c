@@ -1643,7 +1643,7 @@ static struct option mcexec_options[] = {
 		.name =		"mpol-threshold",
 		.has_arg =	required_argument,
 		.flag =		NULL,
-		.val =		'm',
+		.val =		'M',
 	},
 	{
 		.name =		"disable-sched-yield",
@@ -1872,9 +1872,9 @@ int main(int argc, char **argv)
 
 	/* Parse options ("+" denotes stop at the first non-option) */
 #ifdef ADD_ENVS_OPTION
-	while ((opt = getopt_long(argc, argv, "+c:n:t:m:h:e:s:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:", mcexec_options, NULL)) != -1) {
 #else /* ADD_ENVS_OPTION */
-	while ((opt = getopt_long(argc, argv, "+c:n:t:m:h:s:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:", mcexec_options, NULL)) != -1) {
 #endif /* ADD_ENVS_OPTION */
 		switch (opt) {
 			char *tmp;
@@ -1903,7 +1903,7 @@ int main(int argc, char **argv)
 				}
 				break;
 
-			case 'm':
+			case 'M':
 				mpol_threshold = atobytes(optarg);
 				break;
 
