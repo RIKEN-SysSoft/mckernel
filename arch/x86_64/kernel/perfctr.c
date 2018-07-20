@@ -10,9 +10,12 @@
 #include <ihk/perfctr.h>
 #include <march.h>
 #include <errno.h>
+#include <cls.h>
 #include <ihk/debug.h>
+#include <ihk/cpu.h>
 #include <registers.h>
 #include <mc_perf_event.h>
+#include <config.h>
 
 extern unsigned int *x86_march_perfmap;
 extern int running_on_kvm(void);
@@ -57,6 +60,10 @@ void x86_init_perfctr(void)
 	uint64_t ecx;
 	uint64_t edx;
 
+#ifndef ENABLE_PERF
+	return;
+#endif //ENABLE_PERF
+
 	/* Do not do it on KVM */
 	if (running_on_kvm()) return;
 
@@ -93,7 +100,7 @@ void x86_init_perfctr(void)
 	for(i = 0; i < X86_IA32_NUM_PERF_COUNTERS; i++) {
 		wrmsr(MSR_IA32_PERFEVTSEL0 + i, 0);
 	}
-		
+
 	/* Enable PMC Control */
 	value = rdmsr(MSR_PERF_GLOBAL_CTRL);
 	value |= X86_IA32_PERF_COUNTERS_MASK;
@@ -256,6 +263,41 @@ int ihk_mc_perfctr_init(int counter, enum ihk_perfctr_type type, int mode)
 	}
 
 	return set_perfctr_x86_direct(counter, mode, x86_march_perfmap[type]);
+}
+
+int ihk_mc_perfctr_set_extra(struct mc_perf_event *event)
+{
+	struct thread *thread = cpu_local_var(current);
+
+	// allocate extra_reg
+	if (thread->extra_reg_alloc_map & (1UL << event->extra_reg.idx)) {
+		if (event->extra_reg.idx == EXTRA_REG_RSP_0) {
+			event->extra_reg.idx = EXTRA_REG_RSP_1;
+		}
+		else if (event->extra_reg.idx == EXTRA_REG_RSP_1) {
+			event->extra_reg.idx = EXTRA_REG_RSP_0;
+		}
+
+		if (thread->extra_reg_alloc_map & (1UL << event->extra_reg.idx)) {
+			// extra_regs are full
+			return -1;
+		}
+	}
+
+	if (event->extra_reg.idx == EXTRA_REG_RSP_0) {
+		event->hw_config &= ~0xffUL;
+		event->hw_config |= ihk_mc_get_extra_reg_event(EXTRA_REG_RSP_0);
+		event->extra_reg.reg = MSR_OFFCORE_RSP_0;
+	}
+	else if (event->extra_reg.idx == EXTRA_REG_RSP_1) {
+		event->hw_config &= ~0xffUL;
+		event->hw_config |= ihk_mc_get_extra_reg_event(EXTRA_REG_RSP_1);
+		event->extra_reg.reg = MSR_OFFCORE_RSP_1;
+	}
+		
+	thread->extra_reg_alloc_map |= (1UL << event->extra_reg.idx);
+	wrmsr(event->extra_reg.reg, event->extra_reg.config);
+	return 0;
 }
 
 #ifdef HAVE_MARCH_PERFCTR_START

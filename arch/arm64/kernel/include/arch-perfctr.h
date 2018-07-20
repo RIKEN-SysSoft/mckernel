@@ -54,39 +54,4 @@ void armv8pmu_per_cpu_init(struct per_cpu_arm_pmu *per_cpu);
 void arm64_enable_user_access_pmu_regs(void);
 void arm64_disable_user_access_pmu_regs(void);
 
-/* TODO[PMU]: 共通部に定義があっても良い。今後の動向を見てここの定義を削除する */
-/*
- * Generalized hardware cache events:
- *
- *       { L1-D, L1-I, LLC, ITLB, DTLB, BPU, NODE } x
- *       { read, write, prefetch } x
- *       { accesses, misses }
- */
-enum perf_hw_cache_id {
-	PERF_COUNT_HW_CACHE_L1D			= 0,
-	PERF_COUNT_HW_CACHE_L1I			= 1,
-	PERF_COUNT_HW_CACHE_LL			= 2,
-	PERF_COUNT_HW_CACHE_DTLB		= 3,
-	PERF_COUNT_HW_CACHE_ITLB		= 4,
-	PERF_COUNT_HW_CACHE_BPU			= 5,
-	PERF_COUNT_HW_CACHE_NODE		= 6,
-
-	PERF_COUNT_HW_CACHE_MAX,		/* non-ABI */
-};
-
-enum perf_hw_cache_op_id {
-	PERF_COUNT_HW_CACHE_OP_READ		= 0,
-	PERF_COUNT_HW_CACHE_OP_WRITE		= 1,
-	PERF_COUNT_HW_CACHE_OP_PREFETCH		= 2,
-
-	PERF_COUNT_HW_CACHE_OP_MAX,		/* non-ABI */
-};
-
-enum perf_hw_cache_op_result_id {
-	PERF_COUNT_HW_CACHE_RESULT_ACCESS	= 0,
-	PERF_COUNT_HW_CACHE_RESULT_MISS		= 1,
-
-	PERF_COUNT_HW_CACHE_RESULT_MAX,		/* non-ABI */
-};
-
 #endif

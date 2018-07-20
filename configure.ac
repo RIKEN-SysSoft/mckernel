@@ -134,6 +134,12 @@ AC_ARG_ENABLE([rusage],
 	      [ENABLE_RUSAGE=$enableval],
 	      [ENABLE_RUSAGE=yes])
 
+AC_ARG_ENABLE([perf],
+	      AC_HELP_STRING([--enable-perf],
+			     [enable perf_event implementation]),
+	      [ENABLE_PERF=$enableval],
+	      [ENABLE_PERF=yes])
+
 AC_ARG_ENABLE([qlmpi],
 	      AC_HELP_STRING([--enable-qlmpi],
 			     [enable qlmpi implementation]),
@@ -459,7 +465,7 @@ else
 fi
 
 if test "x$ENABLE_QLMPI" = "xyes" ; then
-	AC_DEFINE([ENABLE_QLMPI],[1],[whether mcoverlayfs is enabled])
+	AC_DEFINE([ENABLE_QLMPI],[1],[whether qlmpi is enabled])
 	AC_MSG_NOTICE([qlmpi is enabled])
 else
 	AC_MSG_NOTICE([qlmpi is disabled])
@@ -481,6 +487,13 @@ if test "x$ENABLE_RUSAGE" = "xyes" ; then
 	AC_DEFINE([ENABLE_RUSAGE],[1],[whether rusage is enabled])
 else
 	AC_MSG_NOTICE([rusage is disabled])
+fi
+
+if test "x$ENABLE_PERF" = "xyes" ; then
+	AC_DEFINE([ENABLE_PERF],[1],[whether perf is enabled])
+	AC_MSG_NOTICE([perf is enabled])
+else
+	AC_MSG_NOTICE([perf is disabled])
 fi
 
 if test "x$MCKERNEL_INCDIR" != "x" ; then

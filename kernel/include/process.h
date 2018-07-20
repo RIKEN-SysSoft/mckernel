@@ -26,6 +26,7 @@
 #include <syscall.h>
 #include <bitops.h>
 #include <profile.h>
+#include <config.h>
 
 #define VR_NONE            0x0
 #define VR_STACK           0x1
@@ -696,6 +697,10 @@ struct thread {
 	int mod_clone;
 	struct uti_attr *mod_clone_arg;
 	int parent_cpuid;
+
+	// for performance counter
+	unsigned long pmc_alloc_map;
+	unsigned long extra_reg_alloc_map;
 };
 
 #define VM_RANGE_CACHE_SIZE	4

@@ -18,6 +18,8 @@
 #include <types.h>
 #endif /*POSTK_DEBUG_TEMP_FIX_29*/
 
+#include <mc_perf_event.h>
+
 #define PERFCTR_USER_MODE   0x01
 #define PERFCTR_KERNEL_MODE 0x02
 
@@ -60,6 +62,7 @@ int ihk_mc_perfctr_init_raw(int counter, uint64_t config, int mode);
 int ihk_mc_perfctr_init(int counter, enum ihk_perfctr_type type, int mode);
 int ihk_mc_perfctr_init_raw(int counter, unsigned int code, int mode);
 #endif/*POSTK_DEBUG_TEMP_FIX_29*/
+int ihk_mc_perfctr_set_extra(struct mc_perf_event *event);
 int ihk_mc_perfctr_start(unsigned long counter_mask);
 int ihk_mc_perfctr_stop(unsigned long counter_mask);
 #ifdef POSTK_DEBUG_ARCH_DEP_107 /* Add perfctr_first_stop I/F */

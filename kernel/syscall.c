@@ -3450,20 +3450,25 @@ SYSCALL_DECLARE(signalfd4)
 }
 
 int 
-perf_counter_alloc(struct mc_perf_event *event)
+perf_counter_alloc(struct thread *thread)
 {
-	int ret = 0;
-	struct perf_event_attr *attr = &event->attr;
-	struct mc_perf_event *leader = event->group_leader;
+#ifdef POSTK_DEBUG_TEMP_FIX_87 /* move X86_IA32_xxx architecture-dependent */
+	/* TODO */
+	return 0;
+#else /* POSTK_DEBUG_TEMP_FIX_87 */
+	int ret = -1;
+	int i = 0;
 
-	ret = ihk_mc_perfctr_alloc_counter(&attr->type, &attr->config, leader->pmc_status); 
-
-	if(ret >= 0) {
-		leader->pmc_status |= 1UL << ret;
+	// find avail generic counter
+    for(i = 0; i < X86_IA32_NUM_PERF_COUNTERS; i++) {
+		if(!(thread->pmc_alloc_map & (1 << i))) {
+			ret = i;
+			break;
+		}
 	}
-	event->counter_id = ret;
 
 	return ret;
+#endif /* POSTK_DEBUG_TEMP_FIX_87 */
 }
 
 int 
@@ -3487,7 +3492,13 @@ perf_counter_start(struct mc_perf_event *event)
 	}
 #else /* POSTK_DEBUG_TEMP_FIX_87 */
 	if(event->counter_id >= 0 && event->counter_id < X86_IA32_NUM_PERF_COUNTERS) {
-		ret = ihk_mc_perfctr_init_raw(event->counter_id, attr->config, mode);
+		if (event->extra_reg.reg) {
+			if (ihk_mc_perfctr_set_extra(event)) {
+				ret = -1;
+				goto out;
+			}
+		}
+		ret = ihk_mc_perfctr_init_raw(event->counter_id, event->hw_config, mode);
 		ihk_mc_perfctr_start(1UL << event->counter_id);
 	}
 	else if(event->counter_id >= X86_IA32_BASE_FIXED_PERF_COUNTERS &&
@@ -3498,8 +3509,9 @@ perf_counter_start(struct mc_perf_event *event)
 	else {
 		ret = -1;
 	}
+
+out:
 #endif /* POSTK_DEBUG_TEMP_FIX_87 */
-		
 	return ret;
 }
 
@@ -3590,18 +3602,18 @@ perf_event_read_group(struct mc_perf_event *event, unsigned long read_format, ch
 static int
 perf_event_read_one(struct mc_perf_event *event, unsigned long read_format, char *buf)
 {
-        unsigned long values[4];
-        int n = 0;
+	unsigned long values[4];
+	int n = 0;
 	int size = 0;
 
-        values[n++] = perf_event_read_value(event);
+	values[n++] = perf_event_read_value(event);
 
 	size = n * sizeof(unsigned long);
 
 	if (copy_to_user(buf, values, size))
 		return -EFAULT;
 
-        return size;
+	return size;
 }
 
 static long
@@ -3618,7 +3630,6 @@ perf_read(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 		ret = perf_event_read_one(event, read_format, buf);
 	}
 	return ret;
-
 }
 
 void 
@@ -3767,12 +3778,12 @@ perf_ioctl(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 			process_unlock(proc, &lock);
 		}
 		*/
-                break;
+		break;
         case PERF_EVENT_IOC_RESET:
 		// TODO: reset other process
 		ihk_mc_perfctr_set(counter_id, event->attr.sample_freq * -1);
 		event->count = 0L;
-                break;
+		break;
         case PERF_EVENT_IOC_REFRESH:
 		// TODO: refresh other process
 		
@@ -3797,7 +3808,13 @@ static int
 perf_close(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 {
 	struct mc_perf_event *event = (struct mc_perf_event*)sfd->data;
+	struct thread *thread = cpu_local_var(current);
 
+	thread->pmc_alloc_map &= ~(1UL << event->counter_id);
+	if (event->extra_reg.reg) {
+		thread->extra_reg_alloc_map &= ~(1UL << event->extra_reg.idx);
+	}
+		
 	kfree(event);
 
 	return 0;
@@ -3849,6 +3866,66 @@ perf_mmap(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 	return rc;
 }
 
+struct mc_perf_event*
+mc_perf_event_alloc(struct perf_event_attr *attr)
+{
+	unsigned long val = 0, extra_config = 0;
+	struct mc_perf_event *event;
+	int ereg_id;
+
+	if (!attr) {
+		return NULL;
+	}
+
+	event = kmalloc(sizeof(struct mc_perf_event), IHK_MC_AP_NOWAIT);
+	if (!event) {
+		return NULL;
+	}
+	memset(event, 0, sizeof(struct mc_perf_event));
+
+	INIT_LIST_HEAD(&event->group_entry);
+	INIT_LIST_HEAD(&event->sibling_list);
+	event->attr = *attr;
+
+	event->sample_freq = attr->sample_freq;
+	event->nr_siblings = 0;
+	event->count = 0L;
+	event->child_count_total = 0;
+	event->parent = NULL;
+
+	switch(attr->type) {
+	case PERF_TYPE_HARDWARE :
+		val = ihk_mc_hw_event_map(attr->config);
+		break;
+	case PERF_TYPE_HW_CACHE :
+		val = ihk_mc_hw_cache_event_map(attr->config);
+		extra_config = ihk_mc_hw_cache_extra_reg_map(attr->config);
+		break;
+	case PERF_TYPE_RAW :
+		val = attr->config;
+		break;
+
+	default:
+		// Unexpected type
+		return NULL;
+	}
+
+	if (val == 0) {
+		return NULL;
+	}
+	
+	event->hw_config = val;
+	event->hw_config_ext = extra_config;
+
+	ereg_id = ihk_mc_get_extra_reg_id(event->hw_config, event->hw_config_ext);
+	if (ereg_id >= 0) {
+		event->extra_reg.config = event->hw_config_ext;
+		event->extra_reg.reg = ihk_mc_get_extra_reg_msr(ereg_id);
+		event->extra_reg.idx = ihk_mc_get_extra_reg_idx(ereg_id);
+	}
+	return event;
+}
+
 SYSCALL_DECLARE(perf_event_open)
 {
 	struct syscall_request request IHK_DMA_ALIGN;
@@ -3856,6 +3933,7 @@ SYSCALL_DECLARE(perf_event_open)
 	struct process *proc = thread->proc;
 	struct mckfd *sfd, *cfd;
 	int fd;
+	int counter_idx;
 	long irqstate;
 #ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
 	struct perf_event_attr *uattr = (void *)ihk_mc_syscall_arg0(ctx);
@@ -3871,6 +3949,10 @@ SYSCALL_DECLARE(perf_event_open)
 
 	int not_supported_flag = 0;
 
+#ifndef ENABLE_PERF
+	return -ENOSYS;
+#endif // ENABLE_PERF
+
 #ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
 	memset(&attr, 0, sizeof(attr));
 	if (copy_from_user(&attr, uattr, sizeof(attr))) {
@@ -3879,64 +3961,67 @@ SYSCALL_DECLARE(perf_event_open)
 #endif /* POSTK_DEBUG_ARCH_DEP_46 */
 
 	// check Not supported 
-	if(cpu > 0) {
+	if (cpu > 0) {
 		not_supported_flag = 1;	
 	}
-	if(flags > 0) {
+	if (flags > 0) {
 		not_supported_flag = 1;	
 	}
+
 #ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
-	if(attr.read_format & PERF_FORMAT_TOTAL_TIME_ENABLED) {
+	if ((attr.type != PERF_TYPE_RAW) && 
+	    (attr.type != PERF_TYPE_HARDWARE) &&
+	    (attr.type != PERF_TYPE_HW_CACHE)) {
 		not_supported_flag = 1;
 	}
-	if(attr.read_format & PERF_FORMAT_TOTAL_TIME_RUNNING) {
-		not_supported_flag = 1;
-	}
-	if(attr.read_format & PERF_FORMAT_ID) {
+	if (attr.read_format & 
+	    (PERF_FORMAT_TOTAL_TIME_ENABLED |
+	     PERF_FORMAT_TOTAL_TIME_RUNNING |
+	     PERF_FORMAT_ID)) {
 		not_supported_flag = 1;
 	}
 #else /* POSTK_DEBUG_ARCH_DEP_46 */
-	if(attr->read_format & PERF_FORMAT_TOTAL_TIME_ENABLED) {
+	if ((attr->type != PERF_TYPE_RAW) && 
+	    (attr->type != PERF_TYPE_HARDWARE) &&
+	    (attr->type != PERF_TYPE_HW_CACHE)) {
 		not_supported_flag = 1;
 	}
-	if(attr->read_format & PERF_FORMAT_TOTAL_TIME_RUNNING) {
-		not_supported_flag = 1;
-	}
-	if(attr->read_format & PERF_FORMAT_ID) {
+	if (attr->read_format & 
+	    (PERF_FORMAT_TOTAL_TIME_ENABLED |
+	     PERF_FORMAT_TOTAL_TIME_RUNNING |
+	     PERF_FORMAT_ID)) {
 		not_supported_flag = 1;
 	}
 #endif /* POSTK_DEBUG_ARCH_DEP_46 */
 
-	if(not_supported_flag) {
+	if (not_supported_flag) {
 		return -1;
 	}
 
-	// process of perf_event_open
-	event = kmalloc(sizeof(struct mc_perf_event), IHK_MC_AP_NOWAIT);
-	if(!event)
-		return -ENOMEM;
 #ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
-	event->attr = attr;
-
-	event->sample_freq = attr.sample_freq;
+	event = mc_perf_event_alloc(&attr);
 #else /* POSTK_DEBUG_ARCH_DEP_46 */
-	event->attr = (struct perf_event_attr)*attr;
-
-	event->sample_freq = attr->sample_freq;
+	event = mc_perf_event_alloc((struct perf_event_attr*)attr);
 #endif /* POSTK_DEBUG_ARCH_DEP_46 */
-	event->nr_siblings = 0;
-	event->count = 0L;
-	event->child_count_total = 0;
-	event->parent = NULL;
+	if (!event) {
+		return -1;
+	}
+
 	event->pid = pid;
-	INIT_LIST_HEAD(&event->group_entry);
-	INIT_LIST_HEAD(&event->sibling_list);
-	if(group_fd == -1) {
+
+	counter_idx = perf_counter_alloc(thread);
+	if (counter_idx < 0) {
+		return -1;
+	}
+	event->counter_id = counter_idx;
+
+	if (group_fd == -1) {
 		event->group_leader = event; 
 		event->pmc_status = 0x0UL;
-	} else {
-		for(cfd = proc->mckfd; cfd; cfd = cfd->next) {
-			if(cfd->fd == group_fd) {
+	}
+	else {
+		for (cfd = proc->mckfd; cfd; cfd = cfd->next) {
+			if (cfd->fd == group_fd) {
 				event->group_leader = (struct mc_perf_event*)cfd->data;
 				list_add_tail(&event->group_entry, &event->group_leader->sibling_list);
 				event->group_leader->nr_siblings++;
@@ -3945,10 +4030,7 @@ SYSCALL_DECLARE(perf_event_open)
 		}
 	}
 
-	if(perf_counter_alloc(event) < 0)
-		return -1;
-	if(event->counter_id < 0)
-		return -1;
+	event->group_leader->pmc_status |= (1UL << counter_idx);
 
 	request.number = __NR_perf_event_open;
 	request.args[0] = 0;
@@ -3956,6 +4038,8 @@ SYSCALL_DECLARE(perf_event_open)
 	if(fd < 0){
 		return fd;
 	} 
+
+	thread->pmc_alloc_map |= 1UL << counter_idx;
 
 	sfd = kmalloc(sizeof(struct mckfd), IHK_MC_AP_NOWAIT);
 	if(!sfd)
