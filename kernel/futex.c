@@ -246,18 +246,6 @@ static int cmpxchg_futex_value_locked(uint32_t __user *uaddr, uint32_t uval, uin
 	return curval;
 }
 
-static int get_futex_value_locked(uint32_t *dest, uint32_t *from)
-{
-	/*
-	 * Officially we should call:
-	 * return getint_user((int *)dest, (int *)from);
-	 *
-	 * but McKernel on x86 can just access user-space.
-	 */
-	*dest = *(volatile uint32_t *)from;
-	return 0;
-}
-
 /*
  * The hash bucket lock must be held when this is called.
  * Afterwards, the futex_q must not be accessed.

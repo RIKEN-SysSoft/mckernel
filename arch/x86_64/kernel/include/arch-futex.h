@@ -130,4 +130,12 @@ static inline int futex_atomic_op_inuser(int encoded_op, int __user *uaddr)
 }
 #endif	/* !POSTK_DEBUG_ARCH_DEP_8 */
 
+static inline int get_futex_value_locked(uint32_t *dest, uint32_t *from)
+{
+
+	*dest = *(volatile uint32_t *)from;
+
+	return 0;
+}
+
 #endif

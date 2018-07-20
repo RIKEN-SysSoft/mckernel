@@ -586,4 +586,24 @@ int arch_linux_open(char *fname, int flag, int mode);
 int arch_linux_unlink(char *fname);
 #endif /* POSTK_DEBUG_ARCH_DEP_78 */
 
+struct move_pages_smp_req {
+	unsigned long count;
+	const void **user_virt_addr;
+	int *user_status;
+	const int *user_nodes;
+	void **virt_addr;
+	int *status;
+	pte_t **ptep;
+	int *nodes;
+	int nodes_ready;
+	int *nr_pages;
+	unsigned long *dst_phys;
+	struct process *proc;
+	ihk_atomic_t phase_done;
+	int phase_ret;
+};
+
+#define PROCESS_VM_READ		0
+#define PROCESS_VM_WRITE	1
+
 #endif
