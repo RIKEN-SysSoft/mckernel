@@ -1,5 +1,3 @@
-#include "util.h"
-
 #define _GNU_SOURCE         /* See feature_test_macros(7) */
 #include <stdio.h>
 #include <unistd.h>
@@ -11,7 +9,13 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
+#include <time.h>
+#include "util.h"
 
+/* Messaging */
+enum test_loglevel test_loglevel = TEST_LOGLEVEL_DEBUG;
+
+/* rdtsc */
 inline uint64_t rdtsc_light(void)
 {
     uint64_t x;
@@ -24,6 +28,7 @@ inline uint64_t rdtsc_light(void)
     return x;
 }
 
+/* Calculation */
 static inline void fixed_size_work() {
 	asm volatile(
 	    "movq $0, %%rcx\n\t"
@@ -43,37 +48,37 @@ static inline void bulk_fsw(unsigned long n) {
 	} 
 }
 
-long cyc, cycpw; /* cycles per work */
+double nspw; /* nsec per work */
+unsigned long nsec;
 
 void fwq_init() {
-	long start, end;
+	struct timespec start, end;
 	int i;
-	start = rdtsc_light();
+	clock_gettime(TIMER_KIND, &start);
 #define N_INIT 10000000
 	bulk_fsw(N_INIT);
-	end = rdtsc_light();
-	cyc = end - start;
-	cycpw = cyc / (double)N_INIT;
-	//printf("%s: cyc=%ld, cycpw=%ld\n", __FUNCTION__, cyc, cycpw);
+	clock_gettime(TIMER_KIND, &end);
+	nsec = DIFFNSEC(end, start);
+	nspw = nsec / (double)N_INIT;
 }
 
 #if 0
-void fwq(long delay_cyc) {
-	if (delay_cyc <= 0) { 
+void fwq(long delay_nsec) {
+	if (delay_nsec < 0) { 
         return;
 	}
-	bulk_fsw(delay_cyc / cycpw);
+	bulk_fsw(delay_nsec / nspw);
 }
 #else /* For machines with large core-to-core performance variation (e.g. OFP) */
-void fwq(long delay_cyc) {
-	long start, end;
+void fwq(long delay_nsec) {
+	struct timespec start, end;
 	
-	if (delay_cyc <= 0) { return; }
-	start = rdtsc_light();
+	if (delay_nsec < 0) { return; }
+	clock_gettime(TIMER_KIND, &start);
 
 	while (1) {
-		end = rdtsc_light();
-		if (end - start >= delay_cyc) {
+		clock_gettime(TIMER_KIND, &end);
+		if (DIFFNSEC(end, start) >= delay_nsec) {
 			break;
 		}
 		bulk_fsw(2); /* ~150 ns per iteration on FOP */

@@ -130,9 +130,9 @@ int main(int argc, char **argv) {
 			syscall(701, 1 | 2 | 0x80000000);
 		}
 
-		for (m = 0; m < 1/*3*/; m++) {
+		for (m = 0; m < 3; m++) {
 
-			for (l = 0; l <= 3/*10*/; l++) {
+			for (l = 0; l <= 10; l++) {
 				long calc_cyc = /*(k == 1 && l == 0) ? (double)t_pure0 * 0.1 :*/ t_pure0 / 10 * l; 
 
 			MPI_Barrier(MPI_COMM_WORLD);
@@ -188,7 +188,7 @@ int main(int argc, char **argv) {
 				MPI_Allreduce(&t_pure_l, &t_pure, 1, MPI_LONG, MPI_MAX, MPI_COMM_WORLD);
 				if (my_rank == 0) {
 					if (l == 0) {
-						printf("k=%d,m=%d\n", k, m);
+						printf("async: %d, trial: %d\n", k, m);
 					}
 					if (k == 0) { 
 						printf("%ld\t%ld\n", calc_cyc, t_pure);
@@ -216,6 +216,7 @@ int main(int argc, char **argv) {
 		if (k == 1) {
 			FINALIZE_ASYNC_THREAD_();
 			
+#if 0
 			if ((rc = getrusage(RUSAGE_THREAD, &ru_end))) {
 				printf("%s: ERROR: getrusage failed (%d)\n", __FUNCTION__, rc);
 			}
@@ -229,6 +230,7 @@ int main(int argc, char **argv) {
 				   DIFFUSEC(ru_end.ru_utime, ru_start.ru_utime),
 				   DIFFUSEC(ru_end.ru_stime, ru_start.ru_stime));
 			syscall(701, 4 | 8 | 0x80000000);
+#endif
 		}
 	}
 	

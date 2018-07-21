@@ -1,7 +1,14 @@
 #ifndef _ASYNC_PROGRESS_INCLUDED_
 #define _ASYNC_PROGRESS_INCLUDED_
 
-void INIT_ASYNC_THREAD_();
-void FINALIZE_ASYNC_THREAD_();
+enum progress_state {
+	PROGRESS_INIT = 0,
+	PROGRESS_START,
+	PROGRESS_FINALIZE
+};
+
+void progress_start();
+void progress_stop();
+void progress_finalize();
 
 #endif
