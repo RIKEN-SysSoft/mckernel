@@ -55,6 +55,9 @@ if ls /dev/mcos* 1>/dev/null 2>&1; then
 	done
 fi
 
+# Allow ihkmond to flush kmsg buffer
+sleep 2.0
+
 # Query IHK-SMP resources and release them
 if ! ${SBINDIR}/ihkconfig 0 query cpu > /dev/null; then
 	echo "error: querying cpus" >&2
