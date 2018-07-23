@@ -106,7 +106,7 @@ void x86_init_perfctr(void)
 	wrmsr(MSR_PERF_GLOBAL_CTRL, value);
 }
 
-static int set_perfctr_x86_direct(int counter, int mode, unsigned int value)
+static int set_perfctr_x86_direct(int counter, unsigned int value, int mode)
 {
 	if (counter < 0 || counter >= X86_IA32_NUM_PERF_COUNTERS) {
 		return -EINVAL;
@@ -165,8 +165,8 @@ static int set_pmc_x86_direct(int counter, long val)
 static int set_perfctr_x86(int counter, int event, int mask, int inv, int count,
                            int mode)
 {
-	return set_perfctr_x86_direct(counter, mode,
-	                              CVAL2(event, mask, inv, count));
+	return set_perfctr_x86_direct(counter,
+		CVAL2(event, mask, inv, count), mode);
 }
 
 static int set_fixed_counter(int counter, int mode)
@@ -200,11 +200,7 @@ static int set_fixed_counter(int counter, int mode)
 	return 0;
 }
 
-#ifdef POSTK_DEBUG_TEMP_FIX_29
 int ihk_mc_perfctr_init_raw(int counter, uint64_t config, int mode)
-#else
-int ihk_mc_perfctr_init_raw(int counter, unsigned int code, int mode)
-#endif /*POSTK_DEBUG_TEMP_FIX_29*/
 {
 #ifdef POSTK_DEBUG_TEMP_FIX_31
 	// PAPI_REF_CYC counted by fixed counter
@@ -217,46 +213,7 @@ int ihk_mc_perfctr_init_raw(int counter, unsigned int code, int mode)
 		return -EINVAL;
 	}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_29
-	return set_perfctr_x86_direct(counter, mode, config);
-#else
-	return set_perfctr_x86_direct(counter, mode, code);
-#endif /*POSTK_DEBUG_TEMP_FIX_29*/
-}
-
-#ifdef POSTK_DEBUG_TEMP_FIX_29
-int ihk_mc_perfctr_init(int counter, uint64_t config, int mode)
-#else
-int ihk_mc_perfctr_init(int counter, enum ihk_perfctr_type type, int mode)
-#endif /*POSTK_DEBUG_TEMP_FIX_29*/
-{
-#ifdef POSTK_DEBUG_TEMP_FIX_29
-	enum ihk_perfctr_type type;
-
-	switch (config) {
-	case PERF_COUNT_HW_CPU_CYCLES :
-		type = APT_TYPE_CYCLE;
-		break;
-	case PERF_COUNT_HW_INSTRUCTIONS :
-		type = APT_TYPE_INSTRUCTIONS;
-		break;
-	default :
-		// Not supported config.
-		type = PERFCTR_MAX_TYPE;
-	}
-#endif /*POSTK_DEBUG_TEMP_FIX_29*/
-
-	if (counter < 0 || counter >= X86_IA32_NUM_PERF_COUNTERS) {
-		return -EINVAL;
-	}
-	if (type < 0 || type >= PERFCTR_MAX_TYPE) {
-		return -EINVAL;
-	}
-	if (!x86_march_perfmap[type]) {
-		return -EINVAL;
-	}
-
-	return set_perfctr_x86_direct(counter, mode, x86_march_perfmap[type]);
+	return set_perfctr_x86_direct(counter, config, mode);
 }
 
 int ihk_mc_perfctr_set_extra(struct mc_perf_event *event)
