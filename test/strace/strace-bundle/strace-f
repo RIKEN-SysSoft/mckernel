@@ -11,3 +11,4 @@ check_prog $time
 
 $TIMEOUT $MCEXEC $STRACE -f $time /bin/ls > check.log 2>&1 ||
 	{ cat check.log; fail_ 'strace -f does not work'; }
+echo strace-f-1 OK

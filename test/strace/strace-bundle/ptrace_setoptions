@@ -18,11 +18,14 @@ check_timeout
 $TIMEOUT $MCEXEC $STRACE -df -enone / 2>&1 |
 	grep -F -x 'ptrace_setoptions = 0xe' > /dev/null ||
 		fail_ 'strace -f failed to recognize proper kernel PTRACE_O_TRACECLONE support'
+echo ptrace_setoptions-1 OK
 
 $TIMEOUT $MCEXEC $STRACE -df -enone / 2>&1 |
 	grep -F -x 'ptrace_setoptions = 0x1f' > /dev/null ||
 		fail_ 'strace -f failed to recognize proper kernel PTRACE_O_TRACESYSGOOD support'
+echo ptrace_setoptions-2 OK
 
 $TIMEOUT $MCEXEC $STRACE -d -enone / 2>&1 |
 	grep -F -x 'ptrace_setoptions = 0x11' > /dev/null ||
 		fail_ 'strace failed to recognize proper kernel PTRACE_O_TRACESYSGOOD support'
+echo ptrace_setoptions-3 OK

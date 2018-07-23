@@ -1,0 +1,20 @@
+*** ptrace_setoptions start
+ptrace_setoptions-1 OK
+ptrace_setoptions-2 OK
+ptrace_setoptions-3 OK
+*** ptrace_setoptions OK
+*** qual_syscall start
+qual_syscall-1 OK
+qual_syscall-2 OK
+qual_syscall-3 OK
+qual_syscall-4 OK
+*** qual_syscall OK
+*** stat start
+stat-1 OK
+stat-2 OK
+stat-3 OK
+stat-4 OK
+*** stat OK
+*** strace-f start
+strace-f-1 OK
+*** strace-f OK

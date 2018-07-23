@@ -20,17 +20,21 @@ rm -f sample
 $TIMEOUT $MCEXEC $STRACE -edesc $truncate_cmd 2>&1 > /dev/null 2> check.log &&
 LC_ALL=C grep -E -x 'ftruncate(64)?\(1, 46118400000\) += 0' check.log > /dev/null ||
 	{ cat check.log; fail_ 'strace -edesc failed to trace ftruncate/ftruncate64 properly'; }
+echo stat-1 OK
 
 LC_ALL=C grep -E -x 'lseek\(1, 46118400000, SEEK_CUR\) += 46118400000|_llseek\(1, 46118400000, \[46118400000\], SEEK_CUR\) += 0' check.log > /dev/null ||
 	{ cat check.log; fail_ 'strace -edesc failed to trace lseek/_llseek properly'; }
+echo stat-2 OK
 
 $TIMEOUT $MCEXEC $STRACE -efile find -L sample > /dev/null 2> check.log &&
 LC_ALL=C grep -E -x 'stat(64)?\("sample", \{st_mode=S_IFREG\|0644, st_size=46118400000, \.\.\.\}\) += 0|(new)?fstatat(64)?\(AT_FDCWD, "sample", \{st_mode=S_IFREG\|0644, st_size=46118400000, \.\.\.\}, 0\) += 0' check.log > /dev/null ||
 	{ cat check.log; fail_ 'strace -efile failed to trace stat/stat64 properly'; }
+echo stat-3 OK
 
 $TIMEOUT $MCEXEC $STRACE -efile find sample > /dev/null 2> check.log &&
 LC_ALL=C grep -E -x 'lstat(64)?\("sample", \{st_mode=S_IFREG\|0644, st_size=46118400000, \.\.\.\}\) += 0|(new)?fstatat(64)?\(AT_FDCWD, "sample", \{st_mode=S_IFREG\|0644, st_size=46118400000, \.\.\.\}, AT_SYMLINK_NOFOLLOW\) += 0' check.log > /dev/null ||
 	{ cat check.log; fail_ 'strace -efile failed to trace fstatat/fstatat64 properly'; }
+echo stat-4 OK
 
 rm -f sample
 

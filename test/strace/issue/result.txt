@@ -1,0 +1,55 @@
+../../../../mic/mcexec ./943
+#943 test start
+#943 test start
+#943-1 gettid in OK
+#943-2 gettid out OK
+#943-3 open in OK
+#943-4 open out OK
+#943-5 bad syscall in OK
+#943-6 bad syscall out OK
+#943 test terminated ok=6 ng=0
+../../../../mic/mcexec ./944
+#944 test start
+#944 test start
+#944-1 gettid in OK
+#944-2 gettid out OK
+#944-3 open in OK
+#944-4 open out OK
+#944-5 bad syscall in OK
+#944-6 bad syscall out OK
+#944 test terminated ok=6 ng=0
+../../../../mic/mcexec ./945
+#945 start
+#945-1 execve in OK
+#945-3 execve out OK
+#945-2 PTRACE_EVENT_EXEC OK
+#945 test terminated ok=3 ng=0
+../../../../mic/mcexec ./946
+#946 start
+#946-1 exit after wait OK
+#946-1 exit after wait OK
+#946-2 exit before wait OK
+#946 terminated ok=2 ng=0
+../../../../mic/mcexec ./960
+#960 start
+#960-1 wait in OK
+#960-2 wait out OK
+#960-3 SIGCHLD OK
+#960 terminated ok=3 ng=0
+../../../../mic/mcexec ./961
+#961 test start
+#961 test start
+#961-1 fork in OK
+#961-2 PTRACE_EVENT_FORK OK
+#961-3 fork out OK
+#961-5 tracee receive SIGCHLD OK
+#961 test start
+#961-4 fork child side didnot be called OK
+#961-4 fork child side didnot be called OK
+#961-6 fork in OK
+#961-8 fork out OK
+#961-10 tracee receive SIGCHLD OK 27454
+#961-4 fork child side didnot be called OK
+#961-9 fork child side didnot be called OK
+#961-7 didnot receive PTRACE_EVENT_FORK OK
+#961 test terminated ok=10 ng=0
