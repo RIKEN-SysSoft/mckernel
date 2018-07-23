@@ -1,0 +1,2 @@
+attr->disabled:1
+attr->exclude_kernel:1

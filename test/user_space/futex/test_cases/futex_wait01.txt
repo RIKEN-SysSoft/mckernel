@@ -1,0 +1,4 @@
+futex_wait01    1  TPASS  :
+futex_wait01    2  TPASS  :
+futex_wait01    3  TPASS  :
+futex_wait01    4  TPASS  :

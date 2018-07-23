@@ -1,0 +1,180 @@
+diff --git a/kernel/pager.c b/kernel/pager.c
+index 2fc1a72..a5e7233 100644
+--- a/kernel/pager.c
++++ b/kernel/pager.c
+@@ -65,7 +65,8 @@
+  * the mlockcntnr structure is used.
+  * The mlockcntnr keeps the list of 
+  */
+-#define MLOCKADDRS_SIZE	128
++//#define MLOCKADDRS_SIZE	128
++#define MLOCKADDRS_SIZE	8
+ struct addrpair {
+ 	unsigned long	start;
+ 	unsigned long	end;
+@@ -296,6 +297,8 @@ pager_open(struct swapinfo *si, char *fname, int flag, int mode)
+ {
+ 	int	fd;
+ 	copy_to_user(si->udata_buf, fname, strlen(fname) + 1);
++//	kprintf("%s: copy_to_user si->udata_buf:%s,fname:%s\n",
++//		__FUNCTION__, si->udata_buf, fname);
+ 	fd = linux_open(si->udata_buf, flag, mode);
+ 	return fd;
+ }
+@@ -304,6 +307,8 @@ static int
+ pager_unlink(struct swapinfo *si, char *fname)
+ {
+ 	copy_to_user(si->udata_buf, fname, strlen(fname) + 1);
++//	kprintf("%s: copy_to_user si->udata_buf:%s,fname:%s\n",
++//		__FUNCTION__, si->udata_buf, fname);
+ 	return linux_unlink(si->udata_buf);
+ }
+ 
+@@ -403,6 +408,9 @@ mlocklist_morereq(struct swapinfo *si, unsigned long *start)
+ {
+ 	struct areaent	went,*ent = si->mlock_area.tail;
+ 	copy_from_user(&went, ent, sizeof(struct areaent));
++	kprintf("%s: copy_from_user went.count:%d,ent->count:%d\n",
++		__FUNCTION__, went.count, ent->count);	//test case 1
++
+ 
+ 	dkprintf("mlocklist_morereq: start = %ld and = %ld\n",
+ 		went.pair[went.count].start, went.pair[went.count].end);
+@@ -421,6 +429,8 @@ arealist_alloc(struct swapinfo *si, struct arealist *areap)
+ 	if (areap->head == NULL) return -ENOMEM;
+ 	memset(&went, 0, sizeof(struct areaent));
+ 	copy_to_user(areap->head, &went, sizeof(struct areaent));
++//	kprintf("%s: copy_to_user went.count:%d,areap->head->count:%d\n",
++//		__FUNCTION__, went.count, areap->head->count);	//test case 
+ 	return 0;
+ }
+ 
+@@ -465,6 +475,8 @@ arealist_get(struct swapinfo *si, struct addrpair **pair, struct arealist *area)
+ 	memset(&wtmp, 0, sizeof(struct areaent));
+ 	copy_to_user(tmp, &wtmp, sizeof(struct areaent));
+ 	copy_to_user(&(area->tail->next), &tmp, sizeof(struct areaent *));
++//	kprintf("%s: copy_to_user wtmp.count:%d,tmp->count:%d area->tail->next %x:%x\n",
++//		__FUNCTION__, wtmp.count, tmp->count, area->tail->next, tmp);	//test case 
+ 
+ 	area->tail = tmp;
+ 	if (pair) *pair = area->tail->pair;
+@@ -476,8 +488,13 @@ arealist_update(int cnt, struct arealist *area)
+ {
+ 	int i;
+ 	copy_from_user(&i, &(area->tail->count), sizeof(int));
++	kprintf("%s: copy_from_user i:%d, area->tail->count:%d\n",
++		__FUNCTION__, i, area->tail->count); //test case 2
++
+ 	i += cnt;
+ 	copy_to_user(&(area->tail->count), &i, sizeof(int));
++//	kprintf("%s: copy_to_user i:%d, area->tail->count:%d\n",
++//		__FUNCTION__, i, area->tail->count);	//test case 
+ 	area->count += cnt;
+ }
+ 
+@@ -492,6 +509,8 @@ arealist_add(struct swapinfo *si, unsigned long start, unsigned long end,
+ 	if (cc < 0) return -1;
+ 	waddr.start = start; waddr.end = end; waddr.flag = flag;
+ 	copy_to_user(addr, &waddr, sizeof(struct addrpair));
++//	kprintf("%s: copy_to_user addr->start:%x, waddr.strt:%x\n",
++//		__FUNCTION__, addr->start, waddr.start);	//test case 
+ 	
+ 	arealist_update(1, area);
+ 	return 0;
+@@ -510,11 +529,17 @@ arealist_preparewrite(struct arealist *areap, struct swap_areainfo *info,
+ 	for (ent = areap->head; ent != NULL; ent = ent->next) {
+ 		int i;
+ 		copy_from_user(&went, ent, sizeof(struct areaent));
++		kprintf("%s: copy_from_user went.count:%d,ent->count:%d\n",
++			__FUNCTION__, went.count, ent->count); //test case 3
++
+ 		for (i = 0; i < went.count; i++, count++) {
+ 			ssize_t sz = went.pair[i].end - went.pair[i].start; 
+ 			copy_to_user(&(info[count].start), &(went.pair[i].start), sizeof(unsigned long));
+ 			copy_to_user(&(info[count].end), &(went.pair[i].end), sizeof(unsigned long));
+ 			copy_to_user(&(info[count].flag), &(went.pair[i].flag), sizeof(unsigned long));
++//			kprintf("%s: copy_to_user info[%d].start:%x,end:%x,flag:%x ,went.pair[%d].start:%x,end:%x,flag:%x\n",
++//		__FUNCTION__, count, info[count].start, info[count].end, info[count].flag,
++//		i, went.pair[i].start, went.pair[i].end, went.pair[i].flag);	//test case 
+ 			if (flag) { /* position in file */
+ 				
+ 				pos = off + totsz;
+@@ -526,6 +551,8 @@ arealist_preparewrite(struct arealist *areap, struct swap_areainfo *info,
+ 				}
+ 			}
+ 			copy_to_user(&(info[count].pos), &pos, sizeof(unsigned long));
++//			kprintf("%s: copy_to_user info[%d].pos:%x,pos:%x\n",
++//				__FUNCTION__, count, info[count].pos, pos);
+ 			totsz += sz;
+ 		}
+ 	}
+@@ -675,8 +702,10 @@ do_pagein(int flag)
+ 		// ihk_mc_pt_print_pte(vm->address_space->page_table, (void*) si->swap_info[i].start);
+ 	}
+ 	linux_close(fd);
++#if 0
+ 	print_region("after pagin", vm);
+ 	dkprintf("do_pagein: done, currss(%lx)\n", vm->currss);
++#endif
+ 	vm->swapinfo = NULL;
+ 	kfree(si->swapfname);
+ 	kfree(si);
+@@ -742,6 +771,8 @@ do_pageout(char *fname, void *buf, size_t size, int flag)
+ 	}
+ 
+ 	copy_to_user(si->udata_buf, si->swapfname, strlen(si->swapfname) + 1);
++	kprintf("%s: copy_to_user si->udata_buf:%s,si->swapfname:%s\n",
++		__FUNCTION__, si->udata_buf, si->swapfname);
+ 	fd = linux_open(si->udata_buf, O_RDWR|O_CREAT|O_TRUNC, 0600);
+ 	if (fd < 0) {
+ 		ekprintf("do_pageout: Cannot open/create file: %s\n", fname);
+@@ -807,8 +838,10 @@ do_pageout(char *fname, void *buf, size_t size, int flag)
+ 			}
+ 		}
+ 	}
++#if 0
+ 	arealist_print("SWAP", &si->swap_area, si->swap_area.count);
+ 	arealist_print("MLOCK", &si->mlock_area, si->mlock_area.count);
++#endif
+ 	si->swap_info = myalloc(si, sizeof(struct swap_areainfo)* si->swap_area.count);
+ 	si->mlock_info =  myalloc(si, sizeof(struct swap_areainfo)* si->mlock_area.count);
+ 	if (si->swap_info == NULL || si->mlock_info == NULL) goto nomem;
+@@ -819,6 +852,8 @@ do_pageout(char *fname, void *buf, size_t size, int flag)
+ 	copy_to_user(&(si->swphdr->version), MCKERNEL_SWAP_VERSION, SWAP_HLEN);
+ 	copy_to_user(&(si->swphdr->count_sarea), &(si->swap_area.count), sizeof(unsigned int));
+ 	copy_to_user(&(si->swphdr->count_marea), &(si->mlock_area.count), sizeof(unsigned int));
++//	kprintf("%s: copy_to_user si->swphdr->magic:%s,si->swphdr->version:%s,si->swphdr->count_sarea:%d,si->swphdr->count_marea:%d,si->swap_area.count:%d,si->mlock_area.count:%d\n",
++//				__FUNCTION__, si->swphdr->magic, si->swphdr->version, si->swphdr->count_sarea, si->swphdr->count_marea, si->swap_area.count, si->mlock_area.count);
+ 	if ((cc = pager_write(fd, si->swphdr, sizeof(struct swap_header)))
+ 	    != sizeof(struct swap_header)) {
+ 		if (cc >= 0)
+@@ -844,6 +879,9 @@ do_pageout(char *fname, void *buf, size_t size, int flag)
+ 	for (i = 0; i < si->swap_area.count; i++) {
+ 		struct swap_areainfo sw_info;
+ 		copy_from_user(&sw_info, &(si->swap_info[i]), sizeof(struct swap_areainfo));
++		kprintf("%s:1 copy_from_user %x:%x\n",
++		__FUNCTION__, sw_info.start, si->swap_info[i].start); // test case 4
++
+ 		sz = sw_info.end - sw_info.start;
+ 		if ((cc = pager_write(fd, (void*) sw_info.start, sz)) != sz) {
+ 			if (cc >= 0)
+@@ -859,6 +897,9 @@ do_pageout(char *fname, void *buf, size_t size, int flag)
+ 	for (i = 0; i < si->swap_area.count; i++) {
+ 		struct swap_areainfo sw_info;
+ 		copy_from_user(&sw_info, &(si->swap_info[i]), sizeof(struct swap_areainfo));
++		kprintf("%s:2 copy_from_user %x:%x\n",
++		__FUNCTION__, sw_info.start, si->swap_info[i].start); // test case 4
++
+ 		cc = ihk_mc_pt_free_range(vm->address_space->page_table,
+ 					  vm,
+ 					  (void*) sw_info.start,
+@@ -880,6 +921,9 @@ do_pageout(char *fname, void *buf, size_t size, int flag)
+ 	for (i = 0; i < si->swap_area.count; i++) {
+ 		struct swap_areainfo sw_info;
+ 		copy_from_user(&sw_info, &(si->swap_info[i]), sizeof(struct swap_areainfo));
++		kprintf("%s:3 copy_from_user %x:%x\n",
++		__FUNCTION__, sw_info.start, si->swap_info[i].start); // test case 4
++
+ 		sz = sw_info.end - sw_info.start;
+ 		cc = linux_munmap((void*) sw_info.start, sz, 0);
+ 		if (cc < 0) {

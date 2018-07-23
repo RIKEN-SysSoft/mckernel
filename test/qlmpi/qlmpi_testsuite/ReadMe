@@ -1,0 +1,32 @@
+qlmpiのテストについて
+1.テスト準備
+1.1 テストケースファイル
+　　mckernel/test/qlmpi/qlmpi_testsuite/test_cases/*.txt
+		MASTER			マスターノードのマシン名もしくはIPアドレス
+		SLAVE			スレーブノードのマシン名もしくはIPアドレス
+1.2 ホストファイル
+	以下のホストファイルを環境に合わせて修正します。
+	mckernel/test/qlmpi/qlmpi_testsuite/hostfile*
+	
+1.2 テストプログラムのコンパイル
+	以下のファイルの内容を見て、適宜修正します。修正後makeします。
+　　mckernel/test/qlmpi/qlmpi_testsuite/Makefile
+		
+1.3 configファイル
+	user_space/swapout/config
+		MCMOD_DIR		mckernelのディレクトリ
+		START			ql_mpiexec_startのパスqlmpiテスト用
+		FINALIZE		ql_mpiexec_finalizeのパスqlmpiテスト用
+		USR_PRG_A		qlmpiテスト用プログラムのパス
+		USR_PRG_B		qlmpiテスト用プログラムのパス
+		USR_PRG_C		qlmpiテスト用プログラムのパス
+		USR_PRG_IRREG	qlmpiテスト用プログラムのパス
+
+2.テスト
+	以下のファイルを実行します。
+　　mckernel/test/qlmpi/qlmpi_testsuite/go_ql_test.sh
+	
+	実行結果は以下のディレクトリに格納されます。
+	mckernel/test/qlmpi/qlmpi_testsuite/result
+
+以上
