@@ -1,0 +1,2 @@
+fork01      1  TPASS  :  fork() returned 11240
+fork01      2  TPASS  :  child pid and fork() return agree: 11240

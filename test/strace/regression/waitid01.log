@@ -1,0 +1,28 @@
+waitid01    0  TINFO  :  Process 18110 terminated:
+waitid01    0  TINFO  :  code = 1
+waitid01    0  TINFO  :  exit value = 31488
+waitid01    0  TINFO  :  Process 18140 terminated:
+waitid01    0  TINFO  :  code = 1
+waitid01    0  TINFO  :  exit value = 0
+waitid01    0  TINFO  :  Process 18170 terminated:
+waitid01    0  TINFO  :  code = 2
+waitid01    0  TINFO  :  signal = 1
+waitid01    0  TINFO  :  Process 18200 terminated:
+waitid01    0  TINFO  :  code = 1
+waitid01    0  TINFO  :  exit value = 31488
+waitid01    0  TINFO  :  Process 18230 terminated:
+waitid01    0  TINFO  :  code = 1
+waitid01    0  TINFO  :  exit value = 0
+waitid01    0  TINFO  :  Process 18260 terminated:
+waitid01    0  TINFO  :  code = 2
+waitid01    0  TINFO  :  signal = 1
+waitid01    0  TINFO  :  Process 18290 terminated:
+waitid01    0  TINFO  :  code = 1
+waitid01    0  TINFO  :  exit value = 31488
+waitid01    0  TINFO  :  Process 18320 terminated:
+waitid01    0  TINFO  :  code = 1
+waitid01    0  TINFO  :  exit value = 0
+waitid01    0  TINFO  :  Process 18350 terminated:
+waitid01    0  TINFO  :  code = 2
+waitid01    0  TINFO  :  signal = 1
+waitid01    1  TPASS  :  waitid(): system call passed

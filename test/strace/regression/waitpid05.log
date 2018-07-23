@@ -1,0 +1,24 @@
+waitpid05    1  TPASS  :  received expected pid.
+waitpid05    2  TPASS  :  received expected exit number.
+waitpid05    3  TPASS  :  received expected pid.
+waitpid05    4  TPASS  :  received expected exit number.
+waitpid05    5  TPASS  :  received expected pid.
+waitpid05    6  TPASS  :  received expected exit number.
+waitpid05    7  TPASS  :  received expected pid.
+waitpid05    8  TPASS  :  received expected exit number.
+waitpid05    9  TPASS  :  received expected pid.
+waitpid05   10  TPASS  :  received expected exit number.
+waitpid05   11  TPASS  :  received expected pid.
+waitpid05   12  TPASS  :  received expected exit number.
+waitpid05   13  TPASS  :  received expected pid.
+waitpid05   14  TPASS  :  received expected exit number.
+waitpid05   15  TPASS  :  received expected pid.
+waitpid05   16  TPASS  :  received expected exit number.
+waitpid05   17  TPASS  :  received expected pid.
+waitpid05   18  TPASS  :  received expected exit number.
+waitpid05   19  TPASS  :  received expected pid.
+waitpid05   20  TPASS  :  received expected exit number.
+waitpid05   21  TPASS  :  received expected pid.
+waitpid05   22  TPASS  :  received expected exit number.
+waitpid05   23  TPASS  :  received expected pid.
+waitpid05   24  TPASS  :  received expected exit number.

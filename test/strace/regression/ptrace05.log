@@ -1,0 +1,130 @@
+ptrace05    0  TINFO  :  [child] Sending kill(.., 0)
+ptrace05    1  TPASS  :  kill(.., 0) exited with 0, as expected.
+ptrace05    0  TINFO  :  [child] Sending kill(.., 1)
+ptrace05    2  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 2)
+ptrace05    3  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 3)
+ptrace05    4  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 4)
+ptrace05    5  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 5)
+ptrace05    6  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 6)
+ptrace05    7  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 7)
+ptrace05    8  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 8)
+ptrace05    9  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 9)
+ptrace05   10  TPASS  :  Killed with SIGKILL, as expected.
+ptrace05    0  TINFO  :  [child] Sending kill(.., 10)
+ptrace05   11  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 11)
+ptrace05   12  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 12)
+ptrace05   13  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 13)
+ptrace05   14  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 14)
+ptrace05   15  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 15)
+ptrace05   16  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 16)
+ptrace05   17  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 17)
+ptrace05   18  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 18)
+ptrace05   19  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 19)
+ptrace05   20  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 20)
+ptrace05   21  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 21)
+ptrace05   22  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 22)
+ptrace05   23  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 23)
+ptrace05   24  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 24)
+ptrace05   25  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 25)
+ptrace05   26  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 26)
+ptrace05   27  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 27)
+ptrace05   28  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 28)
+ptrace05   29  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 29)
+ptrace05   30  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 30)
+ptrace05   31  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 31)
+ptrace05   32  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 32)
+ptrace05   33  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 33)
+ptrace05   34  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 34)
+ptrace05   35  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 35)
+ptrace05   36  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 36)
+ptrace05   37  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 37)
+ptrace05   38  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 38)
+ptrace05   39  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 39)
+ptrace05   40  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 40)
+ptrace05   41  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 41)
+ptrace05   42  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 42)
+ptrace05   43  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 43)
+ptrace05   44  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 44)
+ptrace05   45  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 45)
+ptrace05   46  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 46)
+ptrace05   47  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 47)
+ptrace05   48  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 48)
+ptrace05   49  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 49)
+ptrace05   50  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 50)
+ptrace05   51  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 51)
+ptrace05   52  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 52)
+ptrace05   53  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 53)
+ptrace05   54  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 54)
+ptrace05   55  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 55)
+ptrace05   56  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 56)
+ptrace05   57  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 57)
+ptrace05   58  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 58)
+ptrace05   59  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 59)
+ptrace05   60  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 60)
+ptrace05   61  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 61)
+ptrace05   62  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 62)
+ptrace05   63  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 63)
+ptrace05   64  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 64)
+ptrace05   65  TPASS  :  Stopped as expected

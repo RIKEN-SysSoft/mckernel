@@ -1,0 +1,2 @@
+wait401     1  TPASS  :  Received child pid as expected.
+wait401     2  TPASS  :  wait401 call succeeded

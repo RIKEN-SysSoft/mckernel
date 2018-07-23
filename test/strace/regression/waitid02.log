@@ -1,0 +1,32 @@
+waitid02    0  TINFO  :  WNOHANG
+waitid02    0  TINFO  :  (18380) waitid(0, 0, 0x547ffffffd10, 1)
+waitid02    1  TPASS  :  exp_errno=22
+waitid02    0  TINFO  :  si_pid = 0 ; si_code = 0 ; si_status = 0
+waitid02    0  TINFO  :  WNOHANG | WEXITED no child
+waitid02    0  TINFO  :  (18380) waitid(0, 0, 0x547ffffffd10, 5)
+waitid02    2  TPASS  :  exp_errno=10
+waitid02    0  TINFO  :  si_pid = 0 ; si_code = 0 ; si_status = 0
+waitid02    0  TINFO  :  WNOHANG | WEXITED with child
+waitid02    0  TINFO  :  (18380) waitid(0, 0, 0x547ffffffd10, 5)
+waitid02    3  TPASS  :  ret: 0
+waitid02    0  TINFO  :  si_pid = 0 ; si_code = 0 ; si_status = 0
+waitid02    0  TINFO  :  P_PGID, WEXITED wait for child
+waitid02    0  TINFO  :  (18380) waitid(2, 10938, 0x547ffffffd10, 4)
+waitid02    4  TPASS  :  ret: 0
+waitid02    0  TINFO  :  si_pid = 18440 ; si_code = 1 ; si_status = 0
+waitid02    0  TINFO  :  P_PID, WEXITED wait for child
+waitid02    0  TINFO  :  (18380) waitid(1, 18470, 0x547ffffffd10, 4)
+waitid02    5  TPASS  :  ret: 0
+waitid02    0  TINFO  :  si_pid = 18470 ; si_code = 1 ; si_status = 0
+waitid02    0  TINFO  :  P_PID, WSTOPPED | WNOWAIT
+waitid02    0  TINFO  :  (18380) waitid(1, 18500, 0x547ffffffd10, 16777218)
+waitid02    6  TPASS  :  ret: 0
+waitid02    0  TINFO  :  si_pid = 18500 ; si_code = 5 ; si_status = 4991
+waitid02    0  TINFO  :  P_PID, WCONTINUED
+waitid02    0  TINFO  :  (18380) waitid(1, 18530, 0x547ffffffd10, 8)
+waitid02    7  TPASS  :  ret: 0
+waitid02    0  TINFO  :  si_pid = 18530 ; si_code = 6 ; si_status = 65535
+waitid02    0  TINFO  :  P_PID, WEXITED not a child of the calling process
+waitid02    0  TINFO  :  (18380) waitid(1, 1, 0x547ffffffd10, 4)
+waitid02    8  TPASS  :  exp_errno=10
+waitid02    0  TINFO  :  si_pid = 0 ; si_code = 0 ; si_status = 0

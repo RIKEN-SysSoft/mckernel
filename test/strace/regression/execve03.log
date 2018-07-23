@@ -1,0 +1,6 @@
+execve03    1  TPASS  :  execve failed as expected: TEST_ERRNO=ENAMETOOLONG(36): File name too long
+execve03    2  TPASS  :  execve failed as expected: TEST_ERRNO=ENOENT(2): No such file or directory
+execve03    3  TPASS  :  execve failed as expected: TEST_ERRNO=ENOTDIR(20): Not a directory
+execve03    4  TPASS  :  execve failed as expected: TEST_ERRNO=EFAULT(14): Bad address
+execve03    5  TPASS  :  execve failed as expected: TEST_ERRNO=EACCES(13): Permission denied
+execve03    6  TPASS  :  execve failed as expected: TEST_ERRNO=ENOEXEC(8): Exec format error
