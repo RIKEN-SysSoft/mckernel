@@ -9406,6 +9406,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		set_cputime(1);
 #endif /* POSTK_DEBUG_TEMP_FIX_84 */
 
+//kprintf("syscall=%d\n", num);
 #ifdef PROFILE_ENABLE
 	if (thread->profile && thread->profile_start_ts) {
 		unsigned long ts = rdtsc();
@@ -9547,6 +9548,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	if (thread->proc->nohost) { // mcexec termination was detected
 		terminate(0, SIGKILL);
 	}
+//kprintf("syscall=%d returns %lx(%ld)\n", num, l, l);
 
 	return l;
 }
