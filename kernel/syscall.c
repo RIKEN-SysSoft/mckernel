@@ -3933,7 +3933,7 @@ SYSCALL_DECLARE(perf_event_open)
 	}
 
 	if (not_supported_flag) {
-		return -1;
+		return -ENOENT;
 	}
 
 	event = mc_perf_event_alloc((struct perf_event_attr*)attr);
