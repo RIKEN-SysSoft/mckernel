@@ -27,7 +27,6 @@
 ../../../../mic/mcexec ./946
 #946 start
 #946-1 exit after wait OK
-#946-1 exit after wait OK
 #946-2 exit before wait OK
 #946 terminated ok=2 ng=0
 ../../../../mic/mcexec ./960

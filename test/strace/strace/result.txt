@@ -1,0 +1,11 @@
+*** test1 start
+test1-1 gettid OK
+test1-2 syscal_9999 OK
+*** test1 end ok=2 ng=0
+*** test2 start
+test2-1 execve OK
+test2-2 fork OK
+test2-3 execve OK
+test2-4 SIGCHLD OK
+test2-5 wait OK
+*** test2 end ok=5 ng=0
