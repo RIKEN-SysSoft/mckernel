@@ -395,7 +395,7 @@ struct vm_range {
 };
 
 struct vm_range_numa_policy {
-	struct list_head list;
+	struct rb_node policy_rb_node;
 	unsigned long start, end;
 	DECLARE_BITMAP(numa_mask, PROCESS_NUMA_MASK_BITS);
 	int numa_mem_policy;
@@ -730,7 +730,7 @@ struct process_vm {
 	DECLARE_BITMAP(numa_mask, PROCESS_NUMA_MASK_BITS);
 	int numa_mem_policy;
 	/* Protected by memory_range_lock */
-	struct list_head vm_range_numa_policy_list;
+	struct rb_root vm_range_numa_policy_tree;
 	struct vm_range *range_cache[VM_RANGE_CACHE_SIZE];
 	int range_cache_ind;
 	struct swapinfo *swapinfo;

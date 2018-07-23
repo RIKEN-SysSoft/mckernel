@@ -148,7 +148,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		}
 
 		if ((up_v = ihk_mc_alloc_pages_user(range_npages,
-						IHK_MC_AP_NOWAIT | ap_flags)) == NULL) {
+						IHK_MC_AP_NOWAIT | ap_flags, s)) == NULL) {
 			kprintf("ERROR: alloc pages for ELF section %i\n", i);
 			goto err;
 		}
@@ -259,7 +259,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	e = addr + PAGE_SIZE * ARGENV_PAGE_COUNT;
 
 	if((args_envs = ihk_mc_alloc_pages_user(ARGENV_PAGE_COUNT,
-	                                        IHK_MC_AP_NOWAIT)) == NULL){
+	                                        IHK_MC_AP_NOWAIT, -1)) == NULL){
 		kprintf("ERROR: allocating pages for args/envs\n");
 		goto err;
 	}

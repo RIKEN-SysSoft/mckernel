@@ -1,0 +1,3 @@
+MCMOD_DIR=$HOME/ppos
+
+export MCMOD_DIR
