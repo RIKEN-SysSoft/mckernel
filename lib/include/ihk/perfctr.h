@@ -63,13 +63,8 @@ int ihk_mc_perfctr_init(int counter, enum ihk_perfctr_type type, int mode);
 int ihk_mc_perfctr_init_raw(int counter, unsigned int code, int mode);
 #endif/*POSTK_DEBUG_TEMP_FIX_29*/
 int ihk_mc_perfctr_set_extra(struct mc_perf_event *event);
-#ifdef POSTK_DEBUG_TEMP_FIX_30
-int ihk_mc_perfctr_start(int counter);
-int ihk_mc_perfctr_stop(int counter);
-#else
 int ihk_mc_perfctr_start(unsigned long counter_mask);
 int ihk_mc_perfctr_stop(unsigned long counter_mask);
-#endif/*POSTK_DEBUG_TEMP_FIX_30*/
 int ihk_mc_perfctr_fixed_init(int counter, int mode);
 int ihk_mc_perfctr_reset(int counter);
 int ihk_mc_perfctr_set(int counter, long value);

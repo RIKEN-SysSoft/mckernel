@@ -3417,8 +3417,7 @@ perf_counter_alloc(struct thread *thread)
 	return ret;
 }
 
-int 
-perf_counter_start(struct mc_perf_event *event)
+int perf_counter_set(struct mc_perf_event *event)
 {
 	int ret = 0;
 	struct perf_event_attr *attr = &event->attr;
@@ -3439,11 +3438,6 @@ perf_counter_start(struct mc_perf_event *event)
 	}
 	ret = ihk_mc_perfctr_init_raw(event->counter_id,
 		event->hw_config, mode);
-	if (ret) {
-		goto out;
-	}
-
-	ihk_mc_perfctr_start(1UL << event->counter_id);
 
 out:
 	return ret;
@@ -3566,26 +3560,32 @@ perf_read(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 	return ret;
 }
 
-void 
-perf_start(struct mc_perf_event *event)
+void perf_start(struct mc_perf_event *event)
 {
 	int counter_id;
+	unsigned long counter_mask = 0;
 	struct mc_perf_event *leader = event->group_leader, *sub;
 
 	counter_id = leader->counter_id;
 	if ((1UL << counter_id & PERF_COUNTERS_MASK) |
 	    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
-		perf_counter_start(leader);
+		perf_counter_set(leader);
+		counter_mask |= 1UL << counter_id;
 	}
 
 	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
 		counter_id = sub->counter_id;
 		if ((1UL << counter_id & PERF_COUNTERS_MASK) |
 		    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
-			perf_counter_start(sub);
+			perf_counter_set(sub);
+			counter_mask |= 1UL << counter_id;
 		}
 	}
-	cpu_local_var(current)->proc->perf_status = PP_COUNT;
+
+	if (counter_mask) {
+		ihk_mc_perfctr_start(counter_mask);
+		cpu_local_var(current)->proc->perf_status = PP_COUNT;
+	}
 }
 
 void 
@@ -3613,37 +3613,26 @@ static void
 perf_stop(struct mc_perf_event *event)
 {
 	int counter_id;
+	unsigned long counter_mask = 0;
 	struct mc_perf_event *leader = event->group_leader, *sub;
 
-#ifdef POSTK_DEBUG_TEMP_FIX_30
 	counter_id = leader->counter_id;
 	if ((1UL << counter_id & PERF_COUNTERS_MASK) |
 	    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
-		ihk_mc_perfctr_stop(counter_id);
+		counter_mask |= 1UL << counter_id;
 	}
 
 	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
 		counter_id = sub->counter_id;
 		if ((1UL << counter_id & PERF_COUNTERS_MASK) |
 		    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
-			ihk_mc_perfctr_stop(counter_id);
+			counter_mask |= 1UL << counter_id;
 		}
-	}
-#else
-	counter_id = leader->counter_id;
-	if ((1UL << counter_id & PERF_COUNTERS_MASK) |
-	    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
-		ihk_mc_perfctr_stop(1UL << counter_id);
 	}
 
-	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
-		counter_id = sub->counter_id;
-		if ((1UL << counter_id & PERF_COUNTERS_MASK) |
-		    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
-			ihk_mc_perfctr_stop(1UL << counter_id);
-		}
+	if (counter_mask) {
+		ihk_mc_perfctr_stop(counter_mask);
 	}
-#endif /*POSTK_DEBUG_TEMP_FIX_30*/
 }
 
 static int

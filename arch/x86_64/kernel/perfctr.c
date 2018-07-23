@@ -296,18 +296,11 @@ int ihk_mc_perfctr_set_extra(struct mc_perf_event *event)
 extern void x86_march_perfctr_start(unsigned long counter_mask);
 #endif
 
-#ifdef POSTK_DEBUG_TEMP_FIX_30
-int ihk_mc_perfctr_start(int counter)
-#else
 int ihk_mc_perfctr_start(unsigned long counter_mask)
-#endif /*POSTK_DEBUG_TEMP_FIX_30*/
 {
 	int ret = 0;
 	unsigned long value = 0;
 	unsigned long mask = PERF_COUNTERS_MASK | FIXED_PERF_COUNTERS_MASK;
-#ifdef POSTK_DEBUG_TEMP_FIX_30
-	unsigned long counter_mask = 1UL << counter;
-#endif /*POSTK_DEBUG_TEMP_FIX_30*/
 
 	PERFCTR_CHKANDJUMP(counter_mask & ~mask, "counter_mask out of range", -EINVAL);
 
@@ -324,18 +317,11 @@ int ihk_mc_perfctr_start(unsigned long counter_mask)
 	goto fn_exit;
 }
 
-#ifdef POSTK_DEBUG_TEMP_FIX_30
-int ihk_mc_perfctr_stop(int counter)
-#else
 int ihk_mc_perfctr_stop(unsigned long counter_mask)
-#endif/*POSTK_DEBUG_TEMP_FIX_30*/
 {
 	int ret = 0;
 	unsigned long value;
 	unsigned long mask = PERF_COUNTERS_MASK | FIXED_PERF_COUNTERS_MASK;
-#ifdef POSTK_DEBUG_TEMP_FIX_30
-	unsigned long counter_mask = 1UL << counter;
-#endif/*POSTK_DEBUG_TEMP_FIX_30*/
 
 	PERFCTR_CHKANDJUMP(counter_mask & ~mask, "counter_mask out of range", -EINVAL);
 
