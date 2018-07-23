@@ -1,0 +1,3 @@
+/sys/devices/system/cpu/cpu0/cache/index[0-1]/coherency_line_size
+1
+^[\d]+

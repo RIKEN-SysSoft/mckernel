@@ -1,0 +1,3 @@
+/sys/devices/system/node/node0/cpumap
+1
+^[\d,\-]+

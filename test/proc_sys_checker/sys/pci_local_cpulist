@@ -1,0 +1,3 @@
+/sys/devices/pci0000:00/0000:00:00.0/local_cpulist
+1
+^[\d,\-]+

@@ -1,0 +1,3 @@
+/sys/devices/system/node/node0/distance
+1
+^[\d\s]+

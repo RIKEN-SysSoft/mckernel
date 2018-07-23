@@ -1,0 +1,3 @@
+/sys/devices/system/cpu/online
+1
+^[\d,\-]+
