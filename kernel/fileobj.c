@@ -359,7 +359,6 @@ static void fileobj_release(struct memobj *memobj)
 
 	memobj_lock(&obj->memobj);
 	--obj->cref;
-	free_sref = obj->sref - 1;	/* surplus sref */
 	if (obj->cref <= 0) {
 		free_sref = obj->sref;
 		free_obj = obj;
