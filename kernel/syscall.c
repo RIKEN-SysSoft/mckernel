@@ -2464,17 +2464,18 @@ retry_tid:
 			}
 		}
 
+		mcs_rwlock_writer_unlock(&newproc->threads_lock, &lock);
+
 		/* TODO: spawn more mcexec threads */
 		if (!new->tid) {
+			release_cpuid(cpuid);
 #ifdef POSTK_DEBUG_TEMP_FIX_85 /* kprintf argument invalid fix. */
 			kprintf("%s: no more TIDs available\n", __FUNCTION__);
 #else /* POSTK_DEBUG_TEMP_FIX_85 */
 			kprintf("%s: no more TIDs available\n");
 #endif /* POSTK_DEBUG_TEMP_FIX_85 */
-			panic("");
+			return -ENOMEM;
 		}
-
-		mcs_rwlock_writer_unlock(&newproc->threads_lock, &lock);
 	}
 	/* fork() a new process on the host */
 	else {
