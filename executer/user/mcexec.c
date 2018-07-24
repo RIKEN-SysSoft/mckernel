@@ -1789,15 +1789,14 @@ static struct option mcexec_options[] = {
 };
 
 #ifdef ENABLE_MCOVERLAYFS
+/* bind-mount regular files under <root>/<prefix> over <prefix> recursively */
 void bind_mount_recursive(const char *root, char *prefix)
 {
 	DIR *dir;
 	struct dirent *entry;
 	char path[PATH_MAX];
-	int len;
 
-	len = snprintf(path, sizeof(path) - 1, "%s/%s", root, prefix);
-	path[len] = 0;
+	snprintf(path, sizeof(path), "%s/%s", root, prefix);
 
 	if (!(dir = opendir(path))) {
 		return;
@@ -1808,36 +1807,57 @@ void bind_mount_recursive(const char *root, char *prefix)
 	}
 
 	do {
-		len = snprintf(path, sizeof(path) - 1,
-				"%s/%s", prefix, entry->d_name);
-		path[len] = 0;
+		char fullpath[PATH_MAX];
+		char shortpath[PATH_MAX];
+		struct stat st;
 
-		if (entry->d_type == DT_DIR) {
+		/* Use lstat for the case d_type isn't supported */
+		snprintf(fullpath, sizeof(fullpath),
+			       "%s/%s/%s", root, prefix, entry->d_name);
+
+		if (lstat(fullpath, &st)) {
+			fprintf(stderr, "%s: error: lstat %s: %s\n",
+				__func__, fullpath, strerror(errno));
+			continue;
+		}
+
+		/* Traverse target or mount point */
+		snprintf(shortpath, sizeof(shortpath),
+			       "%s/%s", prefix, entry->d_name);
+
+		if (S_ISDIR(st.st_mode)) {
+			__dprintf("dir found: %s\n", fullpath);
+
 			if (strcmp(entry->d_name, ".") == 0 ||
 					strcmp(entry->d_name, "..") == 0)
 				continue;
 
-			bind_mount_recursive(root, path);
+			bind_mount_recursive(root, shortpath);
 		}
-		else if (entry->d_type == DT_REG) {
+		else if (S_ISREG(st.st_mode) || S_ISLNK(st.st_mode)) {
 			int ret;
 			struct sys_mount_desc mount_desc;
-			memset(&mount_desc, '\0', sizeof mount_desc);
-			char bind_path[PATH_MAX];
 
-			len = snprintf(bind_path, sizeof(bind_path) - 1,
-					"%s/%s/%s", root, prefix, entry->d_name);
-			bind_path[len] = 0;
+			__dprintf("reg file found: fullpath=%s,shortpath=%s\n",
+				  fullpath, shortpath);
 
-			mount_desc.dev_name = bind_path;
-			mount_desc.dir_name = path;
+			if (lstat(shortpath, &st) && errno == ENOENT) {
+				fprintf(stderr, "%s: warning: mount point %s not found\n",
+					__func__, shortpath);
+				continue;
+			}
+
+			memset(&mount_desc, '\0', sizeof(mount_desc));
+			mount_desc.dev_name = fullpath;
+			mount_desc.dir_name = shortpath;
 			mount_desc.type = NULL;
 			mount_desc.flags = MS_BIND | MS_PRIVATE;
 			mount_desc.data = NULL;
+
 			if ((ret = ioctl(fd, MCEXEC_UP_SYS_MOUNT,
 						(unsigned long)&mount_desc)) != 0) {
-				fprintf(stderr, "WARNING: failed to bind mount %s over %s: %d\n",
-						bind_path, path, ret);
+				fprintf(stderr, "%s: warning: failed to bind mount %s over %s: %d\n",
+					__func__, fullpath, shortpath, ret);
 			}
 		}
 	}
