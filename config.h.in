@@ -3,8 +3,7 @@
 /* Path of install directory for binary */
 #undef BINDIR
 
-/* Id of IHK.ko maching of which is checked at run-time by reboot script and
-   mcexec */
+/* IHK build-id to confirm IHK and McKernel built at the same time are used */
 #undef BUILDID
 
 /* whether mcoverlayfs is enabled */
