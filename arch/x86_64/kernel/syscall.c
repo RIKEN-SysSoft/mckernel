@@ -1055,10 +1055,9 @@ out:
 	return;
 }
 
-void
-check_sig_pending()
+static int
+check_sig_pending_thread(struct thread *thread)
 {
-	struct thread *thread;
 	int found = 0;
 	struct list_head *head;
 	mcs_rwlock_lock_t *lock;
@@ -1067,22 +1066,11 @@ check_sig_pending()
 	struct sig_pending *pending;
 	__sigset_t w;
 	__sigset_t x;
-	int sig;
+	int sig = 0;
 	struct k_sigaction *k;
+	struct cpu_local_var *v;
 
-
-	if(clv == NULL)
-		return;
-	thread = cpu_local_var(current);
-
-	if (thread == NULL || thread == &cpu_local_var(idle)) {
-		return;
-	}
-
-	if (thread->in_syscall_offload == 0) {
-		return;
-	}
-
+	v = get_this_cpu_local_var();
 	w = thread->sigmask.__val[0];
 
 	lock = &thread->sigcommon->lock;
@@ -1101,12 +1089,22 @@ check_sig_pending()
 					if (pending->interrupted == 0) {
 						pending->interrupted = 1;
 						found = 1;
+						if (sig != SIGCHLD &&
+						    sig != SIGURG &&
+						    !k->sa.sa_handler) {
+							found = 2;
+							break;
+						}
 					}
 				}
 			}
 		}
 
 		mcs_rwlock_reader_unlock(lock, &mcs_rw_node);
+
+		if (found == 2) {
+			break;
+		}
 
 		if (lock == &thread->sigpendinglock) {
 			break;
@@ -1116,17 +1114,49 @@ check_sig_pending()
 		head = &thread->sigpending;
 	}
 
-	if (found) {
-		if (sig != SIGCHLD && sig != SIGURG &&
-		    thread->sigcommon->action[sig - 1].sa.sa_handler == NULL) {
-			terminate_mcexec(0, sig);
-		}
-		else if (thread->sigcommon->action[sig - 1].sa.sa_handler &&
-		         thread->sigcommon->action[sig - 1].sa.sa_handler !=
-		                                                   (void *)1) {
-			interrupt_syscall(thread, 0);
-		}
+	if (found == 2) {
+		ihk_mc_spinlock_unlock(&v->runq_lock, v->runq_irqstate);
+		terminate_mcexec(0, sig);
+		return 1;
 	}
+	else if (found == 1) {
+		ihk_mc_spinlock_unlock(&v->runq_lock, v->runq_irqstate);
+		interrupt_syscall(thread, 0);
+		return 1;
+	}
+	return 0;
+}
+
+void
+check_sig_pending()
+{
+	struct thread *thread;
+	struct cpu_local_var *v;
+
+	if (clv == NULL)
+		return;
+
+	v = get_this_cpu_local_var();
+repeat:
+	v->runq_irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
+	list_for_each_entry(thread, &(v->runq), sched_list) {
+
+		if (thread == NULL || thread == &cpu_local_var(idle)) {
+			continue;
+		}
+
+		if (thread->in_syscall_offload == 0) {
+			continue;
+		}
+
+		if (thread->proc->exit_status & 0x0000000100000000L) {
+			continue;
+		}
+
+		if (check_sig_pending_thread(thread))
+			goto repeat;
+	}
+	ihk_mc_spinlock_unlock(&v->runq_lock, v->runq_irqstate);
 }
 
 unsigned long
