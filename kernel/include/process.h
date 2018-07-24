@@ -277,6 +277,7 @@ struct resource_set {
 
 extern struct list_head	resource_set_list;
 extern mcs_rwlock_lock_t	resource_set_lock;
+extern int idle_halt;
 extern int allow_oversubscribe;
 
 struct process_hash {

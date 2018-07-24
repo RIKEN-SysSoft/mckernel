@@ -145,6 +145,12 @@ static void parse_kargs(void)
 	}
 	ihk_mc_set_dump_level(dump_level);
 
+	/* idle_halt option */
+	ptr = find_command_line("idle_halt");
+	if (ptr) {
+		idle_halt = 1;
+	}
+
 	/* allow_oversubscribe option */
 	ptr = find_command_line("allow_oversubscribe");
 	if (ptr) {
