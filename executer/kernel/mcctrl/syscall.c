@@ -1160,7 +1160,7 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 			}
 		}
 		else {
-			if (pix == 0) { printk("%s: INFO vm_insert_pfn,phys=%p\n", __FUNCTION__, (void*)phys); }
+			//if (pix == 0) { printk("%s: INFO vm_insert_pfn,phys=%p\n", __FUNCTION__, (void*)phys); }
 			error = vm_insert_pfn(vma, rva+(pix*PAGE_SIZE), pfn+pix);
 		}
 		if (error) {
