@@ -393,6 +393,7 @@ int main(void)
 
 	futex_init();
 
+	done_init();
 	kputs("IHK/McKernel booted.\n");
 
 #ifdef DCFA_KMOD

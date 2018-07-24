@@ -132,28 +132,38 @@ static void multi_nm_interrupt_handler(void *priv)
 	struct pt_regs *regs = (struct pt_regs *)priv;
 	union arm64_cpu_local_variables *clv;
 
-	/* mode == 1or2, for FREEZER NMI */
-	if (nmi_mode == 1 || nmi_mode == 2) {
+	switch (nmi_mode) {
+	case 1:
+	case 2:
+		/* mode == 1or2, for FREEZER NMI */
 		dkprintf("%s: freeze mode NMI catch. (nmi_mode=%d)\n", __FUNCTION__, nmi_mode);
 		freeze_thaw(NULL);
-		return;
-	}
+		break;
 
-	/* mode == 0,    for MEMDUMP NMI */
-	clv = get_arm64_this_cpu_local();
+	case 0:
+		/* mode == 0,    for MEMDUMP NMI */
+		clv = get_arm64_this_cpu_local();
 
-	if (regs) {
-		memcpy(clv->arm64_cpu_local_thread.panic_regs, regs->regs, sizeof(regs->regs));
-		clv->arm64_cpu_local_thread.panic_regs[31] = regs->sp;
-		clv->arm64_cpu_local_thread.panic_regs[32] = regs->pc;
-		clv->arm64_cpu_local_thread.panic_regs[33] = regs->pstate;
-	}
-	clv->arm64_cpu_local_thread.paniced = 1;
-	ihk_mc_query_mem_areas();
+		if (regs) {
+			memcpy(clv->arm64_cpu_local_thread.panic_regs, regs->regs, sizeof(regs->regs));
+			clv->arm64_cpu_local_thread.panic_regs[31] = regs->sp;
+			clv->arm64_cpu_local_thread.panic_regs[32] = regs->pc;
+			clv->arm64_cpu_local_thread.panic_regs[33] = regs->pstate;
+		}
+		clv->arm64_cpu_local_thread.paniced = 1;
+		ihk_mc_query_mem_areas();
+		/* memdump-nmi is halted McKernel, break is unnecessary. */
 
-	while(1)
-	{
-		cpu_halt();
+	case 3:
+		/* mode == 3,    for SHUTDOWN-WAIT NMI */
+		while(1) {
+			cpu_halt();
+		}
+		break;
+
+	default:
+		ekprintf("%s: Unknown nmi-mode(%d) detected.\n", __FUNCTION__, nmi_mode);
+		break;
 	}
 }
 

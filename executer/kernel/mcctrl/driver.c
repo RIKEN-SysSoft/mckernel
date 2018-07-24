@@ -27,6 +27,7 @@
 #include <linux/miscdevice.h>
 #include <linux/slab.h>
 #include <linux/device.h>
+#include <linux/delay.h>
 #include "mcctrl.h"
 #include <ihk/ihk_host_user.h>
 
@@ -169,6 +170,14 @@ error_cleanup_channels:
 int mcctrl_os_shutdown_notifier(int os_index)
 {
 	if (os[os_index]) {
+		/* Wait for os running */
+		if (ihk_os_wait_for_status(os[os_index], IHK_OS_STATUS_RUNNING, 0, 200) != 0) {
+			printk("IHK: OS does not become RUNNING in shutdown. Force shutdown.\n");
+			/* send nmi to force shutdown */
+			ihk_os_send_nmi(os[os_index], 3);
+			mdelay(200);
+		}
+
 		sysfsm_cleanup(os[os_index]);
 		free_topology_info(os[os_index]);
 		ihk_os_unregister_user_call_handlers(os[os_index], mcctrl_uc + os_index);
