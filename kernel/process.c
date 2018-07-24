@@ -3168,6 +3168,9 @@ void schedule(void)
 	}
 
 redo:
+	/* Reset for redo */
+	switch_ctx = 0;
+
 	cpu_local_var(runq_irqstate) = 
 		ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
 	v = get_this_cpu_local_var();
