@@ -222,6 +222,14 @@ int translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva,
 			pgsize = 1UL << offsh;
 			rpa = pt[ix] & ((1UL << 52) - 1) & ~(pgsize - 1);
 			rpa |= rva & (pgsize - 1);
+
+			/* For GB pages, just report regular 2MB page */
+			if (offsh == 30) {
+				pgsize = 1UL << 21;
+				dprintk("%s: GB page translated 0x%lx -> 0x%lx, pgsize: %lu\n",
+						__FUNCTION__, rva, rpa, pgsize);
+			}
+
 			ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
 			ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
 			error = 0;
