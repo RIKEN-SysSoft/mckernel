@@ -200,13 +200,7 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp, uintptr_t virt_a
 	struct fileobj *obj;
 	struct mcs_lock_node node;
 
-	dkprintf("fileobj_create(%d)\n", fd);
-	newobj = kmalloc(sizeof(*newobj), IHK_MC_AP_NOWAIT);
-	if (!newobj) {
-		error = -ENOMEM;
-		kprintf("fileobj_create(%d):kmalloc failed. %d\n", fd, error);
-		goto out;
-	}
+	dkprintf("%s(%d)\n", __func__, fd);
 
 	ihk_mc_syscall_arg0(&ctx) = PAGER_REQ_CREATE;
 	ihk_mc_syscall_arg1(&ctx) = fd;
@@ -215,10 +209,23 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp, uintptr_t virt_a
 
 	error = syscall_generic_forwarding(__NR_mmap, &ctx);
 	if (error) {
-		dkprintf("fileobj_create(%d):create failed. %d\n", fd, error);
+		kprintf("%s(%d):create failed. %d\n", __func__, fd, error);
 		goto out;
 	}
 
+	mcs_lock_lock(&fileobj_list_lock, &node);
+	obj = obj_list_lookup(result.handle);
+	if (obj)
+		goto found;
+	mcs_lock_unlock(&fileobj_list_lock, &node);
+
+	// not found: alloc new object and lookup again
+	newobj = kmalloc(sizeof(*newobj), IHK_MC_AP_NOWAIT);
+	if (!newobj) {
+		error = -ENOMEM;
+		kprintf("%s(%d):kmalloc failed. %d\n", __func__, fd, error);
+		goto out;
+	}
 	memset(newobj, 0, sizeof(*newobj));
 	newobj->memobj.ops = &fileobj_ops;
 	newobj->memobj.flags = MF_HAS_PAGER | MF_REG_FILE;
@@ -312,6 +319,7 @@ error_cleanup:
 			to_memobj(obj)->flags & MF_ZEROFILL ? "zerofill" : "");
 	}
 	else {
+found:
 		++obj->sref;
 		++obj->cref;
 		memobj_unlock(&obj->memobj);	/* locked by obj_list_lookup() */
@@ -332,7 +340,7 @@ out:
 	if (newobj) {
 		kfree(newobj);
 	}
-	dkprintf("fileobj_create(%d):%d %p %x\n", fd, error, *objp, *maxprotp);
+	dkprintf("%s(%d):%d %p %x\n", __func__, fd, error, *objp, *maxprotp);
 	return error;
 }
 
