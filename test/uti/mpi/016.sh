@@ -102,14 +102,12 @@ if [ ${mck} -eq 1 ]; then
     if [ ${use_hfi} -eq 1 ]; then
 	mcexecopt="--enable-hfi1 $mcexecopt"
     fi
-    ssh="ssh c$LASTNODE"
 else
     makeopt="UTI_DIR=$uti_dir_lin"
     use_mck=
     mck_mem=
     mcexec=
     mcexecopt=
-    ssh="ssh c$LASTNODE"
 fi
 
 if [ $gdb -eq 1 ]; then
@@ -128,12 +126,14 @@ if [ $interactive -eq 1 ]; then
     i_mpi_hydra_bootstrap=
     hosts=
     opt_dir=/opt/intel
+    ssh=
 else
     PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes bash -c \'if \[ \"\`cat /etc/mtab \| while read line\; do cut -d\" \" -f 2\; done \| grep /work\`\" == \"\" \]\; then sudo mount /work\; fi\'
     i_mpi_hydra_bootstrap_exec="export I_MPI_HYDRA_BOOTSTRAP_EXEC=/usr/bin/ssh"
     i_mpi_hydra_bootstrap="export I_MPI_HYDRA_BOOTSTRAP=ssh"
     hosts="-hosts $nodes"
     opt_dir=/home/opt/local/cores/intel
+    ssh="ssh c$LASTNODE"
 fi
 
 # If using ssh
@@ -147,6 +147,8 @@ if [ ${stop} -eq 1 ]; then
     if [ ${mck} -eq 1 ]; then
 	PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes \
 	    /usr/sbin/pidof mcexec \| xargs -r sudo kill -9
+	PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes \
+	    /usr/sbin/pidof $exe \| xargs -r sudo kill -9
 	PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes \
 	    sudo ${mck_dir}/sbin/mcstop+release.sh
     else
@@ -228,7 +230,7 @@ export I_MPI_ASYNC_PROGRESS=off
 #export I_MPI_HYDRA_DEBUG=on
 
 $compilervars
-mpiexec.hydra -l -n $nprocs -ppn $ppn $hosts $ilpopt $enable_x $gdbcmd $mcexec $mcexecopt ${test_dir}/$exe -n $nsamples -p $ppn
+mpiexec.hydra -n $nprocs -ppn $ppn $hosts $ilpopt $enable_x $gdbcmd $mcexec $mcexecopt ${test_dir}/$exe -n $nsamples -p $ppn
 #-l
 
 EOF
@@ -239,7 +241,9 @@ if [ ${go} -eq 1 ]; then
     if [ $pjsub -eq 1 ]; then
 	pjsub ./job.sh
     else
-	. ${opt_dir}/compilers_and_libraries_2018.1.163/linux/bin/compilervars.sh intel64
+	if [ $interactive -eq 0 ]; then
+	    . ${opt_dir}/compilers_and_libraries_2018.1.163/linux/bin/compilervars.sh intel64
+	fi
 	cd ${test_dir}
 	rm ./$exe
 	make $makeopt ./$exe

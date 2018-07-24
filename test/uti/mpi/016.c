@@ -79,7 +79,7 @@ int main(int argc, char **argv)
 	struct rusage ru_start, ru_end;
 	struct timeval tv_start, tv_end;
  
-	test_set_loglevel(TEST_LOGLEVEL_WARN);	
+	//test_set_loglevel(TEST_LOGLEVEL_WARN);	
 	fwq_init();
 
 	while ((opt = getopt_long(argc, argv, "+n:p:", options, NULL)) != -1) {
@@ -176,14 +176,16 @@ int main(int argc, char **argv)
 		printf("t_comm_ave: %.2f usec\n", t_comm_ave * 1000000);
 	}
 
-	/* 0: w/o async, 1: w/ async */
-	for (progress = 0; progress <= 2; progress++) {
+	/* 0: no progress, 1: progress, no uti, 2: progress, uti */
+	for (progress = 0; progress <= 1; progress++) {
 
 		if (progress == 1) {
 			setenv("DISABLE_UTI", "1", 1);
+			progress_init();
 		} else if (progress == 2) {
 			progress_finalize();
 			unsetenv("DISABLE_UTI");
+			progress_init();
 		}
 
 		/* RMA-start, compute for i / 10 * T(RMA), RMA-flush, ... */
@@ -244,6 +246,11 @@ int main(int argc, char **argv)
 
 	}
 	
+	if (progress >= 1) {
+		progress_finalize();
+		MPI_Barrier(MPI_COMM_WORLD);
+	}
+
 	if (rank == 0) {
 		printf("calc,no prog,prog and no uti, prog and uti\n");
 		for (l = 0; l <= 10; l++) {
@@ -255,10 +262,6 @@ int main(int argc, char **argv)
 			}
 			printf("\n");
 		}
-	}
-
-	if (progress >= 1) {
-		progress_finalize();
 	}
 
 	MPI_Finalize();

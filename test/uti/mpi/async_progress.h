@@ -7,6 +7,7 @@ enum progress_state {
 	PROGRESS_FINALIZE
 };
 
+void progress_init();
 void progress_start();
 void progress_stop();
 void progress_finalize();
