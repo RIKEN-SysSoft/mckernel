@@ -20,9 +20,9 @@ MCKERNEL_LIBDIR=$(DESTDIR)/@MCKERNEL_LIBDIR@
 KDIR ?= @KDIR@
 ARCH=@ARCH@
 # POSTK_DEBUG_ARCH_DEP_94 arch depends move [BEGIN]
-CFLAGS=-Wall -O -I. -I$(VPATH)/arch/${ARCH} -I$(VPATH)/arch/${ARCH}/include
+CFLAGS=-Wall -O -I. -I$(VPATH)/arch/${ARCH} -I${IHKDIR} -I$(VPATH)/arch/${ARCH}/include
 # POSTK_DEBUG_ARCH_DEP_94 [ELSE]
-#CFLAGS=-Wall -O -I. -I$(VPATH)/arch/${ARCH}
+#CFLAGS=-Wall -O -I. -I$(VPATH)/arch/${ARCH} -I${IHKDIR}
 # POSTK_DEBUG_ARCH_DEP_94 [END]
 LDFLAGS=@LDFLAGS@
 RPATH=$(shell echo $(LDFLAGS)|awk '{for(i=1;i<=NF;i++){if($$i~/^-L/){w=$$i;sub(/^-L/,"-Wl,-rpath,",w);print w}}}')
@@ -65,9 +65,9 @@ mcexec: mcexec.c libmcexec.a
 ifeq ($(ARCH), arm64)
 eclair: eclair.c arch/$(ARCH)/arch-eclair.c
 # POSTK_DEBUG_ARCH_DEP_94 arch depends move [BEGIN]
-	$(CC) -I.. -I. -I./arch/$(ARCH)/include -I$(VPATH)/.. -I$(VPATH) -I${IHKDIR} $(CFLAGS) -o $@ $^ $(LIBS)
+	$(CC) -I.. -I. -I./arch/$(ARCH)/include -I$(VPATH)/.. -I$(VPATH) $(CFLAGS) -o $@ $^ $(LIBS)
 # POSTK_DEBUG_ARCH_DEP_94 [ELSE]
-#	$(CC) -I.. -I. -I./arch/$(ARCH)/include -I$(VPATH)/.. -I$(VPATH) -I$(VPATH)/arch/${ARCH}/include -I${IHKDIR} $(CFLAGS) -o $@ $^ $(LIBS)
+#	$(CC) -I.. -I. -I./arch/$(ARCH)/include -I$(VPATH)/.. -I$(VPATH) -I$(VPATH)/arch/${ARCH}/include $(CFLAGS) -o $@ $^ $(LIBS)
 # POSTK_DEBUG_ARCH_DEP_94 [END]
 else
 eclair: eclair.c

@@ -647,6 +647,7 @@ TARGET
 UNAME_R
 KDIR
 ARCH
+BUILDID
 XCC
 FGREP
 EGREP
@@ -5024,6 +5025,20 @@ _ACEOF
 cat >>confdefs.h <<_ACEOF
 #define SBINDIR "$DESTDIR/$SBINDIR"
 _ACEOF
+
+
+ABS_SRCDIR=$( cd $( dirname $0 ); pwd )
+IHK_ABS_SRCDIR=${ABS_SRCDIR}/../ihk
+BUILDID=$( cd $IHK_ABS_SRCDIR; git rev-list -1 HEAD | cut -c1-8 )
+{ $as_echo "$as_me:${as_lineno-$LINENO}: BUILDID=$BUILDID" >&5
+$as_echo "$as_me: BUILDID=$BUILDID" >&6;}
+if test "x$BUILDID" != "x" ; then
+
+cat >>confdefs.h <<_ACEOF
+#define BUILDID "$BUILDID"
+_ACEOF
+
+fi
 
 
 

@@ -76,6 +76,7 @@
 #include <asm/prctl.h>
 #endif /* !POSTK_DEBUG_ARCH_DEP_77 */
 #include "../include/uprotocol.h"
+#include <ihk/ihk_host_user.h>
 #include <getopt.h>
 #include "archdep.h"
 #include "arch_args.h"
@@ -1757,6 +1758,8 @@ static int
 opendev()
 {
 	int f;
+	char buildid[] = BUILDID;
+    char query_result[sizeof(BUILDID)];
 
 	sprintf(dev, "/dev/mcos%d", mcosid);
 
@@ -1767,6 +1770,18 @@ opendev()
 		return -1;
 	}
 	fd = f;
+
+	if (ioctl(fd, IHK_OS_GET_BUILDID, query_result)) {
+		fprintf(stderr, "Error: IHK_OS_GET_BUILDID failed");
+		close(fd);
+		return -1;
+	}
+
+	if (strncmp(buildid, query_result, sizeof(buildid))) {
+		fprintf(stderr, "Error: build-id of mcexec (%s) didn't match that of IHK (%s)\n", buildid, query_result);
+		close(fd);
+		return -1;
+	}
 
 	return fd;
 }

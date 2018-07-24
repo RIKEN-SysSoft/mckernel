@@ -514,6 +514,15 @@ fi
 AC_DEFINE_UNQUOTED(BINDIR,"$DESTDIR/$BINDIR",[Path of install directory for binary])
 AC_DEFINE_UNQUOTED(SBINDIR,"$DESTDIR/$SBINDIR",[Path of install directory for system binary])
 
+ABS_SRCDIR=$( cd $( dirname $0 ); pwd )
+IHK_ABS_SRCDIR=${ABS_SRCDIR}/../ihk
+BUILDID=$( cd $IHK_ABS_SRCDIR; git rev-list -1 HEAD | cut -c1-8 )
+AC_MSG_NOTICE([BUILDID=$BUILDID])
+if test "x$BUILDID" != "x" ; then
+   AC_DEFINE_UNQUOTED(BUILDID,"$BUILDID",[IHK build-id to confirm IHK and McKernel built at the same time are used])
+fi
+AC_SUBST(BUILDID)
+
 AC_SUBST(CC)
 AC_SUBST(XCC)
 AC_SUBST(ARCH)
