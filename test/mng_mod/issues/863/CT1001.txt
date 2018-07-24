@@ -1,0 +1,27 @@
+スクリプトは Wed Jan 24 20:43:43 2018
+ に開始しました[?1034hbash-4.2$ ~/wallaby11-smp-x86/development/mic/mcexec ./signalonread-multi
+[4261] I am the examiner for 4270.
+[4270] I am a subjectThread 1, ad000700 ad000700
+[4270] I am a subjectThread 3, ae400700 ae400700
+[4270] I am a subjectThread 2, ada00700 ada00700
+[4270] I am a subjectThread 0, ac72aec0 ac72aec0
+[3] setup: 1367 ms
+[2] setup: 1367 ms
+[1] setup: 1367 ms
+[0] setup: 1367 ms
+[3] START TEST
+[2] START TEST
+[3] ./signalonread-multi try to read 2147483648 bytes. buffp=0x2aac40000010
+[1] START TEST
+[2] ./signalonread-multi try to read 2147483648 bytes. buffp=0x2aad00000010
+[0] START TEST
+[1] ./signalonread-multi try to read 2147483648 bytes. buffp=0x2aab80000010
+[0] ./signalonread-multi try to read 2147483648 bytes. buffp=0x2aaac0000010
+The TEST process is terminated by the signal 15
+TEST SUCCESSED IF YOU DID NOT SEE 'OVERRUN'
+TEST FINISHED
+bash-4.2$ シェルから脱出するには "exit" を使用してください。
+bash-4.2$ exit
+
+スクリプトは Wed Jan 24 20:45:10 2018
+ に終了しました

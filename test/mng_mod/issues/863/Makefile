@@ -1,0 +1,33 @@
+CC=gcc
+TARGET=CT3001 CT3002 CT3003 CT3004 CT3005 CT3006 CT3007 CT3008
+all:: $(TARGET)
+
+CT3001: CT3001.c
+	$(CC) -o CT3001 $<
+
+CT3002: CT3002.c
+	$(CC) -o CT3002 $<
+
+CT3003: CT3003.c
+	$(CC) -o CT3003 $<
+
+CT3004: CT3004.c
+	$(CC) -o CT3004 $<
+
+CT3005: CT3005.c
+	$(CC) -o CT3005 $<
+
+CT3006: CT3006.c
+	$(CC) -o CT3006 $<
+
+CT3007: CT3007.c
+	$(CC) -o CT3007 $<
+
+CT3008: CT3008.c
+	$(CC) -o CT3008 $<
+
+test:: $(TARGET)
+	./CT300x.sh
+
+clean::
+	rm -f $(TARGET)
