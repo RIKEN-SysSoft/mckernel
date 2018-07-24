@@ -30,6 +30,7 @@
 #include <ihk/ikc.h>
 #include <page.h>
 #include <limits.h>
+#include <syscall.h>
 
 void terminate(int, int);
 extern long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
@@ -2562,6 +2563,16 @@ out:
 	}
 
 	return mpsr->phase_ret;
+}
+
+time_t time(void) {
+	struct syscall_request sreq IHK_DMA_ALIGN;
+	struct thread *thread = cpu_local_var(current);
+	time_t ret;
+	sreq.number = __NR_time;
+	sreq.args[0] = (uintptr_t)NULL;
+	ret = (time_t)do_syscall(&sreq, ihk_mc_get_processor_id(), thread->proc->pid);
+	return ret;
 }
 
 /*** End of File ***/

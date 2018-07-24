@@ -14,6 +14,7 @@
 #include <prctl.h>
 #include <limits.h>
 #include <uio.h>
+#include <syscall.h>
 
 extern void ptrace_report_signal(struct thread *thread, int sig);
 extern void clear_single_step(struct thread *thread);
@@ -2543,6 +2544,20 @@ out:
 	}
 
 	return mpsr->phase_ret;
+}
+
+#ifdef POSTK_DEBUG_TEMP_FIX_96 /* aarch64 build error fix. */
+extern void calculate_time_from_tsc(struct timespec *ts);
+#endif /* POSTK_DEBUG_TEMP_FIX_96 */
+time_t time(void) {
+	struct timespec ats;
+
+	if (gettime_local_support) {
+		calculate_time_from_tsc(&ats);
+		return ats.tv_sec;
+	}
+
+	return (time_t)0;
 }
 
 /*** End of File ***/
