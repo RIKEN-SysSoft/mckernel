@@ -1133,7 +1133,7 @@ static int __clear_pt_page(struct page_table *pt, void *virt, int largepage)
 
 uint64_t ihk_mc_pt_virt_to_pagemap(struct page_table *pt, unsigned long virt)
 {
-	uint64_t ret = 0;
+	uint64_t ret = PM_PSHIFT(PAGE_SHIFT);
 	unsigned long v = (unsigned long)virt;
 	pte_t* ptep;
 	translation_table_t* tt;
