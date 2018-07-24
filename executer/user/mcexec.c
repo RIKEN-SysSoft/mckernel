@@ -1839,15 +1839,16 @@ void bind_mount_recursive(const char *root, char *prefix)
 			int ret;
 			struct sys_mount_desc mount_desc;
 
-			__dprintf("reg file found: fullpath=%s,shortpath=%s\n", fullpath, shortpath);
-			
+			__dprintf("reg file found: fullpath=%s,shortpath=%s\n",
+				  fullpath, shortpath);
+
 			if (lstat(shortpath, &st) && errno == ENOENT) {
 				fprintf(stderr, "%s: warning: mount point %s not found\n",
 					__func__, shortpath);
 				continue;
 			}
 
-			memset(&mount_desc, '\0', sizeof mount_desc);
+			memset(&mount_desc, '\0', sizeof(mount_desc));
 			mount_desc.dev_name = fullpath;
 			mount_desc.dir_name = shortpath;
 			mount_desc.type = NULL;
