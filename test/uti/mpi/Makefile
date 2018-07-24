@@ -1,7 +1,9 @@
 .SUFFIXES:	# Clear suffixes
 
 MYHOME=/work/gg10/e29005
-UTI_DIR=${MYHOME}/project/uti/install
+
+# Specify it via 016.sh 
+# UTI_DIR=${MYHOME}/project/uti/install
 
 CC=mpiicc 
 LD=$(CC)

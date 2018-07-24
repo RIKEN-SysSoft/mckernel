@@ -5,6 +5,8 @@
 MYHOME=/work/gg10/e29005
 test_dir=${MYHOME}/project/os/mckernel/test/uti/mpi
 mck_dir=${MYHOME}/project/os/install
+uti_dir_lin=${MYHOME}/project/uti/install
+uti_dir_mck=${MYHOME}/project/uti/install_mck
 
 exe=`basename $0 | sed 's/\.sh//'`
 
@@ -24,7 +26,7 @@ omp_num_threads=3
 ppn=4
 lpp=4 # logical-per-physical
 
-while getopts srgc:ml:N:P:o:hGdip OPT
+while getopts srgc:ml:N:P:o:hGdipL: OPT
 do
         case ${OPT} in
             s) stop=1
@@ -50,6 +52,8 @@ do
 	    i) interactive=1
 		;;
 	    p) pjsub=1
+		;;
+	    L) LASTNODE=$OPTARG
 		;;
             *) echo "invalid option -${OPT}" >&2
                 exit 1
@@ -89,6 +93,7 @@ fi
 echo nprocs=$nprocs nnodes=$nnodes ppn=$ppn nodes=$nodes nsamples=$nsamples domain=$domain
 
 if [ ${mck} -eq 1 ]; then
+    makeopt="UTI_DIR=$uti_dir_mck"
     use_mck="#PJM -x MCK=$mck_dir"
     mck_mem="#PJM -x MCK_MEM=32G@0,8G@1"
     mcexec="${mck_dir}/bin/mcexec"
@@ -97,11 +102,14 @@ if [ ${mck} -eq 1 ]; then
     if [ ${use_hfi} -eq 1 ]; then
 	mcexecopt="--enable-hfi1 $mcexecopt"
     fi
+    ssh="ssh c$LASTNODE"
 else
+    makeopt="UTI_DIR=$uti_dir_lin"
     use_mck=
     mck_mem=
     mcexec=
     mcexecopt=
+    ssh="ssh c$LASTNODE"
 fi
 
 if [ $gdb -eq 1 ]; then
@@ -137,6 +145,8 @@ fi
 
 if [ ${stop} -eq 1 ]; then
     if [ ${mck} -eq 1 ]; then
+	PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes \
+	    /usr/sbin/pidof mcexec \| xargs -r sudo kill -9
 	PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes \
 	    sudo ${mck_dir}/sbin/mcstop+release.sh
     else
@@ -218,7 +228,7 @@ export I_MPI_ASYNC_PROGRESS=off
 #export I_MPI_HYDRA_DEBUG=on
 
 $compilervars
-mpiexec.hydra -n $nprocs -ppn $ppn $hosts $ilpopt $enable_x $gdbcmd $mcexec $mcexecopt ${test_dir}/$exe -n $nsamples -p $ppn
+mpiexec.hydra -l -n $nprocs -ppn $ppn $hosts $ilpopt $enable_x $gdbcmd $mcexec $mcexecopt ${test_dir}/$exe -n $nsamples -p $ppn
 #-l
 
 EOF
@@ -231,7 +241,8 @@ if [ ${go} -eq 1 ]; then
     else
 	. ${opt_dir}/compilers_and_libraries_2018.1.163/linux/bin/compilervars.sh intel64
 	cd ${test_dir}
-	make ./$exe
-	ssh c$LASTNODE ${test_dir}/job.sh
+	rm ./$exe
+	make $makeopt ./$exe
+	$ssh ${test_dir}/job.sh
     fi
 fi

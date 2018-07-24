@@ -79,7 +79,7 @@ int main(int argc, char **argv)
 	struct rusage ru_start, ru_end;
 	struct timeval tv_start, tv_end;
  
-	//test_set_loglevel(TEST_LOGLEVEL_WARN);	
+	test_set_loglevel(TEST_LOGLEVEL_WARN);	
 	fwq_init();
 
 	while ((opt = getopt_long(argc, argv, "+n:p:", options, NULL)) != -1) {

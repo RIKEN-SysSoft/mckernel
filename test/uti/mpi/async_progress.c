@@ -1,5 +1,6 @@
 #define _GNU_SOURCE             /* See feature_test_macros(7) */
 #include <unistd.h>
+#include <sys/syscall.h>   /* For SYS_xxx definitions */
 #include <sched.h>
 #include <pthread.h>
 #include <mpi.h>
@@ -31,6 +32,11 @@ static void *progress_fn(void* data)
 	struct rusage ru_start, ru_end;
 	struct timeval tv_start, tv_end;
 
+	ret = syscall(732);
+	if (ret == -1) {
+		pr_debug("Progress is running on Linux\n");
+	}
+
 	if ((ret = getrusage(RUSAGE_THREAD, &ru_start))) {
 		printf("%s: error: getrusage failed (%d)\n", __func__, ret);
 	}
@@ -39,7 +45,7 @@ static void *progress_fn(void* data)
 		printf("%s: error: gettimeofday failed (%d)\n", __func__, ret);
 	}
 
-	//printf("async: cpu=%d\n", sched_getcpu());
+	printf("progress: cpu=%d\n", sched_getcpu());
 
 init:
 	/* Wait for state transition */
@@ -167,6 +173,8 @@ static void progress_init()
 		printf("%s: error: UTI_ATTR_SAME_L1 failed\n", __func__);
 	}
 	
+	printf("master: cpu=%d\n", sched_getcpu());
+
 	if ((ret = uti_pthread_create(&progress_thr, &pthread_attr, progress_fn, NULL, &uti_attr))) {
 		printf("%s: error: uti_pthread_create failed (%d)\n", __func__, ret);
 		goto out;
