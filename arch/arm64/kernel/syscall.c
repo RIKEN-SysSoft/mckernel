@@ -523,8 +523,8 @@ SYSCALL_DECLARE(rt_sigreturn)
 		regs->regs[0] = ksigsp.sigrc;
 		clear_single_step(thread);
 		set_signal(SIGTRAP, regs, &info);
-		check_signal(0, regs, 0);
 		check_need_resched();
+		check_signal(0, regs, 0);
 	}
 	return ksigsp.sigrc;
 
@@ -1135,8 +1135,8 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 			};
 			clear_single_step(thread);
 			set_signal(SIGTRAP, regs, &info);
-			check_signal(0, regs, 0);
 			check_need_resched();
+			check_signal(0, regs, 0);
 		}
 	}
 	else {

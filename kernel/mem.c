@@ -1218,10 +1218,6 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 			info._sifields._sigfault.si_addr = fault_addr;
 			set_signal(SIGSEGV, regs, &info);
 		}
-		if(interrupt_from_user(regs)){
-			cpu_enable_interrupt();
-			check_signal(0, regs, 0);
-		}
 		goto out;
 	}
 
@@ -1230,7 +1226,11 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 out:
 	dkprintf("%s: addr: %p, reason: %lx, regs: %p -> error: %d\n",
 			__FUNCTION__, fault_addr, reason, regs, error);
-	check_need_resched();
+	if(interrupt_from_user(regs)){
+		cpu_enable_interrupt();
+		check_need_resched();
+		check_signal(0, regs, 0);
+	}
 #ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
 	set_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 #else /* POSTK_DEBUG_TEMP_FIX_84 */

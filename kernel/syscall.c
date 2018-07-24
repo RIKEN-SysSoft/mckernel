@@ -9507,11 +9507,6 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 
 	save_syscall_return_value(num, l);
 
-	if (!list_empty(&thread->sigpending) ||
-	    !list_empty(&thread->sigcommon->sigpending)) {
-		check_signal(l, NULL, num);
-	}
-
 #ifdef PROFILE_ENABLE
 	{
 		unsigned long ts = rdtsc();
@@ -9549,6 +9544,11 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		check_need_resched();
 	}
 #endif /* POSTK_DEBUG_TEMP_FIX_60 && POSTK_DEBUG_TEMP_FIX_56 */
+
+	if (!list_empty(&thread->sigpending) ||
+	    !list_empty(&thread->sigcommon->sigpending)) {
+		check_signal(l, NULL, num);
+	}
 
 #ifdef DISABLE_SCHED_YIELD
 	if (num != __NR_sched_yield)

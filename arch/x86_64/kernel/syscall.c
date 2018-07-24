@@ -252,8 +252,8 @@ SYSCALL_DECLARE(rt_sigreturn)
 		regs->gpr.rflags &= ~RFLAGS_TF;
 		info.si_code = TRAP_TRACE;
 		set_signal(SIGTRAP, regs, &info);
-		check_signal(0, regs, 0);
 		check_need_resched();
+		check_signal(0, regs, 0);
 	}
 
 	if(ksigsp.fpregs && xsavesize){
@@ -820,8 +820,8 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 			regs->gpr.rflags &= ~RFLAGS_TF;
 			info.si_code = TRAP_TRACE;
 			set_signal(SIGTRAP, regs, &info);
-			check_signal(0, regs, 0);
 			check_need_resched();
+			check_signal(0, regs, 0);
 		}
 	}
 	else {
