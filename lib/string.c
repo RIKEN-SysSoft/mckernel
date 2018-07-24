@@ -354,19 +354,4 @@ int flatten_strings_from_user(int nr_strings, char *first, char **strings, char 
 		p = strchr(p, '\0') + 1;
 	}
 
-	for (string_i = 0; string_i < nr_strings; ++string_i) {
-		char *userp;
-		_flat[n++] = p - (char *)_flat;
-
-		ret = getlong_user((long *)&userp, (void *)(strings + string_i));
-		if (ret < 0)
-			return ret;
-
-		strcpy_from_user(p, userp);
-		p = strchr(p, '\0') + 1;
-	}
-	_flat[n] = 0;
-
-	*flat = (char *)_flat;
-	return full_len;
-}
+	for (string_i = 0; string_i < nr_strings; ++string_

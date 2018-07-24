@@ -3246,37 +3246,54 @@ int main_loop(struct thread_data_s *my_thread)
 			memset(pathbuf, '\0', sizeof(pathbuf));
 
 			/* check argument 1 dirfd */
-			if ((int)w.sr.args[0] != AT_FDCWD) {
+			ret = do_strncpy_from_user(fd, pathbuf,
+			                           (void *)w.sr.args[1],
+			                           PATH_MAX);
+			__dprintf("openat(dirfd == AT_FDCWD)\n");
+			if (ret >= PATH_MAX) {
+				ret = -ENAMETOOLONG;
+			}
+			if (ret < 0) {
+				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+				break;
+			}
+
+			if ((int)w.sr.args[0] != AT_FDCWD &&
+			    pathbuf[0] != '/') {
 				/* dirfd != AT_FDCWD */
 				__dprintf("openat(dirfd != AT_FDCWD)\n");
-				snprintf(tmpbuf, sizeof(tmpbuf), "/proc/self/fd/%d", (int)w.sr.args[0]);
-				ret = readlink(tmpbuf, pathbuf, sizeof(pathbuf) - 1);
+				snprintf(tmpbuf, sizeof(tmpbuf),
+				         "/proc/self/fd/%d", (int)w.sr.args[0]);
+				ret = readlink(tmpbuf, pathbuf,
+				               sizeof(pathbuf) - 1);
+				if (ret == -1 &&
+				    (errno == ENOENT ||
+				     errno == EINVAL)) {
+					do_syscall_return(fd, cpu, -EBADF, 0, 0,
+					                  0, 0);
+					break;
+				}
 				if (ret < 0) {
-					do_syscall_return(fd, cpu, -errno, 0, 0, 0, 0);
+					do_syscall_return(fd, cpu, -errno, 0, 0,
+					                  0, 0);
 					break;
 				}
 				__dprintf("  %s -> %s\n", tmpbuf, pathbuf);
-				ret = do_strncpy_from_user(fd, tmpbuf, (void *)w.sr.args[1], PATH_MAX);
+				ret = do_strncpy_from_user(fd, tmpbuf,
+				                           (void *)w.sr.args[1],
+				                           PATH_MAX);
 				if (ret >= PATH_MAX) {
 					ret = -ENAMETOOLONG;
 				}
 				if (ret < 0) {
-					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+					do_syscall_return(fd, cpu, ret, 0, 0, 0,
+					                  0);
 					break;
 				}
 				strncat(pathbuf, "/", 1);
 				strncat(pathbuf, tmpbuf, strlen(tmpbuf) + 1);
-			} else {
-				/* dirfd == AT_FDCWD */
-				__dprintf("openat(dirfd == AT_FDCWD)\n");
-				ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[1], PATH_MAX);
-				if (ret >= PATH_MAX) {
-					ret = -ENAMETOOLONG;
-				}
-				if (ret < 0) {
-					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
-					break;
-				}
+			}
+			else {
 			}
 			__dprintf("openat: %s\n", pathbuf);
 
