@@ -3118,7 +3118,7 @@ set_timer()
 	/* Toggle timesharing if CPU core is oversubscribed */
 	if (v->runq_len > 1 || v->current->itimer_enabled) {
 		if (!cpu_local_var(timer_enabled)) {
-			dkprintf("%s: INFO interval timer activated,pid=%d,tid=%d,runq_len=%d,itimer_enabled=%d\n", __FUNCTION__, v->current->proc->pid, v->current->tid, v->runq_len, v->current->itimer_enabled);
+			dkprintf("%s: INFO interval timer activated,cpu=%d,pid=%d,tid=%d,runq_len=%d\n", __func__, ihk_mc_get_processor_id(), v->current->proc->pid, v->current->tid, v->runq_len);
 			lapic_timer_enable(/*10000000*/1000000);
 			cpu_local_var(timer_enabled) = 1;
 		}
