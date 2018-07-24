@@ -1,0 +1,12 @@
+ [OK] CT_001 not_switch
+ [OK] CT_002 0 => 16997
+ [OK] CT_003 1 => 17007
+ [OK] CT_004  switch to idle 17017 => 2
+ [OK] CT_005  switch to idle 17047 => 1
+ [OK] CT_006  switch to idle 17018 => 1
+ [OK] CT_007  switch to idle 16997 => 0
+ [OK] CT_008 17007 => 17018
+ [OK] CT_009 17017 => 17018
+ [OK] CT_010  switch to idle 17017 => 1
+ [OK] CT_011  switch to idle 17047 => 1
+ [OK] CT_012  switch to idle 17018 => 1
