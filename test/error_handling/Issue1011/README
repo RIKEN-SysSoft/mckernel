@@ -1,0 +1,17 @@
+■ Issue#1011 動作確認
+1. ファイルの説明
+  1011.patch   mcexec からmcctrl.ko に渡すprogram_load_des構造体のnum_sections に
+               常に-1 を設定するパッチ
+
+2. 確認方法
+  1. 上記パッチを適用していない状態でMcKernelを起動する
+  2. mcexec hostname を実行し、ホスト名が表示されることを確認する
+  3. 上記パッチをMcKernelに適用後、ビルドと起動を行う
+  4. mcexec hostname を実行し、ホスト名が表示されず、"prepare: Invalid argument"が
+     コンソールに出力されることを確認する
+  5. /var/log/messages に"kernel: mcexec_prepare_image: ERROR: # of sections: -1"が
+     出力されていることを確認する
+
+3. 確認結果
+  上記確認方法で期待される動作が確認できたため、問題ない。
+
