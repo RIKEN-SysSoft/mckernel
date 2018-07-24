@@ -3189,7 +3189,8 @@ redo:
 		}
 	}
 
-	if (v->flags & CPU_FLAG_NEED_MIGRATE) {
+	if (v->flags & CPU_FLAG_NEED_MIGRATE ||
+	    prev->status == PS_EXITED) {
 		next = &cpu_local_var(idle);
 	} else {
 		/* Pick a new running process or one that has a pending signal */
