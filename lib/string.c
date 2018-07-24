@@ -280,6 +280,18 @@ int flatten_strings_from_user(int nr_strings, char *first, char **strings, char 
 	long r;
 	int n, ret;
 
+	/* When strings is NULL, make array one NULL */
+	if (!strings) {
+		full_len = sizeof(long) + sizeof(char *);
+		_flat = kmalloc(full_len, IHK_MC_AP_NOWAIT);
+		if (!_flat) {
+			return -ENOMEM;
+		}
+		memset(_flat, 0, full_len);
+		*flat = (char *)_flat;
+		return full_len;
+	}
+
 	/* How many strings do we have? */
 	if (nr_strings == -1) {
 		nr_strings = 0;

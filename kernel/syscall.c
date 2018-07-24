@@ -2154,11 +2154,9 @@ SYSCALL_DECLARE(execve)
 {
 	int error;
 	long ret;
-	char *empty_envp[1] = {NULL};
 	const char *filename = (const char *)ihk_mc_syscall_arg0(ctx);
 	char **argv = (char **)ihk_mc_syscall_arg1(ctx);
-	char **envp = (char **)ihk_mc_syscall_arg2(ctx) ? 
-		(char **)ihk_mc_syscall_arg2(ctx) : empty_envp;
+	char **envp = (char **)ihk_mc_syscall_arg2(ctx);
 
 	char *argv_flat = NULL;
 	int argv_flat_len = 0;
@@ -2218,7 +2216,7 @@ SYSCALL_DECLARE(execve)
 	/* Flatten argv and envp into kernel-space buffers */
 	argv_flat_len = flatten_strings_from_user(-1, (desc->shell_path[0] ? 
 				desc->shell_path : NULL), argv, &argv_flat);
-	if (argv_flat_len == 0) {
+	if (argv_flat_len < 0) {
 		char *kfilename;
 		int len = strlen_user(filename);
 
@@ -2228,12 +2226,12 @@ SYSCALL_DECLARE(execve)
 		kprintf("ERROR: no argv for executable: %s?\n", kfilename? kfilename: "");
 		if(kfilename)
 			kfree(kfilename);
-		ret = -EINVAL;
+		ret = argv_flat_len;
 		goto end;
 	}
 
 	envp_flat_len = flatten_strings_from_user(-1, NULL, envp, &envp_flat);
-	if (envp_flat_len == 0) {
+	if (envp_flat_len < 0) {
 		char *kfilename;
 		int len = strlen_user(filename);
 
@@ -2243,7 +2241,7 @@ SYSCALL_DECLARE(execve)
 		kprintf("ERROR: no envp for executable: %s?\n", kfilename? kfilename: "");
 		if(kfilename)
 			kfree(kfilename);
-		ret = -EINVAL;
+		ret = envp_flat_len;
 		goto end;
 	}
 
