@@ -206,7 +206,7 @@ struct thread_data_s;
 int main_loop(struct thread_data_s *);
 
 static int mcosid;
-static int fd;
+int fd;
 static char *exec_path = NULL;
 static char *altroot;
 static const char rlimit_stack_envname[] = "MCKERNEL_RLIMIT_STACK";
@@ -3026,7 +3026,7 @@ out:
 	return rc;
 }
 
-static long do_strncpy_from_user(int fd, void *dest, void *src, unsigned long n)
+long do_strncpy_from_user(int fd, void *dest, void *src, unsigned long n)
 {
 	struct strncpy_from_user_desc desc;
 	int ret;
@@ -3240,8 +3240,6 @@ int main_loop(struct thread_data_s *my_thread)
 		my_thread->remote_cpu = w.cpu;
 
 		switch (w.sr.number) {
-#ifdef POSTK_DEBUG_ARCH_DEP_13 /* arch depend hide */
-#ifdef __aarch64__
 		case __NR_openat:
 			/* initialize buffer */
 			memset(tmpbuf, '\0', sizeof(tmpbuf));
@@ -3288,44 +3286,6 @@ int main_loop(struct thread_data_s *my_thread)
 			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
-#else /* __aarch64__ */
-		case __NR_open:
-			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[0], PATH_MAX);
-			if (ret >= PATH_MAX) {
-				ret = -ENAMETOOLONG;
-			}
-			if (ret < 0) {
-				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
-				break;
-			}
-			__dprintf("open: %s\n", pathbuf);
-
-			fn = chgpath(pathbuf, tmpbuf);
-
-			ret = open(fn, w.sr.args[1], w.sr.args[2]);
-			SET_ERR(ret);
-			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
-			break;
-#endif /* __aarch64__ */
-#else /* POSTK_DEBUG_ARCH_DEP_13 */
-		case __NR_open:
-			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[0], PATH_MAX);
-			if (ret >= PATH_MAX) {
-				ret = -ENAMETOOLONG;
-			}
-			if (ret < 0) {
-				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
-				break;
-			}
-			__dprintf("open: %s\n", pathbuf);
-
-			fn = chgpath(pathbuf, tmpbuf);
-
-			ret = open(fn, w.sr.args[1], w.sr.args[2]);
-			SET_ERR(ret);
-			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
-			break;
-#endif /* POSTK_DEBUG_ARCH_DEP_13 */
 
 		case __NR_futex:
 			ret = clock_gettime(w.sr.args[1], &tv);
@@ -3446,11 +3406,7 @@ gettid_out:
 			break;
 		}
 
-#ifdef POSTK_DEBUG_ARCH_DEP_13 /* arch depend hide */
-		case 1079: {
-#else /* POSTK_DEBUG_ARCH_DEP_13 */
-		case __NR_fork: {
-#endif /* POSTK_DEBUG_ARCH_DEP_13 */
+		case __NR_clone: {
 			struct fork_sync *fs;
 			struct fork_sync_container *fsc;
 			struct fork_sync_container *fp;
@@ -4318,7 +4274,9 @@ return_linux_spawn:
 		}
 
 		default:
-			ret = do_generic_syscall(&w);
+			if (archdep_syscall(&w, &ret)) {
+				ret = do_generic_syscall(&w);
+			}
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 

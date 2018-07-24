@@ -2468,7 +2468,7 @@ retry_tid:
 	}
 	/* fork() a new process on the host */
 	else {
-		request1.number = __NR_fork;
+		request1.number = __NR_clone;
 		request1.args[0] = 0;
 		if(clone_flags & CLONE_PARENT){
 			if(oldproc->ppid_parent->pid != 1)
@@ -2630,11 +2630,6 @@ retry_tid:
 	}
 
 	return new->tid;
-}
-
-SYSCALL_DECLARE(vfork)
-{
-    return do_fork(CLONE_VFORK|SIGCHLD, 0, 0, 0, 0, ihk_mc_syscall_pc(ctx), ihk_mc_syscall_sp(ctx));
 }
 
 SYSCALL_DECLARE(set_tid_address)

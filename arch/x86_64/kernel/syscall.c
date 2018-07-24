@@ -1487,6 +1487,16 @@ SYSCALL_DECLARE(clone)
                    ihk_mc_syscall_sp(ctx));
 }
 
+SYSCALL_DECLARE(fork)
+{
+	return do_fork(SIGCHLD, 0, 0, 0, 0, ihk_mc_syscall_pc(ctx), ihk_mc_syscall_sp(ctx));
+}
+
+SYSCALL_DECLARE(vfork)
+{
+	return do_fork(CLONE_VFORK|SIGCHLD, 0, 0, 0, 0, ihk_mc_syscall_pc(ctx), ihk_mc_syscall_sp(ctx));
+}
+
 SYSCALL_DECLARE(shmget)
 {
 	const key_t key = ihk_mc_syscall_arg0(ctx);
