@@ -1451,7 +1451,7 @@ out:
 
 static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size, uintptr_t rpa)
 {
-	ssize_t ss;
+	ssize_t ss, n;
 	struct pager *pager;
 	struct file *file = NULL;
 	uintptr_t phys = -1;
@@ -1464,7 +1464,8 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 
 	ss = down_interruptible(&pager_sem);
 	if (ss) {
-		printk("pager_req_read(%lx,%lx,%lx,%lx): signaled. %ld\n", handle, off, size, rpa, ss);
+		pr_debug("%s(%lx,%lx,%lx,%lx): signaled. %ld\n",
+			 __func__, handle, off, size, rpa, ss);
 		goto out;
 	}
 
@@ -1479,15 +1480,16 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 
 	if (!file) {
 		ss = -EBADF;
-		printk("pager_req_read(%lx,%lx,%lx,%lx):pager not found. %ld\n", handle, off, size, rpa, ss);
+		pr_warn("%s(%lx,%lx,%lx,%lx):pager not found. %ld\n",
+			__func__, handle, off, size, rpa, ss);
 		goto out;
 	}
 
 	phys = ihk_device_map_memory(dev, rpa, size);
 	buf = ihk_device_map_virtual(dev, phys, size, NULL, 0);
 	if (!buf) {
-		printk("%s: ERROR: invalid buffer address\n",
-			__FUNCTION__);
+		pr_warn("%s: ERROR: invalid buffer address\n",
+			__func__);
 		ss = -EINVAL;
 		goto out;
 	}
@@ -1495,25 +1497,31 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 	fs = get_fs();
 	set_fs(KERNEL_DS);
 	pos = off;
-	ss = vfs_read(file, buf, size, &pos);
-	if ((ss != size) && (ss > 0)) {
-#ifdef POSTK_DEBUG_TEMP_FIX_12 /* clear_user() used by kernel area, fix */
-		memset(buf + ss, 0, size - ss);
-		ss = size;
-#else /* POSTK_DEBUG_TEMP_FIX_12 */
-		if (clear_user(buf+ss, size-ss) == 0) {
-			ss = size;
+	n = 0;
+	while (n < size) {
+		if (pos != off + n) {
+			pr_warn("%s: pos wrong? got %lld, expected %ld\n",
+				__func__, pos, off+n);
+			pos = off + n;
 		}
-		else {
-			ss = -EFAULT;
+		ss = vfs_read(file, buf + n, size - n, &pos);
+		if (ss < 0) {
+			break;
 		}
-#endif /* POSTK_DEBUG_TEMP_FIX_12 */
+		if (ss == 0) {
+			memset(buf + n, 0, size - n);
+			n = size;
+			break;
+		}
+		n += ss;
 	}
 	set_fs(fs);
 	if (ss < 0) {
-		printk("pager_req_read(%lx,%lx,%lx,%lx):pread failed. %ld\n", handle, off, size, rpa, ss);
+		pr_warn("%s(%lx,%lx,%lx,%lx):pread failed. %ld\n",
+			__func__, handle, off, size, rpa, ss);
 		goto out;
 	}
+	ss = n;
 
 out:
 	if (buf) {
