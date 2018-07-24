@@ -1980,9 +1980,7 @@ static void settid(struct thread *thread, int nr_tids, int *tids)
 	int ret;
 	struct syscall_request request IHK_DMA_ALIGN;
 
-#ifdef POSTK_DEBUG_ARCH_DEP_58 /* settid() arguments area 0 clear add. */
 	memset(&request, 0, sizeof(request));
-#endif /* POSTK_DEBUG_ARCH_DEP_58 */
 
 	request.number = __NR_gettid;
 	/*
