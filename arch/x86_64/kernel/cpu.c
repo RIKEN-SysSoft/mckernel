@@ -849,6 +849,7 @@ void setup_x86_ap(void (*next_func)(void))
 void arch_show_interrupt_context(const void *reg);
 void set_signal(int sig, void *regs, struct siginfo *info);
 void check_signal(unsigned long, void *, int);
+void check_sig_pending();
 extern void tlb_flush_handler(int vector);
 
 void __show_stack(uintptr_t *sp) {
@@ -868,6 +869,18 @@ void __show_stack(uintptr_t *sp) {
 void show_context_stack(uintptr_t *rbp) {
 	__show_stack(rbp);
 	return;
+}
+
+void interrupt_exit(struct x86_user_context *regs)
+{
+	if (interrupt_from_user(regs)) {
+		cpu_enable_interrupt();
+		check_signal(0, regs, 0);
+		check_need_resched();
+	}
+	else {
+		check_sig_pending();
+	}
 }
 
 void handle_interrupt(int vector, struct x86_user_context *regs)
@@ -996,11 +1009,7 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 		}
 	}
 
-	if(interrupt_from_user(regs)){
-		cpu_enable_interrupt();
-		check_signal(0, regs, 0);
-		check_need_resched();
-	}
+	interrupt_exit(regs);
 #ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
 	set_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 #else /* POSTK_DEBUG_TEMP_FIX_84 */
@@ -1024,11 +1033,7 @@ void gpe_handler(struct x86_user_context *regs)
 		panic("gpe_handler");
 	}
 	set_signal(SIGSEGV, regs, NULL);
-	if(interrupt_from_user(regs)){
-		cpu_enable_interrupt();
-		check_signal(0, regs, 0);
-		check_need_resched();
-	}
+	interrupt_exit(regs);
 #ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
 	set_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 #else /* POSTK_DEBUG_TEMP_FIX_84 */
@@ -1065,11 +1070,7 @@ void debug_handler(struct x86_user_context *regs)
 	memset(&info, '\0', sizeof info);
 	info.si_code = si_code;
 	set_signal(SIGTRAP, regs, &info);
-	if(interrupt_from_user(regs)){
-		cpu_enable_interrupt();
-		check_signal(0, regs, 0);
-		check_need_resched();
-	}
+	interrupt_exit(regs);
 #ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
 	set_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 #else /* POSTK_DEBUG_TEMP_FIX_84 */
@@ -1095,11 +1096,7 @@ void int3_handler(struct x86_user_context *regs)
 	memset(&info, '\0', sizeof info);
 	info.si_code = TRAP_BRKPT;
 	set_signal(SIGTRAP, regs, &info);
-	if(interrupt_from_user(regs)){
-		cpu_enable_interrupt();
-		check_signal(0, regs, 0);
-		check_need_resched();
-	}
+	interrupt_exit(regs);
 #ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
 	set_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 #else /* POSTK_DEBUG_TEMP_FIX_84 */
