@@ -1325,6 +1325,17 @@ interrupt_from_user(void *regs0)
 	return((regs->pstate & PSR_MODE_MASK) == PSR_MODE_EL0t);
 }
 
+void save_syscall_return_value(int num, unsigned long rc)
+{
+	/*
+	 * Save syscall return value.
+	 */
+	if (cpu_local_var(current) && cpu_local_var(current)->uctx &&
+			num != __NR_rt_sigsuspend) {
+		ihk_mc_syscall_arg0(cpu_local_var(current)->uctx) = rc;
+	}
+}
+
 void
 check_signal(unsigned long rc, void *regs0, int num)
 {
@@ -1348,16 +1359,6 @@ __check_signal(unsigned long rc, void *regs0, int num, int irq_disabled)
 	if(clv == NULL)
 		return;
 	thread = cpu_local_var(current);
-
-	/**
-	 * If check_signal is called from syscall(), 
-	 * then save syscall return value.
-	 */
-	if((regs == NULL)&&(num != __NR_rt_sigsuspend)){ /* It's call from syscall! */
-	 	// Get user context through current thread
-	 	// and update syscall return.
-	 	ihk_mc_syscall_arg0(thread->uctx) = rc;
-	}
 
 	if(thread == NULL || thread->proc->pid == 0){
 		struct thread *t;
