@@ -1631,6 +1631,7 @@ done:
 				rc = -ENOMEM;
 			}
 			else{
+				memset(pending, 0, sizeof(struct sig_pending));
 				pending->sigmask.__val[0] = mask;
 				memcpy(&pending->info, info, sizeof(siginfo_t));
 				pending->ptracecont = ptracecont;
