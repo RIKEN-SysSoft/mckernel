@@ -358,7 +358,7 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 			 *  08048000-08056000 r-xp 00000000 03:0c 64593   /usr/sbin/gpm
 			 */
 			written_now = snprintf(_buf, left, 
-					"%lx-%lx %s%s%s%s %lx %lx:%lx %d %s\n",
+					"%lx-%lx %s%s%s%s %lx %lx:%lx %d\t\t\t%s\n",
 					range->start, range->end,
 					range->flag & VR_PROT_READ ? "r" : "-",
 					range->flag & VR_PROT_WRITE ? "w" : "-",
@@ -369,6 +369,11 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 					0UL,
 					0UL,
 					0,
+					range->start ==
+						(unsigned long)vm->vdso_addr ? "[vdso]" :
+					range->start ==
+						(unsigned long)vm->vvar_addr ? "[vsyscall]" :
+					range->flag & VR_STACK ? "[stack]" :
 					""
 					);
 			
