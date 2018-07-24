@@ -32,6 +32,7 @@
 #include <limits.h>
 #include <syscall.h>
 
+void terminate_mcexec(int, int);
 extern long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
 long syscall(int num, ihk_mc_user_context_t *ctx);
 void set_signal(int sig, void *regs0, siginfo_t *info);
@@ -1116,7 +1117,15 @@ check_sig_pending()
 	}
 
 	if (found) {
-		interrupt_syscall(thread, 0);
+		if (sig != SIGCHLD && sig != SIGURG &&
+		    thread->sigcommon->action[sig - 1].sa.sa_handler == NULL) {
+			terminate_mcexec(0, sig);
+		}
+		else if (thread->sigcommon->action[sig - 1].sa.sa_handler &&
+		         thread->sigcommon->action[sig - 1].sa.sa_handler !=
+		                                                   (void *)1) {
+			interrupt_syscall(thread, 0);
+		}
 	}
 }
 

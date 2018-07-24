@@ -965,6 +965,28 @@ SYSCALL_DECLARE(waitid)
 	return 0;
 }
 
+void terminate_mcexec(int rc, int sig)
+{
+	unsigned long old_exit_status;
+	unsigned long exit_status;
+	struct thread *mythread = cpu_local_var(current);
+	struct process *proc = mythread->proc;
+	struct syscall_request request IHK_DMA_ALIGN;
+
+	if ((old_exit_status = proc->exit_status) & 0x0000000100000000L)
+		return;
+	exit_status = 0x0000000100000000L | ((rc & 0x00ff) << 8) | (sig & 0xff);
+	if (!__sync_bool_compare_and_swap(&proc->exit_status,
+	                                  old_exit_status, exit_status))
+		return;
+	if (!proc->nohost) {
+		request.number = __NR_exit_group;
+		request.args[0] = proc->exit_status;
+		proc->nohost = 1;
+		do_syscall(&request, ihk_mc_get_processor_id(), proc->pid);
+	}
+}
+
 void terminate(int rc, int sig)
 {
 	struct resource_set *resource_set = cpu_local_var(resource_set);
@@ -982,7 +1004,6 @@ void terminate(int rc, int sig)
 	int i;
 	int n;
 	int *ids = NULL;
-	struct syscall_request request IHK_DMA_ALIGN;
 	int exit_status;
 
 	// sync perf info
@@ -1004,8 +1025,11 @@ void terminate(int rc, int sig)
 		return;
 	}
 
-	exit_status = mythread->exit_status = ((rc & 0x00ff) << 8) | (sig & 0xff);
+	exit_status = ((rc & 0x00ff) << 8) | (sig & 0xff);
+	mythread->exit_status = exit_status;
 	proc->status = PS_EXITED;
+	terminate_mcexec(rc, sig);
+
 	mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
 	mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 
@@ -1153,19 +1177,7 @@ void terminate(int rc, int sig)
 #endif
 
 	// clean up memory
-	if (!proc->nohost) {
-		request.number = __NR_exit_group;
-		request.args[0] = exit_status;
-#ifdef POSTK_DEBUG_TEMP_FIX_48 /* nohost flag missed fix */
-		proc->nohost = 1;
-		do_syscall(&request, ihk_mc_get_processor_id(), proc->pid);
-#else /* POSTK_DEBUG_TEMP_FIX_48 */
-		do_syscall(&request, ihk_mc_get_processor_id(), proc->pid);
-		proc->nohost = 1;
-#endif /* POSTK_DEBUG_TEMP_FIX_48 */
-	}
 
-	proc->exit_status = exit_status;
 	finalize_process(proc);
 
 	preempt_disable();
