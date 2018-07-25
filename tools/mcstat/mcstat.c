@@ -18,7 +18,7 @@
 #include <ihk/ihk_host_user.h>
 #include <ihk/ihklib_private.h>		// mcctrl_ioctl_getrusage_desc is defined here
 #undef IHK_MAX_NUM_NUMA_NODES
-#include <mckernel/ihklib_rusage.h>	// mckernel_rusage is defined here
+#include <ihklib_rusage.h>	// mckernel_rusage is defined here
 
 #define MAX_CPUS	256
 #define MiB100		(100*1024*1024) // 100 MiB

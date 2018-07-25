@@ -13,10 +13,10 @@ MANDIR=@MANDIR@
 MCKERNEL_INCDIR=@MCKERNEL_INCDIR@
 KDIR ?= @KDIR@
 ARCH=@ARCH@
-IHKDIR ?= $(VPATH)/../../../ihk/linux/include/
-CFLAGS=-Wall -O -I. -I${MCKERNEL_INCDIR} -I${IHKDIR}
-LDFLAGS=@LDFLAGS@
 VPATH=@abs_srcdir@
+IHKDIR ?= $(VPATH)/../../../ihk/linux/include/
+CFLAGS=-Wall -O -I. -I${MCKERNEL_INCDIR} -I${IHKDIR} -I@abs_srcdir@/../../executer/include
+LDFLAGS=@LDFLAGS@
 TARGET=mcstat
 
 .PHONY: all clean install
