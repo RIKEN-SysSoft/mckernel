@@ -2683,7 +2683,9 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
 	__return_syscall(usrdata->os, packet, param[2], tid);
 #endif /* POSTK_DEBUG_ARCH_DEP_46 */
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-	                       (usrdata->channels + packet->ref)->c);
+						   (usrdata->ikc2linux[smp_processor_id()] ?
+							usrdata->ikc2linux[smp_processor_id()] :
+							usrdata->ikc2linux[0]));
 err:
 	if(ppd)
 		mcctrl_put_per_proc_data(ppd);
