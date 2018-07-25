@@ -2082,7 +2082,6 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 				dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", pte_get_phys(&old), __FUNCTION__, pte_get_phys(&old), PTL1_SIZE, PTL1_SIZE);
 				rusage_memory_stat_sub(args->memobj, PTL1_SIZE, PTL1_SIZE);
 			}
-			args->vm->currss -= PTL1_SIZE;
 		} else {
 			dkprintf("%s: !calling memory_stat_rss_sub(),virt=%lx,phys=%lx\n", __FUNCTION__, base, pte_get_phys(&old));
 		}
@@ -2179,7 +2178,6 @@ static int clear_range_middle(void *args0, pte_t *ptep, uint64_t base,
 					dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", pte_get_phys(&old), __FUNCTION__, pte_get_phys(&old), tbl.pgsize, tbl.pgsize);
 					rusage_memory_stat_sub(args->memobj, tbl.pgsize, tbl.pgsize);
 				}
-				args->vm->currss -= tbl.pgsize;
 			}
 		}
 
