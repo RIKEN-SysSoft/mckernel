@@ -1329,15 +1329,20 @@ done:
 		mcs_rwlock_reader_lock_noirq(&tproc->update_lock, &updatelock);
 		savelock = &tthread->sigpendinglock;
 		head = &tthread->sigpending;
-		if(sig == SIGKILL ||
-		   (tproc->status != PS_EXITED &&
-		    tproc->status != PS_ZOMBIE &&
-		    tthread->status != PS_EXITED)){
+		mcs_rwlock_reader_lock_noirq(&tproc->threads_lock, &lock);
+		if (tthread->status != PS_EXITED &&
+			(sig == SIGKILL ||
+			 (tproc->status != PS_EXITED && tproc->status != PS_ZOMBIE))) {
 			hold_thread(tthread);
+			if ((rc = hold_thread(tthread))) {
+				kprintf("%s: ERROR hold_thread returned %d,tid=%d\n", __FUNCTION__, rc, tthread->tid);
+				tthread = NULL;
+			}
 		}
 		else{
 			tthread = NULL;
 		}
+		mcs_rwlock_reader_unlock_noirq(&tproc->threads_lock, &lock);
 		mcs_rwlock_reader_unlock_noirq(&tproc->update_lock, &updatelock);
 		mcs_rwlock_reader_unlock_noirq(&thash->lock[hash], &lock);
 	}

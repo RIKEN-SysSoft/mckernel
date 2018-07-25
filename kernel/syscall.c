@@ -1012,13 +1012,13 @@ void terminate(int rc, int sig)
 		sync_child_event(proc->monitoring_event);
 
 	// clean up threads
-	mcs_rwlock_reader_lock(&proc->threads_lock, &lock); // conflict clone
+	mcs_rwlock_writer_lock(&proc->threads_lock, &lock); // conflict clone
 	mcs_rwlock_writer_lock_noirq(&proc->update_lock, &updatelock);
 	if (proc->status == PS_EXITED) {
-		mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
-		mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 		preempt_disable();
 		mythread->status = PS_EXITED;
+		mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
+		mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 		release_thread(mythread);
 		preempt_enable();
 		schedule();
@@ -1029,10 +1029,10 @@ void terminate(int rc, int sig)
 	exit_status = ((rc & 0x00ff) << 8) | (sig & 0xff);
 	mythread->exit_status = exit_status;
 	proc->status = PS_EXITED;
-	terminate_mcexec(rc, sig);
-
 	mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
-	mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
+	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
+
+	terminate_mcexec(rc, sig);
 
 	mcs_rwlock_writer_lock(&proc->threads_lock, &lock);
 	list_del(&mythread->siblings_list);
@@ -1182,7 +1182,9 @@ void terminate(int rc, int sig)
 	finalize_process(proc);
 
 	preempt_disable();
+	mcs_rwlock_writer_lock(&proc->threads_lock, &lock);
 	mythread->status = PS_EXITED;
+	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 	release_thread(mythread);
 	release_process_vm(vm);
 	preempt_enable();
@@ -5528,16 +5530,16 @@ do_exit(int code)
 		      FUTEX_WAKE, 1, 0, NULL, 0, 0, 1);
 	}
 
-	mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
+	mcs_rwlock_writer_lock(&proc->threads_lock, &lock);
 	if(proc->status == PS_EXITED){
-		mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
+		mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 		terminate(exit_status, 0);
 		return;
 	}
 	preempt_disable();
 	thread->status = PS_EXITED;
 	sync_child_event(thread->proc->monitoring_event);
-	mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
+	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 	release_thread(thread);
 	preempt_enable();
 

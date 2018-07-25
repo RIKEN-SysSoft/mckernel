@@ -2621,14 +2621,15 @@ out:
 	return error;
 }
 
-void hold_thread(struct thread *thread)
+int hold_thread(struct thread *thread)
 {
 	if (thread->status == PS_EXITED) {
-		panic("hold_thread: already exited process");
+		kprintf("hold_thread: ERROR: already exited process,tid=%d\n", thread->tid);
+		return -ESRCH;
 	}
 
 	ihk_atomic_inc(&thread->refcount);
-	return;
+	return 0;
 }
 
 void
