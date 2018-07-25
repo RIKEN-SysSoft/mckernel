@@ -840,7 +840,7 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 
 	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
 	if (!packet) {
-		error = -ENOENT;
+		ret = VM_FAULT_SIGBUS;
 		printk("%s: no packet registered for TID %d\n",
 				__FUNCTION__, task_pid_vnr(current));
 		goto put_and_out;
