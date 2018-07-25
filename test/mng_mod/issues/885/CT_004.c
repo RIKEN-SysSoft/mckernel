@@ -91,18 +91,6 @@ int main(int argc, char** argv)
 		rc = waitpid(pid, &status, 0);
 		CHKANDJUMP(rc == -1, "waitpid");
 
-if (WIFEXITED(status)) {
-printf("exited:%d\n", WEXITSTATUS(status));
-}
-
-if (WIFSIGNALED(status)) {
-printf("signaled\n");
-}
-
-if (WIFCONTINUED(status)) {
-printf("continued\n");
-}
-
 		CHKANDJUMP(!WIFSTOPPED(status), "child is not stopped again");
 
 		/* detach child */
@@ -111,6 +99,12 @@ printf("continued\n");
 
 		/* wake child */
 		sem_post(cwait);
+
+		/* wait child's exit */
+		rc = waitpid(pid, &status, 0);
+		CHKANDJUMP(rc == -1, "waitpid");
+
+		CHKANDJUMP(!WIFEXITED(status), "child is not exited");
 	}
 
 	printf("*** %s PASSED\n\n", TEST_NAME);

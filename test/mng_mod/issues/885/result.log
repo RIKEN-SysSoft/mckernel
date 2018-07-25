@@ -75,4 +75,18 @@ RESULT: ok
  [OK] ptrace_detach faild [double detach]
 *** CT_009 PASSED
 
+/home/satoken/ppos/bin/mcexec ./CT_010
+*** CT_010 start *******************************
+ [OK] ptrace_attach by tracer
+ [OK] ptrace_detach by tracer
+ [OK] waitpid by tracer after detach (failed)
+ [OK] waitpid for tracee by parent
+*** CT_010 PASSED
 
+/home/satoken/ppos/bin/mcexec ./CT_011
+*** CT_011 start *******************************
+ [OK] ptrace_attach
+ [OK] ptrace_cont
+ [OK] waitpid for tracee by tracer without detach
+ [OK] waitpid for tracee by parent
+*** CT_011 PASSED

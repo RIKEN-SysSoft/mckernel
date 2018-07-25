@@ -75,6 +75,12 @@ int main(int argc, char** argv)
 
 		/* wake child */
 		sem_post(cwait);
+
+		/* wait child's exit */
+		rc = waitpid(pid, &status, 0);
+		CHKANDJUMP(rc == -1, "waitpid");
+
+		CHKANDJUMP(!WIFEXITED(status), "child is not exited");
 	}
 
 	printf("*** %s PASSED\n\n", TEST_NAME);
