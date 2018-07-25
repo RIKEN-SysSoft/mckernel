@@ -1,0 +1,71 @@
+.\" Man page for mcstat
+.\"
+
+.TH MCSTAT 1 "@MCKERNEL_RELEASE_DATE@" "Version @MCKERNEL_VERSION@" MCKERNEL @MCKERNEL_VERSION@"
+.SH NAME
+mcstat \- report McKernel statistics and status
+.\"
+
+.\" ----------------------------  SYNOPSIS ----------------------------
+.SH SYNOPSIS
+.B mcstat \fR [\fIoptions\fR] \fR [\fI<delay>\fR \fI<count>\fR ]
+
+.\" ----------------------------  DESCRIPTION ----------------------------
+.SH DESCRIPTION
+mcstat reports  information about memory, elapsed time of system and users,
+and the number of threads in the McKernel. It also reports McKernel OS status.
+
+An example is shown below.
+
+------- memory (MB) ------- ------- tsc ------ --- thread ---
+    total  current      max    system     user current max
+    2.758    0.461    0.652      2340        3       0   1
+
+It reports that 2.758 MB physical memory has been allocated for
+McKernel, but only 0.461 MB memory is currently used and the maximum
+memory usage is 0.652 MB since rebooted. Elpased times (in 10 msec?)
+in system and user spaces are 2340 and 3, respectively.  No threads
+are currently running, but one thread has run in the past.
+
+.\" ----------------------------  DESCRIPTION ----------------------------
+.SH OPTIONS
+
+.TP
+.I	delay
+The delay between updates in seconds.  If no delay is specified, only
+one report is printed.
+
+.TP
+.I	count
+Number of updates.  In absence of count, when delay is defined,
+default is infinite.
+
+.\" .TP
+.\" .B	-c
+
+.TP
+.B	-n
+Display the header only once. In default, the header is displayed
+every 10 reports.
+
+.TP
+.B	-s
+Reports only McKernel OS status. Without this option, mcstat reports only McKernel statistics.
+
+.TP
+.B	-h
+Display help and exit.
+
+.PP
+.\" ----------------------------  ENVIRONMENT ----------------------------
+.SH ENVIRONMENT
+
+.PP
+.\" ----------------------------  SEE ALSO ----------------------------
+.SH SEE ALSO
+
+.\" ----------------------------  AUTHORS ----------------------------
+.SH AUTHORS
+Copyright (C) 2017 McKernel Development Team, RIKEN AICS, Japan
+
+

@@ -1,0 +1,30 @@
+# Makefile.in COPYRIGHT FUJITSU LIMITED 2015-2016
+CC=@CC@
+MCC=mpicc
+BINDIR=@BINDIR@
+SBINDIR=@SBINDIR@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+LIBDIR=@libdir@
+MANDIR=@MANDIR@
+MCKERNEL_INCDIR=@MCKERNEL_INCDIR@
+KDIR ?= @KDIR@
+ARCH=@ARCH@
+CFLAGS=-Wall -O -I. -I${MCKERNEL_INCDIR}
+LDFLAGS=@LDFLAGS@
+VPATH=@abs_srcdir@
+TARGET=mcstat
+
+all: $(TARGET)
+
+mcexec: mcstat.c libmcexec.a
+	$(CC) -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) $(LDFLAGS) -o $@ $^
+
+clean::
+	$(RM) $(TARGET) *.o
+
+.PHONY: all clean install
+
+install::
+	install -m 755 mcstat $(BINDIR)
+

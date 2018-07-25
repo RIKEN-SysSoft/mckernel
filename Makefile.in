@@ -66,6 +66,7 @@ install:
 		exit 1 \
 		;; \
 	esac
+	@(cd tools/mcstat/; $(MAKE) install)
 
 clean:
 	@(cd executer/kernel/mcctrl; $(MAKE) clean)
