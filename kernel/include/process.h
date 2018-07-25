@@ -425,6 +425,7 @@ struct mckfd {
 	long (*mmap_cb)(struct mckfd *, ihk_mc_user_context_t *);
 	int (*close_cb)(struct mckfd *, ihk_mc_user_context_t *);
 	int (*fcntl_cb)(struct mckfd *, ihk_mc_user_context_t *);
+	int (*dup_cb)(struct mckfd *, ihk_mc_user_context_t *);
 };
 
 #define SFD_CLOEXEC 02000000

@@ -1,0 +1,83 @@
+【Issue#925 動作確認】
+Issue#925が解決され、既存機能に影響がないことをIssueで報告されたテストプログラム（1項目）と、
+McKernelでのXPMEM操作の基本動作確認（11項目）の計12項目のテストによって確認した。
+なお、各テストの実行結果は./result.log として格納している。
+
+①Issueで報告されたテストプログラムによる確認
+ ・Issue#925
+ 報告で使用されたテストプログラムを用いて、現象が再現しないことを確認した。
+ 実行時の出力を./result.log に記載している
+ 
+②McKernelでのXPMEM操作の基本動作確認
+以下の内容で、Issue#925による変更が既存機能(XPMEM)に影響しないことを確認した。
+
+基本動作確認の詳細を以下に示す。
+
+1. テストの実行方法
+ 以下の手順でテストを実行する
+	1. Makefileの変数MCK_DIRの内容を、McKernelがインストールされているディレクトリに変更する
+	2. Makefileの変数XPMEM_DIRの内容を、XPMEMライブラリがインストールされているディレクトリに変更する
+	3. sh make test を実行する
+
+2. テスト項目
+CT_001: 単一プロセスでのXPMEM操作
+	1. 実行したプロセスがxpmem_make -> xpmem_get -> xpmem_attach -> xpmem_detach -> xpmem_remove
+
+CT_002: 子プロセスでのXPMEM操作
+	1. 親プロセスがfork()
+	2. 子プロセスがxpmem_make -> xpmem_get -> xpmem_attach -> xpmem_detach ->xpmem_remove
+	3. 子プロセス終了後、親プロセスが終了
+
+CT_003: 親プロセスがmakeした共有領域への子プロセスによるXPMEM操作
+	1. 親プロセスがxpmem_make
+	2. fork()で子プロセスを作成
+	3. 子プロセスで、xpmem_get -> xpmem_attach -> 値(TEST_VAL)の設定 -> xpmem_detach
+	4. 子プロセスが終了
+	5. 親プロセスが、子プロセスによって設定された値(TEST_VAL)を確認
+	6. 親プロセスがxpmem_remove
+
+CT_004: fork()後に親プロセスがmakeした共有領域への子プロセスによるXPMEM操作
+	1. fork()で子プロセスを作成
+	2. 親プロセスがxpmem_make
+	3. 子プロセスで、xpmem_get -> xpmem_attach -> 値(TEST_VAL)の設定 -> xpmem_detach
+	4. 子プロセスが終了
+	5. 親プロセスが、子プロセスによって設定された値(TEST_VAL)を確認
+	6. 親プロセスがxpmem_remove
+
+CT_005: 子プロセスがxpmem_attach後、xpmem_detachをせずに終了
+	1. 親プロセスがxpmem_make
+	2. fork()で子プロセスを作成
+	3. 子プロセスで、xpmem_get -> xpmem_attach
+	4. 子プロセスが終了
+	5. 親プロセスがxpmem_remove
+
+CT_006: 子プロセスがXPMEM操作を行う時点で、xpmem_makeをした親プロセスが終了している
+	1. 親プロセスがxpmem_make
+	2. fork()で子プロセスを作成
+	3. 親プロセスが終了
+	4. 子プロセスで、xpmem_get (失敗)
+	5. 子プロセスが終了
+
+CT_007: xpmem_make 呼び出しの異常系
+	1. xpmem_make の第1引数に不正なアドレスを指定する (失敗)
+	2. 1度xpmem_make を実施したメモリ領域に対して、再度xpmem_make を行う (成功)
+
+CT_008: xpmem_get 呼び出しの異常系
+	1. xpmem_get の第1引数に不正なsegidを指定する (失敗)
+	2. 1度xpmem_get を実施したsegidで、再度xpmem_get を行う (成功)
+	
+CT_009: xpmem_attach 呼び出しの異常系
+	1. xpmem_attach の第1引数に不正なapidを指定する (失敗)
+	2. 1度xpmem_attach を実施したapidで、再度xpmem_attach を行う (成功)
+
+CT_010: xpmem_detach 呼び出しの異常系
+	1. xpmem_detach の第1引数に不正なアドレスを指定する (成功)
+	2. 1度xpmem_detach を実施したメモリ領域に対して、再度xpmem_detach を行う (成功)
+
+CT_011: xpmem_remove 呼び出しの異常系
+	1. xpmem_remove の第1引数に不正なsegidを指定する (失敗)
+	2. 1度xpmem_remove を実施したsegidで、再度xpmem_remove を行う (失敗)
+
+3. 結果
+テストプログラムの実行結果をresult.log に示す。
+上記の11項目がPASSしていることを確認した。
