@@ -9311,6 +9311,7 @@ set_cputime(int mode)
 		return;
 	}
 
+	cpu_disable_interrupt();
 	tsc = rdtsc();
 	if(thread->base_tsc != 0){
 		unsigned long dtsc = tsc - thread->base_tsc;
@@ -9403,6 +9404,7 @@ set_cputime(int mode)
 			}
 		}
 	}
+	cpu_enable_interrupt();
 }
 
 long syscall(int num, ihk_mc_user_context_t *ctx)
