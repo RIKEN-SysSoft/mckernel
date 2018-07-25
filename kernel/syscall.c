@@ -5734,15 +5734,8 @@ SYSCALL_DECLARE(getrusage)
 		kusage.ru_maxrss = proc->maxrss / 1024;
 	}
 	else if(who == RUSAGE_CHILDREN){
-#ifdef POSTK_DEBUG_TEMP_FIX_72 /* fix RUSAGE_CHILDREN time */
 		ts_to_tv(&kusage.ru_utime, &proc->utime_children);
 		ts_to_tv(&kusage.ru_stime, &proc->stime_children);
-#else /* POSTK_DEBUG_TEMP_FIX_72 */
-		tsc_to_ts(thread->user_tsc, &ats);
-		ts_to_tv(&kusage.ru_utime, &ats);
-		tsc_to_ts(thread->system_tsc, &ats);
-		ts_to_tv(&kusage.ru_stime, &ats);
-#endif /* POSTK_DEBUG_TEMP_FIX_72 */
 
 		kusage.ru_maxrss = proc->maxrss_children / 1024;
 	}
