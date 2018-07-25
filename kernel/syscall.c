@@ -6141,6 +6141,13 @@ static int ptrace_attach(int pid)
 		error = -ESRCH;
 		goto out;
 	}
+
+	if (proc->pid == pid) {
+		thread_unlock(thread, &lock);
+		error = -EPERM;
+		goto out;
+	}
+
 	child = thread->proc;
 	dkprintf("ptrace_attach(): pid requested:%d, thread->tid:%d, thread->proc->pid=%d, thread->proc->parent=%p\n", pid, thread->tid, thread->proc->pid, thread->proc->parent);
 
