@@ -85,6 +85,7 @@ CT_010: sig_numの有効確認
 	1. sigaction(SIGUSR1, NULL, NULL) で有効かどうかを確認
 	2. sigaction(SIGKILL, NULL, NULL) で有効かどうかを確認
 	3. sigaction(SIGSTOP, NULL, NULL) で有効かどうかを確認
+	4. sigaction(_NSIG, NULL, NULL) で有効かどうかを確認
 
 3. 結果
 テストプログラムの実行結果をresult.log に示す。

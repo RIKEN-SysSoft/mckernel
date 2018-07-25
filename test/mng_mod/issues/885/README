@@ -1,6 +1,6 @@
 【Issue#885 動作確認】
 Issue#885が解決され、既存機能に影響がないことをIssueで報告されたテストプログラム（2項目）と、
-McKernelでのptraceのattach/detach操作の基本動作確認（8項目）の計10項目のテストによって確認した。
+McKernelでのptraceのattach/detach操作の基本動作確認（9項目）の計11項目のテストによって確認した。
 なお、各テストの実行結果は./result.log として格納している。
 
 ①Issueで報告されたテストプログラムによる確認
@@ -45,15 +45,17 @@ CT_005: 不正なpid指定のattach
 	1. 不正なpid(0, 1, 負数)を指定したattach
 	2. 自身のpidを指定したattach
 
-CT_006: attach済の子プロセスへのattach
+CT_006: attach済の子プロセスへのattach①
 	1. 既にattachしている子プロセスへ再びattach
-	2. tracemeした子プロセスへattach
 
-CT_007: 不正なpid指定のdetach
+CT_007: attach済の子プロセスへのattach②
+	1. tracemeした子プロセスへattach
+
+CT_008: 不正なpid指定のdetach
 	1. 不正なpid(0, 1, 負数)を指定したdetach
 	2. attachしていない子プロセスのpidを指定したdetach
 
-CT_008: detach済の子プロセスへのdetach
+CT_009: detach済の子プロセスへのdetach
 	1. 既にdetachしていいる子プロセスへ再びdetach
 
 3. 結果
