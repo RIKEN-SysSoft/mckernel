@@ -1234,7 +1234,7 @@ out:
 #ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
 	set_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 #else /* POSTK_DEBUG_TEMP_FIX_84 */
-	set_cputime(0);
+	set_cputime(interrupt_from_user(regs)? 0: 1);
 #endif /* POSTK_DEBUG_TEMP_FIX_84 */
 #ifdef PROFILE_ENABLE
 	if (thread->profile)

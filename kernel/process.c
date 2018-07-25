@@ -409,6 +409,9 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 	ihk_atomic_set(&thread->refcount, 2);
 	memcpy(&thread->cpu_set, &org->cpu_set, sizeof(thread->cpu_set));
 
+	/* New thread is in kernel until jumping to enter_user_mode */
+	thread->in_kernel = org->in_kernel;
+
 	/* NOTE: sp is the user mode stack! */
 	ihk_mc_init_user_process(&thread->ctx, &thread->uctx, ((char *)thread) +
 				 KERNEL_STACK_NR_PAGES * PAGE_SIZE, pc, sp);
