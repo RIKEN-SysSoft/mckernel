@@ -1,0 +1,61 @@
+【Issue#885 動作確認】
+Issue#885が解決され、既存機能に影響がないことをIssueで報告されたテストプログラム（2項目）と、
+McKernelでのptraceのattach/detach操作の基本動作確認（8項目）の計10項目のテストによって確認した。
+なお、各テストの実行結果は./result.log として格納している。
+
+①Issueで報告されたテストプログラムによる確認
+ ・Issue#885
+ 報告で使用されたテストプログラムを用いて、現象が再現しないことを確認した。
+ 実行時の出力を./result.log に記載している
+ 
+②McKernelでのptraceのattach/detachの基本動作確認
+以下の内容で、Issue#885による変更が既存機能に影響しないことを確認した。
+
+基本動作確認の詳細を以下に示す。
+
+1. テストの実行方法
+ 以下の手順でテストを実行する
+	1. Makefileの変数MCK_DIRの内容を、McKernelがインストールされているディレクトリに変更する
+	2. sh make test を実行する
+
+2. テスト項目
+CT_001: 通常のattach detach 操作
+	1. 親プロセスが子プロセスにattach
+	2. 親プロセスが子プロセスをdetach
+	3. 子プロセスが終了
+	4. 親プロセスがwait()で子プロセスの終了を回収
+
+CT_002: tracee(子プロセス)がdetachせずに終了
+	1. 親プロセスが子プロセスにattach
+	2. 子プロセスが終了
+	3. 親プロセスがwait()で子プロセスの終了を回収
+
+CT_003: tracer(親プロセス)がdetachしないまま先に終了
+	1. 親プロセスが子プロセスにattach
+	2. 親プロセスが子プロセスに再開指示した直後に終了
+	3. 子プロセスが終了
+
+CT_004: 複数回のattach -> detach 操作
+	1. 親プロセスが子プロセスにattach
+	2. 親プロセスが子プロセスにdetach
+	3. 再び、親プロセスが子プロセスにattach
+	4. 親プロセスが子プロセスにdetach
+
+CT_005: 不正なpid指定のattach
+	1. 不正なpid(0, 1, 負数)を指定したattach
+	2. 自身のpidを指定したattach
+
+CT_006: attach済の子プロセスへのattach
+	1. 既にattachしている子プロセスへ再びattach
+	2. tracemeした子プロセスへattach
+
+CT_007: 不正なpid指定のdetach
+	1. 不正なpid(0, 1, 負数)を指定したdetach
+	2. attachしていない子プロセスのpidを指定したdetach
+
+CT_008: detach済の子プロセスへのdetach
+	1. 既にdetachしていいる子プロセスへ再びdetach
+
+3. 結果
+テストプログラムの実行結果をresult.log に示す。
+上記の10項目がPASSしていることを確認した。
