@@ -809,6 +809,11 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 		regs->gpr.rip = (unsigned long)k->sa.sa_handler;
 		regs->gpr.rsp = (unsigned long)usp;
 
+		// check signal handler is ONESHOT
+		if (k->sa.sa_flags & SA_RESETHAND) {
+			k->sa.sa_handler = SIG_DFL; 
+		}
+
 		if(!(k->sa.sa_flags & SA_NODEFER))
 			thread->sigmask.__val[0] |= pending->sigmask.__val[0];
 		kfree(pending);
