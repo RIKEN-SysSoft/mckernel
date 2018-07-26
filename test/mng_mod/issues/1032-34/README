@@ -1,0 +1,189 @@
+【Issue#1032～#1034 動作確認】
+Issue#1032～#1034が解決され、既存機能に影響がないことをIssueで報告されたテストプログラム（3項目）と、
+McKernelでのgetrusage()の基本動作確認（10項目）の計13項目のテストによって確認した。
+なお、各テストの実行結果は./result.log として格納している。
+
+①Issueで報告されたテストプログラムによる確認
+ ・Issue#1032
+ 報告で使用されたテストプログラムを100回ずつ実行し、現象が再現しないことを確認した。
+ 実行時の出力の1回分を./result.log に記載している
+ 
+②McKernelでのgetrusage()の基本動作確認
+以下の内容で、Issue#1032～#1034による変更が既存機能に影響しないことを確認した。
+各項目はそれぞれ100回ずつ実行し、すべてでPASSすることを確認した。
+
+基本動作確認の詳細を以下に示す。
+
+1. テストの実行方法
+ 以下の手順でテストを実行する
+	1. Makefileの変数MCK_DIRの内容を、McKernelがインストールされているディレクトリに変更する
+	2. sh make を実行する
+	3. ./ins_test_driver.sh を実行し、テスト用のデバイスドライバをロードする
+	4. sh make test を実行する
+	5. ./rm_test_driver.sh を実行し、テスト用のデバイスドライバをアンロードする
+
+2. テスト項目
+CT_001: 単一プロセスでのRUSAGE_SELFの utime, stime計測動作
+  観点：自プロセスのutime, stime計測を確認する
+	1. getrusage(RUSAGE_SELF) を実行し、以下を確認
+	  - utimeの値が  0 < utime < 0.1 (秒)
+	  - stimeの値が  0 < stime < 0.1 (秒)
+	2. 2秒程度かかる処理をユーザモードで実行 
+	3. getrusage(RUSAGE_SELF) を実行し、以下を確認
+	  - utimeの増分が  2秒程度
+	  - stimeの増分が  0.1秒未満
+	4. 1秒程度かかる処理をカーネルモードで実行 
+	  - utimeの増分が  0.1秒未満
+	  - stimeの増分が  1秒程度
+
+CT_002: 単一プロセスでのRUSAGE_SELF のmaxrss計測
+  観点：自プロセスのmaxrss計測を確認する
+	1. getrusage(RUSAGE_SELF) を実行し、以下を確認
+	  - maxrssの値が 0より大きい
+	2. mmap()で12Mバイトの領域を確保し、全体に書き込み処理を実施
+	3. getrusage(RUSAGE_SELF) を実行し、以下を確認
+	  - maxrssの値が  12Mバイト以上
+	4. 確保した領域(12Mバイト)をmunmap()で解放
+	5. getrusage(RUSAGE_SELF) を実行し、以下を確認
+	  - maxrssの値が  前回と同じ
+	6. mmap()で16Mバイトの領域を確保し、全体に書き込み処理を実施
+	7. getrusage(RUSAGE_SELF) を実行し、以下を確認
+	  - maxrssの増分が  4Mバイト程度
+	8. 確保した領域(16Mバイト)をmunmap()で解放
+
+CT_003: サブスレッド作成時のRUSAGE_SELF のutime, stime計測
+  観点：サブスレッドの動作がutime, stimeに加算されることを確認する
+	1. getrusage(RUSAGE_SELF) を実行し、以下を確認
+	  - utimeの値が  0 < utime < 0.1 (秒)
+	  - stimeの値が  0 < stime < 0.1 (秒)
+	2. pthread_create()でサブスレッドを作成する
+	3. メインスレッドが、pthread_join()でサブスレッドの終了を待つ
+	  3.1. サブスレッドが、2秒程度かかる処理をユーザモードで実行 
+	  3.2. サブスレッドが、1秒程度かかる処理をカーネルモードで実行 
+	  3.3. サブスレッドが、終了する
+	4. メインスレッドがgetrusage(RUSAGE_SELF) を実行し、以下を確認
+	  - utimeの増分が  2秒程度 (サブスレッド増分2秒)
+	  - stimeの増分が  4秒程度 (サブスレッド増分1秒、メインスレッドjoin待ち3秒)
+   ※ Linuxではjoin待ち中は他タスクへとスイッチされてシステム時間が加算されないため、
+     Linuxでの実行時、本項目はFAILとなる
+    
+CT_004: サブスレッド作成時のRUSAGE_SELF のmaxrss計測
+  観点：サブスレッドの動作がmaxrssに加算されることを確認する
+	1. getrusage(RUSAGE_SELF) を実行し、以下を確認
+	  - maxrssの値が 0より大きい
+	2. pthread_create()でサブスレッドを作成する
+	3. メインスレッドが、pthread_join()でサブスレッドの終了を待つ
+	  3.1. サブスレッドが、mmap()で16Mバイトの領域を確保し、全体に書き込み処理を実施
+	  3.2. サブスレッドが、確保した領域(16Mバイト)をmunmap()で解放
+	  3.3. サブスレッドが、終了する
+	4. メインスレッドがgetrusage(RUSAGE_SELF) を実行し、以下を確認
+	  - maxrssの値が  16Mバイト以上
+
+CT_005: 子プロセス作成時のRUSAGE_SELF のutime, stime, maxrss計測
+  観点：子プロセスのutime, stime, maxrssが加算されないことを確認する
+	1. getrusage(RUSAGE_SELF) を実行し、以下を確認
+	  - utimeの値が  0 < utime < 0.1 (秒)
+	  - stimeの値が  0 < stime < 0.1 (秒)
+	  - maxrssの値が 0より大きい
+	2. fork()で子プロセスを作成する
+	3. 親プロセスが、3秒程度かかる処理をユーザモードで実行
+	  3.1. 子プロセスが、1秒程度かかる処理をユーザモードで実行
+	  3.2. 子プロセスが、1秒程度かかる処理をカーネルモードで実行
+	  3.3. 子プロセスが、16Mバイトの領域の確保、書き込み、解放処理を実施
+	  3.4. 子プロセスが終了する
+	4. 親プロセスがwaitpid()で子プロセスの終了を回収する
+	5. getrusage(RUSAGE_SELF) を実行し、以下を確認
+	  - utimeの増分が  3秒程度
+	  - stimeの増分が  0.1秒未満
+	  - maxrssの値が 16Mバイト未満
+
+CT_006: 子プロセス作成時のRUSAGE_CHILDREN のutime, stime計測
+  観点：子プロセスのutime, stimeのみが計測されていることを確認する
+	1. getrusage(RUSAGE_CHILDREN) を実行し、以下を確認
+	  - utimeの値が  0 
+	  - stimeの値が  0 
+	2. fork()で子プロセスを作成する
+	3. 親プロセスが、1秒程度かかる処理をユーザモードで実行
+	  3.1. 子プロセスが、2秒程度かかる処理をユーザモードで実行
+	4. 親プロセスがgetrusage(RUSAGE_CHILDREN)を実行し、以下を確認
+	  - utimeの値が  0 (子プロセスがまだ終了していないため)
+	  - stimeの値が  0 
+	5. 親プロセスがwaitpid()で子プロセスの終了を待つ
+	  5.1. 子プロセスが、1秒程度かかる処理をカーネルモードで実行
+	  5.2. 子プロセスが終了する
+	6. 親プロセスがgetrusage(RUSAGE_CHILDREN)を実行し、以下を確認
+	  - utimeの増分が  2秒程度
+	  - stimeの増分が  1秒程度
+
+CT_007: 子プロセス作成時のRUSAGE_CHILDREN のmaxrss計測
+  観点：子プロセスのmaxrssのみが計測されていることを確認する
+	1. getrusage(RUSAGE_CHILDREN) を実行し、以下を確認
+	  - maxrssの値が 0
+	2. fork()で子プロセスを作成する
+	3. 親プロセスが、32Mバイトの領域の確保、書き込み、解放処理を実施
+	4. 親プロセスがwaitpid()で子プロセスの終了を待つ
+	  4.1. 子プロセスが、1秒程度かかる処理をユーザモードで実行
+	  4.2. 子プロセスが、16Mバイトの領域の確保、書き込み、解放処理を実施
+	  4.3. 子プロセスが終了する
+	5. 親プロセスがgetrusage(RUSAGE_CHILDREN)を実行し、以下を確認
+	  - maxrssの値が 16 < maxrss < 32 (MB)
+
+CT_008: 孫プロセス作成時のRUSAGE_CHILDREN のutime, stime, maxrss計測
+  観点：子プロセス、孫プロセスの使用資源が計測されることを確認する
+	1. getrusage(RUSAGE_SELF) を実行し、以下を確認
+	  - utimeの値が  0
+	  - stimeの値が  0
+	  - maxrssの値が 0
+	2. fork()で子プロセスを作成し、waitpidで子プロセスの終了を待つ
+	  2.1. 子プロセスが、fork()で孫プロセスを作成する
+	  2.2. 子プロセスが、ユーザモード処理2秒、カーネルモード処理1秒 を実施
+	  2.3. 子プロセスが、8Mバイトの領域の確保、書き込み、開放処理を実施
+	  2.4. 子プロセスが、waitpid()で孫プロセスの終了を待つ
+	    2.4.1. 孫プロセスが、ユーザモード処理1秒、カーネルモード処理1秒 を実施
+	    2.4.2. 孫プロセスが、32Mバイトの領域の確保、書き込み、開放処理を実施
+	    2.4.3. 孫プロセスが終了する
+	  2.5. 子プロセスが終了する
+	3. 親プロセスがgetrusage(RUSAGE_CHILDREN)を実行し、以下を確認
+	  - utimeの値が 3秒程度 (子2秒、孫1秒の和)
+	  - stimeの値が 2秒程度 (子1秒、孫1秒の和)
+	  - maxrssの値が 32 < maxrss < 40 (MB) (子、孫のmaxrssの最大値)
+
+CT_009: サブスレッド作成時のRUSAGE_THREAD のutime, stime計測
+  観点：複数のスレッドでそれぞれのutime, stimeが計測されることを確認する
+	1. getrusage(RUSAGE_THREAD) を実行し、以下を確認
+	  - utimeの値が  0 < utime < 0.1 (秒)
+	  - stimeの値が  0 < stime < 0.1 (秒)
+	2. 1秒程度かかる処理をユーザモードで実行 
+	3. pthread_create()でサブスレッドを作成する
+	4. メインスレッドが、pthread_join()でサブスレッドの終了を待つ
+	  4.1. サブスレッドがgetrusage(RUSAGE_THREAD) を実行し、以下を確認
+         - utimeの値が 0 < utime 0.1 (秒)
+         - stimeの値が 0 < stime 0.1 (秒)
+	  4.2. サブスレッドが、2秒程度かかる処理をユーザモードで実行 
+	  4.3. サブスレッドが、1秒程度かかる処理をカーネルモードで実行 
+	  4.4. サブスレッドがgetrusage(RUSAGE_THREAD) を実行し、以下を確認
+         - utimeの増分が 2秒程度
+         - stimeの増分が 1秒程度
+	  4.4. サブスレッドが、終了する
+	5. メインスレッドがgetrusage(RUSAGE_THREAD) を実行し、以下を確認
+	  - utimeの増分が  1秒程度
+	  - stimeの増分が  3秒程度 (join待ち3秒)
+   ※ Linuxではjoin待ち中は他タスクへとスイッチされてシステム時間が加算されないため、
+     Linuxでの実行時、本項目はFAILとなる
+
+CT_010: サブスレッド作成時のRUSAGE_THREAD のmaxrss計測
+  観点：複数のスレッドで、プロセス全体のmaxrssが取得されることを確認する
+	1. getrusage(RUSAGE_THREAD) を実行し、以下を確認
+      - maxrssの値が 0より大きい
+	2. 8Mバイトの領域の確保、書き込み、解放処理を実施
+	3. pthread_create()でサブスレッドを作成し、pthread_join()でサブスレッドの終了を待つ
+	  3.1. サブスレッドがgetrusage(RUSAGE_THREAD) を実行し、以下を確認
+         - maxrssの値が 8MB 以上
+	  3.2. サブスレッドが16Mバイトの領域の確保、書き込み、解放処理を実施
+	  3.3. サブスレッドが終了する
+	4. メインスレッドがgetrusage(RUSAGE_THREAD) を実行し、以下を確認
+         - maxrssの値が 16MB 以上
+
+3. 結果
+テストプログラムの1回分の実行結果をresult.log に示す。
+上記の項目がすべてPASSしていることを確認した。
