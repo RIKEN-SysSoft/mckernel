@@ -179,9 +179,7 @@ error_exit() {
 			if ! systemctl disable irqbalance_mck.service >/dev/null 2>/dev/null; then
 				echo "warning: failed to disable irqbalance_mck" >&2
 			fi
-# # POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
-#			if ! etcdir=@ETCDIR@ perl -e '$etcdir=$ENV{'etcdir'}; @files = grep { -f } glob "$etcdir/proc/irq/*/smp_affinity"; foreach $file (@files) { $dest = substr($file, length($etcdir)); if(0) {print "cp $file $dest\n";} system("cp $file $dest 2>/dev/null"); }'; then
-			if ! etcdir=@DESTDIR@/@ETCDIR@ perl -e '$etcdir=$ENV{'etcdir'}; @files = grep { -f } glob "$etcdir/proc/irq/*/smp_affinity"; foreach $file (@files) { $dest = substr($file, length($etcdir)); if(0) {print "cp $file $dest\n";} system("cp $file $dest 2>/dev/null"); }'; then
+			if ! perl -e '$tmpdir="/tmp/mcreboot"; @files = grep { -f } glob "$tmpdir/proc/irq/*/smp_affinity"; foreach $file (@files) { $dest = substr($file, length($tmpdir)); if (1) {print "cp $file $dest\n";} system("cp $file $dest 2>/dev/null"); }'; then
 				echo "warning: failed to restore /proc/irq/*/smp_affinity" >&2
 			fi
 			if ! systemctl start irqbalance.service; then
@@ -256,9 +254,7 @@ if [ "${irqbalance_used}" == "yes" ]; then
 		exit 1
     fi;
 
-# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
-#    if ! etcdir=@ETCDIR@ perl -e 'use File::Copy qw(copy); $etcdir=$ENV{'etcdir'}; @files = grep { -f } glob "/proc/irq/*/smp_affinity"; foreach $file (@files) { $rel = substr($file, 1); $dir=substr($rel, 0, length($rel)-length("/smp_affinity")); if(0) { print "cp $file $etcdir/$rel\n";} if(system("mkdir -p $etcdir/$dir")){ exit 1;} if(!copy($file,"$etcdir/$rel")){ exit 1;} }'; then
-    if ! etcdir=@DESTDIR@/@ETCDIR@ perl -e 'use File::Copy qw(copy); $etcdir=$ENV{'etcdir'}; @files = grep { -f } glob "/proc/irq/*/smp_affinity"; foreach $file (@files) { $rel = substr($file, 1); $dir=substr($rel, 0, length($rel)-length("/smp_affinity")); if(0) { print "cp $file $etcdir/$rel\n";} if(system("mkdir -p $etcdir/$dir")){ exit 1;} if(!copy($file,"$etcdir/$rel")){ exit 1;} }'; then
+    if ! perl -e 'use File::Copy qw(copy); $tmpdir="/tmp/mcreboot"; @files = grep { -f } glob "/proc/irq/*/smp_affinity"; foreach $file (@files) { $rel = substr($file, 1); $dir = substr($rel, 0, length($rel) - length("/smp_affinity")); if (system("mkdir -p $tmpdir/$dir")) { exit 1; } if (0) { print "cp $file $tmpdir/$rel\n"; } if (!copy($file,"$tmpdir/$rel")) { exit 1; } }'; then
 		echo "error: saving /proc/irq/*/smp_affinity" >&2
 		error_exit "mcos_sys_mounted"
 	fi;

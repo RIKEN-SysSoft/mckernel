@@ -126,9 +126,7 @@ fi
 
 # Start irqbalance with the original settings
 if [ "${irqbalance_used}" != "" ]; then
-# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
-#	if ! etcdir=@ETCDIR@ perl -e '$etcdir=$ENV{'etcdir'}; @files = grep { -f } glob "$etcdir/proc/irq/*/smp_affinity"; foreach $file (@files) { $dest = substr($file, length($etcdir)); if(0) {print "cp $file $dest\n";} system("cp $file $dest 2>/dev/null"); }'; then
-	if ! etcdir=@DESTDIR@/@ETCDIR@ perl -e '$etcdir=$ENV{'etcdir'}; @files = grep { -f } glob "$etcdir/proc/irq/*/smp_affinity"; foreach $file (@files) { $dest = substr($file, length($etcdir)); if(0) {print "cp $file $dest\n";} system("cp $file $dest 2>/dev/null"); }'; then
+	if ! perl -e '$tmpdir="/tmp/mcreboot"; @files = grep { -f } glob "$tmpdir/proc/irq/*/smp_affinity"; foreach $file (@files) { $dest = substr($file, length($tmpdir)); if (0) {print "cp $file $dest\n";} system("cp $file $dest 2>/dev/null"); }'; then
 		echo "warning: failed to restore /proc/irq/*/smp_affinity" >&2
 	fi
 	if ! systemctl start irqbalance.service; then
