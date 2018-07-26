@@ -25,6 +25,15 @@ mem=""
 cpus=""
 irqbalance_used=""
 
+disable_irqbalance_mck() {
+	if [ -f /etc/systemd/system/irqbalance_mck.service ]; then
+		systemctl disable irqbalance_mck.service >/dev/null 2>/dev/null
+
+		# Invalid .service file persists so remove it
+		rm -f /etc/systemd/system/irqbalance_mck.service
+	fi
+}
+
 # No SMP module? Exit.
 if ! grep ihk_smp_@ARCH@ /proc/modules &>/dev/null; then exit 0; fi
 
@@ -33,9 +42,7 @@ if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: ac
 	if ! systemctl stop irqbalance_mck.service 2>/dev/null; then
 		echo "warning: failed to stop irqbalance_mck" >&2
 	fi
-	if ! systemctl disable irqbalance_mck.service >/dev/null 2>/dev/null; then
-		echo "warning: failed to disable irqbalance_mck" >&2
-	fi
+	disable_irqbalance_mck
 fi
 
 # Destroy all LWK instances
