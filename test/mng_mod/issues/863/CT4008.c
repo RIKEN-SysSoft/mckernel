@@ -12,12 +12,15 @@
 #define FILESIZE (2L * 1024 * 1024 * 1024)
 
 pid_t pid;
+int fd;
 
 void
 sig(int s)
 {
+	char line[80];
 	fprintf(stderr, "kill SIGTERM (ignored)\n");
-	kill(pid, SIGTERM);
+	sprintf(line, "%d %d %d\n", 0, pid, SIGTERM);
+	write(fd, line, strlen(line));
 }
 
 void
@@ -46,6 +49,7 @@ main(int argc, char **argv)
 	int st;
 	int rc;
 
+	fd = atoi(argv[1]);
 	pid = fork();
 	if (pid == 0) {
 		signal(SIGTERM, SIG_IGN);
@@ -56,21 +60,21 @@ main(int argc, char **argv)
 	alarm(2);
 	while ((rc = waitpid(pid, &st, 0)) == -1 && errno == EINTR);
 	if (rc != pid) {
-		fprintf(stderr, "CT3008 NG BAD wait rc=%d errno=%d\n", rc, errno);
+		fprintf(stderr, "CT4008 NG BAD wait rc=%d errno=%d\n", rc, errno);
 		exit(1);
 	}
 	if (WIFSIGNALED(st)) {
-		fprintf(stderr, "CT3008 NG BAD signal st=%08x\n", st);
+		fprintf(stderr, "CT4008 NG BAD signal st=%08x\n", st);
 		exit(1);
 	}
 	if (!WIFEXITED(st)) {
-		fprintf(stderr, "CT3008 NG BAD terminated st=%08x\n", st);
+		fprintf(stderr, "CT4008 NG BAD terminated st=%08x\n", st);
 		exit(1);
 	}
 	if (WEXITSTATUS(st) != 99) {
-		fprintf(stderr, "CT3008 NG BAD exit status st=%08x\n", st);
+		fprintf(stderr, "CT4008 NG BAD exit status st=%08x\n", st);
 		exit(1);
 	}
-	fprintf(stderr, "CT3008 OK\n");
+	fprintf(stderr, "CT4008 OK\n");
 	exit(0);
 }
