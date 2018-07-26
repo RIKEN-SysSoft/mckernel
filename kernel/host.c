@@ -79,7 +79,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	unsigned long s, e, up;
 	char **argv;
 	char **a;
-	int i, n, argc, envc, args_envs_npages, l;
+	int i, n, argc, envc, args_envs_npages;
 	char **env;
 	int range_npages;
 	void *up_v;
@@ -349,21 +349,25 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	// Update variables
 	argc = *((long *)(args_envs));
 	dkprintf("argc: %d\n", argc);
-
 	argv = (char **)(args_envs + (sizeof(long)));
-	if(proc->saved_cmdline){
+
+	if (proc->saved_cmdline) {
 		kfree(proc->saved_cmdline);
+		proc->saved_cmdline = NULL;
 		proc->saved_cmdline_len = 0;
 	}
-	for(a = argv, l = 0; *a; a++)
-		l += strlen(args_envs + (unsigned long)*a) + 1;
+
 	proc->saved_cmdline = kmalloc(p->args_len, IHK_MC_AP_NOWAIT);
-	if(!proc->saved_cmdline)
+	if (!proc->saved_cmdline) {
 		goto err;
-	proc->saved_cmdline_len = l;
-	for(a = argv, l = 0; *a; a++){
-		strcpy(proc->saved_cmdline + l, args_envs + (unsigned long)*a);
-		l += strlen(args_envs + (unsigned long)*a) + 1;
+	}
+
+	proc->saved_cmdline_len = p->args_len - ((argc + 1) * sizeof(char **));
+	memcpy(proc->saved_cmdline,
+			(char *)args_envs + ((argc + 1) * sizeof(char **)),
+			proc->saved_cmdline_len);
+
+	for (a = argv; *a; a++) {
 		*a = (char *)addr + (unsigned long)*a; // Process' address space!
 	}
 
