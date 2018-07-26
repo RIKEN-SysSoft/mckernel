@@ -3407,7 +3407,7 @@ perf_counter_alloc(struct thread *thread)
 	int i = 0;
 
 	// find avail generic counter
-    for(i = 0; i < X86_IA32_NUM_PERF_COUNTERS; i++) {
+	for (i = 0; i < NUM_PERF_COUNTERS; i++) {
 		if(!(thread->pmc_alloc_map & (1 << i))) {
 			ret = i;
 			break;
@@ -3431,24 +3431,19 @@ perf_counter_start(struct mc_perf_event *event)
 		mode |= PERFCTR_USER_MODE;
 	}
 
-	if(event->counter_id >= 0 && event->counter_id < X86_IA32_NUM_PERF_COUNTERS) {
-		if (event->extra_reg.reg) {
-			if (ihk_mc_perfctr_set_extra(event)) {
-				ret = -1;
-				goto out;
-			}
+	if (event->extra_reg.reg) {
+		if (ihk_mc_perfctr_set_extra(event)) {
+			ret = -1;
+			goto out;
 		}
-		ret = ihk_mc_perfctr_init_raw(event->counter_id, event->hw_config, mode);
-		ihk_mc_perfctr_start(1UL << event->counter_id);
 	}
-	else if(event->counter_id >= X86_IA32_BASE_FIXED_PERF_COUNTERS &&
-		event->counter_id < X86_IA32_BASE_FIXED_PERF_COUNTERS + X86_IA32_NUM_FIXED_PERF_COUNTERS) {
-		ret = ihk_mc_perfctr_fixed_init(event->counter_id, mode);
-		ihk_mc_perfctr_start(1UL << event->counter_id);
+	ret = ihk_mc_perfctr_init_raw(event->counter_id,
+		event->hw_config, mode);
+	if (ret) {
+		goto out;
 	}
-	else {
-		ret = -1;
-	}
+
+	ihk_mc_perfctr_start(1UL << event->counter_id);
 
 out:
 	return ret;
@@ -3578,15 +3573,15 @@ perf_start(struct mc_perf_event *event)
 	struct mc_perf_event *leader = event->group_leader, *sub;
 
 	counter_id = leader->counter_id;
-	if((1UL << counter_id & X86_IA32_PERF_COUNTERS_MASK) | 
-	(1UL << counter_id & X86_IA32_FIXED_PERF_COUNTERS_MASK)) {
+	if ((1UL << counter_id & PERF_COUNTERS_MASK) |
+	    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
 		perf_counter_start(leader);
 	}
 
 	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
 		counter_id = sub->counter_id;
-		if((1UL << counter_id & X86_IA32_PERF_COUNTERS_MASK) | 
-		(1UL << counter_id & X86_IA32_FIXED_PERF_COUNTERS_MASK)) {
+		if ((1UL << counter_id & PERF_COUNTERS_MASK) |
+		    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
 			perf_counter_start(sub);
 		}
 	}
@@ -3600,15 +3595,15 @@ perf_reset(struct mc_perf_event *event)
 	struct mc_perf_event *leader = event->group_leader, *sub;
 
 	counter_id = leader->counter_id;
-	if((1UL << counter_id & X86_IA32_PERF_COUNTERS_MASK) | 
-	(1UL << counter_id & X86_IA32_FIXED_PERF_COUNTERS_MASK)) {
+	if ((1UL << counter_id & PERF_COUNTERS_MASK) |
+	    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
 		ihk_mc_perfctr_reset(counter_id);
 	}
 
 	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
 		counter_id = sub->counter_id;
-		if((1UL << counter_id & X86_IA32_PERF_COUNTERS_MASK) | 
-		(1UL << counter_id & X86_IA32_FIXED_PERF_COUNTERS_MASK)) {
+		if ((1UL << counter_id & PERF_COUNTERS_MASK) |
+		    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
 			ihk_mc_perfctr_reset(counter_id);
 		}
 	}
@@ -3622,29 +3617,29 @@ perf_stop(struct mc_perf_event *event)
 
 #ifdef POSTK_DEBUG_TEMP_FIX_30
 	counter_id = leader->counter_id;
-	if((1UL << counter_id & X86_IA32_PERF_COUNTERS_MASK) | 
-	(1UL << counter_id & X86_IA32_FIXED_PERF_COUNTERS_MASK)) {
+	if ((1UL << counter_id & PERF_COUNTERS_MASK) |
+	    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
 		ihk_mc_perfctr_stop(counter_id);
 	}
 
 	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
 		counter_id = sub->counter_id;
-		if((1UL << counter_id & X86_IA32_PERF_COUNTERS_MASK) | 
-		(1UL << counter_id & X86_IA32_FIXED_PERF_COUNTERS_MASK)) {
+		if ((1UL << counter_id & PERF_COUNTERS_MASK) |
+		    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
 			ihk_mc_perfctr_stop(counter_id);
 		}
 	}
 #else
 	counter_id = leader->counter_id;
-	if((1UL << counter_id & X86_IA32_PERF_COUNTERS_MASK) |
-	(1UL << counter_id & X86_IA32_FIXED_PERF_COUNTERS_MASK)) {
+	if ((1UL << counter_id & PERF_COUNTERS_MASK) |
+	    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
 		ihk_mc_perfctr_stop(1UL << counter_id);
 	}
 
 	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
 		counter_id = sub->counter_id;
-		if((1UL << counter_id & X86_IA32_PERF_COUNTERS_MASK) |
-		(1UL << counter_id & X86_IA32_FIXED_PERF_COUNTERS_MASK)) {
+		if ((1UL << counter_id & PERF_COUNTERS_MASK) |
+		    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
 			ihk_mc_perfctr_stop(1UL << counter_id);
 		}
 	}
