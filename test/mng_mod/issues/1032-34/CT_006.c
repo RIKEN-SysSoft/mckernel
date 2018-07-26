@@ -73,11 +73,11 @@ int main(int argc, char* argv[])
 
 		printf("[ RUSAGE_CHILDREN ]\n");
 		OKNG(cur_utime != 0,
-				"  utime: %d.%06d s (+ %d.%06d s)",
+				"  utime: %d.%06d s (+ %d.%06d s)  <- 子プロセスが未終了のため、0",
 				(cur_utime / ONE_SEC), (cur_utime % ONE_SEC),
 				(delta_utime / ONE_SEC), (delta_utime % ONE_SEC));
 		OKNG(cur_stime != 0,
-				"  stime: %d.%06d s (+ %d.%06d s)",
+				"  stime: %d.%06d s (+ %d.%06d s)  <- 子プロセスが未終了のため、0",
 				(cur_stime / ONE_SEC), (cur_stime % ONE_SEC),
 				(delta_stime / ONE_SEC), (delta_stime % ONE_SEC));
 

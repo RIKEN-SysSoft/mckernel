@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
 			(cur_utime / ONE_SEC), (cur_utime % ONE_SEC),
 			(delta_utime / ONE_SEC), (delta_utime % ONE_SEC));
 	OKNG(delta_stime < (2.9 * ONE_SEC) || delta_stime > (3.1 * ONE_SEC),
-			"  stime: %d.%06d s (+ %d.%06d s)",
+			"  stime: %d.%06d s (+ %d.%06d s)  <- join待ち3秒",
 			(cur_stime / ONE_SEC), (cur_stime % ONE_SEC),
 			(delta_stime / ONE_SEC), (delta_stime % ONE_SEC));
 

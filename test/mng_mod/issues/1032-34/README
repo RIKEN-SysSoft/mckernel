@@ -4,13 +4,14 @@ McKernelでのgetrusage()の基本動作確認（10項目）の計13項目のテ
 なお、各テストの実行結果は./result.log として格納している。
 
 ①Issueで報告されたテストプログラムによる確認
- ・Issue#1032
+ ・Issue#1032, Issue#1033, Issue#1034
  報告で使用されたテストプログラムを100回ずつ実行し、現象が再現しないことを確認した。
- 実行時の出力の1回分を./result.log に記載している
+ 実行時の出力の1回分を./result.log に記載している。
  
 ②McKernelでのgetrusage()の基本動作確認
 以下の内容で、Issue#1032～#1034による変更が既存機能に影響しないことを確認した。
 各項目はそれぞれ100回ずつ実行し、すべてでPASSすることを確認した。
+テストプログラムの1回分の実行結果をresult.log に記載している。
 
 基本動作確認の詳細を以下に示す。
 
@@ -22,7 +23,14 @@ McKernelでのgetrusage()の基本動作確認（10項目）の計13項目のテ
 	4. sh make test を実行する
 	5. ./rm_test_driver.sh を実行し、テスト用のデバイスドライバをアンロードする
 
-2. テスト項目
+2. 前提
+ テスト中でのCPU時間の加算処理は以下のようにして行っている。
+  utime：alarm(2)とSIGALRMハンドラを用いて、SIGALRM受信をcpu_pause()で待つ
+  stime：テスト用のデバイスドライバファイル(/dev/test_rusage) へのioctl発行
+         上記ioctlはrequest番号秒だけシステム内で処理を行う
+         (Linuxでの実行時はタスクがスイッチされるため想定通りの結果は得られない)
+
+3. テスト項目
 CT_001: 単一プロセスでのRUSAGE_SELFの utime, stime計測動作
   観点：自プロセスのutime, stime計測を確認する
 	1. getrusage(RUSAGE_SELF) を実行し、以下を確認
@@ -184,6 +192,3 @@ CT_010: サブスレッド作成時のRUSAGE_THREAD のmaxrss計測
 	4. メインスレッドがgetrusage(RUSAGE_THREAD) を実行し、以下を確認
          - maxrssの値が 16MB 以上
 
-3. 結果
-テストプログラムの1回分の実行結果をresult.log に示す。
-上記の項目がすべてPASSしていることを確認した。

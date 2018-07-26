@@ -72,11 +72,11 @@ int main(int argc, char* argv[])
 
 	printf("[ RUSAGE_SELF ]\n");
 	OKNG(delta_utime < (1.9 * ONE_SEC) || delta_utime > (2.1 * ONE_SEC),
-			"  utime: %d.%06d s (+ %d.%06d s)",
+			"  utime: %d.%06d s (+ %d.%06d s)  <- サブスレッド増分2秒",
 			(cur_utime / ONE_SEC), (cur_utime % ONE_SEC),
 			(delta_utime / ONE_SEC), (delta_utime % ONE_SEC));
 	OKNG(delta_stime < (3.9 * ONE_SEC) || delta_stime > (4.1 * ONE_SEC),
-			"  stime: %d.%06d s (+ %d.%06d s)",
+			"  stime: %d.%06d s (+ %d.%06d s)  <- サブスレッド増分1秒 + メインスレッドjoin待ち3秒",
 			(cur_stime / ONE_SEC), (cur_stime % ONE_SEC),
 			(delta_stime / ONE_SEC), (delta_stime % ONE_SEC));
 

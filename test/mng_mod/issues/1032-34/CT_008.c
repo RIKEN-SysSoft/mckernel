@@ -123,15 +123,16 @@ int main(int argc, char* argv[])
 
 	printf("[ RUSAGE_CHILDREN ]\n");
 	OKNG(cur_utime < (2.9 * ONE_SEC) || delta_utime > (3.1 * ONE_SEC),
-			"  utime: %d.%06d s (+ %d.%06d s)",
+			"  utime: %d.%06d s (+ %d.%06d s)  <- 子プロセス2秒、孫プロセス1秒の和",
 			(cur_utime / ONE_SEC), (cur_utime % ONE_SEC),
 			(delta_utime / ONE_SEC), (delta_utime % ONE_SEC));
 	OKNG(cur_stime < (1.9 * ONE_SEC) || delta_stime > (2.1 * ONE_SEC),
-			"  stime: %d.%06d s (+ %d.%06d s)",
+			"  stime: %d.%06d s (+ %d.%06d s)  <- 子プロセス1秒、孫プロセス1秒の和",
 			(cur_stime / ONE_SEC), (cur_stime % ONE_SEC),
 			(delta_stime / ONE_SEC), (delta_stime % ONE_SEC));
 	OKNG(cur_maxrss < 32 * 1024 || cur_maxrss > 40 * 1024,
-			"  maxrss: %d KB (+ %d KB)", cur_maxrss, delta_maxrss);
+			"  maxrss: %d KB (+ %d KB)  <- 子、孫のmaxrssの最大値",
+	        cur_maxrss, delta_maxrss);
 
 	prev_utime = cur_utime;
 	prev_stime = cur_stime;
