@@ -22,6 +22,10 @@ if (${ARCH} STREQUAL "x86_64")
 	add_compile_options(-mcmodel=large -mno-red-zone -mno-sse)
 endif()
 
+if (ENABLE_STACK_PROTECTOR)
+	add_compile_options(-fstack-protector-strong)
+endif(ENABLE_STACK_PROTECTOR)
+
 set(MCKERNEL_SRCS
 	init.c mem.c debug.c mikc.c listeners.c ap.c syscall.c cls.c host.c process.c
 	copy.c waitq.c futex.c timer.c plist.c fileobj.c shmobj.c zeroobj.c

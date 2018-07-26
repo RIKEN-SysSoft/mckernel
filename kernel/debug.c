@@ -21,6 +21,7 @@
 #include <sysfs.h>
 #include <debug.h>
 #include <limits.h>
+#include <config.h>
 
 struct ihk_kmsg_buf *kmsg_buf;
 
@@ -178,6 +179,15 @@ int kprintf(const char *format, ...)
 	barrier();
 	return len;
 }
+
+#ifdef ENABLE_STACK_PROTECTOR
+void __stack_chk_fail(void)
+{
+	kprintf("stack-protector check failed, return address: %llx\n",
+		__builtin_return_address(0));
+	panic("stack_chk_fail");
+}
+#endif
 
 void kmsg_init()
 {
