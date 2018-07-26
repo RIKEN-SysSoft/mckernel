@@ -1750,13 +1750,13 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 		return -EINVAL;
 	}
 
-	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+	pathbuf = kmalloc(PATH_MAX, GFP_KERNEL);
 	if (!pathbuf) {
 		retval = -ENOMEM;
 		goto out;
 	}
 
-	kfilename = kmalloc(PATH_MAX, GFP_TEMPORARY);
+	kfilename = kmalloc(PATH_MAX, GFP_KERNEL);
 	if (!kfilename) {
 		retval = -ENOMEM;
 		kfree(pathbuf);

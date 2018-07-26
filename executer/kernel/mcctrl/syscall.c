@@ -1205,7 +1205,7 @@ static int pager_get_path(struct file *file, char *path) {
 	int error = 0;
 	char *pathbuf, *fullpath;
 
-	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+	pathbuf = kmalloc(PATH_MAX, GFP_KERNEL);
 	if (!pathbuf) {
 		printk("%s: ERROR: allocating path\n", __FUNCTION__);
 		error = -ENOMEM;
@@ -1313,7 +1313,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 			{
 				char *pathbuf, *fullpath;
 
-				pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+				pathbuf = kmalloc(PATH_MAX, GFP_KERNEL);
 				if (pathbuf) {
 					fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
 					if (!IS_ERR(fullpath)) {
