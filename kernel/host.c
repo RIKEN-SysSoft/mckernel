@@ -362,10 +362,13 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		goto err;
 	}
 
-	proc->saved_cmdline_len = p->args_len - ((argc + 1) * sizeof(char **));
+	proc->saved_cmdline_len = p->args_len - ((argc + 2) * sizeof(char **));
 	memcpy(proc->saved_cmdline,
-			(char *)args_envs + ((argc + 1) * sizeof(char **)),
+			(char *)args_envs + ((argc + 2) * sizeof(char **)),
 			proc->saved_cmdline_len);
+	dkprintf("%s: saved_cmdline: %s\n",
+			__FUNCTION__,
+			proc->saved_cmdline);
 
 	for (a = argv; *a; a++) {
 		*a = (char *)addr + (unsigned long)*a; // Process' address space!
