@@ -136,6 +136,18 @@ int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxp
 	obj->memobj.flags = MF_HAS_PAGER | MF_DEV_FILE;
 	obj->memobj.size = len;
 	obj->handle = result.handle;
+
+	dkprintf("%s: path=%s\n", __FUNCTION__, result.path);
+	if (result.path[0]) {
+		obj->memobj.path = kmalloc(PATH_MAX, IHK_MC_AP_NOWAIT);
+		if (!obj->memobj.path) {
+			error = -ENOMEM;
+			kprintf("%s: ERROR: Out of memory\n", __FUNCTION__);
+			goto out;
+		}
+		strncpy(obj->memobj.path, result.path, PATH_MAX);
+	}
+
 	obj->ref = 1;
 	obj->pfn_pgoff = off / PAGE_SIZE;
 	obj->npages = npages;
@@ -217,6 +229,11 @@ static void devobj_release(struct memobj *memobj)
 			ihk_mc_free_pages(obj->pfn_table, pfn_npages);
 #endif /*POSTK_DEBUG_TEMP_FIX_36*/
 		}
+
+		if (to_memobj(free_obj)->path) {
+			kfree(to_memobj(free_obj)->path);
+		}
+
 		kfree(free_obj);
 	}
 

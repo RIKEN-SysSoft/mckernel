@@ -61,6 +61,7 @@ struct memobj {
 	/* For pre-mapped memobjects */
 	void **pages;
 	int nr_pages;
+	char *path;
 };
 
 typedef void memobj_release_func_t(struct memobj *obj);

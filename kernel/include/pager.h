@@ -13,6 +13,7 @@
 #define HEADER_PAGER_H
 
 #include <ihk/types.h>
+#include <limits.h>
 
 enum pager_op {
 	PAGER_REQ_CREATE =	0x0001,
@@ -32,6 +33,7 @@ struct pager_create_result {
 	int		maxprot;
 	uint32_t flags;
 	size_t size;
+	char path[PATH_MAX];
 };
 
 /*
@@ -46,6 +48,7 @@ struct pager_map_result {
 	uintptr_t	handle;
 	int		maxprot;
 	int8_t		padding[4];
+	char path[PATH_MAX];
 };
 
 /* for pager_req_pfn() */
