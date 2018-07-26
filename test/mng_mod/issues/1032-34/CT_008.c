@@ -12,12 +12,12 @@
 int main(int argc, char* argv[])
 {
 	int rc;
-	char *buf_child = NULL, *buf_mago = NULL;
+	char *buf_child = NULL, *buf_grand_child = NULL;
 	struct rusage cur_rusage;
 	long cur_utime, cur_stime, cur_maxrss;
 	long delta_utime, delta_stime, delta_maxrss;
 	long prev_utime = 0, prev_stime = 0, prev_maxrss = 0;
-	int pid, pid_mago, status, status_mago;
+	int pid, pid_grand_child, status, status_grand_child;
 
 	printf("----  just started ----\n");
 	/* check rusage 1st */
@@ -52,31 +52,31 @@ int main(int argc, char* argv[])
 	CHKANDJUMP(pid == -1, "fork");
 
 	if (pid == 0) { /* child */
-		printf("    ----  fork mago process  ----\n");
-		pid_mago = fork();
-		CHKANDJUMP(pid_mago == -1, "fork mago");
+		printf("    ----  fork grand_child process  ----\n");
+		pid_grand_child = fork();
+		CHKANDJUMP(pid_grand_child == -1, "fork grand_child");
 
-		if (pid_mago == 0) /* mago */
+		if (pid_grand_child == 0) /* grand_child */
 		{
 			/* add utime 1sec */
-			printf("        ----  add utime 1sec in mago  ----\n");
+			printf("        ----  add utime 1sec in grand_child  ----\n");
 			add_utime(1);
 
 			/* add stime 1sec */
-			printf("        ----  add stime 1sec in mago  ----\n");
+			printf("        ----  add stime 1sec in grand_child  ----\n");
 			add_stime(1);
 			
 			/* mmap 32MB */
-			printf("        ----  mmap and access 32MB (%d KB) in mago  ----\n", 32 * 1024);
-			buf_mago = mmap(0, 32 * M_BYTE, PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
-			CHKANDJUMP(!buf_mago, "mmap");
-			memset(buf_mago, 0xff, 32 * M_BYTE);
+			printf("        ----  mmap and access 32MB (%d KB) in grand_child  ----\n", 32 * 1024);
+			buf_grand_child = mmap(0, 32 * M_BYTE, PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
+			CHKANDJUMP(!buf_grand_child, "mmap");
+			memset(buf_grand_child, 0xff, 32 * M_BYTE);
 
 			/* munmap 32MB */
-			printf("        ----  munmap 32MB (%d KB) in mago  ----\n", 32 * 1024);
-			munmap(buf_mago, 16 * M_BYTE);
+			printf("        ----  munmap 32MB (%d KB) in grand_child  ----\n", 32 * 1024);
+			munmap(buf_grand_child, 16 * M_BYTE);
 
-			printf("        ----  mago process exit  ----\n");
+			printf("        ----  grand_child process exit  ----\n");
 			_exit(234);
 		}
 
@@ -98,8 +98,8 @@ int main(int argc, char* argv[])
 		printf("    ----  munmap 8MB (%d KB) in child  ----\n", 8 * 1024);
 		munmap(buf_child, 8 * M_BYTE);
 
-		printf("    ----  wait mago's exit  ----\n");
-		rc = waitpid(pid_mago, &status_mago, 0);
+		printf("    ----  wait grand_child's exit  ----\n");
+		rc = waitpid(pid_grand_child, &status_grand_child, 0);
 		CHKANDJUMP(rc == -1, "waitpid");
 
 		printf("    ----  child process exit  ----\n");
