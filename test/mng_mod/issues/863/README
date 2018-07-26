@@ -1,6 +1,13 @@
 【Issue#863 動作確認】
 1. Issue#863および、同件のIssue#870で指摘されたテストプログラムを用いて
    現象が解消されていることを確認した。(2件)
+
+   Issue#863の実行方法は、stress_test のディレクトリで以下のコマンドを実行する。
+      /path/to/mcexec/mcexec ./signalonread-multi
+
+   Issue#870の実行方法は、stress_test のディレクトリで以下のコマンドを実行する。
+      ./mck-mcexec.sh ./killit -t 4000 - ./signalonread -nt 4 -nosignal
+
    実行結果(エビデンス)は以下の通り。
 
 CT1001.txt Issue#863の指摘で使用されたテストプログラムの実行結果(OK 1件、NG 0件)
