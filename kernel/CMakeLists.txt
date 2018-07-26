@@ -31,6 +31,8 @@ set(MCKERNEL_SRCS
 	copy.c waitq.c futex.c timer.c plist.c fileobj.c shmobj.c zeroobj.c
 	procfs.c devobj.c sysfs.c xpmem.c profile.c freeze.c rbtree.c pager.c
 
+	file_ops.c user_sdma.c sdma.c user_exp_rcv.c chip.c
+
 	${IHK_FULL_SOURCE_DIR}/ikc/queue.c ${IHK_FULL_SOURCE_DIR}/ikc/master.c
 	${IHK_FULL_SOURCE_DIR}/ikc/manycore.c
 
