@@ -1,0 +1,273 @@
+./CT_001.sh
+*** CT_001 start *******************
+** exec ltp-syscall_mkdir09  30 times
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+mkdir09     1  TPASS  :  PASS
+[OK] ltp-syscall_mkdir09  30 times all passed
+*** CT_001 PASSED
+
+./CT_002.sh
+*** CT_002 start *******************
+** exec ostest siginfo_00
+TEST_SUITE: siginfo
+TEST_NUMBER: 0
+ARGS:
+=== raise signal #1 ===
+Catch signal #1
+  siginfo->si_signo = 1
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #2 ===
+Catch signal #2
+  siginfo->si_signo = 2
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #3 ===
+Catch signal #3
+  siginfo->si_signo = 3
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #4 ===
+Catch signal #4
+  siginfo->si_signo = 4
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #5 ===
+Catch signal #5
+  siginfo->si_signo = 5
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #6 ===
+Catch signal #6
+  siginfo->si_signo = 6
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #7 ===
+Catch signal #7
+  siginfo->si_signo = 7
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #8 ===
+Catch signal #8
+  siginfo->si_signo = 8
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #10 ===
+Catch signal #10
+  siginfo->si_signo = 10
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #11 ===
+Catch signal #11
+  siginfo->si_signo = 11
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #12 ===
+Catch signal #12
+  siginfo->si_signo = 12
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #13 ===
+Catch signal #13
+  siginfo->si_signo = 13
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #14 ===
+Catch signal #14
+  siginfo->si_signo = 14
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #15 ===
+Catch signal #15
+  siginfo->si_signo = 15
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #16 ===
+Catch signal #16
+  siginfo->si_signo = 16
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #17 ===
+Catch signal #17
+  siginfo->si_signo = 17
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #18 ===
+Catch signal #18
+  siginfo->si_signo = 18
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #20 ===
+Catch signal #20
+  siginfo->si_signo = 20
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #21 ===
+Catch signal #21
+  siginfo->si_signo = 21
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #22 ===
+Catch signal #22
+  siginfo->si_signo = 22
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #23 ===
+Catch signal #23
+  siginfo->si_signo = 23
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #24 ===
+Catch signal #24
+  siginfo->si_signo = 24
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #25 ===
+Catch signal #25
+  siginfo->si_signo = 25
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #26 ===
+Catch signal #26
+  siginfo->si_signo = 26
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #27 ===
+Catch signal #27
+  siginfo->si_signo = 27
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #28 ===
+Catch signal #28
+  siginfo->si_signo = 28
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #29 ===
+Catch signal #29
+  siginfo->si_signo = 29
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #30 ===
+Catch signal #30
+  siginfo->si_signo = 30
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+=== raise signal #31 ===
+Catch signal #31
+  siginfo->si_signo = 31
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0xfffffffa
+RESULT: ok
+[OK] ostest siginfo_00  passed
+*** CT_002 PASSED
+
+./CT_003.sh
+*** CT_003 start *******************
+** exec ostest siginfo_01 and then send SIGHUP to mcexec
+TEST_SUITE: siginfo
+TEST_NUMBER: 1
+ARGS:
+==================================================
+Please send signal to mcexec(pid=12295) from console.
+Exit Once you throw twice the same signal.
+==================================================
+** back ground process(mcexec): 12295
+** send SIGHUP to mcexec once
+Catch signal #1
+  siginfo->si_signo = 1
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0x0
+** check existing of 12295
+  PID TTY          TIME CMD
+12295 pts/0    00:00:00 exe
+[OK] 12295 exists yet
+** send SIGHUP to mcexec again
+Terminate by signal 1
+./CT_003.sh: line 34: 12295 Hangup                  ${MCEXEC} ${OSTEST_DIR}/bin/test_mck -s siginfo -n 1
+** check existing of 12295
+  PID TTY          TIME CMD
+[OK] 12295 doesn't exist (be killed by signal)
+*** CT_003 PASSED
+
+./CT_004.sh
+*** CT_004 start *******************
+** exec ostest siginfo_01 and then send SIGINT to mcexec
+TEST_SUITE: siginfo
+TEST_NUMBER: 1
+ARGS:
+==================================================
+Please send signal to mcexec(pid=12311) from console.
+Exit Once you throw twice the same signal.
+==================================================
+** back ground process(mcexec): 12311
+** send SIGINT to mcexec once
+Catch signal #2
+  siginfo->si_signo = 2
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0x0
+** check existing of 12311
+  PID TTY          TIME CMD
+12311 pts/0    00:00:00 exe
+[OK] 12311 exists yet
+** send SIGINT to mcexec again
+Terminate by signal 2
+** check existing of 12311
+  PID TTY          TIME CMD
+[OK] 12311 doesn't exist (be killed by signal)
+*** CT_004 PASSED
+
+./CT_005.sh
+*** CT_005 start *******************
+** exec ostest siginfo_01 and then send SIGTERM to mcexec
+TEST_SUITE: siginfo
+TEST_NUMBER: 1
+ARGS:
+==================================================
+Please send signal to mcexec(pid=12327) from console.
+Exit Once you throw twice the same signal.
+==================================================
+** back ground process(mcexec): 12327
+** send SIGTERM to mcexec once
+Catch signal #15
+  siginfo->si_signo = 15
+  siginfo->si_errno = 0
+  siginfo->si_code  = 0x0
+** check existing of 12327
+  PID TTY          TIME CMD
+12327 pts/0    00:00:00 exe
+[OK] 12327 exists yet
+** send SIGTERM to mcexec again
+Terminate by signal 15
+./CT_005.sh: line 34: 12327 Terminated              ${MCEXEC} ${OSTEST_DIR}/bin/test_mck -s siginfo -n 1
+** check existing of 12327
+  PID TTY          TIME CMD
+[OK] 12327 doesn't exist (be killed by signal)
+*** CT_005 PASSED
