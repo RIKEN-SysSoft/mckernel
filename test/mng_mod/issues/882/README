@@ -1,7 +1,11 @@
 【Issue#882 動作確認】
 1. Issue#882で指摘されたテストプログラムを用いて現象が解消されていることを
    確認した。(テストプログラム1本、確認項目3件)
-   実行結果(エビデンス)は以下の通り。
+
+Issue#882の再現方法は以下を参照。
+https://postpeta.pccluster.org/redmine/issues/882#再現方法
+
+実行結果(エビデンス)は以下の通り。
 
 CT1001-3.txt Issue#882の指摘で使用されたテストプログラムの実行結果
              (OK 3件、NG 0件)
@@ -14,7 +18,24 @@ CT1001-3.txt Issue#882の指摘で使用されたテストプログラムの実�
 
 2. Issue#882の変更が既存fork機能に影響しないことをLTPを用いて確認した。
    (テストプログラム6本、確認項目12件)
-   実行結果(エビデンス)は以下の通り。
+
+テストの実行方法は以下の通り。
+
+(1) 以下の内容のファイルを<ltp-install>/runtest/mylistとして作成
+fork01 fork01
+fork02 fork02
+fork03 fork03
+fork04 fork04
+fork07 fork07
+fork08 fork08
+
+(2) 以下のコマンドを実行
+
+  cd <ltp-top>
+  sudo <mckernel-install>/sbin/mcreboot.sh -c 2,3,4,5,6,7
+  sudo sh -c 'LTPMCEXEC=<mckernel-install>/bin/mcexec install/runltp -f mylist'
+
+実行結果(エビデンス)は以下の通り。
 
 fork01.txt fork後に子プロセスのプロセスIDが正しいことを確認 (OK 2件)
 fork02.txt fork後にwaitを行い、waitが子プロセスのPIDを返却することを確認(OK 1件)
