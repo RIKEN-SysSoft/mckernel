@@ -94,17 +94,17 @@
 #define ADD_ENVS_OPTION
 
 #ifndef DEBUG
-#define __dprint(msg, ...)
+#define __dprint(msg)
 #define __dprintf(arg, ...)
-#define __eprint(msg, ...)
+#define __eprint(msg)
 #define __eprintf(format, ...)
 #else
-#define __dprint(msg, ...)  {printf("%s: " msg, __FUNCTION__);fflush(stdout);}
-#define __dprintf(format, ...)  {printf("%s: " format, __FUNCTION__, \
-                                       __VA_ARGS__);fflush(stdout);}
-#define __eprint(msg, ...)  {fprintf(stderr, "%s: " msg, __FUNCTION__);fflush(stderr);}
-#define __eprintf(format, ...)  {fprintf(stderr, "%s: " format, __FUNCTION__, \
-                                        __VA_ARGS__);fflush(stderr);}
+#define __dprint(msg)  {printf("%s: " msg, __FUNCTION__);fflush(stdout);}
+#define __dprintf(format, args...)  {printf("%s: " format, __FUNCTION__, \
+                                       ##args);fflush(stdout);}
+#define __eprint(msg)  {fprintf(stderr, "%s: " msg, __FUNCTION__);fflush(stderr);}
+#define __eprintf(format, args...)  {fprintf(stderr, "%s: " format, __FUNCTION__, \
+                                        ##args);fflush(stderr);}
 #endif
 	
 #define CHKANDJUMPF(cond, err, format, ...)								\
