@@ -3222,6 +3222,8 @@ redo:
 		}
 	}
 
+	/* Switch to idle() when prev is PS_EXITED since it always reaches release_thread() 
+	   because it always resumes from just after ihk_mc_switch_context() call. See #1029 */
 	if (v->flags & CPU_FLAG_NEED_MIGRATE ||
 	    prev->status == PS_EXITED) {
 		next = &cpu_local_var(idle);
