@@ -4,9 +4,9 @@
    確認した。(2件)
 
 確認項目は、以下の通り。
-(1) プログラムがシステムコールオフロード完了前にLinuxから送付されたシグナルに
-    応答すること。
-    → 全て SUCCESS ならOK
+(1) プログラムがLinuxから送付されたシグナルに即座に応答すること。
+    → TEST FAILED: Signal response time is more than or equal to 1 second
+      の表示が無ければOK
 (2) プログラム実行完了後、プロセスとスレッドの残留が無いこと。
     → 0 processes found/ 0 threads found の出力があればOK
 
