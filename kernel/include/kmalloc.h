@@ -13,11 +13,9 @@
 #ifndef __HEADER_KMALLOC_H
 #define __HEADER_KMALLOC_H
 
-#include <ihk/mm.h>
-#include <cls.h>
-
-void panic(const char *);
-int kprintf(const char *format, ...);
+#include "ihk/mm.h"
+#include "cls.h"
+#include "debug.h"
 
 #define kmalloc(size, flag) ({\
 void *r = _kmalloc(size, flag, __FILE__, __LINE__);\

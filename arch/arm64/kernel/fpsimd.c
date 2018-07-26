@@ -19,9 +19,6 @@
 #define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
-#define BUG_ON(condition) do { if (condition) { kprintf("PANIC: %s: %s(line:%d)\n",\
-				__FILE__, __FUNCTION__, __LINE__); panic(""); } } while(0)
-
 #ifdef CONFIG_ARM64_SVE
 
 /* Maximum supported vector length across all CPUs (initially poisoned) */

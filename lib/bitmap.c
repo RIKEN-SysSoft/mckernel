@@ -11,9 +11,9 @@
 #include <ctype.h>
 #include <limits.h>
 #include <bitmap.h>
+#include <debug.h>
 
 #define EXPORT_SYMBOL(x)
-#define BUG_ON(x)
 
 /**
  * hex_to_bin - convert a hex digit to its real value

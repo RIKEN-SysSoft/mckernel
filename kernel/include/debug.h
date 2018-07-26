@@ -1,7 +1,12 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
-#include <lwk/compiler.h>
+#include "lwk/compiler.h"
+
+void panic(const char *);
+
+/* when someone has a lot of time, add attribute __printf(1, 2) to kprintf */
+int kprintf(const char *format, ...);
 
 struct ddebug {
 	const char *file;
@@ -36,5 +41,14 @@ do {                                  \
 		kprintf(fmt, ##args); \
 } while (0)
 #define ekprintf(fmt, args...) kprintf(fmt, ##args)
+
+#define BUG_ON(condition) do {                         \
+	if (condition) {                               \
+		kprintf("PANIC: %s: %s(line:%d)\n",    \
+			__FILE__, __func__, __LINE__); \
+		panic("");                             \
+	}                                              \
+} while (0)
+#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
 
 #endif
