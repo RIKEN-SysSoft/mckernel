@@ -165,27 +165,6 @@ static unsigned long setup_l3(struct page_table *pt,
 	return virt_to_phys(pt);
 }
 
-static void init_normal_area(struct page_table *pt)
-{
-	unsigned long map_start, map_end, phys, pt_phys;
-	void *virt;
-
-	map_start = ihk_mc_get_memory_address(IHK_MC_GMA_MAP_START, 0);
-	map_end = ihk_mc_get_memory_address(IHK_MC_GMA_MAP_END, 0);
-	virt = (void *)MAP_ST_START + map_start;
-
-	kprintf("map_start = %lx, map_end = %lx, virt %lx\n",
-		map_start, map_end, virt);
-
-	for (phys = map_start; phys < map_end; phys += LARGE_PAGE_SIZE) {
-		if (set_pt_large_page(pt, virt, phys, PTATTR_WRITABLE) != 0) {
-			kprintf("%s: error setting mapping for 0x%lx\n",
-					__func__, virt);
-		}
-		virt += LARGE_PAGE_SIZE;
-	}
-}
-
 static struct page_table *__alloc_new_pt(ihk_mc_ap_flag ap_flag)
 {
 	struct page_table *newpt = ihk_mc_alloc_pages(1, ap_flag);
@@ -2540,6 +2519,26 @@ static void init_fixed_area(struct page_table *pt)
 	return;
 }
 
+static void init_normal_area(struct page_table *pt)
+{
+	unsigned long map_start, map_end, phys;
+	void *virt;
+
+	map_start = ihk_mc_get_memory_address(IHK_MC_GMA_MAP_START, 0);
+	map_end = ihk_mc_get_memory_address(IHK_MC_GMA_MAP_END, 0);
+	virt = (void *)MAP_ST_START + map_start;
+
+	kprintf("map_start = %lx, map_end = %lx, virt %lx\n",
+		map_start, map_end, virt);
+
+	for (phys = map_start; phys < map_end; phys += LARGE_PAGE_SIZE) {
+		if (set_pt_large_page(pt, virt, phys, PTATTR_WRITABLE) != 0) {
+			kprintf("%s: error setting mapping for 0x%lx\n",
+					__func__, virt);
+		}
+		virt += LARGE_PAGE_SIZE;
+	}
+}
 void init_text_area(struct page_table *pt)
 {
 	unsigned long __end, phys, virt;
