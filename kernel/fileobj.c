@@ -38,7 +38,7 @@
 #define	ekprintf(...)	kprintf(__VA_ARGS__)
 #endif
 
-mcs_rwlock_lock_t fileobj_list_lock;
+mcs_lock_t fileobj_list_lock;
 static LIST_HEAD(fileobj_list);
 
 #define FILEOBJ_PAGE_HASH_SHIFT 9
@@ -52,7 +52,7 @@ struct fileobj {
 	uintptr_t handle;
 	struct list_head list;
 	struct list_head page_hash[FILEOBJ_PAGE_HASH_SIZE];
-	mcs_rwlock_lock_t page_hash_locks[FILEOBJ_PAGE_HASH_SIZE];
+	mcs_lock_t page_hash_locks[FILEOBJ_PAGE_HASH_SIZE];
 };
 
 static memobj_release_func_t fileobj_release;
@@ -89,7 +89,7 @@ static void fileobj_page_hash_init(struct fileobj *obj)
 {
 	int i;
 	for (i = 0; i < FILEOBJ_PAGE_HASH_SIZE; ++i) {
-		mcs_rwlock_init(&obj->page_hash_locks[i]);
+		mcs_lock_init(&obj->page_hash_locks[i]);
 		INIT_LIST_HEAD(&obj->page_hash[i]);
 	}
 	return;
@@ -198,7 +198,7 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp, uintptr_t virt_a
 	int error;
 	struct fileobj *newobj  = NULL;
 	struct fileobj *obj;
-	struct mcs_rwlock_node node;
+	struct mcs_lock_node node;
 
 	dkprintf("fileobj_create(%d)\n", fd);
 	newobj = kmalloc(sizeof(*newobj), IHK_MC_AP_NOWAIT);
@@ -228,7 +228,7 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp, uintptr_t virt_a
 	fileobj_page_hash_init(newobj);
 	ihk_mc_spinlock_init(&newobj->memobj.lock);
 
-	mcs_rwlock_writer_lock_noirq(&fileobj_list_lock, &node);
+	mcs_lock_lock_noirq(&fileobj_list_lock, &node);
 	obj = obj_list_lookup(result.handle);
 	if (!obj) {
 		obj_list_insert(newobj);
@@ -308,7 +308,7 @@ error_cleanup:
 			to_memobj(obj)->flags & MF_ZEROFILL ? "zerofill" : "");
 	}
 
-	mcs_rwlock_writer_unlock_noirq(&fileobj_list_lock, &node);
+	mcs_lock_unlock_noirq(&fileobj_list_lock, &node);
 
 	error = 0;
 	*objp = to_memobj(obj);
@@ -339,7 +339,7 @@ static void fileobj_release(struct memobj *memobj)
 	long free_sref = 0;
 	uintptr_t free_handle;
 	struct fileobj *free_obj = NULL;
-	struct mcs_rwlock_node node;
+	struct mcs_lock_node node;
 
 	dkprintf("fileobj_release(%p %lx)\n", obj, obj->handle);
 
@@ -364,7 +364,7 @@ static void fileobj_release(struct memobj *memobj)
 				obj->cref,
 				free_obj,
 				to_memobj(obj)->flags & MF_ZEROFILL ? "zerofill" : "");
-		mcs_rwlock_writer_lock_noirq(&fileobj_list_lock, &node);
+		mcs_lock_lock_noirq(&fileobj_list_lock, &node);
 		/* zap page_list */
 		for (;;) {
 			struct page *page;
@@ -435,7 +435,7 @@ static void fileobj_release(struct memobj *memobj)
 		}
 
 		obj_list_remove(free_obj);
-		mcs_rwlock_writer_unlock_noirq(&fileobj_list_lock, &node);
+		mcs_lock_unlock_noirq(&fileobj_list_lock, &node);
 		kfree(free_obj);
 	}
 
@@ -481,10 +481,10 @@ static void fileobj_do_pageio(void *args0)
 	struct page *page;
 	ihk_mc_user_context_t ctx;
 	ssize_t ss;
-	struct mcs_rwlock_node mcs_node;
+	struct mcs_lock_node mcs_node;
 	int hash = (off >> PAGE_SHIFT) & FILEOBJ_PAGE_HASH_MASK;	
 
-	mcs_rwlock_writer_lock_noirq(&obj->page_hash_locks[hash],
+	mcs_lock_lock_noirq(&obj->page_hash_locks[hash],
 			&mcs_node);
 	page = __fileobj_page_hash_lookup(obj, hash, off);
 	if (!page) {
@@ -492,10 +492,10 @@ static void fileobj_do_pageio(void *args0)
 	}
 
 	while (page->mode == PM_PAGEIO) {
-		mcs_rwlock_writer_unlock_noirq(&obj->page_hash_locks[hash],
+		mcs_lock_unlock_noirq(&obj->page_hash_locks[hash],
 				&mcs_node);
 		cpu_pause();
-		mcs_rwlock_writer_lock_noirq(&obj->page_hash_locks[hash],
+		mcs_lock_lock_noirq(&obj->page_hash_locks[hash],
 				&mcs_node);
 	}
 
@@ -509,7 +509,7 @@ static void fileobj_do_pageio(void *args0)
 		}
 		else {
 			page->mode = PM_PAGEIO;
-			mcs_rwlock_writer_unlock_noirq(&obj->page_hash_locks[hash],
+			mcs_lock_unlock_noirq(&obj->page_hash_locks[hash],
 					&mcs_node);
 
 			ihk_mc_syscall_arg0(&ctx) = PAGER_REQ_READ;
@@ -522,7 +522,7 @@ static void fileobj_do_pageio(void *args0)
 					__FUNCTION__, obj->handle);
 			ss = syscall_generic_forwarding(__NR_mmap, &ctx);
 
-			mcs_rwlock_writer_lock_noirq(&obj->page_hash_locks[hash],
+			mcs_lock_lock_noirq(&obj->page_hash_locks[hash],
 					&mcs_node);
 			if (page->mode != PM_PAGEIO) {
 				kprintf("fileobj_do_pageio(%p,%lx,%lx):"
@@ -549,7 +549,7 @@ static void fileobj_do_pageio(void *args0)
 		page->mode = PM_DONE_PAGEIO;
 	}
 out:
-	mcs_rwlock_writer_unlock_noirq(&obj->page_hash_locks[hash],
+	mcs_lock_unlock_noirq(&obj->page_hash_locks[hash],
 			&mcs_node);
 	fileobj_release(&obj->memobj);		/* got fileobj_get_page() */
 	kfree(args0);
@@ -568,7 +568,7 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 	uintptr_t phys = -1;
 	struct page *page;
 	struct pageio_args *args = NULL;
-	struct mcs_rwlock_node mcs_node;
+	struct mcs_lock_node mcs_node;
 	int hash = (off >> PAGE_SHIFT) & FILEOBJ_PAGE_HASH_MASK;	
 
 	dkprintf("fileobj_get_page(%p,%lx,%x,%x,%p)\n", obj, off, p2align, virt_addr, physp);
@@ -619,7 +619,7 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 		goto out_nolock;
 	}
 
-	mcs_rwlock_writer_lock_noirq(&obj->page_hash_locks[hash],
+	mcs_lock_lock_noirq(&obj->page_hash_locks[hash],
 			&mcs_node);
 	page = __fileobj_page_hash_lookup(obj, hash, off);
 	if (!page || (page->mode == PM_WILL_PAGEIO)
@@ -698,7 +698,7 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 	*physp = page_to_phys(page);
 	virt = NULL;
 out:
-	mcs_rwlock_writer_unlock_noirq(&obj->page_hash_locks[hash],
+	mcs_lock_unlock_noirq(&obj->page_hash_locks[hash],
 			&mcs_node);
 out_nolock:
 	if (virt) {
@@ -775,7 +775,7 @@ static int fileobj_lookup_page(struct memobj *memobj, off_t off,
 	struct fileobj *obj = to_fileobj(memobj);
 	int error = -1;
 	struct page *page;
-	struct mcs_rwlock_node mcs_node;
+	struct mcs_lock_node mcs_node;
 	int hash = (off >> PAGE_SHIFT) & FILEOBJ_PAGE_HASH_MASK;
 
 	dkprintf("fileobj_lookup_page(%p,%lx,%x,%p)\n", obj, off, p2align, physp);
@@ -784,7 +784,7 @@ static int fileobj_lookup_page(struct memobj *memobj, off_t off,
 		return -ENOMEM;
 	}
 
-	mcs_rwlock_reader_lock_noirq(&obj->page_hash_locks[hash],
+	mcs_lock_lock_noirq(&obj->page_hash_locks[hash],
 			&mcs_node);
 
 	page = __fileobj_page_hash_lookup(obj, hash, off);
@@ -796,7 +796,7 @@ static int fileobj_lookup_page(struct memobj *memobj, off_t off,
 	error = 0;
 
 out:
-	mcs_rwlock_reader_unlock_noirq(&obj->page_hash_locks[hash],
+	mcs_lock_unlock_noirq(&obj->page_hash_locks[hash],
 			&mcs_node);
 
 	dkprintf("fileobj_lookup_page(%p,%lx,%x,%p): %d \n",
