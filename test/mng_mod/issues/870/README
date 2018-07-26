@@ -6,7 +6,8 @@ Issue#870の実行方法は、stress_test のディレクトリで以下のコ�
     ./mck-mcexec.sh ./killit -t 4000 - ./signalonread -nt 4 -nosignal
 
 確認項目は、以下の通り。
-(1) プログラムがLinuxから送付されたシグナルによって中断すること。
+(1) プログラムがシステムコールオフロード完了前にLinuxから送付されたシグナルに
+    応答すること。
     → 全て SUCCESS ならOK
 (2) プログラム実行完了後、プロセスとスレッドの残留が無いこと。
     → 0 processes found/ 0 threads found の出力があればOK
