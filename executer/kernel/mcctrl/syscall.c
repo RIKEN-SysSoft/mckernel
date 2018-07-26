@@ -1774,20 +1774,22 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
 		maxprot |= PROT_EXEC;
 	}
 
-	down_write(&current->mm->mmap_sem);
+	prot_and_flags = MAP_SHARED |
+		(prot_and_flags & (MAP_POPULATE | MAP_LOCKED));
+
 #define	ANY_WHERE 0
 	if (prot_and_flags & MAP_LOCKED) prot_and_flags |= MAP_POPULATE;
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,5,0)
+	down_write(&current->mm->mmap_sem);
+
 	va = do_mmap_pgoff(file, ANY_WHERE, len, maxprot, 
-			MAP_SHARED | (prot_and_flags & (MAP_POPULATE | MAP_LOCKED)), pgoff);
-#endif	
+			prot_and_flags, pgoff);
 
 	up_write(&current->mm->mmap_sem);
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,5,0)
-	va = vm_mmap(file, ANY_WHERE, len, maxprot, MAP_SHARED | 
-			(prot_and_flags & (MAP_POPULATE | MAP_LOCKED)), pgoff << PAGE_SHIFT);
+#else
+	va = vm_mmap(file, ANY_WHERE, len, maxprot,
+			prot_and_flags, pgoff << PAGE_SHIFT);
 #endif
 
 	if (IS_ERR_VALUE(va)) {
