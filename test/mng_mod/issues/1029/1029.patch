@@ -1,7 +1,7 @@
-diff --git a/kernel/include/process.h b/kernel/include/process.h
-index 1bd70e1..240fe03 100644
---- a/kernel/include/process.h
-+++ b/kernel/include/process.h
+diff --git kernel/include/process.h kernel/include/process.h
+index 1bf8f27..e55e40e 100644
+--- kernel/include/process.h
++++ kernel/include/process.h
 @@ -697,6 +697,9 @@ struct thread {
  	// for performance counter
  	unsigned long pmc_alloc_map;
@@ -12,11 +12,11 @@ index 1bd70e1..240fe03 100644
  };
  
  #define VM_RANGE_CACHE_SIZE	4
-diff --git a/kernel/process.c b/kernel/process.c
-index cdd4ab3..a3e6c8a 100644
---- a/kernel/process.c
-+++ b/kernel/process.c
-@@ -125,6 +125,7 @@ init_process(struct process *proc, struct process *parent)
+diff --git kernel/process.c kernel/process.c
+index 3dda3ea..eb65aa9 100644
+--- kernel/process.c
++++ kernel/process.c
+@@ -126,6 +126,7 @@ init_process(struct process *proc, struct process *parent)
  		proc->mpol_threshold = parent->mpol_threshold;
  		memcpy(proc->rlimit, parent->rlimit,
  		       sizeof(struct rlimit) * MCK_RLIM_MAX);
@@ -24,7 +24,7 @@ index cdd4ab3..a3e6c8a 100644
  #ifdef POSTK_DEBUG_TEMP_FIX_69 /* Fix problem not to inherit parent cpu_set. */
  		memcpy(&proc->cpu_set, &parent->cpu_set,
  		       sizeof(proc->cpu_set));
-@@ -3104,12 +3105,16 @@ out_schedule:
+@@ -3135,12 +3136,16 @@ out_schedule:
  	schedule();
  }
  
@@ -41,7 +41,7 @@ index cdd4ab3..a3e6c8a 100644
  
  	if (cpu_local_var(no_preempt)) {
  		kprintf("%s: WARNING can't schedule() while no preemption, cnt: %d\n",
-@@ -3139,6 +3144,62 @@ redo:
+@@ -3173,6 +3178,62 @@ redo:
  		}
  	}
  
@@ -101,10 +101,10 @@ index cdd4ab3..a3e6c8a 100644
 +	}
 +}
 +
+ 	/* Switch to idle() when prev is PS_EXITED since it always reaches release_thread() 
+ 	   because it always resumes from just after ihk_mc_switch_context() call. See #1029 */
  	if (v->flags & CPU_FLAG_NEED_MIGRATE ||
- 	    prev->status == PS_EXITED) {
- 		next = &cpu_local_var(idle);
-@@ -3172,6 +3233,58 @@ redo:
+@@ -3208,6 +3269,58 @@ redo:
  
  	set_timer();
  
