@@ -2676,20 +2676,29 @@ void destroy_thread(struct thread *thread)
 {
 	struct sig_pending *pending;
 	struct sig_pending *signext;
-	struct mcs_rwlock_node_irqsave lock;
+	struct mcs_rwlock_node_irqsave lock, updatelock;
 	struct process *proc = thread->proc;
 	struct resource_set *resource_set = cpu_local_var(resource_set);
 	int hash;
+	struct timespec ats;
 
 	hash = thread_hash(thread->tid);
 	mcs_rwlock_writer_lock(&resource_set->thread_hash->lock[hash], &lock);
 	list_del(&thread->hash_list);
 	mcs_rwlock_writer_unlock(&resource_set->thread_hash->lock[hash], &lock);
 
+	mcs_rwlock_writer_lock(&proc->update_lock, &updatelock);
+	tsc_to_ts(thread->system_tsc, &ats);
+	ts_add(&thread->proc->stime, &ats);
+	tsc_to_ts(thread->user_tsc, &ats);
+	ts_add(&thread->proc->utime, &ats);
+
 	mcs_rwlock_writer_lock(&proc->threads_lock, &lock);
 	list_del(&thread->siblings_list);
 	__release_tid(proc, thread);
 	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
+
+	mcs_rwlock_writer_unlock(&proc->update_lock, &updatelock);
 
 	cpu_clear(thread->cpu_id, &thread->vm->address_space->cpu_set,
 	          &thread->vm->address_space->cpu_set_lock);
@@ -2719,19 +2728,10 @@ void destroy_thread(struct thread *thread)
 void release_thread(struct thread *thread)
 {
 	struct process_vm *vm;
-	struct mcs_rwlock_node_irqsave lock;
-	struct timespec ats;
 
 	if (!ihk_atomic_dec_and_test(&thread->refcount)) {
 		return;
 	}
-
-	mcs_rwlock_writer_lock(&thread->proc->update_lock, &lock);
-	tsc_to_ts(thread->system_tsc, &ats);
-	ts_add(&thread->proc->stime, &ats);
-	tsc_to_ts(thread->user_tsc, &ats);
-	ts_add(&thread->proc->utime, &ats);
-	mcs_rwlock_writer_unlock(&thread->proc->update_lock, &lock);
 
 	vm = thread->vm;
 
