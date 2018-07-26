@@ -1012,13 +1012,15 @@ void terminate(int rc, int sig)
 		sync_child_event(proc->monitoring_event);
 
 	// clean up threads
-	mcs_rwlock_writer_lock(&proc->threads_lock, &lock); // conflict clone
 	mcs_rwlock_writer_lock_noirq(&proc->update_lock, &updatelock);
+	mcs_rwlock_writer_lock(&proc->threads_lock, &lock); // conflict clone
 	if (proc->status == PS_EXITED) {
+		dkprintf("%s: PID: %d, TID: %d PS_EXITED already\n",
+				__FUNCTION__, proc->pid, mythread->tid);
 		preempt_disable();
 		mythread->status = PS_EXITED;
-		mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
 		mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
+		mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
 		release_thread(mythread);
 		preempt_enable();
 		schedule();
@@ -1026,11 +1028,13 @@ void terminate(int rc, int sig)
 		return;
 	}
 
+	dkprintf("%s: PID: %d, TID: %d setting PS_EXITED\n",
+			__FUNCTION__, proc->pid, mythread->tid);
 	exit_status = ((rc & 0x00ff) << 8) | (sig & 0xff);
 	mythread->exit_status = exit_status;
 	proc->status = PS_EXITED;
-	mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
 	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
+	mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
 
 	terminate_mcexec(rc, sig);
 
