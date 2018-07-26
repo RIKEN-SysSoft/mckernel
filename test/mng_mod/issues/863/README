@@ -2,10 +2,16 @@
 1. Issue#863で指摘されたテストプログラムを用いて現象が解消されていることを
    確認した。(2件)
 
-   Issue#863の実行方法は、stress_test のディレクトリで以下のコマンドを実行する。
-      /path/to/mcexec/mcexec ./signalonread-multi
+Issue#863の実行方法は、stress_test のディレクトリで以下のコマンドを実行する。
+   /path/to/mcexec/mcexec ./signalonread-multi
 
-   実行結果(エビデンス)は以下の通り。
+確認項目は、以下の通り。
+(1) プログラムがSIGTERMで終了すること。
+    → The TEST process is terminated by the signal 15 の表示があれば OK
+(2) プログラムがLinuxから送付されたシグナルによって中断すること。
+    → TEST FAIL OVERRUN の表示が無ければOK
+
+実行結果(エビデンス)は以下の通り。
 
 CT1001.txt Issue#863の指摘で使用されたテストプログラムの実行結果(OK 1件、NG 0件)
 
