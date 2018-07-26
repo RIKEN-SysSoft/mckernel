@@ -1,0 +1,18 @@
+スクリプトは Thu Mar 15 10:12:07 2018
+ に開始しました[?1034hbash-4.2$ make test
+./CT02
+CT02001 OK process_vm_readv failed
+CT02002 OK no data updated
+CT02003 OK process_vm_readv was success
+CT02004 OK data updated
+CT02005 OK process_vm_readv failed after munmap
+CT02006 OK process_vm_writev failed
+CT02007 OK no data updated
+CT02008 OK process_vm_writev was success
+CT02009 OK data updated
+CT02010 OK process_vm_writev failed after munmap
+bash-4.2$ exit
+exit
+
+スクリプトは Thu Mar 15 10:12:13 2018
+ に終了しました
