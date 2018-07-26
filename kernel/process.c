@@ -1444,6 +1444,20 @@ int change_prot_process_memory_range(struct process_vm *vm,
 	clrattr = oldattr & ~newattr;
 	setattr = newattr & ~oldattr;
 
+	/*
+	 * If this is a file mapping don't set any new prot write.
+	 * We need to keep the page table read-only to trigger a page
+	 * fault for copy-on-write later on
+	 */
+	if (range->memobj && (range->flag & VR_PRIVATE)) {
+		setattr &= ~PTATTR_WRITABLE;
+		if (clrattr == setattr == 0) {
+			range->flag = newflag;
+			error = 0;
+			goto out;
+		}
+	}
+
 	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 	error = ihk_mc_pt_change_attr_range(vm->address_space->page_table,
 			(void *)range->start, (void *)range->end,
