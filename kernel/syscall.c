@@ -677,21 +677,12 @@ do_wait(int pid, int *status, int options, void *rusage)
 
 	mcs_rwlock_writer_lock_noirq(&thread->proc->children_lock, &lock);
 	list_for_each_entry_safe(child, next, &proc->children_list, siblings_list) {	
-#ifdef POSTK_DEBUG_ARCH_DEP_44 /* wait() add support __WALL */
 		/*
-		if (!(options & __WALL)) {
-			if (!(!!(options & __WCLONE) ^ (child->termsig == SIGCHLD))) {
-				continue;
-			}
-		}
-		*/
-#else /* POSTK_DEBUG_ARCH_DEP_44 */
-		/*
-		if (!(!!(options & __WCLONE) ^ (child->termsig == SIGCHLD))) {
+		if (!(options & __WALL) &&
+		  !(!!(options & __WCLONE) ^ (child->termsig == SIGCHLD))) {
 			continue;
 		}
 		*/
-#endif /* POSTK_DEBUG_ARCH_DEP_44 */
 
 		/* Find thread with pid == tid, this will be either the main thread
 		 * or the one we are looking for specifically when __WCLONE is passed */
@@ -890,11 +881,7 @@ SYSCALL_DECLARE(wait4)
 	int rc;
 	struct rusage usage;
 
-#ifdef POSTK_DEBUG_ARCH_DEP_44 /* wait() add support __WALL */
 	if(options & ~(WNOHANG | WUNTRACED | WCONTINUED | __WCLONE | __WALL)){
-#else /* POSTK_DEBUG_ARCH_DEP_44 */
-	if(options & ~(WNOHANG | WUNTRACED | WCONTINUED | __WCLONE)){
-#endif /* POSTK_DEBUG_ARCH_DEP_44 */
 		dkprintf("wait4: unexpected options(%x).\n", options);
 		return -EINVAL;
 	}
@@ -926,11 +913,7 @@ SYSCALL_DECLARE(waitid)
 		pid = -1;
 	else
 		return -EINVAL;
-#ifdef POSTK_DEBUG_ARCH_DEP_44 /* wait() add support __WALL */
 	if(options & ~(WEXITED | WSTOPPED | WCONTINUED | WNOHANG | WNOWAIT | __WCLONE | __WALL)){
-#else /* POSTK_DEBUG_ARCH_DEP_44 */
-	if(options & ~(WEXITED | WSTOPPED | WCONTINUED | WNOHANG | WNOWAIT | __WCLONE)){
-#endif /* POSTK_DEBUG_ARCH_DEP_44 */
 		dkprintf("wait4: unexpected options(%x).\n", options);
 		dkprintf("waitid: unexpected options(%x).\n", options);
 		return -EINVAL;
