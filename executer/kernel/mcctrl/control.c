@@ -46,6 +46,9 @@
 #include <ihk/ihk_host_user.h>
 #include <ihklib_rusage.h>
 #include <rusage.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
+#include <uapi/linux/sched/types.h>
+#endif
 
 //#define DEBUG
 
