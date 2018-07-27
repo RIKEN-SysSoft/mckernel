@@ -2253,6 +2253,8 @@ SYSCALL_DECLARE(execve)
 	/* Unmap all memory areas of the process, userspace will be gone */
 	munmap_all();
 
+	/* Code assumes no process switch from here on */
+	preempt_disable();
 	ihk_mc_init_user_process(&thread->ctx, &thread->uctx,
 			((char *)thread) +
 			KERNEL_STACK_NR_PAGES * PAGE_SIZE, desc->entry, 0);
@@ -2316,12 +2318,16 @@ end:
 		/* Lock run queue because enter_user_mode expects to release it */
 		cpu_local_var(runq_irqstate) = 
 			ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
+		preempt_enable();
 
 		ihk_mc_switch_context(NULL, &thread->ctx, thread);
 
 		/* not reached */
 		return -EFAULT;
 	}
+
+	/* no preempt_enable, errors can only happen before we disabled it */
+
 	return ret;
 }
 
