@@ -3,7 +3,13 @@
 #include <affinity.h>
 #include <arch-memory.h>
 #include <time.h>
+// calculate_time_from_tsc is declared in syscall.h with a different
+// prototype; temporarily redefine it to avoid conflict
+// (this does not link with any of mckernel files, the headers are
+// only here for a few types)
+#define calculate_time_from_tsc calculate_time_from_tsc_mckernel
 #include <syscall.h>
+#undef calculate_time_from_tsc
 #include <registers.h>
 #include <ihk/atomic.h>
 

@@ -589,4 +589,6 @@ struct move_pages_smp_req {
 #define PROCESS_VM_READ		0
 #define PROCESS_VM_WRITE	1
 
+void calculate_time_from_tsc(struct timespec *ts);
+
 #endif
