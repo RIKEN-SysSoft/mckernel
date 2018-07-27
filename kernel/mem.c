@@ -1756,13 +1756,16 @@ static void rusage_init()
 {
 	int npages;
 	unsigned long phys;
+	const struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
+
+	if (!cpu_info) {
+		panic("rusage_init: PANIC: ihk_mc_get_cpu_info returned NULL");
+	}
 
 	npages = (sizeof(struct rusage_global) + PAGE_SIZE -1) >> PAGE_SHIFT;
 	rusage = ihk_mc_alloc_pages(npages, IHK_MC_AP_CRITICAL);
 	memset(rusage, 0, npages * PAGE_SIZE);
-#ifndef POSTK_DEBUG_TEMP_FIX_81 /* rusage->num_processors always 1 fix. */
-	rusage->num_processors = num_processors;
-#endif /* POSTK_DEBUG_TEMP_FIX_81 */
+	rusage->num_processors = cpu_info->ncpus;
 	rusage->num_numa_nodes = ihk_mc_get_nr_numa_nodes();
 	rusage->ns_per_tsc = ihk_mc_get_ns_per_tsc();
 	phys = virt_to_phys(rusage);

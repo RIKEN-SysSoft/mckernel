@@ -1,18 +1,18 @@
 .SUFFIXES:	# Clear suffixes
-.SUFFIXES:	.c 
+.SUFFIXES:	.c
 
 CC = gcc
 
 CPPFLAGS = -I$(HOME)/project/os/install/include
 CCFLAGS = -g
-LDFLAGS = -L$(HOME)/project/os/install/lib -lihk -Wl,-rpath -Wl,$(HOME)/project/os/install/lib
-EXES = 
-SRCS = 
+LDFLAGS = -L$(HOME)/project/os/install/lib -lihk -Wl,-rpath -Wl,$(HOME)/project/os/install/lib -lpthread
+EXES =
+SRCS =
 OBJS = $(SRCS:.c=.o)
 
 CPPFLAGSMCK = -I$(HOME)/usr/include
 CCFLAGSMCK = -g -O0
-LDFLAGSMCK = -static 
+LDFLAGSMCK = -static -lpthread
 SRCSMCK = $(shell ls rusage*.c)
 EXESMCK = $(SRCSMCK:.c=)
 OBJSMCK = $(SRCSMCK:.c=.o)
@@ -162,6 +162,18 @@ rusage103: rusage103.o
 
 rusage103.o: rusage103.c
 	$(CC) $(CCFLAGS) $(CPPFLAGS) -c $<
+
+%_mck: %_mck.o
+	$(CC) -o $@ $^ $(LDFLAGSMCK)
+
+%_mck.o:: %_mck.c
+	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
+
+%_lin.o:: %_lin.c
+	$(CC) $(CCFLAGS) $(CPPFLAGS) -c $<
+
+%_lin: %_lin.o
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
 	rm -f core $(EXES) $(OBJS) $(EXESMCK) $(OBJSMCK)

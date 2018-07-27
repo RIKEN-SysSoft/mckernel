@@ -1,0 +1,47 @@
+diff --git arch/x86_64/kernel/include/syscall_list.h arch/x86_64/kernel/include/syscall_list.h
+index 48b1ea0..3717bb2 100644
+--- arch/x86_64/kernel/include/syscall_list.h
++++ arch/x86_64/kernel/include/syscall_list.h
+@@ -168,4 +168,6 @@ SYSCALL_HANDLED(802, linux_mlock)
+ SYSCALL_HANDLED(803, suspend_threads)
+ SYSCALL_HANDLED(804, resume_threads)
+ SYSCALL_HANDLED(811, linux_spawn)
++
++SYSCALL_HANDLED(900, dump_rusage)
+ /**** End of File ****/
+diff --git kernel/syscall.c kernel/syscall.c
+index 8dc0a0e..9969a4b 100644
+--- kernel/syscall.c
++++ kernel/syscall.c
+@@ -9477,3 +9477,31 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
+ 
+ 	return l;
+ }
++
++SYSCALL_DECLARE(dump_rusage)
++{
++	/* rusage debug */
++	int i;
++	for(i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
++		kprintf("memory_stat_rss[%d]=%ld\n", i, rusage->memory_stat_rss[i]);
++	}
++	for(i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
++		kprintf("memory_stat_mapped_file[%d]=%ld\n", i, rusage->memory_stat_mapped_file[i]);
++	}
++	kprintf("memory_max_usage=%ld\n", rusage->memory_max_usage);
++	kprintf("memory_kmem_usage=%ld\n", rusage->memory_kmem_usage);
++	kprintf("memory_kmem_max_usage=%ld\n", rusage->memory_kmem_max_usage);
++	for (i = 0; i < rusage->num_numa_nodes; i++) {
++		kprintf("memory_numa_stat[%d]=%ld\n", i, rusage->memory_numa_stat[i]);
++	}
++	kprintf("ns_per_tsc=%ld\n", rusage->ns_per_tsc);
++	for (i = 0; i < rusage->num_processors; i++) {
++		kprintf("cpu[%d].user_tsc=%ld\n", i, rusage->cpu[i].user_tsc);
++		kprintf("cpu[%d].system_tsc=%ld\n", i, rusage->cpu[i].system_tsc);
++	}
++
++	kprintf("num_threads=%d\n", rusage->num_threads);
++	kprintf("max_num_threads=%d\n", rusage->max_num_threads);
++
++	return 0;
++}

@@ -102,15 +102,16 @@ rusage021: Run npb bt-mz.S.4
 2-ppn x 2-tpn x 2-node (wallaby{14,15}) [OK]
 2-ppn x 1-tpn x 2-node (polaris,kochab) [OK]
 
-rusage100: Test ihk_os_getrusage() 
+rusage100: Test ihk_os_getrusage()
 anon mmap,num_threads=1 [OK]
 
 rusage101: Test ihk_os_getrusage()
 anon mmap,num_threads=2 [OK]
 
-rusage102: Test ihk_os_getrusage()  
+rusage102: Test ihk_os_getrusage()
 file map,num_threads=1 [OK]
 
 rusage103: Test ihk_os_getrusage()
 anon mmap@numa#1 [OK]
 
+rusage104: Test ihk_os_getrusage(), user time per CPU
