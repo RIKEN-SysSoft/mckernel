@@ -14,6 +14,7 @@
 #include <prctl.h>
 #include <limits.h>
 #include <syscall.h>
+#include <uio.h>
 #include <debug.h>
 
 extern void ptrace_report_signal(struct thread *thread, int sig);
