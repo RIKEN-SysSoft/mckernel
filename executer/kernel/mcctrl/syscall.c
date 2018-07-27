@@ -761,9 +761,15 @@ void rus_page_hash_put_pages(void)
 
 #define	USE_VM_INSERT_PFN	1
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
+static int rus_vm_fault(struct vm_fault *vmf)
+{
+	struct vm_area_struct *vma = vmf->vma;
+#else
 static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
-	struct mcctrl_usrdata *	usrdata	= vma->vm_file->private_data;
+#endif
+	struct mcctrl_usrdata  *usrdata	= vma->vm_file->private_data;
 	ihk_device_t		dev = ihk_os_to_dev(usrdata->os);
 	unsigned long		rpa;
 	unsigned long		phys;
