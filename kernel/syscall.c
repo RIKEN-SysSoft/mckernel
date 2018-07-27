@@ -6883,11 +6883,8 @@ SYSCALL_DECLARE(sched_getaffinity)
 	}
 
 	dkprintf("%s() len: %d, ret: %d\n", __FUNCTION__, len, ret);
-#ifdef POSTK_DEBUG_TEMP_FIX_58 /* sched_getafifnity return value fix */
+
 	return ret;
-#else /* POSTK_DEBUG_TEMP_FIX_58 */
-	return len;
-#endif /* POSTK_DEBUG_TEMP_FIX_58 */
 }
 
 SYSCALL_DECLARE(get_cpu_id)
