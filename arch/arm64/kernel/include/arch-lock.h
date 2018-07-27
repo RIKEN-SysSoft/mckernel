@@ -607,8 +607,13 @@ __mcs_rwlock_reader_unlock(struct mcs_rwlock_lock *lock, struct mcs_rwlock_node_
 
 static inline int irqflags_can_interrupt(unsigned long flags)
 {
-#warning "arm64 irqflags_can_interrupt not implemented"
-	return true;
+#ifdef CONFIG_HAS_NMI
+#warning irqflags_can_interrupt needs testing/fixing on such a target
+	return flags > ICC_PMR_EL1_MASKED;
+#else
+	// PSTATE.DAIF I bit clear means interrupt is possible
+	return !(flags & (1 << 7));
+#endif
 }
 
 
