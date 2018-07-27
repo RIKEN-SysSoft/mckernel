@@ -115,10 +115,8 @@ struct program_load_desc {
 #define PLD_MAGIC 0xcafecafe44332211UL
 #endif /* POSTK_DEBUG_TEMP_FIX_76 */
 	int num_sections;
-	int status;
 	int cpu;
 	int pid;
-	int err;
 	int stack_prot;
 	int pgid;
 	int cred[8];
