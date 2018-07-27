@@ -3632,6 +3632,8 @@ perf_stop(struct mc_perf_event *event)
 
 	if (counter_mask) {
 		ihk_mc_perfctr_stop(counter_mask);
+		cpu_local_var(current)->proc->monitoring_event = NULL;
+		cpu_local_var(current)->proc->perf_status = PP_NONE;
 	}
 }
 
@@ -3665,8 +3667,6 @@ perf_ioctl(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 		if(event->pid == 0){
 			perf_stop(event);
 		}
-		cpu_local_var(current)->proc->monitoring_event = NULL;
-		cpu_local_var(current)->proc->perf_status = PP_NONE;
 		// TODO: stop other process
 		/*
 		else if(event->pid > 0){
