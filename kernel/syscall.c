@@ -2245,21 +2245,20 @@ SYSCALL_DECLARE(execve)
 		goto end;
 	}
 
-	if (cpu_local_var(current)->proc->ptrace) {
+	if (thread->proc->ptrace) {
 		ihk_mc_syscall_ret(ctx) = 0;
-		ptrace_syscall_event(cpu_local_var(current));
+		ptrace_syscall_event(thread);
 	}
 
 	/* Unmap all memory areas of the process, userspace will be gone */
 	munmap_all();
 
-	ihk_mc_init_user_process(&cpu_local_var(current)->ctx, 
-			&cpu_local_var(current)->uctx,
-			((char *)cpu_local_var(current)) + 
+	ihk_mc_init_user_process(&thread->ctx, &thread->uctx,
+			((char *)thread) +
 			KERNEL_STACK_NR_PAGES * PAGE_SIZE, desc->entry, 0);
 
 	/* Create virtual memory ranges and update args/envs */
-	if (prepare_process_ranges_args_envs(cpu_local_var(current), desc, desc, 
+	if (prepare_process_ranges_args_envs(thread, desc, desc,
 				PTATTR_NO_EXECUTE | PTATTR_WRITABLE | PTATTR_FOR_USER,
 				argv_flat, argv_flat_len, envp_flat, envp_flat_len) != 0) {
 		kprintf("execve(): PANIC: preparing ranges, args, envs, stack\n");
@@ -2294,7 +2293,7 @@ SYSCALL_DECLARE(execve)
 	clear_fp_regs(thread);
 #endif /* POSTK_DEBUG_TEMP_FIX_19 */
 
-	error = ptrace_report_exec(cpu_local_var(current));
+	error = ptrace_report_exec(thread);
 	if(error) {
 		kprintf("execve(): ERROR: ptrace_report_exec()\n");
 	}
@@ -2318,8 +2317,10 @@ end:
 		cpu_local_var(runq_irqstate) = 
 			ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
 
-		ihk_mc_switch_context(NULL, &cpu_local_var(current)->ctx, 
-			cpu_local_var(current));
+		ihk_mc_switch_context(NULL, &thread->ctx, thread);
+
+		/* not reached */
+		return -EFAULT;
 	}
 	return ret;
 }
