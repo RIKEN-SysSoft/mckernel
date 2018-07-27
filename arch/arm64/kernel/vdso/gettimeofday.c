@@ -1,5 +1,7 @@
 /* gettimeofday.c COPYRIGHT FUJITSU LIMITED 2016 */
 
+#include <affinity.h>
+#include <arch-memory.h>
 #include <time.h>
 #include <syscall.h>
 #include <registers.h>
