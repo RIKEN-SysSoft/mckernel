@@ -1892,7 +1892,6 @@ retry:
 			} else {
 				// Host Kernel memory space
 				const enum ihk_mc_pt_attribute attr = 0;
-				const int remove_vmap_allocator_entry = 1;
 				void* vmap;
 
 				vmap = ihk_mc_map_virtual(phys, npages, attr);
@@ -1903,7 +1902,7 @@ retry:
 					goto out;
 				}
 				memcpy(virt, vmap, pgsize);
-				ihk_mc_unmap_virtual(vmap, npages, remove_vmap_allocator_entry);
+				ihk_mc_unmap_virtual(vmap, npages);
 			}
 #else /*POSTK_DEBUG_TEMP_FIX_14*/
 			memcpy(virt, phys_to_virt(phys), pgsize);

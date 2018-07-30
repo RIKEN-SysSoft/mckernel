@@ -689,7 +689,7 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 		kprintf("unsupported procfs entry: %d/%s\n", pid, p);
 
 end:
-	ihk_mc_unmap_virtual(buf, npages, 0);
+	ihk_mc_unmap_virtual(buf, npages);
 	dprintf("ret: %d, eof: %d\n", ans, eof);
 	r->ret = ans;
 	r->eof = eof;
@@ -697,7 +697,7 @@ end:
 	packet.err = 0;
 bufunavail:
 	ihk_mc_unmap_memory(NULL, pbuf, r->count);
-	ihk_mc_unmap_virtual(r, 1, 0);
+	ihk_mc_unmap_virtual(r, 1);
 dataunavail:
 	ihk_mc_unmap_memory(NULL, parg, sizeof(struct procfs_read));
 

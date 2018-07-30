@@ -1681,7 +1681,7 @@ void *ihk_mc_map_virtual(unsigned long phys, int npages,
 	return (char *)p + offset;
 }
 
-void ihk_mc_unmap_virtual(void *va, int npages, int free_physical)
+void ihk_mc_unmap_virtual(void *va, int npages)
 {
 	unsigned long i;
 
@@ -1691,13 +1691,7 @@ void ihk_mc_unmap_virtual(void *va, int npages, int free_physical)
 		flush_tlb_single((unsigned long)(va + (i << PAGE_SHIFT)));
 	}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_51 /* ihk_mc_unmap_virtual() free_physical disabled */
 	ihk_pagealloc_free(vmap_allocator, (unsigned long)va, npages);
-#else /* POSTK_DEBUG_TEMP_FIX_51 */
-	if (free_physical) {
-		ihk_pagealloc_free(vmap_allocator, (unsigned long)va, npages);
-	}
-#endif /* POSTK_DEBUG_TEMP_FIX_51 */
 }
 
 #ifdef ATTACHED_MIC
