@@ -2605,9 +2605,13 @@ retry_tid:
 		if (old->mod_clone_arg) {
 			new->mod_clone_arg = kmalloc(sizeof(struct uti_attr),
 			                             IHK_MC_AP_NOWAIT);
-			if (new->mod_clone_arg)
-				memcpy(new->mod_clone_arg, old->mod_clone_arg,
-				       sizeof(struct uti_attr));
+			if (!new->mod_clone_arg) {
+				kprintf("%s: error: allocating mod_clone_arg\n",
+					__func__);
+				return -ENOMEM;
+			}
+			memcpy(new->mod_clone_arg, old->mod_clone_arg,
+			       sizeof(struct uti_attr));
 		}
 	}
 	chain_thread(new);
@@ -9258,7 +9262,11 @@ SYSCALL_DECLARE(util_indicate_clone)
 	    mod != SPAWN_TO_REMOTE)
 		return -EINVAL;
 	if (arg) {
-		kattr = kmalloc(sizeof(struct uti_attr), IHK_MC_AP_NOWAIT);
+		if (!(kattr = kmalloc(sizeof(struct uti_attr), IHK_MC_AP_NOWAIT))) {
+			kprintf("%s: error: allocating kattr\n", __func__);
+			return -ENOMEM;
+		}
+
 		if (copy_from_user(kattr, arg, sizeof(struct uti_attr))) {
 			kfree(kattr);
 			return -EFAULT;
