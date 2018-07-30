@@ -5,6 +5,7 @@
 #include <io.h>
 #include <arch/cpu.h>
 #include <memory.h>
+#include <affinity.h>
 #include <syscall.h>
 #include <arch-timer.h>
 
