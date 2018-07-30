@@ -1,12 +1,12 @@
 .SUFFIXES:	# Disable implicit rules
 
-SYSCALLL_INTERCEPT_DIR=/work/gg10/e29005/usr
-UTI_DIR=/work/gg10/e29005/project/uti/install
+SYSCALLL_INTERCEPT_DIR=/home/e29005/usr
+UTI_DIR=/home/e29005/project/uti/install
 
 CC = gcc
 
 CPPFLAGS = -I$(UTI_DIR)/include
-CCFLAGS = -g -O2
+CCFLAGS = -g -O0
 LDFLAGS = -L$(UTI_DIR)/lib -Wl,-rpath,$(UTI_DIR)/lib -luti -lpthread -lrt 
 
 SRCS = $(shell ls CT*.c)

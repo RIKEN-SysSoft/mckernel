@@ -1,6 +1,6 @@
 .SUFFIXES:	# Clear suffixes
 
-MYHOME=/work/gg10/e29005
+MYHOME=/home/e29005
 
 # Specify it via 016.sh 
 # UTI_DIR=${MYHOME}/project/uti/install
@@ -8,7 +8,7 @@ MYHOME=/work/gg10/e29005
 CC=mpiicc 
 LD=$(CC)
 
-CFLAGS = -g -O2 -Wall
+CFLAGS = -g -O0 -Wall
 LDFLAGS = -lpthread -lpsm2 -L$(UTI_DIR)/lib -Wl,-rpath -Wl,$(UTI_DIR)/lib -luti
 SRCS = $(shell ls *.c)
 OBJS = $(SRCS:.c=.o)

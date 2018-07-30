@@ -17,17 +17,11 @@
 #include "async_progress.h"
 #include "util.h"
 
-static struct option options[] = {
-	/* end */
-	{ NULL, 0, NULL, 0, },
-};
-
 static int ppn = -1;
 
-void rma(int my_rank, int nsamples, int nproc, MPI_Win win, double *rbuf, double *result, int szbuf, long t_calc, int progress) {
+void rma(int my_rank, int nproc, MPI_Win win, double *rbuf, double *result, int szbuf, long t_calc, int progress) {
 	int i, j;
 
-	for (j = 0; j < nsamples; j++) {
 		for (i = 0; i < nproc; i++) {
 			int target = j % nproc;
 
@@ -42,19 +36,41 @@ void rma(int my_rank, int nsamples, int nproc, MPI_Win win, double *rbuf, double
 					   0, szbuf, MPI_DOUBLE,
 					   MPI_SUM, win);
 		}
-	}
 	
 	if (progress) {
 		progress_start();
 	}
 #pragma omp parallel
 	{
-		fwq(t_calc * nsamples);
+		fwq(t_calc);
 	}
 	if (progress) {
 		progress_stop();
 	}
 	MPI_Win_flush_local_all(win);
+}
+
+double measure(int rank, int nproc, MPI_Win win, double *rbuf, double* result, int szbuf, unsigned long t_calc, int progress, int _nsamples) {
+	int i;
+	double t_l, t_g, t_sum = 0;
+	double start, end;
+
+	for (i = 0; i < _nsamples; i++) {
+		MPI_Barrier(MPI_COMM_WORLD);
+		MPI_Win_lock_all(0, win);
+		
+		start = MPI_Wtime();
+		rma(rank, nproc, win, rbuf, result, szbuf, t_calc, progress);
+		end = MPI_Wtime();
+		
+		MPI_Win_unlock_all(win);
+		MPI_Barrier(MPI_COMM_WORLD);
+
+		t_l = end - start;
+		MPI_Allreduce(&t_l, &t_g, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+		t_sum += t_g;
+	}
+	return t_sum / _nsamples;
 }
 
 #define NROW 11
@@ -65,12 +81,10 @@ int main(int argc, char **argv)
 	int ret;
 	int actual;
 	int nproc;
-	int nsamples = -1;
 	int rank = -1, size = -1;
 	int i, j, progress, l, m;
 	double *wbuf, *rbuf, *result;
 	MPI_Win win;
-	double start, end;
 	double t_comm_l, t_comm_g, t_comm_sum, t_comm_ave;
 	double t_total_l, t_total_g, t_total_sum, t_total_ave;
 	double t_table[NROW][NCOL];
@@ -78,17 +92,20 @@ int main(int argc, char **argv)
 	int szbuf = 1; /* Number of doubles to send */
 	struct rusage ru_start, ru_end;
 	struct timeval tv_start, tv_end;
+	int disable_syscall_intercept = 0;
  
-	//test_set_loglevel(TEST_LOGLEVEL_WARN);	
+	cpu_set_t cpuset;
+
+	test_set_loglevel(TEST_LOGLEVEL_WARN);	
 	fwq_init();
 
-	while ((opt = getopt_long(argc, argv, "+n:p:", options, NULL)) != -1) {
+	while ((opt = getopt(argc, argv, "+p:I:")) != -1) {
 		switch (opt) {
-		case 'n':
-			nsamples = atoi(optarg);
-			break;
 		case 'p':
 			ppn = atoi(optarg);
+			break;
+		case 'I':
+			disable_syscall_intercept = atoi(optarg);
 			break;
 		default: /* '?' */
 			printf("unknown option %c\n", optopt);
@@ -97,7 +114,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-	NG(nsamples != -1, "Error: Specify nsamples with -n");
 	NG(ppn != -1, "Error: Specify processes-per-rank with -p");
 
 	MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &actual);
@@ -105,9 +121,16 @@ int main(int argc, char **argv)
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &nproc);
-	
+
+#if 0 /* Avoid phys with Linux threads is allocated to progress */
+	CPU_ZERO(&cpuset);
+	CPU_SET(sched_getcpu() + 1, &cpuset);
+	if ((sched_setaffinity(0, sizeof(cpu_set_t), &cpuset))) {
+		printf("[%d] setaffinity failed\n", rank);
+	}
+#endif	
 	if (rank == 0) {
-		printf("ndoubles=%d,nproc=%d,nsamples=%d\n", szbuf, nproc, nsamples); 
+		printf("ndoubles=%d,nproc=%d\n", szbuf, nproc); 
 
 #pragma omp parallel
 		{
@@ -154,33 +177,17 @@ int main(int argc, char **argv)
 
 #define NSAMPLES_T_COMM 10
 	/* Measure RMA-only time */
-	t_comm_sum = 0;
-	for (i = 0; i < NSAMPLES_T_COMM; i++) {
-		MPI_Barrier(MPI_COMM_WORLD);
-		MPI_Win_lock_all(0, win);
+	t_comm_ave = measure(rank, nproc, win, rbuf, result, szbuf, 0, 0, NSAMPLES_T_COMM);
 
-		start = MPI_Wtime();
-		rma(rank, nsamples, nproc, win, rbuf, result, szbuf, 0, 0);
-		end = MPI_Wtime();
-
-		MPI_Win_unlock_all(win);
-		MPI_Barrier(MPI_COMM_WORLD);
-		
-		t_comm_l = (end - start) / nsamples;
-		MPI_Allreduce(&t_comm_l, &t_comm_g, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-
-		t_comm_sum += t_comm_g;
-	}
-	t_comm_ave = t_comm_sum / NSAMPLES_T_COMM;
 	if (rank == 0) {
 		printf("t_comm_ave: %.2f usec\n", t_comm_ave * 1000000);
 	}
 
 	/* 0: no progress, 1: progress, no uti, 2: progress, uti */
-	for (progress = 0; progress <= 1; progress++) {
+	for (progress = 0; progress <= (disable_syscall_intercept ? 1 : 0); progress += 1) {
 
 		if (progress == 1) {
-			setenv("DISABLE_UTI", "1", 1);
+			setenv("DISABLE_UTI", "1", 1); /* Don't use uti_attr and pin to Linux/McKernel CPUs */
 			progress_init();
 		} else if (progress == 2) {
 			progress_finalize();
@@ -192,24 +199,8 @@ int main(int argc, char **argv)
 		for (l = 0; l <= 10; l++) {
 			unsigned long t_calc = t_comm_ave * 1000000000 * l / 10; /* in nsec */
 #define NSAMPLES_T_TOTAL 10
-			t_total_sum = 0;
-			for (i = 0; i < NSAMPLES_T_TOTAL; i++) {
 
-				MPI_Barrier(MPI_COMM_WORLD);
-				MPI_Win_lock_all(0, win);
-					
-				start = MPI_Wtime();
-				rma(rank, nsamples, nproc, win, rbuf, result, szbuf, t_calc, progress);
-				end = MPI_Wtime();
-					
-				MPI_Win_unlock_all(win);
-				MPI_Barrier(MPI_COMM_WORLD);
-				t_total_l = (end - start) / nsamples;
-
-				MPI_Allreduce(&t_total_l, &t_total_g, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-				t_total_sum += t_total_g;
-			}
-			t_total_ave = t_total_sum / NSAMPLES_T_TOTAL;
+			t_total_ave = measure(rank, nproc, win, rbuf, result, szbuf, t_calc, progress, NSAMPLES_T_TOTAL);
 
 			if (rank == 0) {
 				if (l == 0) {
@@ -246,10 +237,6 @@ int main(int argc, char **argv)
 
 	}
 	
-	if (progress >= 1) {
-		progress_finalize();
-		MPI_Barrier(MPI_COMM_WORLD);
-	}
 
 	if (rank == 0) {
 		printf("calc,no prog,prog and no uti, prog and uti\n");
@@ -262,6 +249,10 @@ int main(int argc, char **argv)
 			}
 			printf("\n");
 		}
+	}
+
+	if (progress >= 1) {
+		progress_finalize();
 	}
 
 	MPI_Finalize();
