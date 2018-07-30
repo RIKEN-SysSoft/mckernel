@@ -5612,15 +5612,15 @@ SYSCALL_DECLARE(setrlimit)
 	struct rlimit *rlm = (struct rlimit *)ihk_mc_syscall_arg1(ctx);
 	struct thread *thread = cpu_local_var(current);
 	int	i;
-#ifdef POSTK_DEBUG_TEMP_FIX_3 /* If rlim_cur is greater than rlim_max, return -EINVAL (S64FX_19) */
 	struct rlimit new_rlim;
-
-	if (copy_from_user(&new_rlim, rlm, sizeof(*rlm)))
-		return -EFAULT;
-	if (new_rlim.rlim_cur > new_rlim.rlim_max)
-		return -EINVAL;
-#endif /* POSTK_DEBUG_TEMP_FIX_3 */
 	int	mcresource;
+
+	if (copy_from_user(&new_rlim, rlm, sizeof(*rlm))) {
+		return -EFAULT;
+	}
+	if (new_rlim.rlim_cur > new_rlim.rlim_max) {
+		return -EINVAL;
+	}
 
 	switch(resource){
 	    case RLIMIT_FSIZE:
@@ -5642,12 +5642,8 @@ SYSCALL_DECLARE(setrlimit)
 		return syscall_generic_forwarding(__NR_setrlimit, ctx);
 	}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_3 /* If rlim_cur is greater than rlim_max, return -EINVAL (S64FX_19) */
-	memcpy(thread->proc->rlimit + mcresource, &new_rlim, sizeof(new_rlim));
-#else /* POSTK_DEBUG_TEMP_FIX_3 */
-	if(copy_from_user(thread->proc->rlimit + mcresource, rlm, sizeof(struct rlimit)))
-		return -EFAULT;
-#endif /* POSTK_DEBUG_TEMP_FIX_3 */
+	memcpy(thread->proc->rlimit + mcresource, &new_rlim,
+		sizeof(new_rlim));
 
 	return 0;
 }
