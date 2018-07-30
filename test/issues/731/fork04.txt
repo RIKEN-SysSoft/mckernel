@@ -1,0 +1,3 @@
+fork04      1  TPASS  :  Env var TERM unchanged after fork(): xterm
+fork04      2  TPASS  :  Env var NoTSetzWq unchanged after fork(): getenv() does not find variable set
+fork04      3  TPASS  :  Env var TESTPROG unchanged after fork(): FRKTCS04

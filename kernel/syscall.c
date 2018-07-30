@@ -2489,7 +2489,7 @@ retry_tid:
 			
 			/* TODO: clean-up new */
 			release_cpuid(cpuid);
-			return -EFAULT;
+			return newproc->pid;
 		}
 
 		/* In a single threaded process TID equals to PID */
