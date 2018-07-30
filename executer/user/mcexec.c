@@ -2861,6 +2861,15 @@ static long util_thread(struct thread_data_s *my_thread, unsigned long rp_rctx, 
 
 	struct thread_data_s *tp;
 
+	uti_desc = (struct uti_desc *)_uti_desc;
+	if (!uti_desc) {
+		printf("%s: ERROR: uti_desc not found. Add --enable-uti option to mcexec.\n",
+		       __func__);
+		rc = -EINVAL;
+		goto out;
+	}
+	__dprintf("%s: uti_desc=%p\n", __FUNCTION__, uti_desc);
+
 	pthread_barrier_init(&uti_init_ready, NULL, 2);
 	if ((rc = create_worker_thread(&tp, &uti_init_ready))) {
 		printf("%s: Error: create_worker_thread failed (%d)\n", __FUNCTION__, rc);
@@ -2870,12 +2879,6 @@ static long util_thread(struct thread_data_s *my_thread, unsigned long rp_rctx, 
 	pthread_barrier_wait(&uti_init_ready);
 	__dprintf("%s: worker tid: %d\n", __FUNCTION__, tp->tid);
 
-	uti_desc = (struct uti_desc *)_uti_desc;
-	if (!uti_desc) {
-		printf("%s: ERROR: uti_desc isn't set. Use mcexec.sh instead of mcexec\n", __FUNCTION__);
-		rc = -EINVAL;
-		goto out;
-	}
 
 	/* Initialize uti related variables for syscall_intercept */
 	uti_desc->fd = fd;
