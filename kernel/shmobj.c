@@ -299,6 +299,7 @@ void shmobj_destroy(struct shmobj *obj)
 		--the_shm_info.used_ids;
 
 		list_add(&obj->chain, &kds_free_list);
+		/* For index reuse, release in descending order of index. */
 		for (;;) {
 			struct shmobj *p;
 
