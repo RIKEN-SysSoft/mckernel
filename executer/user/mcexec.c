@@ -3428,8 +3428,6 @@ int main_loop(struct thread_data_s *my_thread)
 			ret = open(fn, w.sr.args[2], w.sr.args[3]);
 			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
-			if (ret >= 0)
-				close(ret);
 			break;
 
 		case __NR_futex:
