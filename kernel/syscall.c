@@ -7752,8 +7752,8 @@ SYSCALL_DECLARE(mremap)
 	const size_t newsize0 = ihk_mc_syscall_arg2(ctx);
 	const int flags = ihk_mc_syscall_arg3(ctx);
 	const uintptr_t newaddr = ihk_mc_syscall_arg4(ctx);
-	const ssize_t oldsize = (oldsize0 + PAGE_SIZE - 1) & PAGE_MASK;
-	const ssize_t newsize = (newsize0 + PAGE_SIZE - 1) & PAGE_MASK;
+	const size_t oldsize = (oldsize0 + PAGE_SIZE - 1) & PAGE_MASK;
+	const size_t newsize = (newsize0 + PAGE_SIZE - 1) & PAGE_MASK;
 	const uintptr_t oldstart = oldaddr;
 	const uintptr_t oldend = oldstart + oldsize;
 	struct thread *thread = cpu_local_var(current);
@@ -7774,8 +7774,7 @@ SYSCALL_DECLARE(mremap)
 
 	/* check arguments */
 	if ((oldaddr & ~PAGE_MASK)
-			|| (oldsize < 0)
-			|| (newsize <= 0)
+			|| (newsize == 0)
 			|| (flags & ~(MREMAP_MAYMOVE | MREMAP_FIXED))
 			|| ((flags & MREMAP_FIXED)
 				&& !(flags & MREMAP_MAYMOVE))
