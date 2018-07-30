@@ -50,7 +50,7 @@ umask_old=`umask`
 idle_halt=""
 allow_oversubscribe=""
 
-while getopts :stk:c:m:o:f:r:q:i:d:e:hO OPT
+while getopts stk:c:m:o:f:r:q:i:d:e:hO OPT
 do
 	case ${OPT} in
 	f)	facility=${OPTARG}
@@ -81,8 +81,8 @@ do
 		;;
 	O) allow_oversubscribe="allow_oversubscribe"
 		;;
-	*)  echo "invalid option -${OPT}" >&2
-		exit 1
+	\?) exit 1
+		;;
 	esac
 done
 
