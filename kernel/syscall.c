@@ -2143,6 +2143,9 @@ static void munmap_all(void)
 	/* free vm_ranges which do_munmap() failed to remove. */
 	free_process_memory_ranges(thread->vm);
 
+	/* reset vm_region's map area */
+	thread->vm->region.map_end = thread->vm->region.map_start;
+
 	return;
 } /* munmap_all() */
 
