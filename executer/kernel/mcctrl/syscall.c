@@ -1259,7 +1259,7 @@ static int pager_get_path(struct file *file, char *path) {
 
 	fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
 	if (!IS_ERR(fullpath)) {
-		memcpy(path, fullpath, strlen(fullpath));
+		memcpy(path, fullpath, strlen(fullpath) + 1);
 	}
 	else {
 		path[0] = 0;
