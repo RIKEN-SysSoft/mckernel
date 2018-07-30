@@ -369,9 +369,33 @@ int mcctrl_ikc_send(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp);
 int mcctrl_ikc_send_msg(ihk_os_t os, int cpu, int msg, int ref, unsigned long arg);
 int mcctrl_ikc_is_valid_thread(ihk_os_t os, int cpu);
 
-/* ikc query-and-wait helper */
+struct mcctrl_wakeup_desc {
+	int status;
+	int err;
+	wait_queue_head_t wq;
+	struct list_head chain;
+	int free_addrs_count;
+	void *free_addrs[];
+};
+
+/* ikc query-and-wait helper
+ *
+ * Arguments:
+ *  - os, cpu and pisp as per mcctl_ikc_send()
+ *  - timeout: time to wait for reply in ms
+ *  - desc: if set, memory area to be used for desc.
+ *    Care must be taken to leave room for variable-length array.
+ *  - do_free: returns bool that specify if the caller should free
+ *    its memory on error (e.g. if ikc_send failed in the first place,
+ *    the reply has no chance of coming and memory should be free)
+ *    Always true on success.
+ *  - free_addrs_count & ...: addresses to kmalloc'd pointers that
+ *    are referenced in the message and must be left intact if we
+ *    abort to timeout/signal.
+ */
 int mcctrl_ikc_send_wait(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp,
-	long int timeout, int *do_frees, int free_addrs_count, ...);
+	long int timeout, struct mcctrl_wakeup_desc *desc,
+	int *do_frees, int free_addrs_count, ...);
 
 ihk_os_t osnum_to_os(int n);
 
