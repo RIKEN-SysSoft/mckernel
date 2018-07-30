@@ -314,6 +314,10 @@ struct perf_ctrl_desc {
 #define UTI_FLAG_HIGH_PRIORITY (1ULL<<12)
 #define UTI_FLAG_NON_COOPERATIVE (1ULL<<13)
 
+#define UTI_FLAG_PREFER_LWK (1ULL << 14)
+#define UTI_FLAG_PREFER_FWK (1ULL << 15)
+#define UTI_FLAG_FABRIC_INTR_AFFINITY (1ULL << 16)
+
 /* Linux default value is used */
 #define UTI_MAX_NUMA_DOMAINS (1024)
 
@@ -332,6 +336,8 @@ struct kuti_attr {
 
 struct uti_attr_desc {
 	unsigned long phys_attr;
+	char *uti_cpu_set_str; /* UTI_CPU_SET environmental variable */
+	size_t uti_cpu_set_len;
 };
 
 struct uti_ctx {
