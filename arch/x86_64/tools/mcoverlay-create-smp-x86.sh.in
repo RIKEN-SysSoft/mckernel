@@ -50,7 +50,8 @@ error_exit() {
 		;;
 	esac
 
-	exit 1
+	# Retun -EINVAL
+	exit -22
 }
 fi
 
@@ -153,3 +154,5 @@ for cpuid in `find /sys/bus/cpu/devices/* -maxdepth 0 -name "cpu[0123456789]*" -
 	rm -rf /tmp/mcos/mcos0_sys/bus/cpu/devices/$cpuid
     fi
 done
+
+exit 0

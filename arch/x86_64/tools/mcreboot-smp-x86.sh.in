@@ -12,6 +12,7 @@
 # the same set of resources as it used previously.
 # Note that the script does not output anything unless an error occurs.
 
+ret=1
 # POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
 # prefix="@prefix@"
 # BINDIR="${prefix}/bin"
@@ -211,7 +212,8 @@ error_exit() {
 		;;
 	esac
 
-	exit 1
+	# Propagate exit status if any
+	exit $ret
 }
 
 ihk_ikc_irq_core=0
@@ -262,7 +264,11 @@ fi
 
 # Remove mcoverlay if loaded
 if [ "$enable_mcoverlay" == "yes" ]; then
-    . ${SBINDIR}/mcoverlay-destroy.sh
+    ${SBINDIR}/mcoverlay-destroy.sh
+    ret=$?
+    if [ $ret -ne 0 ]; then
+	error_exit "initial"
+    fi
 fi
 
 # Stop irqbalance
@@ -465,7 +471,11 @@ fi
 
 # Overlay /proc, /sys with McKernel specific contents
 if [ "$enable_mcoverlay" == "yes" ]; then
-    . ${SBINDIR}/mcoverlay-create.sh
+    ${SBINDIR}/mcoverlay-create.sh
+    ret=$?
+    if [ $ret -ne 0 ]; then
+	error_exit "os_created"
+    fi
 fi
 
 # Start irqbalance with CPUs and IRQ for McKernel banned
