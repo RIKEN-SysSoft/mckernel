@@ -2893,7 +2893,15 @@ static long util_thread(struct thread_data_s *my_thread, unsigned long rp_rctx, 
 		struct uti_attr_desc desc;
 
 		desc.phys_attr = pattr;
-		ioctl(fd, MCEXEC_UP_UTI_ATTR, &desc);
+		desc.uti_cpu_set_str = getenv("UTI_CPU_SET");
+		desc.uti_cpu_set_len = strlen(desc.uti_cpu_set_str) + 1;
+
+		if ((rc = ioctl(fd, MCEXEC_UP_UTI_ATTR, &desc))) {
+			fprintf(stderr, "%s: error: MCEXEC_UP_UTI_ATTR: %s\n",
+				__func__, strerror(errno));
+			rc = -errno;
+			goto out;
+		}
 	}
 
 	/* Start intercepting syscalls. Note that it dereferences pointers in uti_desc. */
