@@ -7787,6 +7787,14 @@ SYSCALL_DECLARE(mremap)
 		goto out;
 	}
 
+	/* check necessity of remap */
+	if (!(flags & MREMAP_FIXED) && oldsize == newsize) {
+		/* Nothing to do */
+		error = 0;
+		newstart = oldaddr;
+		goto out;
+	}
+
 	if (oldend < oldstart) {
 		error = -EINVAL;
 		ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
