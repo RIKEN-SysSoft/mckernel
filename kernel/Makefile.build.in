@@ -19,7 +19,7 @@ endif
 
 CFLAGS += -I$(SRC)/include -I@abs_builddir@/../ -I@abs_builddir@/include -D__KERNEL__  -g -fno-omit-frame-pointer -fno-inline -fno-inline-small-functions
 ifneq ($(ARCH), arm64)
-CFLAGS += -mcmodel=large -mno-red-zone
+CFLAGS += -mcmodel=large -mno-red-zone -mno-sse
 endif
 LDFLAGS += -e arch_start
 IHKOBJ = ihk/ihk.o
