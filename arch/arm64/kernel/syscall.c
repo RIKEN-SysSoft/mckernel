@@ -1811,8 +1811,9 @@ SYSCALL_DECLARE(mmap)
 		goto out;
 	}
 
-	if ((flags & MAP_FIXED) && ((addr < region->user_start)
-			|| (region->user_end <= addr))) {
+	if (addr < region->user_start
+			|| region->user_end <= addr
+			|| len > (region->user_end - region->user_start)) {
 		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):ENOMEM\n",
 				addr0, len0, prot, flags0, fd, off0);
 		error = -ENOMEM;
