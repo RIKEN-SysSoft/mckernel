@@ -1,0 +1,45 @@
+*** RT_001 start *******************************
+TEST_SUITE: rt_sigaction
+TEST_NUMBER: 5
+ARGS:
+sigaction(-1) = -1 (errno=22)
+sigaction(65) = -1 (errno=22)
+sigaction(9) = -1 (errno=22)
+sigaction(19) = -1 (errno=22)
+RESULT: ok
+*** RT_001: PASSED
+
+*** CT_001 start *******************************
+ [OK] sigaction with SA_RESETHAND
+ [OK] sigaction to get current action
+ [OK] check current act
+*** CT_001 PASSED
+
+*** CT_002 start *******************************
+ [OK] sigaction with SA_RESETHAND
+   send 1st SIGUSR1
+ [OK] invoked test_handler
+ [OK] sigaction to get current action
+ [OK] check current act (after reset)
+*** CT_002 PASSED
+
+*** CT_003 start *******************************
+ [OK] sigaction 0 failed
+ [OK] sigaction _NSIG failed
+ [OK] sigaction SIGKILL failed
+ [OK] sigaction SIGSTOP failed
+*** CT_003 PASSED
+
+*** CT_004 start *******************************
+ [OK] sigaction to get SIGKILL action
+ [OK] check SIGKILL act
+ [OK] sigaction to get SIGSTOP action
+ [OK] check SIGSTOP act
+*** CT_004 PASSED
+
+*** CT_005 start *******************************
+ [OK] SIGUSR1 is valid
+ [OK] SIGKILL is valid
+ [OK] SIGSTOP is valid
+ [OK] _NSIG is invalid
+*** CT_005 PASSED
