@@ -1,0 +1,49 @@
+Script started on Thu Jun 28 09:14:18 2018
+bash-4.2$ make test
+sh ./C1109.sh
+TEST_SUITE: mem_stack_limits
+TEST_NUMBER: 0
+ARGS: -s 9961472 
+call: 0 GiB + 9 MiB + 512 KiB
+used_stack size: 9986480 (0 GiB + 9 MiB + 536 KiB)
+RESULT: ok
+*** C1109T01: OK
+TEST_SUITE: mem_stack_limits
+TEST_NUMBER: 0
+ARGS: -s 2040109466 
+call: 1 GiB + 921 MiB + 614 KiB
+used_stack size: 2040182784 (1 GiB + 921 MiB + 686 KiB)
+RESULT: ok
+*** C1109T02: OK
+TEST_SUITE: mem_stack_limits
+TEST_NUMBER: 0
+ARGS: -s 10200547328 
+call: 9 GiB + 512 MiB + 0 KiB
+used_stack size: 10200572336 (9 GiB + 512 MiB + 24 KiB)
+RESULT: ok
+*** C1109T03: OK
+TEST_SUITE: mem_stack_limits
+TEST_NUMBER: 0
+ARGS: -s 9961472 
+call: 0 GiB + 9 MiB + 512 KiB
+used_stack size: 9986480 (0 GiB + 9 MiB + 536 KiB)
+RESULT: ok
+*** C1109T04: OK
+TEST_SUITE: mem_stack_limits
+TEST_NUMBER: 0
+ARGS: -s 2040109466 
+call: 1 GiB + 921 MiB + 614 KiB
+used_stack size: 2040182784 (1 GiB + 921 MiB + 686 KiB)
+RESULT: ok
+*** C1109T05: OK
+TEST_SUITE: mem_stack_limits
+TEST_NUMBER: 0
+ARGS: -s 10200547328 
+call: 9 GiB + 512 MiB + 0 KiB
+used_stack size: 10200572336 (9 GiB + 512 MiB + 24 KiB)
+RESULT: ok
+*** C1109T06: OK
+bash-4.2$ exit
+exit
+
+Script done on Thu Jun 28 09:14:32 2018

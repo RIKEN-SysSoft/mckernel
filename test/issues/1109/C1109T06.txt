@@ -1,0 +1,6 @@
+TEST_SUITE: mem_stack_limits
+TEST_NUMBER: 0
+ARGS: -s 10200547328 
+call: 9 GiB + 512 MiB + 0 KiB
+used_stack size: 10200572336 (9 GiB + 512 MiB + 24 KiB)
+RESULT: ok
