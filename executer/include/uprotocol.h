@@ -255,7 +255,6 @@ enum perf_ctrl_type {
 
 struct perf_ctrl_desc {
 	enum perf_ctrl_type ctrl_type;
-	int status;
 #ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
 	int err;
 #endif /* POSTK_DEBUG_TEMP_FIX_80 */

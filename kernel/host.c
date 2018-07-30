@@ -776,6 +776,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		pckt.err = 0;
 #endif /* POSTK_DEBUG_TEMP_FIX_80 */
 		pckt.arg = packet->arg;
+		pckt.reply = packet->reply;
 		ihk_ikc_send(resp_channel, &pckt, 0);
 
 #ifndef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
