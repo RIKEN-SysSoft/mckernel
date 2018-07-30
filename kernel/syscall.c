@@ -9440,7 +9440,7 @@ SYSCALL_DECLARE(util_indicate_clone)
 	    mod != SPAWN_TO_REMOTE)
 		return -EINVAL;
 	if (arg) {
-		if (!(kattr = kmalloc(sizeof(struct uti_attr), IHK_MC_AP_NOWAIT)) {
+		if (!(kattr = kmalloc(sizeof(struct uti_attr), IHK_MC_AP_NOWAIT))) {
 			kprintf("%s: error: allocating kattr\n", __func__);
 			return -ENOMEM;
 		}
