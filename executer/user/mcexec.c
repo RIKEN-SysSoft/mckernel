@@ -444,10 +444,12 @@ struct program_load_desc *load_interp(struct program_load_desc *desc0, FILE *fp)
 	for (i = 0; i < hdr.e_phnum; i++) {
 		if (fread(&phdr, sizeof(phdr), 1, fp) < 1) {
 			__eprintf("Loading phdr failed (%d)\n", i);
+			free(desc);
 			return NULL;
 		}
 		if (phdr.p_type == PT_INTERP) {
 			__eprint("PT_INTERP on interp\n");
+			free(desc);
 			return NULL;
 		}
 		if (phdr.p_type == PT_LOAD) {
@@ -508,11 +510,13 @@ retry:
 
 			if (!execvp) {
 				if (strlen(filename) + 1 > max_len) {
+					free(link_path);
 					return ENAMETOOLONG;
 				}
 				strcpy(path, filename);
 				error = access(path, X_OK);
 				if (error) {
+					free(link_path);
 					return errno;
 				}
 				found = 1;
@@ -524,6 +528,7 @@ retry:
 			}
 
 			if (strlen(filename) >= 255) {
+				free(link_path);
 				return ENAMETOOLONG;
 			}
 
@@ -533,6 +538,7 @@ retry:
 			tofree = string = strdup(PATH);
 			if (string == NULL) {
 				printf("lookup_exec_path(): copying PATH, not enough memory?\n");
+				free(link_path);
 				return ENOMEM;
 			}
 
@@ -553,7 +559,8 @@ retry:
 			}
 
 			free(tofree);
-			if(!found){
+			if (!found) {
+				free(link_path);
 				return ENOENT;
 			}
 			break;
@@ -565,6 +572,7 @@ retry:
 
 			if (error < 0 || error >= max_len) {
 				fprintf(stderr, "lookup_exec_path(): array too small?\n");
+				free(link_path);
 				return ENOMEM;
 			}
 
@@ -584,6 +592,7 @@ retry:
 
 		if (error < 0 || error >= max_len) {
 			fprintf(stderr, "lookup_exec_path(): array too small?\n");
+			free(link_path);
 			return ENOMEM;
 		}
 
@@ -614,6 +623,7 @@ retry:
 		error = readlink(path, link_path, max_len);
 		if (error == -1 || error == max_len) {
 			fprintf(stderr, "lookup_exec_path(): error readlink\n");
+			free(link_path);
 			return EINVAL;
 		}
 		link_path[error] = '\0';
@@ -631,7 +641,7 @@ retry:
 		filename = link_path;
 		goto retry; 
 	}
-	
+
 	if (!found) {
 		fprintf(stderr, 
 				"lookup_exec_path(): error finding file %s\n", filename);
@@ -680,6 +690,7 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 
 	if (fread(&header, 1, 2, fp) != 2) {
 		fprintf(stderr, "Error: Failed to read header from %s\n", filename);
+		fclose(fp);
 		return errno;
 	}
 
@@ -702,6 +713,7 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 	if ((ret = ioctl(fd, MCEXEC_UP_OPEN_EXEC, filename)) != 0) {
 		fprintf(stderr, "Error: open_exec() fails for %s: %d (fd: %d)\n", 
 			filename, ret, fd);
+		fclose(fp);
 		return ret;
 	}
 
@@ -716,6 +728,7 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 		
 		if (!exec_path) {
 			fprintf(stderr, "WARNING: strdup(filename) failed\n");
+			fclose(fp);
 			return ENOMEM;
 		}
 	}
@@ -723,12 +736,14 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 		char *cwd = getcwd(NULL, 0);
 		if (!cwd) {
 			fprintf(stderr, "Error: getting current working dir pathname\n");
+			fclose(fp);
 			return ENOMEM;
 		}
 
 		exec_path = malloc(strlen(cwd) + strlen(filename) + 2);
 		if (!exec_path) {
 			fprintf(stderr, "Error: allocating exec_path\n");
+			fclose(fp);
 			return ENOMEM;
 		}
 
@@ -738,8 +753,8 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 	
 	desc = load_elf(fp, &interp_path);
 	if (!desc) {
-		fclose(fp);
 		fprintf(stderr, "Error: Failed to parse ELF!\n");
+		fclose(fp);
 		return 1;
 	}
 
@@ -749,18 +764,22 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 		path = search_file(interp_path, X_OK);
 		if (!path) {
 			fprintf(stderr, "Error: interp not found: %s\n", interp_path);
+			fclose(fp);
 			return 1;
 		}
 
 		interp = fopen(path, "rb");
 		if (!interp) {
 			fprintf(stderr, "Error: Failed to open %s\n", path);
+			fclose(fp);
 			return 1;
 		}
 
 		desc = load_interp(desc, interp);
 		if (!desc) {
 			fprintf(stderr, "Error: Failed to parse interp!\n");
+			fclose(fp);
+			fclose(interp);
 			return 1;
 		}
 	}
@@ -1778,11 +1797,7 @@ void bind_mount_recursive(const char *root, char *prefix)
 		return;
 	}
 
-	if (!(entry = readdir(dir))) {
-		return;
-	}
-
-	do {
+	while ((entry = readdir(dir))) {
 		len = snprintf(path, sizeof(path) - 1,
 				"%s/%s", prefix, entry->d_name);
 		path[len] = 0;
@@ -1816,7 +1831,6 @@ void bind_mount_recursive(const char *root, char *prefix)
 			}
 		}
 	}
-	while ((entry = readdir(dir)) != NULL);
 
 	closedir(dir);
 }
@@ -2715,7 +2729,8 @@ do_generic_syscall(
 		sprintf(proc_path, "/proc/self/fd/%d", (int)w->sr.args[0]);
 
 		/* Get filename */
-		if ((len = readlink(proc_path, path, sizeof(path))) < 0) {
+		len = readlink(proc_path, path, sizeof(path));
+		if (len < 0 || len >= sizeof(path)) {
 			fprintf(stderr, "%s: error: readlink() failed for %s\n",
 				__FUNCTION__, proc_path);
 			goto out;
@@ -3420,6 +3435,8 @@ int main_loop(struct thread_data_s *my_thread)
 			ret = open(fn, w.sr.args[2], w.sr.args[3]);
 			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			if (ret >= 0)
+				close(ret);
 			break;
 
 		case __NR_futex:

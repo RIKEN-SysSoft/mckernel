@@ -42,7 +42,7 @@ int print_kregs(char *rbp, size_t rbp_size, const struct arch_kregs *kregs)
 	}
 
 	for (i = 0; i < sizeof(regs_1)/sizeof(regs_1[0]); i++) {	/* rsi, rdi, rbp, rsp */
-		ret = print_bin(rbp, rbp_size, (void *)regs_1[i], sizeof(regs_1[0]));
+		ret = print_bin(rbp, rbp_size, regs_1 + i, sizeof(regs_1[0]));
 		if (ret < 0) {
 			return ret;
 		}
@@ -62,7 +62,7 @@ int print_kregs(char *rbp, size_t rbp_size, const struct arch_kregs *kregs)
 	}
 
 	for (i = 0; i < sizeof(regs_2)/sizeof(regs_2[0]); i++) {	/* r12-r15 */
-		ret = print_bin(rbp, rbp_size, (void *)regs_2[i], sizeof(regs_2[0]));
+		ret = print_bin(rbp, rbp_size, regs_2 + i, sizeof(regs_2[0]));
 		if (ret < 0) {
 			return ret;
 		}

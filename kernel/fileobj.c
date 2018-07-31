@@ -656,7 +656,9 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 			npages = 1 << p2align;
 
 			virt = ihk_mc_alloc_pages_user(npages, (IHK_MC_AP_NOWAIT |
-					(to_memobj(obj)->flags & MF_ZEROFILL) ? IHK_MC_AP_USER : 0), virt_addr);
+					((to_memobj(obj)->flags & MF_ZEROFILL) ?
+						IHK_MC_AP_USER : 0)),
+					virt_addr);
 			if (!virt) {
 				error = -ENOMEM;
 				kprintf("fileobj_get_page(%p,%lx,%x,%x,%p):"
