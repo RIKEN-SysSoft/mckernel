@@ -1718,7 +1718,7 @@ set_signal(int sig, void *regs0, siginfo_t *info)
 
 SYSCALL_DECLARE(mmap)
 {
-	const int supported_flags = 0
+	const unsigned int supported_flags = 0
 		| MAP_SHARED		// 0x01
 		| MAP_PRIVATE		// 0x02
 		| MAP_FIXED		// 0x10
@@ -1726,7 +1726,7 @@ SYSCALL_DECLARE(mmap)
 		| MAP_LOCKED		// 0x2000
 		| MAP_POPULATE		// 0x8000
 		| MAP_HUGETLB		// 00040000
-		| (0x3F << MAP_HUGE_SHIFT) // FC000000
+		| (0x3FU << MAP_HUGE_SHIFT) // FC000000
 		;
 	const int ignored_flags = 0
 		| MAP_DENYWRITE		// 0x0800

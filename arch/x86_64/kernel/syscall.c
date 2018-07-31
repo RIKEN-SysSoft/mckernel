@@ -1471,7 +1471,7 @@ set_signal(int sig, void *regs0, siginfo_t *info)
 
 SYSCALL_DECLARE(mmap)
 {
-	const int supported_flags = 0
+	const unsigned int supported_flags = 0
 		| MAP_SHARED		// 01
 		| MAP_PRIVATE		// 02
 		| MAP_FIXED		// 10
@@ -1479,7 +1479,7 @@ SYSCALL_DECLARE(mmap)
 		| MAP_LOCKED		// 2000
 		| MAP_POPULATE		// 8000
 		| MAP_HUGETLB		// 00040000
-		| (0x3F << MAP_HUGE_SHIFT) // FC000000
+		| (0x3FU << MAP_HUGE_SHIFT) // FC000000
 		;
 	const int ignored_flags = 0
 #ifdef	USE_NOCACHE_MMAP
