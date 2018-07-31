@@ -72,7 +72,7 @@ char *profile_event_names[] =
 	""
 };
 
-mcs_lock_node_t job_profile_lock = {0, NULL};
+mcs_lock_node_t job_profile_lock = { 0 };
 struct profile_event *job_profile_events = NULL;
 int job_nr_processes = -1;
 int job_nr_processes_left = -1;
@@ -445,7 +445,7 @@ void profile_dealloc_proc_events(struct process *proc)
 	kfree(proc->profile_events);
 }
 
-void static profile_clear_process(struct process *proc)
+static void profile_clear_process(struct process *proc)
 {
 	proc->profile_elapsed_ts = 0;
 	if (!proc->profile_events) return;
@@ -454,7 +454,7 @@ void static profile_clear_process(struct process *proc)
 			sizeof(*proc->profile_events) * PROFILE_EVENT_MAX);
 }
 
-void static profile_clear_thread(struct thread *thread)
+static void profile_clear_thread(struct thread *thread)
 {
 	thread->profile_start_ts = 0;
 	thread->profile_elapsed_ts = 0;

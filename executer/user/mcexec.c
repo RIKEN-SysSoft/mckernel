@@ -3366,9 +3366,9 @@ int main_loop(struct thread_data_s *my_thread)
 		}
 
 		/* Don't print when got a msg to stdout */
-		if (!(w.sr.number == __NR_write && w.sr.args[0] == 1))
+		if (!(w.sr.number == __NR_write && w.sr.args[0] == 1)) {
 			__dprintf("[%d] got syscall: %ld\n", cpu, w.sr.number);
-		
+		}
 		//pthread_mutex_lock(lock);
 
 		my_thread->remote_tid = w.sr.rtid;
@@ -3474,11 +3474,13 @@ int main_loop(struct thread_data_s *my_thread)
 				term = (w.sr.args[0] & 0xff00) >> 8;
 				if(isatty(2)){
 					if(sig){
-						if(!ischild)
+						if(!ischild) {
 							fprintf(stderr, "Terminate by signal %d\n", sig);
+						}
 					}
-					else if(term)
+					else if(term) {
 						__dprintf("Exit status: %d\n", term);
+					}
 				}
 			}
 

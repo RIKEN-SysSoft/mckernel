@@ -255,6 +255,11 @@ static unsigned long attr_to_l1attr(enum ihk_mc_pt_attribute attr)
 	}
 }
 
+#define PTLX_SHIFT(index) PTL ## index ## _SHIFT
+
+#define GET_VIRT_INDEX(virt, index, dest) \
+	dest = ((virt) >> PTLX_SHIFT(index)) & (PT_ENTRIES - 1)
+
 #define GET_VIRT_INDICES(virt, l4i, l3i, l2i, l1i) \
 	l4i = ((virt) >> PTL4_SHIFT) & (PT_ENTRIES - 1); \
 	l3i = ((virt) >> PTL3_SHIFT) & (PT_ENTRIES - 1); \
@@ -1515,12 +1520,12 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 	if (page) {
 		dkprintf("%s: page=%p,is_in_memobj=%d,(old & PFL1_DIRTY)=%lx,memobj=%p,args->memobj->flags=%x\n", __FUNCTION__, page, page_is_in_memobj(page), (old & PFL1_DIRTY), args->memobj, args->memobj ? args->memobj->flags : -1);
 	}
-	if (page && page_is_in_memobj(page) && (old & PFL1_DIRTY) && (args->memobj) &&
-			!(args->memobj->flags & MF_ZEROFILL)) {
+	if (page && page_is_in_memobj(page) && pte_is_dirty(&old, PTL1_SIZE) &&
+			args->memobj && !(args->memobj->flags & MF_ZEROFILL)) {
 		memobj_flush_page(args->memobj, phys, PTL1_SIZE);
 	}
 
-	if (!(old & PFL1_FILEOFF)) {
+	if (!pte_is_fileoff(&old, PTL1_SIZE)) {
 		if(args->free_physical) {
 			if (!page) {
 				/* Anonymous || !XPMEM attach */
@@ -1582,11 +1587,11 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
 			page = phys_to_page(phys);
 		}
 
-		if (page && page_is_in_memobj(page) && (old & PFL2_DIRTY)) {
+		if (page && page_is_in_memobj(page) && pte_is_dirty(&old, PTL2_SIZE)) {
 			memobj_flush_page(args->memobj, phys, PTL2_SIZE);
 		}
 
-		if (!(old & PFL2_FILEOFF)) {
+		if (!pte_is_fileoff(&old, PTL2_SIZE)) {
 			if(args->free_physical) {
 				if (!page) {
 					/* Anonymous || !XPMEM attach */
@@ -1663,13 +1668,13 @@ static int clear_range_l3(void *args0, pte_t *ptep, uint64_t base,
 			page = phys_to_page(phys);
 		}
 
-		if (page && page_is_in_memobj(page) && (old & PFL3_DIRTY)) {
+		if (page && page_is_in_memobj(page) && pte_is_dirty(&old, PTL3_SIZE)) {
 			memobj_flush_page(args->memobj, phys, PTL3_SIZE);
 		}
 
 		dkprintf("%s: phys=%ld, pte_get_phys(&old),PTL3_SIZE\n", __FUNCTION__, pte_get_phys(&old));
 
-		if (!(old & PFL3_FILEOFF)) {
+		if (!pte_is_fileoff(&old, PTL3_SIZE)) {
 			if(args->free_physical) {
 				if (!page) {
 					/* Anonymous || !XPMEM attach */

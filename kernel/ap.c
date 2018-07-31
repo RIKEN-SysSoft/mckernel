@@ -209,8 +209,10 @@ store_fake_cpu_info(struct sysfs_ops *ops0, void *instance, void *buf,
 
 static struct fake_cpu_info_ops show_fci_online = {
 	.member = ONLINE,
-	.ops.show = &show_fake_cpu_info,
-	.ops.store = &store_fake_cpu_info,
+	.ops = {
+		.show = &show_fake_cpu_info,
+		.store = &store_fake_cpu_info,
+	},
 };
 
 void
