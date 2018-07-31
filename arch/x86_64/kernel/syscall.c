@@ -2390,8 +2390,6 @@ int move_pages_smp_handler(int cpu_index, int nr_cpus, void *arg)
 			case 0:
 				memcpy(mpsr->virt_addr, mpsr->user_virt_addr,
 						sizeof(void *) * count);
-				memcpy(mpsr->status, mpsr->user_status,
-						sizeof(int) * count);
 				memcpy(mpsr->nodes, mpsr->user_nodes,
 						sizeof(int) * count);
 				memset(mpsr->ptep, 0, sizeof(pte_t) * count);
@@ -2411,41 +2409,38 @@ int move_pages_smp_handler(int cpu_index, int nr_cpus, void *arg)
 			case 0:
 				memcpy(mpsr->virt_addr, mpsr->user_virt_addr,
 						sizeof(void *) * count);
-				memcpy(mpsr->status, mpsr->user_status,
-						sizeof(int) * count);
-			case 1:
 				memcpy(mpsr->nodes, mpsr->user_nodes,
 						sizeof(int) * count);
+				mpsr->nodes_ready = 1;
+				break;
+			case 1:
 				memset(mpsr->ptep, 0, sizeof(pte_t) * count);
 				memset(mpsr->status, 0, sizeof(int) * count);
 				memset(mpsr->nr_pages, 0, sizeof(int) * count);
 				memset(mpsr->dst_phys, 0,
 						sizeof(unsigned long) * count);
-				mpsr->nodes_ready = 1;
 				break;
 
 			default:
 				break;
 		}
 	}
-	else if (nr_cpus >= 4 && nr_cpus < 8) {
+	else if (nr_cpus >= 4 && nr_cpus < 7) {
 		switch (cpu_index) {
 			case 0:
 				memcpy(mpsr->virt_addr, mpsr->user_virt_addr,
 						sizeof(void *) * count);
 				break;
 			case 1:
-				memcpy(mpsr->status, mpsr->user_status,
-						sizeof(int) * count);
-				break;
-			case 2:
 				memcpy(mpsr->nodes, mpsr->user_nodes,
 						sizeof(int) * count);
 				mpsr->nodes_ready = 1;
 				break;
-			case 3:
+			case 2:
 				memset(mpsr->ptep, 0, sizeof(pte_t) * count);
 				memset(mpsr->status, 0, sizeof(int) * count);
+				break;
+			case 3:
 				memset(mpsr->nr_pages, 0, sizeof(int) * count);
 				memset(mpsr->dst_phys, 0,
 						sizeof(unsigned long) * count);
@@ -2455,7 +2450,7 @@ int move_pages_smp_handler(int cpu_index, int nr_cpus, void *arg)
 				break;
 		}
 	}
-	else if (nr_cpus >= 8) {
+	else {
 		switch (cpu_index) {
 			case 0:
 				memcpy(mpsr->virt_addr, mpsr->user_virt_addr,
@@ -2467,28 +2462,23 @@ int move_pages_smp_handler(int cpu_index, int nr_cpus, void *arg)
 						sizeof(void *) * (count / 2));
 				break;
 			case 2:
-				memcpy(mpsr->status, mpsr->user_status,
-						sizeof(int) * count);
-				break;
-			case 3:
 				memcpy(mpsr->nodes, mpsr->user_nodes,
 						sizeof(int) * count);
 				mpsr->nodes_ready = 1;
 				break;
-			case 4:
+			case 3:
 				memset(mpsr->ptep, 0, sizeof(pte_t) * count);
 				break;
-			case 5:
+			case 4:
 				memset(mpsr->status, 0, sizeof(int) * count);
 				break;
-			case 6:
+			case 5:
 				memset(mpsr->nr_pages, 0, sizeof(int) * count);
 				break;
-			case 7:
+			case 6:
 				memset(mpsr->dst_phys, 0,
 						sizeof(unsigned long) * count);
 				break;
-
 			default:
 				break;
 		}
