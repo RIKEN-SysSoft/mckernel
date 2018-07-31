@@ -602,4 +602,9 @@ __mcs_rwlock_reader_unlock(struct mcs_rwlock_lock *lock, struct mcs_rwlock_node_
 #endif
 }
 
+static inline int irqflags_can_interrupt(unsigned long flags)
+{
+	return !!(flags & 0x200);
+}
+
 #endif

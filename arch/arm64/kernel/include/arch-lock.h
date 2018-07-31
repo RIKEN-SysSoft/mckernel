@@ -604,4 +604,18 @@ __mcs_rwlock_reader_unlock(struct mcs_rwlock_lock *lock, struct mcs_rwlock_node_
 #endif
 }
 
+#if defined(CONFIG_HAS_NMI)
+#include <arm-gic-v3.h>
+static inline int irqflags_can_interrupt(unsigned long flags)
+{
+	return (flags == ICC_PMR_EL1_UNMASKED);
+}
+#else /* CONFIG_HAS_NMI */
+static inline int irqflags_can_interrupt(unsigned long flags)
+{
+	return !(flags & 0x2);
+}
+#endif /* CONFIG_HAS_NMI */
+
+
 #endif /* !__HEADER_ARM64_COMMON_ARCH_LOCK_H */
