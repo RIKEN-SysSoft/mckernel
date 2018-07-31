@@ -2624,7 +2624,7 @@ void init_page_table(void)
 	init_pt = ihk_mc_alloc_pages(1, IHK_MC_AP_CRITICAL);
 	ihk_mc_spinlock_init(&init_pt_lock);
 	
-	memset(init_pt, 0, sizeof(PAGE_SIZE));
+	memset(init_pt, 0, sizeof(*init_pt));
 
 	/* Normal memory area */
 	init_normal_area(init_pt);
