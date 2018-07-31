@@ -1057,7 +1057,8 @@ void terminate(int rc, int sig)
 			break;
 		}
 		__mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
-		cpu_pause();
+		/* We might be waiting for another thread on same CPU */
+		schedule();
 	}
 
 	mcs_rwlock_writer_lock(&proc->threads_lock, &lock);
