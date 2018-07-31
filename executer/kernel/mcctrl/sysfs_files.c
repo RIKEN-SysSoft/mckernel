@@ -1020,9 +1020,29 @@ struct pci_file_name {
 	struct list_head chain;
 };
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 11, 0) || \
+	(defined(RHEL_RELEASE_CODE) && RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(7, 5))
+struct mcctrl_filler_args {
+	struct dir_context ctx;
+	void *buf;
+};
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0)
+static int pci_file_name_gen(struct dir_context *ctx, const char *name,
+		int namlen, loff_t offset, u64 ino, unsigned int d_type)
+#else
+static int pci_file_name_gen(void *ctx, const char *name,
+		int namlen, loff_t offset, u64 ino, unsigned int d_type)
+#endif
+{
+	struct mcctrl_filler_args *args
+		= container_of(ctx, struct mcctrl_filler_args, ctx);
+	void *buf = args->buf;
+#else
 static int pci_file_name_gen(void *buf, const char *name, int namlen,
 		loff_t offset, u64 ino, unsigned d_type)
 {
+#endif
 	struct pci_file_name *p;
 	int error = -1;
 
@@ -1061,49 +1081,21 @@ out:
 	return error;
 }
 
+static inline int mcctrl_vfs_readdir(struct file *file, filldir_t filler,
+				     void *buf)
+{
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 11, 0) || \
 	(defined(RHEL_RELEASE_CODE) && RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(7, 5))
-typedef int (*mcctrl_filldir_t)(void *buf, const char *name, int namlen,
-		loff_t offset, u64 ino, unsigned d_type);
-
-struct mcctrl_filler_args {
-	struct dir_context ctx;
-	mcctrl_filldir_t filler;
-	void *buf;
-};
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0)
-static int mcctrl_filler(struct dir_context *ctx, const char *name,
-		int namlen, loff_t offset, u64 ino, unsigned int d_type)
-#else
-static int mcctrl_filler(void *ctx, const char *name,
-		int namlen, loff_t offset, u64 ino, unsigned int d_type)
-#endif
-{
-	struct mcctrl_filler_args *args
-		= container_of(ctx, struct mcctrl_filler_args, ctx);
-
-	return (*args->filler)(args->buf, name, namlen, offset, ino, d_type);
-} /* mcctrl_filler() */
-
-static inline int mcctrl_vfs_readdir(struct file *file,
-		mcctrl_filldir_t filler, void *buf)
-{
 	struct mcctrl_filler_args args = {
-		.ctx.actor = &mcctrl_filler,
-		.filler = filler,
+		.ctx.actor = filler,
 		.buf = buf,
 	};
 
 	return iterate_dir(file, &args.ctx);
-} /* mcctrl_vfs_readdir() */
 #else
-static inline int mcctrl_vfs_readdir(struct file *file, filldir_t filler,
-		void *buf)
-{
 	return vfs_readdir(file, filler, buf);
-} /* mcctrl_vfs_readdir() */
 #endif
+} /* mcctrl_vfs_readdir() */
 
 static int setup_pci_files(struct mcctrl_usrdata *udp)
 {
