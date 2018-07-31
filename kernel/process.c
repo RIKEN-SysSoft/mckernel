@@ -3240,7 +3240,7 @@ redo:
 	/* Switch to idle() when prev is PS_EXITED since it always reaches release_thread() 
 	   because it always resumes from just after ihk_mc_switch_context() call. See #1029 */
 	if (v->flags & CPU_FLAG_NEED_MIGRATE ||
-	    prev->status == PS_EXITED) {
+	    (prev && prev->status == PS_EXITED)) {
 		next = &cpu_local_var(idle);
 	} else {
 		/* Pick a new running process or one that has a pending signal */
@@ -3325,7 +3325,7 @@ redo:
 		}
 
 #ifdef PROFILE_ENABLE
-		if (prev->profile && prev->profile_start_ts != 0) {
+		if (prev && prev->profile && prev->profile_start_ts != 0) {
 			prev->profile_elapsed_ts +=
 				(rdtsc() - prev->profile_start_ts);
 			prev->profile_start_ts = 0;
