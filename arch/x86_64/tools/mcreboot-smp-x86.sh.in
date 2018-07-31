@@ -232,7 +232,7 @@ if [ "${ENABLE_MCOVERLAYFS}" == "yes" ]; then
 			enable_mcoverlay="yes"
 		fi
 	else
-		if [ ${linux_version_code} -eq 199168 -a ${rhel_release} -ge 327 -a ${rhel_release} -le 693 ]; then
+		if [ ${linux_version_code} -eq 199168 -a ${rhel_release} -ge 327 -a ${rhel_release} -le 862 ]; then
 			enable_mcoverlay="yes"
 		fi
 		if [ ${linux_version_code} -ge 262144 -a ${linux_version_code} -lt 262400 ]; then
