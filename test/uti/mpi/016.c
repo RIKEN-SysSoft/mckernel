@@ -17,9 +17,15 @@
 #include "async_progress.h"
 #include "util.h"
 
+#define MYTIME_UNIT "cyc"
+
+static inline double mytime() {
+	return rdtsc_light()/*MPI_Wtime()*/;
+}
+
 static int ppn = -1;
 
-void rma(int my_rank, int nproc, MPI_Win win, double *rbuf, double *result, int szbuf, long t_calc, int progress) {
+void rma(int my_rank, int nproc, MPI_Win win, double *rbuf, double *result, int szbuf, long cyc_calc, int progress) {
 	int i, j;
 
 		for (i = 0; i < nproc; i++) {
@@ -42,7 +48,7 @@ void rma(int my_rank, int nproc, MPI_Win win, double *rbuf, double *result, int 
 	}
 #pragma omp parallel
 	{
-		fwq(t_calc);
+		cdelay(cyc_calc);
 	}
 	if (progress) {
 		progress_stop();
@@ -50,27 +56,32 @@ void rma(int my_rank, int nproc, MPI_Win win, double *rbuf, double *result, int 
 	MPI_Win_flush_local_all(win);
 }
 
-double measure(int rank, int nproc, MPI_Win win, double *rbuf, double* result, int szbuf, unsigned long t_calc, int progress, int _nsamples) {
+double measure(int rank, int nproc, MPI_Win win, double *rbuf, double* result, int szbuf, long cyc_calc, int progress, int nsamples, int nsamples_drop) {
 	int i;
 	double t_l, t_g, t_sum = 0;
 	double start, end;
 
-	for (i = 0; i < _nsamples; i++) {
+	for (i = 0; i < nsamples + nsamples_drop; i++) {
 		MPI_Barrier(MPI_COMM_WORLD);
 		MPI_Win_lock_all(0, win);
 		
-		start = MPI_Wtime();
-		rma(rank, nproc, win, rbuf, result, szbuf, t_calc, progress);
-		end = MPI_Wtime();
+		start = mytime();
+		rma(rank, nproc, win, rbuf, result, szbuf, cyc_calc, progress);
+		end = mytime();
 		
 		MPI_Win_unlock_all(win);
 		MPI_Barrier(MPI_COMM_WORLD);
 
 		t_l = end - start;
 		MPI_Allreduce(&t_l, &t_g, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
+		if (i < nsamples_drop) {
+			continue;
+		}
+
 		t_sum += t_g;
 	}
-	return t_sum / _nsamples;
+	return t_sum / nsamples;
 }
 
 #define NROW 11
@@ -134,7 +145,7 @@ int main(int argc, char **argv)
 
 #pragma omp parallel
 		{
-			//printf("cpu=%d\n", sched_getcpu());
+			printf("%d cpu\n", sched_getcpu());
 			if (omp_get_thread_num() == 0) {
 				printf("#threads=%d\n", omp_get_num_threads());
 			}
@@ -175,16 +186,19 @@ int main(int argc, char **argv)
 	
 #endif	
 
-#define NSAMPLES_T_COMM 10
+#define NSAMPLES_DROP 10
+#define NSAMPLES_T_COMM 20
 	/* Measure RMA-only time */
-	t_comm_ave = measure(rank, nproc, win, rbuf, result, szbuf, 0, 0, NSAMPLES_T_COMM);
+	t_comm_ave = measure(rank, nproc, win, rbuf, result, szbuf, 0, 0, NSAMPLES_T_COMM, NSAMPLES_DROP);
 
 	if (rank == 0) {
-		printf("t_comm_ave: %.2f usec\n", t_comm_ave * 1000000);
+		printf("t_comm_ave: %.2f %s\n", t_comm_ave, MYTIME_UNIT);
 	}
 
+	syscall(701, 1 | 2 | 0x80000000); /* syscall profile start */
+
 	/* 0: no progress, 1: progress, no uti, 2: progress, uti */
-	for (progress = 0; progress <= (disable_syscall_intercept ? 1 : 0); progress += 1) {
+	for (progress = 0; progress <= (disable_syscall_intercept ? 0 : 0); progress += 1) {
 
 		if (progress == 1) {
 			setenv("DISABLE_UTI", "1", 1); /* Don't use uti_attr and pin to Linux/McKernel CPUs */
@@ -196,11 +210,11 @@ int main(int argc, char **argv)
 		}
 
 		/* RMA-start, compute for i / 10 * T(RMA), RMA-flush, ... */
-		for (l = 0; l <= 10; l++) {
-			unsigned long t_calc = t_comm_ave * 1000000000 * l / 10; /* in nsec */
-#define NSAMPLES_T_TOTAL 10
+		for (l = 0; l <= 0; l++) {
+			long cyc_calc = t_comm_ave * l / 10; /* in nsec */
+#define NSAMPLES_T_TOTAL 20
 
-			t_total_ave = measure(rank, nproc, win, rbuf, result, szbuf, t_calc, progress, NSAMPLES_T_TOTAL);
+			t_total_ave = measure(rank, nproc, win, rbuf, result, szbuf, cyc_calc, progress, NSAMPLES_T_TOTAL, NSAMPLES_DROP);
 
 			if (rank == 0) {
 				if (l == 0) {
@@ -211,16 +225,16 @@ int main(int argc, char **argv)
 						pr_debug("calc\ttotal\n");
 					}
 					/* usec */
-					pr_debug("%.2f\t%.2f\n", t_calc / (double)1000, t_total_ave * 1000000);
-					t_table[l][0] = t_calc / (double)1000;
-					t_table[l][progress + 1] = t_total_ave * 1000000;
+					pr_debug("%ld\t%.2f\n", cyc_calc, t_total_ave);
+					t_table[l][0] = cyc_calc;
+					t_table[l][progress + 1] = t_total_ave;
 				} else {
 					if (l == 0) {
 						pr_debug("total\n");
 					}
 					/* usec */
-					pr_debug("%.2f\n", t_total_ave * 1000000);
-					t_table[l][progress + 1] = t_total_ave * 1000000;
+					pr_debug("%.2f\n", t_total_ave);
+					t_table[l][progress + 1] = t_total_ave;
 				}
 			}
 
@@ -237,6 +251,7 @@ int main(int argc, char **argv)
 
 	}
 	
+	syscall(701, 4 | 8 | 0x80000000); /* syscall profile report */
 
 	if (rank == 0) {
 		printf("calc,no prog,prog and no uti, prog and uti\n");
@@ -245,7 +260,7 @@ int main(int argc, char **argv)
 				if (i > 0) {
 					printf(",");
 				}
-				printf("%.2f", t_table[l][i]);
+				printf("%.0f", t_table[l][i]);
 			}
 			printf("\n");
 		}

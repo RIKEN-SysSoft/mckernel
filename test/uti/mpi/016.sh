@@ -24,7 +24,6 @@ LASTNODE=8196
 use_hfi=0
 omp_num_threads=32
 ppn=4
-lpp=4 # logical-per-physical
 
 while getopts srgc:ml:N:P:o:hGI:ipL: OPT
 do
@@ -86,10 +85,11 @@ if [ ${mck} -eq 1 ]; then
     i_mpi_pin=off
     i_mpi_pin_domain=
     i_mpi_pin_order=
-    kmp_affinity="export KMP_AFFINITY=disabled" # Without this, rank is bound to OMP_NUM_THREAD-sized domain
+    kmp_affinity="export KMP_AFFINITY=granularity=thread,scatter"
+    #kmp_affinity="export KMP_AFFINITY=disabled" # Use this when OMP_NUM_THREADS=1 because Intel MPI tries to bind rank to OMP_NUM_THREAD-sized domain
 else
     i_mpi_pin=on
-    domain=$omp_num_threads
+    domain=$omp_num_threads # Use 32 when you want to match mck's -n division
     i_mpi_pin_domain="export I_MPI_PIN_DOMAIN=$domain"
     i_mpi_pin_order="export I_MPI_PIN_ORDER=compact"
     kmp_affinity="export KMP_AFFINITY=granularity=thread,scatter"
@@ -103,7 +103,7 @@ if [ ${mck} -eq 1 ]; then
     mck_mem="#PJM -x MCK_MEM=32G@0,8G@1"
     mcexec="${mck_dir}/bin/mcexec"
     nmcexecthr=$((omp_num_threads + 4))
-    mcexecopt="-n $ppn -t $nmcexecthr"
+    mcexecopt="-n $ppn" # -t $nmcexecthr
 
     if [ ${use_hfi} -eq 1 ]; then
 	mcexecopt="--enable-hfi1 $mcexecopt"
@@ -171,8 +171,9 @@ if [ ${reboot} -eq 1 ]; then
     if [ ${mck} -eq 1 ]; then
 	if hostname  | grep ofp &>/dev/null; then
 
+	    # -h: Hide idle thread to prevent KNL CPU from mux-ing resource and halving throughput 
 	    PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes \
-	    sudo ${mck_dir}/sbin/mcreboot.sh -O -c 2-17,70-85,138-153,206-221,20-35,88-103,156-171,224-239,36-51,104-119,172-187,240-255,52-67,120-135,188-203,256-271 -r 2-5,70-73,138-141,206-209:0+6-9,74-77,142-145,210-213:1+10-13,78-81,146-149,214-217:68+14-17,82-85,150-153,218-221:69+20-23,88-91,156-159,224-227:136+24-27,92-95,160-163,228-231:137+28-31,96-99,164-167,232-235:204+32-35,100-103,168-171,236-239:205+36-39,104-107,172-175,240-243:18+40-43,108-111,176-179,244-247:19+44-47,112-115,180-183,248-251:86+48-51,116-119,184-187,252-255:87+52-55,120-123,188-191,256-259:154+56-59,124-127,192-195,260-263:155+60-63,128-131,196-199,264-267:222+64-67,132-135,200-203,268-271:223 -m 32G@0,12G@1
+	    sudo ${mck_dir}/sbin/mcreboot.sh -h -O -c 2-17,70-85,138-153,206-221,20-35,88-103,156-171,224-239,36-51,104-119,172-187,240-255,52-67,120-135,188-203,256-271 -r 2-5,70-73,138-141,206-209:0+6-9,74-77,142-145,210-213:1+10-13,78-81,146-149,214-217:68+14-17,82-85,150-153,218-221:69+20-23,88-91,156-159,224-227:136+24-27,92-95,160-163,228-231:137+28-31,96-99,164-167,232-235:204+32-35,100-103,168-171,236-239:205+36-39,104-107,172-175,240-243:18+40-43,108-111,176-179,244-247:19+44-47,112-115,180-183,248-251:86+48-51,116-119,184-187,252-255:87+52-55,120-123,188-191,256-259:154+56-59,124-127,192-195,260-263:155+60-63,128-131,196-199,264-267:222+64-67,132-135,200-203,268-271:223 -m 32G@0,12G@1
 
 # perl -e 'for ($i=0;$i<68;$i++){if($i>0){print "+";}printf("%d,%d,%d:%d", $i+68,$i+136,$i+204,$i);}'
 

@@ -15,21 +15,11 @@
 /* Messaging */
 enum test_loglevel test_loglevel = TEST_LOGLEVEL_DEBUG;
 
-/* rdtsc */
-inline uint64_t rdtsc_light(void)
-{
-    uint64_t x;
-    __asm__ __volatile__("rdtscp;" /* rdtscp don't jump over earlier instructions */
-                         "shl $32, %%rdx;"
-                         "or %%rdx, %%rax" :
-                         "=a"(x) :
-                         :    
-                         "%rcx", "%rdx", "memory");
-    return x;
-}
-
 /* Calculation */
-static inline void fixed_size_work() {
+static inline void asmloop(unsigned long n) {
+	int j;
+
+	for (j = 0; j < n; j++) {
 	asm volatile(
 	    "movq $0, %%rcx\n\t"
 		"1:\t"
@@ -39,24 +29,18 @@ static inline void fixed_size_work() {
 		:
 		: 
 		: "rcx", "cc");
-}
-
-static inline void bulk_fsw(unsigned long n) {
-	int j;
-	for (j = 0; j < (n); j++) {
-		fixed_size_work(); 
 	} 
 }
 
 double nspw; /* nsec per work */
-unsigned long nsec;
 
 void fwq_init() {
 	struct timespec start, end;
-	int i;
+	unsigned long nsec;
+
 	clock_gettime(TIMER_KIND, &start);
 #define N_INIT 10000000
-	bulk_fsw(N_INIT);
+	asmloop(N_INIT);
 	clock_gettime(TIMER_KIND, &end);
 	nsec = DIFFNSEC(end, start);
 	nspw = nsec / (double)N_INIT;
@@ -65,9 +49,9 @@ void fwq_init() {
 #if 0
 void fwq(long delay_nsec) {
 	if (delay_nsec < 0) { 
-        return;
+		return;
 	}
-	bulk_fsw(delay_nsec / nspw);
+	asmloop(delay_nsec / nspw);
 }
 #else /* For machines with large core-to-core performance variation (e.g. OFP) */
 void fwq(long delay_nsec) {
@@ -81,10 +65,48 @@ void fwq(long delay_nsec) {
 		if (DIFFNSEC(end, start) >= delay_nsec) {
 			break;
 		}
-		bulk_fsw(2); /* ~150 ns per iteration on FOP */
+		asmloop(2); /* ~150 ns per iteration on FOP */
 	}
 }
 #endif
+
+
+double cycpw; /* cyc per work */
+
+void cdlay_init() {
+	unsigned long start, end;
+
+	start = rdtsc_light();
+#define N_INIT 10000000
+	asmloop(N_INIT);
+	end = rdtsc_light();
+	cycpw = (end - start) / (double)N_INIT;
+}
+
+#if 0
+void cdelay(long delay_cyc) {
+	if (delay_cyc < 0) { 
+		return;
+	}
+	asmloop(delay_cyc / cycpw);
+}
+#else /* For machines with large core-to-core performance variation (e.g. OFP) */
+void cdelay(long delay_cyc) {
+	unsigned long start, end;
+	
+	if (delay_cyc < 0) { return; }
+	start = rdtsc_light();
+
+	while (1) {
+		end = rdtsc_light();
+		if (end - start >= delay_cyc) {
+			break;
+		}
+		asmloop(2);
+	}
+}
+#endif
+
 
 int print_cpu_last_executed_on(const char *name) {
 	char fn[256];

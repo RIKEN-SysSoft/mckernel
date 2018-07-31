@@ -46,6 +46,19 @@ static inline void test_set_loglevel(enum test_loglevel level)
 #define OKNGNOJUMP(args...) _OKNG(1, 0, ##args)
 
 /* Time */
+inline uint64_t rdtsc_light(void)
+{
+    uint64_t x;
+    __asm__ __volatile__("rdtscp;" /* rdtscp don't jump over earlier instructions */
+                         "shl $32, %%rdx;"
+                         "or %%rdx, %%rax" :
+                         "=a"(x) :
+                         :    
+                         "%rcx", "%rdx", "memory");
+    return x;
+}
+
+
 #define DIFFUSEC(end, start) ((end.tv_sec - start.tv_sec) * 1000000UL + (end.tv_usec - start.tv_usec))
 #define DIFFNSEC(end, start) ((end.tv_sec - start.tv_sec) * 1000000000UL + (end.tv_nsec - start.tv_nsec))
 #define TIMER_KIND CLOCK_MONOTONIC_RAW /* CLOCK_THREAD_CPUTIME_ID */
