@@ -1504,7 +1504,7 @@ out:
 
 static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size, uintptr_t rpa)
 {
-	ssize_t ss;
+	ssize_t ss, n;
 	struct pager *pager;
 	struct file *file = NULL;
 	uintptr_t phys = -1;
@@ -1524,7 +1524,8 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 
 	ss = down_interruptible(&pager_sem);
 	if (ss) {
-		printk("pager_req_read(%lx,%lx,%lx,%lx): signaled. %ld\n", handle, off, size, rpa, ss);
+		pr_debug("%s(%lx,%lx,%lx,%lx): signaled. %ld\n",
+			 __func__, handle, off, size, rpa, ss);
 		goto out;
 	}
 
@@ -1539,46 +1540,53 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 
 	if (!file) {
 		ss = -EBADF;
-		printk("pager_req_read(%lx,%lx,%lx,%lx):pager not found. %ld\n", handle, off, size, rpa, ss);
+		pr_warn("%s(%lx,%lx,%lx,%lx):pager not found. %ld\n",
+			__func__, handle, off, size, rpa, ss);
 		goto out;
 	}
 
 	phys = ihk_device_map_memory(dev, rpa, size);
 	buf = ihk_device_map_virtual(dev, phys, size, NULL, 0);
 	if (!buf) {
-		printk("%s: ERROR: invalid buffer address\n",
-			__FUNCTION__);
+		pr_warn("%s: ERROR: invalid buffer address\n",
+			__func__);
 		ss = -EINVAL;
 		goto out;
 	}
 
 #ifdef POSTK_DEBUG_ARCH_DEP_96 /* build for linux4.16 */
-	pos = off;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
-	ss = kernel_read(file, buf, size, &pos);
 #else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
 	fs = get_fs();
 	set_fs(KERNEL_DS);
-	ss = vfs_read(file, buf, size, &pos);
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
+#endif /* POSTK_DEBUG_ARCH_DEP_96 */
+	pos = off;
+	n = 0;
+	while (n < size) {
+		if (pos != off + n) {
+			pr_warn("%s: pos wrong? got %lld, expected %ld\n",
+				__func__, pos, off+n);
+			pos = off + n;
+		}
+#ifdef POSTK_DEBUG_ARCH_DEP_96 /* build for linux4.16 */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
+		ss = kernel_read(file, buf + n, size - n, &pos);
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
+		ss = vfs_read(file, buf + n, size - n, &pos);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
 #else /* POSTK_DEBUG_ARCH_DEP_96 */
-	fs = get_fs();
-	set_fs(KERNEL_DS);
-	pos = off;
-	ss = vfs_read(file, buf, size, &pos);
+		ss = vfs_read(file, buf + n, size - n, &pos);
 #endif /* POSTK_DEBUG_ARCH_DEP_96 */
-	if ((ss != size) && (ss > 0)) {
-#ifdef POSTK_DEBUG_TEMP_FIX_12 /* clear_user() used by kernel area, fix */
-		memset(buf + ss, 0, size - ss);
-		ss = size;
-#else /* POSTK_DEBUG_TEMP_FIX_12 */
-		if (clear_user(buf+ss, size-ss) == 0) {
-			ss = size;
+		if (ss < 0) {
+			break;
 		}
-		else {
-			ss = -EFAULT;
+		if (ss == 0) {
+			memset(buf + n, 0, size - n);
+			n = size;
+			break;
 		}
-#endif /* POSTK_DEBUG_TEMP_FIX_12 */
+		n += ss;
 	}
 #ifdef POSTK_DEBUG_ARCH_DEP_96 /* build for linux4.16 */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
