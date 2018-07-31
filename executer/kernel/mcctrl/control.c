@@ -1344,20 +1344,18 @@ retry_alloc:
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, irqflags);
 
 	if (ret == -ERESTARTSYS) {
-		/* Is the request valid? */
+		/* Requeue valid requests */
 		if (wqhln->req) {
-			packet = wqhln->packet;
-			kfree(wqhln);
-			wqhln = NULL;
-			ret = -EINTR;
-			goto put_ppd_out;
+			irqflags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
+			list_add_tail(&wqhln->list, &ppd->wq_req_list);
+			ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, irqflags);
 		}
 		else {
 			kfree(wqhln);
-			wqhln = NULL;
-			ret = -EINTR;
-			goto put_ppd_out;
 		}
+		wqhln = NULL;
+		ret = -EINTR;
+		goto put_ppd_out;
 	}
 
 	packet = wqhln->packet;
