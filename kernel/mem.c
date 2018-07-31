@@ -2309,8 +2309,7 @@ void ___kmalloc_print_free_list(struct list_head *list)
 }
 
 #ifdef POSTK_DEBUG_ARCH_DEP_27
-int search_free_space(struct thread *thread, size_t len, intptr_t hint,
-		      int pgshift, intptr_t *addrp)
+int search_free_space(struct thread *thread, size_t len, int pgshift, intptr_t *addrp)
 {
 	struct vm_regions *region = &thread->vm->region;
 	intptr_t addr;
@@ -2318,17 +2317,16 @@ int search_free_space(struct thread *thread, size_t len, intptr_t hint,
 	struct vm_range *range;
 	size_t pgsize = (size_t)1 << pgshift;
 
-	dkprintf("search_free_space(%lx,%lx,%d,%p)\n", len, hint, pgshift, addrp);
+	dkprintf("%s: len: %lu, pgshift: %d\n",
+		__FUNCTION__, len, pgshift);
 
-	addr = hint;
+	addr = region->map_end;
 	for (;;) {
 		addr = (addr + pgsize - 1) & ~(pgsize - 1);
 		if ((region->user_end <= addr)
 				|| ((region->user_end - len) < addr)) {
-			ekprintf("search_free_space(%lx,%lx,%p):"
-					"no space. %lx %lx\n",
-					len, hint, addrp, addr,
-					region->user_end);
+			ekprintf("%s: error: addr 0x%lx is outside the user region\n",
+				__FUNCTION__, addr);
 			error = -ENOMEM;
 			goto out;
 		}
@@ -2340,12 +2338,13 @@ int search_free_space(struct thread *thread, size_t len, intptr_t hint,
 		addr = range->end;
 	}
 
+	region->map_end = addr + len;
 	error = 0;
 	*addrp = addr;
 
 out:
-	dkprintf("search_free_space(%lx,%lx,%d,%p): %d %lx\n",
-			len, hint, pgshift, addrp, error, addr);
+	dkprintf("%s: len: %lu, pgshift: %d, addr: 0x%lx\n",
+		__FUNCTION__, len, pgshift, addr);
 	return error;
 }
 #endif	/* POSTK_DEBUG_ARCH_DEP_27 */
