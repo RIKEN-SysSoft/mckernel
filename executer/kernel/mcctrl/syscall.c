@@ -1699,11 +1699,12 @@ retry:
 			goto out_release;
 		}
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,8,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0) || \
+	(defined(RHEL_RELEASE_CODE) && RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(7, 5))
 		fault = handle_mm_fault(vma, va, flags);
-#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,8,0) */
+#else
 		fault = handle_mm_fault(current->mm, vma, va, flags);
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,8,0) */
+#endif
 		if (fault != 0) {
 			printk("%s: error: faulting %lx at off: %lu\n", 
 					__FUNCTION__, va, off);
