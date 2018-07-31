@@ -2308,47 +2308,6 @@ void ___kmalloc_print_free_list(struct list_head *list)
 	kprintf_unlock(irqflags);
 }
 
-#ifdef POSTK_DEBUG_ARCH_DEP_27
-int search_free_space(struct thread *thread, size_t len, int pgshift, intptr_t *addrp)
-{
-	struct vm_regions *region = &thread->vm->region;
-	intptr_t addr;
-	int error;
-	struct vm_range *range;
-	size_t pgsize = (size_t)1 << pgshift;
-
-	dkprintf("%s: len: %lu, pgshift: %d\n",
-		__FUNCTION__, len, pgshift);
-
-	addr = region->map_end;
-	for (;;) {
-		addr = (addr + pgsize - 1) & ~(pgsize - 1);
-		if ((region->user_end <= addr)
-				|| ((region->user_end - len) < addr)) {
-			ekprintf("%s: error: addr 0x%lx is outside the user region\n",
-				__FUNCTION__, addr);
-			error = -ENOMEM;
-			goto out;
-		}
-
-		range = lookup_process_memory_range(thread->vm, addr, addr+len);
-		if (range == NULL) {
-			break;
-		}
-		addr = range->end;
-	}
-
-	region->map_end = addr + len;
-	error = 0;
-	*addrp = addr;
-
-out:
-	dkprintf("%s: len: %lu, pgshift: %d, addr: 0x%lx\n",
-		__FUNCTION__, len, pgshift, addr);
-	return error;
-}
-#endif	/* POSTK_DEBUG_ARCH_DEP_27 */
-
 #ifdef POSTK_DEBUG_TEMP_FIX_52 /* supports NUMA for memory area determination */
 #ifdef IHK_RBTREE_ALLOCATOR
 int is_mckernel_memory(unsigned long phys)

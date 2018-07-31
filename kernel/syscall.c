@@ -59,9 +59,6 @@
 #include <rusage_private.h>
 #include <ihk/monitor.h>
 #include <profile.h>
-#ifdef POSTK_DEBUG_ARCH_DEP_27
-#include <memory.h>
-#endif	/* POSTK_DEBUG_ARCH_DEP_27 */
 
 /* Headers taken from kitten LWK */
 #include <lwk/stddef.h>
@@ -1296,8 +1293,6 @@ int do_munmap(void *addr, size_t len)
 	return error;
 }
 
-#ifdef POSTK_DEBUG_ARCH_DEP_27
-#else
 static int search_free_space(size_t len, int pgshift, intptr_t *addrp)
 {
 	struct thread *thread = cpu_local_var(current);
@@ -1338,7 +1333,6 @@ out:
 		__FUNCTION__, len, pgshift, addr);
 	return error;
 }
-#endif
 
 intptr_t
 do_mmap(const intptr_t addr0, const size_t len0, const int prot,
@@ -1431,11 +1425,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	}
 	else {
 		/* Obtain mapping address */
-#ifdef POSTK_DEBUG_ARCH_DEP_27
-		error = search_free_space(thread, len, PAGE_SHIFT + p2align, &addr);
-#else
 		error = search_free_space(len, PAGE_SHIFT + p2align, &addr);
-#endif	/* POSTK_DEBUG_ARCH_DEP_27 */
 		if (error) {
 			ekprintf("do_mmap:search_free_space(%lx,%lx,%d) failed. %d\n",
 					len, region->map_end, p2align, error);
@@ -5029,11 +5019,7 @@ SYSCALL_DECLARE(shmat)
 		}
 	}
 	else {
-#ifdef POSTK_DEBUG_ARCH_DEP_27
-		error = search_free_space(thread, len, obj->pgshift, &addr);
-#else
 		error = search_free_space(len, obj->pgshift, &addr);
-#endif	/* POSTK_DEBUG_ARCH_DEP_27 */
 		if (error) {
 			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 			shmobj_list_unlock();
@@ -7871,13 +7857,8 @@ SYSCALL_DECLARE(mremap)
 			goto out;
 		}
 		need_relocate = 1;
-#ifdef POSTK_DEBUG_ARCH_DEP_27
-		error = search_free_space(thread, newsize, range->pgshift,
-				(intptr_t *)&newstart);
-#else
 		error = search_free_space(newsize, range->pgshift,
 				(intptr_t *)&newstart);
-#endif	/* POSTK_DEBUG_ARCH_DEP_27 */
 		if (error) {
 			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
 					"search failed. %d\n",
