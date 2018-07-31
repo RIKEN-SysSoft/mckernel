@@ -154,7 +154,7 @@ int mcctrl_ikc_send_wait(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp,
 		spin_lock_irqsave(&usrdata->wakeup_descs_lock, flags);
 		list_add(&desc->chain, &usrdata->wakeup_descs_list);
 		spin_unlock_irqrestore(&usrdata->wakeup_descs_lock, flags);
-		if (free_addrs_count)
+		if (do_frees)
 			*do_frees = 0;
 		return ret < 0 ? ret : -ETIME;
 	}
