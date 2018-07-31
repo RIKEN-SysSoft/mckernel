@@ -535,6 +535,7 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 		else if (proc->status == PS_EXITED)
 			state = "Z (zombie)";
 		sprintf(tmp,
+		        "Pid:\t%d\n"
 		        "Uid:\t%d\t%d\t%d\t%d\n"
 		        "Gid:\t%d\t%d\t%d\t%d\n"
 			"State:\t%s\n"
@@ -543,6 +544,7 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 				"Cpus_allowed_list:\t%s\n"
 				"Mems_allowed:\t%s\n"
 				"Mems_allowed_list:\t%s\n",
+		        proc->pid,
 		        proc->ruid, proc->euid, proc->suid, proc->fsuid,
 		        proc->rgid, proc->egid, proc->sgid, proc->fsgid,
 			state,
