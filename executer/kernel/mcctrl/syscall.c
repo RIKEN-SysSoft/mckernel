@@ -1242,15 +1242,7 @@ static int pager_get_path(struct file *file, char *path) {
 	int error = 0;
 	char *pathbuf, *fullpath;
 
-#ifdef POSTK_DEBUG_ARCH_DEP_96 /* build for linux4.16 */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
 	pathbuf = kmalloc(PATH_MAX, GFP_KERNEL);
-#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
-	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
-#else /* POSTK_DEBUG_ARCH_DEP_96 */
-	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
-#endif /* POSTK_DEBUG_ARCH_DEP_96 */
 	if (!pathbuf) {
 		printk("%s: ERROR: allocating path\n", __FUNCTION__);
 		error = -ENOMEM;
@@ -1358,15 +1350,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 			{
 				char *pathbuf, *fullpath;
 
-#ifdef POSTK_DEBUG_ARCH_DEP_96 /* build for linux4.16 */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
 				pathbuf = kmalloc(PATH_MAX, GFP_KERNEL);
-#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
-				pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
-#else /* POSTK_DEBUG_ARCH_DEP_96 */
-				pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
-#endif /* POSTK_DEBUG_ARCH_DEP_96 */
 				if (pathbuf) {
 					fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
 					if (!IS_ERR(fullpath)) {

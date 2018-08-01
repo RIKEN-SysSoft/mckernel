@@ -1777,29 +1777,13 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 		return -EINVAL;
 	}
 
-#ifdef POSTK_DEBUG_ARCH_DEP_96 /* build for linux4.16 */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
 	pathbuf = kmalloc(PATH_MAX, GFP_KERNEL);
-#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
-	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
-#else /* POSTK_DEBUG_ARCH_DEP_96 */
-	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
-#endif /* POSTK_DEBUG_ARCH_DEP_96 */
 	if (!pathbuf) {
 		retval = -ENOMEM;
 		goto out;
 	}
 
-#ifdef POSTK_DEBUG_ARCH_DEP_96 /* build for linux4.16 */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
 	kfilename = kmalloc(PATH_MAX, GFP_KERNEL);
-#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
-	kfilename = kmalloc(PATH_MAX, GFP_TEMPORARY);
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
-#else /* POSTK_DEBUG_ARCH_DEP_96 */
-	kfilename = kmalloc(PATH_MAX, GFP_TEMPORARY);
-#endif /* POSTK_DEBUG_ARCH_DEP_96 */
 	if (!kfilename) {
 		retval = -ENOMEM;
 		kfree(pathbuf);
