@@ -44,15 +44,13 @@
 #include <process.h>
 #include <limits.h>
 #include <sysfs.h>
+#include <debug.h>
 
 //#define DEBUG_PRINT_MEM
 
 #ifdef DEBUG_PRINT_MEM
-#define	dkprintf(...)	kprintf(__VA_ARGS__)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
-#else
-#define dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 static unsigned long pa_start, pa_end;

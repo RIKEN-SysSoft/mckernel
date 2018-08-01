@@ -6,6 +6,7 @@
 #include <cputype.h>
 #include <process.h>
 #include <syscall.h>
+#include <debug.h>
 #include <arch-timer.h>
 
 //#define DEBUG_GICV3
@@ -13,11 +14,8 @@
 #define USE_CAVIUM_THUNDER_X
 
 #ifdef DEBUG_GICV3
-#define	dkprintf(...)	kprintf(__VA_ARGS__)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
-#else
-#define dkprintf(...)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 #ifdef USE_CAVIUM_THUNDER_X

@@ -9,15 +9,13 @@
 #include <prctl.h>
 #include <cpufeature.h>
 #include <kmalloc.h>
+#include <debug.h>
 
 //#define DEBUG_PRINT_FPSIMD
 
 #ifdef DEBUG_PRINT_FPSIMD
-#define dkprintf kprintf
-#define ekprintf kprintf
-#else
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define ekprintf kprintf
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 #define BUG_ON(condition) do { if (condition) { kprintf("PANIC: %s: %s(line:%d)\n",\

@@ -283,7 +283,8 @@ static int xpmem_close(
 	int n_opened;
 
 	XPMEM_DEBUG("call: fd=%d, pid=%d, rgid=%d", 
-		mckfd->fd, proc->pid, proc->rgid);
+		mckfd->fd, cpu_local_var(current)->proc->pid,
+		cpu_local_var(current)->proc->rgid);
 
 	n_opened = ihk_atomic_dec_return(&xpmem_my_part->n_opened);
 	XPMEM_DEBUG("n_opened=%d", n_opened);

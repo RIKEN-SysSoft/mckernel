@@ -14,16 +14,14 @@
 #include <context.h>
 #include <kmalloc.h>
 #include <vdso.h>
+#include <debug.h>
 #include <rusage_private.h>
 
 //#define DEBUG
 
 #ifdef DEBUG
-#define	dkprintf(...)	do { kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	do { kprintf(__VA_ARGS__); } while (0)
-#else
-#define dkprintf(...) do { } while (0)
-#define ekprintf(...) do { kprintf(__VA_ARGS__); } while (0)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 #define NOT_IMPLEMENTED()  do { kprintf("%s is not implemented\n", __func__); while(1);} while(0)
@@ -2056,7 +2054,7 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 	}
 
 	if (page) {
-		dkprintf("%s: page=%p,is_in_memobj=%d,(old & PFL1_DIRTY)=%lx,memobj=%p,args->memobj->flags=%x\n", __FUNCTION__, page, page_is_in_memobj(page), (old & PFL1_DIRTY), args->memobj, args->memobj ? args->memobj->flags : -1);
+		dkprintf("%s: page=%p,is_in_memobj=%d,(old & PTE_DIRTY)=%lx,memobj=%p,args->memobj->flags=%x\n", __FUNCTION__, page, page_is_in_memobj(page), (old & PTE_DIRTY), args->memobj, args->memobj ? args->memobj->flags : -1);
 	}
 	if (page && page_is_in_memobj(page) && ptl1_dirty(&old) && (args->memobj) &&
 			!(args->memobj->flags & MF_ZEROFILL)) {

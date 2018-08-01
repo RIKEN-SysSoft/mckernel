@@ -21,10 +21,7 @@
 #include <memory.h>
 #include <page.h>
 #include <string.h>
-
-#define	dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
-#define	fkprintf(...)	kprintf(__VA_ARGS__)
+#include <debug.h>
 
 struct zeroobj {
 	struct memobj		memobj;		/* must be first */
@@ -117,7 +114,7 @@ static int alloc_zeroobj(void)
 	page = phys_to_page_insert_hash(phys);
 
 	if (page->mode != PM_NONE) {
-		fkprintf("alloc_zeroobj():"
+		ekprintf("alloc_zeroobj():"
 				"page %p %#lx %d %d %#lx\n",
 				page, page_to_phys(page), page->mode,
 				page->count, page->offset);

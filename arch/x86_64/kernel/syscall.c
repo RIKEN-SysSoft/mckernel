@@ -31,6 +31,7 @@
 #include <page.h>
 #include <limits.h>
 #include <syscall.h>
+#include <debug.h>
 
 void terminate_mcexec(int, int);
 extern long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
@@ -45,11 +46,8 @@ extern uint64_t get_xsave_mask();
 //#define DEBUG_PRINT_SC
 
 #ifdef DEBUG_PRINT_SC
-#define dkprintf kprintf
-#define ekprintf(...) kprintf(__VA_ARGS__)
-#else
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define ekprintf(...) kprintf(__VA_ARGS__)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 uintptr_t debug_constants[] = {

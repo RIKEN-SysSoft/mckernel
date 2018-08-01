@@ -7,16 +7,14 @@
 #include <memory.h>
 #include <affinity.h>
 #include <syscall.h>
+#include <debug.h>
 #include <arch-timer.h>
 
 // #define DEBUG_GICV2
 
 #ifdef DEBUG_GICV2
-#define	dkprintf(...)	kprintf(__VA_ARGS__)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
-#else
-#define dkprintf(...)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 void *dist_base;

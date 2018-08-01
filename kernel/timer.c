@@ -32,13 +32,13 @@
 #include <futex.h>
 #include <bitops.h>
 #include <timer.h>
+#include <debug.h>
 
 //#define DEBUG_PRINT_TIMER
 
 #ifdef DEBUG_PRINT_TIMER
-#define dkprintf kprintf
-#else
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 #define LOOP_TIMEOUT 500

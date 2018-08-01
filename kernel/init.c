@@ -32,6 +32,7 @@
 #include <syscall.h>
 #include <sysfs.h>
 #include <ihk/monitor.h>
+#include <debug.h>
 
 //#define IOCTL_FUNC_EXTENSION
 #ifdef IOCTL_FUNC_EXTENSION
@@ -41,11 +42,8 @@
 //#define DEBUG_PRINT_INIT
 
 #ifdef DEBUG_PRINT_INIT
-#define dkprintf(...) do { kprintf(__VA_ARGS__); } while (0)
-#define ekprintf(...) do { kprintf(__VA_ARGS__); } while (0)
-#else
-#define dkprintf(...) do { } while (0)
-#define ekprintf(...) do { kprintf(__VA_ARGS__); } while (0)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 #define DUMP_LEVEL_USER_UNUSED_EXCLUDE 24
@@ -331,6 +329,7 @@ static void populate_sysfs(void)
 {
 	cpu_sysfs_setup();
 	numa_sysfs_setup();
+	dynamic_debug_sysfs_setup();
 	//setup_remote_snooping_samples();
 } /* populate_sysfs() */
 

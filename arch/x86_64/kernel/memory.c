@@ -25,15 +25,13 @@
 #include <cls.h>
 #include <kmalloc.h>
 #include <rusage_private.h>
+#include <debug.h>
 
 //#define DEBUG
 
 #ifdef DEBUG
-#define	dkprintf(...)	do { kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	do { kprintf(__VA_ARGS__); } while (0)
-#else
-#define dkprintf(...) do { } while (0)
-#define ekprintf(...) do { kprintf(__VA_ARGS__); } while (0)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 static char *last_page;

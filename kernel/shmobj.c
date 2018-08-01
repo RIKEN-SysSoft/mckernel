@@ -23,10 +23,8 @@
 #include <shm.h>
 #include <string.h>
 #include <rusage_private.h>
+#include <debug.h>
 
-#define	dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
-#define	fkprintf(...)	kprintf(__VA_ARGS__)
 
 static LIST_HEAD(shmobj_list_head);
 static ihk_spinlock_t shmobj_list_lock_body = SPIN_LOCK_UNLOCKED;
@@ -277,7 +275,7 @@ void shmobj_destroy(struct shmobj *obj)
 				page->mode, page->count);
 		count = ihk_atomic_sub_return(1, &page->count);
 		if (!((page->mode == PM_MAPPED) && (count == 0))) {
-			fkprintf("shmobj_destroy(%p): "
+			ekprintf("shmobj_destroy(%p): "
 					"page %p phys %#lx mode %#x"
 					" count %d off %#lx\n",
 					obj, page,
@@ -339,7 +337,7 @@ static void shmobj_release(struct memobj *memobj)
 	newref = --obj->ds.shm_nattch;
 	if (newref <= 0) {
 		if (newref < 0) {
-			fkprintf("shmobj_release(%p):ref %ld\n",
+			ekprintf("shmobj_release(%p):ref %ld\n",
 					memobj, newref);
 			panic("shmobj_release:freeing free shmobj");
 		}
@@ -434,7 +432,7 @@ static int shmobj_get_page(struct memobj *memobj, off_t off, int p2align,
 		   Add when setting the PTE for a page with count of one in ihk_mc_pt_set_range(). */
 
 		if (page->mode != PM_NONE) {
-			fkprintf("shmobj_get_page(%p,%#lx,%d,%p):"
+			ekprintf("shmobj_get_page(%p,%#lx,%d,%p):"
 					"page %p %#lx %d %d %#lx\n",
 					memobj, off, p2align, physp,
 					page, page_to_phys(page), page->mode,

@@ -26,20 +26,17 @@
 
 #include <mc_xpmem.h>
 #include <xpmem.h>
+#include <debug.h>
 
 #define XPMEM_CURRENT_VERSION           0x00026003
 
 //#define DEBUG_PRINT_XPMEM
 
 #ifdef DEBUG_PRINT_XPMEM
-#define dkprintf(...) kprintf(__VA_ARGS__)
-#define ekprintf(...) kprintf(__VA_ARGS__)
-#define XPMEM_DEBUG(format, a...) kprintf("[%d] %s: "format"\n", cpu_local_var(current)->proc->rgid, __func__, ##a)
-#else
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define ekprintf(...) kprintf(__VA_ARGS__)
-#define XPMEM_DEBUG(format, a...) do { if (0) kprintf("\n"); } while (0)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
+#define XPMEM_DEBUG(format, a...) dkprintf("[%d] %s: "format"\n", cpu_local_var(current)->proc->rgid, __func__, ##a)
 
 //#define USE_DBUG_ON
 

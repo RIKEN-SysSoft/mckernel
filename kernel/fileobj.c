@@ -27,15 +27,13 @@
 #include <string.h>
 #include <syscall.h>
 #include <rusage_private.h>
+#include <debug.h>
 
 //#define DEBUG_PRINT_FILEOBJ
 
 #ifdef DEBUG_PRINT_FILEOBJ
-#define	dkprintf(...)	do { if (1) kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
-#else
-#define	dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 mcs_lock_t fileobj_list_lock;

@@ -15,6 +15,7 @@
 #include <limits.h>
 #include <uio.h>
 #include <syscall.h>
+#include <debug.h>
 
 extern void ptrace_report_signal(struct thread *thread, int sig);
 extern void clear_single_step(struct thread *thread);
@@ -28,11 +29,8 @@ static void __check_signal(unsigned long rc, void *regs, int num, int irq_disabl
 //#define DEBUG_PRINT_SC
 
 #ifdef DEBUG_PRINT_SC
-#define dkprintf kprintf
-#define ekprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
-#else
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define ekprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 #define NOT_IMPLEMENTED()  do { kprintf("%s is not implemented\n", __func__); while(1);} while(0)

@@ -29,15 +29,13 @@
 #include <time.h>
 #include <syscall.h>
 #include <rusage_private.h>
+#include <debug.h>
 
 //#define DEBUG_PRINT_AP
 
 #ifdef DEBUG_PRINT_AP
-#define dkprintf(...) do { kprintf(__VA_ARGS__); } while (0)
-#define ekprintf(...) do { kprintf(__VA_ARGS__); } while (0)
-#else
-#define dkprintf(...) do { } while (0)
-#define ekprintf(...) do { kprintf(__VA_ARGS__); } while (0)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 int num_processors = 1;

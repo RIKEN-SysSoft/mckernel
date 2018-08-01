@@ -59,6 +59,7 @@
 #include <rusage_private.h>
 #include <ihk/monitor.h>
 #include <profile.h>
+#include <debug.h>
 
 /* Headers taken from kitten LWK */
 #include <lwk/stddef.h>
@@ -69,11 +70,8 @@
 //#define DEBUG_PRINT_SC
 
 #ifdef DEBUG_PRINT_SC
-#define	dkprintf(...) kprintf(__VA_ARGS__)
-#define	ekprintf(...) kprintf(__VA_ARGS__)
-#else
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...) kprintf(__VA_ARGS__)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 //static ihk_atomic_t pid_cnt = IHK_ATOMIC_INIT(1024);

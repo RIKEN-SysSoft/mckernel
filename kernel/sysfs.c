@@ -23,9 +23,7 @@
 #include <sysfs.h>
 #include <sysfs_msg.h>
 #include <vsprintf.h>
-
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define ekprintf(...) do { if (1) kprintf(__VA_ARGS__); } while (0)
+#include <debug.h>
 
 static size_t sysfs_data_bufsize;
 static void *sysfs_data_buf;
