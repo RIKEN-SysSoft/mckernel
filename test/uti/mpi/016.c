@@ -17,46 +17,96 @@
 #include "async_progress.h"
 #include "util.h"
 
-#define MYTIME_UNIT "cyc"
+#define MYTIME_UNIT "usec"
+#define MYTIME_TOUSEC 1000000
+#define MYTIME_TONSEC 1000000000
+
+#define NROW 11
+#define NCOL 4
+
+#define NSAMPLES_DROP 5/*10*/
+#define NSAMPLES_COMM 10/*20*/
+#define NSAMPLES_TOTAL 10/*20*/
+#define NSAMPLES_INNER 5
+
+#define PROGRESS_CALC_PHASE_ONLY
 
 static inline double mytime() {
-	return rdtsc_light()/*MPI_Wtime()*/;
+	return /*rdtsc_light()*/MPI_Wtime();
 }
 
 static int ppn = -1;
 
-void rma(int my_rank, int nproc, MPI_Win win, double *rbuf, double *result, int szbuf, long cyc_calc, int progress) {
+void init_buf(double *origin_buf, double *result, double *target_buf, int szbuf, int rank, int id) {
+	int j;
+	for (j = 0; j < szbuf; j++) {
+		origin_buf[j] = (rank + 1) * 100.0 + (j + 1);
+		result[j] = (id + 1) * 100000000.0 + (rank + 1) * 10000.0 + (j + 1);
+		target_buf[j] = (rank + 1) * 1000000.0 + (j + 1);
+	}
+}	
+
+void pr_buf(double *origin_buf, double *result, double *target_buf, int szbuf, int rank, int nproc) {
 	int i, j;
+	for (i = 0; i < nproc; i++) {
+		MPI_Barrier(MPI_COMM_WORLD);
 
-		for (i = 0; i < nproc; i++) {
-			int target = j % nproc;
-
-			/* Inter-node communication only */
-			if (target /*/ ppn*/ == my_rank /*/ ppn*/) {
-				continue;
-			}
-			
-			MPI_Get_accumulate(rbuf, szbuf, MPI_DOUBLE,
-					   result, szbuf, MPI_DOUBLE,
-					   i,
-					   0, szbuf, MPI_DOUBLE,
-					   MPI_SUM, win);
+		if (i != rank) {
+			usleep(100000);
+			continue;
 		}
+
+		for (j = 0; j < szbuf; j++) {
+			pr_debug("[%d] origin_buf,j=%d,val=%f\n", rank, j, origin_buf[j]);
+			pr_debug("[%d] result,j=%d,val=%f\n", rank, j, result[j]);
+			pr_debug("[%d] target_buf,j=%d,val=%f\n", rank, j, target_buf[j]);
+		}
+	}
+}
+
+void rma(int rank, int nproc, MPI_Win win, double *origin_buf, double *result, int szbuf, long nsec_calc, int progress) {
+	int i, j, target_rank;
+
+	for (j = 0; j < NSAMPLES_INNER; j++) {
+		for (i = 1; i < nproc; i++) {
+			target_rank = (rank + i) % nproc;
+			
+			MPI_Get_accumulate(origin_buf, szbuf, MPI_DOUBLE,
+					   result, szbuf, MPI_DOUBLE,
+					   target_rank,
+					   0, szbuf, MPI_DOUBLE,
+					   MPI_NO_OP, win);
+
+#if 0 /* This increases the throughput of the RMA to 20679 / (8*63*5) for 8-ppn 8-node case */
+			if (!progress) {
+				int completed, ret;
+				
+				if ((ret = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &completed, MPI_STATUS_IGNORE)) != MPI_SUCCESS) {
+					pr_err("%s: error: MPI_Iprobe: %d\n", __func__, ret);
+				}
+			}
+#endif			
+		}
+	}
 	
 	if (progress) {
+#ifdef PROGRESS_CALC_PHASE_ONLY
 		progress_start();
+#endif
 	}
-#pragma omp parallel
-	{
-		cdelay(cyc_calc);
-	}
+
+	ndelay(nsec_calc);
+
 	if (progress) {
+#ifdef PROGRESS_CALC_PHASE_ONLY
 		progress_stop();
+#endif
 	}
+
 	MPI_Win_flush_local_all(win);
 }
 
-double measure(int rank, int nproc, MPI_Win win, double *rbuf, double* result, int szbuf, long cyc_calc, int progress, int nsamples, int nsamples_drop) {
+double measure(int rank, int nproc, MPI_Win win, double *origin_buf, double* result, double *target_buf, int szbuf, long nsec_calc, int progress, int nsamples, int nsamples_drop) {
 	int i;
 	double t_l, t_g, t_sum = 0;
 	double start, end;
@@ -66,7 +116,7 @@ double measure(int rank, int nproc, MPI_Win win, double *rbuf, double* result, i
 		MPI_Win_lock_all(0, win);
 		
 		start = mytime();
-		rma(rank, nproc, win, rbuf, result, szbuf, cyc_calc, progress);
+		rma(rank, nproc, win, origin_buf, result, szbuf, nsec_calc, progress);
 		end = mytime();
 		
 		MPI_Win_unlock_all(win);
@@ -84,17 +134,14 @@ double measure(int rank, int nproc, MPI_Win win, double *rbuf, double* result, i
 	return t_sum / nsamples;
 }
 
-#define NROW 11
-#define NCOL 4
-
 int main(int argc, char **argv)
 {
 	int ret;
 	int actual;
-	int nproc;
 	int rank = -1, size = -1;
+	int nproc;
 	int i, j, progress, l, m;
-	double *wbuf, *rbuf, *result;
+	double *target_buf, *origin_buf, *result;
 	MPI_Win win;
 	double t_comm_l, t_comm_g, t_comm_sum, t_comm_ave;
 	double t_total_l, t_total_g, t_total_sum, t_total_ave;
@@ -107,8 +154,8 @@ int main(int argc, char **argv)
  
 	cpu_set_t cpuset;
 
-	test_set_loglevel(TEST_LOGLEVEL_WARN);	
-	fwq_init();
+	//test_set_loglevel(TEST_LOGLEVEL_WARN);	
+	ndelay_init();
 
 	while ((opt = getopt(argc, argv, "+p:I:")) != -1) {
 		switch (opt) {
@@ -125,27 +172,28 @@ int main(int argc, char **argv)
 		}
 	}
 
-	NG(ppn != -1, "Error: Specify processes-per-rank with -p");
+	if (ppn == -1) {
+		pr_err("Error: Specify processes-per-rank with -p");
+		ret = -1;
+		goto out;
+	}
 
 	MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &actual);
-	NG(actual == MPI_THREAD_MULTIPLE, "Error: MPI_THREAD_MULTIPLE is not available\n");
+	if (actual != MPI_THREAD_MULTIPLE) {
+		pr_err("Error: MPI_THREAD_MULTIPLE is not available\n");
+		ret = -1;
+		goto out;
+	}
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &nproc);
 
-#if 0 /* Avoid phys with Linux threads is allocated to progress */
-	CPU_ZERO(&cpuset);
-	CPU_SET(sched_getcpu() + 1, &cpuset);
-	if ((sched_setaffinity(0, sizeof(cpu_set_t), &cpuset))) {
-		printf("[%d] setaffinity failed\n", rank);
-	}
-#endif	
 	if (rank == 0) {
 		printf("ndoubles=%d,nproc=%d\n", szbuf, nproc); 
 
 #pragma omp parallel
 		{
-			printf("%d cpu\n", sched_getcpu());
+			//printf("%d cpu\n", sched_getcpu());
 			if (omp_get_thread_num() == 0) {
 				printf("#threads=%d\n", omp_get_num_threads());
 			}
@@ -153,52 +201,54 @@ int main(int argc, char **argv)
 	}
 
 	/* accumulate-to buffer */
-	wbuf = malloc(sizeof(double) * szbuf);
-	NG(wbuf, "Error: allocating wbuf");
-	memset(wbuf, 0, sizeof(double) * szbuf);
+	target_buf = malloc(sizeof(double) * szbuf);
+	if (!target_buf) {
+		pr_err("Error: allocating target_buf");
+		ret = -1;
+		goto out;
+	}
+	memset(target_buf, 0, sizeof(double) * szbuf);
 
 	/* read-from buffer */
-	rbuf = malloc(sizeof(double) * szbuf);
-	NG(rbuf, "Error: alloacting rbuf");
-	memset(rbuf, 0, sizeof(double) * szbuf);
+	origin_buf = malloc(sizeof(double) * szbuf);
+	if (!origin_buf) {
+		pr_err("Error: alloacting origin_buf");
+		ret = -1;
+		goto out;
+	}
+	memset(origin_buf, 0, sizeof(double) * szbuf);
 
 	/* fetch-to buffer */
 	result = malloc(sizeof(double) * szbuf);
-	NG(result, "Error: allocating result");
+	if (!result) {
+		pr_err("Error: allocating result");
+		ret = -1;
+		goto out;
+	}
 	memset(result, 0, sizeof(double) * szbuf);
 
 	/* Expose accumulate-to buffer*/
-	ret = MPI_Win_create(wbuf, sizeof(double) * szbuf, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
-	NG(ret == 0, "Error: MPI_Win_create returned %d\n", ret);
-
-	for (j = 0; j < szbuf; j++) {
-		wbuf[j] = j + 1;
-		rbuf[j] = 10000 + j + 1;
-		result[j] = 100000 + j + 1;
+	ret = MPI_Win_create(target_buf, sizeof(double) * szbuf, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
+	if (ret != 0) {
+		pr_err("Error: MPI_Win_create returned %d\n", ret);
+		ret = -1;
+		goto out;
 	}
-	
-#if 0
-	for (j = 0; j < szbuf; j++) {
-		printf("wbuf,j=%d,val=%f\n", j, wbuf[j]);
-		printf("rbuf,j=%d,val=%f\n", j, rbuf[j]);
-		printf("result,j=%d,val=%f\n", j, result[j]);
-	}
-	
-#endif	
 
-#define NSAMPLES_DROP 10
-#define NSAMPLES_T_COMM 20
 	/* Measure RMA-only time */
-	t_comm_ave = measure(rank, nproc, win, rbuf, result, szbuf, 0, 0, NSAMPLES_T_COMM, NSAMPLES_DROP);
+	init_buf(origin_buf, result, target_buf, szbuf, rank, 99);
+	t_comm_ave = measure(rank, nproc, win, origin_buf, result, target_buf, szbuf, 0, 0, NSAMPLES_COMM, NSAMPLES_DROP);
 
 	if (rank == 0) {
-		printf("t_comm_ave: %.2f %s\n", t_comm_ave, MYTIME_UNIT);
+		printf("t_comm_ave: %.0f %s\n", t_comm_ave * MYTIME_TOUSEC, MYTIME_UNIT);
 	}
 
+#ifdef PROFILE	
 	syscall(701, 1 | 2 | 0x80000000); /* syscall profile start */
+#endif
 
 	/* 0: no progress, 1: progress, no uti, 2: progress, uti */
-	for (progress = 0; progress <= (disable_syscall_intercept ? 0 : 0); progress += 1) {
+	for (progress = 0; progress <= (disable_syscall_intercept ? 0 : 2); progress += 1) {
 
 		if (progress == 1) {
 			setenv("DISABLE_UTI", "1", 1); /* Don't use uti_attr and pin to Linux/McKernel CPUs */
@@ -209,49 +259,54 @@ int main(int argc, char **argv)
 			progress_init();
 		}
 
-		/* RMA-start, compute for i / 10 * T(RMA), RMA-flush, ... */
-		for (l = 0; l <= 0; l++) {
-			long cyc_calc = t_comm_ave * l / 10; /* in nsec */
-#define NSAMPLES_T_TOTAL 20
+		if (progress == 1 || progress == 2) {
+#ifndef PROGRESS_CALC_PHASE_ONLY
+			//progress_start();
+#endif
+		}
 
-			t_total_ave = measure(rank, nproc, win, rbuf, result, szbuf, cyc_calc, progress, NSAMPLES_T_TOTAL, NSAMPLES_DROP);
+		/* RMA-start, compute for T_{RMA} * l / 10, RMA-flush */
+		for (l = 0; l <= 10; l += 1) {
+			long nsec_calc = (t_comm_ave * MYTIME_TONSEC * l) / 10;
+
+			init_buf(origin_buf, result, target_buf, szbuf, rank, l);
+			//pr_buf(origin_buf, result, target_buf, szbuf, rank, nproc);
+			t_total_ave = measure(rank, nproc, win, origin_buf, result, target_buf, szbuf, nsec_calc, progress, NSAMPLES_TOTAL, NSAMPLES_DROP);
+			//pr_buf(origin_buf, result, target_buf, szbuf, rank, nproc);
 
 			if (rank == 0) {
+
 				if (l == 0) {
 					pr_debug("progress=%d\n", progress);
-				}
-				if (progress == 0) { 
-					if (l == 0) {
+					if (progress == 0) { 
 						pr_debug("calc\ttotal\n");
-					}
-					/* usec */
-					pr_debug("%ld\t%.2f\n", cyc_calc, t_total_ave);
-					t_table[l][0] = cyc_calc;
-					t_table[l][progress + 1] = t_total_ave;
-				} else {
-					if (l == 0) {
+					} else {
 						pr_debug("total\n");
 					}
-					/* usec */
-					pr_debug("%.2f\n", t_total_ave);
-					t_table[l][progress + 1] = t_total_ave;
 				}
-			}
 
-#if 0
-			for (i = 0; i < nproc; i++) {
-				for (j = 0; j < sbuf; j++) {
-					printf("wbuf,j=%d,val=%f\n", j, wbuf[j]);
-					printf("rbuf,j=%d,val=%f\n", j, rbuf[j]);
-					printf("result,j=%d,val=%f\n", j, result[j]);
+				t_table[l][0] = nsec_calc * (MYTIME_TOUSEC / (double)MYTIME_TONSEC);
+				if (progress == 0) { 
+					pr_debug("%.0f\t%.0f\n", nsec_calc * (MYTIME_TOUSEC / (double)MYTIME_TONSEC), t_total_ave * MYTIME_TOUSEC);
+					t_table[l][progress + 1] = t_total_ave * MYTIME_TOUSEC;
+				} else {
+					pr_debug("%.0f\n", t_total_ave * MYTIME_TOUSEC);
+					t_table[l][progress + 1] = t_total_ave * MYTIME_TOUSEC;
 				}
 			}
+		}
+
+		if (progress == 1 || progress == 2) {
+#ifndef PROGRESS_CALC_PHASE_ONLY
+			//progress_stop();
 #endif
 		}
 
 	}
 	
+#ifdef PROFILE
 	syscall(701, 4 | 8 | 0x80000000); /* syscall profile report */
+#endif
 
 	if (rank == 0) {
 		printf("calc,no prog,prog and no uti, prog and uti\n");
@@ -265,6 +320,8 @@ int main(int argc, char **argv)
 			printf("\n");
 		}
 	}
+
+	MPI_Barrier(MPI_COMM_WORLD);
 
 	if (progress >= 1) {
 		progress_finalize();

@@ -25,7 +25,7 @@ async_progress.o:: async_progress.c util.h
 	$(CC) $(CFLAGS) -I$(UTI_DIR)/include -c $<
 
 util.o:: util.c util.h
-	$(CC) $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) -qopenmp -c $<
 
 014: 014.o async_progress.o util.o
 	$(LD) -o $@ $^ $(LDFLAGS)

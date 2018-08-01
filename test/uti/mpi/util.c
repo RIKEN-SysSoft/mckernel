@@ -32,29 +32,40 @@ static inline void asmloop(unsigned long n) {
 	} 
 }
 
+#define N_INIT 10000000
 double nspw; /* nsec per work */
 
-void fwq_init() {
-	struct timespec start, end;
-	unsigned long nsec;
+void ndelay_init() {
+	struct timeval start, end;
 
-	clock_gettime(TIMER_KIND, &start);
-#define N_INIT 10000000
-	asmloop(N_INIT);
-	clock_gettime(TIMER_KIND, &end);
-	nsec = DIFFNSEC(end, start);
-	nspw = nsec / (double)N_INIT;
+	//clock_gettime(TIMER_KIND, &start);
+	gettimeofday(&start, NULL);
+
+#pragma omp parallel
+	{
+		asmloop(N_INIT);
+	}
+
+	//clock_gettime(TIMER_KIND, &end);
+	gettimeofday(&end, NULL);
+
+	nspw = DIFFUSEC(end, start) * 1000 / (double)N_INIT;
+	pr_debug("nspw=%f\n", nspw);
 }
 
-#if 0
-void fwq(long delay_nsec) {
+#if 1
+void ndelay(long delay_nsec) {
 	if (delay_nsec < 0) { 
+		printf("delay_nsec < 0\n");
 		return;
 	}
-	asmloop(delay_nsec / nspw);
+#pragma omp parallel
+	{
+		asmloop(delay_nsec / nspw);
+	}
 }
 #else /* For machines with large core-to-core performance variation (e.g. OFP) */
-void fwq(long delay_nsec) {
+void ndelay(long delay_nsec) {
 	struct timespec start, end;
 	
 	if (delay_nsec < 0) { return; }

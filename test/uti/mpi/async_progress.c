@@ -18,17 +18,17 @@
 
 #define STOP_BY_MPI 0
 #define STOP_BY_MEM 1
-#define STOP_TYPE /*STOP_BY_MEM*/STOP_BY_MPI
+#define STOP_TYPE STOP_BY_MEM/*STOP_BY_MPI*/
 
 #define POLL_BY_PROBE 0
 #define POLL_BY_WAIT 1
 #define POLL_BY_TEST 2
-#define POLL_TYPE /*POLL_BY_TEST*/POLL_BY_WAIT
+#define POLL_TYPE POLL_BY_PROBE/*POLL_BY_WAIT*/
 
-static int progress_rank, progress_world_rank;
+static int progress_rank, progress_world_rank, progress_world_nproc;
 static pthread_t progress_thr;
 static pthread_mutex_t progress_mutex;
-static pthread_cond_t progress_cond_up, progress_cond_down;
+static pthread_cond_t progress_cond_down;
 static volatile int progress_flag_up, progress_flag_down;
 
 static enum progress_state progress_state;
@@ -37,8 +37,17 @@ static MPI_Comm progress_comm;
 static int progress_refc;
 #define WAKE_TAG 100
 
-#define NROW_STAT 100
-static int cyc_init1_count, cyc_init2_count, cyc_start_count, cyc_stop1_count, cyc_stop2_count, cyc_stop3_count, cyc_finalize_count;
+#define NROW_STAT 10
+#define NRANK_STAT 1
+#define RECORD_STAT(count, array, end, start) do { \
+	if (count < NROW_STAT) { \
+		array[count++] += (end - start);	\
+	} \
+} while(0)
+
+static int cyc_prog1_count, cyc_prog2_count, cyc_init1_count, cyc_init2_count, cyc_start_count, cyc_stop1_count, cyc_stop2_count, cyc_stop3_count, cyc_finalize_count;
+static unsigned long cyc_prog1[NROW_STAT];
+static unsigned long cyc_prog2[NROW_STAT];
 static unsigned long cyc_init1[NROW_STAT];
 static unsigned long cyc_init2[NROW_STAT];
 static unsigned long cyc_start[NROW_STAT];
@@ -47,12 +56,26 @@ static unsigned long cyc_stop2[NROW_STAT];
 static unsigned long cyc_stop3[NROW_STAT];
 static unsigned long cyc_finalize[NROW_STAT];
 
+#define MIN2(x,y) ((x) < (y) ? (x) : (y))
+
+void pr_stat(char *name, int count, unsigned long *array) {
+	int i;
+
+	pr_debug("[%d] %s: ", progress_world_rank, name);
+	for (i = 0; i < MIN2(count, NROW_STAT); i++) {
+		if (i > 0) pr_debug(",");
+		pr_debug("%ld", array[i]);
+	}
+	pr_debug("\n");
+}
+
 static void *progress_fn(void* data)
 {
 	int ret;
 	MPI_Request req;
 	struct rusage ru_start, ru_end;
 	struct timeval tv_start, tv_end;
+	unsigned long start, end;
 
 #if 0
 	ret = syscall(732);
@@ -81,6 +104,10 @@ static void *progress_fn(void* data)
 #endif
 
 init:
+#ifdef PROFILE
+	start = rdtsc_light();
+#endif
+
 	/* Wait for state transition */
 	pthread_mutex_lock(&progress_mutex);
 	while (!progress_flag_down) {
@@ -100,16 +127,25 @@ init:
 	}
 
 	pthread_mutex_unlock(&progress_mutex);
-	
-	if (progress_world_rank < 2) pr_debug("[%d] poll,cpu=%d\n", progress_world_rank, sched_getcpu());
+
+#ifdef PROFILE
+	end = rdtsc_light();
+	RECORD_STAT(cyc_prog1_count, cyc_prog1, end, start);
+#endif
+
+	//if (progress_world_rank < 2) pr_debug("[%d] poll,cpu=%d\n", progress_world_rank, sched_getcpu());
+
+#ifdef PROFILE
+	start = rdtsc_light();
+#endif
 
 #if STOP_TYPE == STOP_BY_MEM
 
 #if POLL_TYPE == POLL_BY_PROBE
 
 	int completed = 0;
-	while (!completed && !progress_stop_flag) {
-		if ((ret = MPI_Iprobe(progress_rank, WAKE_TAG, progress_comm, &completed, MPI_STATUS_IGNORE)) != MPI_SUCCESS) {
+	while (!progress_stop_flag) {
+		if ((ret = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &completed, MPI_STATUS_IGNORE)) != MPI_SUCCESS) {
 			pr_err("%s: error: MPI_Iprobe: %d\n", __func__, ret);
 			break;
 		}
@@ -160,13 +196,14 @@ init:
 #endif /* POLL_TYPE */
 #endif /* STOP_TYPE */
 
- 	pthread_mutex_lock(&progress_mutex);
 	progress_state = PROGRESS_INIT;
 	__sync_synchronize(); /* st-st barrier */
 	progress_flag_up = 1;
-	pthread_cond_signal(&progress_cond_up);
-        pthread_mutex_unlock(&progress_mutex);
 
+#ifdef PROFILE
+	end = rdtsc_light();
+	RECORD_STAT(cyc_prog2_count, cyc_prog2, end, start);
+#endif
 	goto init;
 
  finalize:
@@ -186,12 +223,9 @@ init:
 		   DIFFUSEC(ru_end.ru_stime, ru_start.ru_stime));
 #endif
 
- 	pthread_mutex_lock(&progress_mutex);
 	progress_state = PROGRESS_INIT;
 	__sync_synchronize(); /* st-st barrier */
 	progress_flag_up = 1;
-	pthread_cond_signal(&progress_cond_up);
-	pthread_mutex_unlock(&progress_mutex);
 
 	return NULL;
 }
@@ -207,6 +241,7 @@ void progress_init()
 	start = rdtsc_light();
 #endif
 	MPI_Comm_rank(MPI_COMM_WORLD, &progress_world_rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &progress_world_nproc);
 
 	if (__sync_val_compare_and_swap(&progress_refc, 0, 1) == 1) {
 		return;
@@ -224,11 +259,6 @@ void progress_init()
 
 	if ((ret = pthread_mutex_init(&progress_mutex, NULL))) {
  		pr_err("%s: error: pthread_mutex_init failed (%d)\n", __func__, ret);
-		goto out;		
-	}
-
-	if ((ret = pthread_cond_init(&progress_cond_up, NULL))) {
- 		pr_err("%s: error: pthread_cond_init failed (%d)\n", __func__, ret);
 		goto out;		
 	}
 
@@ -262,7 +292,7 @@ void progress_init()
 
 #ifdef PROFILE
 	end = rdtsc_light();
-	cyc_init1[cyc_init1_count++] += (end - start);
+	RECORD_STAT(cyc_init1_count, cyc_init1, end, start);
 #endif
 	
 #ifdef PROFILE
@@ -282,7 +312,7 @@ void progress_init()
 
 #ifdef PROFILE
 	end = rdtsc_light();
-	cyc_init2[cyc_init2_count++] += (end - start);
+	RECORD_STAT(cyc_init2_count, cyc_init2, end, start);
 #endif
 }
 
@@ -306,7 +336,7 @@ void progress_start()
 	}
 
 	if (progress_state == PROGRESS_START) {
-		pr_warn("%s: warning: START\n", __func__);
+		//pr_warn("%s: warning: START\n", __func__);
 		pthread_mutex_unlock(&progress_mutex);
 		return;
 	}
@@ -328,7 +358,7 @@ void progress_start()
 	
 #ifdef PROFILE
 	end = rdtsc_light();
-	cyc_start[cyc_start_count++] += (end - start);
+	RECORD_STAT(cyc_start_count, cyc_start, end, start);
 #endif
 }
 
@@ -337,7 +367,11 @@ void do_progress_stop()
 	int ret;
 	unsigned long start, end;
 
-	if (progress_world_rank < 2) pr_debug("[%d] stop,cpu=%d\n", progress_world_rank, sched_getcpu());
+	//if (progress_world_rank < 2) pr_debug("[%d] stop,cpu=%d\n", progress_world_rank, sched_getcpu());
+
+#ifdef PROFILE
+	start = rdtsc_light();
+#endif
 
 #if STOP_TYPE == STOP_BY_MEM
 
@@ -346,37 +380,28 @@ void do_progress_stop()
 
 #elif STOP_TYPE == STOP_BY_MPI
 
-#ifdef PROFILE
-	start = rdtsc_light();
-#endif
-
 	if ((ret = MPI_Send(NULL, 0, MPI_CHAR, progress_rank, WAKE_TAG, progress_comm)) != MPI_SUCCESS) {
 		pr_err("%s: error: MPI_Send failed (%d)\n", __func__, ret);
 		return;
 	}
 
-#ifdef PROFILE
-	end = rdtsc_light();
-	cyc_stop2[cyc_stop2_count++] += (end - start);
-#endif
 
 #endif /* STOP_TYPE */
 
 #ifdef PROFILE
+	end = rdtsc_light();
+	RECORD_STAT(cyc_stop2_count, cyc_stop2, end, start);
 	start = rdtsc_light();
 #endif
 
 	/* Make sure the following command will observe INIT */
-	pthread_mutex_lock(&progress_mutex);
 	while (!progress_flag_up) {
-		pthread_cond_wait(&progress_cond_up, &progress_mutex);
 	}
 	progress_flag_up = 0;
-	pthread_mutex_unlock(&progress_mutex);
 
 #ifdef PROFILE
 	end = rdtsc_light();
-	cyc_stop3[cyc_stop3_count++] += (end - start);
+	RECORD_STAT(cyc_stop3_count, cyc_stop3, end, start);
 #endif
 }
 
@@ -414,7 +439,7 @@ void progress_stop()
 
 #ifdef PROFILE
 	end = rdtsc_light();
-	cyc_stop1[cyc_stop1_count++] += (end - start);
+	RECORD_STAT(cyc_stop1_count, cyc_stop1, end, start);
 #endif	
 
 	do_progress_stop();
@@ -465,12 +490,9 @@ void progress_finalize()
 	pthread_mutex_unlock(&progress_mutex);
 
 	/* Make sure the following command will observe INIT */
-	pthread_mutex_lock(&progress_mutex);
 	while (!progress_flag_up) {
-		pthread_cond_wait(&progress_cond_up, &progress_mutex);
 	}
 	progress_flag_up = 0;
-	pthread_mutex_unlock(&progress_mutex);
 
 	pthread_join(progress_thr, NULL);
 
@@ -483,64 +505,26 @@ void progress_finalize()
 
 #ifdef PROFILE
 	end = rdtsc_light();
-	cyc_finalize[cyc_finalize_count++] += (end - start);
+	RECORD_STAT(cyc_finalize_count, cyc_finalize, end, start);
 
-	for (j = 0; j < nproc; j++) {
+	for (j = 0; j < NRANK_STAT; j++) {
 
 		MPI_Barrier(MPI_COMM_WORLD);
 
 		if (j != progress_world_rank) {
+			usleep(1000000);
 			continue;
 		}
 
-		pr_debug("[%d] cyc_init1: ", progress_world_rank);
-		for (i = 0; i < cyc_init1_count; i++) {
-			if (i > 0) pr_debug(",");
-			pr_debug("%ld", cyc_init1[i]);
-		}
-		pr_debug("\n");
-
-		pr_debug("[%d] cyc_init2: ", progress_world_rank);
-		for (i = 0; i < cyc_init2_count; i++) {
-			if (i > 0) pr_debug(",");
-			pr_debug("%ld", cyc_init2[i]);
-		}
-		pr_debug("\n");
-
-		pr_debug("[%d] cyc_start: ", progress_world_rank);
-		for (i = 0; i < cyc_start_count; i++) {
-			if (i > 0) pr_debug(",");
-			pr_debug("%ld", cyc_start[i]);
-		}
-		pr_debug("\n");
-
-		pr_debug("[%d] cyc_stop1: ", progress_world_rank);
-		for (i = 0; i < cyc_stop1_count; i++) {
-			if (i > 0) pr_debug(",");
-			pr_debug("%ld", cyc_stop1[i]);
-		}
-		pr_debug("\n");
-
-		pr_debug("[%d] cyc_stop2: ", progress_world_rank);
-		for (i = 0; i < cyc_stop2_count; i++) {
-			if (i > 0) pr_debug(",");
-			pr_debug("%ld", cyc_stop2[i]);
-		}
-		pr_debug("\n");
-
-		pr_debug("[%d] cyc_stop3: ", progress_world_rank);
-		for (i = 0; i < cyc_stop3_count; i++) {
-			if (i > 0) pr_debug(",");
-			pr_debug("%ld", cyc_stop3[i]);
-		}
-		pr_debug("\n");
-
-		pr_debug("[%d] cyc_finalize: ", progress_world_rank);
-		for (i = 0; i < cyc_finalize_count; i++) {
-			if (i > 0) pr_debug(",");
-			pr_debug("%ld", cyc_finalize[i]);
-		}
-		pr_debug("\n");
+		pr_stat("cyc_prog1", cyc_prog1_count, cyc_prog1);
+		pr_stat("cyc_prog2", cyc_prog2_count, cyc_prog2);
+		pr_stat("cyc_init1", cyc_init1_count, cyc_init1);
+		pr_stat("cyc_init2", cyc_init2_count, cyc_init2);
+		pr_stat("cyc_start", cyc_start_count, cyc_start);
+		pr_stat("cyc_stop1", cyc_stop1_count, cyc_stop1);
+		pr_stat("cyc_stop2", cyc_stop2_count, cyc_stop2);
+		pr_stat("cyc_stop3", cyc_stop3_count, cyc_stop3);
+		pr_stat("cyc_finalize", cyc_finalize_count, cyc_finalize);
 	}
 #endif
 }

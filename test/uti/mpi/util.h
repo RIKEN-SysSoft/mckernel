@@ -27,7 +27,6 @@ static inline void test_set_loglevel(enum test_loglevel level)
 #define pr_warn(fmt, args...) pr_level(TEST_LOGLEVEL_WARN, fmt, ##args)
 #define pr_debug(fmt, args...) pr_level(TEST_LOGLEVEL_DEBUG, fmt, ##args)
 
-
 #define _OKNG(verb, jump, cond, fmt, args...) do {	\
 	if (cond) {					\
 		if (verb)				\

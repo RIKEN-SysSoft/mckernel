@@ -85,8 +85,13 @@ if [ ${mck} -eq 1 ]; then
     i_mpi_pin=off
     i_mpi_pin_domain=
     i_mpi_pin_order=
-    kmp_affinity="export KMP_AFFINITY=granularity=thread,scatter"
-    #kmp_affinity="export KMP_AFFINITY=disabled" # Use this when OMP_NUM_THREADS=1 because Intel MPI tries to bind rank to OMP_NUM_THREAD-sized domain
+#    if [ $omp_num_threads -eq 1 ]; then
+#	# Avoid binding main thread and uti thread to one CPU
+	kmp_affinity="export KMP_AFFINITY=disabled" 
+#    else
+#	# Bind rank to OMP_NUM_THREAD-sized CPU-domain
+#	kmp_affinity="export KMP_AFFINITY=granularity=thread,scatter"
+#    fi
 else
     i_mpi_pin=on
     domain=$omp_num_threads # Use 32 when you want to match mck's -n division
@@ -103,7 +108,7 @@ if [ ${mck} -eq 1 ]; then
     mck_mem="#PJM -x MCK_MEM=32G@0,8G@1"
     mcexec="${mck_dir}/bin/mcexec"
     nmcexecthr=$((omp_num_threads + 4))
-    mcexecopt="-n $ppn" # -t $nmcexecthr
+    mcexecopt="-n $ppn --uti-use-last-cpu" # -t $nmcexecthr
 
     if [ ${use_hfi} -eq 1 ]; then
 	mcexecopt="--enable-hfi1 $mcexecopt"
@@ -148,8 +153,9 @@ else
 fi
 
 # If using ssh
+# Latest versions are: 1.163, 2.199, 3.222
 if [ $pjsub -eq 0 ] && [ $interactive -eq 0 ]; then
-    compilervars=". ${opt_dir}/compilers_and_libraries_2018.1.163/linux/bin/compilervars.sh intel64"
+    compilervars=". ${opt_dir}/compilers_and_libraries_2018.2.199/linux/bin/compilervars.sh intel64"
 else
     compilervars=
 fi
@@ -254,7 +260,7 @@ if [ ${go} -eq 1 ]; then
 	pjsub ./job.sh
     else
 	if [ $interactive -eq 0 ]; then
-	    . ${opt_dir}/compilers_and_libraries_2018.1.163/linux/bin/compilervars.sh intel64
+	    . ${opt_dir}/compilers_and_libraries_2018.2.199/linux/bin/compilervars.sh intel64
 	fi
 	rm ./$exe
 	make $makeopt ./$exe
