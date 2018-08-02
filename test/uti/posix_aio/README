@@ -1,0 +1,7 @@
+Benchmarks of hybrid-parallel asynchronous I/O
+
+001: Sequential read
+002: Sequential write
+003: Random read
+004: Random write
+
