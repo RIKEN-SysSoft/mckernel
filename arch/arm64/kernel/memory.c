@@ -127,15 +127,22 @@ static inline void arch_flush_tlb_single(const int asid, const unsigned long add
 
 void flush_tlb_single(unsigned long addr)
 {
+	struct thread *thread = cpu_local_var(current);
 	struct process_vm* vm = NULL;
+	struct address_space *adsp = NULL;
 	struct page_table* pt = NULL;
 	int asid = 0;
 
-	vm = cpu_local_var(current)->vm;
-	if (vm) {
-		pt = vm->address_space->page_table;
-		if (pt) {
-			asid = get_address_space_id(pt);
+	if (thread) {
+		vm = thread->vm;
+		if (vm) {
+			adsp = vm->address_space;
+			if (adsp) {
+				pt = adsp->page_table;
+				if (pt) {
+					asid = get_address_space_id(pt);
+				}
+			}
 		}
 	}
 	arch_flush_tlb_single(asid, addr);
