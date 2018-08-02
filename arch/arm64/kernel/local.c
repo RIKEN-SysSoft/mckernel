@@ -19,7 +19,7 @@ void init_processors_local(int max_id)
 {
 	int i = 0;
 	union arm64_cpu_local_variables *tmp;
-	const int npages = ((max_id + 1) * ALIGN_UP(KERNEL_STACK_SIZE, PAGE_SIZE));
+	const int npages = ((max_id + 1) * (ALIGN_UP(KERNEL_STACK_SIZE, PAGE_SIZE) >> PAGE_SHIFT));
 
 	if (npages < 1) {
 		panic("idle kernel stack allocation failed.");
