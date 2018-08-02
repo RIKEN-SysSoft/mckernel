@@ -1539,6 +1539,9 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 	fs = get_fs();
 	set_fs(KERNEL_DS);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0) */
+#else /* POSTK_DEBUG_ARCH_DEP_96 */
+	fs = get_fs();
+	set_fs(KERNEL_DS);
 #endif /* POSTK_DEBUG_ARCH_DEP_96 */
 	pos = off;
 	n = 0;
@@ -1576,9 +1579,11 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 	set_fs(fs);
 #endif /* POSTK_DEBUG_ARCH_DEP_96 */
 	if (ss < 0) {
-		printk("pager_req_read(%lx,%lx,%lx,%lx):pread failed. %ld\n", handle, off, size, rpa, ss);
+		pr_warn("%s(%lx,%lx,%lx,%lx):pread failed. %ld\n",
+			__func__, handle, off, size, rpa, ss);
 		goto out;
 	}
+	ss = n;
 
 out:
 	if (buf) {
