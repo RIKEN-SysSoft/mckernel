@@ -77,9 +77,12 @@ int ihk_mc_perfctr_read_mask(unsigned long counter_mask, unsigned long *value);
 unsigned long ihk_mc_perfctr_read(int counter);
 unsigned long ihk_mc_perfctr_read_msr(int counter);
 int ihk_mc_perfctr_alloc_counter(unsigned int *type, unsigned long *config, unsigned long pmc_status);
-#ifdef POSTK_DEBUG_ARCH_DEP_87 /* move X86_IA32_xxx architecture-dependent */
-int ihk_mc_counter_mask_check(unsigned long counter_mask);
+#ifdef POSTK_DEBUG_ARCH_DEP_87 /* perf_mask_check arch-dependents. */
+int ihk_mc_perf_counter_mask_check(unsigned long counter_mask);
 #endif /* POSTK_DEBUG_ARCH_DEP_87 */
+#ifdef POSTK_DEBUG_ARCH_DEP_109 /* perf_counter_get arch-depents. */
+int ihk_mc_perf_get_num_counters(void);
+#endif /* POSTK_DEBUG_ARCH_DEP_109 */
 
 #endif
 

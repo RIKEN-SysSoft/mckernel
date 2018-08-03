@@ -30,7 +30,6 @@ int arm64_init_perfctr(void)
 		return ret;
 	}
 
-
 	cpu_info = ihk_mc_get_cpu_info();
 	pages = (sizeof(struct per_cpu_arm_pmu) * cpu_info->ncpus + PAGE_SIZE -1) >> PAGE_SHIFT;
 	cpu_pmu.per_cpu = ihk_mc_alloc_pages(pages, IHK_MC_AP_NOWAIT);
@@ -243,9 +242,22 @@ int ihk_mc_perfctr_alloc_counter(unsigned int *type, unsigned long *config, unsi
         return ret;
 }
 
-#ifdef POSTK_DEBUG_ARCH_DEP_87 /* move X86_IA32_xxx architecture-dependent */
-int ihk_mc_counter_mask_check(unsigned long counter_mask)
+#ifdef POSTK_DEBUG_ARCH_DEP_87 /* perf_mask_check arch-dependents. */
+int ihk_mc_perf_counter_mask_check(unsigned long counter_mask)
 {
 	return 1;
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_87 */
+
+#ifdef POSTK_DEBUG_ARCH_DEP_109 /* perf_counter_get arch-depents. */
+int ihk_mc_perf_get_num_counters(void)
+{
+	return cpu_pmu.per_cpu[ihk_mc_get_processor_id()].num_events;
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_109 */
+
+int ihk_mc_perfctr_set_extra(struct mc_perf_event *event)
+{
+	/* Nothing to do. */
+	return 0;
+}
