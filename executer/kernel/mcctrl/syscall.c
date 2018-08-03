@@ -1932,42 +1932,6 @@ out:
 	return error;
 }
 
-#ifdef SC_DEBUG
-#ifdef MCCTRL_KSYM_walk_page_range
-static void
-(*mcctrl_walk_page_range)(unsigned long addr, unsigned long end, struct mm_walk *walk)
-#if MCCTRL_KSYM_walk_page_range
-	= (void *)MCCTRL_KSYM_walk_page_range;
-#else
-	= &walk_page_range;
-#endif
-#endif
-
-static int mywalk(pte_t *pte, unsigned long addr, unsigned long next, struct mm_walk *walk)
-{
-	unsigned long		pfn;
-	struct page		*page;
-
-	if (pte == NULL) {
-		kprintf("mywalk: ptr(%p)\n", pte);
-		return 0;
-	}
-	pfn = pte_pfn(*pte);
-	page = pfn_to_page(pfn);
-	if (page == NULL) {
-		kprintf("mywalk: pte(%p) page is null\n", pte);
-		return 0;
-	}
-	if (PageLocked(page)) {
-		kprintf("mywalk: MLOCK (%p)\n", (void*) addr);
-	}
-	if (addr > 0x700000 && addr < 0x705000) {
-		kprintf("mywalk: %p(%lx)\n", (void*) addr, page->flags);
-	}
-	return 0;
-}
-#endif
-
 static long pager_req_mlock_list(ihk_os_t os, unsigned long start,
 				 unsigned long end, void *addr, int nent)
 {
