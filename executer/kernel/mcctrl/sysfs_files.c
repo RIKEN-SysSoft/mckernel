@@ -892,16 +892,6 @@ out:
 	return error;
 } /* read_long() */
 
-#ifdef MCCTRL_KSYM_sys_readlink
-static ssize_t (*mcctrl_sys_readlink)(const char *path, char *buf,
-		size_t bufsiz)
-#if MCCTRL_KSYM_sys_readlink
-	= (void *)MCCTRL_KSYM_sys_readlink;
-#else
-	= &sys_readlink;
-#endif
-#endif
-
 static int read_link(char *buf, size_t bufsize, char *fmt, ...)
 {
 	int error;
