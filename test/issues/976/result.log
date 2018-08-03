@@ -1,0 +1,103 @@
+*** CT_001 start ********************************
+ [OK] sigaltstack() to get current  returned 0
+      (expect return is 0)
+ [OK] default ss_sp is (nil)
+      (expect ss_sp is NULL)
+ [OK] alloc altstack area 0x2aaaab014000
+      (expect area is valid vaddr)
+ [OK] sigaltstack() to set new stack  returned 0
+      (expect return is 0)
+ [OK] sigaltstack() to get current  returned 0
+      (expect return is 0)
+ [OK] new ss_sp is 0x2aaaab014000
+      (expect ss_sp is 0x2aaaab014000)
+** Re-run by execve
+*** CT_001 start ********************************
+ [OK] sigaltstack() to get current  returned 0
+      (expect return is 0)
+ [OK] default ss_sp is (nil)
+      (expect ss_sp is NULL)
+ [OK] alloc altstack area 0x2aaaab014000
+      (expect area is valid vaddr)
+ [OK] sigaltstack() to set new stack  returned 0
+      (expect return is 0)
+ [OK] sigaltstack() to get current  returned 0
+      (expect return is 0)
+ [OK] new ss_sp is 0x2aaaab014000
+      (expect ss_sp is 0x2aaaab014000)
+*** CT_001 PASSED
+
+*** CT_002 start ********************************
+ [OK] fetestexcept(FE_ALL_EXCEPT) returned 0
+      (expect return is 0)
+ [OK] fetestexcept(FE_ALL_EXCEPT) returned 1
+      (expect return is FE_INVALID(1))
+ [OK] feraiseexcept(FE_ALL_EXCEPT) returned 0
+      (expect return is 0)
+ [OK] fetestexcept(FE_ALL_EXCEPT) returned 61
+      (expect return is FE_ALL_EXCEPT(61))
+** Re-run by execve
+*** CT_002 start ********************************
+ [OK] fetestexcept(FE_ALL_EXCEPT) returned 0
+      (expect return is 0)
+ [OK] fetestexcept(FE_ALL_EXCEPT) returned 1
+      (expect return is FE_INVALID(1))
+ [OK] feraiseexcept(FE_ALL_EXCEPT) returned 0
+      (expect return is 0)
+ [OK] fetestexcept(FE_ALL_EXCEPT) returned 61
+      (expect return is FE_ALL_EXCEPT(61))
+*** CT_002 PASSED
+
+*** CT_003 start ********************************
+ [OK] fegetround  returned 0
+      (expect return is FE_TONEAREST(0))
+ [OK] fesetround(FE_TOWARDZERO) returned 0
+      (expect return is 0)
+ [OK] fegetround  returned 3072
+      (expect return is FE_TOWARDZERO(3072))
+** Re-run by execve
+*** CT_003 start ********************************
+ [OK] fegetround  returned 0
+      (expect return is FE_TONEAREST(0))
+ [OK] fesetround(FE_TOWARDZERO) returned 0
+      (expect return is 0)
+ [OK] fegetround  returned 3072
+      (expect return is FE_TOWARDZERO(3072))
+*** CT_003 PASSED
+
+*** LT_001 start *******************************
+execl01_child    1  TPASS  :  execve01_child executed
+execve01    0  TINFO  :  Child process returned TPASS
+*** LT_001: PASSED (ok:2)
+
+*** LT_002 start *******************************
+Error: Failed to open execve_child
+execve(): error loading ELF for file execve_child
+execve02    1  TPASS  :  execve() failed expectedly: TEST_ERRNO=EACCES(13): Permission denied
+execve02    0  TINFO  :  Child process returned TPASS
+*** LT_002: PASSED (ok:2)
+
+*** LT_003 start *******************************
+lookup_exec_path: lookup_exec_path(): error stat
+Error: /tmp/exeiG2gZP/fake.11925 is not an executable?, errno: 13
+execve(): error loading ELF for file /tmp/exeiG2gZP/fake.11925
+Error: file /tmp/exeiG2gZP/execve03.11925 is zero length
+execve(): error loading ELF for file /tmp/exeiG2gZP/execve03.11925
+execve03    1  TPASS  :  execve failed as expected: TEST_ERRNO=ENAMETOOLONG(36): File name too long
+execve03    2  TPASS  :  execve failed as expected: TEST_ERRNO=ENOENT(2): No such file or directory
+execve03    3  TPASS  :  execve failed as expected: TEST_ERRNO=ENOTDIR(20): Not a directory
+execve03    4  TPASS  :  execve failed as expected: TEST_ERRNO=EFAULT(14): Bad address
+execve03    5  TPASS  :  execve failed as expected: TEST_ERRNO=EACCES(13): Permission denied
+execve03    6  TPASS  :  execve failed as expected: TEST_ERRNO=ENOEXEC(8): Exec format error
+*** LT_003: PASSED (ok:6)
+
+*** LT_004 start *******************************
+execve05    1  TPASS  :  Test DONE, pid 11995, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+execve05    1  TPASS  :  Test DONE, pid 12025, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+execve05    1  TPASS  :  Test DONE, pid 12055, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+execve05    1  TPASS  :  Test DONE, pid 12085, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+execve05    1  TPASS  :  Test DONE, pid 12115, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+execve05    1  TPASS  :  Test DONE, pid 12145, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+execve05    1  TPASS  :  Test DONE, pid 12175, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+execve05    1  TPASS  :  Test DONE, pid 12205, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+*** LT_004: PASSED (ok:8)
