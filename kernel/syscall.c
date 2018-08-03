@@ -3449,7 +3449,6 @@ int perf_counter_set(struct mc_perf_event *event)
 		mode |= PERFCTR_USER_MODE;
 	}
 
-
 	if (event->extra_reg.reg) {
 		if (ihk_mc_perfctr_set_extra(event)) {
 			ret = -1;

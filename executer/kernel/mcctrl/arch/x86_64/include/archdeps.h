@@ -1,5 +1,4 @@
 /* archdeps.h COPYRIGHT FUJITSU LIMITED 2017 */
-#ifdef POSTK_DEBUG_ARCH_DEP_83 /* arch depend translate_rva_to_rpa() move */
 #ifndef __HEADER_MCCTRL_X86_64_ARCHDEPS_H
 #define __HEADER_MCCTRL_X86_64_ARCHDEPS_H
 
@@ -7,6 +6,7 @@
 #include <linux/mm.h>
 #endif /* POSTK_DEBUG_ARCH_DEP_100 */
 
+#ifdef POSTK_DEBUG_ARCH_DEP_83 /* arch depend translate_rva_to_rpa() move */
 extern int translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva,
 				unsigned long *rpap, unsigned long *pgsizep);
 #endif /* POSTK_DEBUG_ARCH_DEP_83 */

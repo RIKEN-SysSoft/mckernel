@@ -2843,7 +2843,7 @@ mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *arg)
 				continue;
 			if(IS_ERR(lnode_topo))
 				continue;
-#ifdef POSTK_DEBUG_ARCH_DEP_54 /*  cpu_isset() and cpu_set() depend on HOST-Linux version */
+#ifdef POSTK_DEBUG_ARCH_DEP_54 /* cpu_isset() and cpu_set() depend on HOST-Linux version */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
 			if (cpumask_test_cpu(target_cpu->saved->cpu_number,
 			              &lnode_topo->cpumap)) {
