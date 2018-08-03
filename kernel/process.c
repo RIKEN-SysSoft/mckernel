@@ -3210,10 +3210,6 @@ void schedule(void)
 		return;
 	}
 
-redo:
-	/* Reset for redo */
-	switch_ctx = 0;
-
 	cpu_local_var(runq_irqstate) = 
 		ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
 	v = get_this_cpu_local_var();
@@ -3358,7 +3354,8 @@ redo:
 
 		/* Have we migrated to another core meanwhile? */
 		if (v != get_this_cpu_local_var()) {
-			goto redo;
+			v = get_this_cpu_local_var();
+			v->flags &= ~CPU_FLAG_NEED_RESCHED;
 		}
 	}
 	else {
