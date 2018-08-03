@@ -39,7 +39,6 @@
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/io.h>
-#include <linux/kallsyms.h>
 #include <linux/syscalls.h>
 #include <trace/events/sched.h>
 #include <config.h>
@@ -54,39 +53,6 @@
 #define dprintk printk
 #else
 #define dprintk(...)
-#endif
-
-#ifdef MCCTRL_KSYM_sys_unshare
-#if MCCTRL_KSYM_sys_unshare
-typedef int (*int_star_fn_ulong_t)(unsigned long);
-int (*mcctrl_sys_unshare)(unsigned long unshare_flags) =
-        (int_star_fn_ulong_t)
-        MCCTRL_KSYM_sys_unshare;
-#else // exported
-int (*mcctrl_sys_unshare)(unsigned long unshare_flags) = NULL;
-#endif
-#endif
-
-#ifdef MCCTRL_KSYM_sys_mount
-#if MCCTRL_KSYM_sys_mount
-typedef int (*int_star_fn_char_char_char_ulong_void_t)(char *, char *, char *, unsigned long, void *);
-int (*mcctrl_sys_mount)(char *dev_name,char *dir_name, char *type, unsigned long flags, void *data) =
-        (int_star_fn_char_char_char_ulong_void_t)
-        MCCTRL_KSYM_sys_mount;
-#else // exported
-int (*mcctrl_sys_mount)(char *dev_name,char *dir_name, char *type, unsigned long flags, void *data) = sys_mount;
-#endif
-#endif
-
-#ifdef MCCTRL_KSYM_sys_umount
-#if MCCTRL_KSYM_sys_umount
-typedef int (*int_fn_char_star_int_t)(char *, int);
-int (*mcctrl_sys_umount)(char *dir_name, int flags) =
-        (int_fn_char_star_int_t)
-        MCCTRL_KSYM_sys_umount;
-#else // exported
-int (*mcctrl_sys_umount)(char *dir_name, int flags) = sys_umount;
-#endif
 #endif
 
 //extern struct mcctrl_channel *channels;
@@ -2080,12 +2046,8 @@ long mcexec_sys_mount(struct sys_mount_desc *__user arg)
 	cap_raise(promoted->cap_effective, CAP_SYS_ADMIN);
 	original = override_creds(promoted);
 
-#ifdef MCCTRL_KSYM_sys_mount
 	ret = mcctrl_sys_mount(desc.dev_name, desc.dir_name, desc.type,
 		desc.flags, desc.data);
-#else
-	ret = -EFAULT;
-#endif
 
 	revert_creds(original);
 	put_cred(promoted);
@@ -2111,11 +2073,7 @@ long mcexec_sys_umount(struct sys_mount_desc *__user arg)
 	cap_raise(promoted->cap_effective, CAP_SYS_ADMIN);
 	original = override_creds(promoted);
 
-#ifdef MCCTRL_KSYM_sys_umount
 	ret = mcctrl_sys_umount(desc.dir_name, MNT_FORCE);
-#else
-	ret = -EFAULT;
-#endif
 
 	revert_creds(original);
 	put_cred(promoted);
@@ -2141,11 +2099,7 @@ long mcexec_sys_unshare(struct sys_unshare_desc *__user arg)
 	cap_raise(promoted->cap_effective, CAP_SYS_ADMIN);
 	original = override_creds(promoted);
 
-#if MCCTRL_KSYM_sys_unshare
 	ret = mcctrl_sys_unshare(desc.unshare_flags);
-#else
-	ret = -EFAULT;
-#endif
 
 	revert_creds(original);
 	put_cred(promoted);
@@ -2674,9 +2628,6 @@ cache_topo_search(struct ihk_cpu_topology *cpu_topo, int level)
 	return NULL;
 }
 
-static long (*setaffinity)(pid_t pid, const struct cpumask *in_mask);
-static int (*setscheduler_nocheck)(struct task_struct *p, int policy,
-                                   const struct sched_param *param);
 static unsigned int *uti_rr;
 static int max_cpu;
 
@@ -2689,20 +2640,6 @@ uti_attr_init(void)
 
 	if (uti_rr)
 		return 0;
-
-	if (!setaffinity) {
-		setaffinity = (long (*)(pid_t, const struct cpumask *))
-		              kallsyms_lookup_name("sched_setaffinity");
-		if (!setaffinity)
-			return -ENOSYS;
-	}
-	if (!setscheduler_nocheck) {
-		setscheduler_nocheck = (int (*)(struct task_struct *, int,
-		                                const struct sched_param *))
-		            kallsyms_lookup_name("sched_setscheduler_nocheck");
-		if (!setscheduler_nocheck)
-			return -ENOSYS;
-	}
 
 	for_each_possible_cpu(i) {
 		max_cpu = i;
@@ -2921,29 +2858,29 @@ mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *arg)
 	else if (kattr->attr.flags & UTI_FLAG_EXCLUSIVE_CPU) {
 		struct sched_param sp;
 
-		setaffinity(0, uti_cpu_select(cpuset));
+		mcctrl_sched_setaffinity(0, uti_cpu_select(cpuset));
 		sp.sched_priority = 1;
-		setscheduler_nocheck(current, SCHED_FIFO, &sp);
+		mcctrl_sched_setscheduler_nocheck(current, SCHED_FIFO, &sp);
 		rc = 1;
 	}
 	else if (kattr->attr.flags & UTI_FLAG_CPU_INTENSIVE) {
-		setaffinity(0, uti_cpu_select(cpuset));
+		mcctrl_sched_setaffinity(0, uti_cpu_select(cpuset));
 		rc = 1;
 	}
 	else if (kattr->attr.flags & UTI_FLAG_HIGH_PRIORITY) {
 		struct sched_param sp;
 
-		setaffinity(0, uti_cpu_select(cpuset));
+		mcctrl_sched_setaffinity(0, uti_cpu_select(cpuset));
 		sp.sched_priority = 1;
-		setscheduler_nocheck(current, SCHED_FIFO, &sp);
+		mcctrl_sched_setscheduler_nocheck(current, SCHED_FIFO, &sp);
 		rc = 1;
 	}
 	else if (kattr->attr.flags & UTI_FLAG_NON_COOPERATIVE) {
-		setaffinity(0, uti_cpu_select(cpuset));
+		mcctrl_sched_setaffinity(0, uti_cpu_select(cpuset));
 		rc = 1;
 	}
 	else {
-		setaffinity(0, cpuset);
+		mcctrl_sched_setaffinity(0, cpuset);
 	}
 
 	kfree(cpuset);

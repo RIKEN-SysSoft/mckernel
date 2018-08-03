@@ -28,6 +28,7 @@
 #include <linux/slab.h>
 #include <linux/device.h>
 #include <linux/delay.h>
+#include <linux/kallsyms.h>
 #include "mcctrl.h"
 #include <ihk/ihk_host_user.h>
 
@@ -209,6 +210,60 @@ static struct ihk_os_notifier mcctrl_os_notifier = {
 	.ops = &mcctrl_os_notifier_ops,
 };
 
+
+
+int (*mcctrl_sys_mount)(char *dev_name, char *dir_name, char *type,
+			unsigned long flags, void *data);
+int (*mcctrl_sys_umount)(char *dir_name, int flags);
+int (*mcctrl_sys_unshare)(unsigned long unshare_flags);
+long (*mcctrl_sched_setaffinity)(pid_t pid, const struct cpumask *in_mask);
+int (*mcctrl_sched_setscheduler_nocheck)(struct task_struct *p, int policy,
+					 const struct sched_param *param);
+
+ssize_t (*mcctrl_sys_readlink)(const char *path, char *buf,
+			       size_t bufsiz);
+void (*mcctrl_zap_page_range)(struct vm_area_struct *vma,
+			      unsigned long start,
+			      unsigned long size,
+			      struct zap_details *details);
+
+static int symbols_init(void)
+{
+	mcctrl_sys_mount = (void *) kallsyms_lookup_name("sys_mount");
+	if (WARN_ON(!mcctrl_sys_mount))
+		return -EFAULT;
+
+	mcctrl_sys_umount = (void *) kallsyms_lookup_name("sys_umount");
+	if (WARN_ON(!mcctrl_sys_umount))
+		return -EFAULT;
+
+	mcctrl_sys_unshare = (void *) kallsyms_lookup_name("sys_unshare");
+	if (WARN_ON(!mcctrl_sys_unshare))
+		return -EFAULT;
+
+	mcctrl_sched_setaffinity =
+		(void *) kallsyms_lookup_name("sched_setaffinity");
+	if (WARN_ON(!mcctrl_sched_setaffinity))
+		return -EFAULT;
+
+	mcctrl_sched_setscheduler_nocheck =
+		(void *) kallsyms_lookup_name("sched_setscheduler_nocheck");
+	if (WARN_ON(!mcctrl_sched_setscheduler_nocheck))
+		return -EFAULT;
+
+	mcctrl_sys_readlink =
+		(void *) kallsyms_lookup_name("sys_readlink");
+	if (WARN_ON(!mcctrl_sys_readlink))
+		return -EFAULT;
+
+	mcctrl_zap_page_range =
+		(void *) kallsyms_lookup_name("zap_page_range");
+	if (WARN_ON(!mcctrl_zap_page_range))
+		return -EFAULT;
+
+	return arch_symbols_init();
+}
+
 static int __init mcctrl_init(void)
 {
 	int ret = 0;
@@ -223,6 +278,9 @@ static int __init mcctrl_init(void)
 	}
 
 	binfmt_mcexec_init();
+
+	if ((ret = symbols_init()))
+		goto error;
 
 	if ((ret = ihk_host_register_os_notifier(&mcctrl_os_notifier)) != 0) {
 		printk("mcctrl: error: registering OS notifier\n");

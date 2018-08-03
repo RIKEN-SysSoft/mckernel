@@ -371,6 +371,23 @@ int mcctrl_ikc_is_valid_thread(ihk_os_t os, int cpu);
 
 ihk_os_t osnum_to_os(int n);
 
+/* look up symbols, plus arch-specific ones */
+extern int (*mcctrl_sys_mount)(char *dev_name, char *dir_name, char *type,
+			       unsigned long flags, void *data);
+extern int (*mcctrl_sys_umount)(char *dir_name, int flags);
+extern int (*mcctrl_sys_unshare)(unsigned long unshare_flags);
+extern long (*mcctrl_sched_setaffinity)(pid_t pid,
+					const struct cpumask *in_mask);
+extern int (*mcctrl_sched_setscheduler_nocheck)(struct task_struct *p,
+						int policy,
+						const struct sched_param *param);
+extern ssize_t (*mcctrl_sys_readlink)(const char *path, char *buf,
+				      size_t bufsiz);
+extern void (*mcctrl_zap_page_range)(struct vm_area_struct *vma,
+				     unsigned long start,
+				     unsigned long size,
+				     struct zap_details *details);
+
 /* syscall.c */
 void pager_add_process(void);
 void pager_remove_process(struct mcctrl_per_proc_data *ppd);
@@ -476,6 +493,7 @@ struct vdso {
 int reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp,
 		unsigned long *endp);
 void get_vdso_info(ihk_os_t os, long vdso_pa);
+int arch_symbols_init(void);
 
 struct get_cpu_mapping_req {
 	int busy;		/* INOUT: */

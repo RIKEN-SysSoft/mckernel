@@ -1,6 +1,7 @@
 /* archdeps.c COPYRIGHT FUJITSU LIMITED 2016 */
 #include <linux/version.h>
 #include <linux/mm_types.h>
+#include <linux/kallsyms.h>
 #include <asm/vdso.h>
 #include "../../../config.h"
 #include "../../mcctrl.h"
@@ -17,29 +18,31 @@
 
 #define D(fmt, ...) printk("%s(%d) " fmt, __func__, __LINE__, ##__VA_ARGS__)
 
-#ifdef MCCTRL_KSYM_vdso_start
-# if MCCTRL_KSYM_vdso_start
-void *vdso_start = (void *)MCCTRL_KSYM_vdso_start;
-# endif
-#else
-# error missing address of vdso_start.
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 0, 0)
+void *vdso_start;
+void *vdso_end;
+static struct vm_special_mapping (*vdso_spec)[2];
 #endif
 
-#ifdef MCCTRL_KSYM_vdso_end
-# if MCCTRL_KSYM_vdso_end
-void *vdso_end = (void *)MCCTRL_KSYM_vdso_end;
-# endif
-#else
-# error missing address of vdso_end.
+int arch_symbols_init(void)
+{
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 0, 0)
+	vdso_start = (void *) kallsyms_lookup_name("vdso_start");
+	if (WARN_ON(!vdso_start))
+		return -EFAULT;
+
+	vdso_end = (void *) kallsyms_lookup_name("vdso_end");
+	if (WARN_ON(!vdso_end))
+		return -EFAULT;
+
+	vdso_spec = (void *) kallsyms_lookup_name("vdso_spec");
+	if (WARN_ON(!vdso_spec))
+		return -EFAULT;
 #endif
 
-#ifdef MCCTRL_KSYM_vdso_spec
-# if MCCTRL_KSYM_vdso_spec
-static struct vm_special_mapping (*vdso_spec)[2] = (void*)MCCTRL_KSYM_vdso_spec;
-# endif
-#else
-# error missing address of vdso_spec.
-#endif
+	return 0;
+}
+
 
 #ifdef POSTK_DEBUG_ARCH_DEP_52
 #define VDSO_MAXPAGES 1
