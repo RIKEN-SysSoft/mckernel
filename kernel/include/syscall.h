@@ -382,7 +382,6 @@ struct procfs_read {
 	int count;		/* bytes to read (request) */
 	int eof;		/* if eof is detected, 1 otherwise 0. (answer)*/
 	int ret;		/* read bytes (answer) */
-	int status;		/* non-zero if done (answer) */
 	int newcpu;		/* migrated new cpu (answer) */
 	int readwrite;		/* 0:read, 1:write */
 	char fname[PROCFS_NAME_MAX];	/* procfs filename (request) */
@@ -393,6 +392,8 @@ struct procfs_file {
 	int mode;			/* file mode (request) */
 	char fname[PROCFS_NAME_MAX];	/* procfs filename (request) */
 };
+
+int process_procfs_request(struct ikc_scd_packet *rpacket);
 
 #define RUSAGE_SELF 0
 #define RUSAGE_CHILDREN -1

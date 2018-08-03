@@ -75,7 +75,7 @@ procfs_delete_thread(struct thread *thread)
  *
  * \param rarg returned argument
  */
-void process_procfs_request(struct ikc_scd_packet *rpacket)
+int process_procfs_request(struct ikc_scd_packet *rpacket)
 {
 	unsigned long rarg = rpacket->arg;
 	unsigned long parg, pbuf;
@@ -83,20 +83,17 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 	struct process *proc = NULL;
 	struct process_vm *vm = NULL;
 	struct procfs_read *r;
-	struct ikc_scd_packet packet;
 	int osnum = ihk_mc_get_osnum();
 	int rosnum, ret, pid, tid, ans = -EIO, eof = 0;
 	char *buf, *p;
-	struct ihk_ikc_channel_desc *syscall_channel;
 	struct mcs_rwlock_node_irqsave lock;
 	unsigned long offset;
 	int count;
 	int npages;
 	int readwrite = 0;
+	int err = -EIO;
 
 	dprintf("process_procfs_request: invoked.\n");
-
-	syscall_channel = get_cpu_local_var(0)->ikc2linux;
 
 	dprintf("rarg: %x\n", rarg);
 	parg = ihk_mc_map_memory(NULL, rarg, sizeof(struct procfs_read));
@@ -104,7 +101,6 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 	r = ihk_mc_map_virtual(parg, 1, PTATTR_WRITABLE | PTATTR_ACTIVE);
 	if (r == NULL) {
 		kprintf("ERROR: process_procfs_request: got a null procfs_read structure.\n");
-		packet.err = -EIO;
 		goto dataunavail;
 	}
 	dprintf("r: %p\n", r);
@@ -118,7 +114,6 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 	dprintf("buf: %p\n", buf);
 	if (buf == NULL) {
 		kprintf("ERROR: process_procfs_request: got a null buffer.\n");
-		packet.err = -EIO;
 		goto bufunavail;
 	}
 
@@ -695,28 +690,19 @@ end:
 	dprintf("ret: %d, eof: %d\n", ans, eof);
 	r->ret = ans;
 	r->eof = eof;
-	r->status = 1; /* done */
-	packet.err = 0;
+	err = 0;
 bufunavail:
 	ihk_mc_unmap_memory(NULL, pbuf, r->count);
 	ihk_mc_unmap_virtual(r, 1);
 dataunavail:
 	ihk_mc_unmap_memory(NULL, parg, sizeof(struct procfs_read));
 
-	packet.msg = SCD_MSG_PROCFS_ANSWER;
-	packet.arg = rarg;
-	packet.pid = rpacket->pid;
-
-	ret = ihk_ikc_send(syscall_channel, &packet, 0);
-	if (ret < 0) {
-		kprintf("ERROR: sending IKC msg, ret: %d\n", ret);
-	}
 	if(proc)
 		release_process(proc);
 	if(thread)
 		release_thread(thread);
 	if(vm)
 		release_process_vm(vm);
-	return;
 
+	return err;
 }

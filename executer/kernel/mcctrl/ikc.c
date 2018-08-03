@@ -182,17 +182,13 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	case SCD_MSG_PREPARE_PROCESS_ACKED:
 	case SCD_MSG_PERF_ACK:
 	case SCD_MSG_SEND_SIGNAL_ACK:
+	case SCD_MSG_PROCFS_ANSWER:
 		mcctrl_wakeup_cb(__os, pisp);
 		break;
 
 	case SCD_MSG_SYSCALL_ONESIDE:
 		mcexec_syscall(usrdata, pisp);
 		break;
-
-	case SCD_MSG_PROCFS_ANSWER:
-		procfs_answer(usrdata, pisp->pid);
-		break;
-
 
 	case SCD_MSG_SYSFS_REQ_CREATE:
 	case SCD_MSG_SYSFS_REQ_MKDIR:
