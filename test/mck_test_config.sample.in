@@ -1,0 +1,5 @@
+# Config file for McKernel tests
+BIN=@prefix@/bin
+SBIN=@prefix@/sbin
+OSTEST=
+LTP=

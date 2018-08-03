@@ -585,6 +585,12 @@ AC_CONFIG_FILES([
 	tools/mcstat/Makefile
 ])
 
+if test -e "${ABS_SRCDIR}/test"; then
+AC_CONFIG_FILES([
+mck_test_config.sample:test/mck_test_config.sample.in
+])
+fi
+
 if test "$TARGET" = "smp-x86"; then
 AC_CONFIG_FILES([
 	arch/x86_64/kernel/Makefile.arch
