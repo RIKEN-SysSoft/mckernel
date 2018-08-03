@@ -127,8 +127,8 @@ static long mcexec_prepare_image(ihk_os_t os,
 
 	pdesc->pid = task_tgid_vnr(current);
 
-	if (reserve_user_space(usrdata, &pdesc->user_start, &pdesc->user_end)) {
-		ret = -ENOMEM;
+	if ((ret = reserve_user_space(usrdata, &pdesc->user_start,
+				      &pdesc->user_end))) {
 		goto put_and_free_out;
 	}
 
