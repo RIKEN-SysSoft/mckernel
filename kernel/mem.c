@@ -987,7 +987,6 @@ void coredump(struct thread *thread, void *regs)
 	}
 #endif /* POSTK_DEBUG_ARCH_DEP_67 */
 
-#ifndef POSTK_DEBUG_ARCH_DEP_18
 	ret = gencore(thread, regs, &coretable, &chunks);
 	if (ret != 0) {
 		dkprintf("could not generate a core file image\n");
@@ -1004,7 +1003,6 @@ void coredump(struct thread *thread, void *regs)
 		kprintf("core dump failed.\n");
 	}
 	freecore(&coretable);
-#endif /* POSTK_DEBUG_ARCH_DEP_18 */
 }
 
 #ifndef POSTK_DEBUG_ARCH_DEP_8
