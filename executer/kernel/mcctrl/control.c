@@ -2234,6 +2234,7 @@ long mcctrl_perf_enable(ihk_os_t os)
 		ret = mcctrl_ikc_send_wait(os, j, &isp, 0,
 					   wakeup_desc_of_perf_desc(perf_desc),
 					   &need_free, 1, perf_desc);
+
 		if (ret < 0) {
 			pr_warn("%s: mcctrl_ikc_send_wait ret=%d\n",
 				__func__, ret);
