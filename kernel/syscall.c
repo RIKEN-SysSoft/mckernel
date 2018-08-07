@@ -9245,6 +9245,9 @@ set_cputime(int mode)
 	unsigned long tsc;	
 	struct cpu_local_var *v;
 	struct ihk_os_cpu_monitor *monitor;
+#ifdef POSTK_DEBUG_TEMP_FIX_98 /* Calling set_cputime() will enable interrupt. */
+	unsigned long irq_flags = 0;
+#endif /* POSTK_DEBUG_TEMP_FIX_98 */
 
 	if(clv == NULL)
 		return;
@@ -9278,7 +9281,11 @@ set_cputime(int mode)
 		return;
 	}
 
+#ifdef POSTK_DEBUG_TEMP_FIX_98 /* Calling set_cputime() will enable interrupt. */
+	irq_flags = cpu_disable_interrupt_save();
+#else /* POSTK_DEBUG_TEMP_FIX_98 */
 	cpu_disable_interrupt();
+#endif /* POSTK_DEBUG_TEMP_FIX_98 */
 	tsc = rdtsc();
 	if(thread->base_tsc != 0){
 		unsigned long dtsc = tsc - thread->base_tsc;
@@ -9371,7 +9378,11 @@ set_cputime(int mode)
 			}
 		}
 	}
+#ifdef POSTK_DEBUG_TEMP_FIX_98 /* Calling set_cputime() will enable interrupt. */
+	cpu_restore_interrupt(irq_flags);
+#else /* POSTK_DEBUG_TEMP_FIX_98 */
 	cpu_enable_interrupt();
+#endif /* POSTK_DEBUG_TEMP_FIX_98 */
 }
 
 long syscall(int num, ihk_mc_user_context_t *ctx)
