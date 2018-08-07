@@ -587,6 +587,12 @@ int arch_linux_open(char *fname, int flag, int mode);
 int arch_linux_unlink(char *fname);
 #endif /* POSTK_DEBUG_ARCH_DEP_78 */
 
+#ifdef POSTK_DEBUG_ARCH_DEP_110 /* archdep for ihk_mc_syscall_ret() set before ptrace_syscall_event() */
+struct thread;
+void arch_ptrace_syscall_enter(struct thread *thread, long setret);
+long arch_ptrace_syscall_exit(struct thread *thread, long setret);
+#endif /* POSTK_DEBUG_ARCH_DEP_110 */
+
 struct move_pages_smp_req {
 	unsigned long count;
 	const void **user_virt_addr;

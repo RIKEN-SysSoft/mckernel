@@ -1999,7 +1999,11 @@ static int ptrace_report_exec(struct thread *thread)
 	return 0;
 }
 
+#ifdef POSTK_DEBUG_ARCH_DEP_110 /* archdep for ihk_mc_syscall_ret() set before ptrace_syscall_event() */
+void ptrace_syscall_event(struct thread *thread)
+#else /* POSTK_DEBUG_ARCH_DEP_110 */
 static void ptrace_syscall_event(struct thread *thread)
+#endif /* POSTK_DEBUG_ARCH_DEP_110 */
 {
 	int ptrace = thread->proc->ptrace;
 
@@ -2237,8 +2241,12 @@ SYSCALL_DECLARE(execve)
 	}
 
 	if (thread->proc->ptrace) {
+#ifdef POSTK_DEBUG_ARCH_DEP_110 /* archdep for ihk_mc_syscall_ret() set before ptrace_syscall_event() */
+		arch_ptrace_syscall_enter(thread, 0);
+#else /* POSTK_DEBUG_ARCH_DEP_110 */
 		ihk_mc_syscall_ret(ctx) = 0;
 		ptrace_syscall_event(thread);
+#endif /* POSTK_DEBUG_ARCH_DEP_110 */
 	}
 
 	/* Unmap all memory areas of the process, userspace will be gone */
@@ -9410,8 +9418,12 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	cpu_enable_interrupt();
 
 	if (cpu_local_var(current)->proc->ptrace) {
+#ifdef POSTK_DEBUG_ARCH_DEP_110 /* archdep for ihk_mc_syscall_ret() set before ptrace_syscall_event() */
+		arch_ptrace_syscall_enter(cpu_local_var(current), -ENOSYS);
+#else /* POSTK_DEBUG_ARCH_DEP_110 */
 		ihk_mc_syscall_ret(ctx) = -ENOSYS;
 		ptrace_syscall_event(cpu_local_var(current));
+#endif /* POSTK_DEBUG_ARCH_DEP_110 */
 		num = ihk_mc_syscall_number(ctx);
 	}
 
@@ -9457,9 +9469,13 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	}
 
 	if (cpu_local_var(current)->proc->ptrace) {
+#ifdef POSTK_DEBUG_ARCH_DEP_110 /* archdep for ihk_mc_syscall_ret() set before ptrace_syscall_event() */
+		l = arch_ptrace_syscall_exit(cpu_local_var(current), l);
+#else /* POSTK_DEBUG_ARCH_DEP_110 */
 		ihk_mc_syscall_ret(ctx) = l;
 		ptrace_syscall_event(cpu_local_var(current));
 		l = ihk_mc_syscall_ret(ctx);
+#endif /* POSTK_DEBUG_ARCH_DEP_110 */
 	}
 
 	save_syscall_return_value(num, l);

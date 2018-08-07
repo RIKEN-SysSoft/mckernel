@@ -2692,4 +2692,20 @@ time_t time(void) {
 	return ret;
 }
 
+#ifdef POSTK_DEBUG_ARCH_DEP_110 /* archdep for ihk_mc_syscall_ret() set before ptrace_syscall_event() */
+extern void ptrace_syscall_event(struct thread *thread);
+void arch_ptrace_syscall_enter(struct thread *thread, long setret)
+{
+	ihk_mc_syscall_ret(ctx) = setret;
+	ptrace_syscall_event(thread);
+}
+
+long arch_ptrace_syscall_exit(struct thread *thread, long setret)
+{
+	ihk_mc_syscall_ret(ctx) = setret;
+	ptrace_syscall_event(thread);
+	return ihk_mc_syscall_ret(ctx);
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_110 */
+
 /*** End of File ***/

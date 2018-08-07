@@ -2555,4 +2555,18 @@ time_t time(void) {
 	return (time_t)0;
 }
 
+#ifdef POSTK_DEBUG_ARCH_DEP_110 /* archdep for ihk_mc_syscall_ret() set before ptrace_syscall_event() */
+extern void ptrace_syscall_event(struct thread *thread);
+void arch_ptrace_syscall_enter(struct thread *thread, long setret)
+{
+	ptrace_syscall_event(thread);
+}
+
+long arch_ptrace_syscall_exit(struct thread *thread, long setret)
+{
+	ptrace_syscall_event(thread);
+	return setret;
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_110 */
+
 /*** End of File ***/
