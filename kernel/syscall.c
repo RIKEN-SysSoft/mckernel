@@ -570,17 +570,17 @@ static int wait_continued(struct thread *thread, struct process *child, int *sta
 struct thread *find_thread_of_process(struct process *child, int pid)
 {
 	int c_found = 0;
-	struct mcs_rwlock_node c_lock;
+	struct mcs_rwlock_node_irqsave c_lock;
 	struct thread *c_thread = NULL;
 
-	mcs_rwlock_reader_lock_noirq(&child->threads_lock, &c_lock);
+	mcs_rwlock_reader_lock(&child->threads_lock, &c_lock);
 	list_for_each_entry(c_thread, &child->threads_list, siblings_list) {
 		if (c_thread->tid == pid) {
 			c_found = 1;
 			break;
 		}
 	}
-	mcs_rwlock_reader_unlock_noirq(&child->threads_lock, &c_lock);
+	mcs_rwlock_reader_unlock(&child->threads_lock, &c_lock);
 	if (!c_found) c_thread = NULL;
 
 	return c_thread;
@@ -694,10 +694,10 @@ do_wait(int pid, int *status, int options, void *rusage)
 
 				ret = wait_zombie(thread, child, status, options);
 				if(!(options & WNOWAIT)){
-					struct mcs_rwlock_node updatelock;
+					struct mcs_rwlock_node_irqsave updatelock;
 					struct mcs_rwlock_node childlock;
 					struct process *pid1 = cpu_local_var(resource_set)->pid1;
-					mcs_rwlock_writer_lock_noirq(&proc->update_lock, &updatelock);
+					mcs_rwlock_writer_lock(&proc->update_lock, &updatelock);
 					ts_add(&proc->stime_children, &child->stime);
 					ts_add(&proc->utime_children, &child->utime);
 					ts_add(&proc->stime_children, &child->stime_children);
@@ -707,7 +707,7 @@ do_wait(int pid, int *status, int options, void *rusage)
 					if(child->maxrss_children > proc->maxrss_children)
 						proc->maxrss_children = child->maxrss_children;
 					set_process_rusage(child, rusage);
-					mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
+					mcs_rwlock_writer_unlock(&proc->update_lock, &updatelock);
 					list_del(&child->siblings_list);
 					mcs_rwlock_writer_unlock_noirq(&proc->children_lock, &lock);
 
@@ -717,14 +717,14 @@ do_wait(int pid, int *status, int options, void *rusage)
 						list_del(&child->ptraced_siblings_list);
 						mcs_rwlock_writer_unlock_noirq(&parent->children_lock, &childlock);
 					}
-					mcs_rwlock_writer_lock_noirq(&child->update_lock, &updatelock);
+					mcs_rwlock_writer_lock(&child->update_lock, &updatelock);
 					child->ptrace = 0;
 					child->parent = pid1;
 					child->ppid_parent = pid1;
 					mcs_rwlock_writer_lock_noirq(&pid1->children_lock, &childlock);
 					list_add_tail(&child->siblings_list, &pid1->children_list);
 					mcs_rwlock_writer_unlock_noirq(&pid1->children_lock, &childlock);
-					mcs_rwlock_writer_unlock_noirq(&child->update_lock, &updatelock);
+					mcs_rwlock_writer_unlock(&child->update_lock, &updatelock);
 					release_process(child);
 				}
 				else
@@ -969,7 +969,7 @@ void terminate(int rc, int sig)
 	struct process *pid1 = resource_set->pid1;
 	struct process_vm *vm;
 	struct mcs_rwlock_node_irqsave lock;
-	struct mcs_rwlock_node updatelock;
+	struct mcs_rwlock_node_irqsave updatelock;
 	struct mcs_rwlock_node childlock;
 	struct mcs_rwlock_node childlock1;
 	int i;
@@ -982,7 +982,7 @@ void terminate(int rc, int sig)
 		sync_child_event(proc->monitoring_event);
 
 	// clean up threads
-	mcs_rwlock_writer_lock_noirq(&proc->update_lock, &updatelock);
+	mcs_rwlock_writer_lock(&proc->update_lock, &updatelock);
 	mcs_rwlock_writer_lock(&proc->threads_lock, &lock); // conflict clone
 	if (proc->status == PS_EXITED) {
 		dkprintf("%s: PID: %d, TID: %d PS_EXITED already\n",
@@ -990,7 +990,7 @@ void terminate(int rc, int sig)
 		preempt_disable();
 		mythread->status = PS_EXITED;
 		mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
-		mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
+		mcs_rwlock_writer_unlock(&proc->update_lock, &updatelock);
 		release_thread(mythread);
 		preempt_enable();
 		schedule();
@@ -1004,7 +1004,7 @@ void terminate(int rc, int sig)
 	mythread->exit_status = exit_status;
 	proc->status = PS_EXITED;
 	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
-	mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
+	mcs_rwlock_writer_unlock(&proc->update_lock, &updatelock);
 
 	terminate_mcexec(rc, sig);
 
@@ -1103,7 +1103,7 @@ void terminate(int rc, int sig)
 					&resource_set->process_hash->list[i],
 					hash_list) {
 				int free_child = 0;
-				mcs_rwlock_writer_lock_noirq(&child->update_lock,
+				mcs_rwlock_writer_lock(&child->update_lock,
 						&updatelock);
 
 				if (child->ppid_parent == proc &&
@@ -1135,7 +1135,7 @@ void terminate(int rc, int sig)
 							&childlock);
 				}
 
-				mcs_rwlock_writer_unlock_noirq(&child->update_lock,
+				mcs_rwlock_writer_unlock(&child->update_lock,
 						&updatelock);
 
 				if (free_child)
@@ -2031,11 +2031,11 @@ static int ptrace_report_clone(struct thread *thread, struct thread *new, int ev
 	long rc;
 	struct siginfo info;
 	struct mcs_rwlock_node lock;
-	struct mcs_rwlock_node updatelock;
+	struct mcs_rwlock_node_irqsave updatelock;
 	int parent_pid;
 
 	/* Save reason why stopped and process state for wait4() to reap */
-	mcs_rwlock_writer_lock_noirq(&thread->proc->update_lock, &lock);
+	mcs_rwlock_writer_lock(&thread->proc->update_lock, &updatelock);
 	thread->exit_status = (SIGTRAP | (event << 8));
 	/* Transition process state */
 	thread->proc->status = PS_TRACED;
@@ -2043,12 +2043,12 @@ static int ptrace_report_clone(struct thread *thread, struct thread *new, int ev
 	thread->proc->ptrace_eventmsg = new->tid;
 	thread->proc->ptrace &= ~PT_TRACE_SYSCALL; /** ??? **/
 	parent_pid = thread->proc->parent->pid;
-	mcs_rwlock_writer_unlock_noirq(&thread->proc->update_lock, &lock);
+	mcs_rwlock_writer_unlock(&thread->proc->update_lock, &updatelock);
 
 	if (event != PTRACE_EVENT_VFORK_DONE) {
 		/* PTRACE_EVENT_FORK or PTRACE_EVENT_VFORK or PTRACE_EVENT_CLONE */
 
-		mcs_rwlock_writer_lock_noirq(&new->proc->update_lock, &updatelock);
+		mcs_rwlock_writer_lock(&new->proc->update_lock, &updatelock);
 		/* set ptrace features to new process */
 		new->proc->ptrace = thread->proc->ptrace;
 		if (event != PTRACE_EVENT_CLONE) {
@@ -2074,7 +2074,7 @@ static int ptrace_report_clone(struct thread *thread, struct thread *new, int ev
 		new->proc->status = PS_TRACED;
 		new->status = PS_TRACED;
 
-		mcs_rwlock_writer_unlock_noirq(&new->proc->update_lock, &updatelock);
+		mcs_rwlock_writer_unlock(&new->proc->update_lock, &updatelock);
 	}
 
 	dkprintf("ptrace_report_clone,kill SIGCHLD\n");
@@ -2556,21 +2556,21 @@ retry_tid:
 		if(clone_flags & CLONE_PARENT){
 			struct mcs_rwlock_node_irqsave lock;
 			struct process *parent;
-			struct mcs_rwlock_node parent_lock;
+			struct mcs_rwlock_node_irqsave parent_lock;
 
 			mcs_rwlock_reader_lock(&oldproc->update_lock, &lock);
 			parent = oldproc->ppid_parent;
-			mcs_rwlock_reader_lock_noirq(&parent->update_lock, &parent_lock);
+			mcs_rwlock_reader_lock(&parent->update_lock, &parent_lock);
 			if(parent->status == PS_EXITED || parent->status == PS_ZOMBIE){
-				mcs_rwlock_reader_unlock_noirq(&parent->update_lock, &parent_lock);
+				mcs_rwlock_reader_unlock(&parent->update_lock, &parent_lock);
 				parent = cpu_local_var(resource_set)->pid1;
-				mcs_rwlock_reader_lock_noirq(&parent->update_lock, &parent_lock);
+				mcs_rwlock_reader_lock(&parent->update_lock, &parent_lock);
 			}
 			newproc->parent = parent;
 			newproc->ppid_parent = parent;
 			newproc->nowait = 1;
 			chain_process(newproc);
-			mcs_rwlock_reader_unlock_noirq(&parent->update_lock, &parent_lock);
+			mcs_rwlock_reader_unlock(&parent->update_lock, &parent_lock);
 			mcs_rwlock_reader_unlock(&oldproc->update_lock, &lock);
 		}
 		else
@@ -5598,7 +5598,7 @@ SYSCALL_DECLARE(getrusage)
 	struct process *proc = thread->proc;
 	struct timespec utime;
 	struct timespec stime;
-	struct mcs_rwlock_node lock;
+	struct mcs_rwlock_node_irqsave lock;
 	struct timespec ats;
 
 	if(who != RUSAGE_SELF &&
@@ -5613,7 +5613,7 @@ SYSCALL_DECLARE(getrusage)
 
 		memset(&utime, '\0', sizeof utime);
 		memset(&stime, '\0', sizeof stime);
-		mcs_rwlock_reader_lock_noirq(&proc->threads_lock, &lock);
+		mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
 		list_for_each_entry(child, &proc->threads_list, siblings_list){
 			if(child != thread &&
 			   child->status == PS_RUNNING &&
@@ -5640,7 +5640,7 @@ SYSCALL_DECLARE(getrusage)
 			tsc_to_ts(child->system_tsc, &ats);
 			ts_add(&stime, &ats);
 		}
-		mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &lock);
+		mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 		ts_to_tv(&kusage.ru_utime, &utime);
 		ts_to_tv(&kusage.ru_stime, &stime);
 
@@ -6046,7 +6046,7 @@ static int ptrace_attach(int pid)
 	struct process *parent;
 	struct mcs_rwlock_node_irqsave lock;
 	struct mcs_rwlock_node childlock;
-	struct mcs_rwlock_node updatelock;
+	struct mcs_rwlock_node_irqsave updatelock;
 	struct siginfo info;
 
 	thread = find_thread(pid, pid, &lock);
@@ -6064,12 +6064,12 @@ static int ptrace_attach(int pid)
 	child = thread->proc;
 	dkprintf("ptrace_attach(): pid requested:%d, thread->tid:%d, thread->proc->pid=%d, thread->proc->parent=%p\n", pid, thread->tid, thread->proc->pid, thread->proc->parent);
 
-	mcs_rwlock_writer_lock_noirq(&child->update_lock, &updatelock);
+	mcs_rwlock_writer_lock(&child->update_lock, &updatelock);
 
 	/* Only for the first thread of a process XXX: fix this */
 	if (thread->tid == child->pid) {
 		if (thread->proc->ptrace & PT_TRACED) {
-			mcs_rwlock_writer_unlock_noirq(&child->update_lock, &updatelock);
+			mcs_rwlock_writer_unlock(&child->update_lock, &updatelock);
 			thread_unlock(thread, &lock);
 			dkprintf("ptrace_attach: -EPERM\n");
 			error = -EPERM;
@@ -6092,7 +6092,7 @@ static int ptrace_attach(int pid)
 
 	child->ptrace = PT_TRACED | PT_TRACE_EXEC;
 
-	mcs_rwlock_writer_unlock_noirq(&thread->proc->update_lock, &updatelock);
+	mcs_rwlock_writer_unlock(&thread->proc->update_lock, &updatelock);
 
 	if (thread->ptrace_debugreg == NULL) {
 		error = alloc_debugreg(thread);
@@ -6131,7 +6131,7 @@ int ptrace_detach(int pid, int data)
 	struct process *parent;
 	struct mcs_rwlock_node_irqsave lock;
 	struct mcs_rwlock_node childlock;
-	struct mcs_rwlock_node updatelock;
+	struct mcs_rwlock_node_irqsave updatelock;
 	struct siginfo info;
 
 	if (data > 64 || data < 0) {
@@ -6145,15 +6145,15 @@ int ptrace_detach(int pid, int data)
 	}
 
 	child = thread->proc;
-	mcs_rwlock_writer_lock_noirq(&child->update_lock, &updatelock);
+	mcs_rwlock_writer_lock(&child->update_lock, &updatelock);
 	parent = child->ppid_parent;
 	if (!(child->ptrace & PT_TRACED) || child->parent != proc) {
-		mcs_rwlock_writer_unlock_noirq(&child->update_lock, &updatelock);
+		mcs_rwlock_writer_unlock(&child->update_lock, &updatelock);
 		thread_unlock(thread, &lock);
 		error = -ESRCH;
 		goto out;
 	}
-	mcs_rwlock_writer_unlock_noirq(&child->update_lock, &updatelock);
+	mcs_rwlock_writer_unlock(&child->update_lock, &updatelock);
 
 	mcs_rwlock_writer_lock_noirq(&proc->children_lock, &childlock);
 	list_del(&child->siblings_list);
@@ -6997,9 +6997,9 @@ SYSCALL_DECLARE(clock_gettime)
 		struct thread *thread = cpu_local_var(current);
 		struct process *proc = thread->proc;
 		struct thread *child;
-		struct mcs_rwlock_node lock;
+		struct mcs_rwlock_node_irqsave lock;
 
-		mcs_rwlock_reader_lock_noirq(&proc->threads_lock, &lock);
+		mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
 		list_for_each_entry(child, &proc->threads_list, siblings_list){
 			if(child != thread &&
 			   child->status == PS_RUNNING &&
@@ -7022,7 +7022,7 @@ SYSCALL_DECLARE(clock_gettime)
 			tsc_to_ts(child->user_tsc + child->system_tsc, &wts);
 			ts_add(&ats, &wts);
 		}
-		mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &lock);
+		mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 		return copy_to_user(ts, &ats, sizeof ats);
 	}
 	else if(clock_id == CLOCK_THREAD_CPUTIME_ID){

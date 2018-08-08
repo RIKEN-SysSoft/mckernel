@@ -3346,7 +3346,7 @@ int __sched_wakeup_thread(struct thread *thread,
 	unsigned long irqstate;
 	struct cpu_local_var *v = get_cpu_local_var(thread->cpu_id);
 	struct process *proc = thread->proc;
-	struct mcs_rwlock_node updatelock;
+	struct mcs_rwlock_node_irqsave updatelock;
 
 	dkprintf("%s: proc->pid=%d, valid_states=%08x, "
 			"proc->status=%08x, proc->cpu_id=%d,my cpu_id=%d\n",
@@ -3369,10 +3369,10 @@ int __sched_wakeup_thread(struct thread *thread,
 	}
 
 	if (thread->status & valid_states) {
-		mcs_rwlock_writer_lock_noirq(&proc->update_lock, &updatelock);
+		mcs_rwlock_writer_lock(&proc->update_lock, &updatelock);
 		if (proc->status != PS_EXITED)
 			proc->status = PS_RUNNING;
-		mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
+		mcs_rwlock_writer_unlock(&proc->update_lock, &updatelock);
 		xchg4((int *)(&thread->status), PS_RUNNING);
 		status = 0;
 	}

@@ -473,16 +473,16 @@ int do_profile(int flag)
 		dkprintf("%s: JOB %d, flag: 0x%lx\n",
 				__FUNCTION__, proc->nr_processes, flag);
 		if (flag & PROF_PRINT) {
-			struct mcs_rwlock_node lock;
+			struct mcs_rwlock_node_irqsave lock;
 			struct thread *_thread;
 
 			/* Accumulate events from all threads to process level */
-			mcs_rwlock_reader_lock_noirq(&proc->threads_lock, &lock);
+			mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
 			list_for_each_entry(_thread, &proc->threads_list,
 					siblings_list) {
 				profile_accumulate_events(_thread, proc);
 			}
-			mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &lock);
+			mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 
 			/* Accumulate events to job level */
 			return profile_accumulate_and_print_job_events(proc);
@@ -490,13 +490,13 @@ int do_profile(int flag)
 	}
 	/* Process level? */
 	else if (flag & PROF_PROC) {
-		struct mcs_rwlock_node lock;
+		struct mcs_rwlock_node_irqsave lock;
 		struct thread *_thread;
 
 		dkprintf("%s: PID %d, flag: 0x%lx\n",
 				__FUNCTION__, proc->pid, flag);
 		/* Accumulate events from all threads */
-		mcs_rwlock_reader_lock_noirq(&proc->threads_lock, &lock);
+		mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
 
 		list_for_each_entry(_thread, &proc->threads_list,
 				siblings_list) {
@@ -525,7 +525,7 @@ int do_profile(int flag)
 			}
 		}
 
-		mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &lock);
+		mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
 
 		if (flag & PROF_PRINT) {
 			profile_print_proc_stats(proc);

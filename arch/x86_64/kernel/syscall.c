@@ -1178,7 +1178,7 @@ do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
 	int i;
 	__sigset_t mask;
 	mcs_rwlock_lock_t *savelock = NULL;
-	struct mcs_rwlock_node mcs_rw_node;
+	struct mcs_rwlock_node_irqsave mcs_rw_node;
 	struct list_head *head = NULL;
 	int rc;
 	unsigned long irqstate = 0;
@@ -1190,8 +1190,8 @@ do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
 	int hash;
 	struct thread_hash *thash = rset->thread_hash;
 	struct process_hash *phash = rset->process_hash;
-	struct mcs_rwlock_node lock;
-	struct mcs_rwlock_node updatelock;
+	struct mcs_rwlock_node_irqsave lock;
+	struct mcs_rwlock_node_irqsave updatelock;
 
 	if(sig > 64 || sig < 0)
 		return -EINVAL;
@@ -1249,12 +1249,12 @@ do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
 	mask = __sigmask(sig);
 	if(tid == -1){
 		struct thread *tthread0 = NULL;
-		struct mcs_rwlock_node plock;
-		struct mcs_rwlock_node updatelock;
+		struct mcs_rwlock_node_irqsave plock;
+		struct mcs_rwlock_node_irqsave updatelock;
 
 		found = 0;
 		hash = process_hash(pid);
-		mcs_rwlock_reader_lock_noirq(&phash->lock[hash], &plock);
+		mcs_rwlock_reader_lock(&phash->lock[hash], &plock);
 		list_for_each_entry(tproc, &phash->list[hash], hash_list){
 			if(tproc->pid == pid){
 				found = 1;
@@ -1262,16 +1262,16 @@ do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
 			}
 		}
 		if(!found){
-			mcs_rwlock_reader_unlock_noirq(&phash->lock[hash], &plock);
+			mcs_rwlock_reader_unlock(&phash->lock[hash], &plock);
 			cpu_restore_interrupt(irqstate);
 			return -ESRCH;
 		}
 
-		mcs_rwlock_reader_lock_noirq(&tproc->update_lock, &updatelock);
+		mcs_rwlock_reader_lock(&tproc->update_lock, &updatelock);
 		if(tproc->status == PS_EXITED || tproc->status == PS_ZOMBIE){
 			goto done;
 		}
-		mcs_rwlock_reader_lock_noirq(&tproc->threads_lock, &lock);
+		mcs_rwlock_reader_lock(&tproc->threads_lock, &lock);
 		list_for_each_entry(t, &tproc->threads_list, siblings_list){
 			if(t->tid == pid || tthread == NULL){
 				if(t->status == PS_EXITED){
@@ -1297,15 +1297,15 @@ do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
 		}
 		else
 			tthread = NULL;
-		mcs_rwlock_reader_unlock_noirq(&tproc->threads_lock, &lock);
+		mcs_rwlock_reader_unlock(&tproc->threads_lock, &lock);
 done:
-		mcs_rwlock_reader_unlock_noirq(&tproc->update_lock, &updatelock);
-		mcs_rwlock_reader_unlock_noirq(&phash->lock[hash], &plock);
+		mcs_rwlock_reader_unlock(&tproc->update_lock, &updatelock);
+		mcs_rwlock_reader_unlock(&phash->lock[hash], &plock);
 	}
 	else{
 		found = 0;
 		hash = thread_hash(tid);
-		mcs_rwlock_reader_lock_noirq(&thash->lock[hash], &lock);
+		mcs_rwlock_reader_lock(&thash->lock[hash], &lock);
 		list_for_each_entry(tthread, &thash->list[hash], hash_list){
 			if(pid != -1 && tthread->proc->pid != pid){
 				continue;
@@ -1318,16 +1318,16 @@ done:
 		}
 
 		if(!found){
-			mcs_rwlock_reader_unlock_noirq(&thash->lock[hash], &lock);
+			mcs_rwlock_reader_unlock(&thash->lock[hash], &lock);
 			cpu_restore_interrupt(irqstate);
 			return -ESRCH;
 		}
 
 		tproc = tthread->proc;
-		mcs_rwlock_reader_lock_noirq(&tproc->update_lock, &updatelock);
+		mcs_rwlock_reader_lock(&tproc->update_lock, &updatelock);
 		savelock = &tthread->sigpendinglock;
 		head = &tthread->sigpending;
-		mcs_rwlock_reader_lock_noirq(&tproc->threads_lock, &lock);
+		mcs_rwlock_reader_lock(&tproc->threads_lock, &lock);
 		if (tthread->status != PS_EXITED &&
 			(sig == SIGKILL ||
 			 (tproc->status != PS_EXITED && tproc->status != PS_ZOMBIE))) {
@@ -1339,9 +1339,9 @@ done:
 		else{
 			tthread = NULL;
 		}
-		mcs_rwlock_reader_unlock_noirq(&tproc->threads_lock, &lock);
-		mcs_rwlock_reader_unlock_noirq(&tproc->update_lock, &updatelock);
-		mcs_rwlock_reader_unlock_noirq(&thash->lock[hash], &lock);
+		mcs_rwlock_reader_unlock(&tproc->threads_lock, &lock);
+		mcs_rwlock_reader_unlock(&tproc->update_lock, &updatelock);
+		mcs_rwlock_reader_unlock(&thash->lock[hash], &lock);
 	}
 
 
@@ -1375,7 +1375,7 @@ done:
 
 	doint = 0;
 
-	mcs_rwlock_writer_lock_noirq(savelock, &mcs_rw_node);
+	mcs_rwlock_writer_lock(savelock, &mcs_rw_node);
 
 	/* Put signal event even when handler is SIG_IGN or SIG_DFL
 	   because target ptraced thread must call ptrace_report_signal 
@@ -1415,7 +1415,7 @@ done:
 			}
 		}
 	}
-	mcs_rwlock_writer_unlock_noirq(savelock, &mcs_rw_node);
+	mcs_rwlock_writer_unlock(savelock, &mcs_rw_node);
 	cpu_restore_interrupt(irqstate);
 
 	if (doint && !(mask & tthread->sigmask.__val[0])) {
@@ -2063,7 +2063,7 @@ int do_process_vm_read_writev(int pid,
 	void *rva;
 	struct vm_range *range;
 	struct mcs_rwlock_node_irqsave lock;
-	struct mcs_rwlock_node update_lock;
+	struct mcs_rwlock_node_irqsave update_lock;
 
 	/* Sanity checks */
 	if (flags) {
@@ -2126,17 +2126,17 @@ arg_out:
 		goto out;
 	}
 
-	mcs_rwlock_reader_lock_noirq(&rproc->update_lock, &update_lock);
+	mcs_rwlock_reader_lock(&rproc->update_lock, &update_lock);
 	if(rproc->status == PS_EXITED ||
 	   rproc->status == PS_ZOMBIE){
-		mcs_rwlock_reader_unlock_noirq(&rproc->update_lock, &update_lock);
+		mcs_rwlock_reader_unlock(&rproc->update_lock, &update_lock);
 		process_unlock(rproc, &lock);
 		ret = -ESRCH;
 		goto out;
 	}
 	rvm = rproc->vm;
 	hold_process_vm(rvm);
-	mcs_rwlock_reader_unlock_noirq(&rproc->update_lock, &update_lock);
+	mcs_rwlock_reader_unlock(&rproc->update_lock, &update_lock);
 	process_unlock(rproc, &lock);
 
 	if (lproc->euid != 0 &&
