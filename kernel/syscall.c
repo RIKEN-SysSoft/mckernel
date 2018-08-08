@@ -8451,6 +8451,12 @@ SYSCALL_DECLARE(set_mempolicy)
 		}
 	}
 
+#ifdef POSTK_DEBUG_TEMP_FIX_99 /* set_mempolicy() mode specification error did not result in error. */
+	if ((mode & MPOL_F_STATIC_NODES) && (mode & MPOL_F_RELATIVE_NODES)) {
+		error = -EINVAL;
+		goto out;
+	}
+#endif /* POSTK_DEBUG_TEMP_FIX_99 */
 	mode &= ~MPOL_MODE_FLAGS;
 
 	switch (mode) {
