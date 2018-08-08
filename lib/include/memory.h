@@ -47,9 +47,7 @@ int setint_user(int *dst, int data);
 int write_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t siz);
 int patch_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t siz);
 
-#ifdef POSTK_DEBUG_TEMP_FIX_52 /* supports NUMA for memory area determination */
-int is_mckernel_memory(unsigned long phys);
-#endif /* POSTK_DEBUG_TEMP_FIX_52 */
+int is_mckernel_memory(unsigned long start, unsigned long end);
 
 #endif
 
