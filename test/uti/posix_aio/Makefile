@@ -1,17 +1,16 @@
 .SUFFIXES:	# Clear suffixes
 .ONESHELL:	# Pack all the lines and pass it to shell
 
-MYHOME=/home/e29005
-VMTOUCH=$(MYHOME)/project/src/vmtouch/install/bin/vmtouch
+VMTOUCH=$(HOME)/project/src/vmtouch/install/bin/vmtouch
 
 # Specify it via *.sh 
-UTI_DIR=${MYHOME}/project/uti/install_linux
+UTI_DIR=${HOME}/project/uti/install_linux
 
 CC=mpiicc
 LD=$(CC)
 
 CFLAGS = -g -O0 -Wall -DVMTOUCH=$(VMTOUCH)
-LDFLAGS = -lpthread -L$(UTI_DIR)/lib -Wl,-rpath -Wl,$(UTI_DIR)/lib -luti
+LDFLAGS = -lpthread -L$(UTI_DIR)/lib -Wl,-rpath -Wl,$(UTI_DIR)/lib -luti -lrt
 SRCS = $(shell ls 0*.c)
 OBJS = $(SRCS:.c=.o) util.o
 EXES = $(SRCS:.c=)
@@ -34,6 +33,12 @@ util.o:: util.c util.h
 	$(LD) -o $@ $^ $(LDFLAGS) -qopenmp
 
 001.o:: 001.c
+	$(CC) $(CFLAGS) -qopenmp -c $<
+
+002: 002.o util.o
+	$(LD) -o $@ $^ $(LDFLAGS) -qopenmp
+
+002.o:: 002.c
 	$(CC) $(CFLAGS) -qopenmp -c $<
 
 %: %.o

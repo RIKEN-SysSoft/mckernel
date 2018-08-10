@@ -1,7 +1,16 @@
-Benchmarks of hybrid-parallel asynchronous I/O
+=============================================
+Benchmarks of asynchronous I/O with busy CPUs
+=============================================
 
-001: Sequential read
-002: Sequential write
-003: Random read
-004: Random write
+The purpose is to show the benefit of spawning the asynchronous threads onto dedicated CPUs.
 
+---
+001
+---
+Write
+
+---
+002
+---
+* NREQS times PPN write streams
+* 8 MB write per stream
