@@ -1,7 +1,7 @@
 .SUFFIXES:	# Disable implicit rules
 
-SYSCALLL_INTERCEPT_DIR=/home/e29005/usr
-UTI_DIR=/home/e29005/project/uti/install
+SYSCALLL_INTERCEPT_DIR=$(HOME)/usr
+UTI_DIR=$(HOME)/project/uti/install
 
 CC = gcc
 
