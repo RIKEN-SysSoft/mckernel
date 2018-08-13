@@ -1,7 +1,5 @@
 #!/usr/bin/bash
 
-#!/usr/bin/bash -x
-
 test_dir=`pwd -P`
 mck_dir=${HOME}/project/os/install
 uti_dir_lin=${HOME}/project/uti/install_linux
@@ -24,6 +22,7 @@ LASTNODE=15
 use_hfi=0
 omp_num_threads=1
 ppn=4
+aio_num_threads=4
 
 while getopts srgc:ml:N:P:o:hGI:ipL: OPT
 do
@@ -128,8 +127,8 @@ if [ ${mck} -eq 1 ]; then
     use_mck="#PJM -x MCK=$mck_dir"
     mck_mem="#PJM -x MCK_MEM=32G@0,8G@1"
     mcexec="${mck_dir}/bin/mcexec"
-    nmcexecthr=$((omp_num_threads + 4))
-    mcexecopt="-n $ppn --uti-use-last-cpu" # -t $nmcexecthr
+    nmcexecthr=$((omp_num_threads + 1 + aio_num_threads + 2))
+    mcexecopt="-n $ppn -t $nmcexecthr --uti-use-last-cpu"
 
     if [ ${use_hfi} -eq 1 ]; then
 	mcexecopt="--enable-hfi1 $mcexecopt"
@@ -218,8 +217,8 @@ if [ ${reboot} -eq 1 ]; then
     if [ ${mck} -eq 1 ]; then
 	case $host_type in
 	    wallaby) hnprefix=wallaby
-		PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes \
-		    sudo ${mck_dir}/sbin/mcreboot.sh -h -O -c 1-7,17-23,9-15,25-31 -r 1-7:0+17-23:16+9-15:8+25-31:24 -m 10G@0,10G@1
+		#PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes sudo ${mck_dir}/sbin/mcreboot.sh -h -O -c 1-7,17-23,9-15,25-31 -r 1-7:0+17-23:16+9-15:8+25-31:24 -m 10G@0,10G@1
+		PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes sudo ${mck_dir}/sbin/mcreboot.sh -h -O -c 1-4 -r 1-4:0 -m 10G@0,10G@1
 		;;
 	    ofp)
 		# -h: Prevent unnessary CPU resource division for KNL 
@@ -287,7 +286,7 @@ export I_MPI_ASYNC_PROGRESS=off
 ulimit -c unlimited 
 
 $compilervars
-mpiexec.hydra -n $nprocs -ppn $ppn $hosts $ilpopt $enable_x $gdbcmd $mcexec $mcexecopt ${test_dir}/$exe -I $disable_syscall_intercept -p $ppn
+mpiexec.hydra -n $nprocs -ppn $ppn $hosts $ilpopt $enable_x $gdbcmd $mcexec $mcexecopt ${test_dir}/$exe -I $disable_syscall_intercept -p $ppn -t $aio_num_threads
 #-l
 
 EOF
