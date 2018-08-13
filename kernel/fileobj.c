@@ -206,8 +206,15 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp, uintptr_t virt_a
 	memset(&result, 0, sizeof(result));
 
 	error = syscall_generic_forwarding(__NR_mmap, &ctx);
+
 	if (error) {
-		kprintf("%s(%d):create failed. %d\n", __func__, fd, error);
+		/* -ESRCH doesn't mean an error but requesting a fall
+		 * back to treat the file as a device file
+		 */
+		if (error != -ESRCH) {
+			kprintf("%s(%d):create failed. %d\n",
+				__func__, fd, error);
+		}
 		goto out;
 	}
 
