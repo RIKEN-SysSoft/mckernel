@@ -15,6 +15,7 @@
 #include <fcntl.h>
 #include <mpi.h>
 #include <linux/limits.h>
+#include <semaphore.h>
 #include "util.h"
 
 #define SZBUF (1ULL << 23)/*23*/
@@ -31,13 +32,11 @@
 #define NSAMPLES_INNER 1
 
 #define WAIT_TYPE_BUSY_LOOP 0
-#define WAIT_TYPE_FUTEX 1
-#define WAIT_TYPE WAIT_TYPE_FUTEX
+#define WAIT_TYPE_SEM 1
+#define WAIT_TYPE WAIT_TYPE_SEM
 
-static pthread_mutex_t progress_mutex;
-static pthread_cond_t progress_cond_down;
-static volatile int progress_flag_down;
-int completion_count;
+static sem_t aio_sem;
+volatile int completion_count;
 
 static inline double mytime() {
 	return /*rdtsc_light()*/MPI_Wtime();
@@ -49,39 +48,49 @@ struct aioreq {
 	struct aiocb *aiocbp;
 };
 
+static void aio_handler(sigval_t sigval)
+{
+	struct aioreq *aioreq = sigval.sival_ptr;
+	int ret;
+
+	//pr_debug("%s: debug: rank=%d\n", __func__, aioreq->rank);
+	ret = __sync_add_and_fetch(&completion_count, 1);
+	if (ret == aioreq->aio_num_threads) {
+		if (sem_post(&aio_sem)) {
+			pr_err("%s: error: sem_post: %s\n",
+			       __func__, strerror(errno));
+		}
+	}
+
+	//pr_debug("%s: debug: completion_count: %d\n", __func__, ret);
+}
+
 static void aio_sighandler(int sig, siginfo_t *si, void *ucontext)
 {
-	if (si->si_code == SI_ASYNCIO) {
-#if WAIT_TYPE == WAIT_TYPE_FUTEX
-		struct aioreq *aioreq = si->si_value.sival_ptr;
+	pr_debug("%s: debug: enter\n", __func__);
+#if WAIT_TYPE == WAIT_TYPE_SEM
+	struct aioreq *aioreq = si->si_value.sival_ptr;
 
-		aioreq->status = aio_error(aioreq->aiocbp);
-		switch (aioreq->status) {
-		case 0: /* Completed */
-			goto completed;
-		case EINPROGRESS:
-			break;
-		case ECANCELED:
-			pr_err("%s: error: aio is cancelled\n",
-			       __func__);
-			goto completed;
-		default:
-			pr_err("%s: error: aio_error: %s\n",
-			       __func__, strerror(aioreq->status));
-			goto completed;
-		completed:
-			__sync_fetch_and_add(&completion_count, 1);
-			break;
-		}
-
-		if (completion_count == aioreq->aio_num_threads) {
-			pthread_mutex_lock(&progress_mutex);
-			progress_flag_down = 1;
-			pthread_cond_signal(&progress_cond_down);
-			pthread_mutex_unlock(&progress_mutex);
-		}		
-#endif /* WAIT_TYPE */
+	if (si->si_code != SI_ASYNCIO) {
+		pr_err("%s: error: unexpected si_code: %d\n",
+	       __func__, si->si_code);
 	}
+	
+	aioreq->status = aio_error(aioreq->aiocbp);
+	if (aioreq->status != 0) {
+		pr_err("%s: error: unexpected status: %d\n",
+	       __func__, aioreq->status);
+	}
+
+	if (__sync_add_and_fetch(&completion_count, 1) == aioreq->aio_num_threads) {
+		if (sem_post(&aio_sem)) {
+			pr_err("%s: error: sem_post: %s\n",
+			       __func__, strerror(errno));
+		}
+	}
+
+	//pr_debug("%s: debug: completion_count: %d\n", __func__, completion_count);
+#endif /* WAIT_TYPE */
 }
 
 int my_aio_init(int nreqs, struct aioreq *iolist, struct aiocb *aiocblist, char **aiobufs) {
@@ -97,9 +106,16 @@ int my_aio_init(int nreqs, struct aioreq *iolist, struct aiocb *aiocblist, char 
 		iolist[i].aiocbp->aio_nbytes = SZBUF;
 		iolist[i].aiocbp->aio_reqprio = 0;
 		iolist[i].aiocbp->aio_offset = 0;
+#if 0
 		iolist[i].aiocbp->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
 		iolist[i].aiocbp->aio_sigevent.sigev_signo = SIGUSR1;
 		iolist[i].aiocbp->aio_sigevent.sigev_value.sival_ptr = &iolist[i];
+#else
+		iolist[i].aiocbp->aio_sigevent.sigev_notify = SIGEV_THREAD;
+		iolist[i].aiocbp->aio_sigevent.sigev_notify_function = aio_handler;
+		iolist[i].aiocbp->aio_sigevent.sigev_notify_attributes = NULL;
+		iolist[i].aiocbp->aio_sigevent.sigev_value.sival_ptr = &iolist[i];
+#endif
 	}
 
 	ret = 0;
@@ -190,21 +206,25 @@ int my_aio(int aio_num_threads, struct aioreq *iolist, char **fn, long nsec_calc
 	int ret;
 	int i, j;
 
+	pr_debug("%s: debug: enter\n", __func__);
+
 	/* Start async IO */
 	for (i = 0; i < NSAMPLES_INNER; i++) {
 
 		if ((ret = my_aio_open(aio_num_threads, iolist, fn)) == -1) {
-			pr_err("%s: error: aio_read: %s\n",
+			pr_err("%s: error: my_aio_open: %s\n",
 			       __func__, strerror(errno));
 			ret = -errno;
 			goto out;
 		}
+		pr_debug("%s: debug: after my_aio_open\n", __func__);
+	
 		
 		/* Reset completion */
 		completion_count = 0;
+		__sync_synchronize();
 
 		for (j = 0; j < aio_num_threads; j++) {
-
 			iolist[j].status = EINPROGRESS;
 
 			if ((ret = aio_write(iolist[j].aiocbp)) == -1) {
@@ -213,12 +233,14 @@ int my_aio(int aio_num_threads, struct aioreq *iolist, char **fn, long nsec_calc
 				ret = -errno;
 				goto out;
 			}
+
+			pr_debug("%s: debug: after %d-th aio_write\n", __func__, j);
 		}
 
 		/* Emulate calcuation phase */
 		ndelay(nsec_calc);
 
-#if 1
+#if 0
 		int k;
 		for (k = 0; k < 20; k++) {
 			char cmd[256];
@@ -229,14 +251,22 @@ int my_aio(int aio_num_threads, struct aioreq *iolist, char **fn, long nsec_calc
 #endif
 		
 		/* Wait for completion of async IO */
-#if WAIT_TYPE == WAIT_TYPE_FUTEX
+#if WAIT_TYPE == WAIT_TYPE_SEM
 
-		pthread_mutex_lock(&progress_mutex);
-		while (!progress_flag_down) {
-			pthread_cond_wait(&progress_cond_down, &progress_mutex);
+	retry:
+		ret = sem_wait(&aio_sem);
+		if (ret == -1) {
+			if (errno == EINTR) {
+				pr_warn("%s: warning: sem_wait interrupted\n",
+				       __func__);
+				goto retry;
+			} else {
+				pr_err("%s: error: sem_wait: %s\n",
+				       __func__, strerror(errno));
+			}
 		}
-		progress_flag_down = 0;
-
+		//pr_debug("%s: debug: completion_count: %d\n", __func__, completion_count);
+		
 #elif WAIT_TYPE == WAIT_TYPE_BUSY_LOOP
 
 		while (completion_count != aio_num_threads) {
@@ -272,10 +302,9 @@ int my_aio(int aio_num_threads, struct aioreq *iolist, char **fn, long nsec_calc
 			ssize_t size;
 			
 			if ((size = aio_return(iolist[j].aiocbp)) != SZBUF) {
-				pr_err("%s: Expected to read %ld B but I've read %ld B\n",
-				       __func__, SZBUF, size);
-				ret = -1;
-				goto out;
+				pr_err("%s: Expected to read %ld B but #%d has read %ld B\n",
+				       __func__, SZBUF, j, size);
+				continue;
 			}
 		}
 
@@ -313,7 +342,7 @@ int measure(double *result, int nsamples, int nsamples_drop, int aio_num_threads
 		}
 		
 		if ((ret = my_aio(aio_num_threads, iolist, fn, nsec_calc))) {
-			pr_err("%s: error: my_aio_read returned %d\n",
+			pr_err("%s: error: my_aio returned %d\n",
 			       __func__, ret);
 		}
 		
@@ -420,17 +449,6 @@ int main(int argc, char **argv)
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &nproc);
 
-	/* Initialize mutex and cond */
-	if ((ret = pthread_mutex_init(&progress_mutex, NULL))) {
- 		pr_err("%s: error: pthread_mutex_init failed (%d)\n", __func__, ret);
-		goto out;		
-	}
-
-	if ((ret = pthread_cond_init(&progress_cond_down, NULL))) {
- 		pr_err("%s: error: pthread_cond_init failed (%d)\n", __func__, ret);
-		goto out;
-	}
-
 #if 0
 	int k;
 	for (k = 0; k < 20; k++) {
@@ -474,7 +492,7 @@ int main(int argc, char **argv)
                 }
 
 		sprintf(fn[i], "%s/rank%d-number%d", src_dir, rank, i);
-		if (0 && rank < 2 && i < 2) {
+		if (rank < 2 && i < 2) {
 			pr_debug("debug: rank: %d, fn[%d]: %s\n",
 				 rank, i, fn[i]);
 		}
@@ -523,6 +541,7 @@ int main(int argc, char **argv)
 		goto out;
 	}
 
+#if 0
 	/* Set signal handlers */
 	sa.sa_flags = SA_RESTART | SA_SIGINFO;
 	sa.sa_sigaction = aio_sighandler;
@@ -532,9 +551,23 @@ int main(int argc, char **argv)
 		ret = 1;
 		goto out;
 	}
+#endif
+
+	/* Initialize semaphore */
+	if ((ret = sem_init(&aio_sem, 0, 0))) {
+		pr_err("%s: error: sem_init: %s\n", __func__, strerror(errno));
+		ret = -errno;
+		goto out;		
+	}
+
+	/* Take profile */
+	if ((ret = measure(&t_io_ave, NSAMPLES_IO, NSAMPLES_DROP, aio_num_threads, iolist, fn, 0, rank, 1))) {
+		pr_err("error: measure returned %d\n", ret);
+		goto out;
+	}
 
 	/* Measure IO only time */
-	if ((ret = measure(&t_io_ave, NSAMPLES_IO, NSAMPLES_DROP, aio_num_threads, iolist, fn, 0, rank, 1))) {
+	if ((ret = measure(&t_io_ave, NSAMPLES_IO, NSAMPLES_DROP, aio_num_threads, iolist, fn, 0, rank, 0))) {
 		pr_err("error: measure returned %d\n", ret);
 		goto out;
 	}
@@ -605,6 +638,11 @@ int main(int argc, char **argv)
 
 	ret = 0;
 out:
+	if ((ret = sem_destroy(&aio_sem))) {
+ 		pr_err("%s: error: sem_destroy: %s\n", __func__, strerror(errno));
+		goto out;		
+	}
+
 	free(argv0);
 	return ret;
 }

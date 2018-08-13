@@ -127,8 +127,8 @@ if [ ${mck} -eq 1 ]; then
     use_mck="#PJM -x MCK=$mck_dir"
     mck_mem="#PJM -x MCK_MEM=32G@0,8G@1"
     mcexec="${mck_dir}/bin/mcexec"
-    nmcexecthr=$((omp_num_threads + 1 + aio_num_threads + 2))
-    mcexecopt="-n $ppn -t $nmcexecthr --uti-use-last-cpu"
+    nmcexecthr=$((omp_num_threads + 1 + aio_num_threads * 2 + 2))
+    mcexecopt="-n $ppn -t $nmcexecthr" # --uti-use-last-cpu
 
     if [ ${use_hfi} -eq 1 ]; then
 	mcexecopt="--enable-hfi1 $mcexecopt"
