@@ -53,7 +53,7 @@ static void aio_handler(sigval_t sigval)
 	struct aioreq *aioreq = sigval.sival_ptr;
 	int ret;
 
-	//pr_debug("%s: debug: rank=%d\n", __func__, aioreq->rank);
+	pr_debug("%s: debug: rank=%d\n", __func__, aioreq->rank);
 	ret = __sync_add_and_fetch(&completion_count, 1);
 	if (ret == aioreq->aio_num_threads) {
 		if (sem_post(&aio_sem)) {
@@ -62,7 +62,7 @@ static void aio_handler(sigval_t sigval)
 		}
 	}
 
-	//pr_debug("%s: debug: completion_count: %d\n", __func__, ret);
+	pr_debug("%s: debug: completion_count: %d\n", __func__, ret);
 }
 
 static void aio_sighandler(int sig, siginfo_t *si, void *ucontext)
@@ -265,7 +265,7 @@ int my_aio(int aio_num_threads, struct aioreq *iolist, char **fn, long nsec_calc
 				       __func__, strerror(errno));
 			}
 		}
-		//pr_debug("%s: debug: completion_count: %d\n", __func__, completion_count);
+		pr_debug("%s: debug: completion_count: %d\n", __func__, completion_count);
 		
 #elif WAIT_TYPE == WAIT_TYPE_BUSY_LOOP
 

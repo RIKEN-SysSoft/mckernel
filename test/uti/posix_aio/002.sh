@@ -175,8 +175,8 @@ case $host_type in
 	i_mpi_fabrics="export I_MPI_FABRICS=shm:dapl"
 	i_mpi_tmi_provider=
 
-	opt_dir=/opt/intel
-	impiver=2018.3.222
+	opt_dir=/opt/intel	
+	impiver=2018.3.222 # 1.163, 2.199, 3.222
 	;;
     ofp)
 	i_mpi_fabrics="export I_MPI_FABRICS=shm:tmi"
@@ -187,7 +187,7 @@ case $host_type in
 	else
 	    opt_dir=/home/opt/local/cores/intel
 	fi
-	impiver=2018.2.199 # 1.163, 2.199, 3.222
+	impiver=2018.1.163 # 1.163, 2.199, 3.222
 	;;
     *) echo "invalid host_type $host_type"
 	exit 1
@@ -300,7 +300,6 @@ if [ ${go} -eq 1 ]; then
 	if [ $interactive -eq 0 ]; then
 	    eval $compilervars
 	fi
-	rm ./$exe
 	make $makeopt ./$exe
 	PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes \
 	    /usr/sbin/pidof $exe \| xargs -r sudo kill -9
