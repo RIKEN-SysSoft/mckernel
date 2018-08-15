@@ -2047,15 +2047,25 @@ long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 		isp.arg = virt_to_phys(perf_desc);
 
 		for (j = 0; j < info->n_cpus; j++) {
+#ifdef POSTK_DEBUG_ARCH_DEP_111 /* change timeout wait. */
+			ret = mcctrl_ikc_send_wait(os, j, &isp, 3 * HZ,
+					wakeup_desc_of_perf_desc(perf_desc),
+					&need_free, 1, perf_desc);
+#else /* POSTK_DEBUG_ARCH_DEP_111 */
 			ret = mcctrl_ikc_send_wait(os, j, &isp, 0,
 					wakeup_desc_of_perf_desc(perf_desc),
 					&need_free, 1, perf_desc);
+#endif /* POSTK_DEBUG_ARCH_DEP_111 */
 			if (ret < 0) {
 				pr_warn("%s: mcctrl_ikc_send_wait ret=%d\n",
 					__func__, ret);
 				if (need_free)
 					kfree(perf_desc);
+#ifdef POSTK_DEBUG_ARCH_DEP_111 /* change timeout wait. */
+				return ret;
+#else /* POSTK_DEBUG_ARCH_DEP_111 */
 				return -EINVAL;
+#endif /* POSTK_DEBUG_ARCH_DEP_111 */
 			}
 
 #ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
@@ -2115,15 +2125,25 @@ long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
 		isp.arg = virt_to_phys(perf_desc);
 
 		for (j = 0; j < info->n_cpus; j++) {
+#ifdef POSTK_DEBUG_ARCH_DEP_111 /* change timeout wait. */
+			ret = mcctrl_ikc_send_wait(os, j, &isp, 3 * HZ,
+					wakeup_desc_of_perf_desc(perf_desc),
+					&need_free, 1, perf_desc);
+#else /* POSTK_DEBUG_ARCH_DEP_111 */
 			ret = mcctrl_ikc_send_wait(os, j, &isp, 0,
 					wakeup_desc_of_perf_desc(perf_desc),
 					&need_free, 1, perf_desc);
+#endif /* POSTK_DEBUG_ARCH_DEP_111 */
 			if (ret < 0) {
 				pr_warn("%s: mcctrl_ikc_send_wait ret=%d\n",
 					__func__, ret);
 				if (need_free)
 					kfree(perf_desc);
+#ifdef POSTK_DEBUG_ARCH_DEP_111 /* change timeout wait. */
+				return ret;
+#else /* POSTK_DEBUG_ARCH_DEP_111 */
 				return -EINVAL;
+#endif /* POSTK_DEBUG_ARCH_DEP_111 */
 			}
 
 #ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
