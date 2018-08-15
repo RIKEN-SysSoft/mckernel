@@ -26,7 +26,7 @@ $(if $(TARGET),,$(error Target is not specified))
 CFLAGS := -nostdinc -mlittle-endian -Wall -Wa,-gdwarf-2
 CFLAGS += -D__KERNEL__ -I$(SRC)/include
 CFLAGS += -I$(SRC)/../lib/include -I$(INCDIR) -I$(IHKBASE)/smp/arm64/include
-CFLAGS += $(foreach i, $(shell seq 6 110), $(addprefix -DPOSTK_DEBUG_ARCH_DEP_, $(i)))
+CFLAGS += $(foreach i, $(shell seq 6 120), $(addprefix -DPOSTK_DEBUG_ARCH_DEP_, $(i)))
 CFLAGS += $(foreach i, $(shell seq 1 100), $(addprefix -DPOSTK_DEBUG_TEMP_FIX_, $(i)))
 
 LDFLAGS := -nostdinc -mlittle-endian -Wall -Wundef -Wstrict-prototypes
