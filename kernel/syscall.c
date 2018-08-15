@@ -8364,7 +8364,11 @@ SYSCALL_DECLARE(mbind)
 						error = vm_policy_insert(vm, range_policy);
 						if (error) {
 							kprintf("%s: ERROR: could not insert range: %d\n",__FUNCTION__, error);
+#ifdef POSTK_DEBUG_TEMP_FIX_100 /* return without unlock. */
+							goto unlock_out;
+#else /* POSTK_DEBUG_TEMP_FIX_100 */
 							return error;
+#endif /* POSTK_DEBUG_TEMP_FIX_100 */
 						}
 					}
 					else {
@@ -8390,7 +8394,11 @@ SYSCALL_DECLARE(mbind)
 			error = vm_policy_insert(vm, range_policy);
 			if (error) {
 				kprintf("%s: ERROR: could not insert range: %d\n",__FUNCTION__, error);
+#ifdef POSTK_DEBUG_TEMP_FIX_100 /* return without unlock. */
+				goto unlock_out;
+#else /* POSTK_DEBUG_TEMP_FIX_100 */
 				return error;
+#endif /* POSTK_DEBUG_TEMP_FIX_100 */
 			}
 
 mbind_update_only:
