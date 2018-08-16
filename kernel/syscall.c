@@ -7256,7 +7256,7 @@ SYSCALL_DECLARE(setitimer)
 	}
 	thread->itimer_enabled = timer_start;
 	kprintf("%s: pid=%d,tid=%d,itimer_enabled=%d\n", __FUNCTION__, thread->proc->pid, thread->tid, thread->itimer_enabled);
-	set_timer();
+	set_timer(0);
 	return 0;
 }
 
@@ -9696,7 +9696,7 @@ set_cputime(int mode)
 			   thread->itimer_prof.it_value.tv_sec == 0 &&
 			   thread->itimer_prof.it_value.tv_usec == 0){
 				thread->itimer_enabled = 0;
-				set_timer();
+				set_timer(0);
 			}
 		}
 	}

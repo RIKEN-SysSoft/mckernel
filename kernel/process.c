@@ -3113,13 +3113,26 @@ ack:
 	ihk_mc_spinlock_unlock(&cur_v->migq_lock, irqstate);
 }
 
-void
-set_timer()
+void set_timer(int runq_locked)
 {
 	struct cpu_local_var *v = get_this_cpu_local_var();
+	struct thread *thread;
+	int num_running = 0;
+	unsigned long irqstate;
+
+	if (!runq_locked) {
+		irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
+	}
+
+	list_for_each_entry(thread, &v->runq, sched_list) {
+		if (thread->status != PS_RUNNING) {
+			continue;
+		}
+		num_running++;
+	}
 
 	/* Toggle timesharing if CPU core is oversubscribed */
-	if (v->runq_len > 1 || v->current->itimer_enabled) {
+	if (num_running > 1 || v->current->itimer_enabled) {
 		if (!cpu_local_var(timer_enabled)) {
 			kprintf("%s: INFO interval timer activated,cpu=%d,pid=%d,tid=%d,runq_len=%d\n", __func__, ihk_mc_get_processor_id(), v->current->proc->pid, v->current->tid, v->runq_len);
 			lapic_timer_enable(/*10000000*/1000000);
@@ -3132,6 +3145,10 @@ set_timer()
 			lapic_timer_disable();
 			cpu_local_var(timer_enabled) = 0;
 		}
+	}
+
+	if (!runq_locked) {
+		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 	}
 }
 
@@ -3281,7 +3298,7 @@ redo:
 		reset_cputime();
 	}
 
-	set_timer();
+	set_timer(1);
 
 	if (switch_ctx) {
 		dkprintf("schedule: %d => %d \n",
