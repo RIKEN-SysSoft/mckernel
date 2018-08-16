@@ -3462,6 +3462,9 @@ int __sched_wakeup_thread(struct thread *thread,
 		mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
 		xchg4((int *)(&thread->status), PS_RUNNING);
 		status = 0;
+
+		/* Call schedule in interrupt_exit() */
+		v->flags |= CPU_FLAG_NEED_RESCHED;
 	}
 	else {
 		status = -EINVAL;
