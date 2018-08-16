@@ -845,7 +845,7 @@ void process_unlock(struct process *proc, struct mcs_rwlock_node_irqsave *lock);
 void chain_process(struct process *);
 void chain_thread(struct thread *);
 void proc_init();
-void set_timer();
+void set_timer(int runq_locked);
 struct sig_pending *hassigpending(struct thread *thread);
 
 #define VERIFY_READ 0
