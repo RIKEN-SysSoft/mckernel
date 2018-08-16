@@ -837,7 +837,7 @@ void process_unlock(struct process *proc, struct mcs_rwlock_node_irqsave *lock);
 void chain_process(struct process *);
 void chain_thread(struct thread *);
 void proc_init(void);
-void set_timer(void);
+void set_timer(int runq_locked);
 struct sig_pending *hassigpending(struct thread *thread);
 
 void release_fp_regs(struct thread *proc);
