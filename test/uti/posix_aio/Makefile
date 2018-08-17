@@ -2,6 +2,7 @@
 .ONESHELL:	# Pack all the lines and pass it to shell
 
 MYHOME=/home/e29005
+VMTOUCH=$(MYHOME)/project/src/vmtouch/install/bin/vmtouch
 
 # Specify it via *.sh 
 UTI_DIR=${MYHOME}/project/uti/install_linux
@@ -9,10 +10,10 @@ UTI_DIR=${MYHOME}/project/uti/install_linux
 CC=mpiicc
 LD=$(CC)
 
-CFLAGS = -g -O0 -Wall
+CFLAGS = -g -O0 -Wall -DVMTOUCH=$(VMTOUCH)
 LDFLAGS = -lpthread -L$(UTI_DIR)/lib -Wl,-rpath -Wl,$(UTI_DIR)/lib -luti
-SRCS = $(shell ls *.c)
-OBJS = $(SRCS:.c=.o)
+SRCS = $(shell ls 0*.c)
+OBJS = $(SRCS:.c=.o) util.o
 EXES = $(SRCS:.c=)
 
 define create_files =
@@ -21,7 +22,7 @@ define create_files =
 	done
 endef
 
-all: $(EXES) file
+all: $(EXES)
 
 file::
 	$(value create_files)

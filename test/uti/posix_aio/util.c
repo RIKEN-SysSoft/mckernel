@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <time.h>
+#include <mpi.h>
 #include "util.h"
 
 /* Messaging */
@@ -37,6 +38,11 @@ double nspw; /* nsec per work */
 
 void ndelay_init() {
 	struct timeval start, end;
+	int rank, nproc;
+	double min, sum, max;
+
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &nproc);
 
 	//clock_gettime(TIMER_KIND, &start);
 	gettimeofday(&start, NULL);
@@ -50,7 +56,14 @@ void ndelay_init() {
 	gettimeofday(&end, NULL);
 
 	nspw = DIFFUSEC(end, start) * 1000 / (double)N_INIT;
-	pr_debug("nspw=%f\n", nspw);
+	//pr_debug("nspw=%f\n", nspw);
+
+	MPI_Reduce(&nspw, &min, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+	MPI_Reduce(&nspw, &sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	MPI_Reduce(&nspw, &max, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+	if (rank == 0) {
+		pr_debug("nspw: min=%.0f, ave=%.0f, max=%.0f\n", min, sum / nproc, max);
+	}
 }
 
 #if 1

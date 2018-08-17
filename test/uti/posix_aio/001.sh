@@ -100,7 +100,7 @@ else
     kmp_affinity="export KMP_AFFINITY=granularity=thread,scatter"
 fi
 
-echo nprocs=$nprocs nnodes=$nnodes ppn=$ppn nodes=$nodes domain=$domain
+echo nprocs=$nprocs nnodes=$nnodes ppn=$ppn nodes=$nodes omp_num_threads=$omp_num_threads
 
 if [ ${mck} -eq 1 ]; then
     makeopt="UTI_DIR=$uti_dir_mck"
@@ -248,7 +248,7 @@ export I_MPI_ASYNC_PROGRESS=off
 ulimit -c unlimited 
 
 $compilervars
-mpiexec.hydra -n $nprocs -ppn $ppn $hosts $ilpopt $enable_x $gdbcmd $mcexec $mcexecopt ${test_dir}/$exe -I $disable_syscall_intercept
+mpiexec.hydra -n $nprocs -ppn $ppn $hosts $ilpopt $enable_x $gdbcmd $mcexec $mcexecopt ${test_dir}/$exe -I $disable_syscall_intercept -p $ppn
 #-l
 
 EOF
@@ -262,8 +262,9 @@ if [ ${go} -eq 1 ]; then
 	if [ $interactive -eq 0 ]; then
 	    . ${opt_dir}/compilers_and_libraries_2018.2.199/linux/bin/compilervars.sh intel64
 	fi
-	rm ./$exe
+	#rm ./$exe
 	make $makeopt ./$exe
+
 	$ssh ${test_dir}/job.sh
     fi
 fi

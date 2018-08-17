@@ -14,7 +14,7 @@
 #include <linux/limits.h>
 #include "util.h"
 
-#define NREQS 1 /* Total number of parallel I/O requests */
+#define NREQS 1 /* # of parallel I/O requests per process */
 #define SZBUF (1ULL<<23)
 
 #define MYTIME_TOUSEC 1000000
@@ -25,8 +25,13 @@
 
 #define NSAMPLES_DROP 0/*10*/
 #define NSAMPLES_IO 2/*20*/
-#define NSAMPLES_TOTAL 1/*20*/
+#define NSAMPLES_TOTAL 2/*20*/
 #define NSAMPLES_INNER 1
+
+#define Q(x) #x
+#define QUOTE(x) Q(x)
+
+char test_srcdir[PATH_MAX];
 
 static inline double mytime() {
 	return /*rdtsc_light()*/MPI_Wtime();
@@ -47,7 +52,6 @@ static void aio_sighandler(int sig, siginfo_t *si, void *ucontext)
 }
 
 int my_aio_init(int nreqs, struct aioreq *iolist, struct aiocb *aiocblist, char *aiobufs[NREQS]) {
-	int ret;
 	int j;
 	
 	for (j = 0; j < nreqs; j++) {
@@ -61,14 +65,44 @@ int my_aio_init(int nreqs, struct aioreq *iolist, struct aiocb *aiocblist, char 
 		iolist[j].aiocbp->aio_sigevent.sigev_signo = SIGUSR1;
 		iolist[j].aiocbp->aio_sigevent.sigev_value.sival_ptr = &iolist[j];
 	}
+
+	return 0;
 }
 
+
+int my_aio_evict(int nreqs, char **fn) {
+	int ret;
+	int i;
+	char cmd[PATH_MAX];
+	
+	for (i = 0; i < NREQS; i++) {
+
+		sprintf(cmd, "%s -e %s > /dev/null", QUOTE(VMTOUCH), fn[i]);
+		ret = system(cmd);
+
+		if (ret == -1) {
+			pr_err("%s: error: system\n",
+                               __func__);
+                        goto out;
+		}
+
+		if (WEXITSTATUS(ret)) {
+			pr_err("%s: error: system returned %d\n",
+                               __func__, WEXITSTATUS(ret));
+			ret = WEXITSTATUS(ret);
+                        goto out;
+		}
+	}
+	ret = 0;
+ out:
+	return ret;
+}
 int my_aio_open(int nreqs, struct aioreq *iolist, char **fn) {
 	int ret;
 	int j;
 	
 	for (j = 0; j < NREQS; j++) {
-		iolist[j].aiocbp->aio_fildes = open(fn[j], O_RDONLY);
+		iolist[j].aiocbp->aio_fildes = open(fn[j], O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
 		if (iolist[j].aiocbp->aio_fildes == -1) {
 			pr_err("%s: error: open %s: %s\n",
 			       __func__, fn[j], strerror(errno));
@@ -76,33 +110,62 @@ int my_aio_open(int nreqs, struct aioreq *iolist, char **fn) {
 			goto out;
 		}
 	}
+
+	ret = 0;
+ out:
+	return ret;
 }
 
-
-int my_aio_check(struct aioreq *iolist, int nreqs, char **data) {
+int my_aio_check(int nreqs, char **fn, char **mem_data) {
 	int ret;
-	int j;
+	int i;
+	FILE *fp[NREQS] = { 0 };
+	char *file_data[NREQS];
 
 	/* Check contents */
-	for (j = 0; j < nreqs; j++) {
-		if (memcmp((const void*)iolist[j].aiocbp->aio_buf, data[j], SZBUF)) {
-			pr_err("%s: Contents of iolist[%d] doesn't match\n",
-			       __func__, j);
+	for (i = 0; i < nreqs; i++) {
+
+		if (!(file_data[i] = malloc(SZBUF))) {
+			pr_err("error: allocating data\n");
+			ret = -ENOMEM;
+			goto out;
+		}
+
+		if (!(fp[i] = fopen(fn[i], "r+"))) {
+			pr_err("error: fopen %s: %s\n",
+			       fn[i], strerror(errno));
+			ret = -errno;
+			goto out;
+		}
+		
+		if (fread(file_data[i], sizeof(char), SZBUF, fp[i]) != SZBUF) {
+			pr_err("error: fread: %s\n",
+			       strerror(errno));
 			ret = -1;
 			goto out;
 		}
+
+		fclose(fp[i]);
+
+		if (memcmp((const char *)file_data[i], mem_data[i], SZBUF)) {
+			pr_err("%s: file_data[%d] and mem_data[%d] doesn't match\n",
+			       __func__, i, i);
+			ret = -1;
+			goto out;
+		}
+
+		free(file_data[i]);
 	}
 	ret = 0;
  out:
 	return ret;
 }
 
-int my_aio_close() {
-	int ret;
+void my_aio_close(int nreqs, struct aioreq *iolist) {
 	int j;
 	
 	for (j = 0; j < NREQS; j++) {
-		close(fn[j])
+		close(iolist[j].aiocbp->aio_fildes);
 		iolist[j].aiocbp->aio_fildes = -1;
 	}
 }
@@ -115,6 +178,7 @@ int my_aio(int nreqs, struct aioreq *iolist, char **fn, long nsec_calc) {
 	for (j = 0; j < NSAMPLES_INNER; j++) {
 		int completion_count = 0;
 
+		//pr_debug("debug: opening file\n");
 		if ((ret = my_aio_open(nreqs, iolist, fn)) == -1) {
 			pr_err("%s: error: aio_read: %s\n",
 			       __func__, strerror(errno));
@@ -122,12 +186,13 @@ int my_aio(int nreqs, struct aioreq *iolist, char **fn, long nsec_calc) {
 			goto out;
 		}
 
+		//pr_debug("debug: issuing write command\n");
 		for (j = 0; j < nreqs; j++) {
 
-			/* Reset completion */
+			/* Reset completion notice */
 			iolist[j].status = EINPROGRESS;
 
-			if ((ret = aio_read(iolist[j].aiocbp)) == -1) {
+			if ((ret = aio_write(iolist[j].aiocbp)) == -1) {
 				pr_err("%s: error: aio_read: %s\n",
 				       __func__, strerror(errno));
 				ret = -errno;
@@ -139,6 +204,7 @@ int my_aio(int nreqs, struct aioreq *iolist, char **fn, long nsec_calc) {
 		ndelay(nsec_calc);
 		
 		/* Wait for completion of async IO */
+		//pr_debug("debug: waiting for completion\n");
 		while (completion_count != nreqs) {
 			for (j = 0; j < nreqs; j++) {
 				if (iolist[j].status != EINPROGRESS) {
@@ -167,26 +233,26 @@ int my_aio(int nreqs, struct aioreq *iolist, char **fn, long nsec_calc) {
 			}
 		}
 		
-		/* Check amount read */
+		/* Check write amount */
 		for (j = 0; j < nreqs; j++) {
 			ssize_t size;
 			
 			if ((size = aio_return(iolist[j].aiocbp)) != SZBUF) {
-				pr_err("%s: Expected to read %ld B but I've read %ld B\n",
+				pr_err("%s: Expected to have written %ld B but reported to have written %ld B\n",
 				       __func__, SZBUF, size);
 				ret = -1;
 				goto out;
 			}
 		}
 
-		my_aio_close(nreqs);
+		my_aio_close(nreqs, iolist);
 	}
 	ret = 0;
  out:
 	return ret;
 }
 
-int measure(double *result, int nsamples, int nsamples_drop, int nreqs, struct aioreq *iolist, char **fn, char **data, long nsec_calc) {
+int measure(double *result, int nsamples, int nsamples_drop, int nreqs, struct aioreq *iolist, char **fn, char **aiobufs, long nsec_calc) {
 	int ret;
 	int i;
 	double t_l, t_g, t_sum = 0;
@@ -194,22 +260,13 @@ int measure(double *result, int nsamples, int nsamples_drop, int nreqs, struct a
 
 	for (i = 0; i < nsamples + nsamples_drop; i++) {
 
-		/* Drop Linux file cache */
-		ret = system("sync && sudo bash -c 'echo 3 > /proc/sys/vm/drop_caches'");
-
-		if (ret == -1) {
-			pr_err("%s: error: system\n",
-                               __func__);
-                        goto out;
+#if 0
+		pr_debug("debug: evicting file cache\n");
+		if ((ret = my_aio_evict(nreqs, fn))) {
+			pr_err("%s: error: my_aio_evict returned %d\n",
+			       __func__, ret);
 		}
-
-		if (WEXITSTATUS(ret)) {
-			pr_err("%s: error: system returned %d\n",
-                               __func__, WEXITSTATUS(ret));
-			ret = WEXITSTATUS(ret);
-                        goto out;
-		}
-
+#endif
 		MPI_Barrier(MPI_COMM_WORLD);
 		
 		start = mytime();
@@ -222,7 +279,7 @@ int measure(double *result, int nsamples, int nsamples_drop, int nreqs, struct a
 		MPI_Barrier(MPI_COMM_WORLD);
 
 		/* Check contents */
-		if ((ret = my_aio_check(iolist, nreqs, data))) {
+		if ((ret = my_aio_check(nreqs, fn, aiobufs))) {
 			pr_err("%s: error: my_aio_check returned %d\n",
 			       __func__, ret);
 		}
@@ -248,24 +305,25 @@ int main(int argc, char **argv)
 	int ret;
 	int i, j, progress, l;
 	int rank, nproc;
-	int disable_syscall_intercept = 0;
+	int disable_syscall_intercept = 0, ppn = -1;
 	struct aioreq *iolist;
 	struct aiocb *aiocblist;
 	struct sigaction sa;
 	double t_io_ave, t_total_ave;
 	double t_table[NROW][NCOL] = { 0 };
 	int opt;
-	char *aiobufs[NREQS];
-	FILE *fp[NREQS] = { 0 };
-	char *data[NREQS] = { 0 };
-	char fn[NREQS][PATH_MAX];
+	char *aiobufs[NREQS] = { 0 };
+	char **fn;
 
 	opterr = 0; /* Don't print out error when not recognizing option character */
 	
-	while ((opt = getopt(argc, argv, ":I:")) != -1) {
+	while ((opt = getopt(argc, argv, ":I:p:")) != -1) {
 		switch (opt) {
 		case 'I':
 			disable_syscall_intercept = atoi(optarg);
+			break;
+		case 'p':
+			ppn = atoi(optarg);
 			break;
 		case '?':
 			pr_err("error: invalid option: -%c\n",
@@ -280,6 +338,12 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if (ppn == -1) {
+		pr_err("error: specify -p <PPN>\n");
+		ret = -EINVAL;
+		goto out;
+	}
+
 	/* Initialize MPI */
 	MPI_Init(&argc, &argv);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -290,7 +354,7 @@ int main(int argc, char **argv)
 #pragma omp parallel
 		{
 			if (omp_get_thread_num() == 0) {
-				printf("nproc=%d,#threads=%d\n", nproc, omp_get_num_threads());
+				printf("nproc: %d, ppn: %d, #threads: %d\n", nproc, ppn, omp_get_num_threads());
 			}
 		}
 	}
@@ -301,51 +365,30 @@ int main(int argc, char **argv)
 	/* Initialize delay function */
 	ndelay_init();
 
-	/* Initialize files */
-	for (i = 0; i < NREQS; i++) {
-		struct stat st;
-		char abspath[PATH_MAX];
+	/* Prepare file names */
 
-		if (!(data[i] = malloc(SZBUF))) {
-			pr_err("error: allocating data\n");
+#define TEST_SRCDIR "/work/gg10/e29005"
+	sprintf(test_srcdir, "%s", /*TEST_SRCDIR*/dirname(argv[0]));
+
+	if (!(fn = malloc(sizeof(char *) * NREQS))) {
+		pr_err("error: allocating fn\n");
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	for (i = 0; i < NREQS; i++) {
+		if (!(fn[i] = malloc(PATH_MAX))) {
+			pr_err("error: allocating fn\n");
 			ret = -ENOMEM;
 			goto out;
 		}
 
-		for (j = 0; j < SZBUF; j++) {
-			*(data[i] + j) = i + j + rank;
-		}
-
-		sprintf(fn[i], "%s/rank%d-number%d", dirname(argv[0]), rank, i);
-		pr_debug("debug: rank: %d, fn[%d]: %s\n",
+		sprintf(fn[i], "%s/rank%d-number%d", test_srcdir, rank, i);
+		if (rank == 0) pr_debug("debug: rank: %d, fn[%d]: %s\n",
 			 rank, i, fn[i]);
-
-		if (!(fp[i] = fopen(fn[i], "w+"))) {
-			pr_err("error: fopen %s: %s\n",
-			       fn[i], strerror(errno));
-			ret = -errno;
-			goto out;
-		}
-		
-		if ((ret = stat(fn[i], &st))) {
-			pr_err("error: stat: %s\n",
-			       strerror(errno));
-			ret = -1;
-			goto out;
-		}
-
-		if (fwrite(data[i], sizeof(char), SZBUF, fp[i]) != SZBUF) {
-			pr_err("error: fopen: %s\n",
-			       strerror(errno));
-			ret = -1;
-			goto out;
-		}
-
-
-		fclose(fp[i]);
 	}
 
-	/* Allocate aio arrays */
+	/* Allocate aio commands */
 	if (!(iolist = calloc(NREQS, sizeof(struct aioreq)))) {
 		pr_err("%s: error: allocating iolist\n",
 		       __func__);
@@ -360,7 +403,7 @@ int main(int argc, char **argv)
 		goto out;
 	}
 
-	/* Prepare buffers */
+	/* Prepare contents to be written */
 	for (i = 0; i < NREQS; i++) {
 		aiobufs[i] = malloc(SZBUF);
 		if (!aiobufs[i]) {
@@ -369,13 +412,10 @@ int main(int argc, char **argv)
 			ret = 1;
 			goto out;
 		}
-	}
 
-	/* Initialize aio parameters except fd and status */
-	if ((ret = my_aio_init(NREQS, iolist, aiocblist, aiobufs))) {
-		pr_err("%s: error: my_aio_init returned %d\n",
-		       __func__, ret);
-		goto out;
+		for (j = 0; j < SZBUF; j++) {
+			*(aiobufs[i] + j) = i + j + rank;
+		}
 	}
 
 	/* Set signal handlers */
@@ -388,41 +428,43 @@ int main(int argc, char **argv)
 		goto out;
 	}
 
-	/* Prepare parallel async read */
-
-	if ((ret = my_aio_init())) {
+	/* Set aio parameters except fd and status */
+	if ((ret = my_aio_init(NREQS, iolist, aiocblist, aiobufs))) {
 		pr_err("%s: error: my_aio_init returned %d\n",
 		       __func__, ret);
 		goto out;
 	}
 
 	/* Measure IO only time */
-	if ((ret = measure(&t_io_ave, NSAMPLES_IO, NSAMPLES_DROP, NREQS, iolist, fn, data, 0))) {
+	//pr_debug("debug: measuring IO only time\n");
+	if ((ret = measure(&t_io_ave, NSAMPLES_IO, NSAMPLES_DROP, NREQS, iolist, fn, aiobufs, 0))) {
 		pr_err("error: measure returned %d\n", ret);
 		goto out;
 	}
 
 	if (rank == 0) {
-		printf("t_io_ave: %.0f usec, %.0f MB/s\n",
+		printf("t_io_ave: %.0f usec, %.0f MB/s per node\n",
 		       t_io_ave * MYTIME_TOUSEC,
-		       SZBUF / t_io_ave / 1000000);
+		       SZBUF * ppn / t_io_ave / 1000000);
 	}
 
 	/* Measure time with no progress, progress and no uti, progress and uti */
-	for (progress = 0; progress <= (disable_syscall_intercept ? 0 : -1); progress += 1) {
+	for (progress = 0; progress <= (disable_syscall_intercept ? 0 : 0); progress += 1) {
 
+		/* Spawn helper thread onto compute CPUs with ignoring uti_attr */
 		if (progress == 1) {
-			/* Ignore uti_attr, spawn a thread onto compute CPUs */
 			setenv("DISABLE_UTI", "1", 1); 
-		} else if (progress == 2) {
+		}
+		/* Spawn helper thread onto dedicated CPUs with respecting uti_attr */
+		else if (progress == 2) {
 			unsetenv("DISABLE_UTI");
 		}
 
-		/* Increasing calculation time up to 100% of IO time */
-		for (l = 0; l <= 10; l += 1) {
+		/* Measure with various calculation time */
+		for (l = 0; l <= 10; l += 2) {
 			long nsec_calc = (t_io_ave * MYTIME_TONSEC * l) / 10;
 			
-			if ((ret = measure(&t_total_ave, NSAMPLES_TOTAL, NSAMPLES_DROP, NREQS, iolist, data, nsec_calc))) {
+			if ((ret = measure(&t_total_ave, NSAMPLES_TOTAL, NSAMPLES_DROP, NREQS, iolist, fn, aiobufs, nsec_calc))) {
 				pr_err("error: measure returned %d\n", ret);
 				goto out;
 			}
@@ -468,5 +510,8 @@ int main(int argc, char **argv)
 
 	ret = 0;
 out:
+	for (i = 0; i < NREQS; i++) {
+		free(aiobufs[i]);
+	}
 	return ret;
 }
