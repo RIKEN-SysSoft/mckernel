@@ -1117,7 +1117,7 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 	struct thread_data_s *tp;
 	int not_uti;
 
-	fprintf(stderr, "%s: pid=%d,tid=%d,sig=%d\n", __FUNCTION__, getpid(), gettid(), sig);
+	//fprintf(stderr, "%s: pid=%d,tid=%d,sig=%d\n", __FUNCTION__, getpid(), gettid(), sig);
 
 	not_uti = ioctl(fd, MCEXEC_UP_SIG_THREAD, 1);
 	pid = getpid();
@@ -1152,7 +1152,7 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 		remote_tid = -1;
 	}
 
-	fprintf(stderr, "%s: not_uti=%d\n", __FUNCTION__, not_uti);
+	//fprintf(stderr, "%s: not_uti=%d\n", __FUNCTION__, not_uti);
 
 	if (not_uti) { /* target isn't uti thread, ask McKernel to call the handler */
 		memset(&sigdesc, '\0', sizeof sigdesc);

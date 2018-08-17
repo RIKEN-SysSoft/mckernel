@@ -2500,7 +2500,7 @@ retry_tid:
 			release_cpuid(cpuid);
 			kprintf("%s: no more TIDs available\n", __FUNCTION__);
 			for (i = 0; i < newproc->nr_tids; ++i) {
-				kprintf("%s: i=%d,tid=%d,thread=%p\n", __FUNCTION__, i, newproc->tids[i].tid, newproc->tids[i].thread);
+				dkprintf("%s: i=%d,tid=%d,thread=%p\n", __FUNCTION__, i, newproc->tids[i].tid, newproc->tids[i].thread);
 			}
 			return -ENOMEM;
 		}
