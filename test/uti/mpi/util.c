@@ -35,7 +35,7 @@ static inline void asmloop(unsigned long n) {
 #define N_INIT 10000000
 double nspw; /* nsec per work */
 
-void ndelay_init() {
+void ndelay_init(int verbose) {
 	struct timeval start, end;
 
 	//clock_gettime(TIMER_KIND, &start);
@@ -50,7 +50,9 @@ void ndelay_init() {
 	gettimeofday(&end, NULL);
 
 	nspw = DIFFUSEC(end, start) * 1000 / (double)N_INIT;
-	pr_debug("nspw=%f\n", nspw);
+	if (verbose) {
+		pr_debug("nspw=%f\n", nspw);
+	}
 }
 
 #if 1

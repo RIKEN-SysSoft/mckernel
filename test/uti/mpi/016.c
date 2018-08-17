@@ -127,6 +127,9 @@ double measure(int rank, int nproc, MPI_Win win, double *origin_buf, double* res
 		MPI_Barrier(MPI_COMM_WORLD);
 		MPI_Win_lock_all(0, win);
 		
+		/* Set parameter based on current IPC and frequency */
+		ndelay_init(0);
+
 		start = mytime();
 		rma(rank, nproc, win, origin_buf, result, szbuf, nsec_calc, async_progress, sync_progress, pct_calc);
 		end = mytime();
@@ -167,7 +170,7 @@ int main(int argc, char **argv)
 	cpu_set_t cpuset;
 
 	//test_set_loglevel(TEST_LOGLEVEL_WARN);	
-	ndelay_init();
+	ndelay_init(1);
 
 	while ((opt = getopt(argc, argv, "+p:I:")) != -1) {
 		switch (opt) {
