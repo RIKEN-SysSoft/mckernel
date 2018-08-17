@@ -1264,7 +1264,7 @@ interrupt_syscall(struct thread *thread, int sig)
 	ihk_mc_user_context_t ctx;
 	long lerror;
 
-	kprintf("interrupt_syscall pid=%d tid=%d sig=%d\n", thread->proc->pid, thread->tid, sig);
+	dkprintf("interrupt_syscall pid=%d tid=%d sig=%d\n", thread->proc->pid, thread->tid, sig);
 	ihk_mc_syscall_arg0(&ctx) = thread->proc->pid;
 	ihk_mc_syscall_arg1(&ctx) = thread->tid;
 	ihk_mc_syscall_arg2(&ctx) = sig;
@@ -2289,7 +2289,7 @@ SYSCALL_DECLARE(execve)
 	request.args[1] = (unsigned long)filename;	
 	request.args[2] = virt_to_phys(desc);
 	cpu = ihk_mc_get_processor_id(); /* Use the same cpuid for 1st and 2nd __NR_execve */
-	kprintf("%s: 1st __NR_execve,cpu=%d\n", __FUNCTION__, cpu);
+	dkprintf("%s: 1st __NR_execve,cpu=%d\n", __FUNCTION__, cpu);
 	ret = do_syscall(&request, cpu, 0);
 
 	if (ret != 0) {
@@ -2605,7 +2605,7 @@ retry_tid:
 		request1.args[2] = virt_to_phys(new->vm->address_space->page_table);
 		request1.args[3] = newproc->pid;
 
-		kprintf("fork(): requesting PTE clear and rpgtable (0x%lx) update\n",
+		dkprintf("fork(): requesting PTE clear and rpgtable (0x%lx) update\n",
 				request1.args[2]);
 
 		if (do_syscall(&request1, ihk_mc_get_processor_id(), new->proc->pid)) {

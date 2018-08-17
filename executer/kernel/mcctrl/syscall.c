@@ -2620,7 +2620,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 
 			ppd->rpgtable = sc->args[2];
 
-			printk("%s: user_start=%lx,len=%lx,rpgtable=%lx,pid=%d\n", __FUNCTION__, sc->args[0], sc->args[1], ppd->rpgtable, ppd->pid);
+			dprintk("%s: user_start=%lx,len=%lx,rpgtable=%lx,pid=%d\n", __FUNCTION__, sc->args[0], sc->args[1], ppd->rpgtable, ppd->pid);
 			mcctrl_put_per_proc_data(ppd);
 		}
 

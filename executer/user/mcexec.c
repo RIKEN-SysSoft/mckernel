@@ -1119,7 +1119,7 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 	struct thread_data_s *tp;
 	int not_uti;
 
-	fprintf(stderr, "%s: pid=%d,tid=%d,sig=%d\n", __FUNCTION__, getpid(), gettid(), sig);
+	//fprintf(stderr, "%s: pid=%d,tid=%d,sig=%d\n", __FUNCTION__, getpid(), gettid(), sig);
 
 	not_uti = ioctl(fd, MCEXEC_UP_SIG_THREAD, 1);
 	pid = getpid();
@@ -1154,7 +1154,7 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 		remote_tid = -1;
 	}
 
-	fprintf(stderr, "%s: not_uti=%d\n", __FUNCTION__, not_uti);
+	//fprintf(stderr, "%s: not_uti=%d\n", __FUNCTION__, not_uti);
 
 	if (not_uti) { /* target isn't uti thread, ask McKernel to call the handler */
 		memset(&sigdesc, '\0', sizeof sigdesc);
@@ -2854,7 +2854,7 @@ static struct uti_desc *uti_desc;
 static void kill_thread(unsigned long tid, int sig)
 {
 	struct thread_data_s *tp;
-	printf("%s: tid=%ld,sig=%d\n", __FUNCTION__, tid, sig);
+	__dprintf("%s: tid=%ld,sig=%d\n", __FUNCTION__, tid, sig);
 
 	if (sig == 0)
 		sig = LOCALSIG;
@@ -3447,7 +3447,7 @@ gettid_out:
 					goto fork_child_sync_pipe;
 				}
 
-				fprintf(stderr, "%s: calling MCEXEC_UP_CREATE_PPD\n", __FUNCTION__);
+				__dprintf(stderr, "%s: calling MCEXEC_UP_CREATE_PPD\n", __FUNCTION__);
 				if (ioctl(fd, MCEXEC_UP_CREATE_PPD) != 0) {
 					fs->status = -errno;
 					fprintf(stderr, "ERROR: creating PPD %s\n", dev);

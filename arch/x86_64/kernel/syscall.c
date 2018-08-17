@@ -964,7 +964,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 		case SIGWINCH:
 			break;
 		default:
-			kprintf("do_signal,default,terminate,sig=%d\n", sig);
+			dkprintf("do_signal,default,terminate,sig=%d\n", sig);
 			terminate(0, sig);
 			break;
 		}
@@ -1457,7 +1457,7 @@ done:
 		int status = tthread->status;
 
 		if (thread != tthread) {
-			kprintf("do_kill,ipi,pid=%d,cpu_id=%d\n",
+			dkprintf("do_kill,ipi,pid=%d,cpu_id=%d\n",
 				 tproc->pid, tthread->cpu_id);
 			ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(tthread->cpu_id)->apic_id, 0xd0);
 		}
