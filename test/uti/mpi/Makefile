@@ -3,7 +3,7 @@
 MYHOME=/home/e29005
 
 # Specify it via 016.sh 
-# UTI_DIR=${MYHOME}/project/uti/install
+UTI_DIR=${MYHOME}/project/uti/install_linux
 
 CC=mpiicc 
 LD=$(CC)

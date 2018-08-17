@@ -169,7 +169,8 @@ if [ ${stop} -eq 1 ]; then
 	PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes \
 	    sudo ${mck_dir}/sbin/mcstop+release.sh
     else
-	:
+	PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes \
+	    /usr/sbin/pidof $exe \| xargs -r sudo kill -9
     fi
 fi
 
@@ -264,6 +265,8 @@ if [ ${go} -eq 1 ]; then
 	fi
 	rm ./$exe
 	make $makeopt ./$exe
+	PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes \
+	    /usr/sbin/pidof $exe \| xargs -r sudo kill -9
 	$ssh ${test_dir}/job.sh
     fi
 fi

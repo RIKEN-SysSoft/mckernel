@@ -21,7 +21,7 @@
 #define MYTIME_TOUSEC 1000000
 #define MYTIME_TONSEC 1000000000
 
-#define NROW 11
+#define NROW 16 /* 0%, 10%, ..., 140% */
 #define NCOL 4
 
 #define NSAMPLES_DROP 5/*10*/
@@ -64,8 +64,9 @@ void pr_buf(double *origin_buf, double *result, double *target_buf, int szbuf, i
 	}
 }
 
-void rma(int rank, int nproc, MPI_Win win, double *origin_buf, double *result, int szbuf, long nsec_calc, int progress) {
+void rma(int rank, int nproc, MPI_Win win, double *origin_buf, double *result, int szbuf, long nsec_calc, int async_progress, int sync_progress, double pct_calc) {
 	int i, j, target_rank;
+	int completed, ret;
 
 	for (j = 0; j < NSAMPLES_INNER; j++) {
 		for (i = 1; i < nproc; i++) {
@@ -76,20 +77,17 @@ void rma(int rank, int nproc, MPI_Win win, double *origin_buf, double *result, i
 					   target_rank,
 					   0, szbuf, MPI_DOUBLE,
 					   MPI_NO_OP, win);
-
-#if 0 /* This increases the throughput of the RMA to 20679 / (8*63*5) for 8-ppn 8-node case */
-			if (!progress) {
-				int completed, ret;
-				
+#if 0
+			if (sync_progress) {
 				if ((ret = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &completed, MPI_STATUS_IGNORE)) != MPI_SUCCESS) {
 					pr_err("%s: error: MPI_Iprobe: %d\n", __func__, ret);
 				}
 			}
-#endif			
+#endif
 		}
 	}
 	
-	if (progress) {
+	if (async_progress) {
 #ifdef PROGRESS_CALC_PHASE_ONLY
 		progress_start();
 #endif
@@ -97,16 +95,30 @@ void rma(int rank, int nproc, MPI_Win win, double *origin_buf, double *result, i
 
 	ndelay(nsec_calc);
 
-	if (progress) {
+	if (async_progress) {
 #ifdef PROGRESS_CALC_PHASE_ONLY
 		progress_stop();
 #endif
 	}
 
+#define MAX2(x,y) ((x) > (y) ? (x) : (y))
+
+#if 1
+	/* iprobe is 10 times faster than win_flush_local_all,
+	   20679 usec / (8*63*5) messages for 8-ppn 8-node case */
+	if (1/*!sync_progress*/)
+		for (j = 0; j < (async_progress ? MAX2(NSAMPLES_INNER * (nproc - 1) * (1.0 - pct_calc),  nproc - 1) : NSAMPLES_INNER * (nproc - 1)); j++) {
+			//for (j = 0; j < MAX2(NSAMPLES_INNER * (nproc - 1) * (1.0 - pct_calc),  nproc - 1); j++) {
+			if ((ret = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &completed, MPI_STATUS_IGNORE)) != MPI_SUCCESS) {
+				pr_err("%s: error: MPI_Iprobe: %d\n", __func__, ret);
+			}
+		}
+#endif
+
 	MPI_Win_flush_local_all(win);
 }
 
-double measure(int rank, int nproc, MPI_Win win, double *origin_buf, double* result, double *target_buf, int szbuf, long nsec_calc, int progress, int nsamples, int nsamples_drop) {
+double measure(int rank, int nproc, MPI_Win win, double *origin_buf, double* result, double *target_buf, int szbuf, long nsec_calc, int async_progress, int sync_progress, int nsamples, int nsamples_drop, double pct_calc) {
 	int i;
 	double t_l, t_g, t_sum = 0;
 	double start, end;
@@ -116,7 +128,7 @@ double measure(int rank, int nproc, MPI_Win win, double *origin_buf, double* res
 		MPI_Win_lock_all(0, win);
 		
 		start = mytime();
-		rma(rank, nproc, win, origin_buf, result, szbuf, nsec_calc, progress);
+		rma(rank, nproc, win, origin_buf, result, szbuf, nsec_calc, async_progress, sync_progress, pct_calc);
 		end = mytime();
 		
 		MPI_Win_unlock_all(win);
@@ -138,7 +150,7 @@ int main(int argc, char **argv)
 {
 	int ret;
 	int actual;
-	int rank = -1, size = -1;
+	int rank = -1;
 	int nproc;
 	int i, j, progress, l, m;
 	double *target_buf, *origin_buf, *result;
@@ -237,7 +249,7 @@ int main(int argc, char **argv)
 
 	/* Measure RMA-only time */
 	init_buf(origin_buf, result, target_buf, szbuf, rank, 99);
-	t_comm_ave = measure(rank, nproc, win, origin_buf, result, target_buf, szbuf, 0, 0, NSAMPLES_COMM, NSAMPLES_DROP);
+	t_comm_ave = measure(rank, nproc, win, origin_buf, result, target_buf, szbuf, 0, 0, 1, NSAMPLES_COMM, NSAMPLES_DROP, 0);
 
 	if (rank == 0) {
 		printf("t_comm_ave: %.0f %s\n", t_comm_ave * MYTIME_TOUSEC, MYTIME_UNIT);
@@ -266,12 +278,12 @@ int main(int argc, char **argv)
 		}
 
 		/* RMA-start, compute for T_{RMA} * l / 10, RMA-flush */
-		for (l = 0; l <= 10; l += 1) {
+		for (l = 0; l <= NROW - 1; l += 1) {
 			long nsec_calc = (t_comm_ave * MYTIME_TONSEC * l) / 10;
 
 			init_buf(origin_buf, result, target_buf, szbuf, rank, l);
 			//pr_buf(origin_buf, result, target_buf, szbuf, rank, nproc);
-			t_total_ave = measure(rank, nproc, win, origin_buf, result, target_buf, szbuf, nsec_calc, progress, NSAMPLES_TOTAL, NSAMPLES_DROP);
+			t_total_ave = measure(rank, nproc, win, origin_buf, result, target_buf, szbuf, nsec_calc, progress, 0, NSAMPLES_TOTAL, NSAMPLES_DROP, l / 10.0);
 			//pr_buf(origin_buf, result, target_buf, szbuf, rank, nproc);
 
 			if (rank == 0) {
@@ -310,7 +322,7 @@ int main(int argc, char **argv)
 
 	if (rank == 0) {
 		printf("calc,no prog,prog and no uti, prog and uti\n");
-		for (l = 0; l <= 10; l++) {
+		for (l = 0; l <= NROW - 1; l++) {
 			for (i = 0; i < NCOL; i++) {
 				if (i > 0) {
 					printf(",");
