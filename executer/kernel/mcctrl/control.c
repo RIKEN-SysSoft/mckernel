@@ -2570,11 +2570,9 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 	struct host_thread *thread_iter, *thread = NULL;
 	long ret = 0;
 
-	printk("%s: enter\n", __FUNCTION__);
-
 	read_lock_irqsave(&host_thread_lock, flags);
 	list_for_each_entry(thread_iter, &host_threads, list) {
-		printk("%s: pid=%d,tid=%d\n", __FUNCTION__, thread_iter->pid, thread_iter->tid);
+		dprintk("%s: pid=%d,tid=%d\n", __FUNCTION__, thread_iter->pid, thread_iter->tid);
 		if(thread_iter->pid == pid && thread_iter->tid == tid) {
 			thread = thread_iter;
 			break;
@@ -2590,7 +2588,7 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 	}
 	ret = -EINVAL;
  out:
-	printk("%s: ret=%ld\n", __FUNCTION__, ret);
+	dprintk("%s: ret=%ld\n", __FUNCTION__, ret);
 	return ret;
 }
 
