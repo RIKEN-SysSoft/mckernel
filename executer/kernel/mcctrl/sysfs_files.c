@@ -798,7 +798,6 @@ static int read_file(void *buf, size_t size, char *fmt, va_list ap)
 	int n;
 	struct file *fp = NULL;
 	loff_t off;
-	mm_segment_t ofs;
 	ssize_t ss;
 
 	dprintk("read_file(%p,%ld,%s,%p)\n", buf, size, fmt, ap);
@@ -824,13 +823,14 @@ static int read_file(void *buf, size_t size, char *fmt, va_list ap)
 	}
 
 	off = 0;
-	ofs = get_fs();
-	set_fs(KERNEL_DS);
-	ss = vfs_read(fp, buf, size, &off);
-	set_fs(ofs);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
+	ss = kernel_read(fp, buf, size, &off);
+#else
+	ss = kernel_read(fp, off, buf, size);
+#endif
 	if (ss < 0) {
 		error = ss;
-		eprintk("mcctrl:read_file:vfs_read failed. %d\n", error);
+		eprintk("mcctrl:read_file:kernel_read failed. %d\n", error);
 		goto out;
 	}
 	if (ss >= size) {

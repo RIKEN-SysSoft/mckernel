@@ -1453,7 +1453,6 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 	uintptr_t phys = -1;
 	ihk_device_t dev = ihk_os_to_dev(os);
 	void *buf = NULL;
-	mm_segment_t fs;
 	loff_t pos;
 
 	dprintk("pager_req_read(%lx,%lx,%lx,%lx)\n", handle, off, size, rpa);
@@ -1490,8 +1489,6 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 		goto out;
 	}
 
-	fs = get_fs();
-	set_fs(KERNEL_DS);
 	pos = off;
 	n = 0;
 	while (n < size) {
@@ -1500,7 +1497,12 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 				__func__, pos, off+n);
 			pos = off + n;
 		}
-		ss = vfs_read(file, buf + n, size - n, &pos);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
+		ss = kernel_read(file, buf + n, size - n, &pos);
+#else
+		ss = kernel_read(file, pos, buf + n, size - n);
+		pos += ss;
+#endif
 		if (ss < 0) {
 			break;
 		}
@@ -1511,7 +1513,6 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 		}
 		n += ss;
 	}
-	set_fs(fs);
 	if (ss < 0) {
 		pr_warn("%s(%lx,%lx,%lx,%lx):pread failed. %ld\n",
 			__func__, handle, off, size, rpa, ss);
@@ -1541,7 +1542,6 @@ static int pager_req_write(ihk_os_t os, uintptr_t handle, off_t off, size_t size
 	uintptr_t phys = -1;
 	ihk_device_t dev = ihk_os_to_dev(os);
 	void *buf = NULL;
-	mm_segment_t fs;
 	loff_t pos;
 	loff_t fsize;
 	size_t len;
@@ -1573,7 +1573,7 @@ static int pager_req_write(ihk_os_t os, uintptr_t handle, off_t off, size_t size
 
 	/*
 	 * XXX: Find a way to avoid changing the file size
-	 * by using a function in the same abstraction level as vfs_write().
+	 * by using a function in the same abstraction level as kernel_write().
 	 */
 	fsize = i_size_read(file->f_mapping->host);
 	if (off >= fsize) {
@@ -1590,15 +1590,16 @@ static int pager_req_write(ihk_os_t os, uintptr_t handle, off_t off, size_t size
 		goto out;
 	}
 
-	fs = get_fs();
-	set_fs(KERNEL_DS);
 	pos = off;
 	len = size;
 	if ((off + size) > fsize) {
 		len = fsize - off;
 	}
-	ss = vfs_write(file, buf, len, &pos);
-	set_fs(fs);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
+	ss = kernel_write(file, buf, len, &pos);
+#else
+	ss = kernel_write(file, buf, len, pos);
+#endif
 	if (ss < 0) {
 		printk("pager_req_write(%lx,%lx,%lx,%lx):pwrite failed. %ld\n", handle, off, size, rpa, ss);
 		goto out;
@@ -2150,7 +2151,6 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 #else /* POSTK_DEBUG_TEMP_FIX_61 */
 	int ret, i, tablesize, size, error = 0;
 #endif /* POSTK_DEBUG_TEMP_FIX_61 */
-	mm_segment_t oldfs = get_fs(); 
 	unsigned long phys, tablephys, rphys;
 	ihk_device_t dev = ihk_os_to_dev(os);
 	char *pt;
@@ -2162,8 +2162,6 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 		error = -EINVAL;
 		goto fail;
 	}
-
-	set_fs(KERNEL_DS);
 
 	/* Every Linux documentation insists we should not 
 	 * open a file in the kernel module, but our karma 
@@ -2210,15 +2208,13 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 #endif /*POSTK_DEBUG_TEMP_FIX_38*/
 			dprintk("virtual %p\n", pt);
 			if (pt != NULL) {
-#ifdef POSTK_DEBUG_ARCH_DEP_41 /* use writehandler version switch add */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0)
-				ret = __kernel_write(file, pt, size, &file->f_pos);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
+				ret = kernel_write(file, pt, size,
+						   &file->f_pos);
 #else
-				ret = file->f_op->write(file, pt, size, &file->f_pos);
+				ret = kernel_write(file, pt, size, file->f_pos);
+				file->f_pos += ret;
 #endif
-#else /* POSTK_DEBUG_ARCH_DEP_41 */
-				ret = file->f_op->write(file, pt, size, &file->f_pos);
-#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 			} else {
 				dprintk("cannot map physical memory(%lx) to virtual memory.\n", 
 					phys);
@@ -2261,7 +2257,6 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 	ihk_device_unmap_memory(dev, tablephys, tablesize);
 	filp_close(file, NULL);
 fail:
-	set_fs(oldfs);
 	if (error == -ENOSYS) {
 		/* make sure we do not travel to user land */
 		error = -EINVAL;
