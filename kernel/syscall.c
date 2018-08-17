@@ -1250,7 +1250,7 @@ interrupt_syscall(struct thread *thread, int sig)
 	ihk_mc_user_context_t ctx;
 	long lerror;
 
-	kprintf("interrupt_syscall pid=%d tid=%d sig=%d\n", thread->proc->pid, thread->tid, sig);
+	dkprintf("interrupt_syscall pid=%d tid=%d sig=%d\n", thread->proc->pid, thread->tid, sig);
 	ihk_mc_syscall_arg0(&ctx) = thread->proc->pid;
 	ihk_mc_syscall_arg1(&ctx) = thread->tid;
 	ihk_mc_syscall_arg2(&ctx) = sig;
@@ -2546,7 +2546,7 @@ retry_tid:
 			release_cpuid(cpuid);
 			kprintf("%s: no more TIDs available\n", __FUNCTION__);
 			for (i = 0; i < newproc->nr_tids; ++i) {
-				kprintf("%s: i=%d,tid=%d,thread=%p\n", __FUNCTION__, i, newproc->tids[i].tid, newproc->tids[i].thread);
+				dkprintf("%s: i=%d,tid=%d,thread=%p\n", __FUNCTION__, i, newproc->tids[i].tid, newproc->tids[i].thread);
 			}
 			return -ENOMEM;
 		}
@@ -9686,7 +9686,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
              ihk_mc_syscall_pc(ctx), ihk_mc_syscall_sp(ctx));
 		break;
 	}
-
+#if 0
 	switch(num) {
 	case __NR_poll: {
 		int i;
@@ -9705,6 +9705,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	default:
 		break;
 	}
+#endif
 #if 1
 #if 0
 	if(num != 24)  // if not sched_yield
