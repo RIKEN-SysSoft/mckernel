@@ -36,7 +36,7 @@ static inline void asmloop(unsigned long n) {
 #define N_INIT 10000000
 double nspw; /* nsec per work */
 
-void ndelay_init() {
+void ndelay_init(int verbose) {
 	struct timeval start, end;
 	int rank, nproc;
 	double min, sum, max;
@@ -56,13 +56,14 @@ void ndelay_init() {
 	gettimeofday(&end, NULL);
 
 	nspw = DIFFUSEC(end, start) * 1000 / (double)N_INIT;
-	//pr_debug("nspw=%f\n", nspw);
 
-	MPI_Reduce(&nspw, &min, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
-	MPI_Reduce(&nspw, &sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-	MPI_Reduce(&nspw, &max, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-	if (rank == 0) {
-		pr_debug("nspw: min=%.0f, ave=%.0f, max=%.0f\n", min, sum / nproc, max);
+	if (verbose) {
+		MPI_Reduce(&nspw, &min, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+		MPI_Reduce(&nspw, &sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+		MPI_Reduce(&nspw, &max, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+		if (rank == 0) {
+			pr_debug("nspw: min=%.0f, ave=%.0f, max=%.0f\n", min, sum / nproc, max);
+		}
 	}
 }
 

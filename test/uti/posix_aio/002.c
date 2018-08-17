@@ -26,9 +26,10 @@
 #define NROW 16
 #define NCOL 4
 
-#define NSAMPLES_DROP 0/*10*/
-#define NSAMPLES_IO 1/*20*/
-#define NSAMPLES_TOTAL 1/*20*/
+#define NSAMPLES_PROFILE 3
+#define NSAMPLES_DROP 1/*10*/
+#define NSAMPLES_IO 5/*20*/
+#define NSAMPLES_TOTAL 5/*20*/
 #define NSAMPLES_INNER 1
 
 #define WAIT_TYPE_BUSY_LOOP 0
@@ -53,7 +54,7 @@ static void aio_handler(sigval_t sigval)
 	struct aioreq *aioreq = sigval.sival_ptr;
 	int ret;
 
-	pr_debug("%s: debug: rank=%d\n", __func__, aioreq->rank);
+	//pr_debug("%s: debug: rank=%d\n", __func__, aioreq->rank);
 	ret = __sync_add_and_fetch(&completion_count, 1);
 	if (ret == aioreq->aio_num_threads) {
 		if (sem_post(&aio_sem)) {
@@ -62,7 +63,7 @@ static void aio_handler(sigval_t sigval)
 		}
 	}
 
-	pr_debug("%s: debug: completion_count: %d\n", __func__, ret);
+	//pr_debug("%s: debug: completion_count: %d\n", __func__, ret);
 }
 
 static void aio_sighandler(int sig, siginfo_t *si, void *ucontext)
@@ -202,14 +203,16 @@ void my_aio_close(int aio_num_threads, struct aioreq *iolist) {
 	}
 }
 
-int my_aio(int aio_num_threads, struct aioreq *iolist, char **fn, long nsec_calc) {
+int my_aio(int aio_num_threads, struct aioreq *iolist, char **fn, long nsec_calc, int no_aio) {
 	int ret;
 	int i, j;
 
-	pr_debug("%s: debug: enter\n", __func__);
+	//pr_debug("%s: debug: enter\n", __func__);
+
 
 	/* Start async IO */
 	for (i = 0; i < NSAMPLES_INNER; i++) {
+		if (no_aio) goto skip1;
 
 		if ((ret = my_aio_open(aio_num_threads, iolist, fn)) == -1) {
 			pr_err("%s: error: my_aio_open: %s\n",
@@ -217,7 +220,7 @@ int my_aio(int aio_num_threads, struct aioreq *iolist, char **fn, long nsec_calc
 			ret = -errno;
 			goto out;
 		}
-		pr_debug("%s: debug: after my_aio_open\n", __func__);
+		//pr_debug("%s: debug: after my_aio_open\n", __func__);
 	
 		
 		/* Reset completion */
@@ -234,11 +237,12 @@ int my_aio(int aio_num_threads, struct aioreq *iolist, char **fn, long nsec_calc
 				goto out;
 			}
 
-			pr_debug("%s: debug: after %d-th aio_write\n", __func__, j);
+			//pr_debug("%s: debug: after %d-th aio_write\n", __func__, j);
 		}
-
+	skip1:
 		/* Emulate calcuation phase */
 		ndelay(nsec_calc);
+		if (no_aio) goto skip2;
 
 #if 0
 		int k;
@@ -265,7 +269,7 @@ int my_aio(int aio_num_threads, struct aioreq *iolist, char **fn, long nsec_calc
 				       __func__, strerror(errno));
 			}
 		}
-		pr_debug("%s: debug: completion_count: %d\n", __func__, completion_count);
+		//pr_debug("%s: debug: completion_count: %d\n", __func__, completion_count);
 		
 #elif WAIT_TYPE == WAIT_TYPE_BUSY_LOOP
 
@@ -309,6 +313,7 @@ int my_aio(int aio_num_threads, struct aioreq *iolist, char **fn, long nsec_calc
 		}
 
 		my_aio_close(aio_num_threads, iolist);
+	skip2:;
 	}
 	ret = 0;
  out:
@@ -316,7 +321,7 @@ int my_aio(int aio_num_threads, struct aioreq *iolist, char **fn, long nsec_calc
 	return ret;
 }
 
-int measure(double *result, int nsamples, int nsamples_drop, int aio_num_threads, struct aioreq *iolist, char **fn, long nsec_calc, int rank, int profile) {
+int measure(double *result, int nsamples, int nsamples_drop, int aio_num_threads, struct aioreq *iolist, char **fn, long nsec_calc, int rank, int profile, int no_aio) {
 	int ret;
 	int i;
 	double t_l, t_g, t_sum = 0;
@@ -325,6 +330,9 @@ int measure(double *result, int nsamples, int nsamples_drop, int aio_num_threads
 	for (i = 0; i < nsamples + nsamples_drop; i++) {
 		
 		MPI_Barrier(MPI_COMM_WORLD);
+
+		/* Set parameter based on current IPC and frequency */
+		ndelay_init(0);
 		
 		start = mytime();
 		
@@ -340,12 +348,12 @@ int measure(double *result, int nsamples, int nsamples_drop, int aio_num_threads
 				pr_err("%s: error: gettimeofday failed (%d)\n", __func__, ret);
 			}
 		}
-		
-		if ((ret = my_aio(aio_num_threads, iolist, fn, nsec_calc))) {
+
+		if ((ret = my_aio(aio_num_threads, iolist, fn, nsec_calc, no_aio))) {
 			pr_err("%s: error: my_aio returned %d\n",
 			       __func__, ret);
 		}
-		
+
 		if (profile) {
 			if ((ret = getrusage(RUSAGE_SELF, &ru_end))) {
 				pr_err("%s: error: getrusage failed (%d)\n", __func__, ret);
@@ -471,9 +479,9 @@ int main(int argc, char **argv)
 
 	/* Set verbosity */
 	//test_set_loglevel(TEST_LOGLEVEL_WARN);	
-
-	/* Initialize delay function */
-	ndelay_init();
+	
+	/* Set parameter based on current IPC and frequency */
+	ndelay_init(1);
 
 	/* Initialize files */
 	if (!(fn = malloc(sizeof(char *) * aio_num_threads))) {
@@ -561,13 +569,13 @@ int main(int argc, char **argv)
 	}
 
 	/* Take profile */
-	if ((ret = measure(&t_io_ave, NSAMPLES_IO, NSAMPLES_DROP, aio_num_threads, iolist, fn, 0, rank, 1))) {
+	if ((ret = measure(&t_io_ave, NSAMPLES_PROFILE, 0, aio_num_threads, iolist, fn, 0, rank, 1, 0))) {
 		pr_err("error: measure returned %d\n", ret);
 		goto out;
 	}
 
 	/* Measure IO only time */
-	if ((ret = measure(&t_io_ave, NSAMPLES_IO, NSAMPLES_DROP, aio_num_threads, iolist, fn, 0, rank, 0))) {
+	if ((ret = measure(&t_io_ave, NSAMPLES_IO, NSAMPLES_DROP, aio_num_threads, iolist, fn, 0, rank, 0, 0))) {
 		pr_err("error: measure returned %d\n", ret);
 		goto out;
 	}
@@ -592,7 +600,7 @@ int main(int argc, char **argv)
 		for (l = 0; l <= NROW - 1; l += 1) {
 			long nsec_calc = (t_io_ave * MYTIME_TONSEC * l) / 10;
 			
-			if ((ret = measure(&t_total_ave, NSAMPLES_TOTAL, NSAMPLES_DROP, aio_num_threads, iolist, fn, nsec_calc, rank, 0))) {
+			if ((ret = measure(&t_total_ave, NSAMPLES_TOTAL, NSAMPLES_DROP, aio_num_threads, iolist, fn, nsec_calc, rank, 0, 0))) {
 				pr_err("error: measure returned %d\n", ret);
 				goto out;
 			}
@@ -633,8 +641,10 @@ int main(int argc, char **argv)
 	}
 
 	MPI_Barrier(MPI_COMM_WORLD);
+	//pr_debug("after barrier\n");
 
 	MPI_Finalize();
+	//pr_debug("after finalize\n");
 
 	ret = 0;
 out:

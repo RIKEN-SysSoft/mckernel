@@ -20,9 +20,9 @@ nnodes=2
 host_type=wallaby
 LASTNODE=15
 use_hfi=0
-omp_num_threads=1
+omp_num_threads=4
 ppn=4
-aio_num_threads=4
+aio_num_threads=1
 
 while getopts srgc:ml:N:P:o:hGI:ipL: OPT
 do
@@ -94,8 +94,7 @@ esac
 
 if [ $mck -eq 0 ]; then
     uti_cpu_set_str="export UTI_CPU_SET=$uti_cpu_set_lin"
-    #i_mpi_pin_processor_exclude_list="export I_MPI_PIN_PROCESSOR_EXCLUDE_LIST=$exclude_list"
-    i_mpi_pin_processor_exclude_list=
+    i_mpi_pin_processor_exclude_list="export I_MPI_PIN_PROCESSOR_EXCLUDE_LIST=$exclude_list"
 else
     uti_cpu_set_str="export UTI_CPU_SET=$uti_cpu_set_mck"
     i_mpi_pin_processor_exclude_list=
@@ -217,8 +216,8 @@ if [ ${reboot} -eq 1 ]; then
     if [ ${mck} -eq 1 ]; then
 	case $host_type in
 	    wallaby) hnprefix=wallaby
-		#PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes sudo ${mck_dir}/sbin/mcreboot.sh -h -O -c 1-7,17-23,9-15,25-31 -r 1-7:0+17-23:16+9-15:8+25-31:24 -m 10G@0,10G@1
-		PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes sudo ${mck_dir}/sbin/mcreboot.sh -h -O -c 1-4 -r 1-4:0 -m 10G@0,10G@1
+		PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes sudo ${mck_dir}/sbin/mcreboot.sh -h -O -c 1-7,17-23,9-15,25-31 -r 1-7:0+17-23:16+9-15:8+25-31:24 -m 10G@0,10G@1
+		#PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes sudo ${mck_dir}/sbin/mcreboot.sh -h -O -c 1-4 -r 1-4:0 -m 10G@0,10G@1
 		;;
 	    ofp)
 		# -h: Prevent unnessary CPU resource division for KNL 
@@ -287,6 +286,7 @@ ulimit -c unlimited
 
 $compilervars
 mpiexec.hydra -n $nprocs -ppn $ppn $hosts $ilpopt $enable_x $gdbcmd $mcexec $mcexecopt ${test_dir}/$exe -I $disable_syscall_intercept -p $ppn -t $aio_num_threads
+#$gdbcmd $mcexec $mcexecopt ${test_dir}/$exe -I $disable_syscall_intercept -p $ppn -t $aio_num_threads
 #-l
 
 EOF
