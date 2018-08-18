@@ -110,17 +110,10 @@
 
 #define	__NR_coredump			999
 
-#ifdef POSTK_DEBUG_TEMP_FIX_61 /* Core table size and lseek return value to loff_t */
 struct coretable {
 	loff_t len;
 	unsigned long addr;
 };
-#else /* POSTK_DEBUG_TEMP_FIX_61 */
-struct coretable {
-	int len;
-	unsigned long addr;
-};
-#endif /* POSTK_DEBUG_TEMP_FIX_61 */
 
 enum mcctrl_os_cpu_operation {
 	MCCTRL_OS_CPU_READ_REGISTER,

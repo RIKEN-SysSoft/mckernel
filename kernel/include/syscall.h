@@ -365,17 +365,10 @@ enum {
 #undef	SYSCALL_DELEGATED
 
 #define	__NR_coredump 999	/* pseudo syscall for coredump */
-#ifdef POSTK_DEBUG_TEMP_FIX_61 /* Core table size and lseek return value to loff_t */
 struct coretable {		/* table entry for a core chunk */
 	off_t len;		/* length of the chunk */
 	unsigned long addr;	/* physical addr of the chunk */
 };
-#else /* POSTK_DEBUG_TEMP_FIX_61 */
-struct coretable {		/* table entry for a core chunk */
-	int len;		/* length of the chunk */
-	unsigned long addr;	/* physical addr of the chunk */
-};
-#endif /* POSTK_DEBUG_TEMP_FIX_61 */
 
 #ifdef POSTK_DEBUG_TEMP_FIX_1
 void create_proc_procfs_files(int pid, int tid, int cpuid);
