@@ -1868,29 +1868,8 @@ retry:
 			}
 			dkprintf("%s: cow,copying virt:%lx<-%lx,phys:%lx<-%lx,pgsize=%lu\n",
 					 __FUNCTION__, virt, phys_to_virt(phys), virt_to_phys(virt), phys, pgsize);
-#ifdef POSTK_DEBUG_TEMP_FIX_14
-			if (page) {
-				// McKernel memory space
-				memcpy(virt, phys_to_virt(phys), pgsize);
-			} else {
-				// Host Kernel memory space
-				const enum ihk_mc_pt_attribute attr = 0;
-				void* vmap;
-
-				vmap = ihk_mc_map_virtual(phys, npages, attr);
-				if (!vmap) {
-					error = -ENOMEM;
-					kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):cannot virtual mapping. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
-					ihk_mc_free_pages(virt, npages);
-					goto out;
-				}
-				memcpy(virt, vmap, pgsize);
-				ihk_mc_unmap_virtual(vmap, npages);
-			}
-#else /*POSTK_DEBUG_TEMP_FIX_14*/
 			memcpy(virt, phys_to_virt(phys), pgsize);
 
-#endif /*POSTK_DEBUG_TEMP_FIX_14*/
 			/* Call rusage_memory_stat_add() because remote page fault may create a page not pointed-to by PTE */
 			if(rusage_memory_stat_add(range, phys, pgsize, pgsize)) {
 				dkprintf("%lx+,%s: remote page fault + cow, calling memory_stat_rss_add(),pgsize=%ld\n",
