@@ -328,6 +328,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 			v = get_this_cpu_local_var();
 
 			if (v->flags & CPU_FLAG_NEED_RESCHED ||
+			    v->runq_len > 1 ||
 			    req->number == __NR_sched_setaffinity) {
 				do_schedule = 1;
 			}
