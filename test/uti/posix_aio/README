@@ -12,5 +12,4 @@ Write
 ---
 002
 ---
-* NREQS times PPN write streams
-* 8 MB write per stream
+Write, IO completion is notified by spawning thread
