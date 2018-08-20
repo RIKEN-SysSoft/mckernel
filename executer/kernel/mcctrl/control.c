@@ -2012,7 +2012,8 @@ long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 		isp.arg = virt_to_phys(perf_desc);
 
 		for (j = 0; j < info->n_cpus; j++) {
-			ret = mcctrl_ikc_send_wait(os, j, &isp, 0,
+			ret = mcctrl_ikc_send_wait(os, j, &isp,
+					msecs_to_jiffies(10000),
 					wakeup_desc_of_perf_desc(perf_desc),
 					&need_free, 1, perf_desc);
 			if (ret < 0) {
@@ -2057,7 +2058,8 @@ long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
 		isp.arg = virt_to_phys(perf_desc);
 
 		for (j = 0; j < info->n_cpus; j++) {
-			ret = mcctrl_ikc_send_wait(os, j, &isp, 0,
+			ret = mcctrl_ikc_send_wait(os, j, &isp,
+					msecs_to_jiffies(10000),
 					wakeup_desc_of_perf_desc(perf_desc),
 					&need_free, 1, perf_desc);
 			if (ret < 0) {
