@@ -2417,7 +2417,11 @@ end:
 	return ret;
 }
 
-#define NR_TIDS (num_processors + 1) /* Plus one for utility thread */
+/* CPU oversubscription example: 
+ * (1) pmi_proxy + gdb + #CPU OMP threads
+ * (2) pmi_proxy + #CPU OMP threads + POSIX AIO IO + POSIX AIO notification
+ */
+#define NR_TIDS (allow_oversubscribe ? (num_processors * 2) : num_processors) 
 
 unsigned long do_fork(int clone_flags, unsigned long newsp,
                       unsigned long parent_tidptr, unsigned long child_tidptr,
