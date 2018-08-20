@@ -8,7 +8,7 @@ mck=1
 mcexec="${mck_dir}/bin/mcexec"
 
 sudo ${mck_dir}/sbin/mcstop+release.sh
-sudo ${mck_dir}/sbin/mcreboot.sh -c 1,2,3
+sudo ${mck_dir}/sbin/mcreboot.sh -c 1,2,3 -m 512M
 
 ulimit -c unlimited
 
