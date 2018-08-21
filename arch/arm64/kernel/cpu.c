@@ -1474,6 +1474,10 @@ out:
 void
 save_fp_regs(struct thread *thread)
 {
+	if (thread == &cpu_local_var(idle)) {
+		return;
+	}
+
 	if (likely(elf_hwcap & (HWCAP_FP | HWCAP_ASIMD))) {
 		if (check_and_allocate_fp_regs(thread) != 0) {
 			// alloc error.
