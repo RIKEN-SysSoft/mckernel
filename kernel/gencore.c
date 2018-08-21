@@ -360,6 +360,10 @@ int gencore(struct thread *thread, void *regs,
 
 		if (range->flag & VR_RESERVED)
 			continue;
+#ifdef POSTK_DEBUG_TEMP_FIX_101 /* fix VR_DONTDUMP coredump kernel-panic. */
+		if (range->flag & VR_DONTDUMP)
+			continue;
+#endif /* POSTK_DEBUG_TEMP_FIX_101 */
 
 		ph[i].p_type = PT_LOAD;
 		ph[i].p_flags = ((flag & VR_PROT_READ) ? PF_R : 0)
@@ -412,6 +416,11 @@ int gencore(struct thread *thread, void *regs,
 
 		if (range->flag & VR_RESERVED)
 			continue;
+#ifdef POSTK_DEBUG_TEMP_FIX_101 /* fix VR_DONTDUMP coredump kernel-panic. */
+		if (range->flag & VR_DONTDUMP)
+			continue;
+
+#endif /* POSTK_DEBUG_TEMP_FIX_101 */
 		if (range->flag & VR_DEMAND_PAGING) {
 			/* Just an ad hoc kluge. */
 			unsigned long p, start, phys;
