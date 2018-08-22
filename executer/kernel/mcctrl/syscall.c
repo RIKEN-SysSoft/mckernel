@@ -675,7 +675,7 @@ retry_alloc:
 			goto out;
 		}
 		else {
-			/* Update packet reference */
+			/* Update packet reference to that of response */
 			packet = wqhln->packet;
 			free_packet = packet;
 			req = &packet->req;
