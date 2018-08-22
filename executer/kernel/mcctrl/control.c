@@ -1979,6 +1979,9 @@ int mcexec_close_exec(ihk_os_t os)
 		}
 	}
 
+	if (!found) {
+		printk("%s: WARNING: exec file not found\n", __func__);
+	}
 	up(&mckernel_exec_file_lock);
 
 	return (found ? 0 : EINVAL);
