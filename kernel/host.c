@@ -667,6 +667,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		break;
 
 	case SCD_MSG_PROCFS_REQUEST:
+	case SCD_MSG_PROCFS_RELEASE:
 		pckt.msg = SCD_MSG_PROCFS_ANSWER;
 		pckt.ref = packet->ref;
 		pckt.arg = packet->arg;

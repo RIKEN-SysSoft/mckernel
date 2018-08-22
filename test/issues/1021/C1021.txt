@@ -1,0 +1,71 @@
+Script started on Wed Aug 29 15:21:45 2018
+bash-4.2$ make test
+sh ./C1021.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 1-7,17-23,9-15,25-31 -m 10G@0,10G@1 ... done
+*** C1021T01 /proc/stat open OK
+*** C1021T02 /proc/stat dup OK
+*** C1021T03 /proc/stat read(1) OK n=158
+*** C1021T04 /proc/stat lseek OK
+*** C1021T05 /proc/stat read(1024) OK
+*** C1021T06 /proc/stat close OK
+*** C1021T07 /proc/stat read(dup) EOF OK
+*** C1021T08 /proc/stat lseek(dup) OK
+*** C1021T09 /proc/stat read(dup) OK
+*** C1021T10 /proc/stat close(dup) OK
+*** C1021T11 /proc/12455/auxv open OK
+*** C1021T12 /proc/12455/auxv dup OK
+*** C1021T13 /proc/12455/auxv read(1) OK n=144
+*** C1021T14 /proc/12455/auxv lseek OK
+*** C1021T15 /proc/12455/auxv read(1024) OK
+*** C1021T16 /proc/12455/auxv close OK
+*** C1021T17 /proc/12455/auxv read(dup) EOF OK
+*** C1021T18 /proc/12455/auxv lseek(dup) OK
+*** C1021T19 /proc/12455/auxv read(dup) OK
+*** C1021T20 /proc/12455/auxv close(dup) OK
+*** C1021T21 /proc/12455/cmdline open OK
+*** C1021T22 /proc/12455/cmdline dup OK
+*** C1021T23 /proc/12455/cmdline read(1) OK n=8
+*** C1021T24 /proc/12455/cmdline lseek OK
+*** C1021T25 /proc/12455/cmdline read(1024) OK
+*** C1021T26 /proc/12455/cmdline close OK
+*** C1021T27 /proc/12455/cmdline read(dup) EOF OK
+*** C1021T28 /proc/12455/cmdline lseek(dup) OK
+*** C1021T29 /proc/12455/cmdline read(dup) OK
+*** C1021T30 /proc/12455/cmdline close(dup) OK
+*** C1021T31 /proc/12455/maps open OK
+*** C1021T32 /proc/12455/maps dup OK
+*** C1021T33 /proc/12455/maps read(1) OK n=25401
+*** C1021T34 /proc/12455/maps lseek OK
+*** C1021T35 /proc/12455/maps read(1024) OK
+*** C1021T36 /proc/12455/maps close OK
+*** C1021T37 /proc/12455/maps read(dup) EOF OK
+*** C1021T38 /proc/12455/maps lseek(dup) OK
+*** C1021T39 /proc/12455/maps read(dup) OK
+*** C1021T40 /proc/12455/maps close(dup) OK
+*** C1021T41 /proc/12455/status open OK
+*** C1021T42 /proc/12455/status dup OK
+*** C1021T43 /proc/12455/status read(1) OK n=255
+*** C1021T44 /proc/12455/status lseek OK
+*** C1021T45 /proc/12455/status read(1024) OK
+*** C1021T46 /proc/12455/status close OK
+*** C1021T47 /proc/12455/status read(dup) EOF OK
+*** C1021T48 /proc/12455/status lseek(dup) OK
+*** C1021T49 /proc/12455/status read(dup) OK
+*** C1021T50 /proc/12455/status close(dup) OK
+*** C1021T51 /proc/12455/task/12455/stat open OK
+*** C1021T52 /proc/12455/task/12455/stat dup OK
+*** C1021T53 /proc/12455/task/12455/stat read(1) OK n=92
+*** C1021T54 /proc/12455/task/12455/stat lseek OK
+*** C1021T55 /proc/12455/task/12455/stat read(1024) OK
+*** C1021T56 /proc/12455/task/12455/stat close OK
+*** C1021T57 /proc/12455/task/12455/stat read(dup) EOF OK
+*** C1021T58 /proc/12455/task/12455/stat lseek(dup) OK
+*** C1021T59 /proc/12455/task/12455/stat read(dup) OK
+*** C1021T60 /proc/12455/task/12455/stat close(dup) OK
+TEST SUCCESS OK=60
+*** C1021T61 OK (kmemleak)
+bash-4.2$ exit
+exit
+
+Script done on Wed Aug 29 15:22:55 2018

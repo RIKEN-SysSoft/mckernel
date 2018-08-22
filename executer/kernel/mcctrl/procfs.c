@@ -922,6 +922,303 @@ static const struct file_operations mckernel_forward = {
 	.write		= mckernel_procfs_write,
 };
 
+#define PA_NULL (-1L)
+
+struct mckernel_procfs_buffer_info {
+	unsigned long top_pa;
+	unsigned long cur_pa;
+	ihk_os_t os;
+	int pid;
+	char path[0];
+};
+
+struct mckernel_procfs_buffer {
+	unsigned long next_pa;
+	unsigned long pos;
+	unsigned long size;
+	char buf[0];
+};
+
+static int mckernel_procfs_buff_open(struct inode *inode, struct file *file)
+{
+	struct mckernel_procfs_buffer_info *info;
+	int pid;
+	int ret;
+	char *path;
+	char *path_buf;
+	char *p;
+	ihk_os_t os;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+	struct proc_dir_entry *dp = PDE(inode);
+	struct procfs_list_entry *e = dp->data;
+#else
+	struct procfs_list_entry *e = PDE_DATA(inode);
+#endif
+
+	os = osnum_to_os(e->osnum);
+	if (!os) {
+		return -EINVAL;
+	}
+	path_buf = kmalloc(PROCFS_NAME_MAX, GFP_KERNEL);
+	if (!path_buf) {
+		return -ENOMEM;
+	}
+	path = getpath(e, path_buf, PROCFS_NAME_MAX);
+	p = strchr(path, '/') + 1;
+	ret = sscanf(p, "%d/", &pid);
+	if (ret != 1) {
+		pid = -1;
+	}
+
+	info = kmalloc(sizeof(struct mckernel_procfs_buffer_info) +
+		       strlen(path) + 1, GFP_KERNEL);
+	if (!info) {
+		kfree(path_buf);
+		return -ENOMEM;
+	}
+	info->top_pa = PA_NULL;
+	info->cur_pa = PA_NULL;
+	info->os = os;
+	info->pid = pid;
+	strcpy(info->path, path);
+	file->private_data = info;
+
+	kfree(path_buf);
+	return 0;
+}
+
+static int mckernel_procfs_buff_release(struct inode *inode, struct file *file)
+{
+	struct mckernel_procfs_buffer_info *info = file->private_data;
+	int rc = 0;
+
+	if (!info) {
+		return -EIO;
+	}
+
+	file->private_data = NULL;
+	if (info->top_pa != PA_NULL) {
+		int ret;
+		struct procfs_read *r = NULL;
+		struct ikc_scd_packet isp;
+		int do_free;
+
+		r = kmalloc(sizeof(struct procfs_read), GFP_KERNEL);
+		if (r == NULL) {
+			rc = -ENOMEM;
+			goto out;
+		}
+		memset(r, '\0', sizeof(struct procfs_read));
+		r->pbuf = info->top_pa;
+		r->ret = -EIO; /* default */
+		r->fname[0] = '\0';
+		isp.msg = SCD_MSG_PROCFS_RELEASE;
+		isp.ref = 0;
+		isp.arg = virt_to_phys(r);
+		isp.pid = 0;
+
+		rc = -EIO;
+		ret = mcctrl_ikc_send_wait(info->os, 0,
+					   &isp, 5 * HZ, NULL, &do_free, 1, r);
+
+		if (!do_free && ret >= 0) {
+			ret = -EIO;
+		}
+
+		if (ret < 0) {
+			rc = ret;
+			if (ret == -ETIME) {
+				pr_info("%s: error: timeout (1 sec)\n",
+				       __func__);
+			}
+			else if (ret == -ERESTARTSYS) {
+				rc = -ERESTART;
+			}
+			if (!do_free)
+				r = NULL;
+			goto out;
+		}
+
+		if (r->ret < 0) {
+			rc = r->ret;
+			goto out;
+		}
+		rc = 0;
+out:
+		if (r)
+			kfree((void *)r);
+	}
+	kfree(info);
+	return rc;
+}
+
+static ssize_t mckernel_procfs_buff_read(struct file *file, char __user *ubuf,
+					 size_t nbytes, loff_t *ppos)
+{
+	struct mckernel_procfs_buffer_info *info = file->private_data;
+	unsigned long phys;
+	struct mckernel_procfs_buffer *buf;
+	int pos = *ppos;
+	ssize_t l = 0;
+	int done = 0;
+	ihk_os_t os;
+
+	if (nbytes <= 0 || *ppos < 0) {
+		return 0;
+	}
+
+	if (!info) {
+		return -EIO;
+	}
+
+	os = info->os;
+	if (info->top_pa == PA_NULL) {
+		int ret;
+		int pid = info->pid;
+		struct procfs_read *r = NULL;
+		struct ikc_scd_packet isp;
+		struct mcctrl_usrdata *udp = NULL;
+		struct mcctrl_per_proc_data *ppd = NULL;
+		int do_free;
+
+		udp = ihk_host_os_get_usrdata(os);
+		if (!udp) {
+			pr_err("%s: no MCCTRL data found for OS\n",
+					__func__);
+			return -EINVAL;
+		}
+
+		if (pid > 0) {
+			ppd = mcctrl_get_per_proc_data(udp, pid);
+
+			if (unlikely(!ppd)) {
+				pr_err("%s: no per-process structure for PID %d",
+						__func__, pid);
+				return -EINVAL;
+			}
+		}
+
+		r = kmalloc(sizeof(struct procfs_read), GFP_KERNEL);
+		if (r == NULL) {
+			l = -ENOMEM;
+			done = 1;
+			goto out;
+		}
+		memset(r, '\0', sizeof(struct procfs_read));
+		r->pbuf = PA_NULL;
+		r->ret = -EIO; /* default */
+		strncpy((char *)r->fname, info->path, PROCFS_NAME_MAX);
+		isp.msg = SCD_MSG_PROCFS_REQUEST;
+		isp.ref = 0;
+		isp.arg = virt_to_phys(r);
+		isp.pid = pid;
+
+		l = -EIO;
+		done = 1;
+		ret = mcctrl_ikc_send_wait(os,
+					   (pid > 0) ? ppd->ikc_target_cpu : 0,
+					   &isp, 5 * HZ, NULL, &do_free, 1, r);
+
+		if (!do_free && ret >= 0) {
+			ret = -EIO;
+		}
+
+		if (ret < 0) {
+			l = ret;
+			if (ret == -ETIME) {
+				pr_info("%s: error: timeout (1 sec)\n",
+				       __func__);
+			}
+			else if (ret == -ERESTARTSYS) {
+				l = -ERESTART;
+			}
+			if (!do_free)
+				r = NULL;
+			goto out;
+		}
+
+		if (r->ret < 0) {
+			l = r->ret;
+			goto out;
+		}
+
+		done = 0;
+		l = 0;
+		info->top_pa = info->cur_pa = r->pbuf;
+
+out:
+		if (ppd)
+			mcctrl_put_per_proc_data(ppd);
+		if (r)
+			kfree((void *)r);
+	}
+
+	if (info->cur_pa == PA_NULL) {
+		info->cur_pa = info->top_pa;
+	}
+
+	while (!done && info->cur_pa != PA_NULL) {
+		long bpos;
+		long bsize;
+
+		phys = ihk_device_map_memory(ihk_os_to_dev(os), info->cur_pa,
+					     PAGE_SIZE);
+#ifdef CONFIG_MIC
+		buf = ioremap_wc(phys, PAGE_SIZE);
+#else
+		buf = ihk_device_map_virtual(ihk_os_to_dev(os), phys,
+					     PAGE_SIZE, NULL, 0);
+#endif
+
+		if (pos < buf->pos) {
+			info->cur_pa = info->top_pa;
+			goto rep;
+		}
+
+		if (pos >= buf->pos + buf->size) {
+			info->cur_pa = buf->next_pa;
+			goto rep;
+		}
+
+		bpos = pos - buf->pos;
+		bsize = (buf->pos + buf->size) - pos;
+		if (bsize > (nbytes - l)) {
+			bsize = nbytes - l;
+		}
+		if (copy_to_user(ubuf, buf->buf + bpos, bsize)) {
+			done = 1;
+			pos = *ppos;
+			l = -EFAULT;
+		}
+		else {
+			ubuf += bsize;
+			pos += bsize;
+			l += bsize;
+			if (l == nbytes) {
+				done = 1;
+			}
+		}
+rep:
+#ifdef CONFIG_MIC
+		iounmap(buf);
+#else
+		ihk_device_unmap_virtual(ihk_os_to_dev(os), buf, PAGE_SIZE);
+#endif
+		ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
+	};
+
+	*ppos = pos;
+	return l;
+}
+
+static const struct file_operations mckernel_buff_io = {
+	.llseek		= mckernel_procfs_lseek,
+	.read		= mckernel_procfs_buff_read,
+	.write		= NULL,
+	.open		= mckernel_procfs_buff_open,
+	.release	= mckernel_procfs_buff_release,
+};
+
 static const struct procfs_entry tid_entry_stuff[] = {
 //	PROC_REG("auxv",       S_IRUSR, NULL),
 //	PROC_REG("clear_refs", S_IWUSR, NULL),
@@ -931,10 +1228,10 @@ static const struct procfs_entry tid_entry_stuff[] = {
 //	PROC_LNK("exe",        mckernel_readlink),
 //	PROC_REG("limits",     S_IRUSR|S_IWUSR, NULL),
 //	PROC_REG("maps",       S_IRUGO, NULL),
-	PROC_REG("mem",        S_IRUSR|S_IWUSR, NULL),
+	PROC_REG("mem",        0600, NULL),
 //	PROC_REG("pagemap",    S_IRUGO, NULL),
 //	PROC_REG("smaps",      S_IRUGO, NULL),
-	PROC_REG("stat",       S_IRUGO, NULL),
+	PROC_REG("stat",       0444, &mckernel_buff_io),
 //	PROC_REG("statm",      S_IRUGO, NULL),
 //	PROC_REG("status",     S_IRUGO, NULL),
 //	PROC_REG("syscall",    S_IRUGO, NULL),
@@ -943,26 +1240,26 @@ static const struct procfs_entry tid_entry_stuff[] = {
 };
 
 static const struct procfs_entry pid_entry_stuff[] = {
-	PROC_REG("auxv",       S_IRUSR, NULL),
+	PROC_REG("auxv",       0400, &mckernel_buff_io),
 	/* Support the case where McKernel process retrieves its job-id under the Fujitsu TCS suite. */
 //	PROC_REG("cgroup",     S_IXUSR, NULL),
 //	PROC_REG("clear_refs", S_IWUSR, NULL),
-	PROC_REG("cmdline",    S_IRUGO, NULL),
+	PROC_REG("cmdline",    0444, &mckernel_buff_io),
 //	PROC_REG("comm",       S_IRUGO|S_IWUSR, NULL),
 //	PROC_REG("coredump_filter", S_IRUGO|S_IWUSR, NULL),
-	PROC_REG("cpuset",     S_IXUSR, NULL),
+//	PROC_REG("cpuset",     S_IRUGO, NULL),
 //	PROC_REG("environ",    S_IRUSR, NULL),
 //	PROC_LNK("exe",        mckernel_readlink),
 //	PROC_REG("limits",     S_IRUSR|S_IWUSR, NULL),
-	PROC_REG("maps",       S_IRUGO, NULL),
-	PROC_REG("mem",        S_IRUSR|S_IWUSR, NULL),
-	PROC_REG("pagemap",    S_IRUGO, NULL),
-	PROC_REG("smaps",      S_IRUGO, NULL),
-//	PROC_REG("stat",       S_IRUGO, NULL),
+	PROC_REG("maps",       0444, &mckernel_buff_io),
+	PROC_REG("mem",        0600, NULL),
+	PROC_REG("pagemap",    0444, NULL),
+//	PROC_REG("smaps",      S_IRUGO, NULL),
+//	PROC_REG("stat",       0444, &mckernel_buff_io),
 //	PROC_REG("statm",      S_IRUGO, NULL),
-	PROC_REG("status",     S_IRUGO, NULL),
+	PROC_REG("status",     0444, &mckernel_buff_io),
 //	PROC_REG("syscall",    S_IRUGO, NULL),
-	PROC_DIR("task",       S_IRUGO|S_IXUGO),
+	PROC_DIR("task",       0555),
 //	PROC_REG("wchan",      S_IRUGO, NULL),
 	PROC_TERM
 };
@@ -970,14 +1267,14 @@ static const struct procfs_entry pid_entry_stuff[] = {
 static const struct procfs_entry base_entry_stuff[] = {
 //	PROC_REG("cmdline",    S_IRUGO, NULL),
 #ifdef POSTK_DEBUG_ARCH_DEP_42 /* /proc/cpuinfo support added. */
-	PROC_REG("cpuinfo",    S_IRUGO, NULL),
+	PROC_REG("cpuinfo",    0444, &mckernel_buff_io),
 #else /* POSTK_DEBUG_ARCH_DEP_42 */
 //	PROC_REG("cpuinfo",    S_IRUGO, NULL),
 #endif /* POSTK_DEBUG_ARCH_DEP_42 */
 //	PROC_REG("meminfo",    S_IRUGO, NULL),
 //	PROC_REG("pagetypeinfo",S_IRUGO, NULL),
 //	PROC_REG("softirq",    S_IRUGO, NULL),
-	PROC_REG("stat",       S_IRUGO, NULL),
+	PROC_REG("stat",       0444, &mckernel_buff_io),
 //	PROC_REG("uptime",     S_IRUGO, NULL),
 //	PROC_REG("version",    S_IRUGO, NULL),
 //	PROC_REG("vmallocinfo",S_IRUSR, NULL),
