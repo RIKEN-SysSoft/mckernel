@@ -1858,7 +1858,6 @@ int mcexec_create_per_process_data(ihk_os_t os)
 
 int mcexec_destroy_per_process_data(ihk_os_t os, int pid)
 {
-	int rc;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd = NULL;
 
@@ -1867,22 +1866,12 @@ int mcexec_destroy_per_process_data(ihk_os_t os, int pid)
 	if (ppd) {
 		/* One for the reference and one for deallocation.
 		 * XXX: actual deallocation may not happen here */
-		rc = mcctrl_put_per_proc_data(ppd);
-		if (rc < 0) {
-			printk("%s: ERROR: first mcctrl_put_per_proc_data failed,rc=%d\n", __FUNCTION__, rc);
-			return rc;
-		} else if (rc == 0) {
-			printk("%s: ERROR: first mcctrl_put_per_proc_data failed,bad value of ppd->refcount(%d)\n", __FUNCTION__, rc);
-			return -EINVAL;
-		}
-		rc = mcctrl_put_per_proc_data(ppd);
-		if (rc < 0) {
-			printk("%s: ERROR: second mcctrl_put_per_proc_data failed,rc=%d\n", __FUNCTION__, rc);
-			return rc;
-		} else if (rc > 0) {
-			printk("%s: ERROR: second mcctrl_put_per_proc_data failed,bad value of ppd->refcount(%d)\n", __FUNCTION__, rc);
-			return -EINVAL;
-		}
+		mcctrl_put_per_proc_data(ppd);
+		pr_ptd("put", task_pid_vnr(current), ptd);
+
+		/* Note that it will call return_syscall() */
+		mcctrl_put_per_proc_data(ppd);
+		pr_ptd("put", task_pid_vnr(current), ptd);
 	}
 	else {
 		printk("%s: WARNING: no per process data for PID %d ?\n",
