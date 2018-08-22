@@ -74,9 +74,7 @@ if [ ${go} -eq 1 ]; then
     cd ${UTI_TOP}
     make $cmdline
     for i in `seq 1 ${nloops}`; do
-	rm -f psm2-demo-server-epid-*
-	PSM2_RCVTHREAD=0 PMI_RANK=0 DISABLE_UTI=1 ${MCK}/bin/mcexec taskset -c 2 $cmdline --ppn 1 &
-	PSM2_RCVTHREAD=0 PMI_RANK=1 DISABLE_UTI=0 ${MCK}/bin/mcexec taskset -c 3 $cmdline --ppn 1
+	${MCK}/bin/mcexec $cmdline
 	wait
 	echo =====;
 	echo $i;
