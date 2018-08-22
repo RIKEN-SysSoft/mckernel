@@ -1855,7 +1855,11 @@ int mcexec_destroy_per_process_data(ihk_os_t os, int pid)
 		/* One for the reference and one for deallocation.
 		 * XXX: actual deallocation may not happen here */
 		mcctrl_put_per_proc_data(ppd);
+		pr_ptd("put", task_pid_vnr(current), ptd);
+
+		/* Note that it will call return_syscall() */
 		mcctrl_put_per_proc_data(ppd);
+		pr_ptd("put", task_pid_vnr(current), ptd);
 	}
 	else {
 		printk("WARNING: no per process data for PID %d ?\n",
