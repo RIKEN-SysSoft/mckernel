@@ -117,6 +117,8 @@ SYSCALL_HANDLED(238, migrate_pages)
 SYSCALL_HANDLED(239, move_pages)
 #ifdef PERF_ENABLE
 SYSCALL_HANDLED(241, perf_event_open)
+#else // PERF_ENABLE
+SYSCALL_DELEGATED(241, perf_event_open)
 #endif // PERF_ENABLE
 SYSCALL_HANDLED(260, wait4)
 SYSCALL_HANDLED(270, process_vm_readv)
