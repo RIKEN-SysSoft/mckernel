@@ -3874,12 +3874,6 @@ sub process {
 				      "Avoid crashing the kernel - try using WARN_ON & recovery code rather than BUG() or BUG_ON()\n" . $herecurr);
 		}
 
-# avoid LINUX_VERSION_CODE
-		if ($line =~ /\bLINUX_VERSION_CODE\b/) {
-			WARN("LINUX_VERSION_CODE",
-			     "LINUX_VERSION_CODE should be avoided, code should be for the version to which it is merged\n" . $herecurr);
-		}
-
 # check for uses of printk_ratelimit
 		if ($line =~ /\bprintk_ratelimit\s*\(/) {
 			WARN("PRINTK_RATELIMITED",
@@ -5152,39 +5146,6 @@ sub process {
 		if ($line =~ /\bvolatile\b/ && $line !~ /$asm_volatile/) {
 			WARN("VOLATILE",
 			     "Use of volatile is usually wrong: see Documentation/process/volatile-considered-harmful.rst\n" . $herecurr);
-		}
-
-# Check for user-visible strings broken across lines, which breaks the ability
-# to grep for the string.  Make exceptions when the previous string ends in a
-# newline (multiple lines in one string constant) or '\t', '\r', ';', or '{'
-# (common in inline assembly) or is a octal \123 or hexadecimal \xaf value
-		if ($line =~ /^\+\s*$String/ &&
-		    $prevline =~ /"\s*$/ &&
-		    $prevrawline !~ /(?:\\(?:[ntr]|[0-7]{1,3}|x[0-9a-fA-F]{1,2})|;\s*|\{\s*)"\s*$/) {
-			if (WARN("SPLIT_STRING",
-				 "quoted string split across lines\n" . $hereprev) &&
-				     $fix &&
-				     $prevrawline =~ /^\+.*"\s*$/ &&
-				     $last_coalesced_string_linenr != $linenr - 1) {
-				my $extracted_string = get_quoted_string($line, $rawline);
-				my $comma_close = "";
-				if ($rawline =~ /\Q$extracted_string\E(\s*\)\s*;\s*$|\s*,\s*)/) {
-					$comma_close = $1;
-				}
-
-				fix_delete_line($fixlinenr - 1, $prevrawline);
-				fix_delete_line($fixlinenr, $rawline);
-				my $fixedline = $prevrawline;
-				$fixedline =~ s/"\s*$//;
-				$fixedline .= substr($extracted_string, 1) . trim($comma_close);
-				fix_insert_line($fixlinenr - 1, $fixedline);
-				$fixedline = $rawline;
-				$fixedline =~ s/\Q$extracted_string\E\Q$comma_close\E//;
-				if ($fixedline !~ /\+\s*$/) {
-					fix_insert_line($fixlinenr, $fixedline);
-				}
-				$last_coalesced_string_linenr = $linenr;
-			}
 		}
 
 # check for missing a space in a string concatenation
