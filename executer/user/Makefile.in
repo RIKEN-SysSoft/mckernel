@@ -65,9 +65,9 @@ mcexec: mcexec.c libmcexec.a
 ifeq ($(ARCH), arm64)
 eclair: eclair.c arch/$(ARCH)/arch-eclair.c
 # POSTK_DEBUG_ARCH_DEP_94 arch depends move [BEGIN]
-	$(CC) -I.. -I. -I./arch/$(ARCH)/include -I$(VPATH)/.. -I$(VPATH) $(CFLAGS) -o $@ $^ $(LIBS)
+	$(CC) -I.. -I. -I./arch/$(ARCH)/include -I$(VPATH)/.. -I$(VPATH) $(CFLAGS) -o $@ $^ $(LIBS) -ldl -lz
 # POSTK_DEBUG_ARCH_DEP_94 [ELSE]
-#	$(CC) -I.. -I. -I./arch/$(ARCH)/include -I$(VPATH)/.. -I$(VPATH) -I$(VPATH)/arch/${ARCH}/include $(CFLAGS) -o $@ $^ $(LIBS)
+#	$(CC) -I.. -I. -I./arch/$(ARCH)/include -I$(VPATH)/.. -I$(VPATH) -I$(VPATH)/arch/${ARCH}/include $(CFLAGS) -o $@ $^ $(LIBS) -ldl -lz
 # POSTK_DEBUG_ARCH_DEP_94 [END]
 else
 eclair: eclair.c
