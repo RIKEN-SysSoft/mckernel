@@ -24,16 +24,7 @@
  *  2013/07/02 shirasawa add error handling for prepare_process
  *  2013/04/17 nakamura add generic system call forwarding
  */
-#ifdef POSTK_DEBUG_ARCH_DEP_96 /* build for linux4.16 */
-#include <linux/version.h>
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0)
-#include <linux/sched/types.h>
-#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0) */
 #include <linux/sched.h>
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0) */
-#else /* POSTK_DEBUG_ARCH_DEP_96 */
-#include <linux/sched.h>
-#endif /* POSTK_DEBUG_ARCH_DEP_96 */
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/wait.h>
@@ -41,9 +32,7 @@
 #include <linux/gfp.h>
 #include <linux/fs.h>
 #include <linux/file.h>
-#ifndef POSTK_DEBUG_ARCH_DEP_96 /* build for linux4.16 */
 #include <linux/version.h>
-#endif /* !POSTK_DEBUG_ARCH_DEP_96 */
 #include <linux/semaphore.h>
 #include <linux/interrupt.h>
 #include <linux/cpumask.h>
@@ -57,6 +46,9 @@
 #include <ihk/ihk_host_user.h>
 #include <ihklib_rusage.h>
 #include <rusage.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
+#include <uapi/linux/sched/types.h>
+#endif
 #ifdef POSTK_DEBUG_ARCH_DEP_86 /* make perf counter start id architecture dependent */
 #include <archdeps.h>
 #endif /* POSTK_DEBUG_ARCH_DEP_86 */
