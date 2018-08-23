@@ -124,7 +124,6 @@ extern void free_all_process_memory_range(struct process_vm *vm);
 extern int arch_clear_host_user_space();
 extern long arch_ptrace(long request, int pid, long addr, long data);
 extern struct cpu_local_var *clv;
-extern void sync_child_event(struct mc_perf_event *event);
 
 int prepare_process_ranges_args_envs(struct thread *thread, 
 		struct program_load_desc *pn,
@@ -967,6 +966,38 @@ void terminate_mcexec(int rc, int sig)
 		request.args[0] = proc->exit_status;
 		proc->nohost = 1;
 		do_syscall(&request, ihk_mc_get_processor_id(), proc->pid);
+	}
+}
+
+void sync_child_event(struct mc_perf_event *event)
+{
+	struct mc_perf_event *leader;
+	struct mc_perf_event *sub;
+
+	if (!event)
+		return;
+	if (!(event->attr.inherit) && (event->pid == 0))
+		return;
+
+	leader = event->group_leader;
+	if (leader->pid == 0) {
+		leader->child_count_total +=
+			ihk_mc_perfctr_read(leader->counter_id);
+	}
+	else if (leader->pid > 0) {
+		leader->count = ihk_mc_perfctr_read(leader->counter_id);
+	}
+	else
+		return; // Error
+
+	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
+		if (event->pid == 0) {
+			sub->child_count_total +=
+				ihk_mc_perfctr_read(sub->counter_id);
+		}
+		else if (event->pid > 0) {
+			sub->count = ihk_mc_perfctr_read(sub->counter_id);
+		}
 	}
 }
 
@@ -3491,36 +3522,6 @@ unsigned long perf_event_read_value(struct mc_perf_event *event)
 		rtn_count += event->child_count_total;
 
 	return rtn_count;
-}
-
-void sync_child_event(struct mc_perf_event *event)
-{
-	struct mc_perf_event *leader;
-	struct mc_perf_event *sub;
-	
-	if(!event)
-		return;
-	if(!(event->attr.inherit) && (event->pid == 0))
-		return;
-	
-	leader = event->group_leader;
-	if(leader->pid == 0){
-		leader->child_count_total += ihk_mc_perfctr_read(leader->counter_id);
-	}
-	else if(leader->pid > 0) {
-		leader->count = ihk_mc_perfctr_read(leader->counter_id);
-	}
-	else 
-		return; // Error
-
-	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
-		if(event->pid == 0){
-			sub->child_count_total += ihk_mc_perfctr_read(sub->counter_id);
-		}
-		else if(event->pid > 0) {
-			sub->count = ihk_mc_perfctr_read(sub->counter_id);
-		}
-	}
 }
 
 static int
