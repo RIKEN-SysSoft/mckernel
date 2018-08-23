@@ -136,6 +136,13 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 static void do_mod_exit(int status);
 #endif
 
+/* Size of tid table. It needs to be more than #CPUs when CPU
+ * oversubscription is needed. The examples of CPU oversubscription are:
+ * (1) pmi_proxy + gdb + #CPU OMP threads
+ * (2) pmi_proxy + #CPU OMP threads + POSIX AIO IO + POSIX AIO notification
+ */
+#define NR_TIDS (allow_oversubscribe ? (num_processors * 2) : num_processors)
+
 static void send_syscall(struct syscall_request *req, int cpu, int pid, struct syscall_response *res)
 {
 	struct ikc_scd_packet packet IHK_DMA_ALIGN;
@@ -2450,14 +2457,15 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		mcs_rwlock_writer_lock(&newproc->threads_lock, &lock);
 		/* Obtain mcexec TIDs if not known yet */
 		if (!newproc->nr_tids) {
-			tids = kmalloc(sizeof(int) * num_processors, IHK_MC_AP_NOWAIT);
+			tids = kmalloc(sizeof(int) * NR_TIDS, IHK_MC_AP_NOWAIT);
 			if (!tids) {
 				mcs_rwlock_writer_unlock(&newproc->threads_lock, &lock);
 				release_cpuid(cpuid);
 				return -ENOMEM;
 			}
 
-			newproc->tids = kmalloc(sizeof(struct mcexec_tid) * num_processors, IHK_MC_AP_NOWAIT);
+			newproc->tids = kmalloc(sizeof(struct mcexec_tid) *
+						NR_TIDS, IHK_MC_AP_NOWAIT);
 			if (!newproc->tids) {
 				mcs_rwlock_writer_unlock(&newproc->threads_lock, &lock);
 				kfree(tids);
@@ -2465,10 +2473,11 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 				return -ENOMEM;
 			}
 
-			settid(new, num_processors, tids);
+			settid(new, NR_TIDS, tids);
 
-			for (i = 0; (i < num_processors) && tids[i]; ++i) {
-				dkprintf("%s: tid[%d]: %d\n", __FUNCTION__, i, tids[i]);
+			for (i = 0; (i < NR_TIDS) && tids[i]; ++i) {
+				dkprintf("%s: tids[%d]: %d\n",
+					 __func__, i, tids[i]);
 				newproc->tids[i].tid = tids[i];
 				newproc->tids[i].thread = NULL;
 				++newproc->nr_tids;
@@ -2497,11 +2506,12 @@ retry_tid:
 		/* TODO: spawn more mcexec threads */
 		if (!new->tid) {
 			release_cpuid(cpuid);
-#ifdef POSTK_DEBUG_TEMP_FIX_85 /* kprintf argument invalid fix. */
-			kprintf("%s: no more TIDs available\n", __FUNCTION__);
-#else /* POSTK_DEBUG_TEMP_FIX_85 */
-			kprintf("%s: no more TIDs available\n");
-#endif /* POSTK_DEBUG_TEMP_FIX_85 */
+			kprintf("%s: no more TIDs available\n", __func__);
+			for (i = 0; i < newproc->nr_tids; ++i) {
+				kprintf("%s: i=%d,tid=%d,thread=%p\n",
+					__func__, i, newproc->tids[i].tid,
+					newproc->tids[i].thread);
+			}
 			return -ENOMEM;
 		}
 	}
