@@ -3455,7 +3455,8 @@ SYSCALL_DECLARE(signalfd4)
 	return sfd->fd;
 }
 
-int 
+#ifdef ENABLE_PERF
+int
 perf_counter_alloc(struct thread *thread)
 {
 	int ret = -1;
@@ -3821,6 +3822,7 @@ perf_mmap(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 
 	return rc;
 }
+#endif /*ENABLE_PERF*/
 
 struct vm_range_numa_policy *vm_range_policy_search(struct process_vm *vm, uintptr_t addr)
 {
@@ -3872,7 +3874,7 @@ static int vm_policy_insert(struct process_vm *vm, struct vm_range_numa_policy *
 	return 0;
 }
 
-
+#ifdef ENABLE_PERF
 struct mc_perf_event*
 mc_perf_event_alloc(struct perf_event_attr *attr)
 {
@@ -4048,6 +4050,7 @@ SYSCALL_DECLARE(perf_event_open)
 	ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
 	return sfd->fd;
 }
+#endif /* ENABLE_PERF */
 
 SYSCALL_DECLARE(rt_sigtimedwait)
 {
@@ -8985,6 +8988,7 @@ static void do_mod_exit(int status){
 #endif
 
 #ifndef POSTK_DEBUG_ARCH_DEP_85 /* delete unnecessary pmc_xxx system call */
+#ifdef ENABLE_PERF
 /* select counter type */
 SYSCALL_DECLARE(pmc_init)
 {
@@ -9015,6 +9019,7 @@ SYSCALL_DECLARE(pmc_reset)
     int counter = ihk_mc_syscall_arg0(ctx);
     return ihk_mc_perfctr_reset(counter);
 }
+#endif /*ENABLE_PERF*/
 #endif /* !POSTK_DEBUG_ARCH_DEP_85 */
 
 extern void save_uctx(void *, void *);

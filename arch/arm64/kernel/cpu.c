@@ -1368,6 +1368,7 @@ struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 	dkprintf("[%d] arch_switch_context: tlsblock_base: 0x%lX\n", 
 		 ihk_mc_get_processor_id(), next->tlsblock_base);
 
+#ifdef ENABLE_PERF
 	/* Performance monitoring inherit */
 	if(next->proc->monitoring_event) {
 		if(next->proc->perf_status == PP_RESET)
@@ -1377,6 +1378,7 @@ struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 			perf_start(next->proc->monitoring_event);
 		}
 	}
+#endif /*ENABLE_PERF*/
 	if (likely(prev)) {
 		tls_thread_switch(prev, next);
 
