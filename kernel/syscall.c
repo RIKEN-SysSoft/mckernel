@@ -2226,13 +2226,16 @@ SYSCALL_DECLARE(execve)
 	dkprintf("execve(): ELF desc received, num sections: %d\n",
 		desc->num_sections);
 	
-	if (desc->shell_path[0]) {
-		dkprintf("execve(): shell interpreter: %s\n", desc->shell_path);
+	/* for shebang script we get extra argvs from mcexec */
+	if (desc->args_len) {
+		desc->args = ((char *)desc) + sizeof(struct program_load_desc) +
+			     sizeof(struct program_image_section) *
+			     desc->num_sections;
 	}
 
 	/* Flatten argv and envp into kernel-space buffers */
-	argv_flat_len = flatten_strings_from_user(-1, (desc->shell_path[0] ? 
-				desc->shell_path : NULL), argv, &argv_flat);
+	argv_flat_len = flatten_strings_from_user(desc->args, argv,
+						  &argv_flat);
 	if (argv_flat_len < 0) {
 		char *kfilename;
 		int len = strlen_user(filename);
@@ -2246,8 +2249,10 @@ SYSCALL_DECLARE(execve)
 		ret = argv_flat_len;
 		goto end;
 	}
+	desc->args = NULL;
+	desc->args_len = 0;
 
-	envp_flat_len = flatten_strings_from_user(-1, NULL, envp, &envp_flat);
+	envp_flat_len = flatten_strings_from_user(NULL, envp, &envp_flat);
 	if (envp_flat_len < 0) {
 		char *kfilename;
 		int len = strlen_user(filename);

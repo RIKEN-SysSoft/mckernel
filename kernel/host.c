@@ -78,7 +78,6 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	unsigned long args_envs_p, args_envs_rp;
 	unsigned long s, e, up;
 	char **argv;
-	char **a;
 	int i, n, argc, envc, args_envs_npages;
 	char **env;
 	int range_npages;
@@ -370,21 +369,18 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 			__FUNCTION__,
 			proc->saved_cmdline);
 
-	for (a = argv; *a; a++) {
-		*a = (char *)addr + (unsigned long)*a; // Process' address space!
+	for (i = 0; i < argc; i++) {
+		// Process' address space!
+		argv[i] = (char *)addr + (unsigned long)argv[i];
 	}
 
 	envc = *((long *)(args_envs + p->args_len));
 	dkprintf("envc: %d\n", envc);
 
 	env = (char **)(args_envs + p->args_len + sizeof(long));
-	while (*env) {
-		char **_env = env;
-		//dkprintf("%s\n", args_envs + p->args_len + (unsigned long)*env);
-		*env = (char *)addr + p->args_len + (unsigned long)*env;
-		env = ++_env;
+	for (i = 0; i < envc; i++) {
+		env[i] = addr + p->args_len + env[i];
 	}
-	env = (char **)(args_envs + p->args_len + sizeof(long));
 
 	dkprintf("env OK\n");
 

@@ -303,7 +303,6 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	              + sizeof(struct program_image_section) * nhdrs);
 	memset(desc, '\0', sizeof(struct program_load_desc)
 	                   + sizeof(struct program_image_section) * nhdrs);
-	desc->shell_path[0] = '\0';
 	fseek(fp, hdr.e_phoff, SEEK_SET);
 	j = 0;
 	desc->num_sections = nhdrs;
@@ -606,8 +605,10 @@ retry:
 
 	/* Check whether the resolved path is a symlink */
 	if (lstat(path, &sb) == -1) {
-		__eprintf("lookup_exec_path(): error stat\n");
-		return errno;
+		error = errno;
+		__dprintf("lookup_exec_path(): error stat for %s: %d\n",
+			  path, error);
+		return error;
 	}
 
 	if ((sb.st_mode & S_IFMT) == S_IFLNK) {
@@ -654,13 +655,13 @@ retry:
 }
 
 int load_elf_desc(char *filename, struct program_load_desc **desc_p, 
-		char **shell_p)
+		char **shebang_p)
 {
 	FILE *fp;
 	FILE *interp = NULL;
 	char *interp_path;
-	char *shell = NULL;
-	size_t shell_len = 0;
+	char *shebang = NULL;
+	size_t shebang_len = 0;
 	struct program_load_desc *desc;
 	int ret = 0;
 	struct stat sb;
@@ -695,16 +696,21 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 	}
 
 	if (!strncmp(header, "#!", 2)) {
-		
-		if (getline(&shell, &shell_len, fp) == -1) {
-			fprintf(stderr, "Error: reading shell path %s\n", filename);
+		if (getline(&shebang, &shebang_len, fp) == -1) {
+			fprintf(stderr, "Error: reading shebang path %s\n",
+				filename);
 		}
 
 		fclose(fp);
 
-		/* Delete new line character */
-		shell[strlen(shell) - 1] = 0;
-		*shell_p = shell;
+		/* Delete new line character and any trailing spaces */
+		shebang_len = strlen(shebang) - 1;
+		shebang[shebang_len] = '\0';
+		while (strpbrk(shebang + shebang_len - 1, " \t")) {
+			shebang_len--;
+			shebang[shebang_len] = '\0';
+		}
+		*shebang_p = shebang;
 		return 0;
 	}
 
@@ -787,6 +793,78 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 	__dprintf("# of sections: %d\n", desc->num_sections);
 	
 	*desc_p = desc;
+	return 0;
+}
+
+/* recursively resolve shebangs
+ *
+ * Note: shebang_argv_p must point to reallocable memory or be NULL
+ */
+int load_elf_desc_shebang(char *shebang_argv0,
+			  struct program_load_desc **desc_p,
+			  char ***shebang_argv_p,
+			  int execvp)
+{
+	char path[1024];
+	char *shebang = NULL;
+	int ret;
+
+	if ((ret = lookup_exec_path(shebang_argv0, path, sizeof(path), execvp))
+			!= 0) {
+		__dprintf("error: finding file: %s\n", shebang_argv0);
+		return ret;
+	}
+
+	if ((ret = load_elf_desc(path, desc_p, &shebang)) != 0) {
+		__eprintf("error: loading file: %s\n", shebang_argv0);
+		return ret;
+	}
+
+	if (shebang) {
+		char *shebang_params;
+		size_t shebang_param_count = 1;
+		size_t shebang_argv_count = 0;
+		char **shebang_argv;
+
+		if (!shebang_argv_p)
+			return load_elf_desc_shebang(shebang, desc_p, NULL, 0);
+
+		shebang_argv = *shebang_argv_p;
+
+		/* if there is a space, add whatever follows as extra arg */
+		shebang_params = strchr(shebang, ' ');
+		if (shebang_params) {
+			shebang_params[0] = '\0';
+			shebang_params++;
+			shebang_param_count++;
+		}
+
+		if (shebang_argv == NULL) {
+			shebang_argv_count = shebang_param_count + 1;
+			shebang_argv = malloc(shebang_argv_count *
+					      sizeof(void *));
+			shebang_argv[shebang_param_count] = 0;
+		} else {
+			while (shebang_argv[shebang_argv_count++])
+				;
+
+			shebang_argv_count += shebang_param_count + 1;
+			shebang_argv = realloc(shebang_argv,
+					    shebang_argv_count * sizeof(void *));
+			memmove(shebang_argv + shebang_param_count,
+				shebang_argv,
+				(shebang_argv_count - shebang_param_count)
+					* sizeof(void *));
+		}
+		shebang_argv[0] = shebang;
+		if (shebang_params)
+			shebang_argv[1] = shebang_params;
+
+		*shebang_argv_p = shebang_argv;
+
+		return load_elf_desc_shebang(shebang, desc_p, shebang_argv_p, 0);
+	}
+
 	return 0;
 }
 
@@ -939,55 +1017,66 @@ unsigned long dma_buf_pa;
 
 void print_flat(char *flat) 
 {
-	char **string;
-		
-	__dprintf("counter: %d\n", *((int *)flat));
+	long i, count;
+	long *_flat = (long *)flat;
 
-	string = (char **)(flat + sizeof(int));
-	while (*string) {
-		
-		__dprintf("%s\n", (flat + (unsigned long)(*string)));
+	count = _flat[0];
+	__dprintf("counter: %ld\n", count);
 
-		++string;
+	for (i = 0; i < count; i++) {
+		__dprintf("%s\n", (flat + _flat[i + 1]));
 	}
 }
 
 /* 
  * Flatten out a (char **) string array into the following format:
- * [nr_strings][char *offset of string_0]...[char *offset of string_n-1][NULL][string0]...[stringn_1]
+ * [nr_strings][char *offset of string_0]...[char *offset of string_n-1][char *offset of end of string][string0]...[stringn_1]
  * if nr_strings == -1, we assume the last item is NULL 
+ *
+ * sizes all are longs.
  *
  * NOTE: copy this string somewhere, add the address of the string to each offset
  * and we get back a valid argv or envp array.
  *
+ * per_strings is already flattened, so we just need to manage counts and copy
+ * the string part appropriately.
+ *
  * returns the total length of the flat string and updates flat to
  * point to the beginning.
  */
-int flatten_strings(int nr_strings, char *first, char **strings, char **flat)
+int flatten_strings(char *pre_strings, char **strings, char **flat)
 {
-	int full_len, string_i;
-	unsigned long flat_offset;
-	char *_flat;
+	int full_len, i;
+	int nr_strings;
+	int pre_strings_count = 0;
+	int pre_strings_len = 0;
+	long *_flat;
+	long *pre_strings_flat;
+	char *p;
 
-	/* How many strings do we have? */
-	if (nr_strings == -1) {
-		for (nr_strings = 0; strings[nr_strings]; ++nr_strings); 
-	}
+	for (nr_strings = 0; strings[nr_strings]; ++nr_strings)
+		;
 
 	/* Count full length */
 	full_len = sizeof(long) + sizeof(char *); // Counter and terminating NULL
-	if (first) {
-		full_len += sizeof(char *) + strlen(first) + 1; 
+	if (pre_strings) {
+		pre_strings_flat = (long *)pre_strings;
+		pre_strings_count = pre_strings_flat[0];
+
+		pre_strings_len = pre_strings_flat[pre_strings_count + 1];
+		pre_strings_len -= sizeof(long) * (pre_strings_count + 2);
+
+		full_len += pre_strings_count * sizeof(long) + pre_strings_len;
 	}
 
-	for (string_i = 0; string_i < nr_strings; ++string_i) {
+	for (i = 0; strings[i]; ++i) {
 		// Pointer + actual value
-		full_len += sizeof(char *) + strlen(strings[string_i]) + 1; 
+		full_len += sizeof(char *) + strlen(strings[i]) + 1;
 	}
 
 	full_len = (full_len + sizeof(long) - 1) & ~(sizeof(long) - 1);
 
-	_flat = (char *)malloc(full_len);
+	_flat = malloc(full_len);
 	if (!_flat) {
 		return 0;
 	}
@@ -995,28 +1084,32 @@ int flatten_strings(int nr_strings, char *first, char **strings, char **flat)
 	memset(_flat, 0, full_len);
 
 	/* Number of strings */
-	*((long *)_flat) = nr_strings + (first ? 1 : 0);
+	_flat[0] = nr_strings + pre_strings_count;
 	
 	// Actual offset
-	flat_offset = sizeof(long) + sizeof(char *) * (nr_strings + 1 + 
-			(first ? 1 : 0)); 
+	p = (char *)(_flat + nr_strings + pre_strings_count + 2);
 
-	if (first) {
-		*((char **)(_flat + sizeof(long))) = (void *)flat_offset;
-		memcpy(_flat + flat_offset, first, strlen(first) + 1);
-		flat_offset += strlen(first) + 1;
+	if (pre_strings) {
+		for (i = 0; i < pre_strings_count; i++) {
+			_flat[i + 1] = pre_strings_flat[i + 1] +
+					nr_strings * sizeof(long);
+		}
+		memcpy(p, pre_strings + pre_strings_flat[1],
+		       pre_strings_len);
+		p += pre_strings_len;
 	}
 
-	for (string_i = 0; string_i < nr_strings; ++string_i) {
-		
-		/* Fabricate the string */
-		*((char **)(_flat + sizeof(long) + (string_i + (first ? 1 : 0)) 
-					* sizeof(char *))) = (void *)flat_offset;
-		memcpy(_flat + flat_offset, strings[string_i], strlen(strings[string_i]) + 1);
-		flat_offset += strlen(strings[string_i]) + 1;
-	}
+	for (i = 0; i < nr_strings; ++i) {
+		int len = strlen(strings[i]) + 1;
 
-	*flat = _flat;
+		_flat[i + pre_strings_count + 1] = p - (char *)_flat;
+
+		memcpy(p, strings[i], len);
+		p += len;
+	}
+	_flat[nr_strings + pre_strings_count + 1] = p - (char *)_flat;
+
+	*flat = (char *)_flat;
 	return full_len;
 }
 
@@ -1476,8 +1569,7 @@ static int find_mount_prefix(char *prefix)
 		}
 	}
 
-	if (line)
-		free(line);
+	free(line);
 
 	return ret;
 }
@@ -1959,7 +2051,6 @@ int main(int argc, char **argv)
 	struct program_load_desc *desc;
 	int envs_len;
 	char *envs;
-	char *args;
 	char *p;
 	int i;
 	int error;
@@ -1967,9 +2058,8 @@ int main(int argc, char **argv)
 	unsigned long lmax;
 	int target_core = 0;
 	int opt;
-	char path[1024];
-	char *shell = NULL;
-	char shell_path[1024];
+	char **shebang_argv = NULL;
+	char *shebang_argv_flat = NULL;
 	int num = 0;
 	int persona;
 #ifdef ADD_ENVS_OPTION
@@ -2002,6 +2092,8 @@ int main(int argc, char **argv)
 	/* Disable address space layout randomization */
 	__dprintf("persona=%08x\n", persona);
 	if ((persona & (PER_LINUX | ADDR_NO_RANDOMIZE)) == 0) {
+		char path[1024];
+
 		CHKANDJUMP(getenv("MCEXEC_ADDR_NO_RANDOMIZE"), 1, "personality() and then execv() failed\n");
 
 		persona = personality(persona | PER_LINUX | ADDR_NO_RANDOMIZE);
@@ -2144,7 +2236,7 @@ int main(int argc, char **argv)
 #ifdef ADD_ENVS_OPTION
 #else /* ADD_ENVS_OPTION */
 	/* Collect environment variables */
-	envs_len = flatten_strings(-1, NULL, environ, &envs);
+	envs_len = flatten_strings(NULL, environ, &envs);
 #endif /* ADD_ENVS_OPTION */
 
 #ifdef ENABLE_MCOVERLAYFS
@@ -2264,32 +2356,8 @@ int main(int argc, char **argv)
 	__dprintf("mcoverlay disable\n");
 #endif // ENABLE_MCOVERLAYFS
 
-	if (lookup_exec_path(argv[optind], path, sizeof(path), 1) != 0) {
-		fprintf(stderr, "error: finding file: %s\n", argv[optind]);
+	if (load_elf_desc_shebang(argv[optind], &desc, &shebang_argv, 1))
 		return 1;
-	}
-
-	if (load_elf_desc(path, &desc, &shell) != 0) {
-		fprintf(stderr, "error: loading file: %s\n", argv[optind]);
-		return 1;
-	}
-
-	/* Check whether shell script */
-	if (shell) {
-		if (lookup_exec_path(shell, shell_path, sizeof(shell_path), 0) != 0) {
-			fprintf(stderr, "error: finding file: %s\n", shell);
-			return 1;
-		}
-
-		if (load_elf_desc(shell_path, &desc, &shell) != 0) {
-			fprintf(stderr, "error: loading file: %s\n", shell);
-			return 1;
-		}
-	}
-
-	if (shell) {
-		argv[optind] = path;
-	}
 
 #ifdef ADD_ENVS_OPTION
 	/* Collect environment variables */
@@ -2297,7 +2365,7 @@ int main(int argc, char **argv)
 		add_env_list(&extra_env, environ[i]);
 	}
 	local_env = create_local_environ(extra_env);
-	envs_len = flatten_strings(-1, NULL, local_env, &envs);
+	envs_len = flatten_strings(NULL, local_env, &envs);
 	destroy_local_environ(local_env);
 	local_env = NULL;
 	destroy_env_list(extra_env);
@@ -2310,9 +2378,14 @@ int main(int argc, char **argv)
 	desc->envs = envs;
 	//print_flat(envs);
 
-	desc->args_len = flatten_strings(-1, shell, argv + optind, &args);
-	desc->args = args;
-	//print_flat(args);
+	if (shebang_argv)
+		flatten_strings(NULL, shebang_argv, &shebang_argv_flat);
+
+	desc->args_len = flatten_strings(shebang_argv_flat, argv + optind,
+					 &desc->args);
+	//print_flat(desc->args);
+	free(shebang_argv);
+	free(shebang_argv_flat);
 
 	desc->cpu = target_core;
 	desc->enable_vdso = enable_vdso;
@@ -3796,85 +3869,81 @@ fork_err:
 			switch (w.sr.args[0]) {
 				struct program_load_desc *desc;
 				struct remote_transfer trans;
-				char path[1024];
 				char *filename;
+				char **shebang_argv;
+				char *shebang_argv_flat;
+				char *buffer;
+				size_t size;
 				int ret;
-				char *shell;
-				char shell_path[1024];
 
 				/* Load descriptor phase */
 				case 1:
-					
-					shell = NULL;
+					shebang_argv = NULL;
+					buffer = NULL;
 					filename = (char *)w.sr.args[1];
 					
-					if ((ret = lookup_exec_path(filename, path, sizeof(path), 0)) 
-						!= 0) {
+					if ((ret = load_elf_desc_shebang(filename, &desc,
+									 &shebang_argv,
+									 0)) != 0) {
 						goto return_execve1;
-					}
-
-					if ((ret = load_elf_desc(path, &desc, &shell)) != 0) {
-						fprintf(stderr, 
-							"execve(): error loading ELF for file %s\n", path);
-						goto return_execve1;
-					}
-					
-					/* Check whether shell script */
-					if (shell) {
-						if ((ret = lookup_exec_path(shell, shell_path, 
-									sizeof(shell_path), 0)) != 0) {
-							fprintf(stderr, "execve(): error: finding file: %s\n", shell);
-							goto return_execve1;
-						}
-
-						if ((ret = load_elf_desc(shell_path, &desc, &shell)) 
-								!= 0) {
-							fprintf(stderr, "execve(): error: loading file: %s\n", shell);
-							goto return_execve1;
-						}
-
-						if (strlen(shell) >= SHELL_PATH_MAX_LEN) {
-							fprintf(stderr, "execve(): error: shell path too long: %s\n", shell_path);
-							ret = ENAMETOOLONG;
-							goto return_execve1;
-						}
-
-						/* Let the LWK know the shell interpreter */
-						strcpy(desc->shell_path, shell);
 					}
 
 					desc->enable_vdso = enable_vdso;
 					__dprintf("execve(): load_elf_desc() for %s OK, num sections: %d\n",
-						path, desc->num_sections);
+						filename, desc->num_sections);
 
 					desc->rlimit[MCK_RLIMIT_STACK].rlim_cur = rlim_stack.rlim_cur;
 					desc->rlimit[MCK_RLIMIT_STACK].rlim_max = rlim_stack.rlim_max;
 					desc->stack_premap = stack_premap;
 
+					buffer = (char *)desc;
+					size = sizeof(struct program_load_desc) +
+					       sizeof(struct program_image_section) *
+					       desc->num_sections;
+					if (shebang_argv) {
+						desc->args_len = flatten_strings(NULL, shebang_argv,
+										 &shebang_argv_flat);
+						buffer = malloc(size + desc->args_len);
+						if (!buffer) {
+							fprintf(stderr,
+								"execve(): could not alloc transfer buffer for file %s\n",
+								filename);
+							free(shebang_argv_flat);
+							ret = ENOMEM;
+							goto return_execve1;
+						}
+						memcpy(buffer, desc, size);
+						memcpy(buffer + size, shebang_argv_flat,
+						       desc->args_len);
+						free(shebang_argv_flat);
+						size += desc->args_len;
+					}
+
 					/* Copy descriptor to co-kernel side */
-					trans.userp = (void*)desc;
+					trans.userp = buffer;
 					trans.rphys = w.sr.args[2];
-					trans.size = sizeof(struct program_load_desc) + 
-						sizeof(struct program_image_section) * 
-						desc->num_sections;
+					trans.size = size;
 					trans.direction = MCEXEC_UP_TRANSFER_TO_REMOTE;
 					
 					if (ioctl(fd, MCEXEC_UP_TRANSFER, &trans) != 0) {
 						fprintf(stderr, 
 							"execve(): error transfering ELF for file %s\n", 
-							(char *)w.sr.args[1]);
+							filename);
+						ret = -errno;
 						goto return_execve1;
 					}
 					
 					__dprintf("execve(): load_elf_desc() for %s OK\n",
-						path);
+						  filename);
 
-					/* We can't be sure next phase will succeed */
-					/* TODO: what shall we do with fp in desc?? */
-					free(desc);
-					
 					ret = 0;
 return_execve1:
+					/* We can't be sure next phase will succeed */
+					/* TODO: what shall we do with fp in desc?? */
+					if (buffer != (char *)desc)
+						free(buffer);
+					free(desc);
+
 					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 					break;
 
