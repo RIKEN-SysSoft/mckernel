@@ -495,7 +495,6 @@ int lookup_exec_path(char *filename, char *path, int max_len, int execvp)
 	struct stat sb;
 	char *link_path = NULL;
 
-retry:
 	found = 0;
 
 	/* Is file not absolute path? */
@@ -609,38 +608,6 @@ retry:
 		__dprintf("lookup_exec_path(): error stat for %s: %d\n",
 			  path, error);
 		return error;
-	}
-
-	if ((sb.st_mode & S_IFMT) == S_IFLNK) {
-		link_path = malloc(max_len);
-		if (!link_path) {
-			fprintf(stderr, "lookup_exec_path(): error allocating\n");
-			return ENOMEM;
-		}
-#ifdef POSTK_DEBUG_TEMP_FIX_6 /* dynamic allocate area initialize clear */
-		memset(link_path, '\0', max_len);
-#endif /* POSTK_DEBUG_TEMP_FIX_6 */
-		
-		error = readlink(path, link_path, max_len);
-		if (error == -1 || error == max_len) {
-			fprintf(stderr, "lookup_exec_path(): error readlink\n");
-			free(link_path);
-			return EINVAL;
-		}
-		link_path[error] = '\0';
-
-		__dprintf("lookup_exec_path(): %s is link -> %s\n", path, link_path);
-
-		if(link_path[0] != '/'){
-			char *t = strrchr(path, '/');
-			if(t){
-				t++;
-				strcpy(t, link_path);
-				strcpy(link_path, path);
-			}
-		}
-		filename = link_path;
-		goto retry; 
 	}
 
 	if (!found) {
