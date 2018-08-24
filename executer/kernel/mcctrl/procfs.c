@@ -294,6 +294,8 @@ get_base_entry(int osnum)
 	if(!e){
 		e = add_procfs_entry(NULL, name, S_IFDIR | 0555,
 		                     uid, gid, NULL);
+		if (!e)
+			return NULL;
 		e->osnum = osnum;
 	}
 	return e;
@@ -429,6 +431,8 @@ proc_exe_link(int osnum, int pid, const char *path)
 
 		e = add_procfs_entry(parent, "exe", S_IFLNK | 0777, uid, gid,
 		                     path);
+		if (!e)
+			goto out;
 		e->data = kmalloc(strlen(path) + 1, GFP_KERNEL);
 		strcpy(e->data, path);
 		task = find_procfs_entry(parent, "task");
@@ -437,6 +441,7 @@ proc_exe_link(int osnum, int pid, const char *path)
 			                 uid, gid, path);
 		}
 	}
+out:
 	up(&procfs_file_list_lock);
 }
 
