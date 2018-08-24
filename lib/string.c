@@ -333,5 +333,5 @@ int flatten_strings_from_user(char *pre_strings, char **strings, char **flat)
 	_flat[nr_strings + pre_strings_count + 1] = p - (char *)_flat;
 
 	*flat = (char *)_flat;
-	return full_len;
+	return p - (char *)_flat;
 }
