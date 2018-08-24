@@ -62,7 +62,7 @@
 #define MCEXEC_UP_TERMINATE_THREAD 0x30a02925
 #define MCEXEC_UP_GET_NUM_POOL_THREADS  0x30a02926
 #define MCEXEC_UP_UTI_ATTR       0x30a02927
-#define MCEXEC_UP_UNMAP_PSEUDO_FILEMAP 0x30a02928
+#define MCEXEC_UP_RELEASE_USER_SPACE 0x30a02928
 
 #define MCEXEC_UP_DEBUG_LOG     0x40000000
 
@@ -249,6 +249,11 @@ struct sys_umount_desc {
 
 struct sys_unshare_desc {
 	unsigned long unshare_flags;
+};
+
+struct release_user_space_desc {
+	unsigned long user_start;
+	unsigned long user_end;
 };
 
 enum perf_ctrl_type {
