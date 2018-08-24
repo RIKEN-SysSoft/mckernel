@@ -1744,6 +1744,7 @@ int mcexec_create_per_process_data(ihk_os_t os)
 		printk("%s: ERROR: allocating per-process data\n", __FUNCTION__);
 		return -ENOMEM;
 	}
+	memset(ppd, 0, sizeof(struct mcctrl_per_proc_data)); /* debug */
 
 	ppd->ud = usrdata;
 	ppd->pid = task_tgid_vnr(current);
