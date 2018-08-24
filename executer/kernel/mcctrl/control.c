@@ -2627,14 +2627,20 @@ err:
 	return 0;
 }
  
-long mcexec_unmap_pseudo_filemap(ihk_os_t os, struct file *file)
+static long mcexec_release_user_space(struct release_user_space_desc *__user arg)
 {
-	long rc = -1;
-	struct mcos_handler_info *info;
-	info = ihk_os_get_mcos_private_data(file);
-	printk("%s: clear_pte_range %p-%p\n", __FUNCTION__, (void*)info->user_start, (void*)info->user_end);
-	rc = clear_pte_range(info->user_start, info->user_end - info->user_start);
-	return rc;
+	struct release_user_space_desc desc;
+
+	if (copy_from_user(&desc, arg, sizeof(desc))) {
+		return -EFAULT;
+	}
+
+#if 1
+	printk("%s: calling clear_pte_range,%lx-%lx\n", __FUNCTION__, desc.user_start, desc.user_end);
+	return clear_pte_range(desc.user_start, desc.user_end - desc.user_start);
+#else
+	return release_user_space(desc.user_start, desc.user_end - desc.user_start);
+#endif
 }
 
  static long (*mckernel_do_futex)(int n, unsigned long arg0, unsigned long arg1,
@@ -3146,8 +3152,8 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 	case MCEXEC_UP_TERMINATE_THREAD:
 		return mcexec_terminate_thread(os, (unsigned long __user *)arg, file);
 
-	case MCEXEC_UP_UNMAP_PSEUDO_FILEMAP:
-		return mcexec_unmap_pseudo_filemap(os, file);
+	case MCEXEC_UP_RELEASE_USER_SPACE:
+		return mcexec_release_user_space((struct release_user_space_desc *)arg);
 
 	case MCEXEC_UP_GET_NUM_POOL_THREADS:
 		return mcctrl_get_num_pool_threads(os);
