@@ -221,6 +221,7 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 				goto end;
 			}
 			p += n;
+			remain -= n;
 		}
 		ans = p - buf;
 		eof = 1;
