@@ -631,6 +631,41 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 	 */
 
 	if (!strcmp(p, "stat")) {
+		const char *comm = "exe";
+		char state;
+
+		if (proc->saved_cmdline) {
+			comm = strrchr(proc->saved_cmdline, '/');
+			if (comm)
+				comm++;
+			else
+				comm = proc->saved_cmdline;
+		}
+		switch (proc->status & (0x3f)) {
+		case PS_INTERRUPTIBLE:
+			state = 'S';
+			break;
+		case PS_UNINTERRUPTIBLE:
+			state = 'D';
+			break;
+		case PS_ZOMBIE:
+			state = 'Z';
+			break;
+		case PS_EXITED:
+			state = 'X';
+			break;
+		case PS_STOPPED:
+			state = 'T';
+			break;
+		case PS_RUNNING:
+		default:
+			if (proc->forwarding)
+				state = 'S';
+			else
+				state = 'R';
+			break;
+		}
+
 
 		/*
 		 * pid (comm) state ppid
@@ -657,7 +692,7 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 		    "%lu %lu %lu %lu "	      // sigignore...
 		    "%lu %d %d %u "	      // cnswap...
 		    "%u %llu %lu %ld\n",      // policy...
-		    0, "exe", 'R', 0,	      // pid...
+		    0, comm, state, 0,        // pid...
 		    0, 0, 0, 0,      	      // pgrp...
 		    0, 0L, 0L, 0L,	      // flags...
 		    0L, 0L, 0L, 0L,	      // cmajflt...
