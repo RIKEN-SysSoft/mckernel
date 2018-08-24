@@ -1327,6 +1327,7 @@ static int reduce_stack(struct rlimit *orig_rlim, char *argv[])
 {
 	int n;
 	char newval[40];
+	char path[1024];
 	int error;
 	struct rlimit new_rlim;
 
@@ -1358,7 +1359,17 @@ static int reduce_stack(struct rlimit *orig_rlim, char *argv[])
 		return 1;
 	}
 
-	execv("/proc/self/exe", argv);
+	error = readlink("/proc/self/exe", path, sizeof(path));
+	if (error < 0) {
+		__eprintf("Could not readlink /proc/self/exe? %m\n");
+		return 1;
+	} else if (error >= sizeof(path)) {
+		strcpy(path, "/proc/self/exe");
+	} else {
+		path[error] = '\0';
+	}
+
+	execv(path, argv);
 
 	__eprintf("failed to execv(myself)\n");
 	return 1;
@@ -1999,7 +2010,15 @@ int main(int argc, char **argv)
 		error = setenv("MCEXEC_ADDR_NO_RANDOMIZE", "1", 1);
 		CHKANDJUMP(error == -1, 1, "setenv failed\n");
 
-		error = execv("/proc/self/exe", argv);
+		error = readlink("/proc/self/exe", path, sizeof(path));
+		CHKANDJUMP(error == -1, 1, "readlink failed: %m\n");
+		if (error >= sizeof(path)) {
+			strcpy(path, "/proc/self/exe");
+		} else {
+			path[error] = '\0';
+		}
+
+		error = execv(path, argv);
 		CHKANDJUMPF(error == -1, 1, "execv failed, error=%d,strerror=%s\n", error, strerror(errno));
 	}
 	if (getenv("MCEXEC_ADDR_NO_RANDOMIZE")) {
