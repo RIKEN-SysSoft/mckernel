@@ -2491,6 +2491,7 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	thread->lfs = get_fs_ctx(lctx);
 	thread->rfs = get_fs_ctx(rctx);
 	thread->handler = info;
+	thread->task = current;
 
 	write_lock_irqsave(&host_thread_lock, flags);
 	thread->next = host_threads;
