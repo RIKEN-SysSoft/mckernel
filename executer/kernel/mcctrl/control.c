@@ -756,7 +756,7 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 	--pe->nr_processes_left;
 	kfree(pli);
 
-	printk("%s: pid: %d, rank=%d\n",
+	dprintk("%s: pid: %d, rank=%d\n",
 		   __FUNCTION__, task_tgid_vnr(current), pe->process_rank);
 
 	cpus_to_assign = udp->cpu_info->n_cpus / req.nr_processes;
@@ -1294,7 +1294,7 @@ retry_alloc:
 		}
 		init_waitqueue_head(&wqhln->wq_syscall);
 		list_add_tail(&wqhln->list, &ppd->wq_req_list);
-		printk("%s: wqhln not found,list_add ppd->wq_req_list %p\n", __FUNCTION__, wqhln);
+		//printk("%s: wqhln not found,list_add ppd->wq_req_list %p\n", __FUNCTION__, wqhln);
 	} else {
 		//printk("%s: wqhln found,%p\n", __FUNCTION__, wqhln);
 	}

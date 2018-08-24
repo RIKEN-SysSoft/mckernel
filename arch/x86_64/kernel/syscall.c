@@ -106,7 +106,7 @@ int obtain_clone_cpuid(cpu_set_t *cpu_set) {
 
 		v = get_cpu_local_var(cpu);
 		ihk_mc_spinlock_lock_noirq(&v->runq_lock);
-		kprintf("%s: cpu=%d,runq_len=%d,runq_reserved=%d\n", __FUNCTION__, cpu, v->runq_len, v->runq_reserved);
+		//kprintf("%s: cpu=%d,runq_len=%d,runq_reserved=%d\n", __FUNCTION__, cpu, v->runq_len, v->runq_reserved);
 		if (min_queue_len == -1 || v->runq_len + v->runq_reserved < min_queue_len) {
 			min_queue_len = v->runq_len + v->runq_reserved;
 			min_cpu = cpu;
