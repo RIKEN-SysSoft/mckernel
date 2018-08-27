@@ -177,6 +177,7 @@ int mcctrl_os_shutdown_notifier(int os_index)
 			mdelay(200);
 		}
 
+		pager_cleanup();
 		sysfsm_cleanup(os[os_index]);
 		free_topology_info(os[os_index]);
 		ihk_os_unregister_user_call_handlers(os[os_index], mcctrl_uc + os_index);

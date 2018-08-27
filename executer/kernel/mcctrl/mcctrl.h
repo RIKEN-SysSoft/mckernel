@@ -420,7 +420,9 @@ extern void (*mcctrl_zap_page_range)(struct vm_area_struct *vma,
 /* syscall.c */
 void pager_add_process(void);
 void pager_remove_process(struct mcctrl_per_proc_data *ppd);
+void pager_cleanup(void);
 
+int __do_in_kernel_irq_syscall(ihk_os_t os, struct ikc_scd_packet *packet);
 int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet);
 int mcctrl_add_per_proc_data(struct mcctrl_usrdata *ud, int pid, 
 	struct mcctrl_per_proc_data *ppd);

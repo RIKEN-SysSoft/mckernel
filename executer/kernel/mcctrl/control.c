@@ -1149,6 +1149,17 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 	int pid = packet->pid;
 	unsigned long flags;
 	struct mcctrl_per_proc_data *ppd;
+	int ret;
+
+	/* Handle requests that do not need the proxy process right now */
+	ret = __do_in_kernel_irq_syscall(ud->os, packet);
+	if (ret != -ENOSYS) {
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
+				       (ud->ikc2linux[smp_processor_id()] ?
+					ud->ikc2linux[smp_processor_id()] :
+					ud->ikc2linux[0]));
+		return ret;
+	}
 
 	/* Get a reference to per-process structure */
 	ppd = mcctrl_get_per_proc_data(ud, pid);

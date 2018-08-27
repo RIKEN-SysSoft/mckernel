@@ -2560,9 +2560,6 @@ free_all_process_memory_range(struct process_vm *vm)
 		range = rb_entry(node, struct vm_range, vm_rb_node);
 		next = rb_next(node);
 
-		if (range->memobj) {
-			range->memobj->flags |= MF_HOST_RELEASED;
-		}
 		error = free_process_memory_range(vm, range);
 		if (error) {
 			ekprintf("free_process_memory(%p):"

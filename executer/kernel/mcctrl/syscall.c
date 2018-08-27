@@ -64,6 +64,7 @@
 #endif
 
 
+static long pager_call_irq(ihk_os_t os, struct syscall_request *req);
 static long pager_call(ihk_os_t os, struct syscall_request *req);
 
 #ifdef SC_DEBUG
@@ -988,35 +989,28 @@ struct pager {
 	off_t			map_off;
 };
 
-/*
- * for linux v2.6.35 or prior
- */
-#ifndef DEFINE_SEMAPHORE
-#define DEFINE_SEMAPHORE(...)	DECLARE_MUTEX(__VA_ARGS__)
-#endif
 
-static DEFINE_SEMAPHORE(pager_sem);
+static DEFINE_SPINLOCK(pager_lock);
 static struct list_head pager_list = LIST_HEAD_INIT(pager_list);
 
 int pager_nr_processes = 0;
 
 void pager_add_process(void)
 {
-	int error;
-	error = down_interruptible(&pager_sem);
-	if (error) {
-		return;
-	}
+	unsigned long flags;
+
+	spin_lock_irqsave(&pager_lock, flags);
 
 	++pager_nr_processes;
 
-	up(&pager_sem);
+	spin_unlock_irqrestore(&pager_lock, flags);
 }
 
 void pager_remove_process(struct mcctrl_per_proc_data *ppd)
 {
 	int error;
 	struct pager *pager_next, *pager;
+	unsigned long flags;
 
 	if (in_atomic() || in_interrupt()) {
 		printk("%s: WARNING: shouldn't be called in IRQ context..\n",
@@ -1041,15 +1035,17 @@ void pager_remove_process(struct mcctrl_per_proc_data *ppd)
 
 	/* Clean up global pagers for regular file mappings if this
 	 * was the last process */
-	error = down_interruptible(&pager_sem);
-	if (error) {
-		return;
-	}
-
+	spin_lock_irqsave(&pager_lock, flags);
 	--pager_nr_processes;
-	if (pager_nr_processes > 0) {
-		goto out;
-	}
+	spin_unlock_irqrestore(&pager_lock, flags);
+}
+
+void pager_cleanup(void)
+{
+	unsigned long flags;
+	struct pager *pager_next, *pager;
+
+	spin_lock_irqsave(&pager_lock, flags);
 
 	list_for_each_entry_safe(pager, pager_next, &pager_list, list) {
 		list_del(&pager->list);
@@ -1066,8 +1062,7 @@ void pager_remove_process(struct mcctrl_per_proc_data *ppd)
 		kfree(pager);
 	}
 
-out:
-	up(&pager_sem);
+	spin_unlock_irqrestore(&pager_lock, flags);
 }
 
 struct pager_create_result {
@@ -1134,6 +1129,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 	uintptr_t phys;
 	struct kstat st;
 	int mf_flags = 0;
+	unsigned long irqflags;
 
 	dprintk("pager_req_create(%d,%lx)\n", fd, (long)result_pa);
 
@@ -1182,12 +1178,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 	}
 
 	for (;;) {
-		error = down_interruptible(&pager_sem);
-		if (error) {
-			error = -EINTR;
-			printk("pager_req_create(%d,%lx):signaled. %d\n", fd, (long)result_pa, error);
-			goto out;
-		}
+		spin_lock_irqsave(&pager_lock, irqflags);
 
 		list_for_each_entry(pager, &pager_list, list) {
 			if (pager->inode == inode) {
@@ -1206,7 +1197,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 			{
 				char *pathbuf, *fullpath;
 
-				pathbuf = kmalloc(PATH_MAX, GFP_KERNEL);
+				pathbuf = kmalloc(PATH_MAX, GFP_ATOMIC);
 				if (pathbuf) {
 					fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
 					if (!IS_ERR(fullpath)) {
@@ -1232,7 +1223,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 			break;
 		}
 
-		up(&pager_sem);
+		spin_unlock_irqrestore(&pager_lock, irqflags);
 
 		newpager = kzalloc(sizeof(*newpager), GFP_ATOMIC);
 		if (!newpager) {
@@ -1252,7 +1243,7 @@ found:
 		get_file(file);
 		pager->rofile = file;
 	}
-	up(&pager_sem);
+	spin_unlock_irqrestore(&pager_lock, irqflags);
 
 	phys = ihk_device_map_memory(dev, result_pa, sizeof(*resp));
 	resp = ihk_device_map_virtual(dev, phys, sizeof(*resp), NULL, 0);
@@ -1297,14 +1288,11 @@ static int pager_req_release(ihk_os_t os, uintptr_t handle, int unref)
 	int error;
 	struct pager *p;
 	struct pager *free_pager = NULL;
+	unsigned long flags;
 
 	dprintk("pager_req_relase(%p,%lx,%d)\n", os, handle, unref);
 
-	error = down_interruptible(&pager_sem);
-	if (error) {
-		printk("pager_req_relase(%p,%lx,%d):signaled. %d\n", os, handle, unref, error);
-		goto out;
-	}
+	spin_lock_irqsave(&pager_lock, flags);
 
 	error = -EBADF;
 	list_for_each_entry(p, &pager_list, list) {
@@ -1319,7 +1307,7 @@ static int pager_req_release(ihk_os_t os, uintptr_t handle, int unref)
 		}
 	}
 
-	up(&pager_sem);
+	spin_unlock_irqrestore(&pager_lock, flags);
 
 	if (error) {
 		printk("pager_req_relase(%p,%lx,%d):pager not found. %d\n", os, handle, unref, error);
@@ -1351,15 +1339,11 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 	ihk_device_t dev = ihk_os_to_dev(os);
 	void *buf = NULL;
 	loff_t pos;
+	unsigned long flags;
 
 	dprintk("pager_req_read(%lx,%lx,%lx,%lx)\n", handle, off, size, rpa);
 
-	ss = down_interruptible(&pager_sem);
-	if (ss) {
-		pr_debug("%s(%lx,%lx,%lx,%lx): signaled. %ld\n",
-			 __func__, handle, off, size, rpa, ss);
-		goto out;
-	}
+	spin_lock_irqsave(&pager_lock, flags);
 
 	list_for_each_entry(pager, &pager_list, list) {
 		if ((uintptr_t)pager == handle) {
@@ -1368,7 +1352,7 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 			break;
 		}
 	}
-	up(&pager_sem);
+	spin_unlock_irqrestore(&pager_lock, flags);
 
 	if (!file) {
 		ss = -EBADF;
@@ -1442,14 +1426,11 @@ static int pager_req_write(ihk_os_t os, uintptr_t handle, off_t off, size_t size
 	loff_t pos;
 	loff_t fsize;
 	size_t len;
+	unsigned long flags;
 
 	dprintk("pager_req_write(%lx,%lx,%lx,%lx)\n", handle, off, size, rpa);
 
-	ss = down_interruptible(&pager_sem);
-	if (ss) {
-		printk("pager_req_write(%lx,%lx,%lx,%lx): signaled. %ld\n", handle, off, size, rpa, ss);
-		goto out;
-	}
+	spin_lock_irqsave(&pager_lock, flags);
 
 	list_for_each_entry(pager, &pager_list, list) {
 		if ((uintptr_t)pager == handle) {
@@ -1460,7 +1441,7 @@ static int pager_req_write(ihk_os_t os, uintptr_t handle, off_t off, size_t size
 	if (file) {
 		get_file(file);
 	}
-	up(&pager_sem);
+	spin_unlock_irqrestore(&pager_lock, flags);
 
 	if (!file) {
 		ss = -EBADF;
@@ -1855,12 +1836,6 @@ full:
 	return cnt;
 }
 
-static long pager_call(ihk_os_t os, struct syscall_request *req)
-{
-	long ret;
-
-	dprintk("pager_call(%#lx)\n", req->args[0]);
-	switch (req->args[0]) {
 #define	PAGER_REQ_CREATE	0x0001
 #define	PAGER_REQ_RELEASE	0x0002
 #define	PAGER_REQ_READ		0x0003
@@ -1869,12 +1844,27 @@ static long pager_call(ihk_os_t os, struct syscall_request *req)
 #define	PAGER_REQ_PFN		0x0006
 #define	PAGER_REQ_UNMAP		0x0007
 #define PAGER_REQ_MLOCK_LIST	0x0008
-	case PAGER_REQ_CREATE:
-		ret = pager_req_create(os, req->args[1], req->args[2]);
-		break;
+static long pager_call_irq(ihk_os_t os, struct syscall_request *req)
+{
+	long ret = -ENOSYS;
 
+	switch (req->args[0]) {
 	case PAGER_REQ_RELEASE:
 		ret = pager_req_release(os, req->args[1], req->args[2]);
+		break;
+	}
+
+	return ret;
+}
+
+static long pager_call(ihk_os_t os, struct syscall_request *req)
+{
+	long ret;
+
+	dprintk("pager_call(%#lx)\n", req->args[0]);
+	switch (req->args[0]) {
+	case PAGER_REQ_CREATE:
+		ret = pager_req_create(os, req->args[1], req->args[2]);
 		break;
 
 	case PAGER_REQ_READ:
@@ -1897,6 +1887,7 @@ static long pager_call(ihk_os_t os, struct syscall_request *req)
 	case PAGER_REQ_UNMAP:
 		ret = pager_req_unmap(os, req->args[1]);
 		break;
+
 	case PAGER_REQ_MLOCK_LIST:
 		ret = pager_req_mlock_list(os, (unsigned long) req->args[1],
 					   (unsigned long) req->args[2],
@@ -2163,6 +2154,27 @@ fail:
 
 #define SCHED_CHECK_SAME_OWNER        0x01
 #define SCHED_CHECK_ROOT              0x02
+
+int __do_in_kernel_irq_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
+{
+	struct syscall_request *sc = &packet->req;
+	int ret;
+
+	switch (sc->number) {
+	case __NR_mmap:
+		ret = pager_call_irq(os, sc);
+		break;
+	default:
+		ret = -ENOSYS;
+	}
+
+	if (ret == -ENOSYS)
+		return -ENOSYS;
+
+	__return_syscall(os, packet, ret, 0);
+
+	return 0;
+}
 
 int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 {
