@@ -70,10 +70,8 @@
 #define PS_TRACED            0x40 /* Set to "not running" by a ptrace related event */
 #define PS_STOPPING          0x80
 #define PS_TRACING           0x100
-#ifdef POSTK_DEBUG_TEMP_FIX_41 /* early to wait4() wakeup for ptrace, fix. */
 #define PS_DELAY_STOPPED     0x200
 #define PS_DELAY_TRACED      0x400
-#endif /* POSTK_DEBUG_TEMP_FIX_41 */
 
 #define PS_NORMAL	(PS_INTERRUPTIBLE | PS_UNINTERRUPTIBLE)
 

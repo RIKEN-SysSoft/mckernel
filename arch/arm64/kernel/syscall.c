@@ -1176,18 +1176,9 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 				/* Reap and set new signal_flags */
 				proc->signal_flags = SIGNAL_STOP_STOPPED;
 
-#ifdef POSTK_DEBUG_TEMP_FIX_41 /* early to wait4() wakeup for ptrace, fix. */
 				proc->status = PS_DELAY_STOPPED;
-#else /* POSTK_DEBUG_TEMP_FIX_41 */
-				proc->status = PS_STOPPED;
-#endif /* POSTK_DEBUG_TEMP_FIX_41 */
 				thread->status = PS_STOPPED;
 				mcs_rwlock_writer_unlock(&proc->update_lock, &lock);	
-
-#ifndef POSTK_DEBUG_TEMP_FIX_41 /* early to wait4() wakeup for ptrace, fix. */
-				/* Wake up the parent who tried wait4 and sleeping */
-				waitq_wakeup(&proc->parent->waitpid_q);
-#endif /* !POSTK_DEBUG_TEMP_FIX_41 */
 
 				dkprintf("do_signal(): pid: %d, tid: %d SIGSTOP, sleeping\n", 
 					proc->pid, thread->tid);
@@ -1205,18 +1196,9 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 			/* Update thread state in fork tree */
 			mcs_rwlock_writer_lock(&proc->update_lock, &lock);	
 			thread->exit_status = SIGTRAP;
-#ifdef POSTK_DEBUG_TEMP_FIX_41 /* early to wait4() wakeup for ptrace, fix. */
 			proc->status = PS_DELAY_TRACED;
-#else /* POSTK_DEBUG_TEMP_FIX_41 */
-			proc->status = PS_TRACED;
-#endif /* POSTK_DEBUG_TEMP_FIX_41 */
 			thread->status = PS_TRACED;
 			mcs_rwlock_writer_unlock(&proc->update_lock, &lock);	
-
-#ifndef POSTK_DEBUG_TEMP_FIX_41 /* early to wait4() wakeup for ptrace, fix. */
-			/* Wake up the parent who tried wait4 and sleeping */
-			waitq_wakeup(&thread->proc->parent->waitpid_q);
-#endif /* !POSTK_DEBUG_TEMP_FIX_41 */
 
 			/* Sleep */
 			dkprintf("do_signal,SIGTRAP,sleeping\n");
