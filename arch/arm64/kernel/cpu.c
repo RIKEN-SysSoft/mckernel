@@ -1281,7 +1281,6 @@ int ihk_mc_interrupt_cpu(int cpu, int vector)
 	return 0;
 }
 
-#ifdef POSTK_DEBUG_ARCH_DEP_22
 /*
  * @ref.impl linux-linaro/arch/arm64/kernel/process.c::tls_thread_switch()
  */
@@ -1357,7 +1356,6 @@ struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 
 	return last;
 }
-#endif /* POSTK_DEBUG_ARCH_DEP_22 */
 
 /*@
   @ requires \valid(thread);
