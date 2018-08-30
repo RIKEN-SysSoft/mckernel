@@ -307,8 +307,8 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 		int cpu;
 
 		for (cpu = 0; cpu < num_processors; ++cpu) {
-			snprintf(buf, count, "cpu%d\n", cpu);
-			if (buf_add(&buf_top, &buf_cur, buf, strlen(buf)) < 0)
+			ans = snprintf(buf, count, "cpu%d\n", cpu);
+			if (buf_add(&buf_top, &buf_cur, buf, ans) < 0)
 				goto err;
 		}
 		ans = 0;
@@ -319,7 +319,7 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 		ans = ihk_mc_show_cpuinfo(buf, count, 0, &eof);
 		if (ans < 0)
 			goto err;
-		if (buf_add(&buf_top, &buf_cur, buf, strlen(buf)) < 0)
+		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0)
 			goto err;
 		ans = 0;
 		goto end;
@@ -410,7 +410,7 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 			 *  address           perms offset  dev   inode   pathname
 			 *  08048000-08056000 r-xp 00000000 03:0c 64593   /usr/sbin/gpm
 			 */
-			snprintf(buf, count,
+			ans = snprintf(buf, count,
 				 "%012lx-%012lx %s%s%s%s %lx %lx:%lx %d\t\t\t%s\n",
 				 range->start, range->end,
 				 range->flag & VR_PROT_READ ? "r" : "-",
@@ -436,7 +436,7 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 					""
 				);
 
-			if (buf_add(&buf_top, &buf_cur, buf, strlen(buf)) < 0) {
+			if (buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
 				ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 				goto err;
 			}
@@ -546,7 +546,7 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 			state = "T (tracing stop)";
 		else if (proc->status == PS_EXITED)
 			state = "Z (zombie)";
-		sprintf(buf,
+		ans = snprintf(buf, count,
 			"Pid:\t%d\n"
 			"Uid:\t%d\t%d\t%d\t%d\n"
 			"Gid:\t%d\t%d\t%d\t%d\n"
@@ -557,27 +557,30 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 			proc->rgid, proc->egid, proc->sgid, proc->fsgid,
 			state,
 			(lockedsize + 1023) >> 10);
-		if (buf_add(&buf_top, &buf_cur, buf, strlen(buf)) < 0) {
+		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
 			goto err;
 		}
 
-		sprintf(buf, "Cpus_allowed:\t%s\n", cpu_bitmask);
-		if (buf_add(&buf_top, &buf_cur, buf, strlen(buf)) < 0) {
+		ans = snprintf(buf, count, "Cpus_allowed:\t%s\n", cpu_bitmask);
+		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
 			kfree(bitmasks);
 			goto err;
 		}
-		sprintf(buf, "Cpus_allowed_list:\t%s\n", cpu_list);
-		if (buf_add(&buf_top, &buf_cur, buf, strlen(buf)) < 0) {
+		ans = snprintf(buf, count, "Cpus_allowed_list:\t%s\n",
+			       cpu_list);
+		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
 			kfree(bitmasks);
 			goto err;
 		}
-		sprintf(buf, "Mems_allowed:\t%s\n", numa_bitmask);
-		if (buf_add(&buf_top, &buf_cur, buf, strlen(buf)) < 0) {
+		ans = snprintf(buf, count, "Mems_allowed:\t%s\n",
+			       numa_bitmask);
+		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
 			kfree(bitmasks);
 			goto err;
 		}
-		sprintf(buf, "Mems_allowed_list:\t%s\n", numa_list);
-		if (buf_add(&buf_top, &buf_cur, buf, strlen(buf)) < 0) {
+		ans = snprintf(buf, count, "Mems_allowed_list:\t%s\n",
+			       numa_list);
+		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
 			kfree(bitmasks);
 			goto err;
 		}
@@ -639,7 +642,7 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 		 * cnswap exit_signal processor rt_priority
 		 * policy delayacct_blkio_ticks guest_time cguest_time
 		 */
-		ans = sprintf(buf,
+		ans = snprintf(buf, count,
 		    "%d (%s) %c %d "	      // pid...
 		    "%d %d %d %d "	      // pgrp...
 		    "%u %lu %lu %lu "	      // flags...
@@ -664,7 +667,7 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 		    0, 0LL, 0L, 0L	      // policy...
 		);
 
-		if (buf_add(&buf_top, &buf_cur, buf, strlen(buf)) < 0)
+		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0)
 			goto err;
 		ans = 0;
 		goto end;
