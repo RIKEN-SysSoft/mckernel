@@ -205,7 +205,8 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 
 	case SCD_MSG_PROCFS_TID_CREATE:
 	case SCD_MSG_PROCFS_TID_DELETE:
-		procfsm_packet_handler(__os, pisp->msg, pisp->pid, pisp->arg);
+		procfsm_packet_handler(__os, pisp->msg, pisp->pid, pisp->arg,
+				       pisp->resp_pa);
 		break;
 
 	case SCD_MSG_GET_VDSO_INFO:
