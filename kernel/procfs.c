@@ -78,12 +78,13 @@ static void buf_free(unsigned long phys)
 }
 
 static int buf_add(struct mckernel_procfs_buffer **top,
-		   struct mckernel_procfs_buffer **cur, void *buf, int l)
+		   struct mckernel_procfs_buffer **cur,
+		   const void *buf, int l)
 {
 	int pos = 0;
 	int r;
 	int bufmax = PAGE_SIZE - sizeof(struct mckernel_procfs_buffer);
-	char *chr = buf;
+	const char *chr = buf;
 
 	if (!*top) {
 		*top = *cur = buf_alloc(NULL, 0);
@@ -632,6 +633,24 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 	 * The offset is treated as the beginning of the virtual address area
 	 * of the process. The count is the length of the area.
 	 */
+
+	if (!strcmp(p, "comm")) {
+		const char *comm = "exe";
+
+		if (proc->saved_cmdline) {
+			comm = strrchr(proc->saved_cmdline, '/');
+			if (comm)
+				comm++;
+			else
+				comm = proc->saved_cmdline;
+		}
+
+		ans = snprintf(buf, count, "%s\n", comm);
+		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0)
+			goto err;
+		ans = 0;
+		goto end;
+	}
 
 	if (!strcmp(p, "stat")) {
 		const char *comm = "exe";

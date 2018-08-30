@@ -1102,7 +1102,7 @@ static const struct procfs_entry pid_entry_stuff[] = {
 //	PROC_REG("cgroup",     S_IXUSR, NULL),
 //	PROC_REG("clear_refs", S_IWUSR, NULL),
 	PROC_REG("cmdline",    0444, &mckernel_buff_io),
-//	PROC_REG("comm",       S_IRUGO|S_IWUSR, NULL),
+	PROC_REG("comm",       0644, &mckernel_buff_io),
 //	PROC_REG("coredump_filter", S_IRUGO|S_IWUSR, NULL),
 //	PROC_REG("cpuset",     S_IRUGO, NULL),
 //	PROC_REG("environ",    S_IRUSR, NULL),
