@@ -117,6 +117,7 @@ procfs_thread_ctl(struct thread *thread, int msg)
 {
 	struct ihk_ikc_channel_desc *syscall_channel;
 	struct ikc_scd_packet packet;
+	int done = 0;
 
 	syscall_channel = cpu_local_var(ikc2linux);
 	memset(&packet, '\0', sizeof packet);
@@ -125,9 +126,14 @@ procfs_thread_ctl(struct thread *thread, int msg)
 	packet.osnum = ihk_mc_get_osnum();
 	packet.ref = thread->cpu_id;
 	packet.pid = thread->proc->pid;
+	packet.resp_pa = virt_to_phys(&done);
 	packet.err = 0;
 
 	ihk_ikc_send(syscall_channel, &packet, 0);
+	if (msg == SCD_MSG_PROCFS_TID_CREATE) {
+		while (!done)
+			cpu_pause();
+	}
 }
 
 void

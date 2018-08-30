@@ -700,33 +700,48 @@ struct procfs_work {
 	int msg;
 	int pid;
 	unsigned long arg;
+	unsigned long resp_pa;
 	struct work_struct work;
 };
 
 static void procfsm_work_main(struct work_struct *work0)
 {
 	struct procfs_work *work = container_of(work0, struct procfs_work, work);
+	unsigned long phys;
+	int *done;
 
 	switch (work->msg) {
-		case SCD_MSG_PROCFS_TID_CREATE:
-			add_tid_entry(ihk_host_os_get_index(work->os), work->pid, work->arg);
-			break;
+	case SCD_MSG_PROCFS_TID_CREATE:
+		add_tid_entry(ihk_host_os_get_index(work->os),
+				work->pid, work->arg);
+		phys = ihk_device_map_memory(ihk_os_to_dev(work->os),
+					     work->resp_pa, sizeof(int));
+		done = ihk_device_map_virtual(ihk_os_to_dev(work->os),
+					      phys, sizeof(int), NULL, 0);
+		*done = 1;
+		ihk_device_unmap_virtual(ihk_os_to_dev(work->os),
+						 done, sizeof(int));
+		ihk_device_unmap_memory(ihk_os_to_dev(work->os),
+					phys, sizeof(int));
+		break;
 
-		case SCD_MSG_PROCFS_TID_DELETE:
-			delete_tid_entry(ihk_host_os_get_index(work->os), work->pid, work->arg);
-			break;
+	case SCD_MSG_PROCFS_TID_DELETE:
+		delete_tid_entry(ihk_host_os_get_index(work->os),
+				 work->pid, work->arg);
+		break;
 
-		default:
-			printk("%s: unknown work: msg: %d, pid: %d, arg: %lu)\n",
-					__FUNCTION__, work->msg, work->pid, work->arg);
-			break;
+	default:
+		pr_warn("%s: unknown work: msg: %d, pid: %d, arg: %lu)\n",
+			__func__, work->msg, work->pid, work->arg);
+		break;
 	}
 
 	kfree(work);
 	return;
 }
 
-int procfsm_packet_handler(void *os, int msg, int pid, unsigned long arg)
+int procfsm_packet_handler(void *os, int msg, int pid, unsigned long arg,
+			   unsigned long resp_pa)
 {
 	struct procfs_work *work = NULL;
 
@@ -740,6 +755,7 @@ int procfsm_packet_handler(void *os, int msg, int pid, unsigned long arg)
 	work->msg = msg;
 	work->pid = pid;
 	work->arg = arg;
+	work->resp_pa = resp_pa;
 	INIT_WORK(&work->work, &procfsm_work_main);
 
 	schedule_work(&work->work);
