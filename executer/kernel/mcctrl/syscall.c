@@ -440,7 +440,7 @@ retry_alloc:
 	list_del(&wqhln->list);
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, irqflags);
 
-	printk("%s: tid: %d, syscall: %d WOKEN UP\n", __FUNCTION__, task_pid_vnr(current), num);
+	dprintk("%s: tid: %d, syscall: %d WOKEN UP\n", __FUNCTION__, task_pid_vnr(current), num);
 
 	if (retry >= 5) {
 		kfree(wqhln);
