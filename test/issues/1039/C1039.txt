@@ -1,0 +1,37 @@
+Script started on Mon Aug 27 11:54:38 2018
+bash-4.2$ make test
+sh ./C1039.sh
+fork02      0  TINFO  :  Inside parent
+fork02      0  TINFO  :  Inside child
+fork02      0  TINFO  :  exit status of wait 0
+fork02      1  TPASS  :  test 1 PASSED
+*** C1039T01: fork02 OK (1)
+fork03      0  TINFO  :  process id in parent of child from fork : 29001
+fork03      1  TPASS  :  test 1 PASSED
+*** C1039T02: fork03 OK (1)
+execl01_child    1  TPASS  :  execve01_child executed
+execve01    0  TINFO  :  Child process returned TPASS
+*** C1039T03: execve01 OK (2)
+Error: Failed to open execve_child
+execve(): error loading ELF for file execve_child
+execve02    1  TPASS  :  execve() failed expectedly: TEST_ERRNO=EACCES(13): Permission denied
+execve02    0  TINFO  :  Child process returned TPASS
+*** C1039T04: execve02 OK (2)
+execve03    1  TPASS  :  execve failed as expected: TEST_ERRNO=ENAMETOOLONG(36): File name too long
+execve03    2  TPASS  :  execve failed as expected: TEST_ERRNO=ENOENT(2): No such file or directory
+lookup_exec_path: lookup_exec_path(): error stat
+execve03    3  TPASS  :  execve failed as expected: TEST_ERRNO=ENOTDIR(20): Not a directory
+execve03    4  TPASS  :  execve failed as expected: TEST_ERRNO=EFAULT(14): Bad address
+Error: /tmp/exe0BQ0Va/fake.29225 is not an executable?, errno: 13
+execve(): error loading ELF for file /tmp/exe0BQ0Va/fake.29225
+execve03    5  TPASS  :  execve failed as expected: TEST_ERRNO=EACCES(13): Permission denied
+Error: file /tmp/exe0BQ0Va/execve03.29225 is zero length
+execve(): error loading ELF for file /tmp/exe0BQ0Va/execve03.29225
+execve03    6  TPASS  :  execve failed as expected: TEST_ERRNO=ENOEXEC(8): Exec format error
+*** C1039T05: execve03 OK (6)
+mmap12      1  TPASS  :  Functionality of mmap() successful
+*** C1039T06: mmap12 OK (1)
+bash-4.2$ exit
+exit
+
+Script done on Mon Aug 27 11:54:58 2018
