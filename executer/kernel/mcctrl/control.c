@@ -2558,25 +2558,12 @@ static long
 mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct task_struct *tsk)
 {
 	int rc;
-	struct host_thread *thread;
 	struct ikc_scd_packet *packet;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
 	struct mcctrl_per_thread_data *ptd;
 
-	printk("%s: target pid=%d,tid=%d,sig=%lx,task=%p\n", __FUNCTION__, pid, tid, sig, tsk);
-
-    write_lock_irqsave(&host_thread_lock, flags);
-	list_for_each_entry(thread, &host_threads, list) {
-		if(thread->tid == tid) {
-			break;
-		}
-	}
-	if (!thread) {
-		printk("%s: thread not found in host_threads list\n", __FUNCTION__);
-		write_unlock_irqrestore(&host_thread_lock, flags);
-		return -ESRCH;
-	}
+	dprintk("%s: target pid=%d,tid=%d,sig=%lx,task=%p\n", __FUNCTION__, pid, tid, sig, tsk);
 
 	ppd = mcctrl_get_per_proc_data(usrdata, pid);
 	if (!ppd) {
@@ -2629,12 +2616,6 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 	dprintk("%s: target pid=%d,tid=%d,ppd->refcount=%d\n", __FUNCTION__, pid, tid, atomic_read(&ppd->refcount));
 	mcctrl_put_per_proc_data(ppd);
  no_ppd:
-#if 0 /* debug */
-	list_del(&thread->list);
-	kfree(thread);
-#endif
-	write_unlock_irqrestore(&host_thread_lock, flags);
-
 	return 0;
 }
 
@@ -2644,14 +2625,32 @@ mcexec_terminate_thread(ihk_os_t os, struct terminate_thread_desc * __user arg)
 	long rc;
 	unsigned long flags;
 	struct terminate_thread_desc desc;
+	struct host_thread *thread;
 
     if (copy_from_user(&desc, arg, sizeof(struct terminate_thread_desc))) {
         return -EFAULT;
     }
 
+	dprintk("%s: target pid=%d,tid=%d\n", __FUNCTION__, desc.pid, desc.tid);
+
+	/* Stop switching FS registers for uti thread */
 	write_lock_irqsave(&host_thread_lock, flags);
-	rc = mcexec_terminate_thread_unsafe(os, desc.pid, desc.tid, desc.sig, (struct task_struct *)desc.tsk);
+	list_for_each_entry(thread, &host_threads, list) {
+		if(thread->tid == desc.tid) {
+			break;
+		}
+	}
+	if (!thread) {
+		printk("%s: thread not found in host_threads list\n", __FUNCTION__);
+		return -ESRCH;
+	}
+#if 1 /* debug */
+	list_del(&thread->list);
+	kfree(thread);
+#endif
 	write_unlock_irqrestore(&host_thread_lock, flags);
+
+	rc = mcexec_terminate_thread_unsafe(os, desc.pid, desc.tid, desc.sig, (struct task_struct *)desc.tsk);
 
 	return rc;
 }
