@@ -2404,6 +2404,11 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	host_threads = thread;
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
+	/* Make per-proc-data survive over the signal-kill of tracee. Note
+	   that the singal-kill calls close() and then release_hanlde()
+	   destroys it. */
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+
 	return 0;
 }
 
@@ -2486,6 +2491,12 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
 						   (usrdata->ikc2linux[smp_processor_id()] ?
 							usrdata->ikc2linux[smp_processor_id()] :
 							usrdata->ikc2linux[0]));
+
+	/* Destroy per_proc_data with the following two puts. Note that
+	   it survived the signal-kill of tracee thanks to the additional put
+	   done in mcexec_util_thread2 */
+	mcctrl_put_per_proc_data(ppd); 
+
 err:
 	if(ppd)
 		mcctrl_put_per_proc_data(ppd);
