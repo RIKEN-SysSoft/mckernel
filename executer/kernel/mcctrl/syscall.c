@@ -451,7 +451,7 @@ retry_alloc:
 
 	printk("%s: tid: %d, syscall: %d WOKEN UP\n", __FUNCTION__, task_pid_vnr(current), num);
 
-	if (!ppd || retry >= 5) {
+	if (retry >= 5) {
 		kfree(wqhln);
 		kprintf("%s: INFO: mcexec is gone or retry count exceeded,pid=%d,ppd=%p,retry=%d\n", __FUNCTION__, task_tgid_vnr(current), ppd, retry);
 		syscall_ret = -EINVAL;
@@ -647,9 +647,8 @@ retry_alloc:
 		/* Delay signal handling */
 		if (error == -ERESTARTSYS) {
 			printk("%s: INFO: interrupted by signal\n", __FUNCTION__);
-			ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 			retry++;
-			if (ppd && retry < 5) { /* mcexec is alive */
+			if (retry < 5) { /* mcexec is alive */
 				printk("%s: INFO: retry=%d\n", __FUNCTION__, retry);
 				continue;
 			}
@@ -663,7 +662,7 @@ retry_alloc:
 		dprintk("%s: tid: %d, fault_addr: %p WOKEN UP\n", 
 				__FUNCTION__, task_pid_vnr(current), fault_addr);
 
-		if (!ppd || retry >= 5) {
+		if (retry >= 5) {
 			kfree(wqhln);
 			kprintf("%s: INFO: mcexec is gone or retry count exceeded,pid=%d,retry=%d\n", __FUNCTION__, task_tgid_vnr(current), retry);
 			error = -EINVAL;
