@@ -150,6 +150,7 @@ union futex_key {
 
 extern int futex_init(void);
 
+struct cpu_local_var;
 extern int
 futex(
 	uint32_t __user *		uaddr,
@@ -159,7 +160,8 @@ futex(
 	uint32_t __user *		uaddr2,
 	uint32_t				val2,
 	uint32_t				val3,
-	int                     fshared
+	int                     fshared,
+	struct cpu_local_var *clv_override
 );
 
 
