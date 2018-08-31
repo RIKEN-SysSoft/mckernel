@@ -390,10 +390,9 @@ static void release_handler(ihk_os_t os, void *param)
 	/* Stop FS switch for uti threads */ 
 	write_lock_irqsave(&host_thread_lock, flags);
 	list_for_each_entry(thread, &host_threads, list) {
-		if (thread->handler != info) { /* Created by the caller of close() */
-			continue;
+		if (thread->handler == info) {
+			thread->handler = NULL;
 		}
-		thread->handler = NULL;
 	}
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
