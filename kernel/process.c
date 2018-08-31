@@ -64,9 +64,7 @@ static void dump_tree(struct process_vm *vm) {
 static void dump_tree(struct process_vm *vm) {}
 #endif
 
-#ifdef POSTK_DEBUG_ARCH_DEP_22
 extern struct thread *arch_switch_context(struct thread *prev, struct thread *next);
-#endif /* POSTK_DEBUG_ARCH_DEP_22 */
 extern long alloc_debugreg(struct thread *proc);
 extern void save_debugreg(unsigned long *debugreg);
 extern void restore_debugreg(unsigned long *debugreg);
@@ -87,10 +85,6 @@ int ptrace_detach(int pid, int data);
 extern unsigned long do_kill(struct thread *, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
 extern void procfs_create_thread(struct thread *);
 extern void procfs_delete_thread(struct thread *);
-#ifndef POSTK_DEBUG_ARCH_DEP_22
-extern void perf_start(struct mc_perf_event *event);
-extern void perf_reset(struct mc_perf_event *event);
-#endif /* !POSTK_DEBUG_ARCH_DEP_22 */
 
 struct list_head resource_set_list;
 mcs_rwlock_lock_t    resource_set_lock;
@@ -3295,44 +3289,7 @@ void schedule(void)
 				next->vm->address_space->page_table)
 			ihk_mc_load_page_table(next->vm->address_space->page_table);
 
-#ifdef POSTK_DEBUG_ARCH_DEP_22
 		last = arch_switch_context(prev, next);
-#else
-		dkprintf("[%d] schedule: tlsblock_base: 0x%lX\n",
-		         ihk_mc_get_processor_id(), next->tlsblock_base);
-
-		/* Set up new TLS.. */
-		ihk_mc_init_user_tlsbase(next->uctx, next->tlsblock_base);
-
-		/* Performance monitoring inherit */
-		if(next->proc->monitoring_event) {
-			if(next->proc->perf_status == PP_RESET)
-				perf_reset(next->proc->monitoring_event);
-			if(next->proc->perf_status != PP_COUNT) {
-				perf_reset(next->proc->monitoring_event);
-				perf_start(next->proc->monitoring_event);
-			}
-		}
-
-#ifdef PROFILE_ENABLE
-		if (prev && prev->profile && prev->profile_start_ts != 0) {
-			prev->profile_elapsed_ts +=
-				(rdtsc() - prev->profile_start_ts);
-			prev->profile_start_ts = 0;
-		}
-
-		if (next->profile && next->profile_start_ts == 0) {
-			next->profile_start_ts = rdtsc();
-		}
-#endif
-
-		if (prev) {
-			last = ihk_mc_switch_context(&prev->ctx, &next->ctx, prev);
-		}
-		else {
-			last = ihk_mc_switch_context(NULL, &next->ctx, prev);
-		}
-#endif /* POSTK_DEBUG_ARCH_DEP_22 */
 
 		/*
 		 * We must hold the lock throughout the context switch, otherwise

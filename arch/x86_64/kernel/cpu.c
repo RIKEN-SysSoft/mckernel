@@ -95,6 +95,8 @@ int gettime_local_support = 0;
 extern int ihk_mc_pt_print_pte(struct page_table *pt, void *virt);
 extern int kprintf(const char *format, ...);
 extern int interrupt_from_user(void *);
+extern void perf_start(struct mc_perf_event *event);
+extern void perf_reset(struct mc_perf_event *event);
 
 static struct idt_entry{
 	uint32_t desc[4];
@@ -1675,9 +1677,6 @@ int ihk_mc_interrupt_cpu(int cpu, int vector)
 	return 0;
 }
 
-#ifdef POSTK_DEBUG_ARCH_DEP_22
-extern void perf_start(struct mc_perf_event *event);
-extern void perf_reset(struct mc_perf_event *event);
 struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 {
 	struct thread *last;
@@ -1699,7 +1698,7 @@ struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 	}
 
 #ifdef PROFILE_ENABLE
-	if (prev->profile && prev->profile_start_ts != 0) {
+	if (prev && prev->profile && prev->profile_start_ts != 0) {
 		prev->profile_elapsed_ts +=
 			(rdtsc() - prev->profile_start_ts);
 		prev->profile_start_ts = 0;
@@ -1718,7 +1717,6 @@ struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 	}
 	return last;
 }
-#endif
 
 /*@
   @ requires \valid(thread);
