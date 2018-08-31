@@ -71,7 +71,7 @@
 
 #define SYSCALL_BY_IKC
 
-#define DEBUG_PRINT_SC
+//#define DEBUG_PRINT_SC
 
 #ifdef DEBUG_PRINT_SC
 #define	dkprintf(...) kprintf(__VA_ARGS__)
