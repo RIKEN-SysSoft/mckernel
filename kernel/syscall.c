@@ -9133,13 +9133,13 @@ util_thread(struct uti_attr *arg)
 	kfree(uti_clv);
 
 	if (rc >= 0) {
-		if (rc & 0x10000007f) { // exit_group || signal
-			dkprintf("%s: exit_group || signal\n", __FUNCTION__);
+		if (rc & 0x100000000) { /* exit_group */
+			dkprintf("%s: exit_group, tid=%d,rc=%lx\n", __FUNCTION__, thread->tid, rc);
 			thread->proc->nohost = 1;
 			terminate((rc >> 8) & 255, rc & 255);
-		}
-		else {
-			dkprintf("%s: !exit_group && !signal\n", __FUNCTION__);
+		} else {
+			/* mcexec is alive, so we can call do_syscall() */
+			dkprintf("%s: exit | signal, tid=%d,rc=%lx\n", __FUNCTION__, thread->tid, rc);
 			request.number = __NR_sched_setaffinity;
 			request.args[0] = 1;
 			request.args[1] = free_address;
