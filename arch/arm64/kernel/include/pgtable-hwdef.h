@@ -45,6 +45,29 @@
 #define SECTION_MASK		(~(SECTION_SIZE-1))
 
 /*
+ * Contiguous page definitions.
+ */
+#ifdef CONFIG_ARM64_64K_PAGES
+#define CONT_PTE_SHIFT		5   //Contiguousでまとまるエントリ数のシフト値
+#define CONT_PMD_SHIFT		5
+#elif defined(CONFIG_ARM64_16K_PAGES)
+#define CONT_PTE_SHIFT		7
+#define CONT_PMD_SHIFT		5
+#else
+#define CONT_PTE_SHIFT		4
+#define CONT_PMD_SHIFT		4
+#endif
+
+#define CONT_PTES		(1 << CONT_PTE_SHIFT)
+#define CONT_PTE_SIZE		(CONT_PTES * PAGE_SIZE)
+#define CONT_PTE_MASK		(~(CONT_PTE_SIZE - 1))
+#define CONT_PMDS		(1 << CONT_PMD_SHIFT)
+#define CONT_PMD_SIZE		(CONT_PMDS * PMD_SIZE)
+#define CONT_PMD_MASK		(~(CONT_PMD_SIZE - 1))
+/* the the numerical offset of the PTE within a range of CONT_PTES */
+#define CONT_RANGE_OFFSET(addr) (((addr)>>PAGE_SHIFT)&(CONT_PTES-1))
+
+/*
  * Level 2 descriptor (PMD).
  */
 #define PMD_TYPE_MASK		(UL(3) << 0)
@@ -72,6 +95,7 @@
 #define PMD_SECT_S		(UL(3) << 8)
 #define PMD_SECT_AF		(UL(1) << 10)
 #define PMD_SECT_NG		(UL(1) << 11)
+#define PMD_SECT_CONT		(UL(1) << 52)
 #define PMD_SECT_PXN		(UL(1) << 53)
 #define PMD_SECT_UXN		(UL(1) << 54)
 
@@ -93,6 +117,7 @@
 #define PTE_SHARED		(UL(3) << 8)	/* SH[1:0], inner shareable */
 #define PTE_AF			(UL(1) << 10)	/* Access Flag */
 #define PTE_NG			(UL(1) << 11)	/* nG */
+#define PTE_CONT		(UL(1) << 52)	/* Contiguous range */
 #define PTE_PXN			(UL(1) << 53)	/* Privileged XN */
 #define PTE_UXN			(UL(1) << 54)	/* User XN */
 /* Software defined PTE bits definition.*/

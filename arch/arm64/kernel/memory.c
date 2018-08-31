@@ -387,6 +387,7 @@ static inline void ptl_set(pte_t* p, pte_t v, int level)
 		panic("ptl_set failed.\n");
 	}
 }
+
 /* clear */
 static inline void ptl4_clear(pte_t* l4p)
 {
@@ -407,22 +408,23 @@ static inline void ptl1_clear(pte_t* l1p)
 static inline void ptl_clear(pte_t* p, int level)
 {
 	switch (level) {
- 	case 4:
+	case 4:
 		ptl4_clear(p);
 		break;
- 	case 3:
+	case 3:
 		ptl3_clear(p);
 		break;
- 	case 2:
+	case 2:
 		ptl2_clear(p);
 		break;
- 	case 1:
+	case 1:
 		ptl1_clear(p);
 		break;
 	default:
 		panic("ptl_clear failed.\n");
 	}
 }
+
 /* null */
 static inline int ptl4_null(const pte_t* l4p)
 {
@@ -465,6 +467,7 @@ static inline int ptl_null(const pte_t* p, int level)
 	}
 	return ret;
 }
+
 /* present */
 static inline int ptl4_present(const pte_t* l4p)
 {
@@ -507,6 +510,7 @@ static inline int ptl_present(const pte_t* p, int level)
 	}
 	return ret;
 }
+
 /* type_block/type_page */
 static inline int ptl4_type_block(const pte_t* l4p)
 {
@@ -553,6 +557,50 @@ static inline int ptl_type_page(const pte_t* p, int level)
 	}
 	return ret;
 }
+
+/* contiguous */
+static inline int ptl4_is_compound(const pte_t* l4p)
+{
+	pte_t pte = ptl4_val(l4p);
+	return pte_is_compound(&pte);
+}
+static inline int ptl3_is_compound(const pte_t* l3p)
+{
+	pte_t pte = ptl3_val(l3p);
+	return pte_is_compound(&pte);
+}
+static inline int ptl2_is_compound(const pte_t* l2p)
+{
+	pte_t pte = ptl2_val(l2p);
+	return pte_is_compound(&pte);
+}
+static inline int ptl1_is_compound(const pte_t* l1p)
+{
+	pte_t pte = ptl1_val(l1p);
+	return pte_is_compound(&pte);
+}
+static inline int ptl_is_compound(const pte_t* p, int level)
+{
+	int ret = 0;
+	switch (level) {
+	case 4:
+		ret = ptl4_is_compound(p);
+		break;
+	case 3:
+		ret = ptl3_is_compound(p);
+		break;
+	case 2:
+		ret = ptl2_is_compound(p);
+		break;
+	case 1:
+		ret = ptl1_is_compound(p);
+		break;
+	default:
+		panic("ptl_is_compound failed.\n");
+	}
+	return ret;
+}
+
 /* type_table */
 static inline int ptl4_type_table(const pte_t* l4p)
 {
@@ -594,6 +642,7 @@ static inline int ptl_type_table(const pte_t* p, int level)
 	}
 	return ret;
 }
+
 /* phys */
 static inline unsigned long ptl4_phys(const pte_t* l4p)
 {
@@ -636,6 +685,7 @@ static inline unsigned long ptl_phys(const pte_t* p, int level)
 	}
 	return ret;
 }
+
 /* dirty */
 static inline int ptl4_dirty(const pte_t* l4p)
 {
@@ -678,6 +728,7 @@ static inline int ptl_dirty(const pte_t* p, int level)
 	}
 	return ret;
 }
+
 /* fileoff */
 static inline int ptl4_fileoff(const pte_t* l4p)
 {
