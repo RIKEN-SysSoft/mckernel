@@ -2,6 +2,8 @@
 # @ref.impl arch/arm64/kernel/vdso/Makefile
 # Building a vDSO image for AArch64.
 
+RMDIR=rmdir
+
 HOST_DIR=@KDIR@
 HOST_CONFIG=$(HOST_DIR)/.config
 HOST_KERNEL_CONFIG_ARM64_4K_PAGES=$(shell grep -E "^CONFIG_ARM64_4K_PAGES=y" $(HOST_CONFIG) | sed 's|CONFIG_ARM64_4K_PAGES=||g')
@@ -96,7 +98,9 @@ $(VDSOBUILD)/vdso.lds: $(VDSOSRC)/vdso.lds.S
 	$(lds_cmd)
 
 clean:
-	$(rm_cmd) $(DESTOBJS) $(DESTASMOBJS) $(VDSOBUILD)/Makefile.dep $(VDSOBUILD)/vdso.* -r $(VDSOBUILD)/../include
+	$(rm_cmd) -f $(DESTOBJS) $(DESTASMOBJS) $(VDSOBUILD)/Makefile.dep $(VDSOBUILD)/vdso.lds
+	$(rm_cmd) -f $(VDSOBUILD)/vdso.so* $(VDSOBUILD)/../include/vdso-offsets.h $(VDSOBUILD)/../include/vdso-so-path.h
+	$(rmdir_cmd) --ignore-fail-on-non-empty $(VDSOBUILD)/../include
 
 depend: $(VDSOBUILD)/Makefile.dep
 
@@ -121,6 +125,7 @@ cc_cmd = $(call echo_cmd,CC,$<)$(CC) $(CFLAGS) -c -o $@
 ld_cmd = $(call echo_cmd,LD,$@)$(CC) $(LDFLAGS) $^ -o $@
 dep_cmd = $(call echo_cmd,DEPEND,)$(CC) $(CFLAGS) -MM $1 > $@
 rm_cmd = $(call echo_cmd,CLEAN,)$(RM)
+rmdir_cmd = $(call echo_cmd,CLEAN,)$(RMDIR)
 objcopy_cmd = $(call echo_cmd,OBJCOPY,$<)$(OBJCOPY) $(OBJCOPYFLAGS) $< $@
 lds_cmd = $(call echo_cmd,LDS,$<)$(CC) $(CFLAGS_lds) -c -o $@ $<
 
