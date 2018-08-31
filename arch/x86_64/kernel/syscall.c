@@ -535,7 +535,7 @@ void ptrace_report_signal(struct thread *thread, int sig)
 	}
 	thread->exit_status = sig;
 	/* Transition thread state */
-	proc->status = PS_TRACED;
+	proc->status = PS_DELAY_TRACED;
 	thread->status = PS_TRACED;
 	proc->ptrace &= ~PT_TRACE_SYSCALL;
 	if (sig == SIGSTOP || sig == SIGTSTP ||
@@ -554,8 +554,6 @@ void ptrace_report_signal(struct thread *thread, int sig)
 	info._sifields._sigchld.si_pid = thread->tid;
 	info._sifields._sigchld.si_status = thread->exit_status;
 	do_kill(cpu_local_var(current), parent_pid, -1, SIGCHLD, &info, 0);
-	/* Wake parent (if sleeping in wait4()) */
-	waitq_wakeup(&proc->parent->waitpid_q);
 
 	dkprintf("ptrace_report_signal,sleeping\n");
 	/* Sleep */
@@ -865,12 +863,9 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 				/* Reap and set new signal_flags */
 				proc->signal_flags = SIGNAL_STOP_STOPPED;
 
-				proc->status = PS_STOPPED;
+				proc->status = PS_DELAY_STOPPED;
 				thread->status = PS_STOPPED;
 				mcs_rwlock_writer_unlock(&proc->update_lock, &lock);	
-
-				/* Wake up the parent who tried wait4 and sleeping */
-				waitq_wakeup(&proc->parent->waitpid_q);
 
 				dkprintf("do_signal(): pid: %d, tid: %d SIGSTOP, sleeping\n", 
 					proc->pid, thread->tid);
@@ -888,12 +883,9 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 			/* Update thread state in fork tree */
 			mcs_rwlock_writer_lock(&proc->update_lock, &lock);	
 			thread->exit_status = SIGTRAP;
-			proc->status = PS_TRACED;
+			proc->status = PS_DELAY_TRACED;
 			thread->status = PS_TRACED;
 			mcs_rwlock_writer_unlock(&proc->update_lock, &lock);	
-
-			/* Wake up the parent who tried wait4 and sleeping */
-			waitq_wakeup(&thread->proc->parent->waitpid_q);
 
 			/* Sleep */
 			dkprintf("do_signal,SIGTRAP,sleeping\n");

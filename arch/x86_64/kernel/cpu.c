@@ -1680,6 +1680,7 @@ int ihk_mc_interrupt_cpu(int cpu, int vector)
 struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 {
 	struct thread *last;
+	struct mcs_rwlock_node_irqsave lock;
 
 	dkprintf("[%d] schedule: tlsblock_base: 0x%lX\n",
 	         ihk_mc_get_processor_id(), next->tlsblock_base);
@@ -1710,6 +1711,28 @@ struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 #endif
 
 	if (prev) {
+		mcs_rwlock_writer_lock(&prev->proc->update_lock, &lock);
+		if (prev->proc->status & (PS_DELAY_STOPPED | PS_DELAY_TRACED)) {
+			switch (prev->proc->status) {
+			case PS_DELAY_STOPPED:
+				prev->proc->status = PS_STOPPED;
+				break;
+			case PS_DELAY_TRACED:
+				prev->proc->status = PS_TRACED;
+				break;
+			default:
+				break;
+			}
+			mcs_rwlock_writer_unlock(&prev->proc->update_lock,
+						&lock);
+
+			/* Wake up the parent who tried wait4 and sleeping */
+			waitq_wakeup(&prev->proc->parent->waitpid_q);
+		} else {
+			mcs_rwlock_writer_unlock(&prev->proc->update_lock,
+						&lock);
+		}
+
 		last = ihk_mc_switch_context(&prev->ctx, &next->ctx, prev);
 	}
 	else {

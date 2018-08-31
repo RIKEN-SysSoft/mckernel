@@ -1359,9 +1359,7 @@ struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 	extern void perf_start(struct mc_perf_event *event);
 	extern void perf_reset(struct mc_perf_event *event);
 	struct thread *last;
-#ifdef POSTK_DEBUG_TEMP_FIX_41 /* early to wait4() wakeup for ptrace, fix. */
 	struct mcs_rwlock_node_irqsave lock;
-#endif /* POSTK_DEBUG_TEMP_FIX_41 */
 
 	/* Set up new TLS.. */
 	dkprintf("[%d] arch_switch_context: tlsblock_base: 0x%lX\n", 
@@ -1381,7 +1379,6 @@ struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 	if (likely(prev)) {
 		tls_thread_switch(prev, next);
 
-#ifdef POSTK_DEBUG_TEMP_FIX_41 /* early to wait4() wakeup for ptrace, fix. */
 		mcs_rwlock_writer_lock(&prev->proc->update_lock, &lock);
 		if (prev->proc->status & (PS_DELAY_STOPPED | PS_DELAY_TRACED)) {
 			switch (prev->proc->status) {
@@ -1395,11 +1392,12 @@ struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 				break;
 			}
 			mcs_rwlock_writer_unlock(&prev->proc->update_lock, &lock);
+
+			/* Wake up the parent who tried wait4 and sleeping */
 			waitq_wakeup(&prev->proc->parent->waitpid_q);
 		} else {
 			mcs_rwlock_writer_unlock(&prev->proc->update_lock, &lock);
 		}
-#endif /* POSTK_DEBUG_TEMP_FIX_41 */
 
 		last = ihk_mc_switch_context(&prev->ctx, &next->ctx, prev);
 	}
