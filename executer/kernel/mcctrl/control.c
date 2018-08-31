@@ -398,6 +398,7 @@ static void release_handler(ihk_os_t os, void *param)
 		}
 		thread->handler = NULL;
 	}
+	write_unlock_irqrestore(&host_thread_lock, flags);
 
 	mcexec_close_exec(os);
 
