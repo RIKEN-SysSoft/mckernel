@@ -388,7 +388,7 @@ static void release_handler(ihk_os_t os, void *param)
 	unsigned long flags;
 	struct host_thread *thread;
 
-	printk("%s: param=%p,pid=%d,tid=%d\n", __FUNCTION__, param, task_tgid_vnr(current), task_pid_vnr(current));
+	dprintk("%s: param=%p,pid=%d,tid=%d\n", __FUNCTION__, param, task_tgid_vnr(current), task_pid_vnr(current));
 
 	/* Stop FS switch for uti threads */ 
 	write_lock_irqsave(&host_thread_lock, flags);
@@ -409,13 +409,13 @@ static void release_handler(ihk_os_t os, void *param)
 	isp.msg = SCD_MSG_CLEANUP_PROCESS;
 	isp.pid = info->pid;
 
-	printk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p, cpu: %d\n", __FUNCTION__, info, info->cpu);
+	dprintk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p, cpu: %d\n", __FUNCTION__, info, info->cpu);
 	mcctrl_ikc_send(os, info->cpu, &isp);
 	if (os_ind >= 0) {
 		printk("%s: calling delete_pid_entry,os_ind=%d,pid=%d\n", __FUNCTION__, os_ind, info->pid);
 		delete_pid_entry(os_ind, info->pid);
 	}
-	printk("%s: calling kfree,param=%p,info->pid=%d\n", __FUNCTION__, param, info->pid);
+
 	kfree(param);
 	dprintk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p OK\n",
 			__FUNCTION__, info);
@@ -1219,7 +1219,7 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 	ppd = mcctrl_get_per_proc_data(ud, pid);
 
 	if (unlikely(!ppd)) {
-		kprintf("%s: INFO: no per-process structure for PID %d,syscall nr=%lu,rtid=%d\n", __FUNCTION__, pid, packet->req.number, packet->req.rtid);
+		dprintk("%s: INFO: no per-process structure for PID %d,syscall nr=%lu,rtid=%d\n", __FUNCTION__, pid, packet->req.number, packet->req.rtid);
 
 		/* We use ERESTARTSYS to tell the LWK that the proxy
 		 * process is gone and the application should be terminated */
