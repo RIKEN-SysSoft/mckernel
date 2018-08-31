@@ -2925,6 +2925,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 		exit(0);
 	}
 
+#if 0
 	/* Reopen device to register the new process */
 	close(fd);
 	fd = opendev();
@@ -2932,6 +2933,8 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 		fprintf(stderr, "%s: ERROR: opendev returned %d\n", __FUNCTION__, errno);
 		exit(1);
 	}
+#endif
+
 #if 0 /* We don't need ppd because the tracer disguises as tracee when ioctl()-ing */
 	if (ioctl(fd, MCEXEC_UP_CREATE_PPD) != 0) {
 		fprintf(stderr, "%s: ERROR: MCEXEC_UP_CREATE_PPD returned %d\n", __FUNCTION__, errno);
