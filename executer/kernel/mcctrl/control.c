@@ -56,6 +56,13 @@
 #define dprintk(...)
 #endif
 
+#define DEBUG_PTD
+#ifdef DEBUG_PTD
+#define pr_ptd(msg, tid, ptd) do { printk("%s: " msg ",tid=%d,refc=%d\n", __FUNCTION__, tid, atomic_read(&ptd->refcount)); } while(0)
+#else
+#define pr_ptd(msg, tid, ptd) do { } while(0)
+#endif
+
 #ifdef MCCTRL_KSYM_sys_unshare
 #if MCCTRL_KSYM_sys_unshare
 typedef int (*int_star_fn_ulong_t)(unsigned long);
@@ -381,9 +388,9 @@ static void release_handler(ihk_os_t os, void *param)
 	unsigned long flags;
 	struct host_thread *thread;
 
-	printk("%s: param=%p,pid=%d,tid=%d\n", __FUNCTION__, param, task_tgid_vnr(current), task_pid_vnr(current));
+	dprintk("%s: param=%p,pid=%d,tid=%d\n", __FUNCTION__, param, task_tgid_vnr(current), task_pid_vnr(current));
 
-	/* Stop FS switch for uti threads */ 
+	/* Stop switching FS registers for uti thread */ 
 	write_lock_irqsave(&host_thread_lock, flags);
 	list_for_each_entry(thread, &host_threads, list) {
 		if (thread->handler != info) { /* Created by the caller of close() */
@@ -391,10 +398,10 @@ static void release_handler(ihk_os_t os, void *param)
 		}
 		thread->handler = NULL;
 	}
+	write_unlock_irqrestore(&host_thread_lock, flags);
 
-	printk("%s: calling mcexec_close_exec\n", __FUNCTION__);
 	if ((rc = mcexec_close_exec(os))) {
-		printk("%s: ERROR: mcexec_close_exec (%d)\n", __FUNCTION__, rc);
+		printk("%s: INFO: mcexec_close_exec (%d)\n", __FUNCTION__, rc);
 	}
 
 	/* Note that it will call return_syscall() */
@@ -404,13 +411,13 @@ static void release_handler(ihk_os_t os, void *param)
 	isp.msg = SCD_MSG_CLEANUP_PROCESS;
 	isp.pid = info->pid;
 
-	printk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p, cpu: %d\n", __FUNCTION__, info, info->cpu);
+	dprintk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p, cpu: %d\n", __FUNCTION__, info, info->cpu);
 	mcctrl_ikc_send(os, info->cpu, &isp);
 	if (os_ind >= 0) {
 		printk("%s: calling delete_pid_entry,os_ind=%d,pid=%d\n", __FUNCTION__, os_ind, info->pid);
 		delete_pid_entry(os_ind, info->pid);
 	}
-	printk("%s: calling kfree,param=%p,info->pid=%d\n", __FUNCTION__, param, info->pid);
+
 	kfree(param);
 	dprintk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p OK\n",
 			__FUNCTION__, info);
@@ -1128,6 +1135,8 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	struct wait_queue_head_list_node *wqhln;
 	struct wait_queue_head_list_node *wqhln_next;
 	struct ikc_scd_packet *packet;
+	struct mcctrl_per_thread_data *ptd;
+	struct mcctrl_per_thread_data *next;
 
 	if (!ppd)
 		return -EINVAL;
@@ -1144,27 +1153,33 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 
 	list_del(&ppd->hash);
 	write_unlock_irqrestore(&ppd->ud->per_proc_data_hash_lock[hash], flags);
-	printk("%s: deallocating PPD for pid %d\n", __FUNCTION__, ppd->pid);
-	for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; i++) {
-		struct mcctrl_per_thread_data *ptd;
-		struct mcctrl_per_thread_data *next;
 
+	dprintk("%s: deallocating PPD for pid %d\n", __FUNCTION__, ppd->pid);
+
+	for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; i++) {
 		write_lock_irqsave(&ppd->per_thread_data_hash_lock[i], flags);
 		list_for_each_entry_safe(ptd, next,
 		                         ppd->per_thread_data_hash + i, hash) {
-			packet = ptd->data;
-			list_del(&ptd->hash);
-			kfree(ptd);
+
 			/* We use ERESTARTSYS to tell the LWK that the proxy
-			   process is gone and the application should be terminated. 
-			   Note that this includes notifying uti thread when tracer isn't working. */
-			__return_syscall(ppd->ud->os, packet, -ERESTARTSYS,
-					packet->req.rtid);
+			   process is gone and the application should be terminated. */
+			packet = (struct ikc_scd_packet *)ptd->data;
+			printk("%s: calling __return_syscall (hash),target pid=%d,tid=%d\n", __FUNCTION__, ppd->pid, packet->req.rtid);
+			__return_syscall(ppd->ud->os, packet, -ERESTARTSYS, packet->req.rtid);
 			ihk_ikc_release_packet(
 					(struct ihk_ikc_free_packet *)packet,
 					(ppd->ud->ikc2linux[smp_processor_id()] ?
 					 ppd->ud->ikc2linux[smp_processor_id()] :
 					 ppd->ud->ikc2linux[0]));
+
+			/* Note that uti ptd needs another put by mcexec_terminate_thread()
+			   (see mcexec_syscall_wait()).
+			   TODO: Detect tracer has died before calling mcexec_terminate_thread() and put uti ptd */
+			if (atomic_read(&ptd->refcount) != 1) {
+				printk("%s: WARNING: ptd->refcount != 1 but %d\n", __FUNCTION__, atomic_read(&ptd->refcount));
+			}
+			mcctrl_put_per_thread_data_unsafe(ptd);
+			pr_ptd("put", ptd->tid, ptd);
 		}
 		write_unlock_irqrestore(&ppd->per_thread_data_hash_lock[i], flags);
 	}
@@ -1175,6 +1190,7 @@ int mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 		packet = wqhln->packet;
 		kfree(wqhln);
 
+		dprintk("%s: calling __return_syscall (wq_req_list),target pid=%d,tid=%d\n", __FUNCTION__, ppd->pid, packet->req.rtid);
 		/* We use ERESTARTSYS to tell the LWK that the proxy
 		 * process is gone and the application should be terminated */
 		__return_syscall(ppd->ud->os, packet, -ERESTARTSYS,
@@ -1208,7 +1224,7 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 	ppd = mcctrl_get_per_proc_data(ud, pid);
 
 	if (unlikely(!ppd)) {
-		kprintf("%s: INFO: no per-process structure for PID %d,syscall nr=%lu,rtid=%d\n", __FUNCTION__, pid, packet->req.number, packet->req.rtid);
+		dprintk("%s: INFO: no per-process structure for PID %d,syscall nr=%lu,rtid=%d\n", __FUNCTION__, pid, packet->req.number, packet->req.rtid);
 
 		/* We use ERESTARTSYS to tell the LWK that the proxy
 		 * process is gone and the application should be terminated */
@@ -1218,7 +1234,6 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 				(ud->ikc2linux[smp_processor_id()] ?
 				 ud->ikc2linux[smp_processor_id()] :
 				 ud->ikc2linux[0]));
-
 		return -1;
 	}
 
@@ -1334,6 +1349,7 @@ int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 	int ret = 0;
 	unsigned long irqflags;
 	struct mcctrl_per_proc_data *ppd;
+	struct mcctrl_per_thread_data *ptd = NULL;
 
 	/* Get a reference to per-process structure */
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
@@ -1344,12 +1360,13 @@ int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 			return -EINVAL;
 	}
 
-	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
-	if (packet) {
+	ptd = mcctrl_get_per_thread_data(ppd, current);
+	if (ptd) {
 		printk("%s: ERROR: packet %p is already registered for thread %d\n",
-				__FUNCTION__, packet, task_pid_vnr(current));
+				__FUNCTION__, ptd->data, task_pid_vnr(current));
+		mcctrl_put_per_thread_data(ptd);
 		ret = -EBUSY;
-		goto put_ppd_out;
+		goto no_ptd;
 	}
 
 retry:
@@ -1411,13 +1428,13 @@ retry_alloc:
 			kfree(wqhln);
 			wqhln = NULL;
 			ret = -EINTR;
-			goto put_ppd_out;
+			goto no_ptd;
 		}
 		else {
 			kfree(wqhln);
 			wqhln = NULL;
 			ret = -EINTR;
-			goto put_ppd_out;
+			goto no_ptd;
 		}
 	}
 
@@ -1454,28 +1471,44 @@ retry_alloc:
 			packet->req.args[4],
 			packet->req.args[5]);
 	
-	if (mcctrl_add_per_thread_data(ppd, current, packet) < 0) {
-		kprintf("%s: error adding per-thread data\n", __FUNCTION__);
-		ret = -EINVAL;;
-		goto put_ppd_out;
+	/* Create ptd */
+	dkprintf("%s: add,tid=%d\n", __FUNCTION__, task_pid_vnr(current));
+	if ((ret = mcctrl_add_per_thread_data(ppd, packet))) {
+		kprintf("%s: error adding per-thread data (%d)\n", __FUNCTION__, ret);
+		ret = -EINVAL;
+		goto no_ptd;
 	}
-	//kprintf("%s: ptd->task=%p, tid=%d\n", __FUNCTION__, current, task_pid_vnr(current));
+	
+	/* Get a reference valid until offload is done */
+	ptd = mcctrl_get_per_thread_data(ppd, current);
+	if (!ptd) {
+		kprintf("%s: ERROR: ptd not found\n", __FUNCTION__);
+		ret = -EINVAL;
+		goto no_ptd;
+	}
+	pr_ptd("get", task_pid_vnr(current), ptd);
+
+	if (packet->req.number == __NR_sched_setaffinity  && packet->req.args[0] == 0) {
+		dkprintf("%s: uti,packet=%p,tid=%d\n", __FUNCTION__, packet, task_pid_vnr(current));
+
+		/* Get a reference valid until thread-offload is done */
+		ptd = mcctrl_get_per_thread_data(ppd, current);
+		if (!ptd) {
+			kprintf("%s: ptd not found\n", __FUNCTION__);
+			ret = -EINVAL;
+			goto no_ptd;
+		}
+		pr_ptd("get", task_pid_vnr(current), ptd);
+	}
 
 	if (__do_in_kernel_syscall(os, packet)) {
 		if (copy_to_user(&req->sr, &packet->req,
 					sizeof(struct syscall_request))) {
-
-			if (mcctrl_delete_per_thread_data(ppd, current) < 0) {
-				kprintf("%s: error deleting per-thread data\n", __FUNCTION__);
-			}
-			ret = -EINVAL;;
+			ret = -EINVAL;
 			goto put_ppd_out;
 		}
 
 		if (copy_to_user(&req->cpu, &packet->ref, sizeof(req->cpu))) {
-			if (mcctrl_delete_per_thread_data(ppd, current) < 0) {
-				kprintf("%s: error deleting per-thread data\n", __FUNCTION__);
-			}
 			ret = -EINVAL;
 			goto put_ppd_out;
 		}
@@ -1489,15 +1522,18 @@ retry_alloc:
 			 usrdata->ikc2linux[smp_processor_id()] :
 			 usrdata->ikc2linux[0]));
 
-	if (mcctrl_delete_per_thread_data(ppd, current) < 0) {
-		kprintf("%s: error deleting per-thread data\n", __FUNCTION__);
-		ret = -EINVAL;;
-		goto put_ppd_out;
-	}
+	/* Drop reference to zero and restart from add */
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put,in_kernel", task_pid_vnr(current), ptd);
 
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put,in_kernel", task_pid_vnr(current), ptd);
 	goto retry;
 
 put_ppd_out:
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put,in_mcexec", task_pid_vnr(current), ptd);
+ no_ptd:
 	mcctrl_put_per_proc_data(ppd);
 	return ret;
 }
@@ -1589,9 +1625,10 @@ long mcexec_load_syscall(ihk_os_t os, struct syscall_load_desc *__user arg)
 long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 {
 	struct syscall_ret_desc ret;
-	struct ikc_scd_packet *packet;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
+	struct mcctrl_per_thread_data *ptd;
+	struct ikc_scd_packet *packet;
 	int error = 0;
 
 	if (copy_from_user(&ret, arg, sizeof(struct syscall_ret_desc))) {
@@ -1606,15 +1643,21 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 		return -EINVAL;
 	}
 
-	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
+	/* Get a reference for this function */
+	ptd = mcctrl_get_per_thread_data(ppd, current);
+	if (!ptd) {
+		printk("%s: ERROR: mcctrl_get_per_thread_data failed\n", __FUNCTION__);
+		error = -EINVAL;
+		goto no_ptd;
+	}
+	pr_ptd("get", task_pid_vnr(current), ptd);
+	packet = (struct ikc_scd_packet *)ptd->data;
 	if (!packet) {
 		kprintf("%s: ERROR: no packet registered for TID %d\n", 
 			__FUNCTION__, task_pid_vnr(current));
 		error = -EINVAL;
-		goto out;
+		goto put_ppd_out;
 	}
-
-	mcctrl_delete_per_thread_data(ppd, current);
 
 	if (ret.size > 0) {
 		/* Host => Accel. Write is fast. */
@@ -1650,7 +1693,15 @@ out:
 			(usrdata->ikc2linux[smp_processor_id()] ?
 			 usrdata->ikc2linux[smp_processor_id()] :
 			 usrdata->ikc2linux[0]));
-
+ put_ppd_out:
+	/* Drop a reference for this function */
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put", task_pid_vnr(current), ptd);
+	
+	/* Final drop of the reference for non-uti syscall offloading */
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put", task_pid_vnr(current), ptd);
+ no_ptd:
 	mcctrl_put_per_proc_data(ppd);
 	return error;
 }
@@ -1900,6 +1951,7 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	/* Find previous file (if exists) and drop it */
 	list_for_each_entry(mcef_iter, &mckernel_exec_files, list) {
 		if (mcef_iter->os == os && mcef_iter->pid == task_tgid_vnr(current)) {
+			dprintk("%s: exec file found,%p,%p\n", __FUNCTION__, mcef_iter, mcef_iter->fp);
 			allow_write_access(mcef_iter->fp);
 			fput(mcef_iter->fp);
 			list_del(&mcef_iter->list);
@@ -2493,7 +2545,7 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	write_lock_irqsave(&host_thread_lock, flags);
 	list_add_tail(&thread->list, &host_threads);
 	write_unlock_irqrestore(&host_thread_lock, flags);
-#if 1
+
 	/* How ppd refcount reaches zero depends on how utility-thread exits:
          MCEXEC_UP_CREATE_PPD: set to 1
          mcexec_util_thread2: inc to 2
@@ -2509,7 +2561,7 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	       so the refcount is 1 when exiting release_handler()
 	*/
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
-#endif
+
 	return 0;
 }
 
@@ -2542,24 +2594,12 @@ static long
 mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct task_struct *tsk)
 {
 	int rc;
-	struct host_thread *thread;
-	struct ikc_scd_packet *packet;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
+	struct mcctrl_per_thread_data *ptd;
+	struct ikc_scd_packet *packet;
 
-	printk("%s: target pid=%d,tid=%d,sig=%lx,task=%p\n", __FUNCTION__, pid, tid, sig, tsk);
-
-    write_lock_irqsave(&host_thread_lock, flags);
-	list_for_each_entry(thread, &host_threads, list) {
-		if(thread->tid == tid) {
-			break;
-		}
-	}
-	if (!thread) {
-		printk("%s: thread not found in host_threads list\n", __FUNCTION__);
-		write_unlock_irqrestore(&host_thread_lock, flags);
-		return -ESRCH;
-	}
+	dprintk("%s: target pid=%d,tid=%d,sig=%lx,task=%p\n", __FUNCTION__, pid, tid, sig, tsk);
 
 	ppd = mcctrl_get_per_proc_data(usrdata, pid);
 	if (!ppd) {
@@ -2567,47 +2607,51 @@ mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct t
 				__FUNCTION__, pid);
 		goto no_ppd;
 	}
-	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, tsk);
+
+	ptd = mcctrl_get_per_thread_data(ppd, tsk);
+	if (!ptd) {
+		printk("%s: ERROR: mcctrl_get_per_thread_data failed\n", __FUNCTION__);
+		goto no_ptd;
+	}
+	if (ptd->tid != tid) {
+		printk("%s: ERROR: ptd->tid(%d) != tid(%d)\n", __FUNCTION__, ptd->tid, tid);
+		goto no_ptd;
+	}
+	pr_ptd("get", tid, ptd);
+
+	packet = (struct ikc_scd_packet *)ptd->data;
 	if (!packet) {
 		kprintf("%s: ERROR: no packet registered for TID %d\n",
 				__FUNCTION__, tid);
 		goto no_ptd;
 	}
-
-	printk("%s: calling mcctrl_delete_per_thread_data,ppd=%p,tsk=%p\n", __FUNCTION__, ppd, tsk);
-	if ((rc = mcctrl_delete_per_thread_data(ppd, tsk))) {
-		kprintf("%s: ERROR: mcctrl_delete_per_thread_data failed (%d)\n", __FUNCTION__, rc);
-		goto no_ptd;
-	}
-
-	printk("%s: calling __return_syscall, target pid=%d,tid=%d,sig=%lx,ppd->refcount=%d\n", __FUNCTION__, pid, tid, sig, atomic_read(&ppd->refcount));
-#if 1 /* debug */
 	__return_syscall(usrdata->os, packet, sig, tid);
-#endif
-	printk("%s: packet=%p,channels=%p,ref=%d,desc=%p\n", __FUNCTION__, packet, usrdata->channels, packet->ref, (usrdata->channels + packet->ref)->c);
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 						   (usrdata->ikc2linux[smp_processor_id()] ?
 							usrdata->ikc2linux[smp_processor_id()] :
 							usrdata->ikc2linux[0]));
+
+	/* Drop reference for this function */
+	pr_ptd("put", tid, ptd);
+	mcctrl_put_per_thread_data(ptd);
+
+	/* Final drop of reference for uti ptd */
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put", tid, ptd);
+
+	if (atomic_read(&ptd->refcount) != 1) {
+		printk("%s: WARNING: ptd->refcount != 1 but %d\n", __FUNCTION__, atomic_read(&ptd->refcount));
+	}
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put", tid, ptd);
  no_ptd:
-	printk("%s: ppd->refcount=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
-	if ((rc = mcctrl_put_per_proc_data(ppd)) <= 0) {
-		printk("%s: mcctrl_put_per_proc_data failed,rc=%d\n", __FUNCTION__, rc);
-	}
+	dprintk("%s: target pid=%d,tid=%d,ppd->refcount=%d\n", __FUNCTION__, pid, tid, atomic_read(&ppd->refcount));
+	mcctrl_put_per_proc_data(ppd);
 
-	/* See the comment in mcexec_util_thread2 on how ppd->refcount reaches zero */
-	printk("%s: ppd->refcount=%d\n", __FUNCTION__, atomic_read(&ppd->refcount));
-	if ((rc = mcctrl_put_per_proc_data(ppd)) < 0) {
-		printk("%s: mcctrl_put_per_proc_data failed,rc=%d\n", __FUNCTION__, rc);
-	}
-
+	/* This is the final drop of uti-ppd */
+	dprintk("%s: target pid=%d,tid=%d,ppd->refcount=%d\n", __FUNCTION__, pid, tid, atomic_read(&ppd->refcount));
+	mcctrl_put_per_proc_data(ppd);
  no_ppd:
-#if 0 /* debug */
-	list_del(&thread->list);
-	kfree(thread);
-#endif
-	write_unlock_irqrestore(&host_thread_lock, flags);
-
 	return 0;
 }
 
@@ -2617,14 +2661,32 @@ mcexec_terminate_thread(ihk_os_t os, struct terminate_thread_desc * __user arg)
 	long rc;
 	unsigned long flags;
 	struct terminate_thread_desc desc;
+	struct host_thread *thread;
 
     if (copy_from_user(&desc, arg, sizeof(struct terminate_thread_desc))) {
         return -EFAULT;
     }
 
+	dprintk("%s: target pid=%d,tid=%d\n", __FUNCTION__, desc.pid, desc.tid);
+
+	/* Stop switching FS registers for uti thread */
 	write_lock_irqsave(&host_thread_lock, flags);
-	rc = mcexec_terminate_thread_unsafe(os, desc.pid, desc.tid, desc.sig, (struct task_struct *)desc.tsk);
+	list_for_each_entry(thread, &host_threads, list) {
+		if(thread->tid == desc.tid) {
+			break;
+		}
+	}
+	if (!thread) {
+		printk("%s: thread not found in host_threads list\n", __FUNCTION__);
+		return -ESRCH;
+	}
+#if 1 /* debug */
+	list_del(&thread->list);
+	kfree(thread);
+#endif
 	write_unlock_irqrestore(&host_thread_lock, flags);
+
+	rc = mcexec_terminate_thread_unsafe(os, desc.pid, desc.tid, desc.sig, (struct task_struct *)desc.tsk);
 
 	return rc;
 }
@@ -3232,6 +3294,7 @@ int mcctrl_get_request_os_cpu(ihk_os_t os, int *ret_cpu)
 {
 	struct mcctrl_usrdata *usrdata;
 	struct mcctrl_per_proc_data *ppd;
+	struct mcctrl_per_thread_data *ptd;
 	struct ikc_scd_packet *packet;
 	struct ihk_ikc_channel_desc *ch;
 	int ret = 0;
@@ -3256,11 +3319,18 @@ int mcctrl_get_request_os_cpu(ihk_os_t os, int *ret_cpu)
 	}
 
 	/* Look up per-thread structure */
-	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
-	if (!packet) {
+	ptd = mcctrl_get_per_thread_data(ppd, current);
+	if (!ptd) {
+		printk("%s: ERROR: mcctrl_get_per_thread_data failed\n", __FUNCTION__);
 		ret = -EINVAL;
+		goto no_ptd;
+	}
+	pr_ptd("get", task_pid_vnr(current), ptd);
+	packet = (struct ikc_scd_packet *)ptd->data;
+	if (!packet) {
 		printk("%s: ERROR: no packet registered for TID %d\n",
 				__FUNCTION__, task_pid_vnr(current));
+		ret = -EINVAL;
 		goto out_put_ppd;
 	}
 
@@ -3273,6 +3343,9 @@ int mcctrl_get_request_os_cpu(ihk_os_t os, int *ret_cpu)
 	printk("%s: OS: %p, CPU: %d\n", __FUNCTION__, os, *ret_cpu);
 
 out_put_ppd:
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put", task_pid_vnr(current), ptd);
+ no_ptd:
 	mcctrl_put_per_proc_data(ppd);
 
 	return ret;
