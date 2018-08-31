@@ -3058,7 +3058,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 				    get_syscall_arg2(&args) == MCEXEC_UP_SYSCALL_THREAD) {
 				} else {
 					if (get_syscall_number(&args) != __NR_sched_yield)
-						fprintf(stderr, "SC,pid=%d,tid=%d,[%3ld](%lx, %lx, %lx, %lx, %lx, %lx): %lx\n",
+						__dprintf("SC,pid=%d,tid=%d,[%3ld](%lx, %lx, %lx, %lx, %lx, %lx): %lx\n",
 							getpid(),
 							gettid(),
 							get_syscall_number(&args),
@@ -3131,7 +3131,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 				    get_syscall_arg2(&args) ==
 				                     MCEXEC_UP_SYSCALL_THREAD &&
 				    samepage(uti_desc->wp, param)) {
-					fprintf(stderr, "SC,McK,pid=%d,tid=%d,[%3d](%lx, %lx, %lx, %lx, %lx, %lx): %lx\n",
+					__dprintf("SC,2mck,pid=%d,tid=%d,[%3d](%lx, %lx, %lx, %lx, %lx, %lx): %lx\n",
 							getpid(),
 							gettid(),
 							param->number,
@@ -3165,7 +3165,7 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 				set_syscall_return(&args, -ENOMEM);
 			}
 			else {
-				fprintf(stderr, "%s: MCEXEC_UP_SYSCALL_THREAD,nr=%ld\n", __FUNCTION__, get_syscall_number(&args));
+				__dprintf("%s: MCEXEC_UP_SYSCALL_THREAD,nr=%ld\n", __FUNCTION__, get_syscall_number(&args));
 				param_top = *(void **)param;
 				param->number = get_syscall_number(&args);
 				param->args[0] = get_syscall_arg1(&args);
