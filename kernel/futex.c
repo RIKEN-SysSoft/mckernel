@@ -871,8 +871,10 @@ retry:
 		goto out_put_key;
 	}
 
-	if (hassigpending(cpu_local_var(current))) {
+	/* RIKEN: futex_wait_queue_me() returns -ERESTARTSYS when waiting on Linux CPU and woken up by signal */
+	if (hassigpending(cpu_local_var_with_override(current, clv_override)) || time_remain == -ERESTARTSYS) {
 		ret = -EINTR;
+		uti_dkprintf("%s: tid=%d woken up by signal\n", __FUNCTION__, cpu_local_var_with_override(current, clv_override)->tid);
 		goto out_put_key;
 	}
 
