@@ -2840,12 +2840,7 @@ int read_process_vm(struct process_vm *vm, void *kdst, const void *usrc, size_t 
 			return error;
 		}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_52 /* NUMA support(memory area determination) */
-		if (!is_mckernel_memory(pa)) {
-#else
-		if (pa < ihk_mc_get_memory_address(IHK_MC_GMA_MAP_START, 0) ||
-			pa >= ihk_mc_get_memory_address(IHK_MC_GMA_MAP_END, 0)) {
-#endif /* POSTK_DEBUG_TEMP_FIX_52 */
+		if (!is_mckernel_memory(pa, pa + cpsize)) {
 			dkprintf("%s: pa is outside of LWK memory, to: %p, pa: %p,"
 				"cpsize: %d\n", __FUNCTION__, to, pa, cpsize);
 			va = ihk_mc_map_virtual(pa, 1, PTATTR_ACTIVE);
@@ -2924,12 +2919,7 @@ int write_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t
 			return error;
 		}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_52 /* NUMA support(memory area determination) */
-		if (!is_mckernel_memory(pa)) {
-#else
-		if (pa < ihk_mc_get_memory_address(IHK_MC_GMA_MAP_START, 0) ||
-			pa >= ihk_mc_get_memory_address(IHK_MC_GMA_MAP_END, 0)) {
-#endif /* POSTK_DEBUG_TEMP_FIX_52 */
+		if (!is_mckernel_memory(pa, pa + cpsize)) {
 			dkprintf("%s: pa is outside of LWK memory, from: %p,"
 				"pa: %p, cpsize: %d\n", __FUNCTION__, from, pa, cpsize);
 			va = ihk_mc_map_virtual(pa, 1, PTATTR_ACTIVE);
@@ -2995,12 +2985,7 @@ int patch_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t
 			return error;
 		}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_52 /* NUMA support(memory area determination) */
-		if (!is_mckernel_memory(pa)) {
-#else
-		if (pa < ihk_mc_get_memory_address(IHK_MC_GMA_MAP_START, 0) ||
-			pa >= ihk_mc_get_memory_address(IHK_MC_GMA_MAP_END, 0)) {
-#endif /* POSTK_DEBUG_TEMP_FIX_52 */
+		if (!is_mckernel_memory(pa, pa + cpsize)) {
 			dkprintf("%s: pa is outside of LWK memory, from: %p,"
 				"pa: %p, cpsize: %d\n", __FUNCTION__, from, pa, cpsize);
 			va = ihk_mc_map_virtual(pa, 1, PTATTR_ACTIVE);
