@@ -364,13 +364,13 @@ static void release_handler(ihk_os_t os, void *param)
 	isp.msg = SCD_MSG_CLEANUP_PROCESS;
 	isp.pid = info->pid;
 
-	printk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p, cpu: %d\n", __FUNCTION__, info, info->cpu);
+	dprintk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p, cpu: %d\n", __FUNCTION__, info, info->cpu);
 	mcctrl_ikc_send(os, info->cpu, &isp);
 	if (os_ind >= 0) {
 		printk("%s: calling delete_pid_entry,os_ind=%d,pid=%d\n", __FUNCTION__, os_ind, info->pid);
 		delete_pid_entry(os_ind, info->pid);
 	}
-	printk("%s: calling kfree,param=%p,info->pid=%d\n", __FUNCTION__, param, info->pid);
+
 	kfree(param);
 	dprintk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p OK\n",
 			__FUNCTION__, info);
