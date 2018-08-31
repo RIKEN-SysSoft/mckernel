@@ -67,7 +67,7 @@
 
 #define SYSCALL_BY_IKC
 
-#define DEBUG_PRINT_SC
+//#define DEBUG_PRINT_SC
 
 #ifdef DEBUG_PRINT_SC
 #undef DDEBUG_DEFAULT
