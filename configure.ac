@@ -77,6 +77,54 @@ AC_DEFUN([PAC_SET_HEADER_LIB_PATH],[
           ])
 ])
 
+AC_DEFUN([PAC_SET_HEADER_LIB_PATH_SYSCALL_INTERCEPT],[
+    AC_ARG_WITH([$1],
+                [AC_HELP_STRING([--with-$1=PATH],
+                                [specify path where $1 include directory and lib directory can be found])],
+
+                [AS_CASE(["$withval"],
+                         [yes|no|''],
+                         [AC_MSG_WARN([--with[out]-$1=PATH expects a valid PATH])
+                          with_$1=""])],
+                [with_$1=$2])
+    AC_ARG_WITH([$1-include],
+                [AC_HELP_STRING([--with-$1-include=PATH],
+                                [specify path where $1 include directory can be found])],
+                [AS_CASE(["$withval"],
+                         [yes|no|''],
+                         [AC_MSG_WARN([--with[out]-$1-include=PATH expects a valid PATH])
+                          with_$1_include=""])],
+                [])
+    AC_ARG_WITH([$1-lib],
+                [AC_HELP_STRING([--with-$1-lib=PATH],
+                                [specify path where $1 lib directory can be found])],
+                [AS_CASE(["$withval"],
+                         [yes|no|''],
+                         [AC_MSG_WARN([--with[out]-$1-lib=PATH expects a valid PATH])
+                          with_$1_lib=""])],
+                [])
+
+    # The args have been sanitized into empty/non-empty values above.
+    # Now append -I/-L args to CPPFLAGS/LDFLAGS, with more specific options
+    # taking priority
+
+    AS_IF([test -n "${with_$1_include}"],
+          [PAC_APPEND_FLAG([-I${with_$1_include}],[CPPFLAGS_SYSCALL_INTERCEPT])],
+          [AS_IF([test -n "${with_$1}"],
+                 [PAC_APPEND_FLAG([-I${with_$1}/include],[CPPFLAGS_SYSCALL_INTERCEPT])])])
+
+    AS_IF([test -n "${with_$1_lib}"],
+          [PAC_APPEND_FLAG([-L${with_$1_lib} -Wl,-rpath,${with_$1_lib}],[LDFLAGS_SYSCALL_INTERCEPT])],
+          [AS_IF([test -n "${with_$1}"],
+                 dnl is adding lib64 by default really the right thing to do?  What if
+                 dnl we are on a 32-bit host that happens to have both lib dirs available?
+                 [PAC_APPEND_FLAG([-L${with_$1}/lib -Wl,-rpath,${with_$1}/lib],[LDFLAGS_SYSCALL_INTERCEPT])
+                  AS_IF([test -d "${with_$1}/lib64"],
+		        [PAC_APPEND_FLAG([-L${with_$1}/lib64 -Wl,-rpath,${with_$1}/lib64],[LDFLAGS_SYSCALL_INTERCEPT])])
+                 ])
+          ])
+])
+
 IHK_VERSION=IHK_VERSION_m4
 MCKERNEL_VERSION=MCKERNEL_VERSION_m4
 DCFA_VERSION=DCFA_VERSION_m4
@@ -94,6 +142,7 @@ AS_IF([test "x$numa_lib_found" != "xyes"],
 	[AC_MSG_ERROR([Unable to find NUMA library, missing numactl-devel?])])
 
 PAC_SET_HEADER_LIB_PATH([mpi])
+PAC_SET_HEADER_LIB_PATH_SYSCALL_INTERCEPT([syscall_intercept])
 
 AC_ARG_WITH([kernelsrc],
   AC_HELP_STRING(
@@ -526,6 +575,8 @@ AC_SUBST(KMODDIR)
 AC_SUBST(KERNDIR)
 AC_SUBST(MANDIR)
 AC_SUBST(CFLAGS)
+AC_SUBST(CPPFLAGS_SYSCALL_INTERCEPT)
+AC_SUBST(LDFLAGS_SYSCALL_INTERCEPT)
 AC_SUBST(ENABLE_MCOVERLAYFS)
 AC_SUBST(ENABLE_RUSAGE)
 AC_SUBST(ENABLE_QLMPI)
