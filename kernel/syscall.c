@@ -74,6 +74,13 @@
 #define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
+#define DEBUG_UTI
+#ifdef DEBUG_UTI
+#define uti_dkprintf(...) do { ((uti_clv && linux_printk) ? (*linux_printk) : kprintf)(__VA_ARGS__); } while (0)
+#else
+#define uti_dkprintf(...) do { } while (0)
+#endif
+
 //static ihk_atomic_t pid_cnt = IHK_ATOMIC_INIT(1024);
 
 /* generate system call handler's prototypes */
@@ -138,6 +145,10 @@ static void do_mod_exit(int status);
  * (2) pmi_proxy + #CPU OMP threads + POSIX AIO IO + POSIX AIO notification
  */
 #define NR_TIDS (allow_oversubscribe ? (num_processors * 2) : num_processors)
+
+long (*linux_wait_event)(void *_resp, unsigned long nsec_timeout);
+int (*linux_printk)(const char *fmt, ...);
+int (*linux_clock_gettime)(clockid_t clk_id, struct timespec *tp);
 
 static void send_syscall(struct syscall_request *req, int cpu, int pid, struct syscall_response *res)
 {
@@ -264,10 +275,21 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		++thread->in_syscall_offload;
 	}
 
-	/* The current thread is the requester and any thread from 
-	 * the pool may serve the request */
+	/* The current thread is the requester */
 	req->rtid = cpu_local_var(current)->tid;
-	req->ttid = 0;
+
+	if (req->number == __NR_sched_setaffinity && req->args[0] == 0) {
+		/* mcexec thread serving migrate-to-Linux request must have
+		   the same tid as the requesting McKernel thread because the
+		   serving thread jumps to hfi driver and then jumps to
+		   rus_vm_fault() without registering it into per thread data
+		   by mcctrl_add_per_thread_data()). */
+		req->ttid = cpu_local_var(current)->tid/*0*/;
+		dkprintf("%s: uti, ttid=%d\n", __FUNCTION__, req->ttid);
+	} else {
+		/* Any thread from the pool may serve the request */
+		req->ttid = 0;
+	}
 	res.req_thread_status = IHK_SCD_REQ_THREAD_SPINNING;
 #ifdef POSTK_DEBUG_TEMP_FIX_26 /* do_syscall arg pid is not targetpid */
 	send_syscall(req, cpu, target_pid, &res);
@@ -5323,8 +5345,16 @@ SYSCALL_DECLARE(shmdt)
 	return 0;
 } /* sys_shmdt() */
 
-SYSCALL_DECLARE(futex)
+long do_futex(int n, unsigned long arg0, unsigned long arg1,
+			  unsigned long arg2, unsigned long arg3,
+			  unsigned long arg4, unsigned long arg5,
+			  unsigned long _uti_clv,
+			  void *uti_futex_resp,
+			  void *_linux_wait_event,
+			  void *_linux_printk,
+			  void *_linux_clock_gettime)
 {
+	struct cpu_local_var *uti_clv = (struct cpu_local_var *)_uti_clv;
 	uint64_t timeout = 0; // No timeout
 	uint32_t val2 = 0;
 	// Only one clock is used, ignore FUTEX_CLOCK_REALTIME
@@ -5332,24 +5362,44 @@ SYSCALL_DECLARE(futex)
 	int fshared = 1;
 	int ret = 0;
 
-	uint32_t *uaddr = (uint32_t *)ihk_mc_syscall_arg0(ctx);
-	int op = (int)ihk_mc_syscall_arg1(ctx);
-	uint32_t val = (uint32_t)ihk_mc_syscall_arg2(ctx);
-	struct timespec *utime = (struct timespec*)ihk_mc_syscall_arg3(ctx);
-	uint32_t *uaddr2 = (uint32_t *)ihk_mc_syscall_arg4(ctx);
-	uint32_t val3 = (uint32_t)ihk_mc_syscall_arg5(ctx);
+	uint32_t *uaddr = (uint32_t *)arg0;
+	int op = (int)arg1;
+	uint32_t val = (uint32_t)arg2;
+	struct timespec *utime = (struct timespec*)arg3;
+	uint32_t *uaddr2 = (uint32_t *)arg4;
+	uint32_t val3 = (uint32_t)arg5;
 	int flags = op;
-   	struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
 
-	monitor->status = IHK_OS_MONITOR_KERNEL_HEAVY;
- 
+
+	/* TODO: replace these with passing via struct smp_boot_param */
+	if (_linux_printk && !linux_printk) {
+		linux_printk = (int (*)(const char *fmt, ...))_linux_printk;
+	}
+	if (_linux_wait_event && !linux_wait_event) {
+		linux_wait_event = (long (*)(void *_resp, unsigned long nsec_timeout))_linux_wait_event;
+	}
+	if (_linux_clock_gettime && !linux_clock_gettime) {
+		linux_clock_gettime = (int (*)(clockid_t clk_id, struct timespec *tp))_linux_clock_gettime;
+	}
+
+	/* Fill in clv */
+	if (uti_clv) {
+		uti_clv->uti_futex_resp = uti_futex_resp;
+	}
+
+	/* monitor is per-cpu object */
+	if (!uti_clv) {
+		struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
+		monitor->status = IHK_OS_MONITOR_KERNEL_HEAVY;
+	} 
+
 	/* Cross-address space futex? */
 	if (op & FUTEX_PRIVATE_FLAG) {
 		fshared = 0;
 	}
 	op = (op & FUTEX_CMD_MASK);
 	
-	dkprintf("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%lx, uaddr2=%lx, val3=%x, []=%x, shared: %d\n", 
+	uti_dkprintf("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%lx, uaddr2=%lx, val3=%x, []=%x, shared: %d\n", 
 			flags,
 			(op == FUTEX_WAIT) ? "FUTEX_WAIT" :
 			(op == FUTEX_WAIT_BITSET) ? "FUTEX_WAIT_BITSET" :
@@ -5360,8 +5410,13 @@ SYSCALL_DECLARE(futex)
 			(op == FUTEX_REQUEUE) ? "FUTEX_REQUEUE (NOT IMPL!)" : "unknown",
 			(unsigned long)uaddr, val, utime, uaddr2, val3, *uaddr, fshared);
 
+	if ((op == FUTEX_WAIT || op == FUTEX_WAIT_BITSET) && utime) {
+		uti_dkprintf("%s: utime=%ld.%09ld\n", __FUNCTION__, utime->tv_sec, utime->tv_nsec);
+	}
 	if (utime && (op == FUTEX_WAIT_BITSET || op == FUTEX_WAIT)) {
 		unsigned long nsec_timeout;
+		if (!uti_clv) {
+			/* Use cycles for non-UTI case */
 
 		/* As per the Linux implementation FUTEX_WAIT specifies the duration of
 		 * the timeout, while FUTEX_WAIT_BITSET specifies the absolute timestamp */
@@ -5407,19 +5462,35 @@ SYSCALL_DECLARE(futex)
 		else {
 			nsec_timeout = (utime->tv_sec * NS_PER_SEC + utime->tv_nsec);
 		}
-
 		timeout = nsec_timeout * 1000 / ihk_mc_get_ns_per_tsc();
-		dkprintf("futex timeout: %lu\n", timeout);
+
+		}
+		else{
+			if (op == FUTEX_WAIT_BITSET) { /* User passed absolute time */
+				struct timespec ats;
+				ret = (*linux_clock_gettime)((flags & FUTEX_CLOCK_REALTIME) ? CLOCK_REALTIME: CLOCK_MONOTONIC, &ats);
+				if (ret) {
+					return ret;
+				}
+				uti_dkprintf("%s: ats=%ld.%09ld\n", __FUNCTION__, ats.tv_sec, ats.tv_nsec);
+				/* Use nsec for UTI case */
+				timeout = (utime->tv_sec * NS_PER_SEC + utime->tv_nsec) -
+					(ats.tv_sec * NS_PER_SEC + ats.tv_nsec);
+			} else { /* User passed relative time */
+				/* Use nsec for UTI case */
+				timeout = (utime->tv_sec * NS_PER_SEC + utime->tv_nsec);
+			}
+		}
 	}
 
 	/* Requeue parameter in 'utime' if op == FUTEX_CMP_REQUEUE.
 	 * number of waiters to wake in 'utime' if op == FUTEX_WAKE_OP. */
 	if (op == FUTEX_CMP_REQUEUE || op == FUTEX_WAKE_OP)
-		val2 = (uint32_t) (unsigned long) ihk_mc_syscall_arg3(ctx);
+		val2 = (uint32_t) (unsigned long) arg3;
 
-	ret = futex(uaddr, op, val, timeout, uaddr2, val2, val3, fshared);
+	ret = futex(uaddr, op, val, timeout, uaddr2, val2, val3, fshared, uti_clv);
 
-	dkprintf("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%lx, uaddr2=%lx, val3=%x, []=%x, shared: %d, ret: %d\n", 
+	uti_dkprintf("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%lx, uaddr2=%lx, val3=%x, []=%x, shared: %d, ret: %d\n", 
 			op,
 			(op == FUTEX_WAIT) ? "FUTEX_WAIT" :
 			(op == FUTEX_WAIT_BITSET) ? "FUTEX_WAIT_BITSET" :
@@ -5431,6 +5502,14 @@ SYSCALL_DECLARE(futex)
 			(unsigned long)uaddr, val, utime, uaddr2, val3, *uaddr, fshared, ret);
 
 	return ret;
+}
+
+SYSCALL_DECLARE(futex)
+{
+	return do_futex(n, ihk_mc_syscall_arg0(ctx), ihk_mc_syscall_arg1(ctx),
+					ihk_mc_syscall_arg2(ctx), ihk_mc_syscall_arg3(ctx),
+					ihk_mc_syscall_arg4(ctx), ihk_mc_syscall_arg5(ctx),
+					0UL, NULL, NULL, NULL, NULL);
 }
 
 static void
@@ -5474,7 +5553,7 @@ do_exit(int code)
 		setint_user((int*)thread->clear_child_tid, 0);
 		barrier();
 		futex((uint32_t *)thread->clear_child_tid,
-		      FUTEX_WAKE, 1, 0, NULL, 0, 0, 1);
+		      FUTEX_WAKE, 1, 0, NULL, 0, 0, 1, NULL);
 	}
 
 	mcs_rwlock_writer_lock(&proc->threads_lock, &lock);
@@ -8998,6 +9077,7 @@ util_thread(struct uti_attr *arg)
 {
 	volatile unsigned long *context;
 	unsigned long pcontext;
+	struct cpu_local_var *uti_clv;
 	struct syscall_request request IHK_DMA_ALIGN;
 	long rc;
 	struct thread *thread = cpu_local_var(current);
@@ -9016,6 +9096,14 @@ util_thread(struct uti_attr *arg)
 	pcontext = virt_to_phys((void *)context);
 	save_uctx((void *)context, NULL);
 
+	/* Create a copy of clv and replace clv with it when the Linux thread calls in a McKernel function */
+	uti_clv = kmalloc(sizeof(struct cpu_local_var), IHK_MC_AP_NOWAIT);
+	if (!uti_clv) {
+		ihk_mc_free_pages((void *)context, 1);
+		return -ENOMEM;
+	}
+	memcpy(uti_clv, get_this_cpu_local_var(), sizeof(struct cpu_local_var));
+
 	request.number = __NR_sched_setaffinity;
 	request.args[0] = 0;
 	request.args[1] = pcontext;
@@ -9025,19 +9113,23 @@ util_thread(struct uti_attr *arg)
 		kattr.parent_cpuid = thread->parent_cpuid;
 		request.args[2] = virt_to_phys(&kattr);
 	}
+	request.args[3] = (unsigned long)uti_clv;
 	thread->thread_offloaded = 1;
 	rc = do_syscall(&request, ihk_mc_get_processor_id(), 0);
 	thread->thread_offloaded = 0;
 	free_address = context[0];
 	free_size = context[1];
 	ihk_mc_free_pages((void *)context, 1);
+	kfree(uti_clv);
 
 	if (rc >= 0) {
 		if (rc & 0x10000007f) { // exit_group || signal
+			dkprintf("%s: exit_group || signal\n", __FUNCTION__);
 			thread->proc->nohost = 1;
 			terminate((rc >> 8) & 255, rc & 255);
 		}
 		else {
+			dkprintf("%s: !exit_group && !signal\n", __FUNCTION__);
 			request.number = __NR_sched_setaffinity;
 			request.args[0] = 1;
 			request.args[1] = free_address;
