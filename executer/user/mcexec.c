@@ -1911,8 +1911,7 @@ struct uti_desc {
 
 static int create_tracer();
 int uti_pfd[2];
-void *uti_wp;
-struct uti_desc *uti_desc;
+struct uti_desc *uti_desc = (void*)-1;
 
 int main(int argc, char **argv)
 {
@@ -2845,9 +2844,9 @@ create_tracer()
 	memset(uti_desc, 0, sizeof(struct uti_desc));
 	sem_init(&uti_desc->arg, 1, 0);
 	sem_init(&uti_desc->attach, 1, 0);
-	uti_wp = mmap(NULL, PAGE_SIZE * 3, PROT_READ | PROT_WRITE,
+	uti_desc->wp = mmap(NULL, PAGE_SIZE * 3, PROT_READ | PROT_WRITE,
 	          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-	if (uti_wp == (void *)-1) {
+	if (uti_desc->wp == (void *)-1) {
 		return -1;
 	}
 
@@ -3134,17 +3133,17 @@ util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, int remote_t
 	}
 #endif
 #ifdef POSTK_DEBUG_ARCH_DEP_35
-	lctx = (char *)uti_wp + page_size;
+	lctx = (char *)uti_desc->wp + page_size;
 	rctx = (char *)lctx + page_size;
 #else
-	lctx = (char *)uti_wp + PAGE_SIZE;
+	lctx = (char *)uti_desc->wp + PAGE_SIZE;
 	rctx = (char *)lctx + PAGE_SIZE;
 #endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 
 	param[0] = (void *)uctx_pa;
 	param[1] = rctx;
 	param[2] = lctx;
-	param[4] = uti_wp;
+	param[4] = uti_desc->wp;
 #ifdef POSTK_DEBUG_ARCH_DEP_35
 	param[5] = (void *)(page_size * 3);
 #else	/* POSTK_DEBUG_ARCH_DEP_35 */
@@ -3159,7 +3158,7 @@ util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, int remote_t
 	create_worker_thread(NULL);
 
 	/* Pass info to the tracer so that it can masquerade as the tracee */
-	uti_desc->wp = uti_wp;
+	uti_desc->wp = uti_desc->wp;
 	uti_desc->mck_tid = remote_tid;
 	uti_desc->key = (unsigned long)param[3];
 	uti_desc->pid = getpid();
@@ -3210,11 +3209,11 @@ util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, int remote_t
 	pthread_exit(NULL);
 
 out:
-	if (uti_wp != (void*)-1)
+	if (uti_desc != (void*)-1 && uti_desc->wp != (void*)-1)
 #ifdef POSTK_DEBUG_ARCH_DEP_35
-		munmap(uti_wp, page_size * 3);
+		munmap(uti_desc->wp, page_size * 3);
 #else	/* POSTK_DEBUG_ARCH_DEP_35 */
-		munmap(uti_wp, PAGE_SIZE * 3);
+		munmap(uti_desc->wp, PAGE_SIZE * 3);
 #endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 	return rc;
 }
