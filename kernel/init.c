@@ -253,6 +253,11 @@ static void nmi_init()
 	ihk_set_nmi_mode_addr(phys);
 }
 
+static void uti_init()
+{
+	ihk_set_mckernel_do_futex((unsigned long)do_futex);
+}
+
 static void rest_init(void)
 {
 	handler_init();
@@ -268,6 +273,7 @@ static void rest_init(void)
 #endif /* !POSTK_DEBUG_TEMP_FIX_73 */
 	cpu_local_var_init();
 	nmi_init();
+	uti_init();
 	time_init();
 	kmalloc_init();
 

@@ -462,7 +462,7 @@ out_put_ppd:
 	return syscall_ret;
 }
 
-static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t reason)
+int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t reason)
 {
 	struct ikc_scd_packet *packet;
 	struct ikc_scd_packet *free_packet = NULL;
@@ -2128,7 +2128,7 @@ out:
 	return (IS_ERR_VALUE(map))? (int)map: 0;
 }
 
-static int clear_pte_range(uintptr_t start, uintptr_t len)
+int clear_pte_range(uintptr_t start, uintptr_t len)
 {
 	struct mm_struct *mm = current->mm;
 	struct vm_area_struct *vma;

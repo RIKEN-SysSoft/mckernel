@@ -67,6 +67,12 @@ get_syscall_arg6(syscall_args *args)
 	return args->r9;
 }
 
+static inline unsigned long
+get_syscall_rip(syscall_args *args)
+{
+	return args->rip;
+}
+
 static inline void
 set_syscall_number(syscall_args *args, unsigned long value)
 {
