@@ -1376,6 +1376,7 @@ done:
 		return 0;
 	}
 
+	/* Forward signal to Linux by interrupt_syscall mechanism */
 	if (tthread->thread_offloaded) {
 		if (!tthread->proc->nohost) {
 			interrupt_syscall(tthread, sig);
