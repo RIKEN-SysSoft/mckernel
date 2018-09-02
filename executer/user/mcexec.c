@@ -2092,26 +2092,8 @@ int main(int argc, char **argv)
 	if (opendev() == -1)
 		exit(EXIT_FAILURE);
 
-	/* Perform mmap() before fork() in create_tracer() */
-	uti_wp = mmap(NULL, PAGE_SIZE * 3, PROT_READ | PROT_WRITE,
-	          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-	if (uti_wp == (void *)-1) {
-		exit(1);
-	}
-	uti_desc = mmap(NULL, sizeof(struct uti_desc), PROT_READ | PROT_WRITE,
-	          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-	if (uti_desc == (void *)-1) {
-		exit(1);
-	}
-	memset(uti_desc, 0, sizeof(struct uti_desc));
-	sem_init(&uti_desc->arg, 1, 0);
-	sem_init(&uti_desc->attach, 1, 0);
 #if 1
-	/* Create tracer before any proxy VMAs are attached */
-	if ((error = pipe(uti_pfd)) == -1) {
-		fprintf(stderr, "%s: pipe returned %d\n", __FUNCTION__, error);
-		return -1;
-	}
+	/* Create tracer before anonymous inode is mapped */
 	if ((error = create_tracer())) {
 		fprintf(stderr, "%s: create tracer returned %d\n", __FUNCTION__, error);
 		return error;
@@ -2852,8 +2834,27 @@ create_tracer()
 	unsigned long code = 0;
 	int exited = 0;
 	int mode = 0;
-	//struct tracer_desc desc;
 	unsigned long buf;
+
+	/* Perform mmap() before fork() in create_tracer() */
+	uti_desc = mmap(NULL, sizeof(struct uti_desc), PROT_READ | PROT_WRITE,
+	          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+	if (uti_desc == (void *)-1) {
+		return -1;
+	}
+	memset(uti_desc, 0, sizeof(struct uti_desc));
+	sem_init(&uti_desc->arg, 1, 0);
+	sem_init(&uti_desc->attach, 1, 0);
+	uti_wp = mmap(NULL, PAGE_SIZE * 3, PROT_READ | PROT_WRITE,
+	          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+	if (uti_wp == (void *)-1) {
+		return -1;
+	}
+
+	if (pipe(uti_pfd)) {
+		fprintf(stderr, "%s: pipe failed: %s\n", __FUNCTION__, strerror(errno));
+		return -1;
+	}
 
 	tpid = fork();
 	if (tpid) {
@@ -3123,16 +3124,9 @@ util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, int remote_t
 	unsigned long buf;
 
 #if 0
-	{
-		int error;
-		if ((error = pipe(uti_pfd)) == -1) {
-			fprintf(stderr, "%s: pipe returned %d\n", __FUNCTION__, error);
-			rc = error; goto out;
-		}
-		if ((error = create_tracer())) {
-			fprintf(stderr, "%s: create_tracer returned %d\n", __FUNCTION__, error);
-			rc = error; goto out;
-		}
+	if ((error = create_tracer())) {
+		fprintf(stderr, "%s: create_tracer returned %d\n", __FUNCTION__, error);
+		rc = error; goto out;
 	}
 #endif
 #ifdef POSTK_DEBUG_ARCH_DEP_35
@@ -3709,6 +3703,13 @@ gettid_out:
 					goto fork_child_sync_pipe;
 				}
 
+				/* Create tracer before anonymous inode is mapped */
+				if ((ret = create_tracer())) {
+					fs->status = ret;
+					fprintf(stderr, "%s: create tracer returned %d\n", __FUNCTION__, ret);
+					goto fork_child_sync_pipe;
+				}
+				
 				if (ioctl(fd, MCEXEC_UP_CREATE_PPD) != 0) {
 					fs->status = -errno;
 					fprintf(stderr, "ERROR: creating PPD %s\n", dev);
