@@ -2504,14 +2504,14 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 	return ret;
 }
 
-static long mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct task_struct *tsk)
+static long mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long code, struct task_struct *tsk)
 {
 	struct ikc_scd_packet *packet;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
 	struct mcctrl_per_thread_data *ptd;
 
-	dprintk("%s: target pid=%d,tid=%d,sig=%lx,task=%p\n", __FUNCTION__, pid, tid, sig, tsk);
+	dprintk("%s: target pid=%d,tid=%d,code=%lx,task=%p\n", __FUNCTION__, pid, tid, code, tsk);
 
 	ppd = mcctrl_get_per_proc_data(usrdata, pid);
 	if (!ppd) {
@@ -2537,7 +2537,7 @@ static long mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long s
 				__FUNCTION__, tid);
 		goto no_ptd;
 	}
-	__return_syscall(usrdata->os, packet, sig, tid);
+	__return_syscall(usrdata->os, packet, code, tid);
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 						   (usrdata->ikc2linux[smp_processor_id()] ?
 							usrdata->ikc2linux[smp_processor_id()] :
@@ -2601,7 +2601,7 @@ mcexec_terminate_thread(ihk_os_t os, struct terminate_thread_desc * __user arg)
 #endif
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
-	rc = mcexec_terminate_thread_unsafe(os, desc.pid, desc.tid, desc.sig, (struct task_struct *)desc.tsk);
+	rc = mcexec_terminate_thread_unsafe(os, desc.pid, desc.tid, desc.code, (struct task_struct *)desc.tsk);
 
  out:
 	return rc;
