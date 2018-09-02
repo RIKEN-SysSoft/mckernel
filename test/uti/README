@@ -142,8 +142,11 @@ CT07 システムコールテスト エラー系
    fork() の戻り値が -1 で errno が ENOSYS
 □ CT07005 fork OK %d 
    vfork() の戻り値が -1 で errno が ENOSYS
-□ CT07006 vfork OK %d 
+
+□  CT07006 vfork OK %d 
    execve() の戻り値が -1 で errno が ENOSYS
+※ syscall_interceptの不具合によりvforkはSegmentation faultを起こすため、除外している
+
 □ CT07007 execve OK %d 
    Linux スレッド終了
    メインスレッドにて pthread_join。成功
