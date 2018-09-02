@@ -375,7 +375,7 @@ static long mcexec_debug_log(ihk_os_t os, unsigned long arg)
 	return 0;
 }
 
-int mcexec_close_exec(ihk_os_t os);
+int mcexec_close_exec(ihk_os_t os, int pid);
 int mcexec_destroy_per_process_data(ihk_os_t os, int pid);
 
 static void release_handler(ihk_os_t os, void *param)
@@ -395,7 +395,7 @@ static void release_handler(ihk_os_t os, void *param)
 	}
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
-	mcexec_close_exec(os);
+	mcexec_close_exec(os, info->pid);
 
 	/* Note that it will call return_syscall() */
 	mcexec_destroy_per_process_data(os, info->pid);
@@ -1942,7 +1942,7 @@ out:
 	return retval;
 }
 
-int mcexec_close_exec(ihk_os_t os)
+int mcexec_close_exec(ihk_os_t os, int pid)
 {
 	struct mckernel_exec_file *mcef = NULL;
 	int found = 0;
@@ -1954,7 +1954,7 @@ int mcexec_close_exec(ihk_os_t os)
 		
 	down(&mckernel_exec_file_lock);
 	list_for_each_entry(mcef, &mckernel_exec_files, list) {
-		if (mcef->os == os && mcef->pid == task_tgid_vnr(current)) {
+		if (mcef->os == os && mcef->pid == pid) {
 			allow_write_access(mcef->fp);
 			fput(mcef->fp);
 			list_del(&mcef->list);
@@ -3137,7 +3137,7 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 		return mcexec_open_exec(os, (char *)arg);
 
 	case MCEXEC_UP_CLOSE_EXEC:
-		return mcexec_close_exec(os);
+		return mcexec_close_exec(os, task_tgid_vnr(current));
 
 	case MCEXEC_UP_PREPARE_DMA:
 		return mcexec_pin_region(os, (unsigned long *)arg);
