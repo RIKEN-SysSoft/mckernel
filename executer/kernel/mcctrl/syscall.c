@@ -2612,6 +2612,10 @@ sched_setparam_out:
 	}
 
 	__return_syscall(os, packet, ret, 0);
+	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
+			       (usrdata->ikc2linux[smp_processor_id()] ?
+				usrdata->ikc2linux[smp_processor_id()] :
+				usrdata->ikc2linux[0]));
 
 	error = 0;
 out:
