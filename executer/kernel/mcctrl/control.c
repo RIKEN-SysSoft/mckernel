@@ -339,6 +339,7 @@ struct host_thread {
 	unsigned long usp;
 	unsigned long lfs;
 	unsigned long rfs;
+    struct task_struct *task;
 };
 
 struct mcos_handler_info *new_mcos_handler_info(ihk_os_t os, struct file *file)
