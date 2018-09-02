@@ -82,6 +82,8 @@
 #define SCD_MSG_CPU_RW_REG              0x52
 #define SCD_MSG_CPU_RW_REG_RESP         0x53
 
+#define SCD_MSG_FUTEX_WAKE              0x60
+
 /* Cloning flags.  */
 # define CSIGNAL       0x000000ff /* Signal mask to be sent at exit.  */
 # define CLONE_VM      0x00000100 /* Set if VM shared between processes.  */
@@ -276,6 +278,12 @@ struct ikc_scd_packet {
 		struct {
 			int eventfd_type;
 		};
+
+		/* SCD_MSG_FUTEX_WAKE */
+		struct {
+			void *resp;
+			int *spin_sleep; /* 1: waiting in linux_wait_event() 0: woken up by someone else */
+		} futex;
 	};
 	char padding[12];
 };
@@ -474,6 +482,14 @@ int arch_cpu_read_write_register(struct ihk_os_cpu_register *desc,
 		enum mcctrl_os_cpu_operation op);
 struct vm_range_numa_policy *vm_range_policy_search(struct process_vm *vm, uintptr_t addr);
 time_t time(void);
+long do_futex(int n, unsigned long arg0, unsigned long arg1,
+			  unsigned long arg2, unsigned long arg3,
+			  unsigned long arg4, unsigned long arg5,
+			  unsigned long _uti_clv,
+			  void *uti_futex_resp,
+			  void *_linux_wait_event,
+			  void *_linux_printk,
+			  void *_linux_clock_gettime);
 
 #ifndef POSTK_DEBUG_ARCH_DEP_52
 #define VDSO_MAXPAGES 2
@@ -596,5 +612,10 @@ struct move_pages_smp_req {
 #define COREDUMP_RUNNING          0
 #define COREDUMP_DESCHEDULED      1
 #define COREDUMP_TO_BE_WOKEN      2
+
+/* uti: function pointers pointing to Linux codes */
+extern long (*linux_wait_event)(void *_resp, unsigned long nsec_timeout);
+extern int (*linux_printk)(const char *fmt, ...);
+extern int (*linux_clock_gettime)(clockid_t clk_id, struct timespec *tp);
 
 #endif
