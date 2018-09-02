@@ -1053,7 +1053,9 @@ void terminate(int rc, int sig)
 	mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
 	n = 0;
 	list_for_each_entry(thread, &proc->threads_list, siblings_list) {
-		n++;
+		if (thread != mythread) {
+			n++;
+		}
 	}
 
 	if (n) {
