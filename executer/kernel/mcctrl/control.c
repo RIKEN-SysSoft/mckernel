@@ -1496,11 +1496,6 @@ retry_alloc:
 		goto put_ppd_out;
 	}
 
-	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-			(usrdata->ikc2linux[smp_processor_id()] ?
-			 usrdata->ikc2linux[smp_processor_id()] :
-			 usrdata->ikc2linux[0]));
-
 	/* Drop reference to zero and restart from add */
 	mcctrl_put_per_thread_data(ptd);
 	pr_ptd("put,in_kernel", task_pid_vnr(current), ptd);
