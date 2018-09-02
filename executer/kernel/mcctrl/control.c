@@ -283,6 +283,8 @@ struct mcos_handler_info {
 	int cpu;
 	struct mcctrl_usrdata *ud;
 	struct file *file;
+	unsigned long user_start;
+	unsigned long user_end;
 };
 
 struct mcos_handler_info;
@@ -420,6 +422,8 @@ static long mcexec_start_image(ihk_os_t os,
 
 	info->pid = desc->pid;
 	info->cpu = desc->cpu;
+	info->user_start = desc->user_start;
+	info->user_end = desc->user_end;
 	ihk_os_register_release_handler(file, release_handler, info);
 	ihk_os_set_mcos_private_data(file, info);
 
@@ -1187,9 +1191,28 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 			wqhln = wqhln_iter;
 			break;
 		}
-		if (!wqhln) {
-			printk("%s: WARNING: no target thread found for exact request??\n",
-				__FUNCTION__);
+		/* Find the mcexec thread with the same tid as the requesting McKernel thread 
+		   and let it handle the migrate-to-Linux request */
+		if (packet->req.number == __NR_sched_setaffinity && packet->req.args[0] == 0) {
+			list_for_each_entry(wqhln_iter, &ppd->wq_list, list) {
+				if (packet->req.ttid == wqhln_iter->rtid) {
+					if (!wqhln_iter->task) {
+						printk("%s: ERROR: wqhln_iter->task=%p,rtid=%d,&ppd->wq_list_lock=%p\n", __FUNCTION__, wqhln_iter->task, wqhln_iter->rtid, &ppd->wq_list_lock);
+					} else if(wqhln_iter->req) {
+						/* list_del() is called after woken-up */
+						dprintk("%s: INFO: target thread is busy, wqhln_iter->req=%d,rtid=%d,&ppd->wq_list_lock=%p\n", __FUNCTION__, wqhln_iter->req, wqhln_iter->rtid, &ppd->wq_list_lock);
+					} else {
+						wqhln = wqhln_iter;
+						dprintk("%s: uti, worker with tid of %d found in wq_list\n", __FUNCTION__, packet->req.ttid);
+					}
+					break;
+				}
+			}
+		} else {
+			if (!wqhln) {
+				printk("%s: WARNING: no target thread (tid=%d) found for exact request??\n",
+					   __FUNCTION__, packet->req.ttid);
+			}
 		}
 	}
 	/* Is there any thread available? */
@@ -1214,6 +1237,12 @@ retry_alloc:
 		wqhln = wqhln_alloc;
 		wqhln->req = 0;
 		wqhln->task = NULL;
+		/* Let the mcexec thread to handle migrate-to-Linux request in mcexec_wait_syscall() after finishing the current task */
+		if (packet->req.number == __NR_sched_setaffinity && packet->req.args[0] == 0) {
+			wqhln->rtid = packet->req.ttid;
+		} else {
+			wqhln->rtid = 0;
+		}
 		init_waitqueue_head(&wqhln->wq_syscall);
 		list_add_tail(&wqhln->list, &ppd->wq_req_list);
 	}
@@ -1261,16 +1290,27 @@ int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 retry:
 	/* Prepare per-thread wait queue head or find a valid request */
 	irqflags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
+
+	/* Handle migrate-to-Linux request if any */
+	list_for_each_entry(wqhln_iter, &ppd->wq_req_list, list) {
+		if (wqhln_iter->rtid == task_pid_vnr(current)) {
+			wqhln = wqhln_iter;
+			wqhln->task = current;
+			list_del(&wqhln->list);
+			goto found;
+		}
+	}
+
 	/* First see if there is a valid request already that is not yet taken */
 	list_for_each_entry(wqhln_iter, &ppd->wq_req_list, list) {
-		if (wqhln_iter->task == NULL && wqhln_iter->req) {
+		if (!wqhln_iter->rtid && wqhln_iter->task == NULL && wqhln_iter->req) {
 			wqhln = wqhln_iter;
 			wqhln->task = current;
 			list_del(&wqhln->list);
 			break;
 		}
 	}
-
+ found:
 	if (!wqhln) {
 retry_alloc:
 		wqhln = kmalloc(sizeof(*wqhln), GFP_ATOMIC);
@@ -1282,6 +1322,8 @@ retry_alloc:
 		wqhln->task = current;
 		wqhln->req = 0;
 		wqhln->packet = NULL;
+		/* Let mcexec_syscall() find the mcexec thread to handle migrate-to-Linux request */
+		wqhln->rtid = task_pid_vnr(current);
 		init_waitqueue_head(&wqhln->wq_syscall);
 
 		list_add(&wqhln->list, &ppd->wq_list);
@@ -2343,6 +2385,8 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	void **__user param = (void **__user )arg;
 	void *__user rctx = (void *__user)param[1];
 	void *__user lctx = (void *__user)param[2];
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_per_proc_data *ppd;
 
 	save_fs_ctx(lctx);
 	info = ihk_os_get_mcos_private_data(file);
@@ -2454,33 +2498,147 @@ err:
 	kfree(thread);
 	return 0;
 }
+ 
+long mcexec_unmap_pseudo_filemap(ihk_os_t os, struct file *file)
+{
+	long rc = -1;
+	struct mcos_handler_info *info;
+	info = ihk_os_get_mcos_private_data(file);
+	dprintk("%s: clear_pte_range %p-%p\n", __FUNCTION__, (void*)info->user_start, (void*)info->user_end);
+	rc = clear_pte_range(info->user_start, info->user_end - info->user_start);
+	return rc;
+}
 
-long
-mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
+ static long (*mckernel_do_futex)(int n, unsigned long arg0, unsigned long arg1,
+			  unsigned long arg2, unsigned long arg3,
+			  unsigned long arg4, unsigned long arg5,
+				   unsigned long _uti_clv,
+				   void *uti_futex_resp,
+				   void *_linux_wait_event,
+							  void *_linux_printk,
+							  void *_linux_clock_gettime);
+
+ long uti_wait_event(void *_resp, unsigned long nsec_timeout) {
+	 struct uti_futex_resp *resp = _resp;
+	 if (nsec_timeout) {
+		 return wait_event_interruptible_timeout(resp->wq, resp->done, nsecs_to_jiffies(nsec_timeout));
+	 } else {
+		 return wait_event_interruptible(resp->wq, resp->done);
+	 }
+ }
+
+ int uti_printk(const char *fmt, ...) {
+	 int sum = 0, nwritten;
+	 va_list args;
+	 va_start(args, fmt);
+	 nwritten = vprintk(fmt, args);
+	 sum += nwritten;
+	 va_end(args);
+	 return sum;
+ }
+
+int uti_clock_gettime(clockid_t clk_id, struct timespec *tp) {
+	int ret = 0;
+	struct timespec64 ts64;
+	dprintk("%s: clk_id=%x,REALTIME=%x,MONOTONIC=%x\n", __FUNCTION__, clk_id, CLOCK_REALTIME, CLOCK_MONOTONIC);
+	switch(clk_id) {
+	case CLOCK_REALTIME:
+		getnstimeofday64(&ts64);
+		tp->tv_sec = ts64.tv_sec;
+		tp->tv_nsec = ts64.tv_nsec;
+		dprintk("%s: CLOCK_REALTIME,%ld.%09ld\n", __FUNCTION__, tp->tv_sec, tp->tv_nsec);
+		break;
+	case CLOCK_MONOTONIC: {
+		/* Do not use getrawmonotonic() because it returns different value than clock_gettime() */
+		ktime_get_ts64(&ts64);
+		tp->tv_sec = ts64.tv_sec;
+		tp->tv_nsec = ts64.tv_nsec;
+		dprintk("%s: CLOCK_MONOTONIC,%ld.%09ld\n", __FUNCTION__, tp->tv_sec, tp->tv_nsec);
+		break; }
+	default:
+		ret = -EINVAL;
+		break;
+	}
+	return ret;
+}
+
+long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 {
 	struct syscall_struct {
 		int number;
 		unsigned long args[6];
 		unsigned long ret;
+		unsigned long uti_clv; /* copy of a clv in McKernel */
 	};
 	struct syscall_struct param;
 	struct syscall_struct __user *uparam =
 	                              (struct syscall_struct __user *)arg;
-	int rc;
+	long rc;
 
 	if (copy_from_user(&param, uparam, sizeof param)) {
 		return -EFAULT;
 	}
-	rc = syscall_backward(ihk_host_os_get_usrdata(os), param.number,
-	                      param.args[0], param.args[1], param.args[2],
-	                      param.args[3], param.args[4], param.args[5],
-	                      &param.ret);
+#if 1 /* debug */
+	if (param.number == __NR_futex) {
+#else
+		if (0) {
+#endif
+		struct uti_futex_resp resp = {
+			.done = 0
+		};
+		init_waitqueue_head(&resp.wq);
+		
+ 		if (!mckernel_do_futex) {
+			if (ihk_os_get_special_address(os, IHK_SPADDR_MCKERNEL_DO_FUTEX,
+										   (unsigned long *)&mckernel_do_futex,
+										   NULL)) {
+				kprintf("%s: ihk_os_get_special_address failed\n", __FUNCTION__);
+				return -EINVAL;
+			}
+			dprintk("%s: mckernel_do_futex=%p\n", __FUNCTION__, mckernel_do_futex);
+		}
 
+		rc = (*mckernel_do_futex)(param.number, param.args[0], param.args[1], param.args[2],
+							  param.args[3], param.args[4], param.args[5], param.uti_clv, (void *)&resp, (void *)uti_wait_event, (void *)uti_printk, (void *)uti_clock_gettime);
+		param.ret = rc;
+	} else {
+			dprintk("%s: syscall_backward, SC %d, tid %d\n", __FUNCTION__, param.number, task_tgid_vnr(current));
+			rc = syscall_backward(ihk_host_os_get_usrdata(os), param.number,
+								  param.args[0], param.args[1], param.args[2],
+								  param.args[3], param.args[4], param.args[5],
+								  &param.ret);
+		}
 	if (copy_to_user(&uparam->ret, &param.ret, sizeof(unsigned long))) {
 		return -EFAULT;
 	}
 	return rc;
 }
+
+void mcctrl_futex_wake(struct ikc_scd_packet *pisp)
+{
+	struct uti_futex_resp *resp;
+
+	/* Guard the access to pisp->futex.resp, which is dead out of mcexec_syscall_thread() */
+	if (*pisp->futex.spin_sleep == 0) {
+		dprintk("%s: DEBUG: woken up by someone else\n", __FUNCTION__);
+		return;
+	}
+
+	resp = pisp->futex.resp;
+	if (!resp) {
+		kprintf("%s: ERROR: pisp->futex.resp is NULL\n", __FUNCTION__);
+		return;
+	}
+
+	if (*pisp->futex.spin_sleep == 0) {
+		kprintf("%s: ERROR: resp is dead\n", __FUNCTION__);
+		return;
+	}
+
+	resp->done = 1;
+	wake_up_interruptible(&resp->wq);
+}
+
 
 static struct ihk_cache_topology *
 cache_topo_search(struct ihk_cpu_topology *cpu_topo, int level)
@@ -2840,6 +2998,9 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 
 	case MCEXEC_UP_TERMINATE_THREAD:
 		return mcexec_terminate_thread(os, (unsigned long *)arg, file);
+
+	case MCEXEC_UP_UNMAP_PSEUDO_FILEMAP:
+		return mcexec_unmap_pseudo_filemap(os, file);
 
 	case MCEXEC_UP_GET_NUM_POOL_THREADS:
 		return mcctrl_get_num_pool_threads(os);

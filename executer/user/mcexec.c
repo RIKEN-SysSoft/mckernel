@@ -192,6 +192,7 @@ struct syscall_struct {
 	int number;
 	unsigned long args[6];
 	unsigned long ret;
+	unsigned long uti_clv; /* copy of a clv in McKernel */
 };
 
 #ifdef NCCS
@@ -1951,6 +1952,20 @@ static void ld_preload_init()
 #endif
 }
 
+struct uti_desc {
+	void *wp;
+	int mck_tid;
+	unsigned long key;
+	int pid, tid; /* Used as the id of tracee when issuing MCEXEC_UP_TERMINATE_THREAD */
+	unsigned long uti_clv;
+	sem_t arg, attach;
+};
+
+static int create_tracer();
+int uti_pfd[2];
+void *uti_wp;
+struct uti_desc *uti_desc;
+
 int main(int argc, char **argv)
 {
 	int ret = 0;
@@ -2128,6 +2143,31 @@ int main(int argc, char **argv)
 	mcosid = num;
 	if (opendev() == -1)
 		exit(EXIT_FAILURE);
+
+	/* Perform mmap() before fork() in create_tracer() */
+	uti_wp = mmap(NULL, PAGE_SIZE * 3, PROT_READ | PROT_WRITE,
+	          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+	if (uti_wp == (void *)-1) {
+		exit(1);
+	}
+	uti_desc = mmap(NULL, sizeof(struct uti_desc), PROT_READ | PROT_WRITE,
+	          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+	if (uti_desc == (void *)-1) {
+		exit(1);
+	}
+	sem_init(&uti_desc->arg, 1, 0);
+	sem_init(&uti_desc->attach, 1, 0);
+#if 1
+	/* Create tracer before any proxy VMAs are attached */
+	if ((error = pipe(uti_pfd)) == -1) {
+		fprintf(stderr, "%s: pipe returned %d\n", __FUNCTION__, error);
+		return -1;
+	}
+	if ((error = create_tracer())) {
+		fprintf(stderr, "%s: create tracer returned %d\n", __FUNCTION__, error);
+		return error;
+	}
+#endif
 
 	ld_preload_init();
 
@@ -2853,11 +2893,8 @@ debug_sig(int s)
 #endif
 
 static int
-create_tracer(void *wp, int mck_tid, unsigned long key)
+create_tracer()
 {
-	int pid = getpid();
-	int tid = gettid();
-	int pfd[2];
 	int tpid;
 	int rc;
 	int st;
@@ -2868,44 +2905,42 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 	unsigned long code = 0;
 	int exited = 0;
 	int mode = 0;
+	//struct tracer_desc desc;
+	unsigned long buf;
 
-	if (pipe(pfd) == -1)
-		return -1;
 	tpid = fork();
 	if (tpid) {
-		struct timeval tv;
-		fd_set rfd;
-
 		if (tpid == -1)
 			return -1;
-		close(pfd[1]);
+		close(uti_pfd[1]);
 		while ((rc = waitpid(tpid, &st, 0)) == -1 && errno == EINTR);
 		if (rc == -1 || !WIFEXITED(st) || WEXITSTATUS(st)) {
 			fprintf(stderr, "waitpid rc=%d st=%08x\n", rc, st);
 			return -ENOMEM;
 		}
+#if 0
+		struct timeval tv;
+		fd_set rfd;
 		FD_ZERO(&rfd);
-		FD_SET(pfd[0], &rfd);
+		FD_SET(uti_pfd[0], &rfd);
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;
-		while ((rc = select(pfd[0] + 1, &rfd, NULL, NULL, &tv)) == -1 &&
+		while ((rc = select(uti_pfd[0] + 1, &rfd, NULL, NULL, &tv)) == -1 &&
 		       errno == EINTR);
 		if (rc == 0) {
-			close(pfd[0]);
+			fprintf(stderr, "%s: select timed out\n", __FUNCTION__);
+			close(uti_pfd[0]);
 			return -ETIMEDOUT;
 		}
 		if (rc == -1) {
-			close(pfd[0]);
+			fprintf(stderr, "%s: select errno=%d\n", __FUNCTION__, errno);
+			close(uti_pfd[0]);
 			return -errno;
 		}
-		rc = read(pfd[0], &st, 1);
-		close(pfd[0]);
-		if (rc != 1) {
-			return -EAGAIN;
-		}
+#endif
 		return 0;
 	}
-	close(pfd[0]);
+	close(uti_pfd[0]);
 	tpid = fork();
 	if (tpid) {
 		if (tpid == -1) {
@@ -2914,17 +2949,42 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 		}
 		exit(0);
 	}
-	if (ptrace(PTRACE_ATTACH, tid, 0, 0) == -1) {
+
+#if 0
+	/* Reopen device because one process must be managed by one opened-device */
+	close(fd);
+	fd = opendev();
+	if (fd < 0) {
+		fprintf(stderr, "%s: ERROR: opendev returned %d\n", __FUNCTION__, errno);
+		exit(1);
+	}
+	
+	if (ioctl(fd, MCEXEC_UP_CREATE_PPD) != 0) {
+		fprintf(stderr, "%s: ERROR: MCEXEC_UP_CREATE_PPD returned %d\n", __FUNCTION__, errno);
+		exit(1);
+	}
+#endif
+
+	sem_wait(&uti_desc->arg);
+	//close(uti_pfd[0]);
+
+	if (ptrace(PTRACE_ATTACH, uti_desc->tid, 0, 0) == -1) {
 		fprintf(stderr, "PTRACE_ATTACH errno=%d\n", errno);
 		exit(1);
 	}
 	waitpid(-1, &st, __WALL);
-	if (ptrace(PTRACE_SETOPTIONS, tid, 0, PTRACE_O_TRACESYSGOOD) == -1) {
+	if (ptrace(PTRACE_SETOPTIONS, uti_desc->tid, 0, PTRACE_O_TRACESYSGOOD) == -1) {
 		fprintf(stderr, "PTRACE_SETOPTIONS errno=%d\n", errno);
 		exit(1);
 	}
-	write(pfd[1], " ", 1);
-	close(pfd[1]);
+
+	/* Wake up tracee so that it can context-switch to McKernel code */
+    rc = write(uti_pfd[1], &buf, sizeof(unsigned long));
+    if (rc != sizeof(unsigned long)) {
+        fprintf(stderr, "%s: write returned %d\n", __FUNCTION__, rc);
+        exit(1);
+    }
+	close(uti_pfd[1]);
 
 	for (i = 0; i < 4096; i++)
 		if (i != fd
@@ -2940,33 +3000,42 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 #endif
 
 	for (i = 1; i <= 10; i++) {
-		param = (struct syscall_struct *)wp + i;
+		param = (struct syscall_struct *)uti_desc->wp + i;
 		*(void **)param = param_top;
 		param_top = param;
 	}
-	memset(wp, '\0', sizeof(long));
+	memset(uti_desc->wp, '\0', sizeof(long));
 
 #ifdef DEBUG_UTI
 	fprintf(stderr, "tracer PID=%d\n", getpid());
 	signal(SIGINT, debug_sig);
 #endif
 	for (;;) {
-		ptrace(PTRACE_SYSCALL, tid, 0, sig);
+		ptrace(PTRACE_SYSCALL, uti_desc->tid, 0, sig);
 		sig = 0;
 		waitpid(-1, &st, __WALL);
 		if (WIFEXITED(st) || WIFSIGNALED(st)) {
 			unsigned long term_param[4];
 
-			term_param[0] = pid;
-			term_param[1] = tid;
-			term_param[3] = key;
+			term_param[0] = uti_desc->pid;
+			term_param[1] = uti_desc->tid;
+			term_param[3] = uti_desc->key;
 			code = st;
 			if (exited == 2 || // exit_group
 			    WIFSIGNALED(st)) {
 				code |= 0x0000000100000000;
 			}
 			term_param[2] = code;
-			ioctl(fd, MCEXEC_UP_TERMINATE_THREAD, term_param);
+			if (ioctl(fd, MCEXEC_UP_TERMINATE_THREAD, term_param) != 0) {
+				fprintf(stderr, "%s: ERROR: MCEXEC_UP_TERMINATE_THREAD returned %d\n", __FUNCTION__, errno);
+			}
+			__dprintf("%s:  WIFEXITED=%d,WIFSIGNALED=%d,WTERMSIG=%d,exited=%d\n", __FUNCTION__, WIFEXITED(st), WIFSIGNALED(st), WTERMSIG(st), exited);
+#if 0
+			if (ptrace(PTRACE_DETACH, uti_desc->tid, 0, WIFSIGNALED(st) ? WTERMSIG(st) : 0) && errno != ESRCH) {
+				fprintf(stderr, "PTRACE_DETACH errno=%d\n", errno);
+				exit(1);
+			}
+#endif
 			break;
 		}
 		if (!WIFSTOPPED(st)) {
@@ -2975,7 +3044,7 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 		if (WSTOPSIG(st) & 0x80) { // syscall
 			syscall_args args;
 
-			get_syscall_args(tid, &args);
+			get_syscall_args(uti_desc->tid, &args);
 
 #ifdef DEBUG_UTI
 			if (get_syscall_return(&args) == -ENOSYS) {
@@ -3000,8 +3069,8 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 			switch (get_syscall_number(&args)) {
 			    case __NR_gettid:
 				set_syscall_number(&args, -1);
-				set_syscall_return(&args, mck_tid);
-				set_syscall_args(tid, &args);
+				set_syscall_return(&args, uti_desc->mck_tid);
+				set_syscall_args(uti_desc->tid, &args);
 				continue;
 			    case __NR_futex:
 			    case __NR_brk:
@@ -3029,7 +3098,7 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 #endif /* POSTK_DEBUG_ARCH_DEP_78 */
 			    case __NR_execve:
 				set_syscall_number(&args, -1);
-				set_syscall_args(tid, &args);
+				set_syscall_args(uti_desc->tid, &args);
 				continue;
 			    case __NR_ioctl:
 				param = (struct syscall_struct *)
@@ -3038,7 +3107,7 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 				    get_syscall_arg1(&args) == fd &&
 				    get_syscall_arg2(&args) ==
 				                     MCEXEC_UP_SYSCALL_THREAD &&
-				    samepage(wp, param)) {
+				    samepage(uti_desc->wp, param)) {
 					set_syscall_arg1(&args, param->args[0]);
 					set_syscall_arg2(&args, param->args[1]);
 					set_syscall_arg3(&args, param->args[2]);
@@ -3048,7 +3117,7 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 					set_syscall_return(&args, param->ret);
 					*(void **)param = param_top;
 					param_top = param;
-					set_syscall_args(tid, &args);
+					set_syscall_args(uti_desc->tid, &args);
 				}
 				continue;
 			    default:
@@ -3068,6 +3137,7 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 				param->args[3] = get_syscall_arg4(&args);
 				param->args[4] = get_syscall_arg5(&args);
 				param->args[5] = get_syscall_arg6(&args);
+				param->uti_clv = uti_desc->uti_clv;
 				param->ret = -EINVAL;
 				set_syscall_number(&args, __NR_ioctl);
 				set_syscall_arg1(&args, fd);
@@ -3075,7 +3145,7 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 				                      MCEXEC_UP_SYSCALL_THREAD);
 				set_syscall_arg3(&args, (unsigned long)param);
 			}
-			set_syscall_args(tid, &args);
+			set_syscall_args(uti_desc->tid, &args);
 		}
 		else { // signal
 			sig = WSTOPSIG(st) & 0x7f;
@@ -3083,45 +3153,47 @@ create_tracer(void *wp, int mck_tid, unsigned long key)
 	}
 
 #ifdef DEBUG_UTI
-	fprintf(stderr, "offloaded thread called these syscalls\n");
-	debug_sig(0);
+	//fprintf(stderr, "offloaded thread called these syscalls\n");
+	//debug_sig(0);
 #endif
 
 	exit(0);
 }
 
 static long
-util_thread(unsigned long uctx_pa, int remote_tid, unsigned long pattr)
+util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, int remote_tid, unsigned long pattr, unsigned long uti_clv)
 {
 	void *lctx;
 	void *rctx;
-	void *wp;
 	void *param[6];
 	int rc = 0;
+	unsigned long buf;
 
-#ifdef POSTK_DEBUG_ARCH_DEP_35
-	wp = mmap(NULL, page_size * 3, PROT_READ | PROT_WRITE,
-	          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
-	wp = mmap(NULL, PAGE_SIZE * 3, PROT_READ | PROT_WRITE,
-	          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
-	if (wp == (void *)-1) {
-		rc = -errno;
-		goto out;
+#if 0
+	{
+		int error;
+		if ((error = pipe(uti_pfd)) == -1) {
+			fprintf(stderr, "%s: pipe returned %d\n", __FUNCTION__, error);
+			rc = error; goto out;
+		}
+		if ((error = create_tracer())) {
+			fprintf(stderr, "%s: create_tracer returned %d\n", __FUNCTION__, error);
+			rc = error; goto out;
+		}
 	}
+#endif
 #ifdef POSTK_DEBUG_ARCH_DEP_35
-	lctx = (char *)wp + page_size;
+	lctx = (char *)uti_wp + page_size;
 	rctx = (char *)lctx + page_size;
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
-	lctx = (char *)wp + PAGE_SIZE;
+#else
+	lctx = (char *)uti_wp + PAGE_SIZE;
 	rctx = (char *)lctx + PAGE_SIZE;
 #endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 
 	param[0] = (void *)uctx_pa;
 	param[1] = rctx;
 	param[2] = lctx;
-	param[4] = wp;
+	param[4] = uti_wp;
 #ifdef POSTK_DEBUG_ARCH_DEP_35
 	param[5] = (void *)(page_size * 3);
 #else	/* POSTK_DEBUG_ARCH_DEP_35 */
@@ -3134,11 +3206,37 @@ util_thread(unsigned long uctx_pa, int remote_tid, unsigned long pattr)
 	}
 
 	create_worker_thread(NULL);
-	if ((rc = create_tracer(wp, remote_tid, (unsigned long)param[3]))) {
-		fprintf(stderr, "create tracer %d\n", rc);
+
+	/* Pass info to the tracer so that it can masquerade as the tracee */
+	uti_desc->wp = uti_wp;
+	uti_desc->mck_tid = remote_tid;
+	uti_desc->key = (unsigned long)param[3];
+	uti_desc->pid = getpid();
+	uti_desc->tid = gettid();
+	uti_desc->uti_clv = uti_clv;
+	
+#if 0
+	//usleep(100000);
+	ssize_t nwritten;
+	char *cur;
+	for(cur = (char*)&uti_desc; (nwritten = write(uti_pfd[1], cur, sizeof(struct uti_desc) - (cur - (char*)&uti_desc))) > 0; cur += nwritten) { }
+	if (nwritten < 0) {
+		fprintf(stderr, "write returned %ld errno=%d\n", nwritten, errno);
 		rc = -errno;
 		goto out;
 	}
+	close(uti_pfd[1]);
+#endif
+	sem_post(&uti_desc->arg);
+
+    /* Wait until tracer attaches me. We can't use
+       futex because it would be captured and redirected by tracer */
+    rc = read(uti_pfd[0], &buf, sizeof(unsigned long));
+    if (rc != sizeof(unsigned long)) {
+        fprintf(stderr, "%s: write returned %d\n", __FUNCTION__, rc);
+        exit(1);
+    }
+	close(uti_pfd[0]);
 
 	if (pattr) {
 		struct uti_attr_desc desc;
@@ -3155,11 +3253,11 @@ util_thread(unsigned long uctx_pa, int remote_tid, unsigned long pattr)
 	pthread_exit(NULL);
 
 out:
-	if (wp)
+	if (uti_wp != (void*)-1)
 #ifdef POSTK_DEBUG_ARCH_DEP_35
-		munmap(wp, page_size * 3);
+		munmap(uti_wp, page_size * 3);
 #else	/* POSTK_DEBUG_ARCH_DEP_35 */
-		munmap(wp, PAGE_SIZE * 3);
+		munmap(uti_wp, PAGE_SIZE * 3);
 #endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 	return rc;
 }
@@ -4225,8 +4323,8 @@ return_execve2:
 
 		case __NR_sched_setaffinity:
 			if (w.sr.args[0] == 0) {
-				ret = util_thread(w.sr.args[1], w.sr.rtid,
-				                  w.sr.args[2]);
+				ret = util_thread(my_thread, w.sr.args[1], w.sr.rtid,
+				                  w.sr.args[2], w.sr.args[3]);
 			}
 			else {
 				ret = munmap((void *)w.sr.args[1],
