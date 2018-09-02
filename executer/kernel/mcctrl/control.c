@@ -2469,9 +2469,28 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	host_threads = thread;
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
-	/* Make per-proc-data survive over the signal-kill of tracee. Note
-	   that the singal-kill calls close() and then release_hanlde()
-	   destroys it. */
+	/* How ppd refcount reaches zero depends on how utility-thread exits:
+  	     exit:
+	       MCEXEC_UP_CREATE_PPD: set to 1
+		   mcexec_util_thread2: get
+		   create_tracer()
+		     mcexec_terminate_thread: put
+	       release_handler(): put
+
+  	     exit_group:
+	       MCEXEC_UP_CREATE_PPD: set to 1
+		   mcexec_util_thread2: get
+		   create_trace()
+	         mcexec_terminate_thread: put
+	       release_handler(): put
+	   
+	     killed by signal:
+	       MCEXEC_UP_CREATE_PPD: set to 1
+	       mcexec_util_thread2: get
+	       release_handler()
+	         mcexec_terminate_thread(): put
+			 put
+	*/
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 
 	return 0;
