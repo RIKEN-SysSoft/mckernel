@@ -99,6 +99,9 @@ struct cpu_local_var {
 	struct list_head smp_func_req_list;
 
 	struct process_vm *on_fork_vm;
+
+	/* UTI */
+	void *uti_futex_resp;
 } __attribute__((aligned(64)));
 
 
@@ -109,5 +112,7 @@ static struct cpu_local_var *get_this_cpu_local_var(void)
 }
 
 #define cpu_local_var(name) get_this_cpu_local_var()->name
+
+#define cpu_local_var_with_override(name, clv_override) (clv_override ? clv_override->name : get_this_cpu_local_var()->name)
 
 #endif
