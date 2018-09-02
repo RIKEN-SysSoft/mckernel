@@ -60,6 +60,7 @@
 #include <ihk/monitor.h>
 #include <profile.h>
 #include <debug.h>
+#include "../executer/include/uti.h"
 
 /* Headers taken from kitten LWK */
 #include <lwk/stddef.h>
@@ -67,7 +68,7 @@
 
 #define SYSCALL_BY_IKC
 
-//#define DEBUG_PRINT_SC
+#define DEBUG_PRINT_SC
 
 #ifdef DEBUG_PRINT_SC
 #undef DDEBUG_DEFAULT
@@ -112,6 +113,7 @@ char *syscall_name[] MCKERNEL_UNUSED = {
 };
 
 static ihk_spinlock_t tod_data_lock = SPIN_LOCK_UNLOCKED;
+static unsigned long uti_desc; /* Address of struct uti_desc object in syscall_intercept.c */
 static void calculate_time_from_tsc(struct timespec *ts);
 
 void check_signal(unsigned long, void *, int);
@@ -3129,6 +3131,8 @@ SYSCALL_DECLARE(setpgid)
 	return rc;
 }
 
+/* Ignore the registration by start_thread() (in pthread_create.c)
+   because McKernel doesn't unlock mutex-es held by the thread which has been killed. */
 SYSCALL_DECLARE(set_robust_list)
 {
 	// Palliative fix. wait for impl.
@@ -9083,6 +9087,29 @@ SYSCALL_DECLARE(pmc_reset)
 
 extern void save_uctx(void *, void *);
 
+/* TODO: use copy_from_user() */
+int util_show_syscall_profile()
+{
+	int i;
+	struct uti_desc *desc = (struct uti_desc *)uti_desc;
+
+	kprintf("Syscall stats for offloaded thread:\n");
+	for (i = 0; i < 512; i++) {
+		if (desc->syscalls[i]) {
+			kprintf("nr=%d #called=%ld\n", i, desc->syscalls[i]);
+		}
+	}
+	
+	kprintf("Syscall stats for other threads:\n");
+	for (i = 0; i < 512; i++) {
+		if (desc->syscalls2[i]) {
+			kprintf("nr=%d #called=%ld\n", i, desc->syscalls2[i]);
+		}
+	}
+
+	return 0;
+}
+
 int
 util_thread(struct uti_attr *arg)
 {
@@ -9125,8 +9152,13 @@ util_thread(struct uti_attr *arg)
 		request.args[2] = virt_to_phys(&kattr);
 	}
 	request.args[3] = (unsigned long)uti_clv;
+	request.args[4] = uti_desc;
 	thread->thread_offloaded = 1;
 	rc = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+	dkprintf("%s: returned from do_syscall,tid=%d,rc=%lx\n", __FUNCTION__, thread->tid, rc);
+
+	util_show_syscall_profile();
+
 	thread->thread_offloaded = 0;
 	free_address = context[0];
 	free_size = context[1];
@@ -9135,13 +9167,13 @@ util_thread(struct uti_attr *arg)
 
 	if (rc >= 0) {
 		if (rc & 0x100000000) { 
-			/* tracer has detected exit_group */
+			/* exit_group detected */
 			dkprintf("%s: exit_group, pid=%d,tid=%d,rc=%lx\n", __FUNCTION__, thread->proc->pid, thread->tid, rc);
 			thread->proc->nohost = 1;
 			terminate((rc >> 8) & 255, rc & 255);
 		} else {
-			/* tracer has detected exit or killed by signal */
-			dkprintf("%s: exit, pid=%d,tid=%d,rc=%lx\n", __FUNCTION__, thread->proc->pid, thread->tid, rc);
+			/* exit or killed-by-signal detected */
+			dkprintf("%s: exit or killed by signal, pid=%d,tid=%d,rc=%lx\n", __FUNCTION__, thread->proc->pid, thread->tid, rc);
 			request.number = __NR_sched_setaffinity;
 			request.args[0] = 1;
 			request.args[1] = free_address;
@@ -9312,6 +9344,14 @@ SYSCALL_DECLARE(resume_threads)
 			continue;
 		do_kill(mythread, proc->pid, thread->tid, SIGCONT, NULL, 0);
 	}
+	return 0;
+}
+
+SYSCALL_DECLARE(util_register_desc)
+{
+	struct thread *thread = cpu_local_var(current);
+	uti_desc = ihk_mc_syscall_arg0(ctx);
+	dkprintf("%s: tid=%d,uti_desc=%lx\n", __FUNCTION__, thread->tid, uti_desc);
 	return 0;
 }
 
@@ -9517,7 +9557,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 			&& (syscall_table[num] != NULL)) {
 		l = syscall_table[num](num, ctx);
 		
-		dkprintf("SC(%d)[%3d] ret: %d\n", 
+		dkprintf("SC(%d)[%3d] ret: %lx\n", 
 				ihk_mc_get_processor_id(), num, l);
 	} else {
 		dkprintf("USC[%3d](%lx, %lx, %lx, %lx, %lx) @ %lx | %lx\n", num,
