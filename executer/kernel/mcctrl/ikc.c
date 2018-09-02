@@ -52,6 +52,8 @@
 static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ihk_ikc_channel_desc *c);
 int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet);
 void sig_done(unsigned long arg, int err);
+void mcctrl_perf_ack(ihk_os_t os, struct ikc_scd_packet *packet);
+void mcctrl_futex_wake(struct ikc_scd_packet *pisp);
 void mcctrl_os_read_write_cpu_response(ihk_os_t os,
 		struct ikc_scd_packet *pisp);
 void mcctrl_eventfd(ihk_os_t os, struct ikc_scd_packet *pisp);
@@ -219,6 +221,10 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	case SCD_MSG_EVENTFD:
 		dkprintf("%s: SCD_MSG_EVENTFD,pisp->eventfd_type=%d\n", __FUNCTION__, pisp->eventfd_type);
 		mcctrl_eventfd(__os, pisp);
+		break;
+
+	case SCD_MSG_FUTEX_WAKE:
+		mcctrl_futex_wake(pisp);
 		break;
 
 	default:

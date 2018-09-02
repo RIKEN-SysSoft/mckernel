@@ -90,6 +90,7 @@ static struct ihk_os_user_call_handler mcctrl_uchs[] = {
 	{ .request = MCEXEC_UP_TERMINATE_THREAD, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_GET_NUM_POOL_THREADS, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_UTI_ATTR, .func = mcctrl_ioctl },
+	{ .request = MCEXEC_UP_UNMAP_PSEUDO_FILEMAP, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_DEBUG_LOG, .func = mcctrl_ioctl },
 	{ .request = IHK_OS_AUX_PERF_NUM, .func = mcctrl_ioctl },
 	{ .request = IHK_OS_AUX_PERF_SET, .func = mcctrl_ioctl },
