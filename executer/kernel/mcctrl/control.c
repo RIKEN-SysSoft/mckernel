@@ -2432,7 +2432,7 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 }
 
 long
-mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
+mcexec_terminate_thread(ihk_os_t os, unsigned long __user *arg, struct file *file)
 {
 	unsigned long param[4];
 	int rc;
@@ -3022,7 +3022,7 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 		return mcexec_syscall_thread(os, arg, file);
 
 	case MCEXEC_UP_TERMINATE_THREAD:
-		return mcexec_terminate_thread(os, (unsigned long *)arg, file);
+		return mcexec_terminate_thread(os, (unsigned long __user *)arg, file);
 
 	case MCEXEC_UP_RELEASE_USER_SPACE:
 		return mcexec_release_user_space((struct release_user_space_desc *)arg);
