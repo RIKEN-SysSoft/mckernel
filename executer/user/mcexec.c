@@ -3320,11 +3320,12 @@ util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, int remote_t
 		ioctl(fd, MCEXEC_UP_UTI_ATTR, &desc);
 	}
 
-	/* Synchronize detached state with the McKernel counterpart */
-	if ((rc = pthread_detach(my_thread->thread_id)) != 0) {
-		fprintf(stderr, "%s: pthread_detach returned %d\n", __FUNCTION__, rc);
+	/* McKernel would create the thread detached, so detach myself */
+	if ((rc = pthread_detach(my_thread->thread_id)) < 0) {
+		fprintf(stderr, "%s: ERROR pthread_detach returned %d\n", __FUNCTION__, rc);
+		goto out;
 	}
-	my_thread->detached = 1; /* Skip join in join_all_threads() */
+	my_thread->detached = 1;
 
 	if ((rc = switch_ctx(fd, MCEXEC_UP_UTIL_THREAD2, param, lctx, rctx))
 	    < 0) {
