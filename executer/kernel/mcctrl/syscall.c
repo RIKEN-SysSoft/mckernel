@@ -795,6 +795,20 @@ static int rus_page_hash_insert(struct page *page)
 		rp->put_page = 0;
 
 		get_page(page);
+		{
+			int _count = 0;
+			struct page* page_head = NULL;
+			int compound = PageCompound(page);
+			if (compound) {
+				page_head = compound_head_by_tail(page);
+				_count = atomic_read(&page_head->_count);
+			} else {
+				_count = atomic_read(&page->_count);
+			}
+			if (!compound || page == page_head) {
+				dprintk("%s: get page,pfn=%lx,compound=%d,_count=%d\n", __FUNCTION__, page_to_pfn(page), compound, _count);
+			}
+		}
 
 		rp->refcount = 0; /* Will be increased below */
 
@@ -823,10 +837,32 @@ void rus_page_hash_put_pages(void)
 
 		list_for_each_entry_safe(rp_iter, rp_iter_next,
 				&rus_page_hash[i], hash) {
+			int _count = 0;
+			struct page *page = rp_iter->page;
+			struct page *page_head = NULL;
+			int compound = PageCompound(page);
+			if (compound) {
+				page_head = compound_head_by_tail(page);
+				_count = atomic_read(&page_head->_count);
+			} else {
+				_count = atomic_read(&page->_count);
+			}
+			if (!compound || page == page_head) {
+				dprintk("%s: put page,pfn=%lx,compound=%d,_count=%d\n", __FUNCTION__, page_to_pfn(page), compound, _count);
+			}
 			list_del(&rp_iter->hash);
 
-			put_page(rp_iter->page);
-			kfree(rp_iter);
+			if (_count == 1) {
+				dprintk("%s: INFO: put_page,pa=%lx000,compound=%d,_count=%d\n", __FUNCTION__, page_to_pfn(page), compound, _count);
+			}
+#if 1 /* debug */ /* It looks like a live page (page backed by /dev/shm/<name>?) is dropped when using uti */
+			if (_count != 1) {
+#endif
+				put_page(rp_iter->page);
+				kfree(rp_iter);
+#if 1
+			}
+#endif
 		}
 	}
 
