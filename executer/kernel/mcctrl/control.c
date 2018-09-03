@@ -72,6 +72,14 @@
 #define pr_ppd(msg, tid, ppd) do { } while(0)
 #endif
 
+#if defined(RHEL_RELEASE_CODE) || (LINUX_VERSION_CODE < KERNEL_VERSION(4,0,0))
+#define BITMAP_SCNLISTPRINTF(buf, buflen, maskp, nmaskbits) \
+        bitmap_scnlistprintf(buf, buflen, maskp, nmaskbits)
+#else
+#define BITMAP_SCNLISTPRINTF(buf, buflen, maskp, nmaskbits) \
+        scnprintf(buf, buflen, "%*pbl", nmaskbits, maskp)
+#endif
+
 //extern struct mcctrl_channel *channels;
 int mcctrl_ikc_set_recv_cpu(ihk_os_t os, int cpu);
 int syscall_backward(struct mcctrl_usrdata *, int, unsigned long, unsigned long,
@@ -2862,12 +2870,35 @@ retry:
 	return cpumask;
 }
 
+int pr_cpumask(const char *msg, cpumask_t* cpumask) {
+	int ret;
+	char *buf;
+	
+	if (!(buf = kmalloc(PAGE_SIZE * 2, GFP_KERNEL))) {
+		kprintf("%s: error: allocating buf\n",
+			__func__);
+		ret = -ENOMEM;
+		goto out;
+	}
+	
+	BITMAP_SCNLISTPRINTF(buf, PAGE_SIZE * 2,
+			     cpumask_bits(cpumask),
+			     nr_cpumask_bits);
+	buf[PAGE_SIZE * 2 - 1] = 0;
+
+	pr_info("%s: info: cpuset: %s\n", msg, buf);
+	ret = 0;
+ out:
+	return ret;
+}
+
 static long
-mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *arg)
+mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *_desc)
 {
 	struct uti_attr_desc desc;
+	char *uti_cpu_set_str;
 	struct kuti_attr *kattr;
-	cpumask_t *cpuset;
+	cpumask_t *cpuset = NULL, *env_cpuset = NULL;
 	struct mcctrl_usrdata *ud = ihk_host_os_get_usrdata(os);
 	ihk_device_t dev = ihk_os_to_dev(os);
 #ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
@@ -2886,30 +2917,44 @@ mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *arg)
 	int mask_size = cpumask_size();
 
 	if ((rc = uti_attr_init())) {
-		return rc;
+		pr_err("%s: error: uti_attr_init (%d)\n",
+		       __func__, rc);
+		goto out;
 	}
-	if (copy_from_user(&desc, arg, sizeof desc))
-		return -EFAULT;
+
+	if ((rc = copy_from_user(&desc, _desc, sizeof(desc)))) {
+		pr_err("%s: error: copy_from_user\n",
+		       __func__);
+		rc = -EFAULT;
+		goto out;
+	}
+
+	if (!(uti_cpu_set_str = kmalloc(desc.uti_cpu_set_len, GFP_KERNEL))) {
+		pr_err("%s: error: allocating uti_cpu_set_str\n",
+		       __func__);
+		rc = -ENOMEM;
+		goto out;
+	}
+
+	if ((rc = copy_from_user(uti_cpu_set_str, desc.uti_cpu_set_str, desc.uti_cpu_set_len))) {
+		pr_err("%s: error: copy_from_user\n",
+		       __func__);
+		rc = -EFAULT;
+		goto out;
+	}
 
 	kattr = phys_to_virt(desc.phys_attr);
 
-	if (((kattr->attr.flags & UTI_FLAG_SAME_L1) &&
-	     (kattr->attr.flags & UTI_FLAG_DIFFERENT_L1)) ||
-	    ((kattr->attr.flags & UTI_FLAG_SAME_L2) &&
-	     (kattr->attr.flags & UTI_FLAG_DIFFERENT_L2)) ||
-	    ((kattr->attr.flags & UTI_FLAG_SAME_L3) &&
-	     (kattr->attr.flags & UTI_FLAG_DIFFERENT_L3)) ||
-	    ((kattr->attr.flags & UTI_FLAG_SAME_NUMA_DOMAIN) &&
-	     (kattr->attr.flags & UTI_FLAG_DIFFERENT_NUMA_DOMAIN))) {
-		return -EINVAL;
-	}
-
+	/* Find caller cpu for later resolution of subgroups */
 	list_for_each_entry(cpu_topo, &ud->cpu_topology_list, chain) {
 		if (cpu_topo->mckernel_cpu_id == kattr->parent_cpuid) {
 			target_cpu = cpu_topo;
 		}
 	}
+
 	if (!target_cpu) {
+		printk("%s: errror: caller cpu not found\n",
+		       __func__);
 		return -EINVAL;
 	}
 
@@ -2918,6 +2963,7 @@ mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *arg)
 	}
 	wkmask = (cpumask_t *)(((char *)cpuset) + mask_size);
 
+	/* Initial cpuset */
 	memcpy(cpuset, cpu_active_mask, mask_size);
 
 	if (kattr->attr.flags & UTI_FLAG_NUMA_SET) {
@@ -3015,38 +3061,70 @@ mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *arg)
 			cpumask_and(cpuset, cpuset, wkmask);
 		}
 	}
+	
+	/* UTI_CPU_SET, PREFER_FWK, PREFER_LWK */
 
+	if (uti_cpu_set_str) {
+		if (!(env_cpuset = kmalloc(mask_size, GFP_KERNEL))) {
+			pr_err("%s: error: allocating env_cpuset\n",
+			       __func__);
+			rc = -ENOMEM;
+			goto out;
+		}
+		
+		if (cpulist_parse(uti_cpu_set_str, env_cpuset) < 0) {
+			pr_err("%s: error: cpulist_parse: %s\n",
+			       __func__, uti_cpu_set_str);
+			rc = -EINVAL;
+			goto out;
+		}
+
+		//pr_cpumask("cpuset", cpuset);
+		//pr_cpumask("env_cpuset", env_cpuset);
+		
+		if ((kattr->attr.flags & UTI_FLAG_PREFER_LWK)) {
+			cpumask_andnot(cpuset, cpuset, env_cpuset);
+		} else { /* Including PREFER_FWK and !PREFER_FWK */
+			cpumask_and(cpuset, cpuset, env_cpuset);
+		}
+	}
+
+	if (kattr->attr.flags &
+	    (UTI_FLAG_EXCLUSIVE_CPU | UTI_FLAG_CPU_INTENSIVE)) {
+		uti_cpu_select(cpuset);
+	}
+
+	//pr_cpumask("final cpuset", cpuset);
+
+	/* Setaffinity cpuset */
 	rc = cpumask_weight(cpuset);
-	if (!rc); /* do nothing */
-	else if (kattr->attr.flags & UTI_FLAG_EXCLUSIVE_CPU) {
+	if (rc > 0) {
+		if ((rc = mcctrl_sched_setaffinity(0, cpuset))) {
+			pr_err("%s: error: setaffinity (%d)\n",
+			       __func__, rc);
+			goto out;
+		}
+	} else {
+		pr_warn("%s: warning: cpuset is empty\n", __func__);
+	}
+
+	
+	/* Assign real-time scheduler */
+	if (kattr->attr.flags & UTI_FLAG_HIGH_PRIORITY) {
 		struct sched_param sp;
 
-		mcctrl_sched_setaffinity(0, uti_cpu_select(cpuset));
 		sp.sched_priority = 1;
-		mcctrl_sched_setscheduler_nocheck(current, SCHED_FIFO, &sp);
-		rc = 1;
-	}
-	else if (kattr->attr.flags & UTI_FLAG_CPU_INTENSIVE) {
-		mcctrl_sched_setaffinity(0, uti_cpu_select(cpuset));
-		rc = 1;
-	}
-	else if (kattr->attr.flags & UTI_FLAG_HIGH_PRIORITY) {
-		struct sched_param sp;
-
-		mcctrl_sched_setaffinity(0, uti_cpu_select(cpuset));
-		sp.sched_priority = 1;
-		mcctrl_sched_setscheduler_nocheck(current, SCHED_FIFO, &sp);
-		rc = 1;
-	}
-	else if (kattr->attr.flags & UTI_FLAG_NON_COOPERATIVE) {
-		mcctrl_sched_setaffinity(0, uti_cpu_select(cpuset));
-		rc = 1;
-	}
-	else {
-		mcctrl_sched_setaffinity(0, cpuset);
+		if ((rc = mcctrl_sched_setscheduler_nocheck(current, SCHED_FIFO, &sp))) {
+			pr_err("%s: error: setscheduler_nocheck (%d)\n",
+			       __func__, rc);
+			goto out;
+		}
 	}
 
+	rc = 0;
+out:
 	kfree(cpuset);
+	kfree(env_cpuset);
 	return rc;
 }
 
