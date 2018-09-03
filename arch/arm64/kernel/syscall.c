@@ -1593,7 +1593,7 @@ done:
 		return 0;
 	}
 
-	if (tthread->thread_offloaded) {
+	if (tthread->uti_state == UTI_STATE_RUNNING_IN_LINUX) {
 		interrupt_syscall(tthread, sig);
 		release_thread(tthread);
 		return 0;
