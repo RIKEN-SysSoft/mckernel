@@ -201,6 +201,7 @@ struct program_load_desc {
 	long stack_premap;
 	unsigned long mpol_bind_mask;
 	int uti_thread_rank; /* N-th clone() spawns a thread on Linux CPU */
+	int uti_use_last_cpu; /* Work-around not to share CPU with OpenMP thread */
 	int nr_processes;
 	int process_rank;
 	char shell_path[SHELL_PATH_MAX_LEN];
@@ -350,7 +351,7 @@ struct syscall_post {
 #define SYSCALL_FOOTER return do_syscall(&request, ihk_mc_get_processor_id(), 0)
 
 extern long do_syscall(struct syscall_request *req, int cpu, int pid);
-int obtain_clone_cpuid(cpu_set_t *cpu_set);
+int obtain_clone_cpuid(cpu_set_t *cpu_set, int use_last);
 extern long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx);
 
 #define DECLARATOR(number,name)		__NR_##name = number,
