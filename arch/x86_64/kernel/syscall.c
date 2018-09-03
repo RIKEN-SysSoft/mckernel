@@ -1370,7 +1370,7 @@ done:
 	}
 
 	/* Forward signal to Linux by interrupt_syscall mechanism */
-	if (tthread->thread_offloaded) {
+	if (tthread->uti_state == UTI_STATE_RUNNING_IN_LINUX) {
 		if (!tthread->proc->nohost) {
 			interrupt_syscall(tthread, sig);
 		}
