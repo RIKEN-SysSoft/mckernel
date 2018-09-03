@@ -227,9 +227,12 @@ struct mcctrl_channel {
 };
 
 struct mcctrl_per_thread_data {
+	struct mcctrl_per_proc_data *ppd;
 	struct list_head hash;
 	struct task_struct *task;
 	void *data;
+	int tid; /* debug */
+	atomic_t refcount;
 };
 
 #define MCCTRL_PER_THREAD_DATA_HASH_SHIFT 8
@@ -444,20 +447,18 @@ struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(
 		struct mcctrl_usrdata *ud, int pid);
 void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd);
 
-int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data* ppd,
-	struct task_struct *task, void *data);
-int mcctrl_delete_per_thread_data(struct mcctrl_per_proc_data* ppd,
-	struct task_struct *task);
+int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data *ppd, void *data);
+void mcctrl_put_per_thread_data_unsafe(struct mcctrl_per_thread_data *ptd);
+void mcctrl_put_per_thread_data(struct mcctrl_per_thread_data* ptd);
 #ifdef POSTK_DEBUG_ARCH_DEP_56 /* Strange how to use inline declaration fix. */
-static inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(
-	struct mcctrl_per_proc_data *ppd, struct task_struct *task)
+inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc_data *ppd, struct task_struct *task)
 {
 	struct mcctrl_per_thread_data *ptd_iter, *ptd = NULL;
 	int hash = (((uint64_t)task >> 4) & MCCTRL_PER_THREAD_DATA_HASH_MASK);
 	unsigned long flags;
 
-	/* Check if data for this thread exists and return it */
-	read_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
+	/* Check if data for this thread exists */
+	write_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
 
 	list_for_each_entry(ptd_iter, &ppd->per_thread_data_hash[hash], hash) {
 		if (ptd_iter->task == task) {
@@ -466,12 +467,21 @@ static inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(
 		}
 	}
 
-	read_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
-	return ptd ? ptd->data : NULL;
+	if (ptd) {
+		if (atomic_read(&ptd->refcount) <= 0) {
+			printk("%s: ERROR: use-after-free detected (%d)", __FUNCTION__, atomic_read(&ptd->refcount));
+			ptd = NULL;
+			goto out;
+		}
+		atomic_inc(&ptd->refcount);
+	}
+
+ out:
+	write_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
+	return ptd;
 }
 #else /* POSTK_DEBUG_ARCH_DEP_56 */
-inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(
-	struct mcctrl_per_proc_data *ppd, struct task_struct *task);
+inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc_data *ppd, struct task_struct *task);
 #endif /* POSTK_DEBUG_ARCH_DEP_56 */
 
 void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet, 
