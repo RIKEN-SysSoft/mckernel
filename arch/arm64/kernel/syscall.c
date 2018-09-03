@@ -58,7 +58,7 @@ static int cpuid_head = 1;
 
 extern int num_processors;
 
-int obtain_clone_cpuid(cpu_set_t *cpu_set) {
+int obtain_clone_cpuid(cpu_set_t *cpu_set, int use_last) {
 	int min_queue_len = -1;
 	int i, min_cpu = -1;
 
