@@ -505,6 +505,8 @@ static int process_msg_prepare_process(unsigned long rphys)
 		vm->numa_mem_policy = MPOL_BIND;
 	}
 
+	proc->uti_thread_rank = pn->uti_thread_rank;
+
 #ifdef PROFILE_ENABLE
 	proc->profile = pn->profile;
 	thread->profile = pn->profile;
