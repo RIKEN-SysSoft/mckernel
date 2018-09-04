@@ -347,6 +347,7 @@ retry_alloc:
 		printk("WARNING: coudln't alloc wait queue head, retrying..\n");
 		goto retry_alloc;
 	}
+	memset(wqhln, 0, sizeof(struct wait_queue_head_list_node));
 
 	/* Prepare per-thread wait queue head */
 	wqhln->task = current;
@@ -526,6 +527,7 @@ retry_alloc:
 		printk("WARNING: coudln't alloc wait queue head, retrying..\n");
 		goto retry_alloc;
 	}
+	memset(wqhln, 0, sizeof(struct wait_queue_head_list_node));
 
 	/* Prepare per-thread wait queue head */
 	wqhln->task = current;
