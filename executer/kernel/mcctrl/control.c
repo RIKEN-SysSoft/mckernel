@@ -288,11 +288,11 @@ struct mcos_handler_info {
 };
 
 struct mcos_handler_info;
-static struct host_thread *host_threads;
+static LIST_HEAD(host_threads); /* Used for FS switch */
 DEFINE_RWLOCK(host_thread_lock);
 
 struct host_thread {
-	struct host_thread *next;
+	struct list_head list;
 	struct mcos_handler_info *handler;
 	int     pid;
 	int     tid;
@@ -339,8 +339,9 @@ static void release_handler(ihk_os_t os, void *param)
 	unsigned long flags;
 	struct host_thread *thread;
 
+	/* Finalize FS switch for uti threads */ 
 	write_lock_irqsave(&host_thread_lock, flags);
-	for (thread = host_threads; thread; thread = thread->next) {
+	list_for_each_entry(thread, &host_threads, list) {
 		if (thread->handler == info) {
 			thread->handler = NULL;
 		}
@@ -2370,22 +2371,6 @@ mcexec_util_thread1(ihk_os_t os, unsigned long arg, struct file *file)
 	return rc;
 }
 
-static inline struct host_thread *get_host_thread(void)
-{
-	int pid = task_tgid_vnr(current);
-	int tid = task_pid_vnr(current);
-	unsigned long flags;
-	struct host_thread *thread;
-	
-	read_lock_irqsave(&host_thread_lock, flags);
-	for (thread = host_threads; thread; thread = thread->next)
-		if(thread->pid == pid && thread->tid == tid)
-			break;
-	read_unlock_irqrestore(&host_thread_lock, flags);
-
-	return thread;
-}
-
 long
 mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 {
@@ -2411,8 +2396,7 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	thread->handler = info;
 
 	write_lock_irqsave(&host_thread_lock, flags);
-	thread->next = host_threads;
-	host_threads = thread;
+	list_add_tail(&thread->list, &host_threads);
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
 	/* How ppd refcount reaches zero depends on how utility-thread exits:
@@ -2442,9 +2426,11 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 	struct host_thread *thread;
 
 	read_lock_irqsave(&host_thread_lock, flags);
-	for (thread = host_threads; thread; thread = thread->next)
-		if(thread->pid == pid && thread->tid == tid)
+	list_for_each_entry(thread, &host_threads, list) {
+		if(thread->pid == pid && thread->tid == tid) {
 			break;
+		}
+	}
 	read_unlock_irqrestore(&host_thread_lock, flags);
 	if (thread) {
 		if (arg)
@@ -2465,9 +2451,7 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
 	int tid;
 	long sig;
 	struct task_struct *tsk;
-	unsigned long flags;
 	struct host_thread *thread;
-	struct host_thread *prev;
 	struct ikc_scd_packet *packet;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
@@ -2483,15 +2467,16 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
 
 	//printk("%s: pid=%d,tid=%d,sig=%lx,task=%p\n", __FUNCTION__, pid, tid, sig, tsk);
 
-	write_lock_irqsave(&host_thread_lock, flags);
-	for (prev = NULL, thread = host_threads; thread;
-	     prev = thread, thread = thread->next) {
-		if(thread->tid == tid)
+	list_for_each_entry(thread, &host_threads, list) {
+		if(thread->pid == pid && thread->tid == tid) {
 			break;
+		}
 	}
+
 	if (!thread) {
+		printk("%s: thread not found in host_threads list\n", __FUNCTION__);
 		write_unlock_irqrestore(&host_thread_lock, flags);
-		return -EINVAL;
+		return -ESRCH;
 	}
 
 	ppd = mcctrl_get_per_proc_data(usrdata, pid);
@@ -2506,8 +2491,12 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
 		       __FUNCTION__, tid);
 		goto err;
 	}
-	mcctrl_delete_per_thread_data(ppd, tsk);
-	printk("%s: calling __return_syscall, tid=%d, sig=%lx, ppd->refcount=%d\n", __FUNCTION__, tid, sig, atomic_read(&ppd->refcount));
+
+	if ((rc = mcctrl_delete_per_thread_data(ppd, tsk))) {
+		kprintf("%s: ERROR: mcctrl_delete_per_thread_data failed (%d)\n", __FUNCTION__, rc);
+		goto err;
+	}
+
 	__return_syscall(usrdata->os, packet, sig, tid);
 	printk("%s: packet=%p,channels=%p,ref=%d,desc=%p\n", __FUNCTION__, packet, usrdata->channels, packet->ref, (usrdata->channels + packet->ref)->c);
 
@@ -2525,12 +2514,9 @@ err:
 	if(ppd)
 		mcctrl_put_per_proc_data(ppd);
 
-	if (prev)
-		prev->next = thread->next;
-	else
-		host_threads = thread->next;
-	write_unlock_irqrestore(&host_thread_lock, flags);
+	list_del(&thread->list);
 	kfree(thread);
+
 	return 0;
 }
  
