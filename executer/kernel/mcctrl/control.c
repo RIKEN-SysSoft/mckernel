@@ -305,6 +305,7 @@ struct mcos_handler_info;
 static LIST_HEAD(host_threads); /* Used for FS switch */
 DEFINE_RWLOCK(host_thread_lock);
 
+/* Info of Linux counterpart of migrated-to-Linux thread */
 struct host_thread {
 	struct list_head list;
 	struct mcos_handler_info *handler;
@@ -2463,7 +2464,7 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	       exiting release_handler()
 	*/
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
-
+	pr_ppd("get", task_pid_vnr(current), ppd);
 	return 0;
 }
 
@@ -2497,8 +2498,7 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 	return ret;
 }
 
-static long
-mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct task_struct *tsk)
+static long mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct task_struct *tsk)
 {
 	struct ikc_scd_packet *packet;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
@@ -2685,6 +2685,7 @@ long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 	struct syscall_struct __user *uparam =
 	                              (struct syscall_struct __user *)arg;
 	long rc;
+
 
 	if (copy_from_user(&param, uparam, sizeof param)) {
 		return -EFAULT;
