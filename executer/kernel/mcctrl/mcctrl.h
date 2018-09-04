@@ -539,6 +539,7 @@ struct vdso {
 
 int reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp,
 		unsigned long *endp);
+int release_user_space(uintptr_t start, uintptr_t len);
 void get_vdso_info(ihk_os_t os, long vdso_pa);
 int arch_symbols_init(void);
 
