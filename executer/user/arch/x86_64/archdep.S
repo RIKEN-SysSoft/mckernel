@@ -146,4 +146,3 @@ compare_and_swap_int:
 	lock
 	cmpxchgl	%edx,0(%rdi)
 	retq
-
