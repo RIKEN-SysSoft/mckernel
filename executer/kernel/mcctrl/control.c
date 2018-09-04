@@ -2431,84 +2431,93 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 	return -EINVAL;
 }
 
-long
-mcexec_terminate_thread(ihk_os_t os, unsigned long __user *arg, struct file *file)
+static long
+mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long sig, struct task_struct *tsk)
 {
-	unsigned long param[4];
 	int rc;
-	int pid;
-	int tid;
-	long sig;
-	struct task_struct *tsk;
-	struct host_thread *thread;
 	struct ikc_scd_packet *packet;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
 
-    if (copy_from_user(param, arg, sizeof(unsigned long) * 4)) {
-        return -EFAULT;
-    }
-
-	pid = param[0];
-	tid = param[1];
-	sig = param[2];
-	tsk = (struct task_struct *)param[3];
-
-	//printk("%s: pid=%d,tid=%d,sig=%lx,task=%p\n", __FUNCTION__, pid, tid, sig, tsk);
-
-	list_for_each_entry(thread, &host_threads, list) {
-		if(thread->pid == pid && thread->tid == tid) {
-			break;
-		}
-	}
-
-	if (!thread) {
-		printk("%s: thread not found in host_threads list\n", __FUNCTION__);
-		write_unlock_irqrestore(&host_thread_lock, flags);
-		return -ESRCH;
-	}
+	dprintk("%s: target pid=%d,tid=%d,sig=%lx,task=%p\n", __FUNCTION__, pid, tid, sig, tsk);
 
 	ppd = mcctrl_get_per_proc_data(usrdata, pid);
 	if (!ppd) {
 		kprintf("%s: ERROR: no per-process structure for PID %d??\n",
-		        __FUNCTION__, pid);
-		goto err;
+				__FUNCTION__, pid);
+		goto no_ppd;
 	}
 	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, tsk);
 	if (!packet) {
 		kprintf("%s: ERROR: no packet registered for TID %d\n",
-		       __FUNCTION__, tid);
-		goto err;
+				__FUNCTION__, tid);
+		goto no_ptd;
 	}
 
 	if ((rc = mcctrl_delete_per_thread_data(ppd, tsk))) {
 		kprintf("%s: ERROR: mcctrl_delete_per_thread_data failed (%d)\n", __FUNCTION__, rc);
-		goto err;
+		goto no_ptd;
 	}
 
 	__return_syscall(usrdata->os, packet, sig, tid);
-	printk("%s: packet=%p,channels=%p,ref=%d,desc=%p\n", __FUNCTION__, packet, usrdata->channels, packet->ref, (usrdata->channels + packet->ref)->c);
-
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 						   (usrdata->ikc2linux[smp_processor_id()] ?
 							usrdata->ikc2linux[smp_processor_id()] :
 							usrdata->ikc2linux[0]));
-
+ no_ptd:
 	/* Destroy per_proc_data with the following two puts. Note that
 	   it survived the signal-kill of tracee thanks to the additional put
 	   done in mcexec_util_thread2 */
-	mcctrl_put_per_proc_data(ppd); 
+	mcctrl_put_per_proc_data(ppd);
+	mcctrl_put_per_proc_data(ppd);
 
-err:
-	if(ppd)
-		mcctrl_put_per_proc_data(ppd);
+ no_ppd:
+	return 0;
+}
+
+static long
+mcexec_terminate_thread(ihk_os_t os, struct terminate_thread_desc * __user arg)
+{
+	long rc;
+	unsigned long flags;
+	struct terminate_thread_desc desc;
+	struct host_thread *thread;
+
+    if (copy_from_user(&desc, arg, sizeof(struct terminate_thread_desc))) {
+		rc = -EFAULT;
+		goto out;
+    }
+
+	dprintk("%s: target pid=%d,tid=%d\n", __FUNCTION__, desc.pid, desc.tid);
+
+	/* Stop switching FS registers for uti thread */
+	write_lock_irqsave(&host_thread_lock, flags);
+	list_for_each_entry(thread, &host_threads, list) {
+		if(thread->tid == desc.tid) {
+			break;
+		}
+	}
+	if (!thread) {
+		printk("%s: ERROR: thread (pid=%d,tid=%d) not found in host_threads\n", __FUNCTION__, desc.pid, desc.tid);
+		rc = -ESRCH;
+		goto unlock_out;
+	}
 
 	list_del(&thread->list);
 	kfree(thread);
 
-	return 0;
+	write_unlock_irqrestore(&host_thread_lock, flags);
+
+	rc = mcexec_terminate_thread_unsafe(os, desc.pid, desc.tid, desc.sig, (struct task_struct *)desc.tsk);
+
+ out:
+	return rc;
+
+ unlock_out:
+	write_unlock_irqrestore(&host_thread_lock, flags);
+	goto out;
 }
- 
+
 static long mcexec_release_user_space(struct release_user_space_desc *__user arg)
 {
 	struct release_user_space_desc desc;
@@ -3022,7 +3031,7 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 		return mcexec_syscall_thread(os, arg, file);
 
 	case MCEXEC_UP_TERMINATE_THREAD:
-		return mcexec_terminate_thread(os, (unsigned long __user *)arg, file);
+		return mcexec_terminate_thread(os, (struct terminate_thread_desc *)arg);
 
 	case MCEXEC_UP_RELEASE_USER_SPACE:
 		return mcexec_release_user_space((struct release_user_space_desc *)arg);
