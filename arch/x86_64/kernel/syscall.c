@@ -36,8 +36,6 @@
 void terminate_mcexec(int, int);
 extern long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
 long syscall(int num, ihk_mc_user_context_t *ctx);
-void set_signal(int sig, void *regs0, siginfo_t *info);
-void check_signal(unsigned long rc, void *regs0, int num);
 extern unsigned long do_fork(int, unsigned long, unsigned long, unsigned long,
 	unsigned long, unsigned long, unsigned long);
 extern int get_xsave_size();
@@ -261,7 +259,7 @@ SYSCALL_DECLARE(rt_sigreturn)
 		info.si_code = TRAP_TRACE;
 		set_signal(SIGTRAP, regs, &info);
 		check_need_resched();
-		check_signal(0, regs, 0);
+		check_signal(0, regs, -1);
 	}
 
 	if(ksigsp.fpregs && xsavesize){
@@ -286,7 +284,6 @@ SYSCALL_DECLARE(rt_sigreturn)
 }
 
 extern struct cpu_local_var *clv;
-extern unsigned long do_kill(struct thread *thread, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
 extern void interrupt_syscall(struct thread *, int sig);
 extern void terminate(int, int);
 extern int num_processors;
@@ -643,11 +640,13 @@ arch_ptrace(long request, int pid, long addr, long data)
 static int
 isrestart(int num, unsigned long rc, int sig, int restart)
 {
-	if(sig == SIGKILL || sig == SIGSTOP)
+	if (sig == SIGKILL || sig == SIGSTOP)
 		return 0;
-	if(num == 0 || rc != -EINTR)
+	if (num < 0 || rc != -EINTR)
 		return 0;
-	switch(num){
+	if (sig == SIGCHLD)
+		return 1;
+	switch (num) {
 	    case __NR_pause:
 	    case __NR_rt_sigsuspend:
 	    case __NR_rt_sigtimedwait:
@@ -668,14 +667,12 @@ isrestart(int num, unsigned long rc, int sig, int restart)
 	    case __NR_io_getevents:
 		return 0;
 	}
-	if(sig == SIGCHLD)
-		return 1;
-	if(restart)
+	if (restart)
 		return 1;
 	return 0;
 }
 
-void
+int
 do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pending *pending, int num)
 {
 	struct x86_user_context *regs = regs0;
@@ -687,6 +684,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 	int	ptraceflag = 0;
 	struct mcs_rwlock_node_irqsave lock;
 	struct mcs_rwlock_node_irqsave mcs_rw_node;
+	int restart = 0;
 
 	for(w = pending->sigmask.__val[0], sig = 0; w; sig++, w >>= 1);
 	dkprintf("do_signal(): tid=%d, pid=%d, sig=%d\n", thread->tid, proc->pid, sig);
@@ -715,7 +713,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 	if(k->sa.sa_handler == SIG_IGN){
 		kfree(pending);
 		mcs_rwlock_writer_unlock(&thread->sigcommon->lock, &mcs_rw_node);
-		return;
+		goto out;
 	}
 	else if(k->sa.sa_handler){
 		unsigned long *usp; /* user stack */
@@ -765,9 +763,8 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 		memcpy(&ksigsp.sigstack, &thread->sigstack, sizeof(stack_t));
 		ksigsp.sigrc = rc;
 		ksigsp.num = num;
-		ksigsp.restart = isrestart(num, rc, sig, k->sa.sa_flags & SA_RESTART);
-		if(num != 0 && rc == -EINTR && sig == SIGCHLD)
-			ksigsp.restart = 1;
+		restart = isrestart(num, rc, sig, k->sa.sa_flags & SA_RESTART);
+		ksigsp.restart = restart;
 		if(xsavesize){
 			uint64_t xsave_mask = get_xsave_mask();
 			unsigned int low = (unsigned int)xsave_mask;
@@ -780,7 +777,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 				kfree(_kfpregs);
 				kprintf("do_signal,no space available\n");
 				terminate(0, sig);
-				return;
+				goto out;
 			}
 			kfpregs = (void *)((((unsigned long)_kfpregs) + 63) & ~63);
 			memset(kfpregs, '\0', xsavesize);
@@ -790,7 +787,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 				kfree(_kfpregs);
 				kprintf("do_signal,write_process_vm failed\n");
 				terminate(0, sig);
-				return;
+				goto out;
 			}
 			ksigsp.fpregs = (void *)fpregs;
 			kfree(_kfpregs);
@@ -802,7 +799,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 			mcs_rwlock_writer_unlock(&thread->sigcommon->lock, &mcs_rw_node);
 			kprintf("do_signal,write_process_vm failed\n");
 			terminate(0, sig);
-			return;
+			goto out;
 		}
 
 		usp = (unsigned long *)sigsp;
@@ -832,7 +829,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 			info.si_code = TRAP_TRACE;
 			set_signal(SIGTRAP, regs, &info);
 			check_need_resched();
-			check_signal(0, regs, 0);
+			check_signal(0, regs, -1);
 		}
 	}
 	else {
@@ -940,6 +937,8 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 			break;
 		}
 	}
+out:
+	return restart;
 }
 
 static struct sig_pending *
@@ -1019,6 +1018,12 @@ void save_syscall_return_value(int num, unsigned long rc)
 	return;
 }
 
+/** \brief check arrived signals and processing
+ *
+ * @param rc    return value of syscall
+ * @param regs0 context
+ * @param num   syscall number (-1: Not called on exiting system call)
+ */
 void
 check_signal(unsigned long rc, void *regs0, int num)
 {
@@ -1059,7 +1064,9 @@ check_signal(unsigned long rc, void *regs0, int num)
 			goto out;
 		}
 
-		do_signal(rc, regs, thread, pending, num);
+		if (do_signal(rc, regs, thread, pending, num)) {
+			num = -1;
+		}
 	}
 
 out:
@@ -1139,7 +1146,7 @@ check_sig_pending_thread(struct thread *thread)
 }
 
 void
-check_sig_pending()
+check_sig_pending(void)
 {
 	struct thread *thread;
 	struct cpu_local_var *v;

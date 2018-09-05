@@ -839,6 +839,13 @@ void chain_thread(struct thread *);
 void proc_init(void);
 void set_timer(int runq_locked);
 struct sig_pending *hassigpending(struct thread *thread);
+extern int do_signal(unsigned long rc, void *regs0, struct thread *thread,
+		     struct sig_pending *pending, int num);
+extern void check_signal(unsigned long rc, void *regs0, int num);
+extern unsigned long do_kill(struct thread *thread, int pid, int tid, int sig,
+			     struct siginfo *info, int ptracecont);
+extern void set_signal(int sig, void *regs, struct siginfo *info);
+extern void check_sig_pending(void);
 
 void release_fp_regs(struct thread *proc);
 void save_fp_regs(struct thread *proc);

@@ -1,0 +1,49 @@
+diff --git a/arch/x86_64/kernel/syscall.c b/arch/x86_64/kernel/syscall.c
+index 4b2742b..a3173c9 100644
+--- a/arch/x86_64/kernel/syscall.c
++++ b/arch/x86_64/kernel/syscall.c
+@@ -1670,6 +1670,11 @@ long do_arch_prctl(unsigned long code, unsigned long address)
+ 			break;
+ 		case ARCH_SET_GS:
+ 			return -ENOTSUPP;
++		case 999: {
++			struct thread *thread = cpu_local_var(current);
++			thread->proc->dblsig = (int)address;
++			return 0;
++		}
+ 		default:
+ 			return -EINVAL;
+ 	}
+diff --git a/kernel/include/process.h b/kernel/include/process.h
+index 24acf1f..dd94469 100644
+--- a/kernel/include/process.h
++++ b/kernel/include/process.h
+@@ -580,6 +580,8 @@ struct process {
+ #endif // PROFILE_ENABLE
+ 	int nr_processes; /* For partitioned execution */
+ 	int process_rank; /* Rank in partition */
++
++	int dblsig;
+ };
+ 
+ /*
+diff --git a/kernel/syscall.c b/kernel/syscall.c
+index 15d4593..3d03fad 100644
+--- a/kernel/syscall.c
++++ b/kernel/syscall.c
+@@ -9632,6 +9632,15 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
+ 
+ 	if (!list_empty(&thread->sigpending) ||
+ 	    !list_empty(&thread->sigcommon->sigpending)) {
++		if (!list_empty(&thread->sigcommon->sigpending) &&
++		    thread->proc->dblsig) {
++			kprintf("have a signal, waiting arrive more signal\n");
++			while (list_is_singular(
++					      &thread->sigcommon->sigpending)) {
++				schedule();
++			}
++			kprintf("have some signals\n");
++		}
+ 		check_signal(l, NULL, num);
+ 	}
+ 

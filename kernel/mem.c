@@ -960,8 +960,6 @@ static struct ihk_mc_interrupt_handler query_free_mem_handler = {
 	.priv = NULL,
 };
 
-void set_signal(int sig, void *regs, struct siginfo *info);
-void check_signal(unsigned long, void *, int);
 int gencore(struct thread *, void *, struct coretable **, int *);
 void freecore(struct coretable **);
 
@@ -1221,7 +1219,7 @@ out:
 	if(interrupt_from_user(regs)){
 		cpu_enable_interrupt();
 		check_need_resched();
-		check_signal(0, regs, 0);
+		check_signal(0, regs, -1);
 	}
 	set_cputime(interrupt_from_user(regs)? 0: 1);
 #ifdef PROFILE_ENABLE
