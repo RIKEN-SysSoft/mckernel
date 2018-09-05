@@ -1710,12 +1710,18 @@ static int invalidate_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 	phys = pte_get_phys(ptep);
 	page = phys_to_page(phys);
 	linear_off = range->objoff + ((uintptr_t)pgaddr - range->start);
-	if (page && (page->offset == linear_off)) {
+
+	if (page) {
+		if (page->offset == linear_off) {
+			pte_make_null(&apte, pgsize);
+		}
+		else {
+			pte_make_fileoff(page->offset, 0, pgsize, &apte);
+		}
+	} else {
 		pte_make_null(&apte, pgsize);
 	}
-	else {
-		pte_make_fileoff(page->offset, 0, pgsize, &apte);
-	}
+
 	pte_xchg(ptep, &apte);
 	flush_tlb_single((uintptr_t)pgaddr);	/* XXX: TLB flush */
 
@@ -1744,6 +1750,11 @@ int invalidate_process_memory_range(struct process_vm *vm,
 {
 	int error;
 	struct invalidate_args args;
+	pte_t* ptep;
+	uintptr_t base;
+	int level;
+	size_t pgsize;
+	size_t cmp_pgsize;
 
 	dkprintf("invalidate_process_memory_range(%p,%p,%#lx,%#lx)\n",
 			vm, range, start, end);
@@ -1751,6 +1762,41 @@ int invalidate_process_memory_range(struct process_vm *vm,
 
 	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 	memobj_ref(range->memobj);
+
+	ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table, (void*)start, 0, NULL, &pgsize, NULL);
+	if (ptep && pte_is_compound(ptep)) {
+		cmp_pgsize = pgsize;
+		level = pgsize_to_tbllv(pgsize);
+		pgsize = tbllv_to_pgsize(level);
+		base = __page_align(start, pgsize);
+		if (((unsigned long)base & (cmp_pgsize - 1)) != 0) {
+			// start pte is not compound head
+			error = isolation_ptes(ptep, pgsize);
+			if (error) {
+				memobj_unref(range->memobj);
+				ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
+				goto out;
+			}
+		}
+	}
+
+	ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table, (void*)end - 1, 0, NULL, &pgsize, NULL);
+	if (ptep && pte_is_compound(ptep)) {
+		cmp_pgsize = pgsize;
+		level = pgsize_to_tbllv(pgsize);
+		pgsize = tbllv_to_pgsize(level);
+		base = __page_align((end - 1), pgsize);
+		if ((((unsigned long)base + pgsize) & (cmp_pgsize - 1)) != 0) {
+			// end pte is not compound tail
+			error = isolation_ptes(ptep, pgsize);
+			if (error) {
+				memobj_unref(range->memobj);
+				ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
+				goto out;
+			}
+		}
+	}
+
 	error = visit_pte_range(vm->address_space->page_table, (void *)start,
 	                        (void *)end, range->pgshift, VPTEF_SKIP_NULL,
 	                        &invalidate_one_page, &args);
