@@ -2178,6 +2178,13 @@ int main(int argc, char **argv)
 	if (opendev() == -1)
 		exit(EXIT_FAILURE);
 
+#ifndef WITH_SYSCALL_INTERCEPT
+	if (enable_uti) {
+		__eprintf("ERROR: uti is not available when not configured with --with-syscall_intercept=<path>\n");
+		exit(EXIT_FAILURE);
+	}
+#endif
+
 	ld_preload_init();
 
 #ifdef ADD_ENVS_OPTION

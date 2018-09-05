@@ -86,3 +86,6 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
+
+/* whether or not syscall_intercept library is linked */
+#undef WITH_SYSCALL_INTERCEPT
