@@ -114,7 +114,6 @@ char *syscall_name[] MCKERNEL_UNUSED = {
 
 static ihk_spinlock_t tod_data_lock = SPIN_LOCK_UNLOCKED;
 static unsigned long uti_desc; /* Address of struct uti_desc object in syscall_intercept.c */
-static void calculate_time_from_tsc(struct timespec *ts);
 
 void save_syscall_return_value(int num, unsigned long rc);
 extern long alloc_debugreg(struct thread *thread);
@@ -6954,7 +6953,7 @@ SYSCALL_DECLARE(get_cpu_id)
 	return ihk_mc_get_processor_id();
 }
 
-static void calculate_time_from_tsc(struct timespec *ts)
+void calculate_time_from_tsc(struct timespec *ts)
 {
 	long ver;
 	unsigned long current_tsc;

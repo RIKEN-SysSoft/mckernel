@@ -31,51 +31,6 @@ struct tod_data_s tod_data
 	.version =	IHK_ATOMIC64_INIT(0),
 };
 
-static inline void cpu_pause_for_vsyscall(void)
-{
-	asm volatile ("pause" ::: "memory");
-	return;
-} /* cpu_pause_for_vsyscall() */
-
-static inline void calculate_time_from_tsc(struct timespec *ts)
-{
-	long ver;
-	unsigned long current_tsc;
-	__time_t sec_delta;
-	long ns_delta;
-
-	for (;;) {
-		while ((ver = ihk_atomic64_read(&tod_data.version)) & 1) {
-			/* settimeofday() is in progress */
-			cpu_pause_for_vsyscall();
-		}
-		rmb();
-		*ts = tod_data.origin;
-		rmb();
-		if (ver == ihk_atomic64_read(&tod_data.version)) {
-			break;
-		}
-
-		/* settimeofday() has intervened */
-		cpu_pause_for_vsyscall();
-	}
-
-	current_tsc = rdtsc();
-	sec_delta = current_tsc / tod_data.clocks_per_sec;
-	ns_delta = NS_PER_SEC * (current_tsc % tod_data.clocks_per_sec)
-		/ tod_data.clocks_per_sec;
-	/* calc. of ns_delta overflows if clocks_per_sec exceeds 18.44 GHz */
-
-	ts->tv_sec += sec_delta;
-	ts->tv_nsec += ns_delta;
-	if (ts->tv_nsec >= NS_PER_SEC) {
-		ts->tv_nsec -= NS_PER_SEC;
-		++ts->tv_sec;
-	}
-
-	return;
-} /* calculate_time_from_tsc() */
-
 int vsyscall_gettimeofday(struct timeval *tv, void *tz)
 {
 	int error;

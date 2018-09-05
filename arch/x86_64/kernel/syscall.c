@@ -1719,6 +1719,11 @@ SYSCALL_DECLARE(arch_prctl)
 	                     ihk_mc_syscall_arg1(ctx));
 }
 
+SYSCALL_DECLARE(time)
+{
+	return time();
+}
+
 static int vdso_get_vdso_info(void)
 {
 	int error;
@@ -2683,10 +2688,20 @@ out:
 time_t time(void) {
 	struct syscall_request sreq IHK_DMA_ALIGN;
 	struct thread *thread = cpu_local_var(current);
-	time_t ret;
-	sreq.number = __NR_time;
-	sreq.args[0] = (uintptr_t)NULL;
-	ret = (time_t)do_syscall(&sreq, ihk_mc_get_processor_id(), thread->proc->pid);
+	struct timespec ats;
+	time_t ret = 0;
+
+	if (gettime_local_support) {
+		calculate_time_from_tsc(&ats);
+		ret = ats.tv_sec;
+	}
+	else {
+		sreq.number = __NR_time;
+		sreq.args[0] = (uintptr_t)NULL;
+		ret = (time_t)do_syscall(&sreq, ihk_mc_get_processor_id(),
+		       thread->proc->pid);
+	}
+
 	return ret;
 }
 
