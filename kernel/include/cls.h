@@ -21,7 +21,7 @@
 
 struct kmalloc_header {
 	unsigned int front_magic;
-	unsigned int cpu_id;
+	int cpu_id;
 	struct list_head list;
 	int size; /* The size of this chunk without the header */
 	unsigned int end_magic;
