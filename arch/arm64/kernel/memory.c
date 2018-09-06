@@ -2582,13 +2582,25 @@ int arch_get_smaller_page_size(void *args, size_t cursize, size_t *newsizep,
 		/* dummy */
 		panic("not reached");
 	}
+	else if ((cursize > PTL3_CONT_SIZE) && CONFIG_ARM64_PGTABLE_LEVELS > 2) {
+		newsize = PTL3_CONT_SIZE;
+		p2align = (PTL3_SHIFT + PTL3_CONT_SHIFT) - PTL1_SHIFT;
+	}
 	else if ((cursize > PTL3_SIZE) && CONFIG_ARM64_PGTABLE_LEVELS > 2) {
 		newsize = PTL3_SIZE;
 		p2align = PTL3_SHIFT - PTL1_SHIFT;
 	}
+	else if (cursize > PTL2_CONT_SIZE) {
+		newsize = PTL2_CONT_SIZE;
+		p2align = (PTL2_SHIFT + PTL2_CONT_SHIFT) - PTL1_SHIFT;
+	}
 	else if (cursize > PTL2_SIZE) {
 		newsize = PTL2_SIZE;
 		p2align = PTL2_SHIFT - PTL1_SHIFT;
+	}
+	else if (cursize > PTL1_CONT_SIZE) {
+		newsize = PTL1_CONT_SIZE;
+		p2align = (PTL1_SHIFT + PTL1_CONT_SHIFT) - PTL1_SHIFT;
 	}
 	else if (cursize > PTL1_SIZE) {
 		newsize = PTL1_SIZE;
