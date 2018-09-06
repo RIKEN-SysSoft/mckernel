@@ -301,6 +301,7 @@ long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
 	unsigned long phys;
 #ifdef POSTK_DEBUG_ARCH_DEP_106 /* Fix virt_to_phys() area to get_free_page */
 	struct syscall_request *request = NULL;
+	int retry;
 
 	request = (struct syscall_request *)__get_free_page(GFP_KERNEL);
 	if (!request) {
@@ -312,6 +313,7 @@ long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
 #else /* POSTK_DEBUG_ARCH_DEP_106 */
 	struct syscall_request _request[2];
 	struct syscall_request *request;
+	int retry;
 
 	if (((unsigned long)_request ^ (unsigned long)(_request + 1)) &
 	    ~(PAGE_SIZE -1))
@@ -393,21 +395,41 @@ retry_alloc:
 	mb();
 	resp->status = STATUS_SYSCALL;
 
+	retry = 0;
+ retry_offload:
 	dprintk("%s: tid: %d, syscall: %d SLEEPING\n", 
 			__FUNCTION__, task_pid_vnr(current), num);
 	/* wait for response */
 	syscall_ret = wait_event_interruptible(wqhln->wq_syscall, wqhln->req);
 	
+	/* debug */
+	if (syscall_ret == -ERESTARTSYS) {
+		printk("%s: INFO: interrupted by signal\n", __FUNCTION__);
+		retry++;
+		if (retry < 5) {
+			printk("%s: INFO: retry=%d\n", __FUNCTION__, retry);
+			goto retry_offload;
+		}
+	}
+
 	/* Remove per-thread wait queue head */
 	irqflags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
 	list_del(&wqhln->list);
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, irqflags);
 
-	dprintk("%s: tid: %d, syscall: %d WOKEN UP\n", 
-			__FUNCTION__, task_pid_vnr(current), num);
+	dprintk("%s: tid: %d, syscall: %d WOKEN UP\n",
+		__FUNCTION__, task_pid_vnr(current), num);
+
+	if (retry >= 5) {
+		kfree(wqhln);
+		kprintf("%s: INFO: mcexec is gone or retry count exceeded,pid=%d,ppd=%p,retry=%d\n", __FUNCTION__, task_tgid_vnr(current), ppd, retry);
+		syscall_ret = -EINVAL;
+		goto out;
+	}
 
 	if (syscall_ret) {
 		kfree(wqhln);
+		printk("%s: ERROR: wait_event_interruptible returned %ld\n", __FUNCTION__, syscall_ret);
 		goto out;
 	}
 	else {
@@ -486,6 +508,7 @@ static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, u
 	unsigned long irqflags;
 	struct mcctrl_per_proc_data *ppd;
 	unsigned long phys;
+	int retry;
 	
 	dprintk("%s: tid: %d, fault_addr: %p, reason: %lu\n",
 			__FUNCTION__, task_pid_vnr(current), fault_addr, (unsigned long)reason);
@@ -559,6 +582,7 @@ retry_alloc:
 	mb();
 	resp->status = STATUS_PAGE_FAULT;
 
+	retry = 0;
 	for (;;) {
 		dprintk("%s: tid: %d, fault_addr: %p SLEEPING\n", 
 				__FUNCTION__, task_pid_vnr(current), fault_addr);
@@ -568,7 +592,11 @@ retry_alloc:
 		/* Delay signal handling */
 		if (error == -ERESTARTSYS) {
 			printk("%s: INFO: interrupted by signal\n", __FUNCTION__);
-			continue;
+			retry++;
+			if (retry < 5) { /* mcexec is alive */
+				printk("%s: INFO: retry=%d\n", __FUNCTION__, retry);
+				continue;
+			}
 		}
 
 		/* Remove per-thread wait queue head */
@@ -578,6 +606,13 @@ retry_alloc:
 
 		dprintk("%s: tid: %d, fault_addr: %p WOKEN UP\n", 
 				__FUNCTION__, task_pid_vnr(current), fault_addr);
+
+		if (retry >= 5) {
+			kfree(wqhln);
+			kprintf("%s: INFO: mcexec is gone or retry count exceeded,pid=%d,retry=%d\n", __FUNCTION__, task_tgid_vnr(current), retry);
+			error = -EINVAL;
+			goto out;
+		}
 
 		if (error) {
 			kfree(wqhln);
