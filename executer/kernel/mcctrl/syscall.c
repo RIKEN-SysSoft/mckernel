@@ -564,7 +564,13 @@ retry_alloc:
 				__FUNCTION__, task_pid_vnr(current), fault_addr);
 		/* wait for response */
 		error = wait_event_interruptible(wqhln->wq_syscall, wqhln->req);
-		
+
+		/* Delay signal handling */
+		if (error == -ERESTARTSYS) {
+			printk("%s: INFO: interrupted by signal\n", __FUNCTION__);
+			continue;
+		}
+
 		/* Remove per-thread wait queue head */
 		irqflags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
 		list_del(&wqhln->list);
