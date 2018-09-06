@@ -58,9 +58,13 @@ static int cpuid_head = 1;
 
 extern int num_processors;
 
-int obtain_clone_cpuid(cpu_set_t *cpu_set) {
+int obtain_clone_cpuid(cpu_set_t *cpu_set)
+{
 	int min_queue_len = -1;
 	int i, min_cpu = -1;
+	unsigned long irqstate;
+
+	irqstate = ihk_mc_spinlock_lock(&runq_reservation_lock);
 
 	/* cpu_head lock */
 	ihk_mc_spinlock_lock_noirq(&cpuid_head_lock);
@@ -68,7 +72,6 @@ int obtain_clone_cpuid(cpu_set_t *cpu_set) {
 	/* Find the first allowed core with the shortest run queue */
 	for (i = 0; i < num_processors; cpuid_head++, i++) {
 		struct cpu_local_var *v;
-		unsigned long irqstate;
 
 		/* cpuid_head over cpu_info->ncpus, cpuid_head = BSP reset. */
 		if (cpuid_head >= num_processors) {
@@ -78,12 +81,13 @@ int obtain_clone_cpuid(cpu_set_t *cpu_set) {
 		if (!CPU_ISSET(cpuid_head, cpu_set)) continue;
 
 		v = get_cpu_local_var(cpuid_head);
-		irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
-		if (min_queue_len == -1 || v->runq_len < min_queue_len) {
-			min_queue_len = v->runq_len;
+		ihk_mc_spinlock_lock_noirq(&v->runq_lock);
+		dkprintf("%s: cpu=%d,runq_len=%d,runq_reserved=%d\n", __FUNCTION__, i, v->runq_len, v->runq_reserved);
+		if (min_queue_len == -1 || v->runq_len + v->runq_reserved < min_queue_len) {
+			min_queue_len = v->runq_len + v->runq_reserved;
 			min_cpu = cpuid_head;
 		}
-		ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
+		ihk_mc_spinlock_unlock_noirq(&v->runq_lock);
 
 		if (min_queue_len == 0) {
 			cpuid_head++;
@@ -97,7 +101,10 @@ int obtain_clone_cpuid(cpu_set_t *cpu_set) {
 	if (min_cpu != -1) {
 		if (get_cpu_local_var(min_cpu)->status != CPU_STATUS_RESERVED)
 			get_cpu_local_var(min_cpu)->status = CPU_STATUS_RESERVED;
+		__sync_fetch_and_add(&get_cpu_local_var(min_cpu)->runq_reserved, 1);
 	}
+	ihk_mc_spinlock_unlock(&runq_reservation_lock, irqstate);
+
 	return min_cpu;
 }
 
