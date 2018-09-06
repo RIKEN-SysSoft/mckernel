@@ -53,11 +53,12 @@ fi
 
 turbo=""
 ihk_irq=""
+safe_kernel_map=""
 umask_old=`umask`
 idle_halt=""
 allow_oversubscribe=""
 
-while getopts :tk:c:m:o:f:r:q:i:d:e:hO OPT
+while getopts :stk:c:m:o:f:r:q:i:d:e:hO OPT
 do
 	case ${OPT} in
 	f)	facility=${OPTARG}
@@ -69,6 +70,8 @@ do
 	c) cpus=${OPTARG}
 		;;
 	m) mem=${OPTARG}
+		;;
+	s) safe_kernel_map="safe_kernel_map"
 		;;
 	r) ikc_map=${OPTARG}
 		;;
@@ -454,7 +457,7 @@ if ! ${SBINDIR}/ihkosctl 0 load ${KERNDIR}/mckernel.img; then
 fi
 
 # Set kernel arguments
-if ! ${SBINDIR}/ihkosctl 0 kargs "hidos $turbo $idle_halt dump_level=${DUMP_LEVEL} $extra_kopts $allow_oversubscribe"; then
+if ! ${SBINDIR}/ihkosctl 0 kargs "hidos $turbo $safe_kernel_map $idle_halt dump_level=${DUMP_LEVEL} $extra_kopts $allow_oversubscribe"; then
 	echo "error: setting kernel arguments" >&2
 	error_exit "os_created"
 fi

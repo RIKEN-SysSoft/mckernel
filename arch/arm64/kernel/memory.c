@@ -35,6 +35,8 @@ extern unsigned long arm64_kernel_phys_base;
 extern unsigned long arm64_st_phys_base;
 extern unsigned long arm64_st_phys_size;
 
+int safe_kernel_map = 0;
+
 /* Arch specific early allocation routine */
 void *early_alloc_pages(int nr_pages)
 {

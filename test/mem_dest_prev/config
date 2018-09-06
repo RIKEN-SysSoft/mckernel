@@ -1,0 +1,13 @@
+MCMOD_DIR=$HOME/ppos
+LTP_DIR=$HOME/test/mem_dest_prev/ltp/testcases/bin/
+LTP_TESTCASE_FILE=LTP_testcase.txt
+MCRBT_OPT_LTP="-m 3G@0,3G@1 -s"
+USR_PROC="mcexec_test_proc/memtest_destroy"
+OS_IDX=0
+
+export MCMOD_DIR
+export LTP_DIR
+export LTP_TESTCASE_FILE
+export MCRBT_OPT_LTP
+export USR_PROC
+export OS_IDX
