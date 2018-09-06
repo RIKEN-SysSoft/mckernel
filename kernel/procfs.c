@@ -385,10 +385,8 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 			}
 
 			va = phys_to_virt(pa);
-			if(readwrite)
-				memcpy(va, buf + ans, size);
-			else
-				memcpy(buf + ans, va, size);
+			memcpy(buf + ans, va, size);
+
 			offset += size;
 			left -= size;
 			ans += size;

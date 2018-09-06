@@ -25,8 +25,8 @@ int main(int argc, char *argv[])
 	unsigned long *anon_map = NULL;
 	unsigned long *tmp_buf = NULL;
 	int data_pos[3] = {0 * MEGA / sizeof(unsigned long),
-			1 * MEGA / sizeof(unsigned long),
-			4 * MEGA / sizeof(unsigned long)};
+			4 * MEGA / sizeof(unsigned long) - 1,
+			8 * MEGA / sizeof(unsigned long) - 1};
 	off_t ret = 0;
 
 	printf("*** %s start *******************************\n", TEST_NAME);
@@ -60,15 +60,27 @@ int main(int argc, char *argv[])
 	ret = pwrite(fd, tmp_buf, 2 * MEGA, (off_t)anon_map);
 	OKNG(ret != 2 * MEGA || errno != 0, "2MB pwrite");
 
+	/* check written data */
+	OKNG(tmp_buf[data_pos[0]] != anon_map[data_pos[0]],
+	     "check written data :0x%lx", anon_map[data_pos[0]]);
+
 	/* pwrite 4MB */
 	errno = 0;
 	ret = pwrite(fd, tmp_buf, 4 * MEGA, (off_t)anon_map);
 	OKNG(ret != 4 * MEGA || errno != 0, "4MB pwrite");
 
+	/* check written data */
+	OKNG(tmp_buf[data_pos[1]] != anon_map[data_pos[1]],
+	     "check written data :0x%lx", anon_map[data_pos[1]]);
+
 	/* pwrite 8MB */
 	errno = 0;
 	ret = pwrite(fd, tmp_buf, 8 * MEGA, (off_t)anon_map);
 	OKNG(ret != 8 * MEGA || errno != 0, "8MB pwrite");
+
+	/* check written data */
+	OKNG(tmp_buf[data_pos[2]] != anon_map[data_pos[2]],
+	     "check written data :0x%lx", anon_map[data_pos[2]]);
 
 	close(fd);
 

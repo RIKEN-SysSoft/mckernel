@@ -13,15 +13,18 @@
  [OK] anonymous map
   anonymous map to 0x2aaaab200000, size:8.00 MB
  [OK] 2MB pwrite
+ [OK] check written data :0x1111
  [OK] 4MB pwrite
+ [OK] check written data :0x2222
  [OK] 8MB pwrite
+ [OK] check written data :0x3333
 *** CT_002 PASSED
 
 *** RT_001 start *******************************
 TEST_SUITE: procfs
 TEST_NUMBER: 0
 ARGS:
-dump /proc/5267/auxv:
+dump /proc/31209/auxv:
   0x00000000000021 0x002aaaaac24000 (AT_SYSINFO_EHDR)
   0x00000000000019 0x00547fffffffe0 (AT_RANDOM)
   0x00000000000011 0x00000000000064 (AT_CLKTCK)
@@ -39,7 +42,7 @@ TEST_SUITE: procfs
 TEST_NUMBER: 1
 ARGS:
 allocated: 0x00000000800010
-dump /proc/5301/mem(offset:0x00000000800010):
+dump /proc/31243/mem(offset:0x00000000800010):
   0x00000000800010: 0000000000000000 0000000000000001 0000000000000002 0000000000000003
   0x00000000800030: 0000000000000004 0000000000000005 0000000000000006 0000000000000007
   0x00000000800050: 0000000000000008 0000000000000009 000000000000000a 000000000000000b
@@ -55,7 +58,7 @@ RESULT: you need check MEM value
 TEST_SUITE: procfs
 TEST_NUMBER: 3
 ARGS:
-output /proc/5335/task/5366/stat
+output /proc/31277/task/31307/stat
 0 (exe) R 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0
 
 RESULT: you need check STAT value

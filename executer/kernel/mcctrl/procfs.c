@@ -592,7 +592,14 @@ static ssize_t __mckernel_procfs_read_write(
 		r->pbuf = pbuf;
 		r->eof = 0;
 		r->ret = -EIO; /* default */
-		r->offset = offset;
+		if (read_write == 0) {
+			/* read */
+			r->offset = offset;
+		}
+		else {
+			/* write */
+			r->offset = (unsigned long)buf;
+		}
 		r->count = this_len;
 		r->readwrite = read_write;
 		strncpy((char *)r->fname, path, PROCFS_NAME_MAX);
@@ -628,8 +635,22 @@ static ssize_t __mckernel_procfs_read_write(
 
 		if (r->ret > 0) {
 			if (read_write == 0) {
+				/* read */
 				if (copy_to_user(buf, kern_buffer, r->ret)) {
-					printk("%s: ERROR: copy_to_user failed.\n", __FUNCTION__);
+					printk(KERN_ERR
+					       "%s: ERROR: copy_to_user failed.\n",
+					       __func__);
+					ret = -EFAULT;
+					goto out;
+				}
+			}
+			else {
+				/* write */
+				if (copy_to_user((char *)offset, kern_buffer,
+				                 r->ret)) {
+					printk(KERN_ERR
+					       "%s: ERROR: copy_to_user failed.\n",
+					       __func__);
 					ret = -EFAULT;
 					goto out;
 				}

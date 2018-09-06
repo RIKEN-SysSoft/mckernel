@@ -498,7 +498,8 @@ int mcctrl_os_alive(void);
 
 struct procfs_read {
 	unsigned long pbuf;	/* physical address of the host buffer (request) */
-	unsigned long offset;	/* offset to read (request) */
+	unsigned long offset;	/* read-from offset on read,
+				write-source offset on write(request) */
 	int count;		/* bytes to read (request) */
 	int eof;		/* if eof is detected, 1 otherwise 0. (answer)*/
 	int ret;		/* read bytes (answer) */

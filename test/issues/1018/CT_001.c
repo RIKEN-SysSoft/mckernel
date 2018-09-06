@@ -23,9 +23,9 @@ int main(int argc, char *argv[])
 	char pfname[PROCFILE_LEN];
 	unsigned long *anon_map = NULL;
 	unsigned long *tmp_buf = NULL;
-	int data_pos[3] = {1 * MEGA / sizeof(unsigned long),
-			2 * MEGA / sizeof(unsigned long),
-			4 * MEGA / sizeof(unsigned long)};
+	int data_pos[3] = {0 * MEGA / sizeof(unsigned long),
+			4 * MEGA / sizeof(unsigned long) - 1,
+			8 * MEGA / sizeof(unsigned long) - 1};
 	off_t ret = 0;
 
 	printf("*** %s start *******************************\n", TEST_NAME);
