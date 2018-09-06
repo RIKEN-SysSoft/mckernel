@@ -471,7 +471,7 @@ void set_cputime(enum set_cputime_mode mode);
 #else /* POSTK_DEBUG_TEMP_FIX_84 */
 void set_cputime(int mode);
 #endif /* POSTK_DEBUG_TEMP_FIX_84 */
-int do_munmap(void *addr, size_t len);
+int do_munmap(void *addr, size_t len, int holding_memory_range_lock);
 intptr_t do_mmap(intptr_t addr0, size_t len0, int prot, int flags, int fd,
 		off_t off0);
 void clear_host_pte(uintptr_t addr, size_t len);
