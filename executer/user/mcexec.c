@@ -2459,6 +2459,7 @@ int main(int argc, char **argv)
 		struct get_cpu_set_arg cpu_set_arg;
 		int mcexec_linux_numa = 0;
 		int ikc_mapped = 0;
+		int process_rank = -1;
 		cpu_set_t mcexec_cpu_set;
 
 		CPU_ZERO(&mcexec_cpu_set);
@@ -2467,6 +2468,7 @@ int main(int argc, char **argv)
 		cpu_set_arg.cpu_set_size = sizeof(desc->cpu_set);
 		cpu_set_arg.nr_processes = nr_processes;
 		cpu_set_arg.target_core = &target_core;
+		cpu_set_arg.process_rank = &process_rank;
 		cpu_set_arg.mcexec_linux_numa = &mcexec_linux_numa;
 		cpu_set_arg.mcexec_cpu_set = &mcexec_cpu_set;
 		cpu_set_arg.mcexec_cpu_set_size = sizeof(mcexec_cpu_set);
@@ -2479,6 +2481,7 @@ int main(int argc, char **argv)
 		}
 
 		desc->cpu = target_core;
+		desc->process_rank = process_rank;
 
 		/* Bind to CPU cores where the LWK process' IKC target maps to */
 		if (ikc_mapped && !no_bind_ikc_map) {

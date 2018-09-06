@@ -574,6 +574,7 @@ struct process {
 	unsigned long profile_elapsed_ts;
 #endif // PROFILE_ENABLE
 	int nr_processes; /* For partitioned execution */
+	int process_rank; /* Rank in partition */
 };
 
 /*
