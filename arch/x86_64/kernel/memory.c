@@ -2694,14 +2694,16 @@ unsigned long virt_to_phys(void *v)
 		return va - LINUX_PAGE_OFFSET;
 	}
 	else if (va >= MAP_KERNEL_START) {
-		//kprintf("%s: MAP_KERNEL_START <= 0x%lx <= LINUX_PAGE_OFFSET\n", __FUNCTION__, va);
+		dkprintf("%s: MAP_KERNEL_START <= 0x%lx <= LINUX_PAGE_OFFSET\n",
+				__FUNCTION__, va);
 		return va - MAP_KERNEL_START + x86_kernel_phys_base;
 	}
 	else if (va >= MAP_FIXED_START) {
 		return va - MAP_FIXED_START;
 	}
 	else {
-		//kprintf("%s: MAP_ST_START <= 0x%lx <= MAP_FIXED_START\n", __FUNCTION__, va);
+		dkprintf("%s: MAP_ST_START <= 0x%lx <= MAP_FIXED_START\n",
+				__FUNCTION__, va);
 		return va - MAP_ST_START;
 	}
 }
