@@ -19,14 +19,14 @@ int __kprintf(const char *format, ...);
 
 /* @ref.impl arch/arm64/include/asm/spinlock_types.h::arch_spinlock_t */
 typedef struct {
-//#ifdef __AARCH64EB__
-//	uint16_t next;
-//	uint16_t owner;
-//#else /* __AARCH64EB__ */
+#ifdef __AARCH64EB__
+	uint16_t next;
+	uint16_t owner;
+#else /* __AARCH64EB__ */
 	uint16_t owner;
 	uint16_t next;
-//#endif /* __AARCH64EB__ */
-} ihk_spinlock_t;
+#endif /* __AARCH64EB__ */
+} __attribute__((aligned(4))) ihk_spinlock_t;
 
 extern void preempt_enable(void);
 extern void preempt_disable(void);
@@ -34,14 +34,91 @@ extern void preempt_disable(void);
 /* @ref.impl arch/arm64/include/asm/spinlock_types.h::__ARCH_SPIN_LOCK_UNLOCKED */
 #define SPIN_LOCK_UNLOCKED	{ 0, 0 }
 
+/* @ref.impl arch/arm64/include/asm/barrier.h::__nops */
+#define __nops(n)	".rept	" #n "\nnop\n.endr\n"
+
+/* @ref.impl ./arch/arm64/include/asm/lse.h::ARM64_LSE_ATOMIC_INSN */
+/* else defined(CONFIG_AS_LSE) && defined(CONFIG_ARM64_LSE_ATOMICS) */
+#define ARM64_LSE_ATOMIC_INSN(llsc, lse)	llsc
+
 /* initialized spinlock struct */
 static void ihk_mc_spinlock_init(ihk_spinlock_t *lock)
 {
 	*lock = (ihk_spinlock_t)SPIN_LOCK_UNLOCKED;
 }
 
-/* @ref.impl arch/arm64/include/asm/spinlock.h::arch_spin_lock */
-/* spinlock lock */
+#ifdef DEBUG_SPINLOCK
+#define ihk_mc_spinlock_trylock_noirq(l) { int rc; \
+__kprintf("[%d] call ihk_mc_spinlock_trylock_noirq %p %s:%d\n", ihk_mc_get_processor_id(), (l), __FILE__, __LINE__); \
+rc = __ihk_mc_spinlock_trylock_noirq(l); \
+__kprintf("[%d] ret ihk_mc_spinlock_trylock_noirq\n", ihk_mc_get_processor_id()); rc; \
+}
+#else
+#define ihk_mc_spinlock_trylock_noirq __ihk_mc_spinlock_trylock_noirq
+#endif
+
+/* @ref.impl arch/arm64/include/asm/spinlock.h::arch_spin_trylock */
+/* spinlock trylock */
+static int __ihk_mc_spinlock_trylock_noirq(ihk_spinlock_t *lock)
+{
+	unsigned int tmp;
+	ihk_spinlock_t lockval;
+	int success;
+
+	preempt_disable();
+
+	asm volatile(ARM64_LSE_ATOMIC_INSN(
+	/* LL/SC */
+	"	prfm	pstl1strm, %2\n"
+	"1:	ldaxr	%w0, %2\n"
+	"	eor	%w1, %w0, %w0, ror #16\n"
+	"	cbnz	%w1, 2f\n"
+	"	add	%w0, %w0, %3\n"
+	"	stxr	%w1, %w0, %2\n"
+	"	cbnz	%w1, 1b\n"
+	"2:",
+	/* LSE atomics */
+	"	ldr	%w0, %2\n"
+	"	eor	%w1, %w0, %w0, ror #16\n"
+	"	cbnz	%w1, 1f\n"
+	"	add	%w1, %w0, %3\n"
+	"	casa	%w0, %w1, %2\n"
+	"	sub	%w1, %w1, %3\n"
+	"	eor	%w1, %w1, %w0\n"
+	"1:")
+	: "=&r" (lockval), "=&r" (tmp), "+Q" (*lock)
+	: "I" (1 << TICKET_SHIFT)
+	: "memory");
+
+	success = !tmp;
+	if (!success) {
+		preempt_enable();
+	}
+	return success;
+}
+
+#ifdef DEBUG_SPINLOCK
+#define ihk_mc_spinlock_trylock(l, result) ({ unsigned long rc; \
+__kprintf("[%d] call ihk_mc_spinlock_trylock %p %s:%d\n", ihk_mc_get_processor_id(), (l), __FILE__, __LINE__); \
+rc = __ihk_mc_spinlock_trylock(l, result); \
+__kprintf("[%d] ret ihk_mc_spinlock_trylock\n", ihk_mc_get_processor_id()); rc;\
+})
+#else
+#define ihk_mc_spinlock_trylock __ihk_mc_spinlock_trylock
+#endif
+
+/* spinlock trylock & interrupt disable & PSTATE.DAIF save */
+static unsigned long __ihk_mc_spinlock_trylock(ihk_spinlock_t *lock, int *result)
+{
+	unsigned long flags;
+
+	flags = cpu_disable_interrupt_save();
+
+	*result = __ihk_mc_spinlock_trylock_noirq(lock);
+
+	return flags;
+}
+
 #ifdef DEBUG_SPINLOCK
 #define ihk_mc_spinlock_lock_noirq(l) { \
 __kprintf("[%d] call ihk_mc_spinlock_lock_noirq %p %s:%d\n", ihk_mc_get_processor_id(), (l), __FILE__, __LINE__); \
@@ -52,6 +129,8 @@ __kprintf("[%d] ret ihk_mc_spinlock_lock_noirq\n", ihk_mc_get_processor_id()); \
 #define ihk_mc_spinlock_lock_noirq __ihk_mc_spinlock_lock_noirq
 #endif
 
+/* @ref.impl arch/arm64/include/asm/spinlock.h::arch_spin_lock */
+/* spinlock lock */
 static void __ihk_mc_spinlock_lock_noirq(ihk_spinlock_t *lock)
 {
 	unsigned int tmp;
@@ -61,11 +140,19 @@ static void __ihk_mc_spinlock_lock_noirq(ihk_spinlock_t *lock)
 
 	asm volatile(
 	/* Atomically increment the next ticket. */
+	ARM64_LSE_ATOMIC_INSN(
+	/* LL/SC */
 "	prfm	pstl1strm, %3\n"
 "1:	ldaxr	%w0, %3\n"
 "	add	%w1, %w0, %w5\n"
 "	stxr	%w2, %w1, %3\n"
-"	cbnz	%w2, 1b\n"
+"	cbnz	%w2, 1b\n",
+	/* LSE atomics */
+"	mov	%w2, %w5\n"
+"	ldadda	%w2, %w0, %3\n"
+	__nops(3)
+	)
+
 	/* Did we get the lock? */
 "	eor	%w1, %w0, %w0, ror #16\n"
 "	cbz	%w1, 3f\n"
@@ -85,7 +172,6 @@ static void __ihk_mc_spinlock_lock_noirq(ihk_spinlock_t *lock)
 	: "memory");
 }
 
-/* spinlock lock & interrupt disable & PSTATE.DAIF save */
 #ifdef DEBUG_SPINLOCK
 #define ihk_mc_spinlock_lock(l) ({ unsigned long rc;\
 __kprintf("[%d] call ihk_mc_spinlock_lock %p %s:%d\n", ihk_mc_get_processor_id(), (l), __FILE__, __LINE__); \
@@ -95,6 +181,8 @@ __kprintf("[%d] ret ihk_mc_spinlock_lock\n", ihk_mc_get_processor_id()); rc;\
 #else
 #define ihk_mc_spinlock_lock __ihk_mc_spinlock_lock
 #endif
+
+/* spinlock lock & interrupt disable & PSTATE.DAIF save */
 static unsigned long __ihk_mc_spinlock_lock(ihk_spinlock_t *lock)
 {
 	unsigned long flags;
@@ -106,8 +194,6 @@ static unsigned long __ihk_mc_spinlock_lock(ihk_spinlock_t *lock)
 	return flags;
 }
 
-/* @ref.impl arch/arm64/include/asm/spinlock.h::arch_spin_unlock */
-/* spinlock unlock */
 #ifdef DEBUG_SPINLOCK
 #define ihk_mc_spinlock_unlock_noirq(l) { \
 __kprintf("[%d] call ihk_mc_spinlock_unlock_noirq %p %s:%d\n", ihk_mc_get_processor_id(), (l), __FILE__, __LINE__); \
@@ -117,12 +203,24 @@ __kprintf("[%d] ret ihk_mc_spinlock_unlock_noirq\n", ihk_mc_get_processor_id());
 #else
 #define ihk_mc_spinlock_unlock_noirq __ihk_mc_spinlock_unlock_noirq
 #endif
+
+/* @ref.impl arch/arm64/include/asm/spinlock.h::arch_spin_unlock */
+/* spinlock unlock */
 static void __ihk_mc_spinlock_unlock_noirq(ihk_spinlock_t *lock)
 {
-	asm volatile(
-"	stlrh	%w1, %0\n"
-	: "=Q" (lock->owner)
-	: "r" (lock->owner + 1)
+	unsigned long tmp;
+
+	asm volatile(ARM64_LSE_ATOMIC_INSN(
+	/* LL/SC */
+	"	ldrh	%w1, %0\n"
+	"	add	%w1, %w1, #1\n"
+	"	stlrh	%w1, %0",
+	/* LSE atomics */
+	"	mov	%w1, #1\n"
+	"	staddlh	%w1, %0\n"
+	__nops(1))
+	: "=Q" (lock->owner), "=&r" (tmp)
+	:
 	: "memory");
 
 	preempt_enable();
