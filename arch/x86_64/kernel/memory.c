@@ -2540,6 +2540,30 @@ static void init_normal_area(struct page_table *pt)
 		virt += LARGE_PAGE_SIZE;
 	}
 }
+
+static void init_linux_kernel_mapping(struct page_table *pt)
+{
+	unsigned long map_start, map_end, phys;
+	void *virt;
+
+	/* Map 2 TB for now */
+	map_start = 0;
+	map_end = 0x20000000000;
+
+	virt = (void *)LINUX_PAGE_OFFSET;
+
+	kprintf("Linux kernel virtual: 0x%lx - 0x%lx -> 0x%lx - 0x%lx\n",
+		LINUX_PAGE_OFFSET, LINUX_PAGE_OFFSET + map_end, 0, map_end);
+
+	for (phys = map_start; phys < map_end; phs += LARGE_PAGE_SIZE) {
+		if (set_pt_large_page(pt, virt, phys, PTATTR_WRITABLE) != 0) {
+			kprintf("%s: error setting mapping for 0x%lx\n",
+				__func__, virt);
+		}
+		virt += LARGE_PAGE_SIZE;
+	}
+}
+
 void init_text_area(struct page_table *pt)
 {
 	unsigned long __end, phys, virt;
@@ -2628,6 +2652,7 @@ void init_page_table(void)
 
 	/* Normal memory area */
 	init_normal_area(init_pt);
+	init_linux_kernel_mapping(init_pt);
 	init_fixed_area(init_pt);
 	init_low_area(init_pt);
 	init_text_area(init_pt);

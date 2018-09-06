@@ -43,10 +43,24 @@
 
 #define USER_END           0x0000800000000000UL
 #define TASK_UNMAPPED_BASE 0x00002AAAAAA00000UL
+
+/*
+ * Canonical negative addresses (i.e., the smallest kernel virtual address)
+ * on x86 64 bit mode (in its most restricted 48 bit format) starts from
+ * 0xffff800000000000, but Linux starts mapping physical memory at 0xffff880000000000.
+ * The 0x80000000000 long gap (8TBs, i.e., 16 PGD level entries in the page tables)
+ * is used for Xen hyervisor (see arch/x86/include/asm/page.h) and that is
+ * what we utilize for McKernel.
+ * This gives us the benefit of being able to use Linux kernel virtual
+ * addresses identically as in Linux.
+ *
+ * NOTE: update these also in eclair.c when modified!
+ */
 #define MAP_ST_START       0xffff800000000000UL
-#define MAP_VMAP_START     0xfffff00000000000UL
-#define MAP_FIXED_START    0xffffffff70000000UL
-#define MAP_KERNEL_START   0xffffffff80000000UL
+#define MAP_VMAP_START     0xffff850000000000UL
+#define MAP_FIXED_START    0xffff860000000000UL
+#define MAP_KERNEL_START   0xffff870000000000UL
+#define LINUX_PAGE_OFFSET  0xffff880000000000UL
 #define STACK_TOP(region)  ((region)->user_end)
 
 #define MAP_VMAP_SIZE      0x0000000100000000UL
