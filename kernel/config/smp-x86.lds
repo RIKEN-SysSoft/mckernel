@@ -5,7 +5,7 @@ PHDRS
 }
 SECTIONS
 {
-	. = 0xffff870000001000;
+	. = 0xFFFFFFFFFE801000;
 	_head = .;
 
 	.text : {
