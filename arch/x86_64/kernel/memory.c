@@ -108,6 +108,7 @@ struct page_table {
 };
 
 static struct page_table *init_pt;
+static int init_pt_loaded = 0;
 static ihk_spinlock_t init_pt_lock;
 
 static int use_1gb_page = 0;
@@ -2659,7 +2660,8 @@ void init_page_table(void)
 	init_vsyscall_area(init_pt);
 
 	load_page_table(init_pt);
-	kprintf("Page table is now at %p\n", init_pt);
+	init_pt_loaded = 1;
+	kprintf("Page table is now at 0x%lx\n", init_pt);
 }
 
 extern void __reserve_arch_pages(unsigned long, unsigned long,
@@ -2687,17 +2689,31 @@ void ihk_mc_reserve_arch_pages(struct ihk_page_allocator_desc *pa_allocator,
 unsigned long virt_to_phys(void *v)
 {
 	unsigned long va = (unsigned long)v;
-	
-	if (va >= MAP_KERNEL_START) {
+
+	if (va >= LINUX_PAGE_OFFSET) {
+		return va - LINUX_PAGE_OFFSET;
+	}
+	else if (va >= MAP_KERNEL_START) {
+		//kprintf("%s: MAP_KERNEL_START <= 0x%lx <= LINUX_PAGE_OFFSET\n", __FUNCTION__, va);
 		return va - MAP_KERNEL_START + x86_kernel_phys_base;
-	} else {
+	}
+	else if (va >= MAP_FIXED_START) {
+		return va - MAP_FIXED_START;
+	}
+	else {
+		//kprintf("%s: MAP_ST_START <= 0x%lx <= MAP_FIXED_START\n", __FUNCTION__, va);
 		return va - MAP_ST_START;
 	}
 }
 
 void *phys_to_virt(unsigned long p)
 {
-	return (void *)(p + MAP_ST_START);
+	/* Before loading our own PT use straight mapping */
+	if (!init_pt_loaded) {
+		return (void *)(p + MAP_ST_START);
+	}
+
+	return (void *)(p + LINUX_PAGE_OFFSET);
 }
 
 int copy_from_user(void *dst, const void *src, size_t siz)
