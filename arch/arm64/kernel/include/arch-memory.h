@@ -312,6 +312,8 @@ enum ihk_mc_pt_attribute {
 	PTATTR_FOR_USER   = UL(1) << (PHYS_MASK_SHIFT - 1),
 	/* WriteCombine */
 	PTATTR_WRITE_COMBINED = PTE_ATTRINDX(2),
+	/* converted flag */
+	ARCH_PTATTR_FLIPPED = PTE_PROT_NONE,
 };
 extern enum ihk_mc_pt_attribute attr_mask;
 
