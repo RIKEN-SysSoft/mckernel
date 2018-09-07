@@ -917,6 +917,7 @@ enum ihk_mc_pt_attribute attr_mask =
 	| PTATTR_FILEOFF
 	| PTATTR_LARGEPAGE
 	| PTATTR_NO_EXECUTE
+	| ARCH_PTATTR_FLIPPED
 	;
 #define ATTR_MASK attr_mask
 
@@ -967,14 +968,17 @@ static unsigned long attr_to_lattr_not_flip(enum ihk_mc_pt_attribute attr, int l
 	return 0;
 }
 
-static unsigned long attr_to_l4attr(enum ihk_mc_pt_attribute attr){ return attr_to_l4attr_not_flip(attr ^ attr_flip_bits); }
-static unsigned long attr_to_l3attr(enum ihk_mc_pt_attribute attr){ return attr_to_l3attr_not_flip(attr ^ attr_flip_bits); }
-static unsigned long attr_to_l2attr(enum ihk_mc_pt_attribute attr){ return attr_to_l2attr_not_flip(attr ^ attr_flip_bits); }
-static unsigned long attr_to_l1attr(enum ihk_mc_pt_attribute attr){ return attr_to_l1attr_not_flip(attr ^ attr_flip_bits); }
 static unsigned long attr_to_lattr(enum ihk_mc_pt_attribute attr, int level)
 {
-	return attr_to_lattr_not_flip(attr ^ attr_flip_bits, level);
+	if (!(attr & ARCH_PTATTR_FLIPPED)) {
+		attr = (attr ^ attr_flip_bits) | ARCH_PTATTR_FLIPPED;
+	}
+	return attr_to_lattr_not_flip(attr, level);
 }
+static unsigned long attr_to_l4attr(enum ihk_mc_pt_attribute attr){ return attr_to_lattr(attr, 4); }
+static unsigned long attr_to_l3attr(enum ihk_mc_pt_attribute attr){ return attr_to_lattr(attr, 3); }
+static unsigned long attr_to_l2attr(enum ihk_mc_pt_attribute attr){ return attr_to_lattr(attr, 2); }
+static unsigned long attr_to_l1attr(enum ihk_mc_pt_attribute attr){ return attr_to_lattr(attr, 1); }
 
 static int __set_pt_page(struct page_table *pt, void *virt, unsigned long phys,
                          enum ihk_mc_pt_attribute attr)
