@@ -1001,6 +1001,11 @@ getsigpending(struct thread *thread, int delflag){
 struct sig_pending *
 hassigpending(struct thread *thread)
 {
+	if (list_empty(&thread->sigpending) &&
+	    list_empty(&thread->sigcommon->sigpending)) {
+		return NULL;
+	}
+
 	return getsigpending(thread, 0);
 }
 
@@ -1054,6 +1059,11 @@ check_signal(unsigned long rc, void *regs0, int num)
 	}
 
 	if(regs != NULL && !interrupt_from_user(regs)) {
+		goto out;
+	}
+
+	if (list_empty(&thread->sigpending) &&
+	    list_empty(&thread->sigcommon->sigpending)) {
 		goto out;
 	}
 
