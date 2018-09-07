@@ -1755,7 +1755,7 @@ mcexec_getcredv(int __user *virt)
 	return 0;
 }
 
-int mcexec_create_per_process_data(ihk_os_t os)
+int mcexec_create_per_process_data(ihk_os_t os, struct rpgtable_desc *rpt)
 {
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd = NULL;
@@ -1811,6 +1811,11 @@ int mcexec_create_per_process_data(ihk_os_t os)
 
 	dprintk("%s: PID: %d, counter: %d\n",
 		__FUNCTION__, ppd->pid, atomic_read(&ppd->refcount));
+
+	if (rpt) {
+		ppd->rpgtable = rpt->rpgtable;
+		return mcctrl_clear_pte_range(rpt->start, rpt->len);
+	}
 
 	return 0;
 }
@@ -2638,7 +2643,8 @@ static long mcexec_release_user_space(struct release_user_space_desc *__user arg
 	}
 
 #if 1
-	return clear_pte_range(desc.user_start, desc.user_end - desc.user_start);
+	return mcctrl_clear_pte_range(desc.user_start,
+				      desc.user_end - desc.user_start);
 #else
 	return release_user_space(desc.user_start, desc.user_end - desc.user_start);
 #endif
@@ -3157,7 +3163,8 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 		return mcexec_get_cpu(os);
 
 	case MCEXEC_UP_CREATE_PPD:
-		return mcexec_create_per_process_data(os);
+		return mcexec_create_per_process_data(os,
+						   (struct rpgtable_desc *)arg);
 
 	case MCEXEC_UP_GET_NODES:
 		return mcexec_get_nodes(os);

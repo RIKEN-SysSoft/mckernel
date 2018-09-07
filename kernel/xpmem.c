@@ -83,7 +83,7 @@ int xpmem_open(
 	request.number = __NR_open;
 	request.args[0] = (unsigned long)pathname;
 	request.args[1] = flags;
-	fd = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+	fd = do_syscall(&request, ihk_mc_get_processor_id());
 	if (fd < 0) {
 		XPMEM_DEBUG("__NR_open error: fd=%d", fd);
 		return fd;

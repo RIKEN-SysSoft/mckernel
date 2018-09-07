@@ -2510,7 +2510,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Register per-process structure in mcctrl */
-	if (ioctl(fd, MCEXEC_UP_CREATE_PPD) != 0) {
+	if (ioctl(fd, MCEXEC_UP_CREATE_PPD, NULL)) {
 		perror("creating mcctrl per-process structure");
 		close(fd);
 		exit(1);
@@ -2872,7 +2872,8 @@ out:
 
 static struct uti_desc *uti_desc;
 
-static void kill_thread(unsigned long tid, int sig)
+static void kill_thread(unsigned long tid, int sig,
+			struct thread_data_s *my_thread)
 {
 	struct thread_data_s *tp;
 
@@ -2880,6 +2881,8 @@ static void kill_thread(unsigned long tid, int sig)
 		sig = LOCALSIG;
 
 	for (tp = thread_data; tp; tp = tp->next) {
+		if (tp == my_thread)
+			continue;
 		if (tp->remote_tid == tid) {
 			if (pthread_kill(tp->thread_id, sig) == ESRCH) {
 				printf("%s: ERROR: Thread not found (tid=%ld,sig=%d)\n", __FUNCTION__, tid, sig);
@@ -3272,7 +3275,7 @@ int main_loop(struct thread_data_s *my_thread)
 			break;
 
 		case __NR_kill: // interrupt syscall
-			kill_thread(w.sr.args[1], w.sr.args[2]);
+			kill_thread(w.sr.args[1], w.sr.args[2], my_thread);
 			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
 			break;
 		case __NR_exit:
@@ -3452,6 +3455,7 @@ gettid_out:
 			    case 0: {
 				int ret = 1;
 				struct newprocess_desc npdesc;
+				struct rpgtable_desc rpt;
 
 				ischild = 1;
 				/* Reopen device fd */
@@ -3464,7 +3468,10 @@ gettid_out:
 					goto fork_child_sync_pipe;
 				}
 
-				if (ioctl(fd, MCEXEC_UP_CREATE_PPD) != 0) {
+				rpt.start = w.sr.args[1];
+				rpt.len = w.sr.args[2];
+				rpt.rpgtable = w.sr.args[3];
+				if (ioctl(fd, MCEXEC_UP_CREATE_PPD, &rpt)) {
 					fs->status = -errno;
 					fprintf(stderr, "ERROR: creating PPD %s\n", dev);
 
