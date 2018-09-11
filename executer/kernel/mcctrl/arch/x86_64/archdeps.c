@@ -419,6 +419,8 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	void *__user rctx = (void *__user)param[1];
 	void *__user lctx = (void *__user)param[2];
 #endif /* POSTK_DEBUG_ARCH_DEP_46 */
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_per_proc_data *ppd;
 
 #ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
 	if (copy_from_user(kparam, param, sizeof(kparam))) {

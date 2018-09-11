@@ -102,6 +102,8 @@
 #define SCD_MSG_CPU_RW_REG              0x52
 #define SCD_MSG_CPU_RW_REG_RESP         0x53
 
+#define SCD_MSG_FUTEX_WAKE              0x60
+
 #define DMA_PIN_SHIFT                   21
 
 #define DO_USER_MODE
@@ -124,6 +126,12 @@ enum mcctrl_os_cpu_operation {
 	MCCTRL_OS_CPU_READ_REGISTER,
 	MCCTRL_OS_CPU_WRITE_REGISTER,
 	MCCTRL_OS_CPU_MAX_OP
+};
+
+/* Used to wake-up a Linux thread futex_wait()-ing */
+struct uti_futex_resp {
+	int done;
+	wait_queue_head_t wq;
 };
 
 struct ikc_scd_packet {
@@ -164,6 +172,12 @@ struct ikc_scd_packet {
 		struct {
 			int eventfd_type;
 		};
+
+		/* SCD_MSG_FUTEX_WAKE */
+		struct {
+			void *resp;
+			int *spin_sleep; /* 1: waiting in linux_wait_event() 0: woken up by someone else */
+		} futex;
 	};
 	char padding[8];
 };
@@ -465,6 +479,7 @@ inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(
 
 void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet, 
 		long ret, int stid);
+int clear_pte_range(uintptr_t start, uintptr_t len);
 
 int mcctrl_os_alive(void);
 

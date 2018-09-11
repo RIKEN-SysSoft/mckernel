@@ -346,6 +346,8 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	struct trans_uctx *__user lctx = NULL;
 	struct trans_uctx klctx;
 	void *kparam[3];
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_per_proc_data *ppd;
 
 	if (copy_from_user(kparam, param, sizeof(kparam))) {
 		ret = -EFAULT;
