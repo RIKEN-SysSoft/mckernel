@@ -1035,7 +1035,7 @@ struct thread_data_s {
 	int terminate;
 	int remote_tid;
 	int remote_cpu;
-	int joined;
+	int joined, detached;
 	pthread_mutex_t *lock;
 	pthread_barrier_t *init_ready;
 } *thread_data;
@@ -1881,7 +1881,7 @@ join_all_threads()
 	do {
 		live_thread = 0;
 		for (tp = thread_data; tp; tp = tp->next) {
-			if (tp->joined)
+			if (tp->joined || tp->detached)
 				continue;
 			live_thread = 1;
 			pthread_join(tp->thread_id, NULL);
@@ -3283,6 +3283,12 @@ util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, int remote_t
 		desc.phys_attr = pattr;
 		ioctl(fd, MCEXEC_UP_UTI_ATTR, &desc);
 	}
+
+	/* Synchronize detached state with the McKernel counterpart */
+	if ((rc = pthread_detach(my_thread->thread_id)) != 0) {
+		fprintf(stderr, "%s: pthread_detach returned %d\n", __FUNCTION__, rc);
+	}
+	my_thread->detached = 1; /* Skip join in join_all_threads() */
 
 	if ((rc = switch_ctx(fd, MCEXEC_UP_UTIL_THREAD2, param, lctx, rctx))
 	    < 0) {
