@@ -571,7 +571,7 @@ struct mcctrl_ioctl_getrusage_desc {
 
 #ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_util_thread2() move to arch depend. */
 struct host_thread {
-	struct host_thread *next;
+	struct list_head list;
 	struct mcos_handler_info *handler;
 	int     pid;
 	int     tid;

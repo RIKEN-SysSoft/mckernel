@@ -334,7 +334,7 @@ static inline bool pte_is_write_combined(pte_t pte)
 long
 mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 {
-	extern struct host_thread *host_threads;
+	extern struct list_head host_threads;
 	extern rwlock_t host_thread_lock;
 	int ret = 0;
 	void *usp = get_user_sp();
@@ -385,8 +385,7 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	thread->handler = info;
 
 	write_lock_irqsave(&host_thread_lock, flags);
-	thread->next = host_threads;
-	host_threads = thread;
+	list_add_tail(&thread->list, &host_threads);
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
 	if (copy_from_user(&current_pt_regs()->user_regs,

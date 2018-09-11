@@ -404,7 +404,7 @@ static inline bool pte_is_write_combined(pte_t pte)
 long
 mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 {
-	extern struct host_thread *host_threads;
+	extern struct list_head host_threads;
 	extern rwlock_t host_thread_lock;
 	void *usp = get_user_sp();
 	struct mcos_handler_info *info;
@@ -450,8 +450,7 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	thread->handler = info;
 
 	write_lock_irqsave(&host_thread_lock, flags);
-	thread->next = host_threads;
-	host_threads = thread;
+	list_add_tail(&thread->list, &host_threads);
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
 	/* Make per-proc-data survive over the signal-kill of tracee. Note
