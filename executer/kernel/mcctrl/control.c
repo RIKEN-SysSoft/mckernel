@@ -2599,17 +2599,20 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 }
 #endif /* !POSTK_DEBUG_ARCH_DEP_99 */
 
+/* Return value: 0 if target is uti thread, -EINVAL if not */
 long
 mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 {
 	int tid = task_pid_vnr(current);
 	int pid = task_tgid_vnr(current);
 	unsigned long flags;
-	struct host_thread *thread;
+	struct host_thread *thread_iter, *thread = NULL;
+	long ret = 0;
 
 	read_lock_irqsave(&host_thread_lock, flags);
-	list_for_each_entry(thread, &host_threads, list) {
-		if(thread->pid == pid && thread->tid == tid) {
+	list_for_each_entry(thread_iter, &host_threads, list) {
+		if(thread_iter->pid == pid && thread_iter->tid == tid) {
+			thread = thread_iter;
 			break;
 		}
 	}
@@ -2620,16 +2623,18 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 			restore_tls(thread->ltls);
 		else
 			restore_tls(thread->rtls);
-		return 0;
+		goto out;
 #else /* POSTK_DEBUG_ARCH_DEP_91 */
 		if (arg)
 			restore_fs(thread->lfs);
 		else
 			restore_fs(thread->rfs);
-		return 0;
+		goto out;
 #endif /* POSTK_DEBUG_ARCH_DEP_91 */
 	}
-	return -EINVAL;
+	ret = -EINVAL;
+ out:
+	return ret;
 }
 
 static long
@@ -2700,7 +2705,7 @@ mcexec_terminate_thread(ihk_os_t os, struct terminate_thread_desc * __user arg)
 	long rc;
 	unsigned long flags;
 	struct terminate_thread_desc desc;
-	struct host_thread *thread;
+	struct host_thread *thread_iter, *thread = NULL;
 
     if (copy_from_user(&desc, arg, sizeof(struct terminate_thread_desc))) {
 		rc = -EFAULT;
@@ -2711,8 +2716,9 @@ mcexec_terminate_thread(ihk_os_t os, struct terminate_thread_desc * __user arg)
 
 	/* Stop switching FS registers for uti thread */
 	write_lock_irqsave(&host_thread_lock, flags);
-	list_for_each_entry(thread, &host_threads, list) {
-		if(thread->tid == desc.tid) {
+	list_for_each_entry(thread_iter, &host_threads, list) {
+		if(thread_iter->tid == desc.tid) {
+			thread = thread_iter;
 			break;
 		}
 	}
