@@ -1,0 +1,29 @@
+【Issue#1180 動作確認】
+□ テスト内容
+1. Issueで報告された再現プログラムでの確認
+RT_001: ostest_sched_setaffinity.008
+	親プロセスが子プロセスに対して、子プロセスが実行中のCPUを除いたcpusetを
+	指定したsched_setaffinity()を実行し、即座にマイグレートすることを確認
+
+2. 既存のマイグレーション機能に影響がないことをOSTESTを用いて確認
+RT_002: ostest_sched_setaffinity.001
+	自プロセスをマイグレートできることを確認
+RT_003: ostest_sched_setaffinity.002
+	マイグレートした自プロセスのレジスタの値が保持されていることを確認
+RT_004: ostest_sched_setaffinity.009
+	マイグレートした子プロセスのレジスタの値が保持されていることを確認
+RT_005: ostest_sched_setaffinity.010
+	複数の子プロセスを同一のCPU上にマイグレートしても、
+	それぞれのレジスタの値が保持されていることを確認
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照
+すべての項目をPASSしていることを確認
