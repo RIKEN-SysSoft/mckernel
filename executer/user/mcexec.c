@@ -3032,6 +3032,15 @@ create_tracer(unsigned long user_start, unsigned long user_end)
 	open("/dev/null", O_WRONLY);
 #endif
 
+	/* Initialize list of syscall arguments for syscall_intercept */
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+	if (sizeof(struct syscall_struct) * 11 > page_size) {
+#else /* POSTK_DEBUG_ARCH_DEP_35 */
+	if (sizeof(struct syscall_struct) * 11 > PAGE_SIZE) {
+#endif /* POSTK_DEBUG_ARCH_DEP_35 */
+		fprintf(stderr, "%s: ERROR: param is too large\n", __FUNCTION__);
+		exit(1);
+	}
 	for (i = 1; i <= 10; i++) {
 		param = (struct syscall_struct *)uti_desc->wp + i;
 		*(void **)param = param_top;
