@@ -2599,16 +2599,12 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 long
 mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
 {
-#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
+	unsigned long param[4];
+	int rc;
 	int pid;
 	int tid;
+	long sig;
 	struct task_struct *tsk;
-	unsigned long kparam[4];
-#else /* POSTK_DEBUG_ARCH_DEP_46 */
-	int pid = param[0];
-	int tid = param[1];
-	struct task_struct *tsk = (struct task_struct *)param[3];
-#endif /* POSTK_DEBUG_ARCH_DEP_46 */
 	unsigned long flags;
 	struct host_thread *thread;
 	struct host_thread *prev;
@@ -2616,14 +2612,17 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
 
-#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
-	if (copy_from_user(kparam, param, sizeof(kparam))) {
-		return -EFAULT;
-	}
-	pid = kparam[0];
-	tid = kparam[1];
-	tsk = (struct task_struct *)kparam[3];
-#endif /* POSTK_DEBUG_ARCH_DEP_46 */
+    if (copy_from_user(param, arg, sizeof(unsigned long) * 4)) {
+        return -EFAULT;
+    }
+
+	pid = param[0];
+	tid = param[1];
+	sig = param[2];
+	tsk = (struct task_struct *)param[3];
+
+	//printk("%s: pid=%d,tid=%d,sig=%lx,task=%p\n", __FUNCTION__, pid, tid, sig, tsk);
+
 	write_lock_irqsave(&host_thread_lock, flags);
 	for (prev = NULL, thread = host_threads; thread;
 	     prev = thread, thread = thread->next) {
