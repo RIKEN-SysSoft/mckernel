@@ -395,6 +395,12 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 		goto out;
 	}
 	restore_tls(get_tls_ctx(rctx));
+
+	/* Make per-proc-data survive over the signal-kill of tracee. Note
+	   that the singal-kill calls close() and then release_hanlde()
+	   destroys it. */
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+
 out:
 	return ret;
 }

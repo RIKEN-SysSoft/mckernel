@@ -454,6 +454,11 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	host_threads = thread;
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
+	/* Make per-proc-data survive over the signal-kill of tracee. Note
+	   that the singal-kill calls close() and then release_hanlde()
+	   destroys it. */
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+
 	return 0;
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_99 */
