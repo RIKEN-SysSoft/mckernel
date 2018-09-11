@@ -2055,6 +2055,43 @@ int clear_pte_range(uintptr_t start, uintptr_t len)
 	return ret;
 }
 
+int release_user_space(uintptr_t start, uintptr_t len)
+{
+	struct mm_struct *mm = current->mm;
+	struct vm_area_struct *vma;
+	uintptr_t addr;
+	uintptr_t end;
+	int error;
+	int ret;
+
+	ret = 0;
+	//down_read(&mm->mmap_sem);
+	addr = start;
+	while (addr < (start + len)) {
+		vma = find_vma(mm, addr);
+		if (!vma) {
+			break;
+		}
+
+		if (addr < vma->vm_start) {
+			addr = vma->vm_start;
+		}
+
+		end = vma->vm_end;
+		if (addr < end) {
+			if ((error = vm_munmap(addr, end - addr))) {
+				printk("%s: ERROR: vm_munmap failed (%d)\n", __func__, error);
+			}
+			if (ret == 0) {
+				ret = error;
+			}
+		}
+		addr = vma->vm_end;
+	}
+	//up_read(&mm->mmap_sem);
+	return ret;
+}
+
 /**
  * \brief Write out the core file image to a core file.
  *

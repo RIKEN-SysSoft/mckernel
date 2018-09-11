@@ -1965,14 +1965,14 @@ struct uti_desc {
 	int exit; /* Used to tell the tracer to exit */
 };
 
-static int create_tracer();
+static int create_tracer(unsigned long user_start, unsigned long user_end);
 int uti_pfd[2];
 struct uti_desc *uti_desc = (void*)-1;
+static struct program_load_desc *desc;
 
 int main(int argc, char **argv)
 {
 	int ret = 0;
-	struct program_load_desc *desc;
 	int envs_len;
 	char *envs;
 	char *args;
@@ -2147,9 +2147,9 @@ int main(int argc, char **argv)
 	if (opendev() == -1)
 		exit(EXIT_FAILURE);
 
-#if 1
-	/* Create tracer before anonymous inode is mapped */
-	if ((error = create_tracer())) {
+#if 0
+	/* TODO: Remove this after memory corruption bug is fixed */
+	if ((error = create_tracer(0, 0))) {
 		fprintf(stderr, "%s: create tracer returned %d\n", __FUNCTION__, error);
 		return error;
 	}
@@ -2878,7 +2878,7 @@ debug_sig(int s)
 #endif
 
 static int
-create_tracer()
+create_tracer(unsigned long user_start, unsigned long user_end)
 {
 	int tpid;
 	int rc;
@@ -2894,6 +2894,10 @@ create_tracer()
 	syscall_args args;
 #endif /* !POSTK_DEBUG_ARCH_DEP_92 */
 	unsigned long buf;
+	struct release_user_space_desc release_desc = {
+		.user_start = desc->user_start,
+		.user_end = desc->user_end
+	};
 
 	/* Perform mmap() before fork() in create_tracer() */
 	uti_desc = mmap(NULL, sizeof(struct uti_desc), PROT_READ | PROT_WRITE,
@@ -2954,6 +2958,12 @@ create_tracer()
 		return 0;
 	}
 	close(uti_pfd[0]);
+#if 1 /* debug */
+		if (ioctl(fd, MCEXEC_UP_RELEASE_USER_SPACE, &release_desc) != 0) {
+			fprintf(stderr, "%s: ERROR: MCEXEC_UP_RELEASE_USER_SPACE returned %d\n", __FUNCTION__, errno);
+			exit(1);
+		}
+#endif
 	tpid = fork();
 	if (tpid) {
 		if (tpid == -1) {
@@ -2978,9 +2988,14 @@ create_tracer()
 	}
 #endif
 
+#if 0
+	if (ioctl(fd, MCEXEC_UP_RELEASE_USER_SPACE, &release_desc) != 0) {
+		fprintf(stderr, "%s: ERROR: MCEXEC_UP_RELEASE_USER_SPACE returned %d\n", __FUNCTION__, errno);
+		exit(1);
+	}
+#endif
 	sem_wait(&uti_desc->arg);
 	if (uti_desc->exit) { /* When uti is not used */
-		fprintf(stderr, "%s: exiting tid=%d\n", __FUNCTION__, gettid());
 		exit(0);
 	}
 
@@ -3062,7 +3077,7 @@ create_tracer()
 				   return_syscall()
 			*/
 			if (exited == 1 || exited == 2) {
-				fprintf(stderr, "%s:  calling MCEXEC_UP_TERMINATE_THREAD,exited=%d,code=%lx\n", __FUNCTION__, exited, code);
+				__dprintf("calling MCEXEC_UP_TERMINATE_THREAD,exited=%d,code=%lx\n", exited, code);
 				if (ioctl(fd, MCEXEC_UP_TERMINATE_THREAD, term_param) != 0) {
 					fprintf(stderr, "%s: INFO: MCEXEC_UP_TERMINATE_THREAD returned %d\n", __FUNCTION__, errno);
 				}
@@ -3230,11 +3245,12 @@ util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, int remote_t
 	void *param[6];
 	int rc = 0;
 	unsigned long buf;
-
-#if 0
-	if ((error = create_tracer())) {
-		fprintf(stderr, "%s: create_tracer returned %d\n", __FUNCTION__, error);
-		rc = error; goto out;
+	
+#if 1
+	/* Create tracer */
+	if ((rc = create_tracer(desc->user_start, desc->user_end))) {
+		fprintf(stderr, "%s: create_tracer returned %d\n", __FUNCTION__, rc);
+		goto out;
 	}
 #endif
 #ifdef POSTK_DEBUG_ARCH_DEP_35
@@ -3813,12 +3829,14 @@ gettid_out:
 					goto fork_child_sync_pipe;
 				}
 
-				/* Create tracer before anonymous inode is mapped */
-				if ((ret = create_tracer())) {
+#if 1
+				/* Create tracer */
+				if ((ret = create_tracer(desc->user_start, desc->user_end))) {
 					fs->status = ret;
 					fprintf(stderr, "%s: create tracer returned %d\n", __FUNCTION__, ret);
 					goto fork_child_sync_pipe;
 				}
+#endif
 				
 				if (ioctl(fd, MCEXEC_UP_CREATE_PPD) != 0) {
 					fs->status = -errno;
