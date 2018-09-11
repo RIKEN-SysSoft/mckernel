@@ -9182,6 +9182,8 @@ int util_thread(struct uti_attr *arg)
 		struct uti_attr attr;
 	} kattr;
 
+	thread->uti_state = UTI_STATE_PROLOGUE;
+
 	context = (volatile unsigned long *)ihk_mc_alloc_pages(1,
 	                                                      IHK_MC_AP_NOWAIT);
 	if (!context) {
@@ -9209,15 +9211,20 @@ int util_thread(struct uti_attr *arg)
 	}
 	request.args[3] = (unsigned long)uti_clv;
 	request.args[4] = uti_desc;
-	thread->thread_offloaded = 1;
+	thread->uti_state = UTI_STATE_RUNNING_IN_LINUX;
 	rc = do_syscall(&request, ihk_mc_get_processor_id(), 0);
 	dkprintf("%s: returned from do_syscall,tid=%d,rc=%lx\n", __FUNCTION__, thread->tid, rc);
 
+	thread->uti_state = UTI_STATE_EPILOGUE;
+
 	util_show_syscall_profile();
 
-	thread->thread_offloaded = 0;
+	/* These are written by mcexec_util_thread1() */
 	free_address = context[0];
 	free_size = context[1];
+	thread->uti_refill_tid = context[2];
+	dkprintf("%s: mcexec worker tid=%d\n", __FUNCTION__, context[2]);
+	
 	ihk_mc_free_pages((void *)context, 1);
 	kfree(uti_clv);
 

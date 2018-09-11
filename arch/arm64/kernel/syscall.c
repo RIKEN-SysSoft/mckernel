@@ -1585,7 +1585,7 @@ done:
 		return 0;
 	}
 
-	if (tthread->thread_offloaded) {
+	if (tthread->uti_state == UTI_STATE_RUNNING_IN_LINUX) {
 		if (!tthread->proc->nohost) {
 			interrupt_syscall(tthread, sig);
 		}
