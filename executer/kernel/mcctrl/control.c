@@ -2648,11 +2648,10 @@ mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
 		goto err;
 	}
 	mcctrl_delete_per_thread_data(ppd, tsk);
-#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
-	__return_syscall(usrdata->os, packet, kparam[2], tid);
-#else /* POSTK_DEBUG_ARCH_DEP_46 */
-	__return_syscall(usrdata->os, packet, param[2], tid);
-#endif /* POSTK_DEBUG_ARCH_DEP_46 */
+	printk("%s: calling __return_syscall, tid=%d, sig=%lx, ppd->refcount=%d\n", __FUNCTION__, tid, sig, atomic_read(&ppd->refcount));
+	__return_syscall(usrdata->os, packet, sig, tid);
+	printk("%s: packet=%p,channels=%p,ref=%d,desc=%p\n", __FUNCTION__, packet, usrdata->channels, packet->ref, (usrdata->channels + packet->ref)->c);
+
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 						   (usrdata->ikc2linux[smp_processor_id()] ?
 							usrdata->ikc2linux[smp_processor_id()] :
