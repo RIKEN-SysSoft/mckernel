@@ -254,6 +254,13 @@ struct release_user_space_desc {
 	unsigned long user_end;
 };
 
+struct terminate_thread_desc {
+	int pid;
+	int tid;
+	long sig;
+	unsigned long tsk; /* struct task_struct * */
+};
+
 enum perf_ctrl_type {
 	PERF_CTRL_SET,
 	PERF_CTRL_GET,
