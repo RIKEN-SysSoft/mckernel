@@ -2844,10 +2844,11 @@ kill_thread(unsigned long tid, int sig)
 
 	for (tp = thread_data; tp; tp = tp->next) {
 		if (tp->remote_tid == tid) {
-			pthread_kill(tp->thread_id, sig);
-			break;
-		}
-	}
+			if (pthread_kill(tp->thread_id, sig) == ESRCH) {
+				printf("%s: ERROR: Thread not found (tid=%ld,sig=%d)\n", __FUNCTION__, tid, sig);
+ 			}
+ 		}
+ 	}
 }
 
 static int
