@@ -1,0 +1,322 @@
+Linuxへのスレッド生成
+結合テスト仕様
+
+CT01 システムコールテスト mmap/munmap/futex/exit
+□ CT01001 mmap/munmap/futex/exit START
+   Linuxにスレッドを生成 (pthread_create)。成功
+□ CT01002 pthread_create OK
+   get_system() の戻り値が -1 (Linux で動作)
+□ CT01003 get_system OK
+   mmap 発行。戻り値が (void *)-1 以外
+□ CT01004 mmap OK
+   mmap 領域に "mmap OK" を書き込む
+   Linuxスレッドからメインスレッドに対して cond_signal
+   メインスレッドにて、mmap 領域参照 (mmap 領域の内容を表示)
+□ CT01005 mmap OK
+   メインスレッドからLinuxスレッドに cond_signal
+   Linux スレッドにて mmap 領域を munmap。戻り値が 0
+□ CT01006 munmap OK
+   Linuxスレッドからメインスレッドに対して cond_signal
+   メインスレッドが mmap 領域を参照 -> SIGSEGV発生
+□ CT01007 munmap OK (SIGSEGV)
+   Linux スレッド終了
+   メインスレッドにて pthread_join。成功
+□ CT01008 exit (pthread_join) OK
+□ CT01009 futex (pthread_mutex/pthread_cond) OK
+□ CT01010 END
+
+CT02 システムコールテスト mremap
+□ CT02001 mremap START
+   Linuxにスレッドを生成 (pthread_create)。成功
+□ CT02002 pthread_create OK
+   get_system() の戻り値が -1 (Linux で動作)
+□ CT02003 get_system OK
+   mmap 発行。戻り値が (void *)-1 以外
+□ CT02004 mmap OK
+   mmap 領域の縮小予定の領域に "mmap OK" を書き込む
+   Linuxスレッドからメインスレッドに対して cond_signal
+   メインスレッドにて、mmap 領域の書き込んだ領域を参照 (mmap 領域の内容を表示)
+□ CT02005 mmap OK
+   メインスレッドからLinuxスレッドに cond_signal
+   Linux スレッドにて mmap 領域を mremap して縮小。戻り値が 0
+□ CT02006 mremap OK
+   Linuxスレッドからメインスレッドに対して cond_signal
+   メインスレッドが mmap 領域の縮小した領域を参照 -> SIGSEGV発生
+□ CT02007 mremap OK (SIGSEGV)
+   メインスレッドからLinuxスレッドに cond_signal
+   Linux スレッドにて mmap 領域を munmap。戻り値が 0
+□ CT02008 munmap OK
+   Linux スレッド終了
+   メインスレッドにて pthread_join。成功
+□ CT02009 pthread_join OK
+□ CT02010 END
+
+CT03 システムコールテスト mprotect
+□ CT03001 mprotect START
+   Linuxにスレッドを生成 (pthread_create)。成功
+□ CT03002 pthread_create OK
+   get_system() の戻り値が -1 (Linux で動作)
+□ CT03003 get_system OK
+   mmap 発行。戻り値が (void *)-1 以外
+□ CT03004 mmap OK
+   mmap 領域に "mmap OK" を書き込む
+   Linuxスレッドからメインスレッドに対して cond_signal
+   メインスレッドにて、mmap 領域を参照 (mmap 領域の内容を表示)
+□ CT03005 mmap OK
+   メインスレッドからLinuxスレッドに cond_signal
+   Linux スレッドにて mmap 領域を mprotect して参照権のみ設定。戻り値が 0
+□ CT03006 mprotect OK
+   Linuxスレッドからメインスレッドに対して cond_signal
+   メインスレッドが mmap 領域に書き込み -> SIGSEGV発生
+□ CT03007 mremap OK (SIGSEGV)
+   メインスレッドからLinuxスレッドに cond_signal
+   Linux スレッドにて mmap 領域を munmap。戻り値が 0
+□ CT03008 munmap OK
+   Linux スレッド終了
+   メインスレッドにて pthread_join。成功
+□ CT03009 pthread_join OK
+□ CT03010 END
+
+CT04 システムコールテスト brk
+□ CT04001 brk START
+   Linuxにスレッドを生成 (pthread_create)。成功
+□ CT04002 pthread_create OK
+   get_system() の戻り値が -1 (Linux で動作)
+□ CT04003 get_system OK
+   sbrk(0)発行。戻り値を保存…(A)
+□ CT04004 sbrk OK
+   sbrk(4096)発行。戻り値を保存…(B)
+   (A)の場所に "sbrk OK" を書き込む
+   Linuxスレッドからメインスレッドに対して cond_signal
+   メインスレッドにて、(A) 領域を参照 (領域の内容を表示)
+□ CT04005 sbrk OK
+   メインスレッドにてsbrk(0)発行。戻り値を保存…(C)
+   メインスレッドからLinuxスレッドに cond_signal
+   Linuxスレッドでsbrk(0)発行。戻り値が(C)と一致している
+□ CT04006 sbrk OK
+   Linux スレッド終了
+   メインスレッドにて pthread_join。成功
+□ CT04007 pthread_join OK
+□ CT04008 END
+
+CT05 システムコールテスト gettid
+□ CT05001 gettid START
+   McKernelにスレッドを生成 (pthread_create)。成功
+□ CT05002 pthread_create OK
+   get_system() の戻り値が 0 (McKernel で動作)
+□ CT05003 get_system OK
+   gettid() の戻り値を保存…(A)
+□ CT05004 gettid OK %d 
+   util_migrate_inter_kernel 発行。戻り値が 0
+□ CT05005 util_migrate_inter_kernel OK
+   get_system() の戻り値が -1 (Linux で動作)
+□ CT05006 get_system OK
+   gettid() の戻り値が(A)と一致
+□ CT05007 gettid OK %d 
+   Linux スレッド終了
+   メインスレッドにて pthread_join。成功
+□ CT05008 pthread_join OK
+□ CT05009 END
+
+CT06 システムコールテスト exit_group
+□ CT06001 exit_group START
+   fork して子プロセス生成。以下、子プロセスの処理
+   Linuxにスレッドを生成 (pthread_create)。成功
+□ CT06002 pthread_create OK
+   get_system() の戻り値が -1 (Linux で動作)
+□ CT06003 get_system OK
+   Linuxスレッドが exit_group(99)
+□ CT06004 pthread_join NG が表示されない
+   親プロセスが wait。子プロセスの終了ステータスが 99
+□ CT06004 exit_group OK
+□ CT06005 END
+
+CT07 システムコールテスト エラー系
+□ CT07001 error START
+   Linuxにスレッドを生成 (pthread_create)。成功
+□ CT07002 pthread_create OK
+   get_system() の戻り値が -1 (Linux で動作)
+□ CT07003 get_system OK
+   clone() の戻り値が -1 で errno が ENOSYS
+□ CT07004 clone OK %d 
+   fork() の戻り値が -1 で errno が ENOSYS
+□ CT07005 fork OK %d 
+   vfork() の戻り値が -1 で errno が ENOSYS
+
+□  CT07006 vfork OK %d 
+   execve() の戻り値が -1 で errno が ENOSYS
+※ syscall_interceptの不具合によりvforkはSegmentation faultを起こすため、除外している
+
+□ CT07007 execve OK %d 
+   Linux スレッド終了
+   メインスレッドにて pthread_join。成功
+□ CT07008 pthread_join OK
+□ CT07009 END
+
+CT08 uti_attr_t関連
+uti_attr_t の動作は実行環境によって変化するため、機械的にOK/NGの判断ができない。
+このため、affinityとschedulerを目視確認して、OK/NGを判断して下さい。
+UTI_FLAG_SAME_NUMA_DOMAIN のテストを容易にするため、mcreboot では特定のNUMA
+ドメインにCPUを寄せて下さい。
+また、UTI_FLAG_SAME_L1のテストを容易にするために、論理コアを1つ以上空けるように
+CPUを割り当てて下さい。
+
+sched cpu には Linux に生成したスレッドの sched_getaffinity の結果を表示する。
+sched には同じく sched_getscheduler の結果を表示する。
+
+□ CT08001 UTI_FLAG_NUMA_SET
+   sched cpu に NUMA domain 2 に属すLinux CPU集合が表示されること。
+   sched=0 であること。
+□ CT08002 UTI_FLAG_NUMA_SET|UTI_FLAG_EXCLUSIVE_CPU
+   sched cpu に NUMA domain 2 に属すLinux CPUの内、1つが表示されること。
+   (CT08001 のCPU集合のメンバであること)
+   sched=1 であること。
+□ CT08003 UTI_FLAG_NUMA_SET|UTI_FLAG_EXCLUSIVE_CPU(2)
+   sched cpu に NUMA domain 2 に属すLinux CPUの内、1つが表示されること。
+   sched cpu は CT08002 とは異なるCPUが表示されていること(ラウンドロビン)。
+   sched=1 であること。
+□ CT08004 UTI_FLAG_SAME_NUMA_DOMAIN
+   sched cpu にMcKernelに割り当てたCPUと同じNUMAドメインに属すLinux CPU集合が
+   表示されること。
+   sched=0 であること。
+□ CT08005 UTI_FLAG_SAME_NUMA_DOMAIN|UTI_FLAG_CPU_INTENSIVE
+   sched cpu に NUMA domain 2 に属すLinux CPUの内、1つが表示されること。
+   (CT08004 のCPU集合のメンバであること)
+   sched=0 であること。
+□ CT08006 UTI_FLAG_DIFFERENT_NUMA_DOMAIN
+   sched cpu にMcKernelに割り当てたCPUと異なるNUMAドメインに属すLinux CPU集合が
+   表示されること。
+   sched=0 であること。
+□ CT08007 UTI_FLAG_DIFFERENT_NUMA_DOMAIN|UTI_FLAG_HIGH_PRIORITY
+   sched cpu にMcKernelに割り当てたCPUと異なるNUMAドメインに属すLinux CPU集合の
+   内、1つが表示されること。(CT08006 のCPU集合のメンバであること)
+   sched=1 であること。
+□ CT08008 UTI_FLAG_SAME_L1
+   sched cpu にMcKernelの親プロセスが実行するCPUとL1キャッシュを共有するLinuxの
+   CPU集合が表示されること。(McKernelへのCPU割り当て状態に依存するが、2論理コア
+   /物理コアの場合、高々1CPUのみが該当する。該当コアが存在しない場合は、全ての
+   コアが対象となる)。
+   sched=0 であること。
+□ CT08009 UTI_FLAG_SAME_L1|UTI_FLAG_NON_COOPERATIVE
+   sched cpu にMcKernelの親プロセスが実行するCPUとL1キャッシュを共有するLinuxの
+   CPUの内1つが表示されること。(CT08008のCPU集合のメンバ。但し、CT08008で該当
+   CPUが存在しない場合は、全てのコアが対象になる)。
+   sched=0 であること。
+□ CT08010 UTI_FLAG_SAME_L2
+   sched cpu にMcKernelの親プロセスが実行するCPUとL2キャッシュを共有するLinuxの
+   CPU集合が表示されること。(McKernelへのCPU割り当て状態に依存するが、2論理コア
+   /物理コアの場合、高々1CPUのみが該当する。該当コアが存在しない場合は、全ての
+   コアが対象となる)。
+   sched=0 であること。
+□ CT08011 UTI_FLAG_SAME_L2|UTI_FLAG_CPU_INTENSIVE
+   sched cpu にMcKernelの親プロセスが実行するCPUとL2キャッシュを共有するLinuxの
+   CPUの内1つが表示されること。(CT08010のCPU集合のメンバ。但し、CT08010で該当
+   CPUが存在しない場合は、全てのコアが対象になる)。
+   sched=0 であること。
+□ CT08012 UTI_FLAG_SAME_L3
+   sched cpu にMcKernelの親プロセスが実行するCPUとL3キャッシュを共有するLinuxの
+   CPU集合が表示されること。
+   sched=0 であること。
+□ CT08013 UTI_FLAG_SAME_L3|UTI_FLAG_CPU_INTENSIVE
+   sched cpu にMcKernelの親プロセスが実行するCPUとL3キャッシュを共有するLinuxの
+   CPUの内1つが表示されること。(CT08012のCPU集合のメンバ)。
+   sched=0 であること。
+□ CT08014 UTI_FLAG_DIFFERENT_L1
+   sched cpu にMcKernelの親プロセスが実行するCPUとL1キャッシュを共有しない
+   LinuxのCPU集合が表示されること。
+   sched=0 であること。
+□ CT08015 UTI_FLAG_DIFFERENT_L1|UTI_FLAG_CPU_INTENSIVE
+   sched cpu にMcKernelの親プロセスが実行するCPUとL1キャッシュを共有しない
+   LinuxのCPUの内、1つが表示されること(CT08014のCPU集合のメンバ)。
+   sched=0 であること。
+□ CT08016 UTI_FLAG_DIFFERENT_L2
+   sched cpu にMcKernelの親プロセスが実行するCPUとL2キャッシュを共有しない
+   LinuxのCPU集合が表示されること。
+   コアが対象となる)。
+   sched=0 であること。
+□ CT08017 UTI_FLAG_DIFFERENT_L2|UTI_FLAG_CPU_INTENSIVE
+   sched cpu にMcKernelの親プロセスが実行するCPUとL2キャッシュを共有しない
+   LinuxのCPUの内、1つが表示されること(CT08016のCPU集合のメンバ)。
+   sched=0 であること。
+□ CT08018 UTI_FLAG_DIFFERENT_L3
+   sched cpu にMcKernelの親プロセスが実行するCPUとL3キャッシュを共有しない
+   LinuxのCPU集合が表示されること。
+   sched=0 であること。
+□ CT08019 UTI_FLAG_DIFFERENT_L3|UTI_FLAG_CPU_INTENSIVE
+   sched cpu にMcKernelの親プロセスが実行するCPUとL3キャッシュを共有しない
+   LinuxのCPUの内、1つが表示されること(CT08018のCPU集合のメンバ)。
+   sched=0 であること。
+
+CT09 プログレス処理オーバーヘッド測定
+
+MPI通信処理とMPIプログレス処理とのロック競合を模すことで、MPIプログレス処理の
+オーバーヘッドを測定する。
+
+MPI通信処理のステップは以下の通り。
+(1) 1usの間オブジェクトをロック
+(2) 30usの間計算を行う
+MPIプログレス処理のステップは以下の通り。
+(1) 10msに一回オブジェクトをロック
+(2) 通信が終了したタイミングに重なった場合は2usの処理を行う。そうでない
+    場合は直ちにアンロックする
+
+CT10 pthread_cond_{wait,signal}() [OK]
+
+CT11 measure time of system calls [OK]
+
+CT12 child (helper thread) futex() wait [OK]
+
+CT13 parent futex() wait [OK]
+
+CT14 child pthread_lock wait [OK]
+
+CT15 parent pthread_lock wait [OK]
+
+CT16 child pthread_cond_wait [OK]
+Linuxはcondで起きる。その後mutexで起きたりしない。
+
+CT17 parent pthread_cond_wait [OK]
+McKernelはcondで起きる。その後mutexで起きる。
+
+CT18 child (helper thread) futex() wait with FUTEX_WAIT_BITSET | FUTEX_CLOCK_REALTIME and non-zero timeout [OK]
+
+CT19 child (helper thread) futex() wait with FUTEX_WAIT_BITSET and non-zero timeout [OK]
+
+CT20 child (helper thread) futex() wait with FUTEX_WAIT and non-zero timeout [OK]
+
+CT21 progress-threadのlockタイミングを変化させたテスト
+
+CT22 compute-threadのlockタイミングを変化させたテスト
+
+CT23 progress-threadのcond_waitタイミングを変化させたテスト
+
+CT24 compute-threadのcond_waitタイミングを変化させたテスト
+
+CT25 MPI_Isend()でのプロセス終了時メモリ破壊不具合のスケルトン。パラメタは以下の通り。
+* 1MB x 250 (./CT25 20 250) 
+* 128K x 1024 (./CT25 17 1024)
+
+CT26 終了時レースコンディションのテスト
+* thread->statusがPS_EXITEDの場合もhold_thread()を呼んでデッドロックする不具合のテスト
+
+CT27 プログレス処理オーバーヘッド測定
+* CT09の複数プロセス版。async progressによってオーバーサブスクライブになった場合のオーバーヘッドを測定する。
+
+CT28 taskset -c 0-7 lock-inc-lock x 10000
+
+CT29 no reverse offload
+
+CT30 CT21にopenmpスレッドを追加したテスト
+
+CT31 pthread_cond_waitオーバーヘッド測定
+* waiterとwakerのCPUは、それぞれ、WAITER_CPU、WAKER_CPUで設定
+
+CT32 futex waitオーバーヘッド測定
+* waiterとwakerのCPUは、それぞれ、WAITER_CPU、WAKER_CPUで設定
+
+CT33 futex wakeオーバーヘッド測定
+* waiterとwakerのCPUは、それぞれ、WAITER_CPU、WAKER_CPUで設定
+
+CT34 繰り返しpthread_create
+
+CT35 LD_PRELOADでsyscall_interceptを用いたsoをつけた場合のテスト
