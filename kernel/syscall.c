@@ -460,8 +460,6 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 
 			/* send result */
 			req2.number = __NR_mmap;
-#define PAGER_RESUME_PAGE_FAULT	0x0101
-			req2.args[0] = PAGER_RESUME_PAGE_FAULT;
 			req2.args[1] = syscall_ret;
 			/* The current thread is the requester and only the waiting thread
 			 * may serve the request */
