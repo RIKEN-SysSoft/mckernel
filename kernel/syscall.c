@@ -2465,12 +2465,6 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
         return -EINVAL;
 	}
 
-	cpuid = obtain_clone_cpuid(&old->cpu_set);
-    if (cpuid == -1) {
-		kprintf("do_fork,core not available\n");
-        return -EAGAIN;
-    }
-
 	/* N-th creation put the new on Linux CPU. It's turned off when zero is 
 	   set to uti_thread_rank. */
 	if (oldproc->uti_thread_rank) {
@@ -2482,6 +2476,12 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 			kprintf("%s: mod_clone is set to %d\n", __FUNCTION__, old->mod_clone);
 		}
 	}
+
+	cpuid = obtain_clone_cpuid(&old->cpu_set, old->mod_clone == SPAWN_TO_REMOTE && oldproc->uti_use_last_cpu);
+    if (cpuid == -1) {
+		kprintf("do_fork,core not available\n");
+        return -EAGAIN;
+    }
 
 	new = clone_thread(old, curpc,
 	                    newsp ? newsp : cursp, clone_flags);

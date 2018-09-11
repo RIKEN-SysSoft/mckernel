@@ -58,7 +58,7 @@ static int cpuid_head = 1;
 
 extern int num_processors;
 
-int obtain_clone_cpuid(cpu_set_t *cpu_set)
+int obtain_clone_cpuid(cpu_set_t *cpu_set, int use_last)
 {
 	int min_queue_len = -1;
 	int i, min_cpu = -1;
@@ -82,7 +82,7 @@ int obtain_clone_cpuid(cpu_set_t *cpu_set)
 
 		v = get_cpu_local_var(cpuid_head);
 		ihk_mc_spinlock_lock_noirq(&v->runq_lock);
-		dkprintf("%s: cpu=%d,runq_len=%d,runq_reserved=%d\n", __FUNCTION__, i, v->runq_len, v->runq_reserved);
+		dkprintf("%s: cpu=%d,runq_len=%d,runq_reserved=%d\n", __FUNCTION__, cpuid_head, v->runq_len, v->runq_reserved);
 		if (min_queue_len == -1 || v->runq_len + v->runq_reserved < min_queue_len) {
 			min_queue_len = v->runq_len + v->runq_reserved;
 			min_cpu = cpuid_head;
