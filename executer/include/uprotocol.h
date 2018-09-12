@@ -55,8 +55,8 @@
 #define MCEXEC_UP_SYS_UMOUNT     0x30a02915
 #define MCEXEC_UP_SYS_UNSHARE    0x30a02916
 
-#define MCEXEC_UP_UTIL_THREAD1   0x30a02920
-#define MCEXEC_UP_UTIL_THREAD2   0x30a02921
+#define MCEXEC_UP_UTI_GET_CTX    0x30a02920
+#define MCEXEC_UP_UTI_SAVE_FS    0x30a02921
 #define MCEXEC_UP_SIG_THREAD     0x30a02922
 #define MCEXEC_UP_SYSCALL_THREAD 0x30a02924
 #define MCEXEC_UP_TERMINATE_THREAD 0x30a02925
@@ -336,6 +336,28 @@ struct kuti_attr {
 
 struct uti_attr_desc {
 	unsigned long phys_attr;
+};
+
+struct uti_ctx {
+	union {
+		char ctx[4096]; /* TODO: Get the size from config.h */
+		struct {
+			int uti_refill_tid;
+		};
+	};
+}; 
+
+struct uti_get_ctx_desc {
+	unsigned long rp_rctx; /* Remote physical address of remote context */
+	void *rctx; /* Remote context */
+	void *lctx; /* Local context */
+	int uti_refill_tid;
+	unsigned long key; /* OUT: struct task_struct* of mcexec thread, used to search struct host_thread */
+};
+
+struct uti_save_fs_desc {
+	void *rctx; /* Remote context */
+	void *lctx; /* Local context */
 };
 
 #endif

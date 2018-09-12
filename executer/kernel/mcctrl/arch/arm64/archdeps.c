@@ -9,7 +9,7 @@
 #endif /* POSTK_DEBUG_ARCH_DEP_96 */
 #include <linux/ptrace.h>
 #include <linux/uaccess.h>
-#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_util_thread2() move to arch depend. */
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_uti_save_fs() move to arch depend. */
 #include <linux/slab.h>
 #include <linux/rwlock_types.h>
 #endif /* POSTK_DEBUG_ARCH_DEP_99 */
@@ -27,7 +27,7 @@
 #endif
 #endif /* POSTK_DEBUG_ARCH_DEP_83 */
 
-#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_util_thread2() move to arch depend. */
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_uti_save_fs() move to arch depend. */
 //#define DEBUG_PPD
 #ifdef DEBUG_PPD
 #define pr_ppd(msg, tid, ppd) do { printk("%s: " msg ",tid=%d,refc=%d\n", __FUNCTION__, tid, atomic_read(&ppd->refcount)); } while(0)
@@ -339,38 +339,38 @@ static inline bool pte_is_write_combined(pte_t pte)
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_12 */
 
-#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_util_thread2() move to arch depend. */
-long
-mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_uti_save_fs() move to arch depend. */
+long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc, struct file *file)
 {
 	extern struct list_head host_threads;
 	extern rwlock_t host_thread_lock;
-	int ret = 0;
+	int rc = 0;
 	void *usp = get_user_sp();
 	struct mcos_handler_info *info;
 	struct host_thread *thread;
 	unsigned long flags;
-	void **__user param = (void **__user)arg;
-	struct trans_uctx *__user rctx = NULL;
-	struct trans_uctx *__user lctx = NULL;
-	struct trans_uctx klctx;
-	void *kparam[3];
+	struct uti_save_fs_desc desc;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
+	struct trans_uctx klctx;
+	struct trans_uctx *__user rctx = NULL;
+	struct trans_uctx *__user lctx = NULL;
 
-	if (copy_from_user(kparam, param, sizeof(kparam))) {
-		ret = -EFAULT;
+	if (copy_from_user(&desc, udesc, sizeof(struct uti_save_fs_desc))) {
+		printk("%s: Error: copy_from_user failed\n", __FUNCTION__);
+		rc = -EFAULT;
 		goto out;
 	}
-	rctx = (void *__user)kparam[1];
-	lctx = (void *__user)kparam[2];
+	rctx = desc.rctx;
+	lctx = desc.lctx;
 
 	klctx.cond = 0;
 	klctx.fregsize = 0;
 	klctx.regs = current_pt_regs()->user_regs;
 
 	if (copy_to_user(lctx, &klctx, sizeof(klctx))) {
-		ret = -EFAULT;
+		printk("%s: Error: copy_to_user failed\n", __FUNCTION__);
+		rc = -EFAULT;
 		goto out;
 	}
 #ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
@@ -399,7 +399,7 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 
 	if (copy_from_user(&current_pt_regs()->user_regs,
 			   &rctx->regs, sizeof(rctx->regs))) {
-		ret = -EFAULT;
+		rc = -EFAULT;
 		goto out;
 	}
 	restore_tls(get_tls_ctx(rctx));
@@ -410,6 +410,6 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 	pr_ppd("get", task_pid_vnr(current), ppd);
 out:
-	return ret;
+	return rc;
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_99 */

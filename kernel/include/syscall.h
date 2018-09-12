@@ -613,6 +613,15 @@ void arch_ptrace_syscall_enter(struct thread *thread, long setret);
 long arch_ptrace_syscall_exit(struct thread *thread, long setret);
 #endif /* POSTK_DEBUG_ARCH_DEP_110 */
 
+struct uti_ctx {
+	union {
+		char ctx[4096];
+		struct {
+			int uti_refill_tid;
+		};
+	};
+}; 
+
 struct move_pages_smp_req {
 	unsigned long count;
 	const void **user_virt_addr;

@@ -579,7 +579,7 @@ struct mcctrl_ioctl_getrusage_desc {
 	size_t size_rusage;
 };
 
-#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_util_thread2() move to arch depend. */
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_uti_save_fs() move to arch depend. */
 struct host_thread {
 	struct list_head list;
 	struct mcos_handler_info *handler;

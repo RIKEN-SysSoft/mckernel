@@ -9169,14 +9169,12 @@ int util_show_syscall_profile()
 
 int util_thread(struct uti_attr *arg)
 {
-	volatile unsigned long *context;
-	unsigned long pcontext;
-	struct cpu_local_var *uti_clv;
+	struct uti_ctx *rctx = NULL;
+	unsigned long rp_rctx;
+	struct cpu_local_var *uti_clv = NULL;
 	struct syscall_request request IHK_DMA_ALIGN;
 	long rc;
 	struct thread *thread = cpu_local_var(current);
-	unsigned long free_address;
-	unsigned long free_size;
 	struct kuti_attr {
 		long parent_cpuid;
 		struct uti_attr attr;
@@ -9184,25 +9182,25 @@ int util_thread(struct uti_attr *arg)
 
 	thread->uti_state = UTI_STATE_PROLOGUE;
 
-	context = (volatile unsigned long *)ihk_mc_alloc_pages(1,
-	                                                      IHK_MC_AP_NOWAIT);
-	if (!context) {
-		return -ENOMEM;
+	rctx = kmalloc(sizeof(struct uti_ctx), IHK_MC_AP_NOWAIT);
+	if (!rctx) {
+		rc = -ENOMEM;
+		goto out;
 	}
-	pcontext = virt_to_phys((void *)context);
-	save_uctx((void *)context, NULL);
+	rp_rctx = virt_to_phys((void *)rctx);
+	save_uctx((void *)rctx->ctx, NULL);
 
 	/* Create a copy of clv and replace clv with it when the Linux thread calls in a McKernel function */
 	uti_clv = kmalloc(sizeof(struct cpu_local_var), IHK_MC_AP_NOWAIT);
 	if (!uti_clv) {
-		ihk_mc_free_pages((void *)context, 1);
-		return -ENOMEM;
+		rc = -ENOMEM;
+		goto out;
 	}
 	memcpy(uti_clv, get_this_cpu_local_var(), sizeof(struct cpu_local_var));
 
 	request.number = __NR_sched_setaffinity;
 	request.args[0] = 0;
-	request.args[1] = pcontext;
+	request.args[1] = rp_rctx;
 	request.args[2] = 0;
 	if (arg) {
 		memcpy(&kattr.attr, arg, sizeof(struct uti_attr));
@@ -9219,14 +9217,15 @@ int util_thread(struct uti_attr *arg)
 
 	util_show_syscall_profile();
 
-	/* These are written by mcexec_util_thread1() */
-	free_address = context[0];
-	free_size = context[1];
-	thread->uti_refill_tid = context[2];
-	dkprintf("%s: mcexec worker tid=%d\n", __FUNCTION__, context[2]);
+	/* Save it before freed */
+	thread->uti_refill_tid = rctx->uti_refill_tid;
+	dkprintf("%s: mcexec worker tid=%d\n", __FUNCTION__, thread->uti_refill_tid);
 	
-	ihk_mc_free_pages((void *)context, 1);
+	kfree(rctx);
+	rctx = NULL;
+
 	kfree(uti_clv);
+	uti_clv = NULL;
 
 	if (rc >= 0) {
 		if (rc & 0x100000000) { /* exit_group */
@@ -9236,11 +9235,6 @@ int util_thread(struct uti_attr *arg)
 		} else {
 			/* exit or killed-by-signal detected */
 			dkprintf("%s: exit or killed by signal, pid=%d,tid=%d,rc=%lx\n", __FUNCTION__, thread->proc->pid, thread->tid, rc);
-			request.number = __NR_sched_setaffinity;
-			request.args[0] = 1;
-			request.args[1] = free_address;
-			request.args[2] = free_size;
-			do_syscall(&request, ihk_mc_get_processor_id(), 0);
 			do_exit(rc);
 		}
 	} else if (rc == -ERESTARTSYS) { 
@@ -9249,8 +9243,17 @@ int util_thread(struct uti_attr *arg)
 		thread->proc->nohost = 1;
 		do_exit(rc);
 	} else {
-		kprintf("%s: unknown error (%ld)\n", __FUNCTION__, rc);
+		kprintf("%s: ERROR: do_syscall() failed (%ld)\n", __FUNCTION__, rc);
 	}
+
+ out:
+	if (rctx) {
+		kfree(rctx);
+	}
+	if (uti_clv) {
+		kfree(uti_clv);
+	}
+
 	return rc;
 }
 

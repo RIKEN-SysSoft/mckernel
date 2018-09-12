@@ -4,7 +4,7 @@
 #ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
 #include <linux/uaccess.h>
 #endif /* POSTK_DEBUG_ARCH_DEP_46 */
-#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_util_thread2() move to arch depend. */
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_uti_save_fs() move to arch depend. */
 #include <linux/slab.h>
 #include <linux/rwlock_types.h>
 #endif /* POSTK_DEBUG_ARCH_DEP_99 */
@@ -21,7 +21,7 @@
 #endif
 #endif /* POSTK_DEBUG_ARCH_DEP_83 */
 
-#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_util_thread2() move to arch depend. */
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_uti_save_fs() move to arch depend. */
 //#define DEBUG_PPD
 #ifdef DEBUG_PPD
 #define pr_ppd(msg, tid, ppd) do { printk("%s: " msg ",tid=%d,refc=%d\n", __FUNCTION__, tid, atomic_read(&ppd->refcount)); } while(0)
@@ -329,6 +329,14 @@ get_fs_ctx(void *ctx)
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_91 */
 
+unsigned long
+get_rsp_ctx(void *ctx)
+{
+	struct trans_uctx *tctx = ctx;
+
+	return tctx->rsp;
+}
+
 #ifdef POSTK_DEBUG_ARCH_DEP_83 /* arch depend translate_rva_to_rpa() move */
 int translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva,
 		unsigned long *rpap, unsigned long *pgsizep)
@@ -409,39 +417,30 @@ static inline bool pte_is_write_combined(pte_t pte)
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_12 */
 
-#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_util_thread2() move to arch depend. */
-long
-mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_uti_save_fs() move to arch depend. */
+long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc, struct file *file)
 {
 	extern struct list_head host_threads;
 	extern rwlock_t host_thread_lock;
+	int rc = 0;
 	void *usp = get_user_sp();
 	struct mcos_handler_info *info;
 	struct host_thread *thread;
 	unsigned long flags;
-	void **__user param = (void **__user )arg;
-#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
-	void *__user rctx = NULL;
-	void *__user lctx = NULL;
-	void *kparam[3];
-#else /* POSTK_DEBUG_ARCH_DEP_46 */
-	void *__user rctx = (void *__user)param[1];
-	void *__user lctx = (void *__user)param[2];
-#endif /* POSTK_DEBUG_ARCH_DEP_46 */
+	struct uti_save_fs_desc desc;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
 
-#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
-	if (copy_from_user(kparam, param, sizeof(kparam))) {
-		return -EFAULT;
+	if(copy_from_user(&desc, udesc, sizeof(struct uti_save_fs_desc))) {
+		printk("%s: Error: copy_from_user failed\n", __FUNCTION__);
+		rc = -EFAULT;
+		goto out;
 	}
-	rctx = (void *__user)kparam[1];
-	lctx = (void *__user)kparam[2];
-#endif /* POSTK_DEBUG_ARCH_DEP_46 */
+
 #ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
-	save_tls_ctx(lctx);
+	save_tls_ctx(desc.lctx);
 #else /* POSTK_DEBUG_ARCH_DEP_91 */
-	save_fs_ctx(lctx);
+	save_fs_ctx(desc.lctx);
 #endif /* POSTK_DEBUG_ARCH_DEP_91 */
 	info = ihk_os_get_mcos_private_data(file);
 	thread = kmalloc(sizeof(struct host_thread), GFP_KERNEL);
@@ -450,11 +449,11 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	thread->tid = task_pid_vnr(current);
 	thread->usp = (unsigned long)usp;
 #ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
-	thread->ltls = get_tls_ctx(lctx);
-	thread->rtls = get_tls_ctx(rctx);
+	thread->ltls = get_tls_ctx(desc.lctx);
+	thread->rtls = get_tls_ctx(desc.lctx);
 #else /* POSTK_DEBUG_ARCH_DEP_91 */
-	thread->lfs = get_fs_ctx(lctx);
-	thread->rfs = get_fs_ctx(rctx);
+	thread->lfs = get_fs_ctx(desc.lctx);
+	thread->rfs = get_fs_ctx(desc.lctx);
 #endif /* POSTK_DEBUG_ARCH_DEP_91 */
 	thread->handler = info;
 
@@ -467,6 +466,7 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	   destroys it. */
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 	pr_ppd("get", task_pid_vnr(current), ppd);
-	return 0;
+ out:
+	return rc;
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_99 */

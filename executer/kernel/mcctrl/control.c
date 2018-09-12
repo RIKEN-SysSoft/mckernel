@@ -80,8 +80,8 @@ int mcctrl_ikc_set_recv_cpu(ihk_os_t os, int cpu);
 int syscall_backward(struct mcctrl_usrdata *, int, unsigned long, unsigned long,
                      unsigned long, unsigned long, unsigned long,
                      unsigned long, unsigned long *);
-#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_util_thread2() move to arch depend. */
-long mcexec_util_thread2(ihk_os_t, unsigned long, struct file *);
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_uti_save_fs() move to arch depend. */
+long mcexec_uti_save_fs(ihk_os_t, struct uti_save_fs_desc __user *, struct file *);
 #endif /* POSTK_DEBUG_ARCH_DEP_99 */
 
 static long mcexec_prepare_image(ihk_os_t os,
@@ -308,7 +308,7 @@ struct mcos_handler_info {
 };
 
 struct mcos_handler_info;
-#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_util_thread2() move to arch depend. */
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_uti_save_fs() move to arch depend. */
 LIST_HEAD(host_threads); /* Used for FS switch */
 DEFINE_RWLOCK(host_thread_lock);
 #else /* POSTK_DEBUG_ARCH_DEP_99 */
@@ -1261,6 +1261,9 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 					}
 					break;
 				}
+			}
+			if (!wqhln) {
+				dprintk("%s: uti: INFO: target worker (tid=%d) not found in wq_list\n", __FUNCTION__, packet->req.ttid);
 			}
 		} else {
 			if (!wqhln) {
@@ -2494,85 +2497,72 @@ extern void restore_fs(unsigned long fs);
 extern void save_fs_ctx(void *);
 extern unsigned long get_fs_ctx(void *);
 #endif /* POSTK_DEBUG_ARCH_DEP_91 */
+extern unsigned long get_rsp_ctx(void *);
 
-long
-mcexec_util_thread1(ihk_os_t os, unsigned long arg, struct file *file)
+long mcexec_uti_get_ctx(ihk_os_t os, struct uti_get_ctx_desc __user *udesc)
 {
-	void **__user uparam = (void ** __user)arg;
-	void *param[7];
-	unsigned long p_rctx;
+	struct uti_get_ctx_desc desc;
 	unsigned long phys;
-	void *__user u_rctx;
-	void *rctx;
+	struct uti_ctx *rctx;
 	int rc = 0;
-	unsigned long free_address;
-	unsigned long free_size;
 	unsigned long icurrent = (unsigned long)current;
 
-	if(copy_from_user(param, uparam, sizeof(void *) * 7)) {
-		return -EFAULT;
-	}
-	p_rctx = (unsigned long)param[0];
-	u_rctx = (void *__user)param[1];
-	free_address = (unsigned long)param[4];
-	free_size = (unsigned long)param[5];
-
-	phys = ihk_device_map_memory(ihk_os_to_dev(os), p_rctx, PAGE_SIZE);
-#ifdef CONFIG_MIC
-	rctx = ioremap_wc(phys, PAGE_SIZE);
-#else
-	rctx = ihk_device_map_virtual(ihk_os_to_dev(os), phys, PAGE_SIZE, NULL, 0);
-#endif
-	if(copy_to_user(u_rctx, rctx, PAGE_SIZE) ||
-	   copy_to_user((unsigned long *)(uparam + 3), &icurrent,
-	                sizeof(unsigned long)))
+	if(copy_from_user(&desc, udesc, sizeof(struct uti_get_ctx_desc))) {
 		rc = -EFAULT;
+		goto out;
+	}
 
-	((unsigned long *)rctx)[0] = free_address;
-	((unsigned long *)rctx)[1] = free_size;
-	((unsigned long *)rctx)[2] = (unsigned long)param[6];
+	phys = ihk_device_map_memory(ihk_os_to_dev(os), desc.rp_rctx, sizeof(struct uti_ctx));
+#ifdef CONFIG_MIC
+	rctx = ioremap_wc(phys, sizeof(struct uti_ctx));
+#else
+	rctx = ihk_device_map_virtual(ihk_os_to_dev(os), phys, sizeof(struct uti_ctx), NULL, 0);
+#endif
+	if (copy_to_user(desc.rctx, rctx->ctx, sizeof(struct uti_ctx))) {
+		rc = -EFAULT;
+		goto unmap_and_out;
+	}
 
+	if (copy_to_user(&udesc->key, &icurrent, sizeof(unsigned long))) {
+		rc = -EFAULT;
+		goto unmap_and_out;
+	}
+	
+	rctx->uti_refill_tid = desc.uti_refill_tid;
+
+ unmap_and_out:
 #ifdef CONFIG_MIC
 	iounmap(rctx);
 #else
-	ihk_device_unmap_virtual(ihk_os_to_dev(os), rctx, PAGE_SIZE);
+	ihk_device_unmap_virtual(ihk_os_to_dev(os), rctx, sizeof(struct uti_ctx));
 #endif
-	ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
-
+	ihk_device_unmap_memory(ihk_os_to_dev(os), phys, sizeof(struct uti_ctx));
+ out:
 	return rc;
 }
 
-#ifndef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_util_thread2() move to arch depend. */
-long
-mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
+#ifndef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_uti_save_fs() move to arch depend. */
+long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc, struct file *file)
 {
+	int rc = 0;
 	void *usp = get_user_sp();
 	struct mcos_handler_info *info;
 	struct host_thread *thread;
 	unsigned long flags;
-	void **__user param = (void **__user )arg;
-#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
-	void *__user rctx = NULL;
-	void *__user lctx = NULL;
-	void *kparam[3];
-#else /* POSTK_DEBUG_ARCH_DEP_46 */
-	void *__user rctx = (void *__user)param[1];
-	void *__user lctx = (void *__user)param[2];
-#endif /* POSTK_DEBUG_ARCH_DEP_46 */
+	struct uti_save_fs_desc desc;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
 
-#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
-	if (copy_from_user(kparam, param, sizeof(kparam))) {
-		return -EFAULT;
+	if(copy_from_user(&desc, udesc, sizeof(struct uti_save_fs_desc))) {
+		printk("%s: Error: copy_from_user failed\n", __FUNCTION__);
+		rc = -EFAULT;
+		goto out;
 	}
-	rctx = (void *__user)kparam[1];
-	lctx = (void *__user)kparam[2];
-#endif /* POSTK_DEBUG_ARCH_DEP_46 */
+
 #ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
-	save_tls_ctx(lctx);
+	save_tls_ctx(desc.lctx);
 #else /* POSTK_DEBUG_ARCH_DEP_91 */
-	save_fs_ctx(lctx);
+	save_fs_ctx(desc.lctx);
 #endif /* POSTK_DEBUG_ARCH_DEP_91 */
 	info = ihk_os_get_mcos_private_data(file);
 	thread = kmalloc(sizeof(struct host_thread), GFP_KERNEL);
@@ -2581,11 +2571,11 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	thread->tid = task_pid_vnr(current);
 	thread->usp = (unsigned long)usp;
 #ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
-	thread->ltls = get_tls_ctx(lctx);
-	thread->rtls = get_tls_ctx(rctx);
+	thread->ltls = get_tls_ctx(desc.lctx);
+	thread->rtls = get_tls_ctx(desc.lctx);
 #else /* POSTK_DEBUG_ARCH_DEP_91 */
-	thread->lfs = get_fs_ctx(lctx);
-	thread->rfs = get_fs_ctx(rctx);
+	thread->lfs = get_fs_ctx(desc.lctx);
+	thread->rfs = get_fs_ctx(desc.lctx);
 #endif /* POSTK_DEBUG_ARCH_DEP_91 */
 	thread->handler = info;
 
@@ -2608,7 +2598,8 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	*/
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 	pr_ppd("get", task_pid_vnr(current), ppd);
-	return 0;
+ out:
+	return rc;
 }
 #endif /* !POSTK_DEBUG_ARCH_DEP_99 */
 
@@ -3258,11 +3249,11 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 	case MCEXEC_UP_SYS_UNSHARE:
 		return mcexec_sys_unshare((struct sys_unshare_desc *)arg);
 
-	case MCEXEC_UP_UTIL_THREAD1:
-		return mcexec_util_thread1(os, arg, file);
+	case MCEXEC_UP_UTI_GET_CTX:
+		return mcexec_uti_get_ctx(os, (struct uti_get_ctx_desc *)arg);
 
-	case MCEXEC_UP_UTIL_THREAD2:
-		return mcexec_util_thread2(os, arg, file);
+	case MCEXEC_UP_UTI_SAVE_FS:
+		return mcexec_uti_save_fs(os, (struct uti_save_fs_desc *)arg, file);
 
 	case MCEXEC_UP_SIG_THREAD:
 		return mcexec_sig_thread(os, arg, file);
