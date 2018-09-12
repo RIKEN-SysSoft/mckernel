@@ -706,7 +706,7 @@ static int copy_user_pte(void *arg0, page_table_t src_pt, pte_t *src_ptep, void 
 
 	error = ihk_mc_pt_set_range(args->new_vm->address_space->page_table,
 								args->new_vm, pgaddr, pgaddr + pgsize, phys, attr,
-								pgshift, args->range);
+								pgshift, args->range, 0);
 	if (error) {
 		args->fault_addr = (intptr_t)pgaddr;
 		goto out;
@@ -820,7 +820,7 @@ int update_process_page_table(struct process_vm *vm,
 	flags = ihk_mc_spinlock_lock(&vm->page_table_lock);
 	error = ihk_mc_pt_set_range(vm->address_space->page_table, vm,
 								(void *)range->start, (void *)range->end, phys, attr,
-								range->pgshift, range);
+								range->pgshift, range, 0);
 	if (error) {
 		kprintf("update_process_page_table:ihk_mc_pt_set_range failed. %d\n", error);
 		goto out;
@@ -2016,7 +2016,7 @@ retry:
 	else {
 		error = ihk_mc_pt_set_range(vm->address_space->page_table, vm,
 		                            pgaddr, pgaddr + pgsize, phys,
-		                            attr, range->pgshift, range);
+		                            attr, range->pgshift, range, 0);
 		if (error) {
 			kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):set_range failed. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
 			goto out;
@@ -2291,7 +2291,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 								thread->vm, (void *)(end - minsz),
 								(void *)end, virt_to_phys(stack),
 								arch_vrflag_to_ptattr(vrflag, PF_POPULATE, NULL),
-								LARGE_PAGE_SHIFT, range
+								LARGE_PAGE_SHIFT, range, 0
 								);
 
 	if (error) {
