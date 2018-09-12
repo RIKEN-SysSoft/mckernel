@@ -123,6 +123,10 @@ AC_DEFUN([PAC_SET_HEADER_LIB_PATH_SYSCALL_INTERCEPT],[
 		        [PAC_APPEND_FLAG([-L${with_$1}/lib64 -Wl,-rpath,${with_$1}/lib64],[LDFLAGS_SYSCALL_INTERCEPT])])
                  ])
           ])
+
+    AS_IF([test -n "${with_$1}" || test -n "${with_$1_include}" || test -n "${with_$1_lib}"],
+	      [WITH_SYSCALL_INTERCEPT=yes],
+	      [WITH_SYSCALL_INTERCEPT=no])
 ])
 
 IHK_VERSION=IHK_VERSION_m4
@@ -142,7 +146,23 @@ AS_IF([test "x$numa_lib_found" != "xyes"],
 	[AC_MSG_ERROR([Unable to find NUMA library, missing numactl-devel?])])
 
 PAC_SET_HEADER_LIB_PATH([mpi])
+
 PAC_SET_HEADER_LIB_PATH_SYSCALL_INTERCEPT([syscall_intercept])
+
+if test "x$WITH_SYSCALL_INTERCEPT" == "xno" ; then
+	AC_CHECK_LIB([syscall_intercept],[syscall_no_intercept],[syscall_intercept_lib_found=yes],[syscall_intercept_lib_found=no],[-lcapstone -ldl])
+	AS_IF([test "x$syscall_intercept_lib_found" != "xyes"],
+		[AC_MSG_NOTICE([libsyscall_intercept.so not found])])
+
+	AC_CHECK_HEADER([libsyscall_intercept_hook_point.h],[syscall_intercept_header_found=yes],[syscall_intercept_header_found=no])
+	AS_IF([test "x$syscall_intercept_header_found" != "xyes"],
+		[AC_MSG_NOTICE([libsyscall_intercept_hook_point.h not found])])
+
+	AS_IF([test "x$syscall_intercept_lib_found" == "xyes" && test "x$syscall_intercept_header_found" == "xyes"],
+		[WITH_SYSCALL_INTERCEPT=yes],
+		[WITH_SYSCALL_INTERCEPT=no])
+fi
+
 
 AC_ARG_WITH([kernelsrc],
   AC_HELP_STRING(
@@ -471,6 +491,13 @@ else
 	AC_MSG_NOTICE([perf is disabled])
 fi
 
+if test "x$WITH_SYSCALL_INTERCEPT" = "xyes" ; then
+	AC_DEFINE([WITH_SYSCALL_INTERCEPT],[1],[whether or not syscall_intercept library is linked])
+	AC_MSG_NOTICE([syscall_intercept library is linked])
+else
+	AC_MSG_NOTICE([syscall_intercept library isn't linked])
+fi
+
 if test "x$MCKERNEL_INCDIR" != "x" ; then
 # POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
 #   AC_DEFINE_UNQUOTED(MCKERNEL_INCDIR,"$MCKERNEL_INCDIR",[McKernel specific headers])
@@ -521,6 +548,7 @@ AC_SUBST(LDFLAGS_SYSCALL_INTERCEPT)
 AC_SUBST(ENABLE_MCOVERLAYFS)
 AC_SUBST(ENABLE_RUSAGE)
 AC_SUBST(ENABLE_QLMPI)
+AC_SUBST(WITH_SYSCALL_INTERCEPT)
 
 AC_SUBST(IHK_VERSION)
 AC_SUBST(MCKERNEL_VERSION)

@@ -629,6 +629,7 @@ IHK_RELEASE_DATE
 DCFA_VERSION
 MCKERNEL_VERSION
 IHK_VERSION
+WITH_SYSCALL_INTERCEPT
 ENABLE_QLMPI
 ENABLE_RUSAGE
 ENABLE_MCOVERLAYFS
@@ -3531,6 +3532,7 @@ fi
 
 
 
+
 # Check whether --with-syscall_intercept was given.
 if test "${with_syscall_intercept+set}" = set; then :
   withval=$with_syscall_intercept; case "$withval" in #(
@@ -3640,6 +3642,81 @@ fi
 
 fi
 
+fi
+
+    if test -n "${with_syscall_intercept}" || test -n "${with_syscall_intercept_include}" || test -n "${with_syscall_intercept_lib}"; then :
+  WITH_SYSCALL_INTERCEPT=yes
+else
+  WITH_SYSCALL_INTERCEPT=no
+fi
+
+
+if test "x$WITH_SYSCALL_INTERCEPT" == "xno" ; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for syscall_no_intercept in -lsyscall_intercept" >&5
+$as_echo_n "checking for syscall_no_intercept in -lsyscall_intercept... " >&6; }
+if ${ac_cv_lib_syscall_intercept_syscall_no_intercept+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lsyscall_intercept -lcapstone -ldl $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char syscall_no_intercept ();
+int
+main ()
+{
+return syscall_no_intercept ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_syscall_intercept_syscall_no_intercept=yes
+else
+  ac_cv_lib_syscall_intercept_syscall_no_intercept=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_syscall_intercept_syscall_no_intercept" >&5
+$as_echo "$ac_cv_lib_syscall_intercept_syscall_no_intercept" >&6; }
+if test "x$ac_cv_lib_syscall_intercept_syscall_no_intercept" = xyes; then :
+  syscall_intercept_lib_found=yes
+else
+  syscall_intercept_lib_found=no
+fi
+
+	if test "x$syscall_intercept_lib_found" != "xyes"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: libsyscall_intercept.so not found" >&5
+$as_echo "$as_me: libsyscall_intercept.so not found" >&6;}
+fi
+
+	ac_fn_c_check_header_mongrel "$LINENO" "libsyscall_intercept_hook_point.h" "ac_cv_header_libsyscall_intercept_hook_point_h" "$ac_includes_default"
+if test "x$ac_cv_header_libsyscall_intercept_hook_point_h" = xyes; then :
+  syscall_intercept_header_found=yes
+else
+  syscall_intercept_header_found=no
+fi
+
+
+	if test "x$syscall_intercept_header_found" != "xyes"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: libsyscall_intercept_hook_point.h not found" >&5
+$as_echo "$as_me: libsyscall_intercept_hook_point.h not found" >&6;}
+fi
+
+	if test "x$syscall_intercept_lib_found" == "xyes" && test "x$syscall_intercept_header_found" == "xyes"; then :
+  WITH_SYSCALL_INTERCEPT=yes
+else
+  WITH_SYSCALL_INTERCEPT=no
+fi
 fi
 
 
@@ -4729,6 +4806,17 @@ else
 $as_echo "$as_me: perf is disabled" >&6;}
 fi
 
+if test "x$WITH_SYSCALL_INTERCEPT" = "xyes" ; then
+
+$as_echo "#define WITH_SYSCALL_INTERCEPT 1" >>confdefs.h
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: syscall_intercept library is linked" >&5
+$as_echo "$as_me: syscall_intercept library is linked" >&6;}
+else
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: syscall_intercept library isn't linked" >&5
+$as_echo "$as_me: syscall_intercept library isn't linked" >&6;}
+fi
+
 if test "x$MCKERNEL_INCDIR" != "x" ; then
 # POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
 #   AC_DEFINE_UNQUOTED(MCKERNEL_INCDIR,"$MCKERNEL_INCDIR",[McKernel specific headers])
@@ -4784,6 +4872,7 @@ fi
 
 
 	# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
+
 
 
 

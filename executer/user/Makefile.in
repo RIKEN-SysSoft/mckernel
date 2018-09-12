@@ -29,16 +29,21 @@ CPPFLAGS_SYSCALL_INTERCEPT=@CPPFLAGS_SYSCALL_INTERCEPT@
 LDFLAGS_SYSCALL_INTERCEPT=@LDFLAGS_SYSCALL_INTERCEPT@
 RPATH=$(shell echo $(LDFLAGS)|awk '{for(i=1;i<=NF;i++){if($$i~/^-L/){w=$$i;sub(/^-L/,"-Wl,-rpath,",w);print w}}}')
 VPATH=@abs_srcdir@
-TARGET=mcexec libsched_yield ldump2mcdump.so syscall_intercept.so
+TARGET=mcexec libsched_yield ldump2mcdump.so
 @uncomment_if_ENABLE_MEMDUMP@TARGET+=eclair
 LIBS=@LIBS@
 IHKDIR ?= $(VPATH)/../../../ihk/linux/include/
 MCEXEC_LIBS=-lmcexec -lrt -lnuma -pthread -L@abs_builddir@/../../../ihk/linux/user -lihk -Wl,-rpath,$(MCKERNEL_LIBDIR)
 ENABLE_QLMPI=@ENABLE_QLMPI@
+WITH_SYSCALL_INTERCEPT=@WITH_SYSCALL_INTERCEPT@
 
 ifeq ($(ENABLE_QLMPI),yes)
 	MCEXEC_LIBS += -lmpi
 	TARGET+= libqlmpi.so ql_server ql_mpiexec_start ql_mpiexec_finalize ql_talker libqlfort.so
+endif
+
+ifeq ($(WITH_SYSCALL_INTERCEPT),yes)
+	TARGET += syscall_intercept.so
 endif
 
 ifeq ($(ARCH), arm64)
@@ -138,7 +143,9 @@ ifeq ($(ENABLE_QLMPI),yes)
 	install -m 755 ql_mpiexec_finalize $(BINDIR)
 	install -m 755 ql_talker $(SBINDIR)
 endif
+ifeq ($(WITH_SYSCALL_INTERCEPT),yes)
 	install -m 755 syscall_intercept.so $(MCKERNEL_LIBDIR)
+endif
 	@uncomment_if_ENABLE_MEMDUMP@install -m 755 eclair $(BINDIR)
 	@uncomment_if_ENABLE_MEMDUMP@install -m 755 vmcore2mckdump $(BINDIR)
 
