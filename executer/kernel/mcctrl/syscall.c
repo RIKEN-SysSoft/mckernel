@@ -299,8 +299,19 @@ static int __notify_syscall_requester(ihk_os_t os, struct ikc_scd_packet *packet
 				IHK_SCD_REQ_THREAD_SPINNING,
 				IHK_SCD_REQ_THREAD_TO_BE_WOKEN)) {
 		dprintk("%s: no need to send IKC message for PID %d\n",
-				__FUNCTION__, packet->pid);
+			   __FUNCTION__, packet->pid);
 		return ret;
+	}
+
+	/* Wait until the status goes back to IHK_SCD_REQ_THREAD_SPINNING or
+	   IHK_SCD_REQ_THREAD_DESCHEDULED because two wake-up attempts are competing.
+	   Note that mcexec_terminate_thread() and remote page fault and
+	   returning EINTR would compete. */
+	if (res->req_thread_status == IHK_SCD_REQ_THREAD_TO_BE_WOKEN) {
+		printk("%s: INFO: someone else is waking up the McKernel thread, "
+				"pid: %d, req status: %lu, syscall nr: %lu\n",
+				__FUNCTION__, packet->pid,
+				res->req_thread_status, packet->req.number);
 	}
 
 	/* The thread is not spinning any more, make sure it's descheduled */
@@ -544,6 +555,23 @@ err:
 #endif /* POSTK_DEBUG_ARCH_DEP_106 */
 	return syscall_ret;
 }
+
+#if 0 /* debug */
+/* Info of Linux counterpart of migrated-to-Linux thread */
+struct host_thread {
+	struct host_thread *next;
+	struct mcos_handler_info *handler;
+	int     pid;
+	int     tid;
+	unsigned long usp;
+	unsigned long lfs;
+	unsigned long rfs;
+	struct task_struct *task;
+};
+
+extern struct host_thread *host_threads;
+extern rwlock_t host_thread_lock;
+#endif
 
 int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t reason)
 {
@@ -814,6 +842,8 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	/* Look up per-process structure */
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 	if (!ppd) {
+		kprintf("%s: INFO: no per-process structure for pid %d (tid %d), try to use pid %d\n", 
+				__FUNCTION__, task_tgid_vnr(current), task_pid_vnr(current), vma->vm_mm->owner->pid);
 		ppd = mcctrl_get_per_proc_data(usrdata, vma->vm_mm->owner->pid);
 	}
 

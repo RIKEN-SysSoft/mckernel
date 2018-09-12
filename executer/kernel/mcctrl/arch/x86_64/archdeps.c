@@ -21,6 +21,15 @@
 #endif
 #endif /* POSTK_DEBUG_ARCH_DEP_83 */
 
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_util_thread2() move to arch depend. */
+//#define DEBUG_PPD
+#ifdef DEBUG_PPD
+#define pr_ppd(msg, tid, ppd) do { printk("%s: " msg ",tid=%d,refc=%d\n", __FUNCTION__, tid, atomic_read(&ppd->refcount)); } while(0)
+#else
+#define pr_ppd(msg, tid, ppd) do { } while(0)
+#endif
+#endif /* POSTK_DEBUG_ARCH_DEP_99 */
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
 static struct vdso_image *vdso_image_64;
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 23)
@@ -457,7 +466,7 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	   that the singal-kill calls close() and then release_hanlde()
 	   destroys it. */
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
-
+	pr_ppd("get", task_pid_vnr(current), ppd);
 	return 0;
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_99 */

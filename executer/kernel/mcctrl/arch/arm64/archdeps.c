@@ -27,6 +27,15 @@
 #endif
 #endif /* POSTK_DEBUG_ARCH_DEP_83 */
 
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_util_thread2() move to arch depend. */
+//#define DEBUG_PPD
+#ifdef DEBUG_PPD
+#define pr_ppd(msg, tid, ppd) do { printk("%s: " msg ",tid=%d,refc=%d\n", __FUNCTION__, tid, atomic_read(&ppd->refcount)); } while(0)
+#else
+#define pr_ppd(msg, tid, ppd) do { } while(0)
+#endif
+#endif /* POSTK_DEBUG_ARCH_DEP_99 */
+
 #define D(fmt, ...) printk("%s(%d) " fmt, __func__, __LINE__, ##__VA_ARGS__)
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 0, 0)
@@ -399,7 +408,7 @@ mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
 	   that the singal-kill calls close() and then release_hanlde()
 	   destroys it. */
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
-
+	pr_ppd("get", task_pid_vnr(current), ppd);
 out:
 	return ret;
 }

@@ -77,6 +77,7 @@
 #endif /* !POSTK_DEBUG_ARCH_DEP_77 */
 #include "../include/uprotocol.h"
 #include <ihk/ihk_host_user.h>
+#include "../include/uti.h"
 #include <getopt.h>
 #include "archdep.h"
 #include "arch_args.h"
@@ -187,14 +188,6 @@ struct sigfd {
 
 struct sigfd *sigfdtop;
 
-
-struct syscall_struct {
-	int number;
-	unsigned long args[6];
-	unsigned long ret;
-	unsigned long uti_clv; /* copy of a clv in McKernel */
-};
-
 #ifdef NCCS
 #undef NCCS
 #endif
@@ -235,6 +228,7 @@ static struct rlimit rlim_stack;
 static char *mpol_bind_nodes = NULL;
 static int uti_thread_rank = 0;
 static int uti_use_last_cpu = 0;
+static int enable_uti = 0;
 
 /* Partitioned execution (e.g., for MPI) */
 static int nr_processes = 0;
@@ -1373,9 +1367,9 @@ static int reduce_stack(struct rlimit *orig_rlim, char *argv[])
 void print_usage(char **argv)
 {
 #ifdef ADD_ENVS_OPTION
-	fprintf(stderr, "usage: %s [-c target_core] [-n nr_partitions] [<-e ENV_NAME=value>...] [--mpol-threshold=N] [--enable-straight-map] [--extend-heap-by=N] [-s (--stack-premap=)[premap_size][,max]] [--mpol-no-heap] [--mpol-no-bss] [--mpol-no-stack] [--mpol-shm-premap] [--disable-sched-yield] [--uti-thread-rank=N] [--uti-use-last-cpu] [<mcos-id>] (program) [args...]\n", argv[0]);
+	fprintf(stderr, "usage: %s [-c target_core] [-n nr_partitions] [<-e ENV_NAME=value>...] [--mpol-threshold=N] [--enable-straight-map] [--extend-heap-by=N] [-s (--stack-premap=)[premap_size][,max]] [--mpol-no-heap] [--mpol-no-bss] [--mpol-no-stack] [--mpol-shm-premap] [--disable-sched-yield] [--enable-uti] [--uti-thread-rank=N] [--uti-use-last-cpu] [<mcos-id>] (program) [args...]\n", argv[0]);
 #else /* ADD_ENVS_OPTION */
-	fprintf(stderr, "usage: %s [-c target_core] [-n nr_partitions] [--mpol-threshold=N] [--enable-straight-map] [--extend-heap-by=N] [-s (--stack-premap=)[premap_size][,max]] [--mpol-no-heap] [--mpol-no-bss] [--mpol-no-stack] [--mpol-shm-premap] [--disable-sched-yield] [--uti-thread-rank=N] [--uti-use-last-cpu] [<mcos-id>] (program) [args...]\n", argv[0]);
+	fprintf(stderr, "usage: %s [-c target_core] [-n nr_partitions] [--mpol-threshold=N] [--enable-straight-map] [--extend-heap-by=N] [-s (--stack-premap=)[premap_size][,max]] [--mpol-no-heap] [--mpol-no-bss] [--mpol-no-stack] [--mpol-shm-premap] [--disable-sched-yield]  [--enable-uti] [--uti-thread-rank=N] [--uti-use-last-cpu] [<mcos-id>] (program) [args...]\n", argv[0]);
 #endif /* ADD_ENVS_OPTION */
 }
 
@@ -1804,6 +1798,12 @@ static struct option mcexec_options[] = {
 		.flag =		&uti_use_last_cpu,
 		.val =		1,
 	},
+	{
+		.name =		"enable-uti",
+		.has_arg =	no_argument,
+		.flag =		&enable_uti,
+		.val =		1,
+	},
 	/* end */
 	{ NULL, 0, NULL, 0, },
 };
@@ -1895,7 +1895,7 @@ join_all_threads()
 	do {
 		live_thread = 0;
 		for (tp = thread_data; tp; tp = tp->next) {
-			if (tp->joined || tp->detached)
+			if (tp->joined && tp->detached)
 				continue;
 			live_thread = 1;
 			pthread_join(tp->thread_id, NULL);
@@ -1936,57 +1936,69 @@ opendev()
 	return fd;
 }
 
+#define LD_PRELOAD_PREPARE(name) do { \
+		sprintf(elembuf, "%s%s/" name, nelem > 0 ? ":" : "", MCKERNEL_LIBDIR); \
+	} while (0)
+
+#define LD_PRELOAD_APPEND do {	\
+		if (strlen(elembuf) + 1 > remainder) { \
+			fprintf(stderr, "%s: warning: LD_PRELOAD line is too long\n", __FUNCTION__); \
+			return; \
+		} \
+		strncat(envbuf, elembuf, remainder); \
+		remainder = PATH_MAX - (strlen(envbuf) + 1); \
+		nelem++; \
+	} while (0)
+
 static void ld_preload_init()
 {
 	char envbuf[PATH_MAX];
-#ifdef ENABLE_QLMPI
-	char *old_ld_preload;
-#endif
+	char *ld_preload_str;
+	size_t remainder = PATH_MAX;
+	int nelem = 0;
+	char elembuf[PATH_MAX];
+
+	memset(envbuf, 0, PATH_MAX);
+
+	if (enable_uti) {
+		LD_PRELOAD_PREPARE("syscall_intercept.so");
+		LD_PRELOAD_APPEND;
+	}
 
 	if (disable_sched_yield) {
-		sprintf(envbuf, "%s/libsched_yield.so.1.0.0", MCKERNEL_LIBDIR);
-		__dprintf("%s: preload library: %s\n", __FUNCTION__, envbuf);
-		if (setenv("LD_PRELOAD", envbuf, 1) < 0) {
-			printf("%s: warning: failed to set LD_PRELOAD for sched_yield\n",
-					__FUNCTION__);
-		}
+		LD_PRELOAD_PREPARE("libsched_yield.so.1.0.0");
+		LD_PRELOAD_APPEND;
 	}
+
+#ifdef ENABLE_QLMPI
+	LD_PRELOAD_PREPARE("libqlfort.so");
+	LD_PRELOAD_APPEND;
+#endif
+
 	/* Set LD_PRELOAD to McKernel specific value */
-	else if (getenv(ld_preload_envname)) {
-		if (setenv("LD_PRELOAD", getenv(ld_preload_envname), 1) < 0) {
+	ld_preload_str = getenv(ld_preload_envname);
+	if (ld_preload_str) {
+		sprintf(elembuf, "%s%s", nelem > 0 ? ":" : "", ld_preload_str);
+		LD_PRELOAD_APPEND;
+	}
+
+	if (strlen(envbuf)) {
+		if (setenv("LD_PRELOAD", envbuf, 1) < 0) {
 			printf("%s: warning: failed to set LD_PRELOAD environment variable\n",
 					__FUNCTION__);
 		}
+		__dprintf("%s: preload library: %s\n", __FUNCTION__, envbuf);
+	}
+
+	if (getenv("ld_preload_envname")) {
 		unsetenv(ld_preload_envname);
 	}
-
-#ifdef ENABLE_QLMPI
-	sprintf(envbuf, "%s/libqlfort.so", MCKERNEL_LIBDIR);
-	if ((old_ld_preload = getenv("LD_PRELOAD"))) {
-		sprintf(strchr(envbuf, '\0'), " %s", old_ld_preload);
-	}
-	setenv("LD_PRELOAD", envbuf, 1);
-#endif
 }
-
-struct uti_desc {
-	void *wp;
-	int mck_tid;
-	unsigned long key;
-	int pid, tid; /* Used as the id of tracee when issuing MCEXEC_UP_TERMINATE_THREAD */
-	unsigned long uti_clv;
-	sem_t arg, attach;
-	int exit; /* Used to tell the tracer to exit */
-};
-
-static int create_tracer(unsigned long user_start, unsigned long user_end);
-int uti_pfd[2];
-struct uti_desc *uti_desc = (void*)-1;
-static struct program_load_desc *desc;
 
 int main(int argc, char **argv)
 {
 	int ret = 0;
+	struct program_load_desc *desc;
 	int envs_len;
 	char *envs;
 	char *args;
@@ -2164,14 +2176,6 @@ int main(int argc, char **argv)
 	mcosid = num;
 	if (opendev() == -1)
 		exit(EXIT_FAILURE);
-
-#if 0
-	/* TODO: Remove this after memory corruption bug is fixed */
-	if ((error = create_tracer(0, 0))) {
-		fprintf(stderr, "%s: create tracer returned %d\n", __FUNCTION__, error);
-		return error;
-	}
-#endif
 
 	ld_preload_init();
 
@@ -2696,7 +2700,9 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+#if 1 /* debug : thread killed by exit_group() are still joinable? */
 	join_all_threads();
+#endif
  fn_fail:
 	return ret;
 }
@@ -2856,8 +2862,9 @@ out:
 	return ret;
 }
 
-static void
-kill_thread(unsigned long tid, int sig)
+static struct uti_desc *uti_desc;
+
+static void kill_thread(unsigned long tid, int sig)
 {
 	struct thread_data_s *tp;
 
@@ -2868,443 +2875,54 @@ kill_thread(unsigned long tid, int sig)
 		if (tp->remote_tid == tid) {
 			if (pthread_kill(tp->thread_id, sig) == ESRCH) {
 				printf("%s: ERROR: Thread not found (tid=%ld,sig=%d)\n", __FUNCTION__, tid, sig);
- 			}
- 		}
- 	}
+			}
+		}
+	}
 }
 
-static int
-samepage(void *a, void *b)
-{
-	unsigned long aa = (unsigned long)a;
-	unsigned long bb = (unsigned long)b;
-
-#ifdef POSTK_DEBUG_ARCH_DEP_35
-	return (aa & page_mask) == (bb & page_mask);
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
-	return (aa & PAGE_MASK) == (bb & PAGE_MASK);
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
-}
-
-#ifdef DEBUG_UTI
-long syscalls[512];
-
-static void
-debug_sig(int s)
+static long util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, int remote_tid, unsigned long pattr, unsigned long uti_clv, unsigned long _uti_desc)
 {
 	int i;
-	for (i = 0; i < 512; i++)
-		if (syscalls[i])
-			fprintf(stderr, "syscall %d called %ld\n", i,
-			                                           syscalls[i]);
-}
-#endif
-
-static int
-create_tracer(unsigned long user_start, unsigned long user_end)
-{
-	int tpid;
-	int rc;
-	int st;
-	int sig = 0;
-	int i;
-	struct syscall_struct *param_top = NULL;
-	struct syscall_struct *param;
-	unsigned long code = 0;
-	int exited = 0;
-	int mode = 0;
-#ifdef POSTK_DEBUG_ARCH_DEP_92 /* syscall_args prev value hold. */
-	syscall_args args;
-#endif /* !POSTK_DEBUG_ARCH_DEP_92 */
-	unsigned long buf;
-	struct release_user_space_desc release_desc = {
-		.user_start = desc->user_start,
-		.user_end = desc->user_end
-	};
-
-	/* Perform mmap() before fork() in create_tracer() */
-	uti_desc = mmap(NULL, sizeof(struct uti_desc), PROT_READ | PROT_WRITE,
-	          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-	if (uti_desc == (void *)-1) {
-		return -1;
-	}
-	memset(uti_desc, 0, sizeof(struct uti_desc));
-	sem_init(&uti_desc->arg, 1, 0);
-	sem_init(&uti_desc->attach, 1, 0);
-#ifdef POSTK_DEBUG_ARCH_DEP_35
-	uti_desc->wp = mmap(NULL, page_size * 3, PROT_READ | PROT_WRITE,
-	          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-#else /* POSTK_DEBUG_ARCH_DEP_35 */
-	uti_desc->wp = mmap(NULL, PAGE_SIZE * 3, PROT_READ | PROT_WRITE,
-	          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-#endif /* POSTK_DEBUG_ARCH_DEP_35 */
-	if (uti_desc->wp == (void *)-1) {
-		return -1;
-	}
-
-	if (pipe(uti_pfd)) {
-		fprintf(stderr, "%s: pipe failed: %s\n", __FUNCTION__, strerror(errno));
-		return -1;
-	}
-
-	tpid = fork();
-	if (tpid) {
-
-		if (tpid == -1)
-			return -1;
-		close(uti_pfd[1]);
-		while ((rc = waitpid(tpid, &st, 0)) == -1 && errno == EINTR);
-		if (rc == -1 || !WIFEXITED(st) || WEXITSTATUS(st)) {
-			fprintf(stderr, "waitpid rc=%d st=%08x\n", rc, st);
-			return -ENOMEM;
-		}
-#if 0
-		struct timeval tv;
-		fd_set rfd;
-		FD_ZERO(&rfd);
-		FD_SET(uti_pfd[0], &rfd);
-		tv.tv_sec = 1;
-		tv.tv_usec = 0;
-		while ((rc = select(uti_pfd[0] + 1, &rfd, NULL, NULL, &tv)) == -1 &&
-		       errno == EINTR);
-		if (rc == 0) {
-			fprintf(stderr, "%s: select timed out\n", __FUNCTION__);
-			close(uti_pfd[0]);
-			return -ETIMEDOUT;
-		}
-		if (rc == -1) {
-			fprintf(stderr, "%s: select errno=%d\n", __FUNCTION__, errno);
-			close(uti_pfd[0]);
-			return -errno;
-		}
-#endif
-		return 0;
-	}
-	close(uti_pfd[0]);
-#if 1 /* debug */
-		if (ioctl(fd, MCEXEC_UP_RELEASE_USER_SPACE, &release_desc) != 0) {
-			fprintf(stderr, "%s: ERROR: MCEXEC_UP_RELEASE_USER_SPACE returned %d\n", __FUNCTION__, errno);
-			exit(1);
-		}
-#endif
-	tpid = fork();
-	if (tpid) {
-		if (tpid == -1) {
-			fprintf(stderr, "fork errno=%d\n", errno);
-			exit(1);
-		}
-		exit(0);
-	}
-
-#if 0
-	/* Reopen device because one process must be managed by one opened-device */
-	close(fd);
-	fd = opendev();
-	if (fd < 0) {
-		fprintf(stderr, "%s: ERROR: opendev returned %d\n", __FUNCTION__, errno);
-		exit(1);
-	}
-	
-	if (ioctl(fd, MCEXEC_UP_CREATE_PPD) != 0) {
-		fprintf(stderr, "%s: ERROR: MCEXEC_UP_CREATE_PPD returned %d\n", __FUNCTION__, errno);
-		exit(1);
-	}
-#endif
-
-#if 0
-	if (ioctl(fd, MCEXEC_UP_RELEASE_USER_SPACE, &release_desc) != 0) {
-		fprintf(stderr, "%s: ERROR: MCEXEC_UP_RELEASE_USER_SPACE returned %d\n", __FUNCTION__, errno);
-		exit(1);
-	}
-#endif
-	sem_wait(&uti_desc->arg);
-	if (uti_desc->exit) { /* When uti is not used */
-		exit(0);
-	}
-
-	//close(uti_pfd[0]);
-
-	if (ptrace(PTRACE_ATTACH, uti_desc->tid, 0, 0) == -1) {
-		fprintf(stderr, "PTRACE_ATTACH errno=%d\n", errno);
-		exit(1);
-	}
-	waitpid(-1, &st, __WALL);
-	if (ptrace(PTRACE_SETOPTIONS, uti_desc->tid, 0, PTRACE_O_TRACESYSGOOD) == -1) {
-		fprintf(stderr, "PTRACE_SETOPTIONS errno=%d\n", errno);
-		exit(1);
-	}
-
-	/* Wake up tracee so that it can context-switch to McKernel code */
-    rc = write(uti_pfd[1], &buf, sizeof(unsigned long));
-    if (rc != sizeof(unsigned long)) {
-        fprintf(stderr, "%s: write returned %d\n", __FUNCTION__, rc);
-        exit(1);
-    }
-	close(uti_pfd[1]);
-
-	for (i = 0; i < 4096; i++)
-		if (i != fd
-#ifdef DEBUG_UTI
-		   && i != 2
-#endif
-		   )
-			close(i);
-	open("/dev/null", O_RDONLY);
-	open("/dev/null", O_WRONLY);
-#ifndef DEBUG_UTI
-	open("/dev/null", O_WRONLY);
-#endif
-
-	/* Initialize list of syscall arguments for syscall_intercept */
-#ifdef POSTK_DEBUG_ARCH_DEP_35
-	if (sizeof(struct syscall_struct) * 11 > page_size) {
-#else /* POSTK_DEBUG_ARCH_DEP_35 */
-	if (sizeof(struct syscall_struct) * 11 > PAGE_SIZE) {
-#endif /* POSTK_DEBUG_ARCH_DEP_35 */
-		fprintf(stderr, "%s: ERROR: param is too large\n", __FUNCTION__);
-		exit(1);
-	}
-	for (i = 1; i <= 10; i++) {
-		param = (struct syscall_struct *)uti_desc->wp + i;
-		*(void **)param = param_top;
-		param_top = param;
-	}
-	memset(uti_desc->wp, '\0', sizeof(long));
-
-#ifdef DEBUG_UTI
-	fprintf(stderr, "tracer PID=%d\n", getpid());
-	signal(SIGINT, debug_sig);
-#endif
-#ifdef POSTK_DEBUG_ARCH_DEP_92 /* syscall_args prev value hold. */
-	memset(&args, 0, sizeof(args));
-#endif /* POSTK_DEBUG_ARCH_DEP_92 */
-	for (;;) {
-		ptrace(PTRACE_SYSCALL, uti_desc->tid, 0, sig);
-		sig = 0;
-		waitpid(-1, &st, __WALL);
-		if (WIFEXITED(st) || WIFSIGNALED(st)) {
-			struct terminate_thread_desc term_desc;
-
-			term_desc.pid = uti_desc->pid;
-			term_desc.tid = uti_desc->tid;
-			term_desc.tsk = uti_desc->key;
-			code = st;
-			
-			if (exited == 2) { /* exit_group */
-				code |= 0x0000000100000000;
-			}
-			term_desc.sig = code;
-
-			/* How return_syscall() is called depends on how utility thread exits:
-			   exit:
-			     create_tracer()
-				   MCEXEC_UP_TERMINATE_THREAD
-				     return_syscall()
-			   exit_group:
-			     create_tracer()
-				   MCEXEC_UP_TERMINATE_THREAD
-				     return_syscall()
-			   killed by signal:
-			     release_handler()
-				   return_syscall()
-			*/
-			if (exited == 1 || exited == 2) {
-				__dprintf("calling MCEXEC_UP_TERMINATE_THREAD,exited=%d,code=%lx\n", exited, code);
-				if (ioctl(fd, MCEXEC_UP_TERMINATE_THREAD, &term_desc) != 0) {
-					fprintf(stderr, "%s: INFO: MCEXEC_UP_TERMINATE_THREAD returned %d\n", __FUNCTION__, errno);
-				}
-			}
-			__dprintf("%s:  WIFEXITED=%d,WIFSIGNALED=%d,WTERMSIG=%d,exited=%d\n", __FUNCTION__, WIFEXITED(st), WIFSIGNALED(st), WTERMSIG(st), exited);
-#if 0
-			if (ptrace(PTRACE_DETACH, uti_desc->tid, 0, WIFSIGNALED(st) ? WTERMSIG(st) : 0) && errno != ESRCH) {
-				fprintf(stderr, "PTRACE_DETACH errno=%d\n", errno);
-				exit(1);
-			}
-#endif
-			break;
-		}
-		if (!WIFSTOPPED(st)) {
-			continue;
-		}
-		if (WSTOPSIG(st) & 0x80) { // syscall
-#ifndef POSTK_DEBUG_ARCH_DEP_92 /* syscall_args prev value hold. */
-			syscall_args args;
-
-#endif /* !POSTK_DEBUG_ARCH_DEP_92 */
-			get_syscall_args(uti_desc->tid, &args);
-
-#ifdef DEBUG_UTI
-#ifdef POSTK_DEBUG_ARCH_DEP_90 /* syscall_enter check is arch depend. */
-			if (syscall_enter(&args)) {
-#else /* POSTK_DEBUG_ARCH_DEP_90 */
-			if (get_syscall_return(&args) == -ENOSYS) {
-#endif /* POSTK_DEBUG_ARCH_DEP_90 */
-				if (get_syscall_number(&args) >= 0 &&
-				    get_syscall_number(&args) < 512) {
-					syscalls[get_syscall_number(&args)]++;
-				}
-			}
-#endif
-
-#ifdef POSTK_DEBUG_ARCH_DEP_90 /* syscall_enter check is arch depend. */
-			if (get_syscall_number(&args) == __NR_ioctl &&
-			    syscall_enter(&args) &&
-			    get_syscall_arg1(&args) == fd &&
-			    get_syscall_arg2(&args) == MCEXEC_UP_SIG_THREAD) {
-#else /* POSTK_DEBUG_ARCH_DEP_90 */
-			if (get_syscall_number(&args) == __NR_ioctl &&
-			    get_syscall_return(&args) == -ENOSYS &&
-			    get_syscall_arg1(&args) == fd &&
-			    get_syscall_arg2(&args) == MCEXEC_UP_SIG_THREAD) {
-#endif /* POSTK_DEBUG_ARCH_DEP_90 */
-				mode = get_syscall_arg3(&args);
-			}
-
-			if (mode) {
-				continue;
-			}
-
-			switch (get_syscall_number(&args)) {
-			    case __NR_gettid:
-				set_syscall_number(&args, -1);
-				set_syscall_return(&args, uti_desc->mck_tid);
-				set_syscall_args(uti_desc->tid, &args);
-				continue;
-			    case __NR_futex:
-			    case __NR_brk:
-			    case __NR_mmap:
-			    case __NR_munmap:
-			    case __NR_mprotect:
-			    case __NR_mremap:
-			    case __NR_msync:
-				break;
-			    case __NR_exit_group:
-				exited++;
-			    case __NR_exit:
-				exited++;
-				continue;
-			    case __NR_clone:
-#ifdef POSTK_DEBUG_ARCH_DEP_78 /* arch dep syscallno hide */
-#ifdef __NR_fork
-			    case __NR_fork:
-#endif
-#ifdef __NR_vfork
-			    case __NR_vfork:
-#endif
-#else /* POSTK_DEBUG_ARCH_DEP_78 */
-			    case __NR_fork:
-			    case __NR_vfork:
-#endif /* POSTK_DEBUG_ARCH_DEP_78 */
-			    case __NR_execve:
-				set_syscall_number(&args, -1);
-#ifdef POSTK_DEBUG_ARCH_DEP_103 /* UTI:ignore syscall setting return -ENOSYS */
-				set_syscall_return(&args, -ENOSYS);
-#endif /* POSTK_DEBUG_ARCH_DEP_103 */
-				set_syscall_args(uti_desc->tid, &args);
-				continue;
-#if 1 /* debug */
-			case __NR_set_robust_list:
-				set_syscall_number(&args, -1);
-				set_syscall_args(uti_desc->tid, &args);
-				continue;
-#endif
-			    case __NR_ioctl:
-				param = (struct syscall_struct *)
-					                get_syscall_arg3(&args);
-#ifdef POSTK_DEBUG_ARCH_DEP_90 /* syscall_enter check is arch depend. */
-				if (!syscall_enter(&args) &&
-				    get_syscall_arg1(&args) == fd &&
-				    get_syscall_arg2(&args) ==
-				                     MCEXEC_UP_SYSCALL_THREAD &&
-				    samepage(uti_desc->wp, param)) {
-#else /* POSTK_DEBUG_ARCH_DEP_90 */
-				if (get_syscall_return(&args) != -ENOSYS &&
-				    get_syscall_arg1(&args) == fd &&
-				    get_syscall_arg2(&args) ==
-				                     MCEXEC_UP_SYSCALL_THREAD &&
-				    samepage(uti_desc->wp, param)) {
-#endif /* POSTK_DEBUG_ARCH_DEP_90 */
-					set_syscall_arg1(&args, param->args[0]);
-					set_syscall_arg2(&args, param->args[1]);
-					set_syscall_arg3(&args, param->args[2]);
-					set_syscall_arg4(&args, param->args[3]);
-					set_syscall_arg5(&args, param->args[4]);
-					set_syscall_arg6(&args, param->args[5]);
-					set_syscall_return(&args, param->ret);
-					*(void **)param = param_top;
-					param_top = param;
-					set_syscall_args(uti_desc->tid, &args);
-				}
-				continue;
-			    default:
-				continue;
-			}
-			param = param_top;
-			if (!param) {
-				set_syscall_number(&args, -1);
-				set_syscall_return(&args, -ENOMEM);
-			}
-			else {
-				param_top = *(void **)param;
-				param->number = get_syscall_number(&args);
-				param->args[0] = get_syscall_arg1(&args);
-				param->args[1] = get_syscall_arg2(&args);
-				param->args[2] = get_syscall_arg3(&args);
-				param->args[3] = get_syscall_arg4(&args);
-				param->args[4] = get_syscall_arg5(&args);
-				param->args[5] = get_syscall_arg6(&args);
-				param->uti_clv = uti_desc->uti_clv;
-				param->ret = -EINVAL;
-				set_syscall_number(&args, __NR_ioctl);
-				set_syscall_arg1(&args, fd);
-				set_syscall_arg2(&args,
-				                      MCEXEC_UP_SYSCALL_THREAD);
-				set_syscall_arg3(&args, (unsigned long)param);
-			}
-			set_syscall_args(uti_desc->tid, &args);
-		}
-		else { // signal
-			sig = WSTOPSIG(st) & 0x7f;
-		}
-	}
-
-#ifdef DEBUG_UTI
-	{
-		char *pmi_str = getenv("PMI_RANK");
-		int pmi_rank = pmi_str ? atoi(pmi_str) : -1;
-		if (pmi_rank == 0 || pmi_rank == -1) {
-			fprintf(stderr, "offloaded thread called these syscalls\n");
-			debug_sig(0);
-		}
-	}
-#endif
-
-	exit(0);
-}
-
-static long
-util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, int remote_tid, unsigned long pattr, unsigned long uti_clv)
-{
 	void *lctx;
 	void *rctx;
 	void *param[6];
 	int rc = 0;
-	unsigned long buf;
-	
-#if 1
-	/* Create tracer */
-	if ((rc = create_tracer(desc->user_start, desc->user_end))) {
-		fprintf(stderr, "%s: create_tracer returned %d\n", __FUNCTION__, rc);
-		goto out;
+	void *uti_wp = (void*)-1;
+
+	uti_desc = (struct uti_desc *)_uti_desc;
+	if (!uti_desc) {
+		fprintf(stderr, "%s: ERROR: uti_desc isn't set. Use mcexec.sh instead of mcexec\n", __FUNCTION__);
+		exit(1);
 	}
-#endif
+
+	/* Initialize uti related variables for syscall_intercept */
+
 #ifdef POSTK_DEBUG_ARCH_DEP_35
-	lctx = (char *)uti_desc->wp + page_size;
+	uti_wp = mmap(NULL, page_size * 3, PROT_READ | PROT_WRITE,
+	          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+#else /* POSTK_DEBUG_ARCH_DEP_35 */
+	uti_wp = mmap(NULL, PAGE_SIZE * 3, PROT_READ | PROT_WRITE,
+	          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+#endif /* POSTK_DEBUG_ARCH_DEP_35 */
+	if (uti_wp == (void *)-1) {
+		exit(1);
+	}
+
+	uti_desc->fd = fd;
+
+	rc = syscall(888);
+	if (rc != -1) {
+		fprintf(stderr, "%s: WARNING: syscall_intercept returned %x\n", __FUNCTION__, rc);
+	}
+
+	/* Get the context of the thread migrating to Linux */
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+	lctx = (char *)uti_wp + page_size;
 	rctx = (char *)lctx + page_size;
 #else
-	lctx = (char *)uti_desc->wp + PAGE_SIZE;
+	lctx = (char *)uti_wp + PAGE_SIZE;
 	rctx = (char *)lctx + PAGE_SIZE;
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
+#endif  /* POSTK_DEBUG_ARCH_DEP_35 */
 
 	param[0] = (void *)uctx_pa;
 	param[1] = rctx;
@@ -3320,39 +2938,32 @@ util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, int remote_t
 		rc = -errno;
 		goto out;
 	}
-
 	create_worker_thread(NULL);
 
-	/* Pass info to the tracer so that it can masquerade as the tracee */
-	uti_desc->wp = uti_desc->wp;
+	/* Record the info of the thread migrating to Linux */
+	uti_desc->wp = uti_wp;
 	uti_desc->mck_tid = remote_tid;
-	uti_desc->key = (unsigned long)param[3];
+	uti_desc->key = (unsigned long)param[3]; /* key to find thread, i.e. struct task_struct * */
 	uti_desc->pid = getpid();
 	uti_desc->tid = gettid();
 	uti_desc->uti_clv = uti_clv;
 	
-#if 0
-	//usleep(100000);
-	ssize_t nwritten;
-	char *cur;
-	for(cur = (char*)&uti_desc; (nwritten = write(uti_pfd[1], cur, sizeof(struct uti_desc) - (cur - (char*)&uti_desc))) > 0; cur += nwritten) { }
-	if (nwritten < 0) {
-		fprintf(stderr, "write returned %ld errno=%d\n", nwritten, errno);
-		rc = -errno;
+	/* Initialize list of syscall arguments for syscall_intercept */
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+	if (sizeof(struct syscall_struct) * 11 > page_size) {
+#else /* POSTK_DEBUG_ARCH_DEP_35 */
+	if (sizeof(struct syscall_struct) * 11 > PAGE_SIZE) {
+#endif /* POSTK_DEBUG_ARCH_DEP_35 */
+		fprintf(stderr, "%s: ERROR: param is too large\n", __FUNCTION__);
+		rc = -ENOMEM;
 		goto out;
 	}
-	close(uti_pfd[1]);
-#endif
-	sem_post(&uti_desc->arg);
-
-    /* Wait until tracer attaches me. We can't use
-       futex because it would be captured and redirected by tracer */
-    rc = read(uti_pfd[0], &buf, sizeof(unsigned long));
-    if (rc != sizeof(unsigned long)) {
-        fprintf(stderr, "%s: write returned %d\n", __FUNCTION__, rc);
-        exit(1);
-    }
-	close(uti_pfd[0]);
+	for (i = 1; i <= 10; i++) {
+		uti_desc->syscall_param = (struct syscall_struct *)uti_desc->wp + i;
+		*(void **)uti_desc->syscall_param = uti_desc->syscall_param_top;
+		uti_desc->syscall_param_top = uti_desc->syscall_param;
+	}
+	memset(uti_desc->wp, '\0', sizeof(long));
 
 	if (pattr) {
 		struct uti_attr_desc desc;
@@ -3368,9 +2979,12 @@ util_thread(struct thread_data_s *my_thread, unsigned long uctx_pa, int remote_t
 	}
 	my_thread->detached = 1;
 
+	/* Start intercepting syscalls. Note that it dereferences pointers in uti_desc. */
+	uti_desc->start_syscall_intercept = 1;
+
 	if ((rc = switch_ctx(fd, MCEXEC_UP_UTIL_THREAD2, param, lctx, rctx))
 	    < 0) {
-		fprintf(stderr, "util_thread2: %d\n", rc);
+		fprintf(stderr, "%s: ERROR switch_ctx returned %d\n", __FUNCTION__, rc);
 	}
 	fprintf(stderr, "return from util_thread2 rc=%d\n", rc);
 	pthread_exit(NULL);
@@ -3578,7 +3192,6 @@ int main_loop(struct thread_data_s *my_thread)
 	char pathbuf[PATH_MAX];
 	char tmpbuf[PATH_MAX];
 	int cpu = my_thread->cpu;
-	int sem_val;
 
 	memset(&w, '\0', sizeof w);
 	w.cpu = cpu;
@@ -3655,7 +3268,7 @@ int main_loop(struct thread_data_s *my_thread)
 			}
 			else {
 			}
-			__dprintf("openat: %s\n", pathbuf);
+			__dprintf("openat: %s,tid=%d\n", pathbuf, my_thread->remote_tid);
 
 			fn = chgpath(pathbuf, tmpbuf);
 
@@ -3709,6 +3322,7 @@ int main_loop(struct thread_data_s *my_thread)
 						__dprintf("Exit status: %d\n", term);
 					}
 				}
+				
 			}
 
 #ifdef USE_SYSCALL_MOD_CALL
@@ -3728,18 +3342,7 @@ int main_loop(struct thread_data_s *my_thread)
 				pause();
 			}
 
-			/* Make tracer exit when it is not used */
-			if (uti_desc != (void*)-1) {
-				if (sem_getvalue(&uti_desc->arg, &sem_val)) {
-					fprintf(stderr, "%s: ERROR: sem_getvalue returned %d\n", __FUNCTION__, errno);
-				}
-				if (sem_val == 0) {
-					uti_desc->exit = 1;
-					sem_post(&uti_desc->arg);
-				}
-			}
-			
-			exit(term);
+			exit(term); /* Call release_handler() and proceed terminate() */
 
 			//pthread_mutex_unlock(lock);
 			return w.sr.args[0];
@@ -3877,15 +3480,6 @@ gettid_out:
 					goto fork_child_sync_pipe;
 				}
 
-#if 1
-				/* Create tracer */
-				if ((ret = create_tracer(desc->user_start, desc->user_end))) {
-					fs->status = ret;
-					fprintf(stderr, "%s: create tracer returned %d\n", __FUNCTION__, ret);
-					goto fork_child_sync_pipe;
-				}
-#endif
-				
 				if (ioctl(fd, MCEXEC_UP_CREATE_PPD) != 0) {
 					fs->status = -errno;
 					fprintf(stderr, "ERROR: creating PPD %s\n", dev);
@@ -3955,8 +3549,9 @@ fork_child_sync_pipe:
 				}
 
 				munmap(fs, sizeof(struct fork_sync));
+#if 1 /* debug : thread killed by exit_group() are still joinable? */
 				join_all_threads();
-
+#endif
 				return ret;
 			    }
 				
@@ -4473,7 +4068,7 @@ return_execve2:
 		case __NR_sched_setaffinity:
 			if (w.sr.args[0] == 0) {
 				ret = util_thread(my_thread, w.sr.args[1], w.sr.rtid,
-				                  w.sr.args[2], w.sr.args[3]);
+				                  w.sr.args[2], w.sr.args[3], w.sr.args[4]);
 			}
 			else {
 				ret = munmap((void *)w.sr.args[1],
