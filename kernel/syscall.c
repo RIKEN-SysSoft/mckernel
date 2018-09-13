@@ -1980,7 +1980,9 @@ static int ptrace_report_exec(struct thread *thread)
 		int sig = (SIGTRAP | (PTRACE_EVENT_EXEC << 8));
 
 		memcpy(&ctx, &thread->ctx, sizeof ctx);
+		preempt_enable();
 		ptrace_report_signal(thread, sig);
+		preempt_disable();
 		memcpy(&thread->ctx, &ctx, sizeof ctx);
 	}
 	return 0;
