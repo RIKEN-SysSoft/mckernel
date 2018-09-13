@@ -1165,7 +1165,6 @@ enum {
 	MF_XPMEM   = 0x10000, /* To identify XPMEM attachment pages for rusage accounting */
 	MF_ZEROOBJ = 0x20000, /* To identify pages of anonymous, on-demand paging ranges for rusage accounting */
 	MF_SHM =     0x40000,
-	MF_END
 };
 
 static int pager_get_path(struct file *file, char *path) {
@@ -1200,7 +1199,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 	ihk_device_t dev = ihk_os_to_dev(os);
 	int error;
 	struct pager_create_result *resp;
-	int maxprot = -1;
+	int maxprot = 0;
 	struct file *file = NULL;
 	struct inode *inode;
 	struct pager *pager = NULL;
@@ -1240,7 +1239,6 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 		goto out;
 	}
 
-	maxprot = 0;
 	if ((file->f_mode & FMODE_READ) && (file->f_mode & FMODE_PREAD)) {
 		maxprot |= PROT_READ;
 	}
@@ -1340,13 +1338,7 @@ found:
 	resp->size = st.size;
 
 	error = pager_get_path(file, resp->path);
-	if (error) {
-		goto out_unmap;
-	}
 
-	error = 0;
-
-out_unmap:
 	ihk_device_unmap_virtual(dev, resp, sizeof(*resp));
 	ihk_device_unmap_memory(dev, phys, sizeof(*resp));
 
