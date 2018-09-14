@@ -1136,7 +1136,7 @@ reserve_user_space_common(struct mcctrl_usrdata *usrdata, unsigned long start, u
 struct pager {
 	struct list_head	list;
 	struct inode *		inode;
-	int			ref;
+	uint64_t		ref; /* needs same type as fileobj->sref */
 	struct file *		rofile;
 	struct file *		rwfile;
 	uintptr_t		map_uaddr;
@@ -1438,14 +1438,14 @@ out:
 	return error;
 }
 
-static int pager_req_release(ihk_os_t os, uintptr_t handle, int unref)
+static int pager_req_release(ihk_os_t os, uintptr_t handle, uint64_t sref)
 {
 	int error;
 	struct pager *p;
 	struct pager *free_pager = NULL;
 	unsigned long flags;
 
-	dprintk("pager_req_relase(%p,%lx,%d)\n", os, handle, unref);
+	dprintk("%s(%p,%lx)\n", __func__, os, handle);
 
 	spin_lock_irqsave(&pager_lock, flags);
 
@@ -1453,11 +1453,11 @@ static int pager_req_release(ihk_os_t os, uintptr_t handle, int unref)
 	list_for_each_entry(p, &pager_list, list) {
 		if ((uintptr_t)p == handle) {
 			error = 0;
-			p->ref -= unref;
-			if (p->ref <= 0) {
-				list_del(&p->list);
-				free_pager = p;
-			}
+			p->ref -= sref;
+			if (p->ref > 0)
+				break;
+			list_del(&p->list);
+			free_pager = p;
 			break;
 		}
 	}
@@ -1465,7 +1465,8 @@ static int pager_req_release(ihk_os_t os, uintptr_t handle, int unref)
 	spin_unlock_irqrestore(&pager_lock, flags);
 
 	if (error) {
-		printk("pager_req_release(%p,%lx,%d):pager not found. %d\n", os, handle, unref, error);
+		pr_err("%s(%p,%lx):pager not found. %d\n",
+		       __func__, os, handle, error);
 		goto out;
 	}
 
@@ -1481,7 +1482,7 @@ static int pager_req_release(ihk_os_t os, uintptr_t handle, int unref)
 
 	error = 0;
 out:
-	dprintk("pager_req_release(%p,%lx,%d): %d\n", os, handle, unref, error);
+	dprintk("%s(%p,%lx): %d\n", __func__, os, handle, error);
 	return error;
 }
 

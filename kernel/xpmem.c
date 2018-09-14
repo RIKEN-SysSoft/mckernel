@@ -1399,7 +1399,7 @@ static int xpmem_free_process_memory_range(
 	}
 
 	if (range->memobj) {
-		memobj_release(range->memobj);
+		memobj_unref(range->memobj);
 	}
 
 	rb_erase(&range->vm_rb_node, &vm->vm_range_tree);
@@ -1732,7 +1732,8 @@ int xpmem_remove_process_memory_range(
 
 		remaining_vmr->private_data = NULL;
 		/* This function is always followed by xpmem_free_process_memory_range() 
-		   which in turn calls memobj_release() */
+		 * which in turn calls memobj_put()
+		 */
 		remaining_vaddr = att->at_vaddr;
 	}
 
@@ -1755,7 +1756,8 @@ int xpmem_remove_process_memory_range(
 
 	vmr->private_data = NULL;
 	/* This function is always followed by [xpmem_]free_process_memory_range()
-	   which in turn calls memobj_release() */
+	 * which in turn calls memobj_put()
+	 */
 
 out:
 	mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);

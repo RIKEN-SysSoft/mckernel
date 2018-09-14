@@ -57,6 +57,7 @@ struct shmobj {
 	struct shmlock_user *	user;
 	struct shmid_ds		ds;
 	struct list_head	page_list;
+	ihk_spinlock_t		page_list_lock;
 	struct list_head	chain;		/* shmobj_list */
 };
 
@@ -104,7 +105,6 @@ static inline void shmlock_users_unlock(void)
 void shmobj_list_lock(void);
 void shmobj_list_unlock(void);
 int shmobj_create_indexed(struct shmid_ds *ds, struct shmobj **objp);
-void shmobj_destroy(struct shmobj *obj);
 void shmlock_user_free(struct shmlock_user *user);
 int shmlock_user_get(uid_t ruid, struct shmlock_user **userp);
 

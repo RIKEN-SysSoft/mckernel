@@ -29,15 +29,13 @@
 static LIST_HEAD(shmobj_list_head);
 static ihk_spinlock_t shmobj_list_lock_body = SPIN_LOCK_UNLOCKED;
 
-static memobj_release_func_t shmobj_release;
-static memobj_ref_func_t shmobj_ref;
+static memobj_free_func_t shmobj_free;
 static memobj_get_page_func_t shmobj_get_page;
 static memobj_invalidate_page_func_t shmobj_invalidate_page;
 static memobj_lookup_page_func_t shmobj_lookup_page;
 
 static struct memobj_ops shmobj_ops = {
-	.release =	&shmobj_release,
-	.ref =		&shmobj_ref,
+	.free =	&shmobj_free,
 	.get_page =	&shmobj_get_page,
 	.invalidate_page =	&shmobj_invalidate_page,
 	.lookup_page =	&shmobj_lookup_page,
@@ -59,7 +57,18 @@ static struct memobj *to_memobj(struct shmobj *shmobj)
 static void page_list_init(struct shmobj *obj)
 {
 	INIT_LIST_HEAD(&obj->page_list);
+	ihk_mc_spinlock_init(&obj->page_list_lock);
 	return;
+}
+
+static void page_list_lock(struct shmobj *obj)
+{
+	ihk_mc_spinlock_lock_noirq(&obj->page_list_lock);
+}
+
+static void page_list_unlock(struct shmobj *obj)
+{
+	ihk_mc_spinlock_unlock_noirq(&obj->page_list_lock);
 }
 
 static void page_list_insert(struct shmobj *obj, struct page *page)
@@ -180,15 +189,14 @@ int shmobj_create(struct shmid_ds *ds, struct memobj **objp)
 	obj->memobj.ops = &shmobj_ops;
 	obj->memobj.flags = MF_SHM;
 	obj->memobj.size = ds->shm_segsz;
+	ihk_atomic_set(&obj->memobj.refcnt, 1);
 	obj->ds = *ds;
 	obj->ds.shm_perm.seq = the_seq++;
-	obj->ds.shm_nattch = 1;
 	obj->ds.init_pgshift = 0;
 	obj->index = -1;
 	obj->pgshift = pgshift;
 	obj->real_segsz = (obj->ds.shm_segsz + pgsize - 1) & ~(pgsize - 1);
 	page_list_init(obj);
-	ihk_mc_spinlock_init(&obj->memobj.lock);
 
 	error = 0;
 	*objp = to_memobj(obj);
@@ -216,7 +224,7 @@ int shmobj_create_indexed(struct shmid_ds *ds, struct shmobj **objp)
 	return error;
 }
 
-void shmobj_destroy(struct shmobj *obj)
+static void shmobj_destroy(struct shmobj *obj)
 {
 	extern struct shm_info the_shm_info;
 	extern struct list_head kds_free_list;
@@ -244,6 +252,7 @@ void shmobj_destroy(struct shmobj *obj)
 		void *page_va;
 		uintptr_t phys;
 
+		/* no lock required as obj is inaccessible */
 		page = page_list_first(obj);
 		if (!page) {
 			break;
@@ -318,61 +327,22 @@ void shmobj_destroy(struct shmobj *obj)
 	return;
 }
 
-static void shmobj_release(struct memobj *memobj)
+static void shmobj_free(struct memobj *memobj)
 {
 	struct shmobj *obj = to_shmobj(memobj);
-	struct thread *thread = cpu_local_var(current);
-	struct process *proc = thread->proc;
-	struct shmobj *freeobj = NULL;
-	long newref;
 	extern time_t time(void);
 
-	dkprintf("shmobj_release(%p)\n", memobj);
-	memobj_lock(&obj->memobj);
-	if (obj->index >= 0) {
-		obj->ds.shm_dtime = time();
-		obj->ds.shm_lpid = proc->pid;
-		dkprintf("shmobj_release:drop shm_nattach %p %d\n", obj, obj->ds.shm_nattch);
-	}
-	newref = --obj->ds.shm_nattch;
-	if (newref <= 0) {
-		if (newref < 0) {
-			ekprintf("shmobj_release(%p):ref %ld\n",
-					memobj, newref);
-			panic("shmobj_release:freeing free shmobj");
-		}
-		if (obj->ds.shm_perm.mode & SHM_DEST) {
-			freeobj = obj;
-		}
-	}
-	memobj_unlock(&obj->memobj);
+	dkprintf("%s(%p)\n", __func__, memobj);
 
-	if (freeobj) {
-		shmobj_list_lock();
-		shmobj_destroy(freeobj);
-		shmobj_list_unlock();
+	shmobj_list_lock();
+	if (!(obj->ds.shm_perm.mode & SHM_DEST)) {
+		ekprintf("%s called without going through rmid?", __func__);
 	}
-	dkprintf("shmobj_release(%p): %ld\n", memobj, newref);
-	return;
-}
 
-static void shmobj_ref(struct memobj *memobj)
-{
-	struct shmobj *obj = to_shmobj(memobj);
-	struct thread *thread = cpu_local_var(current);
-	struct process *proc = thread->proc;
-	long newref;
-	extern time_t time(void);
+	shmobj_destroy(obj);
+	shmobj_list_unlock();
 
-	dkprintf("shmobj_ref(%p)\n", memobj);
-	memobj_lock(&obj->memobj);
-	newref = ++obj->ds.shm_nattch;
-	if (obj->index >= 0) {
-		obj->ds.shm_atime = time();
-		obj->ds.shm_lpid = proc->pid;
-	}
-	memobj_unlock(&obj->memobj);
-	dkprintf("shmobj_ref(%p): newref %ld\n", memobj, newref);
+	dkprintf("%s(%p)\n", __func__, memobj);
 	return;
 }
 
@@ -388,7 +358,7 @@ static int shmobj_get_page(struct memobj *memobj, off_t off, int p2align,
 
 	dkprintf("shmobj_get_page(%p,%#lx,%d,%p)\n",
 			memobj, off, p2align, physp);
-	memobj_lock(&obj->memobj);
+	memobj_ref(memobj);
 	if (off & ~PAGE_MASK) {
 		error = -EINVAL;
 		ekprintf("shmobj_get_page(%p,%#lx,%d,%p):invalid argument. %d\n",
@@ -414,12 +384,14 @@ static int shmobj_get_page(struct memobj *memobj, off_t off, int p2align,
 		goto out;
 	}
 
+	page_list_lock(obj);
 	page = page_list_lookup(obj, off);
 	if (!page) {
 		npages = 1 << p2align;
 		virt = ihk_mc_alloc_aligned_pages_user(npages, p2align,
 				IHK_MC_AP_NOWAIT, virt_addr);
 		if (!virt) {
+			page_list_unlock(obj);
 			error = -ENOMEM;
 			ekprintf("shmobj_get_page(%p,%#lx,%d,%p):"
 					"alloc failed. %d\n",
@@ -449,6 +421,7 @@ static int shmobj_get_page(struct memobj *memobj, off_t off, int p2align,
 		dkprintf("shmobj_get_page(%p,%#lx,%d,%p):alloc page. %p %#lx\n",
 				memobj, off, p2align, physp, page, phys);
 	}
+	page_list_unlock(obj);
 
 	ihk_atomic_inc(&page->count);
 
@@ -456,7 +429,7 @@ static int shmobj_get_page(struct memobj *memobj, off_t off, int p2align,
 	*physp = page_to_phys(page);
 
 out:
-	memobj_unlock(&obj->memobj);
+	memobj_unref(memobj);
 	if (virt) {
 		ihk_mc_free_pages_user(virt, npages);
 	}
@@ -474,11 +447,14 @@ static int shmobj_invalidate_page(struct memobj *memobj, uintptr_t phys,
 
 	dkprintf("shmobj_invalidate_page(%p,%#lx,%#lx)\n", memobj, phys, pgsize);
 
+	page_list_lock(obj);
 	if (!(page = phys_to_page(phys))
 			|| !(page = page_list_lookup(obj, page->offset))) {
+		page_list_unlock(obj);
 		error = 0;
 		goto out;
 	}
+	page_list_unlock(obj);
 
 	if (ihk_atomic_read(&page->count) == 1) {
 		if (page_unmap(page)) {
@@ -511,7 +487,7 @@ static int shmobj_lookup_page(struct memobj *memobj, off_t off, int p2align,
 
 	dkprintf("shmobj_lookup_page(%p,%#lx,%d,%p)\n",
 			memobj, off, p2align, physp);
-	memobj_lock(&obj->memobj);
+	memobj_ref(&obj->memobj);
 	if (off & ~PAGE_MASK) {
 		error = -EINVAL;
 		ekprintf("shmobj_lookup_page(%p,%#lx,%d,%p):invalid argument. %d\n",
@@ -537,7 +513,9 @@ static int shmobj_lookup_page(struct memobj *memobj, off_t off, int p2align,
 		goto out;
 	}
 
+	page_list_lock(obj);
 	page = page_list_lookup(obj, off);
+	page_list_unlock(obj);
 	if (!page) {
 		error = -ENOENT;
 		dkprintf("shmobj_lookup_page(%p,%#lx,%d,%p):page not found. %d\n",
@@ -552,7 +530,7 @@ static int shmobj_lookup_page(struct memobj *memobj, off_t off, int p2align,
 	}
 
 out:
-	memobj_unlock(&obj->memobj);
+	memobj_unref(&obj->memobj);
 	dkprintf("shmobj_lookup_page(%p,%#lx,%d,%p):%d %#lx\n",
 			memobj, off, p2align, physp, error, phys);
 	return error;

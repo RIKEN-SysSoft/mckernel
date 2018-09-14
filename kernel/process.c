@@ -882,7 +882,7 @@ int join_process_memory_range(struct process_vm *vm,
 	surviving->end = merging->end;
 
 	if (merging->memobj) {
-		memobj_release(merging->memobj);
+		memobj_unref(merging->memobj);
 	}
 	rb_erase(&merging->vm_rb_node, &vm->vm_range_tree);
 	for (i = 0; i < VM_RANGE_CACHE_SIZE; ++i) {
@@ -955,7 +955,7 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 		
 		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 		if (range->memobj) {
-			memobj_lock(range->memobj);
+			memobj_ref(range->memobj);
 		}
 #ifdef POSTK_DEBUG_TEMP_FIX_87 /* from device-map rusage count fix. */
 		error = ihk_mc_pt_free_range(vm->address_space->page_table, vm,
@@ -966,7 +966,7 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 				(range->flag & VR_PRIVATE)? NULL: range->memobj);
 #endif /* POSTK_DEBUG_TEMP_FIX_87 */
 		if (range->memobj) {
-			memobj_unlock(range->memobj);
+			memobj_unref(range->memobj);
 		}
 		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 		if (error && (error != -ENOENT)) {
@@ -993,7 +993,7 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 	}
 
 	if (range->memobj) {
-		memobj_release(range->memobj);
+		memobj_unref(range->memobj);
 	}
 
 	rb_erase(&range->vm_rb_node, &vm->vm_range_tree);
@@ -1525,7 +1525,7 @@ int remap_process_memory_range(struct process_vm *vm, struct vm_range *range,
 	dkprintf("remap_process_memory_range(%p,%p,%#lx,%#lx,%#lx)\n",
 			vm, range, start, end, off);
 	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
-	memobj_lock(range->memobj);
+	memobj_ref(range->memobj);
 
 	args.start = start;
 	args.off = off;
@@ -1550,7 +1550,7 @@ int remap_process_memory_range(struct process_vm *vm, struct vm_range *range,
 
 	error = 0;
 out:
-	memobj_unlock(range->memobj);
+	memobj_unref(range->memobj);
 	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 	dkprintf("remap_process_memory_range(%p,%p,%#lx,%#lx,%#lx):%d\n",
 			vm, range, start, end, off, error);
@@ -1615,7 +1615,7 @@ int sync_process_memory_range(struct process_vm *vm, struct vm_range *range,
 	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 
 	if (!(range->memobj->flags & MF_ZEROFILL)) {
-		memobj_lock(range->memobj);
+		memobj_ref(range->memobj);
 	}
 
 	error = visit_pte_range(vm->address_space->page_table, (void *)start,
@@ -1623,7 +1623,7 @@ int sync_process_memory_range(struct process_vm *vm, struct vm_range *range,
 			&sync_one_page, &args);
 
 	if (!(range->memobj->flags & MF_ZEROFILL)) {
-		memobj_unlock(range->memobj);
+		memobj_unref(range->memobj);
 	}
 
 	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
@@ -1705,11 +1705,11 @@ int invalidate_process_memory_range(struct process_vm *vm,
 	args.range = range;
 
 	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
-	memobj_lock(range->memobj);
+	memobj_ref(range->memobj);
 	error = visit_pte_range(vm->address_space->page_table, (void *)start,
 	                        (void *)end, range->pgshift, VPTEF_SKIP_NULL,
 	                        &invalidate_one_page, &args);
-	memobj_unlock(range->memobj);
+	memobj_unref(range->memobj);
 	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 	if (error) {
 		ekprintf("invalidate_process_memory_range(%p,%p,%#lx,%#lx):"

@@ -1691,13 +1691,11 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	populate_len = len;
 
 	if (!(flags & MAP_ANONYMOUS)) {
-		memobj_lock(memobj);
-		if (memobj->status == MEMOBJ_TO_BE_PREFETCHED) {
-			memobj->status = MEMOBJ_READY;
+		if (atomic_cmpxchg4(&memobj->status, MEMOBJ_TO_BE_PREFETCHED,
+				    MEMOBJ_READY)) {
 			populated_mapping = 1;
 			populate_len = memobj->size;
 		}
-		memobj_unlock(memobj);
 
 		/* Update PTEs for pre-mapped memory object */
 		if ((memobj->flags & MF_PREMAP) &&
@@ -1775,7 +1773,7 @@ out:
 		ihk_mc_free_pages_user(p, npages);
 	}
 	if (memobj) {
-		memobj_release(memobj);
+		memobj_unref(memobj);
 	}
 	dkprintf("%s: 0x%lx:%8lu, (req: 0x%lx:%lu), prot: %x, flags: %x, "
 			"fd: %d, off: %lu, error: %ld, addr: 0x%lx\n",
@@ -4847,6 +4845,7 @@ int shmobj_list_lookup(int shmid, struct shmobj **objp)
 		return -EIDRM;
 	}
 
+	memobj_ref(&obj->memobj);
 	*objp = obj;
 	return 0;
 } /* shmobj_list_lookup() */
@@ -4865,6 +4864,7 @@ int shmobj_list_lookup_by_key(key_t key, struct shmobj **objp)
 		return -EINVAL;
 	}
 
+	memobj_ref(&obj->memobj);
 	*objp = obj;
 	return 0;
 } /* shmobj_list_lookup_by_key() */
@@ -4882,6 +4882,7 @@ int shmobj_list_lookup_by_index(int index, struct shmobj **objp)
 		return -EINVAL;
 	}
 
+	memobj_ref(&obj->memobj);
 	*objp = obj;
 	return 0;
 } /* shmobj_list_lookup_by_index() */
@@ -4923,6 +4924,7 @@ int do_shmget(const key_t key, const size_t size, const int shmflg)
 		}
 		if (obj && (shmflg & IPC_CREAT) && (shmflg & IPC_EXCL)) {
 			shmobj_list_unlock();
+			memobj_unref(&obj->memobj);
 			dkprintf("do_shmget(%#lx,%#lx,%#x): -EEXIST\n", key, size, shmflg);
 			return -EEXIST;
 		}
@@ -4949,12 +4951,14 @@ int do_shmget(const key_t key, const size_t size, const int shmflg)
 			}
 			if (req & ~obj->ds.shm_perm.mode) {
 				shmobj_list_unlock();
+				memobj_unref(&obj->memobj);
 				dkprintf("do_shmget(%#lx,%#lx,%#x): -EINVAL\n", key, size, shmflg);
 				return -EACCES;
 			}
 		}
 		if (obj->ds.shm_segsz < size) {
 			shmobj_list_unlock();
+			memobj_unref(&obj->memobj);
 			dkprintf("do_shmget(%#lx,%#lx,%#x): -EINVAL\n", key, size, shmflg);
 			return -EINVAL;
 		}
@@ -5001,7 +5005,6 @@ int do_shmget(const key_t key, const size_t size, const int shmflg)
 
 	shmid = make_shmid(obj);
 	shmobj_list_unlock();
-	memobj_release(&obj->memobj);
 
 	dkprintf("do_shmget(%#lx,%#lx,%#x): %d\n", key, size, shmflg, shmid);
 	return shmid;
@@ -5037,6 +5040,7 @@ SYSCALL_DECLARE(shmat)
 	pgsize = (size_t)1 << obj->pgshift;
 	if (shmaddr && ((uintptr_t)shmaddr & (pgsize - 1)) && !(shmflg & SHM_RND)) {
 		shmobj_list_unlock();
+		memobj_unref(&obj->memobj);
 		dkprintf("shmat(%#x,%p,%#x): -EINVAL\n", shmid, shmaddr, shmflg);
 		return -EINVAL;
 	}
@@ -5066,6 +5070,7 @@ SYSCALL_DECLARE(shmat)
 	}
 	if (~obj->ds.shm_perm.mode & req) {
 		shmobj_list_unlock();
+		memobj_unref(&obj->memobj);
 		dkprintf("shmat(%#x,%p,%#x): -EINVAL\n", shmid, shmaddr, shmflg);
 		return -EACCES;
 	}
@@ -5076,6 +5081,7 @@ SYSCALL_DECLARE(shmat)
 		if (lookup_process_memory_range(vm, addr, addr+len)) {
 			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 			shmobj_list_unlock();
+			memobj_unref(&obj->memobj);
 			dkprintf("shmat(%#x,%p,%#x):lookup_process_memory_range succeeded. -ENOMEM\n", shmid, shmaddr, shmflg);
 			return -ENOMEM;
 		}
@@ -5085,6 +5091,7 @@ SYSCALL_DECLARE(shmat)
 		if (error) {
 			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 			shmobj_list_unlock();
+			memobj_unref(&obj->memobj);
 			dkprintf("shmat(%#x,%p,%#x):search_free_space failed. %d\n", shmid, shmaddr, shmflg, error);
 			return error;
 		}
@@ -5100,12 +5107,11 @@ SYSCALL_DECLARE(shmat)
 		if (error) {
 			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 			shmobj_list_unlock();
+			memobj_unref(&obj->memobj);
 			dkprintf("shmat(%#x,%p,%#x):set_host_vma failed. %d\n", shmid, shmaddr, shmflg, error);
 			return error;
 		}
 	}
-
-	memobj_ref(&obj->memobj);
 
 	error = add_process_memory_range(vm, addr, addr+len, -1,
 			vrflags, &obj->memobj, 0, obj->pgshift, NULL);
@@ -5113,7 +5119,7 @@ SYSCALL_DECLARE(shmat)
 		if (!(prot & PROT_WRITE)) {
 			(void)set_host_vma(addr, len, PROT_READ | PROT_WRITE | PROT_EXEC, 1/* holding memory_range_lock */);
 		}
-		memobj_release(&obj->memobj);
+		memobj_unref(&obj->memobj);
 		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 		shmobj_list_unlock();
 		dkprintf("shmat(%#x,%p,%#x):add_process_memory_range failed. %d\n", shmid, shmaddr, shmflg, error);
@@ -5123,7 +5129,6 @@ SYSCALL_DECLARE(shmat)
 	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 	shmobj_list_unlock();
 
-	dkprintf("shmat:bump shm_nattach %p %d\n", obj, obj->ds.shm_nattch);
 	dkprintf("shmat(%#x,%p,%#x): 0x%lx. %d\n", shmid, shmaddr, shmflg, addr);
 	return addr;
 } /* sys_shmat() */
@@ -5145,10 +5150,11 @@ SYSCALL_DECLARE(shmctl)
 	size_t size;
 	struct shmlock_user *user;
 	uid_t ruid = proc->ruid;
+	uint16_t oldmode;
 
 	dkprintf("shmctl(%#x,%d,%p)\n", shmid, cmd, buf);
-	if (0) ;
-	else if (cmd == IPC_RMID) {
+	switch (cmd) {
+	case IPC_RMID:
 		shmobj_list_lock();
 		error = shmobj_list_lookup(shmid, &obj);
 		if (error) {
@@ -5160,19 +5166,21 @@ SYSCALL_DECLARE(shmctl)
 				&& (obj->ds.shm_perm.uid != proc->euid)
 				&& (obj->ds.shm_perm.cuid != proc->euid)) {
 			shmobj_list_unlock();
+			memobj_unref(&obj->memobj);
 			dkprintf("shmctl(%#x,%d,%p): -EPERM\n", shmid, cmd, buf);
 			return -EPERM;
 		}
+		oldmode = obj->ds.shm_perm.mode;
 		obj->ds.shm_perm.mode |= SHM_DEST;
-		if (obj->ds.shm_nattch <= 0) {
-			shmobj_destroy(obj);
-		}
 		shmobj_list_unlock();
+		// unref twice if this is the first time rmid is called
+		if (!(oldmode & SHM_DEST))
+			memobj_unref(&obj->memobj);
+		memobj_unref(&obj->memobj);
 
 		dkprintf("shmctl(%#x,%d,%p): 0\n", shmid, cmd, buf);
 		return 0;
-	}
-	else if (cmd == IPC_SET) {
+	case IPC_SET:
 		shmobj_list_lock();
 		error = shmobj_list_lookup(shmid, &obj);
 		if (error) {
@@ -5183,12 +5191,14 @@ SYSCALL_DECLARE(shmctl)
 		if ((obj->ds.shm_perm.uid != proc->euid)
 				&& (obj->ds.shm_perm.cuid != proc->euid)) {
 			shmobj_list_unlock();
+			memobj_unref(&obj->memobj);
 			dkprintf("shmctl(%#x,%d,%p): -EPERM\n", shmid, cmd, buf);
 			return -EPERM;
 		}
 		error = copy_from_user(&ads, buf, sizeof(ads));
 		if (error) {
 			shmobj_list_unlock();
+			memobj_unref(&obj->memobj);
 			dkprintf("shmctl(%#x,%d,%p): %d\n", shmid, cmd, buf, error);
 			return error;
 		}
@@ -5199,48 +5209,66 @@ SYSCALL_DECLARE(shmctl)
 		obj->ds.shm_ctime = now;
 
 		shmobj_list_unlock();
+		memobj_unref(&obj->memobj);
 		dkprintf("shmctl(%#x,%d,%p): 0\n", shmid, cmd, buf);
 		return 0;
-	}
-	else if (cmd == IPC_STAT) {
+	case IPC_STAT:
+	case SHM_STAT:
 		shmobj_list_lock();
-		error = shmobj_list_lookup(shmid, &obj);
+		if (cmd == IPC_STAT) {
+			error = shmobj_list_lookup(shmid, &obj);
+		} else { // SHM_STAT
+			error = shmobj_list_lookup_by_index(shmid, &obj);
+		}
 		if (error) {
 			shmobj_list_unlock();
 			dkprintf("shmctl(%#x,%d,%p): lookup: %d\n", shmid, cmd, buf, error);
 			return error;
 		}
-		if (!proc->euid) {
-			req = 0;
+
+		if (cmd == IPC_STAT) {
+			if (!proc->euid) {
+				req = 0;
+			} else if ((proc->euid == obj->ds.shm_perm.uid) ||
+				   (proc->euid == obj->ds.shm_perm.cuid)) {
+				req = 0400;
+			} else if ((proc->egid == obj->ds.shm_perm.gid) ||
+				   (proc->egid == obj->ds.shm_perm.cgid)) {
+				req = 0040;
+			} else {
+				req = 0004;
+			}
+			if (req & ~obj->ds.shm_perm.mode) {
+				shmobj_list_unlock();
+				memobj_unref(&obj->memobj);
+				dkprintf("shmctl(%#x,%d,%p): -EACCES\n", shmid,
+					 cmd, buf);
+				return -EACCES;
+			}
 		}
-		else if ((proc->euid == obj->ds.shm_perm.uid)
-				|| (proc->euid == obj->ds.shm_perm.cuid)) {
-			req = 0400;
+
+		/* This could potentially be higher than required if some other
+		 * thread holds a ref at this point.
+		 * Minus one here is because we hold a ref...
+		 */
+		obj->ds.shm_nattch = ihk_atomic_read(&obj->memobj.refcnt) - 1;
+		/* ... And one for sentinel unless RMID has been called */
+		if (!(obj->ds.shm_perm.mode & SHM_DEST)) {
+			obj->ds.shm_nattch--;
 		}
-		else if ((proc->egid == obj->ds.shm_perm.gid)
-				|| (proc->egid == obj->ds.shm_perm.cgid)) {
-			req = 0040;
-		}
-		else {
-			req = 0004;
-		}
-		if (req & ~obj->ds.shm_perm.mode) {
-			shmobj_list_unlock();
-			dkprintf("shmctl(%#x,%d,%p): -EACCES\n", shmid, cmd, buf);
-			return -EACCES;
-		}
+
 		error = copy_to_user(buf, &obj->ds, sizeof(*buf));
 		if (error) {
 			shmobj_list_unlock();
+			memobj_unref(&obj->memobj);
 			dkprintf("shmctl(%#x,%d,%p): %d\n", shmid, cmd, buf, error);
 			return error;
 		}
-
 		shmobj_list_unlock();
+		memobj_unref(&obj->memobj);
 		dkprintf("shmctl(%#x,%d,%p): 0\n", shmid, cmd, buf);
 		return 0;
-	}
-	else if (cmd == IPC_INFO) {
+	case IPC_INFO:
 		shmobj_list_lock();
 		error = shmobj_list_lookup(shmid, &obj);
 		if (error) {
@@ -5251,6 +5279,7 @@ SYSCALL_DECLARE(shmctl)
 		error = copy_to_user(buf, &the_shminfo, sizeof(the_shminfo));
 		if (error) {
 			shmobj_list_unlock();
+			memobj_unref(&obj->memobj);
 			dkprintf("shmctl(%#x,%d,%p): %d\n", shmid, cmd, buf, error);
 			return error;
 		}
@@ -5260,10 +5289,10 @@ SYSCALL_DECLARE(shmctl)
 			maxi = 0;
 		}
 		shmobj_list_unlock();
+		memobj_unref(&obj->memobj);
 		dkprintf("shmctl(%#x,%d,%p): %d\n", shmid, cmd, buf, maxi);
 		return maxi;
-	}
-	else if (cmd == SHM_LOCK) {
+	case SHM_LOCK:
 		shmobj_list_lock();
 		error = shmobj_list_lookup(shmid, &obj);
 		if (error) {
@@ -5275,12 +5304,14 @@ SYSCALL_DECLARE(shmctl)
 				&& (obj->ds.shm_perm.cuid != proc->euid)
 				&& (obj->ds.shm_perm.uid != proc->euid)) {
 			shmobj_list_unlock();
+			memobj_unref(&obj->memobj);
 			dkprintf("shmctl(%#x,%d,%p): perm shm: %d\n", shmid, cmd, buf, error);
 			return -EPERM;
 		}
 		rlim = &proc->rlimit[MCK_RLIMIT_MEMLOCK];
 		if (!rlim->rlim_cur && !has_cap_ipc_lock(thread)) {
 			shmobj_list_unlock();
+			memobj_unref(&obj->memobj);
 			dkprintf("shmctl(%#x,%d,%p): perm proc: %d\n", shmid, cmd, buf, error);
 			return -EPERM;
 		}
@@ -5291,6 +5322,7 @@ SYSCALL_DECLARE(shmctl)
 			error = shmlock_user_get(ruid, &user);
 			if (error) {
 				shmlock_users_unlock();
+				memobj_unref(&obj->memobj);
 				shmobj_list_unlock();
 				ekprintf("shmctl(%#x,%d,%p): user lookup: %d\n", shmid, cmd, buf, error);
 				return -ENOMEM;
@@ -5301,6 +5333,7 @@ SYSCALL_DECLARE(shmctl)
 					&& ((rlim->rlim_cur < user->locked)
 						|| ((rlim->rlim_cur - user->locked) < size))) {
 				shmlock_users_unlock();
+				memobj_unref(&obj->memobj);
 				shmobj_list_unlock();
 				dkprintf("shmctl(%#x,%d,%p): too large: %d\n", shmid, cmd, buf, error);
 				return -ENOMEM;
@@ -5311,11 +5344,11 @@ SYSCALL_DECLARE(shmctl)
 			shmlock_users_unlock();
 		}
 		shmobj_list_unlock();
+		memobj_unref(&obj->memobj);
 
 		dkprintf("shmctl(%#x,%d,%p): 0\n", shmid, cmd, buf);
 		return 0;
-	}
-	else if (cmd == SHM_UNLOCK) {
+	case SHM_UNLOCK:
 		shmobj_list_lock();
 		error = shmobj_list_lookup(shmid, &obj);
 		if (error) {
@@ -5327,6 +5360,7 @@ SYSCALL_DECLARE(shmctl)
 				&& (obj->ds.shm_perm.cuid != proc->euid)
 				&& (obj->ds.shm_perm.uid != proc->euid)) {
 			shmobj_list_unlock();
+			memobj_unref(&obj->memobj);
 			dkprintf("shmctl(%#x,%d,%p): perm shm: %d\n", shmid, cmd, buf, error);
 			return -EPERM;
 		}
@@ -5345,28 +5379,10 @@ SYSCALL_DECLARE(shmctl)
 			obj->ds.shm_perm.mode &= ~SHM_LOCKED;
 		}
 		shmobj_list_unlock();
+		memobj_unref(&obj->memobj);
 		dkprintf("shmctl(%#x,%d,%p): 0\n", shmid, cmd, buf);
 		return 0;
-	}
-	else if (cmd == SHM_STAT) {
-		shmobj_list_lock();
-		error = shmobj_list_lookup_by_index(shmid, &obj);
-		if (error) {
-			shmobj_list_unlock();
-			dkprintf("shmctl(%#x,%d,%p): lookup: %d\n", shmid, cmd, buf, error);
-			return error;
-		}
-		error = copy_to_user(buf, &obj->ds, sizeof(*buf));
-		if (error) {
-			shmobj_list_unlock();
-			dkprintf("shmctl(%#x,%d,%p): %d\n", shmid, cmd, buf, error);
-			return error;
-		}
-		shmobj_list_unlock();
-		dkprintf("shmctl(%#x,%d,%p): 0\n", shmid, cmd, buf);
-		return 0;
-	}
-	else if (cmd == SHM_INFO) {
+	case SHM_INFO:
 		shmobj_list_lock();
 		error = copy_to_user(buf, &the_shm_info, sizeof(the_shm_info));
 		if (error) {
@@ -5382,10 +5398,10 @@ SYSCALL_DECLARE(shmctl)
 		shmobj_list_unlock();
 		dkprintf("shmctl(%#x,%d,%p): %d\n", shmid, cmd, buf, maxi);
 		return maxi;
+	default:
+		dkprintf("shmctl(%#x,%d,%p): EINVAL\n", shmid, cmd, buf);
+		return -EINVAL;
 	}
-
-	dkprintf("shmctl(%#x,%d,%p): EINVAL\n", shmid, cmd, buf);
-	return -EINVAL;
 } /* sys_shmctl() */
 
 SYSCALL_DECLARE(shmdt)
@@ -8017,7 +8033,7 @@ SYSCALL_DECLARE(mremap)
 					oldaddr, oldsize0, newsize0, flags,
 					newaddr, error);
 			if (range->memobj) {
-				memobj_release(range->memobj);
+				memobj_unref(range->memobj);
 			}
 			goto out;
 		}
