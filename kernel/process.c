@@ -125,6 +125,7 @@ init_process(struct process *proc, struct process *parent)
 	INIT_LIST_HEAD(&proc->ptraced_siblings_list);
 	mcs_rwlock_init(&proc->update_lock);
 #endif /* POSTK_DEBUG_ARCH_DEP_63 */
+	INIT_LIST_HEAD(&proc->report_threads_list);
 	INIT_LIST_HEAD(&proc->threads_list);
 	INIT_LIST_HEAD(&proc->children_list);
 	INIT_LIST_HEAD(&proc->ptraced_children_list);
@@ -349,6 +350,7 @@ struct thread *create_thread(unsigned long user_pc,
 	thread->vm = vm;
 	thread->proc = proc;
 	proc->vm = vm;
+	proc->main_thread = thread;
 
 	if(init_process_vm(proc, asp, vm) != 0){
 		goto err;
@@ -466,6 +468,7 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 
 		thread->proc = proc;
 		thread->vm = proc->vm;
+		proc->main_thread = thread;
 
 		memcpy(&proc->vm->region, &org->vm->region, sizeof(struct vm_regions));
 
@@ -570,29 +573,47 @@ ptrace_traceme(void)
 	struct thread *thread = cpu_local_var(current);
 	struct process *proc = thread->proc;
 	struct process *parent = proc->parent;
-	struct mcs_rwlock_node_irqsave lock;
 	struct mcs_rwlock_node child_lock;
+	struct resource_set *resource_set = cpu_local_var(resource_set);
+	struct process *pid1 = resource_set->pid1;
 
 	dkprintf("ptrace_traceme,pid=%d,proc->parent=%p\n", proc->pid, proc->parent);
 
-	if (proc->ptrace & PT_TRACED) {
+	if (thread->ptrace & PT_TRACED) {
+		return -EPERM;
+	}
+	if (parent == pid1) {
 		return -EPERM;
 	}
 
 	dkprintf("ptrace_traceme,parent->pid=%d\n", proc->parent->pid);
 
-	mcs_rwlock_writer_lock(&proc->update_lock, &lock);
-	mcs_rwlock_writer_lock_noirq(&parent->children_lock, &child_lock);
-	list_add_tail(&proc->ptraced_siblings_list, &parent->ptraced_children_list);
-	mcs_rwlock_writer_unlock_noirq(&parent->children_lock, &child_lock);
-	proc->ptrace = PT_TRACED | PT_TRACE_EXEC;
-	mcs_rwlock_writer_unlock(&proc->update_lock, &lock);
+	if (thread == proc->main_thread) {
+		mcs_rwlock_writer_lock_noirq(&parent->children_lock,
+					     &child_lock);
+		list_add_tail(&proc->ptraced_siblings_list,
+			      &parent->ptraced_children_list);
+		mcs_rwlock_writer_unlock_noirq(&parent->children_lock,
+					       &child_lock);
+	}
+	if (!thread->report_proc) {
+		mcs_rwlock_writer_lock_noirq(&parent->threads_lock,
+					     &child_lock);
+		list_add_tail(&thread->report_siblings_list,
+			      &parent->report_threads_list);
+		mcs_rwlock_writer_unlock_noirq(&parent->threads_lock,
+					       &child_lock);
+		thread->report_proc = parent;
+	}
+
+	thread->ptrace = PT_TRACED | PT_TRACE_EXEC;
 
 	if (thread->ptrace_debugreg == NULL) {
 		error = alloc_debugreg(thread);
 	}
 
 	clear_single_step(thread);
+	hold_thread(thread);
 
 	dkprintf("ptrace_traceme,returning,error=%d\n", error);
 	return error;
@@ -2430,6 +2451,11 @@ void free_process_memory_ranges(struct process_vm *vm)
 	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 }
 
+static void free_thread_pages(struct thread *thread)
+{
+	ihk_mc_free_pages(thread, KERNEL_STACK_NR_PAGES);
+}
+
 void
 hold_process(struct process *proc)
 {
@@ -2462,13 +2488,6 @@ release_process(struct process *proc)
 	list_del(&proc->siblings_list);
 	mcs_rwlock_writer_unlock(&parent->children_lock, &lock);
 
-	if(proc->ptrace & PT_TRACED){
-		parent = proc->ppid_parent;
-		mcs_rwlock_writer_lock(&parent->children_lock, &lock);
-		list_del(&proc->ptraced_siblings_list);
-		mcs_rwlock_writer_unlock(&parent->children_lock, &lock);
-	}
-
 	if (proc->tids) kfree(proc->tids);
 #ifdef PROFILE_ENABLE
 	if (proc->profile) {
@@ -2481,6 +2500,7 @@ release_process(struct process *proc)
 	}
 	profile_dealloc_proc_events(proc);
 #endif // PROFILE_ENABLE
+	free_thread_pages(proc->main_thread);
 	kfree(proc);
 }
 
@@ -2574,8 +2594,8 @@ out:
 int hold_thread(struct thread *thread)
 {
 	if (thread->status == PS_EXITED) {
-		kprintf("hold_thread: ERROR: already exited process,tid=%d\n", thread->tid);
-		return -ESRCH;
+		kprintf("hold_thread: WARNING: already exited process,tid=%d\n",
+			thread->tid);
 	}
 
 	ihk_atomic_inc(&thread->refcount);
@@ -2657,17 +2677,16 @@ void destroy_thread(struct thread *thread)
 	ts_add(&thread->proc->stime, &ats);
 	tsc_to_ts(thread->user_tsc, &ats);
 	ts_add(&thread->proc->utime, &ats);
+	mcs_rwlock_writer_unlock(&proc->update_lock, &updatelock);
 
 	mcs_rwlock_writer_lock(&proc->threads_lock, &lock);
 	list_del(&thread->siblings_list);
 	if (thread->uti_state == UTI_STATE_EPILOGUE) {
 		__find_and_replace_tid(proc, thread, thread->uti_refill_tid);
-	} else {
+	}
+	else if (thread != proc->main_thread) {
 		__release_tid(proc, thread);
 	}
-	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
-
-	mcs_rwlock_writer_unlock(&proc->update_lock, &updatelock);
 
 	cpu_clear(thread->cpu_id, &thread->vm->address_space->cpu_set,
 	          &thread->vm->address_space->cpu_set_lock);
@@ -2691,7 +2710,9 @@ void destroy_thread(struct thread *thread)
 
 	release_sigcommon(thread->sigcommon);
 
-	ihk_mc_free_pages(thread, KERNEL_STACK_NR_PAGES);
+	if (thread != proc->main_thread)
+		free_thread_pages(thread);
+	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 }
 
 void release_thread(struct thread *thread)
@@ -2713,20 +2734,6 @@ void release_thread(struct thread *thread)
 	destroy_thread(thread);
 
 	release_process_vm(vm);
-	rusage_num_threads_dec();
-
-#ifdef RUSAGE_DEBUG
-	if (rusage->num_threads == 0) {
-		int i;
-		kprintf("total_memory_usage=%ld\n", rusage->total_memory_usage);
-		for(i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
-			kprintf("memory_stat_rss[%d]=%ld\n", i, rusage->memory_stat_rss[i]);
-		}
-		for(i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
-			kprintf("memory_stat_mapped_file[%d]=%ld\n", i, rusage->memory_stat_mapped_file[i]);
-		}
-	}
-#endif
 }
 
 void cpu_set(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock)
@@ -3287,6 +3294,25 @@ void schedule(void)
 
 		if ((last != NULL) && (last->status == PS_EXITED)) {
 			release_thread(last);
+			rusage_num_threads_dec();
+#ifdef RUSAGE_DEBUG
+			if (rusage->num_threads == 0) {
+				int i;
+
+				kprintf("total_memory_usage=%ld\n",
+					rusage->total_memory_usage);
+				for (i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
+					kprintf("memory_stat_rss[%d]=%ld\n", i,
+						rusage->memory_stat_rss[i]);
+				}
+				for (i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
+					kprintf(
+					   "memory_stat_mapped_file[%d]=%ld\n",
+					    i,
+					    rusage->memory_stat_mapped_file[i]);
+				}
+			}
+#endif
 		}
 
 		/* Have we migrated to another core meanwhile? */
@@ -3535,22 +3561,26 @@ void runq_del_thread(struct thread *thread, int cpu_id)
 }
 
 struct thread *
-find_thread(int pid, int tid, struct mcs_rwlock_node_irqsave *lock)
+find_thread(int pid, int tid)
 {
 	struct thread *thread;
 	struct thread_hash *thash = cpu_local_var(resource_set)->thread_hash;
 	int hash = thread_hash(tid);
+	struct mcs_rwlock_node_irqsave lock;
 
 	if(tid <= 0)
 		return NULL;
-	mcs_rwlock_reader_lock(&thash->lock[hash], lock);
+	mcs_rwlock_reader_lock(&thash->lock[hash], &lock);
 retry:
 	list_for_each_entry(thread, &thash->list[hash], hash_list){
 		if(thread->tid == tid){
-			if(pid <= 0)
+			if (pid <= 0 ||
+			    thread->proc->pid == pid) {
+				hold_thread(thread);
+				mcs_rwlock_reader_unlock(&thash->lock[hash],
+							 &lock);
 				return thread;
-			if(thread->proc->pid == pid)
-				return thread;
+			}
 		}
 	}
 	/* If no thread with pid == tid was found, then we may be looking for a
@@ -3560,20 +3590,16 @@ retry:
 		pid = 0;
 		goto retry;
 	}
-	mcs_rwlock_reader_unlock(&thash->lock[hash], lock);
+	mcs_rwlock_reader_unlock(&thash->lock[hash], &lock);
 	return NULL;
 }
 
 void
-thread_unlock(struct thread *thread, struct mcs_rwlock_node_irqsave *lock)
+thread_unlock(struct thread *thread)
 {
-	struct thread_hash *thash = cpu_local_var(resource_set)->thread_hash;
-	int hash;
-
 	if(!thread)
 		return;
-	hash = thread_hash(thread->tid);
-	mcs_rwlock_reader_unlock(&thash->lock[hash], lock);
+	release_thread(thread);
 }
 
 struct process *
@@ -3628,8 +3654,9 @@ debug_log(unsigned long arg)
 				if (p == pid1)
 					continue;
 				found++;
-				kprintf("pid=%d ppid=%d status=%d\n",
-				        p->pid, p->ppid_parent->pid, p->status);
+				kprintf("pid=%d ppid=%d status=%d ref=%d\n",
+					p->pid, p->ppid_parent->pid, p->status,
+					p->refcount.counter);
 			}
 			__mcs_rwlock_reader_unlock(&phash->lock[i], &lock);
 		}
@@ -3640,9 +3667,11 @@ debug_log(unsigned long arg)
 			__mcs_rwlock_reader_lock(&thash->lock[i], &lock);
 			list_for_each_entry(t, &thash->list[i], hash_list){
 				found++;
-				kprintf("cpu=%d pid=%d tid=%d status=%d offload=%d\n",
-				        t->cpu_id, t->proc->pid, t->tid,
-				        t->status, t->in_syscall_offload);
+				kprintf("cpu=%d pid=%d tid=%d status=%d "
+					"offload=%d ref=%d ptrace=%08x\n",
+					t->cpu_id, t->proc->pid, t->tid,
+					t->status, t->in_syscall_offload,
+					t->refcount.counter, t->ptrace);
 			}
 			__mcs_rwlock_reader_unlock(&thash->lock[i], &lock);
 		}

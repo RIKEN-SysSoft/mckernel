@@ -576,7 +576,6 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	struct ikc_scd_packet pckt;
 	struct ihk_ikc_channel_desc *resp_channel = cpu_local_var(ikc2linux);
 	int rc;
-	struct mcs_rwlock_node_irqsave lock;
 	struct thread *thread;
 	struct process *proc;
 	struct mcctrl_signal {
@@ -637,14 +636,14 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	 * the waiting thread
 	 */
 	case SCD_MSG_WAKE_UP_SYSCALL_THREAD:
-		thread = find_thread(0, packet->ttid, &lock);
+		thread = find_thread(0, packet->ttid);
 		if (!thread) {
 			kprintf("%s: WARNING: no thread for SCD reply? TID: %d\n",
 				__FUNCTION__, packet->ttid);
 			ret = -EINVAL;
 			break;
 		}
-		thread_unlock(thread, &lock);
+		thread_unlock(thread);
 
 		dkprintf("%s: SCD_MSG_WAKE_UP_SYSCALL_THREAD: waking up tid %d\n",
 			__FUNCTION__, packet->ttid);

@@ -537,23 +537,32 @@ void ptrace_report_signal(struct thread *thread, int sig)
 	dkprintf("ptrace_report_signal, tid=%d, pid=%d\n", thread->tid, thread->proc->pid);
 
 	mcs_rwlock_writer_lock(&proc->update_lock, &lock);	
-	if(!(proc->ptrace & PT_TRACED)){
+	if (!(thread->ptrace & PT_TRACED)) {
 		mcs_rwlock_writer_unlock(&proc->update_lock, &lock);
 		return;
 	}
-	thread->exit_status = sig;
+
 	/* Transition thread state */
-	proc->status = PS_DELAY_TRACED;
+	thread->exit_status = sig;
 	thread->status = PS_TRACED;
-	proc->ptrace &= ~PT_TRACE_SYSCALL;
-	if (sig == SIGSTOP || sig == SIGTSTP ||
-			sig == SIGTTIN || sig == SIGTTOU) {
-		proc->signal_flags |= SIGNAL_STOP_STOPPED;
-	} else {
-		proc->signal_flags &= ~SIGNAL_STOP_STOPPED;
-	}
-	parent_pid = proc->parent->pid;
+	thread->ptrace &= ~PT_TRACE_SYSCALL;
 	save_debugreg(thread->ptrace_debugreg);
+	if (sig == SIGSTOP || sig == SIGTSTP ||
+	    sig == SIGTTIN || sig == SIGTTOU) {
+		thread->signal_flags |= SIGNAL_STOP_STOPPED;
+	}
+	else {
+		thread->signal_flags &= ~SIGNAL_STOP_STOPPED;
+	}
+
+	if (thread == proc->main_thread) {
+		proc->status = PS_DELAY_TRACED;
+		parent_pid = proc->parent->pid;
+	}
+	else {
+		parent_pid = thread->report_proc->pid;
+		waitq_wakeup(&thread->report_proc->waitpid_q);
+	}
 	mcs_rwlock_writer_unlock(&proc->update_lock, &lock);
 
 	memset(&info, '\0', sizeof info);
@@ -574,9 +583,8 @@ ptrace_arch_prctl(int pid, long code, long addr)
 {
 	long rc = -EIO;
 	struct thread *child;
-	struct mcs_rwlock_node_irqsave lock;
 
-	child = find_thread(pid, pid, &lock);
+	child = find_thread(pid, pid);
 	if (!child)
 		return -ESRCH;
 	if (child->proc->status & (PS_TRACED | PS_STOPPED)) {
@@ -618,7 +626,7 @@ ptrace_arch_prctl(int pid, long code, long addr)
 			break;
 		}
 	}
-	thread_unlock(child, &lock);
+	thread_unlock(child);
 
 	return rc;
 }
@@ -690,9 +698,9 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 	dkprintf("do_signal(): tid=%d, pid=%d, sig=%d\n", thread->tid, proc->pid, sig);
 	orgsig = sig;
 
-	if((proc->ptrace & PT_TRACED) &&
-	   pending->ptracecont == 0 &&
-	   sig != SIGKILL) {
+	if ((thread->ptrace & PT_TRACED) &&
+	    pending->ptracecont == 0 &&
+	    sig != SIGKILL) {
 		ptraceflag = 1;
 		sig = SIGSTOP;
 	}
@@ -835,6 +843,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 	else {
 		int	coredumped = 0;
 		siginfo_t info;
+		int ptc = pending->ptracecont;
 
 		if(ptraceflag){
 			if(thread->ptrace_recvsig)
@@ -861,22 +870,37 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 				info.si_code = CLD_STOPPED;
 				info._sifields._sigchld.si_pid = thread->proc->pid;
 				info._sifields._sigchld.si_status = (sig << 8) | 0x7f;
-				do_kill(cpu_local_var(current), thread->proc->parent->pid, -1, SIGCHLD, &info, 0);
-				dkprintf("do_signal,SIGSTOP,changing state\n");
+				if (ptc == 2 &&
+				    thread != thread->proc->main_thread) {
+					thread->signal_flags =
+							    SIGNAL_STOP_STOPPED;
+					thread->status = PS_STOPPED;
+					thread->exit_status = SIGSTOP;
+					do_kill(thread,
+						thread->report_proc->pid, -1,
+						SIGCHLD, &info, 0);
+					waitq_wakeup(
+					       &thread->report_proc->waitpid_q);
+				}
+				else {
+					/* Update thread state in fork tree */
+					mcs_rwlock_writer_lock(
+						     &proc->update_lock, &lock);
+					proc->group_exit_status = SIGSTOP;
 
-				/* Update thread state in fork tree */
-				mcs_rwlock_writer_lock(&proc->update_lock, &lock);	
-				proc->group_exit_status = SIGSTOP;
+					/* Reap and set new signal_flags */
+					proc->main_thread->signal_flags =
+							    SIGNAL_STOP_STOPPED;
 
-				/* Reap and set new signal_flags */
-				proc->signal_flags = SIGNAL_STOP_STOPPED;
+					proc->status = PS_DELAY_STOPPED;
+					thread->status = PS_STOPPED;
+					mcs_rwlock_writer_unlock(
+						     &proc->update_lock, &lock);
 
-				proc->status = PS_DELAY_STOPPED;
-				thread->status = PS_STOPPED;
-				mcs_rwlock_writer_unlock(&proc->update_lock, &lock);	
-
-				dkprintf("do_signal(): pid: %d, tid: %d SIGSTOP, sleeping\n", 
-					proc->pid, thread->tid);
+					do_kill(thread,
+						thread->proc->parent->pid, -1,
+						SIGCHLD, &info, 0);
+				}
 				/* Sleep */
 				schedule();
 				dkprintf("SIGSTOP(): woken up\n");
@@ -884,16 +908,28 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 			break;
 		case SIGTRAP:
 			dkprintf("do_signal,SIGTRAP\n");
-			if(!(proc->ptrace & PT_TRACED)) {
+			if (!(thread->ptrace & PT_TRACED)) {
 				goto core;
 			}
 
 			/* Update thread state in fork tree */
-			mcs_rwlock_writer_lock(&proc->update_lock, &lock);	
 			thread->exit_status = SIGTRAP;
-			proc->status = PS_DELAY_TRACED;
 			thread->status = PS_TRACED;
-			mcs_rwlock_writer_unlock(&proc->update_lock, &lock);	
+			if (thread == proc->main_thread) {
+				mcs_rwlock_writer_lock(&proc->update_lock,
+						       &lock);
+				proc->group_exit_status = SIGTRAP;
+				proc->status = PS_DELAY_TRACED;
+				mcs_rwlock_writer_unlock(&proc->update_lock,
+							 &lock);
+				do_kill(thread, thread->proc->parent->pid, -1,
+					SIGCHLD, &info, 0);
+			}
+			else {
+				do_kill(thread, thread->report_proc->pid, -1,
+					SIGCHLD, &info, 0);
+				waitq_wakeup(&thread->report_proc->waitpid_q);
+			}
 
 			/* Sleep */
 			dkprintf("do_signal,SIGTRAP,sleeping\n");
@@ -908,7 +944,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 			info._sifields._sigchld.si_pid = proc->pid;
 			info._sifields._sigchld.si_status = 0x0000ffff;
 			do_kill(cpu_local_var(current), proc->parent->pid, -1, SIGCHLD, &info, 0);
-			proc->signal_flags = SIGNAL_STOP_CONTINUED;
+			proc->main_thread->signal_flags = SIGNAL_STOP_CONTINUED;
 			proc->status = PS_RUNNING;
 			dkprintf("do_signal,SIGCONT,do nothing\n");
 			break;
@@ -958,10 +994,12 @@ getsigpending(struct thread *thread, int delflag){
 	lock = &thread->sigcommon->lock;
 	head = &thread->sigcommon->sigpending;
 	for(;;) {
-		if (delflag)
+		if (delflag) {
 			mcs_rwlock_writer_lock(lock, &mcs_rw_node);
-		else 
+		}
+		else {
 			mcs_rwlock_reader_lock(lock, &mcs_rw_node);
+		}
 
 		list_for_each_entry_safe(pending, next, head, list){
 			for(x = pending->sigmask.__val[0], sig = 0; x; sig++, x >>= 1);
@@ -974,19 +1012,23 @@ getsigpending(struct thread *thread, int delflag){
 					if(delflag) 
 						list_del(&pending->list);
 
-					if (delflag)
+					if (delflag) {
 						mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
-					else 
+					}
+					else {
 						mcs_rwlock_reader_unlock(lock, &mcs_rw_node);
+					}
 					return pending;
 				}
 			}
 		}
 
-		if (delflag)
+		if (delflag) {
 			mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
-		else 
+		}
+		else {
 			mcs_rwlock_reader_unlock(lock, &mcs_rw_node);
+		}
 
 		if(lock == &thread->sigpendinglock)
 			return NULL;
@@ -1177,7 +1219,7 @@ repeat:
 			continue;
 		}
 
-		if (thread->proc->exit_status & 0x0000000100000000L) {
+		if (thread->proc->group_exit_status & 0x0000000100000000L) {
 			continue;
 		}
 
@@ -1404,10 +1446,10 @@ done:
 	   in check_signal */
 	rc = 0;
 	k = tthread->sigcommon->action + sig - 1;
-	if((sig != SIGKILL && (tproc->ptrace & PT_TRACED)) ||
-			(k->sa.sa_handler != (void *)1 &&
-			 (k->sa.sa_handler != NULL ||
-			  (sig != SIGCHLD && sig != SIGURG)))){
+	if ((sig != SIGKILL && (tthread->ptrace & PT_TRACED)) ||
+	    (k->sa.sa_handler != (void *)1 &&
+	     (k->sa.sa_handler != NULL ||
+	      (sig != SIGCHLD && sig != SIGURG)))) {
 		struct sig_pending *pending = NULL;
 		if (sig < 33) { // SIGRTMIN - SIGRTMAX
 			list_for_each_entry(pending, head, list){
