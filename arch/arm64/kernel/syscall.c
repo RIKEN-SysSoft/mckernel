@@ -2542,18 +2542,21 @@ out:
 	return mpsr->phase_ret;
 }
 
-#ifdef POSTK_DEBUG_TEMP_FIX_96 /* aarch64 build error fix. */
-extern void calculate_time_from_tsc(struct timespec *ts);
-#endif /* POSTK_DEBUG_TEMP_FIX_96 */
-time_t time(void) {
+time_t time(void)
+{
 	struct timespec ats;
+	time_t ret = 0;
 
 	if (gettime_local_support) {
 		calculate_time_from_tsc(&ats);
-		return ats.tv_sec;
+		ret = ats.tv_sec;
 	}
+	return ret;
+}
 
-	return (time_t)0;
+SYSCALL_DECLARE(time)
+{
+	return time();
 }
 
 #ifdef POSTK_DEBUG_ARCH_DEP_110 /* archdep for ihk_mc_syscall_ret() set before ptrace_syscall_event() */

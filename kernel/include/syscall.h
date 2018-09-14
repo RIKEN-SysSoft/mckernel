@@ -493,6 +493,7 @@ int arch_setup_vdso(void);
 int arch_cpu_read_write_register(struct ihk_os_cpu_register *desc,
 		enum mcctrl_os_cpu_operation op);
 struct vm_range_numa_policy *vm_range_policy_search(struct process_vm *vm, uintptr_t addr);
+void calculate_time_from_tsc(struct timespec *ts);
 time_t time(void);
 long do_futex(int n, unsigned long arg0, unsigned long arg1,
 			  unsigned long arg2, unsigned long arg3,

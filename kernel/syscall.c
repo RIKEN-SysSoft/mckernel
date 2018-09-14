@@ -114,11 +114,6 @@ char *syscall_name[] MCKERNEL_UNUSED = {
 
 static ihk_spinlock_t tod_data_lock = SPIN_LOCK_UNLOCKED;
 static unsigned long uti_desc; /* Address of struct uti_desc object in syscall_intercept.c */
-#ifdef POSTK_DEBUG_TEMP_FIX_96 /* aarch64 build error fix. */
-void calculate_time_from_tsc(struct timespec *ts);
-#else /* POSTK_DEBUG_TEMP_FIX_96 */
-static void calculate_time_from_tsc(struct timespec *ts);
-#endif /* POSTK_DEBUG_TEMP_FIX_96 */
 
 void save_syscall_return_value(int num, unsigned long rc);
 extern long alloc_debugreg(struct thread *thread);
@@ -7005,11 +7000,7 @@ SYSCALL_DECLARE(get_cpu_id)
 	return ihk_mc_get_processor_id();
 }
 
-#ifdef POSTK_DEBUG_TEMP_FIX_96 /* aarch64 build error fix. */
 void calculate_time_from_tsc(struct timespec *ts)
-#else /* POSTK_DEBUG_TEMP_FIX_96 */
-static void calculate_time_from_tsc(struct timespec *ts)
-#endif /* POSTK_DEBUG_TEMP_FIX_96 */
 {
 	long ver;
 	unsigned long current_tsc;
