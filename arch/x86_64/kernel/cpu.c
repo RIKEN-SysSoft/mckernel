@@ -848,9 +848,6 @@ void setup_x86_ap(void (*next_func)(void))
 }
 
 void arch_show_interrupt_context(const void *reg);
-void set_signal(int sig, void *regs, struct siginfo *info);
-void check_signal(unsigned long, void *, int);
-void check_sig_pending();
 extern void tlb_flush_handler(int vector);
 
 void __show_stack(uintptr_t *sp) {
@@ -878,7 +875,7 @@ void interrupt_exit(struct x86_user_context *regs)
 		cpu_enable_interrupt();
 		check_sig_pending();
 		check_need_resched();
-		check_signal(0, regs, 0);
+		check_signal(0, regs, -1);
 	}
 	else {
 		check_sig_pending();

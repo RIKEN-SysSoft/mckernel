@@ -120,10 +120,7 @@ void calculate_time_from_tsc(struct timespec *ts);
 static void calculate_time_from_tsc(struct timespec *ts);
 #endif /* POSTK_DEBUG_TEMP_FIX_96 */
 
-void check_signal(unsigned long, void *, int);
 void save_syscall_return_value(int num, unsigned long rc);
-void do_signal(long rc, void *regs, struct thread *thread, struct sig_pending *pending, int num);
-extern unsigned long do_kill(struct thread *thread, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
 extern long alloc_debugreg(struct thread *thread);
 extern int num_processors;
 extern unsigned long ihk_mc_get_ns_per_tsc(void);
@@ -4255,7 +4252,7 @@ SYSCALL_DECLARE(rt_sigtimedwait)
 			list_del(&pending->list);
 			thread->sigmask.__val[0] = bset;
 			mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
-			do_signal(-EINTR, NULL, thread, pending, 0);
+			do_signal(-EINTR, NULL, thread, pending, -1);
 			return -EINTR;
 		}
 		mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
@@ -4368,7 +4365,7 @@ do_sigsuspend(struct thread *thread, const sigset_t *set)
 		list_del(&pending->list);
 		mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
 		thread->sigmask.__val[0] = bset;
-		do_signal(-EINTR, NULL, thread, pending, 0);
+		do_signal(-EINTR, NULL, thread, pending, -1);
 		break;
 	}
 	return -EINTR;
@@ -9646,7 +9643,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	if(cpu_local_var(current)->proc->status == PS_EXITED &&
 	   (num != __NR_exit && num != __NR_exit_group)){
 		save_syscall_return_value(num, -EINVAL);
-		check_signal(-EINVAL, NULL, 0);
+		check_signal(-EINVAL, NULL, -1);
 #ifdef POSTK_DEBUG_TEMP_FIX_84 /* FIX: set_cputime() kernel to kernel case */
 		set_cputime(CPUTIME_MODE_K2U);
 #else /* POSTK_DEBUG_TEMP_FIX_84 */

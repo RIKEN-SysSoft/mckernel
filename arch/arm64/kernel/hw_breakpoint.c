@@ -7,6 +7,7 @@
 #include <hw_breakpoint.h>
 #include <arch-memory.h>
 #include <signal.h>
+#include <process.h>
 
 /* @ref.impl arch/arm64/kernel/hw_breakpoint.c::core_num_[brps|wrps] */
 /* Number of BRP/WRP registers on this CPU. */

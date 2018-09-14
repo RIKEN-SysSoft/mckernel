@@ -13,7 +13,6 @@
 unsigned long __page_fault_handler_address;
 extern int interrupt_from_user(void *);
 
-void set_signal(int sig, void *regs, struct siginfo *info);
 static void do_bad_area(unsigned long addr, unsigned int esr, struct pt_regs *regs);
 static int do_page_fault(unsigned long addr, unsigned int esr, struct pt_regs *regs);
 static int do_translation_fault(unsigned long addr, unsigned int esr, struct pt_regs *regs);

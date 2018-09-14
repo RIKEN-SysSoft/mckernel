@@ -407,8 +407,6 @@ struct ucontext {
 };
 
 void arm64_notify_die(const char *str, struct pt_regs *regs, struct siginfo *info, int err);
-void set_signal(int sig, void *regs, struct siginfo *info);
-void check_signal(unsigned long rc, void *regs, int num);
 void check_signal_irq_disabled(unsigned long rc, void *regs, int num);
 
 #endif /* __HEADER_ARM64_COMMON_SIGNAL_H */

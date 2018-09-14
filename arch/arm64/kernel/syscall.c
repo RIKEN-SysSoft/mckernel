@@ -527,7 +527,7 @@ SYSCALL_DECLARE(rt_sigreturn)
 		clear_single_step(thread);
 		set_signal(SIGTRAP, regs, &info);
 		check_need_resched();
-		check_signal(0, regs, 0);
+		check_signal(0, regs, -1);
 	}
 	return ksigsp.sigrc;
 
@@ -542,7 +542,6 @@ bad_frame:
 }
 
 extern struct cpu_local_var *clv;
-extern unsigned long do_kill(struct thread *thread, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
 extern void interrupt_syscall(struct thread *, int sig);
 extern int num_processors;
 
@@ -644,8 +643,14 @@ extern void coredump(struct thread *thread, void *regs);
 static int
 isrestart(int syscallno, unsigned long rc, int sig, int restart)
 {
-	if(syscallno == 0 || rc != -EINTR)
+	if (sig == SIGKILL || sig == SIGSTOP)
 		return 0;
+
+	if (syscallno < 0 || rc != -EINTR)
+		return 0;
+
+	if (sig == SIGCHLD)
+		return 1;
 
 	/* 
 	 * The following interfaces are never restarted after being interrupted 
@@ -666,7 +671,7 @@ isrestart(int syscallno, unsigned long rc, int sig, int restart)
 	 *   poll(2)       -> ppoll
 	 *   select(2)     -> pselect6
 	 */
-	switch(syscallno){
+	switch (syscallno) {
 		case __NR_rt_sigsuspend:
 		case __NR_rt_sigtimedwait:
 		case __NR_epoll_pwait:
@@ -682,9 +687,7 @@ isrestart(int syscallno, unsigned long rc, int sig, int restart)
 			return 0;
 	}
 
-	if(sig == SIGCHLD)
-		return 1;
-	if(restart)
+	if (restart)
 		return 1;
 	return 0;
 }
@@ -1061,7 +1064,7 @@ static int setup_rt_frame(int usig, unsigned long rc, int to_restart,
 	return err;
 }
 
-void
+int
 do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pending *pending, int syscallno)
 {
 	struct pt_regs *regs = regs0;
@@ -1073,6 +1076,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 	int	ptraceflag = 0;
 	struct mcs_rwlock_node_irqsave lock;
 	struct mcs_rwlock_node_irqsave mcs_rw_node;
+	int restart = 0;
 
 	for(w = pending->sigmask.__val[0], sig = 0; w; sig++, w >>= 1);
 	dkprintf("do_signal(): tid=%d, pid=%d, sig=%d\n", thread->tid, proc->pid, sig);
@@ -1098,28 +1102,22 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 	if(k->sa.sa_handler == SIG_IGN){
 		kfree(pending);
 		mcs_rwlock_writer_unlock(&thread->sigcommon->lock, &mcs_rw_node);
-		return;
+		goto out;
 	}
 	else if(k->sa.sa_handler){
-		/* save signal frame */
-		int to_restart = 0;
-
 		// check syscall to have restart ?
-		to_restart = isrestart(syscallno, rc, sig, k->sa.sa_flags & SA_RESTART);
-		if(syscallno != 0 && rc == -EINTR && sig == SIGCHLD) {
-			to_restart = 1;
-		}
-		if(to_restart == 1) {
+		restart = isrestart(syscallno, rc, sig, k->sa.sa_flags & SA_RESTART);
+		if (restart == 1) {
 			/* Prepare for system call restart. */
 			regs->regs[0] = regs->orig_x0;
 		}
 
-		if (setup_rt_frame(sig, rc, to_restart, syscallno, k, pending, regs, thread)) {
+		if (setup_rt_frame(sig, rc, restart, syscallno, k, pending, regs, thread)) {
 			kfree(pending);
 			mcs_rwlock_writer_unlock(&thread->sigcommon->lock, &mcs_rw_node);
 			kprintf("do_signal,page_fault_thread_vm failed\n");
 			terminate(0, sig);
-			return;
+			goto out;
 		}
 
 		// check signal handler is ONESHOT
@@ -1139,7 +1137,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 			clear_single_step(thread);
 			set_signal(SIGTRAP, regs, &info);
 			check_need_resched();
-			check_signal(0, regs, 0);
+			check_signal(0, regs, -1);
 		}
 	}
 	else {
@@ -1247,6 +1245,8 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 			break;
 		}
 	}
+out:
+	return restart;
 }
 
 static struct sig_pending *
@@ -1381,7 +1381,9 @@ __check_signal(unsigned long rc, void *regs0, int num, int irq_disabled)
 		if (irq_disabled == 1) {
 			cpu_restore_interrupt(irqstate);
 		}
-		do_signal(rc, regs, thread, pending, num);
+		if (do_signal(rc, regs, thread, pending, num)) {
+			num = -1;
+		}
 	}
 
 out:

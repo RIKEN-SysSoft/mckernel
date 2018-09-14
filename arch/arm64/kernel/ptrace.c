@@ -26,7 +26,6 @@
 				__FILE__, __FUNCTION__, __LINE__); panic(""); } } while(0)
 
 extern void save_debugreg(unsigned long *debugreg);
-extern unsigned long do_kill(struct thread *thread, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
 extern int interrupt_from_user(void *);
 
 enum aarch64_regset {
