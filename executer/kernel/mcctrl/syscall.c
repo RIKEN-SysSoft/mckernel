@@ -2136,7 +2136,7 @@ out:
 	return (IS_ERR_VALUE(map))? (int)map: 0;
 }
 
-int clear_pte_range(uintptr_t start, uintptr_t len)
+int mcctrl_clear_pte_range(uintptr_t start, uintptr_t len)
 {
 	struct mm_struct *mm = current->mm;
 	struct vm_area_struct *vma;
@@ -2383,25 +2383,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 		break;
 
 	case __NR_munmap:
-		/* Set new remote page table if not zero */
-		if (sc->args[2]) {
-			struct mcctrl_per_proc_data *ppd = NULL;
-
-			ppd = mcctrl_get_per_proc_data(usrdata, sc->args[3]);
-			if (unlikely(!ppd)) {
-				kprintf("%s: ERROR: no per-process structure for PID %d??\n",
-						__FUNCTION__, task_tgid_vnr(current));
-				return -1;
-			}
-
-			ppd->rpgtable = sc->args[2];
-
-			dprintk("%s: pid: %d, rpgtable: 0x%lx updated\n",
-				__FUNCTION__, ppd->pid, ppd->rpgtable);
-			mcctrl_put_per_proc_data(ppd);
-		}
-
-		ret = clear_pte_range(sc->args[0], sc->args[1]);
+		ret = mcctrl_clear_pte_range(sc->args[0], sc->args[1]);
 		break;
 
 	case __NR_mprotect:

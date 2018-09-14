@@ -2723,8 +2723,7 @@ time_t time(void) {
 	else {
 		sreq.number = __NR_time;
 		sreq.args[0] = (uintptr_t)NULL;
-		ret = (time_t)do_syscall(&sreq, ihk_mc_get_processor_id(),
-		       thread->proc->pid);
+		ret = (time_t)do_syscall(&sreq, ihk_mc_get_processor_id());
 	}
 
 	return ret;

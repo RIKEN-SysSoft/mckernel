@@ -148,23 +148,12 @@ long (*linux_wait_event)(void *_resp, unsigned long nsec_timeout);
 int (*linux_printk)(const char *fmt, ...);
 int (*linux_clock_gettime)(clockid_t clk_id, struct timespec *tp);
 
-static void send_syscall(struct syscall_request *req, int cpu, int pid, struct syscall_response *res)
+static void send_syscall(struct syscall_request *req, int cpu,
+			 struct syscall_response *res)
 {
 	struct ikc_scd_packet packet IHK_DMA_ALIGN;
 	struct ihk_ikc_channel_desc *syscall_channel = get_cpu_local_var(cpu)->ikc2linux;
 	int ret;
-
-	if(req->number == __NR_exit_group ||
-	   req->number == __NR_kill){ // interrupt syscall
-#ifndef POSTK_DEBUG_TEMP_FIX_26 /* do_syscall arg pid is not targetpid */
-		if (req->number == __NR_kill) {
-			req->rtid = -1; // no response
-			pid = req->args[0];
-		}
-		if (req->number == __NR_gettid)
-			pid = req->args[1];
-#endif /* !POSTK_DEBUG_TEMP_FIX_26 */
-	}
 
 	res->status = 0;
 	req->valid = 0;
@@ -177,11 +166,7 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid, struct s
 #ifdef SYSCALL_BY_IKC
 	packet.msg = SCD_MSG_SYSCALL_ONESIDE;
 	packet.ref = cpu;
-#ifdef POSTK_DEBUG_TEMP_FIX_26 /* do_syscall arg pid is not targetpid */
-	packet.pid = pid;
-#else /* POSTK_DEBUG_TEMP_FIX_26 */
-	packet.pid = pid ? pid : cpu_local_var(current)->proc->pid;
-#endif /* POSTK_DEBUG_TEMP_FIX_26 */
+	packet.pid = cpu_local_var(current)->proc->pid;
 	packet.resp_pa = virt_to_phys(res);
 	dkprintf("send syscall, nr: %d, pid: %d\n", req->number, packet.pid);
 
@@ -192,7 +177,7 @@ static void send_syscall(struct syscall_request *req, int cpu, int pid, struct s
 #endif
 }
 
-long do_syscall(struct syscall_request *req, int cpu, int pid)
+long do_syscall(struct syscall_request *req, int cpu)
 {
 	struct syscall_response res;
 	struct syscall_request req2 IHK_DMA_ALIGN;
@@ -211,9 +196,6 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		t_s = rdtsc();
 	}
 #endif // PROFILE_ENABLE
-#ifdef POSTK_DEBUG_TEMP_FIX_26 /* do_syscall arg pid is not targetpid */
-	int target_pid = pid;
-#endif /* POSTK_DEBUG_TEMP_FIX_26 */
 
 	dkprintf("SC(%d)[%3d] sending syscall\n",
 		ihk_mc_get_processor_id(),
@@ -224,52 +206,10 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 	
 	barrier();
 
-#ifdef POSTK_DEBUG_TEMP_FIX_26 /* do_syscall arg pid is not targetpid */
-	switch (req->number) {
-	case __NR_kill:
-		req->rtid = -1; // no response
-		target_pid = req->args[0];
-		break;
-	case __NR_gettid:
-		target_pid = req->args[1];
-		break;
-	default:
-		break;
-	}
-	target_pid = target_pid ? target_pid : proc->pid;
-#endif /* POSTK_DEBUG_TEMP_FIX_26 */
-
 	if(req->number != __NR_exit_group){
-#ifdef POSTK_DEBUG_TEMP_FIX_26 /* do_syscall arg pid is not targetpid */
-#ifdef POSTK_DEBUG_TEMP_FIX_48 /* nohost flag missed fix */
-		struct process *target_proc = NULL;
-		struct mcs_rwlock_node_irqsave lock;
-
-		if (target_pid != proc->pid) {
-			target_proc = find_process(target_pid, &lock);
-			if (!target_proc) {
-				return -EPIPE;
-			}
-			process_unlock(target_proc, &lock);
-		} else {
-			target_proc = proc;
-		}
-
-		if (target_proc->nohost) { // host is down
+		if (proc->nohost) {// host is down
 			return -EPIPE;
 		}
-#else /* POSTK_DEBUG_TEMP_FIX_48 */
-		if (proc->nohost && // host is down
-		    target_pid == proc->pid) {
-			return -EPIPE;
-		}
-#endif /* POSTK_DEBUG_TEMP_FIX_48 */
-#else /* POSTK_DEBUG_TEMP_FIX_26 */
-		if(proc->nohost && // host is down
-		   pid == proc->pid) {
-			return -EPIPE;
-		}
-#endif /* POSTK_DEBUG_TEMP_FIX_26 */
 		++thread->in_syscall_offload;
 	}
 
@@ -289,11 +229,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 		req->ttid = 0;
 	}
 	res.req_thread_status = IHK_SCD_REQ_THREAD_SPINNING;
-#ifdef POSTK_DEBUG_TEMP_FIX_26 /* do_syscall arg pid is not targetpid */
-	send_syscall(req, cpu, target_pid, &res);
-#else /* POSTK_DEBUG_TEMP_FIX_26 */
-	send_syscall(req, cpu, pid, &res);
-#endif /* POSTK_DEBUG_TEMP_FIX_26 */
+	send_syscall(req, cpu, &res);
 
 	if (req->rtid == -1) {
 		preempt_disable();
@@ -387,11 +323,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 			req2.ttid = res.stid;
 
 			res.req_thread_status = IHK_SCD_REQ_THREAD_SPINNING;
-#ifdef POSTK_DEBUG_TEMP_FIX_26 /* do_syscall arg pid is not targetpid */
-			send_syscall(&req2, cpu, target_pid, &res);
-#else /* POSTK_DEBUG_TEMP_FIX_26 */
-			send_syscall(&req2, cpu, pid, &res);
-#endif /* POSTK_DEBUG_TEMP_FIX_26 */
+			send_syscall(&req2, cpu, &res);
 #ifdef PROFILE_ENABLE
 			profile_event_add(PROFILE_remote_page_fault,
 					(rdtsc() - t_s));
@@ -463,11 +395,7 @@ long do_syscall(struct syscall_request *req, int cpu, int pid)
 			req2.ttid = res.stid;
 
 			res.req_thread_status = IHK_SCD_REQ_THREAD_SPINNING;
-#ifdef POSTK_DEBUG_TEMP_FIX_26 /* do_syscall arg pid is not targetpid */
-			send_syscall(&req2, cpu, target_pid, &res);
-#else /* POSTK_DEBUG_TEMP_FIX_26 */
-			send_syscall(&req2, cpu, pid, &res);
-#endif /* POSTK_DEBUG_TEMP_FIX_26 */
+			send_syscall(&req2, cpu, &res);
 		}
 	}
 	if (req->rtid == -1) {
@@ -522,7 +450,6 @@ long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx)
 static int wait_zombie(struct thread *thread, struct process *child, int *status, int options) {
     int ret;
     struct syscall_request request IHK_DMA_ALIGN;
-	int ppid = 0;
     
     dkprintf("wait_zombie,found PS_ZOMBIE process: %d\n", child->pid);
     
@@ -530,7 +457,6 @@ static int wait_zombie(struct thread *thread, struct process *child, int *status
         *status = child->exit_status;
     }
     
-	ppid = child->ppid_parent->pid;
 	if(child->ppid_parent->pid != thread->proc->pid || child->nowait)
 		return child->pid;
 	request.number = __NR_wait4;
@@ -538,7 +464,7 @@ static int wait_zombie(struct thread *thread, struct process *child, int *status
 	request.args[1] = 0;
 	request.args[2] = options;
 	/* Ask host to clean up exited child */
-	ret = do_syscall(&request, ihk_mc_get_processor_id(), ppid);
+	ret = do_syscall(&request, ihk_mc_get_processor_id());
 
 	if (ret != child->pid)
 		kprintf("WARNING: host waitpid failed?\n");
@@ -988,7 +914,7 @@ void terminate_mcexec(int rc, int sig)
 		request.number = __NR_exit_group;
 		request.args[0] = proc->exit_status;
 		proc->nohost = 1;
-		do_syscall(&request, ihk_mc_get_processor_id(), proc->pid);
+		do_syscall(&request, ihk_mc_get_processor_id());
 	}
 }
 
@@ -2037,8 +1963,7 @@ static void settid(struct thread *thread, int nr_tids, int *tids)
 	 */
 	request.args[4] = nr_tids;
 	request.args[5] = virt_to_phys(tids);
-	if ((ret = do_syscall(&request, ihk_mc_get_processor_id(),
-				thread->proc->pid)) < 0) {
+	if ((ret = do_syscall(&request, ihk_mc_get_processor_id())) < 0) {
 		kprintf("%s: WARNING: do_syscall returns %d\n",
 			__FUNCTION__, ret);
 	}
@@ -2258,7 +2183,7 @@ SYSCALL_DECLARE(execve)
 	request.args[0] = 1;  /* 1st phase - get ELF desc */
 	request.args[1] = (unsigned long)filename;	
 	request.args[2] = virt_to_phys(desc);
-	ret = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+	ret = do_syscall(&request, ihk_mc_get_processor_id());
 
 	if (ret != 0) {
 		dkprintf("execve(): ERROR: host failed to load elf header, errno: %d\n", 
@@ -2345,7 +2270,7 @@ SYSCALL_DECLARE(execve)
 	request.args[2] = sizeof(struct program_load_desc) + 
 		sizeof(struct program_image_section) * desc->num_sections;
 
-	if ((ret = do_syscall(&request, ihk_mc_get_processor_id(), 0)) != 0) {
+	if ((ret = do_syscall(&request, ihk_mc_get_processor_id())) != 0) {
 		goto end;
 	}
 
@@ -2559,11 +2484,16 @@ retry_tid:
 	else {
 		request1.number = __NR_clone;
 		request1.args[0] = 0;
+		request1.args[1] = new->vm->region.user_start;
+		request1.args[2] = new->vm->region.user_end -
+				   new->vm->region.user_start;
+		request1.args[3] =
+			       virt_to_phys(new->vm->address_space->page_table);
 		if(clone_flags & CLONE_PARENT){
 			if(oldproc->ppid_parent->pid != 1)
 				request1.args[0] = clone_flags;
 		}
-		newproc->pid = do_syscall(&request1, ihk_mc_get_processor_id(), 0);
+		newproc->pid = do_syscall(&request1, ihk_mc_get_processor_id());
 		if (newproc->pid < 0) {
 			kprintf("ERROR: forking host process\n");
 			
@@ -2577,24 +2507,6 @@ retry_tid:
 		new->vm->address_space->pids[0] = new->proc->pid;
 
 		dkprintf("fork(): new pid: %d\n", new->proc->pid);
-#ifndef POSTK_DEBUG_TEMP_FIX_48 /* nohost flag missed fix */
-		/* clear user space PTEs and set new rpgtable so that consequent 
-		 * page faults will look up the right mappings */
-		request1.number = __NR_munmap;
-		request1.args[0] = new->vm->region.user_start;
-		request1.args[1] = new->vm->region.user_end - 
-			new->vm->region.user_start;
-		/* 3rd parameter denotes new rpgtable of host process */
-		request1.args[2] = virt_to_phys(new->vm->address_space->page_table);
-		request1.args[3] = newproc->pid;
-
-		dkprintf("fork(): requesting PTE clear and rpgtable (0x%lx) update\n",
-				request1.args[2]);
-
-		if (do_syscall(&request1, ihk_mc_get_processor_id(), new->proc->pid)) {
-			kprintf("ERROR: clearing PTEs in host process\n");
-		}		
-#endif /* !POSTK_DEBUG_TEMP_FIX_48 */
 		if(oldproc->monitoring_event &&
 		   oldproc->monitoring_event->attr.inherit){
 			newproc->monitoring_event = oldproc->monitoring_event;
@@ -2688,24 +2600,6 @@ retry_tid:
 			chain_process(newproc);
 	}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_48 /* nohost flag missed fix */
-	/* clear user space PTEs and set new rpgtable so that consequent 
-	 * page faults will look up the right mappings */
-	request1.number = __NR_munmap;
-	request1.args[0] = new->vm->region.user_start;
-	request1.args[1] = new->vm->region.user_end - 
-		new->vm->region.user_start;
-	/* 3rd parameter denotes new rpgtable of host process */
-	request1.args[2] = virt_to_phys(new->vm->address_space->page_table);
-	request1.args[3] = newproc->pid;
-
-	dkprintf("fork(): requesting PTE clear and rpgtable (0x%lx) update\n",
-			request1.args[2]);
-
-	if (do_syscall(&request1, ihk_mc_get_processor_id(), new->proc->pid)) {
-		kprintf("ERROR: clearing PTEs in host process\n");
-	}		
-#endif /* !POSTK_DEBUG_TEMP_FIX_48 */
 	if (oldproc->ptrace) {
 		ptrace_event = ptrace_check_clone_event(old, clone_flags);
 		if (ptrace_event) {
@@ -2722,7 +2616,7 @@ retry_tid:
 		request1.number = __NR_clone;
 		request1.args[0] = 1;
 		request1.args[1] = new->tid;
-		do_syscall(&request1, ihk_mc_get_processor_id(), 0);
+		do_syscall(&request1, ihk_mc_get_processor_id());
 	}
 
 	runq_add_thread(new, cpuid);
@@ -2862,7 +2756,7 @@ getcred(int *_buf)
 	request.number = __NR_setfsuid;
 	request.args[0] = phys;
 	request.args[1] = 1;
-	do_syscall(&request, ihk_mc_get_processor_id(), 0);
+	do_syscall(&request, ihk_mc_get_processor_id());
 
 	return buf;
 }
@@ -2969,7 +2863,7 @@ SYSCALL_DECLARE(setfsuid)
 	request.number = __NR_setfsuid;
 	request.args[0] = fsuid;
 	request.args[1] = 0;
-	newfsuid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+	newfsuid = do_syscall(&request, ihk_mc_get_processor_id());
 #ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
 	do_setresuid((int)(newfsuid >> 32));
 	newfsuid &= (1UL << 32) - 1;
@@ -3032,7 +2926,7 @@ SYSCALL_DECLARE(setfsgid)
 
 	request.number = __NR_setfsgid;
 	request.args[0] = fsgid;
-	newfsgid = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+	newfsgid = do_syscall(&request, ihk_mc_get_processor_id());
 #ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
 	do_setresgid((int)(newfsgid >> 32));
 	newfsgid &= (1UL << 32) - 1;
@@ -3485,7 +3379,7 @@ SYSCALL_DECLARE(signalfd4)
 		request.number = __NR_signalfd4;
 		request.args[0] = 0;
 		request.args[1] = flags;
-		fd = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+		fd = do_syscall(&request, ihk_mc_get_processor_id());
 		if(fd < 0){
 			return fd;
 		}
@@ -4077,7 +3971,7 @@ SYSCALL_DECLARE(perf_event_open)
 
 	request.number = __NR_perf_event_open;
 	request.args[0] = 0;
-	fd = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+	fd = do_syscall(&request, ihk_mc_get_processor_id());
 	if(fd < 0){
 		return fd;
 	} 
@@ -5523,7 +5417,8 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 				request.args[1] = (flags & FUTEX_CLOCK_REALTIME)?
 						      CLOCK_REALTIME: CLOCK_MONOTONIC;
 
-				int r = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+				int r = do_syscall(&request,
+						   ihk_mc_get_processor_id());
 
 				if (r < 0) {
 					return -EFAULT;
@@ -6639,7 +6534,7 @@ SYSCALL_DECLARE(sched_setparam)
 		request1.args[0] = SCHED_CHECK_SAME_OWNER;
 		request1.args[1] = pid;
 
-		retval = do_syscall(&request1, ihk_mc_get_processor_id(), 0);
+		retval = do_syscall(&request1, ihk_mc_get_processor_id());
 		if (retval != 0) {
 			return retval;
 		}
@@ -6720,7 +6615,7 @@ SYSCALL_DECLARE(sched_setscheduler)
 		request1.number = __NR_sched_setparam;
 		request1.args[0] = SCHED_CHECK_ROOT;
 
-		retval = do_syscall(&request1, ihk_mc_get_processor_id(), 0);
+		retval = do_syscall(&request1, ihk_mc_get_processor_id());
 		if (retval != 0) {
 			return retval;
 		}
@@ -6746,7 +6641,7 @@ SYSCALL_DECLARE(sched_setscheduler)
 		request1.args[0] = SCHED_CHECK_SAME_OWNER;
 		request1.args[1] = pid;
 
-		retval = do_syscall(&request1, ihk_mc_get_processor_id(), 0);
+		retval = do_syscall(&request1, ihk_mc_get_processor_id());
 		if (retval != 0) {
 			return retval;
 		}
@@ -7061,7 +6956,7 @@ SYSCALL_DECLARE(setitimer)
 		request.args[1] = ihk_mc_syscall_arg1(ctx);
 		request.args[2] = ihk_mc_syscall_arg2(ctx);
 
-		return do_syscall(&request, ihk_mc_get_processor_id(), 0);
+		return do_syscall(&request, ihk_mc_get_processor_id());
 	}
 	else if(which == ITIMER_VIRTUAL){
 		if(old){
@@ -7133,7 +7028,7 @@ SYSCALL_DECLARE(getitimer)
 		request.args[0] = ihk_mc_syscall_arg0(ctx);
 		request.args[1] = ihk_mc_syscall_arg1(ctx);
 
-		return do_syscall(&request, ihk_mc_get_processor_id(), 0);
+		return do_syscall(&request, ihk_mc_get_processor_id());
 	}
 	else if(which == ITIMER_VIRTUAL){
 		if(old){
@@ -7229,7 +7124,7 @@ SYSCALL_DECLARE(clock_gettime)
 	request.args[0] = ihk_mc_syscall_arg0(ctx);
 	request.args[1] = ihk_mc_syscall_arg1(ctx);
 
-	return do_syscall(&request, ihk_mc_get_processor_id(), 0);
+	return do_syscall(&request, ihk_mc_get_processor_id());
 }
 
 SYSCALL_DECLARE(gettimeofday)
@@ -7264,7 +7159,7 @@ SYSCALL_DECLARE(gettimeofday)
 	request.args[0] = (unsigned long)tv;
 	request.args[1] = (unsigned long)tz;
 
-	return do_syscall(&request, ihk_mc_get_processor_id(), 0);
+	return do_syscall(&request, ihk_mc_get_processor_id());
 }
 
 SYSCALL_DECLARE(settimeofday)
@@ -7384,7 +7279,7 @@ SYSCALL_DECLARE(nanosleep)
 	request.args[0] = (unsigned long)tv;
 	request.args[1] = (unsigned long)rem;
 
-	return do_syscall(&request, ihk_mc_get_processor_id(), 0);
+	return do_syscall(&request, ihk_mc_get_processor_id());
 }
 
 //#define DISABLE_SCHED_YIELD
@@ -9219,7 +9114,7 @@ int util_thread(struct uti_attr *arg)
 	request.args[3] = (unsigned long)uti_clv;
 	request.args[4] = uti_desc;
 	thread->uti_state = UTI_STATE_RUNNING_IN_LINUX;
-	rc = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+	rc = do_syscall(&request, ihk_mc_get_processor_id());
 	dkprintf("%s: returned from do_syscall,tid=%d,rc=%lx\n", __FUNCTION__, thread->tid, rc);
 
 	thread->uti_state = UTI_STATE_EPILOGUE;

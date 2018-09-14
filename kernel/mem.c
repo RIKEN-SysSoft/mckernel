@@ -994,7 +994,7 @@ void coredump(struct thread *thread, void *regs)
 	request.args[0] = chunks;
 	request.args[1] = virt_to_phys(coretable);
 	/* no data for now */
-	ret = do_syscall(&request, thread->cpu_id, thread->proc->pid);
+	ret = do_syscall(&request, thread->cpu_id);
 	if (ret == 0) {
 		kprintf("dumped core.\n");
 	} else {

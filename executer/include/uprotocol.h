@@ -267,6 +267,12 @@ struct terminate_thread_desc {
 	unsigned long tsk; /* struct task_struct * */
 };
 
+struct rpgtable_desc {
+	uintptr_t rpgtable;
+	uintptr_t start;
+	uintptr_t len;
+};
+
 enum perf_ctrl_type {
 	PERF_CTRL_SET,
 	PERF_CTRL_GET,

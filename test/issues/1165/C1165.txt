@@ -1,0 +1,72 @@
+Script started on Tue Aug 28 13:52:33 2018
+bash-4.2$ make test
+sh ./C1165.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 1-7,17-23,9-15,25-31 -m 10G@0,10G@1 ... done
+*** C1165T01 OK
+insmod /home/shirasawa/ostest/util/../bin/test_mck.ko
+create charcter device /dev/test_mck/mmap_dev(240:0)
+create charcter device /dev/test_mck/mmap_dev2(240:1)
+TEST_SUITE: force_exit
+TEST_NUMBER: 0
+ARGS: -d /dev/test_mck/mmap_dev -f mmapfile 
+read 1 byte (a(97))
+mmap(0x2aaaac73b000)
+remove /dev/test_mck
+rmmod /home/shirasawa/ostest/util/../bin/test_mck.ko
+*** C1165T02 OK
+clone01     1  TPASS  :  clone returned 9933
+*** C1165T03: clone01 OK (1)
+clone03     1  TPASS  :  Test passed
+*** C1165T04: clone03 OK (1)
+clone04     1  TPASS  :  expected failure; Got EINVAL
+*** C1165T05: clone04 OK (1)
+clone06     1  TPASS  :  Test Passed
+*** C1165T06: clone06 OK (1)
+clone07     1  TPASS  :  Use of return() in child did not cause SIGSEGV
+*** C1165T07: clone07 OK (1)
+fork01      1  TPASS  :  fork() returned 10278
+fork01      2  TPASS  :  child pid and fork() return agree: 10278
+*** C1165T08: fork01 OK (2)
+fork02      0  TINFO  :  Inside parent
+fork02      0  TINFO  :  Inside child
+fork02      0  TINFO  :  exit status of wait 0
+fork02      1  TPASS  :  test 1 PASSED
+*** C1165T09: fork02 OK (1)
+fork03      0  TINFO  :  process id in parent of child from fork : 10428
+fork03      1  TPASS  :  test 1 PASSED
+*** C1165T10: fork03 OK (1)
+fork04      1  TPASS  :  Env var TERM unchanged after fork(): xterm
+fork04      2  TPASS  :  Env var NoTSetzWq unchanged after fork(): getenv() does not find variable set
+fork04      3  TPASS  :  Env var TESTPROG unchanged after fork(): FRKTCS04
+*** C1165T11: fork04 OK (3)
+fork07      0  TINFO  :  Forking 100 children
+fork07      0  TINFO  :  Forked all 100 children, now collecting
+fork07      0  TINFO  :  Collected all 100 children
+fork07      1  TPASS  :  100/100 children read correctly from an inheritted fd
+*** C1165T12: fork07 OK (1)
+fork08      0  TINFO  :  parent forksval: 1
+fork08      0  TINFO  :  parent forksval: 2
+fork08      0  TINFO  :  exit status of wait  expected 0 got 0
+fork08      1  TPASS  :  parent test PASSED
+fork08      0  TINFO  :  second child got char: b
+fork08      1  TPASS  :  Test passed in childnumber 2
+fork08      0  TINFO  :  exit status of wait  expected 0 got 0
+fork08      2  TPASS  :  parent test PASSED
+fork08      0  TINFO  :  exit status of wait  expected 0 got 0
+fork08      3  TPASS  :  parent test PASSED
+fork08      0  TINFO  :  Number of processes forked is 2
+*** C1165T13: fork08 OK (4)
+fork09      0  TINFO  :  OPEN_MAX is 1024
+fork09      0  TINFO  :  first file descriptor is 12 
+fork09      0  TINFO  :  Parent reporting 1023 files open
+fork09      0  TINFO  :  Child opened new file #1023
+fork09      1  TPASS  :  test 1 PASSED
+*** C1165T14: fork09 OK (1)
+fork10      0  TINFO  :  fork child A
+fork10      1  TPASS  :  test 1 PASSED
+*** C1165T15: fork10 OK (1)
+bash-4.2$ exit
+exit
+
+Script done on Tue Aug 28 13:53:01 2018

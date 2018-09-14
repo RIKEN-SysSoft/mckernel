@@ -486,6 +486,7 @@ static inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct m
 #else /* POSTK_DEBUG_ARCH_DEP_56 */
 inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc_data *ppd, struct task_struct *task);
 #endif /* POSTK_DEBUG_ARCH_DEP_56 */
+int mcctrl_clear_pte_range(uintptr_t start, uintptr_t len);
 
 void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet, 
 		long ret, int stid);
