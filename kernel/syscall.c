@@ -9616,11 +9616,8 @@ set_cputime(int mode)
 long syscall(int num, ihk_mc_user_context_t *ctx)
 {
 	long l;
-#if !defined(POSTK_DEBUG_TEMP_FIX_60) && !defined(POSTK_DEBUG_TEMP_FIX_56)
-	struct thread *thread = cpu_local_var(current);
-#else /* !defined(POSTK_DEBUG_TEMP_FIX_60) && !defined(POSTK_DEBUG_TEMP_FIX_56) */
-	struct thread *thread = cpu_local_var(current);
-#endif /* !defined(POSTK_DEBUG_TEMP_FIX_60) && !defined(POSTK_DEBUG_TEMP_FIX_56) */
+	struct cpu_local_var *v = get_this_cpu_local_var();
+	struct thread *thread = v->current;
 
 #ifdef DISABLE_SCHED_YIELD
 	if (num != __NR_sched_yield)
@@ -9738,22 +9735,9 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	}
 #endif // PROFILE_ENABLE
 
-#if defined(POSTK_DEBUG_TEMP_FIX_60) && defined(POSTK_DEBUG_TEMP_FIX_56)
-	check_need_resched();
-#elif defined(POSTK_DEBUG_TEMP_FIX_60) /* sched_yield called check_signal fix. */
-	if (num != __NR_futex) {
+	if (v->flags & CPU_FLAG_NEED_RESCHED) {
 		check_need_resched();
 	}
-#elif defined(POSTK_DEBUG_TEMP_FIX_56) /* in futex_wait() signal handring fix. */
-	if (num != __NR_sched_yield) {
-		check_need_resched();
-	}
-#else /* POSTK_DEBUG_TEMP_FIX_60 && POSTK_DEBUG_TEMP_FIX_56 */
-	if (num != __NR_sched_yield &&
-			num != __NR_futex) {
-		check_need_resched();
-	}
-#endif /* POSTK_DEBUG_TEMP_FIX_60 && POSTK_DEBUG_TEMP_FIX_56 */
 
 	if (!list_empty(&thread->sigpending) ||
 	    !list_empty(&thread->sigcommon->sigpending)) {
