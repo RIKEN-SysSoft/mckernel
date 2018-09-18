@@ -1,179 +1,60 @@
-.SUFFIXES:	# Clear suffixes
-.SUFFIXES:	.c
+include $(HOME)/.mck_test_config.mk
+XPMEM_DIR=$(HOME)/usr
 
 CC = gcc
 
-CPPFLAGS = -I$(HOME)/project/os/install/include
-CCFLAGS = -g
-LDFLAGS = -L$(HOME)/project/os/install/lib -lihk -Wl,-rpath -Wl,$(HOME)/project/os/install/lib -lpthread
-EXES =
-SRCS =
-OBJS = $(SRCS:.c=.o)
+CPPFLAGSLIN = -I$(MCK_DIR)/include
+CFLAGSLIN = -Wall -Werror -g
+LDFLAGSLIN = -L$(MCK_DIR)/lib -lihk -Wl,-rpath -Wl,$(MCK_DIR)/lib -lpthread
+SRCSLIN = $(shell ls *_lin.c)
+EXESLIN = $(SRCSLIN:.c=)
+OBJSLIN = $(SRCSLIN:.c=.o)
 
-CPPFLAGSMCK = -I$(HOME)/usr/include
-CCFLAGSMCK = -g -O0
-LDFLAGSMCK = -static -lpthread
-SRCSMCK = $(shell ls rusage*.c)
+CPPFLAGSMCK =
+CFLAGSMCK = -Wall -Werror -g -O0
+LDFLAGSMCK =
+SRCSMCK = $(shell ls *.c | grep -vE '_lin')
 EXESMCK = $(SRCSMCK:.c=)
 OBJSMCK = $(SRCSMCK:.c=.o)
 
-all: $(EXES) $(EXESMCK)
+all: $(EXESLIN) $(EXESMCK)
 
-rusage000: rusage000.o
-	$(CC) -o $@ $^ $(LDFLAGSMCK)
+011_mck: 011_mck.o
+	$(CC) -o $@ $^ $(LDFLAGSMCK) -L$(XPMEM_DIR)/lib -lxpmem
 
-rusage000.o: rusage000.c
-	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
+011_mck.o: 011_mck.c
+	$(CC) $(CFLAGSMCK) $(CPPFLAGSMCK) -I$(XPMEM_DIR)/include -c $<
 
-rusage010: rusage010.o
-	$(CC) -o $@ $^ $(LDFLAGSMCK)
+012_mck: 012_mck.o
+	$(CC) -o $@ $^ $(LDFLAGSMCK) -L$(XPMEM_DIR)/lib -lxpmem -Wl,-rpath -Wl,$(XPMEM_DIR)/lib
 
-rusage010.o: rusage010.c
-	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
+012_mck.o: 012_mck.c
+	$(CC) $(CFLAGSMCK) $(CPPFLAGSMCK) -I$(XPMEM_DIR)/include -c $<
 
-rusage020: rusage020.o
-	$(CC) -o $@ $^ $(LDFLAGSMCK)
+10%_mck: 10%_mck.o
+	$(CC) -o $@ $^ $(LDFLAGSMCK) -L$(MCK_DIR)/lib -lihk -Wl,-rpath -Wl,$(MCK_DIR)/lib
 
-rusage020.o: rusage020.c
-	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
+10%_mck.o:: 10%_mck.c
+	$(CC) $(CFLAGSMCK) $(CPPFLAGSMCK) -I$(MCK_DIR)/include -c $<
 
-rusage030: rusage030.o
-	$(CC) -o $@ $^ $(LDFLAGSMCK)
+20%_mck: 20%_mck.o
+	$(CC) -o $@ $^ $(LDFLAGSMCK) -lpthread
 
-rusage030.o: rusage030.c
-	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
-
-rusage001: rusage001.o
-	$(CC) -o $@ $^ $(LDFLAGSMCK)
-
-rusage001.o: rusage001.c
-	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
-
-rusage002: rusage002.o
-	$(CC) -o $@ $^ $(LDFLAGSMCK) -lrt
-
-rusage002.o: rusage002.c
-	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
-
-rusage003: rusage003.o
-	$(CC) -o $@ $^ $(LDFLAGSMCK) -lrt
-
-rusage003.o: rusage003.c
-	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
-
-rusage004: rusage004.o
-	$(CC) -o $@ $^ $(LDFLAGSMCK)
-
-rusage004.o: rusage004.c
-	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
-
-rusage006: rusage006.o
-	$(CC) -o $@ $^ $(LDFLAGSMCK)
-
-rusage006.o: rusage006.c
-	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
-
-rusage007: rusage007.o
-	$(CC) -o $@ $^ $(LDFLAGSMCK)
-
-rusage007.o: rusage007.c
-	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
-
-rusage008: rusage008.o
-	$(CC) -o $@ $^ $(LDFLAGSMCK)
-
-rusage008.o: rusage008.c
-	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
-
-rusage009: rusage009.o
-	$(CC) -o $@ $^ $(LDFLAGSMCK)
-
-rusage009.o: rusage009.c
-	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
-
-rusage011: rusage011.o
-	$(CC) -o $@ $^ $(LDFLAGSMCK) -L/home/takagi/usr/lib -lxpmem
-
-rusage011.o: rusage011.c
-	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
-
-rusage012: rusage012.o
-	$(CC) -o $@ $^ $(LDFLAGSMCK) -L/home/takagi/usr/lib -lxpmem
-
-rusage012.o: rusage012.c
-	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
-
-rusage013: rusage013.o
-	$(CC) -o $@ $^ $(LDFLAGSMCK)
-
-rusage013.o: rusage013.c
-	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
-
-rusage014: rusage014.o
-	$(CC) -o $@ $^ $(LDFLAGSMCK)
-
-rusage014.o: rusage014.c
-	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
-
-rusage015: rusage015.o
-	$(CC) -o $@ $^ $(LDFLAGSMCK)
-
-rusage015.o: rusage015.c
-	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
-
-rusage016: rusage016.o
-	$(CC) -o $@ $^ $(LDFLAGSMCK)
-
-rusage016.o: rusage016.c
-	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
-
-rusage017: rusage017.o
-	$(CC) -o $@ $^ $(LDFLAGSMCK)
-
-rusage017.o: rusage017.c
-	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
-
-rusage018: rusage018.o
-	$(CC) -o $@ $^ $(LDFLAGSMCK)
-
-rusage018.o: rusage018.c
-	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
-
-rusage100: rusage100.o
-	$(CC) -o $@ $^ $(LDFLAGS)
-
-rusage100.o: rusage100.c
-	$(CC) $(CCFLAGS) $(CPPFLAGS) -c $<
-
-rusage101: rusage101.o
-	$(CC) -o $@ $^ $(LDFLAGS)
-
-rusage101.o: rusage101.c
-	$(CC) $(CCFLAGS) $(CPPFLAGS) -c $<
-
-rusage102: rusage102.o
-	$(CC) -o $@ $^ $(LDFLAGS)
-
-rusage102.o: rusage102.c
-	$(CC) $(CCFLAGS) $(CPPFLAGS) -c $<
-
-rusage103: rusage103.o
-	$(CC) -o $@ $^ $(LDFLAGS)
-
-rusage103.o: rusage103.c
-	$(CC) $(CCFLAGS) $(CPPFLAGS) -c $<
+20%_mck.o:: 20%_mck.c
+	$(CC) $(CFLAGSMCK) $(CPPFLAGSMCK) -c $<
 
 %_mck: %_mck.o
 	$(CC) -o $@ $^ $(LDFLAGSMCK)
 
 %_mck.o:: %_mck.c
-	$(CC) $(CCFLAGSMCK) $(CPPFLAGSMCK) -c $<
+	$(CC) $(CFLAGSMCK) $(CPPFLAGSMCK) -c $<
+
 
 %_lin.o:: %_lin.c
-	$(CC) $(CCFLAGS) $(CPPFLAGS) -c $<
+	$(CC) $(CFLAGSLIN) $(CPPFLAGSLIN) -c $<
 
 %_lin: %_lin.o
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CC) -o $@ $^ $(LDFLAGSLIN)
 
 clean:
-	rm -f core $(EXES) $(OBJS) $(EXESMCK) $(OBJSMCK)
+	rm -f core $(EXESLIN) $(OBJSLIN) $(EXESMCK) $(OBJSMCK)
