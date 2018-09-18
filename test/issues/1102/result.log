@@ -1,4 +1,3 @@
-./CT_001.sh
 *** CT_001 start *******************
 ** exec ltp-syscall_mkdir09  30 times
 mkdir09     1  TPASS  :  PASS
@@ -34,7 +33,6 @@ mkdir09     1  TPASS  :  PASS
 [OK] ltp-syscall_mkdir09  30 times all passed
 *** CT_001 PASSED
 
-./CT_002.sh
 *** CT_002 start *******************
 ** exec ostest siginfo_00
 TEST_SUITE: siginfo
@@ -189,85 +187,82 @@ RESULT: ok
 [OK] ostest siginfo_00  passed
 *** CT_002 PASSED
 
-./CT_003.sh
 *** CT_003 start *******************
 ** exec ostest siginfo_01 and then send SIGHUP to mcexec
 TEST_SUITE: siginfo
 TEST_NUMBER: 1
 ARGS:
 ==================================================
-Please send signal to mcexec(pid=12295) from console.
+Please send signal to mcexec(pid=15217) from console.
 Exit Once you throw twice the same signal.
 ==================================================
-** back ground process(mcexec): 12295
+** back ground process(mcexec): 15217
 ** send SIGHUP to mcexec once
 Catch signal #1
   siginfo->si_signo = 1
   siginfo->si_errno = 0
   siginfo->si_code  = 0x0
-** check existing of 12295
+** check existing of 15217
   PID TTY          TIME CMD
-12295 pts/0    00:00:00 exe
-[OK] 12295 exists yet
+15217 pts/0    00:00:00 exe
+[OK] 15217 exists yet
 ** send SIGHUP to mcexec again
 Terminate by signal 1
-./CT_003.sh: line 34: 12295 Hangup                  ${MCEXEC} ${OSTEST_DIR}/bin/test_mck -s siginfo -n 1
-** check existing of 12295
+./C1102.sh: line 84: 15217 Hangup                  ${MCEXEC} ${TESTMCK} -s siginfo -n 1
+** check existing of 15217
   PID TTY          TIME CMD
-[OK] 12295 doesn't exist (be killed by signal)
+[OK] 15217 doesn't exist (be killed by signal)
 *** CT_003 PASSED
 
-./CT_004.sh
 *** CT_004 start *******************
 ** exec ostest siginfo_01 and then send SIGINT to mcexec
 TEST_SUITE: siginfo
 TEST_NUMBER: 1
 ARGS:
 ==================================================
-Please send signal to mcexec(pid=12311) from console.
+Please send signal to mcexec(pid=15254) from console.
 Exit Once you throw twice the same signal.
 ==================================================
-** back ground process(mcexec): 12311
+** back ground process(mcexec): 15254
 ** send SIGINT to mcexec once
 Catch signal #2
   siginfo->si_signo = 2
   siginfo->si_errno = 0
   siginfo->si_code  = 0x0
-** check existing of 12311
+** check existing of 15254
   PID TTY          TIME CMD
-12311 pts/0    00:00:00 exe
-[OK] 12311 exists yet
+15254 pts/0    00:00:00 exe
+[OK] 15254 exists yet
 ** send SIGINT to mcexec again
 Terminate by signal 2
-** check existing of 12311
+** check existing of 15254
   PID TTY          TIME CMD
-[OK] 12311 doesn't exist (be killed by signal)
+[OK] 15254 doesn't exist (be killed by signal)
 *** CT_004 PASSED
 
-./CT_005.sh
 *** CT_005 start *******************
 ** exec ostest siginfo_01 and then send SIGTERM to mcexec
 TEST_SUITE: siginfo
 TEST_NUMBER: 1
 ARGS:
 ==================================================
-Please send signal to mcexec(pid=12327) from console.
+Please send signal to mcexec(pid=15290) from console.
 Exit Once you throw twice the same signal.
 ==================================================
-** back ground process(mcexec): 12327
+** back ground process(mcexec): 15290
 ** send SIGTERM to mcexec once
 Catch signal #15
   siginfo->si_signo = 15
   siginfo->si_errno = 0
   siginfo->si_code  = 0x0
-** check existing of 12327
+** check existing of 15290
   PID TTY          TIME CMD
-12327 pts/0    00:00:00 exe
-[OK] 12327 exists yet
+15290 pts/0    00:00:00 exe
+[OK] 15290 exists yet
 ** send SIGTERM to mcexec again
 Terminate by signal 15
-./CT_005.sh: line 34: 12327 Terminated              ${MCEXEC} ${OSTEST_DIR}/bin/test_mck -s siginfo -n 1
-** check existing of 12327
+./C1102.sh: line 172: 15290 Terminated              ${MCEXEC} ${TESTMCK} -s siginfo -n 1
+** check existing of 15290
   PID TTY          TIME CMD
-[OK] 12327 doesn't exist (be killed by signal)
+[OK] 15290 doesn't exist (be killed by signal)
 *** CT_005 PASSED

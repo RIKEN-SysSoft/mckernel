@@ -11,7 +11,7 @@
 
 #define SMALL_PAGE_SIZE 4096L
 #define PAGE_MASK (~(SMALL_PAGE_SIZE - 1))
-#define GET_PAGE_INFO 733
+#define GET_PAGE_INFO 750
 
 int
 is_small_page(long pageinfo)

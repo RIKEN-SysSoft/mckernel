@@ -24,9 +24,9 @@ $ make test
 
 McKernelのインストール先や、OSTEST, LTPの配置場所は、
 $HOME/.mck_test_config を参照している
-.mck_test_config は、McKernelをビルドした際に生成される
-mck_test_config.sample ファイルを$HOMEにコピーし、適宜編集する
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
 
 □ 実行結果
-result.log 参照
-すべての項目をPASSしていることを確認
+result.log 参照。
+すべての項目をPASSしていることを確認。

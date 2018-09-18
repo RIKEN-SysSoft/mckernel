@@ -1,3 +1,0 @@
-STKN:[main] This is shell script
-STKN:[main_loop] filename:./call_execve  shell:0x(nil)
-STKN:[main_loop] filename:./print_maps_and_cmdline  shell:0x(nil)
