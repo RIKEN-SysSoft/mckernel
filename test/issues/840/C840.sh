@@ -1,33 +1,13 @@
 #!/bin/sh
-BIN=
-SBIN=
+USELTP=0
+USEOSTEST=0
+
 BOOTPARAM="-c 1-7 -m 4G@0"
+. ../../common.sh
 
 if ! sudo ls /sys/kernel/debug | grep kmemleak > /dev/null 2>&1; then
 	echo kmemleak: not found >&2
 	exit 1
-fi
-
-if [ -f ../../../config.h ]; then
-	str=`grep "^#define BINDIR " ../../../config.h | head -1 | sed 's/^#define BINDIR /BINDIR=/'`
-	eval $str
-fi
-
-if [ -f ../../../Makefile ]; then
-	str=`grep ^SBINDIR ../../../Makefile | head -1 | sed 's/ //g'`
-	eval $str
-fi
-
-if [ "x$BINDIR" = x ];then
-	BINDIR="$BIN"
-fi
-
-if [ "x$SBINDIR" = x ];then
-	SBINDIR="$SBIN"
-fi
-
-if lsmod | grep mcctrl > /dev/null 2>&1; then
-	sudo $SBINDIR/mcstop+release.sh
 fi
 
 dd if=/dev/zero of=rpf.data bs=1M count=1024
@@ -43,7 +23,7 @@ while [ x$b = x ]; do
 	sudo $SBINDIR/mcreboot.sh $BOOTPARAM
 	$SBINDIR/ihkosctl 0 clear_kmsg
 	sudo dmesg -c > /dev/null
-	$BINDIR/mcexec ./C840T01
+	$MCEXEC ./C840T01
 	sleep 3
 	rpf=`dmesg | grep 'remote_page_fault:interrupted. -512'`
 	offload=` $SBINDIR/ihkosctl 0 kmsg | grep 'is dead, terminate()'`
@@ -76,7 +56,7 @@ while [ x$b = x ]; do
 	sudo $SBINDIR/mcreboot.sh $BOOTPARAM
 	$SBINDIR/ihkosctl 0 clear_kmsg
 	sudo dmesg -c > /dev/null
-	$BINDIR/mcexec ./C840T02
+	$MCEXEC ./C840T02
 	sleep 3
 	rpf=`dmesg | grep 'remote_page_fault:interrupted. -512'`
 	offload=` $SBINDIR/ihkosctl 0 kmsg | grep 'is dead, terminate()'`
@@ -109,7 +89,7 @@ while [ x$b = x ]; do
 	sudo $SBINDIR/mcreboot.sh $BOOTPARAM
 	$SBINDIR/ihkosctl 0 clear_kmsg
 	sudo dmesg -c > /dev/null
-	$BINDIR/mcexec ./C840T03
+	$MCEXEC ./C840T03
 	sleep 3
 	rpf=`dmesg | grep 'remote_page_fault:interrupted. -512'`
 	offload=` $SBINDIR/ihkosctl 0 kmsg | grep 'is dead, terminate()'`
@@ -142,7 +122,7 @@ while [ x$b = x ]; do
 	sudo $SBINDIR/mcreboot.sh $BOOTPARAM
 	$SBINDIR/ihkosctl 0 clear_kmsg
 	sudo dmesg -c > /dev/null
-	timeout -s 9 2 $BINDIR/mcexec ./C840T04
+	timeout -s 9 2 $MCEXEC ./C840T04
 	sleep 3
 	rpf=`dmesg | grep 'remote_page_fault:interrupted. -512'`
 	offload=` $SBINDIR/ihkosctl 0 kmsg | grep 'is dead, terminate()'`
@@ -175,7 +155,7 @@ while [ x$b = x ]; do
 	sudo $SBINDIR/mcreboot.sh $BOOTPARAM
 	$SBINDIR/ihkosctl 0 clear_kmsg
 	sudo dmesg -c > /dev/null
-	timeout -s 9 2 $BINDIR/mcexec ./C840T05
+	timeout -s 9 2 $MCEXEC ./C840T05
 	sleep 3
 	rpf=`dmesg | grep 'remote_page_fault:interrupted. -512'`
 	offload=` $SBINDIR/ihkosctl 0 kmsg | grep 'is dead, terminate()'`
@@ -208,7 +188,7 @@ while [ x$b = x ]; do
 	sudo $SBINDIR/mcreboot.sh $BOOTPARAM
 	$SBINDIR/ihkosctl 0 clear_kmsg
 	sudo dmesg -c > /dev/null
-	timeout -s 9 2 $BINDIR/mcexec ./C840T06
+	timeout -s 9 2 $MCEXEC ./C840T06
 	sleep 3
 	rpf=`dmesg | grep 'remote_page_fault:interrupted. -512'`
 	offload=` $SBINDIR/ihkosctl 0 kmsg | grep 'is dead, terminate()'`

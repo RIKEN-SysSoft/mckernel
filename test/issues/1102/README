@@ -1,26 +1,37 @@
+【Issue#1102 動作確認】
+□ テスト内容
+1. Issueで報告された再現方法で症状が再現しないことを確認
+CT_001: ltp-syscall_mkdir09
+	ltp-syscall_mkdir09 を30回繰り返し実行し、
+	いずれの実行結果もFAILとならないことを確認する
 
-CT_001:
-  ltp-syscall_mkdir09 を繰り返し実行する
-    -> いずれの実行結果もFAILとならない
+2. 既存のシグナル機能に影響がないことをテストプログラムで確認
+CT_002: ostest のsiginfo.000
+	ostest_siginfo.000 を実行し、RESULT: ok が出力されることを確認する
 
-CT_002:
-  ostest のsiginfo_00 を実行する
-    -> 実行結果がRESULT: ok となる
+CT_003: ostest_siginfo.001 (SIGHUP)
+	実行中のostest のsiginfo.001 にSIGHUPを通知し、以下を確認する
+	- 1度目のSIGHUPはハンドルされ、プロセスが残存する
+	- 2度目のSIGHUPにより、プロセスが終了する
 
-CT_003:
-  ostest のsiginfo_01 を実行する
-  動作の確認には、SIGHUP を用いる
-    -> 1度目のSIGHUPはハンドルされ、プロセスが残存する
-       2度目のSIGHUPにより、プロセスが終了する
+CT_004: ostest_siginfo.001 (SIGINT)
+	実行中のostest のsiginfo.001 にSIGINTを通知し、以下を確認する
+	- 1度目のSIGINTはハンドルされ、プロセスが残存する
+	- 2度目のSIGINTにより、プロセスが終了する
 
-CT_004:
-  ostest のsiginfo_01 を実行する
-  動作の確認には、SIGINT を用いる
-    -> 1度目のSIGINTはハンドルされ、プロセスが残存する
-       2度目のSIGINTにより、プロセスが終了する
+CT_005: ostest_siginfo.001 (SIGTERM)
+	実行中のostest のsiginfo.001 にSIGTERMを通知し、以下を確認する
+	- 1度目のSIGTERMはハンドルされ、プロセスが残存する
+	- 2度目のSIGTERMにより、プロセスが終了する
 
-CT_005:
-  ostest のsiginfo_01 を実行する
-  動作の確認には、SIGTERM を用いる
-    -> 1度目のSIGTERMはハンドルされ、プロセスが残存する
-       2度目のSIGTERMにより、プロセスが終了する
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。

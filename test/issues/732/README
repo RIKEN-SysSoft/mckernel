@@ -1,20 +1,35 @@
+【Issue#732 動作確認】
+□ テスト内容
+1. Issueで報告された症状が解消されていることを確認
+CT_001: /proc/<PID>/maps
+	/proc/<PID>/maps の内容を出力し、
+	出力結果の末尾に不要なNULL文字が存在しないことを確認する
 
-CT_001:
-  /proc/<PID>/maps の内容を出力する
-    -> 出力結果の末尾に不要なNULL文字が存在しない
+2. 他のprocfsインタフェースで同様の症状が発生しないことを確認
+CT_002: /proc/<PID>/stat
+	/proc/<PID>/stat の内容を出力し、
+	出力結果の末尾に不要なNULL文字が存在しないことを確認する
 
-CT_002:
-  /proc/<PID>/stat の内容を出力する
-    -> 出力結果の末尾に不要なNULL文字が存在しない
+CT_003: /proc/<PID>/status
+	/proc/<PID>/status の内容を出力し、
+	出力結果の末尾に不要なNULL文字が存在しないことを確認する
 
-CT_003:
-  /proc/<PID>/status の内容を出力する
-    -> 出力結果の末尾に不要なNULL文字が存在しない
+CT_004: /proc/<PID>/stack
+	/proc/<PID>/stck の内容を出力し、
+	出力結果の末尾に不要なNULL文字が存在しないことを確認する
 
-CT_004:
-  /proc/<PID>/stack の内容を出力する
-    -> 出力結果の末尾に不要なNULL文字が存在しない
+CT_005: /proc/<PID>/numa_maps
+	/proc/<PID>/numa_maps の内容を出力し、
+	出力結果の末尾に不要なNULL文字が存在しないことを確認する
 
-CT_005:
-  /proc/<PID>/numa_maps の内容を出力する
-    -> 出力結果の末尾に不要なNULL文字が存在しない
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。

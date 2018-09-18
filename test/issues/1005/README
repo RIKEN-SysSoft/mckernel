@@ -27,5 +27,5 @@ $HOME/.mck_test_config を参照している
 $HOMEにコピーし、適宜編集する
 
 □ 実行結果
-result.log 参照
-すべての項目をPASSしていることを確認
+result.log 参照。
+すべての項目をPASSしていることを確認。

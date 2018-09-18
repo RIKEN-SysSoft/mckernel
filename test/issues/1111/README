@@ -2,20 +2,20 @@
 □ テスト内容
 1. Issueで報告された再現プログラムでの確認
 RT_001: ostest-rt_sigaction.005 による確認
-	テストが正常に終了し、「RESULT: ok」が出力される
+	テストが正常に終了し、「RESULT: ok」が出力されることを確認する
 
 2. 既存のsigaction機能に影響がないことを確認
 CT_001: 設定中のハンドラ情報の取得 (上書き時)
 	1. SIG_RESETHANDを指定したsigaction()でSIG_USR1にハンドラを設定
-	2. sigaction(SIGUSR1, NULL, &act) で設定情報を取得できる
+	2. sigaction(SIGUSR1, NULL, &act) で設定情報を取得できることを確認する
 	3. SIG_RESETHANDを指定しないsigaction()でSIG_USR1にデフォルトハンドラを設定
-	4. sigaction(SIGUSR1, NULL, &act) で3.で指定した設定情報を取得できる
+	4. sigaction(SIGUSR1, NULL, &act) で3.で指定した設定情報を取得できることを確認する
 
 CT_002: 設定中のハンドラ情報の取得 (デフォルトに戻った時)
 	1. SIG_RESETHANDを指定したsigaction()でSIG_USR1にハンドラを設定
 	2. 自身にSIGUSR1を送る
 	3. 1.で登録したハンドラが呼び出される
-	4. sigaction(SIGUSR1, NULL, &act) で設定情報を取得できる
+	4. sigaction(SIGUSR1, NULL, &act) で設定情報を取得できることを確認する
 
 CT_003: 不正なsig_numへのハンドラ登録
 	1. 範囲外(上限、下限)のsignumへのハンドラ登録が失敗する
@@ -34,10 +34,10 @@ CT_005: sig_numの有効確認
 □ 実行手順
 $ make test
 
-実行できない場合は、C1111.shの以下の行を適切に書き換えた後に実行。
-BIN=          mcexec が存在するパス
-SBIN=         mcreboot.sh が存在するパス
-OSTEST=       OSTESTが存在するパス
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
 
 □ 実行結果
 result.log 参照。

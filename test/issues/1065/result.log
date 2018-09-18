@@ -1,14 +1,12 @@
-./CT_001.sh
 *** CT_001 start *******************
-file map: /home/satoken/2018_work/04/test/dummy_file
-000000400000-000000401000 r-xs 0 0:0 0                  /home/satoken/2018_work/04/test/file_map
-000000600000-000000601000 r--s 0 0:0 0                  /home/satoken/2018_work/04/test/file_map
-000000601000-000000602000 rw-s 0 0:0 0                  /home/satoken/2018_work/04/test/file_map
+file map: /home/satoken/mck_srcs/gerrit/mckernel/test/issues/1065/dummy_file
+000000400000-000000401000 r-xs 0 0:0 0
+000000600000-000000601000 r--s 0 0:0 0
+000000601000-000000602000 rw-s 0 0:0 0
 2aaaaa9f8000-2aaaaaa00000 rw-s 0 0:0 0
-2aaaaaa00000-2aaaaaa21000 r-xs 0 0:0 0                  /usr/lib64/ld-2.17.so
-2aaaaac21000-2aaaaac22000 r--s 0 0:0 0                  /usr/lib64/ld-2.17.so
-2aaaaac22000-2aaaaac23000 rw-s 0 0:0 0                  /usr/lib64/ld-2.17.so
-2aaaaac23000-2aaaaac24000 rw-p 0 0:0 0
+2aaaaaa00000-2aaaaaa21000 r-xs 0 0:0 0
+2aaaaac21000-2aaaaac22000 r--s 0 0:0 0
+2aaaaac22000-2aaaaac24000 rw-s 0 0:0 0
 2aaaaac24000-2aaaaac26000 r-xs 0 0:0 0                  [vdso]
 2aaaaac26000-2aaaaac27000 rw-p 0 0:0 0
 2aaaaac4d000-2aaaaac4e000 rw-p 0 0:0 0
@@ -18,25 +16,23 @@ file map: /home/satoken/2018_work/04/test/dummy_file
 2aaaab00a000-2aaaab00c000 rw-p 0 0:0 0                  /usr/lib64/libc-2.17.so
 2aaaab00c000-2aaaab011000 rw-p 0 0:0 0
 2aaaab011000-2aaaab013000 rw-p 0 0:0 0
-2aaaab013000-2aaaab014000 rw-s 0 0:0 0                  /home/satoken/2018_work/04/test/dummy_file
+2aaaab013000-2aaaab014000 rw-s 0 0:0 0                  /home/satoken/mck_srcs/gerrit/mckernel/test/issues/1065/dummy_file
 547fff800000-548000000000 rw-s 0 0:0 0                  [stack]
 
-** grep /home/satoken/2018_work/04/test/dummy_file from maps
-2aaaab013000-2aaaab014000 rw-s 0 0:0 0                  /home/satoken/2018_work/04/test/dummy_file
-[OK] /home/satoken/2018_work/04/test/dummy_file is found
+** grep /home/satoken/mck_srcs/gerrit/mckernel/test/issues/1065/dummy_file from maps
+2aaaab013000-2aaaab014000 rw-s 0 0:0 0                  /home/satoken/mck_srcs/gerrit/mckernel/test/issues/1065/dummy_file
+[OK] /home/satoken/mck_srcs/gerrit/mckernel/test/issues/1065/dummy_file is found
 *** CT_001 PASSED
 
-./CT_002.sh
 *** CT_002 start *******************
 file map: ./dummy_file
-000000400000-000000401000 r-xs 0 0:0 0                  /home/satoken/2018_work/04/test/file_map
-000000600000-000000601000 r--s 0 0:0 0                  /home/satoken/2018_work/04/test/file_map
-000000601000-000000602000 rw-s 0 0:0 0                  /home/satoken/2018_work/04/test/file_map
+000000400000-000000401000 r-xs 0 0:0 0
+000000600000-000000601000 r--s 0 0:0 0
+000000601000-000000602000 rw-s 0 0:0 0
 2aaaaa9f8000-2aaaaaa00000 rw-s 0 0:0 0
-2aaaaaa00000-2aaaaaa21000 r-xs 0 0:0 0                  /usr/lib64/ld-2.17.so
-2aaaaac21000-2aaaaac22000 r--s 0 0:0 0                  /usr/lib64/ld-2.17.so
-2aaaaac22000-2aaaaac23000 rw-s 0 0:0 0                  /usr/lib64/ld-2.17.so
-2aaaaac23000-2aaaaac24000 rw-p 0 0:0 0
+2aaaaaa00000-2aaaaaa21000 r-xs 0 0:0 0
+2aaaaac21000-2aaaaac22000 r--s 0 0:0 0
+2aaaaac22000-2aaaaac24000 rw-s 0 0:0 0
 2aaaaac24000-2aaaaac26000 r-xs 0 0:0 0                  [vdso]
 2aaaaac26000-2aaaaac27000 rw-p 0 0:0 0
 2aaaaac4d000-2aaaaac4e000 rw-p 0 0:0 0
@@ -46,25 +42,23 @@ file map: ./dummy_file
 2aaaab00a000-2aaaab00c000 rw-p 0 0:0 0                  /usr/lib64/libc-2.17.so
 2aaaab00c000-2aaaab011000 rw-p 0 0:0 0
 2aaaab011000-2aaaab013000 rw-p 0 0:0 0
-2aaaab013000-2aaaab014000 rw-s 0 0:0 0                  /home/satoken/2018_work/04/test/dummy_file
+2aaaab013000-2aaaab014000 rw-s 0 0:0 0                  /home/satoken/mck_srcs/gerrit/mckernel/test/issues/1065/dummy_file
 547fff800000-548000000000 rw-s 0 0:0 0                  [stack]
 
-** grep /home/satoken/2018_work/04/test/dummy_file from maps
-2aaaab013000-2aaaab014000 rw-s 0 0:0 0                  /home/satoken/2018_work/04/test/dummy_file
-[OK] /home/satoken/2018_work/04/test/dummy_file is found
+** grep /home/satoken/mck_srcs/gerrit/mckernel/test/issues/1065/dummy_file from maps
+2aaaab013000-2aaaab014000 rw-s 0 0:0 0                  /home/satoken/mck_srcs/gerrit/mckernel/test/issues/1065/dummy_file
+[OK] /home/satoken/mck_srcs/gerrit/mckernel/test/issues/1065/dummy_file is found
 *** CT_002 PASSED
 
-./CT_003.sh
 *** CT_003 start *******************
-file map: ./lnk_to_dummy
-000000400000-000000401000 r-xs 0 0:0 0                  /home/satoken/2018_work/04/test/file_map
-000000600000-000000601000 r--s 0 0:0 0                  /home/satoken/2018_work/04/test/file_map
-000000601000-000000602000 rw-s 0 0:0 0                  /home/satoken/2018_work/04/test/file_map
+file map: /home/satoken/mck_srcs/gerrit/mckernel/test/issues/1065/dummy_file
+000000400000-000000401000 r-xs 0 0:0 0
+000000600000-000000601000 r--s 0 0:0 0
+000000601000-000000602000 rw-s 0 0:0 0
 2aaaaa9f8000-2aaaaaa00000 rw-s 0 0:0 0
-2aaaaaa00000-2aaaaaa21000 r-xs 0 0:0 0                  /usr/lib64/ld-2.17.so
-2aaaaac21000-2aaaaac22000 r--s 0 0:0 0                  /usr/lib64/ld-2.17.so
-2aaaaac22000-2aaaaac23000 rw-s 0 0:0 0                  /usr/lib64/ld-2.17.so
-2aaaaac23000-2aaaaac24000 rw-p 0 0:0 0
+2aaaaaa00000-2aaaaaa21000 r-xs 0 0:0 0
+2aaaaac21000-2aaaaac22000 r--s 0 0:0 0
+2aaaaac22000-2aaaaac24000 rw-s 0 0:0 0
 2aaaaac24000-2aaaaac26000 r-xs 0 0:0 0                  [vdso]
 2aaaaac26000-2aaaaac27000 rw-p 0 0:0 0
 2aaaaac4d000-2aaaaac4e000 rw-p 0 0:0 0
@@ -74,25 +68,23 @@ file map: ./lnk_to_dummy
 2aaaab00a000-2aaaab00c000 rw-p 0 0:0 0                  /usr/lib64/libc-2.17.so
 2aaaab00c000-2aaaab011000 rw-p 0 0:0 0
 2aaaab011000-2aaaab013000 rw-p 0 0:0 0
-2aaaab013000-2aaaab014000 rw-s 0 0:0 0                  /home/satoken/2018_work/04/test/dummy_file
+2aaaab013000-2aaaab014000 rw-s 0 0:0 0                  /home/satoken/mck_srcs/gerrit/mckernel/test/issues/1065/dummy_file
 547fff800000-548000000000 rw-s 0 0:0 0                  [stack]
 
-** grep /home/satoken/2018_work/04/test/dummy_file from maps
-2aaaab013000-2aaaab014000 rw-s 0 0:0 0                  /home/satoken/2018_work/04/test/dummy_file
-[OK] /home/satoken/2018_work/04/test/dummy_file is found
+** grep /home/satoken/mck_srcs/gerrit/mckernel/test/issues/1065/dummy_file from maps
+2aaaab013000-2aaaab014000 rw-s 0 0:0 0                  /home/satoken/mck_srcs/gerrit/mckernel/test/issues/1065/dummy_file
+[OK] /home/satoken/mck_srcs/gerrit/mckernel/test/issues/1065/dummy_file is found
 *** CT_003 PASSED
 
-./CT_004.sh
 *** CT_004 start *******************
-exec : ./print_maps
-000000400000-000000401000 r-xs 0 0:0 0                  /home/satoken/2018_work/04/test/print_maps
-000000600000-000000601000 r--s 0 0:0 0                  /home/satoken/2018_work/04/test/print_maps
-000000601000-000000602000 rw-s 0 0:0 0                  /home/satoken/2018_work/04/test/print_maps
+file map: ./lnk_to_dummy
+000000400000-000000401000 r-xs 0 0:0 0
+000000600000-000000601000 r--s 0 0:0 0
+000000601000-000000602000 rw-s 0 0:0 0
 2aaaaa9f8000-2aaaaaa00000 rw-s 0 0:0 0
-2aaaaaa00000-2aaaaaa21000 r-xs 0 0:0 0                  /usr/lib64/ld-2.17.so
-2aaaaac21000-2aaaaac22000 r--s 0 0:0 0                  /usr/lib64/ld-2.17.so
-2aaaaac22000-2aaaaac23000 rw-s 0 0:0 0                  /usr/lib64/ld-2.17.so
-2aaaaac23000-2aaaaac24000 rw-p 0 0:0 0
+2aaaaaa00000-2aaaaaa21000 r-xs 0 0:0 0
+2aaaaac21000-2aaaaac22000 r--s 0 0:0 0
+2aaaaac22000-2aaaaac24000 rw-s 0 0:0 0
 2aaaaac24000-2aaaaac26000 r-xs 0 0:0 0                  [vdso]
 2aaaaac26000-2aaaaac27000 rw-p 0 0:0 0
 2aaaaac4d000-2aaaaac4e000 rw-p 0 0:0 0
@@ -102,54 +94,23 @@ exec : ./print_maps
 2aaaab00a000-2aaaab00c000 rw-p 0 0:0 0                  /usr/lib64/libc-2.17.so
 2aaaab00c000-2aaaab011000 rw-p 0 0:0 0
 2aaaab011000-2aaaab013000 rw-p 0 0:0 0
+2aaaab013000-2aaaab014000 rw-s 0 0:0 0                  /home/satoken/mck_srcs/gerrit/mckernel/test/issues/1065/dummy_file
 547fff800000-548000000000 rw-s 0 0:0 0                  [stack]
 
-** grep /home/satoken/2018_work/04/test/print_maps from maps
-000000400000-000000401000 r-xs 0 0:0 0                  /home/satoken/2018_work/04/test/print_maps
-000000600000-000000601000 r--s 0 0:0 0                  /home/satoken/2018_work/04/test/print_maps
-000000601000-000000602000 rw-s 0 0:0 0                  /home/satoken/2018_work/04/test/print_maps
-[OK] /home/satoken/2018_work/04/test/print_maps is found
-
-** grep /usr/lib64/ld-2.17.so from maps
-2aaaaaa00000-2aaaaaa21000 r-xs 0 0:0 0                  /usr/lib64/ld-2.17.so
-2aaaaac21000-2aaaaac22000 r--s 0 0:0 0                  /usr/lib64/ld-2.17.so
-2aaaaac22000-2aaaaac23000 rw-s 0 0:0 0                  /usr/lib64/ld-2.17.so
-[OK] /usr/lib64/ld-2.17.so is found
+** grep /home/satoken/mck_srcs/gerrit/mckernel/test/issues/1065/dummy_file from maps
+2aaaab013000-2aaaab014000 rw-s 0 0:0 0                  /home/satoken/mck_srcs/gerrit/mckernel/test/issues/1065/dummy_file
+[OK] /home/satoken/mck_srcs/gerrit/mckernel/test/issues/1065/dummy_file is found
 *** CT_004 PASSED
 
-./CT_005.sh
 *** CT_005 start *******************
-exec : ./static_print_maps
-000000400000-0000004b8000 r-xs 0 0:0 0                  /home/satoken/2018_work/04/test/static_print_maps
-0000006b7000-0000006ba000 rw-s 0 0:0 0                  /home/satoken/2018_work/04/test/static_print_maps
-0000006ba000-0000006bc000 rw-p 0 0:0 0
-000000800000-000000802000 rw-s 0 0:0 0                  [heap]
-000000802000-000000823000 rw-s 0 0:0 0                  [heap]
-000000823000-000000824000 rw-s 0 0:0 0                  [heap]
+check [vdso], [stack]
+000000400000-000000401000 r-xs 0 0:0 0
+000000600000-000000601000 r--s 0 0:0 0
+000000601000-000000602000 rw-s 0 0:0 0
 2aaaaa9f8000-2aaaaaa00000 rw-s 0 0:0 0
-2aaaaaa00000-2aaaaaa02000 r-xs 0 0:0 0                  [vdso]
-547fff800000-548000000000 rw-s 0 0:0 0                  [stack]
-
-** grep /home/satoken/2018_work/04/test/static_print_maps from maps
-000000400000-0000004b8000 r-xs 0 0:0 0                  /home/satoken/2018_work/04/test/static_print_maps
-0000006b7000-0000006ba000 rw-s 0 0:0 0                  /home/satoken/2018_work/04/test/static_print_maps
-[OK] /home/satoken/2018_work/04/test/static_print_maps is found
-
-** grep /usr/lib64/ld-2.17.so from maps
-[OK] /usr/lib64/ld-2.17.so is not found
-*** CT_005 PASSED
-
-./CT_006.sh
-*** CT_006 start *******************
-000000400000-00000040b000 r-xs 0 0:0 0                  /usr/bin/cat
-00000060b000-00000060c000 r--s 0 0:0 0                  /usr/bin/cat
-00000060c000-00000060d000 rw-s 0 0:0 0                  /usr/bin/cat
-000000800000-000000821000 rw-s 0 0:0 0                  [heap]
-2aaaaa9f8000-2aaaaaa00000 rw-s 0 0:0 0
-2aaaaaa00000-2aaaaaa21000 r-xs 0 0:0 0                  /usr/lib64/ld-2.17.so
-2aaaaac21000-2aaaaac22000 r--s 0 0:0 0                  /usr/lib64/ld-2.17.so
-2aaaaac22000-2aaaaac23000 rw-s 0 0:0 0                  /usr/lib64/ld-2.17.so
-2aaaaac23000-2aaaaac24000 rw-p 0 0:0 0
+2aaaaaa00000-2aaaaaa21000 r-xs 0 0:0 0
+2aaaaac21000-2aaaaac22000 r--s 0 0:0 0
+2aaaaac22000-2aaaaac24000 rw-s 0 0:0 0
 2aaaaac24000-2aaaaac26000 r-xs 0 0:0 0                  [vdso]
 2aaaaac26000-2aaaaac27000 rw-p 0 0:0 0
 2aaaaac4d000-2aaaaac4e000 rw-p 0 0:0 0
@@ -159,67 +120,13 @@ exec : ./static_print_maps
 2aaaab00a000-2aaaab00c000 rw-p 0 0:0 0                  /usr/lib64/libc-2.17.so
 2aaaab00c000-2aaaab011000 rw-p 0 0:0 0
 2aaaab011000-2aaaab013000 rw-p 0 0:0 0
-2aaaab013000-2aaab153c000 r--p 0 0:0 0                  /usr/lib/locale/locale-archive
+2aaaab013000-2aaaab014000 rw-s 0 0:0 0                  /home/satoken/mck_srcs/gerrit/mckernel/test/issues/1065/dummy_file
 547fff800000-548000000000 rw-s 0 0:0 0                  [stack]
-[OK] shell script is running normaly
-*** CT_006 PASSED
 
-./CT_007.sh
-*** CT_007 start *******************
-exec : ./call_execve ./print_maps_and_cmdline
-000000400000-000000401000 r-xs 0 0:0 0                  /home/satoken/2018_work/04/test/print_maps_and_cmdline
-000000600000-000000601000 r--s 0 0:0 0                  /home/satoken/2018_work/04/test/print_maps_and_cmdline
-000000601000-000000602000 rw-s 0 0:0 0                  /home/satoken/2018_work/04/test/print_maps_and_cmdline
-2aaaaa9f8000-2aaaaaa00000 rw-s 0 0:0 0
-2aaaaaa00000-2aaaaaa21000 r-xs 0 0:0 0                  /usr/lib64/ld-2.17.so
-2aaaaac21000-2aaaaac22000 r--s 0 0:0 0                  /usr/lib64/ld-2.17.so
-2aaaaac22000-2aaaaac23000 rw-s 0 0:0 0                  /usr/lib64/ld-2.17.so
-2aaaaac23000-2aaaaac24000 rw-p 0 0:0 0
+** grep \[vdso\] from maps
 2aaaaac24000-2aaaaac26000 r-xs 0 0:0 0                  [vdso]
-2aaaaac26000-2aaaaac27000 rw-p 0 0:0 0
-2aaaaac4d000-2aaaaae05000 r-xp 0 0:0 0                  /usr/lib64/libc-2.17.so
-2aaaaae05000-2aaaab005000 ---p 0 0:0 0                  /usr/lib64/libc-2.17.so
-2aaaab005000-2aaaab009000 r--p 0 0:0 0                  /usr/lib64/libc-2.17.so
-2aaaab009000-2aaaab00b000 rw-p 0 0:0 0                  /usr/lib64/libc-2.17.so
-2aaaab00b000-2aaaab010000 rw-p 0 0:0 0
-2aaaab010000-2aaaab011000 rw-p 0 0:0 0
-2aaaab011000-2aaaab013000 rw-p 0 0:0 0
+[OK] \[vdso\] is found
+** grep \[stack\] from maps
 547fff800000-548000000000 rw-s 0 0:0 0                  [stack]
-STKN:[main_loop] filename:./print_maps_and_cmdline  shell:0x(nil)
-STKN:[main_loop] filename:/bin/sh  shell:0x(nil)
-STKN:[main_loop] filename:./print_maps_and_cmdline  shell:0x(nil)
-
-** grep /home/satoken/2018_work/04/test/print_maps_and_cmdline from maps
-000000400000-000000401000 r-xs 0 0:0 0                  /home/satoken/2018_work/04/test/print_maps_and_cmdline
-000000600000-000000601000 r--s 0 0:0 0                  /home/satoken/2018_work/04/test/print_maps_and_cmdline
-000000601000-000000602000 rw-s 0 0:0 0                  /home/satoken/2018_work/04/test/print_maps_and_cmdline
-[OK] /home/satoken/2018_work/04/test/print_maps_and_cmdline is found
-
-** grep /usr/lib64/ld-2.17.so from maps
-2aaaaaa00000-2aaaaaa21000 r-xs 0 0:0 0                  /usr/lib64/ld-2.17.so
-2aaaaac21000-2aaaaac22000 r--s 0 0:0 0                  /usr/lib64/ld-2.17.so
-2aaaaac22000-2aaaaac23000 rw-s 0 0:0 0                  /usr/lib64/ld-2.17.so
-[OK] /usr/lib64/ld-2.17.so is found
-./print_maps_and_cmdlineso.6o.
-** grep ./print_maps_and_cmdline from cmdline
-./print_maps_and_cmdlineso.6o.
-[OK] ./print_maps_and_cmdline is found
-*** CT_007 PASSED
-
-./CT_008.sh
-*** CT_008 start *******************
-exec : ./call_execve.sh ./print_maps_and_cmdline
-./CT_008.sh: line 18: 25571 Segmentation fault      (core dumped) ${MCEXEC} ${test_program} > ./${TESTNAME}_maps.log 2> ./${TESTNAME}_cmdline.log
-STKN:[main] This is shell script
-STKN:[main_loop] filename:./call_execve  shell:0x(nil)
-STKN:[main_loop] filename:./print_maps_and_cmdline  shell:0x(nil)
-
-** grep /home/satoken/2018_work/04/test/print_maps_and_cmdline from maps
-[NG] /home/satoken/2018_work/04/test/print_maps_and_cmdline is not found
-
-** grep /usr/lib64/ld-2.17.so from maps
-[NG] /usr/lib64/ld-2.17.so is not found
-
-** grep ./print_maps_and_cmdline from cmdline
-[NG] ./print_maps_and_cmdline is not found
-*** CT_008 FAILED
+[OK] \[stack\] is found
+*** CT_005 PASSED
