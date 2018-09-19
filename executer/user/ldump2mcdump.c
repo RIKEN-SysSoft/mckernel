@@ -1,4 +1,4 @@
-
+/* ldump2mcdump.c COPYRIGHT FUJITSU LIMITED 2017 */
 #include "../include/defs.h"      /* From the crash source top-level directory */
 #include <bfd.h>
 #include <pwd.h>

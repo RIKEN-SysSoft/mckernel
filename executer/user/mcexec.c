@@ -1,4 +1,4 @@
-/* mcexec.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
+/* mcexec.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
 /**
  * \file executer/user/mcexec.c
  *  License details are found in the file LICENSE.

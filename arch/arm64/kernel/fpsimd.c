@@ -1,4 +1,4 @@
-/* fpsimd.c COPYRIGHT FUJITSU LIMITED 2016-2017 */
+/* fpsimd.c COPYRIGHT FUJITSU LIMITED 2016-2018 */
 #include <thread_info.h>
 #include <fpsimd.h>
 #include <cpuinfo.h>

@@ -1,4 +1,4 @@
-/* perfctr.h COPYRIGHT FUJITSU LIMITED 2015-2016 */
+/* perfctr.h COPYRIGHT FUJITSU LIMITED 2015-2018 */
 /**
  * \file perfctr.h
  *  License details are found in the file LICENSE.

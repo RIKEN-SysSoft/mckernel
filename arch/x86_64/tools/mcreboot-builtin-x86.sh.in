@@ -1,4 +1,5 @@
 #!/bin/bash -x
+# mcreboot-builtin-x86.sh.in COPYRIGHT FUJITSU LIMITED 2018
 
 # \file arch/x86/tools/mcreboot-builtin-x86.sh.in
 #  License details are found in the file LICENSE.

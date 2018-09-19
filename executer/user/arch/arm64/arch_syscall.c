@@ -1,3 +1,4 @@
+/* arch_syscall.c COPYRIGHT FUJITSU LIMITED 2018 */
 struct syscall_wait_desc;
 
 int

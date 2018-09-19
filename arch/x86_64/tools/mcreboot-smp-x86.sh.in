@@ -1,4 +1,5 @@
 #!/bin/bash
+# mcreboot-smp-x86.sh.in COPYRIGHT FUJITSU LIMITED 2018
 
 # IHK SMP-x86 example boot script.
 # author: Balazs Gerofi <bgerofi@riken.jp>

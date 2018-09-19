@@ -1,4 +1,4 @@
-/* psci.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
+/* psci.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
 /* @ref.impl arch/arm64/kernel/psci.c */
 /*
  * This program is free software; you can redistribute it and/or modify

@@ -1,4 +1,5 @@
 #!/bin/bash
+# mcstop+release-smp-x86.sh.in COPYRIGHT FUJITSU LIMITED 2018
 
 # IHK SMP-x86 example McKernel unload script.
 # author: Balazs Gerofi <bgerofi@riken.jp>

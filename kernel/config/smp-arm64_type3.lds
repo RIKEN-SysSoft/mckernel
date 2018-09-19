@@ -1,3 +1,4 @@
+/* smp-arm64_type3.lds COPYRIGHT FUJITSU LIMITED 2017-2018 */
 PHDRS
 {
 	text PT_LOAD FLAGS(5);

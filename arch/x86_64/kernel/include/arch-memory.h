@@ -1,3 +1,4 @@
+/* arch-memory.h COPYRIGHT FUJITSU LIMITED 2018 */
 /**
  * \file arch-memomry.h
  *  License details are found in the file LICENSE.

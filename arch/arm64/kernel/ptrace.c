@@ -1,4 +1,4 @@
-/* ptrace.c COPYRIGHT FUJITSU LIMITED 2016-2017 */
+/* ptrace.c COPYRIGHT FUJITSU LIMITED 2016-2018 */
 #include <errno.h>
 #include <debug-monitors.h>
 #include <hw_breakpoint.h>

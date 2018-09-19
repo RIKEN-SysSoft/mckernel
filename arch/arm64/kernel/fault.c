@@ -1,4 +1,4 @@
-/* fault.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
+/* fault.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
 
 #include <ihk/context.h>
 #include <ihk/debug.h>

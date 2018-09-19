@@ -1,4 +1,5 @@
 #!/bin/bash
+# mcreboot-attached-mic.sh.in COPYRIGHT FUJITSU LIMITED 2018
 
 # \file arch/x86/tools/mcreboot-attached-mic.sh.in
 #  License details are found in the file LICENSE.

@@ -1,3 +1,4 @@
+/* types.h COPYRIGHT FUJITSU LIMITED 2018 */
 /**
  * \file types.h
  *  Licence details are found in the file LICENSE.

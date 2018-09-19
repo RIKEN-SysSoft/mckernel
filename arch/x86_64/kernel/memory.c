@@ -1,3 +1,4 @@
+/* memory.c COPYRIGHT FUJITSU LIMITED 2018 */
 /**
  * \file memory.c
  *  License details are found in the file LICENSE.

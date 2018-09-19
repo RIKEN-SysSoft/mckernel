@@ -1,3 +1,4 @@
+# mcoverlay-destroy-smp-x86.sh.in COPYRIGHT FUJITSU LIMITED 2018
 # Remove mcoverlay if loaded
 
 # POSTK_DEBUG_ARCH_DEP_95 if disable mcoverlayfs script nothing to do

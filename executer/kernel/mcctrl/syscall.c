@@ -1,4 +1,4 @@
-/* syscall.c COPYRIGHT FUJITSU LIMITED 2016-2017 */
+/* syscall.c COPYRIGHT FUJITSU LIMITED 2016-2018 */
 /**
  * \file executer/kernel/syscall.c
  *  License details are found in the file LICENSE.

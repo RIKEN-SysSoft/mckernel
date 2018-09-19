@@ -1,3 +1,4 @@
+# mcoverlay-create-smp-x86.sh.in COPYRIGHT FUJITSU LIMITED 2018
 # Overlay /proc, /sys with McKernel specific contents
 
 # POSTK_DEBUG_ARCH_DEP_95 if disable mcoverlayfs script nothing to do

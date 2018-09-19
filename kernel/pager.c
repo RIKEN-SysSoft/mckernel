@@ -1,3 +1,4 @@
+/* pager.c COPYRIGHT FUJITSU LIMITED 2017-2018 */
 /*
  * \file pager.c
  *  License details are found in the file LICENSE.

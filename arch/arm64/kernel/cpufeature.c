@@ -1,4 +1,4 @@
-/* cpufeature.c COPYRIGHT FUJITSU LIMITED 2017 */
+/* cpufeature.c COPYRIGHT FUJITSU LIMITED 2017-2018 */
 
 #include <cpufeature.h>
 #include <ihk/debug.h>
