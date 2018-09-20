@@ -440,17 +440,29 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 
 		proc->termsig = termsig;
 		asp = create_address_space(cpu_local_var(resource_set), 1);
-		if(!asp){
+		if (!asp) {
 			kfree(proc);
 			goto err_free_proc;
 		}
 		proc->vm = kmalloc(sizeof(struct process_vm), IHK_MC_AP_NOWAIT);
-		if(!proc->vm){
+		if (!proc->vm) {
 			release_address_space(asp);
 			kfree(proc);
 			goto err_free_proc;
 		}
 		memset(proc->vm, '\0', sizeof(struct process_vm));
+
+		proc->saved_cmdline_len = org->proc->saved_cmdline_len;
+		proc->saved_cmdline = kmalloc(proc->saved_cmdline_len,
+					      IHK_MC_AP_NOWAIT);
+		if (!proc->saved_cmdline) {
+			release_address_space(asp);
+			kfree(proc->vm);
+			kfree(proc);
+			goto err_free_proc;
+		}
+		memcpy(proc->saved_cmdline, org->proc->saved_cmdline,
+		       proc->saved_cmdline_len);
 
 		dkprintf("fork(): init_process_vm()\n");
 		if (init_process_vm(proc, asp, proc->vm) != 0) {
