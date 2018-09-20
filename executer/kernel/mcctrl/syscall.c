@@ -2176,13 +2176,9 @@ int release_user_space(uintptr_t start, uintptr_t len)
 static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 	struct file *file;
 	struct coretable *coretable;
-#ifdef POSTK_DEBUG_TEMP_FIX_61 /* Core table size and lseek return value to loff_t */
 	int i, tablesize, error = 0;
 	loff_t size;
 	ssize_t ret;
-#else /* POSTK_DEBUG_TEMP_FIX_61 */
-	int ret, i, tablesize, size, error = 0;
-#endif /* POSTK_DEBUG_TEMP_FIX_61 */
 	unsigned long phys, tablephys, rphys;
 	ihk_device_t dev = ihk_os_to_dev(os);
 	char *pt;
@@ -2243,11 +2239,7 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 			ihk_device_unmap_virtual(dev, pt, size);
 			ihk_device_unmap_memory(dev, phys, size);
 			if (ret != size) {
-#ifdef POSTK_DEBUG_TEMP_FIX_61 /* Core table size and lseek return value to loff_t */
 				dprintk("core file write failed(%ld).\n", ret);
-#else /* POSTK_DEBUG_TEMP_FIX_61 */
-				dprintk("core file write failed(%d).\n", ret);
-#endif /* POSTK_DEBUG_TEMP_FIX_61 */
 				error = PTR_ERR(file);
 				break;
 			}
@@ -2260,11 +2252,7 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 			}
 			ret = file->f_op->llseek(file, size, SEEK_CUR);
 			if (ret < 0) {
-#ifdef POSTK_DEBUG_TEMP_FIX_61 /* Core table size and lseek return value to loff_t */
 				dprintk("core file seek failed(%ld).\n", ret);
-#else /* POSTK_DEBUG_TEMP_FIX_61 */
-				dprintk("core file seek failed(%d).\n", ret);
-#endif /* POSTK_DEBUG_TEMP_FIX_61 */
 				error = PTR_ERR(file);
 				break;
 			}
