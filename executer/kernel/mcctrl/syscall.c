@@ -2201,11 +2201,7 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 	 * dump routine of the Linux kernel in linux/fs/exec.c. 
 	 * So we have a legitimate reason to do this.
 	 */
-#ifdef POSTK_DEBUG_TEMP_FIX_59 /* corefile open flag add O_TRUNC */
 	file = filp_open("core", O_CREAT | O_RDWR | O_LARGEFILE | O_TRUNC, 0600);
-#else /* POSTK_DEBUG_TEMP_FIX_59 */
-	file = filp_open("core", O_CREAT | O_RDWR | O_LARGEFILE, 0600);
-#endif /* POSTK_DEBUG_TEMP_FIX_59 */
 	if (IS_ERR(file) || !file->f_op) {
 		dprintk("cannot open core file\n");
 		error = PTR_ERR(file);
