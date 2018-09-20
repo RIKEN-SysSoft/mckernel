@@ -979,11 +979,9 @@ void coredump(struct thread *thread, void *regs)
 	struct coretable *coretable;
 	int chunks;
 
-#ifdef POSTK_DEBUG_ARCH_DEP_67 /* use limit corefile size. (temporarily fix.) */
 	if (thread->proc->rlimit[MCK_RLIMIT_CORE].rlim_cur == 0) {
 		return;
 	}
-#endif /* POSTK_DEBUG_ARCH_DEP_67 */
 
 	ret = gencore(thread, regs, &coretable, &chunks);
 	if (ret != 0) {
