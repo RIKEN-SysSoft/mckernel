@@ -1,10 +1,14 @@
 ==========
 How to run
 ==========
-./run.sh <rusagexxx>
-
-Example:
-./run.sh rusage000
+(1) cp <build>/mckernel/mck_test_config.sample \
+    ~/.mck_test_config
+(2) cp <build>/ihk/mck_test_config.mk.sample \
+    ~/.mck_test_config.mk
+(3) Edit the following line in Makefile:
+    XPMEM_DIR=/usr/
+(4) ./run.sh <test_id>
+    Example: ./run.sh 000
 
 ===================================
 How to judge it behaves as expected
@@ -14,7 +18,7 @@ Follow the instruction given by run.sh.
 =====================
 Descripation of tests
 =====================
-rusage000: Excercise the following execution paths:
+000: Excercise the following execution paths:
   args_envs()->set_range() text,data,arg,env[OK]
   args_envs()->set_range() !vdso [OK],
   args_envs()->set_range() stack[OK],
@@ -29,89 +33,89 @@ rusage000: Excercise the following execution paths:
   exit_group()->free_process_memory_range()->!vdso[OK],
   exit_group()->free_process_memory_range()->stack[OK],
 
-rusage010: Excercise the following execution paths:
+010: Excercise the following execution paths:
   app->mmap() 2M,anon,pre-page ->set_range()->munmap()->free_process_memory_range()->clear_range()[OK]
 
-rusage020: Excercise the following execution paths:
+020: Excercise the following execution paths:
   app->mmap() 1G,anon,private,demand-page -> pf -> set_range() [NA (failed to get 1GB page)],
   app->mmap() 1G,anon,private,demand-page -> pf -> set_range()->munmap()->free_process_memory_range()->clear_range()[NA (failed to get 1GB page)]
 
-rusage030: Excercise the following execution paths:
+030: Excercise the following execution paths:
   app->mmap() 128M,anon,private,demand-page(=zeroobj) -> pf -> set_range() [OK],
   app->mmap() 128M,anon,private,demand-page(=zeroobj) -> pf -> set_range()->munmap()->free_process_memory_range()->clear_range()[OK]
 
-rusage001: Excercise the following execution paths:
+001: Excercise the following execution paths:
   do_mmap(),file,demand-page->get_page(),ld->set_pte()->munmap()->clear_range() [OK]
   do_mmap(),file,demand-page->get_page(),ld->set_pte()->st->munmap()->clear_range() [OK]
   do_mmap(),file,demand-page->get_page(),st->set_pte()->flush()->munmap()->clear_range() [OK]
 
-rusage002: Excercise the following execution paths: 
+002: Excercise the following execution paths:
   do_mmap(),/dev/shm with --mpol_shm_premap,pre-page->get_page(),st->set_pte()->munmap()->clear_range() [OK]
 
-rusage003: Excercise the following execution paths: 
+003: Excercise the following execution paths:
   do_mmap(),/dev/shm without --mpol_shm_premap,pre-page->get_page(),st->set_pte()->munmap()->clear_range() [OK]
 
-rusage004: Excercise the following execution paths related to clone
+004: Excercise the following execution paths related to clone
   load segments->copy_user_ranges()->clear_range() [OK]
   filemap(demand-paging)->copy_user_ranges()->clear_range() [OK]
 
-rusage005: Excercise the following execution paths related to device file (ib ping-pong)
+005: Excercise the following execution paths related to device file (ib ping-pong)
   devobj()->get_page()->pf->munmap()->clear_range() [OK]
   remote page fault->cow->clear_range() [OK]
   ld-linux.so->mmap private->cow->clear_range() [OK]
 
-rusage006: Excercise the following execution paths related to clone
+006: Excercise the following execution paths related to clone
   filemap,/dev/shm with --mpol_shm_premap->copy_user_ranges()->clear_range() [OK]
 
-rusage007: Excercise the following execution paths related to clone
+007: Excercise the following execution paths related to clone
   filemap,/dev/shm without --mpol_shm_premap->copy_user_ranges()->clear_range() [OK]
 
-rusage008: Excercise the following execution paths related to sharing file-map page
+008: Excercise the following execution paths related to sharing file-map page
 fork()->filemap->pf->clear_range() [OK]
 
-rusage009: Excercise the following execution paths related to sharing shmget() page
+009: Excercise the following execution paths related to sharing shmget() page
 fork()->shmat()->pf->clear_range() [OK]
 
-rusage011: Excercise the following execution paths related to sharing xpmem page
+011: Excercise the following execution paths related to sharing xpmem page
 fork()->xpmem_attach()->pf->clear_range() [OK]
 
-rusage012: #925
+012: #925
 
-rusage013: Excercise the following execution paths: 
+013: Excercise the following execution paths:
 fileobj(prvate)->cow->set_pte()->clear_range() [OK]
 
-rusage014: Excercise the following execution paths related to remap_file_pages
+014: Excercise the following execution paths related to remap_file_pages
 do_mmap->fileobj-->remap_file_pages()->st->clear_range() [OK]
 
-rusage015: Excercise the following execution paths related to remap_file_pages
+015: Excercise the following execution paths related to remap_file_pages
 do_mmap->fileobj-->st-->remap_one_page()->clear_range() [OK]
 
-rusage016: Excercise the following execution paths related to mremap
+016: Excercise the following execution paths related to mremap
 mremap()->move_pte_range()-->clear_range() [OK]
 
-rusage017: Excercise the following execution paths related to split_process_memory_range, file-map
+017: Excercise the following execution paths related to split_process_memory_range, file-map
 mprotect()->split_process_memory_range()->change_prot_process_memory_range()->clear_range()/file_obj_release() [OK]
 
-rusage018: Excercise the following execution paths related to split_process_memory_range, 2M-page
+018: Excercise the following execution paths related to split_process_memory_range, 2M-page
 mprotect()->ihk_mc_pt_split()->change_prot_process_memory_range()->clear_range() [OK]
 
-rusage019: Run npb bt-mz.S.2
+019: Run npb bt-mz.S.2
 1-ppn x 2-tpn x 2-node[OK]
 
-rusage021: Run npb bt-mz.S.4
+021: Run npb bt-mz.S.4
 2-ppn x 2-tpn x 2-node (wallaby{14,15}) [OK]
 2-ppn x 1-tpn x 2-node (polaris,kochab) [OK]
 
-rusage100: Test ihk_os_getrusage()
+100: Test ihk_os_getrusage(), call from McKernel process
 anon mmap,num_threads=1 [OK]
 
-rusage101: Test ihk_os_getrusage()
+101: Test ihk_os_getrusage(), call from McKernel process
 anon mmap,num_threads=2 [OK]
 
-rusage102: Test ihk_os_getrusage()
+102: Test ihk_os_getrusage(), call from McKernel process
 file map,num_threads=1 [OK]
 
-rusage103: Test ihk_os_getrusage()
+103: Test ihk_os_getrusage(), call from McKernel process
 anon mmap@numa#1 [OK]
 
-rusage104: Test ihk_os_getrusage(), user time per CPU
+200: Test ihk_os_getrusage(), user time per CPU

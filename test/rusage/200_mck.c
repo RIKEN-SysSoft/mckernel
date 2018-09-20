@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include "util.h"
 
 
 #define DELAY0 (100UL * 1000 * 1000)
@@ -115,7 +116,6 @@ unsigned long nsec;
 void fwq_init(void)
 {
 	struct timespec start, end;
-	int i;
 
 	clock_gettime(TIMER_KIND, &start);
 #define N_INIT 10000000

@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 	if ((ret = ihk_os_getrusage(0, &rusage, sizeof(rusage)))) {
 		fprintf(stderr, "%s: ihk_os_getrusage failed\n", __func__);
 		ret = -EINVAL;
-		goto out;
+		goto fn_fail;
 	}
 
 	OKNG(WITHIN_RANGE(rusage.cpuacct_usage_percpu[1], DELAY0, SCALE),
@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 
 	printf("All tests finished\n");
 
- out:
+ fn_fail:
 	return ret;
 }
 
