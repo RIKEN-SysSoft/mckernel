@@ -1707,7 +1707,7 @@ SYSCALL_DECLARE(mmap)
 		| MAP_NONBLOCK		// 0x10000
 		;
 
-	const intptr_t addr0 = ihk_mc_syscall_arg0(ctx);
+	const uintptr_t addr0 = ihk_mc_syscall_arg0(ctx);
 	const size_t len0 = ihk_mc_syscall_arg1(ctx);
 	const int prot = ihk_mc_syscall_arg2(ctx);
 	const int flags0 = ihk_mc_syscall_arg3(ctx);
@@ -1716,7 +1716,7 @@ SYSCALL_DECLARE(mmap)
 	struct thread *thread = cpu_local_var(current);
 	struct vm_regions *region = &thread->vm->region;
 	int error;
-	intptr_t addr = 0;
+	uintptr_t addr = 0;
 	size_t len;
 	int flags = flags0;
 	size_t pgsize;
