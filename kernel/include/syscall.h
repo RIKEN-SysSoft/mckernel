@@ -466,7 +466,7 @@ static inline unsigned long timespec_to_jiffy(const struct timespec *ats)
 void reset_cputime(void);
 void set_cputime(int mode);
 int do_munmap(void *addr, size_t len, int holding_memory_range_lock);
-intptr_t do_mmap(intptr_t addr0, size_t len0, int prot, int flags, int fd,
+intptr_t do_mmap(uintptr_t addr0, size_t len0, int prot, int flags, int fd,
 		off_t off0);
 void clear_host_pte(uintptr_t addr, size_t len);
 typedef int32_t key_t;
