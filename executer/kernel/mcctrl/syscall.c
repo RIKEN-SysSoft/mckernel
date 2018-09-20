@@ -2282,11 +2282,9 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 			phys = ihk_device_map_memory(dev, rphys, size);
 			dprintk("physical %lx, ", phys);
 			pt = ihk_device_map_virtual(dev, phys, size, NULL, 0);
-#ifdef POSTK_DEBUG_TEMP_FIX_38
 			if (pt == NULL) {
 				pt = phys_to_virt(phys);
 			}
-#endif /*POSTK_DEBUG_TEMP_FIX_38*/
 			dprintk("virtual %p\n", pt);
 			if (pt != NULL) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)

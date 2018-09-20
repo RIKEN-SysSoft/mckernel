@@ -1,0 +1,77 @@
+insmod /home/satoken/ostest/util/../bin/test_mck.ko
+create charcter device /dev/test_mck/mmap_dev(244:0)
+create charcter device /dev/test_mck/mmap_dev2(244:1)
+000000400000-000000401000 r-xs 0 0:0 0
+000000600000-000000601000 r--s 0 0:0 0
+000000601000-000000602000 rw-s 0 0:0 0
+2aaaaa9f8000-2aaaaaa00000 rw-s 0 0:0 0
+2aaaaaa00000-2aaaaaa21000 r-xs 0 0:0 0
+2aaaaac21000-2aaaaac22000 r--s 0 0:0 0
+2aaaaac22000-2aaaaac24000 rw-s 0 0:0 0
+2aaaaac24000-2aaaaac26000 r-xs 0 0:0 0                  [vdso]
+2aaaaac26000-2aaaaac27000 rw-p 0 0:0 0
+2aaaaac4d000-2aaaaac4e000 rw-p 0 0:0 0
+2aaaaac4e000-2aaaaae06000 r-xp 0 0:0 0                  /usr/lib64/libc-2.17.so
+2aaaaae06000-2aaaab006000 ---p 0 0:0 0                  /usr/lib64/libc-2.17.so
+2aaaab006000-2aaaab00a000 r--p 0 0:0 0                  /usr/lib64/libc-2.17.so
+2aaaab00a000-2aaaab00c000 rw-p 0 0:0 0                  /usr/lib64/libc-2.17.so
+2aaaab00c000-2aaaab011000 rw-p 0 0:0 0
+2aaaab011000-2aaaab013000 rw-p 0 0:0 0
+2aaaab013000-2aaaab014000 rw-p 0 0:0 0
+2aaaab014000-2aaaab015000 r--s 0 0:0 0                  /dev/test_mck/mmap_dev2
+547fff800000-548000000000 rw-s 0 0:0 0                  [stack]
+Terminate by signal 11
+remove /dev/test_mck
+rmmod /home/satoken/ostest/util/../bin/test_mck.ko
+*** CT_001 start *******************************
+** check file type by readelf
+  Type:                              CORE (Core file)
+*** CT_001 PASSED ******************************
+
+*** CT_002 start *******************************
+** check that core contains vdso data
+(gdb) x 0x2aaaaac24000
+0x2aaaaac24000: 0x464c457f
+*** CT_002 PASSED ******************************
+
+*** CT_003 start *******************************
+** check that core dose NOT contain devmap data
+(gdb) x 0x2aaaab014000
+0x2aaaab014000: Cannot access memory at address 0x2aaaab014000
+*** CT_003 PASSED ******************************
+
+*** CT_004 start *******************************
+** check that core can be backtraced
+(gdb) bt
+#0  0x0000000000400ad0 in main (argc=1, argv=0x547ffffffd08) at devmap_and_segv.c:42
+*** CT_004 PASSED ******************************
+
+*** CT_005 start *******************************
+** check that core can be got info registers
+(gdb) info registers
+rax            0x0      0
+rbx            0x0      0
+rcx            0x2aaaaac834a0   46912498054304
+rdx            0x0      0
+rsi            0x547ffffffa30   92908732545584
+rdi            0x2      2
+rbp            0x547ffffffc20   0x547ffffffc20
+rsp            0x547ffffffb70   0x547ffffffb70
+r8             0x0      0
+r9             0x547ffffff930   92908732545328
+r10            0x8      8
+r11            0x246    582
+r12            0xffff8001007d0dc0       -140733185192512
+r13            0xffff800100770000       -140733185589248
+r14            0xb98    2968
+r15            0xffff80010078fa9c       -140733185459556
+rip            0x400ad0 0x400ad0 <main+592>
+eflags         0x10206  [ PF IF RF ]
+cs             0x33     51
+ss             0x3b     59
+ds             0x0      0
+es             0x0      0
+fs             0x0      0
+gs             0x0      0
+(gdb)
+*** CT_005 PASSED ******************************
