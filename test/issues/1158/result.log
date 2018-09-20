@@ -1,0 +1,15 @@
+*** CT_001 start *******************************
+[Linux   ] cat /sys/devices/pci0000:00/0000:00:00.0/local_cpus
+00010001
+[McKernel] mcexec cat /sys/devices/pci0000:00/0000:00:00.0/local_cpus
+00010001
+[OK] local_cpus is same between Linux and McKernel
+*** CT_001: PASSED
+
+*** CT_002 start *******************************
+[Linux   ] cat /sys/devices/pci0000:00/0000:00:00.0/local_cpulist
+0,16
+[McKernel] mcexec cat /sys/devices/pci0000:00/0000:00:00.0/local_cpulist
+0,16
+[OK] local_cpulist is same between Linux and McKernel
+*** CT_002: PASSED
