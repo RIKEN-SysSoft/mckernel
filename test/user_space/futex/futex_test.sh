@@ -32,7 +32,7 @@ function ng_out() {
 function ltp_test() {
 	TEST_NAME=$1
 #LTP programを実行 logを保存
-	sudo ${MCPATH}/bin/mcexec ${LTP_EXE_DIR}/${TEST_NAME} >./result/${TEST_NAME}.log
+	sudo ${MCK_DIR}/bin/mcexec ${LTP}/testcases/bin/${TEST_NAME} >./result/${TEST_NAME}.log
 
 #LTP log 確認
 	NUM=`cat ./test_cases/${TEST_NAME}.txt |wc -l`
@@ -56,21 +56,16 @@ TEST_CODE=001
 TEST_PREFIX=futex_
 
 ME=`whoami`
-if [ $# -ne 2 ]; then
-	source ./config
-else
-	MCPATH=$1
-	LTP_EXE_DIR=$2/futex
-fi
+source ${HOME}/.mck_test_config
 
 mkdir -p result
 
 reboot
 #LTP programを実行 logを保存
-mcexec ${LTP_EXE_DIR}/futex_wait01 >./result/futex_wait01.log
+${MCK_DIR}/bin/mcexec ${LTP}/testcases/bin/futex_wait01 >./result/futex_wait01.log
 
 #kmsgを保存
-sudo ${MCPATH}/sbin/ihkosctl 0 kmsg >./result/futex_wait01.kmsg
+sudo ${MCK_DIR}/sbin/ihkosctl 0 kmsg >./result/futex_wait01.kmsg
 
 #kmsgで結果を出力する。
 #futex-001 アドレスが正しく引き継いでいることを確認

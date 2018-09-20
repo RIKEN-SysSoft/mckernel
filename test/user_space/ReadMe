@@ -1,6 +1,12 @@
 User spaceテストについて
 1.テストの準備
-1.1 パッチファイル
+1.1 設定ファイル
+
+以下のコマンドでシェルスクリプトの変数設定用includeファイルを準備します。
+
+    cp -i <build>/mckernel/mck_test_config.sample ~/.mck_test_config
+
+1.2 パッチファイル
  テストは、修正部分にkprintfをパッチで追加し確認を行います。
  パッチファイルは以下のディレクトリに格納しています。
 　mckernel/test/user_space/patch/
@@ -18,7 +24,7 @@ User spaceテストについて
  なし					swapout				so_023-so_025
  qlmpilib.patch			swapout				so_026 
 
-1.2 パッチの適用
+1.3 パッチの適用
  mckernelディレクトリで以下コマンドを実行してパッチを当ててください。
  パッチ実行後ビルドしてください。
  
@@ -26,7 +32,7 @@ User spaceテストについて
 				(XXXX.patchはパッチファイル名)
 
 
-1.3 その他プログラムのコンパイル
+1.4 その他プログラムのコンパイル
 	(1)user_space/swapoutディレクトリで、makeし、swaptest実行モジュールを作成してください。
 	(2)qlmpi/qlmpi_testsuiteディレクトリで、テスト用プログラムのコンパイルを実施してください。
 	(3)LTPプログラムの実行モジュールを準備する必要があります。
