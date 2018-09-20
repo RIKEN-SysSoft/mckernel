@@ -1533,12 +1533,20 @@ static int search_free_space(size_t len, int pgshift, uintptr_t *addrp)
 	struct thread *thread = cpu_local_var(current);
 	struct vm_regions *region = &thread->vm->region;
 	intptr_t addr;
-	int error;
+	int error = 0;
 	struct vm_range *range;
 	size_t pgsize = (size_t)1 << pgshift;
 
 	dkprintf("%s: len: %lu, pgshift: %d\n",
 		__FUNCTION__, len, pgshift);
+
+	/* try given addr first */
+	addr = *addrp;
+	if (addr != 0) {
+		range = lookup_process_memory_range(thread->vm, addr, addr+len);
+		if (range == NULL)
+			goto out;
+	}
 
 	addr = region->map_end;
 	for (;;) {
@@ -1560,7 +1568,6 @@ static int search_free_space(size_t len, int pgshift, uintptr_t *addrp)
 	}
 
 	region->map_end = addr + len;
-	error = 0;
 	*addrp = addr;
 
 out:

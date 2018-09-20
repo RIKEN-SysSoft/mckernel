@@ -1702,13 +1702,18 @@ SYSCALL_DECLARE(mmap)
 	}
 
 #define	VALID_DUMMY_ADDR	((region->user_start + PTL3_SIZE - 1) & ~(PTL3_SIZE - 1))
-	addr = (flags & MAP_FIXED)? addr0: VALID_DUMMY_ADDR;
+	addr = addr0;
 	len = (len0 + pgsize - 1) & ~(pgsize - 1);
+recheck:
 	if ((addr & (pgsize - 1))
 			|| (len == 0)
 			|| !(flags & (MAP_SHARED | MAP_PRIVATE))
 			|| ((flags & MAP_SHARED) && (flags & MAP_PRIVATE))
 			|| (off0 & (pgsize - 1))) {
+		if (!(flags & MAP_FIXED) && addr != VALID_DUMMY_ADDR) {
+			addr = VALID_DUMMY_ADDR;
+			goto recheck;
+		}
 		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):EINVAL\n",
 				addr0, len0, prot, flags0, fd, off0);
 		error = -EINVAL;
@@ -1718,6 +1723,10 @@ SYSCALL_DECLARE(mmap)
 	if (addr < region->user_start
 			|| region->user_end <= addr
 			|| len > (region->user_end - region->user_start)) {
+		if (!(flags & MAP_FIXED) && addr != VALID_DUMMY_ADDR) {
+			addr = VALID_DUMMY_ADDR;
+			goto recheck;
+		}
 		ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):ENOMEM\n",
 				addr0, len0, prot, flags0, fd, off0);
 		error = -ENOMEM;
