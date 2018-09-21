@@ -25,8 +25,6 @@ void cpu_safe_halt(void);
 void cpu_restore_interrupt(unsigned long);
 void cpu_pause(void);
 
-#define barrier()   arch_barrier()
-
 unsigned long cpu_disable_interrupt_save(void);
 
 struct ihk_mc_interrupt_handler {

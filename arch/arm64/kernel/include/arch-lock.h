@@ -7,6 +7,7 @@
 #include <ihk/cpu.h>
 #include <ihk/atomic.h>
 #include "affinity.h"
+#include <lwk/compiler.h>
 
 //#define DEBUG_SPINLOCK
 //#define DEBUG_MCS_RWLOCK
