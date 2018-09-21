@@ -1342,7 +1342,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	int p2align;
 	void *p = NULL;
 	int vrflags;
-	intptr_t phys;
+	uintptr_t phys;
 	struct memobj *memobj = NULL;
 	int maxprot;
 	int denied;
@@ -1416,7 +1416,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 			goto out;
 		}
 	}
-	else {
+	else if (flags & MAP_ANONYMOUS) {
 		/* Obtain mapping address */
 		error = search_free_space(len, PAGE_SHIFT + p2align, &addr);
 		if (error) {
@@ -1450,7 +1450,7 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		populated_mapping = 0;
 	}
 
-	if (!(prot & PROT_WRITE)) {
+	if ((flags & MAP_ANONYMOUS) && !(prot & PROT_WRITE)) {
 		error = set_host_vma(addr, len, PROT_READ | PROT_EXEC, 1/* holding memory_range_lock */);
 		if (error) {
 			kprintf("do_mmap:set_host_vma failed. %d\n", error);
@@ -1502,14 +1502,55 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 #ifdef PROFILE_ENABLE
 				profile_event_add(PROFILE_mmap_device_file, len);
 #endif // PROFILE_ENABLE
-				dkprintf("%s: device fd: %d off: %lu mapping at %p - %p\n", 
-						__FUNCTION__, fd, off, addr, addr + len); 
 			}
 		}
 		if (error) {
 			kprintf("%s: error: file mapping failed, fd: %d, error: %d\n",
-					__FUNCTION__, error);
+					__func__, fd, error);
 			goto out;
+		}
+
+		/* hugetlbfs files are pre-created in fileobj_create, but
+		 * need extra processing
+		 */
+		if (memobj && (memobj->flags & MF_HUGETLBFS)) {
+			error = hugefileobj_create(memobj, len, off, &pgshift,
+						   addr0);
+			if (error) {
+				memobj->ops->free(memobj);
+				kprintf("%s: error creating hugetlbfs memobj, fd: %d, error: %d\n",
+					__func__, fd, error);
+				goto out;
+			}
+			p2align = pgshift - PAGE_SHIFT;
+		}
+
+		/* Obtain mapping address - delayed to use proper p2align */
+		if (!(flags & MAP_FIXED))
+			error = search_free_space(len, PAGE_SHIFT + p2align,
+						  &addr);
+		if (error) {
+			ekprintf("do_mmap:search_free_space(%lx,%lx,%d) failed. %d\n",
+				 len, region->map_end, p2align, error);
+			goto out;
+		}
+		if (!(prot & PROT_WRITE)) {
+			error = set_host_vma(addr, len, PROT_READ | PROT_EXEC,
+					     1/* holding memory_range_lock */);
+			if (error) {
+				kprintf("do_mmap:set_host_vma failed. %d\n",
+					error);
+				goto out;
+			}
+
+			ro_vma_mapped = 1;
+		}
+		if (memobj->flags & MF_HUGETLBFS) {
+			dkprintf("Created hugefileobj %p (%d:%x %llx-%llx, fd %d, pgshift %d)\n",
+				 memobj, len, off, addr, addr+len, fd, pgshift);
+		} else if (memobj->flags & MF_DEV_FILE) {
+			dkprintf("%s: device fd: %d off: %lu mapping at %p - %p\n",
+				 __func__, fd, off, addr, addr + len);
 		}
 	}
 	/* Prepopulated ANONYMOUS mapping */
