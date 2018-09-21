@@ -1165,6 +1165,7 @@ enum {
 	MF_XPMEM   = 0x10000, /* To identify XPMEM attachment pages for rusage accounting */
 	MF_ZEROOBJ = 0x20000, /* To identify pages of anonymous, on-demand paging ranges for rusage accounting */
 	MF_SHM =     0x40000,
+	MF_HUGETLBFS = 0x100000,
 };
 
 static int pager_get_path(struct file *file, char *path) {
@@ -1254,6 +1255,17 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 		goto out;
 	}
 
+	if (inode->i_op == mcctrl_hugetlbfs_inode_operations) {
+		mf_flags = MF_HUGETLBFS;
+		/* pager is used as handle id on mckernel side, use inode */
+		pager = (void *)st.ino;
+		/* retrofit blksize in resp as well through st.size field;
+		 * the actual file size is not used
+		 */
+		st.size = st.blksize;
+		goto out_reply;
+	}
+
 	for (;;) {
 		spin_lock_irqsave(&pager_lock, irqflags);
 
@@ -1322,6 +1334,7 @@ found:
 	}
 	spin_unlock_irqrestore(&pager_lock, irqflags);
 
+out_reply:
 	phys = ihk_device_map_memory(dev, result_pa, sizeof(*resp));
 	resp = ihk_device_map_virtual(dev, phys, sizeof(*resp), NULL, 0);
 	if (!resp) {
