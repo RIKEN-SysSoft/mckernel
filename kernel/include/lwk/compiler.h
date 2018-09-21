@@ -3,6 +3,8 @@
 
 #ifndef __ASSEMBLY__
 
+#include <types.h>
+
 #ifdef __CHECKER__
 # define __user		__attribute__((noderef, address_space(1)))
 # define __kernel	__attribute__((address_space(0)))
@@ -173,11 +175,6 @@ void ftrace_likely_update(struct ftrace_likely_data *f, int val,
 #else
 # define likely(x)	__builtin_expect(!!(x), 1)
 # define unlikely(x)	__builtin_expect(!!(x), 0)
-#endif
-
-/* Optimization barrier */
-#ifndef barrier
-# define barrier() __memory_barrier()
 #endif
 
 #ifndef barrier_data
@@ -489,5 +486,63 @@ void ftrace_likely_update(struct ftrace_likely_data *f, int val,
 	smp_read_barrier_depends(); /* Dependency order vs. p above. */ \
 	(_________p1); \
 })
+
+extern void *memcpy(void *dest, const void *src, size_t n);
+
+static __always_inline void __read_once_size(const volatile void *p, void *res, int size)
+{
+	switch (size) {
+	case 1: *(unsigned char *)res = *(volatile unsigned char *)p; break;
+	case 2: *(unsigned short *)res = *(volatile unsigned short *)p; break;
+	case 4: *(unsigned int *)res = *(volatile unsigned int *)p; break;
+	case 8: *(unsigned long long *)res = *(volatile unsigned long long *)p; break;
+	default:
+		barrier();
+		memcpy((void *)res, (const void *)p, size);
+		barrier();
+	}
+}
+
+static __always_inline void __write_once_size(volatile void *p, void *res, int size)
+{
+	switch (size) {
+	case 1: *(volatile unsigned char *)p = *(unsigned char *)res; break;
+	case 2: *(volatile unsigned short *)p = *(unsigned short *)res; break;
+	case 4: *(volatile unsigned int *)p = *(unsigned int *)res; break;
+	case 8: *(volatile unsigned long long *)p = *(unsigned long long *)res; break;
+	default:
+		barrier();
+		memcpy((void *)p, (const void *)res, size);
+		barrier();
+	}
+}
+
+/*
+ * Prevent the compiler from merging or refetching reads or writes. The
+ * compiler is also forbidden from reordering successive instances of
+ * READ_ONCE, WRITE_ONCE and ACCESS_ONCE (see below), but only when the
+ * compiler is aware of some particular ordering.  One way to make the
+ * compiler aware of ordering is to put the two invocations of READ_ONCE,
+ * WRITE_ONCE or ACCESS_ONCE() in different C statements.
+ *
+ * In contrast to ACCESS_ONCE these two macros will also work on aggregate
+ * data types like structs or unions. If the size of the accessed data
+ * type exceeds the word size of the machine (e.g., 32 bits or 64 bits)
+ * READ_ONCE() and WRITE_ONCE()  will fall back to memcpy and print a
+ * compile-time warning.
+ *
+ * Their two major use cases are: (1) Mediating communication between
+ * process-level code and irq/NMI handlers, all running on the same CPU,
+ * and (2) Ensuring that the compiler does not  fold, spindle, or otherwise
+ * mutilate accesses that either do not require ordering or that interact
+ * with an explicit memory barrier or atomic instruction that provides the
+ * required ordering.
+ */
+
+#define READ_ONCE(x) \
+	({ union { typeof(x) __val; char __c[1]; } __u; __read_once_size(&(x), __u.__c, sizeof(x)); __u.__val; })
+
+#define WRITE_ONCE(x, val) \
+	({ typeof(x) __val = (val); __write_once_size(&(x), &__val, sizeof(__val)); __val; })
 
 #endif /* __LWK_COMPILER_H */
