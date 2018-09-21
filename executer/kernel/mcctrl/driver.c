@@ -229,6 +229,9 @@ void (*mcctrl_zap_page_range)(struct vm_area_struct *vma,
 			      unsigned long size,
 			      struct zap_details *details);
 
+struct inode_operations *mcctrl_hugetlbfs_inode_operations;
+
+
 static int symbols_init(void)
 {
 	mcctrl_sys_mount = (void *) kallsyms_lookup_name("sys_mount");
@@ -261,6 +264,11 @@ static int symbols_init(void)
 	mcctrl_zap_page_range =
 		(void *) kallsyms_lookup_name("zap_page_range");
 	if (WARN_ON(!mcctrl_zap_page_range))
+		return -EFAULT;
+
+	mcctrl_hugetlbfs_inode_operations =
+		(void *) kallsyms_lookup_name("hugetlbfs_inode_operations");
+	if (WARN_ON(!mcctrl_hugetlbfs_inode_operations))
 		return -EFAULT;
 
 	return arch_symbols_init();

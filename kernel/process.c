@@ -977,9 +977,15 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 		if (range->memobj) {
 			memobj_ref(range->memobj);
 		}
-		error = ihk_mc_pt_free_range(vm->address_space->page_table, vm,
-				(void *)start, (void *)end,
-				(range->flag & VR_PRIVATE)? NULL: range->memobj);
+		if (range->memobj && range->memobj->flags & MF_HUGETLBFS) {
+			error = ihk_mc_pt_clear_range(vm->address_space->page_table,
+					vm, (void *)start, (void *)end);
+		} else {
+			error = ihk_mc_pt_free_range(vm->address_space->page_table,
+					vm, (void *)start, (void *)end,
+					(range->flag & VR_PRIVATE) ? NULL :
+						range->memobj);
+		}
 		if (range->memobj) {
 			memobj_unref(range->memobj);
 		}
@@ -1271,7 +1277,7 @@ int add_process_memory_range(struct process_vm *vm,
 	if (phys != NOPHYS && !(flag & (VR_REMOTE | VR_DEMAND_PAGING))
 			&& ((flag & VR_PROT_MASK) != VR_PROT_NONE)) {
 #if 1
-			memset((void*)phys_to_virt(phys), 0, end - start);
+		memset((void *)phys_to_virt(phys), 0, end - start);
 #else
 		if (end - start < (1024*1024)) {
 			memset((void*)phys_to_virt(phys), 0, end - start);
@@ -1451,7 +1457,8 @@ int change_prot_process_memory_range(struct process_vm *vm,
 	 * We need to keep the page table read-only to trigger a page
 	 * fault for copy-on-write later on
 	 */
-	if (range->memobj && (range->flag & VR_PRIVATE)) {
+	if (range->memobj && (range->flag & VR_PRIVATE) &&
+	    !(range->memobj->flags & MF_HUGETLBFS)) {
 		setattr &= ~PTATTR_WRITABLE;
 		if (!clrattr && !setattr) {
 			range->flag = newflag;
@@ -2502,6 +2509,13 @@ release_process(struct process *proc)
 #endif // PROFILE_ENABLE
 	free_thread_pages(proc->main_thread);
 	kfree(proc);
+
+	/* no process left */
+	mcs_rwlock_reader_lock(&rset->pid1->children_lock, &lock);
+	if (list_empty(&rset->pid1->children_list)) {
+		hugefileobj_cleanup();
+	}
+	mcs_rwlock_reader_unlock(&rset->pid1->children_lock, &lock);
 }
 
 void
