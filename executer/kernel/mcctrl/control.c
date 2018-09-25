@@ -1755,11 +1755,18 @@ mcexec_getcredv(int __user *virt)
 	return 0;
 }
 
-int mcexec_create_per_process_data(ihk_os_t os, struct rpgtable_desc *rpt)
+int mcexec_create_per_process_data(ihk_os_t os,
+				   struct rpgtable_desc * __user rpt)
 {
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd = NULL;
 	int i;
+	struct rpgtable_desc krpt;
+
+	if (rpt &&
+	    copy_from_user(&krpt, rpt, sizeof(krpt))) {
+		return -EFAULT;
+	}
 
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 	if (ppd) {
@@ -1813,8 +1820,8 @@ int mcexec_create_per_process_data(ihk_os_t os, struct rpgtable_desc *rpt)
 		__FUNCTION__, ppd->pid, atomic_read(&ppd->refcount));
 
 	if (rpt) {
-		ppd->rpgtable = rpt->rpgtable;
-		return mcctrl_clear_pte_range(rpt->start, rpt->len);
+		ppd->rpgtable = krpt.rpgtable;
+		return mcctrl_clear_pte_range(krpt.start, krpt.len);
 	}
 
 	return 0;
@@ -3164,7 +3171,7 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 
 	case MCEXEC_UP_CREATE_PPD:
 		return mcexec_create_per_process_data(os,
-						   (struct rpgtable_desc *)arg);
+					    (struct rpgtable_desc * __user)arg);
 
 	case MCEXEC_UP_GET_NODES:
 		return mcexec_get_nodes(os);
