@@ -1016,6 +1016,12 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 #endif /* POSTK_DEBUG_TEMP_FIX_84 */
 
 	--v->in_interrupt;
+
+	/* for migration by IPI */
+	if (v->flags & CPU_FLAG_NEED_MIGRATE) {
+		schedule();
+		check_signal(0, regs, 0);
+	}
 }
 
 void gpe_handler(struct x86_user_context *regs)

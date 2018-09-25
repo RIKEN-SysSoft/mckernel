@@ -9,6 +9,7 @@
 #include <syscall.h>
 #include <debug.h>
 #include <arch-timer.h>
+#include <cls.h>
 
 // #define DEBUG_GICV2
 
@@ -127,6 +128,12 @@ void handle_interrupt_gicv2(struct pt_regs *regs)
 		break;
 	} while (1);
 	set_cputime(from_user ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
+
+	/* for migration by IPI */
+	if (get_this_cpu_local_var()->flags & CPU_FLAG_NEED_MIGRATE) {
+		schedule();
+		check_signal(0, regs, 0);
+	}
 }
 
 void gic_dist_init_gicv2(unsigned long dist_base_pa, unsigned long size)
