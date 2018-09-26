@@ -1976,6 +1976,11 @@ static int clear_range(struct page_table *pt, struct process_vm *vm,
 	int error;
 	struct clear_range_args args;
 	translation_table_t* tt;
+	pte_t* ptep;
+	uintptr_t base;
+	int level;
+	size_t pgsize;
+	size_t cmp_pgsize;
 
 	if ((start < vm->region.user_start)
 			|| (vm->region.user_end < end)
@@ -1995,6 +2000,36 @@ static int clear_range(struct page_table *pt, struct process_vm *vm,
 	}
 	args.memobj = memobj;
 	args.vm = vm;
+
+	ptep = ihk_mc_pt_lookup_pte(pt, (void*)start, 0, NULL, &pgsize, NULL);
+	if (ptep && pte_is_compound(ptep)) {
+		cmp_pgsize = pgsize;
+		level = pgsize_to_tbllv(pgsize);
+		pgsize = tbllv_to_pgsize(level);
+		base = __page_align(start, pgsize);
+		if (__page_offset(base, cmp_pgsize) != 0) {
+			// start pte is not compound head
+			error = isolation_ptes(ptep, pgsize);
+			if (error) {
+				return error;
+			}
+		}
+	}
+
+	ptep = ihk_mc_pt_lookup_pte(pt, (void*)end - 1, 0, NULL, &pgsize, NULL);
+	if (ptep && pte_is_compound(ptep)) {
+		cmp_pgsize = pgsize;
+		level = pgsize_to_tbllv(pgsize);
+		pgsize = tbllv_to_pgsize(level);
+		base = __page_align((end - 1), pgsize);
+		if (__page_offset(base + pgsize, cmp_pgsize) != 0) {
+			// end pte is not compound tail
+			error = isolation_ptes(ptep, pgsize);
+			if (error) {
+				return error;
+			}
+		}
+	}
 
 	tt = get_translation_table(pt);
 	error = initial_lookup.walk(tt, 0, start, end, initial_lookup.callback, &args);
