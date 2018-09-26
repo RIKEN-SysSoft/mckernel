@@ -2337,7 +2337,7 @@ long mcctrl_perf_enable(ihk_os_t os)
 	perf_desc->ctrl_type = PERF_CTRL_ENABLE;
 #ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
 	perf_desc->err = 0;
-#endif /* POSTK_DEBUG_ARCH_DEP_80 */
+#endif /* POSTK_DEBUG_TEMP_FIX_80 */
 	perf_desc->target_cntr_mask = cntr_mask;
 
 	memset(&isp, '\0', sizeof(struct ikc_scd_packet));
@@ -2364,7 +2364,7 @@ long mcctrl_perf_enable(ihk_os_t os)
 				kfree(perf_desc);
 			return ret;
 		}
-#endif /* POSTK_DEBUG_ARCH_DEP_80 */
+#endif /* POSTK_DEBUG_TEMP_FIX_80 */
 	}
 	kfree(perf_desc);
 
