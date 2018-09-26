@@ -2,7 +2,7 @@
 □ テスト内容
 1. Issueで報告された再現プログラムでの確認
 RT_001: ostest-rt_sigaction.004 による確認
-	SIGUSR1 でプロセスが終了し、「Terminate by signal 10」が出力される
+	SIGUSR1 でプロセスが終了し、「Terminate by signal 10」が出力されることを確認する
 
 2. 既存のsigaction機能に影響がないことを確認
 CT_001: SIG_RESETHAND 指定時の動作
@@ -50,10 +50,10 @@ CT_005: 複数回(非上書き)のSIG_RESETHAND 指定時の動作
 □ 実行手順
 $ make test
 
-実行できない場合は、C1031.shの以下の行を適切に書き換えた後に実行。
-BIN=          mcexec が存在するパス
-SBIN=         mcreboot.sh が存在するパス
-OSTEST=       OSTESTが存在するパス
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
 
 □ 実行結果
 result.log 参照。

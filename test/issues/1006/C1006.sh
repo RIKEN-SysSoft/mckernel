@@ -1,54 +1,13 @@
 #!/bin/sh
-if [ -f $HOME/mck_test_config ]; then
-	. $HOME/mck_test_config
-else
-	BIN=
-	SBIN=
-	OSTEST=
-	LTP=
-fi
-BOOTPARAM="-c 1-7,9-15,17-23,25-31 -m 10G@0,10G@1 -r 1-7:0+9-15:8+17-23:16+25-31:24"
 
-if [ "x$BINDIR" = x ];then
-	BINDIR="$BIN"
-fi
+USELTP=1
+USEOSTEST=1
 
-if [ "x$SBINDIR" = x ];then
-	SBINDIR="$SBIN"
-fi
-
-if [ "x$OSTESTDIR" = x ]; then
-	OSTESTDIR="$OSTEST"
-fi
-
-if [ "x$LTPDIR" = x ]; then
-	LTPDIR="$LTP"
-fi
-
-if [ ! -x $SBINDIR/mcstop+release.sh ]; then
-	echo mcstop+release: not found >&2
-	exit 1
-fi
-echo -n "mcstop+release.sh ... "
-sudo $SBINDIR/mcstop+release.sh
-echo "done"
-
-if [ ! -x $SBINDIR/mcreboot.sh ]; then
-	echo mcreboot: not found >&2
-	exit 1
-fi
-echo -n "mcreboot.sh $BOOTPARAM ... "
-sudo $SBINDIR/mcreboot.sh $BOOTPARAM
-echo "done"
-
-if [ ! -x $BINDIR/mcexec ]; then
-	echo mcexec: not found >&2
-	exit 1
-fi
+. ../../common.sh
 
 tid=001
 echo "*** RT_$tid start *******************************"
-sudo $BINDIR/mcexec $OSTESTDIR/bin/test_mck -s ptrace -n 8 2>&1 | tee ./RT_${tid}.txt
+sudo ${MCEXEC} ${TESTMCK} -s ptrace -n 8 2>&1 | tee ./RT_${tid}.txt
 if grep "RESULT: ok" ./RT_${tid}.txt > /dev/null 2>&1 ; then
 	echo "*** RT_$tid: PASSED"
 else
@@ -58,7 +17,7 @@ echo ""
 
 tid=001
 echo "*** LT_$tid start *******************************"
-sudo PATH=$LTPDIR/bin:${PATH} $BINDIR/mcexec $LTPDIR/bin/ptrace01 2>&1 | tee ./LT_${tid}.txt
+sudo PATH=${LTPBIN}:${PATH} ${MCEXEC} ${LTPBIN}/ptrace01 2>&1 | tee ./LT_${tid}.txt
 ok=`grep TPASS LT_${tid}.txt | wc -l`
 ng=`grep TFAIL LT_${tid}.txt | wc -l`
 if [ $ng = 0 ]; then
@@ -70,7 +29,7 @@ echo ""
 
 tid=002
 echo "*** LT_$tid start *******************************"
-sudo PATH=$LTPDIR/bin:${PATH} $BINDIR/mcexec $LTPDIR/bin/ptrace02 2>&1 | tee ./LT_${tid}.txt
+sudo PATH=${LTPBIN}:${PATH} ${MCEXEC} ${LTPBIN}/ptrace02 2>&1 | tee ./LT_${tid}.txt
 ok=`grep TPASS LT_${tid}.txt | wc -l`
 ng=`grep TFAIL LT_${tid}.txt | wc -l`
 if [ $ng = 0 ]; then
@@ -82,7 +41,7 @@ echo ""
 
 tid=003
 echo "*** LT_$tid start *******************************"
-sudo PATH=$LTPDIR/bin:${PATH} $BINDIR/mcexec $LTPDIR/bin/ptrace03 2>&1 | tee ./LT_${tid}.txt
+sudo PATH=${LTPBIN}:${PATH} ${MCEXEC} ${LTPBIN}/ptrace03 2>&1 | tee ./LT_${tid}.txt
 ok=`grep TPASS LT_${tid}.txt | wc -l`
 ng=`grep TFAIL LT_${tid}.txt | wc -l`
 if [ $ng = 0 ]; then
@@ -94,7 +53,7 @@ echo ""
 
 tid=004
 echo "*** LT_$tid start *******************************"
-sudo PATH=$LTPDIR/bin:${PATH} $BINDIR/mcexec $LTPDIR/bin/ptrace05 2>&1 | tee ./LT_${tid}.txt
+sudo PATH=${LTPBIN}:${PATH} ${MCEXEC} ${LTPBIN}/ptrace05 2>&1 | tee ./LT_${tid}.txt
 ok=`grep TPASS LT_${tid}.txt | wc -l`
 ng=`grep TFAIL LT_${tid}.txt | wc -l`
 if [ $ng = 0 ]; then

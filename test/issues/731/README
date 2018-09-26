@@ -25,10 +25,10 @@ C731T007 fork08 の実行確認
 □ 実行手順
 $ make test
 
-実行できない場合は、C731.shの以下の行を適切に書き換えた後に実行。
-BIN=          mcexec が存在するパス
-SBIN=         mcreboot.sh が存在するパス
-LTP=          LTPが存在するパス
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
 
 □ 実行結果
 C731.txt 参照。
