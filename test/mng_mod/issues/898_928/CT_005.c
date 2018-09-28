@@ -39,8 +39,8 @@ int main(int argc, char** argv) {
 	char fn[256];
 	char kargs[256];
 
-	int cpus[4] = {6, 7, 8, 9};
-	int num_cpus = 4;
+	int cpus[3] = {1, 2, 3};
+	int num_cpus = 3;
 
 	struct ihk_mem_chunk mem_chunks[4];
 	int num_mem_chunks;
@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
 	status = system(cmd);
 
 	// ihk_os_destroy_pseudofs
-	ret_ihklib = ihk_os_destroy_pseudofs(0);
+	ret_ihklib = ihk_os_destroy_pseudofs(0, 0, 0);
 	fp = popen("cat /proc/mounts | grep /tmp/mcos/mcos0_sys", "r");
 	nread = fread(buf, 1, sizeof(buf), fp);
 	buf[nread] = 0;
@@ -82,20 +82,16 @@ int main(int argc, char** argv) {
     //OKNG(ret_ihklib == 0, "ihk_os_assign_cpu\n");
 
 	// reserve mem 128m@0,128m@1
-	num_mem_chunks = 2;
+	num_mem_chunks = 1;
 	mem_chunks[0].size = 128*1024*1024ULL;
 	mem_chunks[0].numa_node_number = 0;
-	mem_chunks[1].size = 128*1024*1024ULL;
-	mem_chunks[1].numa_node_number = 1;
     ret_ihklib = ihk_reserve_mem(0, mem_chunks, num_mem_chunks);
     //OKNG(ret_ihklib == 0, "ihk_reserve_mem (2)\n");
 
 	// assign mem 128m@0,128m@1
-	num_mem_chunks = 2;
+	num_mem_chunks = 1;
 	mem_chunks[0].size = 128*1024*1024ULL;
 	mem_chunks[0].numa_node_number = 0;
-	mem_chunks[1].size = 128*1024*1024ULL;
-	mem_chunks[1].numa_node_number = 1;
     ret_ihklib = ihk_os_assign_mem(0, mem_chunks, num_mem_chunks);
     //OKNG(ret_ihklib == 0, "ihk_os_assign_mem (2)\n");
 
@@ -122,7 +118,7 @@ int main(int argc, char** argv) {
 	usleep(100*1000);
 
 	// create pseudofs
-	ret_ihklib = ihk_os_create_pseudofs(0);
+	ret_ihklib = ihk_os_create_pseudofs(0, 0, 0);
 	fp = popen("cat /proc/mounts | grep /tmp/mcos/mcos0_sys", "r");
 	nread = fread(buf, 1, sizeof(buf), fp);
 	buf[nread] = 0;
@@ -162,7 +158,7 @@ destroy:
 	status = system(cmd);
 
 	// destroy pseudofs
-	ret_ihklib = ihk_os_destroy_pseudofs(0);
+	ret_ihklib = ihk_os_destroy_pseudofs(0, 0, 0);
 	fp = popen("cat /proc/mounts | grep /tmp/mcos/mcos0_sys", "r");
 	nread = fread(buf, 1, sizeof(buf), fp);
 	buf[nread] = 0;
