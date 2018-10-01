@@ -1,0 +1,144 @@
+【Issue#771 Issue#1179 Issue#1143 動作確認】
+□ テスト内容
+各 Issue は以下の理由により、一括して対応した。
+・ Issue#771 は ptrace のスレッドサポートである。
+・ Issue#1179 は PTRACE_ATTACH の不具合対応であるが、スレッドの PTRACE_ATTACH
+   対応が Issue#771 に含まれるため、一括して対応することにした。
+・ Issue#1143 は wait4 の __WALL フラグサポートであるが、スレッドの wait4 対応
+   (__WCLONEフラグサポート) が Issue#771 に含まれるため、一括して対応すること
+   にした。
+
+テスト内容は以下の通りである。
+
+1. gdb を用いてスレッドを使用するプログラムのデバッグが行えることを確認する。
+C771T001 mcexec gdb C771T001 を実行すると、McKernelでgdbの実行を開始し、
+         (gdb) のプロンプトが表示されること
+C771T002 b thr を実行し、スレッドにブレークポイントを設定できること
+C771T003 r コマンド実行後、スレッドに設定したブレークポイントで停止できること
+C771T004 info threads コマンドで、スレッド一覧が表示できること
+C771T005 bt コマンドでスレッドのバックトレースが表示できること
+C771T006 n コマンドでスレッドのステップ実行ができること
+C771T007 thread 1 コマンドでメインスレッドに切り替えできること
+C771T008 bt コマンドでメインスレッドのバックトレースが表示できること
+C771T009 thread 2 コマンドで再びスレッドに切り替えできること
+C771T010 c コマンドでスレッドとメインスレッドの実行が再開されること
+C771T011 q コマンドで gdb を正しく終了できること
+C771T012 McKernel にスレッドとプロセスの残留が無いこと
+
+2. gdb のテストケースを実行し、gdb が使用する ptrace の機能が動作することを
+   確認する。thread を使用するテストを中心に、以下のテストケースを選定した。
+C771T013 a2-run が PASS すること
+C771T014 foll-fork が PASS すること
+C771T015 fork-detach が PASS すること
+C771T016 atomic-seq-threaded が PASS すること
+C771T017 bp_in_thread が PASS すること
+C771T018 bt-clone-stop が PASS すること
+C771T019 corethreads が PASS すること
+C771T020 dlopen-libpthread が PASS すること
+C771T021 fork-child-threads が PASS すること
+C771T022 killed が PASS すること
+C771T023 pthread_cond_wait が PASS すること
+C771T024 switch-threads が PASS すること
+C771T025 thread-specific が PASS すること
+C771T026 thread_check が PASS すること
+C771T027 thread_events が PASS すること
+C771T028 threaded-exec が PASS すること
+C771T029 threxit-hop-specific が PASS すること
+C771T030 tls-nodebug が PASS すること
+C771T031 tls-sepdebug が PASS すること
+C771T032 tls-var が PASS すること
+
+3. ptrace のスレッドサポートの基本機能を確認する。
+C771T033 スレッドに PTRACE_ATTACH できること
+C771T034 PTRACE_SYSCALL により、スレッドのシステムコールを補足できること
+C771T035 PTRACE_DETACH により、スレッドのトレースを中止できること
+
+4. Issue#1179 の指摘プログラムが正常動作することを確認する。
+CT771T036 test_mck -s ptrace -n 19 が PASS すること
+
+5. wait4 で __WALL フラグ、__WCLONE フラグが正しく機能することを確認する。
+CT771T037 wait4 のフラグに __WALL, __WCLONE 共に指定しないとき、pid に
+          子プロセスを指定してエラーにならないこと
+CT771T038 wait4 のフラグに __WALL, __WCLONE 共に指定しないとき、pid に
+          スレッドをを指定してエラー(ECHILD)になること
+CT771T039 wait4 のフラグに __WCLONE を指定し、pid に子プロセスを指定して
+          エラー(ECHILD)になること
+CT771T040 wait4 のフラグに __WCLONE を指定し、pid にスレッドをを指定して
+          エラーにならないこと
+CT771T041 wait4 のフラグに __WALL を指定し、pid に子プロセスを指定して
+          エラーにならないこと
+CT771T042 wait4 のフラグに __WALL を指定し、pid にスレッドをを指定して
+          エラーにならないこと
+
+6. LTP を用いて変更が既存処理に影響しないことを確認する。
+   プロセス関連のシステムコール(clone, exit, fork, kill, ptrace, waitなど)
+   を中心に以下のテストプログラムを選定した。
+CT771T043 clone01 が PASS すること
+CT771T044 clone03 が PASS すること
+CT771T045 clone04 が PASS すること
+CT771T046 clone06 が PASS すること
+CT771T047 clone07 が PASS すること
+CT771T048 exit01 が PASS すること
+CT771T049 exit02 が PASS すること
+CT771T050 exit_group01 が PASS すること
+CT771T051 fork01 が PASS すること
+CT771T052 fork02 が PASS すること
+CT771T053 fork03 が PASS すること
+CT771T054 fork04 が PASS すること
+CT771T055 fork07 が PASS すること
+CT771T056 fork08 が PASS すること
+CT771T057 fork09 が PASS すること
+CT771T058 fork10 が PASS すること
+CT771T059 fork11 が PASS すること
+CT771T060 kill01 が PASS すること
+CT771T061 kill02 が PASS すること
+CT771T062 kill03 が PASS すること
+CT771T063 kill04 が PASS すること
+CT771T064 kill05 が PASS すること
+CT771T065 kill06 が PASS すること
+CT771T066 kill07 が PASS すること
+CT771T067 kill08 が PASS すること
+CT771T068 kill09 が PASS すること
+CT771T069 kill11 が PASS すること
+CT771T070 kill12 が PASS すること
+CT771T071 ptrace01 が PASS すること
+CT771T072 ptrace02 が PASS すること
+CT771T073 ptrace03 が PASS すること
+CT771T074 ptrace04 が PASS すること
+CT771T075 ptrace05 が PASS すること
+CT771T076 wait02 が PASS すること
+CT771T077 wait401 が PASS すること
+CT771T078 wait402 が PASS すること
+CT771T079 waitid01 が PASS すること
+CT771T080 waitid02 が PASS すること
+CT771T081 waitpid01 が PASS すること
+CT771T082 waitpid02 が PASS すること
+CT771T083 waitpid03 が PASS すること
+CT771T084 waitpid04 が PASS すること
+CT771T085 waitpid05 が PASS すること
+CT771T086 waitpid06 が PASS すること
+CT771T087 waitpid07 が PASS すること
+CT771T088 waitpid08 が PASS すること
+CT771T089 waitpid09 が PASS すること
+CT771T090 waitpid10 が PASS すること
+CT771T091 waitpid11 が PASS すること
+CT771T092 waitpid12 が PASS すること
+CT771T093 waitpid13 が PASS すること
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、 $HOME/.mck_test_config
+を参照する。.mck_test_config は、McKernel をビルドした際に生成される
+mck_test_config.sample ファイルを $HOME にコピーし、適宜編集すること。
+
+また、C771.sh の以下の指定を適宜変更すること。
+GDBBUILDDIR=  GDB 構築したパス ($HOME にて gdb を src.rpm から構築している
+              場合は変更不要)
+
+gdb のテストケースでは、dejagnu パッケージに含まれる runtest コマンドを使用
+する。システムにインストールされていない場合は、予めインストールすること。
+
+□ 実行結果
+C771.txt 参照。
+すべての項目をPASSしていることを確認。

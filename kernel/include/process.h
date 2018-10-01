@@ -468,6 +468,14 @@ struct process {
 
 	// threads and children
 	struct list_head threads_list;
+	struct list_head report_threads_list;
+
+	/*
+	 * main_thread is used to refer to thread information using process ID.
+	 * 1) signal related state in signal_flags
+	 * 2) status of trace
+	 */
+	struct thread *main_thread;
 	mcs_rwlock_lock_t threads_lock; // lock for threads_list
 	/* TID set of proxy process */
 	struct mcexec_tid *tids;
@@ -496,7 +504,6 @@ struct process {
 			// V       +----   |
 			// PS_STOPPED -----+
 			// (PS_TRACED)
-	unsigned long exit_status; // only for zombie
 
 	/* Store exit_status for a group of threads when stopped by SIGSTOP.
 	   exit_status can't be used because values of exit_status of threads
@@ -527,22 +534,6 @@ struct process {
 	char *saved_cmdline;
 	long saved_cmdline_len;
 	cpu_set_t cpu_set;
-
-	/* Store ptrace flags.
-	 * The lower 8 bits are PTRACE_O_xxx of the PTRACE_SETOPTIONS request.
-	 * Other bits are for inner use of the McKernel.
-	 */
-	int ptrace;
-
-	/* Store ptrace event message.
-	 * PTRACE_O_xxx will store event message here.
-	 * PTRACE_GETEVENTMSG will get from here.
-	 */
-	unsigned long ptrace_eventmsg;
-
-	/* Store event related to signal. For example, 
-	   it represents that the proceess has been resumed by SIGCONT. */
-	int signal_flags;
 
 	/* Store signal sent to parent when the process terminates. */
 	int termsig;
@@ -614,7 +605,7 @@ struct thread {
 	// thread info
 	int cpu_id;
 	int tid;
-	int status;	// PS_RUNNING -> PS_EXITED
+	int status;	// PS_RUNNING -> PS_EXITED (-> ZOMBIE / ptrace)
 			// |       ^       ^
 			// |       |       |
 			// V       |       |
@@ -623,6 +614,14 @@ struct thread {
 			// PS_INTERRPUTIBLE
 			// PS_UNINTERRUPTIBLE
 	int exit_status;
+
+	/*
+	 * Store event related to signal. For example,
+	 * it represents that the proceess has been resumed by SIGCONT.
+	 */
+	int signal_flags;
+
+	int termsig;
 
 	// process vm
 	struct process_vm *vm;
@@ -642,6 +641,22 @@ struct thread {
 	
 	ihk_spinlock_t spin_sleep_lock;
 	int spin_sleep;
+
+	// for ptrace
+	struct process *report_proc;
+	struct list_head report_siblings_list; // lock process
+
+	/* Store ptrace flags.
+	 * The lower 8 bits are PTRACE_O_xxx of the PTRACE_SETOPTIONS request.
+	 * Other bits are for inner use of the McKernel.
+	 */
+	int ptrace;
+
+	/* Store ptrace event message.
+	 * PTRACE_O_xxx will store event message here.
+	 * PTRACE_GETEVENTMSG will get from here.
+	 */
+	unsigned long ptrace_eventmsg;
 
 	ihk_atomic_t refcount;
 
@@ -834,8 +849,8 @@ void cpu_clear_and_set(int c_cpu, int s_cpu,
 
 void release_cpuid(int cpuid);
 
-struct thread *find_thread(int pid, int tid, struct mcs_rwlock_node_irqsave *lock);
-void thread_unlock(struct thread *thread, struct mcs_rwlock_node_irqsave *lock);
+struct thread *find_thread(int pid, int tid);
+void thread_unlock(struct thread *thread);
 struct process *find_process(int pid, struct mcs_rwlock_node_irqsave *lock);
 void process_unlock(struct process *proc, struct mcs_rwlock_node_irqsave *lock);
 void chain_process(struct process *);
@@ -850,6 +865,7 @@ extern unsigned long do_kill(struct thread *thread, int pid, int tid, int sig,
 			     struct siginfo *info, int ptracecont);
 extern void set_signal(int sig, void *regs, struct siginfo *info);
 extern void check_sig_pending(void);
+void clear_single_step(struct thread *thread);
 
 void release_fp_regs(struct thread *proc);
 void save_fp_regs(struct thread *proc);
