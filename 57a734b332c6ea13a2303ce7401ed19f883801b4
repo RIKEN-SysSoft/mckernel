@@ -1,0 +1,123 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "96b501c2_f5b27462",
+        "filename": "kernel/ubsan.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 116,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:21:30Z",
+      "side": 1,
+      "message": "WARNING: Prefer \u0027unsigned int\u0027 to bare use of \u0027unsigned\u0027\n+static unsigned type_bit_width(struct type_descriptor *type)",
+      "revId": "57a734b332c6ea13a2303ce7401ed19f883801b4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ca077043_6467cbbd",
+        "filename": "kernel/ubsan.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 123,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:21:30Z",
+      "side": 1,
+      "message": "WARNING: Prefer \u0027unsigned int\u0027 to bare use of \u0027unsigned\u0027\n+\tunsigned inline_bits \u003d sizeof(unsigned long)*8;",
+      "revId": "57a734b332c6ea13a2303ce7401ed19f883801b4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "76114988_9f28feff",
+        "filename": "kernel/ubsan.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 124,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:21:30Z",
+      "side": 1,
+      "message": "WARNING: Prefer \u0027unsigned int\u0027 to bare use of \u0027unsigned\u0027\n+\tunsigned bits \u003d type_bit_width(type);",
+      "revId": "57a734b332c6ea13a2303ce7401ed19f883801b4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "37691eb7_307f16ed",
+        "filename": "kernel/ubsan.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 132,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:21:30Z",
+      "side": 1,
+      "message": "WARNING: Prefer \u0027unsigned int\u0027 to bare use of \u0027unsigned\u0027\n+\t\tunsigned extra_bits \u003d sizeof(int64_t)*8 - type_bit_width(type);",
+      "revId": "57a734b332c6ea13a2303ce7401ed19f883801b4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1904d521_77683ca5",
+        "filename": "kernel/ubsan.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 133,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:21:30Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\tunsigned extra_bits \u003d sizeof(int64_t)*8 - type_bit_width(type);\n+\t\treturn ((int64_t)val) \u003c\u003c extra_bits \u003e\u003e extra_bits;",
+      "revId": "57a734b332c6ea13a2303ce7401ed19f883801b4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "88b9bc06_1f943a22",
+        "filename": "kernel/ubsan.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 147,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:21:30Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+static uint64_t get_unsigned_val(struct type_descriptor *type, unsigned long val)",
+      "revId": "57a734b332c6ea13a2303ce7401ed19f883801b4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d33cbe3d_1e18c420",
+        "filename": "kernel/ubsan.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 182,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:21:30Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"Access was not aligned properly, expected %ld byte alignment\\n\",",
+      "revId": "57a734b332c6ea13a2303ce7401ed19f883801b4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
