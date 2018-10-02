@@ -1,0 +1,174 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "96fde06c_ae5f64f1",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 697,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:25:07Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tstruct mcs_rwlock_node_irqsave updatelock;",
+      "revId": "225340f54604ebccac5f7e3f53db1cccd00ad057",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bd83f15d_f6339a85",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 700,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:25:07Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tmcs_rwlock_writer_lock(\u0026proc-\u003eupdate_lock, \u0026updatelock);",
+      "revId": "225340f54604ebccac5f7e3f53db1cccd00ad057",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9cd12a46_61ed0b8b",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 710,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:25:07Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tmcs_rwlock_writer_unlock(\u0026proc-\u003eupdate_lock, \u0026updatelock);",
+      "revId": "225340f54604ebccac5f7e3f53db1cccd00ad057",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d055fba9_9336baf5",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 720,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:25:07Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tmcs_rwlock_writer_lock(\u0026child-\u003eupdate_lock, \u0026updatelock);",
+      "revId": "225340f54604ebccac5f7e3f53db1cccd00ad057",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5c9ce150_20f4ebed",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 727,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:25:07Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tmcs_rwlock_writer_unlock(\u0026child-\u003eupdate_lock, \u0026updatelock);",
+      "revId": "225340f54604ebccac5f7e3f53db1cccd00ad057",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "24774976_e93dd69e",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2563,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:25:07Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tmcs_rwlock_reader_lock(\u0026parent-\u003eupdate_lock, \u0026parent_lock);",
+      "revId": "225340f54604ebccac5f7e3f53db1cccd00ad057",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f47f66a1_cbf41d8c",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2565,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:25:07Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tmcs_rwlock_reader_unlock(\u0026parent-\u003eupdate_lock, \u0026parent_lock);",
+      "revId": "225340f54604ebccac5f7e3f53db1cccd00ad057",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ce954c8f_1927bb14",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2567,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:25:07Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tmcs_rwlock_reader_lock(\u0026parent-\u003eupdate_lock, \u0026parent_lock);",
+      "revId": "225340f54604ebccac5f7e3f53db1cccd00ad057",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e0479e74_3734ab64",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2573,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:25:07Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tmcs_rwlock_reader_unlock(\u0026parent-\u003eupdate_lock, \u0026parent_lock);",
+      "revId": "225340f54604ebccac5f7e3f53db1cccd00ad057",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f8550f50_b8c0e01a",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 6072,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:25:07Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tmcs_rwlock_writer_unlock(\u0026child-\u003eupdate_lock, \u0026updatelock);",
+      "revId": "225340f54604ebccac5f7e3f53db1cccd00ad057",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
