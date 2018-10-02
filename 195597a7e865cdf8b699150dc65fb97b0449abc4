@@ -1,0 +1,752 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "e18b9429_afdef1ca",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 748,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"Error: Failed to get realpath of %s\\n\", exec_path);",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f378d3ea_45a01493",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 772,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stderr, \"Error: Failed to get realpath of %s\\n\", path);",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "743359b5_eade8cce",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3637,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I^Iif ((ret \u003d lookup_exec_path(filename, path, sizeof(path), 0)) $",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "625327ef_71f4a460",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3637,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tif ((ret \u003d lookup_exec_path(filename, path, sizeof(path), 0))",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ede546fe_ceda93d9",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3643,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I^I^Ifprintf(stderr, $",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b9a69288_9f7e0c51",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3644,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\"execve(): error loading ELF for file %s\\n\", path);",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3dc0c5f7_08199864",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3650,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I^I^Iif ((ret \u003d lookup_exec_path(shell, shell_path, $",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8f54ff4a_2fac2044",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3651,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\tsizeof(shell_path), 0)) !\u003d 0) {",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "caa925d4_2d177e0c",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3652,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tfprintf(stderr, \"execve(): error: finding file: %s\\n\", shell);",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "77052898_79ff37d4",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3656,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tif ((ret \u003d load_elf_desc(shell_path, \u0026desc, \u0026shell))",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a12a3a96_af98b762",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3656,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I^I^Iif ((ret \u003d load_elf_desc(shell_path, \u0026desc, \u0026shell)) $",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "72779004_2ff927b4",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3658,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tfprintf(stderr, \"execve(): error: loading file: %s\\n\", shell);",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ace33c6a_e5403718",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3667,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tfprintf(stderr, \"execve(): error: shell path too long: %s\\n\", shell_path);",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5b3ca203_62fb13ef",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3681,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t__dprintf(\"execve(): load_elf_desc() for %s OK, num sections: %d\\n\",",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "583bd9cf_564c8b8a",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3684,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tdesc-\u003erlimit[MCK_RLIMIT_STACK].rlim_cur \u003d rlim_stack.rlim_cur;",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "efc138f3_11dd961b",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3685,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tdesc-\u003erlimit[MCK_RLIMIT_STACK].rlim_max \u003d rlim_stack.rlim_max;",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b63d0872_0995f33c",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3689,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "ERROR: \"(foo*)\" should be \"(foo *)\"\n+\t\t\ttrans.userp \u003d (void*)desc;",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1bd81ed9_d12729d6",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3691,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I^Itrans.size \u003d sizeof(struct program_load_desc) + $",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6b029cfc_f1c6d45d",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3692,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I^I^Isizeof(struct program_image_section) * $",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "abc07c7a_a89a8bb8",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3697,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I^I^Ifprintf(stderr, $",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ff395e27_2413b7f3",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3698,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I^I^I^I\"execve(): error transfering ELF for file %s\\n\", $",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "25397a12_b2950db8",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3698,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: \u0027transfering\u0027 may be misspelled - perhaps \u0027transferring\u0027?\n+\t\t\t\t\t\"execve(): error transfering ELF for file %s\\n\",",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3ff62b61_71ae4302",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3709,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\t\t\tstruct sys_mount_desc mount_desc;\n+\t\t\t\tmount_desc.dev_name \u003d NULL;",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "118a7285_8f9f7b70",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3716,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t(unsigned long)\u0026mount_desc) !\u003d 0) {",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7e4c8b8e_7c8e0df9",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3728,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I^I$",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4907f2d4_5ec11e19",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 87,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "ERROR: \"(foo*)\" should be \"(foo *)\"\n+\t\trc \u003d copy_to_user((void*)dest + offset, zero_buf, len);",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "463c64b8_8ad5766a",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 98,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: kfree(NULL) is safe and this check is probably not required\n+\tif (zero_buf) {\n+\t\tkfree(zero_buf);",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "db09495b_0e9b2c21",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 105,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: kfree(NULL) is safe and this check is probably not required\n+\tif (zero_buf) {\n+\t\tkfree(zero_buf);",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5b0dd346_3cc35842",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 201,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tmap_addr \u003d do_mmap(fmap_start, fmap_end - fmap_start, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE,",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a781b883_f981c5ea",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 202,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+^I^I                   fd, pn-\u003esections[i].offset \u0026 PAGE_MASK);$",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "742a73e9_fd688517",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 215,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tsection_file_end \u003d pn-\u003esections[i].vaddr + pn-\u003esections[i].filesz;",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8e40f120_66b61894",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 218,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfill_zero_to_user(fmap_start, section_start - fmap_start);",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a9be32e_380b81f6",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 221,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfill_zero_to_user(section_file_end, fmap_end - section_file_end);",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "16e74889_e67145d5",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 225,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\trange \u003d lookup_process_memory_range(vm, fmap_start, fmap_start + 1);",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1b3171c6_998abdff",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 236,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t/* Non-TEXT sections that are large respect user allocation policy",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2eb7cb8d_28a12f60",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 237,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+\t\t * unless user explicitly requests otherwise */",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "920a0dac_db658d72",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 240,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tdkprintf(\"%s: section: %d size: %d pages -\u003e IHK_MC_AP_USER\\n\",",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dd6ad9b4_03d3b243",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 241,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\t\t__FUNCTION__, i, (fmap_end - fmap_start) / PAGE_SIZE);",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2eeb5254_4ebc1ff6",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 241,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t__FUNCTION__, i, (fmap_end - fmap_start) / PAGE_SIZE);",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0a00951e_ce9e6eb0",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 249,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tmap_addr \u003d do_mmap(anon_start, anon_end - anon_start, PROT_READ | PROT_WRITE,",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6cb9ed9b_47c9fb1c",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 250,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+                               MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);$",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ac9ef1d7_6a9c194f",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 250,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+                               MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);$",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "99178bd0_8b014b08",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 275,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I^I^I(fmap_start \u003c vm-\u003eregion.data_start ? $",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "adb7bec3_c0eb7a03",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 278,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:19Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I^I^I(anon_end \u003e vm-\u003eregion.data_end ? $",
+      "revId": "195597a7e865cdf8b699150dc65fb97b0449abc4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
