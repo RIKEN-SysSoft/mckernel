@@ -1,0 +1,310 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "e45a9ed8_e98d4b81",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 43,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:46Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+unsigned long get_boottime(){",
+      "revId": "cad305d893fafcf5594aef2925723756c92f1027",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ab88cd8b_2c0a965b",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 43,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:46Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+unsigned long get_boottime(){",
+      "revId": "cad305d893fafcf5594aef2925723756c92f1027",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2a047590_f4b8414a",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 43,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:46Z",
+      "side": 1,
+      "message": "ERROR: Bad function definition - unsigned long get_boottime() should probably be unsigned long get_boottime(void)\n+unsigned long get_boottime(){",
+      "revId": "cad305d893fafcf5594aef2925723756c92f1027",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6d0f74a1_0d175495",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:46Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tpid1-\u003eutime.tv_sec, pid1-\u003estime.tv_sec, pid1-\u003enr_processes);",
+      "revId": "cad305d893fafcf5594aef2925723756c92f1027",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b44f6df8_daac0f1b",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:46Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+unsigned long process_satus(unsigned long *running, unsigned long *blocked, unsigned long *total){",
+      "revId": "cad305d893fafcf5594aef2925723756c92f1027",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5139a45d_0670f1d3",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:46Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+unsigned long process_satus(unsigned long *running, unsigned long *blocked, unsigned long *total){",
+      "revId": "cad305d893fafcf5594aef2925723756c92f1027",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "102d5678_72d7d3c0",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:46Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+unsigned long process_satus(unsigned long *running, unsigned long *blocked, unsigned long *total){",
+      "revId": "cad305d893fafcf5594aef2925723756c92f1027",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f8bf1938_7b481475",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:46Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tfor(i \u003d 0; i \u003c HASH_SIZE; i++){",
+      "revId": "cad305d893fafcf5594aef2925723756c92f1027",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "54a28a89_f343568a",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:46Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tfor(i \u003d 0; i \u003c HASH_SIZE; i++){",
+      "revId": "cad305d893fafcf5594aef2925723756c92f1027",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7e95885b_b047e723",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 71,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:46Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\t\tlist_for_each_entry(p, \u0026phash-\u003elist[i], hash_list){",
+      "revId": "cad305d893fafcf5594aef2925723756c92f1027",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0cf87de1_4ff286fe",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 77,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:46Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t// FIXME: Not sure about this state for blocked processes",
+      "revId": "cad305d893fafcf5594aef2925723756c92f1027",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "514c7fd1_3d80ef58",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 267,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:46Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tn \u003d snprintf(p, remain, \"cpu%d 0 0 0 0 0 0 0 0 0 0\\n\", cpu);",
+      "revId": "cad305d893fafcf5594aef2925723756c92f1027",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "521adec0_59ad461a",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 276,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:46Z",
+      "side": 1,
+      "message": "WARNING: Block comments use * on subsequent lines\n+\t\t/* FIXME: Fix interrupts and context switches statistics\n+\t\tn \u003d snprintf(p, remain, \"intr 0 0 0 0 0 0\\n\");",
+      "revId": "cad305d893fafcf5594aef2925723756c92f1027",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8d6403bc_1957dd4e",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 284,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:46Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\t\tif (n \u003e\u003d remain) { ans \u003d -ENOSPC; eof \u003d 1; goto end; }",
+      "revId": "cad305d893fafcf5594aef2925723756c92f1027",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "92e7962e_c434df34",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 288,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:46Z",
+      "side": 1,
+      "message": "WARNING: Avoid unnecessary line continuations\n+\t\tn \u003d snprintf(p, remain, \"processes %lu\\n\" \\",
+      "revId": "cad305d893fafcf5594aef2925723756c92f1027",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "226da256_f4e31e82",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 291,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:46Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\ttotal, running, blocked);",
+      "revId": "cad305d893fafcf5594aef2925723756c92f1027",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "58a4d748_c7ac6c6f",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 292,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:46Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\t\tif (n \u003e\u003d remain) { ans \u003d -ENOSPC; eof \u003d 1; goto end; }",
+      "revId": "cad305d893fafcf5594aef2925723756c92f1027",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "eec952de_e60c501a",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 295,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:23:46Z",
+      "side": 1,
+      "message": "WARNING: Block comments use * on subsequent lines\n+\t\t/* FIXME: Add softirq statistics\n+\t\tn \u003d snprintf(p, remain, \"softirq 0 0 0\\n\");",
+      "revId": "cad305d893fafcf5594aef2925723756c92f1027",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
