@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "6b40d853_91cd2a24",
+        "filename": "executer/kernel/mcctrl/mcctrl.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 502,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:34:12Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+\t\t\t\twrite-source offset on write(request) */",
+      "revId": "61d782049047a5418f48646264fc28b7065b7966",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "47f4b6c6_1df888ca",
+        "filename": "executer/kernel/mcctrl/mcctrl.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 502,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:34:12Z",
+      "side": 1,
+      "message": "WARNING: Block comments use * on subsequent lines\n+\tunsigned long offset;\t/* read-from offset on read,\n+\t\t\t\twrite-source offset on write(request) */",
+      "revId": "61d782049047a5418f48646264fc28b7065b7966",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e4bce58a_759050d9",
+        "filename": "executer/kernel/mcctrl/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 640,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:34:12Z",
+      "side": 1,
+      "message": "WARNING: Prefer [subsystem eg: netdev]_err([subsystem]dev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...\n+\t\t\t\t\tprintk(KERN_ERR",
+      "revId": "61d782049047a5418f48646264fc28b7065b7966",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ad8d2cdf_c30b8464",
+        "filename": "executer/kernel/mcctrl/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 650,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:34:12Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+^I^I^I^I                 r-\u003eret)) {$",
+      "revId": "61d782049047a5418f48646264fc28b7065b7966",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "13ebf7a4_eb8def83",
+        "filename": "executer/kernel/mcctrl/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 651,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:34:12Z",
+      "side": 1,
+      "message": "WARNING: Prefer [subsystem eg: netdev]_err([subsystem]dev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...\n+\t\t\t\t\tprintk(KERN_ERR",
+      "revId": "61d782049047a5418f48646264fc28b7065b7966",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
