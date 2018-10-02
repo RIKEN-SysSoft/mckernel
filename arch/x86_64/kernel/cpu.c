@@ -92,7 +92,6 @@ void x86_set_warm_reset(unsigned long ip, char *first_page_va);
 void x86_init_perfctr(void);
 int gettime_local_support = 0;
 
-extern int ihk_mc_pt_print_pte(struct page_table *pt, void *virt);
 extern int kprintf(const char *format, ...);
 extern int interrupt_from_user(void *);
 extern void perf_start(struct mc_perf_event *event);
@@ -1083,64 +1082,6 @@ void int3_handler(struct x86_user_context *regs)
 	interrupt_exit(regs);
 	set_cputime(interrupt_from_user(regs) ?
 		CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
-}
-
-void
-unhandled_page_fault(struct thread *thread, void *fault_addr, void *regs)
-{
-	const uintptr_t address = (uintptr_t)fault_addr;
-	struct process_vm *vm;
-	struct vm_range *range;
-	unsigned long irqflags;
-	unsigned long error = ((struct x86_user_context *)regs)->gpr.error;
-
-	irqflags = kprintf_lock();
-	__kprintf("Page fault for 0x%lx\n", address);
-	__kprintf("%s for %s access in %s mode (reserved bit %s set), "
-			"it %s an instruction fetch\n",
-			(error & PF_PROT ? "protection fault" : "no page found"),
-			(error & PF_WRITE ? "write" : "read"),
-			(error & PF_USER ? "user" : "kernel"),
-			(error & PF_RSVD ? "was" : "wasn't"),
-			(error & PF_INSTR ? "was" : "wasn't"));
-
-	if (!thread)
-		goto skipvm;
-
-	vm = thread->vm;
-
-	range = lookup_process_memory_range(vm, address, address+1);
-	if (range) {
-		__kprintf("address is in range, flag: 0x%lx\n",
-				range->flag);
-		ihk_mc_pt_print_pte(vm->address_space->page_table, (void*)address);
-	} else {
-		__kprintf("address is out of range! \n");
-	}
-
-skipvm:
-	kprintf_unlock(irqflags);
-
-	/* TODO */
-	ihk_mc_debug_show_interrupt_context(regs);
-
-	if (!(error & PF_USER)) {
-		panic("panic: kernel mode PF");
-	}
-
-	//dkprintf("now dump a core file\n");
-	//coredump(proc, regs);
-
-#ifdef DEBUG_PRINT_MEM
-	{
-		uint64_t *sp = (void *)REGS_GET_STACK_POINTER(regs);
-
-		kprintf("*rsp:%lx,*rsp+8:%lx,*rsp+16:%lx,*rsp+24:%lx,\n",
-				sp[0], sp[1], sp[2], sp[3]);
-	}
-#endif
-
-	return;
 }
 
 static void outb(uint8_t v, uint16_t port)
