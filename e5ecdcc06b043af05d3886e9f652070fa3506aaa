@@ -1,0 +1,412 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "661bed5f_4d4d7d72",
+        "filename": "test/issues/1001/Makefile",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I$(CC) -o $@ $^ $(LDFLAGS) -I$(MCK_DIR)/include -L$(MCK_DIR)/lib -Wl,--rpath\u003d$(MCK_DIR)/lib -l ihk $",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0f7ea054_70be6f48",
+        "filename": "test/issues/1006/C1006.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+sudo PATH\u003d${LTPBIN}:${PATH} ${MCEXEC} ${LTPBIN}/ptrace01 2\u003e\u00261 | tee ./LT_${tid}.txt",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "49e3e57e_9a98f132",
+        "filename": "test/issues/1006/C1006.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+sudo PATH\u003d${LTPBIN}:${PATH} ${MCEXEC} ${LTPBIN}/ptrace02 2\u003e\u00261 | tee ./LT_${tid}.txt",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9fa534ce_d315e90e",
+        "filename": "test/issues/1006/C1006.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 44,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+sudo PATH\u003d${LTPBIN}:${PATH} ${MCEXEC} ${LTPBIN}/ptrace03 2\u003e\u00261 | tee ./LT_${tid}.txt",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a75b54ad_bb693158",
+        "filename": "test/issues/1006/C1006.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+sudo PATH\u003d${LTPBIN}:${PATH} ${MCEXEC} ${LTPBIN}/ptrace05 2\u003e\u00261 | tee ./LT_${tid}.txt",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "26212fa0_092a1a03",
+        "filename": "test/issues/1109/C1109.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tsudo sh -c \"ulimit -s $ul; $MCEXEC $TESTMCK -s mem_stack_limits -n 0 -- -s $st\" 2\u003e\u00261 | tee C1109T$id.txt",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b86f72e3_d7c65330",
+        "filename": "test/issues/1109/C1109.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t$MCEXEC -s 2M,$ul $TESTMCK -s mem_stack_limits -n 0 -- -s $st 2\u003e\u00261 | tee C1109T$id.txt",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a6ac9ecf_43adb60f",
+        "filename": "test/issues/1121/C1121.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+sudo ${MCEXEC} ${TESTMCK} -s sched_setaffinity -n 0 -- -p 20 2\u003e\u00261 | tee ./RT_${tid}.txt",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b3a04d0c_ac75085e",
+        "filename": "test/issues/1121/C1121.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+sudo ${MCEXEC} ${TESTMCK} -s sched_setaffinity -n 1 -- -p 20 2\u003e\u00261 | tee ./RT_${tid}.txt",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e2698ad0_e514b8b3",
+        "filename": "test/issues/1121/C1121.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+sudo ${MCEXEC} ${TESTMCK} -s sched_getaffinity -n 3 -- -p 20 2\u003e\u00261 | tee ./RT_${tid}.txt",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba5bfe0f_847dd5f5",
+        "filename": "test/issues/1121/C1121.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+sudo ${MCEXEC} ${TESTMCK} -s sched_getaffinity -n 5 -- -p 20 2\u003e\u00261 | tee ./RT_${tid}.txt",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "95d926b8_b360ee3f",
+        "filename": "test/issues/1122/C1122.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+sudo ${MCEXEC} ${TESTMCK} -s sched_getaffinity -n 0 -- -p 20 2\u003e\u00261 | tee ./RT_${tid}.txt",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9c025614_e6b951d4",
+        "filename": "test/issues/1122/C1122.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+sudo ${MCEXEC} ${TESTMCK} -s sched_getaffinity -n 2 -- -p 20 2\u003e\u00261 | tee ./RT_${tid}.txt",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "92d12db0_dfcc4906",
+        "filename": "test/issues/1122/C1122.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+sudo ${MCEXEC} ${TESTMCK} -s sched_getaffinity -n 3 -- -p 20 2\u003e\u00261 | tee ./RT_${tid}.txt",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f5cbedf1_857f97c6",
+        "filename": "test/issues/1122/C1122.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+sudo ${MCEXEC} ${TESTMCK} -s sched_getaffinity -n 5 -- -p 20 2\u003e\u00261 | tee ./RT_${tid}.txt",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1d90dbb5_9a623132",
+        "filename": "test/issues/976/C976.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+sudo PATH\u003d${LTPBIN}:${PATH} ${MCEXEC} ${LTPBIN}/execve01 2\u003e\u00261 | tee ./LT_${tid}.txt",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fcf3566c_9fb1f39a",
+        "filename": "test/issues/976/C976.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+sudo PATH\u003d${LTPBIN}:${PATH} ${MCEXEC} ${LTPBIN}/execve02 2\u003e\u00261 | tee ./LT_${tid}.txt",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0287c34b_f4536811",
+        "filename": "test/issues/976/C976.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 38,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+sudo PATH\u003d${LTPBIN}:${PATH} ${MCEXEC} ${LTPBIN}/execve03 2\u003e\u00261 | tee ./LT_${tid}.txt",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "aa6e2a2e_b82b9864",
+        "filename": "test/issues/976/C976.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+sudo PATH\u003d${LTPBIN}:${PATH} ${MCEXEC} ${LTPBIN}/execve05 20 ${LTPBIN}/execve05 ${LTPBIN}/execve05 4 2\u003e\u00261 | tee ./LT_${tid}.txt",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7f1a798f_cc5a6c77",
+        "filename": "test/issues/995/C995.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+sudo PATH\u003d${LTPBIN}:${PATH} ${MCEXEC} ${LTPBIN}/execve01 2\u003e\u00261 | tee ./LT_${tid}.txt",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "005e1e31_07a46b3f",
+        "filename": "test/issues/995/C995.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+sudo PATH\u003d${LTPBIN}:${PATH} ${MCEXEC} ${LTPBIN}/execve02 2\u003e\u00261 | tee ./LT_${tid}.txt",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9a86770a_54801079",
+        "filename": "test/issues/995/C995.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 54,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+sudo PATH\u003d${LTPBIN}:${PATH} ${MCEXEC} ${LTPBIN}/execve03 2\u003e\u00261 | tee ./LT_${tid}.txt",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "34370948_a39e4eea",
+        "filename": "test/issues/995/C995.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 66,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+sudo PATH\u003d${LTPBIN}:${PATH} ${MCEXEC} ${LTPBIN}/execve05 20 ${LTPBIN}/execve05 ${LTPBIN}/execve05 4 2\u003e\u00261 | tee ./LT_${tid}.txt",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "64549e0c_a5ff679c",
+        "filename": "test/issues/998+999/C998+999.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:36:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+BOOTPARAM\u003d\"-c 1-7,9-15,17-23,25-31 -m 10G@0,10G@1 -r 1-7:0+9-15:8+17-23:16+25-31:24\"",
+      "revId": "e5ecdcc06b043af05d3886e9f652070fa3506aaa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
