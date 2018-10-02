@@ -1,0 +1,412 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "d862a0fb_6c26b8c2",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 492,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "WARNING: Use of volatile is usually wrong: see Documentation/process/volatile-considered-harmful.rst\n+static __always_inline void __read_once_size(const volatile void *p, void *res, int size)",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9f6ef6f6_119ace2b",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 492,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+static __always_inline void __read_once_size(const volatile void *p, void *res, int size)",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b8746a1c_7992290e",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 495,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "WARNING: Use of volatile is usually wrong: see Documentation/process/volatile-considered-harmful.rst\n+\tcase 1: *(unsigned char *)res \u003d *(volatile unsigned char *)p; break;",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0d9c11d9_a3a36202",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 495,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\tcase 1: *(unsigned char *)res \u003d *(volatile unsigned char *)p; break;",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d4277ac4_404658dd",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 496,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\tcase 2: *(unsigned short *)res \u003d *(volatile unsigned short *)p; break;",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "80d99b98_cfb26184",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 496,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "WARNING: Use of volatile is usually wrong: see Documentation/process/volatile-considered-harmful.rst\n+\tcase 2: *(unsigned short *)res \u003d *(volatile unsigned short *)p; break;",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5ef60806_9a3f820f",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 497,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\tcase 4: *(unsigned int *)res \u003d *(volatile unsigned int *)p; break;",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9ca9d247_4c3ab516",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 497,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "WARNING: Use of volatile is usually wrong: see Documentation/process/volatile-considered-harmful.rst\n+\tcase 4: *(unsigned int *)res \u003d *(volatile unsigned int *)p; break;",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6059bbce_524428fb",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 498,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\tcase 8: *(unsigned long long *)res \u003d *(volatile unsigned long long *)p; break;",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7bbb3865_ca2732e5",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 498,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "WARNING: Use of volatile is usually wrong: see Documentation/process/volatile-considered-harmful.rst\n+\tcase 8: *(unsigned long long *)res \u003d *(volatile unsigned long long *)p; break;",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "666a1565_c039b1d8",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 498,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcase 8: *(unsigned long long *)res \u003d *(volatile unsigned long long *)p; break;",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7f1c8e58_519f8032",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 506,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+static __always_inline void __write_once_size(volatile void *p, void *res, int size)",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "53fd8074_31e6841c",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 506,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "WARNING: Use of volatile is usually wrong: see Documentation/process/volatile-considered-harmful.rst\n+static __always_inline void __write_once_size(volatile void *p, void *res, int size)",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ae96d3c3_7da2bff7",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 509,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "WARNING: Use of volatile is usually wrong: see Documentation/process/volatile-considered-harmful.rst\n+\tcase 1: *(volatile unsigned char *)p \u003d *(unsigned char *)res; break;",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "754b606a_3ea3f5cb",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 509,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\tcase 1: *(volatile unsigned char *)p \u003d *(unsigned char *)res; break;",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c41b8d11_10430a15",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 510,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "WARNING: Use of volatile is usually wrong: see Documentation/process/volatile-considered-harmful.rst\n+\tcase 2: *(volatile unsigned short *)p \u003d *(unsigned short *)res; break;",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "786e724e_598c6e66",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 510,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\tcase 2: *(volatile unsigned short *)p \u003d *(unsigned short *)res; break;",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f14f457a_1899436e",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 511,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\tcase 4: *(volatile unsigned int *)p \u003d *(unsigned int *)res; break;",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "012d0161_7dcd8e49",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 511,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "WARNING: Use of volatile is usually wrong: see Documentation/process/volatile-considered-harmful.rst\n+\tcase 4: *(volatile unsigned int *)p \u003d *(unsigned int *)res; break;",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fadb6d81_23c8796a",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 512,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "WARNING: Use of volatile is usually wrong: see Documentation/process/volatile-considered-harmful.rst\n+\tcase 8: *(volatile unsigned long long *)p \u003d *(unsigned long long *)res; break;",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da7729d5_658f4b22",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 512,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcase 8: *(volatile unsigned long long *)p \u003d *(unsigned long long *)res; break;",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f3a773d4_1f9a2ba1",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 512,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\tcase 8: *(volatile unsigned long long *)p \u003d *(unsigned long long *)res; break;",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3b6cafd7_c1314ec3",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 543,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t({ union { typeof(x) __val; char __c[1]; } __u; __read_once_size(\u0026(x), __u.__c, sizeof(x)); __u.__val; })",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1f1db03a_08622def",
+        "filename": "kernel/include/lwk/compiler.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 546,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-02T04:35:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t({ typeof(x) __val \u003d (val); __write_once_size(\u0026(x), \u0026__val, sizeof(__val)); __val; })",
+      "revId": "da1b149d3abb729e18756db81f7d738104b81c0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
