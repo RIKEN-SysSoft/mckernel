@@ -1157,7 +1157,6 @@ err:
 static int check_and_allocate_fp_regs(struct thread *thread);
 void save_fp_regs(struct thread *thread);
 
-#ifdef POSTK_DEBUG_ARCH_DEP_23 /* add arch dep. clone_thread() function */
 void arch_clone_thread(struct thread *othread, unsigned long pc,
 			unsigned long sp, struct thread *nthread)
 {
@@ -1166,10 +1165,6 @@ void arch_clone_thread(struct thread *othread, unsigned long pc,
 	/* get tpidr_el0 value, and set original-thread->tlsblock_base, new-thread->tlsblock_base */
 	asm("mrs %0, tpidr_el0" : "=r" (tls));
 	othread->tlsblock_base = nthread->tlsblock_base = tls;
-
-	if ((othread->fp_regs != NULL) && (check_and_allocate_fp_regs(nthread) == 0)) {
-		memcpy(nthread->fp_regs, othread->fp_regs, sizeof(fp_regs_struct));
-	}
 
 	/* if SVE enable, takeover lower 128 bit register */
 	if (likely(elf_hwcap & HWCAP_SVE)) {
@@ -1180,7 +1175,6 @@ void arch_clone_thread(struct thread *othread, unsigned long pc,
 		thread_fpsimd_to_sve(nthread, &fp_regs);
 	}
 }
-#endif /* POSTK_DEBUG_ARCH_DEP_23 */
 
 /*@
   @ requires \valid(handler);

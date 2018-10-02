@@ -108,11 +108,9 @@ enum ihk_mc_user_context_regtype {
 	IHK_UCR_PROGRAM_COUNTER = 2,
 };
 
-#ifdef POSTK_DEBUG_ARCH_DEP_23 /* add arch dep. clone_process() function */
 struct thread;
 void arch_clone_thread(struct thread *othread, unsigned long pc,
 			unsigned long sp, struct thread *nthread);
-#endif /* POSTK_DEBUG_ARCH_DEP_23 */
 
 void ihk_mc_modify_user_context(ihk_mc_user_context_t *uctx,
                                 enum ihk_mc_user_context_regtype reg,

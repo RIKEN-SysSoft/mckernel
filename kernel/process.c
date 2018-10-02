@@ -408,9 +408,7 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 	/* copy fp_regs from parent */
 	save_fp_regs(org);
 	copy_fp_regs(org, thread);
-#ifdef POSTK_DEBUG_ARCH_DEP_23 /* add arch dep. clone_process() function */
 	arch_clone_thread(org, pc, sp, thread);
-#endif /* POSTK_DEBUG_ARCH_DEP_23 */
 
 	memcpy(thread->uctx, org->uctx, sizeof(*org->uctx));
 	ihk_mc_modify_user_context(thread->uctx, IHK_UCR_STACK_POINTER, sp);
