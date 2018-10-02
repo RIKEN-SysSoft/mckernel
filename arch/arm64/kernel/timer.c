@@ -114,7 +114,7 @@ static void timer_handler(void *priv)
 	}
 }
 
-static unsigned long is_use_virt_timer(void)
+unsigned long is_use_virt_timer(void)
 {
 	extern unsigned long ihk_param_use_virt_timer;
 

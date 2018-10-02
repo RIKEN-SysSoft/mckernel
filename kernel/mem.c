@@ -56,7 +56,7 @@
 static unsigned long pa_start, pa_end;
 static struct ihk_mc_numa_node memory_nodes[512];
 
-extern void unhandled_page_fault(struct thread *, void *, void *);
+extern int ihk_mc_pt_print_pte(struct page_table *pt, void *virt);
 extern int interrupt_from_user(void *);
 
 struct tlb_flush_entry tlb_flush_vector[IHK_TLB_FLUSH_IRQ_VECTOR_SIZE];
@@ -1144,6 +1144,58 @@ void tlb_flush_handler(int vector)
 #endif // PROFILE_ENABLE
 }
 
+static void unhandled_page_fault(struct thread *thread, void *fault_addr,
+				 uint64_t reason, void *regs)
+{
+	const uintptr_t address = (uintptr_t)fault_addr;
+	struct process_vm *vm = thread->vm;
+	struct vm_range *range;
+	unsigned long irqflags;
+
+	irqflags = kprintf_lock();
+	__kprintf("Page fault for 0x%lx\n", address);
+	__kprintf("%s for %s access in %s mode (reserved bit %s set), "
+			"it %s an instruction fetch\n",
+			(reason & PF_PROT ? "protection fault" :
+			 "no page found"),
+			(reason & PF_WRITE ? "write" : "read"),
+			(reason & PF_USER ? "user" : "kernel"),
+			(reason & PF_RSVD ? "was" : "wasn't"),
+			(reason & PF_INSTR ? "was" : "wasn't"));
+
+	range = lookup_process_memory_range(vm, address, address+1);
+	if (range) {
+		__kprintf("address is in range, flag: 0x%lx\n",
+				range->flag);
+		ihk_mc_pt_print_pte(vm->address_space->page_table,
+				    (void *)address);
+	} else {
+		__kprintf("address is out of range!\n");
+	}
+
+	kprintf_unlock(irqflags);
+
+	/* TODO */
+	ihk_mc_debug_show_interrupt_context(regs);
+
+	if (!(reason & PF_USER)) {
+		panic("panic: kernel mode PF");
+	}
+
+	//dkprintf("now dump a core file\n");
+	//coredump(proc, regs);
+
+#ifdef DEBUG_PRINT_MEM
+	{
+		uint64_t *sp = (void *)REGS_GET_STACK_POINTER(regs);
+
+		kprintf("*rsp:%lx,*rsp+8:%lx,*rsp+16:%lx,*rsp+24:%lx,\n",
+				sp[0], sp[1], sp[2], sp[3]);
+	}
+#endif
+}
+
+
 static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 {
 	struct thread *thread = cpu_local_var(current);
@@ -1182,7 +1234,7 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 		kprintf("%s fault VM failed for TID: %d, addr: 0x%lx, reason: %d, error: %d\n",
 			__func__, thread ? thread->tid : -1, fault_addr,
 			reason, error);
-		unhandled_page_fault(thread, fault_addr, regs);
+		unhandled_page_fault(thread, fault_addr, reason, regs);
 		preempt_enable();
 		memset(&info, '\0', sizeof info);
 		if (error == -ERANGE) {

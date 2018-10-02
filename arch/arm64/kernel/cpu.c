@@ -53,8 +53,8 @@ void assign_processor_id(void);
 void arch_delay(int);
 int gettime_local_support = 0;
 
-extern int ihk_mc_pt_print_pte(struct page_table *pt, void *virt);
 extern int interrupt_from_user(void *);
+extern unsigned long is_use_virt_timer(void);
 
 extern unsigned long ihk_param_gic_dist_base_pa;
 extern unsigned long ihk_param_gic_dist_map_size;
@@ -1560,61 +1560,23 @@ restore_fp_regs(struct thread *thread)
 }
 
 void
-unhandled_page_fault(struct thread *thread, void *fault_addr, void *regs)
+lapic_timer_enable(unsigned int clocks)
 {
-	const uintptr_t address = (uintptr_t)fault_addr;
-	struct process_vm *vm;
-	struct vm_range *range;
-	unsigned long irqflags;
-	unsigned long error = 0;
+	unsigned int val = 0;
 
-	irqflags = kprintf_lock();
-	__kprintf("Page fault for 0x%lx\n", address);
-	__kprintf("%s for %s access in %s mode (reserved bit %s set), "
-			"it %s an instruction fetch\n",
-			(error & PF_PROT ? "protection fault" : "no page found"),
-			(error & PF_WRITE ? "write" : "read"),
-			(error & PF_USER ? "user" : "kernel"),
-			(error & PF_RSVD ? "was" : "wasn't"),
-			(error & PF_INSTR ? "was" : "wasn't"));
+	/* gen control register value */
+	asm volatile("mrs %0, cntp_ctl_el0" : "=r" (val));
+	val &= ~(ARCH_TIMER_CTRL_IT_STAT | ARCH_TIMER_CTRL_IT_MASK);
+	val |= ARCH_TIMER_CTRL_ENABLE;
 
-	if (!thread)
-		goto skipvm;
-
-	vm = thread->vm;
-
-	range = lookup_process_memory_range(vm, address, address+1);
-	if (range) {
-		__kprintf("address is in range, flag: 0x%lx\n",
-				range->flag);
-		ihk_mc_pt_print_pte(vm->address_space->page_table, (void*)address);
+	if (is_use_virt_timer()) {
+		asm volatile("msr cntv_tval_el0, %0" : : "r" (clocks));
+		asm volatile("msr cntv_ctl_el0,  %0" : : "r" (val));
 	} else {
-		__kprintf("address is out of range! \n");
+		asm volatile("msr cntp_tval_el0, %0" : : "r" (clocks));
+		asm volatile("msr cntp_ctl_el0,  %0" : : "r" (val));
 	}
-
-skipvm:
-	kprintf_unlock(irqflags);
-
-	/* TODO */
-	ihk_mc_debug_show_interrupt_context(regs);
-
-	if (!interrupt_from_user(regs)) {
-		panic("panic: kernel mode PF");
-	}
-
-	//dkprintf("now dump a core file\n");
-	//coredump(proc, regs);
-
-	#ifdef DEBUG_PRINT_MEM
-	{
-	uint64_t *sp = (void *)REGS_GET_STACK_POINTER(regs);
-
-	kprintf("*rsp:%lx,*rsp+8:%lx,*rsp+16:%lx,*rsp+24:%lx,\n",
-			sp[0], sp[1], sp[2], sp[3]);
-	}
-	#endif
-
-	return;
+	per_cpu_timer_val[ihk_mc_get_processor_id()] = clocks;
 }
 
 void init_tick(void)
