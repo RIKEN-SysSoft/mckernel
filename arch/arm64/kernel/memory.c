@@ -2591,26 +2591,22 @@ int ihk_mc_pt_split(page_table_t pt, struct process_vm *vm, void *addr)
 
 retry:
 	ptep = ihk_mc_pt_lookup_pte(pt, addr, 0, &pgaddr, &pgsize, NULL);
-	switch (pgsize) {
-	case __PTL4_SIZE:
-		level = 4;
-		break;
-	case __PTL3_SIZE:
-		level = 3;
-		break;
-	case __PTL2_SIZE:
-		level = 2;
-		break;
-	case __PTL1_SIZE:
-		level = 1;
-		break;
-	default:
+	level = pgsize_to_tbllv(pgsize);
+	if (level < 0) {
 		ekprintf("ihk_mc_pt_split:invalid pgsize %#lx\n", pgsize);
-		return -EINVAL;
+		return level;
 	}
 
 	if (ptep && !ptl_null(ptep, level) && (pgaddr != addr)) {
 		page = NULL;
+		if (ptl_is_compound(ptep, level)) {
+			error = isolation_ptes(ptep, pgsize);
+			if (error) {
+				goto out;
+			}
+			goto retry;
+		}
+
 		if (!ptl_fileoff(ptep, level)) {
 			phys = ptl_phys(ptep, level);
 			page = phys_to_page(phys);
