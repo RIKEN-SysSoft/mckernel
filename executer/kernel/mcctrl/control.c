@@ -2172,7 +2172,7 @@ long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 					__func__, ret);
 				if (need_free)
 					kfree(perf_desc);
-				return -EINVAL;
+				return ret;
 			}
 		}
 
@@ -2218,7 +2218,7 @@ long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
 					__func__, ret);
 				if (need_free)
 					kfree(perf_desc);
-				return -EINVAL;
+				return ret;
 			}
 
 			value_sum += perf_desc->read_value;
