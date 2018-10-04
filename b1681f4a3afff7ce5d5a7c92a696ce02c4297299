@@ -1,0 +1,208 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "60a33d20_30126b97",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 849,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-04T05:31:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t    shebang_argv_count * sizeof(void *));",
+      "revId": "b1681f4a3afff7ce5d5a7c92a696ce02c4297299",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e8145357_ec669f67",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1029,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-04T05:31:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+ * [nr_strings][char *offset of string_0]...[char *offset of string_n-1][char *offset of end of string][string0]...[stringn_1]",
+      "revId": "b1681f4a3afff7ce5d5a7c92a696ce02c4297299",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "699b528e_a95c902f",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 3729,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-04T05:31:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tif ((ret \u003d load_elf_desc_shebang(filename, \u0026desc,",
+      "revId": "b1681f4a3afff7ce5d5a7c92a696ce02c4297299",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7ce8e81c_81e1fde9",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 3730,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-04T05:31:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t\t\t \u0026shebang_argv)) !\u003d 0) {",
+      "revId": "b1681f4a3afff7ce5d5a7c92a696ce02c4297299",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0dd74a34_8aeec2a9",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 3743,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-04T05:31:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tsize \u003d sizeof(struct program_load_desc) +",
+      "revId": "b1681f4a3afff7ce5d5a7c92a696ce02c4297299",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c0fe31d7_82949f26",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 3744,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-04T05:31:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t       sizeof(struct program_image_section) *",
+      "revId": "b1681f4a3afff7ce5d5a7c92a696ce02c4297299",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8bc1a51f_682e1495",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 3747,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-04T05:31:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tdesc-\u003eargs_len \u003d flatten_strings(NULL, shebang_argv,",
+      "revId": "b1681f4a3afff7ce5d5a7c92a696ce02c4297299",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2d652da9_fbb53c13",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 3748,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-04T05:31:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t\t\t\t \u0026shebang_argv_flat);",
+      "revId": "b1681f4a3afff7ce5d5a7c92a696ce02c4297299",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ab38d2d4_1635f339",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 3749,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-04T05:31:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tbuffer \u003d malloc(size + desc-\u003eargs_len);",
+      "revId": "b1681f4a3afff7ce5d5a7c92a696ce02c4297299",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "288616bb_746092d2",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 3750,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-04T05:31:28Z",
+      "side": 1,
+      "message": "WARNING: Too many leading tabs - consider code refactoring\n+\t\t\t\t\t\tif (!buffer) {",
+      "revId": "b1681f4a3afff7ce5d5a7c92a696ce02c4297299",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "aa235a4a_22d5f60e",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 3759,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-04T05:31:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tmemcpy(buffer + size, shebang_argv_flat,",
+      "revId": "b1681f4a3afff7ce5d5a7c92a696ce02c4297299",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f38e9c65_c9f8958b",
+        "filename": "lib/string.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 222,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-04T05:31:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+ * [nr_strings][char *offset of string_0]...[char *offset of string_n-1][char *offset of end of string][string0]...[stringn_1]",
+      "revId": "b1681f4a3afff7ce5d5a7c92a696ce02c4297299",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
