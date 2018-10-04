@@ -19,6 +19,7 @@ void vdso_gettimeofday_unused_funcs(void)
 	UNUSED(clear_perfctl);
 	UNUSED(set_perfctr);
 	UNUSED(read_perfctr);
+	UNUSED(xos_is_tchip);
 }
 
 static inline struct tod_data_s *get_tod_data_addr(void)
