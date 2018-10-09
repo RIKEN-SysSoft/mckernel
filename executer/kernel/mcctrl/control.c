@@ -2213,11 +2213,7 @@ long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 					__func__, ret);
 				if (need_free)
 					kfree(perf_desc);
-#ifdef POSTK_DEBUG_ARCH_DEP_111 /* change timeout wait. */
 				return ret;
-#else /* POSTK_DEBUG_ARCH_DEP_111 */
-				return -EINVAL;
-#endif /* POSTK_DEBUG_ARCH_DEP_111 */
 			}
 
 #ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
@@ -2286,11 +2282,7 @@ long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
 					__func__, ret);
 				if (need_free)
 					kfree(perf_desc);
-#ifdef POSTK_DEBUG_ARCH_DEP_111 /* change timeout wait. */
 				return ret;
-#else /* POSTK_DEBUG_ARCH_DEP_111 */
-				return -EINVAL;
-#endif /* POSTK_DEBUG_ARCH_DEP_111 */
 			}
 
 #ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
