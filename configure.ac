@@ -589,6 +589,7 @@ AC_CONFIG_FILES([
 	arch/x86_64/tools/mcreboot.1:arch/x86_64/tools/mcreboot.1in
 	arch/x86_64/tools/irqbalance_mck.service
 	arch/x86_64/tools/irqbalance_mck.in
+	tools/mcstat/mcstat.1:tools/mcstat/mcstat.1in
 	tools/mcstat/Makefile
 ])
 
