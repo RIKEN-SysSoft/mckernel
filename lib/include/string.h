@@ -47,7 +47,6 @@ extern int sscanf(const char * buf, const char * fmt, ...);
 extern int scnprintf(char * buf, size_t size, const char *fmt, ...);
 
 unsigned long strtol(const char *cp, char **endp, unsigned int base);
-int flatten_strings(int nr_strings, char *first, char **strings, char **flat);
-int flatten_strings_from_user(int nr_strings, char *first, char **strings, char **flat);
+int flatten_strings_from_user(char *pre_strings, char **strings, char **flat);
 
 #endif
