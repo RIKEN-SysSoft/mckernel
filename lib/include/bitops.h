@@ -51,6 +51,7 @@ static inline unsigned long hweight_long(unsigned long w)
 #define __ALIGN_MASK(x, mask)	__ALIGN_KERNEL_MASK((x), (mask))
 #define __ALIGN_KERNEL(x, a)		__ALIGN_KERNEL_MASK(x, (typeof(x))(a) - 1)
 #define ALIGN(x, a)		__ALIGN_KERNEL((x), (a))
+#define IS_ALIGNED(x, a)                (((x) & ((typeof(x))(a) - 1)) == 0)
 
 #endif /*__ASSEMBLY__*/
 
