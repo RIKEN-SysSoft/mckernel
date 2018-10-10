@@ -1,0 +1,208 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "b3a1dac3_5ef70a7b",
+        "filename": "kernel/hugefileobj.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 140,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-10T05:50:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tkprintf(\"%s: obj %p had refcnt %ld \u003e 1, destroying anyway\\n\",",
+      "revId": "8e18ce2579126d3b001b09ae26d776f7dc27e4df",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f691d2b3_814def12",
+        "filename": "kernel/hugefileobj.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 229,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-10T05:50:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"pgshift changed between two calls on same inode?! had %d now %d\\n\",",
+      "revId": "8e18ce2579126d3b001b09ae26d776f7dc27e4df",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ae50019f_d1df700a",
+        "filename": "kernel/hugefileobj.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 274,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-10T05:50:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tdkprintf(\"could not allocate more pages wth pgshift %d\\n\",",
+      "revId": "8e18ce2579126d3b001b09ae26d776f7dc27e4df",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "470c63f5_c4b3373f",
+        "filename": "kernel/process.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 960,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-10T05:50:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\terror \u003d ihk_mc_pt_clear_range(vm-\u003eaddress_space-\u003epage_table,",
+      "revId": "8e18ce2579126d3b001b09ae26d776f7dc27e4df",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "699e9ede_d94d0a5e",
+        "filename": "kernel/process.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 963,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-10T05:50:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\terror \u003d ihk_mc_pt_free_range(vm-\u003eaddress_space-\u003epage_table,",
+      "revId": "8e18ce2579126d3b001b09ae26d776f7dc27e4df",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "267d2233_3892aa8b",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1521,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-10T05:50:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tkprintf(\"%s: error creating hugetlbfs memobj, fd: %d, error: %d\\n\",",
+      "revId": "8e18ce2579126d3b001b09ae26d776f7dc27e4df",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "336b4ce1_2c0a57ca",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1533,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-10T05:50:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tekprintf(\"do_mmap:search_free_space(%lx,%lx,%d) failed. %d\\n\",",
+      "revId": "8e18ce2579126d3b001b09ae26d776f7dc27e4df",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "624ffb53_47264c12",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1533,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-10T05:50:37Z",
+      "side": 1,
+      "message": "WARNING: Prefer using \u0027\"%s...\", __func__\u0027 to using \u0027do_mmap\u0027, this function\u0027s name, in a string\n+\t\t\tekprintf(\"do_mmap:search_free_space(%lx,%lx,%d) failed. %d\\n\",",
+      "revId": "8e18ce2579126d3b001b09ae26d776f7dc27e4df",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1f9729c1_c22fc654",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1541,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-10T05:50:37Z",
+      "side": 1,
+      "message": "WARNING: Prefer using \u0027\"%s...\", __func__\u0027 to using \u0027do_mmap\u0027, this function\u0027s name, in a string\n+\t\t\t\tkprintf(\"do_mmap:set_host_vma failed. %d\\n\",",
+      "revId": "8e18ce2579126d3b001b09ae26d776f7dc27e4df",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "82204cf4_d631bb72",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1549,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-10T05:50:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tdkprintf(\"Created hugefileobj %p (%d:%x %llx-%llx, fd %d, pgshift %d)\\n\",",
+      "revId": "8e18ce2579126d3b001b09ae26d776f7dc27e4df",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "055f27e7_1d4a56bf",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1552,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-10T05:50:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tdkprintf(\"%s: device fd: %d off: %lu mapping at %p - %p\\n\",",
+      "revId": "8e18ce2579126d3b001b09ae26d776f7dc27e4df",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3d4f1617_7b9e5dd9",
+        "filename": "test/issues/1203/C1203.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-10T05:50:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+if sudo HUGETLB_VERBOSE\u003d2 HUGETLB_ELFMAP\u003dRW HUGETLB_DEBUG\u003d1 \"$MCEXEC\" ./C1203T02; then",
+      "revId": "8e18ce2579126d3b001b09ae26d776f7dc27e4df",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
