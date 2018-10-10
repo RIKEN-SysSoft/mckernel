@@ -790,6 +790,7 @@ out:
 	return error;
 } /* setup_node_files() */
 
+#ifdef SETUP_PCI_FILES
 static int read_file(void *buf, size_t size, char *fmt, va_list ap)
 {
 	int error;
@@ -1132,6 +1133,7 @@ out:
 	dprintk("setup_pci_files(%p): %d\n", udp, error);
 	return error;
 } /* setup_pci_files() */
+#endif // SETUP_PCI_FILES
 
 void setup_sysfs_files(ihk_os_t os)
 {
@@ -1171,7 +1173,9 @@ void setup_sysfs_files(ihk_os_t os)
 	setup_cpus_sysfs_files(udp);
 	setup_node_files(udp);
 	setup_cpus_sysfs_files_node_link(udp);
-	//setup_pci_files(udp);
+#ifdef SETUP_PCI_FILES
+	setup_pci_files(udp);
+#endif
 
 	/* Indicate sysfs files setup completion for boot script */
 	error = sysfsm_mkdirf(os, NULL, "/sys/setup_complete");
