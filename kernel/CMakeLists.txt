@@ -22,6 +22,10 @@ if (${ARCH} STREQUAL "x86_64")
 	add_compile_options(-mcmodel=large -mno-red-zone -mno-sse)
 endif()
 
+if (ENABLE_STACK_PROTECTOR)
+	add_compile_options(-fstack-protector-strong)
+endif(ENABLE_STACK_PROTECTOR)
+
 set(MCKERNEL_SRCS
 	init.c mem.c debug.c mikc.c listeners.c ap.c syscall.c cls.c host.c process.c
 	copy.c waitq.c futex.c timer.c plist.c fileobj.c shmobj.c zeroobj.c
@@ -38,6 +42,16 @@ set(MCKERNEL_SRCS
 	${PROJECT_SOURCE_DIR}/lib/string.c
 	${PROJECT_SOURCE_DIR}/lib/vsprintf.c
 )
+
+# early boot files: need to disable more options (repeat from previous list!)
+set(EARLY_BOOT_SRCS
+	${IHK_FULL_SOURCE_DIR}/cokernel/smp/x86_64/setup.c
+	${PROJECT_SOURCE_DIR}/lib/vsprintf.c
+	${PROJECT_SOURCE_DIR}/lib/string.c
+	init.c
+	debug.c
+)
+
 
 if (ENABLE_UBSAN)
 	add_compile_options(-fsanitize=undefined)
@@ -62,12 +76,26 @@ if (BUILD_TARGET STREQUAL "smp-x86")
 		${IHK_FULL_SOURCE_DIR}/cokernel/smp/x86_64/dma.c
 		${IHK_FULL_SOURCE_DIR}/cokernel/smp/x86_64/ikc.c
 	)
+
+	list(APPEND EARLY_BOOT_SRCS
+		${PROJECT_SOURCE_DIR}/arch/${ARCH}/kernel/cpu.c
+		${PROJECT_SOURCE_DIR}/arch/${ARCH}/kernel/memory.c
+	)
+	set(EARLY_BOOT_FLAGS
+		"-fno-stack-protector")
 elseif (BUILD_TARGET STREQUAL "smp-arm64")
+	set(EARLY_BOOT_FLAGS
+		"-fno-stack-protector")
 	add_definitions(-UCONFIG_ARM64_64K_PAGES -DCONFIG_ARM64_VA_BITS=48 -DCONFIG_ARM64_PGTABLE_LEVELS=4 -DCONFIG_NR_CPUS=256 -DNR_CPUS=CONFIG_NR_CPUS -DCONFIG_SMP_MAX_CORES=512 -DCONFIG_HZ=100 -DCONFIG_ARM_GIC_V3=y -DCONFIG_ARM_ARCH_TIMER_EVTSTREAM -DCONFIG_ARM64_SVE)
 	foreach(i RANGE 1 100)
 		add_definitions(-DPOSTK_DEBUG_ARCH_DEP_${i} -DPOSTK_DEBUG_TEMP_FIX_${i})
 	endforeach()
 endif()
+
+set_source_files_properties(
+	${EARLY_BOOT_SRCS}
+	PROPERTIES COMPILE_FLAGS
+	${EARLY_BOOT_FLAGS})
 
 add_executable(mckernel.img ${MCKERNEL_SRCS})
 

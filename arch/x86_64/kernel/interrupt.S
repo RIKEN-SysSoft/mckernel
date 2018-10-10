@@ -13,14 +13,8 @@
  * 2013/?? - bgerofi + shimosawa: handle rsp correctly for nested interrupts
  */
 
-#define X86_CPU_LOCAL_OFFSET_TSS    176
-#define X86_TSS_OFFSET_SP0          4
-#define X86_CPU_LOCAL_OFFSET_SP0 \
-		(X86_CPU_LOCAL_OFFSET_TSS + X86_TSS_OFFSET_SP0)
-#define X86_CPU_LOCAL_OFFSET_KSTACK 16
-#define X86_CPU_LOCAL_OFFSET_USTACK 24
-#define KERNEL_CS                   32
-#define KERNEL_DS                   40
+#include <asm-offsets.h>
+
 #define USER_CS                     (48 + 3)
 #define USER_DS                     (56 + 3)
 
@@ -139,10 +133,8 @@ __freeze:
 
 .globl nmi
 nmi:
-#define PANICED 232
-#define PANIC_REGS 240
-		movq	%rax,%gs:PANIC_REGS+0x00
-		movq	%rsp,%gs:PANIC_REGS+0x08
+		movq	%rax,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x00
+		movq	%rsp,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x08
 
 		movl	nmi_mode(%rip),%eax
 		cmp $3,%rax
@@ -153,10 +145,10 @@ nmi:
 		jne	3f
 1:
 		cld
-		movq	%gs:PANIC_REGS+0x00,%rax
+		movq	%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x00,%rax
 		PUSH_ALL_REGS
 		subq	$40, %rsp
-		movq	%rsp,%gs:PANIC_REGS+0x10
+		movq	%rsp,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x10
 		movq	%rsp, %rdi
 		call	freeze_thaw
 		cmpq	$0, %rax
@@ -166,40 +158,40 @@ nmi:
 		POP_ALL_REGS
 		iretq
 3:
-		movq	%rbx,%gs:PANIC_REGS+0x08
-		movq	%rcx,%gs:PANIC_REGS+0x10
-		movq	%rdx,%gs:PANIC_REGS+0x18
-		movq	%rsi,%gs:PANIC_REGS+0x20
-		movq	%rdi,%gs:PANIC_REGS+0x28
-		movq	%rbp,%gs:PANIC_REGS+0x30
+		movq	%rbx,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x08
+		movq	%rcx,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x10
+		movq	%rdx,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x18
+		movq	%rsi,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x20
+		movq	%rdi,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x28
+		movq	%rbp,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x30
 		movq	0x18(%rsp),%rax		/* rsp */
-		movq	%rax,%gs:PANIC_REGS+0x38
-		movq	%r8, %gs:PANIC_REGS+0x40
-		movq	%r9, %gs:PANIC_REGS+0x48
-		movq	%r10,%gs:PANIC_REGS+0x50
-		movq	%r11,%gs:PANIC_REGS+0x58
-		movq	%r12,%gs:PANIC_REGS+0x60
-		movq	%r13,%gs:PANIC_REGS+0x68
-		movq	%r14,%gs:PANIC_REGS+0x70
-		movq	%r15,%gs:PANIC_REGS+0x78
+		movq	%rax,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x38
+		movq	%r8, %gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x40
+		movq	%r9, %gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x48
+		movq	%r10,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x50
+		movq	%r11,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x58
+		movq	%r12,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x60
+		movq	%r13,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x68
+		movq	%r14,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x70
+		movq	%r15,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x78
 		movq	0x00(%rsp),%rax		/* rip */
-		movq	%rax,%gs:PANIC_REGS+0x80
+		movq	%rax,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x80
 		movq	0x10(%rsp),%rax		/* rflags */
-		movl	%eax,%gs:PANIC_REGS+0x88
+		movl	%eax,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x88
 		movq	0x08(%rsp),%rax		/* cs */
-		movl	%eax,%gs:PANIC_REGS+0x8C
+		movl	%eax,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x8C
 		movq	0x20(%rsp),%rax		/* ss */
-		movl	%eax,%gs:PANIC_REGS+0x90
+		movl	%eax,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x90
 		xorq	%rax,%rax
 		movw	%ds,%ax
-		movl	%eax,%gs:PANIC_REGS+0x94
+		movl	%eax,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x94
 		movw	%es,%ax
-		movl	%eax,%gs:PANIC_REGS+0x98
+		movl	%eax,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x98
 		movw	%fs,%ax
-		movl	%eax,%gs:PANIC_REGS+0x9C
+		movl	%eax,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0x9C
 		movw	%gs,%ax
-		movl	%eax,%gs:PANIC_REGS+0xA0
-		movq	$1,%gs:PANICED
+		movl	%eax,%gs:X86_CPU_LOCAL_OFFSET_PANIC_REGS+0xA0
+		movq	$1,%gs:X86_CPU_LOCAL_OFFSET_PANICED
 		call	ihk_mc_query_mem_areas
 4:
 		hlt

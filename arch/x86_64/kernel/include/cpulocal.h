@@ -15,16 +15,13 @@
 
 #include <types.h>
 #include <registers.h>
+#include <asm-offsets.h>
 
 /*
  * CPU Local Page
  * 0 -    : struct x86_cpu_local_varibles
  * - 4096 : kernel stack
  */
-
-#define X86_CPU_LOCAL_OFFSET_TSS    176
-#define X86_CPU_LOCAL_OFFSET_KSTACK 16
-#define X86_CPU_LOCAL_OFFSET_USTACK 24
 
 struct x86_cpu_local_variables {
 /* 0 */
@@ -34,18 +31,21 @@ struct x86_cpu_local_variables {
 /* 16 */
 	unsigned long kernel_stack;
 	unsigned long user_stack;
-
 /* 32 */
-	struct x86_desc_ptr gdt_ptr;
-	unsigned short pad[3];
+	unsigned long pad1;
+/* canary HAS to be at offset 0x28 e.g. 40, hardcoded in gcc */
+	unsigned long stack_canary;
 /* 48 */
+	struct x86_desc_ptr gdt_ptr;
+	unsigned short pad2[3];
+/* 64 */
 	uint64_t gdt[16];
-/* 176 */
+/* 192 */
 	struct tss64 tss;
-/* 280 */
+/* 296 */
 	unsigned long paniced;
 	uint64_t panic_regs[21];
-/* 456 */
+/* 472 */
 } __attribute__((packed));
 
 struct x86_cpu_local_variables *get_x86_cpu_local_variable(int id);

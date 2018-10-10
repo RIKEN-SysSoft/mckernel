@@ -20,6 +20,8 @@
 #include <ihk/debug.h>
 #include <registers.h>
 #include <string.h>
+#include <types.h>
+#include <debug.h>
 
 #define LOCALS_SPAN (4 * PAGE_SIZE)
 
@@ -29,6 +31,17 @@ size_t x86_cpu_local_variables_span = LOCALS_SPAN;	/* for debugger */
 void init_processors_local(int max_id)
 {
 	size_t size;
+
+	BUILD_BUG_ON(X86_CPU_LOCAL_OFFSET_TSS !=
+		     offsetof(struct x86_cpu_local_variables, tss));
+	BUILD_BUG_ON(X86_CPU_LOCAL_OFFSET_KSTACK !=
+		     offsetof(struct x86_cpu_local_variables, kernel_stack));
+	BUILD_BUG_ON(X86_CPU_LOCAL_OFFSET_USTACK !=
+		     offsetof(struct x86_cpu_local_variables, user_stack));
+	BUILD_BUG_ON(X86_CPU_LOCAL_OFFSET_PANICED !=
+		     offsetof(struct x86_cpu_local_variables, paniced));
+	BUILD_BUG_ON(X86_CPU_LOCAL_OFFSET_PANIC_REGS !=
+		     offsetof(struct x86_cpu_local_variables, panic_regs));
 
 	size = LOCALS_SPAN * max_id;
 	/* Is contiguous allocating adequate?? */
