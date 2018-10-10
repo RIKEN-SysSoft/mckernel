@@ -31,6 +31,15 @@ if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
 	exit 1
 fi
 
+# Check SELinux
+if [ -f /etc/selinux/config ]; then
+	SELINUX=`cat /etc/selinux/config | grep SELINUX= | grep -v "#" | cut -d"=" -f2 | awk '{print $1}'`
+	if [ "${SELINUX}" == "enforcing" ]; then
+		echo "error: SELinux must be disabled for running McKernel (update /etc/selinux/config)"
+		exit 1
+	fi
+fi
+
 redirect_kmsg=0
 mon_interval="-1"
 DUMP_LEVEL=24
