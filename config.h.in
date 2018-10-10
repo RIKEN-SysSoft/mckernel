@@ -21,6 +21,9 @@
 /* whether rusage is enabled */
 #cmakedefine ENABLE_RUSAGE 1
 
+/* whether undefined behaviour sanitizer is enabled */
+#cmakedefine ENABLE_UBSAN 1
+
 /* Path of bind-mount source directory */
 #cmakedefine ROOTFSDIR "${ROOTFSDIR}"
 
