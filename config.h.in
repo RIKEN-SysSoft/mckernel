@@ -24,6 +24,9 @@
 /* whether UTI is enabled */
 #cmakedefine ENABLE_UTI 1
 
+/* whether undefined behaviour sanitizer is enabled */
+#cmakedefine ENABLE_UBSAN 1
+
 /* Path of bind-mount source directory */
 #cmakedefine ROOTFSDIR "${ROOTFSDIR}"
 
