@@ -45,6 +45,11 @@ set(MCKERNEL_SRCS
 	${IHK_FULL_SOURCE_DIR}/cokernel/smp/${ARCH}/setup.c
 )
 
+if (ENABLE_UBSAN)
+	add_compile_options(-fsanitize=undefined)
+	list(APPEND MCKERNEL_SRCS ubsan.c)
+endif(ENABLE_UBSAN)
+
 if (BUILD_TARGET STREQUAL "smp-x86")
 	list(APPEND MCKERNEL_SRCS
 		${PROJECT_SOURCE_DIR}/arch/${ARCH}/kernel/context.S
