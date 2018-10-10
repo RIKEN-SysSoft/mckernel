@@ -31,6 +31,12 @@ if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
 	exit 1
 fi
 
+# Check SELinux
+if which getenforce 1>/dev/null 2>/dev/null && [ "`getenforce | tr '[:upper:]' '[:lower:]'`" == "enforcing" ]; then
+	echo "error: SELinux must not be enabled when running McKernel (update /etc/selinux/config or see setenforce)"
+	exit 1
+fi
+
 redirect_kmsg=0
 mon_interval="-1"
 DUMP_LEVEL=24
