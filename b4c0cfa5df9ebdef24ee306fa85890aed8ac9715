@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "f7fb45b7_2404f9ea",
+        "filename": "kernel/shmobj.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 274,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-12T04:57:20Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tmemory_stat_rss_sub(npages * PAGE_SIZE, npages * PAGE_SIZE);",
+      "revId": "b4c0cfa5df9ebdef24ee306fa85890aed8ac9715",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
