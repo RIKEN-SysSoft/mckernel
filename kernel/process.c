@@ -994,9 +994,7 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 					vm, (void *)start, (void *)end);
 		} else {
 			error = ihk_mc_pt_free_range(vm->address_space->page_table,
-					vm, (void *)start, (void *)end,
-					(range->flag & VR_PRIVATE) ? NULL :
-						range->memobj);
+					vm, (void *)start, (void *)end, range->memobj);
 		}
 		if (range->memobj) {
 			memobj_unref(range->memobj);
