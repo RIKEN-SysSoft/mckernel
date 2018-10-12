@@ -1,0 +1,157 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "bfed2702_ff9b039c",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1941,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-12T04:33:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t//if(rusage_memory_stat_add_with_page(range, phys, pgsize, pgsize, page)) {",
+      "revId": "4e3c8517b91af840b8a266ebab6780a1f5c400c2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b5d56405_3b66c8a8",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1942,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-12T04:33:15Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t\t\tif(rusage_memory_stat_add(range, phys, pgsize, pgsize)) {",
+      "revId": "4e3c8517b91af840b8a266ebab6780a1f5c400c2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f700ba2a_25587610",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1942,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-12T04:33:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tif(rusage_memory_stat_add(range, phys, pgsize, pgsize)) {",
+      "revId": "4e3c8517b91af840b8a266ebab6780a1f5c400c2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "17cdfd7c_79ff000b",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1943,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-12T04:33:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t/* on-demand paging, phys pages are obtained by ihk_mc_alloc_aligned_pages_user() or get_page() */",
+      "revId": "4e3c8517b91af840b8a266ebab6780a1f5c400c2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9d01d9f8_5ac52087",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1944,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-12T04:33:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tdkprintf(\"%lx+,%s: (on-demand paging \u0026\u0026 first map) || cow,calling memory_stat_rss_add(),phys\u003d%lx,pgsize\u003d%ld\\n\",",
+      "revId": "4e3c8517b91af840b8a266ebab6780a1f5c400c2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c4028ae7_be1aaadf",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1945,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-12T04:33:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t phys, __FUNCTION__, phys, pgsize);",
+      "revId": "4e3c8517b91af840b8a266ebab6780a1f5c400c2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8ca53765_b8157e0d",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1945,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-12T04:33:15Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\t\t\t phys, __FUNCTION__, phys, pgsize);",
+      "revId": "4e3c8517b91af840b8a266ebab6780a1f5c400c2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ca511632_53a9acca",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1947,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-12T04:33:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tdkprintf(\"%s: !calling memory_stat_rss_add(),phys\u003d%lx,pgsize\u003d%ld\\n\",",
+      "revId": "4e3c8517b91af840b8a266ebab6780a1f5c400c2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2616d20d_279bcc00",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1948,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-12T04:33:15Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\t\t\t __FUNCTION__, phys, pgsize);",
+      "revId": "4e3c8517b91af840b8a266ebab6780a1f5c400c2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
