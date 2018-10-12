@@ -1996,7 +1996,8 @@ retry:
 #endif /*POSTK_DEBUG_ARCH_DEP_21*/
 
 	/*****/
-	if (ptep && !pgsize_is_contiguous(pgsize)) {
+	if (ptep && !pgsize_is_contiguous(pgsize) &&
+			!(reason & PF_PATCH)) {
 		//if(rusage_memory_stat_add_with_page(range, phys, pgsize, pgsize, page)) {
 		if(rusage_memory_stat_add(range, phys, pgsize, pgsize)) {
 			/* on-demand paging, phys pages are obtained by ihk_mc_alloc_aligned_pages_user() or get_page() */
