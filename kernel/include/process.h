@@ -522,10 +522,9 @@ struct process {
 	int egid;
 	int sgid;
 	int fsgid;
-	int execed:1;
-	int nohost:1;
-	int nowait:1;
-	int forwarding:1;
+	int execed;
+	int nohost;
+	int nowait;
 	struct rlimit rlimit[MCK_RLIM_MAX];
 	unsigned long saved_auxv[AUXV_LEN];
 	char *saved_cmdline;
