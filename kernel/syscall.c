@@ -1746,7 +1746,8 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 	maxprot = PROT_READ | PROT_WRITE | PROT_EXEC;
 	if (!(flags & MAP_ANONYMOUS)) {
 		off = off0;
-		error = fileobj_create(fd, &memobj, &maxprot, addr0);
+		error = fileobj_create(fd, &memobj, &maxprot,
+				       flags, addr0);
 #ifdef ATTACHED_MIC
 		/*
 		 * XXX: refuse device mapping in attached-mic now:
