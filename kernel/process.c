@@ -1937,14 +1937,16 @@ retry:
 
 	/*****/
 	if (ptep) {
-		//if(rusage_memory_stat_add_with_page(range, phys, pgsize, pgsize, page)) {
-		if(rusage_memory_stat_add(range, phys, pgsize, pgsize)) {
-			/* on-demand paging, phys pages are obtained by ihk_mc_alloc_aligned_pages_user() or get_page() */
-			dkprintf("%lx+,%s: (on-demand paging && first map) || cow,calling memory_stat_rss_add(),phys=%lx,pgsize=%ld\n",
-					 phys, __FUNCTION__, phys, pgsize);
-		} else {
-			dkprintf("%s: !calling memory_stat_rss_add(),phys=%lx,pgsize=%ld\n",
-					 __FUNCTION__, phys, pgsize);
+		if (!(reason & PF_PATCH)) {
+			//if(rusage_memory_stat_add_with_page(range, phys, pgsize, pgsize, page)) {
+			if(rusage_memory_stat_add(range, phys, pgsize, pgsize)) {
+				/* on-demand paging, phys pages are obtained by ihk_mc_alloc_aligned_pages_user() or get_page() */
+				dkprintf("%lx+,%s: (on-demand paging && first map) || cow,calling memory_stat_rss_add(),phys=%lx,pgsize=%ld\n",
+						 phys, __FUNCTION__, phys, pgsize);
+			} else {
+				dkprintf("%s: !calling memory_stat_rss_add(),phys=%lx,pgsize=%ld\n",
+						 __FUNCTION__, phys, pgsize);
+			}
 		}
 
 		dkprintf("%s: attr=%x\n", __FUNCTION__, attr);
