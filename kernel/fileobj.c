@@ -28,6 +28,7 @@
 #include <syscall.h>
 #include <rusage_private.h>
 #include <debug.h>
+#include <mman.h>
 
 //#define DEBUG_PRINT_FILEOBJ
 
@@ -186,7 +187,8 @@ static struct fileobj *obj_list_lookup(uintptr_t handle)
 /***********************************************************************
  * fileobj
  */
-int fileobj_create(int fd, struct memobj **objp, int *maxprotp, uintptr_t virt_addr)
+int fileobj_create(int fd, struct memobj **objp, int *maxprotp, int flags,
+		   uintptr_t virt_addr)
 {
 	ihk_mc_user_context_t ctx;
 	struct pager_create_result result __attribute__((aligned(64)));	
@@ -234,7 +236,8 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp, uintptr_t virt_a
 	}
 	memset(newobj, 0, sizeof(*newobj));
 	newobj->memobj.ops = &fileobj_ops;
-	newobj->memobj.flags = MF_HAS_PAGER | MF_REG_FILE;
+	newobj->memobj.flags = MF_HAS_PAGER | MF_REG_FILE |
+		((flags & MAP_PRIVATE) ? MF_PRIVATE : 0);
 	newobj->handle = result.handle;
 
 	fileobj_page_hash_init(newobj);
