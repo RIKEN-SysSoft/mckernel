@@ -1166,6 +1166,7 @@ enum {
 	MF_ZEROOBJ = 0x20000, /* To identify pages of anonymous, on-demand paging ranges for rusage accounting */
 	MF_SHM =     0x40000,
 	MF_HUGETLBFS = 0x100000,
+	MF_PRIVATE   = 0x200000 /* To prevent flush in clear_range_* */
 };
 
 static int pager_get_path(struct file *file, char *path) {

@@ -46,6 +46,7 @@ enum {
 	MF_ZEROOBJ = 0x20000, /* To identify pages of anonymous, on-demand paging ranges for rusage accounting */
 	MF_SHM =     0x40000,
 	MF_HUGETLBFS = 0x100000,
+	MF_PRIVATE   = 0x200000 /* To prevent flush in clear_range_* */
 };
 
 #define MEMOBJ_READY              0
@@ -150,7 +151,8 @@ static inline int memobj_is_removable(struct memobj *obj)
 	return !!(obj->flags & MF_IS_REMOVABLE);
 }
 
-int fileobj_create(int fd, struct memobj **objp, int *maxprotp, uintptr_t virt_addr);
+int fileobj_create(int fd, struct memobj **objp, int *maxprotp, int flags,
+		   uintptr_t virt_addr);
 struct shmid_ds;
 int shmobj_create(struct shmid_ds *ds, struct memobj **objp);
 int zeroobj_create(struct memobj **objp);

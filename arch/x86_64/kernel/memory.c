@@ -1500,8 +1500,10 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 	if (page) {
 		dkprintf("%s: page=%p,is_in_memobj=%d,(old & PFL1_DIRTY)=%lx,memobj=%p,args->memobj->flags=%x\n", __FUNCTION__, page, page_is_in_memobj(page), (old & PFL1_DIRTY), args->memobj, args->memobj ? args->memobj->flags : -1);
 	}
-	if (page && page_is_in_memobj(page) && pte_is_dirty(&old, PTL1_SIZE) &&
-			args->memobj && !(args->memobj->flags & MF_ZEROFILL)) {
+
+	if (page && page_is_in_memobj(page) &&
+	    pte_is_dirty(&old, PTL1_SIZE) && args->memobj &&
+	    !(args->memobj->flags & (MF_ZEROFILL | MF_PRIVATE))) {
 		memobj_flush_page(args->memobj, phys, PTL1_SIZE);
 	}
 
@@ -1567,7 +1569,9 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
 			page = phys_to_page(phys);
 		}
 
-		if (page && page_is_in_memobj(page) && pte_is_dirty(&old, PTL2_SIZE)) {
+		if (page && page_is_in_memobj(page) &&
+		    pte_is_dirty(&old, PTL2_SIZE) && args->memobj &&
+		    !(args->memobj->flags & (MF_ZEROFILL | MF_PRIVATE))) {
 			memobj_flush_page(args->memobj, phys, PTL2_SIZE);
 		}
 
@@ -1648,7 +1652,9 @@ static int clear_range_l3(void *args0, pte_t *ptep, uint64_t base,
 			page = phys_to_page(phys);
 		}
 
-		if (page && page_is_in_memobj(page) && pte_is_dirty(&old, PTL3_SIZE)) {
+		if (page && page_is_in_memobj(page) &&
+		    pte_is_dirty(&old, PTL3_SIZE) && args->memobj &&
+		    !(args->memobj->flags & (MF_ZEROFILL | MF_PRIVATE))) {
 			memobj_flush_page(args->memobj, phys, PTL3_SIZE);
 		}
 
