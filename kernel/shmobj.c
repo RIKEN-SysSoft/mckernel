@@ -271,7 +271,7 @@ static void shmobj_destroy(struct shmobj *obj)
 			/* Track change in page->count for shmobj.
 			   It is decremented in here or shmobj_invalidate() or clear_range(). */
 			dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, phys, npages * PAGE_SIZE, PAGE_SIZE);
-			memory_stat_rss_sub(npages * PAGE_SIZE, PAGE_SIZE); 
+			memory_stat_rss_sub(npages * PAGE_SIZE, npages * PAGE_SIZE);
 		}
 #if 0
 		dkprintf("shmobj_destroy(%p):"
@@ -459,7 +459,7 @@ static int shmobj_invalidate_page(struct memobj *memobj, uintptr_t phys,
 			/* Track change in page->count for shmobj. 
 			 It is decremented in here or shmobj_destroy() or clear_range(). */
 			dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, phys, pgsize, PAGE_SIZE);
-			memory_stat_rss_sub(pgsize, PAGE_SIZE); 
+			memory_stat_rss_sub(pgsize, pgsize);
 		}
 	}
 
