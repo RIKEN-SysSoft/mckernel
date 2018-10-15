@@ -667,12 +667,17 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 
 		fclose(fp);
 
-		/* Delete new line character and any trailing spaces */
+		/* Delete new line character and any trailing/leading spaces */
 		shebang_len = strlen(shebang) - 1;
 		shebang[shebang_len] = '\0';
-		while (strpbrk(shebang + shebang_len - 1, " \t")) {
+		while (shebang_len > 0 &&
+				strpbrk(shebang + shebang_len - 1, " \t")) {
 			shebang_len--;
 			shebang[shebang_len] = '\0';
+		}
+		while (shebang_len > 0 && strpbrk(shebang, " \t") == shebang) {
+			shebang_len--;
+			shebang++;
 		}
 		*shebang_p = shebang;
 		return 0;
