@@ -766,13 +766,14 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
  */
 int load_elf_desc_shebang(char *shebang_argv0,
 			  struct program_load_desc **desc_p,
-			  char ***shebang_argv_p)
+			  char ***shebang_argv_p,
+			  int execvp)
 {
 	char path[PATH_MAX];
 	char *shebang = NULL;
 	int ret;
 
-	if ((ret = lookup_exec_path(shebang_argv0, path, sizeof(path), 1))
+	if ((ret = lookup_exec_path(shebang_argv0, path, sizeof(path), execvp))
 			!= 0) {
 		__dprintf("error: finding file: %s\n", shebang_argv0);
 		return ret;
@@ -790,7 +791,8 @@ int load_elf_desc_shebang(char *shebang_argv0,
 		char **shebang_argv;
 
 		if (!shebang_argv_p)
-			return load_elf_desc_shebang(shebang, desc_p, NULL);
+			return load_elf_desc_shebang(shebang, desc_p,
+						     NULL, execvp);
 
 		shebang_argv = *shebang_argv_p;
 
@@ -825,7 +827,8 @@ int load_elf_desc_shebang(char *shebang_argv0,
 
 		*shebang_argv_p = shebang_argv;
 
-		return load_elf_desc_shebang(shebang, desc_p, shebang_argv_p);
+		return load_elf_desc_shebang(shebang, desc_p, shebang_argv_p,
+					     execvp);
 	}
 
 	return 0;
@@ -2399,7 +2402,7 @@ int main(int argc, char **argv)
 #endif // ENABLE_MCOVERLAYFS
 
 	if ((ret = load_elf_desc_shebang(argv[optind], &desc,
-					 &shebang_argv))) {
+					 &shebang_argv, 1 /* execvp */))) {
 		fprintf(stderr, "%s: could not load program: %s\n",
 			argv[optind], strerror(ret));
 		return 1;
@@ -3711,10 +3714,11 @@ fork_err:
 				case 1:
 					shebang_argv = NULL;
 					buffer = NULL;
+					desc = NULL;
 					filename = (char *)w.sr.args[1];
 					
 					if ((ret = load_elf_desc_shebang(filename, &desc,
-									 &shebang_argv)) != 0) {
+									 &shebang_argv, 0)) != 0) {
 						goto return_execve1;
 					}
 
