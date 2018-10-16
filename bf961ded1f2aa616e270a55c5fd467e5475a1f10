@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "bafddbc6_3827fbf7",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3418,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-16T11:34:17Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\tprintk(\"%s: ERROR receive: %d\\n\", __FUNCTION__, resp.err);",
+      "revId": "bf961ded1f2aa616e270a55c5fd467e5475a1f10",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7e8f07cc_4cc67aa0",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3418,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-16T11:34:17Z",
+      "side": 1,
+      "message": "WARNING: printk() should include KERN_\u003cLEVEL\u003e facility level\n+\t\tprintk(\"%s: ERROR receive: %d\\n\", __FUNCTION__, resp.err);",
+      "revId": "bf961ded1f2aa616e270a55c5fd467e5475a1f10",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
