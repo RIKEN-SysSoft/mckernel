@@ -2125,6 +2125,9 @@ struct mcctrl_perf_ctrl_desc {
 #define wakeup_desc_of_perf_desc(_desc) \
 	(&container_of((_desc), struct mcctrl_perf_ctrl_desc, desc)->wakeup)
 
+/* Note that usrdata->perf_event_num is updated with # of registered
+ * events
+ */
 long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 {
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
@@ -2135,6 +2138,8 @@ long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 	int ret = 0;
 	int i = 0, j = 0;
 	int need_free;
+	int num_registered = 0;
+	int err = 0;
 
 	for (i = 0; i < usrdata->perf_event_num; i++) {
 		ret = copy_from_user(&attr, &arg[i],
@@ -2153,6 +2158,7 @@ long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 		memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
 
 		perf_desc->ctrl_type = PERF_CTRL_SET;
+		perf_desc->err = 0;
 		perf_desc->target_cntr = i;
 		perf_desc->config = attr.config;
 		perf_desc->exclude_kernel = attr.exclude_kernel;
@@ -2174,12 +2180,22 @@ long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 					kfree(perf_desc);
 				return ret;
 			}
+
+			err = perf_desc->err;
+			if (err != 0) {
+				break;
+			}
 		}
 
+		if (err == 0) {
+			num_registered++;
+		}
 		kfree(perf_desc);
 	}
 
-	return usrdata->perf_event_num;
+	usrdata->perf_event_num = num_registered;
+
+	return num_registered;
 }
 
 long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
@@ -2202,6 +2218,7 @@ long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
 		memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
 
 		perf_desc->ctrl_type = PERF_CTRL_GET;
+		perf_desc->err = 0;
 		perf_desc->target_cntr = i;
 
 		memset(&isp, '\0', sizeof(struct ikc_scd_packet));
@@ -2221,7 +2238,9 @@ long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
 				return ret;
 			}
 
-			value_sum += perf_desc->read_value;
+			if (perf_desc->err == 0) {
+				value_sum += perf_desc->read_value;
+			}
 		}
 		kfree(perf_desc);
 		if (copy_to_user(&arg[i], &value_sum, sizeof(unsigned long))) {
@@ -2241,7 +2260,7 @@ long mcctrl_perf_enable(ihk_os_t os)
 	struct ikc_scd_packet isp;
 	struct perf_ctrl_desc *perf_desc;
 	struct ihk_cpu_info *info = ihk_os_get_cpu_info(os);
-	unsigned int cntr_mask = 0;
+	unsigned long cntr_mask = 0;
 	int ret = 0;
 	int i = 0, j = 0;
 	int need_free;
@@ -2256,6 +2275,7 @@ long mcctrl_perf_enable(ihk_os_t os)
 	memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
 
 	perf_desc->ctrl_type = PERF_CTRL_ENABLE;
+	perf_desc->err = 0;
 	perf_desc->target_cntr_mask = cntr_mask;
 
 	memset(&isp, '\0', sizeof(struct ikc_scd_packet));
@@ -2275,6 +2295,12 @@ long mcctrl_perf_enable(ihk_os_t os)
 			return -EINVAL;
 		}
 
+		if (perf_desc->err < 0) {
+			ret = perf_desc->err;
+			kfree(perf_desc);
+			return ret;
+		}
+
 	}
 	kfree(perf_desc);
 
@@ -2287,13 +2313,13 @@ long mcctrl_perf_disable(ihk_os_t os)
 	struct ikc_scd_packet isp;
 	struct perf_ctrl_desc *perf_desc;
 	struct ihk_cpu_info *info = ihk_os_get_cpu_info(os);
-	unsigned int cntr_mask = 0;
+	unsigned long cntr_mask = 0;
 	int ret = 0;
 	int i = 0, j = 0;
 	int need_free;
 
 	for (i = 0; i < usrdata->perf_event_num; i++) {
-		cntr_mask |= 1 << i;
+		cntr_mask |= 1UL << i;
 	}
 	perf_desc = kmalloc(sizeof(struct mcctrl_perf_ctrl_desc), GFP_KERNEL);
 	if (!perf_desc) {
@@ -2302,6 +2328,7 @@ long mcctrl_perf_disable(ihk_os_t os)
 	memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
 
 	perf_desc->ctrl_type = PERF_CTRL_DISABLE;
+	perf_desc->err = 0;
 	perf_desc->target_cntr_mask = cntr_mask;
 
 	memset(&isp, '\0', sizeof(struct ikc_scd_packet));
@@ -2320,6 +2347,11 @@ long mcctrl_perf_disable(ihk_os_t os)
 			return -EINVAL;
 		}
 
+		if (perf_desc->err < 0) {
+			ret = perf_desc->err;
+			kfree(perf_desc);
+			return ret;
+		}
 	}
 	kfree(perf_desc);
 
