@@ -1874,6 +1874,12 @@ static struct option mcexec_options[] = {
 		.flag =		&enable_uti,
 		.val =		1,
 	},
+	{
+		.name =		"debug-mcexec",
+		.has_arg =	no_argument,
+		.flag =		&debug,
+		.val =		1,
+	},
 	/* end */
 	{ NULL, 0, NULL, 0, },
 };
@@ -2156,9 +2162,11 @@ int main(int argc, char **argv)
 
 	/* Parse options ("+" denotes stop at the first non-option) */
 #ifdef ADD_ENVS_OPTION
-	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:m:u:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:m:u:",
+				  mcexec_options, NULL)) != -1) {
 #else /* ADD_ENVS_OPTION */
-	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:m:u:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:m:u:",
+				  mcexec_options, NULL)) != -1) {
 #endif /* ADD_ENVS_OPTION */
 		switch (opt) {
 			char *tmp;
@@ -2205,21 +2213,24 @@ int main(int argc, char **argv)
 				break;
 #endif /* ADD_ENVS_OPTION */
 			
-		case 's': {
-			char *token, *dup, *line;
-			dup = strdup(optarg);
-			line = dup;
-			token = strsep(&line, ",");
-			if (token != NULL && *token != 0) {
-				stack_premap = atobytes(token);
+			case 's': {
+				char *token, *dup, *line;
+
+				dup = strdup(optarg);
+				line = dup;
+				token = strsep(&line, ",");
+				if (token != NULL && *token != 0) {
+					stack_premap = atobytes(token);
+				}
+				token = strsep(&line, ",");
+				if (token != NULL && *token != 0) {
+					stack_max = atobytes(token);
+				}
+				free(dup);
+				__dprintf("stack_premap=%ld,stack_max=%ld\n",
+					  stack_premap, stack_max);
+				break;
 			}
-			token = strsep(&line, ",");
-			if (token != NULL && *token != 0) {
-				stack_max = atobytes(token);
-			}
-			free(dup);
-			__dprintf("stack_premap=%ld,stack_max=%ld\n", stack_premap, stack_max);
-			break; }
 
 			case 'u':
 				uti_thread_rank = atoi(optarg);
