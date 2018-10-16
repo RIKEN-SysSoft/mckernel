@@ -237,7 +237,6 @@ long do_syscall(struct syscall_request *req, int cpu)
 
 	dkprintf("%s: syscall num: %d waiting for Linux.. \n",
 		__FUNCTION__, req->number);
-	proc->forwarding = 1;
 
 #define	STATUS_IN_PROGRESS	0
 #define	STATUS_COMPLETED	1
@@ -399,7 +398,6 @@ long do_syscall(struct syscall_request *req, int cpu)
 			send_syscall(&req2, cpu, &res);
 		}
 	}
-	proc->forwarding = 0;
 	if (req->rtid == -1) {
 		preempt_enable();
 	}
