@@ -711,17 +711,26 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 			if (!pcd->exclude_user) {
 				mode |= PERFCTR_USER_MODE;
 			}
-			ihk_mc_perfctr_init_raw(pcd->target_cntr, pcd->config, mode);
-			ihk_mc_perfctr_stop(1 << pcd->target_cntr);
-			ihk_mc_perfctr_reset(pcd->target_cntr);
+
+			ret = ihk_mc_perfctr_init_raw(pcd->target_cntr, pcd->config, mode);
+			if (ret != 0) {
+				break;
+			}
+
+			ret = ihk_mc_perfctr_stop(1 << pcd->target_cntr);
+			if (ret != 0) {
+				break;
+			}
+
+			ret = ihk_mc_perfctr_reset(pcd->target_cntr);
 			break;
 
 		case PERF_CTRL_ENABLE:
-			ihk_mc_perfctr_start(pcd->target_cntr_mask);
+			ret = ihk_mc_perfctr_start(pcd->target_cntr_mask);
 			break;
 			
 		case PERF_CTRL_DISABLE:
-			ihk_mc_perfctr_stop(pcd->target_cntr_mask);
+			ret = ihk_mc_perfctr_stop(pcd->target_cntr_mask);
 			break;
 
 		case PERF_CTRL_GET:
@@ -736,12 +745,11 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		ihk_mc_unmap_memory(NULL, pp, sizeof(struct perf_ctrl_desc));
 
 		pckt.msg = SCD_MSG_PERF_ACK;
-		pckt.err = 0;
+		pckt.err = ret;
 		pckt.arg = packet->arg;
 		pckt.reply = packet->reply;
 		ihk_ikc_send(resp_channel, &pckt, 0);
 
-		ret = 0;
 		break;
 
 	case SCD_MSG_CPU_RW_REG:
