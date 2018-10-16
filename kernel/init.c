@@ -59,6 +59,13 @@ static void handler_init(void)
 	ihk_mc_set_syscall_handler(syscall);
 }
 
+
+/* Symbols with name conflict with the linux kernel
+ * Give the possibility to load all symbols at the same time
+ */
+int *mck_num_processors = &num_processors;
+
+
 unsigned long data[1024] __attribute__((aligned(64)));
 
 #ifdef USE_DMA
