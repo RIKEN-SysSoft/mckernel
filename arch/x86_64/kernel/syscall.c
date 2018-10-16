@@ -2754,7 +2754,6 @@ out:
 
 time_t time(void) {
 	struct syscall_request sreq IHK_DMA_ALIGN;
-	struct thread *thread = cpu_local_var(current);
 	struct timespec ats;
 	time_t ret = 0;
 
