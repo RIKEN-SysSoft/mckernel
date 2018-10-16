@@ -44,7 +44,6 @@ enum {
 	MF_XPMEM   = 0x10000, /* To identify XPMEM attachment pages for rusage accounting */
 	MF_ZEROOBJ = 0x20000, /* To identify pages of anonymous, on-demand paging ranges for rusage accounting */
 	MF_SHM =     0x40000,
-	MF_END
 };
 
 #define MEMOBJ_READY              0
