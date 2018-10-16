@@ -215,6 +215,10 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp, uintptr_t virt_a
 		goto out;
 	}
 
+	if (result.flags & MF_HUGETLBFS) {
+		return hugefileobj_pre_create(&result, objp, maxprotp);
+	}
+
 	mcs_lock_lock(&fileobj_list_lock, &node);
 	obj = obj_list_lookup(result.handle);
 	if (obj)

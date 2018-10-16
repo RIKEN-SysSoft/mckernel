@@ -428,6 +428,7 @@ extern void (*mcctrl_zap_page_range)(struct vm_area_struct *vma,
 				     unsigned long start,
 				     unsigned long size,
 				     struct zap_details *details);
+extern struct inode_operations *mcctrl_hugetlbfs_inode_operations;
 
 /* syscall.c */
 void pager_add_process(void);

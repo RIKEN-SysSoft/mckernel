@@ -19,6 +19,7 @@
 #include <ihk/lock.h>
 #include <errno.h>
 #include <list.h>
+#include <pager.h>
 
 #ifdef POSTK_DEBUG_ARCH_DEP_18 /* coredump arch separation. */
 #else /* POSTK_DEBUG_ARCH_DEP_18 */
@@ -44,6 +45,7 @@ enum {
 	MF_XPMEM   = 0x10000, /* To identify XPMEM attachment pages for rusage accounting */
 	MF_ZEROOBJ = 0x20000, /* To identify pages of anonymous, on-demand paging ranges for rusage accounting */
 	MF_SHM =     0x40000,
+	MF_HUGETLBFS = 0x100000,
 };
 
 #define MEMOBJ_READY              0
@@ -83,11 +85,15 @@ static inline int memobj_ref(struct memobj *obj)
 	return ihk_atomic_inc_return(&obj->refcnt);
 }
 
-static inline void memobj_unref(struct memobj *obj)
+static inline int memobj_unref(struct memobj *obj)
 {
-	if (ihk_atomic_dec_return(&obj->refcnt) == 0) {
+	int cnt;
+
+	if ((cnt = ihk_atomic_dec_return(&obj->refcnt)) == 0) {
 		(*obj->ops->free)(obj);
 	}
+
+	return cnt;
 }
 
 static inline int memobj_get_page(struct memobj *obj, off_t off,
@@ -150,5 +156,10 @@ int shmobj_create(struct shmid_ds *ds, struct memobj **objp);
 int zeroobj_create(struct memobj **objp);
 int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxprotp,
 	int prot, int populate_flags);
+int hugefileobj_pre_create(struct pager_create_result *result,
+			   struct memobj **objp, int *maxprotp);
+int hugefileobj_create(struct memobj *obj, size_t len, off_t off,
+		       int *pgshiftp, uintptr_t virt_addr);
+void hugefileobj_cleanup(void);
 
 #endif /* HEADER_MEMOBJ_H */
