@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "35a48377_57b49e1c",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-10-16T11:29:12Z",
+      "side": 1,
+      "message": "Same remark as the others - please no blank line here",
+      "revId": "977e37bbfa11930e95a82bcc390a8d0e51c4861f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3326bbe5_6af78051",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 892,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-10-16T11:29:12Z",
+      "side": 1,
+      "message": "let\u0027s try to keep lines \u003c80 when the context isn\u0027t obviously bigger everywhere",
+      "revId": "977e37bbfa11930e95a82bcc390a8d0e51c4861f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
