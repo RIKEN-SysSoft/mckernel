@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "190ecfab_e32cfc4b",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2295,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-10-16T08:36:46Z",
+      "side": 1,
+      "message": "If mcctrl_ikc_send_wait did not fail, need_free has to be set, so you do not need to check.\n(in general an extra check does not hurt, but a few lines below we free without the check so let\u0027s keep it coherent)",
+      "revId": "1c820cf2c36b3920d3d4486cb57923bb3ec57bb9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "18640285_3c7eda11",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2348,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-10-16T08:36:46Z",
+      "side": 1,
+      "message": "(same)",
+      "revId": "1c820cf2c36b3920d3d4486cb57923bb3ec57bb9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
