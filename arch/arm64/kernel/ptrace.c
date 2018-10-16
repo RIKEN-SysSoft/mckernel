@@ -22,9 +22,6 @@
 
 #define NOT_IMPLEMENTED()  do { kprintf("%s is not implemented\n", __func__); while(1);} while(0)
 
-#define BUG_ON(condition) do { if (condition) { kprintf("PANIC: %s: %s(line:%d)\n",\
-				__FILE__, __FUNCTION__, __LINE__); panic(""); } } while(0)
-
 extern void save_debugreg(unsigned long *debugreg);
 extern int interrupt_from_user(void *);
 

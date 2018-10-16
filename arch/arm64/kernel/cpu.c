@@ -45,9 +45,6 @@
 #define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
-#define BUG_ON(condition) do { if (condition) { kprintf("PANIC: %s: %s(line:%d)\n",\
-				__FILE__, __FUNCTION__, __LINE__); panic(""); } } while(0)
-
 struct cpuinfo_arm64 cpuinfo_data[NR_CPUS];	/* index is logical cpuid */
 
 static struct list_head handlers[1024];

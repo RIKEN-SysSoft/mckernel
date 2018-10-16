@@ -14,11 +14,8 @@
 //#define DEBUG_PRINT_GENCORE
 
 #ifdef DEBUG_PRINT_GENCORE
-#define	dkprintf(...)	kprintf(__VA_ARGS__)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
-#else
-#define dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 /* Exclude reserved (mckernel's internal use), device file,
