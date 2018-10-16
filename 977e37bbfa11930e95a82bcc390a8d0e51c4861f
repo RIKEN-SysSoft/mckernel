@@ -33,6 +33,312 @@
       "revId": "977e37bbfa11930e95a82bcc390a8d0e51c4861f",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "443cd38d_806a53db",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 892,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-16T11:30:49Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tset_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);",
+      "revId": "977e37bbfa11930e95a82bcc390a8d0e51c4861f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "15cd0ae5_f3f7ae30",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1007,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-16T11:30:49Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tset_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);",
+      "revId": "977e37bbfa11930e95a82bcc390a8d0e51c4861f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7358be3e_a0fa6e76",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1020,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-16T11:30:49Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tset_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);",
+      "revId": "977e37bbfa11930e95a82bcc390a8d0e51c4861f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "77a472e0_6996a073",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1029,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-16T11:30:49Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tset_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);",
+      "revId": "977e37bbfa11930e95a82bcc390a8d0e51c4861f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ff3a27f4_dc9dd7a8",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1039,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-16T11:30:49Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tset_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);",
+      "revId": "977e37bbfa11930e95a82bcc390a8d0e51c4861f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8d425d20_237ed4c0",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1058,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-16T11:30:49Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tset_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);",
+      "revId": "977e37bbfa11930e95a82bcc390a8d0e51c4861f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1e17cb1c_0f29da55",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1065,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-16T11:30:49Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tset_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);",
+      "revId": "977e37bbfa11930e95a82bcc390a8d0e51c4861f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0e5ad23c_fe17e557",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1076,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-16T11:30:49Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tset_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);",
+      "revId": "977e37bbfa11930e95a82bcc390a8d0e51c4861f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "35c4fbef_203e94ef",
+        "filename": "kernel/mem.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1161,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-16T11:30:49Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tset_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);",
+      "revId": "977e37bbfa11930e95a82bcc390a8d0e51c4861f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f3eefd79_73f4c42f",
+        "filename": "kernel/mem.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1222,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-16T11:30:49Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tset_cputime(interrupt_from_user(regs) ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);",
+      "revId": "977e37bbfa11930e95a82bcc390a8d0e51c4861f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "db20f645_508ac8a7",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 9589,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-16T11:30:49Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(mode \u003d\u003d CPUTIME_MODE_K2U){",
+      "revId": "977e37bbfa11930e95a82bcc390a8d0e51c4861f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "acc704e3_85a0d198",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 9589,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-16T11:30:49Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(mode \u003d\u003d CPUTIME_MODE_K2U){",
+      "revId": "977e37bbfa11930e95a82bcc390a8d0e51c4861f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "757e5dbd_33f51330",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 9592,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-16T11:30:49Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\telse if(mode \u003d\u003d CPUTIME_MODE_U2K){",
+      "revId": "977e37bbfa11930e95a82bcc390a8d0e51c4861f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "57aa6a86_6b2eb077",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 9592,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-16T11:30:49Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\telse if(mode \u003d\u003d CPUTIME_MODE_U2K){",
+      "revId": "977e37bbfa11930e95a82bcc390a8d0e51c4861f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "41a27c0e_eea37cc9",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 9609,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-16T11:30:49Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t\tif(mode \u003d\u003d CPUTIME_MODE_U2K){",
+      "revId": "977e37bbfa11930e95a82bcc390a8d0e51c4861f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a90b3b67_ecde5d21",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 9609,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-16T11:30:49Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\t\tif(mode \u003d\u003d CPUTIME_MODE_U2K){",
+      "revId": "977e37bbfa11930e95a82bcc390a8d0e51c4861f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fc149eda_0d29998b",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 9622,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-16T11:30:49Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(mode \u003d\u003d CPUTIME_MODE_K2K_IN){",
+      "revId": "977e37bbfa11930e95a82bcc390a8d0e51c4861f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "44191d74_1e6c690c",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 9622,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-16T11:30:49Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(mode \u003d\u003d CPUTIME_MODE_K2K_IN){",
+      "revId": "977e37bbfa11930e95a82bcc390a8d0e51c4861f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
     }
   ]
 }
