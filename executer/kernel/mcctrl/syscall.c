@@ -2093,7 +2093,13 @@ int mcctrl_clear_pte_range(uintptr_t start, uintptr_t len)
 	struct vm_area_struct *vma;
 	uintptr_t addr;
 	uintptr_t end;
+#ifdef POSTK_DEBUG_ARCH_DEP_115 /* build for linux4.18 */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 18, 0)
 	int error;
+#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(4, 18, 0) */
+#else /* POSTK_DEBUG_ARCH_DEP_115 */
+	int error;
+#endif /* POSTK_DEBUG_ARCH_DEP_115 */
 	int ret;
 
 	ret = 0;
@@ -2113,6 +2119,8 @@ int mcctrl_clear_pte_range(uintptr_t start, uintptr_t len)
 			end = vma->vm_end;
 		}
 		if (addr < end) {
+#ifdef POSTK_DEBUG_ARCH_DEP_115 /* build for linux4.18 */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 18, 0)
 			error = zap_vma_ptes(vma, addr, end-addr);
 			if (error) {
 				mcctrl_zap_page_range(vma, addr, end-addr, NULL);
@@ -2121,6 +2129,25 @@ int mcctrl_clear_pte_range(uintptr_t start, uintptr_t len)
 			if (ret == 0) {
 				ret = error;
 			}
+#else /* LINUX_VERSION_CODE < KERNEL_VERSION(4, 18, 0) */
+			if (addr < vma->vm_start || addr + end-addr > vma->vm_end ||
+					!(vma->vm_flags & VM_PFNMAP)) {
+				mcctrl_zap_page_range(vma, addr, end-addr, NULL);
+			}
+			else {
+				zap_vma_ptes(vma, addr, end-addr);
+			}
+#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(4, 18, 0) */
+#else /* POSTK_DEBUG_ARCH_DEP_115 */
+			error = zap_vma_ptes(vma, addr, end-addr);
+			if (error) {
+				mcctrl_zap_page_range(vma, addr, end-addr, NULL);
+				error = 0;
+			}
+			if (ret == 0) {
+				ret = error;
+			}
+#endif /* POSTK_DEBUG_ARCH_DEP_115 */
 		}
 		addr = end;
 	}
