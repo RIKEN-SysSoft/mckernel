@@ -356,12 +356,13 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		proc->saved_cmdline_len = 0;
 	}
 
-	proc->saved_cmdline = kmalloc(p->args_len, IHK_MC_AP_NOWAIT);
+	proc->saved_cmdline_len = p->args_len - ((argc + 2) * sizeof(char **));
+	proc->saved_cmdline = kmalloc(proc->saved_cmdline_len,
+				      IHK_MC_AP_NOWAIT);
 	if (!proc->saved_cmdline) {
 		goto err;
 	}
 
-	proc->saved_cmdline_len = p->args_len - ((argc + 2) * sizeof(char **));
 	memcpy(proc->saved_cmdline,
 			(char *)args_envs + ((argc + 2) * sizeof(char **)),
 			proc->saved_cmdline_len);
