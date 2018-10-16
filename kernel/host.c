@@ -75,7 +75,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		char *envs, int envs_len) 
 {
 	char *args_envs, *args_envs_r;
-	unsigned long args_envs_p, args_envs_rp;
+	unsigned long args_envs_p, args_envs_rp, envs_offset;
 	unsigned long s, e, up;
 	char **argv;
 	int i, n, argc, envc, args_envs_npages;
@@ -336,7 +336,13 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 
 	dkprintf("envs copy, nr: %d\n", *((long *)args_envs_r));
 
-	memcpy_long(args_envs + p->args_len, args_envs_r, p->envs_len + sizeof(long) - 1);
+	/* p->args_len is not necessarily long-aligned, even if the memory
+	 * below exists and is zeroed out - env must start aligned
+	 */
+	envs_offset = (p->args_len + sizeof(long) - 1) & ~(sizeof(long) - 1);
+
+	memcpy_long(args_envs + envs_offset, args_envs_r,
+		    p->envs_len + sizeof(long) - 1);
 
 	/* Only map remote address if it wasn't specified as an argument */
 	if (!envs) {
@@ -375,12 +381,12 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		argv[i] = (char *)addr + (unsigned long)argv[i];
 	}
 
-	envc = *((long *)(args_envs + p->args_len));
+	envc = *((long *)(args_envs + envs_offset));
 	dkprintf("envc: %d\n", envc);
 
-	env = (char **)(args_envs + p->args_len + sizeof(long));
+	env = (char **)(args_envs + envs_offset + sizeof(long));
 	for (i = 0; i < envc; i++) {
-		env[i] = addr + p->args_len + env[i];
+		env[i] = addr + envs_offset + env[i];
 	}
 
 	dkprintf("env OK\n");

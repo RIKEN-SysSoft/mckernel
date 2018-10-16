@@ -234,7 +234,7 @@ int memcmp(const void *s1, const void *s2, size_t n)
  */
 int flatten_strings_from_user(char *pre_strings, char **strings, char **flat)
 {
-	int full_len, i;
+	int full_len, len, i;
 	int nr_strings = 0;
 	int pre_strings_count = 0;
 	int pre_strings_len = 0;
@@ -333,5 +333,8 @@ int flatten_strings_from_user(char *pre_strings, char **strings, char **flat)
 	_flat[nr_strings + pre_strings_count + 1] = p - (char *)_flat;
 
 	*flat = (char *)_flat;
-	return p - (char *)_flat;
+	len = p - (char *)_flat;
+	if (len < full_len)
+		memset(p, 0, full_len - len);
+	return len;
 }
