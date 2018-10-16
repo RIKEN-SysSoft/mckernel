@@ -1558,7 +1558,7 @@ int do_munmap(void *addr, size_t len, int holding_memory_range_lock)
 	return error;
 }
 
-static int search_free_space(size_t len, int pgshift, intptr_t *addrp)
+static int search_free_space(size_t len, int pgshift, uintptr_t *addrp)
 {
 	struct thread *thread = cpu_local_var(current);
 	struct vm_regions *region = &thread->vm->region;
@@ -1600,12 +1600,12 @@ out:
 }
 
 intptr_t
-do_mmap(const intptr_t addr0, const size_t len0, const int prot,
+do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 	const int flags, const int fd, const off_t off0)
 {
 	struct thread *thread = cpu_local_var(current);
 	struct vm_regions *region = &thread->vm->region;
-	intptr_t addr = addr0;
+	uintptr_t addr = addr0;
 	size_t len = len0;
 	size_t populate_len = 0;
 	off_t off;
@@ -5268,7 +5268,7 @@ SYSCALL_DECLARE(shmat)
 	struct process_vm *vm = thread->vm;
 	size_t len;
 	int error;
-	intptr_t addr;
+	uintptr_t addr;
 	int prot;
 	int vrflags;
 	int req;
@@ -8144,8 +8144,7 @@ SYSCALL_DECLARE(mremap)
 			goto out;
 		}
 		need_relocate = 1;
-		error = search_free_space(newsize, range->pgshift,
-				(intptr_t *)&newstart);
+		error = search_free_space(newsize, range->pgshift, &newstart);
 		if (error) {
 			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
 					"search failed. %d\n",
