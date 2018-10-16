@@ -632,36 +632,36 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 	char header[1024];
 
 	if ((ret = access(filename, X_OK)) != 0) {
-		fprintf(stderr, "Error: %s is not an executable?, errno: %d\n", 
+		__dprintf("Error: %s is not an executable?, errno: %d\n",
 			filename, errno);
 		return errno;
 	}
 	
 	if ((ret = stat(filename, &sb)) == -1) {
-		fprintf(stderr, "Error: failed to stat %s\n", filename);
+		__dprintf("Error: failed to stat %s\n", filename);
 		return errno;
 	}
 	
 	if (sb.st_size == 0) {
-		fprintf(stderr, "Error: file %s is zero length\n", filename);
+		__dprintf("Error: file %s is zero length\n", filename);
 		return ENOEXEC;
 	}
 
 	fp = fopen(filename, "rb");
 	if (!fp) {
-		fprintf(stderr, "Error: Failed to open %s\n", filename);
+		__dprintf("Error: Failed to open %s\n", filename);
 		return errno;
 	}
 
 	if (fread(&header, 1, 2, fp) != 2) {
-		fprintf(stderr, "Error: Failed to read header from %s\n", filename);
+		__dprintf("Error: Failed to read header from %s\n", filename);
 		fclose(fp);
 		return errno;
 	}
 
 	if (!strncmp(header, "#!", 2)) {
 		if (getline(&shebang, &shebang_len, fp) == -1) {
-			fprintf(stderr, "Error: reading shebang path %s\n",
+			__dprintf("Error: reading shebang path %s\n",
 				filename);
 		}
 
@@ -779,7 +779,7 @@ int load_elf_desc_shebang(char *shebang_argv0,
 	}
 
 	if ((ret = load_elf_desc(path, desc_p, &shebang)) != 0) {
-		__eprintf("error: loading file: %s\n", shebang_argv0);
+		__dprintf("error: loading file: %s\n", shebang_argv0);
 		return ret;
 	}
 
@@ -2398,8 +2398,12 @@ int main(int argc, char **argv)
 	__dprintf("mcoverlay disable\n");
 #endif // ENABLE_MCOVERLAYFS
 
-	if (load_elf_desc_shebang(argv[optind], &desc, &shebang_argv))
+	if ((ret = load_elf_desc_shebang(argv[optind], &desc,
+					 &shebang_argv))) {
+		fprintf(stderr, "%s: could not load program: %s\n",
+			argv[optind], strerror(ret));
 		return 1;
+	}
 
 #ifdef ADD_ENVS_OPTION
 	/* Collect environment variables */
