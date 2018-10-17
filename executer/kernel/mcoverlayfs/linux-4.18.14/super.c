@@ -24,6 +24,7 @@ MODULE_AUTHOR("Miklos Szeredi <miklos@szeredi.hu>");
 MODULE_DESCRIPTION("Overlay filesystem");
 MODULE_LICENSE("GPL");
 
+#define MCOVERLAYFS_SUPER_MAGIC 0x4d634f56
 
 struct ovl_dir_cache;
 
@@ -315,7 +316,7 @@ static int ovl_statfs(struct dentry *dentry, struct kstatfs *buf)
 	err = vfs_statfs(&path, buf);
 	if (!err) {
 		buf->f_namelen = ofs->namelen;
-		buf->f_type = OVERLAYFS_SUPER_MAGIC;
+		buf->f_type = MCOVERLAYFS_SUPER_MAGIC;
 	}
 
 	return err;
@@ -413,6 +414,8 @@ enum {
 	OPT_XINO_ON,
 	OPT_XINO_OFF,
 	OPT_XINO_AUTO,
+	OPT_NOCOPYUPW,
+	OPT_NOFSCHECK,
 	OPT_ERR,
 };
 
@@ -429,6 +432,8 @@ static const match_table_t ovl_tokens = {
 	{OPT_XINO_ON,			"xino=on"},
 	{OPT_XINO_OFF,			"xino=off"},
 	{OPT_XINO_AUTO,			"xino=auto"},
+	{OPT_NOCOPYUPW,			"nocopyupw"},
+	{OPT_NOFSCHECK,			"nofscheck"},
 	{OPT_ERR,			NULL}
 };
 
@@ -553,6 +558,11 @@ static int ovl_parse_opt(char *opt, struct ovl_config *config)
 
 		case OPT_XINO_AUTO:
 			config->xino = OVL_XINO_AUTO;
+			break;
+
+		case OPT_NOCOPYUPW:
+		case OPT_NOFSCHECK:
+			/* compat */
 			break;
 
 		default:
@@ -1319,7 +1329,7 @@ static struct ovl_entry *ovl_get_lowerstack(struct super_block *sb,
 
 	err = -EINVAL;
 	sb->s_stack_depth++;
-	if (sb->s_stack_depth > FILESYSTEM_MAX_STACK_DEPTH) {
+	if (sb->s_stack_depth > /* NOFSCHECK */ 3) {
 		pr_err("overlayfs: maximum fs stacking depth exceeded\n");
 		goto out_err;
 	}
@@ -1453,7 +1463,7 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 	/* Never override disk quota limits or use reserved space */
 	cap_lower(cred->cap_effective, CAP_SYS_RESOURCE);
 
-	sb->s_magic = OVERLAYFS_SUPER_MAGIC;
+	sb->s_magic = MCOVERLAYFS_SUPER_MAGIC;
 	sb->s_op = &ovl_super_operations;
 	sb->s_xattr = ovl_xattr_handlers;
 	sb->s_fs_info = ofs;
@@ -1501,11 +1511,11 @@ static struct dentry *ovl_mount(struct file_system_type *fs_type, int flags,
 
 static struct file_system_type ovl_fs_type = {
 	.owner		= THIS_MODULE,
-	.name		= "overlay",
+	.name		= "mcoverlay",
 	.mount		= ovl_mount,
 	.kill_sb	= kill_anon_super,
 };
-MODULE_ALIAS_FS("overlay");
+MODULE_ALIAS_FS("mcoverlay");
 
 static void ovl_inode_init_once(void *foo)
 {

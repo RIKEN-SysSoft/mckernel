@@ -100,6 +100,9 @@ retry:
 			size = vfs_getxattr(old, name, NULL, 0);
 
 		if (size < 0) {
+			/* NOFSCHECK */
+			continue;
+
 			error = size;
 			break;
 		}
