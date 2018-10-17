@@ -8619,7 +8619,7 @@ SYSCALL_DECLARE(mbind)
 						error = vm_policy_insert(vm, range_policy);
 						if (error) {
 							kprintf("%s: ERROR: could not insert range: %d\n",__FUNCTION__, error);
-							return error;
+							goto unlock_out;
 						}
 					}
 					else {
@@ -8645,7 +8645,7 @@ SYSCALL_DECLARE(mbind)
 			error = vm_policy_insert(vm, range_policy);
 			if (error) {
 				kprintf("%s: ERROR: could not insert range: %d\n",__FUNCTION__, error);
-				return error;
+				goto unlock_out;
 			}
 
 mbind_update_only:
@@ -8665,7 +8665,7 @@ mbind_update_only:
 
 		default:
 			error = -EINVAL;
-			goto out;
+			goto unlock_out;
 	}
 
 	error = 0;
