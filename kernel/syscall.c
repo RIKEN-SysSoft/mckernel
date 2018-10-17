@@ -8706,6 +8706,11 @@ SYSCALL_DECLARE(set_mempolicy)
 		}
 	}
 
+	if ((mode & MPOL_F_STATIC_NODES) &&
+	    (mode & MPOL_F_RELATIVE_NODES)) {
+		error = -EINVAL;
+		goto out;
+	}
 	mode &= ~MPOL_MODE_FLAGS;
 
 	switch (mode) {
