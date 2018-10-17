@@ -18,6 +18,9 @@ endif
 ifeq ($(BUILD_MODULE),none)
 BUILD_MODULE=$(shell if [ ${LINUX_VERSION_CODE} -ge 263680 -a ${LINUX_VERSION_CODE} -lt 263936 ]; then echo "linux-4.6.7"; else echo "none"; fi)
 endif
+ifeq ($(BUILD_MODULE),none)
+BUILD_MODULE=$(shell if [ ${LINUX_VERSION_CODE} -ge 266752 ]; then echo "linux-4.18.4"; else echo "none"; fi)
+endif
 endif
 ifeq ($(BUILD_MODULE_TMP),rhel)
 ifeq ($(BUILD_MODULE),none)
