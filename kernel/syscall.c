@@ -9581,6 +9581,7 @@ set_cputime(int mode)
 	unsigned long tsc;	
 	struct cpu_local_var *v;
 	struct ihk_os_cpu_monitor *monitor;
+	unsigned long irq_flags = 0;
 
 	if(clv == NULL)
 		return;
@@ -9604,7 +9605,7 @@ set_cputime(int mode)
 		return;
 	}
 
-	cpu_disable_interrupt();
+	irq_flags = cpu_disable_interrupt_save();
 	tsc = rdtsc();
 	if(thread->base_tsc != 0){
 		unsigned long dtsc = tsc - thread->base_tsc;
@@ -9685,7 +9686,7 @@ set_cputime(int mode)
 			}
 		}
 	}
-	cpu_enable_interrupt();
+	cpu_restore_interrupt(irq_flags);
 }
 
 long syscall(int num, ihk_mc_user_context_t *ctx)
