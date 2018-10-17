@@ -22,6 +22,9 @@ int ovl_setattr(struct dentry *dentry, struct iattr *attr)
 	struct dentry *upperdentry;
 	const struct cred *old_cred;
 
+	/* NOCOPYUPW */
+	return 0;
+
 	/*
 	 * Check for permissions before trying to copy-up.  This is redundant
 	 * since it will be rechecked later by ->setattr() on upper dentry.  But
@@ -277,6 +280,9 @@ int ovl_xattr_set(struct dentry *dentry, struct inode *inode, const char *name,
 	struct dentry *realdentry = upperdentry ?: ovl_dentry_lower(dentry);
 	const struct cred *old_cred;
 
+	/* NOCOPYUPW */
+	return 0;
+
 	err = ovl_want_write(dentry);
 	if (err)
 		goto out;
@@ -404,6 +410,9 @@ static bool ovl_open_need_copy_up(struct dentry *dentry, int flags)
 int ovl_open_maybe_copy_up(struct dentry *dentry, unsigned int file_flags)
 {
 	int err = 0;
+
+	/* NOCOPYUPW */
+	return err;
 
 	if (ovl_open_need_copy_up(dentry, file_flags)) {
 		err = ovl_want_write(dentry);

@@ -115,6 +115,8 @@ bool ovl_dentry_remote(struct dentry *dentry)
 
 bool ovl_dentry_weird(struct dentry *dentry)
 {
+	/* NOFSCHECK */
+	return false;
 	return dentry->d_flags & (DCACHE_NEED_AUTOMOUNT |
 				  DCACHE_MANAGE_TRANSIT |
 				  DCACHE_OP_HASH |
