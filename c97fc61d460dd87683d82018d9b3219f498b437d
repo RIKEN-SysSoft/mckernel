@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3191869a_415f1463",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-10-18T01:09:14Z",
+      "side": 1,
+      "message": "Please describe briefly why it is a problem when interrupts are enabled here (I agree on principle)",
+      "revId": "c97fc61d460dd87683d82018d9b3219f498b437d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
