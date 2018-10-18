@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "e2b018cd_8685c1a6",
+        "filename": "arch/x86_64/tools/mcreboot-smp-x86.sh.in",
+        "patchSetId": 3
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-10-18T04:08:16Z",
+      "side": 1,
+      "message": "Actually sorry! But let\u0027s not check this because it can be disabled at runtime with setenforce 0 without changing the file\n\nYou can check with the getenforce command instead, that will save parsing. If command exists and getenforce \u003d\u003d Enforcing error",
+      "revId": "ff7b4704718821c47aa6c2e1c04e2a62ac06d397",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
