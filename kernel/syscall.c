@@ -4839,11 +4839,11 @@ SYSCALL_DECLARE(madvise)
 	default:
 	case MADV_MERGEABLE:
 	case MADV_UNMERGEABLE:
-	case MADV_HUGEPAGE:
 	case MADV_NOHUGEPAGE:
 		error = -EINVAL;
 		break;
 
+	case MADV_HUGEPAGE:
 	case MADV_NORMAL:
 	case MADV_RANDOM:
 	case MADV_SEQUENTIAL:
