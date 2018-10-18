@@ -16,6 +16,23 @@
       "revId": "c97fc61d460dd87683d82018d9b3219f498b437d",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fd6894c1_a7840c75",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-10-18T04:13:02Z",
+      "side": 1,
+      "message": "Sorry I did not read the code properly, would suggest rewording the commit message instead, something like: \"Do not enable interrupts when exiting set_cputime inconditionally\" or similar",
+      "revId": "c97fc61d460dd87683d82018d9b3219f498b437d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
     }
   ]
 }
