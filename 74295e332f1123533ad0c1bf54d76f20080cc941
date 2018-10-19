@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "eea5158b_50ab097e",
+        "filename": "kernel/host.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 715,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-19T01:10:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tret \u003d ihk_mc_perfctr_init_raw(pcd-\u003etarget_cntr, pcd-\u003econfig, mode);",
+      "revId": "74295e332f1123533ad0c1bf54d76f20080cc941",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
