@@ -241,10 +241,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	 * mcexec_ret_syscall(), for the rest, free it here.
 	 */
 	if (msg != SCD_MSG_SYSCALL_ONESIDE) {
-		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)__packet,
-				(usrdata->ikc2linux[smp_processor_id()] ?
-				 usrdata->ikc2linux[smp_processor_id()] :
-				 usrdata->ikc2linux[0]));
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)__packet);
 	}
 	return 0;
 }
@@ -253,7 +250,7 @@ static int dummy_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *__os)
 {
 	kprintf("%s: WARNING: packet received\n", __FUNCTION__);
-	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)__packet, c);
+	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)__packet);
 	return 0;
 }
 
