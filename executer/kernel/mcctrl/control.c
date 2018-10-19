@@ -1132,11 +1132,7 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 			dprintk("%s: calling __return_syscall (hash),target pid=%d,tid=%d\n", __FUNCTION__, ppd->pid, packet->req.rtid);
 			__return_syscall(ppd->ud->os, packet, -ERESTARTSYS,
 					 packet->req.rtid);
-			ihk_ikc_release_packet(
-					(struct ihk_ikc_free_packet *)packet,
-					(ppd->ud->ikc2linux[smp_processor_id()] ?
-					 ppd->ud->ikc2linux[smp_processor_id()] :
-					 ppd->ud->ikc2linux[0]));
+			ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet);
 
 			/* Note that uti ptd needs another put by mcexec_terminate_thread()
 			   (see mcexec_syscall_wait()).
@@ -1160,10 +1156,7 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 		 * process is gone and the application should be terminated */
 		__return_syscall(ppd->ud->os, packet, -ERESTARTSYS,
 				packet->req.rtid);
-		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-				(ppd->ud->ikc2linux[smp_processor_id()] ?
-				 ppd->ud->ikc2linux[smp_processor_id()] :
-				 ppd->ud->ikc2linux[0]));
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet);
 	}
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, flags);
 
@@ -1188,10 +1181,7 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 	/* Handle requests that do not need the proxy process right now */
 	ret = __do_in_kernel_irq_syscall(ud->os, packet);
 	if (ret != -ENOSYS) {
-		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-				       (ud->ikc2linux[smp_processor_id()] ?
-					ud->ikc2linux[smp_processor_id()] :
-					ud->ikc2linux[0]));
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet);
 		return ret;
 	}
 
@@ -1207,10 +1197,7 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 		 * process is gone and the application should be terminated */
 		__return_syscall(ud->os, packet, -ERESTARTSYS,
 				packet->req.rtid);
-		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-				(ud->ikc2linux[smp_processor_id()] ?
-				 ud->ikc2linux[smp_processor_id()] :
-				 ud->ikc2linux[0]));
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet);
 
 		return -1;
 	}
@@ -1418,10 +1405,7 @@ retry_alloc:
 				task_tgid_vnr(current),
 				task_pid_vnr(current),
 				packet->req.number);
-		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-				(usrdata->ikc2linux[smp_processor_id()] ?
-				 usrdata->ikc2linux[smp_processor_id()] :
-				 usrdata->ikc2linux[0]));
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet);
 		goto retry;
 	}
 
@@ -1649,10 +1633,7 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 	error = 0;
 out:
 	/* Free packet */
-	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-			(usrdata->ikc2linux[smp_processor_id()] ?
-			 usrdata->ikc2linux[smp_processor_id()] :
-			 usrdata->ikc2linux[0]));
+	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet);
  put_ppd_out:
 	/* Drop a reference for this function */
 	mcctrl_put_per_thread_data(ptd);
@@ -2568,10 +2549,7 @@ static long mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long c
 		goto no_ptd;
 	}
 	__return_syscall(usrdata->os, packet, code, tid);
-	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-						   (usrdata->ikc2linux[smp_processor_id()] ?
-							usrdata->ikc2linux[smp_processor_id()] :
-							usrdata->ikc2linux[0]));
+	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet);
 
 	/* Drop reference for this function */
 	mcctrl_put_per_thread_data(ptd);

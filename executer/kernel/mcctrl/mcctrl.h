@@ -128,6 +128,7 @@ struct uti_futex_resp {
 };
 
 struct ikc_scd_packet {
+	struct ihk_ikc_packet_header header;
 	int msg;
 	int err;
 	void *reply;
@@ -172,7 +173,7 @@ struct ikc_scd_packet {
 			int *spin_sleep; /* 1: waiting in linux_wait_event() 0: woken up by someone else */
 		} futex;
 	};
-	char padding[8];
+	/* char padding[8]; */ /* We want the size to be 128 bytes */
 };
 
 

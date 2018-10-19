@@ -765,7 +765,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 
 	}
 
-	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet, c);
+	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet);
 	return ret;
 }
 
@@ -773,7 +773,7 @@ static int dummy_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *__os)
 {
 	struct ikc_scd_packet *packet = __packet;
-	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet, c);
+	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet);
 	return 0;
 }
 

@@ -514,10 +514,7 @@ retry_alloc:
 out:
 	/* Release packet sent from McKernel */
 	if (free_packet) {
-		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)free_packet,
-							   (usrdata->ikc2linux[smp_processor_id()] ?
-								usrdata->ikc2linux[smp_processor_id()] :
-								usrdata->ikc2linux[0]));
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)free_packet);
 	}
 	ihk_device_unmap_virtual(ihk_os_to_dev(usrdata->os), resp, sizeof(*resp));
 	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
@@ -744,10 +741,7 @@ retry_alloc:
 out:
 	/* Release remote page-fault response packet */
 	if (free_packet) {
-		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)free_packet,
-							   (usrdata->ikc2linux[smp_processor_id()] ?
-								usrdata->ikc2linux[smp_processor_id()] :
-								usrdata->ikc2linux[0]));
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)free_packet);
 	}
 
 	ihk_device_unmap_virtual(ihk_os_to_dev(usrdata->os), resp, sizeof(*resp));
@@ -2277,7 +2271,6 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 	struct syscall_request *sc = &packet->req;
 	int error;
 	long ret = -1;
-	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 
 	dprintk("%s: system call: %lx\n", __FUNCTION__, sc->args[0]);
 	switch (sc->number) {
@@ -2376,10 +2369,7 @@ sched_setparam_out:
 	}
 
 	__return_syscall(os, packet, ret, 0);
-	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-			       (usrdata->ikc2linux[smp_processor_id()] ?
-				usrdata->ikc2linux[smp_processor_id()] :
-				usrdata->ikc2linux[0]));
+	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet);
 
 	error = 0;
 out:
