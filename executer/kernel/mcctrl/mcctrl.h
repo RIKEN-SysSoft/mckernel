@@ -128,6 +128,7 @@ struct uti_futex_resp {
 };
 
 struct ikc_scd_packet {
+	struct ihk_ikc_packet_header header;
 	int msg;
 	int err;
 	void *reply;

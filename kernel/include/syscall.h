@@ -17,6 +17,7 @@
 #include <ihk/atomic.h>
 #include <ihk/context.h>
 #include <ihk/memconst.h>
+#include <ihk/ikc.h>
 #include <rlimit.h>
 #include <time.h>
 
@@ -242,6 +243,7 @@ enum mcctrl_os_cpu_operation {
 };
 
 struct ikc_scd_packet {
+	struct ihk_ikc_packet_header header;
 	int msg;
 	int err;
 	void *reply;
