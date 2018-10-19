@@ -128,6 +128,7 @@ struct uti_futex_resp {
 };
 
 struct ikc_scd_packet {
+	struct ihk_ikc_channel_desc *channel; /* Inherited field */
 	int msg;
 	int err;
 	void *reply;

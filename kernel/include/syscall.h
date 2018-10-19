@@ -242,6 +242,7 @@ enum mcctrl_os_cpu_operation {
 };
 
 struct ikc_scd_packet {
+	struct ihk_ikc_channel_desc *channel; /* Inherited field */
 	int msg;
 	int err;
 	void *reply;
