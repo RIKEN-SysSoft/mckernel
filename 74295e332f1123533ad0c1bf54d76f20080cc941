@@ -2,6 +2,46 @@
   "comments": [
     {
       "key": {
+        "uuid": "0c63414d_d39c3c73",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2196,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-10-22T01:26:10Z",
+      "side": 1,
+      "message": "(style nitpick) usually not tabs between variable and assignment",
+      "range": {
+        "startLine": 2196,
+        "startChar": 24,
+        "endLine": 2196,
+        "endChar": 25
+      },
+      "revId": "74295e332f1123533ad0c1bf54d76f20080cc941",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "32e68ca1_df18b441",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2300,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-10-22T01:26:10Z",
+      "side": 1,
+      "message": "Comment I posted here for patchset 1 still holds: I find checking for need_free here confusing with the unconditional free below.\nPlease either remove the check (it\u0027s not needed) or make the last kfree conditional like this.",
+      "revId": "74295e332f1123533ad0c1bf54d76f20080cc941",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "eea5158b_50ab097e",
         "filename": "kernel/host.c",
         "patchSetId": 4
