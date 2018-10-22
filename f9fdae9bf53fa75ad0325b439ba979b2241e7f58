@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "2a366107_dd3961df",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-10-22T13:22:59Z",
+      "side": 1,
+      "message": "s/HUDGEPAGE/HUGEPAGE/ typo still present",
+      "revId": "f9fdae9bf53fa75ad0325b439ba979b2241e7f58",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
