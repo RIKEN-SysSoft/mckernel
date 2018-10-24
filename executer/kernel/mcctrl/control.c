@@ -2266,7 +2266,7 @@ long mcctrl_perf_enable(ihk_os_t os)
 	int need_free;
 
 	for (i = 0; i < usrdata->perf_event_num; i++) {
-		cntr_mask |= 1 << i;
+		cntr_mask |= 1UL << i;
 	}
 	perf_desc = kmalloc(sizeof(struct mcctrl_perf_ctrl_desc), GFP_KERNEL);
 	if (!perf_desc) {
