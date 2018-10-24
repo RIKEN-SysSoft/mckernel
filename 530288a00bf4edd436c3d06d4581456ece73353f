@@ -50,6 +50,23 @@
       "revId": "530288a00bf4edd436c3d06d4581456ece73353f",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3ecf259b_dfda6d48",
+        "filename": "kernel/include/syscall.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 291,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-10-24T09:03:51Z",
+      "side": 1,
+      "message": "Since we\u0027re copying the header, please do remove the padding now :)",
+      "revId": "530288a00bf4edd436c3d06d4581456ece73353f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
