@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "a184f2b6_b7eac23e",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1135,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-24T03:40:26Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet);",
+      "revId": "530288a00bf4edd436c3d06d4581456ece73353f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bef21d10_ad4d206f",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 517,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-24T03:40:26Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tihk_ikc_release_packet((struct ihk_ikc_free_packet *)free_packet);",
+      "revId": "530288a00bf4edd436c3d06d4581456ece73353f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "17a8818c_bb97a743",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 744,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-24T03:40:26Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tihk_ikc_release_packet((struct ihk_ikc_free_packet *)free_packet);",
+      "revId": "530288a00bf4edd436c3d06d4581456ece73353f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
