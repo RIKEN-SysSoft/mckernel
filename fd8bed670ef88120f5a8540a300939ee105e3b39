@@ -22,6 +22,30 @@
       "revId": "fd8bed670ef88120f5a8540a300939ee105e3b39",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "dac7b06c_ffaf240c",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 2269,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-10-24T06:50:19Z",
+      "side": 1,
+      "message": "Sorry, I pushed the patch as https://review.gerrithub.io/c/RIKEN-SysSoft/mckernel/+/430527",
+      "parentUuid": "6f7b275d_f197da96",
+      "range": {
+        "startLine": 2269,
+        "startChar": 15,
+        "endLine": 2269,
+        "endChar": 17
+      },
+      "revId": "fd8bed670ef88120f5a8540a300939ee105e3b39",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
     }
   ]
 }
