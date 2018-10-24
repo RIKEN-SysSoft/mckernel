@@ -565,6 +565,7 @@ AC_CONFIG_FILES([
 	kernel/Makefile
 	kernel/Makefile.build
 	kernel/include/swapfmt.h
+	kernel/include/version.h
 	arch/x86_64/tools/mcreboot-attached-mic.sh
 	arch/x86_64/tools/mcshutdown-attached-mic.sh
 	arch/x86_64/tools/mcreboot-builtin-x86.sh

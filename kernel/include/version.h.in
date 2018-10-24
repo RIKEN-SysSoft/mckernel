@@ -1,0 +1,10 @@
+/*
+ * \file version.h
+ *  License details are found in the file LICENSE.
+ * \brief
+ *	McKernel version strings
+ */
+
+#define IHK_VERSION "@IHK_VERSION@"
+#define MCKERNEL_VERSION "@MCKERNEL_VERSION@"
+

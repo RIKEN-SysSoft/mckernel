@@ -26,6 +26,7 @@
 #include <mman.h>
 #include <bitmap.h>
 #include <init.h>
+#include <version.h>
 
 //#define DEBUG_PRINT_PROCFS
 
@@ -308,6 +309,14 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 		if(vm)
 			hold_process_vm(vm);
 		process_unlock(proc, &lock);
+	}
+	else if (!strcmp(p, "mckernel")) {
+		ans = snprintf(buf, count, "%s\n", MCKERNEL_VERSION);
+
+		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0)
+			goto err;
+		ans = 0;
+		goto end;
 	}
 	else if (!strcmp(p, "stat")) {	/* "/proc/stat" */
 		extern int num_processors;	/* kernel/ap.c */
