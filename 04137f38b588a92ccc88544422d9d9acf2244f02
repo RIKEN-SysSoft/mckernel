@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "813e9caf_fb731351",
+        "filename": "executer/kernel/mcctrl/procfs.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1140,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-24T04:23:05Z",
+      "side": 1,
+      "message": "WARNING: Symbolic permissions \u0027S_IRUGO\u0027 are not preferred. Consider using octal permissions \u00270444\u0027.\n+\tPROC_REG(\"mckernel\",   S_IRUGO, \u0026mckernel_buff_io),",
+      "revId": "04137f38b588a92ccc88544422d9d9acf2244f02",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
