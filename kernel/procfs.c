@@ -309,6 +309,15 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 			hold_process_vm(vm);
 		process_unlock(proc, &lock);
 	}
+	else if (!strcmp(p, "mckernel")) {
+		ans = snprintf(buf, count, "%s-%s\n",
+				MCKERNEL_VERSION, BUILDID);
+
+		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0)
+			goto err;
+		ans = 0;
+		goto end;
+	}
 	else if (!strcmp(p, "stat")) {	/* "/proc/stat" */
 		extern int num_processors;	/* kernel/ap.c */
 		int cpu;
