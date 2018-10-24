@@ -504,6 +504,9 @@ fi
 AC_DEFINE_UNQUOTED(BINDIR,"$BINDIR",[Path of install directory for binary])
 AC_DEFINE_UNQUOTED(SBINDIR,"$SBINDIR",[Path of install directory for system binary])
 
+AC_DEFINE_UNQUOTED(IHK_VERSION,"$IHK_VERSION",[IHK version string])
+AC_DEFINE_UNQUOTED(MCKERNEL_VERSION,"$MCKERNEL_VERSION",[McKernel version string])
+
 ABS_SRCDIR=$( cd $( dirname $0 ); pwd )
 IHK_ABS_SRCDIR=${ABS_SRCDIR}/../ihk
 BUILDID=$( cd $IHK_ABS_SRCDIR; if @<:@ ! -d .git @:>@; then echo $IHK_VERSION; else bash -c 'git rev-list -1 HEAD | cut -c1-8'; fi )
