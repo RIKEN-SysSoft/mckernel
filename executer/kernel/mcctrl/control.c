@@ -2305,9 +2305,9 @@ long mcctrl_perf_enable(ihk_os_t os)
 
 	for (i = 0; i < usrdata->perf_event_num; i++) {
 #ifdef POSTK_DEBUG_ARCH_DEP_86 /* make perf counter start id architecture dependent */
-		cntr_mask |= 1 << (i + ARCH_PERF_CONTER_START);
+		cntr_mask |= 1UL << (i + ARCH_PERF_CONTER_START);
 #else /* POSTK_DEBUG_ARCH_DEP_86 */
-		cntr_mask |= 1 << i;
+		cntr_mask |= 1UL << i;
 #endif /* POSTK_DEBUG_ARCH_DEP_86 */
 	}
 	perf_desc = kmalloc(sizeof(struct mcctrl_perf_ctrl_desc), GFP_KERNEL);
