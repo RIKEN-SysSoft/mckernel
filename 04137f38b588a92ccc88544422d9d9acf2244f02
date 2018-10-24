@@ -2,6 +2,23 @@
   "comments": [
     {
       "key": {
+        "uuid": "29559402_8d36574e",
+        "filename": "configure.ac",
+        "patchSetId": 3
+      },
+      "lineNbr": 508,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-10-24T04:33:29Z",
+      "side": 1,
+      "message": "It\u0027s really a bad practice to use AC_DEFINE_UNQUOTED and quote ourselves (especially for paths I see just above, what if my install prefix contains a double-quote?), but I\u0027ll let this slide as we\u0027ve never been so close to moving to cmake... :P",
+      "revId": "04137f38b588a92ccc88544422d9d9acf2244f02",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "813e9caf_fb731351",
         "filename": "executer/kernel/mcctrl/procfs.c",
         "patchSetId": 3
@@ -16,6 +33,41 @@
       "revId": "04137f38b588a92ccc88544422d9d9acf2244f02",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c8b79d50_9cc158fc",
+        "filename": "executer/kernel/mcctrl/procfs.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1140,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-10-24T04:33:29Z",
+      "side": 1,
+      "message": "All of these have been changed for uncommented proc files, let\u0027s stick to this (sorry)",
+      "parentUuid": "813e9caf_fb731351",
+      "revId": "04137f38b588a92ccc88544422d9d9acf2244f02",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "dcabfc12_97b95915",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 314,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-10-24T04:33:29Z",
+      "side": 1,
+      "message": "I might pass on adding IHK_VERSION on the cmake side if you\u0027re not using it... :)",
+      "revId": "04137f38b588a92ccc88544422d9d9acf2244f02",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
