@@ -4837,6 +4837,17 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
+
+cat >>confdefs.h <<_ACEOF
+#define IHK_VERSION "$IHK_VERSION"
+_ACEOF
+
+
+cat >>confdefs.h <<_ACEOF
+#define MCKERNEL_VERSION "$MCKERNEL_VERSION"
+_ACEOF
+
+
 ABS_SRCDIR=$( cd $( dirname $0 ); pwd )
 IHK_ABS_SRCDIR=${ABS_SRCDIR}/../ihk
 BUILDID=$( cd $IHK_ABS_SRCDIR; if [ ! -d .git ]; then echo $IHK_VERSION; else bash -c 'git rev-list -1 HEAD | cut -c1-8'; fi )

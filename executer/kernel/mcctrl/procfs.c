@@ -1138,5 +1138,6 @@ static const struct procfs_entry base_entry_stuff[] = {
 //	PROC_REG("vmallocinfo",S_IRUSR, NULL),
 //	PROC_REG("vmstat",     S_IRUGO, NULL),
 //	PROC_REG("zoneinfo",   S_IRUGO, NULL),
+	PROC_REG("mckernel",   S_IRUGO, &mckernel_buff_io),
 	PROC_TERM
 };
