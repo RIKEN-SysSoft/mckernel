@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "46085017_badba445",
+        "filename": "executer/kernel/mcctrl/procfs.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1140,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-24T04:21:14Z",
+      "side": 1,
+      "message": "WARNING: Symbolic permissions \u0027S_IRUGO\u0027 are not preferred. Consider using octal permissions \u00270444\u0027.\n+\tPROC_REG(\"mckernel\",   S_IRUGO, \u0026mckernel_buff_io),",
+      "revId": "db879a63072a34f4598c06ab41031e5c674f8c05",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "83453d81_1bf59678",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 313,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-24T04:21:14Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tans \u003d snprintf(buf, count, \"%s-%s\\n\", MCKERNEL_VERSION, BUILDID);",
+      "revId": "db879a63072a34f4598c06ab41031e5c674f8c05",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
