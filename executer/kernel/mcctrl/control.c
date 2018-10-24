@@ -2155,6 +2155,9 @@ struct mcctrl_perf_ctrl_desc {
 #define wakeup_desc_of_perf_desc(_desc) \
 	(&container_of((_desc), struct mcctrl_perf_ctrl_desc, desc)->wakeup)
 
+/* Note that usrdata->perf_event_num is updated with # of registered
+ * events
+ */
 long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 {
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
@@ -2165,10 +2168,8 @@ long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 	int ret = 0;
 	int i = 0, j = 0;
 	int need_free;
-#ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
-	int register_event = 0;
+	int num_registered = 0;
 	int err = 0;
-#endif /* POSTK_DEBUG_TEMP_FIX_80 */
 
 	for (i = 0; i < usrdata->perf_event_num; i++) {
 		ret = copy_from_user(&attr, &arg[i],
@@ -2187,9 +2188,7 @@ long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 		memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
 
 		perf_desc->ctrl_type = PERF_CTRL_SET;
-#ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
 		perf_desc->err = 0;
-#endif /* POSTK_DEBUG_TEMP_FIX_80 */
 #ifdef POSTK_DEBUG_ARCH_DEP_86 /* make perf counter start id architecture dependent */
 		perf_desc->target_cntr = i + ARCH_PERF_CONTER_START;
 #else /* POSTK_DEBUG_ARCH_DEP_86 */
@@ -2216,27 +2215,21 @@ long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 				return ret;
 			}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
 			err = perf_desc->err;
 			if (err != 0) {
 				break;
 			}
-#endif /* POSTK_DEBUG_TEMP_FIX_80 */
 		}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
 		if (err == 0) {
-			register_event++;
+			num_registered++;
 		}
-#endif /* POSTK_DEBUG_TEMP_FIX_80 */
 		kfree(perf_desc);
 	}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
-	return register_event;
-#else /* POSTK_DEBUG_TEMP_FIX_80 */
-	return usrdata->perf_event_num;
-#endif /* POSTK_DEBUG_TEMP_FIX_80 */
+	usrdata->perf_event_num = num_registered;
+
+	return num_registered;
 }
 
 long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
@@ -2259,9 +2252,7 @@ long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
 		memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
 
 		perf_desc->ctrl_type = PERF_CTRL_GET;
-#ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
 		perf_desc->err = 0;
-#endif /* POSTK_DEBUG_TEMP_FIX_80 */
 #ifdef POSTK_DEBUG_ARCH_DEP_86 /* make perf counter start id architecture dependent */
 		perf_desc->target_cntr = i + ARCH_PERF_CONTER_START;
 #else /* POSTK_DEBUG_ARCH_DEP_86 */
@@ -2285,13 +2276,9 @@ long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
 				return ret;
 			}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
 			if (perf_desc->err == 0) {
 				value_sum += perf_desc->read_value;
 			}
-#else /* POSTK_DEBUG_TEMP_FIX_80 */
-			value_sum += perf_desc->read_value;
-#endif /* POSTK_DEBUG_TEMP_FIX_80 */
 		}
 		kfree(perf_desc);
 		if (copy_to_user(&arg[i], &value_sum, sizeof(unsigned long))) {
@@ -2311,11 +2298,7 @@ long mcctrl_perf_enable(ihk_os_t os)
 	struct ikc_scd_packet isp;
 	struct perf_ctrl_desc *perf_desc;
 	struct ihk_cpu_info *info = ihk_os_get_cpu_info(os);
-#ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
 	unsigned long cntr_mask = 0;
-#else /* POSTK_DEBUG_TEMP_FIX_80 */
-	unsigned int cntr_mask = 0;
-#endif /* POSTK_DEBUG_TEMP_FIX_80 */
 	int ret = 0;
 	int i = 0, j = 0;
 	int need_free;
@@ -2334,9 +2317,7 @@ long mcctrl_perf_enable(ihk_os_t os)
 	memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
 
 	perf_desc->ctrl_type = PERF_CTRL_ENABLE;
-#ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
 	perf_desc->err = 0;
-#endif /* POSTK_DEBUG_TEMP_FIX_80 */
 	perf_desc->target_cntr_mask = cntr_mask;
 
 	memset(&isp, '\0', sizeof(struct ikc_scd_packet));
@@ -2356,14 +2337,11 @@ long mcctrl_perf_enable(ihk_os_t os)
 			return -EINVAL;
 		}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
 		if (perf_desc->err < 0) {
 			ret = perf_desc->err;
-			if (need_free)
-				kfree(perf_desc);
+			kfree(perf_desc);
 			return ret;
 		}
-#endif /* POSTK_DEBUG_TEMP_FIX_80 */
 	}
 	kfree(perf_desc);
 
@@ -2376,20 +2354,16 @@ long mcctrl_perf_disable(ihk_os_t os)
 	struct ikc_scd_packet isp;
 	struct perf_ctrl_desc *perf_desc;
 	struct ihk_cpu_info *info = ihk_os_get_cpu_info(os);
-	unsigned int cntr_mask = 0;
+	unsigned long cntr_mask = 0;
 	int ret = 0;
 	int i = 0, j = 0;
 	int need_free;
 
 	for (i = 0; i < usrdata->perf_event_num; i++) {
 #ifdef POSTK_DEBUG_ARCH_DEP_86 /* make perf counter start id architecture dependent */
-#ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
 		cntr_mask |= 1UL << (i + ARCH_PERF_CONTER_START);
-#else /* POSTK_DEBUG_TEMP_FIX_80 */
-		cntr_mask |= 1 << (i + ARCH_PERF_CONTER_START);
-#endif /* POSTK_DEBUG_TEMP_FIX_80 */
 #else /* POSTK_DEBUG_ARCH_DEP_86 */
-		cntr_mask |= 1 << i;
+		cntr_mask |= 1UL << i;
 #endif /* POSTK_DEBUG_ARCH_DEP_86 */
 	}
 	perf_desc = kmalloc(sizeof(struct mcctrl_perf_ctrl_desc), GFP_KERNEL);
@@ -2399,9 +2373,7 @@ long mcctrl_perf_disable(ihk_os_t os)
 	memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
 
 	perf_desc->ctrl_type = PERF_CTRL_DISABLE;
-#ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
 	perf_desc->err = 0;
-#endif /* POSTK_DEBUG_TEMP_FIX_80 */
 	perf_desc->target_cntr_mask = cntr_mask;
 
 	memset(&isp, '\0', sizeof(struct ikc_scd_packet));
@@ -2420,14 +2392,11 @@ long mcctrl_perf_disable(ihk_os_t os)
 			return -EINVAL;
 		}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_80 /* ihk_os_setperfevent return value fix. */
 		if (perf_desc->err < 0) {
 			ret = perf_desc->err;
-			if (need_free)
-				kfree(perf_desc);
+			kfree(perf_desc);
 			return ret;
 		}
-#endif /* POSTK_DEBUG_TEMP_FIX_80 */
 	}
 	kfree(perf_desc);
 
