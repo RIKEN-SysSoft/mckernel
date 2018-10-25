@@ -634,7 +634,6 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 	pli_next = NULL;
 	/* Add ourself to the list in order of start time */
 	list_for_each_entry(pli_iter, &pe->pli_list, list) {
-#ifdef POSTK_DEBUG_ARCH_DEP_74 /* Fix HOST-Linux version dependent code (task_struct.start_time) */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)
 		if (pli_iter->task->start_time > current->start_time) {
 			pli_next = pli_iter;
@@ -651,17 +650,6 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 			break;
 		}
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0) */
-#else /* POSTK_DEBUG_ARCH_DEP_74 */
-		if ((pli_iter->task->start_time.tv_sec >
-					current->start_time.tv_sec) ||
-				((pli_iter->task->start_time.tv_sec ==
-				  current->start_time.tv_sec) &&
-				 ((pli_iter->task->start_time.tv_nsec >
-				   current->start_time.tv_nsec)))) {
-			pli_next = pli_iter;
-			break;
-		}
-#endif /* POSTK_DEBUG_ARCH_DEP_74 */
 	}
 
 	/* Add in front of next */
