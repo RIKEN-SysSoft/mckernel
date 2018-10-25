@@ -263,7 +263,6 @@ if [ ${go} -eq 1 ]; then
 	if [ $interactive -eq 0 ]; then
 	    . ${opt_dir}/compilers_and_libraries_2018.2.199/linux/bin/compilervars.sh intel64
 	fi
-	rm ./$exe
 	make $makeopt ./$exe
 	PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes \
 	    /usr/sbin/pidof $exe \| xargs -r sudo kill -9

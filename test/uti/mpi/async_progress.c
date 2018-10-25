@@ -149,6 +149,7 @@ init:
 			pr_err("%s: error: MPI_Iprobe: %d\n", __func__, ret);
 			break;
 		}
+		//sched_yield();
 		//usleep(1);
 	}
 
