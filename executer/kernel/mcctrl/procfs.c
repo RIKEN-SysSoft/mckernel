@@ -19,6 +19,7 @@
 #include <linux/fs.h>
 #include <linux/resource.h>
 #include <linux/interrupt.h>
+#include <linux/cred.h>
 #include "mcctrl.h"
 #include <linux/version.h>
 #include <linux/semaphore.h>
