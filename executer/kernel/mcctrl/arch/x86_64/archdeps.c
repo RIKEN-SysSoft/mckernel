@@ -15,7 +15,7 @@
 #endif /* POSTK_DEBUG_ARCH_DEP_83 */
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
-static struct vdso_image *vdso_image_64;
+static struct vdso_image *_vdso_image_64;
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 23)
 static void *vdso_start;
 static void *vdso_end;
@@ -28,8 +28,8 @@ static void **hv_clock;
 int arch_symbols_init(void)
 {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
-	vdso_image_64 = (void *) kallsyms_lookup_name("vdso_image_64");
-	if (WARN_ON(!vdso_image_64))
+	_vdso_image_64 = (void *) kallsyms_lookup_name("vdso_image_64");
+	if (WARN_ON(!_vdso_image_64))
 		return -EFAULT;
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 23)
 	vdso_start = (void *) kallsyms_lookup_name("vdso_start");
@@ -128,7 +128,7 @@ void get_vdso_info(ihk_os_t os, long vdso_rpa)
 
 	/* VDSO pages */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,16,0)
-	size = vdso_image_64->size;
+	size = _vdso_image_64->size;
 	vdso->vdso_npages = size >> PAGE_SHIFT;
 
 	if (vdso->vdso_npages > VDSO_MAXPAGES) {
@@ -138,7 +138,7 @@ void get_vdso_info(ihk_os_t os, long vdso_rpa)
 
 	for (i = 0; i < vdso->vdso_npages; ++i) {
 		vdso->vdso_physlist[i] = virt_to_phys(
-				vdso_image_64->data + (i * PAGE_SIZE));
+				_vdso_image_64->data + (i * PAGE_SIZE));
 	}
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
 	size = vdso_end - vdso_start;
