@@ -3024,7 +3024,6 @@ mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *_desc)
 				continue;
 			if(IS_ERR(lnode_topo))
 				continue;
-#ifdef POSTK_DEBUG_ARCH_DEP_54 /* cpu_isset() linux version depend fix. */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
 			if (cpumask_test_cpu(target_cpu->saved->cpu_number,
 			              &lnode_topo->cpumap)) {
@@ -3032,10 +3031,6 @@ mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *_desc)
 			if (cpu_isset(target_cpu->saved->cpu_number,
 			              lnode_topo->cpumap)) {
 #endif
-#else /* POSTK_DEBUG_ARCH_DEP_54 */
-			if (cpu_isset(target_cpu->saved->cpu_number,
-			              lnode_topo->cpumap)) {
-#endif /* POSTK_DEBUG_ARCH_DEP_54 */
 				if (kattr->attr.flags &
 				    UTI_FLAG_SAME_NUMA_DOMAIN) {
 					cpumask_or(wkmask, wkmask,
