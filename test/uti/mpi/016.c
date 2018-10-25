@@ -17,19 +17,21 @@
 #include "async_progress.h"
 #include "util.h"
 
-#define MYTIME_UNIT "usec"
 #define MYTIME_TOUSEC 1000000
 #define MYTIME_TONSEC 1000000000
 
-#define NROW 16 /* 0%, 10%, ..., 140% */
-#define NCOL 4
+#define NSAMPLES_INIT 4/*20*/
+#define NSAMPLES_DROP_INIT 1/*10*/
 
-#define NSAMPLES_DROP 5/*10*/
-#define NSAMPLES_COMM 10/*20*/
-#define NSAMPLES_TOTAL 10/*20*/
-#define NSAMPLES_INNER 5
+#define NSAMPLES_TRIAL 4/*20*/
+#define NSAMPLES_DROP_TRIAL 1/*10*/
 
-#define PROGRESS_CALC_PHASE_ONLY
+#define NSAMPLES_TOTAL 4/*20*/
+#define NSAMPLES_DROP_TOTAL 1/*10*/
+
+#define NSAMPLES_INNER 2 /* (#ranks - 1) * NSAMPLES_INNER doubles are sent from each rank */
+
+#define MAX2(x,y) ((x) > (y) ? (x) : (y))
 
 static inline double mytime() {
 	return /*rdtsc_light()*/MPI_Wtime();
@@ -37,16 +39,80 @@ static inline double mytime() {
 
 static int ppn = -1;
 
-void init_buf(double *origin_buf, double *result, double *target_buf, int szbuf, int rank, int id) {
+/* Time components to measure */
+struct measure_desc {
+	double rma;
+	double calc;
+	double pswitch; /* Overhead of turning on/off progress */
+	double iprobe;
+	double flush;
+	double total;
+};
+
+/* Buffers used for RMA */
+struct buf_desc {
+	double *origin_buf, *result, *target_buf;
+	int sz;
+};
+
+/* Time components for simulated computation and communication */
+struct time_desc {
+	long calc_nsec;
+	double calc_ratio;
+	double iprobe;
+};
+
+struct double_int {
+	double val;
+	int rank;
+
+};
+
+int alloc_buf(struct buf_desc *buf) {
+	int ret;
+
+	/* accumulate-to buffer */
+	buf->target_buf = malloc(sizeof(double) * buf->sz);
+	if (!buf->target_buf) {
+		pr_err("ERROR: allocating target_buf");
+		ret = -1;
+		goto out;
+	}
+	memset(buf->target_buf, 0, sizeof(double) * buf->sz);
+
+	/* read-from buffer */
+	buf->origin_buf = malloc(sizeof(double) * buf->sz);
+	if (!buf->origin_buf) {
+		pr_err("ERROR: alloacting origin_buf");
+		ret = -1;
+		goto out;
+	}
+	memset(buf->origin_buf, 0, sizeof(double) * buf->sz);
+
+	/* fetch-to buffer */
+	buf->result = malloc(sizeof(double) * buf->sz);
+	if (!buf->result) {
+		pr_err("ERROR: allocating result");
+		ret = -1;
+		goto out;
+	}
+	memset(buf->result, 0, sizeof(double) * buf->sz);
+
+	ret = 0;
+ out:
+	return ret;
+}
+
+void init_buf(struct buf_desc *buf, int rank, double id) {
 	int j;
-	for (j = 0; j < szbuf; j++) {
-		origin_buf[j] = (rank + 1) * 100.0 + (j + 1);
-		result[j] = (id + 1) * 100000000.0 + (rank + 1) * 10000.0 + (j + 1);
-		target_buf[j] = (rank + 1) * 1000000.0 + (j + 1);
+	for (j = 0; j < buf->sz; j++) {
+		buf->origin_buf[j] = (rank + 1) * 100.0 + (j + 1);
+		buf->result[j] = (id + 1) * 100000000.0 + (rank + 1) * 10000.0 + (j + 1);
+		buf->target_buf[j] = (rank + 1) * 1000000.0 + (j + 1);
 	}
 }	
 
-void pr_buf(double *origin_buf, double *result, double *target_buf, int szbuf, int rank, int nproc) {
+void pr_buf(struct buf_desc *buf, int rank, int nproc) {
 	int i, j;
 	for (i = 0; i < nproc; i++) {
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -56,26 +122,80 @@ void pr_buf(double *origin_buf, double *result, double *target_buf, int szbuf, i
 			continue;
 		}
 
-		for (j = 0; j < szbuf; j++) {
-			pr_debug("[%d] origin_buf,j=%d,val=%f\n", rank, j, origin_buf[j]);
-			pr_debug("[%d] result,j=%d,val=%f\n", rank, j, result[j]);
-			pr_debug("[%d] target_buf,j=%d,val=%f\n", rank, j, target_buf[j]);
+		for (j = 0; j < buf->sz; j++) {
+			pr_debug("[%d] origin_buf,j=%d,val=%f\n", rank, j, buf->origin_buf[j]);
+			pr_debug("[%d] result,j=%d,val=%f\n", rank, j, buf->result[j]);
+			pr_debug("[%d] target_buf,j=%d,val=%f\n", rank, j, buf->target_buf[j]);
 		}
 	}
 }
 
-void rma(int rank, int nproc, MPI_Win win, double *origin_buf, double *result, int szbuf, long nsec_calc, int async_progress, int sync_progress, double pct_calc) {
+void pr_measure_first_row()
+{
+	printf("%8s\t%8s\t%8s\t", "rma", "calc", "pswitch");
+	printf("%8s\t", "iprobe");
+	printf("%8s\t%8s\n", "flush", "total");
+}
+
+void pr_measure(struct measure_desc *measure)
+{
+	printf("%8.1f\t%8.1f\t%8.1f\t",
+	       measure->rma * MYTIME_TOUSEC,
+	       measure->calc * MYTIME_TOUSEC,
+	       measure->pswitch * MYTIME_TOUSEC);
+	printf("%8.1f\t", measure->iprobe * MYTIME_TOUSEC);
+	printf("%8.1f\t%8.1f\n",
+	       measure->flush * MYTIME_TOUSEC,
+	       measure->total * MYTIME_TOUSEC);
+}
+
+/* iprobe is 10 times faster than win_flush_local_all
+   which takes 20679 usec for 8-ppn * 63-target * 5-sample messages from each node, for 8-ppn 8-node case */
+int iprobe(double duration)
+{
+	int ret, completed;
+	int i;
+	double start, end;
+	
+	if (duration <= 0) {
+		ret = 0;
+		goto out;
+	}
+
+	start = mytime();
+	while(1) {
+		if ((ret = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &completed, MPI_STATUS_IGNORE)) != MPI_SUCCESS) {
+			pr_err("%s: error: MPI_Iprobe: %d\n", __func__, ret);
+			goto out;
+		}
+		
+		end = mytime();
+		//printf("%s: %f\n", __func__, (end - start) * MYTIME_TOUSEC);
+		if (end - start > duration) {
+			break;
+		}
+		usleep(1);
+	}
+	ret = 0;
+ out:
+	return ret;
+}
+
+
+void rma(int rank, int nproc, MPI_Win win, struct buf_desc *buf, struct time_desc *time, struct measure_desc *measure, int async_progress, int sync_progress) {
 	int i, j, target_rank;
 	int completed, ret;
+	double start, start2, end;
 
+	start = mytime();
 	for (j = 0; j < NSAMPLES_INNER; j++) {
 		for (i = 1; i < nproc; i++) {
 			target_rank = (rank + i) % nproc;
 			
-			MPI_Get_accumulate(origin_buf, szbuf, MPI_DOUBLE,
-					   result, szbuf, MPI_DOUBLE,
+			MPI_Get_accumulate(buf->origin_buf, buf->sz, MPI_DOUBLE,
+					   buf->result, buf->sz, MPI_DOUBLE,
 					   target_rank,
-					   0, szbuf, MPI_DOUBLE,
+					   0, buf->sz, MPI_DOUBLE,
 					   MPI_NO_OP, win);
 #if 0
 			if (sync_progress) {
@@ -86,42 +206,54 @@ void rma(int rank, int nproc, MPI_Win win, double *origin_buf, double *result, i
 #endif
 		}
 	}
+	end = mytime();
+	measure->rma = end - start;
 	
+	start2 = mytime();
 	if (async_progress) {
-#ifdef PROGRESS_CALC_PHASE_ONLY
 		progress_start();
-#endif
 	}
 
-	ndelay(nsec_calc);
+	start = mytime();
+	ndelay(time->calc_nsec);
+	end = mytime();
+	measure->calc = end - start;
 
 	if (async_progress) {
-#ifdef PROGRESS_CALC_PHASE_ONLY
 		progress_stop();
-#endif
 	}
+	end = mytime();
+	measure->pswitch = (end - start2) - measure->calc;
 
-#define MAX2(x,y) ((x) > (y) ? (x) : (y))
 
 #if 1
-	/* iprobe is 10 times faster than win_flush_local_all,
-	   20679 usec / (8*63*5) messages for 8-ppn 8-node case */
-	if (1/*!sync_progress*/)
-		for (j = 0; j < (async_progress ? MAX2(NSAMPLES_INNER * (nproc - 1) * (1.0 - pct_calc),  nproc - 1) : NSAMPLES_INNER * (nproc - 1)); j++) {
-			//for (j = 0; j < MAX2(NSAMPLES_INNER * (nproc - 1) * (1.0 - pct_calc),  nproc - 1); j++) {
-			if ((ret = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &completed, MPI_STATUS_IGNORE)) != MPI_SUCCESS) {
-				pr_err("%s: error: MPI_Iprobe: %d\n", __func__, ret);
-			}
-		}
+	start = mytime();
+	if (iprobe(async_progress ?
+		  MAX2(time->iprobe * (1.0 - time->calc_ratio),  0) :
+		  time->iprobe)) {
+		pr_err("%s: ERROR: iprobe: %d\n", __func__, ret);
+	}
+
+	end = mytime();
+	measure->iprobe = end - start;
 #endif
 
+	start = mytime();
 	MPI_Win_flush_local_all(win);
+	end = mytime();
+	measure->flush = end - start;
 }
 
-double measure(int rank, int nproc, MPI_Win win, double *origin_buf, double* result, double *target_buf, int szbuf, long nsec_calc, int async_progress, int sync_progress, int nsamples, int nsamples_drop, double pct_calc) {
+void measure(int rank, int nproc, MPI_Win win, struct buf_desc *buf, struct time_desc *time, struct measure_desc *measure, int async_progress, int sync_progress, int nsamples, int nsamples_drop) {
 	int i;
 	double t_l, t_g, t_sum = 0;
+	double t_rma_l, t_rma_g, t_rma_sum = 0;
+	double t_iprobe_l, t_iprobe_g, t_iprobe_sum = 0;
+	double t_flush_l, t_flush_g, t_flush_sum = 0;
 	double start, end;
+	struct measure_desc measure_l, measure_g;
+	struct measure_desc measure_s = { 0 };
+	struct double_int double_int_l, double_int_g;
 
 	for (i = 0; i < nsamples + nsamples_drop; i++) {
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -131,22 +263,52 @@ double measure(int rank, int nproc, MPI_Win win, double *origin_buf, double* res
 		ndelay_init(0);
 
 		start = mytime();
-		rma(rank, nproc, win, origin_buf, result, szbuf, nsec_calc, async_progress, sync_progress, pct_calc);
+		rma(rank, nproc, win, buf, time, &measure_l, async_progress, sync_progress);
 		end = mytime();
+		measure_l.total = end - start;
 		
 		MPI_Win_unlock_all(win);
-		MPI_Barrier(MPI_COMM_WORLD);
 
-		t_l = end - start;
-		MPI_Allreduce(&t_l, &t_g, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+		double_int_l.val = measure_l.total;
+		double_int_l.rank = rank;
+		MPI_Allreduce(&double_int_l, &double_int_g, 1, MPI_DOUBLE_INT, MPI_MAXLOC, MPI_COMM_WORLD);
+
+		if (rank == 0) {
+			//printf("double_int_g.rank=%d,val=%.0f usec\n", double_int_g.rank, double_int_g.val * MYTIME_TOUSEC);
+		}
+
+		measure_g.rma = measure_l.rma;
+		measure_g.calc = measure_l.calc;
+		measure_g.pswitch = measure_l.pswitch;
+		measure_g.iprobe = measure_l.iprobe;
+		measure_g.flush = measure_l.flush;
+		measure_g.total = measure_l.total;
+
+		MPI_Bcast(&measure_g.rma, 1, MPI_DOUBLE, double_int_g.rank, MPI_COMM_WORLD);
+		MPI_Bcast(&measure_g.calc, 1, MPI_DOUBLE, double_int_g.rank, MPI_COMM_WORLD);
+		MPI_Bcast(&measure_g.pswitch, 1, MPI_DOUBLE, double_int_g.rank, MPI_COMM_WORLD);
+		MPI_Bcast(&measure_g.iprobe, 1, MPI_DOUBLE, double_int_g.rank, MPI_COMM_WORLD);
+		MPI_Bcast(&measure_g.flush, 1, MPI_DOUBLE, double_int_g.rank, MPI_COMM_WORLD);
+		MPI_Bcast(&measure_g.total, 1, MPI_DOUBLE, double_int_g.rank, MPI_COMM_WORLD);
 
 		if (i < nsamples_drop) {
 			continue;
 		}
 
-		t_sum += t_g;
+		measure_s.rma += measure_g.rma;
+		measure_s.calc += measure_g.calc;
+		measure_s.pswitch += measure_g.pswitch;
+		measure_s.iprobe += measure_g.iprobe;
+		measure_s.flush += measure_g.flush;
+		measure_s.total += measure_g.total;
 	}
-	return t_sum / nsamples;
+
+	measure->rma = measure_s.rma / nsamples;
+	measure->calc = measure_s.calc / nsamples;
+	measure->pswitch = measure_s.pswitch / nsamples;
+	measure->iprobe = measure_s.iprobe / nsamples;
+	measure->flush = measure_s.flush / nsamples;
+	measure->total = measure_s.total / nsamples;
 }
 
 int main(int argc, char **argv)
@@ -155,14 +317,14 @@ int main(int argc, char **argv)
 	int actual;
 	int rank = -1;
 	int nproc;
-	int i, j, progress, l, m;
-	double *target_buf, *origin_buf, *result;
+	int i, j, progress, m;
+	double l;
+	double ratio, ratio_min;
 	MPI_Win win;
-	double t_comm_l, t_comm_g, t_comm_sum, t_comm_ave;
-	double t_total_l, t_total_g, t_total_sum, t_total_ave;
-	double t_table[NROW][NCOL];
+	struct buf_desc buf = { .sz = 1 }; /* Number of doubles to send */
+	struct time_desc time_init, time_trial, time_min, time_target;
+	struct measure_desc measure_init, measure_trial, measure_min, measure_target;
 	int opt;
-	int szbuf = 1; /* Number of doubles to send */
 	struct rusage ru_start, ru_end;
 	struct timeval tv_start, tv_end;
 	int disable_syscall_intercept = 0;
@@ -188,14 +350,14 @@ int main(int argc, char **argv)
 	}
 
 	if (ppn == -1) {
-		pr_err("Error: Specify processes-per-rank with -p");
+		pr_err("ERROR: Specify processes-per-rank with -p");
 		ret = -1;
 		goto out;
 	}
 
 	MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &actual);
 	if (actual != MPI_THREAD_MULTIPLE) {
-		pr_err("Error: MPI_THREAD_MULTIPLE is not available\n");
+		pr_err("ERROR: MPI_THREAD_MULTIPLE is not available\n");
 		ret = -1;
 		goto out;
 	}
@@ -204,7 +366,7 @@ int main(int argc, char **argv)
 	MPI_Comm_size(MPI_COMM_WORLD, &nproc);
 
 	if (rank == 0) {
-		printf("ndoubles=%d,nproc=%d\n", szbuf, nproc); 
+		printf("ndoubles=%d,nproc=%d\n", buf.sz, nproc); 
 
 #pragma omp parallel
 		{
@@ -215,47 +377,65 @@ int main(int argc, char **argv)
 		}
 	}
 
-	/* accumulate-to buffer */
-	target_buf = malloc(sizeof(double) * szbuf);
-	if (!target_buf) {
-		pr_err("Error: allocating target_buf");
-		ret = -1;
+	/* Allocate buffer */
+	if (alloc_buf(&buf) != 0) {
+		pr_err("ERROR: alloc_buf returned %d\n", ret);
 		goto out;
 	}
-	memset(target_buf, 0, sizeof(double) * szbuf);
-
-	/* read-from buffer */
-	origin_buf = malloc(sizeof(double) * szbuf);
-	if (!origin_buf) {
-		pr_err("Error: alloacting origin_buf");
-		ret = -1;
-		goto out;
-	}
-	memset(origin_buf, 0, sizeof(double) * szbuf);
-
-	/* fetch-to buffer */
-	result = malloc(sizeof(double) * szbuf);
-	if (!result) {
-		pr_err("Error: allocating result");
-		ret = -1;
-		goto out;
-	}
-	memset(result, 0, sizeof(double) * szbuf);
 
 	/* Expose accumulate-to buffer*/
-	ret = MPI_Win_create(target_buf, sizeof(double) * szbuf, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
+	ret = MPI_Win_create(buf.target_buf, sizeof(double) * buf.sz, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
 	if (ret != 0) {
-		pr_err("Error: MPI_Win_create returned %d\n", ret);
+		pr_err("ERROR: MPI_Win_create returned %d\n", ret);
 		ret = -1;
 		goto out;
 	}
 
-	/* Measure RMA-only time */
-	init_buf(origin_buf, result, target_buf, szbuf, rank, 99);
-	t_comm_ave = measure(rank, nproc, win, origin_buf, result, target_buf, szbuf, 0, 0, 1, NSAMPLES_COMM, NSAMPLES_DROP, 0);
+	/* Measure RMA without iprobe optimization */
+	init_buf(&buf, rank, 99);
+	time_init.calc_nsec = 0;
+	time_init.calc_ratio = 0;
+	time_init.iprobe = 0;
+	measure(rank, nproc, win, &buf, &time_init, &measure_init, 0, 1, NSAMPLES_INIT, NSAMPLES_DROP_INIT);
+	if (rank == 0) {
+		pr_debug("RMA, flush:\n");
+		pr_measure_first_row();
+		pr_measure(&measure_init);
+	}
+
+	/* Find optimal iprobe time. It's around one tenth of flush. */
+	memcpy(&measure_min, &measure_init, sizeof(struct measure_desc));
+	memcpy(&time_min, &time_init, sizeof(struct time_desc));
+
+#if 1
+	for (ratio = 0.025; ratio < 0.3; ratio += 0.025) {
+		init_buf(&buf, rank, 99);
+		time_trial.calc_nsec = 0;
+		time_trial.calc_ratio = 0;
+		time_trial.iprobe = measure_init.flush * ratio;
+		measure(rank, nproc, win, &buf, &time_trial, &measure_trial, 0, 1, NSAMPLES_TRIAL, NSAMPLES_DROP_TRIAL);
+		if (rank == 0) {
+			pr_debug("RMA, iprobe(%.0f usec), flush:\n", time_trial.iprobe * MYTIME_TOUSEC);
+			pr_measure(&measure_trial);
+		}
+
+		if (measure_trial.total < measure_min.total) {
+			memcpy(&measure_min, &measure_trial, sizeof(struct measure_desc));
+			memcpy(&time_min, &time_trial, sizeof(struct time_desc));
+			ratio_min = ratio;
+		}
+	}
+
+	if (ratio_min + 0.025 >= 0.3) {
+		pr_err("ERROR: Search space didn't cover minimum\n");
+		ret = -1;
+		goto out;
+	}
+#endif
 
 	if (rank == 0) {
-		printf("t_comm_ave: %.0f %s\n", t_comm_ave * MYTIME_TOUSEC, MYTIME_UNIT);
+		pr_debug("RMA, iprobe, flush:\n");
+		pr_measure(&measure_min);
 	}
 
 #ifdef PROFILE	
@@ -263,7 +443,7 @@ int main(int argc, char **argv)
 #endif
 
 	/* 0: no progress, 1: progress, no uti, 2: progress, uti */
-	for (progress = 0; progress <= (disable_syscall_intercept ? 0 : 2); progress += 1) {
+	for (progress = 0; progress <= (disable_syscall_intercept ? 0 : 2); progress += 1/*1*/) {
 
 		if (progress == 1) {
 			setenv("DISABLE_UTI", "1", 1); /* Don't use uti_attr and pin to Linux/McKernel CPUs */
@@ -280,34 +460,25 @@ int main(int argc, char **argv)
 #endif
 		}
 
-		/* RMA-start, compute for T_{RMA} * l / 10, RMA-flush */
-		for (l = 0; l <= NROW - 1; l += 1) {
-			long nsec_calc = (t_comm_ave * MYTIME_TONSEC * l) / 10;
-
-			init_buf(origin_buf, result, target_buf, szbuf, rank, l);
-			//pr_buf(origin_buf, result, target_buf, szbuf, rank, nproc);
-			t_total_ave = measure(rank, nproc, win, origin_buf, result, target_buf, szbuf, nsec_calc, progress, 0, NSAMPLES_TOTAL, NSAMPLES_DROP, l / 10.0);
-			//pr_buf(origin_buf, result, target_buf, szbuf, rank, nproc);
+		/* RMA-start, calc for 0%, 10%, ..., 150% of (iprobe + flush), flush */
+		for (ratio = 0; ratio <= 1.5; ratio += 0.3) {
+			time_target.calc_nsec = (measure_min.iprobe + measure_min.flush) * MYTIME_TONSEC * ratio;
+			time_target.calc_ratio = ratio;
+			time_target.iprobe = time_min.iprobe;
+			init_buf(&buf, rank, ratio);
+			measure(rank, nproc, win, &buf, &time_target, &measure_target, progress, 0, NSAMPLES_TOTAL, NSAMPLES_DROP_TOTAL);
 
 			if (rank == 0) {
-
-				if (l == 0) {
+				if (ratio == 0) {
 					pr_debug("progress=%d\n", progress);
-					if (progress == 0) { 
-						pr_debug("calc\ttotal\n");
-					} else {
-						pr_debug("total\n");
-					}
+					pr_measure_first_row();
 				}
 
-				t_table[l][0] = nsec_calc * (MYTIME_TOUSEC / (double)MYTIME_TONSEC);
-				if (progress == 0) { 
-					pr_debug("%.0f\t%.0f\n", nsec_calc * (MYTIME_TOUSEC / (double)MYTIME_TONSEC), t_total_ave * MYTIME_TOUSEC);
-					t_table[l][progress + 1] = t_total_ave * MYTIME_TOUSEC;
-				} else {
-					pr_debug("%.0f\n", t_total_ave * MYTIME_TOUSEC);
-					t_table[l][progress + 1] = t_total_ave * MYTIME_TOUSEC;
-				}
+#if 0
+				pr_debug("%.0f\t",
+					 time_target.calc_nsec * (MYTIME_TOUSEC / (double)MYTIME_TONSEC));
+#endif
+				pr_measure(&measure_target);
 			}
 		}
 
@@ -322,19 +493,6 @@ int main(int argc, char **argv)
 #ifdef PROFILE
 	syscall(701, 4 | 8 | 0x80000000); /* syscall profile report */
 #endif
-
-	if (rank == 0) {
-		printf("calc,no prog,prog and no uti, prog and uti\n");
-		for (l = 0; l <= NROW - 1; l++) {
-			for (i = 0; i < NCOL; i++) {
-				if (i > 0) {
-					printf(",");
-				}
-				printf("%.0f", t_table[l][i]);
-			}
-			printf("\n");
-		}
-	}
 
 	MPI_Barrier(MPI_COMM_WORLD);
 

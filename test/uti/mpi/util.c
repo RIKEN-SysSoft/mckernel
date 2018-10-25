@@ -57,6 +57,10 @@ void ndelay_init(int verbose) {
 
 #if 1
 void ndelay(long delay_nsec) {
+	if (delay_nsec == 0) {
+		return;
+	}
+
 	if (delay_nsec < 0) { 
 		printf("delay_nsec < 0\n");
 		return;
