@@ -9,7 +9,7 @@ enum progress_state {
 
 void progress_init();
 void progress_start();
-void progress_stop();
+void progress_stop(double *time_progress);
 void progress_finalize();
 
 #endif

@@ -8,24 +8,25 @@ mck_dir=${MYHOME}/project/os/install
 uti_dir_lin=${MYHOME}/project/uti/install_linux
 uti_dir_mck=${MYHOME}/project/uti/install_mckernel
 
-exe=`basename $0 | sed 's/\.sh//'`
+exe=`basename $0`
+exe=${exe/.sh/}
 
 stop=0
 reboot=0
 go=0
 
-interactive=0
-pjsub=0
+jobtype=ssh # interactive or pjsub or ssh
 gdb=0
 disable_syscall_intercept=0
 mck=0
 nnodes=2
-LASTNODE=8196
+LASTNODE=8200
 use_hfi=0
 omp_num_threads=32
 ppn=4
+mpitype=mvapich
 
-while getopts srgc:ml:N:P:o:hGI:ipL: OPT
+while getopts srgc:ml:N:P:o:hGI:j:L:M: OPT
 do
         case ${OPT} in
             s) stop=1
@@ -48,14 +49,16 @@ do
 		;;
 	    I) disable_syscall_intercept=$OPTARG
 		;;
-	    i) interactive=1
+	    j) jobtype=$OPTARG
 		;;
 	    p) pjsub=1
 		;;
 	    L) LASTNODE=$OPTARG
 		;;
-            *) echo "invalid option -${OPT}" >&2
-                exit 1
+	    M) mpitype=$OPTARG
+		;;
+            \?) exit 1
+		;;
         esac
 done
 
@@ -73,37 +76,159 @@ uti_cpu_set_mck=1,69,137,205,18-19,86-87,154-155,222-223
 #uti_cpu_set_lin=204-271 
 #uti_cpu_set_mck=1-67
 
-if [ $mck -eq 0 ]; then
-    uti_cpu_set_str="export UTI_CPU_SET=$uti_cpu_set_lin"
-    i_mpi_pin_processor_exclude_list="export I_MPI_PIN_PROCESSOR_EXCLUDE_LIST=$exclude_list"
+if [ $mck -eq 1 ]; then
+    uti_cpu_set="export UTI_CPU_SET=$uti_cpu_set_mck"
 else
-    uti_cpu_set_str="export UTI_CPU_SET=$uti_cpu_set_mck"
-    i_mpi_pin_processor_exclude_list=
+    uti_cpu_set="export UTI_CPU_SET=$uti_cpu_set_lin"
 fi
 
 if [ ${mck} -eq 1 ]; then
-    i_mpi_pin=off
-    i_mpi_pin_domain=
-    i_mpi_pin_order=
-#    if [ $omp_num_threads -eq 1 ]; then
-#	# Avoid binding main thread and uti thread to one CPU
-	kmp_affinity="export KMP_AFFINITY=disabled" 
-#    else
-#	# Bind rank to OMP_NUM_THREAD-sized CPU-domain
-#	kmp_affinity="export KMP_AFFINITY=granularity=thread,scatter"
-#    fi
+    case $mpitype in
+	intel)
+	    # Bind by "mcexec -n"
+	    i_mpi_pin_processor_exclude_list=
+	    i_mpi_pin=off
+	    i_mpi_pin_domain=
+	    i_mpi_pin_order=
+	    ;;
+	mvapich)
+	    # Bind by "MV2_CPU_MAPPING"
+	    # CPU ordering of McKernel is different than Linux.
+	    # That is, using <Quadrant, Physical, Logical> representation, 
+	    # ordering is like this:
+	    # <0,0,0>, ..., <0,15,0>, <0,0,1>, 
+	    mv2_cpu_mapping="export MV2_CPU_MAPPING=0-7,16-23,32-39,48-55:8-15,24-31,40-47,56-63:64-71,80-87,96-103,112-119:72-79,88-95,104-111,120-127:128-135,144-151,160-167,176-183:136-143,152-159,168-175,184-191:192-199,208-215,224-231,240-247:200-207,216-223,232-239,248-255"
+	    ;;
+    esac
 else
-    i_mpi_pin=on
-    domain=$omp_num_threads # Use 32 when you want to match mck's -n division
-    i_mpi_pin_domain="export I_MPI_PIN_DOMAIN=$domain"
-    i_mpi_pin_order="export I_MPI_PIN_ORDER=compact"
+    case $mpitype in
+	intel)
+	    # Bind by "I_MPI_PIN_*"
+	    i_mpi_pin_processor_exclude_list="export I_MPI_PIN_PROCESSOR_EXCLUDE_LIST=$exclude_list"
+	    i_mpi_pin=on
+	    domain=$omp_num_threads # Use 32 when you want to match mck's -n division
+	    i_mpi_pin_domain="export I_MPI_PIN_DOMAIN=$domain"
+	    i_mpi_pin_order="export I_MPI_PIN_ORDER=compact"
+	    ;;
+	mvapich)
+	    # Bind by "MV2_CPU_MAPPING"
+	    # excluding CPUS in exclude_list (0-1,68-69,136-137,204-205,18-19,86-87,154-155,222-223)
+	    # perl -e '@ss = (2,20,36,52); foreach $s (@ss) { if($s!=$ss[0]){print ":";}for ($j=0;$j<16;$j+=8) {if($j!=0){print ":"}for ($i=$s;$i<272;$i+=68){if($i!=$s){print ",";} printf("%d-%d", $j+$i, $j+$i+7);}}}print "\n"'
+	    mv2_cpu_mapping="export MV2_CPU_MAPPING=2-9,70-77,138-145,206-213:10-17,78-85,146-153,214-221:20-27,88-95,156-163,224-231:28-35,96-103,164-171,232-239:36-43,104-111,172-179,240-247:44-51,112-119,180-187,248-255:52-59,120-127,188-195,256-263:60-67,128-135,196-203,264-271"
+	    ;;
+    esac
+fi
+
+if [ ${mck} -eq 1 ]; then
+    # Bind by "mcexec -n"
+    #    if [ $omp_num_threads -eq 1 ]; then
+    #	# Avoid binding main thread and uti thread to one CPU
+    kmp_affinity="export KMP_AFFINITY=disabled" 
+    #    else
+    #	# Bind rank to OMP_NUM_THREAD-sized CPU-domain
+    #	kmp_affinity="export KMP_AFFINITY=granularity=thread,scatter"
+    #    fi
+else
     kmp_affinity="export KMP_AFFINITY=granularity=thread,scatter"
 fi
 
 echo nprocs=$nprocs nnodes=$nnodes ppn=$ppn nodes=$nodes domain=$domain
 
+if [ $gdb -eq 1 ]; then
+    enable_x="-enable-x"
+    gdbcmd="xterm -display localhost:11 -hold -e gdb -ex run --args"
+fi
+
+case $mpitype in
+    intel)
+	makeopt="CC=mpiicc"
+	mpiexec="mpiexec.hydra"
+	;;
+    mvapich)
+	mpi_dir=${HOME}/project/src/mvapich/install
+	makeopt="CC=${mpi_dir}/bin/mpicc"
+	mpiexec="${mpi_dir}/bin/mpiexec.hydra"
+	;;
+esac
+
+# compilervars for compile
+case $jobtype in
+    interactive)
+	opt_dir=/opt/intel
+	compilervars_compile=". ${opt_dir}/compilers_and_libraries_2018.2.199/linux/bin/compilervars.sh intel64"
+	;;
+    pjsub | ssh)
+	opt_dir=/home/opt/local/cores/intel
+	compilervars_compile=". ${opt_dir}/compilers_and_libraries_2018.2.199/linux/bin/compilervars.sh intel64"
+	;;
+esac
+
+#  compilervars for run-time
+case $mpitype in
+    intel)
+	case $jobtype in
+	    ssh)
+		compilervars_runtime=$compilervars_compile
+		;;
+	    interactive | pjsub)
+		compilervars_runtime=	
+		;;
+	esac
+	;;
+    mvapich)
+	compilervars_runtime="export PATH=${mpi_dir}/bin:$PATH && export LD_LIBRARY_PATH=${mpi_dir}/lib:/opt/intel/compilers_and_libraries_2018.1.163/linux/compiler/lib/intel64_lin/:/opt/intel/compilers_and_libraries_2018.1.163/linux/mkl/lib/intel64_lin/:$LD_LIBRARY_PATH"
+	;;
+esac
+
+case $mpitype in
+    intel)
+	case $jobtype in
+	    interactive)
+		i_mpi_hydra_bootstrap_exec=
+		i_mpi_hydra_bootstrap=
+		hosts=
+		ssh=
+		;;
+	    pjsub)
+		i_mpi_hydra_bootstrap_exec=
+		i_mpi_hydra_bootstrap=
+		hosts=
+		ssh=
+		;;
+	    ssh)
+		i_mpi_hydra_bootstrap_exec="export I_MPI_HYDRA_BOOTSTRAP_EXEC=/usr/bin/ssh"
+		i_mpi_hydra_bootstrap="export I_MPI_HYDRA_BOOTSTRAP=ssh"
+		hosts="-hosts $nodes"
+		ssh="ssh -A c$LASTNODE"
+		;;
+	esac
+	;;
+    mvapich)
+	case $jobtype in
+	    interactive)
+		hydra_bootstrap_exec=
+		hydra_bootstrap=
+		hosts=
+		ssh=
+		;;
+	    pjsub)
+		hydra_bootstrap_exec="export HYDRA_BOOTSTRAP_EXEC=/bin/pjrsh"
+		hydra_bootstrap="export HYDRA_BOOTSTRAP=rsh"
+		hosts=
+		ssh=
+		;;
+	    ssh)
+		hydra_bootstrap_exec="export HYDRA_BOOTSTRAP_EXEC=/usr/bin/ssh"
+		hydra_bootstrap="export HYDRA_BOOTSTRAP=ssh"
+		hosts="-hosts $nodes"
+		ssh="ssh -A c$LASTNODE"
+		;;
+	esac
+	;;
+esac
+
 if [ ${mck} -eq 1 ]; then
-    makeopt="UTI_DIR=$uti_dir_mck"
+    makeopt="${makeopt} UTI_DIR=$uti_dir_mck"
     use_mck="#PJM -x MCK=$mck_dir"
     mck_mem="#PJM -x MCK_MEM=32G@0,8G@1"
     mcexec="${mck_dir}/bin/mcexec"
@@ -117,48 +242,27 @@ if [ ${mck} -eq 1 ]; then
     if [ $disable_syscall_intercept -eq 0 ]; then
 	mcexecopt="--enable-uti $mcexecopt"
     fi
-
 else
-    offline=`PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes lscpu \| grep Off 2>&1 | dshbak -c | grep Off`
-    if [ "$offline" != "" ]; then
-	echo "Error: Some CPUs are offline: $offline"
-	exit
-    fi
-
-    makeopt="UTI_DIR=$uti_dir_lin"
+    makeopt="${makeopt} UTI_DIR=$uti_dir_lin"
     use_mck=
     mck_mem=
     mcexec=
     mcexecopt=
 fi
 
-if [ $gdb -eq 1 ]; then
-    enable_x="-enable-x"
-    gdbcmd="xterm -display localhost:11 -hold -e gdb -ex run --args"
+nalive=`PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes hostname | wc -l`
+if [ $nalive -ne $nnodes ]; then
+    echo "Error: One or more nodes are offline (#alive: $nalive)"
+    exit
 fi
 
-if [ $interactive -eq 1 ]; then
-    i_mpi_hydra_bootstrap_exec=
-    i_mpi_hydra_bootstrap=
-    hosts=
-    opt_dir=/opt/intel
-    ssh=
-else
-#    PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes bash -c \'if \[ \"\`cat /etc/mtab \| while read line\; do cut -d\" \" -f 2\; done \| grep /work\`\" == \"\" \]\; then sudo mount /work\; fi\'
-    i_mpi_hydra_bootstrap_exec="export I_MPI_HYDRA_BOOTSTRAP_EXEC=/usr/bin/ssh"
-    i_mpi_hydra_bootstrap="export I_MPI_HYDRA_BOOTSTRAP=ssh"
-    hosts="-hosts $nodes"
-    opt_dir=/home/opt/local/cores/intel
-    ssh="ssh -A c$LASTNODE"
-fi
-
-# If using ssh
-# Latest versions are: 1.163, 2.199, 3.222
-if [ $pjsub -eq 0 ] && [ $interactive -eq 0 ]; then
-    compilervars=". ${opt_dir}/compilers_and_libraries_2018.2.199/linux/bin/compilervars.sh intel64"
-else
-    compilervars=
-fi
+if [ ${mck} -eq 0 ]; then
+    offline=`PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes lscpu \| grep Off 2>&1 | dshbak -c | grep Off`
+    if [ "$offline" != "" ]; then
+	echo "Error: One or more CPUs are offline: $offline"
+	exit
+    fi
+fi    
 
 if [ ${stop} -eq 1 ]; then
     if [ ${mck} -eq 1 ]; then
@@ -195,6 +299,8 @@ if [ ${reboot} -eq 1 ]; then
     fi
 fi
 
+case $mpitype in
+intel)
 (
 cat <<EOF
 #!/bin/sh
@@ -218,7 +324,7 @@ export OMP_NUM_THREADS=$omp_num_threads
 export KMP_BLOCKTIME=1
 export PSM2_RCVTHREAD=0
 
-$uti_cpu_set_str
+$uti_cpu_set
 export I_MPI_PIN=$i_mpi_pin
 $i_mpi_pin_processor_exclude_list
 $i_mpi_pin_domain
@@ -248,25 +354,80 @@ export I_MPI_ASYNC_PROGRESS=off
 
 ulimit -c unlimited 
 
-$compilervars
-mpiexec.hydra -n $nprocs -ppn $ppn $hosts $ilpopt $enable_x $gdbcmd $mcexec $mcexecopt ${test_dir}/$exe -p $ppn -I $disable_syscall_intercept
+$compilervars_runtime
+$mpiexec -n $nprocs -ppn $ppn $hosts $ilpopt $enable_x $gdbcmd $mcexec $mcexecopt ${test_dir}/$exe -p $ppn -I $disable_syscall_intercept
 #-l
 
 EOF
 ) > ./job.sh
+;;
+mvapich)
+(
+cat <<EOF
+#!/bin/sh
+
+#PJM -L rscgrp=$rg
+#PJM -L node=$nnodes
+#PJM --mpi proc=$nprocs
+#PJM -L elapse=$elapse
+#PJM -L proc-crproc=16384 
+#PJM -g gg10
+#PJM -j
+#PJM -s
+$use_mck
+$mck_mem
+
+$hydra_bootstrap_exec
+$hydra_bootstrap
+
+export HYDRA_PROXY_RETRY_COUNT=30
+
+export OMP_NUM_THREADS=$omp_num_threads
+# export OMP_STACKSIZE=64M
+export KMP_BLOCKTIME=1
+
+$mv2_cpu_mapping
+$kmp_affinity
+
+export MCKERNEL_RLIMIT_STACK=32M,16G
+export KMP_STACKSIZE=64m
+#export KMP_HW_SUBSET=64c,1t
+
+export MPIR_CVAR_ASYNC_PROGRESS=0
+
+$uti_cpu_set
+
+ulimit -c unlimited 
+
+$compilervars_runtime
+$mpiexec -n $nprocs -ppn $ppn $hosts $enable_x $gdbcmd $mcexec $mcexecopt ${test_dir}/$exe -p $ppn -I $disable_syscall_intercept
+
+EOF
+) > ./job.sh
+;;
+esac
+
 chmod u+x ./job.sh
 
 if [ ${go} -eq 1 ]; then
-    if [ $pjsub -eq 1 ]; then
-	pjsub ./job.sh
-    else
-	if [ $interactive -eq 0 ]; then
-	    . ${opt_dir}/compilers_and_libraries_2018.2.199/linux/bin/compilervars.sh intel64
-	fi
-	rm ./$exe
-	make $makeopt ./$exe
-	PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes \
-	    /usr/sbin/pidof $exe \| xargs -r sudo kill -9
-	$ssh ${test_dir}/job.sh
-    fi
+    case $jobtype in 
+	pjsub | ssh)
+	    eval "$compilervars_compile"
+	    ;&
+	interactive)
+	    rm -f ./$exe # To switch Linux and McKernel executables
+	    make $makeopt ./$exe
+	    ;;
+    esac
+
+    case $jobtype in 
+	pjsub)
+	    pjsub ./job.sh
+	    ;;
+	ssh | interactive)
+	    PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes \
+		/usr/sbin/pidof $exe \| xargs -r sudo kill -9
+	    $ssh ${test_dir}/job.sh
+	    ;;
+    esac
 fi
