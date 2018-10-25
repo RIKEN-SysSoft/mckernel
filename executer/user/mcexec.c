@@ -3311,8 +3311,10 @@ int main_loop(struct thread_data_s *my_thread)
 					                  0);
 					break;
 				}
-				strncat(pathbuf, "/", 1);
-				strncat(pathbuf, tmpbuf, strlen(tmpbuf) + 1);
+				strncat(pathbuf, "/",
+					sizeof(pathbuf) - strlen(pathbuf) - 1);
+				strncat(pathbuf, tmpbuf,
+					sizeof(pathbuf) - strlen(pathbuf) - 1);
 			}
 			else {
 			}
