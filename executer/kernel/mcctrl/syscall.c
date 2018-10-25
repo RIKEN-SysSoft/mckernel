@@ -2085,7 +2085,9 @@ int mcctrl_clear_pte_range(uintptr_t start, uintptr_t len)
 	struct vm_area_struct *vma;
 	uintptr_t addr;
 	uintptr_t end;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 18, 0)
 	int error;
+#endif
 	int ret;
 
 	ret = 0;
@@ -2105,6 +2107,9 @@ int mcctrl_clear_pte_range(uintptr_t start, uintptr_t len)
 			end = vma->vm_end;
 		}
 		if (addr < end) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 18, 0)
+			zap_vma_ptes(vma, addr, end-addr);
+#else
 			error = zap_vma_ptes(vma, addr, end-addr);
 			if (error) {
 				mcctrl_zap_page_range(vma, addr, end-addr, NULL);
@@ -2113,6 +2118,7 @@ int mcctrl_clear_pte_range(uintptr_t start, uintptr_t len)
 			if (ret == 0) {
 				ret = error;
 			}
+#endif
 		}
 		addr = end;
 	}
