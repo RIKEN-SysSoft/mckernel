@@ -910,13 +910,7 @@ static struct vm_operations_struct rus_vmops = {
 
 static int rus_mmap(struct file *file, struct vm_area_struct *vma)
 {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,7,0)
-//	vma->vm_flags |= VM_RESERVED | VM_DONTEXPAND | VM_MIXEDMAP;
-	vma->vm_flags |= VM_RESERVED | VM_MIXEDMAP;
-#else
-//	vma->vm_flags |= VM_DONTDUMP | VM_DONTEXPAND | VM_MIXEDMAP;
-	vma->vm_flags |= VM_DONTDUMP | VM_MIXEDMAP;
-#endif
+	vma->vm_flags |= arch_rus_vm_flags;
 	vma->vm_ops = &rus_vmops;
 	return 0;
 }

@@ -13,4 +13,10 @@ static inline bool pte_is_write_combined(pte_t pte)
 	return ((pte_flags(pte) & _PAGE_PWT) && !(pte_flags(pte) & _PAGE_PCD));
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_12 */
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,7,0)
+static const unsigned long arch_rus_vm_flags = VM_RESERVED | VM_MIXEDMAP;
+#else
+static const unsigned long arch_rus_vm_flags = VM_DONTDUMP | VM_MIXEDMAP;
+#endif
 #endif /* __HEADER_MCCTRL_X86_64_ARCHDEPS_H */
