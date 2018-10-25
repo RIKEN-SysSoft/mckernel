@@ -1728,6 +1728,9 @@ static int pager_req_pfn(ihk_os_t os, uintptr_t handle, off_t off, uintptr_t ppf
 	uintptr_t pfn;
 	uintptr_t va;
 	pgd_t *pgd;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0) && defined(CONFIG_X86_64_SMP)
+	p4d_t *p4d;
+#endif
 	pud_t *pud;
 	pmd_t *pmd;
 	pte_t *pte;
@@ -1752,31 +1755,42 @@ static int pager_req_pfn(ihk_os_t os, uintptr_t handle, off_t off, uintptr_t ppf
 retry:	
 	pgd = pgd_offset(current->mm, va);
 	if (!pgd_none(*pgd) && !pgd_bad(*pgd) && pgd_present(*pgd)) {
-		pud = pud_offset(pgd, va);
-		if (!pud_none(*pud) && !pud_bad(*pud) && pud_present(*pud)) {
-			pmd = pmd_offset(pud, va);
-			if (!pmd_none(*pmd) && !pmd_bad(*pmd) && pmd_present(*pmd)) {
-				pte = pte_offset_map(pmd, va);
-				if (!pte_none(*pte) && pte_present(*pte)) {
-					pfn = (uintptr_t)pte_pfn(*pte) << PAGE_SHIFT;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0) && defined(CONFIG_X86_64_SMP)
+		p4d = p4d_offset(pgd, va);
+		if (!p4d_none(*p4d) && !p4d_bad(*p4d) && p4d_present(*p4d)) {
+			pud = pud_offset(p4d, va);
+#else
+			pud = pud_offset(pgd, va);
+#endif
+			if (!pud_none(*pud) && !pud_bad(*pud) &&
+			    pud_present(*pud)) {
+				pmd = pmd_offset(pud, va);
+				if (!pmd_none(*pmd) && !pmd_bad(*pmd) &&
+				    pmd_present(*pmd)) {
+					pte = pte_offset_map(pmd, va);
+					if (!pte_none(*pte) && pte_present(*pte)) {
+						pfn = (uintptr_t)pte_pfn(*pte) << PAGE_SHIFT;
 #define	PFN_PRESENT	((uintptr_t)1 << 0)
-					pfn |= PFN_VALID | PFN_PRESENT;
-					
-					/* Check if mapping is write-combined */
+						pfn |= PFN_VALID | PFN_PRESENT;
+
+						/* Check if mapping is write-combined */
 #ifdef POSTK_DEBUG_ARCH_DEP_12
-					if (pte_is_write_combined(*pte)) {
-						pfn |= PFN_WRITE_COMBINED;
-					}
+						if (pte_is_write_combined(*pte)) {
+							pfn |= PFN_WRITE_COMBINED;
+						}
 #else /* POSTK_DEBUG_ARCH_DEP_12 */
-					if ((pte_flags(*pte) & _PAGE_PWT) && 
-						!(pte_flags(*pte) & _PAGE_PCD)) {
-						pfn |= _PAGE_PWT;
-					}
+						if ((pte_flags(*pte) & _PAGE_PWT) &&
+						    !(pte_flags(*pte) & _PAGE_PCD)) {
+							pfn |= _PAGE_PWT;
+						}
 #endif /* POSTK_DEBUG_ARCH_DEP_12 */
+					}
+					pte_unmap(pte);
 				}
-				pte_unmap(pte);
 			}
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0) && defined(CONFIG_X86_64_SMP)
 		}
+#endif
 	}
 
 	/* If not present, try to fault it */
