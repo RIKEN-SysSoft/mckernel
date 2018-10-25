@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "a4a9977f_8545a81c",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1731,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-25T02:23:14Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4, 12, 0) \u0026\u0026 defined(CONFIG_X86_64_SMP)",
+      "revId": "74c42d9f884c84fd02b5b14b5ddaa4cac1d5576c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "515bb421_41215a03",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1758,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-25T02:23:14Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4, 12, 0) \u0026\u0026 defined(CONFIG_X86_64_SMP)",
+      "revId": "74c42d9f884c84fd02b5b14b5ddaa4cac1d5576c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b553a66a_5d91e59c",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1760,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-25T02:23:14Z",
+      "side": 1,
+      "message": "WARNING: suspect code indent for conditional statements (16, 16)\n+\t\tif (!p4d_none(*p4d) \u0026\u0026 !p4d_bad(*p4d) \u0026\u0026 p4d_present(*p4d)) {\n+\t\tpud \u003d pud_offset(p4d, va);",
+      "revId": "74c42d9f884c84fd02b5b14b5ddaa4cac1d5576c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3da48633_e5ba60ae",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1789,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-25T02:23:14Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4, 12, 0) \u0026\u0026 defined(CONFIG_X86_64_SMP)",
+      "revId": "74c42d9f884c84fd02b5b14b5ddaa4cac1d5576c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
