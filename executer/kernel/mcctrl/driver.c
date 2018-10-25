@@ -235,14 +235,29 @@ struct inode_operations *mcctrl_hugetlbfs_inode_operations;
 static int symbols_init(void)
 {
 	mcctrl_sys_mount = (void *) kallsyms_lookup_name("sys_mount");
+#if defined(CONFIG_X86_64_SMP)
+	if (!mcctrl_sys_mount)
+		mcctrl_sys_mount =
+			(void *) kallsyms_lookup_name("__x64_sys_mount");
+#endif
 	if (WARN_ON(!mcctrl_sys_mount))
 		return -EFAULT;
 
 	mcctrl_sys_umount = (void *) kallsyms_lookup_name("sys_umount");
+#if defined(CONFIG_X86_64_SMP)
+	if (!mcctrl_sys_umount)
+		mcctrl_sys_umount =
+			(void *) kallsyms_lookup_name("__x64_sys_umount");
+#endif
 	if (WARN_ON(!mcctrl_sys_umount))
 		return -EFAULT;
 
 	mcctrl_sys_unshare = (void *) kallsyms_lookup_name("sys_unshare");
+#if defined(CONFIG_X86_64_SMP)
+	if (!mcctrl_sys_unshare)
+		mcctrl_sys_unshare =
+			(void *) kallsyms_lookup_name("__x64_sys_unshare");
+#endif
 	if (WARN_ON(!mcctrl_sys_unshare))
 		return -EFAULT;
 
@@ -258,6 +273,11 @@ static int symbols_init(void)
 
 	mcctrl_sys_readlink =
 		(void *) kallsyms_lookup_name("sys_readlink");
+#if defined(CONFIG_X86_64_SMP)
+	if (!mcctrl_sys_readlink)
+		mcctrl_sys_readlink =
+			(void *) kallsyms_lookup_name("__x64_sys_readlink");
+#endif
 	if (WARN_ON(!mcctrl_sys_readlink))
 		return -EFAULT;
 
