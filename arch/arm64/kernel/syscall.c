@@ -16,6 +16,7 @@
 #include <syscall.h>
 #include <uio.h>
 #include <debug.h>
+#include <xpmem.h>
 
 extern void ptrace_report_signal(struct thread *thread, int sig);
 extern void clear_single_step(struct thread *thread);
@@ -1841,6 +1842,37 @@ out:
 	dkprintf("shmget(%#lx,%#lx,%#x): %d %d\n", key, size, shmflg0, error, shmid);
 	return (error)?: shmid;
 } /* sys_shmget() */
+
+SYSCALL_DECLARE(openat)
+{
+	const char *pathname_user = (const char *)ihk_mc_syscall_arg1(ctx);
+	int flags = (int)ihk_mc_syscall_arg2(ctx);
+	char *pathname;
+	int len = strlen_user(pathname_user) + 1;
+	long rc;
+
+	pathname = kmalloc(len, IHK_MC_AP_NOWAIT);
+	if (!pathname) {
+		dkprintf("%s: error allocating pathname\n", __FUNCTION__);
+		return -ENOMEM;
+	}
+	if (copy_from_user(pathname, pathname_user, len)) {
+		dkprintf("%s: error: copy_from_user pathname\n", __FUNCTION__);
+		rc = -EFAULT;
+		goto out;
+	}
+
+	dkprintf("openat(): pathname=%s\n", pathname);
+	if (!strcmp(pathname, XPMEM_DEV_PATH)) {
+		rc = xpmem_openat(pathname, flags, ctx);
+	} else {
+		rc = syscall_generic_forwarding(__NR_openat, ctx);
+	}
+
+out:
+	kfree(pathname);
+	return rc;
+}
 
 void
 save_uctx(void *uctx, struct pt_regs *regs)

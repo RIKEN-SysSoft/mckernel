@@ -7,7 +7,7 @@ IHK_OBJS += assert.o cache.o cpu.o cputable.o context.o entry.o entry-fpsimd.o
 IHK_OBJS += fault.o head.o hyp-stub.o local.o perfctr.o perfctr_armv8pmu.o proc.o proc-macros.o
 IHK_OBJS += psci.o smp.o trampoline.o traps.o fpsimd.o
 IHK_OBJS += debug-monitors.o hw_breakpoint.o ptrace.o
-IHK_OBJS += $(notdir $(VDSO_SO_O)) memory.o syscall.o vdso.o
+IHK_OBJS += $(notdir $(VDSO_SO_O)) memory.o syscall.o vdso.o xpmem.o
 
 IHK_OBJS += irq-gic-v2.o irq-gic-v3.o
 IHK_OBJS += memcpy.o memset.o

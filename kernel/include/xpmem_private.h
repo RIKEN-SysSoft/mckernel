@@ -253,6 +253,8 @@ static int xpmem_dup(struct mckfd *mckfd, ihk_mc_user_context_t *ctx);
 
 static int xpmem_init(void);
 static void xpmem_exit(void);
+int do_xpmem_open(int syscall_num, const char *pathname,
+		  int flags, ihk_mc_user_context_t *ctx);
 static int __xpmem_open(void);
 static void xpmem_destroy_tg(struct xpmem_thread_group *);
 
@@ -305,7 +307,7 @@ static int xpmem_pin_page(struct xpmem_thread_group *, struct thread *,
 static void xpmem_unpin_pages(struct xpmem_segment *, struct process_vm *, 
 	unsigned long, size_t);
 
-static struct xpmem_thread_group * __xpmem_tg_ref_by_tgid_nolock_internal(
+struct xpmem_thread_group * __xpmem_tg_ref_by_tgid_nolock_internal(
 	pid_t, int, int);
 
 static inline struct xpmem_thread_group *__xpmem_tg_ref_by_tgid(
@@ -357,14 +359,14 @@ static inline struct xpmem_thread_group *__xpmem_tg_ref_by_tgid_nolock(
 
 static struct xpmem_thread_group * xpmem_tg_ref_by_segid(xpmem_segid_t);
 static struct xpmem_thread_group * xpmem_tg_ref_by_apid(xpmem_apid_t);
-static void xpmem_tg_deref(struct xpmem_thread_group *);
+void xpmem_tg_deref(struct xpmem_thread_group *);
 static struct xpmem_segment *xpmem_seg_ref_by_segid(struct xpmem_thread_group *,
 	xpmem_segid_t);
-static void xpmem_seg_deref(struct xpmem_segment *);
+void xpmem_seg_deref(struct xpmem_segment *);
 static struct xpmem_access_permit * xpmem_ap_ref_by_apid(
 	struct xpmem_thread_group *, xpmem_apid_t);
-static void xpmem_ap_deref(struct xpmem_access_permit *);
-static void xpmem_att_deref(struct xpmem_attachment *);
+void xpmem_ap_deref(struct xpmem_access_permit *);
+void xpmem_att_deref(struct xpmem_attachment *);
 static int xpmem_validate_access(struct xpmem_access_permit *, off_t, size_t,
 	int, unsigned long *);
 
