@@ -133,9 +133,7 @@ SYSCALL_HANDLED(238, set_mempolicy)
 SYSCALL_HANDLED(239, get_mempolicy)
 SYSCALL_HANDLED(247, waitid)
 SYSCALL_HANDLED(256, migrate_pages)
-#ifdef POSTK_DEBUG_ARCH_DEP_62 /* Absorb the difference between open and openat args. */
 SYSCALL_HANDLED(257, openat)
-#endif  /* POSTK_DEBUG_ARCH_DEP_62 */
 SYSCALL_DELEGATED(270, pselect6)
 SYSCALL_DELEGATED(271, ppoll)
 SYSCALL_HANDLED(273, set_robust_list)

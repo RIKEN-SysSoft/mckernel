@@ -16,6 +16,7 @@
 #include <syscall.h>
 #include <uio.h>
 #include <debug.h>
+#include <xpmem.h>
 
 extern void ptrace_report_signal(struct thread *thread, int sig);
 extern void clear_single_step(struct thread *thread);
