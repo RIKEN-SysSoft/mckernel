@@ -32,6 +32,7 @@
 #include <limits.h>
 #include <syscall.h>
 #include <debug.h>
+#include <xpmem.h>
 
 void terminate_mcexec(int, int);
 extern long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
@@ -1764,6 +1765,35 @@ SYSCALL_DECLARE(arch_prctl)
 SYSCALL_DECLARE(time)
 {
 	return time();
+}
+
+SYSCALL_DECLARE(open)
+{
+	const char *_pathname = (const char *)ihk_mc_syscall_arg0(ctx);
+	int len;
+	char *pathname;
+	long rc;
+
+	len = strlen_user(_pathname);
+	if (len < 0)
+		return len;
+	if (!(pathname = kmalloc(len + 1, IHK_MC_AP_NOWAIT)))
+		return -ENOMEM;
+	if (copy_from_user(pathname, _pathname, len + 1)) {
+		kfree(pathname);
+		return -EFAULT;
+	}
+	dkprintf("open(): pathname=%s\n", pathname);
+	rc = strcmp(pathname, XPMEM_DEV_PATH);
+	if (!rc) {
+		rc = xpmem_open(pathname, (int)ihk_mc_syscall_arg1(ctx), ctx);
+	}
+	else {
+		rc = syscall_generic_forwarding(__NR_open, ctx);
+	}
+	kfree(pathname);
+
+	return rc;
 }
 
 static int vdso_get_vdso_info(void)
