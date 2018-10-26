@@ -3484,46 +3484,6 @@ SYSCALL_DECLARE(ioctl)
 	return rc;
 }
 
-SYSCALL_DECLARE(open)
-{
-	const char *pathname = (const char *)ihk_mc_syscall_arg0(ctx);
-	int len;
-	char *xpmem_wk;
-	long rc;
-
-	len = strlen_user(pathname);
-	if (len < 0)
-		return len;
-	if (!(xpmem_wk = kmalloc(len + 1, IHK_MC_AP_NOWAIT)))
-		return -ENOMEM;
-	if (copy_from_user(xpmem_wk, pathname, len + 1)) {
-		kfree(xpmem_wk);
-		return -EFAULT;
-	}
-	dkprintf("open(): pathname=%s\n", xpmem_wk);
-	rc = strcmp(xpmem_wk, XPMEM_DEV_PATH);
-#ifdef POSTK_DEBUG_ARCH_DEP_62 /* Absorb the difference between open and openat args. */
-	if (!rc) {
-		rc = xpmem_open(__NR_open, xpmem_wk, (int)ihk_mc_syscall_arg1(ctx), ctx);
-	}
-	else {
-		rc = syscall_generic_forwarding(__NR_open, ctx);
-	}
-	kfree(xpmem_wk);
-#else /* POSTK_DEBUG_ARCH_DEP_62 */
-	kfree(xpmem_wk);
-	if (!rc) {
-		rc = xpmem_open(ctx);
-	}
-	else {
-		rc = syscall_generic_forwarding(__NR_open, ctx);
-	}
-#endif /* POSTK_DEBUG_ARCH_DEP_62 */
-
-	return rc;
-}
-
-#ifdef POSTK_DEBUG_ARCH_DEP_62 /* Absorb the difference between open and openat args. */
 SYSCALL_DECLARE(openat)
 {
 	const char *pathname_user = (const char *)ihk_mc_syscall_arg1(ctx);
@@ -3534,18 +3494,18 @@ SYSCALL_DECLARE(openat)
 
 	pathname = kmalloc(len, IHK_MC_AP_NOWAIT);
 	if (!pathname) {
-		dkprintf("%s: error allocating pathname\n", __FUNCTION__);
+		dkprintf("%s: error allocating pathname\n", __func__);
 		return -ENOMEM;
 	}
 	if (copy_from_user(pathname, pathname_user, len)) {
-		dkprintf("%s: error: copy_from_user pathname\n", __FUNCTION__);
+		dkprintf("%s: error: copy_from_user pathname\n", __func__);
 		rc = -EFAULT;
 		goto out;
 	}
 
 	dkprintf("openat(): pathname=%s\n", pathname);
 	if (!strcmp(pathname, XPMEM_DEV_PATH)) {
-		rc = xpmem_open(__NR_openat, pathname, flags, ctx);
+		rc = xpmem_openat(pathname, flags, ctx);
 	} else {
 		rc = syscall_generic_forwarding(__NR_openat, ctx);
 	}
@@ -3554,7 +3514,6 @@ out:
 	kfree(pathname);
 	return rc;
 }
-#endif /* POSTK_DEBUG_ARCH_DEP_62 */
 
 SYSCALL_DECLARE(close)
 {
