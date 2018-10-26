@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "50cebdf0_527296af",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 10
+      },
+      "lineNbr": 3504,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-10-26T08:12:40Z",
+      "side": 1,
+      "message": "old issue but might as well fix: strncmp(pathname, XPMEM_DEV_PATH, len+1)\n\nOtherwise we\u0027ll read past the allocated buffer",
+      "revId": "271b3649f9d6a06e5cf74c11842293460e7b4718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "ab8ab9e7_5fa57769",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 10
+      },
+      "lineNbr": 3536,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-10-26T08:12:40Z",
+      "side": 1,
+      "message": "same",
+      "revId": "271b3649f9d6a06e5cf74c11842293460e7b4718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "3feddce0_bcacd058",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 10
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-10-26T08:12:40Z",
+      "side": 1,
+      "message": "(maybe) this can now become static if you want to restrict its access",
+      "revId": "271b3649f9d6a06e5cf74c11842293460e7b4718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "25511d87_41b5929f",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 10
+      },
+      "lineNbr": 2160,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-10-26T08:12:40Z",
+      "side": 1,
+      "message": "these all no longer need to drop the static attribute\n\n(a quick way to fix most is \u0027git checkout -p HEAD^ kernel/xpmem.c kernel/include/xpmem.h\u0027 and select what you want to undo; then commit --amend as usual)",
+      "revId": "271b3649f9d6a06e5cf74c11842293460e7b4718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
