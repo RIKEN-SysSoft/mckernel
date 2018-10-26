@@ -1,0 +1,327 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7d3102f8_7188608f",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/copy_up.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:59:24Z",
+      "side": 1,
+      "message": "WARNING: Symbolic permissions \u0027S_IWUSR | S_IRUGO\u0027 are not preferred. Consider using octal permissions \u00270644\u0027.\n+\t\t   S_IWUSR | S_IRUGO);",
+      "revId": "66179d7d3cda886cee5dad2710d11adc46b237e3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ca4e1342_0617532a",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/copy_up.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 61,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:59:24Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027error\u0027 should also have an identifier name\n+\tint uninitialized_var(error);",
+      "revId": "66179d7d3cda886cee5dad2710d11adc46b237e3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c39e8f0c_1a99c894",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/copy_up.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 512,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:59:24Z",
+      "side": 1,
+      "message": "WARNING: Avoid crashing the kernel - try using WARN_ON \u0026 recovery code rather than BUG() or BUG_ON()\n+\t\tBUG_ON(upperpath.dentry !\u003d NULL);",
+      "revId": "66179d7d3cda886cee5dad2710d11adc46b237e3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2269cab0_13ef4d5f",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/copy_up.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 631,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:59:24Z",
+      "side": 1,
+      "message": "WARNING: else is not generally useful after a break or return\n+\t\treturn -EIO;\n+\t} else {",
+      "revId": "66179d7d3cda886cee5dad2710d11adc46b237e3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ee1c51ea_d1a01ee4",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/namei.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 783,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:59:24Z",
+      "side": 1,
+      "message": "WARNING: Avoid crashing the kernel - try using WARN_ON \u0026 recovery code rather than BUG() or BUG_ON()\n+\tBUG_ON(idx \u003c 0);",
+      "revId": "66179d7d3cda886cee5dad2710d11adc46b237e3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bd19f5a8_fb3e0b98",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/namei.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 790,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:59:24Z",
+      "side": 1,
+      "message": "WARNING: Avoid crashing the kernel - try using WARN_ON \u0026 recovery code rather than BUG() or BUG_ON()\n+\tBUG_ON(idx \u003e oe-\u003enumlower);",
+      "revId": "66179d7d3cda886cee5dad2710d11adc46b237e3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1712001f_6c68d6f8",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/namei.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 862,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:59:24Z",
+      "side": 1,
+      "message": "WARNING: Avoid crashing the kernel - try using WARN_ON \u0026 recovery code rather than BUG() or BUG_ON()\n+\t\t\tBUG_ON(!d.stop || d.redirect);",
+      "revId": "66179d7d3cda886cee5dad2710d11adc46b237e3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "425cf480_854ee87e",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/overlayfs.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 124,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:59:24Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint err \u003d vfs_mkdir(dir, dentry, mode);\n+\tpr_debug(\"mkdir(%pd2, 0%o) \u003d %i\\n\", dentry, mode, err);",
+      "revId": "66179d7d3cda886cee5dad2710d11adc46b237e3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c9a1a68e_f7db8e0f",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/overlayfs.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 150,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:59:24Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint err \u003d vfs_setxattr(dentry, name, value, size, flags);\n+\tpr_debug(\"setxattr(%pd2, \\\"%s\\\", \\\"%*pE\\\", %zu, 0x%x) \u003d %i\\n\",",
+      "revId": "66179d7d3cda886cee5dad2710d11adc46b237e3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b6296983_8fb249bb",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/overlayfs.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 158,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:59:24Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint err \u003d vfs_removexattr(dentry, name);\n+\tpr_debug(\"removexattr(%pd2, \\\"%s\\\") \u003d %i\\n\", dentry, name, err);",
+      "revId": "66179d7d3cda886cee5dad2710d11adc46b237e3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a3e6ac8f_c5a03456",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/overlayfs.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 180,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:59:24Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint err \u003d vfs_whiteout(dir, dentry);\n+\tpr_debug(\"whiteout(%pd2) \u003d %i\\n\", dentry, err);",
+      "revId": "66179d7d3cda886cee5dad2710d11adc46b237e3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1daca658_91372c7a",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/ovl_entry.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 79,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:59:24Z",
+      "side": 1,
+      "message": "WARNING: Prefer \u0027unsigned int\u0027 to bare use of \u0027unsigned\u0027\n+\tunsigned numlower;",
+      "revId": "66179d7d3cda886cee5dad2710d11adc46b237e3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f1d2eee4_3b0a6020",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/readdir.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 850,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:59:24Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+\t\t\t\tsmp_store_release(\u0026od-\u003eupperfile, realfile);",
+      "revId": "66179d7d3cda886cee5dad2710d11adc46b237e3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "abaf1ec5_fa544197",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/super.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 135,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:59:24Z",
+      "side": 1,
+      "message": "WARNING: Prefer using \u0027\"%s...\", __func__\u0027 to using \u0027ovl_d_real\u0027, this function\u0027s name, in a string\n+\tWARN(1, \"ovl_d_real(%pd4, %s:%lu): real dentry not found\\n\", dentry,",
+      "revId": "66179d7d3cda886cee5dad2710d11adc46b237e3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "590a3555_e6122fba",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/super.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 235,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:59:24Z",
+      "side": 1,
+      "message": "WARNING: Prefer \u0027unsigned int\u0027 to bare use of \u0027unsigned\u0027\n+\tunsigned i;",
+      "revId": "66179d7d3cda886cee5dad2710d11adc46b237e3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "89bbca90_3a2e1dc3",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/super.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 559,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:59:24Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tpr_err(\"overlayfs: unrecognized mount option \\\"%s\\\" or missing value\\n\", p);",
+      "revId": "66179d7d3cda886cee5dad2710d11adc46b237e3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c51576bf_0917d304",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/util.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:59:24Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tstruct ovl_fs *ofs \u003d dentry-\u003ed_sb-\u003es_fs_info;\n+\treturn mnt_want_write(ofs-\u003eupper_mnt);",
+      "revId": "66179d7d3cda886cee5dad2710d11adc46b237e3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7dd1503a_1708d549",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/util.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:59:24Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tstruct ovl_fs *ofs \u003d dentry-\u003ed_sb-\u003es_fs_info;\n+\tmnt_drop_write(ofs-\u003eupper_mnt);",
+      "revId": "66179d7d3cda886cee5dad2710d11adc46b237e3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6d3a43b4_ff446be8",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/util.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:59:24Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tstruct ovl_fs *ofs \u003d dentry-\u003ed_sb-\u003es_fs_info;\n+\treturn ofs-\u003eworkdir;",
+      "revId": "66179d7d3cda886cee5dad2710d11adc46b237e3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
