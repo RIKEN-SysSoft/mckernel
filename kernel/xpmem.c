@@ -36,10 +36,8 @@
 
 struct xpmem_partition *xpmem_my_part = NULL;  /* pointer to this partition */
 
-
-#if defined(POSTK_DEBUG_ARCH_DEP_46) || defined(POSTK_DEBUG_ARCH_DEP_62)
-int xpmem_open(int num, const char *pathname,
-		int flags, ihk_mc_user_context_t *ctx)
+int do_xpmem_open(int syscall_num, const char *pathname,
+		  int flags, ihk_mc_user_context_t *ctx)
 {
 	int ret;
 	struct thread *thread = cpu_local_var(current);
@@ -48,23 +46,8 @@ int xpmem_open(int num, const char *pathname,
 	struct mckfd *mckfd;
 	long irqstate;
 
-	XPMEM_DEBUG("call: syscall_num=%d, pathname=%s, flags=%d", num, pathname, flags);
-#else /* POSTK_DEBUG_ARCH_DEP_46 || POSTK_DEBUG_ARCH_DEP_62 */
-int xpmem_open(
-	ihk_mc_user_context_t *ctx)
-{
-	const char *pathname = (const char *)ihk_mc_syscall_arg0(ctx);
-	int flags = (int)ihk_mc_syscall_arg1(ctx);
-	int ret;
-	struct thread *thread = cpu_local_var(current);
-	struct process *proc = thread->proc;
-	struct syscall_request request IHK_DMA_ALIGN;
-	int fd;
-	struct mckfd *mckfd;
-	long irqstate;
-
-	XPMEM_DEBUG("call: pathname=%s, flags=%d", pathname, flags);
-#endif /* POSTK_DEBUG_ARCH_DEP_46 || POSTK_DEBUG_ARCH_DEP_62 */
+	XPMEM_DEBUG("call: syscall_num=%d, pathname=%s, flags=%d",
+		    syscall_num, pathname, flags);
 
 	if (!xpmem_my_part) {
 		ret = xpmem_init();
@@ -73,22 +56,11 @@ int xpmem_open(
 		}
 	}
 
-#ifdef POSTK_DEBUG_ARCH_DEP_62 /* Absorb the difference between open and openat args. */
-	fd = syscall_generic_forwarding(num, ctx);
+	fd = syscall_generic_forwarding(syscall_num, ctx);
 	if(fd < 0){
-		XPMEM_DEBUG("syscall_num=%d error: fd=%d", num, fd);
+		XPMEM_DEBUG("syscall_num=%d error: fd=%d", syscall_num, fd);
 		return fd;
 	}
-#else /* POSTK_DEBUG_ARCH_DEP_62 */
-	request.number = __NR_open;
-	request.args[0] = (unsigned long)pathname;
-	request.args[1] = flags;
-	fd = do_syscall(&request, ihk_mc_get_processor_id());
-	if (fd < 0) {
-		XPMEM_DEBUG("__NR_open error: fd=%d", fd);
-		return fd;
-	}
-#endif /* POSTK_DEBUG_ARCH_DEP_62 */
 
 	ret = __xpmem_open();
 	if (ret) {
@@ -128,7 +100,6 @@ int xpmem_open(
 
 	return mckfd->fd;
 }
-
 
 static int xpmem_ioctl(
 	struct mckfd *mckfd,
@@ -2127,7 +2098,7 @@ static void xpmem_unpin_pages(
 }
 
 
-static struct xpmem_thread_group * __xpmem_tg_ref_by_tgid_nolock_internal(
+struct xpmem_thread_group * __xpmem_tg_ref_by_tgid_nolock_internal(
 	pid_t tgid,
 	int index,
 	int return_destroying)
@@ -2174,7 +2145,7 @@ static struct xpmem_thread_group * xpmem_tg_ref_by_apid(
 }
 
 
-static void xpmem_tg_deref(
+void xpmem_tg_deref(
 	struct xpmem_thread_group *tg)
 {
 	DBUG_ON(ihk_atomic_read(&tg->refcnt) <= 0);
@@ -2215,7 +2186,7 @@ static struct xpmem_segment * xpmem_seg_ref_by_segid(
 }
 
 
-static void xpmem_seg_deref(
+void xpmem_seg_deref(
 	struct xpmem_segment *seg)
 {
 	DBUG_ON(ihk_atomic_read(&seg->refcnt) <= 0);
@@ -2262,7 +2233,7 @@ static struct xpmem_access_permit * xpmem_ap_ref_by_apid(
 }
 
 
-static void xpmem_ap_deref(
+void xpmem_ap_deref(
 	struct xpmem_access_permit *ap)
 {
 	DBUG_ON(ihk_atomic_read(&ap->refcnt) <= 0);
@@ -2278,7 +2249,7 @@ static void xpmem_ap_deref(
 }
 
 
-static void xpmem_att_deref(
+void xpmem_att_deref(
 	struct xpmem_attachment *att)
 {
 	DBUG_ON(ihk_atomic_read(&att->refcnt) <= 0);
