@@ -67,6 +67,24 @@
       "revId": "530288a00bf4edd436c3d06d4581456ece73353f",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "a0cef458_54669457",
+        "filename": "kernel/include/syscall.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 291,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-10-26T00:45:07Z",
+      "side": 1,
+      "message": "I thought I fixed it, but it was lost :(",
+      "parentUuid": "3ecf259b_dfda6d48",
+      "revId": "530288a00bf4edd436c3d06d4581456ece73353f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
     }
   ]
 }
