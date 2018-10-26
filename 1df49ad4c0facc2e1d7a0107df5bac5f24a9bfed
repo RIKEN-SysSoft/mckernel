@@ -1,0 +1,293 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "749262a1_948ac2e0",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1856,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:08:26Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\tdkprintf(\"%s: error allocating pathname\\n\", __FUNCTION__);",
+      "revId": "1df49ad4c0facc2e1d7a0107df5bac5f24a9bfed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b1fe7842_480e7c02",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1860,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:08:26Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\tdkprintf(\"%s: error: copy_from_user pathname\\n\", __FUNCTION__);",
+      "revId": "1df49ad4c0facc2e1d7a0107df5bac5f24a9bfed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c4af34cc_44e38668",
+        "filename": "arch/arm64/kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:08:26Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ * ^ICopyright (C) 2016 Yoichi Umezawa$",
+      "revId": "1df49ad4c0facc2e1d7a0107df5bac5f24a9bfed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e4d0e030_53c2db3a",
+        "filename": "arch/x86_64/kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:08:26Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ * ^ICopyright (C) 2016 Yoichi Umezawa$",
+      "revId": "1df49ad4c0facc2e1d7a0107df5bac5f24a9bfed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "448395de_d785fcca",
+        "filename": "kernel/include/xpmem.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:08:26Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027const char*\u0027 should also have an identifier name\n+extern int xpmem_open(const char*, int, ihk_mc_user_context_t *ctx);",
+      "revId": "1df49ad4c0facc2e1d7a0107df5bac5f24a9bfed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bed89cf9_3871d6bf",
+        "filename": "kernel/include/xpmem.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:08:26Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027int\u0027 should also have an identifier name\n+extern int xpmem_open(const char*, int, ihk_mc_user_context_t *ctx);",
+      "revId": "1df49ad4c0facc2e1d7a0107df5bac5f24a9bfed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "48a5b36e_caaaeee9",
+        "filename": "kernel/include/xpmem.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:08:26Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027const char*\u0027 should also have an identifier name\n+extern int xpmem_openat(const char*, int, ihk_mc_user_context_t *ctx);",
+      "revId": "1df49ad4c0facc2e1d7a0107df5bac5f24a9bfed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6dec2c6e_4bd93e54",
+        "filename": "kernel/include/xpmem.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:08:26Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027int\u0027 should also have an identifier name\n+extern int xpmem_openat(const char*, int, ihk_mc_user_context_t *ctx);",
+      "revId": "1df49ad4c0facc2e1d7a0107df5bac5f24a9bfed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3bbc70a3_40154088",
+        "filename": "kernel/include/xpmem_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 310,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:08:26Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027int\u0027 should also have an identifier name\n+struct xpmem_thread_group * __xpmem_tg_ref_by_tgid_nolock_internal(",
+      "revId": "1df49ad4c0facc2e1d7a0107df5bac5f24a9bfed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a22d29a6_c5427452",
+        "filename": "kernel/include/xpmem_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 310,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:08:26Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027pid_t\u0027 should also have an identifier name\n+struct xpmem_thread_group * __xpmem_tg_ref_by_tgid_nolock_internal(",
+      "revId": "1df49ad4c0facc2e1d7a0107df5bac5f24a9bfed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "666cbc9d_f50798de",
+        "filename": "kernel/include/xpmem_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 310,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:08:26Z",
+      "side": 1,
+      "message": "ERROR: \"foo * bar\" should be \"foo *bar\"\n+struct xpmem_thread_group * __xpmem_tg_ref_by_tgid_nolock_internal(",
+      "revId": "1df49ad4c0facc2e1d7a0107df5bac5f24a9bfed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6228a13f_400fa9f5",
+        "filename": "kernel/include/xpmem_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 310,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:08:26Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027int\u0027 should also have an identifier name\n+struct xpmem_thread_group * __xpmem_tg_ref_by_tgid_nolock_internal(",
+      "revId": "1df49ad4c0facc2e1d7a0107df5bac5f24a9bfed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "42c3958b_dfaadf30",
+        "filename": "kernel/include/xpmem_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 362,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:08:26Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027struct xpmem_thread_group *\u0027 should also have an identifier name\n+void xpmem_tg_deref(struct xpmem_thread_group *);",
+      "revId": "1df49ad4c0facc2e1d7a0107df5bac5f24a9bfed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d55fd5dc_9cc13803",
+        "filename": "kernel/include/xpmem_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 365,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:08:26Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027struct xpmem_segment *\u0027 should also have an identifier name\n+void xpmem_seg_deref(struct xpmem_segment *);",
+      "revId": "1df49ad4c0facc2e1d7a0107df5bac5f24a9bfed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "59b24386_45d47522",
+        "filename": "kernel/include/xpmem_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 368,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:08:26Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027struct xpmem_access_permit *\u0027 should also have an identifier name\n+void xpmem_ap_deref(struct xpmem_access_permit *);",
+      "revId": "1df49ad4c0facc2e1d7a0107df5bac5f24a9bfed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5825be7b_aded57d2",
+        "filename": "kernel/include/xpmem_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 369,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:08:26Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027struct xpmem_attachment *\u0027 should also have an identifier name\n+void xpmem_att_deref(struct xpmem_attachment *);",
+      "revId": "1df49ad4c0facc2e1d7a0107df5bac5f24a9bfed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "80e9dbf4_ed357628",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2101,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:08:26Z",
+      "side": 1,
+      "message": "ERROR: \"foo * bar\" should be \"foo *bar\"\n+struct xpmem_thread_group * __xpmem_tg_ref_by_tgid_nolock_internal(",
+      "revId": "1df49ad4c0facc2e1d7a0107df5bac5f24a9bfed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
