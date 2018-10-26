@@ -7,11 +7,7 @@ SYSCALL_DELEGATED(25, fcntl)
 SYSCALL_HANDLED(29, ioctl)
 SYSCALL_DELEGATED(43, statfs)
 SYSCALL_DELEGATED(44, fstatfs)
-#ifdef POSTK_DEBUG_ARCH_DEP_62 /* Absorb the difference between open and openat args. */
 SYSCALL_HANDLED(56, openat)
-#else /* POSTK_DEBUG_ARCH_DEP_62 */
-SYSCALL_DELEGATED(56, openat)
-#endif /* POSTK_DEBUG_ARCH_DEP_62 */
 SYSCALL_HANDLED(57, close)
 SYSCALL_DELEGATED(61, getdents64)
 SYSCALL_DELEGATED(62, lseek)
