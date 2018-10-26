@@ -32,6 +32,7 @@
 #include <limits.h>
 #include <syscall.h>
 #include <debug.h>
+#include <xpmem.h>
 
 void terminate_mcexec(int, int);
 extern long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
