@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "76924d8c_d0dc9dcc",
+        "filename": "kernel/include/xpmem.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:30:37Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+int xpmem_remove_process_memory_range(struct process_vm *vm, $",
+      "revId": "c760e54a56181cade65a5dc43b91dc436c603719",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "333fd1f3_76247495",
+        "filename": "kernel/include/xpmem.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-26T07:30:37Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+int xpmem_fault_process_memory_range(struct process_vm *vm, $",
+      "revId": "c760e54a56181cade65a5dc43b91dc436c603719",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
