@@ -1114,7 +1114,7 @@ static const struct procfs_entry pid_entry_stuff[] = {
 //	PROC_LNK("exe",        mckernel_readlink),
 //	PROC_REG("limits",     S_IRUSR|S_IWUSR, NULL),
 	PROC_REG("maps",       0444, &mckernel_buff_io),
-	PROC_REG("mem",        0600, NULL),
+	PROC_REG("mem",        0400, NULL),
 	PROC_REG("pagemap",    0444, NULL),
 //	PROC_REG("smaps",      S_IRUGO, NULL),
 //	PROC_REG("stat",       0444, &mckernel_buff_io),

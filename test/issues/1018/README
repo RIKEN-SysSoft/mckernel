@@ -6,8 +6,8 @@ CT_001: /proc/<PID>/mem に対するpread
 	preadが成功することと、読み取ったデータが正しいことを確認
 
 CT_002: /proc/<PID>/mem に対するpwrite
-	/proc/<PID>/mem に対して、2MB, 4MB, 8MB でそれぞれpwriteを実行し、
-	pwriteが成功することを確認
+	/proc/<PID>/mem に対して、書き込み権限のあるopenを実行し、
+	openが失敗することと、errnoにEACCESが設定されることを確認
 
 2. 既存のprocfs機能に影響がないことをOSTESTを用いて確認
 RT_001: ostest_procfs.000
@@ -20,18 +20,12 @@ RT_003: ostest_procfs.003
 	/proc/<PID>/stat の内容を取得できることを確認
 
 □ 実行手順
-McKernelのインストール先や、OSTEST, LTPの配置場所は、
-$HOME/mck_test_config を参照している
-mck_test_config は、McKernelをビルドした際に生成される
-mck_test_config.sample ファイルを$HOMEにコピーし、適宜編集する
-
 $ make test
 
-実行できない場合は、C1018.shの以下の行を適切に書き換えた後に実行。
-BIN=          mcexec が存在するパス
-SBIN=         mcreboot.sh が存在するパス
-OSTEST=       OSTESTが存在するパス
-LTP=          LTPが存在するパス
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
 
 □ 実行結果
 result.log 参照。
