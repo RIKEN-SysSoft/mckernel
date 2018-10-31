@@ -1,0 +1,344 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fdfef89f_8da19b78",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 80,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-31T07:13:05Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define MCK_MEMBER_OFFSET_INIT(X, Y, Z) (MCK_ASSIGN_OFFSET(X) \u003d MEMBER_OFFSET(Y, Z))",
+      "revId": "8f9601a2e0c7e166c9a7e14331e753316b293d0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4c7fde3c_8f5fd201",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 152,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-31T07:13:05Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\terrmsg, space(strlen(pc-\u003ecurcmd)), file, line, func);",
+      "revId": "8f9601a2e0c7e166c9a7e14331e753316b293d0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa4785be_dbb61a23",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 223,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-31T07:13:05Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tif (readmem(ld.end, KVADDR, \u0026ld.start, sizeof(ld.start), \"first list element\",",
+      "revId": "8f9601a2e0c7e166c9a7e14331e753316b293d0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "713f8582_185a5b0c",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 366,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-31T07:13:05Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tMCK_MEMBER_OFFSET_INIT(vm_regions_brk_end_allocated, \"struct vm_regions\",",
+      "revId": "8f9601a2e0c7e166c9a7e14331e753316b293d0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "38242d9b_55c203a1",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 368,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-31T07:13:05Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tMCK_MEMBER_OFFSET_INIT(vm_range_vm_rb_node, \"struct vm_range\", \"vm_rb_node\");",
+      "revId": "8f9601a2e0c7e166c9a7e14331e753316b293d0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c372ad44_27320810",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 607,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-31T07:13:05Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t.list_head_offset \u003d MCK_MEMBER_OFFSET(thread_sched_list),",
+      "revId": "8f9601a2e0c7e166c9a7e14331e753316b293d0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bc77bd6a_1c1d2ea5",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 763,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-31T07:13:05Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tsizeof(void *), \"rb_node rb_left\", RETURN_ON_ERROR|QUIET)) {",
+      "revId": "8f9601a2e0c7e166c9a7e14331e753316b293d0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2df5c20d_09c7029f",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 767,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-31T07:13:05Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\terror(INFO, \"rb_node: %lx: corrupted rb_left pointer: %lx\\n\",",
+      "revId": "8f9601a2e0c7e166c9a7e14331e753316b293d0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "74ce4b19_83c338a2",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 786,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-31T07:13:05Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tsizeof(void *), \"rb_node rb_left\", RETURN_ON_ERROR|QUIET)) {",
+      "revId": "8f9601a2e0c7e166c9a7e14331e753316b293d0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "86490ead_90f0affc",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 790,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-31T07:13:05Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\terror(INFO, \"rb_node: %lx: corrupted rb_left pointer: %lx\\n\",",
+      "revId": "8f9601a2e0c7e166c9a7e14331e753316b293d0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "524e1e39_95d509e3",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 797,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-31T07:13:05Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tsizeof(void *), \"rb_node rb_left\", RETURN_ON_ERROR|QUIET)) {",
+      "revId": "8f9601a2e0c7e166c9a7e14331e753316b293d0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a1641035_d1189c8a",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 801,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-31T07:13:05Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\terror(INFO, \"rb_node: %lx: corrupted rb_right pointer: %lx\\n\",",
+      "revId": "8f9601a2e0c7e166c9a7e14331e753316b293d0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "367e775f_e6574ba2",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 823,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-31T07:13:05Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\u0026start, sizeof(void *), \"rb_root rb_node\", FAULT_ON_ERROR);",
+      "revId": "8f9601a2e0c7e166c9a7e14331e753316b293d0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3fb45de5_ce2e5d80",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 954,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-31T07:13:05Z",
+      "side": 1,
+      "message": "ERROR: Macros with multiple statements should be enclosed in a do - while loop\n+#define GET_VIRT_INDICES(virt, l4i, l3i, l2i, l1i) \\\n+\tl4i \u003d ((virt) \u003e\u003e PTL4_SHIFT) \u0026 (PT_ENTRIES - 1); \\\n+\tl3i \u003d ((virt) \u003e\u003e PTL3_SHIFT) \u0026 (PT_ENTRIES - 1); \\\n+\tl2i \u003d ((virt) \u003e\u003e PTL2_SHIFT) \u0026 (PT_ENTRIES - 1); \\\n+\tl1i \u003d ((virt) \u003e\u003e PTL1_SHIFT) \u0026 (PT_ENTRIES - 1)",
+      "revId": "8f9601a2e0c7e166c9a7e14331e753316b293d0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4664c073_37450a8b",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1044,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-31T07:13:05Z",
+      "side": 1,
+      "message": "WARNING: Prefer using \u0027\"%s...\", __func__\u0027 to using \u0027ptl_shift\u0027, this function\u0027s name, in a string\n+\tdefault: error(FATAL, \"ptl_shift called with invalid level %d\\n\", level);",
+      "revId": "8f9601a2e0c7e166c9a7e14331e753316b293d0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6b92ef13_3d3a06a2",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1044,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-31T07:13:05Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\tdefault: error(FATAL, \"ptl_shift called with invalid level %d\\n\", level);",
+      "revId": "8f9601a2e0c7e166c9a7e14331e753316b293d0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fd298c29_ef4ee500",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1044,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-31T07:13:05Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdefault: error(FATAL, \"ptl_shift called with invalid level %d\\n\", level);",
+      "revId": "8f9601a2e0c7e166c9a7e14331e753316b293d0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b00cefd7_726a8bd7",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1092,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-31T07:13:05Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(fp, \"pt %#lx, virt %lx, l4idx %d, l3idx %d, l2idx %d, l1idx %d\\n\",",
+      "revId": "8f9601a2e0c7e166c9a7e14331e753316b293d0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "475fc09e_409a95b0",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1200,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-31T07:13:05Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (!readmem(process_vm + MCK_MEMBER_OFFSET(process_vm_address_space),",
+      "revId": "8f9601a2e0c7e166c9a7e14331e753316b293d0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "aae42893_a0646ce5",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1205,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-10-31T07:13:05Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (!readmem(address_space + MCK_MEMBER_OFFSET(address_space_page_table),",
+      "revId": "8f9601a2e0c7e166c9a7e14331e753316b293d0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
