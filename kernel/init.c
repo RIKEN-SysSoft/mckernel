@@ -168,6 +168,12 @@ static void parse_kargs(void)
 	if (ptr) {
 		allow_oversubscribe = 1;
 	}
+
+	/* time_sharing option */
+	ptr = find_command_line("time_sharing");
+	if (ptr) {
+		time_sharing = 1;
+	}
 }
 
 extern void ihk_mc_get_boot_time(unsigned long *tv_sec, unsigned long *tv_nsec);
