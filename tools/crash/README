@@ -1,0 +1,35 @@
+crash extension for mckernel
+
+== BUILD ==
+
+You can build it by installing the crash-devel package, or putting
+the files here in the extensions directory of the crash sources, and
+running `make -f mckernel.mk`
+
+== USAGE ==
+
+Either run 'extend path/to/mckernel.so' from within crash or run crash
+with `CRASH_EXTENSIONS=path/to/dir crash -x`
+You then need to tell crash about mckernel symbol with the `mcsymbols`
+command:
+
+  crash> mcsymbols path/to/mckernel.img
+  Loading symbols from path/to/mckernel.img... OK.
+
+If your mckernel.img is always at the same place, you can put the command
+in a crashrc file and load everything automatically with -i, such as:
+
+  CRASH_EXTENSIONS=.../crash/extensions crash -x -i .../crashrc
+
+
+At this point, you can use the various mckernel commands, as well as
+regular linux crash commands:
+
+  crash> help | xargs -n 1 | grep -E '^mc'
+  mcmem
+  mcps
+  mcsymbols
+  mcvtop
+  mckmsg
+
+Refer to the inline help of each command for their usage and examples.
