@@ -1626,21 +1626,15 @@ static int split_large_page(pte_t *ptep, size_t pgsize)
 	unsigned long under_pgsize;
 
 	// ラージページ判定
-	switch (pgsize)
-	{
-#if FIRST_LEVEL_BLOCK_SUPPORT
-	case __PTL3_SIZE:
+	if (FIRST_LEVEL_BLOCK_SUPPORT && pgsize == PTL3_SIZE) {
 		table_level = 3;
 		entries = PTL3_ENTRIES;
 		under_pgsize = PTL2_SIZE;
-		break;
-#endif
-	case __PTL2_SIZE:
+	} else if (pgsize == PTL2_SIZE) {
 		table_level = 2;
 		entries = PTL2_ENTRIES;
 		under_pgsize = PTL1_SIZE;
-		break;
-	default:
+	} else {
 		ekprintf("split_large_page:invalid pgsize %#lx\n", pgsize);
 		return -EINVAL;
 	}
@@ -2927,9 +2921,19 @@ void init_low_area(struct page_table *pt)
 	set_pt_large_page(pt, 0, 0, PTATTR_NO_EXECUTE|PTATTR_WRITABLE);
 }
 
+int FIRST_LEVEL_BLOCK_SUPPORT;
 void init_page_table(void)
 {
 	ihk_mc_spinlock_init(&init_pt_lock);
+
+	if (PAGE_SIZE == _SZ4KB) {
+		FIRST_LEVEL_BLOCK_SUPPORT = 1;
+	} else if ((PAGE_SIZE == _SZ16KB)) {
+		FIRST_LEVEL_BLOCK_SUPPORT = 0;
+	} else {
+		uint64_t parange = read_sysreg(id_aa64mmfr0_el1) & 7;
+		FIRST_LEVEL_BLOCK_SUPPORT = (parange >= ID_AA64MMFR0_PARANGE_52);
+	}
 
 	/* Normal memory area */
 	init_normal_area(init_pt);

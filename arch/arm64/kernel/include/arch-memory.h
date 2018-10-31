@@ -110,7 +110,6 @@
 # define PTL3_INDEX_MASK PTL4_INDEX_MASK
 # define PTL2_INDEX_MASK PTL3_INDEX_MASK
 # define PTL1_INDEX_MASK PTL2_INDEX_MASK
-# define FIRST_LEVEL_BLOCK_SUPPORT  1
 # define __PTL4_CONT_SHIFT  0
 # define __PTL3_CONT_SHIFT  4
 # define __PTL2_CONT_SHIFT  4
@@ -124,7 +123,6 @@
 # define PTL3_INDEX_MASK ((UL(1) << 11) - 1)
 # define PTL2_INDEX_MASK PTL3_INDEX_MASK
 # define PTL1_INDEX_MASK PTL2_INDEX_MASK
-# define FIRST_LEVEL_BLOCK_SUPPORT  0
 # define __PTL4_CONT_SHIFT  0
 # define __PTL3_CONT_SHIFT  0
 # define __PTL2_CONT_SHIFT  5
@@ -138,7 +136,6 @@
 # define PTL3_INDEX_MASK ((UL(1) << 6) - 1)
 # define PTL2_INDEX_MASK ((UL(1) << 13) - 1)
 # define PTL1_INDEX_MASK PTL2_INDEX_MASK
-# define FIRST_LEVEL_BLOCK_SUPPORT  0
 # define __PTL4_CONT_SHIFT  0
 # define __PTL3_CONT_SHIFT  0
 # define __PTL2_CONT_SHIFT  5
@@ -146,6 +143,10 @@
 #else
 # error granule size error.
 #endif
+
+#ifndef __ASSEMBLY__
+extern int FIRST_LEVEL_BLOCK_SUPPORT;
+#endif /* __ASSEMBLY__ */
 
 # define __PTL4_SIZE  (UL(1) << __PTL4_SHIFT)
 # define __PTL3_SIZE  (UL(1) << __PTL3_SHIFT)
