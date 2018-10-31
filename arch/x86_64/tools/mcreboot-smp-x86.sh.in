@@ -49,8 +49,9 @@ safe_kernel_map=""
 umask_old=`umask`
 idle_halt=""
 allow_oversubscribe=""
+time_sharing="time_sharing"
 
-while getopts stk:c:m:o:f:r:q:i:d:e:hO OPT
+while getopts stk:c:m:o:f:r:q:i:d:e:hOT: OPT
 do
 	case ${OPT} in
 	f)	facility=${OPTARG}
@@ -80,6 +81,14 @@ do
 	h) idle_halt="idle_halt"
 		;;
 	O) allow_oversubscribe="allow_oversubscribe"
+		;;
+	T)
+		case ${OPTARG} in
+		    1) time_sharing="time_sharing"
+			;;
+		    0) time_sharing=""
+			;;
+		esac
 		;;
 	\?) exit 1
 		;;
@@ -449,7 +458,7 @@ if ! ${SBINDIR}/ihkosctl 0 load ${KERNDIR}/mckernel.img; then
 fi
 
 # Set kernel arguments
-if ! ${SBINDIR}/ihkosctl 0 kargs "hidos $turbo $safe_kernel_map $idle_halt dump_level=${DUMP_LEVEL} $extra_kopts $allow_oversubscribe"; then
+if ! ${SBINDIR}/ihkosctl 0 kargs "hidos $turbo $safe_kernel_map $idle_halt dump_level=${DUMP_LEVEL} $extra_kopts $allow_oversubscribe $time_sharing"; then
 	echo "error: setting kernel arguments" >&2
 	error_exit "os_created"
 fi

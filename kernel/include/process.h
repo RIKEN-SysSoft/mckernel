@@ -280,6 +280,7 @@ extern struct list_head	resource_set_list;
 extern mcs_rwlock_lock_t	resource_set_lock;
 extern int idle_halt;
 extern int allow_oversubscribe;
+extern int time_sharing;
 extern ihk_spinlock_t runq_reservation_lock; /* mutex for cpuid reservation (clv->runq_reserved) */
 
 struct process_hash {
