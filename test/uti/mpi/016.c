@@ -1,4 +1,5 @@
 #define _GNU_SOURCE         /* See feature_test_macros(7) */
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -20,16 +21,29 @@
 #define NSAMPLES_INIT 10/*20*/
 #define NSAMPLES_DROP_INIT 2/*10*/
 
-#define NSAMPLES_TRIAL 10/*20*/
-#define NSAMPLES_DROP_TRIAL 2/*10*/
+#define SEARCH_MIN 0.01
+#define SEARCH_MAX 0.15
+#define SEARCH_STEP 0.005/*0.0025*/
 
-#define NSAMPLES_TOTAL 10/*20*/
-#define NSAMPLES_DROP_TOTAL 2/*10*/
+#define NSAMPLES_SEARCH 3/*10*/
+#define NSAMPLES_DROP_SEARCH 0/*2*/
+
+#define NSAMPLES_TOTAL 2/*10*/
+#define NSAMPLES_DROP_TOTAL 0/*2*/
 
 /* (#ranks - 1) * NSAMPLES_INNER doubles are sent from each rank */
 #define NSAMPLES_INNER 8
 
+#define RATIO_MAX 1.0/*1.5*/
+#define RATIO_STEP 0.1/*0.1*/
+
+/* 0: Without progress, 1: With non-uti progress, 2: With uti progress */
+#define PROGRESS_STEP 2
+
 static int ppn = -1;
+
+/* Report min, max, ave at each rma() call */
+static int profile_minmaxave = 1;
 
 /* Time components to measure */
 struct measure_desc {
@@ -47,7 +61,7 @@ struct buf_desc {
 	int sz;
 };
 
-/* Time components for simulated computation and communication */
+/* Amouont of computation in time and optimal iprobe time */
 struct time_desc {
 	double calc;
 	double iprobe;
@@ -133,7 +147,7 @@ void pr_buf(struct buf_desc *buf, int rank, int nproc)
 void pr_measure_first_row(void)
 {
 	printf("%8s\t%8s\t%8s\t%8s\t",
-	       "calc(requested)", "rma", "calc", "pswitch");
+	       "calc(requested)", "rma", "pswitch", "calc");
 	printf("%8s\t", "iprobe");
 	printf("%8s\t%8s\n", "flush", "total");
 }
@@ -235,13 +249,6 @@ void rma(int rank, int nproc, MPI_Win win,
 		sdelay(time->calc);
 		end = mytime();
 		measure->calc = end - start;
-#if 0
-		if (rank == 0) {
-			printf("requested:%f,measured:%f\n",
-			       time->calc * MYTIME_TOUSEC,
-			       measure->calc * MYTIME_TOUSEC);
-		}
-#endif
 	}
 
 	if (async_progress) {
@@ -283,6 +290,7 @@ void measure(int rank, int nproc, MPI_Win win, struct buf_desc *buf,
 	struct measure_desc measure_l, measure_g;
 	struct measure_desc measure_s;
 	struct double_int double_int_l, double_int_g;
+	struct measure_desc min, max, ave;
 
 	memset(&measure_s, 0, sizeof(struct measure_desc));
 
@@ -308,14 +316,6 @@ void measure(int rank, int nproc, MPI_Win win, struct buf_desc *buf,
 		MPI_Allreduce(&double_int_l, &double_int_g, 1, MPI_DOUBLE_INT,
 			      MPI_MAXLOC, MPI_COMM_WORLD);
 
-#if 0
-		if (rank == 0) {
-			printf("double_int_g.rank=%d,val=%.0f usec\n",
-			       double_int_g.rank,
-			       double_int_g.val * MYTIME_TOUSEC);
-		}
-#endif
-
 		measure_g.rma = measure_l.rma;
 		measure_g.calc = measure_l.calc;
 		measure_g.pswitch = measure_l.pswitch;
@@ -335,6 +335,34 @@ void measure(int rank, int nproc, MPI_Win win, struct buf_desc *buf,
 			  MPI_COMM_WORLD);
 		MPI_Bcast(&measure_g.total, 1, MPI_DOUBLE, double_int_g.rank,
 			  MPI_COMM_WORLD);
+
+#define allreduce(component, result, op) do {			\
+		MPI_Allreduce(&measure_l.component, &result.component, 1, MPI_DOUBLE, \
+			      op, MPI_COMM_WORLD); \
+		} while (0)
+
+#define min_max_ave(component) do { \
+			allreduce(component, min, MPI_MIN);	\
+			allreduce(component, max, MPI_MAX);	\
+			allreduce(component, ave, MPI_SUM);	\
+			ave.component /= nproc; \
+		} while (0)
+		
+		if (profile_minmaxave) {
+			min_max_ave(rma);
+			min_max_ave(pswitch);
+			min_max_ave(calc);
+			min_max_ave(iprobe);
+			min_max_ave(flush);
+			min_max_ave(total);
+			
+			if (rank == 0) {
+				pr_measure_first_row();
+				pr_measure(time, &min);
+				pr_measure(time, &max);
+				pr_measure(time, &ave);
+			}
+		}
 
 		if (i < nsamples_drop) {
 			continue;
@@ -367,8 +395,8 @@ int main(int argc, char **argv)
 	double ratio, ratio_min;
 	MPI_Win win;
 	struct buf_desc buf = { .sz = 1 }; /* Number of doubles to send */
-	struct time_desc time_init, time_trial, time_min, time_target;
-	struct measure_desc measure_init, measure_trial, measure_min,
+	struct time_desc time_init, time_search, time_min, time_target;
+	struct measure_desc measure_init, measure_search, measure_min,
 		measure_target;
 	int opt;
 	struct rusage ru_start, ru_end;
@@ -410,12 +438,15 @@ int main(int argc, char **argv)
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &nproc);
 
+	if (rank == 1) {
+		//show_maps();
+	}
+
 	if (rank == 0) {
 		printf("ndoubles=%d,nproc=%d\n", buf.sz, nproc);
 
 #pragma omp parallel
 		{
-			//printf("%d cpu\n", sched_getcpu());
 			if (omp_get_thread_num() == 0) {
 				printf("#threads=%d\n", omp_get_num_threads());
 			}
@@ -466,30 +497,33 @@ int main(int argc, char **argv)
 	memcpy(&time_min, &time_init, sizeof(struct time_desc));
 
 	/* Re-calibrate to deal with DVFS */
-	sdelay_init(0);
+	sdelay_init(1);
 
-	for (ratio = 0.01; ratio < 0.2; ratio += 0.005) {
+	for (ratio = SEARCH_MIN; ratio < SEARCH_MAX; ratio += SEARCH_STEP) {
 		init_buf(&buf, rank, 99);
-		time_trial.calc = 0;
-		time_trial.iprobe = measure_init.flush * ratio;
+
+		/* Flush time flactuate more with computation */
+		time_search.calc = measure_init.rma/*0*/;
+
+		time_search.iprobe = measure_init.flush * ratio;
 		measure(rank, nproc, win,
-			&buf, &time_trial, &measure_trial,
-			0, 1, NSAMPLES_TRIAL, NSAMPLES_DROP_TRIAL);
+			&buf, &time_search, &measure_search,
+			0, 1, NSAMPLES_SEARCH, NSAMPLES_DROP_SEARCH);
 		if (rank == 0) {
-			pr_measure(&time_trial, &measure_trial);
+			pr_measure(&time_search, &measure_search);
 		}
 
-		if (measure_trial.total < measure_min.total) {
-			memcpy(&measure_min, &measure_trial,
+		if (measure_search.total < measure_min.total) {
+			memcpy(&measure_min, &measure_search,
 			       sizeof(struct measure_desc));
-			memcpy(&time_min, &time_trial,
+			memcpy(&time_min, &time_search,
 			       sizeof(struct time_desc));
 			ratio_min = ratio;
 		}
 	}
 
-	if (ratio_min + 0.005 >= 0.2) {
-		pr_err("ERROR: Expand the search space\n");
+	if (ratio_min + SEARCH_STEP >= SEARCH_MAX) {
+		pr_err("ERROR: SEARCH_MAX is too small\n");
 		ret = -1;
 		goto out;
 	}
@@ -506,7 +540,7 @@ int main(int argc, char **argv)
 	/* 0: no progress, 1: progress, no uti, 2: progress, uti */
 	for (progress = 0;
 	     progress <= (disable_syscall_intercept ? 0 : 2);
-	     progress += 1/*1*/) {
+	     progress += PROGRESS_STEP) {
 
 		if (progress == 1) {
 			/* Don't use uti_attr and pin to Linux/McKernel CPUs */
@@ -525,10 +559,17 @@ int main(int argc, char **argv)
 		}
 
 		/* Re-calibrate to deal with DVFS */
-		sdelay_init(0);
+		sdelay_init(1);
 
 		/* RMA-start, calc for 0%, ..., 150% of iprobe, flush */
-		for (ratio = 0; ratio <= 1.5; ratio += 0.1) {
+		for (ratio = 0; ratio <= RATIO_MAX; ratio += RATIO_STEP) {
+			if (rank == 0) {
+				if (ratio == 0) {
+					pr_debug("progress=%d\n", progress);
+					pr_measure_first_row();
+				}
+			}
+
 			time_target.calc = measure_min.iprobe * ratio;
 			time_target.iprobe = time_min.iprobe;
 			init_buf(&buf, rank, ratio);
@@ -537,12 +578,8 @@ int main(int argc, char **argv)
 				progress, 0,
 				NSAMPLES_TOTAL, NSAMPLES_DROP_TOTAL);
 
+				
 			if (rank == 0) {
-				if (ratio == 0) {
-					pr_debug("progress=%d\n", progress);
-					pr_measure_first_row();
-				}
-
 				pr_measure(&time_target, &measure_target);
 			}
 		}
