@@ -2196,7 +2196,8 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	/* Create stack range */
 #ifdef POSTK_DEBUG_ARCH_DEP_104 /* user stack prepage size fix */
 	end = STACK_TOP(&thread->vm->region) & USER_STACK_PAGE_MASK;
-	minsz = USER_STACK_PREPAGE_SIZE & USER_STACK_PAGE_MASK;
+	minsz = (pn->stack_premap + USER_STACK_PREPAGE_SIZE - 1) &
+		USER_STACK_PAGE_MASK;
 #else /* POSTK_DEBUG_ARCH_DEP_104 */
 	end = STACK_TOP(&thread->vm->region) & LARGE_PAGE_MASK;
 	minsz = (pn->stack_premap
