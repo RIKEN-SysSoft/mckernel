@@ -1,0 +1,85 @@
+/opt/ppos/bin/mcexec ./CT_001
+*** CT_001 start *******************************
+ [OK] xpmem_make
+ [OK] xpmem_get
+ [OK] xpmem_attach
+ [OK] xpmem_detach
+ [OK] xpmem_remove
+*** CT_001 PASSED
+
+/opt/ppos/bin/mcexec ./CT_002
+*** CT_002 start *******************************
+ [OK] xpmem_make in child
+ [OK] xpmem_get in child
+ [OK] xpmem_attach in child
+ [OK] xpmem_detach in child
+ [OK] xpmem_remove in child
+*** CT_002 PASSED
+
+/opt/ppos/bin/mcexec ./CT_003
+*** CT_003 start *******************************
+ [OK] xpmem_make
+ [OK] xpmem_get in child
+ [OK] xpmem_attach in child
+ [OK] xpmem_detach in child
+ [OK] validate TEST_VAL
+ [OK] xpmem_remove
+*** CT_003 PASSED
+
+/opt/ppos/bin/mcexec ./CT_004
+*** CT_004 start *******************************
+ [OK] xpmem_get in child
+ [OK] xpmem_attach in child
+ [OK] xpmem_detach in child
+ [OK] xpmem_make
+ [OK] validate TEST_VAL
+ [OK] xpmem_remove
+*** CT_004 PASSED
+
+/opt/ppos/bin/mcexec ./CT_005
+*** CT_005 start *******************************
+ [OK] xpmem_make
+ [OK] xpmem_get in child
+ [OK] xpmem_attach in child
+ [OK] validate TEST_VAL
+ [OK] xpmem_remove
+*** CT_005 PASSED
+
+/opt/ppos/bin/mcexec ./CT_006
+*** CT_006 start *******************************
+ [OK] xpmem_make
+ [OK] xpmem_get in child failed (parent process exited already
+*** CT_006 PASSED
+
+/opt/ppos/bin/mcexec ./CT_007
+*** CT_007 start *******************************
+ [OK] xpmem_make failed (invalid address)
+ [OK] xpmem_make succeed(do twice to same address)
+*** CT_007 PASSED
+
+/opt/ppos/bin/mcexec ./CT_008
+*** CT_008 start *******************************
+ [OK] xpmem_get in child failed (invalid segid)
+ [OK] xpmem_get in child (do twice to same segid
+*** CT_008 PASSED
+
+/opt/ppos/bin/mcexec ./CT_009
+*** CT_009 start *******************************
+ [OK] xpmem_attach in childi failed (invalid apid)
+ [OK] xpmem_attach in child succeed (do twice to same apid)
+*** CT_009 PASSED
+
+/opt/ppos/bin/mcexec ./CT_010
+*** CT_010 start *******************************
+ [OK] xpmem_detach in child succeed (invalid address)
+ [OK] xpmem_detach in child succeed (do twice to same address)
+*** CT_010 PASSED
+
+/opt/ppos/bin/mcexec ./CT_011
+*** CT_011 start *******************************
+ [OK] xpmem_remove failed (invalid segid)
+ [OK] xpmem_remove failed (do twice to same segid)
+*** CT_011 PASSED
+
+/opt/ppos/bin/mcexec ./rusage012
+1234
