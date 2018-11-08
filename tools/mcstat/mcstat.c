@@ -179,6 +179,7 @@ static char *charstat[] = {
     "Booting",	/*IHK_OS_STATUS_BOOTING*/
     "Booted",	/*IHK_OS_STATUS_BOOTED, OS booted and acked */
     "Ready",	/*IHK_OS_STATUS_READY, OS is ready and fully functional */
+    "Running",	/*IHK_OS_STATUS_RUNNING, OS is running */
     "Freezing",	/*IHK_OS_STATUS_FREEZING, OS is freezing */
     "Frozen",	/*IHK_OS_STATUS_FROZEN,   OS is frozen */
     "Shutdown",	/* IHK_OS_STATUS_SHUTDOWN, OS is shutting down */
