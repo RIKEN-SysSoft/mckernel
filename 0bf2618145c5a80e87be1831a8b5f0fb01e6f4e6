@@ -62,6 +62,29 @@
       "revId": "0bf2618145c5a80e87be1831a8b5f0fb01e6f4e6",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f9fa29a5_bf5f29f8",
+        "filename": "test/v1.5_follow/08_mcexec_signal_fork_conflict/run.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-11-08T06:00:56Z",
+      "side": 1,
+      "message": "パスには、common.shが設定する変数を用いてください。",
+      "range": {
+        "startLine": 13,
+        "startChar": 0,
+        "endLine": 13,
+        "endChar": 98
+      },
+      "revId": "0bf2618145c5a80e87be1831a8b5f0fb01e6f4e6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
