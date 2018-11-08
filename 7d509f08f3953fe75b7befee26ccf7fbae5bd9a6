@@ -1,0 +1,820 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "38dec14d_b3e1677f",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/CT_001.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "17c545a8_23d0b453",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/CT_001.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e8201982_676b25f3",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/CT_002.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c3256f2d_e7c42cfb",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/CT_002.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "679fef9c_d1457927",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/CT_002.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 48,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^Iif (!WIFSIGNALED(status) \u0026\u0026 $",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f7873854_e3439dc3",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/CT_003.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "77e875d9_32c0a58c",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/CT_003.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "31f9026d_31abc6e9",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/CT_003.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^Iif (!WIFSIGNALED(status) \u0026\u0026 $",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a1d7bbde_80b5ca70",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/CT_004.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "316963f6_6a0b95a5",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/CT_004.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt2 \u003d 0;",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c44c009d_23cdb5c2",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/CT_004.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d60f9210_4bea07d2",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/CT_005.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5c300857_d80c8467",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/CT_005.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "39c8aee6_c63e1f39",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/CT_006.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "af799f49_e1b757f5",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/CT_006.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "21179ac4_bb890cdc",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/CT_007.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ef6cb690_adfac3df",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/CT_007.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1811b67a_077a8c73",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/CT_008.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "75da08c4_8f750e33",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/CT_008.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c226ac80_7ee6dc48",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/CT_009.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "88e98f51_b9ef2444",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/CT_010.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f0ccb42b_a4321348",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/Makefile",
+        "patchSetId": 1
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CPPFLAGS \u003d $",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "131dae29_31c0cf85",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/Makefile",
+        "patchSetId": 1
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+LDFLAGS \u003d $",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "60da0b9f_b31f59cb",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/Makefile",
+        "patchSetId": 1
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^Irm -f $(TARGET) *.o $",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "27f7c28b_17917a70",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ARGS: $",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "044cca48_3848c0ab",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define CHKANDJUMP(cond, ...)\t\t\t\t\t\t\t\\\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\\n+\t\t\tfprintf(stderr, \" [NG] \");\t\t\t\t\t\\\n+\t\t\tfprintf(stderr, __VA_ARGS__);\t\t\t\t\\\n+\t\t\tfprintf(stderr, \" failed\\n\");\t\t\t\t\\\n+\t\t\tgoto fn_fail;\t\t\t\t\t\t\t\t\\\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t} while(0);",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dc5a1a5b_2930502a",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define CHKANDJUMP(cond, ...)\t\t\t\t\t\t\t\\",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6111338e_4c2d4120",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "WARNING: do {} while (0) macros should not be semicolon terminated\n+#define CHKANDJUMP(cond, ...)\t\t\t\t\t\t\t\\\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\\n+\t\t\tfprintf(stderr, \" [NG] \");\t\t\t\t\t\\\n+\t\t\tfprintf(stderr, __VA_ARGS__);\t\t\t\t\\\n+\t\t\tfprintf(stderr, \" failed\\n\");\t\t\t\t\\\n+\t\t\tgoto fn_fail;\t\t\t\t\t\t\t\t\\\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t} while(0);",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "38dd8325_bac72977",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a411aa2f_2de631d4",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d9ff17e6_0884c77b",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stderr, \" [NG] \");\t\t\t\t\t\\",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4d33ddfe_7a8f9494",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stderr, __VA_ARGS__);\t\t\t\t\\",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "49b8b5e1_b2b9bccf",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stderr, \" failed\\n\");\t\t\t\t\\",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2beb58ee_f87417a2",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tgoto fn_fail;\t\t\t\t\t\t\t\t\\",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "92b1be3d_03e823f6",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ec846175_ffde50df",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t} while(0);",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ae510a72_c9cf1126",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "WARNING: do {} while (0) macros should not be semicolon terminated\n+#define OKNG(cond, ...)\t\t\t\t\t\t\t\t\t\\\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\\n+\t\t\tCHKANDJUMP(cond, __VA_ARGS__);\t\t\t\t\\\n+\t\t} else {\t\t\t\t\t\t\t\t\t\t\\\n+\t\t\tfprintf(stdout, \" [OK] \");\t\t\t\t\t\\\n+\t\t\tfprintf(stdout, __VA_ARGS__);\t\t\t\t\\\n+\t\t\tfprintf(stdout, \"\\n\");\t\t\t\t\t\t\\\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t} while(0);",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d97dc1be_66da1310",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define OKNG(cond, ...)\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7da48641_ddb61043",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6a2fc032_8cd9730b",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "34ba297e_5d7fe1ea",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tCHKANDJUMP(cond, __VA_ARGS__);\t\t\t\t\\",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "50c21b93_2df83aff",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t} else {\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "57f1e3b0_cf65c5ff",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stdout, \" [OK] \");\t\t\t\t\t\\",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "10cd21ac_76ad6779",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stdout, __VA_ARGS__);\t\t\t\t\\",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9e950c54_5c3215cd",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stdout, \"\\n\");\t\t\t\t\t\t\\",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0e97504f_5b772459",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "40a5b8c6_8e11abd4",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t} while(0);",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3e66261e_a36229eb",
+        "filename": "test/v1.5_follow/13_sigaction_handler_reset/test_chk.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T04:53:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#endif^I$",
+      "revId": "7d509f08f3953fe75b7befee26ccf7fbae5bd9a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
