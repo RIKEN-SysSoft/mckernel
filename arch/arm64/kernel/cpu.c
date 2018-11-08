@@ -30,6 +30,7 @@
 #include <debug-monitors.h>
 #include <sysreg.h>
 #include <cpufeature.h>
+#include <debug.h>
 #ifdef POSTK_DEBUG_ARCH_DEP_65
 #include <hwcap.h>
 #endif /* POSTK_DEBUG_ARCH_DEP_65 */
@@ -39,15 +40,9 @@
 #include "postk_print_sysreg.c"
 
 #ifdef DEBUG_PRINT_CPU
-#define dkprintf kprintf
-#define ekprintf kprintf
-#else
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define ekprintf kprintf
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
-
-#define BUG_ON(condition) do { if (condition) { kprintf("PANIC: %s: %s(line:%d)\n",\
-				__FILE__, __FUNCTION__, __LINE__); panic(""); } } while(0)
 
 struct cpuinfo_arm64 cpuinfo_data[NR_CPUS];	/* index is logical cpuid */
 static unsigned int per_cpu_timer_val[NR_CPUS] = { 0 };
@@ -1283,7 +1278,6 @@ int ihk_mc_interrupt_cpu(int cpu, int vector)
 	return 0;
 }
 
-#ifdef POSTK_DEBUG_ARCH_DEP_22
 /*
  * @ref.impl linux-linaro/arch/arm64/kernel/process.c::tls_thread_switch()
  */
@@ -1309,14 +1303,13 @@ struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 	extern void perf_start(struct mc_perf_event *event);
 	extern void perf_reset(struct mc_perf_event *event);
 	struct thread *last;
-#ifdef POSTK_DEBUG_TEMP_FIX_41 /* early to wait4() wakeup for ptrace, fix. */
 	struct mcs_rwlock_node_irqsave lock;
-#endif /* POSTK_DEBUG_TEMP_FIX_41 */
 
 	/* Set up new TLS.. */
 	dkprintf("[%d] arch_switch_context: tlsblock_base: 0x%lX\n", 
 		 ihk_mc_get_processor_id(), next->tlsblock_base);
 
+#ifdef ENABLE_PERF
 	/* Performance monitoring inherit */
 	if(next->proc->monitoring_event) {
 		if(next->proc->perf_status == PP_RESET)
@@ -1326,10 +1319,10 @@ struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 			perf_start(next->proc->monitoring_event);
 		}
 	}
+#endif /*ENABLE_PERF*/
 	if (likely(prev)) {
 		tls_thread_switch(prev, next);
 
-#ifdef POSTK_DEBUG_TEMP_FIX_41 /* early to wait4() wakeup for ptrace, fix. */
 		mcs_rwlock_writer_lock(&prev->proc->update_lock, &lock);
 		if (prev->proc->status & (PS_DELAY_STOPPED | PS_DELAY_TRACED)) {
 			switch (prev->proc->status) {
@@ -1343,11 +1336,12 @@ struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 				break;
 			}
 			mcs_rwlock_writer_unlock(&prev->proc->update_lock, &lock);
+
+			/* Wake up the parent who tried wait4 and sleeping */
 			waitq_wakeup(&prev->proc->parent->waitpid_q);
 		} else {
 			mcs_rwlock_writer_unlock(&prev->proc->update_lock, &lock);
 		}
-#endif /* POSTK_DEBUG_TEMP_FIX_41 */
 
 		last = ihk_mc_switch_context(&prev->ctx, &next->ctx, prev);
 	}
@@ -1357,7 +1351,6 @@ struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 
 	return last;
 }
-#endif /* POSTK_DEBUG_ARCH_DEP_22 */
 
 /*@
   @ requires \valid(thread);
@@ -1439,8 +1432,7 @@ void copy_fp_regs(struct thread *from, struct thread *to)
 	}
 }
 
-void
-clear_fp_regs(struct thread *thread)
+void clear_fp_regs(void)
 {
 	if (likely(elf_hwcap & (HWCAP_FP | HWCAP_ASIMD))) {
 #ifdef CONFIG_ARM64_SVE
@@ -1477,7 +1469,7 @@ restore_fp_regs(struct thread *thread)
 	if (likely(elf_hwcap & (HWCAP_FP | HWCAP_ASIMD))) {
 		if (!thread->fp_regs) {
 			// only clear fpregs.
-			clear_fp_regs(thread);
+			clear_fp_regs();
 			return;
 		}
 		thread_fpsimd_load(thread);

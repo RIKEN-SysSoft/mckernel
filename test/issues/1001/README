@@ -1,0 +1,62 @@
+【Issue#1001 動作確認】
+□ テスト内容
+1. 既存のperf_event_open機能に影響がないことを確認
+CT_001: 単一イベント種別での計測
+	1. perf_event_open を1回呼び出し、1つのカウンタの設定とfdの取得を行う
+	2. PERF_EVENT_IOC_RESET を取得したfdにioctlで送信し、
+	   カウンタの値が0になっていることを確認する
+	3. PERF_EVENT_IOC_ENABLE を取得したfdにioctlで送信し、計測を開始する
+	4. 計測対象プログラム(calc_task(), memory_task())を実行する
+	5. PERF_EVENT_IOC_DISABLE を取得したfdにioctlで送信し、計測を終了する
+	6. 計測終了時のカウンタの値を取得し、表示する
+	7. カウンタが停止していることを確認するため、計測対象プログラムを再び実行する
+	8. カウンタの値が前回取得時から変化していないことを確認する
+
+CT_002: 複数のイベント種別での計測
+	1. perf_event_open を4回呼び出し、4つのカウンタの設定とfdの取得を行う
+	   1つ目のカウンタをリーダーとし、4つのカウンタを1つのグループとして設定する
+	2. PERF_EVENT_IOC_RESET を各fdにioctlで送信し、
+	   各カウンタの値が0になっていることを確認する
+	3. PERF_EVENT_IOC_ENABLE をグループリーダーのfdにioctlで送信し、計測を開始する
+	4. 計測対象プログラム(calc_task(), memory_task())を実行する
+	5. PERF_EVENT_IOC_DISABLE をグループリーダーのfdにioctlで送信し、計測を終了する
+	6. 計測終了時の各カウンタの値を取得し、表示する
+	7. 各カウンタが停止していることを確認するため、計測対象プログラムを再び実行する
+	8. カウンタの値が前回取得時から変化していないことを確認する
+
+2. 既存のpa_info機能に影響がないことを確認
+CT_003: 単一のイベント種別での計測
+	1. ihk_os_setperfevent を呼び出し、1種類のイベントの設定を行う
+	2. ihk_os_perfctlをPERF_EVENT_ENABLE指定で呼び出し、計測を開始する
+	3. 計測対象プログラム(calc_task(), memory_task())をmckernel上で実行する
+	4. ihk_os_perfctlをPERF_EVENT_DISABLE指定で呼び出し、計測を終了する
+	5. 計測終了時の各カウンタの値を取得し、表示する
+	6. カウンタが停止していることを確認するため、計測対象プログラムを再び実行する
+	7. カウンタの値が前回取得時から変化していないことを確認する
+
+CT_004: 複数のイベント種別での計測
+	1. ihk_os_setperfevent を呼び出し、4種類のイベントの設定を行う
+	2. ihk_os_perfctlをPERF_EVENT_ENABLE指定で呼び出し、計測を開始する
+	3. 計測対象プログラム(calc_task(), memory_task())をmckernel上で実行する
+	4. ihk_os_perfctlをPERF_EVENT_DISABLE指定で呼び出し、計測を終了する
+	5. 計測終了時の各カウンタの値を取得し、表示する
+	6. カウンタが停止していることを確認するため、計測対象プログラムを再び実行する
+	7. カウンタの値が前回取得時から変化していないことを確認する
+
+3. LTPによる動作の確認
+LT_001: perf_event_open01 で、PERF_TYPE_HARDWARE 種別の計測が行えることを確認
+	1. 上記テスト中の 1-5件目のテストがTPASSであることを確認
+	1. 上記テスト中の 6,7件目のテストがTCONFであることを確認
+	   (PERF_TYPE_SOFTWARE指定はMcKernelでは未サポートのため)
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。

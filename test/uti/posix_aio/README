@@ -1,0 +1,15 @@
+=============================================
+Benchmarks of asynchronous I/O with busy CPUs
+=============================================
+
+The purpose is to show the benefit of spawning the asynchronous threads onto dedicated CPUs.
+
+---
+001
+---
+Write
+
+---
+002
+---
+Write, IO completion is notified by spawning thread

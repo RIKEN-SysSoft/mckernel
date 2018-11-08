@@ -1,5 +1,7 @@
 #!/usr/bin/bash
 
+. ${HOME}/.mck_test_config
+
 testname=$1
 bootopt="-m 256M"
 mcexecopt=""
@@ -7,21 +9,19 @@ testopt=""
 kill="n"
 dryrun="n"
 sleepopt="0.4"
-home=$(eval echo \$\{HOME\})
-install=${home}/project/os/install
 
 echo Executing ${testname}
 
 case ${testname} in
-    rusage011 | rusage012)
+    011 | 012)
 	printf "*** Enable debug messages in rusage.h, memory.c, fileobj.c, shmobj.c, process.c by defining DEBUG macro, e.g. #define RUSAGE_DEBUG and then recompile IHK/McKernel.\n"
 	printf "*** Install xpmem by git-clone https://github.com/hjelmn/xpmem.\n"
 	;;
-    rusage100 | rusage101 | rusage102 | rusage103)
+    100 | 101 | 102 | 103)
 	printf "*** Refer to rusage100.patch to add syscall #900 by editing syscall_list.h and syscall.c and recompile IHK/McKernel.\n"
 	;;
-    rusage104)
-	printf "*** Apply rusage104.patch to enable syscall #900"
+    200)
+	printf "*** Apply rusage200.patch to enable syscall #900"
 	printf "which reports rusage values.\n"
 	;;
     *)
@@ -32,33 +32,34 @@ esac
 read -p "*** Hit return when ready!" key
 
 case ${testname} in
-    rusage005)
-	ssh wallaby -c '(cd ${home}/project/src/rusage/verbs; make rdma_wr)'
-	bn=verbs/rdma_wr
+    005)
+	ssh wallaby -c '(cd ${HOME}/project/src/rusage/verbs; make rdma_wr)'
+	bn_mck=verbs/rdma_wr
 	;;
-    rusage019)
-	#ssh wallaby -c '(cd ${home}/project/src/rusage/npb/NPB3.3.1-MZ/NPB3.3-MZ-MPI; make bt-mz CLASS=S NPROCS=2)'
-	bn=npb/NPB3.3.1-MZ/NPB3.3-MZ-MPI/bin/bt-mz.S.2
+    019)
+	#ssh wallaby -c '(cd ${HOME}/project/src/rusage/npb/NPB3.3.1-MZ/NPB3.3-MZ-MPI; make bt-mz CLASS=S NPROCS=2)'
+	bn_mck=npb/NPB3.3.1-MZ/NPB3.3-MZ-MPI/bin/bt-mz.S.2
 	perl -e 'print "wallaby14\nwallaby15\n"' > ./hostfile
 	;;
-    rusage021)
+    021)
 	if ! grep /var/log/local6 /etc/rsyslog.conf &>/dev/null; then
 	    echo "Insert a line of local6.* /var/log/local6 into /etc/rsyslog.conf"
 	    exit 255
 	fi
-	ssh wallaby bash -c '(cd ${home}/project/src/rusage/npb/NPB3.3.1-MZ/NPB3.3-MZ-MPI; make bt-mz CLASS=S NPROCS=4)'
-	bn=npb/NPB3.3.1-MZ/NPB3.3-MZ-MPI/bin/bt-mz.S.4
+	ssh wallaby bash -c '(cd ${HOME}/project/src/rusage/npb/NPB3.3.1-MZ/NPB3.3-MZ-MPI; make bt-mz CLASS=S NPROCS=4)'
+	bn_mck=npb/NPB3.3.1-MZ/NPB3.3-MZ-MPI/bin/bt-mz.S.4
 	perl -e 'print "polaris:2\nkochab:2\n"' > ./hostfile
 	;;
-    rusage104)
-	bn=${testname}
+    200)
+	bn_mck=${testname}_mck
+	bn_lin=${testname}_lin
 	make clean > /dev/null 2> /dev/null
-	make ${bn}_mck ${bn}_lin
+	make $bn_mck $bn_lin
 	;;
     *)
-	bn=${testname}
+	bn_mck=${testname}_mck
 	make clean > /dev/null 2> /dev/null
-	make ${bn}
+	make $bn_mck
 esac
 
 pid=`pidof mcexec`
@@ -67,91 +68,82 @@ if [ "${pid}" != "" ]; then
 fi
 
 case ${testname} in
-    rusage000)
+    000)
 	testopt="0"
 	;;
-    rusage010)
+    010)
 	testopt="1"
 	;;
-    rusage020)
+    020)
 	bootopt="-m 256M@0,1G@0"
 	testopt="2"
 	kill="y"
 	;;
-    rusage030)
+    030)
 	testopt="3"
 	;;
-    rusage001)
-	cp ${bn} ./file
+    001)
+	cp $bn_mck ./file
 	kill="n"
 	;;
-    rusage002)
+    002)
 	mcexecopt="--mpol-shm-premap"
 	;;
-    rusage003)
+    003)
 	;;
-    rusage004)
-	cp ${bn} ./file
+    004)
+	cp $bn_mck ./file
 	;;
-    rusage005)
-	echo ssh wallaby15.aics-sys.riken.jp ${home}/project/src/verbs/rdma_wr -p 10000&
+    005)
+	echo ssh wallaby15.aics-sys.riken.jp ${HOME}/project/src/verbs/rdma_wr -p 10000&
 	read -p "Run rdma_wr on wallaby15 and enter the port number." port
 	testopt="-s wallaby15.aics-sys.riken.jp -p ${port}"
 	;;
-    rusage006)
+    006)
 	mcexecopt="--mpol-shm-premap"
 	;;
-    rusage007)
+    007)
 	;;
-    rusage008)
-	cp ${bn} ./file
+    008)
+	cp $bn_mck ./file
 	;;
-    rusage009)
+    009)
 	;;
-    rusage011)
+    011)
 	sudo insmod /home/takagi/usr/lib/module/xpmem.ko
 	sudo chmod og+rw /dev/xpmem
 	dryrun="n"
 	kill="n"
 	sleepopt="5"
 	;;
-    rusage012)
+    012)
 	sudo insmod /home/takagi/usr/lib/module/xpmem.ko
 	sudo chmod og+rw /dev/xpmem
 	dryrun="n"
 	kill="n"
 	sleepopt="5"
 	;;
-    rusage013)
-	cp ${bn} ./file
+    013 | 014 | 015 | 017)
+	cp $bn_mck ./file
 	;;
-    rusage014)
-	cp ${bn} ./file
+    016)
 	;;
-    rusage015)
-	cp ${bn} ./file
+    018)
 	;;
-    rusage016)
-	;;
-    rusage017)
-	cp ${bn} ./file
-	;;
-    rusage018)
-	;;
-    rusage019 | rusage021)
+    019 | 021)
 	bootopt="-k 1 -m 256M"
 	;;
-    rusage100)
+    100)
 	;;
-    rusage101)
+    101)
 	;;
-    rusage102)
-	cp ${bn} ./file
+    102)
+	cp $bn_lin ./file
 	;;
-    rusage103)
+    103)
 	bootopt="-m 256M@1"
 	;;
-    rusage104)
+    200)
 	bootopt="-c 1,2,3 -m 256M"
 	;;
     *)
@@ -164,7 +156,7 @@ exit
 fi
 
 case ${testname} in
-    rusage019 | rusage021)
+    019 | 021)
 	sudo rm /var/log/local6
 	sudo touch /var/log/local6
 	sudo chmod 600 /var/log/local6
@@ -175,60 +167,69 @@ case ${testname} in
 esac
 
 case ${testname} in
-    rusage019 | rusage021)
-	echo sudo ssh wallaby15 ${install}/sbin/mcstop+release.sh &&
-	echo sudo ssh wallaby15 ${install}/sbin/mcreboot.sh
+    019 | 021)
+	echo sudo ssh wallaby15 ${MCK_DIR}/sbin/mcstop+release.sh &&
+	echo sudo ssh wallaby15 ${MCK_DIR}/sbin/mcreboot.sh
 	read -p "Boot mckernel on wallaby15." ans
 	;;
     *)
 	;;
 esac
-sudo ${install}/sbin/mcstop+release.sh &&
-sudo ${install}/sbin/mcreboot.sh ${bootopt}
+sudo ${MCK_DIR}/sbin/mcstop+release.sh &&
+sudo ${MCK_DIR}/sbin/mcreboot.sh ${bootopt}
 
 if [ ${kill} == "y" ]; then
-    ${install}/bin/mcexec ${mcexecopt} ./${bn} ${testopt} &
+    ${MCK_DIR}/bin/mcexec ${mcexecopt} ./${bn} ${testopt} &
     sleep ${sleepopt}
-    sudo ${install}/sbin/ihkosctl 0 kmsg > ./${testname}.log
+    sudo ${MCK_DIR}/sbin/ihkosctl 0 kmsg > ./${testname}.log
     pid=`pidof mcexec`
     if [ "${pid}" != "" ]; then
 	kill -9 ${pid} > /dev/null 2> /dev/null
     fi
 else
     case ${testname} in
-	rusage005)
-	    ${install}/bin/mcexec ${mcexecopt} ./${bn} ${testopt}
+	005)
+	    ${MCK_DIR}/bin/mcexec ${mcexecopt} ./${bn_mck} ${testopt}
 	    #read -p "Run rdma_wr." ans
-	    sudo ${install}/sbin/ihkosctl 0 kmsg > ./${testname}.log
+	    sudo ${MCK_DIR}/sbin/ihkosctl 0 kmsg > ./${testname}.log
 	    ;;
-	rusage019 | rusage021)
-	    echo OMP_NUM_THREADS=2 mpiexec -machinefile ./hostfile ${install}/bin/mcexec ${mcexecopt} ./${bn} ${testopt}
-	    read -p "Run ${bn} and hit return." ans
+	019 | 021)
+	    echo OMP_NUM_THREADS=2 mpiexec -machinefile ./hostfile ${MCK_DIR}/bin/mcexec ${mcexecopt} ./${bn_mck} ${testopt}
+	    read -p "Run ${bn_mck} and hit return." ans
 	    sleep 1.5
 	    sudo cat /var/log/local6 > ./${testname}.log
 	    ;;
-	rusage100 | rusage101 | rusage102 | rusage103)
-	    ${install}/bin/mcexec ${mcexecopt} ./${bn} ${testopt} > ./${testname}.log
+	100 | 101 | 102 | 103)
+	    ${MCK_DIR}/bin/mcexec ${mcexecopt} ./${bn_mck} ${testopt} > ./${testname}.log
 	    echo "================================================" >> ./${testname}.log
-	    sudo ${install}/sbin/ihkosctl 0 kmsg >> ./${testname}.log
+	    sudo ${MCK_DIR}/sbin/ihkosctl 0 kmsg >> ./${testname}.log
 	    ;;
-	rusage104)
-	    ${install}/bin/mcexec ${mcexecopt} ./${bn}_mck
-	    ${install}/bin/mcexec ${mcexecopt} ./${bn}_lin
-	    sudo ${install}/sbin/ihkosctl 0 kmsg > ./${testname}.log
+	200)
+	    ${MCK_DIR}/bin/mcexec ${mcexecopt} ./${bn_mck}
+	    ${MCK_DIR}/bin/mcexec ${mcexecopt} ./${bn_lin}
+	    sudo ${MCK_DIR}/sbin/ihkosctl 0 kmsg > ./${testname}.log
 	    grep user ./${testname}.log
 	    ;;
 	*)
-	    ${install}/bin/mcexec ${mcexecopt} ./${bn} ${testopt}
-	    sudo ${install}/sbin/ihkosctl 0 kmsg > ./${testname}.log
+	    ${MCK_DIR}/bin/mcexec ${mcexecopt} ./${bn_mck} ${testopt}
+	    sudo ${MCK_DIR}/sbin/ihkosctl 0 kmsg > ./${testname}.log
     esac
 fi
 
+
 case ${testname} in
-    rusage100 | rusage101 | rusage102 | rusage103)
+    011 | 012)
+	sudo rmmod xpmem
+	;;
+    *)
+	;;
+esac
+
+case ${testname} in
+    100 | 101 | 102 | 103)
 	printf "*** Check the ihk_os_getrusage() result (the first part of ${testname}.log) matches with the syscall #900 result (the second part) \n"
 	;;
-    rusage104)
+    200)
 	printf "*** It behaves as expected when there's no [NG] and "
 	printf "\"All tests finished\" is shown\n"
 	;;
@@ -238,4 +239,4 @@ case ${testname} in
 	;;
 esac
 
-sudo ${install}/sbin/mcstop+release.sh
+sudo ${MCK_DIR}/sbin/mcstop+release.sh

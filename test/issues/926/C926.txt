@@ -1,5 +1,7 @@
-スクリプトは Wed Jun  6 14:39:24 2018
- に開始しました[?1034hbash-4.2$ ./mcexec C[K./C926
+Script started on Thu Jun 28 09:11:00 2018
+bash-4.2$ make test
+gcc -o C926 C926.c -Wall -g
+sh ./C926.sh
 C926T01... OK
 C926T02... OK
 C926T03... OK
@@ -8,8 +10,9 @@ C926T05... OK
 C926T06... OK
 C926T07... OK
 C926T08... OK
+C926T09... OK
+C926T10... OK
 bash-4.2$ exit
 exit
 
-スクリプトは Wed Jun  6 14:39:38 2018
- に終了しました
+Script done on Thu Jun 28 09:11:07 2018

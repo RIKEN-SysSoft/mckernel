@@ -14,6 +14,8 @@
 #include <prctl.h>
 #include <limits.h>
 #include <syscall.h>
+#include <uio.h>
+#include <debug.h>
 
 extern void ptrace_report_signal(struct thread *thread, int sig);
 extern void clear_single_step(struct thread *thread);
@@ -27,17 +29,11 @@ static void __check_signal(unsigned long rc, void *regs, int num, int irq_disabl
 //#define DEBUG_PRINT_SC
 
 #ifdef DEBUG_PRINT_SC
-#define dkprintf kprintf
-#define ekprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
-#else
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define ekprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 #define NOT_IMPLEMENTED()  do { kprintf("%s is not implemented\n", __func__); while(1);} while(0)
-
-#define BUG_ON(condition) do { if (condition) { kprintf("PANIC: %s: %s(line:%d)\n",\
-				__FILE__, __FUNCTION__, __LINE__); panic(""); } } while(0)
 
 uintptr_t debug_constants[] = {
 	sizeof(struct cpu_local_var),
@@ -59,7 +55,7 @@ static int cpuid_head = 1;
 
 extern int num_processors;
 
-int obtain_clone_cpuid(cpu_set_t *cpu_set) {
+int obtain_clone_cpuid(cpu_set_t *cpu_set, int use_last) {
 	int min_queue_len = -1;
 	int i, min_cpu = -1;
 
@@ -1177,18 +1173,9 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 				/* Reap and set new signal_flags */
 				proc->signal_flags = SIGNAL_STOP_STOPPED;
 
-#ifdef POSTK_DEBUG_TEMP_FIX_41 /* early to wait4() wakeup for ptrace, fix. */
 				proc->status = PS_DELAY_STOPPED;
-#else /* POSTK_DEBUG_TEMP_FIX_41 */
-				proc->status = PS_STOPPED;
-#endif /* POSTK_DEBUG_TEMP_FIX_41 */
 				thread->status = PS_STOPPED;
 				mcs_rwlock_writer_unlock(&proc->update_lock, &lock);	
-
-#ifndef POSTK_DEBUG_TEMP_FIX_41 /* early to wait4() wakeup for ptrace, fix. */
-				/* Wake up the parent who tried wait4 and sleeping */
-				waitq_wakeup(&proc->parent->waitpid_q);
-#endif /* !POSTK_DEBUG_TEMP_FIX_41 */
 
 				dkprintf("do_signal(): pid: %d, tid: %d SIGSTOP, sleeping\n", 
 					proc->pid, thread->tid);
@@ -1206,18 +1193,9 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 			/* Update thread state in fork tree */
 			mcs_rwlock_writer_lock(&proc->update_lock, &lock);	
 			thread->exit_status = SIGTRAP;
-#ifdef POSTK_DEBUG_TEMP_FIX_41 /* early to wait4() wakeup for ptrace, fix. */
 			proc->status = PS_DELAY_TRACED;
-#else /* POSTK_DEBUG_TEMP_FIX_41 */
-			proc->status = PS_TRACED;
-#endif /* POSTK_DEBUG_TEMP_FIX_41 */
 			thread->status = PS_TRACED;
 			mcs_rwlock_writer_unlock(&proc->update_lock, &lock);	
-
-#ifndef POSTK_DEBUG_TEMP_FIX_41 /* early to wait4() wakeup for ptrace, fix. */
-			/* Wake up the parent who tried wait4 and sleeping */
-			waitq_wakeup(&thread->proc->parent->waitpid_q);
-#endif /* !POSTK_DEBUG_TEMP_FIX_41 */
 
 			/* Sleep */
 			dkprintf("do_signal,SIGTRAP,sleeping\n");
@@ -1594,7 +1572,7 @@ done:
 		return 0;
 	}
 
-	if (tthread->thread_offloaded) {
+	if (tthread->uti_state == UTI_STATE_RUNNING_IN_LINUX) {
 		interrupt_syscall(tthread, sig);
 		release_thread(tthread);
 		return 0;
@@ -1729,7 +1707,7 @@ SYSCALL_DECLARE(mmap)
 		| MAP_NONBLOCK		// 0x10000
 		;
 
-	const intptr_t addr0 = ihk_mc_syscall_arg0(ctx);
+	const uintptr_t addr0 = ihk_mc_syscall_arg0(ctx);
 	const size_t len0 = ihk_mc_syscall_arg1(ctx);
 	const int prot = ihk_mc_syscall_arg2(ctx);
 	const int flags0 = ihk_mc_syscall_arg3(ctx);
@@ -1738,7 +1716,7 @@ SYSCALL_DECLARE(mmap)
 	struct thread *thread = cpu_local_var(current);
 	struct vm_regions *region = &thread->vm->region;
 	int error;
-	intptr_t addr = 0;
+	uintptr_t addr = 0;
 	size_t len;
 	int flags = flags0;
 	size_t pgsize;

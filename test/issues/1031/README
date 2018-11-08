@@ -1,0 +1,60 @@
+【Issue#1031 動作確認】
+□ テスト内容
+1. Issueで報告された再現プログラムでの確認
+RT_001: ostest-rt_sigaction.004 による確認
+	SIGUSR1 でプロセスが終了し、「Terminate by signal 10」が出力されることを確認する
+
+2. 既存のsigaction機能に影響がないことを確認
+CT_001: SIG_RESETHAND 指定時の動作
+	1. SIG_RESETHANDを指定したsigaction()でSIG_USR1にハンドラを設定
+	2. 自身にSIGUSR1を送る
+	3. 1.で登録したハンドラが呼び出される
+	4. 自身にSIGUSR1を送る
+	5. 1.で登録したハンドラが呼び出されず、プロセスが終了する
+
+CT_002: SIG_RESETHAND 未指定時の動作
+	1. SIG_RESETHANDを指定しないsigaction()でSIGUSR1にハンドラを設定
+	2. 自身にSIGUSR1を送る
+	3. 1.で登録したハンドラが呼び出される
+	4. 自身にSIGUSR1を送る
+	5. 1.で登録したハンドラが呼び出される
+
+CT_003: SIG_RESETHANDO 指定ハンドラへの上書き登録時の動作
+	1. SIG_RESETHANDを指定したsigaction()でSIG_USR1にハンドラを設定
+	2. SIG_RESETHANDを指定しないsigaction()でSIG_USR1にハンドラを設定
+	3. 自身にSIGUSR1を送る
+	4. 2.で登録したハンドラが呼び出される
+	5. 自身にSIGUSR1を送る
+	6. 2.で登録したハンドラが呼び出される
+
+CT_004: 複数のsig_numへのハンドラ登録時の動作
+	1. SIG_RESETHANDを指定したsigaction()でSIG_USR1にハンドラを設定
+	2. SIG_RESETHANDを指定したsigaction()でSIG_USR2にハンドラを設定
+	3. 自身にSIGUSR1を送る
+	4. 1.で登録したハンドラが呼び出される
+	5. 自身にSIGUSR2を送る
+	6. 2.で登録したハンドラが呼び出される
+	7. 自身にSIGUSR1を送る
+	8. 1.で登録したハンドラが呼び出されず、プロセスが終了する
+
+CT_005: 複数回(非上書き)のSIG_RESETHAND 指定時の動作
+	1. SIG_RESETHANDを指定したsigaction()でSIG_USR1にハンドラを設定
+	2. 自身にSIGUSR1を送る
+	3. 1.で登録したハンドラが呼び出される
+	4. SIG_RESETHANDを指定したsigaction()でSIG_USR1にハンドラを設定
+	5. 自身にSIGUSR1を送る
+	6. 4.で登録したハンドラが呼び出される
+	7. 自身にSIGUSR1を送る
+	8. 4.で登録したハンドラが呼び出されず、プロセスが終了する
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。

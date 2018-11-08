@@ -23,6 +23,7 @@ char *strncpy(char *dest, const char *src, size_t maxlen);
 int strcmp(const char *s1, const char *s2);
 int strncmp(const char *s1, const char *s2, size_t n);
 char *strstr(const char *haystack, const char *needle);
+char *strpbrk(const char *haystack, const char *accept);
 char *strchr(const char *s, int n);
 char *strrchr(const char *s, int n);
 void *memcpy(void *dest, const void *src, size_t n);
@@ -46,7 +47,6 @@ extern int sscanf(const char * buf, const char * fmt, ...);
 extern int scnprintf(char * buf, size_t size, const char *fmt, ...);
 
 unsigned long strtol(const char *cp, char **endp, unsigned int base);
-int flatten_strings(int nr_strings, char *first, char **strings, char **flat);
-int flatten_strings_from_user(int nr_strings, char *first, char **strings, char **flat);
+int flatten_strings_from_user(char *pre_strings, char **strings, char **flat);
 
 #endif

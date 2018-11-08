@@ -1,0 +1,26 @@
+【Issue#1039 動作確認】
+□ テスト内容
+調査の結果、Issue#1039の指摘は本来発生しない現象なことが判明し、
+Issue#1039向けパッチ(POSTK_TEMP_FIX_14)は不要なため、本パッチの除去を行った。
+
+このため、パッチ除去により動作に影響が無いことをLTPを用いて確認した。
+page faultのcopy on write処理が呼び出される以下のテストプログラムを選定した。
+
+C1039T01 fork02
+C1039T02 fork03
+C1039T03 execve01
+C1039T04 execve02
+C1039T05 execve03
+C1039T06 mmap12
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+C1039.txt 参照。
+全ての項目が OK となっていることを確認。

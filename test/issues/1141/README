@@ -1,0 +1,13 @@
+===========
+How to test
+===========
+(1) Edit the following line in Makefile
+
+    MCKDIR=$(HOME)/project/os/install
+
+(2) make test
+(3) Check if the first value, number of instructions retired,
+    shows around 3 million.
+(4) Check if the second value, number of cycles taken,
+    shows around 3 million / instructions-per-cycle
+    (1 - 1.5, depends on the processor).

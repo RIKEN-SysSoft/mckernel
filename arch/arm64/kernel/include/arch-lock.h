@@ -6,6 +6,8 @@
 
 #include <ihk/cpu.h>
 #include <ihk/atomic.h>
+#include "affinity.h"
+#include <lwk/compiler.h>
 
 //#define DEBUG_SPINLOCK
 //#define DEBUG_MCS_RWLOCK
@@ -151,6 +153,8 @@ typedef struct mcs_lock_node {
 	struct mcs_lock_node *next;
 	unsigned long irqsave;
 } __attribute__((aligned(64))) mcs_lock_node_t;
+
+typedef mcs_lock_node_t mcs_lock_t;
 
 static void mcs_lock_init(struct mcs_lock_node *node)
 {
@@ -601,5 +605,17 @@ __mcs_rwlock_reader_unlock(struct mcs_rwlock_lock *lock, struct mcs_rwlock_node_
 	cpu_restore_interrupt(node->irqsave);
 #endif
 }
+
+static inline int irqflags_can_interrupt(unsigned long flags)
+{
+#ifdef CONFIG_HAS_NMI
+#warning irqflags_can_interrupt needs testing/fixing on such a target
+	return flags > ICC_PMR_EL1_MASKED;
+#else
+	// PSTATE.DAIF I bit clear means interrupt is possible
+	return !(flags & (1 << 7));
+#endif
+}
+
 
 #endif /* !__HEADER_ARM64_COMMON_ARCH_LOCK_H */

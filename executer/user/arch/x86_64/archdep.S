@@ -1,15 +1,22 @@
 /*
-arg: rdi, rsi, rdx, rcx, r8, r9
-ret: rax
+Calling convention:
+  arg: rdi, rsi, rdx, rcx, r8, r9
+  ret: rax
 
-rax syscall number
-syscall: (rax:num) rdi rsi rdx r10 r8 r9 (rcx:ret addr)
-fd, cmd, param
-rdi: fd
-rsi: cmd
-rdx: param
-rcx: save area
-r8: new thread context
+  rdi: fd
+  rsi: cmd
+  rdx: param
+  rcx: save area
+  r8: new thread context
+
+Syscam call convention:
+  syscall number: rax
+  arg: rdi, rsi, rdx, r10, r8, r9
+  return addr: rcx
+
+  rdi:	 fd
+  rsi:	cmd
+  rdx:	param
 */
 
 .global switch_ctx
@@ -91,6 +98,7 @@ switch_ctx:
 
 1:
 	mov	$0xffffffffffffffff,%eax
+	retq
 2:
 	pushq	%rax
 	movq	$158,%rax /* arch_prctl */
@@ -146,4 +154,3 @@ compare_and_swap_int:
 	lock
 	cmpxchgl	%edx,0(%rdi)
 	retq
-

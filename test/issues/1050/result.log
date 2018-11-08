@@ -1,0 +1,35 @@
+*** RT_001 start *******************************
+TEST_SUITE: setrlimit
+TEST_NUMBER: 15
+ARGS:
+setrlimit() = -1, errno = 22
+RESULT: ok
+*** RT_001: PASSED
+
+*** CT_001 start *******************************
+ [OK] getrlimit cur:3eb1e max:3eb1e
+ [OK] setrlimit cur:3eb14 max:3eb14  returned 0 (expect return is 0)
+ [OK] errno after setrlimit :0 (expect error is 0)
+ [OK] getrlimit cur:3eb14 max:3eb14 (expect max is 3eb14)
+*** CT_001 PASSED
+
+*** CT_002 start *******************************
+ [OK] getrlimit cur:3eb1e max:3eb1e
+ [OK] setrlimit cur:3eb1e max:3eb28  returned 0 (expect return is 0)
+ [OK] errno after setrlimit :0 (expect error is 0)
+ [OK] getrlimit cur:3eb1e max:3eb28 (expect max is 3eb28)
+*** CT_002 PASSED
+
+*** CT_003 start *******************************
+ [OK] getrlimit cur:c8000 max:c8000
+ [OK] setrlimit cur:c7ff6 max:c7ff6  returned 0 (expect return is 0)
+ [OK] errno after setrlimit :0 (expect error is 0)
+ [OK] getrlimit cur:c7ff6 max:c7ff6 (expect max is c7ff6)
+*** CT_003 PASSED
+
+*** CT_004 start *******************************
+ [OK] getrlimit cur:c8000 max:c8000
+ [OK] setrlimit cur:c8000 max:c800a  returned 0 (expect return is 0)
+ [OK] errno after setrlimit :0 (expect error is 0)
+ [OK] getrlimit cur:c8000 max:c800a (expect max is c800a)
+*** CT_004 PASSED

@@ -1,0 +1,27 @@
+【Issue#926 動作確認】
+□ テスト内容
+1. shmat, RMID, shmdtの組み合せ確認。shmat直前にshmget実行。()内は別プロセス。
+C926T01 shmat->shmdt->(shmat->shmdt)で同じ領域が使われていることを確認
+C926T02 shmat->exit->(shmat->shmdt)で同じ領域が使われていることを確認
+C926T03 shmat->RMID->(shmat)->shmdt->(shmdt)で別領域が使われることを確認
+C926T04 shmat->RMID->(shmat->shmdt)->shmdtで別領域が使われることを確認
+C926T05 shmat->RMID->shmdt->(shmat->shmdt)で別領域が使われることを確認
+C926T06 shmat->RMID->exit->(shmat->shmdt)で別領域が使われることを確認
+C926T07 shmat->(shmat)->RMID->exit->(shmdt)で同じ領域が使われることを確認
+C926T08 shmat->(shmat)->exit->(shmdt)で同じ領域が使われることを確認
+
+2. shmgetとshmatの組み合せ確認。shmgetのキーは同じ。
+C926T09 shmget->shmat->RMID->shmget->shmatで別領域が使われることを確認
+C926T10 shmget->shmat->RMID->shmatで同じ領域が使われることを確認
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+C926.txt 参照。
+全ての項目が OK となっていることを確認。

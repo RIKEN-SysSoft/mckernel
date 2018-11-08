@@ -15,6 +15,7 @@
 #include <linux/rbtree.h>
 #include <linux/security.h>
 #include <linux/cred.h>
+#include <linux/version.h>
 #include "overlayfs.h"
 
 struct ovl_cache_entry {
@@ -34,10 +35,18 @@ struct ovl_dir_cache {
 	struct list_head entries;
 };
 
+/* vfs_readdir vs. iterate_dir compat */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 11, 0) || \
+	(defined(RHEL_RELEASE_CODE) && RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(7, 5))
+#define USE_ITERATE_DIR 1
+#endif
+
+#ifndef USE_ITERATE_DIR
 struct dir_context {
 	const filldir_t actor;
 	//loff_t pos;
 };
+#endif
 
 struct ovl_readdir_data {
 	struct dir_context ctx;
@@ -256,7 +265,11 @@ static inline int ovl_dir_read(struct path *realpath,
 	do {
 		rdd->count = 0;
 		rdd->err = 0;
+#ifdef USE_ITERATE_DIR
+		err = iterate_dir(realfile, &rdd->ctx);
+#else
 		err = vfs_readdir(realfile, rdd->ctx.actor, rdd);
+#endif
 		if (err >= 0)
 			err = rdd->err;
 	} while (!err && rdd->count);
@@ -365,6 +378,22 @@ static struct ovl_dir_cache *ovl_cache_get(struct dentry *dentry)
 	return cache;
 }
 
+#ifdef USE_ITERATE_DIR
+struct iterate_wrapper {
+	struct dir_context ctx;
+	filldir_t actor;
+	void *buf;
+};
+
+static int ovl_wrap_readdir(void *ctx, const char *name, int namelen,
+			    loff_t offset, u64 ino, unsigned int d_type)
+{
+	struct iterate_wrapper *w = ctx;
+
+	return w->actor(w->buf, name, namelen, offset, ino, d_type);
+}
+#endif
+
 static int ovl_readdir(struct file *file, void *buf, filldir_t filler)
 {
 	struct ovl_dir_file *od = file->private_data;
@@ -376,7 +405,16 @@ static int ovl_readdir(struct file *file, void *buf, filldir_t filler)
 		ovl_dir_reset(file);
 
 	if (od->is_real) {
+#ifdef USE_ITERATE_DIR
+		struct iterate_wrapper w = {
+			.ctx.actor = ovl_wrap_readdir,
+			.actor = filler,
+			.buf = buf,
+		};
+		res = iterate_dir(od->realfile, &w.ctx);
+#else
 		res = vfs_readdir(od->realfile, filler, buf);
+#endif
 		file->f_pos = od->realfile->f_pos;
 
 		return res;

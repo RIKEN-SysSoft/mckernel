@@ -1,0 +1,37 @@
+*** RT_001 start *******************************
+TEST_SUITE: sched_getaffinity
+TEST_NUMBER: 1
+ARGS:
+sched_getaffinity result:-1, errno:14 (expect error is "EFAULT"=14)
+RESULT: ok
+*** RT_001: PASSED
+
+*** RT_002 start *******************************
+TEST_SUITE: sched_getaffinity
+TEST_NUMBER: 0
+ARGS: -p 20
+RESULT: ok
+*** RT_002: PASSED
+
+*** RT_003 start *******************************
+TEST_SUITE: sched_getaffinity
+TEST_NUMBER: 2
+ARGS: -p 20
+sched_getaffinity result:-1, errno:22 (expect error is "EINVAL"=22)
+RESULT: ok
+*** RT_003: PASSED
+
+*** RT_004 start *******************************
+TEST_SUITE: sched_getaffinity
+TEST_NUMBER: 3
+ARGS: -p 20
+sched_getaffinity result:-1, errno:3 (expect error is "ESRCH"=3)
+RESULT: ok
+*** RT_004: PASSED
+
+*** RT_005 start *******************************
+TEST_SUITE: sched_getaffinity
+TEST_NUMBER: 5
+ARGS: -p 20
+RESULT: ok
+*** RT_005: PASSED

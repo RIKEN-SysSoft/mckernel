@@ -12,6 +12,80 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
+void
+additional_test()
+{
+	key_t key;
+	int shmid1;
+	int shmid2;
+	int shmid3;
+	int *sp1;
+	int *sp2;
+	int *sp3;
+	int *sp4;
+	struct shmid_ds buf;
+
+	key = ftok("/", 1);
+
+	if ((shmid1 = shmget(key, 4096, IPC_CREAT | 0660)) == -1) {
+		perror("shmget 1");
+		exit(1);
+	}
+	if ((sp1 = shmat(shmid1, NULL, 0)) == (void *)-1) {
+		perror("shmat 1");
+		exit(1);
+	}
+	if (shmctl(shmid1, IPC_RMID, &buf) == -1) {
+		perror("RMID 1");
+		exit(1);
+	}
+	*sp1 = 1;
+
+	if ((shmid2 = shmget(key, 4096, IPC_CREAT | 0660)) == -1) {
+		perror("shmget 2");
+		exit(1);
+	}
+	if ((sp2 = shmat(shmid2, NULL, 0)) == (void *)-1) {
+		perror("shmat 2");
+		exit(1);
+	}
+	*sp2 = 2;
+
+	printf("C926T09... ");
+	if ((shmid3 = shmget(key, 4096, IPC_CREAT | 0660)) == -1) {
+		perror("shmget 3");
+		exit(1);
+	}
+	if ((sp3 = shmat(shmid3, NULL, 0)) == (void *)-1) {
+		perror("shmat 3");
+		exit(1);
+	}
+	if (shmid3 == shmid2 && *sp3 == 2) {
+		printf("OK\n");
+	}
+	else {
+		if (shmid3 != shmid2) {
+			printf("NG shmid %d!=%d\n", shmid3, shmid2);
+		}
+		else {
+			printf("NG valie=%d\n", *sp3);
+		}
+	}
+
+	printf("C926T10... ");
+	if ((sp4 = shmat(shmid1, NULL, 0)) == (void *)-1) {
+		perror("shmat 4");
+		exit(1);
+	}
+	if (*sp4 == 1) {
+		printf("OK\n");
+	}
+	else {
+		printf("NG valie=%d\n", *sp4);
+	}
+	shmctl(shmid2, IPC_RMID, &buf);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -85,6 +159,7 @@ main(int argc, char **argv)
 		sp = shmat(shmid, NULL, 0);
 		st = *sp == valid3? 1: 0;
 		shmdt(sp);
+		shmctl(shmid, IPC_RMID, &buf);
 		exit(st);
 	}
 
@@ -150,6 +225,7 @@ main(int argc, char **argv)
 		sp = shmat(shmid, NULL, 0);
 		st = *sp == valid3? 1: 0;
 		shmdt(sp);
+		shmctl(shmid, IPC_RMID, &buf);
 		exit(st);
 	}
 
@@ -223,6 +299,7 @@ main(int argc, char **argv)
 		sp = shmat(shmid, NULL, 0);
 		st = *sp == valid3? 1: 0;
 		shmdt(sp);
+		shmctl(shmid, IPC_RMID, &buf);
 		exit(st);
 	}
 
@@ -294,6 +371,7 @@ main(int argc, char **argv)
 		sp = shmat(shmid, NULL, 0);
 		st = *sp == valid3? 1: 0;
 		shmdt(sp);
+		shmctl(shmid, IPC_RMID, &buf);
 		exit(st);
 	}
 
@@ -362,6 +440,7 @@ main(int argc, char **argv)
 		sp = shmat(shmid, NULL, 0);
 		st = *sp == valid3? 1: 0;
 		shmdt(sp);
+		shmctl(shmid, IPC_RMID, &buf);
 		exit(st);
 	}
 
@@ -428,6 +507,7 @@ main(int argc, char **argv)
 		sp = shmat(shmid, NULL, 0);
 		st = *sp == valid3? 1: 0;
 		shmdt(sp);
+		shmctl(shmid, IPC_RMID, &buf);
 		exit(st);
 	}
 
@@ -499,6 +579,7 @@ main(int argc, char **argv)
 		sp = shmat(shmid, NULL, 0);
 		st = *sp == valid3? 1: 0;
 		shmdt(sp);
+		shmctl(shmid, IPC_RMID, &buf);
 		exit(st);
 	}
 
@@ -569,6 +650,7 @@ main(int argc, char **argv)
 		sp = shmat(shmid, NULL, 0);
 		st = *sp == valid3? 1: 0;
 		shmdt(sp);
+		shmctl(shmid, IPC_RMID, &buf);
 		exit(st);
 	}
 
@@ -582,6 +664,8 @@ main(int argc, char **argv)
 	else {
 		printf("NG\n");
 	}
+
+	additional_test();
 
 	exit(0);
 }

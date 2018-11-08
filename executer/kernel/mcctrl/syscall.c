@@ -63,17 +63,21 @@
 #define	dprintk(...)
 #endif
 
-#ifdef MCCTRL_KSYM_zap_page_range
-static void
-(*mcctrl_zap_page_range)(struct vm_area_struct *vma, unsigned long start,
-		unsigned long size, struct zap_details *details)
-#if MCCTRL_KSYM_zap_page_range
-	= (void *)MCCTRL_KSYM_zap_page_range;
+//#define DEBUG_PTD
+#ifdef DEBUG_PTD
+#define pr_ptd(msg, tid, ptd) do { printk("%s: " msg ",tid=%d,refc=%d\n", __FUNCTION__, tid, atomic_read(&ptd->refcount)); } while(0)
 #else
-	= &zap_page_range;
-#endif
+#define pr_ptd(msg, tid, ptd) do { } while(0)
 #endif
 
+//#define DEBUG_PPD
+#ifdef DEBUG_PPD
+#define pr_ppd(msg, tid, ppd) do { printk("%s: " msg ",tid=%d,refc=%d\n", __FUNCTION__, tid, atomic_read(&ppd->refcount)); } while(0)
+#else
+#define pr_ppd(msg, tid, ppd) do { } while(0)
+#endif
+
+static long pager_call_irq(ihk_os_t os, struct syscall_request *req);
 static long pager_call(ihk_os_t os, struct syscall_request *req);
 
 #ifdef SC_DEBUG
@@ -89,75 +93,90 @@ static void print_dma_lastreq(void)
 }
 #endif
 
-int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data* ppd, 
-	struct task_struct *task, void *data)
+void mcctrl_put_per_thread_data_unsafe(struct mcctrl_per_thread_data *ptd)
 {
-	struct mcctrl_per_thread_data *ptd_iter, *ptd = NULL;
-	struct mcctrl_per_thread_data *ptd_alloc = NULL;
-	int hash = (((uint64_t)task >> 4) & MCCTRL_PER_THREAD_DATA_HASH_MASK);
-	int ret = 0;
-	unsigned long flags;
-
-	ptd_alloc = kmalloc(sizeof(*ptd), GFP_ATOMIC);
-	if (!ptd_alloc) {
-		kprintf("%s: error allocate per thread data\n", __FUNCTION__);
-		ret = -ENOMEM;
-		goto out_noalloc;
-	}
-
-	/* Check if data for this thread exists and add if not */
-	write_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
-	list_for_each_entry(ptd_iter, &ppd->per_thread_data_hash[hash], hash) {
-		if (ptd_iter->task == task) {
-			ptd = ptd_iter;
-			break;
+	if (!atomic_dec_and_test(&ptd->refcount)) {
+		int ret = atomic_read(&ptd->refcount);
+		if (ret < 0) {
+			printk("%s: ERROR: invalid refcount=%d\n", __FUNCTION__, ret);
 		}
+		return;
 	}
 
-	if (unlikely(ptd)) {
-		ret = -EBUSY;
-		kfree(ptd_alloc);
-		goto out;
-	}
-
-	ptd = ptd_alloc;
-	ptd->task = task;
-	ptd->data = data;
-	list_add_tail(&ptd->hash, &ppd->per_thread_data_hash[hash]); 
-
-out:
-	write_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
-out_noalloc:
-	return ret;
+	list_del(&ptd->hash);
+	kfree(ptd);
 }
 
-int mcctrl_delete_per_thread_data(struct mcctrl_per_proc_data* ppd, 
-	struct task_struct *task)
+void mcctrl_put_per_thread_data(struct mcctrl_per_thread_data* _ptd)
 {
+	struct mcctrl_per_proc_data *ppd = _ptd->ppd;
 	struct mcctrl_per_thread_data *ptd_iter, *ptd = NULL;
-	int hash = (((uint64_t)task >> 4) & MCCTRL_PER_THREAD_DATA_HASH_MASK);
-	int ret = 0;
+	int hash = (((uint64_t)_ptd->task >> 4) & MCCTRL_PER_THREAD_DATA_HASH_MASK);
 	unsigned long flags;
-	
+
 	/* Check if data for this thread exists and delete it */
 	write_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
 	list_for_each_entry(ptd_iter, &ppd->per_thread_data_hash[hash], hash) {
-		if (ptd_iter->task == task) {
+		if (ptd_iter->task == _ptd->task) {
 			ptd = ptd_iter;
 			break;
 		}
 	}
 
 	if (!ptd) {
-		ret = -EINVAL;
+		printk("%s: ERROR: ptd not found\n", __FUNCTION__);
 		goto out;
 	}
 
-	list_del(&ptd->hash);
-	kfree(ptd);
-
+	mcctrl_put_per_thread_data_unsafe(ptd);
+	
 out:
 	write_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
+}
+
+int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data *ppd, void *data)
+{
+	struct mcctrl_per_thread_data *ptd_iter, *ptd = NULL;
+	struct mcctrl_per_thread_data *ptd_alloc = NULL;
+	int hash = (((uint64_t)current >> 4) & MCCTRL_PER_THREAD_DATA_HASH_MASK);
+	int ret = 0;
+	unsigned long flags;
+
+	ptd_alloc = kmalloc(sizeof(struct mcctrl_per_thread_data), GFP_ATOMIC);
+	if (!ptd_alloc) {
+		kprintf("%s: error allocate per thread data\n", __FUNCTION__);
+		ret = -ENOMEM;
+		goto out_noalloc;
+	}
+	memset(ptd_alloc, 0, sizeof(struct mcctrl_per_thread_data));
+	
+	/* Check if data for this thread exists and add if not */
+	write_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
+	list_for_each_entry(ptd_iter, &ppd->per_thread_data_hash[hash], hash) {
+		if (ptd_iter->task == current) {
+			ptd = ptd_iter;
+			break;
+		}
+	}
+
+	if (unlikely(ptd)) {
+		kprintf("%s: WARNING: ptd of tid: %d exists\n", __FUNCTION__, task_pid_vnr(current));
+		ret = -EBUSY;
+		kfree(ptd_alloc);
+		goto out;
+	}
+
+	ptd = ptd_alloc;
+	ptd->ppd = ppd;
+	ptd->task = current;
+	ptd->tid = task_pid_vnr(current);
+	ptd->data = data;
+	atomic_set(&ptd->refcount, 1);
+	list_add_tail(&ptd->hash, &ppd->per_thread_data_hash[hash]); 
+
+ out:
+	write_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
+ out_noalloc:
 	return ret;
 }
 
@@ -168,7 +187,7 @@ struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc
 	int hash = (((uint64_t)task >> 4) & MCCTRL_PER_THREAD_DATA_HASH_MASK);
 	unsigned long flags;
 
-	/* Check if data for this thread exists and return it */
+	/* Check if data for this thread exists */
 	read_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
 
 	list_for_each_entry(ptd_iter, &ppd->per_thread_data_hash[hash], hash) {
@@ -178,8 +197,18 @@ struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc
 		}
 	}
 
+	if (ptd) {
+		if (atomic_read(&ptd->refcount) <= 0) {
+			printk("%s: ERROR: use-after-free detected (%d)", __FUNCTION__, atomic_read(&ptd->refcount));
+			ptd = NULL;
+			goto out;
+		}
+		atomic_inc(&ptd->refcount);
+	}
+
+ out:
 	read_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
-	return ptd ? ptd->data : NULL;
+	return ptd;
 }
 #endif /* !POSTK_DEBUG_ARCH_DEP_56 */
 
@@ -270,8 +299,19 @@ static int __notify_syscall_requester(ihk_os_t os, struct ikc_scd_packet *packet
 				IHK_SCD_REQ_THREAD_SPINNING,
 				IHK_SCD_REQ_THREAD_TO_BE_WOKEN)) {
 		dprintk("%s: no need to send IKC message for PID %d\n",
-				__FUNCTION__, packet->pid);
+			   __FUNCTION__, packet->pid);
 		return ret;
+	}
+
+	/* Wait until the status goes back to IHK_SCD_REQ_THREAD_SPINNING or
+	   IHK_SCD_REQ_THREAD_DESCHEDULED because two wake-up attempts are competing.
+	   Note that mcexec_terminate_thread() and remote page fault and
+	   returning EINTR would compete. */
+	if (res->req_thread_status == IHK_SCD_REQ_THREAD_TO_BE_WOKEN) {
+		printk("%s: INFO: someone else is waking up the McKernel thread, "
+				"pid: %d, req status: %lu, syscall nr: %lu\n",
+				__FUNCTION__, packet->pid,
+				res->req_thread_status, packet->req.number);
 	}
 
 	/* The thread is not spinning any more, make sure it's descheduled */
@@ -301,15 +341,18 @@ long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
                       unsigned long *ret)
 {
 	struct ikc_scd_packet *packet;
+    struct ikc_scd_packet *free_packet = NULL;
 	struct syscall_request *req;
 	struct syscall_response *resp;
 	unsigned long syscall_ret;
 	struct wait_queue_head_list_node *wqhln;
 	unsigned long irqflags;
 	struct mcctrl_per_proc_data *ppd;
+	struct mcctrl_per_thread_data *ptd;
 	unsigned long phys;
 	struct syscall_request _request[2];
 	struct syscall_request *request;
+	int retry;
 
 	if (((unsigned long)_request ^ (unsigned long)(_request + 1)) &
 	    ~(PAGE_SIZE -1))
@@ -334,7 +377,14 @@ long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
 		return -EINVAL;
 	}
 
-	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
+	ptd = mcctrl_get_per_thread_data(ppd, current);
+	if (!ptd) {
+		printk("%s: ERROR: mcctrl_get_per_thread_data failed\n", __FUNCTION__);
+		syscall_ret = -ENOENT;
+		goto no_ptd;
+	}
+	pr_ptd("get", task_pid_vnr(current), ptd);
+	packet = (struct ikc_scd_packet *)ptd->data;
 	if (!packet) {
 		syscall_ret = -ENOENT;
 		printk("%s: no packet registered for TID %d\n",
@@ -356,6 +406,7 @@ retry_alloc:
 		printk("WARNING: coudln't alloc wait queue head, retrying..\n");
 		goto retry_alloc;
 	}
+	memset(wqhln, 0, sizeof(struct wait_queue_head_list_node));
 
 	/* Prepare per-thread wait queue head */
 	wqhln->task = current;
@@ -385,30 +436,52 @@ retry_alloc:
 	mb();
 	resp->status = STATUS_SYSCALL;
 
+	retry = 0;
+ retry_offload:
 	dprintk("%s: tid: %d, syscall: %d SLEEPING\n", 
 			__FUNCTION__, task_pid_vnr(current), num);
 	/* wait for response */
 	syscall_ret = wait_event_interruptible(wqhln->wq_syscall, wqhln->req);
 	
+	/* debug */
+	if (syscall_ret == -ERESTARTSYS) {
+		printk("%s: INFO: interrupted by signal\n", __FUNCTION__);
+		retry++;
+		if (retry < 5) {
+			printk("%s: INFO: retry=%d\n", __FUNCTION__, retry);
+			goto retry_offload;
+		}
+	}
+
 	/* Remove per-thread wait queue head */
 	irqflags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
 	list_del(&wqhln->list);
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, irqflags);
 
-	dprintk("%s: tid: %d, syscall: %d WOKEN UP\n", 
-			__FUNCTION__, task_pid_vnr(current), num);
+	dprintk("%s: tid: %d, syscall: %d WOKEN UP\n",
+		__FUNCTION__, task_pid_vnr(current), num);
+
+	if (retry >= 5) {
+		kfree(wqhln);
+		kprintf("%s: INFO: mcexec is gone or retry count exceeded,pid=%d,ppd=%p,retry=%d\n", __FUNCTION__, task_tgid_vnr(current), ppd, retry);
+		syscall_ret = -EINVAL;
+		goto out;
+	}
 
 	if (syscall_ret) {
 		kfree(wqhln);
+		printk("%s: ERROR: wait_event_interruptible returned %ld\n", __FUNCTION__, syscall_ret);
 		goto out;
 	}
 	else {
 		unsigned long phys2;
 		struct syscall_response *resp2;
 
-		/* Update packet reference */
+		/* Note that wqhln->packet is a new packet */
 		packet = wqhln->packet;
+		free_packet = packet;
 		req = &packet->req;
+
 		phys2 = ihk_device_map_memory(ihk_os_to_dev(usrdata->os), 
 				packet->resp_pa, sizeof(*resp));
 		resp2 = ihk_device_map_virtual(ihk_os_to_dev(usrdata->os), 
@@ -433,28 +506,26 @@ retry_alloc:
 		syscall_ret = -EIO;
 		goto out;
 	}
-#define	PAGER_REQ_RESUME	0x0101
-	else if (req->args[0] != PAGER_REQ_RESUME) {
-		resp->ret = pager_call(usrdata->os, (void *)req);
 
-		if (__notify_syscall_requester(usrdata->os, packet, resp) < 0) {
-			printk("%s: WARNING: failed to notify PID %d\n",
-					__FUNCTION__, packet->pid);
-		}
-
-		mb();
-	}
-	else {
-		*ret = req->args[1];
-	}
+	*ret = req->args[1];
 
 	kfree(wqhln);
 	syscall_ret = 0;
 out:
+	/* Release packet sent from McKernel */
+	if (free_packet) {
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)free_packet,
+							   (usrdata->ikc2linux[smp_processor_id()] ?
+								usrdata->ikc2linux[smp_processor_id()] :
+								usrdata->ikc2linux[0]));
+	}
 	ihk_device_unmap_virtual(ihk_os_to_dev(usrdata->os), resp, sizeof(*resp));
 	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
 
 out_put_ppd:
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put", task_pid_vnr(current), ptd);
+ no_ptd:
 	dprintk("%s: tid: %d, syscall: %d, syscall_ret: %lx\n",
 		__FUNCTION__, task_pid_vnr(current), num, syscall_ret);
 
@@ -462,7 +533,24 @@ out_put_ppd:
 	return syscall_ret;
 }
 
-static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t reason)
+#if 0 /* debug */
+/* Info of Linux counterpart of migrated-to-Linux thread */
+struct host_thread {
+	struct host_thread *next;
+	struct mcos_handler_info *handler;
+	int     pid;
+	int     tid;
+	unsigned long usp;
+	unsigned long lfs;
+	unsigned long rfs;
+	struct task_struct *task;
+};
+
+extern struct host_thread *host_threads;
+extern rwlock_t host_thread_lock;
+#endif
+
+int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t reason)
 {
 	struct ikc_scd_packet *packet;
 	struct ikc_scd_packet *free_packet = NULL;
@@ -472,7 +560,9 @@ static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, u
 	struct wait_queue_head_list_node *wqhln;
 	unsigned long irqflags;
 	struct mcctrl_per_proc_data *ppd;
+	struct mcctrl_per_thread_data *ptd;
 	unsigned long phys;
+	int retry;
 	
 	dprintk("%s: tid: %d, fault_addr: %p, reason: %lu\n",
 			__FUNCTION__, task_pid_vnr(current), fault_addr, (unsigned long)reason);
@@ -486,11 +576,18 @@ static int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, u
 		return -EINVAL;
 	}
 
-	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
-	if (!packet) {
+	ptd = mcctrl_get_per_thread_data(ppd, current);
+	if (!ptd) {
+		printk("%s: ERROR: mcctrl_get_per_thread_data failed\n", __FUNCTION__);		
 		error = -ENOENT;
+		goto no_ptd;
+	}
+	pr_ptd("get", task_pid_vnr(current), ptd);
+	packet = (struct ikc_scd_packet *)ptd->data;
+	if (!packet) {
 		printk("%s: no packet registered for TID %d\n",
 				__FUNCTION__, task_pid_vnr(current));
+		error = -ENOENT;
 		goto out_put_ppd;
 	}
 
@@ -514,6 +611,7 @@ retry_alloc:
 		printk("WARNING: coudln't alloc wait queue head, retrying..\n");
 		goto retry_alloc;
 	}
+	memset(wqhln, 0, sizeof(struct wait_queue_head_list_node));
 
 	/* Prepare per-thread wait queue head */
 	wqhln->task = current;
@@ -546,12 +644,23 @@ retry_alloc:
 	mb();
 	resp->status = STATUS_PAGE_FAULT;
 
+	retry = 0;
 	for (;;) {
 		dprintk("%s: tid: %d, fault_addr: %p SLEEPING\n", 
 				__FUNCTION__, task_pid_vnr(current), fault_addr);
 		/* wait for response */
 		error = wait_event_interruptible(wqhln->wq_syscall, wqhln->req);
-		
+
+		/* Delay signal handling */
+		if (error == -ERESTARTSYS) {
+			printk("%s: INFO: interrupted by signal\n", __FUNCTION__);
+			retry++;
+			if (retry < 5) { /* mcexec is alive */
+				printk("%s: INFO: retry=%d\n", __FUNCTION__, retry);
+				continue;
+			}
+		}
+
 		/* Remove per-thread wait queue head */
 		irqflags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
 		list_del(&wqhln->list);
@@ -559,6 +668,13 @@ retry_alloc:
 
 		dprintk("%s: tid: %d, fault_addr: %p WOKEN UP\n", 
 				__FUNCTION__, task_pid_vnr(current), fault_addr);
+
+		if (retry >= 5) {
+			kfree(wqhln);
+			kprintf("%s: INFO: mcexec is gone or retry count exceeded,pid=%d,retry=%d\n", __FUNCTION__, task_tgid_vnr(current), retry);
+			error = -EINVAL;
+			goto out;
+		}
 
 		if (error) {
 			kfree(wqhln);
@@ -627,126 +743,26 @@ retry_alloc:
 	error = 0;
 out:
 	/* Release remote page-fault response packet */
-	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)free_packet,
-			(usrdata->ikc2linux[smp_processor_id()] ?
-			 usrdata->ikc2linux[smp_processor_id()] :
-			 usrdata->ikc2linux[0]));
+	if (free_packet) {
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)free_packet,
+							   (usrdata->ikc2linux[smp_processor_id()] ?
+								usrdata->ikc2linux[smp_processor_id()] :
+								usrdata->ikc2linux[0]));
+	}
 
 	ihk_device_unmap_virtual(ihk_os_to_dev(usrdata->os), resp, sizeof(*resp));
 	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
 
 out_put_ppd:
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put", task_pid_vnr(current), ptd);
+ no_ptd:
 	dprintk("%s: tid: %d, fault_addr: %p, reason: %lu, error: %d\n",
 			__FUNCTION__, task_pid_vnr(current), fault_addr, (unsigned long)reason, error);
 
 	mcctrl_put_per_proc_data(ppd);
 	return error;
 }
-
-#define RUS_PAGE_HASH_SHIFT	8
-#define RUS_PAGE_HASH_SIZE	(1UL << RUS_PAGE_HASH_SHIFT)
-#define RUS_PAGE_HASH_MASK	(RUS_PAGE_HASH_SIZE - 1)
-
-struct list_head rus_page_hash[RUS_PAGE_HASH_SIZE];
-spinlock_t rus_page_hash_lock;
-
-struct rus_page {
-	struct list_head hash;
-	struct page *page;
-	int refcount;
-	int put_page;
-};
-
-void rus_page_hash_init(void)
-{
-	int i;
-
-	spin_lock_init(&rus_page_hash_lock);
-	for (i = 0; i < RUS_PAGE_HASH_SIZE; ++i) {
-		INIT_LIST_HEAD(&rus_page_hash[i]);
-	}
-}
-
-/* rus_page_hash_lock must be held */
-struct rus_page *_rus_page_hash_lookup(struct page *page)
-{
-	struct rus_page *rp = NULL;
-	struct rus_page *rp_iter;
-
-	list_for_each_entry(rp_iter,
-			&rus_page_hash[page_to_pfn(page) & RUS_PAGE_HASH_MASK], hash) {
-
-		if (rp_iter->page != page)
-			continue;
-
-		rp = rp_iter;
-		break;
-	}
-
-	return rp;
-}
-
-
-static int rus_page_hash_insert(struct page *page)
-{
-	int ret = 0;
-	struct rus_page *rp;
-	unsigned long flags;
-
-	spin_lock_irqsave(&rus_page_hash_lock, flags);
-
-	rp = _rus_page_hash_lookup(page);
-	if (!rp) {
-		rp = kmalloc(sizeof(*rp), GFP_ATOMIC);
-
-		if (!rp) {
-			printk("rus_page_add_hash(): error allocating rp\n");
-			ret = -ENOMEM;
-			goto out;
-		}
-
-		rp->page = page;
-		rp->put_page = 0;
-
-		get_page(page);
-
-		rp->refcount = 0; /* Will be increased below */
-
-		list_add_tail(&rp->hash,
-				&rus_page_hash[page_to_pfn(page) & RUS_PAGE_HASH_MASK]);
-	}
-
-	++rp->refcount;
-
-
-out:
-	spin_unlock_irqrestore(&rus_page_hash_lock, flags);
-	return ret;
-}
-
-void rus_page_hash_put_pages(void)
-{
-	int i;
-	struct rus_page *rp_iter;
-	struct rus_page *rp_iter_next;
-	unsigned long flags;
-
-	spin_lock_irqsave(&rus_page_hash_lock, flags);
-
-	for (i = 0; i < RUS_PAGE_HASH_SIZE; ++i) {
-
-		list_for_each_entry_safe(rp_iter, rp_iter_next,
-				&rus_page_hash[i], hash) {
-			list_del(&rp_iter->hash);
-
-			put_page(rp_iter->page);
-			kfree(rp_iter);
-		}
-	}
-
-	spin_unlock_irqrestore(&rus_page_hash_lock, flags);
-}
-
 
 /*
  * By remap_pfn_range(), VM_PFN_AT_MMAP may be raised.
@@ -761,9 +777,15 @@ void rus_page_hash_put_pages(void)
 
 #define	USE_VM_INSERT_PFN	1
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
+static int rus_vm_fault(struct vm_fault *vmf)
+{
+	struct vm_area_struct *vma = vmf->vma;
+#else
 static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
-	struct mcctrl_usrdata *	usrdata	= vma->vm_file->private_data;
+#endif
+	struct mcctrl_usrdata  *usrdata	= vma->vm_file->private_data;
 	ihk_device_t		dev = ihk_os_to_dev(usrdata->os);
 	unsigned long		rpa;
 	unsigned long		phys;
@@ -777,10 +799,10 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	size_t			pix;
 #endif
 	struct mcctrl_per_proc_data *ppd;
+	struct mcctrl_per_thread_data *ptd;
 	struct ikc_scd_packet *packet;
 	int ret = 0;
 
-#ifdef POSTK_DEBUG_ARCH_DEP_41 /* HOST-Linux version switch add */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
 	dprintk("mcctrl:page fault:flags %#x pgoff %#lx va %#lx page %p\n",
 			vmf->flags, vmf->pgoff, vmf->address, vmf->page);
@@ -788,24 +810,30 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	dprintk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
 			vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-#else /* POSTK_DEBUG_ARCH_DEP_41 */
-	dprintk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
-			vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
-#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 
 	/* Look up per-process structure */
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 	if (!ppd) {
+		kprintf("%s: INFO: no per-process structure for pid %d (tid %d), try to use pid %d\n", 
+				__FUNCTION__, task_tgid_vnr(current), task_pid_vnr(current), vma->vm_mm->owner->pid);
 		ppd = mcctrl_get_per_proc_data(usrdata, vma->vm_mm->owner->pid);
 	}
 
 	if (!ppd) {
 		kprintf("%s: ERROR: no per-process structure for PID %d??\n", 
 				__FUNCTION__, task_tgid_vnr(current));
-		return -EINVAL;
+		ret = VM_FAULT_SIGBUS;
+		goto no_ppd;
 	}
 
-	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
+	ptd = mcctrl_get_per_thread_data(ppd, current);
+	if (!ptd) {
+		printk("%s: ERROR: mcctrl_get_per_thread_data failed\n", __FUNCTION__);
+		ret = VM_FAULT_SIGBUS;
+		goto no_ptd;
+	}
+	pr_ptd("get", task_pid_vnr(current), ptd);
+	packet = (struct ikc_scd_packet *)ptd->data;
 	if (!packet) {
 		ret = VM_FAULT_SIGBUS;
 		printk("%s: no packet registered for TID %d\n",
@@ -814,7 +842,6 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	}
 
 	for (try = 1; ; ++try) {
-#ifdef POSTK_DEBUG_ARCH_DEP_41 /* HOST-Linux version switch add */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
 		error = translate_rva_to_rpa(usrdata->os, ppd->rpgtable,
 				vmf->address, &rpa, &pgsize);
@@ -823,15 +850,9 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 				(unsigned long)vmf->virtual_address,
 				&rpa, &pgsize);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-#else /* POSTK_DEBUG_ARCH_DEP_41 */
-		error = translate_rva_to_rpa(usrdata->os, ppd->rpgtable,
-				(unsigned long)vmf->virtual_address,
-				&rpa, &pgsize);
-#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 #define	NTRIES 2
 		if (!error || (try >= NTRIES)) {
 			if (error) {
-#ifdef POSTK_DEBUG_ARCH_DEP_41 /* HOST-Linux version switch add */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
 				printk("%s: error translating 0x%#lx "
 						"(req: TID: %u, syscall: %lu)\n",
@@ -843,12 +864,6 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 						__FUNCTION__, vmf->virtual_address,
 						packet->req.rtid, packet->req.number);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-#else /* POSTK_DEBUG_ARCH_DEP_41 */
-				printk("%s: error translating 0x%p "
-						"(req: TID: %u, syscall: %lu)\n",
-						__FUNCTION__, vmf->virtual_address,
-						packet->req.rtid, packet->req.number);
-#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 			}
 
 			break;
@@ -859,17 +874,12 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 #define	PF_WRITE	0x02
 			reason |= PF_WRITE;
 		}
-#ifdef POSTK_DEBUG_ARCH_DEP_41 /* HOST-Linux version switch add */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
 		error = remote_page_fault(usrdata, (void *)vmf->address, reason);
 #else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 		error = remote_page_fault(usrdata, vmf->virtual_address, reason);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-#else /* POSTK_DEBUG_ARCH_DEP_41 */
-		error = remote_page_fault(usrdata, vmf->virtual_address, reason);
-#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 		if (error) {
-#ifdef POSTK_DEBUG_ARCH_DEP_41 /* HOST-Linux version switch add */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
 				printk("%s: error forwarding PF for 0x%#lx "
 						"(req: TID: %d, syscall: %lu)\n",
@@ -881,12 +891,6 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 						__FUNCTION__, vmf->virtual_address,
 						packet->req.rtid, packet->req.number);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-#else /* POSTK_DEBUG_ARCH_DEP_41 */
-				printk("%s: error forwarding PF for 0x%p "
-						"(req: TID: %d, syscall: %lu)\n",
-						__FUNCTION__, vmf->virtual_address,
-						packet->req.rtid, packet->req.number);
-#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 			break;
 		}
 	}
@@ -895,15 +899,11 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 		goto put_and_out;
 	}
 
-#ifdef POSTK_DEBUG_ARCH_DEP_41 /* HOST-Linux version switch add */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
 	rva = vmf->address & ~(pgsize - 1);
 #else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 	rva = (unsigned long)vmf->virtual_address & ~(pgsize - 1);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-#else /* POSTK_DEBUG_ARCH_DEP_41 */
-	rva = (unsigned long)vmf->virtual_address & ~(pgsize - 1);
-#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 	rpa = rpa & ~(pgsize - 1);
 
 	phys = ihk_device_map_memory(dev, rpa, pgsize);
@@ -921,30 +921,8 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 		if (pfn_valid(pfn+pix)) {
 			page = pfn_to_page(pfn+pix);
 
-			if ((error = rus_page_hash_insert(page)) < 0) {
-#ifdef POSTK_DEBUG_ARCH_DEP_41 /* HOST-Linux version switch add */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-				printk("%s: error adding page to RUS hash for 0x%#lx "
-						"(req: TID: %d, syscall: %lu)\n",
-						__FUNCTION__, vmf->address,
-						packet->req.rtid, packet->req.number);
-#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-				printk("%s: error adding page to RUS hash for 0x%p "
-						"(req: TID: %d, syscall: %lu)\n",
-						__FUNCTION__, vmf->virtual_address,
-						packet->req.rtid, packet->req.number);
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-#else /* POSTK_DEBUG_ARCH_DEP_41 */
-				printk("%s: error adding page to RUS hash for 0x%p "
-						"(req: TID: %d, syscall: %lu)\n",
-						__FUNCTION__, vmf->virtual_address,
-						packet->req.rtid, packet->req.number);
-#endif /* POSTK_DEBUG_ARCH_DEP_41 */
-			}
-
 			error = vm_insert_page(vma, rva+(pix*PAGE_SIZE), page);
 			if (error) {
-#ifdef POSTK_DEBUG_ARCH_DEP_41 /* HOST-Linux version switch add */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
 				printk("%s: error inserting mapping for 0x%#lx "
 						"(req: TID: %d, syscall: %lu) error: %d, " 
@@ -960,20 +938,13 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 						packet->req.rtid, packet->req.number, error,
 						vma->vm_start, vma->vm_end);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-#else /* POSTK_DEBUG_ARCH_DEP_41 */
-				printk("%s: error inserting mapping for 0x%p "
-						"(req: TID: %d, syscall: %lu) error: %d, " 
-						"vm_start: 0x%lx, vm_end: 0x%lx\n",
-						__FUNCTION__, vmf->virtual_address,
-						packet->req.rtid, packet->req.number, error,
-						vma->vm_start, vma->vm_end);
-#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 			}
 		}
 		else
 		error = vm_insert_pfn(vma, rva+(pix*PAGE_SIZE), pfn+pix);
 		if (error) {
-#ifdef POSTK_DEBUG_TEMP_FIX_11 /* rus_vm_fault() multi-thread fix */
+#if 1 /* POSTK_DEBUG_TEMP_FIX_11 */ /* rus_vm_fault() multi-thread fix */
+			printk("%s: vm_insert_pfn returned %d\n", __FUNCTION__, error);
 			if (error == -EBUSY) {
 				error = 0;
 			} else {
@@ -989,7 +960,6 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 #endif
 	ihk_device_unmap_memory(dev, phys, pgsize);
 	if (error) {
-#ifdef POSTK_DEBUG_ARCH_DEP_41 /* HOST-Linux version switch add */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
 		printk("%s: remote PF failed for 0x%#lx, pgoff: %lu "
 				"(req: TID: %d, syscall: %lu)\n",
@@ -1001,12 +971,6 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 				__FUNCTION__, vmf->virtual_address, vmf->pgoff,
 				packet->req.rtid, packet->req.number);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-#else /* POSTK_DEBUG_ARCH_DEP_41 */
-		printk("%s: remote PF failed for 0x%p, pgoff: %lu "
-				"(req: TID: %d, syscall: %lu)\n",
-				__FUNCTION__, vmf->virtual_address, vmf->pgoff,
-				packet->req.rtid, packet->req.number);
-#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 		ret = VM_FAULT_SIGBUS;
 		goto put_and_out;
 	}
@@ -1014,7 +978,11 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	ret = VM_FAULT_NOPAGE;
 
 put_and_out:
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put", task_pid_vnr(current), ptd);
+ no_ptd:
 	mcctrl_put_per_proc_data(ppd);
+ no_ppd:
 	return ret;
 }
 
@@ -1070,7 +1038,15 @@ reserve_user_space_common(struct mcctrl_usrdata *usrdata, unsigned long start, u
 	start = vm_mmap(file, start, end, PROT_READ|PROT_WRITE|PROT_EXEC,
 	                MAP_FIXED|MAP_SHARED, 0);
 #endif
-
+#if 0
+	{ /* debug */
+        struct vm_area_struct *vma;
+		down_write(&current->mm->mmap_sem);
+		vma = find_vma(current->mm, start);
+		vma->vm_flags |= VM_DONTCOPY;
+		up_write(&current->mm->mmap_sem);
+	}
+#endif
 	revert_creds(original);
 	put_cred(promoted);
 	fput(file);
@@ -1084,7 +1060,7 @@ reserve_user_space_common(struct mcctrl_usrdata *usrdata, unsigned long start, u
 struct pager {
 	struct list_head	list;
 	struct inode *		inode;
-	int			ref;
+	uint64_t		ref; /* needs same type as fileobj->sref */
 	struct file *		rofile;
 	struct file *		rwfile;
 	uintptr_t		map_uaddr;
@@ -1092,35 +1068,28 @@ struct pager {
 	off_t			map_off;
 };
 
-/*
- * for linux v2.6.35 or prior
- */
-#ifndef DEFINE_SEMAPHORE
-#define DEFINE_SEMAPHORE(...)	DECLARE_MUTEX(__VA_ARGS__)
-#endif
 
-static DEFINE_SEMAPHORE(pager_sem);
+static DEFINE_SPINLOCK(pager_lock);
 static struct list_head pager_list = LIST_HEAD_INIT(pager_list);
 
 int pager_nr_processes = 0;
 
 void pager_add_process(void)
 {
-	int error;
-	error = down_interruptible(&pager_sem);
-	if (error) {
-		return;
-	}
+	unsigned long flags;
+
+	spin_lock_irqsave(&pager_lock, flags);
 
 	++pager_nr_processes;
 
-	up(&pager_sem);
+	spin_unlock_irqrestore(&pager_lock, flags);
 }
 
 void pager_remove_process(struct mcctrl_per_proc_data *ppd)
 {
 	int error;
 	struct pager *pager_next, *pager;
+	unsigned long flags;
 
 	if (in_atomic() || in_interrupt()) {
 		printk("%s: WARNING: shouldn't be called in IRQ context..\n",
@@ -1145,15 +1114,17 @@ void pager_remove_process(struct mcctrl_per_proc_data *ppd)
 
 	/* Clean up global pagers for regular file mappings if this
 	 * was the last process */
-	error = down_interruptible(&pager_sem);
-	if (error) {
-		return;
-	}
-
+	spin_lock_irqsave(&pager_lock, flags);
 	--pager_nr_processes;
-	if (pager_nr_processes > 0) {
-		goto out;
-	}
+	spin_unlock_irqrestore(&pager_lock, flags);
+}
+
+void pager_cleanup(void)
+{
+	unsigned long flags;
+	struct pager *pager_next, *pager;
+
+	spin_lock_irqsave(&pager_lock, flags);
 
 	list_for_each_entry_safe(pager, pager_next, &pager_list, list) {
 		list_del(&pager->list);
@@ -1170,11 +1141,7 @@ void pager_remove_process(struct mcctrl_per_proc_data *ppd)
 		kfree(pager);
 	}
 
-	/* Flush page hash as well */
-	rus_page_hash_put_pages();
-
-out:
-	up(&pager_sem);
+	spin_unlock_irqrestore(&pager_lock, flags);
 }
 
 struct pager_create_result {
@@ -1198,14 +1165,14 @@ enum {
 	MF_XPMEM   = 0x10000, /* To identify XPMEM attachment pages for rusage accounting */
 	MF_ZEROOBJ = 0x20000, /* To identify pages of anonymous, on-demand paging ranges for rusage accounting */
 	MF_SHM =     0x40000,
-	MF_END
+	MF_HUGETLBFS = 0x100000,
 };
 
 static int pager_get_path(struct file *file, char *path) {
 	int error = 0;
 	char *pathbuf, *fullpath;
 
-	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+	pathbuf = kmalloc(PATH_MAX, GFP_KERNEL);
 	if (!pathbuf) {
 		printk("%s: ERROR: allocating path\n", __FUNCTION__);
 		error = -ENOMEM;
@@ -1214,7 +1181,7 @@ static int pager_get_path(struct file *file, char *path) {
 
 	fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
 	if (!IS_ERR(fullpath)) {
-		memcpy(path, fullpath, strlen(fullpath));
+		memcpy(path, fullpath, strlen(fullpath) + 1);
 	}
 	else {
 		path[0] = 0;
@@ -1233,7 +1200,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 	ihk_device_t dev = ihk_os_to_dev(os);
 	int error;
 	struct pager_create_result *resp;
-	int maxprot = -1;
+	int maxprot = 0;
 	struct file *file = NULL;
 	struct inode *inode;
 	struct pager *pager = NULL;
@@ -1241,6 +1208,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 	uintptr_t phys;
 	struct kstat st;
 	int mf_flags = 0;
+	unsigned long irqflags;
 
 	dprintk("pager_req_create(%d,%lx)\n", fd, (long)result_pa);
 
@@ -1272,7 +1240,6 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 		goto out;
 	}
 
-	maxprot = 0;
 	if ((file->f_mode & FMODE_READ) && (file->f_mode & FMODE_PREAD)) {
 		maxprot |= PROT_READ;
 	}
@@ -1288,13 +1255,19 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 		goto out;
 	}
 
+	if (inode->i_op == mcctrl_hugetlbfs_inode_operations) {
+		mf_flags = MF_HUGETLBFS;
+		/* pager is used as handle id on mckernel side, use inode */
+		pager = (void *)st.ino;
+		/* retrofit blksize in resp as well through st.size field;
+		 * the actual file size is not used
+		 */
+		st.size = st.blksize;
+		goto out_reply;
+	}
+
 	for (;;) {
-		error = down_interruptible(&pager_sem);
-		if (error) {
-			error = -EINTR;
-			printk("pager_req_create(%d,%lx):signaled. %d\n", fd, (long)result_pa, error);
-			goto out;
-		}
+		spin_lock_irqsave(&pager_lock, irqflags);
 
 		list_for_each_entry(pager, &pager_list, list) {
 			if (pager->inode == inode) {
@@ -1313,7 +1286,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 			{
 				char *pathbuf, *fullpath;
 
-				pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+				pathbuf = kmalloc(PATH_MAX, GFP_ATOMIC);
 				if (pathbuf) {
 					fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
 					if (!IS_ERR(fullpath)) {
@@ -1339,7 +1312,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 			break;
 		}
 
-		up(&pager_sem);
+		spin_unlock_irqrestore(&pager_lock, irqflags);
 
 		newpager = kzalloc(sizeof(*newpager), GFP_ATOMIC);
 		if (!newpager) {
@@ -1359,8 +1332,9 @@ found:
 		get_file(file);
 		pager->rofile = file;
 	}
-	up(&pager_sem);
+	spin_unlock_irqrestore(&pager_lock, irqflags);
 
+out_reply:
 	phys = ihk_device_map_memory(dev, result_pa, sizeof(*resp));
 	resp = ihk_device_map_virtual(dev, phys, sizeof(*resp), NULL, 0);
 	if (!resp) {
@@ -1377,13 +1351,7 @@ found:
 	resp->size = st.size;
 
 	error = pager_get_path(file, resp->path);
-	if (error) {
-		goto out_unmap;
-	}
 
-	error = 0;
-
-out_unmap:
 	ihk_device_unmap_virtual(dev, resp, sizeof(*resp));
 	ihk_device_unmap_memory(dev, phys, sizeof(*resp));
 
@@ -1399,37 +1367,35 @@ out:
 	return error;
 }
 
-static int pager_req_release(ihk_os_t os, uintptr_t handle, int unref)
+static int pager_req_release(ihk_os_t os, uintptr_t handle, uint64_t sref)
 {
 	int error;
 	struct pager *p;
 	struct pager *free_pager = NULL;
+	unsigned long flags;
 
-	dprintk("pager_req_relase(%p,%lx,%d)\n", os, handle, unref);
+	dprintk("%s(%p,%lx)\n", __func__, os, handle);
 
-	error = down_interruptible(&pager_sem);
-	if (error) {
-		printk("pager_req_relase(%p,%lx,%d):signaled. %d\n", os, handle, unref, error);
-		goto out;
-	}
+	spin_lock_irqsave(&pager_lock, flags);
 
 	error = -EBADF;
 	list_for_each_entry(p, &pager_list, list) {
 		if ((uintptr_t)p == handle) {
 			error = 0;
-			p->ref -= unref;
-			if (p->ref <= 0) {
-				list_del(&p->list);
-				free_pager = p;
-			}
+			p->ref -= sref;
+			if (p->ref > 0)
+				break;
+			list_del(&p->list);
+			free_pager = p;
 			break;
 		}
 	}
 
-	up(&pager_sem);
+	spin_unlock_irqrestore(&pager_lock, flags);
 
 	if (error) {
-		printk("pager_req_relase(%p,%lx,%d):pager not found. %d\n", os, handle, unref, error);
+		pr_err("%s(%p,%lx):pager not found. %d\n",
+		       __func__, os, handle, error);
 		goto out;
 	}
 
@@ -1445,28 +1411,24 @@ static int pager_req_release(ihk_os_t os, uintptr_t handle, int unref)
 
 	error = 0;
 out:
-	dprintk("pager_req_relase(%p,%lx,%d): %d\n", os, handle, unref, error);
+	dprintk("%s(%p,%lx): %d\n", __func__, os, handle, error);
 	return error;
 }
 
 static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size, uintptr_t rpa)
 {
-	ssize_t ss;
+	ssize_t ss, n;
 	struct pager *pager;
 	struct file *file = NULL;
 	uintptr_t phys = -1;
 	ihk_device_t dev = ihk_os_to_dev(os);
 	void *buf = NULL;
-	mm_segment_t fs;
 	loff_t pos;
+	unsigned long flags;
 
 	dprintk("pager_req_read(%lx,%lx,%lx,%lx)\n", handle, off, size, rpa);
 
-	ss = down_interruptible(&pager_sem);
-	if (ss) {
-		printk("pager_req_read(%lx,%lx,%lx,%lx): signaled. %ld\n", handle, off, size, rpa, ss);
-		goto out;
-	}
+	spin_lock_irqsave(&pager_lock, flags);
 
 	list_for_each_entry(pager, &pager_list, list) {
 		if ((uintptr_t)pager == handle) {
@@ -1475,45 +1437,54 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 			break;
 		}
 	}
-	up(&pager_sem);
+	spin_unlock_irqrestore(&pager_lock, flags);
 
 	if (!file) {
 		ss = -EBADF;
-		printk("pager_req_read(%lx,%lx,%lx,%lx):pager not found. %ld\n", handle, off, size, rpa, ss);
+		pr_warn("%s(%lx,%lx,%lx,%lx):pager not found. %ld\n",
+			__func__, handle, off, size, rpa, ss);
 		goto out;
 	}
 
 	phys = ihk_device_map_memory(dev, rpa, size);
 	buf = ihk_device_map_virtual(dev, phys, size, NULL, 0);
 	if (!buf) {
-		printk("%s: ERROR: invalid buffer address\n",
-			__FUNCTION__);
+		pr_warn("%s: ERROR: invalid buffer address\n",
+			__func__);
 		ss = -EINVAL;
 		goto out;
 	}
 
-	fs = get_fs();
-	set_fs(KERNEL_DS);
 	pos = off;
-	ss = vfs_read(file, buf, size, &pos);
-	if ((ss != size) && (ss > 0)) {
-#ifdef POSTK_DEBUG_TEMP_FIX_12 /* clear_user() used by kernel area, fix */
-		memset(buf + ss, 0, size - ss);
-		ss = size;
-#else /* POSTK_DEBUG_TEMP_FIX_12 */
-		if (clear_user(buf+ss, size-ss) == 0) {
-			ss = size;
+	n = 0;
+	while (n < size) {
+		if (pos != off + n) {
+			pr_warn("%s: pos wrong? got %lld, expected %ld\n",
+				__func__, pos, off+n);
+			pos = off + n;
 		}
-		else {
-			ss = -EFAULT;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
+		ss = kernel_read(file, buf + n, size - n, &pos);
+#else
+		ss = kernel_read(file, pos, buf + n, size - n);
+		pos += ss;
+#endif
+		if (ss < 0) {
+			break;
 		}
-#endif /* POSTK_DEBUG_TEMP_FIX_12 */
+		if (ss == 0) {
+			memset(buf + n, 0, size - n);
+			n = size;
+			break;
+		}
+		n += ss;
 	}
-	set_fs(fs);
 	if (ss < 0) {
-		printk("pager_req_read(%lx,%lx,%lx,%lx):pread failed. %ld\n", handle, off, size, rpa, ss);
+		pr_warn("%s(%lx,%lx,%lx,%lx):pread failed. %ld\n",
+			__func__, handle, off, size, rpa, ss);
 		goto out;
 	}
+	ss = n;
 
 out:
 	if (buf) {
@@ -1537,18 +1508,14 @@ static int pager_req_write(ihk_os_t os, uintptr_t handle, off_t off, size_t size
 	uintptr_t phys = -1;
 	ihk_device_t dev = ihk_os_to_dev(os);
 	void *buf = NULL;
-	mm_segment_t fs;
 	loff_t pos;
 	loff_t fsize;
 	size_t len;
+	unsigned long flags;
 
 	dprintk("pager_req_write(%lx,%lx,%lx,%lx)\n", handle, off, size, rpa);
 
-	ss = down_interruptible(&pager_sem);
-	if (ss) {
-		printk("pager_req_write(%lx,%lx,%lx,%lx): signaled. %ld\n", handle, off, size, rpa, ss);
-		goto out;
-	}
+	spin_lock_irqsave(&pager_lock, flags);
 
 	list_for_each_entry(pager, &pager_list, list) {
 		if ((uintptr_t)pager == handle) {
@@ -1559,7 +1526,7 @@ static int pager_req_write(ihk_os_t os, uintptr_t handle, off_t off, size_t size
 	if (file) {
 		get_file(file);
 	}
-	up(&pager_sem);
+	spin_unlock_irqrestore(&pager_lock, flags);
 
 	if (!file) {
 		ss = -EBADF;
@@ -1569,7 +1536,7 @@ static int pager_req_write(ihk_os_t os, uintptr_t handle, off_t off, size_t size
 
 	/*
 	 * XXX: Find a way to avoid changing the file size
-	 * by using a function in the same abstraction level as vfs_write().
+	 * by using a function in the same abstraction level as kernel_write().
 	 */
 	fsize = i_size_read(file->f_mapping->host);
 	if (off >= fsize) {
@@ -1586,15 +1553,16 @@ static int pager_req_write(ihk_os_t os, uintptr_t handle, off_t off, size_t size
 		goto out;
 	}
 
-	fs = get_fs();
-	set_fs(KERNEL_DS);
 	pos = off;
 	len = size;
 	if ((off + size) > fsize) {
 		len = fsize - off;
 	}
-	ss = vfs_write(file, buf, len, &pos);
-	set_fs(fs);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
+	ss = kernel_write(file, buf, len, &pos);
+#else
+	ss = kernel_write(file, buf, len, pos);
+#endif
 	if (ss < 0) {
 		printk("pager_req_write(%lx,%lx,%lx,%lx):pwrite failed. %ld\n", handle, off, size, rpa, ss);
 		goto out;
@@ -1828,11 +1796,12 @@ retry:
 			goto out_release;
 		}
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,8,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0) || \
+	(defined(RHEL_RELEASE_CODE) && RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(7, 5))
 		fault = handle_mm_fault(vma, va, flags);
-#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,8,0) */
+#else
 		fault = handle_mm_fault(current->mm, vma, va, flags);
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,8,0) */
+#endif
 		if (fault != 0) {
 			printk("%s: error: faulting %lx at off: %lu\n", 
 					__FUNCTION__, va, off);
@@ -1917,42 +1886,6 @@ out:
 	return error;
 }
 
-#ifdef SC_DEBUG
-#ifdef MCCTRL_KSYM_walk_page_range
-static void
-(*mcctrl_walk_page_range)(unsigned long addr, unsigned long end, struct mm_walk *walk)
-#if MCCTRL_KSYM_walk_page_range
-	= (void *)MCCTRL_KSYM_walk_page_range;
-#else
-	= &walk_page_range;
-#endif
-#endif
-
-static int mywalk(pte_t *pte, unsigned long addr, unsigned long next, struct mm_walk *walk)
-{
-	unsigned long		pfn;
-	struct page		*page;
-
-	if (pte == NULL) {
-		kprintf("mywalk: ptr(%p)\n", pte);
-		return 0;
-	}
-	pfn = pte_pfn(*pte);
-	page = pfn_to_page(pfn);
-	if (page == NULL) {
-		kprintf("mywalk: pte(%p) page is null\n", pte);
-		return 0;
-	}
-	if (PageLocked(page)) {
-		kprintf("mywalk: MLOCK (%p)\n", (void*) addr);
-	}
-	if (addr > 0x700000 && addr < 0x705000) {
-		kprintf("mywalk: %p(%lx)\n", (void*) addr, page->flags);
-	}
-	return 0;
-}
-#endif
-
 static long pager_req_mlock_list(ihk_os_t os, unsigned long start,
 				 unsigned long end, void *addr, int nent)
 {
@@ -1988,12 +1921,6 @@ full:
 	return cnt;
 }
 
-static long pager_call(ihk_os_t os, struct syscall_request *req)
-{
-	long ret;
-
-	dprintk("pager_call(%#lx)\n", req->args[0]);
-	switch (req->args[0]) {
 #define	PAGER_REQ_CREATE	0x0001
 #define	PAGER_REQ_RELEASE	0x0002
 #define	PAGER_REQ_READ		0x0003
@@ -2002,12 +1929,27 @@ static long pager_call(ihk_os_t os, struct syscall_request *req)
 #define	PAGER_REQ_PFN		0x0006
 #define	PAGER_REQ_UNMAP		0x0007
 #define PAGER_REQ_MLOCK_LIST	0x0008
-	case PAGER_REQ_CREATE:
-		ret = pager_req_create(os, req->args[1], req->args[2]);
-		break;
+static long pager_call_irq(ihk_os_t os, struct syscall_request *req)
+{
+	long ret = -ENOSYS;
 
+	switch (req->args[0]) {
 	case PAGER_REQ_RELEASE:
 		ret = pager_req_release(os, req->args[1], req->args[2]);
+		break;
+	}
+
+	return ret;
+}
+
+static long pager_call(ihk_os_t os, struct syscall_request *req)
+{
+	long ret;
+
+	dprintk("pager_call(%#lx)\n", req->args[0]);
+	switch (req->args[0]) {
+	case PAGER_REQ_CREATE:
+		ret = pager_req_create(os, req->args[1], req->args[2]);
 		break;
 
 	case PAGER_REQ_READ:
@@ -2030,6 +1972,7 @@ static long pager_call(ihk_os_t os, struct syscall_request *req)
 	case PAGER_REQ_UNMAP:
 		ret = pager_req_unmap(os, req->args[1]);
 		break;
+
 	case PAGER_REQ_MLOCK_LIST:
 		ret = pager_req_mlock_list(os, (unsigned long) req->args[1],
 					   (unsigned long) req->args[2],
@@ -2122,7 +2065,7 @@ out:
 	return (IS_ERR_VALUE(map))? (int)map: 0;
 }
 
-static int clear_pte_range(uintptr_t start, uintptr_t len)
+int mcctrl_clear_pte_range(uintptr_t start, uintptr_t len)
 {
 	struct mm_struct *mm = current->mm;
 	struct vm_area_struct *vma;
@@ -2163,6 +2106,43 @@ static int clear_pte_range(uintptr_t start, uintptr_t len)
 	return ret;
 }
 
+int release_user_space(uintptr_t start, uintptr_t len)
+{
+	struct mm_struct *mm = current->mm;
+	struct vm_area_struct *vma;
+	uintptr_t addr;
+	uintptr_t end;
+	int error;
+	int ret;
+
+	ret = 0;
+	//down_read(&mm->mmap_sem);
+	addr = start;
+	while (addr < (start + len)) {
+		vma = find_vma(mm, addr);
+		if (!vma) {
+			break;
+		}
+
+		if (addr < vma->vm_start) {
+			addr = vma->vm_start;
+		}
+
+		end = vma->vm_end;
+		if (addr < end) {
+			if ((error = vm_munmap(addr, end - addr))) {
+				printk("%s: ERROR: vm_munmap failed (%d)\n", __func__, error);
+			}
+			if (ret == 0) {
+				ret = error;
+			}
+		}
+		addr = vma->vm_end;
+	}
+	//up_read(&mm->mmap_sem);
+	return ret;
+}
+
 /**
  * \brief Write out the core file image to a core file.
  *
@@ -2174,14 +2154,9 @@ static int clear_pte_range(uintptr_t start, uintptr_t len)
 static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 	struct file *file;
 	struct coretable *coretable;
-#ifdef POSTK_DEBUG_TEMP_FIX_61 /* Core table size and lseek return value to loff_t */
 	int i, tablesize, error = 0;
 	loff_t size;
 	ssize_t ret;
-#else /* POSTK_DEBUG_TEMP_FIX_61 */
-	int ret, i, tablesize, size, error = 0;
-#endif /* POSTK_DEBUG_TEMP_FIX_61 */
-	mm_segment_t oldfs = get_fs(); 
 	unsigned long phys, tablephys, rphys;
 	ihk_device_t dev = ihk_os_to_dev(os);
 	char *pt;
@@ -2194,28 +2169,14 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 		goto fail;
 	}
 
-	set_fs(KERNEL_DS);
-
 	/* Every Linux documentation insists we should not 
 	 * open a file in the kernel module, but our karma 
 	 * leads us here. Precisely, Here we emulate the core 
 	 * dump routine of the Linux kernel in linux/fs/exec.c. 
 	 * So we have a legitimate reason to do this.
 	 */
-#ifdef POSTK_DEBUG_TEMP_FIX_59 /* corefile open flag add O_TRUNC */
 	file = filp_open("core", O_CREAT | O_RDWR | O_LARGEFILE | O_TRUNC, 0600);
-#else /* POSTK_DEBUG_TEMP_FIX_59 */
-	file = filp_open("core", O_CREAT | O_RDWR | O_LARGEFILE, 0600);
-#endif /* POSTK_DEBUG_TEMP_FIX_59 */
-#ifdef POSTK_DEBUG_ARCH_DEP_41 /* use writehandler version switch add */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0)
 	if (IS_ERR(file) || !file->f_op) {
-#else
-	if (IS_ERR(file) || !file->f_op || !file->f_op->write) {
-#endif
-#else /* POSTK_DEBUG_ARCH_DEP_41 */
-	if (IS_ERR(file) || !file->f_op || !file->f_op->write) {
-#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 		dprintk("cannot open core file\n");
 		error = PTR_ERR(file);
 		goto fail;
@@ -2234,22 +2195,18 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 			phys = ihk_device_map_memory(dev, rphys, size);
 			dprintk("physical %lx, ", phys);
 			pt = ihk_device_map_virtual(dev, phys, size, NULL, 0);
-#ifdef POSTK_DEBUG_TEMP_FIX_38
 			if (pt == NULL) {
 				pt = phys_to_virt(phys);
 			}
-#endif /*POSTK_DEBUG_TEMP_FIX_38*/
 			dprintk("virtual %p\n", pt);
 			if (pt != NULL) {
-#ifdef POSTK_DEBUG_ARCH_DEP_41 /* use writehandler version switch add */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0)
-				ret = __kernel_write(file, pt, size, &file->f_pos);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
+				ret = kernel_write(file, pt, size,
+						   &file->f_pos);
 #else
-				ret = file->f_op->write(file, pt, size, &file->f_pos);
+				ret = kernel_write(file, pt, size, file->f_pos);
+				file->f_pos += ret;
 #endif
-#else /* POSTK_DEBUG_ARCH_DEP_41 */
-				ret = file->f_op->write(file, pt, size, &file->f_pos);
-#endif /* POSTK_DEBUG_ARCH_DEP_41 */
 			} else {
 				dprintk("cannot map physical memory(%lx) to virtual memory.\n", 
 					phys);
@@ -2260,11 +2217,7 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 			ihk_device_unmap_virtual(dev, pt, size);
 			ihk_device_unmap_memory(dev, phys, size);
 			if (ret != size) {
-#ifdef POSTK_DEBUG_TEMP_FIX_61 /* Core table size and lseek return value to loff_t */
 				dprintk("core file write failed(%ld).\n", ret);
-#else /* POSTK_DEBUG_TEMP_FIX_61 */
-				dprintk("core file write failed(%d).\n", ret);
-#endif /* POSTK_DEBUG_TEMP_FIX_61 */
 				error = PTR_ERR(file);
 				break;
 			}
@@ -2277,11 +2230,7 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 			}
 			ret = file->f_op->llseek(file, size, SEEK_CUR);
 			if (ret < 0) {
-#ifdef POSTK_DEBUG_TEMP_FIX_61 /* Core table size and lseek return value to loff_t */
 				dprintk("core file seek failed(%ld).\n", ret);
-#else /* POSTK_DEBUG_TEMP_FIX_61 */
-				dprintk("core file seek failed(%d).\n", ret);
-#endif /* POSTK_DEBUG_TEMP_FIX_61 */
 				error = PTR_ERR(file);
 				break;
 			}
@@ -2292,7 +2241,6 @@ static int writecore(ihk_os_t os, unsigned long rcoretable, int chunks) {
 	ihk_device_unmap_memory(dev, tablephys, tablesize);
 	filp_close(file, NULL);
 fail:
-	set_fs(oldfs);
 	if (error == -ENOSYS) {
 		/* make sure we do not travel to user land */
 		error = -EINVAL;
@@ -2302,6 +2250,27 @@ fail:
 
 #define SCHED_CHECK_SAME_OWNER        0x01
 #define SCHED_CHECK_ROOT              0x02
+
+int __do_in_kernel_irq_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
+{
+	struct syscall_request *sc = &packet->req;
+	int ret;
+
+	switch (sc->number) {
+	case __NR_mmap:
+		ret = pager_call_irq(os, sc);
+		break;
+	default:
+		ret = -ENOSYS;
+	}
+
+	if (ret == -ENOSYS)
+		return -ENOSYS;
+
+	__return_syscall(os, packet, ret, 0);
+
+	return 0;
+}
 
 int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 {
@@ -2317,25 +2286,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 		break;
 
 	case __NR_munmap:
-		/* Set new remote page table if not zero */
-		if (sc->args[2]) {
-			struct mcctrl_per_proc_data *ppd = NULL;
-
-			ppd = mcctrl_get_per_proc_data(usrdata, sc->args[3]);
-			if (unlikely(!ppd)) {
-				kprintf("%s: ERROR: no per-process structure for PID %d??\n",
-						__FUNCTION__, task_tgid_vnr(current));
-				return -1;
-			}
-
-			ppd->rpgtable = sc->args[2];
-
-			dprintk("%s: pid: %d, rpgtable: 0x%lx updated\n",
-				__FUNCTION__, ppd->pid, ppd->rpgtable);
-			mcctrl_put_per_proc_data(ppd);
-		}
-
-		ret = clear_pte_range(sc->args[0], sc->args[1]);
+		ret = mcctrl_clear_pte_range(sc->args[0], sc->args[1]);
 		break;
 
 	case __NR_mprotect:
@@ -2350,12 +2301,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 		}
 
 	case __NR_coredump:
-		error = writecore(os, sc->args[1], sc->args[0]);
-#ifdef POSTK_DEBUG_TEMP_FIX_62 /* Fix to notify McKernel that core file generation failed */
-		ret = error;
-#else /* POSTK_DEBUG_TEMP_FIX_62 */
-		ret = 0;
-#endif /* POSTK_DEBUG_TEMP_FIX_62 */
+		ret = writecore(os, sc->args[1], sc->args[0]);
 		break;
 	
 	case __NR_sched_setparam: {
@@ -2430,6 +2376,10 @@ sched_setparam_out:
 	}
 
 	__return_syscall(os, packet, ret, 0);
+	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
+			       (usrdata->ikc2linux[smp_processor_id()] ?
+				usrdata->ikc2linux[smp_processor_id()] :
+				usrdata->ikc2linux[0]));
 
 	error = 0;
 out:

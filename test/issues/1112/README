@@ -1,0 +1,69 @@
+【Issue#1112 動作確認】
+□ テスト内容
+1. Issueで報告された再現プログラムでの確認
+RT_001: ostest-rt_sigaction.004 による確認
+	テストが正常に終了し、「RESULT: ok」が出力される
+
+2. 既存のmremap機能に影響がないことを確認
+CT_001: mremapによる領域の拡張
+	1. mmap で32MBの領域を確保
+	2. 下記条件でmremapを実行
+		- old_addr : mmapで確保したアドレス
+		- old_size : 0x2000000 (32MB)
+		- new_size : 0x3000000 (64MB)
+		- flags    : MREMAP_MAYMOVE
+	3. mremap がMAP_FAILED以外の値を返す
+	4. mremap がerrnoを設定しない
+
+CT_002: mremapによる領域の縮小
+	1. mmap で32MBの領域を確保
+	2. 下記条件でmremapを実行
+		- old_addr : mmapで確保したアドレス
+		- old_size : 0x2000000 (32MB)
+		- new_size : 0x800000  (8MB)
+		- flags    : 0
+	3. mremap がold_addr に指定した値を返す
+	4. mremap がerrnoを設定しない
+
+CT_003: old/new_size 不正時の動作
+	1. mmap で32MBの領域を確保
+	2. 下記条件でmremapを実行
+		- old_addr : mmapで確保したアドレス
+		- old_size : 0xffffffffffffe000 (remap後の領域がアドレス空間の最大値を超える値)
+		- new_size : 0xffffffffffffe000 (remap後の領域がアドレス空間の最大値を超える値)
+		- flags    : 0
+	3. mremap がold_addr に指定した値を返す
+	4. mremap がerrnoを設定しない
+
+CT_004: old/new_size 不正時の動作
+	1. mmap で32MBの領域を確保
+	2. 下記条件でmremapを実行
+		- old_addr : mmapで確保したアドレス
+		- old_size : 0xffffffffffffe000 (remap後の領域がアドレス空間の最大値を超える値)
+		- new_size : 0xffffffffffffe000 (remap後の領域がアドレス空間の最大値を超える値)
+		- flags    : MREMAP_MAYMOVE | MREMAP_FIXED
+		- new_addr : mmapで確保したアドレス + 0x40000000 (1GB)
+	3. mremap がMAP_FAILED を返す
+	4. mremap がerrnoにEINVALを設定する
+
+CT_005: old/new_size 不正時の動作
+	1. mmap で32MBの領域を確保
+	2. 下記条件でmremapを実行
+		- old_addr : mmapで確保したアドレス
+		- old_size : 0x2000000 (32MB)
+		- new_size : 0xffffffffffffe000 (remap後の領域がアドレス空間の最大値を超える値)
+		- flags    : MREMAP_MAYMOVE
+	3. mremap がMAP_FAILED を返す
+	4. mremap がerrnoにENOMEMを設定する
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。

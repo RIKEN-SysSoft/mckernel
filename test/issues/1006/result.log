@@ -1,0 +1,95 @@
+*** RT_001 start *******************************
+TEST_SUITE: ptrace
+TEST_NUMBER: 8
+ARGS:
+TEST_SUITE: ptrace
+TEST_NUMBER: 8
+ARGS:
+child's fpregs.swd is 0x38 (expected NOT ZERO)
+RESULT: ok
+*** RT_001: PASSED
+
+*** LT_001 start *******************************
+ptrace01    1  TPASS  :  Test Passed
+ptrace01    2  TPASS  :  Test Passed
+*** LT_001: PASSED (ok:2)
+
+*** LT_002 start *******************************
+ptrace02    1  TPASS  :  Test Passed
+ptrace02    2  TPASS  :  Test Passed
+*** LT_002: PASSED (ok:2)
+
+*** LT_003 start *******************************
+ptrace03    1  TCONF  :  ptrace03.c:137: this kernel allows to trace init
+ptrace03    2  TPASS  :  Test Passed
+ptrace03    3  TPASS  :  Test Passed
+*** LT_003: PASSED (ok:2)
+
+*** LT_004 start *******************************
+ptrace05    0  TINFO  :  [child] Sending kill(.., 0)
+ptrace05    1  TPASS  :  kill(.., 0) exited with 0, as expected.
+ptrace05    2  TPASS  :  Stopped as expected
+ptrace05    3  TPASS  :  Stopped as expected
+ptrace05    4  TPASS  :  Stopped as expected
+ptrace05    5  TPASS  :  Stopped as expected
+ptrace05    6  TPASS  :  Stopped as expected
+ptrace05    7  TPASS  :  Stopped as expected
+ptrace05    8  TPASS  :  Stopped as expected
+ptrace05    9  TPASS  :  Stopped as expected
+ptrace05   10  TPASS  :  Killed with SIGKILL, as expected.
+ptrace05   11  TPASS  :  Stopped as expected
+ptrace05   12  TPASS  :  Stopped as expected
+ptrace05   13  TPASS  :  Stopped as expected
+ptrace05   14  TPASS  :  Stopped as expected
+ptrace05   15  TPASS  :  Stopped as expected
+ptrace05   16  TPASS  :  Stopped as expected
+ptrace05   17  TPASS  :  Stopped as expected
+ptrace05   18  TPASS  :  Stopped as expected
+ptrace05   19  TPASS  :  Stopped as expected
+ptrace05   20  TPASS  :  Stopped as expected
+ptrace05   21  TPASS  :  Stopped as expected
+ptrace05   22  TPASS  :  Stopped as expected
+ptrace05   23  TPASS  :  Stopped as expected
+ptrace05   24  TPASS  :  Stopped as expected
+ptrace05   25  TPASS  :  Stopped as expected
+ptrace05   26  TPASS  :  Stopped as expected
+ptrace05   27  TPASS  :  Stopped as expected
+ptrace05   28  TPASS  :  Stopped as expected
+ptrace05   29  TPASS  :  Stopped as expected
+ptrace05   30  TPASS  :  Stopped as expected
+ptrace05   31  TPASS  :  Stopped as expected
+ptrace05   32  TPASS  :  Stopped as expected
+ptrace05   33  TPASS  :  Stopped as expected
+ptrace05   34  TPASS  :  Stopped as expected
+ptrace05   35  TPASS  :  Stopped as expected
+ptrace05   36  TPASS  :  Stopped as expected
+ptrace05   37  TPASS  :  Stopped as expected
+ptrace05   38  TPASS  :  Stopped as expected
+ptrace05   39  TPASS  :  Stopped as expected
+ptrace05   40  TPASS  :  Stopped as expected
+ptrace05   41  TPASS  :  Stopped as expected
+ptrace05   42  TPASS  :  Stopped as expected
+ptrace05   43  TPASS  :  Stopped as expected
+ptrace05   44  TPASS  :  Stopped as expected
+ptrace05   45  TPASS  :  Stopped as expected
+ptrace05   46  TPASS  :  Stopped as expected
+ptrace05   47  TPASS  :  Stopped as expected
+ptrace05   48  TPASS  :  Stopped as expected
+ptrace05   49  TPASS  :  Stopped as expected
+ptrace05   50  TPASS  :  Stopped as expected
+ptrace05   51  TPASS  :  Stopped as expected
+ptrace05   52  TPASS  :  Stopped as expected
+ptrace05   53  TPASS  :  Stopped as expected
+ptrace05   54  TPASS  :  Stopped as expected
+ptrace05   55  TPASS  :  Stopped as expected
+ptrace05   56  TPASS  :  Stopped as expected
+ptrace05   57  TPASS  :  Stopped as expected
+ptrace05   58  TPASS  :  Stopped as expected
+ptrace05   59  TPASS  :  Stopped as expected
+ptrace05   60  TPASS  :  Stopped as expected
+ptrace05   61  TPASS  :  Stopped as expected
+ptrace05   62  TPASS  :  Stopped as expected
+ptrace05   63  TPASS  :  Stopped as expected
+ptrace05   64  TPASS  :  Stopped as expected
+ptrace05   65  TPASS  :  Stopped as expected
+*** LT_004: PASSED (ok:65)

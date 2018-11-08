@@ -1,0 +1,25 @@
+【Issue#1109 動作確認】
+□ テスト内容
+1. スタックサイズ制限を ulimit -s によって指定した場合の実行確認
+C1109T01 ulimit -s 10MB 指定し、9.5MBスタックを使用できることを確認
+C1109T02 ulimit -s 2GB 指定し、1.9GBスタックを使用できることを確認
+C1109T03 ulimit -s unlimited 指定し、全メモリの95%をスタックで使用できる
+         ことを確認
+
+2. スタックサイズをmcexec -s オプションで指定した場合の実行確認
+C1109T04 mcexec -s 2M,10M 指定し、9.5MBスタックを使用できることを確認
+C1109T05 mcexec -s 2M,2G 指定し、1.9GBスタックを使用できることを確認
+C1109T06 mcexec -s 2M,100000G 指定し、全メモリの95%をスタックで使用できる
+         ことを確認
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+C1109.txt 参照。
+全ての項目が OK となっていることを確認。

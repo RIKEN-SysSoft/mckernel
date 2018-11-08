@@ -16,20 +16,16 @@
 #include <registers.h>
 #include <mc_perf_event.h>
 #include <config.h>
+#include <debug.h>
 
 extern unsigned int *x86_march_perfmap;
 extern int running_on_kvm(void);
-#ifdef POSTK_DEBUG_TEMP_FIX_31
 int ihk_mc_perfctr_fixed_init(int counter, int mode);
-#endif/*POSTK_DEBUG_TEMP_FIX_31*/
 
 //#define PERFCTR_DEBUG
 #ifdef PERFCTR_DEBUG
-#define	dkprintf(...)	do { kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	do { kprintf(__VA_ARGS__); } while (0)
-#else
-#define	dkprintf(...)	do { } while (0)
-#define	ekprintf(...)	do { kprintf(__VA_ARGS__); } while (0)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 #define X86_CR4_PCE     0x00000100
@@ -43,11 +39,11 @@ int ihk_mc_perfctr_fixed_init(int counter, int mode);
 		}                                                               \
     } while(0)
 
-int perf_counters_discovered = 0;
-int X86_IA32_NUM_PERF_COUNTERS = 0;
-unsigned long X86_IA32_PERF_COUNTERS_MASK = 0;
-int X86_IA32_NUM_FIXED_PERF_COUNTERS = 0;
-unsigned long X86_IA32_FIXED_PERF_COUNTERS_MASK = 0;
+int perf_counters_discovered;
+int NUM_PERF_COUNTERS;
+unsigned long PERF_COUNTERS_MASK;
+int NUM_FIXED_PERF_COUNTERS;
+unsigned long FIXED_PERF_COUNTERS_MASK;
 
 void x86_init_perfctr(void)
 {
@@ -78,17 +74,17 @@ void x86_init_perfctr(void)
 		op = 0x0a;
 		asm volatile("cpuid" : "=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(op));
 
-		X86_IA32_NUM_PERF_COUNTERS = ((eax & 0xFF00) >> 8);
-		X86_IA32_PERF_COUNTERS_MASK = (1 << X86_IA32_NUM_PERF_COUNTERS) - 1;
+		NUM_PERF_COUNTERS = ((eax & 0xFF00) >> 8);
+		PERF_COUNTERS_MASK = (1 << NUM_PERF_COUNTERS) - 1;
 		
-		X86_IA32_NUM_FIXED_PERF_COUNTERS = (edx & 0x0F);
-		X86_IA32_FIXED_PERF_COUNTERS_MASK = 
-			((1UL << X86_IA32_NUM_FIXED_PERF_COUNTERS) - 1) <<
-			X86_IA32_BASE_FIXED_PERF_COUNTERS;
+		NUM_FIXED_PERF_COUNTERS = (edx & 0x0F);
+		FIXED_PERF_COUNTERS_MASK =
+			((1UL << NUM_FIXED_PERF_COUNTERS) - 1) <<
+			BASE_FIXED_PERF_COUNTERS;
 	
 		perf_counters_discovered = 1;
-		kprintf("X86_IA32_NUM_PERF_COUNTERS: %d, X86_IA32_NUM_FIXED_PERF_COUNTERS: %d\n",
-				X86_IA32_NUM_PERF_COUNTERS, X86_IA32_NUM_FIXED_PERF_COUNTERS);
+		kprintf("NUM_PERF_COUNTERS: %d, NUM_FIXED_PERF_COUNTERS: %d\n",
+				NUM_PERF_COUNTERS, NUM_FIXED_PERF_COUNTERS);
 	}
 
 	/* Clear Fixed Counter Control */
@@ -97,20 +93,20 @@ void x86_init_perfctr(void)
 	wrmsr(MSR_PERF_FIXED_CTRL, value);
 
 	/* Clear Generic Counter Control */
-	for(i = 0; i < X86_IA32_NUM_PERF_COUNTERS; i++) {
+	for (i = 0; i < NUM_PERF_COUNTERS; i++) {
 		wrmsr(MSR_IA32_PERFEVTSEL0 + i, 0);
 	}
 
 	/* Enable PMC Control */
 	value = rdmsr(MSR_PERF_GLOBAL_CTRL);
-	value |= X86_IA32_PERF_COUNTERS_MASK;
-	value |= X86_IA32_FIXED_PERF_COUNTERS_MASK;
+	value |= PERF_COUNTERS_MASK;
+	value |= FIXED_PERF_COUNTERS_MASK;
 	wrmsr(MSR_PERF_GLOBAL_CTRL, value);
 }
 
 static int set_perfctr_x86_direct(int counter, int mode, unsigned int value)
 {
-	if (counter < 0 || counter >= X86_IA32_NUM_PERF_COUNTERS) {
+	if (counter < 0 || counter >= NUM_PERF_COUNTERS) {
 		return -EINVAL;
 	}
 
@@ -149,13 +145,14 @@ static int set_pmc_x86_direct(int counter, long val)
 	val &= 0x000000ffffffffff; // 40bit Mask
 
 	cnt_bit = 1UL << counter;
-	if ( cnt_bit & X86_IA32_PERF_COUNTERS_MASK ) {
+	if (cnt_bit & PERF_COUNTERS_MASK) {
 		// set generic pmc
 		wrmsr(MSR_IA32_PMC0 + counter, val);
 	}
-	else if ( cnt_bit & X86_IA32_FIXED_PERF_COUNTERS_MASK ) {
+	else if (cnt_bit & FIXED_PERF_COUNTERS_MASK) {
 		// set fixed pmc
-		wrmsr(MSR_IA32_FIXED_CTR0 + counter - X86_IA32_BASE_FIXED_PERF_COUNTERS, val);
+		wrmsr(MSR_IA32_FIXED_CTR0 +
+			counter - BASE_FIXED_PERF_COUNTERS, val);
 	}
 	else {
 		return -EINVAL;
@@ -175,10 +172,10 @@ static int set_fixed_counter(int counter, int mode)
 {
 	unsigned long value = 0;
 	unsigned int  ctr_mask = 0xf;
-	int counter_idx = counter - X86_IA32_BASE_FIXED_PERF_COUNTERS ;
+	int counter_idx = counter - BASE_FIXED_PERF_COUNTERS;
 	unsigned int  set_val = 0;
 
-	if (counter_idx < 0 || counter_idx >= X86_IA32_NUM_FIXED_PERF_COUNTERS) {
+	if (counter_idx < 0 || counter_idx >= NUM_FIXED_PERF_COUNTERS) {
 		return -EINVAL;
 	}
 
@@ -208,14 +205,13 @@ int ihk_mc_perfctr_init_raw(int counter, uint64_t config, int mode)
 int ihk_mc_perfctr_init_raw(int counter, unsigned int code, int mode)
 #endif /*POSTK_DEBUG_TEMP_FIX_29*/
 {
-#ifdef POSTK_DEBUG_TEMP_FIX_31
 	// PAPI_REF_CYC counted by fixed counter
-	if (counter >= X86_IA32_BASE_FIXED_PERF_COUNTERS) {
+	if (counter >= BASE_FIXED_PERF_COUNTERS &&
+		counter < BASE_FIXED_PERF_COUNTERS + NUM_FIXED_PERF_COUNTERS) {
 		return ihk_mc_perfctr_fixed_init(counter, mode);
 	}
-#endif /*POSTK_DEBUG_TEMP_FIX_31*/
 
-	if (counter < 0 || counter >= X86_IA32_NUM_PERF_COUNTERS) {
+	if (counter < 0 || counter >= NUM_PERF_COUNTERS) {
 		return -EINVAL;
 	}
 
@@ -248,7 +244,7 @@ int ihk_mc_perfctr_init(int counter, enum ihk_perfctr_type type, int mode)
 	}
 #endif /*POSTK_DEBUG_TEMP_FIX_29*/
 
-	if (counter < 0 || counter >= X86_IA32_NUM_PERF_COUNTERS) {
+	if (counter < 0 || counter >= NUM_PERF_COUNTERS) {
 		return -EINVAL;
 	}
 	if (type < 0 || type >= PERFCTR_MAX_TYPE) {
@@ -300,18 +296,11 @@ int ihk_mc_perfctr_set_extra(struct mc_perf_event *event)
 extern void x86_march_perfctr_start(unsigned long counter_mask);
 #endif
 
-#ifdef POSTK_DEBUG_TEMP_FIX_30
-int ihk_mc_perfctr_start(int counter)
-#else
 int ihk_mc_perfctr_start(unsigned long counter_mask)
-#endif /*POSTK_DEBUG_TEMP_FIX_30*/
 {
 	int ret = 0;
 	unsigned long value = 0;
-	unsigned long mask = X86_IA32_PERF_COUNTERS_MASK | X86_IA32_FIXED_PERF_COUNTERS_MASK;
-#ifdef POSTK_DEBUG_TEMP_FIX_30
-	unsigned long counter_mask = 1UL << counter;
-#endif /*POSTK_DEBUG_TEMP_FIX_30*/
+	unsigned long mask = PERF_COUNTERS_MASK | FIXED_PERF_COUNTERS_MASK;
 
 	PERFCTR_CHKANDJUMP(counter_mask & ~mask, "counter_mask out of range", -EINVAL);
 
@@ -328,18 +317,11 @@ int ihk_mc_perfctr_start(unsigned long counter_mask)
 	goto fn_exit;
 }
 
-#ifdef POSTK_DEBUG_TEMP_FIX_30
-int ihk_mc_perfctr_stop(int counter)
-#else
 int ihk_mc_perfctr_stop(unsigned long counter_mask)
-#endif/*POSTK_DEBUG_TEMP_FIX_30*/
 {
 	int ret = 0;
 	unsigned long value;
-	unsigned long mask = X86_IA32_PERF_COUNTERS_MASK | X86_IA32_FIXED_PERF_COUNTERS_MASK;
-#ifdef POSTK_DEBUG_TEMP_FIX_30
-	unsigned long counter_mask = 1UL << counter;
-#endif/*POSTK_DEBUG_TEMP_FIX_30*/
+	unsigned long mask = PERF_COUNTERS_MASK | FIXED_PERF_COUNTERS_MASK;
 
 	PERFCTR_CHKANDJUMP(counter_mask & ~mask, "counter_mask out of range", -EINVAL);
 
@@ -376,10 +358,10 @@ int ihk_mc_perfctr_fixed_init(int counter, int mode)
 {
 	unsigned long value = 0;
 	unsigned int  ctr_mask = 0xf;
-	int counter_idx = counter - X86_IA32_BASE_FIXED_PERF_COUNTERS ;
+	int counter_idx = counter - BASE_FIXED_PERF_COUNTERS;
 	unsigned int  set_val = 0;
 
-	if (counter_idx < 0 || counter_idx >= X86_IA32_NUM_FIXED_PERF_COUNTERS) {
+	if (counter_idx < 0 || counter_idx >= NUM_FIXED_PERF_COUNTERS) {
 		return -EINVAL;
 	}
 
@@ -420,7 +402,7 @@ int ihk_mc_perfctr_read_mask(unsigned long counter_mask, unsigned long *value)
 {
 	int i, j;
 
-	for (i = 0, j = 0; i < X86_IA32_NUM_PERF_COUNTERS && counter_mask;
+	for (i = 0, j = 0; i < NUM_PERF_COUNTERS && counter_mask;
 	     i++, counter_mask >>= 1) {
 		if (counter_mask & 1) {
 			value[j++] = rdpmc(i);
@@ -440,13 +422,14 @@ unsigned long ihk_mc_perfctr_read(int counter)
 
 	cnt_bit = 1UL << counter;
 
-	if ( cnt_bit & X86_IA32_PERF_COUNTERS_MASK ) {
+	if (cnt_bit & PERF_COUNTERS_MASK) {
 		// read generic pmc
 		retval = rdpmc(counter);
 	}
-	else if ( cnt_bit & X86_IA32_FIXED_PERF_COUNTERS_MASK ) {
+	else if (cnt_bit & FIXED_PERF_COUNTERS_MASK) {
 		// read fixed pmc
-		retval = rdpmc((1 << 30) + (counter - X86_IA32_BASE_FIXED_PERF_COUNTERS));
+		retval = rdpmc((1 << 30) +
+			(counter - BASE_FIXED_PERF_COUNTERS));
 	}
 	else {
 		retval = -EINVAL;
@@ -468,12 +451,12 @@ unsigned long ihk_mc_perfctr_read_msr(int counter)
 
 	cnt_bit = 1UL << counter;
 
-	if ( cnt_bit & X86_IA32_PERF_COUNTERS_MASK ) {
+	if (cnt_bit & PERF_COUNTERS_MASK) {
 		// read generic pmc
 		idx = MSR_IA32_PMC0 + counter;
 		retval = (unsigned long) rdmsr(idx);
 	}
-	else if ( cnt_bit & X86_IA32_FIXED_PERF_COUNTERS_MASK ) {
+	else if (cnt_bit & FIXED_PERF_COUNTERS_MASK) {
 		// read fixed pmc
 		idx = MSR_IA32_FIXED_CTR0 + counter;
 		retval = (unsigned long) rdmsr(idx);
@@ -506,8 +489,8 @@ int ihk_mc_perfctr_alloc_counter(unsigned int *type, unsigned long *config, unsi
 	}
 
 	// find avail generic counter
-       	for(i = 0; i < X86_IA32_NUM_PERF_COUNTERS; i++) {
-		if(!(pmc_status & (1 << i))) {
+	for (i = 0; i < NUM_PERF_COUNTERS; i++) {
+		if (!(pmc_status & (1 << i))) {
 			ret = i;
 			break;
 		}

@@ -12,11 +12,8 @@
 /* Optimization barrier */
 
 /* The "volatile" is due to gcc bugs */
-/* XXX: barrier is also defined in lib/include/ihk/cpu.h,
- * it would be cleaner to restore this here at some point, but we have
- * quite a few C files not including either this or kernel's compiler.h
- * #define barrier() __asm__ __volatile__("": : :"memory")
- */
+#define barrier() __asm__ __volatile__("": : :"memory")
+
 /*
  * This version is i.e. to prevent dead stores elimination on @ptr
  * where gcc and llvm may behave differently when otherwise using

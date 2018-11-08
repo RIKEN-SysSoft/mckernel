@@ -1,0 +1,169 @@
+insmod /home/satoken/ostest/util/../bin/test_mck.ko
+mknod: ‘/dev/test_mck/mmap_dev’: File exists
+create character device /dev/test_mck/mmap_dev(244:0)
+mknod: ‘/dev/test_mck/mmap_dev2’: File exists
+create character device /dev/test_mck/mmap_dev2(244:1)
+*** CT_001 start *******************************
+ [OK] open test_device_file:/dev/test_mck/mmap_dev2
+ [OK] mmap device file
+  map dev_file to 0x2aaaab014000
+ [OK] failed to read host's phys_memory
+*** CT_001 PASSED
+
+remove /dev/test_mck
+rmmod /home/satoken/ostest/util/../bin/test_mck.ko
+*** RT_001 start *******************************
+TEST_SUITE: procfs
+TEST_NUMBER: 0
+ARGS:
+dump /proc/17731/auxv:
+  0x00000000000021 0x002aaaaac24000 (AT_SYSINFO_EHDR)
+  0x00000000000019 0x00547fffffffe0 (AT_RANDOM)
+  0x00000000000011 0x00000000000064 (AT_CLKTCK)
+  0x00000000000006 0x00000000001000 (AT_PAGESZ)
+  0x00000000000003 0x00000000400040 (AT_PHDR)
+  0x00000000000004 0x00000000000038 (AT_PHENT)
+  0x00000000000005 0x0000000000000a (AT_PHNUM)
+  0x00000000000009 0x00000000403430 (AT_ENTRY)
+  0000000000000000 0000000000000000 (AT_NULL)
+RESULT: you need check AUXV value
+*** RT_001: PASSED
+
+*** RT_002 start *******************************
+TEST_SUITE: procfs
+TEST_NUMBER: 1
+ARGS:
+allocated: 0x00000000800010
+dump /proc/17765/mem(offset:0x00000000800010):
+  0x00000000800010: 0000000000000000 0000000000000001 0000000000000002 0000000000000003
+  0x00000000800030: 0000000000000004 0000000000000005 0000000000000006 0000000000000007
+  0x00000000800050: 0000000000000008 0000000000000009 000000000000000a 000000000000000b
+  0x00000000800070: 000000000000000c 000000000000000d 000000000000000e 000000000000000f
+  0x00000000800090: 0000000000000010 0000000000000011 0000000000000012 0000000000000013
+  0x000000008000b0: 0000000000000014 0000000000000015 0000000000000016 0000000000000017
+  0x000000008000d0: 0000000000000018 0000000000000019 000000000000001a 000000000000001b
+  0x000000008000f0: 000000000000001c 000000000000001d 000000000000001e 000000000000001f
+RESULT: you need check MEM value
+*** RT_002: PASSED
+
+*** RT_003 start *******************************
+TEST_SUITE: procfs
+TEST_NUMBER: 3
+ARGS:
+output /proc/17799/task/17829/stat
+0 (exe) R 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0
+
+RESULT: you need check STAT value
+*** RT_003: PASSED
+
+*** RT_004 start *******************************
+TEST_SUITE: procfs
+TEST_NUMBER: 6
+ARGS:
+output: /proc/cpuinfo
+processor       : 0
+vendor_id       : GenuineIntel
+cpu family      : 6
+model           : 62
+model name      : Intel(R) Xeon(R) CPU E5-2650 v2 @ 2.60GHz
+stepping        : 4
+microcode       : 0x428
+cpu MHz         : 2600.000
+cache size      : 20480 KB
+physical id     : 0
+siblings        : 2
+core id         : 0
+cpu cores       : 1
+apicid          : 0
+initial apicid  : 0
+fpu             : yes
+fpu_exception   : yes
+cpuid level     : 13
+wp              : yes
+flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm ida arat epb pln pts dtherm tpr_shadow vnmi flexpriority ept vpid fsgsbase smep erms xsaveopt
+bogomips        : 5200.17
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 46 bits physical, 48 bits virtual
+power management:
+
+processor       : 8
+vendor_id       : GenuineIntel
+cpu family      : 6
+model           : 62
+model name      : Intel(R) Xeon(R) CPU E5-2650 v2 @ 2.60GHz
+stepping        : 4
+microcode       : 0x428
+cpu MHz         : 2599.898
+cache size      : 20480 KB
+physical id     : 1
+siblings        : 2
+core id         : 0
+cpu cores       : 1
+apicid          : 32
+initial apicid  : 32
+fpu             : yes
+fpu_exception   : yes
+cpuid level     : 13
+wp              : yes
+flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm ida arat epb pln pts dtherm tpr_shadow vnmi flexpriority ept vpid fsgsbase smep erms xsaveopt
+bogomips        : 5205.44
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 46 bits physical, 48 bits virtual
+power management:
+
+processor       : 16
+vendor_id       : GenuineIntel
+cpu family      : 6
+model           : 62
+model name      : Intel(R) Xeon(R) CPU E5-2650 v2 @ 2.60GHz
+stepping        : 4
+microcode       : 0x428
+cpu MHz         : 2599.898
+cache size      : 20480 KB
+physical id     : 0
+siblings        : 2
+core id         : 0
+cpu cores       : 1
+apicid          : 1
+initial apicid  : 1
+fpu             : yes
+fpu_exception   : yes
+cpuid level     : 13
+wp              : yes
+flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm ida arat epb pln pts dtherm tpr_shadow vnmi flexpriority ept vpid fsgsbase smep erms xsaveopt
+bogomips        : 5200.17
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 46 bits physical, 48 bits virtual
+power management:
+
+processor       : 24
+vendor_id       : GenuineIntel
+cpu family      : 6
+model           : 62
+model name      : Intel(R) Xeon(R) CPU E5-2650 v2 @ 2.60GHz
+stepping        : 4
+microcode       : 0x428
+cpu MHz         : 2600.000
+cache size      : 20480 KB
+physical id     : 1
+siblings        : 2
+core id         : 0
+cpu cores       : 1
+apicid          : 33
+initial apicid  : 33
+fpu             : yes
+fpu_exception   : yes
+cpuid level     : 13
+wp              : yes
+flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm ida arat epb pln pts dtherm tpr_shadow vnmi flexpriority ept vpid fsgsbase smep erms xsaveopt
+bogomips        : 5205.44
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 46 bits physical, 48 bits virtual
+power management:
+
+RESULT: you need check CPUINFO
+*** RT_004: PASSED

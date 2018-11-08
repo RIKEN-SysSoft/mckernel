@@ -52,6 +52,8 @@
 static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ihk_ikc_channel_desc *c);
 int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet);
 void sig_done(unsigned long arg, int err);
+void mcctrl_perf_ack(ihk_os_t os, struct ikc_scd_packet *packet);
+void mcctrl_futex_wake(struct ikc_scd_packet *pisp);
 void mcctrl_os_read_write_cpu_response(ihk_os_t os,
 		struct ikc_scd_packet *pisp);
 void mcctrl_eventfd(ihk_os_t os, struct ikc_scd_packet *pisp);
@@ -154,7 +156,7 @@ int mcctrl_ikc_send_wait(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp,
 		spin_lock_irqsave(&usrdata->wakeup_descs_lock, flags);
 		list_add(&desc->chain, &usrdata->wakeup_descs_list);
 		spin_unlock_irqrestore(&usrdata->wakeup_descs_lock, flags);
-		if (free_addrs_count)
+		if (do_frees)
 			*do_frees = 0;
 		return ret < 0 ? ret : -ETIME;
 	}
@@ -182,17 +184,13 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	case SCD_MSG_PREPARE_PROCESS_ACKED:
 	case SCD_MSG_PERF_ACK:
 	case SCD_MSG_SEND_SIGNAL_ACK:
+	case SCD_MSG_PROCFS_ANSWER:
 		mcctrl_wakeup_cb(__os, pisp);
 		break;
 
 	case SCD_MSG_SYSCALL_ONESIDE:
 		mcexec_syscall(usrdata, pisp);
 		break;
-
-	case SCD_MSG_PROCFS_ANSWER:
-		procfs_answer(usrdata, pisp->pid);
-		break;
-
 
 	case SCD_MSG_SYSFS_REQ_CREATE:
 	case SCD_MSG_SYSFS_REQ_MKDIR:
@@ -209,7 +207,8 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 
 	case SCD_MSG_PROCFS_TID_CREATE:
 	case SCD_MSG_PROCFS_TID_DELETE:
-		procfsm_packet_handler(__os, pisp->msg, pisp->pid, pisp->arg);
+		procfsm_packet_handler(__os, pisp->msg, pisp->pid, pisp->arg,
+				       pisp->resp_pa);
 		break;
 
 	case SCD_MSG_GET_VDSO_INFO:
@@ -223,6 +222,10 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	case SCD_MSG_EVENTFD:
 		dkprintf("%s: SCD_MSG_EVENTFD,pisp->eventfd_type=%d\n", __FUNCTION__, pisp->eventfd_type);
 		mcctrl_eventfd(__os, pisp);
+		break;
+
+	case SCD_MSG_FUTEX_WAKE:
+		mcctrl_futex_wake(pisp);
 		break;
 
 	default:

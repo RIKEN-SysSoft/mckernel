@@ -1,0 +1,93 @@
+*** CT_001 start *******************************
+ [OK] perf_event_open for 1 counter
+INSTRUCTIONS    : 0
+ [OK] Reset counter to 0
+ [OK] Start counter at once
+  do some processing...
+ [OK] Stop counter at once
+  counted value is as belows...
+INSTRUCTIONS    : 291067667
+  processing again... (to check if counter is stopped)
+  current value is bellow
+  (expected to be same value as last time)
+INSTRUCTIONS    : 291067667
+ [OK] Counter is stopped
+*** CT_001 PASSED
+
+*** CT_002 start *******************************
+ [OK] perf_event_open for 4 counters
+INSTRUCTIONS    : 0
+CACHE_REFERENCES: 0
+CACHE_MISSES    : 0
+BRANCH_MISSES   : 0
+ [OK] Reset counters to 0
+ [OK] Start counters at once
+  do some processing...
+ [OK] Stop counters at once
+  counted values are as belows...
+INSTRUCTIONS    : 291067668
+CACHE_REFERENCES: 1984930
+CACHE_MISSES    : 781531
+BRANCH_MISSES   : 2784
+  processing again... (to check if counters are stopped)
+  current values are as bellow
+  (expected to be same value as last time)
+INSTRUCTIONS    : 291067668
+CACHE_REFERENCES: 1984930
+CACHE_MISSES    : 781531
+BRANCH_MISSES   : 2784
+ [OK] Counters are stopped
+*** CT_002 PASSED
+
+*** CT_003 start *******************************
+ [OK] setperfevent for 1 counter
+ [OK] Start counter
+  do some processing...
+ [OK] Stop counter
+ [OK] getperfevent 1 counter
+  counted value is as belows...
+INSTRUCTIONS    : 291184821
+  processing again... (to check if counter is stopped)
+ [OK] getperfevent 1 counter
+  current value is as bellow
+  (expected to be same value as last time)
+INSTRUCTIONS    : 291184821
+ [OK] Counter is stopped
+*** CT_003 PASSED
+
+*** CT_004 start *******************************
+ [OK] setperfevent for 4 counters
+ [OK] Start counters at once
+  do some processing...
+ [OK] Stop counters at once
+ [OK] getperfevent 4 counters
+  counted values are as belows...
+INSTRUCTIONS    : 291184822
+CACHE_REFERENCES: 1986528
+CACHE_MISSES    : 780284
+BRANCH_MISSES   : 3657
+  processing again... (to check if counters are stopped)
+ [OK] getperfevent 4 counters
+  current values are as bellow
+  (expected to be same value as last time)
+INSTRUCTIONS    : 291184822
+CACHE_REFERENCES: 1986528
+CACHE_MISSES    : 780284
+BRANCH_MISSES   : 3657
+ [OK] Counters are stopped
+*** CT_004 PASSED
+
+*** LT_001 start *******************************
+perf_event_open01    0  TINFO  :  read event counter succeeded, value: 300000015
+perf_event_open01    1  TPASS  :  test PERF_TYPE_HARDWARE: PERF_COUNT_HW_INSTRUCTIONS succeeded
+perf_event_open01    0  TINFO  :  read event counter succeeded, value: 0
+perf_event_open01    2  TPASS  :  test PERF_TYPE_HARDWARE: PERF_COUNT_HW_CACHE_REFERENCES succeeded
+perf_event_open01    0  TINFO  :  read event counter succeeded, value: 0
+perf_event_open01    3  TPASS  :  test PERF_TYPE_HARDWARE: PERF_COUNT_HW_CACHE_MISSES succeeded
+perf_event_open01    0  TINFO  :  read event counter succeeded, value: 100000006
+perf_event_open01    4  TPASS  :  test PERF_TYPE_HARDWARE: PERF_COUNT_HW_BRANCH_INSTRUCTIONS succeeded
+perf_event_open01    0  TINFO  :  read event counter succeeded, value: 1
+perf_event_open01    5  TPASS  :  test PERF_TYPE_HARDWARE: PERF_COUNT_HW_BRANCH_MISSES succeeded
+perf_event_open01    6  TCONF  :  perf_event_open01.c:155: perf_event_open for PERF_COUNT_SW_CPU_CLOCK not supported: TEST_ERRNO=ENOENT(2): No such file or directory
+perf_event_open01    7  TCONF  :  perf_event_open01.c:155: perf_event_open for PERF_COUNT_SW_TASK_CLOCK not supported: TEST_ERRNO=ENOENT(2): No such file or directory
+*** LT_001: PASSED (ok:5)

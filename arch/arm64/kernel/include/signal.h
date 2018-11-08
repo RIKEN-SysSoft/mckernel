@@ -9,6 +9,11 @@
 #define _NSIG_BPW	64
 #define _NSIG_WORDS (_NSIG / _NSIG_BPW)
 
+static inline int valid_signal(unsigned long sig)
+{
+	return sig <= _NSIG ? 1 : 0;
+}
+
 typedef unsigned long int __sigset_t;
 #define __sigmask(sig)  (((__sigset_t) 1) << ((sig) - 1))
 

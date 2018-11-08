@@ -1,0 +1,32 @@
+【Issue#1018 動作確認】
+□ テスト内容
+1. Issueで報告された再現プログラムでの確認
+CT_001: /proc/<PID>/mem に対するpread
+	/proc/<PID>/mem に対して、2MB, 4MB, 8MB でそれぞれpreadを実行し、
+	preadが成功することと、読み取ったデータが正しいことを確認
+
+CT_002: /proc/<PID>/mem に対するpwrite
+	/proc/<PID>/mem に対して、書き込み権限のあるopenを実行し、
+	openが失敗することと、errnoにEACCESが設定されることを確認
+
+2. 既存のprocfs機能に影響がないことをOSTESTを用いて確認
+RT_001: ostest_procfs.000
+	/proc/<PID>/auxv の内容を取得できることを確認
+
+RT_002: ostest_procfs.001
+	/proc/<PID>/mem の内容を取得できることを確認
+
+RT_003: ostest_procfs.003
+	/proc/<PID>/stat の内容を取得できることを確認
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。

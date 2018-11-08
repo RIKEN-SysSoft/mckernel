@@ -26,4 +26,6 @@ clean::
 	$(RM) $(TARGET) *.o
 
 install::
+	install -m 755 -d $(MANDIR)/man1
+	install -m 644 mcstat.1 $(MANDIR)/man1/mcstat.1
 	install -m 755 mcstat $(BINDIR)

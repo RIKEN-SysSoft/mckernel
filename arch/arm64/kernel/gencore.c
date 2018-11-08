@@ -7,6 +7,7 @@
 #include <process.h>
 #include <string.h>
 #include <elfcore.h>
+#include <debug.h>
 
 #define	align32(x) ((((x) + 3) / 4) * 4)
 #define	alignpage(x) ((((x) + (PAGE_SIZE) - 1) / (PAGE_SIZE)) * (PAGE_SIZE))
@@ -14,11 +15,8 @@
 //#define DEBUG_PRINT_GENCORE
 
 #ifdef DEBUG_PRINT_GENCORE
-#define	dkprintf(...)	kprintf(__VA_ARGS__)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
-#else
-#define dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 /*

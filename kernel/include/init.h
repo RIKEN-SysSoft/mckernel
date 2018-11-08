@@ -33,6 +33,7 @@ extern void cpu_sysfs_setup(void);
 extern void numa_sysfs_setup(void);
 extern void rusage_sysfs_setup(void);
 extern void status_sysfs_setup(void);
+extern void dynamic_debug_sysfs_setup(void);
 
 extern char *find_command_line(char *name);
 

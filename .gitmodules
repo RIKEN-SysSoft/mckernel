@@ -1,0 +1,3 @@
+[submodule "ihk"]
+	path = ihk
+	url = https://github.com/RIKEN-SysSoft/ihk.git

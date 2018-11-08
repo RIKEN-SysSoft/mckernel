@@ -77,6 +77,58 @@ AC_DEFUN([PAC_SET_HEADER_LIB_PATH],[
           ])
 ])
 
+AC_DEFUN([PAC_SET_HEADER_LIB_PATH_SYSCALL_INTERCEPT],[
+    AC_ARG_WITH([$1],
+                [AC_HELP_STRING([--with-$1=PATH],
+                                [specify path where $1 include directory and lib directory can be found])],
+
+                [AS_CASE(["$withval"],
+                         [yes|no|''],
+                         [AC_MSG_WARN([--with[out]-$1=PATH expects a valid PATH])
+                          with_$1=""])],
+                [with_$1=$2])
+    AC_ARG_WITH([$1-include],
+                [AC_HELP_STRING([--with-$1-include=PATH],
+                                [specify path where $1 include directory can be found])],
+                [AS_CASE(["$withval"],
+                         [yes|no|''],
+                         [AC_MSG_WARN([--with[out]-$1-include=PATH expects a valid PATH])
+                          with_$1_include=""])],
+                [])
+    AC_ARG_WITH([$1-lib],
+                [AC_HELP_STRING([--with-$1-lib=PATH],
+                                [specify path where $1 lib directory can be found])],
+                [AS_CASE(["$withval"],
+                         [yes|no|''],
+                         [AC_MSG_WARN([--with[out]-$1-lib=PATH expects a valid PATH])
+                          with_$1_lib=""])],
+                [])
+
+    # The args have been sanitized into empty/non-empty values above.
+    # Now append -I/-L args to CPPFLAGS/LDFLAGS, with more specific options
+    # taking priority
+
+    AS_IF([test -n "${with_$1_include}"],
+          [PAC_APPEND_FLAG([-I${with_$1_include}],[CPPFLAGS_SYSCALL_INTERCEPT])],
+          [AS_IF([test -n "${with_$1}"],
+                 [PAC_APPEND_FLAG([-I${with_$1}/include],[CPPFLAGS_SYSCALL_INTERCEPT])])])
+
+    AS_IF([test -n "${with_$1_lib}"],
+          [PAC_APPEND_FLAG([-L${with_$1_lib} -Wl,-rpath,${with_$1_lib}],[LDFLAGS_SYSCALL_INTERCEPT])],
+          [AS_IF([test -n "${with_$1}"],
+                 dnl is adding lib64 by default really the right thing to do?  What if
+                 dnl we are on a 32-bit host that happens to have both lib dirs available?
+                 [PAC_APPEND_FLAG([-L${with_$1}/lib -Wl,-rpath,${with_$1}/lib],[LDFLAGS_SYSCALL_INTERCEPT])
+                  AS_IF([test -d "${with_$1}/lib64"],
+		        [PAC_APPEND_FLAG([-L${with_$1}/lib64 -Wl,-rpath,${with_$1}/lib64],[LDFLAGS_SYSCALL_INTERCEPT])])
+                 ])
+          ])
+
+    AS_IF([test -n "${with_$1}" || test -n "${with_$1_include}" || test -n "${with_$1_lib}"],
+	      [WITH_SYSCALL_INTERCEPT=yes],
+	      [WITH_SYSCALL_INTERCEPT=no])
+])
+
 IHK_VERSION=IHK_VERSION_m4
 MCKERNEL_VERSION=MCKERNEL_VERSION_m4
 DCFA_VERSION=DCFA_VERSION_m4
@@ -94,6 +146,23 @@ AS_IF([test "x$numa_lib_found" != "xyes"],
 	[AC_MSG_ERROR([Unable to find NUMA library, missing numactl-devel?])])
 
 PAC_SET_HEADER_LIB_PATH([mpi])
+
+PAC_SET_HEADER_LIB_PATH_SYSCALL_INTERCEPT([syscall_intercept])
+
+if test "x$WITH_SYSCALL_INTERCEPT" == "xno" ; then
+	AC_CHECK_LIB([syscall_intercept],[syscall_no_intercept],[syscall_intercept_lib_found=yes],[syscall_intercept_lib_found=no],[-lcapstone -ldl])
+	AS_IF([test "x$syscall_intercept_lib_found" != "xyes"],
+		[AC_MSG_NOTICE([libsyscall_intercept.so not found])])
+
+	AC_CHECK_HEADER([libsyscall_intercept_hook_point.h],[syscall_intercept_header_found=yes],[syscall_intercept_header_found=no])
+	AS_IF([test "x$syscall_intercept_header_found" != "xyes"],
+		[AC_MSG_NOTICE([libsyscall_intercept_hook_point.h not found])])
+
+	AS_IF([test "x$syscall_intercept_lib_found" == "xyes" && test "x$syscall_intercept_header_found" == "xyes"],
+		[WITH_SYSCALL_INTERCEPT=yes],
+		[WITH_SYSCALL_INTERCEPT=no])
+fi
+
 
 AC_ARG_WITH([kernelsrc],
   AC_HELP_STRING(
@@ -339,78 +408,6 @@ KDIR="$WITH_KERNELSRC"
 UNAME_R="$WITH_UNAME_R"
 TARGET="$WITH_TARGET"
 
-MCCTRL_LINUX_SYMTAB=""
-case "X$WITH_SYSTEM_MAP" in
-    Xyes | Xno | X)
-	MCCTRL_LINUX_SYMTAB=""
-	;;
-    *)
-	MCCTRL_LINUX_SYMTAB="$WITH_SYSTEM_MAP"
-	;;
-esac
-
-AC_MSG_CHECKING([[for System.map]])
-if test -r "$MCCTRL_LINUX_SYMTAB"; then
-	MCCTRL_LINUX_SYMTAB="$MCCTRL_LINUX_SYMTAB"
-elif test -r "/boot/System.map-`uname -r`"; then
-	MCCTRL_LINUX_SYMTAB="/boot/System.map-`uname -r`"
-elif test -r "$KDIR/System.map"; then
-	MCCTRL_LINUX_SYMTAB="$KDIR/System.map"
-fi
-
-if test "$MCCTRL_LINUX_SYMTAB" == ""; then
-	AC_MSG_ERROR([could not find])
-fi
-
-if test -z "`eval cat $MCCTRL_LINUX_SYMTAB`"; then
-	AC_MSG_ERROR([could not read System.map file, no read permission?])
-fi
-AC_MSG_RESULT([$MCCTRL_LINUX_SYMTAB])
-
-MCCTRL_LINUX_SYMTAB_CMD="cat $MCCTRL_LINUX_SYMTAB"
-
-# MCCTRL_FIND_KSYM(SYMBOL)
-# ------------------------------------------------------
-# Search System.map for address of the given symbol and
-# do one of three things in config.h:
-# If not found, leave MCCTRL_KSYM_foo undefined
-# If found to be exported, "#define MCCTRL_KSYM_foo 0"
-# If found not to be exported, "#define MCCTRL_KSYM_foo 0x<value>"
-AC_DEFUN([MCCTRL_FIND_KSYM],[
-  AC_MSG_CHECKING([[System.map for symbol $1]])
-  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " $1\$" | cut -d\  -f1`
-  if test -z $mcctrl_addr; then
-    AC_MSG_RESULT([not found])
-  else
-    mcctrl_result=$mcctrl_addr
-    mcctrl_addr="0x$mcctrl_addr"
-    m4_ifval([$2],[],[
-      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_$1\$" >/dev/null`; then
-        mcctrl_result="exported"
-        mcctrl_addr="0"
-      fi
-    ])
-    AC_MSG_RESULT([$mcctrl_result])
-    AC_DEFINE_UNQUOTED(MCCTRL_KSYM_[]$1,$mcctrl_addr,[Define to address of kernel symbol $1, or 0 if exported])
-  fi
-])
-
-MCCTRL_FIND_KSYM([sys_mount])
-MCCTRL_FIND_KSYM([sys_umount])
-MCCTRL_FIND_KSYM([sys_unshare])
-MCCTRL_FIND_KSYM([zap_page_range])
-MCCTRL_FIND_KSYM([vdso_image_64])
-MCCTRL_FIND_KSYM([vdso_start])
-MCCTRL_FIND_KSYM([vdso_end])
-MCCTRL_FIND_KSYM([vdso_pages])
-MCCTRL_FIND_KSYM([__vvar_page])
-MCCTRL_FIND_KSYM([hpet_address])
-# POSTK_DEBUG_ARCH_DEP_50, add:find kernel symbol.
-MCCTRL_FIND_KSYM([vdso_spec])
-MCCTRL_FIND_KSYM([hv_clock])
-MCCTRL_FIND_KSYM([sys_readlink])
-MCCTRL_FIND_KSYM([walk_page_range])
-
 case $ENABLE_MEMDUMP in
 	yes|no|auto)
 		;;
@@ -489,6 +486,13 @@ else
 	AC_MSG_NOTICE([perf is disabled])
 fi
 
+if test "x$WITH_SYSCALL_INTERCEPT" = "xyes" ; then
+	AC_DEFINE([WITH_SYSCALL_INTERCEPT],[1],[whether or not syscall_intercept library is linked])
+	AC_MSG_NOTICE([syscall_intercept library is linked])
+else
+	AC_MSG_NOTICE([syscall_intercept library isn't linked])
+fi
+
 if test "x$MCKERNEL_INCDIR" != "x" ; then
    AC_DEFINE_UNQUOTED(MCKERNEL_INCDIR,"$MCKERNEL_INCDIR",[McKernel specific headers])
 fi
@@ -526,9 +530,12 @@ AC_SUBST(KMODDIR)
 AC_SUBST(KERNDIR)
 AC_SUBST(MANDIR)
 AC_SUBST(CFLAGS)
+AC_SUBST(CPPFLAGS_SYSCALL_INTERCEPT)
+AC_SUBST(LDFLAGS_SYSCALL_INTERCEPT)
 AC_SUBST(ENABLE_MCOVERLAYFS)
 AC_SUBST(ENABLE_RUSAGE)
 AC_SUBST(ENABLE_QLMPI)
+AC_SUBST(WITH_SYSCALL_INTERCEPT)
 
 AC_SUBST(IHK_VERSION)
 AC_SUBST(MCKERNEL_VERSION)
@@ -570,8 +577,15 @@ AC_CONFIG_FILES([
 	arch/x86_64/tools/mcreboot.1:arch/x86_64/tools/mcreboot.1in
 	arch/x86_64/tools/irqbalance_mck.service
 	arch/x86_64/tools/irqbalance_mck.in
+	tools/mcstat/mcstat.1:tools/mcstat/mcstat.1in
 	tools/mcstat/Makefile
 ])
+
+if test -e "${ABS_SRCDIR}/test"; then
+AC_CONFIG_FILES([
+mck_test_config.sample:test/mck_test_config.sample.in
+])
+fi
 
 if test "$TARGET" = "smp-x86"; then
 AC_CONFIG_FILES([

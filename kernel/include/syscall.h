@@ -49,6 +49,7 @@
 #define	SCD_MSG_PROCFS_DELETE		0x11
 #define	SCD_MSG_PROCFS_REQUEST		0x12
 #define	SCD_MSG_PROCFS_ANSWER		0x13
+#define	SCD_MSG_PROCFS_RELEASE		0x15
 
 #define	SCD_MSG_DEBUG_LOG		0x20
 
@@ -81,6 +82,8 @@
 
 #define SCD_MSG_CPU_RW_REG              0x52
 #define SCD_MSG_CPU_RW_REG_RESP         0x53
+
+#define SCD_MSG_FUTEX_WAKE              0x60
 
 /* Cloning flags.  */
 # define CSIGNAL       0x000000ff /* Signal mask to be sent at exit.  */
@@ -197,8 +200,10 @@ struct program_load_desc {
 	unsigned long heap_extension;
 	long stack_premap;
 	unsigned long mpol_bind_mask;
+	int uti_thread_rank; /* N-th clone() spawns a thread on Linux CPU */
+	int uti_use_last_cpu; /* Work-around not to share CPU with OpenMP thread */
 	int nr_processes;
-	char shell_path[SHELL_PATH_MAX_LEN];
+	int process_rank;
 	__cpu_set_unit cpu_set[PLD_CPU_SET_SIZE];
 	int profile;
 	struct program_image_section sections[0];
@@ -258,7 +263,7 @@ struct ikc_scd_packet {
 			long sysfs_arg3;
 		};
 
-		/* SCD_MSG_SCHEDULE_THREAD */
+		/* SCD_MSG_WAKE_UP_SYSCALL_THREAD */
 		struct {
 			int ttid;
 		};
@@ -274,6 +279,12 @@ struct ikc_scd_packet {
 		struct {
 			int eventfd_type;
 		};
+
+		/* SCD_MSG_FUTEX_WAKE */
+		struct {
+			void *resp;
+			int *spin_sleep; /* 1: waiting in linux_wait_event() 0: woken up by someone else */
+		} futex;
 	};
 	char padding[8];
 };
@@ -336,10 +347,10 @@ struct syscall_post {
 	SYSCALL_ARG_##a2(2); SYSCALL_ARG_##a3(3); \
 	SYSCALL_ARG_##a4(4); SYSCALL_ARG_##a5(5);
 
-#define SYSCALL_FOOTER return do_syscall(&request, ihk_mc_get_processor_id(), 0)
+#define SYSCALL_FOOTER return do_syscall(&request, ihk_mc_get_processor_id())
 
-extern long do_syscall(struct syscall_request *req, int cpu, int pid);
-int obtain_clone_cpuid(cpu_set_t *cpu_set);
+extern long do_syscall(struct syscall_request *req, int cpu);
+int obtain_clone_cpuid(cpu_set_t *cpu_set, int use_last);
 extern long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx);
 
 #define DECLARATOR(number,name)		__NR_##name = number,
@@ -353,17 +364,10 @@ enum {
 #undef	SYSCALL_DELEGATED
 
 #define	__NR_coredump 999	/* pseudo syscall for coredump */
-#ifdef POSTK_DEBUG_TEMP_FIX_61 /* Core table size and lseek return value to loff_t */
 struct coretable {		/* table entry for a core chunk */
 	off_t len;		/* length of the chunk */
 	unsigned long addr;	/* physical addr of the chunk */
 };
-#else /* POSTK_DEBUG_TEMP_FIX_61 */
-struct coretable {		/* table entry for a core chunk */
-	int len;		/* length of the chunk */
-	unsigned long addr;	/* physical addr of the chunk */
-};
-#endif /* POSTK_DEBUG_TEMP_FIX_61 */
 
 #ifdef POSTK_DEBUG_TEMP_FIX_1
 void create_proc_procfs_files(int pid, int tid, int cpuid);
@@ -383,7 +387,6 @@ struct procfs_read {
 	int count;		/* bytes to read (request) */
 	int eof;		/* if eof is detected, 1 otherwise 0. (answer)*/
 	int ret;		/* read bytes (answer) */
-	int status;		/* non-zero if done (answer) */
 	int newcpu;		/* migrated new cpu (answer) */
 	int readwrite;		/* 0:read, 1:write */
 	char fname[PROCFS_NAME_MAX];	/* procfs filename (request) */
@@ -394,6 +397,8 @@ struct procfs_file {
 	int mode;			/* file mode (request) */
 	char fname[PROCFS_NAME_MAX];	/* procfs filename (request) */
 };
+
+int process_procfs_request(struct ikc_scd_packet *rpacket);
 
 #define RUSAGE_SELF 0
 #define RUSAGE_CHILDREN -1
@@ -459,8 +464,8 @@ static inline unsigned long timespec_to_jiffy(const struct timespec *ats)
 
 void reset_cputime(void);
 void set_cputime(int mode);
-int do_munmap(void *addr, size_t len);
-intptr_t do_mmap(intptr_t addr0, size_t len0, int prot, int flags, int fd,
+int do_munmap(void *addr, size_t len, int holding_memory_range_lock);
+intptr_t do_mmap(uintptr_t addr0, size_t len0, int prot, int flags, int fd,
 		off_t off0);
 void clear_host_pte(uintptr_t addr, size_t len);
 typedef int32_t key_t;
@@ -471,7 +476,16 @@ int arch_setup_vdso(void);
 int arch_cpu_read_write_register(struct ihk_os_cpu_register *desc,
 		enum mcctrl_os_cpu_operation op);
 struct vm_range_numa_policy *vm_range_policy_search(struct process_vm *vm, uintptr_t addr);
+void calculate_time_from_tsc(struct timespec *ts);
 time_t time(void);
+long do_futex(int n, unsigned long arg0, unsigned long arg1,
+			  unsigned long arg2, unsigned long arg3,
+			  unsigned long arg4, unsigned long arg5,
+			  unsigned long _uti_clv,
+			  void *uti_futex_resp,
+			  void *_linux_wait_event,
+			  void *_linux_printk,
+			  void *_linux_clock_gettime);
 
 #ifndef POSTK_DEBUG_ARCH_DEP_52
 #define VDSO_MAXPAGES 2
@@ -519,6 +533,7 @@ enum perf_ctrl_type {
 
 struct perf_ctrl_desc {
 	enum perf_ctrl_type ctrl_type;
+	int err;
 	union {
 		/* for SET, GET */
 		struct {
@@ -569,6 +584,15 @@ typedef struct uti_attr {
 	uint64_t flags; /* Representing location and behavior hints by bitmap */
 } uti_attr_t;
 
+struct uti_ctx {
+	union {
+		char ctx[4096];
+		struct {
+			int uti_refill_tid;
+		};
+	};
+}; 
+
 struct move_pages_smp_req {
 	unsigned long count;
 	const void **user_virt_addr;
@@ -588,5 +612,10 @@ struct move_pages_smp_req {
 
 #define PROCESS_VM_READ		0
 #define PROCESS_VM_WRITE	1
+
+/* uti: function pointers pointing to Linux codes */
+extern long (*linux_wait_event)(void *_resp, unsigned long nsec_timeout);
+extern int (*linux_printk)(const char *fmt, ...);
+extern int (*linux_clock_gettime)(clockid_t clk_id, struct timespec *tp);
 
 #endif

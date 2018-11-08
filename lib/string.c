@@ -112,6 +112,19 @@ strrchr(const char *s, int c)
 	return (char *)last;
 } /* strrchr() */
 
+char *strpbrk(const char *s, const char *accept)
+{
+	const char *a;
+
+	do {
+		for (a = accept; *a; a++)
+			if (*s == *a)
+				return (char *)s;
+	} while (*(s++));
+
+	return NULL;
+}
+
 char *strstr(const char *haystack, const char *needle)
 {
 	int len = strlen(needle);
@@ -206,79 +219,30 @@ int memcmp(const void *s1, const void *s2, size_t n)
 
 /* 
  * Flatten out a (char **) string array into the following format:
- * [nr_strings][char *offset of string_0]...[char *offset of string_n-1][NULL][string0]...[stringn_1]
- * if nr_strings == -1, we assume the last item is NULL 
+ * [nr_strings][char *offset of string_0]...[char *offset of string_n-1][char *offset of end of string][string0]...[stringn_1]
+ *
+ * sizes all are longs.
  *
  * NOTE: copy this string somewhere, add the address of the string to each offset
  * and we get back a valid argv or envp array.
  *
+ * pre_strings is already flattened, so we just need to manage counts and copy
+ * the string parts appropriately.
+ *
  * returns the total length of the flat string and updates flat to
  * point to the beginning.
  */
-int flatten_strings(int nr_strings, char *first, char **strings, char **flat)
+int flatten_strings_from_user(char *pre_strings, char **strings, char **flat)
 {
-	int full_len, string_i;
-	unsigned long flat_offset;
-	char *_flat;
-
-	/* How many strings do we have? */
-	if (nr_strings == -1) {
-		for (nr_strings = 0; strings[nr_strings]; ++nr_strings); 
-	}
-
-	/* Count full length */
-	full_len = sizeof(long) + sizeof(char *); // Counter and terminating NULL
-	if (first) {
-		full_len += sizeof(char *) + strlen(first) + 1; 
-	}
-
-	for (string_i = 0; string_i < nr_strings; ++string_i) {
-		// Pointer + actual value
-		full_len += sizeof(char *) + strlen(strings[string_i]) + 1; 
-	}
-
-	full_len = (full_len + sizeof(long) - 1) & ~(sizeof(long) - 1);
-
-	_flat = (char *)kmalloc(full_len, IHK_MC_AP_NOWAIT);
-	if (!_flat) {
-		return 0;
-	}
-
-	memset(_flat, 0, full_len);
-
-	/* Number of strings */
-	*((long *)_flat) = nr_strings + (first ? 1 : 0);
-	
-	// Actual offset
-	flat_offset = sizeof(long) + sizeof(char *) * (nr_strings + 1 + 
-			(first ? 1 : 0)); 
-
-	if (first) {
-		*((char **)(_flat + sizeof(long))) = (void *)flat_offset;
-		memcpy(_flat + flat_offset, first, strlen(first) + 1);
-		flat_offset += strlen(first) + 1;
-	}
-
-	for (string_i = 0; string_i < nr_strings; ++string_i) {
-		
-		/* Fabricate the string */
-		*((char **)(_flat + sizeof(long) + (string_i + (first ? 1 : 0)) 
-					* sizeof(char *))) = (void *)flat_offset;
-		memcpy(_flat + flat_offset, strings[string_i], strlen(strings[string_i]) + 1);
-		flat_offset += strlen(strings[string_i]) + 1;
-	}
-
-	*flat = _flat;
-	return full_len;
-}
-
-int flatten_strings_from_user(int nr_strings, char *first, char **strings, char **flat)
-{
-	int full_len, string_i;
+	int full_len, i;
+	int nr_strings = 0;
+	int pre_strings_count = 0;
+	int pre_strings_len = 0;
 	long *_flat;
+	long *pre_strings_flat;
 	char *p;
 	long r;
-	int n, ret;
+	int ret;
 
 	/* When strings is NULL, make array one NULL */
 	if (!strings) {
@@ -293,35 +257,34 @@ int flatten_strings_from_user(int nr_strings, char *first, char **strings, char 
 	}
 
 	/* How many strings do we have? */
-	if (nr_strings == -1) {
-		nr_strings = 0;
-		for (;;) {
-			ret = getlong_user(&r, (void *)(strings + nr_strings));
-			if (ret < 0)
-				return ret;
+	for (;;) {
+		ret = getlong_user(&r, (void *)(strings + nr_strings));
+		if (ret < 0)
+			return ret;
 
-			if (r == 0)
-				break;
+		if (r == 0)
+			break;
 
-			++nr_strings;
-		}
+		++nr_strings;
 	}
 
 	/* Count full length */
 	full_len = sizeof(long) + sizeof(char *); // Counter and terminating NULL
-	if (first) {
-		int len = strlen(first);
+	if (pre_strings) {
+		pre_strings_flat = (long *)pre_strings;
+		pre_strings_count = pre_strings_flat[0];
 
-		if(len < 0)
-			return len;
-		full_len += sizeof(char *) + len + 1; 
+		pre_strings_len = pre_strings_flat[pre_strings_count + 1];
+		pre_strings_len -= sizeof(long) * (pre_strings_count + 2);
+
+		full_len += pre_strings_count * sizeof(long) + pre_strings_len;
 	}
 
-	for (string_i = 0; string_i < nr_strings; ++string_i) {
+	for (i = 0; i < nr_strings; ++i) {
 		char *userp;
 		int len;
 
-		ret = getlong_user((long *)&userp, (void *)(strings + string_i));
+		ret = getlong_user((long *)&userp, (void *)(strings + i));
 		if (ret < 0)
 			return ret;
 
@@ -341,32 +304,34 @@ int flatten_strings_from_user(int nr_strings, char *first, char **strings, char 
 	}
 
 	/* Number of strings */
-	n = first? 1: 0;
-	_flat[0] = nr_strings + n;
-	
-	// Actual offset
-	p = (char *)(_flat + nr_strings + 2 + n);
+	_flat[0] = nr_strings + pre_strings_count;
 
-	n = 1;
-	if (first) {
-		_flat[n++] = p - (char *)_flat;
-		strcpy(p, first);
-		p = strchr(p, '\0') + 1;
+	// Actual offset
+	p = (char *)(_flat + nr_strings + pre_strings_count + 2);
+
+	if (pre_strings) {
+		for (i = 0; i < pre_strings_count; i++) {
+			_flat[i + 1] = pre_strings_flat[i + 1] +
+					nr_strings * sizeof(long);
+		}
+		memcpy(p, pre_strings + pre_strings_flat[1],
+		       pre_strings_len);
+		p += pre_strings_len;
 	}
 
-	for (string_i = 0; string_i < nr_strings; ++string_i) {
+	for (i = 0; i < nr_strings; ++i) {
 		char *userp;
-		_flat[n++] = p - (char *)_flat;
+		_flat[i + pre_strings_count + 1] = p - (char *)_flat;
 
-		ret = getlong_user((long *)&userp, (void *)(strings + string_i));
+		ret = getlong_user((long *)&userp, (void *)(strings + i));
 		if (ret < 0)
 			return ret;
 
 		strcpy_from_user(p, userp);
 		p = strchr(p, '\0') + 1;
 	}
-	_flat[n] = 0;
+	_flat[nr_strings + pre_strings_count + 1] = p - (char *)_flat;
 
 	*flat = (char *)_flat;
-	return full_len;
+	return p - (char *)_flat;
 }

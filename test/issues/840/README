@@ -1,0 +1,29 @@
+【Issue#840 動作確認】
+□ テスト内容
+以下の条件のとき、mcctrlのシステムコール処理でメモリリークしないことを確認。
+C840T01 オフロード中のシステムコールでRPF処理中にMcKプロセスがSIGKILLを受ける
+C840T02 オフロード中のシステムコールでRPF処理外にMcKプロセスがSIGKILLを受ける
+C840T03 システムコールオフロードしていないときにMcKプロセスがSIGKILLを受ける
+C840T04 オフロード中のシステムコールでRPF処理中にmcexecがSIGKILLを受ける
+C840T05 オフロード中のシステムコールでRPF処理外にmcexecがSIGKILLを受ける
+C840T06 システムコールオフロードしていないときにmcexecがSIGKILLを受ける
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+※注意
+・メモリリークのテストのため、kmemleakが使用可能なLinuxカーネルを用いること。
+  kmemleakが使用不可の場合、make testは実行できない。
+・シグナルを受けるタイミングによっては、テスト条件を満たさないことがある
+  (WARNINGを表示)。
+　WARNINGの場合、make testはテスト条件を満たすまで当該テストを繰り返す。
+
+□ 実行結果
+C840.txt 参照。
+全ての項目が OK となっていることを確認。
+

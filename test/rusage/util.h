@@ -7,7 +7,7 @@
 #define dprintf(...) do {			 \
 	char msg[1024];			 \
 	sprintf(msg, __VA_ARGS__);		 \
-	fprintf(stderr, "%s,%s", __func__, msg); \
+	fprintf(stderr, "%s: %s", __func__, msg); \
 } while (0)
 #else
 #define dprintf(...) do {  } while (0)
@@ -16,7 +16,7 @@
 #define eprintf(...) do {			 \
 	char msg[1024];			 \
 	sprintf(msg, __VA_ARGS__);		 \
-	fprintf(stderr, "%s,%s", __func__, msg); \
+	fprintf(stderr, "%s: ERROR: %s", __func__, msg); \
 } while (0)
 
 #define CHKANDJUMP(cond, err, ...) do { \
@@ -36,7 +36,7 @@
 		printf("[ NG ] ");			\
 		printf(__VA_ARGS__);			\
 		ret = -EINVAL;				\
-		goto out;				\
+		goto fn_fail;				\
 	}						\
 } while (0)
 

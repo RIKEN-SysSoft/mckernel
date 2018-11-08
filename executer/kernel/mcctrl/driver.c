@@ -28,6 +28,7 @@
 #include <linux/slab.h>
 #include <linux/device.h>
 #include <linux/delay.h>
+#include <linux/kallsyms.h>
 #include "mcctrl.h"
 #include <ihk/ihk_host_user.h>
 
@@ -43,8 +44,6 @@ extern void mcctrl_syscall_init(void);
 extern void procfs_init(int);
 extern void procfs_exit(int);
 
-extern void rus_page_hash_init(void);
-extern void rus_page_hash_put_pages(void);
 extern void uti_attr_finalize(void);
 extern void binfmt_mcexec_init(void);
 extern void binfmt_mcexec_exit(void);
@@ -84,13 +83,14 @@ static struct ihk_os_user_call_handler mcctrl_uchs[] = {
 	{ .request = MCEXEC_UP_SYS_MOUNT, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_SYS_UMOUNT, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_SYS_UNSHARE, .func = mcctrl_ioctl },
-	{ .request = MCEXEC_UP_UTIL_THREAD1, .func = mcctrl_ioctl },
-	{ .request = MCEXEC_UP_UTIL_THREAD2, .func = mcctrl_ioctl },
+	{ .request = MCEXEC_UP_UTI_GET_CTX, .func = mcctrl_ioctl },
+	{ .request = MCEXEC_UP_UTI_SAVE_FS, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_SIG_THREAD, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_SYSCALL_THREAD, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_TERMINATE_THREAD, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_GET_NUM_POOL_THREADS, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_UTI_ATTR, .func = mcctrl_ioctl },
+	{ .request = MCEXEC_UP_RELEASE_USER_SPACE, .func = mcctrl_ioctl },
 	{ .request = MCEXEC_UP_DEBUG_LOG, .func = mcctrl_ioctl },
 	{ .request = IHK_OS_AUX_PERF_NUM, .func = mcctrl_ioctl },
 	{ .request = IHK_OS_AUX_PERF_SET, .func = mcctrl_ioctl },
@@ -178,6 +178,7 @@ int mcctrl_os_shutdown_notifier(int os_index)
 			mdelay(200);
 		}
 
+		pager_cleanup();
 		sysfsm_cleanup(os[os_index]);
 		free_topology_info(os[os_index]);
 		ihk_os_unregister_user_call_handlers(os[os_index], mcctrl_uc + os_index);
@@ -185,9 +186,6 @@ int mcctrl_os_shutdown_notifier(int os_index)
 		destroy_ikc_channels(os[os_index]);
 		procfs_exit(os_index);
 	}
-#ifdef POSTK_DEBUG_TEMP_FIX_35 /* in shutdown phase, rus_page_hash_put_pages() call added. */
-	rus_page_hash_put_pages();
-#endif /* POSTK_DEBUG_TEMP_FIX_35 */
 
 	os[os_index] = NULL;
 
@@ -214,6 +212,68 @@ static struct ihk_os_notifier mcctrl_os_notifier = {
 	.ops = &mcctrl_os_notifier_ops,
 };
 
+
+
+int (*mcctrl_sys_mount)(char *dev_name, char *dir_name, char *type,
+			unsigned long flags, void *data);
+int (*mcctrl_sys_umount)(char *dir_name, int flags);
+int (*mcctrl_sys_unshare)(unsigned long unshare_flags);
+long (*mcctrl_sched_setaffinity)(pid_t pid, const struct cpumask *in_mask);
+int (*mcctrl_sched_setscheduler_nocheck)(struct task_struct *p, int policy,
+					 const struct sched_param *param);
+
+ssize_t (*mcctrl_sys_readlink)(const char *path, char *buf,
+			       size_t bufsiz);
+void (*mcctrl_zap_page_range)(struct vm_area_struct *vma,
+			      unsigned long start,
+			      unsigned long size,
+			      struct zap_details *details);
+
+struct inode_operations *mcctrl_hugetlbfs_inode_operations;
+
+
+static int symbols_init(void)
+{
+	mcctrl_sys_mount = (void *) kallsyms_lookup_name("sys_mount");
+	if (WARN_ON(!mcctrl_sys_mount))
+		return -EFAULT;
+
+	mcctrl_sys_umount = (void *) kallsyms_lookup_name("sys_umount");
+	if (WARN_ON(!mcctrl_sys_umount))
+		return -EFAULT;
+
+	mcctrl_sys_unshare = (void *) kallsyms_lookup_name("sys_unshare");
+	if (WARN_ON(!mcctrl_sys_unshare))
+		return -EFAULT;
+
+	mcctrl_sched_setaffinity =
+		(void *) kallsyms_lookup_name("sched_setaffinity");
+	if (WARN_ON(!mcctrl_sched_setaffinity))
+		return -EFAULT;
+
+	mcctrl_sched_setscheduler_nocheck =
+		(void *) kallsyms_lookup_name("sched_setscheduler_nocheck");
+	if (WARN_ON(!mcctrl_sched_setscheduler_nocheck))
+		return -EFAULT;
+
+	mcctrl_sys_readlink =
+		(void *) kallsyms_lookup_name("sys_readlink");
+	if (WARN_ON(!mcctrl_sys_readlink))
+		return -EFAULT;
+
+	mcctrl_zap_page_range =
+		(void *) kallsyms_lookup_name("zap_page_range");
+	if (WARN_ON(!mcctrl_zap_page_range))
+		return -EFAULT;
+
+	mcctrl_hugetlbfs_inode_operations =
+		(void *) kallsyms_lookup_name("hugetlbfs_inode_operations");
+	if (WARN_ON(!mcctrl_hugetlbfs_inode_operations))
+		return -EFAULT;
+
+	return arch_symbols_init();
+}
+
 static int __init mcctrl_init(void)
 {
 	int ret = 0;
@@ -227,9 +287,10 @@ static int __init mcctrl_init(void)
 		os[i] = NULL;
 	}
 
-	rus_page_hash_init();
-
 	binfmt_mcexec_init();
+
+	if ((ret = symbols_init()))
+		goto error;
 
 	if ((ret = ihk_host_register_os_notifier(&mcctrl_os_notifier)) != 0) {
 		printk("mcctrl: error: registering OS notifier\n");
@@ -241,7 +302,6 @@ static int __init mcctrl_init(void)
 
 error:
 	binfmt_mcexec_exit();
-	rus_page_hash_put_pages();
 
 	return ret;
 }
@@ -253,7 +313,6 @@ static void __exit mcctrl_exit(void)
 	}
 
 	binfmt_mcexec_exit();
-	rus_page_hash_put_pages();
 	uti_attr_finalize();
 
 	printk("mcctrl: unregistered.\n");

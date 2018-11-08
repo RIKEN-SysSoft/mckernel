@@ -4,7 +4,7 @@ BINDIR=@BINDIR@
 KDIR ?= @KDIR@
 CFLAGS=-Wall -O -I.
 VPATH=@abs_srcdir@
-TARGET=../../libmcexec.a
+TARGET=../../libmcexec.a ../../libsyscall_intercept_arch.a
 LIBS=@LIBS@
 
 all: $(TARGET)
@@ -16,6 +16,12 @@ archdep.o: archdep.S
 	$(CC) -c -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) -fPIE -pie -pthread $<
 
 arch_syscall.o: arch_syscall.c
+	$(CC) -c -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) -fPIE -pie -pthread $<
+
+../../libsyscall_intercept_arch.a: archdep_c.o
+	$(AR) cr ../../libsyscall_intercept_arch.a archdep_c.o
+
+archdep_c.o: archdep_c.c
 	$(CC) -c -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) -fPIE -pie -pthread $<
 
 clean:

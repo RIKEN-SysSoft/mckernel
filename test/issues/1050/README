@@ -1,0 +1,52 @@
+【Issue#1050 動作確認】
+□ テスト内容
+1. Issueで報告された再現プログラムでの確認
+RT_001: ostest-setrlimit.015
+	rlim_max(ハードリミット)を超えるrlim_cur(ソフトリミット)を指定した場合、
+	-1が返り、errnoにEINVALが設定されることを確認
+
+2. 既存のset/get_rlimit機能に影響がないことをテストプログラムを用いて確認
+   なお、以下のテストプログラムは特権ユーザ権限で実行する
+CT_001: Linuxに処理移譲しないresource指定で、rlim_maxを減少させる操作の確認
+	RLIMIT_NPROC をresourceに指定し、以下を確認
+	1. getrlimitで、現在のrlim_max の値を取得
+	2. setrlimitで、現在のrlim_max - 10 の値を設定
+	3. setrlimitが成功し、0を返すことを確認
+	4. errnoが変更されていないことを確認
+	5. getrlimitで、変更後の値が設定されていることを確認
+
+CT_002: Linuxに処理移譲しないresource指定で、rlim_maxを増加させる操作の確認
+	RLIMIT_NPROC をresourceに指定し、以下を確認
+	1. getrlimitで、現在のrlim_max の値を取得
+	2. setrlimitで、現在のrlim_max + 10 の値を設定
+	3. setrlimitが成功し、0を返すことを確認
+	4. errnoが変更されていないことを確認
+	5. getrlimitで、値が変更されていることを確認
+
+CT_003: Linuxに処理移譲するresource指定で、rlim_maxを減少させる操作の確認
+	RLIMIT_MSGQUEUE をresourceに指定し、以下を確認
+	1. getrlimitで、現在のrlim_max の値を取得
+	2. setrlimitで、現在のrlim_max - 10 の値を設定
+	3. setrlimitが成功し、0を返すことを確認
+	4. errnoが変更されていないことを確認
+	5. getrlimitで、変更後の値が設定されていることを確認
+
+CT_004: Linuxに処理移譲するresource指定で、rlim_maxを増加させる操作の確認
+	RLIMIT_MSGQUEUE をresourceに指定し、以下を確認
+	1. getrlimitで、現在のrlim_max の値を取得
+	2. setrlimitで、現在のrlim_max + 10 の値を設定
+	3. setrlimitが成功し、0を返すことを確認
+	4. errnoが変更されていないことを確認
+	5. getrlimitで、値が変更されていることを確認
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。

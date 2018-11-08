@@ -1,5 +1,6 @@
 /* archdeps.c COPYRIGHT FUJITSU LIMITED 2016 */
 #include <linux/version.h>
+#include <linux/kallsyms.h>
 #include "../../../config.h"
 #include "../../mcctrl.h"
 
@@ -13,57 +14,46 @@
 #endif
 #endif /* POSTK_DEBUG_ARCH_DEP_83 */
 
-#ifdef MCCTRL_KSYM_vdso_image_64
-#if MCCTRL_KSYM_vdso_image_64
-struct vdso_image *vdso_image = (void *)MCCTRL_KSYM_vdso_image_64;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
+static struct vdso_image *vdso_image_64;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 23)
+static void *vdso_start;
+static void *vdso_end;
+static struct page **vdso_pages;
 #endif
+static void *__vvar_page;
+static long *hpet_address;
+static void **hv_clock;
+
+int arch_symbols_init(void)
+{
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
+	vdso_image_64 = (void *) kallsyms_lookup_name("vdso_image_64");
+	if (WARN_ON(!vdso_image_64))
+		return -EFAULT;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 23)
+	vdso_start = (void *) kallsyms_lookup_name("vdso_start");
+	if (WARN_ON(!vdso_start))
+		return -EFAULT;
+
+	vdso_end = (void *) kallsyms_lookup_name("vdso_end");
+	if (WARN_ON(!vdso_end))
+		return -EFAULT;
+
+	vdso_pages = (void *) kallsyms_lookup_name("vdso_pages");
+	if (WARN_ON(!vdso_pages))
+		return -EFAULT;
 #endif
 
-#ifdef MCCTRL_KSYM_vdso_start
-#if MCCTRL_KSYM_vdso_start
-void *vdso_start = (void *)MCCTRL_KSYM_vdso_start;
-#endif
-#endif
+	__vvar_page = (void *) kallsyms_lookup_name("__vvar_page");
+	if (WARN_ON(!__vvar_page))
+		return -EFAULT;
 
-#ifdef MCCTRL_KSYM_vdso_end
-#if MCCTRL_KSYM_vdso_end
-void *vdso_end = (void *)MCCTRL_KSYM_vdso_end;
-#endif
-#endif
+	hpet_address = (void *) kallsyms_lookup_name("hpet_address");
+	hv_clock = (void *) kallsyms_lookup_name("hv_clock");
+	return 0;
+}
 
-#ifdef MCCTRL_KSYM_vdso_pages
-#if MCCTRL_KSYM_vdso_pages
-struct page **vdso_pages = (void *)MCCTRL_KSYM_vdso_pages;
-#endif
-#endif
-
-#ifdef MCCTRL_KSYM___vvar_page
-#if MCCTRL_KSYM___vvar_page
-void *__vvar_page = (void *)MCCTRL_KSYM___vvar_page;
-#endif
-#endif
-
-long *hpet_addressp
-#ifdef MCCTRL_KSYM_hpet_address
-#if MCCTRL_KSYM_hpet_address
-	= (void *)MCCTRL_KSYM_hpet_address;
-#else
-	= &hpet_address;
-#endif
-#else
-	= NULL;
-#endif
-
-void **hv_clockp
-#ifdef MCCTRL_KSYM_hv_clock
-#if MCCTRL_KSYM_hv_clock
-	= (void *)MCCTRL_KSYM_hv_clock;
-#else
-	= &hv_clock;
-#endif
-#else
-	= NULL;
-#endif
 
 #ifdef POSTK_DEBUG_ARCH_DEP_52
 #define VDSO_MAXPAGES 2
@@ -138,7 +128,7 @@ void get_vdso_info(ihk_os_t os, long vdso_rpa)
 
 	/* VDSO pages */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,16,0)
-	size = vdso_image->size;
+	size = vdso_image_64->size;
 	vdso->vdso_npages = size >> PAGE_SHIFT;
 
 	if (vdso->vdso_npages > VDSO_MAXPAGES) {
@@ -148,7 +138,7 @@ void get_vdso_info(ihk_os_t os, long vdso_rpa)
 
 	for (i = 0; i < vdso->vdso_npages; ++i) {
 		vdso->vdso_physlist[i] = virt_to_phys(
-				vdso_image->data + (i * PAGE_SIZE));
+				vdso_image_64->data + (i * PAGE_SIZE));
 	}
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
 	size = vdso_end - vdso_start;
@@ -185,36 +175,36 @@ void get_vdso_info(ihk_os_t os, long vdso_rpa)
 #endif
 
 	/* HPET page */
-	if (hpet_addressp && *hpet_addressp) {
+	if (hpet_address && *hpet_address) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,5,0)
 		vdso->hpet_is_global = 0;
 		vdso->hpet_virt = (void *)(-2 * PAGE_SIZE);
-		vdso->hpet_phys = *hpet_addressp;
+		vdso->hpet_phys = *hpet_address;
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)
 		vdso->hpet_is_global = 0;
 		vdso->hpet_virt = (void *)(-1 * PAGE_SIZE);
-		vdso->hpet_phys = *hpet_addressp;
+		vdso->hpet_phys = *hpet_address;
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,16,0)
 		vdso->hpet_is_global = 0;
 		vdso->hpet_virt = (void *)((vdso->vdso_npages + 1) * PAGE_SIZE);
-		vdso->hpet_phys = *hpet_addressp;
+		vdso->hpet_phys = *hpet_address;
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
 		vdso->hpet_is_global = 1;
 		vdso->hpet_virt = (void *)fix_to_virt(VSYSCALL_HPET);
-		vdso->hpet_phys = *hpet_addressp;
+		vdso->hpet_phys = *hpet_address;
 #endif
 	}
 
 	/* struct pvlock_vcpu_time_info table */
-	if (hv_clockp && *hv_clockp) {
+	if (hv_clock && *hv_clock) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,5,0)
 		vdso->pvti_is_global = 0;
 		vdso->pvti_virt = (void *)(-1 * PAGE_SIZE);
-		vdso->pvti_phys = virt_to_phys(*hv_clockp);
+		vdso->pvti_phys = virt_to_phys(*hv_clock);
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
 		vdso->pvti_is_global = 1;
 		vdso->pvti_virt = (void *)fix_to_virt(PVCLOCK_FIXMAP_BEGIN);
-		vdso->pvti_phys = virt_to_phys(*hv_clockp);
+		vdso->pvti_phys = virt_to_phys(*hv_clock);
 #endif
 	}
 
@@ -287,6 +277,14 @@ get_fs_ctx(void *ctx)
 	struct trans_uctx *tctx = ctx;
 
 	return tctx->fs;
+}
+
+unsigned long
+get_rsp_ctx(void *ctx)
+{
+	struct trans_uctx *tctx = ctx;
+
+	return tctx->rsp;
 }
 
 #ifdef POSTK_DEBUG_ARCH_DEP_83 /* arch depend translate_rva_to_rpa() move */

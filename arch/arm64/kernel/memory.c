@@ -14,9 +14,7 @@
 #include <context.h>
 #include <kmalloc.h>
 #include <vdso.h>
-
-#define	dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
+#include <debug.h>
 
 #define NOT_IMPLEMENTED()  do { kprintf("%s is not implemented\n", __func__); while(1);} while(0)
 
@@ -2924,17 +2922,12 @@ int read_process_vm(struct process_vm *vm, void *kdst, const void *usrc, size_t 
 			return error;
 		}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_52 /* NUMA support(memory area determination) */
-		if (!is_mckernel_memory(pa)) {
-#else
-		if (pa < ihk_mc_get_memory_address(IHK_MC_GMA_MAP_START, 0) ||
-			pa >= ihk_mc_get_memory_address(IHK_MC_GMA_MAP_END, 0)) {
-#endif /* POSTK_DEBUG_TEMP_FIX_52 */
+		if (!is_mckernel_memory(pa, pa + cpsize)) {
 			dkprintf("%s: pa is outside of LWK memory, to: %p, pa: %p,"
 				"cpsize: %d\n", __FUNCTION__, to, pa, cpsize);
 			va = ihk_mc_map_virtual(pa, 1, PTATTR_ACTIVE);
 			memcpy(to, va, cpsize);
-			ihk_mc_unmap_virtual(va, 1, 1);
+			ihk_mc_unmap_virtual(va, 1);
 		}
 		else {
 			va = phys_to_virt(pa);
@@ -3007,17 +3000,12 @@ int write_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t
 			return error;
 		}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_52 /* NUMA support(memory area determination) */
-		if (!is_mckernel_memory(pa)) {
-#else
-		if (pa < ihk_mc_get_memory_address(IHK_MC_GMA_MAP_START, 0) ||
-			pa >= ihk_mc_get_memory_address(IHK_MC_GMA_MAP_END, 0)) {
-#endif /* POSTK_DEBUG_TEMP_FIX_52 */
+		if (!is_mckernel_memory(pa, pa + cpsize)) {
 			dkprintf("%s: pa is outside of LWK memory, from: %p,"
 				"pa: %p, cpsize: %d\n", __FUNCTION__, from, pa, cpsize);
 			va = ihk_mc_map_virtual(pa, 1, PTATTR_WRITABLE|PTATTR_ACTIVE);
 			memcpy(va, from, cpsize);
-			ihk_mc_unmap_virtual(va, 1, 1);
+			ihk_mc_unmap_virtual(va, 1);
 		}
 		else {
 			va = phys_to_virt(pa);
@@ -3078,17 +3066,12 @@ int patch_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t
 			return error;
 		}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_52 /* NUMA support(memory area determination) */
-		if (!is_mckernel_memory(pa)) {
-#else
-		if (pa < ihk_mc_get_memory_address(IHK_MC_GMA_MAP_START, 0) ||
-			pa >= ihk_mc_get_memory_address(IHK_MC_GMA_MAP_END, 0)) {
-#endif /* POSTK_DEBUG_TEMP_FIX_52 */
+		if (!is_mckernel_memory(pa, pa + cpsize)) {
 			dkprintf("%s: pa is outside of LWK memory, from: %p,"
 				"pa: %p, cpsize: %d\n", __FUNCTION__, from, pa, cpsize);
 			va = ihk_mc_map_virtual(pa, 1, PTATTR_WRITABLE|PTATTR_ACTIVE);
 			memcpy(va, from, cpsize);
-			ihk_mc_unmap_virtual(va, 1, 1);
+			ihk_mc_unmap_virtual(va, 1);
 		}
 		else {
 			va = phys_to_virt(pa);

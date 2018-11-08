@@ -14,15 +14,13 @@
 #include <ihk/debug.h>
 #include <ikc/queue.h>
 #include <vdso.h>
+#include <debug.h>
 
 //#define DEBUG_PRINT_VDSO
 
 #ifdef DEBUG_PRINT_VDSO
-#define	dkprintf(...)	kprintf(__VA_ARGS__)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
-#else
-#define dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 #ifdef POSTK_DEBUG_ARCH_DEP_52

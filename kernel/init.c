@@ -32,6 +32,7 @@
 #include <syscall.h>
 #include <sysfs.h>
 #include <ihk/monitor.h>
+#include <debug.h>
 
 //#define IOCTL_FUNC_EXTENSION
 #ifdef IOCTL_FUNC_EXTENSION
@@ -41,11 +42,8 @@
 //#define DEBUG_PRINT_INIT
 
 #ifdef DEBUG_PRINT_INIT
-#define dkprintf(...) do { kprintf(__VA_ARGS__); } while (0)
-#define ekprintf(...) do { kprintf(__VA_ARGS__); } while (0)
-#else
-#define dkprintf(...) do { } while (0)
-#define ekprintf(...) do { kprintf(__VA_ARGS__); } while (0)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 #define DUMP_LEVEL_USER_UNUSED_EXCLUDE 24
@@ -60,6 +58,13 @@ static void handler_init(void)
 {
 	ihk_mc_set_syscall_handler(syscall);
 }
+
+
+/* Symbols with name conflict with the linux kernel
+ * Give the possibility to load all symbols at the same time
+ */
+int *mck_num_processors = &num_processors;
+
 
 unsigned long data[1024] __attribute__((aligned(64)));
 
@@ -125,6 +130,8 @@ char *find_command_line(char *name)
 	return strstr(cmdline, name);
 }
 
+extern int safe_kernel_map;
+
 static void parse_kargs(void)
 {
 	char *ptr;
@@ -144,6 +151,11 @@ static void parse_kargs(void)
 		}
 	}
 	ihk_mc_set_dump_level(dump_level);
+
+	ptr = find_command_line("safe_kernel_map");
+	if (ptr) {
+		safe_kernel_map = 1;
+	}
 
 	/* idle_halt option */
 	ptr = find_command_line("idle_halt");
@@ -246,6 +258,11 @@ static void nmi_init()
 	ihk_set_nmi_mode_addr(phys);
 }
 
+static void uti_init()
+{
+	ihk_set_mckernel_do_futex((unsigned long)do_futex);
+}
+
 static void rest_init(void)
 {
 	handler_init();
@@ -261,6 +278,7 @@ static void rest_init(void)
 #endif /* !POSTK_DEBUG_TEMP_FIX_73 */
 	cpu_local_var_init();
 	nmi_init();
+	uti_init();
 	time_init();
 	kmalloc_init();
 
@@ -331,6 +349,7 @@ static void populate_sysfs(void)
 {
 	cpu_sysfs_setup();
 	numa_sysfs_setup();
+	dynamic_debug_sysfs_setup();
 	//setup_remote_snooping_samples();
 } /* populate_sysfs() */
 

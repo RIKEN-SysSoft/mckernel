@@ -1,0 +1,22 @@
+Script started on Wed Aug  1 14:18:26 2018
+bash-4.2$ make test
+gcc -o C765 C765.c -Wall -g
+sh ./C765.sh
+C765T01 stack addr=0x547ffffffc40 LARGE PRIVATE  OK
+C765T02 heap addr=0x802f30 SMALL PRIVATE  OK
+C765T03 private(8k) addr=0x2aaaac739000 SMALL PRIVATE  OK
+C765T04 private(2M) addr=0x2aaaac800000 LARGE PRIVATE  OK
+C765T05 shared(8k) addr=0x2aaaaca00000 SMALL SHARED  OK
+C765T06 shared(2M) addr=0x2aaaaca02000 SMALL SHARED  OK
+C765T07 shm(8k) addr=0x2aaaacc02000 SMALL SHARED  OK
+C765T08 shm(2M) addr=0x2aaaacc04000 SMALL SHARED  OK
+TEST_SUITE: mem_limits
+TEST_NUMBER: 0
+ARGS: -f mmap -s 7340032 -c 1 
+alloc#0: p=0x2aaaac800000
+RESULT: ok
+C765T09 OK
+bash-4.2$ exit
+exit
+
+Script done on Wed Aug  1 14:18:40 2018

@@ -1,0 +1,58 @@
+【Issue#1021 動作確認】
+□ テスト内容
+1. procfs ファイルに対するファイルオペレーションのテスト
+Issue#1021 の対応において、procfs の以下のファイル処理を変更している。
+  /proc/stat
+  /proc/pid/auxv
+  /proc/pid/cmdline
+  /proc/pid/maps
+  /proc/pid/status
+  /proc/pid/task/tid/stat
+
+これらのファイルに対するファイルオペレーションとして、以下をテストする。
+1) ファイルをopen(2)できること。
+2) ファイルディスクリプタをdup(2)できること。
+3) 1バイト単位にファイル終端までread(2)できること。
+4) lseek(2) できること。(※2)
+5) lseek(2) 後に、1024バイト単位に read(2) できること。最初の read(2)と内容が
+     一致していること。
+6) close(2) できること。
+7) dup(2) したファイルディスクリプタが EOF になっていること (5 の read(2) の
+   影響)。
+8) dup(2) したファイルディスクリプタを lseek(2) できること。
+9) dup(2) したファイルディスクリプタを read(2) し、ファイル全体を 1 回の read(2)
+   で読み込むことができること。また、最初の read(2) と内容が一致していること。
+10) dup(2) したファイルを close(2) できること。
+
+テストケースは以下の通りである。
+C1021T01-C1021T10 /proc/stat に対する上記 1) - 10) のテスト
+C1021T11-C1021T20 /proc/pid/auxv に対する上記 1) - 10) のテスト
+C1021T21-C1021T30 /proc/pid/cmdline に対する上記 1) - 10) のテスト
+C1021T31-C1021T40 /proc/pid/maps に対する上記 1) - 10) のテスト (※1, ※2)
+C1021T41-C1021T50 /proc/pid/status に対する上記 1) - 10) のテスト
+C1021T51-C1021T60 /proc/pid/rask/tid/stat に対する上記 1) - 10) のテスト
+
+※1 /proc/pid/maps はユーザプログラムのメモリの使い方により非常に大きなファイル
+    になることがあるので、予め mmap を複数回行って4kB以上の read が発生するよう
+    にしておく。(McKernel 内のバッファが複数ページになる場合のテストを兼ねる)。
+
+※2 /proc/pid/maps の読み込み中に情報が変化しても後続の read(2) に影響しない
+    ことを確認するため、/proc/pid/maps の lseek(2) 後に munmap(2) を行い、
+    McKernel の内部情報を変化させる。(後続の read(2) では、munmap 前の情報を
+    読み込む仕様)。
+
+2. メモリリークが発生していないことの確認
+C1021T61 kmemleak を用いて mcctrl の procfs 処理がメモリリークを起こして
+         いないことを確認する。
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+C1021.txt 参照。
+全ての項目が OK となっていることを確認。

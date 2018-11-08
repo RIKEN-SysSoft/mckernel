@@ -1,0 +1,7 @@
+# Config file for McKernel tests
+: ${BIN:=@prefix@/bin}
+: ${SBIN:=@prefix@/sbin}
+: ${OSTEST:=}
+: ${LTP:=}
+: ${BOOTPARAM:=-c 1-7,9-15,17-23,25-31 -m 10G@0,10G@1 -r 1-7:0+9-15:8+17-23:16+25-31:24}
+: ${MCKERNEL_VERSION:=@MCKERNEL_VERSION@}

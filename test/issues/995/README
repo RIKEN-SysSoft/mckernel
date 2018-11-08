@@ -1,0 +1,37 @@
+【Issue#995 動作確認】
+□ テスト内容
+1. Issueで報告された再現プログラムでの確認
+CT_001: interpがシンボリックリンクを含む相対パスの場合
+	execveで実行されたシェルスクリプトのinterpに渡されるargv[0]が
+	シンボリックリンク未解決の相対パスとして設定されることを確認
+
+CT_002: interpがシンボリックリンクを含む絶対パスの場合
+	execveで実行されたシェルスクリプトのinterpに渡されるargv[0]が
+	シンボリックリンク未解決の絶対パスとして設定されることを確認
+
+2. 既存のexecve機能に影響がないことをLTPを用いて確認
+LT_001: ltp-execve01
+	子プロセスがexecveを実行し、正常に終了することを確認 (TPASS 1件)
+
+LT_002: ltp-execve02
+	rootのみに実行権限が付与された実行ファイルを、
+	一般ユーザがexecveした場合に失敗することを確認 (TPASS 1件)
+
+LT_003: ltp-execve03
+	下記の不正な引数でexecveを実行した場合、返り値と設定されるerrnoが
+	正しいことを確認 (TPASS 6件)
+
+LT_004: ltp-execve05
+	execveの標準的な動作を確認 (TPASS 8件)
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。

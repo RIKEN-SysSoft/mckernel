@@ -1,0 +1,31 @@
+【Issue#1005 動作確認】
+□ テスト内容
+1. Issueで報告された症状が修正されたことの確認
+CT_001: McKernelのcoreファイルの形式を確認
+	readelf -h で、TypeがCOREであることを確認する
+
+CT_002: vdso領域の内容がcoreファイルに含まれていることの確認
+	gdbのxコマンドでvdso領域のアドレスを指定し、
+	内容が表示されることを確認する
+
+CT_003: device-fileの内容がcoreファイルに含まれていないことの確認
+	gdbのxコマンドでdevice-fileをマップした領域のアドレスを指定し、
+	内容を取得できないことを確認する
+
+CT_004: backtraceの情報がcoreファイルに含まれていることを確認
+	gdbのbtコマンドでbacktraceの情報が表示されることを確認する
+
+CT_005: registersの情報がcoreファイルに含まれていることを確認
+	gdbのinfo registersコマンドでregistersの情報が表示されることを確認する
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。

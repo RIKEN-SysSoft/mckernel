@@ -55,13 +55,14 @@
 #define MCEXEC_UP_SYS_UMOUNT     0x30a02915
 #define MCEXEC_UP_SYS_UNSHARE    0x30a02916
 
-#define MCEXEC_UP_UTIL_THREAD1   0x30a02920
-#define MCEXEC_UP_UTIL_THREAD2   0x30a02921
+#define MCEXEC_UP_UTI_GET_CTX    0x30a02920
+#define MCEXEC_UP_UTI_SAVE_FS    0x30a02921
 #define MCEXEC_UP_SIG_THREAD     0x30a02922
 #define MCEXEC_UP_SYSCALL_THREAD 0x30a02924
 #define MCEXEC_UP_TERMINATE_THREAD 0x30a02925
 #define MCEXEC_UP_GET_NUM_POOL_THREADS  0x30a02926
 #define MCEXEC_UP_UTI_ATTR       0x30a02927
+#define MCEXEC_UP_RELEASE_USER_SPACE 0x30a02928
 
 #define MCEXEC_UP_DEBUG_LOG     0x40000000
 
@@ -91,6 +92,7 @@ struct program_image_section {
 
 struct get_cpu_set_arg {
 	int nr_processes;
+	int *process_rank;
 	void *cpu_set;
 	size_t cpu_set_size;	// Size in bytes
 	int *target_core;
@@ -140,8 +142,10 @@ struct program_load_desc {
 	unsigned long heap_extension;
 	long stack_premap;
 	unsigned long mpol_bind_mask;
+	int uti_thread_rank; /* N-th clone() spawns a thread on Linux CPU */
+	int uti_use_last_cpu; /* Work-around not to share CPU with OpenMP thread */
 	int nr_processes;
-	char shell_path[SHELL_PATH_MAX_LEN];
+	int process_rank;
 	__cpu_set_unit cpu_set[PLD_CPU_SET_SIZE];
 	int profile;
 	struct program_image_section sections[0];
@@ -242,6 +246,28 @@ struct sys_unshare_desc {
 	unsigned long unshare_flags;
 };
 
+struct release_user_space_desc {
+	unsigned long user_start;
+	unsigned long user_end;
+};
+
+struct terminate_thread_desc {
+	int pid;
+	int tid;
+
+	long code; 
+	/* 32------32  31--16  15--------8  7----0
+       exit_group          exit-status  signal */
+
+	unsigned long tsk; /* struct task_struct * */
+};
+
+struct rpgtable_desc {
+	uintptr_t rpgtable;
+	uintptr_t start;
+	uintptr_t len;
+};
+
 enum perf_ctrl_type {
 	PERF_CTRL_SET,
 	PERF_CTRL_GET,
@@ -251,6 +277,7 @@ enum perf_ctrl_type {
 
 struct perf_ctrl_desc {
 	enum perf_ctrl_type ctrl_type;
+	int err;
 	union {
 		/* for SET, GET */
 		struct {
@@ -290,6 +317,10 @@ struct perf_ctrl_desc {
 #define UTI_FLAG_HIGH_PRIORITY (1ULL<<12)
 #define UTI_FLAG_NON_COOPERATIVE (1ULL<<13)
 
+#define UTI_FLAG_PREFER_LWK (1ULL << 14)
+#define UTI_FLAG_PREFER_FWK (1ULL << 15)
+#define UTI_FLAG_FABRIC_INTR_AFFINITY (1ULL << 16)
+
 /* Linux default value is used */
 #define UTI_MAX_NUMA_DOMAINS (1024)
 
@@ -308,6 +339,30 @@ struct kuti_attr {
 
 struct uti_attr_desc {
 	unsigned long phys_attr;
+	char *uti_cpu_set_str; /* UTI_CPU_SET environmental variable */
+	size_t uti_cpu_set_len;
+};
+
+struct uti_ctx {
+	union {
+		char ctx[4096]; /* TODO: Get the size from config.h */
+		struct {
+			int uti_refill_tid;
+		};
+	};
+}; 
+
+struct uti_get_ctx_desc {
+	unsigned long rp_rctx; /* Remote physical address of remote context */
+	void *rctx; /* Remote context */
+	void *lctx; /* Local context */
+	int uti_refill_tid;
+	unsigned long key; /* OUT: struct task_struct* of mcexec thread, used to search struct host_thread */
+};
+
+struct uti_save_fs_desc {
+	void *rctx; /* Remote context */
+	void *lctx; /* Local context */
 };
 
 #endif

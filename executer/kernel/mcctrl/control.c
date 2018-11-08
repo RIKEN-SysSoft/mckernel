@@ -39,7 +39,6 @@
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/io.h>
-#include <linux/kallsyms.h>
 #include <linux/syscalls.h>
 #include <trace/events/sched.h>
 #include <config.h>
@@ -47,6 +46,9 @@
 #include <ihk/ihk_host_user.h>
 #include <ihklib_rusage.h>
 #include <rusage.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
+#include <uapi/linux/sched/types.h>
+#endif
 
 //#define DEBUG
 
@@ -56,37 +58,26 @@
 #define dprintk(...)
 #endif
 
-#ifdef MCCTRL_KSYM_sys_unshare
-#if MCCTRL_KSYM_sys_unshare
-typedef int (*int_star_fn_ulong_t)(unsigned long);
-int (*mcctrl_sys_unshare)(unsigned long unshare_flags) =
-        (int_star_fn_ulong_t)
-        MCCTRL_KSYM_sys_unshare;
-#else // exported
-int (*mcctrl_sys_unshare)(unsigned long unshare_flags) = NULL;
-#endif
+//#define DEBUG_PTD
+#ifdef DEBUG_PTD
+#define pr_ptd(msg, tid, ptd) do { printk("%s: " msg ",tid=%d,refc=%d\n", __FUNCTION__, tid, atomic_read(&ptd->refcount)); } while(0)
+#else
+#define pr_ptd(msg, tid, ptd) do { } while(0)
 #endif
 
-#ifdef MCCTRL_KSYM_sys_mount
-#if MCCTRL_KSYM_sys_mount
-typedef int (*int_star_fn_char_char_char_ulong_void_t)(char *, char *, char *, unsigned long, void *);
-int (*mcctrl_sys_mount)(char *dev_name,char *dir_name, char *type, unsigned long flags, void *data) =
-        (int_star_fn_char_char_char_ulong_void_t)
-        MCCTRL_KSYM_sys_mount;
-#else // exported
-int (*mcctrl_sys_mount)(char *dev_name,char *dir_name, char *type, unsigned long flags, void *data) = sys_mount;
-#endif
+//#define DEBUG_PPD
+#ifdef DEBUG_PPD
+#define pr_ppd(msg, tid, ppd) do { printk("%s: " msg ",tid=%d,refc=%d\n", __FUNCTION__, tid, atomic_read(&ppd->refcount)); } while(0)
+#else
+#define pr_ppd(msg, tid, ppd) do { } while(0)
 #endif
 
-#ifdef MCCTRL_KSYM_sys_umount
-#if MCCTRL_KSYM_sys_umount
-typedef int (*int_fn_char_star_int_t)(char *, int);
-int (*mcctrl_sys_umount)(char *dir_name, int flags) =
-        (int_fn_char_star_int_t)
-        MCCTRL_KSYM_sys_umount;
-#else // exported
-int (*mcctrl_sys_umount)(char *dir_name, int flags) = sys_umount;
-#endif
+#if defined(RHEL_RELEASE_CODE) || (LINUX_VERSION_CODE < KERNEL_VERSION(4,0,0))
+#define BITMAP_SCNLISTPRINTF(buf, buflen, maskp, nmaskbits) \
+        bitmap_scnlistprintf(buf, buflen, maskp, nmaskbits)
+#else
+#define BITMAP_SCNLISTPRINTF(buf, buflen, maskp, nmaskbits) \
+        scnprintf(buf, buflen, "%*pbl", nmaskbits, maskp)
 #endif
 
 //extern struct mcctrl_channel *channels;
@@ -158,8 +149,8 @@ static long mcexec_prepare_image(ihk_os_t os,
 
 	pdesc->pid = task_tgid_vnr(current);
 
-	if (reserve_user_space(usrdata, &pdesc->user_start, &pdesc->user_end)) {
-		ret = -ENOMEM;
+	if ((ret = reserve_user_space(usrdata, &pdesc->user_start,
+				      &pdesc->user_end))) {
 		goto put_and_free_out;
 	}
 
@@ -314,14 +305,17 @@ struct mcos_handler_info {
 	int cpu;
 	struct mcctrl_usrdata *ud;
 	struct file *file;
+	unsigned long user_start;
+	unsigned long user_end;
 };
 
 struct mcos_handler_info;
-static struct host_thread *host_threads;
+static LIST_HEAD(host_threads); /* Used for FS switch */
 DEFINE_RWLOCK(host_thread_lock);
 
+/* Info of Linux counterpart of migrated-to-Linux thread */
 struct host_thread {
-	struct host_thread *next;
+	struct list_head list;
 	struct mcos_handler_info *handler;
 	int     pid;
 	int     tid;
@@ -357,7 +351,7 @@ static long mcexec_debug_log(ihk_os_t os, unsigned long arg)
 	return 0;
 }
 
-int mcexec_close_exec(ihk_os_t os);
+int mcexec_close_exec(ihk_os_t os, int pid);
 int mcexec_destroy_per_process_data(ihk_os_t os, int pid);
 
 static void release_handler(ihk_os_t os, void *param)
@@ -368,15 +362,16 @@ static void release_handler(ihk_os_t os, void *param)
 	unsigned long flags;
 	struct host_thread *thread;
 
+	/* Finalize FS switch for uti threads */ 
 	write_lock_irqsave(&host_thread_lock, flags);
-	for (thread = host_threads; thread; thread = thread->next) {
+	list_for_each_entry(thread, &host_threads, list) {
 		if (thread->handler == info) {
 			thread->handler = NULL;
 		}
 	}
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
-	mcexec_close_exec(os);
+	mcexec_close_exec(os, info->pid);
 
 	mcexec_destroy_per_process_data(os, info->pid);
 
@@ -451,6 +446,8 @@ static long mcexec_start_image(ihk_os_t os,
 
 	info->pid = desc->pid;
 	info->cpu = desc->cpu;
+	info->user_start = desc->user_start;
+	info->user_end = desc->user_end;
 	ihk_os_register_release_handler(file, release_handler, info);
 	ihk_os_set_mcos_private_data(file, info);
 
@@ -685,6 +682,7 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 		wake_up_interruptible(&pli_next->pli_wq);
 		/* Reset process counter */
 		pe->nr_processes_left = pe->nr_processes;
+		pe->process_rank = 0;
 	}
 
 	/* Wait for the rest if not the last or if the last but
@@ -916,6 +914,15 @@ next_cpu:
 		goto put_and_unlock_out;
 	}
 
+	/* Copy rank */
+	if (copy_to_user(req.process_rank, &pe->process_rank,
+				sizeof(int))) {
+		printk("%s: error copying process rank to user\n",
+				__FUNCTION__);
+		ret = -EINVAL;
+		goto put_and_unlock_out;
+	}
+
 	/* mcexec NUMA to bind to */
 	mcexec_linux_numa = cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu));
 	if (copy_to_user(req.mcexec_linux_numa, &mcexec_linux_numa,
@@ -963,6 +970,7 @@ next_cpu:
 	}
 	/* Otherwise wake up next process in list */
 	else {
+		++pe->process_rank;
 		pli_next = list_first_entry(&pe->pli_list,
 			struct process_list_item, list);
 		list_del(&pli_next->list);
@@ -1092,6 +1100,8 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	struct wait_queue_head_list_node *wqhln;
 	struct wait_queue_head_list_node *wqhln_next;
 	struct ikc_scd_packet *packet;
+	struct mcctrl_per_thread_data *ptd;
+	struct mcctrl_per_thread_data *next;
 
 	if (!ppd)
 		return;
@@ -1110,25 +1120,34 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	write_unlock_irqrestore(&ppd->ud->per_proc_data_hash_lock[hash], flags);
 
 	dprintk("%s: deallocating PPD for pid %d\n", __FUNCTION__, ppd->pid);
-	for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; i++) {
-		struct mcctrl_per_thread_data *ptd;
-		struct mcctrl_per_thread_data *next;
 
+	for (i = 0; i < MCCTRL_PER_THREAD_DATA_HASH_SIZE; i++) {
+		write_lock_irqsave(&ppd->per_thread_data_hash_lock[i], flags);
 		list_for_each_entry_safe(ptd, next,
 		                         ppd->per_thread_data_hash + i, hash) {
-			packet = ptd->data;
-			list_del(&ptd->hash);
-			kfree(ptd);
+
 			/* We use ERESTARTSYS to tell the LWK that the proxy
-			 * process is gone and the application should be terminated */
+			   process is gone and the application should be terminated. */
+			packet = (struct ikc_scd_packet *)ptd->data;
+			dprintk("%s: calling __return_syscall (hash),target pid=%d,tid=%d\n", __FUNCTION__, ppd->pid, packet->req.rtid);
 			__return_syscall(ppd->ud->os, packet, -ERESTARTSYS,
-					packet->req.rtid);
+					 packet->req.rtid);
 			ihk_ikc_release_packet(
 					(struct ihk_ikc_free_packet *)packet,
 					(ppd->ud->ikc2linux[smp_processor_id()] ?
 					 ppd->ud->ikc2linux[smp_processor_id()] :
 					 ppd->ud->ikc2linux[0]));
+
+			/* Note that uti ptd needs another put by mcexec_terminate_thread()
+			   (see mcexec_syscall_wait()).
+			   TODO: Detect tracer has died before calling mcexec_terminate_thread() and put uti ptd */
+			if (atomic_read(&ptd->refcount) != 1) {
+				printk("%s: WARNING: ptd->refcount != 1 but %d\n", __FUNCTION__, atomic_read(&ptd->refcount));
+			}
+			mcctrl_put_per_thread_data_unsafe(ptd);
+			pr_ptd("put", ptd->tid, ptd);
 		}
+		write_unlock_irqrestore(&ppd->per_thread_data_hash_lock[i], flags);
 	}
 
 	flags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
@@ -1164,6 +1183,17 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 	int pid = packet->pid;
 	unsigned long flags;
 	struct mcctrl_per_proc_data *ppd;
+	int ret;
+
+	/* Handle requests that do not need the proxy process right now */
+	ret = __do_in_kernel_irq_syscall(ud->os, packet);
+	if (ret != -ENOSYS) {
+		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
+				       (ud->ikc2linux[smp_processor_id()] ?
+					ud->ikc2linux[smp_processor_id()] :
+					ud->ikc2linux[0]));
+		return ret;
+	}
 
 	/* Get a reference to per-process structure */
 	ppd = mcctrl_get_per_proc_data(ud, pid);
@@ -1207,9 +1237,31 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 			wqhln = wqhln_iter;
 			break;
 		}
-		if (!wqhln) {
-			printk("%s: WARNING: no target thread found for exact request??\n",
-				__FUNCTION__);
+		/* Find the mcexec thread with the same tid as the requesting McKernel thread 
+		   and let it handle the migrate-to-Linux request */
+		if (packet->req.number == __NR_sched_setaffinity && packet->req.args[0] == 0) {
+			list_for_each_entry(wqhln_iter, &ppd->wq_list, list) {
+				if (packet->req.ttid == wqhln_iter->rtid) {
+					if (!wqhln_iter->task) {
+						printk("%s: ERROR: wqhln_iter->task=%p,rtid=%d,&ppd->wq_list_lock=%p\n", __FUNCTION__, wqhln_iter->task, wqhln_iter->rtid, &ppd->wq_list_lock);
+					} else if(wqhln_iter->req) {
+						/* list_del() is called after woken-up */
+						dprintk("%s: INFO: target thread is busy, wqhln_iter->req=%d,rtid=%d,&ppd->wq_list_lock=%p\n", __FUNCTION__, wqhln_iter->req, wqhln_iter->rtid, &ppd->wq_list_lock);
+					} else {
+						wqhln = wqhln_iter;
+						dprintk("%s: uti, worker with tid of %d found in wq_list\n", __FUNCTION__, packet->req.ttid);
+					}
+					break;
+				}
+			}
+			if (!wqhln) {
+				dprintk("%s: uti: INFO: target worker (tid=%d) not found in wq_list\n", __FUNCTION__, packet->req.ttid);
+			}
+		} else {
+			if (!wqhln) {
+				printk("%s: WARNING: no target thread (tid=%d) found for exact request??\n",
+					   __FUNCTION__, packet->req.ttid);
+			}
 		}
 	}
 	/* Is there any thread available? */
@@ -1234,6 +1286,12 @@ retry_alloc:
 		wqhln = wqhln_alloc;
 		wqhln->req = 0;
 		wqhln->task = NULL;
+		/* Let the mcexec thread to handle migrate-to-Linux request in mcexec_wait_syscall() after finishing the current task */
+		if (packet->req.number == __NR_sched_setaffinity && packet->req.args[0] == 0) {
+			wqhln->rtid = packet->req.ttid;
+		} else {
+			wqhln->rtid = 0;
+		}
 		init_waitqueue_head(&wqhln->wq_syscall);
 		list_add_tail(&wqhln->list, &ppd->wq_req_list);
 	}
@@ -1260,6 +1318,7 @@ int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 	int ret = 0;
 	unsigned long irqflags;
 	struct mcctrl_per_proc_data *ppd;
+	struct mcctrl_per_thread_data *ptd = NULL;
 
 	/* Get a reference to per-process structure */
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
@@ -1270,27 +1329,39 @@ int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 			return -EINVAL;
 	}
 
-	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
-	if (packet) {
+	ptd = mcctrl_get_per_thread_data(ppd, current);
+	if (ptd) {
 		printk("%s: ERROR: packet %p is already registered for thread %d\n",
-				__FUNCTION__, packet, task_pid_vnr(current));
+				__FUNCTION__, ptd->data, task_pid_vnr(current));
+		mcctrl_put_per_thread_data(ptd);
 		ret = -EBUSY;
-		goto put_ppd_out;
+		goto no_ptd;
 	}
 
 retry:
 	/* Prepare per-thread wait queue head or find a valid request */
 	irqflags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
+
+	/* Handle migrate-to-Linux request if any */
+	list_for_each_entry(wqhln_iter, &ppd->wq_req_list, list) {
+		if (wqhln_iter->rtid == task_pid_vnr(current)) {
+			wqhln = wqhln_iter;
+			wqhln->task = current;
+			list_del(&wqhln->list);
+			goto found;
+		}
+	}
+
 	/* First see if there is a valid request already that is not yet taken */
 	list_for_each_entry(wqhln_iter, &ppd->wq_req_list, list) {
-		if (wqhln_iter->task == NULL && wqhln_iter->req) {
+		if (!wqhln_iter->rtid && wqhln_iter->task == NULL && wqhln_iter->req) {
 			wqhln = wqhln_iter;
 			wqhln->task = current;
 			list_del(&wqhln->list);
 			break;
 		}
 	}
-
+ found:
 	if (!wqhln) {
 retry_alloc:
 		wqhln = kmalloc(sizeof(*wqhln), GFP_ATOMIC);
@@ -1302,6 +1373,8 @@ retry_alloc:
 		wqhln->task = current;
 		wqhln->req = 0;
 		wqhln->packet = NULL;
+		/* Let mcexec_syscall() find the mcexec thread to handle migrate-to-Linux request */
+		wqhln->rtid = task_pid_vnr(current);
 		init_waitqueue_head(&wqhln->wq_syscall);
 
 		list_add(&wqhln->list, &ppd->wq_list);
@@ -1317,20 +1390,18 @@ retry_alloc:
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, irqflags);
 
 	if (ret == -ERESTARTSYS) {
-		/* Is the request valid? */
+		/* Requeue valid requests */
 		if (wqhln->req) {
-			packet = wqhln->packet;
-			kfree(wqhln);
-			wqhln = NULL;
-			ret = -EINTR;
-			goto put_ppd_out;
+			irqflags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
+			list_add_tail(&wqhln->list, &ppd->wq_req_list);
+			ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, irqflags);
 		}
 		else {
 			kfree(wqhln);
-			wqhln = NULL;
-			ret = -EINTR;
-			goto put_ppd_out;
 		}
+		wqhln = NULL;
+		ret = -EINTR;
+		goto no_ptd;
 	}
 
 	packet = wqhln->packet;
@@ -1366,27 +1437,43 @@ retry_alloc:
 			packet->req.args[4],
 			packet->req.args[5]);
 	
-	if (mcctrl_add_per_thread_data(ppd, current, packet) < 0) {
-		kprintf("%s: error adding per-thread data\n", __FUNCTION__);
-		ret = -EINVAL;;
-		goto put_ppd_out;
+	/* Create ptd */
+	if ((ret = mcctrl_add_per_thread_data(ppd, packet))) {
+		kprintf("%s: error adding per-thread data (%d)\n", __FUNCTION__, ret);
+		ret = -EINVAL;
+		goto no_ptd;
+	}
+	
+	/* Get a reference valid until offload is done */
+	ptd = mcctrl_get_per_thread_data(ppd, current);
+	if (!ptd) {
+		kprintf("%s: ERROR: ptd not found\n", __FUNCTION__);
+		ret = -EINVAL;
+		goto no_ptd;
+	}
+	pr_ptd("get", task_pid_vnr(current), ptd);
+
+	if (packet->req.number == __NR_sched_setaffinity  && packet->req.args[0] == 0) {
+		dprintk("%s: uti,packet=%p,tid=%d\n", __FUNCTION__, packet, task_pid_vnr(current));
+
+		/* Get a reference valid until thread-offload is done */
+		ptd = mcctrl_get_per_thread_data(ppd, current);
+		if (!ptd) {
+			kprintf("%s: ptd not found\n", __FUNCTION__);
+			ret = -EINVAL;
+			goto no_ptd;
+		}
+		pr_ptd("get", task_pid_vnr(current), ptd);
 	}
 
 	if (__do_in_kernel_syscall(os, packet)) {
 		if (copy_to_user(&req->sr, &packet->req,
 					sizeof(struct syscall_request))) {
-
-			if (mcctrl_delete_per_thread_data(ppd, current) < 0) {
-				kprintf("%s: error deleting per-thread data\n", __FUNCTION__);
-			}
-			ret = -EINVAL;;
+			ret = -EINVAL;
 			goto put_ppd_out;
 		}
 
 		if (copy_to_user(&req->cpu, &packet->ref, sizeof(req->cpu))) {
-			if (mcctrl_delete_per_thread_data(ppd, current) < 0) {
-				kprintf("%s: error deleting per-thread data\n", __FUNCTION__);
-			}
 			ret = -EINVAL;
 			goto put_ppd_out;
 		}
@@ -1395,20 +1482,18 @@ retry_alloc:
 		goto put_ppd_out;
 	}
 
-	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
-			(usrdata->ikc2linux[smp_processor_id()] ?
-			 usrdata->ikc2linux[smp_processor_id()] :
-			 usrdata->ikc2linux[0]));
+	/* Drop reference to zero and restart from add */
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put,in_kernel", task_pid_vnr(current), ptd);
 
-	if (mcctrl_delete_per_thread_data(ppd, current) < 0) {
-		kprintf("%s: error deleting per-thread data\n", __FUNCTION__);
-		ret = -EINVAL;;
-		goto put_ppd_out;
-	}
-
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put,in_kernel", task_pid_vnr(current), ptd);
 	goto retry;
 
 put_ppd_out:
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put,in_mcexec", task_pid_vnr(current), ptd);
+ no_ptd:
 	mcctrl_put_per_proc_data(ppd);
 	return ret;
 }
@@ -1503,6 +1588,7 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 	struct ikc_scd_packet *packet;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
+	struct mcctrl_per_thread_data *ptd;
 	int error = 0;
 
 	if (copy_from_user(&ret, arg, sizeof(struct syscall_ret_desc))) {
@@ -1517,15 +1603,21 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 		return -EINVAL;
 	}
 
-	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
+	/* Get a reference for this function */
+	ptd = mcctrl_get_per_thread_data(ppd, current);
+	if (!ptd) {
+		printk("%s: ERROR: mcctrl_get_per_thread_data failed\n", __FUNCTION__);
+		error = -EINVAL;
+		goto no_ptd;
+	}
+	pr_ptd("get", task_pid_vnr(current), ptd);
+	packet = (struct ikc_scd_packet *)ptd->data;
 	if (!packet) {
 		kprintf("%s: ERROR: no packet registered for TID %d\n", 
 			__FUNCTION__, task_pid_vnr(current));
 		error = -EINVAL;
-		goto out;
+		goto put_ppd_out;
 	}
-
-	mcctrl_delete_per_thread_data(ppd, current);
 
 	if (ret.size > 0) {
 		/* Host => Accel. Write is fast. */
@@ -1561,7 +1653,15 @@ out:
 			(usrdata->ikc2linux[smp_processor_id()] ?
 			 usrdata->ikc2linux[smp_processor_id()] :
 			 usrdata->ikc2linux[0]));
-
+ put_ppd_out:
+	/* Drop a reference for this function */
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put", task_pid_vnr(current), ptd);
+	
+	/* Final drop of the reference for non-uti syscall offloading */
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put", task_pid_vnr(current), ptd);
+ no_ptd:
 	mcctrl_put_per_proc_data(ppd);
 	return error;
 }
@@ -1655,11 +1755,18 @@ mcexec_getcredv(int __user *virt)
 	return 0;
 }
 
-int mcexec_create_per_process_data(ihk_os_t os)
+int mcexec_create_per_process_data(ihk_os_t os,
+				   struct rpgtable_desc * __user rpt)
 {
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd = NULL;
 	int i;
+	struct rpgtable_desc krpt;
+
+	if (rpt &&
+	    copy_from_user(&krpt, rpt, sizeof(krpt))) {
+		return -EFAULT;
+	}
 
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 	if (ppd) {
@@ -1674,6 +1781,7 @@ int mcexec_create_per_process_data(ihk_os_t os)
 		printk("%s: ERROR: allocating per-process data\n", __FUNCTION__);
 		return -ENOMEM;
 	}
+	memset(ppd, 0, sizeof(struct mcctrl_per_proc_data)); /* debug */
 
 	ppd->ud = usrdata;
 	ppd->pid = task_tgid_vnr(current);
@@ -1711,6 +1819,11 @@ int mcexec_create_per_process_data(ihk_os_t os)
 	dprintk("%s: PID: %d, counter: %d\n",
 		__FUNCTION__, ppd->pid, atomic_read(&ppd->refcount));
 
+	if (rpt) {
+		ppd->rpgtable = krpt.rpgtable;
+		return mcctrl_clear_pte_range(krpt.start, krpt.len);
+	}
+
 	return 0;
 }
 
@@ -1725,7 +1838,11 @@ int mcexec_destroy_per_process_data(ihk_os_t os, int pid)
 		/* One for the reference and one for deallocation.
 		 * XXX: actual deallocation may not happen here */
 		mcctrl_put_per_proc_data(ppd);
+		pr_ppd("put", task_pid_vnr(current), ppd);
+
+		/* Note that it will call return_syscall() */
 		mcctrl_put_per_proc_data(ppd);
+		pr_ppd("put", task_pid_vnr(current), ppd);
 	}
 	else {
 		printk("WARNING: no per process data for PID %d ?\n",
@@ -1752,13 +1869,13 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 		return -EINVAL;
 	}
 
-	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+	pathbuf = kmalloc(PATH_MAX, GFP_KERNEL);
 	if (!pathbuf) {
 		retval = -ENOMEM;
 		goto out;
 	}
 
-	kfilename = kmalloc(PATH_MAX, GFP_TEMPORARY);
+	kfilename = kmalloc(PATH_MAX, GFP_KERNEL);
 	if (!kfilename) {
 		retval = -ENOMEM;
 		kfree(pathbuf);
@@ -1788,6 +1905,7 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 		retval = -ENOMEM;
 		goto out_put_file;
 	}
+	memset(mcef, 0, sizeof(struct mckernel_exec_file)); /* debug */
 
 	down(&mckernel_exec_file_lock);
 	/* Find previous file (if exists) and drop it */
@@ -1829,7 +1947,7 @@ out:
 	return retval;
 }
 
-int mcexec_close_exec(ihk_os_t os)
+int mcexec_close_exec(ihk_os_t os, int pid)
 {
 	struct mckernel_exec_file *mcef = NULL;
 	int found = 0;
@@ -1841,7 +1959,7 @@ int mcexec_close_exec(ihk_os_t os)
 		
 	down(&mckernel_exec_file_lock);
 	list_for_each_entry(mcef, &mckernel_exec_files, list) {
-		if (mcef->os == os && mcef->pid == task_tgid_vnr(current)) {
+		if (mcef->os == os && mcef->pid == pid) {
 			allow_write_access(mcef->fp);
 			fput(mcef->fp);
 			list_del(&mcef->list);
@@ -1927,12 +2045,8 @@ long mcexec_sys_mount(struct sys_mount_desc *__user arg)
 	cap_raise(promoted->cap_effective, CAP_SYS_ADMIN);
 	original = override_creds(promoted);
 
-#ifdef MCCTRL_KSYM_sys_mount
 	ret = mcctrl_sys_mount(desc.dev_name, desc.dir_name, desc.type,
 		desc.flags, desc.data);
-#else
-	ret = -EFAULT;
-#endif
 
 	revert_creds(original);
 	put_cred(promoted);
@@ -1958,11 +2072,7 @@ long mcexec_sys_umount(struct sys_mount_desc *__user arg)
 	cap_raise(promoted->cap_effective, CAP_SYS_ADMIN);
 	original = override_creds(promoted);
 
-#ifdef MCCTRL_KSYM_sys_umount
 	ret = mcctrl_sys_umount(desc.dir_name, MNT_FORCE);
-#else
-	ret = -EFAULT;
-#endif
 
 	revert_creds(original);
 	put_cred(promoted);
@@ -1988,11 +2098,7 @@ long mcexec_sys_unshare(struct sys_unshare_desc *__user arg)
 	cap_raise(promoted->cap_effective, CAP_SYS_ADMIN);
 	original = override_creds(promoted);
 
-#if MCCTRL_KSYM_sys_unshare
 	ret = mcctrl_sys_unshare(desc.unshare_flags);
-#else
-	ret = -EFAULT;
-#endif
 
 	revert_creds(original);
 	put_cred(promoted);
@@ -2019,6 +2125,9 @@ struct mcctrl_perf_ctrl_desc {
 #define wakeup_desc_of_perf_desc(_desc) \
 	(&container_of((_desc), struct mcctrl_perf_ctrl_desc, desc)->wakeup)
 
+/* Note that usrdata->perf_event_num is updated with # of registered
+ * events
+ */
 long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 {
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
@@ -2029,6 +2138,8 @@ long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 	int ret = 0;
 	int i = 0, j = 0;
 	int need_free;
+	int num_registered = 0;
+	int err = 0;
 
 	for (i = 0; i < usrdata->perf_event_num; i++) {
 		ret = copy_from_user(&attr, &arg[i],
@@ -2047,6 +2158,7 @@ long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 		memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
 
 		perf_desc->ctrl_type = PERF_CTRL_SET;
+		perf_desc->err = 0;
 		perf_desc->target_cntr = i;
 		perf_desc->config = attr.config;
 		perf_desc->exclude_kernel = attr.exclude_kernel;
@@ -2057,7 +2169,8 @@ long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 		isp.arg = virt_to_phys(perf_desc);
 
 		for (j = 0; j < info->n_cpus; j++) {
-			ret = mcctrl_ikc_send_wait(os, j, &isp, 0,
+			ret = mcctrl_ikc_send_wait(os, j, &isp,
+					msecs_to_jiffies(10000),
 					wakeup_desc_of_perf_desc(perf_desc),
 					&need_free, 1, perf_desc);
 			if (ret < 0) {
@@ -2065,14 +2178,24 @@ long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 					__func__, ret);
 				if (need_free)
 					kfree(perf_desc);
-				return -EINVAL;
+				return ret;
+			}
+
+			err = perf_desc->err;
+			if (err != 0) {
+				break;
 			}
 		}
 
+		if (err == 0) {
+			num_registered++;
+		}
 		kfree(perf_desc);
 	}
 
-	return usrdata->perf_event_num;
+	usrdata->perf_event_num = num_registered;
+
+	return num_registered;
 }
 
 long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
@@ -2095,6 +2218,7 @@ long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
 		memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
 
 		perf_desc->ctrl_type = PERF_CTRL_GET;
+		perf_desc->err = 0;
 		perf_desc->target_cntr = i;
 
 		memset(&isp, '\0', sizeof(struct ikc_scd_packet));
@@ -2102,7 +2226,8 @@ long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
 		isp.arg = virt_to_phys(perf_desc);
 
 		for (j = 0; j < info->n_cpus; j++) {
-			ret = mcctrl_ikc_send_wait(os, j, &isp, 0,
+			ret = mcctrl_ikc_send_wait(os, j, &isp,
+					msecs_to_jiffies(10000),
 					wakeup_desc_of_perf_desc(perf_desc),
 					&need_free, 1, perf_desc);
 			if (ret < 0) {
@@ -2110,10 +2235,12 @@ long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
 					__func__, ret);
 				if (need_free)
 					kfree(perf_desc);
-				return -EINVAL;
+				return ret;
 			}
 
-			value_sum += perf_desc->read_value;
+			if (perf_desc->err == 0) {
+				value_sum += perf_desc->read_value;
+			}
 		}
 		kfree(perf_desc);
 		if (copy_to_user(&arg[i], &value_sum, sizeof(unsigned long))) {
@@ -2133,13 +2260,13 @@ long mcctrl_perf_enable(ihk_os_t os)
 	struct ikc_scd_packet isp;
 	struct perf_ctrl_desc *perf_desc;
 	struct ihk_cpu_info *info = ihk_os_get_cpu_info(os);
-	unsigned int cntr_mask = 0;
+	unsigned long cntr_mask = 0;
 	int ret = 0;
 	int i = 0, j = 0;
 	int need_free;
 
 	for (i = 0; i < usrdata->perf_event_num; i++) {
-		cntr_mask |= 1 << i;
+		cntr_mask |= 1UL << i;
 	}
 	perf_desc = kmalloc(sizeof(struct mcctrl_perf_ctrl_desc), GFP_KERNEL);
 	if (!perf_desc) {
@@ -2148,6 +2275,7 @@ long mcctrl_perf_enable(ihk_os_t os)
 	memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
 
 	perf_desc->ctrl_type = PERF_CTRL_ENABLE;
+	perf_desc->err = 0;
 	perf_desc->target_cntr_mask = cntr_mask;
 
 	memset(&isp, '\0', sizeof(struct ikc_scd_packet));
@@ -2167,6 +2295,12 @@ long mcctrl_perf_enable(ihk_os_t os)
 			return -EINVAL;
 		}
 
+		if (perf_desc->err < 0) {
+			ret = perf_desc->err;
+			kfree(perf_desc);
+			return ret;
+		}
+
 	}
 	kfree(perf_desc);
 
@@ -2179,13 +2313,13 @@ long mcctrl_perf_disable(ihk_os_t os)
 	struct ikc_scd_packet isp;
 	struct perf_ctrl_desc *perf_desc;
 	struct ihk_cpu_info *info = ihk_os_get_cpu_info(os);
-	unsigned int cntr_mask = 0;
+	unsigned long cntr_mask = 0;
 	int ret = 0;
 	int i = 0, j = 0;
 	int need_free;
 
 	for (i = 0; i < usrdata->perf_event_num; i++) {
-		cntr_mask |= 1 << i;
+		cntr_mask |= 1UL << i;
 	}
 	perf_desc = kmalloc(sizeof(struct mcctrl_perf_ctrl_desc), GFP_KERNEL);
 	if (!perf_desc) {
@@ -2194,6 +2328,7 @@ long mcctrl_perf_disable(ihk_os_t os)
 	memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
 
 	perf_desc->ctrl_type = PERF_CTRL_DISABLE;
+	perf_desc->err = 0;
 	perf_desc->target_cntr_mask = cntr_mask;
 
 	memset(&isp, '\0', sizeof(struct ikc_scd_packet));
@@ -2212,6 +2347,11 @@ long mcctrl_perf_disable(ihk_os_t os)
 			return -EINVAL;
 		}
 
+		if (perf_desc->err < 0) {
+			ret = perf_desc->err;
+			kfree(perf_desc);
+			return ret;
+		}
 	}
 	kfree(perf_desc);
 
@@ -2301,203 +2441,395 @@ extern void set_user_sp(unsigned long);
 extern void restore_fs(unsigned long fs);
 extern void save_fs_ctx(void *);
 extern unsigned long get_fs_ctx(void *);
+extern unsigned long get_rsp_ctx(void *);
 
-long
-mcexec_util_thread1(ihk_os_t os, unsigned long arg, struct file *file)
+long mcexec_uti_get_ctx(ihk_os_t os, struct uti_get_ctx_desc __user *udesc)
 {
-	void **__user uparam = (void ** __user)arg;
-	void *param[6];
-	unsigned long p_rctx;
+	struct uti_get_ctx_desc desc;
 	unsigned long phys;
-	void *__user u_rctx;
-	void *rctx;
+	struct uti_ctx *rctx;
 	int rc = 0;
-	unsigned long free_address;
-	unsigned long free_size;
 	unsigned long icurrent = (unsigned long)current;
 
-	if(copy_from_user(param, uparam, sizeof(void *) * 6)) {
-		return -EFAULT;
-	}
-	p_rctx = (unsigned long)param[0];
-	u_rctx = (void *__user)param[1];
-	free_address = (unsigned long)param[4];
-	free_size = (unsigned long)param[5];
-
-	phys = ihk_device_map_memory(ihk_os_to_dev(os), p_rctx, PAGE_SIZE);
-#ifdef CONFIG_MIC
-	rctx = ioremap_wc(phys, PAGE_SIZE);
-#else
-	rctx = ihk_device_map_virtual(ihk_os_to_dev(os), phys, PAGE_SIZE, NULL, 0);
-#endif
-	if(copy_to_user(u_rctx, rctx, PAGE_SIZE) ||
-	   copy_to_user((unsigned long *)(uparam + 3), &icurrent,
-	                sizeof(unsigned long)))
+	if(copy_from_user(&desc, udesc, sizeof(struct uti_get_ctx_desc))) {
 		rc = -EFAULT;
+		goto out;
+	}
 
-	((unsigned long *)rctx)[0] = free_address;
-	((unsigned long *)rctx)[1] = free_size;
+	phys = ihk_device_map_memory(ihk_os_to_dev(os), desc.rp_rctx, sizeof(struct uti_ctx));
+#ifdef CONFIG_MIC
+	rctx = ioremap_wc(phys, sizeof(struct uti_ctx));
+#else
+	rctx = ihk_device_map_virtual(ihk_os_to_dev(os), phys, sizeof(struct uti_ctx), NULL, 0);
+#endif
+	if (copy_to_user(desc.rctx, rctx->ctx, sizeof(struct uti_ctx))) {
+		rc = -EFAULT;
+		goto unmap_and_out;
+	}
 
+	if (copy_to_user(&udesc->key, &icurrent, sizeof(unsigned long))) {
+		rc = -EFAULT;
+		goto unmap_and_out;
+	}
+	
+	rctx->uti_refill_tid = desc.uti_refill_tid;
+
+ unmap_and_out:
 #ifdef CONFIG_MIC
 	iounmap(rctx);
 #else
-	ihk_device_unmap_virtual(ihk_os_to_dev(os), rctx, PAGE_SIZE);
+	ihk_device_unmap_virtual(ihk_os_to_dev(os), rctx, sizeof(struct uti_ctx));
 #endif
-	ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
-
+	ihk_device_unmap_memory(ihk_os_to_dev(os), phys, sizeof(struct uti_ctx));
+ out:
 	return rc;
 }
 
-static inline struct host_thread *get_host_thread(void)
+long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc, struct file *file)
 {
-	int pid = task_tgid_vnr(current);
-	int tid = task_pid_vnr(current);
-	unsigned long flags;
-	struct host_thread *thread;
-	
-	read_lock_irqsave(&host_thread_lock, flags);
-	for (thread = host_threads; thread; thread = thread->next)
-		if(thread->pid == pid && thread->tid == tid)
-			break;
-	read_unlock_irqrestore(&host_thread_lock, flags);
-
-	return thread;
-}
-
-long
-mcexec_util_thread2(ihk_os_t os, unsigned long arg, struct file *file)
-{
+	int rc = 0;
 	void *usp = get_user_sp();
 	struct mcos_handler_info *info;
 	struct host_thread *thread;
 	unsigned long flags;
-	void **__user param = (void **__user )arg;
-	void *__user rctx = (void *__user)param[1];
-	void *__user lctx = (void *__user)param[2];
+	struct uti_save_fs_desc desc;
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_per_proc_data *ppd;
 
-	save_fs_ctx(lctx);
+	if(copy_from_user(&desc, udesc, sizeof(struct uti_save_fs_desc))) {
+		printk("%s: Error: copy_from_user failed\n", __FUNCTION__);
+		rc = -EFAULT;
+		goto out;
+	}
+
+	save_fs_ctx(desc.lctx);
 	info = ihk_os_get_mcos_private_data(file);
 	thread = kmalloc(sizeof(struct host_thread), GFP_KERNEL);
 	memset(thread, '\0', sizeof(struct host_thread));
 	thread->pid = task_tgid_vnr(current);
 	thread->tid = task_pid_vnr(current);
 	thread->usp = (unsigned long)usp;
-	thread->lfs = get_fs_ctx(lctx);
-	thread->rfs = get_fs_ctx(rctx);
+	thread->lfs = get_fs_ctx(desc.lctx);
+	thread->rfs = get_fs_ctx(desc.rctx);
 	thread->handler = info;
 
 	write_lock_irqsave(&host_thread_lock, flags);
-	thread->next = host_threads;
-	host_threads = thread;
+	list_add_tail(&thread->list, &host_threads);
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
-	return 0;
+	/* How ppd refcount reaches zero depends on how utility-thread exits:
+	   (1) MCEXEC_UP_CREATE_PPD sets to 1
+	   (2) mcexec_util_thread2() increments to 2
+	   (3) Tracer detects exit/exit_group/killed by signal of tracee
+               and decrements to 1 via mcexec_terminate_thread()
+	   (4) Tracer calls exit_fd(), it calls release_handler(),
+	       it decrements to 0
+
+	   KNOWN ISSUE: 
+               mcexec_terminate_thread() isn't called when tracer is
+	       unexpectedly killed so the refcount remains 1 when 
+	       exiting release_handler()
+	*/
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+	pr_ppd("get", task_pid_vnr(current), ppd);
+ out:
+	return rc;
 }
 
+/* Return value: 0 if target is uti thread, -EINVAL if not */
 long
 mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 {
 	int tid = task_pid_vnr(current);
 	int pid = task_tgid_vnr(current);
 	unsigned long flags;
-	struct host_thread *thread;
+	struct host_thread *thread_iter, *thread = NULL;
+	long ret = 0;
 
 	read_lock_irqsave(&host_thread_lock, flags);
-	for (thread = host_threads; thread; thread = thread->next)
-		if(thread->pid == pid && thread->tid == tid)
+	list_for_each_entry(thread_iter, &host_threads, list) {
+		if(thread_iter->pid == pid && thread_iter->tid == tid) {
+			thread = thread_iter;
 			break;
+		}
+	}
 	read_unlock_irqrestore(&host_thread_lock, flags);
 	if (thread) {
 		if (arg)
 			restore_fs(thread->lfs);
 		else
 			restore_fs(thread->rfs);
-		return 0;
+		goto out;
 	}
-	return -EINVAL;
+	ret = -EINVAL;
+ out:
+	return ret;
 }
 
-long
-mcexec_terminate_thread(ihk_os_t os, unsigned long *param, struct file *file)
+static long mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long code, struct task_struct *tsk)
 {
-	int pid = param[0];
-	int tid = param[1];
-	struct task_struct *tsk = (struct task_struct *)param[3];
-	unsigned long flags;
-	struct host_thread *thread;
-	struct host_thread *prev;
 	struct ikc_scd_packet *packet;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
+	struct mcctrl_per_thread_data *ptd;
 
-	write_lock_irqsave(&host_thread_lock, flags);
-	for (prev = NULL, thread = host_threads; thread;
-	     prev = thread, thread = thread->next) {
-		if(thread->tid == tid)
-			break;
-	}
-	if (!thread) {
-		write_unlock_irqrestore(&host_thread_lock, flags);
-		return -EINVAL;
-	}
+	dprintk("%s: target pid=%d,tid=%d,code=%lx,task=%p\n", __FUNCTION__, pid, tid, code, tsk);
 
 	ppd = mcctrl_get_per_proc_data(usrdata, pid);
 	if (!ppd) {
 		kprintf("%s: ERROR: no per-process structure for PID %d??\n",
-		        __FUNCTION__, pid);
-		goto err;
+				__FUNCTION__, pid);
+		goto no_ppd;
 	}
-	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, tsk);
+
+	ptd = mcctrl_get_per_thread_data(ppd, tsk);
+	if (!ptd) {
+		printk("%s: ERROR: mcctrl_get_per_thread_data failed\n", __FUNCTION__);
+		goto no_ptd;
+	}
+	if (ptd->tid != tid) {
+		printk("%s: ERROR: ptd->tid(%d) != tid(%d)\n", __FUNCTION__, ptd->tid, tid);
+		goto no_ptd;
+	}
+	pr_ptd("get", tid, ptd);
+
+	packet = (struct ikc_scd_packet *)ptd->data;
 	if (!packet) {
 		kprintf("%s: ERROR: no packet registered for TID %d\n",
-		       __FUNCTION__, tid);
-		goto err;
+				__FUNCTION__, tid);
+		goto no_ptd;
 	}
-	mcctrl_delete_per_thread_data(ppd, tsk);
-	__return_syscall(usrdata->os, packet, param[2], tid);
+	__return_syscall(usrdata->os, packet, code, tid);
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet,
 						   (usrdata->ikc2linux[smp_processor_id()] ?
 							usrdata->ikc2linux[smp_processor_id()] :
 							usrdata->ikc2linux[0]));
-err:
-	if(ppd)
-		mcctrl_put_per_proc_data(ppd);
 
-	if (prev)
-		prev->next = thread->next;
-	else
-		host_threads = thread->next;
-	write_unlock_irqrestore(&host_thread_lock, flags);
-	kfree(thread);
+	/* Drop reference for this function */
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put", tid, ptd);
+
+	/* Final drop of reference for uti ptd */
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put", tid, ptd);
+
+	if (atomic_read(&ptd->refcount) != 1) {
+		printk("%s: WARNING: ptd->refcount != 1 but %d\n", __FUNCTION__, atomic_read(&ptd->refcount));
+	}
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put", tid, ptd);
+ no_ptd:
+	mcctrl_put_per_proc_data(ppd);
+	pr_ppd("put", task_pid_vnr(current), ppd);
+
+	/* This is the final drop of uti-ppd */
+	mcctrl_put_per_proc_data(ppd);
+	pr_ppd("put", task_pid_vnr(current), ppd);
+ no_ppd:
 	return 0;
 }
 
-long
-mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
+static long
+mcexec_terminate_thread(ihk_os_t os, struct terminate_thread_desc * __user arg)
+{
+	long rc;
+	unsigned long flags;
+	struct terminate_thread_desc desc;
+	struct host_thread *thread_iter, *thread = NULL;
+
+    if (copy_from_user(&desc, arg, sizeof(struct terminate_thread_desc))) {
+		rc = -EFAULT;
+		goto out;
+    }
+
+	dprintk("%s: target pid=%d,tid=%d\n", __FUNCTION__, desc.pid, desc.tid);
+
+	/* Stop switching FS registers for uti thread */
+	write_lock_irqsave(&host_thread_lock, flags);
+	list_for_each_entry(thread_iter, &host_threads, list) {
+		if(thread_iter->tid == desc.tid) {
+			thread = thread_iter;
+			break;
+		}
+	}
+	if (!thread) {
+		printk("%s: ERROR: thread (pid=%d,tid=%d) not found in host_threads\n", __FUNCTION__, desc.pid, desc.tid);
+		rc = -ESRCH;
+		goto unlock_out;
+	}
+
+	list_del(&thread->list);
+	kfree(thread);
+
+	write_unlock_irqrestore(&host_thread_lock, flags);
+
+	rc = mcexec_terminate_thread_unsafe(os, desc.pid, desc.tid, desc.code, (struct task_struct *)desc.tsk);
+
+ out:
+	return rc;
+
+ unlock_out:
+	write_unlock_irqrestore(&host_thread_lock, flags);
+	goto out;
+}
+
+static long mcexec_release_user_space(struct release_user_space_desc *__user arg)
+{
+	struct release_user_space_desc desc;
+
+	if (copy_from_user(&desc, arg, sizeof(desc))) {
+		return -EFAULT;
+	}
+
+#if 1
+	return mcctrl_clear_pte_range(desc.user_start,
+				      desc.user_end - desc.user_start);
+#else
+	return release_user_space(desc.user_start, desc.user_end - desc.user_start);
+#endif
+}
+
+ static long (*mckernel_do_futex)(int n, unsigned long arg0, unsigned long arg1,
+			  unsigned long arg2, unsigned long arg3,
+			  unsigned long arg4, unsigned long arg5,
+				   unsigned long _uti_clv,
+				   void *uti_futex_resp,
+				   void *_linux_wait_event,
+							  void *_linux_printk,
+							  void *_linux_clock_gettime);
+
+ long uti_wait_event(void *_resp, unsigned long nsec_timeout) {
+	 struct uti_futex_resp *resp = _resp;
+	 if (nsec_timeout) {
+		 return wait_event_interruptible_timeout(resp->wq, resp->done, nsecs_to_jiffies(nsec_timeout));
+	 } else {
+		 return wait_event_interruptible(resp->wq, resp->done);
+	 }
+ }
+
+ int uti_printk(const char *fmt, ...) {
+	 int sum = 0, nwritten;
+	 va_list args;
+	 va_start(args, fmt);
+	 nwritten = vprintk(fmt, args);
+	 sum += nwritten;
+	 va_end(args);
+	 return sum;
+ }
+
+int uti_clock_gettime(clockid_t clk_id, struct timespec *tp) {
+	int ret = 0;
+	struct timespec64 ts64;
+	dprintk("%s: clk_id=%x,REALTIME=%x,MONOTONIC=%x\n", __FUNCTION__, clk_id, CLOCK_REALTIME, CLOCK_MONOTONIC);
+	switch(clk_id) {
+	case CLOCK_REALTIME:
+		getnstimeofday64(&ts64);
+		tp->tv_sec = ts64.tv_sec;
+		tp->tv_nsec = ts64.tv_nsec;
+		dprintk("%s: CLOCK_REALTIME,%ld.%09ld\n", __FUNCTION__, tp->tv_sec, tp->tv_nsec);
+		break;
+	case CLOCK_MONOTONIC: {
+		/* Do not use getrawmonotonic() because it returns different value than clock_gettime() */
+		ktime_get_ts64(&ts64);
+		tp->tv_sec = ts64.tv_sec;
+		tp->tv_nsec = ts64.tv_nsec;
+		dprintk("%s: CLOCK_MONOTONIC,%ld.%09ld\n", __FUNCTION__, tp->tv_sec, tp->tv_nsec);
+		break; }
+	default:
+		ret = -EINVAL;
+		break;
+	}
+	return ret;
+}
+
+long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 {
 	struct syscall_struct {
 		int number;
 		unsigned long args[6];
 		unsigned long ret;
+		unsigned long uti_clv; /* copy of a clv in McKernel */
 	};
 	struct syscall_struct param;
 	struct syscall_struct __user *uparam =
 	                              (struct syscall_struct __user *)arg;
-	int rc;
+	long rc;
+
 
 	if (copy_from_user(&param, uparam, sizeof param)) {
 		return -EFAULT;
 	}
-	rc = syscall_backward(ihk_host_os_get_usrdata(os), param.number,
-	                      param.args[0], param.args[1], param.args[2],
-	                      param.args[3], param.args[4], param.args[5],
-	                      &param.ret);
+#if 0 /* debug */
+	if (param.number == __NR_futex) {
+#else
+		if (0) {
+#endif
+		struct uti_futex_resp resp = {
+			.done = 0
+		};
+		init_waitqueue_head(&resp.wq);
+		
+ 		if (!mckernel_do_futex) {
+			if (ihk_os_get_special_address(os, IHK_SPADDR_MCKERNEL_DO_FUTEX,
+										   (unsigned long *)&mckernel_do_futex,
+										   NULL)) {
+				kprintf("%s: ihk_os_get_special_address failed\n", __FUNCTION__);
+				return -EINVAL;
+			}
+			dprintk("%s: mckernel_do_futex=%p\n", __FUNCTION__, mckernel_do_futex);
+		}
 
+		rc = (*mckernel_do_futex)(param.number, param.args[0], param.args[1], param.args[2],
+							  param.args[3], param.args[4], param.args[5], param.uti_clv, (void *)&resp, (void *)uti_wait_event, (void *)uti_printk, (void *)uti_clock_gettime);
+		param.ret = rc;
+	} else {
+			dprintk("%s: syscall_backward, SC %d, tid %d\n", __FUNCTION__, param.number, task_tgid_vnr(current));
+			rc = syscall_backward(ihk_host_os_get_usrdata(os), param.number,
+								  param.args[0], param.args[1], param.args[2],
+								  param.args[3], param.args[4], param.args[5],
+								  &param.ret);
+			switch (param.number) {
+			case __NR_munmap:
+				//printk("%s: syscall_backward, munmap,addr=%lx,len=%lx,tid=%d\n", __FUNCTION__, param.args[0], param.args[1], task_tgid_vnr(current));
+				break;
+			case __NR_mmap:
+				//printk("%s: syscall_backward, mmap,ret=%lx,tid=%d\n", __FUNCTION__, param.ret, task_tgid_vnr(current));
+				break;
+			default:
+				break;
+			}
+		}
 	if (copy_to_user(&uparam->ret, &param.ret, sizeof(unsigned long))) {
 		return -EFAULT;
 	}
 	return rc;
 }
+
+void mcctrl_futex_wake(struct ikc_scd_packet *pisp)
+{
+	struct uti_futex_resp *resp;
+
+	/* Guard the access to pisp->futex.resp, which is dead out of mcexec_syscall_thread() */
+	if (*pisp->futex.spin_sleep == 0) {
+		dprintk("%s: DEBUG: woken up by someone else\n", __FUNCTION__);
+		return;
+	}
+
+	resp = pisp->futex.resp;
+	if (!resp) {
+		kprintf("%s: ERROR: pisp->futex.resp is NULL\n", __FUNCTION__);
+		return;
+	}
+
+	if (*pisp->futex.spin_sleep == 0) {
+		kprintf("%s: ERROR: resp is dead\n", __FUNCTION__);
+		return;
+	}
+
+	resp->done = 1;
+	wake_up_interruptible(&resp->wq);
+}
+
 
 static struct ihk_cache_topology *
 cache_topo_search(struct ihk_cpu_topology *cpu_topo, int level)
@@ -2512,9 +2844,6 @@ cache_topo_search(struct ihk_cpu_topology *cpu_topo, int level)
 	return NULL;
 }
 
-static long (*setaffinity)(pid_t pid, const struct cpumask *in_mask);
-static int (*setscheduler_nocheck)(struct task_struct *p, int policy,
-                                   const struct sched_param *param);
 static unsigned int *uti_rr;
 static int max_cpu;
 
@@ -2527,20 +2856,6 @@ uti_attr_init(void)
 
 	if (uti_rr)
 		return 0;
-
-	if (!setaffinity) {
-		setaffinity = (long (*)(pid_t, const struct cpumask *))
-		              kallsyms_lookup_name("sched_setaffinity");
-		if (!setaffinity)
-			return -ENOSYS;
-	}
-	if (!setscheduler_nocheck) {
-		setscheduler_nocheck = (int (*)(struct task_struct *, int,
-		                                const struct sched_param *))
-		            kallsyms_lookup_name("sched_setscheduler_nocheck");
-		if (!setscheduler_nocheck)
-			return -ENOSYS;
-	}
 
 	for_each_possible_cpu(i) {
 		max_cpu = i;
@@ -2600,12 +2915,35 @@ retry:
 	return cpumask;
 }
 
+int pr_cpumask(const char *msg, cpumask_t* cpumask) {
+	int ret;
+	char *buf;
+	
+	if (!(buf = kmalloc(PAGE_SIZE * 2, GFP_KERNEL))) {
+		kprintf("%s: error: allocating buf\n",
+			__func__);
+		ret = -ENOMEM;
+		goto out;
+	}
+	
+	BITMAP_SCNLISTPRINTF(buf, PAGE_SIZE * 2,
+			     cpumask_bits(cpumask),
+			     nr_cpumask_bits);
+	buf[PAGE_SIZE * 2 - 1] = 0;
+
+	pr_info("%s: info: cpuset: %s\n", msg, buf);
+	ret = 0;
+ out:
+	return ret;
+}
+
 static long
-mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *arg)
+mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *_desc)
 {
 	struct uti_attr_desc desc;
+	char *uti_cpu_set_str;
 	struct kuti_attr *kattr;
-	cpumask_t *cpuset;
+	cpumask_t *cpuset = NULL, *env_cpuset = NULL;
 	struct mcctrl_usrdata *ud = ihk_host_os_get_usrdata(os);
 	ihk_device_t dev = ihk_os_to_dev(os);
 #ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
@@ -2624,30 +2962,44 @@ mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *arg)
 	int mask_size = cpumask_size();
 
 	if ((rc = uti_attr_init())) {
-		return rc;
+		pr_err("%s: error: uti_attr_init (%d)\n",
+		       __func__, rc);
+		goto out;
 	}
-	if (copy_from_user(&desc, arg, sizeof desc))
-		return -EFAULT;
+
+	if ((rc = copy_from_user(&desc, _desc, sizeof(desc)))) {
+		pr_err("%s: error: copy_from_user\n",
+		       __func__);
+		rc = -EFAULT;
+		goto out;
+	}
+
+	if (!(uti_cpu_set_str = kmalloc(desc.uti_cpu_set_len, GFP_KERNEL))) {
+		pr_err("%s: error: allocating uti_cpu_set_str\n",
+		       __func__);
+		rc = -ENOMEM;
+		goto out;
+	}
+
+	if ((rc = copy_from_user(uti_cpu_set_str, desc.uti_cpu_set_str, desc.uti_cpu_set_len))) {
+		pr_err("%s: error: copy_from_user\n",
+		       __func__);
+		rc = -EFAULT;
+		goto out;
+	}
 
 	kattr = phys_to_virt(desc.phys_attr);
 
-	if (((kattr->attr.flags & UTI_FLAG_SAME_L1) &&
-	     (kattr->attr.flags & UTI_FLAG_DIFFERENT_L1)) ||
-	    ((kattr->attr.flags & UTI_FLAG_SAME_L2) &&
-	     (kattr->attr.flags & UTI_FLAG_DIFFERENT_L2)) ||
-	    ((kattr->attr.flags & UTI_FLAG_SAME_L3) &&
-	     (kattr->attr.flags & UTI_FLAG_DIFFERENT_L3)) ||
-	    ((kattr->attr.flags & UTI_FLAG_SAME_NUMA_DOMAIN) &&
-	     (kattr->attr.flags & UTI_FLAG_DIFFERENT_NUMA_DOMAIN))) {
-		return -EINVAL;
-	}
-
+	/* Find caller cpu for later resolution of subgroups */
 	list_for_each_entry(cpu_topo, &ud->cpu_topology_list, chain) {
 		if (cpu_topo->mckernel_cpu_id == kattr->parent_cpuid) {
 			target_cpu = cpu_topo;
 		}
 	}
+
 	if (!target_cpu) {
+		printk("%s: errror: caller cpu not found\n",
+		       __func__);
 		return -EINVAL;
 	}
 
@@ -2656,6 +3008,7 @@ mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *arg)
 	}
 	wkmask = (cpumask_t *)(((char *)cpuset) + mask_size);
 
+	/* Initial cpuset */
 	memcpy(cpuset, cpu_active_mask, mask_size);
 
 	if (kattr->attr.flags & UTI_FLAG_NUMA_SET) {
@@ -2753,38 +3106,70 @@ mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *arg)
 			cpumask_and(cpuset, cpuset, wkmask);
 		}
 	}
+	
+	/* UTI_CPU_SET, PREFER_FWK, PREFER_LWK */
 
+	if (uti_cpu_set_str) {
+		if (!(env_cpuset = kmalloc(mask_size, GFP_KERNEL))) {
+			pr_err("%s: error: allocating env_cpuset\n",
+			       __func__);
+			rc = -ENOMEM;
+			goto out;
+		}
+		
+		if (cpulist_parse(uti_cpu_set_str, env_cpuset) < 0) {
+			pr_err("%s: error: cpulist_parse: %s\n",
+			       __func__, uti_cpu_set_str);
+			rc = -EINVAL;
+			goto out;
+		}
+
+		//pr_cpumask("cpuset", cpuset);
+		//pr_cpumask("env_cpuset", env_cpuset);
+		
+		if ((kattr->attr.flags & UTI_FLAG_PREFER_LWK)) {
+			cpumask_andnot(cpuset, cpuset, env_cpuset);
+		} else { /* Including PREFER_FWK and !PREFER_FWK */
+			cpumask_and(cpuset, cpuset, env_cpuset);
+		}
+	}
+
+	if (kattr->attr.flags &
+	    (UTI_FLAG_EXCLUSIVE_CPU | UTI_FLAG_CPU_INTENSIVE)) {
+		uti_cpu_select(cpuset);
+	}
+
+	//pr_cpumask("final cpuset", cpuset);
+
+	/* Setaffinity cpuset */
 	rc = cpumask_weight(cpuset);
-	if (!rc); /* do nothing */
-	else if (kattr->attr.flags & UTI_FLAG_EXCLUSIVE_CPU) {
+	if (rc > 0) {
+		if ((rc = mcctrl_sched_setaffinity(0, cpuset))) {
+			pr_err("%s: error: setaffinity (%d)\n",
+			       __func__, rc);
+			goto out;
+		}
+	} else {
+		pr_warn("%s: warning: cpuset is empty\n", __func__);
+	}
+
+	
+	/* Assign real-time scheduler */
+	if (kattr->attr.flags & UTI_FLAG_HIGH_PRIORITY) {
 		struct sched_param sp;
 
-		setaffinity(0, uti_cpu_select(cpuset));
 		sp.sched_priority = 1;
-		setscheduler_nocheck(current, SCHED_FIFO, &sp);
-		rc = 1;
-	}
-	else if (kattr->attr.flags & UTI_FLAG_CPU_INTENSIVE) {
-		setaffinity(0, uti_cpu_select(cpuset));
-		rc = 1;
-	}
-	else if (kattr->attr.flags & UTI_FLAG_HIGH_PRIORITY) {
-		struct sched_param sp;
-
-		setaffinity(0, uti_cpu_select(cpuset));
-		sp.sched_priority = 1;
-		setscheduler_nocheck(current, SCHED_FIFO, &sp);
-		rc = 1;
-	}
-	else if (kattr->attr.flags & UTI_FLAG_NON_COOPERATIVE) {
-		setaffinity(0, uti_cpu_select(cpuset));
-		rc = 1;
-	}
-	else {
-		setaffinity(0, cpuset);
+		if ((rc = mcctrl_sched_setscheduler_nocheck(current, SCHED_FIFO, &sp))) {
+			pr_err("%s: error: setscheduler_nocheck (%d)\n",
+			       __func__, rc);
+			goto out;
+		}
 	}
 
+	rc = 0;
+out:
 	kfree(cpuset);
+	kfree(env_cpuset);
 	return rc;
 }
 
@@ -2817,7 +3202,8 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 		return mcexec_get_cpu(os);
 
 	case MCEXEC_UP_CREATE_PPD:
-		return mcexec_create_per_process_data(os);
+		return mcexec_create_per_process_data(os,
+					    (struct rpgtable_desc * __user)arg);
 
 	case MCEXEC_UP_GET_NODES:
 		return mcexec_get_nodes(os);
@@ -2837,7 +3223,7 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 		return mcexec_open_exec(os, (char *)arg);
 
 	case MCEXEC_UP_CLOSE_EXEC:
-		return mcexec_close_exec(os);
+		return mcexec_close_exec(os, task_tgid_vnr(current));
 
 	case MCEXEC_UP_PREPARE_DMA:
 		return mcexec_pin_region(os, (unsigned long *)arg);
@@ -2860,11 +3246,11 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 	case MCEXEC_UP_SYS_UNSHARE:
 		return mcexec_sys_unshare((struct sys_unshare_desc *)arg);
 
-	case MCEXEC_UP_UTIL_THREAD1:
-		return mcexec_util_thread1(os, arg, file);
+	case MCEXEC_UP_UTI_GET_CTX:
+		return mcexec_uti_get_ctx(os, (struct uti_get_ctx_desc *)arg);
 
-	case MCEXEC_UP_UTIL_THREAD2:
-		return mcexec_util_thread2(os, arg, file);
+	case MCEXEC_UP_UTI_SAVE_FS:
+		return mcexec_uti_save_fs(os, (struct uti_save_fs_desc *)arg, file);
 
 	case MCEXEC_UP_SIG_THREAD:
 		return mcexec_sig_thread(os, arg, file);
@@ -2873,7 +3259,10 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 		return mcexec_syscall_thread(os, arg, file);
 
 	case MCEXEC_UP_TERMINATE_THREAD:
-		return mcexec_terminate_thread(os, (unsigned long *)arg, file);
+		return mcexec_terminate_thread(os, (struct terminate_thread_desc *)arg);
+
+	case MCEXEC_UP_RELEASE_USER_SPACE:
+		return mcexec_release_user_space((struct release_user_space_desc *)arg);
 
 	case MCEXEC_UP_GET_NUM_POOL_THREADS:
 		return mcctrl_get_num_pool_threads(os);
@@ -2919,6 +3308,7 @@ int mcctrl_get_request_os_cpu(ihk_os_t os, int *ret_cpu)
 {
 	struct mcctrl_usrdata *usrdata;
 	struct mcctrl_per_proc_data *ppd;
+	struct mcctrl_per_thread_data *ptd;
 	struct ikc_scd_packet *packet;
 	struct ihk_ikc_channel_desc *ch;
 	int ret = 0;
@@ -2943,11 +3333,18 @@ int mcctrl_get_request_os_cpu(ihk_os_t os, int *ret_cpu)
 	}
 
 	/* Look up per-thread structure */
-	packet = (struct ikc_scd_packet *)mcctrl_get_per_thread_data(ppd, current);
-	if (!packet) {
+	ptd = mcctrl_get_per_thread_data(ppd, current);
+	if (!ptd) {
+		printk("%s: ERROR: mcctrl_get_per_thread_data failed\n", __FUNCTION__);
 		ret = -EINVAL;
+		goto no_ptd;
+	}
+	pr_ptd("get", task_pid_vnr(current), ptd);
+	packet = (struct ikc_scd_packet *)ptd->data;
+	if (!packet) {
 		printk("%s: ERROR: no packet registered for TID %d\n",
 				__FUNCTION__, task_pid_vnr(current));
+		ret = -EINVAL;
 		goto out_put_ppd;
 	}
 
@@ -2960,6 +3357,9 @@ int mcctrl_get_request_os_cpu(ihk_os_t os, int *ret_cpu)
 	printk("%s: OS: %p, CPU: %d\n", __FUNCTION__, os, *ret_cpu);
 
 out_put_ppd:
+	mcctrl_put_per_thread_data(ptd);
+	pr_ptd("put", task_pid_vnr(current), ptd);
+ no_ptd:
 	mcctrl_put_per_proc_data(ppd);
 
 	return ret;

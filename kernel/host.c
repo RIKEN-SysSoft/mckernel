@@ -34,13 +34,13 @@
 #include <sysfs.h>
 #include <ihk/perfctr.h>
 #include <rusage_private.h>
+#include <debug.h>
 
 //#define DEBUG_PRINT_HOST
 
 #ifdef DEBUG_PRINT_HOST
-#define dkprintf kprintf
-#else
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 /* Linux channel table, indexec by Linux CPU id */
@@ -78,7 +78,6 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	unsigned long args_envs_p, args_envs_rp;
 	unsigned long s, e, up;
 	char **argv;
-	char **a;
 	int i, n, argc, envc, args_envs_npages;
 	char **env;
 	int range_npages;
@@ -306,7 +305,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 
 	/* Only unmap remote address if it wasn't specified as an argument */
 	if (!args) {
-		ihk_mc_unmap_virtual(args_envs_r, args_envs_npages, 0);
+		ihk_mc_unmap_virtual(args_envs_r, args_envs_npages);
 		ihk_mc_unmap_memory(NULL, args_envs_rp, p->args_len);
 	}
 	flush_tlb();
@@ -341,7 +340,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 
 	/* Only map remote address if it wasn't specified as an argument */
 	if (!envs) {
-		ihk_mc_unmap_virtual(args_envs_r, args_envs_npages, 0);
+		ihk_mc_unmap_virtual(args_envs_r, args_envs_npages);
 		ihk_mc_unmap_memory(NULL, args_envs_rp, p->envs_len);
 	}
 	flush_tlb();
@@ -357,12 +356,13 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		proc->saved_cmdline_len = 0;
 	}
 
-	proc->saved_cmdline = kmalloc(p->args_len, IHK_MC_AP_NOWAIT);
+	proc->saved_cmdline_len = p->args_len - ((argc + 2) * sizeof(char **));
+	proc->saved_cmdline = kmalloc(proc->saved_cmdline_len,
+				      IHK_MC_AP_NOWAIT);
 	if (!proc->saved_cmdline) {
 		goto err;
 	}
 
-	proc->saved_cmdline_len = p->args_len - ((argc + 2) * sizeof(char **));
 	memcpy(proc->saved_cmdline,
 			(char *)args_envs + ((argc + 2) * sizeof(char **)),
 			proc->saved_cmdline_len);
@@ -370,21 +370,18 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 			__FUNCTION__,
 			proc->saved_cmdline);
 
-	for (a = argv; *a; a++) {
-		*a = (char *)addr + (unsigned long)*a; // Process' address space!
+	for (i = 0; i < argc; i++) {
+		// Process' address space!
+		argv[i] = (char *)addr + (unsigned long)argv[i];
 	}
 
 	envc = *((long *)(args_envs + p->args_len));
 	dkprintf("envc: %d\n", envc);
 
 	env = (char **)(args_envs + p->args_len + sizeof(long));
-	while (*env) {
-		char **_env = env;
-		//dkprintf("%s\n", args_envs + p->args_len + (unsigned long)*env);
-		*env = (char *)addr + p->args_len + (unsigned long)*env;
-		env = ++_env;
+	for (i = 0; i < envc; i++) {
+		env[i] = addr + p->args_len + env[i];
 	}
-	env = (char **)(args_envs + p->args_len + sizeof(long));
 
 	dkprintf("env OK\n");
 
@@ -449,7 +446,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	if((pn = kmalloc(sizeof(struct program_load_desc) 
 					+ sizeof(struct program_image_section) * n,
 					IHK_MC_AP_NOWAIT)) == NULL){
-		ihk_mc_unmap_virtual(p, npages, 0);
+		ihk_mc_unmap_virtual(p, npages);
 		ihk_mc_unmap_memory(NULL, phys, sz);
 		return -ENOMEM;
 	}
@@ -460,7 +457,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 					(unsigned long *)&p->cpu_set,
 					sizeof(p->cpu_set))) == NULL) {
 		kfree(pn);
-		ihk_mc_unmap_virtual(p, npages, 1);
+		ihk_mc_unmap_virtual(p, npages);
 		ihk_mc_unmap_memory(NULL, phys, sz);
 		return -ENOMEM;
 	}
@@ -482,6 +479,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	proc->mpol_flags = pn->mpol_flags;
 	proc->mpol_threshold = pn->mpol_threshold;
 	proc->nr_processes = pn->nr_processes;
+	proc->process_rank = pn->process_rank;
 	proc->heap_extension = pn->heap_extension;
 
 	/* Update NUMA binding policy if requested */
@@ -503,6 +501,9 @@ static int process_msg_prepare_process(unsigned long rphys)
 		}
 		vm->numa_mem_policy = MPOL_BIND;
 	}
+
+	proc->uti_thread_rank = pn->uti_thread_rank;
+	proc->uti_use_last_cpu = pn->uti_use_last_cpu;
 
 #ifdef PROFILE_ENABLE
 	proc->profile = pn->profile;
@@ -542,14 +543,14 @@ static int process_msg_prepare_process(unsigned long rphys)
 
 	kfree(pn);
 
-	ihk_mc_unmap_virtual(p, npages, 1);
+	ihk_mc_unmap_virtual(p, npages);
 	ihk_mc_unmap_memory(NULL, phys, sz);
 	flush_tlb();
 
 	return 0;
 err:
 	kfree(pn);
-	ihk_mc_unmap_virtual(p, npages, 1);
+	ihk_mc_unmap_virtual(p, npages);
 	ihk_mc_unmap_memory(NULL, phys, sz);
 	destroy_thread(thread);
 	return -ENOMEM;
@@ -562,7 +563,6 @@ static void syscall_channel_send(struct ihk_ikc_channel_desc *c,
 }
 
 extern unsigned long do_kill(struct thread *, int, int, int, struct siginfo *, int ptracecont);
-extern void process_procfs_request(struct ikc_scd_packet *rpacket);
 extern void terminate_host(int pid);
 extern void debug_log(long);
 
@@ -573,7 +573,6 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	struct ikc_scd_packet pckt;
 	struct ihk_ikc_channel_desc *resp_channel = cpu_local_var(ikc2linux);
 	int rc;
-	struct mcs_rwlock_node_irqsave lock;
 	struct thread *thread;
 	struct process *proc;
 	struct mcctrl_signal {
@@ -610,7 +609,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	case SCD_MSG_SCHEDULE_PROCESS:
 		thread = (struct thread *)packet->arg;
 
-		cpuid = obtain_clone_cpuid(&thread->cpu_set);
+		cpuid = obtain_clone_cpuid(&thread->cpu_set, 0);
 		if (cpuid == -1) {
 			kprintf("No CPU available\n");
 			ret = -1;
@@ -634,14 +633,14 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	 * the waiting thread
 	 */
 	case SCD_MSG_WAKE_UP_SYSCALL_THREAD:
-		thread = find_thread(0, packet->ttid, &lock);
+		thread = find_thread(0, packet->ttid);
 		if (!thread) {
 			kprintf("%s: WARNING: no thread for SCD reply? TID: %d\n",
 				__FUNCTION__, packet->ttid);
 			ret = -EINVAL;
 			break;
 		}
-		thread_unlock(thread, &lock);
+		thread_unlock(thread);
 
 		dkprintf("%s: SCD_MSG_WAKE_UP_SYSCALL_THREAD: waking up tid %d\n",
 			__FUNCTION__, packet->ttid);
@@ -653,7 +652,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		pp = ihk_mc_map_memory(NULL, packet->arg, sizeof(struct mcctrl_signal));
 		sp = (struct mcctrl_signal *)ihk_mc_map_virtual(pp, 1, PTATTR_WRITABLE | PTATTR_ACTIVE);
 		memcpy(&info, sp, sizeof(struct mcctrl_signal));
-		ihk_mc_unmap_virtual(sp, 1, 0);
+		ihk_mc_unmap_virtual(sp, 1);
 		ihk_mc_unmap_memory(NULL, pp, sizeof(struct mcctrl_signal));
 		pckt.msg = SCD_MSG_SEND_SIGNAL_ACK;
 		pckt.err = 0;
@@ -668,7 +667,14 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		break;
 
 	case SCD_MSG_PROCFS_REQUEST:
-		process_procfs_request(packet);
+	case SCD_MSG_PROCFS_RELEASE:
+		pckt.msg = SCD_MSG_PROCFS_ANSWER;
+		pckt.ref = packet->ref;
+		pckt.arg = packet->arg;
+		pckt.err = process_procfs_request(packet);
+		pckt.reply = packet->reply;
+		pckt.pid = packet->pid;
+		syscall_channel_send(resp_channel, &pckt);
 		ret = 0;
 		break;
 
@@ -705,17 +711,26 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 			if (!pcd->exclude_user) {
 				mode |= PERFCTR_USER_MODE;
 			}
-			ihk_mc_perfctr_init_raw(pcd->target_cntr, pcd->config, mode);
-			ihk_mc_perfctr_stop(1 << pcd->target_cntr);
-			ihk_mc_perfctr_reset(pcd->target_cntr);
+
+			ret = ihk_mc_perfctr_init_raw(pcd->target_cntr, pcd->config, mode);
+			if (ret != 0) {
+				break;
+			}
+
+			ret = ihk_mc_perfctr_stop(1 << pcd->target_cntr);
+			if (ret != 0) {
+				break;
+			}
+
+			ret = ihk_mc_perfctr_reset(pcd->target_cntr);
 			break;
 
 		case PERF_CTRL_ENABLE:
-			ihk_mc_perfctr_start(pcd->target_cntr_mask);
+			ret = ihk_mc_perfctr_start(pcd->target_cntr_mask);
 			break;
 			
 		case PERF_CTRL_DISABLE:
-			ihk_mc_perfctr_stop(pcd->target_cntr_mask);
+			ret = ihk_mc_perfctr_stop(pcd->target_cntr_mask);
 			break;
 
 		case PERF_CTRL_GET:
@@ -726,16 +741,15 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 			kprintf("%s: SCD_MSG_PERF_CTRL unexpected ctrl_type\n", __FUNCTION__);
 		}
 
-		ihk_mc_unmap_virtual(pcd, 1, 0);
+		ihk_mc_unmap_virtual(pcd, 1);
 		ihk_mc_unmap_memory(NULL, pp, sizeof(struct perf_ctrl_desc));
 
 		pckt.msg = SCD_MSG_PERF_ACK;
-		pckt.err = 0;
+		pckt.err = ret;
 		pckt.arg = packet->arg;
 		pckt.reply = packet->reply;
 		ihk_ikc_send(resp_channel, &pckt, 0);
 
-		ret = 0;
 		break;
 
 	case SCD_MSG_CPU_RW_REG:

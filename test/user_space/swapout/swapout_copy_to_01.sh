@@ -1,5 +1,7 @@
 #!/bin/sh
 
+. ${HOME}/.mck_test_config
+
 # Functions
 function reboot() {
 	count=`pgrep -c -f 'mcexec '`
@@ -99,8 +101,8 @@ fi
 #swapout011 do_pageout si->swphdr->version
 version=`grep "do_pageout:.*,si->swphdr->version" ./result/swapout_copy_to_01.kmsg | head -n 1 | sed s/"^.*copy_to_user .*,si->swphdr->version:\(.*\),si->swphdr->count_sarea:.*$"/"\1"/ `
 #echo ${version}
-if [ "${version}" = "0.9.0" ]; then
-	text=`echo "do_pageout:si->swphdr->version is 0.9.0"`
+if [ "${version}" = "${MCKERNEL_VERSION}" ]; then
+	text=`echo "do_pageout:si->swphdr->version is ${MCKERNEL_VERSION}"`
 	ok_out "${text} :(${version})" 
 else
 	ng_out "do_pageout: does not match the value of si->swphdr->version."

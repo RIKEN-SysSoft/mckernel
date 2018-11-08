@@ -10,6 +10,7 @@
 #include <rusage.h>
 #include <ihk/ihk_monitor.h>
 #include <arch_rusage.h>
+#include <debug.h>
 
 #ifdef ENABLE_RUSAGE
 
@@ -55,7 +56,7 @@ rusage_rss_add(unsigned long size)
 	}
 
 	vm->currss += size;
-	if (vm->currss > vm->proc->maxrss) {
+	if (vm->proc && vm->currss > vm->proc->maxrss) {
 		vm->proc->maxrss = vm->currss;
 	}
 }
@@ -118,8 +119,9 @@ static inline int rusage_memory_stat_add(struct vm_range *range, uintptr_t phys,
 	struct page *page = phys_to_page(phys);
 
 	/* Is It file map and cow page? */
-	if ((range->memobj->flags & (MF_DEV_FILE | MF_REG_FILE)) &&
-		!page) {
+	if ((range->memobj->flags & (MF_DEV_FILE | MF_REG_FILE |
+				     MF_HUGETLBFS)) &&
+	    !page) {
 		//kprintf("%s: cow,phys=%lx\n", __FUNCTION__, phys);
 		memory_stat_rss_add(size, pgsize);
 		return 1;

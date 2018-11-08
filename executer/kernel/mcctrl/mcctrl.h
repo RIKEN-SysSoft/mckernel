@@ -67,6 +67,7 @@
 #define	SCD_MSG_PROCFS_DELETE		0x11
 #define	SCD_MSG_PROCFS_REQUEST		0x12
 #define	SCD_MSG_PROCFS_ANSWER		0x13
+#define	SCD_MSG_PROCFS_RELEASE		0x15
 
 #define SCD_MSG_DEBUG_LOG		0x20
 
@@ -101,28 +102,29 @@
 #define SCD_MSG_CPU_RW_REG              0x52
 #define SCD_MSG_CPU_RW_REG_RESP         0x53
 
+#define SCD_MSG_FUTEX_WAKE              0x60
+
 #define DMA_PIN_SHIFT                   21
 
 #define DO_USER_MODE
 
 #define	__NR_coredump			999
 
-#ifdef POSTK_DEBUG_TEMP_FIX_61 /* Core table size and lseek return value to loff_t */
 struct coretable {
 	loff_t len;
 	unsigned long addr;
 };
-#else /* POSTK_DEBUG_TEMP_FIX_61 */
-struct coretable {
-	int len;
-	unsigned long addr;
-};
-#endif /* POSTK_DEBUG_TEMP_FIX_61 */
 
 enum mcctrl_os_cpu_operation {
 	MCCTRL_OS_CPU_READ_REGISTER,
 	MCCTRL_OS_CPU_WRITE_REGISTER,
 	MCCTRL_OS_CPU_MAX_OP
+};
+
+/* Used to wake-up a Linux thread futex_wait()-ing */
+struct uti_futex_resp {
+	int done;
+	wait_queue_head_t wq;
 };
 
 struct ikc_scd_packet {
@@ -147,7 +149,7 @@ struct ikc_scd_packet {
 			long sysfs_arg3;
 		};
 
-		/* SCD_MSG_SCHEDULE_THREAD */
+		/* SCD_MSG_WAKE_UP_SYSCALL_THREAD */
 		struct {
 			int ttid;
 		};
@@ -163,6 +165,12 @@ struct ikc_scd_packet {
 		struct {
 			int eventfd_type;
 		};
+
+		/* SCD_MSG_FUTEX_WAKE */
+		struct {
+			void *resp;
+			int *spin_sleep; /* 1: waiting in linux_wait_event() 0: woken up by someone else */
+		} futex;
 	};
 	char padding[8];
 };
@@ -213,9 +221,12 @@ struct mcctrl_channel {
 };
 
 struct mcctrl_per_thread_data {
+	struct mcctrl_per_proc_data *ppd;
 	struct list_head hash;
 	struct task_struct *task;
 	void *data;
+	int tid; /* debug */
+	atomic_t refcount;
 };
 
 #define MCCTRL_PER_THREAD_DATA_HASH_SHIFT 8
@@ -315,6 +326,7 @@ struct mcctrl_part_exec {
 	struct mutex lock;	
 	int nr_processes;
 	int nr_processes_left;
+	int process_rank;
 	cpumask_t cpus_used;
 	struct list_head pli_list;
 };
@@ -400,10 +412,30 @@ int mcctrl_ikc_send_wait(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp,
 
 ihk_os_t osnum_to_os(int n);
 
+/* look up symbols, plus arch-specific ones */
+extern int (*mcctrl_sys_mount)(char *dev_name, char *dir_name, char *type,
+			       unsigned long flags, void *data);
+extern int (*mcctrl_sys_umount)(char *dir_name, int flags);
+extern int (*mcctrl_sys_unshare)(unsigned long unshare_flags);
+extern long (*mcctrl_sched_setaffinity)(pid_t pid,
+					const struct cpumask *in_mask);
+extern int (*mcctrl_sched_setscheduler_nocheck)(struct task_struct *p,
+						int policy,
+						const struct sched_param *param);
+extern ssize_t (*mcctrl_sys_readlink)(const char *path, char *buf,
+				      size_t bufsiz);
+extern void (*mcctrl_zap_page_range)(struct vm_area_struct *vma,
+				     unsigned long start,
+				     unsigned long size,
+				     struct zap_details *details);
+extern struct inode_operations *mcctrl_hugetlbfs_inode_operations;
+
 /* syscall.c */
 void pager_add_process(void);
 void pager_remove_process(struct mcctrl_per_proc_data *ppd);
+void pager_cleanup(void);
 
+int __do_in_kernel_irq_syscall(ihk_os_t os, struct ikc_scd_packet *packet);
 int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet);
 int mcctrl_add_per_proc_data(struct mcctrl_usrdata *ud, int pid, 
 	struct mcctrl_per_proc_data *ppd);
@@ -412,20 +444,18 @@ struct mcctrl_per_proc_data *mcctrl_get_per_proc_data(
 		struct mcctrl_usrdata *ud, int pid);
 void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd);
 
-int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data* ppd,
-	struct task_struct *task, void *data);
-int mcctrl_delete_per_thread_data(struct mcctrl_per_proc_data* ppd,
-	struct task_struct *task);
+int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data *ppd, void *data);
+void mcctrl_put_per_thread_data_unsafe(struct mcctrl_per_thread_data *ptd);
+void mcctrl_put_per_thread_data(struct mcctrl_per_thread_data* ptd);
 #ifdef POSTK_DEBUG_ARCH_DEP_56 /* Strange how to use inline declaration fix. */
-static inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(
-	struct mcctrl_per_proc_data *ppd, struct task_struct *task)
+inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc_data *ppd, struct task_struct *task)
 {
 	struct mcctrl_per_thread_data *ptd_iter, *ptd = NULL;
 	int hash = (((uint64_t)task >> 4) & MCCTRL_PER_THREAD_DATA_HASH_MASK);
 	unsigned long flags;
 
-	/* Check if data for this thread exists and return it */
-	read_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
+	/* Check if data for this thread exists */
+	write_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
 
 	list_for_each_entry(ptd_iter, &ppd->per_thread_data_hash[hash], hash) {
 		if (ptd_iter->task == task) {
@@ -434,16 +464,27 @@ static inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(
 		}
 	}
 
-	read_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
-	return ptd ? ptd->data : NULL;
+	if (ptd) {
+		if (atomic_read(&ptd->refcount) <= 0) {
+			printk("%s: ERROR: use-after-free detected (%d)", __FUNCTION__, atomic_read(&ptd->refcount));
+			ptd = NULL;
+			goto out;
+		}
+		atomic_inc(&ptd->refcount);
+	}
+
+ out:
+	write_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
+	return ptd;
 }
 #else /* POSTK_DEBUG_ARCH_DEP_56 */
-inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(
-	struct mcctrl_per_proc_data *ppd, struct task_struct *task);
+inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc_data *ppd, struct task_struct *task);
 #endif /* POSTK_DEBUG_ARCH_DEP_56 */
+int mcctrl_clear_pte_range(uintptr_t start, uintptr_t len);
 
 void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet, 
 		long ret, int stid);
+int clear_pte_range(uintptr_t start, uintptr_t len);
 
 int mcctrl_os_alive(void);
 
@@ -455,7 +496,6 @@ struct procfs_read {
 	int count;		/* bytes to read (request) */
 	int eof;		/* if eof is detected, 1 otherwise 0. (answer)*/
 	int ret;		/* read bytes (answer) */
-	int status;		/* non-zero if done (answer) */
 	int newcpu;		/* migrated new cpu (answer) */
 	int readwrite;		/* 0:read, 1:write */
 	char fname[PROCFS_NAME_MAX];	/* procfs filename (request) */
@@ -468,7 +508,8 @@ struct procfs_file {
 };
 
 void procfs_answer(struct mcctrl_usrdata *ud, int pid);
-int procfsm_packet_handler(void *os, int msg, int pid, unsigned long arg);
+int procfsm_packet_handler(void *os, int msg, int pid, unsigned long arg,
+			   unsigned long resp_pa);
 void add_tid_entry(int osnum, int pid, int tid);
 void add_pid_entry(int osnum, int pid);
 void delete_tid_entry(int osnum, int pid, int tid);
@@ -504,7 +545,9 @@ struct vdso {
 
 int reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp,
 		unsigned long *endp);
+int release_user_space(uintptr_t start, uintptr_t len);
 void get_vdso_info(ihk_os_t os, long vdso_pa);
+int arch_symbols_init(void);
 
 struct get_cpu_mapping_req {
 	int busy;		/* INOUT: */

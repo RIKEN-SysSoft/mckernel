@@ -16,6 +16,10 @@ SECTIONS
 	.data : {
 		*(.data)
 		*(.data.*)
+		. = ALIGN(8);
+		__start___verbose = .;
+		*(__verbose);
+		__stop___verbose = .;
 	} :data
 	.rodata : {
 		*(.rodata .rodata.*)

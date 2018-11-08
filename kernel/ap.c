@@ -29,15 +29,13 @@
 #include <time.h>
 #include <syscall.h>
 #include <rusage_private.h>
+#include <debug.h>
 
 //#define DEBUG_PRINT_AP
 
 #ifdef DEBUG_PRINT_AP
-#define dkprintf(...) do { kprintf(__VA_ARGS__); } while (0)
-#define ekprintf(...) do { kprintf(__VA_ARGS__); } while (0)
-#else
-#define dkprintf(...) do { } while (0)
-#define ekprintf(...) do { kprintf(__VA_ARGS__); } while (0)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 int num_processors = 1;
@@ -209,8 +207,10 @@ store_fake_cpu_info(struct sysfs_ops *ops0, void *instance, void *buf,
 
 static struct fake_cpu_info_ops show_fci_online = {
 	.member = ONLINE,
-	.ops.show = &show_fake_cpu_info,
-	.ops.store = &store_fake_cpu_info,
+	.ops = {
+		.show = &show_fake_cpu_info,
+		.store = &store_fake_cpu_info,
+	},
 };
 
 void

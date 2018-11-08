@@ -25,21 +25,21 @@
 #include <cls.h>
 #include <kmalloc.h>
 #include <rusage_private.h>
+#include <debug.h>
 
 //#define DEBUG
 
 #ifdef DEBUG
-#define	dkprintf(...)	do { kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	do { kprintf(__VA_ARGS__); } while (0)
-#else
-#define dkprintf(...) do { } while (0)
-#define ekprintf(...) do { kprintf(__VA_ARGS__); } while (0)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 static char *last_page;
 extern char _head[], _end[];
 
 extern unsigned long x86_kernel_phys_base;
+
+int safe_kernel_map = 0;
 
 /* Arch specific early allocation routine */
 void *early_alloc_pages(int nr_pages)
@@ -109,6 +109,7 @@ struct page_table {
 };
 
 static struct page_table *init_pt;
+static int init_pt_loaded = 0;
 static ihk_spinlock_t init_pt_lock;
 
 static int use_1gb_page = 0;
@@ -165,30 +166,6 @@ static unsigned long setup_l3(struct page_table *pt,
 	}
 
 	return virt_to_phys(pt);
-}
-
-static void init_normal_area(struct page_table *pt)
-{
-	unsigned long map_start, map_end, phys, pt_phys;
-	int ident_index, virt_index;
-
-	map_start = ihk_mc_get_memory_address(IHK_MC_GMA_MAP_START, 0);
-	map_end = ihk_mc_get_memory_address(IHK_MC_GMA_MAP_END, 0);
-
-	kprintf("map_start = %lx, map_end = %lx\n", map_start, map_end);
-	ident_index = map_start >> PTL4_SHIFT;
-	virt_index = (MAP_ST_START >> PTL4_SHIFT) & (PT_ENTRIES - 1);
-
-	memset(pt, 0, sizeof(struct page_table));
-
-	for (phys = (map_start & ~(PTL4_SIZE - 1)); phys < map_end;
-	     phys += PTL4_SIZE) {
-		pt_phys = setup_l3(ihk_mc_alloc_pages(1, IHK_MC_AP_CRITICAL), phys,
-		                   map_start, map_end);
-
-		pt->entry[ident_index++] = pt_phys | PFL4_PDIR_ATTR;
-		pt->entry[virt_index++] = pt_phys | PFL4_PDIR_ATTR;
-	}
 }
 
 static struct page_table *__alloc_new_pt(ihk_mc_ap_flag ap_flag)
@@ -257,6 +234,11 @@ static unsigned long attr_to_l1attr(enum ihk_mc_pt_attribute attr)
 		return (attr & ATTR_MASK);
 	}
 }
+
+#define PTLX_SHIFT(index) PTL ## index ## _SHIFT
+
+#define GET_VIRT_INDEX(virt, index, dest) \
+	dest = ((virt) >> PTLX_SHIFT(index)) & (PT_ENTRIES - 1)
 
 #define GET_VIRT_INDICES(virt, l4i, l3i, l2i, l1i) \
 	l4i = ((virt) >> PTL4_SHIFT) & (PT_ENTRIES - 1); \
@@ -1518,12 +1500,12 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 	if (page) {
 		dkprintf("%s: page=%p,is_in_memobj=%d,(old & PFL1_DIRTY)=%lx,memobj=%p,args->memobj->flags=%x\n", __FUNCTION__, page, page_is_in_memobj(page), (old & PFL1_DIRTY), args->memobj, args->memobj ? args->memobj->flags : -1);
 	}
-	if (page && page_is_in_memobj(page) && (old & PFL1_DIRTY) && (args->memobj) &&
-			!(args->memobj->flags & MF_ZEROFILL)) {
+	if (page && page_is_in_memobj(page) && pte_is_dirty(&old, PTL1_SIZE) &&
+			args->memobj && !(args->memobj->flags & MF_ZEROFILL)) {
 		memobj_flush_page(args->memobj, phys, PTL1_SIZE);
 	}
 
-	if (!(old & PFL1_FILEOFF)) {
+	if (!pte_is_fileoff(&old, PTL1_SIZE)) {
 		if(args->free_physical) {
 			if (!page) {
 				/* Anonymous || !XPMEM attach */
@@ -1585,11 +1567,11 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
 			page = phys_to_page(phys);
 		}
 
-		if (page && page_is_in_memobj(page) && (old & PFL2_DIRTY)) {
+		if (page && page_is_in_memobj(page) && pte_is_dirty(&old, PTL2_SIZE)) {
 			memobj_flush_page(args->memobj, phys, PTL2_SIZE);
 		}
 
-		if (!(old & PFL2_FILEOFF)) {
+		if (!pte_is_fileoff(&old, PTL2_SIZE)) {
 			if(args->free_physical) {
 				if (!page) {
 					/* Anonymous || !XPMEM attach */
@@ -1666,13 +1648,13 @@ static int clear_range_l3(void *args0, pte_t *ptep, uint64_t base,
 			page = phys_to_page(phys);
 		}
 
-		if (page && page_is_in_memobj(page) && (old & PFL3_DIRTY)) {
+		if (page && page_is_in_memobj(page) && pte_is_dirty(&old, PTL3_SIZE)) {
 			memobj_flush_page(args->memobj, phys, PTL3_SIZE);
 		}
 
 		dkprintf("%s: phys=%ld, pte_get_phys(&old),PTL3_SIZE\n", __FUNCTION__, pte_get_phys(&old));
 
-		if (!(old & PFL3_FILEOFF)) {
+		if (!pte_is_fileoff(&old, PTL3_SIZE)) {
 			if(args->free_physical) {
 				if (!page) {
 					/* Anonymous || !XPMEM attach */
@@ -2540,6 +2522,82 @@ static void init_fixed_area(struct page_table *pt)
 	return;
 }
 
+static void init_normal_area(struct page_table *pt)
+{
+	unsigned long map_start, map_end, phys;
+	void *virt;
+
+	map_start = ihk_mc_get_memory_address(IHK_MC_GMA_MAP_START, 0);
+	map_end = ihk_mc_get_memory_address(IHK_MC_GMA_MAP_END, 0);
+	virt = (void *)MAP_ST_START + map_start;
+
+	kprintf("map_start = %lx, map_end = %lx, virt %lx\n",
+		map_start, map_end, virt);
+
+	for (phys = map_start; phys < map_end; phys += LARGE_PAGE_SIZE) {
+		if (set_pt_large_page(pt, virt, phys, PTATTR_WRITABLE) != 0) {
+			kprintf("%s: error setting mapping for 0x%lx\n",
+					__func__, virt);
+		}
+		virt += LARGE_PAGE_SIZE;
+	}
+}
+
+static void init_linux_kernel_mapping(struct page_table *pt)
+{
+	unsigned long map_start, map_end, phys;
+	void *virt;
+	int nr_memory_chunks, chunk_id, numa_id;
+
+	/* In case of safe_kernel_map option (safe_kernel_map == 1),
+	 * processing to prevent destruction of the memory area on Linux side
+	 * is executed */
+	if (safe_kernel_map == 0) {
+		kprintf("Straight-map entire physical memory\n");
+
+		/* Map 2 TB for now */
+		map_start = 0;
+		map_end = 0x20000000000;
+
+		virt = (void *)LINUX_PAGE_OFFSET;
+
+		kprintf("Linux kernel virtual: 0x%lx - 0x%lx -> 0x%lx - 0x%lx\n",
+			LINUX_PAGE_OFFSET, LINUX_PAGE_OFFSET + map_end, 0, map_end);
+
+		for (phys = map_start; phys < map_end; phys += LARGE_PAGE_SIZE) {
+			if (set_pt_large_page(pt, virt, phys, PTATTR_WRITABLE) != 0) {
+				kprintf("%s: error setting mapping for 0x%lx\n", __FUNCTION__, virt);
+			}
+			virt += LARGE_PAGE_SIZE;
+		}
+	} else {
+		kprintf("Straight-map physical memory areas allocated to McKernel\n");
+
+		nr_memory_chunks = ihk_mc_get_nr_memory_chunks();
+		if (nr_memory_chunks == 0) {
+			kprintf("%s: ERROR: No memory chunk available.\n", __FUNCTION__);
+			return;
+		}
+
+		for (chunk_id = 0; chunk_id < nr_memory_chunks; chunk_id++) {
+			if (ihk_mc_get_memory_chunk(chunk_id, &map_start, &map_end, &numa_id)) {
+				kprintf("%s: ERROR: Memory chunk id (%d) out of range.\n", __FUNCTION__, chunk_id);
+				continue;
+			}
+
+			dkprintf("Linux kernel virtual: 0x%lx - 0x%lx -> 0x%lx - 0x%lx\n",
+					 LINUX_PAGE_OFFSET + map_start, LINUX_PAGE_OFFSET + map_end, map_start, map_end);
+
+			virt = (void *)(LINUX_PAGE_OFFSET + map_start);
+			for (phys = map_start; phys < map_end; phys += LARGE_PAGE_SIZE, virt += LARGE_PAGE_SIZE) {
+				if (set_pt_large_page(pt, virt, phys, PTATTR_WRITABLE) != 0) {
+					kprintf("%s: set_pt_large_page() failed for 0x%lx\n", __FUNCTION__, virt);
+				}
+			}
+		}
+	}
+}
+
 void init_text_area(struct page_table *pt)
 {
 	unsigned long __end, phys, virt;
@@ -2624,17 +2682,19 @@ void init_page_table(void)
 	init_pt = ihk_mc_alloc_pages(1, IHK_MC_AP_CRITICAL);
 	ihk_mc_spinlock_init(&init_pt_lock);
 	
-	memset(init_pt, 0, sizeof(PAGE_SIZE));
+	memset(init_pt, 0, sizeof(*init_pt));
 
 	/* Normal memory area */
 	init_normal_area(init_pt);
+	init_linux_kernel_mapping(init_pt);
 	init_fixed_area(init_pt);
 	init_low_area(init_pt);
 	init_text_area(init_pt);
 	init_vsyscall_area(init_pt);
 
 	load_page_table(init_pt);
-	kprintf("Page table is now at %p\n", init_pt);
+	init_pt_loaded = 1;
+	kprintf("Page table is now at 0x%lx\n", init_pt);
 }
 
 extern void __reserve_arch_pages(unsigned long, unsigned long,
@@ -2662,17 +2722,33 @@ void ihk_mc_reserve_arch_pages(struct ihk_page_allocator_desc *pa_allocator,
 unsigned long virt_to_phys(void *v)
 {
 	unsigned long va = (unsigned long)v;
-	
+
 	if (va >= MAP_KERNEL_START) {
+		dkprintf("%s: MAP_KERNEL_START <= 0x%lx <= LINUX_PAGE_OFFSET\n",
+				__FUNCTION__, va);
 		return va - MAP_KERNEL_START + x86_kernel_phys_base;
-	} else {
+	}
+	else if (va >= LINUX_PAGE_OFFSET) {
+		return va - LINUX_PAGE_OFFSET;
+	}
+	else if (va >= MAP_FIXED_START) {
+		return va - MAP_FIXED_START;
+	}
+	else {
+		dkprintf("%s: MAP_ST_START <= 0x%lx <= MAP_FIXED_START\n",
+				__FUNCTION__, va);
 		return va - MAP_ST_START;
 	}
 }
 
 void *phys_to_virt(unsigned long p)
 {
-	return (void *)(p + MAP_ST_START);
+	/* Before loading our own PT use straight mapping */
+	if (!init_pt_loaded) {
+		return (void *)(p + MAP_ST_START);
+	}
+
+	return (void *)(p + LINUX_PAGE_OFFSET);
 }
 
 int copy_from_user(void *dst, const void *src, size_t siz)
@@ -2840,17 +2916,12 @@ int read_process_vm(struct process_vm *vm, void *kdst, const void *usrc, size_t 
 			return error;
 		}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_52 /* NUMA support(memory area determination) */
-		if (!is_mckernel_memory(pa)) {
-#else
-		if (pa < ihk_mc_get_memory_address(IHK_MC_GMA_MAP_START, 0) ||
-			pa >= ihk_mc_get_memory_address(IHK_MC_GMA_MAP_END, 0)) {
-#endif /* POSTK_DEBUG_TEMP_FIX_52 */
+		if (!is_mckernel_memory(pa, pa + cpsize)) {
 			dkprintf("%s: pa is outside of LWK memory, to: %p, pa: %p,"
 				"cpsize: %d\n", __FUNCTION__, to, pa, cpsize);
 			va = ihk_mc_map_virtual(pa, 1, PTATTR_ACTIVE);
 			memcpy(to, va, cpsize);
-			ihk_mc_unmap_virtual(va, 1, 1);
+			ihk_mc_unmap_virtual(va, 1);
 		}
 		else {
 			va = phys_to_virt(pa);
@@ -2924,17 +2995,12 @@ int write_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t
 			return error;
 		}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_52 /* NUMA support(memory area determination) */
-		if (!is_mckernel_memory(pa)) {
-#else
-		if (pa < ihk_mc_get_memory_address(IHK_MC_GMA_MAP_START, 0) ||
-			pa >= ihk_mc_get_memory_address(IHK_MC_GMA_MAP_END, 0)) {
-#endif /* POSTK_DEBUG_TEMP_FIX_52 */
+		if (!is_mckernel_memory(pa, pa + cpsize)) {
 			dkprintf("%s: pa is outside of LWK memory, from: %p,"
 				"pa: %p, cpsize: %d\n", __FUNCTION__, from, pa, cpsize);
 			va = ihk_mc_map_virtual(pa, 1, PTATTR_ACTIVE);
 			memcpy(va, from, cpsize);
-			ihk_mc_unmap_virtual(va, 1, 1);
+			ihk_mc_unmap_virtual(va, 1);
 		}
 		else {
 			va = phys_to_virt(pa);
@@ -2995,17 +3061,12 @@ int patch_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t
 			return error;
 		}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_52 /* NUMA support(memory area determination) */
-		if (!is_mckernel_memory(pa)) {
-#else
-		if (pa < ihk_mc_get_memory_address(IHK_MC_GMA_MAP_START, 0) ||
-			pa >= ihk_mc_get_memory_address(IHK_MC_GMA_MAP_END, 0)) {
-#endif /* POSTK_DEBUG_TEMP_FIX_52 */
+		if (!is_mckernel_memory(pa, pa + cpsize)) {
 			dkprintf("%s: pa is outside of LWK memory, from: %p,"
 				"pa: %p, cpsize: %d\n", __FUNCTION__, from, pa, cpsize);
 			va = ihk_mc_map_virtual(pa, 1, PTATTR_ACTIVE);
 			memcpy(va, from, cpsize);
-			ihk_mc_unmap_virtual(va, 1, 1);
+			ihk_mc_unmap_virtual(va, 1);
 		}
 		else {
 			va = phys_to_virt(pa);

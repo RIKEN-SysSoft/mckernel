@@ -19,6 +19,7 @@
 #include <ihk/lock.h>
 #include <errno.h>
 #include <list.h>
+#include <pager.h>
 
 #ifdef POSTK_DEBUG_ARCH_DEP_18 /* coredump arch separation. */
 #else /* POSTK_DEBUG_ARCH_DEP_18 */
@@ -44,8 +45,7 @@ enum {
 	MF_XPMEM   = 0x10000, /* To identify XPMEM attachment pages for rusage accounting */
 	MF_ZEROOBJ = 0x20000, /* To identify pages of anonymous, on-demand paging ranges for rusage accounting */
 	MF_SHM =     0x40000,
-	MF_HOST_RELEASED = 0x80000000,
-	MF_END
+	MF_HUGETLBFS = 0x100000,
 };
 
 #define MEMOBJ_READY              0
@@ -56,7 +56,7 @@ struct memobj {
 	uint32_t flags;
 	uint32_t status;
 	size_t size;
-	ihk_spinlock_t lock;
+	ihk_atomic_t refcnt;
 
 	/* For pre-mapped memobjects */
 	void **pages;
@@ -64,8 +64,7 @@ struct memobj {
 	char *path;
 };
 
-typedef void memobj_release_func_t(struct memobj *obj);
-typedef void memobj_ref_func_t(struct memobj *obj);
+typedef void memobj_free_func_t(struct memobj *obj);
 typedef int memobj_get_page_func_t(struct memobj *obj, off_t off, int p2align, uintptr_t *physp, unsigned long *flag, uintptr_t virt_addr);
 typedef uintptr_t memobj_copy_page_func_t(struct memobj *obj, uintptr_t orgphys, int p2align);
 typedef int memobj_flush_page_func_t(struct memobj *obj, uintptr_t phys, size_t pgsize);
@@ -73,27 +72,28 @@ typedef int memobj_invalidate_page_func_t(struct memobj *obj, uintptr_t phys, si
 typedef int memobj_lookup_page_func_t(struct memobj *obj, off_t off, int p2align, uintptr_t *physp, unsigned long *flag);
 
 struct memobj_ops {
-	memobj_release_func_t *		release;
-	memobj_ref_func_t *		ref;
-	memobj_get_page_func_t *	get_page;
-	memobj_copy_page_func_t *	copy_page;
-	memobj_flush_page_func_t *	flush_page;
-	memobj_invalidate_page_func_t *	invalidate_page;
-	memobj_lookup_page_func_t *	lookup_page;
+	memobj_free_func_t *free;
+	memobj_get_page_func_t *get_page;
+	memobj_copy_page_func_t *copy_page;
+	memobj_flush_page_func_t *flush_page;
+	memobj_invalidate_page_func_t *invalidate_page;
+	memobj_lookup_page_func_t *lookup_page;
 };
 
-static inline void memobj_release(struct memobj *obj)
+static inline int memobj_ref(struct memobj *obj)
 {
-	if (obj->ops->release) {
-		(*obj->ops->release)(obj);
-	}
+	return ihk_atomic_inc_return(&obj->refcnt);
 }
 
-static inline void memobj_ref(struct memobj *obj)
+static inline int memobj_unref(struct memobj *obj)
 {
-	if (obj->ops->ref) {
-		(*obj->ops->ref)(obj);
+	int cnt;
+
+	if ((cnt = ihk_atomic_dec_return(&obj->refcnt)) == 0) {
+		(*obj->ops->free)(obj);
 	}
+
+	return cnt;
 }
 
 static inline int memobj_get_page(struct memobj *obj, off_t off,
@@ -140,16 +140,6 @@ static inline int memobj_lookup_page(struct memobj *obj, off_t off,
 	return -ENXIO;
 }
 
-static inline void memobj_lock(struct memobj *obj)
-{
-	ihk_mc_spinlock_lock_noirq(&obj->lock);
-}
-
-static inline void memobj_unlock(struct memobj *obj)
-{
-	ihk_mc_spinlock_unlock_noirq(&obj->lock);
-}
-
 static inline int memobj_has_pager(struct memobj *obj)
 {
 	return !!(obj->flags & MF_HAS_PAGER);
@@ -166,5 +156,10 @@ int shmobj_create(struct shmid_ds *ds, struct memobj **objp);
 int zeroobj_create(struct memobj **objp);
 int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxprotp,
 	int prot, int populate_flags);
+int hugefileobj_pre_create(struct pager_create_result *result,
+			   struct memobj **objp, int *maxprotp);
+int hugefileobj_create(struct memobj *obj, size_t len, off_t off,
+		       int *pgshiftp, uintptr_t virt_addr);
+void hugefileobj_cleanup(void);
 
 #endif /* HEADER_MEMOBJ_H */

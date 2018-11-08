@@ -1,0 +1,49 @@
+【Issue#976 動作確認】
+□ テスト内容
+1. Issueで報告された再現プログラムでの確認
+CT_001: sigaltstackがexecve時に初期化されていることの確認
+	1. 自プロセスの代替シグナルスタック(ss_sp)がNULLであることを確認
+	2. sigaltstack()で新たに代替シグナルスタックを設定
+	3. execve で自身を再実行し、自プロセスの代替シグナルスタックがNULLであることを確認
+
+CT_002: fenvの浮動小数点例外発生フラグがexecve時に初期化されていることを確認
+	1. fetestexcept(FE_ALL_EXCEPT)で自プロセスの浮動小数点例外の発生フラグが
+	   すべて0であることを確認
+	2. 0除算を実行し、浮動小数点例外(FE_INVALID)を発生させる
+	3. fetestexcept(FE_ALL_EXCEPT)で自プロセスのFE_INVALIDフラグが1に
+	   なっていることを確認
+	4. feraiseexcept(FE_ALL_EXCEPT)で自プロセスの浮動小数点例外の発生フラグを
+	   すべて1にする
+	5. execve で自身を再実行し、浮動小数点例外の発生フラグがすべて0であることを確認
+
+CT_003: fenvの浮動小数丸めの設定がexecve時に初期化されていることを確認
+	1. fegetround() で自プロセスの丸めモードを取得し、FE_TONEARESTであることを確認
+	2. fesetround(FE_TOWARDZERO) で自プロセスの丸めモードをFE_TOWARDZEROに変更する
+	3. execve で自身を再実行し、自プロセスの丸めモードがFE_TONEARESTであることを確認
+
+2. 既存のexecve機能に影響がないことをLTPを用いて確認
+LT_001: ltp-execve01
+	子プロセスがexecveを実行し、正常に終了することを確認 (TPASS 1件)
+
+LT_002: ltp-execve02
+	rootのみに実行権限が付与された実行ファイルを、
+	一般ユーザがexecveした場合に失敗することを確認 (TPASS 1件)
+
+LT_003: ltp-execve03
+	下記の不正な引数でexecveを実行した場合、返り値と設定されるerrnoが
+	正しいことを確認 (TPASS 6件)
+
+LT_004: ltp-execve05
+	execveの標準的な動作を確認 (TPASS 8件)
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。

@@ -19,15 +19,13 @@
 #include <ihk/ikc.h>
 #include <ikc/master.h>
 #include <arch/cpu.h>
+#include <debug.h>
 
 //#define DEBUG_LISTENERS
 
 #ifdef DEBUG_LISTENERS
-#define	dkprintf(...)	kprintf(__VA_ARGS__)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
-#else
-#define dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 void testmem(void *v, unsigned long size)
@@ -71,7 +69,7 @@ static int test_packet_handler(struct ihk_ikc_channel_desc *c,
 		
 		testmem(v, 4 * 1024 * 1024);
 
-		ihk_mc_unmap_virtual(v, 4 * 1024, 1);
+		ihk_mc_unmap_virtual(v, 4 * 1024);
 		ihk_mc_unmap_memory(NULL, pp, 4 * 1024 * 1024);
 	} else if (packet->msg == 0x11110012) {
 		p.msg = 0x11110013;

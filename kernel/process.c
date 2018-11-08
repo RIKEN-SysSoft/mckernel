@@ -38,12 +38,13 @@
 #include <xpmem.h>
 #include <rusage_private.h>
 #include <ihk/monitor.h>
+#include <debug.h>
 
 //#define DEBUG_PRINT_PROCESS
 
 #ifdef DEBUG_PRINT_PROCESS
-#define dkprintf(...) kprintf(__VA_ARGS__)
-#define ekprintf(...) kprintf(__VA_ARGS__)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 static void dtree(struct rb_node *node, int l) {
 	struct vm_range *range;
 	if (!node)
@@ -60,14 +61,10 @@ static void dump_tree(struct process_vm *vm) {
 	dtree(vm->vm_range_tree.rb_node, 1);
 }
 #else
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define ekprintf(...) kprintf(__VA_ARGS__)
 static void dump_tree(struct process_vm *vm) {}
 #endif
 
-#ifdef POSTK_DEBUG_ARCH_DEP_22
 extern struct thread *arch_switch_context(struct thread *prev, struct thread *next);
-#endif /* POSTK_DEBUG_ARCH_DEP_22 */
 extern long alloc_debugreg(struct thread *proc);
 extern void save_debugreg(unsigned long *debugreg);
 extern void restore_debugreg(unsigned long *debugreg);
@@ -78,10 +75,6 @@ static int vm_range_insert(struct process_vm *vm,
 static struct vm_range *vm_range_find(struct process_vm *vm,
 		unsigned long addr);
 static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm);
-extern void release_fp_regs(struct thread *proc);
-extern void save_fp_regs(struct thread *proc);
-extern void copy_fp_regs(struct thread *from, struct thread *to);
-extern void restore_fp_regs(struct thread *proc);
 extern void __runq_add_proc(struct thread *proc, int cpu_id);
 extern void terminate_host(int pid);
 extern void lapic_timer_enable(unsigned int clocks);
@@ -89,16 +82,12 @@ extern void lapic_timer_disable();
 extern int num_processors;
 extern ihk_spinlock_t cpuid_head_lock;
 int ptrace_detach(int pid, int data);
-extern unsigned long do_kill(struct thread *, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
 extern void procfs_create_thread(struct thread *);
 extern void procfs_delete_thread(struct thread *);
-#ifndef POSTK_DEBUG_ARCH_DEP_22
-extern void perf_start(struct mc_perf_event *event);
-extern void perf_reset(struct mc_perf_event *event);
-#endif /* !POSTK_DEBUG_ARCH_DEP_22 */
 
 struct list_head resource_set_list;
 mcs_rwlock_lock_t    resource_set_lock;
+ihk_spinlock_t runq_reservation_lock;
 
 int idle_halt = 0;
 int allow_oversubscribe = 0;
@@ -126,10 +115,8 @@ init_process(struct process *proc, struct process *parent)
 		proc->mpol_threshold = parent->mpol_threshold;
 		memcpy(proc->rlimit, parent->rlimit,
 		       sizeof(struct rlimit) * MCK_RLIM_MAX);
-#ifdef POSTK_DEBUG_TEMP_FIX_69 /* Fix problem not to inherit parent cpu_set. */
 		memcpy(&proc->cpu_set, &parent->cpu_set,
 		       sizeof(proc->cpu_set));
-#endif /* POSTK_DEBUG_TEMP_FIX_69 */
 	}
 
 #ifdef POSTK_DEBUG_ARCH_DEP_63 /* struct process member initialize add */
@@ -138,6 +125,7 @@ init_process(struct process *proc, struct process *parent)
 	INIT_LIST_HEAD(&proc->ptraced_siblings_list);
 	mcs_rwlock_init(&proc->update_lock);
 #endif /* POSTK_DEBUG_ARCH_DEP_63 */
+	INIT_LIST_HEAD(&proc->report_threads_list);
 	INIT_LIST_HEAD(&proc->threads_list);
 	INIT_LIST_HEAD(&proc->children_list);
 	INIT_LIST_HEAD(&proc->ptraced_children_list);
@@ -362,6 +350,7 @@ struct thread *create_thread(unsigned long user_pc,
 	thread->vm = vm;
 	thread->proc = proc;
 	proc->vm = vm;
+	proc->main_thread = thread;
 
 	if(init_process_vm(proc, asp, vm) != 0){
 		goto err;
@@ -453,17 +442,29 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 
 		proc->termsig = termsig;
 		asp = create_address_space(cpu_local_var(resource_set), 1);
-		if(!asp){
+		if (!asp) {
 			kfree(proc);
 			goto err_free_proc;
 		}
 		proc->vm = kmalloc(sizeof(struct process_vm), IHK_MC_AP_NOWAIT);
-		if(!proc->vm){
+		if (!proc->vm) {
 			release_address_space(asp);
 			kfree(proc);
 			goto err_free_proc;
 		}
 		memset(proc->vm, '\0', sizeof(struct process_vm));
+
+		proc->saved_cmdline_len = org->proc->saved_cmdline_len;
+		proc->saved_cmdline = kmalloc(proc->saved_cmdline_len,
+					      IHK_MC_AP_NOWAIT);
+		if (!proc->saved_cmdline) {
+			release_address_space(asp);
+			kfree(proc->vm);
+			kfree(proc);
+			goto err_free_proc;
+		}
+		memcpy(proc->saved_cmdline, org->proc->saved_cmdline,
+		       proc->saved_cmdline_len);
 
 		dkprintf("fork(): init_process_vm()\n");
 		if (init_process_vm(proc, asp, proc->vm) != 0) {
@@ -479,6 +480,7 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 
 		thread->proc = proc;
 		thread->vm = proc->vm;
+		proc->main_thread = thread;
 
 		memcpy(&proc->vm->region, &org->vm->region, sizeof(struct vm_regions));
 
@@ -583,29 +585,47 @@ ptrace_traceme(void)
 	struct thread *thread = cpu_local_var(current);
 	struct process *proc = thread->proc;
 	struct process *parent = proc->parent;
-	struct mcs_rwlock_node_irqsave lock;
 	struct mcs_rwlock_node child_lock;
+	struct resource_set *resource_set = cpu_local_var(resource_set);
+	struct process *pid1 = resource_set->pid1;
 
 	dkprintf("ptrace_traceme,pid=%d,proc->parent=%p\n", proc->pid, proc->parent);
 
-	if (proc->ptrace & PT_TRACED) {
+	if (thread->ptrace & PT_TRACED) {
+		return -EPERM;
+	}
+	if (parent == pid1) {
 		return -EPERM;
 	}
 
 	dkprintf("ptrace_traceme,parent->pid=%d\n", proc->parent->pid);
 
-	mcs_rwlock_writer_lock(&proc->update_lock, &lock);
-	mcs_rwlock_writer_lock_noirq(&parent->children_lock, &child_lock);
-	list_add_tail(&proc->ptraced_siblings_list, &parent->ptraced_children_list);
-	mcs_rwlock_writer_unlock_noirq(&parent->children_lock, &child_lock);
-	proc->ptrace = PT_TRACED | PT_TRACE_EXEC;
-	mcs_rwlock_writer_unlock(&proc->update_lock, &lock);
+	if (thread == proc->main_thread) {
+		mcs_rwlock_writer_lock_noirq(&parent->children_lock,
+					     &child_lock);
+		list_add_tail(&proc->ptraced_siblings_list,
+			      &parent->ptraced_children_list);
+		mcs_rwlock_writer_unlock_noirq(&parent->children_lock,
+					       &child_lock);
+	}
+	if (!thread->report_proc) {
+		mcs_rwlock_writer_lock_noirq(&parent->threads_lock,
+					     &child_lock);
+		list_add_tail(&thread->report_siblings_list,
+			      &parent->report_threads_list);
+		mcs_rwlock_writer_unlock_noirq(&parent->threads_lock,
+					       &child_lock);
+		thread->report_proc = parent;
+	}
+
+	thread->ptrace = PT_TRACED | PT_TRACE_EXEC;
 
 	if (thread->ptrace_debugreg == NULL) {
 		error = alloc_debugreg(thread);
 	}
 
 	clear_single_step(thread);
+	hold_thread(thread);
 
 	dkprintf("ptrace_traceme,returning,error=%d\n", error);
 	return error;
@@ -894,7 +914,7 @@ int join_process_memory_range(struct process_vm *vm,
 	surviving->end = merging->end;
 
 	if (merging->memobj) {
-		memobj_release(merging->memobj);
+		memobj_unref(merging->memobj);
 	}
 	rb_erase(&merging->vm_rb_node, &vm->vm_range_tree);
 	for (i = 0; i < VM_RANGE_CACHE_SIZE; ++i) {
@@ -967,13 +987,19 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 		
 		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 		if (range->memobj) {
-			memobj_lock(range->memobj);
+			memobj_ref(range->memobj);
 		}
-		error = ihk_mc_pt_free_range(vm->address_space->page_table, vm,
-				(void *)start, (void *)end,
-				(range->flag & VR_PRIVATE)? NULL: range->memobj);
+		if (range->memobj && range->memobj->flags & MF_HUGETLBFS) {
+			error = ihk_mc_pt_clear_range(vm->address_space->page_table,
+					vm, (void *)start, (void *)end);
+		} else {
+			error = ihk_mc_pt_free_range(vm->address_space->page_table,
+					vm, (void *)start, (void *)end,
+					(range->flag & VR_PRIVATE) ? NULL :
+						range->memobj);
+		}
 		if (range->memobj) {
-			memobj_unlock(range->memobj);
+			memobj_unref(range->memobj);
 		}
 		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 		if (error && (error != -ENOENT)) {
@@ -1000,7 +1026,7 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 	}
 
 	if (range->memobj) {
-		memobj_release(range->memobj);
+		memobj_unref(range->memobj);
 	}
 
 	rb_erase(&range->vm_rb_node, &vm->vm_range_tree);
@@ -1263,7 +1289,7 @@ int add_process_memory_range(struct process_vm *vm,
 	if (phys != NOPHYS && !(flag & (VR_REMOTE | VR_DEMAND_PAGING))
 			&& ((flag & VR_PROT_MASK) != VR_PROT_NONE)) {
 #if 1
-			memset((void*)phys_to_virt(phys), 0, end - start);
+		memset((void *)phys_to_virt(phys), 0, end - start);
 #else
 		if (end - start < (1024*1024)) {
 			memset((void*)phys_to_virt(phys), 0, end - start);
@@ -1443,7 +1469,8 @@ int change_prot_process_memory_range(struct process_vm *vm,
 	 * We need to keep the page table read-only to trigger a page
 	 * fault for copy-on-write later on
 	 */
-	if (range->memobj && (range->flag & VR_PRIVATE)) {
+	if (range->memobj && (range->flag & VR_PRIVATE) &&
+	    !(range->memobj->flags & MF_HUGETLBFS)) {
 		setattr &= ~PTATTR_WRITABLE;
 		if (!clrattr && !setattr) {
 			range->flag = newflag;
@@ -1532,7 +1559,7 @@ int remap_process_memory_range(struct process_vm *vm, struct vm_range *range,
 	dkprintf("remap_process_memory_range(%p,%p,%#lx,%#lx,%#lx)\n",
 			vm, range, start, end, off);
 	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
-	memobj_lock(range->memobj);
+	memobj_ref(range->memobj);
 
 	args.start = start;
 	args.off = off;
@@ -1557,7 +1584,7 @@ int remap_process_memory_range(struct process_vm *vm, struct vm_range *range,
 
 	error = 0;
 out:
-	memobj_unlock(range->memobj);
+	memobj_unref(range->memobj);
 	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 	dkprintf("remap_process_memory_range(%p,%p,%#lx,%#lx,%#lx):%d\n",
 			vm, range, start, end, off, error);
@@ -1622,7 +1649,7 @@ int sync_process_memory_range(struct process_vm *vm, struct vm_range *range,
 	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 
 	if (!(range->memobj->flags & MF_ZEROFILL)) {
-		memobj_lock(range->memobj);
+		memobj_ref(range->memobj);
 	}
 
 	error = visit_pte_range(vm->address_space->page_table, (void *)start,
@@ -1630,7 +1657,7 @@ int sync_process_memory_range(struct process_vm *vm, struct vm_range *range,
 			&sync_one_page, &args);
 
 	if (!(range->memobj->flags & MF_ZEROFILL)) {
-		memobj_unlock(range->memobj);
+		memobj_unref(range->memobj);
 	}
 
 	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
@@ -1712,11 +1739,11 @@ int invalidate_process_memory_range(struct process_vm *vm,
 	args.range = range;
 
 	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
-	memobj_lock(range->memobj);
+	memobj_ref(range->memobj);
 	error = visit_pte_range(vm->address_space->page_table, (void *)start,
 	                        (void *)end, range->pgshift, VPTEF_SKIP_NULL,
 	                        &invalidate_one_page, &args);
-	memobj_unlock(range->memobj);
+	memobj_unref(range->memobj);
 	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 	if (error) {
 		ekprintf("invalidate_process_memory_range(%p,%p,%#lx,%#lx):"
@@ -1881,30 +1908,8 @@ retry:
 			}
 			dkprintf("%s: cow,copying virt:%lx<-%lx,phys:%lx<-%lx,pgsize=%lu\n",
 					 __FUNCTION__, virt, phys_to_virt(phys), virt_to_phys(virt), phys, pgsize);
-#ifdef POSTK_DEBUG_TEMP_FIX_14
-			if (page) {
-				// McKernel memory space
-				memcpy(virt, phys_to_virt(phys), pgsize);
-			} else {
-				// Host Kernel memory space
-				const enum ihk_mc_pt_attribute attr = 0;
-				const int remove_vmap_allocator_entry = 1;
-				void* vmap;
-
-				vmap = ihk_mc_map_virtual(phys, npages, attr);
-				if (!vmap) {
-					error = -ENOMEM;
-					kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):cannot virtual mapping. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
-					ihk_mc_free_pages(virt, npages);
-					goto out;
-				}
-				memcpy(virt, vmap, pgsize);
-				ihk_mc_unmap_virtual(vmap, npages, remove_vmap_allocator_entry);
-			}
-#else /*POSTK_DEBUG_TEMP_FIX_14*/
 			memcpy(virt, phys_to_virt(phys), pgsize);
 
-#endif /*POSTK_DEBUG_TEMP_FIX_14*/
 			/* Call rusage_memory_stat_add() because remote page fault may create a page not pointed-to by PTE */
 			if(rusage_memory_stat_add(range, phys, pgsize, pgsize)) {
 				dkprintf("%lx+,%s: remote page fault + cow, calling memory_stat_rss_add(),pgsize=%ld\n",
@@ -1987,11 +1992,28 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 	int error;
 	const uintptr_t fault_addr = (uintptr_t)fault_addr0;
 	struct vm_range *range;
+	struct thread *thread = cpu_local_var(current);
+	int locked = 0;
 
 	dkprintf("[%d]do_page_fault_process_vm(%p,%lx,%lx)\n",
 			ihk_mc_get_processor_id(), vm, fault_addr0, reason);
-
-	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	
+	if (!thread->vm->is_memory_range_lock_taken) {
+		/* For the case where is_memory_range_lock_taken is incremented after memory_range_lock is taken. */
+		while (1) {
+			if (thread->vm->is_memory_range_lock_taken) {
+				goto skip;
+			}
+			if (ihk_mc_spinlock_trylock_noirq(&vm->memory_range_lock)) {
+				locked = 1;
+				break;
+			}
+		}
+	} else {
+skip:;
+		dkprintf("%s: INFO: skip locking of memory_range_lock,pid=%d,tid=%d\n",
+			 __func__, thread->proc->pid, thread->tid);
+	}	
 
 	if (vm->exiting) {
 		error = -ECANCELED;
@@ -2100,7 +2122,9 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 
 	error = 0;
 out:
-	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	if (locked) {
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	}
 	dkprintf("[%d]do_page_fault_process_vm(%p,%lx,%lx): %d\n",
 			ihk_mc_get_processor_id(), vm, fault_addr0,
 			reason, error);
@@ -2141,6 +2165,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	char *stack;
 	int error;
 	unsigned long *p;
+	unsigned long maxsz;
 	unsigned long minsz;
 	unsigned long at_rand;
 	struct process *proc = thread->proc;
@@ -2157,19 +2182,20 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	minsz = (pn->stack_premap
 			+ LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
 #endif /* POSTK_DEBUG_ARCH_DEP_80 */
-	size = (proc->rlimit[MCK_RLIMIT_STACK].rlim_cur
-			+ LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
+	maxsz = (end - thread->vm->region.map_start) / 2;
+	size = proc->rlimit[MCK_RLIMIT_STACK].rlim_cur;
+	if (size > maxsz) {
+		size = maxsz;
+	}
+	else if (size < minsz) {
+		size = minsz;
+	}
+	size = (size + LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
 	dkprintf("%s: stack_premap: %lu, rlim_cur: %lu, minsz: %lu, size: %lu\n",
 			__FUNCTION__,
 			pn->stack_premap,
 			proc->rlimit[MCK_RLIMIT_STACK].rlim_cur,
 			minsz, size);
-	if (size > (USER_END / 2)) {
-		size = USER_END / 2;
-	}
-	else if (size < minsz) {
-		size = minsz;
-	}
 	start = (end - size) & LARGE_PAGE_MASK;
 
 	/* Apply user allocation policy to stacks */
@@ -2444,6 +2470,11 @@ void free_process_memory_ranges(struct process_vm *vm)
 	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 }
 
+static void free_thread_pages(struct thread *thread)
+{
+	ihk_mc_free_pages(thread, KERNEL_STACK_NR_PAGES);
+}
+
 void
 hold_process(struct process *proc)
 {
@@ -2476,13 +2507,6 @@ release_process(struct process *proc)
 	list_del(&proc->siblings_list);
 	mcs_rwlock_writer_unlock(&parent->children_lock, &lock);
 
-	if(proc->ptrace & PT_TRACED){
-		parent = proc->ppid_parent;
-		mcs_rwlock_writer_lock(&parent->children_lock, &lock);
-		list_del(&proc->ptraced_siblings_list);
-		mcs_rwlock_writer_unlock(&parent->children_lock, &lock);
-	}
-
 	if (proc->tids) kfree(proc->tids);
 #ifdef PROFILE_ENABLE
 	if (proc->profile) {
@@ -2495,7 +2519,15 @@ release_process(struct process *proc)
 	}
 	profile_dealloc_proc_events(proc);
 #endif // PROFILE_ENABLE
+	free_thread_pages(proc->main_thread);
 	kfree(proc);
+
+	/* no process left */
+	mcs_rwlock_reader_lock(&rset->pid1->children_lock, &lock);
+	if (list_empty(&rset->pid1->children_list)) {
+		hugefileobj_cleanup();
+	}
+	mcs_rwlock_reader_unlock(&rset->pid1->children_lock, &lock);
 }
 
 void
@@ -2516,9 +2548,6 @@ free_all_process_memory_range(struct process_vm *vm)
 		range = rb_entry(node, struct vm_range, vm_rb_node);
 		next = rb_next(node);
 
-		if (range->memobj) {
-			range->memobj->flags |= MF_HOST_RELEASED;
-		}
 		error = free_process_memory_range(vm, range);
 		if (error) {
 			ekprintf("free_process_memory(%p):"
@@ -2591,8 +2620,8 @@ out:
 int hold_thread(struct thread *thread)
 {
 	if (thread->status == PS_EXITED) {
-		kprintf("hold_thread: ERROR: already exited process,tid=%d\n", thread->tid);
-		return -ESRCH;
+		kprintf("hold_thread: WARNING: already exited process,tid=%d\n",
+			thread->tid);
 	}
 
 	ihk_atomic_inc(&thread->refcount);
@@ -2639,6 +2668,21 @@ void __release_tid(struct process *proc, struct thread *thread) {
 	}
 }
 
+/* Replace tid specified by thread with tid specified by new_tid */
+void __find_and_replace_tid(struct process *proc, struct thread *thread, int new_tid) {
+	int i;
+
+	for (i = 0; i < proc->nr_tids; ++i) {
+		if (proc->tids[i].thread != thread) continue;
+
+		proc->tids[i].thread = NULL;
+		proc->tids[i].tid = new_tid;
+		dkprintf("%s: tid %d (thread %p) has been relaced with tid %d\n",
+				__FUNCTION__, thread->tid, thread, new_tid);
+		break;
+	}
+}
+
 void destroy_thread(struct thread *thread)
 {
 	struct sig_pending *pending;
@@ -2659,13 +2703,16 @@ void destroy_thread(struct thread *thread)
 	ts_add(&thread->proc->stime, &ats);
 	tsc_to_ts(thread->user_tsc, &ats);
 	ts_add(&thread->proc->utime, &ats);
+	mcs_rwlock_writer_unlock(&proc->update_lock, &updatelock);
 
 	mcs_rwlock_writer_lock(&proc->threads_lock, &lock);
 	list_del(&thread->siblings_list);
-	__release_tid(proc, thread);
-	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
-
-	mcs_rwlock_writer_unlock(&proc->update_lock, &updatelock);
+	if (thread->uti_state == UTI_STATE_EPILOGUE) {
+		__find_and_replace_tid(proc, thread, thread->uti_refill_tid);
+	}
+	else if (thread != proc->main_thread) {
+		__release_tid(proc, thread);
+	}
 
 	cpu_clear(thread->cpu_id, &thread->vm->address_space->cpu_set,
 	          &thread->vm->address_space->cpu_set_lock);
@@ -2689,7 +2736,9 @@ void destroy_thread(struct thread *thread)
 
 	release_sigcommon(thread->sigcommon);
 
-	ihk_mc_free_pages(thread, KERNEL_STACK_NR_PAGES);
+	if (thread != proc->main_thread)
+		free_thread_pages(thread);
+	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 }
 
 void release_thread(struct thread *thread)
@@ -2711,20 +2760,6 @@ void release_thread(struct thread *thread)
 	destroy_thread(thread);
 
 	release_process_vm(vm);
-	rusage_num_threads_dec();
-
-#ifdef RUSAGE_DEBUG
-	if (rusage->num_threads == 0) {
-		int i;
-		kprintf("total_memory_usage=%ld\n", rusage->total_memory_usage);
-		for(i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
-			kprintf("memory_stat_rss[%d]=%ld\n", i, rusage->memory_stat_rss[i]);
-		}
-		for(i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
-			kprintf("memory_stat_mapped_file[%d]=%ld\n", i, rusage->memory_stat_mapped_file[i]);
-		}
-	}
-#endif
 }
 
 void cpu_set(int cpu, cpu_set_t *cpu_set, ihk_spinlock_t *lock)
@@ -2949,6 +2984,9 @@ void sched_init(void)
 	INIT_LIST_HEAD(&cpu_local_var(migq));
 	ihk_mc_spinlock_init(&cpu_local_var(migq_lock));
 
+	// to save default fpregs
+	save_fp_regs(idle_thread);
+
 #ifdef TIMER_CPU_ID
 	if (ihk_mc_get_processor_id() == TIMER_CPU_ID) {
 		init_timers();
@@ -3057,15 +3095,28 @@ ack:
 	ihk_mc_spinlock_unlock(&cur_v->migq_lock, irqstate);
 }
 
-void
-set_timer()
+void set_timer(int runq_locked)
 {
 	struct cpu_local_var *v = get_this_cpu_local_var();
+	struct thread *thread;
+	int num_running = 0;
+	unsigned long irqstate;
+
+	if (!runq_locked) {
+		irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
+	}
+
+	list_for_each_entry(thread, &v->runq, sched_list) {
+		if (thread->status != PS_RUNNING) {
+			continue;
+		}
+		num_running++;
+	}
 
 	/* Toggle timesharing if CPU core is oversubscribed */
-	if (v->runq_len > 1 || v->current->itimer_enabled) {
+	if (num_running > 1 || v->current->itimer_enabled) {
 		if (!cpu_local_var(timer_enabled)) {
-			lapic_timer_enable(10000000);
+			lapic_timer_enable(/*10000000*/1000000);
 			cpu_local_var(timer_enabled) = 1;
 		}
 	}
@@ -3074,6 +3125,10 @@ set_timer()
 			lapic_timer_disable();
 			cpu_local_var(timer_enabled) = 0;
 		}
+	}
+
+	if (!runq_locked) {
+		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 	}
 }
 
@@ -3128,11 +3183,11 @@ void spin_sleep_or_schedule(void)
 		}
 		ihk_mc_spinlock_unlock(&thread->spin_sleep_lock, irqstate);
 
-#ifdef POSTK_DEBUG_TEMP_FIX_56 /* in futex_wait() signal handring fix. */
-		if (hassigpending(cpu_local_var(current))) {
+		if ((!list_empty(&thread->sigpending) ||
+		     !list_empty(&thread->sigcommon->sigpending)) &&
+		    hassigpending(thread)) {
 			woken = 1;
 		}
-#endif /* POSTK_DEBUG_TEMP_FIX_56 */
 
 		if (woken) {
 			return;
@@ -3162,10 +3217,6 @@ void schedule(void)
 		return;
 	}
 
-redo:
-	/* Reset for redo */
-	switch_ctx = 0;
-
 	cpu_local_var(runq_irqstate) = 
 		ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
 	v = get_this_cpu_local_var();
@@ -3190,7 +3241,7 @@ redo:
 	/* Switch to idle() when prev is PS_EXITED since it always reaches release_thread() 
 	   because it always resumes from just after ihk_mc_switch_context() call. See #1029 */
 	if (v->flags & CPU_FLAG_NEED_MIGRATE ||
-	    prev->status == PS_EXITED) {
+	    (prev && prev->status == PS_EXITED)) {
 		next = &cpu_local_var(idle);
 	} else {
 		/* Pick a new running process or one that has a pending signal */
@@ -3220,7 +3271,7 @@ redo:
 		reset_cputime();
 	}
 
-	set_timer();
+	set_timer(1);
 
 	if (switch_ctx) {
 		dkprintf("schedule: %d => %d \n",
@@ -3255,44 +3306,7 @@ redo:
 				next->vm->address_space->page_table)
 			ihk_mc_load_page_table(next->vm->address_space->page_table);
 
-#ifdef POSTK_DEBUG_ARCH_DEP_22
 		last = arch_switch_context(prev, next);
-#else
-		dkprintf("[%d] schedule: tlsblock_base: 0x%lX\n",
-		         ihk_mc_get_processor_id(), next->tlsblock_base);
-
-		/* Set up new TLS.. */
-		ihk_mc_init_user_tlsbase(next->uctx, next->tlsblock_base);
-
-		/* Performance monitoring inherit */
-		if(next->proc->monitoring_event) {
-			if(next->proc->perf_status == PP_RESET)
-				perf_reset(next->proc->monitoring_event);
-			if(next->proc->perf_status != PP_COUNT) {
-				perf_reset(next->proc->monitoring_event);
-				perf_start(next->proc->monitoring_event);
-			}
-		}
-
-#ifdef PROFILE_ENABLE
-		if (prev->profile && prev->profile_start_ts != 0) {
-			prev->profile_elapsed_ts +=
-				(rdtsc() - prev->profile_start_ts);
-			prev->profile_start_ts = 0;
-		}
-
-		if (next->profile && next->profile_start_ts == 0) {
-			next->profile_start_ts = rdtsc();
-		}
-#endif
-
-		if (prev) {
-			last = ihk_mc_switch_context(&prev->ctx, &next->ctx, prev);
-		}
-		else {
-			last = ihk_mc_switch_context(NULL, &next->ctx, prev);
-		}
-#endif /* POSTK_DEBUG_ARCH_DEP_22 */
 
 		/*
 		 * We must hold the lock throughout the context switch, otherwise
@@ -3306,11 +3320,31 @@ redo:
 
 		if ((last != NULL) && (last->status == PS_EXITED)) {
 			release_thread(last);
+			rusage_num_threads_dec();
+#ifdef RUSAGE_DEBUG
+			if (rusage->num_threads == 0) {
+				int i;
+
+				kprintf("total_memory_usage=%ld\n",
+					rusage->total_memory_usage);
+				for (i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
+					kprintf("memory_stat_rss[%d]=%ld\n", i,
+						rusage->memory_stat_rss[i]);
+				}
+				for (i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
+					kprintf(
+					   "memory_stat_mapped_file[%d]=%ld\n",
+					    i,
+					    rusage->memory_stat_mapped_file[i]);
+				}
+			}
+#endif
 		}
 
 		/* Have we migrated to another core meanwhile? */
 		if (v != get_this_cpu_local_var()) {
-			goto redo;
+			v = get_this_cpu_local_var();
+			v->flags &= ~CPU_FLAG_NEED_RESCHED;
 		}
 	}
 	else {
@@ -3322,8 +3356,15 @@ redo:
 void
 release_cpuid(int cpuid)
 {
-	if (!get_cpu_local_var(cpuid)->runq_len)
-		get_cpu_local_var(cpuid)->status = CPU_STATUS_IDLE;
+	unsigned long irqstate;
+    struct cpu_local_var *v = get_cpu_local_var(cpuid);
+    irqstate = ihk_mc_spinlock_lock(&runq_reservation_lock);
+    ihk_mc_spinlock_lock_noirq(&(v->runq_lock));
+	if (!v->runq_len)
+		v->status = CPU_STATUS_IDLE;
+	__sync_fetch_and_sub(&v->runq_reserved, 1);
+    ihk_mc_spinlock_unlock_noirq(&(v->runq_lock));
+    ihk_mc_spinlock_unlock(&runq_reservation_lock, irqstate);
 }
 
 void check_need_resched(void)
@@ -3381,6 +3422,9 @@ int __sched_wakeup_thread(struct thread *thread,
 		mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
 		xchg4((int *)(&thread->status), PS_RUNNING);
 		status = 0;
+
+		/* Make interrupt_exit() call schedule() */
+		v->flags |= CPU_FLAG_NEED_RESCHED;
 	}
 	else {
 		status = -EINVAL;
@@ -3489,13 +3533,17 @@ void runq_add_thread(struct thread *thread, int cpu_id)
 {
 	struct cpu_local_var *v = get_cpu_local_var(cpu_id);
 	unsigned long irqstate;
-	
-	irqstate = ihk_mc_spinlock_lock(&(v->runq_lock));
+	irqstate = ihk_mc_spinlock_lock(&runq_reservation_lock);
+	ihk_mc_spinlock_lock_noirq(&(v->runq_lock));
 	__runq_add_thread(thread, cpu_id);
-	ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
+	__sync_fetch_and_sub(&v->runq_reserved, 1);
+	ihk_mc_spinlock_unlock_noirq(&(v->runq_lock));
+	ihk_mc_spinlock_unlock(&runq_reservation_lock, irqstate);
 
 	procfs_create_thread(thread);
 
+	__sync_add_and_fetch(&thread->proc->clone_count, 1);
+	dkprintf("%s: clone_count is %d\n", __FUNCTION__, thread->proc->clone_count);
 	rusage_num_threads_inc();
 #ifdef RUSAGE_DEBUG
 	if (rusage->num_threads == 1) {
@@ -3539,22 +3587,26 @@ void runq_del_thread(struct thread *thread, int cpu_id)
 }
 
 struct thread *
-find_thread(int pid, int tid, struct mcs_rwlock_node_irqsave *lock)
+find_thread(int pid, int tid)
 {
 	struct thread *thread;
 	struct thread_hash *thash = cpu_local_var(resource_set)->thread_hash;
 	int hash = thread_hash(tid);
+	struct mcs_rwlock_node_irqsave lock;
 
 	if(tid <= 0)
 		return NULL;
-	mcs_rwlock_reader_lock(&thash->lock[hash], lock);
+	mcs_rwlock_reader_lock(&thash->lock[hash], &lock);
 retry:
 	list_for_each_entry(thread, &thash->list[hash], hash_list){
 		if(thread->tid == tid){
-			if(pid <= 0)
+			if (pid <= 0 ||
+			    thread->proc->pid == pid) {
+				hold_thread(thread);
+				mcs_rwlock_reader_unlock(&thash->lock[hash],
+							 &lock);
 				return thread;
-			if(thread->proc->pid == pid)
-				return thread;
+			}
 		}
 	}
 	/* If no thread with pid == tid was found, then we may be looking for a
@@ -3564,20 +3616,16 @@ retry:
 		pid = 0;
 		goto retry;
 	}
-	mcs_rwlock_reader_unlock(&thash->lock[hash], lock);
+	mcs_rwlock_reader_unlock(&thash->lock[hash], &lock);
 	return NULL;
 }
 
 void
-thread_unlock(struct thread *thread, struct mcs_rwlock_node_irqsave *lock)
+thread_unlock(struct thread *thread)
 {
-	struct thread_hash *thash = cpu_local_var(resource_set)->thread_hash;
-	int hash;
-
 	if(!thread)
 		return;
-	hash = thread_hash(thread->tid);
-	mcs_rwlock_reader_unlock(&thash->lock[hash], lock);
+	release_thread(thread);
 }
 
 struct process *
@@ -3632,8 +3680,9 @@ debug_log(unsigned long arg)
 				if (p == pid1)
 					continue;
 				found++;
-				kprintf("pid=%d ppid=%d status=%d\n",
-				        p->pid, p->ppid_parent->pid, p->status);
+				kprintf("pid=%d ppid=%d status=%d ref=%d\n",
+					p->pid, p->ppid_parent->pid, p->status,
+					p->refcount.counter);
 			}
 			__mcs_rwlock_reader_unlock(&phash->lock[i], &lock);
 		}
@@ -3644,9 +3693,11 @@ debug_log(unsigned long arg)
 			__mcs_rwlock_reader_lock(&thash->lock[i], &lock);
 			list_for_each_entry(t, &thash->list[i], hash_list){
 				found++;
-				kprintf("cpu=%d pid=%d tid=%d status=%d offload=%d\n",
-				        t->cpu_id, t->proc->pid, t->tid,
-				        t->status, t->in_syscall_offload);
+				kprintf("cpu=%d pid=%d tid=%d status=%d "
+					"offload=%d ref=%d ptrace=%08x\n",
+					t->cpu_id, t->proc->pid, t->tid,
+					t->status, t->in_syscall_offload,
+					t->refcount.counter, t->ptrace);
 			}
 			__mcs_rwlock_reader_unlock(&thash->lock[i], &lock);
 		}
@@ -3676,4 +3727,48 @@ debug_log(unsigned long arg)
 		kprintf("%d threads are found.\n", found);
 		break;
 	}
+}
+
+int access_ok(struct process_vm *vm, int type, uintptr_t addr, size_t len) {
+	struct vm_range *range, *next;
+	int first = true;
+
+	range = lookup_process_memory_range(vm, addr, addr + len);
+
+	if (!range || range->start > addr) {
+		kprintf("%s: No VM range at 0x%llx, refusing access\n",
+			__FUNCTION__, addr);
+		return -EFAULT;
+	}
+	do {
+		if (first) {
+			first = false;
+		} else {
+			next = next_process_memory_range(vm, range);
+			if (!next) {
+				kprintf("%s: No VM range after 0x%llx, but checking until 0x%llx. Refusing access\n",
+					__FUNCTION__, range->end, addr + len);
+				return -EFAULT;
+			}
+			if (range->end != next->start) {
+				kprintf("%s: 0x%llx - 0x%llx and 0x%llx - 0x%llx are not adjacent (request was %0x%llx-0x%llx %zu)\n",
+					__FUNCTION__, range->start, range->end,
+					next->start, next->end,
+					addr, addr+len, len);
+				return -EFAULT;
+			}
+			range = next;
+		}
+
+		if ((type == VERIFY_WRITE && !(range->flag & VR_PROT_WRITE)) ||
+		    (type == VERIFY_READ && !(range->flag & VR_PROT_READ))) {
+			kprintf("%s: 0x%llx - 0x%llx does not have prot %s (request was %0x%llx-0x%llx %zu)\n",
+				__FUNCTION__, range->start, range->end,
+				type == VERIFY_WRITE ? "write" : "ready",
+				addr, addr+len, len);
+			return -EACCES;
+		}
+	} while (addr + len > range->end);
+
+	return 0;
 }

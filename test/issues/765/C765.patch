@@ -1,0 +1,128 @@
+diff --git arch/x86_64/kernel/include/syscall_list.h arch/x86_64/kernel/include/syscall_list.h
+index 6de0ccc..912af92 100644
+--- arch/x86_64/kernel/include/syscall_list.h
++++ arch/x86_64/kernel/include/syscall_list.h
+@@ -162,6 +162,7 @@ SYSCALL_HANDLED(730, util_migrate_inter_kernel)
+ SYSCALL_HANDLED(731, util_indicate_clone)
+ SYSCALL_HANDLED(732, get_system)
+ SYSCALL_HANDLED(733, util_register_desc)
++SYSCALL_HANDLED(750, get_mem_info)
+ 
+ /* McKernel Specific */
+ SYSCALL_HANDLED(801, swapout)
+diff --git kernel/mem.c kernel/mem.c
+index fa2e347..3a6adc2 100644
+--- kernel/mem.c
++++ kernel/mem.c
+@@ -1604,6 +1604,9 @@ int page_unmap(struct page *page)
+ 		return 1;
+ 	}
+ 	*/
++	if(ihk_atomic_read(&page->count) < 0) {
++		kprintf("page_unmap: BAD count\n");
++	}
+ 
+ 	dkprintf("page_unmap(%p %x %d): 1\n", page, page->mode, page->count);
+ 	list_del(&page->hash);
+@@ -2538,3 +2541,31 @@ int ihk_mc_get_mem_user_page(void *arg0, page_table_t pt, pte_t *ptep, void *pga
+ 
+ 	return 0;
+ }
++
++void dbg_page_count(int init)
++{
++
++	int i;
++	struct page *page_iter;
++	unsigned long irqflags;
++	int cnt = 0;
++	int bad = 0;
++
++	for (i = 0; i < PHYS_PAGE_HASH_SIZE; i++) {
++		irqflags = ihk_mc_spinlock_lock(&page_hash_locks[i]);
++		list_for_each_entry(page_iter, &page_hash[i], hash) {
++			cnt++;
++			if (ihk_atomic_read(&page_iter->count) < 0)
++				bad++;
++		}
++		ihk_mc_spinlock_unlock(&page_hash_locks[i], irqflags);
++	}
++
++	if (init || bad) {
++		if (!bad)
++			kprintf("struct page # = %d\n", cnt);
++		else
++			kprintf("struct page # = %d, bad # = %d\n", cnt, bad);
++	}
++}
++
+diff --git kernel/process.c kernel/process.c
+index fad3e91..8de718f 100644
+--- kernel/process.c
++++ kernel/process.c
+@@ -84,6 +84,7 @@ extern ihk_spinlock_t cpuid_head_lock;
+ int ptrace_detach(int pid, int data);
+ extern void procfs_create_thread(struct thread *);
+ extern void procfs_delete_thread(struct thread *);
++extern void dbg_page_count(int);
+ 
+ struct list_head resource_set_list;
+ mcs_rwlock_lock_t    resource_set_lock;
+@@ -2773,6 +2774,8 @@ static void idle(void)
+ 		v->status = CPU_STATUS_IDLE;
+ 	cpu_enable_interrupt();
+ 
++	dbg_page_count(1);
++
+ 	while (1) {
+ 		cpu_local_var(current)->status = PS_STOPPED;
+ 		schedule();
+@@ -3287,6 +3290,8 @@ void schedule(void)
+ 
+ 		if ((last != NULL) && (last->status == PS_EXITED)) {
+ 			release_thread(last);
++
++			dbg_page_count(0);
+ 		}
+ 
+ 		/* Have we migrated to another core meanwhile? */
+diff --git kernel/syscall.c kernel/syscall.c
+index 466ca89..5aa3449 100644
+--- kernel/syscall.c
++++ kernel/syscall.c
+@@ -9287,6 +9287,35 @@ SYSCALL_DECLARE(util_register_desc)
+ 	return 0;
+ }
+ 
++SYSCALL_DECLARE(get_mem_info)
++{
++	unsigned long addr = ihk_mc_syscall_arg0(ctx);
++	struct thread *thread = cpu_local_var(current);
++	struct vm_range *range = lookup_process_memory_range(thread->vm,
++	                                                     addr, addr + 1);
++	struct process_vm *vm = thread->vm;
++	pte_t *ptep;
++	void *pgaddr;
++	size_t pgsize;
++	int p2align;
++	struct page *page = NULL;
++
++	if (!range)
++		return -EINVAL;
++
++	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
++	ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
++		(void *)addr, range->pgshift, &pgaddr, &pgsize, &p2align);
++	if (ptep && !pte_is_null(ptep) && !pte_is_fileoff(ptep, pgsize)) {
++		unsigned long phys;
++		phys = pte_get_phys(ptep);
++		page = phys_to_page(phys);
++	}
++
++	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
++	return pgsize | (page ? 1 : 0);
++}
++
+ void
+ reset_cputime()
+ {

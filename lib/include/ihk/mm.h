@@ -106,7 +106,7 @@ void ihk_mc_unmap_memory(void *os, unsigned long phys, unsigned long size);
 
 void *ihk_mc_map_virtual(unsigned long phys, int npages,
                          enum ihk_mc_pt_attribute attr);
-void ihk_mc_unmap_virtual(void *va, int npages, int free_physical);
+void ihk_mc_unmap_virtual(void *va, int npages);
 
 extern void *sbox_base;
 extern unsigned int free_bitmap_micpa;
@@ -229,6 +229,7 @@ char *ihk_get_kargs(void);
 int ihk_set_monitor(unsigned long addr, unsigned long size);
 int ihk_set_rusage(unsigned long addr, unsigned long size);
 int ihk_set_nmi_mode_addr(unsigned long addr);
+int ihk_set_mckernel_do_futex(unsigned long addr);
 
 extern void (*__tlb_flush_handler)(int vector);
 

@@ -31,6 +31,7 @@
 #include <prctl.h>
 #include <page.h>
 #include <kmalloc.h>
+#include <debug.h>
 
 #define LAPIC_ID            0x020
 #define LAPIC_TIMER         0x320
@@ -69,11 +70,8 @@
 //#define DEBUG_PRINT_CPU
 
 #ifdef DEBUG_PRINT_CPU
-#define dkprintf kprintf
-#define ekprintf kprintf
-#else
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define ekprintf kprintf
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 static void *lapic_vp;
@@ -96,6 +94,8 @@ int gettime_local_support = 0;
 extern int ihk_mc_pt_print_pte(struct page_table *pt, void *virt);
 extern int kprintf(const char *format, ...);
 extern int interrupt_from_user(void *);
+extern void perf_start(struct mc_perf_event *event);
+extern void perf_reset(struct mc_perf_event *event);
 
 static struct idt_entry{
 	uint32_t desc[4];
@@ -847,9 +847,6 @@ void setup_x86_ap(void (*next_func)(void))
 }
 
 void arch_show_interrupt_context(const void *reg);
-void set_signal(int sig, void *regs, struct siginfo *info);
-void check_signal(unsigned long, void *, int);
-void check_sig_pending();
 extern void tlb_flush_handler(int vector);
 
 void __show_stack(uintptr_t *sp) {
@@ -877,7 +874,7 @@ void interrupt_exit(struct x86_user_context *regs)
 		cpu_enable_interrupt();
 		check_sig_pending();
 		check_need_resched();
-		check_signal(0, regs, 0);
+		check_signal(0, regs, -1);
 	}
 	else {
 		check_sig_pending();
@@ -1010,6 +1007,12 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 	set_cputime(interrupt_from_user(regs)? 0: 1);
 
 	--v->in_interrupt;
+
+	/* for migration by IPI */
+	if (v->flags & CPU_FLAG_NEED_MIGRATE) {
+		schedule();
+		check_signal(0, regs, 0);
+	}
 }
 
 void gpe_handler(struct x86_user_context *regs)
@@ -1644,12 +1647,10 @@ int ihk_mc_interrupt_cpu(int cpu, int vector)
 	return 0;
 }
 
-#ifdef POSTK_DEBUG_ARCH_DEP_22
-extern void perf_start(struct mc_perf_event *event);
-extern void perf_reset(struct mc_perf_event *event);
 struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 {
 	struct thread *last;
+	struct mcs_rwlock_node_irqsave lock;
 
 	dkprintf("[%d] schedule: tlsblock_base: 0x%lX\n",
 	         ihk_mc_get_processor_id(), next->tlsblock_base);
@@ -1668,7 +1669,7 @@ struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 	}
 
 #ifdef PROFILE_ENABLE
-	if (prev->profile && prev->profile_start_ts != 0) {
+	if (prev && prev->profile && prev->profile_start_ts != 0) {
 		prev->profile_elapsed_ts +=
 			(rdtsc() - prev->profile_start_ts);
 		prev->profile_start_ts = 0;
@@ -1680,6 +1681,28 @@ struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 #endif
 
 	if (prev) {
+		mcs_rwlock_writer_lock(&prev->proc->update_lock, &lock);
+		if (prev->proc->status & (PS_DELAY_STOPPED | PS_DELAY_TRACED)) {
+			switch (prev->proc->status) {
+			case PS_DELAY_STOPPED:
+				prev->proc->status = PS_STOPPED;
+				break;
+			case PS_DELAY_TRACED:
+				prev->proc->status = PS_TRACED;
+				break;
+			default:
+				break;
+			}
+			mcs_rwlock_writer_unlock(&prev->proc->update_lock,
+						&lock);
+
+			/* Wake up the parent who tried wait4 and sleeping */
+			waitq_wakeup(&prev->proc->parent->waitpid_q);
+		} else {
+			mcs_rwlock_writer_unlock(&prev->proc->update_lock,
+						&lock);
+		}
+
 		last = ihk_mc_switch_context(&prev->ctx, &next->ctx, prev);
 	}
 	else {
@@ -1687,7 +1710,6 @@ struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 	}
 	return last;
 }
-#endif
 
 /*@
   @ requires \valid(thread);
@@ -1762,14 +1784,6 @@ void copy_fp_regs(struct thread *from, struct thread *to)
 	}
 }
 
-#ifdef POSTK_DEBUG_TEMP_FIX_19
-void
-clear_fp_regs(struct thread *thread)
-{
-	return;
-}
-#endif /* POSTK_DEBUG_TEMP_FIX_19 */
-
 /*@
   @ requires \valid(thread);
   @ assigns thread->fp_regs;
@@ -1777,8 +1791,11 @@ clear_fp_regs(struct thread *thread)
 void
 restore_fp_regs(struct thread *thread)
 {
-	if (!thread->fp_regs)
+	if (!thread->fp_regs) {
+		// only clear fpregs.
+		clear_fp_regs();
 		return;
+	}
 
 	if (xsave_available) {
 		unsigned int low, high;
@@ -1795,6 +1812,13 @@ restore_fp_regs(struct thread *thread)
 
 	// XXX: why release??
 	//release_fp_regs(thread);
+}
+
+void clear_fp_regs(void)
+{
+	struct cpu_local_var *v = get_this_cpu_local_var();
+
+	restore_fp_regs(&v->idle);
 }
 
 ihk_mc_user_context_t *lookup_user_context(struct thread *thread)

@@ -21,10 +21,7 @@
 #include <memory.h>
 #include <page.h>
 #include <string.h>
-
-#define	dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
-#define	fkprintf(...)	kprintf(__VA_ARGS__)
+#include <debug.h>
 
 struct zeroobj {
 	struct memobj		memobj;		/* must be first */
@@ -35,9 +32,11 @@ static ihk_spinlock_t the_zeroobj_lock = SPIN_LOCK_UNLOCKED;
 static struct zeroobj *the_zeroobj = NULL;	/* singleton */
 
 static memobj_get_page_func_t zeroobj_get_page;
+static memobj_free_func_t zeroobj_free;
 
 static struct memobj_ops zeroobj_ops = {
 	.get_page =	&zeroobj_get_page,
+	.free = &zeroobj_free,
 };
 
 static struct zeroobj *to_zeroobj(struct memobj *memobj)
@@ -77,6 +76,12 @@ static struct page *page_list_first(struct zeroobj *obj)
 /***********************************************************************
  * zeroobj
  */
+
+static void zeroobj_free(struct memobj *obj)
+{
+	kprintf("trying to free zeroobj, this should never happen\n");
+}
+
 static int alloc_zeroobj(void)
 {
 	int error;
@@ -104,8 +109,8 @@ static int alloc_zeroobj(void)
 	obj->memobj.ops = &zeroobj_ops;
 	obj->memobj.flags = MF_ZEROOBJ;
 	obj->memobj.size = 0;
+	ihk_atomic_set(&obj->memobj.refcnt, 2); // never reaches 0
 	page_list_init(obj);
-	ihk_mc_spinlock_init(&obj->memobj.lock);
 
 	virt = ihk_mc_alloc_pages(1, IHK_MC_AP_NOWAIT);	/* XXX:NYI:large page */
 	if (!virt) {
@@ -117,7 +122,7 @@ static int alloc_zeroobj(void)
 	page = phys_to_page_insert_hash(phys);
 
 	if (page->mode != PM_NONE) {
-		fkprintf("alloc_zeroobj():"
+		ekprintf("alloc_zeroobj():"
 				"page %p %#lx %d %d %#lx\n",
 				page, page_to_phys(page), page->mode,
 				page->count, page->offset);
@@ -162,6 +167,7 @@ int zeroobj_create(struct memobj **objp)
 
 	error = 0;
 	*objp = to_memobj(the_zeroobj);
+	memobj_ref(*objp);
 
 out:
 	dkprintf("zeroobj_create(%p):%d %p\n", objp, error, *objp);

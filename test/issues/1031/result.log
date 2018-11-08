@@ -1,0 +1,58 @@
+*** RT_001 start *******************************
+TEST_SUITE: rt_sigaction
+TEST_NUMBER: 4
+ARGS:
+/-------- Signal handler will activate -------/
+sig#10 is handled.
+/------ Process will terminate by signal -----/
+Terminate by signal 10
+*** RT_001: CHECK "Terminate by signal 10"
+
+*** CT_001 start *******************************
+ [OK] sigaction with SA_RESETHAND
+   send 1st SIGUSR1
+ [OK] invoked test_handler
+   send 2nd SIGUSR1
+ [OK] child is killed by SIGUSR1
+*** CT_001 PASSED
+
+*** CT_002 start *******************************
+ [OK] sigaction (no SA_RESETHAND)
+   send 1st SIGUSR1
+ [OK] invoked test_handler
+   send 2nd SIGUSR1
+ [OK] invoked test_handler again
+ [OK] child exited normaly
+*** CT_002 PASSED
+
+*** CT_003 start *******************************
+ [OK] sigaction with SA_RESETHAND
+ [OK] sigaction (rewrite no SA_RESETHAND)
+   send 1st SIGUSR1
+ [OK] invoked test_handler
+   send 2nd SIGUSR1
+ [OK] invoked test_handler again
+ [OK] child exited normaly
+*** CT_003 PASSED
+
+*** CT_004 start *******************************
+ [OK] sigaction with SA_RESETHAND to SIGUSR1
+ [OK] sigaction with SA_RESETHAND to SIGUSR2
+   send 1st SIGUSR1
+ [OK] invoked test_handler
+   send 1st SIGUSR2
+ [OK] invoked test_handler2
+   send 2nd SIGUSR1
+ [OK] child is killed by SIGUSR1
+*** CT_004 PASSED
+
+*** CT_005 start *******************************
+ [OK] sigaction with SA_RESETHAND
+   send 1st SIGUSR1
+ [OK] invoked test_handler
+ [OK] sigaction with SA_RESETHAND again
+   send 2nd SIGUSR1
+ [OK] invoked test_handler again
+   send 3rd SIGUSR1
+ [OK] child is killed by SIGUSR1
+*** CT_005 PASSED

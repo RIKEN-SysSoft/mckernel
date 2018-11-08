@@ -1,0 +1,16 @@
+#!/bin/sh
+
+#PJM -L rscgrp=@rg@
+#PJM -L node=@nnodes@
+#PJM --mpi proc=@nprocs@
+#PJM -L elapse=@elapse@
+#PJM -L proc-crproc=16384 
+#PJM -g gg10
+#PJM -j
+#PJM -s
+@use_mck@
+@mck_mem@
+
+@env@
+
+@mpiexec@ @genv@ @progress@ -np @nprocs@ -machinefile ${PJM_O_NODEINF} @mcexec@ @mcexecopt@ ./001 1048576 1000

@@ -27,15 +27,13 @@
 #include <string.h>
 #include <syscall.h>
 #include <rusage_private.h>
+#include <debug.h>
 
 //#define DEBUG_PRINT_FILEOBJ
 
 #ifdef DEBUG_PRINT_FILEOBJ
-#define	dkprintf(...)	do { if (1) kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
-#else
-#define	dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 mcs_lock_t fileobj_list_lock;
@@ -47,24 +45,21 @@ static LIST_HEAD(fileobj_list);
 
 struct fileobj {
 	struct memobj memobj;		/* must be first */
-	long sref;
-	long cref;
+	uint64_t sref;
 	uintptr_t handle;
 	struct list_head list;
 	struct list_head page_hash[FILEOBJ_PAGE_HASH_SIZE];
 	mcs_lock_t page_hash_locks[FILEOBJ_PAGE_HASH_SIZE];
 };
 
-static memobj_release_func_t fileobj_release;
-static memobj_ref_func_t fileobj_ref;
+static memobj_free_func_t fileobj_free;
 static memobj_get_page_func_t fileobj_get_page;
 static memobj_flush_page_func_t fileobj_flush_page;
 static memobj_invalidate_page_func_t fileobj_invalidate_page;
 static memobj_lookup_page_func_t fileobj_lookup_page;
 
 static struct memobj_ops fileobj_ops = {
-	.release =	&fileobj_release,
-	.ref =		&fileobj_ref,
+	.free =	&fileobj_free,
 	.get_page =	&fileobj_get_page,
 	.copy_page =	NULL,
 	.flush_page =	&fileobj_flush_page,
@@ -170,22 +165,22 @@ static void obj_list_remove(struct fileobj *obj)
 /* return NULL or locked fileobj */
 static struct fileobj *obj_list_lookup(uintptr_t handle)
 {
-	struct fileobj *obj;
 	struct fileobj *p;
 
-	obj = NULL;
 	list_for_each_entry(p, &fileobj_list, list) {
 		if (p->handle == handle) {
-			memobj_lock(&p->memobj);
-			if (p->cref > 0) {
-				obj = p;
-				break;
+			/* for the interval between last put and fileobj_free
+			 * taking list_lock
+			 */
+			if (memobj_ref(&p->memobj) <= 1) {
+				ihk_atomic_dec(&p->memobj.refcnt);
+				continue;
 			}
-			memobj_unlock(&p->memobj);
+			return p;
 		}
 	}
 
-	return obj;
+	return NULL;
 }
 
 /***********************************************************************
@@ -200,13 +195,7 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp, uintptr_t virt_a
 	struct fileobj *obj;
 	struct mcs_lock_node node;
 
-	dkprintf("fileobj_create(%d)\n", fd);
-	newobj = kmalloc(sizeof(*newobj), IHK_MC_AP_NOWAIT);
-	if (!newobj) {
-		error = -ENOMEM;
-		kprintf("fileobj_create(%d):kmalloc failed. %d\n", fd, error);
-		goto out;
-	}
+	dkprintf("%s(%d)\n", __func__, fd);
 
 	ihk_mc_syscall_arg0(&ctx) = PAGER_REQ_CREATE;
 	ihk_mc_syscall_arg1(&ctx) = fd;
@@ -214,20 +203,41 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp, uintptr_t virt_a
 	memset(&result, 0, sizeof(result));
 
 	error = syscall_generic_forwarding(__NR_mmap, &ctx);
+
 	if (error) {
-		dkprintf("fileobj_create(%d):create failed. %d\n", fd, error);
+		/* -ESRCH doesn't mean an error but requesting a fall
+		 * back to treat the file as a device file
+		 */
+		if (error != -ESRCH) {
+			kprintf("%s(%d):create failed. %d\n",
+				__func__, fd, error);
+		}
 		goto out;
 	}
 
+	if (result.flags & MF_HUGETLBFS) {
+		return hugefileobj_pre_create(&result, objp, maxprotp);
+	}
+
+	mcs_lock_lock(&fileobj_list_lock, &node);
+	obj = obj_list_lookup(result.handle);
+	if (obj)
+		goto found;
+	mcs_lock_unlock(&fileobj_list_lock, &node);
+
+	// not found: alloc new object and lookup again
+	newobj = kmalloc(sizeof(*newobj), IHK_MC_AP_NOWAIT);
+	if (!newobj) {
+		error = -ENOMEM;
+		kprintf("%s(%d):kmalloc failed. %d\n", __func__, fd, error);
+		goto out;
+	}
 	memset(newobj, 0, sizeof(*newobj));
 	newobj->memobj.ops = &fileobj_ops;
 	newobj->memobj.flags = MF_HAS_PAGER | MF_REG_FILE;
 	newobj->handle = result.handle;
 
-	newobj->sref = 1;
-	newobj->cref = 1;
 	fileobj_page_hash_init(newobj);
-	ihk_mc_spinlock_init(&newobj->memobj.lock);
 
 	mcs_lock_lock_noirq(&fileobj_list_lock, &node);
 	obj = obj_list_lookup(result.handle);
@@ -237,6 +247,8 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp, uintptr_t virt_a
 		to_memobj(obj)->size = result.size;
 		to_memobj(obj)->flags |= result.flags;
 		to_memobj(obj)->status = MEMOBJ_READY;
+		ihk_atomic_set(&to_memobj(obj)->refcnt, 1);
+		obj->sref = 1;
 		if (to_memobj(obj)->flags & MF_PREFETCH) {
 			to_memobj(obj)->status = MEMOBJ_TO_BE_PREFETCHED;
 		}
@@ -305,20 +317,17 @@ error_cleanup:
 		}
 
 		newobj = NULL;
-		dkprintf("%s: new obj 0x%lx cref: %d, %s\n",
+		dkprintf("%s: new obj 0x%lx %s\n",
 			__FUNCTION__,
 			obj,
-			obj->cref,
 			to_memobj(obj)->flags & MF_ZEROFILL ? "zerofill" : "");
 	}
 	else {
-		++obj->sref;
-		++obj->cref;
-		memobj_unlock(&obj->memobj);	/* locked by obj_list_lookup() */
-		dkprintf("%s: existing obj 0x%lx cref: %d, %s\n",
+found:
+		obj->sref++;
+		dkprintf("%s: existing obj 0x%lx, %s\n",
 			__FUNCTION__,
 			obj,
-			obj->cref,
 			to_memobj(obj)->flags & MF_ZEROFILL ? "zerofill" : "");
 	}
 
@@ -332,152 +341,111 @@ out:
 	if (newobj) {
 		kfree(newobj);
 	}
-	dkprintf("fileobj_create(%d):%d %p %x\n", fd, error, *objp, *maxprotp);
+	dkprintf("%s(%d):%d %p %x\n", __func__, fd, error, *objp, *maxprotp);
 	return error;
 }
 
-static void fileobj_ref(struct memobj *memobj)
+static void fileobj_free(struct memobj *memobj)
 {
 	struct fileobj *obj = to_fileobj(memobj);
-
-	dkprintf("fileobj_ref(%p %lx):\n", obj, obj->handle);
-	memobj_lock(&obj->memobj);
-	++obj->cref;
-	memobj_unlock(&obj->memobj);
-	return;
-}
-
-static void fileobj_release(struct memobj *memobj)
-{
-	struct fileobj *obj = to_fileobj(memobj);
-	long free_sref = 0;
-	uintptr_t free_handle;
-	struct fileobj *free_obj = NULL;
 	struct mcs_lock_node node;
+	int error;
+	ihk_mc_user_context_t ctx;
 
-	dkprintf("fileobj_release(%p %lx)\n", obj, obj->handle);
 
-	memobj_lock(&obj->memobj);
-	--obj->cref;
-	free_sref = obj->sref - 1;	/* surplus sref */
-	if (obj->cref <= 0) {
-		free_sref = obj->sref;
-		free_obj = obj;
-	}
-	obj->sref -= free_sref;
-	free_handle = obj->handle;
-	memobj_unlock(&obj->memobj);
-	if (obj->memobj.flags & MF_HOST_RELEASED) {
-		free_sref = 0; // don't call syscall_generic_forwarding
-	}
+	dkprintf("%s: free obj 0x%lx, %s\n", __func__,
+		 obj, to_memobj(obj)->flags & MF_ZEROFILL ? "zerofill" : "");
 
-	if (free_obj) {
-		dkprintf("%s: release obj 0x%lx cref: %d, free_obj: 0x%lx, %s\n",
-				__FUNCTION__,
-				obj,
-				obj->cref,
-				free_obj,
-				to_memobj(obj)->flags & MF_ZEROFILL ? "zerofill" : "");
-		mcs_lock_lock_noirq(&fileobj_list_lock, &node);
-		/* zap page_list */
-		for (;;) {
-			struct page *page;
-			void *page_va;
-			uintptr_t phys;
+	mcs_lock_lock_noirq(&fileobj_list_lock, &node);
+	obj_list_remove(obj);
+	mcs_lock_unlock_noirq(&fileobj_list_lock, &node);
 
-			page = fileobj_page_hash_first(obj);
-			if (!page) {
-				break;
-			}
-			__fileobj_page_hash_remove(page);
-			phys = page_to_phys(page);
-			page_va = phys_to_virt(phys);
+	/* zap page_list */
+	for (;;) {
+		struct page *page;
+		void *page_va;
+		uintptr_t phys;
 
-			/* Count must be one because set to one on the first get_page() invoking fileobj_do_pageio and
-			   incremented by the second get_page() reaping the pageio and decremented by clear_range().
+		page = fileobj_page_hash_first(obj);
+		if (!page) {
+			break;
+		}
+		__fileobj_page_hash_remove(page);
+		phys = page_to_phys(page);
+		page_va = phys_to_virt(phys);
+		/* Count must be one because set to one on the first
+		 * get_page() invoking fileobj_do_pageio and incremented by
+		 * the second get_page() reaping the pageio and decremented
+		 * by clear_range().
+		 */
+		if (ihk_atomic_read(&page->count) != 1) {
+			kprintf("%s: WARNING: page count is %d for phys 0x%lx is invalid, flags: 0x%lx\n",
+				__func__, ihk_atomic_read(&page->count),
+				page->phys, to_memobj(obj)->flags);
+		}
+		else if (page_unmap(page)) {
+			ihk_mc_free_pages_user(page_va, 1);
+			/* Track change in page->count for !MF_PREMAP pages.
+			 * It is decremented here or in clear_range()
 			 */
-			if (ihk_atomic_read(&page->count) != 1) {
-				kprintf("%s: WARNING: page count is %d for phys 0x%lx is invalid, flags: 0x%lx\n",
-						__FUNCTION__,
-					ihk_atomic_read(&page->count),
-					page->phys,
-					to_memobj(free_obj)->flags);
-			}
-			else if (page_unmap(page)) {
-				ihk_mc_free_pages_user(page_va, 1);
-				/* Track change in page->count for !MF_PREMAP pages. It is decremented here or in clear_range() */
-				dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, phys, PAGE_SIZE, PAGE_SIZE);
-				rusage_memory_stat_mapped_file_sub(PAGE_SIZE, PAGE_SIZE); 
-			}
-#if 0
-			count = ihk_atomic_sub_return(1, &page->count);
-
-			if (!((page->mode == PM_WILL_PAGEIO)
-					|| (page->mode == PM_DONE_PAGEIO)
-					|| (page->mode == PM_PAGEIO_EOF)
-					|| (page->mode == PM_PAGEIO_ERROR)
-					|| ((page->mode == PM_MAPPED)
-						&& (count <= 0)))) {
-				kprintf("fileobj_release(%p %lx): "
-					       "mode %x, count %d, off %lx\n",
-					       obj, obj->handle, page->mode,
-					       count, page->offset);
-				panic("fileobj_release");
-			}
-
-			page->mode = PM_NONE;
-#endif
-		}
-
-		/* Pre-mapped? */
-		if (to_memobj(free_obj)->flags & MF_PREMAP) {
-			int i;
-			for (i = 0; i < to_memobj(free_obj)->nr_pages; ++i) {
-				if (to_memobj(free_obj)->pages[i]) {
-					dkprintf("%s: pages[i]=%p\n", __FUNCTION__, i, to_memobj(free_obj)->pages[i]);
-					// Track change in fileobj->pages[] for MF_PREMAP pages
-					// Note that page_unmap() isn't called for MF_PREMAP in 
-					// free_process_memory_range() --> ihk_mc_pt_free_range()
-					dkprintf("%lx-,%s: memory_stat_rss_sub,phys=%lx,size=%ld,pgsize=%ld\n",
-							virt_to_phys(to_memobj(free_obj)->pages[i]), __FUNCTION__, virt_to_phys(to_memobj(free_obj)->pages[i]), PAGE_SIZE, PAGE_SIZE);
-					rusage_memory_stat_mapped_file_sub(PAGE_SIZE, PAGE_SIZE);
-					ihk_mc_free_pages_user(to_memobj(free_obj)->pages[i], 1);
-				}
-			}
-
-			kfree(to_memobj(free_obj)->pages);
-		}
-
-		if (to_memobj(free_obj)->path) {
-			dkprintf("%s: %s\n", __FUNCTION__, to_memobj(free_obj)->path);
-			kfree(to_memobj(free_obj)->path);
-		}
-
-		obj_list_remove(free_obj);
-		mcs_lock_unlock_noirq(&fileobj_list_lock, &node);
-		kfree(free_obj);
-	}
-
-	if (free_sref) {
-		int error;
-		ihk_mc_user_context_t ctx;
-
-		ihk_mc_syscall_arg0(&ctx) = PAGER_REQ_RELEASE;
-		ihk_mc_syscall_arg1(&ctx) = free_handle;
-		ihk_mc_syscall_arg2(&ctx) = free_sref;
-
-		error = syscall_generic_forwarding(__NR_mmap, &ctx);
-		if (error) {
-			kprintf("fileobj_release(%p %lx):"
-					"release %ld failed. %d\n",
-					obj, free_handle, free_sref, error);
-			/* through */
+			dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n",
+				 phys, __func__, phys, PAGE_SIZE, PAGE_SIZE);
+			rusage_memory_stat_mapped_file_sub(PAGE_SIZE,
+							   PAGE_SIZE);
 		}
 	}
 
-	dkprintf("fileobj_release(%p %lx):free %ld %p\n",
-			obj, free_handle, free_sref, free_obj);
+	/* Pre-mapped? */
+	if (to_memobj(obj)->flags & MF_PREMAP) {
+		int i;
+
+		for (i = 0; i < to_memobj(obj)->nr_pages; ++i) {
+			if (to_memobj(obj)->pages[i]) {
+				dkprintf("%s: pages[i]=%p\n", __func__, i,
+					 to_memobj(obj)->pages[i]);
+				// Track change in fileobj->pages[] for MF_PREMAP pages
+				// Note that page_unmap() isn't called for MF_PREMAP in
+				// free_process_memory_range() --> ihk_mc_pt_free_range()
+				dkprintf("%lx-,%s: memory_stat_rss_sub,phys=%lx,size=%ld,pgsize=%ld\n",
+					 virt_to_phys(to_memobj(obj)->pages[i]),
+					 __func__,
+					 virt_to_phys(to_memobj(obj)->pages[i]),
+					 PAGE_SIZE, PAGE_SIZE);
+				rusage_memory_stat_mapped_file_sub(PAGE_SIZE,
+								   PAGE_SIZE);
+				ihk_mc_free_pages_user(to_memobj(obj)->pages[i],
+						       1);
+			}
+		}
+
+		kfree(to_memobj(obj)->pages);
+	}
+
+	if (to_memobj(obj)->path) {
+		dkprintf("%s: %s\n", __func__, to_memobj(obj)->path);
+		kfree(to_memobj(obj)->path);
+	}
+
+	/* linux side
+	 * sref is necessary because handle is used as key, so there could
+	 * be a new mckernel pager with the same handle being created as
+	 * this one is being destroyed
+	 */
+	ihk_mc_syscall_arg0(&ctx) = PAGER_REQ_RELEASE;
+	ihk_mc_syscall_arg1(&ctx) = obj->handle;
+	ihk_mc_syscall_arg2(&ctx) = obj->sref;
+
+	error = syscall_generic_forwarding(__NR_mmap, &ctx);
+	if (error) {
+		kprintf("%s(%p %lx): free failed. %d\n", __func__,
+			obj, obj->handle, error);
+		/* through */
+	}
+
+	dkprintf("%s(%p %lx):free\n", __func__, obj, obj->handle);
+	kfree(obj);
 	return;
+
 }
 
 struct pageio_args {
@@ -570,7 +538,7 @@ static void fileobj_do_pageio(void *args0)
 out:
 	mcs_lock_unlock_noirq(&obj->page_hash_locks[hash],
 			&mcs_node);
-	fileobj_release(&obj->memobj);		/* got fileobj_get_page() */
+	memobj_unref(&obj->memobj);		/* got fileobj_get_page() */
 	kfree(args0);
 	dkprintf("fileobj_do_pageio(%p,%lx,%lx):\n", obj, off, pgsize);
 	return;
@@ -656,7 +624,9 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 			npages = 1 << p2align;
 
 			virt = ihk_mc_alloc_pages_user(npages, (IHK_MC_AP_NOWAIT |
-					(to_memobj(obj)->flags & MF_ZEROFILL) ? IHK_MC_AP_USER : 0), virt_addr);
+					((to_memobj(obj)->flags & MF_ZEROFILL) ?
+						IHK_MC_AP_USER : 0)),
+					virt_addr);
 			if (!virt) {
 				error = -ENOMEM;
 				kprintf("fileobj_get_page(%p,%lx,%x,%x,%p):"
@@ -681,9 +651,7 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 			page->mode = PM_WILL_PAGEIO;
 		}
 
-		memobj_lock(&obj->memobj);
-		++obj->cref;	/* for fileobj_do_pageio() */
-		memobj_unlock(&obj->memobj);
+		memobj_ref(&obj->memobj);
 
 		args->fileobj = obj;
 		args->objoff = off;
@@ -744,18 +712,12 @@ static int fileobj_flush_page(struct memobj *memobj, uintptr_t phys,
 		return 0;
 	}
 
-	if (memobj->flags & MF_HOST_RELEASED) {
-		return 0;
-	}
-
 	page = phys_to_page(phys);
 	if (!page) {
 		kprintf("%s: warning: tried to flush non-existing page for phys addr: 0x%lx\n", 
 			__FUNCTION__, phys);
 		return 0;
 	}
-
-	memobj_unlock(&obj->memobj);
 
 	ihk_mc_syscall_arg0(&ctx) = PAGER_REQ_WRITE;
 	ihk_mc_syscall_arg1(&ctx) = obj->handle;
@@ -771,7 +733,6 @@ static int fileobj_flush_page(struct memobj *memobj, uintptr_t phys,
 		/* through */
 	}
 
-	memobj_lock(&obj->memobj);
 	return 0;
 }
 

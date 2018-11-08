@@ -63,7 +63,7 @@
 #define FUTEX_OP_ANDN		3	/* *(int *)UADDR2 &= ~OPARG; */
 #define FUTEX_OP_XOR		4	/* *(int *)UADDR2 ^= OPARG; */
 
-#define FUTEX_OP_OPARG_SHIFT	8	/* Use (1 << OPARG) instead of OPARG.  */
+#define FUTEX_OP_OPARG_SHIFT	8U	/* Use (1 << OPARG) instead of OPARG. */
 
 #define FUTEX_OP_CMP_EQ		0	/* if (oldval == CMPARG) wake */
 #define FUTEX_OP_CMP_NE		1	/* if (oldval != CMPARG) wake */
@@ -150,6 +150,7 @@ union futex_key {
 
 extern int futex_init(void);
 
+struct cpu_local_var;
 extern int
 futex(
 	uint32_t __user *		uaddr,
@@ -159,7 +160,8 @@ futex(
 	uint32_t __user *		uaddr2,
 	uint32_t				val2,
 	uint32_t				val3,
-	int                     fshared
+	int                     fshared,
+	struct cpu_local_var *clv_override
 );
 
 

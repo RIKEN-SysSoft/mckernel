@@ -48,7 +48,7 @@ archdep_syscall(struct syscall_wait_desc *w, long *ret)
 			if (*ret >= PATH_MAX) {
 				*ret = -ENAMETOOLONG;
 			}
-			if (ret < 0) {
+			if (*ret < 0) {
 				return 0;
 			}
 			__dprintf("open: %s\n", pathbuf);

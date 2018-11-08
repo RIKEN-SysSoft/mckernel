@@ -1,0 +1,73 @@
+*** CT_001 start *******************************
+glibc time(): 1536804078 seconds
+sys_time    : 1536804078 seconds
+ [OK] check seconds since the Epoch
+*** CT_001 PASSED
+
+*** CT_002 start *******************************
+* Check syscall_time is not delegated to mcexec
+* Result of strace -f -c (expect time is NOT contained)
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 58.26    0.033991        1133        30           futex
+ 31.92    0.018621          71       264           ioctl
+  4.48    0.002614           7       392       356 open
+  1.44    0.000839           6       146       108 stat
+  0.84    0.000491           5        97           mmap
+  0.80    0.000468           6        81           read
+  0.51    0.000299           5        66           mprotect
+  0.26    0.000151           5        32           set_robust_list
+  0.21    0.000120           4        30           gettid
+  0.19    0.000110           3        35           fstat
+  0.17    0.000099           3        33           close
+  0.14    0.000079          16         5         3 access
+  0.12    0.000071           2        30           clone
+  0.10    0.000057           3        19           getrlimit
+  0.08    0.000048           5        10           munmap
+  0.07    0.000043           0       122           rt_sigaction
+  0.06    0.000033           7         5           write
+  0.05    0.000032           6         5         1 openat
+  0.05    0.000027           3         9           lseek
+  0.05    0.000027           3         8           getdents
+  0.03    0.000019           3         6           brk
+  0.03    0.000018           4         5           personality
+  0.03    0.000017          17         1           mlock
+  0.03    0.000016          16         1           epoll_ctl
+  0.02    0.000011           6         2           execve
+  0.01    0.000007           7         1           pread
+  0.01    0.000007           4         2           arch_prctl
+  0.01    0.000006           6         1           lstat
+  0.01    0.000004           2         2           rt_sigprocmask
+  0.01    0.000004           4         1           getcwd
+  0.01    0.000004           2         2           sched_getaffinity
+  0.01    0.000003           3         1           getpgid
+  0.01    0.000003           2         2           set_tid_address
+  0.00    0.000000           0         1           epoll_create
+  0.00    0.000000           0         1           eventfd2
+------ ----------- ----------- --------- --------- ----------------
+100.00    0.058339                  1448       468 total
+*** CT_002: PASSED
+
+*** LT_001 start *******************************
+time01      1  TPASS  :  time(0) returned 1536804078
+*** LT_001: PASSED (ok:1)
+
+*** LT_002 start *******************************
+time02      1  TPASS  :  time() returned value 1536804078, stored value 1536804078 are same
+*** LT_002: PASSED (ok:1)
+
+*** LT_003 start *******************************
+gettimeofday01    1  TPASS  :  gettimeofday(2) set the errno EFAULT correctly
+*** LT_003: PASSED (ok:1)
+
+*** LT_004 start *******************************
+tst_test.c:934: INFO: Timeout per run is 0h 05m 00s
+gettimeofday02.c:89: INFO: gettimeofday() called 7968855 times
+gettimeofday02.c:90: PASS: gettimeofday() monotonous in 10 seconds
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** LT_004: PASSED (ok:0)

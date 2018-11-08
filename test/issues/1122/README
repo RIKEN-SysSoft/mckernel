@@ -1,0 +1,34 @@
+【Issue#1122 動作確認】
+□ テスト内容
+1. Issueで報告された再現プログラムでの確認
+RT_001: ostest-sched_getaffinity.001
+	affinityマスクの情報を受け取る第3引数に不正なアドレスを指定した場合、
+	-1が返り、errnoにEFAULTが設定されることを確認
+
+2. 既存のsched_setaffinity機能に影響がないことをOSTESTを用いて確認
+RT_002: ostest_schedgetaffinity.000
+	自プロセスのaffinityマスクを取得し、実行中のCPUがaffinityマスクに
+	含まれていることを確認
+
+RT_003: ostest_schedgetaffinity.002
+	cpusetsizeに不正な値(0) を指定した場合、
+	-1が返り、errnoにEINVALが設定されることを確認
+
+RT_004: ostest_schedgetaffinity.003
+	pidに存在しないプロセスIDを指定した場合、
+	-1が返り、errnoにESRCHが設定されることを確認
+
+RT_005: ostest_schedgetaffinity.005
+	子プロセスが親プロセスのaffinityマスクを引き継いでいることを確認
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。

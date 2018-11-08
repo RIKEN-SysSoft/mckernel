@@ -40,11 +40,85 @@ extern int sprintf(char * buf, const char *fmt, ...);
 extern int sscanf(const char * buf, const char * fmt, ...);
 extern int scnprintf(char * buf, size_t size, const char *fmt, ...);
 
+struct mckernel_procfs_buffer {
+	unsigned long next_pa;
+	unsigned long pos;
+	unsigned long size;
+	char buf[0];
+};
+
+#define PA_NULL (-1L)
+
+static struct mckernel_procfs_buffer *buf_alloc(unsigned long *phys, long pos)
+{
+	struct mckernel_procfs_buffer *buf;
+
+	buf = ihk_mc_alloc_pages(1, IHK_MC_AP_NOWAIT);
+	if (!buf)
+		return NULL;
+	buf->next_pa = PA_NULL;
+	buf->pos = pos;
+	buf->size = 0;
+	if (phys)
+		*phys = virt_to_phys(buf);
+	return buf;
+}
+
+static void buf_free(unsigned long phys)
+{
+	struct mckernel_procfs_buffer *pbuf;
+	unsigned long next;
+
+	while (phys != PA_NULL) {
+		pbuf = phys_to_virt(phys);
+		next = pbuf->next_pa;
+		ihk_mc_free_pages(pbuf, 1);
+		phys = next;
+	}
+}
+
+static int buf_add(struct mckernel_procfs_buffer **top,
+		   struct mckernel_procfs_buffer **cur,
+		   const void *buf, int l)
+{
+	int pos = 0;
+	int r;
+	int bufmax = PAGE_SIZE - sizeof(struct mckernel_procfs_buffer);
+	const char *chr = buf;
+
+	if (!*top) {
+		*top = *cur = buf_alloc(NULL, 0);
+		if (!*top)
+			return -ENOMEM;
+	}
+	while (l) {
+		r = bufmax - (*cur)->size;
+		if (!r) {
+			*cur = buf_alloc(&(*cur)->next_pa, (*cur)->pos +
+							   bufmax);
+			if (!*cur) {
+				buf_free(virt_to_phys(*top));
+				return -ENOMEM;
+			}
+			r = bufmax;
+		}
+		if (r > l) {
+			r = l;
+		}
+		memcpy((*cur)->buf + (*cur)->size, chr + pos, r);
+		l -= r;
+		pos += r;
+		(*cur)->size += r;
+	}
+	return 0;
+}
+
 static void
 procfs_thread_ctl(struct thread *thread, int msg)
 {
 	struct ihk_ikc_channel_desc *syscall_channel;
 	struct ikc_scd_packet packet;
+	int done = 0;
 
 	syscall_channel = cpu_local_var(ikc2linux);
 	memset(&packet, '\0', sizeof packet);
@@ -53,9 +127,14 @@ procfs_thread_ctl(struct thread *thread, int msg)
 	packet.osnum = ihk_mc_get_osnum();
 	packet.ref = thread->cpu_id;
 	packet.pid = thread->proc->pid;
+	packet.resp_pa = virt_to_phys(&done);
 	packet.err = 0;
 
 	ihk_ikc_send(syscall_channel, &packet, 0);
+	if (msg == SCD_MSG_PROCFS_TID_CREATE) {
+		while (!done)
+			cpu_pause();
+	}
 }
 
 void
@@ -75,7 +154,7 @@ procfs_delete_thread(struct thread *thread)
  *
  * \param rarg returned argument
  */
-void process_procfs_request(struct ikc_scd_packet *rpacket)
+int process_procfs_request(struct ikc_scd_packet *rpacket)
 {
 	unsigned long rarg = rpacket->arg;
 	unsigned long parg, pbuf;
@@ -83,49 +162,76 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 	struct process *proc = NULL;
 	struct process_vm *vm = NULL;
 	struct procfs_read *r;
-	struct ikc_scd_packet packet;
 	int osnum = ihk_mc_get_osnum();
 	int rosnum, ret, pid, tid, ans = -EIO, eof = 0;
-	char *buf, *p;
-	struct ihk_ikc_channel_desc *syscall_channel;
+	char *buf, *p = NULL;
+	char *vbuf = NULL;
+	char *tmp = NULL;
 	struct mcs_rwlock_node_irqsave lock;
 	unsigned long offset;
 	int count;
 	int npages;
 	int readwrite = 0;
+	int err = -EIO;
+	struct mckernel_procfs_buffer *buf_top = NULL;
+	struct mckernel_procfs_buffer *buf_cur = NULL;
 
 	dprintf("process_procfs_request: invoked.\n");
-
-	syscall_channel = get_cpu_local_var(0)->ikc2linux;
 
 	dprintf("rarg: %x\n", rarg);
 	parg = ihk_mc_map_memory(NULL, rarg, sizeof(struct procfs_read));
 	dprintf("parg: %x\n", parg);
 	r = ihk_mc_map_virtual(parg, 1, PTATTR_WRITABLE | PTATTR_ACTIVE);
 	if (r == NULL) {
+		ihk_mc_unmap_memory(NULL, parg, sizeof(struct procfs_read));
 		kprintf("ERROR: process_procfs_request: got a null procfs_read structure.\n");
-		packet.err = -EIO;
-		goto dataunavail;
+		goto err;
 	}
 	dprintf("r: %p\n", r);
 
-	dprintf("remote pbuf: %x\n", r->pbuf);
-	pbuf = ihk_mc_map_memory(NULL, r->pbuf, r->count);
-	dprintf("pbuf: %x\n", pbuf);
-	count = r->count + ((uintptr_t)pbuf & (PAGE_SIZE - 1));
-	npages = (count + (PAGE_SIZE - 1)) / PAGE_SIZE;
-	buf = ihk_mc_map_virtual(pbuf, npages, PTATTR_WRITABLE | PTATTR_ACTIVE);
-	dprintf("buf: %p\n", buf);
-	if (buf == NULL) {
-		kprintf("ERROR: process_procfs_request: got a null buffer.\n");
-		packet.err = -EIO;
-		goto bufunavail;
+	if (rpacket->msg == SCD_MSG_PROCFS_RELEASE) {
+		struct mckernel_procfs_buffer *pbuf;
+		unsigned long phys;
+		unsigned long next;
+
+		for (phys = r->pbuf; phys != PA_NULL; phys = next) {
+			pbuf = phys_to_virt(phys);
+			next = pbuf->next_pa;
+			ihk_mc_free_pages(pbuf, 1);
+		}
+		r->ret = 0;
+		err = 0;
+		goto err;
 	}
 
-	readwrite = r->readwrite;
-	count = r->count;
+	if (r->pbuf == PA_NULL) {
+		tmp = ihk_mc_alloc_pages(1, IHK_MC_AP_NOWAIT);
+		if (!tmp)
+			goto err;
+		buf = tmp;
+		count = PAGE_SIZE;
+	}
+	else {
+		dprintf("remote pbuf: %x\n", r->pbuf);
+		pbuf = ihk_mc_map_memory(NULL, r->pbuf, r->count);
+		dprintf("pbuf: %x\n", pbuf);
+		count = r->count + ((uintptr_t)pbuf & (PAGE_SIZE - 1));
+		npages = (count + (PAGE_SIZE - 1)) / PAGE_SIZE;
+		vbuf = ihk_mc_map_virtual(pbuf, npages,
+					  PTATTR_WRITABLE|PTATTR_ACTIVE);
+		dprintf("buf: %p\n", vbuf);
+		if (vbuf == NULL) {
+			ihk_mc_unmap_memory(NULL, pbuf, r->count);
+			kprintf("ERROR: %s: got a null buffer.\n", __func__);
+			goto err;
+		}
+		buf = vbuf;
+		readwrite = r->readwrite;
+		count = r->count;
+		dprintf("fname: %s, offset: %lx, count:%d.\n", r->fname,
+			r->offset, r->count);
+	}
 	offset = r->offset;
-	dprintf("fname: %s, offset: %lx, count:%d.\n", r->fname, r->offset, r->count);
 
 	/*
 	 * check for "mcos%d/"
@@ -205,35 +311,24 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 	}
 	else if (!strcmp(p, "stat")) {	/* "/proc/stat" */
 		extern int num_processors;	/* kernel/ap.c */
-		char *p;
-		size_t remain;
 		int cpu;
 
-		if (offset > 0) {
-			ans = 0;
-			eof = 1;
-			goto end;
-		}
-		p = buf;
-		remain = count;
 		for (cpu = 0; cpu < num_processors; ++cpu) {
-			size_t  n;
-
-			n = snprintf(p, remain, "cpu%d\n", cpu);
-			if (n >= remain) {
-				ans = -ENOSPC;
-				eof = 1;
-				goto end;
-			}
-			p += n;
+			ans = snprintf(buf, count, "cpu%d\n", cpu);
+			if (buf_add(&buf_top, &buf_cur, buf, ans) < 0)
+				goto err;
 		}
-		ans = p - buf;
-		eof = 1;
+		ans = 0;
 		goto end;
 	}
 #ifdef POSTK_DEBUG_ARCH_DEP_42 /* /proc/cpuinfo support added. */
 	else if (!strcmp(p, "cpuinfo")) { /* "/proc/cpuinfo" */
-		ans = ihk_mc_show_cpuinfo(buf, count, offset, &eof);
+		ans = ihk_mc_show_cpuinfo(buf, count, 0, &eof);
+		if (ans < 0)
+			goto err;
+		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0)
+			goto err;
+		ans = 0;
 		goto end;
 	}
 #endif /* POSTK_DEBUG_ARCH_DEP_42 */
@@ -291,12 +386,7 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 				goto end;
 			}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_52 /* NUMA support(memory area determination) */
-			if (!is_mckernel_memory(pa)) {
-#else
-			if (pa < ihk_mc_get_memory_address(IHK_MC_GMA_MAP_START, 0) ||
-					pa >= ihk_mc_get_memory_address(IHK_MC_GMA_MAP_END, 0)) {
-#endif /* POSTK_DEBUG_TEMP_FIX_52 */
+			if (!is_mckernel_memory(pa, pa + size)) {
 				ans = -EIO;
 				goto end;
 			}
@@ -318,110 +408,51 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 	 */
 	if (strcmp(p, "maps") == 0) {
 		struct vm_range *range;
-#ifdef POSTK_DEBUG_TEMP_FIX_47 /* /proc/<pid>/maps 1024 byte over read fix. */
-		int left = PAGE_SIZE * 2;
-#else /* POSTK_DEBUG_TEMP_FIX_47 */
-		int left = r->count - 1; /* extra 1 for terminating NULL */
-#endif /* POSTK_DEBUG_TEMP_FIX_47 */
-		int written = 0;
-		char *_buf = buf;
-#ifdef POSTK_DEBUG_TEMP_FIX_47 /* /proc/<pid>/maps 1024 byte over read fix. */
-		int len = 0;
-		char *tmp = NULL;
-
-		_buf = tmp = kmalloc(left, IHK_MC_AP_CRITICAL);
-		if (!tmp) {
-			kprintf("%s: error allocating /proc/self/maps buffer\n",
-				__FUNCTION__);
-			ans = 0;
-			goto end;
-		}
-#endif /* POSTK_DEBUG_TEMP_FIX_47 */
-		
-#ifndef POSTK_DEBUG_TEMP_FIX_47 /* /proc/<pid>/maps 1024 byte over read fix. */
-		/* Starting from the middle of a proc file is not supported for maps */
-		if (offset > 0) {
-			ans = 0;
-			eof = 1;
-			goto end;
-		}
-#endif /* POSTK_DEBUG_TEMP_FIX_47 */
 
 		ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 
 		range = lookup_process_memory_range(vm, 0, -1);
 		while (range) {
-			int written_now;
-
 			/* format is (from man proc):
 			 *  address           perms offset  dev   inode   pathname
 			 *  08048000-08056000 r-xp 00000000 03:0c 64593   /usr/sbin/gpm
 			 */
-			written_now = snprintf(_buf, left, 
-					"%012lx-%012lx %s%s%s%s %lx %lx:%lx %d\t\t\t%s\n",
-					range->start, range->end,
-					range->flag & VR_PROT_READ ? "r" : "-",
-					range->flag & VR_PROT_WRITE ? "w" : "-",
-					range->flag & VR_PROT_EXEC ? "x" : "-",
-					range->flag & VR_PRIVATE ? "p" : "s",
-					/* TODO: fill in file details! */
-					0UL,
-					0UL,
-					0UL,
-					0,
-					range->memobj && range->memobj->path ? range->memobj->path :
-					range->start ==
-						(unsigned long)vm->vdso_addr ? "[vdso]" :
-					range->start ==
-						(unsigned long)vm->vvar_addr ? "[vsyscall]" :
-					range->flag & VR_STACK ? "[stack]" :
-					range->start >= vm->region.brk_start &&
-						range->end <= vm->region.brk_end_allocated ?
-						"[heap]" :
+			ans = snprintf(buf, count,
+				 "%012lx-%012lx %s%s%s%s %lx %lx:%lx %d\t\t\t%s\n",
+				 range->start, range->end,
+				 range->flag & VR_PROT_READ ? "r" : "-",
+				 range->flag & VR_PROT_WRITE ? "w" : "-",
+				 range->flag & VR_PROT_EXEC ? "x" : "-",
+				 range->flag & VR_PRIVATE ? "p" : "s",
+				 /* TODO: fill in file details! */
+				 0UL,
+				 0UL,
+				 0UL,
+				 0,
+				 range->memobj && range->memobj->path ?
+					range->memobj->path :
+				 range->start == (unsigned long)vm->vdso_addr ?
+					"[vdso]" :
+				 range->start == (unsigned long)vm->vvar_addr ?
+					"[vsyscall]" :
+				 range->flag & VR_STACK ?
+					"[stack]" :
+				 range->start >= vm->region.brk_start &&
+				    range->end <= vm->region.brk_end_allocated ?
+					"[heap]" :
 					""
-					);
-			
-			left -= written_now;
-			_buf += written_now;
-			written += written_now;
+				);
 
-#ifdef POSTK_DEBUG_TEMP_FIX_47 /* /proc/<pid>/maps 1024 byte over read fix. */
-			if (left == 0) {
-				kprintf("%s(): WARNING: buffer too small to fill proc/maps\n", 
-						__FUNCTION__);
-				break;
+			if (buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
+				ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+				goto err;
 			}
-#else /* POSTK_DEBUG_TEMP_FIX_47 */
-			if (left == 1) {
-				kprintf("%s(): WARNING: buffer too small to fill proc/maps\n", 
-						__FUNCTION__);
-				break;
-			}
-#endif /* POSTK_DEBUG_TEMP_FIX_47 */
 			range = next_process_memory_range(vm, range);
 		}
 		
 		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 		
-#ifdef POSTK_DEBUG_TEMP_FIX_47 /* /proc/<pid>/maps 1024 byte over read fix. */
-		len = strlen(tmp);
-		if (r->offset < len) {
-			if (r->offset + r->count < len) {
-				ans = r->count;
-			} else {
-				eof = 1;
-				ans = len;
-			}
-			strncpy(buf, tmp + r->offset, ans);
-		} else if (r->offset == len) {
-			ans = 0;
-			eof = 1;
-		}
-		kfree(tmp);
-#else /* POSTK_DEBUG_TEMP_FIX_47 */
-		ans = written;
-		eof = 1;
-#endif /* POSTK_DEBUG_TEMP_FIX_47 */
+		ans = 0;
 		goto end;
 	}
 	
@@ -470,28 +501,16 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 		extern int num_processors;	/* kernel/ap.c */
 		struct vm_range *range;
 		unsigned long lockedsize = 0;
-		char *tmp;
 		char *bitmasks;
 		int bitmasks_offset = 0;
 		char *cpu_bitmask, *cpu_list, *numa_bitmask, *numa_list;
-		int len;
 		char *state;
 
-		tmp = kmalloc(8192, IHK_MC_AP_CRITICAL);
-		if (!tmp) {
-			kprintf("%s: error allocating /proc/self/status buffer\n",
-				__FUNCTION__);
-			ans = 0;
-			goto end;
-		}
-
 		bitmasks = kmalloc(BITMASKS_BUF_SIZE, IHK_MC_AP_CRITICAL);
-		if (!tmp) {
+		if (!bitmasks) {
 			kprintf("%s: error allocating /proc/self/status bitmaks buffer\n",
 				__FUNCTION__);
-			kfree(tmp);
-			ans = 0;
-			goto end;
+			goto err;
 		}
 
 		ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
@@ -534,35 +553,46 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 			state = "T (tracing stop)";
 		else if (proc->status == PS_EXITED)
 			state = "Z (zombie)";
-		sprintf(tmp,
-		        "Uid:\t%d\t%d\t%d\t%d\n"
-		        "Gid:\t%d\t%d\t%d\t%d\n"
+		ans = snprintf(buf, count,
+			"Pid:\t%d\n"
+			"Uid:\t%d\t%d\t%d\t%d\n"
+			"Gid:\t%d\t%d\t%d\t%d\n"
 			"State:\t%s\n"
-		        "VmLck:\t%9lu kB\n"
-				"Cpus_allowed:\t%s\n"
-				"Cpus_allowed_list:\t%s\n"
-				"Mems_allowed:\t%s\n"
-				"Mems_allowed_list:\t%s\n",
-		        proc->ruid, proc->euid, proc->suid, proc->fsuid,
-		        proc->rgid, proc->egid, proc->sgid, proc->fsgid,
+			"VmLck:\t%9lu kB\n",
+			proc->pid,
+			proc->ruid, proc->euid, proc->suid, proc->fsuid,
+			proc->rgid, proc->egid, proc->sgid, proc->fsgid,
 			state,
-		        (lockedsize + 1023) >> 10,
-				cpu_bitmask, cpu_list, numa_bitmask, numa_list);
-		len = strlen(tmp);
-		if (r->offset < len) {
-			if (r->offset + r->count < len) {
-				ans = r->count;
-			} else {
-				eof = 1;
-				ans = len;
-			}
-			strncpy(buf, tmp + r->offset, ans);
-		} else if (r->offset == len) {
-			ans = 0;
-			eof = 1;
+			(lockedsize + 1023) >> 10);
+		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
+			goto err;
 		}
-		kfree(tmp);
+
+		ans = snprintf(buf, count, "Cpus_allowed:\t%s\n", cpu_bitmask);
+		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
+			kfree(bitmasks);
+			goto err;
+		}
+		ans = snprintf(buf, count, "Cpus_allowed_list:\t%s\n",
+			       cpu_list);
+		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
+			kfree(bitmasks);
+			goto err;
+		}
+		ans = snprintf(buf, count, "Mems_allowed:\t%s\n",
+			       numa_bitmask);
+		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
+			kfree(bitmasks);
+			goto err;
+		}
+		ans = snprintf(buf, count, "Mems_allowed_list:\t%s\n",
+			       numa_list);
+		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
+			kfree(bitmasks);
+			goto err;
+		}
 		kfree(bitmasks);
+		ans = 0;
 		goto end;
 	}
 
@@ -571,20 +601,10 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 	 */
 	if (strcmp(p, "auxv") == 0) {
 		unsigned int limit = AUXV_LEN * sizeof(unsigned long);
-		unsigned int len = r->count;
-		if (r->offset < limit) {
-			if (limit < r->offset + r->count) {
-				len = limit - r->offset;
-			}
-			memcpy((void *)buf, ((char *) proc->saved_auxv) + r->offset, len);
-			ans = len;
-			if (r->offset + len == limit) {
-				eof = 1;
-			}
-		} else if (r->offset == limit) {
-			ans = 0;
-			eof = 1;
-		}
+
+		if (buf_add(&buf_top, &buf_cur, proc->saved_auxv, limit) < 0)
+			goto err;
+		ans = 0;
 		goto end;
 	}
 
@@ -593,27 +613,17 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 	 */
 	if (strcmp(p, "cmdline") == 0) {
 		unsigned int limit = proc->saved_cmdline_len;
-		unsigned int len = r->count;
 
 		if(!proc->saved_cmdline){
+			if (buf_add(&buf_top, &buf_cur, "", 0) < 0)
+				goto err;
 			ans = 0;
-			eof = 1;
 			goto end;
 		}
 
-		if (r->offset < limit) {
-			if (limit < r->offset + r->count) {
-				len = limit - r->offset;
-			}
-			memcpy((void *)buf, ((char *) proc->saved_cmdline) + r->offset, len);
-			ans = len;
-			if (r->offset + len == limit) {
-				eof = 1;
-			}
-		} else if (r->offset == limit) {
-			ans = 0;
-			eof = 1;
-		}
+		if (buf_add(&buf_top, &buf_cur, proc->saved_cmdline, limit) < 0)
+			goto err;
+		ans = 0;
 		goto end;
 	}
 
@@ -624,9 +634,25 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 	 * of the process. The count is the length of the area.
 	 */
 
+	if (!strcmp(p, "comm")) {
+		const char *comm = "exe";
+
+		if (proc->saved_cmdline) {
+			comm = strrchr(proc->saved_cmdline, '/');
+			if (comm)
+				comm++;
+			else
+				comm = proc->saved_cmdline;
+		}
+
+		ans = snprintf(buf, count, "%s\n", comm);
+		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0)
+			goto err;
+		ans = 0;
+		goto end;
+	}
+
 	if (!strcmp(p, "stat")) {
-		char tmp[1024];
-		int len;
 
 		/*
 		 * pid (comm) state ppid
@@ -641,7 +667,7 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 		 * cnswap exit_signal processor rt_priority
 		 * policy delayacct_blkio_ticks guest_time cguest_time
 		 */
-		ans = sprintf(tmp,
+		ans = snprintf(buf, count,
 		    "%d (%s) %c %d "	      // pid...
 		    "%d %d %d %d "	      // pgrp...
 		    "%u %lu %lu %lu "	      // flags...
@@ -665,21 +691,10 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 		    0L, 0, thread->cpu_id, 0, // cnswap...
 		    0, 0LL, 0L, 0L	      // policy...
 		);
-		dprintf("tmp=%s\n", tmp);
 
-		len = strlen(tmp);
-		if (r->offset < len) {
-			if (r->offset + r->count < len) {
-				ans = r->count;
-			} else {
-				eof = 1;
-				ans = len;
-			}
-			strncpy(buf, tmp + r->offset, ans);
-		} else if (r->offset == len) {
-			ans = 0;
-			eof = 1;
-		}
+		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0)
+			goto err;
+		ans = 0;
 		goto end;
 	}
 
@@ -689,32 +704,31 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 		kprintf("unsupported procfs entry: %d/%s\n", pid, p);
 
 end:
-	ihk_mc_unmap_virtual(buf, npages, 0);
 	dprintf("ret: %d, eof: %d\n", ans, eof);
 	r->ret = ans;
 	r->eof = eof;
-	r->status = 1; /* done */
-	packet.err = 0;
-bufunavail:
-	ihk_mc_unmap_memory(NULL, pbuf, r->count);
-	ihk_mc_unmap_virtual(r, 1, 0);
-dataunavail:
-	ihk_mc_unmap_memory(NULL, parg, sizeof(struct procfs_read));
-
-	packet.msg = SCD_MSG_PROCFS_ANSWER;
-	packet.arg = rarg;
-	packet.pid = rpacket->pid;
-
-	ret = ihk_ikc_send(syscall_channel, &packet, 0);
-	if (ret < 0) {
-		kprintf("ERROR: sending IKC msg, ret: %d\n", ret);
+	err = 0;
+	if (r->pbuf == PA_NULL && buf_top)
+		r->pbuf = virt_to_phys(buf_top);
+err:
+	if (vbuf) {
+		ihk_mc_unmap_virtual(vbuf, npages);
+		ihk_mc_unmap_memory(NULL, pbuf, r->count);
 	}
+	if (r) {
+		ihk_mc_unmap_virtual(r, 1);
+		ihk_mc_unmap_memory(NULL, parg, sizeof(struct procfs_read));
+	}
+	if (tmp) {
+		ihk_mc_free_pages(tmp, 1);
+	}
+
 	if(proc)
 		release_process(proc);
 	if(thread)
 		release_thread(thread);
 	if(vm)
 		release_process_vm(vm);
-	return;
 
+	return err;
 }

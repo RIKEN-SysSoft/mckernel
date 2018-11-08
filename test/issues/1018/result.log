@@ -1,0 +1,15 @@
+*** CT_001 start *******************************
+ [OK] mmap device file
+  anonymous map to 0x2aaaab200000, size:8.00 MB
+ [OK] 2MB pread
+ [OK] check read data :0x1111
+ [OK] 4MB pread
+ [OK] check read data :0x2222
+ [OK] 8MB pread
+ [OK] check read data :0x3333
+*** CT_001 PASSED
+
+*** CT_002 start *******************************
+ [OK] open /proc/<PID>/mem is failed
+ [OK] errno is EACCES
+*** CT_002 PASSED

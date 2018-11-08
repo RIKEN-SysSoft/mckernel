@@ -13,6 +13,8 @@ KDIR ?= @KDIR@
 ARCH=@ARCH@
 CFLAGS=-Wall -O -I. -I$(VPATH)/arch/${ARCH} -I${IHKDIR} -I@abs_builddir@/../../../ihk/linux/include
 LDFLAGS=@LDFLAGS@
+CPPFLAGS_SYSCALL_INTERCEPT=@CPPFLAGS_SYSCALL_INTERCEPT@
+LDFLAGS_SYSCALL_INTERCEPT=@LDFLAGS_SYSCALL_INTERCEPT@
 RPATH=$(shell echo $(LDFLAGS)|awk '{for(i=1;i<=NF;i++){if($$i~/^-L/){w=$$i;sub(/^-L/,"-Wl,-rpath,",w);print w}}}')
 VPATH=@abs_srcdir@
 TARGET=mcexec libsched_yield ldump2mcdump.so
@@ -21,10 +23,15 @@ LIBS=@LIBS@
 IHKDIR ?= $(VPATH)/../../../ihk/linux/include/
 MCEXEC_LIBS=-lmcexec -lrt -lnuma -pthread -L@abs_builddir@/../../../ihk/linux/user -lihk -Wl,-rpath,$(MCKERNEL_LIBDIR)
 ENABLE_QLMPI=@ENABLE_QLMPI@
+WITH_SYSCALL_INTERCEPT=@WITH_SYSCALL_INTERCEPT@
 
 ifeq ($(ENABLE_QLMPI),yes)
 	MCEXEC_LIBS += -lmpi
 	TARGET+= libqlmpi.so ql_server ql_mpiexec_start ql_mpiexec_finalize ql_talker libqlfort.so
+endif
+
+ifeq ($(WITH_SYSCALL_INTERCEPT),yes)
+	TARGET += syscall_intercept.so
 endif
 
 ifeq ($(ARCH), arm64)
@@ -40,10 +47,10 @@ mcexec: mcexec.c libmcexec.a
 # POSTK_DEBUG_ARCH_DEP_34, eclair arch depend separate.
 ifeq ($(ARCH), arm64)
 eclair: eclair.c arch/$(ARCH)/arch-eclair.c
-	$(CC) -I.. -I. -I./arch/$(ARCH)/include -I$(VPATH)/.. -I$(VPATH) -I$(VPATH)/arch/$(ARCH)/include $(CFLAGS) -o $@ $^ $(LIBS)
+	$(CC) -I.. -I. -I./arch/$(ARCH)/include -I$(VPATH)/.. -I$(VPATH) -I$(VPATH)/arch/$(ARCH)/include $(CFLAGS) -o $@ $^ $(LIBS) -ldl -lz
 else
-eclair: eclair.c
-	$(CC) $(CFLAGS) -I${IHKDIR} -o $@ $^ $(LIBS)
+eclair: eclair.c arch/$(ARCH)/arch-eclair.c
+	$(CC) -I.. -I$(VPATH) -I$(VPATH)/arch/$(ARCH)/include $(CFLAGS) -o $@ $^ $(LIBS)
 endif
 
 ldump2mcdump.so: ldump2mcdump.c
@@ -51,6 +58,12 @@ ldump2mcdump.so: ldump2mcdump.c
 
 libsched_yield: libsched_yield.c
 	$(CC) -shared -fPIC -Wl,-soname,sched_yield.so.1 -o libsched_yield.so.1.0.0 $^ -lc -ldl
+
+syscall_intercept.so: syscall_intercept.c libsyscall_intercept_arch.a
+	$(CC) $(CPPFLAGS_SYSCALL_INTERCEPT) -g -O2 $(LDFLAGS_SYSCALL_INTERCEPT) -lsyscall_intercept -fpic -shared -L. -lsyscall_intercept_arch $^ -o $@ 
+
+libsyscall_intercept_arch.a::
+	+(cd arch/${ARCH}; $(MAKE))
 
 libmcexec.a::
 	+(cd arch/${ARCH}; $(MAKE))
@@ -99,6 +112,9 @@ ifeq ($(ENABLE_QLMPI),yes)
 	install -m 755 ql_mpiexec_start $(BINDIR)
 	install -m 755 ql_mpiexec_finalize $(BINDIR)
 	install -m 755 ql_talker $(SBINDIR)
+endif
+ifeq ($(WITH_SYSCALL_INTERCEPT),yes)
+	install -m 755 syscall_intercept.so $(MCKERNEL_LIBDIR)
 endif
 	@uncomment_if_ENABLE_MEMDUMP@install -m 755 eclair $(BINDIR)
 	@uncomment_if_ENABLE_MEMDUMP@install -m 755 vmcore2mckdump $(BINDIR)

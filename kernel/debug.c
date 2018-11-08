@@ -18,6 +18,9 @@
 #include <ihk/lock.h>
 #include <ihk/monitor.h>
 #include <errno.h>
+#include <sysfs.h>
+#include <debug.h>
+#include <limits.h>
 
 struct ihk_kmsg_buf *kmsg_buf;
 
@@ -84,7 +87,8 @@ void kputs(char *buf)
 	debug_spin_unlock_irqrestore(&kmsg_buf->lock, flags_inner);
 	kprintf_unlock(flags_outer);
 
-	if (DEBUG_KMSG_USED > IHK_KMSG_HIGH_WATER_MARK) {
+	if (irqflags_can_interrupt(flags_outer) &&
+			DEBUG_KMSG_USED > IHK_KMSG_HIGH_WATER_MARK) {
 		eventfd(IHK_OS_EVENTFD_TYPE_KMSG);
 		ihk_mc_delay_us(IHK_KMSG_NOTIFY_DELAY);
 	}
@@ -123,8 +127,8 @@ int __kprintf(const char *format, ...)
 	}
 
 	debug_spin_unlock_irqrestore(&kmsg_buf->lock, flags_inner);
-
-	if (DEBUG_KMSG_USED > IHK_KMSG_HIGH_WATER_MARK) {
+	if (irqflags_can_interrupt(flags_inner) &&
+			DEBUG_KMSG_USED > IHK_KMSG_HIGH_WATER_MARK) {
 		eventfd(IHK_OS_EVENTFD_TYPE_KMSG);
 		ihk_mc_delay_us(IHK_KMSG_NOTIFY_DELAY);
 	}
@@ -165,7 +169,8 @@ int kprintf(const char *format, ...)
 	debug_spin_unlock_irqrestore(&kmsg_buf->lock, flags_inner);
 	kprintf_unlock(flags_outer);
 
-	if (DEBUG_KMSG_USED > IHK_KMSG_HIGH_WATER_MARK) {
+	if (irqflags_can_interrupt(flags_outer) &&
+			DEBUG_KMSG_USED > IHK_KMSG_HIGH_WATER_MARK) {
 		eventfd(IHK_OS_EVENTFD_TYPE_KMSG);
 		ihk_mc_delay_us(IHK_KMSG_NOTIFY_DELAY);
 	}
@@ -177,4 +182,148 @@ int kprintf(const char *format, ...)
 void kmsg_init()
 {
 	ihk_mc_spinlock_init(&kmsg_lock);
+}
+
+extern struct ddebug __start___verbose[];
+extern struct ddebug __stop___verbose[];
+
+static ssize_t dynamic_debug_sysfs_show(struct sysfs_ops *ops,
+		void *instance, void *buf, size_t size)
+{
+	struct ddebug *dbg;
+	ssize_t n = 0;
+
+	n = snprintf(buf, size, "# filename:lineno function flags format\n");
+
+	for (dbg = __start___verbose; dbg < __stop___verbose; dbg++) {
+		n += snprintf(buf + n, size - n, "%s:%d %s =%s\n",
+				dbg->file, dbg->line, dbg->func,
+				dbg->flags ? "p" : "_");
+
+		if (n >= size)
+			break;
+	}
+
+	return n;
+}
+
+static ssize_t dynamic_debug_sysfs_store(struct sysfs_ops *ops,
+		void *instance, void *buf, size_t size)
+{
+	char *cur = buf;
+	char *file = NULL, *func = NULL;
+	long int line_start = 0, line_end = INT_MAX;
+	int set_flag = -1;
+	struct ddebug *dbg;
+
+
+	// assume line was new-line terminated and squash last newline
+	cur[size-1] = '\0';
+
+	/* basic line parsing, combinaisons of:
+	 *   file <file>
+	 *   func <func>
+	 *   line <line|line-line|line-|-line>
+	 *   and must end with [+-=][p_] (set/clear print flag)
+	 */
+again:
+	while (cur && cur < ((char *)buf) + size && *cur) {
+		dkprintf("looking at %.*s, size left %d\n",
+			size - (cur - (char *)buf), cur,
+			(char *)buf - cur + size);
+
+		if (strncmp(cur, "func ", 5) == 0) {
+			cur += 5;
+			func = cur;
+		} else if (strncmp(cur, "file ", 5) == 0) {
+			cur += 5;
+			file = cur;
+		} else if (strncmp(cur, "line ", 5) == 0) {
+			cur += 5;
+			if (*cur != '-') {
+				line_start = strtol(cur, &cur, 0);
+			}
+			if (*cur != '-') {
+				line_end = line_start;
+			} else {
+				cur++;
+				if (*cur == ' ' || *cur == '\0') {
+					line_end = INT_MAX;
+				} else {
+					line_end = strtol(cur, &cur, 0);
+				}
+			}
+		} else if (strchr("+-=", *cur)) {
+			switch ((*cur) + 256 * (*(cur+1))) {
+			case '+' + 256*'p':
+			case '=' + 256*'p':
+				set_flag = DDEBUG_PRINT;
+				break;
+			case '-' + 256*'p':
+			case '=' + 256*'_':
+				set_flag = DDEBUG_NONE;
+				break;
+			default:
+				kprintf("invalid flag: %.*s\n",
+					size - (cur - (char *)buf), cur);
+				return -EINVAL;
+			}
+			/* XXX check 3rd char is end of input or \n or ; */
+			cur += 3;
+			break;
+
+		} else {
+			kprintf("dynamic debug control: unrecognized keyword: %.*s\n",
+				size - (cur - (char *)buf), cur);
+			return -EINVAL;
+		}
+		cur = strpbrk(cur, " \n");
+		if (cur) {
+			*cur = '\0';
+			cur++;
+		}
+	}
+	dkprintf("func %s, file %s, lines %d-%d, flag %x\n",
+		func, file, line_start, line_end, set_flag);
+
+	if (set_flag < 0) {
+		kprintf("dynamic debug control: no flag set?\n");
+		return -EINVAL;
+	}
+	if (!func && !file) {
+		kprintf("at least file or func should be set\n");
+		return -EINVAL;
+	}
+
+	for (dbg = __start___verbose; dbg < __stop___verbose; dbg++) {
+		/* TODO: handle wildcards */
+		if ((!func || strcmp(func, dbg->func) == 0) &&
+		    (!file || strcmp(file, dbg->file) == 0) &&
+		    dbg->line >= line_start &&
+		    dbg->line <= line_end) {
+			dbg->flags = set_flag;
+		}
+	}
+
+	if (cur && cur < ((char *)buf) + size && *cur)
+		goto again;
+
+	return size;
+}
+
+static struct sysfs_ops dynamic_debug_sysfs_ops = {
+	.show = &dynamic_debug_sysfs_show,
+	.store = &dynamic_debug_sysfs_store,
+};
+
+void dynamic_debug_sysfs_setup(void)
+{
+	int error;
+
+	error = sysfs_createf(&dynamic_debug_sysfs_ops, NULL, 0644,
+			      "/sys/kernel/debug/dynamic_debug/control");
+	if (error) {
+		kprintf("%s: ERROR: creating dynamic_debug/control sysfs file",
+			__func__);
+	}
 }

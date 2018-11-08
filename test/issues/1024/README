@@ -1,0 +1,24 @@
+【Issue#1024 動作確認】
+□ テスト内容
+1. VMAP領域の仮想アドレス回収漏れはプログラム起動時、および、procfsアクセス時
+   に存在する。VMAP領域は1M(1024×1024)ページ分の仮想アドレスが割り当て可能
+   なので、以下を1M回以上繰り返しても問題が発生しないことを確認する。 
+C1024T01 mcexec sleep 0を1M回以上行う
+C1024T02 /proc/self/mapsのreadを1M回以上行う
+
+2. 変更がVMAP領域を使用する他の処理に影響ないことをLTPを用いて確認する。
+C1024T03 process_vm_readv02 (process_vm_readvの処理でVMAPを使用)
+C1024T04 process_vm_readv03 (process_vm_readvの処理でVMAPを使用)
+C1024T05 process_vm_writev02 (process_vm_writevの処理でVMAPを使用)
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+C1024.txt 参照。
+全ての項目が OK となっていることを確認。

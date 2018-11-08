@@ -1,0 +1,32 @@
+【Issue#1158 動作確認】
+□ テスト内容
+Issueで報告された症状は現在発生しない。
+理由は、setup_pci_files()が実行されないためである。
+
+なお、setup_pci_files()はsysfsのPCIリソースへのインタフェースのうち、
+local_cpus, local_cpulist のMcKernelでのビューを作成する目的で作成されたが、
+正常に動作しないためコメントアウトされている。
+
+McKernelからのlocal_cpus, local_cpulistを参照した場合、
+Linuxと同様の情報が参照されることを確認する。
+
+1. テストプログラムによる確認
+CT_001: local_cpus の参照
+	/sys/devices/ 配下のlocal_cpusについて、
+	Linuxと同様の情報が参照できることを確認する
+
+CT_002: local_cpulist の参照
+	/sys/devices/ 配下のlocal_cpulistについて、
+	Linuxと同様の情報が参照できることを確認する
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。

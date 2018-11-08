@@ -1,0 +1,32 @@
+【Issue#1036 動作確認】
+□ テスト内容
+1. Issueで報告された要望が実現されていることの確認
+CT_001: timeシステムコールで取得される秒数の確認
+	timeシステムコールで取得された秒数と、glibcのtime()関数で
+	取得された秒数が等しいことを確認する
+CT_002: timeシステムコールがLinuxに移譲されないことを確認
+	straceコマンドを用いて、mcexecがtimeシステムコールを
+	呼び出していないことを確認する
+
+2. 既存のtime機能に影響がないことをLTPを用いて確認
+LT_001: ltp-syscall_time01
+	time(2)の基本動作の確認
+LT_002: ltp-syscall_time02
+	time(2)の返り値と、引数に指定した領域に格納される値が一致することを確認
+LT_003: ltp-syscall_gettimeofday01
+	不正な引数を指定してgettimeofday(2)を実行した場合、エラー値が返り、
+	errnoにEFAULTが設定されることを確認
+LT_004: ltp-syscall_gettimeofday02
+	gettimeofday(2)で取得される時刻が増加し続けることを確認する
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。

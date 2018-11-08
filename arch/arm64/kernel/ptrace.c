@@ -11,21 +11,16 @@
 #include <hwcap.h>
 #include <string.h>
 #include <thread_info.h>
+#include <debug.h>
 
 //#define DEBUG_PRINT_SC
 
 #ifdef DEBUG_PRINT_SC
-#define dkprintf kprintf
-#define ekprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
-#else
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define ekprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 #define NOT_IMPLEMENTED()  do { kprintf("%s is not implemented\n", __func__); while(1);} while(0)
-
-#define BUG_ON(condition) do { if (condition) { kprintf("PANIC: %s: %s(line:%d)\n",\
-				__FILE__, __FUNCTION__, __LINE__); panic(""); } } while(0)
 
 extern void save_debugreg(unsigned long *debugreg);
 extern unsigned long do_kill(struct thread *thread, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
@@ -959,11 +954,7 @@ void ptrace_report_signal(struct thread *thread, int sig)
 	}
 	thread->exit_status = sig;
 	/* Transition thread state */
-#ifdef POSTK_DEBUG_TEMP_FIX_41 /* early to wait4() wakeup for ptrace, fix. */
 	proc->status = PS_DELAY_TRACED;
-#else /* POSTK_DEBUG_TEMP_FIX_41 */
-	proc->status = PS_TRACED;
-#endif /* POSTK_DEBUG_TEMP_FIX_41 */
 	thread->status = PS_TRACED;
 	proc->ptrace &= ~PT_TRACE_SYSCALL;
 	if (sig == SIGSTOP || sig == SIGTSTP ||
@@ -982,10 +973,6 @@ void ptrace_report_signal(struct thread *thread, int sig)
 	info._sifields._sigchld.si_pid = thread->tid;
 	info._sifields._sigchld.si_status = thread->exit_status;
 	do_kill(cpu_local_var(current), parent_pid, -1, SIGCHLD, &info, 0);
-#ifndef POSTK_DEBUG_TEMP_FIX_41 /* early to wait4() wakeup for ptrace, fix. */
-	/* Wake parent (if sleeping in wait4()) */
-	waitq_wakeup(&proc->parent->waitpid_q);
-#endif /* !POSTK_DEBUG_TEMP_FIX_41 */
 
 	dkprintf("ptrace_report_signal,sleeping\n");
 	/* Sleep */

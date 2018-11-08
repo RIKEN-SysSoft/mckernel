@@ -1,0 +1,44 @@
+【Issue#1027 動作確認】
+□ テスト内容
+1. Issueで報告された再現プログラムでの確認
+RT_001: ostest-sched_yield.000
+	sched_yield()によるスケジューリングが行われ、
+	  - [child] End process
+	  - [parent] End process
+	の順に出力されることを確認
+
+2. 既存のfork機能に影響がないことをLTPを用いて確認
+LT_001: ltp-fork01
+	fork後に子プロセスのプロセスIDが正しいことを確認 (TPASS 2件)
+
+LT_002: ltp-fork02
+	fork後にwaitを行い、waitが子プロセスのPIDを返却することを確認(TPASS 1件)
+
+LT_003: ltp-fork03
+	子プロセスがfork後に計算を行えること、また子プロセスでのfork返却値が0で
+	あることを確認 (TPASS 1件)
+
+LT_004: ltp-fork04
+	forkで生成した子プロセスが環境変数を変更しても、親プロセス側の
+	環境変数に変化が無いことを確認 (TPASS 3件)
+
+LT_005: ltp-fork07
+	forkした子プロセスに、親プロセスからファイルディスクリプタを
+	引き継いでいることを確認 (TPASS 1件)
+
+LT_006: ltp-fork08
+	forkした複数の子プロセスが、それぞれ親プロセスから引き継いだファイル
+	ディスクリプタを別個に操作できることを確認
+	(ある子プロセスがcloseしても別な子プロセスがI/O可能) (TPASS 4件)
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。

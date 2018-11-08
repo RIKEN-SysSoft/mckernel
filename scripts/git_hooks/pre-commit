@@ -1,0 +1,71 @@
+#!/bin/bash
+#
+# Mostly taken from nfs-ganesha
+#
+# 1. Run checkpatch on the commit
+# 2. Check to see if a submodule is not being updated
+
+# define colors for use in output
+green='\033[0;32m'
+no_color='\033[0m'
+grey='\033[0;90m'
+
+
+if git rev-parse --verify HEAD 2>/dev/null >/dev/null
+then
+	against=HEAD
+else
+	# Initial commit: diff against an empty tree object
+	against=4b825dc642cb6eb9a060e54bf8d69288fbee4904
+fi
+
+ROOT_DIR=$(git rev-parse --show-toplevel)
+
+# skip if no checkpatch (compat for branch switches)
+[[ -x "$ROOT_DIR/scripts/checkpatch.pl" ]] || exit 0
+
+git diff --cached  $against | \
+	"$ROOT_DIR/scripts/checkpatch.pl" --no-signoff --no-tree -q -
+if [ $? != 0 ]; then
+    echo -n -e "Continue with commit? ${grey}[N|y]${no_color} "
+    read -n 1 reply </dev/tty
+    echo
+    if [[ "$reply" == "y" || "$reply" == "Y" ]]; then
+        echo "Permitting to be committed..."
+    else
+        echo "Aborting commit due to checkpatch errors."
+        exit 1
+    fi
+fi
+
+# Check whether any submodule is about to be updated with the
+# commit. Ask the user for confirmation.
+[[ -e "${ROOT_DIR}/.gitmodules" ]] || exit 0
+SUBMODULES=$(sed -ne 's/^.*path = //p' "${ROOT_DIR}/.gitmodules")
+
+# Finding the submodules that have been modified
+MOD_SUBMODULES=$(git diff --cached --name-only | grep -F "$SUBMODULES")
+
+# If no modified submodules, exit with status code 0, else prompt the
+# user and exit accordingly
+if [[ -n "$MOD_SUBMODULES" ]]; then
+    echo "Submodules to be committed:"
+    echo "  (use \"git reset HEAD <file>...\" to unstage)"
+    echo
+
+    for SUB in $MOD_SUBMODULES
+    do
+        echo -e "\t${green}modified:\t$SUB${no_color}"
+    done
+    echo
+    echo -n -e "Continue with commit? ${grey}[N|y]${no_color} "
+    read -n 1 reply </dev/tty
+    echo
+    if [[ "$reply" == "y" || "$reply" == "Y" ]]; then
+        echo "Permitting submodules to be committed..."
+    else
+        echo "Aborting commit due to submodule update."
+        exit 1
+    fi
+fi
+exit 0

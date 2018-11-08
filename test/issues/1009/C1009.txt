@@ -1,0 +1,24 @@
+Script started on Mon Sep 10 15:12:28 2018
+bash-4.2$ make test
+gcc -g -Wall -o C1009T01 C1009T01.c
+sh ./C1009.sh
+SIGUSR2
+SIGUSR1
+read A OK
+read B OK
+*** C1009T01: OK
+kill01      1  TPASS  :  received expected signal 9
+*** C1009T02: kill01 OK (1)
+kill12      1  TPASS  :  Test passed
+*** C1009T03: kill12 OK (1)
+pause02     1  TPASS  :  pause was interrupted correctly
+*** C1009T04: pause02 OK (1)
+sigaction01    1  TPASS  :  SA_RESETHAND did not cause SA_SIGINFO to be cleared
+sigaction01    2  TPASS  :  SA_RESETHAND was masked when handler executed
+sigaction01    3  TPASS  :  sig has been masked because sa_mask originally contained sig
+sigaction01    4  TPASS  :  siginfo pointer non NULL
+*** C1009T05: sigaction01 OK (4)
+bash-4.2$ exit
+exit
+
+Script done on Mon Sep 10 15:12:54 2018

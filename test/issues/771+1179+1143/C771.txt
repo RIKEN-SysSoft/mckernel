@@ -1,0 +1,627 @@
+Script started on Mon Sep 24 08:49:43 2018
+bash-4.2$ make test
+gcc -g -Wall -o C771T001 C771T001.c -pthread
+gcc -g -Wall -o C771T033 C771T033.c -pthread
+gcc -g -Wall -o C771T037 C771T037.c -pthread
+mcstop+release.sh ... done
+mcreboot.sh -c 1-7,9-15,17-23,25-31 -m 10G@0,10G@1 -r 1-7:0+9-15:8+17-23:16+25-31:24 ... done
+spawn /home/shirasawa/wallaby11-smp-x86/issue771/mic/bin/mcexec gdb ./C771T001
+GNU gdb (GDB) Red Hat Enterprise Linux 7.6.1-94.el7
+Copyright (C) 2013 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "x86_64-redhat-linux-gnu".
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>...
+Reading symbols from /home/shirasawa/wallaby11-smp-x86/issue771/mckernel/test/issues/771+1179+1143/C771T001...done.
+(gdb) b thr
+Breakpoint 1 at 0x400989: file C771T001.c, line 20.
+(gdb) r
+Starting program: /home/shirasawa/wallaby11-smp-x86/issue771/mckernel/test/issues/771+1179+1143/./C771T001 
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib64/libthread_db.so.1".
+process start pid=5721
+[New Thread 0x2aaaad000700 (LWP 5750)]
+pthread_create: 0
+[Switching to Thread 0x2aaaad000700 (LWP 5750)]
+
+Breakpoint 1, thr (arg=0x0) at C771T001.c:20
+20		fprintf(stderr, "thread start tid=%d\n", (int)syscall(SYS_gettid));
+Missing separate debuginfos, use: debuginfo-install glibc-2.17-222.el7.x86_64 libgcc-4.8.5-28.el7_5.1.x86_64 libgfortran-4.8.5-28.el7_5.1.x86_64 libquadmath-4.8.5-28.el7_5.1.x86_64 mpich-3.2-3.2-2.el7.x86_64
+(gdb) info threads
+  Id   Target Id         Frame 
+* 2    Thread 0x2aaaad000700 (LWP 5750) "exe" thr (arg=0x0) at C771T001.c:20
+  1    Thread 0x2aaaac735e80 (LWP 5721) "exe" 0x0000000000400b61 in main (
+    argc=1, argv=0x547ffffffd08) at C771T001.c:52
+(gdb) bt
+#0  thr (arg=0x0) at C771T001.c:20
+#1  0x00002aaaaae49e25 in start_thread () from /lib64/libpthread.so.0
+#2  0x00002aaaab15cbad in clone () from /lib64/libc.so.6
+(gdb) n
+thread start tid=5750
+21		fflush(stderr);
+(gdb) thread 1
+[Switching to thread 1 (Thread 0x2aaaac735e80 (LWP 5721))]
+#0  0x0000000000400b61 in main (argc=1, argv=0x547ffffffd08) at C771T001.c:52
+52		while (!m);
+(gdb) bt
+#0  0x0000000000400b61 in main (argc=1, argv=0x547ffffffd08) at C771T001.c:52
+(gdb) thread 2
+[Switching to thread 2 (Thread 0x2aaaad000700 (LWP 5750))]
+#0  thr (arg=0x0) at C771T001.c:21
+21		fflush(stderr);
+(gdb) c
+Continuing.
+mmap m=0x2aaaad001000 errno=0
+update m=0x2aaaad001000
+update *m=1
+munmap rc=0, errno=0
+main done
+[Thread 0x2aaaad000700 (LWP 5750) exited]
+[Inferior 1 (process 5721) exited normally]
+(gdb) q
+checking result...
+*** C771T001 gdb start OK
+*** C771T002 breakpoint command OK
+*** C771T003 run command OK
+*** C771T004 info threads command OK
+*** C771T005 backtrace command OK
+*** C771T006 next command OK
+*** C771T007 thread command OK
+*** C771T008 thread command OK
+*** C771T009 thread command OK
+*** C771T010 continue command OK
+*** C771T011 quit command OK
+OK=11 NG=0
+[  0]: 0 processes are found.
+[  0]: 0 threads are found.
+
+*** C771T012 no processes and threads found OK
+======== a2-run ========
+【SAME】a2-run: Summary.
+【SAME】a2-run : Log.
+【PASS】a2-run
+*** C771T013: base-a2-run OK
+======== foll-fork ========
+【SAME】foll-fork: Summary.
+【SAME】foll-fork : Log.
+【PASS】foll-fork
+*** C771T014: base-foll-fork OK
+======== fork-detach ========
+【SAME】fork-detach: Summary.
+【SAME】fork-detach : Log.
+【PASS】fork-detach
+*** C771T015: base-fork-detach OK
+======== atomic-seq-threaded ========
+【DIFF】atomic-seq-threaded : Summary Difference ---
+--- /home/shirasawa/wallaby11-smp-x86/issue771/mckernel/test/issues/771+1179+1143/gdb-result/linux/atomic-seq-threaded.sum	2018-09-24 08:52:39.889889082 +0900
++++ /home/shirasawa/wallaby11-smp-x86/issue771/mckernel/test/issues/771+1179+1143/gdb-result/mck/atomic-seq-threaded.sum	2018-09-24 08:52:39.899889116 +0900
+@@ -11,5 +11,5 @@
+ 		=== gdb Summary ===
+ 
+ # of unsupported tests		2
+-/home/shirasawa/rpmbuild/BUILD/gdb-7.6.1/build-x86_64-redhat-linux-gnu/gdb/testsuite/../../gdb/gdb version  7.6.1-110.el7.centos -nw -nx -data-directory /home/shirasawa/rpmbuild/BUILD/gdb-7.6.1/build-x86_64-redhat-linux-gnu/gdb/testsuite/../data-directory 
++/home/shirasawa/wallaby11-smp-x86/issue771/mckernel/test/issues/771+1179+1143/mcexec_gdb.sh version  7.6.1-94.el7 -nw -nx -data-directory /home/shirasawa/rpmbuild/BUILD/gdb-7.6.1/build-x86_64-redhat-linux-gnu/gdb/testsuite/../data-directory 
+ 
+【SAME】atomic-seq-threaded : Log.
+【PASS】atomic-seq-threaded
+*** C771T016: threads-atomic-seq-threaded OK
+======== bp_in_thread ========
+【SAME】bp_in_thread: Summary.
+【SAME】bp_in_thread : Log.
+【PASS】bp_in_thread
+*** C771T017: threads-bp_in_thread OK
+======== bt-clone-stop ========
+【SAME】bt-clone-stop: Summary.
+【SAME】bt-clone-stop : Log.
+【PASS】bt-clone-stop
+*** C771T018: threads-bt-clone-stop OK
+======== corethreads ========
+【SAME】corethreads: Summary.
+【SAME】corethreads : Log.
+【PASS】corethreads
+*** C771T019: threads-corethreads OK
+======== dlopen-libpthread ========
+【SAME】dlopen-libpthread: Summary.
+【SAME】dlopen-libpthread : Log.
+【PASS】dlopen-libpthread
+*** C771T020: threads-dlopen-libpthread OK
+======== fork-child-threads ========
+【SAME】fork-child-threads: Summary.
+【SAME】fork-child-threads : Log.
+【PASS】fork-child-threads
+*** C771T021: threads-fork-child-threads OK
+======== killed ========
+【SAME】killed: Summary.
+【SAME】killed : Log.
+【PASS】killed
+*** C771T022: threads-killed OK
+======== pthread_cond_wait ========
+【SAME】pthread_cond_wait: Summary.
+【SAME】pthread_cond_wait : Log.
+【PASS】pthread_cond_wait
+*** C771T023: threads-pthread_cond_wait OK
+======== switch-threads ========
+【SAME】switch-threads: Summary.
+【SAME】switch-threads : Log.
+【PASS】switch-threads
+*** C771T024: threads-switch-threads OK
+======== thread-specific ========
+【SAME】thread-specific: Summary.
+【SAME】thread-specific : Log.
+【PASS】thread-specific
+*** C771T025: threads-thread-specific OK
+======== thread_check ========
+【SAME】thread_check: Summary.
+【DIFF】thread_check : Log Difference ---
+--- /home/shirasawa/wallaby11-smp-x86/issue771/mckernel/test/issues/771+1179+1143/gdb-result/linux/thread_check.log	2018-09-24 09:00:11.257427754 +0900
++++ /home/shirasawa/wallaby11-smp-x86/issue771/mckernel/test/issues/771+1179+1143/gdb-result/mck/thread_check.log	2018-09-24 09:00:11.270427798 +0900
+@@ -13,4 +13,4 @@
+ (gdb) PASS: gdb.threads/thread_check.exp: continue to tf
+ (gdb) PASS: gdb.threads/thread_check.exp: backtrace from thread function
+ (gdb) info breakpoints
+-(gdb) Quitting /home/shirasawa/rpmbuild/BUILD/gdb-7.6.1/build-x86_64-redhat-linux-gnu/gdb/testsuite/../../gdb/gdb -nw -nx -data-directory /home/shirasawa/rpmbuild/BUILD/gdb-7.6.1/build-x86_64-redhat-linux-gnu/gdb/testsuite/../data-directory 
++(gdb) Quitting mcexec_gdb.sh -nw -nx -data-directory /home/shirasawa/rpmbuild/BUILD/gdb-7.6.1/build-x86_64-redhat-linux-gnu/gdb/testsuite/../data-directory 
+【PASS】thread_check
+*** C771T026: threads-thread_check OK
+======== thread_events ========
+【SAME】thread_events: Summary.
+【DIFF】thread_events : Log Difference ---
+--- /home/shirasawa/wallaby11-smp-x86/issue771/mckernel/test/issues/771+1179+1143/gdb-result/linux/thread_events.log	2018-09-24 09:01:01.132598675 +0900
++++ /home/shirasawa/wallaby11-smp-x86/issue771/mckernel/test/issues/771+1179+1143/gdb-result/mck/thread_events.log	2018-09-24 09:01:01.141598706 +0900
+@@ -15,7 +15,7 @@
+ (gdb) PASS: gdb.threads/thread_events.exp: continue to threadfunc with messages disabled
+ (gdb) PASS: gdb.threads/thread_events.exp: continue to after_join_func with messages disabled
+ (gdb) info breakpoints
+-(gdb) Quitting /home/shirasawa/rpmbuild/BUILD/gdb-7.6.1/build-x86_64-redhat-linux-gnu/gdb/testsuite/../../gdb/gdb -nw -nx -data-directory /home/shirasawa/rpmbuild/BUILD/gdb-7.6.1/build-x86_64-redhat-linux-gnu/gdb/testsuite/../data-directory 
++(gdb) Quitting mcexec_gdb.sh -nw -nx -data-directory /home/shirasawa/rpmbuild/BUILD/gdb-7.6.1/build-x86_64-redhat-linux-gnu/gdb/testsuite/../data-directory 
+ (gdb) GDB initialized.
+ (gdb) set width 0
+ (gdb) set build-id-verbose 0
+@@ -33,4 +33,4 @@
+ (gdb) PASS: gdb.threads/thread_events.exp: continue to threadfunc with messages enabled
+ (gdb) PASS: gdb.threads/thread_events.exp: continue to after_join_func with messages enabled
+ (gdb) info breakpoints
+-(gdb) Quitting /home/shirasawa/rpmbuild/BUILD/gdb-7.6.1/build-x86_64-redhat-linux-gnu/gdb/testsuite/../../gdb/gdb -nw -nx -data-directory /home/shirasawa/rpmbuild/BUILD/gdb-7.6.1/build-x86_64-redhat-linux-gnu/gdb/testsuite/../data-directory 
++(gdb) Quitting mcexec_gdb.sh -nw -nx -data-directory /home/shirasawa/rpmbuild/BUILD/gdb-7.6.1/build-x86_64-redhat-linux-gnu/gdb/testsuite/../data-directory 
+【PASS】thread_events
+*** C771T027: threads-thread_events OK
+======== threaded-exec ========
+【SAME】threaded-exec: Summary.
+【SAME】threaded-exec : Log.
+【PASS】threaded-exec
+*** C771T028: threads-threaded-exec OK
+======== threxit-hop-specific ========
+【SAME】threxit-hop-specific: Summary.
+【SAME】threxit-hop-specific : Log.
+【PASS】threxit-hop-specific
+*** C771T029: threads-threxit-hop-specific OK
+======== tls-nodebug ========
+【SAME】tls-nodebug: Summary.
+【SAME】tls-nodebug : Log.
+【PASS】tls-nodebug
+*** C771T030: threads-tls-nodebug OK
+======== tls-sepdebug ========
+【SAME】tls-sepdebug: Summary.
+【SAME】tls-sepdebug : Log.
+【PASS】tls-sepdebug
+*** C771T031: threads-tls-sepdebug OK
+======== tls-var ========
+【SAME】tls-var: Summary.
+【SAME】tls-var : Log.
+【PASS】tls-var
+*** C771T032: threads-tls-var OK
+tid=23026
+*** C771T033 *** ATTACH OK
+*** C771T034 *** SYSCALL OK
+syscall enter n=9
+*** C771T034 *** SYSCALL OK
+syscall return n=9 r=46912535269376
+*** C771T035 DETACH OK
+mmap m=0x2aaaad001000 errno=0
+update m=0x2aaaad001000
+update *m=1
+munmap rc=0, errno=0
+main done
+TEST_SUITE: ptrace
+TEST_NUMBER: 19
+ARGS: 
+TEST_SUITE: ptrace
+TEST_NUMBER: 19
+ARGS: 
+child is stopped.
+RESULT: ok
+*** C771T036: ostest-ptrace-19 OK
+pid=23121
+tid=23151
+*** C771T037 wait4(pid) OK
+*** C771T038 wait4(tid) OK
+*** C771T039 wait4(pid, __WCLONE) OK
+*** C771T040 wait4(tid, __WCLONE) OK
+*** C771T041 wait4(pid, __WALL) OK
+*** C771T042 wait4(tid, __WALL) OK
+clone01     1  TPASS  :  clone returned 23215
+*** C771T043: clone01 OK (1)
+clone03     1  TPASS  :  Test passed
+*** C771T044: clone03 OK (1)
+clone04     1  TPASS  :  expected failure; Got EINVAL
+*** C771T045: clone04 OK (1)
+clone06     1  TPASS  :  Test Passed
+*** C771T046: clone06 OK (1)
+clone07     1  TPASS  :  Use of return() in child did not cause SIGSEGV
+*** C771T047: clone07 OK (1)
+exit01      1  TPASS  :  exit() test PASSED
+*** C771T048: exit01 OK (1)
+exit02      1  TPASS  :  exit() test PASSED
+*** C771T049: exit02 OK (1)
+exit_group01    1  TPASS  :  exit_group() succeeded
+*** C771T050: exit_group01 OK (1)
+fork01      1  TPASS  :  fork() returned 23754
+fork01      2  TPASS  :  child pid and fork() return agree: 23754
+*** C771T051: fork01 OK (2)
+fork02      0  TINFO  :  Inside parent
+fork02      0  TINFO  :  Inside child
+fork02      0  TINFO  :  exit status of wait 0
+fork02      1  TPASS  :  test 1 PASSED
+*** C771T052: fork02 OK (1)
+fork03      0  TINFO  :  process id in parent of child from fork : 23896
+fork03      1  TPASS  :  test 1 PASSED
+*** C771T053: fork03 OK (1)
+fork04      1  TPASS  :  Env var TERM unchanged after fork(): xterm
+fork04      2  TPASS  :  Env var NoTSetzWq unchanged after fork(): getenv() does not find variable set
+fork04      3  TPASS  :  Env var TESTPROG unchanged after fork(): FRKTCS04
+*** C771T054: fork04 OK (3)
+fork07      0  TINFO  :  Forking 100 children
+fork07      0  TINFO  :  Forked all 100 children, now collecting
+fork07      0  TINFO  :  Collected all 100 children
+fork07      1  TPASS  :  100/100 children read correctly from an inheritted fd
+*** C771T055: fork07 OK (1)
+fork08      0  TINFO  :  parent forksval: 1
+fork08      0  TINFO  :  parent forksval: 2
+fork08      0  TINFO  :  second child got char: b
+fork08      1  TPASS  :  Test passed in childnumber 2
+fork08      0  TINFO  :  exit status of wait  expected 0 got 0
+fork08      1  TPASS  :  parent test PASSED
+fork08      0  TINFO  :  exit status of wait  expected 0 got 0
+fork08      2  TPASS  :  parent test PASSED
+fork08      0  TINFO  :  exit status of wait  expected 0 got 0
+fork08      3  TPASS  :  parent test PASSED
+fork08      0  TINFO  :  Number of processes forked is 2
+*** C771T056: fork08 OK (4)
+fork09      0  TINFO  :  OPEN_MAX is 1024
+fork09      0  TINFO  :  first file descriptor is 12 
+fork09      0  TINFO  :  Parent reporting 1023 files open
+fork09      0  TINFO  :  Child opened new file #1023
+fork09      1  TPASS  :  test 1 PASSED
+*** C771T057: fork09 OK (1)
+fork10      0  TINFO  :  fork child A
+fork10      1  TPASS  :  test 1 PASSED
+*** C771T058: fork10 OK (1)
+fork11      1  TPASS  :  fork test passed, 100 processes
+*** C771T059: fork11 OK (1)
+kill01      1  TPASS  :  received expected signal 9
+*** C771T060: kill01 OK (1)
+kill02      1  TPASS  :  The signal was sent to all processes in the process group.
+kill02      2  TPASS  :  The signal was not sent to selective processes that were not in the process group.
+*** C771T061: kill02 OK (2)
+kill03      1  TPASS  :  errno set to 22 : Invalid argument, as expected
+*** C771T062: kill03 OK (1)
+kill04      1  TPASS  :  errno set to 3 : No such process, as expected
+*** C771T063: kill04 OK (1)
+kill failed with EPERM
+kill05      1  TPASS  :  received expected errno(EPERM)
+*** C771T064: kill05 OK (1)
+kill06      1  TPASS  :  received expected signal 9
+*** C771T065: kill06 OK (1)
+kill07      0  TINFO  :  received expected signal 9
+kill07      1  TPASS  :  Did not catch signal as expected
+*** C771T066: kill07 OK (1)
+kill08      1  TPASS  :  received expected signal 9
+*** C771T067: kill08 OK (1)
+kill09      1  TPASS  :  kill(31358, SIGKILL) returned 0
+*** C771T068: kill09 OK (1)
+kill10      1  TPASS  :  All 2 pgrps received their signals
+31429: All 10 children reported in
+31460: All 10 children reported in
+*** C771T069: kill10 OK (1)
+kill11      1  TPASS  :  signal SIGHUP          
+kill11      2  TPASS  :  signal SIGINT          
+kill11      3  TPASS  :  signal SIGQUIT          dumped core
+kill11      4  TPASS  :  signal SIGILL           dumped core
+kill11      5  TPASS  :  signal SIGTRAP          dumped core
+kill11      6  TPASS  :  signal SIGIOT/SIGABRT   dumped core
+kill11      7  TPASS  :  signal SIGIOT/SIGABRT   dumped core
+kill11      8  TPASS  :  signal SIGBUS           dumped core
+kill11      9  TPASS  :  signal SIGFPE           dumped core
+kill11     10  TPASS  :  signal SIGKILL         
+kill11     11  TPASS  :  signal SIGUSR1         
+kill11     12  TPASS  :  signal SIGSEGV          dumped core
+kill11     13  TPASS  :  signal SIGUSR2         
+kill11     14  TPASS  :  signal SIGPIPE         
+kill11     15  TPASS  :  signal SIGALRM         
+kill11     16  TPASS  :  signal SIGTERM         
+kill11     17  TPASS  :  signal SIGXCPU          dumped core
+kill11     18  TPASS  :  signal SIGXFSZ          dumped core
+kill11     19  TPASS  :  signal SIGVTALRM       
+kill11     20  TPASS  :  signal SIGPROF         
+kill11     21  TPASS  :  signal SIGIO/SIGPOLL   
+kill11     22  TPASS  :  signal SIGPWR          
+kill11     23  TPASS  :  signal SIGSYS/SIGUNUSED dumped core
+*** C771T070: kill11 OK (23)
+kill12      1  TPASS  :  Test passed
+*** C771T071: kill12 OK (1)
+ptrace01    1  TPASS  :  Test Passed
+ptrace01    2  TPASS  :  Test Passed
+*** C771T072: ptrace01 OK (2)
+ptrace02    1  TPASS  :  Test Passed
+ptrace02    2  TPASS  :  Test Passed
+*** C771T073: ptrace02 OK (2)
+ptrace03    1  TCONF  :  ptrace03.c:137: this kernel allows to trace init
+ptrace03    2  TPASS  :  Test Passed
+ptrace03    3  TPASS  :  Test Passed
+*** C771T074: ptrace03 OK (2)
+ptrace05    0  TINFO  :  [child] Sending kill(.., 0)
+ptrace05    1  TPASS  :  kill(.., 0) exited with 0, as expected.
+ptrace05    0  TINFO  :  [child] Sending kill(.., 1)
+ptrace05    2  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 2)
+ptrace05    3  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 3)
+ptrace05    4  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 4)
+ptrace05    5  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 5)
+ptrace05    6  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 6)
+ptrace05    7  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 7)
+ptrace05    8  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 8)
+ptrace05    9  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 9)
+ptrace05   10  TPASS  :  Killed with SIGKILL, as expected.
+ptrace05    0  TINFO  :  [child] Sending kill(.., 10)
+ptrace05   11  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 11)
+ptrace05   12  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 12)
+ptrace05   13  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 13)
+ptrace05   14  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 14)
+ptrace05   15  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 15)
+ptrace05   16  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 16)
+ptrace05   17  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 17)
+ptrace05   18  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 18)
+ptrace05   19  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 19)
+ptrace05   20  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 20)
+ptrace05   21  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 21)
+ptrace05   22  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 22)
+ptrace05   23  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 23)
+ptrace05   24  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 24)
+ptrace05   25  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 25)
+ptrace05   26  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 26)
+ptrace05   27  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 27)
+ptrace05   28  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 28)
+ptrace05   29  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 29)
+ptrace05   30  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 30)
+ptrace05   31  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 31)
+ptrace05   32  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 32)
+ptrace05   33  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 33)
+ptrace05   34  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 34)
+ptrace05   35  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 35)
+ptrace05   36  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 36)
+ptrace05   37  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 37)
+ptrace05   38  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 38)
+ptrace05   39  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 39)
+ptrace05   40  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 40)
+ptrace05   41  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 41)
+ptrace05   42  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 42)
+ptrace05   43  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 43)
+ptrace05   44  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 44)
+ptrace05   45  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 45)
+ptrace05   46  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 46)
+ptrace05   47  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 47)
+ptrace05   48  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 48)
+ptrace05   49  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 49)
+ptrace05   50  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 50)
+ptrace05   51  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 51)
+ptrace05   52  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 52)
+ptrace05   53  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 53)
+ptrace05   54  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 54)
+ptrace05   55  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 55)
+ptrace05   56  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 56)
+ptrace05   57  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 57)
+ptrace05   58  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 58)
+ptrace05   59  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 59)
+ptrace05   60  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 60)
+ptrace05   61  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 61)
+ptrace05   62  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 62)
+ptrace05   63  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 63)
+ptrace05   64  TPASS  :  Stopped as expected
+ptrace05    0  TINFO  :  [child] Sending kill(.., 64)
+ptrace05   65  TPASS  :  Stopped as expected
+*** C771T075: ptrace05 OK (65)
+wait02      1  TPASS  :  wait(&status) returned 3201
+*** C771T076: wait02 OK (1)
+wait401     1  TPASS  :  Received child pid as expected.
+wait401     2  TPASS  :  wait401 call succeeded
+*** C771T077: wait401 OK (2)
+wait402     1  TPASS  :  received expected failure - errno = 10 - No child processes
+*** C771T078: wait402 OK (1)
+waitid01    0  TINFO  :  Process 3384 terminated:
+waitid01    0  TINFO  :  code = 1
+waitid01    0  TINFO  :  exit value = 31488
+waitid01    0  TINFO  :  Process 3414 terminated:
+waitid01    0  TINFO  :  code = 1
+waitid01    0  TINFO  :  exit value = 0
+waitid01    0  TINFO  :  Process 3444 terminated:
+waitid01    0  TINFO  :  code = 2
+waitid01    0  TINFO  :  signal = 1
+waitid01    0  TINFO  :  Process 3474 terminated:
+waitid01    0  TINFO  :  code = 1
+waitid01    0  TINFO  :  exit value = 31488
+waitid01    0  TINFO  :  Process 3504 terminated:
+waitid01    0  TINFO  :  code = 1
+waitid01    0  TINFO  :  exit value = 0
+waitid01    0  TINFO  :  Process 3534 terminated:
+waitid01    0  TINFO  :  code = 2
+waitid01    0  TINFO  :  signal = 1
+waitid01    0  TINFO  :  Process 3564 terminated:
+waitid01    0  TINFO  :  code = 1
+waitid01    0  TINFO  :  exit value = 31488
+waitid01    0  TINFO  :  Process 3594 terminated:
+waitid01    0  TINFO  :  code = 1
+waitid01    0  TINFO  :  exit value = 0
+waitid01    0  TINFO  :  Process 3624 terminated:
+waitid01    0  TINFO  :  code = 2
+waitid01    0  TINFO  :  signal = 1
+waitid01    1  TPASS  :  waitid(): system call passed
+*** C771T079: waitid01 OK (1)
+waitid02    0  TINFO  :  WNOHANG
+waitid02    0  TINFO  :  (3664) waitid(0, 0, 0x547ffffffcf0, 1)
+waitid02    1  TPASS  :  exp_errno=22
+waitid02    0  TINFO  :  si_pid = 0 ; si_code = 0 ; si_status = 0
+waitid02    0  TINFO  :  WNOHANG | WEXITED no child
+waitid02    0  TINFO  :  (3664) waitid(0, 0, 0x547ffffffcf0, 5)
+waitid02    2  TPASS  :  exp_errno=10
+waitid02    0  TINFO  :  si_pid = 0 ; si_code = 0 ; si_status = 0
+waitid02    0  TINFO  :  WNOHANG | WEXITED with child
+waitid02    0  TINFO  :  (3664) waitid(0, 0, 0x547ffffffcf0, 5)
+waitid02    3  TPASS  :  ret: 0
+waitid02    0  TINFO  :  si_pid = 0 ; si_code = 0 ; si_status = 0
+waitid02    0  TINFO  :  P_PGID, WEXITED wait for child
+waitid02    0  TINFO  :  (3664) waitid(2, 5365, 0x547ffffffcf0, 4)
+waitid02    4  TPASS  :  ret: 0
+waitid02    0  TINFO  :  si_pid = 3725 ; si_code = 1 ; si_status = 0
+waitid02    0  TINFO  :  P_PID, WEXITED wait for child
+waitid02    0  TINFO  :  (3664) waitid(1, 3755, 0x547ffffffcf0, 4)
+waitid02    5  TPASS  :  ret: 0
+waitid02    0  TINFO  :  si_pid = 3755 ; si_code = 1 ; si_status = 0
+waitid02    0  TINFO  :  P_PID, WSTOPPED | WNOWAIT
+waitid02    0  TINFO  :  (3664) waitid(1, 3785, 0x547ffffffcf0, 16777218)
+waitid02    6  TPASS  :  ret: 0
+waitid02    0  TINFO  :  si_pid = 3785 ; si_code = 5 ; si_status = 4991
+waitid02    0  TINFO  :  P_PID, WCONTINUED
+waitid02    0  TINFO  :  (3664) waitid(1, 3815, 0x547ffffffcf0, 8)
+waitid02    7  TPASS  :  ret: 0
+waitid02    0  TINFO  :  si_pid = 3815 ; si_code = 6 ; si_status = 65535
+waitid02    0  TINFO  :  P_PID, WEXITED not a child of the calling process
+waitid02    0  TINFO  :  (3664) waitid(1, 1, 0x547ffffffcf0, 4)
+waitid02    8  TPASS  :  exp_errno=10
+waitid02    0  TINFO  :  si_pid = 0 ; si_code = 0 ; si_status = 0
+*** C771T080: waitid02 OK (8)
+waitpid01    1  TPASS  :  recieved expected pid
+waitpid01    2  TPASS  :  recieved expected signal
+*** C771T081: waitpid01 OK (2)
+waitpid02    1  TPASS  :  recieved expected pid
+waitpid02    2  TPASS  :  recieved expected signal
+waitpid02    3  TPASS  :  recieved expected exit value
+*** C771T082: waitpid02 OK (3)
+waitpid03    1  TPASS  :  Got correct child PID
+waitpid03    2  TPASS  :  Condition 2 test passed
+*** C771T083: waitpid03 OK (2)
+waitpid04    1  TPASS  :  condition 1 test passed
+waitpid04    2  TPASS  :  condition 2 test passed
+waitpid04    3  TPASS  :  condition 3 test passed
+*** C771T084: waitpid04 OK (3)
+waitpid05    1  TPASS  :  received expected pid.
+waitpid05    2  TPASS  :  received expected exit number.
+waitpid05    3  TPASS  :  received expected pid.
+waitpid05    4  TPASS  :  received expected exit number.
+waitpid05    5  TPASS  :  received expected pid.
+waitpid05    6  TPASS  :  received expected exit number.
+waitpid05    7  TPASS  :  received expected pid.
+waitpid05    8  TPASS  :  received expected exit number.
+waitpid05    9  TPASS  :  received expected pid.
+waitpid05   10  TPASS  :  received expected exit number.
+waitpid05   11  TPASS  :  received expected pid.
+waitpid05   12  TPASS  :  received expected exit number.
+waitpid05   13  TPASS  :  received expected pid.
+waitpid05   14  TPASS  :  received expected exit number.
+waitpid05   15  TPASS  :  received expected pid.
+waitpid05   16  TPASS  :  received expected exit number.
+waitpid05   17  TPASS  :  received expected pid.
+waitpid05   18  TPASS  :  received expected exit number.
+waitpid05   19  TPASS  :  received expected pid.
+waitpid05   20  TPASS  :  received expected exit number.
+waitpid05   21  TPASS  :  received expected pid.
+waitpid05   22  TPASS  :  received expected exit number.
+waitpid05   23  TPASS  :  received expected pid.
+waitpid05   24  TPASS  :  received expected exit number.
+*** C771T085: waitpid05 OK (24)
+waitpid06    1  TPASS  :  waitpid06 PASSED
+*** C771T086: waitpid06 OK (1)
+waitpid07    1  TPASS  :  waitpid07 PASSED
+*** C771T087: waitpid07 OK (1)
+waitpid08    1  TPASS  :  waitpid08 PASSED
+*** C771T088: waitpid08 OK (1)
+waitpid09    1  TPASS  :  case 1 PASSED
+waitpid09    2  TPASS  :  case 2 PASSED
+*** C771T089: waitpid09 OK (2)
+waitpid10    1  TPASS  :  Test PASSED
+*** C771T090: waitpid10 OK (1)
+waitpid11    1  TPASS  :  Test PASSED
+waitpid11    1  TPASS  :  waitpid11 PASSED
+*** C771T091: waitpid11 OK (2)
+waitpid12    1  TPASS  :  Test PASSED
+waitpid12    1  TPASS  :  waitpid12 PASSED
+*** C771T092: waitpid12 OK (2)
+waitpid13    1  TPASS  :  Test PASSED
+waitpid13    1  TPASS  :  waitpid13 PASSED
+*** C771T093: waitpid13 OK (2)
+bash-4.2$ exit
+exit
+
+Script done on Mon Sep 24 09:07:34 2018

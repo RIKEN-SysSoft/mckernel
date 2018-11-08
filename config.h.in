@@ -54,48 +54,6 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
-/* Define to address of kernel symbol __vvar_page, or 0 if exported */
-#undef MCCTRL_KSYM___vvar_page
-
-/* Define to address of kernel symbol hpet_address, or 0 if exported */
-#undef MCCTRL_KSYM_hpet_address
-
-/* Define to address of kernel symbol hv_clock, or 0 if exported */
-#undef MCCTRL_KSYM_hv_clock
-
-/* Define to address of kernel symbol sys_mount, or 0 if exported */
-#undef MCCTRL_KSYM_sys_mount
-
-/* Define to address of kernel symbol sys_readlink, or 0 if exported */
-#undef MCCTRL_KSYM_sys_readlink
-
-/* Define to address of kernel symbol sys_umount, or 0 if exported */
-#undef MCCTRL_KSYM_sys_umount
-
-/* Define to address of kernel symbol sys_unshare, or 0 if exported */
-#undef MCCTRL_KSYM_sys_unshare
-
-/* Define to address of kernel symbol vdso_end, or 0 if exported */
-#undef MCCTRL_KSYM_vdso_end
-
-/* Define to address of kernel symbol vdso_image_64, or 0 if exported */
-#undef MCCTRL_KSYM_vdso_image_64
-
-/* Define to address of kernel symbol vdso_pages, or 0 if exported */
-#undef MCCTRL_KSYM_vdso_pages
-
-/* Define to address of kernel symbol vdso_spec, or 0 if exported */
-#undef MCCTRL_KSYM_vdso_spec
-
-/* Define to address of kernel symbol vdso_start, or 0 if exported */
-#undef MCCTRL_KSYM_vdso_start
-
-/* Define to address of kernel symbol walk_page_range, or 0 if exported */
-#undef MCCTRL_KSYM_walk_page_range
-
-/* Define to address of kernel symbol zap_page_range, or 0 if exported */
-#undef MCCTRL_KSYM_zap_page_range
-
 /* McKernel specific headers */
 #undef MCKERNEL_INCDIR
 
@@ -128,3 +86,6 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
+
+/* whether or not syscall_intercept library is linked */
+#undef WITH_SYSCALL_INTERCEPT

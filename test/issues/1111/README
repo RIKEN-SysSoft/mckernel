@@ -1,0 +1,44 @@
+【Issue#1111 動作確認】
+□ テスト内容
+1. Issueで報告された再現プログラムでの確認
+RT_001: ostest-rt_sigaction.005 による確認
+	テストが正常に終了し、「RESULT: ok」が出力されることを確認する
+
+2. 既存のsigaction機能に影響がないことを確認
+CT_001: 設定中のハンドラ情報の取得 (上書き時)
+	1. SIG_RESETHANDを指定したsigaction()でSIG_USR1にハンドラを設定
+	2. sigaction(SIGUSR1, NULL, &act) で設定情報を取得できることを確認する
+	3. SIG_RESETHANDを指定しないsigaction()でSIG_USR1にデフォルトハンドラを設定
+	4. sigaction(SIGUSR1, NULL, &act) で3.で指定した設定情報を取得できることを確認する
+
+CT_002: 設定中のハンドラ情報の取得 (デフォルトに戻った時)
+	1. SIG_RESETHANDを指定したsigaction()でSIG_USR1にハンドラを設定
+	2. 自身にSIGUSR1を送る
+	3. 1.で登録したハンドラが呼び出される
+	4. sigaction(SIGUSR1, NULL, &act) で設定情報を取得できることを確認する
+
+CT_003: 不正なsig_numへのハンドラ登録
+	1. 範囲外(上限、下限)のsignumへのハンドラ登録が失敗する
+	2. SIGKILL, SIGSTOPへのハンドラ登録が失敗する
+
+CT_004: SIGKILL, SIGSTOPのハンドラ情報の取得
+	1. sigaction(SIGKILL, NULL, &act) で設定情報を取得できる
+	2. sigaction(SIGSTOP, NULL, &act) で設定情報を取得できる
+
+CT_005: sig_numの有効確認
+	1. sigaction(SIGUSR1, NULL, NULL) が成功する（有効）
+	2. sigaction(SIGKILL, NULL, NULL) が成功する（有効）
+	3. sigaction(SIGSTOP, NULL, NULL) が成功する（有効）
+	4. sigaction(_NSIG, NULL, NULL) が失敗する（無効）
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。

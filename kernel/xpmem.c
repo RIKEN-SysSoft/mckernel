@@ -83,7 +83,7 @@ int xpmem_open(
 	request.number = __NR_open;
 	request.args[0] = (unsigned long)pathname;
 	request.args[1] = flags;
-	fd = do_syscall(&request, ihk_mc_get_processor_id(), 0);
+	fd = do_syscall(&request, ihk_mc_get_processor_id());
 	if (fd < 0) {
 		XPMEM_DEBUG("__NR_open error: fd=%d", fd);
 		return fd;
@@ -283,7 +283,8 @@ static int xpmem_close(
 	int n_opened;
 
 	XPMEM_DEBUG("call: fd=%d, pid=%d, rgid=%d", 
-		mckfd->fd, proc->pid, proc->rgid);
+		mckfd->fd, cpu_local_var(current)->proc->pid,
+		cpu_local_var(current)->proc->rgid);
 
 	n_opened = ihk_atomic_dec_return(&xpmem_my_part->n_opened);
 	XPMEM_DEBUG("n_opened=%d", n_opened);
@@ -1398,7 +1399,7 @@ static int xpmem_free_process_memory_range(
 	}
 
 	if (range->memobj) {
-		memobj_release(range->memobj);
+		memobj_unref(range->memobj);
 	}
 
 	rb_erase(&range->vm_rb_node, &vm->vm_range_tree);
@@ -1731,7 +1732,8 @@ int xpmem_remove_process_memory_range(
 
 		remaining_vmr->private_data = NULL;
 		/* This function is always followed by xpmem_free_process_memory_range() 
-		   which in turn calls memobj_release() */
+		 * which in turn calls memobj_put()
+		 */
 		remaining_vaddr = att->at_vaddr;
 	}
 
@@ -1754,7 +1756,8 @@ int xpmem_remove_process_memory_range(
 
 	vmr->private_data = NULL;
 	/* This function is always followed by [xpmem_]free_process_memory_range()
-	   which in turn calls memobj_release() */
+	 * which in turn calls memobj_put()
+	 */
 
 out:
 	mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);

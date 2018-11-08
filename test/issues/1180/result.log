@@ -1,0 +1,40 @@
+*** RT_001 start *******************************
+TEST_SUITE: sched_setaffinity
+TEST_NUMBER: 8
+ARGS: -p 20
+RESULT: ok
+*** RT_001: PASSED
+
+*** RT_002 start *******************************
+TEST_SUITE: sched_setaffinity
+TEST_NUMBER: 1
+ARGS: -p 20
+RESULT: ok
+*** RT_002: PASSED
+
+*** RT_003 start *******************************
+TEST_SUITE: sched_setaffinity
+TEST_NUMBER: 2
+ARGS: -p 20
+==before migrate process==
+f0 = 3.140000, f1 = 42.195000, f2 = 53.849998, f3 = 909.908997
+==after migrate process==
+f0 = 3.140000, f1 = 42.195000, f2 = 53.849998, f3 = 909.908997
+RESULT: ok
+*** RT_003: PASSED
+
+*** RT_004 start *******************************
+TEST_SUITE: sched_setaffinity
+TEST_NUMBER: 9
+ARGS: -p 20
+==Please check migrated child process keep datas==
+RESULT: ok
+*** RT_004: PASSED
+
+*** RT_005 start *******************************
+TEST_SUITE: sched_setaffinity
+TEST_NUMBER: 10
+ARGS: -p 20
+==Please check migrated child process keep datas==
+RESULT: ok
+*** RT_005: PASSED

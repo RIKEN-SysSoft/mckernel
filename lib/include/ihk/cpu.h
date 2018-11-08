@@ -25,8 +25,6 @@ void cpu_safe_halt(void);
 void cpu_restore_interrupt(unsigned long);
 void cpu_pause(void);
 
-#define barrier()   arch_barrier()
-
 unsigned long cpu_disable_interrupt_save(void);
 
 struct ihk_mc_interrupt_handler {
@@ -76,6 +74,7 @@ void ihk_mc_init_ap(void);
 void ihk_mc_init_context(ihk_mc_kernel_context_t *new_ctx,
                          void *stack_pointer,
                          void (*next_function)(void));
+void *ihk_mc_get_linux_kernel_pgt(void);
 
 int ihk_mc_get_extra_reg_id(unsigned long hw_config, unsigned long hw_config_ext);
 unsigned int ihk_mc_get_nr_extra_regs(void);

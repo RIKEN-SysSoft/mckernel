@@ -1,0 +1,36 @@
+*** RT_001 start *******************************
+TEST_SUITE: mremap_mmap_anon
+TEST_NUMBER: 1
+ARGS:
+RESULT: ok
+*** RT_001: PASSED
+
+*** CT_001 start *******************************
+ [OK] mmap   returned :0x2aaaab200000
+ [OK] mremap returned :0x2aaaab200000 (expect return is valid addr)
+ [OK] errno after mremap :0 (expect error is 0)
+*** CT_001 PASSED
+
+*** CT_002 start *******************************
+ [OK] mmap   returned :0x2aaaab200000
+ [OK] mremap returned :0x2aaaab200000 (expect return is 0x2aaaab200000)
+ [OK] errno after mremap :0 (expect error is 0)
+*** CT_002 PASSED
+
+*** CT_003 start *******************************
+ [OK] mmap   returned :0x2aaaab200000
+ [OK] mremap returned :0x2aaaab200000 (expect return is 0x2aaaab200000)
+ [OK] errno after mremap :0 (expect error is 0)
+*** CT_003 PASSED
+
+*** CT_004 start *******************************
+ [OK] mmap   returned :0x2aaaab200000
+ [OK] mremap returned :0xffffffffffffffff (expect return is MAP_FAILED)
+ [OK] errno after mremap :22 (expect error is EINVAL(22))
+*** CT_004 PASSED
+
+*** CT_005 start *******************************
+ [OK] mmap   returned :0x2aaaab200000
+ [OK] mremap returned :0xffffffffffffffff (expect return is MAP_FAILED)
+ [OK] errno after mremap :12 (expect error is ENOMEM(12))
+*** CT_005 PASSED

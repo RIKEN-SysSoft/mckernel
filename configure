@@ -628,9 +628,12 @@ IHK_RELEASE_DATE
 DCFA_VERSION
 MCKERNEL_VERSION
 IHK_VERSION
+WITH_SYSCALL_INTERCEPT
 ENABLE_QLMPI
 ENABLE_RUSAGE
 ENABLE_MCOVERLAYFS
+LDFLAGS_SYSCALL_INTERCEPT
+CPPFLAGS_SYSCALL_INTERCEPT
 MANDIR
 KERNDIR
 KMODDIR
@@ -702,6 +705,9 @@ enable_option_checking
 with_mpi
 with_mpi_include
 with_mpi_lib
+with_syscall_intercept
+with_syscall_intercept_include
+with_syscall_intercept_lib
 with_kernelsrc
 with_target
 with_system_map
@@ -1346,6 +1352,15 @@ Optional Packages:
   --with-mpi-include=PATH specify path where mpi include directory can be
                           found
   --with-mpi-lib=PATH     specify path where mpi lib directory can be found
+  --with-syscall_intercept=PATH
+                          specify path where syscall_intercept include
+                          directory and lib directory can be found
+  --with-syscall_intercept-include=PATH
+                          specify path where syscall_intercept include
+                          directory can be found
+  --with-syscall_intercept-lib=PATH
+                          specify path where syscall_intercept lib directory
+                          can be found
   --with-kernelsrc=path   Path to 'kernel src', default is
                           /lib/modules/uname_r/build
   --with-target={attached-mic | builtin-mic | builtin-x86 | smp-x86}
@@ -2075,6 +2090,8 @@ ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
 
 
 
@@ -3513,6 +3530,195 @@ fi
 
 
 
+
+# Check whether --with-syscall_intercept was given.
+if test "${with_syscall_intercept+set}" = set; then :
+  withval=$with_syscall_intercept; case "$withval" in #(
+  yes|no|'') :
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --without-syscall_intercept=PATH expects a valid PATH" >&5
+$as_echo "$as_me: WARNING: --without-syscall_intercept=PATH expects a valid PATH" >&2;}
+                          with_syscall_intercept="" ;; #(
+  *) :
+     ;;
+esac
+else
+  with_syscall_intercept=
+fi
+
+
+# Check whether --with-syscall_intercept-include was given.
+if test "${with_syscall_intercept_include+set}" = set; then :
+  withval=$with_syscall_intercept_include; case "$withval" in #(
+  yes|no|'') :
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --without-syscall_intercept-include=PATH expects a valid PATH" >&5
+$as_echo "$as_me: WARNING: --without-syscall_intercept-include=PATH expects a valid PATH" >&2;}
+                          with_syscall_intercept_include="" ;; #(
+  *) :
+     ;;
+esac
+fi
+
+
+# Check whether --with-syscall_intercept-lib was given.
+if test "${with_syscall_intercept_lib+set}" = set; then :
+  withval=$with_syscall_intercept_lib; case "$withval" in #(
+  yes|no|'') :
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --without-syscall_intercept-lib=PATH expects a valid PATH" >&5
+$as_echo "$as_me: WARNING: --without-syscall_intercept-lib=PATH expects a valid PATH" >&2;}
+                          with_syscall_intercept_lib="" ;; #(
+  *) :
+     ;;
+esac
+fi
+
+
+    # The args have been sanitized into empty/non-empty values above.
+    # Now append -I/-L args to CPPFLAGS/LDFLAGS, with more specific options
+    # taking priority
+
+    if test -n "${with_syscall_intercept_include}"; then :
+
+
+	if echo "$CPPFLAGS_SYSCALL_INTERCEPT" | $FGREP -e "\<-I${with_syscall_intercept_include}\>" >/dev/null 2>&1; then :
+  echo "CPPFLAGS_SYSCALL_INTERCEPT(='$CPPFLAGS_SYSCALL_INTERCEPT') contains '-I${with_syscall_intercept_include}', not appending" >&5
+else
+  echo "CPPFLAGS_SYSCALL_INTERCEPT(='$CPPFLAGS_SYSCALL_INTERCEPT') does not contain '-I${with_syscall_intercept_include}', appending" >&5
+		CPPFLAGS_SYSCALL_INTERCEPT="$CPPFLAGS_SYSCALL_INTERCEPT -I${with_syscall_intercept_include}"
+
+fi
+
+else
+  if test -n "${with_syscall_intercept}"; then :
+
+
+	if echo "$CPPFLAGS_SYSCALL_INTERCEPT" | $FGREP -e "\<-I${with_syscall_intercept}/include\>" >/dev/null 2>&1; then :
+  echo "CPPFLAGS_SYSCALL_INTERCEPT(='$CPPFLAGS_SYSCALL_INTERCEPT') contains '-I${with_syscall_intercept}/include', not appending" >&5
+else
+  echo "CPPFLAGS_SYSCALL_INTERCEPT(='$CPPFLAGS_SYSCALL_INTERCEPT') does not contain '-I${with_syscall_intercept}/include', appending" >&5
+		CPPFLAGS_SYSCALL_INTERCEPT="$CPPFLAGS_SYSCALL_INTERCEPT -I${with_syscall_intercept}/include"
+
+fi
+
+fi
+fi
+
+    if test -n "${with_syscall_intercept_lib}"; then :
+
+
+	if echo "$LDFLAGS_SYSCALL_INTERCEPT" | $FGREP -e "\<-L${with_syscall_intercept_lib} -Wl,-rpath,${with_syscall_intercept_lib}\>" >/dev/null 2>&1; then :
+  echo "LDFLAGS_SYSCALL_INTERCEPT(='$LDFLAGS_SYSCALL_INTERCEPT') contains '-L${with_syscall_intercept_lib} -Wl,-rpath,${with_syscall_intercept_lib}', not appending" >&5
+else
+  echo "LDFLAGS_SYSCALL_INTERCEPT(='$LDFLAGS_SYSCALL_INTERCEPT') does not contain '-L${with_syscall_intercept_lib} -Wl,-rpath,${with_syscall_intercept_lib}', appending" >&5
+		LDFLAGS_SYSCALL_INTERCEPT="$LDFLAGS_SYSCALL_INTERCEPT -L${with_syscall_intercept_lib} -Wl,-rpath,${with_syscall_intercept_lib}"
+
+fi
+
+else
+  if test -n "${with_syscall_intercept}"; then :
+
+
+	if echo "$LDFLAGS_SYSCALL_INTERCEPT" | $FGREP -e "\<-L${with_syscall_intercept}/lib -Wl,-rpath,${with_syscall_intercept}/lib\>" >/dev/null 2>&1; then :
+  echo "LDFLAGS_SYSCALL_INTERCEPT(='$LDFLAGS_SYSCALL_INTERCEPT') contains '-L${with_syscall_intercept}/lib -Wl,-rpath,${with_syscall_intercept}/lib', not appending" >&5
+else
+  echo "LDFLAGS_SYSCALL_INTERCEPT(='$LDFLAGS_SYSCALL_INTERCEPT') does not contain '-L${with_syscall_intercept}/lib -Wl,-rpath,${with_syscall_intercept}/lib', appending" >&5
+		LDFLAGS_SYSCALL_INTERCEPT="$LDFLAGS_SYSCALL_INTERCEPT -L${with_syscall_intercept}/lib -Wl,-rpath,${with_syscall_intercept}/lib"
+
+fi
+
+                  if test -d "${with_syscall_intercept}/lib64"; then :
+
+
+	if echo "$LDFLAGS_SYSCALL_INTERCEPT" | $FGREP -e "\<-L${with_syscall_intercept}/lib64 -Wl,-rpath,${with_syscall_intercept}/lib64\>" >/dev/null 2>&1; then :
+  echo "LDFLAGS_SYSCALL_INTERCEPT(='$LDFLAGS_SYSCALL_INTERCEPT') contains '-L${with_syscall_intercept}/lib64 -Wl,-rpath,${with_syscall_intercept}/lib64', not appending" >&5
+else
+  echo "LDFLAGS_SYSCALL_INTERCEPT(='$LDFLAGS_SYSCALL_INTERCEPT') does not contain '-L${with_syscall_intercept}/lib64 -Wl,-rpath,${with_syscall_intercept}/lib64', appending" >&5
+		LDFLAGS_SYSCALL_INTERCEPT="$LDFLAGS_SYSCALL_INTERCEPT -L${with_syscall_intercept}/lib64 -Wl,-rpath,${with_syscall_intercept}/lib64"
+
+fi
+
+fi
+
+fi
+
+fi
+
+    if test -n "${with_syscall_intercept}" || test -n "${with_syscall_intercept_include}" || test -n "${with_syscall_intercept_lib}"; then :
+  WITH_SYSCALL_INTERCEPT=yes
+else
+  WITH_SYSCALL_INTERCEPT=no
+fi
+
+
+if test "x$WITH_SYSCALL_INTERCEPT" == "xno" ; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for syscall_no_intercept in -lsyscall_intercept" >&5
+$as_echo_n "checking for syscall_no_intercept in -lsyscall_intercept... " >&6; }
+if ${ac_cv_lib_syscall_intercept_syscall_no_intercept+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lsyscall_intercept -lcapstone -ldl $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char syscall_no_intercept ();
+int
+main ()
+{
+return syscall_no_intercept ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_syscall_intercept_syscall_no_intercept=yes
+else
+  ac_cv_lib_syscall_intercept_syscall_no_intercept=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_syscall_intercept_syscall_no_intercept" >&5
+$as_echo "$ac_cv_lib_syscall_intercept_syscall_no_intercept" >&6; }
+if test "x$ac_cv_lib_syscall_intercept_syscall_no_intercept" = xyes; then :
+  syscall_intercept_lib_found=yes
+else
+  syscall_intercept_lib_found=no
+fi
+
+	if test "x$syscall_intercept_lib_found" != "xyes"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: libsyscall_intercept.so not found" >&5
+$as_echo "$as_me: libsyscall_intercept.so not found" >&6;}
+fi
+
+	ac_fn_c_check_header_mongrel "$LINENO" "libsyscall_intercept_hook_point.h" "ac_cv_header_libsyscall_intercept_hook_point_h" "$ac_includes_default"
+if test "x$ac_cv_header_libsyscall_intercept_hook_point_h" = xyes; then :
+  syscall_intercept_header_found=yes
+else
+  syscall_intercept_header_found=no
+fi
+
+
+	if test "x$syscall_intercept_header_found" != "xyes"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: libsyscall_intercept_hook_point.h not found" >&5
+$as_echo "$as_me: libsyscall_intercept_hook_point.h not found" >&6;}
+fi
+
+	if test "x$syscall_intercept_lib_found" == "xyes" && test "x$syscall_intercept_header_found" == "xyes"; then :
+  WITH_SYSCALL_INTERCEPT=yes
+else
+  WITH_SYSCALL_INTERCEPT=no
+fi
+fi
+
+
+
 # Check whether --with-kernelsrc was given.
 if test "${with_kernelsrc+set}" = set; then :
   withval=$with_kernelsrc; WITH_KERNELSRC=$withval
@@ -4396,399 +4602,6 @@ KDIR="$WITH_KERNELSRC"
 UNAME_R="$WITH_UNAME_R"
 TARGET="$WITH_TARGET"
 
-MCCTRL_LINUX_SYMTAB=""
-case "X$WITH_SYSTEM_MAP" in
-    Xyes | Xno | X)
-	MCCTRL_LINUX_SYMTAB=""
-	;;
-    *)
-	MCCTRL_LINUX_SYMTAB="$WITH_SYSTEM_MAP"
-	;;
-esac
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for System.map" >&5
-$as_echo_n "checking for System.map... " >&6; }
-if test -r "$MCCTRL_LINUX_SYMTAB"; then
-	MCCTRL_LINUX_SYMTAB="$MCCTRL_LINUX_SYMTAB"
-elif test -r "/boot/System.map-`uname -r`"; then
-	MCCTRL_LINUX_SYMTAB="/boot/System.map-`uname -r`"
-elif test -r "$KDIR/System.map"; then
-	MCCTRL_LINUX_SYMTAB="$KDIR/System.map"
-fi
-
-if test "$MCCTRL_LINUX_SYMTAB" == ""; then
-	as_fn_error $? "could not find" "$LINENO" 5
-fi
-
-if test -z "`eval cat $MCCTRL_LINUX_SYMTAB`"; then
-	as_fn_error $? "could not read System.map file, no read permission?" "$LINENO" 5
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $MCCTRL_LINUX_SYMTAB" >&5
-$as_echo "$MCCTRL_LINUX_SYMTAB" >&6; }
-
-MCCTRL_LINUX_SYMTAB_CMD="cat $MCCTRL_LINUX_SYMTAB"
-
-# MCCTRL_FIND_KSYM(SYMBOL)
-# ------------------------------------------------------
-# Search System.map for address of the given symbol and
-# do one of three things in config.h:
-# If not found, leave MCCTRL_KSYM_foo undefined
-# If found to be exported, "#define MCCTRL_KSYM_foo 0"
-# If found not to be exported, "#define MCCTRL_KSYM_foo 0x<value>"
-
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol sys_mount" >&5
-$as_echo_n "checking System.map for symbol sys_mount... " >&6; }
-  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " sys_mount\$" | cut -d\  -f1`
-  if test -z $mcctrl_addr; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-  else
-    mcctrl_result=$mcctrl_addr
-    mcctrl_addr="0x$mcctrl_addr"
-
-      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_sys_mount\$" >/dev/null`; then
-        mcctrl_result="exported"
-        mcctrl_addr="0"
-      fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
-$as_echo "$mcctrl_result" >&6; }
-
-cat >>confdefs.h <<_ACEOF
-#define MCCTRL_KSYM_sys_mount $mcctrl_addr
-_ACEOF
-
-  fi
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol sys_umount" >&5
-$as_echo_n "checking System.map for symbol sys_umount... " >&6; }
-  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " sys_umount\$" | cut -d\  -f1`
-  if test -z $mcctrl_addr; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-  else
-    mcctrl_result=$mcctrl_addr
-    mcctrl_addr="0x$mcctrl_addr"
-
-      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_sys_umount\$" >/dev/null`; then
-        mcctrl_result="exported"
-        mcctrl_addr="0"
-      fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
-$as_echo "$mcctrl_result" >&6; }
-
-cat >>confdefs.h <<_ACEOF
-#define MCCTRL_KSYM_sys_umount $mcctrl_addr
-_ACEOF
-
-  fi
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol sys_unshare" >&5
-$as_echo_n "checking System.map for symbol sys_unshare... " >&6; }
-  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " sys_unshare\$" | cut -d\  -f1`
-  if test -z $mcctrl_addr; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-  else
-    mcctrl_result=$mcctrl_addr
-    mcctrl_addr="0x$mcctrl_addr"
-
-      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_sys_unshare\$" >/dev/null`; then
-        mcctrl_result="exported"
-        mcctrl_addr="0"
-      fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
-$as_echo "$mcctrl_result" >&6; }
-
-cat >>confdefs.h <<_ACEOF
-#define MCCTRL_KSYM_sys_unshare $mcctrl_addr
-_ACEOF
-
-  fi
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol zap_page_range" >&5
-$as_echo_n "checking System.map for symbol zap_page_range... " >&6; }
-  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " zap_page_range\$" | cut -d\  -f1`
-  if test -z $mcctrl_addr; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-  else
-    mcctrl_result=$mcctrl_addr
-    mcctrl_addr="0x$mcctrl_addr"
-
-      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_zap_page_range\$" >/dev/null`; then
-        mcctrl_result="exported"
-        mcctrl_addr="0"
-      fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
-$as_echo "$mcctrl_result" >&6; }
-
-cat >>confdefs.h <<_ACEOF
-#define MCCTRL_KSYM_zap_page_range $mcctrl_addr
-_ACEOF
-
-  fi
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol vdso_image_64" >&5
-$as_echo_n "checking System.map for symbol vdso_image_64... " >&6; }
-  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " vdso_image_64\$" | cut -d\  -f1`
-  if test -z $mcctrl_addr; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-  else
-    mcctrl_result=$mcctrl_addr
-    mcctrl_addr="0x$mcctrl_addr"
-
-      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_vdso_image_64\$" >/dev/null`; then
-        mcctrl_result="exported"
-        mcctrl_addr="0"
-      fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
-$as_echo "$mcctrl_result" >&6; }
-
-cat >>confdefs.h <<_ACEOF
-#define MCCTRL_KSYM_vdso_image_64 $mcctrl_addr
-_ACEOF
-
-  fi
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol vdso_start" >&5
-$as_echo_n "checking System.map for symbol vdso_start... " >&6; }
-  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " vdso_start\$" | cut -d\  -f1`
-  if test -z $mcctrl_addr; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-  else
-    mcctrl_result=$mcctrl_addr
-    mcctrl_addr="0x$mcctrl_addr"
-
-      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_vdso_start\$" >/dev/null`; then
-        mcctrl_result="exported"
-        mcctrl_addr="0"
-      fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
-$as_echo "$mcctrl_result" >&6; }
-
-cat >>confdefs.h <<_ACEOF
-#define MCCTRL_KSYM_vdso_start $mcctrl_addr
-_ACEOF
-
-  fi
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol vdso_end" >&5
-$as_echo_n "checking System.map for symbol vdso_end... " >&6; }
-  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " vdso_end\$" | cut -d\  -f1`
-  if test -z $mcctrl_addr; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-  else
-    mcctrl_result=$mcctrl_addr
-    mcctrl_addr="0x$mcctrl_addr"
-
-      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_vdso_end\$" >/dev/null`; then
-        mcctrl_result="exported"
-        mcctrl_addr="0"
-      fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
-$as_echo "$mcctrl_result" >&6; }
-
-cat >>confdefs.h <<_ACEOF
-#define MCCTRL_KSYM_vdso_end $mcctrl_addr
-_ACEOF
-
-  fi
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol vdso_pages" >&5
-$as_echo_n "checking System.map for symbol vdso_pages... " >&6; }
-  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " vdso_pages\$" | cut -d\  -f1`
-  if test -z $mcctrl_addr; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-  else
-    mcctrl_result=$mcctrl_addr
-    mcctrl_addr="0x$mcctrl_addr"
-
-      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_vdso_pages\$" >/dev/null`; then
-        mcctrl_result="exported"
-        mcctrl_addr="0"
-      fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
-$as_echo "$mcctrl_result" >&6; }
-
-cat >>confdefs.h <<_ACEOF
-#define MCCTRL_KSYM_vdso_pages $mcctrl_addr
-_ACEOF
-
-  fi
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol __vvar_page" >&5
-$as_echo_n "checking System.map for symbol __vvar_page... " >&6; }
-  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __vvar_page\$" | cut -d\  -f1`
-  if test -z $mcctrl_addr; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-  else
-    mcctrl_result=$mcctrl_addr
-    mcctrl_addr="0x$mcctrl_addr"
-
-      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab___vvar_page\$" >/dev/null`; then
-        mcctrl_result="exported"
-        mcctrl_addr="0"
-      fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
-$as_echo "$mcctrl_result" >&6; }
-
-cat >>confdefs.h <<_ACEOF
-#define MCCTRL_KSYM___vvar_page $mcctrl_addr
-_ACEOF
-
-  fi
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol hpet_address" >&5
-$as_echo_n "checking System.map for symbol hpet_address... " >&6; }
-  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " hpet_address\$" | cut -d\  -f1`
-  if test -z $mcctrl_addr; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-  else
-    mcctrl_result=$mcctrl_addr
-    mcctrl_addr="0x$mcctrl_addr"
-
-      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_hpet_address\$" >/dev/null`; then
-        mcctrl_result="exported"
-        mcctrl_addr="0"
-      fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
-$as_echo "$mcctrl_result" >&6; }
-
-cat >>confdefs.h <<_ACEOF
-#define MCCTRL_KSYM_hpet_address $mcctrl_addr
-_ACEOF
-
-  fi
-
-# POSTK_DEBUG_ARCH_DEP_50, add:find kernel symbol.
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol vdso_spec" >&5
-$as_echo_n "checking System.map for symbol vdso_spec... " >&6; }
-  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " vdso_spec\$" | cut -d\  -f1`
-  if test -z $mcctrl_addr; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-  else
-    mcctrl_result=$mcctrl_addr
-    mcctrl_addr="0x$mcctrl_addr"
-
-      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_vdso_spec\$" >/dev/null`; then
-        mcctrl_result="exported"
-        mcctrl_addr="0"
-      fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
-$as_echo "$mcctrl_result" >&6; }
-
-cat >>confdefs.h <<_ACEOF
-#define MCCTRL_KSYM_vdso_spec $mcctrl_addr
-_ACEOF
-
-  fi
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol hv_clock" >&5
-$as_echo_n "checking System.map for symbol hv_clock... " >&6; }
-  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " hv_clock\$" | cut -d\  -f1`
-  if test -z $mcctrl_addr; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-  else
-    mcctrl_result=$mcctrl_addr
-    mcctrl_addr="0x$mcctrl_addr"
-
-      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_hv_clock\$" >/dev/null`; then
-        mcctrl_result="exported"
-        mcctrl_addr="0"
-      fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
-$as_echo "$mcctrl_result" >&6; }
-
-cat >>confdefs.h <<_ACEOF
-#define MCCTRL_KSYM_hv_clock $mcctrl_addr
-_ACEOF
-
-  fi
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol sys_readlink" >&5
-$as_echo_n "checking System.map for symbol sys_readlink... " >&6; }
-  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " sys_readlink\$" | cut -d\  -f1`
-  if test -z $mcctrl_addr; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-  else
-    mcctrl_result=$mcctrl_addr
-    mcctrl_addr="0x$mcctrl_addr"
-
-      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_sys_readlink\$" >/dev/null`; then
-        mcctrl_result="exported"
-        mcctrl_addr="0"
-      fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
-$as_echo "$mcctrl_result" >&6; }
-
-cat >>confdefs.h <<_ACEOF
-#define MCCTRL_KSYM_sys_readlink $mcctrl_addr
-_ACEOF
-
-  fi
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking System.map for symbol walk_page_range" >&5
-$as_echo_n "checking System.map for symbol walk_page_range... " >&6; }
-  mcctrl_addr=`eval $MCCTRL_LINUX_SYMTAB_CMD | grep " walk_page_range\$" | cut -d\  -f1`
-  if test -z $mcctrl_addr; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-  else
-    mcctrl_result=$mcctrl_addr
-    mcctrl_addr="0x$mcctrl_addr"
-
-      if `eval $MCCTRL_LINUX_SYMTAB_CMD | grep " __ksymtab_walk_page_range\$" >/dev/null`; then
-        mcctrl_result="exported"
-        mcctrl_addr="0"
-      fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mcctrl_result" >&5
-$as_echo "$mcctrl_result" >&6; }
-
-cat >>confdefs.h <<_ACEOF
-#define MCCTRL_KSYM_walk_page_range $mcctrl_addr
-_ACEOF
-
-  fi
-
-
 case $ENABLE_MEMDUMP in
 	yes|no|auto)
 		;;
@@ -4986,6 +4799,17 @@ else
 $as_echo "$as_me: perf is disabled" >&6;}
 fi
 
+if test "x$WITH_SYSCALL_INTERCEPT" = "xyes" ; then
+
+$as_echo "#define WITH_SYSCALL_INTERCEPT 1" >>confdefs.h
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: syscall_intercept library is linked" >&5
+$as_echo "$as_me: syscall_intercept library is linked" >&6;}
+else
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: syscall_intercept library isn't linked" >&5
+$as_echo "$as_me: syscall_intercept library isn't linked" >&6;}
+fi
+
 if test "x$MCKERNEL_INCDIR" != "x" ; then
 
 cat >>confdefs.h <<_ACEOF
@@ -5056,12 +4880,20 @@ fi
 
 
 
+
+
+
 ac_config_headers="$ac_config_headers config.h"
 
 # POSTK_DEBUG_ARCH_DEP_37
 # AC_CONFIG_FILES arch dependfiles separate
-ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/user/mcexec.1:executer/user/mcexec.1in executer/user/vmcore2mckdump executer/user/arch/$ARCH/Makefile executer/user/arch/x86_64/Makefile executer/kernel/mcctrl/Makefile executer/kernel/mcctrl/arch/$ARCH/Makefile executer/kernel/mcoverlayfs/Makefile executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile executer/kernel/mcoverlayfs/linux-4.0.9/Makefile executer/kernel/mcoverlayfs/linux-4.6.7/Makefile executer/include/qlmpilib.h kernel/Makefile kernel/Makefile.build kernel/include/swapfmt.h arch/x86_64/tools/mcreboot-attached-mic.sh arch/x86_64/tools/mcshutdown-attached-mic.sh arch/x86_64/tools/mcreboot-builtin-x86.sh arch/x86_64/tools/mcreboot-smp-x86.sh arch/x86_64/tools/mcstop+release-smp-x86.sh arch/x86_64/tools/mcoverlay-destroy-smp-x86.sh arch/x86_64/tools/mcoverlay-create-smp-x86.sh arch/x86_64/tools/eclair-dump-backtrace.exp arch/x86_64/tools/mcshutdown-builtin-x86.sh arch/x86_64/tools/mcreboot.1:arch/x86_64/tools/mcreboot.1in arch/x86_64/tools/irqbalance_mck.service arch/x86_64/tools/irqbalance_mck.in tools/mcstat/Makefile"
+ac_config_files="$ac_config_files Makefile executer/user/Makefile executer/user/mcexec.1:executer/user/mcexec.1in executer/user/vmcore2mckdump executer/user/arch/$ARCH/Makefile executer/user/arch/x86_64/Makefile executer/kernel/mcctrl/Makefile executer/kernel/mcctrl/arch/$ARCH/Makefile executer/kernel/mcoverlayfs/Makefile executer/kernel/mcoverlayfs/linux-3.10.0-327.36.1.el7/Makefile executer/kernel/mcoverlayfs/linux-4.0.9/Makefile executer/kernel/mcoverlayfs/linux-4.6.7/Makefile executer/include/qlmpilib.h kernel/Makefile kernel/Makefile.build kernel/include/swapfmt.h arch/x86_64/tools/mcreboot-attached-mic.sh arch/x86_64/tools/mcshutdown-attached-mic.sh arch/x86_64/tools/mcreboot-builtin-x86.sh arch/x86_64/tools/mcreboot-smp-x86.sh arch/x86_64/tools/mcstop+release-smp-x86.sh arch/x86_64/tools/mcoverlay-destroy-smp-x86.sh arch/x86_64/tools/mcoverlay-create-smp-x86.sh arch/x86_64/tools/eclair-dump-backtrace.exp arch/x86_64/tools/mcshutdown-builtin-x86.sh arch/x86_64/tools/mcreboot.1:arch/x86_64/tools/mcreboot.1in arch/x86_64/tools/irqbalance_mck.service arch/x86_64/tools/irqbalance_mck.in tools/mcstat/mcstat.1:tools/mcstat/mcstat.1in tools/mcstat/Makefile"
 
+
+if test -e "${ABS_SRCDIR}/test"; then
+ac_config_files="$ac_config_files mck_test_config.sample:test/mck_test_config.sample.in"
+
+fi
 
 if test "$TARGET" = "smp-x86"; then
 ac_config_files="$ac_config_files arch/x86_64/kernel/Makefile.arch"
@@ -5797,7 +5629,9 @@ do
     "arch/x86_64/tools/mcreboot.1") CONFIG_FILES="$CONFIG_FILES arch/x86_64/tools/mcreboot.1:arch/x86_64/tools/mcreboot.1in" ;;
     "arch/x86_64/tools/irqbalance_mck.service") CONFIG_FILES="$CONFIG_FILES arch/x86_64/tools/irqbalance_mck.service" ;;
     "arch/x86_64/tools/irqbalance_mck.in") CONFIG_FILES="$CONFIG_FILES arch/x86_64/tools/irqbalance_mck.in" ;;
+    "tools/mcstat/mcstat.1") CONFIG_FILES="$CONFIG_FILES tools/mcstat/mcstat.1:tools/mcstat/mcstat.1in" ;;
     "tools/mcstat/Makefile") CONFIG_FILES="$CONFIG_FILES tools/mcstat/Makefile" ;;
+    "mck_test_config.sample") CONFIG_FILES="$CONFIG_FILES mck_test_config.sample:test/mck_test_config.sample.in" ;;
     "arch/x86_64/kernel/Makefile.arch") CONFIG_FILES="$CONFIG_FILES arch/x86_64/kernel/Makefile.arch" ;;
     "kernel/config/config.smp-arm64") CONFIG_FILES="$CONFIG_FILES kernel/config/config.smp-arm64" ;;
     "arch/arm64/kernel/vdso/Makefile") CONFIG_FILES="$CONFIG_FILES arch/arm64/kernel/vdso/Makefile" ;;

@@ -44,15 +44,13 @@
 #include <process.h>
 #include <limits.h>
 #include <sysfs.h>
+#include <debug.h>
 
 //#define DEBUG_PRINT_MEM
 
 #ifdef DEBUG_PRINT_MEM
-#define	dkprintf(...)	kprintf(__VA_ARGS__)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
-#else
-#define dkprintf(...)	do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...)	kprintf(__VA_ARGS__)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 static unsigned long pa_start, pa_end;
@@ -547,7 +545,7 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 		ihk_mc_ap_flag flag, int pref_node, int is_user, uintptr_t virt_addr)
 {
 	unsigned long pa = 0;
-	int i, node;
+	int i = 0, node;
 #ifndef IHK_RBTREE_ALLOCATOR
 	struct ihk_page_allocator_desc *pa_allocator;
 #endif
@@ -962,8 +960,6 @@ static struct ihk_mc_interrupt_handler query_free_mem_handler = {
 	.priv = NULL,
 };
 
-void set_signal(int sig, void *regs, struct siginfo *info);
-void check_signal(unsigned long, void *, int);
 int gencore(struct thread *, void *, struct coretable **, int *);
 void freecore(struct coretable **);
 
@@ -981,11 +977,9 @@ void coredump(struct thread *thread, void *regs)
 	struct coretable *coretable;
 	int chunks;
 
-#ifdef POSTK_DEBUG_ARCH_DEP_67 /* use limit corefile size. (temporarily fix.) */
 	if (thread->proc->rlimit[MCK_RLIMIT_CORE].rlim_cur == 0) {
 		return;
 	}
-#endif /* POSTK_DEBUG_ARCH_DEP_67 */
 
 #ifndef POSTK_DEBUG_ARCH_DEP_18
 	ret = gencore(thread, regs, &coretable, &chunks);
@@ -997,7 +991,7 @@ void coredump(struct thread *thread, void *regs)
 	request.args[0] = chunks;
 	request.args[1] = virt_to_phys(coretable);
 	/* no data for now */
-	ret = do_syscall(&request, thread->cpu_id, thread->proc->pid);
+	ret = do_syscall(&request, thread->cpu_id);
 	if (ret == 0) {
 		kprintf("dumped core.\n");
 	} else {
@@ -1223,7 +1217,7 @@ out:
 	if(interrupt_from_user(regs)){
 		cpu_enable_interrupt();
 		check_need_resched();
-		check_signal(0, regs, 0);
+		check_signal(0, regs, -1);
 	}
 	set_cputime(interrupt_from_user(regs)? 0: 1);
 #ifdef PROFILE_ENABLE
@@ -1671,7 +1665,7 @@ void *ihk_mc_map_virtual(unsigned long phys, int npages,
 	return (char *)p + offset;
 }
 
-void ihk_mc_unmap_virtual(void *va, int npages, int free_physical)
+void ihk_mc_unmap_virtual(void *va, int npages)
 {
 	unsigned long i;
 
@@ -1681,13 +1675,7 @@ void ihk_mc_unmap_virtual(void *va, int npages, int free_physical)
 		flush_tlb_single((unsigned long)(va + (i << PAGE_SHIFT)));
 	}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_51 /* ihk_mc_unmap_virtual() free_physical disabled */
 	ihk_pagealloc_free(vmap_allocator, (unsigned long)va, npages);
-#else /* POSTK_DEBUG_TEMP_FIX_51 */
-	if (free_physical) {
-		ihk_pagealloc_free(vmap_allocator, (unsigned long)va, npages);
-	}
-#endif /* POSTK_DEBUG_TEMP_FIX_51 */
 }
 
 #ifdef ATTACHED_MIC
@@ -2304,76 +2292,37 @@ void ___kmalloc_print_free_list(struct list_head *list)
 	kprintf_unlock(irqflags);
 }
 
-#ifdef POSTK_DEBUG_ARCH_DEP_27
-int search_free_space(struct thread *thread, size_t len, intptr_t hint,
-		      int pgshift, intptr_t *addrp)
-{
-	struct vm_regions *region = &thread->vm->region;
-	intptr_t addr;
-	int error;
-	struct vm_range *range;
-	size_t pgsize = (size_t)1 << pgshift;
-
-	dkprintf("search_free_space(%lx,%lx,%d,%p)\n", len, hint, pgshift, addrp);
-
-	addr = hint;
-	for (;;) {
-		addr = (addr + pgsize - 1) & ~(pgsize - 1);
-		if ((region->user_end <= addr)
-				|| ((region->user_end - len) < addr)) {
-			ekprintf("search_free_space(%lx,%lx,%p):"
-					"no space. %lx %lx\n",
-					len, hint, addrp, addr,
-					region->user_end);
-			error = -ENOMEM;
-			goto out;
-		}
-
-		range = lookup_process_memory_range(thread->vm, addr, addr+len);
-		if (range == NULL) {
-			break;
-		}
-		addr = range->end;
-	}
-
-	error = 0;
-	*addrp = addr;
-
-out:
-	dkprintf("search_free_space(%lx,%lx,%d,%p): %d %lx\n",
-			len, hint, pgshift, addrp, error, addr);
-	return error;
-}
-#endif	/* POSTK_DEBUG_ARCH_DEP_27 */
-
-#ifdef POSTK_DEBUG_TEMP_FIX_52 /* supports NUMA for memory area determination */
 #ifdef IHK_RBTREE_ALLOCATOR
-int is_mckernel_memory(unsigned long phys)
+int is_mckernel_memory(unsigned long start, unsigned long end)
 {
 	int i;
 
 	for (i = 0; i < ihk_mc_get_nr_memory_chunks(); ++i) {
-		unsigned long start, end;
+		unsigned long chunk_start, chunk_end;
 		int numa_id;
 
-		ihk_mc_get_memory_chunk(i, &start, &end, &numa_id);
-		if (start <= phys && phys < end) {
+		ihk_mc_get_memory_chunk(i, &chunk_start, &chunk_end, &numa_id);
+		if ((chunk_start <= start && start < chunk_end) &&
+		    (chunk_start <= end && end < chunk_end)) {
 			return 1;
 		}
 	}
 	return 0;
 }
 #else /* IHK_RBTREE_ALLOCATOR */
-int is_mckernel_memory(unsigned long phys)
+int is_mckernel_memory(unsigned long start, unsigned long end)
 {
 	int i;
 
 	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
 		struct ihk_page_allocator_desc *pa_allocator;
+		unsigned long area_start = pa_allocator->start;
+		unsigned long area_end = pa_allocator->end;
 
 		list_for_each_entry(pa_allocator,
 				    &memory_nodes[i].allocators, list) {
-			if (pa_allocator->start <= phys && phys < pa_allocator->end) {
+			if ((area_start <= start && start < area_end) &&
+			    (area_start <= end && end < area_end)) {
 				return 1;
 			}
 		}
@@ -2381,7 +2330,6 @@ int is_mckernel_memory(unsigned long phys)
 	return 0;
 }
 #endif /* IHK_RBTREE_ALLOCATOR */
-#endif /* POSTK_DEBUG_TEMP_FIX_52 */
 
 void ihk_mc_query_mem_areas(void){
 

@@ -32,7 +32,7 @@ function ng_out() {
 function ltp_test() {
 	TEST_NAME=$1
 #LTP programを実行 logを保存
-	${MCPATH}/bin/mcexec ${LTP_EXE_DIR}/${TEST_NAME} >./result/${TEST_NAME}.log
+	${MCK_DIR}/bin/mcexec ${LTP}/testcases/bin/${TEST_NAME} >./result/${TEST_NAME}.log
 
 #LTP log 確認
 	NUM=`cat ./test_cases/${TEST_NAME}.txt |wc -l`
@@ -55,20 +55,15 @@ TEST_CODE=001
 TEST_PREFIX=perf_
 
 ME=`whoami`
-if [ $# -ne 2 ]; then
-	source ./config
-else
-	MCPATH=$1
-	LTP_EXE_DIR=$2/perf_event_open
-fi
+source ${HOME}/.mck_test_config
 
 mkdir -p ./result
 reboot
 #LTP programを実行 logを保存
-mcexec ${LTP_EXE_DIR}/perf_event_open01 >./result/perf_event_open01.log
+${MCK_DIR}/bin/mcexec ${LTP}/testcases/bin/perf_event_open01 >./result/perf_event_open01.log
 
 #kmsgを保存
-sudo ${MCPATH}/sbin/ihkosctl 0 kmsg >./result/perf_event_open01.kmsg
+sudo ${MCK_DIR}/sbin/ihkosctl 0 kmsg >./result/perf_event_open01.kmsg
 
 #kmsgで結果を出力する。
 NUM=`cat ./test_cases/perd_event_open01.kmsg.txt |wc -l`

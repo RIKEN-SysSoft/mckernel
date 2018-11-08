@@ -1,0 +1,45 @@
+*** RT_001 start *******************************
+argv[0]: ./syml_put_args
+argv[1]: ./test_01.sh
+*** RT_001: PASSED
+
+*** RT_002 start *******************************
+argv[0]: /home/satoken/mck_srcs/for_tests/mckernel/test/issues/995/syml_put_args
+argv[1]: ./test_02.sh
+*** RT_002: PASSED
+
+*** LT_001 start *******************************
+execl01_child    1  TPASS  :  execve01_child executed
+execve01    0  TINFO  :  Child process returned TPASS
+*** LT_001: PASSED (ok:2)
+
+*** LT_002 start *******************************
+Error: Failed to open execve_child
+execve(): error loading ELF for file execve_child
+execve02    1  TPASS  :  execve() failed expectedly: TEST_ERRNO=EACCES(13): Permission denied
+execve02    0  TINFO  :  Child process returned TPASS
+*** LT_002: PASSED (ok:2)
+
+*** LT_003 start *******************************
+Error: /tmp/exehdVdU3/fake.20952 is not an executable?, errno: 13
+execve(): error loading ELF for file /tmp/exehdVdU3/fake.20952
+Error: file /tmp/exehdVdU3/execve03.20952 is zero length
+execve(): error loading ELF for file /tmp/exehdVdU3/execve03.20952
+execve03    1  TPASS  :  execve failed as expected: TEST_ERRNO=ENAMETOOLONG(36): File name too long
+execve03    2  TPASS  :  execve failed as expected: TEST_ERRNO=ENOENT(2): No such file or directory
+execve03    3  TPASS  :  execve failed as expected: TEST_ERRNO=ENOTDIR(20): Not a directory
+execve03    4  TPASS  :  execve failed as expected: TEST_ERRNO=EFAULT(14): Bad address
+execve03    5  TPASS  :  execve failed as expected: TEST_ERRNO=EACCES(13): Permission denied
+execve03    6  TPASS  :  execve failed as expected: TEST_ERRNO=ENOEXEC(8): Exec format error
+*** LT_003: PASSED (ok:6)
+
+*** LT_004 start *******************************
+execve05    1  TPASS  :  Test DONE, pid 21022, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+execve05    1  TPASS  :  Test DONE, pid 21052, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+execve05    1  TPASS  :  Test DONE, pid 21082, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+execve05    1  TPASS  :  Test DONE, pid 21112, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+execve05    1  TPASS  :  Test DONE, pid 21142, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+execve05    1  TPASS  :  Test DONE, pid 21172, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+execve05    1  TPASS  :  Test DONE, pid 21202, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+execve05    1  TPASS  :  Test DONE, pid 21232, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+*** LT_004: PASSED (ok:8)

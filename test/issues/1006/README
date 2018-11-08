@@ -1,0 +1,31 @@
+【Issue#1006 動作確認】
+□ テスト内容
+1. Issueで報告された再現プログラムでの確認
+RT_001: ostest-ptrace.008 での確認
+	wait()で待っている親プロセスを起動した直後の子プロセスから、
+	ptrace(GETFPREGS)で正しい値が取得できることを確認
+
+2. 既存のptrace機能に影響がないことをLTPを用いて確認
+LT_001: ltp-ptrace01
+	PTRACE_TRACEME と PTRACE_KILL の動作を確認 (TPASS 2件)
+
+LT_002: ltp-ptrace02
+	PTRACE_TRACEME と PTRACE_CONT の動作を確認 (TPASS 2件)
+
+LT_003: ltp-ptrace03
+	ptrace()に不正なpidを指定した場合の動作を確認 (TCONF 1件、TPASS 2件)
+
+LT_004: ltp-ptrace05
+	TRACE状態での各シグナル受信時の動作を確認 (TPASS 65件)
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。

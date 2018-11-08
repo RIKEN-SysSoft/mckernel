@@ -1,0 +1,67 @@
+Script started on Tue Sep 11 14:51:16 2018
+bash-4.2$ make test
+gcc -g -Wall -o C1176T02 C1176T02.c
+gcc -g -Wall -o C1176T03 C1176T03.c
+gcc -g -Wall -o C1176T04 C1176T04.c
+sh ./C1176.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 1-7,9-15,17-23,25-31 -m 10G@0,10G@1 -r 1-7:0+9-15:8+17-23:16+25-31:24 ... done
+TEST_SUITE: getrusage
+TEST_NUMBER: 2
+ARGS: 
+[parent before]
+------------------------------
+show_rusage():
+  ru_utime=0s + 582us
+  ru_stime=0s + 42089us
+  ru_maxrss=6316
+------------------------------
+[child before]
+------------------------------
+show_rusage():
+  ru_utime=0s + 6us
+  ru_stime=0s + 0us
+  ru_maxrss=14512
+------------------------------
+allocation memory 16777216 byte(16384 KiB)
+alarm 2 seconds wait.
+sleep 2 seconds wait.
+free memory 16777216 byte(16384 KiB)
+[child after]
+------------------------------
+show_rusage():
+  ru_utime=1s + 997934us
+  ru_stime=2s + 2895us
+  ru_maxrss=30900
+------------------------------
+[parent after]
+------------------------------
+show_rusage():
+  ru_utime=0s + 599us
+  ru_stime=4s + 44489us
+  ru_maxrss=30900
+------------------------------
+RESULT: you need check rusage value
+*** C1176T01: OK
+*** C1176T02: OK
+*** C1176T03: OK
+parent call sleep
+child call sleep
+parent return from sleep
+child return from sleep
+*** C1176T04: OK
+kill01      1  TPASS  :  received expected signal 9
+*** C1176T05: kill01 OK (1)
+kill12      1  TPASS  :  Test passed
+*** C1176T06: kill12 OK (1)
+pause02     1  TPASS  :  pause was interrupted correctly
+*** C1176T07: pause02 OK (1)
+sigaction01    1  TPASS  :  SA_RESETHAND did not cause SA_SIGINFO to be cleared
+sigaction01    2  TPASS  :  SA_RESETHAND was masked when handler executed
+sigaction01    3  TPASS  :  sig has been masked because sa_mask originally contained sig
+sigaction01    4  TPASS  :  siginfo pointer non NULL
+*** C1176T08: sigaction01 OK (4)
+bash-4.2$ exit
+exit
+
+Script done on Tue Sep 11 14:51:54 2018

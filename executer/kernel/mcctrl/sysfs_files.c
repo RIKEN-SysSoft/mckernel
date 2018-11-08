@@ -790,6 +790,7 @@ out:
 	return error;
 } /* setup_node_files() */
 
+#ifdef SETUP_PCI_FILES
 static int read_file(void *buf, size_t size, char *fmt, va_list ap)
 {
 	int error;
@@ -798,7 +799,6 @@ static int read_file(void *buf, size_t size, char *fmt, va_list ap)
 	int n;
 	struct file *fp = NULL;
 	loff_t off;
-	mm_segment_t ofs;
 	ssize_t ss;
 
 	dprintk("read_file(%p,%ld,%s,%p)\n", buf, size, fmt, ap);
@@ -824,13 +824,14 @@ static int read_file(void *buf, size_t size, char *fmt, va_list ap)
 	}
 
 	off = 0;
-	ofs = get_fs();
-	set_fs(KERNEL_DS);
-	ss = vfs_read(fp, buf, size, &off);
-	set_fs(ofs);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
+	ss = kernel_read(fp, buf, size, &off);
+#else
+	ss = kernel_read(fp, off, buf, size);
+#endif
 	if (ss < 0) {
 		error = ss;
-		eprintk("mcctrl:read_file:vfs_read failed. %d\n", error);
+		eprintk("mcctrl:read_file:kernel_read failed. %d\n", error);
 		goto out;
 	}
 	if (ss >= size) {
@@ -892,16 +893,6 @@ out:
 	return error;
 } /* read_long() */
 
-#ifdef MCCTRL_KSYM_sys_readlink
-static ssize_t (*mcctrl_sys_readlink)(const char *path, char *buf,
-		size_t bufsiz)
-#if MCCTRL_KSYM_sys_readlink
-	= (void *)MCCTRL_KSYM_sys_readlink;
-#else
-	= &sys_readlink;
-#endif
-#endif
-
 static int read_link(char *buf, size_t bufsize, char *fmt, ...)
 {
 	int error;
@@ -951,30 +942,14 @@ out:
 	return error;
 } /* read_link() */
 
-#ifdef POSTK_DEBUG_TEMP_FIX_22 /* iterate_dir() deadlock */
 static int setup_one_pci(struct mcctrl_usrdata *udp, const char *name)
 {
-#else /* POSTK_DEBUG_TEMP_FIX_22 */
-static int setup_one_pci(void *arg0, const char *name, int namlen,
-		loff_t offset, u64 ino, unsigned d_type)
-{
-	struct mcctrl_usrdata *udp = arg0;
-#endif /* POSTK_DEBUG_TEMP_FIX_22 */
 	int error;
 	char *buf = NULL;
 	long node;
 	struct sysfsm_bitmap_param param;
 
-#ifdef POSTK_DEBUG_TEMP_FIX_22 /* iterate_dir() deadlock */
 	dprintk("setup_one_pci(%p,%s)\n", udp, name);
-#else /* POSTK_DEBUG_TEMP_FIX_22 */
-	dprintk("setup_one_pci(%p,%s,%d,%#lx,%#lx,%d)\n",
-			arg0, name, namlen, (long)offset, (long)ino, d_type);
-	if (namlen != 12) {
-		error = 0;
-		goto out;
-	}
-#endif /* POSTK_DEBUG_TEMP_FIX_22 */
 
 	buf = (void *)__get_free_pages(GFP_KERNEL, 0);
 	if (!buf) {
@@ -1026,26 +1001,39 @@ static int setup_one_pci(void *arg0, const char *name, int namlen,
 	error = 0;
 out:
 	free_pages((long)buf, 0);
-#ifdef POSTK_DEBUG_TEMP_FIX_22 /* iterate_dir() deadlock */
 	dprintk("setup_one_pci(%p,%s): %d\n", udp, name, error);
-#else /* POSTK_DEBUG_TEMP_FIX_22 */
-	dprintk("setup_one_pci(%p,%s,%d,%#lx,%#lx,%d): %d\n",
-			arg0, name, namlen, (long)offset, (long)ino, d_type,
-			error);
-#endif /* POSTK_DEBUG_TEMP_FIX_22 */
 	return error;
 } /* setup_one_pci() */
 
-#ifdef POSTK_DEBUG_TEMP_FIX_22 /* iterate_dir() deadlock */
 LIST_HEAD(pci_file_name_list);
 struct pci_file_name {
 	char *name;
 	struct list_head chain;
 };
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 11, 0) || \
+	(defined(RHEL_RELEASE_CODE) && RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(7, 5))
+struct mcctrl_filler_args {
+	struct dir_context ctx;
+	void *buf;
+};
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0)
+static int pci_file_name_gen(struct dir_context *ctx, const char *name,
+		int namlen, loff_t offset, u64 ino, unsigned int d_type)
+#else
+static int pci_file_name_gen(void *ctx, const char *name,
+		int namlen, loff_t offset, u64 ino, unsigned int d_type)
+#endif
+{
+	struct mcctrl_filler_args *args
+		= container_of(ctx, struct mcctrl_filler_args, ctx);
+	void *buf = args->buf;
+#else
 static int pci_file_name_gen(void *buf, const char *name, int namlen,
 		loff_t offset, u64 ino, unsigned d_type)
 {
+#endif
 	struct pci_file_name *p;
 	int error = -1;
 
@@ -1083,56 +1071,31 @@ out:
 			buf, name, namlen, (long)offset, (long)ino, d_type, error);
 	return error;
 }
-#endif /* POSTK_DEBUG_TEMP_FIX_22 */
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,11,0)
-typedef int (*mcctrl_filldir_t)(void *buf, const char *name, int namlen,
-		loff_t offset, u64 ino, unsigned d_type);
-
-struct mcctrl_filler_args {
-	struct dir_context ctx;
-	mcctrl_filldir_t filler;
-	void *buf;
-};
-
-static int mcctrl_filler(struct dir_context *ctx, const char *name,
-		int namlen, loff_t offset, u64 ino, unsigned d_type)
+static inline int mcctrl_vfs_readdir(struct file *file, filldir_t filler,
+				     void *buf)
 {
-	struct mcctrl_filler_args *args
-		= container_of(ctx, struct mcctrl_filler_args, ctx);
-
-	return (*args->filler)(args->buf, name, namlen, offset, ino, d_type);
-} /* mcctrl_filler() */
-
-static inline int mcctrl_vfs_readdir(struct file *file,
-		mcctrl_filldir_t filler, void *buf)
-{
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 11, 0) || \
+	(defined(RHEL_RELEASE_CODE) && RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(7, 5))
 	struct mcctrl_filler_args args = {
-		.ctx.actor = &mcctrl_filler,
-		.filler = (void *)filler,
+		.ctx.actor = filler,
 		.buf = buf,
 	};
 
 	return iterate_dir(file, &args.ctx);
-} /* mcctrl_vfs_readdir() */
 #else
-static inline int mcctrl_vfs_readdir(struct file *file, filldir_t filler,
-		void *buf)
-{
 	return vfs_readdir(file, filler, buf);
-} /* mcctrl_vfs_readdir() */
 #endif
+} /* mcctrl_vfs_readdir() */
 
 static int setup_pci_files(struct mcctrl_usrdata *udp)
 {
 	int error;
 	int er;
 	struct file *fp = NULL;
-#ifdef POSTK_DEBUG_TEMP_FIX_22 /* iterate_dir() deadlock */
 	int ret = 0;
 	struct pci_file_name *cur;
 	struct pci_file_name *next;
-#endif /* POSTK_DEBUG_TEMP_FIX_22 */
 
 	dprintk("setup_pci_files(%p)\n", udp);
 	fp = filp_open("/sys/bus/pci/devices", O_DIRECTORY, 0);
@@ -1142,18 +1105,13 @@ static int setup_pci_files(struct mcctrl_usrdata *udp)
 		goto out;
 	}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_22 /* iterate_dir() deadlock */
 	error = mcctrl_vfs_readdir(fp, &pci_file_name_gen, udp);
-#else /* POSTK_DEBUG_TEMP_FIX_22 */
-	error = mcctrl_vfs_readdir(fp, &setup_one_pci, udp);
-#endif /* POSTK_DEBUG_TEMP_FIX_22 */
 	if (error) {
 		eprintk("mcctrl:setup_pci_files:"
 				"mcctrl_vfs_readdir failed. %d\n", error);
 		goto out;
 	}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_22 /* iterate_dir() deadlock */
 	list_for_each_entry_safe(cur, next, &pci_file_name_list, chain) {
 		if (!ret) {
 			ret = setup_one_pci(udp, cur->name);
@@ -1162,7 +1120,6 @@ static int setup_pci_files(struct mcctrl_usrdata *udp)
 		kfree(cur->name);
 		kfree(cur);
 	}
-#endif /* POSTK_DEBUG_TEMP_FIX_22 */
 
 	error = 0;
 out:
@@ -1176,6 +1133,7 @@ out:
 	dprintk("setup_pci_files(%p): %d\n", udp, error);
 	return error;
 } /* setup_pci_files() */
+#endif // SETUP_PCI_FILES
 
 void setup_sysfs_files(ihk_os_t os)
 {
@@ -1215,7 +1173,9 @@ void setup_sysfs_files(ihk_os_t os)
 	setup_cpus_sysfs_files(udp);
 	setup_node_files(udp);
 	setup_cpus_sysfs_files_node_link(udp);
-	//setup_pci_files(udp);
+#ifdef SETUP_PCI_FILES
+	setup_pci_files(udp);
+#endif
 
 	/* Indicate sysfs files setup completion for boot script */
 	error = sysfsm_mkdirf(os, NULL, "/sys/setup_complete");

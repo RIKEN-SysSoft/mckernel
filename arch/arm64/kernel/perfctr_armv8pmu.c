@@ -4,16 +4,14 @@
 #include <ihk/perfctr.h>
 #include <errno.h>
 #include <ihk/debug.h>
+#include <debug.h>
 
 #define BIT(nr) (1UL << (nr))
 
 //#define DEBUG_PRINT_PMU
 #ifdef DEBUG_PRINT_PMU
-#define	dkprintf(...) kprintf(__VA_ARGS__)
-#define	ekprintf(...) kprintf(__VA_ARGS__)
-#else
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define	ekprintf(...) kprintf(__VA_ARGS__)
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 

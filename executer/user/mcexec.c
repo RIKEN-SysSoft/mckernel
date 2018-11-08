@@ -77,6 +77,7 @@
 #endif /* !POSTK_DEBUG_ARCH_DEP_77 */
 #include "../include/uprotocol.h"
 #include <ihk/ihk_host_user.h>
+#include "../include/uti.h"
 #include <getopt.h>
 #include "archdep.h"
 #include "arch_args.h"
@@ -95,36 +96,39 @@
 //#define DEBUG
 #define ADD_ENVS_OPTION
 
-#ifndef DEBUG
-#define __dprint(msg)
-#define __dprintf(arg, ...)
-#define __eprint(msg)
-#define __eprintf(format, ...)
+#ifdef DEBUG
+static int debug = 1;
 #else
-#define __dprint(msg)  {printf("%s: " msg, __FUNCTION__);fflush(stdout);}
-#define __dprintf(format, args...)  {printf("%s: " format, __FUNCTION__, \
-                                       ##args);fflush(stdout);}
-#define __eprint(msg)  {fprintf(stderr, "%s: " msg, __FUNCTION__);fflush(stderr);}
-#define __eprintf(format, args...)  {fprintf(stderr, "%s: " format, __FUNCTION__, \
-                                        ##args);fflush(stderr);}
+static int debug;
 #endif
-	
-#define CHKANDJUMPF(cond, err, format, ...)								\
-	do {																\
-		if(cond) {														\
-			__eprintf(format, __VA_ARGS__);								\
-			ret = err;													\
-			goto fn_fail;												\
-		}																\
+
+#define __dprintf(format, args...) do {                  \
+	if (debug) {                                     \
+		printf("%s: " format, __func__, ##args); \
+		fflush(stdout);                          \
+	}                                                \
+} while (0)
+#define __eprintf(format, args...) do {                   \
+	fprintf(stderr, "%s: " format, __func__, ##args); \
+	fflush(stderr);                                   \
+} while (0)
+
+#define CHKANDJUMPF(cond, err, format, ...)             \
+	do {                                            \
+		if (cond) {                             \
+			__eprintf(format, __VA_ARGS__); \
+			ret = err;                      \
+			goto fn_fail;                   \
+		}                                       \
 	} while(0)
 
-#define CHKANDJUMP(cond, err, msg)										\
-	do {																\
-		if(cond) {														\
-			__eprint(msg);												\
-			ret = err;													\
-			goto fn_fail;												\
-		}																\
+#define CHKANDJUMP(cond, err, msg)      \
+	do {                            \
+		if (cond) {             \
+			__eprintf(msg); \
+			ret = err;      \
+			goto fn_fail;   \
+		}                       \
 	} while(0)
 
 
@@ -184,13 +188,6 @@ struct sigfd {
 
 struct sigfd *sigfdtop;
 
-
-struct syscall_struct {
-	int number;
-	unsigned long args[6];
-	unsigned long ret;
-};
-
 #ifdef NCCS
 #undef NCCS
 #endif
@@ -229,6 +226,9 @@ static long stack_premap = (2ULL << 20);
 static long stack_max = -1;
 static struct rlimit rlim_stack;
 static char *mpol_bind_nodes = NULL;
+static int uti_thread_rank = 0;
+static int uti_use_last_cpu = 0;
+static int enable_uti = 0;
 
 /* Partitioned execution (e.g., for MPI) */
 static int nr_processes = 0;
@@ -278,11 +278,11 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	*interp_pathp = NULL;
 
 	if (fread(&hdr, sizeof(hdr), 1, fp) < 1) {
-		__eprint("Cannot read Ehdr.\n");
+		__eprintf("Cannot read Ehdr.\n");
 		return NULL;
 	}
 	if (memcmp(hdr.e_ident, ELFMAG, SELFMAG)) {
-		__eprint("ELFMAG mismatched.\n");
+		__eprintf("ELFMAG mismatched.\n");
 		return NULL;
 	}
 	fseek(fp, hdr.e_phoff, SEEK_SET);
@@ -300,7 +300,6 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	              + sizeof(struct program_image_section) * nhdrs);
 	memset(desc, '\0', sizeof(struct program_load_desc)
 	                   + sizeof(struct program_image_section) * nhdrs);
-	desc->shell_path[0] = '\0';
 	fseek(fp, hdr.e_phoff, SEEK_SET);
 	j = 0;
 	desc->num_sections = nhdrs;
@@ -312,13 +311,13 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 		}
 		if (phdr.p_type == PT_INTERP) {
 			if (phdr.p_filesz > sizeof(interp_path)) {
-				__eprint("too large PT_INTERP segment\n");
+				__eprintf("too large PT_INTERP segment\n");
 				return NULL;
 			}
 			ss = pread(fileno(fp), interp_path, phdr.p_filesz,
 					phdr.p_offset);
 			if (ss <= 0) {
-				__eprint("cannot read PT_INTERP segment\n");
+				__eprintf("cannot read PT_INTERP segment\n");
 				return NULL;
 			}
 			interp_path[ss] = '\0';
@@ -408,11 +407,11 @@ struct program_load_desc *load_interp(struct program_load_desc *desc0, FILE *fp)
 	unsigned long align;
 
 	if (fread(&hdr, sizeof(hdr), 1, fp) < 1) {
-		__eprint("Cannot read Ehdr.\n");
+		__eprintf("Cannot read Ehdr.\n");
 		return NULL;
 	}
 	if (memcmp(hdr.e_ident, ELFMAG, SELFMAG)) {
-		__eprint("ELFMAG mismatched.\n");
+		__eprintf("ELFMAG mismatched.\n");
 		return NULL;
 	}
 	fseek(fp, hdr.e_phoff, SEEK_SET);
@@ -441,10 +440,12 @@ struct program_load_desc *load_interp(struct program_load_desc *desc0, FILE *fp)
 	for (i = 0; i < hdr.e_phnum; i++) {
 		if (fread(&phdr, sizeof(phdr), 1, fp) < 1) {
 			__eprintf("Loading phdr failed (%d)\n", i);
+			free(desc);
 			return NULL;
 		}
 		if (phdr.p_type == PT_INTERP) {
-			__eprint("PT_INTERP on interp\n");
+			__eprintf("PT_INTERP on interp\n");
+			free(desc);
 			return NULL;
 		}
 		if (phdr.p_type == PT_LOAD) {
@@ -491,7 +492,6 @@ int lookup_exec_path(char *filename, char *path, int max_len, int execvp)
 	struct stat sb;
 	char *link_path = NULL;
 
-retry:
 	found = 0;
 
 	/* Is file not absolute path? */
@@ -505,11 +505,13 @@ retry:
 
 			if (!execvp) {
 				if (strlen(filename) + 1 > max_len) {
+					free(link_path);
 					return ENAMETOOLONG;
 				}
 				strcpy(path, filename);
 				error = access(path, X_OK);
 				if (error) {
+					free(link_path);
 					return errno;
 				}
 				found = 1;
@@ -521,6 +523,7 @@ retry:
 			}
 
 			if (strlen(filename) >= 255) {
+				free(link_path);
 				return ENAMETOOLONG;
 			}
 
@@ -530,6 +533,7 @@ retry:
 			tofree = string = strdup(PATH);
 			if (string == NULL) {
 				printf("lookup_exec_path(): copying PATH, not enough memory?\n");
+				free(link_path);
 				return ENOMEM;
 			}
 
@@ -550,7 +554,8 @@ retry:
 			}
 
 			free(tofree);
-			if(!found){
+			if (!found) {
+				free(link_path);
 				return ENOENT;
 			}
 			break;
@@ -562,6 +567,7 @@ retry:
 
 			if (error < 0 || error >= max_len) {
 				fprintf(stderr, "lookup_exec_path(): array too small?\n");
+				free(link_path);
 				return ENOMEM;
 			}
 
@@ -581,6 +587,7 @@ retry:
 
 		if (error < 0 || error >= max_len) {
 			fprintf(stderr, "lookup_exec_path(): array too small?\n");
+			free(link_path);
 			return ENOMEM;
 		}
 
@@ -594,41 +601,12 @@ retry:
 
 	/* Check whether the resolved path is a symlink */
 	if (lstat(path, &sb) == -1) {
-		__eprint("lookup_exec_path(): error stat\n");
-		return errno;
+		error = errno;
+		__dprintf("lookup_exec_path(): error stat for %s: %d\n",
+			  path, error);
+		return error;
 	}
 
-	if ((sb.st_mode & S_IFMT) == S_IFLNK) {
-		link_path = malloc(max_len);
-		if (!link_path) {
-			fprintf(stderr, "lookup_exec_path(): error allocating\n");
-			return ENOMEM;
-		}
-#ifdef POSTK_DEBUG_TEMP_FIX_6 /* dynamic allocate area initialize clear */
-		memset(link_path, '\0', max_len);
-#endif /* POSTK_DEBUG_TEMP_FIX_6 */
-		
-		error = readlink(path, link_path, max_len);
-		if (error == -1 || error == max_len) {
-			fprintf(stderr, "lookup_exec_path(): error readlink\n");
-			return EINVAL;
-		}
-		link_path[error] = '\0';
-
-		__dprintf("lookup_exec_path(): %s is link -> %s\n", path, link_path);
-
-		if(link_path[0] != '/'){
-			char *t = strrchr(path, '/');
-			if(t){
-				t++;
-				strcpy(t, link_path);
-				strcpy(link_path, path);
-			}
-		}
-		filename = link_path;
-		goto retry; 
-	}
-	
 	if (!found) {
 		fprintf(stderr, 
 				"lookup_exec_path(): error finding file %s\n", filename);
@@ -641,13 +619,13 @@ retry:
 }
 
 int load_elf_desc(char *filename, struct program_load_desc **desc_p, 
-		char **shell_p)
+		char **shebang_p)
 {
 	FILE *fp;
 	FILE *interp = NULL;
 	char *interp_path;
-	char *shell = NULL;
-	size_t shell_len = 0;
+	char *shebang = NULL;
+	size_t shebang_len = 0;
 	struct program_load_desc *desc;
 	int ret = 0;
 	struct stat sb;
@@ -677,20 +655,26 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 
 	if (fread(&header, 1, 2, fp) != 2) {
 		fprintf(stderr, "Error: Failed to read header from %s\n", filename);
+		fclose(fp);
 		return errno;
 	}
 
 	if (!strncmp(header, "#!", 2)) {
-		
-		if (getline(&shell, &shell_len, fp) == -1) {
-			fprintf(stderr, "Error: reading shell path %s\n", filename);
+		if (getline(&shebang, &shebang_len, fp) == -1) {
+			fprintf(stderr, "Error: reading shebang path %s\n",
+				filename);
 		}
 
 		fclose(fp);
 
-		/* Delete new line character */
-		shell[strlen(shell) - 1] = 0;
-		*shell_p = shell;
+		/* Delete new line character and any trailing spaces */
+		shebang_len = strlen(shebang) - 1;
+		shebang[shebang_len] = '\0';
+		while (strpbrk(shebang + shebang_len - 1, " \t")) {
+			shebang_len--;
+			shebang[shebang_len] = '\0';
+		}
+		*shebang_p = shebang;
 		return 0;
 	}
 
@@ -699,6 +683,7 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 	if ((ret = ioctl(fd, MCEXEC_UP_OPEN_EXEC, filename)) != 0) {
 		fprintf(stderr, "Error: open_exec() fails for %s: %d (fd: %d)\n", 
 			filename, ret, fd);
+		fclose(fp);
 		return ret;
 	}
 
@@ -713,6 +698,7 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 		
 		if (!exec_path) {
 			fprintf(stderr, "WARNING: strdup(filename) failed\n");
+			fclose(fp);
 			return ENOMEM;
 		}
 	}
@@ -720,12 +706,14 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 		char *cwd = getcwd(NULL, 0);
 		if (!cwd) {
 			fprintf(stderr, "Error: getting current working dir pathname\n");
+			fclose(fp);
 			return ENOMEM;
 		}
 
 		exec_path = malloc(strlen(cwd) + strlen(filename) + 2);
 		if (!exec_path) {
 			fprintf(stderr, "Error: allocating exec_path\n");
+			fclose(fp);
 			return ENOMEM;
 		}
 
@@ -735,8 +723,8 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 	
 	desc = load_elf(fp, &interp_path);
 	if (!desc) {
-		fclose(fp);
 		fprintf(stderr, "Error: Failed to parse ELF!\n");
+		fclose(fp);
 		return 1;
 	}
 
@@ -746,18 +734,22 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 		path = search_file(interp_path, X_OK);
 		if (!path) {
 			fprintf(stderr, "Error: interp not found: %s\n", interp_path);
+			fclose(fp);
 			return 1;
 		}
 
 		interp = fopen(path, "rb");
 		if (!interp) {
 			fprintf(stderr, "Error: Failed to open %s\n", path);
+			fclose(fp);
 			return 1;
 		}
 
 		desc = load_interp(desc, interp);
 		if (!desc) {
 			fprintf(stderr, "Error: Failed to parse interp!\n");
+			fclose(fp);
+			fclose(interp);
 			return 1;
 		}
 	}
@@ -765,6 +757,77 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 	__dprintf("# of sections: %d\n", desc->num_sections);
 	
 	*desc_p = desc;
+	return 0;
+}
+
+/* recursively resolve shebangs
+ *
+ * Note: shebang_argv_p must point to reallocable memory or be NULL
+ */
+int load_elf_desc_shebang(char *shebang_argv0,
+			  struct program_load_desc **desc_p,
+			  char ***shebang_argv_p)
+{
+	char path[PATH_MAX];
+	char *shebang = NULL;
+	int ret;
+
+	if ((ret = lookup_exec_path(shebang_argv0, path, sizeof(path), 1))
+			!= 0) {
+		__dprintf("error: finding file: %s\n", shebang_argv0);
+		return ret;
+	}
+
+	if ((ret = load_elf_desc(path, desc_p, &shebang)) != 0) {
+		__eprintf("error: loading file: %s\n", shebang_argv0);
+		return ret;
+	}
+
+	if (shebang) {
+		char *shebang_params;
+		size_t shebang_param_count = 1;
+		size_t shebang_argv_count = 0;
+		char **shebang_argv;
+
+		if (!shebang_argv_p)
+			return load_elf_desc_shebang(shebang, desc_p, NULL);
+
+		shebang_argv = *shebang_argv_p;
+
+		/* if there is a space, add whatever follows as extra arg */
+		shebang_params = strchr(shebang, ' ');
+		if (shebang_params) {
+			shebang_params[0] = '\0';
+			shebang_params++;
+			shebang_param_count++;
+		}
+
+		if (shebang_argv == NULL) {
+			shebang_argv_count = shebang_param_count + 1;
+			shebang_argv = malloc(shebang_argv_count *
+					      sizeof(void *));
+			shebang_argv[shebang_param_count] = 0;
+		} else {
+			while (shebang_argv[shebang_argv_count++])
+				;
+
+			shebang_argv_count += shebang_param_count + 1;
+			shebang_argv = realloc(shebang_argv,
+					    shebang_argv_count * sizeof(void *));
+			memmove(shebang_argv + shebang_param_count,
+				shebang_argv,
+				(shebang_argv_count - shebang_param_count)
+					* sizeof(void *));
+		}
+		shebang_argv[0] = shebang;
+		if (shebang_params)
+			shebang_argv[1] = shebang_params;
+
+		*shebang_argv_p = shebang_argv;
+
+		return load_elf_desc_shebang(shebang, desc_p, shebang_argv_p);
+	}
+
 	return 0;
 }
 
@@ -897,9 +960,8 @@ void print_desc(struct program_load_desc *desc)
 	int i;
 
 	__dprintf("Desc (%p)\n", desc);
-	__dprintf("Status = %d, CPU = %d, pid = %d, entry = %lx, rp = %lx\n",
-	          desc->status, desc->cpu, desc->pid, desc->entry,
-	          desc->rprocess);
+	__dprintf("CPU = %d, pid = %d, entry = %lx, rp = %lx\n",
+		  desc->cpu, desc->pid, desc->entry, desc->rprocess);
 	for (i = 0; i < desc->num_sections; i++) {
 		__dprintf("vaddr: %lx, mem_len: %lx, remote_pa: %lx, files: %lx\n", 
 		          desc->sections[i].vaddr, desc->sections[i].len, 
@@ -918,55 +980,66 @@ unsigned long dma_buf_pa;
 
 void print_flat(char *flat) 
 {
-	char **string;
-		
-	__dprintf("counter: %d\n", *((int *)flat));
+	long i, count;
+	long *_flat = (long *)flat;
 
-	string = (char **)(flat + sizeof(int));
-	while (*string) {
-		
-		__dprintf("%s\n", (flat + (unsigned long)(*string)));
+	count = _flat[0];
+	__dprintf("counter: %ld\n", count);
 
-		++string;
+	for (i = 0; i < count; i++) {
+		__dprintf("%s\n", (flat + _flat[i + 1]));
 	}
 }
 
 /* 
  * Flatten out a (char **) string array into the following format:
- * [nr_strings][char *offset of string_0]...[char *offset of string_n-1][NULL][string0]...[stringn_1]
+ * [nr_strings][char *offset of string_0]...[char *offset of string_n-1][char *offset of end of string][string0]...[stringn_1]
  * if nr_strings == -1, we assume the last item is NULL 
+ *
+ * sizes all are longs.
  *
  * NOTE: copy this string somewhere, add the address of the string to each offset
  * and we get back a valid argv or envp array.
  *
+ * pre_strings is already flattened, so we just need to manage counts and copy
+ * the string part appropriately.
+ *
  * returns the total length of the flat string and updates flat to
  * point to the beginning.
  */
-int flatten_strings(int nr_strings, char *first, char **strings, char **flat)
+int flatten_strings(char *pre_strings, char **strings, char **flat)
 {
-	int full_len, string_i;
-	unsigned long flat_offset;
-	char *_flat;
+	int full_len, i;
+	int nr_strings;
+	int pre_strings_count = 0;
+	int pre_strings_len = 0;
+	long *_flat;
+	long *pre_strings_flat;
+	char *p;
 
-	/* How many strings do we have? */
-	if (nr_strings == -1) {
-		for (nr_strings = 0; strings[nr_strings]; ++nr_strings); 
-	}
+	for (nr_strings = 0; strings[nr_strings]; ++nr_strings)
+		;
 
 	/* Count full length */
 	full_len = sizeof(long) + sizeof(char *); // Counter and terminating NULL
-	if (first) {
-		full_len += sizeof(char *) + strlen(first) + 1; 
+	if (pre_strings) {
+		pre_strings_flat = (long *)pre_strings;
+		pre_strings_count = pre_strings_flat[0];
+
+		pre_strings_len = pre_strings_flat[pre_strings_count + 1];
+		pre_strings_len -= sizeof(long) * (pre_strings_count + 2);
+
+		full_len += pre_strings_count * sizeof(long) + pre_strings_len;
 	}
 
-	for (string_i = 0; string_i < nr_strings; ++string_i) {
+	for (i = 0; strings[i]; ++i) {
 		// Pointer + actual value
-		full_len += sizeof(char *) + strlen(strings[string_i]) + 1; 
+		full_len += sizeof(char *) + strlen(strings[i]) + 1;
 	}
 
 	full_len = (full_len + sizeof(long) - 1) & ~(sizeof(long) - 1);
 
-	_flat = (char *)malloc(full_len);
+	_flat = malloc(full_len);
 	if (!_flat) {
 		return 0;
 	}
@@ -974,29 +1047,33 @@ int flatten_strings(int nr_strings, char *first, char **strings, char **flat)
 	memset(_flat, 0, full_len);
 
 	/* Number of strings */
-	*((long *)_flat) = nr_strings + (first ? 1 : 0);
+	_flat[0] = nr_strings + pre_strings_count;
 	
 	// Actual offset
-	flat_offset = sizeof(long) + sizeof(char *) * (nr_strings + 1 + 
-			(first ? 1 : 0)); 
+	p = (char *)(_flat + nr_strings + pre_strings_count + 2);
 
-	if (first) {
-		*((char **)(_flat + sizeof(long))) = (void *)flat_offset;
-		memcpy(_flat + flat_offset, first, strlen(first) + 1);
-		flat_offset += strlen(first) + 1;
+	if (pre_strings) {
+		for (i = 0; i < pre_strings_count; i++) {
+			_flat[i + 1] = pre_strings_flat[i + 1] +
+					nr_strings * sizeof(long);
+		}
+		memcpy(p, pre_strings + pre_strings_flat[1],
+		       pre_strings_len);
+		p += pre_strings_len;
 	}
 
-	for (string_i = 0; string_i < nr_strings; ++string_i) {
-		
-		/* Fabricate the string */
-		*((char **)(_flat + sizeof(long) + (string_i + (first ? 1 : 0)) 
-					* sizeof(char *))) = (void *)flat_offset;
-		memcpy(_flat + flat_offset, strings[string_i], strlen(strings[string_i]) + 1);
-		flat_offset += strlen(strings[string_i]) + 1;
-	}
+	for (i = 0; i < nr_strings; ++i) {
+		int len = strlen(strings[i]) + 1;
 
-	*flat = _flat;
-	return full_len;
+		_flat[i + pre_strings_count + 1] = p - (char *)_flat;
+
+		memcpy(p, strings[i], len);
+		p += len;
+	}
+	_flat[nr_strings + pre_strings_count + 1] = p - (char *)_flat;
+
+	*flat = (char *)_flat;
+	return p - (char *)_flat;
 }
 
 //#define NUM_HANDLER_THREADS	248
@@ -1010,7 +1087,7 @@ struct thread_data_s {
 	int terminate;
 	int remote_tid;
 	int remote_cpu;
-	int joined;
+	int joined, detached;
 	pthread_mutex_t *lock;
 	pthread_barrier_t *init_ready;
 } *thread_data;
@@ -1022,6 +1099,7 @@ pid_t master_tid;
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_barrier_t init_ready;
+pthread_barrier_t uti_init_ready;
 
 pthread_attr_t watchdog_thread_attr;
 pthread_t watchdog_thread;
@@ -1130,9 +1208,9 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 	int	cpu;
 	struct signal_desc sigdesc;
 	struct thread_data_s *tp;
-	int localthread;
+	int not_uti;
 
-	localthread = ioctl(fd, MCEXEC_UP_SIG_THREAD, 1);
+	not_uti = ioctl(fd, MCEXEC_UP_SIG_THREAD, 1);
 	pid = getpid();
 	tid = gettid();
 	if (siginfo->si_pid == pid &&
@@ -1165,7 +1243,7 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 		remote_tid = -1;
 	}
 
-	if (localthread) {
+	if (not_uti) { /* target isn't uti thread, ask McKernel to call the handler */
 		memset(&sigdesc, '\0', sizeof sigdesc);
 		sigdesc.cpu = cpu;
 		sigdesc.pid = (int)pid;
@@ -1177,7 +1255,7 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 			exit(1);
 		}
 	}
-	else {
+	else { /* target is uti thread, mcexec calls the handler */
 		struct syscall_struct param;
 		int rc;
 
@@ -1202,7 +1280,7 @@ sendsig(int sig, siginfo_t *siginfo, void *context)
 		}
 	}
 out:
-	if (!localthread)
+	if (!not_uti)
 		ioctl(fd, MCEXEC_UP_SIG_THREAD, 0);
 }
 
@@ -1306,6 +1384,7 @@ static int reduce_stack(struct rlimit *orig_rlim, char *argv[])
 {
 	int n;
 	char newval[40];
+	char path[PATH_MAX];
 	int error;
 	struct rlimit new_rlim;
 
@@ -1333,22 +1412,32 @@ static int reduce_stack(struct rlimit *orig_rlim, char *argv[])
 
 	error = setrlimit(RLIMIT_STACK, &new_rlim);
 	if (error) {
-		__eprint("failed to setrlimit(RLIMIT_STACK)\n");
+		__eprintf("failed to setrlimit(RLIMIT_STACK)\n");
 		return 1;
 	}
 
-	execv("/proc/self/exe", argv);
+	error = readlink("/proc/self/exe", path, sizeof(path));
+	if (error < 0) {
+		__eprintf("Could not readlink /proc/self/exe? %m\n");
+		return 1;
+	} else if (error >= sizeof(path)) {
+		strcpy(path, "/proc/self/exe");
+	} else {
+		path[error] = '\0';
+	}
 
-	__eprint("failed to execv(myself)\n");
+	execv(path, argv);
+
+	__eprintf("failed to execv(myself)\n");
 	return 1;
 }
 
 void print_usage(char **argv)
 {
 #ifdef ADD_ENVS_OPTION
-	fprintf(stderr, "usage: %s [-c target_core] [-n nr_partitions] [<-e ENV_NAME=value>...] [--mpol-threshold=N] [--enable-straight-map] [--extend-heap-by=N] [-s (--stack-premap=)[premap_size][,max]] [--mpol-no-heap] [--mpol-no-bss] [--mpol-no-stack] [--mpol-shm-premap] [--disable-sched-yield] [<mcos-id>] (program) [args...]\n", argv[0]);
+	fprintf(stderr, "usage: %s [-c target_core] [-n nr_partitions] [<-e ENV_NAME=value>...] [--mpol-threshold=N] [--enable-straight-map] [--extend-heap-by=N] [-s (--stack-premap=)[premap_size][,max]] [--mpol-no-heap] [--mpol-no-bss] [--mpol-no-stack] [--mpol-shm-premap] [--disable-sched-yield] [--enable-uti] [--uti-thread-rank=N] [--uti-use-last-cpu] [<mcos-id>] (program) [args...]\n", argv[0]);
 #else /* ADD_ENVS_OPTION */
-	fprintf(stderr, "usage: %s [-c target_core] [-n nr_partitions] [--mpol-threshold=N] [--enable-straight-map] [--extend-heap-by=N] [-s (--stack-premap=)[premap_size][,max]] [--mpol-no-heap] [--mpol-no-bss] [--mpol-no-stack] [--mpol-shm-premap] [--disable-sched-yield] [<mcos-id>] (program) [args...]\n", argv[0]);
+	fprintf(stderr, "usage: %s [-c target_core] [-n nr_partitions] [--mpol-threshold=N] [--enable-straight-map] [--extend-heap-by=N] [-s (--stack-premap=)[premap_size][,max]] [--mpol-no-heap] [--mpol-no-bss] [--mpol-no-stack] [--mpol-shm-premap] [--disable-sched-yield]  [--enable-uti] [--uti-thread-rank=N] [--uti-use-last-cpu] [<mcos-id>] (program) [args...]\n", argv[0]);
 #endif /* ADD_ENVS_OPTION */
 }
 
@@ -1372,8 +1461,7 @@ void init_sigaction(void)
 
 static int max_cpuid;
 
-static int
-create_worker_thread(pthread_barrier_t *init_ready)
+static int create_worker_thread(struct thread_data_s **tp_out, pthread_barrier_t *init_ready)
 {
 	struct thread_data_s *tp;
 
@@ -1391,6 +1479,10 @@ create_worker_thread(pthread_barrier_t *init_ready)
 	tp->next = thread_data;
 	thread_data = tp;
 
+	if (tp_out) {
+		*tp_out = tp;
+	}
+
 	return pthread_create(&tp->thread_id, NULL, 
 	                      &main_loop_thread_func, tp);
 }
@@ -1404,7 +1496,7 @@ int init_worker_threads(int fd)
 
 	max_cpuid = 0;
 	for (i = 0; i <= n_threads; ++i) {
-		int ret = create_worker_thread(&init_ready);
+		int ret = create_worker_thread(NULL, &init_ready);
 
 		if (ret) {
 			printf("ERROR: creating syscall threads (%d), check ulimit?\n", ret);
@@ -1444,8 +1536,7 @@ static int find_mount_prefix(char *prefix)
 		}
 	}
 
-	if (line)
-		free(line);
+	free(line);
 
 	return ret;
 }
@@ -1653,6 +1744,8 @@ static void destroy_local_environ(char **local_env)
 unsigned long atobytes(char *string)
 {
 	unsigned long mult = 1;
+	unsigned long ret;
+	char orig_postfix = 0;
 	char *postfix;
 	errno = ERANGE;
 
@@ -1664,19 +1757,26 @@ unsigned long atobytes(char *string)
 
 	if (*postfix == 'k' || *postfix == 'K') {
 		mult = 1024;
+		orig_postfix = *postfix;
 		*postfix = 0;
 	}
 	else if (*postfix == 'm' || *postfix == 'M') {
 		mult = 1024 * 1024;
+		orig_postfix = *postfix;
 		*postfix = 0;
 	}
 	else if (*postfix == 'g' || *postfix == 'G') {
 		mult = 1024 * 1024 * 1024;
+		orig_postfix = *postfix;
 		*postfix = 0;
 	}
 
+	ret = atol(string) * mult;
+	if (orig_postfix)
+		*postfix = orig_postfix;
+
 	errno = 0;
-	return atol(string) * mult;
+	return ret;
 }
 
 static struct option mcexec_options[] = {
@@ -1756,64 +1856,101 @@ static struct option mcexec_options[] = {
 		.flag =		NULL,
 		.val =		's',
 	},
+	{
+		.name =		"uti-thread-rank",
+		.has_arg =	required_argument,
+		.flag =		NULL,
+		.val =		'u',
+	},
+	{
+		.name =		"uti-use-last-cpu",
+		.has_arg =	no_argument,
+		.flag =		&uti_use_last_cpu,
+		.val =		1,
+	},
+	{
+		.name =		"enable-uti",
+		.has_arg =	no_argument,
+		.flag =		&enable_uti,
+		.val =		1,
+	},
 	/* end */
 	{ NULL, 0, NULL, 0, },
 };
 
 #ifdef ENABLE_MCOVERLAYFS
+/* bind-mount files under <root>/<prefix> over <prefix> recursively */
 void bind_mount_recursive(const char *root, char *prefix)
 {
 	DIR *dir;
 	struct dirent *entry;
 	char path[PATH_MAX];
-	int len;
 
-	len = snprintf(path, sizeof(path) - 1, "%s/%s", root, prefix);
-	path[len] = 0;
+	snprintf(path, sizeof(path), "%s/%s", root, prefix);
+	path[sizeof(path) - 1] = 0;
 
 	if (!(dir = opendir(path))) {
 		return;
 	}
 
-	if (!(entry = readdir(dir))) {
-		return;
-	}
+	while ((entry = readdir(dir))) {
+		char fullpath[PATH_MAX];
+		char shortpath[PATH_MAX];
+		struct stat st;
 
-	do {
-		len = snprintf(path, sizeof(path) - 1,
-				"%s/%s", prefix, entry->d_name);
-		path[len] = 0;
+		/* Use lstat instead of checking dt_type of readdir
+		   result because the latter reports DT_UNKNOWN for
+		   files on some file systems */
+		snprintf(fullpath, sizeof(fullpath),
+			       "%s/%s/%s", root, prefix, entry->d_name);
+		fullpath[sizeof(fullpath) - 1] = 0;
 
-		if (entry->d_type == DT_DIR) {
+		if (lstat(fullpath, &st)) {
+			fprintf(stderr, "%s: error: lstat %s: %s\n",
+				__func__, fullpath, strerror(errno));
+			continue;
+		}
+
+		/* Traverse target or mount point */
+		snprintf(shortpath, sizeof(shortpath),
+			       "%s/%s", prefix, entry->d_name);
+		shortpath[sizeof(shortpath) - 1] = 0;
+
+		if (S_ISDIR(st.st_mode)) {
+			__dprintf("dir found: %s\n", fullpath);
+
 			if (strcmp(entry->d_name, ".") == 0 ||
 					strcmp(entry->d_name, "..") == 0)
 				continue;
 
-			bind_mount_recursive(root, path);
+			bind_mount_recursive(root, shortpath);
 		}
-		else if (entry->d_type == DT_REG) {
+		else if (S_ISREG(st.st_mode) || S_ISLNK(st.st_mode)) {
 			int ret;
 			struct sys_mount_desc mount_desc;
-			memset(&mount_desc, '\0', sizeof mount_desc);
-			char bind_path[PATH_MAX];
 
-			len = snprintf(bind_path, sizeof(bind_path) - 1,
-					"%s/%s/%s", root, prefix, entry->d_name);
-			bind_path[len] = 0;
+			__dprintf("reg/symlink found: %s\n", fullpath);
 
-			mount_desc.dev_name = bind_path;
-			mount_desc.dir_name = path;
+			if (lstat(shortpath, &st)) {
+				fprintf(stderr, "%s: warning: lstat of mount point (%s) failed: %s\n",
+					__func__, shortpath, strerror(errno));
+				continue;
+			}
+
+			memset(&mount_desc, '\0', sizeof(mount_desc));
+			mount_desc.dev_name = fullpath;
+			mount_desc.dir_name = shortpath;
 			mount_desc.type = NULL;
 			mount_desc.flags = MS_BIND | MS_PRIVATE;
 			mount_desc.data = NULL;
+
 			if ((ret = ioctl(fd, MCEXEC_UP_SYS_MOUNT,
 						(unsigned long)&mount_desc)) != 0) {
-				fprintf(stderr, "WARNING: failed to bind mount %s over %s: %d\n",
-						bind_path, path, ret);
+				fprintf(stderr, "%s: warning: failed to bind mount %s over %s: %d\n",
+					__func__, fullpath, shortpath, ret);
 			}
 		}
 	}
-	while ((entry = readdir(dir)) != NULL);
 
 	closedir(dir);
 }
@@ -1828,7 +1965,7 @@ join_all_threads()
 	do {
 		live_thread = 0;
 		for (tp = thread_data; tp; tp = tp->next) {
-			if (tp->joined)
+			if (tp->joined || tp->detached)
 				continue;
 			live_thread = 1;
 			pthread_join(tp->thread_id, NULL);
@@ -1869,37 +2006,63 @@ opendev()
 	return fd;
 }
 
+#define LD_PRELOAD_PREPARE(name) do { \
+		sprintf(elembuf, "%s%s/" name, nelem > 0 ? ":" : "", MCKERNEL_LIBDIR); \
+	} while (0)
+
+#define LD_PRELOAD_APPEND do {	\
+		if (strlen(elembuf) + 1 > remainder) { \
+			fprintf(stderr, "%s: warning: LD_PRELOAD line is too long\n", __FUNCTION__); \
+			return; \
+		} \
+		strncat(envbuf, elembuf, remainder); \
+		remainder = PATH_MAX - (strlen(envbuf) + 1); \
+		nelem++; \
+	} while (0)
+
 static void ld_preload_init()
 {
 	char envbuf[PATH_MAX];
-#ifdef ENABLE_QLMPI
-	char *old_ld_preload;
-#endif
+	char *ld_preload_str;
+	size_t remainder = PATH_MAX;
+	int nelem = 0;
+	char elembuf[PATH_MAX];
+
+	memset(envbuf, 0, PATH_MAX);
+
+	if (enable_uti) {
+		LD_PRELOAD_PREPARE("syscall_intercept.so");
+		LD_PRELOAD_APPEND;
+	}
 
 	if (disable_sched_yield) {
-		sprintf(envbuf, "%s/libsched_yield.so.1.0.0", MCKERNEL_LIBDIR);
-		__dprintf("%s: preload library: %s\n", __FUNCTION__, envbuf);
-		if (setenv("LD_PRELOAD", envbuf, 1) < 0) {
-			printf("%s: warning: failed to set LD_PRELOAD for sched_yield\n",
-					__FUNCTION__);
-		}
+		LD_PRELOAD_PREPARE("libsched_yield.so.1.0.0");
+		LD_PRELOAD_APPEND;
 	}
+
+#ifdef ENABLE_QLMPI
+	LD_PRELOAD_PREPARE("libqlfort.so");
+	LD_PRELOAD_APPEND;
+#endif
+
 	/* Set LD_PRELOAD to McKernel specific value */
-	else if (getenv(ld_preload_envname)) {
-		if (setenv("LD_PRELOAD", getenv(ld_preload_envname), 1) < 0) {
+	ld_preload_str = getenv(ld_preload_envname);
+	if (ld_preload_str) {
+		sprintf(elembuf, "%s%s", nelem > 0 ? ":" : "", ld_preload_str);
+		LD_PRELOAD_APPEND;
+	}
+
+	if (strlen(envbuf)) {
+		if (setenv("LD_PRELOAD", envbuf, 1) < 0) {
 			printf("%s: warning: failed to set LD_PRELOAD environment variable\n",
 					__FUNCTION__);
 		}
-		unsetenv(ld_preload_envname);
+		__dprintf("%s: preload library: %s\n", __FUNCTION__, envbuf);
 	}
 
-#ifdef ENABLE_QLMPI
-	sprintf(envbuf, "%s/libqlfort.so", MCKERNEL_LIBDIR);
-	if ((old_ld_preload = getenv("LD_PRELOAD"))) {
-		sprintf(strchr(envbuf, '\0'), " %s", old_ld_preload);
+	if (getenv("ld_preload_envname")) {
+		unsetenv(ld_preload_envname);
 	}
-	setenv("LD_PRELOAD", envbuf, 1);
-#endif
 }
 
 int main(int argc, char **argv)
@@ -1908,7 +2071,6 @@ int main(int argc, char **argv)
 	struct program_load_desc *desc;
 	int envs_len;
 	char *envs;
-	char *args;
 	char *p;
 	int i;
 	int error;
@@ -1916,9 +2078,8 @@ int main(int argc, char **argv)
 	unsigned long lmax;
 	int target_core = 0;
 	int opt;
-	char path[1024];
-	char *shell = NULL;
-	char shell_path[1024];
+	char **shebang_argv = NULL;
+	char *shebang_argv_flat = NULL;
 	int num = 0;
 	int persona;
 #ifdef ADD_ENVS_OPTION
@@ -1951,6 +2112,8 @@ int main(int argc, char **argv)
 	/* Disable address space layout randomization */
 	__dprintf("persona=%08x\n", persona);
 	if ((persona & (PER_LINUX | ADDR_NO_RANDOMIZE)) == 0) {
+		char path[PATH_MAX];
+
 		CHKANDJUMP(getenv("MCEXEC_ADDR_NO_RANDOMIZE"), 1, "personality() and then execv() failed\n");
 
 		persona = personality(persona | PER_LINUX | ADDR_NO_RANDOMIZE);
@@ -1959,7 +2122,15 @@ int main(int argc, char **argv)
 		error = setenv("MCEXEC_ADDR_NO_RANDOMIZE", "1", 1);
 		CHKANDJUMP(error == -1, 1, "setenv failed\n");
 
-		error = execv("/proc/self/exe", argv);
+		error = readlink("/proc/self/exe", path, sizeof(path));
+		CHKANDJUMP(error == -1, 1, "readlink failed: %m\n");
+		if (error >= sizeof(path)) {
+			strcpy(path, "/proc/self/exe");
+		} else {
+			path[error] = '\0';
+		}
+
+		error = execv(path, argv);
 		CHKANDJUMPF(error == -1, 1, "execv failed, error=%d,strerror=%s\n", error, strerror(errno));
 	}
 	if (getenv("MCEXEC_ADDR_NO_RANDOMIZE")) {
@@ -1985,9 +2156,9 @@ int main(int argc, char **argv)
 
 	/* Parse options ("+" denotes stop at the first non-option) */
 #ifdef ADD_ENVS_OPTION
-	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:m:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:m:u:", mcexec_options, NULL)) != -1) {
 #else /* ADD_ENVS_OPTION */
-	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:m:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:m:u:", mcexec_options, NULL)) != -1) {
 #endif /* ADD_ENVS_OPTION */
 		switch (opt) {
 			char *tmp;
@@ -2050,6 +2221,10 @@ int main(int argc, char **argv)
 			__dprintf("stack_premap=%ld,stack_max=%ld\n", stack_premap, stack_max);
 			break; }
 
+			case 'u':
+				uti_thread_rank = atoi(optarg);
+				break;
+
 			case 0:	/* long opt */
 				break;
 
@@ -2080,16 +2255,23 @@ int main(int argc, char **argv)
 	if (opendev() == -1)
 		exit(EXIT_FAILURE);
 
+#ifndef WITH_SYSCALL_INTERCEPT
+	if (enable_uti) {
+		__eprintf("ERROR: uti is not available when not configured with --with-syscall_intercept=<path>\n");
+		exit(EXIT_FAILURE);
+	}
+#endif
+
 	ld_preload_init();
 
 #ifdef ADD_ENVS_OPTION
 #else /* ADD_ENVS_OPTION */
 	/* Collect environment variables */
-	envs_len = flatten_strings(-1, NULL, environ, &envs);
+	envs_len = flatten_strings(NULL, environ, &envs);
 #endif /* ADD_ENVS_OPTION */
 
 #ifdef ENABLE_MCOVERLAYFS
-	__dprint("mcoverlay enable\n");
+	__dprintf("mcoverlay enable\n");
 	char mcos_procdir[PATH_MAX];
 	char mcos_sysdir[PATH_MAX];
 
@@ -2205,32 +2387,8 @@ int main(int argc, char **argv)
 	__dprintf("mcoverlay disable\n");
 #endif // ENABLE_MCOVERLAYFS
 
-	if (lookup_exec_path(argv[optind], path, sizeof(path), 1) != 0) {
-		fprintf(stderr, "error: finding file: %s\n", argv[optind]);
+	if (load_elf_desc_shebang(argv[optind], &desc, &shebang_argv))
 		return 1;
-	}
-
-	if (load_elf_desc(path, &desc, &shell) != 0) {
-		fprintf(stderr, "error: loading file: %s\n", argv[optind]);
-		return 1;
-	}
-
-	/* Check whether shell script */
-	if (shell) {
-		if (lookup_exec_path(shell, shell_path, sizeof(shell_path), 0) != 0) {
-			fprintf(stderr, "error: finding file: %s\n", shell);
-			return 1;
-		}
-
-		if (load_elf_desc(shell_path, &desc, &shell) != 0) {
-			fprintf(stderr, "error: loading file: %s\n", shell);
-			return 1;
-		}
-	}
-
-	if (shell) {
-		argv[optind] = path;
-	}
 
 #ifdef ADD_ENVS_OPTION
 	/* Collect environment variables */
@@ -2238,7 +2396,7 @@ int main(int argc, char **argv)
 		add_env_list(&extra_env, environ[i]);
 	}
 	local_env = create_local_environ(extra_env);
-	envs_len = flatten_strings(-1, NULL, local_env, &envs);
+	envs_len = flatten_strings(NULL, local_env, &envs);
 	destroy_local_environ(local_env);
 	local_env = NULL;
 	destroy_env_list(extra_env);
@@ -2251,9 +2409,14 @@ int main(int argc, char **argv)
 	desc->envs = envs;
 	//print_flat(envs);
 
-	desc->args_len = flatten_strings(-1, shell, argv + optind, &args);
-	desc->args = args;
-	//print_flat(args);
+	if (shebang_argv)
+		flatten_strings(NULL, shebang_argv, &shebang_argv_flat);
+
+	desc->args_len = flatten_strings(shebang_argv_flat, argv + optind,
+					 &desc->args);
+	//print_flat(desc->args);
+	free(shebang_argv);
+	free(shebang_argv_flat);
 
 	desc->cpu = target_core;
 	desc->enable_vdso = enable_vdso;
@@ -2394,18 +2557,18 @@ int main(int argc, char **argv)
 	dma_buf = mmap(0, PIN_SIZE, PROT_READ | PROT_WRITE, 
 	               (MAP_ANONYMOUS | MAP_PRIVATE), -1, 0);
 	if (dma_buf == (void *)-1) {
-		__dprint("error: allocating DMA area\n");
+		__dprintf("error: allocating DMA area\n");
 		exit(1);
 	}
 	
 	/* PIN buffer */
 	if (mlock(dma_buf, (size_t)PIN_SIZE)) {
-		__dprint("ERROR: locking dma_buf\n");
+		__dprintf("ERROR: locking dma_buf\n");
 		exit(1);
 	}
 
 	/* Register per-process structure in mcctrl */
-	if (ioctl(fd, MCEXEC_UP_CREATE_PPD) != 0) {
+	if (ioctl(fd, MCEXEC_UP_CREATE_PPD, NULL)) {
 		perror("creating mcctrl per-process structure");
 		close(fd);
 		exit(1);
@@ -2416,6 +2579,7 @@ int main(int argc, char **argv)
 		struct get_cpu_set_arg cpu_set_arg;
 		int mcexec_linux_numa = 0;
 		int ikc_mapped = 0;
+		int process_rank = -1;
 		cpu_set_t mcexec_cpu_set;
 
 		CPU_ZERO(&mcexec_cpu_set);
@@ -2424,6 +2588,7 @@ int main(int argc, char **argv)
 		cpu_set_arg.cpu_set_size = sizeof(desc->cpu_set);
 		cpu_set_arg.nr_processes = nr_processes;
 		cpu_set_arg.target_core = &target_core;
+		cpu_set_arg.process_rank = &process_rank;
 		cpu_set_arg.mcexec_linux_numa = &mcexec_linux_numa;
 		cpu_set_arg.mcexec_cpu_set = &mcexec_cpu_set;
 		cpu_set_arg.mcexec_cpu_set_size = sizeof(mcexec_cpu_set);
@@ -2436,13 +2601,14 @@ int main(int argc, char **argv)
 		}
 
 		desc->cpu = target_core;
+		desc->process_rank = process_rank;
 
 		/* Bind to CPU cores where the LWK process' IKC target maps to */
 		if (ikc_mapped && !no_bind_ikc_map) {
 			/* This call may not succeed, but that is fine */
 			if (sched_setaffinity(0, sizeof(mcexec_cpu_set),
 						&mcexec_cpu_set) < 0) {
-				__dprint("WARNING: couldn't bind to mcexec_cpu_set\n");
+				__dprintf("WARNING: couldn't bind to mcexec_cpu_set\n");
 			}
 #ifdef DEBUG
 			else {
@@ -2523,6 +2689,10 @@ int main(int argc, char **argv)
 		}
 	}
 
+	desc->uti_thread_rank = uti_thread_rank;
+	desc->uti_use_last_cpu = uti_use_last_cpu;
+
+	/* user_start and user_end are set by this call */
 	if (ioctl(fd, MCEXEC_UP_PREPARE_IMAGE, (unsigned long)desc) != 0) {
 		perror("prepare");
 		close(fd);
@@ -2559,7 +2729,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 #endif
-	__dprint("mccmd server initialized\n");
+	__dprintf("mccmd server initialized\n");
 #endif
 
 	init_sigaction();
@@ -2596,8 +2766,9 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+#if 1 /* debug : thread killed by exit_group() are still joinable? */
 	join_all_threads();
-
+#endif
  fn_fail:
 	return ret;
 }
@@ -2712,7 +2883,8 @@ do_generic_syscall(
 		sprintf(proc_path, "/proc/self/fd/%d", (int)w->sr.args[0]);
 
 		/* Get filename */
-		if ((len = readlink(proc_path, path, sizeof(path))) < 0) {
+		len = readlink(proc_path, path, sizeof(path));
+		if (len < 0 || len >= sizeof(path)) {
 			fprintf(stderr, "%s: error: readlink() failed for %s\n",
 				__FUNCTION__, proc_path);
 			goto out;
@@ -2756,8 +2928,10 @@ out:
 	return ret;
 }
 
-static void
-kill_thread(unsigned long tid, int sig)
+static struct uti_desc *uti_desc;
+
+static void kill_thread(unsigned long tid, int sig,
+			struct thread_data_s *my_thread)
 {
 	struct thread_data_s *tp;
 
@@ -2765,325 +2939,74 @@ kill_thread(unsigned long tid, int sig)
 		sig = LOCALSIG;
 
 	for (tp = thread_data; tp; tp = tp->next) {
-		if (tp->remote_tid == tid) {
-			pthread_kill(tp->thread_id, sig);
-			break;
-		}
-	}
-}
-
-static int
-samepage(void *a, void *b)
-{
-	unsigned long aa = (unsigned long)a;
-	unsigned long bb = (unsigned long)b;
-
-#ifdef POSTK_DEBUG_ARCH_DEP_35
-	return (aa & page_mask) == (bb & page_mask);
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
-	return (aa & PAGE_MASK) == (bb & PAGE_MASK);
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
-}
-
-#ifdef DEBUG_UTI
-long syscalls[512];
-
-static void
-debug_sig(int s)
-{
-	int i;
-	for (i = 0; i < 512; i++)
-		if (syscalls[i])
-			fprintf(stderr, "syscall %d called %ld\n", i,
-			                                           syscalls[i]);
-}
-#endif
-
-static int
-create_tracer(void *wp, int mck_tid, unsigned long key)
-{
-	int pid = getpid();
-	int tid = gettid();
-	int pfd[2];
-	int tpid;
-	int rc;
-	int st;
-	int sig = 0;
-	int i;
-	struct syscall_struct *param_top = NULL;
-	struct syscall_struct *param;
-	unsigned long code = 0;
-	int exited = 0;
-	int mode = 0;
-
-	if (pipe(pfd) == -1)
-		return -1;
-	tpid = fork();
-	if (tpid) {
-		struct timeval tv;
-		fd_set rfd;
-
-		if (tpid == -1)
-			return -1;
-		close(pfd[1]);
-		while ((rc = waitpid(tpid, &st, 0)) == -1 && errno == EINTR);
-		if (rc == -1 || !WIFEXITED(st) || WEXITSTATUS(st)) {
-			fprintf(stderr, "waitpid rc=%d st=%08x\n", rc, st);
-			return -ENOMEM;
-		}
-		FD_ZERO(&rfd);
-		FD_SET(pfd[0], &rfd);
-		tv.tv_sec = 1;
-		tv.tv_usec = 0;
-		while ((rc = select(pfd[0] + 1, &rfd, NULL, NULL, &tv)) == -1 &&
-		       errno == EINTR);
-		if (rc == 0) {
-			close(pfd[0]);
-			return -ETIMEDOUT;
-		}
-		if (rc == -1) {
-			close(pfd[0]);
-			return -errno;
-		}
-		rc = read(pfd[0], &st, 1);
-		close(pfd[0]);
-		if (rc != 1) {
-			return -EAGAIN;
-		}
-		return 0;
-	}
-	close(pfd[0]);
-	tpid = fork();
-	if (tpid) {
-		if (tpid == -1) {
-			fprintf(stderr, "fork errno=%d\n", errno);
-			exit(1);
-		}
-		exit(0);
-	}
-	if (ptrace(PTRACE_ATTACH, tid, 0, 0) == -1) {
-		fprintf(stderr, "PTRACE_ATTACH errno=%d\n", errno);
-		exit(1);
-	}
-	waitpid(-1, &st, __WALL);
-	if (ptrace(PTRACE_SETOPTIONS, tid, 0, PTRACE_O_TRACESYSGOOD) == -1) {
-		fprintf(stderr, "PTRACE_SETOPTIONS errno=%d\n", errno);
-		exit(1);
-	}
-	write(pfd[1], " ", 1);
-	close(pfd[1]);
-
-	for (i = 0; i < 4096; i++)
-		if (i != fd
-#ifdef DEBUG_UTI
-		   && i != 2
-#endif
-		   )
-			close(i);
-	open("/dev/null", O_RDONLY);
-	open("/dev/null", O_WRONLY);
-#ifndef DEBUG_UTI
-	open("/dev/null", O_WRONLY);
-#endif
-
-	for (i = 1; i <= 10; i++) {
-		param = (struct syscall_struct *)wp + i;
-		*(void **)param = param_top;
-		param_top = param;
-	}
-	memset(wp, '\0', sizeof(long));
-
-#ifdef DEBUG_UTI
-	fprintf(stderr, "tracer PID=%d\n", getpid());
-	signal(SIGINT, debug_sig);
-#endif
-	for (;;) {
-		ptrace(PTRACE_SYSCALL, tid, 0, sig);
-		sig = 0;
-		waitpid(-1, &st, __WALL);
-		if (WIFEXITED(st) || WIFSIGNALED(st)) {
-			unsigned long term_param[4];
-
-			term_param[0] = pid;
-			term_param[1] = tid;
-			term_param[3] = key;
-			code = st;
-			if (exited == 2 || // exit_group
-			    WIFSIGNALED(st)) {
-				code |= 0x0000000100000000;
-			}
-			term_param[2] = code;
-			ioctl(fd, MCEXEC_UP_TERMINATE_THREAD, term_param);
-			break;
-		}
-		if (!WIFSTOPPED(st)) {
+		if (tp == my_thread)
 			continue;
-		}
-		if (WSTOPSIG(st) & 0x80) { // syscall
-			syscall_args args;
-
-			get_syscall_args(tid, &args);
-
-#ifdef DEBUG_UTI
-			if (get_syscall_return(&args) == -ENOSYS) {
-				if (get_syscall_number(&args) >= 0 &&
-				    get_syscall_number(&args) < 512) {
-					syscalls[get_syscall_number(&args)]++;
-				}
+		if (tp->remote_tid == tid) {
+			if (pthread_kill(tp->thread_id, sig) == ESRCH) {
+				printf("%s: ERROR: Thread not found (tid=%ld,sig=%d)\n", __FUNCTION__, tid, sig);
 			}
-#endif
-
-			if (get_syscall_number(&args) == __NR_ioctl &&
-			    get_syscall_return(&args) == -ENOSYS &&
-			    get_syscall_arg1(&args) == fd &&
-			    get_syscall_arg2(&args) == MCEXEC_UP_SIG_THREAD) {
-				mode = get_syscall_arg3(&args);
-			}
-
-			if (mode) {
-				continue;
-			}
-
-			switch (get_syscall_number(&args)) {
-			    case __NR_gettid:
-				set_syscall_number(&args, -1);
-				set_syscall_return(&args, mck_tid);
-				set_syscall_args(tid, &args);
-				continue;
-			    case __NR_futex:
-			    case __NR_brk:
-			    case __NR_mmap:
-			    case __NR_munmap:
-			    case __NR_mprotect:
-			    case __NR_mremap:
-				break;
-			    case __NR_exit_group:
-				exited++;
-			    case __NR_exit:
-				exited++;
-				continue;
-			    case __NR_clone:
-#ifdef POSTK_DEBUG_ARCH_DEP_78 /* arch dep syscallno hide */
-#ifdef __NR_fork
-			    case __NR_fork:
-#endif
-#ifdef __NR_vfork
-			    case __NR_vfork:
-#endif
-#else /* POSTK_DEBUG_ARCH_DEP_78 */
-			    case __NR_fork:
-			    case __NR_vfork:
-#endif /* POSTK_DEBUG_ARCH_DEP_78 */
-			    case __NR_execve:
-				set_syscall_number(&args, -1);
-				set_syscall_args(tid, &args);
-				continue;
-			    case __NR_ioctl:
-				param = (struct syscall_struct *)
-					                get_syscall_arg3(&args);
-				if (get_syscall_return(&args) != -ENOSYS &&
-				    get_syscall_arg1(&args) == fd &&
-				    get_syscall_arg2(&args) ==
-				                     MCEXEC_UP_SYSCALL_THREAD &&
-				    samepage(wp, param)) {
-					set_syscall_arg1(&args, param->args[0]);
-					set_syscall_arg2(&args, param->args[1]);
-					set_syscall_arg3(&args, param->args[2]);
-					set_syscall_arg4(&args, param->args[3]);
-					set_syscall_arg5(&args, param->args[4]);
-					set_syscall_arg6(&args, param->args[5]);
-					set_syscall_return(&args, param->ret);
-					*(void **)param = param_top;
-					param_top = param;
-					set_syscall_args(tid, &args);
-				}
-				continue;
-			    default:
-				continue;
-			}
-			param = param_top;
-			if (!param) {
-				set_syscall_number(&args, -1);
-				set_syscall_return(&args, -ENOMEM);
-			}
-			else {
-				param_top = *(void **)param;
-				param->number = get_syscall_number(&args);
-				param->args[0] = get_syscall_arg1(&args);
-				param->args[1] = get_syscall_arg2(&args);
-				param->args[2] = get_syscall_arg3(&args);
-				param->args[3] = get_syscall_arg4(&args);
-				param->args[4] = get_syscall_arg5(&args);
-				param->args[5] = get_syscall_arg6(&args);
-				param->ret = -EINVAL;
-				set_syscall_number(&args, __NR_ioctl);
-				set_syscall_arg1(&args, fd);
-				set_syscall_arg2(&args,
-				                      MCEXEC_UP_SYSCALL_THREAD);
-				set_syscall_arg3(&args, (unsigned long)param);
-			}
-			set_syscall_args(tid, &args);
-		}
-		else { // signal
-			sig = WSTOPSIG(st) & 0x7f;
 		}
 	}
-
-#ifdef DEBUG_UTI
-	fprintf(stderr, "offloaded thread called these syscalls\n");
-	debug_sig(0);
-#endif
-
-	exit(0);
 }
 
-static long
-util_thread(unsigned long uctx_pa, int remote_tid, unsigned long pattr)
+static long util_thread(struct thread_data_s *my_thread, unsigned long rp_rctx, int remote_tid, unsigned long pattr, unsigned long uti_clv, unsigned long _uti_desc)
 {
-	void *lctx;
-	void *rctx;
-	void *wp;
-	void *param[6];
+	struct uti_get_ctx_desc get_ctx_desc;
+	struct uti_save_fs_desc save_fs_desc;
 	int rc = 0;
 
-#ifdef POSTK_DEBUG_ARCH_DEP_35
-	wp = mmap(NULL, page_size * 3, PROT_READ | PROT_WRITE,
-	          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
-	wp = mmap(NULL, PAGE_SIZE * 3, PROT_READ | PROT_WRITE,
-	          MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
-	if (wp == (void *)-1) {
+	struct thread_data_s *tp;
+
+	uti_desc = (struct uti_desc *)_uti_desc;
+	if (!uti_desc) {
+		printf("%s: ERROR: uti_desc not found. Add --enable-uti option to mcexec.\n",
+		       __func__);
+		rc = -EINVAL;
+		goto out;
+	}
+	__dprintf("%s: uti_desc=%p\n", __FUNCTION__, uti_desc);
+
+	pthread_barrier_init(&uti_init_ready, NULL, 2);
+	if ((rc = create_worker_thread(&tp, &uti_init_ready))) {
+		printf("%s: Error: create_worker_thread failed (%d)\n", __FUNCTION__, rc);
+		rc = -EINVAL;
+		goto out;
+	}
+	pthread_barrier_wait(&uti_init_ready);
+	__dprintf("%s: worker tid: %d\n", __FUNCTION__, tp->tid);
+
+
+	/* Initialize uti related variables for syscall_intercept */
+	uti_desc->fd = fd;
+
+	rc = syscall(888);
+	if (rc != -1) {
+		fprintf(stderr, "%s: WARNING: syscall_intercept returned %x\n", __FUNCTION__, rc);
+	}
+
+	/* Get the remote context, record refill tid */
+	get_ctx_desc.rp_rctx = rp_rctx;
+	get_ctx_desc.rctx = uti_desc->rctx;
+	get_ctx_desc.lctx = uti_desc->lctx;
+	get_ctx_desc.uti_refill_tid = tp->tid;
+
+	if ((rc = ioctl(fd, MCEXEC_UP_UTI_GET_CTX, &get_ctx_desc))) {
+		fprintf(stderr, "%s: Error: MCEXEC_UP_UTI_GET_CTX failed (%d)\n", __FUNCTION__, errno);
 		rc = -errno;
 		goto out;
 	}
-#ifdef POSTK_DEBUG_ARCH_DEP_35
-	lctx = (char *)wp + page_size;
-	rctx = (char *)lctx + page_size;
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
-	lctx = (char *)wp + PAGE_SIZE;
-	rctx = (char *)lctx + PAGE_SIZE;
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 
-	param[0] = (void *)uctx_pa;
-	param[1] = rctx;
-	param[2] = lctx;
-	param[4] = wp;
-#ifdef POSTK_DEBUG_ARCH_DEP_35
-	param[5] = (void *)(page_size * 3);
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
-	param[5] = (void *)(PAGE_SIZE * 3);
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
-	if ((rc = ioctl(fd, MCEXEC_UP_UTIL_THREAD1, param)) == -1) {
-		fprintf(stderr, "util_thread1: %d errno=%d\n", rc, errno);
-		rc = -errno;
-		goto out;
-	}
-
-	create_worker_thread(NULL);
-	if ((rc = create_tracer(wp, remote_tid, (unsigned long)param[3]))) {
-		fprintf(stderr, "create tracer %d\n", rc);
-		rc = -errno;
+	/* Initialize uti thread info */
+	uti_desc->mck_tid = remote_tid;
+	uti_desc->key = get_ctx_desc.key;
+	uti_desc->pid = getpid();
+	uti_desc->tid = gettid();
+	uti_desc->uti_clv = uti_clv;
+	
+	/* Initialize list of syscall arguments for syscall_intercept */
+	if (sizeof(struct syscall_struct) * 11 > PAGE_SIZE) {
+		fprintf(stderr, "%s: ERROR: param is too large\n", __FUNCTION__);
+		rc = -ENOMEM;
 		goto out;
 	}
 
@@ -3091,23 +3014,33 @@ util_thread(unsigned long uctx_pa, int remote_tid, unsigned long pattr)
 		struct uti_attr_desc desc;
 
 		desc.phys_attr = pattr;
-		ioctl(fd, MCEXEC_UP_UTI_ATTR, &desc);
+		desc.uti_cpu_set_str = getenv("UTI_CPU_SET");
+		desc.uti_cpu_set_len = strlen(desc.uti_cpu_set_str) + 1;
+
+		if ((rc = ioctl(fd, MCEXEC_UP_UTI_ATTR, &desc))) {
+			fprintf(stderr, "%s: error: MCEXEC_UP_UTI_ATTR: %s\n",
+				__func__, strerror(errno));
+			rc = -errno;
+			goto out;
+		}
 	}
 
-	if ((rc = switch_ctx(fd, MCEXEC_UP_UTIL_THREAD2, param, lctx, rctx))
+	/* Start intercepting syscalls. Note that it dereferences pointers in uti_desc. */
+	uti_desc->start_syscall_intercept = 1;
+
+	/* Save remote and local FS and then contex-switch */
+	save_fs_desc.rctx = uti_desc->rctx;
+	save_fs_desc.lctx = uti_desc->lctx;
+
+	if ((rc = switch_ctx(fd, MCEXEC_UP_UTI_SAVE_FS, &save_fs_desc, uti_desc->lctx, uti_desc->rctx))
 	    < 0) {
-		fprintf(stderr, "util_thread2: %d\n", rc);
+		fprintf(stderr, "%s: ERROR switch_ctx failed (%d)\n", __FUNCTION__, rc);
+		goto out;
 	}
-	fprintf(stderr, "return from util_thread2 rc=%d\n", rc);
-	pthread_exit(NULL);
+	fprintf(stderr, "%s: ERROR: Returned from switch_ctx (%d)\n", __FUNCTION__, rc);
+	rc = -EINVAL;
 
 out:
-	if (wp)
-#ifdef POSTK_DEBUG_ARCH_DEP_35
-		munmap(wp, page_size * 3);
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
-		munmap(wp, PAGE_SIZE * 3);
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 	return rc;
 }
 
@@ -3316,9 +3249,9 @@ int main_loop(struct thread_data_s *my_thread)
 		}
 
 		/* Don't print when got a msg to stdout */
-		if (!(w.sr.number == __NR_write && w.sr.args[0] == 1))
+		if (!(w.sr.number == __NR_write && w.sr.args[0] == 1)) {
 			__dprintf("[%d] got syscall: %ld\n", cpu, w.sr.number);
-		
+		}
 		//pthread_mutex_lock(lock);
 
 		my_thread->remote_tid = w.sr.rtid;
@@ -3380,7 +3313,7 @@ int main_loop(struct thread_data_s *my_thread)
 			}
 			else {
 			}
-			__dprintf("openat: %s\n", pathbuf);
+			__dprintf("openat: %s,tid=%d\n", pathbuf, my_thread->remote_tid);
 
 			fn = chgpath(pathbuf, tmpbuf);
 
@@ -3400,7 +3333,7 @@ int main_loop(struct thread_data_s *my_thread)
 			break;
 
 		case __NR_kill: // interrupt syscall
-			kill_thread(w.sr.args[1], w.sr.args[2]);
+			kill_thread(w.sr.args[1], w.sr.args[2], my_thread);
 			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
 			break;
 		case __NR_exit:
@@ -3408,7 +3341,11 @@ int main_loop(struct thread_data_s *my_thread)
 			sig = 0;
 			term = 0;
 			
-			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
+			/* Enforce the order in which mcexec is destroyed and then 
+			   McKernel process is destroyed to prevent
+			   migrated-to-Linux thread from accessing stale memory values.
+			   It is done by not calling do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
+			   here and making McKernel side wait until release_handler() is called. */
 
 			/* Drop executable file */
 			if ((ret = ioctl(fd, MCEXEC_UP_CLOSE_EXEC)) != 0) {
@@ -3422,12 +3359,15 @@ int main_loop(struct thread_data_s *my_thread)
 				term = (w.sr.args[0] & 0xff00) >> 8;
 				if(isatty(2)){
 					if(sig){
-						if(!ischild)
+						if(!ischild) {
 							fprintf(stderr, "Terminate by signal %d\n", sig);
+						}
 					}
-					else if(term)
+					else if(term) {
 						__dprintf("Exit status: %d\n", term);
+					}
 				}
+				
 			}
 
 #ifdef USE_SYSCALL_MOD_CALL
@@ -3439,14 +3379,15 @@ int main_loop(struct thread_data_s *my_thread)
 			dcfampi_cmd_server_exit();
 #endif
 			mc_cmd_server_exit();
-			__dprint("mccmd server exited\n");
+			__dprintf("mccmd server exited\n");
 #endif
 			if(sig){
 				signal(sig, SIG_DFL);
 				kill(getpid(), sig);
 				pause();
 			}
-			exit(term);
+
+			exit(term); /* Call release_handler() and proceed terminate() */
 
 			//pthread_mutex_unlock(lock);
 			return w.sr.args[0];
@@ -3488,7 +3429,7 @@ int main_loop(struct thread_data_s *my_thread)
 					tids[i++] = tp->tid;
 				}
 
-				for (; i < ncpu; ++i) {
+				for (; i < w.sr.args[4]; ++i) {
 					tids[i] = 0;
 				}
 
@@ -3572,6 +3513,7 @@ gettid_out:
 			    case 0: {
 				int ret = 1;
 				struct newprocess_desc npdesc;
+				struct rpgtable_desc rpt;
 
 				ischild = 1;
 				/* Reopen device fd */
@@ -3584,7 +3526,10 @@ gettid_out:
 					goto fork_child_sync_pipe;
 				}
 
-				if (ioctl(fd, MCEXEC_UP_CREATE_PPD) != 0) {
+				rpt.start = w.sr.args[1];
+				rpt.len = w.sr.args[2];
+				rpt.rpgtable = w.sr.args[3];
+				if (ioctl(fd, MCEXEC_UP_CREATE_PPD, &rpt)) {
 					fs->status = -errno;
 					fprintf(stderr, "ERROR: creating PPD %s\n", dev);
 
@@ -3653,8 +3598,9 @@ fork_child_sync_pipe:
 				}
 
 				munmap(fs, sizeof(struct fork_sync));
+#if 1 /* debug : thread killed by exit_group() are still joinable? */
 				join_all_threads();
-
+#endif
 				return ret;
 			    }
 				
@@ -3734,93 +3680,80 @@ fork_err:
 			switch (w.sr.args[0]) {
 				struct program_load_desc *desc;
 				struct remote_transfer trans;
-				char path[1024];
 				char *filename;
+				char **shebang_argv;
+				char *shebang_argv_flat;
+				char *buffer;
+				size_t size;
 				int ret;
-				char *shell;
-				char shell_path[1024];
 
 				/* Load descriptor phase */
 				case 1:
-					
-					shell = NULL;
+					shebang_argv = NULL;
+					buffer = NULL;
 					filename = (char *)w.sr.args[1];
 					
-					if ((ret = lookup_exec_path(filename, path, sizeof(path), 0)) 
-						!= 0) {
+					if ((ret = load_elf_desc_shebang(filename, &desc,
+									 &shebang_argv)) != 0) {
 						goto return_execve1;
-					}
-
-					if ((ret = load_elf_desc(path, &desc, &shell)) != 0) {
-						fprintf(stderr, 
-							"execve(): error loading ELF for file %s\n", path);
-						goto return_execve1;
-					}
-					
-					/* Check whether shell script */
-					if (shell) {
-						if ((ret = lookup_exec_path(shell, shell_path, 
-									sizeof(shell_path), 0)) != 0) {
-							fprintf(stderr, "execve(): error: finding file: %s\n", shell);
-							goto return_execve1;
-						}
-
-						if ((ret = load_elf_desc(shell_path, &desc, &shell)) 
-								!= 0) {
-							fprintf(stderr, "execve(): error: loading file: %s\n", shell);
-							goto return_execve1;
-						}
-
-#ifdef POSTK_DEBUG_TEMP_FIX_9 /* shell-script run via execve arg[0] fix */
-						if (strlen(shell) >= SHELL_PATH_MAX_LEN) {
-#else /* POSTK_DEBUG_TEMP_FIX_9 */
-						if (strlen(shell_path) >= SHELL_PATH_MAX_LEN) {
-#endif /* POSTK_DEBUG_TEMP_FIX_9 */
-							fprintf(stderr, "execve(): error: shell path too long: %s\n", shell_path);
-							ret = ENAMETOOLONG;
-							goto return_execve1;
-						}
-
-						/* Let the LWK know the shell interpreter */
-#ifdef POSTK_DEBUG_TEMP_FIX_9 /* shell-script run via execve arg[0] fix */
-						strcpy(desc->shell_path, shell);
-#else /* POSTK_DEBUG_TEMP_FIX_9 */
-						strcpy(desc->shell_path, shell_path);
-#endif /* POSTK_DEBUG_TEMP_FIX_9 */
 					}
 
 					desc->enable_vdso = enable_vdso;
 					__dprintf("execve(): load_elf_desc() for %s OK, num sections: %d\n",
-						path, desc->num_sections);
+						filename, desc->num_sections);
 
 					desc->rlimit[MCK_RLIMIT_STACK].rlim_cur = rlim_stack.rlim_cur;
 					desc->rlimit[MCK_RLIMIT_STACK].rlim_max = rlim_stack.rlim_max;
 					desc->stack_premap = stack_premap;
 
+					buffer = (char *)desc;
+					size = sizeof(struct program_load_desc) +
+					       sizeof(struct program_image_section) *
+					       desc->num_sections;
+					if (shebang_argv) {
+						desc->args_len = flatten_strings(NULL, shebang_argv,
+										 &shebang_argv_flat);
+						buffer = malloc(size + desc->args_len);
+						if (!buffer) {
+							fprintf(stderr,
+								"execve(): could not alloc transfer buffer for file %s\n",
+								filename);
+							free(shebang_argv_flat);
+							ret = ENOMEM;
+							goto return_execve1;
+						}
+						memcpy(buffer, desc, size);
+						memcpy(buffer + size, shebang_argv_flat,
+						       desc->args_len);
+						free(shebang_argv_flat);
+						size += desc->args_len;
+					}
+
 					/* Copy descriptor to co-kernel side */
-					trans.userp = (void*)desc;
+					trans.userp = buffer;
 					trans.rphys = w.sr.args[2];
-					trans.size = sizeof(struct program_load_desc) + 
-						sizeof(struct program_image_section) * 
-						desc->num_sections;
+					trans.size = size;
 					trans.direction = MCEXEC_UP_TRANSFER_TO_REMOTE;
 					
 					if (ioctl(fd, MCEXEC_UP_TRANSFER, &trans) != 0) {
 						fprintf(stderr, 
 							"execve(): error transfering ELF for file %s\n", 
-							(char *)w.sr.args[1]);
+							filename);
+						ret = -errno;
 						goto return_execve1;
 					}
 					
 					__dprintf("execve(): load_elf_desc() for %s OK\n",
-						path);
+						  filename);
 
-					/* We can't be sure next phase will succeed */
-					/* TODO: what shall we do with fp in desc?? */
-					free(desc);
-					
 					ret = 0;
 return_execve1:
+					/* We can't be sure next phase will succeed */
+					/* TODO: what shall we do with fp in desc?? */
+					if (buffer != (char *)desc)
+						free(buffer);
+					free(desc);
+
 					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 					break;
 
@@ -4178,14 +4111,12 @@ return_execve2:
 
 		case __NR_sched_setaffinity:
 			if (w.sr.args[0] == 0) {
-				ret = util_thread(w.sr.args[1], w.sr.rtid,
-				                  w.sr.args[2]);
+				ret = util_thread(my_thread, w.sr.args[1], w.sr.rtid,
+				                  w.sr.args[2], w.sr.args[3], w.sr.args[4]);
 			}
 			else {
-				ret = munmap((void *)w.sr.args[1],
-				             w.sr.args[2]);
-				if (ret == -1)
-					ret = -errno;
+				__eprintf("__NR_sched_setaffinity: invalid argument (%lx)\n", w.sr.args[0]);
+				ret = -EINVAL;
 			}
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
@@ -4391,6 +4322,6 @@ return_linux_spawn:
 
 		//pthread_mutex_unlock(lock);
 	}
-	__dprint("timed out.\n");
+	__dprintf("timed out.\n");
 	return 1;
 }

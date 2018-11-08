@@ -114,14 +114,18 @@ SYSCALL_HANDLED(236, get_mempolicy)
 SYSCALL_HANDLED(237, set_mempolicy)
 SYSCALL_HANDLED(238, migrate_pages)
 SYSCALL_HANDLED(239, move_pages)
+#ifdef PERF_ENABLE
 SYSCALL_HANDLED(241, perf_event_open)
+#endif // PERF_ENABLE
 SYSCALL_HANDLED(260, wait4)
 SYSCALL_HANDLED(270, process_vm_readv)
 SYSCALL_HANDLED(271, process_vm_writev)
+#ifdef PERF_ENABLE
 SYSCALL_HANDLED(601, pmc_init)
 SYSCALL_HANDLED(602, pmc_start)
 SYSCALL_HANDLED(603, pmc_stop)
 SYSCALL_HANDLED(604, pmc_reset)
+#endif // PERF_ENABLE
 SYSCALL_HANDLED(700, get_cpu_id)
 #ifdef PROFILE_ENABLE
 SYSCALL_HANDLED(__NR_profile, profile)

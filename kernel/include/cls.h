@@ -21,7 +21,7 @@
 
 struct kmalloc_header {
 	unsigned int front_magic;
-	unsigned int cpu_id;
+	int cpu_id;
 	struct list_head list;
 	int size; /* The size of this chunk without the header */
 	unsigned int end_magic;
@@ -74,6 +74,7 @@ struct cpu_local_var {
 	struct thread *current;
 	struct list_head runq;
 	size_t runq_len;
+	size_t runq_reserved; /* Number of threads which are about to be added to runq */
 
 	struct ihk_ikc_channel_desc *ikc2linux;
 
@@ -99,6 +100,9 @@ struct cpu_local_var {
 	struct list_head smp_func_req_list;
 
 	struct process_vm *on_fork_vm;
+
+	/* UTI */
+	void *uti_futex_resp;
 } __attribute__((aligned(64)));
 
 
@@ -109,5 +113,7 @@ static struct cpu_local_var *get_this_cpu_local_var(void)
 }
 
 #define cpu_local_var(name) get_this_cpu_local_var()->name
+
+#define cpu_local_var_with_override(name, clv_override) (clv_override ? clv_override->name : get_this_cpu_local_var()->name)
 
 #endif
