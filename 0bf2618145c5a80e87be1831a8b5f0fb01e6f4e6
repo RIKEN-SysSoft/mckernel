@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "5dc6080e_58db5c66",
+        "filename": "test/v1.5_follow/08_mcexec_signal_fork_conflict/run.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-08T05:51:13Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t${STRESSBIN}/killit -np 16 -t 2000 ${MCEXEC} ${STRESSBIN}/signalonfork -nosignal \u003e /dev/null 2\u003e\u00261",
+      "revId": "0bf2618145c5a80e87be1831a8b5f0fb01e6f4e6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
