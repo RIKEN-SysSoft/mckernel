@@ -1,0 +1,58 @@
+/* README COPYRIGHT FUJITSU LIMITED 2018 */
+
+/proc/[pid]/maps 追加機能テストセットREADME
+
+(1) テストの実行方法
+	以下の手順でテストを実行する
+		1. Makefileの変数MCK_DIRの内容を、McKernelがインストールされているディレクトリに変更する
+		2. McKernelを起動する(起動コア数、メモリ構成などは問わない)
+		3. make testを実行する
+		4. McKernelを終了する
+
+(2) テスト項目詳細
+	TEST001 ---p の属性でmmap登録した情報が出力されること。
+	TEST002 ---s の属性でmmap登録した情報が出力されること。
+	TEST003 r--p の属性でmmap登録した情報が出力されること。
+	TEST004 r--s の属性でmmap登録した情報が出力されること。
+	TEST005 -w-p の属性でmmap登録した情報が出力されること。
+	TEST006 -w-s の属性でmmap登録した情報が出力されること。
+	TEST007 --xp の属性でmmap登録した情報が出力されること。
+	TEST008 --xs の属性でmmap登録した情報が出力されること。
+	TEST009 rw-p の属性でmmap登録した情報が出力されること。
+	TEST010 rw-s の属性でmmap登録した情報が出力されること。
+	TEST011 r-xp の属性でmmap登録した情報が出力されること。
+	TEST012 r-xs の属性でmmap登録した情報が出力されること。
+	TEST013 -wxp の属性でmmap登録した情報が出力されること。
+	TEST014 -wxs の属性でmmap登録した情報が出力されること。
+	TEST015 rwxp の属性でmmap登録した情報が出力されること。
+	TEST016 rwxs の属性でmmap登録した情報が出力されること。
+	TEST017 offsetフィールドが全て0であること。
+	TEST018 devフィールドがすべて0:0であること。
+	TEST019 inodeフィールドが全て0であること。
+	TEST020 "[vdso]"のpathnameを持つエントリが存在すること。
+	TEST021 "[vsyscall]"のpathnameを持つエントリが存在すること。
+	TEST022 "[stack]"のpathnameを持つエントリのstart-endの間にスタックアドレスがあること。
+	TEST023 "[heap]"のpathnameを持つエントリのstart-endの間にsbrk()の結果アドレスがあること。
+	TEST024 pathnameが空文字列であるエントリがあること。
+
+(3) 実行結果ログ
+	result.logファイル内に実行時のログを記載する。
+	実行に利用したIHK/McKernelは、IA版における下記の版数相当の
+	arm64版移植IHK/McKernelである。
+
+	IHK
+		commit d6fcbee8cb91f9ec4b49f97c918e696ac0335aaf
+		Author: Shiratori, Takehiro <fj0300es@aa.jp.fujitsu.com>
+		Date:   Tue Oct 16 16:25:33 2018 +0900
+
+	McKernel
+		commit 6f9fef2b13447c74c36d15cf5ebd186f8395ccca
+		Author: Ken Sato <ken.sato.ty@hitachi-solutions.com>
+		Date:   Tue Sep 25 10:05:41 2018 +0900
+
+(4) 備考
+	本テストセットは一部IHK/McKernelの実装挙動を期待としてテスト項目を作成しているため、
+	全ての項目がHOST-Linux上でもOKになるとは限らない。
+
+
+以上。
