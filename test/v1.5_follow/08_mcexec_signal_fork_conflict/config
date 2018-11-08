@@ -1,0 +1,9 @@
+## config COPYRIGHT FUJITSU LIMITED 2018 ##
+MCK_DIR=/opt/ppos
+MCEXEC=${MCK_DIR}/bin/mcexec
+MCREBOOT=${MCK_DIR}/sbin/mcreboot.sh
+MCSTOP=${MCK_DIR}/sbin/mcstop+release.sh
+IHKOSCTL=${MCK_DIR}/sbin/ihkosctl
+
+LTPBIN=./ltpbin
+STRESSBIN=./stressbin
