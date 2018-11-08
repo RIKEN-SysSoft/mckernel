@@ -25,6 +25,29 @@
     },
     {
       "key": {
+        "uuid": "3be8fcb3_110263bd",
+        "filename": "test/v1.5_follow/08_mcexec_signal_fork_conflict/run.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-11-08T05:58:19Z",
+      "side": 1,
+      "message": "test/issues/1005/C1005.shなどを参照して、以下のようにしてください。\n\nUSELTP\u003d0\nUSEOSTEST\u003d0\n\n. ../../common.sh",
+      "range": {
+        "startLine": 4,
+        "startChar": 0,
+        "endLine": 4,
+        "endChar": 10
+      },
+      "revId": "0bf2618145c5a80e87be1831a8b5f0fb01e6f4e6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "5dc6080e_58db5c66",
         "filename": "test/v1.5_follow/08_mcexec_signal_fork_conflict/run.sh",
         "patchSetId": 3
