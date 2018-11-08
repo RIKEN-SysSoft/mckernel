@@ -2827,16 +2827,19 @@ do_generic_syscall(
 		char proc_path[PATH_MAX];
 		char path[PATH_MAX];
 		struct stat sb;
+		int len;
 
 		sprintf(proc_path, "/proc/self/fd/%d", (int)w->sr.args[0]);
 
 		/* Get filename */
-		if (readlink(proc_path, path, sizeof(path)) < 0) {
+		if ((len = readlink(proc_path, path, sizeof(path))) < 0) {
 			fprintf(stderr, "%s: error: readlink() failed for %s\n",
 				__FUNCTION__, proc_path);
 			perror(": ");
 			goto out;
 		}
+
+		path[len] = 0;
 
 		/* Not in /sys? */
 		if (strncmp(path, "/sys/", 5))
