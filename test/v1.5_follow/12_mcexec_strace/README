@@ -1,0 +1,34 @@
+/* README COPYRIGHT FUJITSU LIMITED 2018 */
+
+mcexec に対するstrace 機能テストセットREADME
+
+(1) テストの実行方法
+以下の手順でテストを実行する
+	1. mcexecへのシンボリックリンクを./mcexecに作成する
+	2. McKernelを起動する
+	3. make test を実行する
+
+(2) テスト項目詳細
+	「別紙_テスト結果.pdf」内の「Issue#923の修正動作確認」項目に従う。
+
+(3) 実行結果ログ
+	result.logファイル内に実行時のログを記載する。
+	実行に利用したIHK/McKernelは、IA版における下記の版数相当の
+	arm64版移植IHK/McKernelである。
+
+	IHK
+		commit d6fcbee8cb91f9ec4b49f97c918e696ac0335aaf
+		Author: Shiratori, Takehiro <fj0300es@aa.jp.fujitsu.com>
+		Date:   Tue Oct 16 16:25:33 2018 +0900
+
+	McKernel
+		commit 6f9fef2b13447c74c36d15cf5ebd186f8395ccca
+		Author: Ken Sato <ken.sato.ty@hitachi-solutions.com>
+		Date:   Tue Sep 25 10:05:41 2018 +0900
+
+(4) 備考
+	特になし。
+
+
+以上。
+
