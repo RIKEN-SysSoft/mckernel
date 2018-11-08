@@ -2,6 +2,29 @@
   "comments": [
     {
       "key": {
+        "uuid": "b76dee68_10d72b77",
+        "filename": "test/v1.5_follow/08_mcexec_signal_fork_conflict/README",
+        "patchSetId": 3
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-11-08T05:55:36Z",
+      "side": 1,
+      "message": "ここに、mckernel/test/mng_mod/issues/882/READMEからテスト内容をコピーして記載してください。(READMEだけ参照すれば内容が分かるように）",
+      "range": {
+        "startLine": 12,
+        "startChar": 0,
+        "endLine": 12,
+        "endChar": 11
+      },
+      "revId": "0bf2618145c5a80e87be1831a8b5f0fb01e6f4e6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "5dc6080e_58db5c66",
         "filename": "test/v1.5_follow/08_mcexec_signal_fork_conflict/run.sh",
         "patchSetId": 3
