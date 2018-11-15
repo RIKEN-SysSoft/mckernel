@@ -768,7 +768,7 @@ static void setup_l2(translation_table_t *tt,
 		eidx = PTL2_ENTRIES - 1;
 	} else {
 		//base_endが現在のテーブルの管理内ならインデックスを算出
-		virt_end = (unsigned long)phys_to_virt(base_end);
+		virt_end = (unsigned long)phys_to_virt(base_end - 1);
 		eidx = ptl2_index(virt_end);
 	}
 
@@ -790,7 +790,6 @@ static void setup_l2(translation_table_t *tt,
 		start += PTL2_SIZE;
 	}
 }
-
 
 static inline void setup_middle_level(translation_table_t *tt, unsigned long base_start, unsigned long base_end,
 				      setup_normal_area_t setup, int shift, unsigned long pgsize, int entries, int level)
@@ -814,7 +813,7 @@ static inline void setup_middle_level(translation_table_t *tt, unsigned long bas
 		eidx = entries - 1;
 	} else {
 		//base_endが現在のテーブルの管理内ならインデックスを算出
-		virt_end = (unsigned long)phys_to_virt(base_end);
+		virt_end = (unsigned long)phys_to_virt(base_end - 1);
 		eidx = ptl_index(virt_end, level);
 	}
 
