@@ -18,33 +18,38 @@
 #include "async_progress.h"
 #include "util.h"
 
-#define NSAMPLES_INIT 10/*20*/
-#define NSAMPLES_DROP_INIT 2/*10*/
+#define PROFILE 1 /* McKernel internal system call profile */
+
+#define NSAMPLES_INIT 10/*10*/
+#define NSAMPLES_DROP_INIT 2/*2*/
 
 #define SEARCH_MIN 0.01
 #define SEARCH_MAX 0.15
-#define SEARCH_STEP 0.005/*0.0025*/
+#define SEARCH_STEP 0.0025/*0.0025*/
 
-#define NSAMPLES_SEARCH 3/*10*/
-#define NSAMPLES_DROP_SEARCH 0/*2*/
+#define NSAMPLES_SEARCH 10/*10*/
+#define NSAMPLES_DROP_SEARCH 2/*2*/
 
-#define NSAMPLES_TOTAL 2/*10*/
-#define NSAMPLES_DROP_TOTAL 0/*2*/
+#define NSAMPLES_TOTAL 10/*10*/
+#define NSAMPLES_DROP_TOTAL 2/*2*/
 
 /* MPI loop is repeated NSAMPLES_INNER times in rma() */
 #define NSAMPLES_INNER 8
 
 /* Ratio fraction of progress time is spent in computation */
-#define RATIO_MAX 1.0/*1.5*/
+#define RATIO_MAX 1.5/*1.5*/
 #define RATIO_STEP 0.1/*0.1*/
 
 /* 0: Without progress, 1: With non-uti progress, 2: With uti progress */
-#define PROGRESS_STEP 2
+#define PROGRESS_START 0/*0*/
+#define PROGRESS_STEP 1/*1*/
+#define PROGRESS_END 2/*2*/
 
+static int rank = -1;
 static int ppn = -1;
 
 /* Report min, max, ave at each rma() call */
-static int profile_minmaxave = 1;
+static int profile_minmaxave = 0;
 
 /* Time components to measure */
 struct measure_desc {
@@ -174,6 +179,9 @@ int iprobe(double duration)
 	int ret, completed;
 	int i;
 	double start, end;
+	double time_progress;
+	struct timeval tv_start, tv_end;
+	struct rusage ru_start, ru_end;
 
 	if (duration <= 0) {
 		ret = 0;
@@ -181,6 +189,11 @@ int iprobe(double duration)
 	}
 
 	start = mytime();
+#if 0
+	getrusage(RUSAGE_THREAD, &ru_start);
+	gettimeofday(&tv_start, NULL);
+#endif
+	int count = 0;
 	while (1) {
 		if ((ret = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG,
 				      MPI_COMM_WORLD, &completed,
@@ -190,12 +203,29 @@ int iprobe(double duration)
 		}
 
 		end = mytime();
-		//printf("%s: %f\n", __func__, (end - start) * MYTIME_TOUSEC);
+
 		if (end - start > duration) {
 			break;
 		}
 		usleep(1);
+		count++;
 	}
+
+#if 0
+        end = mytime();
+	time_progress = end - start;
+	if (rank < 3) pr_debug("[%d] time_progress=%.0f usec,count=%d\n", rank, time_progress * MYTIME_TOUSEC, count);
+
+	getrusage(RUSAGE_THREAD, &ru_end);
+	gettimeofday(&tv_end, NULL);
+	if (rank < 3) {
+		pr_debug("[%d]: wall: %ld, user: %ld, sys: %ld\n",
+			 rank,
+			 DIFFUSEC(tv_end, tv_start),
+			 DIFFUSEC(ru_end.ru_utime, ru_start.ru_utime),
+			 DIFFUSEC(ru_end.ru_stime, ru_start.ru_stime));
+	}
+#endif
 	ret = 0;
  out:
 	return ret;
@@ -211,6 +241,7 @@ void rma(int rank, int nproc, MPI_Win win,
 	int completed, ret;
 	double start, start2, end;
 	double iprobe_time;
+	double time_progress;
 
 	start = mytime();
 	for (j = 0; j < NSAMPLES_INNER; j++) {
@@ -240,27 +271,38 @@ void rma(int rank, int nproc, MPI_Win win,
 	end = mytime();
 	measure->rma = end - start;
 
-	if (async_progress) {
-		start2 = mytime();
-		progress_start();
-	}
-
+	time_progress = 0;
 	if (time->calc > 0) {
+		if (async_progress) {
+			start2 = mytime();
+			progress_start();
+		}
+		
 		start = mytime();
 		sdelay(time->calc);
 		end = mytime();
 		measure->calc = end - start;
+		
+		if (async_progress) {
+			progress_stop(&time_progress);
+			end = mytime();
+			measure->pswitch = (end - start2) - measure->calc;
+		}
 	}
-
-	if (async_progress) {
-		progress_stop();
-		end = mytime();
-		measure->pswitch = (end - start2) - measure->calc;
+	
+#ifdef IPROBE_PLUS_FLUSH
+	switch (async_progress) {
+	case 0:
+		iprobe_time = time->iprobe;
+		break;
+	case 1:
+		/* There's no way to know the exact time with oversubscription */
+		iprobe_time = MAX2(time->iprobe - time->calc,  0);
+		break;
+	case 2:
+		iprobe_time = MAX2(time->iprobe - time_progress,  0);
+		break;
 	}
-
-	iprobe_time = async_progress ?
-		MAX2(time->iprobe - measure->calc,  0) :
-		time->iprobe;
 
 	if (iprobe_time > 0) {
 		start = mytime();
@@ -270,6 +312,7 @@ void rma(int rank, int nproc, MPI_Win win,
 		end = mytime();
 		measure->iprobe = end - start;
 	}
+#endif
 
 	start = mytime();
 	MPI_Win_flush_local_all(win);
@@ -389,7 +432,6 @@ int main(int argc, char **argv)
 {
 	int ret;
 	int actual;
-	int rank = -1;
 	int nproc;
 	int i, j, progress, m;
 	double l;
@@ -405,6 +447,10 @@ int main(int argc, char **argv)
 	int disable_syscall_intercept = 0;
 
 	cpu_set_t cpuset;
+
+	if (rank == 0) {
+		printf("%s: enter\n", __func__);
+	}
 
 	//test_set_loglevel(TEST_LOGLEVEL_WARN);
 
@@ -490,6 +536,8 @@ int main(int argc, char **argv)
 		pr_measure(&time_init, &measure_init);
 	}
 
+//#define IPROBE_PLUS_FLUSH
+#ifdef IPROBE_PLUS_FLUSH
 	/* Find optimal iprobe time. It's around one tenth of flush. */
 	if (rank == 0) {
 		pr_debug("Searching optimal iprobe time\n");
@@ -524,23 +572,26 @@ int main(int argc, char **argv)
 	}
 
 	if (ratio_min + SEARCH_STEP >= SEARCH_MAX) {
-		pr_err("ERROR: SEARCH_MAX is too small\n");
-		ret = -1;
-		goto out;
+		pr_warn("WARNING: SEARCH_MAX is too small\n");
 	}
 
 	if (rank == 0) {
 		pr_debug("Time with optimal iprobe time\n");
 		pr_measure(&time_min, &measure_min);
 	}
+#else
+	memcpy(&measure_min, &measure_init, sizeof(struct measure_desc));
+	memcpy(&time_min, &time_init, sizeof(struct time_desc));
+	measure_min.iprobe = measure_init.flush;
+#endif
 
 #ifdef PROFILE
 	syscall(701, 1 | 2 | 0x80000000); /* syscall profile start */
 #endif
 
 	/* 0: no progress, 1: progress, no uti, 2: progress, uti */
-	for (progress = 0;
-	     progress <= (disable_syscall_intercept ? 0 : 2);
+	for (progress = PROGRESS_START;
+	     progress <= (disable_syscall_intercept ? 0 : PROGRESS_END);
 	     progress += PROGRESS_STEP) {
 
 		if (progress == 1) {
@@ -561,6 +612,8 @@ int main(int argc, char **argv)
 
 		/* Re-calibrate to deal with DVFS */
 		sdelay_init(1);
+
+		//printf("[%d] cpu=%d\n", rank, sched_getcpu());
 
 		/* RMA-start, calc for 0%, ..., 150% of iprobe, flush */
 		for (ratio = 0; ratio <= RATIO_MAX; ratio += RATIO_STEP) {

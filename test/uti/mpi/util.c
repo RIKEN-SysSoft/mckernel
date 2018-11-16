@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <time.h>
+#include <errno.h>
 #include "util.h"
 
 /* Messaging */
@@ -42,10 +43,12 @@ void sdelay(double _delay)
 void sdelay_init(int verbose)
 {
 	int i;
-	int rank;
+	int rank, nranks;
 	double start, end, sum;
+	double omp_ovh_max, omp_ovh_min, omp_ovh_sum_g;
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &nranks);
 
 	start = mytime();
 
@@ -57,7 +60,21 @@ void sdelay_init(int verbose)
 	end = mytime();
 	spw = (end - start) / (double)N_INIT;
 	if (verbose) {
-		pr_debug("%.0f nsec per work\n", spw * MYTIME_TONSEC);
+		double max, min, sum;
+		MPI_Barrier(MPI_COMM_WORLD);
+		MPI_Reduce(&spw, &max, 1, MPI_DOUBLE,
+			   MPI_MAX, 0, MPI_COMM_WORLD);
+		MPI_Reduce(&spw, &min, 1, MPI_DOUBLE,
+			   MPI_MIN, 0, MPI_COMM_WORLD);
+		MPI_Reduce(&spw, &sum, 1, MPI_DOUBLE,
+			   MPI_SUM, 0, MPI_COMM_WORLD);
+
+		if (rank == 0) {
+			pr_debug("Time of asm loop (nsec): max: %.0f min: %.0f ave: %.0f\n",
+				 max * MYTIME_TONSEC,
+				 min * MYTIME_TONSEC,
+				 sum / nranks * MYTIME_TONSEC);
+		}
 	}
 
 
@@ -100,8 +117,22 @@ void sdelay_init(int verbose)
 	}
 
 	omp_ovh = sum / NSAMPLES_OMP_OVH_OUTER;
+
+	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Allreduce(&omp_ovh, &omp_ovh_max, 1, MPI_DOUBLE,
+		   MPI_MAX, MPI_COMM_WORLD);
+	MPI_Allreduce(&omp_ovh, &omp_ovh_min, 1, MPI_DOUBLE,
+		   MPI_MIN, MPI_COMM_WORLD);
+	MPI_Allreduce(&omp_ovh, &omp_ovh_sum_g, 1, MPI_DOUBLE,
+		   MPI_SUM, MPI_COMM_WORLD);
+
 	if (verbose) {
-		pr_debug("OMP overhead: %.0f usec\n", omp_ovh * MYTIME_TOUSEC);
+		if (rank == 0) {
+			pr_debug("OMP overhead (usec): max: %.0f min: %.0f ave: %.0f\n",
+				 omp_ovh_max * MYTIME_TOUSEC,
+				 omp_ovh_min * MYTIME_TOUSEC,
+				 omp_ovh_sum_g / nranks * MYTIME_TOUSEC);
+		}
 	}
 }
 
@@ -188,4 +219,40 @@ int print_cpu_last_executed_on(const char *name)
  fn_fail:
 	mpi_errno = -1;
     goto fn_exit;
+}
+
+int show_maps() {
+	int ret;
+	FILE *fp;
+	char *maps;
+	size_t nread;
+	
+	maps = malloc(65536);
+	if (!maps) {
+		pr_err("%s: ERROR: fopen: %s",
+		       __func__, strerror(errno));
+		ret = -errno;
+		goto out;
+	}
+	
+	fp = fopen("/proc/self/maps", "r");
+	if (!fp) {
+		pr_err("%s: ERROR: fopen: %s",
+		       __func__, strerror(errno));
+		ret = -errno;
+		goto out;
+	}
+	
+	nread = fread(maps, sizeof(char), 65536, fp);
+	if (!feof(fp)) {
+		pr_err("%s: ERROR: EOF not reached\n",
+		       __func__);
+		ret = -1;
+		goto out;
+	}
+	
+	pr_debug("%s\n", maps);
+ out:
+	return ret;
+
 }

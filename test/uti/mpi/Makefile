@@ -2,10 +2,10 @@
 
 MYHOME=/home/e29005
 
-# Specify it via 016.sh 
+# Don't "make 016" but use 016.sh for 016 
 UTI_DIR=${MYHOME}/project/uti/install_linux
-
 CC=mpiicc 
+
 LD=$(CC)
 
 CFLAGS = -g -O0 -Wall

@@ -32,7 +32,8 @@ static pthread_cond_t progress_cond_down;
 static volatile int progress_flag_up, progress_flag_down;
 
 static enum progress_state progress_state;
-static int progress_stop_flag;
+static volatile int progress_stop_flag;
+static double time_progress;
 static MPI_Comm progress_comm;
 static int progress_refc;
 #define WAKE_TAG 100
@@ -76,6 +77,7 @@ static void *progress_fn(void* data)
 	struct rusage ru_start, ru_end;
 	struct timeval tv_start, tv_end;
 	unsigned long start, end;
+	double start2, end2;
 
 #if 0
 	ret = syscall(732);
@@ -92,7 +94,6 @@ static void *progress_fn(void* data)
 	if ((ret = gettimeofday(&tv_start, NULL))) {
 		pr_err("%s: error: gettimeofday failed (%d)\n", __func__, ret);
 	}
-
 #endif
 
 #if STOP_TYPE == STOP_BY_MEM && POLL_TYPE == POLL_BY_TEST
@@ -133,8 +134,6 @@ init:
 	RECORD_STAT(cyc_prog1_count, cyc_prog1, end, start);
 #endif
 
-	//if (progress_world_rank < 2) pr_debug("[%d] poll,cpu=%d\n", progress_world_rank, sched_getcpu());
-
 #ifdef PROFILE
 	start = rdtsc_light();
 #endif
@@ -143,15 +142,68 @@ init:
 
 #if POLL_TYPE == POLL_BY_PROBE
 
-	int completed = 0;
+	//if (progress_world_rank < 2) pr_debug("[%d] poll,cpu=%d\n", progress_world_rank, sched_getcpu());
+
+
+	//#define REPORT_PROGRESS_TIME
+#ifdef REPORT_PROGRESS_TIME
+	start2 = mytime();
+	getrusage(RUSAGE_THREAD, &ru_start);
+	gettimeofday(&tv_start, NULL);
+	double start3, end3, time3;
+#endif
+	int completed = 0, count = 0;
 	while (!progress_stop_flag) {
+
+#ifdef REPORT_PROGRESS_TIME
+		start3 = mytime();
+#endif
+		//pr_debug("[%d] poll,cpu=%d\n", progress_world_rank, sched_getcpu());
 		if ((ret = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &completed, MPI_STATUS_IGNORE)) != MPI_SUCCESS) {
 			pr_err("%s: error: MPI_Iprobe: %d\n", __func__, ret);
 			break;
 		}
-		//sched_yield();
+#ifdef REPORT_PROGRESS_TIME
+		end3 = mytime();
+
+		if (count < 3) {
+			if (1 && progress_world_rank < 5) {
+				pr_debug("[%d] cpu=%d,count=%d,iprobe=%.0f nsec\n", progress_world_rank, sched_getcpu(), count, (end3 - start3) * MYTIME_TONSEC);
+			}
+		}
+
+		/* Exclude lead time including first time futex */
+		if (count == 0) {
+			double lead_time;
+
+			end2 = mytime();
+			lead_time = end2 - start2;
+			if (1 && progress_world_rank == 0) {
+				pr_debug("[%d] 1st iprobe takes %.0f nsec\n", progress_world_rank, lead_time * MYTIME_TONSEC);
+			}
+			start2 = mytime();
+		}
+#endif
+		count++;
 		//usleep(1);
 	}
+#ifdef REPORT_PROGRESS_TIME
+        end2 = mytime();
+	time_progress = end2 - start2;
+
+	if (1 && progress_world_rank < 3) pr_debug("[%d] time_progress=%.0f usec,count=%d\n", progress_world_rank, time_progress * MYTIME_TOUSEC, count);
+
+	getrusage(RUSAGE_THREAD, &ru_end);
+	gettimeofday(&tv_end, NULL);
+
+	if (1 && progress_world_rank < 3) {
+		pr_debug("[%d]: wall: %ld, user: %ld, sys: %ld\n",
+			 progress_world_rank,
+			 DIFFUSEC(tv_end, tv_start),
+			 DIFFUSEC(ru_end.ru_utime, ru_start.ru_utime),
+			 DIFFUSEC(ru_end.ru_stime, ru_start.ru_stime));
+	}
+#endif
 
 #elif POLL_TYPE == POLL_BY_TEST
 
@@ -209,6 +261,7 @@ init:
 
  finalize:
 
+#if 0
 	if ((ret = getrusage(RUSAGE_THREAD, &ru_end))) {
 		pr_err("%s: error: getrusage failed (%d)\n", __func__, ret);
 	}
@@ -217,7 +270,6 @@ init:
 		pr_err("%s: error: gettimeofday failed (%d)\n", __func__, ret);
 	}
 
-#if 0
 	pr_debug("%s: wall: %ld, user: %ld, sys: %ld\n", __func__,
 		   DIFFUSEC(tv_end, tv_start),
 		   DIFFUSEC(ru_end.ru_utime, ru_start.ru_utime),
@@ -278,18 +330,15 @@ void progress_init()
 		goto out;
 	}
 	
-#if 0
-	if ((ret = UTI_ATTR_SAME_L1(&uti_attr))) {
-		pr_err("%s: error: UTI_ATTR_SAME_L1 failed\n", __func__);
+	/* Linux CPU might be congested */
+	if ((ret = UTI_ATTR_HIGH_PRIORITY(&uti_attr))) {
+		pr_err("%s: error: UTI_ATTR_HIGH_PRIORITY failed\n", __func__);
 	}
-#endif
 
-#if 1 /* Expecting round-robin binding */
+	/* Expecting round-robin CPU binding */
 	if ((ret = UTI_ATTR_CPU_INTENSIVE(&uti_attr))) {
 		pr_err("%s: error: UTI_ATTR_CPU_INTENSIVE failed\n", __func__);
 	}
-
-#endif
 
 #ifdef PROFILE
 	end = rdtsc_light();
@@ -363,7 +412,7 @@ void progress_start()
 #endif
 }
 
-void do_progress_stop()
+double do_progress_stop()
 {
 	int ret;
 	unsigned long start, end;
@@ -404,9 +453,10 @@ void do_progress_stop()
 	end = rdtsc_light();
 	RECORD_STAT(cyc_stop3_count, cyc_stop3, end, start);
 #endif
+	return time_progress;
 }
 
-void progress_stop()
+void progress_stop(double *time_progress)
 {
 	unsigned long start, end;
 
@@ -443,7 +493,7 @@ void progress_stop()
 	RECORD_STAT(cyc_stop1_count, cyc_stop1, end, start);
 #endif	
 
-	do_progress_stop();
+	*time_progress = do_progress_stop();
 }
 
 void progress_finalize()

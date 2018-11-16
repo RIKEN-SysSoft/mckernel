@@ -69,7 +69,7 @@ static inline void test_set_loglevel(enum test_loglevel level)
 
 #define MYTIME_TOUSEC 1000000
 #define MYTIME_TONSEC 1000000000
-#define N_INIT 10000000 /* 100 loop takes 500 ns on KNL */
+#define N_INIT 2000000/*10000000*/ /* one asmloop takes 500 ns on KNL */
 #define MAX2(x, y) ((x) > (y) ? (x) : (y))
 
 inline uint64_t rdtsc_light(void)
