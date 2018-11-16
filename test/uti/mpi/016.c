@@ -31,9 +31,10 @@
 #define NSAMPLES_TOTAL 2/*10*/
 #define NSAMPLES_DROP_TOTAL 0/*2*/
 
-/* (#ranks - 1) * NSAMPLES_INNER doubles are sent from each rank */
+/* MPI loop is repeated NSAMPLES_INNER times in rma() */
 #define NSAMPLES_INNER 8
 
+/* Ratio fraction of progress time is spent in computation */
 #define RATIO_MAX 1.0/*1.5*/
 #define RATIO_STEP 0.1/*0.1*/
 

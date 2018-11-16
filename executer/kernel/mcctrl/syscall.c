@@ -1734,6 +1734,7 @@ static int pager_req_pfn(ihk_os_t os, uintptr_t handle, off_t off, uintptr_t ppf
 	uintptr_t phys;
 	uintptr_t *ppfn;
 	int page_fault_attempted = 0;
+	int count;
 
 	dprintk("pager_req_pfn(%p,%lx,%lx)\n", os, handle, off);
 
@@ -1829,7 +1830,23 @@ out_release:
 
 	error = 0;
 out:
-	dprintk("pager_req_pfn(%p,%lx,%lx): %d %lx\n", os, handle, off, error, pfn);
+	{
+#define PFN_PFN ((((uintptr_t)1 << 56) - 1) & ~(PAGE_SIZE - 1))
+		unsigned long pfn2 = (pfn & PFN_PFN) >> PAGE_SHIFT;
+		if (pfn_valid(pfn2)) {
+			struct page *page;
+			page = pfn_to_page(pfn2);
+#if 1
+			if (!page_count(page)) 
+				get_page(page);
+#endif
+			count = page_count(page);
+		} else {
+			count = -123;
+		}
+	}
+
+	dprintk("pager_req_pfn(%p,%lx,%lx): %d %lx, count: %d\n", os, handle, off, error, pfn, count);
 	return error;
 }
 
