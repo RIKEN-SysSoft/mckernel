@@ -307,7 +307,7 @@ long do_syscall(struct syscall_request *req, int cpu)
 
 			dkprintf("STATUS_PAGE_FAULT in syscall, pid: %d\n", 
 					cpu_local_var(current)->proc->pid);
-			kprintf("remote page fault,tid=%d,va=%lx\n", cpu_local_var(current)->tid, res.fault_address);
+			dkprintf("remote page fault,tid=%d,va=%lx\n", cpu_local_var(current)->tid, res.fault_address);
 			error = page_fault_process_vm(thread->vm,
 					(void *)res.fault_address,
 					res.fault_reason|PF_POPULATE);
