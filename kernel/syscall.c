@@ -307,7 +307,7 @@ long do_syscall(struct syscall_request *req, int cpu)
 
 			dkprintf("STATUS_PAGE_FAULT in syscall, pid: %d\n", 
 					cpu_local_var(current)->proc->pid);
-			dkprintf("remote page fault,va=%lx,reason=%x\n", res.fault_address, res.fault_reason|PF_POPULATE);
+			kprintf("remote page fault,tid=%d,va=%lx\n", cpu_local_var(current)->tid, res.fault_address);
 			error = page_fault_process_vm(thread->vm,
 					(void *)res.fault_address,
 					res.fault_reason|PF_POPULATE);
@@ -340,6 +340,7 @@ long do_syscall(struct syscall_request *req, int cpu)
 			unsigned long phys;
 			struct syscall_request req2 IHK_DMA_ALIGN; /* debug */
 
+			dkprintf("SYACALL,tid=%d\n", cpu_local_var(current)->tid);
 			phys = ihk_mc_map_memory(NULL, res.fault_address,
 			                        sizeof(struct syscall_request));
 			requestp = ihk_mc_map_virtual(phys, 1,

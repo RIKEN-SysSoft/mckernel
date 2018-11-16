@@ -961,14 +961,14 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	ihk_device_unmap_memory(dev, phys, pgsize);
 	if (error) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-		printk("%s: remote PF failed for 0x%#lx, pgoff: %lu "
+		printk("%s: remote PF failed for 0x%#lx, pgoff: %lx "
 				"(req: TID: %d, syscall: %lu)\n",
 				__FUNCTION__, vmf->address, vmf->pgoff,
 				packet->req.rtid, packet->req.number);
 #else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-		printk("%s: remote PF failed for 0x%p, pgoff: %lu "
+		printk("%s: remote PF failed for 0x%p, flags: %x, pgoff: %lx "
 				"(req: TID: %d, syscall: %lu)\n",
-				__FUNCTION__, vmf->virtual_address, vmf->pgoff,
+		       __FUNCTION__, vmf->virtual_address, vmf->flags, vmf->pgoff,
 				packet->req.rtid, packet->req.number);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 		ret = VM_FAULT_SIGBUS;
