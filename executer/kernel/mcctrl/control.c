@@ -72,7 +72,7 @@
 #define pr_ppd(msg, tid, ppd) do { } while(0)
 #endif
 
-#if defined(RHEL_RELEASE_CODE) || (LINUX_VERSION_CODE < KERNEL_VERSION(4,0,0))
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,0,0)
 #define BITMAP_SCNLISTPRINTF(buf, buflen, maskp, nmaskbits) \
         bitmap_scnlistprintf(buf, buflen, maskp, nmaskbits)
 #else
