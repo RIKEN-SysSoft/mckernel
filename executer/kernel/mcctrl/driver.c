@@ -29,6 +29,7 @@
 #include <linux/device.h>
 #include <linux/delay.h>
 #include <linux/kallsyms.h>
+#include <linux/version.h>
 #include "mcctrl.h"
 #include <ihk/ihk_host_user.h>
 
@@ -222,7 +223,7 @@ long (*mcctrl_sched_setaffinity)(pid_t pid, const struct cpumask *in_mask);
 int (*mcctrl_sched_setscheduler_nocheck)(struct task_struct *p, int policy,
 					 const struct sched_param *param);
 
-ssize_t (*mcctrl_sys_readlink)(const char *path, char *buf,
+ssize_t (*mcctrl_sys_readlinkat)(int dfd, const char *path, char *buf,
 			       size_t bufsiz);
 void (*mcctrl_zap_page_range)(struct vm_area_struct *vma,
 			      unsigned long start,
@@ -234,29 +235,41 @@ struct inode_operations *mcctrl_hugetlbfs_inode_operations;
 
 static int symbols_init(void)
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,17,0)
+	mcctrl_sys_mount = (void *) kallsyms_lookup_name("ksys_mount");
+#else
 	mcctrl_sys_mount = (void *) kallsyms_lookup_name("sys_mount");
 #if defined(CONFIG_X86_64_SMP)
 	if (!mcctrl_sys_mount)
 		mcctrl_sys_mount =
 			(void *) kallsyms_lookup_name("__x64_sys_mount");
 #endif
+#endif
 	if (WARN_ON(!mcctrl_sys_mount))
 		return -EFAULT;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,17,0)
+	mcctrl_sys_umount = (void *) kallsyms_lookup_name("ksys_umount");
+#else
 	mcctrl_sys_umount = (void *) kallsyms_lookup_name("sys_umount");
 #if defined(CONFIG_X86_64_SMP)
 	if (!mcctrl_sys_umount)
 		mcctrl_sys_umount =
 			(void *) kallsyms_lookup_name("__x64_sys_umount");
 #endif
+#endif
 	if (WARN_ON(!mcctrl_sys_umount))
 		return -EFAULT;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,17,0)
+	mcctrl_sys_unshare = (void *) kallsyms_lookup_name("ksys_unshare");
+#else
 	mcctrl_sys_unshare = (void *) kallsyms_lookup_name("sys_unshare");
 #if defined(CONFIG_X86_64_SMP)
 	if (!mcctrl_sys_unshare)
 		mcctrl_sys_unshare =
 			(void *) kallsyms_lookup_name("__x64_sys_unshare");
+#endif
 #endif
 	if (WARN_ON(!mcctrl_sys_unshare))
 		return -EFAULT;
@@ -271,14 +284,17 @@ static int symbols_init(void)
 	if (WARN_ON(!mcctrl_sched_setscheduler_nocheck))
 		return -EFAULT;
 
-	mcctrl_sys_readlink =
-		(void *) kallsyms_lookup_name("sys_readlink");
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,17,0)
+	mcctrl_sys_readlinkat = (void *)kallsyms_lookup_name("do_readlinkat");
+#else
+	mcctrl_sys_readlinkat = (void *)kallsyms_lookup_name("sys_readlinkat");
 #if defined(CONFIG_X86_64_SMP)
-	if (!mcctrl_sys_readlink)
-		mcctrl_sys_readlink =
-			(void *) kallsyms_lookup_name("__x64_sys_readlink");
+	if (!mcctrl_sys_readlinkat)
+		mcctrl_sys_readlinkat =
+			(void *) kallsyms_lookup_name("__x64_sys_readlinkat");
 #endif
-	if (WARN_ON(!mcctrl_sys_readlink))
+#endif
+	if (WARN_ON(!mcctrl_sys_readlinkat))
 		return -EFAULT;
 
 	mcctrl_zap_page_range =
