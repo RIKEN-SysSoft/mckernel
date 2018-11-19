@@ -422,7 +422,7 @@ extern long (*mcctrl_sched_setaffinity)(pid_t pid,
 extern int (*mcctrl_sched_setscheduler_nocheck)(struct task_struct *p,
 						int policy,
 						const struct sched_param *param);
-extern ssize_t (*mcctrl_sys_readlink)(const char *path, char *buf,
+extern ssize_t (*mcctrl_sys_readlinkat)(int dfd, const char *path, char *buf,
 				      size_t bufsiz);
 extern void (*mcctrl_zap_page_range)(struct vm_area_struct *vma,
 				     unsigned long start,

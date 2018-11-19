@@ -921,7 +921,7 @@ static int read_link(char *buf, size_t bufsize, char *fmt, ...)
 
 	old_fs = get_fs();
 	set_fs(KERNEL_DS);
-	ss = mcctrl_sys_readlink(filename, buf, bufsize);
+	ss = mcctrl_sys_readlinkat(AT_FDCWD, filename, buf, bufsize);
 	set_fs(old_fs);
 	if (ss < 0) {
 		error = ss;
