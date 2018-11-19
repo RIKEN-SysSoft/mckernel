@@ -910,49 +910,21 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	pfn = phys >> PAGE_SHIFT;
 #if USE_VM_INSERT_PFN
 	for (pix = 0; pix < (pgsize / PAGE_SIZE); ++pix) {
-		struct page *page;
-
 		/* LWK may hold large page based mappings that align rva outside
 		 * Linux' VMA, make sure we don't try to map to those pages */
 		if (rva + (pix * PAGE_SIZE) < vma->vm_start) {
 			continue;
 		}
 
-		if (pfn_valid(pfn+pix)) {
-			page = pfn_to_page(pfn+pix);
-
-			error = vm_insert_page(vma, rva+(pix*PAGE_SIZE), page);
-			if (error) {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-				printk("%s: error inserting mapping for 0x%#lx "
-						"(req: TID: %d, syscall: %lu) error: %d, " 
-						"vm_start: 0x%lx, vm_end: 0x%lx\n",
-						__FUNCTION__, vmf->address,
-						packet->req.rtid, packet->req.number, error,
-						vma->vm_start, vma->vm_end);
-#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-				printk("%s: error inserting mapping for 0x%p "
-						"(req: TID: %d, syscall: %lu) error: %d, " 
-						"vm_start: 0x%lx, vm_end: 0x%lx\n",
-						__FUNCTION__, vmf->virtual_address,
-						packet->req.rtid, packet->req.number, error,
-						vma->vm_start, vma->vm_end);
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-			}
-		}
-		else
-		error = vm_insert_pfn(vma, rva+(pix*PAGE_SIZE), pfn+pix);
+		error = vm_insert_mixed(vma, rva+(pix*PAGE_SIZE), pfn+pix);
 		if (error) {
-#if 1 /* POSTK_DEBUG_TEMP_FIX_11 */ /* rus_vm_fault() multi-thread fix */
-			printk("%s: vm_insert_pfn returned %d\n", __FUNCTION__, error);
+			pr_warn("%s: vm_insert_mixed returned %d\n",
+				__func__, error);
 			if (error == -EBUSY) {
 				error = 0;
 			} else {
 				break;
 			}
-#else /* POSTK_DEBUG_TEMP_FIX_11 */
-			break;
-#endif /* POSTK_DEBUG_TEMP_FIX_11 */
 		}
 	}
 #else
