@@ -75,6 +75,7 @@ static void ovl_dentry_release(struct dentry *dentry)
 	}
 }
 
+#ifdef D_REAL_UPPER
 static int ovl_check_append_only(struct inode *inode, int flag)
 {
 	/*
@@ -90,16 +91,23 @@ static int ovl_check_append_only(struct inode *inode, int flag)
 
 	return 0;
 }
+#endif
 
 static struct dentry *ovl_d_real(struct dentry *dentry,
+#ifdef D_REAL_UPPER
 				 const struct inode *inode,
 				 unsigned int open_flags, unsigned int flags)
+#else
+				 const struct inode *inode)
+#endif
 {
 	struct dentry *real;
+#ifdef D_REAL_UPPER
 	int err;
 
 	if (flags & D_REAL_UPPER)
 		return ovl_dentry_upper(dentry);
+#endif
 
 	if (!d_is_reg(dentry)) {
 		if (!inode || inode == d_inode(dentry))
@@ -107,19 +115,23 @@ static struct dentry *ovl_d_real(struct dentry *dentry,
 		goto bug;
 	}
 
+#ifdef D_REAL_UPPER
 	if (open_flags) {
 		err = ovl_open_maybe_copy_up(dentry, open_flags);
 		if (err)
 			return ERR_PTR(err);
 	}
+#endif
 
 	real = ovl_dentry_upper(dentry);
 	if (real && (!inode || inode == d_inode(real))) {
+#ifdef D_REAL_UPPER
 		if (!inode) {
 			err = ovl_check_append_only(d_inode(real), open_flags);
 			if (err)
 				return ERR_PTR(err);
 		}
+#endif
 		return real;
 	}
 
@@ -128,7 +140,11 @@ static struct dentry *ovl_d_real(struct dentry *dentry,
 		goto bug;
 
 	/* Handle recursion */
+#ifdef D_REAL_UPPER
 	real = d_real(real, inode, open_flags, 0);
+#else
+	real = d_real(real, inode);
+#endif
 
 	if (!inode || inode == d_inode(real))
 		return real;
@@ -1467,7 +1483,11 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_op = &ovl_super_operations;
 	sb->s_xattr = ovl_xattr_handlers;
 	sb->s_fs_info = ofs;
+#ifdef SB_NOREMOTELOCK
 	sb->s_flags |= SB_POSIXACL | SB_NOREMOTELOCK;
+#else
+	sb->s_flags |= SB_POSIXACL;
+#endif
 
 	err = -ENOMEM;
 	root_dentry = d_make_root(ovl_new_inode(sb, S_IFDIR, 0));
