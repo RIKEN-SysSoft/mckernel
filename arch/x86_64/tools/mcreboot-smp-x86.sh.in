@@ -137,32 +137,32 @@ error_exit() {
 		fi
 		;&
 	mcos_sys_mounted)
-		if [ "$enable_mcoverlay" == "yes" ]; then
+		if [ "$ENABLE_MCOVERLAYFS" == "yes" ]; then
 			umount /tmp/mcos/mcos0_sys
 		fi
 		;&
 	mcos_proc_mounted)
-		if [ "$enable_mcoverlay" == "yes" ]; then
+		if [ "$ENABLE_MCOVERLAYFS" == "yes" ]; then
 			umount /tmp/mcos/mcos0_proc
 		fi
 		;&
 	mcoverlayfs_loaded)
-		if [ "$enable_mcoverlay" == "yes" ]; then
+		if [ "$ENABLE_MCOVERLAYFS" == "yes" ]; then
 			rmmod mcoverlay 2>/dev/null
 		fi
 		;&
 	linux_proc_bind_mounted)
-		if [ "$enable_mcoverlay" == "yes" ]; then
+		if [ "$ENABLE_MCOVERLAYFS" == "yes" ]; then
 			umount /tmp/mcos/linux_proc
 		fi
 		;&
 	tmp_mcos_mounted)
-		if [ "$enable_mcoverlay" == "yes" ]; then
+		if [ "$ENABLE_MCOVERLAYFS" == "yes" ]; then
 			umount /tmp/mcos
 		fi
 		;&
 	tmp_mcos_created)
-		if [ "$enable_mcoverlay" == "yes" ]; then
+		if [ "$ENABLE_MCOVERLAYFS" == "yes" ]; then
 			rm -rf /tmp/mcos
 		fi
 		;&
@@ -239,26 +239,6 @@ if [ "${release}" == "${rhel_release}" ]; then
 	rhel_release="";
 fi
 
-enable_mcoverlay="no"
-
-if [ "${ENABLE_MCOVERLAYFS}" == "yes" ]; then
-	if [ "${rhel_release}" == "" ]; then
-		if [ ${linux_version_code} -ge 262144 -a ${linux_version_code} -lt 262400 ]; then
-			enable_mcoverlay="yes"
-		fi
-		if [ ${linux_version_code} -ge 263680 -a ${linux_version_code} -lt 263936 ]; then
-			enable_mcoverlay="yes"
-		fi
-	else
-		if [ ${linux_version_code} -eq 199168 -a ${rhel_release} -ge 327 -a ${rhel_release} -le 862 ]; then
-			enable_mcoverlay="yes"
-		fi
-		if [ ${linux_version_code} -ge 262144 -a ${linux_version_code} -lt 262400 ]; then
-			enable_mcoverlay="yes"
-		fi
-	fi
-fi
-
 # Figure out CPUs if not requested by user
 if [ "$cpus" == "" ]; then
 	# Get the number of CPUs on NUMA node 0
@@ -274,7 +254,7 @@ if [ "$cpus" == "" ]; then
 fi
 
 # Remove mcoverlay if loaded
-if [ "$enable_mcoverlay" == "yes" ]; then
+if [ "$ENABLE_MCOVERLAYFS" == "yes" ]; then
     ${SBINDIR}/mcoverlay-destroy.sh
     ret=$?
     if [ $ret -ne 0 ]; then
@@ -481,7 +461,7 @@ if ! chown ${chown_option} /dev/mcd* /dev/mcos*; then
 fi
 
 # Overlay /proc, /sys with McKernel specific contents
-if [ "$enable_mcoverlay" == "yes" ]; then
+if [ "$ENABLE_MCOVERLAYFS" == "yes" ]; then
     ${SBINDIR}/mcoverlay-create.sh
     ret=$?
     if [ $ret -ne 0 ]; then

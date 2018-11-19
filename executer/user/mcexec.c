@@ -153,30 +153,6 @@ int __glob_argc = -1;
 char **__glob_argv = 0;
 #endif
 
-#ifdef ENABLE_MCOVERLAYFS
-#undef ENABLE_MCOVERLAYFS
-
-// RedHat?
-#ifdef RHEL_RELEASE_CODE
-
-#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,10,0)
-#define ENABLE_MCOVERLAYFS 1
-#else
-#error "ERROR: your Linux kernel version on RHEL is not supported"
-#endif // LINUX_VERSION_CODE <= KERNEL_VERSION(3,10,0)
-
-// Other distro?
-#else
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0) && LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0)
-#define ENABLE_MCOVERLAYFS 1
-#endif // LINUX_VERSION_CODE == 4.0
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0) && LINUX_VERSION_CODE < KERNEL_VERSION(4,7,0)
-#define ENABLE_MCOVERLAYFS 1
-#endif // LINUX_VERSION_CODE == 4.6
-
-#endif // RHEL_RELEASE_CODE
-#endif // ENABLE_MCOVERLAYFS
-
 typedef unsigned char   cc_t;
 typedef unsigned int    speed_t;
 typedef unsigned int    tcflag_t;
