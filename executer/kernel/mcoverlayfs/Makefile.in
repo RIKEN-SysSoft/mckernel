@@ -1,43 +1,10 @@
 ENABLE_MCOVERLAYFS=@ENABLE_MCOVERLAYFS@
-RELEASE=@UNAME_R@
-
-MAJOR=$(shell echo ${RELEASE} | sed -e 's/^\([0-9]*\).*/\1/')
-MINOR=$(shell echo ${RELEASE} | sed -e 's/^[0-9]*.\([0-9]*\).*/\1/')
-PATCH=$(shell echo ${RELEASE} | sed -e 's/^[0-9]*.[0-9]*.\([0-9]*\).*/\1/')
-LINUX_VERSION_CODE=$(shell expr \( ${MAJOR} \* 65536 \) + \( ${MINOR} \* 256 \) + ${PATCH})
-RHEL_RELEASE_TMP=$(shell echo ${RELEASE} | sed -e 's/^[0-9]*.[0-9]*.[0-9]*-\([0-9]*\).*/\1/')
-RHEL_RELEASE=$(shell if [ "${RELEASE}" == "${RHEL_RELEASE_TMP}" ]; then echo ""; else echo ${RHEL_RELEASE_TMP}; fi)
-BUILD_MODULE_TMP=$(shell if [ "${RHEL_RELEASE}" == "" ]; then echo "org"; else echo "rhel"; fi)
-BUILD_MODULE=none
-#$(info "LINUX_VERSION_CODE: ${LINUX_VERSION_CODE}, RHEL_RELEASE: ${RHEL_RELEASE}")
-ifeq ($(ENABLE_MCOVERLAYFS),yes)
-ifeq ($(BUILD_MODULE_TMP),org)
-ifeq ($(BUILD_MODULE),none)
-BUILD_MODULE=$(shell if [ ${LINUX_VERSION_CODE} -ge 262144 -a ${LINUX_VERSION_CODE} -lt 262400 ]; then echo "linux-4.0.9"; else echo "none"; fi)
-endif
-ifeq ($(BUILD_MODULE),none)
-BUILD_MODULE=$(shell if [ ${LINUX_VERSION_CODE} -ge 263680 -a ${LINUX_VERSION_CODE} -lt 263936 ]; then echo "linux-4.6.7"; else echo "none"; fi)
-endif
-ifeq ($(BUILD_MODULE),none)
-BUILD_MODULE=$(shell if [ ${LINUX_VERSION_CODE} -ge 266752 ]; then echo "linux-4.18.14"; else echo "none"; fi)
-endif
-endif
-ifeq ($(BUILD_MODULE_TMP),rhel)
-ifeq ($(BUILD_MODULE),none)
-BUILD_MODULE=$(shell if [ ${LINUX_VERSION_CODE} -eq 199168 -a ${RHEL_RELEASE} -ge 327 -a ${RHEL_RELEASE} -le 862 ]; then echo "linux-3.10.0-327.36.1.el7"; else echo "none"; fi)
-endif
-ifeq ($(BUILD_MODULE),none)
-BUILD_MODULE=$(shell if [ ${LINUX_VERSION_CODE} -ge 262144 -a ${LINUX_VERSION_CODE} -lt 262400 ]; then echo "linux-4.0.9"; else echo "none"; fi)
-endif
-endif
-endif
+MCOVERLAYFS_MODULE=@MCOVERLAYFS_MODULE@
 
 .PHONY: clean install modules
 
 modules:
-ifneq ($(BUILD_MODULE),none)
-	+@(cd $(BUILD_MODULE) && make modules)
-endif
+	+@(cd $(MCOVERLAYFS_MODULE) && make modules)
 
 clean:
 	@(cd linux-3.10.0-327.36.1.el7 && make clean)
@@ -46,7 +13,5 @@ clean:
 	@(cd linux-4.18.14 && make clean)
 
 install:
-ifneq ($(BUILD_MODULE),none)
-	@(cd $(BUILD_MODULE); make install)
-endif
+	@(cd $(MCOVERLAYFS_MODULE); make install)
 

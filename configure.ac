@@ -220,7 +220,7 @@ AC_ARG_WITH([uname_r],
 
 case "X$WITH_UNAME_R" in
     Xyes | Xno | X)
-	WITH_UNAME_R='`uname -r`'
+	WITH_UNAME_R="`uname -r`"
 	;;
 esac
 
@@ -450,8 +450,43 @@ fi
 if test "x$ENABLE_MCOVERLAYFS" = "xyes" ; then
 	AC_DEFINE([ENABLE_MCOVERLAYFS],[1],[whether mcoverlayfs is enabled])
 	AC_MSG_NOTICE([mcoverlayfs is enabled])
+
+	IFS=. read LINUX_VERSION_MAJOR LINUX_VERSION_MINOR LINUX_VERSION_PATCH _ <<EOF
+${UNAME_R%%-*}
+EOF
+
+	LINUX_VERSION_CODE=$(( LINUX_VERSION_MAJOR * 65536 + LINUX_VERSION_MINOR * 256 + LINUX_VERSION_PATCH ))
+	# rhel
+	if test x"${UNAME_R}" != x"${UNAME_R//.el[[0-9]]}" ; then
+		RHEL_RELEASE="${UNAME_R#*-}"
+		RHEL_RELEASE="${RHEL_RELEASE%%.*}"
+		case "$LINUX_VERSION_CODE" in
+		199168) # 3.10.0
+			MCOVERLAYFS_MODULE=linux-3.10.0-327.36.1.el7;;
+		262144) # 4.0.0
+			MCOVERLAYFS_MODULE=linux-4.0.9;;
+		266752) # 4.18.0
+			MCOVERLAYFS_MODULE=linux-4.18.14;;
+		*)
+			AC_MSG_ERROR([Your RHEL/centos version has no known mcoverlayfs module]);;
+		esac
+	else
+		case "1" in
+		# 4.0.0-4.1.0
+		$((LINUX_VERSION_CODE >= 262144 && LINUX_VERSION_CODE < 262400)))
+			MCOVERLAYFS_MODULE=linux-4.0.9;;
+		# 4.6.0-4.7.0
+		$((LINUX_VERSION_CODE >= 263680 && LINUX_VERSION_CODE < 263936)))
+			MCOVERLAYFS_MODULE=linux-4.6.7;;
+		# 4.18.0-4.20.0
+		$((LINUX_VERSION_CODE >= 266752 && LINUX_VERSION_CODE < 267264)))
+			MCOVERLAYFS_MODULE=linux-4.18.14;;
+		*)
+			AC_MSG_ERROR([Your kernel version has no known mcoverlayfs module]);;
+		esac
+	fi
 else
-	AC_MSG_NOTICE([mcoverlayfs is disabled])
+	AC_MSG_WARN([mcoverlayfs is disabled. You will not be able to run anything.])
 fi
 
 if test "x$ENABLE_QLMPI" = "xyes" ; then
@@ -536,6 +571,7 @@ AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS_SYSCALL_INTERCEPT)
 AC_SUBST(LDFLAGS_SYSCALL_INTERCEPT)
 AC_SUBST(ENABLE_MCOVERLAYFS)
+AC_SUBST(MCOVERLAYFS_MODULE)
 AC_SUBST(ENABLE_RUSAGE)
 AC_SUBST(ENABLE_QLMPI)
 AC_SUBST(WITH_SYSCALL_INTERCEPT)
