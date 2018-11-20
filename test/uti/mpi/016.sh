@@ -76,55 +76,61 @@ uti_cpu_set_mck=1,69,137,205,18-19,86-87,154-155,222-223
 #uti_cpu_set_lin=204-271 
 #uti_cpu_set_mck=1-67
 
-if [ $mck -eq 0 ]; then
-    uti_cpu_set="export UTI_CPU_SET=$uti_cpu_set_lin"
-    i_mpi_pin_processor_exclude_list="export I_MPI_PIN_PROCESSOR_EXCLUDE_LIST=$exclude_list"
-else
+if [ $mck -eq 1 ]; then
     uti_cpu_set="export UTI_CPU_SET=$uti_cpu_set_mck"
-    i_mpi_pin_processor_exclude_list=
+else
+    uti_cpu_set="export UTI_CPU_SET=$uti_cpu_set_lin"
 fi
 
 if [ ${mck} -eq 1 ]; then
     case $mpitype in
 	intel)
+	    # Bind by "mcexec -n"
+	    i_mpi_pin_processor_exclude_list=
 	    i_mpi_pin=off
 	    i_mpi_pin_domain=
 	    i_mpi_pin_order=
-	    #    if [ $omp_num_threads -eq 1 ]; then
-	    #	# Avoid binding main thread and uti thread to one CPU
-	    kmp_affinity="export KMP_AFFINITY=disabled" 
-	    #    else
-	    #	# Bind rank to OMP_NUM_THREAD-sized CPU-domain
-	    #	kmp_affinity="export KMP_AFFINITY=granularity=thread,scatter"
-	    #    fi
 	    ;;
 	mvapich)
+	    # Bind by "MV2_CPU_MAPPING"
 	    # CPU ordering of McKernel is different than Linux.
 	    # That is, using <Quadrant, Physical, Logical> representation, 
 	    # ordering is like this:
 	    # <0,0,0>, ..., <0,15,0>, <0,0,1>, 
 	    mv2_cpu_mapping="export MV2_CPU_MAPPING=0-7,16-23,32-39,48-55:8-15,24-31,40-47,56-63:64-71,80-87,96-103,112-119:72-79,88-95,104-111,120-127:128-135,144-151,160-167,176-183:136-143,152-159,168-175,184-191:192-199,208-215,224-231,240-247:200-207,216-223,232-239,248-255"
-	    kmp_affinity="export KMP_AFFINITY=granularity=thread,scatter"
 	    ;;
     esac
 else
     case $mpitype in
 	intel)
+	    # Bind by "I_MPI_PIN_*"
+	    i_mpi_pin_processor_exclude_list="export I_MPI_PIN_PROCESSOR_EXCLUDE_LIST=$exclude_list"
 	    i_mpi_pin=on
 	    domain=$omp_num_threads # Use 32 when you want to match mck's -n division
 	    i_mpi_pin_domain="export I_MPI_PIN_DOMAIN=$domain"
 	    i_mpi_pin_order="export I_MPI_PIN_ORDER=compact"
-	    kmp_affinity="export KMP_AFFINITY=granularity=thread,scatter"
 	    ;;
 	mvapich)
+	    # Bind by "MV2_CPU_MAPPING"
 	    # excluding CPUS in exclude_list (0-1,68-69,136-137,204-205,18-19,86-87,154-155,222-223)
 	    # perl -e '@ss = (2,20,36,52); foreach $s (@ss) { if($s!=$ss[0]){print ":";}for ($j=0;$j<16;$j+=8) {if($j!=0){print ":"}for ($i=$s;$i<272;$i+=68){if($i!=$s){print ",";} printf("%d-%d", $j+$i, $j+$i+7);}}}print "\n"'
 	    mv2_cpu_mapping="export MV2_CPU_MAPPING=2-9,70-77,138-145,206-213:10-17,78-85,146-153,214-221:20-27,88-95,156-163,224-231:28-35,96-103,164-171,232-239:36-43,104-111,172-179,240-247:44-51,112-119,180-187,248-255:52-59,120-127,188-195,256-263:60-67,128-135,196-203,264-271"
-	    kmp_affinity="export KMP_AFFINITY=granularity=thread,scatter"
 	    ;;
     esac
 fi
 
+if [ ${mck} -eq 1 ]; then
+    # Bind by "mcexec -n"
+    #    if [ $omp_num_threads -eq 1 ]; then
+    #	# Avoid binding main thread and uti thread to one CPU
+    kmp_affinity="export KMP_AFFINITY=disabled" 
+    #    else
+    #	# Bind rank to OMP_NUM_THREAD-sized CPU-domain
+    #	kmp_affinity="export KMP_AFFINITY=granularity=thread,scatter"
+    #    fi
+else
+    kmp_affinity="export KMP_AFFINITY=granularity=thread,scatter"
+fi
 
 echo nprocs=$nprocs nnodes=$nnodes ppn=$ppn nodes=$nodes domain=$domain
 
