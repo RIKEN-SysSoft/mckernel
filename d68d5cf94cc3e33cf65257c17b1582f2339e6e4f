@@ -1,0 +1,208 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "d1a3d06d_f5fa75b7",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1731,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:00:22Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4, 12, 0) \u0026\u0026 defined(CONFIG_X86_64_SMP)",
+      "revId": "d68d5cf94cc3e33cf65257c17b1582f2339e6e4f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "785e48a8_df0110e3",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1758,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:00:22Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4, 12, 0) \u0026\u0026 defined(CONFIG_X86_64_SMP)",
+      "revId": "d68d5cf94cc3e33cf65257c17b1582f2339e6e4f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ff5f4589_a4c2215b",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1771,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:00:22Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tif (!pte_none(*pte) \u0026\u0026 pte_present(*pte)) {",
+      "revId": "d68d5cf94cc3e33cf65257c17b1582f2339e6e4f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "15f5e12a_d3996114",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1772,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:00:22Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tpfn \u003d (uintptr_t)pte_pfn(*pte) \u003c\u003c PAGE_SHIFT;",
+      "revId": "d68d5cf94cc3e33cf65257c17b1582f2339e6e4f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d44fbab7_b01f9ecb",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1776,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:00:22Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t/* Check if mapping is write-combined */",
+      "revId": "d68d5cf94cc3e33cf65257c17b1582f2339e6e4f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4a2d9691_37a045ce",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1778,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:00:22Z",
+      "side": 1,
+      "message": "WARNING: Too many leading tabs - consider code refactoring\n+\t\t\t\t\t\tif (pte_is_write_combined(*pte)) {",
+      "revId": "d68d5cf94cc3e33cf65257c17b1582f2339e6e4f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "28e6c268_31b2ec09",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1778,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:00:22Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tif (pte_is_write_combined(*pte)) {",
+      "revId": "d68d5cf94cc3e33cf65257c17b1582f2339e6e4f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9bc5d948_a11bc369",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1779,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:00:22Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\tpfn |\u003d PFN_WRITE_COMBINED;",
+      "revId": "d68d5cf94cc3e33cf65257c17b1582f2339e6e4f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "eefb7474_3c75e9fe",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1782,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:00:22Z",
+      "side": 1,
+      "message": "WARNING: Too many leading tabs - consider code refactoring\n+\t\t\t\t\t\tif ((pte_flags(*pte) \u0026 _PAGE_PWT) \u0026\u0026",
+      "revId": "d68d5cf94cc3e33cf65257c17b1582f2339e6e4f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "271131db_1d7d803d",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1782,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:00:22Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tif ((pte_flags(*pte) \u0026 _PAGE_PWT) \u0026\u0026",
+      "revId": "d68d5cf94cc3e33cf65257c17b1582f2339e6e4f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6543efd4_44b29e2c",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1783,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:00:22Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t    !(pte_flags(*pte) \u0026 _PAGE_PCD)) {",
+      "revId": "d68d5cf94cc3e33cf65257c17b1582f2339e6e4f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7b2a19ed_cd2f51de",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1791,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:00:22Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4, 12, 0) \u0026\u0026 defined(CONFIG_X86_64_SMP)",
+      "revId": "d68d5cf94cc3e33cf65257c17b1582f2339e6e4f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
