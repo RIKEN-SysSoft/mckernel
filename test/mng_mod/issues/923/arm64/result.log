@@ -1,0 +1,818 @@
+gcc -o CT02 CT02.c
+gcc -o CT02m CT02m.c
+./run.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 4-7 -m 2G ... done
+CT02001 OK process_vm_readv failed
+CT02002 OK no data updated
+CT02003 OK process_vm_readv was success
+CT02004 OK data updated
+CT02005 OK process_vm_readv failed after munmap
+CT02006 OK process_vm_writev failed
+CT02007 OK no data updated
+CT02008 OK process_vm_writev was success
+CT02009 OK data updated
+CT02010 OK process_vm_writev failed after munmap
+execve("/opt/ppos/bin/mcexec", ["mcexec", "ls"], [/* 28 vars */]) = 0
+brk(NULL)                               = 0xaaaae4940000
+faccessat(AT_FDCWD, "/etc/ld.so.preload", R_OK) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/opt/ppos/lib/tls/aarch64/librt.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+newfstatat(AT_FDCWD, "/opt/ppos/lib/tls/aarch64", 0xffffea84fcd0, 0) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/opt/ppos/lib/tls/librt.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+newfstatat(AT_FDCWD, "/opt/ppos/lib/tls", 0xffffea84fcd0, 0) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/opt/ppos/lib/aarch64/librt.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+newfstatat(AT_FDCWD, "/opt/ppos/lib/aarch64", 0xffffea84fcd0, 0) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/opt/ppos/lib/librt.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+newfstatat(AT_FDCWD, "/opt/ppos/lib", {st_mode=S_IFDIR|0755, st_size=77, ...}, 0) = 0
+openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 4
+fstat(4, {st_mode=S_IFREG|0644, st_size=52366, ...}) = 0
+mmap(NULL, 52366, PROT_READ, MAP_PRIVATE, 4, 0) = 0xffff8ea40000
+close(4)                                = 0
+openat(AT_FDCWD, "/lib64/librt.so.1", O_RDONLY|O_CLOEXEC) = 4
+read(4, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0\0\36\0\0\0\0\0\0"..., 832) = 832
+fstat(4, {st_mode=S_IFREG|0755, st_size=82080, ...}) = 0
+mmap(NULL, 131904, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 4, 0) = 0xffff8ea10000
+mmap(0xffff8ea20000, 131072, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 4, 0) = 0xffff8ea20000
+close(4)                                = 0
+openat(AT_FDCWD, "/opt/ppos/lib/libnuma.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib64/libnuma.so.1", O_RDONLY|O_CLOEXEC) = 4
+read(4, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0`4\0\0\0\0\0\0"..., 832) = 832
+fstat(4, {st_mode=S_IFREG|0755, st_size=71192, ...}) = 0
+mmap(NULL, 149096, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 4, 0) = 0xffff8e9e0000
+mmap(0xffff8e9f0000, 131072, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 4, 0) = 0xffff8e9f0000
+close(4)                                = 0
+openat(AT_FDCWD, "/opt/ppos/lib/libihk.so", O_RDONLY|O_CLOEXEC) = 4
+read(4, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0\200\367\2\0\0\0\0\0"..., 832) = 832
+fstat(4, {st_mode=S_IFREG|0755, st_size=1396744, ...}) = 0
+mmap(NULL, 1197200, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 4, 0) = 0xffff8e8b0000
+mmap(0xffff8e9b0000, 131072, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 4, 0xf0000) = 0xffff8e9b0000
+mmap(0xffff8e9d0000, 17552, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0xffff8e9d0000
+close(4)                                = 0
+openat(AT_FDCWD, "/opt/ppos/lib/libpthread.so.0", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib64/libpthread.so.0", O_RDONLY|O_CLOEXEC) = 4
+read(4, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0xh\0\0\0\0\0\0"..., 832) = 832
+fstat(4, {st_mode=S_IFREG|0755, st_size=185096, ...}) = 0
+mmap(NULL, 213912, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 4, 0) = 0xffff8e870000
+mmap(0xffff8e890000, 131072, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 4, 0x10000) = 0xffff8e890000
+close(4)                                = 0
+openat(AT_FDCWD, "/opt/ppos/lib/libc.so.6", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib64/libc.so.6", O_RDONLY|O_CLOEXEC) = 4
+read(4, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0\210\16\2\0\0\0\0\0"..., 832) = 832
+fstat(4, {st_mode=S_IFREG|0755, st_size=1861456, ...}) = 0
+mmap(NULL, 1594224, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 4, 0) = 0xffff8e6e0000
+mprotect(0xffff8e840000, 65536, PROT_NONE) = 0
+mmap(0xffff8e850000, 131072, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 4, 0x160000) = 0xffff8e850000
+close(4)                                = 0
+openat(AT_FDCWD, "/opt/ppos/lib/libgcc_s.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib64/libgcc_s.so.1", O_RDONLY|O_CLOEXEC) = 4
+read(4, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0 )\0\0\0\0\0\0"..., 832) = 832
+fstat(4, {st_mode=S_IFREG|0755, st_size=133776, ...}) = 0
+mmap(NULL, 197688, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 4, 0) = 0xffff8e6a0000
+mmap(0xffff8e6c0000, 131072, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 4, 0x10000) = 0xffff8e6c0000
+close(4)                                = 0
+openat(AT_FDCWD, "/opt/ppos/lib/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib64/libz.so.1", O_RDONLY|O_CLOEXEC) = 4
+read(4, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0\320!\0\0\0\0\0\0"..., 832) = 832
+fstat(4, {st_mode=S_IFREG|0755, st_size=135704, ...}) = 0
+mmap(NULL, 197080, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 4, 0) = 0xffff8e660000
+mmap(0xffff8e680000, 131072, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 4, 0x10000) = 0xffff8e680000
+close(4)                                = 0
+openat(AT_FDCWD, "/opt/ppos/lib/libdl.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib64/libdl.so.2", O_RDONLY|O_CLOEXEC) = 4
+read(4, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0\20\16\0\0\0\0\0\0"..., 832) = 832
+fstat(4, {st_mode=S_IFREG|0755, st_size=74440, ...}) = 0
+mmap(NULL, 131296, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 4, 0) = 0xffff8e630000
+mmap(0xffff8e640000, 131072, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 4, 0) = 0xffff8e640000
+close(4)                                = 0
+mprotect(0xffff8e850000, 65536, PROT_READ) = 0
+mprotect(0xffff8e640000, 65536, PROT_READ) = 0
+mprotect(0xffff8e680000, 65536, PROT_READ) = 0
+mprotect(0xffff8e6c0000, 65536, PROT_READ) = 0
+mprotect(0xffff8e890000, 65536, PROT_READ) = 0
+mprotect(0xffff8e9b0000, 65536, PROT_READ) = 0
+mprotect(0xffff8e9f0000, 65536, PROT_READ) = 0
+mprotect(0xffff8ea20000, 65536, PROT_READ) = 0
+mprotect(0xffff8ea90000, 65536, PROT_READ) = 0
+munmap(0xffff8ea40000, 52366)           = 0
+set_tid_address(0xffff8eaa5860)         = 28207
+set_robust_list(0xffff8eaa5870, 24)     = 0
+rt_sigaction(SIGRTMIN, {0xffff8e876314, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_1, {0xffff8e8763f4, [], SA_RESTART|SA_SIGINFO}, NULL, 8) = 0
+rt_sigprocmask(SIG_UNBLOCK, [RTMIN RT_1], NULL, 8) = 0
+getrlimit(RLIMIT_STACK, {rlim_cur=8192*1024, rlim_max=RLIM64_INFINITY}) = 0
+brk(NULL)                               = 0xaaaae4940000
+brk(0xaaaae4970000)                     = 0xaaaae4970000
+openat(AT_FDCWD, "/proc/self/status", O_RDONLY) = 4
+fstat(4, {st_mode=S_IFREG|0444, st_size=0, ...}) = 0
+mmap(NULL, 65536, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xffff8ea40000
+read(4, "Name:\tmcexec\nUmask:\t0022\nState:\t"..., 1024) = 983
+close(4)                                = 0
+munmap(0xffff8ea40000, 65536)           = 0
+openat(AT_FDCWD, "/sys/devices/system/node", O_RDONLY|O_NONBLOCK|O_DIRECTORY|O_CLOEXEC) = 4
+getdents64(4, /* 13 entries */, 32768)  = 408
+openat(AT_FDCWD, "/sys/devices/system/node/node2/meminfo", O_RDONLY) = 5
+fstat(5, {st_mode=S_IFREG|0444, st_size=65536, ...}) = 0
+mmap(NULL, 65536, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xffff8ea40000
+read(5, "Node 2 MemTotal:        8379584 "..., 8192) = 1070
+read(5, "", 8192)                       = 0
+close(5)                                = 0
+munmap(0xffff8ea40000, 65536)           = 0
+openat(AT_FDCWD, "/sys/devices/system/node/node0/meminfo", O_RDONLY) = 5
+fstat(5, {st_mode=S_IFREG|0444, st_size=65536, ...}) = 0
+mmap(NULL, 65536, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xffff8ea40000
+read(5, "Node 0 MemTotal:        8024640 "..., 8192) = 1070
+read(5, "", 8192)                       = 0
+close(5)                                = 0
+munmap(0xffff8ea40000, 65536)           = 0
+openat(AT_FDCWD, "/sys/devices/system/node/node3/meminfo", O_RDONLY) = 5
+fstat(5, {st_mode=S_IFREG|0444, st_size=65536, ...}) = 0
+mmap(NULL, 65536, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xffff8ea40000
+read(5, "Node 3 MemTotal:        8376768 "..., 8192) = 1070
+read(5, "", 8192)                       = 0
+close(5)                                = 0
+munmap(0xffff8ea40000, 65536)           = 0
+openat(AT_FDCWD, "/sys/devices/system/node/node1/meminfo", O_RDONLY) = 5
+fstat(5, {st_mode=S_IFREG|0444, st_size=65536, ...}) = 0
+mmap(NULL, 65536, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xffff8ea40000
+read(5, "Node 1 MemTotal:        8379584 "..., 8192) = 1070
+read(5, "", 8192)                       = 0
+close(5)                                = 0
+munmap(0xffff8ea40000, 65536)           = 0
+getdents64(4, /* 0 entries */, 32768)   = 0
+close(4)                                = 0
+sched_getaffinity(0, 512, [0 1 2 3 ...]) = 512
+openat(AT_FDCWD, "/sys/devices/system/cpu", O_RDONLY|O_NONBLOCK|O_DIRECTORY|O_CLOEXEC) = 4
+getdents64(4, /* 31 entries */, 32768)  = 896
+getdents64(4, /* 0 entries */, 32768)   = 0
+close(4)                                = 0
+openat(AT_FDCWD, "/proc/self/status", O_RDONLY) = 4
+fstat(4, {st_mode=S_IFREG|0444, st_size=0, ...}) = 0
+mmap(NULL, 65536, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xffff8ea40000
+read(4, "Name:\tmcexec\nUmask:\t0022\nState:\t"..., 1024) = 983
+read(4, "", 1024)                       = 0
+close(4)                                = 0
+munmap(0xffff8ea40000, 65536)           = 0
+personality(0xffffffff)                 = 0 (PER_LINUX)
+personality(PER_LINUX|ADDR_NO_RANDOMIZE) = 0 (PER_LINUX)
+readlinkat(AT_FDCWD, "/proc/self/exe", "/opt/install_latest/bin/mcexec", 4096) = 30
+execve("/opt/install_latest/bin/mcexec", ["mcexec", "ls"], [/* 29 vars */]) = 0
+brk(NULL)                               = 0xaaaaaaac0000
+faccessat(AT_FDCWD, "/etc/ld.so.preload", R_OK) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/opt/ppos/lib/tls/aarch64/librt.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+newfstatat(AT_FDCWD, "/opt/ppos/lib/tls/aarch64", 0xffffffffd610, 0) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/opt/ppos/lib/tls/librt.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+newfstatat(AT_FDCWD, "/opt/ppos/lib/tls", 0xffffffffd610, 0) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/opt/ppos/lib/aarch64/librt.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+newfstatat(AT_FDCWD, "/opt/ppos/lib/aarch64", 0xffffffffd610, 0) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/opt/ppos/lib/librt.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+newfstatat(AT_FDCWD, "/opt/ppos/lib", {st_mode=S_IFDIR|0755, st_size=77, ...}, 0) = 0
+openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 4
+fstat(4, {st_mode=S_IFREG|0644, st_size=52366, ...}) = 0
+mmap(NULL, 52366, PROT_READ, MAP_PRIVATE, 4, 0) = 0xffffbe7a0000
+close(4)                                = 0
+openat(AT_FDCWD, "/lib64/librt.so.1", O_RDONLY|O_CLOEXEC) = 4
+read(4, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0\0\36\0\0\0\0\0\0"..., 832) = 832
+fstat(4, {st_mode=S_IFREG|0755, st_size=82080, ...}) = 0
+mmap(NULL, 131904, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 4, 0) = 0xffffbe770000
+mmap(0xffffbe780000, 131072, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 4, 0) = 0xffffbe780000
+close(4)                                = 0
+openat(AT_FDCWD, "/opt/ppos/lib/libnuma.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib64/libnuma.so.1", O_RDONLY|O_CLOEXEC) = 4
+read(4, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0`4\0\0\0\0\0\0"..., 832) = 832
+fstat(4, {st_mode=S_IFREG|0755, st_size=71192, ...}) = 0
+mmap(NULL, 149096, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 4, 0) = 0xffffbe740000
+mmap(0xffffbe750000, 131072, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 4, 0) = 0xffffbe750000
+close(4)                                = 0
+openat(AT_FDCWD, "/opt/ppos/lib/libihk.so", O_RDONLY|O_CLOEXEC) = 4
+read(4, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0\200\367\2\0\0\0\0\0"..., 832) = 832
+fstat(4, {st_mode=S_IFREG|0755, st_size=1396744, ...}) = 0
+mmap(NULL, 1197200, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 4, 0) = 0xffffbe610000
+mmap(0xffffbe710000, 131072, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 4, 0xf0000) = 0xffffbe710000
+mmap(0xffffbe730000, 17552, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0xffffbe730000
+close(4)                                = 0
+openat(AT_FDCWD, "/opt/ppos/lib/libpthread.so.0", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib64/libpthread.so.0", O_RDONLY|O_CLOEXEC) = 4
+read(4, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0xh\0\0\0\0\0\0"..., 832) = 832
+fstat(4, {st_mode=S_IFREG|0755, st_size=185096, ...}) = 0
+mmap(NULL, 213912, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 4, 0) = 0xffffbe5d0000
+mmap(0xffffbe5f0000, 131072, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 4, 0x10000) = 0xffffbe5f0000
+close(4)                                = 0
+openat(AT_FDCWD, "/opt/ppos/lib/libc.so.6", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib64/libc.so.6", O_RDONLY|O_CLOEXEC) = 4
+read(4, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0\210\16\2\0\0\0\0\0"..., 832) = 832
+fstat(4, {st_mode=S_IFREG|0755, st_size=1861456, ...}) = 0
+mmap(NULL, 1594224, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 4, 0) = 0xffffbe440000
+mprotect(0xffffbe5a0000, 65536, PROT_NONE) = 0
+mmap(0xffffbe5b0000, 131072, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 4, 0x160000) = 0xffffbe5b0000
+close(4)                                = 0
+openat(AT_FDCWD, "/opt/ppos/lib/libgcc_s.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib64/libgcc_s.so.1", O_RDONLY|O_CLOEXEC) = 4
+read(4, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0 )\0\0\0\0\0\0"..., 832) = 832
+fstat(4, {st_mode=S_IFREG|0755, st_size=133776, ...}) = 0
+mmap(NULL, 197688, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 4, 0) = 0xffffbe400000
+mmap(0xffffbe420000, 131072, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 4, 0x10000) = 0xffffbe420000
+close(4)                                = 0
+openat(AT_FDCWD, "/opt/ppos/lib/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib64/libz.so.1", O_RDONLY|O_CLOEXEC) = 4
+read(4, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0\320!\0\0\0\0\0\0"..., 832) = 832
+fstat(4, {st_mode=S_IFREG|0755, st_size=135704, ...}) = 0
+mmap(NULL, 197080, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 4, 0) = 0xffffbe3c0000
+mmap(0xffffbe3e0000, 131072, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 4, 0x10000) = 0xffffbe3e0000
+close(4)                                = 0
+openat(AT_FDCWD, "/opt/ppos/lib/libdl.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib64/libdl.so.2", O_RDONLY|O_CLOEXEC) = 4
+read(4, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0\20\16\0\0\0\0\0\0"..., 832) = 832
+fstat(4, {st_mode=S_IFREG|0755, st_size=74440, ...}) = 0
+mmap(NULL, 131296, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 4, 0) = 0xffffbe390000
+mmap(0xffffbe3a0000, 131072, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 4, 0) = 0xffffbe3a0000
+close(4)                                = 0
+mprotect(0xffffbe5b0000, 65536, PROT_READ) = 0
+mprotect(0xffffbe3a0000, 65536, PROT_READ) = 0
+mprotect(0xffffbe3e0000, 65536, PROT_READ) = 0
+mprotect(0xffffbe420000, 65536, PROT_READ) = 0
+mprotect(0xffffbe5f0000, 65536, PROT_READ) = 0
+mprotect(0xffffbe710000, 65536, PROT_READ) = 0
+mprotect(0xffffbe750000, 65536, PROT_READ) = 0
+mprotect(0xffffbe780000, 65536, PROT_READ) = 0
+mprotect(0xffffbe7f0000, 65536, PROT_READ) = 0
+munmap(0xffffbe7a0000, 52366)           = 0
+set_tid_address(0xffffbe805860)         = 28207
+set_robust_list(0xffffbe805870, 24)     = 0
+rt_sigaction(SIGRTMIN, {0xffffbe5d6314, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_1, {0xffffbe5d63f4, [], SA_RESTART|SA_SIGINFO}, NULL, 8) = 0
+rt_sigprocmask(SIG_UNBLOCK, [RTMIN RT_1], NULL, 8) = 0
+getrlimit(RLIMIT_STACK, {rlim_cur=8192*1024, rlim_max=RLIM64_INFINITY}) = 0
+brk(NULL)                               = 0xaaaaaaac0000
+brk(0xaaaaaaaf0000)                     = 0xaaaaaaaf0000
+openat(AT_FDCWD, "/proc/self/status", O_RDONLY) = 4
+fstat(4, {st_mode=S_IFREG|0444, st_size=0, ...}) = 0
+mmap(NULL, 65536, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xffffbe7a0000
+read(4, "Name:\tmcexec\nUmask:\t0022\nState:\t"..., 1024) = 983
+close(4)                                = 0
+munmap(0xffffbe7a0000, 65536)           = 0
+openat(AT_FDCWD, "/sys/devices/system/node", O_RDONLY|O_NONBLOCK|O_DIRECTORY|O_CLOEXEC) = 4
+getdents64(4, /* 13 entries */, 32768)  = 408
+openat(AT_FDCWD, "/sys/devices/system/node/node2/meminfo", O_RDONLY) = 5
+fstat(5, {st_mode=S_IFREG|0444, st_size=65536, ...}) = 0
+mmap(NULL, 65536, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xffffbe7a0000
+read(5, "Node 2 MemTotal:        8379584 "..., 8192) = 1070
+read(5, "", 8192)                       = 0
+close(5)                                = 0
+munmap(0xffffbe7a0000, 65536)           = 0
+openat(AT_FDCWD, "/sys/devices/system/node/node0/meminfo", O_RDONLY) = 5
+fstat(5, {st_mode=S_IFREG|0444, st_size=65536, ...}) = 0
+mmap(NULL, 65536, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xffffbe7a0000
+read(5, "Node 0 MemTotal:        8024640 "..., 8192) = 1070
+read(5, "", 8192)                       = 0
+close(5)                                = 0
+munmap(0xffffbe7a0000, 65536)           = 0
+openat(AT_FDCWD, "/sys/devices/system/node/node3/meminfo", O_RDONLY) = 5
+fstat(5, {st_mode=S_IFREG|0444, st_size=65536, ...}) = 0
+mmap(NULL, 65536, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xffffbe7a0000
+read(5, "Node 3 MemTotal:        8376768 "..., 8192) = 1070
+read(5, "", 8192)                       = 0
+close(5)                                = 0
+munmap(0xffffbe7a0000, 65536)           = 0
+openat(AT_FDCWD, "/sys/devices/system/node/node1/meminfo", O_RDONLY) = 5
+fstat(5, {st_mode=S_IFREG|0444, st_size=65536, ...}) = 0
+mmap(NULL, 65536, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xffffbe7a0000
+read(5, "Node 1 MemTotal:        8379584 "..., 8192) = 1070
+read(5, "", 8192)                       = 0
+close(5)                                = 0
+munmap(0xffffbe7a0000, 65536)           = 0
+getdents64(4, /* 0 entries */, 32768)   = 0
+close(4)                                = 0
+sched_getaffinity(0, 512, [0 1 2 3 ...]) = 512
+openat(AT_FDCWD, "/sys/devices/system/cpu", O_RDONLY|O_NONBLOCK|O_DIRECTORY|O_CLOEXEC) = 4
+getdents64(4, /* 31 entries */, 32768)  = 896
+getdents64(4, /* 0 entries */, 32768)   = 0
+close(4)                                = 0
+openat(AT_FDCWD, "/proc/self/status", O_RDONLY) = 4
+fstat(4, {st_mode=S_IFREG|0444, st_size=0, ...}) = 0
+mmap(NULL, 65536, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xffffbe7a0000
+read(4, "Name:\tmcexec\nUmask:\t0022\nState:\t"..., 1024) = 983
+read(4, "", 1024)                       = 0
+close(4)                                = 0
+munmap(0xffffbe7a0000, 65536)           = 0
+personality(0xffffffff)                 = 0x40000 (PER_LINUX|ADDR_NO_RANDOMIZE)
+getrlimit(RLIMIT_STACK, {rlim_cur=8192*1024, rlim_max=RLIM64_INFINITY}) = 0
+openat(AT_FDCWD, "/dev/mcos0", O_RDWR)  = 4
+ioctl(4, _IOC(0, 0x2a, 0x37, 0x11), 0xffffffffd2d0) = 0
+faccessat(AT_FDCWD, "/usr/local/sbin/ls", X_OK) = -1 ENOENT (No such file or directory)
+faccessat(AT_FDCWD, "/usr/local/bin/ls", X_OK) = -1 ENOENT (No such file or directory)
+faccessat(AT_FDCWD, "/usr/sbin/ls", X_OK) = -1 ENOENT (No such file or directory)
+faccessat(AT_FDCWD, "/usr/bin/ls", X_OK) = 0
+newfstatat(AT_FDCWD, "/usr/bin/ls", {st_mode=S_IFREG|0755, st_size=138280, ...}, AT_SYMLINK_NOFOLLOW) = 0
+faccessat(AT_FDCWD, "/usr/bin/ls", X_OK) = 0
+newfstatat(AT_FDCWD, "/usr/bin/ls", {st_mode=S_IFREG|0755, st_size=138280, ...}, 0) = 0
+openat(AT_FDCWD, "/usr/bin/ls", O_RDONLY) = 5
+fstat(5, {st_mode=S_IFREG|0755, st_size=138280, ...}) = 0
+mmap(NULL, 65536, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xffffbe7a0000
+read(5, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\2\0\267\0\1\0\0\0\20R@\0\0\0\0\0"..., 8192) = 8192
+lseek(5, 0, SEEK_SET)                   = 0
+ioctl(4, _IOC(0, 0x29, 0x12, 0x30a0), 0xffffffffc2f0) = 0
+read(5, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\2\0\267\0\1\0\0\0\20R@\0\0\0\0\0"..., 8192) = 8192
+lseek(5, 8192, SEEK_SET)                = 8192
+lseek(5, 8192, SEEK_SET)                = 8192
+pread64(5, "/lib/ld-linux-aarch64.so.1\0", 27, 568) = 27
+getpgid(0)                              = 28041
+ioctl(4, _IOC(0, 0x29, 0x0b, 0x30a0), 0xaaaaaaac0cbc) = 0
+faccessat(AT_FDCWD, "/lib/ld-linux-aarch64.so.1", X_OK) = 0
+openat(AT_FDCWD, "/lib/ld-linux-aarch64.so.1", O_RDONLY) = 6
+fstat(6, {st_mode=S_IFREG|0755, st_size=161120, ...}) = 0
+mmap(NULL, 65536, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xffffbe380000
+read(6, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0`\17\0\0\0\0\0\0"..., 8192) = 8192
+lseek(6, 0, SEEK_SET)                   = 0
+read(6, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0`\17\0\0\0\0\0\0"..., 8192) = 8192
+lseek(6, 8192, SEEK_SET)                = 8192
+getrlimit(RLIMIT_AS, {rlim_cur=RLIM64_INFINITY, rlim_max=RLIM64_INFINITY}) = 0
+getrlimit(RLIMIT_CORE, {rlim_cur=0, rlim_max=RLIM64_INFINITY}) = 0
+getrlimit(RLIMIT_CPU, {rlim_cur=RLIM64_INFINITY, rlim_max=RLIM64_INFINITY}) = 0
+getrlimit(RLIMIT_DATA, {rlim_cur=RLIM64_INFINITY, rlim_max=RLIM64_INFINITY}) = 0
+getrlimit(RLIMIT_FSIZE, {rlim_cur=RLIM64_INFINITY, rlim_max=RLIM64_INFINITY}) = 0
+getrlimit(RLIMIT_LOCKS, {rlim_cur=RLIM64_INFINITY, rlim_max=RLIM64_INFINITY}) = 0
+getrlimit(RLIMIT_MEMLOCK, {rlim_cur=64*1024, rlim_max=64*1024}) = 0
+getrlimit(RLIMIT_MSGQUEUE, {rlim_cur=800*1024, rlim_max=800*1024}) = 0
+getrlimit(RLIMIT_NICE, {rlim_cur=0, rlim_max=0}) = 0
+getrlimit(RLIMIT_NOFILE, {rlim_cur=1024, rlim_max=4*1024}) = 0
+getrlimit(RLIMIT_NPROC, {rlim_cur=32362, rlim_max=32362}) = 0
+getrlimit(RLIMIT_RSS, {rlim_cur=RLIM64_INFINITY, rlim_max=RLIM64_INFINITY}) = 0
+getrlimit(RLIMIT_RTPRIO, {rlim_cur=0, rlim_max=0}) = 0
+getrlimit(RLIMIT_RTTIME, {rlim_cur=RLIM64_INFINITY, rlim_max=RLIM64_INFINITY}) = 0
+getrlimit(RLIMIT_SIGPENDING, {rlim_cur=32362, rlim_max=32362}) = 0
+getrlimit(RLIMIT_STACK, {rlim_cur=8192*1024, rlim_max=RLIM64_INFINITY}) = 0
+ioctl(4, _IOC(0, 0x29, 0x07, 0x30a0), 0) = 4
+mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xffffbe370000
+mlock(0xffffbe370000, 4096)             = 0
+ioctl(4, _IOC(0, 0x29, 0x0e, 0x30a0), 0) = 0
+ioctl(4, _IOC(0, 0x29, 0x00, 0x30a0), 0xaaaaaaac1220) = 0
+lseek(5, 8192, SEEK_SET)                = 8192
+read(5, "\2\4\0\0\37\0\0\0\0\0\0\0\0\0\0\0h\0C\0\0\0\0\0\2\4\0\0y\0\0\0"..., 57344) = 57344
+ioctl(4, _IOC(0, 0x29, 0x01, 0x30a0), 0xffffffffd2d0) = 0
+read(5, "J\0\nK?\0\nk\342\3\0K\0\220\1\21\0\240\202\32\367\375\377\27\345\264\3775*\0\0\320"..., 40960) = 40960
+read(5, "A\v\0\0\0\0\0\0,\0\0\0\204%\0\0\260z\377\377t\0\0\0\0A\16 \235\4\236\3"..., 8192) = 8192
+ioctl(4, _IOC(0, 0x29, 0x01, 0x30a0), 0xffffffffd2d0) = 0
+lseek(5, 122880, SEEK_SET)              = 122880
+read(5, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 8192) = 8192
+ioctl(4, _IOC(0, 0x29, 0x01, 0x30a0), 0xffffffffd2d0) = 0
+read(5, "\300)@\0\0\0\0\0\300)@\0\0\0\0\0\300)@\0\0\0\0\0\300)@\0\0\0\0\0"..., 8192) = 7208
+ioctl(4, _IOC(0, 0x29, 0x01, 0x30a0), 0xffffffffd2d0) = 0
+lseek(6, 8192, SEEK_SET)                = 8192
+read(6, "\240\0\0\320\0\200 \221\240[\0\371\240\0\0\320\0@!\221\240W\0\371\240\0\0\320h\1\0\320"..., 57344) = 57344
+ioctl(4, _IOC(0, 0x29, 0x01, 0x30a0), 0xffffffffd2d0) = 0
+read(6, "?\0\0kA\376\377T\202hb\370!\0\200R@@\0\221\341G\0\271A\20@\271\341C\0\271"..., 49152) = 49152
+read(6, "\204O\377\377\250\0\0\0\0A\0160\235\6\236\5A\r\35A\223\4\224\3G\225\2Z\n\336\335\325"..., 8192) = 8192
+ioctl(4, _IOC(0, 0x29, 0x01, 0x30a0), 0xffffffffd2d0) = 0
+lseek(6, 122880, SEEK_SET)              = 122880
+read(6, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 8192) = 8192
+ioctl(4, _IOC(0, 0x29, 0x01, 0x30a0), 0xffffffffd2d0) = 0
+read(6, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 8192) = 8192
+ioctl(4, _IOC(0, 0x29, 0x01, 0x30a0), 0xffffffffd2d0) = 0
+gettid()                                = 28207
+rt_sigaction(SIGHUP, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGHUP, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGINT, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGINT, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGQUIT, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGQUIT, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGILL, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGILL, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGTRAP, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGTRAP, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGABRT, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGABRT, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGBUS, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGBUS, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGFPE, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGFPE, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGUSR1, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGUSR1, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGSEGV, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGSEGV, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGUSR2, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGUSR2, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGPIPE, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGPIPE, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGALRM, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGALRM, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGTERM, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGTERM, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGSTKFLT, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGSTKFLT, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGCONT, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGCONT, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGTSTP, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGTSTP, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGTTIN, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGTTIN, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGTTOU, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGTTOU, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGURG, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGURG, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGXCPU, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGXCPU, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGXFSZ, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGXFSZ, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGVTALRM, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGVTALRM, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGPROF, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGPROF, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGWINCH, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGWINCH, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGIO, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGIO, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGPWR, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGPWR, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGSYS, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGSYS, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_2, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_2, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_3, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_3, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_4, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_4, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_5, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_5, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_6, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_6, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_7, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_7, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_8, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_8, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_9, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_9, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_10, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_10, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_11, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_11, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_12, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_12, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_13, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_13, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_14, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_14, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_15, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_15, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_16, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_16, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_17, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_17, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_18, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_18, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_19, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_19, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_20, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_20, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_21, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_21, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_22, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_22, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_23, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_23, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_24, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_24, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_25, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_25, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_26, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_26, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_27, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_27, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_28, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_28, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_29, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_29, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_30, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_30, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_31, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_31, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+rt_sigaction(SIGRT_32, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGRT_32, {0xaaaaaaaa3ff8, [], SA_SIGINFO}, NULL, 8) = 0
+mmap(NULL, 8388608, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK, -1, 0) = 0xffffbdb70000
+mprotect(0xffffbdb70000, 65536, PROT_NONE) = 0
+clone(strace: Process 28209 attached
+child_stack=0xffffbe36eb10, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0xffffbe36f2d0, tls=0xffffbe36f8f0, child_tidptr=0xffffbe36f2d0) = 28209
+[pid 28209] set_robust_list(0xffffbe36f2e0, 24 <unfinished ...>
+[pid 28207] mmap(NULL, 8388608, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK, -1, 0 <unfinished ...>
+[pid 28209] <... set_robust_list resumed> ) = 0
+[pid 28207] <... mmap resumed> )        = 0xffffbd370000
+[pid 28209] newfstatat(AT_FDCWD, "/dev/mcos0",  <unfinished ...>
+[pid 28207] mprotect(0xffffbd370000, 65536, PROT_NONE) = 0
+[pid 28209] <... newfstatat resumed> {st_mode=S_IFCHR|0600, st_rdev=makedev(244, 0), ...}, 0) = 0
+[pid 28207] clone( <unfinished ...>
+[pid 28209] openat(AT_FDCWD, "/dev/mcos0", O_RDONLYstrace: Process 28210 attached
+) = 7
+[pid 28207] <... clone resumed> child_stack=0xffffbdb6eb10, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0xffffbdb6f2d0, tls=0xffffbdb6f8f0, child_tidptr=0xffffbdb6f2d0) = 28210
+[pid 28210] set_robust_list(0xffffbdb6f2e0, 24 <unfinished ...>
+[pid 28209] eventfd2(0, 0 <unfinished ...>
+[pid 28210] <... set_robust_list resumed> ) = 0
+[pid 28207] mmap(NULL, 8388608, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK, -1, 0 <unfinished ...>
+[pid 28210] gettid( <unfinished ...>
+[pid 28209] <... eventfd2 resumed> )    = 8
+[pid 28210] <... gettid resumed> )      = 28210
+[pid 28209] ioctl(7, _IOC(0, 0x2a, 0x15, 0x11) <unfinished ...>
+[pid 28207] <... mmap resumed> )        = 0xffffbcb70000
+[pid 28209] <... ioctl resumed> , 0xffffbe36e968) = 0
+[pid 28207] mprotect(0xffffbcb70000, 65536, PROT_NONE <unfinished ...>
+[pid 28210] futex(0xaaaaaaabe6d0, FUTEX_WAIT_PRIVATE, 0, NULL <unfinished ...>
+[pid 28207] <... mprotect resumed> )    = 0
+[pid 28209] close(7 <unfinished ...>
+[pid 28207] clone(strace: Process 28211 attached
+ <unfinished ...>
+[pid 28209] <... close resumed> )       = 0
+[pid 28207] <... clone resumed> child_stack=0xffffbd36eb10, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0xffffbd36f2d0, tls=0xffffbd36f8f0, child_tidptr=0xffffbd36f2d0) = 28211
+[pid 28211] set_robust_list(0xffffbd36f2e0, 24 <unfinished ...>
+[pid 28209] epoll_create1(0 <unfinished ...>
+[pid 28207] mmap(NULL, 8388608, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK, -1, 0 <unfinished ...>
+[pid 28211] <... set_robust_list resumed> ) = 0
+[pid 28209] <... epoll_create1 resumed> ) = 7
+[pid 28207] <... mmap resumed> )        = 0xffffbc370000
+[pid 28211] gettid( <unfinished ...>
+[pid 28209] epoll_ctl(7, EPOLL_CTL_ADD, 8, {EPOLLIN, {u32=8, u64=8}} <unfinished ...>
+[pid 28207] mprotect(0xffffbc370000, 65536, PROT_NONE <unfinished ...>
+[pid 28211] <... gettid resumed> )      = 28211
+[pid 28209] <... epoll_ctl resumed> )   = 0
+[pid 28207] <... mprotect resumed> )    = 0
+[pid 28211] futex(0xaaaaaaabe6d0, FUTEX_WAIT_PRIVATE, 0, NULL <unfinished ...>
+[pid 28209] epoll_pwait(7,  <unfinished ...>
+[pid 28207] clone(strace: Process 28212 attached
+child_stack=0xffffbcb6eb10, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0xffffbcb6f2d0, tls=0xffffbcb6f8f0, child_tidptr=0xffffbcb6f2d0) = 28212
+[pid 28212] set_robust_list(0xffffbcb6f2e0, 24) = 0
+[pid 28207] mmap(NULL, 8388608, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK, -1, 0 <unfinished ...>
+[pid 28212] gettid( <unfinished ...>
+[pid 28207] <... mmap resumed> )        = 0xffffbbb70000
+[pid 28212] <... gettid resumed> )      = 28212
+[pid 28212] futex(0xaaaaaaabe6d0, FUTEX_WAIT_PRIVATE, 0, NULL <unfinished ...>
+[pid 28207] mprotect(0xffffbbb70000, 65536, PROT_NONE) = 0
+[pid 28207] clone(strace: Process 28213 attached
+child_stack=0xffffbc36eb10, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0xffffbc36f2d0, tls=0xffffbc36f8f0, child_tidptr=0xffffbc36f2d0) = 28213
+[pid 28213] set_robust_list(0xffffbc36f2e0, 24 <unfinished ...>
+[pid 28207] mmap(NULL, 8388608, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK, -1, 0 <unfinished ...>
+[pid 28213] <... set_robust_list resumed> ) = 0
+[pid 28207] <... mmap resumed> )        = 0xffffbb370000
+[pid 28207] mprotect(0xffffbb370000, 65536, PROT_NONE <unfinished ...>
+[pid 28213] gettid( <unfinished ...>
+[pid 28207] <... mprotect resumed> )    = 0
+[pid 28213] <... gettid resumed> )      = 28213
+[pid 28213] futex(0xaaaaaaabe6d0, FUTEX_WAIT_PRIVATE, 0, NULL <unfinished ...>
+[pid 28207] clone(child_stack=0xffffbbb6eb10, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0xffffbbb6f2d0, tls=0xffffbbb6f8f0, child_tidptr=0xffffbbb6f2d0) = 28214
+[pid 28207] futex(0xaaaaaaabe6d0, FUTEX_WAIT_PRIVATE, 0, NULLstrace: Process 28214 attached
+ <unfinished ...>
+[pid 28214] set_robust_list(0xffffbbb6f2e0, 24) = 0
+[pid 28214] gettid()                    = 28214
+[pid 28214] futex(0xaaaaaaabe6d0, FUTEX_WAKE_PRIVATE, 2147483647 <unfinished ...>
+[pid 28207] <... futex resumed> )       = 0
+[pid 28214] <... futex resumed> )       = 5
+[pid 28213] <... futex resumed> )       = 0
+[pid 28210] <... futex resumed> )       = 0
+[pid 28213] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28210] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28211] <... futex resumed> )       = 0
+[pid 28207] ioctl(4, _IOC(0, 0x29, 0x02, 0x30a0) <unfinished ...>
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] <... futex resumed> )       = 0
+[pid 28211] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28207] <... ioctl resumed> , 0xaaaaaaac1220) = 0
+[pid 28207] futex(0xffffbbb6f2d0, FUTEX_WAIT, 28214, NULL <unfinished ...>
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28212] faccessat(AT_FDCWD, 0x10000001a420, R_OK) = -1 ENOENT (No such file or directory)
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x08, 0x30a0), 0xffffbbb6c090) = 0
+[pid 28214] openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 9
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28212] fstat(9, {st_mode=S_IFREG|0644, st_size=52366, ...}) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28214] close(9)                    = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x08, 0x30a0), 0xffffbcb6c090) = 0
+[pid 28212] openat(AT_FDCWD, "/lib64/libselinux.so.1", O_RDONLY|O_CLOEXEC) = 9
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] read(9, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0 k\0\0\0\0\0\0"..., 832) = 832
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] fstat(9, {st_mode=S_IFREG|0755, st_size=204944, ...}) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0), 0xffffbcb6e968) = 0
+[pid 28212] close(9)                    = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x08, 0x30a0), 0xffffbbb6c090) = 0
+[pid 28214] openat(AT_FDCWD, "/lib64/libcap.so.2", O_RDONLY|O_CLOEXEC) = 9
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28212] read(9, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0@\27\0\0\0\0\0\0"..., 832) = 832
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] fstat(9, {st_mode=S_IFREG|0755, st_size=69152, ...}) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28212] close(9)                    = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x08, 0x30a0), 0xffffbbb6c090) = 0
+[pid 28214] openat(AT_FDCWD, "/lib64/libacl.so.1", O_RDONLY|O_CLOEXEC) = 9
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] read(9, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0p \0\0\0\0\0\0"..., 832) = 832
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] fstat(9, {st_mode=S_IFREG|0755, st_size=69792, ...}) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28212] close(9)                    = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x08, 0x30a0), 0xffffbbb6c090) = 0
+[pid 28214] openat(AT_FDCWD, "/lib64/libc.so.6", O_RDONLY|O_CLOEXEC) = 9
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] read(9, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0\210\16\2\0\0\0\0\0"..., 832) = 832
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28214] fstat(9, {st_mode=S_IFREG|0755, st_size=1861456, ...}) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28212] close(9)                    = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x08, 0x30a0), 0xffffbbb6c090) = 0
+[pid 28214] openat(AT_FDCWD, "/lib64/libpcre.so.1", O_RDONLY|O_CLOEXEC) = 9
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28212] read(9, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0p\26\0\0\0\0\0\0"..., 832) = 832
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] fstat(9, {st_mode=S_IFREG|0755, st_size=265976, ...}) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28212] close(9)                    = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x08, 0x30a0), 0xffffbbb6c090) = 0
+[pid 28214] openat(AT_FDCWD, "/lib64/libdl.so.2", O_RDONLY|O_CLOEXEC) = 9
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28212] read(9, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0\20\16\0\0\0\0\0\0"..., 832) = 832
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] fstat(9, {st_mode=S_IFREG|0755, st_size=74440, ...}) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28212] close(9)                    = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x08, 0x30a0), 0xffffbbb6c090) = 0
+[pid 28214] openat(AT_FDCWD, "/lib64/libattr.so.1", O_RDONLY|O_CLOEXEC) = 9
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28212] read(9, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0\220\25\0\0\0\0\0\0"..., 832) = 832
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28214] fstat(9, {st_mode=S_IFREG|0755, st_size=69032, ...}) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28212] close(9)                    = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0), 0xffffbcb6e968) = 0
+[pid 28212] statfs(0x10000008cd20, 0x3ffffffffce0) = -1 ENOENT (No such file or directory)
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28214] statfs("/selinux", 0x3ffffffffce0) = -1 ENOENT (No such file or directory)
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x08, 0x30a0), 0xffffbcb6c090) = 0
+[pid 28212] newfstatat(AT_FDCWD, "/proc/mcos0/filesystems", 0xffffbcb6c030, 0) = -1 ENOENT (No such file or directory)
+[pid 28212] openat(AT_FDCWD, "/proc/filesystems", O_RDONLY) = 9
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28214] fstat(9, {st_mode=S_IFREG|0444, st_size=0, ...}) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] read(9, "nodev\tsysfs\nnodev\trootfs\nnodev\tr"..., 1024) = 362
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] read(9, "", 1024)           = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28212] close(9)                    = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28214] faccessat(AT_FDCWD, "/etc/selinux/config", F_OK) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0), 0xffffbbb6e968) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x08, 0x30a0), 0xffffbbb6c090) = 0
+[pid 28214] openat(AT_FDCWD, "/usr/lib/locale/locale-archive", O_RDONLY|O_CLOEXEC) = 9
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28212] fstat(9, {st_mode=S_IFREG|0644, st_size=106070960, ...}) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28214] close(9)                    = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0), 0xffffbbb6e968) = 0
+[pid 28214] ioctl(1, TCGETS, 0x3ffffffff890) = -1 ENOTTY (Inappropriate ioctl for device)
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28212] ioctl(1, TIOCGWINSZ, 0x3ffffffff9c0) = -1 ENOTTY (Inappropriate ioctl for device)
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x08, 0x30a0) <unfinished ...>
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] <... ioctl resumed> , 0xffffbbb6c090) = 0
+[pid 28214] openat(AT_FDCWD, ".", O_RDONLY|O_NONBLOCK|O_DIRECTORY|O_CLOEXEC) = 9
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28212] getdents64(9, /* 10 entries */, 32768) = 296
+[pid 28212] readlinkat(AT_FDCWD, "/proc/self/fd/9", "/opt/repo/mckernel/test/mng_mod/"..., 4096) = 48
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28214] getdents64(9,  <unfinished ...>
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] <... getdents64 resumed> /* 0 entries */, 32768) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28212] close(9)                    = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] fstat(1, {st_mode=S_IFREG|0644, st_size=52526, ...}) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28212] write(1, 0x1000068b0000, 60CT02
+CT02.c
+CT02m
+CT02m.c
+Makefile
+README
+result.log
+run.sh
+) = 60
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] close(1)                    = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbbb6c088) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28212] <... ioctl resumed> , 0xffffbcb6e968) = 0
+[pid 28212] close(2)                    = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x04, 0x30a0), 0xffffbcb6c088) = 0
+[pid 28212] ioctl(4, _IOC(0, 0x29, 0x03, 0x30a0) <unfinished ...>
+[pid 28214] <... ioctl resumed> , 0xffffbbb6e968) = 0
+[pid 28214] ioctl(4, _IOC(0, 0x29, 0x13, 0x30a0), 0xffffbbb6e968) = 0
+[pid 28214] ioctl(2, TCGETS, 0xffffbbb6c030) = -1 EBADF (Bad file descriptor)
+[pid 28214] exit_group(0)               = ?
+[pid 28214] +++ exited with 0 +++
+[pid 28210] +++ exited with 0 +++
+[pid 28209] +++ exited with 0 +++
+[pid 28213] +++ exited with 0 +++
+[pid 28211] +++ exited with 0 +++
+[pid 28212] +++ exited with 0 +++
++++ exited with 0 +++
