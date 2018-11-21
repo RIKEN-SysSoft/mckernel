@@ -1,0 +1,109 @@
+/* README COPYRIGHT FUJITSU LIMITED 2018 */
+
+sigaction()のハンドラリセット機能テストセットREADME
+
+(1) テストの実行方法
+以下の手順でテストを実行する
+	1. $HOME/.mck_test_configを用意する
+	   当該ファイルは、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+	   $HOMEにコピーし、適宜編集する
+	2. make test を実行する
+
+(2) テスト項目詳細
+1. Issueで報告されたテストプログラムによる確認
+	ISSUE01(test_mck rt_sigaction #4): SA_RESETHANDを指定しされたハンドラが1度だけ実行されること
+	⇒ テストプログラムがSIGUSR1によって終了すればOK
+
+2.McKernelでのsigaction()の基本動作確認
+	CT_001: SIG_RESETHAND 指定時の動作
+		1. SIG_RESETHANDを指定したsigaction()でSIG_USR1にハンドラを設定
+		2. 自身にSIGUSR1を送る
+		3. 1.で登録したハンドラが呼び出される
+		4. 自身にSIGUSR1を送る
+		5. 1.で登録したハンドラが呼び出されず、プロセスが終了する
+
+	CT_002: SIG_RESETHAND 未指定時の動作
+		1. SIG_RESETHANDを指定しないsigaction()でSIGUSR1にハンドラを設定
+		2. 自身にSIGUSR1を送る
+		3. 1.で登録したハンドラが呼び出される
+		4. 自身にSIGUSR1を送る
+		5. 1.で登録したハンドラが呼び出される
+
+	CT_003: SIG_RESETHANDO 指定ハンドラへの上書き登録時の動作
+		1. SIG_RESETHANDを指定したsigaction()でSIG_USR1にハンドラを設定
+		2. SIG_RESETHANDを指定しないsigaction()でSIG_USR1にハンドラを設定
+		3. 自身にSIGUSR1を送る
+		4. 2.で登録したハンドラが呼び出される
+		5. 自身にSIGUSR1を送る
+		6. 2.で登録したハンドラが呼び出される
+
+	CT_004: 複数のsig_numへのハンドラ登録時の動作
+		1. SIG_RESETHANDを指定したsigaction()でSIG_USR1にハンドラを設定
+		2. SIG_RESETHANDを指定したsigaction()でSIG_USR2にハンドラを設定
+		3. 自身にSIGUSR1を送る
+		4. 1.で登録したハンドラが呼び出される
+		5. 自身にSIGUSR2を送る
+		6. 2.で登録したハンドラが呼び出される
+		7. 自身にSIGUSR1を送る
+		8. 1.で登録したハンドラが呼び出されず、プロセスが終了する
+
+	CT_005: 複数回(非上書き)のSIG_RESETHAND 指定時の動作
+		1. SIG_RESETHANDを指定したsigaction()でSIG_USR1にハンドラを設定
+		2. 自身にSIGUSR1を送る
+		3. 1.で登録したハンドラが呼び出される
+		4. SIG_RESETHANDを指定したsigaction()でSIG_USR1にハンドラを設定
+		5. 自身にSIGUSR1を送る
+		6. 4.で登録したハンドラが呼び出される
+		7. 自身にSIGUSR1を送る
+		8. 4.で登録したハンドラが呼び出されず、プロセスが終了する
+
+	CT_006: 設定中のハンドラ情報の取得(上書き時)
+		1. SIG_RESETHANDを指定したsigaction()でSIG_USR1にハンドラを設定
+		2. sigaction(SIGUSR1, NULL, &act) で設定情報を取得できる
+		3. SIG_RESETHANDを指定しないsigaction()でSIG_USR1にデフォルトハンドラを設定
+		4. sigaction(SIGUSR1, NULL, &act) で3.で指定した設定情報を取得できる
+
+	CT_007: 設定中のハンドラ情報の取得(デフォルトに戻った時)
+		1. SIG_RESETHANDを指定したsigaction()でSIG_USR1にハンドラを設定
+		2. 自身にSIGUSR1を送る
+		3. 1.で登録したハンドラが呼び出される
+		4. sigaction(SIGUSR1, NULL, &act) で設定情報を取得できる
+
+	CT_008: 不正なsig_numへのハンドラ登録
+		1. 範囲外(上限、下限)のsignumへのハンドラ登録が失敗する
+		2. SIGKILL, SIGSTOPへのハンドラ登録が失敗する
+
+	CT_009: SIGKILL, SIGSTOPのハンドラ情報の取得
+		1. sigaction(SIGKILL, NULL, &act) で設定情報を取得できる
+		2. sigaction(SIGSTOP, NULL, &act) で設定情報を取得できる
+
+	CT_010: sig_numの有効確認
+		1. sigaction(SIGUSR1, NULL, NULL) が成功する（有効）
+		2. sigaction(SIGKILL, NULL, NULL) が成功する（有効）
+		3. sigaction(SIGSTOP, NULL, NULL) が成功する（有効）
+		4. sigaction(_NSIG, NULL, NULL) が失敗する（無効）
+
+(3) 実行結果ログ
+	result.logファイル内に実行時のログを記載する。
+	実行に利用したIHK/McKernelは、IA版における下記の版数相当の
+	arm64版移植IHK/McKernelである。
+
+	IHK
+		commit d6fcbee8cb91f9ec4b49f97c918e696ac0335aaf
+		Author: Shiratori, Takehiro <fj0300es@aa.jp.fujitsu.com>
+		Date:   Tue Oct 16 16:25:33 2018 +0900
+
+	McKernel
+		commit 6f9fef2b13447c74c36d15cf5ebd186f8395ccca
+		Author: Ken Sato <ken.sato.ty@hitachi-solutions.com>
+		Date:   Tue Sep 25 10:05:41 2018 +0900
+
+	なお、test_mck rt_sigactionがSIGUSR1によって終了することで、
+	make test自身はエラーとなっているが、これは期待動作である。
+
+(4) 備考
+	特になし。
+
+
+以上。
+
