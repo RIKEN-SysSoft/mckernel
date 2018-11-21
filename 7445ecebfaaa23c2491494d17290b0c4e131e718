@@ -1,0 +1,1806 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "4e36c46f_7891835f",
+        "filename": "test/mng_mod/issues/1031/arm64/CT_001.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "af344b92_62f16c84",
+        "filename": "test/mng_mod/issues/1031/arm64/CT_001.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ef7512d2_2425d232",
+        "filename": "test/mng_mod/issues/1031/arm64/CT_002.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9771cae5_be84cd48",
+        "filename": "test/mng_mod/issues/1031/arm64/CT_002.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b09841c6_19364e70",
+        "filename": "test/mng_mod/issues/1031/arm64/CT_002.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 48,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^Iif (!WIFSIGNALED(status) \u0026\u0026 $",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3b8479b2_5dc62486",
+        "filename": "test/mng_mod/issues/1031/arm64/CT_003.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "68c70848_fac16e23",
+        "filename": "test/mng_mod/issues/1031/arm64/CT_003.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b4b66988_9047346a",
+        "filename": "test/mng_mod/issues/1031/arm64/CT_003.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^Iif (!WIFSIGNALED(status) \u0026\u0026 $",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "54d1d951_7cfedfe6",
+        "filename": "test/mng_mod/issues/1031/arm64/CT_004.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8e9d4054_5541758d",
+        "filename": "test/mng_mod/issues/1031/arm64/CT_004.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt2 \u003d 0;",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bcb523d2_fbd44735",
+        "filename": "test/mng_mod/issues/1031/arm64/CT_004.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6b06ebc3_cf183038",
+        "filename": "test/mng_mod/issues/1031/arm64/CT_005.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "169a23ba_35b1b51c",
+        "filename": "test/mng_mod/issues/1031/arm64/CT_005.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "649b302b_8de203a3",
+        "filename": "test/mng_mod/issues/1031/arm64/CT_006.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ab47fab0_37d4feda",
+        "filename": "test/mng_mod/issues/1031/arm64/CT_006.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bd29d446_97cd5135",
+        "filename": "test/mng_mod/issues/1031/arm64/CT_007.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e091ab93_aff08779",
+        "filename": "test/mng_mod/issues/1031/arm64/CT_007.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b948ad7f_fd5296f8",
+        "filename": "test/mng_mod/issues/1031/arm64/CT_008.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dd696071_7c6cf488",
+        "filename": "test/mng_mod/issues/1031/arm64/CT_008.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0d58f1dd_fa5c2cf0",
+        "filename": "test/mng_mod/issues/1031/arm64/CT_009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c13e3ab5_dec3ef87",
+        "filename": "test/mng_mod/issues/1031/arm64/CT_010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "769ff8ee_6a08d00e",
+        "filename": "test/mng_mod/issues/1031/arm64/Makefile",
+        "patchSetId": 2
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CPPFLAGS \u003d $",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "87acb0e0_756261f4",
+        "filename": "test/mng_mod/issues/1031/arm64/Makefile",
+        "patchSetId": 2
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+LDFLAGS \u003d $",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "baa7337a_cfa43f78",
+        "filename": "test/mng_mod/issues/1031/arm64/Makefile",
+        "patchSetId": 2
+      },
+      "lineNbr": 44,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^Irm -f $(TARGET) *.o $",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2ee818d8_9fd4dba2",
+        "filename": "test/mng_mod/issues/1031/arm64/result.log",
+        "patchSetId": 2
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+gcc -o CT_001 CT_001.c $",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "738637df_edb8d089",
+        "filename": "test/mng_mod/issues/1031/arm64/result.log",
+        "patchSetId": 2
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+gcc -o CT_002 CT_002.c $",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "96c7b4df_b65363e4",
+        "filename": "test/mng_mod/issues/1031/arm64/result.log",
+        "patchSetId": 2
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+gcc -o CT_003 CT_003.c $",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "687d871b_5ad51b43",
+        "filename": "test/mng_mod/issues/1031/arm64/result.log",
+        "patchSetId": 2
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+gcc -o CT_004 CT_004.c $",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "18a6358d_594bcd1c",
+        "filename": "test/mng_mod/issues/1031/arm64/result.log",
+        "patchSetId": 2
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+gcc -o CT_005 CT_005.c $",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cecfcf4e_a2d32c3e",
+        "filename": "test/mng_mod/issues/1031/arm64/result.log",
+        "patchSetId": 2
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+gcc -o CT_006 CT_006.c $",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e5a86767_31deed31",
+        "filename": "test/mng_mod/issues/1031/arm64/result.log",
+        "patchSetId": 2
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+gcc -o CT_007 CT_007.c $",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d970150d_ad1d72a1",
+        "filename": "test/mng_mod/issues/1031/arm64/result.log",
+        "patchSetId": 2
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+gcc -o CT_008 CT_008.c $",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b82ee4db_9a682087",
+        "filename": "test/mng_mod/issues/1031/arm64/result.log",
+        "patchSetId": 2
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+gcc -o CT_009 CT_009.c $",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3fd753a4_a4380838",
+        "filename": "test/mng_mod/issues/1031/arm64/result.log",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+gcc -o CT_010 CT_010.c $",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "905b841e_2e3a98ca",
+        "filename": "test/mng_mod/issues/1031/arm64/result.log",
+        "patchSetId": 2
+      },
+      "lineNbr": 71,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ARGS: $",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "61cbbda2_ad622ade",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: do {} while (0) macros should not be semicolon terminated\n+#define CHKANDJUMP(cond, ...)\t\t\t\t\t\t\t\\\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\\n+\t\t\tfprintf(stderr, \" [NG] \");\t\t\t\t\t\\\n+\t\t\tfprintf(stderr, __VA_ARGS__);\t\t\t\t\\\n+\t\t\tfprintf(stderr, \" failed\\n\");\t\t\t\t\\\n+\t\t\tgoto fn_fail;\t\t\t\t\t\t\t\t\\\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t} while(0);",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9757f18e_99db9c4b",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define CHKANDJUMP(cond, ...)\t\t\t\t\t\t\t\\\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\\n+\t\t\tfprintf(stderr, \" [NG] \");\t\t\t\t\t\\\n+\t\t\tfprintf(stderr, __VA_ARGS__);\t\t\t\t\\\n+\t\t\tfprintf(stderr, \" failed\\n\");\t\t\t\t\\\n+\t\t\tgoto fn_fail;\t\t\t\t\t\t\t\t\\\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t} while(0);",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a06a545f_cf86fd45",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define CHKANDJUMP(cond, ...)\t\t\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0f19e50d_024aed08",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "43ea15e4_b94faae5",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7e2d5887_73a538e5",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stderr, \" [NG] \");\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "032d6337_c8f7721f",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stderr, __VA_ARGS__);\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "42a71a6f_6e266c6b",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stderr, \" failed\\n\");\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cb57abe4_0eb2a370",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tgoto fn_fail;\t\t\t\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "04a3b99c_40ab6b85",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0e57f22e_82c27766",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t} while(0);",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "782e451f_0300d70d",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define OKNG(cond, ...)\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "861d8fa6_449b5165",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: do {} while (0) macros should not be semicolon terminated\n+#define OKNG(cond, ...)\t\t\t\t\t\t\t\t\t\\\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\\n+\t\t\tCHKANDJUMP(cond, __VA_ARGS__);\t\t\t\t\\\n+\t\t} else {\t\t\t\t\t\t\t\t\t\t\\\n+\t\t\tfprintf(stdout, \" [OK] \");\t\t\t\t\t\\\n+\t\t\tfprintf(stdout, __VA_ARGS__);\t\t\t\t\\\n+\t\t\tfprintf(stdout, \"\\n\");\t\t\t\t\t\t\\\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t} while(0);",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7d1cd4b5_056bb5d2",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fe112435_77f4664e",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e6ffec97_ea8cb371",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tCHKANDJUMP(cond, __VA_ARGS__);\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d3988cfe_c11e363d",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t} else {\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "63c8011a_c331ad1f",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stdout, \" [OK] \");\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7daf8675_93a69a88",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stdout, __VA_ARGS__);\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "aa917d32_35d86dad",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stdout, \"\\n\");\t\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5dc47166_dbf847de",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3cb809b4_15da9449",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t} while(0);",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "92646c60_f6d356ab",
+        "filename": "test/mng_mod/issues/1031/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#endif^I$",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "af56aa0a_310953a7",
+        "filename": "test/mng_mod/issues/1031/x86_64/CT_001.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "feb8f722_0060a6b6",
+        "filename": "test/mng_mod/issues/1031/x86_64/CT_001.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "91aead02_a487fe25",
+        "filename": "test/mng_mod/issues/1031/x86_64/CT_002.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "00a5ba8f_802c07c9",
+        "filename": "test/mng_mod/issues/1031/x86_64/CT_002.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4d020214_2f09e684",
+        "filename": "test/mng_mod/issues/1031/x86_64/CT_002.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 48,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^Iif (!WIFSIGNALED(status) \u0026\u0026 $",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3f6ad460_f4f3a868",
+        "filename": "test/mng_mod/issues/1031/x86_64/CT_003.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f32f877e_3647c832",
+        "filename": "test/mng_mod/issues/1031/x86_64/CT_003.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a22e2b88_98ff9a9b",
+        "filename": "test/mng_mod/issues/1031/x86_64/CT_003.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^Iif (!WIFSIGNALED(status) \u0026\u0026 $",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a937d855_634abe23",
+        "filename": "test/mng_mod/issues/1031/x86_64/CT_004.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "878aae43_3bba472c",
+        "filename": "test/mng_mod/issues/1031/x86_64/CT_004.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt2 \u003d 0;",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e2db8be9_20cf3391",
+        "filename": "test/mng_mod/issues/1031/x86_64/CT_004.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2b7234dc_b25c5d4f",
+        "filename": "test/mng_mod/issues/1031/x86_64/CT_005.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "73f47ae1_995d490e",
+        "filename": "test/mng_mod/issues/1031/x86_64/CT_005.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "78084090_4ceba0b6",
+        "filename": "test/mng_mod/issues/1031/x86_64/CT_006.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f670c3c3_2b961ce7",
+        "filename": "test/mng_mod/issues/1031/x86_64/CT_006.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6d6bc2a9_b98e8f00",
+        "filename": "test/mng_mod/issues/1031/x86_64/CT_007.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a4dea0f3_272e9f3a",
+        "filename": "test/mng_mod/issues/1031/x86_64/CT_007.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7e04b2b5_018aa942",
+        "filename": "test/mng_mod/issues/1031/x86_64/CT_008.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int handled_cnt \u003d 0;",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "aff6adc5_c54a9142",
+        "filename": "test/mng_mod/issues/1031/x86_64/CT_008.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b583ea0d_5e6fe2ad",
+        "filename": "test/mng_mod/issues/1031/x86_64/CT_009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d70eacaa_0c4e300c",
+        "filename": "test/mng_mod/issues/1031/x86_64/CT_010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "59059a80_bc539053",
+        "filename": "test/mng_mod/issues/1031/x86_64/Makefile",
+        "patchSetId": 2
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CPPFLAGS \u003d $",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2042a4d0_10afe893",
+        "filename": "test/mng_mod/issues/1031/x86_64/Makefile",
+        "patchSetId": 2
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+LDFLAGS \u003d $",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6696d00d_d826f297",
+        "filename": "test/mng_mod/issues/1031/x86_64/Makefile",
+        "patchSetId": 2
+      },
+      "lineNbr": 55,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^Irm -f $(TARGET) *.o $",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "056bccbd_cedd9d55",
+        "filename": "test/mng_mod/issues/1031/x86_64/README",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bd7e3a99_1b455fd5",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: do {} while (0) macros should not be semicolon terminated\n+#define CHKANDJUMP(cond, ...)\t\t\t\t\t\t\t\\\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\\n+\t\t\tfprintf(stderr, \" [NG] \");\t\t\t\t\t\\\n+\t\t\tfprintf(stderr, __VA_ARGS__);\t\t\t\t\\\n+\t\t\tfprintf(stderr, \" failed\\n\");\t\t\t\t\\\n+\t\t\tgoto fn_fail;\t\t\t\t\t\t\t\t\\\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t} while(0);",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "16a2f10c_639b8594",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define CHKANDJUMP(cond, ...)\t\t\t\t\t\t\t\\\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\\n+\t\t\tfprintf(stderr, \" [NG] \");\t\t\t\t\t\\\n+\t\t\tfprintf(stderr, __VA_ARGS__);\t\t\t\t\\\n+\t\t\tfprintf(stderr, \" failed\\n\");\t\t\t\t\\\n+\t\t\tgoto fn_fail;\t\t\t\t\t\t\t\t\\\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t} while(0);",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7c1123b3_35d5c15c",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define CHKANDJUMP(cond, ...)\t\t\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f1261fb5_9d7dede6",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "50e512b8_50cf872d",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ceca6c8f_58220712",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stderr, \" [NG] \");\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d6894655_7499df80",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stderr, __VA_ARGS__);\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "99f9e2d3_843e930c",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stderr, \" failed\\n\");\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0dae9121_af845e88",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tgoto fn_fail;\t\t\t\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "59105b01_5b9b79cf",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f4667418_68a21c08",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t} while(0);",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "685e1355_75ad4f61",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define OKNG(cond, ...)\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "df6610a1_e359924d",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: do {} while (0) macros should not be semicolon terminated\n+#define OKNG(cond, ...)\t\t\t\t\t\t\t\t\t\\\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\\n+\t\t\tCHKANDJUMP(cond, __VA_ARGS__);\t\t\t\t\\\n+\t\t} else {\t\t\t\t\t\t\t\t\t\t\\\n+\t\t\tfprintf(stdout, \" [OK] \");\t\t\t\t\t\\\n+\t\t\tfprintf(stdout, __VA_ARGS__);\t\t\t\t\\\n+\t\t\tfprintf(stdout, \"\\n\");\t\t\t\t\t\t\\\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t} while(0);",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3951aa41_cef3297b",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "30c69acc_2a63cc37",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b8b9160c_0b86fbf1",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tCHKANDJUMP(cond, __VA_ARGS__);\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2485dedf_4d6db2fc",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t} else {\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d2dea9f3_b5ad1ef0",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stdout, \" [OK] \");\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8045bbf8_e47dde45",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stdout, __VA_ARGS__);\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fc4fbf9f_95494a76",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stdout, \"\\n\");\t\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f12b841e_829b5bea",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a162bf4b_5398ef86",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t} while(0);",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "24251258_7c920827",
+        "filename": "test/mng_mod/issues/1031/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:45:53Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#endif^I$",
+      "revId": "7445ecebfaaa23c2491494d17290b0c4e131e718",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
