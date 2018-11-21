@@ -1,0 +1,2520 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "8412035f_d4299cc6",
+        "filename": "test/mng_mod/issues/885/arm64/CT_001.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "21f86000_2474456f",
+        "filename": "test/mng_mod/issues/885/arm64/CT_001.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a75d6bbb_375fcc9a",
+        "filename": "test/mng_mod/issues/885/arm64/CT_001.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5040bd15_5f0802b1",
+        "filename": "test/mng_mod/issues/885/arm64/CT_002.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "414000ba_6667a2fd",
+        "filename": "test/mng_mod/issues/885/arm64/CT_002.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "daca3918_d1d81095",
+        "filename": "test/mng_mod/issues/885/arm64/CT_002.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "01028cc5_f1f58bde",
+        "filename": "test/mng_mod/issues/885/arm64/CT_003.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b96a2e13_7c3ed9b2",
+        "filename": "test/mng_mod/issues/885/arm64/CT_003.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c581d468_4e1383d3",
+        "filename": "test/mng_mod/issues/885/arm64/CT_003.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d2a50740_3ee55e6d",
+        "filename": "test/mng_mod/issues/885/arm64/CT_004.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6e211262_450eb297",
+        "filename": "test/mng_mod/issues/885/arm64/CT_004.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "202fc964_c119a4a5",
+        "filename": "test/mng_mod/issues/885/arm64/CT_004.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa7d11cf_a686dc22",
+        "filename": "test/mng_mod/issues/885/arm64/CT_005.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3caef07c_119375cb",
+        "filename": "test/mng_mod/issues/885/arm64/CT_005.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "66f8800c_2c623b62",
+        "filename": "test/mng_mod/issues/885/arm64/CT_005.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fe8bd25e_dcad735a",
+        "filename": "test/mng_mod/issues/885/arm64/CT_006.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b9c3e8af_4dd44828",
+        "filename": "test/mng_mod/issues/885/arm64/CT_006.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "abee4e93_c1b2b199",
+        "filename": "test/mng_mod/issues/885/arm64/CT_006.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e5ea9a0a_b4e67a63",
+        "filename": "test/mng_mod/issues/885/arm64/CT_007.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ec5fb000_212e2928",
+        "filename": "test/mng_mod/issues/885/arm64/CT_007.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "afaab28d_54c124c6",
+        "filename": "test/mng_mod/issues/885/arm64/CT_007.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8f018bcf_6d4d94c4",
+        "filename": "test/mng_mod/issues/885/arm64/CT_008.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d422a0ff_105c0d2a",
+        "filename": "test/mng_mod/issues/885/arm64/CT_008.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9134763f_85964add",
+        "filename": "test/mng_mod/issues/885/arm64/CT_008.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6c2459ac_70e9916e",
+        "filename": "test/mng_mod/issues/885/arm64/CT_009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7f0931c4_940f86b1",
+        "filename": "test/mng_mod/issues/885/arm64/CT_009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "aea434d1_c9a5902d",
+        "filename": "test/mng_mod/issues/885/arm64/CT_009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "64190bb5_3100e9b9",
+        "filename": "test/mng_mod/issues/885/arm64/CT_009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: \u0027faild\u0027 may be misspelled - perhaps \u0027failed\u0027?\n+\t\tOKNG(rc \u003d\u003d 0, \"ptrace_detach faild [double detach]\");",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ed3dbfb6_339bd3d7",
+        "filename": "test/mng_mod/issues/885/arm64/CT_010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0ca178b2_19065b17",
+        "filename": "test/mng_mod/issues/885/arm64/CT_010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: spaces required around that \u0027\u003d\u0027 (ctx:WxV)\n+\tpid_t tracer_pid \u003d 0, tracee_pid \u003d0;\n \t                                 ^",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b212a79d_8e3e18b3",
+        "filename": "test/mng_mod/issues/885/arm64/CT_010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "019dfc28_8154310a",
+        "filename": "test/mng_mod/issues/885/arm64/CT_010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\ttracer_wait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3950f049_483ea427",
+        "filename": "test/mng_mod/issues/885/arm64/CT_010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\ttracee_wait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8bdc5267_1fb74d88",
+        "filename": "test/mng_mod/issues/885/arm64/CT_010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tCHKANDJUMP(!WIFSTOPPED(status), \"tracee is not stopped\");",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2d4e5518_12303d65",
+        "filename": "test/mng_mod/issues/885/arm64/CT_010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 77,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tOKNG(rc !\u003d -1, \"waitpid by tracer after detach (failed)\");",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9c32fe9d_598b8ed9",
+        "filename": "test/mng_mod/issues/885/arm64/CT_010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 84,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tOKNG(!WIFEXITED(status), \"waitpid for tracee by parent\");",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d72a6b1e_f217a05c",
+        "filename": "test/mng_mod/issues/885/arm64/CT_010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 89,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tCHKANDJUMP(!WIFEXITED(status), \"child(tracer) is not exited\");",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "08ded22d_6f00e848",
+        "filename": "test/mng_mod/issues/885/arm64/CT_011.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "92e64b0d_6e2283f6",
+        "filename": "test/mng_mod/issues/885/arm64/CT_011.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: spaces required around that \u0027\u003d\u0027 (ctx:WxV)\n+\tpid_t tracer_pid \u003d 0, tracee_pid \u003d0;\n \t                                 ^",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cbff94d8_4fe3ab0d",
+        "filename": "test/mng_mod/issues/885/arm64/CT_011.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "623e393b_114fc201",
+        "filename": "test/mng_mod/issues/885/arm64/CT_011.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\ttracer_wait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9e472a08_6e22fc1c",
+        "filename": "test/mng_mod/issues/885/arm64/CT_011.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\ttracee_wait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d4598609_b60547dc",
+        "filename": "test/mng_mod/issues/885/arm64/CT_011.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tCHKANDJUMP(!WIFSTOPPED(status), \"tracee is not stopped\");",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9bd435f9_3a6d12ee",
+        "filename": "test/mng_mod/issues/885/arm64/CT_011.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 79,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tOKNG(!WIFEXITED(status), \"waitpid for tracee by tracer without detach\");",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "296e0d69_77d6b06b",
+        "filename": "test/mng_mod/issues/885/arm64/CT_011.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tOKNG(!WIFEXITED(status), \"waitpid for tracee by parent\");",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2122da11_2956c2e1",
+        "filename": "test/mng_mod/issues/885/arm64/CT_011.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 91,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tCHKANDJUMP(!WIFEXITED(status), \"child(tracer) is not exited\");",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "327ad983_62c8b2d3",
+        "filename": "test/mng_mod/issues/885/arm64/Makefile",
+        "patchSetId": 2
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CPPFLAGS \u003d $",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a5a5416_ee55d182",
+        "filename": "test/mng_mod/issues/885/arm64/Makefile",
+        "patchSetId": 2
+      },
+      "lineNbr": 47,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^Irm -f $(TARGET) *.o $",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7c51116a_8dc64f18",
+        "filename": "test/mng_mod/issues/885/arm64/result.log",
+        "patchSetId": 2
+      },
+      "lineNbr": 62,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: \u0027faild\u0027 may be misspelled - perhaps \u0027failed\u0027?\n+ [OK] ptrace_detach faild [double detach]",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "70af584b_130673b2",
+        "filename": "test/mng_mod/issues/885/arm64/result.log",
+        "patchSetId": 2
+      },
+      "lineNbr": 75,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ARGS: $",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2890cbef_f2e5e599",
+        "filename": "test/mng_mod/issues/885/arm64/result.log",
+        "patchSetId": 2
+      },
+      "lineNbr": 80,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ARGS: $",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "74e78eac_097a8406",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define CHKANDJUMP(cond, ...)\t\t\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9416c646_b5fa1157",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define CHKANDJUMP(cond, ...)\t\t\t\t\t\t\t\\\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\\n+\t\t\tfprintf(stderr, \" [NG] \");\t\t\t\t\t\\\n+\t\t\tfprintf(stderr, __VA_ARGS__);\t\t\t\t\\\n+\t\t\tfprintf(stderr, \" failed\\n\");\t\t\t\t\\\n+\t\t\tgoto fn_fail;\t\t\t\t\t\t\t\t\\\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t} while(0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cc1abf13_94785923",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: do {} while (0) macros should not be semicolon terminated\n+#define CHKANDJUMP(cond, ...)\t\t\t\t\t\t\t\\\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\\n+\t\t\tfprintf(stderr, \" [NG] \");\t\t\t\t\t\\\n+\t\t\tfprintf(stderr, __VA_ARGS__);\t\t\t\t\\\n+\t\t\tfprintf(stderr, \" failed\\n\");\t\t\t\t\\\n+\t\t\tgoto fn_fail;\t\t\t\t\t\t\t\t\\\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t} while(0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "10839e33_efde2b87",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4bddd516_1b468221",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0fd9ee76_55d1afb1",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stderr, \" [NG] \");\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "09996305_f1b0fd3d",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stderr, __VA_ARGS__);\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "27597ba7_98174798",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stderr, \" failed\\n\");\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6c29168d_79385a65",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tgoto fn_fail;\t\t\t\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cf03e60b_71192a73",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f5c61689_7e18cdf8",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t} while(0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0419934a_ff7b0c6b",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define OKNG(cond, ...)\t\t\t\t\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5a4c8bdb_25d75ce5",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: do {} while (0) macros should not be semicolon terminated\n+#define OKNG(cond, ...)\t\t\t\t\t\t\t\t\t\\\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\\n+\t\t\tCHKANDJUMP(cond, __VA_ARGS__);\t\t\t\t\\\n+\t\t} else {\t\t\t\t\t\t\t\t\t\t\\\n+\t\t\tfprintf(stdout, \" [OK] \");\t\t\t\t\t\\\n+\t\t\tfprintf(stdout, __VA_ARGS__);\t\t\t\t\\\n+\t\t\tfprintf(stdout, \"\\n\");\t\t\t\t\t\t\\\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t} while(0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a8552156_3778a377",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f114646d_5e50b78c",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "53e5f94a_6634e2da",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tCHKANDJUMP(cond, __VA_ARGS__);\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3718d77d_cfc7d199",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t} else {\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "289f453f_440de28a",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stdout, \" [OK] \");\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4d27a389_bd2442c4",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stdout, __VA_ARGS__);\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5a5ffbf5_ada0f39b",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stdout, \"\\n\");\t\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c98bb6c5_44836713",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "20a47e54_884cafa6",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t} while(0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2eb4cd1e_1afdbf69",
+        "filename": "test/mng_mod/issues/885/arm64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#endif^I$",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "51b8791a_3d478f69",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_001.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bdb693ce_5d0391d2",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_001.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f7a1a1fe_4e3ab186",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_001.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "102b4f45_3716eba3",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_002.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bcd50932_1e8e46b4",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_002.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1923d19e_8cacc9b9",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_002.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "43019659_7d3b5101",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_003.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ac98c894_25c70a29",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_003.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b802ebe7_c271609e",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_003.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7d507348_ba08c62d",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_004.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e809d894_b4f0c602",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_004.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9f382505_8717c14d",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_004.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4252e26f_b6cdff3f",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_005.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "35338030_190d29b7",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_005.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ee1332df_9b0577d7",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_005.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3bd0f4de_a604d800",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_006.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "68d6ff60_945c757a",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_006.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d9b4d9ee_7f4b21e0",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_006.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b0bb8db4_993a6ae9",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_007.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "82bc31f4_9a51ac9c",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_007.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "64b17da4_43310144",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_007.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "58fab7e0_4b104657",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_008.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "94dfb159_8b90648f",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_008.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4fcd8600_1f4d0eab",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_008.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "166c90e9_9840ca08",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e486e667_7b50d67d",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "63bf39c9_d0209a11",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c6f12a06_0aeec426",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: \u0027faild\u0027 may be misspelled - perhaps \u0027failed\u0027?\n+\t\tOKNG(rc \u003d\u003d 0, \"ptrace_detach faild [double detach]\");",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e9f6721e_c7d5a1f6",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c41a31af_d3bc11c9",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: spaces required around that \u0027\u003d\u0027 (ctx:WxV)\n+\tpid_t tracer_pid \u003d 0, tracee_pid \u003d0;\n \t                                 ^",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "884d7fb6_3ae1f30f",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "105b36c7_f85c91a8",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\ttracer_wait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b46551cc_1937b523",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\ttracee_wait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1af2d65e_2ee59e94",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tCHKANDJUMP(!WIFSTOPPED(status), \"tracee is not stopped\");",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fc6a2144_80a17849",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 77,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tOKNG(rc !\u003d -1, \"waitpid by tracer after detach (failed)\");",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7902007f_0ec34157",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 84,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tOKNG(!WIFEXITED(status), \"waitpid for tracee by parent\");",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "280dae39_7dcf5a73",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 89,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tCHKANDJUMP(!WIFEXITED(status), \"child(tracer) is not exited\");",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2dbaca9e_705a5516",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_011.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv)",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa7d615e_6608b4dd",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_011.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: spaces required around that \u0027\u003d\u0027 (ctx:WxV)\n+\tpid_t tracer_pid \u003d 0, tracee_pid \u003d0;\n \t                                 ^",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6853a8b5_81f2f0e5",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_011.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4cf61d5d_d9ca9f74",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_011.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\ttracer_wait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e8c71a90_48c75610",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_011.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\ttracee_wait \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "03a3db04_dc55513e",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_011.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tCHKANDJUMP(!WIFSTOPPED(status), \"tracee is not stopped\");",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "62ae6826_24e1f407",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_011.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 79,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tOKNG(!WIFEXITED(status), \"waitpid for tracee by tracer without detach\");",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "67c93dfc_7b29f613",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_011.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tOKNG(!WIFEXITED(status), \"waitpid for tracee by parent\");",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "26958170_242fcaac",
+        "filename": "test/mng_mod/issues/885/x86_64/CT_011.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 91,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tCHKANDJUMP(!WIFEXITED(status), \"child(tracer) is not exited\");",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1ed58096_f42208ca",
+        "filename": "test/mng_mod/issues/885/x86_64/Makefile",
+        "patchSetId": 2
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CPPFLAGS \u003d $",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "65332b9d_bf2afea0",
+        "filename": "test/mng_mod/issues/885/x86_64/Makefile",
+        "patchSetId": 2
+      },
+      "lineNbr": 60,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^Irm -f $(TARGET) *.o $",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6c8d07e0_452c341c",
+        "filename": "test/mng_mod/issues/885/x86_64/README",
+        "patchSetId": 2
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+・Issue#885 (https://postpeta.pccluster.org/redmine/issues/885) $",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "449fc36e_d907f82e",
+        "filename": "test/mng_mod/issues/885/x86_64/README",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e128de41_ebde1feb",
+        "filename": "test/mng_mod/issues/885/x86_64/result.log",
+        "patchSetId": 2
+      },
+      "lineNbr": 75,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: \u0027faild\u0027 may be misspelled - perhaps \u0027failed\u0027?\n+ [OK] ptrace_detach faild [double detach]",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c1395bf6_c6f9594e",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: do {} while (0) macros should not be semicolon terminated\n+#define CHKANDJUMP(cond, ...)\t\t\t\t\t\t\t\\\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\\n+\t\t\tfprintf(stderr, \" [NG] \");\t\t\t\t\t\\\n+\t\t\tfprintf(stderr, __VA_ARGS__);\t\t\t\t\\\n+\t\t\tfprintf(stderr, \" failed\\n\");\t\t\t\t\\\n+\t\t\tgoto fn_fail;\t\t\t\t\t\t\t\t\\\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t} while(0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "05fcfbd7_6ca0841b",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define CHKANDJUMP(cond, ...)\t\t\t\t\t\t\t\\\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\\n+\t\t\tfprintf(stderr, \" [NG] \");\t\t\t\t\t\\\n+\t\t\tfprintf(stderr, __VA_ARGS__);\t\t\t\t\\\n+\t\t\tfprintf(stderr, \" failed\\n\");\t\t\t\t\\\n+\t\t\tgoto fn_fail;\t\t\t\t\t\t\t\t\\\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t} while(0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b3c4f98e_039aff87",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define CHKANDJUMP(cond, ...)\t\t\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "74bec3f7_a79db78f",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "50683831_9a262462",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b05af2d2_ecd072d1",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stderr, \" [NG] \");\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "eca341f1_299d20fd",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stderr, __VA_ARGS__);\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "523a450f_19d0043e",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stderr, \" failed\\n\");\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f3d63f5c_1bbfeb2c",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tgoto fn_fail;\t\t\t\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c0f083e0_a6e69edd",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "085ffbf0_996d43ae",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t} while(0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "654af2ed_9a1efb07",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: do {} while (0) macros should not be semicolon terminated\n+#define OKNG(cond, ...)\t\t\t\t\t\t\t\t\t\\\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\\n+\t\t\tCHKANDJUMP(cond, __VA_ARGS__);\t\t\t\t\\\n+\t\t} else {\t\t\t\t\t\t\t\t\t\t\\\n+\t\t\tfprintf(stdout, \" [OK] \");\t\t\t\t\t\\\n+\t\t\tfprintf(stdout, __VA_ARGS__);\t\t\t\t\\\n+\t\t\tfprintf(stdout, \"\\n\");\t\t\t\t\t\t\\\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\\n+\t} while(0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8c48b917_e17ce9f3",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define OKNG(cond, ...)\t\t\t\t\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e3c1074a_fc9a6f50",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdo {\t\t\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e9208256_d6608df0",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (cond) {\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6cf1b3fc_5e6ecda8",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tCHKANDJUMP(cond, __VA_ARGS__);\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "427d9902_ab67cd55",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t} else {\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c5591cb5_bb9cff3d",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stdout, \" [OK] \");\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "decbce30_4f640d04",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stdout, __VA_ARGS__);\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d7614910_0f749779",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stdout, \"\\n\");\t\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "82f3438e_dce675c7",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t}\t\t\t\t\t\t\t\t\t\t\t\t\\",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "59e74391_01a58ed1",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t} while(0);",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "57d6c416_44670dd2",
+        "filename": "test/mng_mod/issues/885/x86_64/test_chk.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T06:20:19Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#endif^I$",
+      "revId": "901da141fd1ee94aced70ec6ddf290ab6c306d1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
