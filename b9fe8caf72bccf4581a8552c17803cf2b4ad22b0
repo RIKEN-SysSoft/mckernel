@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "dd721bab_bc8c2201",
+        "filename": "configure.ac",
+        "patchSetId": 2
+      },
+      "lineNbr": 487,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-21T14:45:18Z",
+      "side": 1,
+      "message": "@Balazs: and that is why I complained this was extra/duplicate work, this has nothing to do with the old stuff. makefile syntax is very different and we can do much better in shell!",
+      "revId": "b9fe8caf72bccf4581a8552c17803cf2b4ad22b0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "00c605bf_bdf33aac",
+        "filename": "configure.ac",
+        "patchSetId": 2
+      },
+      "lineNbr": 489,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-21T14:45:18Z",
+      "side": 1,
+      "message": "I kept the ENABLE_MCOVERLAYFS flag, it\u0027s there and doesn\u0027t hurt -- I think it\u0027s helpful to test building with a new kernel version to limit the scope of it. I just put a warning instead.\nWe can remove the flag when it moves to userspace and we remove the kernel modules.",
+      "revId": "b9fe8caf72bccf4581a8552c17803cf2b4ad22b0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
