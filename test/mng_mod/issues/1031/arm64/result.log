@@ -1,0 +1,76 @@
+gcc -o CT_001 CT_001.c 
+gcc -o CT_002 CT_002.c 
+gcc -o CT_003 CT_003.c 
+gcc -o CT_004 CT_004.c 
+gcc -o CT_005 CT_005.c 
+gcc -o CT_006 CT_006.c 
+gcc -o CT_007 CT_007.c 
+gcc -o CT_008 CT_008.c 
+gcc -o CT_009 CT_009.c 
+gcc -o CT_010 CT_010.c 
+./run.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 4-7 -m 2G ... done
+*** CT_001 start *******************************
+ [OK] child is killed by SIGUSR1
+*** CT_001 PASSED
+
+*** CT_002 start *******************************
+ [OK] child exited normaly
+*** CT_002 PASSED
+
+*** CT_003 start *******************************
+ [OK] child exited normaly
+*** CT_003 PASSED
+
+*** CT_004 start *******************************
+ [OK] child is killed by SIGUSR1
+*** CT_004 PASSED
+
+*** CT_005 start *******************************
+ [OK] child is killed by SIGUSR1
+*** CT_005 PASSED
+
+*** CT_006 start *******************************
+ [OK] sigaction with SA_RESETHAND
+ [OK] sigaction to get current action
+ [OK] check current act
+*** CT_006 PASSED
+
+*** CT_007 start *******************************
+ [OK] sigaction with SA_RESETHAND
+   send 1st SIGUSR1
+ [OK] invoked test_handler
+ [OK] sigaction to get current action
+ [OK] check current act (after reset)
+*** CT_007 PASSED
+
+*** CT_008 start *******************************
+ [OK] sigaction 0 failed
+ [OK] sigaction _NSIG failed
+ [OK] sigaction SIGKILL failed
+ [OK] sigaction SIGSTOP failed
+*** CT_008 PASSED
+
+*** CT_009 start *******************************
+ [OK] sigaction to get SIGKILL action
+ [OK] check SIGKILL act
+ [OK] sigaction to get SIGSTOP action
+ [OK] check SIGSTOP act
+*** CT_009 PASSED
+
+*** CT_010 start *******************************
+ [OK] SIGUSR1 is valid
+ [OK] SIGKILL is valid
+ [OK] SIGSTOP is valid
+ [OK] _NSIG is invalid
+*** CT_010 PASSED
+
+TEST_SUITE: rt_sigaction
+TEST_NUMBER: 4
+ARGS: 
+/-------- Signal handler will activate -------/
+sig#10 is handled.
+/------ Process will terminate by signal -----/
+./run.sh: 19 行: 31921 ユーザー定義シグナル1       stdbuf -i0 -o0 -e0 ${MCEXEC} ${TESTMCK} -s rt_sigaction -n 4
+make: *** [test] エラー 138
