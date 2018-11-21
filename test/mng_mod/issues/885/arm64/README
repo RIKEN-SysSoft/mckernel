@@ -1,0 +1,96 @@
+/* README COPYRIGHT FUJITSU LIMITED 2018 */
+
+ptraceのトレース対象がdetachされずに終了を試みた場合の終了
+および終了報告機能テストセットREADME
+
+(1) テストの実行方法
+以下の手順でテストを実行する
+	1. $HOME/.mck_test_configを用意する
+	   当該ファイルは、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+	   $HOMEにコピーし、適宜編集する
+	2. make test を実行する
+
+(2) テスト項目詳細
+1. Issueで報告されたテストプログラムによる確認
+	ISSUE01,02(test_mck ptrace #19,#20) traceeがtracerからdetachされないまま終了しても問題がないこと。
+	⇒ 実行結果表示として、RESULT: ok が表示されればOK
+
+2.McKernelでのptraceのattach/detachの基本動作確認
+	CT_001: 通常のattach detach 操作
+		1. 親プロセスが子プロセスにattach
+		2. 親プロセスがwait()で子プロセスの停止を回収
+		3. 親プロセスが子プロセスをdetach
+		4. 子プロセスが終了
+		5. 親プロセスがwait()で子プロセスの終了を回収
+
+	CT_002: tracee(子プロセス)がdetachせずに終了
+		1. 親プロセスが子プロセスにattach
+		2. 親プロセスがwait()で子プロセスの停止を回収
+		3. 親プロセスが子プロセスに再開指示(ptrace_cont)
+		4. 子プロセスが終了
+		5. 親プロセスがwait()で子プロセスの終了を回収
+
+	CT_003: tracer(親プロセス)がdetachしないまま先に終了
+		1. 親プロセスが子プロセスにattach
+		2. 親プロセスがwait()で子プロセスの停止を回収
+		3. 親プロセスが子プロセスに再開指示した直後に終了
+		4. 子プロセスが終了
+
+	CT_004: 複数回のattach -> detach 操作
+		1. 親プロセスが子プロセスにattach
+		2. 親プロセスがwait()で子プロセスの停止を回収
+		3. 親プロセスが子プロセスにdetach
+		4. 再び、親プロセスが子プロセスにattach
+		5. 親プロセスがwait()で子プロセスの停止を回収
+		6. 親プロセスが子プロセスにdetach
+		7. 親プロセスがwait()で子プロセスの終了を回収
+
+	CT_005: 不正なpid指定のattach
+		1. 不正なpid(0, 1, 負数)を指定したattachが失敗
+		2. 自身のpidを指定したattachが失敗
+
+	CT_006: attach済の子プロセスへのattach①
+		1. 既にattachしている子プロセスへ再びattachが失敗
+
+	CT_007: attach済の子プロセスへのattach②
+		1. tracemeした子プロセスへattachが失敗
+
+	CT_008: 不正なpid指定のdetach
+		1. 不正なpid(0, 1, 負数)を指定したdetachが失敗
+		2. attachしていない子プロセスのpidを指定したdetachが失敗
+		3. 自身のpidを指定したattachが失敗
+
+	CT_009: detach済の子プロセスへのdetach
+		1. 既にdetachしていいる子プロセスへ再びdetach
+
+	CT_010: 親子関係ではないプロセス間でのattach
+		1. 親プロセスが2つの子プロセス(tracerプロセス, traceeプロセスとする)をforkする
+		2. tracerプロセスがtraceeプロセスをattach
+		3. tracerプロセスがwait()でtraceeプロセスの停止を回収
+		4. tracerプロセスがtraceeプロセスに再開を指示
+		5. traceeプロセスが終了する
+		6. tracerプロセスがtraceeプロセスにdetach
+		7. tracerプロセスがwait()でtraceeプロセスの終了を回収
+		8. tracerプロセスが終了
+		9. 親プロセスがwait()でtracee,tracerプロセスの終了を回収
+
+(3) 実行結果ログ
+	result.logファイル内に実行時のログを記載する。
+	実行に利用したIHK/McKernelは、IA版における下記の版数相当の
+	arm64版移植IHK/McKernelである。
+
+	IHK
+		commit d6fcbee8cb91f9ec4b49f97c918e696ac0335aaf
+		Author: Shiratori, Takehiro <fj0300es@aa.jp.fujitsu.com>
+		Date:   Tue Oct 16 16:25:33 2018 +0900
+
+	McKernel
+		commit 6f9fef2b13447c74c36d15cf5ebd186f8395ccca
+		Author: Ken Sato <ken.sato.ty@hitachi-solutions.com>
+		Date:   Tue Sep 25 10:05:41 2018 +0900
+
+(4) 備考
+	特になし。
+
+
+以上。
