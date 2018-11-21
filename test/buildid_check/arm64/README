@@ -1,0 +1,41 @@
+/* README COPYRIGHT FUJITSU LIMITED 2018 */
+
+mcexec, ihk, mckernelのビルドID一致確認テストセットREADME
+
+(1) テストの実行方法
+	以下の手順でテストを実行する
+		1. テスト向けにビルドIDの一致しないihk.ko/ihk-smp-arm64.koを用意し、McKernelインストール先に配置する
+		   ビルドIDは、ビルドに使用したihkのgitリポジトリcommitハッシュ値の
+		   上8桁を抽出して作成するため、ソース内に処理に影響しないコメントなどを
+		   追加してコミットして作成することでビルドIDの異なるihk.ko/ihk-smp-arm64.koを作成可能である。
+
+		2. $HOME/.mck_test_configを用意する
+		   当該ファイルは、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+		   $HOMEにコピーし、適宜編集する
+
+		3. ./run.shを実行する
+
+(2) テスト項目詳細
+	TEST001 ビルドIDの一致しないihk.ko/ihk-smp-arm64.koを含む環境でmcreboot.shがエラーとなることを確認する
+	TEST002 ビルドIDの一致しないihk.ko/ihk-smp-arm64.koを含む環境でmcexecがエラーとなることを確認する
+
+(3) 実行結果ログ
+	result.logファイル内に実行時のログを記載する。
+	実行に利用したIHK/McKernelは、IA版における下記の版数相当の
+	arm64版移植IHK/McKernelである。
+
+	IHK
+		commit d6fcbee8cb91f9ec4b49f97c918e696ac0335aaf
+		Author: Shiratori, Takehiro <fj0300es@aa.jp.fujitsu.com>
+		Date:   Tue Oct 16 16:25:33 2018 +0900
+
+	McKernel
+		commit 6f9fef2b13447c74c36d15cf5ebd186f8395ccca
+		Author: Ken Sato <ken.sato.ty@hitachi-solutions.com>
+		Date:   Tue Sep 25 10:05:41 2018 +0900
+
+(4) 備考
+	特になし。
+
+
+以上。
