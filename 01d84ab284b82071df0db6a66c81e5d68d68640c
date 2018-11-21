@@ -1,0 +1,1381 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "017ef8ae_700c55ae",
+        "filename": "test/mcexec_options/arm64/Makefile",
+        "patchSetId": 1
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+LDFLAGS \u003d $",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3edc95d0_ad1e5b83",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+/* allow_oversubscribe.c COPYRIGHT FUJITSU LIMITED 2018 */^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6faab11a_b653ca50",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+#include \u003cstdio.h\u003e^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "aebd7720_a5156307",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+#include \u003cunistd.h\u003e^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6665c4fe_44440169",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+#include \u003csys/types.h\u003e^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "19a5d809_ce74df74",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+#include \u003csys/wait.h\u003e^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "936f067f_278bc2d8",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+#include \u003cstdlib.h\u003e^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "47be4822_02030089",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fb4a8f62_07d24d29",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+#define PROG \"/usr/bin/date\"^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1b797835_4462c2a4",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6ee5bfa1_7a05c776",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+static int^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "40fc094a_d7fa859b",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+do_fork(int proc_num)^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3d2027bc_c569a4d1",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+{^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3ffef92c_16baa353",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^Iint i;^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6d480123_558b7c8a",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "27996809_eb4c2a93",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^Ifor (i \u003d 0; i \u003c proc_num; i +\u003d 1) {^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d4f5394f_f522855a",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I^Ipid_t pid \u003d fork();^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6ac85f0f_9d58453d",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bd69ea76_a433452a",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I^Iif (pid \u003c 0) {^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "23a79877_bf5905d9",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I^I^Iperror(\"fork failed\");^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7f9afd4f_8a721e89",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I^I^Ireturn -1;^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8de4cd84_72d856d4",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I^I}^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a819c95a_d24cfad0",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I^Ielse if (0 \u003d\u003d pid) {^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dbe750ef_7a0aaeb6",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+\t\telse if (0 \u003d\u003d pid) {",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2a27c391_b6332388",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I^I^Iprintf(\"%d: in child (%d/%d)\\n\",^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3d5ce47b_08ff2141",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I^I^I    getpid(), (i+1), proc_num);^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bd467cd7_a1afaa11",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I^I^Iexecl(PROG, PROG, NULL);^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0ead7d42_6b6410be",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I^I^Iexit(0);^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "148f7c99_ec2dfb48",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I^I^I/* NOTREACHED */^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f6553893_1ec66065",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I^I}^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a8c33f28_b79a954e",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I}^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c01ed56b_3921715a",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b2ccb5fe_5a574689",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^Ireturn 0;^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9af65860_4b07ba64",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+}^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "baef4faf_a95e30b8",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c427d5c4_cc86c24a",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+static int^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d488380b_baba30c8",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+do_wait(int proc_num)^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "eb2375ff_d0627b38",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+{^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "30ac4eda_a565ba31",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^Ipid_t mypid \u003d getpid();^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d482d322_9610b97b",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 38,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^Iint i;^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8796c61b_4bf2ebd0",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "72f56b2d_4ca1b2f6",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^Iprintf(\"%d: in parent\\n\", mypid);^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6295beac_a7d6eacf",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 41,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^Ifor (i \u003d 0; i \u003c proc_num; i +\u003d 1) {^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "72b916f2_c4276928",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I^Iint status;^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1e68fc6a_aeefb2b1",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 43,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I^Ipid_t pid \u003d waitpid(-1, \u0026status, 0);^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "36f07bf3_23c13ec6",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 44,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dcf11f0f_7fcc3f75",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 45,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I^Iif (pid \u003c 0) {^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "049db253_0676d2d2",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 46,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I^I^Iperror(\"waitpid failed\");^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c2b9b57e_dafff641",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 47,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I^I^Ireturn -1;^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "edc0f48d_dae991e2",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 48,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I^I}^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ec9949c9_6dfee986",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I^Iprintf(\"%d: waited %d (%d/%d)\\n\",^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7719ea9c_398eced3",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I^I    mypid, pid, (i+1), proc_num);^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "13f7bdec_50edc2cb",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 51,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I}^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f6209019_2d1ee857",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^Iprintf(\"%d: all done\\n\", mypid);^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d170a623_1a0c5b28",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9aba2d70_de1af35e",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 54,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^Ireturn 0;^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c71ef970_b96cb0bb",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 55,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+}^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c3c1b92c_dc389fce",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "32d76a88_d22e421e",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 57,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+int^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f3f569d7_c1d5e0f9",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 58,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+main(int argc, char *argv[])^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3e7d713d_4b7557b9",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 59,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+{^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a6f59547_0d69b9e8",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 60,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^Iint result \u003d 0;^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4c5f09e7_24f8a324",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 61,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^Iint proc_num \u003d atoi(argv[1]);^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "34257dae_b75a27f5",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 62,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0e248ae3_1baaff41",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 63,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^Iif (do_fork(proc_num)) {^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "90a3392d_6eb0663a",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 64,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I^Iresult \u003d -1;^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cce4345e_ab530f69",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 65,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I}^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba228fe2_f46eb9bb",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 66,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d3cdd7eb_817f6eae",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 67,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^Iif (do_wait(proc_num)) {^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9553017d_64b0e5bf",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 68,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I^Iresult \u003d -1;^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7f0504a3_6194139f",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^I}^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "10eb1383_593ae4d5",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 70,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^Ireturn result;^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5ef054d4_c3e3f84c",
+        "filename": "test/mcexec_options/arm64/allow_oversubscribe.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 71,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+}^M$",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0a2ad424_b7a34bc4",
+        "filename": "test/mcexec_options/arm64/extend_heap.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "WARNING: unchecked sscanf return value\n+\t\t\tsscanf(buf, \"%lx-%lx\", \u0026start, \u0026bf_end);",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7fb44d01_965efec0",
+        "filename": "test/mcexec_options/arm64/extend_heap.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 72,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "WARNING: unchecked sscanf return value\n+\t\t\tsscanf(buf, \"%lx-%lx\", \u0026start, \u0026af_end);",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b63f5c13_d9e2c086",
+        "filename": "test/mcexec_options/arm64/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+gcc -o extend_heap extend_heap.c $",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "54504698_470b2ed7",
+        "filename": "test/mcexec_options/arm64/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+gcc -o allow_oversubscribe allow_oversubscribe.c $",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "08ee887e_768c04f3",
+        "filename": "test/mcexec_options/arm64/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+gcc -o stack_premap stack_premap.c $",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6d0389a0_9b634df9",
+        "filename": "test/mcexec_options/arm64/run_stack_premap.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 41,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+${MCEXEC} --stack-premap ${NEAR_PGSZ_HIGH},${LPGSZ} ./stack_premap ${NEAR_PGSZ_HIGH_VAL}",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e25b91ca_637b02a6",
+        "filename": "test/mcexec_options/arm64/run_stack_premap.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+${MCEXEC} --stack-premap ${NEAR_LPGSZ_HIGH},2g ./stack_premap ${NEAR_LPGSZ_HIGH_VAL}",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0ce124e7_27399c74",
+        "filename": "test/mcexec_options/arm64/stack_premap.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 59,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T10:14:15Z",
+      "side": 1,
+      "message": "WARNING: unchecked sscanf return value\n+\t\t\tsscanf(buf, \"%lx-%lx\", \u0026start, \u0026end);",
+      "revId": "01d84ab284b82071df0db6a66c81e5d68d68640c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
