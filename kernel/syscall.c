@@ -9381,6 +9381,7 @@ int util_thread(struct uti_attr *arg)
 		do_exit(rc);
 	} else {
 		kprintf("%s: ERROR: do_syscall() failed (%ld)\n", __FUNCTION__, rc);
+		do_exit(rc);
 	}
 
  out:
