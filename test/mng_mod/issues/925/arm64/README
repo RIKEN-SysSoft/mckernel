@@ -1,0 +1,99 @@
+/* README COPYRIGHT FUJITSU LIMITED 2018 */
+
+XPMEM ドライバのfork()時の関連オブジェクトコピー機能テストセットREADME
+
+(1) テストの実行方法
+	以下の手順でテストを実行する
+		1. $HOME/.mck_test_configを用意する
+		   当該ファイルは、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+		   $HOMEにコピーし、適宜編集する
+		2. Makefileの変数XPMEM_DIRの内容を、XPMEMライブラリがインストールされているディレクトリに変更する
+		3. XPMEMドライバをinsmodする
+		4. make test を実行する
+
+(2) テスト項目詳細
+1. Issueで報告されたテストプログラムによる確認
+	ISSUE01(rusage012) 親プロセス、子プロセスの間でxpmem領域への書き込み、参照が正しく行えること
+	⇒ テストプログラム実行時に"1234"が出力され、且つ"xpmem_remove failed "が
+	   出力されなければOK
+
+2. McKernelでのXPMEM操作の基本動作確認
+	CT_001: 単一プロセスでのXPMEM操作
+		1. 実行したプロセスがxpmem_make -> xpmem_get -> xpmem_attach -> xpmem_detach -> xpmem_remove
+
+	CT_002: 子プロセスでのXPMEM操作
+		1. 親プロセスがfork()
+		2. 子プロセスがxpmem_make -> xpmem_get -> xpmem_attach -> xpmem_detach ->xpmem_remove
+		3. 子プロセス終了後、親プロセスが終了
+
+	CT_003: 親プロセスがmakeした共有領域への子プロセスによるXPMEM操作
+		1. 親プロセスがxpmem_make
+		2. fork()で子プロセスを作成
+		3. 子プロセスで、xpmem_get -> xpmem_attach -> 値(TEST_VAL)の設定-> xpmem_detach
+		4. 子プロセスが終了
+		5. 親プロセスが、子プロセスによって設定された値(TEST_VAL)を確認
+		6. 親プロセスがxpmem_remove
+
+	CT_004: fork()後に親プロセスがmakeした共有領域への子プロセスによるXPMEM操作
+		1. fork()で子プロセスを作成
+		2. 親プロセスがxpmem_make
+		3. 子プロセスで、xpmem_get -> xpmem_attach -> 値(TEST_VAL)の設定-> xpmem_detach
+		4. 子プロセスが終了
+		5. 親プロセスが、子プロセスによって設定された値(TEST_VAL)を確認
+		6. 親プロセスがxpmem_remove
+
+	CT_005: 子プロセスがxpmem_attach後、xpmem_detachをせずに終了
+		1. 親プロセスがxpmem_make
+		2. fork()で子プロセスを作成
+		3. 子プロセスで、xpmem_get -> xpmem_attach
+		4. 子プロセスが終了
+		5. 親プロセスがxpmem_remove
+
+	CT_006: 子プロセスがXPMEM操作を行う時点で、xpmem_makeをした親プロセスが終了している
+		1. 親プロセスがxpmem_make
+		2. fork()で子プロセスを作成
+		3. 親プロセスが終了
+		4. 子プロセスで、xpmem_get (失敗)
+		5. 子プロセスが終了
+
+	CT_007: xpmem_make 呼び出しの異常系
+		1. xpmem_make の第1引数に不正なアドレスを指定する(失敗)
+		2. 1度xpmem_make を実施したメモリ領域に対して、再度xpmem_make を行う(成功)
+
+	CT_008: xpmem_get 呼び出しの異常系
+		1. xpmem_get の第1引数に不正なsegidを指定する(失敗)
+		2. 1度xpmem_get を実施したsegidで、再度xpmem_get を行う(成功)
+
+	CT_009: xpmem_attach 呼び出しの異常系
+		1. xpmem_attach の第1引数に不正なapidを指定する(失敗)
+		2. 1度xpmem_attach を実施したapidで、再度xpmem_attach を行う(成功)
+
+	CT_010: xpmem_detach 呼び出しの異常系
+		1. xpmem_detach の第1引数に不正なアドレスを指定する(成功)
+		2. 1度xpmem_detach を実施したメモリ領域に対して、再度xpmem_detach を行う(成功)
+
+	CT_011: xpmem_remove 呼び出しの異常系
+		1. xpmem_remove の第1引数に不正なsegidを指定する(失敗)
+		2. 1度xpmem_remove を実施したsegidで、再度xpmem_remove を行う(失敗)
+
+
+(3) 実行結果ログ
+	result.logファイル内に実行時のログを記載する。
+	実行に利用したIHK/McKernelは、IA版における下記の版数相当の
+	arm64版移植IHK/McKernelである。
+
+	IHK
+		commit d6fcbee8cb91f9ec4b49f97c918e696ac0335aaf
+		Author: Shiratori, Takehiro <fj0300es@aa.jp.fujitsu.com>
+		Date:   Tue Oct 16 16:25:33 2018 +0900
+
+	McKernel
+		commit 6f9fef2b13447c74c36d15cf5ebd186f8395ccca
+		Author: Ken Sato <ken.sato.ty@hitachi-solutions.com>
+		Date:   Tue Sep 25 10:05:41 2018 +0900
+
+(4) 備考
+	特になし。
+
+
+以上。
