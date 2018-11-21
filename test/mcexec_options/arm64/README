@@ -1,0 +1,74 @@
+/* README COPYRIGHT FUJITSU LIMITED 2018 */
+
+mcexecへの追加実装オプションテストセットREADME
+
+(1) テストの実行方法
+	以下の手順でテストを実行する
+		1. $HOME/.mck_test_configを用意する
+		   当該ファイルは、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+		   $HOMEにコピーし、適宜編集する
+		2. configのページサイズ変数群の定義を環境に合わせる(デフォルトでは64K-page設定が有効)
+		3. make testを実行する
+
+(2) テスト項目詳細
+	【-h オプション】
+	TEST001 "-h xxK"指定のヒープ拡張確認(サイズはページサイズより小さい値)
+	TEST002 "-h xxM"指定のヒープ拡張確認(サイズはラージページサイズより小さい値)
+	TEST003 "-h 1G"指定のヒープ拡張確認
+	TEST004 "-h xxk"指定のヒープ拡張確認(サイズはページサイズより大きく、ラージページサイズより小さい値)
+	TEST005 "-h xxm"指定のヒープ拡張確認(サイズはラージページサイズより大きい値)
+	TEST006 "-h 2g"指定のヒープ拡張確認
+	TEST007 "-h xx"指定のヒープ拡張確認(サイズはノーマルページサイズ)
+	TEST008 "-h xx"指定のヒープ拡張確認(サイズはラージページサイズ)
+
+	【-m オプション】
+	TEST009 任意のMcKernelに含むnodeを-mで指定する
+	TEST010 HOST上には存在するが、McKernelには割り当たっていないnodeを-mで指定する
+	TEST011 「-」を含む指定を行い、連続したnodeを割り当てる
+	TEST012 「,」で区切った指定を行い、nodeを割り当てる
+	TEST013 「!」を使用し、指定除外を含むnodeを割り当てる
+	TEST014 「+」を使用したnode指定を含むnodeを割り当てる
+	TEST015 allを指定したnodeを割り当てる
+	TEST016 存在しないnode番号を指定する
+
+	【-n オプション】
+	TEST017 -n 2を指定して、任意のa.outを実行して動作することを確認する
+	TEST018 -n 4(McKernel割り当てコア数と同一)を指定して、任意のa.outを実行して動作することを確認する
+	TEST019 McKernel割り当てコア数より大きい数値を指定して、エラーになることを確認する
+	TEST020 数値以外を含む文字列を指定して、エラーになることを確認する
+
+	【-O オプション】
+	TEST021 mcreboot.shの-Oオプション無効時、McKernelコア数を越えるforkがEINVALで失敗すること
+	TEST022 mcreboot.shの-Oオプション有効時、McKernelコア数を越えるforkが成功すること
+
+	【-s(--stack-premap) オプション】
+	TEST023 "-s xxK"指定のpremap領域確認(サイズはページサイズより小さい値)
+	TEST024 "-s xxM"指定のpremap領域確認(サイズはラージページサイズより小さい値)
+	TEST025 "-s 1G"指定のpremap領域確認
+	TEST026 "--stack-premap xxk"指定のpremap領域確認(サイズはページサイズより大きく、ラージページサイズより小さい値)
+	TEST027 "--stack-premap xxm"指定のpremap領域確認(サイズはラージページサイズより大きい値)
+	TEST028 "--stack-premap 2g"指定のpremap領域確認
+	TEST029 "-s xx"指定のpremap領域確認(サイズはノーマルページサイズ)
+	TEST030 max指定値がsize指定値よりも小さい場合、max値分でpremapする事を確認
+
+(3) 実行結果ログ
+	result.logファイル内に実行時のログを記載する。
+	実行に利用したIHK/McKernelは、IA版における下記の版数相当の
+	arm64版移植IHK/McKernelである。
+
+	IHK
+		commit d6fcbee8cb91f9ec4b49f97c918e696ac0335aaf
+		Author: Shiratori, Takehiro <fj0300es@aa.jp.fujitsu.com>
+		Date:   Tue Oct 16 16:25:33 2018 +0900
+
+	McKernel
+		commit 6f9fef2b13447c74c36d15cf5ebd186f8395ccca
+		Author: Ken Sato <ken.sato.ty@hitachi-solutions.com>
+		Date:   Tue Sep 25 10:05:41 2018 +0900
+
+(4) 備考
+	本テストセットは一部IHK/McKernelの実装挙動を期待としてテスト項目を作成しているため、
+	全ての項目がHOST-Linux上でもOKになるとは限らない。
+
+
+以上。
