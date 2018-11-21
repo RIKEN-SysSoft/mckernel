@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "0ec50398_41085816",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:08:39Z",
+      "side": 1,
+      "message": "WARNING: Possible unwrapped commit description (prefer a maximum 75 chars per line)\nSee linux 4.18\u0027s 27d036e33237e (\"mm: Remove return value of zap_vma_ptes()\")",
+      "revId": "6581f9b4b2d2a0db4f890da4e0e671f00f121bb6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1b83fd66_fbb8fa50",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2088,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:08:39Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003c KERNEL_VERSION(4, 18, 0)",
+      "revId": "6581f9b4b2d2a0db4f890da4e0e671f00f121bb6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3de2b1c3_c38f9d3b",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2110,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:08:39Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4, 18, 0)",
+      "revId": "6581f9b4b2d2a0db4f890da4e0e671f00f121bb6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
