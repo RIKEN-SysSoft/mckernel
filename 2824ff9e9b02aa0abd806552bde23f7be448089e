@@ -1,0 +1,395 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "52cb02d2_4e61c8bd",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 541,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint ret \u003d 0;\n+\tif ((pgsize \u003d\u003d PTL4_CONT_SIZE \u0026\u0026 CONFIG_ARM64_PGTABLE_LEVELS \u003e 3) ||",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0da00f97_e1b289c9",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 553,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint level \u003d -EINVAL;\n+\tif ((pgsize \u003d\u003d PTL4_CONT_SIZE || pgsize \u003d\u003d PTL4_SIZE)",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9268d674_75d7d689",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 570,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tsize_t pgsize \u003d 0;\n+\tswitch (level) {",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "76d5e33a_523f3042",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 594,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tsize_t pgsize \u003d 0;\n+\tswitch (level) {",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9d6ee3cd_837b9b69",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 618,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint ret \u003d 0;\n+\tswitch (level) {",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9b88c2f1_1ffae8f2",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 639,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "ERROR: \"foo* bar\" should be \"foo *bar\"\n+static inline pte_t* get_compound_head(pte_t *__ptep, size_t __pgsize)",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5cdc345f_74cbdcdc",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 643,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint shift \u003d 0;\n+\tswitch (pgsize_to_tbllv(__pgsize)) {",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "93410e6a_8ed3b940",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 662,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "ERROR: \"(foo*)\" should be \"(foo *)\"\n+\treturn  (pte_t*)__page_align(__ptep, align);",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a5ce7ab7_01c25e61",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 665,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "ERROR: \"foo* bar\" should be \"foo *bar\"\n+static inline pte_t* get_compound_tail(pte_t *__ptep, size_t __pgsize)",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "20c03a88_046c1d2a",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 669,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint shift \u003d 0;\n+\tswitch (pgsize_to_tbllv(__pgsize)) {",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a2fd27b4_2c334dc1",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 688,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "ERROR: \"(foo*)\" should be \"(foo *)\"\n+\treturn  (pte_t*)__page_align_up(__ptep + 1, align) - 1;",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "429d2b2e_5f083dc9",
+        "filename": "arch/arm64/kernel/include/pgtable-hwdef.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 51,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define CONT_PTE_SHIFT\t\t5   //Contiguousでまとまるエントリ数のシフト値",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "32376a8b_aafbbea1",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 562,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "ERROR: \"foo* bar\" should be \"foo *bar\"\n+static inline int ptl4_is_compound(const pte_t* l4p)",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5a3543b8_2fe905f7",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 565,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tpte_t pte \u003d ptl4_val(l4p);\n+\treturn pte_is_compound(\u0026pte);",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3e002bc6_46f5b241",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 567,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "ERROR: \"foo* bar\" should be \"foo *bar\"\n+static inline int ptl3_is_compound(const pte_t* l3p)",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "11c9ba1c_0d4e3a21",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 570,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tpte_t pte \u003d ptl3_val(l3p);\n+\treturn pte_is_compound(\u0026pte);",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ff684fa6_a7e48b1e",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 572,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "ERROR: \"foo* bar\" should be \"foo *bar\"\n+static inline int ptl2_is_compound(const pte_t* l2p)",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9f9af32e_34a93f04",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 575,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tpte_t pte \u003d ptl2_val(l2p);\n+\treturn pte_is_compound(\u0026pte);",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "759e7e77_61b215e4",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 577,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "ERROR: \"foo* bar\" should be \"foo *bar\"\n+static inline int ptl1_is_compound(const pte_t* l1p)",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "868f6759_4b1f1cb8",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 580,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tpte_t pte \u003d ptl1_val(l1p);\n+\treturn pte_is_compound(\u0026pte);",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c3cdd088_b04c985e",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 582,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "ERROR: \"foo* bar\" should be \"foo *bar\"\n+static inline int ptl_is_compound(const pte_t* p, int level)",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "04b6f7bd_314ed0f0",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 585,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint ret \u003d 0;\n+\tswitch (level) {",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "034dfa66_a9e27ba1",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 599,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T17:39:02Z",
+      "side": 1,
+      "message": "WARNING: Prefer using \u0027\"%s...\", __func__\u0027 to using \u0027ptl_is_compound\u0027, this function\u0027s name, in a string\n+\t\tpanic(\"ptl_is_compound failed.\\n\");",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
