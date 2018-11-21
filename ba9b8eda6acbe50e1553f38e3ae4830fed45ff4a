@@ -1,0 +1,276 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "c1efde8c_54098231",
+        "filename": "test/proc_maps/arm64/Makefile",
+        "patchSetId": 2
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T08:25:56Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+LDFLAGS \u003d $",
+      "revId": "ba9b8eda6acbe50e1553f38e3ae4830fed45ff4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3317b6d4_7adf3522",
+        "filename": "test/proc_maps/arm64/proc_maps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 62,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T08:25:56Z",
+      "side": 1,
+      "message": "WARNING: Prefer ARRAY_SIZE(mapconf)\n+\tfor (i \u003d 0; i \u003c sizeof(mapconf) / sizeof(mapconf[0]); i++) {",
+      "revId": "ba9b8eda6acbe50e1553f38e3ae4830fed45ff4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "75a327cc_ae4fd508",
+        "filename": "test/proc_maps/arm64/proc_maps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 72,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T08:25:56Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\"%lx-%lx %s%s%s%s\", mapconf[i].addr, mapconf[i].addr + page_size,",
+      "revId": "ba9b8eda6acbe50e1553f38e3ae4830fed45ff4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "638953d1_e21f35a4",
+        "filename": "test/proc_maps/arm64/proc_maps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 90,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T08:25:56Z",
+      "side": 1,
+      "message": "WARNING: unchecked sscanf return value\n+\t\tsscanf(buf, \"%lx-%lx %s %lx %lx:%lx %lx\\t\\t\\t%s\",\n+\t\t\t\u0026start, \u0026end, prot, \u0026offset, \u0026dev1, \u0026dev2, \u0026inode, pathname);",
+      "revId": "ba9b8eda6acbe50e1553f38e3ae4830fed45ff4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b94e5dff_61c4df80",
+        "filename": "test/proc_maps/arm64/proc_maps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 91,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T08:25:56Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\u0026start, \u0026end, prot, \u0026offset, \u0026dev1, \u0026dev2, \u0026inode, pathname);",
+      "revId": "ba9b8eda6acbe50e1553f38e3ae4830fed45ff4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "031e4c03_5fac5083",
+        "filename": "test/proc_maps/arm64/proc_maps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 120,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T08:25:56Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tunsigned long stack_addr \u003d (unsigned long)pathname;",
+      "revId": "ba9b8eda6acbe50e1553f38e3ae4830fed45ff4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "64e1bca1_d3e57dac",
+        "filename": "test/proc_maps/arm64/proc_maps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 121,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T08:25:56Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\t\t\t\tunsigned long stack_addr \u003d (unsigned long)pathname;\n+\t\t\t\t\tstack_addr--;",
+      "revId": "ba9b8eda6acbe50e1553f38e3ae4830fed45ff4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3e83a994_c695b069",
+        "filename": "test/proc_maps/arm64/proc_maps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 134,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T08:25:56Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tunsigned long heap_addr \u003d (unsigned long)sbrk(0);",
+      "revId": "ba9b8eda6acbe50e1553f38e3ae4830fed45ff4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5714cf51_fc518238",
+        "filename": "test/proc_maps/arm64/proc_maps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 135,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T08:25:56Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\t\t\t\tunsigned long heap_addr \u003d (unsigned long)sbrk(0);\n+\t\t\t\t\theap_addr--;",
+      "revId": "ba9b8eda6acbe50e1553f38e3ae4830fed45ff4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8da09dfd_a0bf6fa3",
+        "filename": "test/proc_maps/arm64/proc_maps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 149,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T08:25:56Z",
+      "side": 1,
+      "message": "WARNING: Prefer ARRAY_SIZE(mapconf)\n+\t\tfor (i \u003d 0; i \u003c sizeof(mapconf) / sizeof(mapconf[0]); i++) {",
+      "revId": "ba9b8eda6acbe50e1553f38e3ae4830fed45ff4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c9f2f0ea_634e43a8",
+        "filename": "test/proc_maps/arm64/proc_maps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 160,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T08:25:56Z",
+      "side": 1,
+      "message": "WARNING: Prefer ARRAY_SIZE(mapconf)\n+\tfor (i \u003d 0; i \u003c sizeof(mapconf) / sizeof(mapconf[0]); i++) {",
+      "revId": "ba9b8eda6acbe50e1553f38e3ae4830fed45ff4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "89067bf3_b8010f27",
+        "filename": "test/proc_maps/arm64/proc_maps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 166,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T08:25:56Z",
+      "side": 1,
+      "message": "WARNING: Prefer ARRAY_SIZE(mapconf)\n+\tfor (i \u003d 0; i \u003c sizeof(mapconf) / sizeof(mapconf[0]); i++) {",
+      "revId": "ba9b8eda6acbe50e1553f38e3ae4830fed45ff4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0346734e_832053d9",
+        "filename": "test/proc_maps/arm64/proc_maps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 168,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T08:25:56Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"TEST%03d: NG, %s not found.\\n\", i + 1, mapconf[i].exp);",
+      "revId": "ba9b8eda6acbe50e1553f38e3ae4830fed45ff4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa29a52e_11e54fb3",
+        "filename": "test/proc_maps/arm64/proc_maps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 221,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T08:25:56Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tprintf(\"TEST%03d: NG, [stack] pathname found, but addr is not expected.\\n\", ++i);",
+      "revId": "ba9b8eda6acbe50e1553f38e3ae4830fed45ff4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fcb4a586_9d903fdc",
+        "filename": "test/proc_maps/arm64/proc_maps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 232,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T08:25:56Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tprintf(\"TEST%03d: NG, [heap] pathname found, but addr is not expected.\\n\", ++i);",
+      "revId": "ba9b8eda6acbe50e1553f38e3ae4830fed45ff4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c4a64f6a_2b6bfe33",
+        "filename": "test/proc_maps/arm64/result.log",
+        "patchSetId": 2
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T08:25:56Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+gcc -o proc_maps proc_maps.c $",
+      "revId": "ba9b8eda6acbe50e1553f38e3ae4830fed45ff4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
