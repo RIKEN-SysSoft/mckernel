@@ -4886,7 +4886,7 @@ _ACEOF
 
 ABS_SRCDIR=$( cd $( dirname $0 ); pwd )
 IHK_ABS_SRCDIR=${ABS_SRCDIR}/../ihk
-BUILDID=$( cd $IHK_ABS_SRCDIR; if [ ! -e .git ]; then echo $IHK_VERSION; else bash -c 'git rev-list -1 HEAD | cut -c1-8'; fi )
+BUILDID=$( git --git-dir=$IHK_ABS_SRCDIR/.git rev-parse --short HEAD 2>/dev/null || echo $IHK_VERSION )
 { $as_echo "$as_me:${as_lineno-$LINENO}: BUILDID=$BUILDID" >&5
 $as_echo "$as_me: BUILDID=$BUILDID" >&6;}
 if test "x$BUILDID" != "x" ; then
