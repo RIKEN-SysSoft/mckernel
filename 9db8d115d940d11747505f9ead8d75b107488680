@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "0c47d3c6_58e58ea4",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T07:07:17Z",
+      "side": 1,
+      "message": "WARNING: Possible unwrapped commit description (prefer a maximum 75 chars per line)\nInstead of relying on the kernel version, the changes removed some defines so",
+      "revId": "9db8d115d940d11747505f9ead8d75b107488680",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
