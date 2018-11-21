@@ -9319,7 +9319,12 @@ extern void save_uctx(void *, void *);
 int util_show_syscall_profile()
 {
 	int i;
-	struct uti_desc *desc = (struct uti_desc *)uti_desc;
+	struct uti_desc *desc;
+
+	if (!uti_desc) {
+		return -EINVAL;
+	}
+	desc = (struct uti_desc *)uti_desc;
 
 	kprintf("Syscall stats for offloaded thread:\n");
 	for (i = 0; i < 512; i++) {
@@ -9415,6 +9420,7 @@ int util_thread(struct uti_attr *arg)
 		do_exit(rc);
 	} else {
 		kprintf("%s: ERROR: do_syscall() failed (%ld)\n", __FUNCTION__, rc);
+		do_exit(rc);
 	}
 
  out:
