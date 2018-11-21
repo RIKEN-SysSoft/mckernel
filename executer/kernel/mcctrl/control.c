@@ -3158,7 +3158,7 @@ mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *_desc)
 	if (kattr->attr.flags & UTI_FLAG_HIGH_PRIORITY) {
 		struct sched_param sp;
 
-		sp.sched_priority = 1;
+		sp.sched_priority = 99;
 		if ((rc = mcctrl_sched_setscheduler_nocheck(current, SCHED_FIFO, &sp))) {
 			pr_err("%s: error: setscheduler_nocheck (%d)\n",
 			       __func__, rc);
