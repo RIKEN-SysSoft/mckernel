@@ -9280,7 +9280,12 @@ extern void save_uctx(void *, void *);
 int util_show_syscall_profile()
 {
 	int i;
-	struct uti_desc *desc = (struct uti_desc *)uti_desc;
+	struct uti_desc *desc;
+
+	if (!uti_desc) {
+		return -EINVAL;
+	}
+	desc = (struct uti_desc *)uti_desc;
 
 	kprintf("Syscall stats for offloaded thread:\n");
 	for (i = 0; i < 512; i++) {
