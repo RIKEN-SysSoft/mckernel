@@ -80,6 +80,20 @@ static void *progress_fn(void* data)
 	double start2, end2;
 
 #if 0
+	{
+		struct sched_param param;
+		ret = sched_getparam(0, &param);
+		if (ret) {
+			pr_err("%s: error: sched_getparam: %s\n",
+			       __func__, strerror(errno));
+		}
+		pr_err("%s: info: scheduler: %d (SCHED_FIFO: %d), prio: %d\n",
+		       __func__, sched_getscheduler(0), SCHED_FIFO,
+		       param.sched_priority);
+	}
+#endif
+
+#if 0
 	ret = syscall(732);
 	if (ret == -1) {
 		pr_debug("Progress is running on Linux\n");
