@@ -1,0 +1,174 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "a470991f_3d81ef9f",
+        "filename": "test/mcstat/arm64/get_rusage.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T11:18:10Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf(\"memory_kmem_max_usage : 0x%lx\\n\", mck_rusage.memory_kmem_max_usage);",
+      "revId": "0cc3c9be694216f423d60528120a8580e7f78f90",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2b69093a_0bfc72ab",
+        "filename": "test/mcstat/arm64/run.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T11:18:10Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+${MCEXEC} ${TESTMCK} -s mem_limits -n 0 -- -s $((64*1024*1024)) -c 1 -f mmap \u003e /dev/null 2\u003e\u00261",
+      "revId": "0cc3c9be694216f423d60528120a8580e7f78f90",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2ac9756c_56051e1a",
+        "filename": "test/mcstat/arm64/run.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T11:18:10Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\techo \"TEST002: NG, memory current value (exp:${exp_mem_current}MiB val:${mem_current}MiB)\"",
+      "revId": "0cc3c9be694216f423d60528120a8580e7f78f90",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0dfa4a0a_e58798c1",
+        "filename": "test/mcstat/arm64/run.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 62,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T11:18:10Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\techo \"TEST003: NG, memory max value (exp:${exp_mem_max}MiB val:${mem_current}MiB)\"",
+      "revId": "0cc3c9be694216f423d60528120a8580e7f78f90",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "704c2bbb_514df9ef",
+        "filename": "test/mcstat/arm64/run.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 70,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T11:18:10Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\techo \"TEST004: NG, tsc system value (exp:${exp_tsc_system} val:${tsc_system})\"",
+      "revId": "0cc3c9be694216f423d60528120a8580e7f78f90",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e06d7c49_b5d5bd63",
+        "filename": "test/mcstat/arm64/run.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 78,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T11:18:10Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\techo \"TEST005: NG, tsc user value (exp:${exp_tsc_system} val:${tsc_system})\"",
+      "revId": "0cc3c9be694216f423d60528120a8580e7f78f90",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "85bb70c5_f94ec3e0",
+        "filename": "test/mcstat/arm64/run.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T11:18:10Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\techo \"TEST006: NG, current thread value (exp:${exp_thread_current} val:${thread_current})\"",
+      "revId": "0cc3c9be694216f423d60528120a8580e7f78f90",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a0308705_c5473baa",
+        "filename": "test/mcstat/arm64/run.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 94,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T11:18:10Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\techo \"TEST007: NG, max thread value (exp:${exp_thread_max} val:${thread_max})\"",
+      "revId": "0cc3c9be694216f423d60528120a8580e7f78f90",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2dbe9638_560bd57b",
+        "filename": "test/mcstat/arm64/run.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 120,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T11:18:10Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\techo \"TEST010: NG, -s option get status.(exp:${exp_status} status:${output})\"",
+      "revId": "0cc3c9be694216f423d60528120a8580e7f78f90",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7dd65884_2ff6b8d3",
+        "filename": "test/mcstat/arm64/run.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 144,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-21T11:18:10Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\toutput\u003d`cat ./tmp.log | sort | uniq -c | sort -nr | head -1 | cut -c 7-8`",
+      "revId": "0cc3c9be694216f423d60528120a8580e7f78f90",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
