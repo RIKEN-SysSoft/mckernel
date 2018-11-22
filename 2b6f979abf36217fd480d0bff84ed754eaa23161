@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "e3679d7e_2c48e114",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1713,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-11-22T07:09:15Z",
+      "side": 0,
+      "message": "My guess of the intention:\n(1) Clean up PTE when remap_file_pages wasn\u0027t called\n(2) Revert to the file-map offset record when remap_file_pages was called so that the next access will cause PF to page-in the contents again\nSo, I guess the fix on the right is correct and required, regardless of contiguous PTE.\nCorrect me if I\u0027m wrong.",
+      "range": {
+        "startLine": 1713,
+        "startChar": 0,
+        "endLine": 1713,
+        "endChar": 44
+      },
+      "revId": "2b6f979abf36217fd480d0bff84ed754eaa23161",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
