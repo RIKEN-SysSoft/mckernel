@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "24c2d0e8_0246f2d8",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2585,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-22T04:49:50Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\telse if ((cursize \u003e PTL3_CONT_SIZE) \u0026\u0026 CONFIG_ARM64_PGTABLE_LEVELS \u003e 2) {",
+      "revId": "da3f536ae79efeb4d9dba0bff91b2d341f288930",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
