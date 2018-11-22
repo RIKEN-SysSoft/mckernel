@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "504cab27_375b659e",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 678,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-22T04:51:46Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\t\tsize_t cmp_pgsize \u003d tbllv_to_cmppgsize(level);\n+\t\t\tif (((unsigned long)pgaddr \u0026 (cmp_pgsize - 1)) \u003d\u003d 0) {",
+      "revId": "e73009daa023c80ae62aec5b902fc94467ecbb7d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a20d531f_74d01ab8",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 680,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-22T04:51:46Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tpgalign \u003d tbllv_to_cmppgshift(level) - PAGE_SHIFT;",
+      "revId": "e73009daa023c80ae62aec5b902fc94467ecbb7d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
