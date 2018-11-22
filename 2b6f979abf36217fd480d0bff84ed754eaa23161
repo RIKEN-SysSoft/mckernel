@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3b5ee7a6_45f5f3f3",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2622,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-22T04:51:14Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\tsize_t cmp_pgsize \u003d tbllv_to_cmppgsize(level);\n+\t\tif (__page_offset(pgaddr, cmp_pgsize) \u003d\u003d 0) {",
+      "revId": "2b6f979abf36217fd480d0bff84ed754eaa23161",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8ebaf3ee_0ba40f44",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2655,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-22T04:51:14Z",
+      "side": 1,
+      "message": "ERROR: \"foo* bar\" should be \"foo *bar\"\n+\tpte_t* ptep;",
+      "revId": "2b6f979abf36217fd480d0bff84ed754eaa23161",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
