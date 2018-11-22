@@ -1,0 +1,157 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "36f979b4_a91fac56",
+        "filename": "arch/arm64/kernel/include/arch/mman.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-22T04:46:22Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define MAP_HUGE_FIRST_CONT_BLOCK  ((__PTL3_SHIFT + __PTL3_CONT_SHIFT) \u003c\u003c MAP_HUGE_SHIFT)",
+      "revId": "13926f7bc3a0cabff321cc5ffe3ddb230390b2df",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "052c1a5b_8de577ac",
+        "filename": "arch/arm64/kernel/include/arch/shm.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-22T04:46:22Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define SHM_HUGE_FIRST_CONT_BLOCK  ((__PTL3_SHIFT + __PTL3_CONT_SHIFT) \u003c\u003c SHM_HUGE_SHIFT)",
+      "revId": "13926f7bc3a0cabff321cc5ffe3ddb230390b2df",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dadb4d3a_8fd74ea0",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2931,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-22T04:46:22Z",
+      "side": 1,
+      "message": "WARNING: Unnecessary parentheses - maybe \u003d\u003d should be \u003d ?\n+\t} else if ((PAGE_SIZE \u003d\u003d _SZ16KB)) {",
+      "revId": "13926f7bc3a0cabff321cc5ffe3ddb230390b2df",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1b0659e3_512b7bf9",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2935,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-22T04:46:22Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\tuint64_t parange \u003d read_sysreg(id_aa64mmfr0_el1) \u0026 7;\n+\t\tFIRST_LEVEL_BLOCK_SUPPORT \u003d (parange \u003e\u003d ID_AA64MMFR0_PARANGE_52);",
+      "revId": "13926f7bc3a0cabff321cc5ffe3ddb230390b2df",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "95573163_2a25e2a0",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2935,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-22T04:46:22Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tFIRST_LEVEL_BLOCK_SUPPORT \u003d (parange \u003e\u003d ID_AA64MMFR0_PARANGE_52);",
+      "revId": "13926f7bc3a0cabff321cc5ffe3ddb230390b2df",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a6b645f3_2b5ec355",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1751,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-22T04:46:22Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t} else if ((FIRST_LEVEL_BLOCK_SUPPORT \u0026\u0026 hugeshift \u003d\u003d MAP_HUGE_FIRST_BLOCK) ||",
+      "revId": "13926f7bc3a0cabff321cc5ffe3ddb230390b2df",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba91cde3_86baee8d",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1752,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-22T04:46:22Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t   (FIRST_LEVEL_BLOCK_SUPPORT \u0026\u0026 hugeshift \u003d\u003d MAP_HUGE_FIRST_CONT_BLOCK) ||",
+      "revId": "13926f7bc3a0cabff321cc5ffe3ddb230390b2df",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "75fefef4_b0c29c10",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1824,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-22T04:46:22Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t} else if ((FIRST_LEVEL_BLOCK_SUPPORT \u0026\u0026 hugeshift \u003d\u003d SHM_HUGE_FIRST_BLOCK) ||",
+      "revId": "13926f7bc3a0cabff321cc5ffe3ddb230390b2df",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ca1cb7cd_5a18c23f",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1825,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-22T04:46:22Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t   (FIRST_LEVEL_BLOCK_SUPPORT \u0026\u0026 hugeshift \u003d\u003d SHM_HUGE_FIRST_CONT_BLOCK) ||",
+      "revId": "13926f7bc3a0cabff321cc5ffe3ddb230390b2df",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
