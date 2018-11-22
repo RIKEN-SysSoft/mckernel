@@ -1,0 +1,140 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "ead439ae_ae7d62e0",
+        "filename": "arch/arm64/kernel/include/arch/mman.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-22T04:46:49Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+# define MAP_HUGE_FIRST_CONT_BLOCK ((__PTL3_SHIFT + __PTL3_CONT_SHIFT) \u003c\u003c MAP_HUGE_SHIFT)",
+      "revId": "9c86303d88c519155752a18e0f0860536682c7be",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3b328371_fb42a517",
+        "filename": "arch/arm64/kernel/include/arch/mman.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-22T04:46:49Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define MAP_HUGE_SECOND_CONT_BLOCK ((__PTL2_SHIFT + __PTL2_CONT_SHIFT) \u003c\u003c MAP_HUGE_SHIFT)",
+      "revId": "9c86303d88c519155752a18e0f0860536682c7be",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6ffc0ac9_dcc5f99a",
+        "filename": "arch/arm64/kernel/include/arch/mman.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-22T04:46:49Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define MAP_HUGE_THIRD_CONT_BLOCK  ((__PTL1_SHIFT + __PTL1_CONT_SHIFT) \u003c\u003c MAP_HUGE_SHIFT)",
+      "revId": "9c86303d88c519155752a18e0f0860536682c7be",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5686545e_3fbc9ee1",
+        "filename": "arch/arm64/kernel/include/arch/shm.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-22T04:46:49Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+# define SHM_HUGE_FIRST_CONT_BLOCK ((__PTL3_SHIFT + __PTL3_CONT_SHIFT) \u003c\u003c SHM_HUGE_SHIFT)",
+      "revId": "9c86303d88c519155752a18e0f0860536682c7be",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ddea9587_12709855",
+        "filename": "arch/arm64/kernel/include/arch/shm.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-22T04:46:49Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define SHM_HUGE_SECOND_CONT_BLOCK ((__PTL2_SHIFT + __PTL2_CONT_SHIFT) \u003c\u003c SHM_HUGE_SHIFT)",
+      "revId": "9c86303d88c519155752a18e0f0860536682c7be",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f47ac5db_6730d1ed",
+        "filename": "arch/arm64/kernel/include/arch/shm.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-22T04:46:49Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define SHM_HUGE_THIRD_CONT_BLOCK  ((__PTL1_SHIFT + __PTL1_CONT_SHIFT) \u003c\u003c SHM_HUGE_SHIFT)",
+      "revId": "9c86303d88c519155752a18e0f0860536682c7be",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7739ed66_577a8cf2",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1749,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-22T04:46:49Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\tint hugeshift \u003d flags \u0026 (0x3F \u003c\u003c MAP_HUGE_SHIFT);\n+\t\tif (hugeshift \u003d\u003d 0) {",
+      "revId": "9c86303d88c519155752a18e0f0860536682c7be",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "903a47bb_1b86a0af",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1822,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-22T04:46:49Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\tint hugeshift \u003d shmflg \u0026 (0x3F \u003c\u003c SHM_HUGE_SHIFT);\n+\t\tif (hugeshift \u003d\u003d 0) {",
+      "revId": "9c86303d88c519155752a18e0f0860536682c7be",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
