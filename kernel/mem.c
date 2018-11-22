@@ -1158,7 +1158,8 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 		t_s = rdtsc();
 #endif // PROFILE_ENABLE
 
-	set_cputime(interrupt_from_user(regs)? 1: 2);
+	set_cputime(interrupt_from_user(regs) ?
+		CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
 	dkprintf("%s: addr: %p, reason: %lx, regs: %p\n",
 			__FUNCTION__, fault_addr, reason, regs);
 
@@ -1219,7 +1220,8 @@ out:
 		check_need_resched();
 		check_signal(0, regs, -1);
 	}
-	set_cputime(interrupt_from_user(regs)? 0: 1);
+	set_cputime(interrupt_from_user(regs) ?
+		CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 #ifdef PROFILE_ENABLE
 	if (thread->profile)
 		profile_event_add(PROFILE_page_fault, (rdtsc() - t_s));
