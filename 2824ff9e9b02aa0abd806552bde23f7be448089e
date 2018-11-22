@@ -2,6 +2,40 @@
   "comments": [
     {
       "key": {
+        "uuid": "18cfe2c3_756424eb",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 400,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-22T05:13:42Z",
+      "side": 1,
+      "message": "Hmm, something about this tips me off.\nShouldn\u0027t we check what type of pte it is first (cont or not) then only look at the appropriate PTLx_SIZE or PTLx_CONT_SIZE?",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ff5dcbc8_e6eebf32",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 533,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-22T05:13:42Z",
+      "side": 1,
+      "message": "compound vs. PTE_CONT is a bit odd, but ok..",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "52cb02d2_4e61c8bd",
         "filename": "arch/arm64/kernel/include/arch-memory.h",
         "patchSetId": 1
@@ -200,6 +234,23 @@
       "writtenOn": "2018-11-21T17:39:02Z",
       "side": 1,
       "message": "WARNING: line over 80 characters\n+#define CONT_PTE_SHIFT\t\t5   //Contiguousでまとまるエントリ数のシフト値",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e06b6b7c_f703ba69",
+        "filename": "arch/arm64/kernel/include/pgtable-hwdef.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 51,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-22T05:13:42Z",
+      "side": 1,
+      "message": "Let\u0027s avoid japanese in source code - please write comments in english",
       "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
