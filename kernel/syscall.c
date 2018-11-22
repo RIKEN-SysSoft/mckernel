@@ -9574,13 +9574,8 @@ reset_cputime()
 	thread->base_tsc = 0;
 }
 
-/**
- * mode == 0: kernel -> user
- * mode == 1: user -> kernel
- * mode == 2: kernel -> kernel
- */
 void
-set_cputime(int mode)
+set_cputime(enum set_cputime_mode mode)
 {
 	struct thread *thread;
 	unsigned long tsc;	
@@ -9597,10 +9592,10 @@ set_cputime(int mode)
 	if(thread == &v->idle)
 		return;
 	monitor = v->monitor;
-	if(mode == 0){
+	if (mode == CPUTIME_MODE_K2U) {
 		monitor->status = IHK_OS_MONITOR_USER;
 	}
-	else if(mode == 1){
+	else if (mode == CPUTIME_MODE_U2K) {
 		monitor->counter++;
 		monitor->status = IHK_OS_MONITOR_KERNEL;
 	}
@@ -9617,7 +9612,7 @@ set_cputime(int mode)
 		struct timespec dts;
 
 		tsc_to_ts(dtsc, &dts);
-		if(mode == 1){
+		if (mode == CPUTIME_MODE_U2K) {
 			thread->user_tsc += dtsc;
 			v->rusage->user_tsc += dtsc;
 			ts_add(&thread->itimer_virtual_value, &dts);
@@ -9630,7 +9625,7 @@ set_cputime(int mode)
 		}
 	}
 
-	if(mode == 2){
+	if (mode == CPUTIME_MODE_K2K_IN) {
 		thread->base_tsc = 0;	
 	}
 	else{
@@ -9638,7 +9633,7 @@ set_cputime(int mode)
 	}
 
 	thread->times_update = 1;
-	thread->in_kernel = mode;
+	thread->in_kernel = (int)mode;
 
 	if(thread->itimer_enabled){
 		struct timeval tv;
@@ -9703,7 +9698,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 #ifdef DISABLE_SCHED_YIELD
 	if (num != __NR_sched_yield)
 #endif // DISABLE_SCHED_YIELD
-		set_cputime(1);
+		set_cputime(CPUTIME_MODE_U2K);
 
 //kprintf("syscall=%d\n", num);
 #ifdef PROFILE_ENABLE
@@ -9718,7 +9713,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	   (num != __NR_exit && num != __NR_exit_group)){
 		save_syscall_return_value(num, -EINVAL);
 		check_signal(-EINVAL, NULL, -1);
-		set_cputime(0);
+		set_cputime(CPUTIME_MODE_K2U);
 		return -EINVAL;
 	}
 
@@ -9812,7 +9807,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 #ifdef DISABLE_SCHED_YIELD
 	if (num != __NR_sched_yield)
 #endif // DISABLE_SCHED_YIELD
-		set_cputime(0);
+		set_cputime(CPUTIME_MODE_K2U);
 
 	if (thread->proc->nohost) { // mcexec termination was detected
 		terminate(0, SIGKILL);

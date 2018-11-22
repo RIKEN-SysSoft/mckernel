@@ -889,7 +889,8 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 	lapic_ack();
 	++v->in_interrupt;
 
-	set_cputime(interrupt_from_user(regs)? 1: 2);
+	set_cputime(interrupt_from_user(regs) ?
+		CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
 
 	dkprintf("CPU[%d] got interrupt, vector: %d, RIP: 0x%lX\n", 
 	         ihk_mc_get_processor_id(), vector, regs->gpr.rip);
@@ -1004,7 +1005,8 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 	}
 
 	interrupt_exit(regs);
-	set_cputime(interrupt_from_user(regs)? 0: 1);
+	set_cputime(interrupt_from_user(regs) ?
+		CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 
 	--v->in_interrupt;
 
@@ -1017,7 +1019,8 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 
 void gpe_handler(struct x86_user_context *regs)
 {
-	set_cputime(interrupt_from_user(regs)? 1: 2);
+	set_cputime(interrupt_from_user(regs) ?
+		CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
 	kprintf("General protection fault (err: %lx, %lx:%lx)\n",
 	        regs->gpr.error, regs->gpr.cs, regs->gpr.rip);
 	arch_show_interrupt_context(regs);
@@ -1026,7 +1029,8 @@ void gpe_handler(struct x86_user_context *regs)
 	}
 	set_signal(SIGSEGV, regs, NULL);
 	interrupt_exit(regs);
-	set_cputime(interrupt_from_user(regs)? 0: 1);
+	set_cputime(interrupt_from_user(regs) ?
+		CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 	panic("GPF");
 }
 
@@ -1036,7 +1040,8 @@ void debug_handler(struct x86_user_context *regs)
 	int si_code = 0;
 	struct siginfo info;
 
-	set_cputime(interrupt_from_user(regs)? 1: 2);
+	set_cputime(interrupt_from_user(regs) ?
+		CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
 #ifdef DEBUG_PRINT_CPU
 	kprintf("debug exception (err: %lx, %lx:%lx)\n",
 	        regs->gpr.error, regs->gpr.cs, regs->gpr.rip);
@@ -1055,14 +1060,16 @@ void debug_handler(struct x86_user_context *regs)
 	info.si_code = si_code;
 	set_signal(SIGTRAP, regs, &info);
 	interrupt_exit(regs);
-	set_cputime(interrupt_from_user(regs)? 0: 1);
+	set_cputime(interrupt_from_user(regs) ?
+		CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 }
 
 void int3_handler(struct x86_user_context *regs)
 {
 	struct siginfo info;
 
-	set_cputime(interrupt_from_user(regs)? 1: 2);
+	set_cputime(interrupt_from_user(regs) ?
+		CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
 #ifdef DEBUG_PRINT_CPU
 	kprintf("int3 exception (err: %lx, %lx:%lx)\n",
 	        regs->gpr.error, regs->gpr.cs, regs->gpr.rip);
@@ -1073,7 +1080,8 @@ void int3_handler(struct x86_user_context *regs)
 	info.si_code = TRAP_BRKPT;
 	set_signal(SIGTRAP, regs, &info);
 	interrupt_exit(regs);
-	set_cputime(interrupt_from_user(regs)? 0: 1);
+	set_cputime(interrupt_from_user(regs) ?
+		CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 }
 
 void
