@@ -2,6 +2,23 @@
   "comments": [
     {
       "key": {
+        "uuid": "226a1e12_9ab12b25",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 159,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-22T06:01:27Z",
+      "side": 1,
+      "message": "I find that _very_ confusing: PTLx_CONT_SIZE isn\u0027t 1 \u003c\u003c PTLx_CONT_SHIFT is quite hard to follow later on in the code.\nI would rather make CONT_SHIFT the actual shift including the base shift",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "18cfe2c3_756424eb",
         "filename": "arch/arm64/kernel/include/arch-memory.h",
         "patchSetId": 1
