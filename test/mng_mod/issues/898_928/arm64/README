@@ -1,0 +1,112 @@
+/* README COPYRIGHT FUJITSU LIMITED 2018 */
+
+McKernel のブート処理／プロセス実行時処理とシャットダウン処理との衝突回避機能
+テストセットREADME
+
+(1) テストの実行方法
+ 以下の手順でテストを実行する
+	1. $HOME/.mck_test_configを用意する
+	   当該ファイルは、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+	   $HOMEにコピーし、適宜編集する
+	2. mck_bps_conflict.h の定数MCK_DIRの内容を、McKernelがインストールされているディレクトリに変更する
+	   デフォルトは/opt/ppos
+	3. make test を実行する
+	4. patch/force_shutdown.patchを適用したMcKernelを用意し、インストールする
+	5. ./run_CT009.shを実行する
+
+(2) テスト項目詳細
+1.ihklibテストスイートを用いた確認
+	・ISSUE01(ihklib001_lin -b)
+		ihklibテストスイートのihklib001_lin.c を以下のように修正して1000回繰り返し実行し、
+		すべての実行においてテストをパスすることを確認した。
+		- McKernelのブート処理の直後にgoto文を追加し、シャットダウン処理の直前に移動する
+
+	・ISSUE02(ihklib001_lin -x)
+		ihklibテストスイートのihklib001_lin.c を以下のように修正して1000回繰り返し実行し、
+		すべての実行においてテストをパスすることを確認した。
+		- McKernelプロセス(mcexec)の実行直後にgoto文を追加し、シャットダウン処理の直前に移動する
+
+	なお、arm64版での実施では、ihklib001_lin.cを修正し、ihk_os_create_pseudofs()の成否判定をSKIPしている
+	これは、arm64版の制限事項によるものである
+
+2.McKernelの起動/終了の基本動作確認
+	以下の条件でMcKernelの起動/終了が正常に行われることを確認する
+	なお、McKernelの起動、終了の操作はihklibを用いて実施する
+
+	CT001:
+		1. McKernelを起動(ihk_os_boot)する
+		2. 起動の直後にMcKernelを終了(ihk_os_shutdown)する
+		⇒ ihk_os_shutdownが0を返す
+
+	CT002:
+		1. McKernelを起動(ihk_os_boot)する
+		2. 起動の直後に対象のIHK_OSインスタンスを破棄(ihk_os_destroy)する
+		⇒ ihk_os_destroyが0を返す
+
+	CT003:
+		1. McKernelを起動(ihk_os_boot)する
+		2. McKernelプロセスを実行する
+		3. McKernelプロセスの実行終了直後にMcKernelを終了(ihk_os_shutdown)する
+		⇒ ihk_os_shutdownが0を返す
+
+	CT004:
+		1. McKernelを起動(ihk_os_boot)する
+		2. McKernelプロセスを実行する
+		3. McKernelプロセスの実行終了直後に対象のIHK_OSインスタンスを破棄(ihk_os_destroy)する
+		⇒ ihk_os_destroyが0を返す
+
+	CT005:
+		1. McKernelを起動(ihk_os_boot)する
+		2. McKernelプロセスを実行する
+		3. McKernelプロセスの実行中にMcKernelを終了(ihk_os_shutdown)する
+		⇒ ihk_os_shutdownが0を返す
+
+	CT006:
+		1. McKernelを起動(ihk_os_boot)する
+		2. McKernelプロセスを実行する
+		3. McKernelプロセスの実行中に対象のIHK_OSインスタンスを破棄(ihk_os_destroy)する
+		⇒ ihk_os_destroyが0以外を返す(ref_count != 0)
+
+	CT007:
+		1. McKernelの起動処理の中の、カーネルイメージのロード(ihk_os_load)までを実施する
+		2. McKernelを終了(ihk_os_shutdown)する
+		⇒ ihk_os_shutdownが0を返す
+
+	CT008:
+		1. McKernelを起動(ihk_os_boot)する
+		2. McKernelプロセスを実行する
+		3. McKernelプロセスの実行終了直後にMcKernelを終了(ihk_os_shutdown)する
+		4. ihk_os_get_status がSHUTDOWNまたは、INACTIVEを返すことを確認する
+		5. 終了したMcKernelに対して、再度終了(ihk_os_shutdown)する
+		⇒ ihk_os_shutdownが0を返す
+
+	CT009のみ、McKernelにパッチを適用する必要がある
+	前提条件として、force_shutdown.patch を適用してビルドしたMcKernelを用いる
+
+	CT009:
+		1. McKernelを起動(ihk_os_boot)する
+		2. 起動の直後にMcKernelを終了(ihk_os_shutdown)する
+		⇒ ihk_os_shutdownが0を返す
+
+(3) 実行結果ログ
+	result.logファイル内に実行時のログを記載する。
+	パッチを適用したMcKernelが必要になるCT009については、
+	result_CT009.logファイル内に実行時のログを記載する。
+
+	実行に利用したIHK/McKernelは、IA版における下記の版数相当の
+	arm64版移植IHK/McKernelである。
+
+	IHK
+		commit d6fcbee8cb91f9ec4b49f97c918e696ac0335aaf
+		Author: Shiratori, Takehiro <fj0300es@aa.jp.fujitsu.com>
+		Date:   Tue Oct 16 16:25:33 2018 +0900
+
+	McKernel
+		commit 6f9fef2b13447c74c36d15cf5ebd186f8395ccca
+		Author: Ken Sato <ken.sato.ty@hitachi-solutions.com>
+		Date:   Tue Sep 25 10:05:41 2018 +0900
+
+(4) 備考
+	特になし。
+
+以上。
