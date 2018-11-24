@@ -1,0 +1,171 @@
+/* README COPYRIGHT FUJITSU LIMITED 2018 */
+
+Linux 側のメモリ領域の破壊防止
+テストセットREADME
+
+(1) テストの実行方法
+以下の手順でテストを実行する
+	1. $HOME/.mck_test_configを用意する
+	   当該ファイルは、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+	   $HOMEにコピーし、適宜編集する
+	2. patch/test_memtest_destroy.patchを適用したMcKernelを用意する
+	3. go_test_McKernal.sh内のTESTCASES環境変数を利用するMcKernelのgranule sizeに合わせて変更する
+	   デフォルトでは64KiB設定のディレクトリが指定
+	4. make test を実行する
+
+(2) テスト項目詳細
+1.McKernel割り当て外メモリへのアクセス失敗確認
+	下記メモリ割り当て設定に基づいて起動したMcKernelで、割り当て外メモリにアクセスした場合、
+	カーネルページフォルトが発生することを確認する
+
+	Test No:0001 NUMAノード数2、内部チャンク数  1、3GiB
+	Test No:0002 NUMAノード数2、内部チャンク数  2、ラージページサイズ
+	Test No:0003 NUMAノード数2、内部チャンク数  4、ラージページサイズ
+	Test No:0004 NUMAノード数2、内部チャンク数  8、ラージページサイズ
+	Test No:0005 NUMAノード数2、内部チャンク数 16、ラージページサイズ
+	Test No:0006 NUMAノード数2、内部チャンク数 32、ラージページサイズ
+	Test No:0007 NUMAノード数2、内部チャンク数 48、ラージページサイズ
+	Test No:0008 NUMAノード数2、内部チャンク数 64、ラージページサイズ
+	Test No:0009 NUMAノード数2、内部チャンク数 96、ラージページサイズ
+	Test No:0010 NUMAノード数2、内部チャンク数128、ラージページサイズ
+
+	64KiB granule sizeの場合、ラージページサイズが512MiBとなり、No:0005以降の
+	メモリ割り当て設定では容量が不足するため、SKIPとしている
+
+2.LTP実施によるリグレッションテスト
+	LTPにおける下記テストケースを実施する
+	brk01
+	clone01
+	clone03
+	clone04
+	clone06
+	clone07
+	close01
+	close02
+	dup01
+	dup02
+	dup03
+	dup04
+	dup05
+	dup06
+	dup07
+	fork01
+	fork02
+	fork03
+	fork04
+	fork07
+	fork08
+	fork09
+	fork10
+	fork11
+	mbind01
+	mem01
+	mem02
+	mem03
+	memcpy01
+	memfd_create02
+	memset01
+	mkdir01
+	mkdir08
+	mkdirat01
+	mknodat01
+	mmap001
+	mmap01
+	mmap02
+	mmap03
+	mmap04
+	mmap06
+	mmap07
+	mmap08
+	mmap09
+	mmap12
+	mmapstress02
+	mmapstress04
+	mmapstress05
+	mremap01
+	mremap05
+	open01
+	open03
+	open04
+	open06
+	open07
+	open09
+	open13
+	poll01
+	posix_fadvise01
+	read01
+	read02
+	read03
+	read04
+	sbrk01
+	sbrk02
+	sendfile02
+	sendfile03
+	sendfile04
+	sendfile05
+	sendfile06
+	sendfile07
+	sendfile08
+	sendfile09
+	semctl01
+	semctl03
+	semctl05
+	socket01
+	socket02
+	stream01
+	stream02
+	stream03
+	stream04
+	stream05
+	unlink05
+	unlink06
+	unlink07
+	unlink08
+	vfork01
+	vfork02
+	vma01
+	vmsplice01
+	vmsplice02
+	write01
+	write03
+	write04
+	write05
+	writetest
+	writev01
+	writev02
+	writev07
+
+(3) 実行結果ログ
+	result.logファイル内に実行時のログを記載する。
+	実行に利用したIHK/McKernelは、IA版における下記の版数相当の
+	arm64版移植IHK/McKernelである。
+
+	IHK
+		commit d6fcbee8cb91f9ec4b49f97c918e696ac0335aaf
+		Author: Shiratori, Takehiro <fj0300es@aa.jp.fujitsu.com>
+		Date:   Tue Oct 16 16:25:33 2018 +0900
+
+	McKernel
+		commit 6f9fef2b13447c74c36d15cf5ebd186f8395ccca
+		Author: Ken Sato <ken.sato.ty@hitachi-solutions.com>
+		Date:   Tue Sep 25 10:05:41 2018 +0900
+
+	なお、LTP実施における下記項目については、提示されたバイナリがない、
+	もしくはv4.18系HOST-Linux上で実施しても同一の非0結果になる項目である
+		バイナリがない項目
+			memfd_create02
+			open13
+			writev07
+
+		HOST-Linux上でも同一の非0結果になる項目
+			sendfile09
+			writev01
+
+	LTPは下記リポジトリのセットを利用した
+		postpeta@postpeta.pccluster.org:ltp.git
+
+(4) 備考
+	特になし。
+
+
+以上。

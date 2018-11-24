@@ -1,0 +1,876 @@
+cc     memtest_destroy.c   -o memtest_destroy
+./go_test_McKernal.sh
+####################
+Test No:0001
+>>> Out-of-range address Test(Before correspondence) Start
+mcstop+release.sh ... done
+/opt/ppos/sbin/mcreboot.sh -m 3G@0,3G@1
+    /opt/ppos/bin/mcexec ./memtest_destroy
+mcexec detected hang of McKernel
+/opt/ppos/sbin/ihkosctl 0 kmsg
+IHK/McKernel started.
+[  0]: ns_per_tsc: 16000
+[  0]: KCommand Line: hidos    dump_level=24  
+[  0]: Physical memory: 0x41c00000 - 0x62000000, 541065216 bytes, 8256 pages available @ NUMA: 0
+[  0]: Physical memory: 0x1406c0000 - 0x1e0000000, 2677276672 bytes, 40852 pages available @ NUMA: 0
+[  0]: Physical memory: 0x240000000 - 0x300000000, 3221225472 bytes, 49152 pages available @ NUMA: 1
+[  0]: NUMA: 0, Linux NUMA: 0, type: 1, available bytes: 3218341888, pages: 49108
+[  0]: NUMA: 1, Linux NUMA: 1, type: 1, available bytes: 3221225472, pages: 49152
+[  0]: NUMA 0 distances: 0 (10), 1 (20), 
+[  0]: NUMA 1 distances: 1 (10), 0 (20), 
+[  0]: map_fixed: phys: 0x0 => 0xffff7ffffbe80000 (1 pages)
+[  0]: Trampoline area: 0x0 
+[  0]: map_fixed: phys: 0x0 => 0xffff7ffffbe90000 (1 pages)
+[  0]: # of cpus : 2
+[  0]: locals = ffff800041c30000
+[  0]: BSP: 0 (HW ID: 8 @ NUMA 0)
+[  0]: BSP: booted 1 AP CPUs
+[  0]: Master channel init acked.
+[  0]: Enable Host mapping vDSO.
+IHK/McKernel booted.
+[  1]: sys_mem_destroy: memory chunk 3.
+[  1]: sys_mem_destroy: mem chunk[0] numa ID(0)
+[  1]:     phys(0x41c00000 - 0x62000000) virt(0xffff800041c00000 - 0xffff800062000000)
+[  1]: sys_mem_destroy: mem chunk[1] numa ID(0)
+[  1]:     phys(0x140400000 - 0x1e0000000) virt(0xffff800140400000 - 0xffff8001e0000000)
+[  1]: sys_mem_destroy: mem chunk[2] numa ID(1)
+[  1]:     phys(0x240000000 - 0x300000000) virt(0xffff800240000000 - 0xffff800300000000)
+[  1]: Unable to handle kernel paging request at virtual address ffff800300000400
+[  1]: OOps.
+[  0]: interrupt_syscall failed. -32
+
+>>> Out-of-range address Test End(Timeout!!!)
+>>> Out-of-range address(After correspondence) Test Start
+mcstop+release.sh ... done
+/opt/ppos/sbin/mcreboot.sh -m 3G@0,3G@1 -s
+    /opt/ppos/bin/mcexec ./memtest_destroy
+mcexec detected hang of McKernel
+/opt/ppos/sbin/ihkosctl 0 kmsg
+IHK/McKernel started.
+[  0]: ns_per_tsc: 16000
+[  0]: KCommand Line: hidos  safe_kernel_map  dump_level=24  
+[  0]: Physical memory: 0x41a00000 - 0x61a00000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x1402c0000 - 0x1e0000000, 2681470976 bytes, 40916 pages available @ NUMA: 0
+[  0]: Physical memory: 0x240000000 - 0x300000000, 3221225472 bytes, 49152 pages available @ NUMA: 1
+[  0]: NUMA: 0, Linux NUMA: 0, type: 1, available bytes: 3218341888, pages: 49108
+[  0]: NUMA: 1, Linux NUMA: 1, type: 1, available bytes: 3221225472, pages: 49152
+[  0]: NUMA 0 distances: 0 (10), 1 (20), 
+[  0]: NUMA 1 distances: 1 (10), 0 (20), 
+[  0]: map_fixed: phys: 0x0 => 0xffff7ffffbe80000 (1 pages)
+[  0]: Trampoline area: 0x0 
+[  0]: map_fixed: phys: 0x0 => 0xffff7ffffbe90000 (1 pages)
+[  0]: # of cpus : 2
+[  0]: locals = ffff800041a30000
+[  0]: BSP: 0 (HW ID: 8 @ NUMA 0)
+[  0]: BSP: booted 1 AP CPUs
+[  0]: Master channel init acked.
+[  0]: Enable Host mapping vDSO.
+IHK/McKernel booted.
+[  1]: sys_mem_destroy: memory chunk 3.
+[  1]: sys_mem_destroy: mem chunk[0] numa ID(0)
+[  1]:     phys(0x41a00000 - 0x61a00000) virt(0xffff800041a00000 - 0xffff800061a00000)
+[  1]: sys_mem_destroy: mem chunk[1] numa ID(0)
+[  1]:     phys(0x140000000 - 0x1e0000000) virt(0xffff800140000000 - 0xffff8001e0000000)
+[  1]: sys_mem_destroy: mem chunk[2] numa ID(1)
+[  1]:     phys(0x240000000 - 0x300000000) virt(0xffff800240000000 - 0xffff800300000000)
+[  1]: Unable to handle kernel paging request at virtual address ffff800300000400
+[  1]: OOps.
+[  0]: interrupt_syscall failed. -32
+
+>>> Out-of-range address Test End(Timeout!!!)
+####################
+Test No:0002
+>>> Out-of-range address Test(Before correspondence) Start
+mcstop+release.sh ... done
+/opt/ppos/sbin/mcreboot.sh -m 512M@0,512M@0,512M@1,512M@1
+    /opt/ppos/bin/mcexec ./memtest_destroy
+mcexec detected hang of McKernel
+/opt/ppos/sbin/ihkosctl 0 kmsg
+IHK/McKernel started.
+[  0]: ns_per_tsc: 16000
+[  0]: KCommand Line: hidos    dump_level=24  
+[  0]: Physical memory: 0x120ac0000 - 0x140800000, 533987328 bytes, 8148 pages available @ NUMA: 0
+[  0]: Physical memory: 0x205400000 - 0x225400000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x240000000 - 0x260000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: Physical memory: 0x260000000 - 0x280000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: NUMA: 0, Linux NUMA: 0, type: 1, available bytes: 1070858240, pages: 16340
+[  0]: NUMA: 1, Linux NUMA: 1, type: 1, available bytes: 1073741824, pages: 16384
+[  0]: NUMA 0 distances: 0 (10), 1 (20), 
+[  0]: NUMA 1 distances: 1 (10), 0 (20), 
+[  0]: map_fixed: phys: 0x0 => 0xffff7ffffbe60000 (1 pages)
+[  0]: Trampoline area: 0x0 
+[  0]: map_fixed: phys: 0x0 => 0xffff7ffffbe70000 (1 pages)
+[  0]: # of cpus : 2
+[  0]: locals = ffff800120af0000
+[  0]: BSP: 0 (HW ID: 8 @ NUMA 0)
+[  0]: BSP: booted 1 AP CPUs
+[  0]: Master channel init acked.
+[  0]: Enable Host mapping vDSO.
+IHK/McKernel booted.
+[  1]: sys_mem_destroy: memory chunk 4.
+[  1]: sys_mem_destroy: mem chunk[0] numa ID(0)
+[  1]:     phys(0x120800000 - 0x140800000) virt(0xffff800120800000 - 0xffff800140800000)
+[  1]: sys_mem_destroy: mem chunk[1] numa ID(0)
+[  1]:     phys(0x205400000 - 0x225400000) virt(0xffff800205400000 - 0xffff800225400000)
+[  1]: sys_mem_destroy: mem chunk[2] numa ID(1)
+[  1]:     phys(0x240000000 - 0x260000000) virt(0xffff800240000000 - 0xffff800260000000)
+[  1]: sys_mem_destroy: mem chunk[3] numa ID(1)
+[  1]:     phys(0x260000000 - 0x280000000) virt(0xffff800260000000 - 0xffff800280000000)
+[  1]: Unable to handle kernel paging request at virtual address ffff800280000400
+[  1]: OOps.
+[  0]: interrupt_syscall failed. -32
+
+>>> Out-of-range address Test End(Timeout!!!)
+>>> Out-of-range address(After correspondence) Test Start
+mcstop+release.sh ... done
+/opt/ppos/sbin/mcreboot.sh -m 512M@0,512M@0,512M@1,512M@1 -s
+    /opt/ppos/bin/mcexec ./memtest_destroy
+mcexec detected hang of McKernel
+/opt/ppos/sbin/ihkosctl 0 kmsg
+IHK/McKernel started.
+[  0]: ns_per_tsc: 16000
+[  0]: KCommand Line: hidos  safe_kernel_map  dump_level=24  
+[  0]: Physical memory: 0x1602c0000 - 0x180000000, 533987328 bytes, 8148 pages available @ NUMA: 0
+[  0]: Physical memory: 0x205400000 - 0x225400000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x240000000 - 0x260000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: Physical memory: 0x260000000 - 0x280000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: NUMA: 0, Linux NUMA: 0, type: 1, available bytes: 1070858240, pages: 16340
+[  0]: NUMA: 1, Linux NUMA: 1, type: 1, available bytes: 1073741824, pages: 16384
+[  0]: NUMA 0 distances: 0 (10), 1 (20), 
+[  0]: NUMA 1 distances: 1 (10), 0 (20), 
+[  0]: map_fixed: phys: 0x0 => 0xffff7ffffbe60000 (1 pages)
+[  0]: Trampoline area: 0x0 
+[  0]: map_fixed: phys: 0x0 => 0xffff7ffffbe70000 (1 pages)
+[  0]: # of cpus : 2
+[  0]: locals = ffff8001602f0000
+[  0]: BSP: 0 (HW ID: 8 @ NUMA 0)
+[  0]: BSP: booted 1 AP CPUs
+[  0]: Master channel init acked.
+[  0]: Enable Host mapping vDSO.
+IHK/McKernel booted.
+[  1]: sys_mem_destroy: memory chunk 4.
+[  1]: sys_mem_destroy: mem chunk[0] numa ID(0)
+[  1]:     phys(0x160000000 - 0x180000000) virt(0xffff800160000000 - 0xffff800180000000)
+[  1]: sys_mem_destroy: mem chunk[1] numa ID(0)
+[  1]:     phys(0x205400000 - 0x225400000) virt(0xffff800205400000 - 0xffff800225400000)
+[  1]: sys_mem_destroy: mem chunk[2] numa ID(1)
+[  1]:     phys(0x240000000 - 0x260000000) virt(0xffff800240000000 - 0xffff800260000000)
+[  1]: sys_mem_destroy: mem chunk[3] numa ID(1)
+[  1]:     phys(0x260000000 - 0x280000000) virt(0xffff800260000000 - 0xffff800280000000)
+[  1]: Unable to handle kernel paging request at virtual address ffff800280000400
+[  1]: OOps.
+[  0]: interrupt_syscall failed. -32
+
+>>> Out-of-range address Test End(Timeout!!!)
+####################
+Test No:0003
+>>> Out-of-range address Test(Before correspondence) Start
+mcstop+release.sh ... done
+/opt/ppos/sbin/mcreboot.sh -m 512M@0,512M@0,512M@0,512M@0,512M@1,512M@1,512M@1,512M@1
+    /opt/ppos/bin/mcexec ./memtest_destroy
+mcexec detected hang of McKernel
+/opt/ppos/sbin/ihkosctl 0 kmsg
+IHK/McKernel started.
+[  0]: ns_per_tsc: 16000
+[  0]: KCommand Line: hidos    dump_level=24  
+[  0]: Physical memory: 0x1602c0000 - 0x180000000, 533987328 bytes, 8148 pages available @ NUMA: 0
+[  0]: Physical memory: 0x180000000 - 0x1a0000000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x1a0000000 - 0x1c0000000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x205400000 - 0x225400000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x240000000 - 0x260000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: Physical memory: 0x260000000 - 0x280000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: Physical memory: 0x280000000 - 0x2a0000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: Physical memory: 0x2a0000000 - 0x2c0000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: NUMA: 0, Linux NUMA: 0, type: 1, available bytes: 2144600064, pages: 32724
+[  0]: NUMA: 1, Linux NUMA: 1, type: 1, available bytes: 2147483648, pages: 32768
+[  0]: NUMA 0 distances: 0 (10), 1 (20), 
+[  0]: NUMA 1 distances: 1 (10), 0 (20), 
+[  0]: map_fixed: phys: 0x0 => 0xffff7ffffbe70000 (1 pages)
+[  0]: Trampoline area: 0x0 
+[  0]: map_fixed: phys: 0x0 => 0xffff7ffffbe80000 (1 pages)
+[  0]: # of cpus : 2
+[  0]: locals = ffff8001602f0000
+[  0]: BSP: 0 (HW ID: 8 @ NUMA 0)
+[  0]: BSP: booted 1 AP CPUs
+[  0]: Master channel init acked.
+[  0]: Enable Host mapping vDSO.
+IHK/McKernel booted.
+[  1]: sys_mem_destroy: memory chunk 8.
+[  1]: sys_mem_destroy: mem chunk[0] numa ID(0)
+[  1]:     phys(0x160000000 - 0x180000000) virt(0xffff800160000000 - 0xffff800180000000)
+[  1]: sys_mem_destroy: mem chunk[1] numa ID(0)
+[  1]:     phys(0x180000000 - 0x1a0000000) virt(0xffff800180000000 - 0xffff8001a0000000)
+[  1]: sys_mem_destroy: mem chunk[2] numa ID(0)
+[  1]:     phys(0x1a0000000 - 0x1c0000000) virt(0xffff8001a0000000 - 0xffff8001c0000000)
+[  1]: sys_mem_destroy: mem chunk[3] numa ID(0)
+[  1]:     phys(0x205400000 - 0x225400000) virt(0xffff800205400000 - 0xffff800225400000)
+[  1]: sys_mem_destroy: mem chunk[4] numa ID(1)
+[  1]:     phys(0x240000000 - 0x260000000) virt(0xffff800240000000 - 0xffff800260000000)
+[  1]: sys_mem_destroy: mem chunk[5] numa ID(1)
+[  1]:     phys(0x260000000 - 0x280000000) virt(0xffff800260000000 - 0xffff800280000000)
+[  1]: sys_mem_destroy: mem chunk[6] numa ID(1)
+[  1]:     phys(0x280000000 - 0x2a0000000) virt(0xffff800280000000 - 0xffff8002a0000000)
+[  1]: sys_mem_destroy: mem chunk[7] numa ID(1)
+[  1]:     phys(0x2a0000000 - 0x2c0000000) virt(0xffff8002a0000000 - 0xffff8002c0000000)
+[  1]: Unable to handle kernel paging request at virtual address ffff8002c0000400
+[  1]: OOps.
+[  0]: interrupt_syscall failed. -32
+
+>>> Out-of-range address Test End(Timeout!!!)
+>>> Out-of-range address(After correspondence) Test Start
+mcstop+release.sh ... done
+/opt/ppos/sbin/mcreboot.sh -m 512M@0,512M@0,512M@0,512M@0,512M@1,512M@1,512M@1,512M@1 -s
+    /opt/ppos/bin/mcexec ./memtest_destroy
+mcexec detected hang of McKernel
+/opt/ppos/sbin/ihkosctl 0 kmsg
+IHK/McKernel started.
+[  0]: ns_per_tsc: 16000
+[  0]: KCommand Line: hidos  safe_kernel_map  dump_level=24  
+[  0]: Physical memory: 0x1602c0000 - 0x180000000, 533987328 bytes, 8148 pages available @ NUMA: 0
+[  0]: Physical memory: 0x180000000 - 0x1a0000000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x1a0000000 - 0x1c0000000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x205400000 - 0x225400000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x240000000 - 0x260000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: Physical memory: 0x260000000 - 0x280000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: Physical memory: 0x280000000 - 0x2a0000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: Physical memory: 0x2a0000000 - 0x2c0000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: NUMA: 0, Linux NUMA: 0, type: 1, available bytes: 2144600064, pages: 32724
+[  0]: NUMA: 1, Linux NUMA: 1, type: 1, available bytes: 2147483648, pages: 32768
+[  0]: NUMA 0 distances: 0 (10), 1 (20), 
+[  0]: NUMA 1 distances: 1 (10), 0 (20), 
+[  0]: map_fixed: phys: 0x0 => 0xffff7ffffbe70000 (1 pages)
+[  0]: Trampoline area: 0x0 
+[  0]: map_fixed: phys: 0x0 => 0xffff7ffffbe80000 (1 pages)
+[  0]: # of cpus : 2
+[  0]: locals = ffff8001602f0000
+[  0]: BSP: 0 (HW ID: 8 @ NUMA 0)
+[  0]: BSP: booted 1 AP CPUs
+[  0]: Master channel init acked.
+[  0]: Enable Host mapping vDSO.
+IHK/McKernel booted.
+[  1]: sys_mem_destroy: memory chunk 8.
+[  1]: sys_mem_destroy: mem chunk[0] numa ID(0)
+[  1]:     phys(0x160000000 - 0x180000000) virt(0xffff800160000000 - 0xffff800180000000)
+[  1]: sys_mem_destroy: mem chunk[1] numa ID(0)
+[  1]:     phys(0x180000000 - 0x1a0000000) virt(0xffff800180000000 - 0xffff8001a0000000)
+[  1]: sys_mem_destroy: mem chunk[2] numa ID(0)
+[  1]:     phys(0x1a0000000 - 0x1c0000000) virt(0xffff8001a0000000 - 0xffff8001c0000000)
+[  1]: sys_mem_destroy: mem chunk[3] numa ID(0)
+[  1]:     phys(0x205400000 - 0x225400000) virt(0xffff800205400000 - 0xffff800225400000)
+[  1]: sys_mem_destroy: mem chunk[4] numa ID(1)
+[  1]:     phys(0x240000000 - 0x260000000) virt(0xffff800240000000 - 0xffff800260000000)
+[  1]: sys_mem_destroy: mem chunk[5] numa ID(1)
+[  1]:     phys(0x260000000 - 0x280000000) virt(0xffff800260000000 - 0xffff800280000000)
+[  1]: sys_mem_destroy: mem chunk[6] numa ID(1)
+[  1]:     phys(0x280000000 - 0x2a0000000) virt(0xffff800280000000 - 0xffff8002a0000000)
+[  1]: sys_mem_destroy: mem chunk[7] numa ID(1)
+[  1]:     phys(0x2a0000000 - 0x2c0000000) virt(0xffff8002a0000000 - 0xffff8002c0000000)
+[  1]: Unable to handle kernel paging request at virtual address ffff8002c0000400
+[  1]: OOps.
+[  0]: interrupt_syscall failed. -32
+
+>>> Out-of-range address Test End(Timeout!!!)
+####################
+Test No:0004
+>>> Out-of-range address Test(Before correspondence) Start
+mcstop+release.sh ... done
+/opt/ppos/sbin/mcreboot.sh -m 512M@0,512M@0,512M@0,512M@0,512M@0,512M@0,512M@0,512M@0,512M@1,512M@1,512M@1,512M@1,512M@1,512M@1,512M@1,512M@1
+    /opt/ppos/bin/mcexec ./memtest_destroy
+mcexec detected hang of McKernel
+/opt/ppos/sbin/ihkosctl 0 kmsg
+IHK/McKernel started.
+[  0]: ns_per_tsc: 16000
+[  0]: KCommand Line: hidos    dump_level=24  
+[  0]: Physical memory: 0x41ec0000 - 0x61c00000, 533987328 bytes, 8148 pages available @ NUMA: 0
+[  0]: Physical memory: 0xc0400000 - 0xe0400000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x120800000 - 0x140800000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x160000000 - 0x180000000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x180000000 - 0x1a0000000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x1a0000000 - 0x1c0000000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x1c0000000 - 0x1e0000000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x205400000 - 0x225400000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x240000000 - 0x260000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: Physical memory: 0x260000000 - 0x280000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: Physical memory: 0x280000000 - 0x2a0000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: Physical memory: 0x2a0000000 - 0x2c0000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: Physical memory: 0x2c0000000 - 0x2e0000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: Physical memory: 0x2e0000000 - 0x300000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: Physical memory: 0x300000000 - 0x320000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: Physical memory: 0x320000000 - 0x340000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: NUMA: 0, Linux NUMA: 0, type: 1, available bytes: 4292083712, pages: 65492
+[  0]: NUMA: 1, Linux NUMA: 1, type: 1, available bytes: 4294967296, pages: 65536
+[  0]: NUMA 0 distances: 0 (10), 1 (20), 
+[  0]: NUMA 1 distances: 1 (10), 0 (20), 
+[  0]: map_fixed: phys: 0x0 => 0xffff7ffffbe90000 (1 pages)
+[  0]: Trampoline area: 0x0 
+[  0]: map_fixed: phys: 0x0 => 0xffff7ffffbea0000 (1 pages)
+[  0]: # of cpus : 2
+[  0]: locals = ffff800041ef0000
+[  0]: BSP: 0 (HW ID: 8 @ NUMA 0)
+[  0]: BSP: booted 1 AP CPUs
+[  0]: Master channel init acked.
+[  0]: Enable Host mapping vDSO.
+IHK/McKernel booted.
+[  1]: sys_mem_destroy: memory chunk 16.
+[  1]: sys_mem_destroy: mem chunk[0] numa ID(0)
+[  1]:     phys(0x41c00000 - 0x61c00000) virt(0xffff800041c00000 - 0xffff800061c00000)
+[  1]: sys_mem_destroy: mem chunk[1] numa ID(0)
+[  1]:     phys(0xc0400000 - 0xe0400000) virt(0xffff8000c0400000 - 0xffff8000e0400000)
+[  1]: sys_mem_destroy: mem chunk[2] numa ID(0)
+[  1]:     phys(0x120800000 - 0x140800000) virt(0xffff800120800000 - 0xffff800140800000)
+[  1]: sys_mem_destroy: mem chunk[3] numa ID(0)
+[  1]:     phys(0x160000000 - 0x180000000) virt(0xffff800160000000 - 0xffff800180000000)
+[  1]: sys_mem_destroy: mem chunk[4] numa ID(0)
+[  1]:     phys(0x180000000 - 0x1a0000000) virt(0xffff800180000000 - 0xffff8001a0000000)
+[  1]: sys_mem_destroy: mem chunk[5] numa ID(0)
+[  1]:     phys(0x1a0000000 - 0x1c0000000) virt(0xffff8001a0000000 - 0xffff8001c0000000)
+[  1]: sys_mem_destroy: mem chunk[6] numa ID(0)
+[  1]:     phys(0x1c0000000 - 0x1e0000000) virt(0xffff8001c0000000 - 0xffff8001e0000000)
+[  1]: sys_mem_destroy: mem chunk[7] numa ID(0)
+[  1]:     phys(0x205400000 - 0x225400000) virt(0xffff800205400000 - 0xffff800225400000)
+[  1]: sys_mem_destroy: mem chunk[8] numa ID(1)
+[  1]:     phys(0x240000000 - 0x260000000) virt(0xffff800240000000 - 0xffff800260000000)
+[  1]: sys_mem_destroy: mem chunk[9] numa ID(1)
+[  1]:     phys(0x260000000 - 0x280000000) virt(0xffff800260000000 - 0xffff800280000000)
+[  1]: sys_mem_destroy: mem chunk[10] numa ID(1)
+[  1]:     phys(0x280000000 - 0x2a0000000) virt(0xffff800280000000 - 0xffff8002a0000000)
+[  1]: sys_mem_destroy: mem chunk[11] numa ID(1)
+[  1]:     phys(0x2a0000000 - 0x2c0000000) virt(0xffff8002a0000000 - 0xffff8002c0000000)
+[  1]: sys_mem_destroy: mem chunk[12] numa ID(1)
+[  1]:     phys(0x2c0000000 - 0x2e0000000) virt(0xffff8002c0000000 - 0xffff8002e0000000)
+[  1]: sys_mem_destroy: mem chunk[13] numa ID(1)
+[  1]:     phys(0x2e0000000 - 0x300000000) virt(0xffff8002e0000000 - 0xffff800300000000)
+[  1]: sys_mem_destroy: mem chunk[14] numa ID(1)
+[  1]:     phys(0x300000000 - 0x320000000) virt(0xffff800300000000 - 0xffff800320000000)
+[  1]: sys_mem_destroy: mem chunk[15] numa ID(1)
+[  1]:     phys(0x320000000 - 0x340000000) virt(0xffff800320000000 - 0xffff800340000000)
+[  1]: Unable to handle kernel paging request at virtual address ffff800340000400
+[  1]: OOps.
+[  0]: interrupt_syscall failed. -32
+
+>>> Out-of-range address Test End(Timeout!!!)
+>>> Out-of-range address(After correspondence) Test Start
+mcstop+release.sh ... done
+/opt/ppos/sbin/mcreboot.sh -m 512M@0,512M@0,512M@0,512M@0,512M@0,512M@0,512M@0,512M@0,512M@1,512M@1,512M@1,512M@1,512M@1,512M@1,512M@1,512M@1 -s
+    /opt/ppos/bin/mcexec ./memtest_destroy
+mcexec detected hang of McKernel
+/opt/ppos/sbin/ihkosctl 0 kmsg
+IHK/McKernel started.
+[  0]: ns_per_tsc: 16000
+[  0]: KCommand Line: hidos  safe_kernel_map  dump_level=24  
+[  0]: Physical memory: 0x41ec0000 - 0x61c00000, 533987328 bytes, 8148 pages available @ NUMA: 0
+[  0]: Physical memory: 0xc0400000 - 0xe0400000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x120400000 - 0x140400000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x140400000 - 0x160400000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x160400000 - 0x180400000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x180400000 - 0x1a0400000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x1a0400000 - 0x1c0400000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x205400000 - 0x225400000, 536870912 bytes, 8192 pages available @ NUMA: 0
+[  0]: Physical memory: 0x240000000 - 0x260000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: Physical memory: 0x260000000 - 0x280000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: Physical memory: 0x280000000 - 0x2a0000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: Physical memory: 0x2a0000000 - 0x2c0000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: Physical memory: 0x2c0000000 - 0x2e0000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: Physical memory: 0x2e0000000 - 0x300000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: Physical memory: 0x300000000 - 0x320000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: Physical memory: 0x320000000 - 0x340000000, 536870912 bytes, 8192 pages available @ NUMA: 1
+[  0]: NUMA: 0, Linux NUMA: 0, type: 1, available bytes: 4292083712, pages: 65492
+[  0]: NUMA: 1, Linux NUMA: 1, type: 1, available bytes: 4294967296, pages: 65536
+[  0]: NUMA 0 distances: 0 (10), 1 (20), 
+[  0]: NUMA 1 distances: 1 (10), 0 (20), 
+[  0]: map_fixed: phys: 0x0 => 0xffff7ffffbe90000 (1 pages)
+[  0]: Trampoline area: 0x0 
+[  0]: map_fixed: phys: 0x0 => 0xffff7ffffbea0000 (1 pages)
+[  0]: # of cpus : 2
+[  0]: locals = ffff800041ef0000
+[  0]: BSP: 0 (HW ID: 8 @ NUMA 0)
+[  0]: BSP: booted 1 AP CPUs
+[  0]: Master channel init acked.
+[  0]: Enable Host mapping vDSO.
+IHK/McKernel booted.
+[  1]: sys_mem_destroy: memory chunk 16.
+[  1]: sys_mem_destroy: mem chunk[0] numa ID(0)
+[  1]:     phys(0x41c00000 - 0x61c00000) virt(0xffff800041c00000 - 0xffff800061c00000)
+[  1]: sys_mem_destroy: mem chunk[1] numa ID(0)
+[  1]:     phys(0xc0400000 - 0xe0400000) virt(0xffff8000c0400000 - 0xffff8000e0400000)
+[  1]: sys_mem_destroy: mem chunk[2] numa ID(0)
+[  1]:     phys(0x120400000 - 0x140400000) virt(0xffff800120400000 - 0xffff800140400000)
+[  1]: sys_mem_destroy: mem chunk[3] numa ID(0)
+[  1]:     phys(0x140400000 - 0x160400000) virt(0xffff800140400000 - 0xffff800160400000)
+[  1]: sys_mem_destroy: mem chunk[4] numa ID(0)
+[  1]:     phys(0x160400000 - 0x180400000) virt(0xffff800160400000 - 0xffff800180400000)
+[  1]: sys_mem_destroy: mem chunk[5] numa ID(0)
+[  1]:     phys(0x180400000 - 0x1a0400000) virt(0xffff800180400000 - 0xffff8001a0400000)
+[  1]: sys_mem_destroy: mem chunk[6] numa ID(0)
+[  1]:     phys(0x1a0400000 - 0x1c0400000) virt(0xffff8001a0400000 - 0xffff8001c0400000)
+[  1]: sys_mem_destroy: mem chunk[7] numa ID(0)
+[  1]:     phys(0x205400000 - 0x225400000) virt(0xffff800205400000 - 0xffff800225400000)
+[  1]: sys_mem_destroy: mem chunk[8] numa ID(1)
+[  1]:     phys(0x240000000 - 0x260000000) virt(0xffff800240000000 - 0xffff800260000000)
+[  1]: sys_mem_destroy: mem chunk[9] numa ID(1)
+[  1]:     phys(0x260000000 - 0x280000000) virt(0xffff800260000000 - 0xffff800280000000)
+[  1]: sys_mem_destroy: mem chunk[10] numa ID(1)
+[  1]:     phys(0x280000000 - 0x2a0000000) virt(0xffff800280000000 - 0xffff8002a0000000)
+[  1]: sys_mem_destroy: mem chunk[11] numa ID(1)
+[  1]:     phys(0x2a0000000 - 0x2c0000000) virt(0xffff8002a0000000 - 0xffff8002c0000000)
+[  1]: sys_mem_destroy: mem chunk[12] numa ID(1)
+[  1]:     phys(0x2c0000000 - 0x2e0000000) virt(0xffff8002c0000000 - 0xffff8002e0000000)
+[  1]: sys_mem_destroy: mem chunk[13] numa ID(1)
+[  1]:     phys(0x2e0000000 - 0x300000000) virt(0xffff8002e0000000 - 0xffff800300000000)
+[  1]: sys_mem_destroy: mem chunk[14] numa ID(1)
+[  1]:     phys(0x300000000 - 0x320000000) virt(0xffff800300000000 - 0xffff800320000000)
+[  1]: sys_mem_destroy: mem chunk[15] numa ID(1)
+[  1]:     phys(0x320000000 - 0x340000000) virt(0xffff800320000000 - 0xffff800340000000)
+[  1]: Unable to handle kernel paging request at virtual address ffff800340000400
+[  1]: OOps.
+[  0]: interrupt_syscall failed. -32
+
+>>> Out-of-range address Test End(Timeout!!!)
+mcstop+release.sh ... done
+mcreboot.sh -c 4-7 -m 1G@0,1G@1,1G@2,1G@3 -O ... done
+>>> LTP Test Start( 100 counts )
+1:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/brk01
+brk01       1  TPASS  :  brk(543512330) returned 0, new size verified by sbrk
+2:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/clone01
+clone01     1  TPASS  :  clone returned 5816
+3:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/clone03
+clone03     1  TPASS  :  Test passed
+4:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/clone04
+clone04     1  TPASS  :  expected failure; Got EINVAL
+5:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/clone06
+clone06     1  TPASS  :  Test Passed
+6:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/clone07
+clone07     1  TPASS  :  Use of return() in child did not cause SIGSEGV
+7:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/close01
+close01     1  TPASS  :  file appears closed
+close01     2  TPASS  :  pipe appears closed
+8:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/close02
+close02     1  TPASS  :  call returned EBADF
+9:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/dup01
+dup01       1  TPASS  :  dup(dupfile) returned 9
+10:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/dup02
+dup02       1  TPASS  :  dup failed as expected with EBADF
+dup02       2  TPASS  :  dup failed as expected with EBADF
+11:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/dup03
+dup03       1  TPASS  :  dup failed as expected with EMFILE
+12:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/dup04
+dup04       1  TPASS  :  dup(8) read side of syspipe returned 10
+dup04       2  TPASS  :  dup(9) write side of syspipe returned 10
+13:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/dup05
+dup05       1  TPASS  :  dup returned 9
+14:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/dup06
+dup06       1  TPASS  :  Test passed.
+15:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/dup07
+dup07       1  TPASS  :  Passed in read mode.
+dup07       2  TPASS  :  Passed in write mode.
+dup07       3  TPASS  :  Passed in read/write mode.
+16:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/fork01
+fork01      1  TPASS  :  fork() returned 5943
+fork01      2  TPASS  :  child pid and fork() return agree: 5943
+17:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/fork02
+fork02      0  TINFO  :  Inside child
+fork02      0  TINFO  :  Inside parent
+fork02      0  TINFO  :  exit status of wait 0
+fork02      1  TPASS  :  test 1 PASSED
+18:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/fork03
+fork03      0  TINFO  :  process id in parent of child from fork : 5970
+fork03      1  TPASS  :  test 1 PASSED
+19:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/fork04
+fork04      1  TPASS  :  Env var TERM unchanged after fork(): screen
+fork04      2  TPASS  :  Env var NoTSetzWq unchanged after fork(): getenv() does not find variable set
+fork04      3  TPASS  :  Env var TESTPROG unchanged after fork(): FRKTCS04
+20:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/fork07
+fork07      0  TINFO  :  Forking 100 children
+fork07      0  TINFO  :  Forked all 100 children, now collecting
+fork07      0  TINFO  :  Collected all 100 children
+fork07      1  TPASS  :  100/100 children read correctly from an inheritted fd
+21:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/fork08
+fork08      0  TINFO  :  parent forksval: 1
+fork08      0  TINFO  :  parent forksval: 2
+fork08      0  TINFO  :  second child got char: b
+fork08      1  TPASS  :  Test passed in childnumber 2
+fork08      0  TINFO  :  exit status of wait  expected 0 got 0
+fork08      1  TPASS  :  parent test PASSED
+fork08      0  TINFO  :  exit status of wait  expected 0 got 0
+fork08      2  TPASS  :  parent test PASSED
+fork08      0  TINFO  :  exit status of wait  expected 0 got 0
+fork08      3  TPASS  :  parent test PASSED
+fork08      0  TINFO  :  Number of processes forked is 2
+22:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/fork09
+fork09      0  TINFO  :  OPEN_MAX is 1024
+fork09      0  TINFO  :  first file descriptor is 8 
+fork09      0  TINFO  :  Parent reporting 1023 files open
+fork09      0  TINFO  :  Child opened new file #1023
+fork09      1  TPASS  :  test 1 PASSED
+23:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/fork10
+fork10      0  TINFO  :  fork child A
+fork10      1  TPASS  :  test 1 PASSED
+24:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/fork11
+fork11      1  TPASS  :  fork test passed, 100 processes
+25:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mbind01
+mbind01     0  TINFO  :  (case00) START
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+mbind01     1  TPASS  :  (case00) END
+mbind01     0  TINFO  :  (case01) START
+EXPECT: return value(ret)=-1 errno=22 (Invalid argument)
+RESULT: return value(ret)=-1 errno=22 (Invalid argument)
+mbind01     2  TPASS  :  (case01) END
+mbind01     0  TINFO  :  (case02) START
+EXPECT: return value(ret)=-1 errno=22 (Invalid argument)
+RESULT: return value(ret)=-1 errno=22 (Invalid argument)
+mbind01     3  TPASS  :  (case02) END
+mbind01     0  TINFO  :  (case03) START
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+mbind01     4  TPASS  :  (case03) END
+mbind01     0  TINFO  :  (case04) START
+EXPECT: return value(ret)=-1 errno=22 (Invalid argument)
+RESULT: return value(ret)=-1 errno=22 (Invalid argument)
+mbind01     5  TPASS  :  (case04) END
+mbind01     0  TINFO  :  (case05) START
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+mbind01     6  TPASS  :  (case05) END
+mbind01     0  TINFO  :  (case06) START
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+mbind01     7  TPASS  :  (case06) END
+mbind01     0  TINFO  :  (case07) START
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+mbind01     8  TPASS  :  (case07) END
+mbind01     0  TINFO  :  (case08) START
+EXPECT: return value(ret)=-1 errno=22 (Invalid argument)
+RESULT: return value(ret)=-1 errno=22 (Invalid argument)
+mbind01     9  TPASS  :  (case08) END
+mbind01     0  TINFO  :  (case09) START
+EXPECT: return value(ret)=-1 errno=22 (Invalid argument)
+RESULT: return value(ret)=-1 errno=22 (Invalid argument)
+mbind01    10  TPASS  :  (case09) END
+mbind01     0  TINFO  :  (case10) START
+EXPECT: return value(ret)=-1 errno=14 (Bad address)
+RESULT: return value(ret)=-1 errno=14 (Bad address)
+mbind01    11  TPASS  :  (case10) END
+26:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mem01
+mem01       0  TINFO  :  Free Mem:	27778 Mb
+mem01       0  TINFO  :  Free Swap:	1951 Mb
+mem01       0  TINFO  :  Total Free:	29729 Mb
+mem01       0  TINFO  :  Total Tested:	3056 Mb
+mem01       0  TINFO  :  touching 3056MB of malloc'ed memory (linear)
+mem01       1  TPASS  :  malloc - alloc of 3056MB succeeded
+27:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mem02
+mem02       1  TPASS  :  calloc - calloc of 64MB of memory succeeded
+mem02       2  TPASS  :  malloc - malloc of 64MB of memory succeeded
+mem02       3  TPASS  :  realloc - realloc of 5 bytes succeeded
+mem02       4  TPASS  :  realloc - realloc of 15 bytes succeeded
+28:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mem03
+mmap not using same address
+mmap not using same address
+mem03       1  TPASS  :  mem03 memory test succeeded
+29:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/memcpy01
+memcpy1     1  TPASS  :  Test passed
+memcpy1     2  TPASS  :  Test passed
+memcpy1     3  TPASS  :  Test passed
+memcpy1     4  TPASS  :  Test passed
+memcpy1     5  TPASS  :  Test passed
+30:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/memfd_create02
+/opt/ltp/testcases/bin/memfd_create02 not found.
+31:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/memset01
+memset01    1  TPASS  :  Test passed
+memset01    2  TPASS  :  Test passed
+32:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mkdir01
+mkdir01     1  TPASS  :  mkdir - path argument pointing below allocated address space failed as expected with errno 14 : Bad address
+mkdir01     2  TPASS  :  mkdir - path argument pointing above allocated address space failed as expected with errno 14 : Bad address
+33:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mkdir08
+mkdir08     1  TPASS  :  mkdir(./dir_7389) returned 0
+34:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mkdirat01
+mkdirat01    1  TPASS  :  mkdirat() returned 0: TEST_ERRNO=SUCCESS(0): Success
+mkdirat01    2  TPASS  :  mkdirat() returned 0: TEST_ERRNO=SUCCESS(0): Success
+mkdirat01    3  TPASS  :  mkdirat() returned 0: TEST_ERRNO=SUCCESS(0): Success
+mkdirat01    4  TPASS  :  mkdirat() returned -1: TEST_ERRNO=ENOTDIR(20): Not a directory
+mkdirat01    5  TPASS  :  mkdirat() returned -1: TEST_ERRNO=EBADF(9): Bad file descriptor
+35:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mknodat01
+mknodat01    1  TPASS  :  mknodat() returned 0: TEST_ERRNO=SUCCESS(0): Success
+mknodat01    2  TPASS  :  mknodat() returned 0: TEST_ERRNO=SUCCESS(0): Success
+mknodat01    3  TPASS  :  mknodat() returned -1: TEST_ERRNO=ENOTDIR(20): Not a directory
+mknodat01    4  TPASS  :  mknodat() returned -1: TEST_ERRNO=EBADF(9): Bad file descriptor
+mknodat01    5  TPASS  :  mknodat() returned 0: TEST_ERRNO=SUCCESS(0): Success
+36:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mmap001
+mmap001     0  TINFO  :  mmap()ing file of 1000 pages or 65536000 bytes
+mmap001     1  TPASS  :  mmap() completed successfully.
+mmap001     0  TINFO  :  touching mmaped memory
+mmap001     2  TPASS  :  we're still here, mmaped area must be good
+mmap001     3  TPASS  :  synchronizing mmapped page passed
+mmap001     4  TPASS  :  munmapping testfile.7411 successful
+37:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mmap01
+mmap01      1  TPASS  :  Functionality of mmap() successful
+38:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mmap02
+mmap02      1  TPASS  :  Functionality of mmap() successful
+39:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mmap03
+mmap03      1  TPASS  :  mmap() functionality is correct
+40:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mmap04
+mmap04      1  TPASS  :  Functionality of mmap() successful
+41:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mmap06
+mmap06      1  TPASS  :  mmap failed with EACCES
+42:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mmap07
+mmap07      1  TPASS  :  mmap failed with EACCES
+43:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mmap08
+mmap08      1  TPASS  :  mmap failed with EBADF
+44:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mmap09
+mmap09      1  TPASS  :  ftruncate mmaped file to a smaller size
+mmap09      2  TPASS  :  ftruncate mmaped file to a larger size
+mmap09      3  TPASS  :  ftruncate mmaped file to 0 size
+45:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mmap12
+mmap12      1  TPASS  :  Functionality of mmap() successful
+46:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mmapstress02
+mmapstress02    1  TPASS  :  Test passed
+
+47:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mmapstress04
+mmapstress04    1  TPASS  :  Test passed
+
+48:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mmapstress05
+mmapstress05    1  TPASS  :  Test passed
+
+49:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mremap01
+mremap01    1  TPASS  :  Functionality of mremap() is correct
+50:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/mremap05
+mremap05    1  TPASS  :  MREMAP_FIXED requires MREMAP_MAYMOVE
+mremap05    2  TPASS  :  new_addr has to be page aligned
+mremap05    3  TPASS  :  old/new area must not overlap
+mremap05    4  TPASS  :  mremap #1
+mremap05    5  TPASS  :  mremap #1 value OK
+mremap05    6  TPASS  :  mremap #2
+mremap05    7  TPASS  :  mremap #2 value OK
+51:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/open01
+open01      1  TPASS  :  Save text bit not cleared as expected
+open01      2  TPASS  :  directory bit is set as expected
+52:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/open03
+open03      1  TPASS  :  open(tfile_7611, O_RDWR|O_CREAT,0700) returned 8
+53:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/open04
+open04      1  TPASS  :  call returned expected EMFILE error
+54:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/open06
+open06      1  TPASS  :  call returned expected ENXIO error
+55:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/open07
+open07      1  TPASS  :  open returned expected ELOOP error
+open07      2  TPASS  :  open returned expected ELOOP error
+open07      3  TPASS  :  open returned expected ELOOP error
+open07      4  TPASS  :  open returned expected ELOOP error
+open07      5  TPASS  :  open succeeded as expected
+56:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/open09
+open09      1  TPASS  :  Test passed in O_WRONLY.
+open09      2  TPASS  :  Test passed in O_RDONLY.
+57:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/open13
+/opt/ltp/testcases/bin/open13 not found.
+58:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/poll01
+poll01      1  TPASS  :  poll() POLLOUT
+poll01      2  TPASS  :  poll() POLLIN
+59:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/posix_fadvise01
+posix_fadvise01    1  TPASS  :  call succeeded expectedly
+posix_fadvise01    2  TPASS  :  call succeeded expectedly
+posix_fadvise01    3  TPASS  :  call succeeded expectedly
+posix_fadvise01    4  TPASS  :  call succeeded expectedly
+posix_fadvise01    5  TPASS  :  call succeeded expectedly
+posix_fadvise01    6  TPASS  :  call succeeded expectedly
+60:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/read01
+read01      1  TPASS  :  read(pfds) returned 512
+61:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/read02
+read02      1  TPASS  :  expected failure: TEST_ERRNO=EBADF(9): Bad file descriptor
+read02      2  TPASS  :  expected failure: TEST_ERRNO=EISDIR(21): Is a directory
+read02      3  TPASS  :  expected failure: TEST_ERRNO=EFAULT(14): Bad address
+read02      4  TPASS  :  expected failure: TEST_ERRNO=EINVAL(22): Invalid argument
+read02      5  TPASS  :  expected failure: TEST_ERRNO=EINVAL(22): Invalid argument
+62:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/read03
+read03      0  TINFO  :  read() succeded in setting errno to EAGAIN
+63:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/read04
+read04      1  TPASS  :  functionality of read() is correct
+64:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/sbrk01
+sbrk01      1  TPASS  :  sbrk - Increase by 8192 bytes returned 0x20030000
+sbrk01      2  TPASS  :  sbrk - Increase by -8192 bytes returned 0x20032000
+65:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/sbrk02
+sbrk02      0  TINFO  :  setup() bailing inc: 24310185984, ret: 0xffffffffffffffff, sbrk: 0xffc6c030000: errno=ENOMEM(12): Cannot allocate memory
+sbrk02      1  TPASS  :  sbrk(24310185984) failed as expected: TEST_ERRNO=ENOMEM(12): Cannot allocate memory
+66:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/sendfile02
+sendfile02    1  TPASS  :  functionality of sendfile() is correct
+sendfile02    2  TPASS  :  functionality of sendfile() is correct
+sendfile02    3  TPASS  :  functionality of sendfile() is correct
+sendfile02    4  TPASS  :  functionality of sendfile() is correct
+67:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/sendfile03
+sendfile03    1  TPASS  :  sendfile() returned 9 : Bad file descriptor
+sendfile03    2  TPASS  :  sendfile() returned 9 : Bad file descriptor
+sendfile03    3  TPASS  :  sendfile() returned 9 : Bad file descriptor
+68:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/sendfile04
+sendfile04    1  TPASS  :  sendfile() returned 14 : Bad address
+sendfile04    2  TPASS  :  sendfile() returned 14 : Bad address
+sendfile04    3  TPASS  :  sendfile() returned 14 : Bad address
+sendfile04    4  TPASS  :  sendfile() returned 14 : Bad address
+sendfile04    5  TPASS  :  sendfile() returned 14 : Bad address
+69:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/sendfile05
+sendfile05    1  TPASS  :  sendfile() returned 22 : Invalid argument
+70:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/sendfile06
+sendfile06    1  TPASS  :  functionality of sendfile() is correct
+71:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/sendfile07
+sendfile07    1  TPASS  :  sendfile() returned 11 : Resource temporarily unavailable
+72:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/sendfile08
+sendfile08    1  TPASS  :  sendfile(2) copies data correctly
+73:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/sendfile09
+sendfile09    1  TCONF  :  sendfile09.c:140: sendfile(2) on large file needs 5G free space.
+sendfile09    2  TCONF  :  sendfile09.c:140: Remaining cases not appropriate for configuration
+##### sendfile09 returned not 0 #####
+74:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/semctl01
+semctl01    1  TPASS  :  buf.sem_nsems and buf.sem_perm.mode are correct
+semctl01    2  TPASS  :  buf.sem_perm.mode is correct
+semctl01    3  TPASS  :  semaphores have expected values
+semctl01    4  TPASS  :  number of sleeping processes is correct
+semctl01    5  TPASS  :  last pid value is correct
+semctl01    6  TPASS  :  semaphore value is correct
+semctl01    7  TPASS  :  number of sleeping processes is correct
+semctl01    8  TPASS  :  semaphore values are correct
+semctl01    9  TPASS  :  semaphore value is correct
+semctl01   10  TPASS  :  the highest index is correct
+semctl01   11  TPASS  :  number of semaphore sets is correct
+semctl01   12  TPASS  :  id of the semaphore set is correct
+semctl01   13  TPASS  :  semaphore appears to be removed
+75:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/semctl03
+semctl03    1  TPASS  :  expected failure - errno = 22 : Invalid argument
+semctl03    2  TPASS  :  expected failure - errno = 22 : Invalid argument
+semctl03    3  TPASS  :  expected failure - errno = 14 : Bad address
+semctl03    4  TPASS  :  expected failure - errno = 14 : Bad address
+76:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/semctl05
+semctl05    1  TPASS  :  expected failure - errno = 34 : Numerical result out of range
+semctl05    2  TPASS  :  expected failure - errno = 34 : Numerical result out of range
+semctl05    3  TPASS  :  expected failure - errno = 34 : Numerical result out of range
+77:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/socket01
+socket01    1  TPASS  :  invalid domain successful
+socket01    2  TPASS  :  invalid type successful
+socket01    3  TPASS  :  UNIX domain dgram successful
+socket01    4  TPASS  :  raw open as non-root successful
+socket01    5  TPASS  :  UDP socket successful
+socket01    6  TPASS  :  UDP stream successful
+socket01    7  TPASS  :  TCP dgram successful
+socket01    8  TPASS  :  TCP socket successful
+socket01    9  TPASS  :  ICMP stream successful
+78:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/socket02
+socket02    1  TPASS  :  socket(SOCK_CLOEXEC) PASSED
+79:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/stream01
+stream01    1  TPASS  :  Test passed.
+80:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/stream02
+stream02    1  TPASS  :  Test passed in block0.
+stream02    2  TPASS  :  Test passed in block1.
+81:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/stream03
+stream03    1  TPASS  :  Test passed in block0.
+stream03    2  TPASS  :  Test passed in block1.
+82:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/stream04
+stream04    1  TPASS  :  Test passed.
+83:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/stream05
+stream05    1  TPASS  :  Test passed in block0.
+stream05    2  TPASS  :  Test passed in block1.
+stream05    3  TPASS  :  Test passed in block2.
+stream05    4  TPASS  :  Test passed in block3.
+stream05    5  TPASS  :  Test passed in block4.
+84:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/unlink05
+unlink05    1  TPASS  :  unlink(tfile_7983) returned 0
+85:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/unlink06
+unlink06    1  TPASS  :  unlink(fifo_unlink7992) returned 0
+86:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/unlink07
+unlink07    1  TPASS  :  unlink(<non-existent file>) Failed, errno=2
+unlink07    2  TPASS  :  unlink(<path is empty string>) Failed, errno=2
+unlink07    3  TPASS  :  unlink(<path contains a non-existent file>) Failed, errno=2
+unlink07    4  TPASS  :  unlink(<address beyond address space>) Failed, errno=14
+unlink07    5  TPASS  :  unlink(<path contains a regular file>) Failed, errno=20
+unlink07    6  TPASS  :  unlink(<address beyond address space>) Failed, errno=14
+unlink07    7  TPASS  :  unlink(<pathname too long>) Failed, errno=36
+unlink07    8  TPASS  :  unlink(<negative address>) Failed, errno=14
+87:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/unlink08
+unlink08    1  TPASS  :  unlink(<unwritable directory>) returned 0
+unlink08    2  TPASS  :  unlink(<unsearchable directory>) returned 0
+unlink08    3  TPASS  :  unlink(<directory>) Failed, errno=21
+88:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/vfork01
+vfork01     0  TINFO  :  Attribute values of parent and child match
+vfork01     0  TINFO  :  Working directories of parent and child match
+vfork01     0  TINFO  :  Device/inode number of parent and childs '/' match
+vfork01     0  TINFO  :  Device/inode number of parent and childs '.' don't match
+vfork01     1  TPASS  :  Call of vfork() successful
+89:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/vfork02
+vfork02     1  TPASS  :  Call to vfork() successful
+90:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/vma01
+parent: t = 0x100000360000
+child : u = 0x100000390000
+vma01       0  TINFO  :  s = 0x100000360000, t = 0x100000390000
+child : x = 0x100000390000
+vma01       0  TINFO  :  s = 0x100000390000, t = 0x1000003c0000
+vma01       1  TPASS  :  two 3*ps VMAs found.
+91:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/vmsplice01
+vmsplice01    1  TPASS  :  Written data has been read back correctly
+92:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/vmsplice02
+vmsplice02    1  TPASS  :  vmsplice() failed as expected: TEST_ERRNO=EBADF(9): Bad file descriptor
+vmsplice02    2  TPASS  :  vmsplice() failed as expected: TEST_ERRNO=EBADF(9): Bad file descriptor
+vmsplice02    3  TPASS  :  vmsplice() failed as expected: TEST_ERRNO=EINVAL(22): Invalid argument
+93:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/write01
+write01     1  TPASS  :  write returned 1
+94:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/write03
+write03     0  TINFO  :  Enter Block 1: test to check if write corrupts the file when write fails
+write03     1  TPASS  :  failure of write(2) didnot corrupt the file
+write03     0  TINFO  :  Exit block 1
+95:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/write04
+write04     0  TINFO  :  Enter block 1: test for EAGAIN in write()
+write04     0  TINFO  :  read() succeded in setting errno to EAGAIN
+write04     1  TPASS  :  Block 1 PASSED
+write04     0  TINFO  :  Exit block 1
+96:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/write05
+write05     0  TINFO  :  Enter Block 1: test with bad fd
+write05     1  TPASS  :  received EBADF as expected.
+write05     0  TINFO  :  Exit Block 1
+write05     0  TINFO  :  Enter Block 2: test with a bad address
+write05     2  TPASS  :  received EFAULT as expected.
+write05     0  TINFO  :  Exit Block 2
+write05     0  TINFO  :  Enter Block 3: test with invalid pipe
+write05     3  TPASS  :  received EPIPE as expected.
+write05     0  TINFO  :  Exit Block 3
+97:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/writetest
+/opt/ltp/testcases/bin/writetest    0  TINFO  :  Blocks:       1
+
+/opt/ltp/testcases/bin/writetest    0  TINFO  :  Seed:         1543035694
+
+/opt/ltp/testcases/bin/writetest    0  TINFO  :  Output file: 'fileout'
+
+/opt/ltp/testcases/bin/writetest    0  TINFO  :  Writing 1 blocks of 1048576 bytes to 'fileout'
+
+/opt/ltp/testcases/bin/writetest    1  TPASS  :  Write: Success
+/opt/ltp/testcases/bin/writetest    0  TINFO  :  Verifying 1 blocks in 'fileout'
+
+/opt/ltp/testcases/bin/writetest    2  TPASS  :  Verify: Success
+
+98:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/writev01
+writev01    1  TPASS  :  Enter Block 1
+writev01    2  TPASS  :  Received EINVAL as expected
+writev01    0  TINFO  :  Exit block 1
+writev01    3  TPASS  :  Enter block 2
+writev01    4  TFAIL  :  writev01.c:204: writev failed unexpectedly: errno=EFAULT(14): Bad address
+writev01    0  TINFO  :  Exit block 2
+writev01    5  TPASS  :  Enter block 3
+writev01    6  TFAIL  :  writev01.c:215: Got EFAULT
+writev01    0  TINFO  :  Exit block 3
+writev01    7  TPASS  :  Enter block 4
+writev01    8  TPASS  :  Received EBADF as expected
+writev01    0  TINFO  :  Exit block 4
+writev01    9  TPASS  :  Enter block 5
+writev01   10  TPASS  :  Received EINVAL as expected
+writev01    0  TINFO  :  Exit block 5
+writev01   11  TPASS  :  Enter block 6
+writev01   12  TPASS  :  writev wrote 0 iovectors
+writev01    0  TINFO  :  Exit block 6
+writev01   13  TPASS  :  Enter block 7
+writev01   14  TPASS  :  writev passed writing 64 bytes, followed by two NULL vectors
+writev01    0  TINFO  :  Exit block 7
+writev01   15  TPASS  :  Enter block 8
+writev01   16  TPASS  :  Received EPIPE as expected
+writev01    0  TINFO  :  Exit block 8
+##### writev01 returned not 0 #####
+99:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/writev02
+writev02    0  TINFO  :  Enter block 1
+writev02    1  TPASS  :  Received EFAULT as expected
+writev02    0  TINFO  :  Exit block 1
+100:/opt/ppos/bin/mcexec /opt/ltp/testcases/bin/writev07
+/opt/ltp/testcases/bin/writev07 not found.
+>>> LTP Test End
