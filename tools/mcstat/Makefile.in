@@ -11,8 +11,8 @@ KDIR ?= @KDIR@
 ARCH=@ARCH@
 VPATH=@abs_srcdir@
 IHKDIR ?= $(VPATH)/../../../ihk/linux/include/
-CFLAGS=-Wall -O -I. -I${IHKDIR} -I@abs_srcdir@/../../executer/include
-LDFLAGS=@LDFLAGS@
+CFLAGS=-Wall -O -I. -I${IHKDIR} -I@abs_srcdir@/../../executer/include -I@abs_builddir@/../../../ihk/linux/include/ihk
+LDFLAGS=-L@abs_builddir@/../../../ihk/linux/user -lihk -Wl,-rpath -Wl,$(prefix)/lib @LDFLAGS@
 TARGET=mcstat
 
 .PHONY: all clean install
