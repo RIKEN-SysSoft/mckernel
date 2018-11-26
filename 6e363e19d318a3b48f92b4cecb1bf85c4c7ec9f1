@@ -2,6 +2,23 @@
   "comments": [
     {
       "key": {
+        "uuid": "d4d217a5_e7e375f9",
+        "filename": "tools/mcstat/mcstat.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 80,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-26T08:03:45Z",
+      "side": 1,
+      "message": "I\u0027m not sure we need to print the same error again, mcstatus always prints something before returning non-zero",
+      "revId": "6e363e19d318a3b48f92b4cecb1bf85c4c7ec9f1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "74dfc63f_e8b3a5bd",
         "filename": "tools/mcstat/mcstat.c",
         "patchSetId": 4
@@ -33,6 +50,63 @@
       "revId": "6e363e19d318a3b48f92b4cecb1bf85c4c7ec9f1",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d6efb61f_70c98404",
+        "filename": "tools/mcstat/mcstat.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 208,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-26T08:03:45Z",
+      "side": 1,
+      "message": "retrying is not accurate, default arguments will call this with count \u003d 1 so mcstatus would just exit.\nI think rc should hold -errno here as well for this case (it will be reset by the ioctl if things worked out on later tries in case there are)",
+      "range": {
+        "startLine": 208,
+        "startChar": 29,
+        "endLine": 208,
+        "endChar": 37
+      },
+      "revId": "6e363e19d318a3b48f92b4cecb1bf85c4c7ec9f1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "15ee7f9f_07cb9a53",
+        "filename": "tools/mcstat/mcstat.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 216,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-26T08:03:45Z",
+      "side": 1,
+      "message": "errno needs to be read before printf, in case printf fails (which can happen, e.g. EPIPE if stdout was closed)",
+      "revId": "6e363e19d318a3b48f92b4cecb1bf85c4c7ec9f1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "98a7b66d_f0becd51",
+        "filename": "tools/mcstat/mcstat.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 240,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-26T08:03:45Z",
+      "side": 1,
+      "message": "This \u0027rc \u003d 0; out:\u0027 pattern is really something I\u0027ve only ever seen in mckernel code; I think most people would just \u0027break\u0027 instead of \u0027goto out\u0027 (and either reset rc to 0, or why not just return the last known status) -- but anyway let\u0027s not spend more time on this, I\u0027m sure you have more important things to do. only the \u0027errno needs to be read before any other external function call\u0027 is important.",
+      "revId": "6e363e19d318a3b48f92b4cecb1bf85c4c7ec9f1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
