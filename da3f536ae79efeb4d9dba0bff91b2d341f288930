@@ -16,6 +16,23 @@
       "revId": "da3f536ae79efeb4d9dba0bff91b2d341f288930",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b2cdc10b_cc27e2ed",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2585,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-26T01:17:47Z",
+      "side": 1,
+      "message": "it\u0027s usually better to check constant test (e.g. CONFIG_ARM64_PGTABLE_LEVELS \u003e 2) first, but I suppose gcc knows the first test doesn\u0027t have side effect so would optimize it away anyway...\nLet\u0027s change this and the below check though if you come back to this patch",
+      "revId": "da3f536ae79efeb4d9dba0bff91b2d341f288930",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
     }
   ]
 }
