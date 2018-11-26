@@ -104,6 +104,23 @@
     },
     {
       "key": {
+        "uuid": "47ee7afa_f25d5f7b",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1748,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-26T02:50:42Z",
+      "side": 1,
+      "message": "hmm, I personally preferred the switch, but why not -- if you do this is would be good to update style in arch/x86_64/kernel/syscall.c the same way though.",
+      "revId": "9c86303d88c519155752a18e0f0860536682c7be",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "7739ed66_577a8cf2",
         "filename": "arch/arm64/kernel/syscall.c",
         "patchSetId": 1
