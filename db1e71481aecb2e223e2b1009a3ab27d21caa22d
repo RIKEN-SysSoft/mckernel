@@ -33,6 +33,23 @@
       "revId": "db1e71481aecb2e223e2b1009a3ab27d21caa22d",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9d8bffe4_78c2f266",
+        "filename": "tools/mcstat/mcstat.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 204,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-26T01:36:31Z",
+      "side": 1,
+      "message": "I like how charstat[] is built better now, but you\u0027re opening up the possibility of having holes in the array now so this should print something like `charstat[rc] ? : \"Unknown\"` to be safe.\n\nThis kind of initialization guarantees you will have NULL if rc is before the last index, so you do not need to check rc \u003e\u003d IHK_OS_STATUS_NOT_BOOTED with this (but still need to check it is positive, which is the same in practice now but not in intent as order might change)\n\nAdditionally for further future-proofing we should add a last element to the enum e.g. IHK_OS_STATUS_COUNT or whatever delimiter and use that instead of HUNGUP here + define it as NULL explicitely in the array; but since that\u0027s in ihk repo I won\u0027t insist on this, only do if you want to/have time.",
+      "revId": "db1e71481aecb2e223e2b1009a3ab27d21caa22d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
