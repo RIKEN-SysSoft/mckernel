@@ -33,6 +33,23 @@
       "revId": "10077d1db40158ab5b1fe2ea5c3fc6c4b5f21817",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "62f28ab8_b4b68fda",
+        "filename": "tools/mcstat/mcstat.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 207,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-26T07:01:06Z",
+      "side": 1,
+      "message": "sorry should have said before: print errno? (need to check for rc \u003c 0 and remember errno before close(fd), in case close/printf fail and overwrite errno)",
+      "revId": "10077d1db40158ab5b1fe2ea5c3fc6c4b5f21817",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
