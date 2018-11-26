@@ -36,6 +36,23 @@
     },
     {
       "key": {
+        "uuid": "1f3e0689_ec96063a",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2924,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-26T02:58:45Z",
+      "side": 1,
+      "message": "if it\u0027s going to be a global variable I\u0027d rather uncapitalize it.\n(unrelated: we might want to consider implementing __initconst like linux, it\u0027s not very difficult, just putting stuff in another section that\u0027s rw at boot and is remapped ro after init is done)",
+      "revId": "13926f7bc3a0cabff321cc5ffe3ddb230390b2df",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "dadb4d3a_8fd74ea0",
         "filename": "arch/arm64/kernel/memory.c",
         "patchSetId": 1
