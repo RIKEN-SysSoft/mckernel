@@ -16,6 +16,24 @@
       "revId": "fac27005eac83334bdf9599a044659c5a34b002c",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "508540bf_5e4a1a98",
+        "filename": "configure.ac",
+        "patchSetId": 3
+      },
+      "lineNbr": 489,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-26T03:13:53Z",
+      "side": 1,
+      "message": "No, as I said in patchset 2 I think it makes sense to allow this. Either to test build on new kernels or apparently Fujitsu runs tests on arm without mcoverlayfs right now",
+      "parentUuid": "bbaa8505_4bb09065",
+      "revId": "fac27005eac83334bdf9599a044659c5a34b002c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
