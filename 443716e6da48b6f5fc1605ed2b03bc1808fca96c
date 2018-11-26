@@ -16,6 +16,40 @@
       "revId": "443716e6da48b6f5fc1605ed2b03bc1808fca96c",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e6fd5046_51c832c7",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2161,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-26T01:14:06Z",
+      "side": 1,
+      "message": "this looks wrong, if pgshift \u003d PTL3_SHIFT + PTL3_CONT_SHIFT you trim it down to PTL3_SHIFT here; it probably needs to be \u003e\u003d like below.\nAlso, I know we\u0027ve discussed this on the call Thursday but I really don\u0027t like this PTLx_SHIFT + PTLx_CONT_SHIFT way of thinking.. You said it\u0027s like that in linux but I don\u0027t see where searching for \"SHIFT \\+ [A-Z_]*_SHIFT\" (e.g. two SOMETHING_SHIFT macros added up)",
+      "revId": "443716e6da48b6f5fc1605ed2b03bc1808fca96c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9ec726e6_b64d70fd",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2178,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-26T01:14:06Z",
+      "side": 1,
+      "message": "block is basically large page, right?\nWhy wasn\u0027t that check here before? it\u0027s not something new with compound pages...",
+      "revId": "443716e6da48b6f5fc1605ed2b03bc1808fca96c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
     }
   ]
 }
