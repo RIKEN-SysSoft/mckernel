@@ -3763,7 +3763,7 @@ SYSCALL_DECLARE(signalfd4)
 int
 perf_counter_alloc(struct thread *thread)
 {
-	int ret = -1;
+	int ret = -EINVAL;
 	int i = 0;
 
 	// find avail generic counter
@@ -4148,20 +4148,23 @@ static int vm_policy_insert(struct process_vm *vm, struct vm_range_numa_policy *
 }
 
 #ifdef ENABLE_PERF
-struct mc_perf_event*
-mc_perf_event_alloc(struct perf_event_attr *attr)
+static int mc_perf_event_alloc(struct mc_perf_event **out,
+			       struct perf_event_attr *attr)
 {
+	int ret = 0;
 	unsigned long val = 0, extra_config = 0;
-	struct mc_perf_event *event;
+	struct mc_perf_event *event = NULL;
 	int ereg_id;
 
 	if (!attr) {
-		return NULL;
+		ret = -EINVAL;
+		goto out;
 	}
 
 	event = kmalloc(sizeof(struct mc_perf_event), IHK_MC_AP_NOWAIT);
 	if (!event) {
-		return NULL;
+		ret = -ENOMEM;
+		goto out;
 	}
 	memset(event, 0, sizeof(struct mc_perf_event));
 
@@ -4189,11 +4192,13 @@ mc_perf_event_alloc(struct perf_event_attr *attr)
 
 	default:
 		// Unexpected type
-		return NULL;
+		ret = -EINVAL;
+		goto out;
 	}
 
 	if (val == 0) {
-		return NULL;
+		ret = -EINVAL;
+		goto out;
 	}
 	
 	event->hw_config = val;
@@ -4205,11 +4210,19 @@ mc_perf_event_alloc(struct perf_event_attr *attr)
 		event->extra_reg.reg = ihk_mc_get_extra_reg_msr(ereg_id);
 		event->extra_reg.idx = ihk_mc_get_extra_reg_idx(ereg_id);
 	}
-	return event;
+
+	*out = event;
+
+out:
+	if (ret) {
+		kfree(event);
+	}
+	return ret;
 }
 
 SYSCALL_DECLARE(perf_event_open)
 {
+	int ret;
 	struct syscall_request request IHK_DMA_ALIGN;
 	struct thread *thread = cpu_local_var(current);
 	struct process *proc = thread->proc;
@@ -4260,16 +4273,16 @@ SYSCALL_DECLARE(perf_event_open)
 		return -ENOENT;
 	}
 
-	event = mc_perf_event_alloc((struct perf_event_attr*)attr);
-	if (!event) {
-		return -1;
+	ret = mc_perf_event_alloc(&event, (struct perf_event_attr *)attr);
+	if (ret) {
+		return ret;
 	}
 
 	event->pid = pid;
 
 	counter_idx = perf_counter_alloc(thread);
 	if (counter_idx < 0) {
-		return -1;
+		return counter_idx;
 	}
 	event->counter_id = counter_idx;
 
