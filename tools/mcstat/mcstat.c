@@ -175,16 +175,17 @@ mcstatistics(int idx, int once, int delay, int count)
 
 /* ihk_os_status enum is defined in ihk/linux/include/ihk/status.h */
 static char *charstat[] = {
-    "None",	/*IHK_OS_STATUS_NOT_BOOTED*/
-    "Booting",	/*IHK_OS_STATUS_BOOTING*/
-    "Booted",	/*IHK_OS_STATUS_BOOTED, OS booted and acked */
-    "Ready",	/*IHK_OS_STATUS_READY, OS is ready and fully functional */
-    "Freezing",	/*IHK_OS_STATUS_FREEZING, OS is freezing */
-    "Frozen",	/*IHK_OS_STATUS_FROZEN,   OS is frozen */
-    "Shutdown",	/* IHK_OS_STATUS_SHUTDOWN, OS is shutting down */
-    "Stopped",	/* IHK_OS_STATUS_STOPPED, OS stopped successfully */
-    "Panic",	/* IHK_OS_STATUS_FAILED, OS panics or failed to boot */
-    "Hangup",	/* IHK_OS_STATUS_HUNGUP,  OS is hungup */
+	[IHK_OS_STATUS_NOT_BOOTED] = "None",
+	[IHK_OS_STATUS_BOOTING] = "Booting",
+	[IHK_OS_STATUS_BOOTED] = "Booted",	/* OS booted and acked */
+	[IHK_OS_STATUS_READY] = "Ready",	/* OS is ready and fully functional */
+	[IHK_OS_STATUS_RUNNING] = "Running",	/* OS is running */
+	[IHK_OS_STATUS_FREEZING] = "Freezing",	/* OS is freezing */
+	[IHK_OS_STATUS_FROZEN] = "Frozen",	/* OS is frozen */
+	[IHK_OS_STATUS_SHUTDOWN] = "Shutdown",	/* OS is shutting down */
+	[IHK_OS_STATUS_STOPPED] = "Stopped",	/* OS stopped successfully */
+	[IHK_OS_STATUS_FAILED] = "Panic",	/* OS panics or failed to boot */
+	[IHK_OS_STATUS_HUNGUP] = "Hangup",	/* OS is hungup */
 };
 
 static void
