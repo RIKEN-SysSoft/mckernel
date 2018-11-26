@@ -36,6 +36,40 @@
     },
     {
       "key": {
+        "uuid": "f8378c99_89cf6da0",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2006,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-26T02:37:12Z",
+      "side": 1,
+      "message": "You\u0027renot using pgsize at all later, why not do ihk_mc_pt_lookup_pte with \u0026cmp_pgsize (and adjust just pgsize_to_tbllv)?",
+      "revId": "55ebab5210cf9117b0f9939058b4cffcd9c93ce2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "26bd1d6f_26c92208",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2010,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-26T02:37:12Z",
+      "side": 1,
+      "message": "I think helpers for page_is_compound_head / page_is_compound_tail might be worth doing given how often this pattern has come up?",
+      "revId": "55ebab5210cf9117b0f9939058b4cffcd9c93ce2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "69868f04_3582ab33",
         "filename": "arch/arm64/kernel/memory.c",
         "patchSetId": 1
