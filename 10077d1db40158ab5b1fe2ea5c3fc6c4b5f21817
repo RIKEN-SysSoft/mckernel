@@ -50,6 +50,24 @@
       "revId": "10077d1db40158ab5b1fe2ea5c3fc6c4b5f21817",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "2683b1f9_0782c19d",
+        "filename": "tools/mcstat/mcstat.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 207,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-11-26T07:42:40Z",
+      "side": 1,
+      "message": "I\u0027ve followed your suggestion.",
+      "parentUuid": "62f28ab8_b4b68fda",
+      "revId": "10077d1db40158ab5b1fe2ea5c3fc6c4b5f21817",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
     }
   ]
 }
