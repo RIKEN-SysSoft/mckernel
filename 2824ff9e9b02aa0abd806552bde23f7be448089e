@@ -258,6 +258,23 @@
     },
     {
       "key": {
+        "uuid": "061c92fc_e6e43152",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 691,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-26T02:43:05Z",
+      "side": 1,
+      "message": "Coming back here after reading more further patches and how this function is used. I don\u0027t like the function name: it\u0027s not an action word, yet does not return anything useful to the caller (only error; it\u0027s a side-effect function that acts on its argument)\n\nSomething like \"split_compound_pages\" might be better, if I understood this correctly?",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "429d2b2e_5f083dc9",
         "filename": "arch/arm64/kernel/include/pgtable-hwdef.h",
         "patchSetId": 1
