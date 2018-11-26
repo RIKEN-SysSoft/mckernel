@@ -2,6 +2,23 @@
   "comments": [
     {
       "key": {
+        "uuid": "5d848a14_034d16a9",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2294,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-26T02:03:40Z",
+      "side": 1,
+      "message": "that\u0027s a weird way of getting the next page when you know base is PTL1_CONT_SIZE-aligned, why not just base + PTL1_CONT_SIZE ?",
+      "revId": "b8809b28ea59192312b563b36efb18d4306419d0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "6d24669f_6d3e580c",
         "filename": "arch/arm64/kernel/memory.c",
         "patchSetId": 1
@@ -13,6 +30,40 @@
       "writtenOn": "2018-11-22T04:49:22Z",
       "side": 1,
       "message": "WARNING: Missing a blank line after declarations\n+\t\tuintptr_t next_addr \u003d ALIGN_UP(base + 1, PTL1_CONT_SIZE);\n+\t\tif (end \u003c next_addr) {",
+      "revId": "b8809b28ea59192312b563b36efb18d4306419d0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cc34dec4_864996bd",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2300,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-26T02:03:40Z",
+      "side": 1,
+      "message": "It took me a few minutes to understand that bitwise or as well, I can\u0027t think of any way of simplifying it but it might use a better comment than the obvious \u0027update attribute\u0027 -- we can see you update the attribute below, but exactly what is happening is less obvious\nSomething like \"ensure PTE_CONT is set iff phys and next_addr are properly aligned\" ?",
+      "revId": "b8809b28ea59192312b563b36efb18d4306419d0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4bff7978_a769fe22",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2303,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-26T02:03:40Z",
+      "side": 1,
+      "message": "Actually shuldn\u0027t this also be cleared if base wasn\u0027t PTL1_CONT_SIZE aligned? (big if\u0027s else)",
       "revId": "b8809b28ea59192312b563b36efb18d4306419d0",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
@@ -172,6 +223,23 @@
     },
     {
       "key": {
+        "uuid": "34523b8a_b94c153a",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2380,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-26T02:03:40Z",
+      "side": 1,
+      "message": "same as above for the whole if",
+      "revId": "b8809b28ea59192312b563b36efb18d4306419d0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "89b55171_75b15c83",
         "filename": "arch/arm64/kernel/memory.c",
         "patchSetId": 1
@@ -200,6 +268,23 @@
       "writtenOn": "2018-11-22T04:49:22Z",
       "side": 1,
       "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t\t(void *)(dest + pgsize), phys, attr, pgshift, args-\u003erange, 0);",
+      "revId": "b8809b28ea59192312b563b36efb18d4306419d0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f9c24384_38ee225f",
+        "filename": "arch/x86_64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2453,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-26T02:03:40Z",
+      "side": 1,
+      "message": "I can\u0027t think the indentation here is correct with 8-space tabs (what checkpatch uses); if you reindent this properly it\u0027s actually not that difficult to respect the 80 characters limit.\nSame for most of the warnings below.",
       "revId": "b8809b28ea59192312b563b36efb18d4306419d0",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
