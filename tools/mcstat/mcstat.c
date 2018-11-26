@@ -14,9 +14,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
+#include <errno.h>
 
+#include <ihklib.h>
 #include <ihk/ihk_host_user.h>
-#include <ihk/ihklib_private.h>		// mcctrl_ioctl_getrusage_desc is defined here
 #undef IHK_MAX_NUM_NUMA_NODES
 #include <ihklib_rusage.h>	// mckernel_rusage is defined here
 
@@ -27,7 +28,22 @@
 #define CONV_UNIT(d)	(((float)(d))/scale)
 #define UPDATE_COUNTER(c)	(c = (c + 1) % 10)
 
-struct mckernel_rusage			rbuf;
+struct my_rusage {
+	struct mckernel_rusage rusage;
+
+	/* Initial amount posted to allocator. Note that the amount
+	 * used before the initialization is not included.
+	 */
+	unsigned long memory_total;
+
+	/* Current of sum of kernel and user */
+	unsigned long memory_cur_usage;
+
+	/* Max of sum of kernel and user */
+	unsigned long memory_max_usage;
+};
+
+struct my_rusage rbuf;
 
 static void	mcstatistics(int idx, int once, int delay, int count);
 static void	mcstatus(int idx, int delay, int count);
@@ -107,22 +123,68 @@ statistics_header(char *unit)
  * the device, and cannot be rebooted by others.
  */
 static int
-mygetrusage(int idx, struct mckernel_rusage *rbp)
+mygetrusage(int idx, struct my_rusage *rbp)
 {
-    int		fd, rc;
-    struct mcctrl_ioctl_getrusage_desc	rusage;
+	int rc;
+	int num_numa_nodes;
+	int i;
+	unsigned long *memtotal = NULL;
 
-    if ((fd = devopen(idx)) < 0) {
-	return -1;
-    }
-    rusage.rusage = rbp;
-    rusage.size_rusage = sizeof(struct mckernel_rusage);
-    memset(rbp, 0, sizeof(struct mckernel_rusage));
-    if ((rc = ioctl(fd, IHK_OS_GETRUSAGE, &rusage)) < 0) {
-	perror("ioctl"); exit(-1);
-    }
-    close(fd);
-    return 0;
+	rc = ihk_os_getrusage(idx, &rbp->rusage,
+			      sizeof(struct mckernel_rusage));
+	if (rc) {
+		printf("%s: error: ihk_os_getrusage: %s\n",
+		       __func__, strerror(-rc));
+		goto out;
+	}
+
+	num_numa_nodes = ihk_os_get_num_numa_nodes(idx);
+	if (num_numa_nodes <= 0) {
+		printf("%s: error: ihk_os_get_num_numa_nodes: %d\n",
+		       __func__, num_numa_nodes);
+		rc = -1;
+		goto out;
+	}
+
+	/* Calculate total by taking a sum over NUMA nodes */
+
+	memtotal = malloc(num_numa_nodes * sizeof(unsigned long));
+	if (!memtotal) {
+		printf("%s: error: assigining memory\n",
+		       __func__);
+		rc = -ENOMEM;
+		goto out;
+	}
+	memset(memtotal, 0, num_numa_nodes * sizeof(unsigned long));
+
+	rc = ihk_os_query_total_mem(idx, memtotal, num_numa_nodes);
+	if (rc) {
+		printf("%s: error: ihk_os_query_total_mem: %s\n",
+		       __func__, strerror(-rc));
+		goto out;
+	}
+
+	rbp->memory_total = 0;
+	for (i = 0; i < num_numa_nodes; i++) {
+		rbp->memory_total += memtotal[i];
+	}
+
+	/* Calculate current by taking a sum over NUMA nodes */
+
+	rbp->memory_cur_usage = rbp->rusage.memory_kmem_usage;
+	for (i = 0; i < num_numa_nodes; i++) {
+		rbp->memory_cur_usage += rbp->rusage.memory_numa_stat[i];
+	}
+
+	/* Calculate max by taking a sum of kernel and user */
+
+	rbp->memory_max_usage = rbp->rusage.memory_kmem_max_usage +
+		rbp->rusage.memory_max_usage;
+
+	rc = 0;
+out:
+	free(memtotal);
+	return rc;
 }
 
 static void
@@ -136,19 +198,20 @@ mcstatistics(int idx, int once, int delay, int count)
 	printf("Device has not been created.\n");
 	exit(-1);
     }
-    if (rbuf.memory_max_usage < MiB100) {
-	scale = MiB; unit = "MB";
-    } else {
-	scale = GiB; unit = "GB";
-    }
+	if (rbuf.rusage.memory_max_usage < MiB100) {
+		scale = MiB; unit = "MB";
+	} else {
+		scale = GiB; unit = "GB";
+	}
     statistics_header(unit);
     for (;;) {
+
 	printf("%9.3f%9.3f%9.3f %9ld%9ld %7d %3d\n",
+	       CONV_UNIT(rbuf.memory_total),
+	       CONV_UNIT(rbuf.memory_cur_usage),
 	       CONV_UNIT(rbuf.memory_max_usage),
-	       CONV_UNIT(rbuf.memory_kmem_usage),
-	       CONV_UNIT(rbuf.memory_kmem_max_usage),
-	       rbuf.cpuacct_stat_system, rbuf.cpuacct_stat_user,
-	       rbuf.num_threads, rbuf.max_num_threads);
+	       rbuf.rusage.cpuacct_stat_system, rbuf.rusage.cpuacct_stat_user,
+	       rbuf.rusage.num_threads, rbuf.rusage.max_num_threads);
 	if (count > 0 && --count == 0) break;
 	sleep(delay);
 	if (mygetrusage(idx, &rbuf) < 0) {
@@ -166,11 +229,12 @@ mcstatistics(int idx, int once, int delay, int count)
   	rusage->cpuacct_stat_system = st / 10000000;
 	rusage->cpuacct_stat_user = ut / 10000000;
 	rusage->cpuacct_usage = ut;
-	printf("cpuacct_usage = %x\n", rbuf.cpuacct_usage);
+	printf("cpuacct_usage = %x\n", rbuf.rusage.cpuacct_usage);
 */
-    for (i = 0; i < rbuf.max_num_threads; i++) {
-	printf("cpuacct_usage_percpu[%d] = %ld\n", i, rbuf.cpuacct_usage_percpu[i]);
-    }
+	for (i = 0; i < rbuf.rusage.max_num_threads; i++) {
+		printf("cpuacct_usage_percpu[%d] = %ld\n",
+		       i, rbuf.rusage.cpuacct_usage_percpu[i]);
+	}
 }
 
 /* ihk_os_status enum is defined in ihk/linux/include/ihk/status.h */
@@ -244,10 +308,10 @@ mcosusage(int idx, int once, int delay, int count)
     unsigned char show = 0;
     struct ihk_os_cpu_monitor	mon[MAX_CPUS];
 
-    if (mygetrusage(idx, &rbuf) < 0) {
-	printf("Device has not been created.\n");
-    }
-    ncpus = rbuf.max_num_threads;
+	if (mygetrusage(idx, &rbuf) < 0) {
+		printf("Device has not been created.\n");
+	}
+	ncpus = rbuf.rusage.max_num_threads;
     osusage_header();
     for(;;) {
 	if ((fd = devopen(idx)) < 0) {
