@@ -2,6 +2,23 @@
   "comments": [
     {
       "key": {
+        "uuid": "deb095a0_bd1cc652",
+        "filename": "tools/mcstat/mcstat.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 80,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-27T02:04:55Z",
+      "side": 1,
+      "message": "You need to only do that if rc \u003c 0, as positive number now means ihk os status code but is still considered an error by shells if we exit with these values",
+      "revId": "5dddac6dca28966f89ca63eee8c1f81efca88b38",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "43125ce9_dc92e737",
         "filename": "tools/mcstat/mcstat.c",
         "patchSetId": 5
