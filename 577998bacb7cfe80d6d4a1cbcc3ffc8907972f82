@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "55a37ab8_d9d54c63",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-27T03:54:51Z",
+      "side": 1,
+      "message": "Usually tools handle better if this is split in two lines, e.g.\n\n Refs: #898\n Refs: #928\n\nFor example the redmine might not link the commit to #928 as is",
+      "revId": "577998bacb7cfe80d6d4a1cbcc3ffc8907972f82",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
