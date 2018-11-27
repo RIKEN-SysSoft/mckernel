@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "dea444e0_14aac30c",
+        "filename": "tools/mcstat/mcstat.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 153,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-27T02:06:04Z",
+      "side": 1,
+      "message": "`rc \u003d num_numa_nodes \u003c 0 ? : -EFAULT` ? can preserve the error if it was set, or at least use a valid errno instead of -1",
+      "revId": "f24ea86c612e725cf3c05eab8a3fec0db73361ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "e8d2fc75_bea452b9",
+        "filename": "tools/mcstat/mcstat.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 159,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-27T02:06:04Z",
+      "side": 1,
+      "message": "(nitpick) can use calloc instead of malloc+memset",
+      "revId": "f24ea86c612e725cf3c05eab8a3fec0db73361ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
