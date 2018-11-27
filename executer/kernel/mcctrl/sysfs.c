@@ -1236,7 +1236,7 @@ sysfsm_cleanup(ihk_os_t os)
 	struct sysfsm_node *np;
 
 	if (!udp) {
-		printk("%s: WARNING: no mcctrl_usrdata found\n", __FUNCTION__);
+		pr_warn("%s: warning: mcctrl_usrdata not found\n", __func__);
 		return;
 	}
 
@@ -1277,10 +1277,20 @@ sysfsm_setup(ihk_os_t os, void *buf, long buf_pa, size_t bufsize)
 	struct device *dev = ihk_os_get_linux_device(os);
 	struct sysfsm_node *np = NULL;
 	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
-	struct sysfsm_data *sdp = &udp->sysfsm_data;
-	struct sysfsm_req *req = &sdp->sysfs_req;
+	struct sysfsm_data *sdp;
+	struct sysfsm_req *req;
 
 	dprintk("mcctrl:sysfsm_setup(%p)\n", os);
+
+	if (!udp) {
+		pr_err("%s: error: mcctrl_usrdata not found\n",
+			 __func__);
+		error = -EINVAL;
+		goto out;
+	}
+
+	sdp = &udp->sysfsm_data;
+	req = &sdp->sysfs_req;
 
 	req->busy = 0;
 	init_waitqueue_head(&req->wq);
@@ -1637,6 +1647,13 @@ sysfsm_req_create(void *os, long param_rpa)
 		}
 	}
 
+	if (!udp) {
+		pr_err("%s: error: mcctrl_usrdata not found\n",
+			 __func__);
+		error = -EINVAL;
+		goto out;
+	}
+
 	np = sysfsm_create(&udp->sysfsm_data, param->path, param->mode,
 			ops, param->client_ops, cinstance);
 	if (IS_ERR(np)) {
@@ -1672,6 +1689,13 @@ sysfsm_req_mkdir(void *os, long param_rpa)
 	param_pa = ihk_device_map_memory(dev, param_rpa, sizeof(*param));
 	param = ihk_device_map_virtual(dev, param_pa, sizeof(*param), NULL, 0);
 
+	if (!udp) {
+		pr_err("%s: error: mcctrl_usrdata not found\n",
+			 __func__);
+		error = -EINVAL;
+		goto out;
+	}
+
 	np = sysfsm_mkdir(&udp->sysfsm_data, param->path);
 	if (IS_ERR(np)) {
 		error = PTR_ERR(np);
@@ -1704,6 +1728,13 @@ sysfsm_req_symlink(void *os, long param_rpa)
 	param_pa = ihk_device_map_memory(dev, param_rpa, sizeof(*param));
 	param = ihk_device_map_virtual(dev, param_pa, sizeof(*param), NULL, 0);
 
+	if (!udp) {
+		pr_err("%s: error: mcctrl_usrdata not found\n",
+			 __func__);
+		error = -EINVAL;
+		goto out;
+	}
+
 	np = sysfsm_symlink(&udp->sysfsm_data, (void *)param->target,
 			param->path);
 	if (IS_ERR(np)) {
@@ -1735,6 +1766,13 @@ sysfsm_req_lookup(void *os, long param_rpa)
 	param_pa = ihk_device_map_memory(dev, param_rpa, sizeof(*param));
 	param = ihk_device_map_virtual(dev, param_pa, sizeof(*param), NULL, 0);
 
+	if (!udp) {
+		pr_err("%s: error: mcctrl_usrdata not found\n",
+			 __func__);
+		error = -EINVAL;
+		goto out;
+	}
+
 	np = sysfsm_lookup(&udp->sysfsm_data, param->path);
 	if (IS_ERR(np)) {
 		error = PTR_ERR(np);
@@ -1765,6 +1803,13 @@ sysfsm_req_unlink(void *os, long param_rpa)
 
 	param_pa = ihk_device_map_memory(dev, param_rpa, sizeof(*param));
 	param = ihk_device_map_virtual(dev, param_pa, sizeof(*param), NULL, 0);
+
+	if (!udp) {
+		pr_err("%s: error: mcctrl_usrdata not found\n",
+			 __func__);
+		error = -EINVAL;
+		goto out;
+	}
 
 	error = sysfsm_unlink(&udp->sysfsm_data, param->path, param->flags);
 	if (error) {
@@ -2244,6 +2289,13 @@ sysfsm_createf(ihk_os_t os, struct sysfsm_ops *ops, void *instance, int mode,
 		special = 1;
 	}
 
+	if (!udp) {
+		pr_err("%s: error: mcctrl_usrdata not found\n",
+			 __func__);
+		error = -EINVAL;
+		goto out;
+	}
+
 	np = sysfsm_create(&udp->sysfsm_data, param->path, param->mode, &local_ops,
 			param->client_ops, param->client_instance);
 	if (IS_ERR(np)) {
@@ -2300,6 +2352,13 @@ sysfsm_mkdirf(ihk_os_t os, sysfs_handle_t *dirhp, const char *fmt, ...)
 		error = -ENOENT;
 		eprintk("mcctrl:sysfsm_mkdirf:not an absolute path. %d\n",
 				error);
+		goto out;
+	}
+
+	if (!udp) {
+		pr_err("%s: error: mcctrl_usrdata not found\n",
+			 __func__);
+		error = -EINVAL;
 		goto out;
 	}
 
@@ -2364,6 +2423,13 @@ sysfsm_symlinkf(ihk_os_t os, sysfs_handle_t targeth, const char *fmt, ...)
 		goto out;
 	}
 
+	if (!udp) {
+		pr_err("%s: error: mcctrl_usrdata not found\n",
+			 __func__);
+		error = -EINVAL;
+		goto out;
+	}
+
 	np = sysfsm_symlink(&udp->sysfsm_data, (void *)targeth.handle,
 			param->path);
 	if (IS_ERR(np)) {
@@ -2418,6 +2484,13 @@ sysfsm_lookupf(ihk_os_t os, sysfs_handle_t *objhp, const char *fmt, ...)
 		error = -ENOENT;
 		eprintk("mcctrl:sysfsm_lookupf:not an absolute path. %d\n",
 				error);
+		goto out;
+	}
+
+	if (!udp) {
+		pr_err("%s: error: mcctrl_usrdata not found\n",
+			 __func__);
+		error = -EINVAL;
 		goto out;
 	}
 
@@ -2477,6 +2550,13 @@ sysfsm_unlinkf(ihk_os_t os, int flags, const char *fmt, ...)
 		error = -ENOENT;
 		eprintk("mcctrl:sysfsm_unlinkf:not an absolute path. %d\n",
 				error);
+		goto out;
+	}
+
+	if (!udp) {
+		pr_err("%s: error: mcctrl_usrdata not found\n",
+			 __func__);
+		error = -EINVAL;
 		goto out;
 	}
 
