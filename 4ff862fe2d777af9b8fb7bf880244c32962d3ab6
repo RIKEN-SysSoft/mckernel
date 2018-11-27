@@ -4728,6 +4728,29 @@
     },
     {
       "key": {
+        "uuid": "99939e37_10b0c92f",
+        "filename": "test/mng_mod/issues/898_928/arm64/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-11-27T05:23:14Z",
+      "side": 1,
+      "message": "1000回成功した、というようなサマリだけにしてください。",
+      "range": {
+        "startLine": 12,
+        "startChar": 0,
+        "endLine": 12,
+        "endChar": 26
+      },
+      "revId": "4ff862fe2d777af9b8fb7bf880244c32962d3ab6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "8da37db9_f29b3118",
         "filename": "test/mng_mod/issues/898_928/arm64/result.log",
         "patchSetId": 1
@@ -4759,6 +4782,29 @@
       "revId": "4ff862fe2d777af9b8fb7bf880244c32962d3ab6",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "801fc335_30a903c3",
+        "filename": "test/mng_mod/issues/898_928/arm64/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-11-27T05:23:14Z",
+      "side": 1,
+      "message": "/bin/sleepではなくて、５秒寝る実行ファイルを別途作成して実行してください。",
+      "range": {
+        "startLine": 40,
+        "startChar": 0,
+        "endLine": 40,
+        "endChar": 51
+      },
+      "revId": "4ff862fe2d777af9b8fb7bf880244c32962d3ab6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     },
     {
       "key": {
