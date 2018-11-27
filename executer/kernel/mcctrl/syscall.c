@@ -214,9 +214,17 @@ static int __notify_syscall_requester(ihk_os_t os, struct ikc_scd_packet *packet
 		struct syscall_response *res)
 {
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
-	struct ihk_ikc_channel_desc *c = (usrdata->channels + packet->ref)->c;
+	struct ihk_ikc_channel_desc *c;
 	struct ikc_scd_packet r_packet;
 	int ret = 0;
+
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n",
+			 __func__);
+		return -EINVAL;
+	}
+
+	c = (usrdata->channels + packet->ref)->c;
 
 	/* If spinning, no need for IKC message */
 	if (__sync_bool_compare_and_swap(&res->req_thread_status,
@@ -1524,6 +1532,12 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
 
 	dprintk("pager_req_map(%p,%d,%lx,%lx,%lx)\n", os, fd, len, off, result_rpa);
 
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n",
+			 __func__);
+		return -EINVAL;
+	}
+
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 	if (unlikely(!ppd)) {
 		kprintf("%s: ERROR: no per-process structure for PID %d??\n",
@@ -1793,6 +1807,12 @@ static int pager_req_unmap(ihk_os_t os, uintptr_t handle)
 	struct mcctrl_per_proc_data *ppd = NULL;
 
 	dprintk("pager_req_unmap(%p,%lx)\n", os, handle);
+
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n",
+			 __func__);
+		return -EINVAL;
+	}
 
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 	if (unlikely(!ppd)) {
