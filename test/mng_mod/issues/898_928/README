@@ -23,9 +23,8 @@ McKernelの状態と、終了処理(shutdown, destroy)の組み合わせで、
 
 (2) テストの実行方法
  以下の手順でテストを実行する
-	1. Makefileの変数MCK_DIRの内容を、McKernelがインストールされているディレクトリに変更する
-	2. CT_xxx.c の定数MCK_DIRの内容を、McKernelがインストールされているディレクトリに変更する
-	3. sh make test を実行する
+	1. ~/.mck_test_config.mkの変数MCK_DIRの内容を、McKernelがインストールされているディレクトリに変更する
+	2. sh make test を実行する
 
 (3) テスト項目
 以下の条件でMcKernelの起動/終了が正常に行われることを確認する
@@ -76,7 +75,7 @@ CT_008:
 	3. McKernelプロセスの実行終了直後にMcKernelを終了(ihk_os_shutdown)する
 	4. ihk_os_get_status がSHUTDOWNまたは、INACTIVEを返すことを確認する
 	5. 終了したMcKernelに対して、再度終了(ihk_os_shutdown)する
-	⇒ ihk_os_shutdownが0以外を返す
+	⇒ ihk_os_shutdownが0を返す
 
 CT_009:
 	前提：force_shutdown.patch を適用してMcKernelをビルドする
