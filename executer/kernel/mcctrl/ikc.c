@@ -91,6 +91,13 @@ static void mcctrl_wakeup_cb(ihk_os_t os, struct ikc_scd_packet *packet)
 		struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 		unsigned long flags;
 
+		/* destroy_ikc_channels must have cleaned up descs */
+		if (!usrdata) {
+			pr_err("%s: error: mcctrl_usrdata not found\n",
+				__func__);
+			return;
+		}
+
 		spin_lock_irqsave(&usrdata->wakeup_descs_lock, flags);
 		mcctrl_wakeup_desc_cleanup(os, desc);
 		spin_unlock_irqrestore(&usrdata->wakeup_descs_lock, flags);
@@ -100,6 +107,7 @@ static void mcctrl_wakeup_cb(ihk_os_t os, struct ikc_scd_packet *packet)
 	wake_up_interruptible(&desc->wq);
 }
 
+/* do_frees: 1 when caller should free free_addrs[], 0 otherwise */
 int mcctrl_ikc_send_wait(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp,
 		long int timeout, struct mcctrl_wakeup_desc *desc,
 		int *do_frees, int free_addrs_count, ...)
@@ -153,6 +161,13 @@ int mcctrl_ikc_send_wait(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp,
 		struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 		unsigned long flags;
 
+		if (!usrdata) {
+			pr_err("%s: error: mcctrl_usrdata not found\n",
+				__func__);
+			ret = ret < 0 ? ret : -EINVAL;
+			goto out;
+		}
+
 		spin_lock_irqsave(&usrdata->wakeup_descs_lock, flags);
 		list_add(&desc->chain, &usrdata->wakeup_descs_list);
 		spin_unlock_irqrestore(&usrdata->wakeup_descs_lock, flags);
@@ -162,6 +177,7 @@ int mcctrl_ikc_send_wait(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp,
 	}
 
 	ret = READ_ONCE(desc->err);
+out:
 	if (alloc_desc)
 		kfree(desc);
 	return ret;
@@ -172,9 +188,16 @@ int mcctrl_ikc_send_wait(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp,
 static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *__os)
 {
+	int ret = 0;
 	struct ikc_scd_packet *pisp = __packet;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(__os);
 	int msg = pisp->msg;
+
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
+		ret = -EINVAL;
+		goto out;
+	}
 
 	switch (msg) {
 	case SCD_MSG_INIT_CHANNEL:
@@ -236,6 +259,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		break;
 	}
 
+out:
 	/* 
 	 * SCD_MSG_SYSCALL_ONESIDE holds the packet and frees is it
 	 * mcexec_ret_syscall(), for the rest, free it here.
@@ -243,7 +267,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	if (msg != SCD_MSG_SYSCALL_ONESIDE) {
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)__packet);
 	}
-	return 0;
+	return ret;
 }
 
 static int dummy_packet_handler(struct ihk_ikc_channel_desc *c,
@@ -258,13 +282,12 @@ int mcctrl_ikc_send(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp)
 {
 	struct mcctrl_usrdata *usrdata;
 
-	if (cpu < 0 || os == NULL) {
+	if (!os || cpu < 0 || cpu >= usrdata->num_channels) {
 		return -EINVAL;
 	}
 
 	usrdata = ihk_host_os_get_usrdata(os);
-	if (usrdata == NULL || cpu >= usrdata->num_channels ||
-	    !usrdata->channels[cpu].c) {
+	if (!usrdata || !usrdata->channels[cpu].c) {
 		return -EINVAL;
 	}
 	return ihk_ikc_send(usrdata->channels[cpu].c, pisp, 0);
@@ -273,9 +296,15 @@ int mcctrl_ikc_send(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp)
 int mcctrl_ikc_send_msg(ihk_os_t os, int cpu, int msg, int ref, unsigned long arg)
 {
 	struct ikc_scd_packet packet;
-	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_usrdata *usrdata;
 
-	if (cpu < 0 || cpu >= usrdata->num_channels || !usrdata->channels[cpu].c) {
+	if (!os) {
+		return -EINVAL;
+	}
+
+	usrdata = ihk_host_os_get_usrdata(os);
+	if (!usrdata || cpu < 0 || cpu >= usrdata->num_channels ||
+	    !usrdata->channels[cpu].c) {
 		return -EINVAL;
 	}
 
@@ -288,7 +317,17 @@ int mcctrl_ikc_send_msg(ihk_os_t os, int cpu, int msg, int ref, unsigned long ar
 
 int mcctrl_ikc_set_recv_cpu(ihk_os_t os, int cpu)
 {
-	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_usrdata *usrdata;
+
+	if (!os) {
+		return -EINVAL;
+	}
+
+	usrdata = ihk_host_os_get_usrdata(os);
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
+		return -EINVAL;
+	}
 
 	ihk_ikc_channel_set_cpu(usrdata->channels[cpu].c,
 	                        ihk_ikc_get_processor_id());
@@ -297,9 +336,15 @@ int mcctrl_ikc_set_recv_cpu(ihk_os_t os, int cpu)
 
 int mcctrl_ikc_is_valid_thread(ihk_os_t os, int cpu)
 {
-	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_usrdata *usrdata;
 
-	if (cpu < 0 || cpu >= usrdata->num_channels || !usrdata->channels[cpu].c) {
+	if (!os) {
+		return 0;
+	}
+
+	usrdata = ihk_host_os_get_usrdata(os);
+	if (!usrdata || cpu < 0 || cpu >= usrdata->num_channels ||
+	    !usrdata->channels[cpu].c) {
 		return 0;
 	} else {
 		return 1;
@@ -308,12 +353,25 @@ int mcctrl_ikc_is_valid_thread(ihk_os_t os, int cpu)
 
 static void mcctrl_ikc_init(ihk_os_t os, int cpu, unsigned long rphys, struct ihk_ikc_channel_desc *c)
 {
-	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_usrdata *usrdata;
 	struct ikc_scd_packet packet;
-	struct mcctrl_channel *pmc = usrdata->channels + cpu;
+	struct mcctrl_channel *pmc;
+
+	if (!os) {
+		pr_err("%s: error: os not found\n", __func__);
+		return;
+	}
+
+	usrdata = ihk_host_os_get_usrdata(os);
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
+		return;
+	}
 
 	if (c->port == 502) {
 		pmc = usrdata->channels + usrdata->num_channels - 1;
+	} else {
+		pmc = usrdata->channels + cpu;
 	}
 
 	if (!pmc) {
@@ -334,6 +392,11 @@ static int connect_handler_ikc2linux(struct ihk_ikc_channel_info *param)
 	ihk_os_t os = param->channel->remote_os;
 	struct mcctrl_usrdata  *usrdata = ihk_host_os_get_usrdata(os);
 	int linux_cpu;
+
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
+		return -1;
+	}
 
 	c = param->channel;
 	linux_cpu = c->send.queue->write_cpu;
@@ -356,6 +419,11 @@ static int connect_handler_ikc2mckernel(struct ihk_ikc_channel_info *param)
 	int mck_cpu;
 	ihk_os_t os = param->channel->remote_os;
 	struct mcctrl_usrdata  *usrdata = ihk_host_os_get_usrdata(os);
+
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
+		return 1;
+	}
 
 	c = param->channel;
 	mck_cpu = c->send.queue->read_cpu;
@@ -486,7 +554,8 @@ void destroy_ikc_channels(ihk_os_t os)
 	struct mcctrl_wakeup_desc *mwd_entry, *mwd_next;
 
 	if (!usrdata) {
-		printk("%s: WARNING: no mcctrl_usrdata found\n", __FUNCTION__);
+		kprintf("%s: error: mcctrl_usrdata not found\n",
+			__func__);
 		return;
 	}
 
