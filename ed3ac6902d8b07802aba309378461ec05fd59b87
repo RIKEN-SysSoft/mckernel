@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "da0ec334_1e86095d",
+        "filename": "test/buildid_check/arm64/run.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-27T08:10:26Z",
+      "side": 1,
+      "message": "WARNING: \u0027successed\u0027 may be misspelled - perhaps \u0027succeeded\u0027?\n+\techo \"TEST001: NG, Buildid mismatch mcreboot.sh (successed).\"",
+      "revId": "ed3ac6902d8b07802aba309378461ec05fd59b87",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "881c14a2_b851293b",
+        "filename": "test/buildid_check/arm64/run.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 92,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-27T08:10:26Z",
+      "side": 1,
+      "message": "WARNING: \u0027successed\u0027 may be misspelled - perhaps \u0027succeeded\u0027?\n+\techo \"TEST002: NG, Buildid mismatch mcexec (successed).\"",
+      "revId": "ed3ac6902d8b07802aba309378461ec05fd59b87",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
