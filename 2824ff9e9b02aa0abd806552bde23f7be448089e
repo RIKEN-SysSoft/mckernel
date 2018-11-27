@@ -309,6 +309,23 @@
     },
     {
       "key": {
+        "uuid": "f2445944_50996d3f",
+        "filename": "arch/arm64/kernel/include/pgtable-hwdef.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2018-11-27T05:23:36Z",
+      "side": 1,
+      "message": "why is it necessary to have these macros defined twice? (i.e., these and the ones above)?\n\nFor example: __PTL2_CONT_SHIFT and CONT_PMD_SHIFT",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "32376a8b_aafbbea1",
         "filename": "arch/arm64/kernel/memory.c",
         "patchSetId": 1
