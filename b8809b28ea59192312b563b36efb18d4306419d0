@@ -53,6 +53,24 @@
     },
     {
       "key": {
+        "uuid": "ec581235_0463b671",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2300,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-11-27T06:18:01Z",
+      "side": 1,
+      "message": "適切なコメントは「headになれるアドレスで、かつ、start - endがPTL1_CONT_SIZEの倍数でない場合の端数部にあたらない場合」でしょうか。",
+      "parentUuid": "cc34dec4_864996bd",
+      "revId": "b8809b28ea59192312b563b36efb18d4306419d0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "4bff7978_a769fe22",
         "filename": "arch/arm64/kernel/memory.c",
         "patchSetId": 1
