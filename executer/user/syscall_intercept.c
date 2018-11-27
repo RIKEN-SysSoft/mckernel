@@ -25,6 +25,7 @@ hook(long syscall_number,
 	struct terminate_thread_desc term_desc;
 	unsigned long code;
 	int stack_top;
+	long ret;
 		
 	if (!uti_desc.start_syscall_intercept) {
 		return 1; /* System call isn't taken over */
@@ -78,9 +79,12 @@ hook(long syscall_number,
 		uti_desc.syscall_stack[stack_top].uti_clv = uti_desc.uti_clv;
 		uti_desc.syscall_stack[stack_top].ret = -EINVAL;
 
-		uti_syscall3(__NR_ioctl, uti_desc.fd, MCEXEC_UP_SYSCALL_THREAD, (long)(uti_desc.syscall_stack + stack_top));
-		*result = uti_desc.syscall_stack[stack_top].ret;
-		
+		ret = uti_syscall3(__NR_ioctl, uti_desc.fd,
+				   MCEXEC_UP_SYSCALL_THREAD,
+				   (long)(uti_desc.syscall_stack + stack_top));
+		*result = (ret < 0) ?
+			ret : uti_desc.syscall_stack[stack_top].ret;
+
 		/* push syscall_struct list */
 		__sync_fetch_and_add(&uti_desc.syscall_stack_top, 1);
 

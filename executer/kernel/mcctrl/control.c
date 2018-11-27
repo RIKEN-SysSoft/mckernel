@@ -100,6 +100,12 @@ static long mcexec_prepare_image(ihk_os_t os,
 	int num_sections;
 	int free_ikc_pointers = 1;
 
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
+		ret = -EINVAL;
+		goto free_out;
+	}
+
 	desc = kmalloc(sizeof(*desc), GFP_KERNEL);
 	if (!desc) {
 		printk("%s: error: allocating program_load_desc\n",
@@ -335,7 +341,15 @@ struct mcos_handler_info *new_mcos_handler_info(ihk_os_t os, struct file *file)
 	}
 #endif /* POSTK_DEBUG_TEMP_FIX_64 */
 	memset(info, '\0', sizeof(struct mcos_handler_info));
+
 	info->ud = ihk_host_os_get_usrdata(os);
+	if (!info->ud) {
+		pr_err("%s: error: mcctrl_usrdata not found\n",
+		       __func__);
+		kfree(info);
+		return NULL;
+	}
+
 	info->file = file;
 	return info;
 }
@@ -423,6 +437,11 @@ static long mcexec_start_image(ihk_os_t os,
 	struct mcos_handler_info *info;
 	int ret = 0;
 
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
+		return -EINVAL;
+	}
+
 	desc = kmalloc(sizeof(*desc), GFP_KERNEL);
 	if (!desc) {
 		printk("%s: error: allocating program_load_desc\n",
@@ -489,6 +508,11 @@ static long mcexec_send_signal(ihk_os_t os, struct signal_desc *sigparam)
 	struct mcctrl_signal *msigp;
 	int rc, do_free;
 
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
+		return -EINVAL;
+	}
+
 	if (copy_from_user(&sig, sigparam, sizeof(struct signal_desc))) {
 		return -EFAULT;
 	}
@@ -545,8 +569,15 @@ static long mcexec_get_nodes(ihk_os_t os)
 {
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 
-	if (!usrdata || !usrdata->mem_info)
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
 		return -EINVAL;
+	}
+
+	if (!usrdata->mem_info) {
+		pr_err("%s: error: mem_info not found\n", __func__);
+		return -EINVAL;
+	}
 
 	return usrdata->mem_info->n_numa_nodes;
 }
@@ -577,6 +608,7 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 	struct process_list_item *pli_iter;
 
 	if (!udp) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
 		return -EINVAL;
 	}
 
@@ -990,6 +1022,7 @@ int mcctrl_get_num_pool_threads(ihk_os_t os)
 	int nr_threads = 0;
 
 	if (!ud) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
 		return -EINVAL;
 	}
 
@@ -1295,6 +1328,11 @@ int mcexec_wait_syscall(ihk_os_t os, struct syscall_wait_desc *__user req)
 	struct mcctrl_per_proc_data *ppd;
 	struct mcctrl_per_thread_data *ptd = NULL;
 
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
+		return -EINVAL;
+	}
+
 	/* Get a reference to per-process structure */
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 
@@ -1563,6 +1601,11 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 	struct mcctrl_per_thread_data *ptd;
 	int error = 0;
 
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
+		return -EINVAL;
+	}
+
 	if (copy_from_user(&ret, arg, sizeof(struct syscall_ret_desc))) {
 		return -EFAULT;
 	}
@@ -1732,6 +1775,11 @@ int mcexec_create_per_process_data(ihk_os_t os,
 	int i;
 	struct rpgtable_desc krpt;
 
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
+		return -EINVAL;
+	}
+
 	if (rpt &&
 	    copy_from_user(&krpt, rpt, sizeof(krpt))) {
 		return -EFAULT;
@@ -1800,6 +1848,12 @@ int mcexec_destroy_per_process_data(ihk_os_t os, int pid)
 {
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd = NULL;
+
+	/* destroy_ikc_channels could have destroyed usrdata */
+	if (!usrdata) {
+		pr_warn("%s: warning: mcctrl_usrdata not found\n", __func__);
+		return 0;
+	}
 
 	ppd = mcctrl_get_per_proc_data(usrdata, pid);
 
@@ -2081,6 +2135,11 @@ long mcctrl_perf_num(ihk_os_t os, unsigned long arg)
 {
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
+		return -EINVAL;
+	}
+
 	usrdata->perf_event_num = arg;
 
 	return 0;
@@ -2109,6 +2168,11 @@ long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 	int need_free;
 	int num_registered = 0;
 	int err = 0;
+
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
+		return -EINVAL;
+	}
 
 	for (i = 0; i < usrdata->perf_event_num; i++) {
 		ret = copy_from_user(&attr, &arg[i],
@@ -2178,6 +2242,11 @@ long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
 	int i = 0, j = 0;
 	int need_free;
 
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
+		return -EINVAL;
+	}
+
 	for (i = 0; i < usrdata->perf_event_num; i++) {
 		perf_desc = kmalloc(sizeof(struct mcctrl_perf_ctrl_desc),
 				    GFP_KERNEL);
@@ -2234,6 +2303,11 @@ long mcctrl_perf_enable(ihk_os_t os)
 	int i = 0, j = 0;
 	int need_free;
 
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
+		return -EINVAL;
+	}
+
 	for (i = 0; i < usrdata->perf_event_num; i++) {
 		cntr_mask |= 1UL << i;
 	}
@@ -2286,6 +2360,11 @@ long mcctrl_perf_disable(ihk_os_t os)
 	int ret = 0;
 	int i = 0, j = 0;
 	int need_free;
+
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
+		return -EINVAL;
+	}
 
 	for (i = 0; i < usrdata->perf_event_num; i++) {
 		cntr_mask |= 1UL << i;
@@ -2465,6 +2544,12 @@ long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc, stru
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
 
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
+		rc = -EINVAL;
+		goto out;
+	}
+
 	if(copy_from_user(&desc, udesc, sizeof(struct uti_save_fs_desc))) {
 		printk("%s: Error: copy_from_user failed\n", __FUNCTION__);
 		rc = -EFAULT;
@@ -2543,6 +2628,11 @@ static long mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long c
 	struct mcctrl_per_thread_data *ptd;
 
 	dprintk("%s: target pid=%d,tid=%d,code=%lx,task=%p\n", __FUNCTION__, pid, tid, code, tsk);
+
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
+		goto no_ppd;
+	}
 
 	ppd = mcctrl_get_per_proc_data(usrdata, pid);
 	if (!ppd) {
@@ -2725,11 +2815,9 @@ long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 	if (copy_from_user(&param, uparam, sizeof param)) {
 		return -EFAULT;
 	}
-#if 0 /* debug */
-	if (param.number == __NR_futex) {
-#else
-		if (0) {
-#endif
+
+	/* debug */
+	if (0 && param.number == __NR_futex) {
 		struct uti_futex_resp resp = {
 			.done = 0
 		};
@@ -2748,12 +2836,21 @@ long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 		rc = (*mckernel_do_futex)(param.number, param.args[0], param.args[1], param.args[2],
 							  param.args[3], param.args[4], param.args[5], param.uti_clv, (void *)&resp, (void *)uti_wait_event, (void *)uti_printk, (void *)uti_clock_gettime);
 		param.ret = rc;
-	} else {
+	else {
+		struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+
+		if (!usrdata) {
+			pr_err("%s: error: mcctrl_usrdata not found\n",
+			       __func__);
+			return -EINVAL;
+		}
+
 			dprintk("%s: syscall_backward, SC %d, tid %d\n", __FUNCTION__, param.number, task_tgid_vnr(current));
-			rc = syscall_backward(ihk_host_os_get_usrdata(os), param.number,
-								  param.args[0], param.args[1], param.args[2],
-								  param.args[3], param.args[4], param.args[5],
-								  &param.ret);
+			rc = syscall_backward(usrdata, param.number,
+					      param.args[0], param.args[1],
+					      param.args[2], param.args[3],
+					      param.args[4], param.args[5],
+					      &param.ret);
 			switch (param.number) {
 			case __NR_munmap:
 				//printk("%s: syscall_backward, munmap,addr=%lx,len=%lx,tid=%d\n", __FUNCTION__, param.args[0], param.args[1], task_tgid_vnr(current));
@@ -2926,6 +3023,13 @@ mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *_desc)
 	int i;
 	int rc = 0;
 	int mask_size = cpumask_size();
+
+	if (!ud) {
+		pr_err("%s: error: mcctrl_usrdata not found\n",
+			__func__);
+		rc = -EINVAL;
+		goto out;
+	}
 
 	if ((rc = uti_attr_init())) {
 		pr_err("%s: error: uti_attr_init (%d)\n",
@@ -3282,7 +3386,8 @@ int mcctrl_get_request_os_cpu(ihk_os_t os, int *ret_cpu)
 	/* Look up per-OS mcctrl structure */
 	usrdata = ihk_host_os_get_usrdata(os);
 	if (!usrdata) {
-		printk("%s: ERROR: no usrdata found for OS %p\n", __FUNCTION__, os);
+		pr_err("%s: ERROR: mcctrl_usrdata not found for OS %p\n",
+		       __func__, os);
 		return -EINVAL;
 	}
 

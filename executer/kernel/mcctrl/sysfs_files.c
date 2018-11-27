@@ -99,6 +99,11 @@ void setup_local_snooping_files(ihk_os_t os)
 	int i;
 	int error;
 
+	if (!udp) {
+		panic("%s: error: mcctrl_usrdata not found\n",
+		      __func__);
+	}
+
 	memset(udp->cpu_online, 0, sizeof(udp->cpu_online));
 	for (i = 0; i < udp->cpu_info->n_cpus; i++) {
 		set_bit(i, udp->cpu_online);
@@ -195,7 +200,7 @@ void free_topology_info(ihk_os_t os)
 	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
 
 	if (!udp) {
-		printk("%s: WARNING: no mcctrl_usrdata found\n", __FUNCTION__);
+		pr_warn("%s: warning: mcctrl_usrdata not found\n", __func__);
 		return;
 	}
 
@@ -1141,6 +1146,11 @@ void setup_sysfs_files(ihk_os_t os)
 	int error;
 	struct sysfs_handle handle;
 	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
+
+	if (!udp) {
+		panic("%s: error: mcctrl_usrdata not found\n",
+		      __func__);
+	}
 
 	error = sysfsm_mkdirf(os, NULL, "/sys/test/x.dir");
 	if (error) {
