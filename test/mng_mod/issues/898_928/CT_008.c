@@ -4,9 +4,9 @@
 #include <string.h>
 #include <ihklib.h>
 #include <sys/types.h>
+#include "util.h"
 
-#define MCK_DIR "/home/satoken/ppos"
-static char prefix[256] = MCK_DIR;
+static char prefix[256] = QUOTE(MCK_DIR);
 
 static char test_name[64] = "CT_008";
 
@@ -39,8 +39,8 @@ int main(int argc, char** argv) {
 	char fn[256];
 	char kargs[256];
 
-	int cpus[4] = {6, 7, 8, 9};
-	int num_cpus = 4;
+	int cpus[2] = {1, 2};
+	int num_cpus = 2;
 
 	struct ihk_mem_chunk mem_chunks[4];
 	int num_mem_chunks;
@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
 	status = system(cmd);
 
 	// ihk_os_destroy_pseudofs
-	ret_ihklib = ihk_os_destroy_pseudofs(0);
+	ret_ihklib = ihk_os_destroy_pseudofs(0, 0, 0);
 	fp = popen("cat /proc/mounts | grep /tmp/mcos/mcos0_sys", "r");
 	nread = fread(buf, 1, sizeof(buf), fp);
 	buf[nread] = 0;
@@ -81,21 +81,21 @@ int main(int argc, char** argv) {
     ret_ihklib = ihk_os_assign_cpu(0, cpus, num_cpus);
     //OKNG(ret_ihklib == 0, "ihk_os_assign_cpu\n");
 
-	// reserve mem 128m@0,128m@1
+	// reserve mem 128m@0,128m@0
 	num_mem_chunks = 2;
 	mem_chunks[0].size = 128*1024*1024ULL;
 	mem_chunks[0].numa_node_number = 0;
 	mem_chunks[1].size = 128*1024*1024ULL;
-	mem_chunks[1].numa_node_number = 1;
+	mem_chunks[1].numa_node_number = 0;
     ret_ihklib = ihk_reserve_mem(0, mem_chunks, num_mem_chunks);
     //OKNG(ret_ihklib == 0, "ihk_reserve_mem (2)\n");
 
-	// assign mem 128m@0,128m@1
+	// assign mem 128m@0,128m@0
 	num_mem_chunks = 2;
 	mem_chunks[0].size = 128*1024*1024ULL;
 	mem_chunks[0].numa_node_number = 0;
 	mem_chunks[1].size = 128*1024*1024ULL;
-	mem_chunks[1].numa_node_number = 1;
+	mem_chunks[1].numa_node_number = 0;
     ret_ihklib = ihk_os_assign_mem(0, mem_chunks, num_mem_chunks);
     //OKNG(ret_ihklib == 0, "ihk_os_assign_mem (2)\n");
 
@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
 	usleep(100*1000);
 
 	// create pseudofs
-	ret_ihklib = ihk_os_create_pseudofs(0);
+	ret_ihklib = ihk_os_create_pseudofs(0, 0, 0);
 	fp = popen("cat /proc/mounts | grep /tmp/mcos/mcos0_sys", "r");
 	nread = fread(buf, 1, sizeof(buf), fp);
 	buf[nread] = 0;
@@ -150,7 +150,7 @@ shutdown:
 
 	// shutdown again
     ret_ihklib = ihk_os_shutdown(0);
-	OKNG(ret_ihklib != 0, "shutdown after shutdown returned NOT 0\n");
+	OKNG(ret_ihklib == 0, "shutdown after shutdown returned NOT 0\n");
 
 destroy:
     ret_ihklib = ihk_destroy_os(0, 0);
@@ -160,7 +160,7 @@ destroy:
 	status = system(cmd);
 
 	// destroy pseudofs
-	ret_ihklib = ihk_os_destroy_pseudofs(0);
+	ret_ihklib = ihk_os_destroy_pseudofs(0, 0, 0);
 	fp = popen("cat /proc/mounts | grep /tmp/mcos/mcos0_sys", "r");
 	nread = fread(buf, 1, sizeof(buf), fp);
 	buf[nread] = 0;
