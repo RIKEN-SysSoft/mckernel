@@ -1,8 +1,9 @@
+include $(HOME)/.mck_test_config.mk
+
 CC = gcc
-MCK_DIR=/home/satoken/ppos
 TARGET=CT_001 CT_002 CT_003 CT_004 CT_005 CT_006 CT_007 CT_008 CT_009
 
-CPPFLAGS = -I$(MCK_DIR)/include
+CPPFLAGS = -I$(MCK_DIR)/include -DMCK_DIR=$(MCK_DIR)
 LDFLAGS = -L$(MCK_DIR)/lib -lihk -Wl,-rpath -Wl,$(MCK_DIR)/lib -lbfd
 
 all: $(TARGET)
