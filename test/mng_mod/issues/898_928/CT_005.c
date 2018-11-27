@@ -4,9 +4,9 @@
 #include <string.h>
 #include <ihklib.h>
 #include <sys/types.h>
+#include "util.h"
 
-#define MCK_DIR "/home/satoken/ppos"
-static char prefix[256] = MCK_DIR;
+static char prefix[256] = QUOTE(MCK_DIR);
 
 static char test_name[64] = "CT_005";
 
@@ -81,14 +81,14 @@ int main(int argc, char** argv) {
     ret_ihklib = ihk_os_assign_cpu(0, cpus, num_cpus);
     //OKNG(ret_ihklib == 0, "ihk_os_assign_cpu\n");
 
-	// reserve mem 128m@0,128m@1
+	// reserve mem 128m@0,128m@0
 	num_mem_chunks = 1;
 	mem_chunks[0].size = 128*1024*1024ULL;
 	mem_chunks[0].numa_node_number = 0;
     ret_ihklib = ihk_reserve_mem(0, mem_chunks, num_mem_chunks);
     //OKNG(ret_ihklib == 0, "ihk_reserve_mem (2)\n");
 
-	// assign mem 128m@0,128m@1
+	// assign mem 128m@0,128m@0
 	num_mem_chunks = 1;
 	mem_chunks[0].size = 128*1024*1024ULL;
 	mem_chunks[0].numa_node_number = 0;
