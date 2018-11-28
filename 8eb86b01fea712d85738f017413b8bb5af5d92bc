@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "dc7db438_61ea39f9",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-28T04:30:50Z",
+      "side": 1,
+      "message": "WARNING: Possible unwrapped commit description (prefer a maximum 75 chars per line)\n* free_process_memory_range() always passes memobj to ihk_mc_pt_free_range()",
+      "revId": "8eb86b01fea712d85738f017413b8bb5af5d92bc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a8b93c09_877cee63",
+        "filename": "kernel/process.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 997,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-28T04:30:50Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tvm, (void *)start, (void *)end, range-\u003ememobj);",
+      "revId": "8eb86b01fea712d85738f017413b8bb5af5d92bc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
