@@ -1,0 +1,106 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1fbf167b_e9803339",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 2848,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-28T08:57:14Z",
+      "side": 1,
+      "message": "Since you fixed the if (0) earlier, might as well fix the indent level off by one in the whole section here?",
+      "revId": "73487a34f45c1717d205b974095540a9a0ddaa6b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "50410918_757deac8",
+        "filename": "executer/kernel/mcctrl/ikc.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 167,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-28T08:57:14Z",
+      "side": 1,
+      "message": "(nitpick) I\u0027d keep the old ret value if there was a previous error (e.g. ret \u003c 0)",
+      "revId": "73487a34f45c1717d205b974095540a9a0ddaa6b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1b99bc2f_cff73b81",
+        "filename": "executer/kernel/mcctrl/ikc.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 285,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-28T08:57:14Z",
+      "side": 1,
+      "message": "(nitpick) I\u0027d keep cpu \u003c 0 here, it doesn\u0027t need usrdata: check as much as possible as early as possible",
+      "revId": "73487a34f45c1717d205b974095540a9a0ddaa6b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5b0337cd_97828956",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1614,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-28T08:57:14Z",
+      "side": 1,
+      "message": "please use an errno, return below is a bad example.",
+      "revId": "73487a34f45c1717d205b974095540a9a0ddaa6b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c56937c1_cb511ff9",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1890,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-28T08:57:14Z",
+      "side": 1,
+      "message": "ditto",
+      "revId": "73487a34f45c1717d205b974095540a9a0ddaa6b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "005b8c12_2275c067",
+        "filename": "executer/user/syscall_intercept.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 82,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-11-28T08:57:14Z",
+      "side": 1,
+      "message": "unrelated?",
+      "revId": "73487a34f45c1717d205b974095540a9a0ddaa6b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
