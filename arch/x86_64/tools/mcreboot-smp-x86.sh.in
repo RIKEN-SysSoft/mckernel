@@ -391,7 +391,7 @@ fi
 IHK_BUILDID=`${SBINDIR}/ihkconfig 0 get buildid`
 if [  "${IHK_BUILDID}" != "${MCK_BUILDID}" ]; then
 	echo "IHK build-id (${IHK_BUILDID}) didn't match McKernel build-id (${MCK_BUILDID})." >&2
-	exit 1
+	error_exit "mcctrl_loaded"
 fi
 
 # Destroy all LWK instances
