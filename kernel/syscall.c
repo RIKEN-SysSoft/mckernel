@@ -1437,9 +1437,15 @@ terminate_host(int pid)
 	proc = find_process(pid, &lock);
 	if(!proc)
 		return;
-	proc->nohost = 1;
-	process_unlock(proc, &lock);
-	do_kill(cpu_local_var(current), pid, -1, SIGKILL, NULL, 0);
+
+	if (proc->nohost != 1) {
+		proc->nohost = 1;
+		process_unlock(proc, &lock);
+		do_kill(cpu_local_var(current), pid, -1, SIGKILL, NULL, 0);
+	}
+	else {
+		process_unlock(proc, &lock);
+	}
 }
 
 void eventfd(int type)
