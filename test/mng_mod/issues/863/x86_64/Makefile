@@ -1,0 +1,34 @@
+CC=gcc
+TARGET=CT2001 CT2002 CT2003 CT2004 CT2005 CT2006 CT2007 CT2008
+all:: $(TARGET)
+	chmod u+x CT200?.sh
+
+CT2001: CT2001.c
+	$(CC) -o CT2001 $<
+
+CT2002: CT2002.c
+	$(CC) -o CT2002 $<
+
+CT2003: CT2003.c
+	$(CC) -o CT2003 $<
+
+CT2004: CT2004.c
+	$(CC) -o CT2004 $<
+
+CT2005: CT2005.c
+	$(CC) -o CT2005 $<
+
+CT2006: CT2006.c
+	$(CC) -o CT2006 $<
+
+CT2007: CT2007.c
+	$(CC) -o CT2007 $<
+
+CT2008: CT2008.c
+	$(CC) -o CT2008 $<
+
+test:: $(TARGET)
+	./CT200x.sh
+
+clean::
+	rm -f $(TARGET)

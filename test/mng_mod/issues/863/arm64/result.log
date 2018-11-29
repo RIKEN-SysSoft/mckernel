@@ -1,0 +1,48 @@
+gcc -o CT2001 CT2001.c
+gcc -o CT2002 CT2002.c
+gcc -o CT2003 CT2003.c
+gcc -o CT2004 CT2004.c
+gcc -o CT2005 CT2005.c
+gcc -o CT2006 CT2006.c
+gcc -o CT2007 CT2007.c
+gcc -o CT2008 CT2008.c
+./CT200x.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 4-7 -m 3G ... done
+DANGERTEST SIGNALONREAD
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 500 msec
+BUFFSIZE: 2147483648
+[17612] I am the examiner for 17619.
+The TEST process is terminated by the signal 15
+TEST SUCCESSED
+CT1001-2: OK
+2048+0 レコード入力
+2048+0 レコード出力
+2147483648 バイト (2.1 GB) コピーされました、 34.1908 秒、 62.8 MB/秒
+19:28:52.323974 test start, kill after 3 seconds
+19:28:55.362275 signal hanlder is called
+CT2001 OK
+vm.drop_caches = 3
+signal hanlder is called
+CT2002 OK
+19:29:19.215304 test start, kill after 3 seconds
+19:29:22.419269 child process terminated
+CT2003 OK
+vm.drop_caches = 3
+19:29:24.295527 test start, kill after 1 seconds
+19:29:27.258408 child process terminated
+CT2004 OK (2.962881)
+kill SIGURG
+kill SIGINT
+CT2005 OK
+vm.drop_caches = 3
+kill SIGURG
+CT2006 OK
+kill SIGTERM (ignored)
+kill SIGINT
+CT2007 OK
+vm.drop_caches = 3
+kill SIGTERM (ignored)
+CT2008 OK

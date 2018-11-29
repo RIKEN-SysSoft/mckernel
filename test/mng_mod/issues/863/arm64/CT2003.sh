@@ -1,0 +1,5 @@
+#!/bin/sh
+## CT2003.sh COPYRIGHT FUJITSU LIMITED 2018 ##
+
+MCEXEC=mcexec
+$MCEXEC ./CT2003
