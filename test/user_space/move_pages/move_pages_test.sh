@@ -10,11 +10,11 @@ function reboot() {
 		pgrep -f 'mcexec ' | xargs sudo kill -9
 	fi
 #	echo -n "mckernel stopping...  "
-	sudo ${MCMOD_DIR}/sbin/mcstop+release.sh
+	sudo ${MCK_DIR}/sbin/mcstop+release.sh
 #	echo "done."
 	#sleep 1
 	echo -n "mckernel reboot ...."
-	sudo ${MCMOD_DIR}/sbin/mcreboot.sh $*
+	sudo ${MCK_DIR}/sbin/mcreboot.sh $*
 	echo "done."
 }
 
@@ -32,7 +32,8 @@ function ng_out() {
 function ltp_test() {
 	TEST_NAME=$1
 #LTP programを実行 logを保存
-	sudo ${MCPATH}/bin/mcexec ${LTP_EXE_DIR}/${TEST_NAME} >./result/${TEST_NAME}.log
+	sudo ${MCK_DIR}/bin/mcexec ${LTP}/testcases/bin/${TEST_NAME} > \
+		./result/${TEST_NAME}.log
 
 #LTP log 確認
 	NUM=`cat ./test_cases/${TEST_NAME}.txt |wc -l`
@@ -56,12 +57,7 @@ TEST_CODE=001
 TEST_PREFIX=mp_
 
 ME=`whoami`
-if [ $# -ne 2 ]; then
-	source ./config
-else
-	MCPATH=$1
-	LTP_EXE_DIR=$2/move_pages
-fi
+source ${HOME}/.mck_test_config
 
 mkdir -p ./result
 
@@ -70,10 +66,11 @@ ltp_test "move_pages01"
 
 reboot "-m256m@0,256m@1"
 #LTP programを実行 logを保存
-sudo ${MCPATH}/bin/mcexec ${LTP_EXE_DIR}/move_pages02 >./result/move_pages02.log
+sudo ${MCK_DIR}/bin/mcexec ${LTP}/testcases/bin/move_pages02 > \
+	./result/move_pages02.log
 
 #kmsgを保存
-sudo ${MCPATH}/sbin/ihkosctl 0 kmsg >./result/move_pages02.kmsg
+sudo ${MCK_DIR}/sbin/ihkosctl 0 kmsg >./result/move_pages02.kmsg
 
 #move_pages-002 第３引数のアドレスが正しく引き継いでいることを確認
 #システムコールの引数のアドレスを取得

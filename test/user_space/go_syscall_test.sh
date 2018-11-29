@@ -1,6 +1,6 @@
 #!/bin/sh
 
-source ./config
+TEST_DIR=`pwd -P`
 
 auto_flg=0
 if [ $# = 1 ]; then

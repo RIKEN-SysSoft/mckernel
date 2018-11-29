@@ -27,11 +27,11 @@ function reboot() {
 		pgrep -f 'mcexec ' | xargs sudo kill -9
 	fi
 #	echo -n "mckernel stopping...  "
-	sudo ${MCMOD_DIR}/sbin/mcstop+release.sh
+	sudo ${MCK_DIR}/sbin/mcstop+release.sh
 #	echo "done."
 	#sleep 1
 	echo -n "mckernel booting...  " 1>&2
-	sudo ${MCMOD_DIR}/sbin/mcreboot.sh $*
+	sudo ${MCK_DIR}/sbin/mcreboot.sh $*
 	echo "done." 1>&2
 }
 TEST_PARAM_FILE=$1

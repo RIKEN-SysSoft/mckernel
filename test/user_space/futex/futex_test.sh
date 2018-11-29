@@ -10,11 +10,11 @@ function reboot() {
 		pgrep -f 'mcexec ' | xargs sudo kill -9
 	fi
 #	echo -n "mckernel stopping...  "
-	sudo ${MCMOD_DIR}/sbin/mcstop+release.sh
+	sudo ${MCK_DIR}/sbin/mcstop+release.sh
 #	echo "done."
 	#sleep 1
 	echo -n "mckernel reboot ...."
-	sudo ${MCMOD_DIR}/sbin/mcreboot.sh $*
+	sudo ${MCK_DIR}/sbin/mcreboot.sh $*
 	echo "done."
 }
 
@@ -71,7 +71,7 @@ sudo ${MCK_DIR}/sbin/ihkosctl 0 kmsg >./result/futex_wait01.kmsg
 #futex-001 アドレスが正しく引き継いでいることを確認
 
 #システムコールの引数のアドレスを取得
-sys_addr=`grep "sys_futex" ./result/futex_wait01.kmsg |head -n 1 |cut -d "," -f 2`
+sys_addr=`grep "do_futex" ./result/futex_wait01.kmsg |head -n 1 |cut -d "," -f 2`
 grep "get_futex_value_locked" ./result/futex_wait01.kmsg | head -n 1 | grep ${sys_addr} >/dev/null
 rc=$?
 if [ ${rc} -eq 0 ]; then

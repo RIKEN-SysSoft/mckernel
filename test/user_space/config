@@ -1,4 +1,0 @@
-MCMOD_DIR=/home/iizuka/mckernel
-SRC_PATH=/home/iizuka/src/mckernel
-TEST_DIR=/home/iizuka/src/mckernel/test/user_space
-

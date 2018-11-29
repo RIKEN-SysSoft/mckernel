@@ -1,9 +1,6 @@
 #!/bin/sh
 
-source ./config
-echo $TEST_DIR
-echo $MCPATH
-echo $LTP_PATH
+TEST_DIR=`pwd -P`
 
 auto_flg=0
 if [ $# = 1 ]; then

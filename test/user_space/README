@@ -12,22 +12,22 @@ User spaceテストについて
 　mckernel/test/user_space/patch/
  以下にテストとパッチの対応を示します。
 
-　パッチファイル名		対象システムコール	テストID
- syscall.patch			perf_event_open		perf_001-perf_008
- syscall.patch			futex				futes_001-futex_011
- syscall.patch			process_vm_readv	pvr_001-pvr_033
- syscall.patch			process_vm_writev	pvw_001-pvw_031
- syscall.patch			move_pages			mpo_001-mp_012
- pager_copy_from.patch  swapout 			so_001-so_006	
- pager_copy_to_01.patch	swapout 			so_007-so_013
- pager_copy_to_02.patch swapout 			so_014-so_022
- なし					swapout				so_023-so_025
- qlmpilib.patch			swapout				so_026 
+　パッチファイル名	対象システムコール	テストID
+ syscall.patch		perf_event_open		perf_001-perf_008
+ syscall.patch		futex			futes_001-futex_011
+ syscall.patch		process_vm_readv	pvr_001-pvr_033
+ syscall.patch		process_vm_writev	pvw_001-pvw_031
+ syscall.patch		move_pages		mpo_001-mp_012
+ pager_copy_from.patch  swapout 		so_001-so_006
+ pager_copy_to_01.patch	swapout 		so_007-so_013
+ pager_copy_to_02.patch swapout 		so_014-so_022
+ なし			swapout			so_023-so_025
+ qlmpilib.patch		swapout			so_026
 
 1.3 パッチの適用
  mckernelディレクトリで以下コマンドを実行してパッチを当ててください。
  パッチ実行後ビルドしてください。
- 
+
  patch -p1 < ./test/user_space/patch/XXXX.patch
 				(XXXX.patchはパッチファイル名)
 
@@ -68,20 +68,7 @@ User spaceテストについて
 3. configファイル
 　configファイルは各テストディレクトリにあります。各ディレクトリのシェルから
 　参照されます。
-	user_space/config
-		MCMOD_DIR		mckernelのディレクトリ
-		SRC_PATH		ソースディレクトリ
-		TEST_DIR		テストプログラムがあるディレクトリ
-
-	user_space/perf_event_open/config
-	user_space/futex/config
-	user_space/process_vm/config
-	user_space/move_pages/config
-		MCPATH			mckernelのディレクトリ
-		LTP_EXE_DIR		LTPの実行ファイルがあるディレクトリ
-
 	user_space/swapout/config
-		MCMOD_DIR		mckernelのディレクトリ
 		START			ql_mpiexec_startのパスqlmpiテスト用
 		FINALIZE		ql_mpiexec_finalizeのパスqlmpiテスト用
 		USR_PRG_A		qlmpiテスト用プログラム　/test/qlmpi/qlmpi_testsuite参照

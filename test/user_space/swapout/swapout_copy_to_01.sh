@@ -1,7 +1,5 @@
 #!/bin/sh
 
-. ${HOME}/.mck_test_config
-
 # Functions
 function reboot() {
 	count=`pgrep -c -f 'mcexec '`
@@ -12,11 +10,11 @@ function reboot() {
 		pgrep -f 'mcexec ' | xargs sudo kill -9
 	fi
 #	echo -n "mckernel stopping...  "
-	sudo ${MCMOD_DIR}/sbin/mcstop+release.sh
+	sudo ${MCK_DIR}/sbin/mcstop+release.sh
 #	echo "done."
 	#sleep 1
 	echo -n "mckernel booting...  " 1>&2
-	sudo ${MCMOD_DIR}/sbin/mcreboot.sh $*
+	sudo ${MCK_DIR}/sbin/mcreboot.sh $*
 	echo "done." 1>&2
 }
 
@@ -41,16 +39,14 @@ ME=`whoami`
 # read config
 source ./config
 
-MCPATH=${MCMOD_DIR}
-
 mkdir -p result
 
 reboot 
 #programを実行 logを保存
-${MCPATH}/bin/mcexec ./swaptest 2 >./result/swapout_copy_to_01.log
+${MCK_DIR}/bin/mcexec ./swaptest 2 >./result/swapout_copy_to_01.log
 
 #kmsgを保存
-sudo ${MCPATH}/sbin/ihkosctl 0 kmsg >./result/swapout_copy_to_01.kmsg
+sudo ${MCK_DIR}/sbin/ihkosctl 0 kmsg >./result/swapout_copy_to_01.kmsg
 
 #swapout007 arealist_update i and count check.
 arealist_i=`grep "arealist_update" ./result/swapout_copy_to_01.kmsg | head -n 1 | sed s/"^.*copy_to_user i:\([0-9a-f]*\),.*$"/"\1"/ `

@@ -10,11 +10,11 @@ function reboot() {
 		pgrep -f 'mcexec ' | xargs sudo kill -9
 	fi
 #	echo -n "mckernel stopping...  "
-	sudo ${MCMOD_DIR}/sbin/mcstop+release.sh
+	sudo ${MCK_DIR}/sbin/mcstop+release.sh
 #	echo "done."
 	#sleep 1
 	echo -n "mckernel reboot ...."
-	sudo ${MCMOD_DIR}/sbin/mcreboot.sh $*
+	sudo ${MCK_DIR}/sbin/mcreboot.sh $*
 	echo "done."
 }
 
@@ -37,7 +37,8 @@ function ltp_test() {
 		TP_NAME=$2
 	fi
 #LTP programを実行 logを保存
-	sudo ${MCPATH}/bin/mcexec ${LTP_EXE_DIR}/${TP_NAME} >./result/${TEST_NAME}.log
+	sudo ${MCK_DIR}/bin/mcexec ${LTP}/testcases/bin/${TP_NAME} > \
+		./result/${TEST_NAME}.log
 
 #LTP log 確認
 	NUM=`cat ./test_cases/${TEST_NAME}.txt |wc -l`
@@ -61,20 +62,16 @@ TEST_CODE=001
 TEST_PREFIX=pvr_
 
 ME=`whoami`
-if [ $# -ne 2 ]; then
-	source ./config
-else
-	MCPATH=$1
-	LTP_EXE_DIR=$2/process_vm
-fi
+source ${HOME}/.mck_test_config
 
 mkdir -p ./result
 
 #LTP programを実行 logを保存
-sudo ${MCPATH}/bin/mcexec ${LTP_EXE_DIR}/process_vm01 -r >./result/process_vm_readv01.log
+sudo ${MCK_DIR}/bin/mcexec ${LTP}/testcases/bin/process_vm01 -r > \
+	./result/process_vm_readv01.log
 
 #kmsgを保存
-sudo ${MCPATH}/sbin/ihkosctl 0 kmsg >./result/process_vm_readv01.kmsg
+sudo ${MCK_DIR}/sbin/ihkosctl 0 kmsg >./result/process_vm_readv01.kmsg
 
 #process_vm_readv-001 第２引数のアドレスが正しく引き継いでいることを確認
 #システムコールの引数のアドレスを取得

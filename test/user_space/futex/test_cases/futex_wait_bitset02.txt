@@ -1,1 +1,1 @@
-futex_wait_bitset02    1  TPASS  :
+futex_wait_bitset02    1  TFAIL  :

@@ -12,10 +12,12 @@ else
 fi
 cd $MC_HOME
 make clean
-./configure --prefix=${MCMOD_DIR} --with-target=smp-x86 --with-mpi=/usr/lib64/mpich-3.2 --enable-qlmpi $* >/tmp/install.log
+./configure --prefix=${MCK_DIR} --with-target=smp-x86 \
+	--with-mpi=/usr/lib64/mpich-3.2 --enable-qlmpi $* > \
+	/tmp/install.log
 make >> /tmp/install.log
 make install >> /tmp/install.log
 
 # for wallaby
-chmod 777 ${MCMOD_DIR}/etc
+chmod 777 ${MCK_DIR}/etc
 

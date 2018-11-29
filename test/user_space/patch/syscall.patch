@@ -6,7 +6,7 @@ index 29dbd04..66f77b5 100644
  	struct vm_range *range;
  	struct mcs_rwlock_node_irqsave lock;
  	struct mcs_rwlock_node update_lock;
-+	kprintf("%s: arg2_addr:%x,arg4_addr:%x\n",
++	kprintf("%s: arg2_addr:%lx,arg4_addr:%lx\n",
 +		__FUNCTION__, local_iov, remote_iov); //PATCH
  
  	/* Sanity checks */
@@ -15,7 +15,7 @@ index 29dbd04..66f77b5 100644
  	int count = mpsr->count;
  	struct page_table *save_pt;
  	extern struct page_table *get_init_page_table(void);
-+	kprintf("%s: mpsr->user_virt_addr:%x,mpsr->user_nodes:%x,mpsr->user_status:%x\n",
++	kprintf("%s: mpsr->user_virt_addr:%lx,mpsr->user_nodes:%lx,mpsr->user_status:%lx\n",
 +		__FUNCTION__, mpsr->user_virt_addr, mpsr->user_nodes, mpsr->user_status); //PATCH
  
  	i_s = (count / nr_cpus) * cpu_index;
@@ -24,12 +24,16 @@ diff --git a/kernel/futex.c b/kernel/futex.c
 index 495ee50..a7d08e2 100644
 --- a/kernel/futex.c
 +++ b/kernel/futex.c
-@@ -749,6 +749,8 @@ static int futex_wait_setup(uint32_t __user *uaddr, uint32_t val, int fshared,
+@@ -749,6 +749,12 @@ static int futex_wait_setup(uint32_t __user *uaddr, uint32_t val, int fshared,
  	*hb = queue_lock(q);
  
  	ret = get_futex_value_locked(&uval, uaddr);
-+	kprintf("get_futex_value_locked: uval:%d,*uaddr:%d,uaddr:%x\n",
-+		uval, *uaddr, uaddr); //PATCH
++	{
++		uint32_t uval_from_uaddr;
++		copy_from_user(&uval_from_uaddr, uaddr, sizeof(uint32_t));
++		kprintf("get_futex_value_locked: uval:%d,*uaddr:%d,uaddr:%lx\n",
++			uval, uval_from_uaddr, uaddr); //PATCH
++	}
  	if (ret) {
  		queue_unlock(q, *hb);
  		put_futex_key(fshared, &q->key);
@@ -46,21 +50,25 @@ index e7fed5d..9c174c9 100644
  
  	event = kmalloc(sizeof(struct mc_perf_event), IHK_MC_AP_NOWAIT);
  	if (!event) {
-@@ -5340,6 +5342,9 @@ SYSCALL_DECLARE(futex)
-    	struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
+@@ -5689,6 +5689,13 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
+ 		monitor->status = IHK_OS_MONITOR_KERNEL_HEAVY;
+ 	} 
  
- 	monitor->status = IHK_OS_MONITOR_KERNEL_HEAVY;
++	{
++		uint32_t uval_from_uaddr;
++		copy_from_user(&uval_from_uaddr, uaddr, sizeof(uint32_t));
++		kprintf("%s:*uaddr:%d,uaddr:%lx\n",
++			__FUNCTION__, uval_from_uaddr, uaddr); //PATCH
++	}
 +
-+	kprintf("%s:*uaddr:%d,uaddr:%x\n",
-+		__FUNCTION__, *uaddr, uaddr); //PATCH
-  
  	/* Cross-address space futex? */
  	if (op & FUTEX_PRIVATE_FLAG) {
+ 		fshared = 0;
 @@ -8720,6 +8725,8 @@ SYSCALL_DECLARE(move_pages)
  	int ret = 0;
  
  	unsigned long t_s, t_e;
-+	kprintf("%s: user_virt_addr:%x,user_nodes:%x,user_status:%x\n",
++	kprintf("%s: user_virt_addr:%lx,user_nodes:%lx,user_status:%lx\n",
 +		__FUNCTION__, user_virt_addr, user_nodes, user_status); //PATCH
  
  	t_s = rdtsc();
@@ -69,7 +77,7 @@ index e7fed5d..9c174c9 100644
  		(const struct iovec *)ihk_mc_syscall_arg3(ctx);
  	unsigned long riovcnt = ihk_mc_syscall_arg4(ctx);
  	unsigned long flags = ihk_mc_syscall_arg5(ctx);
-+	kprintf("%s: arg2_addr:%x,arg4_addr:%x\n",
++	kprintf("%s: arg2_addr:%lx,arg4_addr:%lx\n",
 +		__FUNCTION__, local_iov, remote_iov); //PATCH
  
  	return do_process_vm_read_writev(pid, local_iov, liovcnt,
@@ -78,7 +86,7 @@ index e7fed5d..9c174c9 100644
  		(const struct iovec *)ihk_mc_syscall_arg3(ctx);
  	unsigned long riovcnt = ihk_mc_syscall_arg4(ctx);
  	unsigned long flags = ihk_mc_syscall_arg5(ctx);
-+	kprintf("%s: arg2_addr:%x,arg4_addr:%x\n",
++	kprintf("%s: arg2_addr:%lx,arg4_addr:%lx\n",
 +		__FUNCTION__, local_iov, remote_iov); //PATCH
  
  	return do_process_vm_read_writev(pid, local_iov, liovcnt,

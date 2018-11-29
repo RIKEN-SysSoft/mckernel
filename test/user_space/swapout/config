@@ -1,7 +1,7 @@
-MCMOD_DIR=/home/iizuka/mckernel
+source ${HOME}/.mck_test_config
 
-START=${MCMOD_DIR}/bin/ql_mpiexec_start
-FINALIZE=${MCMOD_DIR}/bin/ql_mpiexec_finalize
+START=${MCK_DIR}/bin/ql_mpiexec_start
+FINALIZE=${MCK_DIR}/bin/ql_mpiexec_finalize
 
 USR_PRG_A=../../qlmpi/qlmpi_testsuite/usr_prg_A
 USR_PRG_B=../../qlmpi/qlmpi_testsuite/usr_prg_B
