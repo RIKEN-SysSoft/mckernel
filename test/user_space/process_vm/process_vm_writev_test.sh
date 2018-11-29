@@ -14,7 +14,7 @@ function reboot() {
 #	echo "done."
 	#sleep 1
 	echo -n "mckernel reboot ...."
-	sudo ${MCK_DIR}/sbin/mcreboot.sh $*
+	sudo ${MCK_DIR}/sbin/mcreboot.sh $BOOTPARAM
 	echo "done."
 }
 

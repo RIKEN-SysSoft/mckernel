@@ -31,7 +31,7 @@ function reboot() {
 #	echo "done."
 	#sleep 1
 	echo -n "mckernel booting...  " 1>&2
-	sudo ${MCK_DIR}/sbin/mcreboot.sh $*
+	sudo ${MCK_DIR}/sbin/mcreboot.sh $BOOTPARAM
 	echo "done." 1>&2
 }
 TEST_PARAM_FILE=$1
@@ -45,6 +45,10 @@ source ./config
 
 # read test param
 source ${TEST_PARAM_FILE}
+
+if ! which mpicc | grep '/usr/lib64/mpich-3.2/bin/mpicc' >/dev/null; then
+    printf "mpich not found.\n Do the following:\n\tmodule clear && module load mpi/mpich-3.2-x86_64\n"
+fi
 
 # make machinefile
 mkdir ./machinefiles &> /dev/null
@@ -109,6 +113,7 @@ do
 done
 ok_out "ql_server and  usr_prgs are not running on each node"
 
+make -C $(dirname ${USR_PRG_A}) $(basename ${USR_PRG_A})
 ### usr_prg_A を実行するql_mpiexec_start の返り値が0 (成功)
 env QL_TEST=${envs_1st_A} ${START} -machinefile ${MFILE} -n ${PROC_NUM} ${USR_PRG_A} ${args_1st_A} > ${start_1st_A_log}
 rc=$?
@@ -162,7 +167,7 @@ ok_out "usr_prg_A's calculation is done on each node"
 ### ql_mpiexec_start の完了後、usr_prg_A が再開指示待ちになっている
 for node in ${node_arry[@]}
 do
-	cnt=`ssh $node "pgrep -u ${ME} -fl 'usr_prg_A'" | grep " exe" | wc -l`
+	cnt=`ssh $node "pgrep -u ${ME} -fl 'usr_prg_A'" | awk '{ print $2 }' | grep mcexec | wc -l`
 	if [ ${cnt} -eq 0 ]; then
 		ng_out "usr_prg_A is not running on ${node}"
 	else
@@ -171,6 +176,7 @@ do
 done
 ok_out "usr_prg_A is waiting for resume-req on each node"
 
+make -C $(dirname ${USR_PRG_B}) $(basename ${USR_PRG_B})
 ### usr_prg_B を実行するql_mpiexec_start の返り値が0 (成功)
 ${START} -machinefile ${MFILE} -n ${PROC_NUM} ${USR_PRG_B} 1 2 3 > ${start_1st_B_log}
 rc=$?
@@ -194,7 +200,7 @@ ok_out "usr_prg_B's calculation is done on each node"
 ### ql_mpiexec_start の完了後、usr_prg_B が再開指示待ちになっている
 for node in ${node_arry[@]}
 do
-	cnt=`ssh $node "pgrep -u ${ME} -fl 'usr_prg_B'" | grep " exe" | wc -l`
+	cnt=`ssh $node "pgrep -u ${ME} -fl 'usr_prg_B'" | awk '{ print $2 }' | grep mcexec | wc -l`
 	if [ ${cnt} -eq 0 ]; then
 		ng_out "usr_prg_B is not running on ${node}"
 	else
@@ -203,6 +209,7 @@ do
 done
 ok_out "usr_prg_B is waiting for resume-req on each node"
 
+make -C $(dirname ${USR_PRG_C}) $(basename ${USR_PRG_C})
 ### usr_prg_C を実行するql_mpiexec_start の返り値が0 (成功)
 ${START} -machinefile ${MFILE} -n ${PROC_NUM} ${USR_PRG_C} a b c > ${start_1st_C_log}
 rc=$?
@@ -226,7 +233,7 @@ ok_out "usr_prg_C's calculation is done on each node"
 ### ql_mpiexec_start の完了後、usr_prg_C が再開指示待ちになっている
 for node in ${node_arry[@]}
 do
-	cnt=`ssh $node "pgrep -u ${ME} -fl 'usr_prg_C'" | grep " exe" | wc -l`
+	cnt=`ssh $node "pgrep -u ${ME} -fl 'usr_prg_C'" | awk '{ print $2 }' | grep mcexec | wc -l`
 	if [ ${cnt} -eq 0 ]; then
 		ng_out "usr_prg_C is not running on ${node}"
 	else
@@ -280,7 +287,7 @@ ok_out "(again) usr_prg_A's calculation is done on each node"
 ### ql_mpiexec_start の完了後、usr_prg_A が再開指示待ちになっている
 for node in ${node_arry[@]}
 do
-	cnt=`ssh $node "pgrep -u ${ME} -fl 'usr_prg_A'" | grep " exe" | wc -l`
+	cnt=`ssh $node "pgrep -u ${ME} -fl 'usr_prg_A'" | awk '{ print $2 }' | grep mcexec | wc -l`
 	if [ ${cnt} -eq 0 ]; then
 		ng_out "usr_prg_A is not running on ${node}"
 	else
@@ -312,7 +319,7 @@ ok_out "(again) usr_prg_B's calculation is done on each node"
 ### ql_mpiexec_start の完了後、usr_prg_B が再開指示待ちになっている
 for node in ${node_arry[@]}
 do
-	cnt=`ssh $node "pgrep -u ${ME} -fl 'usr_prg_B'" | grep " exe" | wc -l`
+	cnt=`ssh $node "pgrep -u ${ME} -fl 'usr_prg_B'" | awk '{ print $2 }' | grep mcexec | wc -l`
 	if [ ${cnt} -eq 0 ]; then
 		ng_out "usr_prg_B is not running on ${node}"
 	else

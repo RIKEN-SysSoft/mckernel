@@ -14,7 +14,7 @@ function reboot() {
 #	echo "done."
 	#sleep 1
 	echo -n "mckernel reboot ...."
-	sudo ${MCK_DIR}/sbin/mcreboot.sh $*
+	sudo ${MCK_DIR}/sbin/mcreboot.sh $BOOTPARAM
 	echo "done."
 }
 
@@ -61,10 +61,13 @@ source ${HOME}/.mck_test_config
 
 mkdir -p ./result
 
-reboot "-m256m@0,256m@1"
+# Don't forget to allocate memory from 2 NUMA nodes
+reboot
+
 ltp_test "move_pages01"
 
-reboot "-m256m@0,256m@1"
+reboot
+
 #LTP programを実行 logを保存
 sudo ${MCK_DIR}/bin/mcexec ${LTP}/testcases/bin/move_pages02 > \
 	./result/move_pages02.log

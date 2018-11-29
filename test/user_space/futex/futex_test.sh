@@ -14,7 +14,7 @@ function reboot() {
 #	echo "done."
 	#sleep 1
 	echo -n "mckernel reboot ...."
-	sudo ${MCK_DIR}/sbin/mcreboot.sh $*
+	sudo ${MCK_DIR}/sbin/mcreboot.sh $BOOTPARAM
 	echo "done."
 }
 
@@ -61,6 +61,7 @@ source ${HOME}/.mck_test_config
 mkdir -p result
 
 reboot
+
 #LTP programを実行 logを保存
 ${MCK_DIR}/bin/mcexec ${LTP}/testcases/bin/futex_wait01 >./result/futex_wait01.log
 
