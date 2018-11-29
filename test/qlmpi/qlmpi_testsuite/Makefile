@@ -1,4 +1,5 @@
-PPOSDIR=/home/satoken/ppos
+include $(HOME)/.mck_test_config.mk
+
 MPIDIR=/usr/lib64/mpich-3.2
 MPIBINDIR=$(MPIDIR)/bin
 MPILIBDIR=$(MPIDIR)/lib
@@ -6,9 +7,9 @@ CC=gcc
 
 MPIF90=$(MPIBINDIR)/mpif90
 MPICC=$(MPIBINDIR)/mpicc
-LIBDIR=$(PPOSDIR)/lib
+LIBDIR=$(MCK_DIR)/lib
 LDFLAGS=-L$(LIBDIR) -lqlmpi -Wl,-rpath=$(LIBDIR) -Wl,-rpath,$(MPILIBDIR)
-CFLAGS= -I$(PPOSDIR)/include
+CFLAGS= -I$(MCK_DIR)/include
 
 TARGETS= usr_prg_A usr_prg_B usr_prg_C usr_prg_irreg CT20a CT20b CT21a CT21b file1 file2 CT22a CT22b
 
