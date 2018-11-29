@@ -250,10 +250,16 @@ else
     mcexecopt=
 fi
 
+nalive=`PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes hostname | wc -l`
+if [ $nalive -ne $nnodes ]; then
+    echo "Error: One or more nodes are offline (#alive: $nalive)"
+    exit
+fi
+
 if [ ${mck} -eq 0 ]; then
     offline=`PDSH_SSH_ARGS_APPEND="-tt -q" pdsh -t 2 -w $nodes lscpu \| grep Off 2>&1 | dshbak -c | grep Off`
     if [ "$offline" != "" ]; then
-	echo "Error: Some CPUs are offline: $offline"
+	echo "Error: One or more CPUs are offline: $offline"
 	exit
     fi
 fi    

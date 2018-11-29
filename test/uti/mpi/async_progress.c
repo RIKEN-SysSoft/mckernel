@@ -315,7 +315,7 @@ void progress_init()
 	}
 
 	/* printf costs much in MPI */
-	uti_set_loglevel(UTI_LOGLEVEL_ERR);
+	uti_set_loglevel(UTI_LOGLEVEL_WARN);
 
 	if ((ret = MPI_Comm_dup(MPI_COMM_SELF, &progress_comm))) {
 		pr_err("%s: error: MPI_Comm_dup failed (%d)\n", __func__, ret);
