@@ -1,0 +1,2129 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "9399cd7c_c783c868",
+        "filename": "test/mng_mod/issues/870/arm64/CT2000.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 89,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: unchecked sscanf return value\n+\tsscanf(line, \"%d %d %d\", \u0026t, \u0026p, \u0026s);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "94c6f195_548f885c",
+        "filename": "test/mng_mod/issues/870/arm64/CT2000.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 94,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\twhile(waitpid(mcexec, \u0026st, 0) \u003d\u003d -1 \u0026\u0026 errno \u003d\u003d EINTR);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ee1e4983_fdebfa3a",
+        "filename": "test/mng_mod/issues/870/arm64/CT2000.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 94,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\twhile(waitpid(mcexec, \u0026st, 0) \u003d\u003d -1 \u0026\u0026 errno \u003d\u003d EINTR);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "06fb952e_6a872f7e",
+        "filename": "test/mng_mod/issues/870/arm64/CT2001.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tsprintf(buf, \"%02d:%02d:%02d.%06d\", tm-\u003etm_hour, tm-\u003etm_min, tm-\u003etm_sec, tv-\u003etv_usec);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bd4ae35d_43adffd3",
+        "filename": "test/mng_mod/issues/870/arm64/CT2001.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 55,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: sizeof act should be sizeof(act)\n+\tmemset(\u0026act, \u0027\\0\u0027, sizeof act);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ce08b348_97b0bb0a",
+        "filename": "test/mng_mod/issues/870/arm64/CT2001.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 58,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tfprintf(stderr, \"%s test start, kill after 3 seconds\\n\", gettime(buf, \u0026tv1));",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "95e6dc66_79c5c7bb",
+        "filename": "test/mng_mod/issues/870/arm64/CT2001.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 73,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"CT2001 NG signal delayed (%d.%06d)\\n\", tv2.tv_sec, tv2.tv_usec);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "155ce3d2_d17b20f5",
+        "filename": "test/mng_mod/issues/870/arm64/CT2002.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int sigcalled \u003d 0;",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "50898417_fcb0f5c2",
+        "filename": "test/mng_mod/issues/870/arm64/CT2002.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: sizeof act should be sizeof(act)\n+\tmemset(\u0026act, \u0027\\0\u0027, sizeof act);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0a034e95_c5bbd85e",
+        "filename": "test/mng_mod/issues/870/arm64/CT2002.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"CT2002 NG BAD read rc\u003d%ld errno\u003d%d\\n\", rc, errno);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "15ab0901_1421bc91",
+        "filename": "test/mng_mod/issues/870/arm64/CT2003.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tsprintf(buf, \"%02d:%02d:%02d.%06d\", tm-\u003etm_hour, tm-\u003etm_min, tm-\u003etm_sec, tv-\u003etv_usec);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "46c8888a_e309f0e6",
+        "filename": "test/mng_mod/issues/870/arm64/CT2003.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 61,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tfprintf(stderr, \"%s test start, kill after 3 seconds\\n\", gettime(buf, \u0026tv1));",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "64460622_2dc466e7",
+        "filename": "test/mng_mod/issues/870/arm64/CT2003.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 67,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\twhile ((rc \u003d waitpid(pid, \u0026st, 0)) \u003d\u003d -1 \u0026\u0026 errno \u003d\u003d EINTR);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "661b7111_95baaa73",
+        "filename": "test/mng_mod/issues/870/arm64/CT2003.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 67,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: while should follow close brace \u0027}\u0027\n+\t}\n+\twhile ((rc \u003d waitpid(pid, \u0026st, 0)) \u003d\u003d -1 \u0026\u0026 errno \u003d\u003d EINTR);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "55fff1c1_a1f3a6d6",
+        "filename": "test/mng_mod/issues/870/arm64/CT2003.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 70,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"CT2003 NG BAD wait rc\u003d%d errno\u003d%d\\n\", rc, errno);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dc098e98_d83cd8b7",
+        "filename": "test/mng_mod/issues/870/arm64/CT2003.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 83,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"CT2003 NG signal delayed (%d.%06d)\\n\", tv2.tv_sec, tv2.tv_usec);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8df51738_0faa8738",
+        "filename": "test/mng_mod/issues/870/arm64/CT2004.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tsprintf(buf, \"%02d:%02d:%02d.%06d\", tm-\u003etm_hour, tm-\u003etm_min, tm-\u003etm_sec, tv-\u003etv_usec);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "912714fe_a76aabf0",
+        "filename": "test/mng_mod/issues/870/arm64/CT2004.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 72,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tfprintf(stderr, \"%s test start, kill after 1 seconds\\n\", gettime(buf, \u0026tv1));",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e785ff20_40a5b698",
+        "filename": "test/mng_mod/issues/870/arm64/CT2004.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 78,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: while should follow close brace \u0027}\u0027\n+\t}\n+\twhile ((rc \u003d waitpid(pid, \u0026st, 0)) \u003d\u003d -1 \u0026\u0026 errno \u003d\u003d EINTR);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "562982dc_2dd36542",
+        "filename": "test/mng_mod/issues/870/arm64/CT2004.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 78,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\twhile ((rc \u003d waitpid(pid, \u0026st, 0)) \u003d\u003d -1 \u0026\u0026 errno \u003d\u003d EINTR);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b925084b_5bef7a1d",
+        "filename": "test/mng_mod/issues/870/arm64/CT2004.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 81,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"CT2004 NG BAD wait rc\u003d%d errno\u003d%d\\n\", rc, errno);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "85083ca6_3b58dfbc",
+        "filename": "test/mng_mod/issues/870/arm64/CT2004.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 94,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"CT2004 OK (%d.%06d)\\n\", tv2.tv_sec, tv2.tv_usec);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e912c997_009fbe7a",
+        "filename": "test/mng_mod/issues/870/arm64/CT2005.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+\tstatic int cnt \u003d 0;",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5b2bea42_b7e62a91",
+        "filename": "test/mng_mod/issues/870/arm64/CT2005.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 59,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\twhile ((rc \u003d waitpid(pid, \u0026st, 0)) \u003d\u003d -1 \u0026\u0026 errno \u003d\u003d EINTR);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b949e261_bbd20d38",
+        "filename": "test/mng_mod/issues/870/arm64/CT2005.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 61,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"CT2005 NG BAD wait rc\u003d%d errno\u003d%d\\n\", rc, errno);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "89429de9_1614f4d6",
+        "filename": "test/mng_mod/issues/870/arm64/CT2006.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 61,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\twhile ((rc \u003d waitpid(pid, \u0026st, 0)) \u003d\u003d -1 \u0026\u0026 errno \u003d\u003d EINTR);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5d203a5b_397066eb",
+        "filename": "test/mng_mod/issues/870/arm64/CT2006.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 63,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"CT2006 NG BAD wait rc\u003d%d errno\u003d%d\\n\", rc, errno);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2541866a_4ecb76e3",
+        "filename": "test/mng_mod/issues/870/arm64/CT2007.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+\tstatic int cnt \u003d 0;",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6f5a56f2_8123dfb1",
+        "filename": "test/mng_mod/issues/870/arm64/CT2007.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 61,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\twhile ((rc \u003d waitpid(pid, \u0026st, 0)) \u003d\u003d -1 \u0026\u0026 errno \u003d\u003d EINTR);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dc75cce8_d4390bcc",
+        "filename": "test/mng_mod/issues/870/arm64/CT2007.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 63,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"CT2007 NG BAD wait rc\u003d%d errno\u003d%d\\n\", rc, errno);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "eae82036_fcbc0023",
+        "filename": "test/mng_mod/issues/870/arm64/CT2008.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tchar line[80];\n+\tfprintf(stderr, \"kill SIGTERM (ignored)\\n\");",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3f3423bc_a2341db4",
+        "filename": "test/mng_mod/issues/870/arm64/CT2008.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 61,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\twhile ((rc \u003d waitpid(pid, \u0026st, 0)) \u003d\u003d -1 \u0026\u0026 errno \u003d\u003d EINTR);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6ad145d0_e18e587a",
+        "filename": "test/mng_mod/issues/870/arm64/CT2008.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 63,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"CT2008 NG BAD wait rc\u003d%d errno\u003d%d\\n\", rc, errno);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b08f4095_508ec6a0",
+        "filename": "test/mng_mod/issues/870/arm64/CT200x.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+${STRESSBIN}/mck-mcexec.sh ${STRESSBIN}/killit -t 4000 ${STRESSBIN}/signalonread -nt 4 -nosignal",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0e618e42_8cfc000d",
+        "filename": "test/mng_mod/issues/870/x86_64/CT1001.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+ に開始しました^[[?1034hbash-4.2$ pwd^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0eaab3a7_1efab911",
+        "filename": "test/mng_mod/issues/870/x86_64/CT1001.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+/home/shirasawa/dangertest/bin^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7bc4e050_d4084411",
+        "filename": "test/mng_mod/issues/870/x86_64/CT1001.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+bash-4.2$ ./mck-mcexec.sh ./killit -t 4000 - ./signalonread -nt 4 -nosignal^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "98571b21_7aa533d6",
+        "filename": "test/mng_mod/issues/870/x86_64/CT1001.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+SUCCESS kmsg^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b1fb74a2_4d534a06",
+        "filename": "test/mng_mod/issues/870/x86_64/CT1001.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+SUCCESS clear_kmsg^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7b44c39d_6e61dffc",
+        "filename": "test/mng_mod/issues/870/x86_64/CT1001.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+SUCCESS mcexec^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "aa8e3e05_2e1e433d",
+        "filename": "test/mng_mod/issues/870/x86_64/CT1001.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+SUCCESS ./killit -t 4000 mcexec ./signalonread -nt 4 -nosignal^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5ca71c1e_bcafeefb",
+        "filename": "test/mng_mod/issues/870/x86_64/CT1001.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+SUCCESS kmsg^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "994eb234_8ebd964c",
+        "filename": "test/mng_mod/issues/870/x86_64/CT1001.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+SUCCESS kmsg 1 lines^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9bcdbe4c_8a9d8d23",
+        "filename": "test/mng_mod/issues/870/x86_64/CT1001.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+SUCCESS ioctl 40000000 1^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "febe73c6_57d30fec",
+        "filename": "test/mng_mod/issues/870/x86_64/CT1001.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+SUCCESS kmsg^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9771408c_b4056ce6",
+        "filename": "test/mng_mod/issues/870/x86_64/CT1001.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+SUCCESS 0 processes found^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2d366e7f_c7253bc0",
+        "filename": "test/mng_mod/issues/870/x86_64/CT1001.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+SUCCESS ioctl 40000000 2^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "69dc5ffa_faf24d58",
+        "filename": "test/mng_mod/issues/870/x86_64/CT1001.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+SUCCESS kmsg^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "90185a4e_62ceed6e",
+        "filename": "test/mng_mod/issues/870/x86_64/CT1001.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+SUCCESS 0 threads found^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5f98b5aa_1634e5d0",
+        "filename": "test/mng_mod/issues/870/x86_64/CT1001.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+bash-4.2$ シェルから脱出するには \"exit\" を使用してください。^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "02986297_c65bf2e5",
+        "filename": "test/mng_mod/issues/870/x86_64/CT1001.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+bash-4.2$ exit^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c2bb892c_65322cb1",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2000.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 89,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: unchecked sscanf return value\n+\tsscanf(line, \"%d %d %d\", \u0026t, \u0026p, \u0026s);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4218c917_cc9a4c98",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2000.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 94,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\twhile(waitpid(mcexec, \u0026st, 0) \u003d\u003d -1 \u0026\u0026 errno \u003d\u003d EINTR);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "abbe80cc_c3d72607",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2000.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 94,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\twhile(waitpid(mcexec, \u0026st, 0) \u003d\u003d -1 \u0026\u0026 errno \u003d\u003d EINTR);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bec22446_5c7a514f",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2001.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tsprintf(buf, \"%02d:%02d:%02d.%06d\", tm-\u003etm_hour, tm-\u003etm_min, tm-\u003etm_sec, tv-\u003etv_usec);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "863dfce2_8725e829",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2001.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 55,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: sizeof act should be sizeof(act)\n+\tmemset(\u0026act, \u0027\\0\u0027, sizeof act);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "498eab35_76efad0c",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2001.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 58,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tfprintf(stderr, \"%s test start, kill after 3 seconds\\n\", gettime(buf, \u0026tv1));",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a0133cdb_21f67768",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2001.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 73,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"CT2001 NG signal delayed (%d.%06d)\\n\", tv2.tv_sec, tv2.tv_usec);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cceaee01_b893e8dc",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2002.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+int sigcalled \u003d 0;",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "466d86e1_4be885c2",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2002.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: sizeof act should be sizeof(act)\n+\tmemset(\u0026act, \u0027\\0\u0027, sizeof act);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d7e2a501_b0cb3037",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2002.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"CT2002 NG BAD read rc\u003d%ld errno\u003d%d\\n\", rc, errno);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4259c5b5_a364faf3",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2003.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tsprintf(buf, \"%02d:%02d:%02d.%06d\", tm-\u003etm_hour, tm-\u003etm_min, tm-\u003etm_sec, tv-\u003etv_usec);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7c6fc2e2_1a414fb7",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2003.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 61,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tfprintf(stderr, \"%s test start, kill after 3 seconds\\n\", gettime(buf, \u0026tv1));",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "27f55433_270a0a87",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2003.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 67,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: while should follow close brace \u0027}\u0027\n+\t}\n+\twhile ((rc \u003d waitpid(pid, \u0026st, 0)) \u003d\u003d -1 \u0026\u0026 errno \u003d\u003d EINTR);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "33091a78_d342d7e7",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2003.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 67,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\twhile ((rc \u003d waitpid(pid, \u0026st, 0)) \u003d\u003d -1 \u0026\u0026 errno \u003d\u003d EINTR);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "875afa5a_9797174c",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2003.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 70,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"CT2003 NG BAD wait rc\u003d%d errno\u003d%d\\n\", rc, errno);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cbc5e13e_d580ac74",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2003.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 83,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"CT2003 NG signal delayed (%d.%06d)\\n\", tv2.tv_sec, tv2.tv_usec);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8d2e6a6d_df34354c",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2004.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tsprintf(buf, \"%02d:%02d:%02d.%06d\", tm-\u003etm_hour, tm-\u003etm_min, tm-\u003etm_sec, tv-\u003etv_usec);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1e859701_953bdc67",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2004.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 72,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tfprintf(stderr, \"%s test start, kill after 1 seconds\\n\", gettime(buf, \u0026tv1));",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3af1b10f_75096f54",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2004.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 78,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\twhile ((rc \u003d waitpid(pid, \u0026st, 0)) \u003d\u003d -1 \u0026\u0026 errno \u003d\u003d EINTR);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "991367f8_0ddb305b",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2004.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 78,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: while should follow close brace \u0027}\u0027\n+\t}\n+\twhile ((rc \u003d waitpid(pid, \u0026st, 0)) \u003d\u003d -1 \u0026\u0026 errno \u003d\u003d EINTR);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bb89d2d6_a0bcd0d7",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2004.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 81,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"CT2004 NG BAD wait rc\u003d%d errno\u003d%d\\n\", rc, errno);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "751df6b1_606c7f5d",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2004.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 94,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"CT2004 OK (%d.%06d)\\n\", tv2.tv_sec, tv2.tv_usec);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0b568a01_c5ae7e7d",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2005.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+\tstatic int cnt \u003d 0;",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "54d3905b_dfe6a14c",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2005.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 59,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\twhile ((rc \u003d waitpid(pid, \u0026st, 0)) \u003d\u003d -1 \u0026\u0026 errno \u003d\u003d EINTR);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9fca54ec_83c1b6bd",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2005.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 61,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"CT2005 NG BAD wait rc\u003d%d errno\u003d%d\\n\", rc, errno);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ae6f2b10_517dbbcf",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2006.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 61,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\twhile ((rc \u003d waitpid(pid, \u0026st, 0)) \u003d\u003d -1 \u0026\u0026 errno \u003d\u003d EINTR);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bce7f64e_7aadf1b9",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2006.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 63,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"CT2006 NG BAD wait rc\u003d%d errno\u003d%d\\n\", rc, errno);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "69d6ae7c_f994f2f9",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2007.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+\tstatic int cnt \u003d 0;",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "93513cf5_8f22c33e",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2007.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 61,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\twhile ((rc \u003d waitpid(pid, \u0026st, 0)) \u003d\u003d -1 \u0026\u0026 errno \u003d\u003d EINTR);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6c596193_0db60f58",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2007.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 63,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"CT2007 NG BAD wait rc\u003d%d errno\u003d%d\\n\", rc, errno);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8fd6e69f_5727f9ff",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2008.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tchar line[80];\n+\tfprintf(stderr, \"kill SIGTERM (ignored)\\n\");",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4023afaf_e107fa96",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2008.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 61,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\twhile ((rc \u003d waitpid(pid, \u0026st, 0)) \u003d\u003d -1 \u0026\u0026 errno \u003d\u003d EINTR);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "de216374_fe24db8d",
+        "filename": "test/mng_mod/issues/870/x86_64/CT2008.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 63,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"CT2008 NG BAD wait rc\u003d%d errno\u003d%d\\n\", rc, errno);",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7f09e375_747d58d6",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+ に開始しました^[[?1034hbash-4.2$ make test2^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a9ed822_8f467cc1",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+./CT200x.sh^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8789ba5f_763797e9",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+14:34:27.063487 test start, kill after 3 seconds^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "545c7efe_fc16cd3c",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+14:34:30.063982 signal hanlder is called^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "15c5558c_8ae59aab",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+CT2001 OK^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "479c5910_8ea8ecf7",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+2048+0 レコード入力^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "62400569_5c5bd847",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+2048+0 レコード出力^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "90354b95_79989af0",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+2147483648 バイト (2.1 GB) コピーされました、 19.4964 秒、 110 MB/秒^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cbc43523_41097a4c",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+vm.drop_caches \u003d 3^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ad6f0b1f_fe5ba840",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+signal hanlder is called^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "93623b37_884b3d77",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+CT2002 OK^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "de6f4ee0_09b8ab41",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+14:35:14.331110 test start, kill after 3 seconds^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "22c55937_47d56743",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+14:35:17.343787 child process terminated^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "72c139a9_654f5ce3",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+CT2003 OK^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c8dc0cb6_ab9c1f2b",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+2048+0 レコード入力^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4ff978a1_5346ec14",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+2048+0 レコード出力^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "90650213_c4aabf10",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+2147483648 バイト (2.1 GB) コピーされました、 19.527 秒、 110 MB/秒^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "49a4f3d4_94caba33",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+vm.drop_caches \u003d 3^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "92264c01_1f8c67a0",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+14:35:37.609699 test start, kill after 1 seconds^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5854f010_eb53e3f7",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+14:35:38.967493 child process terminated^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "94d2105f_0a1a283f",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+CT2004 OK^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ab282600_8b10bae5",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+kill SIGURG^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3d08eb62_77eacb75",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+kill SIGINT^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "502cb903_353ca3c2",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+CT2005 OK^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da1e015e_4dcf06ce",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+2048+0 レコード入力^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9b9b82d7_3f37060e",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+2048+0 レコード出力^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "96a8a70f_f58f5d25",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+2147483648 バイト (2.1 GB) コピーされました、 19.5092 秒、 110 MB/秒^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cce795d4_5170b8c3",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+vm.drop_caches \u003d 3^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1e935d97_74e55027",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+kill SIGURG^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2ee72388_f82d899d",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+CT2006 OK^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6aaa594e_e238897f",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+kill SIGTERM (ignored)^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "770dfbc6_df551b4f",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+kill SIGINT^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "66deddb6_4c70eaf2",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+CT2007 OK^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2f9cbd28_1d0270bf",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+2048+0 レコード入力^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6c25d72d_a4bd98ed",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+2048+0 レコード出力^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "13bb5517_3be5da59",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+2147483648 バイト (2.1 GB) コピーされました、 19.508 秒、 110 MB/秒^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8e367154_a656e581",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 38,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+vm.drop_caches \u003d 3^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "23932bb9_40672890",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+kill SIGTERM (ignored)^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "70c68802_58dc365b",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+CT2008 OK^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "17c18ff5_afd32d25",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 41,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+bash-4.2$ exit^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "aec51cb9_6b796215",
+        "filename": "test/mng_mod/issues/870/x86_64/CT200x.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-29T11:58:40Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+exit^M$",
+      "revId": "37a5d9a1864e675883a77370ef44bea3ba21368a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
