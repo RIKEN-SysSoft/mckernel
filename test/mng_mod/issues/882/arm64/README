@@ -1,0 +1,50 @@
+/* README COPYRIGHT FUJITSU LIMITED 2018 */
+
+mcexec でのシグナル応答とfork 処理との衝突回避機能テストセットREADME
+
+(1) テストの実行方法
+	以下の手順でテストを実行する
+		1. $HOME/.mck_test_configを用意する
+		   当該ファイルは、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+		   $HOMEにコピーし、適宜編集する
+		2. ストレステストバイナリを用意し、./run.sh内のSTRESSBIN定義を適宜変更する
+		3. ./run.shを実行する
+
+(2) テスト項目詳細
+	Issue#882で指摘されたテストプログラムを利用する項目
+		CT1001 プログラム終了後にMcKernelのプロセス残留がない事を確認する。
+		CT1002 プログラム終了後にMcKernelのスレッド残留がない事を確認する。
+		CT1003 プログラム終了後にLinuxにmcexecの残留が無い事を確認する。
+	なお、Issue#882はタイミング依存の問題があるため、5回以上の複数回実施で問題がない
+	ことを確認する。
+
+	LTPを利用する項目
+		fork01 fork後に子プロセスのプロセスIDが正しいことを確認する。
+		fork02 fork後にwaitを行い、waitが子プロセスのPIDを返却することを確認する。
+		fork03 forkで生成した子プロセスが処理を行った後でもfork返却値に変化が無い
+		       (親プロセス側の返却値で上書きされていない)ことを確認する。
+		fork04 forkで生成した子プロセスが環境変数を変更しても、親プロセス側の環境変数に変化が無いことを確認する。
+		fork07 forkした子プロセスに、親プロセスからファイルディスクリプタを引き継いでいることを確認する。
+		fork08 forkした複数の子プロセスが、それぞれ親プロセスから引き継いだファイル
+		       ディスクリプタを別個に操作できることを確認する。(ある子プロセスがcloseしても別な子プロセスがI/O可能)
+
+(3) 実行結果ログ
+	result.logファイル内に実行時のログを記載する。
+	実行に利用したIHK/McKernelは、IA版における下記の版数相当の
+	arm64版移植IHK/McKernelである。
+
+	IHK
+		commit d6fcbee8cb91f9ec4b49f97c918e696ac0335aaf
+		Author: Shiratori, Takehiro <fj0300es@aa.jp.fujitsu.com>
+		Date:   Tue Oct 16 16:25:33 2018 +0900
+
+	McKernel
+		commit 6f9fef2b13447c74c36d15cf5ebd186f8395ccca
+		Author: Ken Sato <ken.sato.ty@hitachi-solutions.com>
+		Date:   Tue Sep 25 10:05:41 2018 +0900
+
+(4) 備考
+	特になし。
+
+
+以上。
