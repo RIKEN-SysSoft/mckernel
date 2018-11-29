@@ -1,4 +1,5 @@
 # Config file for McKernel tests
+: ${MCK_DIR:=@prefix@}
 : ${BIN:=@prefix@/bin}
 : ${SBIN:=@prefix@/sbin}
 : ${OSTEST:=}
