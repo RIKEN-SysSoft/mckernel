@@ -14,7 +14,7 @@ function reboot() {
 #	echo "done."
 	#sleep 1
 	echo -n "mckernel booting...  " 1>&2
-	sudo ${MCK_DIR}/sbin/mcreboot.sh $*
+	sudo ${MCK_DIR}/sbin/mcreboot.sh $BOOTPARAM
 	echo "done." 1>&2
 }
 
@@ -42,6 +42,8 @@ source ./config
 mkdir -p result
 
 reboot 
+make
+
 #programを実行 logを保存
 ${MCK_DIR}/bin/mcexec ./swaptest 2 >./result/swapout_copy_to_01.log
 

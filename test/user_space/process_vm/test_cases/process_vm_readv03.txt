@@ -1,2 +1,1 @@
-process_vm_readv03    1  TFAIL  :  process_vm_readv03.c:186: process_vm_readv: errno=EFAULT(14): Bad address
-process_vm_readv03    1  TFAIL  :  process_vm_readv03.c:103: child 1 returns 256
+process_vm_readv03    1  TPASS  :  child 1: all bytes are correctly received.

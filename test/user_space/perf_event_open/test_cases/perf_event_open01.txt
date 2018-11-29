@@ -3,4 +3,5 @@ perf_event_open01    2  TPASS  :
 perf_event_open01    3  TPASS  :
 perf_event_open01    4  TPASS  :
 perf_event_open01    5  TPASS  :
-perf_event_open01    6  TFAIL  :
+perf_event_open01    6  TCONF  :
+perf_event_open01    7  TCONF  :
