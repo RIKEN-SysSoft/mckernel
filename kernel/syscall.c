@@ -3111,7 +3111,7 @@ getcred(int *_buf)
 	struct syscall_request request IHK_DMA_ALIGN;
 	unsigned long phys;
 
-	if((((unsigned long)_buf) ^ ((unsigned long)(_buf + 8))) & ~4095)
+	if((((unsigned long)_buf) ^ ((unsigned long)(_buf + 8))) & PAGE_MASK)
 		buf = _buf + 8;
 	else
 		buf = _buf;
@@ -5772,7 +5772,7 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 				request.number = n;
 				unsigned long __phys;                                          
 
-				if((((unsigned long)tv) ^ ((unsigned long)(tv + 1))) & ~4095)
+				if((((unsigned long)tv) ^ ((unsigned long)(tv + 1))) & PAGE_MASK)
 					tv_now = tv + 1;
 				if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->address_space->page_table, 
 						(void *)tv_now, &__phys)) { 

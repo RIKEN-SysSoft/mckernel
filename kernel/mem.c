@@ -625,7 +625,7 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 			}
 			else {
 #ifdef PROFILE_ENABLE
-				profile_event_add(PROFILE_mpol_alloc_missed, npages * 4096);
+				profile_event_add(PROFILE_mpol_alloc_missed, npages * PAGE_SIZE);
 #endif
 				dkprintf("%s: couldn't fulfill explicit NUMA request for %d pages\n",
 						__FUNCTION__, npages);
@@ -717,7 +717,7 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 	}
 	else {
 #ifdef PROFILE_ENABLE
-		profile_event_add(PROFILE_mpol_alloc_missed, npages * 4096);
+		profile_event_add(PROFILE_mpol_alloc_missed, npages * PAGE_SIZE);
 #endif
 		dkprintf("%s: couldn't fulfill user policy for %d pages\n",
 			__FUNCTION__, npages);
@@ -1170,7 +1170,7 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 
 	cpu_enable_interrupt();
 
-	if ((uintptr_t)fault_addr < 4096) {
+	if ((uintptr_t)fault_addr < PAGE_SIZE) {
 		error = -EINVAL;
 	} else {
 		error = page_fault_process_vm(thread->vm, fault_addr, reason);
