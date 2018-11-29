@@ -17,6 +17,7 @@
 #include <syscall.h>
 #include <debug.h>
 
+void terminate_mcexec(int, int);
 extern void ptrace_report_signal(struct thread *thread, int sig);
 extern void clear_single_step(struct thread *thread);
 void terminate(int, int);
@@ -1431,6 +1432,110 @@ out:
 	return;
 }
 
+static int
+check_sig_pending_thread(struct thread *thread)
+{
+	int found = 0;
+	struct list_head *head;
+	mcs_rwlock_lock_t *lock;
+	struct mcs_rwlock_node_irqsave mcs_rw_node;
+	struct sig_pending *next;
+	struct sig_pending *pending;
+	__sigset_t w;
+	__sigset_t x;
+	int sig = 0;
+	struct k_sigaction *k;
+	struct cpu_local_var *v;
+
+	v = get_this_cpu_local_var();
+	w = thread->sigmask.__val[0];
+
+	lock = &thread->sigcommon->lock;
+	head = &thread->sigcommon->sigpending;
+	for (;;) {
+		mcs_rwlock_reader_lock(lock, &mcs_rw_node);
+
+		list_for_each_entry_safe(pending, next, head, list){
+			for (x = pending->sigmask.__val[0], sig = 0; x;
+			     sig++, x >>= 1);
+			k = thread->sigcommon->action + sig - 1;
+			if ((sig != SIGCHLD && sig != SIGURG) ||
+			    (k->sa.sa_handler != SIG_IGN &&
+			     k->sa.sa_handler != NULL)) {
+				if (!(pending->sigmask.__val[0] & w)) {
+					if (pending->interrupted == 0) {
+						pending->interrupted = 1;
+						found = 1;
+						if (sig != SIGCHLD &&
+						    sig != SIGURG &&
+						    !k->sa.sa_handler) {
+							found = 2;
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		mcs_rwlock_reader_unlock(lock, &mcs_rw_node);
+
+		if (found == 2) {
+			break;
+		}
+
+		if (lock == &thread->sigpendinglock) {
+			break;
+		}
+
+		lock = &thread->sigpendinglock;
+		head = &thread->sigpending;
+	}
+
+	if (found == 2) {
+		ihk_mc_spinlock_unlock(&v->runq_lock, v->runq_irqstate);
+		terminate_mcexec(0, sig);
+		return 1;
+	}
+	else if (found == 1) {
+		ihk_mc_spinlock_unlock(&v->runq_lock, v->runq_irqstate);
+		interrupt_syscall(thread, 0);
+		return 1;
+	}
+	return 0;
+}
+
+void
+check_sig_pending(void)
+{
+	struct thread *thread;
+	struct cpu_local_var *v;
+
+	if (clv == NULL)
+		return;
+
+	v = get_this_cpu_local_var();
+repeat:
+	v->runq_irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
+	list_for_each_entry(thread, &(v->runq), sched_list) {
+
+		if (thread == NULL || thread == &cpu_local_var(idle)) {
+			continue;
+		}
+
+		if (thread->in_syscall_offload == 0) {
+			continue;
+		}
+
+		if (thread->proc->group_exit_status & 0x0000000100000000L) {
+			continue;
+		}
+
+		if (check_sig_pending_thread(thread))
+			goto repeat;
+	}
+	ihk_mc_spinlock_unlock(&v->runq_lock, v->runq_irqstate);
+}
+
 unsigned long
 do_kill(struct thread * thread, int pid, int tid, int sig, siginfo_t *info, int ptracecont)
 {
@@ -1684,27 +1789,11 @@ done:
 	if (doint && !(mask & tthread->sigmask.__val[0])) {
 		int status = tthread->status;
 
-#ifdef POSTK_DEBUG_TEMP_FIX_74 /* interrupt_syscall() timing change */
-#ifdef POSTK_DEBUG_TEMP_FIX_48 /* nohost flag missed fix */
-		if(tthread->proc->status != PS_EXITED)
-			interrupt_syscall(tthread, 0);
-#else /* POSTK_DEBUG_TEMP_FIX_48 */
-		if(!tthread->proc->nohost)
-			interrupt_syscall(tthread, 0);
-#endif /* POSTK_DEBUG_TEMP_FIX_48 */
-#endif /* POSTK_DEBUG_TEMP_FIX_74 */
-
 		if (thread != tthread) {
 			dkprintf("do_kill,ipi,pid=%d,cpu_id=%d\n",
 				 tproc->pid, tthread->cpu_id);
-#define IPI_CPU_NOTIFY 0
 			ihk_mc_interrupt_cpu(tthread->cpu_id, INTRID_CPU_NOTIFY);
 		}
-
-#ifndef POSTK_DEBUG_TEMP_FIX_74 /* interrupt_syscall() timing change */
-		if(!tthread->proc->nohost)
-			interrupt_syscall(tthread, 0);
-#endif /* !POSTK_DEBUG_TEMP_FIX_74 */
 
 		if (status != PS_RUNNING) {
 			if(sig == SIGKILL){
