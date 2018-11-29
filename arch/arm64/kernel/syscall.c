@@ -51,51 +51,43 @@ uintptr_t debug_constants[] = {
 	-1,
 };
 
-static ihk_spinlock_t cpuid_head_lock = SPIN_LOCK_UNLOCKED;
-static int cpuid_head = 1;
-
 extern int num_processors;
 
 int obtain_clone_cpuid(cpu_set_t *cpu_set, int use_last)
 {
 	int min_queue_len = -1;
-	int i, min_cpu = -1;
+	int cpu, min_cpu = -1, uti_cpu = -1;
 	unsigned long irqstate;
 
 	irqstate = ihk_mc_spinlock_lock(&runq_reservation_lock);
 
-	/* cpu_head lock */
-	ihk_mc_spinlock_lock_noirq(&cpuid_head_lock);
-
 	/* Find the first allowed core with the shortest run queue */
-	for (i = 0; i < num_processors; cpuid_head++, i++) {
+	for (cpu = 0; cpu < num_processors; ++cpu) {
 		struct cpu_local_var *v;
 
-		/* cpuid_head over cpu_info->ncpus, cpuid_head = BSP reset. */
-		if (cpuid_head >= num_processors) {
-			cpuid_head = 0;
-		}
+		if (!CPU_ISSET(cpu, cpu_set)) continue;
 
-		if (!CPU_ISSET(cpuid_head, cpu_set)) continue;
-
-		v = get_cpu_local_var(cpuid_head);
+		v = get_cpu_local_var(cpu);
 		ihk_mc_spinlock_lock_noirq(&v->runq_lock);
-		dkprintf("%s: cpu=%d,runq_len=%d,runq_reserved=%d\n", __FUNCTION__, cpuid_head, v->runq_len, v->runq_reserved);
+		dkprintf("%s: cpu=%d,runq_len=%d,runq_reserved=%d\n", __FUNCTION__, cpu, v->runq_len, v->runq_reserved);
 		if (min_queue_len == -1 || v->runq_len + v->runq_reserved < min_queue_len) {
 			min_queue_len = v->runq_len + v->runq_reserved;
-			min_cpu = cpuid_head;
+			min_cpu = cpu;
 		}
-		ihk_mc_spinlock_unlock_noirq(&v->runq_lock);
 
-		if (min_queue_len == 0) {
-			cpuid_head++;
-			break;
+		/* Record the last tie CPU */
+		if (min_cpu != cpu && v->runq_len + v->runq_reserved == min_queue_len) {
+			uti_cpu = cpu;
 		}
+		dkprintf("%s: cpu=%d,runq_len=%d,runq_reserved=%d,min_cpu=%d,uti_cpu=%d\n", __FUNCTION__, cpu, v->runq_len, v->runq_reserved, min_cpu, uti_cpu);
+		ihk_mc_spinlock_unlock_noirq(&v->runq_lock);
+#if 0
+		if (min_queue_len == 0)
+			break;
+#endif
 	}
 
-	/* cpu_head unlock */
-	ihk_mc_spinlock_unlock_noirq(&cpuid_head_lock);
-
+	min_cpu = use_last ? uti_cpu : min_cpu;
 	if (min_cpu != -1) {
 		if (get_cpu_local_var(min_cpu)->status != CPU_STATUS_RESERVED)
 			get_cpu_local_var(min_cpu)->status = CPU_STATUS_RESERVED;
