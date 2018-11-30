@@ -1,6 +1,6 @@
 MCRBT_OPT="-m `./utils/gen_mem_chunks.sh "0 1" 32M 1`"
 USR_PROC="mcexec_test_proc/exec_setmempolicy_mbind 0x8000 0x0 2 0x8000 0x0 2 1 1"
 OS_IDX=0
-#POLICY_KIND="<NUMA node policy>"
+#POLICY_KIND="<addr policy>"
 POLICY_KIND="<default policy>"
 #POLICY_KIND="<default policy:Mapping of MAP_SHARED>"
