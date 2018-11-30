@@ -1982,7 +1982,7 @@ int arch_map_vdso(struct process_vm *vm)
 		s = vm->vdso_addr + (i * PAGE_SIZE);
 		e = s + PAGE_SIZE;
 		error = ihk_mc_pt_set_range(pt, vm, s, e,
-									vdso.vdso_physlist[i], attr, 0, range);
+									vdso.vdso_physlist[i], attr, 0, range, 0);
 		if (error) {
 			ekprintf("ihk_mc_pt_set_range failed. %d\n", error);
 			goto out;
@@ -2014,7 +2014,7 @@ int arch_map_vdso(struct process_vm *vm)
 			e = s + PAGE_SIZE;
 			attr = PTATTR_ACTIVE | PTATTR_USER | PTATTR_NO_EXECUTE;
 			error = ihk_mc_pt_set_range(pt, vm, s, e,
-										vdso.vvar_phys, attr, 0, range);
+										vdso.vvar_phys, attr, 0, range, 0);
 			if (error) {
 				ekprintf("ihk_mc_pt_set_range failed. %d\n", error);
 				goto out;
@@ -2025,7 +2025,7 @@ int arch_map_vdso(struct process_vm *vm)
 			e = s + PAGE_SIZE;
 			attr = PTATTR_ACTIVE | PTATTR_USER | PTATTR_NO_EXECUTE | PTATTR_UNCACHABLE;
 			error = ihk_mc_pt_set_range(pt, vm, s, e,
-										vdso.hpet_phys, attr, 0, range);
+										vdso.hpet_phys, attr, 0, range, 0);
 			if (error) {
 				ekprintf("ihk_mc_pt_set_range failed. %d\n", error);
 				goto out;
@@ -2036,7 +2036,7 @@ int arch_map_vdso(struct process_vm *vm)
 			e = s + PAGE_SIZE;
 			attr = PTATTR_ACTIVE | PTATTR_USER | PTATTR_NO_EXECUTE;
 			error = ihk_mc_pt_set_range(pt, vm, s, e,
-										vdso.pvti_phys, attr, 0, range);
+										vdso.pvti_phys, attr, 0, range, 0);
 			if (error) {
 				ekprintf("ihk_mc_pt_set_range failed. %d\n", error);
 				goto out;
