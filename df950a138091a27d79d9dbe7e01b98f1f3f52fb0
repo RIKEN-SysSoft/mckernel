@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "6799d98d_df26fedf",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1749,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:42:10Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\tint hugeshift \u003d flags \u0026 (0x3F \u003c\u003c MAP_HUGE_SHIFT);\n+\t\tif (hugeshift \u003d\u003d 0) {",
+      "revId": "df950a138091a27d79d9dbe7e01b98f1f3f52fb0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "28f849c1_aca596b1",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1822,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:42:10Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\tint hugeshift \u003d shmflg \u0026 (0x3F \u003c\u003c SHM_HUGE_SHIFT);\n+\t\tif (hugeshift \u003d\u003d 0) {",
+      "revId": "df950a138091a27d79d9dbe7e01b98f1f3f52fb0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
