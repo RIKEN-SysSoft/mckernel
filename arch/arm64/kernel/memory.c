@@ -2456,20 +2456,39 @@ static pte_t *lookup_pte(translation_table_t* tt, uintptr_t virt, int pgshift,
 
 	ptep = NULL;
 	if (!pgshift) {
-		pgshift = FIRST_LEVEL_BLOCK_SUPPORT ? PTL3_SHIFT : PTL2_SHIFT;
+		if (FIRST_LEVEL_BLOCK_SUPPORT) {
+			pgshift = PTL3_CONT_SHIFT;
+		} else {
+			pgshift = PTL2_CONT_SHIFT;
+		}
 	}
 
 	ptep = ptl4_offset(tt, virt);
 	if (ptl4_null(ptep)) {
-		if (pgshift > PTL3_SHIFT) {
+		if (pgshift >= PTL3_CONT_SHIFT) {
+			pgshift = PTL3_CONT_SHIFT;
+		} else if (pgshift > PTL3_SHIFT) {
 			pgshift = PTL3_SHIFT;
 		}
 		goto out;
 	}
 
 	ptep = ptl3_offset(ptep, virt);
-	if (ptl3_null(ptep) || ptl3_type_block(ptep)) {
-		if (pgshift >= PTL3_SHIFT) {
+	if (ptl3_null(ptep)) {
+		if (pgshift >= PTL3_CONT_SHIFT) {
+			pgshift = PTL3_CONT_SHIFT;
+		} else if (pgshift >= PTL3_SHIFT) {
+			pgshift = PTL3_SHIFT;
+		} else {
+			ptep = NULL;
+		}
+		goto out;
+	}
+	if (ptl3_type_block(ptep)) {
+		if (ptl3_is_contiguous(ptep) &&
+		    pgshift >= PTL3_CONT_SHIFT) {
+			pgshift = PTL3_CONT_SHIFT;
+		} else if (pgshift >= PTL3_SHIFT) {
 			pgshift = PTL3_SHIFT;
 		} else {
 			ptep = NULL;
@@ -2478,17 +2497,43 @@ static pte_t *lookup_pte(translation_table_t* tt, uintptr_t virt, int pgshift,
 	}
 
 	ptep = ptl2_offset(ptep, virt);
-	if (ptl2_null(ptep) || ptl2_type_block(ptep)) {
-		if (pgshift >= PTL2_SHIFT) {
+	if (ptl2_null(ptep)) {
+		if (pgshift >= PTL2_CONT_SHIFT) {
+			pgshift = PTL2_CONT_SHIFT;
+		} else if (pgshift >= PTL2_SHIFT) {
 			pgshift = PTL2_SHIFT;
 		} else {
-			ptep = NULL;;
+			ptep = NULL;
+		}
+		goto out;
+	}
+	if (ptl2_type_block(ptep)) {
+		if (ptl2_is_contiguous(ptep) &&
+		    pgshift >= PTL2_CONT_SHIFT) {
+			pgshift = PTL2_CONT_SHIFT;
+		} else if (pgshift >= PTL2_SHIFT) {
+			pgshift = PTL2_SHIFT;
+		} else {
+			ptep = NULL;
 		}
 		goto out;
 	}
 
 	ptep = ptl1_offset(ptep, virt);
-	pgshift = PTL1_SHIFT;
+	if (ptl1_type_page(ptep)) {
+		if (ptl1_is_contiguous(ptep) &&
+		    pgshift >= PTL1_CONT_SHIFT) {
+			pgshift = PTL1_CONT_SHIFT;
+		} else {
+			pgshift = PTL1_SHIFT;
+		}
+		goto out;
+	}
+	if (pgshift >= PTL1_CONT_SHIFT) {
+		pgshift = PTL1_CONT_SHIFT;
+	} else {
+		pgshift = PTL1_SHIFT;
+	}
 
 out:
 	size = (size_t)1 << pgshift;
