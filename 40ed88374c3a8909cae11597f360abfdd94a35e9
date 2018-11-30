@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "5aad6599_8cc71c77",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1979,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:40:58Z",
+      "side": 1,
+      "message": "ERROR: \"foo* bar\" should be \"foo *bar\"\n+\tpte_t* ptep;",
+      "revId": "40ed88374c3a8909cae11597f360abfdd94a35e9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "05d6b213_3a86ec0a",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2001,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:40:58Z",
+      "side": 1,
+      "message": "ERROR: \"(foo*)\" should be \"(foo *)\"\n+\tptep \u003d ihk_mc_pt_lookup_pte(pt, (void*)start, 0, NULL, \u0026pgsize, NULL);",
+      "revId": "40ed88374c3a8909cae11597f360abfdd94a35e9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e346337f_f814b03a",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2012,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:40:58Z",
+      "side": 1,
+      "message": "ERROR: \"(foo*)\" should be \"(foo *)\"\n+\tptep \u003d ihk_mc_pt_lookup_pte(pt, (void*)end - 1, 0, NULL, \u0026pgsize, NULL);",
+      "revId": "40ed88374c3a8909cae11597f360abfdd94a35e9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
