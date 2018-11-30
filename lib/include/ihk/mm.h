@@ -179,7 +179,7 @@ int ihk_mc_pt_change_attr_range(page_table_t pt, void *start, void *end,
 pte_t *ihk_mc_pt_lookup_pte(page_table_t pt, void *virt, int pgshift, void **pgbasep, size_t *pgsizep, int *p2alignp);
 int ihk_mc_pt_set_range(page_table_t pt, struct process_vm *vm, void *start, 
 		void *end, uintptr_t phys, enum ihk_mc_pt_attribute attr,
-						int pgshift, struct vm_range *range);
+		int pgshift, struct vm_range *range, int overwrite);
 int ihk_mc_pt_set_pte(page_table_t pt, pte_t *ptep, size_t pgsize, uintptr_t phys, enum ihk_mc_pt_attribute attr);
 int ihk_mc_pt_prepare_map(page_table_t pt, void *virt, unsigned long size,
                           enum ihk_mc_pt_prepare_flag);
