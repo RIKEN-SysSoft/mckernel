@@ -1,6 +1,8 @@
 #!/bin/sh
 START_NG_TEST_NO=0085
 
+make -C mcexec_test_proc
+
 for test_case in `ls -1 ./testcases/*.txt`
 do
 	case_name=`basename ${test_case} .txt`
