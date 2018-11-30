@@ -23,7 +23,7 @@ runqに積まれている実行待ちthreadの状態の組み合わせで、12�
 (2) テストの実行方法
 以下の手順でテストを実行する
 	1. 1029.patch をMcKernelのソースコードに適用し、ビルドとインストールを行う
-	2. MakefileのMCK_DIR変数の内容を、McKernelがインストールされているディレクトリに変更する
+	2. ${HOME}/.mck_test_config.mkのMCK_DIR変数の内容を、McKernelがインストールされているディレクトリに変更する
 	3. <mckernel-install>/bin/mcreboot.sh -c 2-7 -m 2G -O
 	4. sh make test を実行する
 

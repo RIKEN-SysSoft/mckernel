@@ -16,14 +16,6 @@ diff --git kernel/process.c kernel/process.c
 index 3dda3ea..eb65aa9 100644
 --- kernel/process.c
 +++ kernel/process.c
-@@ -126,6 +126,7 @@ init_process(struct process *proc, struct process *parent)
- 		proc->mpol_threshold = parent->mpol_threshold;
- 		memcpy(proc->rlimit, parent->rlimit,
- 		       sizeof(struct rlimit) * MCK_RLIM_MAX);
-+#define POSTK_DEBUG_TEMP_FIX_69 1 // TestCode for #1029
- #ifdef POSTK_DEBUG_TEMP_FIX_69 /* Fix problem not to inherit parent cpu_set. */
- 		memcpy(&proc->cpu_set, &parent->cpu_set,
- 		       sizeof(proc->cpu_set));
 @@ -3135,12 +3136,16 @@ out_schedule:
  	schedule();
  }
@@ -41,7 +33,7 @@ index 3dda3ea..eb65aa9 100644
  
  	if (cpu_local_var(no_preempt)) {
  		kprintf("%s: WARNING can't schedule() while no preemption, cnt: %d\n",
-@@ -3173,6 +3178,62 @@ redo:
+@@ -3173,6 +3178,70 @@ redo:
  		}
  	}
  
@@ -58,6 +50,14 @@ index 3dda3ea..eb65aa9 100644
 +	if (thread->tid == prev->tid) {
 +		continue;
 +	}
++
++	/* Skip not-schedulable */
++	if (thread->status == PS_RUNNING ||
++		(thread->status == PS_INTERRUPTIBLE && hassigpending(thread))) {
++	} else {
++		continue;
++	}
++
 +	runq_cnt++;
 +	if (!thread->started) {
 +		not_started = 1;
