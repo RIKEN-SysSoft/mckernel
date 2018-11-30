@@ -339,6 +339,92 @@ static inline void pte_set_dirty(pte_t *ptep, size_t pgsize)
 	return;
 }
 
+static inline int pte_is_contiguous(pte_t *ptep)
+{
+	return 0;
+}
+
+static inline int pgsize_is_contiguous(size_t pgsize)
+{
+	return 0;
+}
+
+static inline int pgsize_to_tbllv(size_t pgsize)
+{
+	switch (pgsize) {
+	case PTL1_SIZE:	return 1;
+	case PTL2_SIZE:	return 2;
+	case PTL3_SIZE:	return 3;
+	case PTL4_SIZE:	return 4;
+	default:
+#if 0	/* XXX: workaround. cannot use panic() here */
+		panic("pgsize_to_tbllv");
+#else
+		return 0;
+#endif
+	}
+	return 0;
+}
+
+static inline size_t tbllv_to_pgsize(int level)
+{
+	switch (level) {
+	case 1: return PTL1_SIZE;
+	case 2: return PTL2_SIZE;
+	case 3: return PTL3_SIZE;
+	case 4: return PTL4_SIZE;
+	default:
+#if 0	/* XXX: workaround. cannot use panic() here */
+		panic("tbllv_to_pgsize");
+#else
+		return 0;
+#endif
+	}
+	return 0;
+}
+
+static inline size_t tbllv_to_contpgsize(int level)
+{
+	return 0;
+}
+
+static inline int tbllv_to_contpgshift(int level)
+{
+	return 0;
+}
+
+static inline pte_t *get_contiguous_head(pte_t *__ptep, size_t __pgsize)
+{
+	return __ptep;
+}
+
+static inline pte_t *get_contiguous_tail(pte_t *__ptep, size_t __pgsize)
+{
+	return __ptep;
+}
+
+static inline int split_contiguous_pages(pte_t *ptep, size_t pgsize)
+{
+	return 0;
+}
+
+static inline int page_is_contiguous_head(pte_t *ptep, size_t pgsize)
+{
+	return 0;
+}
+
+static inline int page_is_contiguous_tail(pte_t *ptep, size_t pgsize)
+{
+	return 0;
+}
+
+static inline void arch_adjust_allocate_page_size(uintptr_t fault_addr,
+						  pte_t *ptep,
+						  void **pgaddrp,
+						  size_t *pgsizep)
+{
+}
+
 struct page_table;
 void set_pte(pte_t *ppte, unsigned long phys, enum ihk_mc_pt_attribute attr);
 pte_t *get_pte(struct page_table *pt, void *virt, enum ihk_mc_pt_attribute attr);
