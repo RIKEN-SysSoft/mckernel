@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "ac0c3ec7_870956d0",
+        "filename": "tools/mcstat/mcstat.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 188,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T05:02:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t[IHK_OS_STATUS_READY] \u003d \"Ready\",\t/* OS is ready and fully functional */",
+      "revId": "05ad326d7fb8b7159ddfa47f8349a837ba25a835",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7225932a_0773d96c",
+        "filename": "tools/mcstat/mcstat.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 194,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T05:02:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t[IHK_OS_STATUS_FAILED] \u003d \"Panic\",\t/* OS panics or failed to boot */",
+      "revId": "05ad326d7fb8b7159ddfa47f8349a837ba25a835",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
