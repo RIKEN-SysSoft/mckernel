@@ -43,17 +43,29 @@ int func_set_mempolicy(set_mem_para* inpara)
 	unsigned long set_nodemask = inpara->set_nodemask;
 	unsigned long set_maxnode = inpara->set_maxnode;
 	int mode = set_mode & 0x00000003;
+	int get_mode;
 
 	rst = set_mempolicy(set_mode, &set_nodemask, set_maxnode);
 
 	printf("-----\n");
 	if (rst < 0) {
-		printf("NG:set_mempolicy - mode:(%s) nodemask:0x%x maxnode:%d rst:%d\n"
-			,mempolicy[mode] ,set_nodemask ,set_maxnode, rst);
-		//assert(0 && "set_mempolicy() failed");
+		printf("NG:set_mempolicy - mode:(%s) nodemask:0x%x maxnode:%d rst:%d\n",
+		       mempolicy[mode], set_nodemask, set_maxnode, rst);
+		return -1;
 	} else {
 		printf("OK:set_mempolicy - mode:(%s) nodemask:0x%x maxnode:%d\n"
 			,mempolicy[mode] ,set_nodemask ,set_maxnode);
+	}
+
+	rst = get_mempolicy(&get_mode, &set_nodemask, set_maxnode, NULL, MPOL_F_NODE);
+
+	if (rst < 0) {
+		printf("NG:get_mempolicy - mode:(%s) nodemask:0x%x maxnode:%d rst:%d\n",
+		       mempolicy[mode] ,set_nodemask ,set_maxnode, rst);
+		return -1;
+	} else {
+		printf("OK:get_mempolicy - mode:(%s) nodemask:0x%x maxnode:%d\n",
+		       mempolicy[mode] ,set_nodemask ,set_maxnode);
 	}
 	printf("-----\n");
 
@@ -63,7 +75,7 @@ int func_set_mempolicy(set_mem_para* inpara)
 int func_mbind(mbind_para* inpara)
 {
 	int rst = -1;
-	unsigned char *addr = NULL;
+	unsigned char *addr = NULL, *fresh_addr = NULL;
 	int get_mode = 0;
 	int i = 0;
 	unsigned long mem_len = PAGE_SIZE;
@@ -77,6 +89,7 @@ int func_mbind(mbind_para* inpara)
 
 	for (i = 0; i < loop_cnt; i++) {
 
+		/* Grab the virtual address range */
 		addr = mmap(0, mem_len, (PROT_READ | PROT_WRITE),
 				(MAP_ANONYMOUS | MAP_PRIVATE), 0, 0);
 		if (addr == (void *) -1) {
@@ -85,12 +98,12 @@ int func_mbind(mbind_para* inpara)
 			//assert(0 && "mmap() failed");
 			return -1;
 		} else {
-//			printf("[%02d] OK:mmap - addr:(0x%016lx) len:%d prot:0x%x flags:0x%x\n"
-//				,i ,addr ,mem_len ,(PROT_READ | PROT_WRITE) ,(MAP_ANONYMOUS | MAP_PRIVATE));
+			printf("[%02d] OK:mmap - addr:(0x%016lx) len:%d prot:0x%x flags:0x%x\n"
+				,i ,addr ,mem_len ,(PROT_READ | PROT_WRITE) ,(MAP_ANONYMOUS | MAP_PRIVATE));
 		}
 
 		if ((inpara->set_mode & 0x000000ff) == 0xff) {
-			switch ((i & 0x3)) {
+			switch ((i % 3)) { /* Skip MPOL_INTERLEAVE because it's not supported */
 				case MPOL_PREFERRED:
 					set_mode = ((set_mode & 0xffffff00) | MPOL_PREFERRED);
 					set_nodemask = inpara->set_nodemask;
@@ -144,26 +157,42 @@ int func_mbind(mbind_para* inpara)
 				,i ,addr ,mempolicy[get_mode]);
 		}
 
+		/* Remap with the address policy */
+
 		rst = munmap(addr, mem_len);
 		if (rst < 0) {
-			printf("[%02d] NG:munmap - addr:(0x%016lx) len:%d\n"
-				,i ,addr ,mem_len);
+			printf("[%02d] NG:munmap - addr:(0x%016lx) len:%d\n",
+			       i, addr, mem_len);
 		} else {
-//			printf("[%02d] OK:munmap - addr:(0x%016lx) len:%d\n"
-//				,i ,addr ,mem_len);
+			printf("[%02d] OK:munmap - addr:(0x%016lx) len:%d\n",
+			       i, addr, mem_len);
 		}
 
-		addr = mmap(addr, mem_len, (PROT_READ | PROT_WRITE),
-				(MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE), 0, 0);
+		addr = mmap(addr, mem_len, PROT_READ | PROT_WRITE,
+			     MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE, 0, 0);
 		if (addr == (void *) -1) {
-			printf("[%02d] NG:mmap - len:%d prot:0x%x flags:0x%x\n"
-				,i ,mem_len ,(PROT_READ | PROT_WRITE) ,(MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE));
-			//assert(0 && "mmap() failed");
+			printf("[%02d] NG:mmap - len:%d prot:0x%x flags:0x%x\n",
+			       i, mem_len,  PROT_READ | PROT_WRITE, MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE);
 			return -1;
 		} else {
-//			printf("[%02d] OK:mmap - addr:(0x%016lx) len:%d prot:0x%x flags:0x%x\n"
-//				,i ,addr ,mem_len ,(PROT_READ | PROT_WRITE) ,(MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE));
+			printf("[%02d] OK:mmap - addr:(0x%016lx) len:%d prot:0x%x flags:0x%x\n",
+				i, addr, mem_len, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE);
 		}
+
+		
+		/* Map with the default policy */
+
+		fresh_addr = mmap(0, mem_len, PROT_READ | PROT_WRITE,
+			     MAP_ANONYMOUS | MAP_PRIVATE, 0, 0);
+		if (fresh_addr == (void *) -1) {
+			printf("[%02d] NG:mmap - len:%d prot:0x%x flags:0x%x\n",
+			       i, mem_len,  PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE);
+			return -1;
+		} else {
+			printf("[%02d] OK:mmap - addr:(0x%016lx) len:%d prot:0x%x flags:0x%x\n",
+				i, fresh_addr, mem_len, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE);
+		}
+
 		printf("-----\n");
 
 	}
@@ -186,8 +215,13 @@ int main(int argc, char *argv[])
 			inpara.para2.set_mode = strtol(argv[4], NULL, 16);
 			inpara.para2.set_nodemask =  strtoul(argv[5], NULL, 16);
 			inpara.para2.set_maxnode = strtoul(argv[6], NULL, 10);
+
+			/* Ignored */
 			inpara.para2.flags = strtoul(argv[7], NULL, 16);
+
+			/* Sweep over MPOL_* values */
 			inpara.para2.loop_cnt = strtol(argv[8], NULL, 10);
+
 			rst = func_mbind(&inpara.para2);
 		}
 	} else {
@@ -195,12 +229,12 @@ int main(int argc, char *argv[])
 		printf("   parameter 1 : set_mempolicy(mode)\n");
 		printf("   parameter 2 : set_mempolicy(nodemask)\n");
 		printf("   parameter 3 : set_mempolicy(maxnode)\n");
-		printf("   parameter 4 : mbind(mode) 0xff - all mode\n");
+		printf("   parameter 4 : mbind(mode). Pass 0xff when looping over mode values\n");
 		printf("   parameter 5 : mbind(nodemask)\n");
 		printf("   parameter 6 : mbind(maxnode)\n");
-		printf("   parameter 7 : mbind(flags)\n");
-		printf("   parameter 8 : Number of mbind executed\n");
-		printf("   example) ./exec_setmempolicy_mbind 0x1 0x1 2 0x2 0x1 2 0x0 1\n");
+		printf("   parameter 7 : not used (mbind(flags))\n");
+		printf("   parameter 8 : Loop count over mode values\n");
+		printf("   example) ./exec_setmempolicy_mbind 0x8001 0x1 2 0x8002 0x1 2 0x0 1\n");
 	}
 
 	return rst;

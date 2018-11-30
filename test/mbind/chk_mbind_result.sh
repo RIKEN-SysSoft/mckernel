@@ -1,55 +1,85 @@
 #!/bin/sh
 
 DEFAULT_POLICY_KIND="<default policy>"
-#SHARED_POLICY_KIND="<default policy:Mapping of MAP_SHARED>"
-NUMA_NODE_POLICY_KIND="<NUMA node policy>"
+SHARED_POLICY_KIND="<default policy:Mapping of MAP_SHARED>"
+ADDR_POLICY_KIND="<addr policy>"
 
 FILE_NAME=$1
 CHK_LOG_FILE="./result/${FILE_NAME}.log"
 
 source "./testcases/${FILE_NAME}.txt"
+
+# Check map with default policy or address policy
 CHK_POLICY_KIND=${POLICY_KIND}
 
 SET_MEM_POLICY=`grep "OK:set_mempolicy" $CHK_LOG_FILE | grep -o '(MPOL.*)'`
+
+# Number of mbind trials
 SET_POLICY_NUM=`grep -c1 "OK:mbind" $CHK_LOG_FILE`
 
 for exec_num in `seq 0 $((SET_POLICY_NUM - 1))`
 do
 
 	if [ $exec_num -lt 10 ]; then
-		NUMA_NODE_ADDR=`grep "OK:mbind" $CHK_LOG_FILE | grep -e "0$exec_num]" | grep -o '(0x.*000)'`
-		NUMA_NODE_POLICY=`grep "OK:mbind" $CHK_LOG_FILE | grep -e "0$exec_num]" | grep -o '(MPOL.*)'`
+		ADDR=`grep "OK:mbind" $CHK_LOG_FILE | grep -e "0$exec_num]" | grep -o '(0x.*000)'`
+		ADDR_POLICY=`grep "OK:mbind" $CHK_LOG_FILE | grep -e "0$exec_num]" | grep -o '(MPOL.*)'`
 	else
-		NUMA_NODE_ADDR=`grep "OK:mbind" $CHK_LOG_FILE | grep -e "$exec_num]" | grep -o '(0x.*000)'`
-		NUMA_NODE_POLICY=`grep "OK:mbind" $CHK_LOG_FILE | grep -e "$exec_num]" | grep -o '(MPOL.*)'`
+		ADDR=`grep "OK:mbind" $CHK_LOG_FILE | grep -e "$exec_num]" | grep -o '(0x.*000)'`
+		ADDR_POLICY=`grep "OK:mbind" $CHK_LOG_FILE | grep -e "$exec_num]" | grep -o '(MPOL.*)'`
 	fi
 
-	if [ "$CHK_POLICY_KIND" = "$DEFAULT_POLICY_KIND" ]; then
-		SET_MEM_POLICY_NUM=`grep -v $NUMA_NODE_ADDR $CHK_LOG_FILE | grep -e "$CHK_POLICY_KIND" | grep -ce "$SET_MEM_POLICY"`
+	# Not-mbound and mapped with default policy?
+	if [ "$CHK_POLICY_KIND" = "$DEFAULT_POLICY_KIND" ] ||
+	   [ "$CHK_POLICY_KIND" = "$SHARED_POLICY_KIND" ]; then
+		SET_MEM_POLICY_NUM=`grep -v $ADDR $CHK_LOG_FILE | grep -e "$CHK_POLICY_KIND" | grep -ce "$SET_MEM_POLICY"`
 		if [ $SET_MEM_POLICY_NUM -gt 0 ]; then
-			echo "OK:" $exec_num $CHK_POLICY_KIND" - not address" $NUMA_NODE_ADDR "test policy" $SET_MEM_POLICY "allocate num:" $SET_MEM_POLICY_NUM
+			printf "\tOK:" 
+		else
+ 			printf "\tNG:"
+		fi
+		echo " ($exec_num) $SET_MEM_POLICY_NUM allocations using $CHK_POLICY_KIND for addresses excluding $ADDR found."
+		if [ $SET_MEM_POLICY_NUM -gt 0 ]; then
 			exit 0
 		else
-			echo "NG:" $exec_num $CHK_POLICY_KIND" - not address" $NUMA_NODE_ADDR "test policy" $SET_MEM_POLICY "allocate num:" $SET_MEM_POLICY_NUM
 			exit 1
 		fi
 	fi
 
-	ALLOCATE_POLICY=`grep "mckernel_allocate_aligned_pages_node" $CHK_LOG_FILE | grep -e $NUMA_NODE_ADDR | grep -e "$CHK_POLICY_KIND" | grep -o '(MPOL.*)'`
+	ALLOCATE_POLICY=`grep "mckernel_allocate_aligned_pages_node" $CHK_LOG_FILE | grep -e $ADDR | grep -e "$CHK_POLICY_KIND" | grep -o '(MPOL.*)'`
 
-	if [ "$CHK_POLICY_KIND" = "$NUMA_NODE_POLICY_KIND" ]; then
-		if [ $NUMA_NODE_POLICY != $ALLOCATE_POLICY ]; then
-			echo "NG:" $exec_num $CHK_POLICY_KIND" - address" $NUMA_NODE_ADDR "test policy" $NUMA_NODE_POLICY "allocate policy" $ALLOCATE_POLICY
-			exit 1
+	if [ "$CHK_POLICY_KIND" = "$ADDR_POLICY_KIND" ]; then
+		# mbound and mapped with address policy?
+		if [ $ADDR_POLICY != "$ALLOCATE_POLICY" ]; then
+			printf "\tNG:"
 		else
-			echo "OK:" $exec_num $CHK_POLICY_KIND" - address" $NUMA_NODE_ADDR "test policy" $NUMA_NODE_POLICY "allocate policy" $ALLOCATE_POLICY
+			printf "\tOK:"
+		fi
+		printf " ($exec_num) Kernel decision ($CHK_POLICY_KIND: $ALLOCATE_POLICY)"
+		if [ $ADDR_POLICY != "$ALLOCATE_POLICY" ]; then
+			printf " doesn't match to"
+		else
+			printf " maches to"
+		fi
+		echo " user direction $ADDR_POLICY via mbind for $ADDR"
+		if [ $ADDR_POLICY != "$ALLOCATE_POLICY" ]; then
+			exit 1
 		fi
 	else
-		if [ $SET_MEM_POLICY != $ALLOCATE_POLICY ]; then
-			echo "NG:" $exec_num $CHK_POLICY_KIND" - address" $NUMA_NODE_ADDR "test policy" $SET_MEM_POLICY "allocate policy" $ALLOCATE_POLICY
-			exit 1
+		# mbound and mapped with default policy?
+		if [ $SET_MEM_POLICY != "$ALLOCATE_POLICY" ]; then
+			printf "\tNG:"
 		else
-			echo "OK:" $exec_num $CHK_POLICY_KIND" - address" $NUMA_NODE_ADDR "test policy" $SET_MEM_POLICY "allocate policy" $ALLOCATE_POLICY
+			printf "\tOK:"
+		fi
+		printf " ($exec_num) Kernel decision ($CHK_POLICY_KIND: $ALLOCATE_POLICY)"
+		if [ $SET_MEM_POLICY != "$ALLOCATE_POLICY" ]; then
+			printf " doesn't match to"
+		else
+			printf " maches to"
+		fi
+		echo " user direction $SET_MEM_POLICY via set_mempolicy for address excluding $ADDR"
+		if [ $SET_MEM_POLICY != "$ALLOCATE_POLICY" ]; then
+			exit 1
 		fi
 	fi
 done
