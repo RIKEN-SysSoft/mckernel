@@ -1,0 +1,310 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "b13c02b6_7c060369",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 398,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:37:42Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint level \u003d pgsize_to_tbllv(pgsize);\n+\tswitch (level) {",
+      "revId": "7d47941e2211da293ee5cfa7783646babdaa8744",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7ba59c46_244b15f6",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 543,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:37:42Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint ret \u003d 0;\n+\tif ((pgsize \u003d\u003d PTL4_CONT_SIZE \u0026\u0026 CONFIG_ARM64_PGTABLE_LEVELS \u003e 3) ||",
+      "revId": "7d47941e2211da293ee5cfa7783646babdaa8744",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7cd663e9_ab0dd09e",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 555,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:37:42Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint level \u003d -EINVAL;\n+\tif ((pgsize \u003d\u003d PTL4_CONT_SIZE || pgsize \u003d\u003d PTL4_SIZE)",
+      "revId": "7d47941e2211da293ee5cfa7783646babdaa8744",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "41268e61_19d7bfda",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 572,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:37:42Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tsize_t pgsize \u003d 0;\n+\tswitch (level) {",
+      "revId": "7d47941e2211da293ee5cfa7783646babdaa8744",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "03b9b411_59683c08",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 596,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:37:42Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tsize_t pgsize \u003d 0;\n+\tswitch (level) {",
+      "revId": "7d47941e2211da293ee5cfa7783646babdaa8744",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "61a5ae30_bd776c27",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 620,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:37:42Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint ret \u003d 0;\n+\tswitch (level) {",
+      "revId": "7d47941e2211da293ee5cfa7783646babdaa8744",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "34822518_d712e8d5",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 645,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:37:42Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint shift \u003d 0;\n+\tswitch (pgsize_to_tbllv(__pgsize)) {",
+      "revId": "7d47941e2211da293ee5cfa7783646babdaa8744",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1f1e1023_8c314aca",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 664,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:37:42Z",
+      "side": 1,
+      "message": "ERROR: \"(foo*)\" should be \"(foo *)\"\n+\treturn  (pte_t*)__page_align(__ptep, align);",
+      "revId": "7d47941e2211da293ee5cfa7783646babdaa8744",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1246686d_14a70610",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 671,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:37:42Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint shift \u003d 0;\n+\tswitch (pgsize_to_tbllv(__pgsize)) {",
+      "revId": "7d47941e2211da293ee5cfa7783646babdaa8744",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "46fcdb4e_d8f49fc7",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 690,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:37:42Z",
+      "side": 1,
+      "message": "ERROR: \"(foo*)\" should be \"(foo *)\"\n+\treturn  (pte_t*)__page_align_up(__ptep + 1, align) - 1;",
+      "revId": "7d47941e2211da293ee5cfa7783646babdaa8744",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c24aa7c0_2f762514",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 723,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:37:42Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tpte_t *ptr \u003d get_contiguous_head(ptep, pgsize);\n+\treturn (ptr \u003d\u003d ptep);",
+      "revId": "7d47941e2211da293ee5cfa7783646babdaa8744",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "84617712_f6c7516c",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 729,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:37:42Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tpte_t *ptr \u003d get_contiguous_tail(ptep, pgsize);\n+\treturn (ptr \u003d\u003d ptep);",
+      "revId": "7d47941e2211da293ee5cfa7783646babdaa8744",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3774beed_326d4e99",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 565,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:37:42Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tpte_t pte \u003d ptl4_val(l4p);\n+\treturn pte_is_contiguous(\u0026pte);",
+      "revId": "7d47941e2211da293ee5cfa7783646babdaa8744",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "195692c9_a5c7a9d4",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 570,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:37:42Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tpte_t pte \u003d ptl3_val(l3p);\n+\treturn pte_is_contiguous(\u0026pte);",
+      "revId": "7d47941e2211da293ee5cfa7783646babdaa8744",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "149060d9_0789e94f",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 575,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:37:42Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tpte_t pte \u003d ptl2_val(l2p);\n+\treturn pte_is_contiguous(\u0026pte);",
+      "revId": "7d47941e2211da293ee5cfa7783646babdaa8744",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "46174084_b5753bb7",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 580,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:37:42Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tpte_t pte \u003d ptl1_val(l1p);\n+\treturn pte_is_contiguous(\u0026pte);",
+      "revId": "7d47941e2211da293ee5cfa7783646babdaa8744",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "52a33927_4f9cdd28",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 585,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:37:42Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint ret \u003d 0;\n+\tswitch (level) {",
+      "revId": "7d47941e2211da293ee5cfa7783646babdaa8744",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ca7b5def_4274f17f",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 599,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:37:42Z",
+      "side": 1,
+      "message": "WARNING: Prefer using \u0027\"%s...\", __func__\u0027 to using \u0027ptl_is_contiguous\u0027, this function\u0027s name, in a string\n+\t\tpanic(\"ptl_is_contiguous failed.\\n\");",
+      "revId": "7d47941e2211da293ee5cfa7783646babdaa8744",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
