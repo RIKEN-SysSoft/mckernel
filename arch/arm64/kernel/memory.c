@@ -2914,7 +2914,7 @@ static int move_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 {
 	int error;
 	struct move_args *args = arg0;
-	const size_t pgsize = (size_t)1 << pgshift;
+	size_t pgsize = (size_t)1 << pgshift;
 	uintptr_t dest;
 	pte_t apte;
 	uintptr_t phys;
@@ -2933,6 +2933,20 @@ static int move_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 
 	apte = PTE_NULL;
 	pte_xchg(ptep, &apte);
+
+	// check attributes before clearing to PTE_NULL
+	if (pte_is_contiguous(&apte)) {
+		// check if ptep is an entry of contiguous pte head
+		if (page_is_contiguous_head(ptep, pgsize)) {
+			int level = pgsize_to_tbllv(pgsize);
+
+			pgsize = tbllv_to_contpgsize(level);
+			pgshift = tbllv_to_contpgshift(level);
+		} else {
+			error = 0;
+			goto out;
+		}
+	}
 
 	phys = apte & PT_PHYSMASK;
 	attr = apte & ~PT_PHYSMASK;
@@ -2958,12 +2972,36 @@ int move_pte_range(page_table_t pt, struct process_vm *vm,
 {
 	int error;
 	struct move_args args;
+	pte_t *ptep;
+	size_t pgsize;
 
 	dkprintf("move_pte_range(%p,%p,%p,%#lx)\n", pt, src, dest, size);
 	args.src = (uintptr_t)src;
 	args.dest = (uintptr_t)dest;
 	args.vm = vm;
 	args.range = range;
+
+	ptep = ihk_mc_pt_lookup_pte(pt, src, 0, NULL, &pgsize, NULL);
+	if (ptep && pte_is_contiguous(ptep)) {
+		if (!page_is_contiguous_head(ptep, pgsize)) {
+			// start pte is not contiguous head
+			error = split_contiguous_pages(ptep, pgsize);
+			if (error) {
+				goto out;
+			}
+		}
+	}
+
+	ptep = ihk_mc_pt_lookup_pte(pt, src + size - 1, 0, NULL, &pgsize, NULL);
+	if (ptep && pte_is_contiguous(ptep)) {
+		if (!page_is_contiguous_tail(ptep, pgsize)) {
+			// end pte is not contiguous tail
+			error = split_contiguous_pages(ptep, pgsize);
+			if (error) {
+				goto out;
+			}
+		}
+	}
 
 	error = visit_pte_range(pt, src, src+size, 0, VPTEF_SKIP_NULL,
 			&move_one_page, &args);
