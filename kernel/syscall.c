@@ -1938,7 +1938,8 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 											virt_to_phys(memobj->pages[i]),
 											ptattr,
 											PAGE_SHIFT,
-											range);
+											range,
+											0);
 				if (error) {
 					kprintf("%s: ERROR: mapping %d page of pre-mapped file\n",
 							__FUNCTION__, i);

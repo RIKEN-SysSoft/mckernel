@@ -2265,6 +2265,7 @@ struct set_range_args {
 	uintptr_t diff;
 	struct process_vm *vm;
 	struct vm_range *range; /* To find pages we don't need to call memory_stat_rss_add() */
+	int overwrite;
 };
 
 int set_range_middle(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
@@ -2280,7 +2281,7 @@ int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 
 	dkprintf("set_range_l1(%lx,%lx,%lx)\n", base, start, end);
 
-	if (!ptl1_null(ptep)) {
+	if (!args->overwrite && !ptl1_null(ptep)) {
 		error = -EBUSY;
 		ekprintf("set_range_l1(%lx,%lx,%lx):page exists. %d %lx\n",
 				base, start, end, error, *ptep);
@@ -2289,6 +2290,19 @@ int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 	}
 
 	phys = args->phys + (base - start);
+	if (__page_offset(base, PTL1_CONT_SIZE) == 0) { //check head pte
+		uintptr_t next_addr = base + PTL1_CONT_SIZE;
+		if (end < next_addr) {
+			next_addr = end;
+		}
+
+		// if phys is aligned and CongtainousPTE does not exceed end address, set the bit.
+		if (__page_offset(phys | next_addr, PTL1_CONT_SIZE) == 0) {
+			args->attr[0] |= PTE_CONT;
+		} else {
+			args->attr[0] &= ~PTE_CONT;
+		}
+	}
 	pte = phys | args->attr[0];
 	ptl1_set(ptep, pte);
 
@@ -2325,10 +2339,11 @@ int set_range_middle(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 		walk_pte_fn_t* callback;
 		unsigned long pgsize;
 		unsigned long pgshift;
+		unsigned long cont_pgsize;
 	} table[] = {
-		{walk_pte_l1, set_range_l1, PTL2_SIZE, PTL2_SHIFT}, /*PTL2: second*/
-		{walk_pte_l2, set_range_l2, PTL3_SIZE, PTL3_SHIFT}, /*PTL3: first*/
-		{walk_pte_l3, set_range_l3, PTL4_SIZE, PTL4_SHIFT}, /*PTL4: zero*/
+		{walk_pte_l1, set_range_l1, PTL2_SIZE, PTL2_SHIFT, PTL2_CONT_SIZE}, /*PTL2: second*/
+		{walk_pte_l2, set_range_l2, PTL3_SIZE, PTL3_SHIFT, PTL3_CONT_SIZE}, /*PTL3: first*/
+		{walk_pte_l3, set_range_l3, PTL4_SIZE, PTL4_SHIFT, PTL4_CONT_SIZE}, /*PTL4: zero*/
 	};
 	const struct table tbl = table[level-2];
 
@@ -2340,7 +2355,7 @@ int set_range_middle(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 	dkprintf("set_range_middle(%lx,%lx,%lx,%d)\n", base, start, end, level);
 
 retry:
-	if (ptl_null(ptep, level)) {
+	if (ptl_null(ptep, level) || (args->overwrite && ptl_type_page(ptep, level))) {
 		pte_t pte;
 		uintptr_t phys;
 		if (level == 2 || (level == 3 && FIRST_LEVEL_BLOCK_SUPPORT)) {
@@ -2349,6 +2364,22 @@ retry:
 			    && (!args->pgshift
 				|| (args->pgshift == tbl.pgshift))) {
 				phys = args->phys + (base - start);
+
+				//check head pte
+				if (__page_offset(base, tbl.cont_pgsize) == 0) {
+					uintptr_t next_addr = base + tbl.cont_pgsize;
+					if (end < next_addr) {
+						next_addr = end;
+					}
+
+					// if phys is aligned and CongtainousPTE does not exceed end address, set the bit.
+					if (__page_offset(phys | next_addr, tbl.cont_pgsize) == 0) {
+						args->attr[level-1] |= PTE_CONT;
+					} else {
+						args->attr[level-1] &= ~PTE_CONT;
+					}
+				}
+
 				ptl_set(ptep, phys | args->attr[level-1], level);
 				error = 0;
 				dkprintf("set_range_middle(%lx,%lx,%lx,%d):"
@@ -2413,7 +2444,7 @@ out:
 
 int ihk_mc_pt_set_range(page_table_t pt, struct process_vm *vm, void *start, 
 		void *end, uintptr_t phys, enum ihk_mc_pt_attribute attr,
-		int pgshift, struct vm_range *range)
+		int pgshift, struct vm_range *range, int overwrite)
 {
 	const struct table {
 		walk_pte_t* walk;
@@ -2437,6 +2468,7 @@ int ihk_mc_pt_set_range(page_table_t pt, struct process_vm *vm, void *start,
 	args.vm = vm;
 	args.pgshift = pgshift;
 	args.range = range;
+	args.overwrite = overwrite;
 
 	// conversion
 	switch (CONFIG_ARM64_PGTABLE_LEVELS)
@@ -2688,7 +2720,7 @@ static int move_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 	attr = apte & ~PT_PHYSMASK;
 
 	error = ihk_mc_pt_set_range(pt, args->vm, (void *)dest,
-			(void *)(dest + pgsize), phys, attr, pgshift, args->range);
+			(void *)(dest + pgsize), phys, attr, pgshift, args->range, 0);
 	if (error) {
 		kprintf("move_one_page(%p,%p,%p %#lx,%p,%d):"
 				"set failed. %d\n",
