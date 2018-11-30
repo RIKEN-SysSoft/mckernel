@@ -1745,23 +1745,23 @@ SYSCALL_DECLARE(mmap)
 	/* check arguments */
 	pgsize = PAGE_SIZE;
 	if (flags & MAP_HUGETLB) {
-		switch (flags & (0x3F << MAP_HUGE_SHIFT)) {
-		case 0:
+		int hugeshift = flags & (0x3F << MAP_HUGE_SHIFT);
+
+		if (hugeshift == 0) {
 			flags |= MAP_HUGE_SECOND_BLOCK;	/* default hugepage size */
-			break;
-
-		case MAP_HUGE_SECOND_BLOCK:
-		case MAP_HUGE_FIRST_BLOCK:
-			break;
-
-		default:
+		} else if (hugeshift == MAP_HUGE_SECOND_BLOCK ||
+			   hugeshift == MAP_HUGE_FIRST_BLOCK ||
+			   hugeshift == MAP_HUGE_SECOND_CONT_BLOCK ||
+			   hugeshift == MAP_HUGE_FIRST_CONT_BLOCK ||
+			   hugeshift == MAP_HUGE_THIRD_CONT_BLOCK) {
+			/*nop*/
+		} else {
 			ekprintf("sys_mmap(%lx,%lx,%x,%x,%x,%lx):"
 					"not supported page size.\n",
 					addr0, len0, prot, flags0, fd, off0);
 			error = -EINVAL;
 			goto out;
 		}
-
 		pgsize = (size_t)1 << ((flags >> MAP_HUGE_SHIFT) & 0x3F);
 	}
 
@@ -1819,16 +1819,17 @@ SYSCALL_DECLARE(shmget)
 	dkprintf("shmget(%#lx,%#lx,%#x)\n", key, size, shmflg0);
 
 	if (shmflg & SHM_HUGETLB) {
-		switch (shmflg & (0x3F << SHM_HUGE_SHIFT)) {
-		case 0:
+		int hugeshift = shmflg & (0x3F << SHM_HUGE_SHIFT);
+
+		if (hugeshift == 0) {
 			shmflg |= SHM_HUGE_SECOND_BLOCK;	/* default hugepage size */
-			break;
-
-		case SHM_HUGE_SECOND_BLOCK:
-		case SHM_HUGE_FIRST_BLOCK:
-			break;
-
-		default:
+		} else if (hugeshift == SHM_HUGE_SECOND_BLOCK ||
+			   hugeshift == SHM_HUGE_FIRST_BLOCK ||
+			   hugeshift == SHM_HUGE_SECOND_CONT_BLOCK ||
+			   hugeshift == SHM_HUGE_FIRST_CONT_BLOCK ||
+			   hugeshift == SHM_HUGE_THIRD_CONT_BLOCK) {
+			/*nop*/
+		} else {
 			error = -EINVAL;
 			goto out;
 		}
