@@ -1849,6 +1849,46 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 		}
 		pgaddr = (void *)(fault_addr & ~(pgsize - 1));
 	}
+
+	/*****/
+	if (ptep == NULL) {
+		int level = pgsize_to_tbllv(pgsize);
+		size_t __pgsize = tbllv_to_pgsize(level);
+		pgaddr = (void *)(fault_addr & ~(__pgsize - 1));
+	} else if (pte_is_null(ptep)) {
+		int level = pgsize_to_tbllv(pgsize);
+		size_t __pgsize = tbllv_to_pgsize(level);
+		if (pgsize != __pgsize) {
+			struct memobj *obj;
+			uintptr_t zeropage = NOPHYS;
+			pte_t *head;
+			pte_t *tail;
+
+			if (zeroobj_create(&obj)) {
+				panic("PFPMR: zeroobj_create");
+			}
+			memobj_get_page(obj, 0, PAGE_P2ALIGN, &zeropage, NULL, 0);
+
+			head = get_contiguous_head(ptep, pgsize);
+			tail = get_contiguous_tail(ptep, pgsize);
+			for (/*nop*/; head <= tail; head++) {
+				uintptr_t phys;
+				if (pte_is_null(head)) {
+					continue;
+				}
+
+				phys = pte_get_phys(head);
+				if (phys == zeropage) {
+					continue;
+				}
+
+				pgsize = __pgsize;
+				pgaddr = (void *)(fault_addr & ~(pgsize - 1));
+				break;
+			}
+		}
+	}
+
 	/*****/
 	dkprintf("%s: ptep=%lx,pte_is_null=%d,pte_is_fileoff=%d\n", __FUNCTION__, ptep, ptep ? pte_is_null(ptep) : -1, ptep ? pte_is_fileoff(ptep, pgsize) : -1);
 	if (!ptep || pte_is_null(ptep) || pte_is_fileoff(ptep, pgsize)) {
@@ -1981,7 +2021,7 @@ retry:
 #endif /*POSTK_DEBUG_ARCH_DEP_21*/
 
 	/*****/
-	if (ptep) {
+	if (ptep && !pgsize_is_contiguous(pgsize)) {
 		//if(rusage_memory_stat_add_with_page(range, phys, pgsize, pgsize, page)) {
 		if(rusage_memory_stat_add(range, phys, pgsize, pgsize)) {
 			/* on-demand paging, phys pages are obtained by ihk_mc_alloc_aligned_pages_user() or get_page() */
@@ -2004,7 +2044,7 @@ retry:
 	else {
 		error = ihk_mc_pt_set_range(vm->address_space->page_table, vm,
 		                            pgaddr, pgaddr + pgsize, phys,
-		                            attr, range->pgshift, range, 0);
+		                            attr, range->pgshift, range, 1);
 		if (error) {
 			kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):set_range failed. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
 			goto out;
