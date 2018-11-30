@@ -3,6 +3,12 @@
 #define __HEADER_ARM64_COMMON_ARCH_MEMORY_H
 
 #include <const.h>
+#include <errno.h>
+
+#ifndef __ASSEMBLY__
+#include <list.h>
+#include <page.h>
+#endif  /*__ASSEMBLY__*/
 
 #define _SZ4KB  (1UL<<12)
 #define _SZ16KB (1UL<<14)
@@ -105,6 +111,10 @@
 # define PTL2_INDEX_MASK PTL3_INDEX_MASK
 # define PTL1_INDEX_MASK PTL2_INDEX_MASK
 # define FIRST_LEVEL_BLOCK_SUPPORT  1
+# define __PTL4_CONT_SHIFT (__PTL4_SHIFT + 0)
+# define __PTL3_CONT_SHIFT (__PTL3_SHIFT + 4)
+# define __PTL2_CONT_SHIFT (__PTL2_SHIFT + 4)
+# define __PTL1_CONT_SHIFT (__PTL1_SHIFT + 4)
 #elif GRANULE_SIZE == _SZ16KB
 # define __PTL4_SHIFT  47
 # define __PTL3_SHIFT  36
@@ -115,6 +125,10 @@
 # define PTL2_INDEX_MASK PTL3_INDEX_MASK
 # define PTL1_INDEX_MASK PTL2_INDEX_MASK
 # define FIRST_LEVEL_BLOCK_SUPPORT  0
+# define __PTL4_CONT_SHIFT (__PTL4_SHIFT + 0)
+# define __PTL3_CONT_SHIFT (__PTL3_SHIFT + 0)
+# define __PTL2_CONT_SHIFT (__PTL2_SHIFT + 5)
+# define __PTL1_CONT_SHIFT (__PTL1_SHIFT + 7)
 #elif GRANULE_SIZE == _SZ64KB
 # define __PTL4_SHIFT  0
 # define __PTL3_SHIFT  42
@@ -125,6 +139,10 @@
 # define PTL2_INDEX_MASK ((UL(1) << 13) - 1)
 # define PTL1_INDEX_MASK PTL2_INDEX_MASK
 # define FIRST_LEVEL_BLOCK_SUPPORT  0
+# define __PTL4_CONT_SHIFT (__PTL4_SHIFT + 0)
+# define __PTL3_CONT_SHIFT (__PTL3_SHIFT + 0)
+# define __PTL2_CONT_SHIFT (__PTL2_SHIFT + 5)
+# define __PTL1_CONT_SHIFT (__PTL1_SHIFT + 5)
 #else
 # error granule size error.
 #endif
@@ -133,10 +151,23 @@
 # define __PTL3_SIZE  (UL(1) << __PTL3_SHIFT)
 # define __PTL2_SIZE  (UL(1) << __PTL2_SHIFT)
 # define __PTL1_SIZE  (UL(1) << __PTL1_SHIFT)
-# define __PTL4_MASK  (~__PTL4_SIZE - 1)
-# define __PTL3_MASK  (~__PTL3_SIZE - 1)
-# define __PTL2_MASK  (~__PTL2_SIZE - 1)
-# define __PTL1_MASK  (~__PTL1_SIZE - 1)
+# define __PTL4_MASK  (~(__PTL4_SIZE - 1))
+# define __PTL3_MASK  (~(__PTL3_SIZE - 1))
+# define __PTL2_MASK  (~(__PTL2_SIZE - 1))
+# define __PTL1_MASK  (~(__PTL1_SIZE - 1))
+
+# define __PTL4_CONT_SIZE  (UL(1) << __PTL4_CONT_SHIFT)
+# define __PTL3_CONT_SIZE  (UL(1) << __PTL3_CONT_SHIFT)
+# define __PTL2_CONT_SIZE  (UL(1) << __PTL2_CONT_SHIFT)
+# define __PTL1_CONT_SIZE  (UL(1) << __PTL1_CONT_SHIFT)
+# define __PTL4_CONT_MASK  (~(__PTL4_CONT_SIZE - 1))
+# define __PTL3_CONT_MASK  (~(__PTL3_CONT_SIZE - 1))
+# define __PTL2_CONT_MASK  (~(__PTL2_CONT_SIZE - 1))
+# define __PTL1_CONT_MASK  (~(__PTL1_CONT_SIZE - 1))
+# define __PTL4_CONT_COUNT  (UL(1) << (__PTL4_CONT_SHIFT - __PTL4_SHIFT))
+# define __PTL3_CONT_COUNT  (UL(1) << (__PTL3_CONT_SHIFT - __PTL3_SHIFT))
+# define __PTL2_CONT_COUNT  (UL(1) << (__PTL2_CONT_SHIFT - __PTL2_SHIFT))
+# define __PTL1_CONT_COUNT  (UL(1) << (__PTL1_CONT_SHIFT - __PTL1_SHIFT))
 
 /* calculate entries */
 #if (CONFIG_ARM64_PGTABLE_LEVELS > 3) && (VA_BITS > __PTL4_SHIFT)
@@ -183,6 +214,22 @@ static const unsigned int  PTL4_ENTRIES = __PTL4_ENTRIES;
 static const unsigned int  PTL3_ENTRIES = __PTL3_ENTRIES;
 static const unsigned int  PTL2_ENTRIES = __PTL2_ENTRIES;
 static const unsigned int  PTL1_ENTRIES = __PTL1_ENTRIES;
+static const unsigned int  PTL4_CONT_SHIFT = __PTL4_CONT_SHIFT;
+static const unsigned int  PTL3_CONT_SHIFT = __PTL3_CONT_SHIFT;
+static const unsigned int  PTL2_CONT_SHIFT = __PTL2_CONT_SHIFT;
+static const unsigned int  PTL1_CONT_SHIFT = __PTL1_CONT_SHIFT;
+static const unsigned long PTL4_CONT_SIZE  = __PTL4_CONT_SIZE;
+static const unsigned long PTL3_CONT_SIZE  = __PTL3_CONT_SIZE;
+static const unsigned long PTL2_CONT_SIZE  = __PTL2_CONT_SIZE;
+static const unsigned long PTL1_CONT_SIZE  = __PTL1_CONT_SIZE;
+static const unsigned long PTL4_CONT_MASK  = __PTL4_CONT_MASK;
+static const unsigned long PTL3_CONT_MASK  = __PTL3_CONT_MASK;
+static const unsigned long PTL2_CONT_MASK  = __PTL2_CONT_MASK;
+static const unsigned long PTL1_CONT_MASK  = __PTL1_CONT_MASK;
+static const unsigned int  PTL4_CONT_COUNT = __PTL4_CONT_COUNT;
+static const unsigned int  PTL3_CONT_COUNT = __PTL3_CONT_COUNT;
+static const unsigned int  PTL2_CONT_COUNT = __PTL2_CONT_COUNT;
+static const unsigned int  PTL1_CONT_COUNT = __PTL1_CONT_COUNT;
 #else
 # define PTL4_SHIFT   __PTL4_SHIFT
 # define PTL3_SHIFT   __PTL3_SHIFT
@@ -200,8 +247,26 @@ static const unsigned int  PTL1_ENTRIES = __PTL1_ENTRIES;
 # define PTL3_ENTRIES __PTL3_ENTRIES
 # define PTL2_ENTRIES __PTL2_ENTRIES
 # define PTL1_ENTRIES __PTL1_ENTRIES
+# define PTL4_CONT_SHIFT __PTL4_CONT_SHIFT
+# define PTL3_CONT_SHIFT __PTL3_CONT_SHIFT
+# define PTL2_CONT_SHIFT __PTL2_CONT_SHIFT
+# define PTL1_CONT_SHIFT __PTL1_CONT_SHIFT
+# define PTL4_CONT_SIZE __PTL4_CONT_SIZE
+# define PTL3_CONT_SIZE __PTL3_CONT_SIZE
+# define PTL2_CONT_SIZE __PTL2_CONT_SIZE
+# define PTL1_CONT_SIZE __PTL1_CONT_SIZE
+# define PTL4_CONT_MASK __PTL4_CONT_MASK
+# define PTL3_CONT_MASK __PTL3_CONT_MASK
+# define PTL2_CONT_MASK __PTL2_CONT_MASK
+# define PTL1_CONT_MASK __PTL1_CONT_MASK
+# define PTL4_CONT_COUNT __PTL4_CONT_COUNT
+# define PTL3_CONT_COUNT __PTL3_CONT_COUNT
+# define PTL2_CONT_COUNT __PTL2_CONT_COUNT
+# define PTL1_CONT_COUNT __PTL1_CONT_COUNT
 #endif/*__ASSEMBLY__*/
 
+#define __page_size(pgshift)        (UL(1) << (pgshift))
+#define __page_mask(pgsize)         (~((pgsize) - 1))
 #define __page_offset(addr, size)   ((unsigned long)(addr) & ((size) - 1))
 #define __page_align(addr, size)    ((unsigned long)(addr) & ~((size) - 1))
 #define __page_align_up(addr, size) __page_align((unsigned long)(addr) + (size) - 1, size)
@@ -210,8 +275,8 @@ static const unsigned int  PTL1_ENTRIES = __PTL1_ENTRIES;
  * nornal page
  */
 #define PAGE_SHIFT          __PTL1_SHIFT
-#define PAGE_SIZE           (UL(1) << __PTL1_SHIFT)
-#define PAGE_MASK           (~(PTL1_SIZE - 1))
+#define PAGE_SIZE           __page_size(PAGE_SHIFT)
+#define PAGE_MASK           __page_mask(PAGE_SIZE)
 #define PAGE_P2ALIGN        0
 #define page_offset(addr)   __page_offset(addr, PAGE_SIZE)
 #define page_align(addr)    __page_align(addr, PAGE_SIZE)
@@ -221,8 +286,8 @@ static const unsigned int  PTL1_ENTRIES = __PTL1_ENTRIES;
  * large page
  */
 #define LARGE_PAGE_SHIFT          __PTL2_SHIFT
-#define LARGE_PAGE_SIZE           (UL(1) << __PTL2_SHIFT)
-#define LARGE_PAGE_MASK           (~(PTL2_SIZE - 1))
+#define LARGE_PAGE_SIZE           __page_size(LARGE_PAGE_SHIFT)
+#define LARGE_PAGE_MASK           __page_mask(LARGE_PAGE_SIZE)
 #define LARGE_PAGE_P2ALIGN        (LARGE_PAGE_SHIFT - PAGE_SHIFT)
 #define large_page_offset(addr)   __page_offset(addr, LARGE_PAGE_SIZE)
 #define large_page_align(addr)    __page_align(addr, LARGE_PAGE_SIZE)
@@ -325,18 +390,22 @@ static inline int pfn_is_write_combined(uintptr_t pfn)
 //共通部と意味がするビット定義
 #define attr_flip_bits (PTATTR_WRITABLE | PTATTR_LARGEPAGE)
 
+static inline int pgsize_to_tbllv(size_t pgsize);
 static inline int pte_is_type_page(const pte_t *ptep, size_t pgsize)
 {
 	int ret = 0; //default D_TABLE
-	if ((PTL4_SIZE == pgsize && CONFIG_ARM64_PGTABLE_LEVELS > 3) ||
-	    (PTL3_SIZE == pgsize && CONFIG_ARM64_PGTABLE_LEVELS > 2) ||
-	    (PTL2_SIZE == pgsize)) {
+	int level = pgsize_to_tbllv(pgsize);
+	switch (level) {
+	case 4:
+	case 3:
+	case 2:
 		// check D_BLOCK
 		ret = ((*ptep & PMD_TYPE_MASK) == PMD_TYPE_SECT);
-	}
-	else if (PTL1_SIZE == pgsize) {
+		break;
+	case 1:
 		// check D_PAGE
 		ret = ((*ptep & PTE_TYPE_MASK) == PTE_TYPE_PAGE);
+		break;
 	}
 	return ret;
 }
@@ -415,10 +484,12 @@ static inline enum ihk_mc_pt_attribute pte_get_attr(pte_t *ptep, size_t pgsize)
 
 static inline void pte_make_null(pte_t *ptep, size_t pgsize)
 {
-	if ((PTL4_SIZE == pgsize && CONFIG_ARM64_PGTABLE_LEVELS > 3) ||
-	    (PTL3_SIZE == pgsize && CONFIG_ARM64_PGTABLE_LEVELS > 2) ||
-	    (PTL2_SIZE == pgsize) || 
-	    (PTL1_SIZE == pgsize)) {
+	if (((PTL4_SIZE == pgsize || PTL4_CONT_SIZE == pgsize)
+				&& CONFIG_ARM64_PGTABLE_LEVELS > 3) ||
+	    ((PTL3_SIZE == pgsize || PTL3_CONT_SIZE == pgsize)
+				&& CONFIG_ARM64_PGTABLE_LEVELS > 2) ||
+	     (PTL2_SIZE == pgsize || PTL2_CONT_SIZE == pgsize) ||
+	     (PTL1_SIZE == pgsize || PTL1_CONT_SIZE == pgsize)) {
 		*ptep = PTE_NULL;
 	}
 }
@@ -426,10 +497,12 @@ static inline void pte_make_null(pte_t *ptep, size_t pgsize)
 static inline void pte_make_fileoff(off_t off,
 		enum ihk_mc_pt_attribute ptattr, size_t pgsize, pte_t *ptep)
 {
-	if ((PTL4_SIZE == pgsize && CONFIG_ARM64_PGTABLE_LEVELS > 3) ||
-	    (PTL3_SIZE == pgsize && CONFIG_ARM64_PGTABLE_LEVELS > 2) ||
-	    (PTL2_SIZE == pgsize) ||
-	    (PTL1_SIZE == pgsize)) {
+	if (((PTL4_SIZE == pgsize || PTL4_CONT_SIZE == pgsize)
+				&& CONFIG_ARM64_PGTABLE_LEVELS > 3) ||
+	    ((PTL3_SIZE == pgsize || PTL3_CONT_SIZE == pgsize)
+				&& CONFIG_ARM64_PGTABLE_LEVELS > 2) ||
+	     (PTL2_SIZE == pgsize || PTL2_CONT_SIZE == pgsize) ||
+	     (PTL1_SIZE == pgsize || PTL1_CONT_SIZE == pgsize)) {
 		*ptep = PTE_FILEOFF | off | PTE_TYPE_PAGE;
 	}
 }
@@ -458,6 +531,204 @@ static inline void pte_set_dirty(pte_t *ptep, size_t pgsize)
 		*ptep |= PTE_DIRTY;
 	}
 }
+
+static inline int pte_is_contiguous(const pte_t *ptep)
+{
+	return !!(*ptep & PTE_CONT);
+}
+
+static inline int pgsize_is_contiguous(size_t pgsize)
+{
+	int ret = 0;
+	if ((pgsize == PTL4_CONT_SIZE && CONFIG_ARM64_PGTABLE_LEVELS > 3) ||
+	    (pgsize == PTL3_CONT_SIZE && CONFIG_ARM64_PGTABLE_LEVELS > 2) ||
+	    (pgsize == PTL2_CONT_SIZE) ||
+	    (pgsize == PTL1_CONT_SIZE)) {
+		ret = 1;
+	}
+	return ret;
+}
+
+static inline int pgsize_to_tbllv(size_t pgsize)
+{
+	int level = -EINVAL;
+	if ((pgsize == PTL4_CONT_SIZE || pgsize == PTL4_SIZE)
+	    && (CONFIG_ARM64_PGTABLE_LEVELS > 3)) {
+		level = 4;
+	} else if ((pgsize == PTL3_CONT_SIZE || pgsize == PTL3_SIZE)
+		   && (CONFIG_ARM64_PGTABLE_LEVELS > 2)) {
+		level = 3;
+	} else if (pgsize == PTL2_CONT_SIZE || pgsize == PTL2_SIZE) {
+		level = 2;
+	} else if (pgsize == PTL1_CONT_SIZE || pgsize == PTL1_SIZE) {
+		level = 1;
+	}
+	return level;
+}
+
+static inline size_t tbllv_to_pgsize(int level)
+{
+	size_t pgsize = 0;
+	switch (level) {
+	case 4:
+		if (CONFIG_ARM64_PGTABLE_LEVELS > 3) {
+			pgsize = PTL4_SIZE;
+		}
+		break;
+	case 3:
+		if (CONFIG_ARM64_PGTABLE_LEVELS > 2) {
+			pgsize = PTL3_SIZE;
+		}
+		break;
+	case 2:
+		pgsize = PTL2_SIZE;
+		break;
+	case 1:
+		pgsize = PTL1_SIZE;
+		break;
+	}
+	return pgsize;
+}
+
+static inline size_t tbllv_to_contpgsize(int level)
+{
+	size_t pgsize = 0;
+	switch (level) {
+	case 4:
+		if (CONFIG_ARM64_PGTABLE_LEVELS > 3) {
+			pgsize = PTL4_CONT_SIZE;
+		}
+		break;
+	case 3:
+		if (CONFIG_ARM64_PGTABLE_LEVELS > 2) {
+			pgsize = PTL3_CONT_SIZE;
+		}
+		break;
+	case 2:
+		pgsize = PTL2_CONT_SIZE;
+		break;
+	case 1:
+		pgsize = PTL1_CONT_SIZE;
+		break;
+	}
+	return pgsize;
+}
+
+static inline int tbllv_to_contpgshift(int level)
+{
+	int ret = 0;
+	switch (level) {
+	case 4:
+		if (CONFIG_ARM64_PGTABLE_LEVELS > 3) {
+			ret = PTL4_CONT_SHIFT;
+		}
+		break;
+	case 3:
+		if (CONFIG_ARM64_PGTABLE_LEVELS > 2) {
+			ret = PTL3_CONT_SHIFT;
+		}
+		break;
+	case 2:
+		ret = PTL2_CONT_SHIFT;
+		break;
+	case 1:
+		ret = PTL1_CONT_SHIFT;
+		break;
+	}
+	return ret;
+}
+
+static inline pte_t *get_contiguous_head(pte_t *__ptep, size_t __pgsize)
+{
+	unsigned long align;
+	int shift = 0;
+	switch (pgsize_to_tbllv(__pgsize)) {
+	case 4:
+		if (CONFIG_ARM64_PGTABLE_LEVELS > 3) {
+			shift = PTL4_CONT_SHIFT - PTL4_SHIFT;
+		}
+		break;
+	case 3:
+		if (CONFIG_ARM64_PGTABLE_LEVELS > 2) {
+			shift = PTL3_CONT_SHIFT - PTL3_SHIFT;
+		}
+		break;
+	case 2:
+		shift = PTL2_CONT_SHIFT - PTL2_SHIFT;
+		break;
+	case 1:
+		shift = PTL1_CONT_SHIFT - PTL1_SHIFT;
+		break;
+	}
+	align = sizeof(*__ptep) << shift;
+	return  (pte_t*)__page_align(__ptep, align);
+}
+
+static inline pte_t *get_contiguous_tail(pte_t *__ptep, size_t __pgsize)
+{
+	unsigned long align;
+	int shift = 0;
+	switch (pgsize_to_tbllv(__pgsize)) {
+	case 4:
+		if (CONFIG_ARM64_PGTABLE_LEVELS > 3) {
+			shift = PTL4_CONT_SHIFT - PTL4_SHIFT;
+		}
+		break;
+	case 3:
+		if (CONFIG_ARM64_PGTABLE_LEVELS > 2) {
+			shift = PTL3_CONT_SHIFT - PTL3_SHIFT;
+		}
+		break;
+	case 2:
+		shift = PTL2_CONT_SHIFT - PTL2_SHIFT;
+		break;
+	case 1:
+		shift = PTL1_CONT_SHIFT - PTL1_SHIFT;
+		break;
+	}
+	align = sizeof(*__ptep) << shift;
+	return  (pte_t*)__page_align_up(__ptep + 1, align) - 1;
+}
+
+static inline int split_contiguous_pages(pte_t *ptep, size_t pgsize)
+{
+	int ret;
+	pte_t *head = get_contiguous_head(ptep, pgsize);
+	pte_t *tail = get_contiguous_tail(ptep, pgsize);
+	pte_t *ptr;
+
+	uintptr_t phys;
+	struct page *page;
+
+	phys = pte_get_phys(head);
+	page = phys_to_page(phys);
+	if (page && (page_is_in_memobj(page)
+		     || page_is_multi_mapped(page))) {
+		ret = -EINVAL;
+		goto out;
+	}
+
+	for (ptr = head; ptr <= tail; ptr++) {
+		*ptr &= ~PTE_CONT;
+	}
+
+	ret = 0;
+out:
+	return ret;
+}
+
+static inline int page_is_contiguous_head(pte_t *ptep, size_t pgsize)
+{
+	pte_t *ptr = get_contiguous_head(ptep, pgsize);
+	return (ptr == ptep);
+}
+
+static inline int page_is_contiguous_tail(pte_t *ptep, size_t pgsize)
+{
+	pte_t *ptr = get_contiguous_tail(ptep, pgsize);
+	return (ptr == ptep);
+}
+
 
 struct page_table;
 void set_pte(pte_t *ppte, unsigned long phys, enum ihk_mc_pt_attribute attr);
