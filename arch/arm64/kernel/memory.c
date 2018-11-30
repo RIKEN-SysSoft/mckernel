@@ -1647,21 +1647,15 @@ static int split_large_page(pte_t *ptep, size_t pgsize)
 	unsigned long under_pgsize;
 
 	// ラージページ判定
-	switch (pgsize)
-	{
-#if FIRST_LEVEL_BLOCK_SUPPORT
-	case __PTL3_SIZE:
+	if (first_level_block_support && pgsize == PTL3_SIZE) {
 		table_level = 3;
 		entries = PTL3_ENTRIES;
 		under_pgsize = PTL2_SIZE;
-		break;
-#endif
-	case __PTL2_SIZE:
+	} else if (pgsize == PTL2_SIZE) {
 		table_level = 2;
 		entries = PTL2_ENTRIES;
 		under_pgsize = PTL1_SIZE;
-		break;
-	default:
+	} else {
 		ekprintf("split_large_page:invalid pgsize %#lx\n", pgsize);
 		return -EINVAL;
 	}
@@ -2500,7 +2494,7 @@ static pte_t *lookup_pte(translation_table_t* tt, uintptr_t virt, int pgshift,
 
 	ptep = NULL;
 	if (!pgshift) {
-		if (FIRST_LEVEL_BLOCK_SUPPORT) {
+		if (first_level_block_support) {
 			pgshift = PTL3_CONT_SHIFT;
 		} else {
 			pgshift = PTL2_CONT_SHIFT;
@@ -2721,7 +2715,7 @@ retry:
 	if (ptl_null(ptep, level) || (args->overwrite && ptl_type_page(ptep, level))) {
 		pte_t pte;
 		uintptr_t phys;
-		if (level == 2 || (level == 3 && FIRST_LEVEL_BLOCK_SUPPORT)) {
+		if (level == 2 || (level == 3 && first_level_block_support)) {
 			if ((start <= base) && ((base + tbl.pgsize) <= end)
 			    && ((args->diff & (tbl.pgsize - 1)) == 0)
 			    && (!args->pgshift
@@ -2893,7 +2887,7 @@ int ihk_mc_pt_set_pte(page_table_t pt, pte_t *ptep, size_t pgsize,
 		pte =  phys | attr_to_l2attr(attr | PTATTR_LARGEPAGE);
 		ptl2_set(ptep, pte);
 	}
-	else if (pgsize == PTL3_SIZE && FIRST_LEVEL_BLOCK_SUPPORT) {
+	else if (pgsize == PTL3_SIZE && first_level_block_support) {
 		if (phys & (PTL3_SIZE - 1)) {
 			kprintf("%s: error: phys needs to be PTL3_SIZE aligned\n", __FUNCTION__);
 			error = -1;
@@ -3242,9 +3236,22 @@ void init_low_area(struct page_table *pt)
 	set_pt_large_page(pt, 0, 0, PTATTR_NO_EXECUTE|PTATTR_WRITABLE);
 }
 
+int first_level_block_support;
 void init_page_table(void)
 {
+	uint64_t parange;
+
 	ihk_mc_spinlock_init(&init_pt_lock);
+
+	if (PAGE_SIZE == _SZ4KB) {
+		first_level_block_support = 1;
+	} else if (PAGE_SIZE == _SZ16KB) {
+		first_level_block_support = 0;
+	} else {
+		parange = read_sysreg(id_aa64mmfr0_el1) & 7;
+		first_level_block_support =
+			(parange >= ID_AA64MMFR0_PARANGE_52);
+	}
 
 	/* Normal memory area */
 	init_normal_area(init_pt);

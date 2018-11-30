@@ -1909,10 +1909,12 @@ SYSCALL_DECLARE(mmap)
 
 		if (hugeshift == 0) {
 			flags |= MAP_HUGE_SECOND_BLOCK;	/* default hugepage size */
-		} else if (hugeshift == MAP_HUGE_SECOND_BLOCK ||
-			   hugeshift == MAP_HUGE_FIRST_BLOCK ||
+		} else if ((first_level_block_support &&
+				hugeshift == MAP_HUGE_FIRST_BLOCK) ||
+			   (first_level_block_support &&
+				hugeshift == MAP_HUGE_FIRST_CONT_BLOCK) ||
+			   hugeshift == MAP_HUGE_SECOND_BLOCK ||
 			   hugeshift == MAP_HUGE_SECOND_CONT_BLOCK ||
-			   hugeshift == MAP_HUGE_FIRST_CONT_BLOCK ||
 			   hugeshift == MAP_HUGE_THIRD_CONT_BLOCK) {
 			/*nop*/
 		} else {
@@ -1983,10 +1985,12 @@ SYSCALL_DECLARE(shmget)
 
 		if (hugeshift == 0) {
 			shmflg |= SHM_HUGE_SECOND_BLOCK;	/* default hugepage size */
-		} else if (hugeshift == SHM_HUGE_SECOND_BLOCK ||
-			   hugeshift == SHM_HUGE_FIRST_BLOCK ||
+		} else if ((first_level_block_support &&
+				hugeshift == SHM_HUGE_FIRST_BLOCK) ||
+			   (first_level_block_support &&
+				hugeshift == SHM_HUGE_FIRST_CONT_BLOCK) ||
+			   hugeshift == SHM_HUGE_SECOND_BLOCK ||
 			   hugeshift == SHM_HUGE_SECOND_CONT_BLOCK ||
-			   hugeshift == SHM_HUGE_FIRST_CONT_BLOCK ||
 			   hugeshift == SHM_HUGE_THIRD_CONT_BLOCK) {
 			/*nop*/
 		} else {
