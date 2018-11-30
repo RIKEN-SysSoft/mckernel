@@ -148,7 +148,7 @@ mygetrusage(int idx, struct my_rusage *rbp)
 	if (num_numa_nodes <= 0) {
 		printf("%s: error: ihk_os_get_num_numa_nodes: %d\n",
 		       __func__, num_numa_nodes);
-		rc = num_numa_nodes < 0 ? : -EINVAL;
+		rc = num_numa_nodes < 0 ? num_numa_nodes : -EINVAL;
 		goto out;
 	}
 
