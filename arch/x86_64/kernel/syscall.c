@@ -1725,16 +1725,14 @@ SYSCALL_DECLARE(shmget)
 	dkprintf("shmget(%#lx,%#lx,%#x)\n", key, size, shmflg0);
 
 	if (shmflg & SHM_HUGETLB) {
-		switch (shmflg & (0x3F << SHM_HUGE_SHIFT)) {
-		case 0:
+		int hugeshift = shmflg & (0x3F << SHM_HUGE_SHIFT);
+
+		if (hugeshift == 0) {
 			shmflg |= SHM_HUGE_2MB;	/* default hugepage size */
-			break;
-
-		case SHM_HUGE_2MB:
-		case SHM_HUGE_1GB:
-			break;
-
-		default:
+		} else if (hugeshift == SHM_HUGE_2MB ||
+			   hugeshift == SHM_HUGE_1GB) {
+			/*nop*/
+		} else {
 			error = -EINVAL;
 			goto out;
 		}
