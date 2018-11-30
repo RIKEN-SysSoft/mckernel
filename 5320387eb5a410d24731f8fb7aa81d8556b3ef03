@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "cb8e1440_639ec305",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2190,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:42:34Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tpgshift \u003d first_level_block_support ? PTL3_CONT_SHIFT : PTL2_CONT_SHIFT;",
+      "revId": "5320387eb5a410d24731f8fb7aa81d8556b3ef03",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1c733979_c28b63ce",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2913,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:42:34Z",
+      "side": 1,
+      "message": "WARNING: Unnecessary parentheses - maybe \u003d\u003d should be \u003d ?\n+\t} else if ((PAGE_SIZE \u003d\u003d _SZ16KB)) {",
+      "revId": "5320387eb5a410d24731f8fb7aa81d8556b3ef03",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "be260c96_8155c257",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2917,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:42:34Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\tuint64_t parange \u003d read_sysreg(id_aa64mmfr0_el1) \u0026 7;\n+\t\tfirst_level_block_support \u003d",
+      "revId": "5320387eb5a410d24731f8fb7aa81d8556b3ef03",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
