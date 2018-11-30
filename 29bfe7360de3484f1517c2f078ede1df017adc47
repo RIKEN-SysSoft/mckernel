@@ -1,0 +1,1466 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "2a960ffc_3f8c90de",
+        "filename": "test/error_handling/arm64/Makefile",
+        "patchSetId": 1
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^Irm -f $(TARGET) *.o $",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1dab152f_d1e20174",
+        "filename": "test/error_handling/arm64/patch/issue1011.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "444eb7cc_e31e5e42",
+        "filename": "test/error_handling/arm64/patch/issue727.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "096bca7a_7d08bb3c",
+        "filename": "test/error_handling/arm64/patch/issue727.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+-^I^I^I^I^I$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "28c5fdb2_92f0ca7b",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+gcc -o exec exec.c $",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1492e08b_bc031a58",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ARGS: -p 6 $",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b67eb630_2d681644",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ARGS: -p 6 $",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "25329017_c82989f1",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 160,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+fork09      0  TINFO  :  first file descriptor is 8 $",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3868e771_dbd666b1",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 206,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11      1  TPASS  :  signal SIGHUP          $",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4d7326a1_61f9d1e9",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 207,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11      2  TPASS  :  signal SIGINT          $",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "81cf84f1_ab8b9ca5",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 215,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11     10  TPASS  :  signal SIGKILL         $",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d9a867f9_fc10b984",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 216,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11     11  TPASS  :  signal SIGUSR1         $",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7080a33d_6d88e182",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 218,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11     13  TPASS  :  signal SIGUSR2         $",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "24180032_eabea3a0",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 219,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11     14  TPASS  :  signal SIGPIPE         $",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6a53605b_9fcec0d1",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 220,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11     15  TPASS  :  signal SIGALRM         $",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "aab25584_8736235e",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 221,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11     16  TPASS  :  signal SIGTERM         $",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "215c7018_8dc8f337",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 224,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11     19  TPASS  :  signal SIGVTALRM       $",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1caeb624_46720479",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 225,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11     20  TPASS  :  signal SIGPROF         $",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "31b17922_a35a6b58",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 226,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11     21  TPASS  :  signal SIGIO/SIGPOLL   $",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b3ea9377_1ac8a1b8",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 227,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11     22  TPASS  :  signal SIGPWR          $",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4b9ea9b4_93789431",
+        "filename": "test/error_handling/arm64/result_issue727.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+gcc -o exec exec.c $",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d46c556f_f114af3b",
+        "filename": "test/error_handling/arm64/run_issue1011.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\techo \"${output}\" | grep -q \"kernel: mcexec_prepare_image: ERROR: # of sections: -1\"",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7904f9bb_5613f6e6",
+        "filename": "test/error_handling/arm64/run_issue1011.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\techo \"\\\"kernel: mcexec_prepare_image: ERROR: # of sections: -1\\\" not found.\"",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dd816786_de73dbb0",
+        "filename": "test/error_handling/x86_64/Issue1011/1011.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8dfc78e4_2edf5587",
+        "filename": "test/error_handling/x86_64/Issue727/727.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ef40bae7_3e5c6a34",
+        "filename": "test/error_handling/x86_64/Issue727/727.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+-^I^I^I^I^I$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4c0ed0cb_d332b9cb",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+ に開始しました^[[?1034hbash-4.2$ ../../../../mic/mcexec ./exec^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "92323013_92fbf6ce",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+727.patch  exec  exec.c  patch-off.log^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "796ae992_19d92bb6",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+bash-4.2$ ../../../../mic/ihkosctl 0kmsg^H^H^H^H kmsg^H^H^H^H^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4440f5ac_569277dd",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+IHK/McKernel started.^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ccd20417_dc372726",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: no_execute_available: 1^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "47bd5d4a_bf532140",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: X86_IA32_NUM_PERF_COUNTERS: 4, X86_IA32_NUM_FIXED_PERF_COUNTERS: 3^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3a9e872b_1941bd0a",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: Invariant TSC supported.^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1b1140e9_6597de9f",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: setup_x86 done.^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f3922282_4b621d36",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: ns_per_tsc: 384^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8d060703_a447ea07",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: KCommand Line: hidos  dump_level\u003d24 ^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a951ab96_95ae8d33",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: Physical memory: 0x1002c7000 - 0x140000000, 1070829568 bytes, 261433 pages available @ NUMA: 0^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9e7deed1_2051818c",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: Physical memory: 0x880000000 - 0x8c0000000, 1073741824 bytes, 262144 pages available @ NUMA: 1^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d893953e_c37bfea3",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: NUMA: 0, Linux NUMA: 0, type: 1, available bytes: 1070829568, pages: 261433^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9f1b2135_c9eb6c8b",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: NUMA: 1, Linux NUMA: 1, type: 1, available bytes: 1073741824, pages: 262144^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a259c482_045a81af",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: NUMA 0 distances: 0 (10), 1 (21), ^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2d1a80af_d6678d8e",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: NUMA 1 distances: 1 (10), 0 (21), ^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "185409ac_2a528348",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: map_fixed: phys: 0x90000 \u003d\u003e 0xffffffff70015000 (2 pages)^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "959b7878_63b4ea4a",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: Trampoline area: 0x90000 ^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0a00927b_3e16a3a9",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: map_fixed: phys: 0x0 \u003d\u003e 0xffffffff70017000 (1 pages)^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "43159389_1e492d62",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: # of cpus : 7^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9321f284_b40d5416",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: locals \u003d ffff8001002eb000^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "baff211d_6f27e372",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[  0]: BSP: 0 (HW ID: 2 @ NUMA 0)^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6080ad50_271d264b",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[  0]: BSP: booted 6 AP CPUs^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "99c60416_a4c13dd2",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[  0]: Master channel init acked.^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ce72217f_9a2c5621",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[  0]: vdso is enabled^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "55f4a4c3_282d1012",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+IHK/McKernel booted.^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "00edb9f8_cebd6c8f",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "54ccb266_2793ca16",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+bash-4.2$ シェルから脱出するには \"exit\" を使用してください。^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa0c7f8f_4cf7464d",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+bash-4.2$ exit^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d3ae11e0_a9d110db",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+ に開始しました^[[?1034hbash-4.2$ ../../../../mic/mcexec ./exec^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0c15812b_e39625b7",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+execve killed^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "932d780d_9cf56008",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+強制終了^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6223f94a_e0ef3de3",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+bash-4.2$ ../../../../mic/ihkosctl 0 kmsg^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "54743266_b2936a77",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+IHK/McKernel started.^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e5dcd32d_dca66efa",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: no_execute_available: 1^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d0bf6856_c91e08fb",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: X86_IA32_NUM_PERF_COUNTERS: 4, X86_IA32_NUM_FIXED_PERF_COUNTERS: 3^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4a83d60d_24d4c4f2",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: Invariant TSC supported.^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c22b27d6_3eec226b",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: setup_x86 done.^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "64196107_00ca403a",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: ns_per_tsc: 384^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2e412773_b4fe3b5d",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: KCommand Line: hidos  dump_level\u003d24 ^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b65de7aa_eb4207b2",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: Physical memory: 0x1002c7000 - 0x140000000, 1070829568 bytes, 261433 pages available @ NUMA: 0^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5e1e2e81_28b4a055",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: Physical memory: 0x880000000 - 0x8c0000000, 1073741824 bytes, 262144 pages available @ NUMA: 1^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "af7b1e87_c681c597",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: NUMA: 0, Linux NUMA: 0, type: 1, available bytes: 1070829568, pages: 261433^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6ca9c714_fbbb40b3",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: NUMA: 1, Linux NUMA: 1, type: 1, available bytes: 1073741824, pages: 262144^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "58f04cb2_aa1b9e1b",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: NUMA 0 distances: 0 (10), 1 (21), ^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "007aa674_a4870ce8",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: NUMA 1 distances: 1 (10), 0 (21), ^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "df7160fa_20969533",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: map_fixed: phys: 0x90000 \u003d\u003e 0xffffffff70015000 (2 pages)^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a565800d_ef3f2d61",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: Trampoline area: 0x90000 ^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8ad2c1df_b6e3d8bc",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: map_fixed: phys: 0x0 \u003d\u003e 0xffffffff70017000 (1 pages)^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0280dbee_5d36de14",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: # of cpus : 7^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ddf233ea_714adc36",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[ -1]: locals \u003d ffff8001002eb000^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "291d63cb_89f9672a",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[  0]: BSP: 0 (HW ID: 2 @ NUMA 0)^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a6d74021_434a48a8",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[  0]: BSP: booted 6 AP CPUs^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "eec0d942_315444e6",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[  0]: Master channel init acked.^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a32af4ef_f2922fc8",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[  0]: vdso is enabled^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3e315c09_e2d3081b",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+IHK/McKernel booted.^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "62703ae7_3e7f6614",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+[  0]: do_syscall: proxy PID 14276 is dead, terminate()^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2fe0c7eb_f5817caa",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "46cc5675_2b9852e6",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+bash-4.2$ シェルから脱出するには \"exit\" を使用してください。^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2f37ca3c_8c4315ec",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T11:44:21Z",
+      "side": 1,
+      "message": "ERROR: DOS line endings\n+bash-4.2$ exit^M$",
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
