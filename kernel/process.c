@@ -646,11 +646,11 @@ static int copy_user_pte(void *arg0, page_table_t src_pt, pte_t *src_ptep, void 
 	intptr_t src_phys;
 	struct page *src_page;
 	void *src_kvirt;
-	const size_t pgsize = (size_t)1 << pgshift;
+	size_t pgsize = (size_t)1 << pgshift;
 	int npages;
 	void *virt = NULL;
 	intptr_t phys;
-	const int pgalign = pgshift - PAGE_SHIFT;
+	int pgalign = pgshift - PAGE_SHIFT;
 	enum ihk_mc_pt_attribute attr;
 
 	if (!pte_is_present(src_ptep)) {
@@ -672,6 +672,19 @@ static int copy_user_pte(void *arg0, page_table_t src_pt, pte_t *src_ptep, void 
 		attr = pte_get_attr(src_ptep, pgsize);
 	}
 	else {
+		if (pte_is_contiguous(src_ptep)) {
+			if (page_is_contiguous_head(src_ptep, pgsize)) {
+				int level = pgsize_to_tbllv(pgsize);
+
+				pgsize = tbllv_to_contpgsize(level);
+				pgalign = tbllv_to_contpgshift(level);
+				pgalign -= PAGE_SHIFT;
+			} else {
+				error = 0;
+				goto out;
+			}
+		}
+
 		dkprintf("copy_user_pte(): 0x%lx PTE found\n", pgaddr);
 		dkprintf("copy_user_pte(): page size: %d\n", pgsize);
 
