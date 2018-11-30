@@ -332,6 +332,61 @@ static inline void pte_set_dirty(pte_t *ptep, size_t pgsize)
 	return;
 }
 
+static inline int pte_is_contiguous(pte_t *ptep)
+{
+	return 0;
+}
+
+static inline int pgsize_is_contiguous(size_t pgsize)
+{
+	return 0;
+}
+
+static inline int pgsize_to_tbllv(size_t pgsize)
+{
+	return 0;
+}
+
+static inline size_t tbllv_to_pgsize(int level)
+{
+	return 0;
+}
+
+static inline size_t tbllv_to_contpgsize(int level)
+{
+	return 0;
+}
+
+static inline int tbllv_to_contpgshift(int level)
+{
+	return 0;
+}
+
+static inline pte_t *get_contiguous_head(pte_t *__ptep, size_t __pgsize)
+{
+	return __ptep;
+}
+
+static inline pte_t *get_contiguous_tail(pte_t *__ptep, size_t __pgsize)
+{
+	return __ptep;
+}
+
+static inline int split_contiguous_pages(pte_t *ptep, size_t pgsize)
+{
+	return 0;
+}
+
+static inline int page_is_contiguous_head(pte_t *ptep, size_t pgsize)
+{
+	return 0;
+}
+
+static inline int page_is_contiguous_tail(pte_t *ptep, size_t pgsize)
+{
+	return 0;
+}
+
 struct page_table;
 void set_pte(pte_t *ppte, unsigned long phys, enum ihk_mc_pt_attribute attr);
 pte_t *get_pte(struct page_table *pt, void *virt, enum ihk_mc_pt_attribute attr);
