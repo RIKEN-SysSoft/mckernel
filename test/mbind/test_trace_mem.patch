@@ -1,12 +1,28 @@
-diff --git kernel/mem.c kernel/mem.c
-index 62cb206..5bfb6d6 100644
---- kernel/mem.c
-+++ kernel/mem.c
-@@ -542,6 +542,15 @@ static void reserve_pages(struct ihk_page_allocator_desc *pa_allocator,
+diff --git a/kernel/include/process.h b/kernel/include/process.h
+index 6f34ee2..503217c 100644
+--- a/kernel/include/process.h
++++ b/kernel/include/process.h
+@@ -750,6 +750,11 @@ struct process_vm {
+ 	long currss;
+ 	DECLARE_BITMAP(numa_mask, PROCESS_NUMA_MASK_BITS);
+ 	int numa_mem_policy;
++
++#if 1	/* For mbind test */
++	int numa_mem_policy_trace;
++#endif
++
+ 	/* Protected by memory_range_lock */
+ 	struct rb_root vm_range_numa_policy_tree;
+ 	struct vm_range *range_cache[VM_RANGE_CACHE_SIZE];
+diff --git a/kernel/mem.c b/kernel/mem.c
+index 1e0d8f8..e2ce780 100644
+--- a/kernel/mem.c
++++ b/kernel/mem.c
+@@ -540,6 +540,15 @@ static void reserve_pages(struct ihk_page_allocator_desc *pa_allocator,
  	ihk_pagealloc_reserve(pa_allocator, start, end);
  }
  
-+#if 1   /* Trace for DEBUG */
++#if 1   /* For mbind test */
 +char *mempolicy [] = {
 +	"MPOL_DEFAULT",
 +	"MPOL_PREFERRED",
@@ -18,58 +34,80 @@ index 62cb206..5bfb6d6 100644
  extern int cpu_local_var_initialized;
  static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
  		ihk_mc_ap_flag flag, int pref_node, int is_user, uintptr_t virt_addr)
-@@ -585,6 +594,23 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
- 			}
- 		}
- 
-+#if 1	/* Trace for DEBUG */
-+		if (!((range_policy_iter) && (range_policy_iter->numa_mem_policy != MPOL_DEFAULT))) {
-+			if ((range_policy_iter) && (range_policy_iter->numa_mem_policy == MPOL_DEFAULT)) {
-+				if (chk_shm == 0) {
-+					kprintf("%s[%d]: addr(0x%016lx) policy(%s) <NUMA node policy>\n"
-+						,__FUNCTION__ ,__LINE__ ,virt_addr ,mempolicy[(range_policy_iter->numa_mem_policy & 0x3)]);
-+				}
-+			} else {
-+				if ((cpu_local_var(current)->vm->numa_mem_policy == MPOL_DEFAULT) && (virt_addr != -1)) {
-+					if (virt_addr) {
-+						kprintf("%s[%d]: addr(0x%016lx) policy(%s) <default policy>\n"
-+							,__FUNCTION__ ,__LINE__ ,virt_addr ,mempolicy[(cpu_local_var(current)->vm->numa_mem_policy & 0x3)]);
-+					}
-+				}
-+			}
-+		}
-+#endif
- 
- 		if ((!((range_policy_iter) && (range_policy_iter->numa_mem_policy != MPOL_DEFAULT))) && (chk_shm == 0))
- 			goto distance_based;
-@@ -647,10 +673,30 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
- 				chk_shm = 1;
- 			} else {
- 				numa_mem_policy = range_policy_iter->numa_mem_policy;
-+
-+#if 1	/* Trace for DEBUG */
-+				kprintf("%s[%d]: addr(0x%016lx) policy(%s) <NUMA node policy>\n"
-+					,__FUNCTION__ ,__LINE__ ,virt_addr ,mempolicy[(numa_mem_policy & 0x3)]);
-+#endif
-+
- 			}
+@@ -649,6 +658,19 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
  		}
  	}
  
-+#if 1	/* Trace for DEBUG */
-+	if (numa_mem_policy == -1) {
-+		if (chk_shm == 1) {
-+			kprintf("%s[%d]: addr(0x%016lx) policy(%s) <default policy:Mapping of MAP_SHARED>\n"
-+				,__FUNCTION__ ,__LINE__ ,virt_addr ,mempolicy[(cpu_local_var(current)->vm->numa_mem_policy & 0x3)]);
++#if 1	/* For mbind test */
++	if (is_user && cpu_local_var(current)->vm->numa_mem_policy_trace && !range_policy_iter && numa_mem_policy == -1 && virt_addr != -1) {
++		int chk_shm;
++
++		range = lookup_process_memory_range(cpu_local_var(current)->vm, (uintptr_t)virt_addr, ((uintptr_t)virt_addr) + 1);
++		chk_shm = (range && range->memobj && (range->memobj->flags & MF_SHM)) ? 1 : 0;
++
++		kprintf("%s[%d]: applying default-policy, addr(0x%016lx) policy(%s) <default policy%s>\n",
++			__func__, __LINE__, virt_addr, mempolicy[(cpu_local_var(current)->vm->numa_mem_policy & 0x3)],
++			chk_shm ? ":Mapping of MAP_SHARED" : "");
++	}
++#endif
++	
+ 	if (numa_mem_policy == -1)
+ 		numa_mem_policy = cpu_local_var(current)->vm->numa_mem_policy;
+ 
+@@ -709,6 +731,13 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
+ 		default:
+ 			break;
+ 	}
++			
++#if 1	/* For mbind test */
++	if (is_user && cpu_local_var(current)->vm->numa_mem_policy_trace && pa && range_policy_iter) {
++		kprintf("%s[%d]: applying addr-policy (and it's not default-policy), addr(0x%016lx) policy(%s) <addr policy>\n",
++			__func__, __LINE__, virt_addr, mempolicy[(numa_mem_policy & 0x3)], numa_mem_policy);
++	}
++#endif
+ 
+ 	if (pa) {
+ 		return phys_to_virt(pa);
+@@ -765,6 +794,25 @@ distance_based:
+ 		if (pa) break;
+ 	}
+ 
++#if 1	/* For mbind test */
++	if (is_user && cpu_local_var(current)->vm->numa_mem_policy_trace && pa) {
++		if (range_policy_iter) {
++			kprintf("%s[%d]: applying addr-policy (and it's default-policy), addr(0x%016lx) policy(%s) <addr policy>\n",
++				__func__, __LINE__, virt_addr, mempolicy[(cpu_local_var(current)->vm->numa_mem_policy & 0x3)]);
 +		} else {
-+			if (virt_addr) {
-+				kprintf("%s[%d]: addr(0x%016lx) policy(%s) <default policy>\n"
-+					,__FUNCTION__ ,__LINE__ ,virt_addr ,mempolicy[(cpu_local_var(current)->vm->numa_mem_policy & 0x3)]);
++			int chk_shm = 0;
++			if (virt_addr != -1) {
++				range = lookup_process_memory_range(cpu_local_var(current)->vm, (uintptr_t)virt_addr, ((uintptr_t)virt_addr) + 1);
++				chk_shm = (range && range->memobj && (range->memobj->flags & MF_SHM)) ? 1 : 0;
 +			}
++			kprintf("%s[%d]: applying default-policy, addr(0x%016lx) policy(%s) <default policy%s>\n",
++				__func__, __LINE__, virt_addr != -1 ? virt_addr : (unsigned long)phys_to_virt(pa),
++				mempolicy[(cpu_local_var(current)->vm->numa_mem_policy & 0x3)],
++				chk_shm ? ":Mapping of MAP_SHARED" : "");
 +		}
 +	}
 +#endif
 +
- 	if (numa_mem_policy == -1)
- 		numa_mem_policy = cpu_local_var(current)->vm->numa_mem_policy;
+ 	if (pa)
+ 		return phys_to_virt(pa);
  
+diff --git a/kernel/syscall.c b/kernel/syscall.c
+index 4f24065..5c307a1 100644
+--- a/kernel/syscall.c
++++ b/kernel/syscall.c
+@@ -8841,6 +8841,12 @@ SYSCALL_DECLARE(set_mempolicy)
+ 			error = -EINVAL;
+ 	}
+ 
++
++#if 1	/* For mbind test */
++	vm->numa_mem_policy_trace = 1;
++	kprintf("numa_mem_policy=%x\n", mode);
++#endif
++
+ 	dkprintf("%s: %s set for PID %d\n",
+ 			__FUNCTION__,
+ 			mode == MPOL_DEFAULT ? "MPOL_DEFAULT" :

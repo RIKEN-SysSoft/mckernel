@@ -6,7 +6,7 @@ if [ $# -lt 1 ]; then
 fi
 
 # read config
-source ./config
+source ${HOME}/.mck_test_config
 
 # read testcase param
 source $1
@@ -15,13 +15,13 @@ source $1
 ./utils/kill_mcexec.sh &> /dev/null
 
 # stop mckernel
-sudo ${MCMOD_DIR}/sbin/mcstop+release.sh
+sudo ${MCK_DIR}/sbin/mcstop+release.sh
 
 sleep 1
 
 # boot mckernel
-echo "${MCMOD_DIR}/sbin/mcreboot.sh ${MCRBT_OPT%,}"
-sudo ${MCMOD_DIR}/sbin/mcreboot.sh ${MCRBT_OPT%,}
+echo "${MCK_DIR}/sbin/mcreboot.sh ${MCRBT_OPT%,}"
+sudo ${MCK_DIR}/sbin/mcreboot.sh ${MCRBT_OPT%,}
 
 sleep 1
 
@@ -31,15 +31,15 @@ if [ ! -e "/dev/mcos0" ]; then
 fi
 
 # exec mckernel test program
-echo "${MCMOD_DIR}/bin/mcexec ${USR_PROC}"
-${MCMOD_DIR}/bin/mcexec ${USR_PROC} 
+echo "${MCK_DIR}/bin/mcexec ${USR_PROC}"
+${MCK_DIR}/bin/mcexec ${USR_PROC}
 
 #if [ $? -eq 0 ]; then
 if [ $? == 0 ]; then
 	sleep 1
 
-	echo "${MCMOD_DIR}/sbin/ihkosctl ${OS_IDX} kmsg"
-	sudo ${MCMOD_DIR}/sbin/ihkosctl ${OS_IDX} kmsg
+	echo "${MCK_DIR}/sbin/ihkosctl ${OS_IDX} kmsg"
+	sudo ${MCK_DIR}/sbin/ihkosctl ${OS_IDX} kmsg
 	exit 0
 else
         echo "Error: faild to mcexec"

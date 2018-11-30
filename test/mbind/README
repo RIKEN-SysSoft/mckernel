@@ -1,19 +1,25 @@
-===================
-Advance preparation
-===================
-1)Implement patch of test_trace_mem.patch
+=====
+Steps
+=====
+
+(1) Set default policy to P1
+(2) Set policy of memory address A to P2
+(3) Check the following:
+    1) P2 is used when allocating A
+    2) P1 is used when allocating memory with address other than A
+
+===========
+Apply patch
+===========
+
 cd mckernel
 patch -p0 < test_trace_mem.patch
 make
 make install
 
+=============
+Run the tests
+=============
 
-2)Compile command execution processing
-cd mckernel/test/mbind/mcexec_test_proc/
-make
-
-==========
-How to run
-==========
 ./go_mbind_test.sh
 
