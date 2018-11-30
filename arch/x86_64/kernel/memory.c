@@ -2239,7 +2239,7 @@ out:
 
 int ihk_mc_pt_set_range(page_table_t pt, struct process_vm *vm, void *start, 
 		void *end, uintptr_t phys, enum ihk_mc_pt_attribute attr,
-						int pgshift, struct vm_range *range)
+		int pgshift, struct vm_range *range, int overwrite)
 {
 	int error;
 	struct set_range_args args;
@@ -2448,7 +2448,7 @@ static int move_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 	attr = apte & ~PT_PHYSMASK;
 
 	error = ihk_mc_pt_set_range(pt, args->vm, (void *)dest,
-								(void *)(dest + pgsize), phys, attr, pgshift, args->range);
+			(void *)(dest + pgsize), phys, attr, pgshift, args->range, 0);
 	if (error) {
 		kprintf("move_one_page(%p,%p,%p %#lx,%p,%d):"
 				"set failed. %d\n",

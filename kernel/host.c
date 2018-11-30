@@ -159,7 +159,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 									(void *)range->start,
 									(void *)range->start + (range_npages * PAGE_SIZE),
 									up, ptattr,
-									range->pgshift, range);
+									range->pgshift, range, 0);
 
 		if (error) {
 			kprintf("%s: ihk_mc_pt_set_range failed. %d\n",
