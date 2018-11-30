@@ -1,0 +1,34 @@
+mcstop+release.sh ... done
+mcreboot.sh -c 4-7 -m 8192M -e anon_on_demand ... done
+OK: 1
+OK: 2
+OK: 4
+OK: 5
+OK: 6
+OK: 7
+NG: 100
+OK: 104
+OK: 105
+OK: 106
+OK: 107
+OK: 200
+OK: 201
+OK: 202
+OK: 203
+OK: 204
+OK: 205
+OK: 206
+OK: 207
+OK: 208
+OK: 300
+OK: 301
+OK: 302
+OK: 303
+OK: 304
+OK: 305
+OK: 306
+OK: 307
+OK: 308
+OK: 404
+OK: 409
+OK: 410

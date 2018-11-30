@@ -1,0 +1,44 @@
+===================
+Advance preparation
+===================
+1) install IHK/McKernel
+
+2) set up configuration file
+   $ cp <mckernel>/mck_test_config.sample ~/.mck_test_config
+   $ emacs ~/.mck_test_config
+   $ cat ~/.mck_test_config
+   # Config file for McKernel tests
+   : ${BIN:=/opt/ppos/bin}
+   : ${SBIN:=/opt/ppos/sbin}
+   : ${OSTEST:=}
+   : ${LTP:=}
+   : ${BOOTPARAM:=-c 4-7 -m 8192M -e anon_on_demand}
+   : ${MCKERNEL_VERSION:=1.5.0}
+
+3) compile test program
+    $ cd <mckernel>/test/contiguous_pte
+    $ make
+
+==========
+How to run
+==========
+    $ cd <mckernel>/test/contiguous_pte
+    $ sh ./go_contiguous_pte_test.sh | tee result.log
+
+==========
+テスト内容は以下の通り。
+1. munmapでcontiguous PTEでマップされた領域[a, b]に含まれるメモリ範囲[p ,q]をunmapした際に、対象領域と、その前後のPTEが期待通りになっているかを確認する。以下、＜ページサイズ, 開始アドレス、終了アドレス＞の形式で設定の組み合わせを示す。
+CT001 <2MB, p - 2MB, p + 2MB>
+
+T.B.D.
+
+#100: 64KB設定の時には16GBの空きメモリが必要。
+      result.log.64KはNG(SIGSEGV)となっているが
+      ログ採取時の実行環境要因のため期待通りの動作である。
+
+#4xx:  madvise(MADV_REMOVE)を使うテストのため
+       1.5のMcKernelでは後続のTPが実行できないので
+       McKernel再起動後に個別の実行確認が必要。
+
+--
+README COPYRIGHT FUJITSU LIMITED 2018
