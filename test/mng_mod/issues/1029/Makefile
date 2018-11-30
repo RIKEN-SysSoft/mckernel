@@ -1,5 +1,6 @@
+include $(HOME)/.mck_test_config.mk
+
 CC=gcc
-MCK_DIR=/home/satoken/ppos
 MCEXEC=$(MCK_DIR)/bin/mcexec
 TARGET=sched_test go_test
 all:: $(TARGET)
