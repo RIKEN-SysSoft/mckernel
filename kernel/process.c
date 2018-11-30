@@ -1711,12 +1711,18 @@ static int invalidate_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 	phys = pte_get_phys(ptep);
 	page = phys_to_page(phys);
 	linear_off = range->objoff + ((uintptr_t)pgaddr - range->start);
-	if (page && (page->offset == linear_off)) {
+
+	if (page) {
+		if (page->offset == linear_off) {
+			pte_make_null(&apte, pgsize);
+		}
+		else {
+			pte_make_fileoff(page->offset, 0, pgsize, &apte);
+		}
+	} else {
 		pte_make_null(&apte, pgsize);
 	}
-	else {
-		pte_make_fileoff(page->offset, 0, pgsize, &apte);
-	}
+
 	pte_xchg(ptep, &apte);
 	flush_tlb_single((uintptr_t)pgaddr);	/* XXX: TLB flush */
 
@@ -1745,6 +1751,8 @@ int invalidate_process_memory_range(struct process_vm *vm,
 {
 	int error;
 	struct invalidate_args args;
+	pte_t *ptep;
+	size_t pgsize;
 
 	dkprintf("invalidate_process_memory_range(%p,%p,%#lx,%#lx)\n",
 			vm, range, start, end);
@@ -1752,6 +1760,43 @@ int invalidate_process_memory_range(struct process_vm *vm,
 
 	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 	memobj_ref(range->memobj);
+
+	ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+				    (void *)start, 0, NULL,
+				    &pgsize, NULL);
+	if (ptep && pte_is_contiguous(ptep)) {
+		if (!page_is_contiguous_head(ptep, pgsize)) {
+			// start pte is not contiguous head
+			error = split_contiguous_pages(ptep, pgsize);
+			if (error) {
+				ihk_spinlock_t *page_table_lock;
+
+				memobj_unref(range->memobj);
+				page_table_lock = &vm->page_table_lock;
+				ihk_mc_spinlock_unlock_noirq(page_table_lock);
+				goto out;
+			}
+		}
+	}
+
+	ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+				    (void *)end - 1, 0, NULL,
+				    &pgsize, NULL);
+	if (ptep && pte_is_contiguous(ptep)) {
+		if (!page_is_contiguous_tail(ptep, pgsize)) {
+			// end pte is not contiguous tail
+			error = split_contiguous_pages(ptep, pgsize);
+			if (error) {
+				ihk_spinlock_t *page_table_lock;
+
+				memobj_unref(range->memobj);
+				page_table_lock = &vm->page_table_lock;
+				ihk_mc_spinlock_unlock_noirq(page_table_lock);
+				goto out;
+			}
+		}
+	}
+
 	error = visit_pte_range(vm->address_space->page_table, (void *)start,
 	                        (void *)end, range->pgshift, VPTEF_SKIP_NULL,
 	                        &invalidate_one_page, &args);
