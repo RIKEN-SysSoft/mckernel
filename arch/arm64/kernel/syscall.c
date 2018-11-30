@@ -507,6 +507,8 @@ SYSCALL_DECLARE(rt_sigreturn)
 	thread->sigmask.__val[0] = ksigsp.uc.uc_sigmask.__val[0];
 	thread->sigstack.ss_flags = ksigsp.uc.uc_stack.ss_flags;
 	if(ksigsp.restart){
+		regs->orig_x0 = regs->regs[0];
+		regs->orig_pc = regs->pc;
 		return syscall(ksigsp.syscallno, regs);
 	}
 
@@ -1081,6 +1083,17 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 
 	if(regs == NULL){ /* call from syscall */
 		regs = thread->uctx;
+
+		/*
+		 * Call do_signal() directly syscalls,
+		 * need to save the return value.
+		 */
+		if (rc == -EINTR) {
+			if (regs->syscallno == __NR_rt_sigtimedwait ||
+			    regs->syscallno == __NR_rt_sigsuspend) {
+				regs->regs[0] = rc;
+			}
+		}
 	}
 	else{
 		rc = regs->regs[0];
@@ -1341,12 +1354,16 @@ interrupt_from_user(void *regs0)
 
 void save_syscall_return_value(int num, unsigned long rc)
 {
+	const struct thread *thread = cpu_local_var(current);
+
 	/*
 	 * Save syscall return value.
 	 */
-	if (cpu_local_var(current) && cpu_local_var(current)->uctx &&
-			num != __NR_rt_sigsuspend) {
-		ihk_mc_syscall_arg0(cpu_local_var(current)->uctx) = rc;
+	if (thread &&
+	    thread->uctx &&
+	    ((thread->uctx->regs[0] == thread->uctx->orig_x0) &&
+	     (thread->uctx->pc == thread->uctx->orig_pc))) {
+		thread->uctx->regs[0] = rc;
 	}
 }
 

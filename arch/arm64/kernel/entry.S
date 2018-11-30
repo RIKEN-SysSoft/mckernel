@@ -5,6 +5,7 @@
 #include <asm-offsets.h>
 #include <esr.h>
 #include <thread_info.h>
+#include <asm-syscall.h>
 
 /*
  * Bad Abort numbers
@@ -371,7 +372,12 @@ el0_sync:
 	b	el0_inv
 el0_svc:
 	uxtw	scno, w8			// syscall number in w8
-	stp	x0, scno, [sp, #S_ORIG_X0]	// save the original x0 and syscall number
+	cmp	scno, #__NR_rt_sigreturn
+	b.eq	1f
+	str	x0, [sp, #S_ORIG_X0]		// save the original x0
+	ldr	x16, [sp, #S_PC]
+	str	x16, [sp, #S_ORIG_PC]		// save the original pc
+1:	str	scno, [sp, #S_SYSCALLNO]	// save syscall number
 	enable_nmi
 	enable_dbg_and_irq x0
 	adrp	x16, __arm64_syscall_handler
