@@ -1200,9 +1200,15 @@ uint64_t ihk_mc_pt_virt_to_pagemap(struct page_table *pt, unsigned long virt)
 	}
 	if (ptl3_type_block(ptep)) {
 		paddr = ptl3_phys(ptep);
-		size = PTL3_SIZE;
-		mask = PTL3_MASK;
-		shift = PTL3_SHIFT;
+		if (pte_is_contiguous(ptep)) {
+			size = PTL3_CONT_SIZE;
+			mask = PTL3_CONT_MASK;
+			shift = PTL3_CONT_SHIFT;
+		} else {
+			size = PTL3_SIZE;
+			mask = PTL3_MASK;
+			shift = PTL3_SHIFT;
+		}
 		goto out;
 	}
 
@@ -1212,9 +1218,15 @@ uint64_t ihk_mc_pt_virt_to_pagemap(struct page_table *pt, unsigned long virt)
 	}
 	if (ptl2_type_block(ptep)) {
 		paddr = ptl2_phys(ptep);
-		size = PTL2_SIZE;
-		mask = PTL2_MASK;
-		shift = PTL2_SHIFT;
+		if (pte_is_contiguous(ptep)) {
+			size = PTL2_CONT_SIZE;
+			mask = PTL2_CONT_MASK;
+			shift = PTL2_CONT_SHIFT;
+		} else {
+			size = PTL2_SIZE;
+			mask = PTL2_MASK;
+			shift = PTL2_SHIFT;
+		}
 		goto out;
 	}
 
@@ -1223,9 +1235,15 @@ uint64_t ihk_mc_pt_virt_to_pagemap(struct page_table *pt, unsigned long virt)
 		return ret;
 	}
 	paddr = ptl1_phys(ptep);
-	size = PTL1_SIZE;
-	mask = PTL1_MASK;
-	shift = PTL1_SHIFT;
+	if (pte_is_contiguous(ptep)) {
+		size = PTL1_CONT_SIZE;
+		mask = PTL1_CONT_MASK;
+		shift = PTL1_CONT_SHIFT;
+	} else {
+		size = PTL1_SIZE;
+		mask = PTL1_MASK;
+		shift = PTL1_SHIFT;
+	}
 out:
 	ret = PM_PFRAME(((paddr & mask) + (v & (size - 1))) >> PAGE_SHIFT);
 	ret |= PM_PSHIFT(shift) | PM_PRESENT;
