@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "46ac00e6_97cc6f84",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2154,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-11-30T07:39:21Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tpgshift \u003d FIRST_LEVEL_BLOCK_SUPPORT ? PTL3_CONT_SHIFT : PTL2_CONT_SHIFT;",
+      "revId": "56c093475681e63fc5e239599f6e8502abdc43a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
