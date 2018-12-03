@@ -1,0 +1,5 @@
+mcstop+release.sh ... done
+*** CT_009 start *************************
+[OK] force shutdown immediately after boot returned 0
+*** All tests finished
+
