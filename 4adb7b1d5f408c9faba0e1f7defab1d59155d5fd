@@ -2,6 +2,23 @@
   "comments": [
     {
       "key": {
+        "uuid": "d434b242_55e27873",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2620,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-12-03T02:10:29Z",
+      "side": 1,
+      "message": "should this use page_is_contiguous_head as well?",
+      "revId": "4adb7b1d5f408c9faba0e1f7defab1d59155d5fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "c03faeef_bc5c312d",
         "filename": "arch/arm64/kernel/memory.c",
         "patchSetId": 2
