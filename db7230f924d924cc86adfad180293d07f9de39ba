@@ -1,0 +1,1024 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "d0eea5ae_07bc0d11",
+        "filename": "test/mbind/chk_mbind_result.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tADDR\u003d`grep \"OK:mbind\" $CHK_LOG_FILE | grep -e \"0$exec_num]\" | grep -o \u0027(0x.*000)\u0027`",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2f2ad1b8_4f52d77d",
+        "filename": "test/mbind/chk_mbind_result.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tADDR_POLICY\u003d`grep \"OK:mbind\" $CHK_LOG_FILE | grep -e \"0$exec_num]\" | grep -o \u0027(MPOL.*)\u0027`",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2037dc6d_055900ec",
+        "filename": "test/mbind/chk_mbind_result.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tADDR\u003d`grep \"OK:mbind\" $CHK_LOG_FILE | grep -e \"$exec_num]\" | grep -o \u0027(0x.*000)\u0027`",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "eef4ecde_ff2ea7ec",
+        "filename": "test/mbind/chk_mbind_result.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tADDR_POLICY\u003d`grep \"OK:mbind\" $CHK_LOG_FILE | grep -e \"$exec_num]\" | grep -o \u0027(MPOL.*)\u0027`",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a23dd332_472d06df",
+        "filename": "test/mbind/chk_mbind_result.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tSET_MEM_POLICY_NUM\u003d`grep -v $ADDR $CHK_LOG_FILE | grep -e \"$CHK_POLICY_KIND\" | grep -ce \"$SET_MEM_POLICY\"`",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "46dc85c4_ead87751",
+        "filename": "test/mbind/chk_mbind_result.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\techo \" ($exec_num) $SET_MEM_POLICY_NUM allocations using $CHK_POLICY_KIND for addresses excluding $ADDR found.\"",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7413360b_fb8ce081",
+        "filename": "test/mbind/chk_mbind_result.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 48,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tALLOCATE_POLICY\u003d`grep \"mckernel_allocate_aligned_pages_node\" $CHK_LOG_FILE | grep -e $ADDR | grep -e \"$CHK_POLICY_KIND\" | grep -o \u0027(MPOL.*)\u0027`",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3166f147_fbf9f98c",
+        "filename": "test/mbind/chk_mbind_result.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\techo \" user direction $SET_MEM_POLICY via set_mempolicy for address excluding $ADDR\"",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8c9ef3de_81de09db",
+        "filename": "test/mbind/go_mbind_test.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+            echo \"[INFO] ${case_name} is skipped because it\u0027s trying to test MPOL_INTERLEAVE\"",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ef026af7_681a1782",
+        "filename": "test/mbind/go_mbind_test.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+                \techo \"[ NG ] failed to test ${case_name}. Please check ${logfile}\"",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9b1c3838_62f4d3eb",
+        "filename": "test/mbind/go_mbind_test.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\techo \"[ NG ] failed to test ${case_name}. Please check ${logfile}\"",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "32b07795_a9696619",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tprintf(\"NG:set_mempolicy - mode:(%s) nodemask:0x%x maxnode:%d rst:%d\\n\",",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "82a1fd29_ed5b9c2c",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 60,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\trst \u003d get_mempolicy(\u0026get_mode, \u0026set_nodemask, set_maxnode, NULL, MPOL_F_NODE);",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "aaa36b2e_ffcb229e",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 63,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tprintf(\"NG:get_mempolicy - mode:(%s) nodemask:0x%x maxnode:%d rst:%d\\n\",",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "886807b1_fb74f3f6",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 64,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "ERROR: space prohibited before that \u0027,\u0027 (ctx:WxV)\n+\t\t       mempolicy[mode] ,set_nodemask ,set_maxnode, rst);\n \t\t                       ^",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ff754e5e_ba9d7575",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 64,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "ERROR: space prohibited before that \u0027,\u0027 (ctx:WxV)\n+\t\t       mempolicy[mode] ,set_nodemask ,set_maxnode, rst);\n \t\t                                     ^",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "db8d411e_998c650c",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 64,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:WxV)\n+\t\t       mempolicy[mode] ,set_nodemask ,set_maxnode, rst);\n \t\t                                     ^",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d7284ca7_5a3dc147",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 64,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:WxV)\n+\t\t       mempolicy[mode] ,set_nodemask ,set_maxnode, rst);\n \t\t                       ^",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "088c68fd_d8d08779",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 66,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: else is not generally useful after a break or return\n+\t\treturn -1;\n+\t} else {",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "37b70e26_e7786c00",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 67,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tprintf(\"OK:get_mempolicy - mode:(%s) nodemask:0x%x maxnode:%d\\n\",",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c3f743ca_7957d60a",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 68,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:WxV)\n+\t\t       mempolicy[mode] ,set_nodemask ,set_maxnode);\n \t\t                       ^",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "10aa9c98_bd226e20",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 68,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "ERROR: space prohibited before that \u0027,\u0027 (ctx:WxV)\n+\t\t       mempolicy[mode] ,set_nodemask ,set_maxnode);\n \t\t                       ^",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8bd6aed4_4fa4fb4a",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 68,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "ERROR: space prohibited before that \u0027,\u0027 (ctx:WxV)\n+\t\t       mempolicy[mode] ,set_nodemask ,set_maxnode);\n \t\t                                     ^",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c35c958f_5ab2752e",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 68,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:WxV)\n+\t\t       mempolicy[mode] ,set_nodemask ,set_maxnode);\n \t\t                                     ^",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6d1c7815_2278e206",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 101,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"[%02d] OK:mmap - addr:(0x%016lx) len:%d prot:0x%x flags:0x%x\\n\"",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1d5cc5c6_06044e50",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 102,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:WxV)\n+\t\t\t\t,i ,addr ,mem_len ,(PROT_READ | PROT_WRITE) ,(MAP_ANONYMOUS | MAP_PRIVATE));\n \t\t\t\t                  ^",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "613d9e55_b3ca150e",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 102,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:WxV)\n+\t\t\t\t,i ,addr ,mem_len ,(PROT_READ | PROT_WRITE) ,(MAP_ANONYMOUS | MAP_PRIVATE));\n \t\t\t\t   ^",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9cdf207b_dc23ed10",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 102,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:ExV)\n+\t\t\t\t,i ,addr ,mem_len ,(PROT_READ | PROT_WRITE) ,(MAP_ANONYMOUS | MAP_PRIVATE));\n \t\t\t\t^",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4c919201_c16bbbdf",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 102,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:WxV)\n+\t\t\t\t,i ,addr ,mem_len ,(PROT_READ | PROT_WRITE) ,(MAP_ANONYMOUS | MAP_PRIVATE));\n \t\t\t\t                                            ^",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1604afe7_88e62a42",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 102,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "ERROR: space prohibited before that \u0027,\u0027 (ctx:WxV)\n+\t\t\t\t,i ,addr ,mem_len ,(PROT_READ | PROT_WRITE) ,(MAP_ANONYMOUS | MAP_PRIVATE));\n \t\t\t\t         ^",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a9915333_7160a383",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 102,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t,i ,addr ,mem_len ,(PROT_READ | PROT_WRITE) ,(MAP_ANONYMOUS | MAP_PRIVATE));",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a6fd26c2_b809c5c5",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 102,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "ERROR: space prohibited before that \u0027,\u0027 (ctx:WxV)\n+\t\t\t\t,i ,addr ,mem_len ,(PROT_READ | PROT_WRITE) ,(MAP_ANONYMOUS | MAP_PRIVATE));\n \t\t\t\t   ^",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6354ee12_a6e46d8f",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 102,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:WxV)\n+\t\t\t\t,i ,addr ,mem_len ,(PROT_READ | PROT_WRITE) ,(MAP_ANONYMOUS | MAP_PRIVATE));\n \t\t\t\t         ^",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bdab9282_4236bd95",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 102,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "ERROR: space prohibited before that \u0027,\u0027 (ctx:WxV)\n+\t\t\t\t,i ,addr ,mem_len ,(PROT_READ | PROT_WRITE) ,(MAP_ANONYMOUS | MAP_PRIVATE));\n \t\t\t\t                                            ^",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "45af21a2_11106aa0",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 102,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "ERROR: space prohibited before that \u0027,\u0027 (ctx:WxV)\n+\t\t\t\t,i ,addr ,mem_len ,(PROT_READ | PROT_WRITE) ,(MAP_ANONYMOUS | MAP_PRIVATE));\n \t\t\t\t                  ^",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "167fbfce_d80fec18",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 106,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tswitch ((i % 3)) { /* Skip MPOL_INTERLEAVE because it\u0027s not supported */",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "030f8393_757414fb",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 175,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t       i, mem_len,  PROT_READ | PROT_WRITE, MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE);",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c6756d99_62873338",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 178,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"[%02d] OK:mmap - addr:(0x%016lx) len:%d prot:0x%x flags:0x%x\\n\",",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3324114f_5fcee2fe",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 179,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\ti, addr, mem_len, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE);",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2e842d5d_f504040a",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 182,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I$",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5b0a14cc_2366678b",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 189,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t       i, mem_len,  PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE);",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "13f66aec_cdeb5646",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 191,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: else is not generally useful after a break or return\n+\t\t\treturn -1;\n+\t\t} else {",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "667fb9b7_efb239ef",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 192,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"[%02d] OK:mmap - addr:(0x%016lx) len:%d prot:0x%x flags:0x%x\\n\",",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c810d223_271e52dc",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 193,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\ti, fresh_addr, mem_len, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE);",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f8ab6103_48c2e042",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 232,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tprintf(\"   parameter 4 : mbind(mode). Pass 0xff when looping over mode values\\n\");",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "08a0c92e_f5f12a26",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 237,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tprintf(\"   example) ./exec_setmempolicy_mbind 0x8001 0x1 2 0x8002 0x1 2 0x0 1\\n\");",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "726ff1f5_5436623e",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind_shared.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tprintf(\"NG:set_mempolicy - mode:(%s) nodemask:0x%x maxnode:%d rst:%d\\n\",",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9e730f36_0c4d2002",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind_shared.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tprintf(\"OK:set_mempolicy - mode:(%s) nodemask:0x%x maxnode:%d\\n\",",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3ba1f440_23d7c128",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind_shared.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 95,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"[%02d] NG:shmat - len:%d prot:0x%x flags:0x%x\\n\",",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c8a245a1_59a3ae36",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind_shared.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 100,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"[%02d] OK:shmat - addr:(0x%016lx) len:%d prot:0x%x flags:0x%x\\n\",",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f626d66f_791f80fd",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind_shared.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 145,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"[%02d] NG:mbind - addr:(0x%016lx) len:%d mode:(%s) nodemask:0x%x maxnode:%d flags:%d rst:%d\\n\",",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "523504eb_06927f5a",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind_shared.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 151,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"[%02d] OK:mbind - addr:(0x%016lx) len:%d mode:(%s) nodemask:0x%x maxnode:%d flags:%d\\n\",",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7ad2cb38_cb987e62",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind_shared.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 158,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"[%02d] NG:get_mempolicy - addr:(0x%016lx) rst:%d\\n\",",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6788caab_c6297a7f",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind_shared.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 163,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"[%02d] OK:get_mempolicy - addr:(0x%016lx) mode:(%s)\\n\",",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0d49faba_29e61b96",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind_shared.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 199,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"[%02d] NG:shmat - len:%d prot:0x%x flags:0x%x\\n\",",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6b779586_fd17976f",
+        "filename": "test/mbind/mcexec_test_proc/exec_setmempolicy_mbind_shared.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 204,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"[%02d] OK:shmat - addr:(0x%016lx) len:%d prot:0x%x flags:0x%x\\n\",",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3e72984a_f840742f",
+        "filename": "test/mbind/test_trace_mem.patch",
+        "patchSetId": 2
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n++^I$",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "96d1017b_13076039",
+        "filename": "test/mbind/test_trace_mem.patch",
+        "patchSetId": 2
+      },
+      "lineNbr": 61,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n++^I^I^I$",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9fae1a65_3833b9f5",
+        "filename": "test/mbind/test_trace_mem.patch",
+        "patchSetId": 2
+      },
+      "lineNbr": 68,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "98792e91_70438c89",
+        "filename": "test/mbind/test_trace_mem.patch",
+        "patchSetId": 2
+      },
+      "lineNbr": 96,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-03T09:34:37Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "db7230f924d924cc86adfad180293d07f9de39ba",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
