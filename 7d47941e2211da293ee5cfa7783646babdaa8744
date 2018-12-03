@@ -121,6 +121,23 @@
     },
     {
       "key": {
+        "uuid": "77b4afe1_6b9bfc5b",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 647,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-12-03T02:06:05Z",
+      "side": 1,
+      "message": "hm, if this function is called with a level3/4 pagesize it will return the same pte; is that OK?\nsame if the pagesize is not recognized (pgsize_to_tbllvl will return -EINVAL and leave shift at 0)",
+      "revId": "7d47941e2211da293ee5cfa7783646babdaa8744",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "1f1e1023_8c314aca",
         "filename": "arch/arm64/kernel/include/arch-memory.h",
         "patchSetId": 2
