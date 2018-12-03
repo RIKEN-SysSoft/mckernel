@@ -1487,8 +1487,9 @@ int init_worker_threads(int fd)
 		int ret = create_worker_thread(NULL, &init_ready);
 
 		if (ret) {
-			printf("ERROR: creating syscall threads (%d), check ulimit?\n", ret);
-			return ret;
+			printf("ERROR: creating worker threads (%d), check ulimit?\n",
+			       ret);
+			return -ret;
 		}
 	}
 
@@ -2757,8 +2758,9 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	if (init_worker_threads(fd) < 0) {
-		perror("worker threads: ");
+	if ((error = init_worker_threads(fd)) != 0) {
+		fprintf(stderr, "%s: Error: creating worker threads: %s\n",
+			__func__, strerror(-error));
 		close(fd);
 		return 1;
 	}
@@ -3569,11 +3571,10 @@ gettid_out:
 					n_threads = 4;
 				}
 
-				ret = 0;
-				if (init_worker_threads(fd) < 0) {
-					perror("worker threads: ");
+				if ((ret = init_worker_threads(fd)) != 0) {
+					fprintf(stderr, "%s: Error: creating worker threads: %s\n",
+						__func__, strerror(-ret));
 					close(fd);
-					ret = -1;
 				}
 
 fork_child_sync_pipe:
