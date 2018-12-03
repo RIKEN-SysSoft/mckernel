@@ -36,6 +36,23 @@
     },
     {
       "key": {
+        "uuid": "70bd59af_12b87b25",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2299,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-12-03T02:31:54Z",
+      "side": 1,
+      "message": "(typo) contiguous\nWould split comment in two lines and also specify that we clear the bit after setting it on all pages of that contiguous chunk, maybe?",
+      "revId": "209cfe857ef53f056db96b42ef3b52e5ad419700",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "17c8472b_e77a856c",
         "filename": "arch/arm64/kernel/memory.c",
         "patchSetId": 2
