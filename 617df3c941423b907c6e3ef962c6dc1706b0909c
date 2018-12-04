@@ -2,6 +2,23 @@
   "comments": [
     {
       "key": {
+        "uuid": "1c1d5c7a_2dca8161",
+        "filename": "kernel/process.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1852,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-12-04T06:01:32Z",
+      "side": 1,
+      "message": "Make a arch-dep function doing the following block and call it here.\nIt\u0027s okay the x86 version is an empty function.",
+      "revId": "617df3c941423b907c6e3ef962c6dc1706b0909c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "71907545_ad8a7fdd",
         "filename": "kernel/process.c",
         "patchSetId": 2
