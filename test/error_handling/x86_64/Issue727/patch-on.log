@@ -1,0 +1,35 @@
+スクリプトは Wed Nov 29 11:25:01 2017
+ に開始しました[?1034hbash-4.2$ ../../../../mic/mcexec ./exec
+execve killed
+強制終了
+bash-4.2$ ../../../../mic/ihkosctl 0 kmsg
+IHK/McKernel started.
+[ -1]: no_execute_available: 1
+[ -1]: X86_IA32_NUM_PERF_COUNTERS: 4, X86_IA32_NUM_FIXED_PERF_COUNTERS: 3
+[ -1]: Invariant TSC supported.
+[ -1]: setup_x86 done.
+[ -1]: ns_per_tsc: 384
+[ -1]: KCommand Line: hidos  dump_level=24 
+[ -1]: Physical memory: 0x1002c7000 - 0x140000000, 1070829568 bytes, 261433 pages available @ NUMA: 0
+[ -1]: Physical memory: 0x880000000 - 0x8c0000000, 1073741824 bytes, 262144 pages available @ NUMA: 1
+[ -1]: NUMA: 0, Linux NUMA: 0, type: 1, available bytes: 1070829568, pages: 261433
+[ -1]: NUMA: 1, Linux NUMA: 1, type: 1, available bytes: 1073741824, pages: 262144
+[ -1]: NUMA 0 distances: 0 (10), 1 (21), 
+[ -1]: NUMA 1 distances: 1 (10), 0 (21), 
+[ -1]: map_fixed: phys: 0x90000 => 0xffffffff70015000 (2 pages)
+[ -1]: Trampoline area: 0x90000 
+[ -1]: map_fixed: phys: 0x0 => 0xffffffff70017000 (1 pages)
+[ -1]: # of cpus : 7
+[ -1]: locals = ffff8001002eb000
+[  0]: BSP: 0 (HW ID: 2 @ NUMA 0)
+[  0]: BSP: booted 6 AP CPUs
+[  0]: Master channel init acked.
+[  0]: vdso is enabled
+IHK/McKernel booted.
+[  0]: do_syscall: proxy PID 14276 is dead, terminate()
+
+bash-4.2$ シェルから脱出するには "exit" を使用してください。
+bash-4.2$ exit
+
+スクリプトは Wed Nov 29 11:25:33 2017
+ に終了しました
