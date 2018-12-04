@@ -1,21 +1,19 @@
-diff --git arch/x86/kernel/include/syscall_list.h arch/x86/kernel/include/syscall_list.h
-index 42d1e2e..f5769b8 100644
---- arch/x86/kernel/include/syscall_list.h
-+++ arch/x86/kernel/include/syscall_list.h
-@@ -156,5 +156,7 @@ SYSCALL_HANDLED(__NR_profile, profile)
- SYSCALL_HANDLED(730, util_migrate_inter_kernel)
- SYSCALL_HANDLED(731, util_indicate_clone)
- SYSCALL_HANDLED(732, get_system)
-+/* McKernel Specific */
+diff --git a/arch/x86_64/kernel/include/syscall_list.h b/arch/x86_64/kernel/include/syscall_list.h
+index ce28d52..d1ad182 100644
+--- a/arch/x86_64/kernel/include/syscall_list.h
++++ b/arch/x86_64/kernel/include/syscall_list.h
+@@ -167,4 +167,5 @@ SYSCALL_HANDLED(802, linux_mlock)
+ SYSCALL_HANDLED(803, suspend_threads)
+ SYSCALL_HANDLED(804, resume_threads)
+ SYSCALL_HANDLED(811, linux_spawn)
 +SYSCALL_HANDLED(950, mem_destroy)
- 
  /**** End of File ****/
-diff --git arch/x86/kernel/syscall.c arch/x86/kernel/syscall.c
-index 2260b66..e96776a 100644
---- arch/x86/kernel/syscall.c
-+++ arch/x86/kernel/syscall.c
-@@ -1887,4 +1887,33 @@ save_uctx(void *uctx, struct x86_user_context *regs)
- 	ctx->fregsize = 0;
+diff --git a/arch/x86_64/kernel/syscall.c b/arch/x86_64/kernel/syscall.c
+index 230fa98..1860268 100644
+--- a/arch/x86_64/kernel/syscall.c
++++ b/arch/x86_64/kernel/syscall.c
+@@ -2745,4 +2745,33 @@ time_t time(void) {
+ 	return ret;
  }
  
 +
@@ -39,9 +37,9 @@ index 2260b66..e96776a 100644
 +	}
 +
 +	addr  = phys_to_virt(get_end + ADD_ADDR_VAL);
-+#if 1 
++#if 0
 +	*addr = 0x1;
-+#endif     
++#endif
 +	kprintf("%s: Address out of range  0x%lx(val:%d)\n",__FUNCTION__ ,addr ,*addr);
 +
 +	return rst;
