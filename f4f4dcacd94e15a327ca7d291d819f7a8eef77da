@@ -1532,6 +1532,29 @@
     },
     {
       "key": {
+        "uuid": "d5a63999_af9478db",
+        "filename": "test/mng_mod/issues/1032-34/arm64/README",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-12-04T05:24:51Z",
+      "side": 1,
+      "message": "Issue#1032 (https://postpeta.pccluster.org/redmine/issues/1032)で報告されているテストプログラム。\nなどと追記してください。",
+      "range": {
+        "startLine": 17,
+        "startChar": 0,
+        "endLine": 17,
+        "endChar": 7
+      },
+      "revId": "f4f4dcacd94e15a327ca7d291d819f7a8eef77da",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "1da62b18_c820d933",
         "filename": "test/mng_mod/issues/1032-34/arm64/README",
         "patchSetId": 1
