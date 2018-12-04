@@ -54,6 +54,29 @@
     },
     {
       "key": {
+        "uuid": "dfd00613_1d438ea9",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 490,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-12-04T04:16:18Z",
+      "side": 1,
+      "message": "この関数のpgsizeはvm_rangeから来ているので、誤った値になりえないため、このエラーチェック全体は不要かもしれません。assertにして、テストがpassしたら消す、のはいかがでしょうか。",
+      "range": {
+        "startLine": 490,
+        "startChar": 0,
+        "endLine": 490,
+        "endChar": 58
+      },
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "ff5dcbc8_e6eebf32",
         "filename": "arch/arm64/kernel/include/arch-memory.h",
         "patchSetId": 1
@@ -269,6 +292,24 @@
       "writtenOn": "2018-11-26T02:43:05Z",
       "side": 1,
       "message": "Coming back here after reading more further patches and how this function is used. I don\u0027t like the function name: it\u0027s not an action word, yet does not return anything useful to the caller (only error; it\u0027s a side-effect function that acts on its argument)\n\nSomething like \"split_compound_pages\" might be better, if I understood this correctly?",
+      "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6a9225fc_c05c1e07",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 691,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-12-04T04:16:18Z",
+      "side": 1,
+      "message": "contiguousに統一しましょう。",
+      "parentUuid": "061c92fc_e6e43152",
       "revId": "2824ff9e9b02aa0abd806552bde23f7be448089e",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
