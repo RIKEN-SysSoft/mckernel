@@ -19,6 +19,23 @@
     },
     {
       "key": {
+        "uuid": "2e0af591_aa857b6f",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2623,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-12-04T05:41:37Z",
+      "side": 1,
+      "message": "He means that this line can be replaced with:\nif (page_is_contiguous_head(...)) {",
+      "revId": "4adb7b1d5f408c9faba0e1f7defab1d59155d5fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "c03faeef_bc5c312d",
         "filename": "arch/arm64/kernel/memory.c",
         "patchSetId": 2
