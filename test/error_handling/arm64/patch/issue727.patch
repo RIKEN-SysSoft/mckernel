@@ -1,0 +1,15 @@
+diff --git a/executer/user/mcexec.c b/executer/user/mcexec.c
+index 6210921..301d2a5 100644
+--- a/executer/user/mcexec.c
++++ b/executer/user/mcexec.c
+@@ -3769,7 +3769,9 @@ return_execve1:
+ 
+ 				/* Copy program image phase */
+ 				case 2:
+-					
++					fprintf(stderr, "execve killed\n");
++					fflush(stderr);
++					kill(getpid(), SIGKILL);
+ 					ret = -1;
+ 					/* Alloc descriptor */
+ 					desc = malloc(w.sr.args[2]);
