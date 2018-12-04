@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "17de932c_643db2ac",
+        "filename": "test/mem_dest_prev/x86_64/go_test_McKernel.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 92,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-04T09:15:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+do $",
+      "revId": "43dce94ef025714a5b1a86e3b701c46c951a1f05",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
