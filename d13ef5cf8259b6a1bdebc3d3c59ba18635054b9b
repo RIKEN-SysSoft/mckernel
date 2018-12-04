@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "50cbae50_38037e55",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1490,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-04T09:37:03Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"ERROR: creating worker threads (%d), check ulimit?\\n\",",
+      "revId": "d13ef5cf8259b6a1bdebc3d3c59ba18635054b9b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0f9e92bc_faa49a95",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 3575,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-04T09:37:03Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tfprintf(stderr, \"%s: Error: creating worker threads: %s\\n\",",
+      "revId": "d13ef5cf8259b6a1bdebc3d3c59ba18635054b9b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
