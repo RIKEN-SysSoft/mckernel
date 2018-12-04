@@ -130,8 +130,6 @@ char *find_command_line(char *name)
 	return strstr(cmdline, name);
 }
 
-extern int safe_kernel_map;
-
 static void parse_kargs(void)
 {
 	char *ptr;
@@ -151,11 +149,6 @@ static void parse_kargs(void)
 		}
 	}
 	ihk_mc_set_dump_level(dump_level);
-
-	ptr = find_command_line("safe_kernel_map");
-	if (ptr) {
-		safe_kernel_map = 1;
-	}
 
 	/* idle_halt option */
 	ptr = find_command_line("idle_halt");

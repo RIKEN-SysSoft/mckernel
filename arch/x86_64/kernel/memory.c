@@ -39,8 +39,6 @@ extern char _head[], _end[];
 
 extern unsigned long x86_kernel_phys_base;
 
-int safe_kernel_map = 0;
-
 /* Arch specific early allocation routine */
 void *early_alloc_pages(int nr_pages)
 {
@@ -2543,6 +2541,8 @@ static void init_normal_area(struct page_table *pt)
 	}
 }
 
+extern char *find_command_line(char *name);
+
 static void init_linux_kernel_mapping(struct page_table *pt)
 {
 	unsigned long map_start, map_end, phys;
@@ -2552,7 +2552,7 @@ static void init_linux_kernel_mapping(struct page_table *pt)
 	/* In case of safe_kernel_map option (safe_kernel_map == 1),
 	 * processing to prevent destruction of the memory area on Linux side
 	 * is executed */
-	if (safe_kernel_map == 0) {
+	if (find_command_line("safe_kernel_map") == NULL) {
 		kprintf("Straight-map entire physical memory\n");
 
 		/* Map 2 TB for now */
