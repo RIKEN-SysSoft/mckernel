@@ -155,6 +155,29 @@
     },
     {
       "key": {
+        "uuid": "4852c777_870bb034",
+        "filename": "test/mng_mod/issues/1029/arm64/patch/1029.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-12-04T05:16:48Z",
+      "side": 1,
+      "message": "redmineの修正を適用してもう一度テストを流してみていただけないでしょうか。というのは、以下の条件の方が広いためです。\n+\t/* Skip not-schedulable */\n+\tif (thread-\u003estatus \u003d\u003d PS_RUNNING ||\n+\t\t(thread-\u003estatus \u003d\u003d PS_INTERRUPTIBLE \u0026\u0026 hassigpending(thread))) {\n+\t} else {\n+\t\tcontinue;\n+\t}",
+      "range": {
+        "startLine": 53,
+        "startChar": 0,
+        "endLine": 53,
+        "endChar": 3
+      },
+      "revId": "11acd5ca0bb907c00331d4062b0b056d0581e119",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "1387cbc0_bd92e5f2",
         "filename": "test/mng_mod/issues/1029/arm64/patch/1029.patch",
         "patchSetId": 1
