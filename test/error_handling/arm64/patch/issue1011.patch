@@ -1,0 +1,13 @@
+diff --git a/executer/user/mcexec.c b/executer/user/mcexec.c
+index 6210921..2cd08ba 100644
+--- a/executer/user/mcexec.c
++++ b/executer/user/mcexec.c
+@@ -478,7 +478,7 @@ struct program_load_desc *load_interp(struct program_load_desc *desc0, FILE *fp)
+ 			j++;
+ 		}
+ 	}
+-	desc->num_sections = j;
++	desc->num_sections = -1; // Test for num_secionts check Issue#1011
+ 
+ 	desc->entry = hdr.e_entry;
+ 	desc->interp_align = align;
