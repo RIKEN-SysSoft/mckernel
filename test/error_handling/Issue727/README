@@ -1,4 +1,5 @@
 ■ Issue#727 動作確認
+
 1. ファイルの説明
 727.patch     再現確認用パッチ mcexec において、execve phase 2 を SIGKILL
               終了させる
@@ -7,11 +8,21 @@ patch-off.log パッチ非適用時の動作確認結果 ls の結果が表示�
 patch-on.log  パッチ適用時の動作確認結果 強制終了し、McKernel が PANIC して
               いなければ OK
 
-2. 確認用テストプログラムのコンパイル方法
-gcc -o exec exec.c を行い、実行ファイル exec を得る
+2. テスト手順・結果確認方法
+    gcc -o exec exec.c
 
-3. 確認結果
-patch-on.log において、mcexec が強制終了し、McKernelのログに PANIC の表示が
-無いため、確認結果は OK。
-また、パッチ非適用時 (patch-off.log)、正常に ls の結果が表示されているので OK。
-以上より、確認結果は問題無い。
+    script patch-off.log
+    mcexec ./exec
+    # mcexecが強制終了していればOK
+    ihkosctl 0 kmsg
+    # ログに PANIC の表示が無ければOK
+    exit
+
+    patch -p1 < 727.patch
+    <compile mckernel>
+    script patch-on.log
+    mcexec ./exec
+    # lsの結果が表示されていればOK
+    ihkosctl 0 kmsg
+    # ログに PANIC の表示が無ければOK
+    exit
