@@ -19,6 +19,29 @@
     },
     {
       "key": {
+        "uuid": "aefe7bd0_3c3be479",
+        "filename": "test/error_handling/arm64/README",
+        "patchSetId": 1
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-12-04T05:20:55Z",
+      "side": 1,
+      "message": "本件と無関係な不具合を回避するため、プロセス数を4（デフォルトは10）、グループ数を2に設定している。\nと追記をお願いします。",
+      "range": {
+        "startLine": 74,
+        "startChar": 0,
+        "endLine": 74,
+        "endChar": 8
+      },
+      "revId": "29bfe7360de3484f1517c2f078ede1df017adc47",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "1dab152f_d1e20174",
         "filename": "test/error_handling/arm64/patch/issue1011.patch",
         "patchSetId": 1
