@@ -53,6 +53,23 @@
     },
     {
       "key": {
+        "uuid": "1b155b40_cc7de236",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2299,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-12-04T05:55:26Z",
+      "side": 1,
+      "message": "\"set contiguous bit until the next head pte if phys is aligned and range does not end early\" ?",
+      "revId": "209cfe857ef53f056db96b42ef3b52e5ad419700",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "17c8472b_e77a856c",
         "filename": "arch/arm64/kernel/memory.c",
         "patchSetId": 2
