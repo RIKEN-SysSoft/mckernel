@@ -138,6 +138,29 @@
     },
     {
       "key": {
+        "uuid": "e5b6cf24_0c2ec1c9",
+        "filename": "arch/arm64/kernel/include/arch-memory.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 649,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-12-04T05:36:01Z",
+      "side": 1,
+      "message": "else { panic(); }\nとしてエラーを報告するようにしましょう。",
+      "range": {
+        "startLine": 649,
+        "startChar": 3,
+        "endLine": 649,
+        "endChar": 0
+      },
+      "revId": "7d47941e2211da293ee5cfa7783646babdaa8744",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "1f1e1023_8c314aca",
         "filename": "arch/arm64/kernel/include/arch-memory.h",
         "patchSetId": 2
