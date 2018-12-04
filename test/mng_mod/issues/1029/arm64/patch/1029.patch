@@ -1,0 +1,165 @@
+diff --git a/kernel/include/process.h b/kernel/include/process.h
+index 2007abf..45232f0 100644
+--- a/kernel/include/process.h
++++ b/kernel/include/process.h
+@@ -723,6 +723,9 @@ struct thread {
+ 	// for performance counter
+ 	unsigned long pmc_alloc_map;
+ 	unsigned long extra_reg_alloc_map;
++
++// TestCode for #1029
++int started;
+ };
+ 
+ #define VM_RANGE_CACHE_SIZE	4
+diff --git a/kernel/process.c b/kernel/process.c
+index 83a94fa..79fa37b 100644
+--- a/kernel/process.c
++++ b/kernel/process.c
+@@ -3255,12 +3255,16 @@ out_schedule:
+ 	schedule();
+ }
+ 
++// TestCode for #1029
++int cases[13] = {0};
+ void schedule(void)
+ {
+ 	struct cpu_local_var *v;
+ 	struct thread *next, *prev, *thread, *tmp = NULL;
+ 	int switch_ctx = 0;
+ 	struct thread *last;
++// TestCode for #1029
++int runq_cnt = 0, case_num = 0, not_started = 0;
+ 
+ 	if (cpu_local_var(no_preempt)) {
+ 		kprintf("%s: WARNING can't schedule() while no preemption, cnt: %d\n",
+@@ -3289,6 +3293,70 @@ void schedule(void)
+ 		}
+ 	}
+ 
++// TestCode for #1029
++// flag for thread is started or not
++if (prev) {
++	prev->started = 1;
++}
++
++// check runq
++runq_cnt = 0;
++not_started = 0;
++list_for_each_entry_safe(thread, tmp, &(v->runq), sched_list) {
++	if (thread->tid == prev->tid) {
++		continue;
++	}
++
++	/* Skip not-schedulable */
++	if (thread->status == PS_RUNNING ||
++		(thread->status == PS_INTERRUPTIBLE && hassigpending(thread))) {
++	} else {
++		continue;
++	}
++
++	runq_cnt++;
++	if (!thread->started) {
++		not_started = 1;
++	}
++}
++
++// test cases
++if (!prev) {
++	case_num = 0;
++} else if (prev == &cpu_local_var(idle)) { // prev is idle
++	if (runq_cnt == 0) { // runq is empty
++		case_num = 1;
++	} else if (not_started) { // runq has other NOT_started thread
++		case_num = 2;
++	} else {                     // runq has other started thread
++		case_num = 3;
++	}
++} else if (v->flags & CPU_FLAG_NEED_MIGRATE) { // prev is NEED_MIGRATE
++	if (runq_cnt == 0) { // runq is empty
++		case_num = 4;
++	} else if (not_started) { // runq has other NOT_started thread
++		case_num = 5;
++	} else {                     // runq has other started thread
++		case_num = 6;
++	}
++} else if (prev->status != PS_EXITED) { // prev is NOT EXITED
++	if (runq_cnt == 0) { // runq is empty
++		case_num = 7;
++	} else if (not_started) { // runq has other NOT_started thread
++		case_num = 8;
++	} else {                     // runq has other started thread
++		case_num = 9;
++	}
++} else {                         // prev is NOT EXITED
++	if (runq_cnt == 0) { // runq is empty
++		case_num = 10;
++	} else if (not_started) { // runq has other NOT_started thread
++		case_num = 11;
++	} else {                     // runq has other started thread
++		case_num = 12;
++	}
++}
++
+ 	/* Switch to idle() when prev is PS_EXITED since it always reaches release_thread() 
+ 	   because it always resumes from just after ihk_mc_switch_context() call. See #1029 */
+ 	if (v->flags & CPU_FLAG_NEED_MIGRATE ||
+@@ -3324,6 +3392,58 @@ void schedule(void)
+ 
+ 	set_timer(1);
+ 
++// TestCode for #1029
++switch (case_num) {
++case 0:
++	break;
++case 1:
++	if (!cases[case_num]) {
++		if (!switch_ctx) {
++			kprintf("[OK] CT_%03d not_switch\n", case_num);
++		} else {
++			kprintf("[NG] CT_%03d %d -> %d\n", case_num, prev->tid, next->tid);
++		}
++		cases[case_num] = 1;
++	}
++	break;
++case 4:
++case 5:
++case 6:
++case 7:
++case 10:
++case 11:
++case 12:
++	// switch to idle
++	if (!cases[case_num]) {
++		if (next == &cpu_local_var(idle)) {
++			kprintf("[OK] CT_%03d %d => %d\n", case_num, 
++		        prev ? prev->tid : 0, next ? next->tid : 0);
++		} else {
++			kprintf("[NG] CT_%03d %d => %d\n", case_num, prev->tid, next->tid);
++		}
++		cases[case_num] = 1;
++	}
++	break;
++case 2:
++case 3:
++case 8:
++case 9:
++	// switch to NOT idle
++	if (!cases[case_num]) {
++		if (next != &cpu_local_var(idle)) {
++			kprintf("[OK] CT_%03d %d => %d\n", case_num, 
++		        prev ? prev->tid : 0, next ? next->tid : 0);
++		} else {
++			kprintf("[NG] CT_%03d\n", case_num);
++		}
++		cases[case_num] = 1;
++	}
++	break;
++
++default:
++	kprintf("unexpected case_num\n");
++}
++
+ 	if (switch_ctx) {
+ 		dkprintf("schedule: %d => %d \n",
+ 		        prev ? prev->tid : 0, next ? next->tid : 0);
