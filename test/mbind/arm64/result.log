@@ -1,0 +1,208 @@
+make: ディレクトリ `/opt/repo/mckernel/test/mbind/mcexec_test_proc' に入ります
+cc   -lnuma  exec_setmempolicy_mbind.c   -o exec_setmempolicy_mbind
+cc   -lnuma  exec_setmempolicy_mbind_shared.c   -o exec_setmempolicy_mbind_shared
+make: ディレクトリ `/opt/repo/mckernel/test/mbind/mcexec_test_proc' から出ます
+OK: (0) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000002e0000)
+[ OK ] 0001_mbind is done.
+OK: (0) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x00001000002e0000)
+[ OK ] 0002_mbind is done.
+OK: (0) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x00001000002e0000)
+[ OK ] 0003_mbind is done.
+[INFO] 0004_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+OK: (0) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000002e0000)
+OK: (1) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x0000100000300000)
+OK: (2) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x0000100000320000)
+[ OK ] 0005_mbind is done.
+OK: (0) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000002e0000)
+OK: (1) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x0000100000300000)
+OK: (2) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x0000100000320000)
+OK: (3) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x0000100000340000)
+OK: (4) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x0000100000360000)
+OK: (5) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x0000100000380000)
+OK: (6) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000003a0000)
+OK: (7) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x00001000003c0000)
+OK: (8) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x00001000003e0000)
+[ OK ] 0006_mbind is done.
+OK: (0) 4 allocations using <default policy> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0007_mbind is done.
+OK: (0) 4 allocations using <default policy> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0008_mbind is done.
+OK: (0) 4 allocations using <default policy> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0009_mbind is done.
+[INFO] 0010_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+[INFO] 0011_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+OK: (0) 1 allocations using <default policy:Mapping of MAP_SHARED> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0012_mbind is done.
+OK: (0) 1 allocations using <default policy:Mapping of MAP_SHARED> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0013_mbind is done.
+[INFO] 0014_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+OK: (0) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000002e0000)
+[ OK ] 0015_mbind is done.
+OK: (0) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x00001000002e0000)
+[ OK ] 0016_mbind is done.
+OK: (0) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x00001000002e0000)
+[ OK ] 0017_mbind is done.
+[INFO] 0018_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+OK: (0) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000002e0000)
+OK: (1) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x0000100000300000)
+OK: (2) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x0000100000320000)
+[ OK ] 0019_mbind is done.
+OK: (0) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000002e0000)
+OK: (1) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x0000100000300000)
+OK: (2) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x0000100000320000)
+OK: (3) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x0000100000340000)
+OK: (4) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x0000100000360000)
+OK: (5) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x0000100000380000)
+OK: (6) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000003a0000)
+OK: (7) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x00001000003c0000)
+OK: (8) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x00001000003e0000)
+[ OK ] 0020_mbind is done.
+OK: (0) 4 allocations using <default policy> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0021_mbind is done.
+OK: (0) 4 allocations using <default policy> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0022_mbind is done.
+OK: (0) 4 allocations using <default policy> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0023_mbind is done.
+[INFO] 0024_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+[INFO] 0025_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+OK: (0) 1 allocations using <default policy:Mapping of MAP_SHARED> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0026_mbind is done.
+OK: (0) 1 allocations using <default policy:Mapping of MAP_SHARED> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0027_mbind is done.
+[INFO] 0028_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+OK: (0) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000002e0000)
+[ OK ] 0029_mbind is done.
+OK: (0) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x00001000002e0000)
+[ OK ] 0030_mbind is done.
+OK: (0) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x00001000002e0000)
+[ OK ] 0031_mbind is done.
+[INFO] 0032_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+OK: (0) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000002e0000)
+OK: (1) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x0000100000300000)
+OK: (2) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x0000100000320000)
+[ OK ] 0033_mbind is done.
+OK: (0) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000002e0000)
+OK: (1) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x0000100000300000)
+OK: (2) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x0000100000320000)
+OK: (3) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x0000100000340000)
+OK: (4) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x0000100000360000)
+OK: (5) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x0000100000380000)
+OK: (6) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000003a0000)
+OK: (7) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x00001000003c0000)
+OK: (8) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x00001000003e0000)
+[ OK ] 0034_mbind is done.
+OK: (0) 4 allocations using <default policy> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0035_mbind is done.
+OK: (0) 4 allocations using <default policy> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0036_mbind is done.
+OK: (0) 4 allocations using <default policy> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0037_mbind is done.
+[INFO] 0038_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+[INFO] 0039_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+OK: (0) 1 allocations using <default policy:Mapping of MAP_SHARED> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0040_mbind is done.
+OK: (0) 1 allocations using <default policy:Mapping of MAP_SHARED> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0041_mbind is done.
+[INFO] 0042_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+OK: (0) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000002e0000)
+[ OK ] 0043_mbind is done.
+OK: (0) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x00001000002e0000)
+[ OK ] 0044_mbind is done.
+OK: (0) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x00001000002e0000)
+[ OK ] 0045_mbind is done.
+[INFO] 0046_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+OK: (0) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000002e0000)
+OK: (1) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x0000100000300000)
+OK: (2) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x0000100000320000)
+[ OK ] 0047_mbind is done.
+OK: (0) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000002e0000)
+OK: (1) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x0000100000300000)
+OK: (2) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x0000100000320000)
+OK: (3) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x0000100000340000)
+OK: (4) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x0000100000360000)
+OK: (5) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x0000100000380000)
+OK: (6) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000003a0000)
+OK: (7) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x00001000003c0000)
+OK: (8) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x00001000003e0000)
+[ OK ] 0048_mbind is done.
+OK: (0) 4 allocations using <default policy> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0049_mbind is done.
+OK: (0) 4 allocations using <default policy> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0050_mbind is done.
+OK: (0) 4 allocations using <default policy> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0051_mbind is done.
+[INFO] 0052_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+[INFO] 0053_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+OK: (0) 1 allocations using <default policy:Mapping of MAP_SHARED> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0054_mbind is done.
+OK: (0) 1 allocations using <default policy:Mapping of MAP_SHARED> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0055_mbind is done.
+[INFO] 0056_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+OK: (0) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000002e0000)
+[ OK ] 0057_mbind is done.
+OK: (0) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x00001000002e0000)
+[ OK ] 0058_mbind is done.
+OK: (0) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x00001000002e0000)
+[ OK ] 0059_mbind is done.
+[INFO] 0060_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+OK: (0) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000002e0000)
+OK: (1) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x0000100000300000)
+OK: (2) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x0000100000320000)
+[ OK ] 0061_mbind is done.
+OK: (0) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000002e0000)
+OK: (1) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x0000100000300000)
+OK: (2) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x0000100000320000)
+OK: (3) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x0000100000340000)
+OK: (4) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x0000100000360000)
+OK: (5) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x0000100000380000)
+OK: (6) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000003a0000)
+OK: (7) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x00001000003c0000)
+OK: (8) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x00001000003e0000)
+[ OK ] 0062_mbind is done.
+OK: (0) 4 allocations using <default policy> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0063_mbind is done.
+OK: (0) 4 allocations using <default policy> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0064_mbind is done.
+OK: (0) 4 allocations using <default policy> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0065_mbind is done.
+[INFO] 0066_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+[INFO] 0067_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+OK: (0) 1 allocations using <default policy:Mapping of MAP_SHARED> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0068_mbind is done.
+OK: (0) 1 allocations using <default policy:Mapping of MAP_SHARED> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0069_mbind is done.
+[INFO] 0070_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+OK: (0) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000002e0000)
+[ OK ] 0071_mbind is done.
+OK: (0) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x00001000002e0000)
+[ OK ] 0072_mbind is done.
+OK: (0) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x00001000002e0000)
+[ OK ] 0073_mbind is done.
+[INFO] 0074_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+OK: (0) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000002e0000)
+OK: (1) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x0000100000300000)
+OK: (2) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x0000100000320000)
+[ OK ] 0075_mbind is done.
+OK: (0) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000002e0000)
+OK: (1) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x0000100000300000)
+OK: (2) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x0000100000320000)
+OK: (3) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x0000100000340000)
+OK: (4) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x0000100000360000)
+OK: (5) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x0000100000380000)
+OK: (6) Kernel decision (<addr policy>: (MPOL_DEFAULT)) maches to user direction (MPOL_DEFAULT) via mbind for (0x00001000003a0000)
+OK: (7) Kernel decision (<addr policy>: (MPOL_PREFERRED)) maches to user direction (MPOL_PREFERRED) via mbind for (0x00001000003c0000)
+OK: (8) Kernel decision (<addr policy>: (MPOL_BIND)) maches to user direction (MPOL_BIND) via mbind for (0x00001000003e0000)
+[ OK ] 0076_mbind is done.
+OK: (0) 4 allocations using <default policy> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0077_mbind is done.
+OK: (0) 4 allocations using <default policy> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0078_mbind is done.
+OK: (0) 4 allocations using <default policy> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0079_mbind is done.
+[INFO] 0080_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+[INFO] 0081_mbind is skipped because it's trying to test MPOL_INTERLEAVE
+OK: (0) 1 allocations using <default policy:Mapping of MAP_SHARED> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0082_mbind is done.
+OK: (0) 1 allocations using <default policy:Mapping of MAP_SHARED> for addresses excluding (0x00001000002e0000) found
+[ OK ] 0083_mbind is done.
+[INFO] 0084_mbind is skipped because it's trying to test MPOL_INTERLEAVE
