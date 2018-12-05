@@ -1,0 +1,39 @@
+/* README COPYRIGHT FUJITSU LIMITED 2018 */
+
+ユーザ空間アクセスコードのアーキテクチャ依存非依存分離
+arm64版テスト結果README
+
+(1) NG項目の補足情報
+	perf_003
+		実施環境ではperfレジスタをサポートしていないためNG。
+
+	futex_011
+		期待値ファイルではTFAILになることを期待しているが、
+		arm64版ではTPASSになるため、比較としてはNGとなっている。
+
+	mp_002
+		move_pagesに利用するsmp_call_func()の仕組みはarm64版では
+		未実装であるため。
+
+(2) SKIP項目について
+	./go_swapout_test.shを利用したテストケースについては、
+	プロセススワップ機能のテストセットであると考えているため、
+	arm64版では移植を行っていない機能となる。
+	そのため、SKIPとしている。
+
+(3) IA版における対応版数
+	実行に利用したIHK/McKernelは、IA版における下記の版数相当の
+	arm64版移植IHK/McKernelである。
+
+	IHK
+		commit d6fcbee8cb91f9ec4b49f97c918e696ac0335aaf
+		Author: Shiratori, Takehiro <fj0300es@aa.jp.fujitsu.com>
+		Date:   Tue Oct 16 16:25:33 2018 +0900
+
+	McKernel
+		commit 6f9fef2b13447c74c36d15cf5ebd186f8395ccca
+		Author: Ken Sato <ken.sato.ty@hitachi-solutions.com>
+		Date:   Tue Sep 25 10:05:41 2018 +0900
+
+
+以上。
