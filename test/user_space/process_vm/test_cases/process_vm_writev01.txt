@@ -1,4 +1,4 @@
-process_vm_writev    1  TPASS  :  expected ret success - returned value = 4096
+process_vm_writev    1  TPASS  :
 process_vm_writev    2  TPASS  :  expected ret success - returned value = -1
 process_vm_writev    3  TPASS  :  expected failure: TEST_ERRNO=EINVAL(22): Invalid argument
 process_vm_writev    4  TPASS  :  expected ret success - returned value = -1
@@ -7,7 +7,7 @@ process_vm_writev    6  TPASS  :  expected ret success - returned value = -1
 process_vm_writev    7  TPASS  :  expected failure: TEST_ERRNO=EINVAL(22): Invalid argument
 process_vm_writev    8  TPASS  :  expected ret success - returned value = -1
 process_vm_writev    9  TPASS  :  expected failure: TEST_ERRNO=EINVAL(22): Invalid argument
-process_vm_writev   10  TPASS  :  expected ret success - returned value = 4096
+process_vm_writev   10  TPASS  :
 process_vm_writev   11  TPASS  :  expected ret success - returned value = -1
 process_vm_writev   12  TPASS  :  expected failure: TEST_ERRNO=EINVAL(22): Invalid argument
 process_vm_writev   13  TPASS  :  expected ret success - returned value = -1
