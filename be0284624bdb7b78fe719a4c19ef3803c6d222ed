@@ -1,0 +1,123 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "f9e60db5_fd385f93",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1285,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T03:07:07Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t\tfor(i \u003d 0; i \u003c HASH_SIZE; i++){",
+      "revId": "be0284624bdb7b78fe719a4c19ef3803c6d222ed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d969c79a_9f39486d",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1285,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T03:07:07Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\t\tfor(i \u003d 0; i \u003c HASH_SIZE; i++){",
+      "revId": "be0284624bdb7b78fe719a4c19ef3803c6d222ed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "31e7fc41_01efce24",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1287,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T03:07:07Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\t\t\tlist_for_each_entry(p, \u0026phash-\u003elist[i], hash_list){",
+      "revId": "be0284624bdb7b78fe719a4c19ef3803c6d222ed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b379e470_e75902a5",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1288,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T03:07:07Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t\t\t\tif(pgid !\u003d 1 \u0026\u0026 p-\u003epgid !\u003d pgid)",
+      "revId": "be0284624bdb7b78fe719a4c19ef3803c6d222ed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e678292f_529a32d1",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1291,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T03:07:07Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\t\t\t\tif(thread \u0026\u0026 p-\u003epid \u003d\u003d thread-\u003eproc-\u003epid){",
+      "revId": "be0284624bdb7b78fe719a4c19ef3803c6d222ed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a63aa896_84657939",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1291,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T03:07:07Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t\t\t\tif(thread \u0026\u0026 p-\u003epid \u003d\u003d thread-\u003eproc-\u003epid){",
+      "revId": "be0284624bdb7b78fe719a4c19ef3803c6d222ed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b1e0fc4e_76aec8b4",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1302,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T03:07:07Z",
+      "side": 1,
+      "message": "WARNING: Prefer kmalloc_array over kmalloc with multiply\n+\t\tpids \u003d kmalloc(sizeof(int) * nr_pids, IHK_MC_AP_NOWAIT);",
+      "revId": "be0284624bdb7b78fe719a4c19ef3803c6d222ed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
