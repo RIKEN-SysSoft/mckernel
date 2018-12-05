@@ -1,0 +1,140 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "a1328f0e_4cecfa8e",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 1285,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T04:08:25Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t\tfor(i \u003d 0; i \u003c HASH_SIZE; i++){",
+      "revId": "c14d1c9ca26eca0619291254b423a71a7a636b42",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6ab78754_9e663f1d",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 1285,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T04:08:25Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\t\tfor(i \u003d 0; i \u003c HASH_SIZE; i++){",
+      "revId": "c14d1c9ca26eca0619291254b423a71a7a636b42",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "27ad299a_f6ce7e18",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 1287,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T04:08:25Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\t\t\tlist_for_each_entry(p, \u0026phash-\u003elist[i], hash_list){",
+      "revId": "c14d1c9ca26eca0619291254b423a71a7a636b42",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "eee4697d_d014f0b3",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 1288,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T04:08:25Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t\t\t\tif(pgid !\u003d 1 \u0026\u0026 p-\u003epgid !\u003d pgid)",
+      "revId": "c14d1c9ca26eca0619291254b423a71a7a636b42",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "74a1fe7b_4c87b33f",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 1291,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T04:08:25Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\t\t\t\tif(thread \u0026\u0026 p-\u003epid \u003d\u003d thread-\u003eproc-\u003epid){",
+      "revId": "c14d1c9ca26eca0619291254b423a71a7a636b42",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2844c104_6ced6cb3",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 1291,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T04:08:25Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t\t\t\tif(thread \u0026\u0026 p-\u003epid \u003d\u003d thread-\u003eproc-\u003epid){",
+      "revId": "c14d1c9ca26eca0619291254b423a71a7a636b42",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "95375f01_3ec518fb",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 1302,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T04:08:25Z",
+      "side": 1,
+      "message": "WARNING: Prefer kmalloc_array over kmalloc with multiply\n+\t\t\tpids \u003d kmalloc(sizeof(int) * nr_pids, IHK_MC_AP_NOWAIT);",
+      "revId": "c14d1c9ca26eca0619291254b423a71a7a636b42",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bc822cc4_ed603ade",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 1303,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T04:08:25Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t\t\tif(!pids)",
+      "revId": "c14d1c9ca26eca0619291254b423a71a7a636b42",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
